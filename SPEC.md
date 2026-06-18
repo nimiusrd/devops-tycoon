@@ -540,15 +540,13 @@ Devinを入れると並列度は上がる
 
 | 項目       | 技術                        |
 | -------- | ------------------------- |
-| フレームワーク  | Next.js / React           |
+| フレームワーク  | React                     |
 | 言語       | TypeScript                |
-| 状態管理     | Zustand                   |
 | アニメーション  | Framer Motion             |
 | グラフ      | Recharts または visx         |
 | シミュレーション | TypeScript実装              |
 | 重い計算     | Web Worker                |
 | 保存       | localStorage              |
-| デプロイ     | Vercel / Cloudflare Pages |
 
 ## 17. 拡張案
 

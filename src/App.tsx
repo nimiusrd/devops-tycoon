@@ -1,6 +1,8 @@
-const seed = 'phase-0-seed';
+interface AppProps {
+  seed: string;
+}
 
-export default function App() {
+export default function App({ seed }: AppProps) {
   return (
     <main className="shell" aria-labelledby="app-title">
       <section className="hero-card">

@@ -1,8 +1,8 @@
 /**
  * Phase 0 の状態機械プレースホルダー。
  *
- * 本格的なフェーズ遷移は Phase 1 以降で xstate に移行する想定だが、
- * UI から参照する境界を先に固定しておく。
+ * 本格的なフェーズ遷移は Phase 1 以降で XState に接続する想定だが、
+ * UI と sim から参照する境界を先に固定しておく。
  */
 export type RunPhase = 'foundation';
 

@@ -1,0 +1,11 @@
+dist
+node_modules
+coverage
+playwright-report
+test-results
+mockups
+*.png
+package-lock.json
+
+# 企画・計画ドキュメントは手書きの体裁を維持する（Prettier の対象外）
+*.md

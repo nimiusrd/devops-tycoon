@@ -1,6 +1,15 @@
-const seed = 'phase-0-seed';
+import { DEFAULT_SCENARIO } from './sim/scenarios';
+import { DEFAULT_SEED } from './sim/seed';
+import type { ScenarioId } from './sim/types';
 
-export default function App() {
+export interface AppProps {
+  /** 解決済みの seed（`?seed=` 由来）。 */
+  seed?: string;
+  /** 適用中のシナリオ。 */
+  scenario?: ScenarioId;
+}
+
+export default function App({ seed = DEFAULT_SEED, scenario = DEFAULT_SCENARIO }: AppProps) {
   return (
     <main className="shell" aria-labelledby="app-title">
       <section className="hero-card">
@@ -9,7 +18,9 @@ export default function App() {
         <p className="status">Foundation Ready</p>
         <dl className="seed-panel" aria-label="Current simulation seed">
           <dt>seed</dt>
-          <dd>{seed}</dd>
+          <dd data-testid="seed">{seed}</dd>
+          <dt>scenario</dt>
+          <dd data-testid="scenario">{scenario}</dd>
         </dl>
       </section>
     </main>

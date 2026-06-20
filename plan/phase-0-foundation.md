@@ -23,7 +23,7 @@ SPEC に明記はないが、第22章を成立させるための土台。**sim �
 - Playwright セットアップ（既存 `mockups/` 撮影構成を視覚回帰の基盤として流用 / 第22.5）
 - Lint/format（ESLint + Prettier）、CI（テスト実行）
 - `src/sim/rng.ts`（mulberry32）と seed の一元管理、`?seed=` パラメータ
-- `window.game` フックの骨組み（`pause/step/loadState`）
+- `window.game` フックの骨組み（`GameHandle`: `pause` / `step` / `startRun` 等。公開契約は `src/game.ts`）
 - ディレクトリ構成（[architecture.md](./architecture.md) §3）の雛形を作成
 
 ## 成果物

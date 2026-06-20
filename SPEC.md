@@ -1070,7 +1070,7 @@ PixiJS の DisplayObject（Container/Sprite）は WebGL なしで生成・座標
 
 * 乱数は seed付きPRNG に一本化し、`?seed=` 等で再現可能にする（第22.3）。
 * レンダラは「状態を読んで描くだけ」（第22.2）＝同一状態なら同一フレーム＝スクショが安定する。
-* `window.game` に `pause() / step(ms) / loadState(seed, scenario)` を露出し、E2Eから状態を固定する。アニメ停止は `document.getAnimations()` を用いる。
+* `window.game`（`GameHandle`）にラン駆動 API を露出する。seed は `?seed=` または `startRun` / `newRun` の引数で指定し、E2E から `pause()` と各フェーズ操作（`enterNode` / `step(ms)` / `dispatch` 等）で状態を固定・進める。公開契約は `src/game.ts` の型定義を正とする。デバッグ専用の `engine` 参照は E2E から使わない。アニメ停止は `document.getAnimations()` を用いる。
 * スプライト生成は依存注入にして、テストでモックへ差し替えられるようにする。
 
 **避けること（CIが脆くなる）**

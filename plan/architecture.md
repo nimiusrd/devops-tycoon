@@ -36,7 +36,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 - **React は状態を持ち、Renderer は状態を読んで描くだけ**（第22.2）。
 - **sim は描画を知らない**。`step(dt)` で状態を進める純粋な関数群とし、入力（介入アクション等）はイベントキュー経由で受ける。
 - 乱数は seed付き PRNG（`mulberry32` 程度）に一本化し、`?seed=` で再現可能にする（第22.3）。
-- `window.game` に `pause() / step(ms) / loadState(seed, scenario)` を露出し、E2E から状態を固定できるようにする（第22.5）。
+- `window.game`（`src/game.ts` の `GameHandle`）を E2E / デバッグから露出し、`?seed=` と `startRun` / 各フェーズ操作で状態を固定・駆動できるようにする（第22.5）。
 
 ---
 
@@ -69,7 +69,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
    │  └─ adapters/            ← レンダラ差し替え用インターフェース
    ├─ ui/                      ← React UI（HUD/アクションバー/カード/ツリー…）
    ├─ data/                    ← カード・レリック・イベント・ボス定義（データ駆動）
-   ├─ game.ts                  ← window.game フック（pause/step/loadState）
+   ├─ game.ts                  ← window.game フック（GameHandle）
    └─ main.tsx
    tests/
    ├─ unit/                    ← Vitest（sim 不変条件・ビューモデル）
@@ -84,7 +84,13 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 
 - 乱数は seed付き PRNG に一本化、`?seed=` で再現。
 - レンダラは「状態を読んで描くだけ」＝同一状態なら同一フレーム＝スクショ安定。
-- `window.game.pause()/step(ms)/loadState(seed, scenario)` を全フェーズで維持。
+- **`window.game` の公開 API は `src/game.ts` の `GameHandle` を正とする。** E2E / 外部自動化が使うメソッド:
+  - 制御: `pause()` / `resume()` / `isPaused()`
+  - 状態読取: `getState()` / `phase()` / `revision()` / `isSprintRunning()` / `getMeta()`
+  - ラン開始: `startRun(difficulty?, trials?, seed?)` / `newRun(seed?)`（旧設計の `loadState(seed, scenario)` は廃止。seed は URL パラメータまたは引数で指定）
+  - フェーズ駆動: `enterNode(id)` / `step(ms)` / `dispatch(id)` / `acknowledgeResult()` / `chooseCard(defId)` / `skipDraft()` / `unlockEvolution(id)` / `finishEvolution()` / `chooseEvent(index)` / `buyShopCard(defId)` / `buyShopRelic()` / `leaveShop()` / `restChoose(option)`
+- **デバッグ専用:** `engine`（`RunEngine` への直接参照）。E2E テストからは使わない。
+- `GameHandle` にメソッドを追加する場合は型定義と E2E 型（`tests/e2e/run.spec.ts` 等）を同時更新する。
 - スプライト生成は依存注入にし、テストでモック差し替え可能に。
 
 ### 4.2 避けること（CIが脆くなる / 第22.5）

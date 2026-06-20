@@ -3,7 +3,7 @@
  *
  * シニアHP+個体スタミナ回復 / 技術的負債返済 / カード強化 / 採用 のいずれかを選ぶ。
  */
-import { canRecruit } from '../sim/member';
+import { canRecruit, RECRUIT_COST } from '../sim/member';
 import type { RunState } from '../sim/run/types';
 
 export interface RestScreenProps {
@@ -13,7 +13,9 @@ export interface RestScreenProps {
 
 export function RestScreen({ state, onChoose }: RestScreenProps) {
   const canUpgrade = state.deck.length > 0;
-  const canHire = canRecruit(state.roster);
+  const rosterHasRoom = canRecruit(state.roster);
+  const canAfford = state.budget >= RECRUIT_COST;
+  const canHire = rosterHasRoom && canAfford;
   return (
     <div className="result-overlay" data-testid="rest" role="dialog" aria-label="Rest">
       <div className="rest-panel">
@@ -63,9 +65,13 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             onClick={() => onChoose('recruit')}
           >
             <span className="rest-icon">🙋</span>
-            <span className="rest-name">メンバーを採用</span>
+            <span className="rest-name">メンバーを採用（💰{RECRUIT_COST}）</span>
             <span className="rest-desc">
-              {canHire ? '未来の主力候補を1人迎える（ベンチに加わる）' : 'ロスターが満員です'}
+              {!rosterHasRoom
+                ? 'ロスターが満員です'
+                : !canAfford
+                  ? `予算が足りません（💰${RECRUIT_COST} 必要）`
+                  : '未来の主力候補を1人迎える（ベンチに加わる）'}
             </span>
           </button>
         </div>

@@ -251,11 +251,21 @@ describe('編成操作と表情演出', () => {
     expect(assignMember(r, 'a', 'coding').members[0].assignment).toBe('bench');
   });
 
-  it('ベンチへ移すと AI 配布は外れる', () => {
+  it('ベンチへ移すと AI 配布が即座に外れる（隠れた割り当てを残さない）', () => {
     let r = roster([member({ id: 'a', assignment: 'coding', aiAssigned: true })]);
     r = assignMember(r, 'a', 'bench');
+    expect(r.members[0].aiAssigned).toBe(false);
+    // ベンチ中は setAiAssigned で再度 ON にできない。
     r = setAiAssigned(r, 'a', true);
     expect(r.members[0].aiAssigned).toBe(false);
+  });
+
+  it('不正なレーン値は無視され、ロスターを破壊しない（window.game 防御）', () => {
+    const r = roster([member({ id: 'a', assignment: 'coding' })]);
+    // 素の JS から不正な文字列が渡る状況を模す。
+    const result = assignMember(r, 'a', 'invalid' as unknown as 'coding');
+    expect(result).toBe(r);
+    expect(result.members[0].assignment).toBe('coding');
   });
 
   it('表情はスタミナと休職状態から導かれる', () => {

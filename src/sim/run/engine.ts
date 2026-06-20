@@ -19,12 +19,14 @@ import { diagnose } from '../diagnosis';
 import {
   applySprintGrowth,
   assignMember,
+  canRecruit,
   createInitialRoster,
   foldFormationEffects,
   pickRecruitArchetype,
   recoverStamina,
   recruitMember,
   setAiAssigned,
+  RECRUIT_COST,
   REST_STAMINA_RECOVER,
   STAMINA_RECOVER_BETWEEN,
 } from '../member';
@@ -557,8 +559,15 @@ export class RunEngine {
     } else if (option === 'upgrade' && this.deck.length > 0) {
       this.deck = upgradeCard(this.deck, this.deck[0].defId);
     } else if (option === 'recruit') {
-      const rng = createRng(`${this.seed}:recruit:${this.position ?? 'rest'}`);
-      this.roster = recruitMember(this.roster, pickRecruitArchetype(rng), rng);
+      // 採用は予算を消費する（ラン経済。SPEC 第4.4）。空き枠と予算が揃ったときのみ。
+      if (canRecruit(this.roster) && this.budget >= RECRUIT_COST) {
+        const rng = createRng(`${this.seed}:recruit:${this.position ?? 'rest'}`);
+        const next = recruitMember(this.roster, pickRecruitArchetype(rng), rng);
+        if (next !== this.roster) {
+          this.roster = next;
+          this.budget -= RECRUIT_COST;
+        }
+      }
     }
     this.advanceMap();
   }

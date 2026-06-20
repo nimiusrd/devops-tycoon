@@ -152,6 +152,8 @@ export function createInitialRoster(rng: Rng): RosterState {
 
 /** ロスターに空きがあるかどうか（採用の上限）。 */
 export const ROSTER_CAP = 6;
+/** 採用 1 人にかかる予算コスト（ラン経済。SPEC 第4.4: 予算は採用・施策に使う）。 */
+export const RECRUIT_COST = 25;
 export function canRecruit(roster: RosterState): boolean {
   return roster.members.length < ROSTER_CAP;
 }
@@ -183,6 +185,9 @@ export function recruitMember(roster: RosterState, arch: MemberArchetype, rng: R
 
 // --- 編成操作（免疫的に新ロスターを返す）---
 
+/** 有効なレーン配置（window.game 経由の不正値を弾く防御に使う）。 */
+const VALID_LANES: readonly LaneAssignment[] = ['coding', 'review', 'bench'];
+
 function mapMember(roster: RosterState, id: string, fn: (m: Member) => Member): RosterState {
   let changed = false;
   const members = roster.members.map((m) => {
@@ -193,15 +198,21 @@ function mapMember(roster: RosterState, id: string, fn: (m: Member) => Member): 
   return changed ? { ...roster, members } : roster;
 }
 
-/** メンバーをレーンへ配置する（休職中は変更不可）。 */
+/**
+ * メンバーをレーンへ配置する（休職中は変更不可）。
+ * 不正なレーン値（window.game の素の JS 呼び出し等）は無視して状態を保つ。
+ * ベンチへ移したときは AI 配布も外し、隠れた割り当てを残さない。
+ */
 export function assignMember(
   roster: RosterState,
   id: string,
   assignment: LaneAssignment,
 ): RosterState {
+  if (!VALID_LANES.includes(assignment)) return roster;
   return mapMember(roster, id, (m) => {
     if (m.onLeave) return m;
-    return { ...m, assignment };
+    const aiAssigned = assignment === 'bench' ? false : m.aiAssigned;
+    return { ...m, assignment, aiAssigned };
   });
 }
 

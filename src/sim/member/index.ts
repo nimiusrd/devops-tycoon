@@ -17,6 +17,7 @@ export type {
 } from './types';
 export {
   ROSTER_CAP,
+  RECRUIT_COST,
   STAMINA_RECOVER_BETWEEN,
   REST_STAMINA_RECOVER,
   createMember,

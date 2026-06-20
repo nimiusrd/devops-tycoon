@@ -1,12 +1,146 @@
 /**
- * シミュレーションのドメイン型（Phase 0 雛形）。
+ * シミュレーションのドメイン型（SPEC 第4.1〜4.2 / 第5章）。
  *
- * 工程モデル（Task / Lane / OrgState 等）の本体は Phase 1 以降で拡張する。
- * Phase 0 では決定論を検証できる最小限の状態のみを定義する。
+ * 工程モデル（Task / Lane / OrgState）とスプリント状態・リザルトを定義する。
+ * すべて描画非依存の純データで、seed付き決定論で更新される（第22.3）。
  */
 
-/** 難易度・シナリオの識別子（SPEC 第16章）。Phase 1 以降で具体化する。 */
+/** 難易度・シナリオの識別子（SPEC 第16章）。 */
 export type ScenarioId = string;
+
+/** タスクが流れる工程（SPEC 第4.1: Backlog▸Coding▸Review▸Rework▸Done）。 */
+export type Lane = 'backlog' | 'coding' | 'review' | 'rework' | 'done';
+
+/** タスクの規模（SPEC 第4.1 の 小/中/大）。 */
+export type TaskKind = 'routine' | 'normal' | 'complex';
+
+/**
+ * 工程上を流れる 1 タスク（PR）。
+ * 種類ごとの見た目（光る/赤/金/黒/炎上）は `aiAssisted` などのフラグから
+ * 純関数で導出する（描画は状態を読むだけ。第22.2）。
+ */
+export interface Task {
+  id: number;
+  /** 規模（小/中/大）。見た目のサイズに対応。 */
+  kind: TaskKind;
+  /** 高価値タスク（金色）。 */
+  highValue: boolean;
+  /** AI を使って実装されたか（光る）。 */
+  aiAssisted: boolean;
+  /** 現在の工程。 */
+  lane: Lane;
+  /** 現工程内の進捗 0..1。 */
+  progress: number;
+  /** これまでに手戻りした回数。 */
+  reworkAttempts: number;
+  /** 一度でも手戻りを経験したか。 */
+  wasReworked: boolean;
+  /** 障害化して鎮火/対応中か（炎上エフェクト）。 */
+  incident: boolean;
+  /** 技術的負債化したか（黒）。 */
+  debt: boolean;
+}
+
+/**
+ * 組織の状態（SPEC 第5章のリソース / 第4.2 のステータス）。
+ * 数値は基本的に 0..100。`techDebt` と `deliveryScore` は累積カウント。
+ */
+export interface OrgState {
+  /** AI 導入フラグ（本作のコア因果のスイッチ。第2章）。 */
+  aiEnabled: boolean;
+  /** AI依存度 0..100（雑な AI 利用ほど Rework/Incident を増やす）。 */
+  aiDependency: number;
+  /** AI を適切に使う能力 0..100。 */
+  aiLiteracy: number;
+  /** 自動テストによる安全性 0..100。 */
+  testCoverage: number;
+  /** ドキュメント量 0..100。 */
+  documentation: number;
+  /** 品質水準 0..100。 */
+  quality: number;
+  /** 士気 0..100。 */
+  morale: number;
+  /** シニアのレビュー余力 0..100。 */
+  seniorHp: number;
+  /** 技術的負債（累積）。 */
+  techDebt: number;
+  /** 出荷ポイント（累積）。 */
+  deliveryScore: number;
+}
+
+/** スプリントの構成（タスク数・並列開発数・安全上限）。 */
+export interface SprintConfig {
+  /** スプリントに投入するタスク総数。 */
+  taskCount: number;
+  /** 同時に Coding できる開発者数（WIP 上限）。 */
+  codingSlots: number;
+  /** 無限ループ防止の最大 tick。超過時は残りを強制的に Done へ流す。 */
+  maxTicks: number;
+}
+
+/** スプリント進行中に積み上がる集計値（リザルトの素）。 */
+export interface SprintMetrics {
+  /** 出荷ポイント。 */
+  delivered: number;
+  /** Done になったタスク数。 */
+  doneCount: number;
+  /** 手戻り発生回数（延べ）。 */
+  reworkCount: number;
+  /** 障害（Incident）発生回数。 */
+  incidentCount: number;
+  /** 鎮火できた障害数。 */
+  contained: number;
+  /** 延焼した障害数。 */
+  spread: number;
+  /** AI 利用で Done に至ったタスク数。 */
+  aiAssistedCompleted: number;
+  /** Done に至ったタスク数（aiAssistedPct の母数）。 */
+  completedCount: number;
+  /** Review 待ち行列の最大長（渋滞の指標）。 */
+  reviewQueueMax: number;
+  /** 現在のクリーン出荷の連続数。 */
+  combo: number;
+  /** スプリント中の最大コンボ。 */
+  maxCombo: number;
+  /** スプリント開始時のシニア体力。 */
+  seniorHpStart: number;
+}
+
+/** スプリント全体の状態。 */
+export interface SprintState {
+  config: SprintConfig;
+  /** 進行中の全タスク（Done を含む）。 */
+  tasks: Task[];
+  metrics: SprintMetrics;
+  /** Review の小数スループットを溜めるアキュムレータ。 */
+  reviewAccumulator: number;
+  /** 次に採番するタスク ID。 */
+  nextTaskId: number;
+  /** スプリントが完了したか（盤面が捌け切る or 上限到達）。 */
+  complete: boolean;
+}
+
+/** スプリントリザルト（SPEC 第4.6）。 */
+export interface SprintResult {
+  done: number;
+  delivered: number;
+  maxCombo: number;
+  /** AI 利用率 0..100。 */
+  aiAssistedPct: number;
+  reviewQueueMax: number;
+  rework: number;
+  incidents: number;
+  contained: number;
+  spread: number;
+  /** シニア体力の増減（end - start。多くは負）。 */
+  seniorHpDelta: number;
+  /** 評価（S/A/B/C/D）。 */
+  grade: string;
+  /** 称号（SPEC 第4.6 の例から導出）。 */
+  title: string;
+  /** 診断コメント。 */
+  diagnosis: string;
+}
 
 /** シミュレーション全体の状態。 */
 export interface SimState {
@@ -20,4 +154,10 @@ export interface SimState {
   elapsedMs: number;
   /** 直近に消費した乱数（決定論の可視化・検証用）。 */
   lastRandom: number;
+  /** AI 導入フラグ（UI から参照）。 */
+  aiEnabled: boolean;
+  /** 組織状態。 */
+  org: OrgState;
+  /** スプリント状態。 */
+  sprint: SprintState;
 }

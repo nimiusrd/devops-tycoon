@@ -1,14 +1,14 @@
 /**
  * 決定論フック `window.game`（SPEC 第22.5）。
  *
- * E2E / デバッグから状態を固定・前進できるようにする骨組み。
- * `pause/resume/step/loadState` を露出し、Playwright が seed と
+ * E2E / デバッグから状態を固定・前進できるようにする。
+ * `pause/resume/step/loadState/setAiEnabled` を露出し、Playwright が seed と
  * 一時停止でフレームを固定できることを保証する。
  */
 import { createEngine, type Engine } from './sim/engine';
 import { resolveSeedFromLocation } from './sim/seed';
 import { DEFAULT_SCENARIO } from './sim/scenarios';
-import type { ScenarioId, SimState } from './sim/types';
+import type { ScenarioId, SimState, SprintResult } from './sim/types';
 
 export interface GameHandle {
   /** 自動進行を止める。 */
@@ -19,8 +19,14 @@ export interface GameHandle {
   isPaused(): boolean;
   /** 指定 ms ぶん手動で前進させ、進行後の状態を返す。 */
   step(ms: number): SimState;
-  /** seed/シナリオを読み込み直して状態をリセットし、初期状態を返す。 */
-  loadState(seed: string, scenario?: ScenarioId): SimState;
+  /** seed/シナリオ/AIフラグを読み込み直して状態をリセットし、初期状態を返す。 */
+  loadState(seed: string, scenario?: ScenarioId, aiEnabled?: boolean): SimState;
+  /** AI 導入フラグを切り替え、同一 seed でスプリントを再初期化する。 */
+  setAiEnabled(enabled: boolean): SimState;
+  /** スプリントが完了したか。 */
+  isComplete(): boolean;
+  /** 現時点のスプリントリザルト。 */
+  result(): SprintResult;
   /** 現在状態のスナップショット。 */
   getState(): SimState;
   /** 内部エンジン（高度なデバッグ用）。 */
@@ -30,13 +36,16 @@ export interface GameHandle {
 export interface CreateGameOptions {
   seed?: string;
   scenario?: ScenarioId;
+  aiEnabled?: boolean;
 }
 
 export function createGame(options: CreateGameOptions = {}): GameHandle {
   const seed = options.seed ?? resolveSeedFromLocation();
   const scenario = options.scenario ?? DEFAULT_SCENARIO;
-  const engine = createEngine({ seed, scenario });
+  const engine = createEngine({ seed, scenario, aiEnabled: options.aiEnabled ?? false });
   let paused = false;
+  let currentSeed = seed;
+  let currentScenario = scenario;
 
   return {
     pause() {
@@ -52,9 +61,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       engine.step(ms);
       return engine.snapshot();
     },
-    loadState(nextSeed: string, nextScenario?: ScenarioId) {
-      engine.load(nextSeed, nextScenario);
+    loadState(nextSeed: string, nextScenario: ScenarioId = currentScenario, aiEnabled?: boolean) {
+      currentSeed = nextSeed;
+      currentScenario = nextScenario;
+      engine.load(nextSeed, nextScenario, aiEnabled);
       return engine.snapshot();
+    },
+    setAiEnabled(enabled: boolean) {
+      engine.load(currentSeed, currentScenario, enabled);
+      return engine.snapshot();
+    },
+    isComplete() {
+      return engine.isComplete();
+    },
+    result() {
+      return engine.result();
     },
     getState() {
       return engine.snapshot();

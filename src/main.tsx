@@ -4,12 +4,11 @@ import App from './App';
 import { installGame } from './game';
 import './styles.css';
 
-// 決定論フック window.game を生成し、解決済み seed を UI へ渡す。
+// 決定論フック window.game を生成し、App へ渡す（描画は状態を読むだけ）。
 const game = installGame();
-const { seed, scenario } = game.getState();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App seed={seed} scenario={scenario} />
+    <App game={game} />
   </React.StrictMode>,
 );

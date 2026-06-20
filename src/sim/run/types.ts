@@ -6,9 +6,11 @@
  * すべて描画非依存の純データで、seed付き決定論で更新される（第22.3）。
  */
 import type { CardEffects, CardInstance, OrgState, SprintResult, SprintState } from '../types';
+import type { GrowthOutcome, RosterState } from '../member/types';
 
 // 周回レイヤのデータ定義（src/data/*）が参照しやすいよう、コア型を再エクスポートする。
 export type { CardEffects, CardInstance } from '../types';
+export type { RosterState, GrowthOutcome } from '../member/types';
 
 /** マップのノード種別（SPEC 第4.4 の表）。高負荷＝elite。 */
 export type NodeType = 'normal' | 'elite' | 'event' | 'shop' | 'rest' | 'boss';
@@ -130,6 +132,10 @@ export interface RunState {
   /** 獲得済みレリック ID（恒久パッシブ。第8章）。 */
   relics: string[];
   evolution: EvolutionState;
+  /** 個体メンバーのロスター = 編成状態（第12章 / MVP4）。 */
+  roster: RosterState;
+  /** 直近スプリントの成長結果（昇格・休職・育成。result/draft で表示）。 */
+  lastGrowth: GrowthOutcome | null;
   /** 予算（ショップ・採用に使う。第4.4 / 第4.7）。 */
   budget: number;
 

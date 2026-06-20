@@ -14,8 +14,21 @@ import { EVENT_DEFS, getEvent } from '../../data/events';
 import { getEvolutionNode } from '../../data/evolution';
 import { RELIC_DEFS, getRelic } from '../../data/relics';
 import { applyAction } from '../actions';
-import { applyDeckBaseline, drawDraft, scaleEffects, upgradeCard } from '../cards';
+import { applyDeckBaseline, combineEffects, drawDraft, scaleEffects, upgradeCard } from '../cards';
 import { diagnose } from '../diagnosis';
+import {
+  applySprintGrowth,
+  assignMember,
+  createInitialRoster,
+  foldFormationEffects,
+  pickRecruitArchetype,
+  recoverStamina,
+  recruitMember,
+  setAiAssigned,
+  REST_STAMINA_RECOVER,
+  STAMINA_RECOVER_BETWEEN,
+} from '../member';
+import type { GrowthOutcome, LaneAssignment, RosterState } from '../member/types';
 import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng } from '../rng';
@@ -114,6 +127,8 @@ export class RunEngine {
   private deck: { defId: string; level: number }[] = [];
   private relics: string[] = [];
   private evolution!: EvolutionState;
+  private roster!: RosterState;
+  private lastGrowth: GrowthOutcome | null = null;
   private budget = 0;
 
   private phase: RunState['phase'] = 'title';
@@ -182,6 +197,8 @@ export class RunEngine {
     this.deck = [];
     this.relics = [];
     this.evolution = { points: 0, unlocked: {} };
+    this.roster = createInitialRoster(createRng(`${this.seed}:roster`));
+    this.lastGrowth = null;
     this.budget = Math.round(diff.startBudget * this.trialBudgetMul());
     this.position = null;
     this.visited = [];
@@ -248,6 +265,8 @@ export class RunEngine {
       0,
       100,
     );
+    // 個体メンバーもスプリント間で一部スタミナを回復する（休職者は復帰しうる）。
+    this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN);
     const isBoss = node.type === 'boss';
     const fold = foldRunEffects({
       deck: this.deck,
@@ -256,7 +275,10 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
-    const effects = isBoss ? withBossEffects(fold.effects, this.bossId) : fold.effects;
+    // 編成（個体メンバーのレーン配置・AI 配布）を係数へ畳み込み、デッキ等と合成する。
+    const formation = foldFormationEffects(this.roster);
+    let effects = combineEffects(fold.effects, toEffects(formation.effects));
+    if (isBoss) effects = withBossEffects(effects, this.bossId);
     const mul =
       node.type === 'elite'
         ? ELITE_TASK_MUL
@@ -266,8 +288,11 @@ export class RunEngine {
     const config: SprintConfig = {
       ...this.baseConfig,
       taskCount: Math.max(4, Math.round(this.baseConfig.taskCount * mul)),
-      focusMax: Math.max(1, this.baseConfig.focusMax + fold.focusBonus),
-      codingSlots: Math.max(1, this.baseConfig.codingSlots + fold.codingSlotBonus),
+      focusMax: Math.max(1, this.baseConfig.focusMax + fold.focusBonus + formation.focusBonus),
+      codingSlots: Math.max(
+        1,
+        this.baseConfig.codingSlots + fold.codingSlotBonus + formation.codingSlotBonus,
+      ),
     };
     this.sprintRng = createRng(`${this.seed}:sprint:${node.id}`);
     this.sprintTick = 0;
@@ -304,6 +329,7 @@ export class RunEngine {
     this.lastResult = result;
     this.sprintsPlayed += 1;
     this.accumulateTotals(result);
+    this.applyGrowth(result);
     this.diagnosis = diagnose(this.org, this.totals);
 
     const node = nodeById(this.map, this.activeNodeId);
@@ -363,6 +389,26 @@ export class RunEngine {
     t.completed += m.completedCount;
     t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
     t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
+  }
+
+  /**
+   * スプリント後の個体成長・消耗・離脱を適用する（第12.2）。
+   * 配置された稼働メンバーが経験値を得て昇格し、スタミナを消費して休職しうる。
+   * ドキュメント魔などが積んだドキュメントを組織へ反映する。乱数はノード単位で派生。
+   */
+  private applyGrowth(result: SprintResult): void {
+    if (!this.sprint || !this.activeNodeId) return;
+    const rng = createRng(`${this.seed}:growth:${this.activeNodeId}`);
+    const { roster, outcome } = applySprintGrowth(
+      this.roster,
+      { delivered: result.delivered, done: result.done },
+      rng,
+    );
+    this.roster = roster;
+    this.lastGrowth = outcome;
+    if (outcome.docGain > 0) {
+      this.org.documentation = clamp(this.org.documentation + outcome.docGain, 0, 100);
+    }
   }
 
   private evoPointsFor(node: MapNode | undefined, result: SprintResult): number {
@@ -494,19 +540,39 @@ export class RunEngine {
 
   // --- 休息 ---
 
-  /** 休息の選択（heal: シニア回復 / repay: 負債返済 / upgrade: カード強化）。 */
-  restChoose(option: 'heal' | 'repay' | 'upgrade'): void {
+  /**
+   * 休息の選択（heal: シニア+個体スタミナ回復 / repay: 負債返済 /
+   * upgrade: カード強化 / recruit: 採用）。
+   */
+  restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit'): void {
     if (this.phase !== 'rest') return;
     if (option === 'heal') {
       const bonus = foldPassives(this.relics).restHealBonus;
       this.org.seniorHp = clamp(this.org.seniorHp + REST_HEAL + bonus, 0, 100);
       this.org.morale = clamp(this.org.morale + 10, 0, 100);
+      // 個体メンバーのスタミナも大きく回復し、休職者は復帰しやすくなる。
+      this.roster = recoverStamina(this.roster, REST_STAMINA_RECOVER);
     } else if (option === 'repay') {
       this.org.techDebt = Math.max(0, this.org.techDebt - REST_REPAY);
     } else if (option === 'upgrade' && this.deck.length > 0) {
       this.deck = upgradeCard(this.deck, this.deck[0].defId);
+    } else if (option === 'recruit') {
+      const rng = createRng(`${this.seed}:recruit:${this.position ?? 'rest'}`);
+      this.roster = recruitMember(this.roster, pickRecruitArchetype(rng), rng);
     }
     this.advanceMap();
+  }
+
+  /** メンバーをレーンへ配置する（編成。第12.2）。スプリント中は変更しない。 */
+  assignMember(id: string, assignment: LaneAssignment): void {
+    if (this.phase === 'sprint') return;
+    this.roster = assignMember(this.roster, id, assignment);
+  }
+
+  /** メンバーへの AI 配布を切り替える（編成。第12.2）。スプリント中は変更しない。 */
+  setMemberAi(id: string, on: boolean): void {
+    if (this.phase === 'sprint') return;
+    this.roster = setAiAssigned(this.roster, id, on);
   }
 
   // --- 共通 ---
@@ -568,6 +634,8 @@ export class RunEngine {
       deck: this.deck.map((c) => ({ ...c })),
       relics: [...this.relics],
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
+      roster: structuredClone(this.roster),
+      lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,
       budget: this.budget,
       activeNodeId: this.activeNodeId,
       sprint: this.sprint ? structuredClone(this.sprint) : null,

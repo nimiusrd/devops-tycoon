@@ -7,15 +7,28 @@
 import { getDifficulty } from '../data/difficulties';
 import { getRelic } from '../data/relics';
 import { diagnosisView } from '../sim/diagnosis';
+import { memberExpression, rosterSummary } from '../sim/member';
+import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 
 export interface RunBarProps {
   state: RunState;
+  /** 編成画面を開く（指定時のみ編成ボタンを表示）。 */
+  onOpenFormation?: () => void;
 }
 
-export function RunBar({ state }: RunBarProps) {
+/** 表情演出の絵文字（第12.2）。 */
+const FACE: Record<MemberExpression, string> = {
+  leave: '😴',
+  tired: '😩',
+  normal: '🙂',
+  great: '💪',
+};
+
+export function RunBar({ state, onOpenFormation }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
   const diag = diagnosisView(state.diagnosis);
+  const roster = rosterSummary(state.roster);
   return (
     <div className="subbar runbar" data-testid="runbar">
       <span className="pill" data-testid="seed">
@@ -47,6 +60,27 @@ export function RunBar({ state }: RunBarProps) {
           })
         )}
       </div>
+      {onOpenFormation ? (
+        <button
+          type="button"
+          className="pill roster-pill"
+          data-testid="open-formation"
+          onClick={onOpenFormation}
+          title={`稼働 ${roster.active} / 休職 ${roster.onLeave}（コーダー${roster.coders}・レビュー${roster.reviewers}）`}
+        >
+          <span className="roster-faces" data-testid="roster-faces">
+            {state.roster.members.map((m) => (
+              <span key={m.id}>{FACE[memberExpression(m)]}</span>
+            ))}
+          </span>
+          編成
+        </button>
+      ) : (
+        <span className="pill" data-testid="roster-count">
+          👥<b>{roster.active}</b>
+          {roster.onLeave > 0 && <span className="roster-leave"> 😴{roster.onLeave}</span>}
+        </span>
+      )}
       <span className={`pill diagnosis diag-${state.diagnosis}`}>{diag.label}</span>
     </div>
   );

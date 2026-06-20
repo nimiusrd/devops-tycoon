@@ -5,11 +5,13 @@
  * 勝敗 を `RunState.phase` でルーティングする。スプリント系のフェーズでは盤面を
  * 背景に残し、リザルト/ドラフト/進化をオーバーレイで重ねる。状態は読むだけ（第22.2）。
  */
+import { useState } from 'react';
 import { Hud } from './ui/Hud';
 import {
   DraftScreen,
   EventScreen,
   EvolutionScreen,
+  FormationScreen,
   RestScreen,
   RunBar,
   RunMapScreen,
@@ -39,6 +41,7 @@ export default function App({ game }: AppProps) {
   const run = useRun(game);
   const { state, meta } = run;
   const phase = state.phase;
+  const [formationOpen, setFormationOpen] = useState(false);
 
   if (phase === 'title') {
     return <TitleScreen seed={state.seed} meta={meta} onStart={run.startRun} />;
@@ -55,7 +58,7 @@ export default function App({ game }: AppProps) {
   return (
     <div className={`app ${screenTone(state)}`}>
       <Hud org={state.org} tasks={tasks} />
-      <RunBar state={state} />
+      <RunBar state={state} onOpenFormation={() => setFormationOpen(true)} />
 
       {phase === 'map' && <RunMapScreen state={state} onEnter={run.enterNode} />}
       {showSprint && <SprintScreen state={state} onDispatch={run.dispatch} />}
@@ -74,6 +77,7 @@ export default function App({ game }: AppProps) {
       {phase === 'result' && state.lastResult && (
         <SprintResultScreen
           result={state.lastResult}
+          growth={state.lastGrowth}
           onContinue={run.acknowledgeResult}
           onAbandon={run.newRun}
         />
@@ -91,6 +95,15 @@ export default function App({ game }: AppProps) {
           state={state}
           onUnlock={run.unlockEvolution}
           onFinish={run.finishEvolution}
+        />
+      )}
+
+      {formationOpen && (
+        <FormationScreen
+          state={state}
+          onAssign={run.assignMember}
+          onToggleAi={run.setMemberAi}
+          onClose={() => setFormationOpen(false)}
         />
       )}
     </div>

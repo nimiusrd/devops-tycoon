@@ -19,6 +19,8 @@ type GameWindow = Window & {
     buyShopRelic(): RunState;
     leaveShop(): RunState;
     restChoose(o: string): RunState;
+    assignMember(id: string, assignment: string): RunState;
+    setMemberAi(id: string, on: boolean): RunState;
   };
 };
 

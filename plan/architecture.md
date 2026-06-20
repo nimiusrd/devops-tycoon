@@ -12,7 +12,7 @@
 | ビルド/Dev | Vite | 開発サーバ・バンドル |
 | UIシェル | React | HUD・アクションバー・カード・ツリー・マップ・リザルト・パンくず |
 | UI演出 | Framer Motion | 画面遷移・マイクロインタラクション |
-| 盤面描画 | DOM/SVG（MVP1〜2）→ PixiJS + pixi-viewport（MVP3以降） | タスク粒・アイソメ盤面・フロー・ヒートマップ・延焼 |
+| 盤面描画 | DOM/SVG（MVP1〜3）→ PixiJS + pixi-viewport（MVP5着手前必須 / MVP4は必要時前倒し） | タスク粒・アイソメ盤面・フロー・ヒートマップ・延焼 |
 | 状態管理 | Zustand（ラン/メタ状態）＋ XState（フェーズ遷移） | 予測可能な状態とフロー管理 |
 | シミュレーション | 純TS・固定タイムステップ・seed付きPRNG | 確率モデル本体（描画から分離・決定論） |
 | 重い試算 | Web Worker（+Comlink） | what-if 計算・モンテカルロ等 |
@@ -98,8 +98,8 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 
 ### 4.4 段階的描画移行（第22.4）
 
-- MVP1〜2: DOM/SVG（モックアップ準拠）で素早く。ただし sim は最初から分離・seed付き。
-- MVP3 以降: 粒数/ズームが増える時点で PixiJS へ移植。React/TS/Framer Motion/Recharts は役割を限定して継続。
+- MVP1〜3: DOM/SVG（モックアップ準拠）で素早く。PHASE3 は周回・診断・勝敗の通しプレイ DoD を優先し、過剰投資を避ける。ただし sim は最初から分離・seed付き。
+- MVP5 着手前: 4階層ズーム・巨大組織ビューの前提として PixiJS へ移植を完了する。MVP4 でも粒数/ズーム階層が増える場合は前倒しする。React/TS/Framer Motion/Recharts は役割を限定して継続。
 
 ### 4.5 世界観の制約（第2.1章）
 

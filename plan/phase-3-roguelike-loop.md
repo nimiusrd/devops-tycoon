@@ -29,7 +29,7 @@
 
 ## 描画移行の判断点（第22.4）
 
-粒数・ノード数が増えるため、**ここで盤面描画を PixiJS + pixi-viewport へ移植**する。sim を分離済み（[phase-1](./phase-1-sprint-simulation.md)）なら移植コストは小さい。[phase-5](./phase-5-org-scale.md) の巨大組織はこの移植を前提とする。
+PHASE3 では周回・診断・勝敗の通しプレイ DoD を優先し、盤面描画は DOM/SVG を継続する。PixiJS + pixi-viewport への移植は、粒数やズーム階層が破綻し始める [phase-4](./phase-4-character-growth.md) / [phase-5](./phase-5-org-scale.md) の着手前ゲートへ繰り越す（過剰投資回避 / 第22.4）。sim は分離済みのため、移植時も状態を読むだけの描画差し替えに留める。
 
 ## 成果物
 

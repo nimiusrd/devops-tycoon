@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
-import { RECRUIT_COST, canRecruit } from '../../src/sim/member';
+import { RECRUIT_COST, STAMINA_RECOVER_BETWEEN, canRecruit } from '../../src/sim/member';
 import type { RunState } from '../../src/sim/run/types';
 
 /**
@@ -144,6 +144,47 @@ describe('ロスターのラン統合（MVP4 / 第12章）', () => {
       e.restChoose('recruit');
       expect(e.snapshot().budget).toBeLessThanOrEqual(before.budget);
     }
+  });
+
+  it('全コーダーのAIを外すと実スプリントでAIが使われず、AI依存度も上がらない（レビュー#C）', () => {
+    const e = new RunEngine({ seed: 'no-ai-adopt', difficulty: 'normal' });
+    const s = toFirstNode(e);
+    // 初期コーダー（m0, m1）の AI 配布を外す。
+    e.setMemberAi('m0', false);
+    e.setMemberAi('m1', false);
+    const depBefore = e.snapshot().org.aiDependency;
+    e.enterNode(s.available[0]);
+    e.step(1_000_000);
+    const after = e.snapshot();
+    expect(after.phase).toBe('result');
+    expect(after.lastResult!.aiAssistedPct).toBe(0);
+    // AI 依存度は intake の AI タスクでのみ上がる。AI 不使用なら据え置き。
+    expect(after.org.aiDependency).toBe(depBefore);
+  });
+
+  it('コーダーにAIを配るとAIが使われる（対偶。レビュー#C）', () => {
+    const e = new RunEngine({ seed: 'no-ai-adopt', difficulty: 'normal' });
+    const s = toFirstNode(e);
+    // 既定でコーダーは AI 配布つき。そのまま回すと AI が使われる。
+    e.enterNode(s.available[0]);
+    e.step(1_000_000);
+    expect(e.snapshot().lastResult!.aiAssistedPct).toBeGreaterThan(0);
+  });
+
+  it('スプリント間スタミナ回復はスプリント終了時に反映される（編成ウィンドウに間に合う）', () => {
+    const e = new RunEngine({ seed: 'recover-timing', difficulty: 'normal' });
+    const s = toFirstNode(e);
+    e.enterNode(s.available[0]);
+    const m0Start = e.snapshot().roster.members.find((m) => m.id === 'm0')!;
+    expect(m0Start.assignment).toBe('coding');
+    const before = m0Start.stamina; // スプリント開始時（満タン）
+    e.step(1_000_000);
+    const after = e.snapshot();
+    expect(after.phase).toBe('result');
+    const m0 = after.roster.members.find((m) => m.id === 'm0')!;
+    // 正味のスタミナ減が 1 回の回復量未満 = 終了時点で既に回復が適用されている。
+    // （回復が次スプリント開始時のままだと、リザルト時点では消費分がそのまま残る）
+    expect(before - m0.stamina).toBeLessThan(STAMINA_RECOVER_BETWEEN);
   });
 
   it('スプリント完了で成長結果が記録され、配置メンバーが経験値を得る', () => {

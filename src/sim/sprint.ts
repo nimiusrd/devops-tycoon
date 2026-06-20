@@ -5,6 +5,7 @@
  * 状態機械。描画を一切知らず、乱数は引数の seed付きPRNG からのみ消費する（第22.3）。
  */
 import {
+  AI_ADOPTION,
   AI_DEP_PER_TASK,
   DEBT_PER_SPREAD,
   IDENTITY_CARD_EFFECTS,
@@ -89,12 +90,15 @@ export function resolveSprintConfig(
  * 新しいスプリント状態を生成する（全タスクは Backlog から開始）。
  * `cardEffects` はデッキを畳み込んだ係数で、未指定（＝デッキ無し）なら
  * Phase 1 と完全に同一の数値挙動になる。集中力は満タンで開始する（第6.2）。
+ * `aiAdoptionShare` は編成由来の実 AI 採用率の倍率（0..1）。未指定なら 1（＝従来の
+ * 全社的な既定採用率）で、Phase 1〜3 と完全に同一の数値挙動になる（後方互換）。
  */
 export function createSprint(
   config: SprintConfig,
   org: OrgState,
   rng: Rng,
   cardEffects: CardEffects = IDENTITY_CARD_EFFECTS,
+  aiAdoptionShare = 1,
 ): SprintState {
   const tasks: Task[] = [];
   for (let i = 0; i < config.taskCount; i += 1) {
@@ -127,6 +131,7 @@ export function createSprint(
     modifiers: { andonUntilTick: 0, overtimeUntilTick: 0, throttleUntilTick: 0 },
     comboGauge: 0,
     cardEffects,
+    aiAdoption: clamp(AI_ADOPTION * aiAdoptionShare, 0, 1),
   };
 }
 
@@ -154,7 +159,7 @@ function intake(sprint: SprintState, org: OrgState, rng: Rng, tick: number): voi
     if (task.lane !== 'backlog') continue;
     task.lane = 'coding';
     task.progress = 0;
-    task.aiAssisted = throttled ? false : decideAiAssisted(org, rng);
+    task.aiAssisted = throttled ? false : decideAiAssisted(org, rng, sprint.aiAdoption);
     if (task.aiAssisted) {
       org.aiDependency = clamp(org.aiDependency + AI_DEP_PER_TASK, 0, 100);
     }

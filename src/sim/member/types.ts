@@ -66,10 +66,15 @@ export interface RosterState {
 /** 編成を畳み込んだ、スプリントに掛かる係数とコンフィグ補正（RunEffects と同形）。 */
 export interface FormationEffects {
   effects: Partial<CardEffects>;
-  /** 並列実装枠への加算（コーダー人数から）。 */
+  /** 並列実装枠への加算（コーダー人数から。コーダー不在は大きな負値で枠を削る）。 */
   codingSlotBonus: number;
   /** 集中力上限への加算（シニアのリード）。 */
   focusBonus: number;
+  /**
+   * 実 AI 採用率の倍率 0..1（AIを配った稼働コーダーの割合）。
+   * 誰にも配らなければ 0 になり、スプリント中に AI タスクが発生しない。
+   */
+  aiAdoptionShare: number;
 }
 
 /** スプリント後の成長結果（UI 表示・組織への波及に使う）。 */

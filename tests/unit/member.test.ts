@@ -143,6 +143,37 @@ describe('編成効果の集約（個体値→CardEffects）', () => {
       foldFormationEffects(onlyOne).effects.codingSpeedMul,
     );
   });
+
+  it('コーダー不在では実装能力が大幅に落ちる（幽霊実装者を残さない）', () => {
+    const withCoder = foldFormationEffects(roster([member({ id: 'a', assignment: 'coding' })]));
+    const noCoder = foldFormationEffects(roster([member({ id: 'a', assignment: 'review' })]));
+    expect(noCoder.effects.codingSpeedMul!).toBeLessThan(withCoder.effects.codingSpeedMul!);
+    expect(noCoder.effects.codingSpeedMul!).toBeLessThan(0.3);
+    // 並列枠も削る（beginSprint の下限まで落とす負値）。
+    expect(noCoder.codingSlotBonus).toBeLessThan(0);
+  });
+});
+
+describe('AI配布が実採用率に反映される（第12.2 / レビュー#C）', () => {
+  it('コーダー全員にAIを配れば share=1、誰にも配らなければ share=0', () => {
+    const allAi = roster([member({ id: 'a', assignment: 'coding', aiAssigned: true })]);
+    const noAi = roster([member({ id: 'a', assignment: 'coding', aiAssigned: false })]);
+    expect(foldFormationEffects(allAi).aiAdoptionShare).toBe(1);
+    expect(foldFormationEffects(noAi).aiAdoptionShare).toBe(0);
+  });
+
+  it('一部のコーダーのみAIなら share は割合になる', () => {
+    const half = roster([
+      member({ id: 'a', assignment: 'coding', aiAssigned: true }),
+      member({ id: 'b', assignment: 'coding', aiAssigned: false }),
+    ]);
+    expect(foldFormationEffects(half).aiAdoptionShare).toBeCloseTo(0.5);
+  });
+
+  it('コーダー不在なら share は 0', () => {
+    const onlyReviewer = roster([member({ id: 'a', assignment: 'review', aiAssigned: true })]);
+    expect(foldFormationEffects(onlyReviewer).aiAdoptionShare).toBe(0);
+  });
 });
 
 describe('トレイト効果（第12.1）', () => {

@@ -267,8 +267,6 @@ export class RunEngine {
       0,
       100,
     );
-    // 個体メンバーもスプリント間で一部スタミナを回復する（休職者は復帰しうる）。
-    this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN);
     const isBoss = node.type === 'boss';
     const fold = foldRunEffects({
       deck: this.deck,
@@ -299,7 +297,13 @@ export class RunEngine {
     this.sprintRng = createRng(`${this.seed}:sprint:${node.id}`);
     this.sprintTick = 0;
     this.accumulatorMs = 0;
-    this.sprint = createSprint(config, this.org, this.sprintRng, effects);
+    this.sprint = createSprint(
+      config,
+      this.org,
+      this.sprintRng,
+      effects,
+      formation.aiAdoptionShare,
+    );
     this.activeNodeId = node.id;
     this.phase = 'sprint';
   }
@@ -332,6 +336,10 @@ export class RunEngine {
     this.sprintsPlayed += 1;
     this.accumulateTotals(result);
     this.applyGrowth(result);
+    // スプリント終了時に個体スタミナを一部回復する（休職者は復帰しうる）。
+    // ここで回復させることで、続くマップ／編成ウィンドウで復帰メンバーをすぐ再配置できる
+    // （beginSprint で回復すると次スプリント開始後＝編成ロック後になり 1 スプリント遅れる）。
+    this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN);
     this.diagnosis = diagnose(this.org, this.totals);
 
     const node = nodeById(this.map, this.activeNodeId);

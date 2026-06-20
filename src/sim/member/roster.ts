@@ -60,6 +60,11 @@ export const STAMINA_RECOVER_BETWEEN = 16;
 /** 休息ノード（heal）でのスタミナ回復。 */
 export const REST_STAMINA_RECOVER = 45;
 
+/** コーダー不在時の Coding 速度倍率（実装はほぼ止まる）。 */
+const NO_CODER_CODING_SPEED = 0.15;
+/** コーダー不在時の並列枠ペナルティ（beginSprint の下限まで枠を削る大きな負値）。 */
+const NO_CODER_SLOT_PENALTY = -99;
+
 // --- ランク・スタミナ・経験値の純関数 ---
 
 /** ランクの表示ラベル。 */
@@ -234,18 +239,22 @@ function isActive(m: Member): boolean {
 /**
  * 編成を 1 つの `FormationEffects` へ畳み込む（純関数）。
  * コーダーの実装力は Coding 速度・並列枠へ、レビュアーのレビュー力は Review 効率/容量へ、
- * AI 配布は配った相手の AI習熟で手戻り・障害を増減させる。誰に AI を配るかが戦術になる。
+ * AI 配布は配った相手の AI習熟で手戻り・障害を増減させ、さらに「AIを配ったコーダーの割合」が
+ * 実 AI 採用率（aiAdoptionShare）になる。誰をどこに置き、誰に AI を配るかが戦術になる。
+ * コーダーを誰も置かなければ実装はほぼ止まる（幽霊実装者を残さない）。
  */
 export function foldFormationEffects(roster: RosterState): FormationEffects {
   const coders = roster.members.filter((m) => isActive(m) && m.assignment === 'coding');
   const reviewers = roster.members.filter((m) => isActive(m) && m.assignment === 'review');
+  const noCoder = coders.length === 0;
 
   const codingPower = coders.reduce((s, m) => s + effectiveImpl(m), 0);
   const reviewPower = reviewers.reduce((s, m) => s + effectiveReview(m), 0);
   // 巨大PR等のレビュー負荷（コーダーのトレイト由来）。
   const reviewLoad = coders.reduce((p, m) => p * foldTraitModifiers(m.traits).reviewLoadMul, 1);
 
-  const codingSpeedMul = clamp(0.7 + codingPower / 230, 0.6, 1.8);
+  // コーダー不在なら実装能力をほぼ無くす（最低枠の保険分も速度で潰す）。
+  const codingSpeedMul = noCoder ? NO_CODER_CODING_SPEED : clamp(0.7 + codingPower / 230, 0.6, 1.8);
   const reviewEfficiencyMul = clamp((0.7 + reviewPower / 200) * reviewLoad, 0.55, 1.8);
   const reviewCapacityMul = clamp(0.8 + reviewers.length * 0.18, 0.8, 1.6);
 
@@ -260,6 +269,10 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
     incidentRateMul *= 1 + (0.05 - 0.1 * masteryNorm);
   }
 
+  // 実 AI 採用率の倍率: AIを配った稼働コーダーの割合（コーダー不在なら 0）。
+  const aiCoders = coders.filter((m) => m.aiAssigned).length;
+  const aiAdoptionShare = noCoder ? 0 : aiCoders / coders.length;
+
   const seniors = roster.members.filter(
     (m) => isActive(m) && m.assignment !== 'bench' && m.rank === 'senior',
   ).length;
@@ -272,8 +285,9 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
       reworkRateAdd: clamp(reworkRateAdd, -0.3, 0.3),
       incidentRateMul: clamp(incidentRateMul, 0.6, 1.6),
     },
-    codingSlotBonus: clamp(coders.length - 1, 0, 3),
+    codingSlotBonus: noCoder ? NO_CODER_SLOT_PENALTY : clamp(coders.length - 1, 0, 3),
     focusBonus: Math.min(2, seniors),
+    aiAdoptionShare,
   };
 }
 

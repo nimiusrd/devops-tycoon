@@ -1,22 +1,24 @@
 /**
- * メイン画面（SPEC 第4章 / 第6章 / 第7章 / mockups/main-screen 準拠）。
+ * アプリのルート（SPEC 第3章 のラン入れ子をフェーズで切り替える）。
  *
- * HUD（第4.2）＋ 盤面（第4.1）＋ 介入アクションバー（第6章）＋ コンボ/数字ポップ（第18.2）。
- * 1 スプリントを自動進行しつつリアルタイムに介入して捌き、終了時はリザルト（第4.6）→
- * カードドラフト（第7章）でデッキを育てて次スプリントへ進む。
+ * タイトル → マップ → スプリント → リザルト → ドラフト → 進化 → … → ボス →
+ * 勝敗 を `RunState.phase` でルーティングする。スプリント系のフェーズでは盤面を
+ * 背景に残し、リザルト/ドラフト/進化をオーバーレイで重ねる。状態は読むだけ（第22.2）。
  */
-import { useState } from 'react';
-import { Board } from './render/Board';
-import { reviewQueueLength } from './render/status';
+import { Hud } from './ui/Hud';
 import {
-  ActionBar,
-  ComboBadge,
-  DeckBar,
   DraftScreen,
-  Hud,
-  PointPops,
+  EventScreen,
+  EvolutionScreen,
+  RestScreen,
+  RunBar,
+  RunMapScreen,
+  RunResultScreen,
+  ShopScreen,
   SprintResultScreen,
-  useSprint,
+  SprintScreen,
+  TitleScreen,
+  useRun,
 } from './ui';
 import type { GameHandle } from './game';
 
@@ -24,97 +26,71 @@ export interface AppProps {
   game: GameHandle;
 }
 
+/** 組織状態に応じた画面トーン（第18.3 の画面ステート）。 */
+function screenTone(state: ReturnType<GameHandle['getState']>): string {
+  if (state.diagnosis === 'reviewHell' || state.diagnosis === 'reworkSpiral') return 'tone-hell';
+  if (state.diagnosis === 'seniorSacrifice' || state.diagnosis === 'aiOverproduction') {
+    return 'tone-cloudy';
+  }
+  return 'tone-day';
+}
+
 export default function App({ game }: AppProps) {
-  const {
-    state,
-    complete,
-    result,
-    aiEnabled,
-    deck,
-    draft,
-    setAiEnabled,
-    dispatch,
-    chooseCard,
-    skipDraft,
-    restart,
-  } = useSprint(game);
-  // リザルト → ドラフトの2段表示を制御する。
-  const [drafting, setDrafting] = useState(false);
+  const run = useRun(game);
+  const { state, meta } = run;
+  const phase = state.phase;
 
-  const queue = reviewQueueLength(state.sprint.tasks);
-  const jamPct = Math.min(100, (queue / 18) * 100);
+  if (phase === 'title') {
+    return <TitleScreen seed={state.seed} meta={meta} onStart={run.startRun} />;
+  }
+  if (phase === 'won' || phase === 'lost') {
+    return <RunResultScreen state={state} meta={meta} onNewRun={run.newRun} />;
+  }
 
-  const handlePick = (defId: string) => {
-    setDrafting(false);
-    chooseCard(defId);
-  };
-  const handleSkip = () => {
-    setDrafting(false);
-    skipDraft();
-  };
+  const tasks = state.sprint?.tasks ?? [];
+  const showSprint =
+    state.sprint !== null &&
+    (phase === 'sprint' || phase === 'result' || phase === 'draft' || phase === 'evolution');
 
   return (
-    <div className="app">
-      <Hud state={state} />
+    <div className={`app ${screenTone(state)}`}>
+      <Hud org={state.org} tasks={tasks} />
+      <RunBar state={state} />
 
-      <div className="subbar">
-        <span className="pill" data-testid="seed">
-          seed <b>{state.seed}</b>
-        </span>
-        <span className="pill" data-testid="sprint-no">
-          スプリント <b>{state.sprintIndex + 1}</b>
-        </span>
-        <span className="pill">
-          progress{' '}
-          <b>
-            {Math.round((state.sprint.metrics.doneCount / state.sprint.config.taskCount) * 100)}%
-          </b>
-        </span>
-        <label className="ai-toggle" data-testid="ai-toggle">
-          <input
-            type="checkbox"
-            checked={aiEnabled}
-            onChange={(e) => setAiEnabled(e.target.checked)}
-            data-testid="ai-toggle-input"
-          />
-          <span>AI導入 {aiEnabled ? 'ON' : 'OFF'}</span>
-        </label>
-        <div className="meter-wrap">
-          <span className="meter-label">渋滞メーター</span>
-          <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
-            <i style={{ width: `${jamPct}%` }} />
-          </div>
-        </div>
-        <ComboBadge combo={state.sprint.metrics.combo} />
-        <button type="button" className="btn" onClick={restart} data-testid="restart">
-          ↻ 新しいラン
-        </button>
-      </div>
+      {phase === 'map' && <RunMapScreen state={state} onEnter={run.enterNode} />}
+      {showSprint && <SprintScreen state={state} onDispatch={run.dispatch} />}
 
-      <main className="board-wrap">
-        <PointPops deliveryScore={state.org.deliveryScore} />
-        <Board state={state} />
-      </main>
-
-      <DeckBar deck={deck} />
-
-      <ActionBar sprint={state.sprint} disabled={complete} onAction={dispatch} />
-
-      {complete && result && !drafting && (
-        <SprintResultScreen
-          result={result}
-          aiEnabled={aiEnabled}
-          onRestart={restart}
-          onContinue={() => setDrafting(true)}
+      {phase === 'event' && <EventScreen state={state} onChoose={run.chooseEvent} />}
+      {phase === 'shop' && (
+        <ShopScreen
+          state={state}
+          onBuyCard={run.buyShopCard}
+          onBuyRelic={run.buyShopRelic}
+          onLeave={run.leaveShop}
         />
       )}
+      {phase === 'rest' && <RestScreen state={state} onChoose={run.restChoose} />}
 
-      {complete && drafting && draft && (
+      {phase === 'result' && state.lastResult && (
+        <SprintResultScreen
+          result={state.lastResult}
+          onContinue={run.acknowledgeResult}
+          onAbandon={run.newRun}
+        />
+      )}
+      {phase === 'draft' && state.draft && (
         <DraftScreen
-          options={draft}
-          sprintNumber={state.sprintIndex + 2}
-          onPick={handlePick}
-          onSkip={handleSkip}
+          options={state.draft}
+          sprintNumber={state.sprintsPlayed + 1}
+          onPick={run.chooseCard}
+          onSkip={run.skipDraft}
+        />
+      )}
+      {phase === 'evolution' && (
+        <EvolutionScreen
+          state={state}
+          onUnlock={run.unlockEvolution}
+          onFinish={run.finishEvolution}
         />
       )}
     </div>

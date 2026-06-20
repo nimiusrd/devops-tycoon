@@ -4,7 +4,7 @@
  * OrgState とスプリントの現況から、画面上部に出す
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
-import type { SimState, Task } from '../sim/types';
+import type { OrgState, SimState, Task } from '../sim/types';
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
 export type RiskLevel = 'LOW' | 'MED' | 'HIGH';
@@ -54,10 +54,9 @@ export function riskLevel(reviewQueue: number, seniorHp: number): RiskLevel {
   return 'LOW';
 }
 
-/** SimState から表示用ステータスを導出する。 */
-export function deriveStatus(state: SimState): StatusView {
-  const { org } = state;
-  const queue = reviewQueueLength(state.sprint.tasks);
+/** 組織状態と現在のタスク群から表示用ステータスを導出する。 */
+export function deriveStatusParts(org: OrgState, tasks: Task[]): StatusView {
+  const queue = reviewQueueLength(tasks);
   return {
     deliveryScore: org.deliveryScore,
     // AI 導入で開発速度は上がるが、その分レビューに皺寄せがいく（第2章）。
@@ -70,4 +69,9 @@ export function deriveStatus(state: SimState): StatusView {
     morale: Math.round(org.morale),
     risk: riskLevel(queue, org.seniorHp),
   };
+}
+
+/** SimState から表示用ステータスを導出する（Phase 1/2 互換）。 */
+export function deriveStatus(state: SimState): StatusView {
+  return deriveStatusParts(state.org, state.sprint.tasks);
 }

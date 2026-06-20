@@ -6,7 +6,7 @@
  * MVP3 以降で PixiJS へ移植する（第22.4）。
  */
 import type { CSSProperties } from 'react';
-import type { Lane, SimState, Task } from '../sim/types';
+import type { Lane, Task } from '../sim/types';
 import { taskColor, taskDiameter, taskVariant } from './taskView';
 
 const LANES: { id: Lane; label: string; icon: string }[] = [
@@ -36,14 +36,14 @@ function TaskDot({ task }: { task: Task }) {
 }
 
 export interface BoardProps {
-  state: SimState;
+  tasks: Task[];
 }
 
 /** Review 渋滞ヒートマップの強度（0..1）。この件数で赤熱が最大に達する。 */
 const HEAT_MAX_QUEUE = 16;
 
-export function Board({ state }: BoardProps) {
-  const byLane = (lane: Lane) => state.sprint.tasks.filter((t) => t.lane === lane);
+export function Board({ tasks: allTasks }: BoardProps) {
+  const byLane = (lane: Lane) => allTasks.filter((t) => t.lane === lane);
 
   return (
     <div className="board" data-testid="board">

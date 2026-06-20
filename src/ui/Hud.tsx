@@ -3,20 +3,23 @@
  *
  * 出荷ポイント・開発速度・レビュー耐性・品質・シニア体力・AI依存度・
  * 技術的負債・士気を表示し、炎上リスクをチップで示す。
+ * ラン中は組織状態（持続）と進行中スプリントのタスクから導出する（第22.2）。
  */
-import { deriveStatus, type Grade } from '../render/status';
-import type { SimState } from '../sim/types';
+import { deriveStatusParts, type Grade } from '../render/status';
+import type { OrgState, Task } from '../sim/types';
 
 function GradeValue({ grade }: { grade: Grade }) {
   return <span className={`v grade grade-${grade}`}>{grade}</span>;
 }
 
 export interface HudProps {
-  state: SimState;
+  org: OrgState;
+  /** 進行中スプリントのタスク（渋滞・リスク導出用。非スプリント時は空配列）。 */
+  tasks: Task[];
 }
 
-export function Hud({ state }: HudProps) {
-  const s = deriveStatus(state);
+export function Hud({ org, tasks }: HudProps) {
+  const s = deriveStatusParts(org, tasks);
   return (
     <header className="hud" data-testid="hud">
       <div className="stat">

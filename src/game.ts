@@ -1,20 +1,17 @@
 /**
  * 決定論フック `window.game`（SPEC 第22.5）。
  *
- * E2E / デバッグから状態を固定・前進できるようにする。
- * `pause/resume/step/loadState/setAiEnabled` を露出し、Playwright が seed と
- * 一時停止でフレームを固定できることを保証する。
+ * Phase 3 ではラン（1四半期）全体を露出する。E2E / デバッグから、タイトル →
+ * マップ → スプリント → リザルト → ドラフト → 進化 → ボス の各フェーズを
+ * 一時停止つきで駆動でき、seed で再現できる（第22.3 / 22.5）。
+ * ラン決着時にはメタ進行（localStorage）へ報酬を記録する（第17章）。
  */
-import { createEngine, type Engine } from './sim/engine';
+import { getTrial } from './data/difficulties';
+import { createRunEngine, type RunEngine } from './sim/run/engine';
 import { resolveSeedFromLocation } from './sim/seed';
-import { DEFAULT_SCENARIO } from './sim/scenarios';
-import type {
-  ActionId,
-  InterventionOutcome,
-  ScenarioId,
-  SimState,
-  SprintResult,
-} from './sim/types';
+import type { ActionId, InterventionOutcome } from './sim/types';
+import type { DifficultyId, RunState } from './sim/run/types';
+import { applyRunReward, loadMeta, saveMeta, type MetaState } from './state/meta';
 
 export interface GameHandle {
   /** 自動進行を止める。 */
@@ -23,41 +20,79 @@ export interface GameHandle {
   resume(): void;
   /** 一時停止中か。 */
   isPaused(): boolean;
-  /** 指定 ms ぶん手動で前進させ、進行後の状態を返す。 */
-  step(ms: number): SimState;
-  /** 介入アクションを発動し、結果（成否）を返す（第6章）。 */
+  /** 現在のラン状態のスナップショット。 */
+  getState(): RunState;
+  /** タイトルで選んだ難易度・試練でランを開始する。 */
+  startRun(difficulty?: DifficultyId, trials?: string[], seed?: string): RunState;
+  /** マップ上のノードへ進入する。 */
+  enterNode(id: string): RunState;
+  /** 指定 ms ぶんスプリントを手動で前進させる。 */
+  step(ms: number): RunState;
+  /** 介入アクションを発動する（第6章）。 */
   dispatch(id: ActionId): InterventionOutcome;
-  /** ドラフトで選んだカードをデッキに加え、次スプリントを開始して状態を返す。 */
-  chooseCard(defId: string): SimState;
-  /** ドラフトをスキップして次スプリントを開始する。 */
-  skipDraft(): SimState;
-  /** seed/シナリオ/AIフラグを読み込み直して状態をリセットし、初期状態を返す。 */
-  loadState(seed: string, scenario?: ScenarioId, aiEnabled?: boolean): SimState;
-  /** AI 導入フラグを切り替え、同一 seed でスプリントを再初期化する。 */
-  setAiEnabled(enabled: boolean): SimState;
-  /** スプリントが完了したか。 */
-  isComplete(): boolean;
-  /** 現時点のスプリントリザルト。 */
-  result(): SprintResult;
-  /** 現在状態のスナップショット。 */
-  getState(): SimState;
+  /** リザルトを確認してドラフトへ進む。 */
+  acknowledgeResult(): RunState;
+  /** ドラフトでカードを選ぶ。 */
+  chooseCard(defId: string): RunState;
+  /** ドラフトをスキップする。 */
+  skipDraft(): RunState;
+  /** 進化ノードを解放する。 */
+  unlockEvolution(id: string): RunState;
+  /** 進化フェーズを終えてマップへ戻る。 */
+  finishEvolution(): RunState;
+  /** イベントの選択肢を選ぶ。 */
+  chooseEvent(index: number): RunState;
+  /** ショップでカードを買う。 */
+  buyShopCard(defId: string): RunState;
+  /** ショップでレリックを買う。 */
+  buyShopRelic(): RunState;
+  /** ショップを出る。 */
+  leaveShop(): RunState;
+  /** 休息の選択（heal / repay / upgrade）。 */
+  restChoose(option: 'heal' | 'repay' | 'upgrade'): RunState;
+  /** 新しいランをタイトルから始める（seed を差し替え可能）。 */
+  newRun(seed?: string): RunState;
+  /** 現在のメタ進行（解放状況・実績）。 */
+  getMeta(): MetaState;
   /** 内部エンジン（高度なデバッグ用）。 */
-  readonly engine: Engine;
+  readonly engine: RunEngine;
 }
 
 export interface CreateGameOptions {
   seed?: string;
-  scenario?: ScenarioId;
-  aiEnabled?: boolean;
+  difficulty?: DifficultyId;
+  trials?: string[];
 }
 
 export function createGame(options: CreateGameOptions = {}): GameHandle {
   const seed = options.seed ?? resolveSeedFromLocation();
-  const scenario = options.scenario ?? DEFAULT_SCENARIO;
-  const engine = createEngine({ seed, scenario, aiEnabled: options.aiEnabled ?? false });
+  const engine = createRunEngine({ seed, difficulty: options.difficulty, trials: options.trials });
   let paused = false;
-  let currentSeed = seed;
-  let currentScenario = scenario;
+  let meta = loadMeta();
+  let recorded = false;
+
+  /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
+  const recordIfFinished = (): void => {
+    const s = engine.snapshot();
+    if (recorded || (s.status !== 'won' && s.status !== 'lost')) return;
+    recorded = true;
+    const scoreMul = s.trials.reduce((m, id) => m * (getTrial(id)?.scoreMul ?? 1), 1);
+    meta = applyRunReward(meta, {
+      won: s.status === 'won',
+      difficulty: s.difficulty,
+      winType: s.winType,
+      bossId: s.bossId,
+      score: s.org.deliveryScore,
+      scoreMul,
+      maxCombo: s.totals.maxCombo,
+    });
+    saveMeta(meta);
+  };
+
+  const after = (): RunState => {
+    recordIfFinished();
+    return engine.snapshot();
+  };
 
   return {
     pause() {
@@ -69,39 +104,72 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     isPaused() {
       return paused;
     },
-    step(ms: number) {
-      engine.step(ms);
+    getState() {
       return engine.snapshot();
     },
-    dispatch(id: ActionId) {
+    startRun(difficulty, trials, runSeed) {
+      recorded = false;
+      engine.startRun(difficulty, trials, runSeed);
+      return engine.snapshot();
+    },
+    enterNode(id) {
+      engine.enterNode(id);
+      return engine.snapshot();
+    },
+    step(ms) {
+      engine.step(ms);
+      return after();
+    },
+    dispatch(id) {
       return engine.dispatch(id);
     },
-    chooseCard(defId: string) {
-      engine.nextSprint(defId);
+    acknowledgeResult() {
+      engine.acknowledgeResult();
+      return engine.snapshot();
+    },
+    chooseCard(defId) {
+      engine.chooseCard(defId);
       return engine.snapshot();
     },
     skipDraft() {
-      engine.nextSprint();
+      engine.skipDraft();
       return engine.snapshot();
     },
-    loadState(nextSeed: string, nextScenario: ScenarioId = currentScenario, aiEnabled?: boolean) {
-      currentSeed = nextSeed;
-      currentScenario = nextScenario;
-      engine.load(nextSeed, nextScenario, aiEnabled);
+    unlockEvolution(id) {
+      engine.unlockEvolution(id);
       return engine.snapshot();
     },
-    setAiEnabled(enabled: boolean) {
-      engine.load(currentSeed, currentScenario, enabled);
+    finishEvolution() {
+      engine.finishEvolution();
       return engine.snapshot();
     },
-    isComplete() {
-      return engine.isComplete();
+    chooseEvent(index) {
+      engine.chooseEvent(index);
+      return after();
     },
-    result() {
-      return engine.result();
-    },
-    getState() {
+    buyShopCard(defId) {
+      engine.buyShopCard(defId);
       return engine.snapshot();
+    },
+    buyShopRelic() {
+      engine.buyShopRelic();
+      return engine.snapshot();
+    },
+    leaveShop() {
+      engine.leaveShop();
+      return engine.snapshot();
+    },
+    restChoose(option) {
+      engine.restChoose(option);
+      return engine.snapshot();
+    },
+    newRun(runSeed) {
+      recorded = false;
+      engine.toTitle(runSeed);
+      return engine.snapshot();
+    },
+    getMeta() {
+      return meta;
     },
     engine,
   };

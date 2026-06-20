@@ -2,15 +2,27 @@
  * 決定論シミュレーションエンジン（SPEC 第22.2 / 22.3）。
  *
  * 描画を一切知らず、固定タイムステップで状態を進める純TS。
- * 同一 seed・同一の step 列なら常に同一状態へ収束する。
- * Phase 1 ではスプリント（Backlog→Coding→Review→Rework→Done）を駆動する。
+ * 同一 seed・同一の step / dispatch 列なら常に同一状態へ収束する。
+ * Phase 2 ではスプリント駆動に加え、介入アクションのディスパッチ（イベント入力）と
+ * スプリント後のドラフト→デッキ更新による周回（第6章 / 第7章）を担う。
  */
-import { createRng, type Rng } from './rng';
+import { applyAction } from './actions';
+import { applyDeckBaseline, deckEffects, drawDraft } from './cards';
 import { createOrgState } from './org';
+import { createRng, type Rng } from './rng';
 import { DEFAULT_SEED } from './seed';
 import { DEFAULT_SCENARIO } from './scenarios';
 import { createSprint, resolveSprintConfig, stepSprint, summarizeSprint } from './sprint';
-import type { OrgState, ScenarioId, SimState, SprintResult, SprintState } from './types';
+import type {
+  ActionId,
+  CardInstance,
+  InterventionOutcome,
+  OrgState,
+  ScenarioId,
+  SimState,
+  SprintResult,
+  SprintState,
+} from './types';
 
 /** 固定タイムステップ（ms）。描画フレームレートから独立。 */
 export const FIXED_STEP_MS = 100;
@@ -20,6 +32,8 @@ export interface EngineInit {
   scenario?: ScenarioId;
   /** AI 導入フラグ（本作のコア因果のスイッチ。第2章）。 */
   aiEnabled?: boolean;
+  /** 初期デッキ（既定は空＝Phase 1 と同一挙動）。 */
+  deck?: CardInstance[];
   fixedStepMs?: number;
 }
 
@@ -35,15 +49,18 @@ export class Engine {
   private elapsedMs = 0;
   private org: OrgState;
   private sprint: SprintState;
+  private deck: CardInstance[];
+  private sprintIndex = 0;
 
   constructor(init: EngineInit = {}) {
     this.fixedStepMs = init.fixedStepMs ?? FIXED_STEP_MS;
     this.seed = init.seed ?? DEFAULT_SEED;
     this.scenario = init.scenario ?? DEFAULT_SCENARIO;
     this.aiEnabled = init.aiEnabled ?? false;
+    this.deck = init.deck ? init.deck.map((c) => ({ ...c })) : [];
     this.rng = this.recordingRng(this.seed);
-    this.org = createOrgState(this.scenario, this.aiEnabled);
-    this.sprint = createSprint(resolveSprintConfig(this.scenario), this.org, this.rng);
+    this.org = this.buildOrg();
+    this.sprint = this.buildSprint();
   }
 
   /** 消費した最新の乱数を記録するラッパ（決定論の可視化・検証用）。 */
@@ -54,6 +71,27 @@ export class Engine {
       this.lastRandom = v;
       return v;
     };
+  }
+
+  /** シナリオ＋AI＋デッキから、このスプリント開始時の組織状態を作る。 */
+  private buildOrg(carry?: Pick<OrgState, 'deliveryScore' | 'techDebt'>): OrgState {
+    const org = createOrgState(this.scenario, this.aiEnabled);
+    applyDeckBaseline(org, deckEffects(this.deck));
+    if (carry) {
+      org.deliveryScore = carry.deliveryScore;
+      org.techDebt = carry.techDebt;
+    }
+    return org;
+  }
+
+  /** 現在のデッキ効果を畳み込んでスプリントを生成する。 */
+  private buildSprint(): SprintState {
+    return createSprint(
+      resolveSprintConfig(this.scenario),
+      this.org,
+      this.rng,
+      deckEffects(this.deck),
+    );
   }
 
   /** 1 固定ステップ進める。スプリントを 1 tick 駆動する。 */
@@ -75,7 +113,32 @@ export class Engine {
     }
   }
 
-  /** seed/シナリオ/AIフラグを差し替えて状態を初期化する。 */
+  /**
+   * 介入アクションを発動する（イベント入力。architecture §2）。
+   * 集中力・クールダウン・対象の有無を検査し、成立時のみ状態を更新する。
+   */
+  dispatch(id: ActionId): InterventionOutcome {
+    return applyAction(id, this.sprint, this.org, this.rng, this.tick);
+  }
+
+  /**
+   * スプリント後のドラフトで選んだカードをデッキに加え、次スプリントを開始する。
+   * `pickedDefId` 省略でスキップ。乱数列は継続するため周回ごとに展開が変わる。
+   */
+  nextSprint(pickedDefId?: string): void {
+    if (pickedDefId) this.deck.push({ defId: pickedDefId, level: 1 });
+    this.sprintIndex += 1;
+    this.accumulatorMs = 0;
+    this.tick = 0;
+    this.elapsedMs = 0;
+    this.org = this.buildOrg({
+      deliveryScore: this.org.deliveryScore,
+      techDebt: this.org.techDebt,
+    });
+    this.sprint = this.buildSprint();
+  }
+
+  /** seed/シナリオ/AIフラグを差し替えて新しいラン（デッキ空）を初期化する。 */
   load(
     seed: string,
     scenario: ScenarioId = this.scenario,
@@ -88,9 +151,11 @@ export class Engine {
     this.accumulatorMs = 0;
     this.tick = 0;
     this.elapsedMs = 0;
+    this.deck = [];
+    this.sprintIndex = 0;
     this.rng = this.recordingRng(seed);
-    this.org = createOrgState(scenario, aiEnabled);
-    this.sprint = createSprint(resolveSprintConfig(scenario), this.org, this.rng);
+    this.org = this.buildOrg();
+    this.sprint = this.buildSprint();
   }
 
   /** スプリントが完了したか。 */
@@ -101,6 +166,14 @@ export class Engine {
   /** 現時点のスプリントリザルトを集計する。 */
   result(): SprintResult {
     return summarizeSprint(this.sprint, this.org);
+  }
+
+  /**
+   * 現スプリント完了時に提示するドラフト候補（カード定義 ID×3）。
+   * 専用の派生 seed から引くため、呼び出すタイミングに依らず安定する（第7.1）。
+   */
+  draftOptions(): string[] {
+    return drawDraft(createRng(`${this.seed}:draft:${this.sprintIndex}`));
   }
 
   /** 現在状態のスナップショット（ネストを含む独立コピー）。 */
@@ -114,6 +187,9 @@ export class Engine {
       aiEnabled: this.aiEnabled,
       org: structuredClone(this.org),
       sprint: structuredClone(this.sprint),
+      sprintIndex: this.sprintIndex,
+      deck: this.deck.map((c) => ({ ...c })),
+      draft: this.sprint.complete ? this.draftOptions() : null,
     };
   }
 }

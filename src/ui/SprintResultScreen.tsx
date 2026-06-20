@@ -31,14 +31,15 @@ export interface SprintResultScreenProps {
   result: SprintResult;
   aiEnabled: boolean;
   onRestart: () => void;
-  onToggleAi: () => void;
+  /** 「次へ」: カードドラフトへ進む（第7章）。 */
+  onContinue: () => void;
 }
 
 export function SprintResultScreen({
   result,
   aiEnabled,
   onRestart,
-  onToggleAi,
+  onContinue,
 }: SprintResultScreenProps) {
   return (
     <div
@@ -74,13 +75,13 @@ export function SprintResultScreen({
           <button
             type="button"
             className="btn btn-primary"
-            onClick={onRestart}
-            data-testid="result-restart"
+            onClick={onContinue}
+            data-testid="result-continue"
           >
-            もう一度（{aiEnabled ? 'AIあり' : 'AIなし'}）
+            カードドラフトへ →
           </button>
-          <button type="button" className="btn" onClick={onToggleAi} data-testid="result-toggle-ai">
-            {aiEnabled ? 'AIなしで比較' : 'AIありで比較'}
+          <button type="button" className="btn" onClick={onRestart} data-testid="result-restart">
+            もう一度（{aiEnabled ? 'AIあり' : 'AIなし'}）
           </button>
         </div>
       </div>

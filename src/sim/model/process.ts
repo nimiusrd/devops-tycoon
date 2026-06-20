@@ -6,8 +6,26 @@
  * 「AI を入れると Coding は速くなるが Review が詰まり、雑な AI 利用は Rework を増やす」——
  * をここで一元的に表現する。
  */
-import type { OrgState, Task, TaskKind } from '../types';
+import type { CardEffects, OrgState, Task, TaskKind } from '../types';
 import type { Rng } from '../rng';
+
+/**
+ * 無効果のカード効果（デッキが空＝Phase 1 と完全に同一の数値挙動）。
+ * すべての確率モデル関数はこれを既定値に取り、デッキが無いときは
+ * Phase 1 と 1bit たりとも違わない結果を返す（後方互換）。
+ */
+export const IDENTITY_CARD_EFFECTS: CardEffects = {
+  codingSpeedMul: 1,
+  routineSpeedMul: 1,
+  reviewEfficiencyMul: 1,
+  reviewCapacityMul: 1,
+  reworkRateAdd: 0,
+  incidentRateMul: 1,
+  aiLiteracyAdd: 0,
+  aiDependencyAdd: 0,
+  qualityAdd: 0,
+  testCoverageAdd: 0,
+};
 
 /** タスク規模ごとの所要倍率（複雑なほど時間がかかる）。 */
 export const SIZE_FACTOR: Record<TaskKind, number> = {
@@ -55,17 +73,46 @@ export const REWORK_TICKS = 4;
 /** タスク 1 件あたりの手戻り上限（これを超えると強制的に通す）。 */
 export const MAX_REWORK = 3;
 
+/** PR分割/タスク差配で「捌きやすく」した際の手戻り率の低下量（第6.1）。 */
+export const SPLIT_REWORK_REDUCTION = 0.16;
+
+/** 残業号令の発動中に掛かる Coding / Review のスループット倍率（第6.1）。 */
+export const OVERTIME_CODING_MUL = 1.4;
+export const OVERTIME_REVIEW_MUL = 1.6;
+
+/** コンボ 1 段ごとの出荷倍率の伸び（第6.2 / 第18.2 の COMBO 演出）。 */
+export const COMBO_BONUS_PER = 0.1;
+/** コンボ倍率の上乗せ上限（最大 1 + これ 倍）。 */
+export const COMBO_BONUS_CAP = 1.5;
+
+/**
+ * コンボ（連続 Done 数）に応じた出荷ポイント倍率（第6.2）。
+ * `combo=0` で 1.0、以降 1 段ごとに伸び、上限で頭打ち。
+ * 「攻めて出荷を伸ばす」インセンティブを与える純関数。
+ */
+export function comboMultiplier(combo: number): number {
+  return 1 + Math.min(COMBO_BONUS_CAP, Math.max(0, combo) * COMBO_BONUS_PER);
+}
+
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
-/** Coding の所要 tick（規模・AI利用で変化）。 */
-export function codingTicks(task: Task): number {
+/**
+ * Coding の所要 tick（規模・AI利用・カード効果で変化）。
+ * カードの Coding 速度倍率（定型はさらに上乗せ）で所要 tick が短くなる。
+ */
+export function codingTicks(task: Task, effects: CardEffects = IDENTITY_CARD_EFFECTS): number {
   const base = CODING_BASE_TICKS * SIZE_FACTOR[task.kind];
-  return task.aiAssisted ? base / AI_CODING_SPEEDUP : base;
+  const aiAdjusted = task.aiAssisted ? base / AI_CODING_SPEEDUP : base;
+  const routineMul = task.kind === 'routine' ? effects.routineSpeedMul : 1;
+  return aiAdjusted / (effects.codingSpeedMul * routineMul);
 }
 
 /** Coding の 1 tick あたり進捗（0..1）。 */
-export function codingProgressPerTick(task: Task): number {
-  return 1 / codingTicks(task);
+export function codingProgressPerTick(
+  task: Task,
+  effects: CardEffects = IDENTITY_CARD_EFFECTS,
+): number {
+  return 1 / codingTicks(task, effects);
 }
 
 /** Rework の 1 tick あたり進捗（0..1）。 */
@@ -78,9 +125,11 @@ export function reworkProgressPerTick(): number {
  * シニア体力が低いほど落ちる（過労 → レビュー渋滞の悪循環。第2章）。
  * 体力 0 でも完全停止はせず、最低限のスループットを残す。
  */
-export function reviewPerTick(org: OrgState): number {
+export function reviewPerTick(org: OrgState, effects: CardEffects = IDENTITY_CARD_EFFECTS): number {
   const efficiency = 0.3 + 0.7 * (org.seniorHp / 100);
-  return REVIEW_BASE_PER_TICK * efficiency;
+  return (
+    REVIEW_BASE_PER_TICK * efficiency * effects.reviewEfficiencyMul * effects.reviewCapacityMul
+  );
 }
 
 /**
@@ -88,13 +137,19 @@ export function reviewPerTick(org: OrgState): number {
  * **AI依存度が上がるほど増える**（第22.5 の代表的不変条件）。
  * 品質・AIリテラシーが高いほど下がる。手戻り回数が増えると収束させる。
  */
-export function reworkProbability(org: OrgState, task: Task): number {
+export function reworkProbability(
+  org: OrgState,
+  task: Task,
+  effects: CardEffects = IDENTITY_CARD_EFFECTS,
+): number {
   const p =
     0.05 +
     0.32 * (org.aiDependency / 100) +
     (task.aiAssisted ? 0.1 : 0) -
     0.18 * (org.aiLiteracy / 100) -
-    0.14 * (org.quality / 100);
+    0.14 * (org.quality / 100) +
+    effects.reworkRateAdd -
+    (task.split ? SPLIT_REWORK_REDUCTION : 0);
   // 再修正済みのタスクは通りやすくする（収束保証）。
   const damped = p * Math.pow(0.5, task.reworkAttempts);
   return clamp(damped, 0.02, 0.75);
@@ -104,11 +159,16 @@ export function reworkProbability(org: OrgState, task: Task): number {
  * Review 済みタスクが障害（Incident）になる確率。
  * テストカバレッジが低いほど増える。AI 利用かつ低リテラシーで上乗せ。
  */
-export function incidentProbability(org: OrgState, task: Task): number {
+export function incidentProbability(
+  org: OrgState,
+  task: Task,
+  effects: CardEffects = IDENTITY_CARD_EFFECTS,
+): number {
   const p =
-    0.02 +
-    0.1 * (1 - org.testCoverage / 100) +
-    (task.aiAssisted ? 0.05 * (1 - org.aiLiteracy / 100) : 0);
+    (0.02 +
+      0.1 * (1 - org.testCoverage / 100) +
+      (task.aiAssisted ? 0.05 * (1 - org.aiLiteracy / 100) : 0)) *
+    effects.incidentRateMul;
   return clamp(p, 0.01, 0.4);
 }
 

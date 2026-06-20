@@ -1,6 +1,9 @@
 {
   "name": "devops-tycoon",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:24-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli": {}
+  },
   "forwardPorts": [5173],
   "postCreateCommand": "npm ci && npx playwright install --with-deps chromium",
   "customizations": {

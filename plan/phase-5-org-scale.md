@@ -4,7 +4,7 @@
 | --- | --- |
 | 対応 MVP | MVP 5 |
 | SPEC 参照 | 第4.7〜4.11章 |
-| 前提 | [phase-3-roguelike-loop](./phase-3-roguelike-loop.md)（PixiJS 移植済みであること） |
+| 前提 | [phase-3-roguelike-loop](./phase-3-roguelike-loop.md)（PHASE4/5 着手前ゲートで PixiJS 移植判断済みであること） |
 | 次フェーズ | （拡張案 / 第23章） |
 
 ---

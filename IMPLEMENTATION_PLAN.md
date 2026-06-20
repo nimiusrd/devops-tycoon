@@ -30,6 +30,7 @@ DevOps Tycoon の実装計画。[`SPEC.md`](./SPEC.md) の企画内容を、実�
 | [plan/phase-3-roguelike-loop.md](./plan/phase-3-roguelike-loop.md) | 周回・育成・診断（MVP3） |
 | [plan/phase-4-character-growth.md](./plan/phase-4-character-growth.md) | キャラクター育成（MVP4） |
 | [plan/phase-5-org-scale.md](./plan/phase-5-org-scale.md) | 組織スケール / 巨大組織対応（MVP5） |
+| [plan/follow-ups.md](./plan/follow-ups.md) | 各フェーズ実装後のフォローアップ / 未解決事項 |
 
 ---
 
@@ -44,14 +45,14 @@ DevOps Tycoon の実装計画。[`SPEC.md`](./SPEC.md) の企画内容を、実�
 | M4 | メンバー育成 | MVP4 | 個体育成・編成が戦術になる |
 | M5 | 巨大組織 | MVP5 | 4階層ズーム・全社/部署/業界・カメラ遷移 |
 
-依存関係: M0 → M1 → M2 → M3 →（M4・M5 は M3 以降で並行可能だが、M5 は描画移行を前提とするため M3 の Pixi 移植後に着手するのが安全）。
+依存関係: M0 → M1 → M2 → M3 →（M4・M5 は M3 以降で並行可能。ただし、粒数・ズーム階層が増える M4/M5 では PixiJS 移行を着手前ゲートとして扱う）。
 
 ---
 
 ## リスクと留意点
 
 - **世界観の制約（第2.1章）**: イベント/ボス/敗北/称号/演出は「現実の開発組織で起こりうる範囲」に留める（[architecture.md](./plan/architecture.md) §4.5）。
-- **描画移行のタイミング**: 早すぎる Pixi 投資は過剰（第22.4）。MVP1〜2 は DOM/SVG、粒数が破綻し始める MVP3 で移植。
+- **描画移行のタイミング**: 早すぎる Pixi 投資は過剰（第22.4）。MVP1〜3 は DOM/SVG で通しプレイの DoD を優先し、粒数・ズーム階層が破綻し始める MVP4/5 の着手前ゲートで PixiJS + pixi-viewport へ移行する。
 - **バランス調整コスト**: 確率モデルのチューニングは Web Worker のモンテカルロ試算（第22.3）＋データ駆動定義で回す。
 - **状態の複雑化**: フェーズ遷移は XState、ラン/メタ状態は Zustand に分離して肥大化を防ぐ。
 

@@ -54,6 +54,16 @@ export interface GameHandle {
   newRun(seed?: string): RunState;
   /** 現在のメタ進行（解放状況・実績）。 */
   getMeta(): MetaState;
+  /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
+  phase(): RunState['phase'];
+  /** スプリントが進行中（自動ステップ対象）か。 */
+  isSprintRunning(): boolean;
+  /**
+   * 状態変更ごとに増える版番号。React は毎フレームこれを見て、変化時のみ
+   * スナップショットを読み直す。これにより window.game 経由の外部操作（E2E 等）も
+   * UI に反映される。
+   */
+  revision(): number;
   /** 内部エンジン（高度なデバッグ用）。 */
   readonly engine: RunEngine;
 }
@@ -70,6 +80,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let paused = false;
   let meta = loadMeta();
   let recorded = false;
+  let revision = 0;
+
+  /** 状態を変えた可能性のある操作の後に版番号を進める。 */
+  const bump = (): void => {
+    revision += 1;
+  };
 
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
   const recordIfFinished = (): void => {
@@ -110,66 +126,91 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     startRun(difficulty, trials, runSeed) {
       recorded = false;
       engine.startRun(difficulty, trials, runSeed);
+      bump();
       return engine.snapshot();
     },
     enterNode(id) {
       engine.enterNode(id);
+      bump();
       return engine.snapshot();
     },
     step(ms) {
       engine.step(ms);
+      bump();
       return after();
     },
     dispatch(id) {
-      return engine.dispatch(id);
+      const outcome = engine.dispatch(id);
+      bump();
+      return outcome;
     },
     acknowledgeResult() {
       engine.acknowledgeResult();
+      bump();
       return engine.snapshot();
     },
     chooseCard(defId) {
       engine.chooseCard(defId);
+      bump();
       return engine.snapshot();
     },
     skipDraft() {
       engine.skipDraft();
+      bump();
       return engine.snapshot();
     },
     unlockEvolution(id) {
       engine.unlockEvolution(id);
+      bump();
       return engine.snapshot();
     },
     finishEvolution() {
       engine.finishEvolution();
+      bump();
       return engine.snapshot();
     },
     chooseEvent(index) {
       engine.chooseEvent(index);
+      bump();
       return after();
     },
     buyShopCard(defId) {
       engine.buyShopCard(defId);
+      bump();
       return engine.snapshot();
     },
     buyShopRelic() {
       engine.buyShopRelic();
+      bump();
       return engine.snapshot();
     },
     leaveShop() {
       engine.leaveShop();
+      bump();
       return engine.snapshot();
     },
     restChoose(option) {
       engine.restChoose(option);
+      bump();
       return engine.snapshot();
     },
     newRun(runSeed) {
       recorded = false;
       engine.toTitle(runSeed);
+      bump();
       return engine.snapshot();
     },
     getMeta() {
       return meta;
+    },
+    phase() {
+      return engine.currentPhase();
+    },
+    isSprintRunning() {
+      return engine.sprintRunning();
+    },
+    revision() {
+      return revision;
     },
     engine,
   };

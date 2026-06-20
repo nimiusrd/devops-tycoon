@@ -40,53 +40,43 @@ export function useRun(game: GameHandle): UseRun {
   const [meta, setMeta] = useState<MetaState>(() => game.getMeta());
 
   useEffect(() => {
+    let lastRev = game.revision();
     const id = window.setInterval(() => {
-      const s = game.getState();
-      if (s.phase !== 'sprint' || game.isPaused()) return;
-      if (s.sprint && s.sprint.complete) return;
-      const next = game.step(SIM_STEP_MS);
+      // スプリント進行中は固定タイムステップで前進させる（版番号も進む）。
+      if (game.isSprintRunning() && !game.isPaused()) game.step(SIM_STEP_MS);
+      // 内部ステップでも window.game 経由の外部操作でも、変化時のみ読み直す。
+      const rev = game.revision();
+      if (rev === lastRev) return;
+      lastRev = rev;
+      const next = game.getState();
       setState(next);
-      // ボススプリントが自動進行で決着したらメタ進行（解放/実績）も同期する。
       if (next.status !== 'playing') setMeta(game.getMeta());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
 
-  const sync = useCallback(
-    (next: RunState) => {
-      setState(next);
-      setMeta(game.getMeta());
-    },
+  // ハンドラはエンジンを操作するだけ。UI への反映は上のポーリングが担う
+  // （内部進行と window.game 経由の外部操作を同一経路で扱うため）。
+  const startRun = useCallback(
+    (difficulty: DifficultyId, trials: string[]) => void game.startRun(difficulty, trials),
     [game],
   );
-
-  const startRun = useCallback(
-    (difficulty: DifficultyId, trials: string[]) => sync(game.startRun(difficulty, trials)),
-    [game, sync],
-  );
-  const enterNode = useCallback((id: string) => sync(game.enterNode(id)), [game, sync]);
-  const dispatch = useCallback(
-    (id: ActionId) => {
-      const outcome = game.dispatch(id);
-      sync(game.getState());
-      return outcome;
-    },
-    [game, sync],
-  );
-  const acknowledgeResult = useCallback(() => sync(game.acknowledgeResult()), [game, sync]);
-  const chooseCard = useCallback((defId: string) => sync(game.chooseCard(defId)), [game, sync]);
-  const skipDraft = useCallback(() => sync(game.skipDraft()), [game, sync]);
-  const unlockEvolution = useCallback((id: string) => sync(game.unlockEvolution(id)), [game, sync]);
-  const finishEvolution = useCallback(() => sync(game.finishEvolution()), [game, sync]);
-  const chooseEvent = useCallback((index: number) => sync(game.chooseEvent(index)), [game, sync]);
-  const buyShopCard = useCallback((defId: string) => sync(game.buyShopCard(defId)), [game, sync]);
-  const buyShopRelic = useCallback(() => sync(game.buyShopRelic()), [game, sync]);
-  const leaveShop = useCallback(() => sync(game.leaveShop()), [game, sync]);
+  const enterNode = useCallback((id: string) => void game.enterNode(id), [game]);
+  const dispatch = useCallback((id: ActionId) => game.dispatch(id), [game]);
+  const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
+  const chooseCard = useCallback((defId: string) => void game.chooseCard(defId), [game]);
+  const skipDraft = useCallback(() => void game.skipDraft(), [game]);
+  const unlockEvolution = useCallback((id: string) => void game.unlockEvolution(id), [game]);
+  const finishEvolution = useCallback(() => void game.finishEvolution(), [game]);
+  const chooseEvent = useCallback((index: number) => void game.chooseEvent(index), [game]);
+  const buyShopCard = useCallback((defId: string) => void game.buyShopCard(defId), [game]);
+  const buyShopRelic = useCallback(() => void game.buyShopRelic(), [game]);
+  const leaveShop = useCallback(() => void game.leaveShop(), [game]);
   const restChoose = useCallback(
-    (option: 'heal' | 'repay' | 'upgrade') => sync(game.restChoose(option)),
-    [game, sync],
+    (option: 'heal' | 'repay' | 'upgrade') => void game.restChoose(option),
+    [game],
   );
-  const newRun = useCallback(() => sync(game.newRun()), [game, sync]);
+  const newRun = useCallback(() => void game.newRun(), [game]);
 
   return {
     state,

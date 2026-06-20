@@ -539,6 +539,16 @@ export class RunEngine {
     this.phase = 'map';
   }
 
+  /** 現在のフェーズ（スナップショットを作らない軽量アクセサ）。 */
+  currentPhase(): RunState['phase'] {
+    return this.phase;
+  }
+
+  /** スプリントが進行中（自動ステップ対象）か。 */
+  sprintRunning(): boolean {
+    return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;
+  }
+
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */
   snapshot(): RunState {
     return {

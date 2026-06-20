@@ -29,17 +29,20 @@ function buildRows(result: SprintResult): Row[] {
 
 export interface SprintResultScreenProps {
   result: SprintResult;
-  aiEnabled: boolean;
-  onRestart: () => void;
   /** 「次へ」: カードドラフトへ進む（第7章）。 */
   onContinue: () => void;
+  /** 二次アクション（ランを中断してタイトルへ等）。省略時は表示しない。 */
+  onAbandon?: () => void;
+  continueLabel?: string;
+  abandonLabel?: string;
 }
 
 export function SprintResultScreen({
   result,
-  aiEnabled,
-  onRestart,
   onContinue,
+  onAbandon,
+  continueLabel = 'カードドラフトへ →',
+  abandonLabel = 'タイトルへ',
 }: SprintResultScreenProps) {
   return (
     <div
@@ -78,11 +81,13 @@ export function SprintResultScreen({
             onClick={onContinue}
             data-testid="result-continue"
           >
-            カードドラフトへ →
+            {continueLabel}
           </button>
-          <button type="button" className="btn" onClick={onRestart} data-testid="result-restart">
-            もう一度（{aiEnabled ? 'AIあり' : 'AIなし'}）
-          </button>
+          {onAbandon && (
+            <button type="button" className="btn" onClick={onAbandon} data-testid="result-restart">
+              {abandonLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

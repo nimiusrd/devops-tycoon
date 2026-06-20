@@ -1,0 +1,603 @@
+/**
+ * ラン（1四半期）オーケストレーター（SPEC 第3章 / 第4.4〜4.6 / 第8〜17章）。
+ *
+ * Phase 2 のスプリント純関数（createSprint/stepSprint/applyAction/summarizeSprint）を
+ * 再利用し、その上にローグライクの入れ子——マップ → スプリント → リザルト →
+ * ドラフト → 進化——とイベント/ショップ/休息/ボス/勝敗/診断を載せた決定論エンジン。
+ * 乱数はノード単位で派生 seed から引くため、辿る順に依らずノード内容が安定する（第22.3）。
+ * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
+ */
+import { BOSS_DEFS, getBoss } from '../../data/bosses';
+import { getCard } from '../../data/cards';
+import { getDifficulty, getTrial } from '../../data/difficulties';
+import { EVENT_DEFS, getEvent } from '../../data/events';
+import { getEvolutionNode } from '../../data/evolution';
+import { RELIC_DEFS, getRelic } from '../../data/relics';
+import { applyAction } from '../actions';
+import { applyDeckBaseline, drawDraft, scaleEffects, upgradeCard } from '../cards';
+import { diagnose } from '../diagnosis';
+import { FIXED_STEP_MS } from '../engine';
+import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
+import { createRng } from '../rng';
+import { DEFAULT_SEED } from '../seed';
+import { resolveSprintConfig, createSprint, stepSprint, summarizeSprint } from '../sprint';
+import type {
+  ActionId,
+  CardEffects,
+  InterventionOutcome,
+  OrgState,
+  SprintConfig,
+  SprintResult,
+  SprintState,
+} from '../types';
+import { foldPassives, foldRunEffects, toEffects, withBossEffects } from './effects';
+import { applyEventOutcome } from './events';
+import { canUnlock, unlockNode } from './evolution';
+import { firstColumnNodes, generateRunMap, nodeById } from './map';
+import type {
+  DifficultyId,
+  EvolutionState,
+  LoseReason,
+  MapNode,
+  RunMap,
+  RunState,
+  RunStatus,
+  RunTotals,
+  ShopOffer,
+  WinType,
+} from './types';
+
+const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+
+/** 高負荷（elite）スプリントのタスク量倍率。 */
+const ELITE_TASK_MUL = 1.6;
+/**
+ * スプリント間のギャップでシニア体力が回復する割合（満タンまでの差分に対して）。
+ * 1 回の過負荷は尾を引くが、持続的な過負荷だけが燃え尽きへ至るようにする緩衝。
+ */
+const BETWEEN_SPRINT_RECOVERY = 0.5;
+/** 休息（heal）でのシニア体力回復量。 */
+const REST_HEAL = 40;
+/** 休息（repay）での技術的負債返済量。 */
+const REST_REPAY = 30;
+/** ショップのレリック価格（割引前）。 */
+const SHOP_RELIC_COST = 30;
+
+export interface RunEngineInit {
+  seed?: string;
+  difficulty?: DifficultyId;
+  trials?: string[];
+}
+
+function emptyTotals(): RunTotals {
+  return {
+    delivered: 0,
+    done: 0,
+    rework: 0,
+    incidents: 0,
+    contained: 0,
+    spread: 0,
+    aiAssisted: 0,
+    completed: 0,
+    reviewQueuePeak: 0,
+    maxCombo: 0,
+  };
+}
+
+/** 難易度の組織プリセットから初期 `OrgState` を作る（AI 導入済みの組織を前提）。 */
+function buildRunOrg(difficulty: DifficultyId): OrgState {
+  const { org } = getDifficulty(difficulty);
+  return {
+    aiEnabled: true,
+    aiDependency: org.aiDependencyBase,
+    aiLiteracy: org.aiLiteracy,
+    testCoverage: org.testCoverage,
+    documentation: org.documentation,
+    quality: org.quality,
+    morale: org.morale,
+    seniorHp: org.seniorHp,
+    techDebt: 0,
+    deliveryScore: 0,
+  };
+}
+
+export class RunEngine {
+  private seed: string;
+  private difficulty: DifficultyId;
+  private trials: string[];
+
+  private map!: RunMap;
+  private bossId!: string;
+  private baseConfig!: SprintConfig;
+
+  private org!: OrgState;
+  private deck: { defId: string; level: number }[] = [];
+  private relics: string[] = [];
+  private evolution!: EvolutionState;
+  private budget = 0;
+
+  private phase: RunState['phase'] = 'title';
+  private status: RunStatus = 'playing';
+  private winType?: WinType;
+  private loseReason?: LoseReason;
+
+  private position: string | null = null;
+  private visited: string[] = [];
+  private available: string[] = [];
+
+  private activeNodeId: string | null = null;
+  private sprint: SprintState | null = null;
+  private sprintRng = createRng('init');
+  private sprintTick = 0;
+  private accumulatorMs = 0;
+  private lastResult: SprintResult | null = null;
+  private draft: string[] | null = null;
+  private eventId: string | null = null;
+  private shop: ShopOffer | null = null;
+
+  private diagnosis: RunState['diagnosis'] = 'healthyAcceleration';
+  private sprintsPlayed = 0;
+  private totals: RunTotals = emptyTotals();
+  private usedHeavyActions = false;
+
+  constructor(init: RunEngineInit = {}) {
+    this.seed = init.seed ?? DEFAULT_SEED;
+    this.difficulty = init.difficulty ?? 'normal';
+    this.trials = init.trials ?? [];
+    this.initRun();
+    this.phase = 'title';
+  }
+
+  /** タイトルで選んだ難易度・試練でランを開始する（phase=map）。 */
+  startRun(
+    difficulty: DifficultyId = this.difficulty,
+    trials: string[] = this.trials,
+    seed?: string,
+  ): void {
+    if (seed !== undefined) this.seed = seed;
+    this.difficulty = difficulty;
+    this.trials = trials;
+    this.initRun();
+    this.phase = 'map';
+  }
+
+  /** タイトル画面へ戻る（新しいランの難易度選択へ）。 */
+  toTitle(seed?: string): void {
+    if (seed !== undefined) this.seed = seed;
+    this.initRun();
+    this.phase = 'title';
+  }
+
+  /** 内部状態をランの初期状態へ戻す（マップ・組織・予算・進化を作り直す）。 */
+  private initRun(): void {
+    this.map = generateRunMap(createRng(`${this.seed}:map`));
+    this.bossId = this.pickBoss();
+    const diff = getDifficulty(this.difficulty);
+    const base = resolveSprintConfig('default');
+    this.baseConfig = {
+      ...base,
+      taskCount: Math.max(6, Math.round(base.taskCount * diff.taskCountMul)),
+    };
+    this.org = buildRunOrg(this.difficulty);
+    this.deck = [];
+    this.relics = [];
+    this.evolution = { points: 0, unlocked: {} };
+    this.budget = Math.round(diff.startBudget * this.trialBudgetMul());
+    this.position = null;
+    this.visited = [];
+    this.available = firstColumnNodes(this.map);
+    this.activeNodeId = null;
+    this.sprint = null;
+    this.sprintTick = 0;
+    this.accumulatorMs = 0;
+    this.lastResult = null;
+    this.draft = null;
+    this.eventId = null;
+    this.shop = null;
+    this.diagnosis = 'healthyAcceleration';
+    this.sprintsPlayed = 0;
+    this.totals = emptyTotals();
+    this.usedHeavyActions = false;
+    this.status = 'playing';
+    this.winType = undefined;
+    this.loseReason = undefined;
+  }
+
+  private pickBoss(): string {
+    const rng = createRng(`${this.seed}:boss`);
+    const ids = BOSS_DEFS.map((b) => b.id);
+    return ids[Math.floor(rng() * ids.length)];
+  }
+
+  private trialBudgetMul(): number {
+    return this.trials.reduce((m, id) => m * (getTrial(id)?.budgetMul ?? 1), 1);
+  }
+
+  /** マップ上のノードへ進入する。種別に応じてスプリント/イベント/ショップ/休息へ。 */
+  enterNode(id: string): void {
+    if (this.phase !== 'map') return;
+    if (!this.available.includes(id)) return;
+    const node = nodeById(this.map, id);
+    if (!node) return;
+    this.position = id;
+    this.visited.push(id);
+    switch (node.type) {
+      case 'normal':
+      case 'elite':
+      case 'boss':
+        this.beginSprint(node);
+        break;
+      case 'event':
+        this.eventId = this.pickEvent(node);
+        this.phase = 'event';
+        break;
+      case 'shop':
+        this.shop = this.buildShop(node);
+        this.phase = 'shop';
+        break;
+      case 'rest':
+        this.phase = 'rest';
+        break;
+    }
+  }
+
+  private beginSprint(node: MapNode): void {
+    // スプリント間のギャップでシニア体力が一部回復する（持続的な過負荷のみ燃え尽きへ）。
+    this.org.seniorHp = clamp(
+      this.org.seniorHp + (100 - this.org.seniorHp) * BETWEEN_SPRINT_RECOVERY,
+      0,
+      100,
+    );
+    const isBoss = node.type === 'boss';
+    const fold = foldRunEffects({
+      deck: this.deck,
+      relics: this.relics,
+      evolution: this.evolution,
+      difficulty: this.difficulty,
+      trials: this.trials,
+    });
+    const effects = isBoss ? withBossEffects(fold.effects, this.bossId) : fold.effects;
+    const mul =
+      node.type === 'elite'
+        ? ELITE_TASK_MUL
+        : isBoss
+          ? (getBoss(this.bossId)?.taskCountMul ?? 1)
+          : 1;
+    const config: SprintConfig = {
+      ...this.baseConfig,
+      taskCount: Math.max(4, Math.round(this.baseConfig.taskCount * mul)),
+      focusMax: Math.max(1, this.baseConfig.focusMax + fold.focusBonus),
+      codingSlots: Math.max(1, this.baseConfig.codingSlots + fold.codingSlotBonus),
+    };
+    this.sprintRng = createRng(`${this.seed}:sprint:${node.id}`);
+    this.sprintTick = 0;
+    this.accumulatorMs = 0;
+    this.sprint = createSprint(config, this.org, this.sprintRng, effects);
+    this.activeNodeId = node.id;
+    this.phase = 'sprint';
+  }
+
+  /** 進行中スプリントを dtMs 分だけ固定タイムステップで進める。 */
+  step(dtMs: number): void {
+    if (this.phase !== 'sprint' || !this.sprint || this.sprint.complete) return;
+    this.accumulatorMs += dtMs;
+    while (this.accumulatorMs >= FIXED_STEP_MS && this.sprint && !this.sprint.complete) {
+      stepSprint(this.sprint, this.org, this.sprintRng, this.sprintTick);
+      this.sprintTick += 1;
+      this.accumulatorMs -= FIXED_STEP_MS;
+    }
+    if (this.sprint && this.sprint.complete) this.resolveSprint();
+  }
+
+  /** 介入アクションを発動する（sprint フェーズのみ。第6章）。 */
+  dispatch(id: ActionId): InterventionOutcome {
+    if (this.phase !== 'sprint' || !this.sprint) return { ok: false, reason: 'complete' };
+    const outcome = applyAction(id, this.sprint, this.org, this.sprintRng, this.sprintTick);
+    if (outcome.ok && (id === 'overtime' || id === 'andon')) this.usedHeavyActions = true;
+    return outcome;
+  }
+
+  /** スプリント完了時の集計・診断・勝敗判定・進化ポイント付与。 */
+  private resolveSprint(): void {
+    if (!this.sprint || !this.activeNodeId) return;
+    const result = summarizeSprint(this.sprint, this.org);
+    this.lastResult = result;
+    this.sprintsPlayed += 1;
+    this.accumulateTotals(result);
+    this.diagnosis = diagnose(this.org, this.totals);
+
+    const node = nodeById(this.map, this.activeNodeId);
+    if (node?.type === 'boss') {
+      const boss = getBoss(this.bossId);
+      const cleared =
+        !!boss &&
+        evaluateBoss({
+          boss,
+          result,
+          org: this.org,
+          bossTargetMul: getDifficulty(this.difficulty).bossTargetMul,
+        });
+      if (cleared) {
+        this.status = 'won';
+        this.winType = evaluateWinType({
+          org: this.org,
+          totals: this.totals,
+          budget: this.budget,
+          usedHeavyActions: this.usedHeavyActions,
+        });
+        this.phase = 'won';
+      } else {
+        this.status = 'lost';
+        this.loseReason = 'bossFailed';
+        this.phase = 'lost';
+      }
+      return;
+    }
+
+    const lose = evaluateLose(this.org, this.totals);
+    if (lose) {
+      this.status = 'lost';
+      this.loseReason = lose;
+      this.phase = 'lost';
+      return;
+    }
+
+    this.evolution = {
+      ...this.evolution,
+      points: this.evolution.points + this.evoPointsFor(node, result),
+    };
+    this.phase = 'result';
+  }
+
+  private accumulateTotals(result: SprintResult): void {
+    if (!this.sprint) return;
+    const m = this.sprint.metrics;
+    const t = this.totals;
+    t.delivered += result.delivered;
+    t.done += result.done;
+    t.rework += result.rework;
+    t.incidents += result.incidents;
+    t.contained += result.contained;
+    t.spread += result.spread;
+    t.aiAssisted += m.aiAssistedCompleted;
+    t.completed += m.completedCount;
+    t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
+    t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
+  }
+
+  private evoPointsFor(node: MapNode | undefined, result: SprintResult): number {
+    const base = 1 + Math.floor(result.delivered / 40);
+    return node?.type === 'elite' ? base + 1 : base;
+  }
+
+  /** リザルトを確認してドラフトへ進む。 */
+  acknowledgeResult(): void {
+    if (this.phase !== 'result') return;
+    this.draft = drawDraft(createRng(`${this.seed}:draft:${this.sprintsPlayed}`));
+    this.phase = 'draft';
+  }
+
+  /** ドラフトでカードを選びデッキに加える（加算系の効果は即時に組織へ反映）。 */
+  chooseCard(defId: string): void {
+    if (this.phase !== 'draft') return;
+    this.addCard(defId, 1);
+    this.draft = null;
+    this.phase = 'evolution';
+  }
+
+  /** ドラフトをスキップする。 */
+  skipDraft(): void {
+    if (this.phase !== 'draft') return;
+    this.draft = null;
+    this.phase = 'evolution';
+  }
+
+  /** 進化ノードを解放する（加算系効果は即時反映。phase は evolution のまま）。 */
+  unlockEvolution(id: string): void {
+    if (this.phase !== 'evolution') return;
+    if (!canUnlock(this.evolution, id)) return;
+    const node = getEvolutionNodeEffects(id);
+    if (node) applyDeckBaseline(this.org, toEffects(node));
+    this.evolution = unlockNode(this.evolution, id);
+  }
+
+  /** 進化フェーズを終え、マップへ戻る（次の分岐を提示）。 */
+  finishEvolution(): void {
+    if (this.phase !== 'evolution') return;
+    this.advanceMap();
+  }
+
+  // --- イベント ---
+
+  private pickEvent(node: MapNode): string {
+    const rng = createRng(`${this.seed}:event:${node.id}`);
+    const list = eventIds();
+    return list[Math.floor(rng() * list.length)];
+  }
+
+  /** イベントの選択肢を選び、効果を適用してマップへ戻る。 */
+  chooseEvent(choiceIndex: number): void {
+    if (this.phase !== 'event' || !this.eventId) return;
+    const ev = getEvent(this.eventId);
+    const choice = ev?.choices[choiceIndex];
+    if (!ev || !choice) return;
+    const res = applyEventOutcome(choice.outcome, this.org, foldPassives(this.relics));
+    this.budget = Math.max(0, this.budget + res.budgetDelta);
+    if (res.grantRelic) this.grantRelic(res.grantRelic);
+    if (res.grantCard) this.addCard(res.grantCard, 1);
+    this.eventId = null;
+    const lose = evaluateLose(this.org, this.totals);
+    if (lose) {
+      this.status = 'lost';
+      this.loseReason = lose;
+      this.phase = 'lost';
+      return;
+    }
+    this.advanceMap();
+  }
+
+  // --- ショップ ---
+
+  private buildShop(node: MapNode): ShopOffer {
+    const rng = createRng(`${this.seed}:shop:${node.id}`);
+    const discount = foldPassives(this.relics).shopDiscount;
+    const cardIds = drawDraft(rng, 3);
+    const cards = cardIds.map((defId) => ({
+      defId,
+      cost: Math.max(1, Math.round((getCard(defId)?.cost ?? 12) * (1 - discount))),
+      bought: false,
+    }));
+    const relicId = this.offerRelic(rng);
+    const relic = relicId
+      ? {
+          id: relicId,
+          cost: Math.max(1, Math.round(SHOP_RELIC_COST * (1 - discount))),
+          bought: false,
+        }
+      : undefined;
+    return { cards, relic };
+  }
+
+  /** 未所持レリックを 1 つ提示（無ければ undefined）。 */
+  private offerRelic(rng: () => number): string | undefined {
+    const pool = relicIds().filter((id) => !this.relics.includes(id));
+    if (pool.length === 0) return undefined;
+    return pool[Math.floor(rng() * pool.length)];
+  }
+
+  /** ショップでカードを購入する。 */
+  buyShopCard(defId: string): void {
+    if (this.phase !== 'shop' || !this.shop) return;
+    const offer = this.shop.cards.find((c) => c.defId === defId && !c.bought);
+    if (!offer || this.budget < offer.cost) return;
+    this.budget -= offer.cost;
+    offer.bought = true;
+    this.addCard(defId, 1);
+  }
+
+  /** ショップでレリックを購入する。 */
+  buyShopRelic(): void {
+    if (this.phase !== 'shop' || !this.shop?.relic || this.shop.relic.bought) return;
+    const relic = this.shop.relic;
+    if (this.budget < relic.cost) return;
+    this.budget -= relic.cost;
+    relic.bought = true;
+    this.grantRelic(relic.id);
+  }
+
+  /** ショップを出てマップへ戻る。 */
+  leaveShop(): void {
+    if (this.phase !== 'shop') return;
+    this.shop = null;
+    this.advanceMap();
+  }
+
+  // --- 休息 ---
+
+  /** 休息の選択（heal: シニア回復 / repay: 負債返済 / upgrade: カード強化）。 */
+  restChoose(option: 'heal' | 'repay' | 'upgrade'): void {
+    if (this.phase !== 'rest') return;
+    if (option === 'heal') {
+      const bonus = foldPassives(this.relics).restHealBonus;
+      this.org.seniorHp = clamp(this.org.seniorHp + REST_HEAL + bonus, 0, 100);
+      this.org.morale = clamp(this.org.morale + 10, 0, 100);
+    } else if (option === 'repay') {
+      this.org.techDebt = Math.max(0, this.org.techDebt - REST_REPAY);
+    } else if (option === 'upgrade' && this.deck.length > 0) {
+      this.deck = upgradeCard(this.deck, this.deck[0].defId);
+    }
+    this.advanceMap();
+  }
+
+  // --- 共通 ---
+
+  /** カードをデッキへ加え、加算系（baseline）効果を即時に組織へ反映する。 */
+  private addCard(defId: string, level: number): void {
+    const def = getCard(defId);
+    if (!def) return;
+    this.deck.push({ defId, level });
+    applyDeckBaseline(this.org, scaleEffects(def.base, level));
+  }
+
+  /** レリックを獲得し、加算系効果を即時に組織へ反映する（枠上限あり）。 */
+  private grantRelic(id: string): void {
+    if (this.relics.includes(id)) return;
+    const slots = foldPassives(this.relics).relicSlots;
+    if (this.relics.length >= slots) return;
+    const relic = getRelic(id);
+    if (!relic) return;
+    this.relics.push(id);
+    if (relic.effects) applyDeckBaseline(this.org, toEffects(relic.effects));
+  }
+
+  /** 現在ノードの分岐を available に設定し、マップへ戻る。 */
+  private advanceMap(): void {
+    const node = this.position ? nodeById(this.map, this.position) : undefined;
+    this.available = node ? node.next : [];
+    this.activeNodeId = null;
+    this.sprint = null;
+    this.phase = 'map';
+  }
+
+  /** 現在のフェーズ（スナップショットを作らない軽量アクセサ）。 */
+  currentPhase(): RunState['phase'] {
+    return this.phase;
+  }
+
+  /** スプリントが進行中（自動ステップ対象）か。 */
+  sprintRunning(): boolean {
+    return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;
+  }
+
+  /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */
+  snapshot(): RunState {
+    return {
+      seed: this.seed,
+      difficulty: this.difficulty,
+      trials: [...this.trials],
+      phase: this.phase,
+      status: this.status,
+      winType: this.winType,
+      loseReason: this.loseReason,
+      map: this.map,
+      bossId: this.bossId,
+      position: this.position,
+      visited: [...this.visited],
+      available: [...this.available],
+      org: structuredClone(this.org),
+      deck: this.deck.map((c) => ({ ...c })),
+      relics: [...this.relics],
+      evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
+      budget: this.budget,
+      activeNodeId: this.activeNodeId,
+      sprint: this.sprint ? structuredClone(this.sprint) : null,
+      lastResult: this.lastResult ? { ...this.lastResult } : null,
+      draft: this.draft ? [...this.draft] : null,
+      eventId: this.eventId,
+      shop: this.shop
+        ? {
+            cards: this.shop.cards.map((c) => ({ ...c })),
+            relic: this.shop.relic ? { ...this.shop.relic } : undefined,
+          }
+        : null,
+      diagnosis: this.diagnosis,
+      sprintsPlayed: this.sprintsPlayed,
+      totals: { ...this.totals },
+      usedHeavyActions: this.usedHeavyActions,
+    };
+  }
+}
+
+export function createRunEngine(init?: RunEngineInit): RunEngine {
+  return new RunEngine(init);
+}
+
+function eventIds(): string[] {
+  return EVENT_DEFS.map((e) => e.id);
+}
+function relicIds(): string[] {
+  return RELIC_DEFS.map((r) => r.id);
+}
+function getEvolutionNodeEffects(id: string): Partial<CardEffects> | undefined {
+  return getEvolutionNode(id)?.effects;
+}

@@ -7,12 +7,16 @@
 import {
   AI_DEP_PER_TASK,
   DEBT_PER_SPREAD,
+  IDENTITY_CARD_EFFECTS,
   INCIDENT_CONTAIN_HP,
   INCIDENT_HP_COST,
   MAX_REWORK,
+  OVERTIME_CODING_MUL,
+  OVERTIME_REVIEW_MUL,
   REVIEW_HP_COST,
   REVIEW_HP_REGEN,
   codingProgressPerTick,
+  comboMultiplier,
   decideAiAssisted,
   incidentProbability,
   reviewPerTick,
@@ -23,6 +27,8 @@ import {
 import type { Rng } from './rng';
 import { getScenario } from './scenarios';
 import type {
+  ActionId,
+  CardEffects,
   Lane,
   OrgState,
   ScenarioId,
@@ -79,8 +85,17 @@ export function resolveSprintConfig(
   return { ...getScenario(scenario).sprint, ...override };
 }
 
-/** 新しいスプリント状態を生成する（全タスクは Backlog から開始）。 */
-export function createSprint(config: SprintConfig, org: OrgState, rng: Rng): SprintState {
+/**
+ * 新しいスプリント状態を生成する（全タスクは Backlog から開始）。
+ * `cardEffects` はデッキを畳み込んだ係数で、未指定（＝デッキ無し）なら
+ * Phase 1 と完全に同一の数値挙動になる。集中力は満タンで開始する（第6.2）。
+ */
+export function createSprint(
+  config: SprintConfig,
+  org: OrgState,
+  rng: Rng,
+  cardEffects: CardEffects = IDENTITY_CARD_EFFECTS,
+): SprintState {
   const tasks: Task[] = [];
   for (let i = 0; i < config.taskCount; i += 1) {
     tasks.push(newTask(i, rng));
@@ -101,10 +116,17 @@ export function createSprint(config: SprintConfig, org: OrgState, rng: Rng): Spr
       combo: 0,
       maxCombo: 0,
       seniorHpStart: org.seniorHp,
+      interventionsUsed: 0,
+      focusSpent: 0,
     },
     reviewAccumulator: 0,
     nextTaskId: config.taskCount,
     complete: false,
+    focus: config.focusMax,
+    cooldowns: {},
+    modifiers: { andonUntilTick: 0, overtimeUntilTick: 0, throttleUntilTick: 0 },
+    comboGauge: 0,
+    cardEffects,
   };
 }
 
@@ -114,15 +136,25 @@ function countLane(tasks: Task[], lane: Lane): number {
   return n;
 }
 
-/** Backlog から Coding へ、WIP 上限まで引き込む。 */
-function intake(sprint: SprintState, org: OrgState, rng: Rng): void {
+/** 残業号令が発動中か。 */
+function isOvertime(sprint: SprintState, tick: number): boolean {
+  return tick < sprint.modifiers.overtimeUntilTick;
+}
+
+/**
+ * Backlog から Coding へ、WIP 上限まで引き込む。
+ * アンドン発動中は流入を止め、AIスロットル発動中は AI を割り当てない（第6.1）。
+ */
+function intake(sprint: SprintState, org: OrgState, rng: Rng, tick: number): void {
+  if (tick < sprint.modifiers.andonUntilTick) return;
+  const throttled = tick < sprint.modifiers.throttleUntilTick;
   let coding = countLane(sprint.tasks, 'coding');
   for (const task of sprint.tasks) {
     if (coding >= sprint.config.codingSlots) break;
     if (task.lane !== 'backlog') continue;
     task.lane = 'coding';
     task.progress = 0;
-    task.aiAssisted = decideAiAssisted(org, rng);
+    task.aiAssisted = throttled ? false : decideAiAssisted(org, rng);
     if (task.aiAssisted) {
       org.aiDependency = clamp(org.aiDependency + AI_DEP_PER_TASK, 0, 100);
     }
@@ -130,11 +162,12 @@ function intake(sprint: SprintState, org: OrgState, rng: Rng): void {
   }
 }
 
-/** Coding を進め、完了したものを Review へ送る。 */
-function advanceCoding(sprint: SprintState): void {
+/** Coding を進め、完了したものを Review へ送る（残業中は加速）。 */
+function advanceCoding(sprint: SprintState, tick: number): void {
+  const boost = isOvertime(sprint, tick) ? OVERTIME_CODING_MUL : 1;
   for (const task of sprint.tasks) {
     if (task.lane !== 'coding') continue;
-    task.progress += codingProgressPerTick(task);
+    task.progress += codingProgressPerTick(task, sprint.cardEffects) * boost;
     if (task.progress >= 1) {
       task.lane = 'review';
       task.progress = 0;
@@ -142,13 +175,16 @@ function advanceCoding(sprint: SprintState): void {
   }
 }
 
-/** Review を 1 件処理し、Done / Rework / Incident に振り分ける。 */
-function reviewOne(task: Task, sprint: SprintState, org: OrgState, rng: Rng): void {
+/**
+ * Review を 1 件処理し、Done / Rework / Incident に振り分ける。
+ * 介入アクション（割り込みレビュー等）からも呼ばれる（第6.1）。
+ */
+export function reviewOne(task: Task, sprint: SprintState, org: OrgState, rng: Rng): void {
   const m = sprint.metrics;
   org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST, 0, 100);
 
   // 1) 障害（Incident）判定
-  if (rng() < incidentProbability(org, task)) {
+  if (rng() < incidentProbability(org, task, sprint.cardEffects)) {
     m.incidentCount += 1;
     m.combo = 0;
     task.incident = true;
@@ -169,7 +205,10 @@ function reviewOne(task: Task, sprint: SprintState, org: OrgState, rng: Rng): vo
   }
 
   // 2) 手戻り判定（AI依存度が高いほど増える。第22.5 の不変条件）
-  if (task.reworkAttempts < MAX_REWORK && rng() < reworkProbability(org, task)) {
+  if (
+    task.reworkAttempts < MAX_REWORK &&
+    rng() < reworkProbability(org, task, sprint.cardEffects)
+  ) {
     m.reworkCount += 1;
     m.combo = 0;
     task.wasReworked = true;
@@ -179,22 +218,24 @@ function reviewOne(task: Task, sprint: SprintState, org: OrgState, rng: Rng): vo
     return;
   }
 
-  // 3) 出荷（Done）
+  // 3) 出荷（Done）。コンボ（連続 Done）に応じた出荷倍率が掛かる（第6.2）。
   task.lane = 'done';
   task.incident = false;
   m.doneCount += 1;
   m.completedCount += 1;
-  m.delivered += taskValue(task);
-  org.deliveryScore += taskValue(task);
-  if (task.aiAssisted) m.aiAssistedCompleted += 1;
   m.combo += 1;
   if (m.combo > m.maxCombo) m.maxCombo = m.combo;
+  const value = Math.round(taskValue(task) * comboMultiplier(m.combo));
+  m.delivered += value;
+  org.deliveryScore += value;
+  if (task.aiAssisted) m.aiAssistedCompleted += 1;
   org.morale = clamp(org.morale + 0.5, 0, 100);
 }
 
-/** Review をシニア体力に応じたスループットで処理する。 */
-function advanceReview(sprint: SprintState, org: OrgState, rng: Rng): void {
-  sprint.reviewAccumulator += reviewPerTick(org);
+/** Review をシニア体力に応じたスループットで処理する（残業中は加速）。 */
+function advanceReview(sprint: SprintState, org: OrgState, rng: Rng, tick: number): void {
+  const boost = isOvertime(sprint, tick) ? OVERTIME_REVIEW_MUL : 1;
+  sprint.reviewAccumulator += reviewPerTick(org, sprint.cardEffects) * boost;
   while (sprint.reviewAccumulator >= 1) {
     const task = sprint.tasks.find((t) => t.lane === 'review');
     if (!task) {
@@ -245,8 +286,8 @@ function forceDrain(sprint: SprintState, org: OrgState): void {
 export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: number): void {
   if (sprint.complete) return;
 
-  intake(sprint, org, rng);
-  advanceCoding(sprint);
+  intake(sprint, org, rng, tick);
+  advanceCoding(sprint, tick);
 
   // 渋滞の指標: Review 待ち行列の最大長を記録（処理前に計測）。
   const reviewQueue = countLane(sprint.tasks, 'review');
@@ -254,17 +295,28 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
     sprint.metrics.reviewQueueMax = reviewQueue;
   }
 
-  advanceReview(sprint, org, rng);
+  advanceReview(sprint, org, rng, tick);
   advanceRework(sprint);
 
   // シニア体力の自然回復。
   org.seniorHp = clamp(org.seniorHp + REVIEW_HP_REGEN, 0, 100);
+
+  // 介入アクションのクールダウンを 1 tick 進める（第6.1）。
+  tickCooldowns(sprint);
 
   if (isDrained(sprint)) {
     sprint.complete = true;
   } else if (tick >= sprint.config.maxTicks) {
     forceDrain(sprint, org);
     sprint.complete = true;
+  }
+}
+
+/** アクションごとの残りクールダウンを 1 tick 減らす（0 で Ready）。 */
+function tickCooldowns(sprint: SprintState): void {
+  for (const key of Object.keys(sprint.cooldowns) as ActionId[]) {
+    const remaining = sprint.cooldowns[key] ?? 0;
+    if (remaining > 0) sprint.cooldowns[key] = remaining - 1;
   }
 }
 

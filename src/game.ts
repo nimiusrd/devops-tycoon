@@ -8,7 +8,13 @@
 import { createEngine, type Engine } from './sim/engine';
 import { resolveSeedFromLocation } from './sim/seed';
 import { DEFAULT_SCENARIO } from './sim/scenarios';
-import type { ScenarioId, SimState, SprintResult } from './sim/types';
+import type {
+  ActionId,
+  InterventionOutcome,
+  ScenarioId,
+  SimState,
+  SprintResult,
+} from './sim/types';
 
 export interface GameHandle {
   /** 自動進行を止める。 */
@@ -19,6 +25,12 @@ export interface GameHandle {
   isPaused(): boolean;
   /** 指定 ms ぶん手動で前進させ、進行後の状態を返す。 */
   step(ms: number): SimState;
+  /** 介入アクションを発動し、結果（成否）を返す（第6章）。 */
+  dispatch(id: ActionId): InterventionOutcome;
+  /** ドラフトで選んだカードをデッキに加え、次スプリントを開始して状態を返す。 */
+  chooseCard(defId: string): SimState;
+  /** ドラフトをスキップして次スプリントを開始する。 */
+  skipDraft(): SimState;
   /** seed/シナリオ/AIフラグを読み込み直して状態をリセットし、初期状態を返す。 */
   loadState(seed: string, scenario?: ScenarioId, aiEnabled?: boolean): SimState;
   /** AI 導入フラグを切り替え、同一 seed でスプリントを再初期化する。 */
@@ -59,6 +71,17 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     step(ms: number) {
       engine.step(ms);
+      return engine.snapshot();
+    },
+    dispatch(id: ActionId) {
+      return engine.dispatch(id);
+    },
+    chooseCard(defId: string) {
+      engine.nextSprint(defId);
+      return engine.snapshot();
+    },
+    skipDraft() {
+      engine.nextSprint();
       return engine.snapshot();
     },
     loadState(nextSeed: string, nextScenario: ScenarioId = currentScenario, aiEnabled?: boolean) {

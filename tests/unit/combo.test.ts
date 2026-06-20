@@ -1,0 +1,67 @@
+import { describe, expect, it } from 'vitest';
+import { COMBO_BONUS_CAP, comboMultiplier } from '../../src/sim/model';
+import { createOrgState } from '../../src/sim/org';
+import { createSprint, resolveSprintConfig, reviewOne } from '../../src/sim/sprint';
+import type { Task } from '../../src/sim/types';
+
+const reviewTask = (id: number): Task => ({
+  id,
+  kind: 'normal',
+  highValue: false,
+  aiAssisted: false,
+  lane: 'review',
+  progress: 0,
+  reworkAttempts: 0,
+  wasReworked: false,
+  incident: false,
+  debt: false,
+});
+
+describe('comboMultiplier（第6.2）', () => {
+  it('コンボ 0 で 1.0、段が上がるほど増える', () => {
+    expect(comboMultiplier(0)).toBe(1);
+    expect(comboMultiplier(5)).toBeGreaterThan(comboMultiplier(0));
+    expect(comboMultiplier(10)).toBeGreaterThan(comboMultiplier(5));
+  });
+
+  it('上限で頭打ちになる', () => {
+    expect(comboMultiplier(1000)).toBeCloseTo(1 + COMBO_BONUS_CAP);
+  });
+});
+
+describe('コンボが出荷ポイントに倍率として乗る（第6.2 / 第18.2）', () => {
+  it('連続 Done が伸びるほど 1 件あたりの出荷が増える', () => {
+    // rng が常に 0.99 を返せば incident/rework 判定は必ず外れ、必ず Done になる。
+    const rng = () => 0.99;
+    const org = createOrgState('default', false);
+    const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+    sprint.tasks = Array.from({ length: 5 }, (_, i) => reviewTask(i));
+
+    const deltas: number[] = [];
+    let last = 0;
+    for (const t of sprint.tasks) {
+      reviewOne(t, sprint, org, rng);
+      deltas.push(sprint.metrics.delivered - last);
+      last = sprint.metrics.delivered;
+    }
+
+    expect(sprint.metrics.combo).toBe(5);
+    expect(sprint.metrics.maxCombo).toBe(5);
+    expect(sprint.tasks.every((t) => t.lane === 'done')).toBe(true);
+    // 倍率が伸びるので 1 件あたりの出荷は非減少、かつ最後は最初より大きい。
+    for (let i = 1; i < deltas.length; i += 1) {
+      expect(deltas[i]).toBeGreaterThanOrEqual(deltas[i - 1]);
+    }
+    expect(deltas[deltas.length - 1]).toBeGreaterThan(deltas[0]);
+  });
+
+  it('手戻りでコンボが途切れる', () => {
+    // rng=0 なら incident 判定に必ず当たり、コンボは積み上がらない。
+    const rng = () => 0;
+    const org = createOrgState('default', true);
+    const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+    sprint.tasks = [reviewTask(0)];
+    reviewOne(sprint.tasks[0], sprint, org, rng);
+    expect(sprint.metrics.combo).toBe(0);
+  });
+});

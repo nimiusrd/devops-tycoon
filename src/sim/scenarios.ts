@@ -44,6 +44,7 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
       taskCount: 28,
       codingSlots: 6,
       maxTicks: 1500,
+      focusMax: 12,
     },
   },
 };

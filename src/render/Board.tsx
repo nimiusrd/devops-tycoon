@@ -5,6 +5,7 @@
  * Backlog → Coding → Review → Rework → Done を流れる様子を DOM で表示する。
  * MVP3 以降で PixiJS へ移植する（第22.4）。
  */
+import type { CSSProperties } from 'react';
 import type { Lane, SimState, Task } from '../sim/types';
 import { taskColor, taskDiameter, taskVariant } from './taskView';
 
@@ -38,6 +39,9 @@ export interface BoardProps {
   state: SimState;
 }
 
+/** Review 渋滞ヒートマップの強度（0..1）。この件数で赤熱が最大に達する。 */
+const HEAT_MAX_QUEUE = 16;
+
 export function Board({ state }: BoardProps) {
   const byLane = (lane: Lane) => state.sprint.tasks.filter((t) => t.lane === lane);
 
@@ -47,11 +51,15 @@ export function Board({ state }: BoardProps) {
         const tasks = byLane(id);
         const shown = id === 'done' ? tasks.slice(0, DONE_DISPLAY_CAP) : tasks;
         const congested = id === 'review' && tasks.length >= 12;
+        // 渋滞ヒートマップ: Review レーンは件数に応じて赤熱する（第18.2）。
+        const heat = id === 'review' ? Math.min(1, tasks.length / HEAT_MAX_QUEUE) : 0;
         return (
           <section
             key={id}
             className={`lane lane-${id}${congested ? ' congested' : ''}`}
             data-testid={`lane-${id}`}
+            data-heat={id === 'review' ? heat.toFixed(2) : undefined}
+            style={id === 'review' ? ({ '--heat': heat } as CSSProperties) : undefined}
           >
             <header className="lane-head">
               <span className="lane-title">

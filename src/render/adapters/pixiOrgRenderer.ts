@@ -101,6 +101,12 @@ interface FirePulse {
   fire: number;
 }
 
+interface FittedLayout {
+  width: number;
+  height: number;
+  key: string;
+}
+
 function makeText(style: { fontSize: number; fill: string; bold?: boolean }): Text {
   return new Text({
     text: '',
@@ -357,7 +363,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private disposed = false;
   private readonly opts: PixiOrgRendererOptions;
   private lastTeams: readonly Team[] = [];
-  private fittedLayout: { width: number; height: number } | null = null;
+  private fittedLayout: FittedLayout | null = null;
   private readonly firePulses: FirePulse[] = [];
   private tickerBound = false;
   private fieldView: OrgFieldView = { scrollX: 0, scrollY: 0, width: 800, height: 600 };
@@ -478,11 +484,16 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     if (!vp) return;
     const layout = layoutIso(teams, this.opts.isoBase, this.opts.pad);
     if (layout.width <= 0 || layout.height <= 0) return;
-    if (this.fittedLayout?.width === layout.width && this.fittedLayout.height === layout.height)
+    const key = layout.placed.map(({ item }) => `${item.id}:${item.gridX}:${item.gridY}`).join('|');
+    if (
+      this.fittedLayout?.width === layout.width &&
+      this.fittedLayout.height === layout.height &&
+      this.fittedLayout.key === key
+    )
       return;
     vp.fit(true, layout.width, layout.height);
     vp.moveCenter(layout.width / 2, layout.height / 2);
-    this.fittedLayout = { width: layout.width, height: layout.height };
+    this.fittedLayout = { width: layout.width, height: layout.height, key };
   }
 
   /** 最新チーム列を viewport カメラで描く（React / pan/zoom 共通入口）。 */

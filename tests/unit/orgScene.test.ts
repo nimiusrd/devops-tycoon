@@ -103,10 +103,14 @@ describe('planOrgScene', () => {
         isPlayer: true,
       }),
     ];
-    const plan = planOrgScene(teams, BIG_CAMERA, opts({
-      zoomScale: LOD_BADGE_MAX,
-      deptColor: (id) => (id === 'eng' ? '#aabbcc' : '#000000'),
-    }));
+    const plan = planOrgScene(
+      teams,
+      BIG_CAMERA,
+      opts({
+        zoomScale: LOD_BADGE_MAX,
+        deptColor: (id) => (id === 'eng' ? '#aabbcc' : '#000000'),
+      }),
+    );
     const s = plan.sprites[0];
     expect(s.name).toBe('Platform');
     expect(s.deptColor).toBe('#aabbcc');

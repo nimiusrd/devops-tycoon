@@ -72,10 +72,7 @@ export function islandTitle(name: string, health: TeamHealth): string {
  * チームと LOD から DOM `TeamIsland` 相当のラベル列を導出する。
  * 同一入力なら常に同一出力（決定論）。
  */
-export function teamIslandView(
-  team: Team,
-  detail: OrgIslandDetail,
-): TeamIslandLabels {
+export function teamIslandView(team: Team, detail: OrgIslandDetail): TeamIslandLabels {
   const title = islandTitle(team.name, team.health);
   const fire = fireLabel(team.incidents);
 

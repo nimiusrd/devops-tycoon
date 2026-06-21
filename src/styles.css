@@ -1637,10 +1637,6 @@ button.card:active {
   .formation-grid {
     grid-template-columns: 1fr;
   }
-  .org-hud,
-  .dept-hud {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* ===== Phase 5: 組織スケール / ズーム階層（第4.7〜4.11） ===== */
@@ -2087,4 +2083,12 @@ button.card:active {
 }
 .industry-table .trend-1 {
   color: var(--mint);
+}
+
+/* 集約HUD のモバイル段組（基底の 8/6 列より後に置いて確実に上書きする）。 */
+@media (max-width: 860px) {
+  .org-hud,
+  .dept-hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

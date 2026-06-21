@@ -27,6 +27,13 @@ export interface OrgScaleInput {
   adjust?: OrgAdjustState;
   /** プレイヤーチームの規模（エンジニア数。編成サイズ等から。既定 5）。 */
   playerEngineers?: number;
+  /**
+   * 進行中スプリントの現在のレビュー待ち行列（`totals` は resolveSprint 後に更新される
+   * ため、スプリント中に俯瞰すると行列が古くなる。現在値を畳み込んで現場を映す）。
+   */
+  liveReviewQueue?: number;
+  /** 進行中スプリントで盤面に残る未鎮火インシデント数（同上）。 */
+  liveIncidents?: number;
 }
 
 /** チーム名（A,B,C... 26 を超えたら番号）。 */
@@ -59,8 +66,9 @@ function playerRaw(input: OrgScaleInput) {
   const { org, totals } = input;
   return {
     aiDependency: Math.round(org.aiDependency),
-    reviewQueue: totals.reviewQueuePeak,
-    incidents: Math.max(0, totals.incidents - totals.contained),
+    // スプリント中は現在の行列/インシデントを優先し、停止中は累積ピーク/未鎮火数を使う。
+    reviewQueue: Math.max(totals.reviewQueuePeak, input.liveReviewQueue ?? 0),
+    incidents: Math.max(Math.max(0, totals.incidents - totals.contained), input.liveIncidents ?? 0),
     morale: Math.round(org.morale),
     techDebt: Math.round(org.techDebt),
     shipping: Math.round(org.deliveryScore),

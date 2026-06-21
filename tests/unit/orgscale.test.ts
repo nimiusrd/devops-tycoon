@@ -11,6 +11,7 @@ import {
   emptyAdjustState,
   generateOrgScale,
   healthRank,
+  isOnFire,
   teamHealth,
   type OrgScaleInput,
   type Team,
@@ -72,6 +73,22 @@ describe('teamHealth', () => {
   });
   it('それ以外は healthy', () => {
     expect(teamHealth({ reviewQueue: 1, incidents: 0, aiDependency: 30 })).toBe('healthy');
+  });
+});
+
+describe('isOnFire', () => {
+  it('Review Hell でなくても未鎮火インシデントを抱えるチームは炎上と数える', () => {
+    expect(isOnFire({ health: 'healthy', incidents: 1 })).toBe(true);
+    expect(isOnFire({ health: 'congested', incidents: 0 })).toBe(false);
+    expect(isOnFire({ health: 'reviewHell', incidents: 0 })).toBe(true);
+  });
+
+  it('集約の炎上数は health ラベルだけでなくインシデント保有チームも含む', () => {
+    const teams: Team[] = [
+      makeTeam({ id: 'a', health: 'healthy', incidents: 1 }),
+      makeTeam({ id: 'b', health: 'congested', incidents: 0 }),
+    ];
+    expect(aggregateDepartment(DEPARTMENT_DEFS[0], teams).onFire).toBe(1);
   });
 });
 
@@ -146,6 +163,19 @@ describe('generateOrgScale', () => {
     );
     expect(boosted.infra.aiGuideline).toBeGreaterThan(base.infra.aiGuideline);
     expect(boosted.aiDependency).toBeLessThan(base.aiDependency);
+  });
+
+  it('スプリント中の現在行列(liveReviewQueue)を畳み込み、累積ピークより優先する', () => {
+    const base = generateOrgScale(input({ totals: totals({ reviewQueuePeak: 0 }) }));
+    const live = generateOrgScale(
+      input({ totals: totals({ reviewQueuePeak: 0 }), liveReviewQueue: 14 }),
+    );
+    const playerOf = (s: ReturnType<typeof generateOrgScale>) =>
+      s.departments.flatMap((d) => d.teams).find((t) => t.isPlayer)!;
+    expect(playerOf(base).reviewQueue).toBe(0);
+    expect(playerOf(live).reviewQueue).toBe(14);
+    // 行列 14 → Review Hell（炎上）として現場が映る。
+    expect(playerOf(live).health).toBe('reviewHell');
   });
 
   it('採用ドラフト(extraTeams)で先頭部門のチームが増える', () => {

@@ -662,9 +662,23 @@ export class RunEngine {
     this.zoom = { ...this.zoom, level: 'department', deptId: id };
   }
 
-  /** チームへドリルダウンして現場へ着地する（カメラ寄り演出の終点）。 */
+  /**
+   * チームへドリルダウンする（第4.11）。
+   * 実在する現場はプレイヤーチームのみなので、プレイヤーチームを選んだときだけ
+   * 現場（team）へ着地する。他の合成チームには遊べる盤面が無いため、嘘の着地を避け、
+   * そのチームが属する部門の部署ビューへ寄せる（注意の粒度を一段だけ下げる）。
+   * 未知の ID は無視する。
+   */
   focusTeam(id: string): void {
-    this.zoom = { ...this.zoom, level: 'team', teamId: id };
+    const team = this.buildOrgScale()
+      .departments.flatMap((d) => d.teams)
+      .find((t) => t.id === id);
+    if (!team) return;
+    if (team.isPlayer) {
+      this.zoom = { ...this.zoom, level: 'team', teamId: id };
+    } else {
+      this.zoom = { ...this.zoom, level: 'department', deptId: team.deptId, teamId: id };
+    }
   }
 
   /** 業界ランキングの種別タブを切り替える。 */
@@ -686,6 +700,16 @@ export class RunEngine {
 
   /** 現在の全社マップ集約を生成する（決定論。第4.8）。 */
   private buildOrgScale(): OrgScaleState {
+    // 進行中スプリントの現在の渋滞・炎上を取り、俯瞰時の現場を最新に保つ。
+    const live = this.sprint
+      ? {
+          liveReviewQueue: Math.max(
+            this.sprint.metrics.reviewQueueMax,
+            this.sprint.tasks.filter((t) => t.lane === 'review').length,
+          ),
+          liveIncidents: this.sprint.tasks.filter((t) => t.incident).length,
+        }
+      : {};
     return generateOrgScale({
       seed: this.seed,
       org: this.org,
@@ -694,6 +718,7 @@ export class RunEngine {
       budget: this.budget,
       adjust: this.orgAdjust,
       playerEngineers: this.roster.members.length,
+      ...live,
     });
   }
 

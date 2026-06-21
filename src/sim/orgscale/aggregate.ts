@@ -18,9 +18,14 @@ export function teamHealth(
   return 'healthy';
 }
 
-/** 健全度が「炎上中」か（炎上チーム数の母数）。 */
-export function isOnFire(team: Pick<Team, 'health'>): boolean {
-  return team.health === 'reviewHell';
+/**
+ * チームが「炎上中」か（炎上チーム数の母数）。
+ * Review Hell（渋滞崩壊）に加え、未鎮火のインシデントを抱えるチームも炎上と数える。
+ * UI のチーム島が `incidents > 0` で 🔥 を出すのと一致させ、全社スコアの炎上ペナルティも
+ * 取りこぼさないようにする（health ラベルだけで判定しない）。
+ */
+export function isOnFire(team: Pick<Team, 'health' | 'incidents'>): boolean {
+  return team.health === 'reviewHell' || team.incidents > 0;
 }
 
 /** 健全度の悪さ順位（集約時に最悪寄りを採るための重み）。 */

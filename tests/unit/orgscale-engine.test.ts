@@ -51,7 +51,7 @@ describe('RunEngine: ズーム階層', () => {
     expect(e.snapshot().zoom.level).toBe('team');
   });
 
-  it('チームへドリルダウンすると現場へ着地する', () => {
+  it('プレイヤーチームへドリルダウンすると現場へ着地する', () => {
     const e = started();
     e.zoomTo('company');
     e.focusTeam('product-t0');
@@ -59,6 +59,24 @@ describe('RunEngine: ズーム階層', () => {
     expect(s.zoom.level).toBe('team');
     expect(s.zoom.teamId).toBe('product-t0');
     expect(s.orgScale).toBeNull();
+  });
+
+  it('合成チームは現場が無いので、その部門の部署ビューへ寄せる（嘘の着地を避ける）', () => {
+    const e = started();
+    e.zoomTo('company');
+    e.focusTeam('platform-t1');
+    const s = e.snapshot();
+    expect(s.zoom.level).toBe('department');
+    expect(s.zoom.deptId).toBe('platform');
+    expect(s.zoom.teamId).toBe('platform-t1');
+    expect(s.orgScale).not.toBeNull();
+  });
+
+  it('未知のチーム ID は無視される', () => {
+    const e = started();
+    e.zoomTo('company');
+    e.focusTeam('does-not-exist');
+    expect(e.snapshot().zoom.level).toBe('company');
   });
 
   it('業界へズームするとランキングが生成され、種別を切り替えられる', () => {

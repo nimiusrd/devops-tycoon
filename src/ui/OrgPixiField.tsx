@@ -4,7 +4,7 @@
  * DOM の HUD / 部門チップ / レバー / 共通基盤ハブは親が描き、ここはチーム島だけ。
  * 実 WebGL は init() 以降ブラウザ上でのみ動く（CI/Node ではマウントされない）。
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { Team } from '../sim/orgscale/types';
 import { PixiOrgRenderer } from '../render/adapters/pixiOrgRenderer';
 import { ORG_ISO, ORG_PAD, ORG_SPRITE_BUDGET } from '../render/orgView';
@@ -18,6 +18,11 @@ export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiOrgRenderer | null>(null);
   const teamsRef = useRef(teams);
+  const onFocusTeamRef = useRef(onFocusTeam);
+
+  useLayoutEffect(() => {
+    onFocusTeamRef.current = onFocusTeam;
+  }, [onFocusTeam]);
 
   useEffect(() => {
     teamsRef.current = teams;
@@ -32,7 +37,7 @@ export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
       pad: ORG_PAD,
       spriteBudget: ORG_SPRITE_BUDGET,
       cullMargin: ORG_ISO.tileW / 2,
-      onFocusTeam,
+      onFocusTeam: (id) => onFocusTeamRef.current(id),
     });
     rendererRef.current = renderer;
 
@@ -59,7 +64,7 @@ export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
       renderer.dispose();
       rendererRef.current = null;
     };
-  }, [onFocusTeam]);
+  }, []);
 
   useEffect(() => {
     const renderer = rendererRef.current;

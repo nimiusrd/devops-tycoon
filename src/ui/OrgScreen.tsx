@@ -32,10 +32,7 @@ export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever 
     () => Object.fromEntries(org.departments.map((d) => [d.def.id, d.def.color])),
     [org.departments],
   );
-  const deptColor = useCallback(
-    (id: string) => deptColorMap[id] ?? '#6b4a9e',
-    [deptColorMap],
-  );
+  const deptColor = useCallback((id: string) => deptColorMap[id] ?? '#6b4a9e', [deptColorMap]);
   const fieldHeight = Math.max(260, layout.height);
 
   return (

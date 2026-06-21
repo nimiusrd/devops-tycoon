@@ -174,13 +174,7 @@ function drawFireRing(g: Graphics, halfW: number, halfH: number, fire: number): 
   g.visible = true;
 }
 
-function drawDiamond(
-  g: Graphics,
-  halfW: number,
-  halfH: number,
-  fill: string,
-  alpha: number,
-): void {
+function drawDiamond(g: Graphics, halfW: number, halfH: number, fill: string, alpha: number): void {
   g.clear();
   g.alpha = 1;
   g.moveTo(0, -halfH);
@@ -193,7 +187,10 @@ function drawDiamond(
 }
 
 /** 菱形の当たり判定（タイル矩形より狭く、重なり時の誤クリックを減らす）。 */
-function diamondHitArea(halfW: number, halfH: number): { contains: (x: number, y: number) => boolean } {
+function diamondHitArea(
+  halfW: number,
+  halfH: number,
+): { contains: (x: number, y: number) => boolean } {
   return {
     contains(x: number, y: number) {
       if (halfW <= 0 || halfH <= 0) return false;

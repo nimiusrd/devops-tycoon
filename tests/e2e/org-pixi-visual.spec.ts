@@ -16,8 +16,18 @@ type GameWindow = Window & {
   __orgPixiTest?: {
     focusTeamCamera(teamId: string): Promise<void>;
     getZoomScale(): number | null;
+    freezeForScreenshot(): void;
   };
 };
+
+/** Pixi ticker / 炎上点滅を止めて canvas を決定論的にする。 */
+async function freezePixiForScreenshot(page: import('@playwright/test').Page) {
+  await page.evaluate(() => {
+    const hook = (window as GameWindow).__orgPixiTest;
+    if (!hook) throw new Error('__orgPixiTest hook missing (dev server + renderer=pixi が必要)');
+    hook.freezeForScreenshot();
+  });
+}
 
 /** Pixi 視覚回帰は opt-in のみ（CI 既定 job では WebGL を回さない）。 */
 const pixiE2e = !!process.env.PIXI_E2E;
@@ -79,6 +89,7 @@ test.describe('Pixi 全社マップ視覚回帰 @pixi', () => {
     await openPixiOrgMap(page, PIXI_SEED);
     await expect(page.getByTestId('org-screen')).toBeVisible();
     await stabilizeForScreenshot(page);
+    await freezePixiForScreenshot(page);
 
     await expect(page.getByTestId('org-pixi-mount')).toHaveScreenshot('org-pixi-company-fit.png', {
       animations: 'disabled',
@@ -90,6 +101,7 @@ test.describe('Pixi 全社マップ視覚回帰 @pixi', () => {
     await openPixiOrgMap(page, PIXI_SEED);
     await stabilizeForScreenshot(page);
     await focusTeamForCardLod(page, CARD_LOD_TEAM_ID);
+    await freezePixiForScreenshot(page);
 
     await expect(page.getByTestId('org-pixi-mount')).toHaveScreenshot('org-pixi-card-lod.png', {
       animations: 'disabled',

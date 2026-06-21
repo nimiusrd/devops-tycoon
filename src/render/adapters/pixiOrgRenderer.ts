@@ -609,6 +609,18 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     }
   }
 
+  /**
+   * 視覚回帰向け: Pixi ticker と炎上 alpha を時間非依存の固定値へ止める。
+   * CSS animation 停止だけでは canvas 内の点滅が残るため E2E 専用。
+   */
+  freezeForScreenshot(): void {
+    this.app?.ticker.stop();
+    const phase = 0.5;
+    for (const { gfx, fire } of this.firePulses) {
+      gfx.alpha = 0.55 + phase * 0.45 * fire;
+    }
+  }
+
   /** viewport の可視範囲を `CameraRect` へ変換する（カリング供給）。 */
   getCameraRect(): CameraRect {
     const vp = this.viewport;

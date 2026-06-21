@@ -15,6 +15,7 @@ declare global {
     __orgPixiTest?: {
       focusTeamCamera(teamId: string): Promise<void>;
       getZoomScale(): number | null;
+      freezeForScreenshot(): void;
     };
   }
 }
@@ -139,6 +140,7 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
         window.__orgPixiTest = {
           focusTeamCamera: (teamId) => renderer.focusTeamCamera(teamsRef.current, teamId, false),
           getZoomScale: () => renderer.getZoomScale(),
+          freezeForScreenshot: () => renderer.freezeForScreenshot(),
         };
       }
     });

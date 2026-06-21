@@ -484,9 +484,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     if (!vp) return;
     const layout = layoutIso(teams, this.opts.isoBase, this.opts.pad);
     if (layout.width <= 0 || layout.height <= 0) return;
-    const key = layout.placed
-      .map(({ item }) => `${item.id}:${item.gridX}:${item.gridY}`)
-      .join('|');
+    const key = layout.placed.map(({ item }) => `${item.id}:${item.gridX}:${item.gridY}`).join('|');
     if (
       this.fittedLayout?.width === layout.width &&
       this.fittedLayout.height === layout.height &&

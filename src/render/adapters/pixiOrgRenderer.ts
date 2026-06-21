@@ -70,6 +70,9 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     }
 
     mount.appendChild(app.canvas);
+    // pixi-viewport の wheel は events.domElement に付く。既定は canvas だが、
+    // mount（org-field 内）に限定しないとオーバーレイ上の scroll でも map が zoom する。
+    app.renderer.events.setTargetElement(mount);
 
     const viewport = new Viewport({
       events: app.renderer.events,

@@ -6,26 +6,26 @@ Phase 6a（React 接続・pan/zoom・カリング）完了後の続き。出典�
 
 ---
 
-## 1. 現状（Phase 6a 完了）
+## 1. 現状（Phase 6a–6c 完了 / 6d–6e 残）
 
 | 項目 | 状態 |
 | --- | --- |
 | `?renderer=pixi` opt-in | ✅ `OrgScreen` → `OrgPixiField` → `PixiOrgRenderer` |
 | pan / zoom / カリング | ✅ pixi-viewport + `getCameraRect()` + `planOrgScene` |
 | 座標系 | ✅ `isoLayoutOrigin` で DOM `layoutIso` と一致 |
-| チーム島の見た目 | ⚠ 菱形 + 健全度 tint + 炎上 stroke のみ（**情報量不足**） |
-| `focusDept` / `zoomTo` と viewport 同期 | ❌ 未接続 |
-| 性能予算 DoD（§4 数値固定） | ❌ 未計測・未テスト化 |
-| 視覚回帰 | ❌ 未着手（判断保留） |
+| チーム島の見た目 | ✅ Container( 菱形 + カード/バッジ/ドット LOD )。DOM 同等の情報量（6b 完了） |
+| `focusDept` / `zoomTo` と viewport 同期 | ✅ 部門チップ / パンくず / 島クリックと viewport を同期（6c 完了） |
+| 性能予算 DoD（§4 数値固定） | ⚠ Vitest 回帰（culled / overBudget / プール上限）はあり。実測 FPS / メモリ・大規模 fixture・定数確定は未（6d / ローカル計測待ち） |
+| 視覚回帰 | ❌ 未着手（判断保留 / 6e 任意） |
 
-**ギャップ（DOM `TeamIsland` にあって Pixi にないもの）**
+**ギャップ（DOM `TeamIsland` にあって Pixi にないもの）** — 6b-2 で解消済み（✅）
 
-- 部門色の枠線
-- チーム名（プレイヤー ★）
-- 出荷 / AI 依存度
-- 炎上件数（🔥N）
-- 健全度バッジ・カード型レイアウト（116px 幅）
-- ホバー強調
+- ✅ 部門色の枠線
+- ✅ チーム名（プレイヤー ★）
+- ✅ 出荷 / AI 依存度
+- ✅ 炎上件数（🔥N）
+- ✅ 健全度バッジ・カード型レイアウト（116px 幅）
+- ✅ ホバー強調
 
 ---
 
@@ -89,11 +89,11 @@ interface OrgSprite {
 
 `planOrgScene` に `zoomScale: number` を opts で渡す。scale は Pixi 側 `viewport.scale.x` から供給。
 
-**DoD**
+**DoD** — ✅ 完了（`src/render/orgIslandView.ts` / `orgScene.ts` 拡張、`tests/unit/orgIslandView.test.ts` / `orgScene.test.ts` 緑）
 
-- [ ] 同一 Team 入力で DOM 相当のラベル文字列が純関数で決定論的に導出される
-- [ ] LOD 境界値の Vitest が緑
-- [ ] 既存 `orgScene.test.ts` が拡張フィールド込みで緑
+- [x] 同一 Team 入力で DOM 相当のラベル文字列が純関数で決定論的に導出される
+- [x] LOD 境界値の Vitest が緑
+- [x] 既存 `orgScene.test.ts` が拡張フィールド込みで緑
 
 ---
 
@@ -116,11 +116,11 @@ interface OrgSprite {
 - 長いチーム名は `orgIslandView.truncateName(name, maxWidth)` で省略。
 - ヒット領域は Container 全体（card サイズに拡張）。
 
-**DoD**
+**DoD** — ✅ 完了（`PixiOrgRenderer` を `SpritePool<Container>` 化し、card/badge/dot の LOD・部門色 stroke・★ gold outline・炎上 stroke 点滅を実装）
 
-- [ ] `/?renderer=pixi&seed=zoom-e2e` で全社マップを開き、**ズームイン時に DOM と同等の情報**（名前・出荷・AI・炎上・部門枠・★）が読める
-- [ ] ズームアウト時に LOD でラベルが間引かれ、フレーム落ちしない
-- [ ] 島クリックで `onFocusTeam` が動く（既存挙動維持）
+- [x] `/?renderer=pixi&seed=zoom-e2e` で全社マップを開き、**ズームイン時に DOM と同等の情報**（名前・出荷・AI・炎上・部門枠・★）が読める
+- [x] ズームアウト時に LOD でラベルが間引かれ、フレーム落ちしない
+- [x] 島クリックで `onFocusTeam` が動く（既存挙動維持）
 
 ---
 
@@ -136,11 +136,11 @@ interface OrgSprite {
 | `zoomTo('company')` 復帰 | `fitToContent` 相当へ animate |
 | 部門チップクリック | 既存 `onFocusDept` + viewport アニメ |
 
-**DoD**
+**DoD** — ✅ 完了（`OrgPixiField` の `focusCompany` / `focusDepartment` / `focusTeamCamera` を `src/render/orgCamera.ts` の純TS bounds で実装し、`OrgScreen` の部門チップ / パンくず / 島クリックへ接続）
 
-- [ ] 部門チップ → 該当ゾーンへカメラが寄る
-- [ ] パンくず「全社」→ 全体 fit に戻る
-- [ ] プレイヤー島クリック → ドリルダウン（engine 側は既存のまま）
+- [x] 部門チップ → 該当ゾーンへカメラが寄る
+- [x] パンくず「全社」→ 全体 fit に戻る
+- [x] プレイヤー島クリック → ドリルダウン（engine 側は既存のまま）
 
 ---
 
@@ -163,11 +163,11 @@ interface OrgSprite {
 | LOD 閾値 | [`src/render/orgIslandView.ts`](../src/render/orgIslandView.ts) | scale 境界 |
 | Vitest fixture | 大規模 Team 配列（100 / 500 / 1000 件） | `overBudget === 0` または許容値 |
 
-**DoD**
+**DoD** — ⚠ 部分完了。Vitest 回帰（`orgScene.test.ts` の `culled` / `overBudget`、`iso.test.ts` のプール上限）と CI 非依存は満たすが、実測 FPS / メモリ・大規模 fixture・`ORG_SPRITE_BUDGET`（暫定 500）の数値確定はホストブラウザ計測待ちで未着手。
 
-- [ ] §4 表の各指標に**実測値と上限**が plan または定数コメントに記載されている
-- [ ] Vitest で `culled` / `overBudget` / プール上限が回帰検知できる
-- [ ] **CI では FPS を assert しない**（第22.5 準拠）
+- [ ] §4 表の各指標に**実測値と上限**が plan または定数コメントに記載されている（未 / ローカル計測待ち）
+- [x] Vitest で `culled` / `overBudget` / プール上限が回帰検知できる
+- [x] **CI では FPS を assert しない**（第22.5 準拠）
 
 ---
 
@@ -215,17 +215,18 @@ interface OrgSprite {
 
 - [x] `?renderer=pixi` で全社マップが Pixi 描画（6a）
 - [x] ドリルダウン / パン / ズーム（6a）
-- [ ] DOM と **同等の情報量**（6b）
-- [ ] `focusDept` / `zoomTo` と viewport 同期（6c）
-- [ ] 性能予算が数値で確定し Vitest 回帰あり（6d）
+- [x] DOM と **同等の情報量**（6b）
+- [x] `focusDept` / `zoomTo` と viewport 同期（6c）
+- [ ] 性能予算が数値で確定し Vitest 回帰あり（6d）※ Vitest 回帰は実装済み。実測値での数値確定のみ残（ローカル計測待ち）
 - [x] 既定 DOM + CI E2E 緑（6a 維持）
 
 ---
 
-## 7. 最初の一手（PR-A から）
+## 7. 残作業（6d / 6e）
 
-1. `src/render/orgIslandView.ts` を新規作成し、`teamIslandLabels(team, detail)` と `detailForZoom(scale)` を実装。
-2. `OrgSprite` / `planOrgScene` を拡張（`deptColor` lookup、`detail` 付与）。
-3. `tests/unit/orgIslandView.test.ts` と `orgScene.test.ts` 更新。
-4. `npm test` / `npm run lint` 緑を確認して PR-A を出す。
-5. 続けて PR-B で `PixiOrgRenderer` を Container 描画に差し替え、ホストブラウザで parity 確認。
+6b-1 / 6b-2（PR-A / PR-B）と 6c（PR-C）は実装・マージ済み（§3・§6 参照）。残るは性能予算の数値確定と任意の視覚回帰。
+
+1. **6d（PR-D）**: ホストブラウザ（DevContainer 5173 フォワード）で `?renderer=pixi` を開き、代表 seed・大規模チーム（100 / 500 / 1000 件）で `culled` / `overBudget` / `sprites.length` と FPS / メモリを計測。
+2. 計測結果を `ORG_SPRITE_BUDGET`（現状 暫定 500）と LOD 閾値へ反映し、§4 表へ実測値と上限を記載。
+3. 大規模 fixture の Vitest（`overBudget === 0` または許容値）を追加し、`npm test` / `npm run lint` 緑を確認して PR-D を出す。
+4. **6e（PR-E・任意）**: DOM parity が安定したら、固定 seed + `pause()` + `?renderer=pixi` の Playwright スクショ回帰を別 job / `@pixi` tag で追加するか判断。

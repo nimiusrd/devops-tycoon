@@ -221,11 +221,16 @@ export function assignMember(
   });
 }
 
-/** メンバーへの AI 配布を切り替える（コーディング担当のみ有効。休職・レビュー・ベンチは無効）。 */
+/**
+ * メンバーへの AI 配布を切り替える（コーディング担当のみ有効。休職・レビュー・ベンチは無効）。
+ * `on` は真偽値へ強制する。window.game 経由で非ブール値（関数等）が渡っても
+ * 後段の `structuredClone`（スナップショット）が壊れないようにするため。
+ */
 export function setAiAssigned(roster: RosterState, id: string, on: boolean): RosterState {
+  const want = on === true;
   return mapMember(roster, id, (m) => {
     if (m.onLeave || m.assignment !== 'coding') return { ...m, aiAssigned: false };
-    return { ...m, aiAssigned: on };
+    return { ...m, aiAssigned: want };
   });
 }
 

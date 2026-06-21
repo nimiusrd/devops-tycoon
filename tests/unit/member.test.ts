@@ -192,6 +192,15 @@ describe('AI配布が実採用率に反映される（第12.2 / レビュー#C�
     expect(foldFormationEffects(reviewerAi).aiAdoptionShare).toBe(0);
   });
 
+  it('setAiAssigned は非ブール値を真偽値へ強制する（structuredClone を壊さない）', () => {
+    const r = roster([member({ id: 'a', assignment: 'coding', aiAssigned: false })]);
+    // 素の JS から関数など非ブール値が来てもクローン可能な boolean を保つ。
+    const fn = () => undefined;
+    const out = setAiAssigned(r, 'a', fn as unknown as boolean);
+    expect(typeof out.members[0].aiAssigned).toBe('boolean');
+    expect(() => structuredClone(out)).not.toThrow();
+  });
+
   it('コーディング以外へ移すと AI 配布は外れる', () => {
     const r = roster([member({ id: 'a', assignment: 'coding', aiAssigned: true })]);
     expect(assignMember(r, 'a', 'review').members[0].aiAssigned).toBe(false);

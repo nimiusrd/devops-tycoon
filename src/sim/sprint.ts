@@ -270,6 +270,17 @@ function isDrained(sprint: SprintState): boolean {
 }
 
 /**
+ * これ以上は永遠に進まない状態か。流入枠が 0（コーダー不在）で、稼働中の工程
+ * （coding/review/rework）にタスクが 1 件も無ければ、Backlog は二度と流れない。
+ */
+function isStalled(sprint: SprintState): boolean {
+  if (sprint.config.codingSlots > 0) return false;
+  return !sprint.tasks.some(
+    (t) => t.lane === 'coding' || t.lane === 'review' || t.lane === 'rework',
+  );
+}
+
+/**
  * 上限到達時、捌け残ったタスクを強制的に Done へ流す。
  * ただし一度も Coding に入っていない（Backlog のまま＝未着手の）タスクは出荷として
  * 計上しない。コーダー不在で流入が止まったスプリントが「無人でも出荷」になるのを防ぐ。
@@ -299,6 +310,14 @@ function forceDrain(sprint: SprintState, org: OrgState): void {
  */
 export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: number): void {
   if (sprint.complete) return;
+
+  // 進行不能（コーダー不在で流入枠 0・稼働中タスクも無し）なら即完了させる。
+  // そうしないと Backlog が流れず isDrained も成立せず、maxTicks まで何も起きない画面を待つ。
+  if (isStalled(sprint)) {
+    forceDrain(sprint, org);
+    sprint.complete = true;
+    return;
+  }
 
   intake(sprint, org, rng, tick);
   advanceCoding(sprint, tick);
@@ -368,6 +387,9 @@ export function computeTitleAndDiagnosis(
   const hpLoss = m.seniorHpStart - org.seniorHp;
   const reworkRatio = m.completedCount > 0 ? m.reworkCount / m.completedCount : 0;
   const pct = aiAssistedPct(m);
+  // 「AI を実際に使ったか」。編成で全コーダーの AI を外すと aiEnabled でも採用 0% になり、
+  // その場合は AI 系の称号（健全な加速者 等）を出さない（診断が実態と逆にならないように）。
+  const aiUsed = org.aiEnabled && pct > 0;
 
   // 重い崩壊から順に判定する。
   if (m.spread >= 2) {
@@ -394,13 +416,13 @@ export function computeTitleAndDiagnosis(
       diagnosis: '手戻りが多すぎます。AIの使い方とレビュー品質を見直しましょう。',
     };
   }
-  if (org.aiEnabled && m.incidentCount >= 3) {
+  if (aiUsed && m.incidentCount >= 3) {
     return {
       title: '爆速だが不安定',
       diagnosis: '実装は進みましたが、テストが追いつかず障害が頻発しています。',
     };
   }
-  if (org.aiEnabled && m.reworkCount <= 2 && m.incidentCount <= 1) {
+  if (aiUsed && m.reworkCount <= 2 && m.incidentCount <= 1) {
     return {
       title: '健全な加速者',
       diagnosis: 'AIの加速を、レビューと品質が受け止められています。理想的な導入です。',
@@ -412,7 +434,7 @@ export function computeTitleAndDiagnosis(
       diagnosis: '途切れない出荷でコンボを積み上げました。流れを支配しています。',
     };
   }
-  if (!org.aiEnabled && hpLoss < 35 && reworkRatio < 0.2 && m.incidentCount <= 2) {
+  if (!aiUsed && hpLoss < 35 && reworkRatio < 0.2 && m.incidentCount <= 2) {
     return {
       title: 'ノー残業の勇者',
       diagnosis: '無理のないペースで安定して出荷できています。',

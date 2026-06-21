@@ -4,7 +4,7 @@
  * DOM の HUD / 部門チップ / レバー / 共通基盤ハブは親が描き、ここはチーム島だけ。
  * 実 WebGL は init() 以降ブラウザ上でのみ動く（CI/Node ではマウントされない）。
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { Team } from '../sim/orgscale/types';
 import { PixiOrgRenderer } from '../render/adapters/pixiOrgRenderer';
 import { ORG_ISO, ORG_PAD, ORG_SPRITE_BUDGET } from '../render/orgView';
@@ -19,6 +19,16 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiOrgRenderer | null>(null);
   const teamsRef = useRef(teams);
+  const onFocusTeamRef = useRef(onFocusTeam);
+  const deptColorRef = useRef(deptColor);
+
+  useLayoutEffect(() => {
+    onFocusTeamRef.current = onFocusTeam;
+  }, [onFocusTeam]);
+
+  useLayoutEffect(() => {
+    deptColorRef.current = deptColor;
+  }, [deptColor]);
 
   useEffect(() => {
     teamsRef.current = teams;
@@ -33,8 +43,8 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
       pad: ORG_PAD,
       spriteBudget: ORG_SPRITE_BUDGET,
       cullMargin: ORG_ISO.tileW / 2,
-      deptColor,
-      onFocusTeam,
+      deptColor: (id) => deptColorRef.current(id),
+      onFocusTeam: (id) => onFocusTeamRef.current(id),
     });
     rendererRef.current = renderer;
 
@@ -61,7 +71,7 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
       renderer.dispose();
       rendererRef.current = null;
     };
-  }, [onFocusTeam, deptColor]);
+  }, []);
 
   useEffect(() => {
     const renderer = rendererRef.current;
@@ -69,6 +79,12 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
     renderer.fitToContent(teams);
     renderer.renderTeams(teams);
   }, [teams]);
+
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    if (!renderer) return;
+    renderer.renderTeams(teamsRef.current);
+  }, [deptColor]);
 
   return (
     <div

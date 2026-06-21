@@ -285,7 +285,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private disposed = false;
   private readonly opts: PixiOrgRendererOptions;
   private lastTeams: readonly Team[] = [];
-  private fitted = false;
+  private fittedLayout: { width: number; height: number } | null = null;
   private readonly firePulses: FirePulse[] = [];
   private tickerBound = false;
 
@@ -386,15 +386,17 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.viewport?.resize(width, height, width, height);
   }
 
-  /** 初回のみ、DOM 盤面と同サイズの world を画面に収める。 */
+  /** DOM 盤面と同サイズの world を画面に収める。内容サイズが変わった時だけ再フィットする。 */
   fitToContent(teams: readonly Team[]): void {
     const vp = this.viewport;
-    if (!vp || this.fitted) return;
+    if (!vp) return;
     const layout = layoutIso(teams, this.opts.isoBase, this.opts.pad);
     if (layout.width <= 0 || layout.height <= 0) return;
+    if (this.fittedLayout?.width === layout.width && this.fittedLayout.height === layout.height)
+      return;
     vp.fit(true, layout.width, layout.height);
     vp.moveCenter(layout.width / 2, layout.height / 2);
-    this.fitted = true;
+    this.fittedLayout = { width: layout.width, height: layout.height };
   }
 
   /** 最新チーム列を viewport カメラで描く（React / pan/zoom 共通入口）。 */
@@ -477,6 +479,6 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.viewport = null;
     this.pool = null;
     this.lastTeams = [];
-    this.fitted = false;
+    this.fittedLayout = null;
   }
 }

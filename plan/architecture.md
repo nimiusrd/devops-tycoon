@@ -45,8 +45,8 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 ```text
 /
 ├─ SPEC.md
-├─ IMPLEMENTATION_PLAN.md      ← 索引
 ├─ plan/                       ← 実装単位ごとの計画（本ディレクトリ）
+│  ├─ README.md                ← 索引
 │  ├─ architecture.md
 │  └─ phase-*.md
 ├─ mockups/                    ← デザインの正（維持）

@@ -17,6 +17,7 @@ import { SpritePool, type CameraRect, type IsoOptions } from '../iso';
 import {
   boundsCenter,
   deptFocusTargetScale,
+  scrollForCenteredTarget,
   worldBoundsForAll,
   worldBoundsForDept,
   worldBoundsForTeamFocus,
@@ -380,6 +381,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private readonly firePulses: FirePulse[] = [];
   private tickerBound = false;
   private fieldView: OrgFieldView = { scrollX: 0, scrollY: 0, width: 800, height: 600 };
+  private scrollHost: HTMLElement | null = null;
 
   constructor(opts: PixiOrgRendererOptions) {
     this.opts = opts;
@@ -460,16 +462,46 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.fieldView = view;
   }
 
+  /** 横スクロールする `.org-field` 要素（フォーカス後に可視窓へ合わせる）。 */
+  setScrollHost(el: HTMLElement | null): void {
+    this.scrollHost = el;
+  }
+
   /** init 済みか（React 側のカメラ同期判定用）。 */
   get isReady(): boolean {
     return this.viewport !== null;
+  }
+
+  /** world 座標が `.org-field` 可視窓の中央に来るよう scroll を同期する。 */
+  private revealWorldPointInScrollHost(worldX: number, worldY: number): void {
+    const vp = this.viewport;
+    const host = this.scrollHost;
+    if (!vp || !host) return;
+
+    const screen = vp.toScreen(worldX, worldY);
+    const { scrollLeft, scrollTop } = scrollForCenteredTarget(
+      screen.x,
+      screen.y,
+      host.clientWidth,
+      host.clientHeight,
+      host.scrollWidth,
+      host.scrollHeight,
+    );
+    host.scrollLeft = scrollLeft;
+    host.scrollTop = scrollTop;
+    this.fieldView = {
+      scrollX: scrollLeft,
+      scrollY: scrollTop,
+      width: host.clientWidth,
+      height: host.clientHeight,
+    };
   }
 
   /** world bounds へ viewport を合わせる（animate=false なら即時 fit）。 */
   private animateToBounds(
     bounds: WorldBounds,
     animate: boolean,
-    resolveScale?: (fitScale: number, currentScale: number) => number,
+    resolveScale?: (currentScale: number, fitScale: number) => number,
   ): Promise<void> {
     const vp = this.viewport;
     if (!vp) return Promise.resolve();
@@ -477,11 +509,15 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     // width/height を同時に animate すると fitWidth/fitHeight が別々に適用され横長に歪む。
     // fit() と同様、findFit で等方 scale を使う。
     const fitScale = vp.findFit(bounds.width, bounds.height);
-    const scale = resolveScale ? resolveScale(fitScale, vp.scale.x) : fitScale;
+    const scale = resolveScale ? resolveScale(vp.scale.x, fitScale) : fitScale;
+    const finish = (): void => {
+      this.revealWorldPointInScrollHost(center.x, center.y);
+    };
     if (!animate) {
       vp.fit(false, bounds.width, bounds.height);
       if (resolveScale) vp.setZoom(scale, false);
       vp.moveCenter(center.x, center.y);
+      finish();
       return Promise.resolve();
     }
     return new Promise((resolve) => {
@@ -490,7 +526,10 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
         ease: CAMERA_EASE,
         position: center,
         scale,
-        callbackOnComplete: () => resolve(),
+        callbackOnComplete: () => {
+          finish();
+          resolve();
+        },
       });
     });
   }
@@ -530,6 +569,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     if (!animate) {
       vp.moveCenter(center.x, center.y);
       vp.setZoom(targetScale, true);
+      this.revealWorldPointInScrollHost(center.x, center.y);
       return Promise.resolve();
     }
     return new Promise((resolve) => {
@@ -538,7 +578,10 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
         ease: CAMERA_EASE,
         position: center,
         scale: targetScale,
-        callbackOnComplete: () => resolve(),
+        callbackOnComplete: () => {
+          this.revealWorldPointInScrollHost(center.x, center.y);
+          resolve();
+        },
       });
     });
   }

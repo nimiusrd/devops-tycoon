@@ -6,6 +6,7 @@ import {
   boundsCenter,
   dampedFocusScale,
   deptFocusTargetScale,
+  scrollForCenteredTarget,
   teamFocusTargetScale,
   TEAM_FOCUS_MAX_ZOOM_IN,
   TEAM_FOCUS_SPAN,
@@ -114,5 +115,25 @@ describe('dampedFocusScale / teamFocusTargetScale', () => {
 
   it('部門フォーカスは DEPT 上限で抑える', () => {
     expect(deptFocusTargetScale(1.0, 3.0)).toBe(1.5);
+  });
+});
+
+describe('scrollForCenteredTarget', () => {
+  it('対象点を可視窓の中央に置く scrollLeft/Top を返す', () => {
+    expect(scrollForCenteredTarget(500, 200, 400, 300, 2000, 800)).toEqual({
+      scrollLeft: 300,
+      scrollTop: 50,
+    });
+  });
+
+  it('端では clamp する', () => {
+    expect(scrollForCenteredTarget(50, 10, 400, 300, 800, 600)).toEqual({
+      scrollLeft: 0,
+      scrollTop: 0,
+    });
+    expect(scrollForCenteredTarget(750, 550, 400, 300, 800, 600)).toEqual({
+      scrollLeft: 400,
+      scrollTop: 300,
+    });
   });
 });

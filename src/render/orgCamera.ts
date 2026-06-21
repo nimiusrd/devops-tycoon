@@ -22,6 +22,26 @@ export function boundsCenter(b: WorldBounds): { x: number; y: number } {
   return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
 }
 
+/**
+ * 盤面上の点 (screenX, screenY) が scroll 窓の中央に来る scrollLeft/Top。
+ * Pixi viewport の toScreen 結果を DOM `.org-field` へ反映する供給先。
+ */
+export function scrollForCenteredTarget(
+  screenX: number,
+  screenY: number,
+  viewportWidth: number,
+  viewportHeight: number,
+  scrollWidth: number,
+  scrollHeight: number,
+): { scrollLeft: number; scrollTop: number } {
+  const maxLeft = Math.max(0, scrollWidth - viewportWidth);
+  const maxTop = Math.max(0, scrollHeight - viewportHeight);
+  return {
+    scrollLeft: Math.min(maxLeft, Math.max(0, screenX - viewportWidth / 2)),
+    scrollTop: Math.min(maxTop, Math.max(0, screenY - viewportHeight / 2)),
+  };
+}
+
 /** 全チーム島を収める bounds（layoutIso と同じ world 原点）。 */
 export function worldBoundsForAll(
   teams: readonly Team[],

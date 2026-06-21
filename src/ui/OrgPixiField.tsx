@@ -90,6 +90,7 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
     rendererRef.current = renderer;
 
     const field = mount.closest<HTMLElement>('.org-field');
+    renderer.setScrollHost(field ?? null);
 
     const syncLayout = (): void => {
       const el = mountRef.current;

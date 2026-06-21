@@ -48,25 +48,39 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
     });
     rendererRef.current = renderer;
 
-    let cancelled = false;
-    void renderer.init(mount).then(() => {
-      if (cancelled) return;
-      const current = teamsRef.current;
-      renderer.fitToContent(current);
-      renderer.renderTeams(current);
-    });
+    const field = mount.closest<HTMLElement>('.org-field');
 
-    const ro = new ResizeObserver(() => {
+    const syncLayout = (): void => {
       const el = mountRef.current;
       const r = rendererRef.current;
       if (!el || !r) return;
+      const scrollHost = field ?? el;
+      r.setFieldView({
+        scrollX: scrollHost.scrollLeft,
+        scrollY: scrollHost.scrollTop,
+        width: scrollHost.clientWidth,
+        height: scrollHost.clientHeight,
+      });
       r.resize(el.clientWidth, el.clientHeight);
       r.renderTeams(teamsRef.current);
+    };
+
+    let cancelled = false;
+    void renderer.init(mount).then(() => {
+      if (cancelled) return;
+      renderer.fitToContent(teamsRef.current);
+      syncLayout();
     });
+
+    const ro = new ResizeObserver(() => syncLayout());
     ro.observe(mount);
+    if (field) ro.observe(field);
+
+    field?.addEventListener('scroll', syncLayout, { passive: true });
 
     return () => {
       cancelled = true;
+      field?.removeEventListener('scroll', syncLayout);
       ro.disconnect();
       renderer.dispose();
       rendererRef.current = null;
@@ -77,6 +91,18 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
     const renderer = rendererRef.current;
     if (!renderer) return;
     renderer.fitToContent(teams);
+    const mount = mountRef.current;
+    const field = mount?.closest<HTMLElement>('.org-field');
+    const scrollHost = field ?? mount;
+    if (scrollHost) {
+      renderer.setFieldView({
+        scrollX: scrollHost.scrollLeft,
+        scrollY: scrollHost.scrollTop,
+        width: scrollHost.clientWidth,
+        height: scrollHost.clientHeight,
+      });
+    }
+    if (mount) renderer.resize(mount.clientWidth, mount.clientHeight);
     renderer.renderTeams(teams);
   }, [teams]);
 

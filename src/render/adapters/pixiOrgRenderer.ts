@@ -16,7 +16,7 @@ import type { Team } from '../../sim/orgscale/types';
 import { SpritePool, type CameraRect, type IsoOptions } from '../iso';
 import { planOrgScene, type OrgSceneOptions, type OrgSprite } from '../orgScene';
 import { truncateName } from '../orgIslandView';
-import { isoLayoutOrigin, layoutIso } from '../orgView';
+import { isoLayoutOrigin, layoutIso, ORG_PAD } from '../orgView';
 import type { RendererAdapter } from './index';
 
 /**
@@ -37,6 +37,20 @@ const COLOR_TEXT_DIM = '#b9add0';
 const COLOR_SUN = '#ffd45c';
 const COLOR_FIRE = '#ff7a2f';
 const COLOR_FIRE_STROKE = '#ff5f1f';
+
+/** dot LOD の菱形半径（`ORG_PAD` 内に収める）。 */
+function dotLodHalfExtents(halfW: number, halfH: number): { halfW: number; halfH: number } {
+  const scale = Math.min(ORG_PAD / halfW, ORG_PAD / halfH, 1);
+  return { halfW: halfW * scale, halfH: halfH * scale };
+}
+
+/** org-field スクロール窓（canvas 上の可視領域）。 */
+export interface OrgFieldView {
+  scrollX: number;
+  scrollY: number;
+  width: number;
+  height: number;
+}
 
 /** PixiJS 全社マップレンダラの入力（チーム配列＋カメラ可視範囲）。 */
 export interface PixiOrgInput {
@@ -321,15 +335,16 @@ function layoutDot(
   halfH: number,
 ): IslandHitBounds {
   hideAllParts(parts);
-  drawDiamond(parts.diamond, halfW, halfH, s.tint, s.isPlayer ? 1 : 0.85);
+  const dot = dotLodHalfExtents(halfW, halfH);
+  drawDiamond(parts.diamond, dot.halfW, dot.halfH, s.tint, s.isPlayer ? 1 : 0.85);
   if (s.fire > 0) {
-    drawFireRing(parts.fireRing, halfW, halfH, s.fire);
+    drawFireRing(parts.fireRing, dot.halfW, dot.halfH, s.fire);
   }
   return {
-    hitX: -halfW,
-    hitY: -halfH,
-    hitW: halfW * 2,
-    hitH: halfH * 2,
+    hitX: -dot.halfW,
+    hitY: -dot.halfH,
+    hitW: dot.halfW * 2,
+    hitH: dot.halfH * 2,
   };
 }
 
@@ -345,6 +360,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private fittedLayout: { width: number; height: number } | null = null;
   private readonly firePulses: FirePulse[] = [];
   private tickerBound = false;
+  private fieldView: OrgFieldView = { scrollX: 0, scrollY: 0, width: 800, height: 600 };
 
   constructor(opts: PixiOrgRendererOptions) {
     this.opts = opts;
@@ -420,6 +436,11 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.viewport = viewport;
   }
 
+  /** org-field のスクロール窓を更新する（カリングの可視範囲）。 */
+  setFieldView(view: OrgFieldView): void {
+    this.fieldView = view;
+  }
+
   /** 炎上菱形 stroke の点滅（browser のみ）。 */
   private pulseFireStrokes(): void {
     if (this.firePulses.length === 0) return;
@@ -433,17 +454,22 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   getCameraRect(): CameraRect {
     const vp = this.viewport;
     if (!vp) return { x: 0, y: 0, w: 800, h: 600 };
+    const scale = vp.scale.x;
+    const { scrollX, scrollY, width, height } = this.fieldView;
     return {
-      x: vp.left,
-      y: vp.top,
-      w: vp.worldScreenWidth,
-      h: vp.worldScreenHeight,
+      x: vp.left + scrollX / scale,
+      y: vp.top + scrollY / scale,
+      w: width / scale,
+      h: height / scale,
     };
   }
 
-  /** マウント要素のサイズ変更に追従する。 */
-  resize(width: number, height: number): void {
-    this.viewport?.resize(width, height, width, height);
+  /** 盤面（mount）と renderer のピクセルサイズを更新する。 */
+  resize(boardWidth: number, boardHeight: number): void {
+    if (boardWidth > 0 && boardHeight > 0) {
+      this.app?.renderer.resize(boardWidth, boardHeight);
+    }
+    this.viewport?.resize(boardWidth, boardHeight, boardWidth, boardHeight);
   }
 
   /** DOM 盤面と同サイズの world を画面に収める。内容サイズが変わった時だけ再フィットする。 */
@@ -521,7 +547,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
         island.eventMode = 'static';
         island.cursor = 'pointer';
         island.hitArea = useDiamondHit
-          ? diamondHitArea(halfW, halfH)
+          ? diamondHitArea(hit.hitW / 2, hit.hitH / 2)
           : new Rectangle(hit.hitX, hit.hitY, hit.hitW, hit.hitH);
         island.on('pointertap', () => onFocus(s.teamId));
       }

@@ -42,6 +42,8 @@ export interface Layout<T> {
  */
 export const ORG_ISO = { tileW: 264, tileH: 176 } as const;
 export const ORG_PAD = 64;
+/** DOM `.team-island` / Pixi card の幅 px。 */
+export const ORG_CARD_W = 116;
 /** 同時描画スプライト上限（性能予算。第22.5）。 */
 export const ORG_SPRITE_BUDGET = 500;
 

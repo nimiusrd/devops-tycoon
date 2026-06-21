@@ -14,6 +14,15 @@ import { Application, Container, Graphics, Rectangle, Text } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import type { Team } from '../../sim/orgscale/types';
 import { SpritePool, type CameraRect, type IsoOptions } from '../iso';
+import {
+  boundsCenter,
+  deptFocusTargetScale,
+  worldBoundsForAll,
+  worldBoundsForDept,
+  worldBoundsForTeamFocus,
+  teamFocusTargetScale,
+  type WorldBounds,
+} from '../orgCamera';
 import { planOrgScene, type OrgSceneOptions, type OrgSprite } from '../orgScene';
 import { truncateName } from '../orgIslandView';
 import { isoLayoutOrigin, layoutIso, ORG_PAD } from '../orgView';
@@ -43,6 +52,10 @@ function dotLodHalfExtents(halfW: number, halfH: number): { halfW: number; halfH
   const scale = Math.min(ORG_PAD / halfW, ORG_PAD / halfH, 1);
   return { halfW: halfW * scale, halfH: halfH * scale };
 }
+
+/** カメラ遷移の既定時間 ms。 */
+const CAMERA_ANIM_MS = 480;
+const CAMERA_EASE = 'easeOutCubic';
 
 /** org-field スクロール窓（canvas 上の可視領域）。 */
 export interface OrgFieldView {
@@ -445,6 +458,89 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   /** org-field のスクロール窓を更新する（カリングの可視範囲）。 */
   setFieldView(view: OrgFieldView): void {
     this.fieldView = view;
+  }
+
+  /** init 済みか（React 側のカメラ同期判定用）。 */
+  get isReady(): boolean {
+    return this.viewport !== null;
+  }
+
+  /** world bounds へ viewport を合わせる（animate=false なら即時 fit）。 */
+  private animateToBounds(
+    bounds: WorldBounds,
+    animate: boolean,
+    resolveScale?: (fitScale: number, currentScale: number) => number,
+  ): Promise<void> {
+    const vp = this.viewport;
+    if (!vp) return Promise.resolve();
+    const center = boundsCenter(bounds);
+    // width/height を同時に animate すると fitWidth/fitHeight が別々に適用され横長に歪む。
+    // fit() と同様、findFit で等方 scale を使う。
+    const fitScale = vp.findFit(bounds.width, bounds.height);
+    const scale = resolveScale ? resolveScale(fitScale, vp.scale.x) : fitScale;
+    if (!animate) {
+      vp.fit(false, bounds.width, bounds.height);
+      if (resolveScale) vp.setZoom(scale, false);
+      vp.moveCenter(center.x, center.y);
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      vp.animate({
+        time: CAMERA_ANIM_MS,
+        ease: CAMERA_EASE,
+        position: center,
+        scale,
+        callbackOnComplete: () => resolve(),
+      });
+    });
+  }
+
+  /** 全社 fit（パンくず「全社」復帰）。 */
+  focusCompany(teams: readonly Team[], animate = true): Promise<void> {
+    const bounds = worldBoundsForAll(teams, this.opts.isoBase, this.opts.pad);
+    if (!bounds) return Promise.resolve();
+    this.fittedLayout = null;
+    return this.animateToBounds(bounds, animate).then(() => {
+      const layout = layoutIso(teams, this.opts.isoBase, this.opts.pad);
+      if (layout.width <= 0 || layout.height <= 0) return;
+      const key = layout.placed
+        .map(({ item }) => `${item.id}:${item.gridX}:${item.gridY}`)
+        .join('|');
+      this.fittedLayout = { width: layout.width, height: layout.height, key };
+    });
+  }
+
+  /** 部門ゾーンへ fit（部門チップ）。 */
+  focusDepartment(teams: readonly Team[], deptId: string, animate = true): Promise<void> {
+    const bounds = worldBoundsForDept(teams, deptId, this.opts.isoBase, this.opts.pad);
+    if (!bounds) return Promise.resolve();
+    return this.animateToBounds(bounds, animate, deptFocusTargetScale);
+  }
+
+  /** チーム島へ寄せる（ドリルダウン前のカメラ演出）。 */
+  focusTeamCamera(teams: readonly Team[], teamId: string, animate = true): Promise<void> {
+    const bounds = worldBoundsForTeamFocus(teams, teamId, this.opts.isoBase, this.opts.pad);
+    const vp = this.viewport;
+    if (!bounds || !vp) return Promise.resolve();
+
+    const center = boundsCenter(bounds);
+    const fitScale = vp.findFit(bounds.width, bounds.height);
+    const targetScale = teamFocusTargetScale(vp.scale.x, fitScale);
+
+    if (!animate) {
+      vp.moveCenter(center.x, center.y);
+      vp.setZoom(targetScale, true);
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      vp.animate({
+        time: CAMERA_ANIM_MS,
+        ease: CAMERA_EASE,
+        position: center,
+        scale: targetScale,
+        callbackOnComplete: () => resolve(),
+      });
+    });
   }
 
   /** 炎上菱形 stroke の点滅（browser のみ）。 */

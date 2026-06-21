@@ -1824,8 +1824,7 @@ button.card:active {
 }
 .org-pixi-mount canvas {
   display: block;
-  width: 100%;
-  height: 100%;
+  /* resizeTo + autoDensity が CSS 寸法を設定する。100% で再スケールするとにじむ。 */
 }
 .org-infra-hub {
   position: absolute;

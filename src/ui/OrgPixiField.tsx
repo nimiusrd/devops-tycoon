@@ -12,9 +12,10 @@ import { ORG_ISO, ORG_PAD, ORG_SPRITE_BUDGET } from '../render/orgView';
 export interface OrgPixiFieldProps {
   teams: readonly Team[];
   onFocusTeam: (id: string) => void;
+  deptColor: (deptId: string) => string;
 }
 
-export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
+export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiOrgRenderer | null>(null);
   const teamsRef = useRef(teams);
@@ -32,6 +33,7 @@ export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
       pad: ORG_PAD,
       spriteBudget: ORG_SPRITE_BUDGET,
       cullMargin: ORG_ISO.tileW / 2,
+      deptColor,
       onFocusTeam,
     });
     rendererRef.current = renderer;
@@ -59,7 +61,7 @@ export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
       renderer.dispose();
       rendererRef.current = null;
     };
-  }, [onFocusTeam]);
+  }, [onFocusTeam, deptColor]);
 
   useEffect(() => {
     const renderer = rendererRef.current;

@@ -97,7 +97,7 @@ export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever 
           </span>
         </div>
         {usePixi ? (
-          <OrgPixiField teams={teams} onFocusTeam={onFocusTeam} />
+          <OrgPixiField teams={teams} onFocusTeam={onFocusTeam} deptColor={deptColor} />
         ) : (
           layout.placed.map(({ item, x, y }) => (
             <TeamIsland

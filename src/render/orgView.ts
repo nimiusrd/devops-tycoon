@@ -36,8 +36,11 @@ export interface Layout<T> {
   height: number;
 }
 
-/** 全社マップ DOM/Pixi 共通のアイソメ寸法・余白。 */
-export const ORG_ISO = { tileW: 132, tileH: 82 } as const;
+/**
+ * 全社マップ DOM/Pixi 共通のアイソメ寸法・余白。
+ * 116px カード（`.team-island`）が重ならないよう、格子 1 ステップ ≒ カード幅 + 余白に合わせる。
+ */
+export const ORG_ISO = { tileW: 264, tileH: 176 } as const;
 export const ORG_PAD = 64;
 /** 同時描画スプライト上限（性能予算。第22.5）。 */
 export const ORG_SPRITE_BUDGET = 500;

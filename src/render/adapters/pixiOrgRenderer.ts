@@ -614,11 +614,14 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
    * CSS animation 停止だけでは canvas 内の点滅が残るため E2E 専用。
    */
   freezeForScreenshot(): void {
-    this.app?.ticker.stop();
+    const app = this.app;
+    if (!app) return;
+    app.ticker.stop();
     const phase = 0.5;
     for (const { gfx, fire } of this.firePulses) {
       gfx.alpha = 0.55 + phase * 0.45 * fire;
     }
+    app.render();
   }
 
   /** viewport の可視範囲を `CameraRect` へ変換する（カリング供給）。 */

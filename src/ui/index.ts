@@ -5,6 +5,7 @@
  * Phase 2: 介入アクションバー / コンボ / 数字ポップ / カードドラフト / デッキ。
  * Phase 3: タイトル / ランマップ / スプリント / 進化 / イベント / ショップ / 休息 /
  *          ラン決着 / ランバー と、ラン進行フック。
+ * Phase 4: 編成（FormationScreen）と、ランバー/リザルトの個体表示（第12章）。
  */
 export { Hud } from './Hud';
 export { SprintResultScreen } from './SprintResultScreen';
@@ -22,6 +23,7 @@ export { EvolutionScreen } from './EvolutionScreen';
 export { EventScreen } from './EventScreen';
 export { ShopScreen } from './ShopScreen';
 export { RestScreen } from './RestScreen';
+export { FormationScreen } from './FormationScreen';
 export { RunResultScreen } from './RunResultScreen';
 export { RunBar } from './RunBar';
 export { useRun } from './useRun';

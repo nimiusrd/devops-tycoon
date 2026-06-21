@@ -1399,3 +1399,242 @@ button.card:active {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Phase 4: キャラクター育成 / 編成 ===== */
+
+.roster-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  border: 2px solid var(--line);
+  background: #211a44;
+  color: var(--text);
+  transition: border-color 0.12s ease;
+}
+.roster-pill:hover {
+  border-color: var(--sun);
+}
+.roster-faces {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 14px;
+  line-height: 1;
+}
+.roster-leave {
+  color: var(--coral);
+}
+
+.formation-panel {
+  width: min(960px, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 22px;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+}
+.formation-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.formation-close {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: #211a44;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 800;
+}
+.formation-close:hover {
+  border-color: var(--sun);
+}
+.fm-locked-note {
+  color: var(--sun);
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.formation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.formation-member {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #211a44;
+  border: 2px solid var(--line);
+}
+.formation-member.on-leave {
+  opacity: 0.7;
+  border-color: var(--coral);
+}
+.fm-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fm-face {
+  font-size: 28px;
+  line-height: 1;
+}
+.fm-id {
+  display: flex;
+  flex-direction: column;
+}
+.fm-name {
+  font-weight: 900;
+  font-size: 16px;
+}
+.fm-rank {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.fm-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--cream);
+}
+.fm-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.fm-bar-label {
+  flex: 0 0 auto;
+}
+.fm-bar-track {
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 6px;
+  background: #15102e;
+  overflow: hidden;
+}
+.fm-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: var(--mint);
+  transition: width 0.2s ease;
+}
+.fm-bar-fill.low {
+  background: var(--coral);
+}
+.fm-xp {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.fm-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.fm-trait {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #2c2358;
+  border: 1px solid var(--line);
+  color: var(--lav);
+}
+.fm-lanes {
+  display: flex;
+  gap: 4px;
+}
+.fm-lane {
+  flex: 1 1 0;
+  padding: 6px 4px;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: #1b1539;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+.fm-lane:hover:not(:disabled) {
+  border-color: var(--sun);
+}
+.fm-lane.active {
+  border-color: var(--sky);
+  color: var(--text);
+  background: #243056;
+}
+.fm-lane:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.fm-ai {
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: #1b1539;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 800;
+  transition: border-color 0.12s ease;
+}
+.fm-ai:hover:not(:disabled) {
+  border-color: var(--sun);
+}
+.fm-ai.on {
+  border-color: var(--mint);
+  color: var(--mint);
+  background: #1b3a30;
+}
+.fm-ai:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.fm-leave-note {
+  font-size: 12px;
+  color: var(--coral);
+  margin: 2px 0 0;
+}
+
+.result-growth {
+  margin-top: 8px;
+}
+.growth-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13.5px;
+}
+.growth-promote {
+  color: var(--sun);
+}
+.growth-leave {
+  color: var(--coral);
+}
+.growth-level {
+  color: var(--mint);
+}
+
+@media (max-width: 860px) {
+  .difficulty-grid,
+  .shop-grid {
+    grid-template-columns: 1fr;
+  }
+  .evolution-branches,
+  .formation-grid {
+    grid-template-columns: 1fr;
+  }
+}

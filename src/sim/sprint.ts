@@ -5,6 +5,7 @@
  * 状態機械。描画を一切知らず、乱数は引数の seed付きPRNG からのみ消費する（第22.3）。
  */
 import {
+  AI_ADOPTION,
   AI_DEP_PER_TASK,
   DEBT_PER_SPREAD,
   IDENTITY_CARD_EFFECTS,
@@ -89,12 +90,15 @@ export function resolveSprintConfig(
  * 新しいスプリント状態を生成する（全タスクは Backlog から開始）。
  * `cardEffects` はデッキを畳み込んだ係数で、未指定（＝デッキ無し）なら
  * Phase 1 と完全に同一の数値挙動になる。集中力は満タンで開始する（第6.2）。
+ * `aiAdoptionShare` は編成由来の実 AI 採用率の倍率（0..1）。未指定なら 1（＝従来の
+ * 全社的な既定採用率）で、Phase 1〜3 と完全に同一の数値挙動になる（後方互換）。
  */
 export function createSprint(
   config: SprintConfig,
   org: OrgState,
   rng: Rng,
   cardEffects: CardEffects = IDENTITY_CARD_EFFECTS,
+  aiAdoptionShare = 1,
 ): SprintState {
   const tasks: Task[] = [];
   for (let i = 0; i < config.taskCount; i += 1) {
@@ -127,6 +131,7 @@ export function createSprint(
     modifiers: { andonUntilTick: 0, overtimeUntilTick: 0, throttleUntilTick: 0 },
     comboGauge: 0,
     cardEffects,
+    aiAdoption: clamp(AI_ADOPTION * aiAdoptionShare, 0, 1),
   };
 }
 
@@ -154,7 +159,7 @@ function intake(sprint: SprintState, org: OrgState, rng: Rng, tick: number): voi
     if (task.lane !== 'backlog') continue;
     task.lane = 'coding';
     task.progress = 0;
-    task.aiAssisted = throttled ? false : decideAiAssisted(org, rng);
+    task.aiAssisted = throttled ? false : decideAiAssisted(org, rng, sprint.aiAdoption);
     if (task.aiAssisted) {
       org.aiDependency = clamp(org.aiDependency + AI_DEP_PER_TASK, 0, 100);
     }
@@ -264,11 +269,31 @@ function isDrained(sprint: SprintState): boolean {
   return !sprint.tasks.some((t) => t.lane !== 'done');
 }
 
-/** 上限到達時、捌け残ったタスクを強制的に Done へ流す。 */
+/**
+ * これ以上は永遠に進まない状態か。流入枠が 0（コーダー不在）で、稼働中の工程
+ * （coding/review/rework）にタスクが 1 件も無ければ、Backlog は二度と流れない。
+ */
+function isStalled(sprint: SprintState): boolean {
+  if (sprint.config.codingSlots > 0) return false;
+  return !sprint.tasks.some(
+    (t) => t.lane === 'coding' || t.lane === 'review' || t.lane === 'rework',
+  );
+}
+
+/**
+ * 上限到達時、捌け残ったタスクを強制的に Done へ流す。
+ * ただし一度も Coding に入っていない（Backlog のまま＝未着手の）タスクは出荷として
+ * 計上しない。コーダー不在で流入が止まったスプリントが「無人でも出荷」になるのを防ぐ。
+ */
 function forceDrain(sprint: SprintState, org: OrgState): void {
   const m = sprint.metrics;
   for (const task of sprint.tasks) {
     if (task.lane === 'done') continue;
+    // 未着手（Backlog）のタスクは盤面を畳むため done へ移すだけで、出荷は計上しない。
+    if (task.lane === 'backlog') {
+      task.lane = 'done';
+      continue;
+    }
     task.lane = 'done';
     task.incident = false;
     m.doneCount += 1;
@@ -285,6 +310,14 @@ function forceDrain(sprint: SprintState, org: OrgState): void {
  */
 export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: number): void {
   if (sprint.complete) return;
+
+  // 進行不能（コーダー不在で流入枠 0・稼働中タスクも無し）なら即完了させる。
+  // そうしないと Backlog が流れず isDrained も成立せず、maxTicks まで何も起きない画面を待つ。
+  if (isStalled(sprint)) {
+    forceDrain(sprint, org);
+    sprint.complete = true;
+    return;
+  }
 
   intake(sprint, org, rng, tick);
   advanceCoding(sprint, tick);
@@ -354,6 +387,9 @@ export function computeTitleAndDiagnosis(
   const hpLoss = m.seniorHpStart - org.seniorHp;
   const reworkRatio = m.completedCount > 0 ? m.reworkCount / m.completedCount : 0;
   const pct = aiAssistedPct(m);
+  // 「AI を実際に使ったか」。編成で全コーダーの AI を外すと aiEnabled でも採用 0% になり、
+  // その場合は AI 系の称号（健全な加速者 等）を出さない（診断が実態と逆にならないように）。
+  const aiUsed = org.aiEnabled && pct > 0;
 
   // 重い崩壊から順に判定する。
   if (m.spread >= 2) {
@@ -380,13 +416,13 @@ export function computeTitleAndDiagnosis(
       diagnosis: '手戻りが多すぎます。AIの使い方とレビュー品質を見直しましょう。',
     };
   }
-  if (org.aiEnabled && m.incidentCount >= 3) {
+  if (aiUsed && m.incidentCount >= 3) {
     return {
       title: '爆速だが不安定',
       diagnosis: '実装は進みましたが、テストが追いつかず障害が頻発しています。',
     };
   }
-  if (org.aiEnabled && m.reworkCount <= 2 && m.incidentCount <= 1) {
+  if (aiUsed && m.reworkCount <= 2 && m.incidentCount <= 1) {
     return {
       title: '健全な加速者',
       diagnosis: 'AIの加速を、レビューと品質が受け止められています。理想的な導入です。',
@@ -398,7 +434,7 @@ export function computeTitleAndDiagnosis(
       diagnosis: '途切れない出荷でコンボを積み上げました。流れを支配しています。',
     };
   }
-  if (!org.aiEnabled && hpLoss < 35 && reworkRatio < 0.2 && m.incidentCount <= 2) {
+  if (!aiUsed && hpLoss < 35 && reworkRatio < 0.2 && m.incidentCount <= 2) {
     return {
       title: 'ノー残業の勇者',
       diagnosis: '無理のないペースで安定して出荷できています。',

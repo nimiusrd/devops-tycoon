@@ -10,6 +10,7 @@ import type { GameHandle } from '../game';
 import type { MetaState } from '../state/meta';
 import type { ActionId, InterventionOutcome } from '../sim/types';
 import type { DifficultyId, RunState } from '../sim/run/types';
+import type { LaneAssignment } from '../sim/member/types';
 
 /** 自動進行の更新間隔（ms）。 */
 const FRAME_MS = 60;
@@ -31,7 +32,9 @@ export interface UseRun {
   buyShopCard: (defId: string) => void;
   buyShopRelic: () => void;
   leaveShop: () => void;
-  restChoose: (option: 'heal' | 'repay' | 'upgrade') => void;
+  restChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit') => void;
+  assignMember: (id: string, assignment: LaneAssignment) => void;
+  setMemberAi: (id: string, on: boolean) => void;
   newRun: () => void;
 }
 
@@ -73,7 +76,15 @@ export function useRun(game: GameHandle): UseRun {
   const buyShopRelic = useCallback(() => void game.buyShopRelic(), [game]);
   const leaveShop = useCallback(() => void game.leaveShop(), [game]);
   const restChoose = useCallback(
-    (option: 'heal' | 'repay' | 'upgrade') => void game.restChoose(option),
+    (option: 'heal' | 'repay' | 'upgrade' | 'recruit') => void game.restChoose(option),
+    [game],
+  );
+  const assignMember = useCallback(
+    (id: string, assignment: LaneAssignment) => void game.assignMember(id, assignment),
+    [game],
+  );
+  const setMemberAi = useCallback(
+    (id: string, on: boolean) => void game.setMemberAi(id, on),
     [game],
   );
   const newRun = useCallback(() => void game.newRun(), [game]);
@@ -94,6 +105,8 @@ export function useRun(game: GameHandle): UseRun {
     buyShopRelic,
     leaveShop,
     restChoose,
+    assignMember,
+    setMemberAi,
     newRun,
   };
 }

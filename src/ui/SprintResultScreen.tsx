@@ -4,6 +4,8 @@
  * Done / Delivered / Max Combo / AI Assisted / Review Queue Max / Rework /
  * Incidents / Senior HP と、評価・診断・称号を表示する。
  */
+import { rankLabel } from '../sim/member';
+import type { GrowthOutcome } from '../sim/run/types';
 import type { SprintResult } from '../sim/types';
 
 interface Row {
@@ -29,6 +31,8 @@ function buildRows(result: SprintResult): Row[] {
 
 export interface SprintResultScreenProps {
   result: SprintResult;
+  /** 直近スプリントの個体成長（昇格・休職など。第12章）。省略時は表示しない。 */
+  growth?: GrowthOutcome | null;
   /** 「次へ」: カードドラフトへ進む（第7章）。 */
   onContinue: () => void;
   /** 二次アクション（ランを中断してタイトルへ等）。省略時は表示しない。 */
@@ -37,8 +41,16 @@ export interface SprintResultScreenProps {
   abandonLabel?: string;
 }
 
+/** 成長セクションに出す要素があるか（昇格・休職・レベルアップ）。 */
+function hasGrowthNews(growth: GrowthOutcome): boolean {
+  return (
+    growth.promotions.length > 0 || growth.wentOnLeave.length > 0 || growth.leveledUp.length > 0
+  );
+}
+
 export function SprintResultScreen({
   result,
+  growth,
   onContinue,
   onAbandon,
   continueLabel = 'カードドラフトへ →',
@@ -74,6 +86,26 @@ export function SprintResultScreen({
             「{result.title}」
           </p>
         </div>
+        {growth && hasGrowthNews(growth) && (
+          <div className="result-growth" data-testid="result-growth">
+            <p className="result-section-label">チームの動き</p>
+            <ul className="growth-list">
+              {growth.promotions.map((p) => (
+                <li key={`p-${p.id}`} className="growth-promote">
+                  🎉 {p.name} が{rankLabel(p.to)}に昇格
+                </li>
+              ))}
+              {growth.wentOnLeave.map((w) => (
+                <li key={`l-${w.id}`} className="growth-leave">
+                  😴 {w.name} が休職に入った
+                </li>
+              ))}
+              {growth.leveledUp.length > 0 && growth.promotions.length === 0 && (
+                <li className="growth-level">💪 {growth.leveledUp.length}人がレベルアップ</li>
+              )}
+            </ul>
+          </div>
+        )}
         <div className="result-actions">
           <button
             type="button"

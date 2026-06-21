@@ -180,9 +180,10 @@ export function taskValue(task: Task): number {
 
 /**
  * Coding に入る際、そのタスクが AI を使うか判定する（要乱数）。
- * AI 未導入なら常に false。
+ * AI 未導入なら常に false。`adoption` は編成（AIを配ったコーダーの割合）で
+ * 変動する実採用率で、未指定なら従来どおり全社的な既定採用率を使う（後方互換）。
  */
-export function decideAiAssisted(org: OrgState, rng: Rng): boolean {
+export function decideAiAssisted(org: OrgState, rng: Rng, adoption: number = AI_ADOPTION): boolean {
   if (!org.aiEnabled) return false;
-  return rng() < AI_ADOPTION;
+  return rng() < adoption;
 }

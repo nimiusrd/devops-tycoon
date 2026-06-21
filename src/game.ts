@@ -11,6 +11,7 @@ import { createRunEngine, type RunEngine } from './sim/run/engine';
 import { resolveSeedFromLocation } from './sim/seed';
 import type { ActionId, InterventionOutcome } from './sim/types';
 import type { DifficultyId, RunState } from './sim/run/types';
+import type { LaneAssignment } from './sim/member/types';
 import { applyRunReward, loadMeta, saveMeta, type MetaState } from './state/meta';
 
 export interface GameHandle {
@@ -48,8 +49,12 @@ export interface GameHandle {
   buyShopRelic(): RunState;
   /** ショップを出る。 */
   leaveShop(): RunState;
-  /** 休息の選択（heal / repay / upgrade）。 */
-  restChoose(option: 'heal' | 'repay' | 'upgrade'): RunState;
+  /** 休息の選択（heal / repay / upgrade / recruit）。 */
+  restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit'): RunState;
+  /** メンバーをレーンへ配置する（編成。第12章）。 */
+  assignMember(id: string, assignment: LaneAssignment): RunState;
+  /** メンバーへの AI 配布を切り替える（編成。第12章）。 */
+  setMemberAi(id: string, on: boolean): RunState;
   /** 新しいランをタイトルから始める（seed を差し替え可能）。 */
   newRun(seed?: string): RunState;
   /** 現在のメタ進行（解放状況・実績）。 */
@@ -191,6 +196,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     restChoose(option) {
       engine.restChoose(option);
+      bump();
+      return engine.snapshot();
+    },
+    assignMember(id, assignment) {
+      engine.assignMember(id, assignment);
+      bump();
+      return engine.snapshot();
+    },
+    setMemberAi(id, on) {
+      engine.setMemberAi(id, on);
       bump();
       return engine.snapshot();
     },

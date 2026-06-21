@@ -88,7 +88,8 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
   - 制御: `pause()` / `resume()` / `isPaused()`
   - 状態読取: `getState()` / `phase()` / `revision()` / `isSprintRunning()` / `getMeta()`
   - ラン開始: `startRun(difficulty?, trials?, seed?)` / `newRun(seed?)`（旧設計の `loadState(seed, scenario)` は廃止。seed は URL パラメータまたは引数で指定）
-  - フェーズ駆動: `enterNode(id)` / `step(ms)` / `dispatch(id)` / `acknowledgeResult()` / `chooseCard(defId)` / `skipDraft()` / `unlockEvolution(id)` / `finishEvolution()` / `chooseEvent(index)` / `buyShopCard(defId)` / `buyShopRelic()` / `leaveShop()` / `restChoose(option)`
+  - フェーズ駆動: `enterNode(id)` / `step(ms)` / `dispatch(id)` / `acknowledgeResult()` / `chooseCard(defId)` / `skipDraft()` / `unlockEvolution(id)` / `finishEvolution()` / `chooseEvent(index)` / `buyShopCard(defId)` / `buyShopRelic()` / `leaveShop()` / `restChoose(option)`（option に `recruit` を含む）
+  - 編成（MVP4 / 第12章）: `assignMember(id, assignment)` / `setMemberAi(id, on)`
 - **デバッグ専用:** `engine`（`RunEngine` への直接参照）。E2E テストからは使わない。
 - `GameHandle` にメソッドを追加する場合は型定義と E2E 型（`tests/e2e/run.spec.ts` 等）を同時更新する。
 - スプライト生成は依存注入にし、テストでモック差し替え可能に。

@@ -219,6 +219,11 @@ export interface SprintState {
   comboGauge: number;
   /** デッキを畳み込んだカード効果（このスプリント中の確率モデルに掛かる）。 */
   cardEffects: CardEffects;
+  /**
+   * このスプリントの実 AI 採用率（0..1）。コーディング流入時に各タスクが AI を
+   * 使う確率。編成（AIを配ったコーダーの割合）で決まり、誰も配らなければ 0 になる。
+   */
+  aiAdoption: number;
 }
 
 /** スプリントリザルト（SPEC 第4.6）。 */

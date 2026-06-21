@@ -206,7 +206,7 @@ function mapMember(roster: RosterState, id: string, fn: (m: Member) => Member): 
 /**
  * メンバーをレーンへ配置する（休職中は変更不可）。
  * 不正なレーン値（window.game の素の JS 呼び出し等）は無視して状態を保つ。
- * ベンチへ移したときは AI 配布も外し、隠れた割り当てを残さない。
+ * AI 配布はコーディング担当のみ有効なので、コーディング以外へ移したら AI を外す。
  */
 export function assignMember(
   roster: RosterState,
@@ -216,15 +216,15 @@ export function assignMember(
   if (!VALID_LANES.includes(assignment)) return roster;
   return mapMember(roster, id, (m) => {
     if (m.onLeave) return m;
-    const aiAssigned = assignment === 'bench' ? false : m.aiAssigned;
+    const aiAssigned = assignment === 'coding' ? m.aiAssigned : false;
     return { ...m, assignment, aiAssigned };
   });
 }
 
-/** メンバーへの AI 配布を切り替える（休職中・ベンチは無効）。 */
+/** メンバーへの AI 配布を切り替える（コーディング担当のみ有効。休職・レビュー・ベンチは無効）。 */
 export function setAiAssigned(roster: RosterState, id: string, on: boolean): RosterState {
   return mapMember(roster, id, (m) => {
-    if (m.onLeave || m.assignment === 'bench') return { ...m, aiAssigned: false };
+    if (m.onLeave || m.assignment !== 'coding') return { ...m, aiAssigned: false };
     return { ...m, aiAssigned: on };
   });
 }
@@ -258,11 +258,12 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
   const reviewEfficiencyMul = clamp((0.7 + reviewPower / 200) * reviewLoad, 0.55, 1.8);
   const reviewCapacityMul = clamp(0.8 + reviewers.length * 0.18, 0.8, 1.6);
 
-  // AI 配布の効果（配った相手の AI習熟・トレイトで決まる）。
+  // AI 配布の効果（配った相手の AI習熟・トレイトで決まる）。AI を実際に使うのは
+  // コーディング担当のタスクなので、効果対象もコーダーに揃える（採用率と一致させる）。
   let reworkRateAdd = 0;
   let incidentRateMul = 1;
-  for (const m of roster.members) {
-    if (!isActive(m) || m.assignment === 'bench' || !m.aiAssigned) continue;
+  for (const m of coders) {
+    if (!m.aiAssigned) continue;
     const masteryNorm = clamp(effectiveAiMastery(m) / 100, 0, 1.2);
     const traitMods = foldTraitModifiers(m.traits);
     reworkRateAdd += 0.09 - 0.18 * masteryNorm + traitMods.aiReworkAdd;
@@ -384,9 +385,16 @@ export function applySprintGrowth(
 /**
  * 全メンバーのスタミナを回復する（スプリント間 / 休息ノード）。
  * 休職中はやや速く回復し、上限の一定割合まで戻ると復帰（ベンチ）する。
+ * `skipIds` のメンバーは今回回復しない（このスプリントで休職入りした直後の者を
+ * 即復帰させないために使う。休職に実コストを持たせる）。
  */
-export function recoverStamina(roster: RosterState, amount: number): RosterState {
+export function recoverStamina(
+  roster: RosterState,
+  amount: number,
+  skipIds?: ReadonlySet<string>,
+): RosterState {
   const members = roster.members.map((m) => {
+    if (skipIds?.has(m.id)) return m;
     const gain = Math.round(amount * (m.onLeave ? LEAVE_RECOVERY_MUL : 1));
     const stamina = Math.min(m.staminaMax, m.stamina + gain);
     if (m.onLeave && stamina >= m.staminaMax * RETURN_RATIO) {

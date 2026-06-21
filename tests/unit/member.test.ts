@@ -174,6 +174,32 @@ describe('AI配布が実採用率に反映される（第12.2 / レビュー#C�
     const onlyReviewer = roster([member({ id: 'a', assignment: 'review', aiAssigned: true })]);
     expect(foldFormationEffects(onlyReviewer).aiAdoptionShare).toBe(0);
   });
+
+  it('レビュアーへのAI配布は手戻り係数に影響しない（AIはコーダー限定）', () => {
+    const withCoder = member({ id: 'c', assignment: 'coding', aiAssigned: false });
+    const reviewerNoAi = roster([
+      withCoder,
+      member({ id: 'r', assignment: 'review', aiAssigned: false }),
+    ]);
+    const reviewerAi = roster([
+      withCoder,
+      member({ id: 'r', assignment: 'review', aiAssigned: true }),
+    ]);
+    // レビュアーに AI を配っても reworkRateAdd / aiAdoptionShare は変わらない。
+    expect(foldFormationEffects(reviewerAi).effects.reworkRateAdd).toBe(
+      foldFormationEffects(reviewerNoAi).effects.reworkRateAdd,
+    );
+    expect(foldFormationEffects(reviewerAi).aiAdoptionShare).toBe(0);
+  });
+
+  it('コーディング以外へ移すと AI 配布は外れる', () => {
+    const r = roster([member({ id: 'a', assignment: 'coding', aiAssigned: true })]);
+    expect(assignMember(r, 'a', 'review').members[0].aiAssigned).toBe(false);
+    expect(assignMember(r, 'a', 'bench').members[0].aiAssigned).toBe(false);
+    // setAiAssigned もレビュー担当には効かない。
+    const reviewer = roster([member({ id: 'a', assignment: 'review', aiAssigned: false })]);
+    expect(setAiAssigned(reviewer, 'a', true).members[0].aiAssigned).toBe(false);
+  });
 });
 
 describe('トレイト効果（第12.1）', () => {
@@ -265,6 +291,18 @@ describe('スタミナと離脱（休職）（第12.2）', () => {
     const after = recoverStamina(r, 80);
     expect(after.members[0].onLeave).toBe(false);
     expect(after.members[0].stamina).toBeGreaterThan(0);
+  });
+
+  it('skipIds のメンバーは回復しない（休職直後の即復帰を防ぐ）', () => {
+    const r = roster([
+      member({ id: 'a', assignment: 'bench', stamina: 0, staminaMax: 50, onLeave: true }),
+      member({ id: 'b', assignment: 'coding', stamina: 40, staminaMax: 80 }),
+    ]);
+    const after = recoverStamina(r, 20, new Set(['a']));
+    // a は今回スキップ（据え置き・休職継続）、b は通常回復。
+    expect(after.members[0].stamina).toBe(0);
+    expect(after.members[0].onLeave).toBe(true);
+    expect(after.members[1].stamina).toBeGreaterThan(40);
   });
 });
 

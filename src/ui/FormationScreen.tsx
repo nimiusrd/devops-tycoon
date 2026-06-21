@@ -120,7 +120,8 @@ function MemberCard({
             type="button"
             className={`fm-ai${m.aiAssigned ? ' on' : ''}`}
             data-testid={`ai-${m.id}`}
-            disabled={locked || m.assignment === 'bench'}
+            disabled={locked || m.assignment !== 'coding'}
+            title={m.assignment !== 'coding' ? 'AIはコーディング担当にのみ配れます' : undefined}
             onClick={() => onToggleAi(m.id, !m.aiAssigned)}
           >
             {m.aiAssigned ? '🤖 AI配布中' : 'AIを配る'}

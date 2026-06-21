@@ -289,8 +289,9 @@ export class RunEngine {
       ...this.baseConfig,
       taskCount: Math.max(4, Math.round(this.baseConfig.taskCount * mul)),
       focusMax: Math.max(1, this.baseConfig.focusMax + fold.focusBonus + formation.focusBonus),
+      // コーダー不在（formation が大きな負値を返す）なら 0 枠まで落とし、流入を止める。
       codingSlots: Math.max(
-        1,
+        0,
         this.baseConfig.codingSlots + fold.codingSlotBonus + formation.codingSlotBonus,
       ),
     };
@@ -339,7 +340,9 @@ export class RunEngine {
     // スプリント終了時に個体スタミナを一部回復する（休職者は復帰しうる）。
     // ここで回復させることで、続くマップ／編成ウィンドウで復帰メンバーをすぐ再配置できる
     // （beginSprint で回復すると次スプリント開始後＝編成ロック後になり 1 スプリント遅れる）。
-    this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN);
+    // ただし、このスプリントで休職入りした直後の者は除外し、即復帰させない（休職に実コストを残す）。
+    const justLeft = new Set((this.lastGrowth?.wentOnLeave ?? []).map((w) => w.id));
+    this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN, justLeft);
     this.diagnosis = diagnose(this.org, this.totals);
 
     const node = nodeById(this.map, this.activeNodeId);

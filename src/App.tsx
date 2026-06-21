@@ -43,11 +43,22 @@ export default function App({ game }: AppProps) {
   const phase = state.phase;
   const [formationOpen, setFormationOpen] = useState(false);
 
+  // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
+  // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
+  const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
+    setFormationOpen(false);
+    run.startRun(difficulty, trials);
+  };
+  const newRun = () => {
+    setFormationOpen(false);
+    run.newRun();
+  };
+
   if (phase === 'title') {
-    return <TitleScreen seed={state.seed} meta={meta} onStart={run.startRun} />;
+    return <TitleScreen seed={state.seed} meta={meta} onStart={startRun} />;
   }
   if (phase === 'won' || phase === 'lost') {
-    return <RunResultScreen state={state} meta={meta} onNewRun={run.newRun} />;
+    return <RunResultScreen state={state} meta={meta} onNewRun={newRun} />;
   }
 
   const tasks = state.sprint?.tasks ?? [];
@@ -79,7 +90,7 @@ export default function App({ game }: AppProps) {
           result={state.lastResult}
           growth={state.lastGrowth}
           onContinue={run.acknowledgeResult}
-          onAbandon={run.newRun}
+          onAbandon={newRun}
         />
       )}
       {phase === 'draft' && state.draft && (

@@ -171,6 +171,20 @@ describe('ロスターのラン統合（MVP4 / 第12章）', () => {
     expect(e.snapshot().lastResult!.aiAssistedPct).toBeGreaterThan(0);
   });
 
+  it('全コーダーを外した無人スプリントは出荷しない（レビュー#3）', () => {
+    const e = new RunEngine({ seed: 'no-coder-sprint', difficulty: 'easy' });
+    const s = toFirstNode(e);
+    // 全メンバーをベンチへ（稼働コーダー 0）。
+    for (const m of s.roster.members) e.assignMember(m.id, 'bench');
+    e.enterNode(s.available[0]);
+    e.step(1_000_000);
+    const after = e.snapshot();
+    expect(after.phase).toBe('result');
+    // 流入が止まり強制 drain も未着手を計上しないため、出荷・完了ともに 0。
+    expect(after.lastResult!.delivered).toBe(0);
+    expect(after.lastResult!.done).toBe(0);
+  });
+
   it('スプリント間スタミナ回復はスプリント終了時に反映される（編成ウィンドウに間に合う）', () => {
     const e = new RunEngine({ seed: 'recover-timing', difficulty: 'normal' });
     const s = toFirstNode(e);

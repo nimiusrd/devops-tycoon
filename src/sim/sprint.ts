@@ -269,11 +269,20 @@ function isDrained(sprint: SprintState): boolean {
   return !sprint.tasks.some((t) => t.lane !== 'done');
 }
 
-/** 上限到達時、捌け残ったタスクを強制的に Done へ流す。 */
+/**
+ * 上限到達時、捌け残ったタスクを強制的に Done へ流す。
+ * ただし一度も Coding に入っていない（Backlog のまま＝未着手の）タスクは出荷として
+ * 計上しない。コーダー不在で流入が止まったスプリントが「無人でも出荷」になるのを防ぐ。
+ */
 function forceDrain(sprint: SprintState, org: OrgState): void {
   const m = sprint.metrics;
   for (const task of sprint.tasks) {
     if (task.lane === 'done') continue;
+    // 未着手（Backlog）のタスクは盤面を畳むため done へ移すだけで、出荷は計上しない。
+    if (task.lane === 'backlog') {
+      task.lane = 'done';
+      continue;
+    }
     task.lane = 'done';
     task.incident = false;
     m.doneCount += 1;

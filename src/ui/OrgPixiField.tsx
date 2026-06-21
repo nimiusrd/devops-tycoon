@@ -4,23 +4,38 @@
  * DOM の HUD / 部門チップ / レバー / 共通基盤ハブは親が描き、ここはチーム島だけ。
  * 実 WebGL は init() 以降ブラウザ上でのみ動く（CI/Node ではマウントされない）。
  */
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import type { Team } from '../sim/orgscale/types';
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react';
+import type { DepartmentState, Team, ZoomState } from '../sim/orgscale/types';
 import { PixiOrgRenderer } from '../render/adapters/pixiOrgRenderer';
 import { ORG_ISO, ORG_PAD, ORG_SPRITE_BUDGET } from '../render/orgView';
 
+/** 親から imperative にカメラ操作するためのハンドル。 */
+export interface OrgPixiFieldHandle {
+  focusCompany(): Promise<void>;
+  focusDepartment(deptId: string): Promise<void>;
+  focusTeam(teamId: string): Promise<void>;
+}
+
 export interface OrgPixiFieldProps {
   teams: readonly Team[];
+  zoom: ZoomState;
+  departments: readonly DepartmentState[];
   onFocusTeam: (id: string) => void;
   deptColor: (deptId: string) => string;
 }
 
-export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProps) {
+export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(function OrgPixiField(
+  { teams, zoom, onFocusTeam, deptColor },
+  ref,
+) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiOrgRenderer | null>(null);
   const teamsRef = useRef(teams);
+  const zoomRef = useRef(zoom);
+  const prevZoomRef = useRef(zoom);
   const onFocusTeamRef = useRef(onFocusTeam);
   const deptColorRef = useRef(deptColor);
+  const initDoneRef = useRef(false);
 
   useLayoutEffect(() => {
     onFocusTeamRef.current = onFocusTeam;
@@ -35,6 +50,23 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
   }, [teams]);
 
   useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusCompany: () =>
+        rendererRef.current?.focusCompany(teamsRef.current, true) ?? Promise.resolve(),
+      focusDepartment: (deptId: string) =>
+        rendererRef.current?.focusDepartment(teamsRef.current, deptId, true) ?? Promise.resolve(),
+      focusTeam: (teamId: string) =>
+        rendererRef.current?.focusTeamCamera(teamsRef.current, teamId, true) ?? Promise.resolve(),
+    }),
+    [],
+  );
+
+  useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
 
@@ -44,11 +76,21 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
       spriteBudget: ORG_SPRITE_BUDGET,
       cullMargin: ORG_ISO.tileW / 2,
       deptColor: (id) => deptColorRef.current(id),
-      onFocusTeam: (id) => onFocusTeamRef.current(id),
+      onFocusTeam: (id) => {
+        const r = rendererRef.current;
+        if (r?.isReady) {
+          void r.focusTeamCamera(teamsRef.current, id, true).then(() => {
+            onFocusTeamRef.current(id);
+          });
+        } else {
+          onFocusTeamRef.current(id);
+        }
+      },
     });
     rendererRef.current = renderer;
 
     const field = mount.closest<HTMLElement>('.org-field');
+    renderer.setScrollHost(field ?? null);
 
     const syncLayout = (): void => {
       const el = mountRef.current;
@@ -68,6 +110,7 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
     let cancelled = false;
     void renderer.init(mount).then(() => {
       if (cancelled) return;
+      initDoneRef.current = true;
       renderer.fitToContent(teamsRef.current);
       syncLayout();
     });
@@ -80,6 +123,7 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
 
     return () => {
       cancelled = true;
+      initDoneRef.current = false;
       field?.removeEventListener('scroll', syncLayout);
       ro.disconnect();
       renderer.dispose();
@@ -106,6 +150,19 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
     renderer.renderTeams(teams);
   }, [teams]);
 
+  /** パンくず等で全社階層へ戻ったとき viewport を全体 fit へ同期する。 */
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    if (!renderer?.isReady || !initDoneRef.current) return;
+
+    const prev = prevZoomRef.current;
+    prevZoomRef.current = zoom;
+
+    if (zoom.level === 'company' && prev.level !== 'company') {
+      void renderer.focusCompany(teamsRef.current, true);
+    }
+  }, [zoom]);
+
   return (
     <div
       ref={mountRef}
@@ -114,4 +171,4 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
       aria-label="全社マップ（WebGL）"
     />
   );
-}
+});

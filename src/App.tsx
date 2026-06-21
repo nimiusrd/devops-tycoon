@@ -154,6 +154,7 @@ export default function App({ game }: AppProps) {
               <OrgScreen
                 org={state.orgScale}
                 budget={state.budget}
+                zoom={zoom}
                 onFocusDept={run.focusDept}
                 onFocusTeam={run.focusTeam}
                 onApplyLever={run.applyOrgLever}

@@ -5,13 +5,13 @@
  * チーム島をタップすると現場へドリルダウンし、部門ヘッダから部署ビューへ寄る。
  * 状態は読むだけ（第22.2）。島の配置は `render/iso.ts` のアイソメ投影で決まる。
  */
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisView } from '../sim/diagnosis';
-import type { OrgScaleState, Team } from '../sim/orgscale/types';
+import type { OrgScaleState, Team, ZoomState } from '../sim/orgscale/types';
 import { getRendererKind } from '../render/adapters/selectRenderer';
 import { HEALTH_COLOR, HEALTH_LABEL, layoutIso, ORG_ISO, ORG_PAD } from '../render/orgView';
-import { OrgPixiField } from './OrgPixiField';
+import { OrgPixiField, type OrgPixiFieldHandle } from './OrgPixiField';
 
 const ISO = ORG_ISO;
 const PAD = ORG_PAD;
@@ -19,21 +19,43 @@ const PAD = ORG_PAD;
 export interface OrgScreenProps {
   org: OrgScaleState;
   budget: number;
+  zoom: ZoomState;
   onFocusDept: (id: string) => void;
   onFocusTeam: (id: string) => void;
   onApplyLever: (leverId: string) => void;
 }
 
-export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever }: OrgScreenProps) {
+export function OrgScreen({
+  org,
+  budget,
+  zoom,
+  onFocusDept,
+  onFocusTeam,
+  onApplyLever,
+}: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
   const layout = layoutIso(teams, ISO, PAD);
   const usePixi = getRendererKind(window.location.search) === 'pixi';
+  const pixiFieldRef = useRef<OrgPixiFieldHandle>(null);
   const deptColorMap = useMemo(
     () => Object.fromEntries(org.departments.map((d) => [d.def.id, d.def.color])),
     [org.departments],
   );
   const deptColor = useCallback((id: string) => deptColorMap[id] ?? '#6b4a9e', [deptColorMap]);
   const fieldHeight = Math.max(260, layout.height);
+
+  const handleFocusDept = useCallback(
+    (deptId: string) => {
+      if (usePixi) {
+        void pixiFieldRef.current?.focusDepartment(deptId).then(() => {
+          onFocusDept(deptId);
+        });
+        return;
+      }
+      onFocusDept(deptId);
+    },
+    [onFocusDept, usePixi],
+  );
 
   return (
     <div className="org-screen" data-testid="org-screen">
@@ -73,7 +95,7 @@ export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever 
             className="org-dept-chip"
             data-testid={`dept-chip-${d.def.id}`}
             style={{ borderColor: d.def.color }}
-            onClick={() => onFocusDept(d.def.id)}
+            onClick={() => handleFocusDept(d.def.id)}
             title="部署ビューへ寄る"
           >
             <span className="dot" style={{ background: d.def.color }} />
@@ -99,7 +121,14 @@ export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever 
             </span>
           </div>
           {usePixi ? (
-            <OrgPixiField teams={teams} onFocusTeam={onFocusTeam} deptColor={deptColor} />
+            <OrgPixiField
+              ref={pixiFieldRef}
+              teams={teams}
+              zoom={zoom}
+              departments={org.departments}
+              onFocusTeam={onFocusTeam}
+              deptColor={deptColor}
+            />
           ) : (
             layout.placed.map(({ item, x, y }) => (
               <TeamIsland

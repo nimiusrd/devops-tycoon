@@ -15,6 +15,8 @@ export interface RunBarProps {
   state: RunState;
   /** 編成画面を開く（指定時のみ編成ボタンを表示）。 */
   onOpenFormation?: () => void;
+  /** 全社マップへズームアウトする（指定時のみ全社ボタンを表示。第4.7）。 */
+  onOpenOrg?: () => void;
 }
 
 /** 表情演出の絵文字（第12.2）。 */
@@ -25,7 +27,7 @@ const FACE: Record<MemberExpression, string> = {
   great: '💪',
 };
 
-export function RunBar({ state, onOpenFormation }: RunBarProps) {
+export function RunBar({ state, onOpenFormation, onOpenOrg }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
   const diag = diagnosisView(state.diagnosis);
   const roster = rosterSummary(state.roster);
@@ -82,6 +84,17 @@ export function RunBar({ state, onOpenFormation }: RunBarProps) {
         </span>
       )}
       <span className={`pill diagnosis diag-${state.diagnosis}`}>{diag.label}</span>
+      {onOpenOrg && (
+        <button
+          type="button"
+          className="pill org-pill"
+          data-testid="open-org"
+          onClick={onOpenOrg}
+          title="全社マップへズームアウト（業界 ▸ 全社 ▸ 部署 ▸ 現場）"
+        >
+          🗺 全社
+        </button>
+      )}
     </div>
   );
 }

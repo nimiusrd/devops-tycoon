@@ -7,6 +7,7 @@
  */
 import type { CardEffects, CardInstance, OrgState, SprintResult, SprintState } from '../types';
 import type { GrowthOutcome, RosterState } from '../member/types';
+import type { IndustryState, OrgScaleState, RankingKind, ZoomState } from '../orgscale/types';
 
 // 周回レイヤのデータ定義（src/data/*）が参照しやすいよう、コア型を再エクスポートする。
 export type { CardEffects, CardInstance } from '../types';
@@ -160,6 +161,15 @@ export interface RunState {
   totals: RunTotals;
   /** 残業号令・アンドンを一度でも使ったか（ノーダメ勝利判定。第14章）。 */
   usedHeavyActions: boolean;
+
+  /** ズーム階層の現在地（業界 ▸ 全社 ▸ 部署 ▸ 現場。第4.7 / MVP5）。 */
+  zoom: ZoomState;
+  /** 業界ランキングで選択中の種別タブ（第4.10）。 */
+  rankingKind: RankingKind;
+  /** 全社マップ集約（zoom が現場以外のときのみ生成。null=未表示）。 */
+  orgScale: OrgScaleState | null;
+  /** 業界ランキング（zoom が業界のときのみ生成。null=未表示）。 */
+  industry: IndustryState | null;
 }
 
 /** ランを通じて積み上がる集計（複数スプリントの合算）。 */

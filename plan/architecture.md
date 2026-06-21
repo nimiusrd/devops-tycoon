@@ -90,6 +90,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
   - ラン開始: `startRun(difficulty?, trials?, seed?)` / `newRun(seed?)`（旧設計の `loadState(seed, scenario)` は廃止。seed は URL パラメータまたは引数で指定）
   - フェーズ駆動: `enterNode(id)` / `step(ms)` / `dispatch(id)` / `acknowledgeResult()` / `chooseCard(defId)` / `skipDraft()` / `unlockEvolution(id)` / `finishEvolution()` / `chooseEvent(index)` / `buyShopCard(defId)` / `buyShopRelic()` / `leaveShop()` / `restChoose(option)`（option に `recruit` を含む）
   - 編成（MVP4 / 第12章）: `assignMember(id, assignment)` / `setMemberAi(id, on)`
+  - 組織スケール / ズーム階層（MVP5 / 第4.7〜4.11）: `zoomTo(level)` / `focusDept(id)` / `focusTeam(id)` / `setRankingKind(kind)` / `applyOrgLever(leverId, deptId?)`。集約結果（`orgScale` / `industry`）と現在地（`zoom` / `rankingKind`）は `getState()` のスナップショットから読む（描画は読むだけ。第22.2）。
 - **デバッグ専用:** `engine`（`RunEngine` への直接参照）。E2E テストからは使わない。
 - `GameHandle` にメソッドを追加する場合は型定義と E2E 型（`tests/e2e/run.spec.ts` 等）を同時更新する。
 - スプライト生成は依存注入にし、テストでモック差し替え可能に。
@@ -106,7 +107,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 ### 4.4 段階的描画移行（第22.4）
 
 - MVP1〜3: DOM/SVG（モックアップ準拠）で素早く。PHASE3 は周回・診断・勝敗の通しプレイ DoD を優先し、過剰投資を避ける。ただし sim は最初から分離・seed付き。
-- MVP5 着手前: 4階層ズーム・巨大組織ビューの前提として PixiJS へ移植を完了する。MVP4 でも粒数/ズーム階層が増える場合は前倒しする。React/TS/Framer Motion/Recharts は役割を限定して継続。
+- MVP5: 4階層ズーム・巨大組織ビューの**描画非依存の基礎**（アイソメ投影 / 深度ソート / 画面外カリング / スプライトプール）を `src/render/iso.ts` に純TS で実装し、数値検証した（第22.5）。全社/部署/業界ビューは現状 DOM/SVG（Framer Motion でクロスフェード）で実装し、`iso.ts` の座標系を共有する。**PixiJS + pixi-viewport への差し替えは、この `iso.ts` を供給先とする局所的なフォローアップ**として残す（実ピクセル/WebGL 検証は Playwright に集約。CI では実 WebGL を回さない方針のため、レンダラ実体の置換は描画前提が固まってから行う）。React/TS/Framer Motion/Recharts は役割を限定して継続。
 
 ### 4.5 世界観の制約（第2.1章）
 

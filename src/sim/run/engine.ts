@@ -9,6 +9,7 @@
  */
 import { BOSS_DEFS, getBoss } from '../../data/bosses';
 import { getCard } from '../../data/cards';
+import { DEPARTMENT_DEFS } from '../../data/departments';
 import { getDifficulty, getTrial } from '../../data/difficulties';
 import { EVENT_DEFS, getEvent } from '../../data/events';
 import { getEvolutionNode } from '../../data/evolution';
@@ -45,6 +46,15 @@ import type {
   SprintResult,
   SprintState,
 } from '../types';
+import { applyLever, emptyAdjustState, generateIndustry, generateOrgScale } from '../orgscale';
+import type {
+  IndustryState,
+  OrgAdjustState,
+  OrgScaleState,
+  RankingKind,
+  ZoomLevel,
+  ZoomState,
+} from '../orgscale/types';
 import { foldPassives, foldRunEffects, toEffects, withBossEffects } from './effects';
 import { applyEventOutcome } from './events';
 import { canUnlock, unlockNode } from './evolution';
@@ -157,6 +167,11 @@ export class RunEngine {
   private totals: RunTotals = emptyTotals();
   private usedHeavyActions = false;
 
+  // 組織スケール（MVP5 / 第4.7〜4.11）。ズーム状態とレバー蓄積を持つ。
+  private zoom: ZoomState = { level: 'team', deptId: null, teamId: null };
+  private rankingKind: RankingKind = 'overall';
+  private orgAdjust: OrgAdjustState = emptyAdjustState();
+
   constructor(init: RunEngineInit = {}) {
     this.seed = init.seed ?? DEFAULT_SEED;
     this.difficulty = init.difficulty ?? 'normal';
@@ -217,6 +232,9 @@ export class RunEngine {
     this.sprintsPlayed = 0;
     this.totals = emptyTotals();
     this.usedHeavyActions = false;
+    this.zoom = { level: 'team', deptId: null, teamId: null };
+    this.rankingKind = 'overall';
+    this.orgAdjust = emptyAdjustState();
     this.status = 'playing';
     this.winType = undefined;
     this.loseReason = undefined;
@@ -625,6 +643,72 @@ export class RunEngine {
     this.phase = 'map';
   }
 
+  // --- 組織スケール / ズーム階層（MVP5 / 第4.7〜4.11） ---
+
+  /**
+   * ズーム階層を切り替える（業界 ▸ 全社 ▸ 部署 ▸ 現場）。
+   * 部署へ移るときは未選択なら先頭部門をフォーカスする。
+   */
+  zoomTo(level: ZoomLevel): void {
+    if (level === 'department' && !this.zoom.deptId) {
+      this.zoom.deptId = DEPARTMENT_DEFS[0]?.id ?? null;
+    }
+    this.zoom = { ...this.zoom, level };
+  }
+
+  /** 部門をフォーカスして部署ビューへ（ドリルダウン）。 */
+  focusDepartment(id: string): void {
+    if (!DEPARTMENT_DEFS.some((d) => d.id === id)) return;
+    this.zoom = { ...this.zoom, level: 'department', deptId: id };
+  }
+
+  /** チームへドリルダウンして現場へ着地する（カメラ寄り演出の終点）。 */
+  focusTeam(id: string): void {
+    this.zoom = { ...this.zoom, level: 'team', teamId: id };
+  }
+
+  /** 業界ランキングの種別タブを切り替える。 */
+  setRankingKind(kind: RankingKind): void {
+    this.rankingKind = kind;
+  }
+
+  /**
+   * 全社 / 部門レバーを発動する（四半期予算を消費して下位制約を緩める。第4.7）。
+   * 予算不足・スコープ不一致は何も起きない。返り値は適用できたか。
+   */
+  applyOrgLever(leverId: string, deptId?: string): boolean {
+    const res = applyLever(this.orgAdjust, this.budget, leverId, deptId);
+    if (!res.changed) return false;
+    this.orgAdjust = res.adjust;
+    this.budget = res.budget;
+    return true;
+  }
+
+  /** 現在の全社マップ集約を生成する（決定論。第4.8）。 */
+  private buildOrgScale(): OrgScaleState {
+    return generateOrgScale({
+      seed: this.seed,
+      org: this.org,
+      totals: this.totals,
+      diagnosis: this.diagnosis,
+      budget: this.budget,
+      adjust: this.orgAdjust,
+      playerEngineers: this.roster.members.length,
+    });
+  }
+
+  /** 現在のズームに応じて全社マップを生成する（現場では不要なので null）。 */
+  private orgScaleForSnapshot(): OrgScaleState | null {
+    return this.zoom.level === 'team' ? null : this.buildOrgScale();
+  }
+
+  /** 業界ランキングを生成する（業界ビューのときのみ）。 */
+  private industryForSnapshot(org: OrgScaleState | null): IndustryState | null {
+    if (this.zoom.level !== 'industry') return null;
+    const scale = org ?? this.buildOrgScale();
+    return generateIndustry(scale, this.rankingKind);
+  }
+
   /** 現在のフェーズ（スナップショットを作らない軽量アクセサ）。 */
   currentPhase(): RunState['phase'] {
     return this.phase;
@@ -637,6 +721,7 @@ export class RunEngine {
 
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */
   snapshot(): RunState {
+    const orgScale = this.orgScaleForSnapshot();
     return {
       seed: this.seed,
       difficulty: this.difficulty,
@@ -672,6 +757,10 @@ export class RunEngine {
       sprintsPlayed: this.sprintsPlayed,
       totals: { ...this.totals },
       usedHeavyActions: this.usedHeavyActions,
+      zoom: { ...this.zoom },
+      rankingKind: this.rankingKind,
+      orgScale,
+      industry: this.industryForSnapshot(orgScale),
     };
   }
 }

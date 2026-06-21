@@ -7,7 +7,17 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react';
 import type { DepartmentState, Team, ZoomState } from '../sim/orgscale/types';
 import { PixiOrgRenderer } from '../render/adapters/pixiOrgRenderer';
-import { ORG_ISO, ORG_PAD, ORG_SPRITE_BUDGET } from '../render/orgView';
+import { ORG_ISO, ORG_PAD, ORG_SPRITE_BUDGET, orgLayoutFingerprint } from '../render/orgView';
+
+/** Playwright Pixi 視覚回帰向け（dev のみ。ドリルダウンせずカメラだけ動かす）。 */
+declare global {
+  interface Window {
+    __orgPixiTest?: {
+      focusTeamCamera(teamId: string): Promise<void>;
+      getZoomScale(): number | null;
+    };
+  }
+}
 
 /** 親から imperative にカメラ操作するためのハンドル。 */
 export interface OrgPixiFieldHandle {
@@ -36,6 +46,8 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
   const onFocusTeamRef = useRef(onFocusTeam);
   const deptColorRef = useRef(deptColor);
   const initDoneRef = useRef(false);
+  /** init / fitToContent と同期した layout 指紋（teams 更新時の refit 判定）。 */
+  const layoutFingerprintRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
     onFocusTeamRef.current = onFocusTeam;
@@ -119,8 +131,16 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
     void renderer.init(mount).then(() => {
       if (cancelled) return;
       initDoneRef.current = true;
+      const fp = orgLayoutFingerprint(teamsRef.current, ORG_ISO, ORG_PAD);
+      layoutFingerprintRef.current = fp;
       renderer.fitToContent(teamsRef.current);
       syncLayout();
+      if (import.meta.env.DEV) {
+        window.__orgPixiTest = {
+          focusTeamCamera: (teamId) => renderer.focusTeamCamera(teamsRef.current, teamId, false),
+          getZoomScale: () => renderer.getZoomScale(),
+        };
+      }
     });
 
     const ro = new ResizeObserver(() => syncLayout());
@@ -132,17 +152,27 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
     return () => {
       cancelled = true;
       initDoneRef.current = false;
+      layoutFingerprintRef.current = null;
+      delete window.__orgPixiTest;
       field?.removeEventListener('scroll', syncLayout);
       ro.disconnect();
       renderer.dispose();
       rendererRef.current = null;
     };
+    // mount/unmount のみ。onFocusTeam / deptColor は ref 経由（deps に入れると WebGL 再生成）。
   }, []);
 
   useEffect(() => {
     const renderer = rendererRef.current;
-    if (!renderer) return;
-    renderer.fitToContent(teams);
+    if (!renderer?.isReady) return;
+
+    const fp = orgLayoutFingerprint(teams, ORG_ISO, ORG_PAD);
+    if (layoutFingerprintRef.current !== fp) {
+      layoutFingerprintRef.current = fp;
+      renderer.invalidateFitCache();
+      renderer.fitToContent(teams);
+    }
+
     const mount = mountRef.current;
     const field = mount?.closest<HTMLElement>('.org-field');
     const scrollHost = field ?? mount;

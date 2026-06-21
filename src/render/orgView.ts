@@ -88,3 +88,14 @@ export function layoutIso<T extends DepthItem>(
   }));
   return { placed, width: maxX - minX + pad * 2, height: maxY - minY + pad * 2 };
 }
+
+/** 全社マップ layoutIso の指紋（Pixi fitToContent キャッシュ / React 同期用）。 */
+export function orgLayoutFingerprint(
+  items: readonly DepthItem[],
+  iso: IsoOptions,
+  pad = 0,
+): string {
+  const layout = layoutIso(items, iso, pad);
+  const key = layout.placed.map(({ item }) => `${item.id}:${item.gridX}:${item.gridY}`).join('|');
+  return `${layout.width}x${layout.height}:${key}`;
+}

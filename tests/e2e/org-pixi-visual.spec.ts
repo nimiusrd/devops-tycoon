@@ -1,7 +1,10 @@
 import { expect, test } from '@playwright/test';
 import type { RunState } from '../../src/sim/run/types';
+import { LOD_BADGE_MAX } from '../../src/render/orgIslandView';
 
 const PIXI_SEED = 'zoom-e2e';
+/** card LOD スクショ対象（プレイヤーチーム。`zoom-e2e` で DOM E2E でも使用）。 */
+const CARD_LOD_TEAM_ID = 'product-t0';
 
 type GameWindow = Window & {
   game?: {
@@ -9,6 +12,10 @@ type GameWindow = Window & {
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
     zoomTo(level: string): RunState;
+  };
+  __orgPixiTest?: {
+    focusTeamCamera(teamId: string): Promise<void>;
+    getZoomScale(): number | null;
   };
 };
 
@@ -45,6 +52,26 @@ async function stabilizeForScreenshot(page: import('@playwright/test').Page) {
   );
 }
 
+/** 既知チームへカメラを寄せ、card LOD（scale >= 0.7）になるまで待つ。 */
+async function focusTeamForCardLod(page: import('@playwright/test').Page, teamId: string) {
+  await page.evaluate(async (id) => {
+    const hook = (window as GameWindow).__orgPixiTest;
+    if (!hook) throw new Error('__orgPixiTest hook missing (dev server + renderer=pixi が必要)');
+    await hook.focusTeamCamera(id);
+  }, teamId);
+  await expect
+    .poll(async () =>
+      page.evaluate(() => (window as GameWindow).__orgPixiTest?.getZoomScale() ?? 0),
+    )
+    .toBeGreaterThanOrEqual(LOD_BADGE_MAX);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+}
+
 test.describe('Pixi 全社マップ視覚回帰 @pixi', () => {
   test.skip(!pixiE2e, 'PIXI_E2E=1 のときだけ実行（既定 CI では WebGL を回さない）');
 
@@ -59,26 +86,12 @@ test.describe('Pixi 全社マップ視覚回帰 @pixi', () => {
     });
   });
 
-  test('card LOD: canvas 上でズームイン後 @pixi', async ({ page }) => {
+  test('card LOD: 既知チームへフォーカスした canvas @pixi', async ({ page }) => {
     await openPixiOrgMap(page, PIXI_SEED);
     await stabilizeForScreenshot(page);
+    await focusTeamForCardLod(page, CARD_LOD_TEAM_ID);
 
-    const mount = page.getByTestId('org-pixi-mount');
-    const box = await mount.boundingBox();
-    expect(box).not.toBeNull();
-    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-    // card LOD 閾値 (>= 0.7) へ寄せる。ホイール量は viewport 既定に合わせて固定。
-    for (let i = 0; i < 10; i++) {
-      await page.mouse.wheel(0, -150);
-    }
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-        }),
-    );
-
-    await expect(mount).toHaveScreenshot('org-pixi-card-lod.png', {
+    await expect(page.getByTestId('org-pixi-mount')).toHaveScreenshot('org-pixi-card-lod.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });

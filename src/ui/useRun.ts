@@ -11,6 +11,7 @@ import type { MetaState } from '../state/meta';
 import type { ActionId, InterventionOutcome } from '../sim/types';
 import type { DifficultyId, RunState } from '../sim/run/types';
 import type { LaneAssignment } from '../sim/member/types';
+import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
 
 /** 自動進行の更新間隔（ms）。 */
 const FRAME_MS = 60;
@@ -35,6 +36,11 @@ export interface UseRun {
   restChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit') => void;
   assignMember: (id: string, assignment: LaneAssignment) => void;
   setMemberAi: (id: string, on: boolean) => void;
+  zoomTo: (level: ZoomLevel) => void;
+  focusDept: (id: string) => void;
+  focusTeam: (id: string) => void;
+  setRankingKind: (kind: RankingKind) => void;
+  applyOrgLever: (leverId: string, deptId?: string) => void;
   newRun: () => void;
 }
 
@@ -87,6 +93,14 @@ export function useRun(game: GameHandle): UseRun {
     (id: string, on: boolean) => void game.setMemberAi(id, on),
     [game],
   );
+  const zoomTo = useCallback((level: ZoomLevel) => void game.zoomTo(level), [game]);
+  const focusDept = useCallback((id: string) => void game.focusDept(id), [game]);
+  const focusTeam = useCallback((id: string) => void game.focusTeam(id), [game]);
+  const setRankingKind = useCallback((kind: RankingKind) => void game.setRankingKind(kind), [game]);
+  const applyOrgLever = useCallback(
+    (leverId: string, deptId?: string) => void game.applyOrgLever(leverId, deptId),
+    [game],
+  );
   const newRun = useCallback(() => void game.newRun(), [game]);
 
   return {
@@ -107,6 +121,11 @@ export function useRun(game: GameHandle): UseRun {
     restChoose,
     assignMember,
     setMemberAi,
+    zoomTo,
+    focusDept,
+    focusTeam,
+    setRankingKind,
+    applyOrgLever,
     newRun,
   };
 }

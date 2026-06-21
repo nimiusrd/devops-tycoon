@@ -12,6 +12,7 @@ import { resolveSeedFromLocation } from './sim/seed';
 import type { ActionId, InterventionOutcome } from './sim/types';
 import type { DifficultyId, RunState } from './sim/run/types';
 import type { LaneAssignment } from './sim/member/types';
+import type { RankingKind, ZoomLevel } from './sim/orgscale/types';
 import { applyRunReward, loadMeta, saveMeta, type MetaState } from './state/meta';
 
 export interface GameHandle {
@@ -55,6 +56,16 @@ export interface GameHandle {
   assignMember(id: string, assignment: LaneAssignment): RunState;
   /** メンバーへの AI 配布を切り替える（編成。第12章）。 */
   setMemberAi(id: string, on: boolean): RunState;
+  /** ズーム階層を切り替える（業界 ▸ 全社 ▸ 部署 ▸ 現場。第4.7 / MVP5）。 */
+  zoomTo(level: ZoomLevel): RunState;
+  /** 部門をフォーカスして部署ビューへ（ドリルダウン。第4.9）。 */
+  focusDept(id: string): RunState;
+  /** チームへドリルダウンして現場へ着地する（第4.11）。 */
+  focusTeam(id: string): RunState;
+  /** 業界ランキングの種別タブを切り替える（第4.10）。 */
+  setRankingKind(kind: RankingKind): RunState;
+  /** 全社 / 部門レバーを発動する（四半期予算を消費。第4.8 / 第4.9）。 */
+  applyOrgLever(leverId: string, deptId?: string): RunState;
   /** 新しいランをタイトルから始める（seed を差し替え可能）。 */
   newRun(seed?: string): RunState;
   /** 現在のメタ進行（解放状況・実績）。 */
@@ -206,6 +217,31 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     setMemberAi(id, on) {
       engine.setMemberAi(id, on);
+      bump();
+      return engine.snapshot();
+    },
+    zoomTo(level) {
+      engine.zoomTo(level);
+      bump();
+      return engine.snapshot();
+    },
+    focusDept(id) {
+      engine.focusDepartment(id);
+      bump();
+      return engine.snapshot();
+    },
+    focusTeam(id) {
+      engine.focusTeam(id);
+      bump();
+      return engine.snapshot();
+    },
+    setRankingKind(kind) {
+      engine.setRankingKind(kind);
+      bump();
+      return engine.snapshot();
+    },
+    applyOrgLever(leverId, deptId) {
+      engine.applyOrgLever(leverId, deptId);
       bump();
       return engine.snapshot();
     },

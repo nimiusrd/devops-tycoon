@@ -6,12 +6,17 @@
  * 背景に残し、リザルト/ドラフト/進化をオーバーレイで重ねる。状態は読むだけ（第22.2）。
  */
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Hud } from './ui/Hud';
 import {
+  Breadcrumb,
+  DeptScreen,
   DraftScreen,
   EventScreen,
   EvolutionScreen,
   FormationScreen,
+  IndustryScreen,
+  OrgScreen,
   RestScreen,
   RunBar,
   RunMapScreen,
@@ -66,10 +71,21 @@ export default function App({ game }: AppProps) {
     state.sprint !== null &&
     (phase === 'sprint' || phase === 'result' || phase === 'draft' || phase === 'evolution');
 
+  // ズーム階層（MVP5 / 第4.7〜4.11）。現場以外を見ているときはオーバーレイで重ねる。
+  const zoom = state.zoom;
+  const focusedDept =
+    state.orgScale?.departments.find((d) => d.def.id === zoom.deptId) ??
+    state.orgScale?.departments[0] ??
+    null;
+
   return (
     <div className={`app ${screenTone(state)}`}>
       <Hud org={state.org} tasks={tasks} />
-      <RunBar state={state} onOpenFormation={() => setFormationOpen(true)} />
+      <RunBar
+        state={state}
+        onOpenFormation={() => setFormationOpen(true)}
+        onOpenOrg={() => run.zoomTo('company')}
+      />
 
       {phase === 'map' && <RunMapScreen state={state} onEnter={run.enterNode} />}
       {showSprint && <SprintScreen state={state} onDispatch={run.dispatch} />}
@@ -117,6 +133,43 @@ export default function App({ game }: AppProps) {
           onClose={() => setFormationOpen(false)}
         />
       )}
+
+      <AnimatePresence>
+        {zoom.level !== 'team' && (
+          <motion.div
+            key={zoom.level}
+            className="zoom-overlay"
+            data-testid="zoom-overlay"
+            data-level={zoom.level}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            <Breadcrumb level={zoom.level} onNavigate={run.zoomTo} />
+            {zoom.level === 'industry' && state.industry && (
+              <IndustryScreen industry={state.industry} onSetKind={run.setRankingKind} />
+            )}
+            {zoom.level === 'company' && state.orgScale && (
+              <OrgScreen
+                org={state.orgScale}
+                budget={state.budget}
+                onFocusDept={run.focusDept}
+                onFocusTeam={run.focusTeam}
+                onApplyLever={run.applyOrgLever}
+              />
+            )}
+            {zoom.level === 'department' && focusedDept && (
+              <DeptScreen
+                dept={focusedDept}
+                budget={state.budget}
+                onFocusTeam={run.focusTeam}
+                onApplyLever={run.applyOrgLever}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

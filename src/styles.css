@@ -1638,3 +1638,457 @@ button.card:active {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Phase 5: 組織スケール / ズーム階層（第4.7〜4.11） ===== */
+
+.org-pill {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: #1f1942;
+  color: var(--text);
+}
+.org-pill:hover {
+  border-color: var(--lav);
+}
+
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 22px;
+  overflow: auto;
+  background:
+    radial-gradient(900px 420px at 80% 0%, #6b4a9e44 0%, transparent 60%),
+    linear-gradient(180deg, #1d1640 0%, #16102e 100%);
+}
+
+/* パンくず */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.breadcrumb-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.breadcrumb-sep {
+  color: var(--text-dim);
+}
+.breadcrumb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #1f1942;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.breadcrumb-btn:hover {
+  border-color: var(--lav);
+  color: var(--text);
+}
+.breadcrumb-btn.active {
+  background: linear-gradient(90deg, #8a6bff, #c9a8ff);
+  color: #1a1338;
+  border-color: transparent;
+  font-weight: 700;
+}
+.breadcrumb-hint {
+  margin-left: auto;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* 共通: 集約HUD */
+.org-head,
+.dept-head,
+.industry-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.org-head h2,
+.dept-head h2,
+.industry-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.org-diagnosis,
+.industry-league,
+.dept-health {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 13px;
+}
+.dept-health[data-health='reviewHell'] {
+  background: #3a1414;
+  border-color: var(--fire);
+}
+.org-rank,
+.industry-season,
+.industry-selfrank {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.org-hud,
+.dept-hud {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.dept-hud {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.org-stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.org-stat dt {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+.org-stat dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.org-stat.tone-good dd {
+  color: var(--mint);
+}
+.org-stat.tone-warn dd {
+  color: var(--sun);
+}
+.org-stat.tone-bad dd {
+  color: var(--coral);
+}
+.org-stat.tone-budget dd {
+  color: var(--sun);
+}
+
+/* 部門チップ */
+.org-depts {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.org-dept-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  background: #1f1942;
+  color: var(--text);
+  cursor: pointer;
+}
+.org-dept-chip:hover {
+  background: #2a2350;
+}
+.org-dept-chip .dot {
+  display: none;
+}
+.org-dept-meta {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+/* 全社マップのアイソメ盤面 */
+.org-field {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: radial-gradient(600px 300px at 50% 30%, #2f256033 0%, transparent 70%), #160f2e;
+  overflow: hidden;
+}
+.org-infra-hub {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #11183a;
+  border: 1px solid var(--sky);
+  font-size: 13px;
+  z-index: 5;
+}
+.org-infra-meta {
+  color: var(--sky);
+}
+.team-island {
+  position: absolute;
+  width: 116px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: #1b1438;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.team-island:hover {
+  background: #271c52;
+  z-index: 10;
+}
+.team-island.is-player {
+  outline: 2px solid var(--sun);
+}
+.team-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.team-name {
+  font-size: 13px;
+}
+.team-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.team-fire {
+  font-size: 11px;
+  color: var(--fire);
+}
+
+/* レバー */
+.org-levers,
+.dept-levers {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.org-levers-title {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-right: 4px;
+}
+.org-lever {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #2a2350, #211a45);
+  color: var(--text);
+  cursor: pointer;
+}
+.org-lever:hover:not(:disabled) {
+  border-color: var(--lav);
+}
+.org-lever:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.org-lever-cost {
+  color: var(--sun);
+  font-size: 12px;
+}
+
+/* 部署ビュー */
+.dept-teams {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.team-pipe-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.team-pipe {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--mint);
+  background: #1b1438;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.team-pipe.health-congested {
+  border-left-color: var(--sun);
+}
+.team-pipe.health-reviewHell {
+  border-left-color: var(--fire);
+  background: #2a1430;
+}
+.team-pipe.chained {
+  box-shadow: inset 0 0 0 1px var(--fire);
+}
+.team-pipe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.team-pipe-badge {
+  font-size: 11px;
+  color: #1a1338;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.team-lanes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.team-lane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #11183a;
+}
+.team-lane.hot {
+  background: #3a1414;
+}
+.lane-name {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.lane-count {
+  font-size: 16px;
+  font-weight: 700;
+}
+.lane-arrow {
+  color: var(--text-dim);
+}
+.team-pipe-fire {
+  color: var(--fire);
+  font-size: 12px;
+}
+.team-pipe-chain {
+  color: var(--sun);
+  font-size: 12px;
+}
+.dep-arrow {
+  color: var(--text-dim);
+}
+
+/* 業界ランキング */
+.industry-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.industry-tab {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #1f1942;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.industry-tab.active {
+  background: linear-gradient(90deg, #3fb6ff, #57e08f);
+  color: #0e1430;
+  border-color: transparent;
+  font-weight: 700;
+}
+.industry-skyline {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 190px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #11183a 0%, #0e1430 100%);
+  /* 装飾（aria-hidden）。遷移アニメ中もクリックを奪わない。 */
+  pointer-events: none;
+}
+.hq {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 0;
+}
+.hq-crown {
+  height: 18px;
+}
+.hq-bar {
+  width: 100%;
+  max-width: 48px;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #6cc6ff, #3a6fd8);
+}
+.hq-bar.is-self {
+  background: linear-gradient(180deg, #ffd45c, #ff9a3d);
+  box-shadow: 0 0 14px #ffd45c99;
+}
+.hq-rank {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.industry-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.industry-table th,
+.industry-table td {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.industry-table th {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.industry-table tr.is-self {
+  background: #2b205066;
+  outline: 1px solid var(--sun);
+}
+.industry-table .score {
+  font-weight: 700;
+}
+.industry-table .trend--1 {
+  color: var(--coral);
+}
+.industry-table .trend-1 {
+  color: var(--mint);
+}
+
+/* 集約HUD のモバイル段組（基底の 8/6 列より後に置いて確実に上書きする）。 */
+@media (max-width: 860px) {
+  .org-hud,
+  .dept-hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

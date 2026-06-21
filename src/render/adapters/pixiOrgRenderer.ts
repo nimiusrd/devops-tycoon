@@ -23,6 +23,12 @@ import { SpritePool, type CameraRect } from '../iso';
 import { planOrgScene, type OrgSceneOptions } from '../orgScene';
 import type { RendererAdapter } from './index';
 
+/**
+ * 破棄オプション（Pixi v8）。子・テクスチャに加え `context: true` で WebGL
+ * コンテキストを解放し、画面の出入りでコンテキストが蓄積するのを防ぐ。
+ */
+const DESTROY_OPTIONS = { children: true, texture: true, context: true } as const;
+
 /** PixiJS 全社マップレンダラの入力（チーム配列＋カメラ可視範囲）。 */
 export interface PixiOrgInput {
   teams: readonly Team[];
@@ -40,6 +46,8 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private viewport: Viewport | null = null;
   private readonly layer = new Container();
   private pool: SpritePool<Graphics> | null = null;
+  /** dispose 済みフラグ（非同期 init の中断判定）。init/dispose は 1 インスタンス 1 回。 */
+  private disposed = false;
   private readonly opts: PixiOrgRendererOptions;
 
   constructor(opts: PixiOrgRendererOptions) {
@@ -50,6 +58,16 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   async init(mount: HTMLElement): Promise<void> {
     const app = new Application();
     await app.init({ background: '#0e0b1a', resizeTo: mount, antialias: true });
+
+    // init は非同期。解決前に dispose された場合（React.StrictMode の二重マウントや
+    // 初期化中の画面離脱）は、ここで破棄して中断する。app はまだローカル変数なので
+    // dispose() からは触れず、この継続で確実に後始末してリーク（孤児 canvas /
+    // WebGL コンテキスト）を防ぐ。
+    if (this.disposed) {
+      app.destroy(true, DESTROY_OPTIONS);
+      return;
+    }
+
     mount.appendChild(app.canvas);
 
     const viewport = new Viewport({
@@ -111,11 +129,12 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     }
   }
 
-  /** WebGL リソースを破棄する。 */
+  /** WebGL リソースを破棄する。init の解決前でも呼べる（disposed で中断させる）。 */
   dispose(): void {
+    this.disposed = true;
     this.pool?.releaseAll();
     this.viewport?.destroy();
-    this.app?.destroy(true, { children: true });
+    this.app?.destroy(true, DESTROY_OPTIONS);
     this.app = null;
     this.viewport = null;
     this.pool = null;

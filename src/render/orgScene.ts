@@ -9,8 +9,14 @@
  * チーム島の DOM レイアウト（箱に収める）は `render/orgView.ts` の `layoutIso`、
  * こちらはカメラ可視範囲＋スプライト予算で「実際に描く列」を絞り込む役割。
  */
-import type { Team } from '../sim/orgscale/types';
+import type { Team, TeamHealth } from '../sim/orgscale/types';
 import { cullVisible, depthSort, isoProject, type CameraRect, type IsoOptions } from './iso';
+import {
+  detailForZoom,
+  teamIslandView,
+  type OrgIslandDetail,
+  type TeamIslandLabels,
+} from './orgIslandView';
 import { HEALTH_COLOR } from './orgView';
 
 /** シーン計画のパラメータ。 */
@@ -24,6 +30,10 @@ export interface OrgSceneOptions {
   spriteBudget: number;
   /** カリングの余白 px（島の見た目サイズ分の取りこぼしを救う）。 */
   cullMargin?: number;
+  /** viewport scale（LOD 判定。未指定時は card 相当）。 */
+  zoomScale?: number;
+  /** 部門 ID → 枠線色。未指定時は OrgScreen と同じフォールバック色。 */
+  deptColor?: (deptId: string) => string;
 }
 
 /** 1 スプライト分の描画指示（WebGL 非依存。レンダラはこれを読むだけ）。 */
@@ -38,6 +48,22 @@ export interface OrgSprite {
   isPlayer: boolean;
   /** 炎上演出の強度 0..1（incidents 由来）。 */
   fire: number;
+  /** チーム名（生値。表示は labels.name を優先）。 */
+  name: string;
+  /** 部門枠線色。 */
+  deptColor: string;
+  /** 出荷。 */
+  shipping: number;
+  /** AI 依存度 0..100。 */
+  aiDependency: number;
+  /** 炎上インシデント数。 */
+  incidents: number;
+  /** 健全度。 */
+  health: TeamHealth;
+  /** LOD 詳細度。 */
+  detail: OrgIslandDetail;
+  /** DOM 同等の表示ラベル。 */
+  labels: TeamIslandLabels;
 }
 
 /** シーン計画の結果（描画列＋数値メトリクス）。 */
@@ -55,6 +81,9 @@ export interface OrgScenePlan {
 /** この件数の炎上で fire 強度が最大（1.0）に達する。 */
 const FIRE_MAX = 6;
 
+/** 部門色 lookup 未指定時のフォールバック（OrgScreen と同値）。 */
+const DEFAULT_DEPT_COLOR = '#6b4a9e';
+
 /**
  * チーム配列とカメラ矩形から、全社マップの 1 フレーム分の描画列を組み立てる。
  *
@@ -66,7 +95,9 @@ export function planOrgScene(
   camera: CameraRect,
   opts: OrgSceneOptions,
 ): OrgScenePlan {
-  const { iso, spriteBudget, cullMargin = 0 } = opts;
+  const { iso, spriteBudget, cullMargin = 0, zoomScale = 1, deptColor } = opts;
+  const detail = detailForZoom(zoomScale);
+  const resolveDeptColor = deptColor ?? (() => DEFAULT_DEPT_COLOR);
   // 1) 画面外カリング（性能の要。第22.5）。
   const { visible, culled } = cullVisible(teams, camera, iso, cullMargin);
   // 2) 画家順（奥→手前）に深度ソート。
@@ -76,6 +107,7 @@ export function planOrgScene(
   const overBudget = sorted.length - drawn.length;
   const sprites = drawn.map((t): OrgSprite => {
     const p = isoProject(t.gridX, t.gridY, iso);
+    const labels = teamIslandView(t, detail);
     return {
       teamId: t.id,
       x: p.x,
@@ -83,6 +115,14 @@ export function planOrgScene(
       tint: HEALTH_COLOR[t.health],
       isPlayer: t.isPlayer,
       fire: Math.min(1, Math.max(0, t.incidents) / FIRE_MAX),
+      name: t.name,
+      deptColor: resolveDeptColor(t.deptId),
+      shipping: t.shipping,
+      aiDependency: t.aiDependency,
+      incidents: t.incidents,
+      health: t.health,
+      detail,
+      labels,
     };
   });
   return { sprites, culled, overBudget, total: teams.length };

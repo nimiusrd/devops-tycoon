@@ -1817,11 +1817,22 @@ button.card:active {
   background: radial-gradient(600px 300px at 50% 30%, #2f256033 0%, transparent 70%), #160f2e;
   overflow: hidden;
 }
+.org-pixi-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.org-pixi-mount canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 .org-infra-hub {
   position: absolute;
   left: 50%;
   top: 10px;
   transform: translateX(-50%);
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 8px;

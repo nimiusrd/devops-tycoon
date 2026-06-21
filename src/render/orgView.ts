@@ -36,6 +36,28 @@ export interface Layout<T> {
   height: number;
 }
 
+/** 全社マップ DOM/Pixi 共通のアイソメ寸法・余白。 */
+export const ORG_ISO = { tileW: 132, tileH: 82 } as const;
+export const ORG_PAD = 64;
+/** 同時描画スプライト上限（性能予算。第22.5）。 */
+export const ORG_SPRITE_BUDGET = 500;
+
+/**
+ * `layoutIso` の min 正規化 + pad を `isoProject` の origin に写す。
+ * Pixi 側で DOM と同じ座標系を使うための純関数（GPU 不要）。
+ */
+export function isoLayoutOrigin<T extends DepthItem>(
+  items: readonly T[],
+  iso: IsoOptions,
+  pad = 0,
+): { originX: number; originY: number } {
+  if (items.length === 0) return { originX: pad, originY: pad };
+  const points = items.map((it) => isoProject(it.gridX, it.gridY, iso));
+  const minX = Math.min(...points.map((p) => p.x));
+  const minY = Math.min(...points.map((p) => p.y));
+  return { originX: -minX + pad, originY: -minY + pad };
+}
+
 /**
  * 格子座標を持つ要素群をアイソメ投影し、左上が (pad, pad) に収まるよう平行移動する。
  * 画家順（奥→手前）に並べて返すので、そのまま重ね描きできる。

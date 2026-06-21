@@ -8,10 +8,12 @@
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisView } from '../sim/diagnosis';
 import type { OrgScaleState, Team } from '../sim/orgscale/types';
-import { HEALTH_COLOR, HEALTH_LABEL, layoutIso } from '../render/orgView';
+import { getRendererKind } from '../render/adapters/selectRenderer';
+import { HEALTH_COLOR, HEALTH_LABEL, layoutIso, ORG_ISO, ORG_PAD } from '../render/orgView';
+import { OrgPixiField } from './OrgPixiField';
 
-const ISO = { tileW: 132, tileH: 82 };
-const PAD = 64;
+const ISO = ORG_ISO;
+const PAD = ORG_PAD;
 
 export interface OrgScreenProps {
   org: OrgScaleState;
@@ -24,6 +26,7 @@ export interface OrgScreenProps {
 export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever }: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
   const layout = layoutIso(teams, ISO, PAD);
+  const usePixi = getRendererKind(window.location.search) === 'pixi';
   const deptColor = (id: string): string =>
     org.departments.find((d) => d.def.id === id)?.def.color ?? '#6b4a9e';
 
@@ -93,16 +96,20 @@ export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever 
             CI {org.infra.ci} / Docs {org.infra.docs} / AI {org.infra.aiGuideline}
           </span>
         </div>
-        {layout.placed.map(({ item, x, y }) => (
-          <TeamIsland
-            key={item.id}
-            team={item}
-            color={deptColor(item.deptId)}
-            x={x}
-            y={y}
-            onClick={() => onFocusTeam(item.id)}
-          />
-        ))}
+        {usePixi ? (
+          <OrgPixiField teams={teams} onFocusTeam={onFocusTeam} />
+        ) : (
+          layout.placed.map(({ item, x, y }) => (
+            <TeamIsland
+              key={item.id}
+              team={item}
+              color={deptColor(item.deptId)}
+              x={x}
+              y={y}
+              onClick={() => onFocusTeam(item.id)}
+            />
+          ))
+        )}
       </div>
 
       <div className="org-levers" data-testid="org-levers">

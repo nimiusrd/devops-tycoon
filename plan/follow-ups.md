@@ -59,6 +59,7 @@
 繰り越し・未解決:
 
 - **PixiJS + pixi-viewport への差し替え**: 描画は現状 DOM/SVG。`src/render/iso.ts`（投影 / 深度 / カリング / プール）を供給先とする**局所的な差し替え**として残す。実 WebGL は CI で回さない方針のため、レンダラ実体の置換は描画前提が固まってから（architecture §4.4）。数百〜数千オブジェクト時の性能予算（スプライト数・カリング数・フレーム時間・メモリ）の数値 DoD は、Pixi 化と同時に詰める。
+  - **下ごしらえ済み（この環境で実装・テスト緑）**: 依存追加（`pixi.js@^8` / `pixi-viewport@^6`）、`RendererAdapter<TState>` の一般化、全社マップの純TSシーン計画 `src/render/orgScene.ts`（カリング/深度/予算）＋数値テスト、`PixiOrgRenderer` 骨組み（`src/render/adapters/pixiOrgRenderer.ts`、init は lazy）、`?renderer=pixi` フラグ（`selectRenderer.ts`、既定 DOM）。**実描画の作り込み・性能計測・React 接続はローカル（DevContainer）で**。手順は [phase-6-webgl-migration.md](./phase-6-webgl-migration.md)。
 - **視覚回帰の固定フレーム**: 既存 mockups を正として、ズーム/ドリルダウンの固定フレームスクリーンショット比較（seed＋一時停止）を Playwright に追加するかは未着手（現状は要素可視性・属性での操作 E2E）。
 - **個体メンバーの集約粒度**: 全社/部署ビューではチーム単位の集約までに留め、個体（MVP4）は現場でのみ表示。チーム島のエンジニア数等への個体反映を深めるかは未着手。
 - **レバー効果のバランス検証**: 全社/部門レバーの効果係数（`src/data/levers.ts`）は暫定。代表 seed のモンテカルロで許容レンジ化する（フェーズ1/4 の統計テスト方針と統一）。

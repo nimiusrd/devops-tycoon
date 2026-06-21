@@ -90,8 +90,8 @@ export function layoutIso<T extends DepthItem>(
 }
 
 /** 全社マップ layoutIso の指紋（Pixi fitToContent キャッシュ / React 同期用）。 */
-export function orgLayoutFingerprint(
-  items: readonly DepthItem[],
+export function orgLayoutFingerprint<T extends DepthItem & { id: string }>(
+  items: readonly T[],
   iso: IsoOptions,
   pad = 0,
 ): string {

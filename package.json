@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "framer-motion": "^12.0.0",
+    "pixi-viewport": "^6.0.3",
+    "pixi.js": "^8.19.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "xstate": "^5.0.0",

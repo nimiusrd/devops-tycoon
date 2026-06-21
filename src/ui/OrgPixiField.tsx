@@ -86,6 +86,14 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
           onFocusTeamRef.current(id);
         }
       },
+      onPlanMetrics: (plan) => {
+        const el = mountRef.current;
+        if (!el) return;
+        el.dataset.orgSprites = String(plan.sprites.length);
+        el.dataset.orgCulled = String(plan.culled);
+        el.dataset.orgOverBudget = String(plan.overBudget);
+        el.dataset.orgTotal = String(plan.total);
+      },
     });
     rendererRef.current = renderer;
 

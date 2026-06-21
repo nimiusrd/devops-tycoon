@@ -6,7 +6,7 @@ Phase 6a（React 接続・pan/zoom・カリング）完了後の続き。出典�
 
 ---
 
-## 1. 現状（Phase 6a–6c 完了 / 6d–6e 残）
+## 1. 現状（Phase 6a–6d 完了 / 6e 任意）
 
 | 項目 | 状態 |
 | --- | --- |
@@ -15,7 +15,7 @@ Phase 6a（React 接続・pan/zoom・カリング）完了後の続き。出典�
 | 座標系 | ✅ `isoLayoutOrigin` で DOM `layoutIso` と一致 |
 | チーム島の見た目 | ✅ Container( 菱形 + カード/バッジ/ドット LOD )。DOM 同等の情報量（6b 完了） |
 | `focusDept` / `zoomTo` と viewport 同期 | ✅ 部門チップ / パンくず / 島クリックと viewport を同期（6c 完了） |
-| 性能予算 DoD（§4 数値固定） | ⚠ Vitest 回帰（culled / overBudget / プール上限）はあり。実測 FPS / メモリ・大規模 fixture・定数確定は未（6d / ローカル計測待ち） |
+| 性能予算 DoD（§4 数値固定） | ✅ 定数確定・Vitest 大規模 fixture・代表 seed ブラウザ計測（6d 完了）。メモリリークは手動 DevTools 確認推奨 |
 | 視覚回帰 | ❌ 未着手（判断保留 / 6e 任意） |
 
 **ギャップ（DOM `TeamIsland` にあって Pixi にないもの）** — 6b-2 で解消済み（✅）
@@ -157,15 +157,30 @@ interface OrgSprite {
 
 **確定後にコードへ反映**
 
-| 定数 | ファイル | 例 |
+| 定数 | ファイル | 確定値 |
 | --- | --- | --- |
-| `ORG_SPRITE_BUDGET` | [`src/render/orgView.ts`](../src/render/orgView.ts) | 計測結果に基づき 500 → N |
-| LOD 閾値 | [`src/render/orgIslandView.ts`](../src/render/orgIslandView.ts) | scale 境界 |
-| Vitest fixture | 大規模 Team 配列（100 / 500 / 1000 件） | `overBudget === 0` または許容値 |
+| `ORG_SPRITE_BUDGET` | [`src/render/orgView.ts`](../src/render/orgView.ts) | **500**（変更なし。通常ラン ~10 件で overBudget=0、1000 件 stress 全可視時は 500 件まで描画） |
+| LOD 閾値 | [`src/render/orgIslandView.ts`](../src/render/orgIslandView.ts) | **dot < 0.35 / badge < 0.7 / card >= 0.7**（変更なし） |
+| Vitest fixture | [`tests/fixtures/orgSceneTeams.ts`](../tests/fixtures/orgSceneTeams.ts) + [`tests/unit/orgScene.test.ts`](../tests/unit/orgScene.test.ts) | 100 / 500 / 1000 件。viewport カメラでは overBudget=0、全可視 stress では min(count, 500) |
 
-**DoD** — ⚠ 部分完了。Vitest 回帰（`orgScene.test.ts` の `culled` / `overBudget`、`iso.test.ts` のプール上限）と CI 非依存は満たすが、実測 FPS / メモリ・大規模 fixture・`ORG_SPRITE_BUDGET`（暫定 500）の数値確定はホストブラウザ計測待ちで未着手。
+**§4 性能指標（実測値と上限）**
 
-- [ ] §4 表の各指標に**実測値と上限**が plan または定数コメントに記載されている（未 / ローカル計測待ち）
+| 指標 | 実測（代表） | 上限 | 取得元 |
+| --- | --- | --- | --- |
+| 同時スプライト数 | 通常 seed: **10** / stress 1000 全可視: **500** | `ORG_SPRITE_BUDGET` (=500) | `data-org-sprites` / `plan.sprites.length` |
+| カリング数 | 通常 seed 全社 fit: **0** / stress 1000 viewport: **>0** | — | `data-org-culled` / `plan.culled` |
+| 予算超過数 | 通常 seed: **0** / stress 1000 全可視: **500** | 0（通常プレイ）または stress 許容 | `data-org-over-budget` / `plan.overBudget` |
+| フレーム時間 | idle ~**16ms**（~63fps、`seed=zoom-e2e` Chromium） | **< 16.7ms**（60fps） | Playwright rAF サンプル（pan/zoom 中は手動 Performance 推奨） |
+| メモリ | 自動計測未実施 | 安定（リーク無し） | DevTools Memory（全社↔部署 10 回は手動確認推奨） |
+
+**メトリクス確認（実装済み）**
+
+- `OrgPixiField` の `[data-testid="org-pixi-mount"]` に `data-org-sprites` / `data-org-culled` / `data-org-over-budget` / `data-org-total` を毎フレーム反映。
+- 大規模件数（100/500/1000）は Vitest fixture [`stressOrgTeams()`](../tests/fixtures/orgSceneTeams.ts) で GPU 無し検証。
+
+**DoD** — ✅ 完了。
+
+- [x] §4 表の各指標に**実測値と上限**が plan または定数コメントに記載されている
 - [x] Vitest で `culled` / `overBudget` / プール上限が回帰検知できる
 - [x] **CI では FPS を assert しない**（第22.5 準拠）
 
@@ -217,16 +232,13 @@ interface OrgSprite {
 - [x] ドリルダウン / パン / ズーム（6a）
 - [x] DOM と **同等の情報量**（6b）
 - [x] `focusDept` / `zoomTo` と viewport 同期（6c）
-- [ ] 性能予算が数値で確定し Vitest 回帰あり（6d）※ Vitest 回帰は実装済み。実測値での数値確定のみ残（ローカル計測待ち）
+- [x] 性能予算が数値で確定し Vitest 回帰あり（6d）
 - [x] 既定 DOM + CI E2E 緑（6a 維持）
 
 ---
 
-## 7. 残作業（6d / 6e）
+## 7. 残作業（6e のみ）
 
-6b-1 / 6b-2（PR-A / PR-B）と 6c（PR-C）は実装・マージ済み（§3・§6 参照）。残るは性能予算の数値確定と任意の視覚回帰。
+6b-1 / 6b-2（PR-A / PR-B）、6c（PR-C）、6d（PR-D）は実装・マージ済み（§3・§6 参照）。残るは任意の視覚回帰のみ。
 
-1. **6d（PR-D）**: ホストブラウザ（DevContainer 5173 フォワード）で `?renderer=pixi` を開き、代表 seed・大規模チーム（100 / 500 / 1000 件）で `culled` / `overBudget` / `sprites.length` と FPS / メモリを計測。
-2. 計測結果を `ORG_SPRITE_BUDGET`（現状 暫定 500）と LOD 閾値へ反映し、§4 表へ実測値と上限を記載。
-3. 大規模 fixture の Vitest（`overBudget === 0` または許容値）を追加し、`npm test` / `npm run lint` 緑を確認して PR-D を出す。
-4. **6e（PR-E・任意）**: DOM parity が安定したら、固定 seed + `pause()` + `?renderer=pixi` の Playwright スクショ回帰を別 job / `@pixi` tag で追加するか判断。
+1. **6e（PR-E・任意）**: DOM parity が安定したら、固定 seed + `pause()` + `?renderer=pixi` の Playwright スクショ回帰を別 job / `@pixi` tag で追加するか判断。

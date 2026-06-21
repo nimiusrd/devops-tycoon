@@ -126,7 +126,8 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     if (!vp) return;
     const layout = layoutIso(teams, this.opts.isoBase, this.opts.pad);
     if (layout.width <= 0 || layout.height <= 0) return;
-    if (this.fittedLayout?.width === layout.width && this.fittedLayout.height === layout.height) return;
+    if (this.fittedLayout?.width === layout.width && this.fittedLayout.height === layout.height)
+      return;
     vp.fit(true, layout.width, layout.height);
     vp.moveCenter(layout.width / 2, layout.height / 2);
     this.fittedLayout = { width: layout.width, height: layout.height };

@@ -43,13 +43,13 @@ DOM/SVG レンダラを PixiJS + pixi-viewport へ **局所的に差し替える
 
 数百〜数千チームを置いたシーンで計測し、上限を数値で固定する。`planOrgScene` の `culled` / `overBudget` / `sprites.length` と Pixi の実測を突き合わせる。
 
-| 指標 | 目標（暫定・要計測） | 取得元 |
-| --- | --- | --- |
-| 同時スプライト数 | `spriteBudget` 以内 | `plan.sprites.length` / Pixi children |
-| カリング数 | 可視外は確実に除外 | `plan.culled` |
-| 予算超過数 | 0（予算設計が妥当なら） | `plan.overBudget` |
-| フレーム時間 | < 16.7ms（60fps） | ブラウザ Performance |
-| メモリ | 安定（リーク無し） | ブラウザ Memory |
+| 指標 | 目標（確定） | 実測（代表） | 取得元 |
+| --- | --- | --- | --- |
+| 同時スプライト数 | `spriteBudget` 以内（**500**） | 通常 seed **10** / stress 1000 全可視 **500** | `plan.sprites.length` / Pixi children |
+| カリング数 | 可視外は確実に除外 | 通常 seed **0** / stress 1000 viewport **>0** | `plan.culled` |
+| 予算超過数 | 0（通常プレイ） | 通常 seed **0** / stress 1000 全可視 **500** | `plan.overBudget` |
+| フレーム時間 | < 16.7ms（60fps） | idle ~**16ms**（`seed=zoom-e2e`） | ブラウザ Performance / rAF |
+| メモリ | 安定（リーク無し） | 自動計測未実施（手動 DevTools 推奨） | ブラウザ Memory |
 
 ---
 

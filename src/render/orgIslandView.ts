@@ -10,7 +10,8 @@ import { HEALTH_LABEL } from './orgView';
 /** ズームに連動する詳細度（第22.5 LOD）。 */
 export type OrgIslandDetail = 'dot' | 'badge' | 'card';
 
-/** LOD 境界: scale < 0.35 → dot、< 0.7 → badge、それ以外 → card。 */
+/** LOD 境界: scale < 0.35 → dot、< 0.7 → badge、それ以外 → card。
+ * Phase 6d: 暫定値のまま確定（pan/zoom 実測で変更不要）。 */
 export const LOD_DOT_MAX = 0.35;
 export const LOD_BADGE_MAX = 0.7;
 

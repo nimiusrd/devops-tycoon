@@ -24,7 +24,7 @@ import {
   teamFocusTargetScale,
   type WorldBounds,
 } from '../orgCamera';
-import { planOrgScene, type OrgSceneOptions, type OrgSprite } from '../orgScene';
+import { planOrgScene, type OrgSceneOptions, type OrgScenePlan, type OrgSprite } from '../orgScene';
 import { truncateName } from '../orgIslandView';
 import { isoLayoutOrigin, layoutIso, ORG_PAD } from '../orgView';
 import type { RendererAdapter } from './index';
@@ -86,6 +86,8 @@ export interface PixiOrgRendererOptions {
   deptColor?: (deptId: string) => string;
   /** チーム島タップ → 現場へドリルダウン（任意）。 */
   onFocusTeam?: (teamId: string) => void;
+  /** dev-only: 直近のシーン計画メトリクス（ブラウザ計測用）。 */
+  onPlanMetrics?: (plan: OrgScenePlan) => void;
 }
 
 /** 1 島 Container の子パーツ（プール再利用用）。 */
@@ -382,6 +384,8 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private tickerBound = false;
   private fieldView: OrgFieldView = { scrollX: 0, scrollY: 0, width: 800, height: 600 };
   private scrollHost: HTMLElement | null = null;
+  /** 直近 render のシーン計画（dev 計測 / デバッグ）。 */
+  private lastPlan: OrgScenePlan | null = null;
 
   constructor(opts: PixiOrgRendererOptions) {
     this.opts = opts;
@@ -470,6 +474,11 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   /** init 済みか（React 側のカメラ同期判定用）。 */
   get isReady(): boolean {
     return this.viewport !== null;
+  }
+
+  /** 直近 render のシーン計画メトリクス（ブラウザ dev 計測用）。 */
+  getLastPlan(): OrgScenePlan | null {
+    return this.lastPlan;
   }
 
   /** world 座標が `.org-field` 可視窓の中央に来るよう scroll を同期する。 */
@@ -664,6 +673,8 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     const halfW = sceneOpts.iso.tileW / 2;
     const halfH = sceneOpts.iso.tileH / 2;
     const plan = planOrgScene(input.teams, input.camera, sceneOpts);
+    this.lastPlan = plan;
+    this.opts.onPlanMetrics?.(plan);
     const onFocus = this.opts.onFocusTeam;
 
     for (const s of plan.sprites) {
@@ -718,5 +729,6 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.pool = null;
     this.lastTeams = [];
     this.fittedLayout = null;
+    this.lastPlan = null;
   }
 }

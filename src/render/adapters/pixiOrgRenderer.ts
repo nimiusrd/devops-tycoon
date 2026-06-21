@@ -10,12 +10,13 @@
  *    から import できる（型検証のため）が、`init()` / `render()` はブラウザ
  *    （DevContainer の dev サーバをホストブラウザで開く）でのみ呼ぶこと。
  */
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, Rectangle, Text } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import type { Team } from '../../sim/orgscale/types';
 import { SpritePool, type CameraRect, type IsoOptions } from '../iso';
-import { planOrgScene, type OrgSceneOptions } from '../orgScene';
-import { isoLayoutOrigin, layoutIso } from '../orgView';
+import { planOrgScene, type OrgSceneOptions, type OrgSprite } from '../orgScene';
+import { truncateName } from '../orgIslandView';
+import { isoLayoutOrigin, layoutIso, ORG_PAD } from '../orgView';
 import type { RendererAdapter } from './index';
 
 /**
@@ -23,6 +24,33 @@ import type { RendererAdapter } from './index';
  * コンテキストを解放し、画面の出入りでコンテキストが蓄積するのを防ぐ。
  */
 const DESTROY_OPTIONS = { children: true, texture: true, context: true } as const;
+
+/** DOM `.team-island` と同寸（styles.css）。 */
+const CARD_W = 116;
+const CARD_PAD_X = 10;
+const CARD_PAD_Y = 8;
+const CARD_RADIUS = 12;
+const CARD_LINE_GAP = 2;
+const COLOR_BG = '#1b1438';
+const COLOR_TEXT = '#f0e8ff';
+const COLOR_TEXT_DIM = '#b9add0';
+const COLOR_SUN = '#ffd45c';
+const COLOR_FIRE = '#ff7a2f';
+const COLOR_FIRE_STROKE = '#ff5f1f';
+
+/** dot LOD の菱形半径（`ORG_PAD` 内に収める）。 */
+function dotLodHalfExtents(halfW: number, halfH: number): { halfW: number; halfH: number } {
+  const scale = Math.min(ORG_PAD / halfW, ORG_PAD / halfH, 1);
+  return { halfW: halfW * scale, halfH: halfH * scale };
+}
+
+/** org-field スクロール窓（canvas 上の可視領域）。 */
+export interface OrgFieldView {
+  scrollX: number;
+  scrollY: number;
+  width: number;
+  height: number;
+}
 
 /** PixiJS 全社マップレンダラの入力（チーム配列＋カメラ可視範囲）。 */
 export interface PixiOrgInput {
@@ -40,20 +68,299 @@ export interface PixiOrgRendererOptions {
   spriteBudget: number;
   /** カリング余白 px。 */
   cullMargin?: number;
+  /** 部門 ID → 枠線色（DOM `deptColor` と同値）。 */
+  deptColor?: (deptId: string) => string;
   /** チーム島タップ → 現場へドリルダウン（任意）。 */
   onFocusTeam?: (teamId: string) => void;
+}
+
+/** 1 島 Container の子パーツ（プール再利用用）。 */
+interface IslandParts {
+  bg: Graphics;
+  diamond: Graphics;
+  /** 炎上 stroke 専用（fill の alpha を点滅で汚さない）。 */
+  fireRing: Graphics;
+  nameText: Text;
+  shippingText: Text;
+  aiText: Text;
+  fireText: Text;
+  badge: Graphics;
+}
+
+/** クリック判定用の矩形（島中心からの offset）。 */
+interface IslandHitBounds {
+  hitX: number;
+  hitY: number;
+  hitW: number;
+  hitH: number;
+}
+
+/** 炎上 stroke の点滅対象。 */
+interface FirePulse {
+  gfx: Graphics;
+  fire: number;
+}
+
+function makeText(style: { fontSize: number; fill: string; bold?: boolean }): Text {
+  return new Text({
+    text: '',
+    style: {
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: style.fontSize,
+      fill: style.fill,
+      fontWeight: style.bold ? 'bold' : 'normal',
+    },
+  });
+}
+
+function createIslandContainer(): Container {
+  const container = new Container();
+  const parts: IslandParts = {
+    bg: new Graphics(),
+    diamond: new Graphics(),
+    fireRing: new Graphics(),
+    nameText: makeText({ fontSize: 13, fill: COLOR_TEXT, bold: true }),
+    shippingText: makeText({ fontSize: 11, fill: COLOR_TEXT_DIM }),
+    aiText: makeText({ fontSize: 11, fill: COLOR_TEXT_DIM }),
+    fireText: makeText({ fontSize: 11, fill: COLOR_FIRE }),
+    badge: new Graphics(),
+  };
+  container.addChild(
+    parts.bg,
+    parts.diamond,
+    parts.fireRing,
+    parts.nameText,
+    parts.shippingText,
+    parts.aiText,
+    parts.fireText,
+    parts.badge,
+  );
+  for (const child of container.children) {
+    child.eventMode = 'none';
+  }
+  (container as Container & { islandParts: IslandParts }).islandParts = parts;
+  return container;
+}
+
+function getParts(container: Container): IslandParts {
+  return (container as Container & { islandParts: IslandParts }).islandParts;
+}
+
+function hideAllParts(parts: IslandParts): void {
+  parts.bg.visible = false;
+  parts.diamond.visible = false;
+  parts.fireRing.visible = false;
+  parts.nameText.visible = false;
+  parts.shippingText.visible = false;
+  parts.aiText.visible = false;
+  parts.fireText.visible = false;
+  parts.badge.visible = false;
+}
+
+/** 幅に収まるまで省略し、描画後の高さを返す。 */
+function layoutLabelLine(text: Text, value: string | null, maxWidth: number): number {
+  if (!value) {
+    text.text = '';
+    text.visible = false;
+    return 0;
+  }
+  text.style.wordWrap = true;
+  text.style.wordWrapWidth = maxWidth;
+  text.visible = true;
+  let shown = value;
+  text.text = shown;
+  while (shown.length > 1 && text.width > maxWidth) {
+    shown = truncateName(shown, shown.length - 1);
+    text.text = shown;
+  }
+  return text.height;
+}
+
+function drawFireRing(g: Graphics, halfW: number, halfH: number, fire: number): void {
+  g.clear();
+  g.alpha = 1;
+  g.moveTo(0, -halfH);
+  g.lineTo(halfW, 0);
+  g.lineTo(0, halfH);
+  g.lineTo(-halfW, 0);
+  g.closePath();
+  g.stroke({ color: COLOR_FIRE_STROKE, width: 1 + fire * 3, alpha: 1 });
+  g.visible = true;
+}
+
+function drawDiamond(g: Graphics, halfW: number, halfH: number, fill: string, alpha: number): void {
+  g.clear();
+  g.alpha = 1;
+  g.moveTo(0, -halfH);
+  g.lineTo(halfW, 0);
+  g.lineTo(0, halfH);
+  g.lineTo(-halfW, 0);
+  g.closePath();
+  g.fill({ color: fill, alpha });
+  g.visible = true;
+}
+
+/** 菱形の当たり判定（タイル矩形より狭く、重なり時の誤クリックを減らす）。 */
+function diamondHitArea(
+  halfW: number,
+  halfH: number,
+): { contains: (x: number, y: number) => boolean } {
+  return {
+    contains(x: number, y: number) {
+      if (halfW <= 0 || halfH <= 0) return false;
+      return Math.abs(x / halfW) + Math.abs(y / halfH) <= 1;
+    },
+  };
+}
+
+function drawCardBg(
+  g: Graphics,
+  w: number,
+  h: number,
+  deptColor: string,
+  healthColor: string,
+  isPlayer: boolean,
+  fire: number,
+): void {
+  g.clear();
+  const x = -w / 2;
+  const y = -h / 2;
+  // 健全度グロー（DOM: box-shadow 0 0 0 2px health55）
+  g.roundRect(x - 2, y - 2, w + 4, h + 4, CARD_RADIUS + 2);
+  g.fill({ color: healthColor, alpha: 0.33 });
+  if (isPlayer) {
+    g.roundRect(x - 3, y - 3, w + 6, h + 6, CARD_RADIUS + 3);
+    g.stroke({ color: COLOR_SUN, width: 2 });
+  }
+  g.roundRect(x, y, w, h, CARD_RADIUS);
+  g.fill({ color: COLOR_BG });
+  g.stroke({ color: deptColor, width: 2 });
+  if (fire > 0) {
+    g.stroke({ color: COLOR_FIRE_STROKE, width: 1 + fire * 2, alpha: 0.9 });
+  }
+  g.visible = true;
+}
+
+function layoutCard(parts: IslandParts, s: OrgSprite): IslandHitBounds & { w: number; h: number } {
+  const labels = s.labels;
+  const innerW = CARD_W - CARD_PAD_X * 2;
+  const left = -CARD_W / 2 + CARD_PAD_X;
+
+  hideAllParts(parts);
+
+  const lineHeights = [
+    layoutLabelLine(parts.nameText, labels.name.length > 0 ? labels.name : null, innerW),
+    layoutLabelLine(parts.shippingText, labels.shipping, innerW),
+    layoutLabelLine(parts.aiText, labels.ai, innerW),
+    layoutLabelLine(parts.fireText, labels.fire, innerW),
+  ].filter((h) => h > 0);
+
+  const contentH =
+    lineHeights.reduce((sum, h) => sum + h, 0) +
+    Math.max(0, lineHeights.length - 1) * CARD_LINE_GAP;
+  const h = contentH + CARD_PAD_Y * 2;
+  const topY = -h / 2 + CARD_PAD_Y;
+
+  let y = topY;
+  for (const text of [parts.nameText, parts.shippingText, parts.aiText, parts.fireText]) {
+    if (!text.visible) continue;
+    text.position.set(left, y);
+    y += text.height + CARD_LINE_GAP;
+  }
+
+  drawCardBg(parts.bg, CARD_W, h, s.deptColor, s.tint, s.isPlayer, s.fire);
+
+  if (labels.showBadge) {
+    parts.badge.clear();
+    parts.badge.circle(CARD_W / 2 - CARD_PAD_X - 5, topY + 11, 5);
+    parts.badge.fill({ color: s.tint });
+    parts.badge.visible = true;
+  }
+
+  return { w: CARD_W, h, hitX: -CARD_W / 2, hitY: -h / 2, hitW: CARD_W, hitH: h };
+}
+
+function layoutBadge(
+  parts: IslandParts,
+  s: OrgSprite,
+  halfW: number,
+  halfH: number,
+): IslandHitBounds {
+  hideAllParts(parts);
+  const dHalfW = halfW * 0.55;
+  const dHalfH = halfH * 0.55;
+  drawDiamond(parts.diamond, dHalfW, dHalfH, s.tint, s.isPlayer ? 1 : 0.85);
+  if (s.fire > 0) {
+    drawFireRing(parts.fireRing, dHalfW, dHalfH, s.fire);
+  }
+
+  const labels = s.labels;
+  let minX = -dHalfW;
+  let maxX = dHalfW;
+  const minY = -dHalfH;
+  let maxY = dHalfH;
+  const textY = halfH * 0.6;
+
+  if (labels.name) {
+    parts.nameText.text = labels.name;
+    parts.nameText.position.set(-dHalfW, textY);
+    parts.nameText.visible = true;
+    minX = Math.min(minX, -dHalfW);
+    maxX = Math.max(maxX, -dHalfW + parts.nameText.width);
+    maxY = Math.max(maxY, textY + parts.nameText.height);
+  }
+
+  if (labels.fire) {
+    const fireX = labels.name ? -dHalfW + parts.nameText.width + 4 : -dHalfW;
+    parts.fireText.text = labels.fire;
+    parts.fireText.position.set(fireX, textY);
+    parts.fireText.visible = true;
+    minX = Math.min(minX, fireX);
+    maxX = Math.max(maxX, fireX + parts.fireText.width);
+    maxY = Math.max(maxY, textY + parts.fireText.height);
+  }
+
+  return {
+    hitX: minX,
+    hitY: minY,
+    hitW: maxX - minX,
+    hitH: maxY - minY,
+  };
+}
+
+function layoutDot(
+  parts: IslandParts,
+  s: OrgSprite,
+  halfW: number,
+  halfH: number,
+): IslandHitBounds {
+  hideAllParts(parts);
+  const dot = dotLodHalfExtents(halfW, halfH);
+  drawDiamond(parts.diamond, dot.halfW, dot.halfH, s.tint, s.isPlayer ? 1 : 0.85);
+  if (s.fire > 0) {
+    drawFireRing(parts.fireRing, dot.halfW, dot.halfH, s.fire);
+  }
+  return {
+    hitX: -dot.halfW,
+    hitY: -dot.halfH,
+    hitW: dot.halfW * 2,
+    hitH: dot.halfH * 2,
+  };
 }
 
 export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private app: Application | null = null;
   private viewport: Viewport | null = null;
   private readonly layer = new Container();
-  private pool: SpritePool<Graphics> | null = null;
+  private pool: SpritePool<Container> | null = null;
   /** dispose 済みフラグ（非同期 init の中断判定）。init/dispose は 1 インスタンス 1 回。 */
   private disposed = false;
   private readonly opts: PixiOrgRendererOptions;
   private lastTeams: readonly Team[] = [];
   private fittedLayout: { width: number; height: number } | null = null;
+  private readonly firePulses: FirePulse[] = [];
+  private tickerBound = false;
+  private fieldView: OrgFieldView = { scrollX: 0, scrollY: 0, width: 800, height: 600 };
 
   constructor(opts: PixiOrgRendererOptions) {
     this.opts = opts;
@@ -62,7 +369,13 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   /** ブラウザでのみ呼ぶ。WebGL コンテキストとビューポートを初期化する。 */
   async init(mount: HTMLElement): Promise<void> {
     const app = new Application();
-    await app.init({ background: '#0e0b1a', resizeTo: mount, antialias: true });
+    await app.init({
+      background: '#0e0b1a',
+      resizeTo: mount,
+      antialias: true,
+      resolution: window.devicePixelRatio,
+      autoDensity: true,
+    });
 
     if (this.disposed) {
       app.destroy(true, DESTROY_OPTIONS);
@@ -70,9 +383,9 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     }
 
     mount.appendChild(app.canvas);
-    // pixi-viewport の wheel は events.domElement に付く。既定は canvas だが、
-    // mount（org-field 内）に限定しないとオーバーレイ上の scroll でも map が zoom する。
-    app.renderer.events.setTargetElement(mount);
+    // ヒットテストは canvas 座標系で行うため、イベントターゲットは canvas に合わせる。
+    // wheel は mount 全体に付くが、盤面外スクロールでの zoom は overlay 内 canvas 外で起きにくい。
+    app.renderer.events.setTargetElement(app.canvas);
 
     const viewport = new Viewport({
       events: app.renderer.events,
@@ -91,33 +404,72 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     viewport.on('moved', redraw);
     viewport.on('zoomed', redraw);
 
-    this.pool = new SpritePool<Graphics>(() => new Graphics(), {
+    this.pool = new SpritePool<Container>(createIslandContainer, {
       max: this.opts.spriteBudget,
-      reset: (g) => {
-        g.clear();
-        g.removeAllListeners();
+      reset: (c) => {
+        c.removeAllListeners();
+        c.eventMode = 'auto';
+        c.cursor = 'default';
+        c.position.set(0, 0);
+        c.hitArea = null;
+        const parts = getParts(c);
+        parts.bg.clear();
+        parts.diamond.clear();
+        parts.diamond.alpha = 1;
+        parts.fireRing.clear();
+        parts.fireRing.alpha = 1;
+        parts.badge.clear();
+        parts.nameText.text = '';
+        parts.shippingText.text = '';
+        parts.aiText.text = '';
+        parts.fireText.text = '';
+        hideAllParts(parts);
       },
     });
 
+    if (!this.tickerBound) {
+      app.ticker.add(() => this.pulseFireStrokes());
+      this.tickerBound = true;
+    }
+
     this.app = app;
     this.viewport = viewport;
+  }
+
+  /** org-field のスクロール窓を更新する（カリングの可視範囲）。 */
+  setFieldView(view: OrgFieldView): void {
+    this.fieldView = view;
+  }
+
+  /** 炎上菱形 stroke の点滅（browser のみ）。 */
+  private pulseFireStrokes(): void {
+    if (this.firePulses.length === 0) return;
+    const phase = 0.5 + 0.5 * Math.sin(performance.now() / 200);
+    for (const { gfx, fire } of this.firePulses) {
+      gfx.alpha = 0.55 + phase * 0.45 * fire;
+    }
   }
 
   /** viewport の可視範囲を `CameraRect` へ変換する（カリング供給）。 */
   getCameraRect(): CameraRect {
     const vp = this.viewport;
     if (!vp) return { x: 0, y: 0, w: 800, h: 600 };
+    const scale = vp.scale.x;
+    const { scrollX, scrollY, width, height } = this.fieldView;
     return {
-      x: vp.left,
-      y: vp.top,
-      w: vp.worldScreenWidth,
-      h: vp.worldScreenHeight,
+      x: vp.left + scrollX / scale,
+      y: vp.top + scrollY / scale,
+      w: width / scale,
+      h: height / scale,
     };
   }
 
-  /** マウント要素のサイズ変更に追従する。 */
-  resize(width: number, height: number): void {
-    this.viewport?.resize(width, height, width, height);
+  /** 盤面（mount）と renderer のピクセルサイズを更新する。 */
+  resize(boardWidth: number, boardHeight: number): void {
+    if (boardWidth > 0 && boardHeight > 0) {
+      this.app?.renderer.resize(boardWidth, boardHeight);
+    }
+    this.viewport?.resize(boardWidth, boardHeight, boardWidth, boardHeight);
   }
 
   /** DOM 盤面と同サイズの world を画面に収める。内容サイズが変わった時だけ再フィットする。 */
@@ -142,48 +494,72 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   /** 最新のチーム状態を読んで 1 フレーム描く。init() 前は何もしない。 */
   render(input: PixiOrgInput): void {
     const pool = this.pool;
-    if (!pool) return;
+    const vp = this.viewport;
+    if (!pool || !vp) return;
 
     this.layer.removeChildren();
     pool.releaseAll();
+    this.firePulses.length = 0;
 
     const origin = isoLayoutOrigin(input.teams, this.opts.isoBase, this.opts.pad);
+    const zoomScale = vp.scale.x;
     const sceneOpts: OrgSceneOptions = {
       iso: { ...this.opts.isoBase, ...origin },
       spriteBudget: this.opts.spriteBudget,
       cullMargin: this.opts.cullMargin,
+      zoomScale,
+      deptColor: this.opts.deptColor,
     };
 
+    const halfW = sceneOpts.iso.tileW / 2;
+    const halfH = sceneOpts.iso.tileH / 2;
     const plan = planOrgScene(input.teams, input.camera, sceneOpts);
+    const onFocus = this.opts.onFocusTeam;
+
     for (const s of plan.sprites) {
-      const g = pool.acquire();
-      if (!g) break;
+      const island = pool.acquire();
+      if (!island) break;
 
-      const halfW = sceneOpts.iso.tileW / 2;
-      const halfH = sceneOpts.iso.tileH / 2;
-      g.moveTo(0, -halfH);
-      g.lineTo(halfW, 0);
-      g.lineTo(0, halfH);
-      g.lineTo(-halfW, 0);
-      g.closePath();
-      g.fill({ color: s.tint, alpha: s.isPlayer ? 1 : 0.85 });
-      if (s.fire > 0) g.stroke({ color: '#ff5f1f', width: 1 + s.fire * 3 });
-      g.position.set(s.x, s.y);
+      const parts = getParts(island);
+      let hit: IslandHitBounds;
+      let useDiamondHit = false;
 
-      const onFocus = this.opts.onFocusTeam;
-      if (onFocus) {
-        g.eventMode = 'static';
-        g.cursor = 'pointer';
-        g.on('pointertap', () => onFocus(s.teamId));
+      if (s.detail === 'card') {
+        const size = layoutCard(parts, s);
+        hit = { hitX: -size.w / 2, hitY: -size.h / 2, hitW: size.w, hitH: size.h };
+      } else if (s.detail === 'badge') {
+        hit = layoutBadge(parts, s, halfW, halfH);
+        if (s.fire > 0) {
+          this.firePulses.push({ gfx: parts.fireRing, fire: s.fire });
+        }
+      } else {
+        hit = layoutDot(parts, s, halfW, halfH);
+        useDiamondHit = true;
+        if (s.fire > 0) {
+          this.firePulses.push({ gfx: parts.fireRing, fire: s.fire });
+        }
       }
 
-      this.layer.addChild(g);
+      island.position.set(s.x, s.y);
+      island.interactiveChildren = false;
+
+      if (onFocus) {
+        island.eventMode = 'static';
+        island.cursor = 'pointer';
+        island.hitArea = useDiamondHit
+          ? diamondHitArea(hit.hitW / 2, hit.hitH / 2)
+          : new Rectangle(hit.hitX, hit.hitY, hit.hitW, hit.hitH);
+        island.on('pointertap', () => onFocus(s.teamId));
+      }
+
+      this.layer.addChild(island);
     }
   }
 
   /** WebGL リソースを破棄する。init の解決前でも呼べる（disposed で中断させる）。 */
   dispose(): void {
     this.disposed = true;
+    this.firePulses.length = 0;
     this.pool?.releaseAll();
     this.viewport?.destroy();
     this.app?.destroy(true, DESTROY_OPTIONS);

@@ -12,17 +12,23 @@ import { ORG_ISO, ORG_PAD, ORG_SPRITE_BUDGET } from '../render/orgView';
 export interface OrgPixiFieldProps {
   teams: readonly Team[];
   onFocusTeam: (id: string) => void;
+  deptColor: (deptId: string) => string;
 }
 
-export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
+export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiOrgRenderer | null>(null);
   const teamsRef = useRef(teams);
   const onFocusTeamRef = useRef(onFocusTeam);
+  const deptColorRef = useRef(deptColor);
 
   useLayoutEffect(() => {
     onFocusTeamRef.current = onFocusTeam;
   }, [onFocusTeam]);
+
+  useLayoutEffect(() => {
+    deptColorRef.current = deptColor;
+  }, [deptColor]);
 
   useEffect(() => {
     teamsRef.current = teams;
@@ -37,29 +43,44 @@ export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
       pad: ORG_PAD,
       spriteBudget: ORG_SPRITE_BUDGET,
       cullMargin: ORG_ISO.tileW / 2,
+      deptColor: (id) => deptColorRef.current(id),
       onFocusTeam: (id) => onFocusTeamRef.current(id),
     });
     rendererRef.current = renderer;
 
-    let cancelled = false;
-    void renderer.init(mount).then(() => {
-      if (cancelled) return;
-      const current = teamsRef.current;
-      renderer.fitToContent(current);
-      renderer.renderTeams(current);
-    });
+    const field = mount.closest<HTMLElement>('.org-field');
 
-    const ro = new ResizeObserver(() => {
+    const syncLayout = (): void => {
       const el = mountRef.current;
       const r = rendererRef.current;
       if (!el || !r) return;
+      const scrollHost = field ?? el;
+      r.setFieldView({
+        scrollX: scrollHost.scrollLeft,
+        scrollY: scrollHost.scrollTop,
+        width: scrollHost.clientWidth,
+        height: scrollHost.clientHeight,
+      });
       r.resize(el.clientWidth, el.clientHeight);
       r.renderTeams(teamsRef.current);
+    };
+
+    let cancelled = false;
+    void renderer.init(mount).then(() => {
+      if (cancelled) return;
+      renderer.fitToContent(teamsRef.current);
+      syncLayout();
     });
+
+    const ro = new ResizeObserver(() => syncLayout());
     ro.observe(mount);
+    if (field) ro.observe(field);
+
+    field?.addEventListener('scroll', syncLayout, { passive: true });
 
     return () => {
       cancelled = true;
+      field?.removeEventListener('scroll', syncLayout);
       ro.disconnect();
       renderer.dispose();
       rendererRef.current = null;
@@ -70,6 +91,18 @@ export function OrgPixiField({ teams, onFocusTeam }: OrgPixiFieldProps) {
     const renderer = rendererRef.current;
     if (!renderer) return;
     renderer.fitToContent(teams);
+    const mount = mountRef.current;
+    const field = mount?.closest<HTMLElement>('.org-field');
+    const scrollHost = field ?? mount;
+    if (scrollHost) {
+      renderer.setFieldView({
+        scrollX: scrollHost.scrollLeft,
+        scrollY: scrollHost.scrollTop,
+        width: scrollHost.clientWidth,
+        height: scrollHost.clientHeight,
+      });
+    }
+    if (mount) renderer.resize(mount.clientWidth, mount.clientHeight);
     renderer.renderTeams(teams);
   }, [teams]);
 

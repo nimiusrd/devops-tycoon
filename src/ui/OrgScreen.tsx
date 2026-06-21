@@ -5,6 +5,7 @@
  * チーム島をタップすると現場へドリルダウンし、部門ヘッダから部署ビューへ寄る。
  * 状態は読むだけ（第22.2）。島の配置は `render/iso.ts` のアイソメ投影で決まる。
  */
+import { useCallback, useMemo } from 'react';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisView } from '../sim/diagnosis';
 import type { OrgScaleState, Team } from '../sim/orgscale/types';
@@ -27,8 +28,15 @@ export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever 
   const teams = org.departments.flatMap((d) => d.teams);
   const layout = layoutIso(teams, ISO, PAD);
   const usePixi = getRendererKind(window.location.search) === 'pixi';
-  const deptColor = (id: string): string =>
-    org.departments.find((d) => d.def.id === id)?.def.color ?? '#6b4a9e';
+  const deptColorMap = useMemo(
+    () => Object.fromEntries(org.departments.map((d) => [d.def.id, d.def.color])),
+    [org.departments],
+  );
+  const deptColor = useCallback(
+    (id: string) => deptColorMap[id] ?? '#6b4a9e',
+    [deptColorMap],
+  );
+  const fieldHeight = Math.max(260, layout.height);
 
   return (
     <div className="org-screen" data-testid="org-screen">
@@ -80,36 +88,34 @@ export function OrgScreen({ org, budget, onFocusDept, onFocusTeam, onApplyLever 
         ))}
       </div>
 
-      <div
-        className="org-field"
-        data-testid="org-field"
-        style={{ height: Math.max(260, layout.height) }}
-      >
-        <div
-          className="org-infra-hub"
-          data-testid="org-infra-hub"
-          title="共通基盤ハブ（全チームへ波及）"
-        >
-          <span aria-hidden>🛰</span>
-          <span>共通基盤</span>
-          <span className="org-infra-meta">
-            CI {org.infra.ci} / Docs {org.infra.docs} / AI {org.infra.aiGuideline}
-          </span>
+      <div className="org-field" data-testid="org-field" style={{ height: fieldHeight }}>
+        <div className="org-field-board" style={{ width: layout.width, height: fieldHeight }}>
+          <div
+            className="org-infra-hub"
+            data-testid="org-infra-hub"
+            title="共通基盤ハブ（全チームへ波及）"
+          >
+            <span aria-hidden>🛰</span>
+            <span>共通基盤</span>
+            <span className="org-infra-meta">
+              CI {org.infra.ci} / Docs {org.infra.docs} / AI {org.infra.aiGuideline}
+            </span>
+          </div>
+          {usePixi ? (
+            <OrgPixiField teams={teams} onFocusTeam={onFocusTeam} deptColor={deptColor} />
+          ) : (
+            layout.placed.map(({ item, x, y }) => (
+              <TeamIsland
+                key={item.id}
+                team={item}
+                color={deptColor(item.deptId)}
+                x={x}
+                y={y}
+                onClick={() => onFocusTeam(item.id)}
+              />
+            ))
+          )}
         </div>
-        {usePixi ? (
-          <OrgPixiField teams={teams} onFocusTeam={onFocusTeam} deptColor={deptColor} />
-        ) : (
-          layout.placed.map(({ item, x, y }) => (
-            <TeamIsland
-              key={item.id}
-              team={item}
-              color={deptColor(item.deptId)}
-              x={x}
-              y={y}
-              onClick={() => onFocusTeam(item.id)}
-            />
-          ))
-        )}
       </div>
 
       <div className="org-levers" data-testid="org-levers">

@@ -80,12 +80,6 @@ export function OrgPixiField({ teams, onFocusTeam, deptColor }: OrgPixiFieldProp
     renderer.renderTeams(teams);
   }, [teams]);
 
-  useEffect(() => {
-    const renderer = rendererRef.current;
-    if (!renderer) return;
-    renderer.renderTeams(teamsRef.current);
-  }, [deptColor]);
-
   return (
     <div
       ref={mountRef}

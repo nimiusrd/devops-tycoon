@@ -64,11 +64,21 @@ export interface PixiOrgRendererOptions {
 interface IslandParts {
   bg: Graphics;
   diamond: Graphics;
+  /** 炎上 stroke 専用（fill の alpha を点滅で汚さない）。 */
+  fireRing: Graphics;
   nameText: Text;
   shippingText: Text;
   aiText: Text;
   fireText: Text;
   badge: Graphics;
+}
+
+/** クリック判定用の矩形（島中心からの offset）。 */
+interface IslandHitBounds {
+  hitX: number;
+  hitY: number;
+  hitW: number;
+  hitH: number;
 }
 
 /** 炎上 stroke の点滅対象。 */
@@ -94,6 +104,7 @@ function createIslandContainer(): Container {
   const parts: IslandParts = {
     bg: new Graphics(),
     diamond: new Graphics(),
+    fireRing: new Graphics(),
     nameText: makeText({ fontSize: 13, fill: COLOR_TEXT, bold: true }),
     shippingText: makeText({ fontSize: 11, fill: COLOR_TEXT_DIM }),
     aiText: makeText({ fontSize: 11, fill: COLOR_TEXT_DIM }),
@@ -103,6 +114,7 @@ function createIslandContainer(): Container {
   container.addChild(
     parts.bg,
     parts.diamond,
+    parts.fireRing,
     parts.nameText,
     parts.shippingText,
     parts.aiText,
@@ -123,6 +135,7 @@ function getParts(container: Container): IslandParts {
 function hideAllParts(parts: IslandParts): void {
   parts.bg.visible = false;
   parts.diamond.visible = false;
+  parts.fireRing.visible = false;
   parts.nameText.visible = false;
   parts.shippingText.visible = false;
   parts.aiText.visible = false;
@@ -149,25 +162,44 @@ function layoutLabelLine(text: Text, value: string | null, maxWidth: number): nu
   return text.height;
 }
 
+function drawFireRing(g: Graphics, halfW: number, halfH: number, fire: number): void {
+  g.clear();
+  g.alpha = 1;
+  g.moveTo(0, -halfH);
+  g.lineTo(halfW, 0);
+  g.lineTo(0, halfH);
+  g.lineTo(-halfW, 0);
+  g.closePath();
+  g.stroke({ color: COLOR_FIRE_STROKE, width: 1 + fire * 3, alpha: 1 });
+  g.visible = true;
+}
+
 function drawDiamond(
   g: Graphics,
   halfW: number,
   halfH: number,
   fill: string,
   alpha: number,
-  fire: number,
 ): void {
   g.clear();
+  g.alpha = 1;
   g.moveTo(0, -halfH);
   g.lineTo(halfW, 0);
   g.lineTo(0, halfH);
   g.lineTo(-halfW, 0);
   g.closePath();
   g.fill({ color: fill, alpha });
-  if (fire > 0) {
-    g.stroke({ color: COLOR_FIRE_STROKE, width: 1 + fire * 3, alpha: 1 });
-  }
   g.visible = true;
+}
+
+/** 菱形の当たり判定（タイル矩形より狭く、重なり時の誤クリックを減らす）。 */
+function diamondHitArea(halfW: number, halfH: number): { contains: (x: number, y: number) => boolean } {
+  return {
+    contains(x: number, y: number) {
+      if (halfW <= 0 || halfH <= 0) return false;
+      return Math.abs(x / halfW) + Math.abs(y / halfH) <= 1;
+    },
+  };
 }
 
 function drawCardBg(
@@ -198,7 +230,7 @@ function drawCardBg(
   g.visible = true;
 }
 
-function layoutCard(parts: IslandParts, s: OrgSprite): { w: number; h: number } {
+function layoutCard(parts: IslandParts, s: OrgSprite): IslandHitBounds & { w: number; h: number } {
   const labels = s.labels;
   const innerW = CARD_W - CARD_PAD_X * 2;
   const left = -CARD_W / 2 + CARD_PAD_X;
@@ -234,7 +266,7 @@ function layoutCard(parts: IslandParts, s: OrgSprite): { w: number; h: number } 
     parts.badge.visible = true;
   }
 
-  return { w: CARD_W, h };
+  return { w: CARD_W, h, hitX: -CARD_W / 2, hitY: -h / 2, hitW: CARD_W, hitH: h };
 }
 
 function layoutBadge(
@@ -242,38 +274,66 @@ function layoutBadge(
   s: OrgSprite,
   halfW: number,
   halfH: number,
-): { w: number; h: number } {
+): IslandHitBounds {
   hideAllParts(parts);
-  drawDiamond(parts.diamond, halfW * 0.55, halfH * 0.55, s.tint, s.isPlayer ? 1 : 0.85, s.fire);
+  const dHalfW = halfW * 0.55;
+  const dHalfH = halfH * 0.55;
+  drawDiamond(parts.diamond, dHalfW, dHalfH, s.tint, s.isPlayer ? 1 : 0.85);
+  if (s.fire > 0) {
+    drawFireRing(parts.fireRing, dHalfW, dHalfH, s.fire);
+  }
 
   const labels = s.labels;
-  let w = halfW;
-  let h = halfH;
+  let minX = -dHalfW;
+  let maxX = dHalfW;
+  const minY = -dHalfH;
+  let maxY = dHalfH;
+  const textY = halfH * 0.6;
 
   if (labels.name) {
     parts.nameText.text = labels.name;
-    parts.nameText.position.set(-halfW * 0.55, halfH * 0.6);
+    parts.nameText.position.set(-dHalfW, textY);
     parts.nameText.visible = true;
-    w = Math.max(w, parts.nameText.width + halfW);
-    h = halfH * 0.6 + 14;
+    minX = Math.min(minX, -dHalfW);
+    maxX = Math.max(maxX, -dHalfW + parts.nameText.width);
+    maxY = Math.max(maxY, textY + parts.nameText.height);
   }
 
   if (labels.fire) {
+    const fireX = labels.name ? -dHalfW + parts.nameText.width + 4 : -dHalfW;
     parts.fireText.text = labels.fire;
-    parts.fireText.position.set(
-      labels.name ? -halfW * 0.55 + parts.nameText.width + 4 : -halfW * 0.55,
-      halfH * 0.6,
-    );
+    parts.fireText.position.set(fireX, textY);
     parts.fireText.visible = true;
-    w = Math.max(w, parts.fireText.x + parts.fireText.width + halfW * 0.55);
+    minX = Math.min(minX, fireX);
+    maxX = Math.max(maxX, fireX + parts.fireText.width);
+    maxY = Math.max(maxY, textY + parts.fireText.height);
   }
 
-  return { w, h };
+  return {
+    hitX: minX,
+    hitY: minY,
+    hitW: maxX - minX,
+    hitH: maxY - minY,
+  };
 }
 
-function layoutDot(parts: IslandParts, s: OrgSprite, halfW: number, halfH: number): void {
+function layoutDot(
+  parts: IslandParts,
+  s: OrgSprite,
+  halfW: number,
+  halfH: number,
+): IslandHitBounds {
   hideAllParts(parts);
-  drawDiamond(parts.diamond, halfW, halfH, s.tint, s.isPlayer ? 1 : 0.85, s.fire);
+  drawDiamond(parts.diamond, halfW, halfH, s.tint, s.isPlayer ? 1 : 0.85);
+  if (s.fire > 0) {
+    drawFireRing(parts.fireRing, halfW, halfH, s.fire);
+  }
+  return {
+    hitX: -halfW,
+    hitY: -halfH,
+    hitW: halfW * 2,
+    hitH: halfH * 2,
+  };
 }
 
 export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
@@ -342,6 +402,9 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
         const parts = getParts(c);
         parts.bg.clear();
         parts.diamond.clear();
+        parts.diamond.alpha = 1;
+        parts.fireRing.clear();
+        parts.fireRing.alpha = 1;
         parts.badge.clear();
         parts.nameText.text = '';
         parts.shippingText.text = '';
@@ -435,23 +498,23 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
       if (!island) break;
 
       const parts = getParts(island);
-      let hitW = halfW * 2;
-      let hitH = halfH * 2;
+      let hit: IslandHitBounds;
+      let useDiamondHit = false;
 
       if (s.detail === 'card') {
         const size = layoutCard(parts, s);
-        hitW = size.w;
-        hitH = size.h;
+        hit = { hitX: -size.w / 2, hitY: -size.h / 2, hitW: size.w, hitH: size.h };
       } else if (s.detail === 'badge') {
-        const size = layoutBadge(parts, s, halfW, halfH);
-        hitW = size.w * 2;
-        hitH = size.h * 2;
+        hit = layoutBadge(parts, s, halfW, halfH);
+        if (s.fire > 0) {
+          this.firePulses.push({ gfx: parts.fireRing, fire: s.fire });
+        }
       } else {
-        layoutDot(parts, s, halfW, halfH);
-      }
-
-      if (s.fire > 0 && (s.detail === 'dot' || s.detail === 'badge')) {
-        this.firePulses.push({ gfx: parts.diamond, fire: s.fire });
+        hit = layoutDot(parts, s, halfW, halfH);
+        useDiamondHit = true;
+        if (s.fire > 0) {
+          this.firePulses.push({ gfx: parts.fireRing, fire: s.fire });
+        }
       }
 
       island.position.set(s.x, s.y);
@@ -460,7 +523,9 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
       if (onFocus) {
         island.eventMode = 'static';
         island.cursor = 'pointer';
-        island.hitArea = new Rectangle(-hitW / 2, -hitH / 2, hitW, hitH);
+        island.hitArea = useDiamondHit
+          ? diamondHitArea(halfW, halfH)
+          : new Rectangle(hit.hitX, hit.hitY, hit.hitW, hit.hitH);
         island.on('pointertap', () => onFocus(s.teamId));
       }
 

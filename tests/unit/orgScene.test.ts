@@ -4,6 +4,7 @@
  * これは PixiJS 移行時の性能予算 DoD の供給先（描画は同じ計画を読むだけ）。
  */
 import { describe, expect, it } from 'vitest';
+import { LOD_BADGE_MAX, LOD_DOT_MAX } from '../../src/render/orgIslandView';
 import { planOrgScene, type OrgSceneOptions } from '../../src/render/orgScene';
 import { HEALTH_COLOR } from '../../src/render/orgView';
 import type { Team, TeamHealth } from '../../src/sim/orgscale/types';
@@ -85,6 +86,58 @@ describe('planOrgScene', () => {
     const teams = [team({ id: 'me', gridX: 0, gridY: 0, isPlayer: true })];
     const plan = planOrgScene(teams, BIG_CAMERA, opts());
     expect(plan.sprites[0].isPlayer).toBe(true);
+  });
+
+  it('拡張フィールド・部門色・LOD・ラベルを伝播する', () => {
+    const teams = [
+      team({
+        id: 'plat',
+        gridX: 0,
+        gridY: 0,
+        name: 'Platform',
+        deptId: 'eng',
+        shipping: 55,
+        aiDependency: 33,
+        incidents: 2,
+        health: 'congested',
+        isPlayer: true,
+      }),
+    ];
+    const plan = planOrgScene(
+      teams,
+      BIG_CAMERA,
+      opts({
+        zoomScale: LOD_BADGE_MAX,
+        deptColor: (id) => (id === 'eng' ? '#aabbcc' : '#000000'),
+      }),
+    );
+    const s = plan.sprites[0];
+    expect(s.name).toBe('Platform');
+    expect(s.deptColor).toBe('#aabbcc');
+    expect(s.shipping).toBe(55);
+    expect(s.aiDependency).toBe(33);
+    expect(s.incidents).toBe(2);
+    expect(s.health).toBe('congested');
+    expect(s.detail).toBe('card');
+    expect(s.labels.name).toBe('★ Platform');
+    expect(s.labels.fire).toBe('🔥2');
+    expect(s.labels.shipping).toBe('出荷 55');
+    expect(s.labels.ai).toBe('AI 33');
+  });
+
+  it('zoomScale 未指定時は card、deptColor 未指定時はフォールバック色', () => {
+    const teams = [team({ id: 't', gridX: 0, gridY: 0, name: 'Team A' })];
+    const plan = planOrgScene(teams, BIG_CAMERA, opts());
+    expect(plan.sprites[0].detail).toBe('card');
+    expect(plan.sprites[0].deptColor).toBe('#6b4a9e');
+    expect(plan.sprites[0].labels.shipping).toBe('出荷 0');
+  });
+
+  it('zoomScale が dot 閾値未満なら dot LOD になる', () => {
+    const teams = [team({ id: 't', gridX: 0, gridY: 0, name: 'Far' })];
+    const plan = planOrgScene(teams, BIG_CAMERA, opts({ zoomScale: LOD_DOT_MAX - 0.01 }));
+    expect(plan.sprites[0].detail).toBe('dot');
+    expect(plan.sprites[0].labels.name).toBe('');
   });
 
   it('空入力でも壊れない', () => {

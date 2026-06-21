@@ -1,5 +1,5 @@
 /**
- * 全社マップの PixiJS レンダラ「骨組み」（DOM/SVG → PixiJS の局所差し替え。SPEC 第22.4）。
+ * 全社マップの PixiJS レンダラ（DOM/SVG → PixiJS の局所差し替え。SPEC 第22.4）。
  *
  * 状態を読んで描くだけ（第22.2）。描く内容（位置・深度・色・予算）は純TSの
  * `planOrgScene` が決め、ここは WebGL への反映（スプライトの取得・配置・破棄）
@@ -9,18 +9,13 @@
  * ⚠ 実 WebGL は CI/Node で回さない方針（architecture §4.2）。本ファイルは Node
  *    から import できる（型検証のため）が、`init()` / `render()` はブラウザ
  *    （DevContainer の dev サーバをホストブラウザで開く）でのみ呼ぶこと。
- *
- * ローカル（DevContainer）で詰める TODO:
- *  - 仮の Graphics ダイヤ → 健全度別スプライト/テクスチャへ差し替え。
- *  - 炎上(fire)・渋滞の演出（点滅・パーティクル・延焼アニメ）。
- *  - pixi-viewport のズーム/パンと、4階層ズーム遷移（zoomTo 等）の接続。
- *  - 性能予算 DoD の計測（FPS / メモリ / スプライト数 / カリング数）。
  */
 import { Application, Container, Graphics } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import type { Team } from '../../sim/orgscale/types';
-import { SpritePool, type CameraRect } from '../iso';
+import { SpritePool, type CameraRect, type IsoOptions } from '../iso';
 import { planOrgScene, type OrgSceneOptions } from '../orgScene';
+import { isoLayoutOrigin, layoutIso } from '../orgView';
 import type { RendererAdapter } from './index';
 
 /**
@@ -36,7 +31,15 @@ export interface PixiOrgInput {
 }
 
 /** レンダラの設定（シーン計画のパラメータ＋操作コールバック）。 */
-export interface PixiOrgRendererOptions extends OrgSceneOptions {
+export interface PixiOrgRendererOptions {
+  /** アイソメ投影のベース（origin は teams から毎フレーム算出）。 */
+  isoBase: IsoOptions;
+  /** 盤面余白 px（DOM の layoutIso と同値）。 */
+  pad: number;
+  /** 同時描画スプライト上限。 */
+  spriteBudget: number;
+  /** カリング余白 px。 */
+  cullMargin?: number;
   /** チーム島タップ → 現場へドリルダウン（任意）。 */
   onFocusTeam?: (teamId: string) => void;
 }
@@ -49,6 +52,8 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   /** dispose 済みフラグ（非同期 init の中断判定）。init/dispose は 1 インスタンス 1 回。 */
   private disposed = false;
   private readonly opts: PixiOrgRendererOptions;
+  private lastTeams: readonly Team[] = [];
+  private fitted = false;
 
   constructor(opts: PixiOrgRendererOptions) {
     this.opts = opts;
@@ -59,27 +64,33 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     const app = new Application();
     await app.init({ background: '#0e0b1a', resizeTo: mount, antialias: true });
 
-    // init は非同期。解決前に dispose された場合（React.StrictMode の二重マウントや
-    // 初期化中の画面離脱）は、ここで破棄して中断する。app はまだローカル変数なので
-    // dispose() からは触れず、この継続で確実に後始末してリーク（孤児 canvas /
-    // WebGL コンテキスト）を防ぐ。
     if (this.disposed) {
       app.destroy(true, DESTROY_OPTIONS);
       return;
     }
 
     mount.appendChild(app.canvas);
+    // pixi-viewport の wheel は events.domElement に付く。既定は canvas だが、
+    // mount（org-field 内）に限定しないとオーバーレイ上の scroll でも map が zoom する。
+    app.renderer.events.setTargetElement(mount);
 
     const viewport = new Viewport({
       events: app.renderer.events,
       screenWidth: mount.clientWidth,
       screenHeight: mount.clientHeight,
+      worldWidth: 4000,
+      worldHeight: 4000,
     });
     viewport.drag().pinch().wheel().decelerate();
     viewport.addChild(this.layer);
     app.stage.addChild(viewport);
 
-    // スプライトはプールで再利用し、生成数を予算上限に抑える（第22.5）。
+    const redraw = (): void => {
+      if (this.lastTeams.length > 0) this.renderTeams(this.lastTeams);
+    };
+    viewport.on('moved', redraw);
+    viewport.on('zoomed', redraw);
+
     this.pool = new SpritePool<Graphics>(() => new Graphics(), {
       max: this.opts.spriteBudget,
       reset: (g) => {
@@ -92,23 +103,62 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.viewport = viewport;
   }
 
+  /** viewport の可視範囲を `CameraRect` へ変換する（カリング供給）。 */
+  getCameraRect(): CameraRect {
+    const vp = this.viewport;
+    if (!vp) return { x: 0, y: 0, w: 800, h: 600 };
+    return {
+      x: vp.left,
+      y: vp.top,
+      w: vp.worldScreenWidth,
+      h: vp.worldScreenHeight,
+    };
+  }
+
+  /** マウント要素のサイズ変更に追従する。 */
+  resize(width: number, height: number): void {
+    this.viewport?.resize(width, height, width, height);
+  }
+
+  /** 初回のみ、DOM 盤面と同サイズの world を画面に収める。 */
+  fitToContent(teams: readonly Team[]): void {
+    const vp = this.viewport;
+    if (!vp || this.fitted) return;
+    const layout = layoutIso(teams, this.opts.isoBase, this.opts.pad);
+    if (layout.width <= 0 || layout.height <= 0) return;
+    vp.fit(true, layout.width, layout.height);
+    vp.moveCenter(layout.width / 2, layout.height / 2);
+    this.fitted = true;
+  }
+
+  /** 最新チーム列を viewport カメラで描く（React / pan/zoom 共通入口）。 */
+  renderTeams(teams: readonly Team[]): void {
+    this.lastTeams = teams;
+    this.render({ teams, camera: this.getCameraRect() });
+  }
+
   /** 最新のチーム状態を読んで 1 フレーム描く。init() 前は何もしない。 */
   render(input: PixiOrgInput): void {
     const pool = this.pool;
-    if (!pool) return; // init() 前（または Node からの誤呼び出し）は描画しない。
+    if (!pool) return;
 
-    // 前フレームのスプライトを全返却してから再利用する。
     this.layer.removeChildren();
     pool.releaseAll();
 
-    const plan = planOrgScene(input.teams, input.camera, this.opts);
+    const origin = isoLayoutOrigin(input.teams, this.opts.isoBase, this.opts.pad);
+    const sceneOpts: OrgSceneOptions = {
+      iso: { ...this.opts.isoBase, ...origin },
+      spriteBudget: this.opts.spriteBudget,
+      cullMargin: this.opts.cullMargin,
+    };
+
+    const plan = planOrgScene(input.teams, input.camera, sceneOpts);
     for (const s of plan.sprites) {
       const g = pool.acquire();
-      if (!g) break; // 予算上限。planOrgScene と二重の安全弁。
+      if (!g) break;
 
-      // TODO(local): 仮ダイヤ。健全度スプライト/テクスチャへ差し替える。
-      const halfW = this.opts.iso.tileW / 2;
-      const halfH = this.opts.iso.tileH / 2;
+      const halfW = sceneOpts.iso.tileW / 2;
+      const halfH = sceneOpts.iso.tileH / 2;
       g.moveTo(0, -halfH);
       g.lineTo(halfW, 0);
       g.lineTo(0, halfH);
@@ -138,5 +188,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.app = null;
     this.viewport = null;
     this.pool = null;
+    this.lastTeams = [];
+    this.fitted = false;
   }
 }

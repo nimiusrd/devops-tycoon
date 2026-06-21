@@ -1,0 +1,231 @@
+# フェーズ6b: Pixi 全社マップ — 見た目 parity と Phase 6 DoD 完遂
+
+Phase 6a（React 接続・pan/zoom・カリング）完了後の続き。出典は [`phase-6-webgl-migration.md`](./phase-6-webgl-migration.md) §3〜§5、[follow-ups.md](./follow-ups.md) フェーズ5、[SPEC.md](../SPEC.md) 第22.4 / 第22.5。
+
+> 前提（変更なし）: 実 WebGL は **CI/Node で回さない**。Vitest は純 TS（シーン計画・LOD・ラベル）のみ。ピクセル検証・FPS 計測はホストブラウザ（DevContainer 5173 フォワード）。
+
+---
+
+## 1. 現状（Phase 6a 完了）
+
+| 項目 | 状態 |
+| --- | --- |
+| `?renderer=pixi` opt-in | ✅ `OrgScreen` → `OrgPixiField` → `PixiOrgRenderer` |
+| pan / zoom / カリング | ✅ pixi-viewport + `getCameraRect()` + `planOrgScene` |
+| 座標系 | ✅ `isoLayoutOrigin` で DOM `layoutIso` と一致 |
+| チーム島の見た目 | ⚠ 菱形 + 健全度 tint + 炎上 stroke のみ（**情報量不足**） |
+| `focusDept` / `zoomTo` と viewport 同期 | ❌ 未接続 |
+| 性能予算 DoD（§4 数値固定） | ❌ 未計測・未テスト化 |
+| 視覚回帰 | ❌ 未着手（判断保留） |
+
+**ギャップ（DOM `TeamIsland` にあって Pixi にないもの）**
+
+- 部門色の枠線
+- チーム名（プレイヤー ★）
+- 出荷 / AI 依存度
+- 炎上件数（🔥N）
+- 健全度バッジ・カード型レイアウト（116px 幅）
+- ホバー強調
+
+---
+
+## 2. 方針
+
+1. **状態→見た目は純 TS で先に固める**（第22.5）。DOM と Pixi が同じ `planOrgScene` / ラベル関数を読む。
+2. **LOD（詳細度）を zoom に連動**させ、数百〜数千チームでもテキスト描画コストを抑える。
+3. **1 チーム = 1 Container**（菱形 + ラベル群）。プール対象を `Graphics` から `Container` に昇格。
+4. DOM フォールバックと CI E2E は維持。Pixi 専用 E2E / 視覚回帰は opt-in のみ。
+
+```mermaid
+flowchart LR
+  TeamData["Team[] + deptColor"]
+  Plan["planOrgScene\n+ orgIslandView"]
+  Pixi["PixiOrgRenderer\nContainer pool"]
+  DOM["TeamIsland\n(DOM fallback)"]
+
+  TeamData --> Plan
+  Plan --> Pixi
+  Plan -.->|"同一ラベル関数"| DOM
+```
+
+---
+
+## 3. サブフェーズと着手順
+
+### 6b-1: 純 TS — 島の見た目計画を拡張（GPU 不要）
+
+**目的:** DOM と Pixi が同じ「何を表示するか」を共有する。
+
+| 作業 | ファイル |
+| --- | --- |
+| `OrgSprite` に表示フィールド追加 | [`src/render/orgScene.ts`](../src/render/orgScene.ts) |
+| ラベル・truncation・LOD 判定を純関数化 | 新規 [`src/render/orgIslandView.ts`](../src/render/orgIslandView.ts) |
+| 部門色 lookup | `planOrgScene` の opts に `deptColor: (id) => string` または `departments` 配列 |
+| Vitest 追加 | [`tests/unit/orgScene.test.ts`](../tests/unit/orgScene.test.ts), 新規 `orgIslandView.test.ts` |
+
+**`OrgSprite` 追加フィールド（案）**
+
+```typescript
+interface OrgSprite {
+  // 既存: teamId, x, y, tint, isPlayer, fire
+  name: string;
+  deptColor: string;
+  shipping: number;
+  aiDependency: number;
+  incidents: number;
+  health: TeamHealth;
+  /** LOD: 'dot' | 'badge' | 'card' */
+  detail: OrgIslandDetail;
+}
+```
+
+**LOD 閾値（案・Vitest で固定）**
+
+| viewport scale | detail | 表示内容 |
+| --- | --- | --- |
+| `< 0.35` | `dot` | 菱形のみ |
+| `0.35 .. 0.7` | `badge` | 菱形 + 短い名前 + 炎上ドット |
+| `>= 0.7` | `card` | DOM 同等（名前・出荷・AI・🔥・部門枠） |
+
+`planOrgScene` に `zoomScale: number` を opts で渡す。scale は Pixi 側 `viewport.scale.x` から供給。
+
+**DoD**
+
+- [ ] 同一 Team 入力で DOM 相当のラベル文字列が純関数で決定論的に導出される
+- [ ] LOD 境界値の Vitest が緑
+- [ ] 既存 `orgScene.test.ts` が拡張フィールド込みで緑
+
+---
+
+### 6b-2: Pixi — 複合スプライト描画（ブラウザのみ）
+
+**目的:** 情報量を DOM に近づける。
+
+| 作業 | ファイル |
+| --- | --- |
+| `SpritePool<Container>` へ変更 | [`src/render/adapters/pixiOrgRenderer.ts`](../src/render/adapters/pixiOrgRenderer.ts) |
+| 島 1 個 = Container( Graphics 菱形 + Text 群 ) | 同上 |
+| `detail` に応じて Text の表示/非表示 | 同上 |
+| 部門色 stroke・プレイヤー gold outline | 同上 |
+| 炎上: stroke 点滅（`app.ticker`、browser のみ） | 同上 |
+| `OrgPixiField` から `zoomScale` を render 時に渡す | [`src/ui/OrgPixiField.tsx`](../src/ui/OrgPixiField.tsx) |
+
+**描画メモ**
+
+- 初版は Pixi `Text`（v8）で十分。60fps を下回る場合のみ `BitmapText` + 共有フォント atlas へ差し替え（6d で判断）。
+- 長いチーム名は `orgIslandView.truncateName(name, maxWidth)` で省略。
+- ヒット領域は Container 全体（card サイズに拡張）。
+
+**DoD**
+
+- [ ] `/?renderer=pixi&seed=zoom-e2e` で全社マップを開き、**ズームイン時に DOM と同等の情報**（名前・出荷・AI・炎上・部門枠・★）が読める
+- [ ] ズームアウト時に LOD でラベルが間引かれ、フレーム落ちしない
+- [ ] 島クリックで `onFocusTeam` が動く（既存挙動維持）
+
+---
+
+### 6c: カメラ — 4 階層ズームと viewport 同期
+
+**目的:** 部門チップ / パンくず / ドリルダウンと Pixi カメラを連動。
+
+| 作業 | 内容 |
+| --- | --- |
+| `OrgPixiField` に `zoom: ZoomState` と `departments` を props 追加 | [`src/ui/OrgScreen.tsx`](../src/ui/OrgScreen.tsx) から渡す |
+| `PixiOrgRenderer.focusTeam(id)` | 該当島へ `animate({ position, scale })` |
+| `PixiOrgRenderer.focusDept(id)` | 部門チーム群の bounding box へ fit |
+| `zoomTo('company')` 復帰 | `fitToContent` 相当へ animate |
+| 部門チップクリック | 既存 `onFocusDept` + viewport アニメ |
+
+**DoD**
+
+- [ ] 部門チップ → 該当ゾーンへカメラが寄る
+- [ ] パンくず「全社」→ 全体 fit に戻る
+- [ ] プレイヤー島クリック → ドリルダウン（engine 側は既存のまま）
+
+---
+
+### 6d: 性能予算 DoD の確定（ローカル計測 → 数値テスト）
+
+**目的:** [phase-6 §4](./phase-6-webgl-migration.md#4-性能予算-dodローカルで計測して埋める) を数値で固定。
+
+**計測手順（ホストブラウザ）**
+
+1. 代表 seed でラン開始 → 全社マップ（`?renderer=pixi`）
+2. DevTools Performance: pan/zoom 中のフレーム時間
+3. `planOrgScene` の `culled` / `overBudget` / `sprites.length` を console または dev-only HUD で表示
+4. Memory: 全社 ↔ 部署 ↔ 全社 を 10 回繰り返し、WebGL コンテキストリークがないか確認
+
+**確定後にコードへ反映**
+
+| 定数 | ファイル | 例 |
+| --- | --- | --- |
+| `ORG_SPRITE_BUDGET` | [`src/render/orgView.ts`](../src/render/orgView.ts) | 計測結果に基づき 500 → N |
+| LOD 閾値 | [`src/render/orgIslandView.ts`](../src/render/orgIslandView.ts) | scale 境界 |
+| Vitest fixture | 大規模 Team 配列（100 / 500 / 1000 件） | `overBudget === 0` または許容値 |
+
+**DoD**
+
+- [ ] §4 表の各指標に**実測値と上限**が plan または定数コメントに記載されている
+- [ ] Vitest で `culled` / `overBudget` / プール上限が回帰検知できる
+- [ ] **CI では FPS を assert しない**（第22.5 準拠）
+
+---
+
+### 6e: 視覚回帰（任意・判断）
+
+**判断基準:** 6b-2 で DOM parity が取れたら、固定 seed + `pause()` + `?renderer=pixi` の Playwright スクショ 1〜2 枚を追加するか検討。
+
+- CI 既定は DOM のまま
+- Pixi 視覚回帰は別 job または `@pixi` tag で opt-in
+- フレーク対策: アニメ停止（`document.getAnimations()`）、viewport scale 固定
+
+**DoD（採用する場合のみ）**
+
+- [ ] seed 固定でスクリーンショット diff が安定
+- [ ] CI デフォルト job は DOM E2E のみ緑
+
+---
+
+## 4. スコープ外（Phase 6 以降）
+
+| 項目 | 理由 |
+| --- | --- |
+| スプリント盤面の Pixi 化 | 粒数数十。全社マップ DoD 完遂後 |
+| 健全度別テクスチャ / パーティクル延焼 | 6b-2 の Graphics/Text で足りる間は後回し |
+| `?renderer=pixi` を CI デフォルトにする | architecture §4.2 方針と矛盾 |
+| Node headless-gl | 禁止（第22.5） |
+
+---
+
+## 5. 推奨 PR 分割
+
+| PR | 内容 | レビューしやすさ |
+| --- | --- | --- |
+| **PR-A** | 6b-1 純 TS 拡張 + Vitest | GPU 不要・差分小 |
+| **PR-B** | 6b-2 Pixi 複合描画 + LOD | 見た目確認が必要 |
+| **PR-C** | 6c カメラ同期 | 操作感 |
+| **PR-D** | 6d 性能定数 + 大規模 fixture テスト | 数値のみ |
+| **PR-E**（任意） | 6e 視覚回帰 | 別 job |
+
+---
+
+## 6. Phase 6 全体 DoD（完遂チェックリスト）
+
+[phase-6 §5](./phase-6-webgl-migration.md#5-完了の目安dod) を満たすための最終状態:
+
+- [x] `?renderer=pixi` で全社マップが Pixi 描画（6a）
+- [x] ドリルダウン / パン / ズーム（6a）
+- [ ] DOM と **同等の情報量**（6b）
+- [ ] `focusDept` / `zoomTo` と viewport 同期（6c）
+- [ ] 性能予算が数値で確定し Vitest 回帰あり（6d）
+- [x] 既定 DOM + CI E2E 緑（6a 維持）
+
+---
+
+## 7. 最初の一手（PR-A から）
+
+1. `src/render/orgIslandView.ts` を新規作成し、`teamIslandLabels(team, detail)` と `detailForZoom(scale)` を実装。
+2. `OrgSprite` / `planOrgScene` を拡張（`deptColor` lookup、`detail` 付与）。
+3. `tests/unit/orgIslandView.test.ts` と `orgScene.test.ts` 更新。
+4. `npm test` / `npm run lint` 緑を確認して PR-A を出す。
+5. 続けて PR-B で `PixiOrgRenderer` を Container 描画に差し替え、ホストブラウザで parity 確認。

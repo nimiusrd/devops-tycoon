@@ -31,6 +31,7 @@ DevOps Tycoon の実装計画。[`SPEC.md`](./SPEC.md) の企画内容を、実�
 | [plan/phase-4-character-growth.md](./plan/phase-4-character-growth.md) | キャラクター育成（MVP4） |
 | [plan/phase-5-org-scale.md](./plan/phase-5-org-scale.md) | 組織スケール / 巨大組織対応（MVP5） |
 | [plan/phase-6-webgl-migration.md](./plan/phase-6-webgl-migration.md) | WebGL（PixiJS）移行 / DOM・SVG からの局所差し替え |
+| [plan/phase-6b-pixi-visual-parity.md](./plan/phase-6b-pixi-visual-parity.md) | Phase 6 続き: Pixi 見た目 parity・カメラ同期・性能 DoD |
 | [plan/follow-ups.md](./plan/follow-ups.md) | 各フェーズ実装後のフォローアップ / 未解決事項 |
 
 ---

@@ -16,7 +16,7 @@ Phase 6a（React 接続・pan/zoom・カリング）完了後の続き。出典�
 | チーム島の見た目 | ✅ Container( 菱形 + カード/バッジ/ドット LOD )。DOM 同等の情報量（6b 完了） |
 | `focusDept` / `zoomTo` と viewport 同期 | ✅ 部門チップ / パンくず / 島クリックと viewport を同期（6c 完了） |
 | 性能予算 DoD（§4 数値固定） | ✅ 定数確定・Vitest 大規模 fixture・代表 seed ブラウザ計測（6d 完了）。メモリリークは手動 DevTools 確認推奨 |
-| 視覚回帰 | ❌ 未着手（判断保留 / 6e 任意） |
+| 視覚回帰 | ✅ opt-in E2E（`npm run test:e2e:pixi` / `@pixi` tag。CI 既定 job 外） |
 
 **ギャップ（DOM `TeamIsland` にあって Pixi にないもの）** — 6b-2 で解消済み（✅）
 
@@ -194,10 +194,10 @@ interface OrgSprite {
 - Pixi 視覚回帰は別 job または `@pixi` tag で opt-in
 - フレーク対策: アニメ停止（`document.getAnimations()`）、viewport scale 固定
 
-**DoD（採用する場合のみ）**
+**DoD（採用する場合のみ）** — ✅ 完了（`tests/e2e/org-pixi-visual.spec.ts` / `npm run test:e2e:pixi`）
 
-- [ ] seed 固定でスクリーンショット diff が安定
-- [ ] CI デフォルト job は DOM E2E のみ緑
+- [x] seed 固定でスクリーンショット diff が安定
+- [x] CI デフォルト job は DOM E2E のみ緑
 
 ---
 
@@ -237,8 +237,6 @@ interface OrgSprite {
 
 ---
 
-## 7. 残作業（6e のみ）
+## 7. 残作業
 
-6b-1 / 6b-2（PR-A / PR-B）、6c（PR-C）、6d（PR-D）は実装・マージ済み（§3・§6 参照）。残るは任意の視覚回帰のみ。
-
-1. **6e（PR-E・任意）**: DOM parity が安定したら、固定 seed + `pause()` + `?renderer=pixi` の Playwright スクショ回帰を別 job / `@pixi` tag で追加するか判断。
+6b-1 / 6b-2（PR-A / PR-B）、6c（PR-C）、6d（PR-D）、6e（PR-E・任意）まで実装済み（§3・§6 参照）。Phase 6 DoD は完遂。

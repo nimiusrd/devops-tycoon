@@ -26,7 +26,7 @@ import {
 } from '../orgCamera';
 import { planOrgScene, type OrgSceneOptions, type OrgScenePlan, type OrgSprite } from '../orgScene';
 import { truncateName } from '../orgIslandView';
-import { isoLayoutOrigin, layoutIso, ORG_PAD } from '../orgView';
+import { isoLayoutOrigin, layoutIso, orgLayoutFingerprint, ORG_PAD } from '../orgView';
 import type { RendererAdapter } from './index';
 
 /**
@@ -476,6 +476,11 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     return this.viewport !== null;
   }
 
+  /** viewport の現在 scale（E2E / dev 計測用）。 */
+  getZoomScale(): number | null {
+    return this.viewport?.scale.x ?? null;
+  }
+
   /** 直近 render のシーン計画メトリクス（ブラウザ dev 計測用）。 */
   getLastPlan(): OrgScenePlan | null {
     return this.lastPlan;
@@ -604,6 +609,21 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     }
   }
 
+  /**
+   * 視覚回帰向け: Pixi ticker と炎上 alpha を時間非依存の固定値へ止める。
+   * CSS animation 停止だけでは canvas 内の点滅が残るため E2E 専用。
+   */
+  freezeForScreenshot(): void {
+    const app = this.app;
+    if (!app) return;
+    app.ticker.stop();
+    const phase = 0.5;
+    for (const { gfx, fire } of this.firePulses) {
+      gfx.alpha = 0.55 + phase * 0.45 * fire;
+    }
+    app.render();
+  }
+
   /** viewport の可視範囲を `CameraRect` へ変換する（カリング供給）。 */
   getCameraRect(): CameraRect {
     const vp = this.viewport;
@@ -626,19 +646,27 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.viewport?.resize(boardWidth, boardHeight, boardWidth, boardHeight);
   }
 
+  /** 直近 fitToContent で使った layout 指紋（React 側との同期確認用）。 */
+  getFittedLayoutFingerprint(): string | null {
+    if (!this.fittedLayout) return null;
+    const { width, height, key } = this.fittedLayout;
+    return `${width}x${height}:${key}`;
+  }
+
+  /** fitToContent のキャッシュを破棄する（layout 変更時の強制 refit 用）。 */
+  invalidateFitCache(): void {
+    this.fittedLayout = null;
+  }
+
   /** DOM 盤面と同サイズの world を画面に収める。内容サイズが変わった時だけ再フィットする。 */
   fitToContent(teams: readonly Team[]): void {
     const vp = this.viewport;
     if (!vp) return;
     const layout = layoutIso(teams, this.opts.isoBase, this.opts.pad);
     if (layout.width <= 0 || layout.height <= 0) return;
+    const fingerprint = orgLayoutFingerprint(teams, this.opts.isoBase, this.opts.pad);
+    if (this.getFittedLayoutFingerprint() === fingerprint) return;
     const key = layout.placed.map(({ item }) => `${item.id}:${item.gridX}:${item.gridY}`).join('|');
-    if (
-      this.fittedLayout?.width === layout.width &&
-      this.fittedLayout.height === layout.height &&
-      this.fittedLayout.key === key
-    )
-      return;
     vp.fit(true, layout.width, layout.height);
     vp.moveCenter(layout.width / 2, layout.height / 2);
     this.fittedLayout = { width: layout.width, height: layout.height, key };

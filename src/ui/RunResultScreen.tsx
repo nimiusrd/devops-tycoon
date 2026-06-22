@@ -6,7 +6,7 @@
 import { getBoss } from '../data/bosses';
 import { diagnosisView } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
-import type { MetaState } from '../state/meta';
+import { getDailyRecord, type MetaState } from '../state/meta';
 import type { LoseReason, RunState } from '../sim/run/types';
 
 const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
@@ -30,6 +30,9 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
   const win = won && state.winType ? winView(state.winType) : null;
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
   const t = state.totals;
+  const isDaily = state.runKind === 'daily';
+  const dailyRecord =
+    isDaily && state.dailyDate ? getDailyRecord(meta, state.dailyDate) : undefined;
 
   return (
     <div
@@ -84,6 +87,13 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
           <p className="result-title-value">
             メタ進行ポイント {meta.points} pt / 自己ベスト {meta.bestScore} pt
           </p>
+          {isDaily && state.dailyDate && (
+            <p className="result-daily" data-testid="run-daily-summary">
+              デイリー {state.dailyDate} — 今回 {state.org.deliveryScore} pt
+              {dailyRecord ? ` / 今日のベスト ${dailyRecord.bestScore} pt` : ''}
+              {dailyRecord?.rewardClaimed ? '（本日の報酬は受領済み）' : ''}
+            </p>
+          )}
         </div>
 
         <div className="result-actions">

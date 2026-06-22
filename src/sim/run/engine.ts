@@ -68,7 +68,9 @@ import type {
   RunState,
   RunStatus,
   RunTotals,
+  RunKind,
   ShopOffer,
+  StartRunOptions,
   WinType,
 } from './types';
 
@@ -149,6 +151,8 @@ export class RunEngine {
 
   private phase: RunState['phase'] = 'title';
   private status: RunStatus = 'playing';
+  private runKind: RunKind = 'normal';
+  private dailyDate: string | undefined;
   private winType?: WinType;
   private loseReason?: LoseReason;
 
@@ -197,11 +201,14 @@ export class RunEngine {
     difficulty: DifficultyId = this.difficulty,
     trials: string[] = this.trials,
     seed?: string,
+    options?: StartRunOptions,
   ): void {
     if (seed !== undefined) this.seed = seed;
     this.difficulty = difficulty;
     this.trials = trials;
     this.initRun();
+    this.runKind = options?.kind ?? 'normal';
+    this.dailyDate = options?.dailyDate;
     this.phase = 'map';
   }
 
@@ -248,6 +255,8 @@ export class RunEngine {
     this.rankingKind = 'overall';
     this.orgAdjust = emptyAdjustState();
     this.status = 'playing';
+    this.runKind = 'normal';
+    this.dailyDate = undefined;
     this.winType = undefined;
     this.loseReason = undefined;
   }
@@ -769,6 +778,8 @@ export class RunEngine {
       seed: this.seed,
       difficulty: this.difficulty,
       trials: [...this.trials],
+      runKind: this.runKind,
+      dailyDate: this.dailyDate,
       phase: this.phase,
       status: this.status,
       winType: this.winType,

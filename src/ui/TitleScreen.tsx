@@ -6,7 +6,7 @@
  */
 import { useState } from 'react';
 import { DIFFICULTY_DEFS, TRIAL_DEFS } from '../data/difficulties';
-import { ACHIEVEMENT_LABEL, type MetaState } from '../state/meta';
+import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import type { DifficultyId } from '../sim/run/types';
 
 const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
@@ -15,6 +15,7 @@ export interface TitleScreenProps {
   seed: string;
   meta: MetaState;
   onStart: (difficulty: DifficultyId, trials: string[]) => void;
+  onStartDaily?: () => void;
   onOpenMetaShop?: () => void;
   onOpenAchievements?: () => void;
 }
@@ -23,12 +24,15 @@ export function TitleScreen({
   seed,
   meta,
   onStart,
+  onStartDaily,
   onOpenMetaShop,
   onOpenAchievements,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
   const [trials, setTrials] = useState<string[]>([]);
+  const today = utcDateStr();
+  const dailyRecord = getDailyRecord(meta, today);
 
   const toggleTrial = (id: string) =>
     setTrials((cur) => (cur.includes(id) ? cur.filter((t) => t !== id) : [...cur, id]));
@@ -93,6 +97,32 @@ export function TitleScreen({
           ))}
         </div>
       </section>
+
+      {onStartDaily && (
+        <section className="title-section" data-testid="daily-run-section">
+          <h2 className="title-section-label">デイリーラン（社内コンテスト）</h2>
+          <p className="title-daily-desc">
+            全員同じ seed・Normal 固定で競う。UTC {today} の記録。
+            {dailyRecord ? (
+              <>
+                {' '}
+                今日のベスト <b>{dailyRecord.bestScore}</b> pt
+                {dailyRecord.rewardClaimed ? ' / 報酬受領済み' : ' / 報酬未受領'}
+              </>
+            ) : (
+              <> まだ今日の記録はありません。</>
+            )}
+          </p>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="start-daily-run"
+            onClick={onStartDaily}
+          >
+            本日のデイリーを始める →
+          </button>
+        </section>
+      )}
 
       {meta.achievements.length > 0 && (
         <section className="title-section">

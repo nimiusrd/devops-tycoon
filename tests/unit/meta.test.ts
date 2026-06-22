@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   ACHIEVEMENT_DEFS,
   ACHIEVEMENT_LABEL,
+  applyDailyRunReward,
   applyRunReward,
+  dailySeed,
   defaultMeta,
   loadMeta,
   purchaseUnlock,
   saveMeta,
   unlockedContent,
+  utcDateStr,
   type MetaStorage,
 } from '../../src/state/meta';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
@@ -210,5 +213,87 @@ describe('メタ進行とアンロック（第17章）', () => {
     for (const def of ACHIEVEMENT_DEFS) {
       expect(ACHIEVEMENT_LABEL[def.id]).toBe(def.label);
     }
+  });
+
+  it('dailySeed は同一日付で決定論的', () => {
+    expect(dailySeed('2026-06-20')).toBe('daily-2026-06-20');
+    expect(dailySeed('2026-06-20')).toBe(dailySeed('2026-06-20'));
+    expect(dailySeed('2026-06-21')).not.toBe(dailySeed('2026-06-20'));
+  });
+
+  it('utcDateStr は UTC の YYYY-MM-DD を返す', () => {
+    expect(utcDateStr(new Date('2026-06-20T15:30:00.000Z'))).toBe('2026-06-20');
+  });
+
+  it('applyDailyRunReward は初回のみ points を付与する', () => {
+    const dateStr = '2026-06-20';
+    const base = defaultMeta();
+    const first = applyDailyRunReward(base, {
+      won: false,
+      difficulty: 'normal',
+      score: 120,
+      scoreMul: 1,
+      maxCombo: 3,
+      dateStr,
+    });
+    expect(first.rewardGranted).toBe(true);
+    expect(first.pointsGained).toBeGreaterThan(0);
+    expect(first.meta.dailyRuns[dateStr]?.rewardClaimed).toBe(true);
+    expect(first.meta.dailyRuns[dateStr]?.bestScore).toBe(120);
+
+    const second = applyDailyRunReward(first.meta, {
+      won: true,
+      difficulty: 'normal',
+      score: 200,
+      scoreMul: 1,
+      maxCombo: 10,
+      dateStr,
+    });
+    expect(second.rewardGranted).toBe(false);
+    expect(second.pointsGained).toBe(0);
+    expect(second.meta.points).toBe(first.meta.points);
+    expect(second.meta.dailyRuns[dateStr]?.bestScore).toBe(200);
+    expect(second.dailyBestUpdated).toBe(true);
+  });
+
+  it('applyDailyRunReward の再走はベスト未更新時も points を付与しない', () => {
+    const dateStr = '2026-06-21';
+    const afterFirst = applyDailyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 150,
+      scoreMul: 1,
+      maxCombo: 2,
+      dateStr,
+    });
+    const rerun = applyDailyRunReward(afterFirst.meta, {
+      won: false,
+      difficulty: 'normal',
+      score: 100,
+      scoreMul: 1,
+      maxCombo: 1,
+      dateStr,
+    });
+    expect(rerun.pointsGained).toBe(0);
+    expect(rerun.dailyBestUpdated).toBe(false);
+    expect(rerun.meta.dailyRuns[dateStr]?.bestScore).toBe(150);
+  });
+
+  it('旧セーブに dailyRuns が欠けていても既定値で補完される', () => {
+    const storage = memStorage();
+    storage.data.set(
+      'devops-tycoon:meta:v1',
+      JSON.stringify({
+        points: 42,
+        unlockedDifficulties: ['easy', 'normal'],
+        defeatedBosses: [],
+        achievements: ['first-clear'],
+        bestScore: 100,
+        unlockedCards: [],
+        unlockedRelics: [],
+        unlockedPresets: [],
+      }),
+    );
+    expect(loadMeta(storage).dailyRuns).toEqual({});
   });
 });

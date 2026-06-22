@@ -14,11 +14,16 @@ import type { DifficultyId, RunState } from './sim/run/types';
 import type { LaneAssignment } from './sim/member/types';
 import type { RankingKind, ZoomLevel } from './sim/orgscale/types';
 import {
+  applyDailyRunReward,
   applyRunReward,
+  dailySeed,
+  DAILY_RUN_DIFFICULTY,
+  DAILY_RUN_TRIALS,
   loadMeta,
   purchaseUnlock,
   saveMeta,
   unlockedContent,
+  utcDateStr,
   type MetaState,
 } from './state/meta';
 
@@ -33,6 +38,8 @@ export interface GameHandle {
   getState(): RunState;
   /** タイトルで選んだ難易度・試練でランを開始する。 */
   startRun(difficulty?: DifficultyId, trials?: string[], seed?: string): RunState;
+  /** 本日（または指定 UTC 日）のデイリーランを開始する（第23章）。 */
+  startDailyRun(dateStr?: string): RunState;
   /** マップ上のノードへ進入する。 */
   enterNode(id: string): RunState;
   /** 指定 ms ぶんスプリントを手動で前進させる。 */
@@ -106,6 +113,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let meta = loadMeta();
   let recorded = false;
   let revision = 0;
+  let activeDailyDate: string | null = null;
 
   /** 状態を変えた可能性のある操作の後に版番号を進める。 */
   const bump = (): void => {
@@ -124,7 +132,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (recorded || (s.status !== 'won' && s.status !== 'lost')) return;
     recorded = true;
     const scoreMul = s.trials.reduce((m, id) => m * (getTrial(id)?.scoreMul ?? 1), 1);
-    meta = applyRunReward(meta, {
+    const input = {
       won: s.status === 'won',
       difficulty: s.difficulty,
       winType: s.winType,
@@ -132,7 +140,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       score: s.org.deliveryScore,
       scoreMul,
       maxCombo: s.totals.maxCombo,
-    });
+    };
+    if (s.runKind === 'daily' && activeDailyDate) {
+      meta = applyDailyRunReward(meta, { ...input, dateStr: activeDailyDate }).meta;
+    } else {
+      meta = applyRunReward(meta, input);
+    }
     saveMeta(meta);
   };
 
@@ -156,8 +169,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     startRun(difficulty, trials, runSeed) {
       recorded = false;
+      activeDailyDate = null;
       applyUnlockedToEngine();
-      engine.startRun(difficulty, trials, runSeed);
+      engine.startRun(difficulty, trials, runSeed, { kind: 'normal' });
+      bump();
+      return engine.snapshot();
+    },
+    startDailyRun(dateStr) {
+      recorded = false;
+      const day = dateStr ?? utcDateStr();
+      activeDailyDate = day;
+      applyUnlockedToEngine();
+      engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], dailySeed(day), {
+        kind: 'daily',
+        dailyDate: day,
+      });
       bump();
       return engine.snapshot();
     },
@@ -263,6 +289,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     newRun(runSeed) {
       recorded = false;
+      activeDailyDate = null;
       applyUnlockedToEngine();
       engine.toTitle(runSeed);
       bump();

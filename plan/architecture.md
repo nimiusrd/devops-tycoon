@@ -107,7 +107,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 ### 4.4 段階的描画移行（第22.4）
 
 - MVP1〜3: DOM/SVG（モックアップ準拠）で素早く。PHASE3 は周回・診断・勝敗の通しプレイ DoD を優先し、過剰投資を避ける。ただし sim は最初から分離・seed付き。
-- MVP5: 4階層ズーム・巨大組織ビューの**描画非依存の基礎**（アイソメ投影 / 深度ソート / 画面外カリング / スプライトプール）を `src/render/iso.ts` に純TS で実装し、数値検証した（第22.5）。全社/部署/業界ビューは現状 DOM/SVG（Framer Motion でクロスフェード）で実装し、`iso.ts` の座標系を共有する。**PixiJS + pixi-viewport への差し替えは、この `iso.ts` を供給先とする局所的なフォローアップ**として残す（実ピクセル/WebGL 検証は Playwright に集約。CI では実 WebGL を回さない方針のため、レンダラ実体の置換は描画前提が固まってから行う）。React/TS/Framer Motion/Recharts は役割を限定して継続。
+- MVP5: 4階層ズーム・巨大組織ビューの**描画非依存の基礎**（アイソメ投影 / 深度ソート / 画面外カリング / スプライトプール）を `src/render/iso.ts` に純TS で実装し、数値検証した（第22.5）。全社/部署/業界ビューは既定では DOM/SVG（Framer Motion でクロスフェード）で実装し、`iso.ts` の座標系を共有する。Phase 6 で全社マップのみ `?renderer=pixi` の opt-in PixiJS + pixi-viewport 描画へ差し替え済み。実ピクセル/WebGL 検証は opt-in Playwright（`npm run test:e2e:pixi`）に集約し、CI 既定 job では実 WebGL を回さない。React/TS/Framer Motion/Recharts は役割を限定して継続。
 
 ### 4.5 世界観の制約（第2.1章）
 

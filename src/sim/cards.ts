@@ -91,8 +91,9 @@ export function upgradeCard(deck: CardInstance[], defId: string): CardInstance[]
  * ドラフト候補をレアリティ重み付きで `count` 枚、重複なく抽選する（第7.1）。
  * 乱数は引数の PRNG から消費するため、同一 seed・同一スプリント番号で再現する。
  */
-export function drawDraft(rng: Rng, count = 3): string[] {
-  const pool = CARD_DEFS.map((c) => ({ id: c.id, weight: RARITY_WEIGHT[c.rarity] }));
+export function drawDraft(rng: Rng, count = 3, allowed?: ReadonlySet<string>): string[] {
+  const defs = allowed ? CARD_DEFS.filter((c) => allowed.has(c.id)) : CARD_DEFS;
+  const pool = defs.map((c) => ({ id: c.id, weight: RARITY_WEIGHT[c.rarity] }));
   const picked: string[] = [];
   for (let n = 0; n < count && pool.length > 0; n += 1) {
     const total = pool.reduce((s, c) => s + c.weight, 0);

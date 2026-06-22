@@ -42,6 +42,7 @@ export interface UseRun {
   setRankingKind: (kind: RankingKind) => void;
   applyOrgLever: (leverId: string, deptId?: string) => void;
   newRun: () => void;
+  purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
 }
 
 export function useRun(game: GameHandle): UseRun {
@@ -59,7 +60,7 @@ export function useRun(game: GameHandle): UseRun {
       lastRev = rev;
       const next = game.getState();
       setState(next);
-      if (next.status !== 'playing') setMeta(game.getMeta());
+      setMeta(game.getMeta());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -102,6 +103,10 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const newRun = useCallback(() => void game.newRun(), [game]);
+  const purchaseMetaUnlock = useCallback(
+    (unlockId: string) => game.purchaseMetaUnlock(unlockId),
+    [game],
+  );
 
   return {
     state,
@@ -127,5 +132,6 @@ export function useRun(game: GameHandle): UseRun {
     setRankingKind,
     applyOrgLever,
     newRun,
+    purchaseMetaUnlock,
   };
 }

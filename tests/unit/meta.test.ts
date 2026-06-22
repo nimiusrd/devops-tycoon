@@ -3,9 +3,12 @@ import {
   applyRunReward,
   defaultMeta,
   loadMeta,
+  purchaseUnlock,
   saveMeta,
+  unlockedContent,
   type MetaStorage,
 } from '../../src/state/meta';
+import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 
 /** メモリ上のストレージ（localStorage 互換）。 */
 function memStorage(): MetaStorage & { data: Map<string, string> } {
@@ -84,5 +87,60 @@ describe('メタ進行とアンロック（第17章）', () => {
     const storage = memStorage();
     storage.data.set('devops-tycoon:meta:v1', '{not json');
     expect(loadMeta(storage)).toEqual(defaultMeta());
+  });
+
+  it('旧セーブに新フィールドが欠けていても既定値で補完される', () => {
+    const storage = memStorage();
+    storage.data.set(
+      'devops-tycoon:meta:v1',
+      JSON.stringify({
+        points: 42,
+        unlockedDifficulties: ['easy', 'normal'],
+        defeatedBosses: [],
+        achievements: ['first-clear'],
+        bestScore: 100,
+      }),
+    );
+    expect(loadMeta(storage)).toEqual({
+      ...defaultMeta(),
+      points: 42,
+      achievements: ['first-clear'],
+      bestScore: 100,
+    });
+  });
+
+  it('unlockedContent は既定解放 ∪ 購入済みを返す', () => {
+    const meta = { ...defaultMeta(), unlockedCards: ['devin'], unlockedRelics: ['strong-ci'] };
+    const content = unlockedContent(meta);
+    expect(content.cards.has('devin')).toBe(true);
+    expect(content.cards.has('copilot')).toBe(true);
+    expect(content.cards.has('claude-code')).toBe(false);
+    expect(content.relics.has('strong-ci')).toBe(true);
+    expect(content.relics.has('postmortem')).toBe(true);
+    expect(content.relics.has('psych-safety')).toBe(false);
+  });
+
+  it('purchaseUnlock は残高不足・二重購入・成功を判定する', () => {
+    const poor = purchaseUnlock({ ...defaultMeta(), points: 10 }, 'unlock-devin');
+    expect(poor.ok).toBe(false);
+    expect(poor.reason).toBe('insufficient_points');
+
+    const rich = purchaseUnlock({ ...defaultMeta(), points: 100 }, 'unlock-devin');
+    expect(rich.ok).toBe(true);
+    expect(rich.meta.points).toBe(50);
+    expect(rich.meta.unlockedCards).toContain('devin');
+
+    const again = purchaseUnlock(rich.meta, 'unlock-devin');
+    expect(again.ok).toBe(false);
+    expect(again.reason).toBe('already_owned');
+  });
+
+  it('unlockedContent の既定プールはメタロック対象を含まない', () => {
+    const cards = defaultUnlockedCardIds();
+    const relics = defaultUnlockedRelicIds();
+    expect(cards.has('devin')).toBe(false);
+    expect(cards.has('ai-guideline')).toBe(true);
+    expect(relics.has('psych-safety')).toBe(false);
+    expect(relics.has('postmortem')).toBe(true);
   });
 });

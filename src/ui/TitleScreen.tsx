@@ -15,9 +15,10 @@ export interface TitleScreenProps {
   seed: string;
   meta: MetaState;
   onStart: (difficulty: DifficultyId, trials: string[]) => void;
+  onOpenMetaShop?: () => void;
 }
 
-export function TitleScreen({ seed, meta, onStart }: TitleScreenProps) {
+export function TitleScreen({ seed, meta, onStart, onOpenMetaShop }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
   const [trials, setTrials] = useState<string[]>([]);
@@ -107,6 +108,17 @@ export function TitleScreen({ seed, meta, onStart }: TitleScreenProps) {
       >
         四半期を始める →
       </button>
+
+      {onOpenMetaShop && (
+        <button
+          type="button"
+          className="btn btn-secondary"
+          data-testid="open-meta-shop"
+          onClick={onOpenMetaShop}
+        >
+          研修ツール解禁（メタショップ）
+        </button>
+      )}
     </div>
   );
 }

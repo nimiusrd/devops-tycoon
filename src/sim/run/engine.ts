@@ -92,6 +92,8 @@ export interface RunEngineInit {
   seed?: string;
   difficulty?: DifficultyId;
   trials?: string[];
+  allowedCards?: ReadonlySet<string>;
+  allowedRelics?: ReadonlySet<string>;
 }
 
 function emptyTotals(): RunTotals {
@@ -130,6 +132,8 @@ export class RunEngine {
   private seed: string;
   private difficulty: DifficultyId;
   private trials: string[];
+  private allowedCards: ReadonlySet<string> | null = null;
+  private allowedRelics: ReadonlySet<string> | null = null;
 
   private map!: RunMap;
   private bossId!: string;
@@ -176,8 +180,16 @@ export class RunEngine {
     this.seed = init.seed ?? DEFAULT_SEED;
     this.difficulty = init.difficulty ?? 'normal';
     this.trials = init.trials ?? [];
+    this.allowedCards = init.allowedCards ?? null;
+    this.allowedRelics = init.allowedRelics ?? null;
     this.initRun();
     this.phase = 'title';
+  }
+
+  /** ラン開始時点の解放プールを設定する（ラン中は固定）。 */
+  setUnlockedContent(cards: ReadonlySet<string>, relics: ReadonlySet<string>): void {
+    this.allowedCards = cards;
+    this.allowedRelics = relics;
   }
 
   /** タイトルで選んだ難易度・試練でランを開始する（phase=map）。 */
@@ -450,7 +462,11 @@ export class RunEngine {
   /** リザルトを確認してドラフトへ進む。 */
   acknowledgeResult(): void {
     if (this.phase !== 'result') return;
-    this.draft = drawDraft(createRng(`${this.seed}:draft:${this.sprintsPlayed}`));
+    this.draft = drawDraft(
+      createRng(`${this.seed}:draft:${this.sprintsPlayed}`),
+      3,
+      this.allowedCards ?? undefined,
+    );
     this.phase = 'draft';
   }
 
@@ -518,7 +534,7 @@ export class RunEngine {
   private buildShop(node: MapNode): ShopOffer {
     const rng = createRng(`${this.seed}:shop:${node.id}`);
     const discount = foldPassives(this.relics).shopDiscount;
-    const cardIds = drawDraft(rng, 3);
+    const cardIds = drawDraft(rng, 3, this.allowedCards ?? undefined);
     const cards = cardIds.map((defId) => ({
       defId,
       cost: Math.max(1, Math.round((getCard(defId)?.cost ?? 12) * (1 - discount))),
@@ -537,7 +553,9 @@ export class RunEngine {
 
   /** 未所持レリックを 1 つ提示（無ければ undefined）。 */
   private offerRelic(rng: () => number): string | undefined {
-    const pool = relicIds().filter((id) => !this.relics.includes(id));
+    const pool = relicIds().filter(
+      (id) => !this.relics.includes(id) && (!this.allowedRelics || this.allowedRelics.has(id)),
+    );
     if (pool.length === 0) return undefined;
     return pool[Math.floor(rng() * pool.length)];
   }

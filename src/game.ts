@@ -13,7 +13,14 @@ import type { ActionId, InterventionOutcome } from './sim/types';
 import type { DifficultyId, RunState } from './sim/run/types';
 import type { LaneAssignment } from './sim/member/types';
 import type { RankingKind, ZoomLevel } from './sim/orgscale/types';
-import { applyRunReward, loadMeta, saveMeta, type MetaState } from './state/meta';
+import {
+  applyRunReward,
+  loadMeta,
+  purchaseUnlock,
+  saveMeta,
+  unlockedContent,
+  type MetaState,
+} from './state/meta';
 
 export interface GameHandle {
   /** 自動進行を止める。 */
@@ -68,6 +75,8 @@ export interface GameHandle {
   applyOrgLever(leverId: string, deptId?: string): RunState;
   /** 新しいランをタイトルから始める（seed を差し替え可能）。 */
   newRun(seed?: string): RunState;
+  /** メタショップでコンテンツを永続解放する（points 消費）。 */
+  purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
   /** 現在のメタ進行（解放状況・実績）。 */
   getMeta(): MetaState;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
@@ -101,6 +110,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** 状態を変えた可能性のある操作の後に版番号を進める。 */
   const bump = (): void => {
     revision += 1;
+  };
+
+  /** 最新 meta から解放プールを engine へ反映する（ラン開始時に呼ぶ）。 */
+  const applyUnlockedToEngine = (): void => {
+    const content = unlockedContent(meta);
+    engine.setUnlockedContent(content.cards, content.relics);
   };
 
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
@@ -141,6 +156,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     startRun(difficulty, trials, runSeed) {
       recorded = false;
+      applyUnlockedToEngine();
       engine.startRun(difficulty, trials, runSeed);
       bump();
       return engine.snapshot();
@@ -247,9 +263,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     newRun(runSeed) {
       recorded = false;
+      applyUnlockedToEngine();
       engine.toTitle(runSeed);
       bump();
       return engine.snapshot();
+    },
+    purchaseMetaUnlock(unlockId) {
+      const result = purchaseUnlock(meta, unlockId);
+      if (!result.ok) return { ok: false, reason: result.reason };
+      meta = result.meta;
+      saveMeta(meta);
+      bump();
+      return { ok: true };
     },
     getMeta() {
       return meta;

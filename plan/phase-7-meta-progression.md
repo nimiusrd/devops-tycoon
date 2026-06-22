@@ -44,7 +44,9 @@
 
 - カード（`CardDef`）／レリック（`RelicDef`）に**解放区分**を持たせる。既定解放（最初から出る）と、メタ解放（points 購入や実績で開く）を区別する。実データの大半は既定解放のままにし、新規追加分や強カードを解放対象に回す（バランスは暫定で可、`src/data/` 編集だけで調整できる形を保つ／architecture §4.3）。
 - 解放対象を宣言的に定義する **`src/data/unlocks.ts`**（仮）を新設: `{ id, kind: 'card'|'relic'|'preset', cost, requires?: achievementId, label, description }`。
-- **`src/state/meta.ts`** に解放済み集合を追加: `unlockedCards: string[]` / `unlockedRelics: string[]` / `unlockedPresets: string[]`（後方互換のため `loadMeta` の既定マージで欠損を埋める。`STORAGE_KEY` を `:v2` に上げ、`v1` からの移行は欠損フィールド補完で吸収）。
+- **`src/state/meta.ts`** に解放済み集合を追加: `unlockedCards: string[]` / `unlockedRelics: string[]` / `unlockedPresets: string[]`。
+  - **既存セーブを失わない移行が必須**。`loadMeta` は現状 `STORAGE_KEY` を 1 個だけ読み、`{ ...defaultMeta(), ...parsed }` で既定マージしている。新フィールドはこのマージで自動補完されるため、**`STORAGE_KEY` は据え置き**（`:v1` のまま）にして欠損だけ既定で埋めるのを基本とする。
+  - もしスキーマ変更で `:v2` へ上げる場合は、**旧キー（`:v1`）を明示的に読み取って移行**し（points / 難易度解放 / 実績 / ベストスコアを引き継ぐ）、移行後に旧キーを削除する。キーだけ上げて旧データを孤立させない（プレイヤーの累積進行が消えるため）。移行の単体テストを必須にする。
 - 解放状態を 1 つにまとめる純関数 **`unlockedContent(meta): { cards: Set<string>; relics: Set<string>; presets: Set<string> }`** を用意（既定解放 ∪ メタ解放）。
 - points 消費の純関数 **`purchaseUnlock(meta, unlockId): { meta, ok, reason? }`**（残高・前提実績・二重購入をチェックして不変更新）。
 
@@ -53,12 +55,15 @@
 - `drawDraft(rng, count, allowed?: ReadonlySet<string>)` を拡張し、`allowed` 指定時は `CARD_DEFS` を解放済みに絞ってから抽選する（未指定時は従来どおり＝テスト後方互換）。
 - `RunEngine` がランの開始時に解放セットを受け取れるようにする（`createRunEngine({ ..., unlocked })` か `startRun` 引数）。`buildShop` のカード抽選・`offerRelic` のレリックプールも解放セットでフィルタする。
 - `game.ts` は `loadMeta()` → `unlockedContent(meta)` を解決してエンジンへ渡す。**ラン中は固定**（ラン内で解放しても次ランから反映）にして決定論を保つ。
+- **開始プリセットの配線**: 現状の開始組織は難易度のみから決まり、`startRun` にプリセット引数が無い。プリセットを「購入できるが何も変わらない」状態にしないため、(1) 開始プリセット定義（開始デッキ／レリック／初期組織値の差分）、(2) タイトルでの解放済みプリセット選択 UI、(3) `startRun(difficulty, trials, seed, presetId?)` への引数追加と開始組織／初期デッキへの反映、までを 1 セットで実装する。**この 3 点を伴わないならプリセットは Phase 7 のスコープから外す**（カード／レリック解放のみで閉ループは成立する）。スコープ判断は 7c 着手時に確定する。
+- **イベント報酬の整合**: イベントは `chooseEvent` → `addCard`/`grantRelic` で**特定 ID を直接付与**する（例: `junior-awaken` が `ai-guideline` を付与、複数イベントがレリックを付与）。これらの被付与 ID を後からメタ解放対象に回すと、購入前でもイベント経由で入手できてしまう。**原則: イベント／ボス報酬／休息採用が直接付与する ID は常時解放（既定解放）に固定**し、メタ解放対象は「ドラフト／ショップのプール限定で増えるコンテンツ」に限る。データ定義時に「直接付与され得る ID」を抽出し、解放対象集合と重複しないことを単体テストで保証する。
 - **回帰確認**: 既存の draft / shop / run-engine テストは `allowed` 未指定パスを使い続けるので結果不変。解放絞り込みは新規テストで検証する。
 
 ### 7c. メタショップ（points 消費で永続解放）
 
 - タイトル画面から開く**メタショップ画面**（`src/ui/MetaShopScreen.tsx` 仮）。解放可能一覧（コスト・前提・購入済み）を表示し、購入で `purchaseUnlock` → `saveMeta`。
 - `game.ts` に `purchaseMetaUnlock(unlockId)` を追加（`GameHandle` 型・E2E 型・architecture §4.1 を同時更新）。`getMeta()` は既存。
+- **UI の即時反映**: `useRun` は `meta` をローカル state に保持し、現状はラン結果が `status !== 'playing'` のときだけ読み直す。タイトル／メタショップでの購入はスナップショットが `playing` のまま起きるため、このままでは残高・購入済み表示が stale になる。購入は必ず `GameHandle`（`purchaseMetaUnlock`）経由にし、`game.ts` 内で `meta` 更新＋`revision` を bump して、`useRun` が `getMeta()` を読み直す導線を通す（ラン中フックと同じ版番号機構で UI を更新する）。
 - 表示は mockups のトーンに合わせる（派手にしすぎない。世界観制約 §4.5: 「研修費でツール解禁」程度の現実的な比喩）。
 
 ### 7d. 実績コレクション閲覧
@@ -69,8 +74,9 @@
 ### 7e. デイリーラン（共有シード）
 
 - 日付（`currentDate` 基準の UTC 日付文字列）から **決定論シードを導出**する純関数（`dailySeed(dateStr)`）。難易度・試練は固定セットにする。
-- `game.ts` に `startDailyRun(dateStr?)` を追加（内部は `startRun(fixedDifficulty, fixedTrials, dailySeed(...))`）。結果は通常どおりメタへ記録。
-- ローカル擬似リーダーボード: その日のベストスコアを meta に保存し、業界ランキングビュー（MVP5）へ「自分のデイリー記録」として差し込めるかを検討（バックエンド配信はスコープ外 / architecture §1）。
+- `game.ts` に `startDailyRun(dateStr?)` を追加（内部は `startRun(fixedDifficulty, fixedTrials, dailySeed(...))`）。
+- **ポイントファーム防止（必須）**: 同一日付／seed のデイリーは何度でも再開できるため、完走ごとに `applyRunReward` を通すと points を無限に稼げてしまう。デイリーは **UTC 日付ごとに「報酬受領済み」フラグを meta に持たせ、メタ進行 points の付与はその日 1 回だけ**にする。再走ではスコア更新（その日のベスト）のみ反映し、points は加算しない。通常ランの報酬経路（`applyRunReward`）とデイリーの記録経路を分離するか、`applyRunReward` に「points を付与しない記録モード」を足す。
+- ローカル擬似リーダーボード: その日のベストスコアを meta に保存し、業界ランキングビュー（MVP5）へ「自分のデイリー記録」として差し込めるかを検討（バックエンド配信はスコープ外 / architecture §1）。デイリーのベスト更新ロジックは決定論で単体テストする。
 
 ---
 
@@ -85,7 +91,7 @@
 
 ## テスト
 
-- **Vitest（厚め）**: `unlockedContent` / `purchaseUnlock`（残高不足・前提未達・二重購入）/ `drawDraft(allowed)` の絞り込み / 解放セット反映後の shop・relic プール / `loadMeta` の v1→v2 移行 / `dailySeed` の決定論。
+- **Vitest（厚め）**: `unlockedContent` / `purchaseUnlock`（残高不足・前提未達・二重購入）/ `drawDraft(allowed)` の絞り込み / 解放セット反映後の shop・relic プール / `loadMeta` の旧キー移行（進行を失わない）/ `dailySeed` の決定論 / イベント等の直接付与 ID が解放対象集合と重複しないこと / デイリーの points 付与が UTC 日付ごと 1 回（再走では加算なし・ベストのみ更新）。
 - **Playwright（薄め）**: クリア→points 取得→メタショップで解放→次ランのドラフトに該当カードが出る、を `window.game` 経由の seed 固定で 1 本。デイリーランの開始導線を 1 本。
 - 既存テスト（draft / shop / run-engine / meta）が**緑のまま**であること（後方互換パスを維持）。
 
@@ -97,7 +103,7 @@
 
 ## リスク・留意点
 
-- **後方互換**: `drawDraft` の追加引数は省略可にし、既存テストと挙動を変えない。`MetaState` のスキーマ拡張は `loadMeta` の既定マージで吸収（`:v2`）。
+- **後方互換**: `drawDraft` の追加引数は省略可にし、既存テストと挙動を変えない。`MetaState` のスキーマ拡張は `loadMeta` の既定マージで吸収する。キーを上げる場合は旧キーから明示移行し、既存プレイヤーの進行を失わない。
 - **バランス**: 解放対象のコスト・効果は暫定。フェーズ1/4/5 フォローアップの「モンテカルロでの許容レンジ化」と統一して後続調整する（解放追加でプールが歪まないかは統計テスト基盤フェーズで検証）。
 - **決定論**: 解放セットは**ラン開始時に固定**し、ラン中は変化させない（seed 再現性を壊さない）。
 - **世界観制約（§4.5）**: 解放・デイリーの演出は現実の開発組織の範囲（研修・ツール解禁・社内コンテスト等）に留める。

@@ -93,14 +93,46 @@ export interface RunRewardInput {
 
 const uniq = (xs: string[]): string[] => Array.from(new Set(xs));
 
-/** 実績 ID の表示名（コレクション要素。第17章）。 */
-export const ACHIEVEMENT_LABEL: Record<string, string> = {
-  'first-clear': '初クリア',
-  'no-damage': 'ノーダメージ突破',
-  'combo-master': 'コンボ x20 達成',
-  'all-bosses': '全ボス撃破',
-  'nightmare-clear': 'Nightmare 制覇',
-};
+/** 実績の宣言的定義（コレクション表示・獲得条件ヒント。第17章）。 */
+export interface AchievementDef {
+  id: string;
+  label: string;
+  /** 未取得時に表示する獲得条件のヒント。 */
+  hint: string;
+}
+
+export const ACHIEVEMENT_DEFS: readonly AchievementDef[] = [
+  {
+    id: 'first-clear',
+    label: '初クリア',
+    hint: 'いずれかの難易度で四半期（ボス）を突破する',
+  },
+  {
+    id: 'no-damage',
+    label: 'ノーダメージ突破',
+    hint: '残業・アンドンを使わず延焼ゼロでボスを突破する（ノーダメージ勝利）',
+  },
+  {
+    id: 'combo-master',
+    label: 'コンボ x20 達成',
+    hint: '1 ラン中にコンボ x20 以上を達成してからボスを突破する',
+  },
+  {
+    id: 'all-bosses',
+    label: '全ボス撃破',
+    hint: 'すべてのボスを少なくとも 1 回ずつ撃破する',
+  },
+  {
+    id: 'nightmare-clear',
+    label: 'Nightmare 制覇',
+    hint: 'Nightmare 難易度で四半期を突破する',
+  },
+];
+
+/** 実績 ID の表示名（後方互換。コレクション要素。第17章）。 */
+export const ACHIEVEMENT_LABEL: Record<string, string> = Object.fromEntries(
+  ACHIEVEMENT_DEFS.map((a) => [a.id, a.label]),
+);
 
 /**
  * 1 ラン分の結果をメタ進行へ反映した新しい `MetaState` を返す（不変）。

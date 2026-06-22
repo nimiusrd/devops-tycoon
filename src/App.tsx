@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Hud } from './ui/Hud';
 import {
   Breadcrumb,
+  AchievementCollectionScreen,
   DeptScreen,
   DraftScreen,
   EventScreen,
@@ -49,6 +50,7 @@ export default function App({ game }: AppProps) {
   const phase = state.phase;
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
+  const [achievementsOpen, setAchievementsOpen] = useState(false);
 
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
@@ -69,6 +71,7 @@ export default function App({ game }: AppProps) {
           meta={meta}
           onStart={startRun}
           onOpenMetaShop={() => setMetaShopOpen(true)}
+          onOpenAchievements={() => setAchievementsOpen(true)}
         />
         {metaShopOpen && (
           <MetaShopScreen
@@ -76,6 +79,9 @@ export default function App({ game }: AppProps) {
             onPurchase={(id) => run.purchaseMetaUnlock(id)}
             onClose={() => setMetaShopOpen(false)}
           />
+        )}
+        {achievementsOpen && (
+          <AchievementCollectionScreen meta={meta} onClose={() => setAchievementsOpen(false)} />
         )}
       </>
     );

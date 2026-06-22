@@ -88,6 +88,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
   - 制御: `pause()` / `resume()` / `isPaused()`
   - 状態読取: `getState()` / `phase()` / `revision()` / `isSprintRunning()` / `getMeta()`
   - ラン開始: `startRun(difficulty?, trials?, seed?)` / `newRun(seed?)`（旧設計の `loadState(seed, scenario)` は廃止。seed は URL パラメータまたは引数で指定）
+  - メタ進行（第17章）: `purchaseMetaUnlock(unlockId)`（points 消費で永続解放。`getMeta()` で残高・購入済みを読む）
   - フェーズ駆動: `enterNode(id)` / `step(ms)` / `dispatch(id)` / `acknowledgeResult()` / `chooseCard(defId)` / `skipDraft()` / `unlockEvolution(id)` / `finishEvolution()` / `chooseEvent(index)` / `buyShopCard(defId)` / `buyShopRelic()` / `leaveShop()` / `restChoose(option)`（option に `recruit` を含む）
   - 編成（MVP4 / 第12章）: `assignMember(id, assignment)` / `setMemberAi(id, on)`
   - 組織スケール / ズーム階層（MVP5 / 第4.7〜4.11）: `zoomTo(level)` / `focusDept(id)` / `focusTeam(id)` / `setRankingKind(kind)` / `applyOrgLever(leverId, deptId?)`。集約結果（`orgScale` / `industry`）と現在地（`zoom` / `rankingKind`）は `getState()` のスナップショットから読む（描画は読むだけ。第22.2）。

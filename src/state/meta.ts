@@ -7,6 +7,12 @@
  */
 import type { BOSS_DEFS } from '../data/bosses';
 import { BOSS_DEFS as ALL_BOSSES } from '../data/bosses';
+import {
+  defaultUnlockedCardIds,
+  defaultUnlockedRelicIds,
+  getUnlock,
+  type UnlockDef,
+} from '../data/unlocks';
 import type { DifficultyId, WinType } from '../sim/run/types';
 
 /** localStorage 等の最小インターフェース（テストでモック可能）。 */
@@ -28,6 +34,26 @@ export interface MetaState {
   achievements: string[];
   /** 自己ベストスコア。 */
   bestScore: number;
+  /** メタショップで購入済みのカード定義 ID。 */
+  unlockedCards: string[];
+  /** メタショップで購入済みのレリック定義 ID。 */
+  unlockedRelics: string[];
+  /** メタショップで購入済みの開始プリセット ID（将来用）。 */
+  unlockedPresets: string[];
+}
+
+export interface UnlockedContent {
+  cards: ReadonlySet<string>;
+  relics: ReadonlySet<string>;
+  presets: ReadonlySet<string>;
+}
+
+export type PurchaseUnlockReason = 'unknown' | 'already_owned' | 'insufficient_points' | 'requires';
+
+export interface PurchaseUnlockResult {
+  meta: MetaState;
+  ok: boolean;
+  reason?: PurchaseUnlockReason;
 }
 
 /** 初期メタ状態（easy/normal は最初から解放）。 */
@@ -38,6 +64,9 @@ export function defaultMeta(): MetaState {
     defeatedBosses: [],
     achievements: [],
     bestScore: 0,
+    unlockedCards: [],
+    unlockedRelics: [],
+    unlockedPresets: [],
   };
 }
 
@@ -85,6 +114,9 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     defeatedBosses: [...meta.defeatedBosses],
     achievements: [...meta.achievements],
     bestScore: Math.max(meta.bestScore, input.score),
+    unlockedCards: [...meta.unlockedCards],
+    unlockedRelics: [...meta.unlockedRelics],
+    unlockedPresets: [...meta.unlockedPresets],
   };
 
   if (input.won) {
@@ -106,6 +138,48 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
 
 function allBossesDefeated(defeated: string[], bosses: typeof BOSS_DEFS): boolean {
   return bosses.every((b) => defeated.includes(b.id));
+}
+
+/** 既定解放 ∪ メタ購入済みのコンテンツ集合。 */
+export function unlockedContent(meta: MetaState): UnlockedContent {
+  const cards = new Set(defaultUnlockedCardIds());
+  for (const id of meta.unlockedCards) cards.add(id);
+  const relics = new Set(defaultUnlockedRelicIds());
+  for (const id of meta.unlockedRelics) relics.add(id);
+  const presets = new Set(meta.unlockedPresets);
+  return { cards, relics, presets };
+}
+
+function isUnlockOwned(meta: MetaState, unlock: UnlockDef): boolean {
+  if (unlock.kind === 'card') return meta.unlockedCards.includes(unlock.contentId);
+  if (unlock.kind === 'relic') return meta.unlockedRelics.includes(unlock.contentId);
+  return meta.unlockedPresets.includes(unlock.contentId);
+}
+
+/** points を消費してコンテンツを永続解放する（不変更新）。 */
+export function purchaseUnlock(meta: MetaState, unlockId: string): PurchaseUnlockResult {
+  const unlock = getUnlock(unlockId);
+  if (!unlock) return { meta, ok: false, reason: 'unknown' };
+  if (isUnlockOwned(meta, unlock)) return { meta, ok: false, reason: 'already_owned' };
+  if (unlock.requires && !meta.achievements.includes(unlock.requires)) {
+    return { meta, ok: false, reason: 'requires' };
+  }
+  if (meta.points < unlock.cost) return { meta, ok: false, reason: 'insufficient_points' };
+
+  const next: MetaState = {
+    ...meta,
+    points: meta.points - unlock.cost,
+    unlockedCards: [...meta.unlockedCards],
+    unlockedRelics: [...meta.unlockedRelics],
+    unlockedPresets: [...meta.unlockedPresets],
+  };
+
+  if (unlock.kind === 'card') next.unlockedCards = uniq([...next.unlockedCards, unlock.contentId]);
+  else if (unlock.kind === 'relic')
+    next.unlockedRelics = uniq([...next.unlockedRelics, unlock.contentId]);
+  else next.unlockedPresets = uniq([...next.unlockedPresets, unlock.contentId]);
+
+  return { meta: next, ok: true };
 }
 
 /** メタ状態を読み込む（壊れていれば初期値）。SSR/未対応環境では初期値。 */

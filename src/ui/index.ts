@@ -17,6 +17,7 @@ export { DraftScreen } from './DraftScreen';
 export { DeckBar } from './DeckBar';
 export { CardView } from './CardView';
 
+export { MetaShopScreen } from './MetaShopScreen';
 export { TitleScreen } from './TitleScreen';
 export { RunMapScreen } from './RunMapScreen';
 export { SprintScreen } from './SprintScreen';

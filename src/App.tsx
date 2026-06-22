@@ -16,6 +16,7 @@ import {
   EvolutionScreen,
   FormationScreen,
   IndustryScreen,
+  MetaShopScreen,
   OrgScreen,
   RestScreen,
   RunBar,
@@ -47,6 +48,7 @@ export default function App({ game }: AppProps) {
   const { state, meta } = run;
   const phase = state.phase;
   const [formationOpen, setFormationOpen] = useState(false);
+  const [metaShopOpen, setMetaShopOpen] = useState(false);
 
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
@@ -60,7 +62,23 @@ export default function App({ game }: AppProps) {
   };
 
   if (phase === 'title') {
-    return <TitleScreen seed={state.seed} meta={meta} onStart={startRun} />;
+    return (
+      <>
+        <TitleScreen
+          seed={state.seed}
+          meta={meta}
+          onStart={startRun}
+          onOpenMetaShop={() => setMetaShopOpen(true)}
+        />
+        {metaShopOpen && (
+          <MetaShopScreen
+            meta={meta}
+            onPurchase={(id) => run.purchaseMetaUnlock(id)}
+            onClose={() => setMetaShopOpen(false)}
+          />
+        )}
+      </>
+    );
   }
   if (phase === 'won' || phase === 'lost') {
     return <RunResultScreen state={state} meta={meta} onNewRun={newRun} />;

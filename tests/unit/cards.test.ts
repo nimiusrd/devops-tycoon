@@ -85,6 +85,18 @@ describe('ドラフト抽選（第7.1）', () => {
     const b = drawDraft(createRng('draft:2'));
     expect(a.join() !== b.join()).toBe(true);
   });
+
+  it('allowed 指定時は未解放カードが出ない', () => {
+    const allowed = new Set(['copilot', 'auto-test', 'docs']);
+    const picked = drawDraft(createRng('draft:filter'), 3, allowed);
+    expect(picked).toHaveLength(3);
+    expect(picked.every((id) => allowed.has(id))).toBe(true);
+  });
+
+  it('allowed 未指定時は従来どおり全カードから抽選する', () => {
+    const all = drawDraft(createRng('draft:legacy'));
+    expect(all).toHaveLength(3);
+  });
 });
 
 describe('デッキで結果が変わる（DoD: ドラフトでデッキが育つ）', () => {

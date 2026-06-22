@@ -6,7 +6,7 @@ Phase 6a（React 接続・pan/zoom・カリング）完了後の続き。出典�
 
 ---
 
-## 1. 現状（Phase 6a–6d 完了 / 6e 任意）
+## 1. 現状（Phase 6a–6e 完了）
 
 | 項目 | 状態 |
 | --- | --- |
@@ -112,7 +112,7 @@ interface OrgSprite {
 
 **描画メモ**
 
-- 初版は Pixi `Text`（v8）で十分。60fps を下回る場合のみ `BitmapText` + 共有フォント atlas へ差し替え（6d で判断）。
+- 現行は Pixi `Text`（v8）で十分。60fps を下回る場合のみ `BitmapText` + 共有フォント atlas への差し替えを検討する。
 - 長いチーム名は `orgIslandView.truncateName(name, maxWidth)` で省略。
 - ヒット領域は Container 全体（card サイズに拡張）。
 
@@ -186,9 +186,9 @@ interface OrgSprite {
 
 ---
 
-### 6e: 視覚回帰（任意・判断）
+### 6e: 視覚回帰（opt-in）
 
-**判断基準:** 6b-2 で DOM parity が取れたら、固定 seed + `pause()` + `?renderer=pixi` の Playwright スクショ 1〜2 枚を追加するか検討。
+**採用方針:** 固定 seed + `pause()` + `?renderer=pixi` の Playwright スクショ 2 枚を、CI 既定 job 外の opt-in E2E として追加。
 
 - CI 既定は DOM のまま
 - Pixi 視覚回帰は別 job または `@pixi` tag で opt-in
@@ -237,6 +237,6 @@ interface OrgSprite {
 
 ---
 
-## 7. 残作業
+## 7. 完了状態
 
-6b-1 / 6b-2（PR-A / PR-B）、6c（PR-C）、6d（PR-D）、6e（PR-E・任意）まで実装済み（§3・§6 参照）。Phase 6 DoD は完遂。
+6b-1 / 6b-2（PR-A / PR-B）、6c（PR-C）、6d（PR-D）、6e（PR-E・opt-in）まで実装済み（§3・§6 参照）。Phase 6 DoD は完遂。

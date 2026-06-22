@@ -14,7 +14,7 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 
 ## 現状
 
-- **MVP1〜5（M0〜M5）は実装済み**。`src/`（sim / state / render / ui）と `tests/`（Vitest 26 ファイル・236 本緑、Playwright E2E）が揃い、`npm run dev` で通しプレイできる。各フェーズの実装内容と繰り越しは [follow-ups.md](./follow-ups.md) を参照。
+- **MVP1〜5（M0〜M5）は実装済み**。`src/`（sim / state / render / ui）と `tests/`（Vitest / Playwright E2E）が揃い、`npm run dev` で通しプレイできる。各フェーズの実装内容と繰り越しは [follow-ups.md](./follow-ups.md) を参照。
 - **Phase 6（WebGL / PixiJS 移行）は完了**: 6a（React 接続・pan/zoom・カリング）/ 6b（DOM 同等の情報量）/ 6c（カメラ同期）/ 6d（性能予算）/ 6e（Pixi 視覚回帰・opt-in）まで完了。詳細は [phase-6b-pixi-visual-parity.md](./phase-6b-pixi-visual-parity.md)。
 - 盤面描画は既定で DOM/SVG、`?renderer=pixi` で全社マップのみ PixiJS に opt-in 切替。
 - モックアップは**デザイン・レイアウトの正**として維持する（第22.2）。
@@ -50,7 +50,7 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 | M5 | 巨大組織 | MVP5 | 4階層ズーム・全社/部署/業界・カメラ遷移 | ✅ 完了 |
 | M6 | WebGL 移行 | 拡張 | `?renderer=pixi` で全社マップ Pixi 描画・DOM 同等の情報量・カメラ同期 | ✅ 完了 |
 
-依存関係: M0 → M1 → M2 → M3 →（M4・M5 は M3 以降で並行可能。ただし、M5 は PixiJS + pixi-viewport 移植完了を着手前提とし、M4 でも粒数・ズーム階層が増える場合は同じゲートを適用する）。M6（Pixi 移行）は M5 の `src/render/iso.ts`（投影 / 深度 / カリング / プール）を供給先とする局所差し替えとして実施中。
+依存関係: M0 → M1 → M2 → M3 →（M4・M5 は M3 以降で並行可能）。M6（Pixi 移行）は M5 の `src/render/iso.ts`（投影 / 深度 / カリング / プール）を供給先とする局所差し替えとして完了済み。
 
 ---
 

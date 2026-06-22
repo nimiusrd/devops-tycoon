@@ -10,6 +10,7 @@ const META_WITH_ACHIEVEMENT: MetaState = {
   unlockedCards: [],
   unlockedRelics: [],
   unlockedPresets: [],
+  dailyRuns: {},
 };
 
 test('タイトルから実績コレクションを開き取得済み／未取得を区別表示できる', async ({ page }) => {

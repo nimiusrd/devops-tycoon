@@ -87,7 +87,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 - **`window.game` の公開 API は `src/game.ts` の `GameHandle` を正とする。** E2E / 外部自動化が使うメソッド:
   - 制御: `pause()` / `resume()` / `isPaused()`
   - 状態読取: `getState()` / `phase()` / `revision()` / `isSprintRunning()` / `getMeta()`
-  - ラン開始: `startRun(difficulty?, trials?, seed?)` / `newRun(seed?)`（旧設計の `loadState(seed, scenario)` は廃止。seed は URL パラメータまたは引数で指定）
+  - ラン開始: `startRun(difficulty?, trials?, seed?)` / `startDailyRun(dateStr?)` / `newRun(seed?)`（旧設計の `loadState(seed, scenario)` は廃止。seed は URL パラメータまたは引数で指定）
   - メタ進行（第17章）: `purchaseMetaUnlock(unlockId)`（points 消費で永続解放。`getMeta()` で残高・購入済みを読む）
   - フェーズ駆動: `enterNode(id)` / `step(ms)` / `dispatch(id)` / `acknowledgeResult()` / `chooseCard(defId)` / `skipDraft()` / `unlockEvolution(id)` / `finishEvolution()` / `chooseEvent(index)` / `buyShopCard(defId)` / `buyShopRelic()` / `leaveShop()` / `restChoose(option)`（option に `recruit` を含む）
   - 編成（MVP4 / 第12章）: `assignMember(id, assignment)` / `setMemberAi(id, on)`

@@ -22,6 +22,7 @@ export interface UseRun {
   state: RunState;
   meta: MetaState;
   startRun: (difficulty: DifficultyId, trials: string[]) => void;
+  startDailyRun: (dateStr?: string) => void;
   enterNode: (id: string) => void;
   dispatch: (id: ActionId) => InterventionOutcome;
   acknowledgeResult: () => void;
@@ -71,6 +72,7 @@ export function useRun(game: GameHandle): UseRun {
     (difficulty: DifficultyId, trials: string[]) => void game.startRun(difficulty, trials),
     [game],
   );
+  const startDailyRun = useCallback((dateStr?: string) => void game.startDailyRun(dateStr), [game]);
   const enterNode = useCallback((id: string) => void game.enterNode(id), [game]);
   const dispatch = useCallback((id: ActionId) => game.dispatch(id), [game]);
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
@@ -112,6 +114,7 @@ export function useRun(game: GameHandle): UseRun {
     state,
     meta,
     startRun,
+    startDailyRun,
     enterNode,
     dispatch,
     acknowledgeResult,

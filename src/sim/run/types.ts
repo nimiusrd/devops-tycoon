@@ -103,6 +103,15 @@ export interface ShopOffer {
   relic?: { id: string; cost: number; bought: boolean };
 }
 
+/** 開始オプション（デイリーラン等）。 */
+export interface StartRunOptions {
+  kind?: RunKind;
+  dailyDate?: string;
+}
+
+/** ランの種別（通常 / デイリー）。 */
+export type RunKind = 'normal' | 'daily';
+
 /**
  * ラン全体の状態（スナップショット）。
  * React/レンダラはこれを読むだけ（第22.2）。
@@ -112,6 +121,10 @@ export interface RunState {
   difficulty: DifficultyId;
   /** 適用中の試練（ランモディファイア。第16章）。 */
   trials: string[];
+  /** 通常ランかデイリーランか（第23章）。 */
+  runKind: RunKind;
+  /** デイリーランの UTC 日付（runKind=daily のときのみ）。 */
+  dailyDate?: string;
   phase: RunPhase;
   status: RunStatus;
   /** 勝敗が確定したときのみ設定。 */

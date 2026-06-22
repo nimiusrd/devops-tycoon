@@ -58,6 +58,10 @@ export default function App({ game }: AppProps) {
     setFormationOpen(false);
     run.startRun(difficulty, trials);
   };
+  const startDailyRun = () => {
+    setFormationOpen(false);
+    run.startDailyRun();
+  };
   const newRun = () => {
     setFormationOpen(false);
     run.newRun();
@@ -70,6 +74,7 @@ export default function App({ game }: AppProps) {
           seed={state.seed}
           meta={meta}
           onStart={startRun}
+          onStartDaily={startDailyRun}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
         />

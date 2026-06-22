@@ -28,6 +28,7 @@ const DEFAULT_META: MetaState = {
   unlockedCards: [],
   unlockedRelics: [],
   unlockedPresets: [],
+  dailyRuns: {},
 };
 
 test('メタショップ購入が次ランのドラフトプールへ反映される', async ({ page }) => {

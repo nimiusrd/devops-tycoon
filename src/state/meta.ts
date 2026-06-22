@@ -40,6 +40,16 @@ export interface MetaState {
   unlockedRelics: string[];
   /** メタショップで購入済みの開始プリセット ID（将来用）。 */
   unlockedPresets: string[];
+  /** UTC 日付（YYYY-MM-DD）→ デイリーラン記録。 */
+  dailyRuns: Record<string, DailyRunRecord>;
+}
+
+/** 1 日分のデイリーラン記録（第23章）。 */
+export interface DailyRunRecord {
+  /** その日のベストスコア（出荷ポイント）。 */
+  bestScore: number;
+  /** その日のメタ進行 points 報酬を受け取り済みか。 */
+  rewardClaimed: boolean;
 }
 
 export interface UnlockedContent {
@@ -67,7 +77,27 @@ export function defaultMeta(): MetaState {
     unlockedCards: [],
     unlockedRelics: [],
     unlockedPresets: [],
+    dailyRuns: {},
   };
+}
+
+/** デイリーランの固定難易度・試練（全員同一条件）。 */
+export const DAILY_RUN_DIFFICULTY: DifficultyId = 'normal';
+export const DAILY_RUN_TRIALS: readonly string[] = [];
+
+/** UTC 日付文字列（YYYY-MM-DD）。 */
+export function utcDateStr(date: Date = new Date()): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/** 日付から決定論シードを導出する（同一日は全員同じ seed）。 */
+export function dailySeed(dateStr: string): string {
+  return `daily-${dateStr}`;
+}
+
+/** 指定日のデイリー記録を返す（未プレイは undefined）。 */
+export function getDailyRecord(meta: MetaState, dateStr: string): DailyRunRecord | undefined {
+  return meta.dailyRuns[dateStr];
 }
 
 const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
@@ -149,6 +179,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
     unlockedPresets: [...meta.unlockedPresets],
+    dailyRuns: { ...meta.dailyRuns },
   };
 
   if (input.won) {
@@ -166,6 +197,57 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
   }
 
   return next;
+}
+
+export interface DailyRunRewardResult {
+  meta: MetaState;
+  /** 今回付与されたメタ進行 points（再走時は 0）。 */
+  pointsGained: number;
+  /** その日初回の報酬付与が行われたか。 */
+  rewardGranted: boolean;
+  /** その日のベストスコアが更新されたか。 */
+  dailyBestUpdated: boolean;
+}
+
+/**
+ * デイリーラン結果をメタ進行へ反映する（不変）。
+ * 同一 UTC 日付では points 付与は 1 回のみ。再走はベスト更新のみ。
+ */
+export function applyDailyRunReward(
+  meta: MetaState,
+  input: RunRewardInput & { dateStr: string },
+): DailyRunRewardResult {
+  const existing = meta.dailyRuns[input.dateStr] ?? { bestScore: 0, rewardClaimed: false };
+
+  if (!existing.rewardClaimed) {
+    const rewarded = applyRunReward(meta, input);
+    const dailyBest = Math.max(existing.bestScore, input.score);
+    const next: MetaState = {
+      ...rewarded,
+      dailyRuns: {
+        ...meta.dailyRuns,
+        [input.dateStr]: { bestScore: dailyBest, rewardClaimed: true },
+      },
+    };
+    return {
+      meta: next,
+      pointsGained: rewarded.points - meta.points,
+      rewardGranted: true,
+      dailyBestUpdated: dailyBest > existing.bestScore,
+    };
+  }
+
+  const dailyBest = Math.max(existing.bestScore, input.score);
+  const dailyBestUpdated = dailyBest > existing.bestScore;
+  const next: MetaState = {
+    ...meta,
+    bestScore: Math.max(meta.bestScore, input.score),
+    dailyRuns: {
+      ...meta.dailyRuns,
+      [input.dateStr]: { bestScore: dailyBest, rewardClaimed: true },
+    },
+  };
+  return { meta: next, pointsGained: 0, rewardGranted: false, dailyBestUpdated };
 }
 
 function allBossesDefeated(defeated: string[], bosses: typeof BOSS_DEFS): boolean {

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ACHIEVEMENT_DEFS,
+  ACHIEVEMENT_LABEL,
   applyRunReward,
   defaultMeta,
   loadMeta,
@@ -142,5 +144,71 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(cards.has('ai-guideline')).toBe(true);
     expect(relics.has('psych-safety')).toBe(false);
     expect(relics.has('postmortem')).toBe(true);
+  });
+
+  it('ACHIEVEMENT_DEFS は applyRunReward が付与する実績 ID を網羅する', () => {
+    const definedIds = new Set(ACHIEVEMENT_DEFS.map((a) => a.id));
+    const earnable = new Set<string>();
+
+    earnable.add('first-clear');
+
+    const noDamage = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'noDamage',
+      bossId: 'big-release',
+      score: 200,
+      scoreMul: 1,
+      maxCombo: 5,
+    });
+    for (const id of noDamage.achievements) earnable.add(id);
+
+    const combo = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'exec-review',
+      score: 200,
+      scoreMul: 1,
+      maxCombo: 21,
+    });
+    for (const id of combo.achievements) earnable.add(id);
+
+    const nightmare = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'nightmare',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 400,
+      scoreMul: 1,
+      maxCombo: 3,
+    });
+    for (const id of nightmare.achievements) earnable.add(id);
+
+    const allBossesMeta = {
+      ...defaultMeta(),
+      defeatedBosses: ['big-release', 'major-incident', 'security-audit'],
+    };
+    const allBosses = applyRunReward(allBossesMeta, {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'exec-review',
+      score: 300,
+      scoreMul: 1,
+      maxCombo: 3,
+    });
+    for (const id of allBosses.achievements) earnable.add(id);
+
+    for (const id of earnable) {
+      expect(definedIds.has(id)).toBe(true);
+    }
+    expect(definedIds.size).toBe(earnable.size);
+  });
+
+  it('ACHIEVEMENT_LABEL は ACHIEVEMENT_DEFS から派生する', () => {
+    for (const def of ACHIEVEMENT_DEFS) {
+      expect(ACHIEVEMENT_LABEL[def.id]).toBe(def.label);
+    }
   });
 });

@@ -16,9 +16,16 @@ export interface TitleScreenProps {
   meta: MetaState;
   onStart: (difficulty: DifficultyId, trials: string[]) => void;
   onOpenMetaShop?: () => void;
+  onOpenAchievements?: () => void;
 }
 
-export function TitleScreen({ seed, meta, onStart, onOpenMetaShop }: TitleScreenProps) {
+export function TitleScreen({
+  seed,
+  meta,
+  onStart,
+  onOpenMetaShop,
+  onOpenAchievements,
+}: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
   const [trials, setTrials] = useState<string[]>([]);
@@ -100,25 +107,38 @@ export function TitleScreen({ seed, meta, onStart, onOpenMetaShop }: TitleScreen
         </section>
       )}
 
-      <button
-        type="button"
-        className="btn btn-primary btn-lg"
-        data-testid="start-run"
-        onClick={() => onStart(difficulty, trials)}
-      >
-        四半期を始める →
-      </button>
-
-      {onOpenMetaShop && (
+      <div className="title-actions">
         <button
           type="button"
-          className="btn btn-secondary"
-          data-testid="open-meta-shop"
-          onClick={onOpenMetaShop}
+          className="btn btn-primary btn-lg"
+          data-testid="start-run"
+          onClick={() => onStart(difficulty, trials)}
         >
-          研修ツール解禁（メタショップ）
+          四半期を始める →
         </button>
-      )}
+
+        {onOpenMetaShop && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="open-meta-shop"
+            onClick={onOpenMetaShop}
+          >
+            研修ツール解禁（メタショップ）
+          </button>
+        )}
+
+        {onOpenAchievements && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="open-achievements"
+            onClick={onOpenAchievements}
+          >
+            実績コレクション
+          </button>
+        )}
+      </div>
     </div>
   );
 }

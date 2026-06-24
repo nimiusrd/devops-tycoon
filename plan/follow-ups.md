@@ -63,4 +63,35 @@
 - **視覚回帰の固定フレーム**: 全社マップ Pixi は opt-in E2E（`PIXI_E2E=1` / `@pixi`）で seed 固定スクリーンショット比較済み。DOM 既定の操作 E2E は従来どおり要素可視性・属性ベース。
 - **個体メンバーの集約粒度**: 全社/部署ビューではチーム単位の集約までに留め、個体（MVP4）は現場でのみ表示。チーム島のエンジニア数等への個体反映を深めるかは未着手。
 - **レバー効果のバランス検証**: 全社/部門レバーの効果係数（`src/data/levers.ts`）は暫定。代表 seed のモンテカルロで許容レンジ化する（フェーズ1/4 の統計テスト方針と統一）。
-- **業界とメタ進行の接続**: シーズン/リーグ/デイリーラン（同一シード）を `state/meta`（第17章）へ恒久反映するかは未着手（現状はラン内の集約から都度生成）。
+- **業界とメタ進行の接続**: シーズン/リーグ/デイリーラン（同一シード）を `state/meta`（第17章）へ恒久反映するかは未着手（現状はラン内の集約から都度生成）。→ Phase 7e でデイリー記録（同一シード・日別ベスト）の `meta` 保存までは実装。業界ランキングビューへの差し込みは引き続き未着手（下記フェーズ7）。
+
+## フェーズ6: WebGL（PixiJS）移行
+
+実装済み（拡張 / 第22.4〜22.5）:
+
+- 全社マップのみ `?renderer=pixi` で PixiJS + pixi-viewport に opt-in 切替（既定は DOM/SVG）。`src/render/iso.ts`（投影 / 深度 / カリング / プール）を供給先とする局所差し替え。
+- `RendererAdapter<TState>` の一般化、純TSシーン計画（`src/render/orgScene.ts` / `orgIslandView.ts`：LOD・ラベル）、`PixiOrgRenderer` の React 接続（`OrgPixiField` / `OrgScreen`）、pan/zoom/カリング、DOM 同等のカード/バッジ/ドット LOD、カメラ同期（`orgCamera.ts`）、性能予算 DoD（Vitest fixture + 定数）、Pixi 視覚回帰（`tests/e2e/org-pixi-visual.spec.ts` / `npm run test:e2e:pixi`・CI 既定外）。
+
+繰り越し・未解決:
+
+- **Pixi 適用範囲の拡張**: 現状は全社マップのみ。部署ビュー／現場盤面など他レイヤへ広げるかは未着手（粒数・ズーム階層が破綻し始めたら検討）。
+- **バンドルサイズ**: `npm run build` で index チャンクが 778kB（>500kB 警告）。Pixi/WebGL を動的 import で分割するかは未対応（機能要件ではないが計測値として残す）。
+
+## フェーズ7: メタ進行の閉ループ化
+
+実装済み（拡張 / 第17章・第23章）:
+
+- **7a 解放データモデル**: `src/data/unlocks.ts`（`UNLOCK_DEFS`：カード/レリックの解放エントリ）と純関数 `unlockedContent(meta)` / `purchaseUnlock(meta, unlockId)`（残高・前提実績・二重購入チェック）。`MetaState` を `unlockedCards` / `unlockedRelics` / `unlockedPresets` / `dailyRuns` で拡張し、`STORAGE_KEY` は `:v1` 据え置きで `loadMeta` の既定マージにより既存セーブを失わず吸収。イベント直接付与 ID と解放対象が重複しないことを単体テストで保証（`eventDirectGrantIds` / `metaUnlockContentIds`）。
+- **7b 解放プールのラン反映**: `drawDraft(rng, count, allowed?)` の後方互換拡張、`buildShop` のカード抽選・`offerRelic` のレリックプールを解放セットでフィルタ。解放セットはラン開始時に `game.ts` が `unlockedContent(loadMeta())` を解決し `engine.setUnlockedContent` へ渡す（constructor 固定ではなく `startRun` / `newRun` / `startDailyRun` で都度反映 → メタショップ購入が次ランに効く）。ラン中は固定で決定論を維持。
+- **7c メタショップ**: `MetaShopScreen`＋`GameHandle.purchaseMetaUnlock`。購入は `meta` 更新＋`revision` bump で `useRun` が `getMeta()` を読み直す（UI 即時反映）。
+- **7d 実績コレクション**: `ACHIEVEMENT_DEFS`（獲得条件ヒント付き）と `AchievementCollectionScreen`（取得済み／未取得を区別表示）。
+- **7e デイリーラン**: `dailySeed(dateStr)`（UTC 日付→決定論シード）・`startDailyRun`・`applyDailyRunReward`（同一 UTC 日付では points 付与 1 回・再走はベストのみ更新）。Title / RunResult にデイリー記録を表示。
+- **テスト**: Vitest（`meta` / `unlocks` / `daily-run` / `meta-unlock-run` 等で 265 本緑）＋ Playwright（`meta-shop` / `daily-run` / `achievements`）。`lint` / `format:check` / `build` 緑。
+
+繰り越し・未解決:
+
+- **開始プリセット（preset）の扱い未確定**: Phase 7 計画 §7b の「定義＋タイトル選択 UI＋`startRun` 引数の 3 点セットを伴わないならスコープ外」に従い、プリセットは実装を見送り済み。ただし `MetaState.unlockedPresets` / `unlockedContent().presets` / `purchaseUnlock`・`MetaShopScreen` の preset 分岐が**到達不能な足場として残存**（`UnlockKind` は `'card' | 'relic'` のみ）。明示的にスコープ外として足場を削除するか、プリセットを正式実装するかを判断する。
+- **業界ランキングへのデイリー記録接続**: §7e の「検討」止まり。デイリーのベストは `meta.dailyRuns` に保存され Title / RunResult には出るが、業界ランキングビュー（`IndustryScreen` / MVP5）へ「自分のデイリー記録」を差し込む擬似リーダーボードは未着手（フェーズ5「業界とメタ進行の接続」と同根）。
+- **称号（`WinType`）の永続化**: §7d は最小実装として実績 ID コレクションに留め、勝利種別ごとの達成有無の永続記録・一覧化は未実装（フェーズ3「称号の永続化」を一部のみ回収）。実績で十分か、別軸で持つかを判断する。
+- **メタ解放のバランス（暫定値）**: `UNLOCK_DEFS` のコスト、`applyRunReward` の points 配分（勝利20 / 敗北5 × `scoreMul`）、デイリー固定条件（難易度 normal・試練なし）は暫定。フェーズ1/4/5 の「モンテカルロ許容レンジ化」統計テスト基盤と統一して後続調整する。
+- **メタ解放対象の拡張**: 現状はカード／レリックのみ。メンバー／トレイト解放（フェーズ3/4 の「メタ進行へのメンバー解放」）や追加イベント／試練の解放を加えるかは未着手。

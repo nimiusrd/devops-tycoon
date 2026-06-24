@@ -17,7 +17,8 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 - **MVP1〜5（M0〜M5）は実装済み**。`src/`（sim / state / render / ui）と `tests/`（Vitest / Playwright E2E）が揃い、`npm run dev` で通しプレイできる。各フェーズの実装内容と繰り越しは [follow-ups.md](./follow-ups.md) を参照。
 - **Phase 6（WebGL / PixiJS 移行）は完了**: 6a（React 接続・pan/zoom・カリング）/ 6b（DOM 同等の情報量）/ 6c（カメラ同期）/ 6d（性能予算）/ 6e（Pixi 視覚回帰・opt-in）まで完了。詳細は [phase-6b-pixi-visual-parity.md](./phase-6b-pixi-visual-parity.md)。
 - 盤面描画は既定で DOM/SVG、`?renderer=pixi` で全社マップのみ PixiJS に opt-in 切替。
-- **Phase 7（メタ進行の閉ループ化）は計画中**: 永続アンロックをドラフト／ショップへ還元し、メタショップ・実績閲覧・デイリーランを足す（SPEC 第17章の未達と第23章を回収）。計画は [phase-7-meta-progression.md](./phase-7-meta-progression.md)。
+- **Phase 7（メタ進行の閉ループ化）は実装済み**: 永続アンロックのドラフト／ショップ反映、メタショップ、実績閲覧、デイリーランまで実装済み。計画とDoDは [phase-7-meta-progression.md](./phase-7-meta-progression.md)。
+- **Phase 8（四半期レビューと目標修正）は計画中**: 目標未達を即ゲームオーバーにせず、スコープ削減・期限延長・品質改善ピボットなどで次四半期へ継続する。計画は [phase-8-goal-adjustment.md](./phase-8-goal-adjustment.md)。
 - モックアップは**デザイン・レイアウトの正**として維持する（第22.2）。
 
 ---
@@ -36,6 +37,7 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 | [phase-6-webgl-migration.md](./phase-6-webgl-migration.md) | WebGL（PixiJS）移行 / DOM・SVG からの局所差し替え |
 | [phase-6b-pixi-visual-parity.md](./phase-6b-pixi-visual-parity.md) | Phase 6 続き: Pixi 見た目 parity・カメラ同期・性能 DoD |
 | [phase-7-meta-progression.md](./phase-7-meta-progression.md) | メタ進行の閉ループ化（永続アンロック・メタショップ・デイリーラン） |
+| [phase-8-goal-adjustment.md](./phase-8-goal-adjustment.md) | 四半期レビューと目標修正（未達からの継続判断） |
 | [follow-ups.md](./follow-ups.md) | 各フェーズ実装後のフォローアップ / 未解決事項 |
 
 ---
@@ -51,9 +53,10 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 | M4 | メンバー育成 | MVP4 | 個体育成・編成が戦術になる | ✅ 完了 |
 | M5 | 巨大組織 | MVP5 | 4階層ズーム・全社/部署/業界・カメラ遷移 | ✅ 完了 |
 | M6 | WebGL 移行 | 拡張 | `?renderer=pixi` で全社マップ Pixi 描画・DOM 同等の情報量・カメラ同期 | ✅ 完了 |
-| M7 | メタ進行の閉ループ | 拡張 | 永続解放がドラフト／ショップに反映・メタショップ・実績閲覧・デイリーラン | 📝 計画 |
+| M7 | メタ進行の閉ループ | 拡張 | 永続解放がドラフト／ショップに反映・メタショップ・実績閲覧・デイリーラン | ✅ 完了 |
+| M8 | 四半期レビューと目標修正 | 拡張 | 未達時にレビューへ遷移し、目標修正・代償・次四半期継続を選べる | 📝 計画 |
 
-依存関係: M0 → M1 → M2 → M3 →（M4・M5 は M3 以降で並行可能）。M6（Pixi 移行）は M5 の `src/render/iso.ts`（投影 / 深度 / カリング / プール）を供給先とする局所差し替えとして完了済み。M7（メタ進行）は M3 のメタ進行（`src/state/meta.ts`）とドラフト／ショップ（`src/sim/run/engine.ts`）を完成させる拡張。
+依存関係: M0 → M1 → M2 → M3 →（M4・M5 は M3 以降で並行可能）→ M6 → M7 → M8。M6（Pixi 移行）は M5 の `src/render/iso.ts`（投影 / 深度 / カリング / プール）を供給先とする局所差し替えとして完了済み。M7（メタ進行）は M3 のメタ進行（`src/state/meta.ts`）とドラフト／ショップ（`src/sim/run/engine.ts`）を完成させる拡張。M8（四半期レビュー）は `RunPhase` / `RunState` / `RunEngine` に未達からの継続判断を追加する拡張。
 
 ---
 
@@ -68,9 +71,10 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 
 ## 次の一手（着手順）
 
-M0〜M5（MVP1〜5）および Phase 6（WebGL 移行）は完了済み。次は **Phase 7（メタ進行の閉ループ化）** を着手対象とする。
+M0〜M7 は完了済み。次は **Phase 8（四半期レビューと目標修正）** を着手対象とする。
 
-1. **Phase 7（M7）**: メタ進行をゲームへ還元する閉ループ化。7a（解放データモデル）→ 7b（解放プールのラン反映）→ 7c（メタショップ）までで「閉ループが回る」最小、7d（実績閲覧）・7e（デイリーラン）で周回動機を上積み。詳細・DoD は [phase-7-meta-progression.md](./phase-7-meta-progression.md)。
-2. 横断的な繰り越し（統計テスト・レバーバランス・業界とメタ進行の接続 等）は [follow-ups.md](./follow-ups.md) で追跡。Phase 7 の 7e は「業界とメタ進行の接続」の第一歩を兼ねる。
+1. **Phase 8（M8）**: 未達時の即 `lost` をやめ、四半期レビューで目標達成度・信頼・負債・士気を評価する。8a（ドメインモデル）→ 8b（フェーズ遷移）→ 8c（レビュー判定）→ 8d（目標修正アクション）→ 8e（UI）までで「未達から継続できる」最小ループを作る。詳細・DoD は [phase-8-goal-adjustment.md](./phase-8-goal-adjustment.md)。
+2. **バランス調整**: 目標修正の代償（経営・顧客・チーム信頼、予算、士気、技術負債）を軽すぎず重すぎない範囲に調整する。
+3. 横断的な繰り越し（統計テスト・レバーバランス・業界とメタ進行の接続 等）は [follow-ups.md](./follow-ups.md) で追跡する。
 
 各フェーズ末に「動く成果物＋テスト」をコミットし、SPEC の章番号で追跡可能にする。

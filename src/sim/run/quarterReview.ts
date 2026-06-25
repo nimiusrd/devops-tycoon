@@ -7,7 +7,7 @@
 import type { BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
 import { getDifficulty } from '../../data/difficulties';
-import type { OrgState, SprintResult } from '../types';
+import type { OrgState } from '../types';
 import type {
   DifficultyId,
   GoalAdjustmentId,
@@ -218,30 +218,32 @@ export function availableAdjustments(
   return allGoalAdjustmentIds().filter((id) => {
     const def = getGoalAdjustment(id);
     if (!def) return false;
-    if (def.trustDelta.customers && trust.customers + def.trustDelta.customers < 5) return false;
-    if (def.trustDelta.management && trust.management + def.trustDelta.management < 5) return false;
-    if (def.trustDelta.team && trust.team + def.trustDelta.team < 5) return false;
-    if (def.budgetDelta < 0 && budget + def.budgetDelta < 0) return false;
+    const nextManagement = clamp(trust.management + (def.trustDelta.management ?? 0), 0, 100);
+    const nextCustomers = clamp(trust.customers + (def.trustDelta.customers ?? 0), 0, 100);
+    const nextTeam = clamp(trust.team + (def.trustDelta.team ?? 0), 0, 100);
+    const nextBudget = budget + def.budgetDelta;
+    if (nextCustomers < 5 || nextManagement < 5 || nextTeam < 5) return false;
+    if (Math.min(nextManagement, nextCustomers, nextTeam) <= 10) return false;
+    if (nextBudget <= 5) return false;
     return true;
   });
 }
 
 export interface BuildReviewInput {
   goal: QuarterGoal;
-  bossCleared: boolean;
   org: OrgState;
   totals: RunTotals;
   trust: StakeholderTrust;
   budget: number;
   quarterNumber: number;
-  lastResult: SprintResult | null;
 }
 
 /** 四半期レビューの完全スナップショットを構築する。 */
 export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
   const progress = measureGoalProgress({ goal: input.goal, org: input.org, totals: input.totals });
+  const bossCleared = progress.every((p) => p.status !== 'missed');
   const outcome = evaluateQuarterOutcome({
-    bossCleared: input.bossCleared,
+    bossCleared,
     progress,
     trust: input.trust,
     org: input.org,
@@ -255,7 +257,7 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
           progress,
           org: input.org,
           totals: input.totals,
-          bossCleared: input.bossCleared,
+          bossCleared,
         });
 
   return {
@@ -265,7 +267,7 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     progress,
     missedReasons,
     availableAdjustments: availableAdjustments(outcome, input.trust, input.budget),
-    bossCleared: input.bossCleared,
+    bossCleared,
   };
 }
 

@@ -11,7 +11,7 @@ import {
   evaluateQuarterOutcome,
   measureGoalProgress,
 } from '../../src/sim/run/quarterReview';
-import type { OrgState, SprintResult } from '../../src/sim/types';
+import type { OrgState } from '../../src/sim/types';
 import type { QuarterGoal, RunTotals, StakeholderTrust } from '../../src/sim/run/types';
 
 const org = (o: Partial<OrgState> = {}): OrgState => ({ ...createOrgState('default', true), ...o });
@@ -142,13 +142,11 @@ describe('四半期レビュー（Phase 8）', () => {
     const build = () =>
       buildQuarterReview({
         goal: buildQuarterGoal(boss, 'normal', 1),
-        bossCleared: false,
         org: org({ quality: 35, morale: 38, techDebt: 50 }),
         totals: totals({ delivered: 30, incidents: 8, completed: 25 }),
         trust: buildInitialTrust('normal'),
         budget: 25,
         quarterNumber: 1,
-        lastResult: null as SprintResult | null,
       });
     expect(build()).toEqual(build());
   });
@@ -193,6 +191,12 @@ describe('四半期レビュー（Phase 8）', () => {
     const adjustments = availableAdjustments('missed_adjustable', trust, 6);
     expect(adjustments).not.toContain('extend_deadline');
     expect(adjustments).toContain('cut_scope');
+  });
+
+  it('信頼が枯渇する修正は提示しない', () => {
+    const trust: StakeholderTrust = { management: 16, customers: 60, team: 60 };
+    const adjustments = availableAdjustments('missed_adjustable', trust, 30);
+    expect(adjustments).not.toContain('pause_ai_rollout');
   });
 
   it('6種類の目標修正定義がすべて存在する', () => {

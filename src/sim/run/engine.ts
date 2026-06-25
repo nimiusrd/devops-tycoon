@@ -33,7 +33,7 @@ import {
 } from '../member';
 import type { GrowthOutcome, LaneAssignment, RosterState } from '../member/types';
 import { FIXED_STEP_MS } from '../engine';
-import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
+import { evaluateLose, evaluateWinType } from '../outcome';
 import { createRng } from '../rng';
 import { DEFAULT_SEED } from '../seed';
 import { resolveSprintConfig, createSprint, stepSprint, summarizeSprint } from '../sprint';
@@ -128,6 +128,23 @@ function emptyTotals(): RunTotals {
   };
 }
 
+function addSprintTotals(
+  t: RunTotals,
+  result: SprintResult,
+  metrics: { aiAssistedCompleted: number; completedCount: number },
+): void {
+  t.delivered += result.delivered;
+  t.done += result.done;
+  t.rework += result.rework;
+  t.incidents += result.incidents;
+  t.contained += result.contained;
+  t.spread += result.spread;
+  t.aiAssisted += metrics.aiAssistedCompleted;
+  t.completed += metrics.completedCount;
+  t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
+  t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
+}
+
 /** 難易度の組織プリセットから初期 `OrgState` を作る（AI 導入済みの組織を前提）。 */
 function buildRunOrg(difficulty: DifficultyId): OrgState {
   const { org } = getDifficulty(difficulty);
@@ -187,7 +204,10 @@ export class RunEngine {
 
   private diagnosis: RunState['diagnosis'] = 'healthyAcceleration';
   private sprintsPlayed = 0;
+  /** ラン通算（勝利種別・メタ報酬用）。 */
   private totals: RunTotals = emptyTotals();
+  /** 当四半期のみ（四半期レビュー KPI 用）。 */
+  private quarterTotals: RunTotals = emptyTotals();
   private usedHeavyActions = false;
 
   // 組織スケール（MVP5 / 第4.7〜4.11）。ズーム状態とレバー蓄積を持つ。
@@ -292,6 +312,7 @@ export class RunEngine {
     this.diagnosis = 'healthyAcceleration';
     this.sprintsPlayed = 0;
     this.totals = emptyTotals();
+    this.quarterTotals = emptyTotals();
     this.usedHeavyActions = false;
     this.zoom = { level: 'team', deptId: null, teamId: null };
     this.rankingKind = 'overall';
@@ -442,25 +463,13 @@ export class RunEngine {
         this.phase = 'lost';
         return;
       }
-      const boss = getBoss(this.bossId);
-      const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
-      const cleared =
-        !!boss &&
-        evaluateBoss({
-          boss,
-          result,
-          org: this.org,
-          bossTargetMul,
-        });
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
-        bossCleared: cleared,
         org: this.org,
-        totals: this.totals,
+        totals: this.quarterTotals,
         trust: this.stakeholderTrust,
         budget: this.budget,
         quarterNumber: this.quarterNumber,
-        lastResult: result,
       });
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
       this.phase = 'quarterReview';
@@ -485,17 +494,8 @@ export class RunEngine {
   private accumulateTotals(result: SprintResult): void {
     if (!this.sprint) return;
     const m = this.sprint.metrics;
-    const t = this.totals;
-    t.delivered += result.delivered;
-    t.done += result.done;
-    t.rework += result.rework;
-    t.incidents += result.incidents;
-    t.contained += result.contained;
-    t.spread += result.spread;
-    t.aiAssisted += m.aiAssistedCompleted;
-    t.completed += m.completedCount;
-    t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
-    t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
+    addSprintTotals(this.totals, result, m);
+    addSprintTotals(this.quarterTotals, result, m);
   }
 
   /**
@@ -611,16 +611,10 @@ export class RunEngine {
     }
     if (this.nextBudgetCap !== null) {
       this.budget = Math.min(this.budget, this.nextBudgetCap);
-    }
-    if (this.goalAdjustmentsTaken.includes('cut_scope')) {
-      this.quarterGoal.deliveryTarget = Math.max(
-        15,
-        Math.round(this.quarterGoal.deliveryTarget * 0.9),
-      );
+      this.nextBudgetCap = null;
     }
 
-    this.totals = emptyTotals();
-    this.sprintsPlayed = 0;
+    this.quarterTotals = emptyTotals();
 
     this.position = null;
     this.visited = [];

@@ -58,7 +58,11 @@ describe('デイリーラン（phase-7 §7e）', () => {
             game.restChoose('heal');
             break;
           case 'quarterReview':
-            game.acknowledgeQuarterReview();
+            if (s.quarterReview?.outcome === 'missed_adjustable') {
+              game.chooseGoalAdjustment(s.quarterReview.availableAdjustments[0] ?? 'cut_scope');
+            } else {
+              game.acknowledgeQuarterReview();
+            }
             break;
           default:
             guard = 5000;

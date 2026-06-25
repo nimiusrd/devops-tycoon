@@ -202,7 +202,8 @@ export class RunEngine {
   private goalAdjustmentsTaken: GoalAdjustmentId[] = [];
   private reviewHistory: QuarterOutcome[] = [];
   private nextBudgetCap: number | null = null;
-  private pauseAiDebuff = false;
+  /** pause_ai_rollout の速度デバフが有効な四半期（その四半期のみ）。 */
+  private pauseAiDebuffQuarter: number | null = null;
 
   constructor(init: RunEngineInit = {}) {
     this.seed = init.seed ?? DEFAULT_SEED;
@@ -276,7 +277,7 @@ export class RunEngine {
     this.goalAdjustmentsTaken = [];
     this.reviewHistory = [];
     this.nextBudgetCap = null;
-    this.pauseAiDebuff = false;
+    this.pauseAiDebuffQuarter = null;
     this.position = null;
     this.visited = [];
     this.available = firstColumnNodes(this.map);
@@ -359,7 +360,7 @@ export class RunEngine {
     const formation = foldFormationEffects(this.roster);
     let effects = combineEffects(fold.effects, toEffects(formation.effects));
     if (isBoss) effects = withBossEffects(effects, this.bossId);
-    if (this.pauseAiDebuff) {
+    if (this.pauseAiDebuffQuarter === this.quarterNumber) {
       effects = {
         ...effects,
         codingSpeedMul: effects.codingSpeedMul * 0.85,
@@ -434,6 +435,13 @@ export class RunEngine {
 
     const node = nodeById(this.map, this.activeNodeId);
     if (node?.type === 'boss') {
+      const lose = evaluateLose(this.org, this.totals);
+      if (lose) {
+        this.status = 'lost';
+        this.loseReason = lose;
+        this.phase = 'lost';
+        return;
+      }
       const boss = getBoss(this.bossId);
       const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
       const cleared =
@@ -560,7 +568,7 @@ export class RunEngine {
     this.budget = applied.budget;
     this.goalAdjustmentsTaken = applied.goalAdjustmentsTaken;
     this.nextBudgetCap = applied.nextBudgetCap;
-    if (applied.pauseAiDebuff) this.pauseAiDebuff = true;
+    if (applied.pauseAiDebuff) this.pauseAiDebuffQuarter = this.quarterNumber + 1;
 
     if (id === 'reorg_teams') {
       this.applyReorgDeparture();
@@ -610,6 +618,9 @@ export class RunEngine {
         Math.round(this.quarterGoal.deliveryTarget * 0.9),
       );
     }
+
+    this.totals = emptyTotals();
+    this.sprintsPlayed = 0;
 
     this.position = null;
     this.visited = [];

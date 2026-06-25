@@ -72,7 +72,7 @@ describe('四半期レビュー（Phase 8）', () => {
       quarterNumber: 1,
     });
     expect(outcome).toBe('missed_adjustable');
-    const adjustments = availableAdjustments(outcome, trust);
+    const adjustments = availableAdjustments(outcome, trust, 20);
     expect(adjustments.length).toBeGreaterThan(0);
     expect(adjustments).toContain('cut_scope');
   });
@@ -93,7 +93,7 @@ describe('四半期レビュー（Phase 8）', () => {
       quarterNumber: 1,
     });
     expect(outcome).toBe('shutdown');
-    expect(availableAdjustments(outcome, trust)).toEqual([]);
+    expect(availableAdjustments(outcome, trust, 0)).toEqual([]);
   });
 
   it('2四半期目の深刻未達は reorg_required になりうる', () => {
@@ -130,7 +130,7 @@ describe('四半期レビュー（Phase 8）', () => {
     const budget = applyGoalAdjustment(input, 'request_budget');
     expect(budget.budget).toBeGreaterThan(input.budget);
     expect(budget.trust.management).toBeLessThan(input.trust.management);
-    expect(budget.nextBudgetCap).toBe(984);
+    expect(budget.nextBudgetCap).toBe(15);
 
     const extend = applyGoalAdjustment(input, 'extend_deadline');
     expect(extend.budget).toBe(input.budget - 10);
@@ -151,6 +151,48 @@ describe('四半期レビュー（Phase 8）', () => {
         lastResult: null as SprintResult | null,
       });
     expect(build()).toEqual(build());
+  });
+
+  it('ボス突破でも KPI 未達なら missed_adjustable になる', () => {
+    const progress = measureGoalProgress({
+      goal,
+      org: org({ quality: 30, morale: 50, techDebt: 60 }),
+      totals: totals({ delivered: 80, incidents: 2, completed: 40 }),
+    });
+    const outcome = evaluateQuarterOutcome({
+      bossCleared: true,
+      progress,
+      trust: buildInitialTrust('normal'),
+      org: org({ quality: 30, morale: 50 }),
+      budget: 30,
+      quarterNumber: 1,
+    });
+    expect(outcome).toBe('missed_adjustable');
+  });
+
+  it('目標修正後の priorGoal は次四半期目標へ引き継がれる', () => {
+    const boss = getBoss('big-release')!;
+    const adjusted = applyGoalAdjustment(
+      {
+        goal: buildQuarterGoal(boss, 'normal', 1),
+        trust: buildInitialTrust('normal'),
+        org: org(),
+        budget: 30,
+        goalAdjustmentsTaken: [],
+        nextBudgetCap: null,
+      },
+      'quality_pivot',
+    );
+    const next = buildQuarterGoal(boss, 'normal', 1, adjusted.goal);
+    expect(next.techDebtLimit).toBe(adjusted.goal.techDebtLimit);
+    expect(next.incidentLimit).toBe(adjusted.goal.incidentLimit);
+  });
+
+  it('予算不足時は extend_deadline を提示しない', () => {
+    const trust = buildInitialTrust('normal');
+    const adjustments = availableAdjustments('missed_adjustable', trust, 6);
+    expect(adjustments).not.toContain('extend_deadline');
+    expect(adjustments).toContain('cut_scope');
   });
 
   it('6種類の目標修正定義がすべて存在する', () => {

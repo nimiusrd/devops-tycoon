@@ -49,6 +49,13 @@ export function buildQuarterGoal(
 
   if (priorGoal) {
     goal.deliveryTarget = Math.max(20, Math.round(priorGoal.deliveryTarget * 0.95));
+    goal.qualityTarget = priorGoal.qualityTarget;
+    goal.techDebtLimit = priorGoal.techDebtLimit;
+    goal.moraleTarget = priorGoal.moraleTarget;
+    goal.incidentLimit = priorGoal.incidentLimit;
+    if (priorGoal.aiAdoptionTarget !== undefined) {
+      goal.aiAdoptionTarget = priorGoal.aiAdoptionTarget;
+    }
   }
   return goal;
 }
@@ -186,7 +193,6 @@ export function evaluateQuarterOutcome(input: OutcomeInput): QuarterOutcome {
     const allMet = progress.every((p) => p.status !== 'missed');
     if (allExceeded) return 'exceeded';
     if (allMet) return 'met';
-    return 'met';
   }
 
   if (
@@ -206,6 +212,7 @@ export function evaluateQuarterOutcome(input: OutcomeInput): QuarterOutcome {
 export function availableAdjustments(
   outcome: QuarterOutcome,
   trust: StakeholderTrust,
+  budget: number,
 ): GoalAdjustmentId[] {
   if (outcome !== 'missed_adjustable') return [];
   return allGoalAdjustmentIds().filter((id) => {
@@ -214,6 +221,7 @@ export function availableAdjustments(
     if (def.trustDelta.customers && trust.customers + def.trustDelta.customers < 5) return false;
     if (def.trustDelta.management && trust.management + def.trustDelta.management < 5) return false;
     if (def.trustDelta.team && trust.team + def.trustDelta.team < 5) return false;
+    if (def.budgetDelta < 0 && budget + def.budgetDelta < 0) return false;
     return true;
   });
 }
@@ -256,7 +264,7 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     trust: { ...input.trust },
     progress,
     missedReasons,
-    availableAdjustments: availableAdjustments(outcome, input.trust),
+    availableAdjustments: availableAdjustments(outcome, input.trust, input.budget),
     bossCleared: input.bossCleared,
   };
 }
@@ -333,7 +341,7 @@ export function applyGoalAdjustment(
 
   let nextBudgetCap = input.nextBudgetCap;
   if (def.nextBudgetCapDelta !== undefined) {
-    const base = nextBudgetCap ?? 999;
+    const base = nextBudgetCap ?? input.budget;
     nextBudgetCap = Math.max(10, base + def.nextBudgetCapDelta);
   }
 

@@ -6,10 +6,10 @@
  */
 import type { BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
-import type { DifficultyId } from '../../data/difficulties';
 import { getDifficulty } from '../../data/difficulties';
 import type { OrgState, SprintResult } from '../types';
 import type {
+  DifficultyId,
   GoalAdjustmentId,
   GoalKpiProgress,
   QuarterGoal,

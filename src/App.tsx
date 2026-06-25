@@ -23,6 +23,7 @@ import {
   RunBar,
   RunMapScreen,
   RunResultScreen,
+  QuarterReviewScreen,
   ShopScreen,
   SprintResultScreen,
   SprintScreen,
@@ -93,6 +94,15 @@ export default function App({ game }: AppProps) {
   }
   if (phase === 'won' || phase === 'lost') {
     return <RunResultScreen state={state} meta={meta} onNewRun={newRun} />;
+  }
+  if (phase === 'quarterReview') {
+    return (
+      <QuarterReviewScreen
+        state={state}
+        onAcknowledge={run.acknowledgeQuarterReview}
+        onChooseAdjustment={run.chooseGoalAdjustment}
+      />
+    );
   }
 
   const tasks = state.sprint?.tasks ?? [];

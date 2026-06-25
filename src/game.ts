@@ -10,7 +10,7 @@ import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import { resolveSeedFromLocation } from './sim/seed';
 import type { ActionId, InterventionOutcome } from './sim/types';
-import type { DifficultyId, RunState } from './sim/run/types';
+import type { DifficultyId, GoalAdjustmentId, RunState } from './sim/run/types';
 import type { LaneAssignment } from './sim/member/types';
 import type { RankingKind, ZoomLevel } from './sim/orgscale/types';
 import {
@@ -80,6 +80,10 @@ export interface GameHandle {
   setRankingKind(kind: RankingKind): RunState;
   /** 全社 / 部門レバーを発動する（四半期予算を消費。第4.8 / 第4.9）。 */
   applyOrgLever(leverId: string, deptId?: string): RunState;
+  /** 四半期レビューを承認する（達成→won / 継続不能→lost）。 */
+  acknowledgeQuarterReview(): RunState;
+  /** 目標修正を選び次四半期へ進む。 */
+  chooseGoalAdjustment(id: GoalAdjustmentId): RunState;
   /** 新しいランをタイトルから始める（seed を差し替え可能）。 */
   newRun(seed?: string): RunState;
   /** メタショップでコンテンツを永続解放する（points 消費）。 */
@@ -140,6 +144,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       score: s.org.deliveryScore,
       scoreMul,
       maxCombo: s.totals.maxCombo,
+      quarterReviews: s.reviewHistory,
     };
     if (s.runKind === 'daily' && activeDailyDate) {
       meta = applyDailyRunReward(meta, { ...input, dateStr: activeDailyDate }).meta;
@@ -284,6 +289,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     applyOrgLever(leverId, deptId) {
       engine.applyOrgLever(leverId, deptId);
+      bump();
+      return engine.snapshot();
+    },
+    acknowledgeQuarterReview() {
+      engine.acknowledgeQuarterReview();
+      bump();
+      return after();
+    },
+    chooseGoalAdjustment(id) {
+      engine.chooseGoalAdjustment(id);
       bump();
       return engine.snapshot();
     },

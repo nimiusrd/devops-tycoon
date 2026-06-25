@@ -57,6 +57,9 @@ describe('デイリーラン（phase-7 §7e）', () => {
           case 'rest':
             game.restChoose('heal');
             break;
+          case 'quarterReview':
+            game.acknowledgeQuarterReview();
+            break;
           default:
             guard = 5000;
             break;

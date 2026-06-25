@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { GameHandle } from '../game';
 import type { MetaState } from '../state/meta';
 import type { ActionId, InterventionOutcome } from '../sim/types';
-import type { DifficultyId, RunState } from '../sim/run/types';
+import type { DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
 
@@ -42,6 +42,8 @@ export interface UseRun {
   focusTeam: (id: string) => void;
   setRankingKind: (kind: RankingKind) => void;
   applyOrgLever: (leverId: string, deptId?: string) => void;
+  acknowledgeQuarterReview: () => void;
+  chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
 }
@@ -104,6 +106,11 @@ export function useRun(game: GameHandle): UseRun {
     (leverId: string, deptId?: string) => void game.applyOrgLever(leverId, deptId),
     [game],
   );
+  const acknowledgeQuarterReview = useCallback(() => void game.acknowledgeQuarterReview(), [game]);
+  const chooseGoalAdjustment = useCallback(
+    (id: GoalAdjustmentId) => void game.chooseGoalAdjustment(id),
+    [game],
+  );
   const newRun = useCallback(() => void game.newRun(), [game]);
   const purchaseMetaUnlock = useCallback(
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
@@ -134,6 +141,8 @@ export function useRun(game: GameHandle): UseRun {
     focusTeam,
     setRankingKind,
     applyOrgLever,
+    acknowledgeQuarterReview,
+    chooseGoalAdjustment,
     newRun,
     purchaseMetaUnlock,
   };

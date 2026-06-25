@@ -25,13 +25,15 @@ describe('ランフェーズマシン（XState / 第3章）', () => {
     expect(drive(['START', 'ENTER_REST', 'RESOLVE'])).toBe('map');
   });
 
-  it('ボス突破で won、失敗で lost に到達する（終端）', () => {
-    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_WON'])).toBe('won');
-    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_LOST'])).toBe('lost');
+  it('ボス完了で四半期レビューへ、承認で won / 修正で map / 終了で lost', () => {
+    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_REVIEW'])).toBe('quarterReview');
+    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_REVIEW', 'REVIEW_WON'])).toBe('won');
+    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_REVIEW', 'REVIEW_CONTINUE'])).toBe('map');
+    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_REVIEW', 'REVIEW_LOST'])).toBe('lost');
     expect(drive(['START', 'ENTER_SPRINT', 'LOST'])).toBe('lost');
   });
 
   it('不正なイベントでは状態が変わらない', () => {
-    expect(drive(['ENTER_SPRINT'])).toBe('title'); // title では START のみ有効
+    expect(drive(['ENTER_SPRINT'])).toBe('title');
   });
 });

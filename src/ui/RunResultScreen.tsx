@@ -15,6 +15,14 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
   moraleCollapse: { label: 'チーム崩壊', desc: '士気が尽き、チームが機能しなくなりました。' },
   reviewFreeze: { label: 'PR 凍結', desc: 'レビュー待ちが限界を超え、出荷が止まりました。' },
   bossFailed: { label: 'ボス突破失敗', desc: '四半期末の試練を突破できませんでした。' },
+  trustExhausted: {
+    label: '信頼枯渇',
+    desc: 'ステークホルダーの信頼が尽き、プロジェクトを継続できませんでした。',
+  },
+  reorgRequired: {
+    label: '組織再編',
+    desc: '目標未達が重なり、大規模再編としてプロジェクトが終了しました。',
+  },
 };
 
 export interface RunResultScreenProps {

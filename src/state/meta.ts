@@ -13,7 +13,7 @@ import {
   getUnlock,
   type UnlockDef,
 } from '../data/unlocks';
-import type { DifficultyId, WinType } from '../sim/run/types';
+import type { DifficultyId, QuarterOutcome, WinType } from '../sim/run/types';
 
 /** localStorage 等の最小インターフェース（テストでモック可能）。 */
 export interface MetaStorage {
@@ -119,6 +119,8 @@ export interface RunRewardInput {
   scoreMul: number;
   /** ランで達成した最大コンボ。 */
   maxCombo: number;
+  /** 四半期レビュー履歴（メタ進行ボーナス用）。 */
+  quarterReviews?: QuarterOutcome[];
 }
 
 const uniq = (xs: string[]): string[] => Array.from(new Set(xs));
@@ -169,7 +171,19 @@ export const ACHIEVEMENT_LABEL: Record<string, string> = Object.fromEntries(
  * 勝利時のみ難易度解放・ボス撃破記録・実績解除が進む。
  */
 export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaState {
-  const gained = Math.round((input.won ? 20 : 5) * Math.max(1, input.scoreMul));
+  const reviews = input.quarterReviews ?? [];
+  const learningBonus =
+    !input.won && reviews.some((r) => r === 'missed_adjustable')
+      ? Math.min(5, 2 + reviews.filter((r) => r === 'missed_adjustable').length)
+      : 0;
+  const exceededBonus =
+    input.won && reviews.some((r) => r === 'exceeded')
+      ? 3
+      : input.won && reviews.includes('met')
+        ? 1
+        : 0;
+  const gained =
+    Math.round((input.won ? 20 : 5) * Math.max(1, input.scoreMul)) + learningBonus + exceededBonus;
   const next: MetaState = {
     points: meta.points + gained,
     unlockedDifficulties: [...meta.unlockedDifficulties],

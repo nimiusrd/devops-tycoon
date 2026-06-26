@@ -536,6 +536,26 @@ body {
   }
 }
 
+/*
+ * 上限超過バッジ（+N）。山が cap で頭打ちでも、頂点の上に隠れた滞留量を出して
+ * 「山の見た目＜実際の滞留量」を防ぐ（旧 Done +N 相当。第18.2）。粒（z7/8）より前面。
+ */
+.pile-overflow {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--cream);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #1f1942e6;
+  border: 1.5px solid var(--line);
+  box-shadow: 0 2px 0 #00000055;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* 凡例（盤面右下に固定）。 */
 .board-legend {
   position: absolute;

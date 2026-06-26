@@ -111,11 +111,24 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it('上限超過は overflow に集約し、描く粒は cap 以内に収まる', () => {
+  it('上限超過はステーションの overflow に集約し、描く粒は cap 以内に収まる', () => {
     const scene = planBoardScene(tasksIn('review', 30));
     const drawn = scene.dots.filter((d) => d.lane === 'review').length;
+    const review = scene.stations.find((s) => s.lane === 'review')!;
     expect(drawn).toBeLessThanOrEqual(20);
-    expect(scene.overflow.review).toBe(30 - drawn);
+    expect(review.overflow).toBe(30 - drawn);
+  });
+
+  it('上限内なら overflow は 0（+N を出さない）', () => {
+    const scene = planBoardScene(tasksIn('done', 5));
+    expect(scene.stations.find((s) => s.lane === 'done')!.overflow).toBe(0);
+  });
+
+  it('overflow バッジ位置は山の頂点付近（ラベルと衝突しない高さ）', () => {
+    const scene = planBoardScene(tasksIn('review', 30));
+    const review = scene.stations.find((s) => s.lane === 'review')!;
+    // 山は上へ伸びるので、頂点バッジは pile より上（labelY 付近より下）に出る。
+    expect(review.overflowY).toBeLessThan(review.y);
   });
 
   it('炎上タスクは fire を立て、最後（最上段）に積む', () => {
@@ -143,7 +156,7 @@ describe('planBoardScene（盤面シーン計画）', () => {
     // 炎上は最上段（末尾）に積む。
     expect(reworkDots[reworkDots.length - 1].id).toBe(777);
     // 隠れたのは通常タスクのみ（21 件中 12 件表示 → 9 件超過）。
-    expect(scene.overflow.rework).toBe(9);
+    expect(scene.stations.find((s) => s.lane === 'rework')!.overflow).toBe(9);
   });
 
   it('粒の中心は設計空間の内側に収まる', () => {

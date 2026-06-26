@@ -147,6 +147,14 @@ export interface BoardStationPlan {
   mood: StationMood;
   /** 吹き出しの文言（無ければ null）。 */
   bubble: string | null;
+  /**
+   * 上限超過で山に描けなかった件数（0 なら超過なし）。山の見た目が実際の滞留量より
+   * 小さく見えないよう、レンダラは >0 のとき `+N` を山の頂点付近に出す（旧 Done +N 相当）。
+   */
+  overflow: number;
+  /** `+N` バッジの表示位置（山の頂点の少し上。設計px）。 */
+  overflowX: number;
+  overflowY: number;
 }
 
 /** レンダラが読む 1 タスク粒の描画計画。 */
@@ -168,8 +176,6 @@ export interface BoardScenePlan {
   stations: BoardStationPlan[];
   dots: BoardDotPlan[];
   flows: readonly BoardFlow[];
-  /** レーンごとに上限超過で描かなかった数（+N 表示用）。 */
-  overflow: Partial<Record<Lane, number>>;
 }
 
 /** Review がこの件数以上で「渋滞（hot）」とみなす（第18.2）。 */
@@ -274,7 +280,6 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
 
   const stations: BoardStationPlan[] = [];
   const dots: BoardDotPlan[] = [];
-  const overflow: Partial<Record<Lane, number>> = {};
 
   for (const layout of STATIONS) {
     const laneTasks = byLane.get(layout.lane) ?? [];
@@ -283,6 +288,20 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
     const heat = layout.lane === 'review' ? reviewHeat(count) : 0;
     const hasAi = laneTasks.some((t) => t.aiAssisted);
     const { mood, bubble } = deriveMood(layout.lane, count, hot, hasAi);
+
+    // 上限超過時も炎上タスクは必ず残す（fire メーター/緊急対応が依存するため）。
+    // 上限内をまず通常タスクで埋め、炎上は最後＝最上段に積んで目立たせる。
+    const incidents = laneTasks.filter((t) => t.incident);
+    const normals = laneTasks.filter((t) => !t.incident);
+    const shownIncidents = incidents.slice(0, layout.cap);
+    const normalSlots = Math.max(0, layout.cap - shownIncidents.length);
+    const shownNormals = normals.slice(0, normalSlots);
+    const shown = [...shownNormals, ...shownIncidents];
+    const overflow = count - shown.length;
+
+    // `+N` バッジは山の頂点（最上段の少し上）に置く。ラベルと衝突させない。
+    const rows = Math.ceil(shown.length / layout.perRow);
+    const apexDy = rows > 0 ? -(rows - 1) * DOT_DY : 0;
 
     stations.push({
       lane: layout.lane,
@@ -299,18 +318,10 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
       heat,
       mood,
       bubble,
+      overflow,
+      overflowX: layout.pile.x,
+      overflowY: layout.pile.y + apexDy - 26,
     });
-
-    // 上限超過時も炎上タスクは必ず残す（fire メーター/緊急対応が依存するため）。
-    // 上限内をまず通常タスクで埋め、炎上は最後＝最上段に積んで目立たせる。
-    const incidents = laneTasks.filter((t) => t.incident);
-    const normals = laneTasks.filter((t) => !t.incident);
-    const shownIncidents = incidents.slice(0, layout.cap);
-    const normalSlots = Math.max(0, layout.cap - shownIncidents.length);
-    const shownNormals = normals.slice(0, normalSlots);
-    const shown = [...shownNormals, ...shownIncidents];
-    const hidden = count - shown.length;
-    if (hidden > 0) overflow[layout.lane] = hidden;
 
     const offsets = pileOffsets(shown.length, layout.perRow);
     shown.forEach((t, i) => {
@@ -327,5 +338,5 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
     });
   }
 
-  return { view: { w: BOARD_VIEW.w, h: BOARD_VIEW.h }, stations, dots, flows: FLOWS, overflow };
+  return { view: { w: BOARD_VIEW.w, h: BOARD_VIEW.h }, stations, dots, flows: FLOWS };
 }

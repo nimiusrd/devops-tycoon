@@ -169,6 +169,19 @@ export function Board({ tasks }: BoardProps) {
         <Bubble key={`b-${s.lane}`} s={s} />
       ))}
 
+      {scene.stations
+        .filter((s) => s.overflow > 0)
+        .map((s) => (
+          <div
+            key={`of-${s.lane}`}
+            className="pile-overflow"
+            data-testid={`overflow-${s.lane}`}
+            style={{ left: pct(s.overflowX, VIEW_W), top: pct(s.overflowY, VIEW_H) }}
+          >
+            +{s.overflow}
+          </div>
+        ))}
+
       <div className="board-legend">
         {LEGEND.map((l) => (
           <span key={l.variant} className="li">

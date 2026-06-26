@@ -33,7 +33,7 @@ import {
 } from '../member';
 import type { GrowthOutcome, LaneAssignment, RosterState } from '../member/types';
 import { FIXED_STEP_MS } from '../engine';
-import { evaluateLose, evaluateWinType } from '../outcome';
+import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng } from '../rng';
 import { DEFAULT_SEED } from '../seed';
 import { resolveSprintConfig, createSprint, stepSprint, summarizeSprint } from '../sprint';
@@ -463,6 +463,8 @@ export class RunEngine {
         this.phase = 'lost';
         return;
       }
+      const boss = getBoss(this.bossId);
+      const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
         org: this.org,
@@ -470,6 +472,7 @@ export class RunEngine {
         trust: this.stakeholderTrust,
         budget: this.budget,
         quarterNumber: this.quarterNumber,
+        bossSprintCleared: !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul }),
       });
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
       this.phase = 'quarterReview';
@@ -572,6 +575,14 @@ export class RunEngine {
 
     if (id === 'reorg_teams') {
       this.applyReorgDeparture();
+    }
+
+    const lose = evaluateLose(this.org, this.totals);
+    if (lose) {
+      this.status = 'lost';
+      this.loseReason = lose;
+      this.phase = 'lost';
+      return;
     }
 
     this.startNextQuarter();

@@ -7,6 +7,8 @@
 import type { BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
 import { getDifficulty } from '../../data/difficulties';
+import type { GoalAdjustmentDef } from '../../data/goalAdjustments';
+import { TECH_DEBT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import type { OrgState } from '../types';
 import type {
   DifficultyId,
@@ -208,11 +210,40 @@ export function evaluateQuarterOutcome(input: OutcomeInput): QuarterOutcome {
   return 'missed_adjustable';
 }
 
+/** 目標修正適用後の org 状態をシミュレートする（ハード敗北フィルタ用）。 */
+function orgAfterAdjustment(org: OrgState, def: GoalAdjustmentDef): OrgState {
+  const next = { ...org };
+  if (def.orgEffects?.moraleDelta !== undefined) {
+    next.morale = clamp(next.morale + def.orgEffects.moraleDelta, 0, 100);
+  }
+  if (def.orgEffects?.seniorHpDelta !== undefined) {
+    next.seniorHp = clamp(next.seniorHp + def.orgEffects.seniorHpDelta, 0, 100);
+  }
+  if (def.orgEffects?.techDebtDelta !== undefined) {
+    next.techDebt = Math.max(0, next.techDebt + def.orgEffects.techDebtDelta);
+  }
+  if (def.reorgReset) {
+    next.seniorHp = clamp(next.seniorHp + 20, 0, 100);
+    next.techDebt = Math.max(0, next.techDebt - 8);
+  }
+  return next;
+}
+
+function wouldHardLose(org: OrgState, totals: RunTotals): boolean {
+  if (org.seniorHp <= 1) return true;
+  if (org.morale <= 1) return true;
+  if (org.techDebt >= TECH_DEBT_CAP) return true;
+  if (totals.reviewQueuePeak >= REVIEW_FREEZE_PEAK) return true;
+  return false;
+}
+
 /** outcome に応じて提示する目標修正を決める。 */
 export function availableAdjustments(
   outcome: QuarterOutcome,
   trust: StakeholderTrust,
   budget: number,
+  org: OrgState,
+  totals: RunTotals,
 ): GoalAdjustmentId[] {
   if (outcome !== 'missed_adjustable') return [];
   return allGoalAdjustmentIds().filter((id) => {
@@ -225,6 +256,7 @@ export function availableAdjustments(
     if (nextCustomers < 5 || nextManagement < 5 || nextTeam < 5) return false;
     if (Math.min(nextManagement, nextCustomers, nextTeam) <= 10) return false;
     if (nextBudget <= 5) return false;
+    if (wouldHardLose(orgAfterAdjustment(org, def), totals)) return false;
     return true;
   });
 }
@@ -236,12 +268,14 @@ export interface BuildReviewInput {
   trust: StakeholderTrust;
   budget: number;
   quarterNumber: number;
+  /** ボススプリント単体の突破可否（evaluateBoss）。 */
+  bossSprintCleared: boolean;
 }
 
 /** 四半期レビューの完全スナップショットを構築する。 */
 export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
   const progress = measureGoalProgress({ goal: input.goal, org: input.org, totals: input.totals });
-  const bossCleared = progress.every((p) => p.status !== 'missed');
+  const bossCleared = input.bossSprintCleared;
   const outcome = evaluateQuarterOutcome({
     bossCleared,
     progress,
@@ -266,7 +300,13 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     trust: { ...input.trust },
     progress,
     missedReasons,
-    availableAdjustments: availableAdjustments(outcome, input.trust, input.budget),
+    availableAdjustments: availableAdjustments(
+      outcome,
+      input.trust,
+      input.budget,
+      input.org,
+      input.totals,
+    ),
     bossCleared,
   };
 }

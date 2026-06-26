@@ -6,6 +6,7 @@
  * ステーション（机＋キャラ＋ラベル＋吹き出し）＋タスク粒の山＋工程間フロー。
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
  */
+import type { CSSProperties } from 'react';
 import type { Task } from '../sim/types';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
@@ -140,11 +141,17 @@ const LEGEND: { variant: BoardDotPlan['variant']; label: string }[] = [
 
 export function Board({ tasks }: BoardProps) {
   const scene = planBoardScene(tasks);
-  // hot なステーションがあれば盤面全体を Review Hell トーンに寄せる（第18.3）。
+  // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
+  // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
   const hot = scene.stations.some((s) => s.hot);
+  const heat = scene.stations.reduce((m, s) => Math.max(m, s.heat), 0);
 
   return (
-    <div className={`board iso-office${hot ? ' review-hell' : ''}`} data-testid="board">
+    <div
+      className={`board iso-office${hot ? ' review-hell' : ''}`}
+      data-testid="board"
+      style={{ '--review-heat': heat } as CSSProperties}
+    >
       <OfficeRoom />
       <FlowArrows flows={scene.flows} />
 

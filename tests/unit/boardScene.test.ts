@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { BOARD_VIEW, REVIEW_HOT_QUEUE, planBoardScene } from '../../src/render/boardScene';
+import {
+  BOARD_VIEW,
+  REVIEW_HEAT_START,
+  REVIEW_HOT_QUEUE,
+  planBoardScene,
+  reviewHeat,
+} from '../../src/render/boardScene';
 import type { Lane, Task } from '../../src/sim/types';
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -125,6 +131,21 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(reviewDots[reviewDots.length - 1].id).toBe(99);
   });
 
+  it('上限超過レーンでも炎上タスクは必ず描く（cap で切り捨てない）', () => {
+    // Rework は cap 12。通常 20 件＋炎上 1 件 → 通常が前に並んでも炎上は残す。
+    const scene = planBoardScene([
+      ...tasksIn('rework', 20),
+      task({ id: 777, lane: 'rework', incident: true }),
+    ]);
+    const reworkDots = scene.dots.filter((d) => d.lane === 'rework');
+    expect(reworkDots.length).toBeLessThanOrEqual(12);
+    expect(reworkDots.some((d) => d.fire && d.id === 777)).toBe(true);
+    // 炎上は最上段（末尾）に積む。
+    expect(reworkDots[reworkDots.length - 1].id).toBe(777);
+    // 隠れたのは通常タスクのみ（21 件中 12 件表示 → 9 件超過）。
+    expect(scene.overflow.rework).toBe(9);
+  });
+
   it('粒の中心は設計空間の内側に収まる', () => {
     const scene = planBoardScene([
       ...tasksIn('backlog', 6),
@@ -143,5 +164,36 @@ describe('planBoardScene（盤面シーン計画）', () => {
     const { flows } = planBoardScene([]);
     expect(flows.some((f) => f.from === 'coding' && f.to === 'review')).toBe(true);
     expect(flows.some((f) => f.from === 'review' && f.to === 'rework' && f.rework)).toBe(true);
+  });
+});
+
+describe('reviewHeat（渋滞の段階強度・hot 手前の早期警告）', () => {
+  it('起点以下は 0、hot 閾値以上は 1', () => {
+    expect(reviewHeat(0)).toBe(0);
+    expect(reviewHeat(REVIEW_HEAT_START)).toBe(0);
+    expect(reviewHeat(REVIEW_HOT_QUEUE)).toBe(1);
+    expect(reviewHeat(REVIEW_HOT_QUEUE + 5)).toBe(1);
+  });
+
+  it('起点〜hot の間は単調増加（8〜11 件で徐々に赤くなる）', () => {
+    const mid = reviewHeat(8);
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(1);
+    expect(reviewHeat(11)).toBeGreaterThan(reviewHeat(9));
+    expect(reviewHeat(9)).toBeGreaterThan(reviewHeat(7));
+  });
+
+  it('ステーションの heat は Review のみ非ゼロ', () => {
+    const scene = planBoardScene([...tasksIn('review', 9), ...tasksIn('coding', 9)]);
+    const review = scene.stations.find((s) => s.lane === 'review')!;
+    const coding = scene.stations.find((s) => s.lane === 'coding')!;
+    expect(review.heat).toBeGreaterThan(0);
+    expect(review.heat).toBeLessThan(1);
+    expect(coding.heat).toBe(0);
+  });
+
+  it('hot 到達時は heat が 1（最大）', () => {
+    const scene = planBoardScene(tasksIn('review', REVIEW_HOT_QUEUE));
+    expect(scene.stations.find((s) => s.lane === 'review')!.heat).toBe(1);
   });
 });

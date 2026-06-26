@@ -139,6 +139,11 @@ export interface BoardStationPlan {
   bubbleY: number;
   /** Review が渋滞しているか（赤いラベル＋パニック表情）。 */
   hot: boolean;
+  /**
+   * 渋滞の段階強度 0..1（Review のみ非ゼロ）。hot の手前から徐々に上がり、
+   * 盤面の赤みを段階的に強める（早期の視覚警告。第18.2）。
+   */
+  heat: number;
   mood: StationMood;
   /** 吹き出しの文言（無ければ null）。 */
   bubble: string | null;
@@ -169,6 +174,19 @@ export interface BoardScenePlan {
 
 /** Review がこの件数以上で「渋滞（hot）」とみなす（第18.2）。 */
 export const REVIEW_HOT_QUEUE = 12;
+
+/** この件数から渋滞 heat が立ち上がる（hot 手前の早期警告の起点）。 */
+export const REVIEW_HEAT_START = 4;
+
+/**
+ * Review 件数 → 渋滞 heat 0..1 を導く（純関数）。
+ * START 以下は 0、HOT 以上は 1。間を線形に上げ、8〜11 件で徐々に赤くなる。
+ */
+export function reviewHeat(count: number): number {
+  if (count <= REVIEW_HEAT_START) return 0;
+  if (count >= REVIEW_HOT_QUEUE) return 1;
+  return (count - REVIEW_HEAT_START) / (REVIEW_HOT_QUEUE - REVIEW_HEAT_START);
+}
 
 /** 粒クラスタの横間隔と段差（設計px）。 */
 const DOT_DX = 22;
@@ -262,6 +280,7 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
     const laneTasks = byLane.get(layout.lane) ?? [];
     const count = laneTasks.length;
     const hot = layout.lane === 'review' && count >= REVIEW_HOT_QUEUE;
+    const heat = layout.lane === 'review' ? reviewHeat(count) : 0;
     const hasAi = laneTasks.some((t) => t.aiAssisted);
     const { mood, bubble } = deriveMood(layout.lane, count, hot, hasAi);
 
@@ -277,13 +296,19 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
       bubbleX: layout.bubble_at.x,
       bubbleY: layout.bubble_at.y,
       hot,
+      heat,
       mood,
       bubble,
     });
 
-    // 炎上タスクを手前（最後＝最上段）に積み、目立たせる。
-    const ordered = [...laneTasks].sort((a, b) => Number(a.incident) - Number(b.incident));
-    const shown = ordered.slice(0, layout.cap);
+    // 上限超過時も炎上タスクは必ず残す（fire メーター/緊急対応が依存するため）。
+    // 上限内をまず通常タスクで埋め、炎上は最後＝最上段に積んで目立たせる。
+    const incidents = laneTasks.filter((t) => t.incident);
+    const normals = laneTasks.filter((t) => !t.incident);
+    const shownIncidents = incidents.slice(0, layout.cap);
+    const normalSlots = Math.max(0, layout.cap - shownIncidents.length);
+    const shownNormals = normals.slice(0, normalSlots);
+    const shown = [...shownNormals, ...shownIncidents];
     const hidden = count - shown.length;
     if (hidden > 0) overflow[layout.lane] = hidden;
 

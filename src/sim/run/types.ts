@@ -27,6 +27,7 @@ export type RunPhase =
   | 'event'
   | 'shop'
   | 'rest'
+  | 'quarterReview'
   | 'won'
   | 'lost';
 
@@ -49,7 +50,68 @@ export type LoseReason =
   | 'techDebt'
   | 'moraleCollapse'
   | 'reviewFreeze'
-  | 'bossFailed';
+  | 'bossFailed'
+  | 'trustExhausted'
+  | 'reorgRequired';
+
+/** ステークホルダー ID（四半期レビュー / SPEC 第4.6.1）。 */
+export type StakeholderId = 'management' | 'customers' | 'team';
+
+/** 四半期目標（Delivery / Quality / Tech Debt / Morale / Incident）。 */
+export interface QuarterGoal {
+  deliveryTarget: number;
+  qualityTarget: number;
+  techDebtLimit: number;
+  moraleTarget: number;
+  incidentLimit: number;
+  aiAdoptionTarget?: number;
+}
+
+/** ステークホルダー信頼（0..100）。 */
+export interface StakeholderTrust {
+  management: number;
+  customers: number;
+  team: number;
+}
+
+/** 四半期レビューの結果種別。 */
+export type QuarterOutcome =
+  | 'exceeded'
+  | 'met'
+  | 'missed_adjustable'
+  | 'missed_crisis'
+  | 'reorg_required'
+  | 'shutdown';
+
+/** 目標修正アクション ID。 */
+export type GoalAdjustmentId =
+  | 'cut_scope'
+  | 'extend_deadline'
+  | 'quality_pivot'
+  | 'request_budget'
+  | 'pause_ai_rollout'
+  | 'reorg_teams';
+
+/** KPI ごとの達成状況（レビュー UI 用）。 */
+export interface GoalKpiProgress {
+  id: string;
+  label: string;
+  target: number;
+  actual: number;
+  /** exceeded=超過達成, met=達成, missed=未達。 */
+  status: 'exceeded' | 'met' | 'missed';
+}
+
+/** 四半期レビューのスナップショット。 */
+export interface QuarterReview {
+  goal: QuarterGoal;
+  outcome: QuarterOutcome;
+  trust: StakeholderTrust;
+  progress: GoalKpiProgress[];
+  missedReasons: string[];
+  availableAdjustments: GoalAdjustmentId[];
+  bossCleared: boolean;
+}
 
 /** 難易度（SPEC 第16章）。 */
 export type DifficultyId = 'easy' | 'normal' | 'hard' | 'nightmare';
@@ -174,6 +236,19 @@ export interface RunState {
   totals: RunTotals;
   /** 残業号令・アンドンを一度でも使ったか（ノーダメ勝利判定。第14章）。 */
   usedHeavyActions: boolean;
+
+  /** 現在の四半期番号（1 起点）。 */
+  quarterNumber: number;
+  /** 今四半期の目標。 */
+  quarterGoal: QuarterGoal;
+  /** ステークホルダー信頼。 */
+  stakeholderTrust: StakeholderTrust;
+  /** 四半期レビュー画面用（quarterReview フェーズのみ）。 */
+  quarterReview: QuarterReview | null;
+  /** これまでに選んだ目標修正（次期制約・メタ報酬用）。 */
+  goalAdjustmentsTaken: GoalAdjustmentId[];
+  /** 四半期レビュー履歴（メタ進行報酬用）。 */
+  reviewHistory: QuarterOutcome[];
 
   /** ズーム階層の現在地（業界 ▸ 全社 ▸ 部署 ▸ 現場。第4.7 / MVP5）。 */
   zoom: ZoomState;

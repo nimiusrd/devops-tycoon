@@ -2,7 +2,7 @@
  * ランのフェーズ遷移マシン（XState / SPEC 第3章・architecture §1）。
  *
  * マップ → スプリント → リザルト → ドラフト → 進化 の入れ子と、
- * イベント/ショップ/休息/ボス/勝敗のフェーズ遷移を宣言的に定義する。
+ * イベント/ショップ/休息/ボス/四半期レビュー/勝敗のフェーズ遷移を宣言的に定義する。
  *
  * ゲームデータの真実は決定論エンジン `RunEngine`（`src/sim/run/engine.ts`）が持ち、
  * このマシンは「正当なフェーズ遷移の契約」を表す（`RunState.phase` はこの図に従う）。
@@ -19,13 +19,15 @@ export type RunEvent =
   | { type: 'ENTER_SHOP' }
   | { type: 'ENTER_REST' }
   | { type: 'SPRINT_DONE' }
-  | { type: 'BOSS_WON' }
-  | { type: 'BOSS_LOST' }
+  | { type: 'BOSS_REVIEW' }
   | { type: 'LOST' }
   | { type: 'ACK' }
   | { type: 'NEXT' }
   | { type: 'FINISH' }
-  | { type: 'RESOLVE' };
+  | { type: 'RESOLVE' }
+  | { type: 'REVIEW_WON' }
+  | { type: 'REVIEW_CONTINUE' }
+  | { type: 'REVIEW_LOST' };
 
 export const runMachine = createMachine({
   id: 'run',
@@ -42,7 +44,7 @@ export const runMachine = createMachine({
       },
     },
     sprint: {
-      on: { SPRINT_DONE: 'result', BOSS_WON: 'won', BOSS_LOST: 'lost', LOST: 'lost' },
+      on: { SPRINT_DONE: 'result', BOSS_REVIEW: 'quarterReview', LOST: 'lost' },
     },
     result: { on: { ACK: 'draft' } },
     draft: { on: { NEXT: 'evolution' } },
@@ -50,6 +52,9 @@ export const runMachine = createMachine({
     event: { on: { RESOLVE: 'map', LOST: 'lost' } },
     shop: { on: { RESOLVE: 'map' } },
     rest: { on: { RESOLVE: 'map' } },
+    quarterReview: {
+      on: { REVIEW_WON: 'won', REVIEW_CONTINUE: 'map', REVIEW_LOST: 'lost' },
+    },
     won: { type: 'final' },
     lost: { type: 'final' },
   },

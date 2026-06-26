@@ -62,6 +62,49 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(next.achievements).toEqual(expect.arrayContaining(['no-damage', 'combo-master']));
   });
 
+  it('敗北でも四半期修正経験で学習ボーナスが入る', () => {
+    const base = applyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 100,
+      scoreMul: 1,
+      maxCombo: 4,
+    });
+    const withReview = applyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 100,
+      scoreMul: 1,
+      maxCombo: 4,
+      quarterReviews: ['missed_adjustable'],
+    });
+    expect(withReview.points).toBeGreaterThan(base.points);
+  });
+
+  it('超過達成レビューで勝利ボーナスが入る', () => {
+    const normal = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 320,
+      scoreMul: 1,
+      maxCombo: 8,
+      quarterReviews: ['met'],
+    });
+    const exceeded = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 320,
+      scoreMul: 1,
+      maxCombo: 8,
+      quarterReviews: ['exceeded'],
+    });
+    expect(exceeded.points).toBeGreaterThan(normal.points);
+  });
+
   it('敗北では難易度解放は進まないがポイントは少し入る', () => {
     const next = applyRunReward(defaultMeta(), {
       won: false,

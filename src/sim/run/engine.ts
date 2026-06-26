@@ -59,17 +59,32 @@ import { foldPassives, foldRunEffects, toEffects, withBossEffects } from './effe
 import { applyEventOutcome } from './events';
 import { canUnlock, unlockNode } from './evolution';
 import { firstColumnNodes, generateRunMap, nodeById } from './map';
+import {
+  applyGoalAdjustment,
+  buildInitialTrust,
+  buildQuarterGoal,
+  buildQuarterReview,
+  canAcknowledgeWin,
+  canChooseAdjustment,
+  isTerminalFailure,
+  loseReasonForOutcome,
+} from './quarterReview';
 import type {
   DifficultyId,
   EvolutionState,
+  GoalAdjustmentId,
   LoseReason,
   MapNode,
+  QuarterGoal,
+  QuarterOutcome,
+  QuarterReview,
   RunMap,
   RunState,
   RunStatus,
   RunTotals,
   RunKind,
   ShopOffer,
+  StakeholderTrust,
   StartRunOptions,
   WinType,
 } from './types';
@@ -111,6 +126,23 @@ function emptyTotals(): RunTotals {
     reviewQueuePeak: 0,
     maxCombo: 0,
   };
+}
+
+function addSprintTotals(
+  t: RunTotals,
+  result: SprintResult,
+  metrics: { aiAssistedCompleted: number; completedCount: number },
+): void {
+  t.delivered += result.delivered;
+  t.done += result.done;
+  t.rework += result.rework;
+  t.incidents += result.incidents;
+  t.contained += result.contained;
+  t.spread += result.spread;
+  t.aiAssisted += metrics.aiAssistedCompleted;
+  t.completed += metrics.completedCount;
+  t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
+  t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
 }
 
 /** 難易度の組織プリセットから初期 `OrgState` を作る（AI 導入済みの組織を前提）。 */
@@ -172,13 +204,26 @@ export class RunEngine {
 
   private diagnosis: RunState['diagnosis'] = 'healthyAcceleration';
   private sprintsPlayed = 0;
+  /** ラン通算（勝利種別・メタ報酬用）。 */
   private totals: RunTotals = emptyTotals();
+  /** 当四半期のみ（四半期レビュー KPI 用）。 */
+  private quarterTotals: RunTotals = emptyTotals();
   private usedHeavyActions = false;
 
   // 組織スケール（MVP5 / 第4.7〜4.11）。ズーム状態とレバー蓄積を持つ。
   private zoom: ZoomState = { level: 'team', deptId: null, teamId: null };
   private rankingKind: RankingKind = 'overall';
   private orgAdjust: OrgAdjustState = emptyAdjustState();
+
+  private quarterNumber = 1;
+  private quarterGoal!: QuarterGoal;
+  private stakeholderTrust!: StakeholderTrust;
+  private quarterReview: QuarterReview | null = null;
+  private goalAdjustmentsTaken: GoalAdjustmentId[] = [];
+  private reviewHistory: QuarterOutcome[] = [];
+  private nextBudgetCap: number | null = null;
+  /** pause_ai_rollout の速度デバフが有効な四半期（その四半期のみ）。 */
+  private pauseAiDebuffQuarter: number | null = null;
 
   constructor(init: RunEngineInit = {}) {
     this.seed = init.seed ?? DEFAULT_SEED;
@@ -221,8 +266,9 @@ export class RunEngine {
 
   /** 内部状態をランの初期状態へ戻す（マップ・組織・予算・進化を作り直す）。 */
   private initRun(): void {
-    this.map = generateRunMap(createRng(`${this.seed}:map`));
-    this.bossId = this.pickBoss();
+    this.quarterNumber = 1;
+    this.map = generateRunMap(createRng(`${this.seed}:map:q1`));
+    this.bossId = this.pickBoss(1);
     const diff = getDifficulty(this.difficulty);
     const base = resolveSprintConfig('default');
     this.baseConfig = {
@@ -236,6 +282,22 @@ export class RunEngine {
     this.roster = createInitialRoster(createRng(`${this.seed}:roster`));
     this.lastGrowth = null;
     this.budget = Math.round(diff.startBudget * this.trialBudgetMul());
+    this.stakeholderTrust = buildInitialTrust(this.difficulty);
+    const boss = getBoss(this.bossId);
+    this.quarterGoal = boss
+      ? buildQuarterGoal(boss, this.difficulty, diff.bossTargetMul)
+      : {
+          deliveryTarget: 60,
+          qualityTarget: 45,
+          techDebtLimit: 55,
+          moraleTarget: 40,
+          incidentLimit: 6,
+        };
+    this.quarterReview = null;
+    this.goalAdjustmentsTaken = [];
+    this.reviewHistory = [];
+    this.nextBudgetCap = null;
+    this.pauseAiDebuffQuarter = null;
     this.position = null;
     this.visited = [];
     this.available = firstColumnNodes(this.map);
@@ -250,6 +312,7 @@ export class RunEngine {
     this.diagnosis = 'healthyAcceleration';
     this.sprintsPlayed = 0;
     this.totals = emptyTotals();
+    this.quarterTotals = emptyTotals();
     this.usedHeavyActions = false;
     this.zoom = { level: 'team', deptId: null, teamId: null };
     this.rankingKind = 'overall';
@@ -261,8 +324,8 @@ export class RunEngine {
     this.loseReason = undefined;
   }
 
-  private pickBoss(): string {
-    const rng = createRng(`${this.seed}:boss`);
+  private pickBoss(quarterNumber: number): string {
+    const rng = createRng(`${this.seed}:boss:q${quarterNumber}`);
     const ids = BOSS_DEFS.map((b) => b.id);
     return ids[Math.floor(rng() * ids.length)];
   }
@@ -318,6 +381,13 @@ export class RunEngine {
     const formation = foldFormationEffects(this.roster);
     let effects = combineEffects(fold.effects, toEffects(formation.effects));
     if (isBoss) effects = withBossEffects(effects, this.bossId);
+    if (this.pauseAiDebuffQuarter === this.quarterNumber) {
+      effects = {
+        ...effects,
+        codingSpeedMul: effects.codingSpeedMul * 0.85,
+        routineSpeedMul: effects.routineSpeedMul * 0.85,
+      };
+    }
     const mul =
       node.type === 'elite'
         ? ELITE_TASK_MUL
@@ -386,29 +456,26 @@ export class RunEngine {
 
     const node = nodeById(this.map, this.activeNodeId);
     if (node?.type === 'boss') {
-      const boss = getBoss(this.bossId);
-      const cleared =
-        !!boss &&
-        evaluateBoss({
-          boss,
-          result,
-          org: this.org,
-          bossTargetMul: getDifficulty(this.difficulty).bossTargetMul,
-        });
-      if (cleared) {
-        this.status = 'won';
-        this.winType = evaluateWinType({
-          org: this.org,
-          totals: this.totals,
-          budget: this.budget,
-          usedHeavyActions: this.usedHeavyActions,
-        });
-        this.phase = 'won';
-      } else {
+      const lose = evaluateLose(this.org, this.totals);
+      if (lose) {
         this.status = 'lost';
-        this.loseReason = 'bossFailed';
+        this.loseReason = lose;
         this.phase = 'lost';
+        return;
       }
+      const boss = getBoss(this.bossId);
+      const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
+      this.quarterReview = buildQuarterReview({
+        goal: this.quarterGoal,
+        org: this.org,
+        totals: this.quarterTotals,
+        trust: this.stakeholderTrust,
+        budget: this.budget,
+        quarterNumber: this.quarterNumber,
+        bossSprintCleared: !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul }),
+      });
+      this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
+      this.phase = 'quarterReview';
       return;
     }
 
@@ -430,17 +497,8 @@ export class RunEngine {
   private accumulateTotals(result: SprintResult): void {
     if (!this.sprint) return;
     const m = this.sprint.metrics;
-    const t = this.totals;
-    t.delivered += result.delivered;
-    t.done += result.done;
-    t.rework += result.rework;
-    t.incidents += result.incidents;
-    t.contained += result.contained;
-    t.spread += result.spread;
-    t.aiAssisted += m.aiAssistedCompleted;
-    t.completed += m.completedCount;
-    t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
-    t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
+    addSprintTotals(this.totals, result, m);
+    addSprintTotals(this.quarterTotals, result, m);
   }
 
   /**
@@ -466,6 +524,121 @@ export class RunEngine {
   private evoPointsFor(node: MapNode | undefined, result: SprintResult): number {
     const base = 1 + Math.floor(result.delivered / 40);
     return node?.type === 'elite' ? base + 1 : base;
+  }
+
+  /** 四半期レビューを承認する（達成→won / 継続不能→lost）。 */
+  acknowledgeQuarterReview(): void {
+    if (this.phase !== 'quarterReview' || !this.quarterReview) return;
+    const { outcome } = this.quarterReview;
+    if (canAcknowledgeWin(outcome)) {
+      this.status = 'won';
+      this.winType = evaluateWinType({
+        org: this.org,
+        totals: this.totals,
+        budget: this.budget,
+        usedHeavyActions: this.usedHeavyActions,
+      });
+      this.phase = 'won';
+      return;
+    }
+    if (isTerminalFailure(outcome)) {
+      this.status = 'lost';
+      this.loseReason = loseReasonForOutcome(outcome);
+      this.phase = 'lost';
+    }
+  }
+
+  /** 目標修正を選び、次四半期へ進む（missed_adjustable のみ）。 */
+  chooseGoalAdjustment(id: GoalAdjustmentId): void {
+    if (this.phase !== 'quarterReview' || !this.quarterReview) return;
+    if (!canChooseAdjustment(this.quarterReview.outcome)) return;
+    if (!this.quarterReview.availableAdjustments.includes(id)) return;
+
+    const applied = applyGoalAdjustment(
+      {
+        goal: this.quarterGoal,
+        trust: this.stakeholderTrust,
+        org: this.org,
+        budget: this.budget,
+        goalAdjustmentsTaken: this.goalAdjustmentsTaken,
+        nextBudgetCap: this.nextBudgetCap,
+      },
+      id,
+    );
+    this.quarterGoal = applied.goal;
+    this.stakeholderTrust = applied.trust;
+    this.org = applied.org;
+    this.budget = applied.budget;
+    this.goalAdjustmentsTaken = applied.goalAdjustmentsTaken;
+    this.nextBudgetCap = applied.nextBudgetCap;
+    if (applied.pauseAiDebuff) this.pauseAiDebuffQuarter = this.quarterNumber + 1;
+
+    if (id === 'reorg_teams') {
+      this.applyReorgDeparture();
+    }
+
+    const lose = evaluateLose(this.org, this.totals);
+    if (lose) {
+      this.status = 'lost';
+      this.loseReason = lose;
+      this.phase = 'lost';
+      return;
+    }
+
+    this.startNextQuarter();
+  }
+
+  /** 組織再編による離脱（決定論 RNG）。 */
+  private applyReorgDeparture(): void {
+    const rng = createRng(`${this.seed}:reorg:q${this.quarterNumber}`);
+    const active = this.roster.members.filter((m) => !m.onLeave);
+    if (active.length <= 2) return;
+    const idx = Math.floor(rng() * active.length);
+    const victim = active[idx];
+    this.roster = {
+      ...this.roster,
+      members: this.roster.members.map((m) =>
+        m.id === victim.id
+          ? { ...m, onLeave: true, assignment: 'bench' as const, aiAssigned: false }
+          : m,
+      ),
+    };
+  }
+
+  /** 次四半期を開始する（マップ再生成・組織状態は引き継ぎ）。 */
+  private startNextQuarter(): void {
+    this.quarterNumber += 1;
+    this.map = generateRunMap(createRng(`${this.seed}:map:q${this.quarterNumber}`));
+    this.bossId = this.pickBoss(this.quarterNumber);
+    const diff = getDifficulty(this.difficulty);
+    const boss = getBoss(this.bossId);
+    if (boss) {
+      this.quarterGoal = buildQuarterGoal(
+        boss,
+        this.difficulty,
+        diff.bossTargetMul,
+        this.quarterGoal,
+      );
+    }
+    if (this.nextBudgetCap !== null) {
+      this.budget = Math.min(this.budget, this.nextBudgetCap);
+      this.nextBudgetCap = null;
+    }
+
+    this.quarterTotals = emptyTotals();
+
+    this.position = null;
+    this.visited = [];
+    this.available = firstColumnNodes(this.map);
+    this.activeNodeId = null;
+    this.sprint = null;
+    this.lastResult = null;
+    this.draft = null;
+    this.eventId = null;
+    this.shop = null;
+    this.quarterReview = null;
+    this.zoom = { level: 'team', deptId: null, teamId: null };
+    this.phase = 'map';
   }
 
   /** リザルトを確認してドラフトへ進む。 */
@@ -811,6 +984,12 @@ export class RunEngine {
       sprintsPlayed: this.sprintsPlayed,
       totals: { ...this.totals },
       usedHeavyActions: this.usedHeavyActions,
+      quarterNumber: this.quarterNumber,
+      quarterGoal: { ...this.quarterGoal },
+      stakeholderTrust: { ...this.stakeholderTrust },
+      quarterReview: this.quarterReview ? structuredClone(this.quarterReview) : null,
+      goalAdjustmentsTaken: [...this.goalAdjustmentsTaken],
+      reviewHistory: [...this.reviewHistory],
       zoom: { ...this.zoom },
       rankingKind: this.rankingKind,
       orgScale,

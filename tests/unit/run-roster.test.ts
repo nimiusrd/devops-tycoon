@@ -255,6 +255,13 @@ describe('ロスターのラン統合（MVP4 / 第12章）', () => {
           case 'rest':
             e.restChoose('recruit');
             break;
+          case 'quarterReview':
+            if (s.quarterReview?.outcome === 'missed_adjustable') {
+              e.chooseGoalAdjustment(s.quarterReview.availableAdjustments[0] ?? 'cut_scope');
+            } else {
+              e.acknowledgeQuarterReview();
+            }
+            break;
           default:
             guard = 40_000;
             break;

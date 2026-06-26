@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
+import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
 import type { RunState } from '../../src/sim/run/types';
 
 /**
@@ -61,6 +62,13 @@ function playRun(
       case 'rest':
         e.restChoose('heal');
         break;
+      case 'quarterReview':
+        if (s.quarterReview?.outcome === 'missed_adjustable') {
+          e.chooseGoalAdjustment(s.quarterReview.availableAdjustments[0] ?? 'cut_scope');
+        } else {
+          e.acknowledgeQuarterReview();
+        }
+        break;
       default:
         guard = guardMax;
         break;
@@ -87,6 +95,102 @@ describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () =
     expect(['won', 'lost']).toContain(s.status);
     expect(['won', 'lost']).toContain(s.phase);
     expect(s.visited.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('ボス到達後は四半期レビューフェーズになる', () => {
+    const e = new RunEngine({ seed: 'reach-boss', difficulty: 'easy' });
+    e.startRun();
+    let s = e.snapshot();
+    let guard = 0;
+    while (s.status === 'playing' && s.phase !== 'quarterReview' && guard < 40_000) {
+      guard += 1;
+      switch (s.phase) {
+        case 'map':
+          e.enterNode(s.available[0]);
+          break;
+        case 'sprint': {
+          const sp = s.sprint;
+          if (sp && !sp.complete) {
+            if (sp.tasks.filter((t) => t.lane === 'review').length >= 6)
+              e.dispatch('interruptReview');
+            if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) e.dispatch('firefight');
+          }
+          e.step(300);
+          break;
+        }
+        case 'result':
+          e.acknowledgeResult();
+          break;
+        case 'draft':
+          if (s.draft && s.draft.length > 0) e.chooseCard(s.draft[0]);
+          else e.skipDraft();
+          break;
+        case 'evolution':
+          e.finishEvolution();
+          break;
+        case 'event':
+          e.chooseEvent(0);
+          break;
+        case 'shop':
+          e.leaveShop();
+          break;
+        case 'rest':
+          e.restChoose('heal');
+          break;
+        default:
+          guard = 40_000;
+          break;
+      }
+      s = e.snapshot();
+    }
+    expect(s.phase).toBe('quarterReview');
+    expect(s.quarterReview).not.toBeNull();
+  });
+
+  it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {
+    const e = new RunEngine({ seed: E2E_MISSED_ADJUSTABLE_SEED, difficulty: 'easy' });
+    e.startRun();
+    let s = e.snapshot();
+    let guard = 0;
+    while (s.phase !== 'quarterReview' && guard < 40_000) {
+      guard += 1;
+      switch (s.phase) {
+        case 'map':
+          e.enterNode(s.available[0]);
+          break;
+        case 'sprint':
+          e.step(1_000_000);
+          break;
+        case 'result':
+          e.acknowledgeResult();
+          break;
+        case 'draft':
+          e.skipDraft();
+          break;
+        case 'evolution':
+          e.finishEvolution();
+          break;
+        case 'event':
+          e.chooseEvent(0);
+          break;
+        case 'shop':
+          e.leaveShop();
+          break;
+        case 'rest':
+          e.restChoose('heal');
+          break;
+        default:
+          guard = 40_000;
+          break;
+      }
+      s = e.snapshot();
+    }
+    if (s.quarterReview?.outcome === 'missed_adjustable') {
+      e.chooseGoalAdjustment('cut_scope');
+      s = e.snapshot();
+      expect(s.quarterNumber).toBe(2);
+      expect(s.phase).toBe('map');
+    }
   });
 
   it('介入で捌くプレイならボスへ到達して決着する（DoD: マップ→ボス）', () => {
@@ -179,6 +283,13 @@ describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () =
             break;
           case 'rest':
             e.restChoose(guard % 2 === 0 ? 'repay' : 'upgrade');
+            break;
+          case 'quarterReview':
+            if (s.quarterReview?.outcome === 'missed_adjustable') {
+              e.chooseGoalAdjustment(s.quarterReview.availableAdjustments[0] ?? 'cut_scope');
+            } else {
+              e.acknowledgeQuarterReview();
+            }
             break;
           default:
             guard = 40_000;

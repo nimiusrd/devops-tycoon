@@ -204,49 +204,56 @@ export function StationActor({ lane, mood }: StationActorProps) {
           <polygon points="96,137 110,131 110,139 96,145" fill="#3fb6ff" opacity=".85" />
         </g>
       )}
-      <g className={bobClass(lane, mood)} transform="translate(60,4)">
-        {/* 胴体 */}
-        {cheering ? (
-          <>
-            <path d="M23 124 q0 -32 27 -32 q27 0 27 32 z" fill={s.body} />
-            <path
-              d="M27 100 q-10 -22 -2 -34"
-              stroke={s.body}
-              strokeWidth="9"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <path
-              d="M73 100 q10 -22 2 -34"
-              stroke={s.body}
-              strokeWidth="9"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <circle cx="24" cy="62" r="6" fill={s.skin} />
-            <circle cx="76" cy="62" r="6" fill={s.skin} />
-          </>
-        ) : (
-          <path d="M22 124 q0 -32 28 -32 q28 0 28 32 z" fill={s.body} />
-        )}
-        {/* 頭 */}
-        <circle cx="50" cy="48" r="24" fill={s.skin} />
-        <path d="M27 46 q1 -24 23 -24 q22 0 23 22 q-11 -9 -23 -9 q-12 0 -23 11z" fill={s.hair} />
-        <Eyes mood={mood} ink={ink} />
-        <Mouth mood={mood} />
-        {/* ほっぺ（上機嫌時） */}
-        {(mood === 'happy' || mood === 'cheer') && (
-          <>
-            <circle cx="35" cy="40" r="3" fill="#ff8fb0" opacity=".7" />
-            <circle cx="65" cy="40" r="3" fill="#ff8fb0" opacity=".7" />
-          </>
-        )}
-        {/* 状態絵文字 */}
-        {s.emoji && (mood !== 'neutral' || lane === 'coding') && (
-          <text x="74" y="28" fontSize="13">
-            {s.emoji}
-          </text>
-        )}
+      {/*
+       * bob/shake は CSS の transform を animate するため、SVG の transform 属性
+       * （アンカー translate）と同じ <g> に置くと CSS が属性を上書きしてアンカーが
+       * 外れる。アニメは外側 <g>、アンカー translate は内側 <g> に分けて両立させる。
+       */}
+      <g className={bobClass(lane, mood)}>
+        <g transform="translate(60,4)">
+          {/* 胴体 */}
+          {cheering ? (
+            <>
+              <path d="M23 124 q0 -32 27 -32 q27 0 27 32 z" fill={s.body} />
+              <path
+                d="M27 100 q-10 -22 -2 -34"
+                stroke={s.body}
+                strokeWidth="9"
+                fill="none"
+                strokeLinecap="round"
+              />
+              <path
+                d="M73 100 q10 -22 2 -34"
+                stroke={s.body}
+                strokeWidth="9"
+                fill="none"
+                strokeLinecap="round"
+              />
+              <circle cx="24" cy="62" r="6" fill={s.skin} />
+              <circle cx="76" cy="62" r="6" fill={s.skin} />
+            </>
+          ) : (
+            <path d="M22 124 q0 -32 28 -32 q28 0 28 32 z" fill={s.body} />
+          )}
+          {/* 頭 */}
+          <circle cx="50" cy="48" r="24" fill={s.skin} />
+          <path d="M27 46 q1 -24 23 -24 q22 0 23 22 q-11 -9 -23 -9 q-12 0 -23 11z" fill={s.hair} />
+          <Eyes mood={mood} ink={ink} />
+          <Mouth mood={mood} />
+          {/* ほっぺ（上機嫌時） */}
+          {(mood === 'happy' || mood === 'cheer') && (
+            <>
+              <circle cx="35" cy="40" r="3" fill="#ff8fb0" opacity=".7" />
+              <circle cx="65" cy="40" r="3" fill="#ff8fb0" opacity=".7" />
+            </>
+          )}
+          {/* 状態絵文字 */}
+          {s.emoji && (mood !== 'neutral' || lane === 'coding') && (
+            <text x="74" y="28" fontSize="13">
+              {s.emoji}
+            </text>
+          )}
+        </g>
       </g>
     </svg>
   );

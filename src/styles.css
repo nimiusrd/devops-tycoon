@@ -51,7 +51,17 @@ body {
   padding: 14px 18px 18px;
 }
 .app .board-wrap {
-  flex: 1 1 auto;
+  /*
+   * 盤面の「contain フィット」の基準枠。flex-basis 0 でスロット高さを盤面の中身から
+   * 切り離し（循環防止）、余白は中央寄せでレターボックス/ピラーボックスする。
+   * 実寸の算出（min(幅, 高×比率)）は Board の ResizeObserver が行う（CSS だけでは
+   * 両軸 contain を確実に表現できないため）。
+   */
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* HUD */
@@ -275,9 +285,9 @@ body {
 /* ===== 俯瞰オフィス（アイソメ盤面・SPEC 第4.1 / 第18章 / mockups 準拠） ===== */
 /*
  * ステーション/粒は設計空間（1404×573）の % で重ねるため、盤面の箱は必ずこの比率を
- * 保つ必要がある。height を強制すると幅と高さが別々に決まり、x と y のスケールがずれて
- * 縦伸び＋粒が極小になる（狭い画面で顕著）。そこで aspect-ratio＋幅で箱を決め、縦が
- * 余る場合は max-height でレターボックスし、常に 1404:573 を維持する。
+ * 保つ必要がある。幅は Board の ResizeObserver が min(スロット幅, スロット高×比率) で
+ * インラインに与え（両軸 contain）、高さは aspect-ratio が導く。width:100% は JS 前/
+ * 無効時のフォールバック。これで横長・縦長どちらのスロットでも 1404:573 が崩れない。
  */
 .board.iso-office {
   --review-heat: 0;
@@ -285,8 +295,6 @@ body {
   width: 100%;
   max-width: 100%;
   aspect-ratio: 1404 / 573;
-  max-height: 100%;
-  margin: auto;
   border-radius: 20px;
   overflow: hidden;
   border: 2px solid var(--line);

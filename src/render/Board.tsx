@@ -6,7 +6,7 @@
  * ステーション（机＋キャラ＋ラベル＋吹き出し）＋タスク粒の山＋工程間フロー。
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
  */
-import type { CSSProperties } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import type { Task } from '../sim/types';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
@@ -20,10 +20,35 @@ import { TASK_COLORS, TASK_DIAMETER } from './taskView';
 
 const VIEW_W = 1404;
 const VIEW_H = 573;
+const VIEW_RATIO = VIEW_W / VIEW_H;
 
 /** 設計px → 盤面内の % へ。 */
 function pct(value: number, total: number): string {
   return `${(value / total) * 100}%`;
+}
+
+/**
+ * 盤面を親スロットに「両軸 contain」で収める（比率 1404:573 を厳守）。
+ * width = min(スロット幅, スロット高×比率) をインラインで与え、高さは aspect-ratio が導く。
+ * CSS だけでは「狭いスロットでは幅基準・低いスロットでは高さ基準」を自動で選べないため、
+ * ResizeObserver でスロット実寸から算出する（描画専用の純レイアウト。決定論に影響しない）。
+ */
+function useContainFit(ref: React.RefObject<HTMLDivElement | null>): void {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const slot = el?.parentElement;
+    if (!el || !slot) return;
+    const apply = () => {
+      const w = slot.clientWidth;
+      const h = slot.clientHeight;
+      if (w === 0 || h === 0) return;
+      el.style.width = `${Math.min(w, h * VIEW_RATIO)}px`;
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(slot);
+    return () => ro.disconnect();
+  }, [ref]);
 }
 
 function TaskDot({ dot }: { dot: BoardDotPlan }) {
@@ -146,8 +171,12 @@ export function Board({ tasks }: BoardProps) {
   const hot = scene.stations.some((s) => s.hot);
   const heat = scene.stations.reduce((m, s) => Math.max(m, s.heat), 0);
 
+  const boardRef = useRef<HTMLDivElement>(null);
+  useContainFit(boardRef);
+
   return (
     <div
+      ref={boardRef}
       className={`board iso-office${hot ? ' review-hell' : ''}`}
       data-testid="board"
       style={{ '--review-heat': heat } as CSSProperties}

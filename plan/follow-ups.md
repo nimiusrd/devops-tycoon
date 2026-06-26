@@ -95,3 +95,23 @@
 - **称号（`WinType`）の永続化**: §7d は最小実装として実績 ID コレクションに留め、勝利種別ごとの達成有無の永続記録・一覧化は未実装（フェーズ3「称号の永続化」を一部のみ回収）。実績で十分か、別軸で持つかを判断する。
 - **メタ解放のバランス（暫定値）**: `UNLOCK_DEFS` のコスト、`applyRunReward` の points 配分（勝利20 / 敗北5 × `scoreMul`）、デイリー固定条件（難易度 normal・試練なし）は暫定。フェーズ1/4/5 の「モンテカルロ許容レンジ化」統計テスト基盤と統一して後続調整する。
 - **メタ解放対象の拡張**: 現状はカード／レリックのみ。メンバー／トレイト解放（フェーズ3/4 の「メタ進行へのメンバー解放」）や追加イベント／試練の解放を加えるかは未着手。
+
+## フェーズ8: 四半期レビューと目標修正
+
+実装済み（拡張 / 第4.6.1・第10・15章）:
+
+- **8a ドメインモデル**: `QuarterGoal`（Delivery / Quality / Tech Debt / Morale / Incident の5指標＋任意の AI Adoption）・`StakeholderTrust`（経営／顧客／チームの3信頼）・`QuarterOutcome`（6種）・`GoalAdjustmentId`（6種）・`QuarterReview` を `src/sim/run/types.ts` に追加。`RunState` を `quarterGoal` / `stakeholderTrust` / `quarterReview` / `goalAdjustmentsTaken` / `reviewHistory` で拡張。
+- **8b フェーズ遷移**: `src/state/runMachine.ts` にボス未達時の即 `lost` を廃止する `quarterReview` 状態を追加（`sprint` → `BOSS_REVIEW` → `quarterReview` → `REVIEW_WON: won` / `REVIEW_CONTINUE: map` / `REVIEW_LOST: lost`）。
+- **8c レビュー判定**: `src/sim/run/quarterReview.ts` に決定論ロジックを実装。`measureGoalProgress`（KPI ごとに exceeded/met/missed）→ `evaluateQuarterOutcome`（ボス突破可否・信頼・予算・士気・Senior HP・四半期数から outcome 算出）→ `diagnoseMissedReasons`（スコープ過多・レビュー詰まり・品質問題・AI 過信・士気低下・障害連鎖・外部評価未達の診断文）。
+- **8d 目標修正アクション**: `src/data/goalAdjustments.ts` にデータ駆動の6種（`cut_scope` / `extend_deadline` / `quality_pivot` / `request_budget` / `pause_ai_rollout` / `reorg_teams`）を定義し、`applyGoalAdjustment` で信頼・予算・次期目標・組織状態への効果と代償を純関数で適用。`availableAdjustments` は適用後に詰む選択肢（信頼・予算・技術負債・レビュー詰まりでハード敗北する手）を事前に除外して提示する。
+- **8e UI**: `src/ui/QuarterReviewScreen.tsx`（`testid: quarter-review`）で今期目標と実績の横並び・KPI 達成度・経営／顧客／チーム信頼ゲージ・未達理由の診断・修正カードを表示。継続不能時のみラン終了。`App.tsx` / `useRun.ts` から `chooseGoalAdjustment` / `acknowledgeQuarterReview` を接続。
+- **8f 次四半期への持ち越し**: `engine.ts` が `priorGoal` を次四半期目標へ引き継ぎ、`nextBudgetCap`（追加予算申請の次期予算制約）・`pauseAiDebuff`（AI 一時停止の翌四半期デバフ）・`reorgReset`（組織再編のリセット）を反映。`reviewHistory` に outcome を記録。
+- **8g テスト**: Vitest（`tests/unit/quarter-review.test.ts`：達成→met/exceeded、軽微未達→missed_adjustable と修正提示、信頼枯渇→shutdown、深刻未達→reorg_required、各修正の効果・代償、同一入力の決定論、ボス突破でも KPI 未達なら missed_adjustable、提示フィルタ＝予算不足/信頼枯渇/低士気 等）＋ seed 決定論テスト（`quarter-review-seeds.test.ts`）＋ Playwright（`run.spec.ts`：ボス未達→レビュー→スコープ削減→次四半期へ継続、継続リソース枯渇→レビュー→ラン終了）。
+
+繰り越し・未解決:
+
+- **目標修正の代償バランス（暫定値）**: `goalAdjustments.ts` の `trustDelta` / `budgetDelta` / `goalEffects` / `orgEffects`、`evaluateQuarterOutcome` の outcome 閾値（信頼・予算・士気・Senior HP・missedCount）は暫定。代表 seed のモンテカルロで許容レンジ化する（フェーズ1/4/5/7 の統計テスト基盤と統一）。
+- **目標生成のチューニング**: `buildQuarterGoal` のボス定義からの目標導出（`bossTargetMul` / 難易度補正 / `priorGoal` の 0.95 逓減）が、継続するほど易化しすぎ／難化しすぎないかを長ランで検証する。
+- **メタ進行との接続**: 未達でも学習・改善ポイントを少量得る「四半期レビュー評価に紐づくメタ報酬」（計画 §リスク・留意点）は未着手。`reviewHistory` の outcome をメタ進行（`state/meta`）の報酬・解放条件へ接続するか判断する。
+- **AI 過信の二重診断**: `diagnoseMissedReasons` で AI Adoption KPI 未達と `aiDependency`＋rework 比率の両方が `aiOverconfidence` を立てうる（現状は `Set` で重複排除済み）。診断メッセージを段階分けするかは未判断。
+- **outcome の演出差**: `missed_crisis` / `reorg_required` / `shutdown` の終了演出は共通の `lose` 系に集約。継続不能の種別ごとに診断・演出を分けるかは未着手（フェーズ3「診断別画面演出の強化」と同根）。

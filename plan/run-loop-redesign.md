@@ -92,8 +92,12 @@
 - **空プール対策（決定論を壊さない）**: 現行 `EVENT_DEFS` は全 6 件が choices 2〜3＝すべて decision 扱いになるため、
   judgment 定義を追加せずに混合抽選を有効化すると、約 45% の judgment 分岐で**プールが空**になりビートが出せない／
   未定義フォールバックに依存して決定論が崩れる。これを防ぐため: ①**混合抽選（`advanceBeat`）を有効化する段で
-  judgment イベント定義を必ず追加**し（§7 step1〜2 を同段に）、②それでも引いた種別のプールが空なら、
-  **もう一方の種別へ決定論的にフォールバック**（同じ PRNG 値で再抽選）するルールを `advanceBeat` に明記してテストする。
+  judgment イベント定義を必ず追加**する（§7 step2。それ以前は混合抽選を有効化しない）、②それでも引いた種別のプールが
+  空なら、**もう一方の種別へ決定論的にフォールバック**する。
+  - フォールバックの乱数は**別の派生キー**（例: `${seed}:beat:q${q}:s${idx}:fallback`）で引き直す。種別判定に使った
+    乱数 `r` をそのまま流用すると、`r` は既に `DECISION_BEAT_CHANCE` の分岐（例 `r>=0.55`）で条件付けられており、
+    重み表の前半が過小選択されて**分布が seed に対して偏る**。派生キーで新しい乱数を引く（または分岐区間を 0..1 へ
+    再正規化してから weighted pick する）ことで、空プール時も均しく決定論的に選べる。テストで分布の偏りが無いことを確認。
 
 ## 4. 組織状態による重み付け（決定論）
 
@@ -198,10 +202,20 @@ quarterReview --REVIEW_WON--> won | --REVIEW_CONTINUE--> setup(次Q) | --REVIEW_
   **`boss` 最優先ルール**: 次スプリントがトラック最終インデックスなら、ビートの選択に関わらず
   `pendingSprintKind='boss'` を強制し、その最終ビートでは「高負荷案件（elite）」の選択肢を提示しない。
   これで「elite を立てたのに boss にもなる」二重決定や、ボス/四半期レビューのスキップを防ぐ（§6 でテスト）。
+  **一回消費（elite を連続させない）**: `pendingSprintKind` も `pendingSprintModifiers` と同じく**一回消費**で、
+  `beginSprint` が `currentSprintKind` に写したら **既定 `normal` へリセット**する。これをしないと、高負荷案件で
+  `elite` を立てた後、次ビートが種別を明示しない（判定／通常選択）場合に**古い `elite` が次スプリントへ残る**。
+  「elite が連続しない（明示しない限り次は normal）」をテストする（§6）。
 - **追加（次スプリント限定の一時効果）**: `pendingSprintModifiers`（判定/選択が `EventOutcome.nextSprint` で
   積む一回限りの効果。例: レビュー負荷+ / Rework率+ / タスク数倍率）。`beginSprint` が消費して**即クリア**し、
   org の恒久変化とは別軸にする。既定は空（無効果）。
 - `bossId` は維持（その四半期のボス。トラック最終スプリントで使う）。`eventId`/`shop` は流用。
+- **`activeNodeId` の置換**: 現状 `activeNodeId`（マップノード ID）は多くの箇所で使われている——
+  `SprintScreen` の `state.map.nodes.find(...activeNodeId)`、エンジンの `resolveSprint`/`applyGrowth` の
+  `activeNodeId` ガードや `nodeById(this.map, ...)`、決定論 RNG のキー。map 撤去でこれらが宙に浮くため、
+  **synthetic な `currentSprintId`（例: `q${q}-s${idx}`）と index ベースの RNG キー**へ置換し、`SprintScreen` は
+  ノード参照をやめて `currentSprintKind` を直接表示する。これを撤去段（§7 step6）に含める。型だけ通しても
+  `activeNodeId` ガードで完了処理が早期 return すると**スプリントが進まなくなる**ため、ガードも index ベースへ移す。
 - **`beginSprint` は `currentSprintKind`（= 直前に確定した `pendingSprintKind`）と `pendingSprintModifiers` を読む**
   ように変え、`MapNode` 依存（`node.type`）を置き換える。`elite` はタスク倍率＋進化ポイント加算、`boss` は
   ボスルールと `BOSS_REVIEW` 遷移、`pendingSprintModifiers` は当該スプリントのみ反映して消費する。
@@ -235,6 +249,10 @@ UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動�
   - 混合比: `DECISION_BEAT_CHANCE` 付近の出し分け。
   - 空プール対策: judgment 定義が無い／引いた種別が空でも、決定論フォールバックでビートが必ず 1 件出る
     （同一 seed で同一結果）。判定イベント定義を入れた後は judgment 分岐で judgment が出る。
+    フォールバックは派生キーで引き直し、空プール時も分布が偏らない（重み表の前半も選ばれる）。
+  - 種別の一回消費: `beginSprint` 後に `pendingSprintKind` が `normal` へリセットされ、**elite が連続しない**
+    （高負荷案件の翌ビートが種別を明示しなければ次は normal）。
+  - 旧 pickEvent フィルタ（中間段階）: judgment 定義追加後も旧マップイベント抽選には judgment が出ない（decision のみ）。
   - 連結（`leadsTo`）: 高負荷選択→次スプリント elite 化／予算補強→shop／一息→rest の遷移。
   - スプリント種別の保持: 高負荷案件を受ける→`pendingSprintKind='elite'`→`beginSprint` で
     タスク倍率＋進化ポイント加算が効く（完了時まで `currentSprintKind` が保持される）。
@@ -265,9 +283,14 @@ UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動�
    `forceLose?` を**追加**。`applyEventOutcome` を拡張し **`delivered` を当期 `quarterTotals.delivered`
    （必要なら通算 `totals` も）へ加算**・`trust` を `stakeholderTrust` へ適用・`forceLose` で敗北情報を返す。
    純関数 `weightedEventPool` と `leadsTo`/`nextSprint`/`trust`/`delivered→quarterTotals`/`forceLose` の適用を
-   Vitest で先行検証。**この段で judgment イベント定義も追加**する（下記 §3.3 の空プール対策）。
+   Vitest で先行検証。**judgment 定義はこの段では追加しない**（旧 `pickEvent` に漏れるため。下記 step2 で追加）。
 2. **sim 層（追加のみ・旧経路温存＋互換 shim）**: `advanceBeat`/`resolveBeat`/`beginSetupSprint`、
-   `pendingSprintKind`/`currentSprintKind`/`pendingSprintModifiers`、`setup`/`setup-pre` を **追加**する。
+   `pendingSprintKind`/`currentSprintKind`/`pendingSprintModifiers`、`setup`/`setup-pre`、**judgment イベント定義**を
+   **追加**し、`advanceBeat` の混合抽選を有効化する（§3.3 の空プール対策と同段）。
+   **judgment 漏れ対策**: 旧 `map`/`enterNode` 経路を温存するこの段では、旧 `pickEvent()`→`eventIds()` が
+   `EVENT_DEFS` 全件から抽選し `EventScreen`/`chooseEvent` が選択肢前提で扱う。judgment（0/1 choice）が旧マップ
+   イベントとして出ると画面から進めない／自動適用が旧経路で起きるため、**旧 `pickEvent` を `kind!=='judgment'`
+   （decision のみ）にフィルタ**する互換策を同段に入れる。judgment は新 `advanceBeat` 抽選でのみ出す。
    `beginSprint` を「種別＋modifiers を読む」形へ切替えるが、**`map.ts`/`enterNode`/`RunState.map` はこの段では残し、
    ラン開始は引き続き `phase='map'` に着地させる**（既存テストの phase 期待と `enterNode` 駆動を壊さない）。
    ただし `enterNode` 内に **`MapNode.type`→`pendingSprintKind` を写す互換 shim** を入れ、中間段階でも elite/boss が
@@ -282,7 +305,11 @@ UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動�
    `smoke.spec.ts` ほか）を `beginSetupSprint`/`resolveBeat` ベースへ。テスト更新を後段に遅らせると、この段で
    `npm test` が割れて「各段 green」を破るため、**フロー切替とテスト更新は不可分**とする。
 6. **撤去（利用側が新フローへ移った後）**: `RunMapScreen`・`map.ts`・`enterNode`（と shim）・`RunState.map`・
-   `runMachine.map` を撤去。step5 で利用側・テストが新フローへ移っているので、ここでの撤去後も `build`/`test` 緑。
+   `runMachine.map` を撤去。あわせて **`activeNodeId` 依存を synthetic `currentSprintId`/index ベースへ移植**する
+   （§5.2）: `SprintScreen` の `state.map.nodes.find(...)` を `currentSprintKind` 直接表示へ、エンジンの
+   `resolveSprint`/`applyGrowth` の `activeNodeId` ガード・`nodeById(this.map, ...)`・RNG キーを index ベースへ。
+   これを撤去と同段で行わないと、UI が型エラー／完了処理が早期 return してスプリントが進まなくなる。
+   step5 で利用側・テストが新フローへ移っているので、移植込みで撤去後も `build`/`test` 緑。
 7. **SPEC**: §8 の変更を反映し、第3/4.4 章および第22章の「実装状況」記述を除去（実装が追いついたため）。
 
 各段で `npm test` / `build` 緑を維持。`mockup-parity.md §3.5-A` を「詰め済み（本ファイル）」へ更新。

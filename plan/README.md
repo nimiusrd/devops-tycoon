@@ -1,6 +1,8 @@
 # 実装計画（索引）
 
-DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実装単位ごとにファイル分割した。各ファイルは SPEC の章番号を参照する。本ディレクトリ（`plan/`）が計画ドキュメント一式の置き場で、このファイルがその索引。
+DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実装単位（フェーズ）ごとに進めてきた。本ディレクトリ（`plan/`）が計画ドキュメント一式の置き場で、このファイルがその索引。
+
+> **実装が一通り完了したため、フェーズ別の計画（旧 `phase-0`〜`phase-8`）は [spec-mapping.md](./spec-mapping.md) に集約した。** SPEC 各章がどのフェーズで実装され、コードのどこに対応するか（トレーサビリティ表）と、各フェーズの目的・主な実装・完了状態・残務をまとめてある。SPEC との対応や実装済み機能を確認したい場合はまずこのファイルを参照。
 
 > 方針: SPEC 第21章「MVPスコープ」を段階の骨格とし、第22章「技術構成」をアーキテクチャの前提とする。**シミュレーション層を最初から描画から分離し、seed付き決定論で実装する**ことを全フェーズ共通の規律とする（第22.3〜22.5）。
 
@@ -14,12 +16,9 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 
 ## 現状
 
-- **MVP1〜5（M0〜M5）は実装済み**。`src/`（sim / state / render / ui）と `tests/`（Vitest / Playwright E2E）が揃い、`npm run dev` で通しプレイできる。各フェーズの実装内容と繰り越しは [follow-ups.md](./follow-ups.md) を参照。
-- **Phase 6（WebGL / PixiJS 移行）は完了**: 6a（React 接続・pan/zoom・カリング）/ 6b（DOM 同等の情報量）/ 6c（カメラ同期）/ 6d（性能予算）/ 6e（Pixi 視覚回帰・opt-in）まで完了。詳細は [phase-6b-pixi-visual-parity.md](./phase-6b-pixi-visual-parity.md)。
-- 盤面描画は既定で DOM/SVG、`?renderer=pixi` で全社マップのみ PixiJS に opt-in 切替。
-- **Phase 7（メタ進行の閉ループ化）は実装済み**: 永続アンロックのドラフト／ショップ反映、メタショップ、実績閲覧、デイリーランまで実装済み。計画とDoDは [phase-7-meta-progression.md](./phase-7-meta-progression.md)。
-- **Phase 8（四半期レビューと目標修正）は実装済み**: 目標未達を即ゲームオーバーにせず、四半期レビューで達成度・信頼・継続リソースを評価し、スコープ削減・期限延長・品質改善ピボットなど6種の目標修正で代償を払って次四半期へ継続する。計画は [phase-8-goal-adjustment.md](./phase-8-goal-adjustment.md)、実装後の繰り越しは [follow-ups.md](./follow-ups.md)。
-- モックアップは**デザイン・レイアウトの正**として維持する（第22.2）。
+- **M0〜M8 は実装済み**。`src/`（sim / state / render / ui）と `tests/`（Vitest / Playwright E2E）が揃い、`npm run dev` で通しプレイできる。各フェーズの目的・主な実装・完了状態は [spec-mapping.md](./spec-mapping.md) §2、実装後の繰り越しは [follow-ups.md](./follow-ups.md) を参照。
+- 盤面描画は既定で DOM/SVG、`?renderer=pixi` で全社マップのみ PixiJS に opt-in 切替（M6）。
+- 各章の充足状況（✅/🟡）と残務の追跡先は [spec-mapping.md](./spec-mapping.md) §1・§3 に集約。モックアップは**デザイン・レイアウトの正**として維持する（第22.2）。
 
 ---
 
@@ -27,20 +26,13 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 
 | ファイル | 内容 |
 | --- | --- |
+| [spec-mapping.md](./spec-mapping.md) | **SPEC 各章 ↔ 実装フェーズ ↔ コードの対応表＋実装済みフェーズ（M0〜M8）の計画集約**。まずここを見る |
 | [architecture.md](./architecture.md) | 技術スタック・レイヤ分離・ディレクトリ構成・横断規律（全フェーズ共通） |
-| [phase-0-foundation.md](./phase-0-foundation.md) | 基盤セットアップ（MVPの前提） |
-| [phase-1-sprint-simulation.md](./phase-1-sprint-simulation.md) | スプリントシミュレーション（MVP1） |
-| [phase-2-active-ops-and-cards.md](./phase-2-active-ops-and-cards.md) | 能動操作とカード（MVP2） |
-| [phase-3-roguelike-loop.md](./phase-3-roguelike-loop.md) | 周回・育成・診断（MVP3） |
-| [phase-4-character-growth.md](./phase-4-character-growth.md) | キャラクター育成（MVP4） |
-| [phase-5-org-scale.md](./phase-5-org-scale.md) | 組織スケール / 巨大組織対応（MVP5） |
-| [phase-6-webgl-migration.md](./phase-6-webgl-migration.md) | WebGL（PixiJS）移行 / DOM・SVG からの局所差し替え |
-| [phase-6b-pixi-visual-parity.md](./phase-6b-pixi-visual-parity.md) | Phase 6 続き: Pixi 見た目 parity・カメラ同期・性能 DoD |
-| [phase-7-meta-progression.md](./phase-7-meta-progression.md) | メタ進行の閉ループ化（永続アンロック・メタショップ・デイリーラン） |
-| [phase-8-goal-adjustment.md](./phase-8-goal-adjustment.md) | 四半期レビューと目標修正（未達からの継続判断） |
 | [follow-ups.md](./follow-ups.md) | 各フェーズ実装後のフォローアップ / 未解決事項 |
 | [mockup-parity.md](./mockup-parity.md) | モックアップ乖離・SPEC未充足の課題一覧（横断バックログ） |
-| [run-loop-redesign.md](./run-loop-redesign.md) | ランループ再設計（ノード選択廃止→四半期トラック＋イベント判定） |
+| [run-loop-redesign.md](./run-loop-redesign.md) | ランループ再設計（ノード選択廃止→四半期トラック＋イベント判定。未着手） |
+
+> 旧 `phase-0`〜`phase-8`（`phase-6b` 含む）の各計画は [spec-mapping.md](./spec-mapping.md) §2 に集約済み。
 
 ---
 

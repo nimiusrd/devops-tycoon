@@ -110,7 +110,7 @@ export default function App({ game }: AppProps) {
     state.sprint !== null &&
     (phase === 'sprint' || phase === 'result' || phase === 'draft' || phase === 'evolution');
 
-  // ズーム階層（MVP5 / 第4.7〜4.11）。現場以外を見ているときはオーバーレイで重ねる。
+  // ズーム階層（第4.7〜4.11）。現場以外を見ているときはオーバーレイで重ねる。
   const zoom = state.zoom;
   const focusedDept =
     state.orgScale?.departments.find((d) => d.def.id === zoom.deptId) ??

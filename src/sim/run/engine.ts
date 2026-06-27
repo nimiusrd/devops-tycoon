@@ -210,7 +210,7 @@ export class RunEngine {
   private quarterTotals: RunTotals = emptyTotals();
   private usedHeavyActions = false;
 
-  // 組織スケール（MVP5 / 第4.7〜4.11）。ズーム状態とレバー蓄積を持つ。
+  // 組織スケール（第4.7〜4.11）。ズーム状態とレバー蓄積を持つ。
   private zoom: ZoomState = { level: 'team', deptId: null, teamId: null };
   private rankingKind: RankingKind = 'overall';
   private orgAdjust: OrgAdjustState = emptyAdjustState();
@@ -843,7 +843,7 @@ export class RunEngine {
     this.phase = 'map';
   }
 
-  // --- 組織スケール / ズーム階層（MVP5 / 第4.7〜4.11） ---
+  // --- 組織スケール / ズーム階層（第4.7〜4.11） ---
 
   /**
    * ズーム階層を切り替える（業界 ▸ 全社 ▸ 部署 ▸ 現場）。

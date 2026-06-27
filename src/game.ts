@@ -70,7 +70,7 @@ export interface GameHandle {
   assignMember(id: string, assignment: LaneAssignment): RunState;
   /** メンバーへの AI 配布を切り替える（編成。第12章）。 */
   setMemberAi(id: string, on: boolean): RunState;
-  /** ズーム階層を切り替える（業界 ▸ 全社 ▸ 部署 ▸ 現場。第4.7 / MVP5）。 */
+  /** ズーム階層を切り替える（業界 ▸ 全社 ▸ 部署 ▸ 現場。第4.7）。 */
   zoomTo(level: ZoomLevel): RunState;
   /** 部門をフォーカスして部署ビューへ（ドリルダウン。第4.9）。 */
   focusDept(id: string): RunState;

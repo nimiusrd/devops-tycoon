@@ -12,12 +12,12 @@
 | ビルド/Dev | Vite | 開発サーバ・バンドル |
 | UIシェル | React | HUD・アクションバー・カード・ツリー・マップ・リザルト・パンくず |
 | UI演出 | Framer Motion | 画面遷移・マイクロインタラクション |
-| 盤面描画 | DOM/SVG（MVP1〜3）→ PixiJS + pixi-viewport（MVP5着手前必須 / MVP4は必要時前倒し） | タスク粒・アイソメ盤面・フロー・ヒートマップ・延焼 |
+| 盤面描画 | DOM/SVG → PixiJS + pixi-viewport（規模拡大時に移行） | タスク粒・アイソメ盤面・フロー・ヒートマップ・延焼 |
 | 状態管理 | Zustand（ラン/メタ状態）＋ XState（フェーズ遷移） | 予測可能な状態とフロー管理 |
 | シミュレーション | 純TS・固定タイムステップ・seed付きPRNG | 確率モデル本体（描画から分離・決定論） |
 | 重い試算 | Web Worker（+Comlink） | what-if 計算・モンテカルロ等 |
 | 静的グラフ | Recharts または visx | リザルト/診断の図 |
-| 保存 | localStorage（MVP）→ IndexedDB（idb/Dexie） | セーブ・メタ進行・リプレイ |
+| 保存 | localStorage（現状）→ IndexedDB（idb/Dexie） | セーブ・メタ進行・リプレイ |
 | テスト | Vitest（ロジック）＋ Playwright（実ブラウザ） | 第22.5 の二段構え |
 | バックエンド | 当面なし（ローカル擬似） | 将来: ランキング共有・デイリーラン配信 |
 
@@ -90,8 +90,8 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
   - ラン開始: `startRun(difficulty?, trials?, seed?)` / `startDailyRun(dateStr?)` / `newRun(seed?)`（旧設計の `loadState(seed, scenario)` は廃止。seed は URL パラメータまたは引数で指定）
   - メタ進行（第17章）: `purchaseMetaUnlock(unlockId)`（points 消費で永続解放。`getMeta()` で残高・購入済みを読む）
   - フェーズ駆動: `enterNode(id)` / `step(ms)` / `dispatch(id)` / `acknowledgeResult()` / `chooseCard(defId)` / `skipDraft()` / `unlockEvolution(id)` / `finishEvolution()` / `chooseEvent(index)` / `buyShopCard(defId)` / `buyShopRelic()` / `leaveShop()` / `restChoose(option)`（option に `recruit` を含む）
-  - 編成（MVP4 / 第12章）: `assignMember(id, assignment)` / `setMemberAi(id, on)`
-  - 組織スケール / ズーム階層（MVP5 / 第4.7〜4.11）: `zoomTo(level)` / `focusDept(id)` / `focusTeam(id)` / `setRankingKind(kind)` / `applyOrgLever(leverId, deptId?)`。集約結果（`orgScale` / `industry`）と現在地（`zoom` / `rankingKind`）は `getState()` のスナップショットから読む（描画は読むだけ。第22.2）。
+  - 編成（第12章）: `assignMember(id, assignment)` / `setMemberAi(id, on)`
+  - 組織スケール / ズーム階層（第4.7〜4.11）: `zoomTo(level)` / `focusDept(id)` / `focusTeam(id)` / `setRankingKind(kind)` / `applyOrgLever(leverId, deptId?)`。集約結果（`orgScale` / `industry`）と現在地（`zoom` / `rankingKind`）は `getState()` のスナップショットから読む（描画は読むだけ。第22.2）。
 - **デバッグ専用:** `engine`（`RunEngine` への直接参照）。E2E テストからは使わない。
 - `GameHandle` にメソッドを追加する場合は型定義と E2E 型（`tests/e2e/run.spec.ts` 等）を同時更新する。
 - スプライト生成は依存注入にし、テストでモック差し替え可能に。
@@ -107,8 +107,8 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 
 ### 4.4 段階的描画移行（第22.4）
 
-- MVP1〜3: DOM/SVG（モックアップ準拠）で素早く。周回・診断・勝敗の通しプレイを優先し、過剰投資を避ける。ただし sim は最初から分離・seed付き。
-- MVP5: 4階層ズーム・巨大組織ビューの**描画非依存の基礎**（アイソメ投影 / 深度ソート / 画面外カリング / スプライトプール）を `src/render/iso.ts` に純TS で実装し、数値検証した（第22.5）。全社/部署/業界ビューは既定では DOM/SVG（Framer Motion でクロスフェード）で実装し、`iso.ts` の座標系を共有する。Phase 6 で全社マップのみ `?renderer=pixi` の opt-in PixiJS + pixi-viewport 描画へ差し替え済み。実ピクセル/WebGL 検証は opt-in Playwright（`npm run test:e2e:pixi`）に集約し、CI 既定 job では実 WebGL を回さない。React/TS/Framer Motion/Recharts は役割を限定して継続。
+- 初期段階: DOM/SVG（モックアップ準拠）で素早く。周回・診断・勝敗の通しプレイを優先し、過剰投資を避ける。ただし sim は最初から分離・seed付き。
+- 巨大組織・4階層ズーム: 4階層ズーム・巨大組織ビューの**描画非依存の基礎**（アイソメ投影 / 深度ソート / 画面外カリング / スプライトプール）を `src/render/iso.ts` に純TS で実装し、数値検証した（第22.5）。全社/部署/業界ビューは既定では DOM/SVG（Framer Motion でクロスフェード）で実装し、`iso.ts` の座標系を共有する。Phase 6 で全社マップのみ `?renderer=pixi` の opt-in PixiJS + pixi-viewport 描画へ差し替え済み。実ピクセル/WebGL 検証は opt-in Playwright（`npm run test:e2e:pixi`）に集約し、CI 既定 job では実 WebGL を回さない。React/TS/Framer Motion/Recharts は役割を限定して継続。
 
 ### 4.5 世界観の制約（第2.1章）
 

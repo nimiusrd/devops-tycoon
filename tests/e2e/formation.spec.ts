@@ -9,9 +9,7 @@ type GameWindow = Window & {
   };
 };
 
-test('編成画面を開き、メンバーの配置と AI 配布を切り替えられる（MVP4 / 第12章）', async ({
-  page,
-}) => {
+test('編成画面を開き、メンバーの配置と AI 配布を切り替えられる（第12章）', async ({ page }) => {
   await page.goto('/?seed=formation-smoke');
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-run').click();

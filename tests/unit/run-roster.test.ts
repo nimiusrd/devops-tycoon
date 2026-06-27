@@ -63,7 +63,7 @@ function playFirstSprint(e: RunEngine, nodeId: string): RunState {
   return e.snapshot();
 }
 
-describe('ロスターのラン統合（MVP4 / 第12章）', () => {
+describe('ロスターのラン統合（第12章）', () => {
   it('ラン開始時にロスター（個体メンバー）がスナップショットに含まれる', () => {
     const e = new RunEngine({ seed: 'roster-run', difficulty: 'normal' });
     const s = toFirstNode(e);

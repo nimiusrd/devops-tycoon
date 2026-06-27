@@ -208,7 +208,7 @@ export interface RunState {
   /** 獲得済みレリック ID（恒久パッシブ。第8章）。 */
   relics: string[];
   evolution: EvolutionState;
-  /** 個体メンバーのロスター = 編成状態（第12章 / MVP4）。 */
+  /** 個体メンバーのロスター = 編成状態（第12章）。 */
   roster: RosterState;
   /** 直近スプリントの成長結果（昇格・休職・育成。result/draft で表示）。 */
   lastGrowth: GrowthOutcome | null;
@@ -250,7 +250,7 @@ export interface RunState {
   /** 四半期レビュー履歴（メタ進行報酬用）。 */
   reviewHistory: QuarterOutcome[];
 
-  /** ズーム階層の現在地（業界 ▸ 全社 ▸ 部署 ▸ 現場。第4.7 / MVP5）。 */
+  /** ズーム階層の現在地（業界 ▸ 全社 ▸ 部署 ▸ 現場。第4.7）。 */
   zoom: ZoomState;
   /** 業界ランキングで選択中の種別タブ（第4.10）。 */
   rankingKind: RankingKind;

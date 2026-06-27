@@ -22,8 +22,7 @@
 
 ## 1. 章 → 実装 対応（前方トレース）
 
-> 「実装」列の M ラベルは、その章がコードのどの領域として実装されたかを示す目印。
-> 対応する MVP との関係は表末尾の「MVP 連番の対応」を参照。
+> 「実装」列の M ラベルは、その章がコードのどの領域として実装されたかを示す実装の区切り（マイルストーン）の通し番号。「横断」は特定の区切りに属さず全体に関わる章を表す。
 
 | SPEC 章 | 内容 | 実装 | 主な実装 / テスト | 状態 |
 | --- | --- | --- | --- | --- |
@@ -59,14 +58,10 @@
 | [18（描画基盤）](../SPEC.md#18-視覚表現) | 視覚表現の WebGL 化 | M6 | `src/render/adapters/pixiOrgRenderer.ts`, `selectRenderer.ts`, `src/ui/OrgPixiField.tsx` / `tests/e2e/org-pixi-visual.spec.ts`（`?renderer=pixi` で opt-in） | ✅ 全社マップを Pixi 化（盤面は DOM/SVG 継続。適用範囲拡張は [mockup-parity.md](./mockup-parity.md) §4） |
 | [19](../SPEC.md#19-面白さの核) | 面白さの核 | 横断 | 各画面の体験設計に反映（M8 のリスク/リターン設計ほか） | ✅ |
 | [20](../SPEC.md#20-教育的価値) | 教育的価値 | M3 | `src/sim/diagnosis.ts`（組織タイプ診断による気づき） | ✅ |
-| [21](../SPEC.md#21-mvpスコープ) | MVPスコープ | 横断 | MVP1〜7 を実装の骨格として採用 | 🟡 MVP の骨格として採用済み。ただし MVP3 が含む「四半期トラック＋スプリント間イベント判定」は [run-loop-redesign.md](./run-loop-redesign.md) で未着手 |
 | [22](../SPEC.md#22-技術構成) | 技術構成 | M0 | `package.json`, `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `src/sim/rng.ts`, `src/sim/seed.ts` / `tests/unit/rng.test.ts`, `seed.test.ts` ／ 詳細は [architecture.md](./architecture.md) | 🟡 基盤・seed付き決定論・テスト二段構え（22.3/22.5）は実装。Web Worker(+Comlink) のモンテカルロ試算・Recharts/visx・IndexedDB(idb/Dexie) は未導入（[mockup-parity.md](./mockup-parity.md) §3/§4） |
 | [23](../SPEC.md#23-拡張案) | 拡張案 | M7 | デイリーランを実装: `tests/unit/daily-run.test.ts`, `tests/e2e/daily-run.spec.ts`（他の拡張案は未着手） | 🟡 |
 | [24](../SPEC.md#24-企画の価値) | 企画の価値 | — | （企画文・実装対象なし） | — |
 | [25](../SPEC.md#25-結論) | 結論 | — | （企画文・実装対象なし） | — |
-
-> **MVP 連番の対応**: SPEC §21 の MVP1〜5 = M1〜M5、MVP6（メタ進行の閉ループ）= M7、MVP7（四半期レビューと目標修正）= M8。
-> WebGL 移行（M6）は SPEC §22.4 の段階的移行に基づく拡張で MVP 連番には含まれない。
 
 ---
 
@@ -74,7 +69,7 @@
 
 | 項目 | 該当 SPEC 章 | 状態 | 追跡先 |
 | --- | --- | --- | --- |
-| 基本ループの再設計（分岐マップ廃止 → 固定トラック＋イベント判定） | [3](../SPEC.md#3-ゲームの基本ループ), [4.4](../SPEC.md#44-スプリント間イベント画面判定--選択), [9](../SPEC.md#9-ランダムイベント周回進行の中核エンジン), [10](../SPEC.md#10-ランとボススプリント), [21](../SPEC.md#21-mvpスコープ) | 🟡 設計合意済み・実装未着手 | [run-loop-redesign.md](./run-loop-redesign.md) |
+| 基本ループの再設計（分岐マップ廃止 → 固定トラック＋イベント判定） | [3](../SPEC.md#3-ゲームの基本ループ), [4.4](../SPEC.md#44-スプリント間イベント画面判定--選択), [9](../SPEC.md#9-ランダムイベント周回進行の中核エンジン), [10](../SPEC.md#10-ランとボススプリント) | 🟡 設計合意済み・実装未着手 | [run-loop-redesign.md](./run-loop-redesign.md) |
 | 全社・部署・業界ビューの等角化（mockup 視覚到達） | [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応), [18](../SPEC.md#18-視覚表現) | 🟡 機能は動作・見た目が残務 | [mockup-parity.md](./mockup-parity.md) §1-B〜1-E |
 | 演出・ビジュアルの残務（粒の流れ・延焼連鎖・スイープ・スローモー・ご褒美・6タイプ演出・キャラ表情） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [12](../SPEC.md#12-キャラクター育成), [18.1](../SPEC.md#181-基本演出), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.3](../SPEC.md#183-画面ステート組織の空気感), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装 | [mockup-parity.md](./mockup-parity.md) §1-A, §2 |
 | リザルトの介入内訳（割り込み×N / 緊急対応×N の表示） | [4.6](../SPEC.md#46-スプリントリザルト画面) | 🟡 `SprintResult` に未集計 | [follow-ups.md](./follow-ups.md) |

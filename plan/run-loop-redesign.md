@@ -73,7 +73,7 @@
 ### 3.2 選択イベント（decision / リスク/リターンの 2〜3 択）
 
 - ルート選択ではなく**その場の決断**。各選択肢に**リスクとリターンの両方**。**断る/安全側にも必ず代償**
-  ——出荷を取らない＝四半期目標（`RunTotals.delivered`）から遅れる、加えて `EventOutcome.trust` による
+  ——出荷を取らない＝四半期目標（当期 `quarterTotals.delivered`）から遅れる、加えて `EventOutcome.trust` による
   経営/顧客/チーム信頼の低下など、**実際に状態へ効く代償**を必ず持たせる（SPEC 9.4 の C 例＝経営信頼低下）。
 - 旧 elite/shop/rest をここへ統合:
 
@@ -89,6 +89,11 @@
 
 - 各ビートで `DECISION_BEAT_CHANCE`（既定 0.55、tunable）で選択イベント、そうでなければ判定イベント。
 - 直前スプリントが高負荷だった／目標から遅れている等で重みを動的調整してもよい（後続チューニング）。
+- **空プール対策（決定論を壊さない）**: 現行 `EVENT_DEFS` は全 6 件が choices 2〜3＝すべて decision 扱いになるため、
+  judgment 定義を追加せずに混合抽選を有効化すると、約 45% の judgment 分岐で**プールが空**になりビートが出せない／
+  未定義フォールバックに依存して決定論が崩れる。これを防ぐため: ①**混合抽選（`advanceBeat`）を有効化する段で
+  judgment イベント定義を必ず追加**し（§7 step1〜2 を同段に）、②それでも引いた種別のプールが空なら、
+  **もう一方の種別へ決定論的にフォールバック**（同じ PRNG 値で再抽選）するルールを `advanceBeat` に明記してテストする。
 
 ## 4. 組織状態による重み付け（決定論）
 
@@ -130,9 +135,10 @@ type EventSignal =
 
 **`applyEventOutcome` の拡張（現行は org・予算・付与物のみ）**:
 
-- **`delivered` を `RunTotals.delivered` にも加算する**（現行は `org.deliveryScore` だけ）。四半期レビューは
-  `RunTotals.delivered` を見るため、ここを通さないとイベント出荷が Phase 8 の Delivery 目標に効かず、
-  「出荷+30 を取る＝目標前進」「出荷0 の安全側＝目標から遅れる」というリスク/リターンが成立しない（#5）。
+- **`delivered` を当期 `quarterTotals.delivered` に加算する**（現行は `org.deliveryScore` だけ）。四半期レビューは
+  通算 `totals` ではなく**当期 `quarterTotals`** を見る（`engine.ts` の boss/レビュー処理）ため、ここを通さないと
+  イベント出荷が Phase 8 の**当期** Delivery 目標に効かず（2Q 以降や継続ランで特に）、「出荷+30 を取る＝目標前進」
+  「出荷0 の安全側＝目標から遅れる」というリスク/リターンが成立しない（#5）。必要なら通算 `totals.delivered` も併せて更新。
 - **`trust` を `RunState.stakeholderTrust` へ適用**する（安全側の信頼低下を機械的な代償にする。#1）。
 - **`forceLose` があれば即 `lost` へ**（`loseReason` を設定）。現行 `evaluateLose` は `reviewFreeze` を
   `totals.reviewQueuePeak` でしか判定しないため、レビュー停止を表す判定イベントは `forceLose` で明示的に
@@ -227,6 +233,8 @@ UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動�
 - **Vitest**:
   - 重み付け: 技術的負債↑で debt/incident 系の確率が上がる（同一 org で決定論）。
   - 混合比: `DECISION_BEAT_CHANCE` 付近の出し分け。
+  - 空プール対策: judgment 定義が無い／引いた種別が空でも、決定論フォールバックでビートが必ず 1 件出る
+    （同一 seed で同一結果）。判定イベント定義を入れた後は judgment 分岐で judgment が出る。
   - 連結（`leadsTo`）: 高負荷選択→次スプリント elite 化／予算補強→shop／一息→rest の遷移。
   - スプリント種別の保持: 高負荷案件を受ける→`pendingSprintKind='elite'`→`beginSprint` で
     タスク倍率＋進化ポイント加算が効く（完了時まで `currentSprintKind` が保持される）。
@@ -235,8 +243,8 @@ UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動�
   - **次スプリント一時効果**: `EventOutcome.nextSprint` が `pendingSprintModifiers` に積まれ、当該スプリントで
     のみ反映され、完了後にクリアされる（翌スプリントへ持ち越さない）。
   - ボス到達: N スプリントでボス（`currentSprintKind='boss'`）→四半期レビュー。
-  - **イベント出荷の反映**: `EventOutcome.delivered` が `RunTotals.delivered` に積まれ、四半期レビューの
-    Delivery 進捗に効く（出荷+30 を取ると前進、出荷0 の安全側は遅れる）。
+  - **イベント出荷の反映**: `EventOutcome.delivered` が当期 `quarterTotals.delivered` に積まれ、四半期レビューの
+    当期 Delivery 進捗に効く（出荷+30 を取ると前進、出荷0 の安全側は遅れる）。2Q 目でも当期分が正しく加算される。
   - **信頼の代償**: `EventOutcome.trust` が `RunState.stakeholderTrust` を下げる（SPEC 9.4 の C 例）。
   - ハード敗北: `EventOutcome.forceLose='reviewFreeze'` の判定→`beat --LOST--> lost`（`loseReason` 設定）。
   - 初回編成: `setup`/`setup-pre`/`beat`/`shop`/`rest` 中は `assignMember`/`setMemberAi` が効き、`sprint` 中は no-op。
@@ -254,22 +262,28 @@ UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動�
 
 1. **データ層（追加のみ・非破壊）**: `EventDef` に `kind?`/`weight?`/`triggers?`（**optional＋デフォルト**で
    既存 `EVENT_DEFS` 全件を無改修で通す）、`EventChoice` に `leadsTo?`、`EventOutcome` に `nextSprint?`/`trust?`/
-   `forceLose?` を**追加**。`applyEventOutcome` を拡張し **`delivered` を `RunTotals.delivered` にも加算**・
-   `trust` を `stakeholderTrust` へ適用・`forceLose` で敗北情報を返す。純関数 `weightedEventPool` と
-   `leadsTo`/`nextSprint`/`trust`/`delivered→totals`/`forceLose` の適用を Vitest で先行検証。
+   `forceLose?` を**追加**。`applyEventOutcome` を拡張し **`delivered` を当期 `quarterTotals.delivered`
+   （必要なら通算 `totals` も）へ加算**・`trust` を `stakeholderTrust` へ適用・`forceLose` で敗北情報を返す。
+   純関数 `weightedEventPool` と `leadsTo`/`nextSprint`/`trust`/`delivered→quarterTotals`/`forceLose` の適用を
+   Vitest で先行検証。**この段で judgment イベント定義も追加**する（下記 §3.3 の空プール対策）。
 2. **sim 層（追加のみ・旧経路温存＋互換 shim）**: `advanceBeat`/`resolveBeat`/`beginSetupSprint`、
    `pendingSprintKind`/`currentSprintKind`/`pendingSprintModifiers`、`setup`/`setup-pre` を **追加**する。
-   `beginSprint` を「種別＋modifiers を読む」形へ切替えるが、**`map.ts`/`enterNode`/`RunState.map` はこの段では残す**。
+   `beginSprint` を「種別＋modifiers を読む」形へ切替えるが、**`map.ts`/`enterNode`/`RunState.map` はこの段では残し、
+   ラン開始は引き続き `phase='map'` に着地させる**（既存テストの phase 期待と `enterNode` 駆動を壊さない）。
    ただし `enterNode` 内に **`MapNode.type`→`pendingSprintKind` を写す互換 shim** を入れ、中間段階でも elite/boss が
    normal に落ちない（高負荷報酬・ボス→レビュー遷移を保つ）ようにする。
 3. **state 層**: `runMachine` に `setup`/`setup-pre`/`beat` を追加（`map` も当面併存可）。
 4. **契約（追加のみ）**: `game.ts`/`useRun.ts` に `resolveBeat`/`beginSetupSprint`/`getBeat` を**追加**
    （`enterNode` は残す）。これで UI 接続（step5）が新 API を呼べる。
-5. **UI 層**: `SetupScreen`/`BeatScreen` を追加し、`App.tsx` を新フローへ接続。進行表示を線形化。
-6. **テスト移行＋撤去（同一段階）**: E2E 型・smoke/run スペックを `resolveBeat`/`beginSetupSprint` ベースへ更新し、
-   **同じコミット群で** `RunMapScreen`・`map.ts`・`enterNode`（と shim）・`RunState.map`・`runMachine.map` を撤去する。
-   利用側の置換と撤去を同段にまとめることで、各段の `build`/`test` 緑を保つ。
-7. **SPEC**: §8 の変更を反映し、第3/4.4 章の「実装状況」バナーを除去（実装が追いついたため）。
+5. **フロー切替＝テスト同時更新（同一段階）**: `App.tsx`/`SetupScreen`/`BeatScreen` を新フローへ接続し、
+   **ラン開始を `phase='setup'` に切り替える**。この切替で観測フェーズと駆動が変わるため、**同じ段で**
+   影響テストを更新する: 開始直後に `phase==='map'` を期待する箇所（`tests/unit/daily-run.test.ts`、
+   `tests/e2e/daily-run.spec.ts` 等）を `setup` へ、`map` で `enterNode` を呼ぶ駆動（`tests/e2e/run.spec.ts`・
+   `smoke.spec.ts` ほか）を `beginSetupSprint`/`resolveBeat` ベースへ。テスト更新を後段に遅らせると、この段で
+   `npm test` が割れて「各段 green」を破るため、**フロー切替とテスト更新は不可分**とする。
+6. **撤去（利用側が新フローへ移った後）**: `RunMapScreen`・`map.ts`・`enterNode`（と shim）・`RunState.map`・
+   `runMachine.map` を撤去。step5 で利用側・テストが新フローへ移っているので、ここでの撤去後も `build`/`test` 緑。
+7. **SPEC**: §8 の変更を反映し、第3/4.4 章および第22章の「実装状況」記述を除去（実装が追いついたため）。
 
 各段で `npm test` / `build` 緑を維持。`mockup-parity.md §3.5-A` を「詰め済み（本ファイル）」へ更新。
 

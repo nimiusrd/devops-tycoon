@@ -39,6 +39,8 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 | [phase-7-meta-progression.md](./phase-7-meta-progression.md) | メタ進行の閉ループ化（永続アンロック・メタショップ・デイリーラン） |
 | [phase-8-goal-adjustment.md](./phase-8-goal-adjustment.md) | 四半期レビューと目標修正（未達からの継続判断） |
 | [follow-ups.md](./follow-ups.md) | 各フェーズ実装後のフォローアップ / 未解決事項 |
+| [mockup-parity.md](./mockup-parity.md) | モックアップ乖離・SPEC未充足の課題一覧（横断バックログ） |
+| [run-loop-redesign.md](./run-loop-redesign.md) | ランループ再設計（ノード選択廃止→四半期トラック＋イベント判定） |
 
 ---
 

@@ -101,7 +101,7 @@
 
 繰り越し・未解決:
 
-- **開始プリセット（preset）の扱い未確定**: Phase 7 計画 §7b の「定義＋タイトル選択 UI＋`startRun` 引数の 3 点セットを伴わないならスコープ外」に従い、プリセットは実装を見送り済み。ただし `MetaState.unlockedPresets` / `unlockedContent().presets` / `purchaseUnlock`・`MetaShopScreen` の preset 分岐が**到達不能な足場として残存**（`UnlockKind` は `'card' | 'relic'` のみ）。明示的にスコープ外として足場を削除するか、プリセットを正式実装するかを判断する。
+- **開始プリセット（preset）の扱い未確定**: Phase 7 で合意した方針（定義＋タイトル選択 UI＋`startRun` 引数の 3 点セットを伴わないならスコープ外。[spec-mapping.md](./spec-mapping.md) §2 M7）に従い、プリセットは実装を見送り済み。ただし `MetaState.unlockedPresets` / `unlockedContent().presets` / `purchaseUnlock`・`MetaShopScreen` の preset 分岐が**到達不能な足場として残存**（`UnlockKind` は `'card' | 'relic'` のみ）。明示的にスコープ外として足場を削除するか、プリセットを正式実装するかを判断する。
 - **業界ランキングへのデイリー記録接続**: §7e の「検討」止まり。デイリーのベストは `meta.dailyRuns` に保存され Title / RunResult には出るが、業界ランキングビュー（`IndustryScreen` / MVP5）へ「自分のデイリー記録」を差し込む擬似リーダーボードは未着手（フェーズ5「業界とメタ進行の接続」と同根）。
 - **称号（`WinType`）の永続化**: §7d は最小実装として実績 ID コレクションに留め、勝利種別ごとの達成有無の永続記録・一覧化は未実装（フェーズ3「称号の永続化」を一部のみ回収）。実績で十分か、別軸で持つかを判断する。
 - **メタ解放のバランス（暫定値）**: `UNLOCK_DEFS` のコスト、`applyRunReward` の points 配分（勝利20 / 敗北5 × `scoreMul`）、デイリー固定条件（難易度 normal・試練なし）は暫定。フェーズ1/4/5 の「モンテカルロ許容レンジ化」統計テスト基盤と統一して後続調整する。
@@ -123,6 +123,6 @@
 
 - **目標修正の代償バランス（暫定値）**: `goalAdjustments.ts` の `trustDelta` / `budgetDelta` / `goalEffects` / `orgEffects`、`evaluateQuarterOutcome` の outcome 閾値（信頼・予算・士気・Senior HP・missedCount）は暫定。代表 seed のモンテカルロで許容レンジ化する（フェーズ1/4/5/7 の統計テスト基盤と統一）。
 - **目標生成のチューニング**: `buildQuarterGoal` のボス定義からの目標導出（`bossTargetMul` / 難易度補正 / `priorGoal` の 0.95 逓減）が、継続するほど易化しすぎ／難化しすぎないかを長ランで検証する。
-- **メタ進行との接続**: 未達でも学習・改善ポイントを少量得る「四半期レビュー評価に紐づくメタ報酬」（計画 §リスク・留意点）は未着手。`reviewHistory` の outcome をメタ進行（`state/meta`）の報酬・解放条件へ接続するか判断する。
+- **メタ進行との接続**: 未達でも学習・改善ポイントを少量得る「四半期レビュー評価に紐づくメタ報酬」（Phase 8 で残課題として整理）は未着手。`reviewHistory` の outcome をメタ進行（`state/meta`）の報酬・解放条件へ接続するか判断する。
 - **AI 過信の二重診断**: `diagnoseMissedReasons` で AI Adoption KPI 未達と `aiDependency`＋rework 比率の両方が `aiOverconfidence` を立てうる（現状は `Set` で重複排除済み）。診断メッセージを段階分けするかは未判断。
 - **outcome の演出差**: `missed_crisis` / `reorg_required` / `shutdown` の終了演出は共通の `lose` 系に集約。継続不能の種別ごとに診断・演出を分けるかは未着手（フェーズ3「診断別画面演出の強化」と同根）。

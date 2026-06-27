@@ -2,6 +2,8 @@
 
 DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実装単位ごとにファイル分割した。各ファイルは SPEC の章番号を参照する。本ディレクトリ（`plan/`）が計画ドキュメント一式の置き場で、このファイルがその索引。
 
+> **SPEC との対応を一望したい場合**は [spec-mapping.md](./spec-mapping.md) を参照。SPEC 各章がどのフェーズで実装され、コードのどこに対応するかをトレーサビリティ表にまとめている。
+
 > 方針: SPEC 第21章「MVPスコープ」を段階の骨格とし、第22章「技術構成」をアーキテクチャの前提とする。**シミュレーション層を最初から描画から分離し、seed付き決定論で実装する**ことを全フェーズ共通の規律とする（第22.3〜22.5）。
 
 ---
@@ -38,6 +40,7 @@ DevOps Tycoon の実装計画。[`SPEC.md`](../SPEC.md) の企画内容を、実
 | [phase-6b-pixi-visual-parity.md](./phase-6b-pixi-visual-parity.md) | Phase 6 続き: Pixi 見た目 parity・カメラ同期・性能 DoD |
 | [phase-7-meta-progression.md](./phase-7-meta-progression.md) | メタ進行の閉ループ化（永続アンロック・メタショップ・デイリーラン） |
 | [phase-8-goal-adjustment.md](./phase-8-goal-adjustment.md) | 四半期レビューと目標修正（未達からの継続判断） |
+| [spec-mapping.md](./spec-mapping.md) | SPEC 各章 ↔ 実装フェーズ ↔ コードの対応表（トレーサビリティ） |
 | [follow-ups.md](./follow-ups.md) | 各フェーズ実装後のフォローアップ / 未解決事項 |
 | [mockup-parity.md](./mockup-parity.md) | モックアップ乖離・SPEC未充足の課題一覧（横断バックログ） |
 | [run-loop-redesign.md](./run-loop-redesign.md) | ランループ再設計（ノード選択廃止→四半期トラック＋イベント判定） |

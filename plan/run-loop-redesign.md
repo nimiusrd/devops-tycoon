@@ -57,6 +57,11 @@
 ### 3.1 判定イベント（judgment / 選択なし・自動適用）
 
 - 組織状態依存の確率事象が起き、効果が即適用される（プレイヤーの決断なし＝「制御できない」緊張感）。
+- **表現の契約（0択を許さない）**: 判定イベントは **`kind: 'judgment'` を必ず明示**し、**ちょうど 1 件の
+  hidden choice**（UI では選択肢を出さず「了解」で閉じる）として持つ。効果（`delivered`/`nextSprint`/`trust`/
+  `forceLose` 等）はその `choices[0].outcome` に載せ、`resolveBeat()`（引数なし）が `choices[0]` を自動適用する。
+  0 choice を許すと `resolveBeat` の適用先が無くなり no-op／実装依存になるため**禁止**（テストで `kind==='judgment'`
+  なら `choices.length===1` を保証）。
 - 例（SPEC 第9.1〜9.3 由来）:
   - 技術的負債↑: 「"動いているように見える"障害が本番で発覚」→ Incident 種・Quality−
   - AI依存度↑ / AIリテラシー↓: 「巨大 AI 生成 PR が投下」→ 次スプリントのレビュー負荷+ / 「存在しない API を使った」→ Rework+
@@ -108,10 +113,18 @@
 // data 側（宣言的）
 interface EventDef {
   // …既存（id/title/prompt/tone/choices）
-  // 既存 EVENT_DEFS を無改修で通すため optional＋デフォルト（追加のみの段を壊さない。§7 step1）。
-  kind?: 'judgment' | 'decision';   // 既定: choices 長 1 → 'judgment'、2 以上 → 'decision'
+  // 既存 EVENT_DEFS（すべて decision）を無改修で通すため optional＋デフォルト（追加のみの段を壊さない。§7 step1）。
+  // 既定: choices 長 1 → 'judgment'、2 以上 → 'decision'。
+  // ただし **judgment 定義は必ず `kind: 'judgment'` を明示**する（§3.1 の契約。既定頼みにしない）。
+  // これにより、旧 pickEvent のフィルタや advanceBeat が「既定解決後の種別」で安全に分類できる。
+  kind?: 'judgment' | 'decision';
   weight?: number;                  // 既定: 1
   triggers?: Partial<Record<EventSignal, number>>; // 信号→重み倍率
+}
+
+// 種別の正規化（既定を解決）。フィルタ/分類はこれを通す（生の kind を直接見ない）。
+function effectiveKind(def: EventDef): 'judgment' | 'decision' {
+  return def.kind ?? (def.choices.length <= 1 ? 'judgment' : 'decision');
 }
 
 interface EventChoice {
@@ -214,7 +227,7 @@ quarterReview --REVIEW_WON--> won | --REVIEW_CONTINUE--> setup(次Q) | --REVIEW_
   `SprintScreen` の `state.map.nodes.find(...activeNodeId)`、エンジンの `resolveSprint`/`applyGrowth` の
   `activeNodeId` ガードや `nodeById(this.map, ...)`、決定論 RNG のキー。map 撤去でこれらが宙に浮くため、
   **synthetic な `currentSprintId`（例: `q${q}-s${idx}`）と index ベースの RNG キー**へ置換し、`SprintScreen` は
-  ノード参照をやめて `currentSprintKind` を直接表示する。これを撤去段（§7 step6）に含める。型だけ通しても
+  ノード参照をやめて `currentSprintKind` を直接表示する。これを撤去段（§7 step5）に含める。型だけ通しても
   `activeNodeId` ガードで完了処理が早期 return すると**スプリントが進まなくなる**ため、ガードも index ベースへ移す。
 - **`beginSprint` は `currentSprintKind`（= 直前に確定した `pendingSprintKind`）と `pendingSprintModifiers` を読む**
   ように変え、`MapNode` 依存（`node.type`）を置き換える。`elite` はタスク倍率＋進化ポイント加算、`boss` は
@@ -267,7 +280,7 @@ UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動�
   - ハード敗北: `EventOutcome.forceLose='reviewFreeze'` の判定→`beat --LOST--> lost`（`loseReason` 設定）。
   - 初回編成: `setup`/`setup-pre`/`beat`/`shop`/`rest` 中は `assignMember`/`setMemberAi` が効き、`sprint` 中は no-op。
   - shop/rest 後の編成: 採用したメンバーを `setup-pre` で配置→次スプリントから即戦力になる（1スプリント遅れない）。
-  - **中間段階の互換**（§7 step2-4）: `enterNode` の shim が `MapNode.type`→`pendingSprintKind` を写し、elite/boss
+  - **中間段階の互換**（§7 step2-3）: `enterNode` の shim が `MapNode.type`→`pendingSprintKind` を写し、elite/boss
     ノードが normal で始まらない（高負荷報酬・ボス遷移が中間段階でも保たれる）。
 - **Playwright**: ラン開始→Setup（編成）→スプリント→ビート（選択）→次スプリント→…→ボス→四半期レビューの通し。
   `enterNode` を使うテストは `resolveBeat`／`beginSetupSprint` ベースへ更新。
@@ -284,33 +297,38 @@ UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動�
    （必要なら通算 `totals` も）へ加算**・`trust` を `stakeholderTrust` へ適用・`forceLose` で敗北情報を返す。
    純関数 `weightedEventPool` と `leadsTo`/`nextSprint`/`trust`/`delivered→quarterTotals`/`forceLose` の適用を
    Vitest で先行検証。**judgment 定義はこの段では追加しない**（旧 `pickEvent` に漏れるため。下記 step2 で追加）。
-2. **sim 層（追加のみ・旧経路温存＋互換 shim）**: `advanceBeat`/`resolveBeat`/`beginSetupSprint`、
+2. **sim＋state 層（追加のみ・旧経路温存＋互換 shim）**: `advanceBeat`/`resolveBeat`/`beginSetupSprint`、
    `pendingSprintKind`/`currentSprintKind`/`pendingSprintModifiers`、`setup`/`setup-pre`、**judgment イベント定義**を
    **追加**し、`advanceBeat` の混合抽選を有効化する（§3.3 の空プール対策と同段）。
+   **フェーズ型・マシンを同段で更新**: engine が `setup`/`setup-pre`/`beat` を返し得るので、`RunPhase` 型と
+   `runMachine`（新フェーズ・遷移）と到達可能性テストを**この段で同時に更新**する（step3 へ後回しにすると、
+   中間段階が型不整合／不正遷移契約になり `build`/`test` が割れる）。
    **judgment 漏れ対策**: 旧 `map`/`enterNode` 経路を温存するこの段では、旧 `pickEvent()`→`eventIds()` が
-   `EVENT_DEFS` 全件から抽選し `EventScreen`/`chooseEvent` が選択肢前提で扱う。judgment（0/1 choice）が旧マップ
-   イベントとして出ると画面から進めない／自動適用が旧経路で起きるため、**旧 `pickEvent` を `kind!=='judgment'`
-   （decision のみ）にフィルタ**する互換策を同段に入れる。judgment は新 `advanceBeat` 抽選でのみ出す。
+   `EVENT_DEFS` 全件から抽選し `EventScreen`/`chooseEvent` が選択肢前提で扱う。judgment が旧マップイベントとして
+   出ると画面から進めない／自動適用が旧経路で起きるため、**旧 `pickEvent` を `effectiveKind(def)!=='judgment'`
+   （= 既定解決後に decision のものだけ）にフィルタ**する互換策を同段に入れる（生の `kind` を直接見ると、既定頼みの
+   judgment 定義が `undefined` ですり抜ける。§4 の `effectiveKind` を使う。なお judgment 定義は `kind:'judgment'`
+   明示が契約）。judgment は新 `advanceBeat` 抽選でのみ出す。
    `beginSprint` を「種別＋modifiers を読む」形へ切替えるが、**`map.ts`/`enterNode`/`RunState.map` はこの段では残し、
    ラン開始は引き続き `phase='map'` に着地させる**（既存テストの phase 期待と `enterNode` 駆動を壊さない）。
    ただし `enterNode` 内に **`MapNode.type`→`pendingSprintKind` を写す互換 shim** を入れ、中間段階でも elite/boss が
    normal に落ちない（高負荷報酬・ボス→レビュー遷移を保つ）ようにする。
-3. **state 層**: `runMachine` に `setup`/`setup-pre`/`beat` を追加（`map` も当面併存可）。
-4. **契約（追加のみ）**: `game.ts`/`useRun.ts` に `resolveBeat`/`beginSetupSprint`/`getBeat` を**追加**
-   （`enterNode` は残す）。これで UI 接続（step5）が新 API を呼べる。
-5. **フロー切替＝テスト同時更新（同一段階）**: `App.tsx`/`SetupScreen`/`BeatScreen` を新フローへ接続し、
+3. **契約（追加のみ）**: `game.ts`/`useRun.ts` に `resolveBeat`/`beginSetupSprint`/`getBeat` を**追加**
+   （`enterNode` は残す）。これで UI 接続（step4）が新 API を呼べる。`runMachine`/`RunPhase` の新フェーズは
+   step2 で追加済み（`map` も当面併存）なので、ここは API 追加のみ。
+4. **フロー切替＝テスト同時更新（同一段階）**: `App.tsx`/`SetupScreen`/`BeatScreen` を新フローへ接続し、
    **ラン開始を `phase='setup'` に切り替える**。この切替で観測フェーズと駆動が変わるため、**同じ段で**
    影響テストを更新する: 開始直後に `phase==='map'` を期待する箇所（`tests/unit/daily-run.test.ts`、
    `tests/e2e/daily-run.spec.ts` 等）を `setup` へ、`map` で `enterNode` を呼ぶ駆動（`tests/e2e/run.spec.ts`・
    `smoke.spec.ts` ほか）を `beginSetupSprint`/`resolveBeat` ベースへ。テスト更新を後段に遅らせると、この段で
    `npm test` が割れて「各段 green」を破るため、**フロー切替とテスト更新は不可分**とする。
-6. **撤去（利用側が新フローへ移った後）**: `RunMapScreen`・`map.ts`・`enterNode`（と shim）・`RunState.map`・
+5. **撤去（利用側が新フローへ移った後）**: `RunMapScreen`・`map.ts`・`enterNode`（と shim）・`RunState.map`・
    `runMachine.map` を撤去。あわせて **`activeNodeId` 依存を synthetic `currentSprintId`/index ベースへ移植**する
    （§5.2）: `SprintScreen` の `state.map.nodes.find(...)` を `currentSprintKind` 直接表示へ、エンジンの
    `resolveSprint`/`applyGrowth` の `activeNodeId` ガード・`nodeById(this.map, ...)`・RNG キーを index ベースへ。
    これを撤去と同段で行わないと、UI が型エラー／完了処理が早期 return してスプリントが進まなくなる。
-   step5 で利用側・テストが新フローへ移っているので、移植込みで撤去後も `build`/`test` 緑。
-7. **SPEC**: §8 の変更を反映し、第3/4.4 章および第22章の「実装状況」記述を除去（実装が追いついたため）。
+   step4 で利用側・テストが新フローへ移っているので、移植込みで撤去後も `build`/`test` 緑。
+6. **SPEC**: §8 の変更を反映し、第3/4.4 章および第22章の「実装状況」記述を除去（実装が追いついたため）。
 
 各段で `npm test` / `build` 緑を維持。`mockup-parity.md §3.5-A` を「詰め済み（本ファイル）」へ更新。
 

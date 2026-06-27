@@ -1,6 +1,6 @@
 # アーキテクチャと横断規律
 
-全フェーズ共通の技術前提と実装規律。各フェーズ計画（`plan/phase-*.md`）はこの方針に従う。出典は [`SPEC.md`](../SPEC.md) 第22章。
+全フェーズ共通の技術前提と実装規律。各フェーズ計画（[`spec-mapping.md`](./spec-mapping.md) §2 に集約）はこの方針に従う。出典は [`SPEC.md`](../SPEC.md) 第22章。
 
 ---
 
@@ -48,7 +48,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 ├─ plan/                       ← 実装単位ごとの計画（本ディレクトリ）
 │  ├─ README.md                ← 索引
 │  ├─ architecture.md
-│  └─ phase-*.md
+│  └─ spec-mapping.md           ← SPEC対応表＋実装済みフェーズ計画の集約
 ├─ mockups/                    ← デザインの正（維持）
 ├─ index.html
 ├─ vite.config.ts

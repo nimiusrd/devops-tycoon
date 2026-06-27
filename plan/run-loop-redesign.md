@@ -134,12 +134,22 @@ quarterReview --REVIEW_WON--> won | --REVIEW_CONTINUE--> sprint(次Q 1) | --REVI
 
 - **削除**: `map`/`position`/`visited`/`available`、型 `MapNode`/`RunMap`、`map.ts`。
 - **追加**: `sprintIndexInQuarter`（1..N）、`sprintsPerQuarter`（N）、`beat`（提示中イベント: `{ eventId, kind }`）。
+- **追加（スプリント種別の保持）**: 旧来は `MapNode.type` が通常/高負荷/ボスを表し、エンジンは
+  これでタスク倍率（高負荷）と進化ポイント加算を決めていた（`engine.ts` の `beginSprint` /
+  リザルト処理）。マップ撤去でこの情報が消えないよう、**`pendingSprintKind`**（次スプリントの種別。
+  ビートの「高負荷案件を受ける」選択や、トラック最終＝`boss` で決まる）と **`currentSprintKind`**
+  （進行中スプリントの種別。完了時の評価・進化ポイントまで保持）を `'normal' | 'elite' | 'boss'` で持つ。
+  既定は `normal`、トラック最終インデックスは `boss`、高負荷案件を受けたら `elite`。
 - `bossId` は維持（その四半期のボス。トラック最終スプリントで使う）。`eventId`/`shop` は流用。
+- **`beginSprint` は `currentSprintKind`（= 直前に確定した `pendingSprintKind`）を読む**ように変え、
+  `MapNode` 依存（`node.type`）を置き換える。`elite` はタスク倍率＋進化ポイント加算、`boss` は
+  ボスルールと `BOSS_REVIEW` 遷移に対応させる。
 
 ### 5.3 公開契約（`window.game` / `GameHandle`）
 
 - **削除**: `enterNode(id)`。
 - **追加**: `resolveBeat(choiceIndex?)`（判定は引数なし、選択は index）。必要なら `getBeat()`。
+  選択が「高負荷案件を受ける」なら `pendingSprintKind='elite'` を立て、次の `beginSprint` で消費する。
 - 型定義（`src/game.ts`）・E2E 型・architecture §4.1 を同時更新。**破壊的変更**なので E2E/smoke を更新する。
 
 ### 5.4 UI
@@ -155,7 +165,9 @@ quarterReview --REVIEW_WON--> won | --REVIEW_CONTINUE--> sprint(次Q 1) | --REVI
   - 重み付け: 技術的負債↑で debt/incident 系の確率が上がる（同一 org で決定論）。
   - 混合比: `DECISION_BEAT_CHANCE` 付近の出し分け。
   - 連結: 高負荷選択→次スプリント elite 化／予算補強→shop／一息→rest の遷移。
-  - ボス到達: N スプリントでボス→四半期レビュー。
+  - スプリント種別の保持: 高負荷案件を受ける→`pendingSprintKind='elite'`→`beginSprint` で
+    タスク倍率＋進化ポイント加算が効く（完了時まで `currentSprintKind` が保持される）。
+  - ボス到達: N スプリントでボス（`currentSprintKind='boss'`）→四半期レビュー。
   - ハード敗北: 判定でレビュー停止→`lost`。
 - **Playwright**: ラン開始→スプリント→ビート（選択）→次スプリント→…→ボス→四半期レビューの通し。
   `enterNode` を使うテストは `resolveBeat` ベースへ更新。

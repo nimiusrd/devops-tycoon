@@ -70,7 +70,7 @@
 繰り越し・未解決:
 
 - **PixiJS + pixi-viewport への差し替え**（Phase 6 / 完了）: 全社マップのみ `?renderer=pixi` で PixiJS に opt-in 切替（既定は DOM/SVG）。`src/render/iso.ts`（投影 / 深度 / カリング / プール）を供給先とする**局所的な差し替え**。実 WebGL は CI 既定 job では回さない（architecture §4.4）。
-  - **完了（6a–6e）**: 依存追加（`pixi.js@^8` / `pixi-viewport@^6`）、`RendererAdapter<TState>` の一般化、純TSシーン計画 `src/render/orgScene.ts` + `orgIslandView.ts`（LOD・ラベル）、`PixiOrgRenderer` の React 接続（`OrgPixiField` / `OrgScreen`）、pan/zoom/カリング、DOM 同等のカード/バッジ/ドット LOD 描画、カメラ同期（`orgCamera.ts`）、性能予算 DoD（Vitest fixture + 定数確定）、Pixi 視覚回帰（`tests/e2e/org-pixi-visual.spec.ts` / `npm run test:e2e:pixi`・CI 既定外）。手順は [phase-6-webgl-migration.md](./phase-6-webgl-migration.md) / [phase-6b-pixi-visual-parity.md](./phase-6b-pixi-visual-parity.md)。
+  - **完了（6a–6e）**: 依存追加（`pixi.js@^8` / `pixi-viewport@^6`）、`RendererAdapter<TState>` の一般化、純TSシーン計画 `src/render/orgScene.ts` + `orgIslandView.ts`（LOD・ラベル）、`PixiOrgRenderer` の React 接続（`OrgPixiField` / `OrgScreen`）、pan/zoom/カリング、DOM 同等のカード/バッジ/ドット LOD 描画、カメラ同期（`orgCamera.ts`）、性能予算 DoD（Vitest fixture + 定数確定）、Pixi 視覚回帰（`tests/e2e/org-pixi-visual.spec.ts` / `npm run test:e2e:pixi`・CI 既定外）。概要は [spec-mapping.md](./spec-mapping.md) §2（M6）。
 - **視覚回帰の固定フレーム**: 全社マップ Pixi は opt-in E2E（`PIXI_E2E=1` / `@pixi`）で seed 固定スクリーンショット比較済み。DOM 既定の操作 E2E は従来どおり要素可視性・属性ベース。
 - **個体メンバーの集約粒度**: 全社/部署ビューではチーム単位の集約までに留め、個体（MVP4）は現場でのみ表示。チーム島のエンジニア数等への個体反映を深めるかは未着手。
 - **レバー効果のバランス検証**: 全社/部門レバーの効果係数（`src/data/levers.ts`）は暫定。代表 seed のモンテカルロで許容レンジ化する（フェーズ1/4 の統計テスト方針と統一）。

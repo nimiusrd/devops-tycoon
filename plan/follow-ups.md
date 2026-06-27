@@ -1,6 +1,6 @@
-# フェーズ別フォローアップ
+# 実装後フォローアップ
 
-各フェーズの実装後に残った確認事項・改善候補・次フェーズへ渡す判断点をまとめる。**実装済み機能の要点（主な実装・完了状態）は [spec-mapping.md](./spec-mapping.md) §2 のフェーズ別サマリに集約**しているため、本ファイルは「繰り越し・未解決」に絞る。フェーズ本体のスコープと DoD は [spec-mapping.md](./spec-mapping.md) / [README.md](./README.md) を保ち、ここでは横断的な取りこぼしを追跡する。
+実装後に残った確認事項・改善候補・判断点をまとめる。**実装済み機能とコードの対応は [spec-mapping.md](./spec-mapping.md) §1 の対応表に集約**しているため、本ファイルは「繰り越し・未解決」に絞る。未充足箇所の一覧は [spec-mapping.md](./spec-mapping.md) §2 を保ち、ここでは横断的な取りこぼしを追跡する。節見出しの「フェーズ N」は実装単位ごとの繰り越しを整理するための区分。
 
 > 画面のモックアップ乖離・SPEC未充足・暫定値の調整など、フェーズ横断で残る「やること」は [mockup-parity.md](./mockup-parity.md) に集約している。
 
@@ -62,8 +62,6 @@
 
 ## フェーズ1: スプリントシミュレーション
 
-> 実装済みの要点は [spec-mapping.md](./spec-mapping.md) §2 M1 を参照。
-
 繰り越し・未解決:
 
 - AI あり/なしの差分が seed 固定で安定して観測できる代表 seed を記録し、バランス調整時の回帰確認に使う。
@@ -89,8 +87,6 @@
 
 ## フェーズ4: キャラクター育成
 
-> 実装済みの要点は [spec-mapping.md](./spec-mapping.md) §2 M4 を参照。
-
 繰り越し・未解決:
 
 - **採用の入口拡張**: 現状は休息ノードのみ。採用専用ノード/イベント/ショップ枠へ広げるか判断する（スコープ外なら明記）。
@@ -98,7 +94,7 @@
 
 ## フェーズ5: 組織スケール（巨大組織対応）
 
-> 実装済みの要点は [spec-mapping.md](./spec-mapping.md) §2 M5 を参照。PixiJS + pixi-viewport への差し替え（旧 5a / 5b）は M6 で完了（横断テーマ **B**）。
+> PixiJS + pixi-viewport への差し替えは M6（WebGL 移行）で完了（横断テーマ **B**）。
 
 繰り越し・未解決:
 
@@ -107,8 +103,6 @@
 
 ## フェーズ6: WebGL（PixiJS）移行
 
-> 実装済みの要点は [spec-mapping.md](./spec-mapping.md) §2 M6 を参照。
-
 繰り越し・未解決:
 
 - **バンドルサイズ**: `npm run build` で index チャンクが 778kB（>500kB 警告）。Pixi/WebGL を動的 import で分割するかは未対応（機能要件ではないが計測値として残す）。
@@ -116,16 +110,12 @@
 
 ## フェーズ7: メタ進行の閉ループ化
 
-> 実装済みの要点は [spec-mapping.md](./spec-mapping.md) §2 M7 を参照。
-
 繰り越し・未解決:
 
-- **開始プリセット（preset）の扱い未確定**: Phase 7 で合意した方針（定義＋タイトル選択 UI＋`startRun` 引数の 3 点セットを伴わないならスコープ外。[spec-mapping.md](./spec-mapping.md) §2 M7）に従い、プリセットは実装を見送り済み。ただし `MetaState.unlockedPresets` / `unlockedContent().presets` / `purchaseUnlock`・`MetaShopScreen` の preset 分岐が**到達不能な足場として残存**（`UnlockKind` は `'card' | 'relic'` のみ）。明示的にスコープ外として足場を削除するか、プリセットを正式実装するかを判断する。
+- **開始プリセット（preset）の扱い未確定**: 合意した方針（定義＋タイトル選択 UI＋`startRun` 引数の 3 点セットを伴わないならスコープ外）に従い、プリセットは実装を見送り済み（[spec-mapping.md](./spec-mapping.md) §2 / [mockup-parity.md](./mockup-parity.md) §2）。ただし `MetaState.unlockedPresets` / `unlockedContent().presets` / `purchaseUnlock`・`MetaShopScreen` の preset 分岐が**到達不能な足場として残存**（`UnlockKind` は `'card' | 'relic'` のみ）。明示的にスコープ外として足場を削除するか、プリセットを正式実装するかを判断する。
 - → 横断テーマ **A**（メタ解放のバランス＝暫定値）・**C**（業界ランキングへのデイリー記録接続）・**D**（称号の永続化）・**F**（メタ解放対象の拡張）。
 
 ## フェーズ8: 四半期レビューと目標修正
-
-> 実装済みの要点は [spec-mapping.md](./spec-mapping.md) §2 M8 を参照。
 
 繰り越し・未解決:
 

@@ -1,6 +1,6 @@
 # アーキテクチャと横断規律
 
-全フェーズ共通の技術前提と実装規律。各フェーズ計画（[`spec-mapping.md`](./spec-mapping.md) §2 に集約）はこの方針に従う。出典は [`SPEC.md`](../SPEC.md) 第22章。
+実装全体に共通する技術前提と実装規律。SPEC 各章とコードの対応は [`spec-mapping.md`](./spec-mapping.md) を参照。出典は [`SPEC.md`](../SPEC.md) 第22章。
 
 ---
 
@@ -45,10 +45,10 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 ```text
 /
 ├─ SPEC.md
-├─ plan/                       ← 実装単位ごとの計画（本ディレクトリ）
+├─ plan/                       ← 計画・設計ドキュメント（本ディレクトリ）
 │  ├─ README.md                ← 索引
 │  ├─ architecture.md
-│  └─ spec-mapping.md           ← SPEC対応表＋実装済みフェーズ計画の集約
+│  └─ spec-mapping.md           ← SPEC ↔ 実装 対応表
 ├─ mockups/                    ← デザインの正（維持）
 ├─ index.html
 ├─ vite.config.ts
@@ -107,7 +107,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 
 ### 4.4 段階的描画移行（第22.4）
 
-- MVP1〜3: DOM/SVG（モックアップ準拠）で素早く。PHASE3 は周回・診断・勝敗の通しプレイ DoD を優先し、過剰投資を避ける。ただし sim は最初から分離・seed付き。
+- MVP1〜3: DOM/SVG（モックアップ準拠）で素早く。周回・診断・勝敗の通しプレイを優先し、過剰投資を避ける。ただし sim は最初から分離・seed付き。
 - MVP5: 4階層ズーム・巨大組織ビューの**描画非依存の基礎**（アイソメ投影 / 深度ソート / 画面外カリング / スプライトプール）を `src/render/iso.ts` に純TS で実装し、数値検証した（第22.5）。全社/部署/業界ビューは既定では DOM/SVG（Framer Motion でクロスフェード）で実装し、`iso.ts` の座標系を共有する。Phase 6 で全社マップのみ `?renderer=pixi` の opt-in PixiJS + pixi-viewport 描画へ差し替え済み。実ピクセル/WebGL 検証は opt-in Playwright（`npm run test:e2e:pixi`）に集約し、CI 既定 job では実 WebGL を回さない。React/TS/Framer Motion/Recharts は役割を限定して継続。
 
 ### 4.5 世界観の制約（第2.1章）

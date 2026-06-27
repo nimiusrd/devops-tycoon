@@ -29,7 +29,7 @@ function reachFirstDraft(e: RunEngine): string[] {
   return s.draft ?? [];
 }
 
-describe('解放プールのラン反映（phase-7 §7b）', () => {
+describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
   it('RunEngine は allowed 指定時、ドラフトが解放セット内に限定される', () => {
     const allowed = defaultUnlockedCardIds();
     const e = new RunEngine({ seed: 'pool-draft' });

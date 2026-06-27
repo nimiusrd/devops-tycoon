@@ -7,7 +7,7 @@ import {
   defaultMeta,
 } from '../../src/state/meta';
 
-describe('デイリーラン（phase-7 §7e）', () => {
+describe('デイリーラン（spec-mapping §2 M7）', () => {
   it('startDailyRun は固定条件と日付 seed でマップへ入る', () => {
     const game = createGame({ seed: 'title' });
     const dateStr = '2026-06-20';

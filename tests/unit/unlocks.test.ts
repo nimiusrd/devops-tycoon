@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { eventDirectGrantIds, metaUnlockContentIds } from '../../src/data/unlocks';
 
-describe('メタ解放とイベント直接付与の整合（phase-7 §7b）', () => {
+describe('メタ解放とイベント直接付与の整合（spec-mapping §2 M7）', () => {
   it('メタ解放対象 ID がイベント直接付与 ID と重複しない', () => {
     const grants = eventDirectGrantIds();
     const locked = metaUnlockContentIds();

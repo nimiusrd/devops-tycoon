@@ -2,7 +2,7 @@
  * メタ進行で永続解放するコンテンツ定義（SPEC 第17章）。
  *
  * ドラフト／ショップのプールにのみ影響する購入対象。イベント等で直接付与される
- * ID はここに含めない（plan phase-7 §7b）。
+ * ID はここに含めない（plan spec-mapping.md §2 M7）。
  */
 import { CARD_DEFS } from './cards';
 import { EVENT_DEFS } from './events';

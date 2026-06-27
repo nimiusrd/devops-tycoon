@@ -6,9 +6,18 @@
 
 ## フェーズ1: スプリントシミュレーション
 
+実装済み（盤面のモックアップ準拠化 / 第4.1・第18章）:
+
+- **スプリント盤面を俯瞰オフィス（アイソメ）へ刷新**: 旧来のフラットな5カラム Kanban から、`mockups/main-screen.html` 準拠のアイソメ盤面へ置換。床/壁/グリッド/島スラブ/技術的負債ヘドロ/観葉植物/窓/時計を `src/ui/OfficeRoom.tsx`（静的SVG）に、工程ごとの机＋キャラ（表情・揺れ）を `src/ui/OfficeActors.tsx` に実装。
+- **「状態→見た目」を純関数に集約**: `src/render/boardScene.ts`（`planBoardScene`）が、タスク配列から各工程ステーションの件数・キャラ表情（neutral/happy/tired/panic/sad/cheer）・吹き出し・積むタスク粒（決定論オフセット）・工程間フロー・Review 渋滞（hot）を導く。GPU 不要で Vitest 検証可（`tests/unit/boardScene.test.ts`、13本）。座標は mockup と同じ設計空間（1404×573）で返し、将来 PixiJS へそのまま供給できる（第22.2 / 第22.5）。
+- **状態反映**: AI タスクは光る粒＋Coding が上機嫌、Review 渋滞で赤ラベル⚠＋パニック表情＋盤面が Review Hell トーン（第18.3）、炎上タスクは flame、Done 出荷でガッツポーズ。`data-testid="board"` / `lane-*` は維持し E2E 互換。
+
+繰り越し・未解決:
+
 - AI あり/なしの差分が seed 固定で安定して観測できる代表 seed を記録し、バランス調整時の回帰確認に使う。
 - スプリント結果の主要メトリクス（Delivered / Rework / Incidents / Senior HP / Review Queue Peak）について、許容レンジを持つ統計テストを追加する。
-- DOM/SVG 盤面の状態→見た目マッピングを、後続の PixiJS 移行でも再利用できる純関数として維持する。
+- **キャラ/粒のスプライト化**: 現状は SVG/DOM。PixiJS 移植時にスプライト＋プール（`render/iso.ts`）へ寄せ、粒の流れるアニメ（工程間移動）や延焼の連鎖演出を強化する。
+- **アクションバーのマスコット**: 介入アクションバーのマネージャー像（mockup footer）は未移植。必要なら `ActionBar` へ追加する。
 
 ## フェーズ2: 能動操作とカード
 

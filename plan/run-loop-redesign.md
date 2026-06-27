@@ -63,6 +63,8 @@
   - シニアHP↓: 「シニアがレビューで燃え尽きた」→ SeniorHP 大幅−（レビュー停止に近づく）
   - 健全（TestCoverage↑/Docs↑）: 「CI 改善で手戻り激減」「ドキュメントが AI に刺さった」→ 好転
 - 一部の判定は**ハード敗北条件**に触れうる（例: レビュー停止 → `reviewFreeze`）。その場合 `beat --LOST--> lost`。
+  現行 `evaluateLose` は totals 由来でしか敗北判定しないため、判定イベント側は `EventOutcome.forceLose`
+  （§4）で明示的に敗北遷移させる。
 - **「次スプリント限定の一時効果」を持つイベントの保持先**: 「巨大 AI 生成 PR → 次スプリントのレビュー負荷+」
   「誤生成 → 次スプリントの Rework+」のような**一回限り**の効果は、org の恒久変化に混ぜず
   `pendingSprintModifiers`（§5.2）に積み、次の `beginSprint` で消費して即クリアする。現行 `EventOutcome` は
@@ -71,7 +73,8 @@
 ### 3.2 選択イベント（decision / リスク/リターンの 2〜3 択）
 
 - ルート選択ではなく**その場の決断**。各選択肢に**リスクとリターンの両方**。**断る/安全側にも必ず代償**
-  （リターン無し＝目標から遅れる、または信頼・士気の微減）。
+  ——出荷を取らない＝四半期目標（`RunTotals.delivered`）から遅れる、加えて `EventOutcome.trust` による
+  経営/顧客/チーム信頼の低下など、**実際に状態へ効く代償**を必ず持たせる（SPEC 9.4 の C 例＝経営信頼低下）。
 - 旧 elite/shop/rest をここへ統合:
 
 | 旧ノード | 選択イベント例 | 取る（リスク/リターン） | 見送る（代償） |
@@ -96,10 +99,10 @@
 // data 側（宣言的）
 interface EventDef {
   // …既存（id/title/prompt/tone/choices）
-  kind: 'judgment' | 'decision';
-  weight: number;                 // ベース重み
+  // 既存 EVENT_DEFS を無改修で通すため optional＋デフォルト（追加のみの段を壊さない。§7 step1）。
+  kind?: 'judgment' | 'decision';   // 既定: choices 長 1 → 'judgment'、2 以上 → 'decision'
+  weight?: number;                  // 既定: 1
   triggers?: Partial<Record<EventSignal, number>>; // 信号→重み倍率
-  // judgment は choices 長 1（自動適用）。decision は 2〜3。
 }
 
 interface EventChoice {
@@ -113,6 +116,10 @@ interface EventOutcome {
   // …既存（delivered/morale/seniorHp/techDebt/budget/quality/…/grantRelic/grantCard）
   // 次スプリント限定の一時効果（一回消費。org の恒久変化とは別軸）。
   nextSprint?: SprintModifierDelta; // 例: reviewLoadAdd / reworkRateAdd / taskCountMul
+  // ステークホルダー信頼の増減（SPEC 9.4 の「経営信頼低下」等を表す。安全側の代償に必須）。
+  trust?: Partial<StakeholderTrust>; // { management?, customers?, team? }（負で低下）
+  // 判定イベントが直接ハード敗北を起こす場合の理由（例: 'reviewFreeze'）。
+  forceLose?: LoseReason;
 }
 
 type EventSignal =
@@ -120,6 +127,17 @@ type EventSignal =
   | 'seniorHpLow'  | 'moraleLow' | 'qualityLow'
   | 'testCoverageHigh' | 'documentationHigh';
 ```
+
+**`applyEventOutcome` の拡張（現行は org・予算・付与物のみ）**:
+
+- **`delivered` を `RunTotals.delivered` にも加算する**（現行は `org.deliveryScore` だけ）。四半期レビューは
+  `RunTotals.delivered` を見るため、ここを通さないとイベント出荷が Phase 8 の Delivery 目標に効かず、
+  「出荷+30 を取る＝目標前進」「出荷0 の安全側＝目標から遅れる」というリスク/リターンが成立しない（#5）。
+- **`trust` を `RunState.stakeholderTrust` へ適用**する（安全側の信頼低下を機械的な代償にする。#1）。
+- **`forceLose` があれば即 `lost` へ**（`loseReason` を設定）。現行 `evaluateLose` は `reviewFreeze` を
+  `totals.reviewQueuePeak` でしか判定しないため、レビュー停止を表す判定イベントは `forceLose` で明示的に
+  敗北遷移させる（または同時に `reviewQueuePeak` を上限へ押し上げる）。これでハード敗北テストが書ける（#7）。
+- `nextSprint` は `pendingSprintModifiers` へ積む（§5.2）。
 
 ```ts
 // sim 側（純関数・決定論）
@@ -146,15 +164,20 @@ beat  --ENTER_SPRINT--> sprint   // 判定適用後 / 非shop・rest の選択�
       --ENTER_SHOP--> shop        // 「予算で補強」を取った
       --ENTER_REST--> rest        // 「一息つく」を取った
       --LOST--> lost              // 判定がハード敗北を引いた
-shop --RESOLVE--> sprint          // 買い物後は次スプリントへ（マップへ戻らない）
-rest --RESOLVE--> sprint
+shop --RESOLVE--> setup-pre        // 買い物後は編成可能な準備へ（採用メンバーを即配置できる）
+rest --RESOLVE--> setup-pre        // 休息後も同様（recruit したメンバーを次スプリント前に配置）
+setup-pre --BEGIN--> sprint        // 編成確定で次スプリント開始
 quarterReview --REVIEW_WON--> won | --REVIEW_CONTINUE--> setup(次Q) | --REVIEW_LOST--> lost
 ```
 
 - `event` フェーズは `beat` に統合（判定/選択の提示は `beat` が担う）。`shop`/`rest` は beat の選択から到達する
   サブ画面として存続（既存 UI 流用）。
-- `setup` は新フェーズ（第1スプリント前の編成）。`setup`/`beat` では `assignMember`/`setMemberAi` を許可し、
-  `sprint` 中は従来どおり no-op。次四半期も `quarterReview --REVIEW_CONTINUE--> setup` で編成機会を保つ。
+- `setup` は新フェーズ（第1スプリント前の編成）。`setup`/`beat`/`shop`/`rest`/`setup-pre` では
+  `assignMember`/`setMemberAi` を許可し、`sprint` 中は従来どおり no-op。
+- **shop/rest の後に編成の隙間を残す**（`setup-pre`）。休息の `recruit` や予算補強の採用で増えたメンバーを、
+  **次スプリント前に配置・AI配布できる**ようにする。これが無いと新規採用が 1 スプリント遅れて効き、shop/rest の
+  価値が意図せず下がる（現行は休息後にマップへ戻り即投入できていた）。実装簡略化のため `setup-pre` は `setup` の
+  再利用（同一画面・別入口）でよい。次四半期も `quarterReview --REVIEW_CONTINUE--> setup` で編成機会を保つ。
 
 ### 5.2 `RunState`（データモデル）
 
@@ -179,10 +202,17 @@ quarterReview --REVIEW_WON--> won | --REVIEW_CONTINUE--> setup(次Q) | --REVIEW_
 
 ### 5.3 公開契約（`window.game` / `GameHandle`）
 
-- **削除**: `enterNode(id)`。
-- **追加**: `resolveBeat(choiceIndex?)`（判定は引数なし、選択は index）。必要なら `getBeat()`。
-  選択が「高負荷案件を受ける」なら `pendingSprintKind='elite'` を立て、次の `beginSprint` で消費する。
-- 型定義（`src/game.ts`）・E2E 型・architecture §4.1 を同時更新。**破壊的変更**なので E2E/smoke を更新する。
+UI は `useRun.ts` 経由で `GameHandle` だけを触る。新フローを動かすには、**まず追加 API を増やし**
+（`build`/`test` を保ったまま）、`enterNode` の撤去だけを最後に行う（§7 の段階に合わせる）。
+
+- **追加（撤去より前の段で）**:
+  - `resolveBeat(choiceIndex?)`: 判定は引数なし、選択は index。選択の `leadsTo` で sprint(通常/高負荷)/shop/rest へ分岐。
+    「高負荷案件を受ける」なら `pendingSprintKind='elite'` を立て、次の `beginSprint` で消費する。必要なら `getBeat()`。
+  - `beginSetupSprint()`: `setup`/`setup-pre` から次スプリントを開始する入口（`BEGIN` 相当）。初回 setup は beat を
+    経由しないため `resolveBeat` では進めない。これが無いと `SetupScreen` から先へ進めず setup で詰まる。
+- **削除（最後の段で）**: `enterNode(id)`。
+- 型定義（`src/game.ts`）・`useRun.ts`・E2E 型・architecture §4.1 を更新。`enterNode` 撤去は**破壊的変更**なので
+  E2E/smoke を `resolveBeat`/`beginSetupSprint` ベースへ同時に移す。
 
 ### 5.4 UI
 
@@ -205,10 +235,16 @@ quarterReview --REVIEW_WON--> won | --REVIEW_CONTINUE--> setup(次Q) | --REVIEW_
   - **次スプリント一時効果**: `EventOutcome.nextSprint` が `pendingSprintModifiers` に積まれ、当該スプリントで
     のみ反映され、完了後にクリアされる（翌スプリントへ持ち越さない）。
   - ボス到達: N スプリントでボス（`currentSprintKind='boss'`）→四半期レビュー。
-  - ハード敗北: 判定でレビュー停止→`lost`。
-  - 初回編成: `setup` 中は `assignMember`/`setMemberAi` が効き、`sprint` 中は no-op。
+  - **イベント出荷の反映**: `EventOutcome.delivered` が `RunTotals.delivered` に積まれ、四半期レビューの
+    Delivery 進捗に効く（出荷+30 を取ると前進、出荷0 の安全側は遅れる）。
+  - **信頼の代償**: `EventOutcome.trust` が `RunState.stakeholderTrust` を下げる（SPEC 9.4 の C 例）。
+  - ハード敗北: `EventOutcome.forceLose='reviewFreeze'` の判定→`beat --LOST--> lost`（`loseReason` 設定）。
+  - 初回編成: `setup`/`setup-pre`/`beat`/`shop`/`rest` 中は `assignMember`/`setMemberAi` が効き、`sprint` 中は no-op。
+  - shop/rest 後の編成: 採用したメンバーを `setup-pre` で配置→次スプリントから即戦力になる（1スプリント遅れない）。
+  - **中間段階の互換**（§7 step2-4）: `enterNode` の shim が `MapNode.type`→`pendingSprintKind` を写し、elite/boss
+    ノードが normal で始まらない（高負荷報酬・ボス遷移が中間段階でも保たれる）。
 - **Playwright**: ラン開始→Setup（編成）→スプリント→ビート（選択）→次スプリント→…→ボス→四半期レビューの通し。
-  `enterNode` を使うテストは `resolveBeat`／`setup` ベースへ更新。
+  `enterNode` を使うテストは `resolveBeat`／`beginSetupSprint` ベースへ更新。
 
 ## 7. 段階的移行（リスクを抑える）
 
@@ -216,18 +252,24 @@ quarterReview --REVIEW_WON--> won | --REVIEW_CONTINUE--> setup(次Q) | --REVIEW_
 `RunMapScreen`・`src/game.ts`・多数の E2E/unit が参照しているため、sim 層の段で先に消すとビルドが割れる。
 各段の終わりで `npm test` / `build` が緑であることを不変条件とし、撤去は最後の置換段にまとめる。
 
-1. **データ層（追加のみ・非破壊）**: `EventDef` に `kind`/`weight`/`triggers`、`EventChoice` に `leadsTo`、
-   `EventOutcome` に `nextSprint` を**追加**（任意フィールドなので既存データは無改修で通る）。判定イベントを拡充。
-   純関数 `weightedEventPool` と `leadsTo`/`nextSprint` の適用を Vitest で先行検証。
-2. **sim 層（追加のみ・旧経路温存）**: `advanceBeat`/`resolveBeat`、`pendingSprintKind`/`currentSprintKind`/
-   `pendingSprintModifiers`、`setup` 関連を **追加**する。`beginSprint` を「種別＋modifiers を読む」形へ内部的に
-   切替えつつ、**`map.ts`/`enterNode`/`RunState.map` はこの段では残す**（旧 UI/契約/テストを壊さない）。
-3. **state 層**: `runMachine` に `setup`/`beat` を追加（`map` も当面併存可）。
-4. **UI 層**: `SetupScreen`/`BeatScreen` を追加し、`App.tsx` を新フローへ接続。進行表示を線形化。
-5. **契約/テスト＋撤去（同一段階）**: `game.ts` の `enterNode`→`resolveBeat`、E2E 型・smoke/run スペックを更新し、
-   **同じコミット群で** `RunMapScreen`・`map.ts`・`enterNode`・`RunState.map`・`runMachine.map` を撤去する。
+1. **データ層（追加のみ・非破壊）**: `EventDef` に `kind?`/`weight?`/`triggers?`（**optional＋デフォルト**で
+   既存 `EVENT_DEFS` 全件を無改修で通す）、`EventChoice` に `leadsTo?`、`EventOutcome` に `nextSprint?`/`trust?`/
+   `forceLose?` を**追加**。`applyEventOutcome` を拡張し **`delivered` を `RunTotals.delivered` にも加算**・
+   `trust` を `stakeholderTrust` へ適用・`forceLose` で敗北情報を返す。純関数 `weightedEventPool` と
+   `leadsTo`/`nextSprint`/`trust`/`delivered→totals`/`forceLose` の適用を Vitest で先行検証。
+2. **sim 層（追加のみ・旧経路温存＋互換 shim）**: `advanceBeat`/`resolveBeat`/`beginSetupSprint`、
+   `pendingSprintKind`/`currentSprintKind`/`pendingSprintModifiers`、`setup`/`setup-pre` を **追加**する。
+   `beginSprint` を「種別＋modifiers を読む」形へ切替えるが、**`map.ts`/`enterNode`/`RunState.map` はこの段では残す**。
+   ただし `enterNode` 内に **`MapNode.type`→`pendingSprintKind` を写す互換 shim** を入れ、中間段階でも elite/boss が
+   normal に落ちない（高負荷報酬・ボス→レビュー遷移を保つ）ようにする。
+3. **state 層**: `runMachine` に `setup`/`setup-pre`/`beat` を追加（`map` も当面併存可）。
+4. **契約（追加のみ）**: `game.ts`/`useRun.ts` に `resolveBeat`/`beginSetupSprint`/`getBeat` を**追加**
+   （`enterNode` は残す）。これで UI 接続（step5）が新 API を呼べる。
+5. **UI 層**: `SetupScreen`/`BeatScreen` を追加し、`App.tsx` を新フローへ接続。進行表示を線形化。
+6. **テスト移行＋撤去（同一段階）**: E2E 型・smoke/run スペックを `resolveBeat`/`beginSetupSprint` ベースへ更新し、
+   **同じコミット群で** `RunMapScreen`・`map.ts`・`enterNode`（と shim）・`RunState.map`・`runMachine.map` を撤去する。
    利用側の置換と撤去を同段にまとめることで、各段の `build`/`test` 緑を保つ。
-6. **SPEC**: §8 の変更を反映し、第3/4.4 章の「実装状況」バナーを除去（実装が追いついたため）。
+7. **SPEC**: §8 の変更を反映し、第3/4.4 章の「実装状況」バナーを除去（実装が追いついたため）。
 
 各段で `npm test` / `build` 緑を維持。`mockup-parity.md §3.5-A` を「詰め済み（本ファイル）」へ更新。
 

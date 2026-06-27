@@ -30,12 +30,12 @@
 | [2](../SPEC.md#2-コンセプト) | コンセプト（AI導入のコア因果） | M1 | `src/sim/sprint.ts`, `src/sim/model/process.ts` / `tests/unit/sprint.test.ts`, `process.test.ts` | ✅ |
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観の制約 | 横断 | [architecture.md](./architecture.md) §4.5（イベント/ボス/敗北/称号の判断基準） | ✅ |
 | [3](../SPEC.md#3-ゲームの基本ループ) | ゲームの基本ループ | M3 / M8 | `src/state/runMachine.ts`, `src/sim/run/engine.ts`, `src/sim/run/map.ts` / `tests/unit/run-machine.test.ts`, `run-engine.test.ts` | 🟡 現行=分岐マップ。固定トラック＋イベント判定は [run-loop-redesign.md](./run-loop-redesign.md) で未着手 |
-| [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ) | メイン画面: 開発ライン | M1 | `src/ui/SprintScreen.tsx`, `src/ui/OfficeRoom.tsx`, `OfficeActors.tsx`, `src/render/taskView.ts` / `tests/unit/taskView.test.ts` | ✅ |
+| [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ) | メイン画面: 開発ライン | M1 | `src/ui/SprintScreen.tsx`, `src/ui/OfficeRoom.tsx`, `OfficeActors.tsx`, `src/render/taskView.ts` / `tests/unit/taskView.test.ts` | 🟡 8種のタスク見た目・レーン・介入バーは実装。§4.1 の「粒として流れるライン」は工程間が静的配置（山）で、ベルトコンベア状の流れ・渋滞の可視化は未実装（[mockup-parity.md](./mockup-parity.md) §1-A） |
 | [4.2](../SPEC.md#42-ステータス表示) | ステータス表示 | M1 | `src/ui/Hud.tsx`, `src/render/status.ts` / `tests/unit/status.test.ts` | ✅ |
 | [4.3](../SPEC.md#43-介入アクションバー) | 介入アクションバー | M2 | `src/ui/ActionBar.tsx`, `src/sim/actions.ts`, `src/data/actions.ts` / `tests/unit/actions.test.ts`, `tests/e2e/interventions.spec.ts` | ✅ |
 | [4.4](../SPEC.md#44-スプリント間イベント画面判定--選択) | スプリント間イベント画面 | M3 | `src/ui/EventScreen.tsx`, `src/sim/run/events.ts`, `src/data/events.ts` | 🟡 現行=ノード遷移。判定/混合ビートは [run-loop-redesign.md](./run-loop-redesign.md) で未着手 |
 | [4.5](../SPEC.md#45-組織進化ツリー画面) | 組織進化ツリー画面 | M3 | `src/ui/EvolutionScreen.tsx`, `src/sim/run/evolution.ts`, `src/data/evolution.ts` | ✅ |
-| [4.6](../SPEC.md#46-スプリントリザルト画面) | スプリントリザルト画面 | M1 | `src/ui/SprintResultScreen.tsx`, `src/sim/outcome.ts` | ✅ |
+| [4.6](../SPEC.md#46-スプリントリザルト画面) | スプリントリザルト画面 | M1 | `src/ui/SprintResultScreen.tsx`, `src/sim/outcome.ts` | 🟡 Done/Delivered/Combo/AI率/Review Max/Rework/Incidents（鎮火・延焼）/評価/診断/称号は実装。§4.6 例の「介入: 割り込み×3 / 緊急対応×1」の介入内訳は `SprintResult` に未集計で表示なし（`summarizeSprint` が `interventionsUsed`/`focusSpent` を渡していない） |
 | [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビュー / 目標修正画面 | M8 | `src/ui/QuarterReviewScreen.tsx`, `src/sim/run/quarterReview.ts`, `src/data/goalAdjustments.ts` / `tests/unit/quarter-review.test.ts` | ✅ |
 | [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 組織スケールとズーム階層 / 全社・部署・業界ビュー / 画面遷移 | M5 | `src/sim/orgscale/*`, `src/ui/OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx`, `src/render/orgScene.ts`, `orgCamera.ts` / `tests/unit/orgscale*.test.ts`, `tests/e2e/org-scale.spec.ts` | 🟡 4階層ズーム/集約/カメラ遷移は動作。全社・部署・業界の等角化（mockup 視覚到達）は [mockup-parity.md](./mockup-parity.md) §1-B〜1-E で残務 |
 | [5](../SPEC.md#5-プレイヤーが操作するリソース) | プレイヤーが操作するリソース | M1 / M2 / M3 | `src/sim/types.ts`（`OrgState` の基本リソース・`SprintState.focus`=集中力）, `src/sim/org.ts`, `src/sim/run/types.ts`（`RunState.budget`=予算・`EvolutionState.points`=進化ポイント） | ✅ |
@@ -45,7 +45,7 @@
 | [9](../SPEC.md#9-ランダムイベント周回進行の中核エンジン) | ランダムイベント | M3 | `src/sim/run/events.ts`, `src/data/events.ts` / `tests/unit/run-systems.test.ts` | 🟡 イベントは実装済み。組織状態依存の重み付け・混合ビート化は [run-loop-redesign.md](./run-loop-redesign.md) で未着手 |
 | [10](../SPEC.md#10-ランとボススプリント) | ランとボススプリント | M3 / M8 | `src/data/bosses.ts`, `src/sim/run/engine.ts`, `src/sim/run/quarterReview.ts` | 🟡 ボス/四半期レビューは実装済み。トラック化は [run-loop-redesign.md](./run-loop-redesign.md) で未着手 |
 | [11](../SPEC.md#11-組織進化ツリー) | 組織進化ツリー | M3 | `src/sim/run/evolution.ts`, `src/data/evolution.ts` | ✅ |
-| [12](../SPEC.md#12-キャラクター育成) | キャラクター育成 | M4 | `src/sim/member/*`, `src/data/members.ts`, `src/data/traits.ts`, `src/ui/FormationScreen.tsx` / `tests/unit/member.test.ts`, `run-roster.test.ts`, `tests/e2e/formation.spec.ts` | ✅ |
+| [12](../SPEC.md#12-キャラクター育成) | キャラクター育成 | M4 | `src/sim/member/*`, `src/data/members.ts`, `src/data/traits.ts`, `src/ui/FormationScreen.tsx` / `tests/unit/member.test.ts`, `run-roster.test.ts`, `tests/e2e/formation.spec.ts` | 🟡 個体ステータス・6トレイト・成長/昇格・編成・スタミナ離脱は実装。§12.2 の「メンバー状態のキャラ表情への反映（疲れ顔/ガッツポーズ）」は未実装（[mockup-parity.md](./mockup-parity.md) §1-A） |
 | [13](../SPEC.md#13-組織タイプ診断) | 組織タイプ診断 | M3 | `src/sim/diagnosis.ts` / `tests/unit/run-systems.test.ts` | ✅ |
 | [14](../SPEC.md#14-勝利条件) | 勝利条件 | M3 / M8 | `src/sim/run/engine.ts`, `src/sim/run/quarterReview.ts` / `tests/unit/run-engine.test.ts`, `quarter-review.test.ts` | ✅ |
 | [15](../SPEC.md#15-敗北条件--継続不能条件) | 敗北条件 / 継続不能条件 | M3 / M8 | `src/sim/outcome.ts`（`evaluateLose`）, `src/sim/run/quarterReview.ts` | 🟡 即時敗北は Senior HP/士気/技術負債/レビュー詰まりの4条件。§15 の「Incident 連続によるリリース停止」「AI依存度過多」は即時敗北として未実装（レビューの KPI/診断止まり） |
@@ -85,7 +85,7 @@
 - **目的**: 「AI を入れると Coding は速くなるが Review が詰まる」コア因果（第2章）を最小ループで成立させる。
 - **主な実装**: `src/sim/types.ts`（`Task`/`Lane`/`OrgState`）, `src/sim/model/process.ts`（工程モデル）, `src/sim/sprint.ts`（AI フラグでの因果）, `src/render/taskView.ts`・`src/ui/SprintScreen.tsx`・`Hud.tsx`・`SprintResultScreen.tsx`。
 - **完了状態（DoD）**: ✅ AI あり/なしで結果差・リザルト表示・不変条件テスト緑。
-- **残務**: 18.1 の粒の流れ／AI暴走演出（[mockup-parity.md](./mockup-parity.md) §1-A）。
+- **残務**: §4.1/18.1 の粒の流れ（工程間が静的配置）・AI暴走演出（[mockup-parity.md](./mockup-parity.md) §1-A）、§4.6 リザルトの介入内訳（割り込み/緊急対応の回数）が `SprintResult` に未集計。
 
 ### M2 / Phase 2 — 能動操作とカード
 
@@ -109,6 +109,7 @@
 - **目的**: 開発者・シニアを**個体**として育成・編成の対象にし、採用を「未来の主力をどう育てるか」の選択にする。
 - **主な実装**: `src/sim/member/*`（個体・成長・スタミナ）, `src/data/members.ts`・`src/data/traits.ts`（トレイト）, `src/ui/FormationScreen.tsx`（編成）。
 - **完了状態（DoD）**: ✅ 個体育成・編成が戦術として機能する。
+- **残務**: §12.2 のメンバー状態をキャラ表情（疲れ顔/ガッツポーズ）へ反映するビジュアルが未実装（[mockup-parity.md](./mockup-parity.md) §1-A）。
 
 ### M5 / Phase 5 — 組織スケール（巨大組織対応）
 
@@ -153,7 +154,8 @@
 | --- | --- | --- | --- |
 | 基本ループの再設計（分岐マップ廃止 → 固定トラック＋イベント判定） | [3](../SPEC.md#3-ゲームの基本ループ), [4.4](../SPEC.md#44-スプリント間イベント画面判定--選択), [9](../SPEC.md#9-ランダムイベント周回進行の中核エンジン), [10](../SPEC.md#10-ランとボススプリント), [21](../SPEC.md#21-mvpスコープ) | 🟡 設計合意済み・実装未着手 | [run-loop-redesign.md](./run-loop-redesign.md) |
 | 全社・部署・業界ビューの等角化（mockup 視覚到達） | [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応), [18](../SPEC.md#18-視覚表現) | 🟡 機能は動作・見た目が残務 | [mockup-parity.md](./mockup-parity.md) §1-B〜1-E |
-| 演出の残務（粒の流れ・延焼連鎖・スイープ・スローモー・ご褒美・6タイプ演出） | [18.1](../SPEC.md#181-基本演出), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.3](../SPEC.md#183-画面ステート組織の空気感), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装 | [mockup-parity.md](./mockup-parity.md) §1-A, §2 |
+| 演出・ビジュアルの残務（粒の流れ・延焼連鎖・スイープ・スローモー・ご褒美・6タイプ演出・キャラ表情） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [12](../SPEC.md#12-キャラクター育成), [18.1](../SPEC.md#181-基本演出), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.3](../SPEC.md#183-画面ステート組織の空気感), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装 | [mockup-parity.md](./mockup-parity.md) §1-A, §2 |
+| リザルトの介入内訳（割り込み×N / 緊急対応×N の表示） | [4.6](../SPEC.md#46-スプリントリザルト画面) | 🟡 `SprintResult` に未集計 | [follow-ups.md](./follow-ups.md) |
 | 能動操作・カードの操作方式（タスク差配のドラッグ / 手札配布→発動） | [6](../SPEC.md#6-スプリント中の能動操作), [7](../SPEC.md#7-ai導入施策カードデッキ) | 🟡 効果は実装・操作方式が SPEC と差 | [follow-ups.md](./follow-ups.md) |
 | 試練の追加（AI依存度の自然増加 ほか） | [16](../SPEC.md#16-難易度設定と試練) | 🟡 4種のみ実装 | [follow-ups.md](./follow-ups.md) |
 | レリック入手元・即時敗北条件の不足（ボス報酬レリック / Incident連続・AI依存過多） | [8](../SPEC.md#8-組織文化レリック), [15](../SPEC.md#15-敗北条件--継続不能条件) | 🟡 主要経路のみ実装 | [follow-ups.md](./follow-ups.md) |

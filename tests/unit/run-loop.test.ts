@@ -99,7 +99,7 @@ function recordSprints(seed: string, difficulty: RunState['difficulty']) {
 describe('固定トラックの不変条件（run-loop-redesign §5）', () => {
   it('各四半期の最終インデックスは必ず boss、boss は最終のみ、elite は非最終のみ', () => {
     // 介入で捌くプレイで少なくとも 1 四半期（ボス）まで到達させる。
-    const records = recordSprints('reach-boss', 'easy');
+    const records = recordSprints('boss-seek-0', 'easy');
     for (const r of records) {
       if (r.index === SPRINTS_PER_QUARTER) {
         expect(r.kind).toBe('boss');

@@ -65,6 +65,11 @@ export interface EventDef {
   weight?: number;
   /** 信号→重み倍率（組織状態で重みをスケールする。第4節）。 */
   triggers?: Partial<Record<EventSignal, number>>;
+  /**
+   * 抽選対象になるための信号下限（0..1）。指定した全信号が下限以上のときのみプールに入る。
+   * ハード敗北など、健全な組織で起きてはならない事象を「組織が荒れたときだけ」に限定する。
+   */
+  minSignal?: Partial<Record<EventSignal, number>>;
   choices: EventChoice[];
 }
 
@@ -314,6 +319,8 @@ export const EVENT_DEFS: EventDef[] = [
     kind: 'judgment',
     weight: 0.5,
     triggers: { seniorHpLow: 3 },
+    // シニアHP が下がってきたとき（HP <= 約65）だけ起きる。健全な組織には起きない。
+    minSignal: { seniorHpLow: 0.35 },
     choices: [
       {
         label: '了解',
@@ -330,6 +337,9 @@ export const EVENT_DEFS: EventDef[] = [
     kind: 'judgment',
     weight: 0.25,
     triggers: { seniorHpLow: 4 },
+    // ハード敗北。シニアHP が枯渇寸前（HP <= 約45）のときだけ抽選対象にする。
+    // 健全なランがビートの乱数だけで回避不能に終了しないようにする。
+    minSignal: { seniorHpLow: 0.55 },
     choices: [
       {
         label: '了解',

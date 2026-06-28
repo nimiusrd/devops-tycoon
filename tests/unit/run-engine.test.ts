@@ -24,7 +24,7 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
   });
 
   it('ボス到達後は四半期レビューフェーズになる', () => {
-    const e = new RunEngine({ seed: 'reach-boss', difficulty: 'easy' });
+    const e = new RunEngine({ seed: 'boss-seek-0', difficulty: 'easy' });
     e.startRun();
     const s = playUntil(e, 'quarterReview', { skilled: true });
     expect(s.phase).toBe('quarterReview');
@@ -44,7 +44,7 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
   });
 
   it('介入で捌くプレイならボススプリントへ到達して決着する（DoD: トラック→ボス）', () => {
-    const e = new RunEngine({ seed: 'reach-boss', difficulty: 'easy' });
+    const e = new RunEngine({ seed: 'boss-seek-0', difficulty: 'easy' });
     const s = playRun(e, { skilled: true });
     // 1 四半期は SPRINTS_PER_QUARTER 本（最終がボス）。最低限ボスまで到達している。
     expect(s.sprintsPlayed).toBeGreaterThanOrEqual(SPRINTS_PER_QUARTER);

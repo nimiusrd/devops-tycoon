@@ -57,7 +57,14 @@ import type {
   ZoomState,
 } from '../orgscale/types';
 import { foldPassives, foldRunEffects, toEffects, withBossEffects } from './effects';
-import { applyEventOutcome, eventsOfKind, pickWeighted, weightedEventPool } from './events';
+import {
+  applyEventOutcome,
+  eventEligible,
+  eventSignals,
+  eventsOfKind,
+  pickWeighted,
+  weightedEventPool,
+} from './events';
 import { canUnlock, unlockNode } from './evolution';
 import {
   applyGoalAdjustment,
@@ -724,6 +731,11 @@ export class RunEngine {
    * ボス直前の最終ビートでは elite を出さず、ボス種別を優先する（§5.2 / §6）。
    */
   private advanceBeat(): void {
+    // 完了したスプリント盤面はビート以降では参照させない（旧 advanceMap の sprint=null 相当）。
+    // result/draft/evolution の間は背景として残すため、ビートへ移るこの時点でクリアする。
+    this.sprint = null;
+    this.currentSprintId = null;
+
     const nextIndex = this.sprintIndexInQuarter + 1;
     const isBossNext = nextIndex >= this.sprintsPerQuarter;
     const rng = createRng(`${this.seed}:beat:q${this.quarterNumber}:s${nextIndex}`);
@@ -733,6 +745,9 @@ export class RunEngine {
     if (isBossNext) {
       pool = pool.filter((d) => !d.choices.some((c) => c.leadsTo === 'sprint-elite'));
     }
+    // 組織状態の信号で抽選対象を絞る（minSignal 未達のイベントはプールに入れない）。
+    const signals = eventSignals(this.org);
+    pool = pool.filter((d) => eventEligible(d, signals));
     const decisionPool = eventsOfKind(pool, 'decision');
     const judgmentPool = eventsOfKind(pool, 'judgment');
 

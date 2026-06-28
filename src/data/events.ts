@@ -1,14 +1,21 @@
 /**
- * ランダムイベント（分岐選択）の宣言的定義（SPEC 第9章）。
+ * スプリント間イベント（ビート）の宣言的定義（SPEC 第9章）。
  *
- * マップの◇ノードで提示する、トレードオフのある選択イベント。
- * 選択結果は組織値・予算・レリック/カード付与の差分（`EventOutcome`）で表す。
- * 効果の適用は `src/sim/run/events.ts`（純TS）。データ駆動（architecture §4.3）。
+ * 固定トラックのスプリントの合間に出る「判定イベント（自動適用）」と
+ * 「選択イベント（リスク/リターンの 2〜3 択）」をデータ駆動で表す。
+ * 効果の適用は `src/sim/run/events.ts`（純TS）。組織状態による重み付けは
+ * `triggers`（信号→重み倍率）で表す（architecture §4.3 / run-loop-redesign §3〜4）。
  */
+import type {
+  EventSignal,
+  LoseReason,
+  SprintModifierDelta,
+  StakeholderTrust,
+} from '../sim/run/types';
 
 /** 選択肢の結果（指定キーのみ適用。Morale 減少はレリックで緩和されうる）。 */
 export interface EventOutcome {
-  /** 出荷ポイント（org.deliveryScore へ加算）。 */
+  /** 出荷ポイント（org.deliveryScore と当期 quarterTotals.delivered へ加算）。 */
   delivered?: number;
   /** Morale 増減（負はレリックの moraleDamageMul で緩和）。 */
   morale?: number;
@@ -23,6 +30,12 @@ export interface EventOutcome {
   grantRelic?: string;
   /** デッキに加えるカード定義 ID。 */
   grantCard?: string;
+  /** 次スプリント限定の一時効果（一回消費。org の恒久変化とは別軸）。 */
+  nextSprint?: SprintModifierDelta;
+  /** ステークホルダー信頼の増減（安全側の代償に使う。負で低下）。 */
+  trust?: Partial<StakeholderTrust>;
+  /** 判定イベントが直接ハード敗北を起こす場合の理由（例: 'reviewFreeze'）。 */
+  forceLose?: LoseReason;
 }
 
 export interface EventChoice {
@@ -30,6 +43,11 @@ export interface EventChoice {
   /** 結果の説明（プレイヤー向け）。 */
   description: string;
   outcome: EventOutcome;
+  /**
+   * 画面遷移を伴う選択の遷移先（旧 shop/rest/elite の統合）。
+   * 既定（未指定）は通常スプリントへ進む。resolveBeat はこれで分岐する。
+   */
+  leadsTo?: 'sprint' | 'sprint-elite' | 'shop' | 'rest';
 }
 
 export interface EventDef {
@@ -38,10 +56,28 @@ export interface EventDef {
   prompt: string;
   /** 演出分類（良い/悪い/ネタ。第9.1〜9.3）。 */
   tone: 'good' | 'bad' | 'joke';
+  /**
+   * 種別。未指定なら effectiveKind で既定解決（choices 長 1→judgment / 2 以上→decision）。
+   * judgment 定義は契約として必ず 'judgment' を明示する（run-loop-redesign §3.1）。
+   */
+  kind?: 'judgment' | 'decision';
+  /** 抽選のベース重み（既定 1）。 */
+  weight?: number;
+  /** 信号→重み倍率（組織状態で重みをスケールする。第4節）。 */
+  triggers?: Partial<Record<EventSignal, number>>;
   choices: EventChoice[];
 }
 
+/**
+ * 種別の正規化（既定を解決）。フィルタ/分類はこれを通す（生の kind を直接見ない）。
+ * 既定: choices 長 1 → 'judgment'、2 以上 → 'decision'。
+ */
+export function effectiveKind(def: EventDef): 'judgment' | 'decision' {
+  return def.kind ?? (def.choices.length <= 1 ? 'judgment' : 'decision');
+}
+
 export const EVENT_DEFS: EventDef[] = [
+  // --- 選択イベント（decision）：旧 ◇イベント ---
   {
     id: 'urgent-demo',
     title: '緊急のお願い',
@@ -60,8 +96,8 @@ export const EVENT_DEFS: EventDef[] = [
       },
       {
         label: '正直に延期を交渉する',
-        description: 'レリック「期待値マネジメント」を獲得',
-        outcome: { grantRelic: 'expectation-mgmt' },
+        description: '経営信頼 -8 / レリック「期待値マネジメント」を獲得',
+        outcome: { grantRelic: 'expectation-mgmt', trust: { management: -8 } },
       },
     ],
   },
@@ -152,6 +188,185 @@ export const EVENT_DEFS: EventDef[] = [
         label: '今は見送る',
         description: '予算 +8',
         outcome: { budget: 8 },
+      },
+    ],
+  },
+
+  // --- 選択イベント（decision）：旧 elite / shop / rest を統合 ---
+  {
+    id: 'elite-offer',
+    title: '大型案件を前倒しするか',
+    prompt: '大口顧客から「前倒しで出せないか」と打診が来た。',
+    tone: 'bad',
+    weight: 2,
+    choices: [
+      {
+        label: '前倒しで引き受ける（高負荷スプリント）',
+        description: '次スプリントが高負荷化（大出荷だが渋滞・炎上リスク）',
+        outcome: {},
+        leadsTo: 'sprint-elite',
+      },
+      {
+        label: '通常スプリントで進める',
+        description: '出荷は控えめ＝四半期目標から遅れる / 経営信頼 -4',
+        outcome: { trust: { management: -4 } },
+        leadsTo: 'sprint',
+      },
+    ],
+  },
+  {
+    id: 'shop-offer',
+    title: '予算で補強するか',
+    prompt: '四半期予算に余裕がある。ツール・採用で補強できる。',
+    tone: 'good',
+    weight: 2,
+    choices: [
+      {
+        label: '補強する（ショップを開く）',
+        description: 'カード購入・強化やレリック獲得・採用ができる',
+        outcome: {},
+        leadsTo: 'shop',
+      },
+      {
+        label: '予算を温存する',
+        description: '補強機会を逃すが予算は手元に残る',
+        outcome: {},
+        leadsTo: 'sprint',
+      },
+    ],
+  },
+  {
+    id: 'rest-offer',
+    title: '一息つくか',
+    prompt: 'チームに疲れが見える。回復に充てるか、攻め続けるか。',
+    tone: 'good',
+    weight: 2,
+    choices: [
+      {
+        label: '休む（回復するが当期出荷を手放す）',
+        description: 'シニアHP回復・負債返済・カード強化など / 次スプリントの出荷減',
+        outcome: { nextSprint: { taskCountMul: 0.7 } },
+        leadsTo: 'rest',
+      },
+      {
+        label: '攻め続ける',
+        description: '回復しない（出荷機会は取りに行く）',
+        outcome: {},
+        leadsTo: 'sprint',
+      },
+    ],
+  },
+
+  // --- 判定イベント（judgment）：組織状態依存・自動適用 ---
+  {
+    id: 'debt-incident',
+    title: '"動いているように見える" 障害',
+    prompt: '本番で潜在バグが顕在化した。技術的負債のツケが回ってきた。',
+    tone: 'bad',
+    kind: 'judgment',
+    weight: 0.6,
+    triggers: { techDebtHigh: 3 },
+    choices: [
+      {
+        label: '了解',
+        description: '品質 -8 / Tech Debt +6 / Morale -4',
+        outcome: { quality: -8, techDebt: 6, morale: -4 },
+      },
+    ],
+  },
+  {
+    id: 'giant-ai-pr-judgment',
+    title: '巨大 AI 生成 PR が投下された',
+    prompt: 'AI が一気に大量のコードを生成し、レビュー待ちが膨れ上がった。',
+    tone: 'bad',
+    kind: 'judgment',
+    weight: 0.6,
+    triggers: { aiDependencyHigh: 3 },
+    choices: [
+      {
+        label: '了解',
+        description: '次スプリントのレビュー負荷 + / シニアHP -6',
+        outcome: { seniorHp: -6, nextSprint: { reviewLoadAdd: 4 } },
+      },
+    ],
+  },
+  {
+    id: 'hallucinated-api',
+    title: '存在しない API を使っていた',
+    prompt: 'AI が幻覚した API でコードが書かれ、動かないことが発覚した。',
+    tone: 'bad',
+    kind: 'judgment',
+    weight: 0.5,
+    triggers: { aiLiteracyLow: 3 },
+    choices: [
+      {
+        label: '了解',
+        description: '次スプリントの手戻り率 + / 品質 -4',
+        outcome: { quality: -4, nextSprint: { reworkRateAdd: 0.15 } },
+      },
+    ],
+  },
+  {
+    id: 'senior-burnout',
+    title: 'シニアがレビューで燃え尽きた',
+    prompt: '積み上がったレビューでシニアの消耗が限界に近づいた。',
+    tone: 'bad',
+    kind: 'judgment',
+    weight: 0.5,
+    triggers: { seniorHpLow: 3 },
+    choices: [
+      {
+        label: '了解',
+        description: 'シニアHP 大幅 - / Morale -6',
+        outcome: { seniorHp: -28, morale: -6 },
+      },
+    ],
+  },
+  {
+    id: 'review-freeze',
+    title: 'レビューが完全に停止した',
+    prompt: 'レビュー担当が機能停止し、出荷ラインが止まった。',
+    tone: 'bad',
+    kind: 'judgment',
+    weight: 0.25,
+    triggers: { seniorHpLow: 4 },
+    choices: [
+      {
+        label: '了解',
+        description: 'レビュー停止によりラン終了',
+        outcome: { forceLose: 'reviewFreeze' },
+      },
+    ],
+  },
+  {
+    id: 'ci-improved',
+    title: 'CI 改善で手戻りが激減',
+    prompt: '整備したテストと CI が効き、壊れる前に気づけるようになった。',
+    tone: 'good',
+    kind: 'judgment',
+    weight: 0.5,
+    triggers: { testCoverageHigh: 2 },
+    choices: [
+      {
+        label: '了解',
+        description: '品質 +6 / Test Coverage +4',
+        outcome: { quality: 6, testCoverage: 4 },
+      },
+    ],
+  },
+  {
+    id: 'docs-hit-ai',
+    title: 'ドキュメントが AI に刺さった',
+    prompt: '整備したドキュメントを AI がよく参照し、生成精度が上がった。',
+    tone: 'good',
+    kind: 'judgment',
+    weight: 0.5,
+    triggers: { documentationHigh: 2 },
+    choices: [
+      {
+        label: '了解',
+        description: 'AI Literacy +6 / 出荷 +8',
+        outcome: { aiLiteracy: 6, delivered: 8 },
       },
     ],
   },

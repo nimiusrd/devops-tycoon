@@ -7,7 +7,7 @@ type GameWindow = Window & {
     pause(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
-    enterNode(id: string): RunState;
+    beginSetupSprint(): RunState;
     step(ms: number): RunState;
     dispatch(id: string): InterventionOutcome;
   };
@@ -19,8 +19,8 @@ test('割り込みレビューを発動すると Review 渋滞が捌ける（第
   const before = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     g.pause();
-    const run = g.startRun('normal', [], 'ops');
-    g.enterNode(run.available[0]);
+    g.startRun('normal', [], 'ops');
+    g.beginSetupSprint();
     let guard = 0;
     let s = g.getState();
     while (guard < 4000) {
@@ -55,7 +55,7 @@ test('スプリント盤面に集中力と介入アクションバーが並ぶ',
   await page.goto('/?seed=bar');
   await page.getByTestId('difficulty-easy').click();
   await page.getByTestId('start-run').click();
-  await page.locator('.map-node.available').first().click();
+  await page.getByTestId('begin-sprint').click();
 
   await expect(page.getByTestId('action-bar')).toBeVisible();
   await expect(page.getByTestId('focus')).toContainText('⚡');

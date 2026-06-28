@@ -10,30 +10,38 @@ function drive(events: RunEvent['type'][]): string {
 }
 
 describe('ランフェーズマシン（XState / 第3章）', () => {
-  it('タイトル → マップ → スプリント → リザルト → ドラフト → 進化 → マップ の周回', () => {
-    expect(drive(['START'])).toBe('map');
-    expect(drive(['START', 'ENTER_SPRINT'])).toBe('sprint');
-    expect(drive(['START', 'ENTER_SPRINT', 'SPRINT_DONE'])).toBe('result');
-    expect(drive(['START', 'ENTER_SPRINT', 'SPRINT_DONE', 'ACK'])).toBe('draft');
-    expect(drive(['START', 'ENTER_SPRINT', 'SPRINT_DONE', 'ACK', 'NEXT'])).toBe('evolution');
-    expect(drive(['START', 'ENTER_SPRINT', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'])).toBe('map');
+  it('タイトル → 編成 → スプリント → リザルト → ドラフト → 進化 → ビート の周回', () => {
+    expect(drive(['START'])).toBe('setup');
+    expect(drive(['START', 'BEGIN'])).toBe('sprint');
+    expect(drive(['START', 'BEGIN', 'SPRINT_DONE'])).toBe('result');
+    expect(drive(['START', 'BEGIN', 'SPRINT_DONE', 'ACK'])).toBe('draft');
+    expect(drive(['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT'])).toBe('evolution');
+    expect(drive(['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'])).toBe('beat');
   });
 
-  it('イベント/ショップ/休息ノードはマップへ戻る', () => {
-    expect(drive(['START', 'ENTER_EVENT', 'RESOLVE'])).toBe('map');
-    expect(drive(['START', 'ENTER_SHOP', 'RESOLVE'])).toBe('map');
-    expect(drive(['START', 'ENTER_REST', 'RESOLVE'])).toBe('map');
+  it('ビートから通常スプリント／ショップ／休息へ分岐し、ショップ・休息は編成へ戻る', () => {
+    const toBeat: RunEvent['type'][] = ['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'];
+    expect(drive([...toBeat, 'ENTER_SPRINT'])).toBe('sprint');
+    expect(drive([...toBeat, 'ENTER_SHOP', 'RESOLVE'])).toBe('setup');
+    expect(drive([...toBeat, 'ENTER_REST', 'RESOLVE'])).toBe('setup');
+    // ショップ・休息後の編成（setup-pre）から次スプリントを開始できる。
+    expect(drive([...toBeat, 'ENTER_SHOP', 'RESOLVE', 'BEGIN'])).toBe('sprint');
   });
 
-  it('ボス完了で四半期レビューへ、承認で won / 修正で map / 終了で lost', () => {
-    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_REVIEW'])).toBe('quarterReview');
-    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_REVIEW', 'REVIEW_WON'])).toBe('won');
-    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_REVIEW', 'REVIEW_CONTINUE'])).toBe('map');
-    expect(drive(['START', 'ENTER_SPRINT', 'BOSS_REVIEW', 'REVIEW_LOST'])).toBe('lost');
-    expect(drive(['START', 'ENTER_SPRINT', 'LOST'])).toBe('lost');
+  it('判定イベントのハード敗北はビートから lost へ遷移する', () => {
+    const toBeat: RunEvent['type'][] = ['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'];
+    expect(drive([...toBeat, 'LOST'])).toBe('lost');
+  });
+
+  it('ボス完了で四半期レビューへ、承認で won / 継続で setup / 終了で lost', () => {
+    expect(drive(['START', 'BEGIN', 'BOSS_REVIEW'])).toBe('quarterReview');
+    expect(drive(['START', 'BEGIN', 'BOSS_REVIEW', 'REVIEW_WON'])).toBe('won');
+    expect(drive(['START', 'BEGIN', 'BOSS_REVIEW', 'REVIEW_CONTINUE'])).toBe('setup');
+    expect(drive(['START', 'BEGIN', 'BOSS_REVIEW', 'REVIEW_LOST'])).toBe('lost');
+    expect(drive(['START', 'BEGIN', 'LOST'])).toBe('lost');
   });
 
   it('不正なイベントでは状態が変わらない', () => {
-    expect(drive(['ENTER_SPRINT'])).toBe('title');
+    expect(drive(['BEGIN'])).toBe('title');
   });
 });

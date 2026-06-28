@@ -1,91 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { RunEngine } from '../../src/sim/run/engine';
+import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
-import type { RunState } from '../../src/sim/run/types';
+import { playRun, playUntil } from './helpers/runFlow';
 
-/**
- * ランを最後（ボス＝won/lost）まで自動プレイするヘルパ。
- * マップでは常に先頭の分岐を選び、各フェーズを既定の選択で消化する。
- */
-function playRun(
-  e: RunEngine,
-  opts: { unlockEvolution?: boolean; skilled?: boolean } = {},
-  guardMax = 40_000,
-): RunState {
-  let s = e.snapshot();
-  let guard = 0;
-  while (s.status === 'playing' && guard < guardMax) {
-    guard += 1;
-    switch (s.phase) {
-      case 'title':
-        e.startRun();
-        break;
-      case 'map':
-        e.enterNode(s.available[0]);
-        break;
-      case 'sprint':
-        if (opts.skilled) {
-          // プレイヤーを模す: 渋滞は割り込みレビュー、炎上は緊急対応で捌く。
-          const sp = s.sprint;
-          if (sp && !sp.complete) {
-            if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
-              e.dispatch('interruptReview');
-            }
-            if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) {
-              e.dispatch('firefight');
-            }
-          }
-          e.step(300);
-        } else {
-          e.step(1_000_000);
-        }
-        break;
-      case 'result':
-        e.acknowledgeResult();
-        break;
-      case 'draft':
-        if (s.draft && s.draft.length > 0) e.chooseCard(s.draft[0]);
-        else e.skipDraft();
-        break;
-      case 'evolution':
-        if (opts.unlockEvolution && s.evolution.points > 0) {
-          e.unlockEvolution('review-1');
-        }
-        e.finishEvolution();
-        break;
-      case 'event':
-        e.chooseEvent(0);
-        break;
-      case 'shop':
-        e.leaveShop();
-        break;
-      case 'rest':
-        e.restChoose('heal');
-        break;
-      case 'quarterReview':
-        if (s.quarterReview?.outcome === 'missed_adjustable') {
-          e.chooseGoalAdjustment(s.quarterReview.availableAdjustments[0] ?? 'cut_scope');
-        } else {
-          e.acknowledgeQuarterReview();
-        }
-        break;
-      default:
-        guard = guardMax;
-        break;
-    }
-    s = e.snapshot();
-  }
-  return s;
-}
-
-describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () => {
-  it('タイトルから開始するとマップが提示される', () => {
+describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着）', () => {
+  it('タイトルから開始すると編成（setup）が提示される', () => {
     const e = new RunEngine({ seed: 'run-a', difficulty: 'normal' });
     expect(e.snapshot().phase).toBe('title');
     e.startRun();
     const s = e.snapshot();
-    expect(s.phase).toBe('map');
-    expect(s.available.length).toBeGreaterThanOrEqual(2);
+    expect(s.phase).toBe('setup');
+    expect(s.sprintsPerQuarter).toBe(SPRINTS_PER_QUARTER);
+    expect(s.sprintIndexInQuarter).toBe(0);
     expect(s.bossId).toBeTruthy();
   });
 
@@ -94,55 +20,13 @@ describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () =
     const s = playRun(e);
     expect(['won', 'lost']).toContain(s.status);
     expect(['won', 'lost']).toContain(s.phase);
-    expect(s.visited.length).toBeGreaterThanOrEqual(2);
+    expect(s.sprintsPlayed).toBeGreaterThanOrEqual(2);
   });
 
   it('ボス到達後は四半期レビューフェーズになる', () => {
     const e = new RunEngine({ seed: 'reach-boss', difficulty: 'easy' });
     e.startRun();
-    let s = e.snapshot();
-    let guard = 0;
-    while (s.status === 'playing' && s.phase !== 'quarterReview' && guard < 40_000) {
-      guard += 1;
-      switch (s.phase) {
-        case 'map':
-          e.enterNode(s.available[0]);
-          break;
-        case 'sprint': {
-          const sp = s.sprint;
-          if (sp && !sp.complete) {
-            if (sp.tasks.filter((t) => t.lane === 'review').length >= 6)
-              e.dispatch('interruptReview');
-            if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) e.dispatch('firefight');
-          }
-          e.step(300);
-          break;
-        }
-        case 'result':
-          e.acknowledgeResult();
-          break;
-        case 'draft':
-          if (s.draft && s.draft.length > 0) e.chooseCard(s.draft[0]);
-          else e.skipDraft();
-          break;
-        case 'evolution':
-          e.finishEvolution();
-          break;
-        case 'event':
-          e.chooseEvent(0);
-          break;
-        case 'shop':
-          e.leaveShop();
-          break;
-        case 'rest':
-          e.restChoose('heal');
-          break;
-        default:
-          guard = 40_000;
-          break;
-      }
-      s = e.snapshot();
-    }
+    const s = playUntil(e, 'quarterReview', { skilled: true });
     expect(s.phase).toBe('quarterReview');
     expect(s.quarterReview).not.toBeNull();
   });
@@ -150,54 +34,20 @@ describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () =
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {
     const e = new RunEngine({ seed: E2E_MISSED_ADJUSTABLE_SEED, difficulty: 'easy' });
     e.startRun();
-    let s = e.snapshot();
-    let guard = 0;
-    while (s.phase !== 'quarterReview' && guard < 40_000) {
-      guard += 1;
-      switch (s.phase) {
-        case 'map':
-          e.enterNode(s.available[0]);
-          break;
-        case 'sprint':
-          e.step(1_000_000);
-          break;
-        case 'result':
-          e.acknowledgeResult();
-          break;
-        case 'draft':
-          e.skipDraft();
-          break;
-        case 'evolution':
-          e.finishEvolution();
-          break;
-        case 'event':
-          e.chooseEvent(0);
-          break;
-        case 'shop':
-          e.leaveShop();
-          break;
-        case 'rest':
-          e.restChoose('heal');
-          break;
-        default:
-          guard = 40_000;
-          break;
-      }
-      s = e.snapshot();
-    }
+    let s = playUntil(e, 'quarterReview');
     if (s.quarterReview?.outcome === 'missed_adjustable') {
       e.chooseGoalAdjustment('cut_scope');
       s = e.snapshot();
       expect(s.quarterNumber).toBe(2);
-      expect(s.phase).toBe('map');
+      expect(s.phase).toBe('setup');
     }
   });
 
-  it('介入で捌くプレイならボスへ到達して決着する（DoD: マップ→ボス）', () => {
+  it('介入で捌くプレイならボススプリントへ到達して決着する（DoD: トラック→ボス）', () => {
     const e = new RunEngine({ seed: 'reach-boss', difficulty: 'easy' });
     const s = playRun(e, { skilled: true });
-    const boss = s.map.nodes.find((n) => n.type === 'boss')!;
-    expect(s.visited).toContain(boss.id);
+    // 1 四半期は SPRINTS_PER_QUARTER 本（最終がボス）。最低限ボスまで到達している。
+    expect(s.sprintsPlayed).toBeGreaterThanOrEqual(SPRINTS_PER_QUARTER);
     expect(['won', 'lost']).toContain(s.status);
   });
 
@@ -213,11 +63,9 @@ describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () =
   it('スプリント完了で進化ポイントが付与され、組織状態が引き継がれる', () => {
     const e = new RunEngine({ seed: 'carry', difficulty: 'normal' });
     e.startRun();
-    let s = e.snapshot();
-    const firstNode = s.available[0];
-    e.enterNode(firstNode);
+    e.beginSetupSprint();
     e.step(1_000_000);
-    s = e.snapshot();
+    let s = e.snapshot();
     expect(s.phase).toBe('result');
     expect(s.sprintsPlayed).toBe(1);
     e.acknowledgeResult();
@@ -245,8 +93,8 @@ describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () =
       while (s.status === 'playing' && guard < 40_000) {
         guard += 1;
         switch (s.phase) {
-          case 'map':
-            e.enterNode(s.available[0]);
+          case 'setup':
+            e.beginSetupSprint();
             break;
           case 'sprint': {
             const sp = s.sprint;
@@ -270,9 +118,9 @@ describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () =
             }
             e.finishEvolution();
             break;
-          case 'event':
-            // index 1（多くがレリック/カード付与の分岐）を選ぶ。
-            e.chooseEvent(1);
+          case 'beat':
+            // 選択イベントは index 1（多くが見送り/別分岐）を選び、判定は自動適用。
+            e.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 1);
             break;
           case 'shop':
             if (s.shop) {
@@ -304,7 +152,7 @@ describe('RunEngine 通しプレイ（DoD: マップ→ボス→決着）', () =
   it('介入アクション（割り込みレビュー）でレビュー渋滞が減る', () => {
     const e = new RunEngine({ seed: 'intervene', difficulty: 'normal' });
     e.startRun();
-    e.enterNode(e.snapshot().available[0]);
+    e.beginSetupSprint();
     // Review にタスクが溜まるまで小刻みに進める。
     let guard = 0;
     let queue = 0;

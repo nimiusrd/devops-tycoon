@@ -1,8 +1,9 @@
 /**
  * ランのフェーズ遷移マシン（XState / SPEC 第3章・architecture §1）。
  *
- * マップ → スプリント → リザルト → ドラフト → 進化 の入れ子と、
- * イベント/ショップ/休息/ボス/四半期レビュー/勝敗のフェーズ遷移を宣言的に定義する。
+ * **固定トラック（スプリント列）＋スプリント間ビート**の入れ子を宣言的に定義する。
+ * 編成（setup）→ スプリント → リザルト → ドラフト → 進化 → ビート（判定/選択）→ 次スプリント …
+ * → ボススプリント → 四半期レビュー → 勝敗/継続。ショップ/休息はビートの選択から到達する。
  *
  * ゲームデータの真実は決定論エンジン `RunEngine`（`src/sim/run/engine.ts`）が持ち、
  * このマシンは「正当なフェーズ遷移の契約」を表す（`RunState.phase` はこの図に従う）。
@@ -14,8 +15,8 @@ import type { RunPhase } from '../sim/run/types';
 /** マシンへ送るイベント。 */
 export type RunEvent =
   | { type: 'START' }
+  | { type: 'BEGIN' }
   | { type: 'ENTER_SPRINT' }
-  | { type: 'ENTER_EVENT' }
   | { type: 'ENTER_SHOP' }
   | { type: 'ENTER_REST' }
   | { type: 'SPRINT_DONE' }
@@ -34,26 +35,28 @@ export const runMachine = createMachine({
   initial: 'title',
   types: {} as { events: RunEvent },
   states: {
-    title: { on: { START: 'map' } },
-    map: {
-      on: {
-        ENTER_SPRINT: 'sprint',
-        ENTER_EVENT: 'event',
-        ENTER_SHOP: 'shop',
-        ENTER_REST: 'rest',
-      },
-    },
+    // ラン開始直後は編成（Setup）。いきなり盤面を走らせない。
+    title: { on: { START: 'setup' } },
+    // setup は第1スプリント前の編成、かつショップ/休息後・次四半期の編成入口（setup-pre）も兼ねる。
+    setup: { on: { BEGIN: 'sprint' } },
     sprint: {
       on: { SPRINT_DONE: 'result', BOSS_REVIEW: 'quarterReview', LOST: 'lost' },
     },
     result: { on: { ACK: 'draft' } },
     draft: { on: { NEXT: 'evolution' } },
-    evolution: { on: { FINISH: 'map' } },
-    event: { on: { RESOLVE: 'map', LOST: 'lost' } },
-    shop: { on: { RESOLVE: 'map' } },
-    rest: { on: { RESOLVE: 'map' } },
+    evolution: { on: { FINISH: 'beat' } },
+    beat: {
+      on: {
+        ENTER_SPRINT: 'sprint',
+        ENTER_SHOP: 'shop',
+        ENTER_REST: 'rest',
+        LOST: 'lost',
+      },
+    },
+    shop: { on: { RESOLVE: 'setup' } },
+    rest: { on: { RESOLVE: 'setup' } },
     quarterReview: {
-      on: { REVIEW_WON: 'won', REVIEW_CONTINUE: 'map', REVIEW_LOST: 'lost' },
+      on: { REVIEW_WON: 'won', REVIEW_CONTINUE: 'setup', REVIEW_LOST: 'lost' },
     },
     won: { type: 'final' },
     lost: { type: 'final' },

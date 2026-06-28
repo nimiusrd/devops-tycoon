@@ -2,7 +2,7 @@
  * スプリント画面（能動操作フェーズ / SPEC 第4.1 / 第6章）。
  *
  * 盤面（タスク粒の流れ）＋ 介入アクションバー ＋ コンボ/数字ポップ ＋ デッキ。
- * ノード種別（通常/高負荷/ボス）に応じてバナーを変える。状態は読むだけ（第22.2）。
+ * スプリント種別（通常/高負荷/ボス）に応じてバナーを変える。状態は読むだけ（第22.2）。
  */
 import { getBoss } from '../data/bosses';
 import { Board } from '../render/Board';
@@ -23,9 +23,9 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
   const sprint = state.sprint;
   if (!sprint) return null;
 
-  const node = state.map.nodes.find((n) => n.id === state.activeNodeId);
-  const isBoss = node?.type === 'boss';
-  const isElite = node?.type === 'elite';
+  const kind = state.currentSprintKind;
+  const isBoss = kind === 'boss';
+  const isElite = kind === 'elite';
   const boss = getBoss(state.bossId);
 
   const queue = reviewQueueLength(sprint.tasks);
@@ -35,7 +35,7 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
   return (
     <>
       <div className="subbar">
-        <span className={`pill node-tag node-${node?.type ?? 'normal'}`}>
+        <span className={`pill node-tag node-${kind}`}>
           {isBoss
             ? `★ ボス: ${boss?.name ?? ''}`
             : isElite

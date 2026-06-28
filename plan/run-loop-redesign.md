@@ -1,5 +1,13 @@
 # ランループ再設計: ノード選択廃止 → 四半期トラック＋イベント判定
 
+> **実装済み（2026-06）**: 本設計は実装に反映済み。分岐マップ（`src/sim/run/map.ts`・
+> `RunMapScreen`・`enterNode`・`RunState.map/position/visited/available`）を撤去し、固定トラック
+> （`SPRINTS_PER_QUARTER`、最終がボス）＋スプリント間ビート（`advanceBeat`/`resolveBeat`）へ置換。
+> フェーズは `title → setup → sprint → result → draft → evolution → beat → …（ショップ/休息は
+> beat の選択から）→ ボススプリント → quarterReview`。公開契約は `enterNode` を撤去し
+> `beginSetupSprint`/`resolveBeat` を追加。検証は `tests/unit/run-loop.test.ts` ほか。
+> 以下は実装の指針となった設計仕様（記録として残す）。
+
 [remaining-issues.md RI-33](./remaining-issues.md) の課題を詰めた設計。**分岐ノードマップを廃止**し、
 四半期を**固定トラック**として進めながら、スプリントの合間に**イベント判定（混合）**を起こす。
 リスク/リターンは「四半期目標（Phase 8）への進捗＝リターン」「渋滞・炎上・信頼・負債＝リスク」に

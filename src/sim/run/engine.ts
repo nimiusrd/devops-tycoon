@@ -2,16 +2,17 @@
  * ラン（1四半期）オーケストレーター（SPEC 第3章 / 第4.4〜4.6 / 第8〜17章）。
  *
  * Phase 2 のスプリント純関数（createSprint/stepSprint/applyAction/summarizeSprint）を
- * 再利用し、その上にローグライクの入れ子——マップ → スプリント → リザルト →
- * ドラフト → 進化——とイベント/ショップ/休息/ボス/勝敗/診断を載せた決定論エンジン。
- * 乱数はノード単位で派生 seed から引くため、辿る順に依らずノード内容が安定する（第22.3）。
- * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
+ * 再利用し、その上にローグライクの入れ子——**固定トラック（スプリント列）＋スプリント間の
+ * ビート（判定/選択イベント）**——とショップ/休息/ボス/勝敗/診断を載せた決定論エンジン。
+ * 四半期は固定長のスプリント列で、最終スプリントがボス。スプリントの合間に毎回ビートが
+ * 挟まり、組織状態で重み付けした判定/選択イベントを seed付き決定論で引く（第22.3 /
+ * run-loop-redesign）。`org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { BOSS_DEFS, getBoss } from '../../data/bosses';
 import { getCard } from '../../data/cards';
 import { DEPARTMENT_DEFS } from '../../data/departments';
 import { getDifficulty, getTrial } from '../../data/difficulties';
-import { EVENT_DEFS, getEvent } from '../../data/events';
+import { EVENT_DEFS, effectiveKind, getEvent } from '../../data/events';
 import { getEvolutionNode } from '../../data/evolution';
 import { RELIC_DEFS, getRelic } from '../../data/relics';
 import { applyAction } from '../actions';
@@ -56,9 +57,8 @@ import type {
   ZoomState,
 } from '../orgscale/types';
 import { foldPassives, foldRunEffects, toEffects, withBossEffects } from './effects';
-import { applyEventOutcome } from './events';
+import { applyEventOutcome, eventsOfKind, pickWeighted, weightedEventPool } from './events';
 import { canUnlock, unlockNode } from './evolution';
-import { firstColumnNodes, generateRunMap, nodeById } from './map';
 import {
   applyGoalAdjustment,
   buildInitialTrust,
@@ -70,26 +70,32 @@ import {
   loseReasonForOutcome,
 } from './quarterReview';
 import type {
+  BeatState,
   DifficultyId,
   EvolutionState,
   GoalAdjustmentId,
   LoseReason,
-  MapNode,
   QuarterGoal,
   QuarterOutcome,
   QuarterReview,
-  RunMap,
   RunState,
   RunStatus,
   RunTotals,
   RunKind,
   ShopOffer,
+  SprintKind,
+  SprintModifierDelta,
   StakeholderTrust,
   StartRunOptions,
   WinType,
 } from './types';
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+
+/** 1 四半期あたりのスプリント数（最終インデックスがボス）。 */
+export const SPRINTS_PER_QUARTER = 6;
+/** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */
+export const DECISION_BEAT_CHANCE = 0.55;
 
 /** 高負荷（elite）スプリントのタスク量倍率。 */
 const ELITE_TASK_MUL = 1.6;
@@ -125,6 +131,18 @@ function emptyTotals(): RunTotals {
     completed: 0,
     reviewQueuePeak: 0,
     maxCombo: 0,
+  };
+}
+
+/** 次スプリント限定の一時効果を合成する（taskCountMul は乗算、加算系は加算）。 */
+function mergeModifiers(a: SprintModifierDelta, b: SprintModifierDelta): SprintModifierDelta {
+  const reviewLoadAdd = (a.reviewLoadAdd ?? 0) + (b.reviewLoadAdd ?? 0);
+  const reworkRateAdd = (a.reworkRateAdd ?? 0) + (b.reworkRateAdd ?? 0);
+  const taskCountMul = (a.taskCountMul ?? 1) * (b.taskCountMul ?? 1);
+  return {
+    ...(reviewLoadAdd !== 0 ? { reviewLoadAdd } : {}),
+    ...(reworkRateAdd !== 0 ? { reworkRateAdd } : {}),
+    ...(taskCountMul !== 1 ? { taskCountMul } : {}),
   };
 }
 
@@ -169,7 +187,6 @@ export class RunEngine {
   private allowedCards: ReadonlySet<string> | null = null;
   private allowedRelics: ReadonlySet<string> | null = null;
 
-  private map!: RunMap;
   private bossId!: string;
   private baseConfig!: SprintConfig;
 
@@ -188,18 +205,26 @@ export class RunEngine {
   private winType?: WinType;
   private loseReason?: LoseReason;
 
-  private position: string | null = null;
-  private visited: string[] = [];
-  private available: string[] = [];
+  // 固定トラック（旧マップの置換）。
+  private sprintsPerQuarter = SPRINTS_PER_QUARTER;
+  /** 当四半期で進行中／直近に開始したスプリントの 1 起点インデックス（0=未開始）。 */
+  private sprintIndexInQuarter = 0;
+  /** 次スプリントの種別（ビートの選択／ボス強制で確定。一回消費）。 */
+  private pendingSprintKind: SprintKind = 'normal';
+  /** 進行中スプリントの種別（完了時の評価・進化ポイントまで保持）。 */
+  private currentSprintKind: SprintKind = 'normal';
+  /** 次スプリント限定の一時効果（beginSprint で消費）。 */
+  private pendingSprintModifiers: SprintModifierDelta = {};
+  /** 提示中のビート（beat フェーズのみ）。 */
+  private beat: BeatState | null = null;
 
-  private activeNodeId: string | null = null;
+  private currentSprintId: string | null = null;
   private sprint: SprintState | null = null;
   private sprintRng = createRng('init');
   private sprintTick = 0;
   private accumulatorMs = 0;
   private lastResult: SprintResult | null = null;
   private draft: string[] | null = null;
-  private eventId: string | null = null;
   private shop: ShopOffer | null = null;
 
   private diagnosis: RunState['diagnosis'] = 'healthyAcceleration';
@@ -241,7 +266,7 @@ export class RunEngine {
     this.allowedRelics = relics;
   }
 
-  /** タイトルで選んだ難易度・試練でランを開始する（phase=map）。 */
+  /** タイトルで選んだ難易度・試練でランを開始する（phase=setup）。 */
   startRun(
     difficulty: DifficultyId = this.difficulty,
     trials: string[] = this.trials,
@@ -254,7 +279,7 @@ export class RunEngine {
     this.initRun();
     this.runKind = options?.kind ?? 'normal';
     this.dailyDate = options?.dailyDate;
-    this.phase = 'map';
+    this.phase = 'setup';
   }
 
   /** タイトル画面へ戻る（新しいランの難易度選択へ）。 */
@@ -264,10 +289,9 @@ export class RunEngine {
     this.phase = 'title';
   }
 
-  /** 内部状態をランの初期状態へ戻す（マップ・組織・予算・進化を作り直す）。 */
+  /** 内部状態をランの初期状態へ戻す（組織・予算・進化・トラックを作り直す）。 */
   private initRun(): void {
     this.quarterNumber = 1;
-    this.map = generateRunMap(createRng(`${this.seed}:map:q1`));
     this.bossId = this.pickBoss(1);
     const diff = getDifficulty(this.difficulty);
     const base = resolveSprintConfig('default');
@@ -298,16 +322,18 @@ export class RunEngine {
     this.reviewHistory = [];
     this.nextBudgetCap = null;
     this.pauseAiDebuffQuarter = null;
-    this.position = null;
-    this.visited = [];
-    this.available = firstColumnNodes(this.map);
-    this.activeNodeId = null;
+    this.sprintsPerQuarter = SPRINTS_PER_QUARTER;
+    this.sprintIndexInQuarter = 0;
+    this.pendingSprintKind = 'normal';
+    this.currentSprintKind = 'normal';
+    this.pendingSprintModifiers = {};
+    this.beat = null;
+    this.currentSprintId = null;
     this.sprint = null;
     this.sprintTick = 0;
     this.accumulatorMs = 0;
     this.lastResult = null;
     this.draft = null;
-    this.eventId = null;
     this.shop = null;
     this.diagnosis = 'healthyAcceleration';
     this.sprintsPlayed = 0;
@@ -334,42 +360,42 @@ export class RunEngine {
     return this.trials.reduce((m, id) => m * (getTrial(id)?.budgetMul ?? 1), 1);
   }
 
-  /** マップ上のノードへ進入する。種別に応じてスプリント/イベント/ショップ/休息へ。 */
-  enterNode(id: string): void {
-    if (this.phase !== 'map') return;
-    if (!this.available.includes(id)) return;
-    const node = nodeById(this.map, id);
-    if (!node) return;
-    this.position = id;
-    this.visited.push(id);
-    switch (node.type) {
-      case 'normal':
-      case 'elite':
-      case 'boss':
-        this.beginSprint(node);
-        break;
-      case 'event':
-        this.eventId = this.pickEvent(node);
-        this.phase = 'event';
-        break;
-      case 'shop':
-        this.shop = this.buildShop(node);
-        this.phase = 'shop';
-        break;
-      case 'rest':
-        this.phase = 'rest';
-        break;
-    }
+  // --- セットアップ → スプリント起動 ---
+
+  /**
+   * 編成フェーズ（setup / setup-pre）から次スプリントを開始する。
+   * 第1スプリント・ショップ/休息後・次四半期の開始入口（旧 enterNode の置換）。
+   */
+  beginSetupSprint(): void {
+    if (this.phase !== 'setup') return;
+    this.launchSprint();
   }
 
-  private beginSprint(node: MapNode): void {
+  /**
+   * トラック上の次スプリントを起動する。種別は pendingSprintKind を消費し、
+   * トラック最終インデックスでは必ず boss を優先する（二重決定防止）。
+   */
+  private launchSprint(): void {
+    const index = this.sprintIndexInQuarter + 1;
+    const kind: SprintKind = index >= this.sprintsPerQuarter ? 'boss' : this.pendingSprintKind;
+    const modifiers = this.pendingSprintModifiers;
+    this.sprintIndexInQuarter = index;
+    this.currentSprintKind = kind;
+    this.currentSprintId = `q${this.quarterNumber}-s${index}`;
+    // 一回消費（次ビートが種別/効果を明示しない限り、次は normal / 無効果）。
+    this.pendingSprintKind = 'normal';
+    this.pendingSprintModifiers = {};
+    this.beginSprint(kind, modifiers);
+  }
+
+  private beginSprint(kind: SprintKind, modifiers: SprintModifierDelta): void {
     // スプリント間のギャップでシニア体力が一部回復する（持続的な過負荷のみ燃え尽きへ）。
     this.org.seniorHp = clamp(
       this.org.seniorHp + (100 - this.org.seniorHp) * BETWEEN_SPRINT_RECOVERY,
       0,
       100,
     );
-    const isBoss = node.type === 'boss';
+    const isBoss = kind === 'boss';
     const fold = foldRunEffects({
       deck: this.deck,
       relics: this.relics,
@@ -388,12 +414,13 @@ export class RunEngine {
         routineSpeedMul: effects.routineSpeedMul * 0.85,
       };
     }
-    const mul =
-      node.type === 'elite'
-        ? ELITE_TASK_MUL
-        : isBoss
-          ? (getBoss(this.bossId)?.taskCountMul ?? 1)
-          : 1;
+    // 次スプリント限定の一時効果: 手戻り率の加算を係数へ畳み込む。
+    if (modifiers.reworkRateAdd) {
+      effects = { ...effects, reworkRateAdd: effects.reworkRateAdd + modifiers.reworkRateAdd };
+    }
+    const baseMul =
+      kind === 'elite' ? ELITE_TASK_MUL : isBoss ? (getBoss(this.bossId)?.taskCountMul ?? 1) : 1;
+    const mul = baseMul * (modifiers.taskCountMul ?? 1);
     const config: SprintConfig = {
       ...this.baseConfig,
       taskCount: Math.max(4, Math.round(this.baseConfig.taskCount * mul)),
@@ -404,7 +431,7 @@ export class RunEngine {
         this.baseConfig.codingSlots + fold.codingSlotBonus + formation.codingSlotBonus,
       ),
     };
-    this.sprintRng = createRng(`${this.seed}:sprint:${node.id}`);
+    this.sprintRng = createRng(`${this.seed}:sprint:${this.currentSprintId}`);
     this.sprintTick = 0;
     this.accumulatorMs = 0;
     this.sprint = createSprint(
@@ -414,7 +441,18 @@ export class RunEngine {
       effects,
       formation.aiAdoptionShare,
     );
-    this.activeNodeId = node.id;
+    // 次スプリント限定の一時効果: レビュー待ちの初期負荷を積む（巨大 AI 生成 PR 等）。
+    if (modifiers.reviewLoadAdd) {
+      let moved = 0;
+      for (const t of this.sprint.tasks) {
+        if (moved >= modifiers.reviewLoadAdd) break;
+        if (t.lane === 'backlog') {
+          t.lane = 'review';
+          t.progress = 0;
+          moved += 1;
+        }
+      }
+    }
     this.phase = 'sprint';
   }
 
@@ -440,22 +478,19 @@ export class RunEngine {
 
   /** スプリント完了時の集計・診断・勝敗判定・進化ポイント付与。 */
   private resolveSprint(): void {
-    if (!this.sprint || !this.activeNodeId) return;
+    if (!this.sprint || !this.currentSprintId) return;
     const result = summarizeSprint(this.sprint, this.org);
     this.lastResult = result;
     this.sprintsPlayed += 1;
     this.accumulateTotals(result);
     this.applyGrowth(result);
     // スプリント終了時に個体スタミナを一部回復する（休職者は復帰しうる）。
-    // ここで回復させることで、続くマップ／編成ウィンドウで復帰メンバーをすぐ再配置できる
-    // （beginSprint で回復すると次スプリント開始後＝編成ロック後になり 1 スプリント遅れる）。
-    // ただし、このスプリントで休職入りした直後の者は除外し、即復帰させない（休職に実コストを残す）。
+    // ここで回復させることで、続くビート／編成ウィンドウで復帰メンバーをすぐ再配置できる。
     const justLeft = new Set((this.lastGrowth?.wentOnLeave ?? []).map((w) => w.id));
     this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN, justLeft);
     this.diagnosis = diagnose(this.org, this.totals);
 
-    const node = nodeById(this.map, this.activeNodeId);
-    if (node?.type === 'boss') {
+    if (this.currentSprintKind === 'boss') {
       const lose = evaluateLose(this.org, this.totals);
       if (lose) {
         this.status = 'lost';
@@ -489,7 +524,7 @@ export class RunEngine {
 
     this.evolution = {
       ...this.evolution,
-      points: this.evolution.points + this.evoPointsFor(node, result),
+      points: this.evolution.points + this.evoPointsFor(result),
     };
     this.phase = 'result';
   }
@@ -504,11 +539,11 @@ export class RunEngine {
   /**
    * スプリント後の個体成長・消耗・離脱を適用する（第12.2）。
    * 配置された稼働メンバーが経験値を得て昇格し、スタミナを消費して休職しうる。
-   * ドキュメント魔などが積んだドキュメントを組織へ反映する。乱数はノード単位で派生。
+   * ドキュメント魔などが積んだドキュメントを組織へ反映する。乱数はスプリント単位で派生。
    */
   private applyGrowth(result: SprintResult): void {
-    if (!this.sprint || !this.activeNodeId) return;
-    const rng = createRng(`${this.seed}:growth:${this.activeNodeId}`);
+    if (!this.sprint || !this.currentSprintId) return;
+    const rng = createRng(`${this.seed}:growth:${this.currentSprintId}`);
     const { roster, outcome } = applySprintGrowth(
       this.roster,
       { delivered: result.delivered, done: result.done },
@@ -521,9 +556,9 @@ export class RunEngine {
     }
   }
 
-  private evoPointsFor(node: MapNode | undefined, result: SprintResult): number {
+  private evoPointsFor(result: SprintResult): number {
     const base = 1 + Math.floor(result.delivered / 40);
-    return node?.type === 'elite' ? base + 1 : base;
+    return this.currentSprintKind === 'elite' ? base + 1 : base;
   }
 
   /** 四半期レビューを承認する（達成→won / 継続不能→lost）。 */
@@ -605,10 +640,9 @@ export class RunEngine {
     };
   }
 
-  /** 次四半期を開始する（マップ再生成・組織状態は引き継ぎ）。 */
+  /** 次四半期を開始する（トラックを初期化・組織状態は引き継ぎ。phase=setup）。 */
   private startNextQuarter(): void {
     this.quarterNumber += 1;
-    this.map = generateRunMap(createRng(`${this.seed}:map:q${this.quarterNumber}`));
     this.bossId = this.pickBoss(this.quarterNumber);
     const diff = getDifficulty(this.difficulty);
     const boss = getBoss(this.bossId);
@@ -627,18 +661,19 @@ export class RunEngine {
 
     this.quarterTotals = emptyTotals();
 
-    this.position = null;
-    this.visited = [];
-    this.available = firstColumnNodes(this.map);
-    this.activeNodeId = null;
+    this.sprintIndexInQuarter = 0;
+    this.pendingSprintKind = 'normal';
+    this.currentSprintKind = 'normal';
+    this.pendingSprintModifiers = {};
+    this.beat = null;
+    this.currentSprintId = null;
     this.sprint = null;
     this.lastResult = null;
     this.draft = null;
-    this.eventId = null;
     this.shop = null;
     this.quarterReview = null;
     this.zoom = { level: 'team', deptId: null, teamId: null };
-    this.phase = 'map';
+    this.phase = 'setup';
   }
 
   /** リザルトを確認してドラフトへ進む。 */
@@ -676,31 +711,85 @@ export class RunEngine {
     this.evolution = unlockNode(this.evolution, id);
   }
 
-  /** 進化フェーズを終え、マップへ戻る（次の分岐を提示）。 */
+  /** 進化フェーズを終え、次のビート（スプリント間イベント）へ進む。 */
   finishEvolution(): void {
     if (this.phase !== 'evolution') return;
-    this.advanceMap();
+    this.advanceBeat();
   }
 
-  // --- イベント ---
+  // --- ビート（スプリント間イベント） ---
 
-  private pickEvent(node: MapNode): string {
-    const rng = createRng(`${this.seed}:event:${node.id}`);
-    const list = eventIds();
-    return list[Math.floor(rng() * list.length)];
+  /**
+   * 次スプリント前のビートを 1 件抽選して提示する（判定/選択の混合）。
+   * ボス直前の最終ビートでは elite を出さず、ボス種別を優先する（§5.2 / §6）。
+   */
+  private advanceBeat(): void {
+    const nextIndex = this.sprintIndexInQuarter + 1;
+    const isBossNext = nextIndex >= this.sprintsPerQuarter;
+    const rng = createRng(`${this.seed}:beat:q${this.quarterNumber}:s${nextIndex}`);
+
+    // 最終ビート（ボス直前）は高負荷案件（elite）を提示しない。
+    let pool = EVENT_DEFS;
+    if (isBossNext) {
+      pool = pool.filter((d) => !d.choices.some((c) => c.leadsTo === 'sprint-elite'));
+    }
+    const decisionPool = eventsOfKind(pool, 'decision');
+    const judgmentPool = eventsOfKind(pool, 'judgment');
+
+    const wantDecision = rng() < DECISION_BEAT_CHANCE;
+    const primary = wantDecision ? decisionPool : judgmentPool;
+    const fallback = wantDecision ? judgmentPool : decisionPool;
+
+    let def;
+    if (primary.length > 0) {
+      def = pickWeighted(weightedEventPool(this.org, this.quarterTotals, primary), rng());
+    } else {
+      // 空プール対策: もう一方の種別へ決定論フォールバック（別派生キーで偏りを避ける）。
+      const fr = createRng(`${this.seed}:beat:q${this.quarterNumber}:s${nextIndex}:fallback`)();
+      def = pickWeighted(weightedEventPool(this.org, this.quarterTotals, fallback), fr);
+    }
+    if (!def) {
+      // 究極のフォールバック（定義が空のときのみ）。ビートを飛ばして次スプリントへ。
+      this.launchSprint();
+      return;
+    }
+    this.beat = { eventId: def.id, kind: effectiveKind(def) };
+    this.phase = 'beat';
   }
 
-  /** イベントの選択肢を選び、効果を適用してマップへ戻る。 */
-  chooseEvent(choiceIndex: number): void {
-    if (this.phase !== 'event' || !this.eventId) return;
-    const ev = getEvent(this.eventId);
-    const choice = ev?.choices[choiceIndex];
-    if (!ev || !choice) return;
+  /**
+   * 提示中ビートを解決する。判定は引数なし（hidden choice[0] を自動適用）、
+   * 選択は choiceIndex。選択の `leadsTo` で sprint(通常/高負荷)/shop/rest へ分岐する。
+   */
+  resolveBeat(choiceIndex?: number): void {
+    if (this.phase !== 'beat' || !this.beat) return;
+    const def = getEvent(this.beat.eventId);
+    if (!def) return;
+    const idx = this.beat.kind === 'judgment' ? 0 : (choiceIndex ?? 0);
+    const choice = def.choices[idx];
+    if (!choice) return;
+
     const res = applyEventOutcome(choice.outcome, this.org, foldPassives(this.relics));
     this.budget = Math.max(0, this.budget + res.budgetDelta);
     if (res.grantRelic) this.grantRelic(res.grantRelic);
     if (res.grantCard) this.addCard(res.grantCard, 1);
-    this.eventId = null;
+    if (res.delivered) {
+      this.totals.delivered += res.delivered;
+      this.quarterTotals.delivered += res.delivered;
+    }
+    if (res.trust) this.applyTrust(res.trust);
+    if (res.nextSprint) {
+      this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, res.nextSprint);
+    }
+    this.beat = null;
+
+    // ハード敗北（判定イベントが直接敗北を起こす場合）。
+    if (res.forceLose) {
+      this.status = 'lost';
+      this.loseReason = res.forceLose;
+      this.phase = 'lost';
+      return;
+    }
     const lose = evaluateLose(this.org, this.totals);
     if (lose) {
       this.status = 'lost';
@@ -708,13 +797,36 @@ export class RunEngine {
       this.phase = 'lost';
       return;
     }
-    this.advanceMap();
+
+    const leadsTo = choice.leadsTo ?? 'sprint';
+    if (leadsTo === 'shop') {
+      this.shop = this.buildShop();
+      this.phase = 'shop';
+      return;
+    }
+    if (leadsTo === 'rest') {
+      this.phase = 'rest';
+      return;
+    }
+    if (leadsTo === 'sprint-elite') {
+      this.pendingSprintKind = 'elite';
+    }
+    this.launchSprint();
+  }
+
+  /** ステークホルダー信頼を増減する（安全側の代償等）。 */
+  private applyTrust(delta: Partial<StakeholderTrust>): void {
+    const t = this.stakeholderTrust;
+    if (delta.management) t.management = clamp(t.management + delta.management, 0, 100);
+    if (delta.customers) t.customers = clamp(t.customers + delta.customers, 0, 100);
+    if (delta.team) t.team = clamp(t.team + delta.team, 0, 100);
   }
 
   // --- ショップ ---
 
-  private buildShop(node: MapNode): ShopOffer {
-    const rng = createRng(`${this.seed}:shop:${node.id}`);
+  private buildShop(): ShopOffer {
+    const key = `${this.seed}:shop:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`;
+    const rng = createRng(key);
     const discount = foldPassives(this.relics).shopDiscount;
     const cardIds = drawDraft(rng, 3, this.allowedCards ?? undefined);
     const cards = cardIds.map((defId) => ({
@@ -762,18 +874,18 @@ export class RunEngine {
     this.grantRelic(relic.id);
   }
 
-  /** ショップを出てマップへ戻る。 */
+  /** ショップを出て編成（setup-pre）へ。採用メンバーを次スプリント前に配置できる。 */
   leaveShop(): void {
     if (this.phase !== 'shop') return;
     this.shop = null;
-    this.advanceMap();
+    this.phase = 'setup';
   }
 
   // --- 休息 ---
 
   /**
    * 休息の選択（heal: シニア+個体スタミナ回復 / repay: 負債返済 /
-   * upgrade: カード強化 / recruit: 採用）。
+   * upgrade: カード強化 / recruit: 採用）。選択後は編成（setup-pre）へ。
    */
   restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit'): void {
     if (this.phase !== 'rest') return;
@@ -790,7 +902,9 @@ export class RunEngine {
     } else if (option === 'recruit') {
       // 採用は予算を消費する（ラン経済。SPEC 第4.4）。空き枠と予算が揃ったときのみ。
       if (canRecruit(this.roster) && this.budget >= RECRUIT_COST) {
-        const rng = createRng(`${this.seed}:recruit:${this.position ?? 'rest'}`);
+        const rng = createRng(
+          `${this.seed}:recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
+        );
         const next = recruitMember(this.roster, pickRecruitArchetype(rng), rng);
         if (next !== this.roster) {
           this.roster = next;
@@ -798,7 +912,7 @@ export class RunEngine {
         }
       }
     }
-    this.advanceMap();
+    this.phase = 'setup';
   }
 
   /** メンバーをレーンへ配置する（編成。第12.2）。スプリント中は変更しない。 */
@@ -832,15 +946,6 @@ export class RunEngine {
     if (!relic) return;
     this.relics.push(id);
     if (relic.effects) applyDeckBaseline(this.org, toEffects(relic.effects));
-  }
-
-  /** 現在ノードの分岐を available に設定し、マップへ戻る。 */
-  private advanceMap(): void {
-    const node = this.position ? nodeById(this.map, this.position) : undefined;
-    this.available = node ? node.next : [];
-    this.activeNodeId = null;
-    this.sprint = null;
-    this.phase = 'map';
   }
 
   // --- 組織スケール / ズーム階層（第4.7〜4.11） ---
@@ -957,11 +1062,13 @@ export class RunEngine {
       status: this.status,
       winType: this.winType,
       loseReason: this.loseReason,
-      map: this.map,
       bossId: this.bossId,
-      position: this.position,
-      visited: [...this.visited],
-      available: [...this.available],
+      sprintsPerQuarter: this.sprintsPerQuarter,
+      sprintIndexInQuarter: this.sprintIndexInQuarter,
+      beat: this.beat ? { ...this.beat } : null,
+      pendingSprintKind: this.pendingSprintKind,
+      currentSprintKind: this.currentSprintKind,
+      pendingSprintModifiers: { ...this.pendingSprintModifiers },
       org: structuredClone(this.org),
       deck: this.deck.map((c) => ({ ...c })),
       relics: [...this.relics],
@@ -969,11 +1076,10 @@ export class RunEngine {
       roster: structuredClone(this.roster),
       lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,
       budget: this.budget,
-      activeNodeId: this.activeNodeId,
+      currentSprintId: this.currentSprintId,
       sprint: this.sprint ? structuredClone(this.sprint) : null,
       lastResult: this.lastResult ? { ...this.lastResult } : null,
       draft: this.draft ? [...this.draft] : null,
-      eventId: this.eventId,
       shop: this.shop
         ? {
             cards: this.shop.cards.map((c) => ({ ...c })),
@@ -983,6 +1089,7 @@ export class RunEngine {
       diagnosis: this.diagnosis,
       sprintsPlayed: this.sprintsPlayed,
       totals: { ...this.totals },
+      quarterTotals: { ...this.quarterTotals },
       usedHeavyActions: this.usedHeavyActions,
       quarterNumber: this.quarterNumber,
       quarterGoal: { ...this.quarterGoal },
@@ -1002,9 +1109,6 @@ export function createRunEngine(init?: RunEngineInit): RunEngine {
   return new RunEngine(init);
 }
 
-function eventIds(): string[] {
-  return EVENT_DEFS.map((e) => e.id);
-}
 function relicIds(): string[] {
   return RELIC_DEFS.map((r) => r.id);
 }

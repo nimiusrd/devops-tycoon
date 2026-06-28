@@ -17,6 +17,35 @@ export interface FormationScreenProps {
   onClose: () => void;
 }
 
+/** 編成グリッド（モーダルと setup 画面で共有）。 */
+export function FormationGrid({
+  state,
+  onAssign,
+  onToggleAi,
+}: {
+  state: RunState;
+  onAssign: (id: string, assignment: LaneAssignment) => void;
+  onToggleAi: (id: string, on: boolean) => void;
+}) {
+  const locked = state.phase === 'sprint';
+  return (
+    <>
+      {locked && <p className="fm-locked-note">スプリント中は編成を変更できません。</p>}
+      <div className="formation-grid">
+        {state.roster.members.map((m) => (
+          <MemberCard
+            key={m.id}
+            m={m}
+            locked={locked}
+            onAssign={onAssign}
+            onToggleAi={onToggleAi}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
 /** 表情演出の絵文字（第12.2: 疲れ顔 / ガッツポーズ等）。 */
 const EXPRESSION_EMOJI: Record<MemberExpression, string> = {
   leave: '😴',
@@ -133,7 +162,6 @@ function MemberCard({
 }
 
 export function FormationScreen({ state, onAssign, onToggleAi, onClose }: FormationScreenProps) {
-  const locked = state.phase === 'sprint';
   return (
     <div className="result-overlay" data-testid="formation" role="dialog" aria-label="Formation">
       <div className="formation-panel">
@@ -151,18 +179,7 @@ export function FormationScreen({ state, onAssign, onToggleAi, onClose }: Format
             閉じる
           </button>
         </div>
-        {locked && <p className="fm-locked-note">スプリント中は編成を変更できません。</p>}
-        <div className="formation-grid">
-          {state.roster.members.map((m) => (
-            <MemberCard
-              key={m.id}
-              m={m}
-              locked={locked}
-              onAssign={onAssign}
-              onToggleAi={onToggleAi}
-            />
-          ))}
-        </div>
+        <FormationGrid state={state} onAssign={onAssign} onToggleAi={onToggleAi} />
       </div>
     </div>
   );

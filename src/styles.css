@@ -1211,11 +1211,32 @@ button.card:active {
 }
 
 /* ランマップ */
-.run-map {
+.run-map,
+.run-setup {
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 8px 0;
+}
+/* 編成（Setup）画面のスプリント開始ボタン。 */
+.primary-button {
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 2px solid var(--sun);
+  background: var(--sun);
+  color: #1a1300;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+.primary-button:hover {
+  filter: brightness(1.06);
+}
+/* トラックで次が山場（ボス）であることの強調。 */
+.boss-next {
+  color: var(--sun);
+  font-weight: 700;
+  margin-left: 4px;
 }
 .map-banner {
   display: flex;

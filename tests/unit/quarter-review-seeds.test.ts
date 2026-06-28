@@ -5,46 +5,12 @@ import {
   E2E_SHUTDOWN_SEED,
 } from '../../src/sim/run/quarterReviewSeeds';
 import type { RunState } from '../../src/sim/run/types';
+import { playUntil } from './helpers/runFlow';
 
 function playToReview(seed: string, difficulty: RunState['difficulty'] = 'easy'): RunState {
   const e = new RunEngine({ seed, difficulty });
   e.startRun();
-  let s = e.snapshot();
-  let guard = 0;
-  while (s.status === 'playing' && s.phase !== 'quarterReview' && guard < 40_000) {
-    guard += 1;
-    switch (s.phase) {
-      case 'map':
-        e.enterNode(s.available[0]);
-        break;
-      case 'sprint':
-        e.step(1_000_000);
-        break;
-      case 'result':
-        e.acknowledgeResult();
-        break;
-      case 'draft':
-        e.skipDraft();
-        break;
-      case 'evolution':
-        e.finishEvolution();
-        break;
-      case 'event':
-        e.chooseEvent(0);
-        break;
-      case 'shop':
-        e.leaveShop();
-        break;
-      case 'rest':
-        e.restChoose('heal');
-        break;
-      default:
-        guard = 40_000;
-        break;
-    }
-    s = e.snapshot();
-  }
-  return s;
+  return playUntil(e, 'quarterReview');
 }
 
 describe('四半期レビュー E2E seed', () => {

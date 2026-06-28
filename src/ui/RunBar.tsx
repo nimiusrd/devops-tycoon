@@ -39,8 +39,14 @@ export function RunBar({ state, onOpenFormation, onOpenOrg }: RunBarProps) {
       <span className="pill" data-testid="difficulty">
         {diff.label.split(':')[0]}
       </span>
-      <span className="pill" data-testid="sprint-no">
-        スプリント <b>{state.sprintsPlayed}</b>
+      <span className="pill" data-testid="sprint-no" title="当四半期のトラック進行（最終がボス）">
+        スプリント{' '}
+        <b>
+          {Math.min(state.sprintIndexInQuarter, state.sprintsPerQuarter)}/{state.sprintsPerQuarter}
+        </b>
+        {state.sprintIndexInQuarter + 1 === state.sprintsPerQuarter && (
+          <span className="boss-next"> ★次が山場</span>
+        )}
       </span>
       <span className="pill" data-testid="budget">
         💰<b>{state.budget}</b>

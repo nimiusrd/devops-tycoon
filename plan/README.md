@@ -21,7 +21,7 @@ DevOps Tycoon の計画・設計ドキュメント一式の置き場で、この
 | --- | --- |
 | [spec-mapping.md](./spec-mapping.md) | **SPEC 各章 ↔ コードの対応表＋未充足箇所の一覧**。まずここを見る |
 | [architecture.md](./architecture.md) | 技術スタック・レイヤ分離・ディレクトリ構成・横断規律 |
-| [remaining-issues.md](./remaining-issues.md) | **プロジェクト残課題リスト**（実装後の繰り越し・未解決事項＋モックアップ乖離・SPEC 未充足の横断バックログを統合）。未着手の基本ループ再設計 [run-loop-redesign.md](./run-loop-redesign.md) も §3.5-A から参照して管理 |
+| [remaining-issues.md](./remaining-issues.md) | **プロジェクト残課題バックログ**（`RI-NN` で ID 管理、1項目 ≒ 1PR。実装後の繰り越し・未解決事項＋モックアップ乖離・SPEC 未充足を統合）。未着手の基本ループ再設計 [run-loop-redesign.md](./run-loop-redesign.md) も RI-33 から参照して管理 |
 
 ---
 

@@ -16,7 +16,7 @@ import { advance } from './helpers/runFlow';
 
 const org = (o: Partial<OrgState> = {}): OrgState => ({ ...createOrgState('default', true), ...o });
 
-describe('イベント種別と重み付け（run-loop-redesign §3〜4）', () => {
+describe('イベント種別と重み付け（SPEC 第9章）', () => {
   it('effectiveKind は kind 明示を優先し、未指定は choices 長で既定解決する', () => {
     for (const def of EVENT_DEFS) {
       const k = effectiveKind(def);
@@ -96,7 +96,7 @@ function recordSprints(seed: string, difficulty: RunState['difficulty']) {
   return records;
 }
 
-describe('固定トラックの不変条件（run-loop-redesign §5）', () => {
+describe('固定トラックの不変条件（SPEC 第3章 / 第10章）', () => {
   it('各四半期の最終インデックスは必ず boss、boss は最終のみ、elite は非最終のみ', () => {
     // 介入で捌くプレイで少なくとも 1 四半期（ボス）まで到達させる。
     const records = recordSprints('boss-seek-0', 'easy');
@@ -117,7 +117,7 @@ describe('固定トラックの不変条件（run-loop-redesign §5）', () => {
   });
 });
 
-describe('ビートの遷移とリスク/リターン（run-loop-redesign §3）', () => {
+describe('ビートの遷移とリスク/リターン（SPEC 第9章）', () => {
   it('「一息つく」を取ると次スプリントの出荷ペナルティ（taskCountMul<1）が積まれる', () => {
     let engine: RunEngine | null = null;
     for (const seed of ['rest-a', 'rest-b', 'rest-c', 'rest-d', 'rest-e', 'rest-f', 'rest-g']) {

@@ -461,6 +461,8 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     contained: m.contained,
     spread: m.spread,
     seniorHpDelta: Math.round(org.seniorHp - m.seniorHpStart),
+    interventionsUsed: m.interventionsUsed,
+    focusSpent: m.focusSpent,
     grade: computeGrade(sprint, org),
     title,
     diagnosis,

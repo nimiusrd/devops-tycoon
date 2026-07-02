@@ -240,6 +240,10 @@ export interface SprintResult {
   spread: number;
   /** シニア体力の増減（end - start。多くは負）。 */
   seniorHpDelta: number;
+  /** 発動した介入アクションの回数（第6章）。 */
+  interventionsUsed: number;
+  /** 消費した集中力の累計。 */
+  focusSpent: number;
   /** 評価（S/A/B/C/D）。 */
   grade: string;
   /** 称号（SPEC 第4.6 の例から導出）。 */

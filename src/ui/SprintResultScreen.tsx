@@ -2,7 +2,7 @@
  * スプリントリザルト画面（SPEC 第4.6）。
  *
  * Done / Delivered / Max Combo / AI Assisted / Review Queue Max / Rework /
- * Incidents / Senior HP と、評価・診断・称号を表示する。
+ * Incidents / Senior HP / Interventions と、評価・診断・称号を表示する。
  */
 import { rankLabel } from '../sim/member';
 import type { GrowthOutcome } from '../sim/run/types';
@@ -26,6 +26,10 @@ function buildRows(result: SprintResult): Row[] {
       value: `${result.incidents} (鎮火 ${result.contained} / 延焼 ${result.spread})`,
     },
     { label: 'Senior HP', value: `${result.seniorHpDelta}` },
+    {
+      label: 'Interventions',
+      value: `${result.interventionsUsed} 回 / 集中力 ${result.focusSpent}`,
+    },
   ];
 }
 

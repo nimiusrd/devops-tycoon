@@ -7,6 +7,9 @@
 import {
   AI_ADOPTION,
   AI_DEP_PER_TASK,
+  BURNING_REGEN_MUL,
+  BURNING_REVIEW_SLOWDOWN,
+  BURN_TICKS,
   DEBT_PER_SPREAD,
   IDENTITY_CARD_EFFECTS,
   INCIDENT_CONTAIN_HP,
@@ -16,6 +19,7 @@ import {
   OVERTIME_REVIEW_MUL,
   REVIEW_HP_COST,
   REVIEW_HP_REGEN,
+  SPREAD_MORALE_COST,
   codingProgressPerTick,
   comboMultiplier,
   decideAiAssisted,
@@ -122,6 +126,7 @@ export function createSprint(
       seniorHpStart: org.seniorHp,
       interventionsUsed: 0,
       focusSpent: 0,
+      actionCounts: {},
     },
     reviewAccumulator: 0,
     nextTaskId: config.taskCount,
@@ -181,31 +186,33 @@ function advanceCoding(sprint: SprintState, tick: number): void {
 }
 
 /**
- * Review を 1 件処理し、Done / Rework / Incident に振り分ける。
+ * タスクに点火する（炎上タイマー始動。第6.3）。
+ * 燃えている間は Rework が進まず、タイマーが切れる前に緊急対応で鎮火するか、
+ * 切れた時点で自動鎮火（シニアHP大量消費）/延焼のどちらかへ解決される。
+ * Review 落ちの障害化と、延焼の連鎖（隣の PR への燃え移り）の両方から呼ばれる。
+ */
+export function igniteTask(task: Task, sprint: SprintState): void {
+  sprint.metrics.incidentCount += 1;
+  task.incident = true;
+  task.burnTicksLeft = BURN_TICKS;
+  task.reworkAttempts += 1;
+  task.lane = 'rework';
+  task.progress = 0;
+}
+
+/**
+ * Review を 1 件処理し、Done / Rework / Incident（点火）に振り分ける。
  * 介入アクション（割り込みレビュー等）からも呼ばれる（第6.1）。
+ * 点火の時点ではコンボは途切れない——延焼または自動鎮火まで悪化したときに途切れる。
+ * 「コンボを守るために今すぐ鎮火するか」という即時判断を作るため（第6.2 / 6.3）。
  */
 export function reviewOne(task: Task, sprint: SprintState, org: OrgState, rng: Rng): void {
   const m = sprint.metrics;
   org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST, 0, 100);
 
-  // 1) 障害（Incident）判定
+  // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。
   if (rng() < incidentProbability(org, task, sprint.cardEffects)) {
-    m.incidentCount += 1;
-    m.combo = 0;
-    task.incident = true;
-    task.reworkAttempts += 1;
-    task.lane = 'rework';
-    task.progress = 0;
-    if (org.seniorHp >= INCIDENT_CONTAIN_HP) {
-      m.contained += 1;
-      org.seniorHp = clamp(org.seniorHp - INCIDENT_HP_COST, 0, 100);
-    } else {
-      // 鎮火する体力がなく延焼。負債と士気に波及する。
-      m.spread += 1;
-      task.debt = true;
-      org.techDebt += DEBT_PER_SPREAD;
-      org.morale = clamp(org.morale - 5, 0, 100);
-    }
+    igniteTask(task, sprint);
     return;
   }
 
@@ -237,10 +244,15 @@ export function reviewOne(task: Task, sprint: SprintState, org: OrgState, rng: R
   org.morale = clamp(org.morale + 0.5, 0, 100);
 }
 
-/** Review をシニア体力に応じたスループットで処理する（残業中は加速）。 */
+/**
+ * Review をシニア体力に応じたスループットで処理する（残業中は加速）。
+ * 火が燃えている間はシニアが火事対応に気を取られ、スループットが落ちる（第6.3）。
+ */
 function advanceReview(sprint: SprintState, org: OrgState, rng: Rng, tick: number): void {
   const boost = isOvertime(sprint, tick) ? OVERTIME_REVIEW_MUL : 1;
-  sprint.reviewAccumulator += reviewPerTick(org, sprint.cardEffects) * boost;
+  const burning = sprint.tasks.some((t) => t.lane === 'rework' && t.incident);
+  const distraction = burning ? BURNING_REVIEW_SLOWDOWN : 1;
+  sprint.reviewAccumulator += reviewPerTick(org, sprint.cardEffects) * boost * distraction;
   while (sprint.reviewAccumulator >= 1) {
     const task = sprint.tasks.find((t) => t.lane === 'review');
     if (!task) {
@@ -252,15 +264,49 @@ function advanceReview(sprint: SprintState, org: OrgState, rng: Rng, tick: numbe
   }
 }
 
-/** Rework を進め、修正できたものを Review へ戻す。 */
+/**
+ * 燃焼中タスクの炎上タイマーを進め、時間切れを解決する（第6.3）。
+ * 猶予内に緊急対応しなかった火の後始末は高くつく:
+ * - シニアに余力があれば自動鎮火（HP を大量消費し、コンボも途切れる）
+ * - 余力がなければ延焼（負債・士気に波及し、Review 待ちの隣の PR へ燃え移る）
+ */
+function advanceBurning(sprint: SprintState, org: OrgState): void {
+  const m = sprint.metrics;
+  // 先にタイマーだけ進めて時間切れを確定する（連鎖着火した火はこの tick では減らない）。
+  const expired: Task[] = [];
+  for (const task of sprint.tasks) {
+    if (task.lane !== 'rework' || !task.incident || task.burnTicksLeft === undefined) continue;
+    task.burnTicksLeft -= 1;
+    if (task.burnTicksLeft <= 0) expired.push(task);
+  }
+  for (const task of expired) {
+    task.incident = false;
+    delete task.burnTicksLeft;
+    m.combo = 0;
+    if (org.seniorHp >= INCIDENT_CONTAIN_HP) {
+      // 自動鎮火: シニアが総出で消す。緊急対応より大幅に高くつく受動対応。
+      m.contained += 1;
+      org.seniorHp = clamp(org.seniorHp - INCIDENT_HP_COST, 0, 100);
+      continue;
+    }
+    // 延焼: 負債と士気に波及し、Review 待ちの先頭 PR へ燃え移る（延焼の連鎖。第18.2）。
+    m.spread += 1;
+    task.debt = true;
+    org.techDebt += DEBT_PER_SPREAD;
+    org.morale = clamp(org.morale - SPREAD_MORALE_COST, 0, 100);
+    const next = sprint.tasks.find((t) => t.lane === 'review');
+    if (next) igniteTask(next, sprint);
+  }
+}
+
+/** Rework を進め、修正できたものを Review へ戻す。燃えている間は手が付けられない。 */
 function advanceRework(sprint: SprintState): void {
   for (const task of sprint.tasks) {
-    if (task.lane !== 'rework') continue;
+    if (task.lane !== 'rework' || task.incident) continue;
     task.progress += reworkProgressPerTick();
     if (task.progress >= 1) {
       task.lane = 'review';
       task.progress = 0;
-      task.incident = false;
     }
   }
 }
@@ -293,6 +339,11 @@ function forceDrain(sprint: SprintState, org: OrgState): void {
     if (task.lane === 'backlog') {
       task.lane = 'done';
       continue;
+    }
+    // まだ燃えていたタスクはスプリント終了時に鎮火扱いで畳む（鎮火+延焼=障害総数を保つ）。
+    if (task.incident) {
+      m.contained += 1;
+      delete task.burnTicksLeft;
     }
     task.lane = 'done';
     task.incident = false;
@@ -329,10 +380,13 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   }
 
   advanceReview(sprint, org, rng, tick);
+  advanceBurning(sprint, org);
   advanceRework(sprint);
 
-  // シニア体力の自然回復。
-  org.seniorHp = clamp(org.seniorHp + REVIEW_HP_REGEN, 0, 100);
+  // シニア体力の自然回復。火が燃えている間は気が休まらず回復が鈍る（第6.3）。
+  const anyBurning = sprint.tasks.some((t) => t.lane === 'rework' && t.incident);
+  const regen = REVIEW_HP_REGEN * (anyBurning ? BURNING_REGEN_MUL : 1);
+  org.seniorHp = clamp(org.seniorHp + regen, 0, 100);
 
   // 介入アクションのクールダウンを 1 tick 進める（第6.1）。
   tickCooldowns(sprint);
@@ -416,6 +470,12 @@ export function computeTitleAndDiagnosis(
       diagnosis: '手戻りが多すぎます。AIの使い方とレビュー品質を見直しましょう。',
     };
   }
+  if ((m.actionCounts.firefight ?? 0) >= 3 && m.incidentCount >= 3 && m.spread === 0) {
+    return {
+      title: '火消しの達人',
+      diagnosis: '連続する炎上を、延焼する前にすべて自らの手で鎮火しました。見事な危機対応です。',
+    };
+  }
   if (aiUsed && m.incidentCount >= 3) {
     return {
       title: '爆速だが不安定',
@@ -461,8 +521,7 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     contained: m.contained,
     spread: m.spread,
     seniorHpDelta: Math.round(org.seniorHp - m.seniorHpStart),
-    interventionsUsed: m.interventionsUsed,
-    focusSpent: m.focusSpent,
+    actionCounts: { ...m.actionCounts },
     grade: computeGrade(sprint, org),
     title,
     diagnosis,

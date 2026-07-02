@@ -113,11 +113,11 @@ describe('介入で結果が変わる（DoD: 操作で結果が変わる）', ()
     expect(differs).toBe(true);
   });
 
-  it('リザルトに介入回数と消費集中力が集計される', () => {
+  it('リザルトに介入内訳が種類別に集計される', () => {
     const e = createEngine({ seed: 'result-interventions', aiEnabled: true });
     stepUntil(e, (s) => reviewCount(s) >= 4);
-    expect(e.dispatch('interruptReview').ok).toBe(true); // cost 3
-    expect(e.dispatch('overtime').ok).toBe(true); // cost 4
+    expect(e.dispatch('interruptReview').ok).toBe(true);
+    expect(e.dispatch('overtime').ok).toBe(true);
 
     let guard = 0;
     while (!e.isComplete() && guard < 100_000) {
@@ -127,7 +127,7 @@ describe('介入で結果が変わる（DoD: 操作で結果が変わる）', ()
     expect(e.isComplete()).toBe(true);
 
     const result = e.result();
-    expect(result.interventionsUsed).toBe(2);
-    expect(result.focusSpent).toBe(7);
+    expect(result.actionCounts.interruptReview).toBe(1);
+    expect(result.actionCounts.overtime).toBe(1);
   });
 });

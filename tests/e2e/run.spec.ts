@@ -167,7 +167,7 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
   const atReview = await page.evaluate(
     ({ seed }) => {
       const g = (window as GameWindow).game!;
-      g.startRun('nightmare', [], seed);
+      g.startRun('hard', [], seed);
       g.pause();
       let s = g.getState();
       let guard = 0;

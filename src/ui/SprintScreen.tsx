@@ -7,6 +7,7 @@
 import { getBoss } from '../data/bosses';
 import { Board } from '../render/Board';
 import { reviewQueueLength } from '../render/status';
+import { BURN_TICKS } from '../sim/model';
 import type { ActionId, InterventionOutcome } from '../sim/types';
 import type { RunState } from '../sim/run/types';
 import { ActionBar } from './ActionBar';
@@ -30,7 +31,12 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
 
   const queue = reviewQueueLength(sprint.tasks);
   const jamPct = Math.min(100, (queue / 18) * 100);
-  const incidents = sprint.tasks.filter((t) => t.lane === 'rework' && t.incident).length;
+  const burning = sprint.tasks.filter((t) => t.lane === 'rework' && t.incident);
+  const incidents = burning.length;
+  // 最も延焼が近い火の残り猶予（0..100%）。バーが縮み切る前に鎮火するタイミングゲー（第6.3）。
+  const urgentTicks =
+    incidents > 0 ? Math.min(...burning.map((t) => t.burnTicksLeft ?? BURN_TICKS)) : 0;
+  const burnPct = incidents > 0 ? Math.max(0, (urgentTicks / BURN_TICKS) * 100) : 0;
 
   return (
     <>
@@ -52,7 +58,7 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
         <div className="meter-wrap">
           <span className="meter-label">炎上タイマー</span>
           <div className={`meter fire${incidents > 0 ? ' burning' : ''}`} data-testid="fire-meter">
-            <i style={{ width: `${Math.min(100, incidents * 25)}%` }} />
+            <i style={{ width: `${burnPct}%` }} />
           </div>
           <span className="meter-count" data-testid="fire-count">
             🔥{incidents}

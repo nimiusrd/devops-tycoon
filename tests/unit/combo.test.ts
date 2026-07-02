@@ -56,12 +56,28 @@ describe('コンボが出荷ポイントに倍率として乗る（第6.2 / 第1
   });
 
   it('手戻りでコンボが途切れる', () => {
-    // rng=0 なら incident 判定に必ず当たり、コンボは積み上がらない。
+    // 1 回目の乱数（incident 判定）は外し、2 回目（rework 判定）に必ず当てる。
+    const values = [0.99, 0];
+    let i = 0;
+    const rng = () => values[Math.min(i++, values.length - 1)];
+    const org = createOrgState('default', true);
+    const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
+    sprint.tasks = [reviewTask(0)];
+    sprint.metrics.combo = 4;
+    reviewOne(sprint.tasks[0], sprint, org, rng);
+    expect(sprint.tasks[0].lane).toBe('rework');
+    expect(sprint.metrics.combo).toBe(0);
+  });
+
+  it('点火（炎上の始まり）ではコンボは途切れない——延焼/自動鎮火まで悪化したときに途切れる', () => {
+    // rng=0 なら incident 判定に必ず当たり、タスクに点火する（第6.3）。
     const rng = () => 0;
     const org = createOrgState('default', true);
-    const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+    const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
     sprint.tasks = [reviewTask(0)];
+    sprint.metrics.combo = 4;
     reviewOne(sprint.tasks[0], sprint, org, rng);
-    expect(sprint.metrics.combo).toBe(0);
+    expect(sprint.tasks[0].incident).toBe(true);
+    expect(sprint.metrics.combo).toBe(4);
   });
 });

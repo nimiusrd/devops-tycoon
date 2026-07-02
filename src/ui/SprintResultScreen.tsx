@@ -4,13 +4,22 @@
  * Done / Delivered / Max Combo / AI Assisted / Review Queue Max / Rework /
  * Incidents / Senior HP と、評価・診断・称号を表示する。
  */
+import { getAction } from '../data/actions';
 import { rankLabel } from '../sim/member';
 import type { GrowthOutcome } from '../sim/run/types';
-import type { SprintResult } from '../sim/types';
+import type { ActionId, SprintResult } from '../sim/types';
 
 interface Row {
   label: string;
   value: string;
+}
+
+/** 介入内訳（例: 割り込みレビュー×3 / 緊急対応×1）。未介入なら「なし」（第4.6）。 */
+function interventionSummary(result: SprintResult): string {
+  const parts = (Object.entries(result.actionCounts) as [ActionId, number][])
+    .filter(([, count]) => count > 0)
+    .map(([id, count]) => `${getAction(id)?.label ?? id}×${count}`);
+  return parts.length > 0 ? parts.join(' / ') : 'なし';
 }
 
 function buildRows(result: SprintResult): Row[] {
@@ -26,6 +35,7 @@ function buildRows(result: SprintResult): Row[] {
       value: `${result.incidents} (鎮火 ${result.contained} / 延焼 ${result.spread})`,
     },
     { label: 'Senior HP', value: `${result.seniorHpDelta}` },
+    { label: '介入', value: interventionSummary(result) },
   ];
 }
 

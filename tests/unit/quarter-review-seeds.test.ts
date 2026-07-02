@@ -22,7 +22,7 @@ describe('四半期レビュー E2E seed', () => {
   });
 
   it('shutdown 用 seed が決定論的', () => {
-    const s = playToReview(E2E_SHUTDOWN_SEED, 'nightmare');
+    const s = playToReview(E2E_SHUTDOWN_SEED, 'hard');
     expect(s.phase).toBe('quarterReview');
     expect(['shutdown', 'reorg_required', 'missed_crisis']).toContain(s.quarterReview?.outcome);
   });

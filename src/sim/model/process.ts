@@ -61,12 +61,29 @@ export const REVIEW_HP_COST = 1.6;
 /** 1 tick あたりのシニア体力回復。 */
 export const REVIEW_HP_REGEN = 0.7;
 
-/** 障害 1 件の鎮火に要するシニア体力。 */
-export const INCIDENT_HP_COST = 8;
-/** これ未満の体力で障害が起きると鎮火できず延焼する閾値。 */
+/**
+ * 障害 1 件の自動鎮火（タイマー切れをシニアが総出で消す）に要するシニア体力。
+ * 緊急対応（⚡1 + HP2）で先手を打つより大幅に高くつく＝放置の代償（第6.3）。
+ */
+export const INCIDENT_HP_COST = 12;
+/** これ未満の体力でタイマーが切れると鎮火できず延焼する閾値。 */
 export const INCIDENT_CONTAIN_HP = 12;
 /** 延焼 1 件で増える技術的負債。 */
 export const DEBT_PER_SPREAD = 6;
+/**
+ * 炎上タイマー: 点火から自動鎮火/延焼までの猶予 tick（第6.3）。
+ * この間に緊急対応（firefight）で鎮火すれば、安く済みコンボも守られる。
+ */
+export const BURN_TICKS = 35;
+/** 延焼時の士気低下。 */
+export const SPREAD_MORALE_COST = 5;
+/**
+ * 火が燃えている間の Review スループット倍率（シニアが火事対応に気を取られる）。
+ * 放置すると渋滞が育つため、「今すぐ消すか、レビューを止めるか」の即時判断を生む。
+ */
+export const BURNING_REVIEW_SLOWDOWN = 0.65;
+/** 火が燃えている間のシニア体力自然回復の倍率（気が休まらない）。 */
+export const BURNING_REGEN_MUL = 0.5;
 
 /** Rework の所要 tick。 */
 export const REWORK_TICKS = 4;

@@ -68,6 +68,17 @@ export function activeIncidents(sprint: SprintState): Task[] {
   return sprint.tasks.filter((t) => t.lane === 'rework' && t.incident);
 }
 
+/** 最も猶予が短い（延焼が近い）燃焼中タスク。緊急対応のターゲット。 */
+export function mostUrgentIncident(sprint: SprintState): Task | undefined {
+  let urgent: Task | undefined;
+  for (const t of activeIncidents(sprint)) {
+    if (!urgent || (t.burnTicksLeft ?? Infinity) < (urgent.burnTicksLeft ?? Infinity)) {
+      urgent = t;
+    }
+  }
+  return urgent;
+}
+
 /**
  * 各アクションの効果。`true` を返すと発動成立（コスト消費）、
  * `false`（対象なし）ならコストを消費しない。
@@ -93,13 +104,16 @@ const EFFECTS: Record<ActionId, (s: SprintState, o: OrgState, r: Rng, tick: numb
     return true;
   },
 
-  // 緊急対応: 燃えているタスクを 1 件、延焼前に鎮火して Review へ戻す。
+  // 緊急対応: 最も延焼が近い火を 1 件、タイマーが切れる前に鎮火して Review へ戻す。
+  // 自動鎮火（HP 大量消費・コンボ喪失）より遥かに安く、コンボも守られる（第6.3）。
   firefight(sprint, org) {
-    const fire = activeIncidents(sprint)[0];
+    const fire = mostUrgentIncident(sprint);
     if (!fire) return false;
     fire.incident = false;
+    delete fire.burnTicksLeft;
     fire.lane = 'review';
     fire.progress = 0;
+    sprint.metrics.contained += 1;
     org.seniorHp = clamp(org.seniorHp - FIREFIGHT_HP_COST, 0, 100);
     return true;
   },
@@ -178,6 +192,7 @@ export function applyAction(
   sprint.cooldowns[id] = def.cooldownTicks;
   sprint.metrics.interventionsUsed += 1;
   sprint.metrics.focusSpent += def.cost;
+  sprint.metrics.actionCounts[id] = (sprint.metrics.actionCounts[id] ?? 0) + 1;
   addComboGauge(sprint, def.gauge);
   return { ok: true };
 }

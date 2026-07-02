@@ -120,6 +120,12 @@ export interface Task {
   wasReworked: boolean;
   /** 障害化して鎮火/対応中か（炎上エフェクト）。 */
   incident: boolean;
+  /**
+   * 炎上タイマーの残り tick（第6.3）。点火時に設定され、0 になる前に
+   * 緊急対応で鎮火しないと自動鎮火（シニアHP大量消費）か延焼へ至る。
+   * 燃えていないタスクでは undefined。
+   */
+  burnTicksLeft?: number;
   /** 技術的負債化したか（黒）。 */
   debt: boolean;
   /** PR分割/タスク差配で「捌きやすく」された印（手戻り率を下げる。第6.1）。 */
@@ -195,6 +201,8 @@ export interface SprintMetrics {
   interventionsUsed: number;
   /** 消費した集中力の累計。 */
   focusSpent: number;
+  /** アクション種別ごとの発動回数（リザルトの介入内訳・称号判定用。第4.6）。 */
+  actionCounts: Partial<Record<ActionId, number>>;
 }
 
 /** スプリント全体の状態。 */
@@ -240,6 +248,8 @@ export interface SprintResult {
   spread: number;
   /** シニア体力の増減（end - start。多くは負）。 */
   seniorHpDelta: number;
+  /** アクション種別ごとの発動回数（介入内訳の表示用。第4.6）。 */
+  actionCounts: Partial<Record<ActionId, number>>;
   /** 評価（S/A/B/C/D）。 */
   grade: string;
   /** 称号（SPEC 第4.6 の例から導出）。 */

@@ -40,8 +40,10 @@ export interface GameHandle {
   startRun(difficulty?: DifficultyId, trials?: string[], seed?: string): RunState;
   /** 本日（または指定 UTC 日）のデイリーランを開始する（第23章）。 */
   startDailyRun(dateStr?: string): RunState;
-  /** マップ上のノードへ進入する。 */
-  enterNode(id: string): RunState;
+  /** 編成フェーズ（setup / setup-pre）から次スプリントを開始する。 */
+  beginSetupSprint(): RunState;
+  /** 提示中ビートを解決する（判定は引数なし、選択は index）。 */
+  resolveBeat(choiceIndex?: number): RunState;
   /** 指定 ms ぶんスプリントを手動で前進させる。 */
   step(ms: number): RunState;
   /** 介入アクションを発動する（第6章）。 */
@@ -54,10 +56,8 @@ export interface GameHandle {
   skipDraft(): RunState;
   /** 進化ノードを解放する。 */
   unlockEvolution(id: string): RunState;
-  /** 進化フェーズを終えてマップへ戻る。 */
+  /** 進化フェーズを終えて次のビートへ進む。 */
   finishEvolution(): RunState;
-  /** イベントの選択肢を選ぶ。 */
-  chooseEvent(index: number): RunState;
   /** ショップでカードを買う。 */
   buyShopCard(defId: string): RunState;
   /** ショップでレリックを買う。 */
@@ -192,10 +192,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
       return engine.snapshot();
     },
-    enterNode(id) {
-      engine.enterNode(id);
+    beginSetupSprint() {
+      engine.beginSetupSprint();
       bump();
       return engine.snapshot();
+    },
+    resolveBeat(choiceIndex) {
+      engine.resolveBeat(choiceIndex);
+      bump();
+      return after();
     },
     step(ms) {
       engine.step(ms);
@@ -231,11 +236,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       engine.finishEvolution();
       bump();
       return engine.snapshot();
-    },
-    chooseEvent(index) {
-      engine.chooseEvent(index);
-      bump();
-      return after();
     },
     buyShopCard(defId) {
       engine.buyShopCard(defId);

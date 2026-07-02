@@ -6,7 +6,7 @@ type GameWindow = Window & {
     pause(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
-    enterNode(id: string): RunState;
+    beginSetupSprint(): RunState;
     step(ms: number): RunState;
   };
 };
@@ -16,9 +16,9 @@ test('タイトル画面が表示され、難易度を選んでランを開始�
   await expect(page.getByTestId('title')).toBeVisible();
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-run').click();
-  await expect(page.getByTestId('run-map')).toBeVisible();
-  // 第0層に選べるノードがある。
-  await expect(page.locator('.map-node.available').first()).toBeVisible();
+  // ラン開始直後は編成（Setup）。スプリント開始ボタンが出る。
+  await expect(page.getByTestId('setup')).toBeVisible();
+  await expect(page.getByTestId('begin-sprint')).toBeVisible();
 });
 
 test('?seed= が UI と window.game に反映される（決定論フック）', async ({ page }) => {
@@ -29,11 +29,11 @@ test('?seed= が UI と window.game に反映される（決定論フック）',
   expect(seed).toBe('playwright-smoke');
 });
 
-test('ノードに進入するとスプリント盤面（HUD と5レーン）が表示される', async ({ page }) => {
+test('スプリントを開始すると盤面（HUD と5レーン）が表示される', async ({ page }) => {
   await page.goto('/?seed=board');
   await page.getByTestId('difficulty-easy').click();
   await page.getByTestId('start-run').click();
-  await page.locator('.map-node.available').first().click();
+  await page.getByTestId('begin-sprint').click();
 
   await expect(page.getByTestId('hud')).toBeVisible();
   await expect(page.getByTestId('board')).toBeVisible();
@@ -48,8 +48,8 @@ test('window.game.step でスプリントが決定論的に進む（同一 seed 
     const g = (window as GameWindow).game!;
     const once = (): number => {
       g.pause();
-      const s = g.startRun('normal', [], 'deterministic');
-      g.enterNode(s.available[0]);
+      g.startRun('normal', [], 'deterministic');
+      g.beginSetupSprint();
       const after = g.step(2000);
       return after.sprint ? after.sprint.metrics.doneCount : -1;
     };

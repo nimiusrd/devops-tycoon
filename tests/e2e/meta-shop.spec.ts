@@ -9,7 +9,7 @@ type GameWindow = Window & {
     getMeta(): MetaState;
     purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
-    enterNode(id: string): RunState;
+    beginSetupSprint(): RunState;
     step(ms: number): RunState;
     acknowledgeResult(): RunState;
     chooseCard(defId: string): RunState;
@@ -55,8 +55,8 @@ test('メタショップ購入が次ランのドラフトプールへ反映さ�
     while (s.phase !== 'draft' && s.status === 'playing' && guard < 5000) {
       guard += 1;
       switch (s.phase) {
-        case 'map':
-          g.enterNode(s.available[0]);
+        case 'setup':
+          g.beginSetupSprint();
           break;
         case 'sprint':
           g.step(1_000_000);

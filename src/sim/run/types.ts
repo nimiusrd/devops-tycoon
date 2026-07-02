@@ -13,23 +13,59 @@ import type { IndustryState, OrgScaleState, RankingKind, ZoomState } from '../or
 export type { CardEffects, CardInstance } from '../types';
 export type { RosterState, GrowthOutcome } from '../member/types';
 
-/** マップのノード種別（SPEC 第4.4 の表）。高負荷＝elite。 */
-export type NodeType = 'normal' | 'elite' | 'event' | 'shop' | 'rest' | 'boss';
+/**
+ * スプリント種別（通常 / 高負荷＝elite / ボス）。
+ * 旧 `MapNode.type` の代替で、トラック上のスプリント 1 件の性質を表す。
+ */
+export type SprintKind = 'normal' | 'elite' | 'boss';
 
 /** ランの進行フェーズ（XState の状態と一致させる。第3章）。 */
 export type RunPhase =
   | 'title'
-  | 'map'
+  | 'setup'
   | 'sprint'
   | 'result'
   | 'draft'
   | 'evolution'
-  | 'event'
+  | 'beat'
   | 'shop'
   | 'rest'
   | 'quarterReview'
   | 'won'
   | 'lost';
+
+/**
+ * 次スプリント限定の一時効果（一回消費。org の恒久変化とは別軸）。
+ * 判定/選択イベントが `EventOutcome.nextSprint` で積み、`beginSprint` が消費する。
+ */
+export interface SprintModifierDelta {
+  /** レビュー待ちの初期負荷加算（巨大 AI 生成 PR など）。 */
+  reviewLoadAdd?: number;
+  /** 手戻り率の加算（誤生成など。0..1）。 */
+  reworkRateAdd?: number;
+  /** タスク数の倍率（休息で出荷を手放す等。1 未満で減少）。 */
+  taskCountMul?: number;
+}
+
+/**
+ * 組織状態の信号（イベント重み付けのトリガ。第4節）。
+ * org/totals から 0..1 の強度で算出し、イベント定義の `triggers` でスケールする。
+ */
+export type EventSignal =
+  | 'techDebtHigh'
+  | 'aiDependencyHigh'
+  | 'aiLiteracyLow'
+  | 'seniorHpLow'
+  | 'moraleLow'
+  | 'qualityLow'
+  | 'testCoverageHigh'
+  | 'documentationHigh';
+
+/** 提示中のビート（スプリント間イベント）。 */
+export interface BeatState {
+  eventId: string;
+  kind: 'judgment' | 'decision';
+}
 
 /** ランの決着（第14 / 第15章）。 */
 export type RunStatus = 'playing' | 'won' | 'lost';
@@ -125,25 +161,6 @@ export type DiagnosisType =
   | 'seniorSacrifice'
   | 'documentationKingdom';
 
-/** マップ上の 1 ノード。層（col）と行（row）で配置し、`next` で次層へつなぐ。 */
-export interface MapNode {
-  id: string;
-  type: NodeType;
-  /** 層（0 起点。最終層はボス）。 */
-  col: number;
-  /** 層内の行位置（描画用）。 */
-  row: number;
-  /** 次の層で接続するノード ID 群（分岐ルート）。 */
-  next: string[];
-}
-
-/** 生成済みのランマップ（層状の有向非巡回グラフ）。 */
-export interface RunMap {
-  nodes: MapNode[];
-  /** 層数（ボス層を含む）。 */
-  columns: number;
-}
-
 /** 進化ツリーの解放状態（SPEC 第4.5 / 第11章）。 */
 export interface EvolutionState {
   /** 未割り振りの進化ポイント。 */
@@ -193,15 +210,20 @@ export interface RunState {
   winType?: WinType;
   loseReason?: LoseReason;
 
-  map: RunMap;
-  /** このランのボス（マップ表示用）。 */
+  /** このランのボス（四半期最終スプリント）。 */
   bossId: string;
-  /** 現在地のノード ID（未進入は null）。 */
-  position: string | null;
-  /** 通過済みノード ID。 */
-  visited: string[];
-  /** 次に選べるノード ID（分岐）。 */
-  available: string[];
+  /** 1 四半期あたりのスプリント数（最終インデックスがボス）。 */
+  sprintsPerQuarter: number;
+  /** 当四半期で進行中／直近に開始したスプリントの 1 起点インデックス（0=未開始）。 */
+  sprintIndexInQuarter: number;
+  /** 提示中のビート（beat フェーズのみ。null=非提示）。 */
+  beat: BeatState | null;
+  /** 次スプリントの種別（ビートの選択／ボス強制で確定。一回消費）。 */
+  pendingSprintKind: SprintKind;
+  /** 進行中スプリントの種別（完了時の評価・進化ポイントまで保持）。 */
+  currentSprintKind: SprintKind;
+  /** 次スプリント限定の一時効果（beginSprint で消費）。 */
+  pendingSprintModifiers: SprintModifierDelta;
 
   org: OrgState;
   deck: CardInstance[];
@@ -215,16 +237,14 @@ export interface RunState {
   /** 予算（ショップ・採用に使う。第4.4 / 第4.7）。 */
   budget: number;
 
-  /** 進行中スプリントのノード ID（sprint フェーズのみ）。 */
-  activeNodeId: string | null;
+  /** 進行中スプリントの合成 ID（例: `q1-s3`。RNG キー・表示用）。 */
+  currentSprintId: string | null;
   /** 進行中スプリント状態（sprint フェーズのみ）。 */
   sprint: SprintState | null;
   /** 直近スプリントのリザルト（result/draft フェーズで表示）。 */
   lastResult: SprintResult | null;
   /** ドラフト候補（draft フェーズのみ）。 */
   draft: string[] | null;
-  /** 進入中のイベント ID（event フェーズのみ）。 */
-  eventId: string | null;
   /** ショップの陳列（shop フェーズのみ）。 */
   shop: ShopOffer | null;
   /** 現在の組織タイプ診断（第13章）。 */
@@ -234,6 +254,8 @@ export interface RunState {
   sprintsPlayed: number;
   /** ランを通じての累積メトリクス（診断・勝敗の母数）。 */
   totals: RunTotals;
+  /** 当四半期のみの累積メトリクス（四半期レビュー KPI・進捗表示の母数）。 */
+  quarterTotals: RunTotals;
   /** 残業号令・アンドンを一度でも使ったか（ノーダメ勝利判定。第14章）。 */
   usedHeavyActions: boolean;
 

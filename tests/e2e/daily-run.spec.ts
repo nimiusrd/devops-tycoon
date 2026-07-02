@@ -7,7 +7,7 @@ test('タイトルからデイリーランを開始できる', async ({ page }) 
   await expect(page.getByTestId('daily-run-section')).toBeVisible();
   await page.getByTestId('start-daily-run').click();
 
-  await expect(page.getByTestId('run-map')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
 
   const info = await page.evaluate(() => {
     const g = window.game!;
@@ -15,7 +15,7 @@ test('タイトルからデイリーランを開始できる', async ({ page }) 
     return { runKind: s.runKind, dailyDate: s.dailyDate, seed: s.seed, phase: s.phase };
   });
 
-  expect(info.phase).toBe('map');
+  expect(info.phase).toBe('setup');
   expect(info.runKind).toBe('daily');
   expect(info.dailyDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   expect(info.seed).toBe(dailySeed(info.dailyDate!));

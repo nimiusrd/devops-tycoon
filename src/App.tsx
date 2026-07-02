@@ -11,9 +11,9 @@ import { Hud } from './ui/Hud';
 import {
   Breadcrumb,
   AchievementCollectionScreen,
+  BeatScreen,
   DeptScreen,
   DraftScreen,
-  EventScreen,
   EvolutionScreen,
   FormationScreen,
   IndustryScreen,
@@ -21,9 +21,9 @@ import {
   OrgScreen,
   RestScreen,
   RunBar,
-  RunMapScreen,
   RunResultScreen,
   QuarterReviewScreen,
+  SetupScreen,
   ShopScreen,
   SprintResultScreen,
   SprintScreen,
@@ -126,10 +126,17 @@ export default function App({ game }: AppProps) {
         onOpenOrg={() => run.zoomTo('company')}
       />
 
-      {phase === 'map' && <RunMapScreen state={state} onEnter={run.enterNode} />}
+      {phase === 'setup' && (
+        <SetupScreen
+          state={state}
+          onAssign={run.assignMember}
+          onToggleAi={run.setMemberAi}
+          onBegin={run.beginSetupSprint}
+        />
+      )}
       {showSprint && <SprintScreen state={state} onDispatch={run.dispatch} />}
 
-      {phase === 'event' && <EventScreen state={state} onChoose={run.chooseEvent} />}
+      {phase === 'beat' && <BeatScreen state={state} onResolve={run.resolveBeat} />}
       {phase === 'shop' && (
         <ShopScreen
           state={state}

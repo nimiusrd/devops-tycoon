@@ -10,8 +10,8 @@ function reachFirstDraft(e: RunEngine): string[] {
   while (s.phase !== 'draft' && s.status === 'playing' && guard < 5000) {
     guard += 1;
     switch (s.phase) {
-      case 'map':
-        e.enterNode(s.available[0]);
+      case 'setup':
+        e.beginSetupSprint();
         break;
       case 'sprint':
         e.step(1_000_000);

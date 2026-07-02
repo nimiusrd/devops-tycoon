@@ -23,14 +23,14 @@ export interface UseRun {
   meta: MetaState;
   startRun: (difficulty: DifficultyId, trials: string[]) => void;
   startDailyRun: (dateStr?: string) => void;
-  enterNode: (id: string) => void;
+  beginSetupSprint: () => void;
+  resolveBeat: (choiceIndex?: number) => void;
   dispatch: (id: ActionId) => InterventionOutcome;
   acknowledgeResult: () => void;
   chooseCard: (defId: string) => void;
   skipDraft: () => void;
   unlockEvolution: (id: string) => void;
   finishEvolution: () => void;
-  chooseEvent: (index: number) => void;
   buyShopCard: (defId: string) => void;
   buyShopRelic: () => void;
   leaveShop: () => void;
@@ -75,14 +75,17 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const startDailyRun = useCallback((dateStr?: string) => void game.startDailyRun(dateStr), [game]);
-  const enterNode = useCallback((id: string) => void game.enterNode(id), [game]);
+  const beginSetupSprint = useCallback(() => void game.beginSetupSprint(), [game]);
+  const resolveBeat = useCallback(
+    (choiceIndex?: number) => void game.resolveBeat(choiceIndex),
+    [game],
+  );
   const dispatch = useCallback((id: ActionId) => game.dispatch(id), [game]);
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
   const chooseCard = useCallback((defId: string) => void game.chooseCard(defId), [game]);
   const skipDraft = useCallback(() => void game.skipDraft(), [game]);
   const unlockEvolution = useCallback((id: string) => void game.unlockEvolution(id), [game]);
   const finishEvolution = useCallback(() => void game.finishEvolution(), [game]);
-  const chooseEvent = useCallback((index: number) => void game.chooseEvent(index), [game]);
   const buyShopCard = useCallback((defId: string) => void game.buyShopCard(defId), [game]);
   const buyShopRelic = useCallback(() => void game.buyShopRelic(), [game]);
   const leaveShop = useCallback(() => void game.leaveShop(), [game]);
@@ -122,14 +125,14 @@ export function useRun(game: GameHandle): UseRun {
     meta,
     startRun,
     startDailyRun,
-    enterNode,
+    beginSetupSprint,
+    resolveBeat,
     dispatch,
     acknowledgeResult,
     chooseCard,
     skipDraft,
     unlockEvolution,
     finishEvolution,
-    chooseEvent,
     buyShopCard,
     buyShopRelic,
     leaveShop,

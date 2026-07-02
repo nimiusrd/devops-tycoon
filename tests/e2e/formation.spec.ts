@@ -9,15 +9,14 @@ type GameWindow = Window & {
   };
 };
 
-test('編成画面を開き、メンバーの配置と AI 配布を切り替えられる（第12章）', async ({ page }) => {
+test('編成（Setup）画面でメンバーの配置と AI 配布を切り替えてスプリントを開始できる（第12章）', async ({
+  page,
+}) => {
   await page.goto('/?seed=formation-smoke');
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-run').click();
-  await expect(page.getByTestId('run-map')).toBeVisible();
-
-  // ランバーの編成ボタンから編成画面を開く。
-  await page.getByTestId('open-formation').click();
-  await expect(page.getByTestId('formation')).toBeVisible();
+  // ラン開始直後は編成（Setup）。
+  await expect(page.getByTestId('setup')).toBeVisible();
 
   // 初期ロスターの3メンバーが表示される（m0/m1/m2）。
   await expect(page.getByTestId('formation-member-m0')).toBeVisible();
@@ -46,10 +45,9 @@ test('編成画面を開き、メンバーの配置と AI 配布を切り替え�
   );
   expect(after).toBe(!before);
 
-  // 閉じるとマップへ戻る。
-  await page.getByTestId('formation-close').click();
-  await expect(page.getByTestId('formation')).toBeHidden();
-  await expect(page.getByTestId('run-map')).toBeVisible();
+  // 編成を確定してスプリントを開始する。
+  await page.getByTestId('begin-sprint').click();
+  await expect(page.getByTestId('board')).toBeVisible();
 });
 
 test('ランバーにメンバーの表情が表示される（表情演出 / 第12.2）', async ({ page }) => {

@@ -9,7 +9,8 @@
 export { CARD_DEFS, getCard, RARITY_LABEL, RARITY_WEIGHT } from './cards';
 export { ACTION_DEFS, getAction } from './actions';
 export { RELIC_DEFS, getRelic } from './relics';
-export { EVENT_DEFS, getEvent } from './events';
+export { EVENT_DEFS, getEvent, effectiveKind } from './events';
+export type { EventDef, EventChoice, EventOutcome } from './events';
 export { BOSS_DEFS, getBoss } from './bosses';
 export { EVOLUTION_NODES, getEvolutionNode, BRANCH_LABEL } from './evolution';
 export { DIFFICULTY_DEFS, getDifficulty, TRIAL_DEFS, getTrial } from './difficulties';

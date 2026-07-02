@@ -8,12 +8,12 @@ import {
 } from '../../src/state/meta';
 
 describe('デイリーラン（spec-mapping §2 M7）', () => {
-  it('startDailyRun は固定条件と日付 seed でマップへ入る', () => {
+  it('startDailyRun は固定条件と日付 seed で編成（setup）へ入る', () => {
     const game = createGame({ seed: 'title' });
     const dateStr = '2026-06-20';
     const s = game.startDailyRun(dateStr);
 
-    expect(s.phase).toBe('map');
+    expect(s.phase).toBe('setup');
     expect(s.runKind).toBe('daily');
     expect(s.dailyDate).toBe(dateStr);
     expect(s.seed).toBe(dailySeed(dateStr));
@@ -32,8 +32,8 @@ describe('デイリーラン（spec-mapping §2 M7）', () => {
       while (s.status === 'playing' && guard < 5000) {
         guard += 1;
         switch (s.phase) {
-          case 'map':
-            game.enterNode(s.available[0]);
+          case 'setup':
+            game.beginSetupSprint();
             break;
           case 'sprint':
             game.step(1_000_000);
@@ -48,8 +48,8 @@ describe('デイリーラン（spec-mapping §2 M7）', () => {
           case 'evolution':
             game.finishEvolution();
             break;
-          case 'event':
-            game.chooseEvent(0);
+          case 'beat':
+            game.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
             break;
           case 'shop':
             game.leaveShop();

@@ -9,7 +9,7 @@
 > 未充足箇所の一覧は同 §2 に集約している。本ファイルは「繰り越し・未解決のやること」に絞る。
 
 > 基本ループ再設計（ノード選択廃止→四半期トラック＋イベント判定）は **RI-33 として実装済み**
-> （PR #48 マージ）。詳細設計は独立ファイル [run-loop-redesign.md](./run-loop-redesign.md) を参照する。
+> （PR #48 マージ）。詳細は RI-33 の項と実装コード（`src/sim/run/`）を参照する。
 
 ## 運用ルール
 
@@ -301,12 +301,13 @@ outcome をメタ進行（`state/meta`）の報酬・解放条件へ接続する
 
 #### RI-33 ノード選択廃止→イベント判定化【エピック】 — 優先度:高 / 実装済み
 
-> **実装済み**: 具体仕様は [run-loop-redesign.md](./run-loop-redesign.md)（四半期トラック＋
-> 混合ビート＋組織状態重み付け）。分岐マップ（`map.ts`/`RunMapScreen`/`enterNode`）を撤去し、
+> **実装済み**（PR #48）: 分岐マップ（`map.ts`/`RunMapScreen`/`enterNode`）を撤去し、
 > 固定トラック（`SPRINTS_PER_QUARTER`、最終がボス）＋スプリント間ビート（判定/選択の混合・
 > 組織状態で重み付け）へ置換した。公開契約は `enterNode` を撤去し `beginSetupSprint`/`resolveBeat`
 > を追加。判定/選択・ボス優先・一回消費・次スプリント一時効果・出荷の当期反映・信頼の代償・
-> ハード敗北を Vitest / Playwright で検証済み。以下は当時の課題メモ（記録として残す）。
+> ハード敗北を Vitest / Playwright で検証済み。実装は `src/sim/run/engine.ts`・`events.ts`・
+> `src/data/events.ts`・`src/ui/{SetupScreen,BeatScreen}.tsx` を正とする。
+> 以下は当時の課題メモ（記録として残す）。
 
 - **課題**: メイン画面（ラン中）はノード選択（ランマップ）が大半を占める。戦略的要素はあるが、
   **状況をコントロールできすぎている**。Slay the Spire は「リターンを得るためにリスクを取る」

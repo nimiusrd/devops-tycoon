@@ -5,8 +5,7 @@
 
 関連ドキュメント:
 [architecture.md](./architecture.md)（技術スタック・レイヤ分離・横断規律） /
-[remaining-issues.md](./remaining-issues.md)（プロジェクト残課題リスト＝実装後の繰り越し・未解決事項＋モックアップ乖離・SPEC 未充足の横断バックログ） /
-[run-loop-redesign.md](./run-loop-redesign.md)（基本ループ再設計・実装済み）。
+[remaining-issues.md](./remaining-issues.md)（プロジェクト残課題リスト＝実装後の繰り越し・未解決事項＋モックアップ乖離・SPEC 未充足の横断バックログ）。
 
 > 状態列の凡例:
 > - **✅ 実装済み** … SPEC の当該章の**中核要件**を満たし、残務がない（または軽微）。SPEC が描く理想の全要素を漏れなく実装済み、という意味ではない。
@@ -15,7 +14,7 @@
 >
 > 「🟡」は中核機能の欠落を意味しない。中核は動作しており、🟡 は
 > **SPEC 章を細部まで充足し切るには残務がある**ことを示す（追跡先は
-> [remaining-issues.md](./remaining-issues.md) / [run-loop-redesign.md](./run-loop-redesign.md)）。
+> [remaining-issues.md](./remaining-issues.md)）。
 
 ---
 
@@ -26,7 +25,7 @@
 | [1](../SPEC.md#1-企画概要) | 企画概要 | （企画文・実装対象なし） | — |
 | [2](../SPEC.md#2-コンセプト) | コンセプト（AI導入のコア因果） | `src/sim/sprint.ts`, `src/sim/model/process.ts` / `tests/unit/sprint.test.ts`, `process.test.ts` | ✅ |
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観の制約 | [architecture.md](./architecture.md) §4.5（イベント/ボス/敗北/称号の判断基準） | ✅ |
-| [3](../SPEC.md#3-ゲームの基本ループ) | ゲームの基本ループ | `src/state/runMachine.ts`, `src/sim/run/engine.ts` / `tests/unit/run-machine.test.ts`, `run-engine.test.ts`, `run-loop.test.ts` | ✅ 固定トラック（`SPRINTS_PER_QUARTER`、最終がボス）＋スプリント間ビートで実装（[run-loop-redesign.md](./run-loop-redesign.md)。分岐マップは撤去） |
+| [3](../SPEC.md#3-ゲームの基本ループ) | ゲームの基本ループ | `src/state/runMachine.ts`, `src/sim/run/engine.ts` / `tests/unit/run-machine.test.ts`, `run-engine.test.ts`, `run-loop.test.ts` | ✅ 固定トラック（`SPRINTS_PER_QUARTER`、最終がボス）＋スプリント間ビートで実装（分岐マップは撤去） |
 | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ) | メイン画面: 開発ライン | `src/ui/SprintScreen.tsx`, `src/ui/OfficeRoom.tsx`, `OfficeActors.tsx`, `src/render/taskView.ts` / `tests/unit/taskView.test.ts` | 🟡 8種のタスク見た目・レーン・介入バーは実装。§4.1 の「粒として流れるライン」は工程間が静的配置（山）で、ベルトコンベア状の流れ・渋滞の可視化は未実装（[remaining-issues.md](./remaining-issues.md) RI-05） |
 | [4.2](../SPEC.md#42-ステータス表示) | ステータス表示 | `src/ui/Hud.tsx`, `src/render/status.ts` / `tests/unit/status.test.ts` | ✅ |
 | [4.3](../SPEC.md#43-介入アクションバー) | 介入アクションバー | `src/ui/ActionBar.tsx`, `src/sim/actions.ts`, `src/data/actions.ts` / `tests/unit/actions.test.ts`, `tests/e2e/interventions.spec.ts` | ✅ |

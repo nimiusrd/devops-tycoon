@@ -4,7 +4,7 @@
  * 固定トラックのスプリントの合間に出る「判定イベント（自動適用）」と
  * 「選択イベント（リスク/リターンの 2〜3 択）」をデータ駆動で表す。
  * 効果の適用は `src/sim/run/events.ts`（純TS）。組織状態による重み付けは
- * `triggers`（信号→重み倍率）で表す（architecture §4.3 / run-loop-redesign §3〜4）。
+ * `triggers`（信号→重み倍率）で表す（architecture §4.3 / SPEC 第9章）。
  */
 import type {
   EventSignal,
@@ -58,7 +58,7 @@ export interface EventDef {
   tone: 'good' | 'bad' | 'joke';
   /**
    * 種別。未指定なら effectiveKind で既定解決（choices 長 1→judgment / 2 以上→decision）。
-   * judgment 定義は契約として必ず 'judgment' を明示する（run-loop-redesign §3.1）。
+   * judgment 定義は契約として必ず 'judgment' を明示する（SPEC 第9章）。
    */
   kind?: 'judgment' | 'decision';
   /** 抽選のベース重み（既定 1）。 */

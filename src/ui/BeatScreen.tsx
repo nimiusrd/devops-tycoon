@@ -7,7 +7,9 @@
  * 「予算で補強」「一息つく」は選択後にショップ/休息へ遷移する。
  */
 import { getEvent } from '../data/events';
+import { formatEventChoiceTags, formatEventOutcomeTags } from '../render/eventOutcomeView';
 import type { RunState } from '../sim/run/types';
+import { EffectTagList } from './EffectTagList';
 
 export interface BeatScreenProps {
   state: RunState;
@@ -27,7 +29,12 @@ export function BeatScreen({ state, onResolve }: BeatScreenProps) {
           <p className="result-eyebrow">JUDGMENT</p>
           <h2 className="event-title">{ev.title}</h2>
           <p className="event-prompt">{ev.prompt}</p>
-          {outcome && <p className="event-choice-desc">{outcome.description}</p>}
+          {outcome && (
+            <>
+              <EffectTagList tags={formatEventOutcomeTags(outcome.outcome)} />
+              {outcome.description && <p className="event-choice-desc">{outcome.description}</p>}
+            </>
+          )}
           <div className="event-choices">
             <button
               type="button"
@@ -59,7 +66,10 @@ export function BeatScreen({ state, onResolve }: BeatScreenProps) {
               onClick={() => onResolve(i)}
             >
               <span className="event-choice-label">{choice.label}</span>
-              <span className="event-choice-desc">{choice.description}</span>
+              <EffectTagList tags={formatEventChoiceTags(choice)} />
+              {choice.description && (
+                <span className="event-choice-desc">{choice.description}</span>
+              )}
             </button>
           ))}
         </div>

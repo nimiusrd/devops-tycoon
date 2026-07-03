@@ -91,17 +91,17 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '残業して間に合わせる',
-        description: '出荷 +30 / Morale -15 / シニアHP -10',
+        description: '短期間でデモ用の成果を積み上げる',
         outcome: { delivered: 30, morale: -15, seniorHp: -10 },
       },
       {
         label: 'スコープを削って出す',
-        description: '出荷 +10 / Tech Debt +5',
+        description: '機能を絞って最低限のデモを出す',
         outcome: { delivered: 10, techDebt: 5 },
       },
       {
         label: '正直に延期を交渉する',
-        description: '経営信頼 -8 / レリック「期待値マネジメント」を獲得',
+        description: '期待値を下げ、長期的な信頼を取りに行く',
         outcome: { grantRelic: 'expectation-mgmt', trust: { management: -8 } },
       },
     ],
@@ -114,12 +114,12 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: 'レビューして取り込む',
-        description: 'Test Coverage +12 / シニアHP -6',
+        description: '品質を担保しつつテスト資産を増やす',
         outcome: { testCoverage: 12, seniorHp: -6 },
       },
       {
         label: 'そのまま全部マージ',
-        description: 'Test Coverage +6 / Tech Debt +4',
+        description: 'スピード優先で取り込み、後から直す',
         outcome: { testCoverage: 6, techDebt: 4 },
       },
     ],
@@ -132,12 +132,12 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: 'シニアが気合いでレビュー',
-        description: '品質 +4 / シニアHP -14',
+        description: '一気にレビューを片付けるが消耗が激しい',
         outcome: { quality: 4, seniorHp: -14 },
       },
       {
         label: '分割を依頼する',
-        description: 'Morale -6 / レリック「小さく出す文化」を獲得',
+        description: '小さく出す文化をチームに浸透させる',
         outcome: { morale: -6, grantRelic: 'small-pr' },
       },
     ],
@@ -150,12 +150,12 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '権限を任せる',
-        description: 'AI Literacy +12 / Morale +8',
+        description: '現場の裁量を広げ、学習を加速させる',
         outcome: { aiLiteracy: 12, morale: 8 },
       },
       {
         label: 'ガイドラインを整備',
-        description: 'AI Literacy +8 / カード「AI利用ガイドライン」を獲得',
+        description: 'ルールを整え、安全に AI を使える土台を作る',
         outcome: { aiLiteracy: 8, grantCard: 'ai-guideline' },
       },
     ],
@@ -168,12 +168,12 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '号令に従う',
-        description: '出荷 +20 / AI依存度 +12 / 品質 -6',
+        description: '数字だけ追い、品質リスクを抱え込む',
         outcome: { delivered: 20, aiDependency: 12, quality: -6 },
       },
       {
         label: '健全な指標を提案する',
-        description: 'Morale +6 / レリック「一次情報主義」を獲得',
+        description: '一次情報を重視する文化を根付かせる',
         outcome: { morale: 6, grantRelic: 'primary-source' },
       },
     ],
@@ -186,12 +186,12 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '導入する',
-        description: '予算 -10 / レリック「ポストモーテム文化」を獲得',
+        description: '学びの場を設け、同じ失敗を繰り返さない',
         outcome: { budget: -10, grantRelic: 'postmortem' },
       },
       {
         label: '今は見送る',
-        description: '予算 +8',
+        description: '予算を温存し、当面は現状維持する',
         outcome: { budget: 8 },
       },
     ],
@@ -207,13 +207,13 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '前倒しで引き受ける（高負荷スプリント）',
-        description: '次スプリントが高負荷化（大出荷だが渋滞・炎上リスク）',
+        description: '大きな出荷チャンスだが、渋滞・炎上リスクも高い',
         outcome: {},
         leadsTo: 'sprint-elite',
       },
       {
         label: '通常スプリントで進める',
-        description: '出荷は控えめ＝四半期目標から遅れる / 経営信頼 -4',
+        description: '無理をせず、四半期目標とのバランスを取る',
         outcome: { trust: { management: -4 } },
         leadsTo: 'sprint',
       },
@@ -249,7 +249,7 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '休む（回復するが当期出荷を手放す）',
-        description: 'シニアHP回復・負債返済・カード強化など / 次スプリントの出荷減',
+        description: 'シニアHP回復・負債返済・カード強化などが選べる',
         outcome: { nextSprint: { taskCountMul: 0.7 } },
         leadsTo: 'rest',
       },
@@ -274,7 +274,7 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '了解',
-        description: '品質 -8 / Tech Debt +6 / Morale -4',
+        description: '潜在バグが顕在化し、品質と士気が揺らぐ',
         outcome: { quality: -8, techDebt: 6, morale: -4 },
       },
     ],
@@ -290,7 +290,7 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '了解',
-        description: '次スプリントのレビュー負荷 + / シニアHP -6',
+        description: 'レビュー待ちが膨れ上がり、次スプリントにも負荷が残る',
         outcome: { seniorHp: -6, nextSprint: { reviewLoadAdd: 4 } },
       },
     ],
@@ -306,7 +306,7 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '了解',
-        description: '次スプリントの手戻り率 + / 品質 -4',
+        description: '幻覚 API の修正で手戻りが増える',
         outcome: { quality: -4, nextSprint: { reworkRateAdd: 0.15 } },
       },
     ],
@@ -324,7 +324,7 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '了解',
-        description: 'シニアHP 大幅 - / Morale -6',
+        description: 'レビュー負荷が限界に達し、チーム全体が消耗する',
         outcome: { seniorHp: -28, morale: -6 },
       },
     ],
@@ -343,7 +343,7 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '了解',
-        description: 'レビュー停止によりラン終了',
+        description: 'レビューが完全に止まり、出荷ラインが機能停止する',
         outcome: { forceLose: 'reviewFreeze' },
       },
     ],
@@ -359,7 +359,7 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '了解',
-        description: '品質 +6 / Test Coverage +4',
+        description: 'CI とテスト整備の成果が出始める',
         outcome: { quality: 6, testCoverage: 4 },
       },
     ],
@@ -375,7 +375,7 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '了解',
-        description: 'AI Literacy +6 / 出荷 +8',
+        description: '整備したドキュメントが AI の精度向上に効く',
         outcome: { aiLiteracy: 6, delivered: 8 },
       },
     ],

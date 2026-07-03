@@ -112,4 +112,22 @@ describe('介入で結果が変わる（DoD: 操作で結果が変わる）', ()
       base.seniorHpDelta !== intervened.seniorHpDelta;
     expect(differs).toBe(true);
   });
+
+  it('リザルトに介入内訳が種類別に集計される', () => {
+    const e = createEngine({ seed: 'result-interventions', aiEnabled: true });
+    stepUntil(e, (s) => reviewCount(s) >= 4);
+    expect(e.dispatch('interruptReview').ok).toBe(true);
+    expect(e.dispatch('overtime').ok).toBe(true);
+
+    let guard = 0;
+    while (!e.isComplete() && guard < 100_000) {
+      e.step(100);
+      guard += 1;
+    }
+    expect(e.isComplete()).toBe(true);
+
+    const result = e.result();
+    expect(result.actionCounts.interruptReview).toBe(1);
+    expect(result.actionCounts.overtime).toBe(1);
+  });
 });

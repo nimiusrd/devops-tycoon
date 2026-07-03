@@ -2,7 +2,7 @@
  * スプリントリザルト画面（SPEC 第4.6）。
  *
  * Done / Delivered / Max Combo / AI Assisted / Review Queue Max / Rework /
- * Incidents / Senior HP と、評価・診断・称号を表示する。
+ * Incidents / Senior HP / 介入 と、評価・診断・称号を表示する。
  */
 import { getAction } from '../data/actions';
 import { rankLabel } from '../sim/member';

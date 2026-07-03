@@ -5,7 +5,9 @@
  */
 import { getCard, RARITY_LABEL } from '../data/cards';
 import { getRelic } from '../data/relics';
+import { formatCardDefTags, formatRelicDefTags } from '../render/eventOutcomeView';
 import type { RunState } from '../sim/run/types';
+import { EffectTagList } from './EffectTagList';
 
 export interface ShopScreenProps {
   state: RunState;
@@ -41,6 +43,10 @@ export function ShopScreen({ state, onBuyCard, onBuyRelic, onLeave }: ShopScreen
               >
                 <span className="shop-card-rarity">{RARITY_LABEL[def.rarity]}</span>
                 <span className="shop-card-name">{def.name}</span>
+                <EffectTagList
+                  tags={formatCardDefTags(def)}
+                  testId={`shop-card-effect-tags-${def.id}`}
+                />
                 <ul className="shop-card-desc">
                   {def.description.map((d, i) => (
                     <li key={i}>{d}</li>
@@ -62,6 +68,10 @@ export function ShopScreen({ state, onBuyCard, onBuyRelic, onLeave }: ShopScreen
             >
               <span className="shop-card-rarity">レリック</span>
               <span className="shop-card-name">🏛 {relic.name}</span>
+              <EffectTagList
+                tags={formatRelicDefTags(relic)}
+                testId={`shop-relic-effect-tags-${relic.id}`}
+              />
               <p className="shop-card-desc">{relic.description}</p>
               <span className="shop-card-cost">
                 {shop.relic.bought ? '購入済み' : `💰${shop.relic.cost}`}

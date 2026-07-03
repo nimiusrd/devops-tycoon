@@ -5,8 +5,10 @@
  * ノードのみ解放できる。ビルドの個性（どの会社になるか）がここで決まる。
  */
 import { BRANCH_LABEL, EVOLUTION_NODES, type EvolutionBranch } from '../data/evolution';
+import { formatEvolutionNodeTags } from '../render/eventOutcomeView';
 import { canUnlock, isUnlocked } from '../sim/run/evolution';
 import type { RunState } from '../sim/run/types';
+import { EffectTagList } from './EffectTagList';
 
 const BRANCH_ORDER: EvolutionBranch[] = ['dev', 'review', 'quality', 'ai', 'culture'];
 
@@ -47,6 +49,10 @@ export function EvolutionScreen({ state, onUnlock, onFinish }: EvolutionScreenPr
                     onClick={() => onUnlock(node.id)}
                   >
                     <span className="evo-name">{node.name}</span>
+                    <EffectTagList
+                      tags={formatEvolutionNodeTags(node)}
+                      testId={`evo-effect-tags-${node.id}`}
+                    />
                     <span className="evo-desc">{node.description}</span>
                     <span className="evo-cost">{unlocked ? '解放済み' : `⭐${node.cost}`}</span>
                   </button>

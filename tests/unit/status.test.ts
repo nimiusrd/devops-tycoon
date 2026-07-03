@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createEngine } from '../../src/sim/engine';
-import { deriveStatus, riskLevel } from '../../src/render/status';
+import {
+  deriveStatus,
+  diffHudMetricSnapshots,
+  hudMetricSnapshot,
+  riskLevel,
+  type HudMetricSnapshot,
+} from '../../src/render/status';
 import type { OrgState, SimState } from '../../src/sim/types';
 
 /** 既定スナップショットに org を上書きした SimState を作る。 */
@@ -36,5 +42,58 @@ describe('riskLevel（炎上リスク）', () => {
     expect(riskLevel(7, 80)).toBe('MED');
     expect(riskLevel(13, 80)).toBe('HIGH');
     expect(riskLevel(0, 20)).toBe('HIGH');
+  });
+});
+
+describe('HUD 指標差分', () => {
+  const baseSnapshot: HudMetricSnapshot = {
+    deliveryScore: 100,
+    seniorHpPct: 80,
+    aiDependencyPct: 30,
+    techDebt: 10,
+    morale: 60,
+  };
+
+  it('StatusView から差分検出用スナップショットを作る', () => {
+    const status = deriveStatus(withOrg({ aiDependency: 72, techDebt: 41, morale: 66 }));
+    expect(hudMetricSnapshot(status)).toEqual({
+      deliveryScore: status.deliveryScore,
+      seniorHpPct: status.seniorHpPct,
+      aiDependencyPct: 72,
+      techDebt: 41,
+      morale: 66,
+    });
+  });
+
+  it('良い指標の増加は positive、減少は negative にする', () => {
+    expect(
+      diffHudMetricSnapshots(baseSnapshot, {
+        ...baseSnapshot,
+        deliveryScore: 112,
+        seniorHpPct: 75,
+        morale: 68,
+      }),
+    ).toEqual([
+      { key: 'deliveryScore', label: '出荷ポイント', delta: 12, tone: 'positive' },
+      { key: 'seniorHpPct', label: 'シニア体力', delta: -5, tone: 'negative' },
+      { key: 'morale', label: '士気', delta: 8, tone: 'positive' },
+    ]);
+  });
+
+  it('AI依存度/技術的負債は増加を negative、減少を positive にする', () => {
+    expect(
+      diffHudMetricSnapshots(baseSnapshot, {
+        ...baseSnapshot,
+        aiDependencyPct: 38,
+        techDebt: 7,
+      }),
+    ).toEqual([
+      { key: 'aiDependencyPct', label: 'AI依存度', delta: 8, tone: 'negative' },
+      { key: 'techDebt', label: '技術的負債', delta: -3, tone: 'positive' },
+    ]);
+  });
+
+  it('変化がない指標は差分に含めない', () => {
+    expect(diffHudMetricSnapshots(baseSnapshot, { ...baseSnapshot })).toEqual([]);
   });
 });

@@ -30,6 +30,35 @@ export interface StatusView {
   risk: RiskLevel;
 }
 
+export type HudMetricKey =
+  | 'deliveryScore'
+  | 'seniorHpPct'
+  | 'aiDependencyPct'
+  | 'techDebt'
+  | 'morale';
+
+export type HudFeedbackTone = 'positive' | 'negative';
+
+export type HudMetricSnapshot = Record<HudMetricKey, number>;
+
+export interface HudMetricDelta {
+  key: HudMetricKey;
+  label: string;
+  delta: number;
+  tone: HudFeedbackTone;
+}
+
+const HUD_METRIC_LABELS: Record<HudMetricKey, string> = {
+  deliveryScore: '出荷ポイント',
+  seniorHpPct: 'シニア体力',
+  aiDependencyPct: 'AI依存度',
+  techDebt: '技術的負債',
+  morale: '士気',
+};
+
+/** 値が増えるほど悪化する HUD 指標。 */
+const INVERSE_HUD_METRICS = new Set<HudMetricKey>(['aiDependencyPct', 'techDebt']);
+
 /** 0..100 の値を閾値でグレード化する（高いほど良い指標向け）。 */
 function gradeOf(value: number): Grade {
   if (value >= 85) return 'S';
@@ -69,6 +98,38 @@ export function deriveStatusParts(org: OrgState, tasks: Task[]): StatusView {
     morale: Math.round(org.morale),
     risk: riskLevel(queue, org.seniorHp),
   };
+}
+
+/** HUD の差分検出に使う数値指標だけを抜き出す。 */
+export function hudMetricSnapshot(status: StatusView): HudMetricSnapshot {
+  return {
+    deliveryScore: status.deliveryScore,
+    seniorHpPct: status.seniorHpPct,
+    aiDependencyPct: status.aiDependencyPct,
+    techDebt: status.techDebt,
+    morale: status.morale,
+  };
+}
+
+/** 前回/今回の HUD 数値差分を、改善/悪化 tone 付きで返す。 */
+export function diffHudMetricSnapshots(
+  previous: HudMetricSnapshot,
+  current: HudMetricSnapshot,
+): HudMetricDelta[] {
+  const deltas: HudMetricDelta[] = [];
+  for (const key of Object.keys(current) as HudMetricKey[]) {
+    const delta = current[key] - previous[key];
+    if (delta === 0) continue;
+
+    const improved = INVERSE_HUD_METRICS.has(key) ? delta < 0 : delta > 0;
+    deltas.push({
+      key,
+      label: HUD_METRIC_LABELS[key],
+      delta,
+      tone: improved ? 'positive' : 'negative',
+    });
+  }
+  return deltas;
 }
 
 /** SimState から表示用ステータスを導出する（Phase 1/2 互換）。 */

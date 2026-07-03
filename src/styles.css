@@ -632,11 +632,6 @@ body {
   box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.5);
   text-align: center;
 }
-.sprint-result-card {
-  max-height: calc(100vh - 4rem);
-  max-height: calc(100dvh - 4rem);
-  overflow-y: auto;
-}
 .result-eyebrow {
   margin: 0;
   font-size: 0.75rem;

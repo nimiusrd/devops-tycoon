@@ -25,6 +25,8 @@ interface ActiveHudFeedback extends HudMetricDelta {
   id: number;
 }
 
+export type HudSnapshotScope = 'team' | 'orgScale';
+
 function GradeValue({ grade }: { grade: Grade }) {
   return <span className={`v grade grade-${grade}`}>{grade}</span>;
 }
@@ -59,30 +61,48 @@ export interface HudProps {
   orgScale?: OrgScaleState | null;
   /** 進行中スプリントのタスク（渋滞・リスク導出用。非スプリント時は空配列）。 */
   tasks: Task[];
+  /** 現場HUDと全社集約HUDのように、表示元が変わる境界では差分を出さない。 */
+  snapshotScope: HudSnapshotScope;
   /** HUD再マウント時にも直前の表示値との差分を出すための初期比較対象。 */
-  getInitialPreviousSnapshot?: () => HudMetricSnapshot | null;
+  getInitialPreviousSnapshot?: (scope: HudSnapshotScope) => HudMetricSnapshot | null;
   /** 親がHUD非表示期間をまたいで最後の表示値を保持するための通知。 */
-  onSnapshotCaptured?: (snapshot: HudMetricSnapshot) => void;
+  onSnapshotCaptured?: (snapshot: HudMetricSnapshot, scope: HudSnapshotScope) => void;
 }
 
 export function Hud({
   org,
   orgScale,
   tasks,
+  snapshotScope,
   getInitialPreviousSnapshot,
   onSnapshotCaptured,
 }: HudProps) {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const snapshot = useMemo(() => hudMetricSnapshot(s), [s]);
   const previousSnapshot = useRef<HudMetricSnapshot | null>(null);
+  const previousScope = useRef<HudSnapshotScope | null>(null);
   const nextFeedbackId = useRef(0);
   const feedbackTimers = useRef(new Set<ReturnType<typeof window.setTimeout>>());
   const [feedbacks, setFeedbacks] = useState<ActiveHudFeedback[]>([]);
 
   useEffect(() => {
-    const previous = previousSnapshot.current ?? getInitialPreviousSnapshot?.() ?? null;
+    const scopeChanged = previousScope.current !== null && previousScope.current !== snapshotScope;
+    const previous =
+      previousScope.current === snapshotScope
+        ? previousSnapshot.current
+        : previousScope.current === null
+          ? (getInitialPreviousSnapshot?.(snapshotScope) ?? null)
+          : null;
+    if (scopeChanged) {
+      for (const timer of feedbackTimers.current) {
+        window.clearTimeout(timer);
+      }
+      feedbackTimers.current.clear();
+      setFeedbacks([]);
+    }
+    previousScope.current = snapshotScope;
     previousSnapshot.current = snapshot;
-    onSnapshotCaptured?.(snapshot);
+    onSnapshotCaptured?.(snapshot, snapshotScope);
     if (!previous) return;
 
     const deltas = diffHudMetricSnapshots(previous, snapshot);
@@ -104,7 +124,7 @@ export function Hud({
       feedbackTimers.current.delete(timer);
     }, FEEDBACK_TTL_MS);
     feedbackTimers.current.add(timer);
-  }, [getInitialPreviousSnapshot, onSnapshotCaptured, snapshot]);
+  }, [getInitialPreviousSnapshot, onSnapshotCaptured, snapshot, snapshotScope]);
 
   useEffect(
     () => () => {

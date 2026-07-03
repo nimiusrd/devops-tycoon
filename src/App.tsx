@@ -8,7 +8,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { HudMetricSnapshot } from './render/status';
-import { Hud } from './ui/Hud';
+import { Hud, type HudSnapshotScope } from './ui/Hud';
 import {
   Breadcrumb,
   AchievementCollectionScreen,
@@ -53,24 +53,38 @@ export default function App({ game }: AppProps) {
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
-  const lastHudSnapshot = useRef<HudMetricSnapshot | null>(null);
-  const rememberHudSnapshot = useCallback((snapshot: HudMetricSnapshot) => {
-    lastHudSnapshot.current = snapshot;
+  const lastHudSnapshot = useRef<{
+    snapshot: HudMetricSnapshot;
+    scope: HudSnapshotScope;
+  } | null>(null);
+  const clearHudSnapshot = useCallback(() => {
+    lastHudSnapshot.current = null;
   }, []);
-  const getLastHudSnapshot = useCallback(() => lastHudSnapshot.current, []);
+  const rememberHudSnapshot = useCallback(
+    (snapshot: HudMetricSnapshot, scope: HudSnapshotScope) => {
+      lastHudSnapshot.current = { snapshot, scope };
+    },
+    [],
+  );
+  const getLastHudSnapshot = useCallback((scope: HudSnapshotScope) => {
+    return lastHudSnapshot.current?.scope === scope ? lastHudSnapshot.current.snapshot : null;
+  }, []);
 
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
   const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
     setFormationOpen(false);
+    clearHudSnapshot();
     run.startRun(difficulty, trials);
   };
   const startDailyRun = () => {
     setFormationOpen(false);
+    clearHudSnapshot();
     run.startDailyRun();
   };
   const newRun = () => {
     setFormationOpen(false);
+    clearHudSnapshot();
     run.newRun();
   };
 
@@ -122,6 +136,7 @@ export default function App({ game }: AppProps) {
     state.orgScale?.departments.find((d) => d.def.id === zoom.deptId) ??
     state.orgScale?.departments[0] ??
     null;
+  const hudSnapshotScope: HudSnapshotScope = state.orgScale ? 'orgScale' : 'team';
 
   return (
     <div className={`app ${screenTone(state)}`}>
@@ -129,6 +144,7 @@ export default function App({ game }: AppProps) {
         org={state.org}
         orgScale={state.orgScale}
         tasks={tasks}
+        snapshotScope={hudSnapshotScope}
         getInitialPreviousSnapshot={getLastHudSnapshot}
         onSnapshotCaptured={rememberHudSnapshot}
       />

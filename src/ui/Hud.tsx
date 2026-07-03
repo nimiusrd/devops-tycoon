@@ -5,11 +5,68 @@
  * 技術的負債・士気を表示し、炎上リスクをチップで示す。
  * ラン中は組織状態（持続）と進行中スプリントのタスクから導出する（第22.2）。
  */
-import { deriveStatusParts, type Grade } from '../render/status';
+import { deriveHudMetrics, type Grade, type StatusMetricView } from '../render/status';
 import type { OrgState, Task } from '../sim/types';
 
 function GradeValue({ grade }: { grade: Grade }) {
   return <span className={`v grade grade-${grade}`}>{grade}</span>;
+}
+
+function MetricValue({ metric }: { metric: StatusMetricView }) {
+  if (typeof metric.value === 'string') return <GradeValue grade={metric.value} />;
+
+  return (
+    <div
+      className="v"
+      data-testid={
+        metric.id === 'delivery'
+          ? 'stat-delivery'
+          : metric.id === 'aiDependency'
+            ? 'stat-ai-dependency'
+            : undefined
+      }
+    >
+      {metric.value}
+      {metric.unit && <small>{metric.unit}</small>}
+    </div>
+  );
+}
+
+function HudStat({ metric }: { metric: StatusMetricView }) {
+  const valueText = `${metric.value}${metric.unit ?? ''}`;
+  return (
+    <section
+      className={`stat stat-${metric.id} stat-tone-${metric.tone}`}
+      data-testid={`hud-${metric.id}`}
+      data-tone={metric.tone}
+      title={metric.help}
+      aria-label={`${metric.label}: ${valueText}。${metric.directionLabel}。${metric.help}`}
+    >
+      <div className="stat-head">
+        <div className="stat-label">
+          <span className="stat-icon" aria-hidden="true">
+            {metric.icon}
+          </span>
+          <span className="k">{metric.label}</span>
+        </div>
+        <span className={`direction-chip direction-${metric.direction}`}>
+          {metric.directionLabel}
+        </span>
+      </div>
+      <MetricValue metric={metric} />
+      <div className="stat-detail">{metric.detail}</div>
+      {metric.barPct !== undefined && metric.fillClass && (
+        <div className="bar">
+          <i className={metric.fillClass} style={{ width: `${metric.barPct}%` }} />
+        </div>
+      )}
+      {metric.risk && (
+        <div className={`risk-chip risk-${metric.risk}`} data-testid="risk">
+          炎上 {metric.risk}
+        </div>
+      )}
+    </section>
+  );
 }
 
 export interface HudProps {
@@ -19,61 +76,12 @@ export interface HudProps {
 }
 
 export function Hud({ org, tasks }: HudProps) {
-  const s = deriveStatusParts(org, tasks);
+  const metrics = deriveHudMetrics(org, tasks);
   return (
     <header className="hud" data-testid="hud">
-      <div className="stat">
-        <div className="k">出荷ポイント</div>
-        <div className="v" data-testid="stat-delivery">
-          {s.deliveryScore} <small>pt</small>
-        </div>
-      </div>
-      <div className="stat">
-        <div className="k">開発速度</div>
-        <GradeValue grade={s.devSpeed} />
-      </div>
-      <div className="stat">
-        <div className="k">レビュー耐性</div>
-        <GradeValue grade={s.reviewCapacity} />
-      </div>
-      <div className="stat">
-        <div className="k">品質</div>
-        <GradeValue grade={s.quality} />
-      </div>
-      <div className="stat">
-        <div className="k">シニア体力</div>
-        <div className="v">
-          {s.seniorHpPct}
-          <small>%</small>
-        </div>
-        <div className="bar">
-          <i className="fill-hp" style={{ width: `${s.seniorHpPct}%` }} />
-        </div>
-      </div>
-      <div className="stat">
-        <div className="k">AI依存度</div>
-        <div className="v" data-testid="stat-ai-dependency">
-          {s.aiDependencyPct}
-          <small>%</small>
-        </div>
-        <div className="bar">
-          <i className="fill-ai" style={{ width: `${s.aiDependencyPct}%` }} />
-        </div>
-      </div>
-      <div className="stat">
-        <div className="k">技術的負債</div>
-        <div className="v">{s.techDebt}</div>
-      </div>
-      <div className="stat">
-        <div className="k">士気</div>
-        <div className="v">{s.morale}</div>
-        <div className="bar">
-          <i className="fill-mor" style={{ width: `${s.morale}%` }} />
-        </div>
-        <div className={`risk-chip risk-${s.risk}`} data-testid="risk">
-          炎上 {s.risk}
-        </div>
-      </div>
+      {metrics.map((metric) => (
+        <HudStat key={metric.id} metric={metric} />
+      ))}
     </header>
   );
 }

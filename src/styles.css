@@ -67,7 +67,7 @@ body {
 /* HUD */
 .hud {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 9px;
 }
 .stat {
@@ -112,8 +112,11 @@ body {
   line-height: 1;
 }
 .stat .k {
+  min-width: 0;
+  overflow: hidden;
   font-size: 10.5px;
   color: var(--text-dim);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .direction-chip {
@@ -1155,7 +1158,7 @@ button.card:active {
 
 @media (max-width: 860px) {
   .hud {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .actions {
     grid-template-columns: repeat(4, 1fr);

@@ -310,3 +310,23 @@ export function formatEvolutionNodeTags(node: EvolutionNodeDef): EffectTag[] {
 
   return tags;
 }
+
+/** ツールチップ等に並べる効果タグ文字列。 */
+export function effectTagsToTooltip(tags: EffectTag[]): string {
+  return tags.map((t) => t.label).join(' · ');
+}
+
+function joinTooltip(tagLine: string, flavor: string): string {
+  if (tagLine && flavor) return `${tagLine} — ${flavor}`;
+  return tagLine || flavor;
+}
+
+/** カードの効果タグとフレーバー文を合成したツールチップ文字列。 */
+export function formatCardTooltip(def: CardDef): string {
+  return joinTooltip(effectTagsToTooltip(formatCardDefTags(def)), def.description.join(' / '));
+}
+
+/** レリックの効果タグとフレーバー文を合成したツールチップ文字列。 */
+export function formatRelicTooltip(relic: RelicDef): string {
+  return joinTooltip(effectTagsToTooltip(formatRelicDefTags(relic)), relic.description);
+}

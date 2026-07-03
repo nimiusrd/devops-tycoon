@@ -6,6 +6,7 @@
  */
 import { getDifficulty } from '../data/difficulties';
 import { getRelic } from '../data/relics';
+import { formatRelicTooltip } from '../render/eventOutcomeView';
 import { diagnosisView } from '../sim/diagnosis';
 import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
@@ -61,7 +62,7 @@ export function RunBar({ state, onOpenFormation, onOpenOrg }: RunBarProps) {
           state.relics.map((id) => {
             const relic = getRelic(id);
             return (
-              <span key={id} className="relic-chip" title={relic?.description}>
+              <span key={id} className="relic-chip" title={relic ? formatRelicTooltip(relic) : id}>
                 🏛 {relic?.name}
               </span>
             );

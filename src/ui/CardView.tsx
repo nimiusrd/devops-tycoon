@@ -5,7 +5,7 @@
  * ドラフト（DraftScreen）とデッキ表示（DeckBar）で共用する。
  */
 import { RARITY_LABEL } from '../data/cards';
-import { formatCardDefTags } from '../render/eventOutcomeView';
+import { formatCardDefTags, formatCardTooltip } from '../render/eventOutcomeView';
 import type { CardDef } from '../sim/types';
 import { EffectTagList } from './EffectTagList';
 
@@ -58,11 +58,7 @@ export function CardView({ def, level = 1, onPick, compact = false }: CardViewPr
     );
   }
   return (
-    <div
-      className={className}
-      data-testid={`deck-card-${def.id}`}
-      title={def.description.join(' / ')}
-    >
+    <div className={className} data-testid={`deck-card-${def.id}`} title={formatCardTooltip(def)}>
       {inner}
     </div>
   );

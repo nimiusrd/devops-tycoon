@@ -6,10 +6,12 @@ import { getRelic } from '../../src/data/relics';
 import {
   formatCardDefTags,
   formatCardEffectsTags,
+  formatCardTooltip,
   formatEvolutionNodeTags,
   formatEventChoiceTags,
   formatEventOutcomeTags,
   formatRelicDefTags,
+  formatRelicTooltip,
 } from '../../src/render/eventOutcomeView';
 
 describe('formatEventOutcomeTags（イベント効果タグ）', () => {
@@ -179,5 +181,21 @@ describe('formatEvolutionNodeTags（進化ノードタグ）', () => {
       { label: '手戻り率 -10%', tone: 'positive' },
       { label: '品質 +8', tone: 'positive' },
     ]);
+  });
+});
+
+describe('formatCardTooltip / formatRelicTooltip（ツールチップ）', () => {
+  it('カードの効果タグとフレーバー文を合成する', () => {
+    const def = getCard('devin')!;
+    expect(formatCardTooltip(def)).toBe(
+      'Coding速度 x1.25 · 手戻り率 +6% · AI依存度 +8 — 自律型 AI エージェントを導入 / 並列実装は進むが、分割が下手だと迷走しやすい',
+    );
+  });
+
+  it('レリックの効果タグとフレーバー文を合成する', () => {
+    const relic = getRelic('flow-first')!;
+    expect(formatRelicTooltip(relic)).toBe(
+      'レビュー容量 x1.20 · 休息回復 +10 — レビュー待ちを減らし、休息での回復も厚くする',
+    );
   });
 });

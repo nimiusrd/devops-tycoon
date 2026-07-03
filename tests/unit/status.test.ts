@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { createEngine } from '../../src/sim/engine';
 import {
   deriveStatus,
+  deriveHudStatusParts,
   diffHudMetricSnapshots,
   hudMetricSnapshot,
   riskLevel,
   type HudMetricSnapshot,
 } from '../../src/render/status';
+import type { OrgScaleState } from '../../src/sim/orgscale/types';
 import type { OrgState, SimState } from '../../src/sim/types';
 
 /** 既定スナップショットに org を上書きした SimState を作る。 */
@@ -33,6 +35,43 @@ describe('deriveStatus（状態→ステータス表示）', () => {
     expect(s.aiDependencyPct).toBe(72);
     expect(s.techDebt).toBe(41);
     expect(s.morale).toBe(66);
+  });
+
+  it('全社俯瞰中はHUD数値に組織スケール集約値を使う', () => {
+    const state = withOrg({
+      deliveryScore: 50,
+      aiDependency: 72,
+      techDebt: 41,
+      morale: 66,
+      seniorHp: 80,
+    });
+    const orgScale: OrgScaleState = {
+      seed: 'status',
+      departments: [],
+      shipping: 180,
+      teamCount: 4,
+      deptCount: 1,
+      engineers: 16,
+      aiDependency: 44,
+      techDebt: 12,
+      morale: 91,
+      onFire: 0,
+      diagnosis: state.diagnosis,
+      infra: { ci: 0, docs: 0, aiGuideline: 0 },
+      budget: 20,
+      score: 160,
+      healthRank: 'A',
+    };
+
+    expect(
+      hudMetricSnapshot(deriveHudStatusParts(state.org, state.sprint.tasks, orgScale)),
+    ).toEqual({
+      deliveryScore: 180,
+      seniorHpPct: 80,
+      aiDependencyPct: 44,
+      techDebt: 12,
+      morale: 91,
+    });
   });
 });
 

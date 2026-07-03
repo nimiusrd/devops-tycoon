@@ -8,13 +8,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  deriveStatusParts,
+  deriveHudStatusParts,
   diffHudMetricSnapshots,
+  hudMetricSnapshot,
   type Grade,
   type HudMetricDelta,
   type HudMetricKey,
   type HudMetricSnapshot,
 } from '../render/status';
+import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
 
 const FEEDBACK_TTL_MS = 1000;
@@ -53,24 +55,34 @@ function FeedbackPop({ feedback }: { feedback?: ActiveHudFeedback }) {
 
 export interface HudProps {
   org: OrgState;
+  /** 全社/部署俯瞰中の集約状態。指定時はレバー適用後の集約値をHUDにも反映する。 */
+  orgScale?: OrgScaleState | null;
   /** 進行中スプリントのタスク（渋滞・リスク導出用。非スプリント時は空配列）。 */
   tasks: Task[];
+  /** HUD再マウント時にも直前の表示値との差分を出すための初期比較対象。 */
+  getInitialPreviousSnapshot?: () => HudMetricSnapshot | null;
+  /** 親がHUD非表示期間をまたいで最後の表示値を保持するための通知。 */
+  onSnapshotCaptured?: (snapshot: HudMetricSnapshot) => void;
 }
 
-export function Hud({ org, tasks }: HudProps) {
-  const s = deriveStatusParts(org, tasks);
-  const { deliveryScore, seniorHpPct, aiDependencyPct, techDebt, morale } = s;
-  const snapshot = useMemo(
-    () => ({ deliveryScore, seniorHpPct, aiDependencyPct, techDebt, morale }),
-    [deliveryScore, seniorHpPct, aiDependencyPct, techDebt, morale],
-  );
+export function Hud({
+  org,
+  orgScale,
+  tasks,
+  getInitialPreviousSnapshot,
+  onSnapshotCaptured,
+}: HudProps) {
+  const s = deriveHudStatusParts(org, tasks, orgScale);
+  const snapshot = useMemo(() => hudMetricSnapshot(s), [s]);
   const previousSnapshot = useRef<HudMetricSnapshot | null>(null);
   const nextFeedbackId = useRef(0);
+  const feedbackTimers = useRef(new Set<ReturnType<typeof window.setTimeout>>());
   const [feedbacks, setFeedbacks] = useState<ActiveHudFeedback[]>([]);
 
   useEffect(() => {
-    const previous = previousSnapshot.current;
+    const previous = previousSnapshot.current ?? getInitialPreviousSnapshot?.() ?? null;
     previousSnapshot.current = snapshot;
+    onSnapshotCaptured?.(snapshot);
     if (!previous) return;
 
     const deltas = diffHudMetricSnapshots(previous, snapshot);
@@ -89,10 +101,20 @@ export function Hud({ org, tasks }: HudProps) {
     const feedbackIds = new Set(nextFeedbacks.map((feedback) => feedback.id));
     const timer = window.setTimeout(() => {
       setFeedbacks((current) => current.filter((feedback) => !feedbackIds.has(feedback.id)));
+      feedbackTimers.current.delete(timer);
     }, FEEDBACK_TTL_MS);
+    feedbackTimers.current.add(timer);
+  }, [getInitialPreviousSnapshot, onSnapshotCaptured, snapshot]);
 
-    return () => window.clearTimeout(timer);
-  }, [snapshot]);
+  useEffect(
+    () => () => {
+      for (const timer of feedbackTimers.current) {
+        window.clearTimeout(timer);
+      }
+      feedbackTimers.current.clear();
+    },
+    [],
+  );
 
   const feedbackByKey = new Map(feedbacks.map((feedback) => [feedback.key, feedback]));
   const statClass = (key: HudMetricKey): string => {

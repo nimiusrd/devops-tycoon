@@ -5,8 +5,9 @@
  * 勝敗 を `RunState.phase` でルーティングする。スプリント系のフェーズでは盤面を
  * 背景に残し、リザルト/ドラフト/進化をオーバーレイで重ねる。状態は読むだけ（第22.2）。
  */
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import type { HudMetricSnapshot } from './render/status';
 import { Hud } from './ui/Hud';
 import {
   Breadcrumb,
@@ -52,6 +53,11 @@ export default function App({ game }: AppProps) {
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
+  const lastHudSnapshot = useRef<HudMetricSnapshot | null>(null);
+  const rememberHudSnapshot = useCallback((snapshot: HudMetricSnapshot) => {
+    lastHudSnapshot.current = snapshot;
+  }, []);
+  const getLastHudSnapshot = useCallback(() => lastHudSnapshot.current, []);
 
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
@@ -119,7 +125,13 @@ export default function App({ game }: AppProps) {
 
   return (
     <div className={`app ${screenTone(state)}`}>
-      <Hud org={state.org} tasks={tasks} />
+      <Hud
+        org={state.org}
+        orgScale={state.orgScale}
+        tasks={tasks}
+        getInitialPreviousSnapshot={getLastHudSnapshot}
+        onSnapshotCaptured={rememberHudSnapshot}
+      />
       <RunBar
         state={state}
         onOpenFormation={() => setFormationOpen(true)}

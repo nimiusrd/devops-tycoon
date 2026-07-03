@@ -4,6 +4,7 @@
  * OrgState とスプリントの現況から、画面上部に出す
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
+import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, SimState, Task } from '../sim/types';
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
@@ -97,6 +98,23 @@ export function deriveStatusParts(org: OrgState, tasks: Task[]): StatusView {
     techDebt: org.techDebt,
     morale: Math.round(org.morale),
     risk: riskLevel(queue, org.seniorHp),
+  };
+}
+
+/** HUD 表示用ステータス。俯瞰中は全社集約値を優先し、レバー効果も差分対象に含める。 */
+export function deriveHudStatusParts(
+  org: OrgState,
+  tasks: Task[],
+  orgScale?: OrgScaleState | null,
+): StatusView {
+  const status = deriveStatusParts(org, tasks);
+  if (!orgScale) return status;
+  return {
+    ...status,
+    deliveryScore: orgScale.shipping,
+    aiDependencyPct: orgScale.aiDependency,
+    techDebt: orgScale.techDebt,
+    morale: orgScale.morale,
   };
 }
 

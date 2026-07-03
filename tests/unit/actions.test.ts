@@ -1,6 +1,37 @@
 import { describe, expect, it } from 'vitest';
+import { ACTION_DEFS } from '../../src/data/actions';
+import { ANDON_TICKS, applyAction, OVERTIME_TICKS, THROTTLE_TICKS } from '../../src/sim/actions';
+import { BURN_TICKS } from '../../src/sim/model';
+import { createOrgState } from '../../src/sim/org';
+import { createSprint, resolveSprintConfig } from '../../src/sim/sprint';
 import { createEngine, type Engine } from '../../src/sim/engine';
-import type { SimState } from '../../src/sim/types';
+import type { ActionId, OrgState, SimState, SprintState, Task } from '../../src/sim/types';
+
+const TICK = 42;
+const rng = () => 0.99;
+
+const makeTask = (id: number, overrides: Partial<Task> = {}): Task => ({
+  id,
+  kind: 'normal',
+  highValue: false,
+  aiAssisted: false,
+  lane: 'review',
+  progress: 0,
+  reworkAttempts: 0,
+  wasReworked: false,
+  incident: false,
+  debt: false,
+  ...overrides,
+});
+
+const burningTask = (id: number, burnTicksLeft = BURN_TICKS): Task =>
+  makeTask(id, { lane: 'rework', incident: true, burnTicksLeft, reworkAttempts: 1 });
+
+function makeSprint(org: OrgState, tasks: Task[]): SprintState {
+  const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+  sprint.tasks = tasks;
+  return sprint;
+}
 
 const reviewCount = (s: SimState): number =>
   s.sprint.tasks.filter((t) => t.lane === 'review').length;
@@ -17,73 +48,168 @@ function stepUntil(e: Engine, pred: (s: SimState) => boolean, maxTicks = 4000): 
   return s;
 }
 
-describe('集中力の消費とクールダウン（第6.1）', () => {
-  it('発動すると集中力がコスト分減り、クールダウンが入る', () => {
-    const e = createEngine({ seed: 'act', aiEnabled: true });
-    const before = stepUntil(e, (s) => reviewCount(s) >= 4);
-    expect(reviewCount(before)).toBeGreaterThanOrEqual(4);
+/** アクション別の成功用 fixture（tasks + 発動前の観測用スナップショット）。 */
+interface ActionFixture {
+  tasks: Task[];
+  /** 副作用検証用。apply 前に呼ばれる。 */
+  before?: (ctx: { sprint: SprintState; org: OrgState }) => void;
+  /** 副作用検証。apply 後に呼ばれる。 */
+  assertEffect: (ctx: {
+    sprint: SprintState;
+    org: OrgState;
+    before: { sprint: SprintState; org: OrgState };
+  }) => void;
+}
 
-    const outcome = e.dispatch('interruptReview');
-    expect(outcome.ok).toBe(true);
+const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
+  interruptReview: {
+    tasks: Array.from({ length: 5 }, (_, i) => makeTask(i)),
+    assertEffect: ({ sprint, before }) => {
+      const beforeReview = before.sprint.tasks.filter((t) => t.lane === 'review').length;
+      const afterReview = sprint.tasks.filter((t) => t.lane === 'review').length;
+      expect(afterReview).toBeLessThan(beforeReview);
+    },
+  },
+  splitPr: {
+    tasks: [makeTask(0, { kind: 'complex', lane: 'coding', progress: 0.5 })],
+    assertEffect: ({ sprint, before }) => {
+      const target = sprint.tasks[0];
+      expect(target.split).toBe(true);
+      expect(target.progress).toBeLessThan(before.sprint.tasks[0].progress);
+    },
+  },
+  firefight: {
+    tasks: [burningTask(0), makeTask(1)],
+    assertEffect: ({ sprint }) => {
+      const t = sprint.tasks[0];
+      expect(t.incident).toBe(false);
+      expect(t.burnTicksLeft).toBeUndefined();
+      expect(t.lane).toBe('review');
+      expect(sprint.metrics.contained).toBe(1);
+    },
+  },
+  assignTask: {
+    tasks: [makeTask(0, { lane: 'coding', progress: 0.2 })],
+    assertEffect: ({ sprint, org, before }) => {
+      expect(sprint.tasks[0].progress).toBeGreaterThan(before.sprint.tasks[0].progress);
+      expect(sprint.tasks[0].split).toBe(true);
+      expect(org.morale).toBeLessThan(before.org.morale);
+    },
+  },
+  aiThrottle: {
+    tasks: [],
+    assertEffect: ({ sprint }) => {
+      expect(sprint.modifiers.throttleUntilTick).toBe(TICK + THROTTLE_TICKS);
+    },
+  },
+  pairReview: {
+    tasks: [makeTask(0), makeTask(1), makeTask(2)],
+    assertEffect: ({ sprint, org, before }) => {
+      const beforeReview = before.sprint.tasks.filter((t) => t.lane === 'review').length;
+      const afterReview = sprint.tasks.filter((t) => t.lane === 'review').length;
+      expect(afterReview).toBeLessThan(beforeReview);
+      expect(org.aiLiteracy).toBeGreaterThan(before.org.aiLiteracy);
+    },
+  },
+  overtime: {
+    tasks: [],
+    assertEffect: ({ sprint, org, before }) => {
+      expect(sprint.modifiers.overtimeUntilTick).toBe(TICK + OVERTIME_TICKS);
+      expect(org.morale).toBeLessThan(before.org.morale);
+      expect(org.seniorHp).toBeLessThan(before.org.seniorHp);
+    },
+  },
+  andon: {
+    tasks: [],
+    assertEffect: ({ sprint }) => {
+      expect(sprint.modifiers.andonUntilTick).toBe(TICK + ANDON_TICKS);
+    },
+  },
+};
 
-    const after = e.snapshot();
-    expect(after.sprint.focus).toBe(before.sprint.focus - 3);
-    expect(after.sprint.cooldowns.interruptReview ?? 0).toBeGreaterThan(0);
-    expect(after.sprint.metrics.interventionsUsed).toBe(1);
-    expect(after.sprint.metrics.focusSpent).toBe(3);
+/** 対象なしで no-target になるアクションと空 fixture。 */
+const NO_TARGET_CASES: { id: ActionId; tasks: Task[] }[] = [
+  { id: 'interruptReview', tasks: [] },
+  { id: 'splitPr', tasks: [makeTask(0, { split: true, lane: 'coding' })] },
+  { id: 'firefight', tasks: [makeTask(0, { lane: 'review' })] },
+  { id: 'assignTask', tasks: [makeTask(0, { lane: 'review' })] },
+];
+
+describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => {
+  describe.each(ACTION_DEFS.map((def) => [def.id, def] as const))('%s', (id, def) => {
+    it('成功時は集中力・クールダウン・集計・連携ゲージの共通契約を満たす', () => {
+      const org = createOrgState('default', true);
+      const fixture = ACTION_FIXTURES[id];
+      const sprint = makeSprint(org, fixture.tasks);
+      fixture.before?.({ sprint, org });
+      const before = {
+        sprint: structuredClone(sprint),
+        org: structuredClone(org),
+      };
+      const focus0 = sprint.focus;
+      const gauge0 = sprint.comboGauge;
+      const interventions0 = sprint.metrics.interventionsUsed;
+      const focusSpent0 = sprint.metrics.focusSpent;
+      const actionCount0 = sprint.metrics.actionCounts[id] ?? 0;
+
+      const outcome = applyAction(id, sprint, org, rng, TICK);
+
+      expect(outcome).toEqual({ ok: true });
+      expect(sprint.focus).toBe(focus0 - def.cost);
+      expect(sprint.cooldowns[id]).toBe(def.cooldownTicks);
+      expect(sprint.metrics.interventionsUsed).toBe(interventions0 + 1);
+      expect(sprint.metrics.focusSpent).toBe(focusSpent0 + def.cost);
+      expect(sprint.metrics.actionCounts[id]).toBe(actionCount0 + 1);
+      expect(sprint.comboGauge).toBeCloseTo(gauge0 + def.gauge, 5);
+      fixture.assertEffect({ sprint, org, before });
+    });
   });
 
-  it('クールダウン中の再発動は失敗し、集中力は減らない', () => {
-    const e = createEngine({ seed: 'cd', aiEnabled: true });
-    stepUntil(e, (s) => reviewCount(s) >= 4);
-    expect(e.dispatch('interruptReview').ok).toBe(true);
-    const mid = e.snapshot();
+  describe('失敗理由の共通契約', () => {
+    it.each(NO_TARGET_CASES)('$id は対象なしで no-target（コスト不消費）', ({ id, tasks }) => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, tasks);
+      const focus0 = sprint.focus;
 
-    const retry = e.dispatch('interruptReview');
-    expect(retry.ok).toBe(false);
-    expect(retry.reason).toBe('cooldown');
-    expect(e.snapshot().sprint.focus).toBe(mid.sprint.focus);
-  });
+      const outcome = applyAction(id, sprint, org, rng, TICK);
 
-  it('集中力が足りないと失敗する（no-focus）', () => {
-    const e = createEngine({ seed: 'nofocus', aiEnabled: true });
-    // 常に成立する重い系で集中力を 12 → 1 まで枯らす。
-    e.dispatch('andon'); // ⚡5
-    e.dispatch('overtime'); // ⚡4
-    e.dispatch('aiThrottle'); // ⚡2
-    expect(e.snapshot().sprint.focus).toBe(1);
+      expect(outcome).toEqual({ ok: false, reason: 'no-target' });
+      expect(sprint.focus).toBe(focus0);
+      expect(sprint.metrics.interventionsUsed).toBe(0);
+    });
 
-    const outcome = e.dispatch('splitPr'); // ⚡2 > 1
-    expect(outcome.ok).toBe(false);
-    expect(outcome.reason).toBe('no-focus');
-  });
+    it('クールダウン中は cooldown で失敗し集中力は減らない', () => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, ACTION_FIXTURES.interruptReview.tasks);
+      expect(applyAction('interruptReview', sprint, org, rng, TICK).ok).toBe(true);
+      const focusMid = sprint.focus;
 
-  it('対象が無い緊急対応は失敗し、コストを消費しない（no-target）', () => {
-    const e = createEngine({ seed: 'notarget', aiEnabled: true });
-    const before = e.snapshot();
-    const outcome = e.dispatch('firefight');
-    expect(outcome.ok).toBe(false);
-    expect(outcome.reason).toBe('no-target');
-    expect(e.snapshot().sprint.focus).toBe(before.sprint.focus);
-  });
-});
+      const retry = applyAction('interruptReview', sprint, org, rng, TICK + 1);
 
-describe('介入の副作用（第6.1）', () => {
-  it('残業号令は Morale とシニアHP を削る', () => {
-    const e = createEngine({ seed: 'overtime', aiEnabled: true });
-    const before = e.snapshot();
-    expect(e.dispatch('overtime').ok).toBe(true);
-    const after = e.snapshot();
-    expect(after.org.morale).toBeLessThan(before.org.morale);
-    expect(after.org.seniorHp).toBeLessThan(before.org.seniorHp);
-  });
+      expect(retry).toEqual({ ok: false, reason: 'cooldown' });
+      expect(sprint.focus).toBe(focusMid);
+    });
 
-  it('割り込みレビューは Review 渋滞を即座に減らす（第6.1 / DoD）', () => {
-    const e = createEngine({ seed: 'sweep', aiEnabled: true });
-    const before = stepUntil(e, (s) => reviewCount(s) >= 4);
-    const q0 = reviewCount(before);
-    expect(e.dispatch('interruptReview').ok).toBe(true);
-    expect(reviewCount(e.snapshot())).toBeLessThan(q0);
+    it('集中力不足は no-focus で失敗する', () => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, []);
+      sprint.focus = 1;
+
+      const outcome = applyAction('splitPr', sprint, org, rng, TICK);
+
+      expect(outcome).toEqual({ ok: false, reason: 'no-focus' });
+      expect(sprint.focus).toBe(1);
+    });
+
+    it('完了済みスプリントは complete で失敗する', () => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, []);
+      sprint.complete = true;
+
+      const outcome = applyAction('andon', sprint, org, rng, TICK);
+
+      expect(outcome).toEqual({ ok: false, reason: 'complete' });
+    });
   });
 });
 

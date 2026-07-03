@@ -1516,6 +1516,7 @@ button.card:active {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 2px;
+  margin-bottom: 6px;
 }
 .effect-tag {
   display: inline-flex;

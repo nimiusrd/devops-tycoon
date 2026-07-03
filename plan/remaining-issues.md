@@ -47,7 +47,7 @@
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
 | RI-43 | 効果タグ自動生成基盤＋ビート選択肢のリスク・リターン表示 | 高 | 完了 | — | 第9 / 18.2 |
-| RI-44 | カード/レリック/進化ノードへの効果タグ適用 | 高 | 未着手 | RI-43 | 第7 / 8 / 11 |
+| RI-44 | カード/レリック/進化ノードへの効果タグ適用 | 高 | 完了 | RI-43 | 第7 / 8 / 11 |
 | RI-45 | レバー/休憩/目標修正/介入アクションの効果数値表示 | 中 | 未着手 | RI-43 | 第4.8 / 6 |
 | RI-46 | 確率的な結果のリスク幅プレビュー(what-if 試算) | 中 | 未着手 | RI-43 | 第22.3 / RI-13 / RI-14 |
 | RI-47 | ステータス増減の汎用フィードバック演出 | 高 | 未着手 | — | 第18.2 |
@@ -203,14 +203,13 @@ mockup footer のマネージャーマスコットは未移植。`ActionBar` へ
 `src/data/events.ts` の `description` はフレーバー文へ整理し、数値は実データ由来のタグ表示に一本化。
 Vitest: `tests/unit/eventOutcomeView.test.ts`。
 
-#### RI-44 カード/レリック/進化ノードへの効果タグ適用 — 優先度:高（依存: RI-43）
+#### RI-44 カード/レリック/進化ノードへの効果タグ適用 — 優先度:高 / 完了
 
-- **現状**: `CardView` / `ShopScreen` / `EvolutionScreen` は手書きの `description[]` を箇条書きするだけ。
-  実効果（`CardDef.base` の `*Mul` / `*Add` 係数、`RelicDef.effects`、`EvolutionNodeDef.effects`）とは別管理。
-- **やること**: RI-43 のフォーマッタを係数系効果に拡張し（「Coding速度 ×1.15」「AI依存 +5%」等）、
-  カード・レリック・進化ノードの表示へ適用する。デメリット付きカードのリスクが説明文を読み込まなくても
-  タグ色で判別できるようにする。
-- **規模感**: 小〜中。表示の差し替えが主で、`CARD_DEFS` 等のデータ変更はしない。
+**完了**: `src/render/eventOutcomeView.ts` に `formatCardEffectsTags` / `formatCardDefTags` /
+`formatRelicDefTags` / `formatEvolutionNodeTags` を追加し、`CardView` / `ShopScreen` /
+`EvolutionScreen` で `EffectTagList` による実データ由来の効果タグ表示に接続。
+手書き `description` はフレーバー文として残し、デメリット付きカードのリスクはタグ色で判別可能。
+Vitest: `tests/unit/eventOutcomeView.test.ts`（カード・レリック・進化ノードのタグ変換テスト追加）。
 
 #### RI-45 レバー/休憩/目標修正/介入アクションの効果数値表示 — 優先度:中（依存: RI-43）
 

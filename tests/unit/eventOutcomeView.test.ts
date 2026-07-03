@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { getCard } from '../../src/data/cards';
+import { getEvolutionNode } from '../../src/data/evolution';
 import { EVENT_DEFS } from '../../src/data/events';
-import { formatEventChoiceTags, formatEventOutcomeTags } from '../../src/render/eventOutcomeView';
+import { getRelic } from '../../src/data/relics';
+import {
+  formatCardDefTags,
+  formatCardEffectsTags,
+  formatEvolutionNodeTags,
+  formatEventChoiceTags,
+  formatEventOutcomeTags,
+  formatRelicDefTags,
+} from '../../src/render/eventOutcomeView';
 
 describe('formatEventOutcomeTags（イベント効果タグ）', () => {
   it('プラス/マイナスの数値デルタを色付きタグに変換する', () => {
@@ -88,6 +98,86 @@ describe('イベント定義とタグの整合', () => {
       { label: '出荷 +30', tone: 'positive' },
       { label: '士気 -15', tone: 'negative' },
       { label: 'シニアHP -10', tone: 'negative' },
+    ]);
+  });
+});
+
+describe('formatCardEffectsTags（カード係数タグ）', () => {
+  it('Copilot カードの base 効果をタグ化する', () => {
+    const def = getCard('copilot')!;
+    expect(formatCardDefTags(def)).toEqual([
+      { label: 'Coding速度 x1.15', tone: 'positive' },
+      { label: '定型タスク速度 x1.30', tone: 'positive' },
+      { label: 'AI依存度 +5', tone: 'negative' },
+    ]);
+  });
+
+  it('Devin カードのデメリット付き効果を色分けする', () => {
+    const def = getCard('devin')!;
+    expect(formatCardDefTags(def)).toEqual([
+      { label: 'Coding速度 x1.25', tone: 'positive' },
+      { label: '手戻り率 +6%', tone: 'negative' },
+      { label: 'AI依存度 +8', tone: 'negative' },
+    ]);
+  });
+
+  it('Claude Code のレビュー負荷増は negative タグにする', () => {
+    expect(
+      formatCardEffectsTags({
+        codingSpeedMul: 1.2,
+        reworkRateAdd: -0.05,
+        reviewEfficiencyMul: 0.9,
+      }),
+    ).toEqual([
+      { label: 'Coding速度 x1.20', tone: 'positive' },
+      { label: 'レビュー効率 x0.90', tone: 'negative' },
+      { label: '手戻り率 -5%', tone: 'positive' },
+    ]);
+  });
+
+  it('空効果は空配列を返す', () => {
+    expect(formatCardEffectsTags({})).toEqual([]);
+  });
+});
+
+describe('formatRelicDefTags（レリックタグ）', () => {
+  it('心理的安全性の Morale ダメージ軽減をタグ化する', () => {
+    const relic = getRelic('psych-safety')!;
+    expect(formatRelicDefTags(relic)).toEqual([
+      { label: 'Morale ダメージ x0.60', tone: 'positive' },
+    ]);
+  });
+
+  it('コスト意識のショップ割引を positive タグにする', () => {
+    const relic = getRelic('budget-discipline')!;
+    expect(formatRelicDefTags(relic)).toEqual([{ label: 'ショップ割引 20%', tone: 'positive' }]);
+  });
+
+  it('effects と passives を合成する', () => {
+    const relic = getRelic('flow-first')!;
+    expect(formatRelicDefTags(relic)).toEqual([
+      { label: 'レビュー容量 x1.20', tone: 'positive' },
+      { label: '休息回復 +10', tone: 'positive' },
+    ]);
+  });
+});
+
+describe('formatEvolutionNodeTags（進化ノードタグ）', () => {
+  it('Coding 枠ボーナスを positive タグにする', () => {
+    const node = getEvolutionNode('dev-2')!;
+    expect(formatEvolutionNodeTags(node)).toEqual([{ label: 'Coding枠 +1', tone: 'positive' }]);
+  });
+
+  it('集中力上限ボーナスを positive タグにする', () => {
+    const node = getEvolutionNode('culture-1')!;
+    expect(formatEvolutionNodeTags(node)).toEqual([{ label: '集中力上限 +2', tone: 'positive' }]);
+  });
+
+  it('係数効果とボーナスを合成する', () => {
+    const node = getEvolutionNode('quality-3')!;
+    expect(formatEvolutionNodeTags(node)).toEqual([
+      { label: '手戻り率 -10%', tone: 'positive' },
+      { label: '品質 +8', tone: 'positive' },
     ]);
   });
 });

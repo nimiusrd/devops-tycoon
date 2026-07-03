@@ -5,7 +5,9 @@
  * ドラフト（DraftScreen）とデッキ表示（DeckBar）で共用する。
  */
 import { RARITY_LABEL } from '../data/cards';
+import { formatCardDefTags } from '../render/eventOutcomeView';
 import type { CardDef } from '../sim/types';
+import { EffectTagList } from './EffectTagList';
 
 export interface CardViewProps {
   def: CardDef;
@@ -31,11 +33,14 @@ export function CardView({ def, level = 1, onPick, compact = false }: CardViewPr
         {stars && <span className="card-stars">{stars}</span>}
       </div>
       {!compact && (
-        <ul className="card-effects">
-          {def.description.map((line, i) => (
-            <li key={i}>{line}</li>
-          ))}
-        </ul>
+        <>
+          <EffectTagList tags={formatCardDefTags(def)} testId={`card-effect-tags-${def.id}`} />
+          <ul className="card-effects">
+            {def.description.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        </>
       )}
     </>
   );

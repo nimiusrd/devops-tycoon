@@ -73,7 +73,7 @@ export function SprintResultScreen({
       role="dialog"
       aria-label="Sprint Result"
     >
-      <div className="result-card">
+      <div className="result-card sprint-result-card">
         <p className="result-eyebrow">SPRINT RESULT</p>
         <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
           {result.grade}

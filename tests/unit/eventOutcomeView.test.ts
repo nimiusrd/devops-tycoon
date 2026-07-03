@@ -42,6 +42,16 @@ describe('formatEventOutcomeTags（イベント効果タグ）', () => {
     expect(loseTags).toEqual([{ label: 'レビュー停止でラン終了', tone: 'negative' }]);
   });
 
+  it('Tech Debt / AI依存度の増加は negative タグにする', () => {
+    expect(formatEventOutcomeTags({ techDebt: 5 })).toEqual([
+      { label: 'Tech Debt +5', tone: 'negative' },
+    ]);
+    expect(formatEventOutcomeTags({ aiDependency: 12, quality: -6 })).toEqual([
+      { label: '品質 -6', tone: 'negative' },
+      { label: 'AI依存度 +12', tone: 'negative' },
+    ]);
+  });
+
   it('空 outcome は空配列を返す', () => {
     expect(formatEventOutcomeTags({})).toEqual([]);
   });

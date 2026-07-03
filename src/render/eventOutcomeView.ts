@@ -58,6 +58,12 @@ const LOSE_LABELS: Record<LoseReason, string> = {
   reorgRequired: '再編必要でラン終了',
 };
 
+/** 値が増えるほど悪化する指標（符号ではなく増減方向で tone を反転する）。 */
+const INVERSE_METRICS = new Set<(typeof NUMERIC_OUTCOME_KEYS)[number]>([
+  'techDebt',
+  'aiDependency',
+]);
+
 function formatSignedDelta(value: number): string {
   return value > 0 ? `+${value}` : `${value}`;
 }
@@ -71,6 +77,18 @@ function toneFromDelta(value: number): EffectTagTone {
   if (value > 0) return 'positive';
   if (value < 0) return 'negative';
   return 'neutral';
+}
+
+function toneFromMetricDelta(
+  key: (typeof NUMERIC_OUTCOME_KEYS)[number],
+  value: number,
+): EffectTagTone {
+  const signTone = toneFromDelta(value);
+  if (signTone === 'neutral') return 'neutral';
+  if (INVERSE_METRICS.has(key)) {
+    return signTone === 'positive' ? 'negative' : 'positive';
+  }
+  return signTone;
 }
 
 function pushTag(tags: EffectTag[], label: string, tone: EffectTagTone): void {
@@ -100,7 +118,11 @@ export function formatEventOutcomeTags(outcome: EventOutcome): EffectTag[] {
   for (const key of NUMERIC_OUTCOME_KEYS) {
     const value = outcome[key];
     if (typeof value === 'number' && value !== 0) {
-      pushTag(tags, `${NUMERIC_LABELS[key]} ${formatSignedDelta(value)}`, toneFromDelta(value));
+      pushTag(
+        tags,
+        `${NUMERIC_LABELS[key]} ${formatSignedDelta(value)}`,
+        toneFromMetricDelta(key, value),
+      );
     }
   }
 

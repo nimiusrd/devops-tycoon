@@ -6,6 +6,7 @@ import { getRelic } from '../../src/data/relics';
 import {
   formatCardDefTags,
   formatCardEffectsTags,
+  formatCardTagsAtLevel,
   formatCardTooltip,
   formatEvolutionNodeTags,
   formatEventChoiceTags,
@@ -197,5 +198,15 @@ describe('formatCardTooltip / formatRelicTooltip（ツールチップ）', () =>
     expect(formatRelicTooltip(relic)).toBe(
       'レビュー容量 x1.20 · 休息回復 +10 — レビュー待ちを減らし、休息での回復も厚くする',
     );
+  });
+
+  it('強化レベルを反映したカード tooltip を生成する', () => {
+    const def = getCard('copilot')!;
+    expect(formatCardTagsAtLevel(def, 2)).toEqual([
+      { label: 'Coding速度 x1.22', tone: 'positive' },
+      { label: '定型タスク速度 x1.45', tone: 'positive' },
+      { label: 'AI依存度 +7.5', tone: 'negative' },
+    ]);
+    expect(formatCardTooltip(def, 2)).toContain('Coding速度 x1.22');
   });
 });

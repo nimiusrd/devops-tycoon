@@ -13,6 +13,7 @@ import type { RelicDef } from '../data/relics';
 import { getRelic } from '../data/relics';
 import type { CardEffects, CardDef } from '../sim/types';
 import type { LoseReason, RunPassives, SprintModifierDelta } from '../sim/run/types';
+import { scaleEffects } from '../sim/cards';
 
 export type EffectTagTone = 'positive' | 'negative' | 'neutral';
 
@@ -249,7 +250,12 @@ export function formatCardEffectsTags(effects: Partial<CardEffects>): EffectTag[
 
 /** カード定義の `base` 効果からタグ一覧を生成する。 */
 export function formatCardDefTags(def: CardDef): EffectTag[] {
-  return formatCardEffectsTags(def.base);
+  return formatCardTagsAtLevel(def, 1);
+}
+
+/** 強化レベルを反映したカード効果タグ一覧。 */
+export function formatCardTagsAtLevel(def: CardDef, level = 1): EffectTag[] {
+  return formatCardEffectsTags(scaleEffects(def.base, level));
 }
 
 /** レリックの恒久パッシブからタグ一覧を生成する。 */
@@ -322,8 +328,11 @@ function joinTooltip(tagLine: string, flavor: string): string {
 }
 
 /** カードの効果タグとフレーバー文を合成したツールチップ文字列。 */
-export function formatCardTooltip(def: CardDef): string {
-  return joinTooltip(effectTagsToTooltip(formatCardDefTags(def)), def.description.join(' / '));
+export function formatCardTooltip(def: CardDef, level = 1): string {
+  return joinTooltip(
+    effectTagsToTooltip(formatCardTagsAtLevel(def, level)),
+    def.description.join(' / '),
+  );
 }
 
 /** レリックの効果タグとフレーバー文を合成したツールチップ文字列。 */

@@ -53,21 +53,21 @@ export default function App({ game }: AppProps) {
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
-  const lastHudSnapshot = useRef<{
-    snapshot: HudMetricSnapshot;
-    scope: HudSnapshotScope;
-  } | null>(null);
+  const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
+    team: null,
+    orgScale: null,
+  });
   const clearHudSnapshot = useCallback(() => {
-    lastHudSnapshot.current = null;
+    lastHudSnapshot.current = { team: null, orgScale: null };
   }, []);
   const rememberHudSnapshot = useCallback(
     (snapshot: HudMetricSnapshot, scope: HudSnapshotScope) => {
-      lastHudSnapshot.current = { snapshot, scope };
+      lastHudSnapshot.current[scope] = snapshot;
     },
     [],
   );
   const getLastHudSnapshot = useCallback((scope: HudSnapshotScope) => {
-    return lastHudSnapshot.current?.scope === scope ? lastHudSnapshot.current.snapshot : null;
+    return lastHudSnapshot.current[scope];
   }, []);
 
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない

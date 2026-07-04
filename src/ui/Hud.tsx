@@ -8,13 +8,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  deriveHudMetrics,
   deriveHudStatusParts,
   diffHudMetricSnapshots,
   hudMetricSnapshot,
   type Grade,
   type HudMetricDelta,
-  type HudMetricKey,
   type HudMetricSnapshot,
+  type StatusMetricView,
 } from '../render/status';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
@@ -55,6 +56,66 @@ function FeedbackPop({ feedback }: { feedback?: ActiveHudFeedback }) {
   );
 }
 
+function MetricValue({ metric }: { metric: StatusMetricView }) {
+  if (typeof metric.value === 'string') return <GradeValue grade={metric.value} />;
+
+  return (
+    <div
+      className="v"
+      data-testid={
+        metric.id === 'delivery'
+          ? 'stat-delivery'
+          : metric.id === 'aiDependency'
+            ? 'stat-ai-dependency'
+            : undefined
+      }
+    >
+      {metric.value}
+      {metric.unit && <small>{metric.unit}</small>}
+    </div>
+  );
+}
+
+function HudStat({ metric, feedback }: { metric: StatusMetricView; feedback?: ActiveHudFeedback }) {
+  const valueText = `${metric.value}${metric.unit ?? ''}`;
+  const feedbackClass = feedback ? ` hud-feedback flash-${feedback.tone}` : '';
+
+  return (
+    <section
+      className={`stat stat-${metric.id} stat-tone-${metric.tone}${feedbackClass}`}
+      data-testid={`hud-${metric.id}`}
+      data-tone={metric.tone}
+      title={metric.help}
+      aria-label={`${metric.label}: ${valueText}。${metric.directionLabel}。${metric.help}`}
+    >
+      <div className="stat-head">
+        <div className="stat-label">
+          <span className="stat-icon" aria-hidden="true">
+            {metric.icon}
+          </span>
+          <span className="k">{metric.label}</span>
+        </div>
+        <span className={`direction-chip direction-${metric.direction}`}>
+          {metric.directionLabel}
+        </span>
+      </div>
+      <MetricValue metric={metric} />
+      <div className="stat-detail">{metric.detail}</div>
+      {metric.barPct !== undefined && metric.fillClass && (
+        <div className="bar">
+          <i className={metric.fillClass} style={{ width: `${metric.barPct}%` }} />
+        </div>
+      )}
+      <FeedbackPop feedback={feedback} />
+      {metric.risk && (
+        <div className={`risk-chip risk-${metric.risk}`} data-testid="risk">
+          炎上 {metric.risk}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export interface HudProps {
   org: OrgState;
   /** 全社/部署俯瞰中の集約状態。指定時はレバー適用後の集約値をHUDにも反映する。 */
@@ -79,6 +140,7 @@ export function Hud({
 }: HudProps) {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const snapshot = useMemo(() => hudMetricSnapshot(s), [s]);
+  const metrics = deriveHudMetrics(org, tasks, orgScale);
   const previousSnapshot = useRef<HudMetricSnapshot | null>(null);
   const previousScope = useRef<HudSnapshotScope | null>(null);
   const nextFeedbackId = useRef(0);
@@ -137,70 +199,16 @@ export function Hud({
   );
 
   const feedbackByKey = new Map(feedbacks.map((feedback) => [feedback.key, feedback]));
-  const statClass = (key: HudMetricKey): string => {
-    const feedback = feedbackByKey.get(key);
-    return feedback ? `stat hud-feedback flash-${feedback.tone}` : 'stat';
-  };
 
   return (
     <header className="hud" data-testid="hud">
-      <div className={statClass('deliveryScore')}>
-        <div className="k">出荷ポイント</div>
-        <div className="v" data-testid="stat-delivery">
-          {s.deliveryScore} <small>pt</small>
-        </div>
-        <FeedbackPop feedback={feedbackByKey.get('deliveryScore')} />
-      </div>
-      <div className="stat">
-        <div className="k">開発速度</div>
-        <GradeValue grade={s.devSpeed} />
-      </div>
-      <div className="stat">
-        <div className="k">レビュー耐性</div>
-        <GradeValue grade={s.reviewCapacity} />
-      </div>
-      <div className="stat">
-        <div className="k">品質</div>
-        <GradeValue grade={s.quality} />
-      </div>
-      <div className={statClass('seniorHpPct')}>
-        <div className="k">シニア体力</div>
-        <div className="v">
-          {s.seniorHpPct}
-          <small>%</small>
-        </div>
-        <div className="bar">
-          <i className="fill-hp" style={{ width: `${s.seniorHpPct}%` }} />
-        </div>
-        <FeedbackPop feedback={feedbackByKey.get('seniorHpPct')} />
-      </div>
-      <div className={statClass('aiDependencyPct')}>
-        <div className="k">AI依存度</div>
-        <div className="v" data-testid="stat-ai-dependency">
-          {s.aiDependencyPct}
-          <small>%</small>
-        </div>
-        <div className="bar">
-          <i className="fill-ai" style={{ width: `${s.aiDependencyPct}%` }} />
-        </div>
-        <FeedbackPop feedback={feedbackByKey.get('aiDependencyPct')} />
-      </div>
-      <div className={statClass('techDebt')}>
-        <div className="k">技術的負債</div>
-        <div className="v">{s.techDebt}</div>
-        <FeedbackPop feedback={feedbackByKey.get('techDebt')} />
-      </div>
-      <div className={statClass('morale')}>
-        <div className="k">士気</div>
-        <div className="v">{s.morale}</div>
-        <div className="bar">
-          <i className="fill-mor" style={{ width: `${s.morale}%` }} />
-        </div>
-        <FeedbackPop feedback={feedbackByKey.get('morale')} />
-        <div className={`risk-chip risk-${s.risk}`} data-testid="risk">
-          炎上 {s.risk}
-        </div>
-      </div>
+      {metrics.map((metric) => (
+        <HudStat
+          key={metric.id}
+          metric={metric}
+          feedback={metric.feedbackKey ? feedbackByKey.get(metric.feedbackKey) : undefined}
+        />
+      ))}
     </header>
   );
 }

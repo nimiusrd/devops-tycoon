@@ -9,6 +9,17 @@ import type { OrgState, SimState, Task } from '../sim/types';
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
 export type RiskLevel = 'LOW' | 'MED' | 'HIGH';
+export type StatusMetricId =
+  | 'delivery'
+  | 'devSpeed'
+  | 'reviewCapacity'
+  | 'quality'
+  | 'seniorHp'
+  | 'aiDependency'
+  | 'techDebt'
+  | 'morale';
+export type StatusMetricDirection = 'higher-better' | 'lower-better';
+export type StatusMetricTone = 'good' | 'watch' | 'danger';
 
 export interface StatusView {
   /** 出荷ポイント。 */
@@ -29,6 +40,23 @@ export interface StatusView {
   morale: number;
   /** 炎上リスク。 */
   risk: RiskLevel;
+}
+
+export interface StatusMetricView {
+  id: StatusMetricId;
+  feedbackKey?: HudMetricKey;
+  label: string;
+  icon: string;
+  value: number | Grade;
+  unit?: string;
+  direction: StatusMetricDirection;
+  directionLabel: string;
+  tone: StatusMetricTone;
+  detail: string;
+  help: string;
+  barPct?: number;
+  fillClass?: string;
+  risk?: RiskLevel;
 }
 
 export type HudMetricKey =
@@ -101,6 +129,37 @@ export function deriveStatusParts(org: OrgState, tasks: Task[]): StatusView {
   };
 }
 
+function gradeTone(grade: Grade): StatusMetricTone {
+  if (grade === 'S' || grade === 'A' || grade === 'B') return 'good';
+  if (grade === 'C' || grade === 'D') return 'watch';
+  return 'danger';
+}
+
+function higherBetterTone(
+  value: number,
+  watchBelow: number,
+  dangerBelow: number,
+): StatusMetricTone {
+  if (value < dangerBelow) return 'danger';
+  if (value < watchBelow) return 'watch';
+  return 'good';
+}
+
+function lowerBetterTone(value: number, watchAt: number, dangerAt: number): StatusMetricTone {
+  if (value >= dangerAt) return 'danger';
+  if (value >= watchAt) return 'watch';
+  return 'good';
+}
+
+function toneFromRisk(risk: RiskLevel): StatusMetricTone {
+  if (risk === 'HIGH') return 'danger';
+  if (risk === 'MED') return 'watch';
+  return 'good';
+}
+
+const HIGHER_BETTER = '高いほど良い';
+const LOWER_BETTER = '低いほど安全';
+
 /** HUD 表示用ステータス。俯瞰中は全社集約値を優先し、レバー効果も差分対象に含める。 */
 export function deriveHudStatusParts(
   org: OrgState,
@@ -116,6 +175,124 @@ export function deriveHudStatusParts(
     techDebt: orgScale.techDebt,
     morale: orgScale.morale,
   };
+}
+
+/** HUD の表示メタデータを、既存のステータス導出値から組み立てる。 */
+export function deriveHudMetrics(
+  org: OrgState,
+  tasks: Task[],
+  orgScale?: OrgScaleState | null,
+): StatusMetricView[] {
+  const s = deriveHudStatusParts(org, tasks, orgScale);
+  const queue = reviewQueueLength(tasks);
+  const devSpeedDetail = org.aiEnabled ? 'AI支援で高速' : '通常速度';
+
+  return [
+    {
+      id: 'delivery',
+      feedbackKey: 'deliveryScore',
+      label: '出荷ポイント',
+      icon: '📦',
+      value: s.deliveryScore,
+      unit: 'pt',
+      direction: 'higher-better',
+      directionLabel: HIGHER_BETTER,
+      tone: 'good',
+      detail: '勝利条件の進捗',
+      help: 'ラン全体の出荷成果です。スプリント完了と品質維持で伸びます。',
+    },
+    {
+      id: 'devSpeed',
+      label: '開発速度',
+      icon: '⚡',
+      value: s.devSpeed,
+      direction: 'higher-better',
+      directionLabel: HIGHER_BETTER,
+      tone: gradeTone(s.devSpeed),
+      detail: devSpeedDetail,
+      help: '開発レーンの押し出し力です。AI支援で上がりますが、レビュー負荷も増えます。',
+    },
+    {
+      id: 'reviewCapacity',
+      label: 'レビュー耐性',
+      icon: '🛡',
+      value: s.reviewCapacity,
+      direction: 'higher-better',
+      directionLabel: HIGHER_BETTER,
+      tone: gradeTone(s.reviewCapacity),
+      detail: `Review待ち ${queue}`,
+      help: 'レビュー詰まりへの耐性です。シニア体力が落ちるほど悪化します。',
+    },
+    {
+      id: 'quality',
+      label: '品質',
+      icon: '✅',
+      value: s.quality,
+      direction: 'higher-better',
+      directionLabel: HIGHER_BETTER,
+      tone: gradeTone(s.quality),
+      detail: '手戻りを抑える力',
+      help: '品質が高いほど手戻りや障害が起きにくくなります。',
+    },
+    {
+      id: 'seniorHp',
+      feedbackKey: 'seniorHpPct',
+      label: 'シニア体力',
+      icon: '💪',
+      value: s.seniorHpPct,
+      unit: '%',
+      direction: 'higher-better',
+      directionLabel: HIGHER_BETTER,
+      tone: higherBetterTone(s.seniorHpPct, 50, 25),
+      detail: '25%未満は危険',
+      help: 'レビュー・火消しを支える余力です。休憩や負荷軽減で回復します。',
+      barPct: s.seniorHpPct,
+      fillClass: 'fill-hp',
+    },
+    {
+      id: 'aiDependency',
+      feedbackKey: 'aiDependencyPct',
+      label: 'AI依存度',
+      icon: '🤖',
+      value: s.aiDependencyPct,
+      unit: '%',
+      direction: 'lower-better',
+      directionLabel: LOWER_BETTER,
+      tone: lowerBetterTone(s.aiDependencyPct, 50, 75),
+      detail: '75%以上は過信域',
+      help: 'AI任せが強いほどレビュー負荷と手戻りリスクが上がります。',
+      barPct: s.aiDependencyPct,
+      fillClass: 'fill-ai',
+    },
+    {
+      id: 'techDebt',
+      feedbackKey: 'techDebt',
+      label: '技術的負債',
+      icon: '🧱',
+      value: s.techDebt,
+      direction: 'lower-better',
+      directionLabel: LOWER_BETTER,
+      tone: lowerBetterTone(s.techDebt, 45, 80),
+      detail: '80以上は危険',
+      help: '負債が高いほど開発と品質に悪影響が出ます。返済や品質投資で下げられます。',
+    },
+    {
+      id: 'morale',
+      feedbackKey: 'morale',
+      label: '士気',
+      icon: '🔥',
+      value: s.morale,
+      direction: 'higher-better',
+      directionLabel: HIGHER_BETTER,
+      tone:
+        toneFromRisk(s.risk) === 'good' ? higherBetterTone(s.morale, 60, 35) : toneFromRisk(s.risk),
+      detail: '炎上リスク連動',
+      help: 'チームの粘り強さです。低下やレビュー渋滞は炎上リスクを上げます。',
+      barPct: s.morale,
+      fillClass: 'fill-mor',
+      risk: s.risk,
+    },
+  ];
 }
 
 /** HUD の差分検出に使う数値指標だけを抜き出す。 */

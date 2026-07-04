@@ -67,7 +67,7 @@ body {
 /* HUD */
 .hud {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 9px;
 }
 .stat {
@@ -79,10 +79,65 @@ body {
   border: 2px solid var(--line);
   box-shadow: 0 4px 0 #1d1640;
 }
+.stat-tone-good {
+  border-color: #58e0b077;
+}
+.stat-tone-watch {
+  border-color: #ffd45caa;
+  box-shadow:
+    0 4px 0 #1d1640,
+    inset 0 0 0 1px #ffd45c33;
+}
+.stat-tone-danger {
+  border-color: #ff7e8bcc;
+  box-shadow:
+    0 4px 0 #1d1640,
+    inset 0 0 0 1px #ff7e8b44;
+}
+.stat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+.stat-label {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 5px;
+}
+.stat-icon {
+  flex: 0 0 auto;
+  font-size: 13px;
+  line-height: 1;
+}
 .stat .k {
+  min-width: 0;
+  overflow: hidden;
   font-size: 10.5px;
   color: var(--text-dim);
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+.direction-chip {
+  flex: 0 0 auto;
+  max-width: 58px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: #1b1438;
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+.direction-higher-better {
+  color: var(--mint);
+  border: 1px solid #58e0b066;
+}
+.direction-lower-better {
+  color: var(--sky);
+  border: 1px solid #6cc6ff66;
 }
 .stat .v {
   font-size: 22px;
@@ -94,6 +149,17 @@ body {
   font-size: 11px;
   font-weight: 700;
   color: var(--text-dim);
+}
+.stat-detail {
+  min-height: 13px;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .stat.hud-feedback {
   overflow: hidden;
@@ -210,6 +276,14 @@ body {
   background: #ff5f57;
   border-color: #ffb0ac;
   animation: riskpulse 1.1s ease-in-out infinite;
+}
+.stat-morale {
+  padding-bottom: 30px;
+}
+.stat-morale .risk-chip {
+  top: auto;
+  right: 9px;
+  bottom: 7px;
 }
 @keyframes riskpulse {
   0%,
@@ -1134,7 +1208,7 @@ button.card:active {
 
 @media (max-width: 860px) {
   .hud {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .actions {
     grid-template-columns: repeat(4, 1fr);

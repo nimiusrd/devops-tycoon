@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   assertMetricsHealthy,
   assertWithinRange,
+  extractReviewMetrics,
   extractRunMetrics,
   runMonteCarlo,
   runMonteCarloSummary,
   summarizeMonteCarlo,
   summarizeNumeric,
+  summarizeReviewMonteCarlo,
   type RunMetrics,
 } from './helpers/monteCarlo';
 import { REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
@@ -210,6 +212,86 @@ describe('monteCarlo 基盤（RI-14）', () => {
       assertWithinRange(summary.incidents, RI15_RANGES.incidents, 'incidents');
       assertWithinRange(summary.seniorHp, RI15_RANGES.seniorHp, 'seniorHp');
       assertWithinRange(summary.reviewQueuePeak, RI15_RANGES.reviewQueuePeak, 'reviewQueuePeak');
+    });
+  });
+
+  describe('RI-17: 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ', () => {
+    /** 代表 seed 群（`${RI17_SEED_PREFIX}-${i}`）。RI-15 と独立させ、レビュー系の回帰検知に使う。 */
+    const RI17_SEED_PREFIX = 'ri17-review';
+    const RI17_SEED_INDICES = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
+    /**
+     * normal 難易度・既定オートプレイでの四半期レビュー許容レンジ。
+     * 細かなバランス調整を縛らず、目標生成や代償が極端に崩れる変更を検知する。
+     */
+    const RI17_RANGES = {
+      reviewCount: { min: 0, max: 4 },
+      adjustmentCount: { min: 0, max: 3 },
+      finalQuarter: { min: 1, max: 5 },
+      finalDeliveryTarget: { min: 15, max: 180 },
+      finalQualityTarget: { min: 35, max: 70 },
+      finalTechDebtLimit: { min: 35, max: 90 },
+      finalMoraleTarget: { min: 25, max: 60 },
+      finalIncidentLimit: { min: 4, max: 12 },
+      finalAiAdoptionTarget: { min: 0, max: 60 },
+      minStakeholderTrust: { min: 10, max: 75 },
+    } as const;
+
+    function runRi17Summary() {
+      const results = RI17_SEED_INDICES.map((i) => {
+        const seed = `${RI17_SEED_PREFIX}-${i}`;
+        const engine = new RunEngine({ seed, difficulty: 'normal' });
+        const final = playRun(engine);
+        return extractReviewMetrics(seed, final);
+      });
+      return summarizeReviewMonteCarlo(results);
+    }
+
+    it('normal 難易度の代表 seed 群がレビュー関連 KPI の許容レンジ内', () => {
+      const summary = runRi17Summary();
+      const trials = RI17_SEED_INDICES.length;
+
+      expect(summary.trials).toBe(trials);
+      expect(summary.settled).toBe(trials);
+      expect(summary.unfinished).toBe(0);
+      assertWithinRange(summary.reviewCount, RI17_RANGES.reviewCount, 'reviewCount');
+      assertWithinRange(summary.adjustmentCount, RI17_RANGES.adjustmentCount, 'adjustmentCount');
+      assertWithinRange(summary.finalQuarter, RI17_RANGES.finalQuarter, 'finalQuarter');
+      assertWithinRange(
+        summary.finalDeliveryTarget,
+        RI17_RANGES.finalDeliveryTarget,
+        'finalDeliveryTarget',
+      );
+      assertWithinRange(
+        summary.finalQualityTarget,
+        RI17_RANGES.finalQualityTarget,
+        'finalQualityTarget',
+      );
+      assertWithinRange(
+        summary.finalTechDebtLimit,
+        RI17_RANGES.finalTechDebtLimit,
+        'finalTechDebtLimit',
+      );
+      assertWithinRange(
+        summary.finalMoraleTarget,
+        RI17_RANGES.finalMoraleTarget,
+        'finalMoraleTarget',
+      );
+      assertWithinRange(
+        summary.finalIncidentLimit,
+        RI17_RANGES.finalIncidentLimit,
+        'finalIncidentLimit',
+      );
+      assertWithinRange(
+        summary.finalAiAdoptionTarget,
+        RI17_RANGES.finalAiAdoptionTarget,
+        'finalAiAdoptionTarget',
+      );
+      assertWithinRange(
+        summary.minStakeholderTrust,
+        RI17_RANGES.minStakeholderTrust,
+        'minStakeholderTrust',
+      );
     });
   });
 });

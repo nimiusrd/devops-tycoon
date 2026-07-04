@@ -196,6 +196,25 @@ export const EVENT_DEFS: EventDef[] = [
       },
     ],
   },
+  {
+    id: 'emoji-policy-summit',
+    title: 'Slack 絵文字命名会議',
+    prompt: '「:done_done: と :really_done: の違いを決めたい」と全社から相談が来た。',
+    tone: 'joke',
+    weight: 0.7,
+    choices: [
+      {
+        label: '命名規約をちゃんと決める',
+        description: '小さな混乱を整え、コミュニケーションの手戻りを減らす',
+        outcome: { morale: 3, quality: 2 },
+      },
+      {
+        label: 'リアクション芸として受け流す',
+        description: '場は和むが、絵文字だけで意思決定する文化が少し育つ',
+        outcome: { morale: 6, techDebt: 2 },
+      },
+    ],
+  },
 
   // --- 選択イベント（decision）：旧 elite / shop / rest を統合 ---
   {
@@ -377,6 +396,21 @@ export const EVENT_DEFS: EventDef[] = [
         label: '了解',
         description: '整備したドキュメントが AI の精度向上に効く',
         outcome: { aiLiteracy: 6, delivered: 8 },
+      },
+    ],
+  },
+  {
+    id: 'readme-haiku',
+    title: 'README が俳句になった',
+    prompt: 'AI が README の要約を頼まれ、「五七五なら読みやすい」と判断した。',
+    tone: 'joke',
+    kind: 'judgment',
+    weight: 0.35,
+    choices: [
+      {
+        label: '了解',
+        description: 'なぜかチームの空気が少し和み、AI へのツッコミ力も上がる',
+        outcome: { morale: 4, aiLiteracy: 2 },
       },
     ],
   },

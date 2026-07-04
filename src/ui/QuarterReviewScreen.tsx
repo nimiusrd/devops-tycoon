@@ -5,8 +5,10 @@
  */
 import { getGoalAdjustment } from '../data/goalAdjustments';
 import { OUTCOME_LABELS } from '../sim/run/quarterReview';
+import { formatGoalAdjustmentTags } from '../render/eventOutcomeView';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { ReactNode } from 'react';
+import { EffectTagList } from './EffectTagList';
 
 export interface QuarterReviewScreenProps {
   state: RunState;
@@ -107,6 +109,10 @@ export function QuarterReviewScreen({
                     onClick={() => onChooseAdjustment(id)}
                   >
                     <strong>{def.label}</strong>
+                    <EffectTagList
+                      tags={formatGoalAdjustmentTags(def)}
+                      testId={`adjustment-tags-${id}`}
+                    />
                     <span>{def.description}</span>
                   </button>
                 );

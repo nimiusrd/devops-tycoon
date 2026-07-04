@@ -111,10 +111,12 @@ const ELITE_TASK_MUL = 1.6;
  * 1 回の過負荷は尾を引くが、持続的な過負荷だけが燃え尽きへ至るようにする緩衝。
  */
 const BETWEEN_SPRINT_RECOVERY = 0.5;
-/** 休息（heal）でのシニア体力回復量。 */
-const REST_HEAL = 40;
-/** 休息（repay）での技術的負債返済量。 */
-const REST_REPAY = 30;
+/** 休息（heal）でのシニア体力回復量（UI プレビューと共有）。 */
+export const REST_HEAL = 40;
+/** 休息（heal）での士気回復量。 */
+export const REST_MORALE_HEAL = 10;
+/** 休息（repay）での技術的負債返済量（UI プレビューと共有）。 */
+export const REST_REPAY = 30;
 /** ショップのレリック価格（割引前）。 */
 const SHOP_RELIC_COST = 30;
 
@@ -907,7 +909,7 @@ export class RunEngine {
     if (option === 'heal') {
       const bonus = foldPassives(this.relics).restHealBonus;
       this.org.seniorHp = clamp(this.org.seniorHp + REST_HEAL + bonus, 0, 100);
-      this.org.morale = clamp(this.org.morale + 10, 0, 100);
+      this.org.morale = clamp(this.org.morale + REST_MORALE_HEAL, 0, 100);
       // 個体メンバーのスタミナも大きく回復し、休職者は復帰しやすくなる。
       this.roster = recoverStamina(this.roster, REST_STAMINA_RECOVER);
     } else if (option === 'repay') {

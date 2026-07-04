@@ -1023,6 +1023,19 @@ body {
   font-weight: 800;
   white-space: nowrap;
 }
+.action .effect-tags {
+  justify-content: center;
+  margin-top: 0;
+  margin-bottom: 0;
+  gap: 3px;
+}
+.action .effect-tag {
+  font-size: 8.5px;
+  padding: 2px 5px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+}
 .action .cost {
   font-size: 11px;
   font-weight: 900;
@@ -1670,8 +1683,19 @@ button.card:active {
 }
 .rest-option {
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+}
+.rest-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.rest-body .effect-tags {
+  margin-top: 0;
+  margin-bottom: 2px;
 }
 .rest-icon {
   font-size: 26px;
@@ -1997,6 +2021,10 @@ button.card:active {
 }
 .quarter-adjustment-card strong {
   font-size: 0.9rem;
+}
+.quarter-adjustment-card .effect-tags {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 .quarter-review-actions {
   margin-top: 1rem;
@@ -2521,14 +2549,25 @@ button.card:active {
 }
 .org-lever {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: linear-gradient(180deg, #2a2350, #211a45);
   color: var(--text);
   cursor: pointer;
+  text-align: left;
+}
+.org-lever-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.org-lever .effect-tags {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 .org-lever:hover:not(:disabled) {
   border-color: var(--lav);

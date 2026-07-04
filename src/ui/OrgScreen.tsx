@@ -11,6 +11,8 @@ import { diagnosisView } from '../sim/diagnosis';
 import type { OrgScaleState, Team, ZoomState } from '../sim/orgscale/types';
 import { getRendererKind } from '../render/adapters/selectRenderer';
 import { HEALTH_COLOR, HEALTH_LABEL, layoutIso, ORG_ISO, ORG_PAD } from '../render/orgView';
+import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
+import { EffectTagList } from './EffectTagList';
 import { OrgPixiField, type OrgPixiFieldHandle } from './OrgPixiField';
 
 const ISO = ORG_ISO;
@@ -154,10 +156,13 @@ export function OrgScreen({
             data-testid={`lever-${l.id}`}
             disabled={budget < l.cost}
             onClick={() => onApplyLever(l.id)}
-            title={l.description}
+            title={formatLeverTooltip(l)}
           >
-            <b>{l.name}</b>
-            <span className="org-lever-cost">💰{l.cost}</span>
+            <span className="org-lever-head">
+              <b>{l.name}</b>
+              <span className="org-lever-cost">💰{l.cost}</span>
+            </span>
+            <EffectTagList tags={formatLeverDefTags(l)} testId={`lever-tags-${l.id}`} />
           </button>
         ))}
       </div>

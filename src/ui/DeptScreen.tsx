@@ -8,6 +8,8 @@
 import { DEPARTMENT_LEVERS } from '../data/levers';
 import type { DepartmentState, Team } from '../sim/orgscale/types';
 import { HEALTH_COLOR, HEALTH_LABEL } from '../render/orgView';
+import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
+import { EffectTagList } from './EffectTagList';
 
 export interface DeptScreenProps {
   dept: DepartmentState;
@@ -70,10 +72,13 @@ export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScre
             data-testid={`lever-${l.id}`}
             disabled={budget < l.cost}
             onClick={() => onApplyLever(l.id, dept.def.id)}
-            title={l.description}
+            title={formatLeverTooltip(l)}
           >
-            <b>{l.name}</b>
-            <span className="org-lever-cost">💰{l.cost}</span>
+            <span className="org-lever-head">
+              <b>{l.name}</b>
+              <span className="org-lever-cost">💰{l.cost}</span>
+            </span>
+            <EffectTagList tags={formatLeverDefTags(l)} testId={`lever-tags-${l.id}`} />
           </button>
         ))}
       </div>

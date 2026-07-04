@@ -5,7 +5,9 @@
  * クリックで `dispatch` し、状態は上位から読むだけ（第22.2）。
  */
 import { ACTION_DEFS } from '../data/actions';
+import { formatActionDefTags, formatActionTooltip } from '../render/eventOutcomeView';
 import type { ActionId, SprintState } from '../sim/types';
+import { EffectTagList } from './EffectTagList';
 
 /** 連携ゲージのラベル表示。 */
 function FocusPips({ focus, max }: { focus: number; max: number }) {
@@ -61,10 +63,11 @@ export function ActionBar({ sprint, disabled, onAction }: ActionBarProps) {
               data-testid={`action-${a.id}`}
               disabled={!ready}
               onClick={() => onAction(a.id)}
-              title={`${a.description}（副作用: ${a.sideEffect}）`}
+              title={formatActionTooltip(a)}
             >
               <span className="ico">{a.icon}</span>
               <span className="name">{a.label}</span>
+              <EffectTagList tags={formatActionDefTags(a)} testId={`action-tags-${a.id}`} />
               <span className="cost">⚡{a.cost}</span>
               <span className={`cd${onCooldown ? '' : ' full'}`}>
                 <i style={{ width: `${cdPct}%` }} />

@@ -163,4 +163,37 @@ describe('monteCarlo 基盤（RI-14）', () => {
       });
     });
   });
+
+  describe('RI-15: スプリント主要メトリクスの許容レンジ', () => {
+    /** 代表 seed 群（`${RI15_SEED_PREFIX}-${i}`、i=0..RI15_TRIALS-1）。 */
+    const RI15_SEED_PREFIX = 'ri15-mc';
+    const RI15_TRIALS = 12;
+
+    /**
+     * normal 難易度・既定オートプレイでの許容レンジ。
+     * 2026-07 計測（ri15-mc-0..11）を基準に、極端な崩壊検知用へ余裕を持たせる。
+     */
+    const RI15_RANGES = {
+      delivered: { min: 200, max: 8000 },
+      rework: { min: 0, max: 55 },
+      incidents: { min: 0, max: 50 },
+      seniorHp: { min: 0, max: 100 },
+      reviewQueuePeak: { min: 10, max: 50 },
+    } as const;
+
+    it('normal 難易度の代表 seed 群が主要 KPI の許容レンジ内', () => {
+      const summary = runMonteCarloSummary({
+        seedPrefix: RI15_SEED_PREFIX,
+        trials: RI15_TRIALS,
+        difficulty: 'normal',
+      });
+
+      expect(summary.settled).toBe(RI15_TRIALS);
+      assertWithinRange(summary.delivered, RI15_RANGES.delivered, 'delivered');
+      assertWithinRange(summary.rework, RI15_RANGES.rework, 'rework');
+      assertWithinRange(summary.incidents, RI15_RANGES.incidents, 'incidents');
+      assertWithinRange(summary.seniorHp, RI15_RANGES.seniorHp, 'seniorHp');
+      assertWithinRange(summary.reviewQueuePeak, RI15_RANGES.reviewQueuePeak, 'reviewQueuePeak');
+    });
+  });
 });

@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { DEPARTMENT_DEFS } from '../../src/data/departments';
+import { COMPANY_LEVERS, DEPARTMENT_LEVERS, LEVER_DEFS } from '../../src/data/levers';
 import {
   aggregateDepartment,
   aggregateHealth,
@@ -18,6 +19,15 @@ import {
 } from '../../src/sim/orgscale';
 import type { OrgState } from '../../src/sim/types';
 import type { RunTotals } from '../../src/sim/run/types';
+import {
+  applyLeverOnBaseline,
+  assertDepartmentLeverIsolated,
+  assertLeverDefInRange,
+  assertLeverImpactRanges,
+  assertOrgScaleHealthy,
+} from './helpers/leverRanges';
+
+const RI16_SEEDS = ['ri16-a', 'ri16-b', 'ri16-c'] as const;
 
 function org(overrides: Partial<OrgState> = {}): OrgState {
   return {
@@ -219,6 +229,96 @@ describe('applyLever', () => {
   it('未知のレバーは変化なし', () => {
     const res = applyLever(emptyAdjustState(), 100, 'nope');
     expect(res.changed).toBe(false);
+  });
+});
+
+describe('レバー係数の許容レンジ（RI-16）', () => {
+  const baselineFactory = (seed: string) =>
+    input({
+      seed,
+      budget: 120,
+      org: org({ aiDependency: 55, morale: 65, techDebt: 45 }),
+      totals: totals({ reviewQueuePeak: 6, incidents: 2, contained: 1 }),
+    });
+
+  it('全レバーの cost / 効果量が定義レンジ内', () => {
+    for (const lever of LEVER_DEFS) {
+      expect(() => assertLeverDefInRange(lever)).not.toThrow();
+    }
+  });
+
+  it('全社レバー適用後も集約指標が健全範囲内', () => {
+    for (const lever of COMPANY_LEVERS) {
+      for (const seed of RI16_SEEDS) {
+        expect(() => applyLeverOnBaseline(lever, baselineFactory(seed))).not.toThrow();
+      }
+    }
+  });
+
+  it('部門レバー適用後も集約指標が健全範囲内', () => {
+    for (const lever of DEPARTMENT_LEVERS) {
+      for (const seed of RI16_SEEDS) {
+        expect(() =>
+          applyLeverOnBaseline(lever, baselineFactory(seed), DEPARTMENT_DEFS[0].id),
+        ).not.toThrow();
+      }
+    }
+  });
+
+  it('部門レバーは対象部門以外へ波及しない', () => {
+    for (const lever of DEPARTMENT_LEVERS) {
+      expect(() =>
+        assertDepartmentLeverIsolated(
+          lever,
+          baselineFactory('ri16-isolation'),
+          DEPARTMENT_DEFS[0].id,
+          DEPARTMENT_DEFS[1].id,
+        ),
+      ).not.toThrow();
+    }
+  });
+
+  it('代表 seed 群でレバー影響の方向性が許容レンジ内', () => {
+    expect(() =>
+      assertLeverImpactRanges(
+        [
+          'aiGuideline',
+          'standardize',
+          'firefighters',
+          'reviewReinforce',
+          'aiThrottleDept',
+          'dependencyCleanup',
+        ],
+        RI16_SEEDS,
+        baselineFactory,
+        {
+          aiGuideline: { aiDependency: { min: -15, max: -5 } },
+          standardize: { techDebt: { min: -220, max: -150 } },
+          firefighters: { morale: { min: 0, max: 8 }, onFire: { min: -10, max: 0 } },
+          reviewReinforce: { aiDependency: { min: -2, max: 2 } },
+          aiThrottleDept: { aiDependency: { min: -12, max: -2 } },
+          dependencyCleanup: { techDebt: { min: -60, max: -5 }, onFire: { min: -4, max: 0 } },
+        },
+      ),
+    ).not.toThrow();
+  });
+
+  it('stress baseline でも全社レバー適用後に指標が破綻しない', () => {
+    const stressed = input({
+      seed: 'ri16-stress',
+      budget: 120,
+      org: org({ aiDependency: 78, morale: 35, techDebt: 90 }),
+      totals: totals({ reviewQueuePeak: 14, incidents: 4, contained: 1 }),
+      liveReviewQueue: 14,
+      liveIncidents: 2,
+    });
+    const baseState = generateOrgScale(stressed);
+    assertOrgScaleHealthy(baseState, 'stress-baseline');
+
+    for (const lever of COMPANY_LEVERS) {
+      const { state } = applyLeverOnBaseline(lever, stressed);
+      assertOrgScaleHealthy(state, `stress/${lever.id}`);
+    }
   });
 });
 

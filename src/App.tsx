@@ -138,8 +138,13 @@ export default function App({ game }: AppProps) {
     null;
   const hudSnapshotScope: HudSnapshotScope = state.orgScale ? 'orgScale' : 'team';
 
+  const sprintLayout = showSprint;
+
   return (
-    <div className={`app ${screenTone(state)}`}>
+    <div
+      className={`app ${screenTone(state)}${sprintLayout ? ' app-sprint-layout' : ''}`}
+      data-phase={phase}
+    >
       <Hud
         org={state.org}
         orgScale={state.orgScale}

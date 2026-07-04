@@ -57,6 +57,39 @@ export interface MonteCarloSummary {
   deliveryScore: NumericMetricSummary;
 }
 
+/** 四半期レビュー許容レンジ検証用のラン終了メトリクス（RI-17）。 */
+export interface ReviewMetrics {
+  seed: string;
+  status: RunStatus;
+  reviewCount: number;
+  adjustmentCount: number;
+  finalQuarter: number;
+  finalDeliveryTarget: number;
+  finalQualityTarget: number;
+  finalTechDebtLimit: number;
+  finalMoraleTarget: number;
+  finalIncidentLimit: number;
+  finalAiAdoptionTarget: number;
+  minStakeholderTrust: number;
+}
+
+/** RI-17 用メトリクスの集計サマリー。 */
+export interface ReviewMonteCarloSummary {
+  trials: number;
+  settled: number;
+  unfinished: number;
+  reviewCount: NumericMetricSummary;
+  adjustmentCount: NumericMetricSummary;
+  finalQuarter: NumericMetricSummary;
+  finalDeliveryTarget: NumericMetricSummary;
+  finalQualityTarget: NumericMetricSummary;
+  finalTechDebtLimit: NumericMetricSummary;
+  finalMoraleTarget: NumericMetricSummary;
+  finalIncidentLimit: NumericMetricSummary;
+  finalAiAdoptionTarget: NumericMetricSummary;
+  minStakeholderTrust: NumericMetricSummary;
+}
+
 export interface RunMonteCarloOptions {
   /** 試行 seed の接頭辞（各試行は `${seedPrefix}-${i}`）。 */
   seedPrefix: string;
@@ -82,6 +115,28 @@ export function extractRunMetrics(seed: string, state: RunState): RunMetrics {
     reviewQueuePeak: state.totals.reviewQueuePeak,
     sprintsPlayed: state.sprintsPlayed,
     deliveryScore: state.org.deliveryScore,
+  };
+}
+
+/** ラン終了状態から四半期レビュー許容レンジ用メトリクスを抽出する。 */
+export function extractReviewMetrics(seed: string, state: RunState): ReviewMetrics {
+  return {
+    seed,
+    status: state.status,
+    reviewCount: state.reviewHistory.length,
+    adjustmentCount: state.goalAdjustmentsTaken.length,
+    finalQuarter: state.quarterNumber,
+    finalDeliveryTarget: state.quarterGoal.deliveryTarget,
+    finalQualityTarget: state.quarterGoal.qualityTarget,
+    finalTechDebtLimit: state.quarterGoal.techDebtLimit,
+    finalMoraleTarget: state.quarterGoal.moraleTarget,
+    finalIncidentLimit: state.quarterGoal.incidentLimit,
+    finalAiAdoptionTarget: state.quarterGoal.aiAdoptionTarget ?? 0,
+    minStakeholderTrust: Math.min(
+      state.stakeholderTrust.management,
+      state.stakeholderTrust.customers,
+      state.stakeholderTrust.team,
+    ),
   };
 }
 
@@ -126,6 +181,31 @@ export function summarizeMonteCarlo(results: readonly RunMetrics[]): MonteCarloS
     reviewQueuePeak: pick('reviewQueuePeak'),
     sprintsPlayed: pick('sprintsPlayed'),
     deliveryScore: pick('deliveryScore'),
+  };
+}
+
+/** RI-17 用メトリクス群から集計サマリーを生成する。 */
+export function summarizeReviewMonteCarlo(
+  results: readonly ReviewMetrics[],
+): ReviewMonteCarloSummary {
+  const settledResults = results.filter((r) => isSettledStatus(r.status));
+  const pick = (key: keyof Omit<ReviewMetrics, 'seed' | 'status'>): NumericMetricSummary =>
+    summarizeNumeric(settledResults.map((r) => r[key]));
+
+  return {
+    trials: results.length,
+    settled: settledResults.length,
+    unfinished: results.length - settledResults.length,
+    reviewCount: pick('reviewCount'),
+    adjustmentCount: pick('adjustmentCount'),
+    finalQuarter: pick('finalQuarter'),
+    finalDeliveryTarget: pick('finalDeliveryTarget'),
+    finalQualityTarget: pick('finalQualityTarget'),
+    finalTechDebtLimit: pick('finalTechDebtLimit'),
+    finalMoraleTarget: pick('finalMoraleTarget'),
+    finalIncidentLimit: pick('finalIncidentLimit'),
+    finalAiAdoptionTarget: pick('finalAiAdoptionTarget'),
+    minStakeholderTrust: pick('minStakeholderTrust'),
   };
 }
 

@@ -20,7 +20,7 @@ import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 
-const FEEDBACK_TTL_MS = 1000;
+const FEEDBACK_TTL_MS = 1600;
 
 interface ActiveRunFeedback extends RunMetricDelta {
   id: number;

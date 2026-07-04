@@ -7,6 +7,7 @@ import {
   runMonteCarloSummary,
   summarizeMonteCarlo,
   summarizeNumeric,
+  type RunMetrics,
 } from './helpers/monteCarlo';
 import { RunEngine } from '../../src/sim/run/engine';
 import { playRun } from './helpers/runFlow';
@@ -45,6 +46,16 @@ describe('monteCarlo 基盤（RI-14）', () => {
     it('各試行の seed が prefix-index 形式になる', () => {
       const results = runMonteCarlo({ seedPrefix: 'seed', trials: 3, difficulty: 'easy' });
       expect(results.map((r) => r.seed)).toEqual(['seed-0', 'seed-1', 'seed-2']);
+    });
+
+    it('trials <= 0 なら例外を投げる', () => {
+      expect(() => runMonteCarlo({ seedPrefix: 'empty', trials: 0 })).toThrow(/trials は 1 以上/);
+    });
+
+    it('guardMax 到達で未決着なら例外を投げる', () => {
+      expect(() => runMonteCarlo({ seedPrefix: 'unfinished', trials: 1, guardMax: 1 })).toThrow(
+        /決着しませんでした/,
+      );
     });
   });
 
@@ -111,8 +122,45 @@ describe('monteCarlo 基盤（RI-14）', () => {
       const results = runMonteCarlo({ seedPrefix: 'winrate', trials: 8, difficulty: 'easy' });
       const summary = summarizeMonteCarlo(results);
       expect(summary.trials).toBe(8);
+      expect(summary.settled).toBe(8);
+      expect(summary.unfinished).toBe(0);
       expect(summary.wins + summary.losses).toBe(8);
       expect(summary.winRate).toBeCloseTo(summary.wins / 8, 10);
+    });
+
+    it('未決着試行は数値集計から除外し unfinished を数える', () => {
+      const settled: RunMetrics = {
+        seed: 'settled',
+        status: 'won',
+        delivered: 100,
+        rework: 5,
+        incidents: 1,
+        seniorHp: 50,
+        reviewQueuePeak: 3,
+        sprintsPlayed: 6,
+        deliveryScore: 200,
+      };
+      const unfinished: RunMetrics = {
+        seed: 'unfinished',
+        status: 'playing',
+        delivered: 999,
+        rework: 999,
+        incidents: 999,
+        seniorHp: 999,
+        reviewQueuePeak: 999,
+        sprintsPlayed: 1,
+        deliveryScore: 999,
+      };
+      const summary = summarizeMonteCarlo([settled, unfinished]);
+      expect(summary.trials).toBe(2);
+      expect(summary.settled).toBe(1);
+      expect(summary.unfinished).toBe(1);
+      expect(summary.delivered).toEqual({
+        mean: 100,
+        min: 100,
+        max: 100,
+        values: [100],
+      });
     });
   });
 });

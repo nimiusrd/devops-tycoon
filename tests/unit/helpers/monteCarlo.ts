@@ -30,10 +30,19 @@ export interface NumericMetricSummary {
   values: number[];
 }
 
+/** ランが勝敗確定済みか。 */
+export function isSettledStatus(status: RunStatus): boolean {
+  return status === 'won' || status === 'lost';
+}
+
 /** モンテカルロ試行の集計サマリー。 */
 export interface MonteCarloSummary {
   trials: number;
-  /** 勝利試行数 / 全試行数。 */
+  /** 決着済み試行数（wins + losses）。 */
+  settled: number;
+  /** 未決着試行数（guardMax 到達など）。 */
+  unfinished: number;
+  /** 勝利試行数 / 決着済み試行数。未決着のみのとき 0。 */
   winRate: number;
   /** 勝利試行数。 */
   wins: number;
@@ -91,18 +100,23 @@ export function summarizeNumeric(values: readonly number[]): NumericMetricSummar
   };
 }
 
-/** 試行メトリクス群から集計サマリーを生成する。 */
+/** 試行メトリクス群から集計サマリーを生成する。数値メトリクスは決着済み試行のみ集計。 */
 export function summarizeMonteCarlo(results: readonly RunMetrics[]): MonteCarloSummary {
   const wins = results.filter((r) => r.status === 'won').length;
   const losses = results.filter((r) => r.status === 'lost').length;
+  const settled = wins + losses;
+  const unfinished = results.length - settled;
   const trials = results.length;
+  const settledResults = results.filter((r) => isSettledStatus(r.status));
 
   const pick = (key: NumericMetricKey): NumericMetricSummary =>
-    summarizeNumeric(results.map((r) => r[key]));
+    summarizeNumeric(settledResults.map((r) => r[key]));
 
   return {
     trials,
-    winRate: trials === 0 ? 0 : wins / trials,
+    settled,
+    unfinished,
+    winRate: settled === 0 ? 0 : wins / settled,
     wins,
     losses,
     delivered: pick('delivered'),
@@ -119,12 +133,22 @@ export function summarizeMonteCarlo(results: readonly RunMetrics[]): MonteCarloS
 export function runMonteCarlo(opts: RunMonteCarloOptions): RunMetrics[] {
   const { seedPrefix, trials, difficulty = 'normal', play = {}, guardMax = 40_000 } = opts;
 
+  if (trials <= 0) {
+    throw new Error(`runMonteCarlo: trials は 1 以上である必要があります (got ${trials})`);
+  }
+
   const results: RunMetrics[] = [];
   for (let i = 0; i < trials; i += 1) {
     const seed = `${seedPrefix}-${i}`;
     const engine = new RunEngine({ seed, difficulty });
     const final = playRun(engine, play, guardMax);
-    results.push(extractRunMetrics(seed, final));
+    const metrics = extractRunMetrics(seed, final);
+    if (!isSettledStatus(metrics.status)) {
+      throw new Error(
+        `${seed}: ランが決着しませんでした (status=${metrics.status}, phase=${final.phase}, guardMax=${guardMax})`,
+      );
+    }
+    results.push(metrics);
   }
   return results;
 }

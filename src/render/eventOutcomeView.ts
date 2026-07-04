@@ -387,8 +387,27 @@ export function formatLeverDefTags(lever: LeverDef): EffectTag[] {
   return formatOrgAdjustTags(lever.effect);
 }
 
+/** 目標 KPI への加算: 上がるほど達成が難しくなる（代償）。 */
+function toneFromGoalTargetAdd(value: number): EffectTagTone {
+  if (value > 0) return 'negative';
+  if (value < 0) return 'positive';
+  return 'neutral';
+}
+
+/** reorgReset 時の追加 org 効果（`applyGoalAdjustment` と一致）。 */
+const REORG_RESET_SENIOR_HP = 20;
+const REORG_RESET_TECH_DEBT = -8;
+
+export interface FormatGoalAdjustmentOptions {
+  /** 次期目標に AI Adoption KPI がある場合のみ true。 */
+  hasAiAdoptionTarget?: boolean;
+}
+
 /** 目標修正の goalEffects からタグ一覧を生成する。 */
-function formatGoalEffectTags(goalEffects: GoalAdjustmentDef['goalEffects']): EffectTag[] {
+function formatGoalEffectTags(
+  goalEffects: GoalAdjustmentDef['goalEffects'],
+  opts?: FormatGoalAdjustmentOptions,
+): EffectTag[] {
   const tags: EffectTag[] = [];
   if (goalEffects.deliveryMul !== undefined && goalEffects.deliveryMul !== 1) {
     const pct = Math.round(goalEffects.deliveryMul * 100);
@@ -405,14 +424,14 @@ function formatGoalEffectTags(goalEffects: GoalAdjustmentDef['goalEffects']): Ef
     pushTag(
       tags,
       `品質目標 ${formatSignedDelta(goalEffects.qualityAdd)}`,
-      toneFromDelta(goalEffects.qualityAdd),
+      toneFromGoalTargetAdd(goalEffects.qualityAdd),
     );
   }
   if (goalEffects.moraleAdd !== undefined && goalEffects.moraleAdd !== 0) {
     pushTag(
       tags,
       `士気目標 ${formatSignedDelta(goalEffects.moraleAdd)}`,
-      toneFromDelta(goalEffects.moraleAdd),
+      toneFromGoalTargetAdd(goalEffects.moraleAdd),
     );
   }
   if (goalEffects.techDebtLimitAdd !== undefined && goalEffects.techDebtLimitAdd !== 0) {
@@ -429,11 +448,15 @@ function formatGoalEffectTags(goalEffects: GoalAdjustmentDef['goalEffects']): Ef
       toneFromDelta(goalEffects.incidentLimitAdd),
     );
   }
-  if (goalEffects.aiAdoptionAdd !== undefined && goalEffects.aiAdoptionAdd !== 0) {
+  if (
+    opts?.hasAiAdoptionTarget &&
+    goalEffects.aiAdoptionAdd !== undefined &&
+    goalEffects.aiAdoptionAdd !== 0
+  ) {
     pushTag(
       tags,
       `AI Adoption目標 ${formatSignedDelta(goalEffects.aiAdoptionAdd)}`,
-      toneFromDelta(goalEffects.aiAdoptionAdd),
+      toneFromGoalTargetAdd(goalEffects.aiAdoptionAdd),
     );
   }
   return tags;
@@ -480,7 +503,10 @@ function formatGoalOrgEffectTags(
 }
 
 /** 目標修正定義から効果タグ一覧を生成する（RI-45）。 */
-export function formatGoalAdjustmentTags(def: GoalAdjustmentDef): EffectTag[] {
+export function formatGoalAdjustmentTags(
+  def: GoalAdjustmentDef,
+  opts?: FormatGoalAdjustmentOptions,
+): EffectTag[] {
   const tags: EffectTag[] = [];
 
   for (const [key, delta] of Object.entries(def.trustDelta)) {
@@ -494,10 +520,15 @@ export function formatGoalAdjustmentTags(def: GoalAdjustmentDef): EffectTag[] {
     pushTag(tags, `予算 ${formatSignedDelta(def.budgetDelta)}`, toneFromDelta(def.budgetDelta));
   }
 
-  tags.push(...formatGoalEffectTags(def.goalEffects));
+  tags.push(...formatGoalEffectTags(def.goalEffects, opts));
 
-  if (def.orgEffects) {
-    tags.push(...formatGoalOrgEffectTags(def.orgEffects));
+  if (def.orgEffects || def.reorgReset) {
+    const orgEffects = { ...def.orgEffects };
+    if (def.reorgReset) {
+      orgEffects.seniorHpDelta = (orgEffects.seniorHpDelta ?? 0) + REORG_RESET_SENIOR_HP;
+      orgEffects.techDebtDelta = (orgEffects.techDebtDelta ?? 0) + REORG_RESET_TECH_DEBT;
+    }
+    tags.push(...formatGoalOrgEffectTags(orgEffects));
   }
 
   if (def.nextBudgetCapDelta !== undefined && def.nextBudgetCapDelta !== 0) {
@@ -509,7 +540,7 @@ export function formatGoalAdjustmentTags(def: GoalAdjustmentDef): EffectTag[] {
   }
 
   if (def.pauseAiDebuff) {
-    pushTag(tags, '次四半期 AI成功率デバフ', 'negative');
+    pushTag(tags, '次四半期 出荷速度 -15%', 'negative');
   }
 
   if (def.reorgReset) {
@@ -525,7 +556,7 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
 
   switch (def.id) {
     case 'interruptReview':
-      pushTag(tags, `Review ${INTERRUPT_REVIEW_COUNT}件処理`, 'positive');
+      pushTag(tags, `Review 最大${INTERRUPT_REVIEW_COUNT}件処理`, 'positive');
       pushTag(tags, `シニアHP -${INTERRUPT_HP_COST}`, 'negative');
       break;
     case 'splitPr':
@@ -545,7 +576,7 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       pushTag(tags, '出荷速度一時低下', 'negative');
       break;
     case 'pairReview':
-      pushTag(tags, `Review ${PAIR_REVIEW_COUNT}件処理`, 'positive');
+      pushTag(tags, `Review 最大${PAIR_REVIEW_COUNT}件処理`, 'positive');
       pushTag(tags, `AI Literacy +${PAIR_LITERACY_GAIN}`, 'positive');
       break;
     case 'overtime':

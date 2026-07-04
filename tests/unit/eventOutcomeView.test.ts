@@ -253,12 +253,43 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
       tone: 'negative',
     });
     expect(formatGoalAdjustmentTags(def)).toContainEqual({
-      label: 'シニアHP +25',
+      label: 'シニアHP +45',
+      tone: 'positive',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: 'Tech Debt -13',
       tone: 'positive',
     });
     expect(formatGoalAdjustmentTags(def)).toContainEqual({
       label: 'レビュー詰まり・属人化リセット',
       tone: 'positive',
+    });
+  });
+
+  it('期限延長の目標引き上げを代償として色分けする', () => {
+    const def = getGoalAdjustment('extend_deadline')!;
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '品質目標 +5',
+      tone: 'negative',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '士気目標 +5',
+      tone: 'negative',
+    });
+  });
+
+  it('AI Adoption 目標が無い四半期では AI 目標タグを出さない', () => {
+    const def = getGoalAdjustment('pause_ai_rollout')!;
+    expect(formatGoalAdjustmentTags(def)).not.toContainEqual(
+      expect.objectContaining({ label: expect.stringContaining('AI Adoption') }),
+    );
+    expect(formatGoalAdjustmentTags(def, { hasAiAdoptionTarget: true })).toContainEqual({
+      label: 'AI Adoption目標 -15',
+      tone: 'positive',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '次四半期 出荷速度 -15%',
+      tone: 'negative',
     });
   });
 });
@@ -267,7 +298,7 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
   it('割り込みレビューの効果量と副作用をタグ化する', () => {
     const def = getAction('interruptReview')!;
     expect(formatActionDefTags(def)).toEqual([
-      { label: 'Review 4件処理', tone: 'positive' },
+      { label: 'Review 最大4件処理', tone: 'positive' },
       { label: 'シニアHP -3', tone: 'negative' },
       { label: '連携 +34%', tone: 'positive' },
     ]);

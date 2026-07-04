@@ -21,9 +21,9 @@ import type { OrgState } from '../../src/sim/types';
 import type { RunTotals } from '../../src/sim/run/types';
 import {
   applyLeverOnBaseline,
+  assertAllLeverImpactRanges,
   assertDepartmentLeverIsolated,
   assertLeverDefInRange,
-  assertLeverImpactRanges,
   assertOrgScaleHealthy,
 } from './helpers/leverRanges';
 
@@ -278,29 +278,8 @@ describe('レバー係数の許容レンジ（RI-16）', () => {
     }
   });
 
-  it('代表 seed 群でレバー影響の方向性が許容レンジ内', () => {
-    expect(() =>
-      assertLeverImpactRanges(
-        [
-          'aiGuideline',
-          'standardize',
-          'firefighters',
-          'reviewReinforce',
-          'aiThrottleDept',
-          'dependencyCleanup',
-        ],
-        RI16_SEEDS,
-        baselineFactory,
-        {
-          aiGuideline: { aiDependency: { min: -15, max: -5 } },
-          standardize: { techDebt: { min: -220, max: -150 } },
-          firefighters: { morale: { min: 0, max: 8 }, onFire: { min: -10, max: 0 } },
-          reviewReinforce: { aiDependency: { min: -2, max: 2 } },
-          aiThrottleDept: { aiDependency: { min: -12, max: -2 } },
-          dependencyCleanup: { techDebt: { min: -60, max: -5 }, onFire: { min: -4, max: 0 } },
-        },
-      ),
-    ).not.toThrow();
+  it('代表 seed 群で全 12 レバーの主効果が許容レンジ内', () => {
+    expect(() => assertAllLeverImpactRanges(RI16_SEEDS, baselineFactory)).not.toThrow();
   });
 
   it('stress baseline でも全社レバー適用後に指標が破綻しない', () => {

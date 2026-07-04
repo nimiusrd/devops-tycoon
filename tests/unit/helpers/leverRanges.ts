@@ -15,18 +15,21 @@ import {
 import type { LeverDef, OrgAdjust, OrgScaleState, Team } from '../../../src/sim/orgscale/types';
 import { assertWithinRange, summarizeNumeric } from './monteCarlo';
 
-/** 四半期予算コストの許容レンジ（全社 max=45 / 部門 max=18 想定）。 */
-export const LEVER_COST_RANGE = { min: 1, max: 50 } as const;
+/** 四半期予算コストの許容レンジ（スコープ別）。 */
+export const LEVER_COST_RANGE_BY_SCOPE = {
+  company: { min: 1, max: 45 },
+  department: { min: 1, max: 18 },
+} as const;
 
 /** レバー 1 回あたりの効果量上限（絶対値）。 */
 export const LEVER_EFFECT_RANGES: Record<keyof OrgAdjust, { min: number; max: number }> = {
   aiDependencyDelta: { min: -20, max: 20 },
-  reviewQueueDelta: { min: -8, max: 0 },
-  incidentDelta: { min: -5, max: 0 },
+  reviewQueueDelta: { min: -8, max: -1 },
+  incidentDelta: { min: -5, max: -1 },
   moraleDelta: { min: -10, max: 10 },
-  techDebtDelta: { min: -25, max: 0 },
-  extraTeams: { min: 0, max: 2 },
-  infraBoost: { min: 0, max: 15 },
+  techDebtDelta: { min: -25, max: -1 },
+  extraTeams: { min: 1, max: 2 },
+  infraBoost: { min: 1, max: 15 },
 };
 
 /** レバー適用後の全社集約指標の許容レンジ。techDebt は全チーム合算のため上限を広げる。 */
@@ -38,19 +41,42 @@ export const ORG_SCALE_AGGREGATE_RANGES = {
   score: { min: 0, max: 10_000 },
 } as const;
 
+export type LeverImpactMetric =
+  | 'aiDependency'
+  | 'morale'
+  | 'techDebt'
+  | 'onFire'
+  | 'playerReviewQueue'
+  | 'playerAiDependency'
+  | 'playerMorale'
+  | 'teamCount'
+  | 'infraCi';
+
+export type LeverImpactSnapshot = Record<LeverImpactMetric, number>;
+
 const ORG_ADJUST_KEYS = Object.keys(LEVER_EFFECT_RANGES) as (keyof OrgAdjust)[];
+
+/** 明示された効果フィールドがゼロになっていないか検証する。 */
+function assertNonZeroEffect(lever: LeverDef, key: keyof OrgAdjust, value: number): void {
+  if (value === 0) {
+    throw new Error(`${lever.id}.${key}=0 はゼロ効果のため許容されません`);
+  }
+}
 
 /** レバー定義のコスト・効果量が許容レンジ内か検証する。 */
 export function assertLeverDefInRange(lever: LeverDef): void {
-  if (lever.cost < LEVER_COST_RANGE.min || lever.cost > LEVER_COST_RANGE.max) {
+  const costRange = LEVER_COST_RANGE_BY_SCOPE[lever.scope];
+  if (lever.cost < costRange.min || lever.cost > costRange.max) {
     throw new Error(
-      `${lever.id}: cost=${lever.cost} が許容レンジ [${LEVER_COST_RANGE.min}, ${LEVER_COST_RANGE.max}] を外れました`,
+      `${lever.id}: cost=${lever.cost} が ${lever.scope} の許容レンジ ` +
+        `[${costRange.min}, ${costRange.max}] を外れました`,
     );
   }
 
   for (const key of ORG_ADJUST_KEYS) {
     const value = lever.effect[key];
     if (value === undefined) continue;
+    assertNonZeroEffect(lever, key, value);
     const range = LEVER_EFFECT_RANGES[key];
     if (value < range.min || value > range.max) {
       throw new Error(
@@ -58,6 +84,32 @@ export function assertLeverDefInRange(lever: LeverDef): void {
       );
     }
   }
+}
+
+function playerTeam(state: OrgScaleState): Team {
+  const team = state.departments.flatMap((d) => d.teams).find((t) => t.isPlayer);
+  if (!team) throw new Error('プレイヤーチームが見つかりません');
+  return team;
+}
+
+/** 適用前後の差分を impact メトリクスとして取り出す。 */
+export function diffLeverImpact(
+  baseline: OrgScaleState,
+  after: OrgScaleState,
+): LeverImpactSnapshot {
+  const beforePlayer = playerTeam(baseline);
+  const afterPlayer = playerTeam(after);
+  return {
+    aiDependency: after.aiDependency - baseline.aiDependency,
+    morale: after.morale - baseline.morale,
+    techDebt: after.techDebt - baseline.techDebt,
+    onFire: after.onFire - baseline.onFire,
+    playerReviewQueue: afterPlayer.reviewQueue - beforePlayer.reviewQueue,
+    playerAiDependency: afterPlayer.aiDependency - beforePlayer.aiDependency,
+    playerMorale: afterPlayer.morale - beforePlayer.morale,
+    teamCount: after.teamCount - baseline.teamCount,
+    infraCi: after.infra.ci - baseline.infra.ci,
+  };
 }
 
 /** 全社集約値が表示・ゲームプレイ可能な範囲内か検証する。 */
@@ -166,21 +218,14 @@ export function assertDepartmentLeverIsolated(
 export function summarizeLeverImpacts(
   levers: readonly LeverDef[],
   baselineInput: OrgScaleInput,
-): Record<string, { aiDependency: number; morale: number; techDebt: number; onFire: number }> {
+  deptId = DEPARTMENT_DEFS[0].id,
+): Record<string, LeverImpactSnapshot> {
   const baseline = generateOrgScale(baselineInput);
-  const impacts: Record<
-    string,
-    { aiDependency: number; morale: number; techDebt: number; onFire: number }
-  > = {};
+  const impacts: Record<string, LeverImpactSnapshot> = {};
 
   for (const lever of levers) {
-    const { state } = applyLeverOnBaseline(lever, baselineInput);
-    impacts[lever.id] = {
-      aiDependency: state.aiDependency - baseline.aiDependency,
-      morale: state.morale - baseline.morale,
-      techDebt: state.techDebt - baseline.techDebt,
-      onFire: state.onFire - baseline.onFire,
-    };
+    const { state } = applyLeverOnBaseline(lever, baselineInput, deptId);
+    impacts[lever.id] = diffLeverImpact(baseline, state);
   }
   return impacts;
 }
@@ -190,10 +235,8 @@ export function assertLeverImpactRanges(
   leverIds: readonly string[],
   seedPrefixes: readonly string[],
   baselineFactory: (seed: string) => OrgScaleInput,
-  ranges: Record<
-    string,
-    Partial<Record<'aiDependency' | 'morale' | 'techDebt' | 'onFire', { min: number; max: number }>>
-  >,
+  ranges: Record<string, Partial<Record<LeverImpactMetric, { min: number; max: number }>>>,
+  deptId = DEPARTMENT_DEFS[0].id,
 ): void {
   for (const leverId of leverIds) {
     const lever = LEVER_DEFS.find((l) => l.id === leverId);
@@ -201,15 +244,48 @@ export function assertLeverImpactRanges(
     const leverRanges = ranges[leverId];
     if (!leverRanges) continue;
 
-    for (const metric of Object.keys(leverRanges) as Array<
-      keyof NonNullable<(typeof ranges)[string]>
-    >) {
+    for (const metric of Object.keys(leverRanges) as LeverImpactMetric[]) {
       const range = leverRanges[metric]!;
       const values = seedPrefixes.map((prefix) => {
-        const impacts = summarizeLeverImpacts([lever], baselineFactory(`${prefix}-ri16`));
+        const impacts = summarizeLeverImpacts([lever], baselineFactory(`${prefix}-ri16`), deptId);
         return impacts[leverId][metric];
       });
       assertWithinRange(summarizeNumeric(values), range, `${leverId}.${metric}`);
     }
   }
+}
+
+/** 全 12 レバーの主効果を代表 seed 群で一括検証する。 */
+export const RI16_LEVER_IMPACT_RANGES: Record<
+  string,
+  Partial<Record<LeverImpactMetric, { min: number; max: number }>>
+> = {
+  recruitDraft: { teamCount: { min: 1, max: 1 }, morale: { min: -5, max: -1 } },
+  aiGuideline: { aiDependency: { min: -15, max: -5 }, infraCi: { min: 4, max: 8 } },
+  infraInvest: { playerReviewQueue: { min: -5, max: -1 }, infraCi: { min: 10, max: 14 } },
+  standardize: { techDebt: { min: -220, max: -150 }, infraCi: { min: 8, max: 12 } },
+  firefighters: { morale: { min: 1, max: 8 }, onFire: { min: -10, max: -1 } },
+  reorg: {
+    teamCount: { min: 1, max: 1 },
+    playerReviewQueue: { min: -4, max: -1 },
+    morale: { min: -8, max: -4 },
+  },
+  reviewReinforce: { playerReviewQueue: { min: -6, max: -2 } },
+  prSizeLimit: { playerReviewQueue: { min: -4, max: -1 }, techDebt: { min: -80, max: -10 } },
+  aiThrottleDept: { playerAiDependency: { min: -10, max: -6 } },
+  seniorHiring: { playerReviewQueue: { min: -5, max: -1 }, playerMorale: { min: 2, max: 4 } },
+  dependencyCleanup: { techDebt: { min: -60, max: -5 }, onFire: { min: -4, max: -1 } },
+  deptFreeze: { onFire: { min: -4, max: -1 }, playerMorale: { min: -6, max: -2 } },
+};
+
+export function assertAllLeverImpactRanges(
+  seedPrefixes: readonly string[],
+  baselineFactory: (seed: string) => OrgScaleInput,
+): void {
+  assertLeverImpactRanges(
+    LEVER_DEFS.map((l) => l.id),
+    seedPrefixes,
+    baselineFactory,
+    RI16_LEVER_IMPACT_RANGES,
+  );
 }

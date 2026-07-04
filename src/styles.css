@@ -72,7 +72,7 @@ body {
   gap: 8px;
   min-height: 100dvh;
   max-height: 100dvh;
-  overflow: hidden;
+  overflow-y: auto;
   padding: 10px 14px 12px;
 }
 .app.app-sprint-layout .hud {
@@ -83,7 +83,7 @@ body {
   padding: 6px 9px 7px;
 }
 .app.app-sprint-layout .stat-morale {
-  padding-bottom: 22px;
+  padding-bottom: 30px;
 }
 .app.app-sprint-layout .runbar,
 .app.app-sprint-layout .subbar {
@@ -112,6 +112,9 @@ body {
   overflow-y: hidden;
   scrollbar-width: thin;
 }
+.app.app-sprint-layout .deckbar-cards > .card {
+  flex-shrink: 0;
+}
 .app.app-sprint-layout .actionbar {
   flex-shrink: 0;
   gap: 8px;
@@ -133,6 +136,16 @@ body {
 }
 .app.app-sprint-layout .action .ico {
   font-size: 18px;
+}
+
+@media (max-height: 720px), (max-width: 860px) {
+  .app.app-sprint-layout {
+    max-height: none;
+    overflow-y: visible;
+  }
+  .app.app-sprint-layout .board-wrap {
+    min-height: clamp(140px, 28vh, 320px);
+  }
 }
 
 /* HUD */

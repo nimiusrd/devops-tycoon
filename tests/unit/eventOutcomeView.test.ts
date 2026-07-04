@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { getCard } from '../../src/data/cards';
 import { getEvolutionNode } from '../../src/data/evolution';
 import { EVENT_DEFS } from '../../src/data/events';
+import { getGoalAdjustment } from '../../src/data/goalAdjustments';
+import { COMPANY_LEVERS } from '../../src/data/levers';
 import { getRelic } from '../../src/data/relics';
+import { getAction } from '../../src/data/actions';
 import {
+  formatActionDefTags,
   formatCardDefTags,
   formatCardEffectsTags,
   formatCardTagsAtLevel,
@@ -11,8 +15,11 @@ import {
   formatEvolutionNodeTags,
   formatEventChoiceTags,
   formatEventOutcomeTags,
+  formatGoalAdjustmentTags,
+  formatLeverDefTags,
   formatRelicDefTags,
   formatRelicTooltip,
+  formatRestOptionTags,
 } from '../../src/render/eventOutcomeView';
 
 describe('formatEventOutcomeTags（イベント効果タグ）', () => {
@@ -208,5 +215,125 @@ describe('formatCardTooltip / formatRelicTooltip（ツールチップ）', () =>
       { label: 'AI依存度 +7.5', tone: 'negative' },
     ]);
     expect(formatCardTooltip(def, 2)).toContain('Coding速度 x1.22');
+  });
+});
+
+describe('formatLeverDefTags（レバー効果タグ / RI-45）', () => {
+  it('採用ドラフトの効果をタグ化する', () => {
+    const lever = COMPANY_LEVERS.find((l) => l.id === 'recruitDraft')!;
+    expect(formatLeverDefTags(lever)).toEqual([
+      { label: '士気 -3', tone: 'negative' },
+      { label: 'チーム +1', tone: 'positive' },
+    ]);
+  });
+
+  it('AIガイドラインの逆指標を正しく色分けする', () => {
+    const lever = COMPANY_LEVERS.find((l) => l.id === 'aiGuideline')!;
+    expect(formatLeverDefTags(lever)).toEqual([
+      { label: 'AI依存度 -10', tone: 'positive' },
+      { label: '共通基盤 +6', tone: 'positive' },
+    ]);
+  });
+});
+
+describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
+  it('スコープ削減の代償と目標緩和をタグ化する', () => {
+    const def = getGoalAdjustment('cut_scope')!;
+    expect(formatGoalAdjustmentTags(def)).toEqual([
+      { label: '顧客信頼 -15', tone: 'negative' },
+      { label: 'Delivery目標 75%', tone: 'positive' },
+      { label: 'Delivery目標 -20', tone: 'positive' },
+    ]);
+  });
+
+  it('組織再編の即時効果とリセットをタグ化する', () => {
+    const def = getGoalAdjustment('reorg_teams')!;
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: 'チーム信頼 -20',
+      tone: 'negative',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: 'シニアHP +45',
+      tone: 'positive',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: 'Tech Debt -13',
+      tone: 'positive',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: 'レビュー詰まり・属人化リセット',
+      tone: 'positive',
+    });
+  });
+
+  it('期限延長の目標引き上げを代償として色分けする', () => {
+    const def = getGoalAdjustment('extend_deadline')!;
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '品質目標 +5',
+      tone: 'negative',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '士気目標 +5',
+      tone: 'negative',
+    });
+  });
+
+  it('AI Adoption 目標が無い四半期では AI 目標タグを出さない', () => {
+    const def = getGoalAdjustment('pause_ai_rollout')!;
+    expect(formatGoalAdjustmentTags(def)).not.toContainEqual(
+      expect.objectContaining({ label: expect.stringContaining('AI Adoption') }),
+    );
+    expect(formatGoalAdjustmentTags(def, { hasAiAdoptionTarget: true })).toContainEqual({
+      label: 'AI Adoption目標 -15',
+      tone: 'positive',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '次四半期 出荷速度 -15%',
+      tone: 'negative',
+    });
+  });
+});
+
+describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
+  it('割り込みレビューの効果量と副作用をタグ化する', () => {
+    const def = getAction('interruptReview')!;
+    expect(formatActionDefTags(def)).toEqual([
+      { label: 'Review 最大4件処理', tone: 'positive' },
+      { label: 'シニアHP -3', tone: 'negative' },
+      { label: '連携 +34%', tone: 'positive' },
+    ]);
+  });
+
+  it('緊急対応の鎮火効果をタグ化する', () => {
+    const def = getAction('firefight')!;
+    expect(formatActionDefTags(def)).toContainEqual({
+      label: '炎上1件鎮火',
+      tone: 'positive',
+    });
+  });
+});
+
+describe('formatRestOptionTags（休息タグ / RI-45）', () => {
+  it('heal の回復量をタグ化する', () => {
+    expect(formatRestOptionTags('heal')).toEqual([
+      { label: 'シニアHP +40', tone: 'positive' },
+      { label: '士気 +10', tone: 'positive' },
+      { label: 'スタミナ +45', tone: 'positive' },
+    ]);
+  });
+
+  it('レリックボーナス付き heal をタグ化する', () => {
+    expect(formatRestOptionTags('heal', { restHealBonus: 10 })).toContainEqual({
+      label: 'シニアHP +50 (基本+40)',
+      tone: 'positive',
+    });
+  });
+
+  it('repay / recruit の効果をタグ化する', () => {
+    expect(formatRestOptionTags('repay')).toEqual([{ label: 'Tech Debt -30', tone: 'positive' }]);
+    expect(formatRestOptionTags('recruit')).toEqual([
+      { label: '予算 -25', tone: 'negative' },
+      { label: 'メンバー +1', tone: 'positive' },
+    ]);
   });
 });

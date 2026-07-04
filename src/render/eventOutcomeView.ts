@@ -7,11 +7,31 @@
  * 共通 `EffectTag` 型を再利用する。
  */
 import type { EventChoice, EventOutcome } from '../data/events';
+import type { GoalAdjustmentDef } from '../data/goalAdjustments';
 import { getCard } from '../data/cards';
 import type { EvolutionNodeDef } from '../data/evolution';
 import type { RelicDef } from '../data/relics';
 import { getRelic } from '../data/relics';
+import {
+  ANDON_TICKS,
+  ASSIGN_MORALE_COST,
+  ASSIGN_PROGRESS,
+  FIREFIGHT_HP_COST,
+  INTERRUPT_HP_COST,
+  INTERRUPT_REVIEW_COUNT,
+  OVERTIME_HP_COST,
+  OVERTIME_MORALE_COST,
+  OVERTIME_TICKS,
+  PAIR_LITERACY_GAIN,
+  PAIR_REVIEW_COUNT,
+  SPLIT_PROGRESS_PENALTY,
+  THROTTLE_TICKS,
+  type ActionDef,
+} from '../sim/actions';
+import { RECRUIT_COST, REST_STAMINA_RECOVER } from '../sim/member/roster';
+import { REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../sim/run/engine';
 import type { CardEffects, CardDef } from '../sim/types';
+import type { LeverDef, OrgAdjust } from '../sim/orgscale/types';
 import type { LoseReason, RunPassives, SprintModifierDelta } from '../sim/run/types';
 import { scaleEffects } from '../sim/cards';
 
@@ -338,4 +358,291 @@ export function formatCardTooltip(def: CardDef, level = 1): string {
 /** レリックの効果タグとフレーバー文を合成したツールチップ文字列。 */
 export function formatRelicTooltip(relic: RelicDef): string {
   return joinTooltip(effectTagsToTooltip(formatRelicDefTags(relic)), relic.description);
+}
+
+/** レバー効果（OrgAdjust）の表示ラベル。 */
+const ORG_ADJUST_SPECS = [
+  { key: 'aiDependencyDelta' as const, label: 'AI依存度', inverse: true },
+  { key: 'reviewQueueDelta' as const, label: 'レビュー行列', inverse: true },
+  { key: 'incidentDelta' as const, label: '炎上', inverse: true },
+  { key: 'moraleDelta' as const, label: '士気', inverse: false },
+  { key: 'techDebtDelta' as const, label: 'Tech Debt', inverse: true },
+  { key: 'extraTeams' as const, label: 'チーム', inverse: false },
+  { key: 'infraBoost' as const, label: '共通基盤', inverse: false },
+] as const;
+
+/** `OrgAdjust` 部分効果からタグ一覧を生成する（RI-45）。 */
+export function formatOrgAdjustTags(effect: Partial<OrgAdjust>): EffectTag[] {
+  const tags: EffectTag[] = [];
+  for (const spec of ORG_ADJUST_SPECS) {
+    const value = effect[spec.key];
+    if (typeof value !== 'number' || value === 0) continue;
+    pushTag(tags, `${spec.label} ${formatSignedDelta(value)}`, toneFromAdd(value, spec.inverse));
+  }
+  return tags;
+}
+
+/** レバー定義の効果タグ一覧（RI-45）。 */
+export function formatLeverDefTags(lever: LeverDef): EffectTag[] {
+  return formatOrgAdjustTags(lever.effect);
+}
+
+/** 目標 KPI への加算: 上がるほど達成が難しくなる（代償）。 */
+function toneFromGoalTargetAdd(value: number): EffectTagTone {
+  if (value > 0) return 'negative';
+  if (value < 0) return 'positive';
+  return 'neutral';
+}
+
+/** reorgReset 時の追加 org 効果（`applyGoalAdjustment` と一致）。 */
+const REORG_RESET_SENIOR_HP = 20;
+const REORG_RESET_TECH_DEBT = -8;
+
+export interface FormatGoalAdjustmentOptions {
+  /** 次期目標に AI Adoption KPI がある場合のみ true。 */
+  hasAiAdoptionTarget?: boolean;
+}
+
+/** 目標修正の goalEffects からタグ一覧を生成する。 */
+function formatGoalEffectTags(
+  goalEffects: GoalAdjustmentDef['goalEffects'],
+  opts?: FormatGoalAdjustmentOptions,
+): EffectTag[] {
+  const tags: EffectTag[] = [];
+  if (goalEffects.deliveryMul !== undefined && goalEffects.deliveryMul !== 1) {
+    const pct = Math.round(goalEffects.deliveryMul * 100);
+    pushTag(tags, `Delivery目標 ${pct}%`, goalEffects.deliveryMul < 1 ? 'positive' : 'negative');
+  }
+  if (goalEffects.deliveryAdd !== undefined && goalEffects.deliveryAdd !== 0) {
+    pushTag(
+      tags,
+      `Delivery目標 ${formatSignedDelta(goalEffects.deliveryAdd)}`,
+      goalEffects.deliveryAdd < 0 ? 'positive' : 'negative',
+    );
+  }
+  if (goalEffects.qualityAdd !== undefined && goalEffects.qualityAdd !== 0) {
+    pushTag(
+      tags,
+      `品質目標 ${formatSignedDelta(goalEffects.qualityAdd)}`,
+      toneFromGoalTargetAdd(goalEffects.qualityAdd),
+    );
+  }
+  if (goalEffects.moraleAdd !== undefined && goalEffects.moraleAdd !== 0) {
+    pushTag(
+      tags,
+      `士気目標 ${formatSignedDelta(goalEffects.moraleAdd)}`,
+      toneFromGoalTargetAdd(goalEffects.moraleAdd),
+    );
+  }
+  if (goalEffects.techDebtLimitAdd !== undefined && goalEffects.techDebtLimitAdd !== 0) {
+    pushTag(
+      tags,
+      `Tech Debt上限 ${formatSignedDelta(goalEffects.techDebtLimitAdd)}`,
+      toneFromDelta(goalEffects.techDebtLimitAdd),
+    );
+  }
+  if (goalEffects.incidentLimitAdd !== undefined && goalEffects.incidentLimitAdd !== 0) {
+    pushTag(
+      tags,
+      `Incident上限 ${formatSignedDelta(goalEffects.incidentLimitAdd)}`,
+      toneFromDelta(goalEffects.incidentLimitAdd),
+    );
+  }
+  if (
+    opts?.hasAiAdoptionTarget &&
+    goalEffects.aiAdoptionAdd !== undefined &&
+    goalEffects.aiAdoptionAdd !== 0
+  ) {
+    pushTag(
+      tags,
+      `AI Adoption目標 ${formatSignedDelta(goalEffects.aiAdoptionAdd)}`,
+      toneFromGoalTargetAdd(goalEffects.aiAdoptionAdd),
+    );
+  }
+  return tags;
+}
+
+/** 目標修正の orgEffects からタグ一覧を生成する。 */
+function formatGoalOrgEffectTags(
+  orgEffects: NonNullable<GoalAdjustmentDef['orgEffects']>,
+): EffectTag[] {
+  const tags: EffectTag[] = [];
+  if (orgEffects.deliveryScoreMul !== undefined && orgEffects.deliveryScoreMul !== 1) {
+    const pct = Math.round(orgEffects.deliveryScoreMul * 100);
+    pushTag(tags, `出荷評価 ${pct}%`, orgEffects.deliveryScoreMul < 1 ? 'negative' : 'positive');
+  }
+  if (orgEffects.techDebtDelta !== undefined && orgEffects.techDebtDelta !== 0) {
+    pushTag(
+      tags,
+      `Tech Debt ${formatSignedDelta(orgEffects.techDebtDelta)}`,
+      toneFromAdd(orgEffects.techDebtDelta, true),
+    );
+  }
+  if (orgEffects.moraleDelta !== undefined && orgEffects.moraleDelta !== 0) {
+    pushTag(
+      tags,
+      `士気 ${formatSignedDelta(orgEffects.moraleDelta)}`,
+      toneFromDelta(orgEffects.moraleDelta),
+    );
+  }
+  if (orgEffects.seniorHpDelta !== undefined && orgEffects.seniorHpDelta !== 0) {
+    pushTag(
+      tags,
+      `シニアHP ${formatSignedDelta(orgEffects.seniorHpDelta)}`,
+      toneFromDelta(orgEffects.seniorHpDelta),
+    );
+  }
+  if (orgEffects.qualityDelta !== undefined && orgEffects.qualityDelta !== 0) {
+    pushTag(
+      tags,
+      `品質 ${formatSignedDelta(orgEffects.qualityDelta)}`,
+      toneFromDelta(orgEffects.qualityDelta),
+    );
+  }
+  return tags;
+}
+
+/** 目標修正定義から効果タグ一覧を生成する（RI-45）。 */
+export function formatGoalAdjustmentTags(
+  def: GoalAdjustmentDef,
+  opts?: FormatGoalAdjustmentOptions,
+): EffectTag[] {
+  const tags: EffectTag[] = [];
+
+  for (const [key, delta] of Object.entries(def.trustDelta)) {
+    if (typeof delta === 'number' && delta !== 0) {
+      const label = TRUST_LABELS[key as keyof typeof TRUST_LABELS] ?? key;
+      pushTag(tags, `${label} ${formatSignedDelta(delta)}`, toneFromDelta(delta));
+    }
+  }
+
+  if (def.budgetDelta !== 0) {
+    pushTag(tags, `予算 ${formatSignedDelta(def.budgetDelta)}`, toneFromDelta(def.budgetDelta));
+  }
+
+  tags.push(...formatGoalEffectTags(def.goalEffects, opts));
+
+  if (def.orgEffects || def.reorgReset) {
+    const orgEffects = { ...def.orgEffects };
+    if (def.reorgReset) {
+      orgEffects.seniorHpDelta = (orgEffects.seniorHpDelta ?? 0) + REORG_RESET_SENIOR_HP;
+      orgEffects.techDebtDelta = (orgEffects.techDebtDelta ?? 0) + REORG_RESET_TECH_DEBT;
+    }
+    tags.push(...formatGoalOrgEffectTags(orgEffects));
+  }
+
+  if (def.nextBudgetCapDelta !== undefined && def.nextBudgetCapDelta !== 0) {
+    pushTag(
+      tags,
+      `次期予算上限 ${formatSignedDelta(def.nextBudgetCapDelta)}`,
+      toneFromDelta(def.nextBudgetCapDelta),
+    );
+  }
+
+  if (def.pauseAiDebuff) {
+    pushTag(tags, '次四半期 出荷速度 -15%', 'negative');
+  }
+
+  if (def.reorgReset) {
+    pushTag(tags, 'レビュー詰まり・属人化リセット', 'positive');
+  }
+
+  return tags;
+}
+
+/** 介入アクション定義から効果タグ一覧を生成する（RI-45）。 */
+export function formatActionDefTags(def: ActionDef): EffectTag[] {
+  const tags: EffectTag[] = [];
+
+  switch (def.id) {
+    case 'interruptReview':
+      pushTag(tags, `Review 最大${INTERRUPT_REVIEW_COUNT}件処理`, 'positive');
+      pushTag(tags, `シニアHP -${INTERRUPT_HP_COST}`, 'negative');
+      break;
+    case 'splitPr':
+      pushTag(tags, '巨大PRを分割', 'positive');
+      pushTag(tags, `進捗 -${Math.round(SPLIT_PROGRESS_PENALTY * 100)}%`, 'negative');
+      break;
+    case 'firefight':
+      pushTag(tags, '炎上1件鎮火', 'positive');
+      pushTag(tags, `シニアHP -${FIREFIGHT_HP_COST}`, 'negative');
+      break;
+    case 'assignTask':
+      pushTag(tags, `Coding +${Math.round(ASSIGN_PROGRESS * 100)}%`, 'positive');
+      pushTag(tags, `士気 -${ASSIGN_MORALE_COST}`, 'negative');
+      break;
+    case 'aiThrottle':
+      pushTag(tags, `AI流入停止 ${THROTTLE_TICKS}tick`, 'positive');
+      pushTag(tags, '出荷速度一時低下', 'negative');
+      break;
+    case 'pairReview':
+      pushTag(tags, `Review 最大${PAIR_REVIEW_COUNT}件処理`, 'positive');
+      pushTag(tags, `AI Literacy +${PAIR_LITERACY_GAIN}`, 'positive');
+      break;
+    case 'overtime':
+      pushTag(tags, `スループット↑ ${OVERTIME_TICKS}tick`, 'positive');
+      pushTag(tags, `士気 -${OVERTIME_MORALE_COST}`, 'negative');
+      pushTag(tags, `シニアHP -${OVERTIME_HP_COST}`, 'negative');
+      break;
+    case 'andon':
+      pushTag(tags, `流入停止 ${ANDON_TICKS}tick`, 'neutral');
+      pushTag(tags, '出荷機会損失', 'negative');
+      break;
+  }
+
+  if (def.gauge > 0) {
+    pushTag(tags, `連携 +${Math.round(def.gauge * 100)}%`, 'positive');
+  }
+
+  return tags;
+}
+
+export type RestOptionId = 'heal' | 'repay' | 'upgrade' | 'recruit';
+
+/** 休息選択肢の効果タグ一覧（RI-45）。 */
+export function formatRestOptionTags(
+  option: RestOptionId,
+  opts?: { restHealBonus?: number },
+): EffectTag[] {
+  const tags: EffectTag[] = [];
+  const bonus = opts?.restHealBonus ?? 0;
+
+  switch (option) {
+    case 'heal': {
+      const healTotal = REST_HEAL + bonus;
+      pushTag(
+        tags,
+        bonus > 0 ? `シニアHP +${healTotal} (基本+${REST_HEAL})` : `シニアHP +${healTotal}`,
+        'positive',
+      );
+      pushTag(tags, `士気 +${REST_MORALE_HEAL}`, 'positive');
+      pushTag(tags, `スタミナ +${REST_STAMINA_RECOVER}`, 'positive');
+      break;
+    }
+    case 'repay':
+      pushTag(tags, `Tech Debt -${REST_REPAY}`, 'positive');
+      break;
+    case 'upgrade':
+      pushTag(tags, 'デッキ先頭 +1Lv', 'positive');
+      break;
+    case 'recruit':
+      pushTag(tags, `予算 -${RECRUIT_COST}`, 'negative');
+      pushTag(tags, 'メンバー +1', 'positive');
+      break;
+  }
+
+  return tags;
+}
+
+/** レバーの効果タグとフレーバー文を合成したツールチップ文字列。 */
+export function formatLeverTooltip(lever: LeverDef): string {
+  return joinTooltip(effectTagsToTooltip(formatLeverDefTags(lever)), lever.description);
+}
+
+/** 介入アクションの効果タグと説明文を合成したツールチップ文字列。 */
+export function formatActionTooltip(def: ActionDef): string {
+  return joinTooltip(
+    effectTagsToTooltip(formatActionDefTags(def)),
+    `${def.description}（副作用: ${def.sideEffect}）`,
+  );
 }

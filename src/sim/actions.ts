@@ -28,27 +28,29 @@ export interface ActionDef {
   tone?: 'danger' | 'heavy';
 }
 
-/** 割り込みレビューで一度に捌く PR 数。 */
-const INTERRUPT_REVIEW_COUNT = 4;
-/** 割り込みレビューの追加シニアHP消費。 */
-const INTERRUPT_HP_COST = 3;
-/** 緊急対応の追加シニアHP消費。 */
-const FIREFIGHT_HP_COST = 2;
-/** タスク差配で進める Coding 進捗量。 */
-const ASSIGN_PROGRESS = 0.5;
-/** タスク差配の士気低下。 */
-const ASSIGN_MORALE_COST = 3;
-/** ペアレビューで捌く PR 数。 */
-const PAIR_REVIEW_COUNT = 2;
-/** ペアレビューで上がる AI Literacy。 */
-const PAIR_LITERACY_GAIN = 4;
-/** PR分割の進捗巻き戻し。 */
-const SPLIT_PROGRESS_PENALTY = 0.2;
+/** 割り込みレビューで一度に捌く PR 数（UI プレビューと共有）。 */
+export const INTERRUPT_REVIEW_COUNT = 4;
+/** 割り込みレビューの追加シニアHP消費（UI プレビューと共有）。 */
+export const INTERRUPT_HP_COST = 3;
+/** 緊急対応の追加シニアHP消費（UI プレビューと共有）。 */
+export const FIREFIGHT_HP_COST = 2;
+/** タスク差配で進める Coding 進捗量（UI プレビューと共有）。 */
+export const ASSIGN_PROGRESS = 0.5;
+/** タスク差配の士気低下（UI プレビューと共有）。 */
+export const ASSIGN_MORALE_COST = 3;
+/** ペアレビューで捌く PR 数（UI プレビューと共有）。 */
+export const PAIR_REVIEW_COUNT = 2;
+/** ペアレビューで上がる AI Literacy（UI プレビューと共有）。 */
+export const PAIR_LITERACY_GAIN = 4;
+/** PR分割の進捗巻き戻し（UI プレビューと共有）。 */
+export const SPLIT_PROGRESS_PENALTY = 0.2;
 
 /** 残業号令の持続 tick・副作用。スループット倍率は model 側（process.ts）に置く。 */
 export const OVERTIME_TICKS = 30;
-const OVERTIME_MORALE_COST = 8;
-const OVERTIME_HP_COST = 6;
+/** 残業号令の Morale 消費（UI プレビューと共有）。 */
+export const OVERTIME_MORALE_COST = 8;
+/** 残業号令のシニアHP消費（UI プレビューと共有）。 */
+export const OVERTIME_HP_COST = 6;
 /** アンドンの流入停止 tick。 */
 export const ANDON_TICKS = 30;
 /** AIスロットルの持続 tick。 */

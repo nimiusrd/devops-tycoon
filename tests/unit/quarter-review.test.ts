@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getBoss } from '../../src/data/bosses';
+import { BOSS_DEFS, getBoss } from '../../src/data/bosses';
+import { getDifficulty } from '../../src/data/difficulties';
 import { getGoalAdjustment } from '../../src/data/goalAdjustments';
 import { createOrgState } from '../../src/sim/org';
 import {
@@ -12,7 +13,14 @@ import {
   measureGoalProgress,
 } from '../../src/sim/run/quarterReview';
 import type { OrgState } from '../../src/sim/types';
-import type { QuarterGoal, RunTotals, StakeholderTrust } from '../../src/sim/run/types';
+import type {
+  DifficultyId,
+  GoalKpiProgress,
+  QuarterGoal,
+  QuarterOutcome,
+  RunTotals,
+  StakeholderTrust,
+} from '../../src/sim/run/types';
 
 const org = (o: Partial<OrgState> = {}): OrgState => ({ ...createOrgState('default', true), ...o });
 
@@ -37,6 +45,33 @@ const goal: QuarterGoal = {
   moraleTarget: 40,
   incidentLimit: 6,
 };
+
+function progressWithMisses(missedCount: number): GoalKpiProgress[] {
+  return ['delivery', 'quality', 'techDebt', 'morale'].map((id, index) => ({
+    id,
+    label: id,
+    target: 10,
+    actual: index < missedCount ? 1 : 12,
+    status: index < missedCount ? 'missed' : 'met',
+  }));
+}
+
+function evaluateBoundary(input: {
+  missedCount: number;
+  trust?: StakeholderTrust;
+  budget?: number;
+  quarterNumber?: number;
+  org?: Partial<OrgState>;
+}): QuarterOutcome {
+  return evaluateQuarterOutcome({
+    bossCleared: false,
+    progress: progressWithMisses(input.missedCount),
+    trust: input.trust ?? { management: 60, customers: 60, team: 60 },
+    org: org({ morale: 60, seniorHp: 60, ...(input.org ?? {}) }),
+    budget: input.budget ?? 30,
+    quarterNumber: input.quarterNumber ?? 1,
+  });
+}
 
 describe('四半期レビュー（Phase 8）', () => {
   it('目標達成時は met または exceeded になる', () => {
@@ -183,6 +218,89 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(outcome).toBe('missed_adjustable');
   });
 
+  it('RI-17: outcome 閾値の境界と優先順位が許容レンジ内', () => {
+    const cases: Array<{
+      name: string;
+      input: Parameters<typeof evaluateBoundary>[0];
+      expected: QuarterOutcome;
+    }> = [
+      {
+        name: 'minTrust=10 は shutdown',
+        input: { missedCount: 1, trust: { management: 10, customers: 60, team: 60 } },
+        expected: 'shutdown',
+      },
+      {
+        name: 'minTrust=11 は shutdown ではなく missed_crisis',
+        input: { missedCount: 1, trust: { management: 11, customers: 60, team: 60 } },
+        expected: 'missed_crisis',
+      },
+      {
+        name: '予算0かつ士気15は shutdown',
+        input: { missedCount: 1, budget: 0, org: { morale: 15 } },
+        expected: 'shutdown',
+      },
+      {
+        name: '予算0でも士気16なら crisis に留まる',
+        input: { missedCount: 1, budget: 0, org: { morale: 16 } },
+        expected: 'missed_crisis',
+      },
+      {
+        name: 'Senior HP 5 かつ未達2件は shutdown',
+        input: { missedCount: 2, org: { seniorHp: 5 } },
+        expected: 'shutdown',
+      },
+      {
+        name: 'Senior HP 6 かつ未達2件は調整可能',
+        input: { missedCount: 2, org: { seniorHp: 6 } },
+        expected: 'missed_adjustable',
+      },
+      {
+        name: '2四半期目の未達3件は reorg_required',
+        input: { missedCount: 3, quarterNumber: 2 },
+        expected: 'reorg_required',
+      },
+      {
+        name: '1四半期目の未達3件は調整可能',
+        input: { missedCount: 3, quarterNumber: 1 },
+        expected: 'missed_adjustable',
+      },
+      {
+        name: 'minTrust=20 かつ未達2件は reorg_required',
+        input: { missedCount: 2, trust: { management: 20, customers: 60, team: 60 } },
+        expected: 'reorg_required',
+      },
+      {
+        name: 'minTrust=21 かつ未達2件は調整可能',
+        input: { missedCount: 2, trust: { management: 21, customers: 60, team: 60 } },
+        expected: 'missed_adjustable',
+      },
+      {
+        name: 'minTrust=15 は missed_crisis',
+        input: { missedCount: 1, trust: { management: 15, customers: 60, team: 60 } },
+        expected: 'missed_crisis',
+      },
+      {
+        name: 'minTrust=16 かつ軽微未達は調整可能',
+        input: { missedCount: 1, trust: { management: 16, customers: 60, team: 60 } },
+        expected: 'missed_adjustable',
+      },
+      {
+        name: '予算5は missed_crisis',
+        input: { missedCount: 1, budget: 5 },
+        expected: 'missed_crisis',
+      },
+      {
+        name: '未達4件は missed_crisis',
+        input: { missedCount: 4 },
+        expected: 'missed_crisis',
+      },
+    ];
+
+    for (const c of cases) {
+      expect(evaluateBoundary(c.input), c.name).toBe(c.expected);
+    }
+  });
+
   it('目標修正後の priorGoal は次四半期目標へ引き継がれる', () => {
     const boss = getBoss('big-release')!;
     const adjusted = applyGoalAdjustment(
@@ -199,6 +317,89 @@ describe('四半期レビュー（Phase 8）', () => {
     const next = buildQuarterGoal(boss, 'normal', 1, adjusted.goal);
     expect(next.techDebtLimit).toBe(adjusted.goal.techDebtLimit);
     expect(next.incidentLimit).toBe(adjusted.goal.incidentLimit);
+  });
+
+  it('RI-17: 目標修正の代償と補正が安全なレンジに収まる', () => {
+    const input = {
+      goal: { ...goal, aiAdoptionTarget: 40 },
+      trust: buildInitialTrust('normal'),
+      org: org({ deliveryScore: 100, morale: 50, seniorHp: 50, techDebt: 40, quality: 60 }),
+      budget: 40,
+      goalAdjustmentsTaken: [] as const,
+      nextBudgetCap: null as number | null,
+    };
+    const ids = [
+      'cut_scope',
+      'extend_deadline',
+      'quality_pivot',
+      'request_budget',
+      'pause_ai_rollout',
+      'reorg_teams',
+    ] as const;
+
+    for (const id of ids) {
+      const result = applyGoalAdjustment(input, id);
+      expect(
+        Math.min(result.trust.management, result.trust.customers, result.trust.team),
+        id,
+      ).toBeGreaterThanOrEqual(40);
+      expect(result.budget, id).toBeGreaterThanOrEqual(30);
+      expect(result.budget, id).toBeLessThanOrEqual(60);
+      expect(result.goal.deliveryTarget, id).toBeGreaterThanOrEqual(25);
+      expect(result.goal.deliveryTarget, id).toBeLessThanOrEqual(75);
+      expect(result.goal.qualityTarget, id).toBeGreaterThanOrEqual(45);
+      expect(result.goal.qualityTarget, id).toBeLessThanOrEqual(55);
+      expect(result.goal.moraleTarget, id).toBeGreaterThanOrEqual(35);
+      expect(result.goal.moraleTarget, id).toBeLessThanOrEqual(45);
+      expect(result.goal.techDebtLimit, id).toBeGreaterThanOrEqual(55);
+      expect(result.goal.techDebtLimit, id).toBeLessThanOrEqual(70);
+      expect(result.goal.incidentLimit, id).toBeGreaterThanOrEqual(6);
+      expect(result.goal.incidentLimit, id).toBeLessThanOrEqual(9);
+      expect(result.goal.aiAdoptionTarget, id).toBeGreaterThanOrEqual(25);
+      expect(result.goal.aiAdoptionTarget, id).toBeLessThanOrEqual(40);
+      expect(result.org.morale, id).toBeGreaterThanOrEqual(40);
+      expect(result.org.seniorHp, id).toBeLessThanOrEqual(100);
+      expect(result.org.techDebt, id).toBeGreaterThanOrEqual(0);
+    }
+
+    expect(applyGoalAdjustment(input, 'request_budget').nextBudgetCap).toBe(25);
+    expect(applyGoalAdjustment(input, 'pause_ai_rollout').pauseAiDebuff).toBe(true);
+    expect(applyGoalAdjustment(input, 'cut_scope').pauseAiDebuff).toBe(false);
+  });
+
+  it('RI-17: 全ボス・難易度の四半期目標が許容レンジ内に収まる', () => {
+    const difficulties: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
+
+    for (const boss of BOSS_DEFS) {
+      for (const difficulty of difficulties) {
+        const diff = getDifficulty(difficulty);
+        const g = buildQuarterGoal(boss, difficulty, diff.bossTargetMul);
+        expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeGreaterThanOrEqual(30);
+        expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeLessThanOrEqual(160);
+        expect(g.qualityTarget, `${boss.id}:${difficulty}:quality`).toBeGreaterThanOrEqual(40);
+        expect(g.qualityTarget, `${boss.id}:${difficulty}:quality`).toBeLessThanOrEqual(55);
+        expect(g.techDebtLimit, `${boss.id}:${difficulty}:techDebt`).toBeGreaterThanOrEqual(40);
+        expect(g.techDebtLimit, `${boss.id}:${difficulty}:techDebt`).toBeLessThanOrEqual(55);
+        expect(g.moraleTarget, `${boss.id}:${difficulty}:morale`).toBeGreaterThanOrEqual(40);
+        expect(g.moraleTarget, `${boss.id}:${difficulty}:morale`).toBeLessThanOrEqual(45);
+        expect(g.incidentLimit, `${boss.id}:${difficulty}:incident`).toBeGreaterThanOrEqual(5);
+        expect(g.incidentLimit, `${boss.id}:${difficulty}:incident`).toBeLessThanOrEqual(6);
+        if (g.aiAdoptionTarget !== undefined) {
+          expect(g.aiAdoptionTarget, `${boss.id}:${difficulty}:ai`).toBeGreaterThanOrEqual(35);
+          expect(g.aiAdoptionTarget, `${boss.id}:${difficulty}:ai`).toBeLessThanOrEqual(45);
+        }
+
+        const next = buildQuarterGoal(boss, difficulty, diff.bossTargetMul, g);
+        expect(next.deliveryTarget, `${boss.id}:${difficulty}:prior`).toBeLessThan(
+          g.deliveryTarget,
+        );
+        expect(next.deliveryTarget, `${boss.id}:${difficulty}:prior`).toBeGreaterThanOrEqual(20);
+        expect(next.qualityTarget).toBe(g.qualityTarget);
+        expect(next.techDebtLimit).toBe(g.techDebtLimit);
+        expect(next.moraleTarget).toBe(g.moraleTarget);
+        expect(next.incidentLimit).toBe(g.incidentLimit);
+      }
+    }
   });
 
   it('予算不足時は extend_deadline を提示しない', () => {

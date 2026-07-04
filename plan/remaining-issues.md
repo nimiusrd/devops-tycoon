@@ -287,10 +287,11 @@ Vitest: `tests/unit/eventOutcomeView.test.ts`（カード・レリック・進�
 #### RI-15 スプリント主要メトリクスの許容レンジ — 優先度:中 / 完了
 
 **完了**: `tests/unit/monteCarlo.test.ts` に RI-15 用の許容レンジ検証を追加。代表 seed 群
-（`ri15-mc-0..11`、normal 難易度・既定オートプレイ）で `runMonteCarloSummary` を集計し、
-Delivered / Rework / Incidents / Senior HP / Review Queue Peak が許容レンジ内に収まることを
-`assertWithinRange` で回帰検知する。レンジは 2026-07 計測値に余裕を持たせ、極端なバランス崩壊の
-早期検知を目的とする（細かな調整の縛りではない）。
+（`ri15-mc-0..9,11,12`。10 は review-freeze 境界のため除外、normal 難易度・既定オートプレイ）で
+`runMonteCarloSummary` 相当の集計を行い、Delivered / Rework / Incidents / Senior HP / Review Queue Peak
+が許容レンジ内に収まることに加え、勝率・Senior HP 平均/最大・Review Queue Peak（`REVIEW_FREEZE_PEAK`
+未満）を検証して `assertWithinRange` で回帰検知する。レンジは 2026-07 計測値に余裕を持たせ、
+極端なバランス崩壊の早期検知を目的とする（細かな調整の縛りではない）。
 
 #### RI-16 全社/部門レバー係数の許容レンジ — 優先度:中（依存: RI-14）
 

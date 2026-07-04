@@ -5,6 +5,7 @@ import {
   drawDraft,
   scaleEffects,
   upgradeCard,
+  upgradeCardAt,
 } from '../../src/sim/cards';
 import { reworkProbability } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
@@ -62,6 +63,17 @@ describe('カード効果の状態反映（第7.2）', () => {
     expect(next[0].level).toBe(2);
     expect(next[1].level).toBe(1); // 1 枚だけ強化
     expect(deck[0].level).toBe(1); // 元配列は不変
+  });
+
+  it('upgradeCardAt は指定位置だけを 1 段強化する', () => {
+    const deck: CardInstance[] = [
+      { defId: 'copilot', level: 1 },
+      { defId: 'copilot', level: 2 },
+    ];
+    const next = upgradeCardAt(deck, 1);
+    expect(next[0].level).toBe(1);
+    expect(next[1].level).toBe(3);
+    expect(deck[1].level).toBe(2);
   });
 
   it('未知カードは効果に影響しない（無効果へフォールバック）', () => {

@@ -34,7 +34,7 @@ export interface UseRun {
   buyShopCard: (defId: string) => void;
   buyShopRelic: () => void;
   leaveShop: () => void;
-  restChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit', defId?: string) => void;
+  restChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit', deckIndex?: number) => void;
   assignMember: (id: string, assignment: LaneAssignment) => void;
   setMemberAi: (id: string, on: boolean) => void;
   zoomTo: (level: ZoomLevel) => void;
@@ -90,8 +90,8 @@ export function useRun(game: GameHandle): UseRun {
   const buyShopRelic = useCallback(() => void game.buyShopRelic(), [game]);
   const leaveShop = useCallback(() => void game.leaveShop(), [game]);
   const restChoose = useCallback(
-    (option: 'heal' | 'repay' | 'upgrade' | 'recruit', defId?: string) =>
-      void game.restChoose(option, defId),
+    (option: 'heal' | 'repay' | 'upgrade' | 'recruit', deckIndex?: number) =>
+      void game.restChoose(option, deckIndex),
     [game],
   );
   const assignMember = useCallback(

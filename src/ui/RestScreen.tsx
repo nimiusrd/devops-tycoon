@@ -14,7 +14,7 @@ import { EffectTagList } from './EffectTagList';
 
 export interface RestScreenProps {
   state: RunState;
-  onChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit', defId?: string) => void;
+  onChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit', deckIndex?: number) => void;
 }
 
 export function RestScreen({ state, onChoose }: RestScreenProps) {
@@ -44,7 +44,7 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
                   key={`${card.defId}-${index}`}
                   className="rest-upgrade-card"
                   data-testid={`rest-upgrade-card-${card.defId}-${index}`}
-                  onClick={() => onChoose('upgrade', card.defId)}
+                  onClick={() => onChoose('upgrade', index)}
                 >
                   <CardView def={def} level={card.level} />
                   <span className="rest-upgrade-next">次: Lv.{card.level + 1}</span>

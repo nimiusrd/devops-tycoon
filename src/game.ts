@@ -64,8 +64,8 @@ export interface GameHandle {
   buyShopRelic(): RunState;
   /** ショップを出る。 */
   leaveShop(): RunState;
-  /** 休息の選択（heal / repay / upgrade / recruit）。upgrade は対象カード ID を指定可能。 */
-  restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit', defId?: string): RunState;
+  /** 休息の選択（heal / repay / upgrade / recruit）。upgrade はデッキ位置を指定可能。 */
+  restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit', deckIndex?: number): RunState;
   /** メンバーをレーンへ配置する（編成。第12章）。 */
   assignMember(id: string, assignment: LaneAssignment): RunState;
   /** メンバーへの AI 配布を切り替える（編成。第12章）。 */
@@ -252,8 +252,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
       return engine.snapshot();
     },
-    restChoose(option, defId) {
-      engine.restChoose(option, defId);
+    restChoose(option, deckIndex) {
+      engine.restChoose(option, deckIndex);
       bump();
       return engine.snapshot();
     },

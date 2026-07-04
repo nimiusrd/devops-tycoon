@@ -149,9 +149,9 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     }
   });
 
-  it('RI-37: 休息のカード強化で指定したカードだけを強化できる', () => {
+  it('RI-37: 休息のカード強化で指定した位置だけを強化できる', () => {
     let engine: RunEngine | null = null;
-    let targetDefId = '';
+    let targetIndex = -1;
 
     for (const seed of ['ri37-upgrade-a', 'ri37-upgrade-b', 'ri37-upgrade-c', 'ri37-upgrade-d']) {
       const e = new RunEngine({ seed, difficulty: 'easy' });
@@ -161,11 +161,10 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       while (s.status === 'playing' && guard < 40_000) {
         guard += 1;
         if (s.phase === 'rest') {
-          const first = s.deck[0];
-          const target = s.deck.find((card, index) => index > 0 && card.defId !== first?.defId);
-          if (first && target) {
+          const index = s.deck.findIndex((card, i) => i > 0 && card.defId !== s.deck[0]?.defId);
+          if (index > 0) {
             engine = e;
-            targetDefId = target.defId;
+            targetIndex = index;
             break;
           }
           e.restChoose('heal');
@@ -178,18 +177,56 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     }
 
     expect(engine).not.toBeNull();
-    const before = engine!.snapshot();
-    const firstBefore = before.deck[0];
-    const targetBefore = before.deck.find((card) => card.defId === targetDefId)!;
+    const before = engine!.snapshot().deck;
+    const targetBefore = before[targetIndex];
 
-    engine!.restChoose('upgrade', targetDefId);
+    engine!.restChoose('upgrade', targetIndex);
     const after = engine!.snapshot();
 
-    expect(after.deck[0]).toEqual(firstBefore);
-    expect(after.deck.find((card) => card.defId === targetDefId)?.level).toBe(
-      targetBefore.level + 1,
+    expect(after.deck[targetIndex].level).toBe(targetBefore.level + 1);
+    expect(after.deck.filter((_, i) => i !== targetIndex)).toEqual(
+      before.filter((_, i) => i !== targetIndex),
     );
     expect(after.phase).toBe('setup');
+  });
+
+  it('RI-37: 同一 defId の重複カードでも指定位置だけを強化する', () => {
+    let verified = false;
+    for (const seed of Array.from({ length: 120 }, (_, i) => `ri37-dup-${i}`)) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      let s = e.snapshot();
+      let guard = 0;
+      while (s.status === 'playing' && guard < 40_000) {
+        guard += 1;
+        if (s.phase === 'rest') {
+          const dupIndex = s.deck.findIndex((card, index) =>
+            s.deck.some((other, j) => j < index && other.defId === card.defId),
+          );
+          if (dupIndex > 0) {
+            const before = s.deck;
+            const firstIndex = before.findIndex((card) => card.defId === before[dupIndex].defId);
+            e.restChoose('upgrade', dupIndex);
+            const after = e.snapshot().deck;
+            expect(after[firstIndex].level).toBe(before[firstIndex].level);
+            expect(after[dupIndex].level).toBe(before[dupIndex].level + 1);
+            verified = true;
+            break;
+          }
+          e.restChoose('heal');
+        } else if (s.phase === 'draft' && s.draft && s.draft.length > 0) {
+          const existing = new Set(s.deck.map((card) => card.defId));
+          const duplicate = s.draft.find((id) => existing.has(id)) ?? s.draft[0];
+          e.chooseCard(duplicate);
+        } else if (!advance(e, { beatChoice: 0 })) {
+          break;
+        }
+        s = e.snapshot();
+      }
+      if (verified) break;
+    }
+
+    expect(verified).toBe(true);
   });
 
   it('RI-37: 対象未指定の休息強化は既存互換で先頭カードを強化する', () => {
@@ -216,7 +253,7 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
 
   it('RI-37: ショップ購入カードも休息強化の対象にできる', () => {
     let engine: RunEngine | null = null;
-    let boughtDefId = '';
+    let boughtIndex = -1;
 
     for (const seed of Array.from({ length: 160 }, (_, i) => `ri37-shop-${i}`)) {
       const e = new RunEngine({ seed, difficulty: 'easy' });
@@ -234,9 +271,12 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
           }
           e.leaveShop();
         } else if (s.phase === 'rest' && bought) {
-          engine = e;
-          boughtDefId = bought;
-          break;
+          boughtIndex = s.deck.findIndex((card) => card.defId === bought);
+          if (boughtIndex >= 0) {
+            engine = e;
+            break;
+          }
+          e.restChoose('heal');
         } else if (s.phase === 'rest') {
           e.restChoose('heal');
         } else if (!advance(e, { beatChoice: 0 })) {
@@ -248,11 +288,11 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     }
 
     expect(engine).not.toBeNull();
-    const before = engine!.snapshot().deck.find((card) => card.defId === boughtDefId);
+    const before = engine!.snapshot().deck[boughtIndex];
     expect(before).toBeDefined();
 
-    engine!.restChoose('upgrade', boughtDefId);
-    const after = engine!.snapshot().deck.find((card) => card.defId === boughtDefId);
+    engine!.restChoose('upgrade', boughtIndex);
+    const after = engine!.snapshot().deck[boughtIndex];
     expect(after?.level).toBe(before!.level + 1);
   });
 

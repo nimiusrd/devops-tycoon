@@ -4,8 +4,11 @@
  * 代表 seed を掃引してラン結果を集計し、RI-15〜RI-19 の許容レンジテストで
  * 再利用できる純関数群を提供する。sim 層は変更せず RunEngine の公開 API のみ利用。
  */
+import { getTrial } from '../../../src/data/difficulties';
+import { UNLOCK_DEFS } from '../../../src/data/unlocks';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { DifficultyId, RunState, RunStatus, RunTotals } from '../../../src/sim/run/types';
+import { applyRunReward, defaultMeta, type RunRewardInput } from '../../../src/state/meta';
 import { playRun, type PlayOptions } from './runFlow';
 
 /** 1 試行分のラン終了メトリクス（RI-15 以降の許容レンジ検証用）。 */
@@ -73,6 +76,34 @@ export interface ReviewMetrics {
   minStakeholderTrust: number;
 }
 
+/** メタ進行 points 報酬の許容レンジ検証用メトリクス（RI-18）。 */
+export interface MetaRewardMetrics {
+  seed: string;
+  status: RunStatus;
+  won: boolean;
+  /** 1 ラン分の applyRunReward で得た points。 */
+  pointsGained: number;
+  /** 試練 scoreMul の積。 */
+  scoreMul: number;
+  /** そのラン報酬だけで購入可能な解放数（初期 0pt 想定）。 */
+  affordableUnlockCount: number;
+}
+
+/** RI-18 用メトリクスの集計サマリー。 */
+export interface MetaRewardMonteCarloSummary {
+  trials: number;
+  settled: number;
+  unfinished: number;
+  /** 全試行の points 報酬。 */
+  pointsGained: NumericMetricSummary;
+  /** 勝利試行のみ。 */
+  winPointsGained: NumericMetricSummary;
+  /** 敗北試行のみ。 */
+  lossPointsGained: NumericMetricSummary;
+  scoreMul: NumericMetricSummary;
+  affordableUnlockCount: NumericMetricSummary;
+}
+
 /** RI-17 用メトリクスの集計サマリー。 */
 export interface ReviewMonteCarloSummary {
   trials: number;
@@ -115,6 +146,39 @@ export function extractRunMetrics(seed: string, state: RunState): RunMetrics {
     reviewQueuePeak: state.totals.reviewQueuePeak,
     sprintsPlayed: state.sprintsPlayed,
     deliveryScore: state.org.deliveryScore,
+  };
+}
+
+/** RunState から applyRunReward 用入力を組み立てる（game.ts と同じ導出）。 */
+export function buildRunRewardInput(state: RunState): RunRewardInput {
+  const scoreMul = state.trials.reduce((m, id) => m * (getTrial(id)?.scoreMul ?? 1), 1);
+  return {
+    won: state.status === 'won',
+    difficulty: state.difficulty,
+    winType: state.winType,
+    bossId: state.bossId,
+    score: state.org.deliveryScore,
+    scoreMul,
+    maxCombo: state.totals.maxCombo,
+    quarterReviews: state.reviewHistory,
+  };
+}
+
+/** ラン終了状態からメタ進行 points 報酬メトリクスを抽出する（RI-18）。 */
+export function extractMetaRewardMetrics(seed: string, state: RunState): MetaRewardMetrics {
+  const input = buildRunRewardInput(state);
+  const before = defaultMeta();
+  const after = applyRunReward(before, input);
+  const pointsGained = after.points - before.points;
+  const affordableUnlockCount = UNLOCK_DEFS.filter((u) => u.cost <= pointsGained).length;
+
+  return {
+    seed,
+    status: state.status,
+    won: input.won,
+    pointsGained,
+    scoreMul: input.scoreMul,
+    affordableUnlockCount,
   };
 }
 
@@ -181,6 +245,29 @@ export function summarizeMonteCarlo(results: readonly RunMetrics[]): MonteCarloS
     reviewQueuePeak: pick('reviewQueuePeak'),
     sprintsPlayed: pick('sprintsPlayed'),
     deliveryScore: pick('deliveryScore'),
+  };
+}
+
+/** RI-18 用メトリクス群から集計サマリーを生成する。 */
+export function summarizeMetaRewardMonteCarlo(
+  results: readonly MetaRewardMetrics[],
+): MetaRewardMonteCarloSummary {
+  const settledResults = results.filter((r) => isSettledStatus(r.status));
+  const winResults = settledResults.filter((r) => r.won);
+  const lossResults = settledResults.filter((r) => !r.won);
+  const pick = (
+    key: keyof Omit<MetaRewardMetrics, 'seed' | 'status' | 'won'>,
+  ): NumericMetricSummary => summarizeNumeric(settledResults.map((r) => r[key]));
+
+  return {
+    trials: results.length,
+    settled: settledResults.length,
+    unfinished: results.length - settledResults.length,
+    pointsGained: pick('pointsGained'),
+    winPointsGained: summarizeNumeric(winResults.map((r) => r.pointsGained)),
+    lossPointsGained: summarizeNumeric(lossResults.map((r) => r.pointsGained)),
+    scoreMul: pick('scoreMul'),
+    affordableUnlockCount: pick('affordableUnlockCount'),
   };
 }
 

@@ -22,7 +22,7 @@ type GameWindow = Window & {
     buyShopCard(id: string): RunState;
     buyShopRelic(): RunState;
     leaveShop(): RunState;
-    restChoose(o: string): RunState;
+    restChoose(o: string, defId?: string): RunState;
     assignMember(id: string, assignment: string): RunState;
     setMemberAi(id: string, on: boolean): RunState;
     acknowledgeQuarterReview(): RunState;
@@ -97,6 +97,60 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
   await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId('run-end-status')).toBeVisible();
   await expect(page.getByTestId('diagnosis')).toBeVisible();
+});
+
+test('RI-37: 休息で強化対象カードを選んでレベルを上げられる', async ({ page }) => {
+  await page.goto('/?seed=ri37-e2e');
+
+  const reached = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('easy', [], 'ri37-e2e');
+    let s = g.getState();
+    let guard = 0;
+    while (s.status === 'playing' && guard < 60000) {
+      guard += 1;
+      if (s.phase === 'rest' && s.deck.length > 0) {
+        return {
+          ok: true,
+          defId: s.deck[0].defId,
+          level: s.deck[0].level,
+        };
+      }
+      if (s.phase === 'setup') g.beginSetupSprint();
+      else if (s.phase === 'sprint') g.step(1_000_000);
+      else if (s.phase === 'result') g.acknowledgeResult();
+      else if (s.phase === 'draft') {
+        if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
+        else g.skipDraft();
+      } else if (s.phase === 'evolution') g.finishEvolution();
+      else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+      else if (s.phase === 'shop') g.leaveShop();
+      else if (s.phase === 'rest') g.restChoose('heal');
+      else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
+      else break;
+      s = g.getState();
+    }
+    return { ok: false, phase: s.phase, deckLength: s.deck.length };
+  });
+
+  test.skip(!reached.ok, `休息とカード所持の条件に到達できない: ${JSON.stringify(reached)}`);
+  if (!reached.ok) return;
+
+  await expect(page.getByTestId('rest')).toBeVisible({ timeout: 5000 });
+  await page.getByTestId('rest-upgrade').click();
+  await expect(page.getByTestId('rest-upgrade-cards')).toBeVisible();
+  await page.getByTestId(`rest-upgrade-card-${reached.defId}-0`).click();
+  await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
+
+  const upgraded = await page.evaluate(
+    ({ defId }) => {
+      const s = (window as GameWindow).game!.getState();
+      return s.deck.find((card) => card.defId === defId)?.level;
+    },
+    { defId: reached.defId },
+  );
+  expect(upgraded).toBe(reached.level + 1);
 });
 
 test('ボス未達→四半期レビュー→スコープ削減→次四半期へ継続', async ({ page }) => {

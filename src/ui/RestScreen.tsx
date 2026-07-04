@@ -3,24 +3,67 @@
  *
  * シニアHP+個体スタミナ回復 / 技術的負債返済 / カード強化 / 採用 のいずれかを選ぶ。
  */
+import { useState } from 'react';
+import { getCard } from '../data/cards';
 import { canRecruit, RECRUIT_COST } from '../sim/member';
 import { foldPassives } from '../sim/run/effects';
 import type { RunState } from '../sim/run/types';
 import { formatRestOptionTags } from '../render/eventOutcomeView';
+import { CardView } from './CardView';
 import { EffectTagList } from './EffectTagList';
 
 export interface RestScreenProps {
   state: RunState;
-  onChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit') => void;
+  onChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit', defId?: string) => void;
 }
 
 export function RestScreen({ state, onChoose }: RestScreenProps) {
+  const [choosingUpgrade, setChoosingUpgrade] = useState(false);
   const canUpgrade = state.deck.length > 0;
   const rosterHasRoom = canRecruit(state.roster);
   const canAfford = state.budget >= RECRUIT_COST;
   const canHire = rosterHasRoom && canAfford;
   const restHealBonus = foldPassives(state.relics).restHealBonus;
   const healTags = formatRestOptionTags('heal', { restHealBonus });
+  if (choosingUpgrade) {
+    return (
+      <div className="result-overlay" data-testid="rest" role="dialog" aria-label="Rest">
+        <div className="rest-panel">
+          <p className="result-eyebrow">REST / UPGRADE</p>
+          <h2 className="draft-title">強化する施策を選ぶ</h2>
+          <p className="rest-desc">
+            選んだカードを1段強化します。強化後の効果量はカード上のタグに反映されます。
+          </p>
+          <div className="rest-upgrade-grid" data-testid="rest-upgrade-cards">
+            {state.deck.map((card, index) => {
+              const def = getCard(card.defId);
+              if (!def) return null;
+              return (
+                <button
+                  type="button"
+                  key={`${card.defId}-${index}`}
+                  className="rest-upgrade-card"
+                  data-testid={`rest-upgrade-card-${card.defId}-${index}`}
+                  onClick={() => onChoose('upgrade', card.defId)}
+                >
+                  <CardView def={def} level={card.level} />
+                  <span className="rest-upgrade-next">次: Lv.{card.level + 1}</span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            data-testid="rest-upgrade-cancel"
+            onClick={() => setChoosingUpgrade(false)}
+          >
+            ← 休息メニューへ戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="result-overlay" data-testid="rest" role="dialog" aria-label="Rest">
       <div className="rest-panel">
@@ -60,7 +103,7 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             className="rest-option"
             data-testid="rest-upgrade"
             disabled={!canUpgrade}
-            onClick={() => onChoose('upgrade')}
+            onClick={() => setChoosingUpgrade(true)}
           >
             <span className="rest-icon">🔧</span>
             <div className="rest-body">

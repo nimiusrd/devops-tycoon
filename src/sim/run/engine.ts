@@ -903,8 +903,9 @@ export class RunEngine {
   /**
    * 休息の選択（heal: シニア+個体スタミナ回復 / repay: 負債返済 /
    * upgrade: カード強化 / recruit: 採用）。選択後は編成（setup-pre）へ。
+   * upgrade は対象カード ID を指定できる。未指定時は既存互換で先頭カードを強化する。
    */
-  restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit'): void {
+  restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit', defId?: string): void {
     if (this.phase !== 'rest') return;
     if (option === 'heal') {
       const bonus = foldPassives(this.relics).restHealBonus;
@@ -915,7 +916,7 @@ export class RunEngine {
     } else if (option === 'repay') {
       this.org.techDebt = Math.max(0, this.org.techDebt - REST_REPAY);
     } else if (option === 'upgrade' && this.deck.length > 0) {
-      this.deck = upgradeCard(this.deck, this.deck[0].defId);
+      this.deck = upgradeCard(this.deck, defId ?? this.deck[0].defId);
     } else if (option === 'recruit') {
       // 採用は予算を消費する（ラン経済。SPEC 第4.4）。空き枠と予算が揃ったときのみ。
       if (canRecruit(this.roster) && this.budget >= RECRUIT_COST) {

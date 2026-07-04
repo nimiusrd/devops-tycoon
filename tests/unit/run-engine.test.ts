@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
-import { playRun, playUntil } from './helpers/runFlow';
+import { advance, playRun, playUntil } from './helpers/runFlow';
 
 describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着）', () => {
   it('タイトルから開始すると編成（setup）が提示される', () => {
@@ -147,6 +147,113 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       }
       expect(['won', 'lost']).toContain(s.status);
     }
+  });
+
+  it('RI-37: 休息のカード強化で指定したカードだけを強化できる', () => {
+    let engine: RunEngine | null = null;
+    let targetDefId = '';
+
+    for (const seed of ['ri37-upgrade-a', 'ri37-upgrade-b', 'ri37-upgrade-c', 'ri37-upgrade-d']) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      let s = e.snapshot();
+      let guard = 0;
+      while (s.status === 'playing' && guard < 40_000) {
+        guard += 1;
+        if (s.phase === 'rest') {
+          const first = s.deck[0];
+          const target = s.deck.find((card, index) => index > 0 && card.defId !== first?.defId);
+          if (first && target) {
+            engine = e;
+            targetDefId = target.defId;
+            break;
+          }
+          e.restChoose('heal');
+        } else if (!advance(e, { beatChoice: 0 })) {
+          break;
+        }
+        s = e.snapshot();
+      }
+      if (engine) break;
+    }
+
+    expect(engine).not.toBeNull();
+    const before = engine!.snapshot();
+    const firstBefore = before.deck[0];
+    const targetBefore = before.deck.find((card) => card.defId === targetDefId)!;
+
+    engine!.restChoose('upgrade', targetDefId);
+    const after = engine!.snapshot();
+
+    expect(after.deck[0]).toEqual(firstBefore);
+    expect(after.deck.find((card) => card.defId === targetDefId)?.level).toBe(
+      targetBefore.level + 1,
+    );
+    expect(after.phase).toBe('setup');
+  });
+
+  it('RI-37: 対象未指定の休息強化は既存互換で先頭カードを強化する', () => {
+    let engine: RunEngine | null = null;
+    for (const seed of Array.from({ length: 80 }, (_, i) => `ri37-legacy-${i}`)) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      const s = playUntil(e, 'rest', { beatChoice: 0 }, 40_000);
+      if (s.phase === 'rest' && s.deck.length > 0) {
+        engine = e;
+        break;
+      }
+    }
+
+    expect(engine).not.toBeNull();
+
+    const before = engine!.snapshot().deck;
+    engine!.restChoose('upgrade');
+    const after = engine!.snapshot().deck;
+
+    expect(after[0].level).toBe(before[0].level + 1);
+    expect(after.slice(1)).toEqual(before.slice(1));
+  });
+
+  it('RI-37: ショップ購入カードも休息強化の対象にできる', () => {
+    let engine: RunEngine | null = null;
+    let boughtDefId = '';
+
+    for (const seed of Array.from({ length: 160 }, (_, i) => `ri37-shop-${i}`)) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      let s = e.snapshot();
+      let guard = 0;
+      let bought = '';
+      while (s.status === 'playing' && guard < 40_000) {
+        guard += 1;
+        if (s.phase === 'shop' && s.shop && !bought) {
+          const offer = s.shop.cards.find((card) => s.budget >= card.cost);
+          if (offer) {
+            bought = offer.defId;
+            e.buyShopCard(offer.defId);
+          }
+          e.leaveShop();
+        } else if (s.phase === 'rest' && bought) {
+          engine = e;
+          boughtDefId = bought;
+          break;
+        } else if (s.phase === 'rest') {
+          e.restChoose('heal');
+        } else if (!advance(e, { beatChoice: 0 })) {
+          break;
+        }
+        s = e.snapshot();
+      }
+      if (engine) break;
+    }
+
+    expect(engine).not.toBeNull();
+    const before = engine!.snapshot().deck.find((card) => card.defId === boughtDefId);
+    expect(before).toBeDefined();
+
+    engine!.restChoose('upgrade', boughtDefId);
+    const after = engine!.snapshot().deck.find((card) => card.defId === boughtDefId);
+    expect(after?.level).toBe(before!.level + 1);
   });
 
   it('介入アクション（割り込みレビュー）でレビュー渋滞が減る', () => {

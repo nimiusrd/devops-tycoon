@@ -258,23 +258,20 @@ describe('レバー係数の許容レンジ（RI-16）', () => {
   it('部門レバー適用後も集約指標が健全範囲内', () => {
     for (const lever of DEPARTMENT_LEVERS) {
       for (const seed of RI16_SEEDS) {
-        expect(() =>
-          applyLeverOnBaseline(lever, baselineFactory(seed), DEPARTMENT_DEFS[0].id),
-        ).not.toThrow();
+        for (const dept of DEPARTMENT_DEFS) {
+          expect(() => applyLeverOnBaseline(lever, baselineFactory(seed), dept.id)).not.toThrow();
+        }
       }
     }
   });
 
   it('部門レバーは対象部門以外へ波及しない', () => {
     for (const lever of DEPARTMENT_LEVERS) {
-      expect(() =>
-        assertDepartmentLeverIsolated(
-          lever,
-          baselineFactory('ri16-isolation'),
-          DEPARTMENT_DEFS[0].id,
-          DEPARTMENT_DEFS[1].id,
-        ),
-      ).not.toThrow();
+      for (const target of DEPARTMENT_DEFS) {
+        expect(() =>
+          assertDepartmentLeverIsolated(lever, baselineFactory('ri16-isolation'), target.id),
+        ).not.toThrow();
+      }
     }
   });
 

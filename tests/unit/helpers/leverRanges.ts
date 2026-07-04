@@ -153,6 +153,16 @@ function assertTeamHealthy(team: Team, label: string): void {
   }
 }
 
+function teamMetricsDiffer(before: Team, after: Team): boolean {
+  return (
+    before.reviewQueue !== after.reviewQueue ||
+    before.aiDependency !== after.aiDependency ||
+    before.morale !== after.morale ||
+    before.techDebt !== after.techDebt ||
+    before.incidents !== after.incidents
+  );
+}
+
 /** 代表 baseline でレバーを 1 回適用し、予算・集約値を検証する。 */
 export function applyLeverOnBaseline(
   lever: LeverDef,
@@ -161,7 +171,8 @@ export function applyLeverOnBaseline(
 ): { budget: number; state: OrgScaleState } {
   const budget = Math.max(lever.cost + 20, baselineInput.budget ?? 100);
   const dept = lever.scope === 'department' ? deptId : undefined;
-  const res = applyLever(emptyAdjustState(), budget, lever.id, dept);
+  const priorAdjust = baselineInput.adjust ?? emptyAdjustState();
+  const res = applyLever(priorAdjust, budget, lever.id, dept);
   if (!res.changed) {
     throw new Error(`${lever.id}: 代表 baseline で applyLever が失敗しました`);
   }
@@ -179,38 +190,31 @@ export function assertDepartmentLeverIsolated(
   lever: LeverDef,
   baselineInput: OrgScaleInput,
   targetDeptId: string,
-  otherDeptId: string,
 ): void {
   if (lever.scope !== 'department') return;
 
   const baseline = generateOrgScale(baselineInput);
   const { state: after } = applyLeverOnBaseline(lever, baselineInput, targetDeptId);
 
-  const unchangedTeams = (deptId: string) =>
-    baseline.departments.find((d) => d.def.id === deptId)!.teams;
-  const changedTeams = (deptId: string) =>
-    after.departments.find((d) => d.def.id === deptId)!.teams;
+  const teamsIn = (state: OrgScaleState, deptId: string) =>
+    state.departments.find((d) => d.def.id === deptId)!.teams;
 
-  const otherBefore = unchangedTeams(otherDeptId);
-  const otherAfter = changedTeams(otherDeptId);
-  if (JSON.stringify(otherBefore) !== JSON.stringify(otherAfter)) {
-    throw new Error(`${lever.id}: 非対象部門 ${otherDeptId} に副作用があります`);
+  for (const dept of DEPARTMENT_DEFS) {
+    if (dept.id === targetDeptId) continue;
+    const before = teamsIn(baseline, dept.id);
+    const changed = teamsIn(after, dept.id);
+    if (JSON.stringify(before) !== JSON.stringify(changed)) {
+      throw new Error(`${lever.id}: 非対象部門 ${dept.id} に副作用があります`);
+    }
   }
 
-  const targetBefore = unchangedTeams(targetDeptId);
-  const targetAfter = changedTeams(targetDeptId);
-  const hasEffect = targetBefore.some((before, i) => {
-    const afterTeam = targetAfter[i];
-    return (
-      before.reviewQueue !== afterTeam.reviewQueue ||
-      before.aiDependency !== afterTeam.aiDependency ||
-      before.morale !== afterTeam.morale ||
-      before.techDebt !== afterTeam.techDebt ||
-      before.incidents !== afterTeam.incidents
-    );
-  });
-  if (!hasEffect) {
-    throw new Error(`${lever.id}: 対象部門 ${targetDeptId} に効果が見えません`);
+  const targetBefore = teamsIn(baseline, targetDeptId);
+  const targetAfter = teamsIn(after, targetDeptId);
+  const allTeamsAffected = targetBefore.every((before, i) =>
+    teamMetricsDiffer(before, targetAfter[i]),
+  );
+  if (!allTeamsAffected) {
+    throw new Error(`${lever.id}: 対象部門 ${targetDeptId} の全チームに効果が波及していません`);
   }
 }
 
@@ -236,13 +240,21 @@ export function assertLeverImpactRanges(
   seedPrefixes: readonly string[],
   baselineFactory: (seed: string) => OrgScaleInput,
   ranges: Record<string, Partial<Record<LeverImpactMetric, { min: number; max: number }>>>,
-  deptId = DEPARTMENT_DEFS[0].id,
+  opts?: { deptId?: string; requireAllRanges?: boolean },
 ): void {
+  const deptId = opts?.deptId ?? DEPARTMENT_DEFS[0].id;
+  const requireAllRanges = opts?.requireAllRanges ?? false;
+
   for (const leverId of leverIds) {
     const lever = LEVER_DEFS.find((l) => l.id === leverId);
     if (!lever) throw new Error(`未知のレバー: ${leverId}`);
     const leverRanges = ranges[leverId];
-    if (!leverRanges) continue;
+    if (!leverRanges) {
+      if (requireAllRanges) {
+        throw new Error(`RI16_LEVER_IMPACT_RANGES に ${leverId} の定義がありません`);
+      }
+      continue;
+    }
 
     for (const metric of Object.keys(leverRanges) as LeverImpactMetric[]) {
       const range = leverRanges[metric]!;
@@ -287,5 +299,6 @@ export function assertAllLeverImpactRanges(
     seedPrefixes,
     baselineFactory,
     RI16_LEVER_IMPACT_RANGES,
+    { requireAllRanges: true },
   );
 }

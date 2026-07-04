@@ -215,6 +215,25 @@ export const EVENT_DEFS: EventDef[] = [
       },
     ],
   },
+  {
+    id: 'standup-acronym-storm',
+    title: '朝会が略語だらけになった',
+    prompt: '朝会で KPI、OKR、WIP、ADR が飛び交い、新人が静かにメモを取り続けている。',
+    tone: 'joke',
+    weight: 0.55,
+    choices: [
+      {
+        label: '用語集を作る',
+        description: '略語の意味をそろえ、オンボーディングのつまずきを減らす',
+        outcome: { quality: 2, aiLiteracy: 2 },
+      },
+      {
+        label: '勢いで乗り切る',
+        description: '場は盛り上がるが、後で「それ何の略でしたっけ？」が増える',
+        outcome: { morale: 4, techDebt: 2 },
+      },
+    ],
+  },
 
   // --- 選択イベント（decision）：旧 elite / shop / rest を統合 ---
   {
@@ -411,6 +430,21 @@ export const EVENT_DEFS: EventDef[] = [
         label: '了解',
         description: 'なぜかチームの空気が少し和み、AI へのツッコミ力も上がる',
         outcome: { morale: 4, aiLiteracy: 2 },
+      },
+    ],
+  },
+  {
+    id: 'meeting-title-refactor',
+    title: '会議名だけリファクタされた',
+    prompt: 'AI がカレンダー整理を手伝い、「定例」をすべて「戦略同期セッション」に改名した。',
+    tone: 'joke',
+    kind: 'judgment',
+    weight: 0.3,
+    choices: [
+      {
+        label: '了解',
+        description: '会議の中身は変わらないが、少しだけドキュメント文化を見直すきっかけになる',
+        outcome: { morale: 2, quality: 1 },
       },
     ],
   },

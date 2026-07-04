@@ -104,7 +104,7 @@
 | RI-35 | 介入アクションのテーブル駆動テスト | 中 | 完了 | — | 第6 |
 | RI-36 | コンボ/連携ゲージの UI↔sim 検証 E2E | 中 | 未着手 | — | 第6.2 |
 | RI-37 | カード強化のショップ/休息接続確認＋強化対象選択 UI | 中 | 未着手 | — | 第7 |
-| RI-38 | `tone: joke` のネタイベント追加 | 低 | 未着手 | — | 第9 |
+| RI-38 | `tone: joke` のネタイベント追加 | 低 | 完了 | — | 第9 |
 | RI-39 | XState の役割整理(`phase` 二重管理の解消) | 中 | 未着手 | — | 第22 |
 | RI-40 | 通しテスト(DoD)の再確認 | 低 | 未着手 | — | — |
 | RI-41 | 代表 seed の記録(AIあり/なし差分) | 低 | 未着手 | — | — |
@@ -442,9 +442,13 @@ GitHub API 実データモード、チーム対抗ランキング、社内LT/経
 
 カード強化がショップ/休息ノードで接続済みかを確認し、強化対象選択 UI が必要なら追加する。
 
-#### RI-38 `tone: joke` のネタイベント追加 — 優先度:低
+#### RI-38 `tone: joke` のネタイベント追加 — 優先度:低 / 完了
 
-`tone: joke` のネタイベントを最低 1〜2 件追加し、良い/悪い/ネタの分類が UI とテストで確認できるようにする。
+**完了**: `src/data/events.ts` に `standup-acronym-storm`（decision）と
+`meeting-title-refactor`（judgment）を追加し、既存の `emoji-policy-summit` /
+`readme-haiku` と合わせて `tone: joke` が decision / judgment の両方に乗るようにした。
+`tests/unit/run-loop.test.ts` で分類を検証し、`tests/e2e/run.spec.ts` で
+`BeatScreen` が `.tone-joke` として描画されることを確認する。
 
 #### RI-39 XState の役割整理(`phase` 二重管理の解消) — 優先度:中
 

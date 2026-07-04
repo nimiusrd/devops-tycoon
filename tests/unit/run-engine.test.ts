@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
-import { playRun, playUntil } from './helpers/runFlow';
+import { advance, playRun, playUntil } from './helpers/runFlow';
 
 describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着）', () => {
   it('タイトルから開始すると編成（setup）が提示される', () => {
@@ -147,6 +147,153 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       }
       expect(['won', 'lost']).toContain(s.status);
     }
+  });
+
+  it('RI-37: 休息のカード強化で指定した位置だけを強化できる', () => {
+    let engine: RunEngine | null = null;
+    let targetIndex = -1;
+
+    for (const seed of ['ri37-upgrade-a', 'ri37-upgrade-b', 'ri37-upgrade-c', 'ri37-upgrade-d']) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      let s = e.snapshot();
+      let guard = 0;
+      while (s.status === 'playing' && guard < 40_000) {
+        guard += 1;
+        if (s.phase === 'rest') {
+          const index = s.deck.findIndex((card, i) => i > 0 && card.defId !== s.deck[0]?.defId);
+          if (index > 0) {
+            engine = e;
+            targetIndex = index;
+            break;
+          }
+          e.restChoose('heal');
+        } else if (!advance(e, { beatChoice: 0 })) {
+          break;
+        }
+        s = e.snapshot();
+      }
+      if (engine) break;
+    }
+
+    expect(engine).not.toBeNull();
+    const before = engine!.snapshot().deck;
+    const targetBefore = before[targetIndex];
+
+    engine!.restChoose('upgrade', targetIndex);
+    const after = engine!.snapshot();
+
+    expect(after.deck[targetIndex].level).toBe(targetBefore.level + 1);
+    expect(after.deck.filter((_, i) => i !== targetIndex)).toEqual(
+      before.filter((_, i) => i !== targetIndex),
+    );
+    expect(after.phase).toBe('setup');
+  });
+
+  it('RI-37: 同一 defId の重複カードでも指定位置だけを強化する', () => {
+    let verified = false;
+    for (const seed of Array.from({ length: 120 }, (_, i) => `ri37-dup-${i}`)) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      let s = e.snapshot();
+      let guard = 0;
+      while (s.status === 'playing' && guard < 40_000) {
+        guard += 1;
+        if (s.phase === 'rest') {
+          const dupIndex = s.deck.findIndex((card, index) =>
+            s.deck.some((other, j) => j < index && other.defId === card.defId),
+          );
+          if (dupIndex > 0) {
+            const before = s.deck;
+            const firstIndex = before.findIndex((card) => card.defId === before[dupIndex].defId);
+            e.restChoose('upgrade', dupIndex);
+            const after = e.snapshot().deck;
+            expect(after[firstIndex].level).toBe(before[firstIndex].level);
+            expect(after[dupIndex].level).toBe(before[dupIndex].level + 1);
+            verified = true;
+            break;
+          }
+          e.restChoose('heal');
+        } else if (s.phase === 'draft' && s.draft && s.draft.length > 0) {
+          const existing = new Set(s.deck.map((card) => card.defId));
+          const duplicate = s.draft.find((id) => existing.has(id)) ?? s.draft[0];
+          e.chooseCard(duplicate);
+        } else if (!advance(e, { beatChoice: 0 })) {
+          break;
+        }
+        s = e.snapshot();
+      }
+      if (verified) break;
+    }
+
+    expect(verified).toBe(true);
+  });
+
+  it('RI-37: 対象未指定の休息強化は既存互換で先頭カードを強化する', () => {
+    let engine: RunEngine | null = null;
+    for (const seed of Array.from({ length: 80 }, (_, i) => `ri37-legacy-${i}`)) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      const s = playUntil(e, 'rest', { beatChoice: 0 }, 40_000);
+      if (s.phase === 'rest' && s.deck.length > 0) {
+        engine = e;
+        break;
+      }
+    }
+
+    expect(engine).not.toBeNull();
+
+    const before = engine!.snapshot().deck;
+    engine!.restChoose('upgrade');
+    const after = engine!.snapshot().deck;
+
+    expect(after[0].level).toBe(before[0].level + 1);
+    expect(after.slice(1)).toEqual(before.slice(1));
+  });
+
+  it('RI-37: ショップ購入カードも休息強化の対象にできる', () => {
+    let engine: RunEngine | null = null;
+    let boughtIndex = -1;
+
+    for (const seed of Array.from({ length: 160 }, (_, i) => `ri37-shop-${i}`)) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      let s = e.snapshot();
+      let guard = 0;
+      let bought = '';
+      while (s.status === 'playing' && guard < 40_000) {
+        guard += 1;
+        if (s.phase === 'shop' && s.shop && !bought) {
+          const offer = s.shop.cards.find((card) => s.budget >= card.cost);
+          if (offer) {
+            bought = offer.defId;
+            e.buyShopCard(offer.defId);
+          }
+          e.leaveShop();
+        } else if (s.phase === 'rest' && bought) {
+          boughtIndex = s.deck.findIndex((card) => card.defId === bought);
+          if (boughtIndex >= 0) {
+            engine = e;
+            break;
+          }
+          e.restChoose('heal');
+        } else if (s.phase === 'rest') {
+          e.restChoose('heal');
+        } else if (!advance(e, { beatChoice: 0 })) {
+          break;
+        }
+        s = e.snapshot();
+      }
+      if (engine) break;
+    }
+
+    expect(engine).not.toBeNull();
+    const before = engine!.snapshot().deck[boughtIndex];
+    expect(before).toBeDefined();
+
+    engine!.restChoose('upgrade', boughtIndex);
+    const after = engine!.snapshot().deck[boughtIndex];
+    expect(after?.level).toBe(before!.level + 1);
   });
 
   it('介入アクション（割り込みレビュー）でレビュー渋滞が減る', () => {

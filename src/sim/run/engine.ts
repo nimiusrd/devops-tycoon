@@ -16,7 +16,13 @@ import { EVENT_DEFS, effectiveKind, getEvent } from '../../data/events';
 import { getEvolutionNode } from '../../data/evolution';
 import { RELIC_DEFS, getRelic } from '../../data/relics';
 import { applyAction } from '../actions';
-import { applyDeckBaseline, combineEffects, drawDraft, scaleEffects, upgradeCard } from '../cards';
+import {
+  applyDeckBaseline,
+  combineEffects,
+  drawDraft,
+  scaleEffects,
+  upgradeCardAt,
+} from '../cards';
 import { diagnose } from '../diagnosis';
 import {
   applySprintGrowth,
@@ -903,8 +909,9 @@ export class RunEngine {
   /**
    * 休息の選択（heal: シニア+個体スタミナ回復 / repay: 負債返済 /
    * upgrade: カード強化 / recruit: 採用）。選択後は編成（setup-pre）へ。
+   * upgrade はデッキ位置を指定できる。未指定時は既存互換で先頭カードを強化する。
    */
-  restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit'): void {
+  restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit', deckIndex?: number): void {
     if (this.phase !== 'rest') return;
     if (option === 'heal') {
       const bonus = foldPassives(this.relics).restHealBonus;
@@ -915,7 +922,7 @@ export class RunEngine {
     } else if (option === 'repay') {
       this.org.techDebt = Math.max(0, this.org.techDebt - REST_REPAY);
     } else if (option === 'upgrade' && this.deck.length > 0) {
-      this.deck = upgradeCard(this.deck, this.deck[0].defId);
+      this.deck = upgradeCardAt(this.deck, deckIndex ?? 0);
     } else if (option === 'recruit') {
       // 採用は予算を消費する（ラン経済。SPEC 第4.4）。空き枠と予算が揃ったときのみ。
       if (canRecruit(this.roster) && this.budget >= RECRUIT_COST) {

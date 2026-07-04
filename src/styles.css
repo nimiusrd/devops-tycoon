@@ -1822,6 +1822,47 @@ button.card:active {
 .rest-icon {
   font-size: 26px;
 }
+.rest-upgrade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 16px 0 18px;
+  text-align: left;
+}
+.rest-upgrade-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    transform 0.12s ease;
+}
+.rest-upgrade-card:hover {
+  border-color: var(--sun);
+  transform: translateY(-1px);
+}
+.rest-upgrade-card .card {
+  width: 100%;
+  min-height: 100%;
+  border: 0;
+  box-shadow: none;
+}
+.rest-upgrade-next {
+  align-self: flex-end;
+  margin: 0 12px 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #2a2450;
+  color: var(--cream);
+  font-size: 12px;
+  font-weight: 800;
+}
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

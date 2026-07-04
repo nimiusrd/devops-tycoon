@@ -87,6 +87,12 @@ export function upgradeCard(deck: CardInstance[], defId: string): CardInstance[]
   });
 }
 
+/** デッキ内の指定位置のカードを 1 段強化したデッキを返す。 */
+export function upgradeCardAt(deck: CardInstance[], index: number): CardInstance[] {
+  if (index < 0 || index >= deck.length) return deck;
+  return deck.map((inst, i) => (i === index ? { ...inst, level: inst.level + 1 } : inst));
+}
+
 /**
  * ドラフト候補をレアリティ重み付きで `count` 枚、重複なく抽選する（第7.1）。
  * 乱数は引数の PRNG から消費するため、同一 seed・同一スプリント番号で再現する。

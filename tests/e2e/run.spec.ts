@@ -105,32 +105,36 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
   const reached = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     g.pause();
-    g.startRun('easy', [], 'ri37-e2e');
-    let s = g.getState();
-    let guard = 0;
-    while (s.status === 'playing' && guard < 60000) {
-      guard += 1;
-      if (s.phase === 'rest' && s.deck.length > 0) {
-        return {
-          ok: true,
-          defId: s.deck[0].defId,
-          level: s.deck[0].level,
-        };
+    for (const seed of Array.from({ length: 80 }, (_, i) => `ri37-e2e-${i}`)) {
+      g.startRun('easy', [], seed);
+      let s = g.getState();
+      let guard = 0;
+      while (s.status === 'playing' && guard < 60000) {
+        guard += 1;
+        if (s.phase === 'rest' && s.deck.length > 0) {
+          return {
+            ok: true,
+            seed,
+            defId: s.deck[0].defId,
+            level: s.deck[0].level,
+          };
+        }
+        if (s.phase === 'setup') g.beginSetupSprint();
+        else if (s.phase === 'sprint') g.step(1_000_000);
+        else if (s.phase === 'result') g.acknowledgeResult();
+        else if (s.phase === 'draft') {
+          if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
+          else g.skipDraft();
+        } else if (s.phase === 'evolution') g.finishEvolution();
+        else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+        else if (s.phase === 'shop') g.leaveShop();
+        else if (s.phase === 'rest') g.restChoose('heal');
+        else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
+        else break;
+        s = g.getState();
       }
-      if (s.phase === 'setup') g.beginSetupSprint();
-      else if (s.phase === 'sprint') g.step(1_000_000);
-      else if (s.phase === 'result') g.acknowledgeResult();
-      else if (s.phase === 'draft') {
-        if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
-        else g.skipDraft();
-      } else if (s.phase === 'evolution') g.finishEvolution();
-      else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
-      else if (s.phase === 'shop') g.leaveShop();
-      else if (s.phase === 'rest') g.restChoose('heal');
-      else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
-      else break;
-      s = g.getState();
     }
+    const s = g.getState();
     return { ok: false, phase: s.phase, deckLength: s.deck.length };
   });
 

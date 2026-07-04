@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // 視覚回帰・相互作用 E2E は実ブラウザ（Chromium）で少数に絞る（SPEC 第22.5）。
-const PORT = 5173;
+const PORT = 5174;
 const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({

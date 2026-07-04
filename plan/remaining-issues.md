@@ -65,7 +65,7 @@
 
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
-| RI-14 | モンテカルロ統計テスト基盤 | 中 | 未着手 | — | 第22.3 |
+| RI-14 | モンテカルロ統計テスト基盤 | 中 | 完了 | — | 第22.3 |
 | RI-15 | スプリント主要メトリクスの許容レンジ | 中 | 未着手 | RI-14 | — |
 | RI-16 | 全社/部門レバー係数の許容レンジ | 中 | 未着手 | RI-14 | `src/data/levers.ts` |
 | RI-17 | 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ | 中 | 未着手 | RI-14 | `quarterReview.ts` |
@@ -277,10 +277,12 @@ Vitest: `tests/unit/eventOutcomeView.test.ts`（カード・レリック・進�
 > 各領域で「暫定値」と明記した係数群を、代表 seed のモンテカルロで許容レンジ化する統計テスト基盤
 > （RI-14）に統一する。RI-15〜RI-19 は RI-14 を土台に各領域を校正する子タスク。
 
-#### RI-14 モンテカルロ統計テスト基盤 — 優先度:中
+#### RI-14 モンテカルロ統計テスト基盤 — 優先度:中 / 完了
 
-代表 seed のモンテカルロで主要メトリクスを許容レンジ化する統計テスト基盤を整え、各領域の暫定値・効果
-係数の回帰確認に使う。基盤は全体で統一する（並列化は RI-13 の Web Worker+Comlink と連動）。RI-15〜RI-19 の前提。
+**完了**: `tests/unit/helpers/monteCarlo.ts` に seed 掃引（`runMonteCarlo`）・メトリクス抽出
+（`extractRunMetrics`）・集計（`summarizeMonteCarlo` / `summarizeNumeric`）・許容レンジ検証
+（`assertWithinRange`）の純関数群を追加。RI-15〜RI-19 が再利用できる `MonteCarloSummary` 型と
+代表 seed 群での決定論・難易度差・メトリクス健全性テストを `tests/unit/monteCarlo.test.ts` に整備。
 
 #### RI-15 スプリント主要メトリクスの許容レンジ — 優先度:中（依存: RI-14）
 

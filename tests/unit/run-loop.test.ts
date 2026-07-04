@@ -37,11 +37,22 @@ describe('イベント種別と重み付け（SPEC 第9章）', () => {
 
   it('tone: joke のネタイベントが decision / judgment の分類に乗る', () => {
     const jokeEvents = EVENT_DEFS.filter((def) => def.tone === 'joke');
-    expect(jokeEvents.map((def) => def.id).sort()).toEqual(['emoji-policy-summit', 'readme-haiku']);
-    expect(eventsOfKind(jokeEvents, 'decision').map((def) => def.id)).toEqual([
+    expect(jokeEvents.map((def) => def.id).sort()).toEqual([
       'emoji-policy-summit',
+      'meeting-title-refactor',
+      'readme-haiku',
+      'standup-acronym-storm',
     ]);
-    expect(eventsOfKind(jokeEvents, 'judgment').map((def) => def.id)).toEqual(['readme-haiku']);
+    expect(
+      eventsOfKind(jokeEvents, 'decision')
+        .map((def) => def.id)
+        .sort(),
+    ).toEqual(['emoji-policy-summit', 'standup-acronym-storm']);
+    expect(
+      eventsOfKind(jokeEvents, 'judgment')
+        .map((def) => def.id)
+        .sort(),
+    ).toEqual(['meeting-title-refactor', 'readme-haiku']);
   });
 
   it('技術的負債が高いほど debt 系判定イベントの重みが上がる（決定論）', () => {

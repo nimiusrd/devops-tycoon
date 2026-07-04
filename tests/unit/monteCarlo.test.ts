@@ -2,15 +2,27 @@ import { describe, expect, it } from 'vitest';
 import {
   assertMetricsHealthy,
   assertWithinRange,
+  extractMetaRewardMetrics,
   extractReviewMetrics,
   extractRunMetrics,
   runMonteCarlo,
   runMonteCarloSummary,
+  summarizeMetaRewardMonteCarlo,
   summarizeMonteCarlo,
   summarizeNumeric,
   summarizeReviewMonteCarlo,
   type RunMetrics,
 } from './helpers/monteCarlo';
+import {
+  ALL_POINTS_RANGE,
+  CHEAPEST_UNLOCK_COST,
+  LOSS_POINTS_RANGE,
+  MAX_WINS_FOR_CHEAPEST_UNLOCK,
+  MAX_WINS_FOR_MOST_EXPENSIVE_UNLOCK,
+  MOST_EXPENSIVE_UNLOCK_COST,
+  TOTAL_UNLOCK_COST,
+  WIN_POINTS_RANGE,
+} from './helpers/metaRewardRanges';
 import { REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RunEngine } from '../../src/sim/run/engine';
 import { playRun } from './helpers/runFlow';
@@ -292,6 +304,66 @@ describe('monteCarlo 基盤（RI-14）', () => {
         RI17_RANGES.minStakeholderTrust,
         'minStakeholderTrust',
       );
+    });
+  });
+
+  describe('RI-18: メタ解放コスト・points 配分の許容レンジ', () => {
+    /** 代表 seed 群（`${RI18_SEED_PREFIX}-${i}`）。RI-15/RI-17 と独立。 */
+    const RI18_SEED_PREFIX = 'ri18-meta';
+    const RI18_SEED_INDICES = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
+    function runRi18Summary() {
+      const results = RI18_SEED_INDICES.map((i) => {
+        const seed = `${RI18_SEED_PREFIX}-${i}`;
+        const engine = new RunEngine({ seed, difficulty: 'normal' });
+        const final = playRun(engine);
+        return extractMetaRewardMetrics(seed, final);
+      });
+      return summarizeMetaRewardMonteCarlo(results);
+    }
+
+    it('normal 難易度の代表 seed 群が points 報酬の許容レンジ内', () => {
+      const summary = runRi18Summary();
+      const trials = RI18_SEED_INDICES.length;
+
+      expect(summary.trials).toBe(trials);
+      expect(summary.settled).toBe(trials);
+      expect(summary.unfinished).toBe(0);
+      expect(summary.winPointsGained.values.length).toBeGreaterThan(0);
+      expect(summary.lossPointsGained.values.length).toBeGreaterThan(0);
+
+      assertWithinRange(summary.pointsGained, ALL_POINTS_RANGE, 'pointsGained');
+      assertWithinRange(summary.winPointsGained, WIN_POINTS_RANGE, 'winPointsGained');
+      assertWithinRange(summary.lossPointsGained, LOSS_POINTS_RANGE, 'lossPointsGained');
+      assertWithinRange(summary.scoreMul, { min: 1, max: 1 }, 'scoreMul');
+    });
+
+    it('勝利報酬だけでは最安解放は 1 ランでは買えず、数ランで到達可能', () => {
+      const summary = runRi18Summary();
+
+      expect(summary.winPointsGained.max).toBeLessThan(CHEAPEST_UNLOCK_COST);
+      expect(summary.winPointsGained.max * MAX_WINS_FOR_CHEAPEST_UNLOCK).toBeGreaterThanOrEqual(
+        CHEAPEST_UNLOCK_COST,
+      );
+      expect(
+        summary.winPointsGained.max * MAX_WINS_FOR_MOST_EXPENSIVE_UNLOCK,
+      ).toBeGreaterThanOrEqual(MOST_EXPENSIVE_UNLOCK_COST);
+    });
+
+    it('全解放合計コストが現行報酬ペースで到達可能な範囲', () => {
+      const summary = runRi18Summary();
+      const avgWin = summary.winPointsGained.mean;
+      const avgLoss = summary.lossPointsGained.mean;
+      const blendedMean =
+        summary.winPointsGained.values.length > 0 && summary.lossPointsGained.values.length > 0
+          ? (avgWin * summary.winPointsGained.values.length +
+              avgLoss * summary.lossPointsGained.values.length) /
+            summary.settled
+          : summary.pointsGained.mean;
+
+      const estimatedRunsToComplete = Math.ceil(TOTAL_UNLOCK_COST / blendedMean);
+      expect(estimatedRunsToComplete).toBeGreaterThan(5);
+      expect(estimatedRunsToComplete).toBeLessThan(50);
     });
   });
 });

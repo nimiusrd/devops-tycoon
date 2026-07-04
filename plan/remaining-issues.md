@@ -69,7 +69,7 @@
 | RI-15 | スプリント主要メトリクスの許容レンジ | 中 | 完了 | RI-14 | — |
 | RI-16 | 全社/部門レバー係数の許容レンジ | 中 | 完了 | RI-14 | `src/data/levers.ts` |
 | RI-17 | 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ | 中 | 未着手 | RI-14 | `quarterReview.ts` |
-| RI-18 | メタ解放コスト・points 配分の許容レンジ | 中 | 未着手 | RI-14 | `src/data/unlocks.ts` |
+| RI-18 | メタ解放コスト・points 配分の許容レンジ | 中 | 完了 | RI-14 | `src/data/unlocks.ts` |
 | RI-19 | 編成差のスプリント結果への影響レンジ | 低 | 未着手 | RI-14 | — |
 
 ### 機能・メタ進行（FEAT）
@@ -104,7 +104,7 @@
 | RI-35 | 介入アクションのテーブル駆動テスト | 中 | 完了 | — | 第6 |
 | RI-36 | コンボ/連携ゲージの UI↔sim 検証 E2E | 中 | 未着手 | — | 第6.2 |
 | RI-37 | カード強化のショップ/休息接続確認＋強化対象選択 UI | 中 | 完了 | — | 第7 |
-| RI-38 | `tone: joke` のネタイベント追加 | 低 | 未着手 | — | 第9 |
+| RI-38 | `tone: joke` のネタイベント追加 | 低 | 完了 | — | 第9 |
 | RI-39 | XState の役割整理(`phase` 二重管理の解消) | 中 | 未着手 | — | 第22 |
 | RI-40 | 通しテスト(DoD)の再確認 | 低 | 未着手 | — | — |
 | RI-41 | 代表 seed の記録(AIあり/なし差分) | 低 | 未着手 | — | — |
@@ -440,13 +440,18 @@ GitHub API 実データモード、チーム対抗ランキング、社内LT/経
 
 #### RI-37 カード強化のショップ/休息接続確認＋強化対象選択 UI — 優先度:中 / 完了
 
-**完了**: `RunEngine.restChoose('upgrade', defId)` で休息強化の対象カードを指定できるようにし、
+**完了**: `RunEngine.restChoose('upgrade', deckIndex)` で休息強化の対象位置を指定できるようにし、
 未指定時は従来互換でデッキ先頭を強化する契約を維持。`RestScreen` に強化対象選択 UI を追加し、
+同一 `defId` の重複カードでも UI で選んだ位置だけが強化されるよう `upgradeCardAt` を導入。
 ショップ購入カードもデッキ内カードとして休息強化対象にできることを Vitest / Playwright で検証。
 
-#### RI-38 `tone: joke` のネタイベント追加 — 優先度:低
+#### RI-38 `tone: joke` のネタイベント追加 — 優先度:低 / 完了
 
-`tone: joke` のネタイベントを最低 1〜2 件追加し、良い/悪い/ネタの分類が UI とテストで確認できるようにする。
+**完了**: `src/data/events.ts` に `standup-acronym-storm`（decision）と
+`meeting-title-refactor`（judgment）を追加し、既存の `emoji-policy-summit` /
+`readme-haiku` と合わせて `tone: joke` が decision / judgment の両方に乗るようにした。
+`tests/unit/run-loop.test.ts` で分類を検証し、`tests/e2e/run.spec.ts` で
+`BeatScreen` が `.tone-joke` として描画されることを確認する。
 
 #### RI-39 XState の役割整理(`phase` 二重管理の解消) — 優先度:中
 

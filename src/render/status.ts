@@ -5,6 +5,7 @@
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
 import type { OrgScaleState } from '../sim/orgscale/types';
+import type { StakeholderTrust } from '../sim/run/types';
 import type { OrgState, SimState, Task } from '../sim/types';
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
@@ -77,6 +78,18 @@ export interface HudMetricDelta {
   tone: HudFeedbackTone;
 }
 
+export type RunMetricKey = 'budget' | 'trustManagement' | 'trustCustomers' | 'trustTeam';
+
+export type RunMetricSnapshot = Record<RunMetricKey, number>;
+
+export interface RunMetricDelta {
+  key: RunMetricKey;
+  label: string;
+  shortLabel: string;
+  delta: number;
+  tone: HudFeedbackTone;
+}
+
 const HUD_METRIC_LABELS: Record<HudMetricKey, string> = {
   deliveryScore: '出荷ポイント',
   seniorHpPct: 'シニア体力',
@@ -87,6 +100,13 @@ const HUD_METRIC_LABELS: Record<HudMetricKey, string> = {
 
 /** 値が増えるほど悪化する HUD 指標。 */
 const INVERSE_HUD_METRICS = new Set<HudMetricKey>(['aiDependencyPct', 'techDebt']);
+
+const RUN_METRIC_LABELS: Record<RunMetricKey, { label: string; shortLabel: string }> = {
+  budget: { label: '予算', shortLabel: '予算' },
+  trustManagement: { label: '経営信頼', shortLabel: '経営' },
+  trustCustomers: { label: '顧客信頼', shortLabel: '顧客' },
+  trustTeam: { label: 'チーム信頼', shortLabel: 'チーム' },
+};
 
 /** 0..100 の値を閾値でグレード化する（高いほど良い指標向け）。 */
 function gradeOf(value: number): Grade {
@@ -322,6 +342,41 @@ export function diffHudMetricSnapshots(
       label: HUD_METRIC_LABELS[key],
       delta,
       tone: improved ? 'positive' : 'negative',
+    });
+  }
+  return deltas;
+}
+
+/** RunBar の差分検出に使うラン横断指標だけを抜き出す。 */
+export function runMetricSnapshot(input: {
+  budget: number;
+  stakeholderTrust: StakeholderTrust;
+}): RunMetricSnapshot {
+  return {
+    budget: input.budget,
+    trustManagement: input.stakeholderTrust.management,
+    trustCustomers: input.stakeholderTrust.customers,
+    trustTeam: input.stakeholderTrust.team,
+  };
+}
+
+/** 予算・信頼の差分を、改善/悪化 tone 付きで返す。 */
+export function diffRunMetricSnapshots(
+  previous: RunMetricSnapshot,
+  current: RunMetricSnapshot,
+): RunMetricDelta[] {
+  const deltas: RunMetricDelta[] = [];
+  for (const key of Object.keys(current) as RunMetricKey[]) {
+    const delta = current[key] - previous[key];
+    if (delta === 0) continue;
+
+    const labels = RUN_METRIC_LABELS[key];
+    deltas.push({
+      key,
+      label: labels.label,
+      shortLabel: labels.shortLabel,
+      delta,
+      tone: delta > 0 ? 'positive' : 'negative',
     });
   }
   return deltas;

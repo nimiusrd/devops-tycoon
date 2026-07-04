@@ -4,10 +4,13 @@ import {
   deriveHudMetrics,
   deriveStatus,
   deriveHudStatusParts,
+  diffRunMetricSnapshots,
   diffHudMetricSnapshots,
   hudMetricSnapshot,
   riskLevel,
+  runMetricSnapshot,
   type HudMetricSnapshot,
+  type RunMetricSnapshot,
 } from '../../src/render/status';
 import type { OrgScaleState } from '../../src/sim/orgscale/types';
 import type { OrgState, SimState } from '../../src/sim/types';
@@ -189,5 +192,56 @@ describe('HUD 指標差分', () => {
 
   it('変化がない指標は差分に含めない', () => {
     expect(diffHudMetricSnapshots(baseSnapshot, { ...baseSnapshot })).toEqual([]);
+  });
+});
+
+describe('RunBar 指標差分', () => {
+  const baseSnapshot: RunMetricSnapshot = {
+    budget: 40,
+    trustManagement: 70,
+    trustCustomers: 80,
+    trustTeam: 90,
+  };
+
+  it('RunState から予算・信頼の差分検出用スナップショットを作る', () => {
+    const stakeholderTrust = { management: 68, customers: 74, team: 81 };
+
+    expect(runMetricSnapshot({ budget: 25, stakeholderTrust })).toEqual({
+      budget: 25,
+      trustManagement: stakeholderTrust.management,
+      trustCustomers: stakeholderTrust.customers,
+      trustTeam: stakeholderTrust.team,
+    });
+  });
+
+  it('予算・信頼は増加を positive、減少を negative にする', () => {
+    expect(
+      diffRunMetricSnapshots(baseSnapshot, {
+        ...baseSnapshot,
+        budget: 32,
+        trustManagement: 76,
+        trustTeam: 85,
+      }),
+    ).toEqual([
+      { key: 'budget', label: '予算', shortLabel: '予算', delta: -8, tone: 'negative' },
+      {
+        key: 'trustManagement',
+        label: '経営信頼',
+        shortLabel: '経営',
+        delta: 6,
+        tone: 'positive',
+      },
+      {
+        key: 'trustTeam',
+        label: 'チーム信頼',
+        shortLabel: 'チーム',
+        delta: -5,
+        tone: 'negative',
+      },
+    ]);
+  });
+
+  it('変化がない予算・信頼は差分に含めない', () => {
+    expect(diffRunMetricSnapshots(baseSnapshot, { ...baseSnapshot })).toEqual([]);
   });
 });

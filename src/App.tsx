@@ -7,7 +7,7 @@
  */
 import { useCallback, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { HudMetricSnapshot } from './render/status';
+import type { HudMetricSnapshot, RunMetricSnapshot } from './render/status';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
 import {
   Breadcrumb,
@@ -57,8 +57,10 @@ export default function App({ game }: AppProps) {
     team: null,
     orgScale: null,
   });
+  const lastRunMetricSnapshot = useRef<RunMetricSnapshot | null>(null);
   const clearHudSnapshot = useCallback(() => {
     lastHudSnapshot.current = { team: null, orgScale: null };
+    lastRunMetricSnapshot.current = null;
   }, []);
   const rememberHudSnapshot = useCallback(
     (snapshot: HudMetricSnapshot, scope: HudSnapshotScope) => {
@@ -68,6 +70,12 @@ export default function App({ game }: AppProps) {
   );
   const getLastHudSnapshot = useCallback((scope: HudSnapshotScope) => {
     return lastHudSnapshot.current[scope];
+  }, []);
+  const rememberRunMetricSnapshot = useCallback((snapshot: RunMetricSnapshot) => {
+    lastRunMetricSnapshot.current = snapshot;
+  }, []);
+  const getLastRunMetricSnapshot = useCallback(() => {
+    return lastRunMetricSnapshot.current;
   }, []);
 
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
@@ -157,6 +165,8 @@ export default function App({ game }: AppProps) {
         state={state}
         onOpenFormation={() => setFormationOpen(true)}
         onOpenOrg={() => run.zoomTo('company')}
+        getInitialPreviousSnapshot={getLastRunMetricSnapshot}
+        onSnapshotCaptured={rememberRunMetricSnapshot}
       />
 
       {phase === 'setup' && (

@@ -403,6 +403,38 @@ body {
   color: var(--cream);
   font-weight: 900;
 }
+.pill.run-feedback {
+  position: relative;
+  overflow: visible;
+}
+.pill.flash-positive {
+  animation: hudFlashPositive 0.8s ease-out;
+}
+.pill.flash-negative {
+  animation: hudFlashNegative 0.8s ease-out;
+}
+.run-feedback-pop {
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  z-index: 3;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #1b1438ee;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  font-weight: 1000;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: 0 2px 0 #00000066;
+}
+.run-feedback-pop.feedback-positive {
+  color: var(--mint);
+}
+.run-feedback-pop.feedback-negative {
+  color: var(--coral);
+}
 .ai-toggle {
   display: flex;
   align-items: center;

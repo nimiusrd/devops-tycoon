@@ -1687,6 +1687,12 @@ button.card:active {
 .event-panel.tone-good {
   border-color: var(--mint);
 }
+.event-panel.tone-joke {
+  border-color: var(--sun);
+  box-shadow:
+    0 0 0 1px #ffd45c33,
+    0 12px 32px #ffd45c1f;
+}
 .event-title {
   font-size: 24px;
   margin: 6px 0;

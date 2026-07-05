@@ -712,11 +712,56 @@ body {
     0 3px 4px #0005;
   animation: flybob 2.4s ease-in-out infinite;
 }
+/* 工程間フロー上を流れる粒（RI-05）。方向に沿った微小ドリフト＋残像。 */
+.task-dot.flowing {
+  z-index: 8;
+  animation:
+    flowDrift var(--flow-duration, 1.15s) ease-in-out infinite,
+    flybob 2.4s ease-in-out infinite;
+}
+.task-dot.flowing::after {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.45;
+  filter: blur(2px);
+  transform: translate(calc(var(--flow-dx, 0px) * -1.4), calc(var(--flow-dy, 0px) * -1.4));
+  animation: flowTrail var(--flow-duration, 1.15s) ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes flowDrift {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translate(0, 0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translate(var(--flow-dx, 4px), var(--flow-dy, 2px));
+  }
+}
+@keyframes flowTrail {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: translate(calc(var(--flow-dx, 0px) * -0.8), calc(var(--flow-dy, 0px) * -0.8));
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(calc(var(--flow-dx, 0px) * -2), calc(var(--flow-dy, 0px) * -2));
+  }
+}
 .task-dot.variant-ai {
   box-shadow:
     0 0 12px #b388ffaa,
     inset 0 -3px 5px #4a2a9a66;
   animation:
+    flybob 2.4s ease-in-out infinite,
+    aiGlow 1.6s ease-in-out infinite;
+}
+.task-dot.variant-ai.flowing {
+  animation:
+    flowDrift var(--flow-duration, 0.85s) ease-in-out infinite,
     flybob 2.4s ease-in-out infinite,
     aiGlow 1.6s ease-in-out infinite;
 }
@@ -731,6 +776,11 @@ body {
     0 0 18px #ff7a2fdd,
     inset 0 -3px 5px #a02a00;
   animation: fireShake 0.25s linear infinite;
+}
+.task-dot.variant-incident.flowing {
+  animation:
+    flowDrift var(--flow-duration, 1.15s) ease-in-out infinite,
+    fireShake 0.25s linear infinite;
 }
 .task-dot .flame {
   position: absolute;

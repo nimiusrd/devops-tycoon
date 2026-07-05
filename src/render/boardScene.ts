@@ -124,6 +124,74 @@ const FLOWS: readonly BoardFlow[] = [
   { from: 'rework', to: 'review', x1: 970, y1: 240, x2: 800, y2: 268, rework: true },
 ];
 
+/** 進捗中タスクをフロー上へ載せる対象レーン（RI-05）。 */
+const FLOWING_LANES: Partial<Record<Lane, Lane>> = {
+  coding: 'review',
+  rework: 'review',
+};
+
+/** from→to のフロー定義を返す。 */
+export function findBoardFlow(from: Lane, to: Lane): BoardFlow | undefined {
+  return FLOWS.find((f) => f.from === from && f.to === to);
+}
+
+/** フロー線上の t (0..1) に対応する設計座標と方向を返す（純関数・Vitest 検証用）。 */
+export function flowPointAt(
+  flow: BoardFlow,
+  t: number,
+): { x: number; y: number; angleDeg: number } {
+  const clamped = Math.max(0, Math.min(1, t));
+  const dx = flow.x2 - flow.x1;
+  const dy = flow.y2 - flow.y1;
+  return {
+    x: flow.x1 + dx * clamped,
+    y: flow.y1 + dy * clamped,
+    angleDeg: (Math.atan2(dy, dx) * 180) / Math.PI,
+  };
+}
+
+/** レーン内 progress に応じてフロー上を流すか（sim の Task.progress と一致）。 */
+function isFlowingTask(lane: Lane, task: Task): boolean {
+  if (task.progress <= 0) return false;
+  if (lane === 'rework' && task.incident) return false;
+  return lane in FLOWING_LANES;
+}
+
+function splitLaneTasks(lane: Lane, tasks: Task[]): { stationary: Task[]; flowing: Task[] } {
+  const stationary: Task[] = [];
+  const flowing: Task[] = [];
+  for (const task of tasks) {
+    if (isFlowingTask(lane, task)) flowing.push(task);
+    else stationary.push(task);
+  }
+  return { stationary, flowing };
+}
+
+function planFlowingDot(task: Task, lane: Lane): BoardDotPlan | null {
+  const to = FLOWING_LANES[lane];
+  if (!to) return null;
+  const flow = findBoardFlow(lane, to);
+  if (!flow) return null;
+  const { x, y, angleDeg } = flowPointAt(flow, task.progress);
+  return {
+    id: task.id,
+    lane,
+    x,
+    y,
+    variant: taskVariant(task),
+    size: taskSize(task),
+    fire: task.incident,
+    motion: {
+      kind: 'flow',
+      from: lane,
+      to,
+      t: task.progress,
+      angleDeg,
+      speedMul: task.aiAssisted ? 1.35 : 1,
+    },
+  };
+}
+
 /** レンダラが読む 1 ステーションの描画計画。 */
 export interface BoardStationPlan {
   lane: Lane;
@@ -157,6 +225,19 @@ export interface BoardStationPlan {
   overflowY: number;
 }
 
+/** 工程間フロー上を流れている粒の motion メタデータ（RI-05）。 */
+export interface BoardDotMotion {
+  kind: 'flow';
+  from: Lane;
+  to: Lane;
+  /** フロー線上の進行度 0..1。 */
+  t: number;
+  /** フロー方向（度）。CSS の微小ドリフト用。 */
+  angleDeg: number;
+  /** 視覚速度係数（AI 粒は少し速く見せる）。 */
+  speedMul: number;
+}
+
 /** レンダラが読む 1 タスク粒の描画計画。 */
 export interface BoardDotPlan {
   id: number;
@@ -168,6 +249,8 @@ export interface BoardDotPlan {
   size: TaskSize;
   /** 炎上中（flame を出す）。 */
   fire: boolean;
+  /** 設定時は工程間フロー上を流れている（山ではなくレーン間移動中）。 */
+  motion?: BoardDotMotion;
 }
 
 /** 盤面 1 フレームの描画計画。 */
@@ -270,6 +353,7 @@ function deriveMood(
  *
  * - 各工程のステーションは常に描く（count 0 でも表情 neutral で存在）。
  * - 粒は各ステーションの pile を中心に山状に積む（cap 超過は overflow に集約）。
+ * - Coding/Rework で progress>0 の粒は工程間フロー上へ補間配置する（RI-05）。
  * - 炎上中のタスクは fire を立て、Review の渋滞で hot/パニック表情にする。
  * 純関数・決定論（入力が同じなら同じ計画）。
  */
@@ -283,6 +367,7 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
 
   for (const layout of STATIONS) {
     const laneTasks = byLane.get(layout.lane) ?? [];
+    const { stationary, flowing } = splitLaneTasks(layout.lane, laneTasks);
     const count = laneTasks.length;
     const hot = layout.lane === 'review' && count >= REVIEW_HOT_QUEUE;
     const heat = layout.lane === 'review' ? reviewHeat(count) : 0;
@@ -291,8 +376,9 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
 
     // 上限超過時も炎上タスクは必ず残す（fire メーター/緊急対応が依存するため）。
     // 上限内をまず通常タスクで埋め、炎上は最後＝最上段に積んで目立たせる。
-    const incidents = laneTasks.filter((t) => t.incident);
-    const normals = laneTasks.filter((t) => !t.incident);
+    // フロー上を流れる粒は山に含めない（RI-05）。
+    const incidents = stationary.filter((t) => t.incident);
+    const normals = stationary.filter((t) => !t.incident);
     const shownIncidents = incidents.slice(0, layout.cap);
     const normalSlots = Math.max(0, layout.cap - shownIncidents.length);
     const shownNormals = normals.slice(0, normalSlots);
@@ -336,6 +422,11 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
         fire: t.incident,
       });
     });
+
+    for (const task of flowing) {
+      const dot = planFlowingDot(task, layout.lane);
+      if (dot) dots.push(dot);
+    }
   }
 
   return { view: { w: BOARD_VIEW.w, h: BOARD_VIEW.h }, stations, dots, flows: FLOWS };

@@ -339,6 +339,62 @@ describe('detectFireEvents（RI-06）', () => {
     ]);
   });
 
+  it('accumulator 減少でも Review 落ちと延焼が混在すれば spread を維持する', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'review'),
+        snapTask(2, 'review'),
+      ],
+      { spread: 0, incidentCount: 1 },
+      0.8,
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+        snapTask(2, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, incidentCount: 3 },
+      0.55,
+    );
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'spread', fromTaskId: 0, toTaskId: 2 },
+      { kind: 'ignite', taskId: 1 },
+    ]);
+  });
+
+  it('Backlog から同 tick 炎上でも ignite を検出する', () => {
+    const prev = snap([snapTask(0, 'backlog')], { incidentCount: 0 }, 0.9);
+    const next = snap(
+      [snapTask(0, 'rework', { incident: true, burnTicksLeft: BURN_TICKS })],
+      { incidentCount: 1 },
+      0.05,
+    );
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'ignite', taskId: 0 }]);
+  });
+
+  it('firefight 対象以外の継続中の火には再点火演出を出さない', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 20 }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: 2 }),
+      ],
+      { contained: 0, incidentCount: 2, actionCounts: { firefight: 0 } },
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 19 }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { contained: 1, incidentCount: 2, actionCounts: { firefight: 1 } },
+    );
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'extinguish', taskId: 1, source: 'firefight' },
+      { kind: 'ignite', taskId: 1 },
+    ]);
+  });
+
   it('firefight は最も延焼が近い火に付与する', () => {
     const prev = snap(
       [

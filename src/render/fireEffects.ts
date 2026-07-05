@@ -157,7 +157,7 @@ function sortByBurnUrgency(
   );
 }
 
-/** 同 tick 内に firefight 後 Review 落ちで再点火したタスク ID（緊急度順）。 */
+/** 同 tick 内に firefight 対象が Review 落ちで再点火したタスク ID。 */
 function pickFirefightReIgnites(
   prev: FireSnapshot,
   nextMap: Map<number, FireSnapshot['tasks'][number]>,
@@ -166,13 +166,10 @@ function pickFirefightReIgnites(
   if (firefightDelta <= 0) return [];
   return sortByBurnUrgency(
     prev,
-    prev.tasks.filter((p) => {
-      if (!p.incident) return false;
-      const n = nextMap.get(p.id);
-      return Boolean(n?.incident);
-    }),
+    prev.tasks.filter((p) => p.incident),
   )
     .slice(0, firefightDelta)
+    .filter((p) => Boolean(nextMap.get(p.id)?.incident))
     .map((p) => p.id);
 }
 
@@ -211,9 +208,9 @@ function buildReviewQueueAfterCoding(
   for (const p of prev.tasks) {
     if (p.lane === 'review') {
       ids.push(p.id);
-    } else if (p.lane === 'coding') {
+    } else if (p.lane === 'coding' || p.lane === 'backlog') {
       const n = nextMap.get(p.id);
-      if (n && n.lane !== 'coding') ids.push(p.id);
+      if (n && n.lane !== p.lane) ids.push(p.id);
     }
   }
   return ids;
@@ -268,9 +265,17 @@ function inferSpreadTargetIds(
   const max = valid.reduce((best, v) => (v.s > best.s ? v : best));
 
   if (zero) {
-    if (next.reviewAccumulator < prev.reviewAccumulator) return zero.targets;
-    const onlyCodingCompletions = queue.every((id) => prevMap.get(id)?.lane === 'coding');
-    if (onlyCodingCompletions && reviewWouldProcessFront(prev, next, queue)) {
+    const freshCompletions = queue.every((id) => {
+      const lane = prevMap.get(id)?.lane;
+      return lane === 'coding' || lane === 'backlog';
+    });
+    if (freshCompletions && reviewWouldProcessFront(prev, next, queue)) {
+      return zero.targets;
+    }
+    const prevReviewInQueue = queue.filter((id) => prevMap.get(id)?.lane === 'review');
+    const singleReviewTargetlessSpread =
+      queue.length === 1 && prevReviewInQueue.length === 1 && max.s > 0;
+    if (next.reviewAccumulator < prev.reviewAccumulator && singleReviewTargetlessSpread) {
       return zero.targets;
     }
   }
@@ -335,7 +340,7 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
   const reviewIgnites = newlyIgnited
     .filter((n) => {
       const prevLane = prevMap.get(n.id)?.lane;
-      return prevLane === 'review' || prevLane === 'coding';
+      return prevLane === 'review' || prevLane === 'coding' || prevLane === 'backlog';
     })
     .sort(
       (a, b) =>
@@ -442,7 +447,7 @@ function spreadTargetPosition(
   prevTasks: readonly Task[],
 ): { x: number; y: number } | null {
   const prevTask = prevTasks.find((t) => t.id === taskId);
-  if (prevTask?.lane === 'coding') {
+  if (prevTask?.lane === 'coding' || prevTask?.lane === 'backlog') {
     return laneFallbackPosition(prevTasks, 'review') ?? dotPosition(tasks, taskId);
   }
   return dotPosition(prevTasks, taskId) ?? dotPosition(tasks, taskId);

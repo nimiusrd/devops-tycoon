@@ -167,7 +167,24 @@ function splitLaneTasks(lane: Lane, tasks: Task[]): { stationary: Task[]; flowin
   return { stationary, flowing };
 }
 
-function planFlowingDot(task: Task, lane: Lane): BoardDotPlan | null {
+/** フロー上の粒を垂直方向に散らす間隔（設計px）。 */
+const FLOW_SPREAD_PX = 14;
+
+/** 同一 progress の粒が重ならないよう、フロー垂直方向へ index ベースで散らす。 */
+function flowSpreadOffsets(count: number, angleDeg: number): Point[] {
+  if (count <= 1) return [{ x: 0, y: 0 }];
+  const perpRad = ((angleDeg + 90) * Math.PI) / 180;
+  const perpX = Math.cos(perpRad);
+  const perpY = Math.sin(perpRad);
+  const out: Point[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const centered = i - (count - 1) / 2;
+    out.push({ x: perpX * centered * FLOW_SPREAD_PX, y: perpY * centered * FLOW_SPREAD_PX });
+  }
+  return out;
+}
+
+function planFlowingDot(task: Task, lane: Lane, spread: Point): BoardDotPlan | null {
   const to = FLOWING_LANES[lane];
   if (!to) return null;
   const flow = findBoardFlow(lane, to);
@@ -176,8 +193,8 @@ function planFlowingDot(task: Task, lane: Lane): BoardDotPlan | null {
   return {
     id: task.id,
     lane,
-    x,
-    y,
+    x: x + spread.x,
+    y: y + spread.y,
     variant: taskVariant(task),
     size: taskSize(task),
     fire: task.incident,
@@ -383,7 +400,7 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
     const normalSlots = Math.max(0, layout.cap - shownIncidents.length);
     const shownNormals = normals.slice(0, normalSlots);
     const shown = [...shownNormals, ...shownIncidents];
-    const overflow = count - shown.length;
+    const overflow = stationary.length - shown.length;
 
     // `+N` バッジは山の頂点（最上段の少し上）に置く。ラベルと衝突させない。
     const rows = Math.ceil(shown.length / layout.perRow);
@@ -423,10 +440,17 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
       });
     });
 
-    for (const task of flowing) {
-      const dot = planFlowingDot(task, layout.lane);
+    const sortedFlowing = [...flowing].sort((a, b) => a.id - b.id);
+    const flowTo = FLOWING_LANES[layout.lane];
+    const flowDef = flowTo ? findBoardFlow(layout.lane, flowTo) : undefined;
+    const spreadOffsets =
+      flowDef && sortedFlowing.length > 0
+        ? flowSpreadOffsets(sortedFlowing.length, flowPointAt(flowDef, 0).angleDeg)
+        : [];
+    sortedFlowing.forEach((task, i) => {
+      const dot = planFlowingDot(task, layout.lane, spreadOffsets[i] ?? { x: 0, y: 0 });
       if (dot) dots.push(dot);
-    }
+    });
   }
 
   return { view: { w: BOARD_VIEW.w, h: BOARD_VIEW.h }, stations, dots, flows: FLOWS };

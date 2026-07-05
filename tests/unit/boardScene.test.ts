@@ -281,4 +281,20 @@ describe('planBoardScene 流動粒（RI-05）', () => {
     const b = planBoardScene(tasks).dots;
     expect(a).toEqual(b);
   });
+
+  it('流動粒だけのレーンでは overflow を出さない', () => {
+    const scene = planBoardScene([task({ id: 1, lane: 'coding', progress: 0.5 })]);
+    expect(scene.stations.find((s) => s.lane === 'coding')!.overflow).toBe(0);
+  });
+
+  it('同一 progress の流動粒は垂直オフセットで重ならない', () => {
+    const scene = planBoardScene([
+      task({ id: 1, lane: 'coding', progress: 0.5 }),
+      task({ id: 2, lane: 'coding', progress: 0.5 }),
+    ]);
+    const dots = scene.dots.filter((d) => d.lane === 'coding');
+    expect(dots).toHaveLength(2);
+    expect(dots[0].x).not.toBe(dots[1].x);
+    expect(dots[0].y).not.toBe(dots[1].y);
+  });
 });

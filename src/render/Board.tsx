@@ -62,16 +62,30 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
       : urgency !== undefined
         ? ' burn-warn'
         : '';
+  const flowing = dot.motion?.kind === 'flow';
+  const motionStyle: CSSProperties = flowing
+    ? (() => {
+        const rad = ((dot.motion?.angleDeg ?? 0) * Math.PI) / 180;
+        const speedMul = dot.motion?.speedMul ?? 1;
+        return {
+          '--flow-dx': `${Math.cos(rad) * 5}px`,
+          '--flow-dy': `${Math.sin(rad) * 5}px`,
+          '--flow-duration': `${1.15 / speedMul}s`,
+        } as CSSProperties;
+      })()
+    : {};
   return (
     <span
-      className={`task-dot variant-${dot.variant}${urgentClass}`}
+      className={`task-dot variant-${dot.variant}${urgentClass}${flowing ? ' flowing' : ''}`}
       data-variant={dot.variant}
+      data-flowing={flowing ? 'true' : undefined}
       style={{
         left: pct(dot.x, VIEW_W),
         top: pct(dot.y, VIEW_H),
         width: `${sizePct}%`,
         aspectRatio: '1 / 1',
         background: TASK_COLORS[dot.variant],
+        ...motionStyle,
         ...(urgency !== undefined ? ({ '--burn-urgency': urgency } as CSSProperties) : undefined),
       }}
     >

@@ -243,10 +243,7 @@ function pickSpreadTargets(
 
   const reviewSpreadTargets =
     reviewSpreadCount <= 0 ? [] : reviewLaneIgnites.slice(-reviewSpreadCount);
-  const targets = [
-    ...reviewSpreadTargets,
-    ...codingCandidates.slice(0, codingSpreadCount),
-  ].sort(
+  const targets = [...reviewSpreadTargets, ...codingCandidates.slice(0, codingSpreadCount)].sort(
     (a, b) =>
       prev.tasks.findIndex((t) => t.id === a.id) - prev.tasks.findIndex((t) => t.id === b.id),
   );

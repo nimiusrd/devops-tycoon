@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   BOARD_VIEW,
+  findBoardFlow,
+  flowPointAt,
   REVIEW_HEAT_START,
   REVIEW_HOT_QUEUE,
   planBoardScene,
@@ -208,5 +210,91 @@ describe('reviewHeat（渋滞の段階強度・hot 手前の早期警告）', ()
   it('hot 到達時は heat が 1（最大）', () => {
     const scene = planBoardScene(tasksIn('review', REVIEW_HOT_QUEUE));
     expect(scene.stations.find((s) => s.lane === 'review')!.heat).toBe(1);
+  });
+});
+
+describe('flowPointAt / 工程間フロー補間（RI-05）', () => {
+  const codingFlow = findBoardFlow('coding', 'review')!;
+
+  it('t=0 は始点、t=1 は終点に一致する', () => {
+    expect(flowPointAt(codingFlow, 0)).toMatchObject({ x: codingFlow.x1, y: codingFlow.y1 });
+    expect(flowPointAt(codingFlow, 1)).toMatchObject({ x: codingFlow.x2, y: codingFlow.y2 });
+  });
+
+  it('t=0.5 は始点と終点の中間付近になる', () => {
+    const mid = flowPointAt(codingFlow, 0.5);
+    expect(mid.x).toBeCloseTo((codingFlow.x1 + codingFlow.x2) / 2, 5);
+    expect(mid.y).toBeCloseTo((codingFlow.y1 + codingFlow.y2) / 2, 5);
+  });
+});
+
+describe('planBoardScene 流動粒（RI-05）', () => {
+  it('Coding progress>0 の粒はフロー上に motion 付きで配置する', () => {
+    const scene = planBoardScene([task({ id: 1, lane: 'coding', progress: 0.6 })]);
+    const dot = scene.dots.find((d) => d.id === 1)!;
+    const expected = flowPointAt(findBoardFlow('coding', 'review')!, 0.6);
+    expect(dot.motion).toMatchObject({ kind: 'flow', from: 'coding', to: 'review', t: 0.6 });
+    expect(dot.x).toBeCloseTo(expected.x, 5);
+    expect(dot.y).toBeCloseTo(expected.y, 5);
+  });
+
+  it('Coding progress=0 の粒は従来どおり山（pile）に積む', () => {
+    const scene = planBoardScene([task({ id: 2, lane: 'coding', progress: 0 })]);
+    const dot = scene.dots.find((d) => d.id === 2)!;
+    expect(dot.motion).toBeUndefined();
+    expect(dot.x).toBeGreaterThan(600);
+    expect(dot.y).toBeGreaterThan(200);
+  });
+
+  it('Rework progress>0 かつ非炎上は rework→review フロー上へ流す', () => {
+    const scene = planBoardScene([task({ id: 3, lane: 'rework', progress: 0.4 })]);
+    const dot = scene.dots.find((d) => d.id === 3)!;
+    const expected = flowPointAt(findBoardFlow('rework', 'review')!, 0.4);
+    expect(dot.motion?.from).toBe('rework');
+    expect(dot.motion?.to).toBe('review');
+    expect(dot.x).toBeCloseTo(expected.x, 5);
+    expect(dot.y).toBeCloseTo(expected.y, 5);
+  });
+
+  it('炎上中の Rework は progress>0 でも山に残す（手戻り不能）', () => {
+    const scene = planBoardScene([task({ id: 4, lane: 'rework', progress: 0.5, incident: true })]);
+    const dot = scene.dots.find((d) => d.id === 4)!;
+    expect(dot.motion).toBeUndefined();
+    expect(dot.fire).toBe(true);
+  });
+
+  it('山とフロー粒が同一レーンで共存する', () => {
+    const scene = planBoardScene([
+      task({ id: 10, lane: 'coding', progress: 0 }),
+      task({ id: 11, lane: 'coding', progress: 0.7, aiAssisted: true }),
+    ]);
+    const codingDots = scene.dots.filter((d) => d.lane === 'coding');
+    expect(codingDots).toHaveLength(2);
+    expect(codingDots.find((d) => d.id === 10)!.motion).toBeUndefined();
+    expect(codingDots.find((d) => d.id === 11)!.motion?.kind).toBe('flow');
+    expect(codingDots.find((d) => d.id === 11)!.motion?.speedMul).toBe(1.35);
+  });
+
+  it('流動粒の配置は決定論（同一入力＝同一座標）', () => {
+    const tasks = [task({ id: 5, lane: 'coding', progress: 0.33 })];
+    const a = planBoardScene(tasks).dots;
+    const b = planBoardScene(tasks).dots;
+    expect(a).toEqual(b);
+  });
+
+  it('流動粒だけのレーンでは overflow を出さない', () => {
+    const scene = planBoardScene([task({ id: 1, lane: 'coding', progress: 0.5 })]);
+    expect(scene.stations.find((s) => s.lane === 'coding')!.overflow).toBe(0);
+  });
+
+  it('同一 progress の流動粒は垂直オフセットで重ならない', () => {
+    const scene = planBoardScene([
+      task({ id: 1, lane: 'coding', progress: 0.5 }),
+      task({ id: 2, lane: 'coding', progress: 0.5 }),
+    ]);
+    const dots = scene.dots.filter((d) => d.lane === 'coding');
+    expect(dots).toHaveLength(2);
+    expect(dots[0].x).not.toBe(dots[1].x);
+    expect(dots[0].y).not.toBe(dots[1].y);
   });
 });

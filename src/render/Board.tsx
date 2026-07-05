@@ -55,16 +55,30 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
   const d = TASK_DIAMETER[dot.size];
   // 粒径は設計幅 1404 に対する % で持たせ、盤面サイズに追従させる。
   const sizePct = (d / VIEW_W) * 100;
+  const flowing = dot.motion?.kind === 'flow';
+  const motionStyle: CSSProperties = flowing
+    ? (() => {
+        const rad = ((dot.motion?.angleDeg ?? 0) * Math.PI) / 180;
+        const speedMul = dot.motion?.speedMul ?? 1;
+        return {
+          '--flow-dx': `${Math.cos(rad) * 5}px`,
+          '--flow-dy': `${Math.sin(rad) * 5}px`,
+          '--flow-duration': `${1.15 / speedMul}s`,
+        } as CSSProperties;
+      })()
+    : {};
   return (
     <span
-      className={`task-dot variant-${dot.variant}`}
+      className={`task-dot variant-${dot.variant}${flowing ? ' flowing' : ''}`}
       data-variant={dot.variant}
+      data-flowing={flowing ? 'true' : undefined}
       style={{
         left: pct(dot.x, VIEW_W),
         top: pct(dot.y, VIEW_H),
         width: `${sizePct}%`,
         aspectRatio: '1 / 1',
         background: TASK_COLORS[dot.variant],
+        ...motionStyle,
       }}
     >
       {dot.fire && <span className="flame">🔥</span>}

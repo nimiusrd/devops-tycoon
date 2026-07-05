@@ -121,12 +121,31 @@ function pickSpreadSources(
 
   const definite = expiredInOrder.filter((p) => isSpreadSource(p, nextMap.get(p.id)!));
   const ambiguous = expiredInOrder.filter((p) => !definite.includes(p));
-  const picked = [...definite];
-  for (const p of ambiguous) {
-    if (picked.length >= spreadDelta) break;
-    picked.push(p);
+  const ambiguousNeeded = Math.max(0, spreadDelta - definite.length);
+  // 同 tick に鎮火がある場合、先に処理された火ほど contained になりやすい。
+  return [...definite, ...ambiguous.slice(-ambiguousNeeded)].slice(0, spreadDelta);
+}
+
+/** advanceReview 後に Review へ残っていたタスクだけが延焼先になりうる。 */
+function pickSpreadTargets(
+  prev: FireSnapshot,
+  reviewIgnites: FireSnapshot['tasks'],
+  spreadDelta: number,
+  expiredCount: number,
+): FireSnapshot['tasks'] {
+  if (spreadDelta <= 0 || reviewIgnites.length === 0) return [];
+
+  const prevReviewCount = prev.tasks.filter((t) => t.lane === 'review').length;
+  // 単一 Review + 単一 expired 火は Review 落ち点火と延焼先が区別不能 → ignite を優先。
+  if (
+    prevReviewCount <= spreadDelta &&
+    reviewIgnites.length === prevReviewCount &&
+    expiredCount <= spreadDelta
+  ) {
+    return [];
   }
-  return picked.slice(0, spreadDelta);
+
+  return reviewIgnites.slice(-Math.min(spreadDelta, reviewIgnites.length));
 }
 
 /**
@@ -162,7 +181,12 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
   if (spreadDelta > 0) {
     const expiredInOrder = prev.tasks.filter((p) => isExpiredReworkFire(p, nextMap.get(p.id)));
     const spreadSources = pickSpreadSources(expiredInOrder, spreadDelta, containedDelta, nextMap);
-    const spreadTargets = reviewIgnites.slice(-spreadDelta);
+    const spreadTargets = pickSpreadTargets(
+      prev,
+      reviewIgnites,
+      spreadDelta,
+      expiredInOrder.length,
+    );
 
     for (let i = 0; i < spreadDelta; i += 1) {
       const from = spreadSources[i] ?? spreadSources[0];

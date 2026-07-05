@@ -66,13 +66,18 @@ const makeTask = (id: number, lane: Lane, overrides: Partial<Task> = {}): Task =
 describe('detectFireEvents（RI-06）', () => {
   it('延焼で spread イベントを検出する', () => {
     const prev = snap(
-      [snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }), snapTask(1, 'review')],
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'review'),
+        snapTask(2, 'review'),
+      ],
       { spread: 0, incidentCount: 1 },
     );
     const next = snap(
       [
         snapTask(0, 'rework', { debt: true }),
         snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+        snapTask(2, 'review'),
       ],
       { spread: 1, incidentCount: 2 },
     );
@@ -115,7 +120,24 @@ describe('detectFireEvents（RI-06）', () => {
       [
         snapTask(0, 'rework', { incident: true, debt: true, burnTicksLeft: 1 }),
         snapTask(1, 'review'),
+        snapTask(2, 'review'),
       ],
+      { spread: 0, incidentCount: 1 },
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+        snapTask(2, 'review'),
+      ],
+      { spread: 1, incidentCount: 2 },
+    );
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }]);
+  });
+
+  it('Review 落ちのみの tick では spread に取り込まない', () => {
+    const prev = snap(
+      [snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }), snapTask(1, 'review')],
       { spread: 0, incidentCount: 1 },
     );
     const next = snap(
@@ -125,7 +147,30 @@ describe('detectFireEvents（RI-06）', () => {
       ],
       { spread: 1, incidentCount: 2 },
     );
-    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }]);
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'ignite', taskId: 1 }]);
+  });
+
+  it('鎮火後の延焼は後方の expired 火を延焼元にする', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'rework', { incident: true, debt: true, burnTicksLeft: 1 }),
+        snapTask(2, 'review'),
+      ],
+      { spread: 0, contained: 0, incidentCount: 2 },
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework'),
+        snapTask(1, 'rework', { debt: true }),
+        snapTask(2, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, contained: 1, incidentCount: 3 },
+    );
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'spread', fromTaskId: 1, toTaskId: 2 },
+      { kind: 'extinguish', taskId: 0, source: 'auto' },
+    ]);
   });
 
   it('緊急対応の鎮火で extinguish(firefight) を検出する', () => {

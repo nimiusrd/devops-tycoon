@@ -42,11 +42,14 @@ const snapTask = (
 const snap = (
   tasks: ReturnType<typeof snapTask>[],
   metrics: Partial<SprintMetrics> = {},
+  reviewAccumulator = 0,
 ): FireSnapshot => ({
   tasks,
   spread: metrics.spread ?? 0,
   contained: metrics.contained ?? 0,
   incidentCount: metrics.incidentCount ?? 0,
+  reviewAccumulator,
+  firefightCount: metrics.actionCounts?.firefight ?? 0,
 });
 
 const makeTask = (id: number, lane: Lane, overrides: Partial<Task> = {}): Task => ({
@@ -139,6 +142,7 @@ describe('detectFireEvents（RI-06）', () => {
     const prev = snap(
       [snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }), snapTask(1, 'review')],
       { spread: 0, incidentCount: 1 },
+      0.9,
     );
     const next = snap(
       [
@@ -146,8 +150,26 @@ describe('detectFireEvents（RI-06）', () => {
         snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
       ],
       { spread: 1, incidentCount: 2 },
+      0.05,
     );
     expect(detectFireEvents(prev, next)).toEqual([{ kind: 'ignite', taskId: 1 }]);
+  });
+
+  it('単一 Review への延焼は spread として検出する', () => {
+    const prev = snap(
+      [snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }), snapTask(1, 'review')],
+      { spread: 0, incidentCount: 1 },
+      0.2,
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, incidentCount: 2 },
+      0.35,
+    );
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }]);
   });
 
   it('鎮火後の延焼は後方の expired 火を延焼元にする', () => {
@@ -176,8 +198,26 @@ describe('detectFireEvents（RI-06）', () => {
   it('緊急対応の鎮火で extinguish(firefight) を検出する', () => {
     const prev = snap([snapTask(0, 'rework', { incident: true, burnTicksLeft: 20 })], {
       contained: 0,
+      actionCounts: { firefight: 1 },
     });
-    const next = snap([snapTask(0, 'review')], { contained: 1 });
+    const next = snap([snapTask(0, 'review')], {
+      contained: 1,
+      actionCounts: { firefight: 2 },
+    });
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'extinguish', taskId: 0, source: 'firefight' },
+    ]);
+  });
+
+  it('firefight 後に Review が Done へ進んでも firefight 演出を維持する', () => {
+    const prev = snap([snapTask(0, 'rework', { incident: true, burnTicksLeft: 20 })], {
+      contained: 0,
+      actionCounts: { firefight: 2 },
+    });
+    const next = snap([snapTask(0, 'done')], {
+      contained: 1,
+      actionCounts: { firefight: 3 },
+    });
     expect(detectFireEvents(prev, next)).toEqual([
       { kind: 'extinguish', taskId: 0, source: 'firefight' },
     ]);
@@ -236,14 +276,30 @@ describe('fireSnapshotsEqual', () => {
     });
     expect(fireSnapshotsEqual(a, b)).toBe(true);
   });
+
+  it('reviewAccumulator か firefightCount が違えば false', () => {
+    const base = snap([snapTask(0, 'review')], { spread: 1 });
+    expect(fireSnapshotsEqual(base, snap([snapTask(0, 'review')], { spread: 1 }, 0.5))).toBe(false);
+    expect(
+      fireSnapshotsEqual(base, snap([snapTask(0, 'review')], { actionCounts: { firefight: 1 } })),
+    ).toBe(false);
+  });
 });
 
 describe('createFireSnapshot / positionFireEffects', () => {
   it('スプリント状態からスナップショットを作れる', () => {
     const tasks = [makeTask(1, 'rework', { incident: true, burnTicksLeft: 10 })];
-    const metrics = { ...baseMetrics(), spread: 2, contained: 1, incidentCount: 3 };
-    const snapshot = createFireSnapshot(tasks, metrics);
+    const metrics = {
+      ...baseMetrics(),
+      spread: 2,
+      contained: 1,
+      incidentCount: 3,
+      actionCounts: { firefight: 4 },
+    };
+    const snapshot = createFireSnapshot(tasks, metrics, 0.75);
     expect(snapshot.spread).toBe(2);
+    expect(snapshot.reviewAccumulator).toBe(0.75);
+    expect(snapshot.firefightCount).toBe(4);
     expect(snapshot.tasks[0].incident).toBe(true);
   });
 

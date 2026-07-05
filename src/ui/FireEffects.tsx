@@ -27,10 +27,11 @@ const IGNITE_MS = 450;
 export interface FireEffectsProps {
   tasks: readonly Task[];
   metrics: SprintMetrics;
+  reviewAccumulator: number;
 }
 
-export function FireEffects({ tasks, metrics }: FireEffectsProps) {
-  const prevSnap = useRef<FireSnapshot>(createFireSnapshot(tasks, metrics));
+export function FireEffects({ tasks, metrics, reviewAccumulator }: FireEffectsProps) {
+  const prevSnap = useRef<FireSnapshot>(createFireSnapshot(tasks, metrics, reviewAccumulator));
   const prevTasks = useRef<readonly Task[]>(tasks);
   const nextKey = useRef(0);
   const removalTimers = useRef<Map<number, number>>(new Map());
@@ -45,7 +46,7 @@ export function FireEffects({ tasks, metrics }: FireEffectsProps) {
   }, []);
 
   useEffect(() => {
-    const nextSnap = createFireSnapshot(tasks, metrics);
+    const nextSnap = createFireSnapshot(tasks, metrics, reviewAccumulator);
     if (fireSnapshotsEqual(prevSnap.current, nextSnap)) return;
 
     const raw = detectFireEvents(prevSnap.current, nextSnap);
@@ -76,7 +77,7 @@ export function FireEffects({ tasks, metrics }: FireEffectsProps) {
       }, duration + 80);
       removalTimers.current.set(effect.key, timer);
     }
-  }, [tasks, metrics]);
+  }, [tasks, metrics, reviewAccumulator]);
 
   return (
     <div className="fire-effects" aria-hidden="true">

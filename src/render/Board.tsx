@@ -189,6 +189,8 @@ export interface BoardProps {
   tasks: Task[];
   /** 指定時は盤面内に延焼・鎮火演出を重ねる（RI-06）。 */
   metrics?: SprintMetrics;
+  /** Review スループット（延焼先判定用）。metrics 指定時は必須。 */
+  reviewAccumulator?: number;
 }
 
 /** 凡例（mockups の dot 凡例）。 */
@@ -200,7 +202,7 @@ const LEGEND: { variant: BoardDotPlan['variant']; label: string }[] = [
   { variant: 'incident', label: '炎上' },
 ];
 
-export function Board({ tasks, metrics }: BoardProps) {
+export function Board({ tasks, metrics, reviewAccumulator = 0 }: BoardProps) {
   const scene = planBoardScene(tasks);
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
@@ -259,7 +261,9 @@ export function Board({ tasks, metrics }: BoardProps) {
         ))}
       </div>
 
-      {metrics && <FireEffects tasks={tasks} metrics={metrics} />}
+      {metrics && (
+        <FireEffects tasks={tasks} metrics={metrics} reviewAccumulator={reviewAccumulator} />
+      )}
     </div>
   );
 }

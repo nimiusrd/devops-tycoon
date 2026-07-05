@@ -25,6 +25,10 @@ export interface FireSnapshot {
   spread: number;
   contained: number;
   incidentCount: number;
+  /** advanceReview の小数スループット（延焼先判定用）。 */
+  reviewAccumulator: number;
+  /** 緊急対応の累計回数（鎮火 source 判定用）。 */
+  firefightCount: number;
 }
 
 /** 座標付きの演出（レンダラ向け）。設計空間 1404×573 の px。 */
@@ -51,7 +55,11 @@ const VIEW_W = 1404;
 const VIEW_H = 573;
 
 /** スプリント状態から演出検出用スナップショットを作る。 */
-export function createFireSnapshot(tasks: readonly Task[], metrics: SprintMetrics): FireSnapshot {
+export function createFireSnapshot(
+  tasks: readonly Task[],
+  metrics: SprintMetrics,
+  reviewAccumulator = 0,
+): FireSnapshot {
   return {
     tasks: tasks.map((t) => ({
       id: t.id,
@@ -63,6 +71,8 @@ export function createFireSnapshot(tasks: readonly Task[], metrics: SprintMetric
     spread: metrics.spread,
     contained: metrics.contained,
     incidentCount: metrics.incidentCount,
+    reviewAccumulator,
+    firefightCount: metrics.actionCounts.firefight ?? 0,
   };
 }
 
@@ -72,6 +82,8 @@ export function fireSnapshotsEqual(a: FireSnapshot, b: FireSnapshot): boolean {
     a.spread !== b.spread ||
     a.contained !== b.contained ||
     a.incidentCount !== b.incidentCount ||
+    a.reviewAccumulator !== b.reviewAccumulator ||
+    a.firefightCount !== b.firefightCount ||
     a.tasks.length !== b.tasks.length
   ) {
     return false;
@@ -126,9 +138,14 @@ function pickSpreadSources(
   return [...definite, ...ambiguous.slice(-ambiguousNeeded)].slice(0, spreadDelta);
 }
 
+function reviewProcessedInTick(prev: FireSnapshot, next: FireSnapshot): boolean {
+  return next.reviewAccumulator < prev.reviewAccumulator;
+}
+
 /** advanceReview 後に Review へ残っていたタスクだけが延焼先になりうる。 */
 function pickSpreadTargets(
   prev: FireSnapshot,
+  next: FireSnapshot,
   reviewIgnites: FireSnapshot['tasks'],
   spreadDelta: number,
   expiredCount: number,
@@ -136,11 +153,12 @@ function pickSpreadTargets(
   if (spreadDelta <= 0 || reviewIgnites.length === 0) return [];
 
   const prevReviewCount = prev.tasks.filter((t) => t.lane === 'review').length;
-  // 単一 Review + 単一 expired 火は Review 落ち点火と延焼先が区別不能 → ignite を優先。
+  // Review 処理済みで延焼先が残らない tick だけ ignite を優先する。
   if (
     prevReviewCount <= spreadDelta &&
     reviewIgnites.length === prevReviewCount &&
-    expiredCount <= spreadDelta
+    expiredCount <= spreadDelta &&
+    reviewProcessedInTick(prev, next)
   ) {
     return [];
   }
@@ -183,6 +201,7 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
     const spreadSources = pickSpreadSources(expiredInOrder, spreadDelta, containedDelta, nextMap);
     const spreadTargets = pickSpreadTargets(
       prev,
+      next,
       reviewIgnites,
       spreadDelta,
       expiredInOrder.length,
@@ -206,6 +225,9 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
   }
 
   if (containedDelta > 0) {
+    const firefightDelta = next.firefightCount - prev.firefightCount;
+    let firefightRemaining = Math.max(0, firefightDelta);
+
     const extinguishCandidates = prev.tasks
       .filter((p) => {
         const n = nextMap.get(p.id);
@@ -220,11 +242,12 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
 
     for (let i = 0; i < containedDelta && i < extinguishCandidates.length; i += 1) {
       const p = extinguishCandidates[i];
-      const n = nextMap.get(p.id)!;
+      const source = firefightRemaining > 0 ? 'firefight' : 'auto';
+      if (firefightRemaining > 0) firefightRemaining -= 1;
       effects.push({
         kind: 'extinguish',
         taskId: p.id,
-        source: n.lane === 'review' ? 'firefight' : 'auto',
+        source,
       });
     }
   }

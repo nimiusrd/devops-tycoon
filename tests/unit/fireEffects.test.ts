@@ -305,6 +305,40 @@ describe('detectFireEvents（RI-06）', () => {
     expect(detectFireEvents(prev, next)).toEqual([{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }]);
   });
 
+  it('高スループットで Review 落ちした Coding 完了は spread にしない', () => {
+    const prev = snap(
+      [snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }), snapTask(1, 'coding')],
+      { spread: 0, incidentCount: 1 },
+      1.8,
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, incidentCount: 2 },
+      2.8,
+    );
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'ignite', taskId: 1 }]);
+  });
+
+  it('firefight 後の同 tick 再点火でも消火と再点火演出を出す', () => {
+    const prev = snap([snapTask(0, 'rework', { incident: true, burnTicksLeft: 2 })], {
+      contained: 0,
+      incidentCount: 1,
+      actionCounts: { firefight: 0 },
+    });
+    const next = snap([snapTask(0, 'rework', { incident: true, burnTicksLeft: BURN_TICKS })], {
+      contained: 1,
+      incidentCount: 1,
+      actionCounts: { firefight: 1 },
+    });
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'extinguish', taskId: 0, source: 'firefight' },
+      { kind: 'ignite', taskId: 0 },
+    ]);
+  });
+
   it('firefight は最も延焼が近い火に付与する', () => {
     const prev = snap(
       [

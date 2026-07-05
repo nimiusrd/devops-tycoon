@@ -95,7 +95,7 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
           className="flame"
           style={
             urgency !== undefined
-              ? ({ fontSize: `${0.75 + urgency * 0.35}em` } as CSSProperties)
+              ? ({ fontSize: `${0.75 + (1 - urgency) * 0.35}em` } as CSSProperties)
               : undefined
           }
         >

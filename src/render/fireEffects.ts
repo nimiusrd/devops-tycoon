@@ -138,8 +138,40 @@ function pickSpreadSources(
   return [...definite, ...ambiguous.slice(-ambiguousNeeded)].slice(0, spreadDelta);
 }
 
-function reviewProcessedInTick(prev: FireSnapshot, next: FireSnapshot): boolean {
-  return next.reviewAccumulator < prev.reviewAccumulator;
+function countReviewNonIgniteDepartures(
+  prev: FireSnapshot,
+  nextMap: Map<number, FireSnapshot['tasks'][number]>,
+): number {
+  return prev.tasks.filter((p) => {
+    if (p.lane !== 'review') return false;
+    const n = nextMap.get(p.id);
+    return n && n.lane !== 'review' && !n.incident;
+  }).length;
+}
+
+function reviewProcessedInTick(
+  prev: FireSnapshot,
+  next: FireSnapshot,
+  nextMap: Map<number, FireSnapshot['tasks'][number]>,
+): boolean {
+  const definiteReviewWork = prev.tasks.some((p) => {
+    if (p.lane !== 'review') return false;
+    const n = nextMap.get(p.id);
+    if (!n || n.lane === 'review') return false;
+    return n.lane === 'done' || (n.lane === 'rework' && !n.incident);
+  });
+  if (definiteReviewWork) return true;
+
+  const prevReviewCount = prev.tasks.filter((t) => t.lane === 'review').length;
+  const nextReviewCount = next.tasks.filter((t) => t.lane === 'review').length;
+  if (prevReviewCount <= 1) {
+    return next.reviewAccumulator < prev.reviewAccumulator;
+  }
+
+  const reviewDepartures = prev.tasks.filter(
+    (p) => p.lane === 'review' && nextMap.get(p.id)?.lane !== 'review',
+  ).length;
+  return reviewDepartures > 0 && nextReviewCount < prevReviewCount;
 }
 
 /** advanceReview 後に Review へ残っていたタスクだけが延焼先になりうる。 */
@@ -148,22 +180,34 @@ function pickSpreadTargets(
   next: FireSnapshot,
   reviewIgnites: FireSnapshot['tasks'],
   spreadDelta: number,
-  expiredCount: number,
+  nextMap: Map<number, FireSnapshot['tasks'][number]>,
 ): FireSnapshot['tasks'] {
   if (spreadDelta <= 0 || reviewIgnites.length === 0) return [];
 
   const prevReviewCount = prev.tasks.filter((t) => t.lane === 'review').length;
-  // Review 処理済みで延焼先が残らない tick だけ ignite を優先する。
-  if (
-    prevReviewCount <= spreadDelta &&
-    reviewIgnites.length === prevReviewCount &&
-    expiredCount <= spreadDelta &&
-    reviewProcessedInTick(prev, next)
+  const nonIgniteDepartures = countReviewNonIgniteDepartures(prev, nextMap);
+  const spreadRoom = prevReviewCount - nonIgniteDepartures - reviewIgnites.length;
+
+  let spreadTargetCount = Math.min(spreadDelta, reviewIgnites.length);
+  if (spreadRoom < 0) {
+    spreadTargetCount = 0;
+  } else if (
+    spreadRoom === 0 &&
+    reviewIgnites.length < prevReviewCount &&
+    reviewProcessedInTick(prev, next, nextMap)
   ) {
-    return [];
+    spreadTargetCount = 0;
+  } else if (
+    spreadRoom === 0 &&
+    prevReviewCount === 1 &&
+    reviewIgnites.length === 1 &&
+    reviewProcessedInTick(prev, next, nextMap)
+  ) {
+    spreadTargetCount = 0;
   }
 
-  return reviewIgnites.slice(-Math.min(spreadDelta, reviewIgnites.length));
+  if (spreadTargetCount <= 0) return [];
+  return reviewIgnites.slice(-spreadTargetCount);
 }
 
 /**
@@ -190,31 +234,29 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
   const spreadSourceIds = new Set<number>();
 
   const reviewIgnites = newlyIgnited
-    .filter((n) => prevMap.get(n.id)?.lane === 'review')
+    .filter((n) => {
+      const prevLane = prevMap.get(n.id)?.lane;
+      return prevLane === 'review' || prevLane === 'coding';
+    })
     .sort(
       (a, b) =>
         prev.tasks.findIndex((t) => t.id === a.id) - prev.tasks.findIndex((t) => t.id === b.id),
     );
 
+  const spreadReviewIgnites = reviewIgnites.filter((n) => prevMap.get(n.id)?.lane === 'review');
+
   if (spreadDelta > 0) {
     const expiredInOrder = prev.tasks.filter((p) => isExpiredReworkFire(p, nextMap.get(p.id)));
     const spreadSources = pickSpreadSources(expiredInOrder, spreadDelta, containedDelta, nextMap);
-    const spreadTargets = pickSpreadTargets(
-      prev,
-      next,
-      reviewIgnites,
-      spreadDelta,
-      expiredInOrder.length,
-    );
+    const spreadTargets = pickSpreadTargets(prev, next, spreadReviewIgnites, spreadDelta, nextMap);
 
-    for (let i = 0; i < spreadDelta; i += 1) {
-      const from = spreadSources[i] ?? spreadSources[0];
-      const to = spreadTargets[i] ?? spreadTargets[0];
-      if (from && to) {
-        spreadSourceIds.add(from.id);
-        spreadTargetIds.add(to.id);
-        effects.push({ kind: 'spread', fromTaskId: from.id, toTaskId: to.id });
-      }
+    const spreadCount = Math.min(spreadDelta, spreadSources.length, spreadTargets.length);
+    for (let i = 0; i < spreadCount; i += 1) {
+      const from = spreadSources[i];
+      const to = spreadTargets[i];
+      spreadSourceIds.add(from.id);
+      spreadTargetIds.add(to.id);
+      effects.push({ kind: 'spread', fromTaskId: from.id, toTaskId: to.id });
     }
   }
 
@@ -226,7 +268,7 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
 
   if (containedDelta > 0) {
     const firefightDelta = next.firefightCount - prev.firefightCount;
-    let firefightRemaining = Math.max(0, firefightDelta);
+    const firefightRemaining = Math.max(0, firefightDelta);
 
     const extinguishCandidates = prev.tasks
       .filter((p) => {
@@ -237,17 +279,21 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
       })
       .sort(
         (a, b) =>
+          (a.burnTicksLeft ?? Number.POSITIVE_INFINITY) -
+            (b.burnTicksLeft ?? Number.POSITIVE_INFINITY) ||
           prev.tasks.findIndex((t) => t.id === a.id) - prev.tasks.findIndex((t) => t.id === b.id),
       );
 
+    const firefightIds = new Set(
+      extinguishCandidates.slice(0, firefightRemaining).map((p) => p.id),
+    );
+
     for (let i = 0; i < containedDelta && i < extinguishCandidates.length; i += 1) {
       const p = extinguishCandidates[i];
-      const source = firefightRemaining > 0 ? 'firefight' : 'auto';
-      if (firefightRemaining > 0) firefightRemaining -= 1;
       effects.push({
         kind: 'extinguish',
         taskId: p.id,
-        source,
+        source: firefightIds.has(p.id) ? 'firefight' : 'auto',
       });
     }
   }

@@ -137,7 +137,7 @@ function pickSpreadSources(
     spreadDelta - expiredInOrder.filter((p) => isSpreadSource(p, nextMap.get(p.id)!)).length,
   );
   const ambiguousSpread = ambiguous.slice(-ambiguousNeeded);
-  const picked: FireSnapshot['tasks'] = [];
+  const picked: FireSnapshot['tasks'][number][] = [];
   for (const p of expiredInOrder) {
     if (picked.length >= spreadDelta) break;
     if (isSpreadSource(p, nextMap.get(p.id)!)) {

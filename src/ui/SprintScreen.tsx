@@ -13,6 +13,7 @@ import type { RunState } from '../sim/run/types';
 import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
+import { FireEffects } from './FireEffects';
 import { PointPops } from './PointPops';
 
 export interface SprintScreenProps {
@@ -68,8 +69,11 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
       </div>
 
       <main className="board-wrap">
-        <PointPops deliveryScore={state.org.deliveryScore} />
-        <Board tasks={sprint.tasks} />
+        <div className="board-stage">
+          <PointPops deliveryScore={state.org.deliveryScore} />
+          <Board tasks={sprint.tasks} />
+          <FireEffects tasks={sprint.tasks} metrics={sprint.metrics} />
+        </div>
       </main>
 
       <DeckBar deck={state.deck} />

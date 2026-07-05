@@ -7,6 +7,7 @@
  * スプリント状態から導出する。座標は mockup と同じ設計空間（1404×573）で返し、
  * レンダラ（DOM/SVG → 将来 PixiJS）は「読んで描くだけ」にする（第22.2）。
  */
+import { BURN_TICKS } from '../sim/model';
 import type { Lane, Task } from '../sim/types';
 import type { TaskSize, TaskVariant } from './taskView';
 import { taskSize, taskVariant } from './taskView';
@@ -168,6 +169,11 @@ export interface BoardDotPlan {
   size: TaskSize;
   /** 炎上中（flame を出す）。 */
   fire: boolean;
+  /**
+   * 炎上タイマーの残り比率 0..1（1=余裕あり、0=延焼直前）。
+   * incident 時のみ。flame サイズ・揺れ強度に使う（RI-06）。
+   */
+  burnUrgency?: number;
 }
 
 /** 盤面 1 フレームの描画計画。 */
@@ -235,8 +241,12 @@ function reviewMood(count: number, hot: boolean): { mood: StationMood; bubble: s
   return { mood: 'neutral', bubble: null };
 }
 
-/** Rework の表情: 差し戻しがあると沈む。 */
-function reworkMood(count: number): { mood: StationMood; bubble: string | null } {
+/** Rework の表情: 炎上中はパニック、差し戻しのみなら沈む。 */
+function reworkMood(
+  count: number,
+  hasIncident: boolean,
+): { mood: StationMood; bubble: string | null } {
+  if (hasIncident) return { mood: 'panic', bubble: '燃えてる！' };
   return count > 0 ? { mood: 'sad', bubble: '動いてない…' } : { mood: 'neutral', bubble: null };
 }
 
@@ -250,6 +260,7 @@ function deriveMood(
   count: number,
   hot: boolean,
   hasAi: boolean,
+  hasIncident: boolean,
 ): { mood: StationMood; bubble: string | null } {
   switch (lane) {
     case 'backlog':
@@ -259,7 +270,7 @@ function deriveMood(
     case 'review':
       return reviewMood(count, hot);
     case 'rework':
-      return reworkMood(count);
+      return reworkMood(count, hasIncident);
     case 'done':
       return doneMood(count);
   }
@@ -287,7 +298,8 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
     const hot = layout.lane === 'review' && count >= REVIEW_HOT_QUEUE;
     const heat = layout.lane === 'review' ? reviewHeat(count) : 0;
     const hasAi = laneTasks.some((t) => t.aiAssisted);
-    const { mood, bubble } = deriveMood(layout.lane, count, hot, hasAi);
+    const hasIncident = laneTasks.some((t) => t.incident);
+    const { mood, bubble } = deriveMood(layout.lane, count, hot, hasAi, hasIncident);
 
     // 上限超過時も炎上タスクは必ず残す（fire メーター/緊急対応が依存するため）。
     // 上限内をまず通常タスクで埋め、炎上は最後＝最上段に積んで目立たせる。
@@ -334,6 +346,8 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
         variant: taskVariant(t),
         size: taskSize(t),
         fire: t.incident,
+        burnUrgency:
+          t.incident && t.burnTicksLeft !== undefined ? t.burnTicksLeft / BURN_TICKS : undefined,
       });
     });
   }

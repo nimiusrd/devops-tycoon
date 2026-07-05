@@ -55,9 +55,16 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
   const d = TASK_DIAMETER[dot.size];
   // 粒径は設計幅 1404 に対する % で持たせ、盤面サイズに追従させる。
   const sizePct = (d / VIEW_W) * 100;
+  const urgency = dot.burnUrgency;
+  const urgentClass =
+    urgency !== undefined && urgency < 0.35
+      ? ' burn-critical'
+      : urgency !== undefined
+        ? ' burn-warn'
+        : '';
   return (
     <span
-      className={`task-dot variant-${dot.variant}`}
+      className={`task-dot variant-${dot.variant}${urgentClass}`}
       data-variant={dot.variant}
       style={{
         left: pct(dot.x, VIEW_W),
@@ -65,9 +72,21 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
         width: `${sizePct}%`,
         aspectRatio: '1 / 1',
         background: TASK_COLORS[dot.variant],
+        ...(urgency !== undefined ? ({ '--burn-urgency': urgency } as CSSProperties) : undefined),
       }}
     >
-      {dot.fire && <span className="flame">🔥</span>}
+      {dot.fire && (
+        <span
+          className="flame"
+          style={
+            urgency !== undefined
+              ? ({ fontSize: `${0.75 + urgency * 0.35}em` } as CSSProperties)
+              : undefined
+          }
+        >
+          🔥
+        </span>
+      )}
     </span>
   );
 }

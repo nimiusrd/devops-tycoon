@@ -8,6 +8,7 @@ import {
   planBoardScene,
   reviewHeat,
 } from '../../src/render/boardScene';
+import { BURN_TICKS } from '../../src/sim/model';
 import type { Lane, Task } from '../../src/sim/types';
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -88,9 +89,18 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(coding(ai).bubble).toBe('AIサイコー！');
   });
 
-  it('Rework は差し戻しがあると sad、Done は出荷があると cheer', () => {
-    const scene = planBoardScene([...tasksIn('rework', 1), ...tasksIn('done', 1)]);
-    expect(scene.stations.find((s) => s.lane === 'rework')!.mood).toBe('sad');
+  it('Rework は差し戻しがあると sad、炎上中は panic', () => {
+    const sad = planBoardScene(tasksIn('rework', 1));
+    expect(sad.stations.find((s) => s.lane === 'rework')!.mood).toBe('sad');
+
+    const panic = planBoardScene(tasksIn('rework', 1, { incident: true, burnTicksLeft: 10 }));
+    const rework = panic.stations.find((s) => s.lane === 'rework')!;
+    expect(rework.mood).toBe('panic');
+    expect(rework.bubble).toBe('燃えてる！');
+  });
+
+  it('Done は出荷があると cheer', () => {
+    const scene = planBoardScene(tasksIn('done', 1));
     expect(scene.stations.find((s) => s.lane === 'done')!.mood).toBe('cheer');
   });
 
@@ -159,6 +169,14 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(reworkDots[reworkDots.length - 1].id).toBe(777);
     // 隠れたのは通常タスクのみ（21 件中 12 件表示 → 9 件超過）。
     expect(scene.stations.find((s) => s.lane === 'rework')!.overflow).toBe(9);
+  });
+
+  it('炎上タスクは burnUrgency を付与する（RI-06）', () => {
+    const scene = planBoardScene([
+      task({ id: 1, lane: 'rework', incident: true, burnTicksLeft: BURN_TICKS / 2 }),
+    ]);
+    const dot = scene.dots.find((d) => d.id === 1);
+    expect(dot?.burnUrgency).toBeCloseTo(0.5);
   });
 
   it('粒の中心は設計空間の内側に収まる', () => {

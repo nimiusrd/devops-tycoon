@@ -68,8 +68,14 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
       </div>
 
       <main className="board-wrap">
-        <PointPops deliveryScore={state.org.deliveryScore} />
-        <Board tasks={sprint.tasks} />
+        <div className="board-stage">
+          <PointPops deliveryScore={state.org.deliveryScore} />
+          <Board
+            tasks={sprint.tasks}
+            metrics={sprint.metrics}
+            reviewAccumulator={sprint.reviewAccumulator}
+          />
+        </div>
       </main>
 
       <DeckBar deck={state.deck} />

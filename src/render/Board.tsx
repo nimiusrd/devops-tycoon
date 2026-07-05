@@ -7,7 +7,8 @@
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
  */
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
-import type { Task } from '../sim/types';
+import type { SprintMetrics, Task } from '../sim/types';
+import { FireEffects } from '../ui/FireEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
 import {
@@ -55,6 +56,13 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
   const d = TASK_DIAMETER[dot.size];
   // 粒径は設計幅 1404 に対する % で持たせ、盤面サイズに追従させる。
   const sizePct = (d / VIEW_W) * 100;
+  const urgency = dot.burnUrgency;
+  const urgentClass =
+    urgency !== undefined && urgency < 0.35
+      ? ' burn-critical'
+      : urgency !== undefined
+        ? ' burn-warn'
+        : '';
   const flowing = dot.motion?.kind === 'flow';
   const motionStyle: CSSProperties = flowing
     ? (() => {
@@ -69,7 +77,7 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
     : {};
   return (
     <span
-      className={`task-dot variant-${dot.variant}${flowing ? ' flowing' : ''}`}
+      className={`task-dot variant-${dot.variant}${urgentClass}${flowing ? ' flowing' : ''}`}
       data-variant={dot.variant}
       data-flowing={flowing ? 'true' : undefined}
       style={{
@@ -79,9 +87,21 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
         aspectRatio: '1 / 1',
         background: TASK_COLORS[dot.variant],
         ...motionStyle,
+        ...(urgency !== undefined ? ({ '--burn-urgency': urgency } as CSSProperties) : undefined),
       }}
     >
-      {dot.fire && <span className="flame">🔥</span>}
+      {dot.fire && (
+        <span
+          className="flame"
+          style={
+            urgency !== undefined
+              ? ({ fontSize: `${0.75 + (1 - urgency) * 0.35}em` } as CSSProperties)
+              : undefined
+          }
+        >
+          🔥
+        </span>
+      )}
     </span>
   );
 }
@@ -167,6 +187,10 @@ function FlowArrows({ flows }: { flows: readonly BoardFlow[] }) {
 
 export interface BoardProps {
   tasks: Task[];
+  /** 指定時は盤面内に延焼・鎮火演出を重ねる（RI-06）。 */
+  metrics?: SprintMetrics;
+  /** Review スループット（延焼先判定用）。metrics 指定時は必須。 */
+  reviewAccumulator?: number;
 }
 
 /** 凡例（mockups の dot 凡例）。 */
@@ -178,7 +202,7 @@ const LEGEND: { variant: BoardDotPlan['variant']; label: string }[] = [
   { variant: 'incident', label: '炎上' },
 ];
 
-export function Board({ tasks }: BoardProps) {
+export function Board({ tasks, metrics, reviewAccumulator = 0 }: BoardProps) {
   const scene = planBoardScene(tasks);
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
@@ -236,6 +260,10 @@ export function Board({ tasks }: BoardProps) {
           </span>
         ))}
       </div>
+
+      {metrics && (
+        <FireEffects tasks={tasks} metrics={metrics} reviewAccumulator={reviewAccumulator} />
+      )}
     </div>
   );
 }

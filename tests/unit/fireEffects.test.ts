@@ -105,9 +105,27 @@ describe('detectFireEvents（RI-06）', () => {
       { spread: 1, incidentCount: 3 },
     );
     expect(detectFireEvents(prev, next)).toEqual([
-      { kind: 'spread', fromTaskId: 0, toTaskId: 1 },
-      { kind: 'ignite', taskId: 2 },
+      { kind: 'spread', fromTaskId: 0, toTaskId: 2 },
+      { kind: 'ignite', taskId: 1 },
     ]);
+  });
+
+  it('負債タスクの再炎上でも延焼元を検出する', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, debt: true, burnTicksLeft: 1 }),
+        snapTask(1, 'review'),
+      ],
+      { spread: 0, incidentCount: 1 },
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, incidentCount: 2 },
+    );
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }]);
   });
 
   it('緊急対応の鎮火で extinguish(firefight) を検出する', () => {
@@ -211,6 +229,27 @@ describe('createFireSnapshot / positionFireEffects', () => {
       const reworkPos = positionFireEffects([{ kind: 'ignite', taskId: 0 }], prevTasks)[0];
       expect(positioned[0].x).toBe(reworkPos.x);
       expect(positioned[0].y).toBe(reworkPos.y);
+    }
+  });
+
+  it('spread の終点は発火前の Review 座標を使う', () => {
+    const prevTasks = [makeTask(0, 'rework', { debt: true }), makeTask(1, 'review')];
+    const nextTasks = [
+      makeTask(0, 'rework', { debt: true }),
+      makeTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+    ];
+    const positioned = positionFireEffects(
+      [{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }],
+      nextTasks,
+      prevTasks,
+    );
+    expect(positioned).toHaveLength(1);
+    if (positioned[0].kind === 'spread') {
+      const reviewPos = positionFireEffects([{ kind: 'ignite', taskId: 1 }], prevTasks)[0];
+      const reworkPos = positionFireEffects([{ kind: 'ignite', taskId: 1 }], nextTasks)[0];
+      expect(positioned[0].toX).toBe(reviewPos.x);
+      expect(positioned[0].toY).toBe(reviewPos.y);
+      expect(positioned[0].toX).not.toBe(reworkPos.x);
     }
   });
 });

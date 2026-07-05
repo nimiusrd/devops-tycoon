@@ -92,19 +92,41 @@ export function fireSnapshotsEqual(a: FireSnapshot, b: FireSnapshot): boolean {
   return true;
 }
 
-function isSpreadSource(
+function isExpiredReworkFire(
   prev: FireSnapshot['tasks'][number],
   next: FireSnapshot['tasks'][number] | undefined,
 ): boolean {
   return Boolean(
-    prev.incident &&
-    prev.lane === 'rework' &&
-    next &&
-    !next.incident &&
-    next.lane === 'rework' &&
-    next.debt &&
-    !prev.debt,
+    prev.incident && prev.lane === 'rework' && next && !next.incident && next.lane === 'rework',
   );
+}
+
+/** 延焼で負債が新規付与された火（再炎上で既に debt な場合も expired 側で拾う）。 */
+function isSpreadSource(
+  prev: FireSnapshot['tasks'][number],
+  next: FireSnapshot['tasks'][number],
+): boolean {
+  if (!isExpiredReworkFire(prev, next)) return false;
+  return !prev.debt && next.debt;
+}
+
+function pickSpreadSources(
+  expiredInOrder: FireSnapshot['tasks'],
+  spreadDelta: number,
+  containedDelta: number,
+  nextMap: Map<number, FireSnapshot['tasks'][number]>,
+): FireSnapshot['tasks'] {
+  if (spreadDelta <= 0) return [];
+  if (containedDelta <= 0) return expiredInOrder.slice(0, spreadDelta);
+
+  const definite = expiredInOrder.filter((p) => isSpreadSource(p, nextMap.get(p.id)!));
+  const ambiguous = expiredInOrder.filter((p) => !definite.includes(p));
+  const picked = [...definite];
+  for (const p of ambiguous) {
+    if (picked.length >= spreadDelta) break;
+    picked.push(p);
+  }
+  return picked.slice(0, spreadDelta);
 }
 
 /**
@@ -128,30 +150,33 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
   });
 
   const spreadTargetIds = new Set<number>();
+  const spreadSourceIds = new Set<number>();
+
+  const reviewIgnites = newlyIgnited
+    .filter((n) => prevMap.get(n.id)?.lane === 'review')
+    .sort(
+      (a, b) =>
+        prev.tasks.findIndex((t) => t.id === a.id) - prev.tasks.findIndex((t) => t.id === b.id),
+    );
 
   if (spreadDelta > 0) {
-    const expired = prev.tasks.filter((p) => isSpreadSource(p, nextMap.get(p.id)));
-    const spreadCandidates = newlyIgnited
-      .filter((n) => prevMap.get(n.id)?.lane === 'review')
-      .sort(
-        (a, b) =>
-          prev.tasks.findIndex((t) => t.id === a.id) - prev.tasks.findIndex((t) => t.id === b.id),
-      );
+    const expiredInOrder = prev.tasks.filter((p) => isExpiredReworkFire(p, nextMap.get(p.id)));
+    const spreadSources = pickSpreadSources(expiredInOrder, spreadDelta, containedDelta, nextMap);
+    const spreadTargets = reviewIgnites.slice(-spreadDelta);
 
     for (let i = 0; i < spreadDelta; i += 1) {
-      const from = expired[i] ?? expired[0];
-      const to =
-        spreadCandidates.find((n) => !spreadTargetIds.has(n.id)) ?? spreadCandidates[i] ?? null;
+      const from = spreadSources[i] ?? spreadSources[0];
+      const to = spreadTargets[i] ?? spreadTargets[0];
       if (from && to) {
+        spreadSourceIds.add(from.id);
         spreadTargetIds.add(to.id);
         effects.push({ kind: 'spread', fromTaskId: from.id, toTaskId: to.id });
       }
     }
   }
 
-  for (const n of newlyIgnited) {
-    const p = prevMap.get(n.id);
-    if (p && p.lane === 'review' && !spreadTargetIds.has(n.id)) {
+  for (const n of reviewIgnites) {
+    if (!spreadTargetIds.has(n.id)) {
       effects.push({ kind: 'ignite', taskId: n.id });
     }
   }
@@ -161,7 +186,7 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
       .filter((p) => {
         const n = nextMap.get(p.id);
         if (!n || !p.incident || n.incident) return false;
-        if (isSpreadSource(p, n)) return false;
+        if (spreadSourceIds.has(p.id)) return false;
         return true;
       })
       .sort(
@@ -208,7 +233,8 @@ export function positionFireEffects(
       case 'spread': {
         const from =
           dotPosition(prevTasks, effect.fromTaskId) ?? dotPosition(nextTasks, effect.fromTaskId);
-        const to = dotPosition(nextTasks, effect.toTaskId);
+        const to =
+          dotPosition(prevTasks, effect.toTaskId) ?? dotPosition(nextTasks, effect.toTaskId);
         if (!from || !to) return [];
         return [{ ...effect, fromX: from.x, fromY: from.y, toX: to.x, toY: to.y }];
       }

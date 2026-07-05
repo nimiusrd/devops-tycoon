@@ -15,9 +15,7 @@ import {
 } from '../render/fireEffects';
 import type { SprintMetrics, Task } from '../sim/types';
 
-interface ActiveEffect extends PositionedFireEffect {
-  key: number;
-}
+type ActiveEffect = PositionedFireEffect & { key: number };
 
 const MAX_EFFECTS = 8;
 const SPREAD_MS = 550;

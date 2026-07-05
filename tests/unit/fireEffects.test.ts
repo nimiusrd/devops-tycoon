@@ -3,6 +3,7 @@ import { BURN_TICKS } from '../../src/sim/model';
 import {
   createFireSnapshot,
   detectFireEvents,
+  fireSnapshotsEqual,
   positionFireEffects,
   type FireSnapshot,
 } from '../../src/render/fireEffects';
@@ -86,6 +87,29 @@ describe('detectFireEvents（RI-06）', () => {
     expect(detectFireEvents(prev, next)).toEqual([{ kind: 'ignite', taskId: 0 }]);
   });
 
+  it('延焼と Review 落ちが同 tick でも ignite を残す', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'review'),
+        snapTask(2, 'review'),
+      ],
+      { spread: 0, incidentCount: 1 },
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+        snapTask(2, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, incidentCount: 3 },
+    );
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'spread', fromTaskId: 0, toTaskId: 1 },
+      { kind: 'ignite', taskId: 2 },
+    ]);
+  });
+
   it('緊急対応の鎮火で extinguish(firefight) を検出する', () => {
     const prev = snap([snapTask(0, 'rework', { incident: true, burnTicksLeft: 20 })], {
       contained: 0,
@@ -106,9 +130,48 @@ describe('detectFireEvents（RI-06）', () => {
     ]);
   });
 
+  it('延焼元を鎮火演出に含めない', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(2, 'review'),
+      ],
+      { contained: 0, incidentCount: 2 },
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework'),
+        snapTask(2, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, contained: 1, incidentCount: 3 },
+    );
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'spread', fromTaskId: 0, toTaskId: 2 },
+      { kind: 'extinguish', taskId: 1, source: 'auto' },
+    ]);
+  });
+
   it('変化がなければ空配列', () => {
     const s = snap([snapTask(0, 'coding')]);
     expect(detectFireEvents(s, s)).toEqual([]);
+  });
+});
+
+describe('fireSnapshotsEqual', () => {
+  it('同内容なら true', () => {
+    const a = snap([snapTask(0, 'review', { incident: true, burnTicksLeft: 3 })], {
+      spread: 1,
+      contained: 2,
+      incidentCount: 3,
+    });
+    const b = snap([snapTask(0, 'review', { incident: true, burnTicksLeft: 3 })], {
+      spread: 1,
+      contained: 2,
+      incidentCount: 3,
+    });
+    expect(fireSnapshotsEqual(a, b)).toBe(true);
   });
 });
 
@@ -116,9 +179,9 @@ describe('createFireSnapshot / positionFireEffects', () => {
   it('スプリント状態からスナップショットを作れる', () => {
     const tasks = [makeTask(1, 'rework', { incident: true, burnTicksLeft: 10 })];
     const metrics = { ...baseMetrics(), spread: 2, contained: 1, incidentCount: 3 };
-    const snap = createFireSnapshot(tasks, metrics);
-    expect(snap.spread).toBe(2);
-    expect(snap.tasks[0].incident).toBe(true);
+    const snapshot = createFireSnapshot(tasks, metrics);
+    expect(snapshot.spread).toBe(2);
+    expect(snapshot.tasks[0].incident).toBe(true);
   });
 
   it('spread イベントに座標を付与できる', () => {
@@ -132,6 +195,22 @@ describe('createFireSnapshot / positionFireEffects', () => {
     if (positioned[0].kind === 'spread') {
       expect(positioned[0].fromX).toBeGreaterThan(0);
       expect(positioned[0].toX).toBeGreaterThan(0);
+    }
+  });
+
+  it('extinguish は prevTasks の Rework 位置を使う', () => {
+    const prevTasks = [makeTask(0, 'rework', { incident: true, burnTicksLeft: 5 })];
+    const nextTasks = [makeTask(0, 'review')];
+    const positioned = positionFireEffects(
+      [{ kind: 'extinguish', taskId: 0, source: 'firefight' }],
+      nextTasks,
+      prevTasks,
+    );
+    expect(positioned).toHaveLength(1);
+    if (positioned[0].kind === 'extinguish') {
+      const reworkPos = positionFireEffects([{ kind: 'ignite', taskId: 0 }], prevTasks)[0];
+      expect(positioned[0].x).toBe(reworkPos.x);
+      expect(positioned[0].y).toBe(reworkPos.y);
     }
   });
 });

@@ -7,7 +7,8 @@
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
  */
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
-import type { Task } from '../sim/types';
+import type { SprintMetrics, Task } from '../sim/types';
+import { FireEffects } from '../ui/FireEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
 import {
@@ -186,6 +187,8 @@ function FlowArrows({ flows }: { flows: readonly BoardFlow[] }) {
 
 export interface BoardProps {
   tasks: Task[];
+  /** 指定時は盤面内に延焼・鎮火演出を重ねる（RI-06）。 */
+  metrics?: SprintMetrics;
 }
 
 /** 凡例（mockups の dot 凡例）。 */
@@ -197,7 +200,7 @@ const LEGEND: { variant: BoardDotPlan['variant']; label: string }[] = [
   { variant: 'incident', label: '炎上' },
 ];
 
-export function Board({ tasks }: BoardProps) {
+export function Board({ tasks, metrics }: BoardProps) {
   const scene = planBoardScene(tasks);
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
@@ -255,6 +258,8 @@ export function Board({ tasks }: BoardProps) {
           </span>
         ))}
       </div>
+
+      {metrics && <FireEffects tasks={tasks} metrics={metrics} />}
     </div>
   );
 }

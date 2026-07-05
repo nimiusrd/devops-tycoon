@@ -10,7 +10,9 @@ import {
   createFireSnapshot,
   detectFireEvents,
   firePct,
+  fireSnapshotsEqual,
   positionFireEffects,
+  type FireSnapshot,
   type PositionedFireEffect,
 } from '../render/fireEffects';
 import type { SprintMetrics, Task } from '../sim/types';
@@ -28,17 +30,31 @@ export interface FireEffectsProps {
 }
 
 export function FireEffects({ tasks, metrics }: FireEffectsProps) {
-  const prev = useRef(createFireSnapshot(tasks, metrics));
+  const prevSnap = useRef<FireSnapshot>(createFireSnapshot(tasks, metrics));
+  const prevTasks = useRef<readonly Task[]>(tasks);
   const nextKey = useRef(0);
+  const removalTimers = useRef<Map<number, number>>(new Map());
   const [active, setActive] = useState<ActiveEffect[]>([]);
 
   useEffect(() => {
+    const timers = removalTimers.current;
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
+
+  useEffect(() => {
     const nextSnap = createFireSnapshot(tasks, metrics);
-    const raw = detectFireEvents(prev.current, nextSnap);
-    prev.current = nextSnap;
+    if (fireSnapshotsEqual(prevSnap.current, nextSnap)) return;
+
+    const raw = detectFireEvents(prevSnap.current, nextSnap);
+    const priorTasks = prevTasks.current;
+    prevSnap.current = nextSnap;
+    prevTasks.current = tasks;
     if (raw.length === 0) return;
 
-    const positioned = positionFireEffects(raw, tasks);
+    const positioned = positionFireEffects(raw, tasks, priorTasks);
     if (positioned.length === 0) return;
 
     const batch = positioned.map((effect) => ({
@@ -47,19 +63,19 @@ export function FireEffects({ tasks, metrics }: FireEffectsProps) {
     }));
     setActive((cur) => [...cur, ...batch].slice(-MAX_EFFECTS));
 
-    const timers = batch.map((effect) => {
+    for (const effect of batch) {
       const duration =
         effect.kind === 'spread'
           ? SPREAD_MS
           : effect.kind === 'extinguish'
             ? EXTINGUISH_MS
             : IGNITE_MS;
-      return window.setTimeout(() => {
+      const timer = window.setTimeout(() => {
         setActive((cur) => cur.filter((e) => e.key !== effect.key));
+        removalTimers.current.delete(effect.key);
       }, duration + 80);
-    });
-
-    return () => timers.forEach((t) => window.clearTimeout(t));
+      removalTimers.current.set(effect.key, timer);
+    }
   }, [tasks, metrics]);
 
   return (

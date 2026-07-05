@@ -582,15 +582,6 @@ body {
   box-shadow: 0 0 24px #ff7a2faa;
   z-index: 13;
 }
-.task-dot.burn-warn {
-  animation-duration: 0.18s;
-}
-.task-dot.burn-critical {
-  animation-duration: 0.12s;
-  box-shadow:
-    0 0 24px #ff4500ee,
-    inset 0 -3px 5px #a02a00;
-}
 
 /* ===== 俯瞰オフィス（アイソメ盤面・SPEC 第4.1 / 第18章 / mockups 準拠） ===== */
 /*
@@ -848,6 +839,28 @@ body {
   animation:
     flowBobDrift var(--flow-duration, 1.15s) ease-in-out infinite,
     fireShake 0.25s linear infinite;
+}
+.task-dot.variant-incident.burn-warn {
+  animation: fireShake 0.18s linear infinite;
+}
+.task-dot.variant-incident.burn-critical {
+  animation: fireShake 0.12s linear infinite;
+  box-shadow:
+    0 0 24px #ff4500ee,
+    inset 0 -3px 5px #a02a00;
+}
+.task-dot.variant-incident.flowing.burn-warn {
+  animation:
+    flowBobDrift var(--flow-duration, 1.15s) ease-in-out infinite,
+    fireShake 0.18s linear infinite;
+}
+.task-dot.variant-incident.flowing.burn-critical {
+  animation:
+    flowBobDrift var(--flow-duration, 1.15s) ease-in-out infinite,
+    fireShake 0.12s linear infinite;
+  box-shadow:
+    0 0 24px #ff4500ee,
+    inset 0 -3px 5px #a02a00;
 }
 .task-dot .flame {
   position: absolute;

@@ -174,6 +174,35 @@ function reviewProcessedInTick(
   return reviewDepartures > 0 && nextReviewCount < prevReviewCount;
 }
 
+function spreadCandidateIgnites(
+  reviewIgnites: FireSnapshot['tasks'],
+  prev: FireSnapshot,
+  next: FireSnapshot,
+  prevMap: Map<number, FireSnapshot['tasks'][number]>,
+): FireSnapshot['tasks'] {
+  return reviewIgnites.filter((n) => {
+    const prevLane = prevMap.get(n.id)?.lane;
+    if (prevLane === 'review') return true;
+    if (prevLane === 'coding') return next.reviewAccumulator >= prev.reviewAccumulator;
+    return false;
+  });
+}
+
+function pickReviewLaneSpreadCount(
+  reviewLaneIgnites: FireSnapshot['tasks'],
+  spreadDelta: number,
+  prevReviewCount: number,
+  nonIgniteDepartures: number,
+): number {
+  const n = reviewLaneIgnites.length;
+  const remainingSlots = prevReviewCount - nonIgniteDepartures;
+  for (let k = Math.min(spreadDelta, n); k >= 0; k -= 1) {
+    const queueAtSpread = remainingSlots - (n - k);
+    if (queueAtSpread >= k) return k;
+  }
+  return 0;
+}
+
 /** advanceReview 後に Review へ残っていたタスクだけが延焼先になりうる。 */
 function pickSpreadTargets(
   prev: FireSnapshot,
@@ -181,33 +210,48 @@ function pickSpreadTargets(
   reviewIgnites: FireSnapshot['tasks'],
   spreadDelta: number,
   nextMap: Map<number, FireSnapshot['tasks'][number]>,
+  prevMap: Map<number, FireSnapshot['tasks'][number]>,
 ): FireSnapshot['tasks'] {
-  if (spreadDelta <= 0 || reviewIgnites.length === 0) return [];
+  if (spreadDelta <= 0) return [];
+
+  const candidates = spreadCandidateIgnites(reviewIgnites, prev, next, prevMap);
+  if (candidates.length === 0) return [];
+
+  const reviewLaneIgnites = candidates.filter((n) => prevMap.get(n.id)?.lane === 'review');
+  const codingCandidates = candidates.filter((n) => prevMap.get(n.id)?.lane === 'coding');
 
   const prevReviewCount = prev.tasks.filter((t) => t.lane === 'review').length;
   const nonIgniteDepartures = countReviewNonIgniteDepartures(prev, nextMap);
-  const spreadRoom = prevReviewCount - nonIgniteDepartures - reviewIgnites.length;
 
-  let spreadTargetCount = Math.min(spreadDelta, reviewIgnites.length);
-  if (spreadRoom < 0) {
-    spreadTargetCount = 0;
-  } else if (
-    spreadRoom === 0 &&
-    reviewIgnites.length < prevReviewCount &&
-    reviewProcessedInTick(prev, next, nextMap)
-  ) {
-    spreadTargetCount = 0;
-  } else if (
-    spreadRoom === 0 &&
+  let reviewSpreadCount = pickReviewLaneSpreadCount(
+    reviewLaneIgnites,
+    spreadDelta,
+    prevReviewCount,
+    nonIgniteDepartures,
+  );
+
+  if (
     prevReviewCount === 1 &&
-    reviewIgnites.length === 1 &&
+    reviewLaneIgnites.length === 1 &&
+    codingCandidates.length === 0 &&
     reviewProcessedInTick(prev, next, nextMap)
   ) {
-    spreadTargetCount = 0;
+    reviewSpreadCount = 0;
   }
 
-  if (spreadTargetCount <= 0) return [];
-  return reviewIgnites.slice(-spreadTargetCount);
+  const codingSpreadCount = Math.min(spreadDelta - reviewSpreadCount, codingCandidates.length);
+
+  const reviewSpreadTargets =
+    reviewSpreadCount <= 0 ? [] : reviewLaneIgnites.slice(-reviewSpreadCount);
+  const targets = [
+    ...reviewSpreadTargets,
+    ...codingCandidates.slice(0, codingSpreadCount),
+  ].sort(
+    (a, b) =>
+      prev.tasks.findIndex((t) => t.id === a.id) - prev.tasks.findIndex((t) => t.id === b.id),
+  );
+
+  return targets;
 }
 
 /**
@@ -243,12 +287,17 @@ export function detectFireEvents(prev: FireSnapshot, next: FireSnapshot): FireEf
         prev.tasks.findIndex((t) => t.id === a.id) - prev.tasks.findIndex((t) => t.id === b.id),
     );
 
-  const spreadReviewIgnites = reviewIgnites.filter((n) => prevMap.get(n.id)?.lane === 'review');
-
   if (spreadDelta > 0) {
     const expiredInOrder = prev.tasks.filter((p) => isExpiredReworkFire(p, nextMap.get(p.id)));
     const spreadSources = pickSpreadSources(expiredInOrder, spreadDelta, containedDelta, nextMap);
-    const spreadTargets = pickSpreadTargets(prev, next, spreadReviewIgnites, spreadDelta, nextMap);
+    const spreadTargets = pickSpreadTargets(
+      prev,
+      next,
+      reviewIgnites,
+      spreadDelta,
+      nextMap,
+      prevMap,
+    );
 
     const spreadCount = Math.min(spreadDelta, spreadSources.length, spreadTargets.length);
     for (let i = 0; i < spreadCount; i += 1) {
@@ -306,10 +355,31 @@ export function firePct(value: number, total: number): string {
   return `${(value / total) * 100}%`;
 }
 
+function laneFallbackPosition(tasks: readonly Task[], lane: Lane): { x: number; y: number } | null {
+  const station = planBoardScene(tasks).stations.find((s) => s.lane === lane);
+  if (!station) return null;
+  return { x: station.overflowX, y: station.overflowY };
+}
+
 function dotPosition(tasks: readonly Task[], taskId: number): { x: number; y: number } | null {
   const dot = planBoardScene(tasks).dots.find((d) => d.id === taskId);
-  if (!dot) return null;
-  return { x: dot.x, y: dot.y };
+  if (dot) return { x: dot.x, y: dot.y };
+
+  const task = tasks.find((t) => t.id === taskId);
+  if (!task) return null;
+  return laneFallbackPosition(tasks, task.lane);
+}
+
+function spreadTargetPosition(
+  tasks: readonly Task[],
+  taskId: number,
+  prevTasks: readonly Task[],
+): { x: number; y: number } | null {
+  const prevTask = prevTasks.find((t) => t.id === taskId);
+  if (prevTask?.lane === 'coding') {
+    return laneFallbackPosition(prevTasks, 'review') ?? dotPosition(tasks, taskId);
+  }
+  return dotPosition(prevTasks, taskId) ?? dotPosition(tasks, taskId);
 }
 
 /**
@@ -326,8 +396,7 @@ export function positionFireEffects(
       case 'spread': {
         const from =
           dotPosition(prevTasks, effect.fromTaskId) ?? dotPosition(nextTasks, effect.fromTaskId);
-        const to =
-          dotPosition(prevTasks, effect.toTaskId) ?? dotPosition(nextTasks, effect.toTaskId);
+        const to = spreadTargetPosition(nextTasks, effect.toTaskId, prevTasks);
         if (!from || !to) return [];
         return [{ ...effect, fromX: from.x, fromY: from.y, toX: to.x, toY: to.y }];
       }

@@ -277,11 +277,32 @@ describe('detectFireEvents（RI-06）', () => {
   });
 
   it('Coding 完了直後の Review 落ちでも ignite を検出する', () => {
-    const prev = snap([snapTask(0, 'coding')], { incidentCount: 0 });
-    const next = snap([snapTask(0, 'rework', { incident: true, burnTicksLeft: BURN_TICKS })], {
-      incidentCount: 1,
-    });
+    const prev = snap([snapTask(0, 'coding')], { incidentCount: 0 }, 0.9);
+    const next = snap(
+      [snapTask(0, 'rework', { incident: true, burnTicksLeft: BURN_TICKS })],
+      {
+        incidentCount: 1,
+      },
+      0.05,
+    );
     expect(detectFireEvents(prev, next)).toEqual([{ kind: 'ignite', taskId: 0 }]);
+  });
+
+  it('Coding 完了直後の Review への延焼は spread として検出する', () => {
+    const prev = snap(
+      [snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }), snapTask(1, 'coding')],
+      { spread: 0, incidentCount: 1 },
+      0.2,
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, incidentCount: 2 },
+      0.35,
+    );
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }]);
   });
 
   it('firefight は最も延焼が近い火に付与する', () => {
@@ -302,12 +323,13 @@ describe('detectFireEvents（RI-06）', () => {
     ]);
   });
 
-  it('Review 高スループットでも Review 落ちを spread に取り込まない', () => {
+  it('Review 高スループットでも延焼先の spread を維持する', () => {
     const prev = snap(
       [
         snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
         snapTask(1, 'review'),
         snapTask(2, 'review'),
+        snapTask(3, 'review'),
       ],
       { spread: 0, incidentCount: 1 },
       1.2,
@@ -317,11 +339,15 @@ describe('detectFireEvents（RI-06）', () => {
         snapTask(0, 'rework', { debt: true }),
         snapTask(1, 'done'),
         snapTask(2, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+        snapTask(3, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
       ],
-      { spread: 1, incidentCount: 2 },
+      { spread: 1, incidentCount: 3 },
       1.5,
     );
-    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'ignite', taskId: 2 }]);
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'spread', fromTaskId: 0, toTaskId: 3 },
+      { kind: 'ignite', taskId: 2 },
+    ]);
   });
 
   it('変化がなければ空配列', () => {
@@ -419,6 +445,21 @@ describe('createFireSnapshot / positionFireEffects', () => {
       expect(positioned[0].toX).toBe(reviewPos.x);
       expect(positioned[0].toY).toBe(reviewPos.y);
       expect(positioned[0].toX).not.toBe(reworkPos.x);
+    }
+  });
+
+  it('cap 超過の Rework 火でも overflow 位置に座標を付与できる', () => {
+    const tasks = Array.from({ length: 13 }, (_, id) =>
+      makeTask(id, 'rework', { incident: true, burnTicksLeft: 5 }),
+    );
+    const positioned = positionFireEffects(
+      [{ kind: 'extinguish', taskId: 12, source: 'auto' }],
+      tasks,
+    );
+    expect(positioned).toHaveLength(1);
+    if (positioned[0].kind === 'extinguish') {
+      expect(positioned[0].x).toBeGreaterThan(0);
+      expect(positioned[0].y).toBeGreaterThan(0);
     }
   });
 });

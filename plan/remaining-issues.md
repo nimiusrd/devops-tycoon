@@ -31,7 +31,7 @@
 
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
-| RI-01 | 全社マップ(org-screen)の等角化 | 高 | 未着手 | — | 第4.8 / `org-screen.png` |
+| RI-01 | 全社マップ(org-screen)の等角化 | 高 | 完了 | — | 第4.8 / `org-screen.png` |
 | RI-02 | 部署ビュー(dept-screen)の等角化 | 高 | 未着手 | — | 第4.9 / `dept-screen.png` |
 | RI-03 | 業界ランキング(industry-screen)の等角化 | 中 | 未着手 | — | 第4.10 / `industry-screen.png` |
 | RI-04 | ドリルダウンのカメラ遷移演出 | 中 | 未着手 | RI-11 | 第4.11 / `drilldown.html` |
@@ -121,15 +121,14 @@
 > （`*Scene.ts`、Vitest 検証）＋ SVG/Pixi 描画アダプタ＋設計座標空間の % 配置」—— を
 > 全社マップ→部署ビュー→業界ランキングへ横展開するのが最短。Pixi 移植（RI-11）はこの等角化と歩調を合わせる。
 
-#### RI-01 全社マップ(org-screen)の等角化 — 優先度:高
+#### RI-01 全社マップ(org-screen)の等角化 — 優先度:高 / 完了
 
-- **現状**: 島の配置は `render/iso.ts` のアイソメ投影で決まるが、チームは**フラットな矩形カード**。
-  `?renderer=pixi` で全社マップのみ Pixi 切替可だが、既定 DOM も Pixi も mockup の見た目には未到達。
-- **目標（`mockups/org-screen.png` / 第4.8）**: 浮遊する**等角プレート**＋部門ゾーン（縦ストライプの色分け）
-  ＋**チーム島**（ミニ机＋アバター＋AIボット）＋中央の**共通基盤ハブ**（サーバーラック＋ボット）＋
-  **チーム間フローの等角レーン**（詰まると赤熱）＋規模効果バッジ。健全/渋滞/Review Hell の状態色。
-- **規模感**: 中〜大。スプリント盤面と同じ手法で島・ハブ・レーンを等角化。`OfficeRoom`/`OfficeActors`
-  相当の「島アクター」を作る。
+**完了**: `src/render/orgBoardScene.ts` に `ORG_VIEW`（1404×573）設計座標空間と
+`planOrgBoardScene()` を追加し、浮遊等角プレート・部門ゾーン（縦ストライプ）・共通基盤ハブ・
+静的フローレーン（heat 色）・チーム島（ミニ机＋アバター＋AI ボット）のシーン計画を純関数で導出。
+`OrgPlate` / `OrgTeamActor` / `OrgFlowLanes` / `OrgHub` / `OrgBoard` で DOM/SVG 等角描画に接続し、
+`OrgScreen` の既定レンダラを矩形カードから等角盤面へ差し替え（`?renderer=pixi` は既存 Pixi を維持）。
+Vitest: `tests/unit/orgBoardScene.test.ts`。E2E: `tests/e2e/org-scale.spec.ts`（`org-board` 検証追加）。
 
 #### RI-02 部署ビュー(dept-screen)の等角化 — 優先度:高
 

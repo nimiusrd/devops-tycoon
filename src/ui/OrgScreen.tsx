@@ -3,20 +3,17 @@
  *
  * 部門ゾーン・チーム島（健全度で色分け）・共通基盤ハブ・全社HUD・全社レバーを表示する。
  * チーム島をタップすると現場へドリルダウンし、部門ヘッダから部署ビューへ寄る。
- * 状態は読むだけ（第22.2）。島の配置は `render/iso.ts` のアイソメ投影で決まる。
+ * 状態は読むだけ（第22.2）。盤面は `orgBoardScene` + `OrgBoard` で等角描画する。
  */
 import { useCallback, useMemo, useRef } from 'react';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisView } from '../sim/diagnosis';
-import type { OrgScaleState, Team, ZoomState } from '../sim/orgscale/types';
+import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
 import { getRendererKind } from '../render/adapters/selectRenderer';
-import { HEALTH_COLOR, HEALTH_LABEL, layoutIso, ORG_ISO, ORG_PAD } from '../render/orgView';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { EffectTagList } from './EffectTagList';
+import { OrgBoard } from './OrgBoard';
 import { OrgPixiField, type OrgPixiFieldHandle } from './OrgPixiField';
-
-const ISO = ORG_ISO;
-const PAD = ORG_PAD;
 
 export interface OrgScreenProps {
   org: OrgScaleState;
@@ -36,7 +33,6 @@ export function OrgScreen({
   onApplyLever,
 }: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
-  const layout = layoutIso(teams, ISO, PAD);
   const usePixi = getRendererKind(window.location.search) === 'pixi';
   const pixiFieldRef = useRef<OrgPixiFieldHandle>(null);
   const deptColorMap = useMemo(
@@ -44,7 +40,6 @@ export function OrgScreen({
     [org.departments],
   );
   const deptColor = useCallback((id: string) => deptColorMap[id] ?? '#6b4a9e', [deptColorMap]);
-  const fieldHeight = Math.max(260, layout.height);
 
   const handleFocusDept = useCallback(
     (deptId: string) => {
@@ -109,20 +104,9 @@ export function OrgScreen({
         ))}
       </div>
 
-      <div className="org-field" data-testid="org-field" style={{ height: fieldHeight }}>
-        <div className="org-field-board" style={{ width: layout.width, height: fieldHeight }}>
-          <div
-            className="org-infra-hub"
-            data-testid="org-infra-hub"
-            title="共通基盤ハブ（全チームへ波及）"
-          >
-            <span aria-hidden>🛰</span>
-            <span>共通基盤</span>
-            <span className="org-infra-meta">
-              CI {org.infra.ci} / Docs {org.infra.docs} / AI {org.infra.aiGuideline}
-            </span>
-          </div>
-          {usePixi ? (
+      <div className="org-field" data-testid="org-field">
+        {usePixi ? (
+          <div className="org-field-board org-field-pixi">
             <OrgPixiField
               ref={pixiFieldRef}
               teams={teams}
@@ -131,19 +115,10 @@ export function OrgScreen({
               onFocusTeam={onFocusTeam}
               deptColor={deptColor}
             />
-          ) : (
-            layout.placed.map(({ item, x, y }) => (
-              <TeamIsland
-                key={item.id}
-                team={item}
-                color={deptColor(item.deptId)}
-                x={x}
-                y={y}
-                onClick={() => onFocusTeam(item.id)}
-              />
-            ))
-          )}
-        </div>
+          </div>
+        ) : (
+          <OrgBoard org={org} onFocusTeam={onFocusTeam} />
+        )}
       </div>
 
       <div className="org-levers" data-testid="org-levers">
@@ -167,46 +142,6 @@ export function OrgScreen({
         ))}
       </div>
     </div>
-  );
-}
-
-function TeamIsland({
-  team,
-  color,
-  x,
-  y,
-  onClick,
-}: {
-  team: Team;
-  color: string;
-  x: number;
-  y: number;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`team-island health-${team.health}${team.isPlayer ? ' is-player' : ''}`}
-      data-testid={`team-${team.id}`}
-      data-health={team.health}
-      style={{
-        left: x,
-        top: y,
-        borderColor: color,
-        boxShadow: `0 0 0 2px ${HEALTH_COLOR[team.health]}55`,
-      }}
-      onClick={onClick}
-      title={`${team.name}（${HEALTH_LABEL[team.health]}）へドリルダウン`}
-    >
-      <span className="team-badge" style={{ background: HEALTH_COLOR[team.health] }} />
-      <b className="team-name">
-        {team.isPlayer ? '★ ' : ''}
-        {team.name}
-      </b>
-      <span className="team-meta">出荷 {team.shipping}</span>
-      <span className="team-meta">AI {team.aiDependency}</span>
-      {team.incidents > 0 && <span className="team-fire">🔥{team.incidents}</span>}
-    </button>
   );
 }
 

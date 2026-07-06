@@ -14,6 +14,10 @@ import { displayName, fireLabel, islandTitle } from './orgIslandView';
 /** 設計座標空間（mockups/org-screen.html の viewBox と一致）。 */
 export const ORG_VIEW = { w: 1404, h: 573 } as const;
 
+/** 島同士の最小間隔（設計px）。extraTeams 等でチームが増えても重ならないよう拡張する。 */
+export const MIN_ISLAND_SPACING_X = 120;
+export const MIN_ISLAND_SPACING_Y = 90;
+
 /** 部門ゾーンの静的レイアウト（mockup の縦ストライプ領域）。 */
 interface ZoneLayout {
   /** 床クリップ内の矩形（設計px）。 */
@@ -187,7 +191,7 @@ function healthTag(health: TeamHealth): string {
 }
 
 /** 部門ラベルの tone。 */
-function zoneLabelTone(dept: DepartmentState): 'ok' | 'warn' | 'hell' {
+export function zoneLabelTone(dept: DepartmentState): 'ok' | 'warn' | 'hell' {
   if (dept.health === 'reviewHell' || dept.onFire >= 2) return 'hell';
   if (dept.health === 'congested' || dept.onFire > 0) return 'warn';
   return 'ok';
@@ -197,6 +201,22 @@ function zoneLabelTone(dept: DepartmentState): 'ok' | 'warn' | 'hell' {
 function zoneSubtitle(dept: DepartmentState): string {
   const diag = dept.onFire > 0 ? `⚠ 炎上 ${dept.onFire}T` : HEALTH_LABEL[dept.health];
   return `${diag} ・ ${dept.teams.length}チーム`;
+}
+
+/** 部門健全度からゾーン glow の種別を導出する（静的 mockup 既定値ではなく実状態を反映）。 */
+function zoneGlowKind(dept: DepartmentState): 'ok' | 'hell' | null {
+  const tone = zoneLabelTone(dept);
+  if (tone === 'hell') return 'hell';
+  if (tone === 'ok') return 'ok';
+  return null;
+}
+
+/** 部門状態とレイアウトから glow 計画を組み立てる。 */
+function zoneGlow(dept: DepartmentState, layout: ZoneLayout): ZoneLayout['glowCenter'] {
+  if (!layout.glowCenter) return null;
+  const kind = zoneGlowKind(dept);
+  if (kind === null) return null;
+  return { ...layout.glowCenter, kind };
 }
 
 /**
@@ -209,12 +229,27 @@ export function teamDesignPosition(
   teamCount: number,
 ): { x: number; y: number } {
   const zone = ZONE_LAYOUTS[deptIndex] ?? ZONE_LAYOUTS[0];
-  const cols = Math.max(1, Math.ceil(Math.sqrt(teamCount)));
+  const baseWidth = zone.teamXMax - zone.teamXMin;
+  const baseHeight = zone.teamYMax - zone.teamYMin;
+
+  const maxColsInBase = Math.max(1, Math.floor(baseWidth / MIN_ISLAND_SPACING_X));
+  const cols = Math.min(
+    teamCount,
+    Math.max(1, Math.min(maxColsInBase, Math.ceil(Math.sqrt(teamCount)))),
+  );
   const rows = Math.max(1, Math.ceil(teamCount / cols));
+
+  const neededWidth = cols * MIN_ISLAND_SPACING_X;
+  const neededHeight = rows * MIN_ISLAND_SPACING_Y;
+  const spanX = Math.max(baseWidth, neededWidth);
+  const spanY = Math.max(baseHeight, neededHeight);
+  const centerX = (zone.teamXMin + zone.teamXMax) / 2;
+  const centerY = (zone.teamYMin + zone.teamYMax) / 2;
+
   const col = teamIndex % cols;
   const row = Math.floor(teamIndex / cols);
-  const x = zone.teamXMin + ((col + 0.5) / cols) * (zone.teamXMax - zone.teamXMin);
-  const y = zone.teamYMin + ((row + 0.5) / rows) * (zone.teamYMax - zone.teamYMin);
+  const x = centerX - spanX / 2 + ((col + 0.5) / cols) * spanX;
+  const y = centerY - spanY / 2 + ((row + 0.5) / rows) * spanY;
   return { x, y };
 }
 
@@ -238,7 +273,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
       color: d.def.color,
       x: layout.x,
       width: layout.width,
-      glow: layout.glowCenter,
+      glow: zoneGlow(d, layout),
     };
   });
 

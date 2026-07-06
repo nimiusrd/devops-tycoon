@@ -101,3 +101,28 @@ export function OrgHubLabel({
     </div>
   );
 }
+
+/** Pixi 描画時に親が重ねる共通基盤ハブ（OrgPixiField は島のみ担当）。 */
+export function OrgInfraHubPill({
+  ci,
+  docs,
+  aiGuideline,
+}: {
+  ci: number;
+  docs: number;
+  aiGuideline: number;
+}) {
+  return (
+    <div
+      className="org-infra-hub"
+      data-testid="org-infra-hub"
+      title="共通基盤ハブ（全チームへ波及）"
+    >
+      <span aria-hidden>🛰</span>
+      <span>共通基盤</span>
+      <span className="org-infra-meta">
+        CI {ci} / Docs {docs} / AI {aiGuideline}
+      </span>
+    </div>
+  );
+}

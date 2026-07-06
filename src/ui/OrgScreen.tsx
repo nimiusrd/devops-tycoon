@@ -13,6 +13,7 @@ import { getRendererKind } from '../render/adapters/selectRenderer';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { EffectTagList } from './EffectTagList';
 import { OrgBoard } from './OrgBoard';
+import { OrgInfraHubPill } from './OrgHub';
 import { OrgPixiField, type OrgPixiFieldHandle } from './OrgPixiField';
 
 export interface OrgScreenProps {
@@ -107,6 +108,11 @@ export function OrgScreen({
       <div className="org-field" data-testid="org-field">
         {usePixi ? (
           <div className="org-field-board org-field-pixi">
+            <OrgInfraHubPill
+              ci={org.infra.ci}
+              docs={org.infra.docs}
+              aiGuideline={org.infra.aiGuideline}
+            />
             <OrgPixiField
               ref={pixiFieldRef}
               teams={teams}

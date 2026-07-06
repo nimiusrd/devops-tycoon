@@ -2,11 +2,14 @@
  * 全社マップ等角盤面のシーン計画検証（RI-01 / SPEC 第22.5）。
  */
 import { describe, expect, it } from 'vitest';
+import { emptyAdjustState } from '../../src/sim/orgscale/levers';
 import { generateOrgScale } from '../../src/sim/orgscale';
 import type { OrgScaleInput } from '../../src/sim/orgscale/generate';
 import type { OrgState } from '../../src/sim/types';
 import type { RunTotals } from '../../src/sim/run/types';
 import {
+  MIN_ISLAND_SPACING_X,
+  MIN_ISLAND_SPACING_Y,
   ORG_VIEW,
   isInOrgView,
   islandMood,
@@ -135,5 +138,70 @@ describe('planOrgBoardScene (RI-01)', () => {
   it('ORG_VIEW は mockup viewBox と一致', () => {
     expect(ORG_VIEW.w).toBe(1404);
     expect(ORG_VIEW.h).toBe(573);
+  });
+
+  it('部門 glow は実際の健全度から導出する（静的 mockup 既定値に依存しない）', () => {
+    const org = generateOrgScale(orgScaleInput('ri01-glow'));
+
+    const healthyProduct = {
+      ...org,
+      departments: org.departments.map((d) =>
+        d.def.id === 'product' ? { ...d, health: 'healthy' as const, onFire: 0 } : d,
+      ),
+    };
+    expect(
+      planOrgBoardScene(healthyProduct).zones.find((z) => z.deptId === 'product')?.glow?.kind,
+    ).toBe('ok');
+
+    const hellProduct = {
+      ...org,
+      departments: org.departments.map((d) =>
+        d.def.id === 'product'
+          ? {
+              ...d,
+              health: 'reviewHell' as const,
+              onFire: 3,
+              teams: d.teams.map((t) => ({ ...t, health: 'reviewHell' as const })),
+            }
+          : d,
+      ),
+    };
+    expect(
+      planOrgBoardScene(hellProduct).zones.find((z) => z.deptId === 'product')?.glow?.kind,
+    ).toBe('hell');
+
+    const recoveredNewbiz = {
+      ...org,
+      departments: org.departments.map((d) =>
+        d.def.id === 'newbiz' ? { ...d, health: 'healthy' as const, onFire: 0 } : d,
+      ),
+    };
+    expect(
+      planOrgBoardScene(recoveredNewbiz).zones.find((z) => z.deptId === 'newbiz')?.glow?.kind,
+    ).toBe('ok');
+  });
+
+  it('extraTeams で増えたチームも最小間隔を保つ', () => {
+    const org = generateOrgScale(
+      orgScaleInput('ri01-spacing', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 4 }, byDept: {} },
+      }),
+    );
+    const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
+    expect(productTeams.length).toBeGreaterThanOrEqual(6);
+
+    const positions = productTeams.map((_, i) => teamDesignPosition(0, i, productTeams.length));
+    for (let i = 0; i < positions.length; i += 1) {
+      for (let j = i + 1; j < positions.length; j += 1) {
+        const dx = Math.abs(positions[i].x - positions[j].x);
+        const dy = Math.abs(positions[i].y - positions[j].y);
+        if (dy < MIN_ISLAND_SPACING_Y * 0.5) {
+          expect(dx).toBeGreaterThanOrEqual(MIN_ISLAND_SPACING_X * 0.85);
+        }
+        if (dx < MIN_ISLAND_SPACING_X * 0.5) {
+          expect(dy).toBeGreaterThanOrEqual(MIN_ISLAND_SPACING_Y * 0.85);
+        }
+      }
+    }
   });
 });

@@ -58,7 +58,7 @@ function ZoneLabel({
 function OrgIsland({ island, onClick }: { island: OrgIslandPlan; onClick: () => void }) {
   const { team } = island;
   return (
-    <div className="org-island-group" style={{ zIndex: island.depth }}>
+    <div className="org-island-group" style={{ zIndex: 20 + island.depth }}>
       <div
         className={`org-island-badge-wrap tone-${island.badge.tone}`}
         style={{ left: pct(island.badge.x, VIEW_W), top: pct(island.badge.y, VIEW_H) }}

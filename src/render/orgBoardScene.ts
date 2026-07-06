@@ -18,6 +18,11 @@ export const ORG_VIEW = { w: 1404, h: 573 } as const;
 export const MIN_ISLAND_SPACING_X = 120;
 export const MIN_ISLAND_SPACING_Y = 90;
 
+/** 島アクター＋バッジが盤面内に収まるよう中心座標に取る余白（設計px）。 */
+export const ISLAND_BADGE_ABOVE = 46;
+export const ISLAND_ACTOR_HALF_H = 65;
+export const ISLAND_MARGIN = 8;
+
 /** 部門ゾーンの静的レイアウト（mockup の縦ストライプ領域）。 */
 interface ZoneLayout {
   /** 床クリップ内の矩形（設計px）。 */
@@ -94,6 +99,7 @@ export interface OrgZonePlan {
   color: string;
   x: number;
   width: number;
+  tone: 'ok' | 'warn' | 'hell';
   glow: ZoneLayout['glowCenter'];
 }
 
@@ -219,6 +225,18 @@ function zoneGlow(dept: DepartmentState, layout: ZoneLayout): ZoneLayout['glowCe
   return { ...layout.glowCenter, kind };
 }
 
+/** 島の中心座標を盤面＋アクター余白内に収める。 */
+export function clampIslandCenter(x: number, y: number): { x: number; y: number } {
+  const minY = ISLAND_BADGE_ABOVE + ISLAND_MARGIN;
+  const maxY = ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_MARGIN;
+  const minX = 70;
+  const maxX = ORG_VIEW.w - 70;
+  return {
+    x: Math.min(maxX, Math.max(minX, x)),
+    y: Math.min(maxY, Math.max(minY, y)),
+  };
+}
+
 /**
  * 部門内のチーム index から設計座標を導出する。
  * チーム数に応じてゾーン内を格子状に配置する。
@@ -241,8 +259,9 @@ export function teamDesignPosition(
 
   const neededWidth = cols * MIN_ISLAND_SPACING_X;
   const neededHeight = rows * MIN_ISLAND_SPACING_Y;
+  const maxSpanY = ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_BADGE_ABOVE - ISLAND_MARGIN * 2;
   const spanX = Math.max(baseWidth, neededWidth);
-  const spanY = Math.max(baseHeight, neededHeight);
+  const spanY = Math.min(Math.max(baseHeight, neededHeight), maxSpanY);
   const centerX = (zone.teamXMin + zone.teamXMax) / 2;
   const centerY = (zone.teamYMin + zone.teamYMax) / 2;
 
@@ -250,12 +269,12 @@ export function teamDesignPosition(
   const row = Math.floor(teamIndex / cols);
   const x = centerX - spanX / 2 + ((col + 0.5) / cols) * spanX;
   const y = centerY - spanY / 2 + ((row + 0.5) / rows) * spanY;
-  return { x, y };
+  return clampIslandCenter(x, y);
 }
 
-/** 画家順 depth（y が大きいほど手前）。 */
-function islandDepth(x: number, y: number): number {
-  return Math.round(y * 10 + x * 0.01);
+/** 画家順 depth（1..99。オーバーレイ層より下の帯）。 */
+export function islandDepth(x: number, y: number): number {
+  return Math.min(99, Math.max(1, Math.round((y / ORG_VIEW.h) * 70 + (x / ORG_VIEW.w) * 29)));
 }
 
 /** 部門の reviewQueue 合計（フロー heat 判定用）。 */
@@ -273,6 +292,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
       color: d.def.color,
       x: layout.x,
       width: layout.width,
+      tone: zoneLabelTone(d),
       glow: zoneGlow(d, layout),
     };
   });

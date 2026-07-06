@@ -8,10 +8,13 @@ import type { OrgScaleInput } from '../../src/sim/orgscale/generate';
 import type { OrgState } from '../../src/sim/types';
 import type { RunTotals } from '../../src/sim/run/types';
 import {
+  ISLAND_ACTOR_HALF_H,
+  ISLAND_MARGIN,
   MIN_ISLAND_SPACING_X,
   MIN_ISLAND_SPACING_Y,
   ORG_VIEW,
   isInOrgView,
+  islandDepth,
   islandMood,
   planOrgBoardScene,
   teamDesignPosition,
@@ -64,16 +67,33 @@ describe('planOrgBoardScene (RI-01)', () => {
   it('島の設計座標が ORG_VIEW 範囲内', () => {
     const org = generateOrgScale(orgScaleInput('ri01-bounds'));
     const scene = planOrgBoardScene(org);
+    const maxY = ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_MARGIN;
     for (const island of scene.islands) {
       expect(isInOrgView(island.x, island.y)).toBe(true);
+      expect(island.y).toBeLessThanOrEqual(maxY);
       expect(isInOrgView(island.badge.x, island.badge.y)).toBe(true);
     }
     expect(isInOrgView(scene.hub.x, scene.hub.y)).toBe(true);
   });
 
-  it('画家順 depth が y 座標で単調非減少', () => {
+  it('platform 部門の島も盤面下端で切れない', () => {
+    const org = generateOrgScale(orgScaleInput('ri01-platform'));
+    const scene = planOrgBoardScene(org);
+    const platformIslands = scene.islands.filter((i) => i.team.deptId === 'platform');
+    expect(platformIslands.length).toBe(3);
+    const maxY = ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_MARGIN;
+    for (const island of platformIslands) {
+      expect(island.y).toBeLessThanOrEqual(maxY);
+    }
+  });
+
+  it('画家順 depth は 1..99 の帯に収まり y で単調非減少', () => {
     const org = generateOrgScale(orgScaleInput('ri01-depth'));
     const scene = planOrgBoardScene(org);
+    for (const island of scene.islands) {
+      expect(island.depth).toBeGreaterThanOrEqual(1);
+      expect(island.depth).toBeLessThanOrEqual(99);
+    }
     for (let i = 1; i < scene.islands.length; i += 1) {
       expect(scene.islands[i].depth).toBeGreaterThanOrEqual(scene.islands[i - 1].depth);
     }
@@ -179,6 +199,15 @@ describe('planOrgBoardScene (RI-01)', () => {
     expect(
       planOrgBoardScene(recoveredNewbiz).zones.find((z) => z.deptId === 'newbiz')?.glow?.kind,
     ).toBe('ok');
+    expect(planOrgBoardScene(recoveredNewbiz).zones.find((z) => z.deptId === 'newbiz')?.tone).toBe(
+      'ok',
+    );
+  });
+
+  it('islandDepth は 1..99 の帯を返す', () => {
+    expect(islandDepth(700, 288)).toBeGreaterThanOrEqual(1);
+    expect(islandDepth(700, 288)).toBeLessThanOrEqual(99);
+    expect(islandDepth(100, 500)).toBeLessThanOrEqual(99);
   });
 
   it('extraTeams で増えたチームも最小間隔を保つ', () => {

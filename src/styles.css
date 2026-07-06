@@ -2803,7 +2803,7 @@ button.card:active {
 .org-zone-label {
   position: absolute;
   transform: translate(-50%, -50%);
-  z-index: 6;
+  z-index: 140;
   font-size: 12px;
   font-weight: 900;
   padding: 6px 12px;
@@ -2837,7 +2837,7 @@ button.card:active {
 .org-hub-station {
   position: absolute;
   transform: translate(-50%, -50%);
-  z-index: 7;
+  z-index: 150;
   width: 14%;
   pointer-events: none;
 }
@@ -2849,7 +2849,7 @@ button.card:active {
 .org-hub-badge {
   position: absolute;
   transform: translate(-50%, -50%);
-  z-index: 8;
+  z-index: 160;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2969,7 +2969,7 @@ button.card:active {
   bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10;
+  z-index: 170;
   font-size: 11px;
   color: var(--text-dim);
   background: #1f1942cc;

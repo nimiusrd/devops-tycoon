@@ -50,12 +50,22 @@ export function OrgPlate({ zones }: OrgPlateProps) {
             width={z.width}
             height={573}
             fill={z.color}
-            opacity={z.deptId === 'newbiz' ? 0.14 : 0.11}
+            opacity={z.tone === 'hell' ? 0.14 : 0.11}
           />
         ))}
-        {zones.find((z) => z.deptId === 'newbiz') && (
-          <rect x={822} y={0} width={582} height={573} fill="#160a24" opacity={0.3} />
-        )}
+        {zones
+          .filter((z) => z.tone === 'hell')
+          .map((z) => (
+            <rect
+              key={`shade-${z.deptId}`}
+              x={z.x}
+              y={0}
+              width={z.width}
+              height={573}
+              fill="#160a24"
+              opacity={0.3}
+            />
+          ))}
         {zones.map(
           (z) =>
             z.glow && (

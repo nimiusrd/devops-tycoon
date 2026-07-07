@@ -28,6 +28,12 @@ import {
   THROTTLE_TICKS,
   type ActionDef,
 } from '../sim/actions';
+import { OVERTIME_CODING_MUL, OVERTIME_REVIEW_MUL } from '../sim/model/process';
+import {
+  PAUSE_AI_DEBUFF_MUL,
+  REORG_RESET_SENIOR_HP,
+  REORG_RESET_TECH_DEBT,
+} from '../sim/run/quarterReview';
 import { RECRUIT_COST, REST_STAMINA_RECOVER } from '../sim/member/roster';
 import { REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../sim/run/engine';
 import type { CardEffects, CardDef } from '../sim/types';
@@ -395,8 +401,7 @@ function toneFromGoalTargetAdd(value: number): EffectTagTone {
 }
 
 /** reorgReset 時の追加 org 効果（`applyGoalAdjustment` と一致）。 */
-const REORG_RESET_SENIOR_HP = 20;
-const REORG_RESET_TECH_DEBT = -8;
+const PAUSE_AI_DEBUFF_PCT = Math.round((1 - PAUSE_AI_DEBUFF_MUL) * 100);
 
 export interface FormatGoalAdjustmentOptions {
   /** 次期目標に AI Adoption KPI がある場合のみ true。 */
@@ -540,7 +545,7 @@ export function formatGoalAdjustmentTags(
   }
 
   if (def.pauseAiDebuff) {
-    pushTag(tags, '次四半期 出荷速度 -15%', 'negative');
+    pushTag(tags, `次四半期 出荷速度 -${PAUSE_AI_DEBUFF_PCT}%`, 'negative');
   }
 
   if (def.reorgReset) {
@@ -581,6 +586,8 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       break;
     case 'overtime':
       pushTag(tags, `スループット↑ ${OVERTIME_TICKS}tick`, 'positive');
+      pushTag(tags, `Coding x${OVERTIME_CODING_MUL}`, 'positive');
+      pushTag(tags, `Review x${OVERTIME_REVIEW_MUL}`, 'positive');
       pushTag(tags, `士気 -${OVERTIME_MORALE_COST}`, 'negative');
       pushTag(tags, `シニアHP -${OVERTIME_HP_COST}`, 'negative');
       break;

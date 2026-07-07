@@ -292,6 +292,20 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
       tone: 'negative',
     });
   });
+
+  it.each([
+    'cut_scope',
+    'extend_deadline',
+    'quality_pivot',
+    'request_budget',
+    'pause_ai_rollout',
+    'reorg_teams',
+  ] as const)('%s は非空タグを返す', (id) => {
+    const def = getGoalAdjustment(id)!;
+    const tags = formatGoalAdjustmentTags(def);
+    expect(tags.length).toBeGreaterThan(0);
+    expect(tags.every((t) => t.label && t.tone)).toBe(true);
+  });
 });
 
 describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
@@ -308,6 +322,34 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
     const def = getAction('firefight')!;
     expect(formatActionDefTags(def)).toContainEqual({
       label: '炎上1件鎮火',
+      tone: 'positive',
+    });
+  });
+
+  it.each([
+    'interruptReview',
+    'splitPr',
+    'firefight',
+    'assignTask',
+    'aiThrottle',
+    'pairReview',
+    'overtime',
+    'andon',
+  ] as const)('%s は非空タグを返す', (id) => {
+    const def = getAction(id)!;
+    const tags = formatActionDefTags(def);
+    expect(tags.length).toBeGreaterThan(0);
+    expect(tags.every((t) => t.label && t.tone)).toBe(true);
+  });
+
+  it('overtime は Coding/Review 倍率タグを含む', () => {
+    const def = getAction('overtime')!;
+    expect(formatActionDefTags(def)).toContainEqual({
+      label: 'Coding x1.4',
+      tone: 'positive',
+    });
+    expect(formatActionDefTags(def)).toContainEqual({
+      label: 'Review x1.6',
       tone: 'positive',
     });
   });

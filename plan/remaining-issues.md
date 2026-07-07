@@ -48,7 +48,7 @@
 | --- | --- | --- | --- | --- | --- |
 | RI-43 | 効果タグ自動生成基盤＋ビート選択肢のリスク・リターン表示 | 高 | 完了 | — | 第9 / 18.2 |
 | RI-44 | カード/レリック/進化ノードへの効果タグ適用 | 高 | 完了 | RI-43 | 第7 / 8 / 11 |
-| RI-45 | レバー/休憩/目標修正/介入アクションの効果数値表示 | 中 | 未着手 | RI-43 | 第4.8 / 6 |
+| RI-45 | レバー/休憩/目標修正/介入アクションの効果数値表示 | 中 | 完了 | RI-43 | 第4.8 / 6 |
 | RI-46 | 確率的な結果のリスク幅プレビュー(what-if 試算) | 中 | 未着手 | RI-43 | 第22.3 / RI-13 / RI-14 |
 | RI-47 | ステータス増減の汎用フィードバック演出 | 高 | 完了 | — | 第18.2 |
 | RI-48 | HUD の情報設計強化(アイコン・良し悪しの方向・しきい値色) | 中 | 完了 | — | 第4.2 / 18 |
@@ -212,15 +212,13 @@ Vitest: `tests/unit/eventOutcomeView.test.ts`。
 手書き `description` はフレーバー文として残し、デメリット付きカードのリスクはタグ色で判別可能。
 Vitest: `tests/unit/eventOutcomeView.test.ts`（カード・レリック・進化ノードのタグ変換テスト追加）。
 
-#### RI-45 レバー/休憩/目標修正/介入アクションの効果数値表示 — 優先度:中（依存: RI-43）
+#### RI-45 レバー/休憩/目標修正/介入アクションの効果数値表示 — 優先度:中 / 完了
 
-効果の数値提示が最も薄い箇所への横展開。いずれも `title` 属性の定性説明のみ（または説明文なし）で、
-効果デルタはデータに存在するのに UI に出ていない。
-
-- 全社/部門レバー（`OrgScreen` / `DeptScreen`、`LeverDef.effect` = `OrgAdjust` の固定デルタ）
-- 休憩の4択（`RestScreen`。回復量・返済量が非表示。効果量を提示できる形にエンジン側の定数を整理して出す）
-- 四半期レビューの目標修正（`QuarterReviewScreen`、`GoalAdjustmentDef` の `trustDelta` / `budgetDelta` 等の代償）
-- 介入アクション（`ActionBar`、`ActionDef`。効果量・副作用をツールチップ任せにしない）
+**完了**: `src/render/eventOutcomeView.ts` に `formatLeverDefTags` / `formatGoalAdjustmentTags` /
+`formatActionDefTags` / `formatRestOptionTags` と tooltip ヘルパを追加し、`OrgScreen` / `DeptScreen` /
+`RestScreen` / `QuarterReviewScreen` / `ActionBar` へ `EffectTagList` で接続。`PAUSE_AI_DEBUFF_MUL` /
+`REORG_RESET_*` / `OVERTIME_*_MUL` は sim 層から import して DRY 化。Vitest:
+`tests/unit/eventOutcomeView.test.ts`（全 8 アクション・全 6 目標修正の網羅テスト含む）。
 
 #### RI-46 確率的な結果のリスク幅プレビュー(what-if 試算) — 優先度:中（依存: RI-43。関連: RI-13 / RI-14）
 

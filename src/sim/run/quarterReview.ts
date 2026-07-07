@@ -23,6 +23,13 @@ import type {
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
+/** 組織再編（reorgReset）時の即時 org 効果加算。 */
+export const REORG_RESET_SENIOR_HP = 20;
+export const REORG_RESET_TECH_DEBT = -8;
+
+/** pauseAiDebuff 適用時の出荷速度倍率（次四半期）。 */
+export const PAUSE_AI_DEBUFF_MUL = 0.85;
+
 /** 難易度に応じた初期信頼。 */
 export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
   const base =
@@ -377,8 +384,8 @@ export function applyGoalAdjustment(
     org.quality = clamp(org.quality + def.orgEffects.qualityDelta, 0, 100);
   }
   if (def.reorgReset) {
-    org.seniorHp = clamp(org.seniorHp + 20, 0, 100);
-    org.techDebt = Math.max(0, org.techDebt - 8);
+    org.seniorHp = clamp(org.seniorHp + REORG_RESET_SENIOR_HP, 0, 100);
+    org.techDebt = Math.max(0, org.techDebt - Math.abs(REORG_RESET_TECH_DEBT));
   }
 
   let nextBudgetCap = input.nextBudgetCap;

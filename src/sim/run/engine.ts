@@ -81,6 +81,7 @@ import {
   canChooseAdjustment,
   isTerminalFailure,
   loseReasonForOutcome,
+  PAUSE_AI_DEBUFF_MUL,
 } from './quarterReview';
 import type {
   BeatState,
@@ -425,8 +426,8 @@ export class RunEngine {
     if (this.pauseAiDebuffQuarter === this.quarterNumber) {
       effects = {
         ...effects,
-        codingSpeedMul: effects.codingSpeedMul * 0.85,
-        routineSpeedMul: effects.routineSpeedMul * 0.85,
+        codingSpeedMul: effects.codingSpeedMul * PAUSE_AI_DEBUFF_MUL,
+        routineSpeedMul: effects.routineSpeedMul * PAUSE_AI_DEBUFF_MUL,
       };
     }
     // 次スプリント限定の一時効果: 手戻り率の加算を係数へ畳み込む。

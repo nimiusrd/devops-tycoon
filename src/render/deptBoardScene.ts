@@ -22,6 +22,17 @@ const TEAM_LAYOUTS_3: readonly { x: number; y: number }[] = [
   { x: 1104, y: 264 },
 ];
 
+/** 4 チーム部門（product 等）は縦 2 段だと 220px 高のミニ盤面が重なるため横一列。 */
+const TEAM_LAYOUTS_4: readonly { x: number; y: number }[] = [
+  { x: 260, y: 318 },
+  { x: 520, y: 318 },
+  { x: 840, y: 318 },
+  { x: 1144, y: 318 },
+];
+
+/** ミニパイプラインの設計幅（CSS % 換算用）。 */
+export const TEAM_MINI_DESIGN_W = TEAM_MINI_W;
+
 /** mockup 準拠の 3 チーム間依存パス（上流→下流）。 */
 const FLOW_PATHS_3: readonly { from: number; to: number; d: string }[] = [
   { from: 0, to: 1, d: 'M450,274 Q576,314 702,364' },
@@ -142,30 +153,41 @@ export function planChainedIndices(teams: readonly Team[]): Set<number> {
 /** チーム数に応じた中心座標を導出する。 */
 export function teamDesignPosition(teamIndex: number, teamCount: number): { x: number; y: number } {
   if (teamCount === 3) return TEAM_LAYOUTS_3[teamIndex] ?? TEAM_LAYOUTS_3[0];
+  if (teamCount === 4) return TEAM_LAYOUTS_4[teamIndex] ?? TEAM_LAYOUTS_4[0];
   if (teamCount === 1) return { x: 702, y: 320 };
   if (teamCount === 2) {
     return teamIndex === 0 ? { x: 450, y: 320 } : { x: 954, y: 320 };
   }
 
-  const cols = Math.min(teamCount, Math.max(1, Math.ceil(Math.sqrt(teamCount))));
+  // 5+ は横優先の格子。行間はミニ盤面高さ以上を確保する。
+  const cols = Math.min(teamCount, 4);
   const rows = Math.max(1, Math.ceil(teamCount / cols));
-  const xMin = 280;
-  const xMax = 1124;
-  const yMin = 240;
-  const yMax = 420;
+  const xMin = 240;
+  const xMax = 1164;
+  const halfH = TEAM_MINI_H / 2;
+  const topMargin = BANNER_ABOVE + 36;
+  const bottomMargin = halfH + 20;
+  const ySpan = DEPT_VIEW.h - topMargin - bottomMargin;
+  const minRowGap = TEAM_MINI_H + 12;
+  const neededHeight = (rows - 1) * minRowGap;
+  const yStart = topMargin + halfH;
+  const yEnd = neededHeight <= ySpan ? yStart + neededHeight : yStart + ySpan;
   const col = teamIndex % cols;
   const row = Math.floor(teamIndex / cols);
   const x = xMin + ((col + 0.5) / cols) * (xMax - xMin);
-  const y = yMin + ((row + 0.5) / rows) * (yMax - yMin);
+  const y =
+    rows === 1 ? yStart + ySpan / 2 : yStart + (row / Math.max(1, rows - 1)) * (yEnd - yStart);
   return clampTeamCenter(x, y);
 }
 
 function clampTeamCenter(x: number, y: number): { x: number; y: number } {
-  const marginX = TEAM_MINI_W / 2 + 20;
-  const marginY = TEAM_MINI_H / 2 + BANNER_ABOVE;
+  const halfW = TEAM_MINI_W / 2;
+  const halfH = TEAM_MINI_H / 2;
+  const minY = halfH + BANNER_ABOVE + 24;
+  const maxY = DEPT_VIEW.h - halfH - 20;
   return {
-    x: Math.min(DEPT_VIEW.w - marginX, Math.max(marginX, x)),
-    y: Math.min(DEPT_VIEW.h - marginY, Math.max(marginY, y)),
+    x: Math.min(DEPT_VIEW.w - halfW - 16, Math.max(halfW + 16, x)),
+    y: Math.min(maxY, Math.max(minY, y)),
   };
 }
 

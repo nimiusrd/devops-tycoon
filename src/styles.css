@@ -3234,6 +3234,7 @@ button.card:active {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 30;
+  width: 27.064%;
   padding: 0;
   border: none;
   background: transparent;
@@ -3250,6 +3251,9 @@ button.card:active {
 }
 .dept-team-mini-svg {
   display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 4px 6px #0006);
 }
 .dept-board-hint {
   position: absolute;

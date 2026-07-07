@@ -145,4 +145,14 @@ describe('teamDesignPosition', () => {
     expect(p2).toEqual({ x: 1104, y: 264 });
     expect(DEPT_VIEW.w).toBe(1404);
   });
+
+  it('4 チームは横一列に配置し X 方向の間隔を確保する', () => {
+    const positions = [0, 1, 2, 3].map((i) => teamDesignPosition(i, 4));
+    const ys = positions.map((p) => p.y);
+    expect(new Set(ys).size).toBe(1);
+    const xs = positions.map((p) => p.x).sort((a, b) => a - b);
+    for (let i = 1; i < xs.length; i++) {
+      expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(180);
+    }
+  });
 });

@@ -32,6 +32,7 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
   await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
   await expect(page.getByTestId('org-screen')).toBeVisible();
   await expect(page.getByTestId('org-hud')).toBeVisible();
+  await expect(page.getByTestId('org-board')).toBeVisible();
   await expect(page.getByTestId('org-infra-hub')).toBeVisible();
 
   // パンくずで業界ランキングへ。

@@ -76,6 +76,25 @@ describe('planOrgBoardScene (RI-01)', () => {
     expect(isInOrgView(scene.hub.x, scene.hub.y)).toBe(true);
   });
 
+  it('platform 部門の3チームは複数列に配置される', () => {
+    const positions = [0, 1, 2].map((i) => teamDesignPosition(1, i, 3));
+    const xs = positions.map((p) => Math.round(p.x));
+    expect(new Set(xs).size).toBeGreaterThanOrEqual(2);
+    const row0 = positions.slice(0, 2);
+    expect(Math.abs(row0[0].x - row0[1].x)).toBeGreaterThanOrEqual(MIN_ISLAND_SPACING_X * 0.85);
+  });
+
+  it('newbiz のハブ依存フローはハブから島へ向く（mockup 準拠）', () => {
+    const org = generateOrgScale(orgScaleInput('ri01-flow-dir'));
+    const scene = planOrgBoardScene(org);
+    const hubToLab = scene.flows.find((f) => f.id === 'flow-4');
+    const hubToProd = scene.flows.find((f) => f.id === 'flow-5');
+    expect(hubToLab?.d).toMatch(/^M700,288/);
+    expect(hubToLab?.d).toMatch(/892,300$/);
+    expect(hubToProd?.d).toMatch(/^M700,288/);
+    expect(hubToProd?.d).toMatch(/1036,356$/);
+  });
+
   it('platform 部門の島も盤面下端で切れない', () => {
     const org = generateOrgScale(orgScaleInput('ri01-platform'));
     const scene = planOrgBoardScene(org);

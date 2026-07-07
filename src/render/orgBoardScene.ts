@@ -80,14 +80,14 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
 /** 共通基盤ハブ（設計px）。 */
 const HUB = { x: 700, y: 288, labelY: 226 } as const;
 
-/** mockup 準拠の静的フローパス（各ゾーン → ハブ）。 */
+/** mockup 準拠の静的フローパス。zone 0/1 は島→ハブ、zone 2 の依存はハブ→島（mockup L259-260）。 */
 const STATIC_FLOWS: readonly { d: string; zoneIndex: number }[] = [
   { d: 'M452,314 Q576,242 700,288', zoneIndex: 0 },
   { d: 'M320,392 Q510,242 700,288', zoneIndex: 0 },
   { d: 'M500,452 Q600,242 700,288', zoneIndex: 0 },
   { d: 'M692,450 L700,288', zoneIndex: 1 },
-  { d: 'M892,300 Q796,242 700,288', zoneIndex: 2 },
-  { d: 'M1036,356 Q868,242 700,288', zoneIndex: 2 },
+  { d: 'M700,288 Q796,242 892,300', zoneIndex: 2 },
+  { d: 'M700,288 Q868,242 1036,356', zoneIndex: 2 },
   { d: 'M958,460 Q997,310 1036,356', zoneIndex: 2 },
   { d: 'M1152,420 Q926,242 700,288', zoneIndex: 2 },
 ];
@@ -250,11 +250,7 @@ export function teamDesignPosition(
   const baseWidth = zone.teamXMax - zone.teamXMin;
   const baseHeight = zone.teamYMax - zone.teamYMin;
 
-  const maxColsInBase = Math.max(1, Math.floor(baseWidth / MIN_ISLAND_SPACING_X));
-  const cols = Math.min(
-    teamCount,
-    Math.max(1, Math.min(maxColsInBase, Math.ceil(Math.sqrt(teamCount)))),
-  );
+  const cols = Math.min(teamCount, Math.max(1, Math.ceil(Math.sqrt(teamCount))));
   const rows = Math.max(1, Math.ceil(teamCount / cols));
 
   const neededWidth = cols * MIN_ISLAND_SPACING_X;

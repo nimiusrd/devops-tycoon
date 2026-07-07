@@ -32,7 +32,7 @@
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
 | RI-01 | 全社マップ(org-screen)の等角化 | 高 | 完了 | — | 第4.8 / `org-screen.png` |
-| RI-02 | 部署ビュー(dept-screen)の等角化 | 高 | 未着手 | — | 第4.9 / `dept-screen.png` |
+| RI-02 | 部署ビュー(dept-screen)の等角化 | 高 | 完了 | — | 第4.9 / `dept-screen.png` |
 | RI-03 | 業界ランキング(industry-screen)の等角化 | 中 | 未着手 | — | 第4.10 / `industry-screen.png` |
 | RI-04 | ドリルダウンのカメラ遷移演出 | 中 | 未着手 | RI-11 | 第4.11 / `drilldown.html` |
 | RI-05 | タスク粒の工程間移動アニメ | 高 | 完了 | — | 第18.1 |
@@ -130,13 +130,14 @@
 `OrgScreen` の既定レンダラを矩形カードから等角盤面へ差し替え（`?renderer=pixi` は既存 Pixi を維持）。
 Vitest: `tests/unit/orgBoardScene.test.ts`。E2E: `tests/e2e/org-scale.spec.ts`（`org-board` 検証追加）。
 
-#### RI-02 部署ビュー(dept-screen)の等角化 — 優先度:高
+#### RI-02 部署ビュー(dept-screen)の等角化 — 優先度:高 / 完了
 
-- **現状**: アイソメ未使用のフラット表現。
-- **目標（`mockups/dept-screen.png` / 第4.9）**: 各チームを **Coding▸Review▸Done の小パイプライン**として
-  中解像度の等角で表示。**チーム間依存の矢印**と、上流の巨大PRが下流へ押し寄せる**連鎖炎上**の可視化。
-  部門HUD・部門レバー。
-- **規模感**: 中。スプリント盤面の「ミニ版パイプライン」をチーム数ぶん並べる構造。
+**完了**: `src/render/deptBoardScene.ts` に `DEPT_VIEW`（1404×573）設計座標空間と
+`planDeptBoardScene()` を追加し、単一部門プレート・チームミニパイプライン（Coding/Review/Done）・
+チーム間依存フロー（連鎖炎上 heat）・工程ラベルを純関数で導出。
+`DeptPlate` / `DeptTeamMini` / `DeptDependencyFlows` / `DeptBoard` で DOM/SVG 等角描画に接続し、
+`DeptScreen` のフラット `TeamPipeline` を等角盤面へ差し替え（部門 HUD・部門レバーは維持）。
+Vitest: `tests/unit/deptBoardScene.test.ts`。E2E: `tests/e2e/org-scale.spec.ts`（`dept-board` 検証）。
 
 #### RI-03 業界ランキング(industry-screen)の等角化 — 優先度:中
 

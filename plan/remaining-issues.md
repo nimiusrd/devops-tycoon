@@ -53,7 +53,7 @@
 | RI-47 | ステータス増減の汎用フィードバック演出 | 高 | 完了 | — | 第18.2 |
 | RI-48 | HUD の情報設計強化(アイコン・良し悪しの方向・しきい値色) | 中 | 完了 | — | 第4.2 / 18 |
 | RI-49 | 介入結果ペイロードの拡張(フィードバック基盤) | 高 | 完了 | — | 第6 / 18.2 |
-| RI-50 | 介入ごとの盤面リアクション演出 | 高 | 未着手 | RI-49 | 第6 / 18.2 / RI-10 |
+| RI-50 | 介入ごとの盤面リアクション演出 | 高 | 完了 | RI-49 | 第6 / 18.2 / RI-10 |
 | RI-51 | 発動不能理由の可視化＋対象数ライブバッジ | 高 | 完了 | — | 第4.3 / 6.1 |
 | RI-52 | スプリント内イベントティッカー(介入・出来事ログ) | 中 | 未着手 | RI-49 | 第6 / 18 |
 | RI-53 | スプリントタイムライン記録とリザルト表示 | 中 | 未着手 | RI-49 | 第4.6 / 6.3 |
@@ -281,24 +281,16 @@ sim 挙動は不変（返す情報が増えるだけ）。Vitest: `tests/unit/ac
 ペイロード検証・失敗時 effect 無し・ゲージ満タン還元）、`tests/unit/fire.test.ts`（`containedTaskId`）。
 UI 接続は RI-51 / RI-50 で行う。
 
-#### RI-50 介入ごとの盤面リアクション演出 — 優先度:高（依存: RI-49）
+#### RI-50 介入ごとの盤面リアクション演出 — 優先度:高 / 完了
 
-- **現状**: アクションを押しても、盤面は「次 tick 以降に状態が変わっている」だけで、ボタンと盤面の
-  因果を結ぶ演出が無い。炎上まわりだけは `FireEffects`（RI-06）が状態差分から演出を推定するが、
-  割り込みレビューのスイープ（第18.2。RI-10 で低優先のまま）・PR分割・タスク差配・時限系
-  （AIスロットル/残業/アンドン）は完全に無演出。**「押す→組織が反応する」の手応えが無いことが、
-  マネジメントしている感覚の薄さの主因**。
-- **やること**: RI-49 のペイロードを受けて、アクション別の盤面リアクションを再生する。
-  - 割り込みレビュー: 対象 PR がまとめて Done 側へ流れる**スイープ**（RI-10 の該当分を前倒し）。
-  - PR分割: 対象粒が 2 つに割れるアニメ＋split バッジ。
-  - 緊急対応: 対象の火へ照準リング→消火バースト（既存 `FireEffects` を「推定」から
-    「ペイロード起点」へ接続し直す）。
-  - タスク差配: 対象粒のダッシュ（加速線）演出。
-  - 時限系（AIスロットル/残業号令/アンドン): 盤面全体のオーラ＋**残り時間リング**をアクション
-    ボタン上に表示（現状 `SprintModifiers` の残り時間は一切見えない）。
-- **実装**: `fireEffects.ts` と同じ「純関数で演出 plan を導出（Vitest）＋ Framer Motion 再生」
-  パターンを踏襲。ペイロード→plan の変換を `src/render/` の純関数に置く。
-- **規模感**: 中。アクション 8 種ぶんだが、パターンは共通化できる。
+**完了**: `src/render/interventionEffects.ts` に `InterventionEffect` → 座標付き plan の純関数
+（`planInterventionReactions` / `positionInterventionReactions` / `deriveActiveBoardAuras`）を追加。
+`src/ui/InterventionEffects.tsx` で Framer Motion により review スイープ・split・firefight 照準→消火・
+assign ダッシュ・モディファイア pulse を再生。`SprintScreen` で dispatch をラップし成功ペイロードを
+`Board` へ渡す。時限系（AIスロットル/残業/アンドン）は盤面オーラ＋ `ActionBar` の `.mod-ring` で
+残り tick を表示（`RunState.sprintTick` 公開）。firefight は `FireEffects` の鎮火推定と二重再生を
+`suppressExtinguishTaskIds` で抑制。Vitest: `tests/unit/interventionEffects.test.ts`。
+E2E: `tests/e2e/interventions.spec.ts`（スイープ演出 DOM 確認）。
 
 #### RI-51 発動不能理由の可視化＋対象数ライブバッジ — 優先度:高 / 完了
 

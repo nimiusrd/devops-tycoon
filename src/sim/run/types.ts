@@ -241,6 +241,8 @@ export interface RunState {
   currentSprintId: string | null;
   /** 進行中スプリント状態（sprint フェーズのみ）。 */
   sprint: SprintState | null;
+  /** 進行中スプリントの現在 tick（sprint フェーズ外は 0）。RI-50 モディファイア表示用。 */
+  sprintTick: number;
   /** 直近スプリントのリザルト（result/draft フェーズで表示）。 */
   lastResult: SprintResult | null;
   /** ドラフト候補（draft フェーズのみ）。 */

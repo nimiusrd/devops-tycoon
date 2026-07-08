@@ -5,7 +5,14 @@
  * 対象数バッジ・発動不能理由を UI に供給する（描画専用。第22.2）。
  */
 import { getAction } from '../data/actions';
-import { activeIncidents, INTERRUPT_REVIEW_COUNT, PAIR_REVIEW_COUNT } from '../sim/actions';
+import {
+  activeIncidents,
+  ANDON_TICKS,
+  INTERRUPT_REVIEW_COUNT,
+  OVERTIME_TICKS,
+  PAIR_REVIEW_COUNT,
+  THROTTLE_TICKS,
+} from '../sim/actions';
 import type { ActionId, SprintState, Task } from '../sim/types';
 
 export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete';
@@ -200,4 +207,35 @@ export function formatInterventionFailure(reason: ActionBlockReason, actionId?: 
     return NO_TARGET_MESSAGES[actionId] ?? BLOCK_MESSAGES['no-target'];
   }
   return BLOCK_MESSAGES[reason];
+}
+
+/** 時限モディファイアの残り tick（ActionBar リング表示用 / RI-50）。 */
+export interface ModifierRingState {
+  active: boolean;
+  remaining: number;
+  total: number;
+}
+
+const MODIFIER_RING_BY_ACTION: Partial<
+  Record<
+    ActionId,
+    { untilKey: 'throttleUntilTick' | 'overtimeUntilTick' | 'andonUntilTick'; total: number }
+  >
+> = {
+  aiThrottle: { untilKey: 'throttleUntilTick', total: THROTTLE_TICKS },
+  overtime: { untilKey: 'overtimeUntilTick', total: OVERTIME_TICKS },
+  andon: { untilKey: 'andonUntilTick', total: ANDON_TICKS },
+};
+
+export function deriveModifierRing(
+  sprint: SprintState,
+  sprintTick: number,
+  actionId: ActionId,
+): ModifierRingState {
+  const entry = MODIFIER_RING_BY_ACTION[actionId];
+  if (!entry) return { active: false, remaining: 0, total: 0 };
+  const until = sprint.modifiers[entry.untilKey];
+  const remaining = Math.max(0, until - sprintTick);
+  if (remaining <= 0) return { active: false, remaining: 0, total: entry.total };
+  return { active: true, remaining, total: entry.total };
 }

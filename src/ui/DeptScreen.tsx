@@ -6,9 +6,10 @@
  * 状態は読むだけ（第22.2）。
  */
 import { DEPARTMENT_LEVERS } from '../data/levers';
-import type { DepartmentState, Team } from '../sim/orgscale/types';
-import { HEALTH_COLOR, HEALTH_LABEL } from '../render/orgView';
+import type { DepartmentState } from '../sim/orgscale/types';
+import { HEALTH_LABEL } from '../render/orgView';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
+import { DeptBoard } from './DeptBoard';
 import { EffectTagList } from './EffectTagList';
 
 export interface DeptScreenProps {
@@ -19,13 +20,6 @@ export interface DeptScreenProps {
 }
 
 export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScreenProps) {
-  // 連鎖炎上: 炎上チームの下流（配列の次チーム）を「延焼リスク」として印す。
-  const fireIndices = dept.teams
-    .map((t, i) => (t.health === 'reviewHell' ? i : -1))
-    .filter((i) => i >= 0);
-  const chained = new Set<number>();
-  for (const i of fireIndices) if (i + 1 < dept.teams.length) chained.add(i + 1);
-
   return (
     <div className="dept-screen" data-testid="dept-screen">
       <header className="dept-head">
@@ -50,16 +44,8 @@ export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScre
         />
       </dl>
 
-      <div className="dept-teams" data-testid="dept-teams">
-        {dept.teams.map((t, i) => (
-          <TeamPipeline
-            key={t.id}
-            team={t}
-            chained={chained.has(i)}
-            hasDownstream={i + 1 < dept.teams.length}
-            onClick={() => onFocusTeam(t.id)}
-          />
-        ))}
+      <div className="dept-field" data-testid="dept-field">
+        <DeptBoard dept={dept} onFocusTeam={onFocusTeam} />
       </div>
 
       <div className="dept-levers" data-testid="dept-levers">
@@ -82,72 +68,6 @@ export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScre
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-/** チーム = 小パイプライン（Coding ▸ Review ▸ Done）。 */
-function TeamPipeline({
-  team,
-  chained,
-  hasDownstream,
-  onClick,
-}: {
-  team: Team;
-  chained: boolean;
-  hasDownstream: boolean;
-  onClick: () => void;
-}) {
-  const coding = Math.max(1, Math.round(team.engineers * 0.6));
-  const review = team.reviewQueue;
-  const done = Math.round(team.shipping / 100);
-  return (
-    <div className="team-pipe-wrap">
-      <button
-        type="button"
-        className={`team-pipe health-${team.health}${chained ? ' chained' : ''}`}
-        data-testid={`team-${team.id}`}
-        data-health={team.health}
-        onClick={onClick}
-        title={`${team.name}（${HEALTH_LABEL[team.health]}）の現場へ`}
-      >
-        <div className="team-pipe-head">
-          <b>
-            {team.isPlayer ? '★ ' : ''}
-            {team.name}
-          </b>
-          <span className="team-pipe-badge" style={{ background: HEALTH_COLOR[team.health] }}>
-            {HEALTH_LABEL[team.health]}
-          </span>
-        </div>
-        <div className="team-lanes">
-          <Lane name="Coding" count={coding} />
-          <span className="lane-arrow">▸</span>
-          <Lane name="Review" count={review} hot={review >= 6} />
-          <span className="lane-arrow">▸</span>
-          <Lane name="Done" count={done} />
-        </div>
-        {team.incidents > 0 && <div className="team-pipe-fire">🔥 炎上 {team.incidents}</div>}
-        {chained && (
-          <div className="team-pipe-chain" data-testid="chain-fire">
-            ⚠ 上流から延焼
-          </div>
-        )}
-      </button>
-      {hasDownstream && (
-        <span className="dep-arrow" aria-hidden>
-          ➜
-        </span>
-      )}
-    </div>
-  );
-}
-
-function Lane({ name, count, hot }: { name: string; count: number; hot?: boolean }) {
-  return (
-    <div className={`team-lane${hot ? ' hot' : ''}`}>
-      <span className="lane-name">{name}</span>
-      <span className="lane-count">{count}</span>
     </div>
   );
 }

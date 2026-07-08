@@ -47,7 +47,7 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
   // パンくずで部署ビューへ。
   await page.getByTestId('crumb-department').click();
   await expect(page.getByTestId('dept-screen')).toBeVisible();
-  await expect(page.getByTestId('dept-teams')).toBeVisible();
+  await expect(page.getByTestId('dept-board')).toBeVisible();
 });
 
 test('チーム島をタップすると現場へドリルダウンしてオーバーレイが閉じる（第4.11）', async ({

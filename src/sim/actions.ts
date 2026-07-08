@@ -68,6 +68,18 @@ export const GAUGE_FOCUS_REFUND = 3;
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
+/** clamp 適用後の実際の消費量（0..100 境界）。 */
+function spendStat(current: number, amount: number): { next: number; spent: number } {
+  const next = clamp(current - amount, 0, 100);
+  return { next, spent: current - next };
+}
+
+/** clamp 適用後の実際の増加量（0..100 境界）。 */
+function gainStat(current: number, amount: number): { next: number; gained: number } {
+  const next = clamp(current + amount, 0, 100);
+  return { next, gained: next - current };
+}
+
 function tasksInLane(sprint: SprintState, lane: Task['lane']): Task[] {
   return sprint.tasks.filter((t) => t.lane === lane);
 }
@@ -107,8 +119,9 @@ const EFFECTS: Record<
     if (queue.length === 0) return false;
     const affectedTaskIds = queue.map((t) => t.id);
     for (const task of queue) reviewOne(task, sprint, org, rng);
-    org.seniorHp = clamp(org.seniorHp - INTERRUPT_HP_COST, 0, 100);
-    return { reviewedCount: queue.length, affectedTaskIds, hpCost: INTERRUPT_HP_COST };
+    const hp = spendStat(org.seniorHp, INTERRUPT_HP_COST);
+    org.seniorHp = hp.next;
+    return { reviewedCount: queue.length, affectedTaskIds, hpCost: hp.spent };
   },
 
   // PR分割: 巨大PRを割り、以降のレビューを通りやすくする（split 印）。
@@ -133,8 +146,9 @@ const EFFECTS: Record<
     fire.lane = 'review';
     fire.progress = 0;
     sprint.metrics.contained += 1;
-    org.seniorHp = clamp(org.seniorHp - FIREFIGHT_HP_COST, 0, 100);
-    return { containedTaskId, hpCost: FIREFIGHT_HP_COST };
+    const hp = spendStat(org.seniorHp, FIREFIGHT_HP_COST);
+    org.seniorHp = hp.next;
+    return { containedTaskId, hpCost: hp.spent };
   },
 
   // タスク差配: 着手中タスクを一気に前進させる（偏重で士気低下）。
@@ -145,8 +159,9 @@ const EFFECTS: Record<
     if (!target) return false;
     target.progress = clamp(target.progress + ASSIGN_PROGRESS, 0, 0.999);
     target.split = true;
-    org.morale = clamp(org.morale - ASSIGN_MORALE_COST, 0, 100);
-    return { affectedTaskIds: [target.id], moraleCost: ASSIGN_MORALE_COST };
+    const morale = spendStat(org.morale, ASSIGN_MORALE_COST);
+    org.morale = morale.next;
+    return { affectedTaskIds: [target.id], moraleCost: morale.spent };
   },
 
   // AIスロットル: 一定時間 AI 流入を絞る（Review 渋滞を抑える）。
@@ -161,20 +176,23 @@ const EFFECTS: Record<
     const queue = tasksInLane(sprint, 'review').slice(0, PAIR_REVIEW_COUNT);
     const affectedTaskIds = queue.map((t) => t.id);
     for (const task of queue) reviewOne(task, sprint, org, rng);
-    org.aiLiteracy = clamp(org.aiLiteracy + PAIR_LITERACY_GAIN, 0, 100);
-    return { reviewedCount: queue.length, affectedTaskIds, literacyGain: PAIR_LITERACY_GAIN };
+    const literacy = gainStat(org.aiLiteracy, PAIR_LITERACY_GAIN);
+    org.aiLiteracy = literacy.next;
+    return { reviewedCount: queue.length, affectedTaskIds, literacyGain: literacy.gained };
   },
 
   // 残業号令: 一定時間スループットをブースト（Morale・HP を削る）。
   overtime(sprint, org, _rng, tick) {
     const untilTick = tick + OVERTIME_TICKS;
     sprint.modifiers.overtimeUntilTick = untilTick;
-    org.morale = clamp(org.morale - OVERTIME_MORALE_COST, 0, 100);
-    org.seniorHp = clamp(org.seniorHp - OVERTIME_HP_COST, 0, 100);
+    const morale = spendStat(org.morale, OVERTIME_MORALE_COST);
+    const hp = spendStat(org.seniorHp, OVERTIME_HP_COST);
+    org.morale = morale.next;
+    org.seniorHp = hp.next;
     return {
       modifier: { kind: 'overtime', untilTick },
-      hpCost: OVERTIME_HP_COST,
-      moraleCost: OVERTIME_MORALE_COST,
+      hpCost: hp.spent,
+      moraleCost: morale.spent,
     };
   },
 
@@ -191,8 +209,9 @@ function addComboGauge(sprint: SprintState, gain: number): number {
   sprint.comboGauge += gain;
   if (sprint.comboGauge >= 1) {
     sprint.comboGauge -= 1;
+    const before = sprint.focus;
     sprint.focus = Math.min(sprint.config.focusMax, sprint.focus + GAUGE_FOCUS_REFUND);
-    return GAUGE_FOCUS_REFUND;
+    return sprint.focus - before;
   }
   return 0;
 }

@@ -308,6 +308,40 @@ describe('介入アクション: 効果ペイロード（RI-49）', () => {
     expect(outcome.effect?.focusRefund).toBe(3);
     expect(sprint.focus).toBe(7);
   });
+
+  it('集中力上限付近では focusRefund は clamp 後の実増分を返す', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [burningTask(0)]);
+    sprint.comboGauge = 0.9;
+    sprint.focus = sprint.config.focusMax;
+
+    const outcome = applyAction('firefight', sprint, org, rng, TICK);
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.effect?.focusRefund).toBe(1);
+    expect(sprint.focus).toBe(sprint.config.focusMax);
+  });
+
+  it('ステータス境界では hpCost / moraleCost / literacyGain は実際の差分を返す', () => {
+    const org = createOrgState('default', true);
+    org.morale = 5;
+    org.seniorHp = 3;
+
+    const overtime = applyAction('overtime', makeSprint(org, []), org, rng, TICK);
+    expect(overtime.effect?.moraleCost).toBe(5);
+    expect(overtime.effect?.hpCost).toBe(3);
+
+    const org2 = createOrgState('default', true);
+    org2.aiLiteracy = 98;
+    const pair = applyAction(
+      'pairReview',
+      makeSprint(org2, [makeTask(0), makeTask(1)]),
+      org2,
+      rng,
+      TICK,
+    );
+    expect(pair.effect?.literacyGain).toBe(2);
+  });
 });
 
 describe('介入で結果が変わる（DoD: 操作で結果が変わる）', () => {

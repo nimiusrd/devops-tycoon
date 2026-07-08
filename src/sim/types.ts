@@ -80,11 +80,41 @@ export interface CardInstance {
   level: number;
 }
 
+/** 時限モディファイアの種別（介入アクションが設定する）。 */
+export type InterventionModifierKind = 'andon' | 'overtime' | 'throttle';
+
+/** 介入アクション成功時の効果ペイロード（RI-49）。UI 演出・ログはこれを読む。 */
+export interface InterventionEffect {
+  actionId: ActionId;
+  /** 影響を受けたタスク ID 一覧。 */
+  affectedTaskIds?: number[];
+  /** Review で捌いた件数。 */
+  reviewedCount?: number;
+  /** 鎮火したタスク ID。 */
+  containedTaskId?: number;
+  /** 消費したシニアHP（追加コスト分）。 */
+  hpCost?: number;
+  /** 消費した士気。 */
+  moraleCost?: number;
+  /** 獲得した AI Literacy。 */
+  literacyGain?: number;
+  /** 消費した集中力（⚡）。 */
+  focusCost: number;
+  /** 連携ゲージ増加量（0..1）。 */
+  gaugeGain: number;
+  /** 連携ゲージ満タンによる集中力還元。 */
+  focusRefund?: number;
+  /** 時限モディファイア（アンドン / 残業 / スロットル）。 */
+  modifier?: { kind: InterventionModifierKind; untilTick: number };
+}
+
 /** 介入アクション発動の結果（SPEC 第6.1）。 */
 export interface InterventionOutcome {
   ok: boolean;
   /** 失敗理由（集中力不足 / クールダウン中 / 対象なし / 完了済み）。 */
   reason?: 'no-focus' | 'cooldown' | 'no-target' | 'complete';
+  /** 成功時のみ。各アクションの適用内容。 */
+  effect?: InterventionEffect;
 }
 
 /** スプリント中に有効な時限モディファイア（介入アクションが設定する）。 */

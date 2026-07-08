@@ -52,7 +52,7 @@
 | RI-46 | 確率的な結果のリスク幅プレビュー(what-if 試算) | 中 | 未着手 | RI-43 | 第22.3 / RI-13 / RI-14 |
 | RI-47 | ステータス増減の汎用フィードバック演出 | 高 | 完了 | — | 第18.2 |
 | RI-48 | HUD の情報設計強化(アイコン・良し悪しの方向・しきい値色) | 中 | 完了 | — | 第4.2 / 18 |
-| RI-49 | 介入結果ペイロードの拡張(フィードバック基盤) | 高 | 未着手 | — | 第6 / 18.2 |
+| RI-49 | 介入結果ペイロードの拡張(フィードバック基盤) | 高 | 完了 | — | 第6 / 18.2 |
 | RI-50 | 介入ごとの盤面リアクション演出 | 高 | 未着手 | RI-49 | 第6 / 18.2 / RI-10 |
 | RI-51 | 発動不能理由の可視化＋対象数ライブバッジ | 高 | 未着手 | — | 第4.3 / 6.1 |
 | RI-52 | スプリント内イベントティッカー(介入・出来事ログ) | 中 | 未着手 | RI-49 | 第6 / 18 |
@@ -271,20 +271,15 @@ RunBar 指標（予算・経営/顧客/チーム信頼）の前回スナップ�
 （good/watch/danger）・補助説明を純関数で導出。`Hud.tsx` はこのメタデータを共通カードとして描画し、
 `styles.css` で方向チップ・危険域色・説明行を整備した。Vitest: `tests/unit/status.test.ts`。
 
-#### RI-49 介入結果ペイロードの拡張(フィードバック基盤) — 優先度:高
+#### RI-49 介入結果ペイロードの拡張(フィードバック基盤) — 優先度:高 / 完了
 
-- **現状**: `applyAction`（`src/sim/actions.ts`）の戻り値 `InterventionOutcome`（`src/sim/types.ts`）は
-  `{ ok, reason }` のみ。各 `EFFECTS` が実際に何をしたか（割り込みレビューで捌いた PR、鎮火した火、
-  分割したタスク、消費した HP/士気、設定した時限効果の期限 tick）は関数内で失われる。UI 層も
-  `App.tsx` が `run.dispatch` をそのまま `SprintScreen`→`ActionBar` に渡すだけで、**戻り値を読む
-  コードが 1 箇所も無い**。
-- **やること**: `InterventionOutcome` に効果ペイロードを追加する（例: `affectedTaskIds` /
-  `reviewedCount` / `containedTaskId` / `hpCost` / `moraleCost` / `gaugeGain` /
-  `modifierUntilTick`）。各 `EFFECTS` が適用内容を組み立てて返し、`applyAction` が共通分
-  （コスト・ゲージ）を合成する。sim の挙動は不変（返す情報が増えるだけ）で、決定論を壊さない。
-  RI-35 のテーブル駆動テストにペイロード検証を追加する。
-- **位置づけ**: RI-50 / RI-52 / RI-54 の土台。**このグループの最初の 1 PR**。
-- **規模感**: 小。sim 層の契約拡張＋テストのみ。
+**完了**: `src/sim/types.ts` に `InterventionEffect` / `InterventionModifierKind` を追加し、
+`InterventionOutcome.effect` で成功時の効果ペイロードを返す契約に拡張。
+`src/sim/actions.ts` の各 `EFFECTS` が適用内容（対象タスク ID・捌いた件数・鎮火 ID・HP/士気コスト・
+時限モディファイア等）を組み立て、`applyAction` が `focusCost` / `gaugeGain` / `focusRefund` を合成。
+sim 挙動は不変（返す情報が増えるだけ）。Vitest: `tests/unit/actions.test.ts`（全 8 アクションの
+ペイロード検証・失敗時 effect 無し・ゲージ満タン還元）、`tests/unit/fire.test.ts`（`containedTaskId`）。
+UI 接続は RI-51 / RI-50 で行う。
 
 #### RI-50 介入ごとの盤面リアクション演出 — 優先度:高（依存: RI-49）
 

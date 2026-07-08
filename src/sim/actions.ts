@@ -9,7 +9,14 @@
 import { getAction } from '../data/actions';
 import type { Rng } from './rng';
 import { reviewOne } from './sprint';
-import type { ActionId, InterventionOutcome, SprintState, OrgState, Task } from './types';
+import type {
+  ActionId,
+  InterventionEffect,
+  InterventionOutcome,
+  SprintState,
+  OrgState,
+  Task,
+} from './types';
 
 /** アクション定義（データは `src/data/actions.ts`）。 */
 export interface ActionDef {
@@ -57,9 +64,21 @@ export const ANDON_TICKS = 30;
 export const THROTTLE_TICKS = 40;
 
 /** 連携ゲージが満タンになったとき回復する集中力。 */
-const GAUGE_FOCUS_REFUND = 3;
+export const GAUGE_FOCUS_REFUND = 3;
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+
+/** clamp 適用後の実際の消費量（0..100 境界）。 */
+function spendStat(current: number, amount: number): { next: number; spent: number } {
+  const next = clamp(current - amount, 0, 100);
+  return { next, spent: current - next };
+}
+
+/** clamp 適用後の実際の増加量（0..100 境界）。 */
+function gainStat(current: number, amount: number): { next: number; gained: number } {
+  const next = clamp(current + amount, 0, 100);
+  return { next, gained: next - current };
+}
 
 function tasksInLane(sprint: SprintState, lane: Task['lane']): Task[] {
   return sprint.tasks.filter((t) => t.lane === lane);
@@ -81,18 +100,28 @@ export function mostUrgentIncident(sprint: SprintState): Task | undefined {
   return urgent;
 }
 
+type EffectPartial = Omit<
+  InterventionEffect,
+  'actionId' | 'focusCost' | 'gaugeGain' | 'focusRefund'
+>;
+
 /**
- * 各アクションの効果。`true` を返すと発動成立（コスト消費）、
+ * 各アクションの効果。ペイロードを返すと発動成立（コスト消費）、
  * `false`（対象なし）ならコストを消費しない。
  */
-const EFFECTS: Record<ActionId, (s: SprintState, o: OrgState, r: Rng, tick: number) => boolean> = {
+const EFFECTS: Record<
+  ActionId,
+  (s: SprintState, o: OrgState, r: Rng, tick: number) => EffectPartial | false
+> = {
   // 割り込みレビュー: Review キュー先頭の数件を即処理してスイープする。
   interruptReview(sprint, org, rng) {
     const queue = tasksInLane(sprint, 'review').slice(0, INTERRUPT_REVIEW_COUNT);
     if (queue.length === 0) return false;
+    const affectedTaskIds = queue.map((t) => t.id);
     for (const task of queue) reviewOne(task, sprint, org, rng);
-    org.seniorHp = clamp(org.seniorHp - INTERRUPT_HP_COST, 0, 100);
-    return true;
+    const hp = spendStat(org.seniorHp, INTERRUPT_HP_COST);
+    org.seniorHp = hp.next;
+    return { reviewedCount: queue.length, affectedTaskIds, hpCost: hp.spent };
   },
 
   // PR分割: 巨大PRを割り、以降のレビューを通りやすくする（split 印）。
@@ -103,7 +132,7 @@ const EFFECTS: Record<ActionId, (s: SprintState, o: OrgState, r: Rng, tick: numb
     if (!target) return false;
     target.split = true;
     target.progress = Math.max(0, target.progress - SPLIT_PROGRESS_PENALTY);
-    return true;
+    return { affectedTaskIds: [target.id] };
   },
 
   // 緊急対応: 最も延焼が近い火を 1 件、タイマーが切れる前に鎮火して Review へ戻す。
@@ -111,13 +140,15 @@ const EFFECTS: Record<ActionId, (s: SprintState, o: OrgState, r: Rng, tick: numb
   firefight(sprint, org) {
     const fire = mostUrgentIncident(sprint);
     if (!fire) return false;
+    const containedTaskId = fire.id;
     fire.incident = false;
     delete fire.burnTicksLeft;
     fire.lane = 'review';
     fire.progress = 0;
     sprint.metrics.contained += 1;
-    org.seniorHp = clamp(org.seniorHp - FIREFIGHT_HP_COST, 0, 100);
-    return true;
+    const hp = spendStat(org.seniorHp, FIREFIGHT_HP_COST);
+    org.seniorHp = hp.next;
+    return { containedTaskId, hpCost: hp.spent };
   },
 
   // タスク差配: 着手中タスクを一気に前進させる（偏重で士気低下）。
@@ -128,46 +159,61 @@ const EFFECTS: Record<ActionId, (s: SprintState, o: OrgState, r: Rng, tick: numb
     if (!target) return false;
     target.progress = clamp(target.progress + ASSIGN_PROGRESS, 0, 0.999);
     target.split = true;
-    org.morale = clamp(org.morale - ASSIGN_MORALE_COST, 0, 100);
-    return true;
+    const morale = spendStat(org.morale, ASSIGN_MORALE_COST);
+    org.morale = morale.next;
+    return { affectedTaskIds: [target.id], moraleCost: morale.spent };
   },
 
   // AIスロットル: 一定時間 AI 流入を絞る（Review 渋滞を抑える）。
   aiThrottle(sprint, _org, _rng, tick) {
-    sprint.modifiers.throttleUntilTick = tick + THROTTLE_TICKS;
-    return true;
+    const untilTick = tick + THROTTLE_TICKS;
+    sprint.modifiers.throttleUntilTick = untilTick;
+    return { modifier: { kind: 'throttle', untilTick } };
   },
 
   // ペアレビュー: 詰まった PR を処理しつつ AI Literacy を底上げ。
   pairReview(sprint, org, rng) {
     const queue = tasksInLane(sprint, 'review').slice(0, PAIR_REVIEW_COUNT);
+    const affectedTaskIds = queue.map((t) => t.id);
     for (const task of queue) reviewOne(task, sprint, org, rng);
-    org.aiLiteracy = clamp(org.aiLiteracy + PAIR_LITERACY_GAIN, 0, 100);
-    return true;
+    const literacy = gainStat(org.aiLiteracy, PAIR_LITERACY_GAIN);
+    org.aiLiteracy = literacy.next;
+    return { reviewedCount: queue.length, affectedTaskIds, literacyGain: literacy.gained };
   },
 
   // 残業号令: 一定時間スループットをブースト（Morale・HP を削る）。
   overtime(sprint, org, _rng, tick) {
-    sprint.modifiers.overtimeUntilTick = tick + OVERTIME_TICKS;
-    org.morale = clamp(org.morale - OVERTIME_MORALE_COST, 0, 100);
-    org.seniorHp = clamp(org.seniorHp - OVERTIME_HP_COST, 0, 100);
-    return true;
+    const untilTick = tick + OVERTIME_TICKS;
+    sprint.modifiers.overtimeUntilTick = untilTick;
+    const morale = spendStat(org.morale, OVERTIME_MORALE_COST);
+    const hp = spendStat(org.seniorHp, OVERTIME_HP_COST);
+    org.morale = morale.next;
+    org.seniorHp = hp.next;
+    return {
+      modifier: { kind: 'overtime', untilTick },
+      hpCost: hp.spent,
+      moraleCost: morale.spent,
+    };
   },
 
   // アンドン: 一定時間 Backlog からの流入を止め、キューを捌き切る。
   andon(sprint, _org, _rng, tick) {
-    sprint.modifiers.andonUntilTick = tick + ANDON_TICKS;
-    return true;
+    const untilTick = tick + ANDON_TICKS;
+    sprint.modifiers.andonUntilTick = untilTick;
+    return { modifier: { kind: 'andon', untilTick } };
   },
 };
 
 /** 連携ゲージを加算し、満タンになったら集中力を一部回復する（第6.2）。 */
-function addComboGauge(sprint: SprintState, gain: number): void {
+function addComboGauge(sprint: SprintState, gain: number): number {
   sprint.comboGauge += gain;
   if (sprint.comboGauge >= 1) {
     sprint.comboGauge -= 1;
+    const before = sprint.focus;
     sprint.focus = Math.min(sprint.config.focusMax, sprint.focus + GAUGE_FOCUS_REFUND);
+    return sprint.focus - before;
   }
+  return 0;
 }
 
 /**
@@ -187,14 +233,23 @@ export function applyAction(
   if ((sprint.cooldowns[id] ?? 0) > 0) return { ok: false, reason: 'cooldown' };
   if (sprint.focus < def.cost) return { ok: false, reason: 'no-focus' };
 
-  const applied = EFFECTS[id](sprint, org, rng, tick);
-  if (!applied) return { ok: false, reason: 'no-target' };
+  const partial = EFFECTS[id](sprint, org, rng, tick);
+  if (!partial) return { ok: false, reason: 'no-target' };
 
   sprint.focus -= def.cost;
   sprint.cooldowns[id] = def.cooldownTicks;
   sprint.metrics.interventionsUsed += 1;
   sprint.metrics.focusSpent += def.cost;
   sprint.metrics.actionCounts[id] = (sprint.metrics.actionCounts[id] ?? 0) + 1;
-  addComboGauge(sprint, def.gauge);
-  return { ok: true };
+  const focusRefund = addComboGauge(sprint, def.gauge);
+
+  const effect: InterventionEffect = {
+    actionId: id,
+    focusCost: def.cost,
+    gaugeGain: def.gauge,
+    ...partial,
+    ...(focusRefund > 0 ? { focusRefund } : {}),
+  };
+
+  return { ok: true, effect };
 }

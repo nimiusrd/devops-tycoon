@@ -1,11 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { ACTION_DEFS } from '../../src/data/actions';
-import { ANDON_TICKS, applyAction, OVERTIME_TICKS, THROTTLE_TICKS } from '../../src/sim/actions';
+import {
+  ANDON_TICKS,
+  applyAction,
+  ASSIGN_MORALE_COST,
+  FIREFIGHT_HP_COST,
+  INTERRUPT_HP_COST,
+  OVERTIME_HP_COST,
+  OVERTIME_MORALE_COST,
+  OVERTIME_TICKS,
+  PAIR_LITERACY_GAIN,
+  PAIR_REVIEW_COUNT,
+  THROTTLE_TICKS,
+} from '../../src/sim/actions';
 import { BURN_TICKS } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import { createSprint, resolveSprintConfig } from '../../src/sim/sprint';
 import { createEngine, type Engine } from '../../src/sim/engine';
-import type { ActionId, OrgState, SimState, SprintState, Task } from '../../src/sim/types';
+import type {
+  ActionId,
+  InterventionEffect,
+  OrgState,
+  SimState,
+  SprintState,
+  Task,
+} from '../../src/sim/types';
 
 const TICK = 42;
 const rng = () => 0.99;
@@ -53,6 +72,8 @@ interface ActionFixture {
   tasks: Task[];
   /** 副作用検証用。apply 前に呼ばれる。 */
   before?: (ctx: { sprint: SprintState; org: OrgState }) => void;
+  /** 期待する効果ペイロード（RI-49）。 */
+  expectedEffect: (def: { cost: number; gauge: number }) => InterventionEffect;
   /** 副作用検証。apply 後に呼ばれる。 */
   assertEffect: (ctx: {
     sprint: SprintState;
@@ -64,6 +85,14 @@ interface ActionFixture {
 const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
   interruptReview: {
     tasks: Array.from({ length: 5 }, (_, i) => makeTask(i)),
+    expectedEffect: (def) => ({
+      actionId: 'interruptReview',
+      reviewedCount: 4,
+      affectedTaskIds: [0, 1, 2, 3],
+      hpCost: INTERRUPT_HP_COST,
+      focusCost: def.cost,
+      gaugeGain: def.gauge,
+    }),
     assertEffect: ({ sprint, before }) => {
       const beforeReview = before.sprint.tasks.filter((t) => t.lane === 'review').length;
       const afterReview = sprint.tasks.filter((t) => t.lane === 'review').length;
@@ -72,6 +101,12 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
   },
   splitPr: {
     tasks: [makeTask(0, { kind: 'complex', lane: 'coding', progress: 0.5 })],
+    expectedEffect: (def) => ({
+      actionId: 'splitPr',
+      affectedTaskIds: [0],
+      focusCost: def.cost,
+      gaugeGain: def.gauge,
+    }),
     assertEffect: ({ sprint, before }) => {
       const target = sprint.tasks[0];
       expect(target.split).toBe(true);
@@ -80,6 +115,13 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
   },
   firefight: {
     tasks: [burningTask(0), makeTask(1)],
+    expectedEffect: (def) => ({
+      actionId: 'firefight',
+      containedTaskId: 0,
+      hpCost: FIREFIGHT_HP_COST,
+      focusCost: def.cost,
+      gaugeGain: def.gauge,
+    }),
     assertEffect: ({ sprint }) => {
       const t = sprint.tasks[0];
       expect(t.incident).toBe(false);
@@ -90,6 +132,13 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
   },
   assignTask: {
     tasks: [makeTask(0, { lane: 'coding', progress: 0.2 })],
+    expectedEffect: (def) => ({
+      actionId: 'assignTask',
+      affectedTaskIds: [0],
+      moraleCost: ASSIGN_MORALE_COST,
+      focusCost: def.cost,
+      gaugeGain: def.gauge,
+    }),
     assertEffect: ({ sprint, org, before }) => {
       expect(sprint.tasks[0].progress).toBeGreaterThan(before.sprint.tasks[0].progress);
       expect(sprint.tasks[0].split).toBe(true);
@@ -98,12 +147,26 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
   },
   aiThrottle: {
     tasks: [],
+    expectedEffect: (def) => ({
+      actionId: 'aiThrottle',
+      modifier: { kind: 'throttle', untilTick: TICK + THROTTLE_TICKS },
+      focusCost: def.cost,
+      gaugeGain: def.gauge,
+    }),
     assertEffect: ({ sprint }) => {
       expect(sprint.modifiers.throttleUntilTick).toBe(TICK + THROTTLE_TICKS);
     },
   },
   pairReview: {
     tasks: [makeTask(0), makeTask(1), makeTask(2)],
+    expectedEffect: (def) => ({
+      actionId: 'pairReview',
+      reviewedCount: PAIR_REVIEW_COUNT,
+      affectedTaskIds: [0, 1],
+      literacyGain: PAIR_LITERACY_GAIN,
+      focusCost: def.cost,
+      gaugeGain: def.gauge,
+    }),
     assertEffect: ({ sprint, org, before }) => {
       const beforeReview = before.sprint.tasks.filter((t) => t.lane === 'review').length;
       const afterReview = sprint.tasks.filter((t) => t.lane === 'review').length;
@@ -113,6 +176,14 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
   },
   overtime: {
     tasks: [],
+    expectedEffect: (def) => ({
+      actionId: 'overtime',
+      modifier: { kind: 'overtime', untilTick: TICK + OVERTIME_TICKS },
+      hpCost: OVERTIME_HP_COST,
+      moraleCost: OVERTIME_MORALE_COST,
+      focusCost: def.cost,
+      gaugeGain: def.gauge,
+    }),
     assertEffect: ({ sprint, org, before }) => {
       expect(sprint.modifiers.overtimeUntilTick).toBe(TICK + OVERTIME_TICKS);
       expect(org.morale).toBeLessThan(before.org.morale);
@@ -121,6 +192,12 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
   },
   andon: {
     tasks: [],
+    expectedEffect: (def) => ({
+      actionId: 'andon',
+      modifier: { kind: 'andon', untilTick: TICK + ANDON_TICKS },
+      focusCost: def.cost,
+      gaugeGain: def.gauge,
+    }),
     assertEffect: ({ sprint }) => {
       expect(sprint.modifiers.andonUntilTick).toBe(TICK + ANDON_TICKS);
     },
@@ -154,7 +231,8 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
 
       const outcome = applyAction(id, sprint, org, rng, TICK);
 
-      expect(outcome).toEqual({ ok: true });
+      expect(outcome.ok).toBe(true);
+      expect(outcome.effect).toEqual(fixture.expectedEffect(def));
       expect(sprint.focus).toBe(focus0 - def.cost);
       expect(sprint.cooldowns[id]).toBe(def.cooldownTicks);
       expect(sprint.metrics.interventionsUsed).toBe(interventions0 + 1);
@@ -174,6 +252,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const outcome = applyAction(id, sprint, org, rng, TICK);
 
       expect(outcome).toEqual({ ok: false, reason: 'no-target' });
+      expect(outcome.effect).toBeUndefined();
       expect(sprint.focus).toBe(focus0);
       expect(sprint.metrics.interventionsUsed).toBe(0);
     });
@@ -187,6 +266,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const retry = applyAction('interruptReview', sprint, org, rng, TICK + 1);
 
       expect(retry).toEqual({ ok: false, reason: 'cooldown' });
+      expect(retry.effect).toBeUndefined();
       expect(sprint.focus).toBe(focusMid);
     });
 
@@ -198,6 +278,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const outcome = applyAction('splitPr', sprint, org, rng, TICK);
 
       expect(outcome).toEqual({ ok: false, reason: 'no-focus' });
+      expect(outcome.effect).toBeUndefined();
       expect(sprint.focus).toBe(1);
     });
 
@@ -209,7 +290,57 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const outcome = applyAction('andon', sprint, org, rng, TICK);
 
       expect(outcome).toEqual({ ok: false, reason: 'complete' });
+      expect(outcome.effect).toBeUndefined();
     });
+  });
+});
+
+describe('介入アクション: 効果ペイロード（RI-49）', () => {
+  it('連携ゲージ満タン時は focusRefund を返す', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [burningTask(0)]);
+    sprint.comboGauge = 0.9;
+    sprint.focus = 5;
+
+    const outcome = applyAction('firefight', sprint, org, rng, TICK);
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.effect?.focusRefund).toBe(3);
+    expect(sprint.focus).toBe(7);
+  });
+
+  it('集中力上限付近では focusRefund は clamp 後の実増分を返す', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [burningTask(0)]);
+    sprint.comboGauge = 0.9;
+    sprint.focus = sprint.config.focusMax;
+
+    const outcome = applyAction('firefight', sprint, org, rng, TICK);
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.effect?.focusRefund).toBe(1);
+    expect(sprint.focus).toBe(sprint.config.focusMax);
+  });
+
+  it('ステータス境界では hpCost / moraleCost / literacyGain は実際の差分を返す', () => {
+    const org = createOrgState('default', true);
+    org.morale = 5;
+    org.seniorHp = 3;
+
+    const overtime = applyAction('overtime', makeSprint(org, []), org, rng, TICK);
+    expect(overtime.effect?.moraleCost).toBe(5);
+    expect(overtime.effect?.hpCost).toBe(3);
+
+    const org2 = createOrgState('default', true);
+    org2.aiLiteracy = 98;
+    const pair = applyAction(
+      'pairReview',
+      makeSprint(org2, [makeTask(0), makeTask(1)]),
+      org2,
+      rng,
+      TICK,
+    );
+    expect(pair.effect?.literacyGain).toBe(2);
   });
 });
 

@@ -124,6 +124,28 @@ describe('interventionEffects (RI-50)', () => {
     }
   });
 
+  it('reviewSweep は post-action lane に応じて Done / Rework / Incident フローを選ぶ', () => {
+    const prev = [makeTask(0), makeTask(1), makeTask(2)];
+    const next: Task[] = [
+      { ...prev[0], lane: 'done' },
+      { ...prev[1], lane: 'rework' },
+      { ...prev[2], lane: 'rework', incident: true, burnTicksLeft: BURN_TICKS },
+    ];
+    const reactions = [{ kind: 'reviewSweep' as const, taskIds: [0, 1, 2] }];
+    const positioned = positionInterventionReactions(reactions, next, prev);
+    expect(positioned).toHaveLength(3);
+    expect(positioned.map((p) => (p.kind === 'reviewSweep' ? p.outcome : null))).toEqual([
+      'done',
+      'rework',
+      'incident',
+    ]);
+    const doneSweep = positioned[0];
+    const reworkSweep = positioned[1];
+    if (doneSweep.kind === 'reviewSweep' && reworkSweep.kind === 'reviewSweep') {
+      expect(doneSweep.toX).not.toBe(reworkSweep.toX);
+    }
+  });
+
   it('deriveActiveBoardAuras は sprintTick から残り tick を導出する', () => {
     const auras = deriveActiveBoardAuras(
       { throttleUntilTick: 70, overtimeUntilTick: 0, andonUntilTick: 55 },

@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { GameHandle } from '../game';
 import type { MetaState } from '../state/meta';
-import type { ActionId, InterventionOutcome } from '../sim/types';
+import type { ActionId, InterventionOutcome, SprintState } from '../sim/types';
 import type { DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
@@ -26,6 +26,8 @@ export interface UseRun {
   beginSetupSprint: () => void;
   resolveBeat: (choiceIndex?: number) => void;
   dispatch: (id: ActionId) => InterventionOutcome;
+  /** dispatch 直後のスプリント快照（盤面演出用）。 */
+  getSprintSnapshot: () => SprintState | null;
   acknowledgeResult: () => void;
   chooseCard: (defId: string) => void;
   skipDraft: () => void;
@@ -81,6 +83,7 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const dispatch = useCallback((id: ActionId) => game.dispatch(id), [game]);
+  const getSprintSnapshot = useCallback(() => game.getState().sprint, [game]);
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
   const chooseCard = useCallback((defId: string) => void game.chooseCard(defId), [game]);
   const skipDraft = useCallback(() => void game.skipDraft(), [game]);
@@ -129,6 +132,7 @@ export function useRun(game: GameHandle): UseRun {
     beginSetupSprint,
     resolveBeat,
     dispatch,
+    getSprintSnapshot,
     acknowledgeResult,
     chooseCard,
     skipDraft,

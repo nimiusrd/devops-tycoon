@@ -9,7 +9,7 @@ import { getBoss } from '../data/bosses';
 import { Board } from '../render/Board';
 import { reviewQueueLength } from '../render/status';
 import { BURN_TICKS } from '../sim/model';
-import type { ActionId, InterventionOutcome } from '../sim/types';
+import type { ActionId, InterventionOutcome, SprintState } from '../sim/types';
 import type { RunState } from '../sim/run/types';
 import type { InterventionTrigger } from './InterventionEffects';
 import { ActionBar } from './ActionBar';
@@ -20,9 +20,10 @@ import { PointPops } from './PointPops';
 export interface SprintScreenProps {
   state: RunState;
   onDispatch: (id: ActionId) => InterventionOutcome;
+  getSprintSnapshot: () => SprintState | null;
 }
 
-export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
+export function SprintScreen({ state, onDispatch, getSprintSnapshot }: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
   const [suppressExtinguishTaskIds, setSuppressExtinguishTaskIds] = useState<ReadonlySet<number>>(
@@ -36,10 +37,12 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
       const prevTasks = sprint.tasks;
       const outcome = onDispatch(id);
       if (outcome.ok && outcome.effect) {
+        const nextSprint = getSprintSnapshot();
         triggerKey.current += 1;
         setInterventionTrigger({
           effect: outcome.effect,
           prevTasks: [...prevTasks],
+          nextTasks: nextSprint ? [...nextSprint.tasks] : [...prevTasks],
           currentTick: state.sprintTick,
           key: triggerKey.current,
         });
@@ -50,7 +53,7 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
       }
       return outcome;
     },
-    [onDispatch, sprint, state.sprintTick],
+    [onDispatch, getSprintSnapshot, sprint, state.sprintTick],
   );
 
   if (!sprint) return null;

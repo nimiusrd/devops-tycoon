@@ -26,21 +26,18 @@ const AURA_PULSE_MS = 600;
 export interface InterventionTrigger {
   effect: InterventionEffect;
   prevTasks: readonly Task[];
+  /** dispatch 直後のタスク快照（React state 更新前に outcome ルートを決める）。 */
+  nextTasks: readonly Task[];
   currentTick: number;
   key: number;
 }
 
 export interface InterventionEffectsProps {
   trigger: InterventionTrigger | null;
-  tasks: readonly Task[];
   onFirefightTaskId?: (taskId: number) => void;
 }
 
-export function InterventionEffects({
-  trigger,
-  tasks,
-  onFirefightTaskId,
-}: InterventionEffectsProps) {
+export function InterventionEffects({ trigger, onFirefightTaskId }: InterventionEffectsProps) {
   const nextKey = useRef(0);
   const removalTimers = useRef<Map<number, number>>(new Map());
   const lastTriggerKey = useRef<number | null>(null);
@@ -60,7 +57,7 @@ export function InterventionEffects({
 
     const positioned = planPositionedInterventionReactions(
       trigger.effect,
-      tasks,
+      trigger.nextTasks,
       trigger.prevTasks,
       trigger.currentTick,
     );
@@ -96,7 +93,7 @@ export function InterventionEffects({
       }, duration + 80);
       removalTimers.current.set(effect.key, timer);
     }
-  }, [trigger, tasks, onFirefightTaskId]);
+  }, [trigger, onFirefightTaskId]);
 
   return (
     <div className="intervention-effects" aria-hidden="true">
@@ -144,8 +141,8 @@ function ReviewSweepParticle({
 }) {
   return (
     <motion.span
-      className="intervention-sweep-particle"
-      data-testid="intervention-effect-sweep"
+      className={`intervention-sweep-particle sweep-${effect.outcome}`}
+      data-testid={`intervention-effect-sweep-${effect.outcome}`}
       style={{
         left: interventionPct(effect.fromX, 1404),
         top: interventionPct(effect.fromY, 573),

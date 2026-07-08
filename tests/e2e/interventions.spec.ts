@@ -70,7 +70,7 @@ test('割り込みレビュー成功時に盤面スイープ演出が出る（RI
   });
 
   await page.getByTestId('action-interruptReview').click();
-  await expect(page.getByTestId('intervention-effect-sweep').first()).toBeVisible({
+  await expect(page.locator('[data-testid^="intervention-effect-sweep-"]').first()).toBeVisible({
     timeout: 3000,
   });
 });

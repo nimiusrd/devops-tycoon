@@ -603,6 +603,18 @@ body {
     0 0 24px #3fb6ff88;
   z-index: 15;
 }
+.intervention-sweep-particle.sweep-rework {
+  background: radial-gradient(circle at 35% 35%, #fff8e0, #ffb347 45%, #ff9f43 85%);
+  box-shadow:
+    0 0 14px #ffb347cc,
+    0 0 24px #ff9f4388;
+}
+.intervention-sweep-particle.sweep-incident {
+  background: radial-gradient(circle at 35% 35%, #fff8c0, #ff7a2f 45%, #c02000 85%);
+  box-shadow:
+    0 0 14px #ff7a2fdd,
+    0 0 24px #ff450088;
+}
 .intervention-split-badge {
   position: absolute;
   transform: translate(-50%, -50%);

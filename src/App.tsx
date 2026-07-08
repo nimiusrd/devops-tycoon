@@ -177,7 +177,13 @@ export default function App({ game }: AppProps) {
           onBegin={run.beginSetupSprint}
         />
       )}
-      {showSprint && <SprintScreen state={state} onDispatch={run.dispatch} />}
+      {showSprint && (
+        <SprintScreen
+          state={state}
+          onDispatch={run.dispatch}
+          getSprintSnapshot={run.getSprintSnapshot}
+        />
+      )}
 
       {phase === 'beat' && <BeatScreen state={state} onResolve={run.resolveBeat} />}
       {phase === 'shop' && (

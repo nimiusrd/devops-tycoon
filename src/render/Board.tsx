@@ -302,7 +302,7 @@ export function Board({
         />
       ))}
 
-      {interventionTrigger && <InterventionEffects trigger={interventionTrigger} tasks={tasks} />}
+      {interventionTrigger && <InterventionEffects trigger={interventionTrigger} />}
     </div>
   );
 }

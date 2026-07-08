@@ -32,6 +32,8 @@ export type PositionedInterventionReaction =
       toX: number;
       toY: number;
       staggerIndex: number;
+      /** reviewOne の結果レーン（演出ルート・色分け用）。 */
+      outcome: 'done' | 'rework' | 'incident';
     }
   | { kind: 'split'; taskId: number; x: number; y: number }
   | { kind: 'firefight'; taskId: number; x: number; y: number }
@@ -70,15 +72,25 @@ function dotPosition(tasks: readonly Task[], taskId: number): { x: number; y: nu
   return { x: station.overflowX, y: station.overflowY };
 }
 
-function reviewToDoneSweep(
+function reviewOutcomeSweep(
   taskId: number,
   prevTasks: readonly Task[],
+  nextTasks: readonly Task[],
   staggerIndex: number,
 ): PositionedInterventionReaction | null {
-  const flow = findBoardFlow('review', 'done');
+  const nextTask = nextTasks.find((t) => t.id === taskId);
+  if (!nextTask || nextTask.lane === 'review') return null;
+
+  const toLane = nextTask.lane === 'done' ? 'done' : nextTask.lane === 'rework' ? 'rework' : null;
+  if (!toLane) return null;
+
+  const flow = findBoardFlow('review', toLane);
   if (!flow) return null;
   const from = dotPosition(prevTasks, taskId) ?? flowPointAt(flow, 0);
   const to = flowPointAt(flow, 1);
+  const outcome: 'done' | 'rework' | 'incident' =
+    nextTask.lane === 'rework' && nextTask.incident ? 'incident' : toLane;
+
   return {
     kind: 'reviewSweep',
     taskId,
@@ -87,6 +99,7 @@ function reviewToDoneSweep(
     toX: to.x,
     toY: to.y,
     staggerIndex,
+    outcome,
   };
 }
 
@@ -144,7 +157,7 @@ export function positionInterventionReactions(
     switch (reaction.kind) {
       case 'reviewSweep':
         return reaction.taskIds.flatMap((taskId, staggerIndex) => {
-          const positioned = reviewToDoneSweep(taskId, prevTasks, staggerIndex);
+          const positioned = reviewOutcomeSweep(taskId, prevTasks, tasks, staggerIndex);
           return positioned ? [positioned] : [];
         });
       case 'split': {

@@ -63,3 +63,41 @@ test('スプリント盤面に集中力と介入アクションバーが並ぶ',
     await expect(page.getByTestId(`action-${id}`)).toBeVisible();
   }
 });
+
+test('Review が空のとき割り込みレビューは無効＋理由表示（RI-51）', async ({ page }) => {
+  await page.goto('/?seed=ri51-empty');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'ri51-empty');
+    g.beginSetupSprint();
+  });
+
+  const btn = page.getByTestId('action-interruptReview');
+  await expect(btn).toBeDisabled();
+  await expect(btn).toHaveAttribute('data-block-reason', 'no-target');
+  await expect(page.getByTestId('action-reason-interruptReview')).toContainText('Review が空');
+});
+
+test('Review に対象があるとき対象数バッジを表示する（RI-51）', async ({ page }) => {
+  await page.goto('/?seed=ops');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'ops');
+    g.beginSetupSprint();
+    let guard = 0;
+    while (guard < 4000) {
+      const s = g.step(100);
+      if (!s.sprint || s.sprint.complete) break;
+      const q = s.sprint.tasks.filter((t) => t.lane === 'review').length;
+      if (q >= 4) return;
+      guard += 1;
+    }
+  });
+
+  await expect(page.getByTestId('action-badge-interruptReview')).toContainText('PR');
+  await expect(page.getByTestId('action-interruptReview')).toBeEnabled();
+});

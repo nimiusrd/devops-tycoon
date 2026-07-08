@@ -1314,6 +1314,104 @@ body {
 .action.heavy {
   background: #3a2f55;
 }
+.action.notarget {
+  border-color: #ff9f4355;
+  opacity: 0.72;
+}
+.action.oncooldown {
+  opacity: 0.62;
+}
+.action-target-badge {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: #1b1438cc;
+  color: var(--sky);
+  border: 1px solid #7bdcff55;
+  line-height: 1.1;
+  z-index: 1;
+}
+.action.ready .action-target-badge {
+  top: 16px;
+}
+.action-block-reason {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #ffb07a;
+  line-height: 1.15;
+  max-width: 100%;
+  white-space: normal;
+}
+.action.shake {
+  animation: action-shake 0.35s ease;
+}
+@keyframes action-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+.actionbar {
+  position: relative;
+}
+.action-toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #2a1f4ecc;
+  border: 2px solid #ff9f4366;
+  color: #ffd8b0;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px #0006;
+  z-index: 20;
+  pointer-events: none;
+}
+.focus-energy {
+  position: relative;
+}
+.focus-feedback-pops {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.focus-feedback-pop {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px #0008;
+}
+.focus-feedback-cost {
+  color: #ff8a7a;
+}
+.focus-feedback-refund {
+  color: #9ff0bd;
+}
+.combo-gauge.flash i {
+  background: linear-gradient(90deg, #ffd45c, #fff0a0);
+  box-shadow: 0 0 8px #ffd45c88;
+}
 
 /* デッキ / 手札（第7章） */
 .deckbar {

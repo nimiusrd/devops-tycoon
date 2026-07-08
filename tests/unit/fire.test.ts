@@ -67,6 +67,7 @@ describe('炎上タイマー: 緊急対応による鎮火（第6.3）', () => {
     sprint.metrics.combo = 6;
     const outcome = applyAction('firefight', sprint, org, () => 0.99, 0);
     expect(outcome.ok).toBe(true);
+    expect(outcome.effect?.containedTaskId).toBe(0);
     const t = sprint.tasks[0];
     expect(t.incident).toBe(false);
     expect(t.burnTicksLeft).toBeUndefined();

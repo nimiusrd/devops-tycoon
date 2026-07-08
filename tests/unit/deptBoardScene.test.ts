@@ -10,11 +10,13 @@ import type { DepartmentState, Team, TeamHealth } from '../../src/sim/orgscale/t
 import { aggregateDepartment } from '../../src/sim/orgscale/aggregate';
 import {
   DEPT_VIEW,
+  flowEndpoints,
   isInDeptView,
   planChainedIndices,
   planDeptBoardScene,
   teamDesignPosition,
   teamLaneCounts,
+  teamLayoutScale,
 } from '../../src/render/deptBoardScene';
 
 function orgScaleInput(seed: string, overrides: Partial<OrgScaleInput> = {}): OrgScaleInput {
@@ -152,7 +154,25 @@ describe('teamDesignPosition', () => {
     expect(new Set(ys).size).toBe(1);
     const xs = positions.map((p) => p.x).sort((a, b) => a - b);
     for (let i = 1; i < xs.length; i++) {
-      expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(180);
+      expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(260);
     }
+  });
+
+  it('4 チームの依存フローは左から右へ向く', () => {
+    const dept = deptWithTeams([0, 1, 2, 3].map((i) => team(`t${i}`, 'healthy')));
+    const scene = planDeptBoardScene(dept);
+    for (const flow of scene.flows) {
+      const { sx, ex } = flowEndpoints(flow.d);
+      expect(sx).toBeLessThan(ex);
+    }
+  });
+
+  it('5 チームは縮小スケールと 2 段配置を使う', () => {
+    const dept = deptWithTeams([0, 1, 2, 3, 4].map((i) => team(`t${i}`, 'healthy')));
+    const scene = planDeptBoardScene(dept);
+    expect(teamLayoutScale(5)).toBeLessThan(1);
+    expect(scene.teams.every((t) => t.scale === teamLayoutScale(5))).toBe(true);
+    const ys = scene.teams.map((t) => t.y);
+    expect(new Set(ys).size).toBeGreaterThanOrEqual(2);
   });
 });

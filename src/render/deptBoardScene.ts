@@ -22,12 +22,12 @@ const TEAM_LAYOUTS_3: readonly { x: number; y: number }[] = [
   { x: 1104, y: 264 },
 ];
 
-/** 4 チーム部門（product 等）は縦 2 段だと 220px 高のミニ盤面が重なるため横一列。 */
+/** 4 チーム部門（product 等）は横一列。中心間隔をフロー矢印が逆向きにならない幅に確保。 */
 const TEAM_LAYOUTS_4: readonly { x: number; y: number }[] = [
-  { x: 260, y: 318 },
-  { x: 520, y: 318 },
-  { x: 840, y: 318 },
-  { x: 1144, y: 318 },
+  { x: 230, y: 318 },
+  { x: 560, y: 318 },
+  { x: 890, y: 318 },
+  { x: 1174, y: 318 },
 ];
 
 /** ミニパイプラインの設計幅（CSS % 換算用）。 */
@@ -67,6 +67,8 @@ export interface DeptTeamPlan {
   tint: string;
   mood: DeptTeamMood;
   chained: boolean;
+  /** チーム数が多いときミニ盤面を縮小（1 = 既定幅）。 */
+  scale: number;
   lanes: DeptLanePlan[];
   banner: {
     x: number;
@@ -140,6 +142,19 @@ function teamLaneAnchors(): DeptLanePlan[] {
   ];
 }
 
+/** チーム数に応じたミニ盤面縮小率。 */
+export function teamLayoutScale(teamCount: number): number {
+  if (teamCount <= 4) return 1;
+  if (teamCount === 5) return 0.72;
+  if (teamCount === 6) return 0.65;
+  return Math.max(0.52, 0.78 - teamCount * 0.04);
+}
+
+/** フロー矢印の水平アンカー offset（チーム間距離に応じて調整）。 */
+export function flowAnchorOffset(dx: number): number {
+  const gap = Math.abs(dx);
+  return Math.min(140, Math.max(36, gap * 0.32));
+}
 /** 連鎖炎上: 炎上チームの下流（配列の次チーム）を延焼リスクとして印す。 */
 export function planChainedIndices(teams: readonly Team[]): Set<number> {
   const fireIndices = teams
@@ -159,24 +174,22 @@ export function teamDesignPosition(teamIndex: number, teamCount: number): { x: n
     return teamIndex === 0 ? { x: 450, y: 320 } : { x: 954, y: 320 };
   }
 
-  // 5+ は横優先の格子。行間はミニ盤面高さ以上を確保する。
-  const cols = Math.min(teamCount, 4);
-  const rows = Math.max(1, Math.ceil(teamCount / cols));
-  const xMin = 240;
-  const xMax = 1164;
-  const halfH = TEAM_MINI_H / 2;
-  const topMargin = BANNER_ABOVE + 36;
-  const bottomMargin = halfH + 20;
-  const ySpan = DEPT_VIEW.h - topMargin - bottomMargin;
-  const minRowGap = TEAM_MINI_H + 12;
-  const neededHeight = (rows - 1) * minRowGap;
-  const yStart = topMargin + halfH;
-  const yEnd = neededHeight <= ySpan ? yStart + neededHeight : yStart + ySpan;
-  const col = teamIndex % cols;
-  const row = Math.floor(teamIndex / cols);
-  const x = xMin + ((col + 0.5) / cols) * (xMax - xMin);
-  const y =
-    rows === 1 ? yStart + ySpan / 2 : yStart + (row / Math.max(1, rows - 1)) * (yEnd - yStart);
+  return layoutManyTeams(teamIndex, teamCount);
+}
+
+/** 5+ チームは 2 段配置＋縮小スケールで重なりを避ける。 */
+function layoutManyTeams(teamIndex: number, teamCount: number): { x: number; y: number } {
+  const topCount = Math.ceil(teamCount / 2);
+  const row = teamIndex < topCount ? 0 : 1;
+  const col = row === 0 ? teamIndex : teamIndex - topCount;
+  const colsInRow = row === 0 ? topCount : teamCount - topCount;
+  const xMin = 220;
+  const xMax = 1184;
+  const scale = teamLayoutScale(teamCount);
+  const yTop = 268;
+  const yBot = Math.min(440, DEPT_VIEW.h - (TEAM_MINI_H * scale) / 2 - 28);
+  const x = colsInRow === 1 ? 702 : xMin + ((col + 0.5) / colsInRow) * (xMax - xMin);
+  const y = row === 0 ? yTop : yBot;
   return clampTeamCenter(x, y);
 }
 
@@ -192,13 +205,23 @@ function clampTeamCenter(x: number, y: number): { x: number; y: number } {
 }
 
 function flowPathBetween(from: { x: number; y: number }, to: { x: number; y: number }): string {
-  const sx = from.x + 150;
-  const sy = from.y + 10;
-  const ex = to.x - 150;
-  const ey = to.y - 10;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const offset = flowAnchorOffset(dx);
+  const sx = from.x + (dx >= 0 ? offset : -offset);
+  const ex = to.x - (dx >= 0 ? offset : -offset);
+  const sy = from.y + dy * 0.08;
+  const ey = to.y - dy * 0.08;
   const cx = (sx + ex) / 2;
-  const cy = Math.min(sy, ey) - 40;
+  const cy = Math.min(sy, ey) - 40 - Math.abs(dy) * 0.12;
   return `M${sx},${sy} Q${cx},${cy} ${ex},${ey}`;
+}
+
+/** フローパスの始点・終点 X（テスト用）。 */
+export function flowEndpoints(d: string): { sx: number; ex: number } {
+  const start = d.match(/^M([\d.]+),/);
+  const end = d.match(/([\d.]+),([\d.]+)$/);
+  return { sx: Number(start?.[1] ?? 0), ex: Number(end?.[1] ?? 0) };
 }
 
 function planFlows(
@@ -271,7 +294,9 @@ function plateGlow(dept: DepartmentState): DeptPlatePlan['glow'] {
 /** 部署ビューのシーン計画を組み立てる。 */
 export function planDeptBoardScene(dept: DepartmentState): DeptBoardScene {
   const chained = planChainedIndices(dept.teams);
-  const positions = dept.teams.map((_, i) => teamDesignPosition(i, dept.teams.length));
+  const teamCount = dept.teams.length;
+  const scale = teamLayoutScale(teamCount);
+  const positions = dept.teams.map((_, i) => teamDesignPosition(i, teamCount));
 
   const teams: DeptTeamPlan[] = dept.teams.map((team, i) => {
     const pos = positions[i];
@@ -291,6 +316,7 @@ export function planDeptBoardScene(dept: DepartmentState): DeptBoardScene {
       tint: HEALTH_COLOR[team.health],
       mood: islandMood(team),
       chained: chained.has(i),
+      scale,
       lanes,
       banner: {
         x: pos.x,

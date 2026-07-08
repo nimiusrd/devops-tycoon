@@ -73,7 +73,7 @@ export function DeptTeamMini({ plan, deptColor }: { plan: DeptTeamPlan; deptColo
     team.health === 'reviewHell' ? '#4a2b45' : team.health === 'congested' ? '#3f3470' : '#3a2f68';
 
   return (
-    <svg className="dept-team-mini-svg" viewBox="0 0 380 220" aria-hidden="true">
+    <svg className="dept-team-mini-svg" viewBox="0 0 380 240" aria-hidden="true">
       <ellipse cx={190} cy={178} rx={128} ry={22} fill="#0b0712" opacity={0.3} />
       <polygon
         points="42,150 190,76 338,150 190,224"

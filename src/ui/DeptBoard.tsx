@@ -59,7 +59,11 @@ function DeptTeamBlock({
         }`}
         data-testid={`team-${team.id}`}
         data-health={team.health}
-        style={{ left: pct(plan.x, VIEW_W), top: pct(plan.y, VIEW_H) }}
+        style={{
+          left: pct(plan.x, VIEW_W),
+          top: pct(plan.y, VIEW_H),
+          width: `${27.064 * plan.scale}%`,
+        }}
         onClick={onClick}
         title={`${team.name}の現場へ`}
       >

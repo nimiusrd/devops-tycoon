@@ -9,6 +9,7 @@
 import { getAction } from '../data/actions';
 import type { Rng } from './rng';
 import { reviewOne } from './sprint';
+import { appendSprintEvent } from './sprintEvents';
 import type {
   ActionId,
   InterventionEffect,
@@ -114,11 +115,11 @@ const EFFECTS: Record<
   (s: SprintState, o: OrgState, r: Rng, tick: number) => EffectPartial | false
 > = {
   // 割り込みレビュー: Review キュー先頭の数件を即処理してスイープする。
-  interruptReview(sprint, org, rng) {
+  interruptReview(sprint, org, rng, tick) {
     const queue = tasksInLane(sprint, 'review').slice(0, INTERRUPT_REVIEW_COUNT);
     if (queue.length === 0) return false;
     const affectedTaskIds = queue.map((t) => t.id);
-    for (const task of queue) reviewOne(task, sprint, org, rng);
+    for (const task of queue) reviewOne(task, sprint, org, rng, tick);
     const hp = spendStat(org.seniorHp, INTERRUPT_HP_COST);
     org.seniorHp = hp.next;
     return { reviewedCount: queue.length, affectedTaskIds, hpCost: hp.spent };
@@ -137,7 +138,7 @@ const EFFECTS: Record<
 
   // 緊急対応: 最も延焼が近い火を 1 件、タイマーが切れる前に鎮火して Review へ戻す。
   // 自動鎮火（HP 大量消費・コンボ喪失）より遥かに安く、コンボも守られる（第6.3）。
-  firefight(sprint, org) {
+  firefight(sprint, org, _rng, tick) {
     const fire = mostUrgentIncident(sprint);
     if (!fire) return false;
     const containedTaskId = fire.id;
@@ -148,6 +149,12 @@ const EFFECTS: Record<
     sprint.metrics.contained += 1;
     const hp = spendStat(org.seniorHp, FIREFIGHT_HP_COST);
     org.seniorHp = hp.next;
+    appendSprintEvent(sprint, {
+      tick,
+      kind: 'contain',
+      taskId: containedTaskId,
+      combo: sprint.metrics.combo,
+    });
     return { containedTaskId, hpCost: hp.spent };
   },
 
@@ -172,10 +179,10 @@ const EFFECTS: Record<
   },
 
   // ペアレビュー: 詰まった PR を処理しつつ AI Literacy を底上げ。
-  pairReview(sprint, org, rng) {
+  pairReview(sprint, org, rng, tick) {
     const queue = tasksInLane(sprint, 'review').slice(0, PAIR_REVIEW_COUNT);
     const affectedTaskIds = queue.map((t) => t.id);
-    for (const task of queue) reviewOne(task, sprint, org, rng);
+    for (const task of queue) reviewOne(task, sprint, org, rng, tick);
     const literacy = gainStat(org.aiLiteracy, PAIR_LITERACY_GAIN);
     org.aiLiteracy = literacy.next;
     return { reviewedCount: queue.length, affectedTaskIds, literacyGain: literacy.gained };
@@ -250,6 +257,13 @@ export function applyAction(
     ...partial,
     ...(focusRefund > 0 ? { focusRefund } : {}),
   };
+
+  appendSprintEvent(sprint, {
+    tick,
+    kind: 'intervention',
+    effect,
+    combo: sprint.metrics.combo,
+  });
 
   return { ok: true, effect };
 }

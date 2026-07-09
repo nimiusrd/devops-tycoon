@@ -13,6 +13,7 @@ export { SprintResultScreen } from './SprintResultScreen';
 export { ActionBar } from './ActionBar';
 export { ComboBadge } from './ComboBadge';
 export { PointPops } from './PointPops';
+export { EventTicker } from './EventTicker';
 export { DraftScreen } from './DraftScreen';
 export { DeckBar } from './DeckBar';
 export { CardView } from './CardView';

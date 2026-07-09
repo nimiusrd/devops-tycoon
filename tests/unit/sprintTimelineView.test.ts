@@ -127,8 +127,8 @@ describe('SprintState.timeline 記録（RI-53）', () => {
     const result = summarizeSprint(sprint, org);
     expect(result.timeline.length).toBeGreaterThan(0);
     expect(result.events.some((e) => e.kind === 'intervention')).toBe(true);
-    // コピーなので参照は別。
-    expect(result.timeline).not.toBe(sprint.timeline);
+    // リザルトは interventionEvents 由来（ring buffer とは別参照）。
     expect(result.events).not.toBe(sprint.events);
+    expect(result.events).not.toBe(sprint.interventionEvents);
   });
 });

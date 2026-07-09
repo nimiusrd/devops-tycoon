@@ -319,14 +319,18 @@ export interface SprintState {
    */
   aiAdoption: number;
   /**
-   * スプリント内イベントログ（RI-52）。上限付き ring buffer。
-   * 介入・点火・鎮火・延焼・コンボ途切れを構造化して残し、ティッカーと
-   * リザルトタイムライン（RI-53）が共有する。
+   * スプリント内イベントログ（RI-52）。上限付き ring buffer（ティッカー表示用）。
+   * 点火・鎮火・延焼・コンボ途切れなど直近 N 件を保持する。
    */
   events: SprintEvent[];
   /**
+   * 介入イベントの全履歴（RI-53）。リザルトのタイムラインマーカー用。
+   * `events` の ring buffer とは独立し、件数制限で落とさない。
+   */
+  interventionEvents: Array<Extract<SprintEvent, { kind: 'intervention' }>>;
+  /**
    * tick ごとの時系列サンプル（RI-53）。Review 待ち・燃焼数・コンボ・シニアHP。
-   * 介入マーカーは `events` の intervention から抽出する（二重管理しない）。
+   * 介入マーカーは `interventionEvents` から抽出する。
    */
   timeline: TimelineSample[];
 }
@@ -368,7 +372,7 @@ export interface SprintResult {
   diagnosis: string;
   /** tick 時系列（RI-53。リザルトのスパークライン用）。 */
   timeline: TimelineSample[];
-  /** スプリント内イベント（RI-52/53。介入マーカー等）。 */
+  /** 介入イベント全件（RI-53。タイムラインマーカー用。ring buffer 非適用）。 */
   events: SprintEvent[];
 }
 

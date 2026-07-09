@@ -8,9 +8,12 @@ import type { SprintEvent, SprintState } from './types';
 /** イベントログの上限（古いものから落とす ring buffer）。 */
 export const SPRINT_EVENT_LIMIT = 64;
 
-/** スプリントイベントを append する（上限超過時は先頭を落とす）。 */
+/** スプリントイベントを append する（ティッカー用 ring buffer + 介入は全件保持）。 */
 export function appendSprintEvent(sprint: SprintState, event: SprintEvent): void {
   sprint.events.push(event);
+  if (event.kind === 'intervention') {
+    sprint.interventionEvents.push(event);
+  }
   if (sprint.events.length > SPRINT_EVENT_LIMIT) {
     sprint.events.splice(0, sprint.events.length - SPRINT_EVENT_LIMIT);
   }

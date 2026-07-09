@@ -140,6 +140,7 @@ export function createSprint(
     cardEffects,
     aiAdoption: clamp(AI_ADOPTION * aiAdoptionShare, 0, 1),
     events: [],
+    interventionEvents: [],
     timeline: [],
   };
 }
@@ -594,6 +595,6 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     title,
     diagnosis,
     timeline: sprint.timeline.map((s) => ({ ...s })),
-    events: [...sprint.events],
+    events: sprint.interventionEvents.map((e) => ({ ...e, effect: { ...e.effect } })),
   };
 }

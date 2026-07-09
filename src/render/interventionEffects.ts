@@ -173,20 +173,26 @@ export function positionInterventionReactions(
       case 'assignDash': {
         const flow = findBoardFlow('coding', 'review');
         if (!flow) return [];
+        const prevTask = prevTasks.find((t) => t.id === reaction.taskId);
+        const nextTask = tasks.find((t) => t.id === reaction.taskId);
+        const fromProgress = prevTask?.progress ?? 0;
+        const toProgress = nextTask?.progress ?? fromProgress;
+        const fromT = Math.max(0, fromProgress);
+        const toT = Math.max(toProgress, fromT + 0.05, 0.65);
         const from =
-          dotPosition(prevTasks, reaction.taskId) ??
-          dotPosition(tasks, reaction.taskId) ??
-          flowPointAt(flow, 0);
-        const mid = flowPointAt(flow, 0.65);
+          fromProgress > 0
+            ? flowPointAt(flow, fromT)
+            : (dotPosition(prevTasks, reaction.taskId) ?? flowPointAt(flow, 0));
+        const to = flowPointAt(flow, Math.min(toT, 0.999));
         return [
           {
             kind: 'assignDash',
             taskId: reaction.taskId,
             fromX: from.x,
             fromY: from.y,
-            toX: mid.x,
-            toY: mid.y,
-            angleDeg: mid.angleDeg,
+            toX: to.x,
+            toY: to.y,
+            angleDeg: to.angleDeg,
           },
         ];
       }

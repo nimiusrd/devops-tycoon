@@ -4,7 +4,7 @@
  * RI-49 の `InterventionEffect` ペイロードから plan を導出し、Framer Motion で再生する。
  * シミュレーションには影響しない描画専用レイヤ（第22.2）。
  */
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   interventionPct,
@@ -40,7 +40,6 @@ export interface InterventionEffectsProps {
 export function InterventionEffects({ trigger, onFirefightTaskId }: InterventionEffectsProps) {
   const nextKey = useRef(0);
   const removalTimers = useRef<Map<number, number>>(new Map());
-  const lastTriggerKey = useRef<number | null>(null);
   const [active, setActive] = useState<ActiveEffect[]>([]);
 
   useEffect(() => {
@@ -52,8 +51,8 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
   }, []);
 
   useEffect(() => {
-    if (!trigger || trigger.key === lastTriggerKey.current) return;
-    lastTriggerKey.current = trigger.key;
+    if (!trigger) return;
+    const timers = removalTimers.current;
 
     const positioned = planPositionedInterventionReactions(
       trigger.effect,
@@ -72,6 +71,8 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
       ...effect,
       key: nextKey.current++,
     }));
+    const batchKeys = new Set(batch.map((b) => b.key));
+
     setActive((cur) => [...cur, ...batch].slice(-MAX_EFFECTS));
 
     for (const effect of batch) {
@@ -89,10 +90,19 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
                   : 400;
       const timer = window.setTimeout(() => {
         setActive((cur) => cur.filter((e) => e.key !== effect.key));
-        removalTimers.current.delete(effect.key);
+        timers.delete(effect.key);
       }, duration + 80);
-      removalTimers.current.set(effect.key, timer);
+      timers.set(effect.key, timer);
     }
+
+    return () => {
+      for (const effect of batch) {
+        const timer = timers.get(effect.key);
+        if (timer != null) window.clearTimeout(timer);
+        timers.delete(effect.key);
+      }
+      setActive((cur) => cur.filter((e) => !batchKeys.has(e.key)));
+    };
   }, [trigger, onFirefightTaskId]);
 
   return (
@@ -252,24 +262,20 @@ function AssignDash({
   effect: Extract<PositionedInterventionReaction, { kind: 'assignDash' }>;
   duration: number;
 }) {
-  const rad = (effect.angleDeg * Math.PI) / 180;
   return (
     <motion.span
       className="intervention-assign-dash"
       data-testid="intervention-effect-dash"
-      style={
-        {
-          left: interventionPct(effect.fromX, 1404),
-          top: interventionPct(effect.fromY, 573),
-          '--dash-angle': `${effect.angleDeg}deg`,
-          '--dash-dx': `${Math.cos(rad) * 28}px`,
-          '--dash-dy': `${Math.sin(rad) * 28}px`,
-        } as CSSProperties
-      }
-      initial={{ opacity: 0, scaleX: 0.2 }}
+      style={{
+        left: interventionPct(effect.fromX, 1404),
+        top: interventionPct(effect.fromY, 573),
+        transformOrigin: 'left center',
+      }}
+      initial={{ opacity: 0, scaleX: 0.2, rotate: effect.angleDeg }}
       animate={{
         opacity: [0, 1, 0.8, 0],
         scaleX: [0.2, 1.2, 1, 0.4],
+        rotate: effect.angleDeg,
         left: interventionPct(effect.toX, 1404),
         top: interventionPct(effect.toY, 573),
       }}

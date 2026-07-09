@@ -12,6 +12,7 @@ import {
   planPositionedInterventionReactions,
   positionInterventionReactions,
 } from '../../src/render/interventionEffects';
+import { findBoardFlow } from '../../src/render/boardScene';
 
 const TICK = 42;
 const rng = () => 0.99;
@@ -143,6 +144,22 @@ describe('interventionEffects (RI-50)', () => {
     const reworkSweep = positioned[1];
     if (doneSweep.kind === 'reviewSweep' && reworkSweep.kind === 'reviewSweep') {
       expect(doneSweep.toX).not.toBe(reworkSweep.toX);
+    }
+  });
+
+  it('assignDash は高進捗タスクでも到達点が開始点より先になる', () => {
+    const prev = [makeTask(0, { lane: 'coding', progress: 0.82 })];
+    const next = [{ ...prev[0], progress: 0.999 }];
+    const reactions = [{ kind: 'assignDash' as const, taskId: 0 }];
+    const [pos] = positionInterventionReactions(reactions, next, prev);
+    expect(pos?.kind).toBe('assignDash');
+    if (pos?.kind === 'assignDash') {
+      const dx = pos.toX - pos.fromX;
+      const dy = pos.toY - pos.fromY;
+      const flow = findBoardFlow('coding', 'review')!;
+      const flowDx = flow.x2 - flow.x1;
+      const flowDy = flow.y2 - flow.y1;
+      expect(dx * flowDx + dy * flowDy).toBeGreaterThan(0);
     }
   });
 

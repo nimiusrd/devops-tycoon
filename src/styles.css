@@ -668,8 +668,6 @@ body {
   width: 36px;
   height: 4px;
   margin: -2px 0 0 -4px;
-  transform-origin: left center;
-  transform: rotate(var(--dash-angle, 0deg));
   border-radius: 4px;
   background: linear-gradient(90deg, #ffe08a, #ff9f43);
   box-shadow: 0 0 12px #ff9f4388;

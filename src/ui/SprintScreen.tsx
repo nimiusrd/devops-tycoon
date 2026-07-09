@@ -4,12 +4,14 @@
  * 盤面（タスク粒の流れ）＋ 介入アクションバー ＋ コンボ/数字ポップ ＋ デッキ。
  * スプリント種別（通常/高負荷/ボス）に応じてバナーを変える。状態は読むだけ（第22.2）。
  */
+import { useCallback, useRef, useState } from 'react';
 import { getBoss } from '../data/bosses';
 import { Board } from '../render/Board';
 import { reviewQueueLength } from '../render/status';
 import { BURN_TICKS } from '../sim/model';
-import type { ActionId, InterventionOutcome } from '../sim/types';
+import type { ActionId, InterventionOutcome, SprintState } from '../sim/types';
 import type { RunState } from '../sim/run/types';
+import type { InterventionTrigger } from './InterventionEffects';
 import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
@@ -18,10 +20,42 @@ import { PointPops } from './PointPops';
 export interface SprintScreenProps {
   state: RunState;
   onDispatch: (id: ActionId) => InterventionOutcome;
+  getSprintSnapshot: () => SprintState | null;
 }
 
-export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
+export function SprintScreen({ state, onDispatch, getSprintSnapshot }: SprintScreenProps) {
   const sprint = state.sprint;
+  const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
+  const [suppressExtinguishTaskIds, setSuppressExtinguishTaskIds] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
+  const triggerKey = useRef(0);
+
+  const handleDispatch = useCallback(
+    (id: ActionId): InterventionOutcome => {
+      if (!sprint) return { ok: false, reason: 'complete' };
+      const prevTasks = sprint.tasks;
+      const outcome = onDispatch(id);
+      if (outcome.ok && outcome.effect) {
+        const nextSprint = getSprintSnapshot();
+        triggerKey.current += 1;
+        setInterventionTrigger({
+          effect: outcome.effect,
+          prevTasks: [...prevTasks],
+          nextTasks: nextSprint ? [...nextSprint.tasks] : [...prevTasks],
+          currentTick: state.sprintTick,
+          key: triggerKey.current,
+        });
+        if (outcome.effect.containedTaskId != null) {
+          setSuppressExtinguishTaskIds(new Set([outcome.effect.containedTaskId]));
+          window.setTimeout(() => setSuppressExtinguishTaskIds(new Set()), 700);
+        }
+      }
+      return outcome;
+    },
+    [onDispatch, getSprintSnapshot, sprint, state.sprintTick],
+  );
+
   if (!sprint) return null;
 
   const kind = state.currentSprintKind;
@@ -74,12 +108,21 @@ export function SprintScreen({ state, onDispatch }: SprintScreenProps) {
             tasks={sprint.tasks}
             metrics={sprint.metrics}
             reviewAccumulator={sprint.reviewAccumulator}
+            modifiers={sprint.complete ? undefined : sprint.modifiers}
+            sprintTick={state.sprintTick}
+            interventionTrigger={interventionTrigger}
+            suppressExtinguishTaskIds={suppressExtinguishTaskIds}
           />
         </div>
       </main>
 
       <DeckBar deck={state.deck} />
-      <ActionBar sprint={sprint} disabled={sprint.complete} onAction={onDispatch} />
+      <ActionBar
+        sprint={sprint}
+        sprintTick={state.sprintTick}
+        disabled={sprint.complete}
+        onAction={handleDispatch}
+      />
     </>
   );
 }

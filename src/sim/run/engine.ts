@@ -1103,6 +1103,7 @@ export class RunEngine {
       budget: this.budget,
       currentSprintId: this.currentSprintId,
       sprint: this.sprint ? structuredClone(this.sprint) : null,
+      sprintTick: this.sprint ? this.sprintTick : 0,
       lastResult: this.lastResult ? { ...this.lastResult } : null,
       draft: this.draft ? [...this.draft] : null,
       shop: this.shop

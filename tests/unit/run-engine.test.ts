@@ -320,4 +320,23 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       expect(afterQueue).toBeLessThan(queue);
     }
   });
+
+  it('sprintTick は sprint 存続中は phase に関わらず最終 tick を保持する（RI-50）', () => {
+    const e = new RunEngine({ seed: 'sprint-tick', difficulty: 'easy' });
+    e.startRun('easy');
+    e.beginSetupSprint();
+    let guard = 0;
+    while (guard < 8000) {
+      e.step(100);
+      const s = e.snapshot();
+      if (!s.sprint) break;
+      if (s.sprint.complete) {
+        expect(s.sprintTick).toBeGreaterThan(0);
+        expect(s.phase).toBe('result');
+        return;
+      }
+      guard += 1;
+    }
+    throw new Error('sprint did not complete within guard');
+  });
 });

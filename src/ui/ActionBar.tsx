@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ACTION_DEFS } from '../data/actions';
 import {
   deriveActionAvailability,
+  deriveModifierRing,
   formatInterventionFailure,
   planActionBarView,
   type ActionBlockReason,
@@ -61,11 +62,12 @@ function FocusFeedbackPops({ pops }: { pops: FocusPop[] }) {
 
 export interface ActionBarProps {
   sprint: SprintState;
+  sprintTick: number;
   disabled: boolean;
   onAction: (id: ActionId) => InterventionOutcome;
 }
 
-export function ActionBar({ sprint, disabled, onAction }: ActionBarProps) {
+export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarProps) {
   const { focus, config, cooldowns, comboGauge } = sprint;
   const availabilityById = useMemo(() => {
     const map = new Map<ActionId, ReturnType<typeof deriveActionAvailability>>();
@@ -148,6 +150,10 @@ export function ActionBar({ sprint, disabled, onAction }: ActionBarProps) {
           const onCooldown = remaining > 0;
           const ready = availability.canActivate;
           const cdPct = onCooldown ? Math.round((1 - remaining / a.cooldownTicks) * 100) : 100;
+          const modRing = sprint.complete
+            ? { active: false, remaining: 0, total: 0 }
+            : deriveModifierRing(sprint, sprintTick, a.id);
+          const modPct = modRing.active ? Math.round((modRing.remaining / modRing.total) * 100) : 0;
           const tone = a.tone ? ` ${a.tone}` : '';
           const blockClass =
             availability.blockReason === 'no-target'
@@ -185,6 +191,15 @@ export function ActionBar({ sprint, disabled, onAction }: ActionBarProps) {
               <span className={`cd${onCooldown ? '' : ' full'}`}>
                 <i style={{ width: `${cdPct}%` }} />
               </span>
+              {modRing.active && (
+                <span
+                  className="mod-ring"
+                  data-testid={`action-mod-ring-${a.id}`}
+                  title={`効果残り ${modRing.remaining} tick`}
+                >
+                  <i style={{ width: `${modPct}%` }} />
+                </span>
+              )}
             </button>
           );
         })}

@@ -28,9 +28,16 @@ export interface FireEffectsProps {
   tasks: readonly Task[];
   metrics: SprintMetrics;
   reviewAccumulator: number;
+  /** firefight 介入演出と二重再生しない task ID（RI-50）。 */
+  suppressExtinguishTaskIds?: ReadonlySet<number>;
 }
 
-export function FireEffects({ tasks, metrics, reviewAccumulator }: FireEffectsProps) {
+export function FireEffects({
+  tasks,
+  metrics,
+  reviewAccumulator,
+  suppressExtinguishTaskIds,
+}: FireEffectsProps) {
   const prevSnap = useRef<FireSnapshot>(createFireSnapshot(tasks, metrics, reviewAccumulator));
   const prevTasks = useRef<readonly Task[]>(tasks);
   const nextKey = useRef(0);
@@ -55,7 +62,17 @@ export function FireEffects({ tasks, metrics, reviewAccumulator }: FireEffectsPr
     prevTasks.current = tasks;
     if (raw.length === 0) return;
 
-    const positioned = positionFireEffects(raw, tasks, priorTasks);
+    const filtered = suppressExtinguishTaskIds?.size
+      ? raw.filter(
+          (e) =>
+            e.kind !== 'extinguish' ||
+            e.source !== 'firefight' ||
+            !suppressExtinguishTaskIds.has(e.taskId),
+        )
+      : raw;
+    if (filtered.length === 0) return;
+
+    const positioned = positionFireEffects(filtered, tasks, priorTasks);
     if (positioned.length === 0) return;
 
     const batch = positioned.map((effect) => ({
@@ -77,7 +94,7 @@ export function FireEffects({ tasks, metrics, reviewAccumulator }: FireEffectsPr
       }, duration + 80);
       removalTimers.current.set(effect.key, timer);
     }
-  }, [tasks, metrics, reviewAccumulator]);
+  }, [tasks, metrics, reviewAccumulator, suppressExtinguishTaskIds]);
 
   return (
     <div className="fire-effects" aria-hidden="true">

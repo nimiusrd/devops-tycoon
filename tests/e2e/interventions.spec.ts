@@ -51,6 +51,30 @@ test('割り込みレビューを発動すると Review 渋滞が捌ける（第
   expect(after.focus).toBe(before.focus - 3);
 });
 
+test('割り込みレビュー成功時に盤面スイープ演出が出る（RI-50）', async ({ page }) => {
+  await page.goto('/?seed=ops');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'ops');
+    g.beginSetupSprint();
+    let guard = 0;
+    while (guard < 4000) {
+      const s = g.step(100);
+      if (!s.sprint || s.sprint.complete) break;
+      const q = s.sprint.tasks.filter((t) => t.lane === 'review').length;
+      if (q >= 4) return;
+      guard += 1;
+    }
+  });
+
+  await page.getByTestId('action-interruptReview').click();
+  await expect(page.locator('[data-testid^="intervention-effect-sweep-"]').first()).toBeVisible({
+    timeout: 3000,
+  });
+});
+
 test('スプリント盤面に集中力と介入アクションバーが並ぶ', async ({ page }) => {
   await page.goto('/?seed=bar');
   await page.getByTestId('difficulty-easy').click();

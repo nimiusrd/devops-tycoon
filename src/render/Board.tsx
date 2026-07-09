@@ -7,8 +7,10 @@
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
  */
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
-import type { SprintMetrics, Task } from '../sim/types';
+import type { SprintMetrics, SprintModifiers, Task } from '../sim/types';
+import { deriveActiveBoardAuras } from './interventionEffects';
 import { FireEffects } from '../ui/FireEffects';
+import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
 import {
@@ -191,6 +193,14 @@ export interface BoardProps {
   metrics?: SprintMetrics;
   /** Review スループット（延焼先判定用）。metrics 指定時は必須。 */
   reviewAccumulator?: number;
+  /** 時限モディファイア（盤面オーラ / RI-50）。 */
+  modifiers?: SprintModifiers;
+  /** 進行中スプリント tick（modifiers 表示用）。 */
+  sprintTick?: number;
+  /** 介入成功トリガ（盤面リアクション / RI-50）。 */
+  interventionTrigger?: InterventionTrigger | null;
+  /** firefight 演出と FireEffects 鎮火の二重再生を避ける task ID。 */
+  suppressExtinguishTaskIds?: ReadonlySet<number>;
 }
 
 /** 凡例（mockups の dot 凡例）。 */
@@ -202,7 +212,15 @@ const LEGEND: { variant: BoardDotPlan['variant']; label: string }[] = [
   { variant: 'incident', label: '炎上' },
 ];
 
-export function Board({ tasks, metrics, reviewAccumulator = 0 }: BoardProps) {
+export function Board({
+  tasks,
+  metrics,
+  reviewAccumulator = 0,
+  modifiers,
+  sprintTick = 0,
+  interventionTrigger = null,
+  suppressExtinguishTaskIds,
+}: BoardProps) {
   const scene = planBoardScene(tasks);
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
@@ -211,6 +229,7 @@ export function Board({ tasks, metrics, reviewAccumulator = 0 }: BoardProps) {
 
   const boardRef = useRef<HTMLDivElement>(null);
   useContainFit(boardRef);
+  const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
 
   return (
     <div
@@ -262,8 +281,28 @@ export function Board({ tasks, metrics, reviewAccumulator = 0 }: BoardProps) {
       </div>
 
       {metrics && (
-        <FireEffects tasks={tasks} metrics={metrics} reviewAccumulator={reviewAccumulator} />
+        <FireEffects
+          tasks={tasks}
+          metrics={metrics}
+          reviewAccumulator={reviewAccumulator}
+          suppressExtinguishTaskIds={suppressExtinguishTaskIds}
+        />
       )}
+
+      {activeAuras.map((aura) => (
+        <div
+          key={aura.kind}
+          className={`board-modifier-aura aura-${aura.kind}`}
+          data-testid={`board-aura-${aura.kind}`}
+          style={
+            {
+              '--aura-remaining': aura.remainingTicks / aura.totalTicks,
+            } as CSSProperties
+          }
+        />
+      ))}
+
+      {interventionTrigger && <InterventionEffects trigger={interventionTrigger} />}
     </div>
   );
 }

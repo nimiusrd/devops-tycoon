@@ -31,6 +31,7 @@ import {
 } from './model';
 import type { Rng } from './rng';
 import { getScenario } from './scenarios';
+import { appendSprintEvent } from './sprintEvents';
 import type {
   ActionId,
   CardEffects,
@@ -137,6 +138,7 @@ export function createSprint(
     comboGauge: 0,
     cardEffects,
     aiAdoption: clamp(AI_ADOPTION * aiAdoptionShare, 0, 1),
+    events: [],
   };
 }
 
@@ -190,14 +192,18 @@ function advanceCoding(sprint: SprintState, tick: number): void {
  * 燃えている間は Rework が進まず、タイマーが切れる前に緊急対応で鎮火するか、
  * 切れた時点で自動鎮火（シニアHP大量消費）/延焼のどちらかへ解決される。
  * Review 落ちの障害化と、延焼の連鎖（隣の PR への燃え移り）の両方から呼ばれる。
+ * `tick` はイベントログ用（省略時は記録しない＝後方互換の単体テスト向け）。
  */
-export function igniteTask(task: Task, sprint: SprintState): void {
+export function igniteTask(task: Task, sprint: SprintState, tick?: number): void {
   sprint.metrics.incidentCount += 1;
   task.incident = true;
   task.burnTicksLeft = BURN_TICKS;
   task.reworkAttempts += 1;
   task.lane = 'rework';
   task.progress = 0;
+  if (tick !== undefined) {
+    appendSprintEvent(sprint, { tick, kind: 'ignite', taskId: task.id });
+  }
 }
 
 /**
@@ -205,14 +211,21 @@ export function igniteTask(task: Task, sprint: SprintState): void {
  * 介入アクション（割り込みレビュー等）からも呼ばれる（第6.1）。
  * 点火の時点ではコンボは途切れない——延焼または自動鎮火まで悪化したときに途切れる。
  * 「コンボを守るために今すぐ鎮火するか」という即時判断を作るため（第6.2 / 6.3）。
+ * `tick` はイベントログ用（省略時は記録しない）。
  */
-export function reviewOne(task: Task, sprint: SprintState, org: OrgState, rng: Rng): void {
+export function reviewOne(
+  task: Task,
+  sprint: SprintState,
+  org: OrgState,
+  rng: Rng,
+  tick?: number,
+): void {
   const m = sprint.metrics;
   org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST, 0, 100);
 
   // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。
   if (rng() < incidentProbability(org, task, sprint.cardEffects)) {
-    igniteTask(task, sprint);
+    igniteTask(task, sprint, tick);
     return;
   }
 
@@ -227,6 +240,14 @@ export function reviewOne(task: Task, sprint: SprintState, org: OrgState, rng: R
     task.reworkAttempts += 1;
     task.lane = 'rework';
     task.progress = 0;
+    if (tick !== undefined) {
+      appendSprintEvent(sprint, {
+        tick,
+        kind: 'combo-break',
+        reason: 'rework',
+        taskId: task.id,
+      });
+    }
     return;
   }
 
@@ -260,7 +281,7 @@ function advanceReview(sprint: SprintState, org: OrgState, rng: Rng, tick: numbe
       break;
     }
     sprint.reviewAccumulator -= 1;
-    reviewOne(task, sprint, org, rng);
+    reviewOne(task, sprint, org, rng, tick);
   }
 }
 
@@ -270,7 +291,7 @@ function advanceReview(sprint: SprintState, org: OrgState, rng: Rng, tick: numbe
  * - シニアに余力があれば自動鎮火（HP を大量消費し、コンボも途切れる）
  * - 余力がなければ延焼（負債・士気に波及し、Review 待ちの隣の PR へ燃え移る）
  */
-function advanceBurning(sprint: SprintState, org: OrgState): void {
+function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void {
   const m = sprint.metrics;
   // 先にタイマーだけ進めて時間切れを確定する（連鎖着火した火はこの tick では減らない）。
   const expired: Task[] = [];
@@ -286,7 +307,21 @@ function advanceBurning(sprint: SprintState, org: OrgState): void {
     if (org.seniorHp >= INCIDENT_CONTAIN_HP) {
       // 自動鎮火: シニアが総出で消す。緊急対応より大幅に高くつく受動対応。
       m.contained += 1;
+      const hpBefore = org.seniorHp;
       org.seniorHp = clamp(org.seniorHp - INCIDENT_HP_COST, 0, 100);
+      const hpCost = hpBefore - org.seniorHp;
+      appendSprintEvent(sprint, {
+        tick,
+        kind: 'auto-contain',
+        taskId: task.id,
+        hpCost,
+      });
+      appendSprintEvent(sprint, {
+        tick,
+        kind: 'combo-break',
+        reason: 'auto-contain',
+        taskId: task.id,
+      });
       continue;
     }
     // 延焼: 負債と士気に波及し、Review 待ちの先頭 PR へ燃え移る（延焼の連鎖。第18.2）。
@@ -295,7 +330,19 @@ function advanceBurning(sprint: SprintState, org: OrgState): void {
     org.techDebt += DEBT_PER_SPREAD;
     org.morale = clamp(org.morale - SPREAD_MORALE_COST, 0, 100);
     const next = sprint.tasks.find((t) => t.lane === 'review');
-    if (next) igniteTask(next, sprint);
+    appendSprintEvent(sprint, {
+      tick,
+      kind: 'spread',
+      taskId: task.id,
+      ...(next ? { spreadToTaskId: next.id } : {}),
+    });
+    appendSprintEvent(sprint, {
+      tick,
+      kind: 'combo-break',
+      reason: 'spread',
+      taskId: task.id,
+    });
+    if (next) igniteTask(next, sprint, tick);
   }
 }
 
@@ -380,7 +427,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   }
 
   advanceReview(sprint, org, rng, tick);
-  advanceBurning(sprint, org);
+  advanceBurning(sprint, org, tick);
   advanceRework(sprint);
 
   // シニア体力の自然回復。火が燃えている間は気が休まらず回復が鈍る（第6.3）。

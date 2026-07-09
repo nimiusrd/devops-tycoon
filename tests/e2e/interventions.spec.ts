@@ -73,6 +73,10 @@ test('割り込みレビュー成功時に盤面スイープ演出が出る（RI
   await expect(page.locator('[data-testid^="intervention-effect-sweep-"]').first()).toBeVisible({
     timeout: 3000,
   });
+  await expect(page.getByTestId('event-ticker')).toBeVisible();
+  await expect(page.locator('[data-testid^="event-ticker-row-"]').first()).toBeVisible({
+    timeout: 3000,
+  });
 });
 
 test('スプリント盤面に集中力と介入アクションバーが並ぶ', async ({ page }) => {

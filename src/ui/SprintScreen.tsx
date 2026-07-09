@@ -15,6 +15,7 @@ import type { InterventionTrigger } from './InterventionEffects';
 import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
+import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
 
 export interface SprintScreenProps {
@@ -113,6 +114,7 @@ export function SprintScreen({ state, onDispatch, getSprintSnapshot }: SprintScr
             interventionTrigger={interventionTrigger}
             suppressExtinguishTaskIds={suppressExtinguishTaskIds}
           />
+          <EventTicker events={sprint.events} />
         </div>
       </main>
 

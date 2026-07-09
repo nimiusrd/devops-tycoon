@@ -117,6 +117,62 @@ export interface InterventionOutcome {
   effect?: InterventionEffect;
 }
 
+/** スプリント内イベントの種別（RI-52/53。文言は持たず UI がフォーマットする）。 */
+export type SprintEventKind =
+  | 'intervention'
+  | 'combo-break'
+  | 'ignite'
+  | 'auto-contain'
+  | 'spread'
+  | 'contain';
+
+/** コンボ途切れの理由。 */
+export type ComboBreakReason = 'rework' | 'auto-contain' | 'spread';
+
+/**
+ * スプリント中に記録する構造化イベント（RI-52）。
+ * seed 決定論の範囲で append のみ。演出・文言は描画層が読む。
+ */
+export type SprintEvent =
+  | {
+      tick: number;
+      kind: 'intervention';
+      effect: InterventionEffect;
+      /** 発動直後のコンボ（鎮火継続表示用）。 */
+      combo: number;
+    }
+  | {
+      tick: number;
+      kind: 'combo-break';
+      reason: ComboBreakReason;
+      taskId?: number;
+    }
+  | {
+      tick: number;
+      kind: 'ignite';
+      taskId: number;
+    }
+  | {
+      tick: number;
+      kind: 'auto-contain';
+      taskId: number;
+      hpCost: number;
+    }
+  | {
+      tick: number;
+      kind: 'spread';
+      taskId: number;
+      /** 燃え移った先のタスク ID（無い場合あり）。 */
+      spreadToTaskId?: number;
+    }
+  | {
+      tick: number;
+      kind: 'contain';
+      taskId: number;
+      /** 鎮火後も維持されたコンボ。 */
+      combo: number;
+    };
+
 /** スプリント中に有効な時限モディファイア（介入アクションが設定する）。 */
 export interface SprintModifiers {
   /** この tick 未満の間、Backlog からの流入を止める（アンドン）。 */
@@ -262,6 +318,12 @@ export interface SprintState {
    * 使う確率。編成（AIを配ったコーダーの割合）で決まり、誰も配らなければ 0 になる。
    */
   aiAdoption: number;
+  /**
+   * スプリント内イベントログ（RI-52）。上限付き ring buffer。
+   * 介入・点火・鎮火・延焼・コンボ途切れを構造化して残し、ティッカーと
+   * リザルトタイムライン（RI-53）が共有する。
+   */
+  events: SprintEvent[];
 }
 
 /** スプリントリザルト（SPEC 第4.6）。 */

@@ -1,0 +1,155 @@
+import { describe, expect, it } from 'vitest';
+import { formatRecentSprintEvents, formatSprintEvent } from '../../src/render/sprintEventView';
+import { applyAction } from '../../src/sim/actions';
+import { BURN_TICKS, INCIDENT_CONTAIN_HP } from '../../src/sim/model';
+import { createOrgState } from '../../src/sim/org';
+import { createSprint, resolveSprintConfig, reviewOne, stepSprint } from '../../src/sim/sprint';
+import { SPRINT_EVENT_LIMIT, appendSprintEvent } from '../../src/sim/sprintEvents';
+import type { OrgState, SprintEvent, SprintState, Task } from '../../src/sim/types';
+
+const makeTask = (id: number, overrides: Partial<Task> = {}): Task => ({
+  id,
+  kind: 'normal',
+  highValue: false,
+  aiAssisted: false,
+  lane: 'review',
+  progress: 0,
+  reworkAttempts: 0,
+  wasReworked: false,
+  incident: false,
+  debt: false,
+  ...overrides,
+});
+
+const burningTask = (id: number, burnTicksLeft = BURN_TICKS): Task =>
+  makeTask(id, { lane: 'rework', incident: true, burnTicksLeft, reworkAttempts: 1 });
+
+function makeSprint(org: OrgState, tasks: Task[]): SprintState {
+  const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
+  sprint.tasks = tasks;
+  return sprint;
+}
+
+describe('sprintEventView（RI-52）', () => {
+  it('割り込みレビュー介入を文言化する', () => {
+    const event: SprintEvent = {
+      tick: 10,
+      kind: 'intervention',
+      combo: 2,
+      effect: {
+        actionId: 'interruptReview',
+        focusCost: 3,
+        gaugeGain: 0.34,
+        reviewedCount: 4,
+        affectedTaskIds: [0, 1, 2, 3],
+        hpCost: 3,
+      },
+    };
+    const view = formatSprintEvent(event);
+    expect(view.icon).toBe('🛂');
+    expect(view.text).toContain('割り込みレビュー');
+    expect(view.text).toContain('PR4件処理');
+    expect(view.text).toContain('シニアHP -3');
+  });
+
+  it('鎮火成功とコンボ途切れを文言化する', () => {
+    expect(formatSprintEvent({ tick: 5, kind: 'contain', taskId: 1, combo: 4 }).text).toBe(
+      '鎮火成功 → コンボ x4 継続',
+    );
+    expect(
+      formatSprintEvent({ tick: 6, kind: 'combo-break', reason: 'rework', taskId: 2 }).text,
+    ).toBe('コンボ途切れ: 手戻り発生');
+    expect(
+      formatSprintEvent({
+        tick: 7,
+        kind: 'spread',
+        taskId: 1,
+        spreadToTaskId: 3,
+      }).text,
+    ).toBe('延焼! 隣の Review 待ち PR に連鎖');
+  });
+
+  it('直近 N 件を新しい順で返す', () => {
+    const events: SprintEvent[] = [
+      { tick: 1, kind: 'ignite', taskId: 0 },
+      { tick: 2, kind: 'combo-break', reason: 'rework', taskId: 1 },
+      { tick: 3, kind: 'contain', taskId: 2, combo: 1 },
+    ];
+    const rows = formatRecentSprintEvents(events, 2);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].text).toContain('鎮火成功');
+    expect(rows[1].text).toContain('コンボ途切れ');
+  });
+});
+
+describe('SprintState.events 記録（RI-52）', () => {
+  it('createSprint は空の events で始まる', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
+    expect(sprint.events).toEqual([]);
+  });
+
+  it('介入成功で intervention イベントを記録する', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [makeTask(0), makeTask(1), makeTask(2), makeTask(3)]);
+    const outcome = applyAction('interruptReview', sprint, org, () => 0.99, 12);
+    expect(outcome.ok).toBe(true);
+    const intervention = sprint.events.find((e) => e.kind === 'intervention');
+    expect(intervention).toMatchObject({
+      tick: 12,
+      kind: 'intervention',
+      effect: { actionId: 'interruptReview' },
+    });
+  });
+
+  it('緊急対応で contain + intervention を記録する', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [burningTask(0, 2)]);
+    sprint.metrics.combo = 4;
+    const outcome = applyAction('firefight', sprint, org, () => 0.5, 20);
+    expect(outcome.ok).toBe(true);
+    expect(sprint.events.some((e) => e.kind === 'contain' && e.combo === 4)).toBe(true);
+    expect(sprint.events.some((e) => e.kind === 'intervention')).toBe(true);
+  });
+
+  it('手戻りで combo-break を記録する', () => {
+    // 1 回目の乱数（incident）は外し、2 回目（rework）に当てる。
+    const values = [0.99, 0];
+    let i = 0;
+    const rng = () => values[Math.min(i++, values.length - 1)];
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [makeTask(0)]);
+    sprint.metrics.combo = 3;
+    reviewOne(sprint.tasks[0], sprint, org, rng, 8);
+    expect(sprint.tasks[0].lane).toBe('rework');
+    expect(sprint.events).toContainEqual({
+      tick: 8,
+      kind: 'combo-break',
+      reason: 'rework',
+      taskId: 0,
+    });
+  });
+
+  it('自動鎮火で auto-contain と combo-break を記録する', () => {
+    const org = createOrgState('default', true);
+    org.seniorHp = INCIDENT_CONTAIN_HP;
+    const sprint = makeSprint(org, [burningTask(0, 1)]);
+    sprint.metrics.combo = 2;
+    stepSprint(sprint, org, () => 0.5, 1);
+    expect(sprint.events.some((e) => e.kind === 'auto-contain')).toBe(true);
+    expect(sprint.events.some((e) => e.kind === 'combo-break' && e.reason === 'auto-contain')).toBe(
+      true,
+    );
+    expect(sprint.metrics.contained).toBe(1);
+  });
+
+  it('ring buffer は上限を超えない', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, []);
+    for (let i = 0; i < SPRINT_EVENT_LIMIT + 10; i += 1) {
+      appendSprintEvent(sprint, { tick: i, kind: 'ignite', taskId: i });
+    }
+    expect(sprint.events).toHaveLength(SPRINT_EVENT_LIMIT);
+    expect(sprint.events[0].tick).toBe(10);
+  });
+});

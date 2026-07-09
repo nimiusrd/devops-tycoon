@@ -101,6 +101,10 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
 });
 
 test('RI-37: 休息で強化対象カードを選んでレベルを上げられる', async ({ page }) => {
+  // seed 探索 + step(1e6) の page.evaluate は CPU 負荷が高く、
+  // タイムライン記録（RI-53）追加後は CI の 30s 既定を超えやすい。
+  test.setTimeout(60_000);
+
   await page.goto('/?seed=ri37-e2e');
 
   const reached = await page.evaluate(() => {

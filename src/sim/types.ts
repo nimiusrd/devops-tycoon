@@ -324,6 +324,24 @@ export interface SprintState {
    * リザルトタイムライン（RI-53）が共有する。
    */
   events: SprintEvent[];
+  /**
+   * tick ごとの時系列サンプル（RI-53）。Review 待ち・燃焼数・コンボ・シニアHP。
+   * 介入マーカーは `events` の intervention から抽出する（二重管理しない）。
+   */
+  timeline: TimelineSample[];
+}
+
+/** スプリント時系列の 1 サンプル（RI-53）。 */
+export interface TimelineSample {
+  tick: number;
+  /** Review 待ち行列長。 */
+  reviewQueue: number;
+  /** 燃焼中（炎上）タスク数。 */
+  burningCount: number;
+  /** 現在コンボ。 */
+  combo: number;
+  /** シニアHP。 */
+  seniorHp: number;
 }
 
 /** スプリントリザルト（SPEC 第4.6）。 */
@@ -348,6 +366,10 @@ export interface SprintResult {
   title: string;
   /** 診断コメント。 */
   diagnosis: string;
+  /** tick 時系列（RI-53。リザルトのスパークライン用）。 */
+  timeline: TimelineSample[];
+  /** スプリント内イベント（RI-52/53。介入マーカー等）。 */
+  events: SprintEvent[];
 }
 
 /** シミュレーション全体の状態。 */

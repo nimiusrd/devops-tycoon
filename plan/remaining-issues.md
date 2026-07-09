@@ -56,7 +56,7 @@
 | RI-50 | 介入ごとの盤面リアクション演出 | 高 | 完了 | RI-49 | 第6 / 18.2 / RI-10 |
 | RI-51 | 発動不能理由の可視化＋対象数ライブバッジ | 高 | 完了 | — | 第4.3 / 6.1 |
 | RI-52 | スプリント内イベントティッカー(介入・出来事ログ) | 中 | 完了 | RI-49 | 第6 / 18 |
-| RI-53 | スプリントタイムライン記録とリザルト表示 | 中 | 未着手 | RI-49 | 第4.6 / 6.3 |
+| RI-53 | スプリントタイムライン記録とリザルト表示 | 中 | 完了 | RI-49 | 第4.6 / 6.3 |
 | RI-54 | リザルトの介入効果分析とプレイ改善 Tips | 中 | 未着手 | RI-49, RI-53 | 第4.6 / 13 |
 | RI-55 | 無介入ベースライン比較(介入の成果表示) | 中 | 未着手 | RI-49 | 第6 / RI-46 / RI-14 |
 
@@ -311,15 +311,13 @@ seed 決定論の範囲に収める。`src/render/sprintEventView.ts` が文言�
 `SprintScreen` 盤面脇に配置。Vitest: `tests/unit/sprintEventView.test.ts`。
 E2E: `tests/e2e/interventions.spec.ts`（ティッカー表示）。
 
-#### RI-53 スプリントタイムライン記録とリザルト表示 — 優先度:中（依存: RI-49）
+#### RI-53 スプリントタイムライン記録とリザルト表示 — 優先度:中 / 完了（依存: RI-49）
 
-- **現状**: `SprintMetrics` は集計値のみ（`reviewQueueMax` などのピーク値）で時系列が無く、
-  「介入の前後で何が変わったか」を振り返る手段が無い。
-- **やること**: tick サンプリングで Review 待ち行列長・燃焼数・コンボ・シニアHP を
-  `SprintState` に記録し、介入の発動 tick をマーカーとして重ねる。リザルトにスパークライン＋
-  介入マーカーを表示し、「ここで割り込み→渋滞ピークが下がった」を一目で見せる。描画は
-  まず自前 SVG の軽量スパークラインで始め、Recharts/visx の導入判断（RI-13）とは切り離す。
-- **規模感**: 中。記録（sim）と表示（リザルト）で子 PR 分割可。
+**完了**: `TimelineSample` を `SprintState.timeline` に毎 `stepSprint` 終端で記録し、
+`summarizeSprint` が `SprintResult.timeline` / `events` へコピー。介入マーカーは
+`events` の `intervention` から抽出（二重管理なし）。`sprintTimelineView` が自前 SVG
+スパークライン計画を導出し、`SprintTimelineChart` を `SprintResultScreen` に配置。
+Vitest: `tests/unit/sprintTimelineView.test.ts`。
 
 #### RI-54 リザルトの介入効果分析とプレイ改善 Tips — 優先度:中（依存: RI-49, RI-53）
 

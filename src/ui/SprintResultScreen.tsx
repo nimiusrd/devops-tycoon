@@ -8,6 +8,7 @@ import { getAction } from '../data/actions';
 import { rankLabel } from '../sim/member';
 import type { GrowthOutcome } from '../sim/run/types';
 import type { ActionId, SprintResult } from '../sim/types';
+import { SprintTimelineChart } from './SprintTimelineChart';
 
 interface Row {
   label: string;
@@ -86,6 +87,7 @@ export function SprintResultScreen({
             </div>
           ))}
         </dl>
+        <SprintTimelineChart timeline={result.timeline} events={result.events} />
         <div className="result-diagnosis">
           <p className="result-section-label">診断</p>
           <p>{result.diagnosis}</p>

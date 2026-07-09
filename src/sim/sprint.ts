@@ -44,6 +44,7 @@ import type {
   SprintState,
   Task,
   TaskKind,
+  TimelineSample,
 } from './types';
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
@@ -139,7 +140,24 @@ export function createSprint(
     cardEffects,
     aiAdoption: clamp(AI_ADOPTION * aiAdoptionShare, 0, 1),
     events: [],
+    timeline: [],
   };
+}
+
+/** 現在の盤面からタイムライン 1 サンプルを作る（RI-53）。 */
+function sampleTimeline(sprint: SprintState, org: OrgState, tick: number): TimelineSample {
+  return {
+    tick,
+    reviewQueue: countLane(sprint.tasks, 'review'),
+    burningCount: sprint.tasks.filter((t) => t.lane === 'rework' && t.incident).length,
+    combo: sprint.metrics.combo,
+    seniorHp: org.seniorHp,
+  };
+}
+
+/** タイムラインへ 1 サンプルを append する。 */
+function appendTimelineSample(sprint: SprintState, org: OrgState, tick: number): void {
+  sprint.timeline.push(sampleTimeline(sprint, org, tick));
 }
 
 function countLane(tasks: Task[], lane: Lane): number {
@@ -414,6 +432,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   if (isStalled(sprint)) {
     forceDrain(sprint, org);
     sprint.complete = true;
+    appendTimelineSample(sprint, org, tick);
     return;
   }
 
@@ -444,6 +463,8 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
     forceDrain(sprint, org);
     sprint.complete = true;
   }
+
+  appendTimelineSample(sprint, org, tick);
 }
 
 /** アクションごとの残りクールダウンを 1 tick 減らす（0 で Ready）。 */
@@ -572,5 +593,7 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     grade: computeGrade(sprint, org),
     title,
     diagnosis,
+    timeline: sprint.timeline.map((s) => ({ ...s })),
+    events: [...sprint.events],
   };
 }

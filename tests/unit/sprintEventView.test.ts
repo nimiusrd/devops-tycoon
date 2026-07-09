@@ -83,10 +83,11 @@ describe('sprintEventView（RI-52）', () => {
 });
 
 describe('SprintState.events 記録（RI-52）', () => {
-  it('createSprint は空の events で始まる', () => {
+  it('createSprint は空の events / interventionEvents で始まる', () => {
     const org = createOrgState('default', true);
     const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
     expect(sprint.events).toEqual([]);
+    expect(sprint.interventionEvents).toEqual([]);
   });
 
   it('介入成功で intervention イベントを記録する', () => {
@@ -151,5 +152,28 @@ describe('SprintState.events 記録（RI-52）', () => {
     }
     expect(sprint.events).toHaveLength(SPRINT_EVENT_LIMIT);
     expect(sprint.events[0].tick).toBe(10);
+  });
+
+  it('ring buffer 超過でも interventionEvents は全件保持する', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, []);
+    const intervention: SprintEvent = {
+      tick: 1,
+      kind: 'intervention',
+      combo: 0,
+      effect: {
+        actionId: 'interruptReview',
+        focusCost: 3,
+        gaugeGain: 0.34,
+        reviewedCount: 4,
+      },
+    };
+    appendSprintEvent(sprint, intervention);
+    for (let i = 0; i < SPRINT_EVENT_LIMIT + 20; i += 1) {
+      appendSprintEvent(sprint, { tick: i + 10, kind: 'ignite', taskId: i });
+    }
+    expect(sprint.events).toHaveLength(SPRINT_EVENT_LIMIT);
+    expect(sprint.interventionEvents).toHaveLength(1);
+    expect(sprint.interventionEvents[0].tick).toBe(1);
   });
 });

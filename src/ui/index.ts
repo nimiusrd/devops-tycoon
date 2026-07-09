@@ -10,6 +10,7 @@
  */
 export { Hud } from './Hud';
 export { SprintResultScreen } from './SprintResultScreen';
+export { SprintTimelineChart } from './SprintTimelineChart';
 export { ActionBar } from './ActionBar';
 export { ComboBadge } from './ComboBadge';
 export { PointPops } from './PointPops';

@@ -1205,6 +1205,81 @@ body {
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
+
+/* スプリントタイムライン（RI-53） */
+.sprint-timeline {
+  margin: 0 0 1.25rem;
+  text-align: left;
+}
+.sprint-timeline-hint {
+  margin: 0 0 0.4rem;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+.sprint-timeline-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.sprint-timeline-legend {
+  list-style: none;
+  margin: 0 0 0.35rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.sprint-timeline-legend .legend-queue {
+  color: #7ec8ff;
+}
+.sprint-timeline-legend .legend-fire {
+  color: #ff7a2f;
+}
+.sprint-timeline-legend .legend-combo {
+  color: var(--sun, #ffd45c);
+}
+.sprint-timeline-legend .legend-hp {
+  color: var(--mint, #57e08f);
+}
+.sprint-timeline-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background: color-mix(in srgb, #0b1220 55%, transparent);
+  border: 1px solid color-mix(in srgb, #ffffff 10%, transparent);
+}
+.timeline-series {
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.timeline-series.series-queue {
+  stroke: #7ec8ff;
+}
+.timeline-series.series-fire {
+  stroke: #ff7a2f;
+}
+.timeline-series.series-combo {
+  stroke: var(--sun, #ffd45c);
+}
+.timeline-series.series-hp {
+  stroke: var(--mint, #57e08f);
+  stroke-dasharray: 3 2;
+}
+.timeline-marker-icon {
+  fill: #ff9aa8;
+  font-size: 8px;
+}
+.timeline-axis {
+  fill: var(--text-dim, #9aa3b5);
+  font-size: 8px;
+}
+
 .result-section-label {
   margin: 0 0 0.2rem;
   font-size: 0.7rem;

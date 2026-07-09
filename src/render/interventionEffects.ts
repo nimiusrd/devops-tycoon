@@ -20,7 +20,8 @@ export type InterventionReaction =
   | { kind: 'split'; taskId: number }
   | { kind: 'firefight'; taskId: number }
   | { kind: 'assignDash'; taskId: number }
-  | { kind: 'boardAura'; modifierKind: InterventionModifierKind; durationTicks: number };
+  | { kind: 'boardAura'; modifierKind: InterventionModifierKind; durationTicks: number }
+  | { kind: 'successPulse' };
 
 /** 座標付きの介入リアクション（レンダラ向け）。 */
 export type PositionedInterventionReaction =
@@ -46,7 +47,8 @@ export type PositionedInterventionReaction =
       toY: number;
       angleDeg: number;
     }
-  | { kind: 'boardAura'; modifierKind: InterventionModifierKind; durationTicks: number };
+  | { kind: 'boardAura'; modifierKind: InterventionModifierKind; durationTicks: number }
+  | { kind: 'successPulse' };
 
 const MODIFIER_TOTALS: Record<InterventionModifierKind, number> = {
   throttle: THROTTLE_TICKS,
@@ -113,9 +115,16 @@ export function planInterventionReactions(
 ): InterventionReaction[] {
   switch (effect.actionId) {
     case 'interruptReview':
+      if (effect.affectedTaskIds && effect.affectedTaskIds.length > 0) {
+        return [{ kind: 'reviewSweep', taskIds: effect.affectedTaskIds }];
+      }
+      return [];
     case 'pairReview':
       if (effect.affectedTaskIds && effect.affectedTaskIds.length > 0) {
         return [{ kind: 'reviewSweep', taskIds: effect.affectedTaskIds }];
+      }
+      if ((effect.literacyGain ?? 0) > 0) {
+        return [{ kind: 'successPulse' }];
       }
       return [];
     case 'splitPr':
@@ -197,6 +206,8 @@ export function positionInterventionReactions(
         ];
       }
       case 'boardAura':
+        return [reaction];
+      case 'successPulse':
         return [reaction];
       default:
         return [];

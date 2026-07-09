@@ -147,6 +147,18 @@ describe('interventionEffects (RI-50)', () => {
     }
   });
 
+  it('pairReview は Review 0 件でも literacyGain があれば successPulse を返す', () => {
+    const effect: InterventionEffect = {
+      actionId: 'pairReview',
+      reviewedCount: 0,
+      affectedTaskIds: [],
+      literacyGain: 4,
+      focusCost: 2,
+      gaugeGain: 0.15,
+    };
+    expect(planInterventionReactions(effect, 42)).toEqual([{ kind: 'successPulse' }]);
+  });
+
   it('assignDash は高進捗タスクでも到達点が開始点より先になる', () => {
     const prev = [makeTask(0, { lane: 'coding', progress: 0.82 })];
     const next = [{ ...prev[0], progress: 0.999 }];

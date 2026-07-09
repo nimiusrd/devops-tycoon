@@ -108,7 +108,7 @@ export function SprintScreen({ state, onDispatch, getSprintSnapshot }: SprintScr
             tasks={sprint.tasks}
             metrics={sprint.metrics}
             reviewAccumulator={sprint.reviewAccumulator}
-            modifiers={sprint.modifiers}
+            modifiers={sprint.complete ? undefined : sprint.modifiers}
             sprintTick={state.sprintTick}
             interventionTrigger={interventionTrigger}
             suppressExtinguishTaskIds={suppressExtinguishTaskIds}

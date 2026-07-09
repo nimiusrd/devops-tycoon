@@ -40,6 +40,7 @@ export interface InterventionEffectsProps {
 export function InterventionEffects({ trigger, onFirefightTaskId }: InterventionEffectsProps) {
   const nextKey = useRef(0);
   const removalTimers = useRef<Map<number, number>>(new Map());
+  const seenTriggerKeys = useRef(new Set<number>());
   const [active, setActive] = useState<ActiveEffect[]>([]);
 
   useEffect(() => {
@@ -52,6 +53,9 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
 
   useEffect(() => {
     if (!trigger) return;
+    if (seenTriggerKeys.current.has(trigger.key)) return;
+    seenTriggerKeys.current.add(trigger.key);
+
     const timers = removalTimers.current;
 
     const positioned = planPositionedInterventionReactions(
@@ -71,7 +75,6 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
       ...effect,
       key: nextKey.current++,
     }));
-    const batchKeys = new Set(batch.map((b) => b.key));
 
     setActive((cur) => [...cur, ...batch].slice(-MAX_EFFECTS));
 
@@ -85,7 +88,7 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
               ? FIREFIGHT_MS
               : effect.kind === 'assignDash'
                 ? DASH_MS
-                : effect.kind === 'boardAura'
+                : effect.kind === 'boardAura' || effect.kind === 'successPulse'
                   ? AURA_PULSE_MS
                   : 400;
       const timer = window.setTimeout(() => {
@@ -94,15 +97,6 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
       }, duration + 80);
       timers.set(effect.key, timer);
     }
-
-    return () => {
-      for (const effect of batch) {
-        const timer = timers.get(effect.key);
-        if (timer != null) window.clearTimeout(timer);
-        timers.delete(effect.key);
-      }
-      setActive((cur) => cur.filter((e) => !batchKeys.has(e.key)));
-    };
   }, [trigger, onFirefightTaskId]);
 
   return (
@@ -131,6 +125,8 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
               return (
                 <BoardAuraPulse key={effect.key} effect={effect} duration={AURA_PULSE_MS / 1000} />
               );
+            case 'successPulse':
+              return <SuccessPulse key={effect.key} duration={AURA_PULSE_MS / 1000} />;
             default:
               return null;
           }
@@ -279,6 +275,19 @@ function AssignDash({
         left: interventionPct(effect.toX, 1404),
         top: interventionPct(effect.toY, 573),
       }}
+      exit={{ opacity: 0 }}
+      transition={{ duration, ease: 'easeOut' }}
+    />
+  );
+}
+
+function SuccessPulse({ duration }: { duration: number }) {
+  return (
+    <motion.div
+      className="intervention-success-pulse"
+      data-testid="intervention-effect-success-pulse"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 0.5, 0.2, 0] }}
       exit={{ opacity: 0 }}
       transition={{ duration, ease: 'easeOut' }}
     />

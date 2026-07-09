@@ -150,7 +150,9 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
           const onCooldown = remaining > 0;
           const ready = availability.canActivate;
           const cdPct = onCooldown ? Math.round((1 - remaining / a.cooldownTicks) * 100) : 100;
-          const modRing = deriveModifierRing(sprint, sprintTick, a.id);
+          const modRing = sprint.complete
+            ? { active: false, remaining: 0, total: 0 }
+            : deriveModifierRing(sprint, sprintTick, a.id);
           const modPct = modRing.active ? Math.round((modRing.remaining / modRing.total) * 100) : 0;
           const tone = a.tone ? ` ${a.tone}` : '';
           const blockClass =

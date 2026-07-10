@@ -7,6 +7,7 @@
  */
 import { useCallback, useMemo, useRef } from 'react';
 import { COMPANY_LEVERS } from '../data/levers';
+import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
 import { getRendererKind } from '../render/adapters/selectRenderer';
@@ -41,6 +42,8 @@ export function OrgScreen({
     [org.departments],
   );
   const deptColor = useCallback((id: string) => deptColorMap[id] ?? '#6b4a9e', [deptColorMap]);
+  const diagnosis = diagnosisView(org.diagnosis);
+  const theme = diagnosisTheme(org.diagnosis);
 
   const handleFocusDept = useCallback(
     (deptId: string) => {
@@ -59,8 +62,13 @@ export function OrgScreen({
     <div className="org-screen" data-testid="org-screen">
       <header className="org-head">
         <h2>🗺 全社マップ</h2>
-        <span className="org-diagnosis" data-testid="org-diagnosis">
-          {diagnosisView(org.diagnosis).label}
+        <span
+          className={`org-diagnosis diag-${org.diagnosis}`}
+          data-testid="org-diagnosis"
+          data-diagnosis={org.diagnosis}
+          title={diagnosis.description}
+        >
+          <span aria-hidden="true">{theme.icon}</span> {diagnosis.label}
         </span>
         <span className="org-rank">健全度 {org.healthRank}</span>
       </header>

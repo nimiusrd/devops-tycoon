@@ -4,6 +4,7 @@
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
 import { getBoss } from '../data/bosses';
+import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
 import { getDailyRecord, type MetaState } from '../state/meta';
@@ -35,6 +36,7 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
   const won = state.status === 'won';
   const boss = getBoss(state.bossId);
   const diag = diagnosisView(state.diagnosis);
+  const theme = diagnosisTheme(state.diagnosis);
   const win = won && state.winType ? winView(state.winType) : null;
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
   const t = state.totals;
@@ -44,9 +46,10 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
 
   return (
     <div
-      className={`result-overlay run-end ${won ? 'win' : 'lose'}`}
+      className={`result-overlay run-end ${won ? 'win' : 'lose'} ${theme.toneClass} diag-${state.diagnosis}`}
       data-testid="run-result"
       data-status={state.status}
+      data-diagnosis={state.diagnosis}
       role="dialog"
       aria-label="Run Result"
     >
@@ -85,7 +88,7 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
         <div className="result-diagnosis">
           <p className="result-section-label">組織タイプ診断</p>
           <p className="diagnosis-type" data-testid="diagnosis">
-            {diag.label}
+            <span aria-hidden="true">{theme.icon}</span> {diag.label}
           </p>
           <p>{diag.description}</p>
         </div>

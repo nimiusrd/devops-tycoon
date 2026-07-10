@@ -111,9 +111,25 @@ describe('組織タイプ診断（第13章）', () => {
     expect(diagnose(org(), totals({ rework: 10, completed: 20 }))).toBe('reworkSpiral');
   });
 
+  it('レビュー待ちのピークが限界なら Review Hell', () => {
+    expect(diagnose(org(), totals({ reviewQueuePeak: 16, completed: 20 }))).toBe('reviewHell');
+  });
+
+  it('AI 実装が過多で検証が詰まれば AI Overproduction', () => {
+    expect(
+      diagnose(org(), totals({ aiAssisted: 12, rework: 2, reviewQueuePeak: 12, completed: 20 })),
+    ).toBe('aiOverproduction');
+  });
+
   it('テスト/ドキュメントが整い手戻りが少なければ Documentation Kingdom', () => {
     const solid = org({ testCoverage: 80, documentation: 70 });
     expect(diagnose(solid, totals({ rework: 1, completed: 30 }))).toBe('documentationKingdom');
+  });
+
+  it('崩壊シグネチャがなければ Healthy Acceleration', () => {
+    expect(diagnose(org(), totals({ completed: 20, reviewQueuePeak: 4 }))).toBe(
+      'healthyAcceleration',
+    );
   });
 });
 

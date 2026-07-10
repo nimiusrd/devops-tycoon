@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { EVENT_DEFS, effectiveKind, getEvent } from '../../src/data/events';
+import { diagnosisTheme } from '../../src/render/diagnosisTheme';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
 import {
@@ -90,14 +91,36 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
       }
       s = g.getState();
     }
-    return s.status;
+    return { status: s.status, diagnosis: s.diagnosis };
   });
 
-  expect(['won', 'lost']).toContain(status);
+  expect(['won', 'lost']).toContain(status.status);
 
   await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId('run-end-status')).toBeVisible();
   await expect(page.getByTestId('diagnosis')).toBeVisible();
+  await expect(page.getByTestId('run-result')).toHaveAttribute('data-diagnosis', status.diagnosis);
+  await expect(page.getByTestId('run-result')).toHaveClass(
+    new RegExp(diagnosisTheme(status.diagnosis).toneClass),
+  );
+});
+
+test('RI-21: 組織タイプに対応する画面トーンと状態文を表示する', async ({ page }) => {
+  await page.goto('/?seed=ri21-theme');
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'ri21-theme');
+  });
+
+  const theme = diagnosisTheme('healthyAcceleration');
+  await expect(page.locator('.app')).toHaveAttribute('data-diagnosis', 'healthyAcceleration');
+  await expect(page.locator('.app')).toHaveClass(new RegExp(theme.toneClass));
+  await expect(page.getByTestId('runbar-diagnosis')).toHaveAttribute(
+    'data-diagnosis',
+    'healthyAcceleration',
+  );
+  await expect(page.getByTestId('runbar-diagnosis')).toContainText(theme.warning);
 });
 
 test('RI-37: 休息で強化対象カードを選んでレベルを上げられる', async ({ page }) => {

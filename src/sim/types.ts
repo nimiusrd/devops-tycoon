@@ -374,6 +374,12 @@ export interface SprintResult {
   timeline: TimelineSample[];
   /** 介入イベント全件（RI-53。タイムラインマーカー用。ring buffer 非適用）。 */
   events: SprintEvent[];
+  /** スプリント終了時の集中力残量（RI-54）。 */
+  focusRemaining: number;
+  /** マネジメント集中力の上限（RI-54）。 */
+  focusMax: number;
+  /** 自動鎮火回数（RI-54。緊急対応を打てなかった炎上の受動対応）。 */
+  autoContainCount: number;
 }
 
 /** シミュレーション全体の状態。 */

@@ -596,5 +596,8 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     diagnosis,
     timeline: sprint.timeline.map((s) => ({ ...s })),
     events: sprint.interventionEvents.map((e) => ({ ...e, effect: { ...e.effect } })),
+    focusRemaining: sprint.focus,
+    focusMax: sprint.config.focusMax,
+    autoContainCount: sprint.events.filter((e) => e.kind === 'auto-contain').length,
   };
 }

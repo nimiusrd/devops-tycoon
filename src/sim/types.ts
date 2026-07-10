@@ -350,6 +350,13 @@ export interface TimelineSample {
   seniorHp: number;
 }
 
+/** 同じ開始条件から無介入で再実行した推定値（RI-55）。 */
+export interface SprintBaselineResult {
+  delivered: number;
+  spread: number;
+  maxCombo: number;
+}
+
 /** スプリントリザルト（SPEC 第4.6）。 */
 export interface SprintResult {
   done: number;
@@ -382,6 +389,8 @@ export interface SprintResult {
   focusMax: number;
   /** 自動鎮火回数（RI-54。緊急対応を打てなかった炎上の受動対応）。 */
   autoContainCount: number;
+  /** 同一 seed・同一開始条件から無介入で再実行した推定値（RI-55）。 */
+  baseline?: SprintBaselineResult;
 }
 
 /** シミュレーション全体の状態。 */

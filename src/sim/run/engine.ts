@@ -43,7 +43,7 @@ import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng } from '../rng';
 import { DEFAULT_SEED } from '../seed';
-import { resolveSprintConfig, createSprint, stepSprint, summarizeSprint } from '../sprint';
+import { resolveSprintConfig, stepSprint, summarizeSprint } from '../sprint';
 import type {
   ActionId,
   CardEffects,
@@ -83,6 +83,8 @@ import {
   loseReasonForOutcome,
   PAUSE_AI_DEBUFF_MUL,
 } from './quarterReview';
+import { createSprintFromBaselineInput, runNoInterventionBaseline } from './sprintBaseline';
+import type { SprintBaselineInput } from './sprintBaseline';
 import type {
   BeatState,
   DifficultyId,
@@ -239,6 +241,7 @@ export class RunEngine {
   private sprintRng = createRng('init');
   private sprintTick = 0;
   private accumulatorMs = 0;
+  private sprintBaselineInput: SprintBaselineInput | null = null;
   private lastResult: SprintResult | null = null;
   private draft: string[] | null = null;
   private shop: ShopOffer | null = null;
@@ -348,6 +351,7 @@ export class RunEngine {
     this.sprint = null;
     this.sprintTick = 0;
     this.accumulatorMs = 0;
+    this.sprintBaselineInput = null;
     this.lastResult = null;
     this.draft = null;
     this.shop = null;
@@ -447,28 +451,19 @@ export class RunEngine {
         this.baseConfig.codingSlots + fold.codingSlotBonus + formation.codingSlotBonus,
       ),
     };
-    this.sprintRng = createRng(`${this.seed}:sprint:${this.currentSprintId}`);
+    this.sprintBaselineInput = {
+      seed: `${this.seed}:sprint:${this.currentSprintId}`,
+      config: { ...config },
+      org: structuredClone(this.org),
+      cardEffects: { ...effects },
+      aiAdoptionShare: formation.aiAdoptionShare,
+      reviewLoadAdd: modifiers.reviewLoadAdd,
+    };
+    const initialized = createSprintFromBaselineInput(this.sprintBaselineInput, this.org);
+    this.sprintRng = initialized.rng;
     this.sprintTick = 0;
     this.accumulatorMs = 0;
-    this.sprint = createSprint(
-      config,
-      this.org,
-      this.sprintRng,
-      effects,
-      formation.aiAdoptionShare,
-    );
-    // 次スプリント限定の一時効果: レビュー待ちの初期負荷を積む（巨大 AI 生成 PR 等）。
-    if (modifiers.reviewLoadAdd) {
-      let moved = 0;
-      for (const t of this.sprint.tasks) {
-        if (moved >= modifiers.reviewLoadAdd) break;
-        if (t.lane === 'backlog') {
-          t.lane = 'review';
-          t.progress = 0;
-          moved += 1;
-        }
-      }
-    }
+    this.sprint = initialized.sprint;
     this.phase = 'sprint';
   }
 
@@ -496,6 +491,9 @@ export class RunEngine {
   private resolveSprint(): void {
     if (!this.sprint || !this.currentSprintId) return;
     const result = summarizeSprint(this.sprint, this.org);
+    if (this.sprintBaselineInput) {
+      result.baseline = runNoInterventionBaseline(this.sprintBaselineInput);
+    }
     this.lastResult = result;
     this.sprintsPlayed += 1;
     this.accumulateTotals(result);
@@ -1104,7 +1102,7 @@ export class RunEngine {
       currentSprintId: this.currentSprintId,
       sprint: this.sprint ? structuredClone(this.sprint) : null,
       sprintTick: this.sprint ? this.sprintTick : 0,
-      lastResult: this.lastResult ? { ...this.lastResult } : null,
+      lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
       draft: this.draft ? [...this.draft] : null,
       shop: this.shop
         ? {

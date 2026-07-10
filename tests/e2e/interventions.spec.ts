@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { comboMultiplier } from '../../src/sim/model';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
 
@@ -90,6 +91,51 @@ test('スプリント盤面に集中力と介入アクションバーが並ぶ',
   for (const id of ['interruptReview', 'firefight', 'overtime', 'andon']) {
     await expect(page.getByTestId(`action-${id}`)).toBeVisible();
   }
+});
+
+test('コンボと連携ゲージの UI 表示が sim 状態と一致する（RI-36）', async ({ page }) => {
+  await page.goto('/?seed=ri36-combo-gauge');
+
+  const gauge = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'ri36-combo-gauge');
+    g.beginSetupSprint();
+    const outcome = g.dispatch('overtime');
+    const sprint = g.getState().sprint!;
+    return {
+      ok: outcome.ok,
+      effectGain: outcome.effect?.gaugeGain,
+      simValue: sprint.comboGauge,
+    };
+  });
+
+  expect(gauge.ok).toBe(true);
+  expect(gauge.effectGain).toBeGreaterThan(0);
+  const gaugeElement = page.getByTestId('combo-gauge');
+  await expect(gaugeElement).toHaveAttribute('data-gauge', String(gauge.simValue));
+  await expect(gaugeElement.locator('i')).toHaveAttribute(
+    'style',
+    `width: ${Math.round(gauge.simValue * 100)}%;`,
+  );
+
+  const combo = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    let state = g.getState();
+    let guard = 0;
+    while (guard < 4000 && state.sprint && !state.sprint.complete) {
+      state = g.step(100);
+      if ((state.sprint?.metrics.combo ?? 0) >= 2) break;
+      guard += 1;
+    }
+    return state.sprint?.metrics.combo ?? 0;
+  });
+
+  expect(combo).toBeGreaterThanOrEqual(2);
+  const comboElement = page.getByTestId('combo');
+  await expect(comboElement).toHaveAttribute('data-combo', String(combo));
+  await expect(comboElement).toContainText(`COMBO ×${combo}`);
+  await expect(comboElement).toContainText(`出荷倍率 ${comboMultiplier(combo).toFixed(1)}x`);
 });
 
 test('Review が空のとき割り込みレビューは無効＋理由表示（RI-51）', async ({ page }) => {

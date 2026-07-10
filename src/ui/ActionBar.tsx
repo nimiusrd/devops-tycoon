@@ -138,7 +138,12 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
             <FocusFeedbackPops pops={focusPops} />
           </div>
           <FocusPips focus={focus} max={config.focusMax} />
-          <div className={`combo-gauge${gaugeFlash ? ' flash' : ''}`} title="連携ゲージ">
+          <div
+            className={`combo-gauge${gaugeFlash ? ' flash' : ''}`}
+            data-testid="combo-gauge"
+            data-gauge={comboGauge}
+            title="連携ゲージ"
+          >
             <i style={{ width: `${Math.round(comboGauge * 100)}%` }} />
           </div>
         </div>

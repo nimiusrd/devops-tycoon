@@ -7,6 +7,7 @@
  */
 import { RANKING_KINDS, RANKING_LABEL } from '../sim/orgscale/industry';
 import type { IndustryState, RankingKind } from '../sim/orgscale/types';
+import { IndustrySkyline } from './IndustrySkyline';
 
 const TREND_ICON: Record<-1 | 0 | 1, string> = { 1: '▲', 0: '→', [-1]: '▼' };
 
@@ -17,8 +18,6 @@ export interface IndustryScreenProps {
 
 export function IndustryScreen({ industry, onSetKind }: IndustryScreenProps) {
   const { kind, entries } = industry;
-  const maxScore = Math.max(1, ...entries.map((e) => e.org.scores[kind]));
-  const skyline = entries.slice(0, 8);
 
   return (
     <div className="industry-screen" data-testid="industry-screen">
@@ -49,18 +48,7 @@ export function IndustryScreen({ industry, onSetKind }: IndustryScreenProps) {
         ))}
       </div>
 
-      <div className="industry-skyline" data-testid="industry-skyline" aria-hidden>
-        {skyline.map((e) => {
-          const h = 30 + Math.round((e.org.scores[kind] / maxScore) * 130);
-          return (
-            <div className="hq" key={e.org.id} title={`${e.org.name}: ${e.org.scores[kind]}`}>
-              <span className="hq-crown">{e.rank === 1 ? '👑' : ''}</span>
-              <div className={`hq-bar${e.org.isSelf ? ' is-self' : ''}`} style={{ height: h }} />
-              <span className="hq-rank">{e.rank}</span>
-            </div>
-          );
-        })}
-      </div>
+      <IndustrySkyline industry={industry} />
 
       <table className="industry-table" data-testid="industry-table">
         <thead>

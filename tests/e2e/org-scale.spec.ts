@@ -38,11 +38,16 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
   // パンくずで業界ランキングへ。
   await page.getByTestId('crumb-industry').click();
   await expect(page.getByTestId('industry-screen')).toBeVisible();
+  await expect(page.getByTestId('industry-skyline')).toBeVisible();
+  await expect(page.getByTestId('industry-hq-crown')).toBeVisible();
+  await expect(page.getByTestId('industry-hq-self')).toBeVisible();
   await expect(page.getByTestId('industry-self-row')).toBeVisible();
 
   // ランキング種別タブを切り替える。
   await page.getByTestId('rank-tab-healthy').click();
   await expect(page.getByTestId('rank-tab-healthy')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('industry-skyline')).toBeVisible();
+  await expect(page.getByTestId('industry-hq-self')).toBeVisible();
 
   // パンくずで部署ビューへ。
   await page.getByTestId('crumb-department').click();

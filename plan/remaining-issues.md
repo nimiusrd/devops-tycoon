@@ -538,9 +538,10 @@ GitHub API 実データモード、チーム対抗ランキング、社内LT/経
 モディファイア tick 等）を fixture 表で検証。失敗理由（`no-target` / `cooldown` / `no-focus` /
 `complete`）も共通契約として整理。炎上タイマー固有は `tests/unit/fire.test.ts` に分離。
 
-#### RI-36 コンボ/連携ゲージの UI↔sim 検証 E2E — 優先度:中
+#### RI-36 コンボ/連携ゲージの UI↔sim 検証 E2E — 優先度:中 / 完了
 
-コンボ/連携ゲージの表示と実効果が乖離しないよう、UI 表示値と sim 集計値を同一 seed で検証する E2E を追加する。
+**完了**: `tests/e2e/interventions.spec.ts` に固定 seed の E2E を追加。同一 sim スナップショットの
+コンボ値・出荷倍率と `ComboBadge` の表示、および介入後の連携ゲージ値とバー幅が一致することを検証する。
 
 #### RI-37 カード強化のショップ/休息接続確認＋強化対象選択 UI — 優先度:中 / 完了
 

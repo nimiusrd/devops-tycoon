@@ -198,4 +198,14 @@ describe('SprintState.events 記録（RI-52）', () => {
     const result = summarizeSprint(sprint, org);
     expect(result.autoContainCount).toBe(3);
   });
+
+  it('maxTicks 到達の forceDrain 鎮火も autoContainCount に含める', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [burningTask(0, 5), burningTask(1, 5)]);
+    sprint.config.maxTicks = 0;
+    stepSprint(sprint, org, () => 0.5, 0);
+    expect(sprint.complete).toBe(true);
+    expect(sprint.metrics.autoContainCount).toBe(2);
+    expect(summarizeSprint(sprint, org).autoContainCount).toBe(2);
+  });
 });

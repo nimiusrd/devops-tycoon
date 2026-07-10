@@ -18,8 +18,10 @@ export interface InterventionAnalysisView {
 }
 
 function countFirefightComboSaves(result: SprintResult): number {
-  return result.events.filter((e) => e.kind === 'intervention' && e.effect.actionId === 'firefight')
-    .length;
+  // 発動直後の combo が 0 なら守る対象が無い鎮火なので数えない。
+  return result.events.filter(
+    (e) => e.kind === 'intervention' && e.effect.actionId === 'firefight' && e.combo > 0,
+  ).length;
 }
 
 function totalReviewedPr(result: SprintResult): number {

@@ -409,8 +409,10 @@ function forceDrain(sprint: SprintState, org: OrgState): void {
       continue;
     }
     // まだ燃えていたタスクはスプリント終了時に鎮火扱いで畳む（鎮火+延焼=障害総数を保つ）。
+    // 緊急対応できなかった受動鎮火なので autoContainCount にも加算する（RI-54）。
     if (task.incident) {
       m.contained += 1;
+      m.autoContainCount += 1;
       delete task.burnTicksLeft;
     }
     task.lane = 'done';

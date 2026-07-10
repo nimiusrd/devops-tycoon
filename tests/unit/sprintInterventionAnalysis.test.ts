@@ -95,6 +95,32 @@ describe('sprintInterventionAnalysis（RI-54）', () => {
     expect(view.tip).toContain('緊急対応でコンボを 2 回守った');
   });
 
+  it('コンボ 0 の緊急対応はコンボ守りに数えない', () => {
+    const view = planInterventionAnalysis(
+      makeResult({
+        focusRemaining: 1,
+        focusMax: 8,
+        actionCounts: { firefight: 2 },
+        events: [
+          {
+            tick: 3,
+            kind: 'intervention',
+            combo: 0,
+            effect: { actionId: 'firefight', focusCost: 1, gaugeGain: 0.5 },
+          },
+          {
+            tick: 8,
+            kind: 'intervention',
+            combo: 3,
+            effect: { actionId: 'firefight', focusCost: 1, gaugeGain: 0.5 },
+          },
+        ],
+      }),
+    );
+    expect(view.rows[1]).toEqual({ label: 'コンボを守った', value: '1 回' });
+    expect(view.tip).not.toContain('緊急対応でコンボを 2 回守った');
+  });
+
   it('自動鎮火 Tip は延焼より優先する', () => {
     const view = planInterventionAnalysis(
       makeResult({

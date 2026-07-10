@@ -4,6 +4,7 @@ import { createOrgState } from '../../src/sim/org';
 import {
   createSprintFromBaselineInput,
   runNoInterventionBaseline,
+  runSprintSimulation,
   type SprintBaselineInput,
 } from '../../src/sim/run/sprintBaseline';
 import { resolveSprintConfig } from '../../src/sim/sprint';
@@ -37,5 +38,19 @@ describe('無介入ベースライン（RI-55）', () => {
     const org = structuredClone(input.org);
     const { sprint } = createSprintFromBaselineInput(input, org);
     expect(sprint.tasks.filter((task) => task.lane === 'review')).toHaveLength(4);
+  });
+
+  it('介入ポリシーを tick ごとに実行しても入力の組織状態を変更しない', () => {
+    const input = makeInput();
+    const before = structuredClone(input.org);
+    let policyCalls = 0;
+
+    runSprintSimulation(input, ({ org }) => {
+      policyCalls += 1;
+      org.morale = 0;
+    });
+
+    expect(policyCalls).toBeGreaterThan(0);
+    expect(input.org).toEqual(before);
   });
 });

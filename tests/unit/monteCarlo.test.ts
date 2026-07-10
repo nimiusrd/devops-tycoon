@@ -8,9 +8,11 @@ import {
   runMonteCarlo,
   runMonteCarloSummary,
   summarizeMetaRewardMonteCarlo,
+  summarizeInterventionComparisons,
   summarizeMonteCarlo,
   summarizeNumeric,
   summarizeReviewMonteCarlo,
+  type InterventionComparison,
   type RunMetrics,
 } from './helpers/monteCarlo';
 import {
@@ -25,6 +27,11 @@ import {
 } from './helpers/metaRewardRanges';
 import { REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RunEngine } from '../../src/sim/run/engine';
+import { runSprintSimulation, type SprintBaselineInput } from '../../src/sim/run/sprintBaseline';
+import { applyAction } from '../../src/sim/actions';
+import { IDENTITY_CARD_EFFECTS } from '../../src/sim/model';
+import { createOrgState } from '../../src/sim/org';
+import { resolveSprintConfig } from '../../src/sim/sprint';
 import { playRun } from './helpers/runFlow';
 
 const MC_SEEDS = ['mc-a', 'mc-b', 'mc-c', 'mc-d', 'mc-e'] as const;
@@ -364,6 +371,88 @@ describe('monteCarlo 基盤（RI-14）', () => {
       const estimatedRunsToComplete = Math.ceil(TOTAL_UNLOCK_COST / blendedMean);
       expect(estimatedRunsToComplete).toBeGreaterThan(5);
       expect(estimatedRunsToComplete).toBeLessThan(50);
+    });
+  });
+
+  describe('RI-56: 介入効果量の許容レンジ', () => {
+    const RI56_SEEDS = Array.from({ length: 24 }, (_, i) => `ri56-intervention-${i}`);
+
+    interface Ri56Comparison extends InterventionComparison {
+      interruptsUsed: number;
+      firefightsUsed: number;
+    }
+
+    function runRi56Comparisons(): Ri56Comparison[] {
+      return RI56_SEEDS.map((seed) => {
+        const org = createOrgState('default', true);
+        org.testCoverage = 0;
+        org.aiLiteracy = 0;
+        const input: SprintBaselineInput = {
+          seed,
+          config: resolveSprintConfig('default'),
+          org,
+          cardEffects: { ...IDENTITY_CARD_EFFECTS },
+          aiAdoptionShare: 1,
+          reviewLoadAdd: 6,
+        };
+        const baseline = runSprintSimulation(input);
+        let interventionsUsed = 0;
+        let interruptsUsed = 0;
+        let firefightsUsed = 0;
+        const intervention = runSprintSimulation(input, ({ sprint, org, rng, tick }) => {
+          if (sprint.tasks.some((task) => task.lane === 'rework' && task.incident)) {
+            if (applyAction('firefight', sprint, org, rng, tick).ok) {
+              interventionsUsed += 1;
+              firefightsUsed += 1;
+            }
+          }
+          if (sprint.tasks.filter((task) => task.lane === 'review').length >= 6) {
+            if (applyAction('interruptReview', sprint, org, rng, tick).ok) {
+              interventionsUsed += 1;
+              interruptsUsed += 1;
+            }
+          }
+        });
+        return {
+          seed,
+          baseline,
+          intervention,
+          interventionsUsed,
+          interruptsUsed,
+          firefightsUsed,
+        };
+      });
+    }
+
+    it('同一 seed 群と単純介入ポリシーなら結果が完全再現する', () => {
+      expect(runRi56Comparisons()).toEqual(runRi56Comparisons());
+    });
+
+    it('介入が有効だが支配的ではない差分に収まる', () => {
+      const comparisons = runRi56Comparisons();
+      const summary = summarizeInterventionComparisons(comparisons);
+
+      expect(summary.trials).toBe(RI56_SEEDS.length);
+      expect(summary.interventionsUsed.min).toBeGreaterThan(0);
+      expect(summary.interventionsUsed.mean).toBeGreaterThanOrEqual(3);
+      expect(summary.interventionsUsed.mean).toBeLessThanOrEqual(8);
+      expect(comparisons.reduce((sum, c) => sum + c.interruptsUsed, 0)).toBeGreaterThan(1);
+      expect(comparisons.reduce((sum, c) => sum + c.firefightsUsed, 0)).toBeGreaterThan(1);
+
+      // 平均 5〜25% の出荷改善を手応えの目安とし、単一 seed でも 75% 超の支配を許さない。
+      expect(summary.deliveredDelta.mean).toBeGreaterThan(10);
+      expect(summary.deliveredDeltaRatio.mean).toBeGreaterThanOrEqual(0.05);
+      expect(summary.deliveredDeltaRatio.mean).toBeLessThanOrEqual(0.25);
+      expect(summary.deliveredDeltaRatio.max).toBeLessThanOrEqual(0.75);
+
+      // 緊急対応は延焼を悪化させず、平均では確実に抑える。
+      expect(summary.spreadReduction.min).toBeGreaterThanOrEqual(0);
+      expect(summary.spreadReduction.mean).toBeGreaterThanOrEqual(0.5);
+      expect(summary.spreadReduction.mean).toBeLessThanOrEqual(4);
+
+      // コンボ改善も有意だが、平均 +8 を超える唯一解にはしない。
+      expect(summary.maxComboDelta.mean).toBeGreaterThanOrEqual(1);
+      expect(summary.maxComboDelta.mean).toBeLessThanOrEqual(8);
     });
   });
 });

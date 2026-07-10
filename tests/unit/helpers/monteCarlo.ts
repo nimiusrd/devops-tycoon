@@ -7,6 +7,7 @@
 import { getTrial } from '../../../src/data/difficulties';
 import { UNLOCK_DEFS } from '../../../src/data/unlocks';
 import { RunEngine } from '../../../src/sim/run/engine';
+import type { SprintBaselineResult } from '../../../src/sim/types';
 import type { DifficultyId, RunState, RunStatus, RunTotals } from '../../../src/sim/run/types';
 import { applyRunReward, defaultMeta, type RunRewardInput } from '../../../src/state/meta';
 import { playRun, type PlayOptions } from './runFlow';
@@ -31,6 +32,24 @@ export interface NumericMetricSummary {
   max: number;
   /** 各試行の生値（許容レンジ検証・デバッグ用）。 */
   values: number[];
+}
+
+/** 同一 seed の無介入・介入スプリントを対にした結果（RI-56）。 */
+export interface InterventionComparison {
+  seed: string;
+  baseline: SprintBaselineResult;
+  intervention: SprintBaselineResult;
+  interventionsUsed: number;
+}
+
+/** 介入効果量のペア差分サマリー（正値が改善を表す）。 */
+export interface InterventionComparisonSummary {
+  trials: number;
+  interventionsUsed: NumericMetricSummary;
+  deliveredDelta: NumericMetricSummary;
+  deliveredDeltaRatio: NumericMetricSummary;
+  spreadReduction: NumericMetricSummary;
+  maxComboDelta: NumericMetricSummary;
 }
 
 /** ランが勝敗確定済みか。 */
@@ -216,6 +235,31 @@ export function summarizeNumeric(values: readonly number[]): NumericMetricSummar
     min: Math.min(...copy),
     max: Math.max(...copy),
     values: copy,
+  };
+}
+
+/** 同一 seed ペアから、介入による絶対差・相対差を集計する。 */
+export function summarizeInterventionComparisons(
+  comparisons: readonly InterventionComparison[],
+): InterventionComparisonSummary {
+  return {
+    trials: comparisons.length,
+    interventionsUsed: summarizeNumeric(comparisons.map((c) => c.interventionsUsed)),
+    deliveredDelta: summarizeNumeric(
+      comparisons.map((c) => c.intervention.delivered - c.baseline.delivered),
+    ),
+    deliveredDeltaRatio: summarizeNumeric(
+      comparisons.map(
+        (c) =>
+          (c.intervention.delivered - c.baseline.delivered) / Math.max(1, c.baseline.delivered),
+      ),
+    ),
+    spreadReduction: summarizeNumeric(
+      comparisons.map((c) => c.baseline.spread - c.intervention.spread),
+    ),
+    maxComboDelta: summarizeNumeric(
+      comparisons.map((c) => c.intervention.maxCombo - c.baseline.maxCombo),
+    ),
   };
 }
 

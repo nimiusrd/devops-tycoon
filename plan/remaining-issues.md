@@ -75,7 +75,7 @@
 | RI-14 | モンテカルロ統計テスト基盤 | 中 | 完了 | — | 第22.3 |
 | RI-15 | スプリント主要メトリクスの許容レンジ | 中 | 完了 | RI-14 | — |
 | RI-16 | 全社/部門レバー係数の許容レンジ | 中 | 完了 | RI-14 | `src/data/levers.ts` |
-| RI-17 | 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ | 中 | 未着手 | RI-14 | `quarterReview.ts` |
+| RI-17 | 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ | 中 | 完了 | RI-14 | `quarterReview.ts` |
 | RI-18 | メタ解放コスト・points 配分の許容レンジ | 中 | 完了 | RI-14 | `src/data/unlocks.ts` |
 | RI-19 | 編成差のスプリント結果への影響レンジ | 低 | 未着手 | RI-14 | — |
 | RI-56 | 介入効果量の許容レンジ(介入あり/なし差の担保) | 中 | 完了 | RI-14 | 第6 / `src/sim/actions.ts` |
@@ -386,13 +386,13 @@ E2E: `tests/e2e/interventions.spec.ts`（比較値・推定注記）。
 副作用がないこと、代表 seed 群での影響方向性（AI依存度低下・負債返済・炎上鎮火等）が
 許容レンジ内であることを検証。現行 `src/data/levers.ts` の暫定値は調整不要。
 
-#### RI-17 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ — 優先度:中（依存: RI-14）
+#### RI-17 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ — 優先度:中 / 完了（依存: RI-14）
 
-- 目標修正の代償（`src/data/goalAdjustments.ts` の `trustDelta` / `budgetDelta` / `goalEffects` / `orgEffects`）。
-- `evaluateQuarterOutcome`（`src/sim/run/quarterReview.ts`）の outcome 閾値（信頼・予算・士気・Senior HP・
-  missedCount）。
-- 目標生成（`buildQuarterGoal`）のボス定義からの導出（`bossTargetMul` / 難易度補正 / `priorGoal` の 0.95
-  逓減）が、継続するほど易化しすぎ／難化しすぎないかを長ランで検証する。
+**完了**: `tests/unit/quarter-review.test.ts` で、目標修正の信頼・予算・KPI・組織状態の代償が安全な
+レンジに収まり、`evaluateQuarterOutcome` の信頼・予算・士気・Senior HP・missedCount 境界が期待する
+outcome になることを検証。`buildQuarterGoal` は全ボス・全難易度と `priorGoal` 引き継ぎで目標値の
+許容範囲を検証する。さらに `tests/unit/monteCarlo.test.ts` で、normal 難易度の代表 8 seed を通し、
+レビュー回数・修正回数・四半期数・最終 KPI・最小信頼の長ラン許容レンジを回帰検知する。
 
 #### RI-18 メタ解放コスト・points 配分の許容レンジ — 優先度:中（依存: RI-14）
 

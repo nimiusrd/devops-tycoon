@@ -175,3 +175,35 @@ test('Review に対象があるとき対象数バッジを表示する（RI-51�
   await expect(page.getByTestId('action-badge-interruptReview')).toContainText('PR');
   await expect(page.getByTestId('action-interruptReview')).toBeEnabled();
 });
+
+test('介入ありのリザルトに無介入ベースライン比較を表示する（RI-55）', async ({ page }) => {
+  await page.goto('/?seed=ri55-e2e');
+
+  const result = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('easy', [], 'ri55-e2e');
+    g.beginSetupSprint();
+    const outcome = g.dispatch('overtime');
+    const state = g.step(1_000_000);
+    if (!outcome.ok || state.phase !== 'result' || !state.lastResult?.baseline) {
+      throw new Error('RI-55 の比較対象リザルトを生成できませんでした');
+    }
+    return state.lastResult;
+  });
+
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-baseline-comparison')).toBeVisible();
+  await expect(page.getByTestId('result-baseline-row-delivered')).toContainText(
+    `${result.baseline!.delivered} pt → ${result.delivered} pt`,
+  );
+  await expect(page.getByTestId('result-baseline-row-spread')).toContainText(
+    `${result.baseline!.spread} 件 → ${result.spread} 件`,
+  );
+  await expect(page.getByTestId('result-baseline-row-maxCombo')).toContainText(
+    `x${result.baseline!.maxCombo} → x${result.maxCombo}`,
+  );
+  await expect(page.getByTestId('result-baseline-disclaimer')).toContainText(
+    '厳密な同一世界線ではありません',
+  );
+});

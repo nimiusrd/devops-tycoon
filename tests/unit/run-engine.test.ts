@@ -74,6 +74,39 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(s.evolution.points).toBeGreaterThan(0);
   });
 
+  it('RI-55: 無介入スプリントの実績は同条件ベースラインと一致する', () => {
+    const e = new RunEngine({ seed: 'ri55-no-intervention', difficulty: 'normal' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    const result = e.snapshot().lastResult!;
+
+    expect(result.baseline).toEqual({
+      delivered: result.delivered,
+      spread: result.spread,
+      maxCombo: result.maxCombo,
+    });
+  });
+
+  it('RI-55: 介入ありでも無介入ベースラインを添付し、ライブ状態を維持する', () => {
+    const e = new RunEngine({ seed: 'ri55-intervention', difficulty: 'normal' });
+    e.startRun();
+    e.beginSetupSprint();
+    expect(e.dispatch('overtime').ok).toBe(true);
+    e.step(1_000_000);
+    const state = e.snapshot();
+    const result = state.lastResult!;
+
+    expect(result.actionCounts.overtime).toBe(1);
+    expect(result.baseline).toBeDefined();
+    expect(
+      result.delivered !== result.baseline!.delivered ||
+        result.spread !== result.baseline!.spread ||
+        result.maxCombo !== result.baseline!.maxCombo,
+    ).toBe(true);
+    expect(state.org.deliveryScore).toBeGreaterThanOrEqual(result.delivered);
+  });
+
   it('Easy と Nightmare では同一 seed でも結果が変わる（難易度が効く）', () => {
     const easy = playRun(new RunEngine({ seed: 'diff-cmp', difficulty: 'easy' }));
     const nightmare = playRun(new RunEngine({ seed: 'diff-cmp', difficulty: 'nightmare' }));

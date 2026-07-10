@@ -33,7 +33,7 @@
 | --- | --- | --- | --- | --- | --- |
 | RI-01 | 全社マップ(org-screen)の等角化 | 高 | 完了 | — | 第4.8 / `org-screen.png` |
 | RI-02 | 部署ビュー(dept-screen)の等角化 | 高 | 完了 | — | 第4.9 / `dept-screen.png` |
-| RI-03 | 業界ランキング(industry-screen)の等角化 | 中 | 未着手 | — | 第4.10 / `industry-screen.png` |
+| RI-03 | 業界ランキング(industry-screen)の等角化 | 中 | 完了 | — | 第4.10 / `industry-screen.png` |
 | RI-04 | ドリルダウンのカメラ遷移演出 | 中 | 未着手 | RI-11 | 第4.11 / `drilldown.html` |
 | RI-05 | タスク粒の工程間移動アニメ | 高 | 完了 | — | 第18.1 |
 | RI-06 | 延焼の連鎖演出 | 高 | 完了 | — | 第18.2 |
@@ -147,12 +147,13 @@ Vitest: `tests/unit/orgBoardScene.test.ts`。E2E: `tests/e2e/org-scale.spec.ts`�
 `DeptScreen` のフラット `TeamPipeline` を等角盤面へ差し替え（部門 HUD・部門レバーは維持）。
 Vitest: `tests/unit/deptBoardScene.test.ts`。E2E: `tests/e2e/org-scale.spec.ts`（`dept-board` 検証）。
 
-#### RI-03 業界ランキング(industry-screen)の等角化 — 優先度:中
+#### RI-03 業界ランキング(industry-screen)の等角化 — 優先度:中 / 完了
 
-- **現状**: ランキング表＋スカイライン（高さ=スコア）はあるが、ビルは等角ではない。
-- **目標（`mockups/industry-screen.png` / 第4.10）**: 各社本社ビルを**等角**で並べた HQスカイライン
-  （1位に王冠・自社は発光）。ランキング種別タブ・リーグ/シーズン表示。
-- **規模感**: 小〜中。スカイラインを等角ビルに置換＋強調演出。
+**完了**: `src/render/industryBoardScene.ts` に `INDUSTRY_VIEW`（740×360）設計座標空間と
+`planIndustryBoardScene()` を追加し、ランキング種別ごとのスコアから上位 HQ ビルの高さ・配置・
+1位王冠・自社発光を純関数で導出。`src/ui/IndustrySkyline.tsx` で等角ビル SVG とラベルへ接続し、
+`IndustryScreen` のフラットな棒グラフスカイラインを置換した。自社が上位枠外でも自社 HQ を末尾に含める。
+Vitest: `tests/unit/industryBoardScene.test.ts`。E2E: `tests/e2e/org-scale.spec.ts`（スカイライン・王冠・自社 HQ 検証）。
 
 #### RI-04 ドリルダウンのカメラ遷移演出 — 優先度:中（依存: RI-11）
 

@@ -33,7 +33,7 @@
 | [4.5](../SPEC.md#45-組織進化ツリー画面) | 組織進化ツリー画面 | `src/ui/EvolutionScreen.tsx`, `src/sim/run/evolution.ts`, `src/data/evolution.ts` | ✅ |
 | [4.6](../SPEC.md#46-スプリントリザルト画面) | スプリントリザルト画面 | `src/ui/SprintResultScreen.tsx`, `src/sim/outcome.ts` | 🟡 Done/Delivered/Combo/AI率/Review Max/Rework/Incidents（鎮火・延焼）/評価/診断/称号は実装。§4.6 例の「介入: 割り込み×3 / 緊急対応×1」の介入内訳は `SprintResult` に未集計で表示なし（`summarizeSprint` が `interventionsUsed`/`focusSpent` を渡していない） |
 | [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビュー / 目標修正画面 | `src/ui/QuarterReviewScreen.tsx`, `src/sim/run/quarterReview.ts`, `src/data/goalAdjustments.ts` / `tests/unit/quarter-review.test.ts` | ✅ |
-| [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 組織スケールとズーム階層 / 全社・部署・業界ビュー / 画面遷移 | `src/sim/orgscale/*`, `src/ui/OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx`, `src/render/orgScene.ts`, `orgCamera.ts` / `tests/unit/orgscale*.test.ts`, `tests/e2e/org-scale.spec.ts` | 🟡 4階層ズーム/集約/カメラ遷移は動作。全社・部署・業界の等角化（mockup 視覚到達）は [remaining-issues.md](./remaining-issues.md) RI-01〜RI-04 で残務 |
+| [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 組織スケールとズーム階層 / 全社・部署・業界ビュー / 画面遷移 | `src/sim/orgscale/*`, `src/ui/OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx`, `src/render/orgScene.ts`, `orgCamera.ts` / `tests/unit/orgscale*.test.ts`, `tests/e2e/org-scale.spec.ts` | 🟡 4階層ズーム/集約/カメラ遷移は動作。全社・部署・業界の等角化は完了し、ドリルダウンのカメラズーム演出が [remaining-issues.md](./remaining-issues.md) RI-04 で残務 |
 | [5](../SPEC.md#5-プレイヤーが操作するリソース) | プレイヤーが操作するリソース | `src/sim/types.ts`（`OrgState` の基本リソース・`SprintState.focus`=集中力）, `src/sim/org.ts`, `src/sim/run/types.ts`（`RunState.budget`=予算・`EvolutionState.points`=進化ポイント） | ✅ |
 | [6](../SPEC.md#6-スプリント中の能動操作) | スプリント中の能動操作 | `src/sim/actions.ts`, `src/ui/ComboBadge.tsx`（6.2 コンボ）/ `tests/unit/combo.test.ts` | 🟡 介入8種・集中力・コンボは実装。§6.1「タスク差配」は対象/担当をドラッグ選択する操作ではなく `assignTask` のボタン自動選択に留まる |
 | [7](../SPEC.md#7-ai導入施策カードデッキ) | AI導入施策カード（デッキ） | `src/sim/cards.ts`, `src/data/cards.ts`, `src/ui/CardView.tsx`, `DeckBar.tsx`, `DraftScreen.tsx` / `tests/unit/cards.test.ts` | 🟡 ドラフト/強化は実装。§7.1 の「手札配布→発動」は未実装で、現状は `deckEffects` がデッキ全体を毎スプリントの係数へ畳み込む方式（手札・発動 API なし） |
@@ -65,7 +65,7 @@
 
 | 項目 | 該当 SPEC 章 | 状態 | 追跡先 |
 | --- | --- | --- | --- |
-| 全社・部署・業界ビューの等角化（mockup 視覚到達） | [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応), [18](../SPEC.md#18-視覚表現) | 🟡 機能は動作・見た目が残務 | [remaining-issues.md](./remaining-issues.md) RI-01〜RI-04 |
+| ドリルダウンのカメラ遷移演出（mockup 視覚到達） | [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応), [18](../SPEC.md#18-視覚表現) | 🟡 機能は動作・カメラズーム演出が残務 | [remaining-issues.md](./remaining-issues.md) RI-04 |
 | 演出・ビジュアルの残務（粒の流れ・延焼連鎖・スイープ・スローモー・ご褒美・6タイプ演出・キャラ表情） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [12](../SPEC.md#12-キャラクター育成), [18.1](../SPEC.md#181-基本演出), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.3](../SPEC.md#183-画面ステート組織の空気感), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装 | [remaining-issues.md](./remaining-issues.md) RI-05〜RI-10, RI-21 |
 | リザルトの介入内訳（割り込み×N / 緊急対応×N の表示） | [4.6](../SPEC.md#46-スプリントリザルト画面) | 🟡 `SprintResult` に未集計 | [remaining-issues.md](./remaining-issues.md) RI-29 |
 | 能動操作・カードの操作方式（タスク差配のドラッグ / 手札配布→発動） | [6](../SPEC.md#6-スプリント中の能動操作), [7](../SPEC.md#7-ai導入施策カードデッキ) | 🟡 効果は実装・操作方式が SPEC と差 | [remaining-issues.md](./remaining-issues.md) RI-30 |

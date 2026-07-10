@@ -15,6 +15,7 @@ const baseMetrics = (): SprintMetrics => ({
   reworkCount: 0,
   incidentCount: 0,
   contained: 0,
+  autoContainCount: 0,
   spread: 0,
   aiAssistedCompleted: 0,
   completedCount: 0,

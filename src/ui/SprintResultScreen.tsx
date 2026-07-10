@@ -5,6 +5,7 @@
  * Incidents / Senior HP / 介入 と、評価・診断・称号を表示する。
  */
 import { getAction } from '../data/actions';
+import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
 import type { GrowthOutcome } from '../sim/run/types';
 import type { ActionId, SprintResult } from '../sim/types';
@@ -67,6 +68,8 @@ export function SprintResultScreen({
   continueLabel = 'カードドラフトへ →',
   abandonLabel = 'タイトルへ',
 }: SprintResultScreenProps) {
+  const analysis = planInterventionAnalysis(result);
+
   return (
     <div
       className="result-overlay"
@@ -88,6 +91,22 @@ export function SprintResultScreen({
           ))}
         </dl>
         <SprintTimelineChart timeline={result.timeline} events={result.events} />
+        {analysis.showSection && (
+          <div className="result-intervention-analysis" data-testid="result-intervention-analysis">
+            <p className="result-section-label">介入分析</p>
+            <dl className="result-rows result-analysis-rows">
+              {analysis.rows.map((row) => (
+                <div className="result-row" key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="result-analysis-tip" data-testid="result-intervention-tip">
+              💡 {analysis.tip}
+            </p>
+          </div>
+        )}
         <div className="result-diagnosis">
           <p className="result-section-label">診断</p>
           <p>{result.diagnosis}</p>

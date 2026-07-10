@@ -269,6 +269,8 @@ export interface SprintMetrics {
   incidentCount: number;
   /** 鎮火できた障害数。 */
   contained: number;
+  /** 自動鎮火回数（RI-54。ring buffer 非依存の累計）。 */
+  autoContainCount: number;
   /** 延焼した障害数。 */
   spread: number;
   /** AI 利用で Done に至ったタスク数。 */

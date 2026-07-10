@@ -3,7 +3,13 @@ import { formatRecentSprintEvents, formatSprintEvent } from '../../src/render/sp
 import { applyAction } from '../../src/sim/actions';
 import { BURN_TICKS, INCIDENT_CONTAIN_HP } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
-import { createSprint, resolveSprintConfig, reviewOne, stepSprint } from '../../src/sim/sprint';
+import {
+  createSprint,
+  resolveSprintConfig,
+  reviewOne,
+  stepSprint,
+  summarizeSprint,
+} from '../../src/sim/sprint';
 import { SPRINT_EVENT_LIMIT, appendSprintEvent } from '../../src/sim/sprintEvents';
 import type { OrgState, SprintEvent, SprintState, Task } from '../../src/sim/types';
 
@@ -142,6 +148,7 @@ describe('SprintState.events 記録（RI-52）', () => {
       true,
     );
     expect(sprint.metrics.contained).toBe(1);
+    expect(sprint.metrics.autoContainCount).toBe(1);
   });
 
   it('ring buffer は上限を超えない', () => {
@@ -175,5 +182,20 @@ describe('SprintState.events 記録（RI-52）', () => {
     expect(sprint.events).toHaveLength(SPRINT_EVENT_LIMIT);
     expect(sprint.interventionEvents).toHaveLength(1);
     expect(sprint.interventionEvents[0].tick).toBe(1);
+  });
+
+  it('ring buffer 超過でも autoContainCount は metrics で保持する', () => {
+    const org = createOrgState('default', true);
+    org.seniorHp = INCIDENT_CONTAIN_HP * 3;
+    const sprint = makeSprint(org, [burningTask(0, 1), burningTask(1, 1), burningTask(2, 1)]);
+    stepSprint(sprint, org, () => 0.5, 1);
+    expect(sprint.metrics.autoContainCount).toBe(3);
+    // ティッカー用 ring buffer を溢れさせ、古い auto-contain を落とす。
+    for (let i = 0; i < SPRINT_EVENT_LIMIT + 5; i += 1) {
+      appendSprintEvent(sprint, { tick: i + 100, kind: 'ignite', taskId: i + 100 });
+    }
+    expect(sprint.events.some((e) => e.kind === 'auto-contain')).toBe(false);
+    const result = summarizeSprint(sprint, org);
+    expect(result.autoContainCount).toBe(3);
   });
 });

@@ -119,6 +119,7 @@ export function createSprint(
       reworkCount: 0,
       incidentCount: 0,
       contained: 0,
+      autoContainCount: 0,
       spread: 0,
       aiAssistedCompleted: 0,
       completedCount: 0,
@@ -326,6 +327,7 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
     if (org.seniorHp >= INCIDENT_CONTAIN_HP) {
       // 自動鎮火: シニアが総出で消す。緊急対応より大幅に高くつく受動対応。
       m.contained += 1;
+      m.autoContainCount += 1;
       const hpBefore = org.seniorHp;
       org.seniorHp = clamp(org.seniorHp - INCIDENT_HP_COST, 0, 100);
       const hpCost = hpBefore - org.seniorHp;
@@ -598,6 +600,6 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     events: sprint.interventionEvents.map((e) => ({ ...e, effect: { ...e.effect } })),
     focusRemaining: sprint.focus,
     focusMax: sprint.config.focusMax,
-    autoContainCount: sprint.events.filter((e) => e.kind === 'auto-contain').length,
+    autoContainCount: m.autoContainCount,
   };
 }

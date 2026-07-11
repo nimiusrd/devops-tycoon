@@ -51,6 +51,8 @@ export function foldRunEffects(input: RunModifierInput): RunEffects {
   let effects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
   let focusBonus = 0;
   let codingSlotBonus = 0;
+  let aiDependencyDriftPerSprint = 0;
+  let frontierModelCostPerDependency = 0;
 
   const diff = getDifficulty(input.difficulty);
   if (diff.globalEffects) effects = combineEffects(effects, toEffects(diff.globalEffects));
@@ -60,6 +62,8 @@ export function foldRunEffects(input: RunModifierInput): RunEffects {
     if (!trial) continue;
     if (trial.effects) effects = combineEffects(effects, toEffects(trial.effects));
     if (trial.focusDelta) focusBonus += trial.focusDelta;
+    aiDependencyDriftPerSprint += trial.aiDependencyDriftPerSprint ?? 0;
+    frontierModelCostPerDependency += trial.frontierModelCostPerDependency ?? 0;
   }
 
   for (const inst of input.deck) {
@@ -79,7 +83,13 @@ export function foldRunEffects(input: RunModifierInput): RunEffects {
     if (node.codingSlotBonus) codingSlotBonus += node.codingSlotBonus;
   }
 
-  return { effects, focusBonus, codingSlotBonus };
+  return {
+    effects,
+    focusBonus,
+    codingSlotBonus,
+    aiDependencyDriftPerSprint,
+    frontierModelCostPerDependency,
+  };
 }
 
 /** ラン全体の数値パッシブ（レリックの合算）を求める。 */

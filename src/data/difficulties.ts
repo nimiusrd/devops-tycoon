@@ -113,6 +113,10 @@ export interface TrialDef {
   budgetMul?: number;
   /** 全体係数（炎上が燃え広がりやすい等）。 */
   effects?: Partial<CardEffects>;
+  /** スプリント開始時の AI依存度自然増加量。 */
+  aiDependencyDriftPerSprint?: number;
+  /** AI依存度 1% あたりのフロンティアモデル利用コスト。 */
+  frontierModelCostPerDependency?: number;
   /** スコア倍率（メタ進行で使用。高いほど高得点）。 */
   scoreMul: number;
 }
@@ -145,6 +149,14 @@ export const TRIAL_DEFS: TrialDef[] = [
     description: 'レビュー効率が落ちる。',
     effects: { reviewEfficiencyMul: 0.85 },
     scoreMul: 1.2,
+  },
+  {
+    id: 'frontier-dependency',
+    label: 'フロンティアモデル依存',
+    description: 'AI依存度が自然増加し、利用コストが予算を圧迫する。',
+    aiDependencyDriftPerSprint: 5,
+    frontierModelCostPerDependency: 0.05,
+    scoreMul: 1.25,
   },
 ];
 

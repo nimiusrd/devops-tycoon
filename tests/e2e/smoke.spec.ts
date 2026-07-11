@@ -21,6 +21,19 @@ test('タイトル画面が表示され、難易度を選んでランを開始�
   await expect(page.getByTestId('begin-sprint')).toBeVisible();
 });
 
+test('フロンティアモデル依存の試練を選択してランを開始できる', async ({ page }) => {
+  await page.goto('/');
+  const trial = page.getByTestId('trial-frontier-dependency');
+  await expect(trial).toContainText('フロンティアモデル依存');
+  await trial.click();
+  await expect(trial).toHaveClass(/on/);
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('setup')).toBeVisible();
+
+  const trials = await page.evaluate(() => (window as GameWindow).game?.getState().trials);
+  expect(trials).toEqual(['frontier-dependency']);
+});
+
 test('?seed= が UI と window.game に反映される（決定論フック）', async ({ page }) => {
   await page.goto('/?seed=playwright-smoke');
   await expect(page.getByTestId('seed')).toContainText('playwright-smoke');

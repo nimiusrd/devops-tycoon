@@ -338,6 +338,10 @@ export interface RunEffects {
   focusBonus: number;
   /** 並列実装枠への加算（開発力ブランチ等）。 */
   codingSlotBonus: number;
+  /** スプリント開始時の AI依存度自然増加量。 */
+  aiDependencyDriftPerSprint: number;
+  /** AI依存度 1% あたりのフロンティアモデル利用コスト。 */
+  frontierModelCostPerDependency: number;
 }
 
 /** レリック・イベント・ショップ等が読む、ラン全体の数値パッシブ。 */

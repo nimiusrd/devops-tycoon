@@ -270,7 +270,16 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
       while (s.status === 'playing' && s.phase !== 'quarterReview' && guard < 60000) {
         guard += 1;
         if (s.phase === 'setup') g.beginSetupSprint();
-        else if (s.phase === 'sprint') g.step(1_000_000);
+        else if (s.phase === 'sprint') {
+          const sprint = s.sprint;
+          if (sprint && !sprint.complete) {
+            if (sprint.tasks.filter((task) => task.lane === 'review').length >= 6)
+              g.dispatch('interruptReview');
+            if (sprint.tasks.some((task) => task.lane === 'rework' && task.incident))
+              g.dispatch('firefight');
+          }
+          g.step(300);
+        }
         else if (s.phase === 'result') g.acknowledgeResult();
         else if (s.phase === 'draft' && s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
         else if (s.phase === 'draft') g.skipDraft();

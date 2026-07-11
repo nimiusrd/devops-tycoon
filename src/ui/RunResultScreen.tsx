@@ -50,6 +50,7 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
   const collectedTitle = state.winType
     ? WIN_TITLE_DEFS.find((title) => title.id === state.winType)
     : undefined;
+  const titleInCollection = !!state.winType && meta.collectedWinTypes.includes(state.winType);
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
   const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
   const t = state.totals;
@@ -73,11 +74,17 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
         </div>
         <p className="run-end-desc">{won ? win?.description : lose?.desc}</p>
         {won && collectedTitle && (
-          <div className="result-title result-win-title" data-testid="run-win-title">
+          <div
+            className="result-title result-win-title"
+            data-testid="run-win-title"
+            data-collected={titleInCollection ? 'true' : 'false'}
+          >
             <p className="result-section-label">今回の勝利称号</p>
             <p className="result-title-value">🏆 {collectedTitle.label}</p>
             <p className="result-title-description">
-              コレクションに登録済み — {collectedTitle.description}
+              {titleInCollection
+                ? `コレクションに登録済み — ${collectedTitle.description}`
+                : collectedTitle.description}
             </p>
           </div>
         )}

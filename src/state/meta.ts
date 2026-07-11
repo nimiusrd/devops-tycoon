@@ -283,7 +283,7 @@ export interface DailyRunRewardResult {
 
 /**
  * デイリーラン結果をメタ進行へ反映する（不変）。
- * 同一 UTC 日付では points 付与は 1 回のみ。再走はベスト更新のみ。
+ * 同一 UTC 日付では points 付与は 1 回のみ。再走はベスト更新と勝利称号収集のみ。
  */
 export function applyDailyRunReward(
   meta: MetaState,
@@ -311,9 +311,14 @@ export function applyDailyRunReward(
 
   const dailyBest = Math.max(existing.bestScore, input.score);
   const dailyBestUpdated = dailyBest > existing.bestScore;
+  const collectedWinTypes =
+    input.won && input.winType
+      ? (uniq([...meta.collectedWinTypes, input.winType]) as WinType[])
+      : [...meta.collectedWinTypes];
   const next: MetaState = {
     ...meta,
     bestScore: Math.max(meta.bestScore, input.score),
+    collectedWinTypes,
     dailyRuns: {
       ...meta.dailyRuns,
       [input.dateStr]: { bestScore: dailyBest, rewardClaimed: true },

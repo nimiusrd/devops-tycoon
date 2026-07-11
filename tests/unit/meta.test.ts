@@ -361,6 +361,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     const second = applyDailyRunReward(first.meta, {
       won: true,
       difficulty: 'normal',
+      winType: 'healthy',
       score: 200,
       scoreMul: 1,
       maxCombo: 10,
@@ -371,6 +372,34 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(second.meta.points).toBe(first.meta.points);
     expect(second.meta.dailyRuns[dateStr]?.bestScore).toBe(200);
     expect(second.dailyBestUpdated).toBe(true);
+    expect(second.meta.collectedWinTypes).toEqual(['healthy']);
+  });
+
+  it('デイリー再走の勝利でも points なしで称号だけ収集する', () => {
+    const dateStr = '2026-06-22';
+    const afterLoss = applyDailyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 80,
+      scoreMul: 1,
+      maxCombo: 2,
+      dateStr,
+    });
+    expect(afterLoss.meta.collectedWinTypes).toEqual([]);
+
+    const afterWin = applyDailyRunReward(afterLoss.meta, {
+      won: true,
+      difficulty: 'normal',
+      winType: 'aiSuccess',
+      score: 240,
+      scoreMul: 1,
+      maxCombo: 8,
+      dateStr,
+    });
+    expect(afterWin.rewardGranted).toBe(false);
+    expect(afterWin.pointsGained).toBe(0);
+    expect(afterWin.meta.points).toBe(afterLoss.meta.points);
+    expect(afterWin.meta.collectedWinTypes).toEqual(['aiSuccess']);
   });
 
   it('applyDailyRunReward の再走はベスト未更新時も points を付与しない', () => {

@@ -211,6 +211,7 @@ const WIN_TYPE_ORDER: readonly WinType[] = [
 ];
 
 export const WIN_TITLE_DEFS: readonly WinTitleDef[] = WIN_TYPE_ORDER.map((id) => ({
+  id,
   ...winView(id),
   hint: WIN_TITLE_HINTS[id],
 }));

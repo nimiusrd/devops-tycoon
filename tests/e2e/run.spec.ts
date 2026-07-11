@@ -149,7 +149,16 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
           };
         }
         if (s.phase === 'setup') g.beginSetupSprint();
-        else if (s.phase === 'sprint') g.step(1_000_000);
+        else if (s.phase === 'sprint') {
+          const sprint = s.sprint;
+          if (sprint && !sprint.complete) {
+            if (sprint.tasks.filter((task) => task.lane === 'review').length >= 6)
+              g.dispatch('interruptReview');
+            if (sprint.tasks.some((task) => task.lane === 'rework' && task.incident))
+              g.dispatch('firefight');
+          }
+          g.step(300);
+        }
         else if (s.phase === 'result') g.acknowledgeResult();
         else if (s.phase === 'draft') {
           if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);

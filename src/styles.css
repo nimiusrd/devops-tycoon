@@ -1923,22 +1923,75 @@ button.card:active {
 
 /* ===== Phase 3: 周回・育成・診断 ===== */
 
-/* 画面ステート（第18.3 組織の空気感） */
-.app.tone-cloudy {
-  background: radial-gradient(900px 500px at 50% -10%, #6b5a3a55 0%, transparent 60%);
+/* 画面ステート（第13章 / 第18.3: 6つの組織タイプ） */
+:is(.tone-healthy-acceleration, .diag-healthyAcceleration) {
+  --diagnosis-accent: #58e0b0;
+  --diagnosis-soft: #173d3a;
+  --diagnosis-glow: #58e0b044;
+  --diagnosis-text: #bfffe9;
 }
-.app.tone-hell {
-  background: radial-gradient(900px 600px at 50% -10%, #7a1f2a66 0%, transparent 60%);
-  animation: hellpulse 4s ease-in-out infinite;
+:is(.tone-documentation-kingdom, .diag-documentationKingdom) {
+  --diagnosis-accent: #6cc6ff;
+  --diagnosis-soft: #173754;
+  --diagnosis-glow: #6cc6ff44;
+  --diagnosis-text: #c8ecff;
 }
-@keyframes hellpulse {
-  0%,
-  100% {
-    filter: saturate(1);
-  }
-  50% {
-    filter: saturate(1.25) brightness(0.95);
-  }
+:is(.tone-ai-overproduction, .diag-aiOverproduction) {
+  --diagnosis-accent: #b39dff;
+  --diagnosis-soft: #33265d;
+  --diagnosis-glow: #b39dff4d;
+  --diagnosis-text: #e0d8ff;
+}
+:is(.tone-senior-sacrifice, .diag-seniorSacrifice) {
+  --diagnosis-accent: #ffd45c;
+  --diagnosis-soft: #493817;
+  --diagnosis-glow: #ffd45c42;
+  --diagnosis-text: #fff0b8;
+}
+:is(.tone-review-hell, .diag-reviewHell) {
+  --diagnosis-accent: #ff5f57;
+  --diagnosis-soft: #501c28;
+  --diagnosis-glow: #ff5f5755;
+  --diagnosis-text: #ffd0cb;
+}
+:is(.tone-rework-spiral, .diag-reworkSpiral) {
+  --diagnosis-accent: #ff7a2f;
+  --diagnosis-soft: #512916;
+  --diagnosis-glow: #ff7a2f55;
+  --diagnosis-text: #ffd7bf;
+}
+.app[class*='tone-'] {
+  transition: background 0.55s ease;
+}
+.app.tone-healthy-acceleration {
+  background:
+    radial-gradient(850px 420px at 75% -5%, #58e0b033 0%, transparent 62%),
+    radial-gradient(620px 360px at 10% 4%, #ffd45c20 0%, transparent 68%);
+}
+.app.tone-documentation-kingdom {
+  background:
+    linear-gradient(135deg, #6cc6ff0d 25%, transparent 25%) 0 0 / 42px 42px,
+    radial-gradient(900px 500px at 50% -12%, #58e0b02e 0%, transparent 62%);
+}
+.app.tone-ai-overproduction {
+  background:
+    radial-gradient(circle at 18% 12%, #b39dff24 0 3px, transparent 4px) 0 0 / 38px 38px,
+    radial-gradient(900px 520px at 68% -10%, #704fba55 0%, transparent 65%);
+}
+.app.tone-senior-sacrifice {
+  background:
+    linear-gradient(180deg, #7b5b283d 0%, transparent 46%),
+    radial-gradient(720px 380px at 18% 0%, #ff7e8b22 0%, transparent 66%);
+}
+.app.tone-review-hell {
+  background:
+    radial-gradient(780px 520px at 50% -8%, #a720365e 0%, transparent 64%),
+    repeating-linear-gradient(115deg, transparent 0 54px, #ff5f5709 55px 57px);
+}
+.app.tone-rework-spiral {
+  background:
+    repeating-radial-gradient(circle at 72% 4%, #ff7a2f18 0 14px, transparent 15px 38px),
+    radial-gradient(850px 540px at 48% -12%, #8f3a2552 0%, transparent 66%);
 }
 
 /* タイトル画面 */
@@ -2170,8 +2223,21 @@ button.card:active {
 .runbar {
   flex-wrap: wrap;
 }
-.runbar .pill.diagnosis {
+.runbar .diagnosis-status {
   margin-left: auto;
+}
+.diagnosis-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.diagnosis-warning {
+  max-width: 22rem;
+  color: var(--diagnosis-text);
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.25;
 }
 .relic-bar {
   display: flex;
@@ -2191,8 +2257,42 @@ button.card:active {
   color: var(--text-dim);
 }
 .pill.diagnosis {
-  background: #2c2358;
-  border-color: var(--lav);
+  flex-shrink: 0;
+  color: var(--diagnosis-text);
+  background: var(--diagnosis-soft);
+  border-color: var(--diagnosis-accent);
+  box-shadow: 0 0 16px var(--diagnosis-glow);
+}
+.org-diagnosis[class*='diag-'] {
+  color: var(--diagnosis-text);
+  background: var(--diagnosis-soft);
+  border-color: var(--diagnosis-accent);
+  box-shadow: 0 0 14px var(--diagnosis-glow);
+}
+.result-overlay[class*='tone-'] {
+  background:
+    radial-gradient(760px 520px at 50% 28%, var(--diagnosis-glow), transparent 68%),
+    rgba(10, 7, 24, 0.82);
+}
+.result-overlay[class*='diag-'] .result-diagnosis {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--diagnosis-accent);
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--diagnosis-soft) 72%, transparent);
+  box-shadow: inset 3px 0 0 var(--diagnosis-accent);
+}
+.result-overlay[class*='diag-'] .diagnosis-type,
+.result-overlay[class*='diag-'] .result-diagnosis .result-section-label {
+  color: var(--diagnosis-text);
+}
+@media (max-width: 980px) {
+  .runbar .diagnosis-status {
+    width: 100%;
+    margin-left: 0;
+  }
+  .diagnosis-warning {
+    max-width: none;
+  }
 }
 .pill.node-tag.node-boss {
   border-color: var(--coral);

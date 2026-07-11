@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getDifficulty } from '../data/difficulties';
 import { getRelic } from '../data/relics';
+import { diagnosisTheme } from '../render/diagnosisTheme';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
 import {
   diffRunMetricSnapshots,
@@ -84,6 +85,7 @@ export function RunBar({
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
   const diag = diagnosisView(state.diagnosis);
+  const theme = diagnosisTheme(state.diagnosis);
   const roster = rosterSummary(state.roster);
   const snapshot = useMemo(() => runMetricSnapshot(state), [state]);
   const previousSnapshot = useRef<RunMetricSnapshot | null>(null);
@@ -213,7 +215,17 @@ export function RunBar({
           {roster.onLeave > 0 && <span className="roster-leave"> 😴{roster.onLeave}</span>}
         </span>
       )}
-      <span className={`pill diagnosis diag-${state.diagnosis}`}>{diag.label}</span>
+      <div
+        className={`diagnosis-status diag-${state.diagnosis}`}
+        data-testid="runbar-diagnosis"
+        data-diagnosis={state.diagnosis}
+        aria-live="polite"
+      >
+        <span className="pill diagnosis" title={diag.description}>
+          <span aria-hidden="true">{theme.icon}</span> {diag.label}
+        </span>
+        <span className="diagnosis-warning">{theme.warning}</span>
+      </div>
       {onOpenOrg && (
         <button
           type="button"

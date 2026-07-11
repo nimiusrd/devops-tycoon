@@ -85,7 +85,7 @@
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
 | RI-20 | 称号(WinType)の永続コレクション化 | 中 | 未着手 | — | 第4.6 / 17 |
-| RI-21 | 診断別の画面演出(6組織タイプ) | 中 | 未着手 | — | 第13 / 18.3 |
+| RI-21 | 診断別の画面演出(6組織タイプ) | 中 | 完了 | — | 第13 / 18.3 |
 | RI-22 | 継続不能種別ごとの終了演出分け | 中 | 未着手 | — | 第15 / 18.3 |
 | RI-23 | 業界ランキングへのデイリー記録接続 | 中 | 未着手 | — | 第4.10 / 17 |
 | RI-24 | メタ解放対象の拡張(メンバー/トレイト/初期カード等) | 低 | 保留(要判断) | — | 第17 |
@@ -422,11 +422,15 @@ Delivered / spread / maxCombo 差分集計を追加。高リスク組織（Test 
 （第4.6）。メタ進行は最小実装として実績 ID コレクションに留め、勝利種別ごとの達成有無の永続記録・一覧化は
 未実装。実績コレクションで十分か、称号を別軸で持つかを決める。
 
-#### RI-21 診断別の画面演出(6組織タイプ) — 優先度:中
+#### RI-21 診断別の画面演出(6組織タイプ) — 優先度:中 / 完了
 
-現状の昼/曇り/地獄の3トーンを、6つの組織タイプ診断（Healthy Acceleration / Review Hell /
-AI Overproduction / Rework Spiral / Senior Sacrifice / Documentation Kingdom）それぞれの色・背景・
-警告文へ拡張する（第13 / 18.3）。
+**完了**: `src/render/diagnosisTheme.ts` に6つの組織タイプ診断（Healthy Acceleration / Review Hell /
+AI Overproduction / Rework Spiral / Senior Sacrifice / Documentation Kingdom）から、固有トーン・
+アイコン・短い状態文を導出する純関数を追加。`App` の3トーンを6背景へ置換し、`RunBar` の常時状態文、
+`OrgScreen` の診断バッジ、`RunResultScreen` の診断アクセントへ接続した。診断判定と更新タイミング、
+チーム単位の健全度・盤面 heat は従来どおり独立している。Vitest: `tests/unit/diagnosisTheme.test.ts` /
+`tests/unit/run-systems.test.ts`（全6タイプ）。E2E: `tests/e2e/run.spec.ts`（画面トーン・状態文・
+ラン結果の診断属性）。
 
 #### RI-22 継続不能種別ごとの終了演出分け — 優先度:中
 

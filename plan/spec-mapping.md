@@ -42,14 +42,14 @@
 | [10](../SPEC.md#10-ランとボススプリント) | ランとボススプリント | `src/data/bosses.ts`, `src/sim/run/engine.ts`, `src/sim/run/quarterReview.ts` | ✅ 固定トラックの最終スプリント＝ボスとして実装（分岐マップ廃止） |
 | [11](../SPEC.md#11-組織進化ツリー) | 組織進化ツリー | `src/sim/run/evolution.ts`, `src/data/evolution.ts` | ✅ |
 | [12](../SPEC.md#12-キャラクター育成) | キャラクター育成 | `src/sim/member/*`, `src/data/members.ts`, `src/data/traits.ts`, `src/ui/FormationScreen.tsx` / `tests/unit/member.test.ts`, `run-roster.test.ts`, `tests/e2e/formation.spec.ts` | 🟡 個体ステータス・6トレイト・成長/昇格・編成・スタミナ離脱は実装。§12.2 の「メンバー状態のキャラ表情への反映（疲れ顔/ガッツポーズ）」は未実装（[remaining-issues.md](./remaining-issues.md) RI-08） |
-| [13](../SPEC.md#13-組織タイプ診断) | 組織タイプ診断 | `src/sim/diagnosis.ts` / `tests/unit/run-systems.test.ts` | ✅ |
+| [13](../SPEC.md#13-組織タイプ診断) | 組織タイプ診断 | `src/sim/diagnosis.ts`, `src/render/diagnosisTheme.ts`, `src/ui/RunBar.tsx`, `src/ui/RunResultScreen.tsx` / `tests/unit/run-systems.test.ts`, `diagnosisTheme.test.ts` | ✅ |
 | [14](../SPEC.md#14-勝利条件) | 勝利条件 | `src/sim/run/engine.ts`, `src/sim/run/quarterReview.ts` / `tests/unit/run-engine.test.ts`, `quarter-review.test.ts` | ✅ |
 | [15](../SPEC.md#15-敗北条件--継続不能条件) | 敗北条件 / 継続不能条件 | `src/sim/outcome.ts`（`evaluateLose`）, `src/sim/run/quarterReview.ts` | 🟡 即時敗北は Senior HP/士気/技術負債/レビュー詰まりの4条件。§15 の「Incident 連続によるリリース停止」「AI依存度過多」は即時敗北として未実装（レビューの KPI/診断止まり） |
 | [16](../SPEC.md#16-難易度設定と試練) | 難易度設定と試練 | `src/data/difficulties.ts`（4 難易度 + `TRIAL_DEFS`）, `src/sim/scenarios.ts` | 🟡 難易度4種は実装。試練は `low-focus`/`half-budget`/`flammable`/`review-cap` の4種のみで、SPEC §16 の「AI依存度の自然増加」等は未実装 |
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ進行とアンロック | `src/state/meta.ts`, `src/data/unlocks.ts`, `src/ui/MetaShopScreen.tsx`, `AchievementCollectionScreen.tsx` / `tests/unit/meta.test.ts`, `meta-unlock-run.test.ts`, `unlocks.test.ts` | 🟡 カード/レリックの永続解放・メタショップ・実績閲覧は実装。SPEC §17 の「開始時の組織（プリセット）解放」は未実装（`UnlockKind = 'card' \| 'relic'`、[remaining-issues.md](./remaining-issues.md) RI-25） |
 | [18.1](../SPEC.md#181-基本演出) | 基本演出 | `src/render/taskView.ts`, `src/ui/OfficeActors.tsx`, `src/styles.css` | 🟡 基本演出は実装。ベルトコンベア状の粒移動・AI暴走時の Review 突入は [remaining-issues.md](./remaining-issues.md) RI-05 で残務 |
 | [18.2](../SPEC.md#182-ジューシーな手応え演出) | ジューシーな手応え演出 | `src/ui/PointPops.tsx`, `ComboBadge.tsx` | 🟡 数字ポップ/`COMBO xN` は実装。延焼の連鎖は [remaining-issues.md](./remaining-issues.md) RI-06、割り込みレビューのスイープ・ボスのスローモは RI-10 で残務 |
-| [18.3](../SPEC.md#183-画面ステート組織の空気感) | 画面ステート（組織の空気感） | `src/render/status.ts`, `src/styles.css` | 🟡 昼/曇り/地獄の3トーンは実装。6 組織タイプ別の演出拡張は [remaining-issues.md](./remaining-issues.md) RI-21 で残務 |
+| [18.3](../SPEC.md#183-画面ステート組織の空気感) | 画面ステート（組織の空気感） | `src/render/diagnosisTheme.ts`, `src/App.tsx`, `src/ui/RunBar.tsx`, `src/ui/OrgScreen.tsx`, `src/ui/RunResultScreen.tsx`, `src/styles.css` / `tests/unit/diagnosisTheme.test.ts`, `tests/e2e/run.spec.ts` | ✅ 6 組織タイプ別の背景・色・状態文を実装 |
 | [18.4](../SPEC.md#184-ご褒美演出) | ご褒美演出 | `src/ui/RunResultScreen.tsx`, `src/ui/PointPops.tsx` | 🟡 リザルト表示と数字ポップは実装。レリック獲得・進化解放の手応え演出や評価Sの特別演出は静的表示に留まり残務（[remaining-issues.md](./remaining-issues.md) RI-10） |
 | [18（描画基盤）](../SPEC.md#18-視覚表現) | 視覚表現の WebGL 化 | `src/render/adapters/pixiOrgRenderer.ts`, `selectRenderer.ts`, `src/ui/OrgPixiField.tsx` / `tests/e2e/org-pixi-visual.spec.ts`（`?renderer=pixi` で opt-in） | ✅ 全社マップを Pixi 化（盤面は DOM/SVG 継続。適用範囲拡張は [remaining-issues.md](./remaining-issues.md) RI-11） |
 | [19](../SPEC.md#19-面白さの核) | 面白さの核 | 各画面の体験設計に反映（リスク/リターン設計ほか） | ✅ |
@@ -66,7 +66,7 @@
 | 項目 | 該当 SPEC 章 | 状態 | 追跡先 |
 | --- | --- | --- | --- |
 | ドリルダウンのカメラ遷移演出（mockup 視覚到達） | [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応), [18](../SPEC.md#18-視覚表現) | 🟡 機能は動作・カメラズーム演出が残務 | [remaining-issues.md](./remaining-issues.md) RI-04 |
-| 演出・ビジュアルの残務（粒の流れ・延焼連鎖・スイープ・スローモー・ご褒美・6タイプ演出・キャラ表情） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [12](../SPEC.md#12-キャラクター育成), [18.1](../SPEC.md#181-基本演出), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.3](../SPEC.md#183-画面ステート組織の空気感), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装 | [remaining-issues.md](./remaining-issues.md) RI-05〜RI-10, RI-21 |
+| 演出・ビジュアルの残務（スイープ・スローモー・ご褒美・キャラ表情） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [12](../SPEC.md#12-キャラクター育成), [18.1](../SPEC.md#181-基本演出), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装 | [remaining-issues.md](./remaining-issues.md) RI-07〜RI-10 |
 | リザルトの介入内訳（割り込み×N / 緊急対応×N の表示） | [4.6](../SPEC.md#46-スプリントリザルト画面) | 🟡 `SprintResult` に未集計 | [remaining-issues.md](./remaining-issues.md) RI-29 |
 | 能動操作・カードの操作方式（タスク差配のドラッグ / 手札配布→発動） | [6](../SPEC.md#6-スプリント中の能動操作), [7](../SPEC.md#7-ai導入施策カードデッキ) | 🟡 効果は実装・操作方式が SPEC と差 | [remaining-issues.md](./remaining-issues.md) RI-30 |
 | 試練の追加（AI依存度の自然増加 ほか） | [16](../SPEC.md#16-難易度設定と試練) | 🟡 4種のみ実装 | [remaining-issues.md](./remaining-issues.md) RI-31 |

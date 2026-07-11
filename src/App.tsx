@@ -7,6 +7,7 @@
  */
 import { useCallback, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { diagnosisTheme } from './render/diagnosisTheme';
 import type { HudMetricSnapshot, RunMetricSnapshot } from './render/status';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
 import {
@@ -35,15 +36,6 @@ import type { GameHandle } from './game';
 
 export interface AppProps {
   game: GameHandle;
-}
-
-/** 組織状態に応じた画面トーン（第18.3 の画面ステート）。 */
-function screenTone(state: ReturnType<GameHandle['getState']>): string {
-  if (state.diagnosis === 'reviewHell' || state.diagnosis === 'reworkSpiral') return 'tone-hell';
-  if (state.diagnosis === 'seniorSacrifice' || state.diagnosis === 'aiOverproduction') {
-    return 'tone-cloudy';
-  }
-  return 'tone-day';
 }
 
 export default function App({ game }: AppProps) {
@@ -147,11 +139,13 @@ export default function App({ game }: AppProps) {
   const hudSnapshotScope: HudSnapshotScope = state.orgScale ? 'orgScale' : 'team';
 
   const sprintLayout = showSprint;
+  const diagnosisTone = diagnosisTheme(state.diagnosis).toneClass;
 
   return (
     <div
-      className={`app ${screenTone(state)}${sprintLayout ? ' app-sprint-layout' : ''}`}
+      className={`app ${diagnosisTone}${sprintLayout ? ' app-sprint-layout' : ''}`}
       data-phase={phase}
+      data-diagnosis={state.diagnosis}
     >
       <Hud
         org={state.org}

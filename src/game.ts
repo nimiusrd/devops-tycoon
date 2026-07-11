@@ -220,7 +220,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     chooseCard(defId) {
       engine.chooseCard(defId);
       bump();
-      return engine.snapshot();
+      return after();
     },
     skipDraft() {
       engine.skipDraft();
@@ -240,7 +240,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     buyShopCard(defId) {
       engine.buyShopCard(defId);
       bump();
-      return engine.snapshot();
+      return after();
     },
     buyShopRelic() {
       engine.buyShopRelic();

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { RELIC_DEFS } from '../../src/data/relics';
 import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
+import type { RunState } from '../../src/sim/run/types';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
 import { advance, playRun, playUntil } from './helpers/runFlow';
 
@@ -29,6 +31,33 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     const s = playUntil(e, 'quarterReview', { skilled: true });
     expect(s.phase).toBe('quarterReview');
     expect(s.quarterReview).not.toBeNull();
+  });
+
+  it('RI-32: ボス突破時に未所持レリックを決定論的に1つ獲得する', () => {
+    let winningSeed: string | undefined;
+    let state: RunState | undefined;
+
+    for (let i = 0; i < 30; i += 1) {
+      const seed = `ri32-boss-reward-${i}`;
+      const engine = new RunEngine({ seed, difficulty: 'easy' });
+      engine.startRun();
+      const snapshot = playUntil(engine, 'quarterReview', { skilled: true });
+      if (snapshot.quarterReview?.bossCleared) {
+        winningSeed = seed;
+        state = snapshot;
+        break;
+      }
+    }
+
+    expect(winningSeed).toBeDefined();
+    expect(state?.bossRelicReward).toBeDefined();
+    expect(RELIC_DEFS.map((relic) => relic.id)).toContain(state?.bossRelicReward);
+    expect(state?.relics).toContain(state?.bossRelicReward);
+
+    const replay = new RunEngine({ seed: winningSeed!, difficulty: 'easy' });
+    replay.startRun();
+    const replayState = playUntil(replay, 'quarterReview', { skilled: true });
+    expect(replayState.bossRelicReward).toBe(state?.bossRelicReward);
   });
 
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {

@@ -785,6 +785,21 @@ body {
 .board.iso-office.review-hell {
   filter: saturate(1.1) hue-rotate(-8deg) brightness(0.92);
 }
+.board-pixi-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.board-pixi-mount canvas {
+  display: block;
+}
+.board-pixi-count {
+  position: absolute;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+}
 
 .office-room,
 .office-flows {
@@ -3751,6 +3766,24 @@ button.card:active {
 }
 .dept-board.iso-dept.dept-hell {
   filter: saturate(1.08) hue-rotate(-6deg) brightness(0.94);
+}
+.dept-pixi-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.dept-pixi-mount canvas {
+  display: block;
+}
+.dept-pixi-hit {
+  position: absolute;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 .dept-plate,
 .dept-flows {

@@ -4,11 +4,13 @@
  * 「状態を読んで描くだけ」の一方向に徹する（第22.2）。`boardScene` が組み立てた
  * シーン計画を読み、俯瞰オフィス（アイソメ）として描く: 部屋（背景）＋工程ごとの
  * ステーション（机＋キャラ＋ラベル＋吹き出し）＋タスク粒の山＋工程間フロー。
- * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
+ * 座標は設計空間（1404×573）の % で重ねる。`?renderer=pixi` で PixiJS に差し替え可能（RI-11）。
  */
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import type { SprintMetrics, SprintModifiers, Task } from '../sim/types';
+import { getRendererKind } from './adapters/selectRenderer';
 import { deriveActiveBoardAuras } from './interventionEffects';
+import { BoardPixiField } from '../ui/BoardPixiField';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
@@ -230,55 +232,79 @@ export function Board({
   const boardRef = useRef<HTMLDivElement>(null);
   useContainFit(boardRef);
   const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
+  const usePixi = getRendererKind(window.location.search) === 'pixi';
 
   return (
     <div
       ref={boardRef}
-      className={`board iso-office${hot ? ' review-hell' : ''}`}
+      className={`board iso-office${hot ? ' review-hell' : ''}${usePixi ? ' board-pixi' : ''}`}
       data-testid="board"
+      data-renderer={usePixi ? 'pixi' : 'dom'}
       style={{ '--review-heat': heat } as CSSProperties}
     >
-      <OfficeRoom />
-      <FlowArrows flows={scene.flows} />
-
-      {scene.dots.map((d) => (
-        <TaskDot key={`${d.lane}-${d.id}`} dot={d} />
-      ))}
-
-      {scene.stations.map((s) => (
-        <Station key={s.lane} s={s} />
-      ))}
-      {scene.stations.map((s) => (
-        <StationLabel key={`l-${s.lane}`} s={s} />
-      ))}
-      {scene.stations.map((s) => (
-        <Bubble key={`b-${s.lane}`} s={s} />
-      ))}
-
-      {scene.stations
-        .filter((s) => s.overflow > 0)
-        .map((s) => (
-          <div
-            key={`of-${s.lane}`}
-            className="pile-overflow"
-            data-testid={`overflow-${s.lane}`}
-            style={{ left: pct(s.overflowX, VIEW_W), top: pct(s.overflowY, VIEW_H) }}
-          >
-            +{s.overflow}
-          </div>
-        ))}
-
-      <div className="board-legend">
-        {LEGEND.map((l) => (
-          <span key={l.variant} className="li">
+      {usePixi ? (
+        <>
+          <BoardPixiField tasks={tasks} />
+          {/* E2E / HUD 連動用のレーン件数（Pixi canvas 上には見えない）。 */}
+          {scene.stations.map((s) => (
             <span
-              className={`legend-dot variant-${l.variant}`}
-              style={{ background: TASK_COLORS[l.variant] }}
-            />
-            {l.label}
-          </span>
-        ))}
-      </div>
+              key={`pixi-count-${s.lane}`}
+              className="board-pixi-count"
+              data-testid={`lane-${s.lane}`}
+              style={{ left: pct(s.labelX, VIEW_W), top: pct(s.labelY, VIEW_H) }}
+            >
+              <small data-testid={`count-${s.lane}`}>
+                {s.count}
+                {s.hot ? ' ⚠' : ''}
+              </small>
+            </span>
+          ))}
+        </>
+      ) : (
+        <>
+          <OfficeRoom />
+          <FlowArrows flows={scene.flows} />
+
+          {scene.dots.map((d) => (
+            <TaskDot key={`${d.lane}-${d.id}`} dot={d} />
+          ))}
+
+          {scene.stations.map((s) => (
+            <Station key={s.lane} s={s} />
+          ))}
+          {scene.stations.map((s) => (
+            <StationLabel key={`l-${s.lane}`} s={s} />
+          ))}
+          {scene.stations.map((s) => (
+            <Bubble key={`b-${s.lane}`} s={s} />
+          ))}
+
+          {scene.stations
+            .filter((s) => s.overflow > 0)
+            .map((s) => (
+              <div
+                key={`of-${s.lane}`}
+                className="pile-overflow"
+                data-testid={`overflow-${s.lane}`}
+                style={{ left: pct(s.overflowX, VIEW_W), top: pct(s.overflowY, VIEW_H) }}
+              >
+                +{s.overflow}
+              </div>
+            ))}
+
+          <div className="board-legend">
+            {LEGEND.map((l) => (
+              <span key={l.variant} className="li">
+                <span
+                  className={`legend-dot variant-${l.variant}`}
+                  style={{ background: TASK_COLORS[l.variant] }}
+                />
+                {l.label}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
 
       {metrics && (
         <FireEffects

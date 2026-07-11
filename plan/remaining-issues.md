@@ -64,7 +64,7 @@
 
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
-| RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 未着手 | — | 第22 |
+| RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 完了 | — | 第22 |
 | RI-12 | バンドル分割(動的 import) | 低 | 未着手 | — | 第22 |
 | RI-13 | 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) | 中 | 未着手 | — | 第22 |
 | RI-57 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | 中 | 未着手 | — | 第17 / 22 |
@@ -338,11 +338,14 @@ E2E: `tests/e2e/interventions.spec.ts`（比較値・推定注記）。
 
 ### 技術構成（TECH）
 
-#### RI-11 Pixi 適用範囲の拡張(部署/現場盤面) — 優先度:中
+#### RI-11 Pixi 適用範囲の拡張(部署/現場盤面) — 優先度:中 / 完了
 
-現状は全社マップのみ opt-in（`?renderer=pixi`）。VIS の等角化を進める際、部署ビュー/現場盤面へ PixiJS を
-広げる（粒数・ズーム階層が DOM/SVG の限界に近づいたら）。スプライト＋プールは `render/iso.ts` を供給先に
-（RI-07 と連動）。
+**完了**: `?renderer=pixi` opt-in を部署ビュー・現場盤面へ横展開した。
+`src/render/adapters/pixiDeptRenderer.ts` / `pixiBoardRenderer.ts` がそれぞれ
+`planDeptBoardScene` / `planBoardScene` を読んで Graphics/Text で描画。
+React ラッパーは `DeptPixiField` / `BoardPixiField`。HUD・レバー・延焼/介入演出は DOM のまま。
+Vitest: `tests/unit/pixiDeptBoardBudget.test.ts`。E2E: `dept-pixi-visual.spec.ts` /
+`board-pixi-visual.spec.ts`（`@pixi` / `PIXI_E2E=1`）。RI-07 スプライト化・RI-04 カメラ演出は別 ID。
 
 #### RI-12 バンドル分割(動的 import) — 優先度:低
 

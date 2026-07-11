@@ -5,6 +5,7 @@
  * `?seed=` と同じ URL パラメータ規約（architecture §4.1）に合わせ、CI と通常
  * プレイは DOM のまま（実 WebGL を回さない方針。§4.2）、ローカル/DevContainer
  * での描画作り込みだけ opt-in で Pixi を有効化できるようにする。
+ * 対象は全社マップ・部署ビュー・現場盤面（RI-11）。
  */
 export type RendererKind = 'dom' | 'pixi';
 

@@ -3,13 +3,15 @@
  *
  * 部門内の各チームを Coding ▸ Review ▸ Done の小パイプラインとして中解像度で表示し、
  * チーム間依存（連鎖炎上）と部門HUD・部門レバーを見せる。現場と全社の橋渡し層。
- * 状態は読むだけ（第22.2）。
+ * 状態は読むだけ（第22.2）。盤面は `?renderer=pixi` で PixiJS に差し替え可能（RI-11）。
  */
 import { DEPARTMENT_LEVERS } from '../data/levers';
 import type { DepartmentState } from '../sim/orgscale/types';
+import { getRendererKind } from '../render/adapters/selectRenderer';
 import { HEALTH_LABEL } from '../render/orgView';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { DeptBoard } from './DeptBoard';
+import { DeptPixiField } from './DeptPixiField';
 import { EffectTagList } from './EffectTagList';
 
 export interface DeptScreenProps {
@@ -20,6 +22,8 @@ export interface DeptScreenProps {
 }
 
 export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScreenProps) {
+  const usePixi = getRendererKind(window.location.search) === 'pixi';
+
   return (
     <div className="dept-screen" data-testid="dept-screen">
       <header className="dept-head">
@@ -45,7 +49,11 @@ export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScre
       </dl>
 
       <div className="dept-field" data-testid="dept-field">
-        <DeptBoard dept={dept} onFocusTeam={onFocusTeam} />
+        {usePixi ? (
+          <DeptPixiField dept={dept} onFocusTeam={onFocusTeam} />
+        ) : (
+          <DeptBoard dept={dept} onFocusTeam={onFocusTeam} />
+        )}
       </div>
 
       <div className="dept-levers" data-testid="dept-levers">

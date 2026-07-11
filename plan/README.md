@@ -9,7 +9,7 @@ DevOps Tycoon の計画・設計ドキュメント一式の置き場で、この
 ## 現状
 
 - 実装は一通り完了し、`src/`（sim / state / render / ui）と `tests/`（Vitest / Playwright E2E）が揃って `npm run dev` で通しプレイできる。
-- 盤面描画は既定で DOM/SVG、`?renderer=pixi` で全社マップのみ PixiJS に opt-in 切替。
+- 盤面描画は既定で DOM/SVG、`?renderer=pixi` で全社・部署・現場盤面を PixiJS に opt-in 切替。
 - SPEC 各章の充足状況（✅/🟡）と残務の追跡先は [spec-mapping.md](./spec-mapping.md) §1・§2 に集約。モックアップは**デザイン・レイアウトの正**として維持する（第22.2）。
 - 残務・未解決事項は [remaining-issues.md](./remaining-issues.md) に一本化して追跡する。
 

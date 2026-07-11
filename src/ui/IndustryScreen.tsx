@@ -7,17 +7,20 @@
  */
 import { RANKING_KINDS, RANKING_LABEL } from '../sim/orgscale/industry';
 import type { IndustryState, RankingKind } from '../sim/orgscale/types';
+import { dailyLeaderboardEntries, type MetaState } from '../state/meta';
 import { IndustrySkyline } from './IndustrySkyline';
 
 const TREND_ICON: Record<-1 | 0 | 1, string> = { 1: '▲', 0: '→', [-1]: '▼' };
 
 export interface IndustryScreenProps {
   industry: IndustryState;
+  meta: MetaState;
   onSetKind: (kind: RankingKind) => void;
 }
 
-export function IndustryScreen({ industry, onSetKind }: IndustryScreenProps) {
+export function IndustryScreen({ industry, meta, onSetKind }: IndustryScreenProps) {
   const { kind, entries } = industry;
+  const dailyEntries = dailyLeaderboardEntries(meta);
 
   return (
     <div className="industry-screen" data-testid="industry-screen">
@@ -81,6 +84,34 @@ export function IndustryScreen({ industry, onSetKind }: IndustryScreenProps) {
           ))}
         </tbody>
       </table>
+
+      <section className="daily-leaderboard" aria-labelledby="daily-leaderboard-heading">
+        <div className="daily-leaderboard-head">
+          <div>
+            <h3 id="daily-leaderboard-heading">⚔️ デイリーランキング</h3>
+            <p>同一 seed のデイリーランで記録した自分のベスト</p>
+          </div>
+          <span className="daily-leaderboard-count">{dailyEntries.length} 日分</span>
+        </div>
+        {dailyEntries.length > 0 ? (
+          <ol className="daily-leaderboard-list" data-testid="daily-leaderboard">
+            {dailyEntries.map((entry) => (
+              <li key={entry.dateStr} data-testid={`daily-record-${entry.dateStr}`}>
+                <span className="daily-rank">#{entry.rank}</span>
+                <time dateTime={entry.dateStr}>{entry.dateStr}</time>
+                <strong>{entry.bestScore.toLocaleString()} pt</strong>
+                <span className="daily-reward">
+                  {entry.rewardClaimed ? '報酬受領済み' : '報酬未受領'}
+                </span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="daily-leaderboard-empty" data-testid="daily-leaderboard-empty">
+            まだデイリー記録はありません。今日のランで最初の記録を残しましょう。
+          </p>
+        )}
+      </section>
     </div>
   );
 }

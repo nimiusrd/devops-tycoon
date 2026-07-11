@@ -52,6 +52,12 @@ export interface DailyRunRecord {
   rewardClaimed: boolean;
 }
 
+/** 業界画面に表示する、順位付きデイリー記録。 */
+export interface DailyLeaderboardEntry extends DailyRunRecord {
+  dateStr: string;
+  rank: number;
+}
+
 export interface UnlockedContent {
   cards: ReadonlySet<string>;
   relics: ReadonlySet<string>;
@@ -98,6 +104,17 @@ export function dailySeed(dateStr: string): string {
 /** 指定日のデイリー記録を返す（未プレイは undefined）。 */
 export function getDailyRecord(meta: MetaState, dateStr: string): DailyRunRecord | undefined {
   return meta.dailyRuns[dateStr];
+}
+
+/**
+ * 自分のデイリー記録をベストスコア順の擬似リーダーボードにする。
+ * 同点は新しい UTC 日付を上位とし、表示順を決定論的に保つ。
+ */
+export function dailyLeaderboardEntries(meta: MetaState): DailyLeaderboardEntry[] {
+  return Object.entries(meta.dailyRuns)
+    .map(([dateStr, record]) => ({ dateStr, ...record }))
+    .sort((a, b) => b.bestScore - a.bestScore || b.dateStr.localeCompare(a.dateStr))
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
 const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];

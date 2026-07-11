@@ -38,6 +38,8 @@ const THEMES: Partial<Record<QuarterOutcome, QuarterFailureTheme>> = {
 };
 
 /** 四半期レビューの継続不能種別に対応する終了演出を取得する。 */
-export function quarterFailureTheme(outcome: QuarterOutcome | undefined): QuarterFailureTheme | null {
+export function quarterFailureTheme(
+  outcome: QuarterOutcome | undefined,
+): QuarterFailureTheme | null {
   return outcome ? (THEMES[outcome] ?? null) : null;
 }

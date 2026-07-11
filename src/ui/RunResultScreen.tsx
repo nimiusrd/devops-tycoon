@@ -73,7 +73,9 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
       aria-label="Run Result"
     >
       <div className="result-card">
-        <p className="result-eyebrow">{won ? 'QUARTER CLEARED' : (failureTheme?.eyebrow ?? 'GAME OVER')}</p>
+        <p className="result-eyebrow">
+          {won ? 'QUARTER CLEARED' : (failureTheme?.eyebrow ?? 'GAME OVER')}
+        </p>
         <div className={`run-end-badge ${won ? 'win' : 'lose'}`} data-testid="run-end-status">
           {won ? '🏆 ' + (win?.label ?? '勝利') : `${failureTheme?.icon ?? '💥'} ${loseLabel}`}
         </div>

@@ -3877,6 +3877,16 @@ button.card:active {
   height: auto;
   filter: drop-shadow(0 4px 6px #0006);
 }
+/* RI-11: 部署ビューの Pixi 描画領域（?renderer=pixi 時のみマウント） */
+.dept-pixi-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.dept-pixi-mount canvas {
+  display: block;
+  /* resizeTo + autoDensity が CSS 寸法を設定する。100% で再スケールするとにじむ。 */
+}
 .dept-board-hint {
   position: absolute;
   bottom: 10px;

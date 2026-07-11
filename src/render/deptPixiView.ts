@@ -1,0 +1,186 @@
+/**
+ * 部署ビュー PixiJS レンダラの純ヘルパ（RI-11 / SPEC 第22.4）。
+ *
+ * GPU に触らない数値計算だけを置き、Vitest で検証する（第22.5）。
+ * - シーン計画のフローパス（SVG の M/Q 文字列）を数値へ解析し、破線用に折れ線分割する
+ * - 設計座標空間（1404×573）を canvas へ contain-fit する変換を導く
+ * - バナー/ラベルのトーン配色（styles.css の DOM 実装と同値）
+ */
+import type { TeamHealth } from '../sim/orgscale/types';
+
+/** 2 次ベジェ 1 本ぶんの制御点（`M sx,sy Q cx,cy ex,ey`）。 */
+export interface QuadPath {
+  sx: number;
+  sy: number;
+  cx: number;
+  cy: number;
+  ex: number;
+  ey: number;
+}
+
+/** 設計座標の点。 */
+export interface Point {
+  x: number;
+  y: number;
+}
+
+/**
+ * `deptBoardScene` のフローパス文字列を解析する。
+ * 対応形式は `Mx,y Qcx,cy ex,ey`（負数・小数を含む）。不正な形式は null。
+ */
+export function parseQuadPath(d: string): QuadPath | null {
+  const m = d.match(
+    /^M\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s+Q\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s+(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*$/,
+  );
+  if (!m) return null;
+  const [sx, sy, cx, cy, ex, ey] = m.slice(1).map(Number);
+  if ([sx, sy, cx, cy, ex, ey].some((n) => !Number.isFinite(n))) return null;
+  return { sx, sy, cx, cy, ex, ey };
+}
+
+/** 2 次ベジェ上の t (0..1) の点。 */
+export function quadPointAt(p: QuadPath, t: number): Point {
+  const u = 1 - t;
+  return {
+    x: u * u * p.sx + 2 * u * t * p.cx + t * t * p.ex,
+    y: u * u * p.sy + 2 * u * t * p.cy + t * t * p.ey,
+  };
+}
+
+/** 2 次ベジェ終端の接線角（度）。矢じりの向きに使う。 */
+export function quadEndAngleDeg(p: QuadPath): number {
+  // B'(1) = 2 (E - C)。制御点と終点が一致する退化時は始点→終点で代用。
+  let dx = p.ex - p.cx;
+  let dy = p.ey - p.cy;
+  if (dx === 0 && dy === 0) {
+    dx = p.ex - p.sx;
+    dy = p.ey - p.sy;
+  }
+  return (Math.atan2(dy, dx) * 180) / Math.PI;
+}
+
+/**
+ * 2 次ベジェを破線の折れ線列へ分割する（SVG stroke-dasharray の Pixi 代替）。
+ *
+ * 曲線を `samples` 分割で弧長近似し、[dash, gap] パターンで on 区間だけを
+ * 折れ線（点列）として返す。決定論（同一入力＝同一出力）なので視覚回帰が安定する。
+ */
+export function quadDashPolylines(p: QuadPath, dash: number, gap: number, samples = 64): Point[][] {
+  if (dash <= 0 || gap < 0 || samples < 1) return [];
+  const pts: Point[] = [];
+  const arc: number[] = [0];
+  for (let i = 0; i <= samples; i += 1) {
+    pts.push(quadPointAt(p, i / samples));
+    if (i > 0) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      arc.push(arc[i - 1] + Math.hypot(b.x - a.x, b.y - a.y));
+    }
+  }
+  const total = arc[samples];
+  if (total === 0) return [];
+
+  const out: Point[][] = [];
+  let current: Point[] | null = null;
+  const period = dash + gap;
+  for (let i = 0; i <= samples; i += 1) {
+    const phase = arc[i] % period;
+    const on = phase < dash || period === 0;
+    if (on) {
+      if (!current) current = [];
+      current.push(pts[i]);
+    } else if (current) {
+      if (current.length >= 2) out.push(current);
+      current = null;
+    }
+  }
+  if (current && current.length >= 2) out.push(current);
+  return out;
+}
+
+/** contain-fit の変換（root Container の scale と中央寄せオフセット）。 */
+export interface ContainFitTransform {
+  scale: number;
+  x: number;
+  y: number;
+}
+
+/**
+ * 設計空間 viewW×viewH を host（canvas 実寸）へ「両軸 contain」で収める変換。
+ * DOM 側の `useContainFit`（aspect-ratio + width 調整）と同じ見え方になる。
+ */
+export function containFitTransform(
+  hostW: number,
+  hostH: number,
+  viewW: number,
+  viewH: number,
+): ContainFitTransform {
+  if (hostW <= 0 || hostH <= 0 || viewW <= 0 || viewH <= 0) return { scale: 1, x: 0, y: 0 };
+  const scale = Math.min(hostW / viewW, hostH / viewH);
+  return {
+    scale,
+    x: (hostW - viewW * scale) / 2,
+    y: (hostH - viewH * scale) / 2,
+  };
+}
+
+/** バナー/タグのトーン配色（styles.css `.dept-team-banner.tone-*` と同値）。 */
+export interface BannerToneColors {
+  border: string;
+  borderAlpha: number;
+  bg: string;
+  text: string;
+  tagBg: string;
+  tagText: string;
+}
+
+export const BANNER_TONE: Record<'ok' | 'warn' | 'hell', BannerToneColors> = {
+  ok: {
+    border: '#58e0b0',
+    borderAlpha: 0.6,
+    bg: '#1f1942',
+    text: '#ffefd6',
+    tagBg: '#16402f',
+    tagText: '#7df0bf',
+  },
+  warn: {
+    border: '#ffd45c',
+    borderAlpha: 1,
+    bg: '#1f1942',
+    text: '#ffefd6',
+    tagBg: '#4a3a14',
+    tagText: '#ffe08a',
+  },
+  hell: {
+    border: '#ff5f57',
+    borderAlpha: 1,
+    bg: '#3a1414',
+    text: '#ffd0cb',
+    tagBg: '#5a1410',
+    tagText: '#ffb0ac',
+  },
+};
+
+/** ミニ盤面の床色（DOM `DeptTeamMini` と同値）。 */
+export function teamFloorColor(health: TeamHealth): string {
+  if (health === 'reviewHell') return '#4a2b45';
+  if (health === 'congested') return '#3f3470';
+  return '#3a2f68';
+}
+
+/**
+ * 粒の山オフセット（DOM `pileDots` と同値: 4 個/行・上限 12・9px 段積み）。
+ * 返り値はアンカー中心からの相対座標と半径。
+ */
+export function pileDotOffsets(count: number): { x: number; y: number; r: number }[] {
+  const cap = Math.min(count, 12);
+  const perRow = 4;
+  const r = count > 8 ? 5 : 6;
+  const out: { x: number; y: number; r: number }[] = [];
+  for (let i = 0; i < cap; i += 1) {
+    const row = Math.floor(i / perRow);
+    const col = i % perRow;
+    out.push({ x: (col - 1.5) * 10, y: -row * 9, r });
+  }
+  return out;
+}

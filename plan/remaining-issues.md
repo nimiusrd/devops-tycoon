@@ -64,7 +64,7 @@
 
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
-| RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 未着手 | — | 第22 |
+| RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 進行中 | — | 第22 |
 | RI-12 | バンドル分割(動的 import) | 低 | 未着手 | — | 第22 |
 | RI-13 | 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) | 中 | 未着手 | — | 第22 |
 | RI-57 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | 中 | 未着手 | — | 第17 / 22 |
@@ -338,11 +338,23 @@ E2E: `tests/e2e/interventions.spec.ts`（比較値・推定注記）。
 
 ### 技術構成（TECH）
 
-#### RI-11 Pixi 適用範囲の拡張(部署/現場盤面) — 優先度:中
+#### RI-11 Pixi 適用範囲の拡張(部署/現場盤面) — 優先度:中 / 進行中
 
 現状は全社マップのみ opt-in（`?renderer=pixi`）。VIS の等角化を進める際、部署ビュー/現場盤面へ PixiJS を
 広げる（粒数・ズーム階層が DOM/SVG の限界に近づいたら）。スプライト＋プールは `render/iso.ts` を供給先に
 （RI-07 と連動）。
+
+**部署ビュー: 完了**。`src/render/adapters/pixiDeptRenderer.ts` が `planDeptBoardScene`（既存の純シーン
+計画）を読んで WebGL 描画する。チームミニ Container は `iso.ts` の `SpritePool` で再利用し、盤面は固定
+設計空間（1404×573）なので viewport は使わず contain-fit の root スケールだけで DOM 版と同じ見え方に
+した。数値計算（フローパス解析・破線分割・contain-fit）は `src/render/deptPixiView.ts` へ分離。
+`DeptScreen` が `?renderer=pixi` で `DeptPixiBoard` へ切り替える（既定は DOM/SVG のまま）。
+Vitest: `tests/unit/deptPixiView.test.ts`。E2E: `tests/e2e/dept-pixi-visual.spec.ts`
+（@pixi opt-in。視覚回帰＋プレイヤーチームタップのドリルダウン）。
+
+**残務: 現場盤面（スプリント盤面）の Pixi 化**。`planBoardScene` は純シーン計画済みだが、DOM 側は
+`FireEffects` / `InterventionEffects` / オーラ / 数字ポップ等の CSS 演出が厚く重なるため、演出の
+Pixi 移植方針（ticker ベースへの置換 or DOM オーバーレイ併用）を決めてから着手する。
 
 #### RI-12 バンドル分割(動的 import) — 優先度:低
 

@@ -6,7 +6,7 @@ import type { RunEngine } from '../../src/sim/run/engine';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
 import {
   E2E_MISSED_ADJUSTABLE_SEED,
-  E2E_SHUTDOWN_SEED,
+  E2E_TERMINAL_SHUTDOWN,
 } from '../../src/sim/run/quarterReviewSeeds';
 
 type GameWindow = Window & {
@@ -258,13 +258,14 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
 });
 
 test('継続リソース枯渇→四半期レビュー→ラン終了', async ({ page }) => {
-  await page.goto(`/?seed=${E2E_SHUTDOWN_SEED}`);
+  const { seed, difficulty, outcome: expectedOutcome } = E2E_TERMINAL_SHUTDOWN;
+  await page.goto(`/?seed=${seed}`);
 
   const atReview = await page.evaluate(
-    ({ seed }) => {
+    ({ seed: runSeed, difficulty: runDifficulty, expectedOutcome: expected }) => {
       const g = (window as GameWindow).game!;
       const engine = (g as unknown as { engine: RunEngine }).engine;
-      engine.startRun('hard', [], seed, { kind: 'normal' });
+      engine.startRun(runDifficulty, [], runSeed, { kind: 'normal' });
       g.pause();
       let s = engine.snapshot();
       let guard = 0;
@@ -287,19 +288,17 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
       const outcome = s.quarterReview?.outcome;
       if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
       return {
-        ok:
-          s.phase === 'quarterReview' &&
-          (outcome === 'shutdown' || outcome === 'reorg_required' || outcome === 'missed_crisis'),
+        ok: s.phase === 'quarterReview' && outcome === expected,
         outcome,
       };
     },
-    { seed: E2E_SHUTDOWN_SEED },
+    { seed, difficulty, expectedOutcome },
   );
 
-  test.skip(!atReview.ok, `seed が shutdown にならない: ${JSON.stringify(atReview)}`);
+  test.skip(!atReview.ok, `seed が ${expectedOutcome} にならない: ${JSON.stringify(atReview)}`);
   const runResult = page.getByTestId('run-result');
   await expect(runResult).toBeVisible({ timeout: 5000 });
-  await expect(runResult).toHaveAttribute('data-quarter-outcome', atReview.outcome!);
+  await expect(runResult).toHaveAttribute('data-quarter-outcome', expectedOutcome);
   await expect(page.getByTestId('run-end-status')).toBeVisible();
 });
 

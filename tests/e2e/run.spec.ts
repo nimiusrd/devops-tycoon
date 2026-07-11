@@ -159,8 +159,7 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
               g.dispatch('firefight');
           }
           g.step(300);
-        }
-        else if (s.phase === 'result') g.acknowledgeResult();
+        } else if (s.phase === 'result') g.acknowledgeResult();
         else if (s.phase === 'draft') {
           if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
           else g.skipDraft();
@@ -274,10 +273,12 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
         if (s.phase === 'setup') engine.beginSetupSprint();
         else if (s.phase === 'sprint') engine.step(1_000_000);
         else if (s.phase === 'result') engine.acknowledgeResult();
-        else if (s.phase === 'draft' && s.draft && s.draft.length > 0) engine.chooseCard(s.draft[0]);
+        else if (s.phase === 'draft' && s.draft && s.draft.length > 0)
+          engine.chooseCard(s.draft[0]);
         else if (s.phase === 'draft') engine.skipDraft();
         else if (s.phase === 'evolution') engine.finishEvolution();
-        else if (s.phase === 'beat') engine.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+        else if (s.phase === 'beat')
+          engine.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
         else if (s.phase === 'shop') engine.leaveShop();
         else if (s.phase === 'rest') engine.restChoose('heal');
         else guard = 60000;

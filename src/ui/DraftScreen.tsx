@@ -5,6 +5,7 @@
  * 同じデッキでも捌き方で結果が変わり、ドラフトでデッキが育っていく（第7章）。
  */
 import { getCard } from '../data/cards';
+import type { WhatIfPreview } from '../sim/run/types';
 import { CardView } from './CardView';
 
 export interface DraftScreenProps {
@@ -12,11 +13,12 @@ export interface DraftScreenProps {
   options: string[];
   /** 次スプリントが何回目か（表示用、1 起点）。 */
   sprintNumber: number;
+  previews: Record<string, WhatIfPreview>;
   onPick: (defId: string) => void;
   onSkip: () => void;
 }
 
-export function DraftScreen({ options, sprintNumber, onPick, onSkip }: DraftScreenProps) {
+export function DraftScreen({ options, sprintNumber, previews, onPick, onSkip }: DraftScreenProps) {
   return (
     <div className="result-overlay" data-testid="draft" role="dialog" aria-label="Card Draft">
       <div className="draft-card-panel">
@@ -26,7 +28,9 @@ export function DraftScreen({ options, sprintNumber, onPick, onSkip }: DraftScre
           {options.map((id) => {
             const def = getCard(id);
             if (!def) return null;
-            return <CardView key={id} def={def} onPick={() => onPick(id)} />;
+            return (
+              <CardView key={id} def={def} onPick={() => onPick(id)} whatIfPreview={previews[id]} />
+            );
           })}
         </div>
         <button type="button" className="btn" onClick={onSkip} data-testid="draft-skip">

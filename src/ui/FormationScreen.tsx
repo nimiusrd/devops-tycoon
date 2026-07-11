@@ -9,6 +9,7 @@ import { getTrait } from '../data/traits';
 import { memberExpression, rankLabel, xpForLevel } from '../sim/member';
 import type { LaneAssignment, Member, MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
+import { WhatIfPreview } from './WhatIfPreview';
 
 export interface FormationScreenProps {
   state: RunState;
@@ -31,6 +32,9 @@ export function FormationGrid({
   return (
     <>
       {locked && <p className="fm-locked-note">スプリント中は編成を変更できません。</p>}
+      {state.whatIf?.current && (
+        <WhatIfPreview preview={state.whatIf.current} testId="what-if-formation" />
+      )}
       <div className="formation-grid">
         {state.roster.members.map((m) => (
           <MemberCard

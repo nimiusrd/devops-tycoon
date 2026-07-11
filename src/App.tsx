@@ -202,6 +202,7 @@ export default function App({ game }: AppProps) {
         <DraftScreen
           options={state.draft}
           sprintNumber={state.sprintsPlayed + 1}
+          previews={state.whatIf?.draftCandidates ?? {}}
           onPick={run.chooseCard}
           onSkip={run.skipDraft}
         />

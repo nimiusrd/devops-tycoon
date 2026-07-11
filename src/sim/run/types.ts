@@ -190,6 +190,29 @@ export interface StartRunOptions {
   dailyDate?: string;
 }
 
+/** what-if 試算で表示する 1 指標の期待値と seed 掃引の観測レンジ。 */
+export interface WhatIfMetric {
+  mean: number;
+  min: number;
+  max: number;
+}
+
+/** 次スプリントを seed 掃引したリスク幅プレビュー（RI-46）。 */
+export interface WhatIfPreview {
+  /** 集計した決定論試行数。 */
+  trials: number;
+  /** 完了したタスクの見込み。 */
+  delivered: WhatIfMetric;
+  /** 延焼件数の見込み。 */
+  spread: WhatIfMetric;
+}
+
+/** 現在の状態に対する次スプリント試算。ドラフト時は候補カード別にも提供する。 */
+export interface WhatIfState {
+  current: WhatIfPreview;
+  draftCandidates: Record<string, WhatIfPreview>;
+}
+
 /** ランの種別（通常 / デイリー）。 */
 export type RunKind = 'normal' | 'daily';
 
@@ -251,6 +274,8 @@ export interface RunState {
   lastResult: SprintResult | null;
   /** ドラフト候補（draft フェーズのみ）。 */
   draft: string[] | null;
+  /** setup / draft でのみ公開する次スプリントの確率試算。 */
+  whatIf: WhatIfState | null;
   /** ショップの陳列（shop フェーズのみ）。 */
   shop: ShopOffer | null;
   /** 現在の組織タイプ診断（第13章）。 */

@@ -85,6 +85,7 @@ import {
 } from './quarterReview';
 import { createSprintFromBaselineInput, runNoInterventionBaseline } from './sprintBaseline';
 import type { SprintBaselineInput } from './sprintBaseline';
+import { previewNextSprint } from './whatIf';
 import type {
   BeatState,
   DifficultyId,
@@ -103,6 +104,7 @@ import type {
   SprintModifierDelta,
   StakeholderTrust,
   StartRunOptions,
+  WhatIfState,
   WinType,
 } from './types';
 
@@ -422,16 +424,51 @@ export class RunEngine {
       0,
       100,
     );
+    this.sprintBaselineInput = this.buildSprintBaselineInput({
+      deck: this.deck,
+      roster: this.roster,
+      org: this.org,
+      kind,
+      modifiers,
+      seed: `${this.seed}:sprint:${this.currentSprintId}`,
+    });
+    const initialized = createSprintFromBaselineInput(this.sprintBaselineInput, this.org);
+    this.sprintRng = initialized.rng;
+    this.sprintTick = 0;
+    this.accumulatorMs = 0;
+    this.sprint = initialized.sprint;
+    this.phase = 'sprint';
+  }
+
+  /**
+   * 指定したデッキ・編成から次スプリントの純粋な初期入力を組み立てる。
+   * 本番起動と RI-46 の試算で共有し、候補試算中に実ランの状態を変更しない。
+   */
+  private buildSprintBaselineInput({
+    deck,
+    roster,
+    org,
+    kind,
+    modifiers,
+    seed,
+  }: {
+    deck: { defId: string; level: number }[];
+    roster: RosterState;
+    org: OrgState;
+    kind: SprintKind;
+    modifiers: SprintModifierDelta;
+    seed: string;
+  }): SprintBaselineInput {
     const isBoss = kind === 'boss';
     const fold = foldRunEffects({
-      deck: this.deck,
+      deck,
       relics: this.relics,
       evolution: this.evolution,
       difficulty: this.difficulty,
       trials: this.trials,
     });
     // 編成（個体メンバーのレーン配置・AI 配布）を係数へ畳み込み、デッキ等と合成する。
-    const formation = foldFormationEffects(this.roster);
+    const formation = foldFormationEffects(roster);
     let effects = combineEffects(fold.effects, toEffects(formation.effects));
     if (isBoss) effects = withBossEffects(effects, this.bossId);
     if (this.pauseAiDebuffQuarter === this.quarterNumber) {
@@ -458,20 +495,14 @@ export class RunEngine {
         this.baseConfig.codingSlots + fold.codingSlotBonus + formation.codingSlotBonus,
       ),
     };
-    this.sprintBaselineInput = {
-      seed: `${this.seed}:sprint:${this.currentSprintId}`,
+    return {
+      seed,
       config: { ...config },
-      org: structuredClone(this.org),
+      org: structuredClone(org),
       cardEffects: { ...effects },
       aiAdoptionShare: formation.aiAdoptionShare,
       reviewLoadAdd: modifiers.reviewLoadAdd,
     };
-    const initialized = createSprintFromBaselineInput(this.sprintBaselineInput, this.org);
-    this.sprintRng = initialized.rng;
-    this.sprintTick = 0;
-    this.accumulatorMs = 0;
-    this.sprint = initialized.sprint;
-    this.phase = 'sprint';
   }
 
   /** 進行中スプリントを dtMs 分だけ固定タイムステップで進める。 */
@@ -1115,9 +1146,53 @@ export class RunEngine {
     return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;
   }
 
+  /** setup / draft における、次スプリントのリスク幅プレビューを生成する（RI-46）。 */
+  private buildWhatIfState(): WhatIfState | null {
+    if (this.phase !== 'setup' && this.phase !== 'draft') return null;
+
+    const nextIndex = this.sprintIndexInQuarter + 1;
+    const kind: SprintKind = nextIndex >= this.sprintsPerQuarter ? 'boss' : this.pendingSprintKind;
+    const modifiers = this.phase === 'setup' ? this.pendingSprintModifiers : {};
+    const baseSeed = `${this.seed}:what-if:q${this.quarterNumber}:s${nextIndex}`;
+    const previewFor = (deck: { defId: string; level: number }[], org: OrgState) => {
+      // beginSprint と同じスプリント間回復を試算側の clone にだけ適用する。
+      const previewOrg = structuredClone(org);
+      previewOrg.seniorHp = clamp(
+        previewOrg.seniorHp + (100 - previewOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
+        0,
+        100,
+      );
+      return previewNextSprint(
+        this.buildSprintBaselineInput({
+          deck,
+          roster: this.roster,
+          org: previewOrg,
+          kind,
+          modifiers,
+          // 候補間で同じ seed 群を使い、選択だけによる差を比較できるようにする。
+          seed: baseSeed,
+        }),
+      );
+    };
+
+    const current = previewFor(this.deck, this.org);
+    const draftCandidates: Record<string, ReturnType<typeof previewNextSprint>> = {};
+    if (this.phase === 'draft' && this.draft) {
+      for (const defId of this.draft) {
+        const card = getCard(defId);
+        if (!card) continue;
+        const org = structuredClone(this.org);
+        applyDeckBaseline(org, scaleEffects(card.base, 1));
+        draftCandidates[defId] = previewFor([...this.deck, { defId, level: 1 }], org);
+      }
+    }
+    return { current, draftCandidates };
+  }
+
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */
   snapshot(): RunState {
     const orgScale = this.orgScaleForSnapshot();
+    const whatIf = this.buildWhatIfState();
     return {
       seed: this.seed,
       difficulty: this.difficulty,
@@ -1148,6 +1223,7 @@ export class RunEngine {
       sprintTick: this.sprint ? this.sprintTick : 0,
       lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
       draft: this.draft ? [...this.draft] : null,
+      whatIf,
       shop: this.shop
         ? {
             cards: this.shop.cards.map((c) => ({ ...c })),

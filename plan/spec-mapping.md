@@ -54,7 +54,7 @@
 | [18（描画基盤）](../SPEC.md#18-視覚表現) | 視覚表現の WebGL 化 | `src/render/adapters/pixiOrgRenderer.ts`, `selectRenderer.ts`, `src/ui/OrgPixiField.tsx` / `tests/e2e/org-pixi-visual.spec.ts`（`?renderer=pixi` で opt-in） | ✅ 全社マップを Pixi 化（盤面は DOM/SVG 継続。適用範囲拡張は [remaining-issues.md](./remaining-issues.md) RI-11） |
 | [19](../SPEC.md#19-面白さの核) | 面白さの核 | 各画面の体験設計に反映（リスク/リターン設計ほか） | ✅ |
 | [20](../SPEC.md#20-教育的価値) | 教育的価値 | `src/sim/diagnosis.ts`（組織タイプ診断による気づき） | ✅ |
-| [22](../SPEC.md#22-技術構成) | 技術構成 | `package.json`, `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `src/sim/rng.ts`, `src/sim/seed.ts` / `tests/unit/rng.test.ts`, `seed.test.ts` ／ 詳細は [architecture.md](./architecture.md) | 🟡 基盤・seed付き決定論・テスト二段構え（22.3/22.5）は実装。Web Worker(+Comlink) のモンテカルロ試算・Recharts/visx・IndexedDB(idb/Dexie) は未導入（[remaining-issues.md](./remaining-issues.md) RI-13） |
+| [22](../SPEC.md#22-技術構成) | 技術構成 | `package.json`, `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `src/sim/rng.ts`, `src/sim/seed.ts` / `tests/unit/rng.test.ts`, `seed.test.ts` ／ 詳細は [architecture.md](./architecture.md) | 🟡 基盤・seed付き決定論・テスト二段構え（22.3/22.5）は実装。Web Worker(+Comlink)・Recharts/visx は未導入（[remaining-issues.md](./remaining-issues.md) RI-13）。IndexedDB 移行＋旧 localStorage 統合は RI-57 |
 | [23](../SPEC.md#23-拡張案) | 拡張案 | デイリーランを実装: `tests/unit/daily-run.test.ts`, `tests/e2e/daily-run.spec.ts`（他の拡張案は未着手） | 🟡 |
 | [24](../SPEC.md#24-企画の価値) | 企画の価値 | （企画文・実装対象なし） | — |
 | [25](../SPEC.md#25-結論) | 結論 | （企画文・実装対象なし） | — |
@@ -72,6 +72,7 @@
 | 試練の追加（AI依存度の自然増加 ほか） | [16](../SPEC.md#16-難易度設定と試練) | 🟡 4種のみ実装 | [remaining-issues.md](./remaining-issues.md) RI-31 |
 | レリック入手元・即時敗北条件の不足（ボス報酬レリック / Incident連続・AI依存過多） | [8](../SPEC.md#8-組織文化レリック), [15](../SPEC.md#15-敗北条件--継続不能条件) | 🟡 主要経路のみ実装 | [remaining-issues.md](./remaining-issues.md) RI-32 |
 | 開始プリセットの永続解放 | [17](../SPEC.md#17-メタ進行とアンロック) | 🟡 未実装（カード/レリックのみ） | [remaining-issues.md](./remaining-issues.md) RI-25 |
-| 技術構成の残項目（Web Worker+Comlink / Recharts・visx / IndexedDB） | [22](../SPEC.md#22-技術構成) | 🟡 未導入 | [remaining-issues.md](./remaining-issues.md) RI-13 |
+| 技術構成の残項目（Web Worker+Comlink / Recharts・visx） | [22](../SPEC.md#22-技術構成) | 🟡 未導入 | [remaining-issues.md](./remaining-issues.md) RI-13 |
+| メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | [17](../SPEC.md#17-メタ進行とアンロック), [22](../SPEC.md#22-技術構成) | 🟡 未着手（現状 localStorage） | [remaining-issues.md](./remaining-issues.md) RI-57 |
 | バランス調整（目標修正の代償・outcome 閾値・レバー・解放コスト） | [10](../SPEC.md#10-ランとボススプリント), [14](../SPEC.md#14-勝利条件), [15](../SPEC.md#15-敗北条件--継続不能条件), [16](../SPEC.md#16-難易度設定と試練), [17](../SPEC.md#17-メタ進行とアンロック) | 進行中 | [remaining-issues.md](./remaining-issues.md) RI-14〜RI-19 |
 | 拡張案（デイリーラン以外: GitHub 連携・対抗ランキング ほか） | [23](../SPEC.md#23-拡張案) | 未着手 | [remaining-issues.md](./remaining-issues.md) RI-34 |

@@ -66,7 +66,8 @@
 | --- | --- | --- | --- | --- | --- |
 | RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 未着手 | — | 第22 |
 | RI-12 | バンドル分割(動的 import) | 低 | 未着手 | — | 第22 |
-| RI-13 | 未導入の技術スタック(Web Worker+Comlink / Recharts・visx / IndexedDB) | 中 | 未着手 | — | 第22 |
+| RI-13 | 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) | 中 | 未着手 | — | 第22 |
+| RI-57 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | 中 | 未着手 | — | 第17 / 22 |
 
 ### バランス（BAL）
 
@@ -348,10 +349,22 @@ E2E: `tests/e2e/interventions.spec.ts`（比較値・推定注記）。
 `npm run build` の index チャンクが 778kB（>500kB 警告、Pixi/WebGL 同梱）。動的 import 等でコード分割するか
 （機能要件ではないが計測値として残す）。
 
-#### RI-13 未導入の技術スタック(Web Worker+Comlink / Recharts・visx / IndexedDB) — 優先度:中
+#### RI-13 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) — 優先度:中
 
 第22章で前提とした技術スタックのうち未導入の分。Web Worker + Comlink（モンテカルロ試算の並列化＝RI-14 の
-基盤候補）、Recharts・visx（指標可視化）、IndexedDB（永続化）の導入要否を判断し、必要なものを入れる。
+基盤候補）、Recharts・visx（指標可視化）の導入要否を判断し、必要なものを入れる。
+IndexedDB（永続化）は RI-57 へ切り出した。
+
+#### RI-57 メタ永続化の IndexedDB 移行＋旧 localStorage 統合 — 優先度:中
+
+現状のメタ進行は `localStorage`（`devops-tycoon:meta:v1`）に小さな JSON を同期保存している
+（`src/state/meta.ts`）。architecture §1 の段階移行に従い、永続化先を IndexedDB（idb/Dexie 等）へ移す。
+移行時に旧 `localStorage` セーブを読み取り、欠けたフィールド（例: `collectedWinTypes` / `dailyRuns`）を
+既定値で補完したうえで IndexedDB へ統合し、成功後は旧キーを削除する。
+
+- **スコープ**: `MetaStorage` 抽象の IndexedDB 実装、起動時ワンショット移行、Vitest / Playwright での往復と移行検証。
+- **非スコープ（当面）**: リプレイ・大量履歴の保存設計（必要になったら別 ID で切り出す）。
+- **依存**: なし。将来のセーブ/リプレイ拡張の土台になる。
 
 ### バランス（BAL）
 
@@ -588,7 +601,7 @@ AI あり/なしの差分が seed 固定で安定して観測できる代表 see
 | §2（SPEC 未充足） | RI-20〜RI-25, RI-29〜RI-32, RI-34 |
 | §3（バランス調整） | RI-14〜RI-19 |
 | §3.5-A（ノード選択廃止） | RI-33 |
-| §4（技術構成） | RI-11 / RI-12 / RI-13 |
+| §4（技術構成） | RI-11 / RI-12 / RI-13 / RI-57 |
 | 横断テーマ A（MC 許容レンジ） | RI-14〜RI-19 |
 | 横断テーマ B（Pixi スプライト/拡張） | RI-07 / RI-08 / RI-11 |
 | 横断テーマ C（業界↔メタ接続） | RI-23 |

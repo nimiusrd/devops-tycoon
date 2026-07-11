@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getRelic, RELIC_DEFS } from '../../src/data/relics';
+import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, evaluateWinType } from '../../src/sim/outcome';
 import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
+import { canAcknowledgeWin } from '../../src/sim/run/quarterReview';
 import type { RunState } from '../../src/sim/run/types';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
 import { advance, playRun, playUntil } from './helpers/runFlow';
@@ -102,6 +104,76 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     }
 
     expect(foundMetaLocked).toBe(true);
+  });
+
+  it('RI-32: 勝利種別はボス報酬適用前の org で判定する', () => {
+    let verified = false;
+    for (let i = 0; i < 80; i += 1) {
+      const engine = new RunEngine({ seed: `ri32-win-type-${i}`, difficulty: 'easy' });
+      engine.startRun();
+      const state = playUntil(engine, 'quarterReview', { skilled: true });
+      if (!state.quarterReview || !canAcknowledgeWin(state.quarterReview.outcome)) continue;
+      if (!state.bossRelicReward) continue;
+
+      const effects = getRelic(state.bossRelicReward)?.effects ?? {};
+      const preRewardOrg = {
+        ...state.org,
+        quality: Math.max(0, state.org.quality - (effects.qualityAdd ?? 0)),
+        testCoverage: Math.max(0, state.org.testCoverage - (effects.testCoverageAdd ?? 0)),
+        aiLiteracy: Math.max(0, state.org.aiLiteracy - (effects.aiLiteracyAdd ?? 0)),
+        aiDependency: Math.max(0, state.org.aiDependency - (effects.aiDependencyAdd ?? 0)),
+      };
+      const expected = evaluateWinType({
+        org: preRewardOrg,
+        totals: state.totals,
+        budget: state.budget,
+        usedHeavyActions: state.usedHeavyActions,
+      });
+
+      engine.acknowledgeQuarterReview();
+      const after = engine.snapshot();
+      expect(after.status).toBe('won');
+      expect(after.winType).toBe(expected);
+      verified = true;
+      break;
+    }
+    expect(verified).toBe(true);
+  });
+
+  it('RI-32: カード獲得で AI 依存上限を超えると即時敗北する', () => {
+    const engine = new RunEngine({ seed: 'ri32-card-lose-direct', difficulty: 'nightmare' });
+    engine.startRun();
+    // ドラフト直前の境界状態を直接組み立て、chooseCard / buyShopCard の即時敗北経路を検証する。
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> } | null;
+      org: { aiDependency: number; aiLiteracy: number };
+      budget: number;
+    };
+    internals.org.aiDependency = AI_DEPENDENCY_CAP - 5;
+    internals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    internals.phase = 'draft';
+    internals.draft = ['copilot'];
+    engine.chooseCard('copilot');
+    let after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('aiDependency');
+    expect(after.phase).toBe('lost');
+
+    const shopEngine = new RunEngine({ seed: 'ri32-shop-lose-direct', difficulty: 'nightmare' });
+    shopEngine.startRun();
+    const shopInternals = shopEngine as unknown as typeof internals;
+    shopInternals.org.aiDependency = AI_DEPENDENCY_CAP - 5;
+    shopInternals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    shopInternals.budget = 100;
+    shopInternals.phase = 'shop';
+    shopInternals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+    shopEngine.buyShopCard('copilot');
+    after = shopEngine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('aiDependency');
+    expect(after.phase).toBe('lost');
   });
 
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {

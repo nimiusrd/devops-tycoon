@@ -214,6 +214,8 @@ export class RunEngine {
   private deck: { defId: string; level: number }[] = [];
   private relics: string[] = [];
   private bossRelicReward: string | undefined;
+  /** ボス報酬適用前の org（勝利種別判定用。報酬で同じ四半期の称号を押し上げない）。 */
+  private winEvalOrg: OrgState | null = null;
   private evolution!: EvolutionState;
   private roster!: RosterState;
   private lastGrowth: GrowthOutcome | null = null;
@@ -325,6 +327,7 @@ export class RunEngine {
     this.deck = [];
     this.relics = [];
     this.bossRelicReward = undefined;
+    this.winEvalOrg = null;
     this.evolution = { points: 0, unlocked: {} };
     this.roster = createInitialRoster(createRng(`${this.seed}:roster`));
     this.lastGrowth = null;
@@ -529,7 +532,11 @@ export class RunEngine {
         quarterNumber: this.quarterNumber,
         bossSprintCleared: bossCleared,
       });
-      if (bossCleared) this.bossRelicReward = this.grantBossRelic();
+      if (bossCleared) {
+        // 勝利種別も報酬前の組織状態で判定する。
+        this.winEvalOrg = structuredClone(this.org);
+        this.bossRelicReward = this.grantBossRelic();
+      }
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
       this.phase = 'quarterReview';
       return;
@@ -589,7 +596,7 @@ export class RunEngine {
     if (canAcknowledgeWin(outcome)) {
       this.status = 'won';
       this.winType = evaluateWinType({
-        org: this.org,
+        org: this.winEvalOrg ?? this.org,
         totals: this.totals,
         budget: this.budget,
         usedHeavyActions: this.usedHeavyActions,
@@ -691,6 +698,7 @@ export class RunEngine {
     this.sprint = null;
     this.lastResult = null;
     this.bossRelicReward = undefined;
+    this.winEvalOrg = null;
     this.draft = null;
     this.shop = null;
     this.quarterReview = null;
@@ -714,6 +722,7 @@ export class RunEngine {
     if (this.phase !== 'draft') return;
     this.addCard(defId, 1);
     this.draft = null;
+    if (this.applyImmediateLose()) return;
     this.phase = 'evolution';
   }
 
@@ -899,6 +908,7 @@ export class RunEngine {
     this.budget -= offer.cost;
     offer.bought = true;
     this.addCard(defId, 1);
+    this.applyImmediateLose();
   }
 
   /** ショップでレリックを購入する。 */
@@ -973,6 +983,16 @@ export class RunEngine {
     if (!def) return;
     this.deck.push({ defId, level });
     applyDeckBaseline(this.org, scaleEffects(def.base, level));
+  }
+
+  /** 即時敗北条件を評価し、該当すれば lost へ遷移する。 */
+  private applyImmediateLose(): boolean {
+    const lose = evaluateLose(this.org, this.totals);
+    if (!lose) return false;
+    this.status = 'lost';
+    this.loseReason = lose;
+    this.phase = 'lost';
+    return true;
   }
 
   /** レリックを獲得し、加算系効果を即時に組織へ反映する（枠上限あり）。 */

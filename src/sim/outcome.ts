@@ -12,6 +12,16 @@ import type { LoseReason, RunTotals, WinType } from './run/types';
 export const TECH_DEBT_CAP = 90;
 /** Review 待ち行列がこのピークに達すると PR 凍結＝敗北。 */
 export const REVIEW_FREEZE_PEAK = 48;
+/** 延焼を伴う Incident がこの連続スプリント数に達するとリリース停止＝敗北。 */
+export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 6;
+/** AI 依存度がこの値に達すると仕様説明不能＝敗北。 */
+export const AI_DEPENDENCY_CAP = 95;
+/**
+ * AI 依存を安全に検証できないとみなす AI リテラシー上限。
+ * Nightmare の初期値（25）では到達可能、Hard 以上の初期値（35+）では
+ * リテラシーを下げない限り対象外になる。
+ */
+export const AI_LITERACY_UNSAFE_CAP = 30;
 
 export interface WinView {
   type: WinType;
@@ -46,6 +56,10 @@ export function evaluateLose(org: OrgState, totals: RunTotals): LoseReason | nul
   if (org.morale <= 1) return 'moraleCollapse';
   if (org.techDebt >= TECH_DEBT_CAP) return 'techDebt';
   if (totals.reviewQueuePeak >= REVIEW_FREEZE_PEAK) return 'reviewFreeze';
+  if ((totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP)
+    return 'incidentCascade';
+  if (org.aiDependency >= AI_DEPENDENCY_CAP && org.aiLiteracy <= AI_LITERACY_UNSAFE_CAP)
+    return 'aiDependency';
   return null;
 }
 

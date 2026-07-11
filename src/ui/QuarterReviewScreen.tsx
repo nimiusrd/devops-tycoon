@@ -4,6 +4,7 @@
  * 勝敗画面ではなくレビュー会議として、目標達成度・信頼・未達理由・修正選択肢を表示する。
  */
 import { getGoalAdjustment } from '../data/goalAdjustments';
+import { getRelic } from '../data/relics';
 import { OUTCOME_LABELS } from '../sim/run/quarterReview';
 import { formatGoalAdjustmentTags } from '../render/eventOutcomeView';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
@@ -41,6 +42,7 @@ export function QuarterReviewScreen({
   const canAdjust = outcome === 'missed_adjustable';
   const isTerminal =
     outcome === 'shutdown' || outcome === 'reorg_required' || outcome === 'missed_crisis';
+  const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
 
   return (
     <div
@@ -81,6 +83,14 @@ export function QuarterReviewScreen({
           {trustBar('顧客', trust.customers)}
           {trustBar('チーム', trust.team)}
         </div>
+
+        {bossRelic && (
+          <div className="result-diagnosis" data-testid="boss-relic-reward">
+            <p className="result-section-label">ボス突破報酬</p>
+            <p className="diagnosis-type">◆ {bossRelic.name}</p>
+            <p>{bossRelic.description}</p>
+          </div>
+        )}
 
         {missedReasons.length > 0 && (
           <div className="quarter-reasons" data-testid="quarter-reasons">

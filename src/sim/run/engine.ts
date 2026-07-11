@@ -149,6 +149,7 @@ function emptyTotals(): RunTotals {
     completed: 0,
     reviewQueuePeak: 0,
     maxCombo: 0,
+    consecutiveIncidentSprints: 0,
   };
 }
 
@@ -179,6 +180,7 @@ function addSprintTotals(
   t.completed += metrics.completedCount;
   t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
   t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
+  t.consecutiveIncidentSprints = result.spread > 0 ? (t.consecutiveIncidentSprints ?? 0) + 1 : 0;
 }
 
 /** 難易度の組織プリセットから初期 `OrgState` を作る（AI 導入済みの組織を前提）。 */
@@ -211,6 +213,9 @@ export class RunEngine {
   private org!: OrgState;
   private deck: { defId: string; level: number }[] = [];
   private relics: string[] = [];
+  private bossRelicReward: string | undefined;
+  /** ボス報酬適用前の org（勝利種別判定用。報酬で同じ四半期の称号を押し上げない）。 */
+  private winEvalOrg: OrgState | null = null;
   private evolution!: EvolutionState;
   private roster!: RosterState;
   private lastGrowth: GrowthOutcome | null = null;
@@ -321,6 +326,8 @@ export class RunEngine {
     this.org = buildRunOrg(this.difficulty);
     this.deck = [];
     this.relics = [];
+    this.bossRelicReward = undefined;
+    this.winEvalOrg = null;
     this.evolution = { points: 0, unlocked: {} };
     this.roster = createInitialRoster(createRng(`${this.seed}:roster`));
     this.lastGrowth = null;
@@ -514,6 +521,8 @@ export class RunEngine {
       }
       const boss = getBoss(this.bossId);
       const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
+      const bossCleared = !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul });
+      // 四半期 KPI は報酬前の org で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
         org: this.org,
@@ -521,8 +530,13 @@ export class RunEngine {
         trust: this.stakeholderTrust,
         budget: this.budget,
         quarterNumber: this.quarterNumber,
-        bossSprintCleared: !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul }),
+        bossSprintCleared: bossCleared,
       });
+      if (bossCleared) {
+        // 勝利種別も報酬前の組織状態で判定する。
+        this.winEvalOrg = structuredClone(this.org);
+        this.bossRelicReward = this.grantBossRelic();
+      }
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
       this.phase = 'quarterReview';
       return;
@@ -582,7 +596,7 @@ export class RunEngine {
     if (canAcknowledgeWin(outcome)) {
       this.status = 'won';
       this.winType = evaluateWinType({
-        org: this.org,
+        org: this.winEvalOrg ?? this.org,
         totals: this.totals,
         budget: this.budget,
         usedHeavyActions: this.usedHeavyActions,
@@ -683,6 +697,8 @@ export class RunEngine {
     this.currentSprintId = null;
     this.sprint = null;
     this.lastResult = null;
+    this.bossRelicReward = undefined;
+    this.winEvalOrg = null;
     this.draft = null;
     this.shop = null;
     this.quarterReview = null;
@@ -706,6 +722,7 @@ export class RunEngine {
     if (this.phase !== 'draft') return;
     this.addCard(defId, 1);
     this.draft = null;
+    if (this.applyImmediateLose()) return;
     this.phase = 'evolution';
   }
 
@@ -867,11 +884,18 @@ export class RunEngine {
     return { cards, relic };
   }
 
-  /** 未所持レリックを 1 つ提示（無ければ undefined）。 */
+  /** ショップ用: メタ解放済みかつ未所持のレリックを 1 つ提示（無ければ undefined）。 */
   private offerRelic(rng: () => number): string | undefined {
     const pool = relicIds().filter(
       (id) => !this.relics.includes(id) && (!this.allowedRelics || this.allowedRelics.has(id)),
     );
+    if (pool.length === 0) return undefined;
+    return pool[Math.floor(rng() * pool.length)];
+  }
+
+  /** ボス報酬用: メタ解放に依存せず、未所持レリック全体から 1 つ選ぶ。 */
+  private pickBossRelic(rng: () => number): string | undefined {
+    const pool = relicIds().filter((id) => !this.relics.includes(id));
     if (pool.length === 0) return undefined;
     return pool[Math.floor(rng() * pool.length)];
   }
@@ -884,6 +908,7 @@ export class RunEngine {
     this.budget -= offer.cost;
     offer.bought = true;
     this.addCard(defId, 1);
+    this.applyImmediateLose();
   }
 
   /** ショップでレリックを購入する。 */
@@ -960,6 +985,16 @@ export class RunEngine {
     applyDeckBaseline(this.org, scaleEffects(def.base, level));
   }
 
+  /** 即時敗北条件を評価し、該当すれば lost へ遷移する。 */
+  private applyImmediateLose(): boolean {
+    const lose = evaluateLose(this.org, this.totals);
+    if (!lose) return false;
+    this.status = 'lost';
+    this.loseReason = lose;
+    this.phase = 'lost';
+    return true;
+  }
+
   /** レリックを獲得し、加算系効果を即時に組織へ反映する（枠上限あり）。 */
   private grantRelic(id: string): void {
     if (this.relics.includes(id)) return;
@@ -969,6 +1004,14 @@ export class RunEngine {
     if (!relic) return;
     this.relics.push(id);
     if (relic.effects) applyDeckBaseline(this.org, toEffects(relic.effects));
+  }
+
+  /** ボス突破報酬として未所持レリックを決定論的に 1 個付与する。 */
+  private grantBossRelic(): string | undefined {
+    const relicId = this.pickBossRelic(createRng(`${this.seed}:boss-relic:q${this.quarterNumber}`));
+    if (!relicId) return undefined;
+    this.grantRelic(relicId);
+    return this.relics.includes(relicId) ? relicId : undefined;
   }
 
   // --- 組織スケール / ズーム階層（第4.7〜4.11） ---
@@ -1095,6 +1138,7 @@ export class RunEngine {
       org: structuredClone(this.org),
       deck: this.deck.map((c) => ({ ...c })),
       relics: [...this.relics],
+      bossRelicReward: this.bossRelicReward,
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
       roster: structuredClone(this.roster),
       lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,

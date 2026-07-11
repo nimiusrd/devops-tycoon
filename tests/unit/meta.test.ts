@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { createGame } from '../../src/game';
+import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome';
 import {
   ACHIEVEMENT_DEFS,
   ACHIEVEMENT_LABEL,
@@ -338,5 +340,43 @@ describe('メタ進行とアンロック（第17章）', () => {
       }),
     );
     expect(loadMeta(storage).dailyRuns).toEqual({});
+  });
+
+  it('RI-32: カード獲得の即時敗北でもメタ報酬を記録する', () => {
+    const game = createGame({ seed: 'ri32-meta-card-lose', difficulty: 'nightmare' });
+    game.startRun('nightmare');
+    const before = game.getMeta().points;
+
+    const internals = game.engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> } | null;
+      org: { aiDependency: number; aiLiteracy: number };
+      budget: number;
+    };
+    internals.org.aiDependency = AI_DEPENDENCY_CAP - 5;
+    internals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    internals.phase = 'draft';
+    internals.draft = ['copilot'];
+
+    const state = game.chooseCard('copilot');
+    expect(state.status).toBe('lost');
+    expect(state.loseReason).toBe('aiDependency');
+    expect(game.getMeta().points).toBeGreaterThan(before);
+
+    const shopGame = createGame({ seed: 'ri32-meta-shop-lose', difficulty: 'nightmare' });
+    shopGame.startRun('nightmare');
+    const shopBefore = shopGame.getMeta().points;
+    const shopInternals = shopGame.engine as unknown as typeof internals;
+    shopInternals.org.aiDependency = AI_DEPENDENCY_CAP - 5;
+    shopInternals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    shopInternals.budget = 100;
+    shopInternals.phase = 'shop';
+    shopInternals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+
+    const shopState = shopGame.buyShopCard('copilot');
+    expect(shopState.status).toBe('lost');
+    expect(shopState.loseReason).toBe('aiDependency');
+    expect(shopGame.getMeta().points).toBeGreaterThan(shopBefore);
   });
 });

@@ -13,7 +13,7 @@ export const TECH_DEBT_CAP = 90;
 /** Review 待ち行列がこのピークに達すると PR 凍結＝敗北。 */
 export const REVIEW_FREEZE_PEAK = 48;
 /** Incident がこの連続スプリント数に達するとリリース停止＝敗北。 */
-export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 3;
+export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 6;
 /** AI 依存度がこの値に達すると仕様説明不能＝敗北。 */
 export const AI_DEPENDENCY_CAP = 95;
 /** AI 依存を安全に検証できないとみなす AI リテラシー上限。 */

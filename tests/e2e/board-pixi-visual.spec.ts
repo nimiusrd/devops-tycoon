@@ -8,6 +8,7 @@ type GameWindow = Window & {
     pause(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
+    beginSetupSprint(): RunState;
   };
   __boardPixiTest?: {
     freezeForScreenshot(): void;
@@ -23,6 +24,7 @@ async function openPixiBoard(page: import('@playwright/test').Page, seed: string
     const g = (window as GameWindow).game!;
     g.pause();
     g.startRun('normal', [], s);
+    g.beginSetupSprint();
   }, seed);
 }
 

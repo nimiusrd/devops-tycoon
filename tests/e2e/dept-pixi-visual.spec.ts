@@ -8,6 +8,7 @@ type GameWindow = Window & {
     pause(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
+    beginSetupSprint(): RunState;
     zoomTo(level: string): RunState;
     focusDept(id: string): RunState;
   };
@@ -25,6 +26,7 @@ async function openPixiDept(page: import('@playwright/test').Page, seed: string)
     const g = (window as GameWindow).game!;
     g.pause();
     g.startRun('normal', [], s);
+    g.beginSetupSprint();
     g.focusDept('product');
   }, seed);
 }

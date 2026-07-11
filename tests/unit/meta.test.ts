@@ -4,6 +4,7 @@ import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome
 import {
   ACHIEVEMENT_DEFS,
   ACHIEVEMENT_LABEL,
+  WIN_TITLE_DEFS,
   applyDailyRunReward,
   applyRunReward,
   dailyLeaderboardEntries,
@@ -63,6 +64,38 @@ describe('メタ進行とアンロック（第17章）', () => {
       maxCombo: 21,
     });
     expect(next.achievements).toEqual(expect.arrayContaining(['no-damage', 'combo-master']));
+  });
+
+  it('勝利称号を重複なく永続コレクションへ記録する', () => {
+    const first = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'healthy',
+      bossId: 'big-release',
+      score: 200,
+      scoreMul: 1,
+      maxCombo: 5,
+    });
+    const second = applyRunReward(first, {
+      won: true,
+      difficulty: 'hard',
+      winType: 'healthy',
+      bossId: 'exec-review',
+      score: 300,
+      scoreMul: 1,
+      maxCombo: 5,
+    });
+    const third = applyRunReward(second, {
+      won: true,
+      difficulty: 'hard',
+      winType: 'aiSuccess',
+      bossId: 'major-incident',
+      score: 350,
+      scoreMul: 1,
+      maxCombo: 5,
+    });
+
+    expect(third.collectedWinTypes).toEqual(['healthy', 'aiSuccess']);
   });
 
   it('敗北でも四半期修正経験で学習ボーナスが入る', () => {
@@ -279,6 +312,23 @@ describe('メタ進行とアンロック（第17章）', () => {
   it('ACHIEVEMENT_LABEL は ACHIEVEMENT_DEFS から派生する', () => {
     for (const def of ACHIEVEMENT_DEFS) {
       expect(ACHIEVEMENT_LABEL[def.id]).toBe(def.label);
+    }
+  });
+
+  it('WIN_TITLE_DEFS はすべての WinType を表示・ヒント付きで定義する', () => {
+    expect(WIN_TITLE_DEFS.map((title) => title.id)).toEqual([
+      'normal',
+      'healthy',
+      'aiSuccess',
+      'management',
+      'happiness',
+      'chaos',
+      'noDamage',
+    ]);
+    for (const title of WIN_TITLE_DEFS) {
+      expect(title.label).not.toBe('');
+      expect(title.description).not.toBe('');
+      expect(title.hint).not.toBe('');
     }
   });
 

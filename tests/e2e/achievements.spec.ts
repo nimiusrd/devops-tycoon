@@ -6,6 +6,7 @@ const META_WITH_ACHIEVEMENT: MetaState = {
   unlockedDifficulties: ['easy', 'normal'],
   defeatedBosses: [],
   achievements: ['first-clear'],
+  collectedWinTypes: ['healthy'],
   bestScore: 120,
   unlockedCards: [],
   unlockedRelics: [],
@@ -31,6 +32,15 @@ test('タイトルから実績コレクションを開き取得済み／未取�
   const noDamage = page.getByTestId('achievement-no-damage');
   await expect(noDamage).toHaveAttribute('data-unlocked', 'false');
   await expect(page.getByTestId('achievement-hint-no-damage')).toContainText('残業');
+
+  await expect(page.getByTestId('win-title-count')).toHaveText('1/7');
+  const healthy = page.getByTestId('win-title-healthy');
+  await expect(healthy).toHaveAttribute('data-unlocked', 'true');
+  await expect(page.getByTestId('win-title-hint-healthy')).toContainText('出荷・品質・士気');
+
+  const noDamageTitle = page.getByTestId('win-title-noDamage');
+  await expect(noDamageTitle).toHaveAttribute('data-unlocked', 'false');
+  await expect(page.getByTestId('win-title-hint-noDamage')).toContainText('残業');
 
   await page.getByTestId('achievement-collection-close').click();
   await expect(page.getByTestId('achievement-collection')).not.toBeVisible();

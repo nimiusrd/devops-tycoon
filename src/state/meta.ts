@@ -13,6 +13,7 @@ import {
   getUnlock,
   type UnlockDef,
 } from '../data/unlocks';
+import { winView } from '../sim/outcome';
 import type { DifficultyId, QuarterOutcome, WinType } from '../sim/run/types';
 
 /** localStorage 等の最小インターフェース（テストでモック可能）。 */
@@ -32,6 +33,8 @@ export interface MetaState {
   defeatedBosses: string[];
   /** 解除済み実績 ID。 */
   achievements: string[];
+  /** 収集済みの勝利称号（WinType、重複なし）。 */
+  collectedWinTypes: WinType[];
   /** 自己ベストスコア。 */
   bestScore: number;
   /** メタショップで購入済みのカード定義 ID。 */
@@ -79,6 +82,7 @@ export function defaultMeta(): MetaState {
     unlockedDifficulties: ['easy', 'normal'],
     defeatedBosses: [],
     achievements: [],
+    collectedWinTypes: [],
     bestScore: 0,
     unlockedCards: [],
     unlockedRelics: [],
@@ -178,6 +182,39 @@ export const ACHIEVEMENT_DEFS: readonly AchievementDef[] = [
   },
 ];
 
+/** 勝利称号の宣言的定義（コレクション表示・獲得条件ヒント）。 */
+export interface WinTitleDef {
+  id: WinType;
+  label: string;
+  description: string;
+  hint: string;
+}
+
+const WIN_TITLE_HINTS: Record<WinType, string> = {
+  normal: 'ボスを突破して四半期を完遂する',
+  healthy: '出荷・品質・士気をすべて高く保ってボスを突破する',
+  aiSuccess: 'AI 利用率を高めつつ、手戻りとレビュー渋滞を抑えてボスを突破する',
+  management: '予算に余裕を残してボスを突破する',
+  happiness: 'Morale とシニア体力を高く保ってボスを突破する',
+  chaos: '障害を乗り越えて高い出荷を達成し、ボスを突破する',
+  noDamage: '残業・アンドンを使わず、延焼ゼロでボスを突破する',
+};
+
+const WIN_TYPE_ORDER: readonly WinType[] = [
+  'normal',
+  'healthy',
+  'aiSuccess',
+  'management',
+  'happiness',
+  'chaos',
+  'noDamage',
+];
+
+export const WIN_TITLE_DEFS: readonly WinTitleDef[] = WIN_TYPE_ORDER.map((id) => ({
+  ...winView(id),
+  hint: WIN_TITLE_HINTS[id],
+}));
+
 /** 実績 ID の表示名（後方互換。コレクション要素。第17章）。 */
 export const ACHIEVEMENT_LABEL: Record<string, string> = Object.fromEntries(
   ACHIEVEMENT_DEFS.map((a) => [a.id, a.label]),
@@ -206,6 +243,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     unlockedDifficulties: [...meta.unlockedDifficulties],
     defeatedBosses: [...meta.defeatedBosses],
     achievements: [...meta.achievements],
+    collectedWinTypes: [...meta.collectedWinTypes],
     bestScore: Math.max(meta.bestScore, input.score),
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
@@ -220,6 +258,8 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
       next.unlockedDifficulties.push(unlock);
     }
     const earned: string[] = ['first-clear'];
+    if (input.winType)
+      next.collectedWinTypes = uniq([...next.collectedWinTypes, input.winType]) as WinType[];
     if (input.winType === 'noDamage') earned.push('no-damage');
     if (input.maxCombo >= 20) earned.push('combo-master');
     if (input.difficulty === 'nightmare') earned.push('nightmare-clear');

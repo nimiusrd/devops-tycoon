@@ -80,6 +80,18 @@ describe('効果の畳み込み（第7/8/11/16章）', () => {
     expect(fold.focusBonus).toBe(-1);
   });
 
+  it('試練「フロンティアモデル依存」は依存度増加と利用コストを集約する', () => {
+    const fold = foldRunEffects({
+      deck: [],
+      relics: [],
+      evolution: { points: 0, unlocked: {} },
+      difficulty: 'normal',
+      trials: ['frontier-dependency'],
+    });
+    expect(fold.aiDependencyDriftPerSprint).toBe(5);
+    expect(fold.frontierModelCostPerDependency).toBe(0.05);
+  });
+
   it('レリックのパッシブ（心理的安全性）が Morale ダメージ倍率を下げる', () => {
     const passives = foldPassives(['psych-safety']);
     expect(passives.moraleDamageMul).toBeLessThan(1);

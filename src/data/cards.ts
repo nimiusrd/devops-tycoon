@@ -70,8 +70,8 @@ export const CARD_DEFS: CardDef[] = [
     name: 'AI利用ガイドライン',
     rarity: 'rare',
     cost: 12,
-    description: ['AI 利用のルールと学習を整備', '使い方が定まり、手戻りが減る'],
-    base: { aiLiteracyAdd: 15, reworkRateAdd: -0.08 },
+    description: ['AI 利用のルールと教育を整備', '効率的な利用が定着し、依存と手戻りが減る'],
+    base: { aiLiteracyAdd: 15, aiDependencyAdd: -10, reworkRateAdd: -0.08 },
   },
   {
     id: 'docs',

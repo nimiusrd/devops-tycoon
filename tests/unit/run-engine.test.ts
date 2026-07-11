@@ -19,6 +19,35 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(s.bossId).toBeTruthy();
   });
 
+  it('試練「フロンティアモデル依存」はスプリントごとに依存度と利用コストを増やす', () => {
+    const normal = new RunEngine({ seed: 'frontier-dependency', difficulty: 'normal' });
+    normal.startRun();
+    normal.beginSetupSprint();
+
+    const trial = new RunEngine({
+      seed: 'frontier-dependency',
+      difficulty: 'normal',
+      trials: ['frontier-dependency'],
+    });
+    trial.startRun();
+    trial.beginSetupSprint();
+
+    const normalState = normal.snapshot();
+    const trialState = trial.snapshot();
+    expect(trialState.org.aiDependency).toBe(normalState.org.aiDependency + 5);
+    // Normal の初期 AI依存度 35 に自然増加 5 を足し、ceil(40 × 0.05) の 2 を消費する。
+    expect(trialState.budget).toBe(normalState.budget - 2);
+
+    const replay = new RunEngine({
+      seed: 'frontier-dependency',
+      difficulty: 'normal',
+      trials: ['frontier-dependency'],
+    });
+    replay.startRun();
+    replay.beginSetupSprint();
+    expect(replay.snapshot()).toEqual(trialState);
+  });
+
   it('最後まで自動プレイすると勝利か敗北で必ず決着する', () => {
     const e = new RunEngine({ seed: 'run-finish', difficulty: 'easy' });
     const s = playRun(e);

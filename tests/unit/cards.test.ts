@@ -42,10 +42,11 @@ describe('カード効果の状態反映（第7.2）', () => {
     expect(carded).toBeLessThan(base);
   });
 
-  it('AI利用ガイドラインは開始時 AI Literacy を底上げする', () => {
-    const o = org({ aiLiteracy: 40 });
+  it('AI利用ガイドラインは教育で AI Literacy を上げ、AI依存度を下げる', () => {
+    const o = org({ aiLiteracy: 40, aiDependency: 55 });
     applyDeckBaseline(o, deckEffects([{ defId: 'ai-guideline', level: 1 }]));
     expect(o.aiLiteracy).toBe(55);
+    expect(o.aiDependency).toBe(45);
   });
 
   it('強化レベルが上がるほど効果が強まる', () => {

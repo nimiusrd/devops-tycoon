@@ -391,6 +391,23 @@ export class RunEngine {
     return this.trials.reduce((m, id) => m * (getTrial(id)?.budgetMul ?? 1), 1);
   }
 
+  /**
+   * 試練「フロンティアモデル依存」のスプリント開始時コストを適用する。
+   * 依存度が高いほど高価なモデルへ安易に寄り、予算消費も増える。
+   */
+  private applyTrialAiDependencyPressure(org: OrgState, budget: number): number {
+    const { aiDependencyDriftPerSprint, frontierModelCostPerDependency } = foldRunEffects({
+      deck: this.deck,
+      relics: this.relics,
+      evolution: this.evolution,
+      difficulty: this.difficulty,
+      trials: this.trials,
+    });
+    org.aiDependency = clamp(org.aiDependency + aiDependencyDriftPerSprint, 0, 100);
+    const modelCost = Math.ceil(org.aiDependency * frontierModelCostPerDependency);
+    return Math.max(0, budget - modelCost);
+  }
+
   // --- セットアップ → スプリント起動 ---
 
   /**
@@ -426,6 +443,7 @@ export class RunEngine {
       0,
       100,
     );
+    this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget);
     this.sprintBaselineInput = this.buildSprintBaselineInput({
       deck: this.deck,
       roster: this.roster,
@@ -1192,6 +1210,7 @@ export class RunEngine {
         0,
         100,
       );
+      this.applyTrialAiDependencyPressure(previewOrg, this.budget);
       return previewNextSprint(
         this.buildSprintBaselineInput({
           deck,

@@ -170,7 +170,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return paused;
     },
     getState() {
-      return engine.snapshot();
+      const state = engine.snapshot();
+      // オートプレイやモンテカルロは snapshot を直接使うため、UI 経路だけで試算する。
+      return { ...state, whatIf: engine.whatIfPreview() };
     },
     startRun(difficulty, trials, runSeed) {
       recorded = false;

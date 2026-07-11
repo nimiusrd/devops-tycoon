@@ -7,7 +7,9 @@
 import { RARITY_LABEL } from '../data/cards';
 import { formatCardTagsAtLevel, formatCardTooltip } from '../render/eventOutcomeView';
 import type { CardDef } from '../sim/types';
+import type { WhatIfPreview as WhatIfPreviewData } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
+import { WhatIfPreview } from './WhatIfPreview';
 
 export interface CardViewProps {
   def: CardDef;
@@ -17,9 +19,17 @@ export interface CardViewProps {
   onPick?: () => void;
   /** コンパクト表示（デッキバー用）。 */
   compact?: boolean;
+  /** このカードを採用した場合の次スプリント試算。 */
+  whatIfPreview?: WhatIfPreviewData;
 }
 
-export function CardView({ def, level = 1, onPick, compact = false }: CardViewProps) {
+export function CardView({
+  def,
+  level = 1,
+  onPick,
+  compact = false,
+  whatIfPreview,
+}: CardViewProps) {
   const stars = level > 1 ? '★'.repeat(level - 1) : '';
   const className = `card card-${def.rarity}${compact ? ' card-compact' : ''}`;
   const inner = (
@@ -43,6 +53,9 @@ export function CardView({ def, level = 1, onPick, compact = false }: CardViewPr
               <li key={i}>{line}</li>
             ))}
           </ul>
+          {whatIfPreview && (
+            <WhatIfPreview preview={whatIfPreview} compact testId={`what-if-card-${def.id}`} />
+          )}
         </>
       )}
     </>

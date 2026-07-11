@@ -85,6 +85,7 @@ import {
 } from './quarterReview';
 import { createSprintFromBaselineInput, runNoInterventionBaseline } from './sprintBaseline';
 import type { SprintBaselineInput } from './sprintBaseline';
+import { previewNextSprint } from './whatIf';
 import type {
   BeatState,
   DifficultyId,
@@ -103,6 +104,7 @@ import type {
   SprintModifierDelta,
   StakeholderTrust,
   StartRunOptions,
+  WhatIfState,
   WinType,
 } from './types';
 
@@ -273,6 +275,8 @@ export class RunEngine {
   private nextBudgetCap: number | null = null;
   /** pause_ai_rollout の速度デバフが有効な四半期（その四半期のみ）。 */
   private pauseAiDebuffQuarter: number | null = null;
+  /** UI 向け what-if 試算のキャッシュ（同一入力の再計算を避ける）。 */
+  private whatIfCache: { key: string; value: WhatIfState | null } | null = null;
 
   constructor(init: RunEngineInit = {}) {
     this.seed = init.seed ?? DEFAULT_SEED;
@@ -422,16 +426,51 @@ export class RunEngine {
       0,
       100,
     );
+    this.sprintBaselineInput = this.buildSprintBaselineInput({
+      deck: this.deck,
+      roster: this.roster,
+      org: this.org,
+      kind,
+      modifiers,
+      seed: `${this.seed}:sprint:${this.currentSprintId}`,
+    });
+    const initialized = createSprintFromBaselineInput(this.sprintBaselineInput, this.org);
+    this.sprintRng = initialized.rng;
+    this.sprintTick = 0;
+    this.accumulatorMs = 0;
+    this.sprint = initialized.sprint;
+    this.phase = 'sprint';
+  }
+
+  /**
+   * 指定したデッキ・編成から次スプリントの純粋な初期入力を組み立てる。
+   * 本番起動と RI-46 の試算で共有し、候補試算中に実ランの状態を変更しない。
+   */
+  private buildSprintBaselineInput({
+    deck,
+    roster,
+    org,
+    kind,
+    modifiers,
+    seed,
+  }: {
+    deck: { defId: string; level: number }[];
+    roster: RosterState;
+    org: OrgState;
+    kind: SprintKind;
+    modifiers: SprintModifierDelta;
+    seed: string;
+  }): SprintBaselineInput {
     const isBoss = kind === 'boss';
     const fold = foldRunEffects({
-      deck: this.deck,
+      deck,
       relics: this.relics,
       evolution: this.evolution,
       difficulty: this.difficulty,
       trials: this.trials,
     });
     // 編成（個体メンバーのレーン配置・AI 配布）を係数へ畳み込み、デッキ等と合成する。
-    const formation = foldFormationEffects(this.roster);
+    const formation = foldFormationEffects(roster);
     let effects = combineEffects(fold.effects, toEffects(formation.effects));
     if (isBoss) effects = withBossEffects(effects, this.bossId);
     if (this.pauseAiDebuffQuarter === this.quarterNumber) {
@@ -458,20 +497,14 @@ export class RunEngine {
         this.baseConfig.codingSlots + fold.codingSlotBonus + formation.codingSlotBonus,
       ),
     };
-    this.sprintBaselineInput = {
-      seed: `${this.seed}:sprint:${this.currentSprintId}`,
+    return {
+      seed,
       config: { ...config },
-      org: structuredClone(this.org),
+      org: structuredClone(org),
       cardEffects: { ...effects },
       aiAdoptionShare: formation.aiAdoptionShare,
       reviewLoadAdd: modifiers.reviewLoadAdd,
     };
-    const initialized = createSprintFromBaselineInput(this.sprintBaselineInput, this.org);
-    this.sprintRng = initialized.rng;
-    this.sprintTick = 0;
-    this.accumulatorMs = 0;
-    this.sprint = initialized.sprint;
-    this.phase = 'sprint';
   }
 
   /** 進行中スプリントを dtMs 分だけ固定タイムステップで進める。 */
@@ -1115,6 +1148,105 @@ export class RunEngine {
     return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;
   }
 
+  /** setup / draft の試算入力を指紋化し、同一条件の再計算を避ける。 */
+  private whatIfCacheKey(): string {
+    const rosterKey = this.roster.members
+      .map((m) => `${m.id}:${m.assignment}:${m.aiAssigned ? 1 : 0}:${m.onLeave ? 1 : 0}`)
+      .join(',');
+    const deckKey = this.deck.map((c) => `${c.defId}:${c.level}`).join(',');
+    const draftKey = this.draft?.join(',') ?? '';
+    const mod = this.pendingSprintModifiers;
+    return [
+      this.phase,
+      this.seed,
+      this.quarterNumber,
+      this.sprintIndexInQuarter,
+      this.pendingSprintKind,
+      deckKey,
+      draftKey,
+      rosterKey,
+      this.org.seniorHp,
+      this.org.aiDependency,
+      this.org.morale,
+      this.org.techDebt,
+      this.org.quality,
+      mod.reviewLoadAdd ?? 0,
+      mod.reworkRateAdd ?? 0,
+      mod.taskCountMul ?? 1,
+    ].join('|');
+  }
+
+  /** setup / draft における、次スプリントのリスク幅プレビューを生成する（RI-46）。 */
+  private buildWhatIfState(): WhatIfState | null {
+    if (this.phase !== 'setup' && this.phase !== 'draft') return null;
+
+    const nextIndex = this.sprintIndexInQuarter + 1;
+    const kind: SprintKind = nextIndex >= this.sprintsPerQuarter ? 'boss' : this.pendingSprintKind;
+    const modifiers = this.phase === 'setup' ? this.pendingSprintModifiers : {};
+    const baseSeed = `${this.seed}:what-if:q${this.quarterNumber}:s${nextIndex}`;
+    const previewFor = (deck: { defId: string; level: number }[], org: OrgState) => {
+      // beginSprint と同じスプリント間回復を試算側の clone にだけ適用する。
+      const previewOrg = structuredClone(org);
+      previewOrg.seniorHp = clamp(
+        previewOrg.seniorHp + (100 - previewOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
+        0,
+        100,
+      );
+      return previewNextSprint(
+        this.buildSprintBaselineInput({
+          deck,
+          roster: this.roster,
+          org: previewOrg,
+          kind,
+          modifiers,
+          // 候補間で同じ seed 群を使い、選択だけによる差を比較できるようにする。
+          seed: baseSeed,
+        }),
+      );
+    };
+
+    const current = previewFor(this.deck, this.org);
+    const draftCandidates: Record<string, ReturnType<typeof previewNextSprint>> = {};
+    if (this.phase === 'draft' && this.draft) {
+      for (const defId of this.draft) {
+        const card = getCard(defId);
+        if (!card) continue;
+        const org = structuredClone(this.org);
+        applyDeckBaseline(org, scaleEffects(card.base, 1));
+        // chooseCard と同じく、採用直後に即時敗北する候補は次スプリント試算を出さない。
+        const lose = evaluateLose(org, this.totals);
+        if (lose) {
+          draftCandidates[defId] = {
+            trials: 0,
+            delivered: { mean: 0, min: 0, max: 0 },
+            spread: { mean: 0, min: 0, max: 0 },
+            immediateLose: lose,
+          };
+          continue;
+        }
+        draftCandidates[defId] = previewFor([...this.deck, { defId, level: 1 }], org);
+      }
+    }
+    return { current, draftCandidates };
+  }
+
+  /**
+   * UI 向けの what-if 試算。オートプレイ／モンテカルロの snapshot 経路からは呼ばない。
+   * 同一入力はキャッシュし、編成変更時だけ再計算する。
+   * 返却値は独立コピーなので、呼び出し側の変更がキャッシュを汚さない。
+   */
+  whatIfPreview(): WhatIfState | null {
+    if (this.phase !== 'setup' && this.phase !== 'draft') {
+      this.whatIfCache = null;
+      return null;
+    }
+    const key = this.whatIfCacheKey();
+    if (this.whatIfCache?.key !== key) {
+      this.whatIfCache = { key, value: this.buildWhatIfState() };
+    }
+    return this.whatIfCache.value ? structuredClone(this.whatIfCache.value) : null;
+  }
+
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */
   snapshot(): RunState {
     const orgScale = this.orgScaleForSnapshot();
@@ -1148,6 +1280,8 @@ export class RunEngine {
       sprintTick: this.sprint ? this.sprintTick : 0,
       lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
       draft: this.draft ? [...this.draft] : null,
+      // 重い seed 掃引は whatIfPreview() / game.getState() 側で必要時のみ行う。
+      whatIf: null,
       shop: this.shop
         ? {
             cards: this.shop.cards.map((c) => ({ ...c })),

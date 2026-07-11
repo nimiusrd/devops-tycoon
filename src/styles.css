@@ -1911,6 +1911,41 @@ button.card:active {
   flex-wrap: wrap;
   margin-bottom: 1.25rem;
 }
+.what-if-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem 0.8rem;
+  margin: 0 0 0.85rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #6fbee6;
+  border-radius: 10px;
+  background: #102d4a;
+  color: #d9f2ff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.what-if-preview.compact {
+  margin: 0.75rem 0 0;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.72rem;
+}
+.what-if-label {
+  color: #8fdbff;
+}
+.what-if-trials {
+  color: #a9bfd1;
+  font-weight: 600;
+}
+.what-if-preview.lose {
+  border-color: #e07a7a;
+  background: #4a1c28;
+  color: #ffd5d5;
+}
+.what-if-preview.lose .what-if-label {
+  color: #ff9b9b;
+}
 
 @media (max-width: 860px) {
   .hud {

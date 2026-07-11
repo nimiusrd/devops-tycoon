@@ -519,7 +519,7 @@ export class RunEngine {
       const boss = getBoss(this.bossId);
       const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
       const bossCleared = !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul });
-      if (bossCleared) this.bossRelicReward = this.grantBossRelic();
+      // 四半期 KPI は報酬前の org で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
         org: this.org,
@@ -529,6 +529,7 @@ export class RunEngine {
         quarterNumber: this.quarterNumber,
         bossSprintCleared: bossCleared,
       });
+      if (bossCleared) this.bossRelicReward = this.grantBossRelic();
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
       this.phase = 'quarterReview';
       return;
@@ -874,11 +875,18 @@ export class RunEngine {
     return { cards, relic };
   }
 
-  /** 未所持レリックを 1 つ提示（無ければ undefined）。 */
+  /** ショップ用: メタ解放済みかつ未所持のレリックを 1 つ提示（無ければ undefined）。 */
   private offerRelic(rng: () => number): string | undefined {
     const pool = relicIds().filter(
       (id) => !this.relics.includes(id) && (!this.allowedRelics || this.allowedRelics.has(id)),
     );
+    if (pool.length === 0) return undefined;
+    return pool[Math.floor(rng() * pool.length)];
+  }
+
+  /** ボス報酬用: メタ解放に依存せず、未所持レリック全体から 1 つ選ぶ。 */
+  private pickBossRelic(rng: () => number): string | undefined {
+    const pool = relicIds().filter((id) => !this.relics.includes(id));
     if (pool.length === 0) return undefined;
     return pool[Math.floor(rng() * pool.length)];
   }
@@ -980,7 +988,7 @@ export class RunEngine {
 
   /** ボス突破報酬として未所持レリックを決定論的に 1 個付与する。 */
   private grantBossRelic(): string | undefined {
-    const relicId = this.offerRelic(createRng(`${this.seed}:boss-relic:q${this.quarterNumber}`));
+    const relicId = this.pickBossRelic(createRng(`${this.seed}:boss-relic:q${this.quarterNumber}`));
     if (!relicId) return undefined;
     this.grantRelic(relicId);
     return this.relics.includes(relicId) ? relicId : undefined;

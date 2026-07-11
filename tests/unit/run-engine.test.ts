@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RELIC_DEFS } from '../../src/data/relics';
+import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
 import type { RunState } from '../../src/sim/run/types';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
@@ -58,6 +58,50 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     replay.startRun();
     const replayState = playUntil(replay, 'quarterReview', { skilled: true });
     expect(replayState.bossRelicReward).toBe(state?.bossRelicReward);
+  });
+
+  it('RI-32: ボス報酬は四半期レビュー判定後に付与され KPI を書き換えない', () => {
+    let found = false;
+    for (let i = 0; i < 40; i += 1) {
+      const seed = `ri32-kpi-order-${i}`;
+      const engine = new RunEngine({ seed, difficulty: 'easy' });
+      engine.startRun();
+      const state = playUntil(engine, 'quarterReview', { skilled: true });
+      if (!state.quarterReview?.bossCleared || !state.bossRelicReward) continue;
+
+      const reward = getRelic(state.bossRelicReward);
+      const qualityAdd = reward?.effects?.qualityAdd ?? 0;
+      if (qualityAdd <= 0) continue;
+
+      const qualityKpi = state.quarterReview.progress.find((kpi) => kpi.id === 'quality');
+      expect(qualityKpi?.actual).toBe(state.org.quality - qualityAdd);
+      found = true;
+      break;
+    }
+    expect(found).toBe(true);
+  });
+
+  it('RI-32: ボス報酬はショップ解放プール外のレリックも付与できる', () => {
+    const shopOnly = new Set(['postmortem', 'small-pr', 'primary-source', 'expectation-mgmt']);
+    let foundMetaLocked = false;
+
+    for (let i = 0; i < 80; i += 1) {
+      const engine = new RunEngine({
+        seed: `ri32-boss-pool-${i}`,
+        difficulty: 'easy',
+        allowedRelics: shopOnly,
+      });
+      engine.startRun();
+      const state = playUntil(engine, 'quarterReview', { skilled: true });
+      if (!state.quarterReview?.bossCleared || !state.bossRelicReward) continue;
+      if (!shopOnly.has(state.bossRelicReward)) {
+        foundMetaLocked = true;
+        expect(state.relics).toContain(state.bossRelicReward);
+        break;
+      }
+    }
+
+    expect(foundMetaLocked).toBe(true);
   });
 
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {

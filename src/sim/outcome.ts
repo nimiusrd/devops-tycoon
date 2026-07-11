@@ -16,8 +16,12 @@ export const REVIEW_FREEZE_PEAK = 48;
 export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 6;
 /** AI 依存度がこの値に達すると仕様説明不能＝敗北。 */
 export const AI_DEPENDENCY_CAP = 95;
-/** AI 依存を安全に検証できないとみなす AI リテラシー上限。 */
-export const AI_LITERACY_UNSAFE_CAP = 20;
+/**
+ * AI 依存を安全に検証できないとみなす AI リテラシー上限。
+ * Hard/Nightmare の初期値（35/25）以下に留まる組織が到達できるよう、
+ * Easy/Normal の初期値（60/45）より低く設定する。
+ */
+export const AI_LITERACY_UNSAFE_CAP = 40;
 
 export interface WinView {
   type: WinType;

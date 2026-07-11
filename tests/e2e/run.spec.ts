@@ -263,6 +263,7 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
         if (s.phase === 'setup') g.beginSetupSprint();
         else if (s.phase === 'sprint') g.step(1_000_000);
         else if (s.phase === 'result') g.acknowledgeResult();
+        else if (s.phase === 'draft' && s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
         else if (s.phase === 'draft') g.skipDraft();
         else if (s.phase === 'evolution') g.finishEvolution();
         else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);

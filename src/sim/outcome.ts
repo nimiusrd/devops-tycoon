@@ -18,10 +18,10 @@ export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 6;
 export const AI_DEPENDENCY_CAP = 95;
 /**
  * AI 依存を安全に検証できないとみなす AI リテラシー上限。
- * Hard/Nightmare の初期値（35/25）以下に留まる組織が到達できるよう、
- * Easy/Normal の初期値（60/45）より低く設定する。
+ * Nightmare の初期値（25）では到達可能、Hard 以上の初期値（35+）では
+ * リテラシーを下げない限り対象外になる。
  */
-export const AI_LITERACY_UNSAFE_CAP = 40;
+export const AI_LITERACY_UNSAFE_CAP = 30;
 
 export interface WinView {
   type: WinType;

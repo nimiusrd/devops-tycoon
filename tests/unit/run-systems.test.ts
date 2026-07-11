@@ -175,12 +175,12 @@ describe('勝敗判定（第14/15章）', () => {
         totals(),
       ),
     ).toBe('aiDependency');
-    // Hard/Nightmare の初期リテラシー（35/25）は到達可能、Easy 初期（60）は対象外。
-    expect(evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: 35 }), totals())).toBe(
+    // Nightmare 初期リテラシー（25）は到達可能、Hard 初期（35）は対象外。
+    expect(evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: 25 }), totals())).toBe(
       'aiDependency',
     );
     expect(
-      evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: 60 }), totals()),
+      evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: 35 }), totals()),
     ).toBeNull();
   });
 

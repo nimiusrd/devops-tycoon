@@ -2814,6 +2814,27 @@ button.card:active {
 .result-overlay.run-end.lose .result-card {
   border-color: var(--coral);
 }
+.result-overlay.run-end.quarter-failure-missed-crisis .result-card {
+  border-color: var(--sun);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--sun) 38%, transparent);
+}
+.result-overlay.run-end.quarter-failure-missed-crisis .run-end-badge {
+  color: var(--sun);
+}
+.result-overlay.run-end.quarter-failure-reorg-required .result-card {
+  border-color: var(--lav);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--lav) 42%, transparent);
+}
+.result-overlay.run-end.quarter-failure-reorg-required .run-end-badge {
+  color: var(--lav);
+}
+.result-overlay.run-end.quarter-failure-shutdown .result-card {
+  border-color: var(--text-dim);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--coral) 28%, transparent);
+}
+.result-overlay.run-end.quarter-failure-shutdown .run-end-badge {
+  color: var(--text-dim);
+}
 
 /* ===== Phase 8: 四半期レビュー ===== */
 

@@ -2,10 +2,11 @@ import { expect, test } from '@playwright/test';
 import { EVENT_DEFS, effectiveKind, getEvent } from '../../src/data/events';
 import { diagnosisTheme } from '../../src/render/diagnosisTheme';
 import type { InterventionOutcome } from '../../src/sim/types';
+import type { RunEngine } from '../../src/sim/run/engine';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
 import {
   E2E_MISSED_ADJUSTABLE_SEED,
-  E2E_SHUTDOWN_SEED,
+  E2E_TERMINAL_SHUTDOWN,
 } from '../../src/sim/run/quarterReviewSeeds';
 
 type GameWindow = Window & {
@@ -149,8 +150,16 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
           };
         }
         if (s.phase === 'setup') g.beginSetupSprint();
-        else if (s.phase === 'sprint') g.step(1_000_000);
-        else if (s.phase === 'result') g.acknowledgeResult();
+        else if (s.phase === 'sprint') {
+          const sprint = s.sprint;
+          if (sprint && !sprint.complete) {
+            if (sprint.tasks.filter((task) => task.lane === 'review').length >= 6)
+              g.dispatch('interruptReview');
+            if (sprint.tasks.some((task) => task.lane === 'rework' && task.incident))
+              g.dispatch('firefight');
+          }
+          g.step(300);
+        } else if (s.phase === 'result') g.acknowledgeResult();
         else if (s.phase === 'draft') {
           if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
           else g.skipDraft();
@@ -249,43 +258,47 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
 });
 
 test('継続リソース枯渇→四半期レビュー→ラン終了', async ({ page }) => {
-  await page.goto(`/?seed=${E2E_SHUTDOWN_SEED}`);
+  const { seed, difficulty, outcome: expectedOutcome } = E2E_TERMINAL_SHUTDOWN;
+  await page.goto(`/?seed=${seed}`);
 
   const atReview = await page.evaluate(
-    ({ seed }) => {
+    ({ seed: runSeed, difficulty: runDifficulty, expectedOutcome: expected }) => {
       const g = (window as GameWindow).game!;
-      g.startRun('hard', [], seed);
+      const engine = (g as unknown as { engine: RunEngine }).engine;
+      engine.startRun(runDifficulty, [], runSeed, { kind: 'normal' });
       g.pause();
-      let s = g.getState();
+      let s = engine.snapshot();
       let guard = 0;
       while (s.status === 'playing' && s.phase !== 'quarterReview' && guard < 60000) {
         guard += 1;
-        if (s.phase === 'setup') g.beginSetupSprint();
-        else if (s.phase === 'sprint') g.step(1_000_000);
-        else if (s.phase === 'result') g.acknowledgeResult();
-        else if (s.phase === 'draft') g.skipDraft();
-        else if (s.phase === 'evolution') g.finishEvolution();
-        else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
-        else if (s.phase === 'shop') g.leaveShop();
-        else if (s.phase === 'rest') g.restChoose('heal');
+        if (s.phase === 'setup') engine.beginSetupSprint();
+        else if (s.phase === 'sprint') engine.step(1_000_000);
+        else if (s.phase === 'result') engine.acknowledgeResult();
+        else if (s.phase === 'draft' && s.draft && s.draft.length > 0)
+          engine.chooseCard(s.draft[0]);
+        else if (s.phase === 'draft') engine.skipDraft();
+        else if (s.phase === 'evolution') engine.finishEvolution();
+        else if (s.phase === 'beat')
+          engine.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+        else if (s.phase === 'shop') engine.leaveShop();
+        else if (s.phase === 'rest') engine.restChoose('heal');
         else guard = 60000;
-        s = g.getState();
+        s = engine.snapshot();
       }
       const outcome = s.quarterReview?.outcome;
+      if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
       return {
-        ok:
-          s.phase === 'quarterReview' &&
-          (outcome === 'shutdown' || outcome === 'reorg_required' || outcome === 'missed_crisis'),
+        ok: s.phase === 'quarterReview' && outcome === expected,
         outcome,
       };
     },
-    { seed: E2E_SHUTDOWN_SEED },
+    { seed, difficulty, expectedOutcome },
   );
 
-  test.skip(!atReview.ok, `seed が shutdown にならない: ${JSON.stringify(atReview)}`);
-  await expect(page.getByTestId('quarter-review')).toBeVisible({ timeout: 5000 });
-  await page.getByTestId('quarter-shutdown').click();
-  await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });
+  test.skip(!atReview.ok, `seed が ${expectedOutcome} にならない: ${JSON.stringify(atReview)}`);
+  const runResult = page.getByTestId('run-result');
+  await expect(runResult).toBeVisible({ timeout: 5000 });
+  await expect(runResult).toHaveAttribute('data-quarter-outcome', expectedOutcome);
   await expect(page.getByTestId('run-end-status')).toBeVisible();
 });
 

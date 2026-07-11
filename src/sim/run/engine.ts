@@ -180,8 +180,7 @@ function addSprintTotals(
   t.completed += metrics.completedCount;
   t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
   t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
-  t.consecutiveIncidentSprints =
-    result.incidents > 0 ? (t.consecutiveIncidentSprints ?? 0) + 1 : 0;
+  t.consecutiveIncidentSprints = result.spread > 0 ? (t.consecutiveIncidentSprints ?? 0) + 1 : 0;
 }
 
 /** 難易度の組織プリセットから初期 `OrgState` を作る（AI 導入済みの組織を前提）。 */

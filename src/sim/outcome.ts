@@ -12,7 +12,7 @@ import type { LoseReason, RunTotals, WinType } from './run/types';
 export const TECH_DEBT_CAP = 90;
 /** Review 待ち行列がこのピークに達すると PR 凍結＝敗北。 */
 export const REVIEW_FREEZE_PEAK = 48;
-/** Incident がこの連続スプリント数に達するとリリース停止＝敗北。 */
+/** 延焼を伴う Incident がこの連続スプリント数に達するとリリース停止＝敗北。 */
 export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 6;
 /** AI 依存度がこの値に達すると仕様説明不能＝敗北。 */
 export const AI_DEPENDENCY_CAP = 95;
@@ -54,10 +54,7 @@ export function evaluateLose(org: OrgState, totals: RunTotals): LoseReason | nul
   if (totals.reviewQueuePeak >= REVIEW_FREEZE_PEAK) return 'reviewFreeze';
   if ((totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP)
     return 'incidentCascade';
-  if (
-    org.aiDependency >= AI_DEPENDENCY_CAP &&
-    org.aiLiteracy <= AI_LITERACY_UNSAFE_CAP
-  )
+  if (org.aiDependency >= AI_DEPENDENCY_CAP && org.aiLiteracy <= AI_LITERACY_UNSAFE_CAP)
     return 'aiDependency';
   return null;
 }

@@ -300,7 +300,7 @@ export interface RunTotals {
   completed: number;
   reviewQueuePeak: number;
   maxCombo: number;
-  /** Incident が発生したスプリントの連続数（即時敗北判定用）。 */
+  /** 延焼を伴う Incident が続いたスプリントの連続数（即時敗北判定用）。 */
   consecutiveIncidentSprints?: number;
 }
 

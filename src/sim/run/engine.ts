@@ -149,6 +149,7 @@ function emptyTotals(): RunTotals {
     completed: 0,
     reviewQueuePeak: 0,
     maxCombo: 0,
+    consecutiveIncidentSprints: 0,
   };
 }
 
@@ -179,6 +180,8 @@ function addSprintTotals(
   t.completed += metrics.completedCount;
   t.reviewQueuePeak = Math.max(t.reviewQueuePeak, result.reviewQueueMax);
   t.maxCombo = Math.max(t.maxCombo, result.maxCombo);
+  t.consecutiveIncidentSprints =
+    result.incidents > 0 ? (t.consecutiveIncidentSprints ?? 0) + 1 : 0;
 }
 
 /** 難易度の組織プリセットから初期 `OrgState` を作る（AI 導入済みの組織を前提）。 */
@@ -211,6 +214,7 @@ export class RunEngine {
   private org!: OrgState;
   private deck: { defId: string; level: number }[] = [];
   private relics: string[] = [];
+  private bossRelicReward: string | undefined;
   private evolution!: EvolutionState;
   private roster!: RosterState;
   private lastGrowth: GrowthOutcome | null = null;
@@ -321,6 +325,7 @@ export class RunEngine {
     this.org = buildRunOrg(this.difficulty);
     this.deck = [];
     this.relics = [];
+    this.bossRelicReward = undefined;
     this.evolution = { points: 0, unlocked: {} };
     this.roster = createInitialRoster(createRng(`${this.seed}:roster`));
     this.lastGrowth = null;
@@ -514,6 +519,8 @@ export class RunEngine {
       }
       const boss = getBoss(this.bossId);
       const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
+      const bossCleared = !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul });
+      if (bossCleared) this.bossRelicReward = this.grantBossRelic();
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
         org: this.org,
@@ -521,7 +528,7 @@ export class RunEngine {
         trust: this.stakeholderTrust,
         budget: this.budget,
         quarterNumber: this.quarterNumber,
-        bossSprintCleared: !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul }),
+        bossSprintCleared: bossCleared,
       });
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
       this.phase = 'quarterReview';
@@ -683,6 +690,7 @@ export class RunEngine {
     this.currentSprintId = null;
     this.sprint = null;
     this.lastResult = null;
+    this.bossRelicReward = undefined;
     this.draft = null;
     this.shop = null;
     this.quarterReview = null;
@@ -971,6 +979,14 @@ export class RunEngine {
     if (relic.effects) applyDeckBaseline(this.org, toEffects(relic.effects));
   }
 
+  /** ボス突破報酬として未所持レリックを決定論的に 1 個付与する。 */
+  private grantBossRelic(): string | undefined {
+    const relicId = this.offerRelic(createRng(`${this.seed}:boss-relic:q${this.quarterNumber}`));
+    if (!relicId) return undefined;
+    this.grantRelic(relicId);
+    return this.relics.includes(relicId) ? relicId : undefined;
+  }
+
   // --- 組織スケール / ズーム階層（第4.7〜4.11） ---
 
   /**
@@ -1095,6 +1111,7 @@ export class RunEngine {
       org: structuredClone(this.org),
       deck: this.deck.map((c) => ({ ...c })),
       relics: [...this.relics],
+      bossRelicReward: this.bossRelicReward,
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
       roster: structuredClone(this.roster),
       lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,

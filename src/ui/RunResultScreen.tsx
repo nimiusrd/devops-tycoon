@@ -4,6 +4,7 @@
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
 import { getBoss } from '../data/bosses';
+import { getRelic } from '../data/relics';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
@@ -15,6 +16,14 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
   techDebt: { label: '技術的負債の崩壊', desc: '負債が上限を超え、開発が立ち行かなくなりました。' },
   moraleCollapse: { label: 'チーム崩壊', desc: '士気が尽き、チームが機能しなくなりました。' },
   reviewFreeze: { label: 'PR 凍結', desc: 'レビュー待ちが限界を超え、出荷が止まりました。' },
+  incidentCascade: {
+    label: '障害連鎖によるリリース停止',
+    desc: '障害が連続し、安定したリリースを継続できなくなりました。',
+  },
+  aiDependency: {
+    label: 'AI 依存の限界',
+    desc: 'AI 依存が高まりすぎて、チームが仕様を説明・検証できなくなりました。',
+  },
   bossFailed: { label: 'ボス突破失敗', desc: '四半期末の試練を突破できませんでした。' },
   trustExhausted: {
     label: '信頼枯渇',
@@ -39,6 +48,7 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
   const theme = diagnosisTheme(state.diagnosis);
   const win = won && state.winType ? winView(state.winType) : null;
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
+  const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
   const t = state.totals;
   const isDaily = state.runKind === 'daily';
   const dailyRecord =
@@ -92,6 +102,14 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
           </p>
           <p>{diag.description}</p>
         </div>
+
+        {bossRelic && (
+          <div className="result-diagnosis" data-testid="boss-relic-reward">
+            <p className="result-section-label">ボス突破報酬</p>
+            <p className="diagnosis-type">◆ {bossRelic.name}</p>
+            <p>{bossRelic.description}</p>
+          </div>
+        )}
 
         <div className="result-title">
           <p className="result-section-label">メタ進行</p>

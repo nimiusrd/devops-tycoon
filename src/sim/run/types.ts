@@ -86,6 +86,8 @@ export type LoseReason =
   | 'techDebt'
   | 'moraleCollapse'
   | 'reviewFreeze'
+  | 'incidentCascade'
+  | 'aiDependency'
   | 'bossFailed'
   | 'trustExhausted'
   | 'reorgRequired';
@@ -229,6 +231,8 @@ export interface RunState {
   deck: CardInstance[];
   /** 獲得済みレリック ID（恒久パッシブ。第8章）。 */
   relics: string[];
+  /** 直近にボス突破報酬として獲得したレリック ID。 */
+  bossRelicReward?: string;
   evolution: EvolutionState;
   /** 個体メンバーのロスター = 編成状態（第12章）。 */
   roster: RosterState;
@@ -296,6 +300,8 @@ export interface RunTotals {
   completed: number;
   reviewQueuePeak: number;
   maxCombo: number;
+  /** Incident が発生したスプリントの連続数（即時敗北判定用）。 */
+  consecutiveIncidentSprints?: number;
 }
 
 /** デッキ・レリック・進化を畳み込んだ、このスプリントに掛かる係数とコンフィグ補正。 */

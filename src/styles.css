@@ -2766,6 +2766,15 @@ button.card:active {
 .achievement-card.unlocked .achievement-card-hint {
   color: var(--mint);
 }
+.title-collection-section {
+  border-top: 1px solid var(--line);
+  margin-top: 22px;
+  padding-top: 20px;
+}
+.title-collection-heading {
+  font-size: 20px;
+  margin: 0;
+}
 
 /* ラン決着 */
 .run-end .run-end-badge {
@@ -2782,6 +2791,17 @@ button.card:active {
 .run-end-desc {
   color: var(--text-dim);
   margin-bottom: 12px;
+}
+.result-win-title {
+  border: 1px solid var(--sun);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+}
+.result-title-description {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin: 4px 0 0;
 }
 .diagnosis-type {
   font-weight: 900;

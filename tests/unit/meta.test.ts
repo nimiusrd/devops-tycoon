@@ -4,6 +4,7 @@ import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome
 import {
   ACHIEVEMENT_DEFS,
   ACHIEVEMENT_LABEL,
+  WIN_TITLE_DEFS,
   applyDailyRunReward,
   applyRunReward,
   dailyLeaderboardEntries,
@@ -63,6 +64,38 @@ describe('メタ進行とアンロック（第17章）', () => {
       maxCombo: 21,
     });
     expect(next.achievements).toEqual(expect.arrayContaining(['no-damage', 'combo-master']));
+  });
+
+  it('勝利称号を重複なく永続コレクションへ記録する', () => {
+    const first = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'healthy',
+      bossId: 'big-release',
+      score: 200,
+      scoreMul: 1,
+      maxCombo: 5,
+    });
+    const second = applyRunReward(first, {
+      won: true,
+      difficulty: 'hard',
+      winType: 'healthy',
+      bossId: 'exec-review',
+      score: 300,
+      scoreMul: 1,
+      maxCombo: 5,
+    });
+    const third = applyRunReward(second, {
+      won: true,
+      difficulty: 'hard',
+      winType: 'aiSuccess',
+      bossId: 'major-incident',
+      score: 350,
+      scoreMul: 1,
+      maxCombo: 5,
+    });
+
+    expect(third.collectedWinTypes).toEqual(['healthy', 'aiSuccess']);
   });
 
   it('敗北でも四半期修正経験で学習ボーナスが入る', () => {
@@ -282,6 +315,23 @@ describe('メタ進行とアンロック（第17章）', () => {
     }
   });
 
+  it('WIN_TITLE_DEFS はすべての WinType を表示・ヒント付きで定義する', () => {
+    expect(WIN_TITLE_DEFS.map((title) => title.id)).toEqual([
+      'normal',
+      'healthy',
+      'aiSuccess',
+      'management',
+      'happiness',
+      'chaos',
+      'noDamage',
+    ]);
+    for (const title of WIN_TITLE_DEFS) {
+      expect(title.label).not.toBe('');
+      expect(title.description).not.toBe('');
+      expect(title.hint).not.toBe('');
+    }
+  });
+
   it('dailySeed は同一日付で決定論的', () => {
     expect(dailySeed('2026-06-20')).toBe('daily-2026-06-20');
     expect(dailySeed('2026-06-20')).toBe(dailySeed('2026-06-20'));
@@ -311,6 +361,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     const second = applyDailyRunReward(first.meta, {
       won: true,
       difficulty: 'normal',
+      winType: 'healthy',
       score: 200,
       scoreMul: 1,
       maxCombo: 10,
@@ -321,6 +372,34 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(second.meta.points).toBe(first.meta.points);
     expect(second.meta.dailyRuns[dateStr]?.bestScore).toBe(200);
     expect(second.dailyBestUpdated).toBe(true);
+    expect(second.meta.collectedWinTypes).toEqual(['healthy']);
+  });
+
+  it('デイリー再走の勝利でも points なしで称号だけ収集する', () => {
+    const dateStr = '2026-06-22';
+    const afterLoss = applyDailyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 80,
+      scoreMul: 1,
+      maxCombo: 2,
+      dateStr,
+    });
+    expect(afterLoss.meta.collectedWinTypes).toEqual([]);
+
+    const afterWin = applyDailyRunReward(afterLoss.meta, {
+      won: true,
+      difficulty: 'normal',
+      winType: 'aiSuccess',
+      score: 240,
+      scoreMul: 1,
+      maxCombo: 8,
+      dateStr,
+    });
+    expect(afterWin.rewardGranted).toBe(false);
+    expect(afterWin.pointsGained).toBe(0);
+    expect(afterWin.meta.points).toBe(afterLoss.meta.points);
+    expect(afterWin.meta.collectedWinTypes).toEqual(['aiSuccess']);
   });
 
   it('applyDailyRunReward の再走はベスト未更新時も points を付与しない', () => {

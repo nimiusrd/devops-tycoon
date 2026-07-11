@@ -8,7 +8,7 @@ import { getRelic } from '../data/relics';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
-import { getDailyRecord, type MetaState } from '../state/meta';
+import { getDailyRecord, WIN_TITLE_DEFS, type MetaState } from '../state/meta';
 import type { LoseReason, RunState } from '../sim/run/types';
 
 const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
@@ -47,6 +47,10 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
   const diag = diagnosisView(state.diagnosis);
   const theme = diagnosisTheme(state.diagnosis);
   const win = won && state.winType ? winView(state.winType) : null;
+  const collectedTitle = state.winType
+    ? WIN_TITLE_DEFS.find((title) => title.id === state.winType)
+    : undefined;
+  const titleInCollection = !!state.winType && meta.collectedWinTypes.includes(state.winType);
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
   const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
   const t = state.totals;
@@ -69,6 +73,21 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
           {won ? '🏆 ' + (win?.label ?? '勝利') : '💥 ' + (lose?.label ?? '敗北')}
         </div>
         <p className="run-end-desc">{won ? win?.description : lose?.desc}</p>
+        {won && collectedTitle && (
+          <div
+            className="result-title result-win-title"
+            data-testid="run-win-title"
+            data-collected={titleInCollection ? 'true' : 'false'}
+          >
+            <p className="result-section-label">今回の勝利称号</p>
+            <p className="result-title-value">🏆 {collectedTitle.label}</p>
+            <p className="result-title-description">
+              {titleInCollection
+                ? `コレクションに登録済み — ${collectedTitle.description}`
+                : collectedTitle.description}
+            </p>
+          </div>
+        )}
 
         <dl className="result-rows">
           <div className="result-row">

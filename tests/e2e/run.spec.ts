@@ -285,7 +285,9 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
   test.skip(!atReview.ok, `seed が shutdown にならない: ${JSON.stringify(atReview)}`);
   await expect(page.getByTestId('quarter-review')).toBeVisible({ timeout: 5000 });
   await page.getByTestId('quarter-shutdown').click();
-  await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });
+  const runResult = page.getByTestId('run-result');
+  await expect(runResult).toBeVisible({ timeout: 5000 });
+  await expect(runResult).toHaveAttribute('data-quarter-outcome', atReview.outcome!);
   await expect(page.getByTestId('run-end-status')).toBeVisible();
 });
 

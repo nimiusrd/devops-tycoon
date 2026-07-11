@@ -6,6 +6,7 @@ import { createOrgState } from '../../src/sim/org';
 import { diagnose } from '../../src/sim/diagnosis';
 import {
   AI_DEPENDENCY_CAP,
+  AI_LITERACY_UNSAFE_CAP,
   CONSECUTIVE_INCIDENT_SPRINT_CAP,
   evaluateBoss,
   evaluateLose,
@@ -162,8 +163,18 @@ describe('勝敗判定（第14/15章）', () => {
   });
 
   it('AI 依存度が上限に達すると仕様説明不能で敗北する', () => {
-    expect(evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP - 1 }), totals())).toBeNull();
-    expect(evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP }), totals())).toBe('aiDependency');
+    expect(
+      evaluateLose(
+        org({ aiDependency: AI_DEPENDENCY_CAP - 1, aiLiteracy: AI_LITERACY_UNSAFE_CAP }),
+        totals(),
+      ),
+    ).toBeNull();
+    expect(
+      evaluateLose(
+        org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: AI_LITERACY_UNSAFE_CAP }),
+        totals(),
+      ),
+    ).toBe('aiDependency');
   });
 
   it('健全な組織は敗北条件に当たらない', () => {

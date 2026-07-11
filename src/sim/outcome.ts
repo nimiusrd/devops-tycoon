@@ -16,6 +16,8 @@ export const REVIEW_FREEZE_PEAK = 48;
 export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 3;
 /** AI 依存度がこの値に達すると仕様説明不能＝敗北。 */
 export const AI_DEPENDENCY_CAP = 95;
+/** AI 依存を安全に検証できないとみなす AI リテラシー上限。 */
+export const AI_LITERACY_UNSAFE_CAP = 20;
 
 export interface WinView {
   type: WinType;
@@ -52,7 +54,11 @@ export function evaluateLose(org: OrgState, totals: RunTotals): LoseReason | nul
   if (totals.reviewQueuePeak >= REVIEW_FREEZE_PEAK) return 'reviewFreeze';
   if ((totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP)
     return 'incidentCascade';
-  if (org.aiDependency >= AI_DEPENDENCY_CAP) return 'aiDependency';
+  if (
+    org.aiDependency >= AI_DEPENDENCY_CAP &&
+    org.aiLiteracy <= AI_LITERACY_UNSAFE_CAP
+  )
+    return 'aiDependency';
   return null;
 }
 

@@ -247,11 +247,12 @@ Vitest: `tests/unit/eventOutcomeView.test.ts`（カード・レリック・進�
 #### RI-46 確率的な結果のリスク幅プレビュー(what-if 試算) — 優先度:中（依存: RI-43。関連: RI-13 / RI-14） / 完了
 
 **完了**: `src/sim/run/whatIf.ts` で `SprintBaselineInput` を派生 seed 24 本で掃引し、出荷・延焼の
-期待値と観測レンジを返す純TS試算を追加。`RunEngine` は setup / draft のスナップショットへ現在の編成と
-カード候補別のプレビューを副作用なく公開し、候補間では同じ seed 群で比較する。`WhatIfPreview` を
-`FormationGrid` / `CardView` に接続し、「次スプリント予測」「出荷」「延焼」「24回試算」を表示。
-Vitest: `tests/unit/whatIf.test.ts`（決定性・カード差分・試算状態の非変更・編成差分）。
-E2E: `tests/e2e/what-if.spec.ts`（編成変更とドラフト候補の表示）。
+期待値と観測レンジを返す純TS試算を追加。`RunEngine.whatIfPreview()` が setup / draft の現在編成と
+カード候補別プレビューを副作用なく公開し、候補間では同じ seed 群で比較する。重い試算は
+`snapshot()` ではなく UI の `game.getState()` 経路に限定し、モンテカルロ／オートプレイを遅延させない。
+`WhatIfPreview` を `FormationGrid` / `CardView` に接続し、「次スプリント予測」「出荷」「延焼」
+「24回試算」を表示。Vitest: `tests/unit/whatIf.test.ts`（決定性・カード差分・試算状態の非変更・
+編成差分）。E2E: `tests/e2e/what-if.spec.ts`（編成変更とドラフト候補の表示）。
 
 #### RI-47 ステータス増減の汎用フィードバック演出 — 優先度:高 / 完了
 

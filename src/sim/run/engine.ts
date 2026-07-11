@@ -275,6 +275,8 @@ export class RunEngine {
   private nextBudgetCap: number | null = null;
   /** pause_ai_rollout の速度デバフが有効な四半期（その四半期のみ）。 */
   private pauseAiDebuffQuarter: number | null = null;
+  /** UI 向け what-if 試算のキャッシュ（同一入力の再計算を避ける）。 */
+  private whatIfCache: { key: string; value: WhatIfState | null } | null = null;
 
   constructor(init: RunEngineInit = {}) {
     this.seed = init.seed ?? DEFAULT_SEED;
@@ -1146,6 +1148,34 @@ export class RunEngine {
     return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;
   }
 
+  /** setup / draft の試算入力を指紋化し、同一条件の再計算を避ける。 */
+  private whatIfCacheKey(): string {
+    const rosterKey = this.roster.members
+      .map((m) => `${m.id}:${m.assignment}:${m.aiAssigned ? 1 : 0}:${m.onLeave ? 1 : 0}`)
+      .join(',');
+    const deckKey = this.deck.map((c) => `${c.defId}:${c.level}`).join(',');
+    const draftKey = this.draft?.join(',') ?? '';
+    const mod = this.pendingSprintModifiers;
+    return [
+      this.phase,
+      this.seed,
+      this.quarterNumber,
+      this.sprintIndexInQuarter,
+      this.pendingSprintKind,
+      deckKey,
+      draftKey,
+      rosterKey,
+      this.org.seniorHp,
+      this.org.aiDependency,
+      this.org.morale,
+      this.org.techDebt,
+      this.org.quality,
+      mod.reviewLoadAdd ?? 0,
+      mod.reworkRateAdd ?? 0,
+      mod.taskCountMul ?? 1,
+    ].join('|');
+  }
+
   /** setup / draft における、次スプリントのリスク幅プレビューを生成する（RI-46）。 */
   private buildWhatIfState(): WhatIfState | null {
     if (this.phase !== 'setup' && this.phase !== 'draft') return null;
@@ -1189,10 +1219,25 @@ export class RunEngine {
     return { current, draftCandidates };
   }
 
+  /**
+   * UI 向けの what-if 試算。オートプレイ／モンテカルロの snapshot 経路からは呼ばない。
+   * 同一入力はキャッシュし、編成変更時だけ再計算する。
+   */
+  whatIfPreview(): WhatIfState | null {
+    if (this.phase !== 'setup' && this.phase !== 'draft') {
+      this.whatIfCache = null;
+      return null;
+    }
+    const key = this.whatIfCacheKey();
+    if (this.whatIfCache?.key === key) return this.whatIfCache.value;
+    const value = this.buildWhatIfState();
+    this.whatIfCache = { key, value };
+    return value;
+  }
+
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */
   snapshot(): RunState {
     const orgScale = this.orgScaleForSnapshot();
-    const whatIf = this.buildWhatIfState();
     return {
       seed: this.seed,
       difficulty: this.difficulty,
@@ -1223,7 +1268,8 @@ export class RunEngine {
       sprintTick: this.sprint ? this.sprintTick : 0,
       lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
       draft: this.draft ? [...this.draft] : null,
-      whatIf,
+      // 重い seed 掃引は whatIfPreview() / game.getState() 側で必要時のみ行う。
+      whatIf: null,
       shop: this.shop
         ? {
             cards: this.shop.cards.map((c) => ({ ...c })),

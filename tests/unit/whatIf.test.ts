@@ -73,12 +73,13 @@ describe('RI-46 次スプリント what-if 試算', () => {
       deck: structuredClone(beforeEngine.deck),
       roster: structuredClone(beforeEngine.roster),
     };
-    const state = engine.snapshot();
+    const whatIf = engine.whatIfPreview();
     const after = engine as unknown as { org: unknown; deck: unknown; roster: unknown };
 
-    expect(state.whatIf?.current.trials).toBe(24);
-    expect(state.whatIf?.draftCandidates.copilot).toBeDefined();
-    expect(state.whatIf?.draftCandidates['auto-test']).toBeDefined();
+    expect(engine.snapshot().whatIf).toBeNull();
+    expect(whatIf?.current.trials).toBe(24);
+    expect(whatIf?.draftCandidates.copilot).toBeDefined();
+    expect(whatIf?.draftCandidates['auto-test']).toBeDefined();
     expect(after.org).toEqual(before.org);
     expect(after.deck).toEqual(before.deck);
     expect(after.roster).toEqual(before.roster);
@@ -87,9 +88,9 @@ describe('RI-46 次スプリント what-if 試算', () => {
   it('編成変更後の setup 試算を公開する', () => {
     const engine = new RunEngine({ seed: 'what-if-formation', difficulty: 'normal' });
     engine.startRun();
-    const before = engine.snapshot().whatIf;
+    const before = engine.whatIfPreview();
     engine.assignMember('m2', 'coding');
-    const after = engine.snapshot().whatIf;
+    const after = engine.whatIfPreview();
 
     expect(before?.current.trials).toBe(24);
     expect(after?.current.trials).toBe(24);

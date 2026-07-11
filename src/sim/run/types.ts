@@ -205,6 +205,8 @@ export interface WhatIfPreview {
   delivered: WhatIfMetric;
   /** 延焼件数の見込み。 */
   spread: WhatIfMetric;
+  /** カード採用時点で即時敗北する場合。次スプリント試算は行わない。 */
+  immediateLose?: LoseReason;
 }
 
 /** 現在の状態に対する次スプリント試算。ドラフト時は候補カード別にも提供する。 */

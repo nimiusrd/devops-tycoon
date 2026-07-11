@@ -1938,6 +1938,14 @@ button.card:active {
   color: #a9bfd1;
   font-weight: 600;
 }
+.what-if-preview.lose {
+  border-color: #e07a7a;
+  background: #4a1c28;
+  color: #ffd5d5;
+}
+.what-if-preview.lose .what-if-label {
+  color: #ff9b9b;
+}
 
 @media (max-width: 860px) {
   .hud {

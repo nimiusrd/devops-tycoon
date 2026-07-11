@@ -52,6 +52,7 @@ test('RI-46: 編成とドラフトで次スプリントのリスク幅を表示�
 
   expect(draft.phase).toBe('draft');
   expect(draft.draft?.length).toBeGreaterThan(0);
+  await expect(page.getByTestId('what-if-draft-skip')).toContainText('24回試算');
   for (const cardId of draft.draft ?? []) {
     await expect(page.getByTestId(`what-if-card-${cardId}`)).toContainText('24回試算');
   }

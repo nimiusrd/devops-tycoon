@@ -1213,6 +1213,17 @@ export class RunEngine {
         if (!card) continue;
         const org = structuredClone(this.org);
         applyDeckBaseline(org, scaleEffects(card.base, 1));
+        // chooseCard と同じく、採用直後に即時敗北する候補は次スプリント試算を出さない。
+        const lose = evaluateLose(org, this.totals);
+        if (lose) {
+          draftCandidates[defId] = {
+            trials: 0,
+            delivered: { mean: 0, min: 0, max: 0 },
+            spread: { mean: 0, min: 0, max: 0 },
+            immediateLose: lose,
+          };
+          continue;
+        }
         draftCandidates[defId] = previewFor([...this.deck, { defId, level: 1 }], org);
       }
     }

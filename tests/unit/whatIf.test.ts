@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getCard } from '../../src/data/cards';
 import { scaleEffects } from '../../src/sim/cards';
+import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome';
 import { RunEngine } from '../../src/sim/run/engine';
 import { previewNextSprint } from '../../src/sim/run/whatIf';
 import type { SprintBaselineInput } from '../../src/sim/run/sprintBaseline';
@@ -83,6 +84,26 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(after.org).toEqual(before.org);
     expect(after.deck).toEqual(before.deck);
     expect(after.roster).toEqual(before.roster);
+  });
+
+  it('即時敗北になるドラフト候補は次スプリント試算を出さない', () => {
+    const engine = new RunEngine({ seed: 'what-if-lose', difficulty: 'nightmare' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      org: { aiDependency: number; aiLiteracy: number };
+    };
+    internals.org.aiDependency = AI_DEPENDENCY_CAP - 5;
+    internals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    internals.phase = 'draft';
+    internals.draft = ['copilot', 'auto-test'];
+
+    const whatIf = engine.whatIfPreview();
+    expect(whatIf?.draftCandidates.copilot?.immediateLose).toBe('aiDependency');
+    expect(whatIf?.draftCandidates.copilot?.trials).toBe(0);
+    expect(whatIf?.draftCandidates['auto-test']?.immediateLose).toBeUndefined();
+    expect(whatIf?.draftCandidates['auto-test']?.trials).toBe(24);
   });
 
   it('編成変更後の setup 試算を公開する', () => {

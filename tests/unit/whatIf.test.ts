@@ -117,4 +117,18 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(after?.current.trials).toBe(24);
     expect(after).not.toEqual(before);
   });
+
+  it('返却した what-if を変更してもキャッシュは汚れない', () => {
+    const engine = new RunEngine({ seed: 'what-if-copy', difficulty: 'normal' });
+    engine.startRun();
+    const first = engine.whatIfPreview();
+    expect(first).not.toBeNull();
+    first!.current.trials = 1;
+    first!.current.delivered.max = -1;
+
+    const second = engine.whatIfPreview();
+    expect(second?.current.trials).toBe(24);
+    expect(second?.current.delivered.max).toBeGreaterThanOrEqual(0);
+    expect(second).not.toBe(first);
+  });
 });

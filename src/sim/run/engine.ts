@@ -1233,6 +1233,7 @@ export class RunEngine {
   /**
    * UI 向けの what-if 試算。オートプレイ／モンテカルロの snapshot 経路からは呼ばない。
    * 同一入力はキャッシュし、編成変更時だけ再計算する。
+   * 返却値は独立コピーなので、呼び出し側の変更がキャッシュを汚さない。
    */
   whatIfPreview(): WhatIfState | null {
     if (this.phase !== 'setup' && this.phase !== 'draft') {
@@ -1240,10 +1241,10 @@ export class RunEngine {
       return null;
     }
     const key = this.whatIfCacheKey();
-    if (this.whatIfCache?.key === key) return this.whatIfCache.value;
-    const value = this.buildWhatIfState();
-    this.whatIfCache = { key, value };
-    return value;
+    if (this.whatIfCache?.key !== key) {
+      this.whatIfCache = { key, value: this.buildWhatIfState() };
+    }
+    return this.whatIfCache.value ? structuredClone(this.whatIfCache.value) : null;
   }
 
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */

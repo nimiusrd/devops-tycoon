@@ -239,7 +239,11 @@ export default function App({ game }: AppProps) {
           >
             <Breadcrumb level={zoom.level} onNavigate={run.zoomTo} />
             {zoom.level === 'industry' && state.industry && (
-              <IndustryScreen industry={state.industry} onSetKind={run.setRankingKind} />
+              <IndustryScreen
+                industry={state.industry}
+                meta={meta}
+                onSetKind={run.setRankingKind}
+              />
             )}
             {zoom.level === 'company' && state.orgScale && (
               <OrgScreen

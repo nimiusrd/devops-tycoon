@@ -6,6 +6,7 @@ import {
   ACHIEVEMENT_LABEL,
   applyDailyRunReward,
   applyRunReward,
+  dailyLeaderboardEntries,
   dailySeed,
   defaultMeta,
   loadMeta,
@@ -157,6 +158,27 @@ describe('メタ進行とアンロック（第17章）', () => {
       achievements: ['first-clear'],
       bestScore: 100,
     });
+  });
+
+  it('デイリー記録をスコア順・同点時は新しい日付順の順位表にする', () => {
+    const entries = dailyLeaderboardEntries({
+      ...defaultMeta(),
+      dailyRuns: {
+        '2026-07-09': { bestScore: 800, rewardClaimed: true },
+        '2026-07-10': { bestScore: 1200, rewardClaimed: true },
+        '2026-07-11': { bestScore: 1200, rewardClaimed: false },
+      },
+    });
+
+    expect(entries).toEqual([
+      { dateStr: '2026-07-11', bestScore: 1200, rewardClaimed: false, rank: 1 },
+      { dateStr: '2026-07-10', bestScore: 1200, rewardClaimed: true, rank: 2 },
+      { dateStr: '2026-07-09', bestScore: 800, rewardClaimed: true, rank: 3 },
+    ]);
+  });
+
+  it('デイリー記録がなければ空の順位表にする', () => {
+    expect(dailyLeaderboardEntries(defaultMeta())).toEqual([]);
   });
 
   it('unlockedContent は既定解放 ∪ 購入済みを返す', () => {

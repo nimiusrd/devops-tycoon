@@ -55,6 +55,37 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
   await expect(page.getByTestId('dept-board')).toBeVisible();
 });
 
+test('業界画面で保存済みデイリー記録を順位付きで表示する（RI-23）', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'devops-tycoon:meta:v1',
+      JSON.stringify({
+        points: 0,
+        unlockedDifficulties: ['easy', 'normal'],
+        defeatedBosses: [],
+        achievements: [],
+        bestScore: 1200,
+        unlockedCards: [],
+        unlockedRelics: [],
+        unlockedPresets: [],
+        dailyRuns: {
+          '2026-07-09': { bestScore: 800, rewardClaimed: true },
+          '2026-07-10': { bestScore: 1200, rewardClaimed: true },
+          '2026-07-11': { bestScore: 1200, rewardClaimed: false },
+        },
+      }),
+    );
+  });
+  await startRun(page, 'daily-ranking-e2e');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('industry'));
+
+  await expect(page.getByTestId('daily-leaderboard')).toBeVisible();
+  await expect(page.getByTestId('daily-record-2026-07-11')).toContainText('#1');
+  await expect(page.getByTestId('daily-record-2026-07-11')).toContainText('1,200 pt');
+  await expect(page.getByTestId('daily-record-2026-07-10')).toContainText('#2');
+  await expect(page.getByTestId('daily-record-2026-07-09')).toContainText('#3');
+});
+
 test('チーム島をタップすると現場へドリルダウンしてオーバーレイが閉じる（第4.11）', async ({
   page,
 }) => {

@@ -4113,6 +4113,69 @@ button.card:active {
 .industry-table .trend-1 {
   color: var(--mint);
 }
+.daily-leaderboard {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #17193688;
+}
+.daily-leaderboard-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.daily-leaderboard h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.daily-leaderboard-head p,
+.daily-leaderboard-empty {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.daily-leaderboard-count,
+.daily-reward {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.daily-leaderboard-list {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.daily-leaderboard-list li {
+  display: grid;
+  grid-template-columns: 44px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #10142c99;
+}
+.daily-rank,
+.daily-leaderboard-list strong {
+  color: var(--sun);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 560px) {
+  .daily-leaderboard-list li {
+    grid-template-columns: 38px 1fr auto;
+  }
+  .daily-reward {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+}
 
 /* 集約HUD のモバイル段組（基底の 8/6 列より後に置いて確実に上書きする）。 */
 @media (max-width: 860px) {

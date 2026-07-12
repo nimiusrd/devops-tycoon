@@ -27,6 +27,7 @@ import {
 import { planOrgScene, type OrgSceneOptions, type OrgScenePlan, type OrgSprite } from '../orgScene';
 import { truncateName } from '../orgIslandView';
 import { isoLayoutOrigin, layoutIso, orgLayoutFingerprint, ORG_PAD } from '../orgView';
+import { ensureTexturePoolGuard } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
 
 /**
@@ -393,6 +394,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
 
   /** ブラウザでのみ呼ぶ。WebGL コンテキストとビューポートを初期化する。 */
   async init(mount: HTMLElement): Promise<void> {
+    ensureTexturePoolGuard();
     const app = new Application();
     await app.init({
       background: '#0e0b1a',
@@ -749,7 +751,12 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   dispose(): void {
     this.disposed = true;
     this.firePulses.length = 0;
-    this.pool?.releaseAll();
+    // CanvasText の unload（TexturePool への返却）は renderer 破棄前に済ませる。
+    // app.destroy 後だと TexturePool が先に消え、pipe の後始末が
+    // `returnTexture` で落ちる（free に残った未接続島の Text が対象。RI-11 で顕在化）。
+    for (const island of this.pool?.drain() ?? []) {
+      island.destroy({ children: true });
+    }
     this.viewport?.destroy();
     this.app?.destroy(true, DESTROY_OPTIONS);
     this.app = null;

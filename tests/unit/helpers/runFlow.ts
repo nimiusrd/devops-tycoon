@@ -30,10 +30,21 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
       return true;
     case 'sprint': {
       // RI-30: オートプレイは手札を可能な限り発動してから進める。
-      const handLen = s.sprint?.cardPiles.hand.length ?? 0;
-      for (let i = 0; i < handLen; i += 1) {
-        const outcome = e.playCard(0);
-        if (!outcome.ok) break;
+      // 先頭が高コストでも後続の安いカードを試す。
+      let guard = 0;
+      while (guard < 24) {
+        guard += 1;
+        const hand = e.snapshot().sprint?.cardPiles.hand ?? [];
+        if (hand.length === 0) break;
+        let playedAny = false;
+        for (const deckIndex of [...hand]) {
+          const outcome = e.playCard(deckIndex);
+          if (outcome.ok) {
+            playedAny = true;
+            break;
+          }
+        }
+        if (!playedAny) break;
       }
       if (opts.skilled) {
         const sp = e.snapshot().sprint;

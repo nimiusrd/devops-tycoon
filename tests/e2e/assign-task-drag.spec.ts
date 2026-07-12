@@ -13,7 +13,7 @@ type GameWindow = Window & {
     beginSetupSprint(): RunState;
     step(ms: number): RunState;
     dispatch(id: string, target?: ActionTarget): InterventionOutcome;
-    playCard(handIndex: number): CardPlayOutcome;
+    playCard(deckIndex: number): CardPlayOutcome;
     engine: { deck: Array<{ defId: string; level: number }> };
   };
 };
@@ -72,7 +72,7 @@ test('手札カードを発動すると focus と cardEffects が変わる（RI-
     const hand = before.sprint?.cardPiles.hand ?? [];
     const focusBefore = before.sprint!.focus;
     const speedBefore = before.sprint!.cardEffects.codingSpeedMul;
-    const play = g.playCard(0);
+    const play = g.playCard(hand[0]!);
     const after = g.getState();
     return {
       handSize: hand.length,

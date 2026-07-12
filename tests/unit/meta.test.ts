@@ -466,11 +466,11 @@ describe('メタ進行とアンロック（第17章）', () => {
     internals.phase = 'setup';
     game.beginSetupSprint();
     const sprintState = game.getState();
-    const handIndex = sprintState.sprint!.cardPiles.hand.findIndex(
+    const handDeckIndex = sprintState.sprint!.cardPiles.hand.find(
       (idx) => sprintState.deck[idx]?.defId === 'copilot',
     );
-    expect(handIndex).toBeGreaterThanOrEqual(0);
-    game.playCard(handIndex);
+    expect(handDeckIndex).toBeDefined();
+    game.playCard(handDeckIndex!);
     const state = game.getState();
     expect(state.status).toBe('lost');
     expect(state.loseReason).toBe('aiDependency');

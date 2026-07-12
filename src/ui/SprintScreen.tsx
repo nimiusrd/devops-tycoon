@@ -29,7 +29,7 @@ import { PointPops } from './PointPops';
 export interface SprintScreenProps {
   state: RunState;
   onDispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
-  onPlayCard: (handIndex: number) => CardPlayOutcome;
+  onPlayCard: (deckIndex: number) => CardPlayOutcome;
   getSprintSnapshot: () => SprintState | null;
 }
 

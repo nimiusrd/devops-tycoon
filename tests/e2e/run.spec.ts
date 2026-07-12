@@ -155,7 +155,10 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
           if (sprint && !sprint.complete) {
             // RI-30: 手札を可能な限り発動してから介入・進行する。
             while ((g.getState().sprint?.cardPiles.hand.length ?? 0) > 0) {
-              const play = (g as unknown as { playCard(i: number): { ok: boolean } }).playCard(0);
+              const deckIndex = g.getState().sprint!.cardPiles.hand[0]!;
+              const play = (g as unknown as { playCard(i: number): { ok: boolean } }).playCard(
+                deckIndex,
+              );
               if (!play.ok) break;
             }
             const live = g.getState().sprint;

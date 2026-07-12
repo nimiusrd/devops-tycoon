@@ -202,11 +202,11 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     engine.beginSetupSprint();
     after = engine.snapshot();
     expect(after.phase).toBe('sprint');
-    const handIndex = after.sprint!.cardPiles.hand.findIndex(
+    const handDeckIndex = after.sprint!.cardPiles.hand.find(
       (idx) => after.deck[idx]?.defId === 'copilot',
     );
-    expect(handIndex).toBeGreaterThanOrEqual(0);
-    const play = engine.playCard(handIndex);
+    expect(handDeckIndex).toBeDefined();
+    const play = engine.playCard(handDeckIndex!);
     expect(play.ok).toBe(true);
     after = engine.snapshot();
     expect(after.status).toBe('lost');

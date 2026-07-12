@@ -48,8 +48,8 @@ export interface GameHandle {
   step(ms: number): RunState;
   /** 介入アクションを発動する（第6章）。target は差配/分割の対象指定（RI-30）。 */
   dispatch(id: ActionId, target?: ActionTarget): InterventionOutcome;
-  /** 手札からカードを発動する（RI-30 / SPEC 第7.1）。 */
-  playCard(handIndex: number): CardPlayOutcome;
+  /** 手札からカードを発動する（deckIndex。RI-30 / SPEC 第7.1）。 */
+  playCard(deckIndex: number): CardPlayOutcome;
   /** リザルトを確認してドラフトへ進む。 */
   acknowledgeResult(): RunState;
   /** ドラフトでカードを選ぶ。 */
@@ -216,8 +216,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
       return outcome;
     },
-    playCard(handIndex) {
-      const outcome = engine.playCard(handIndex);
+    playCard(deckIndex) {
+      const outcome = engine.playCard(deckIndex);
       bump();
       recordIfFinished();
       return outcome;

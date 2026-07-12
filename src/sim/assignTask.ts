@@ -5,6 +5,7 @@
  * `target` 省略時の後方互換自動選択の両方から使う。
  */
 import type { ActionTarget, Lane, OrgState, SprintState, Task, TaskKind } from './types';
+import { AI_DEP_PER_TASK } from './model';
 
 /** タスク差配で進める Coding 進捗量（UI プレビューと共有）。 */
 export const ASSIGN_PROGRESS = 0.5;
@@ -120,20 +121,30 @@ export function applyAssignTaskEffect(
   const task = resolveAssignTaskTarget(sprint, target);
   if (!task) return false;
 
+  // Backlog 上の進捗は intake で消えるため、明示的な Backlog ドロップは拒否する。
+  if (target?.lane === 'backlog') return false;
+
   if (target?.lane && target.lane !== task.lane) {
     if (!canMoveToLane(sprint, task, target.lane)) return false;
     task.lane = target.lane;
-    if (target.lane === 'coding' || target.lane === 'backlog') {
-      // レーン移動後は進捗を工程内でやり直さない（加速効果を残す）。
-    }
+  }
+
+  // Backlog に残ったまま加速すると intake で進捗が消えるため Coding へ上げる。
+  if (task.lane === 'backlog') {
+    if (!canMoveToLane(sprint, task, 'coding')) return false;
+    task.lane = 'coding';
   }
 
   const assignee = target?.assignee ?? defaultAssignee(task, org);
   if (assignee === 'ai' && !org.aiEnabled) {
-    // AI 無効時に ai 指定は no-target。
     if (target?.assignee === 'ai') return false;
   }
-  task.aiAssisted = assignee === 'ai' && org.aiEnabled;
+  const wantAi = assignee === 'ai' && org.aiEnabled;
+  if (wantAi && !task.aiAssisted) {
+    // intake() と同様、AI 割当への切替で依存度を上げる。
+    org.aiDependency = clamp(org.aiDependency + AI_DEP_PER_TASK, 0, 100);
+  }
+  task.aiAssisted = wantAi;
 
   task.progress = clamp(task.progress + ASSIGN_PROGRESS, 0, 0.999);
   task.split = true;

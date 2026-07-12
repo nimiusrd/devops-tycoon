@@ -34,7 +34,7 @@ describe('planBoardDrag', () => {
     ];
     const plan = planBoardDrag(sprint, 'assignTask');
     expect(plan?.draggableTaskIds).toEqual([0, 1]);
-    expect(plan?.dropLanes).toEqual(['backlog', 'coding']);
+    expect(plan?.dropLanes).toEqual(['coding']);
   });
 
   it('splitPr は未 split の review/coding を対象にする', () => {

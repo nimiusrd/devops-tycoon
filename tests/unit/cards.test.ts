@@ -111,13 +111,38 @@ describe('手札配布・発動（RI-30）', () => {
     const before = e.snapshot();
     expect(before.sprint.cardPiles.hand).toHaveLength(1);
     expect(before.sprint.cardEffects.codingSpeedMul).toBe(1);
-    const outcome = e.playCard(0);
+    const outcome = e.playCard(before.sprint.cardPiles.hand[0]!);
     expect(outcome.ok).toBe(true);
     const after = e.snapshot();
     expect(after.sprint.focus).toBeLessThan(before.sprint.focus);
     expect(after.sprint.cardEffects.codingSpeedMul).toBeGreaterThan(1);
     expect(after.sprint.cardPiles.hand).toHaveLength(0);
     expect(after.sprint.cardPiles.played).toEqual([0]);
+  });
+  it('強化後の再発動は加算系の差分だけを適用する', () => {
+    const e = createEngine({
+      seed: 'baseline-upgrade',
+      aiEnabled: true,
+      deck: [{ defId: 'auto-test', level: 1 }],
+    });
+    const deckIndex = e.snapshot().sprint.cardPiles.hand[0]!;
+    expect(e.playCard(deckIndex).ok).toBe(true);
+    const afterFirst = e.snapshot().org.quality;
+
+    // 次スプリントへ進め、強化して再発動。
+    while (!e.isComplete()) e.step(1000);
+    e.nextSprint();
+    const s = e.snapshot();
+    // deck[0] を強化
+    (e as unknown as { deck: Array<{ level: number }> }).deck[0]!.level = 2;
+    // 手札に戻す（新スプリントで deal 済み）
+    const hand = s.sprint.cardPiles.hand;
+    expect(hand).toContain(0);
+    const beforeSecond = e.snapshot().org.quality;
+    expect(e.playCard(0).ok).toBe(true);
+    const afterSecond = e.snapshot().org.quality;
+    expect(afterFirst).toBeGreaterThan(0);
+    expect(afterSecond).toBeGreaterThan(beforeSecond);
   });
 });
 
@@ -154,8 +179,10 @@ describe('デッキで結果が変わる（DoD: 手札発動で効果が出る /
     const e: Engine = createEngine({ seed: 'deck-cmp', aiEnabled: true, deck });
     if (playAll) {
       // 手札をすべて発動してからスプリントを進める。
-      while (e.snapshot().sprint.cardPiles.hand.length > 0) {
-        const outcome = e.playCard(0);
+      while (true) {
+        const hand = e.snapshot().sprint.cardPiles.hand;
+        if (hand.length === 0) break;
+        const outcome = e.playCard(hand[0]!);
         if (!outcome.ok) break;
       }
     }

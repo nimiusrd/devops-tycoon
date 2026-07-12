@@ -143,4 +143,25 @@ describe('applyAssignTaskEffect / applyAction', () => {
     expect(defaultAssignee(makeTask(0, { kind: 'routine' }), org)).toBe('ai');
     expect(defaultAssignee(makeTask(0, { kind: 'complex' }), org)).toBe('senior');
   });
+
+  it('Backlog ドロップは拒否し、Backlog タスクは Coding へ上げて加速する', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog', progress: 0 })]);
+    expect(applyAssignTaskEffect(sprint, org, { taskId: 0, lane: 'backlog' })).toBe(false);
+    const ok = applyAssignTaskEffect(sprint, org, { taskId: 0, assignee: 'senior' });
+    expect(ok).not.toBe(false);
+    expect(sprint.tasks[0]!.lane).toBe('coding');
+    expect(sprint.tasks[0]!.progress).toBeGreaterThan(0);
+  });
+
+  it('AI 割当への切替で依存度が上がる', () => {
+    const org = createOrgState('default', true);
+    const before = org.aiDependency;
+    const sprint = makeSprint(org, [
+      makeTask(0, { lane: 'coding', kind: 'routine', aiAssisted: false }),
+    ]);
+    applyAssignTaskEffect(sprint, org, { taskId: 0, assignee: 'ai' });
+    expect(org.aiDependency).toBeGreaterThan(before);
+    expect(sprint.tasks[0]!.aiAssisted).toBe(true);
+  });
 });

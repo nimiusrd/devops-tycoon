@@ -38,7 +38,8 @@ export function planBoardDrag(sprint: SprintState, armed: DraggableActionId): Bo
     return {
       armed,
       draggableTaskIds: tasks.map((t) => t.id),
-      dropLanes: ['backlog', 'coding'],
+      // Backlog ドロップは進捗が消えるため Coding のみ。
+      dropLanes: ['coding'],
     };
   }
   const tasks = splitPrCandidates(sprint);

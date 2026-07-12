@@ -130,9 +130,9 @@ export class Engine {
     return applyAction(id, this.sprint, this.org, this.rng, this.tick, target);
   }
 
-  /** 手札からカードを発動する（RI-30）。 */
-  playCard(handIndex: number): CardPlayOutcome {
-    return playCardFromHand(this.sprint, this.org, this.deck, handIndex, this.sprintPassiveEffects);
+  /** 手札からカードを発動する（deckIndex。RI-30）。 */
+  playCard(deckIndex: number): CardPlayOutcome {
+    return playCardFromHand(this.sprint, this.org, this.deck, deckIndex, this.sprintPassiveEffects);
   }
 
   /**

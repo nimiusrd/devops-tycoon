@@ -15,7 +15,8 @@ export interface DeckBarProps {
   hand?: number[];
   focus?: number;
   playable?: boolean;
-  onPlay?: (handIndex: number) => CardPlayOutcome;
+  /** 安定な deckIndex で発動する（連打で手札がずれない）。 */
+  onPlay?: (deckIndex: number) => CardPlayOutcome;
 }
 
 export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: DeckBarProps) {
@@ -29,7 +30,7 @@ export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: Dec
           <span className="deckbar-empty">手札がありません</span>
         ) : (
           <div className="deckbar-cards">
-            {hand.map((deckIndex, handIndex) => {
+            {hand.map((deckIndex) => {
               const inst = deck[deckIndex];
               if (!inst) return null;
               const def = getCard(inst.defId);
@@ -38,13 +39,13 @@ export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: Dec
               const canPlay = focus >= cost;
               return (
                 <CardView
-                  key={`hand-${deckIndex}-${handIndex}`}
+                  key={`hand-${deckIndex}`}
                   def={def}
                   level={inst.level}
                   compact
                   playCost={cost}
                   disabled={!canPlay}
-                  onPlay={() => onPlay(handIndex)}
+                  onPlay={() => onPlay(deckIndex)}
                 />
               );
             })}

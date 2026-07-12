@@ -32,7 +32,7 @@ export interface UseRun {
   beginSetupSprint: () => void;
   resolveBeat: (choiceIndex?: number) => void;
   dispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
-  playCard: (handIndex: number) => CardPlayOutcome;
+  playCard: (deckIndex: number) => CardPlayOutcome;
   /** dispatch 直後のスプリント快照（盤面演出用）。 */
   getSprintSnapshot: () => SprintState | null;
   acknowledgeResult: () => void;
@@ -93,7 +93,7 @@ export function useRun(game: GameHandle): UseRun {
     (id: ActionId, target?: ActionTarget) => game.dispatch(id, target),
     [game],
   );
-  const playCard = useCallback((handIndex: number) => game.playCard(handIndex), [game]);
+  const playCard = useCallback((deckIndex: number) => game.playCard(deckIndex), [game]);
   const getSprintSnapshot = useCallback(() => game.getState().sprint, [game]);
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
   const chooseCard = useCallback((defId: string) => void game.chooseCard(defId), [game]);

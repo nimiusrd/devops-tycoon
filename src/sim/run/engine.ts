@@ -564,14 +564,14 @@ export class RunEngine {
     return outcome;
   }
 
-  /** 手札からカードを発動する（sprint フェーズのみ。RI-30 / SPEC 第7.1）。 */
-  playCard(handIndex: number): CardPlayOutcome {
+  /** 手札からカードを発動する（deckIndex。sprint フェーズのみ。RI-30 / SPEC 第7.1）。 */
+  playCard(deckIndex: number): CardPlayOutcome {
     if (this.phase !== 'sprint' || !this.sprint) return { ok: false, reason: 'complete' };
     const outcome = playCardFromHand(
       this.sprint,
       this.org,
       this.deck,
-      handIndex,
+      deckIndex,
       this.sprintPassiveEffects,
     );
     if (outcome.ok) this.applyImmediateLose();

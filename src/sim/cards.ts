@@ -137,19 +137,20 @@ export function dealHand(deckSize: number, rng: Rng, handSize = HAND_SIZE): Spri
 }
 
 /**
- * 手札 1 枚を発動する。成功時は `sprint.cardEffects` に合成し、加算系を org へ反映する。
+ * 手札からデッキ位置 `deckIndex` のカードを発動する。
+ * 成功時は `sprint.cardEffects` に合成し、加算系を org へ反映する。
  * `passiveEffects` はレリック等の常時パッシブ（発動前の基準効果）。
  */
 export function playCardFromHand(
   sprint: SprintState,
   org: OrgState,
   deck: CardInstance[],
-  handIndex: number,
+  deckIndex: number,
   passiveEffects: CardEffects = IDENTITY_CARD_EFFECTS,
 ): CardPlayOutcome {
   if (sprint.complete) return { ok: false, reason: 'complete' };
-  const deckIndex = sprint.cardPiles.hand[handIndex];
-  if (deckIndex === undefined) return { ok: false, reason: 'no-card' };
+  const handIndex = sprint.cardPiles.hand.indexOf(deckIndex);
+  if (handIndex < 0) return { ok: false, reason: 'no-card' };
   const inst = deck[deckIndex];
   if (!inst) return { ok: false, reason: 'invalid' };
   const def = getCard(inst.defId);
@@ -163,11 +164,20 @@ export function playCardFromHand(
   sprint.cardPiles.hand.splice(handIndex, 1);
   sprint.cardPiles.played.push(deckIndex);
 
-  const cardFx = scaleEffects(def.base, inst.level);
-  // 加算系はラン中 1 回だけ（旧・獲得時適用と同等）。乗算系は毎スプリントの発動で効く。
-  if (!inst.baselineApplied) {
-    applyDeckBaseline(org, cardFx);
-    inst.baselineApplied = true;
+  const appliedLevel = inst.baselineAppliedLevel ?? 0;
+  if (appliedLevel < inst.level) {
+    const next = scaleEffects(def.base, inst.level);
+    const prev =
+      appliedLevel > 0 ? scaleEffects(def.base, appliedLevel) : { ...IDENTITY_CARD_EFFECTS };
+    // 加算系だけ差分適用（乗算系は sprint.cardEffects 側）。
+    applyDeckBaseline(org, {
+      ...IDENTITY_CARD_EFFECTS,
+      aiLiteracyAdd: next.aiLiteracyAdd - prev.aiLiteracyAdd,
+      aiDependencyAdd: next.aiDependencyAdd - prev.aiDependencyAdd,
+      qualityAdd: next.qualityAdd - prev.qualityAdd,
+      testCoverageAdd: next.testCoverageAdd - prev.testCoverageAdd,
+    });
+    inst.baselineAppliedLevel = inst.level;
   }
 
   let acc = { ...passiveEffects };

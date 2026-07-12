@@ -19,14 +19,20 @@ function spendStat(current: number, amount: number): { next: number; spent: numb
   return { next, spent: current - next };
 }
 
-/** 差配可能なタスク（Backlog / Coding）。 */
+/** 差配可能なタスク（Coding、および Coding へ上げられる Backlog）。 */
 export function assignableTasks(sprint: SprintState): Task[] {
-  return sprint.tasks.filter((t) => t.lane === 'backlog' || t.lane === 'coding');
+  const codingCount = sprint.tasks.filter((t) => t.lane === 'coding').length;
+  const canLiftBacklog = codingCount < sprint.config.codingSlots;
+  return sprint.tasks.filter(
+    (t) => t.lane === 'coding' || (t.lane === 'backlog' && canLiftBacklog),
+  );
 }
 
-/** PR分割の候補（Review / Coding・未 split）。 */
+/** PR分割の候補（Review 優先 → Coding・未 split。後方互換の自動選択順）。 */
 export function splitPrCandidates(sprint: SprintState): Task[] {
-  return sprint.tasks.filter((t) => (t.lane === 'review' || t.lane === 'coding') && !t.split);
+  const review = sprint.tasks.filter((t) => t.lane === 'review' && !t.split);
+  const coding = sprint.tasks.filter((t) => t.lane === 'coding' && !t.split);
+  return [...review, ...coding];
 }
 
 /** タスク規模から理想の担当を返す（SPEC「複雑→シニア、定型→AI」）。 */
@@ -84,7 +90,7 @@ export function resolveAssignTaskTarget(
   return coding.find((t) => t.kind === 'complex') ?? coding[0];
 }
 
-/** PR分割の対象解決。 */
+/** PR分割の対象解決（省略時は Review→Coding の順で complex 優先。従来互換）。 */
 export function resolveSplitPrTarget(sprint: SprintState, target?: ActionTarget): Task | undefined {
   if (target) {
     const task = sprint.tasks.find((t) => t.id === target.taskId);
@@ -124,6 +130,12 @@ export function applyAssignTaskEffect(
   // Backlog 上の進捗は intake で消えるため、明示的な Backlog ドロップは拒否する。
   if (target?.lane === 'backlog') return false;
 
+  // 失敗時にレーンを動かさないよう、担当の妥当性を先に検査する。
+  const assignee = target?.assignee ?? defaultAssignee(task, org);
+  if (assignee === 'ai' && !org.aiEnabled && target?.assignee === 'ai') {
+    return false;
+  }
+
   if (target?.lane && target.lane !== task.lane) {
     if (!canMoveToLane(sprint, task, target.lane)) return false;
     task.lane = target.lane;
@@ -135,10 +147,6 @@ export function applyAssignTaskEffect(
     task.lane = 'coding';
   }
 
-  const assignee = target?.assignee ?? defaultAssignee(task, org);
-  if (assignee === 'ai' && !org.aiEnabled) {
-    if (target?.assignee === 'ai') return false;
-  }
   const wantAi = assignee === 'ai' && org.aiEnabled;
   if (wantAi && !task.aiAssisted) {
     // intake() と同様、AI 割当への切替で依存度を上げる。

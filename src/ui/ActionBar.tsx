@@ -15,7 +15,7 @@ import {
   planActionBarView,
   type ActionBlockReason,
 } from '../render/actionBarView';
-import { isDraggableAction, type DraggableActionId } from '../render/boardDragPlan';
+import { isDraggableAction, planBoardDrag, type DraggableActionId } from '../render/boardDragPlan';
 import { formatActionDefTags, formatActionTooltip } from '../render/eventOutcomeView';
 import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
 import { EffectTagList } from './EffectTagList';
@@ -138,14 +138,25 @@ export function ActionBar({
       if (isDraggableAction(id)) {
         const availability = availabilityById.get(id);
         if (!availability?.canActivate && armedId !== id) return;
-        onArm(armedId === id ? null : id);
+        if (armedId === id) {
+          onArm(null);
+          return;
+        }
+        // 候補はあるが描画粒が overflow で無いときは従来どおり自動対象で発動する。
+        const plan = planBoardDrag(sprint, id);
+        if (!plan) {
+          const outcome = onAction(id);
+          applyOutcomeFeedback(id, outcome);
+          return;
+        }
+        onArm(id);
         return;
       }
       if (armedId) onArm(null);
       const outcome = onAction(id);
       applyOutcomeFeedback(id, outcome);
     },
-    [armedId, availabilityById, applyOutcomeFeedback, onAction, onArm],
+    [armedId, availabilityById, applyOutcomeFeedback, onAction, onArm, sprint],
   );
 
   return (

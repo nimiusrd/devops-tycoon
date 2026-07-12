@@ -11,6 +11,7 @@ import {
   defaultAssignee,
   isIdealAssignment,
   resolveAssignTaskTarget,
+  resolveSplitPrTarget,
 } from '../../src/sim/assignTask';
 import { createOrgState } from '../../src/sim/org';
 import { createSprint, resolveSprintConfig } from '../../src/sim/sprint';
@@ -128,7 +129,7 @@ describe('applyAssignTaskEffect / applyAction', () => {
     expect(outcome.effect?.affectedTaskIds).toEqual([1]);
   });
 
-  it('assignableTasks は backlog+coding', () => {
+  it('assignableTasks は Coding と上げられる Backlog のみ', () => {
     const org = createOrgState('default', true);
     const sprint = makeSprint(org, [
       makeTask(0, { lane: 'backlog' }),
@@ -136,6 +137,41 @@ describe('applyAssignTaskEffect / applyAction', () => {
       makeTask(2, { lane: 'review' }),
     ]);
     expect(assignableTasks(sprint).map((t) => t.id)).toEqual([0, 1]);
+  });
+
+  it('Coding WIP 満杯時は Backlog を差配対象にしない', () => {
+    const org = createOrgState('default', true);
+    const slots = sprintSlots(org);
+    const sprint = makeSprint(org, [
+      makeTask(0, { lane: 'backlog' }),
+      ...Array.from({ length: slots }, (_, i) => makeTask(i + 1, { lane: 'coding' })),
+    ]);
+    expect(assignableTasks(sprint).every((t) => t.lane === 'coding')).toBe(true);
+    expect(assignableTasks(sprint).some((t) => t.id === 0)).toBe(false);
+  });
+
+  it('target 省略の splitPr は同格なら Review を Coding より優先する', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [
+      makeTask(0, { lane: 'coding', kind: 'normal' }),
+      makeTask(1, { lane: 'review', kind: 'normal' }),
+    ]);
+    expect(resolveSplitPrTarget(sprint)?.id).toBe(1);
+
+    const bothComplex = makeSprint(org, [
+      makeTask(0, { lane: 'coding', kind: 'complex' }),
+      makeTask(1, { lane: 'review', kind: 'complex' }),
+    ]);
+    expect(resolveSplitPrTarget(bothComplex)?.id).toBe(1);
+  });
+
+  it('AI 無効時の明示 AI 指定は失敗しレーンを動かさない', () => {
+    const org = createOrgState('default', false);
+    const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog', kind: 'routine' })]);
+    expect(applyAssignTaskEffect(sprint, org, { taskId: 0, lane: 'coding', assignee: 'ai' })).toBe(
+      false,
+    );
+    expect(sprint.tasks[0]!.lane).toBe('backlog');
   });
 
   it('defaultAssignee は kind に従う', () => {

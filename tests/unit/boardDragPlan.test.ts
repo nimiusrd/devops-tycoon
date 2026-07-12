@@ -55,6 +55,26 @@ describe('planBoardDrag', () => {
     sprint.tasks = [makeTask(0, { lane: 'done' })];
     expect(planBoardDrag(sprint, 'assignTask')).toBeNull();
   });
+
+  it('山の overflow に隠れた候補だけでは null（自動対象フォールバック用）', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+    // Coding cap=12。13 件目以降は +N に隠れ、描画粒が無い。
+    sprint.tasks = Array.from({ length: 13 }, (_, i) =>
+      makeTask(i, { lane: 'coding', split: false, progress: 0 }),
+    );
+    const plan = planBoardDrag(sprint, 'splitPr');
+    // 可視粒だけが対象。先頭 12 は見えるので null ではないが、隠れた ID は含まない。
+    expect(plan).not.toBeNull();
+    expect(plan!.draggableTaskIds).not.toContain(12);
+    expect(plan!.draggableTaskIds.length).toBeLessThanOrEqual(12);
+
+    // 可視をすべて split 済みにすると、残りは overflow だけ → null。
+    for (const id of plan!.draggableTaskIds) {
+      sprint.tasks.find((t) => t.id === id)!.split = true;
+    }
+    expect(planBoardDrag(sprint, 'splitPr')).toBeNull();
+  });
 });
 
 describe('hitTestDropLane', () => {

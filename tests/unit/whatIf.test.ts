@@ -86,7 +86,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(after.roster).toEqual(before.roster);
   });
 
-  it('即時敗北になるドラフト候補は次スプリント試算を出さない', () => {
+  it('発動すると敗北するドラフト候補は loseOnPlay で警告する（獲得時は即時敗北にしない）', () => {
     const engine = new RunEngine({ seed: 'what-if-lose', difficulty: 'nightmare' });
     engine.startRun();
     const internals = engine as unknown as {
@@ -100,9 +100,10 @@ describe('RI-46 次スプリント what-if 試算', () => {
     internals.draft = ['copilot', 'auto-test'];
 
     const whatIf = engine.whatIfPreview();
-    expect(whatIf?.draftCandidates.copilot?.immediateLose).toBe('aiDependency');
+    expect(whatIf?.draftCandidates.copilot?.loseOnPlay).toBe('aiDependency');
+    expect(whatIf?.draftCandidates.copilot?.immediateLose).toBeUndefined();
     expect(whatIf?.draftCandidates.copilot?.trials).toBe(0);
-    expect(whatIf?.draftCandidates['auto-test']?.immediateLose).toBeUndefined();
+    expect(whatIf?.draftCandidates['auto-test']?.loseOnPlay).toBeUndefined();
     expect(whatIf?.draftCandidates['auto-test']?.trials).toBe(24);
   });
 

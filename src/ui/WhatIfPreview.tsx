@@ -34,6 +34,20 @@ export function WhatIfPreview({
     );
   }
 
+  if (preview.loseOnPlay) {
+    const reason = IMMEDIATE_LOSE_LABEL[preview.loseOnPlay] ?? preview.loseOnPlay;
+    return (
+      <div
+        className={`what-if-preview lose${compact ? ' compact' : ''}`}
+        data-testid={testId}
+        data-lose-on-play={preview.loseOnPlay}
+      >
+        <span className="what-if-label">発動で敗北</span>
+        <span>{reason}</span>
+      </div>
+    );
+  }
+
   const deliveredMin = Math.floor(preview.delivered.min);
   const deliveredMax = Math.ceil(preview.delivered.max);
   const spreadMin = Math.floor(preview.spread.min);

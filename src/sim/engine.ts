@@ -80,11 +80,20 @@ export class Engine {
   }
 
   /** シナリオ＋AIから、このスプリント開始時の組織状態を作る（カードは発動時反映）。 */
-  private buildOrg(carry?: Pick<OrgState, 'deliveryScore' | 'techDebt'>): OrgState {
+  private buildOrg(
+    carry?: Pick<
+      OrgState,
+      'deliveryScore' | 'techDebt' | 'aiLiteracy' | 'aiDependency' | 'quality' | 'testCoverage'
+    >,
+  ): OrgState {
     const org = createOrgState(this.scenario, this.aiEnabled);
     if (carry) {
       org.deliveryScore = carry.deliveryScore;
       org.techDebt = carry.techDebt;
+      org.aiLiteracy = carry.aiLiteracy;
+      org.aiDependency = carry.aiDependency;
+      org.quality = carry.quality;
+      org.testCoverage = carry.testCoverage;
     }
     return org;
   }
@@ -148,6 +157,11 @@ export class Engine {
     this.org = this.buildOrg({
       deliveryScore: this.org.deliveryScore,
       techDebt: this.org.techDebt,
+      // RI-30: playCard の加算系 baseline を次スプリントへ持ち越す。
+      aiLiteracy: this.org.aiLiteracy,
+      aiDependency: this.org.aiDependency,
+      quality: this.org.quality,
+      testCoverage: this.org.testCoverage,
     });
     this.sprint = this.buildSprint();
   }

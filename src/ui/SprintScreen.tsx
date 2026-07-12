@@ -44,10 +44,20 @@ export function SprintScreen({
   const [suppressExtinguishTaskIds, setSuppressExtinguishTaskIds] = useState<ReadonlySet<number>>(
     () => new Set(),
   );
-  const [armedId, setArmedId] = useState<DraggableActionId | null>(null);
+  const [armed, setArmed] = useState<{
+    sprintId: string | null;
+    id: DraggableActionId | null;
+  }>({ sprintId: null, id: null });
   const triggerKey = useRef(0);
-  // スプリント完了後は武装を解除（派生表示）。
-  const effectiveArmedId = sprint?.complete ? null : armedId;
+  // 完了中・別スプリントの武装は無効（effect で setState しない）。
+  const armedId =
+    sprint && !sprint.complete && armed.sprintId === state.currentSprintId ? armed.id : null;
+  const setArmedId = useCallback(
+    (id: DraggableActionId | null) => {
+      setArmed({ sprintId: state.currentSprintId, id });
+    },
+    [state.currentSprintId],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,7 +65,7 @@ export function SprintScreen({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [setArmedId]);
 
   const handleDispatch = useCallback(
     (id: ActionId, target?: ActionTarget): InterventionOutcome => {
@@ -80,15 +90,15 @@ export function SprintScreen({
       }
       return outcome;
     },
-    [onDispatch, getSprintSnapshot, sprint, state.sprintTick],
+    [onDispatch, getSprintSnapshot, setArmedId, sprint, state.sprintTick],
   );
 
   const handleDragComplete = useCallback(
     (target: ActionTarget) => {
-      if (!effectiveArmedId) return;
-      handleDispatch(effectiveArmedId, target);
+      if (!armedId) return;
+      handleDispatch(armedId, target);
     },
-    [effectiveArmedId, handleDispatch],
+    [armedId, handleDispatch],
   );
 
   if (!sprint) return null;
@@ -147,7 +157,7 @@ export function SprintScreen({
             interventionTrigger={interventionTrigger}
             suppressExtinguishTaskIds={suppressExtinguishTaskIds}
             sprint={sprint}
-            armedAction={effectiveArmedId}
+            armedAction={armedId}
             onDragComplete={handleDragComplete}
           />
           <EventTicker events={sprint.events} />
@@ -165,7 +175,7 @@ export function SprintScreen({
         sprint={sprint}
         sprintTick={state.sprintTick}
         disabled={sprint.complete}
-        armedId={effectiveArmedId}
+        armedId={armedId}
         onArm={setArmedId}
         onAction={handleDispatch}
       />

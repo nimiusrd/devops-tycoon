@@ -6,7 +6,7 @@
  */
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { ActionId, Lane, SprintState } from '../sim/types';
-import { BOARD_VIEW } from './boardScene';
+import { BOARD_VIEW, planBoardScene } from './boardScene';
 
 /** ドラッグ武装可能なアクション。 */
 export type DraggableActionId = 'assignTask' | 'splitPr';
@@ -30,10 +30,20 @@ export interface BoardDragPlan {
   dropLanes: Array<'backlog' | 'coding' | 'review'>;
 }
 
-/** 武装中のドラッグ計画。対象が無ければ null。 */
+/** 盤面に描画されているタスク ID（overflow +N に隠れた粒は除く）。 */
+function visibleTaskIds(sprint: SprintState): Set<number> {
+  return new Set(planBoardScene(sprint.tasks).dots.map((d) => d.id));
+}
+
+/**
+ * 武装中のドラッグ計画。
+ * 候補はあるが描画粒が無い（山の overflow）ときは null を返し、
+ * ActionBar 側でクリック即・自動対象フォールバックする。
+ */
 export function planBoardDrag(sprint: SprintState, armed: DraggableActionId): BoardDragPlan | null {
+  const visible = visibleTaskIds(sprint);
   if (armed === 'assignTask') {
-    const tasks = assignableTasks(sprint);
+    const tasks = assignableTasks(sprint).filter((t) => visible.has(t.id));
     if (tasks.length === 0) return null;
     return {
       armed,
@@ -42,7 +52,7 @@ export function planBoardDrag(sprint: SprintState, armed: DraggableActionId): Bo
       dropLanes: ['coding'],
     };
   }
-  const tasks = splitPrCandidates(sprint);
+  const tasks = splitPrCandidates(sprint).filter((t) => visible.has(t.id));
   if (tasks.length === 0) return null;
   return {
     armed,

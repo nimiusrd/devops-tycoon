@@ -133,6 +133,8 @@ describe('手札配布・発動（RI-30）', () => {
     while (!e.isComplete()) e.step(1000);
     e.nextSprint();
     const s = e.snapshot();
+    // 加算系 baseline は次スプリントの org に持ち越される。
+    expect(s.org.quality).toBe(afterFirst);
     // deck[0] を強化
     (e as unknown as { deck: Array<{ level: number }> }).deck[0]!.level = 2;
     // 手札に戻す（新スプリントで deal 済み）

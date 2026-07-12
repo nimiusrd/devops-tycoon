@@ -1270,14 +1270,14 @@ export class RunEngine {
         const org = structuredClone(this.org);
         // 次スプリントで当該カードを 1 枚発動した仮定（RI-30）。
         applyDeckBaseline(org, scaleEffects(card.base, 1));
-        // chooseCard と同じく、採用直後に即時敗北する候補は次スプリント試算を出さない。
-        const lose = evaluateLose(org, this.totals);
-        if (lose) {
+        // 獲得時は即時敗北しない。発動仮定で敗北するなら loseOnPlay として警告する。
+        const loseOnPlay = evaluateLose(org, this.totals);
+        if (loseOnPlay) {
           draftCandidates[defId] = {
             trials: 0,
             delivered: { mean: 0, min: 0, max: 0 },
             spread: { mean: 0, min: 0, max: 0 },
-            immediateLose: lose,
+            loseOnPlay,
           };
           continue;
         }

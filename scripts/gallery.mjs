@@ -15,12 +15,23 @@
  *   GALLERY_CHROMIUM=path   Chromium 実行ファイルの明示指定（通常は不要）
  */
 import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { isAbsolute, relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 import { chromium } from '@playwright/test';
 
 const SEED = process.env.GALLERY_SEED ?? 'tycoon';
 const DIFFICULTY = process.env.GALLERY_DIFFICULTY ?? 'easy';
-const OUT = process.env.GALLERY_OUT ?? 'gallery';
+// 出力先はカレントディレクトリ配下に限定する（再帰削除するため、`..` や
+// 絶対パスで作業ツリー外を指されると危険）。
+const OUT_ARG = process.env.GALLERY_OUT ?? 'gallery';
+const OUT = resolve(OUT_ARG);
+const OUT_REL = relative(process.cwd(), OUT);
+if (OUT_REL === '' || OUT_REL.startsWith('..') || isAbsolute(OUT_REL)) {
+  console.error(
+    `GALLERY_OUT はカレントディレクトリ配下のサブディレクトリを指定してください（指定値: ${OUT_ARG}）`,
+  );
+  process.exit(1);
+}
 const PORT = 5199;
 const VIEWPORT = { width: 1440, height: 900 };
 
@@ -32,7 +43,7 @@ await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 
 const server = await createServer({
-  server: { port: PORT, strictPort: true, watch: { ignored: [`**/${OUT}/**`] } },
+  server: { port: PORT, strictPort: true, watch: { ignored: [`**/${OUT_REL}/**`] } },
 });
 await server.listen();
 
@@ -91,14 +102,27 @@ await page.waitForSelector('[data-testid="setup"]');
 await snap('setup', '編成（Setup）');
 await snapModal('open-formation', 'formation', 'formation-close', 'formation', '編成モーダル');
 
-// スプリント中盤の盤面（タスク粒が流れている状態）。
+// スプリント中盤の盤面（タスク粒が流れている状態）。スプリントを終わらせて
+// しまうとリザルトのオーバーレイが写るため、進行度（Done 数）を見ながら
+// 1 秒ずつ進め、盤面が動き出した時点で sprint 中のまま撮影する。
 await page.evaluate(() => window.game.beginSetupSprint());
-for (let i = 0; i < 10; i += 1) {
-  const phase = await page.evaluate(() => window.game.phase());
-  if (phase !== 'sprint') break;
-  await page.evaluate(() => window.game.step(2000));
+let liveCaptured = false;
+for (let i = 0; i < 30 && !liveCaptured; i += 1) {
+  const doneCount = await page.evaluate(() => {
+    const g = window.game;
+    if (g.phase() !== 'sprint') return null;
+    g.step(1000);
+    return g.phase() === 'sprint' ? (g.getState().sprint?.metrics.doneCount ?? 0) : null;
+  });
+  if (doneCount === null) break;
+  if (doneCount >= 3) {
+    await snap('sprint-board', 'スプリント盤面（現場）');
+    liveCaptured = true;
+  }
 }
-await snap('sprint-board', 'スプリント盤面（現場）');
+if (!liveCaptured) {
+  console.warn('⚠️ スプリントが撮影前に終了したため、ライブ盤面をスキップ');
+}
 
 // ズーム階層（現場 ▸ 全社 ▸ 部署 ▸ 業界）。
 const zoomShots = [

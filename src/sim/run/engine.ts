@@ -1267,6 +1267,20 @@ export class RunEngine {
       for (const defId of this.draft) {
         const card = getCard(defId);
         if (!card) continue;
+        const nextDeck = [...this.deck, { defId, level: 1 }];
+        // 次スプリントの dealHand と同じ seed で、新カードが手札に入るか判定する。
+        const nextSprintId = `q${this.quarterNumber}-s${nextIndex}`;
+        const dealRng = createRng(`${this.seed}:deal:${nextSprintId}`);
+        const piles = dealHand(nextDeck.length, dealRng);
+        const newCardIndex = nextDeck.length - 1;
+        const inHand = piles.hand.includes(newCardIndex);
+
+        if (!inHand) {
+          // 手札に入らなければ発動できないので、獲得のみの試算（発動仮定なし）。
+          draftCandidates[defId] = previewFor(nextDeck, structuredClone(this.org), []);
+          continue;
+        }
+
         const org = structuredClone(this.org);
         // 次スプリントで当該カードを 1 枚発動した仮定（RI-30）。
         applyDeckBaseline(org, scaleEffects(card.base, 1));
@@ -1281,9 +1295,7 @@ export class RunEngine {
           };
           continue;
         }
-        draftCandidates[defId] = previewFor([...this.deck, { defId, level: 1 }], org, [
-          { defId, level: 1 },
-        ]);
+        draftCandidates[defId] = previewFor(nextDeck, org, [{ defId, level: 1 }]);
       }
     }
     return { current, draftCandidates };

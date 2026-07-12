@@ -1493,6 +1493,37 @@ body {
   border: 2px solid var(--line);
   box-shadow: 0 6px 0 #1a1338;
 }
+.assign-assignee {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 72px;
+  padding-right: 8px;
+  border-right: 2px solid var(--line);
+}
+.assign-assignee-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+.assign-assignee-btn {
+  appearance: none;
+  border: 1px solid #7bdcff44;
+  background: #1d1640;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.assign-assignee-btn.on {
+  border-color: #ffd45c;
+  background: #ffd45c22;
+  color: #ffd45c;
+}
 .focus {
   display: flex;
   align-items: center;
@@ -1603,16 +1634,6 @@ body {
     0 0 0 2px #ffd45c55,
     0 4px 0 #1d1640;
 }
-.action.armed::before {
-  content: 'ARMED';
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  color: #ffd45c;
-}
 .task-dot.draggable {
   cursor: grab;
   outline: 2px solid #7bdcffaa;
@@ -1655,6 +1676,18 @@ body {
   font-size: 8px;
   font-weight: 900;
   color: var(--sky);
+}
+/* armed は ready より後に定義し、武装中バッジを優先する。 */
+.action.armed::before,
+.action.armed.ready::before {
+  content: 'ARMED';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffd45c;
 }
 .action.nofocus:not(.ready) {
   border-color: #ff5f5755;

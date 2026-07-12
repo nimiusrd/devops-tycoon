@@ -28,6 +28,8 @@ export interface BoardDragPlan {
   draggableTaskIds: number[];
   /** ハイライトするドロップ先レーン。 */
   dropLanes: Array<'backlog' | 'coding' | 'review'>;
+  /** タスク差配時に明示する担当（省略時は defaultAssignee）。 */
+  assignee?: 'ai' | 'senior';
 }
 
 /** 盤面に描画されているタスク ID（overflow +N に隠れた粒は除く）。 */
@@ -40,7 +42,11 @@ function visibleTaskIds(sprint: SprintState): Set<number> {
  * 候補はあるが描画粒が無い（山の overflow）ときは null を返し、
  * ActionBar 側でクリック即・自動対象フォールバックする。
  */
-export function planBoardDrag(sprint: SprintState, armed: DraggableActionId): BoardDragPlan | null {
+export function planBoardDrag(
+  sprint: SprintState,
+  armed: DraggableActionId,
+  assignee?: 'ai' | 'senior',
+): BoardDragPlan | null {
   const visible = visibleTaskIds(sprint);
   if (armed === 'assignTask') {
     const tasks = assignableTasks(sprint).filter((t) => visible.has(t.id));
@@ -50,6 +56,7 @@ export function planBoardDrag(sprint: SprintState, armed: DraggableActionId): Bo
       draggableTaskIds: tasks.map((t) => t.id),
       // Backlog ドロップは進捗が消えるため Coding のみ。
       dropLanes: ['coding'],
+      ...(assignee ? { assignee } : {}),
     };
   }
   const tasks = splitPrCandidates(sprint).filter((t) => visible.has(t.id));

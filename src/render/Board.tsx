@@ -240,6 +240,8 @@ export interface BoardProps {
   /** 武装中のドラッグ介入（RI-30）。フル SprintState があると候補判定が正確。 */
   sprint?: SprintState | null;
   armedAction?: DraggableActionId | null;
+  /** タスク差配の担当指定（省略時は defaultAssignee）。 */
+  assignAssignee?: 'ai' | 'senior';
   onDragComplete?: (target: ActionTarget) => void;
 }
 
@@ -262,6 +264,7 @@ export function Board({
   suppressExtinguishTaskIds,
   sprint = null,
   armedAction = null,
+  assignAssignee,
   onDragComplete,
 }: BoardProps) {
   const scene = planBoardScene(tasks);
@@ -274,7 +277,8 @@ export function Board({
   useContainFit(boardRef);
   const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
 
-  const dragPlan = armedAction && sprint ? planBoardDrag(sprint, armedAction) : null;
+  const dragPlan =
+    armedAction && sprint ? planBoardDrag(sprint, armedAction, assignAssignee) : null;
   const dragIds = new Set(dragPlan?.draggableTaskIds ?? []);
   const dropLanes = new Set(dragPlan?.dropLanes ?? []);
 
@@ -307,7 +311,11 @@ export function Board({
         const pt = clientToBoardPoint(ev.clientX, ev.clientY, rect);
         const lane = hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes);
         if (!lane) return;
-        onDragComplete({ taskId, lane });
+        onDragComplete({
+          taskId,
+          lane,
+          ...(dragPlan.assignee ? { assignee: dragPlan.assignee } : {}),
+        });
       };
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);

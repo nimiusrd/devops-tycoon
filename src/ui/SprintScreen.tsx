@@ -48,6 +48,13 @@ export function SprintScreen({
     sprintId: string | null;
     id: DraggableActionId | null;
   }>({ sprintId: null, id: null });
+  const [assignAssignee, setAssignAssignee] = useState<'ai' | 'senior' | undefined>(undefined);
+  const [outcomeFeedback, setOutcomeFeedback] = useState<{
+    id: ActionId;
+    outcome: InterventionOutcome;
+    nonce: number;
+  } | null>(null);
+  const feedbackNonce = useRef(0);
   const triggerKey = useRef(0);
   // 完了中・別スプリントの武装は無効（effect で setState しない）。
   const armedId =
@@ -55,6 +62,7 @@ export function SprintScreen({
   const setArmedId = useCallback(
     (id: DraggableActionId | null) => {
       setArmed({ sprintId: state.currentSprintId, id });
+      if (id !== 'assignTask') setAssignAssignee(undefined);
     },
     [state.currentSprintId],
   );
@@ -96,7 +104,9 @@ export function SprintScreen({
   const handleDragComplete = useCallback(
     (target: ActionTarget) => {
       if (!armedId) return;
-      handleDispatch(armedId, target);
+      const outcome = handleDispatch(armedId, target);
+      feedbackNonce.current += 1;
+      setOutcomeFeedback({ id: armedId, outcome, nonce: feedbackNonce.current });
     },
     [armedId, handleDispatch],
   );
@@ -158,6 +168,7 @@ export function SprintScreen({
             suppressExtinguishTaskIds={suppressExtinguishTaskIds}
             sprint={sprint}
             armedAction={armedId}
+            assignAssignee={armedId === 'assignTask' ? assignAssignee : undefined}
             onDragComplete={handleDragComplete}
           />
           <EventTicker events={sprint.events} />
@@ -178,6 +189,9 @@ export function SprintScreen({
         armedId={armedId}
         onArm={setArmedId}
         onAction={handleDispatch}
+        assignAssignee={assignAssignee}
+        onAssignAssigneeChange={setAssignAssignee}
+        outcomeFeedback={outcomeFeedback}
       />
     </>
   );

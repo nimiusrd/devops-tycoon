@@ -5,7 +5,7 @@
  * assignTask / splitPr は武装トグル（盤面ドラッグで確定。RI-30）。
  * 他アクションはクリックで即 `dispatch`。RI-51: 対象数バッジ・発動不能理由。
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ACTION_DEFS } from '../data/actions';
 import {
@@ -68,6 +68,11 @@ export interface ActionBarProps {
   armedId: DraggableActionId | null;
   onArm: (id: DraggableActionId | null) => void;
   onAction: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
+  /** タスク差配の担当（武装中に選択。省略＝理想担当）。 */
+  assignAssignee?: 'ai' | 'senior';
+  onAssignAssigneeChange?: (assignee: 'ai' | 'senior' | undefined) => void;
+  /** ドラッグ発動など ActionBar 外からの結果フィードバック。 */
+  outcomeFeedback?: { id: ActionId; outcome: InterventionOutcome; nonce: number } | null;
 }
 
 export function ActionBar({
@@ -77,6 +82,9 @@ export function ActionBar({
   armedId,
   onArm,
   onAction,
+  assignAssignee,
+  onAssignAssigneeChange,
+  outcomeFeedback,
 }: ActionBarProps) {
   const { focus, config, cooldowns, comboGauge } = sprint;
   const availabilityById = useMemo(() => {
@@ -92,6 +100,7 @@ export function ActionBar({
   const [gaugeFlash, setGaugeFlash] = useState(false);
   const [focusPops, setFocusPops] = useState<FocusPop[]>([]);
   const nextPopId = useRef(0);
+  const lastFeedbackNonce = useRef<number | null>(null);
 
   const pushFocusPop = useCallback((text: string, tone: FocusPop['tone']) => {
     const pop: FocusPop = { id: nextPopId.current++, text, tone };
@@ -133,6 +142,14 @@ export function ActionBar({
     [pushFocusPop, showToast, triggerShake],
   );
 
+  // ドラッグ経路など ActionBar 外からの発動結果を同じ UI フィードバックへ載せる。
+  useEffect(() => {
+    if (!outcomeFeedback) return;
+    if (lastFeedbackNonce.current === outcomeFeedback.nonce) return;
+    lastFeedbackNonce.current = outcomeFeedback.nonce;
+    applyOutcomeFeedback(outcomeFeedback.id, outcomeFeedback.outcome);
+  }, [outcomeFeedback, applyOutcomeFeedback]);
+
   const handleAction = useCallback(
     (id: ActionId) => {
       if (isDraggableAction(id)) {
@@ -143,7 +160,7 @@ export function ActionBar({
           return;
         }
         // 候補はあるが描画粒が overflow で無いときは従来どおり自動対象で発動する。
-        const plan = planBoardDrag(sprint, id);
+        const plan = planBoardDrag(sprint, id, assignAssignee);
         if (!plan) {
           const outcome = onAction(id);
           applyOutcomeFeedback(id, outcome);
@@ -156,7 +173,7 @@ export function ActionBar({
       const outcome = onAction(id);
       applyOutcomeFeedback(id, outcome);
     },
-    [armedId, availabilityById, applyOutcomeFeedback, onAction, onArm, sprint],
+    [armedId, assignAssignee, availabilityById, applyOutcomeFeedback, onAction, onArm, sprint],
   );
 
   return (
@@ -183,6 +200,35 @@ export function ActionBar({
           </div>
         </div>
       </div>
+      {armedId === 'assignTask' && onAssignAssigneeChange && (
+        <div className="assign-assignee" data-testid="assign-assignee">
+          <span className="assign-assignee-label">担当</span>
+          <button
+            type="button"
+            className={`assign-assignee-btn${!assignAssignee ? ' on' : ''}`}
+            data-testid="assign-assignee-ideal"
+            onClick={() => onAssignAssigneeChange(undefined)}
+          >
+            理想
+          </button>
+          <button
+            type="button"
+            className={`assign-assignee-btn${assignAssignee === 'ai' ? ' on' : ''}`}
+            data-testid="assign-assignee-ai"
+            onClick={() => onAssignAssigneeChange('ai')}
+          >
+            AI
+          </button>
+          <button
+            type="button"
+            className={`assign-assignee-btn${assignAssignee === 'senior' ? ' on' : ''}`}
+            data-testid="assign-assignee-senior"
+            onClick={() => onAssignAssigneeChange('senior')}
+          >
+            シニア
+          </button>
+        </div>
+      )}
       <div className="actions">
         {ACTION_DEFS.map((a) => {
           const availability = availabilityById.get(a.id)!;

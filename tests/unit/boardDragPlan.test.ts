@@ -49,6 +49,14 @@ describe('planBoardDrag', () => {
     expect(plan?.draggableTaskIds).toEqual([1]);
   });
 
+  it('assignTask 計画に担当指定を載せられる', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(resolveSprintConfig('default'), org, rng);
+    sprint.tasks = [makeTask(0, { lane: 'coding' })];
+    const plan = planBoardDrag(sprint, 'assignTask', 'senior');
+    expect(plan?.assignee).toBe('senior');
+  });
+
   it('対象なしなら null', () => {
     const org = createOrgState('default', true);
     const sprint = createSprint(resolveSprintConfig('default'), org, rng);

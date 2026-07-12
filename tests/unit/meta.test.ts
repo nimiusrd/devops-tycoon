@@ -443,7 +443,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(loadMeta(storage).dailyRuns).toEqual({});
   });
 
-  it('RI-32: カード獲得の即時敗北でもメタ報酬を記録する', () => {
+  it('RI-32: カード発動の即時敗北でもメタ報酬を記録する', () => {
     const game = createGame({ seed: 'ri32-meta-card-lose', difficulty: 'nightmare' });
     game.startRun('nightmare');
     const before = game.getMeta().points;
@@ -460,7 +460,18 @@ describe('メタ進行とアンロック（第17章）', () => {
     internals.phase = 'draft';
     internals.draft = ['copilot'];
 
-    const state = game.chooseCard('copilot');
+    game.chooseCard('copilot');
+    expect(game.getState().status).toBe('playing');
+
+    internals.phase = 'setup';
+    game.beginSetupSprint();
+    const sprintState = game.getState();
+    const handIndex = sprintState.sprint!.cardPiles.hand.findIndex(
+      (idx) => sprintState.deck[idx]?.defId === 'copilot',
+    );
+    expect(handIndex).toBeGreaterThanOrEqual(0);
+    game.playCard(handIndex);
+    const state = game.getState();
     expect(state.status).toBe('lost');
     expect(state.loseReason).toBe('aiDependency');
     expect(game.getMeta().points).toBeGreaterThan(before);
@@ -476,8 +487,8 @@ describe('メタ進行とアンロック（第17章）', () => {
     shopInternals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
 
     const shopState = shopGame.buyShopCard('copilot');
-    expect(shopState.status).toBe('lost');
-    expect(shopState.loseReason).toBe('aiDependency');
-    expect(shopGame.getMeta().points).toBeGreaterThan(shopBefore);
+    // 購入だけでは未発動。メタ報酬も増えない。
+    expect(shopState.status).toBe('playing');
+    expect(shopGame.getMeta().points).toBe(shopBefore);
   });
 });

@@ -169,16 +169,24 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(verified).toBe(true);
   });
 
-  it('RI-32: カード獲得で AI 依存上限を超えると即時敗北する', () => {
+  it('RI-32: カード発動で AI 依存上限を超えると即時敗北する', () => {
     const engine = new RunEngine({ seed: 'ri32-card-lose-direct', difficulty: 'nightmare' });
     engine.startRun();
-    // ドラフト直前の境界状態を直接組み立て、chooseCard / buyShopCard の即時敗北経路を検証する。
+    // 境界状態を直接組み立て、playCard の即時敗北経路を検証する（RI-30: 獲得時は未発動）。
     const internals = engine as unknown as {
       phase: string;
       draft: string[] | null;
       shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> } | null;
       org: { aiDependency: number; aiLiteracy: number };
       budget: number;
+      deck: Array<{ defId: string; level: number }>;
+      sprint: {
+        complete: boolean;
+        focus: number;
+        cardPiles: { hand: number[]; played: number[]; discard: number[]; drawOrder: number[] };
+        cardEffects: unknown;
+      } | null;
+      sprintPassiveEffects: unknown;
     };
     internals.org.aiDependency = AI_DEPENDENCY_CAP - 5;
     internals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
@@ -186,6 +194,21 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     internals.draft = ['copilot'];
     engine.chooseCard('copilot');
     let after = engine.snapshot();
+    expect(after.status).toBe('playing');
+    expect(after.deck.some((c) => c.defId === 'copilot')).toBe(true);
+
+    // スプリントへ進め、手札の copilot を発動して敗北させる。
+    internals.phase = 'setup';
+    engine.beginSetupSprint();
+    after = engine.snapshot();
+    expect(after.phase).toBe('sprint');
+    const handIndex = after.sprint!.cardPiles.hand.findIndex(
+      (idx) => after.deck[idx]?.defId === 'copilot',
+    );
+    expect(handIndex).toBeGreaterThanOrEqual(0);
+    const play = engine.playCard(handIndex);
+    expect(play.ok).toBe(true);
+    after = engine.snapshot();
     expect(after.status).toBe('lost');
     expect(after.loseReason).toBe('aiDependency');
     expect(after.phase).toBe('lost');
@@ -200,9 +223,9 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     shopInternals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
     shopEngine.buyShopCard('copilot');
     after = shopEngine.snapshot();
-    expect(after.status).toBe('lost');
-    expect(after.loseReason).toBe('aiDependency');
-    expect(after.phase).toBe('lost');
+    // 購入だけでは未発動のため敗北しない。
+    expect(after.status).toBe('playing');
+    expect(after.deck.some((c) => c.defId === 'copilot')).toBe(true);
   });
 
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {

@@ -19,7 +19,10 @@ import { applyAction } from '../actions';
 import {
   applyDeckBaseline,
   combineEffects,
+  dealHand,
+  deckEffects,
   drawDraft,
+  playCardFromHand,
   scaleEffects,
   upgradeCardAt,
 } from '../cards';
@@ -46,13 +49,16 @@ import { DEFAULT_SEED } from '../seed';
 import { resolveSprintConfig, stepSprint, summarizeSprint } from '../sprint';
 import type {
   ActionId,
+  ActionTarget,
   CardEffects,
+  CardPlayOutcome,
   InterventionOutcome,
   OrgState,
   SprintConfig,
   SprintResult,
   SprintState,
 } from '../types';
+import { IDENTITY_CARD_EFFECTS } from '../model';
 import { applyLever, emptyAdjustState, generateIndustry, generateOrgScale } from '../orgscale';
 import type {
   IndustryState,
@@ -249,6 +255,8 @@ export class RunEngine {
   private sprintTick = 0;
   private accumulatorMs = 0;
   private sprintBaselineInput: SprintBaselineInput | null = null;
+  /** スプリント開始時のパッシブ係数（カード発動時の合成ベース。RI-30）。 */
+  private sprintPassiveEffects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
   private lastResult: SprintResult | null = null;
   private draft: string[] | null = null;
   private shop: ShopOffer | null = null;
@@ -457,6 +465,10 @@ export class RunEngine {
     this.sprintTick = 0;
     this.accumulatorMs = 0;
     this.sprint = initialized.sprint;
+    // パッシブ（レリック等）のみを基準に保持し、手札を配布する（RI-30）。
+    this.sprintPassiveEffects = { ...this.sprint.cardEffects };
+    const dealRng = createRng(`${this.seed}:deal:${this.currentSprintId}`);
+    this.sprint.cardPiles = dealHand(this.deck.length, dealRng);
     this.phase = 'sprint';
   }
 
@@ -471,6 +483,7 @@ export class RunEngine {
     kind,
     modifiers,
     seed,
+    playedCards = [],
   }: {
     deck: { defId: string; level: number }[];
     roster: RosterState;
@@ -478,6 +491,8 @@ export class RunEngine {
     kind: SprintKind;
     modifiers: SprintModifierDelta;
     seed: string;
+    /** what-if: 次スプリントで発動すると仮定するカード（RI-30）。 */
+    playedCards?: { defId: string; level: number }[];
   }): SprintBaselineInput {
     const isBoss = kind === 'boss';
     const fold = foldRunEffects({
@@ -490,6 +505,10 @@ export class RunEngine {
     // 編成（個体メンバーのレーン配置・AI 配布）を係数へ畳み込み、デッキ等と合成する。
     const formation = foldFormationEffects(roster);
     let effects = combineEffects(fold.effects, toEffects(formation.effects));
+    // 手札発動を仮定したカードを係数へ合成（本番 beginSprint では空）。
+    if (playedCards.length > 0) {
+      effects = combineEffects(effects, deckEffects(playedCards));
+    }
     if (isBoss) effects = withBossEffects(effects, this.bossId);
     if (this.pauseAiDebuffQuarter === this.quarterNumber) {
       effects = {
@@ -538,10 +557,24 @@ export class RunEngine {
   }
 
   /** 介入アクションを発動する（sprint フェーズのみ。第6章）。 */
-  dispatch(id: ActionId): InterventionOutcome {
+  dispatch(id: ActionId, target?: ActionTarget): InterventionOutcome {
     if (this.phase !== 'sprint' || !this.sprint) return { ok: false, reason: 'complete' };
-    const outcome = applyAction(id, this.sprint, this.org, this.sprintRng, this.sprintTick);
+    const outcome = applyAction(id, this.sprint, this.org, this.sprintRng, this.sprintTick, target);
     if (outcome.ok && (id === 'overtime' || id === 'andon')) this.usedHeavyActions = true;
+    return outcome;
+  }
+
+  /** 手札からカードを発動する（sprint フェーズのみ。RI-30 / SPEC 第7.1）。 */
+  playCard(handIndex: number): CardPlayOutcome {
+    if (this.phase !== 'sprint' || !this.sprint) return { ok: false, reason: 'complete' };
+    const outcome = playCardFromHand(
+      this.sprint,
+      this.org,
+      this.deck,
+      handIndex,
+      this.sprintPassiveEffects,
+    );
+    if (outcome.ok) this.applyImmediateLose();
     return outcome;
   }
 
@@ -773,7 +806,7 @@ export class RunEngine {
     if (this.phase !== 'draft') return;
     this.addCard(defId, 1);
     this.draft = null;
-    if (this.applyImmediateLose()) return;
+    // RI-30: カード効果は手札発動時に反映されるため、獲得時の即時敗北は見ない。
     this.phase = 'evolution';
   }
 
@@ -959,7 +992,7 @@ export class RunEngine {
     this.budget -= offer.cost;
     offer.bought = true;
     this.addCard(defId, 1);
-    this.applyImmediateLose();
+    // RI-30: 効果は手札発動時。購入だけでは即時敗北しない。
   }
 
   /** ショップでレリックを購入する。 */
@@ -1028,12 +1061,11 @@ export class RunEngine {
 
   // --- 共通 ---
 
-  /** カードをデッキへ加え、加算系（baseline）効果を即時に組織へ反映する。 */
+  /** カードをデッキへ加える（効果は手札発動時に反映。RI-30）。 */
   private addCard(defId: string, level: number): void {
     const def = getCard(defId);
     if (!def) return;
     this.deck.push({ defId, level });
-    applyDeckBaseline(this.org, scaleEffects(def.base, level));
   }
 
   /** 即時敗北条件を評価し、該当すれば lost へ遷移する。 */
@@ -1202,7 +1234,11 @@ export class RunEngine {
     const kind: SprintKind = nextIndex >= this.sprintsPerQuarter ? 'boss' : this.pendingSprintKind;
     const modifiers = this.phase === 'setup' ? this.pendingSprintModifiers : {};
     const baseSeed = `${this.seed}:what-if:q${this.quarterNumber}:s${nextIndex}`;
-    const previewFor = (deck: { defId: string; level: number }[], org: OrgState) => {
+    const previewFor = (
+      deck: { defId: string; level: number }[],
+      org: OrgState,
+      playedCards: { defId: string; level: number }[] = [],
+    ) => {
       // beginSprint と同じスプリント間回復を試算側の clone にだけ適用する。
       const previewOrg = structuredClone(org);
       previewOrg.seniorHp = clamp(
@@ -1220,6 +1256,7 @@ export class RunEngine {
           modifiers,
           // 候補間で同じ seed 群を使い、選択だけによる差を比較できるようにする。
           seed: baseSeed,
+          playedCards,
         }),
       );
     };
@@ -1231,6 +1268,7 @@ export class RunEngine {
         const card = getCard(defId);
         if (!card) continue;
         const org = structuredClone(this.org);
+        // 次スプリントで当該カードを 1 枚発動した仮定（RI-30）。
         applyDeckBaseline(org, scaleEffects(card.base, 1));
         // chooseCard と同じく、採用直後に即時敗北する候補は次スプリント試算を出さない。
         const lose = evaluateLose(org, this.totals);
@@ -1243,7 +1281,9 @@ export class RunEngine {
           };
           continue;
         }
-        draftCandidates[defId] = previewFor([...this.deck, { defId, level: 1 }], org);
+        draftCandidates[defId] = previewFor([...this.deck, { defId, level: 1 }], org, [
+          { defId, level: 1 },
+        ]);
       }
     }
     return { current, draftCandidates };

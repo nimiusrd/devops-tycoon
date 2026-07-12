@@ -1597,6 +1597,56 @@ body {
     0 0 0 2px #7bdcff33,
     0 4px 0 #1d1640;
 }
+.action.armed {
+  border-color: #ffd45c;
+  box-shadow:
+    0 0 0 2px #ffd45c55,
+    0 4px 0 #1d1640;
+}
+.action.armed::before {
+  content: 'ARMED';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffd45c;
+}
+.task-dot.draggable {
+  cursor: grab;
+  outline: 2px solid #7bdcffaa;
+  z-index: 9;
+}
+.task-dot.dragging {
+  cursor: grabbing;
+  outline-color: #ffd45c;
+  z-index: 12;
+}
+.station.drop-target {
+  outline: 2px dashed #7bdcff88;
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+.station.drop-hover {
+  outline-color: #ffd45c;
+  background: #ffd45c22;
+}
+.board.board-armed {
+  cursor: crosshair;
+}
+.card.card-playable {
+  cursor: pointer;
+}
+.card.card-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.deckbar-meta {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-dim);
+}
 .action.ready::before {
   content: 'READY';
   position: absolute;

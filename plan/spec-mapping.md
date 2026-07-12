@@ -68,7 +68,7 @@
 | ドリルダウンのカメラ遷移演出（mockup 視覚到達） | [4.7–4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応), [18](../SPEC.md#18-視覚表現) | 🟡 機能は動作・カメラズーム演出が残務 | [remaining-issues.md](./remaining-issues.md) RI-04 |
 | 演出・ビジュアルの残務（スイープ・スローモー・ご褒美・キャラ表情） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [12](../SPEC.md#12-キャラクター育成), [18.1](../SPEC.md#181-基本演出), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装 | [remaining-issues.md](./remaining-issues.md) RI-07〜RI-10 |
 | リザルトの介入内訳（割り込み×N / 緊急対応×N の表示） | [4.6](../SPEC.md#46-スプリントリザルト画面) | 🟡 `SprintResult` に未集計 | [remaining-issues.md](./remaining-issues.md) RI-29 |
-| 能動操作・カードの操作方式（タスク差配のドラッグ / 手札配布→発動） | [6](../SPEC.md#6-スプリント中の能動操作), [7](../SPEC.md#7-ai導入施策カードデッキ) | 🟡 効果は実装・操作方式が SPEC と差 | [remaining-issues.md](./remaining-issues.md) RI-30 |
+| 能動操作・カードの操作方式（タスク差配のドラッグ / 手札配布→発動） | [6](../SPEC.md#6-スプリント中の能動操作), [7](../SPEC.md#7-ai導入施策カードデッキ) | ✅ RI-30 で SPEC 準拠 | [remaining-issues.md](./remaining-issues.md) RI-30 |
 | レリック入手元・即時敗北条件の不足（ボス報酬レリック / Incident連続・AI依存過多） | [8](../SPEC.md#8-組織文化レリック), [15](../SPEC.md#15-敗北条件--継続不能条件) | 🟡 主要経路のみ実装 | [remaining-issues.md](./remaining-issues.md) RI-32 |
 | 開始プリセットの永続解放 | [17](../SPEC.md#17-メタ進行とアンロック) | 🟡 未実装（カード/レリックのみ） | [remaining-issues.md](./remaining-issues.md) RI-25 |
 | 技術構成の残項目（Web Worker+Comlink / Recharts・visx） | [22](../SPEC.md#22-技術構成) | 🟡 未導入 | [remaining-issues.md](./remaining-issues.md) RI-13 |

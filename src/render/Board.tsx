@@ -5,10 +5,24 @@
  * シーン計画を読み、俯瞰オフィス（アイソメ）として描く: 部屋（背景）＋工程ごとの
  * ステーション（机＋キャラ＋ラベル＋吹き出し）＋タスク粒の山＋工程間フロー。
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
+ * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
-import { useLayoutEffect, useRef, type CSSProperties } from 'react';
-import type { SprintMetrics, SprintModifiers, Task } from '../sim/types';
+import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import type {
+  ActionTarget,
+  Lane,
+  SprintMetrics,
+  SprintModifiers,
+  SprintState,
+  Task,
+} from '../sim/types';
 import { deriveActiveBoardAuras } from './interventionEffects';
+import {
+  clientToBoardPoint,
+  hitTestDropLane,
+  planBoardDrag,
+  type DraggableActionId,
+} from './boardDragPlan';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
@@ -54,7 +68,17 @@ function useContainFit(ref: React.RefObject<HTMLDivElement | null>): void {
   }, [ref]);
 }
 
-function TaskDot({ dot }: { dot: BoardDotPlan }) {
+function TaskDot({
+  dot,
+  draggable,
+  dragging,
+  onPointerDown,
+}: {
+  dot: BoardDotPlan;
+  draggable?: boolean;
+  dragging?: boolean;
+  onPointerDown?: (e: React.PointerEvent, taskId: number) => void;
+}) {
   const d = TASK_DIAMETER[dot.size];
   // 粒径は設計幅 1404 に対する % で持たせ、盤面サイズに追従させる。
   const sizePct = (d / VIEW_W) * 100;
@@ -79,9 +103,12 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
     : {};
   return (
     <span
-      className={`task-dot variant-${dot.variant}${urgentClass}${flowing ? ' flowing' : ''}`}
+      className={`task-dot variant-${dot.variant}${urgentClass}${flowing ? ' flowing' : ''}${draggable ? ' draggable' : ''}${dragging ? ' dragging' : ''}`}
       data-variant={dot.variant}
+      data-task-id={dot.id}
       data-flowing={flowing ? 'true' : undefined}
+      data-draggable={draggable ? 'true' : undefined}
+      onPointerDown={draggable && onPointerDown ? (e) => onPointerDown(e, dot.id) : undefined}
       style={{
         left: pct(dot.x, VIEW_W),
         top: pct(dot.y, VIEW_H),
@@ -108,11 +135,20 @@ function TaskDot({ dot }: { dot: BoardDotPlan }) {
   );
 }
 
-function Station({ s }: { s: BoardStationPlan }) {
+function Station({
+  s,
+  dropTarget,
+  hover,
+}: {
+  s: BoardStationPlan;
+  dropTarget?: boolean;
+  hover?: boolean;
+}) {
   return (
     <div
-      className={`station station-${s.lane}`}
+      className={`station station-${s.lane}${dropTarget ? ' drop-target' : ''}${hover ? ' drop-hover' : ''}`}
       data-testid={`lane-${s.lane}`}
+      data-drop-target={dropTarget ? 'true' : undefined}
       style={{ left: pct(s.x, VIEW_W), top: pct(s.y, VIEW_H) }}
     >
       <StationActor lane={s.lane} mood={s.mood} />
@@ -201,6 +237,10 @@ export interface BoardProps {
   interventionTrigger?: InterventionTrigger | null;
   /** firefight 演出と FireEffects 鎮火の二重再生を避ける task ID。 */
   suppressExtinguishTaskIds?: ReadonlySet<number>;
+  /** 武装中のドラッグ介入（RI-30）。フル SprintState があると候補判定が正確。 */
+  sprint?: SprintState | null;
+  armedAction?: DraggableActionId | null;
+  onDragComplete?: (target: ActionTarget) => void;
 }
 
 /** 凡例（mockups の dot 凡例）。 */
@@ -220,6 +260,9 @@ export function Board({
   sprintTick = 0,
   interventionTrigger = null,
   suppressExtinguishTaskIds,
+  sprint = null,
+  armedAction = null,
+  onDragComplete,
 }: BoardProps) {
   const scene = planBoardScene(tasks);
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
@@ -231,22 +274,75 @@ export function Board({
   useContainFit(boardRef);
   const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
 
+  const dragPlan = armedAction && sprint ? planBoardDrag(sprint, armedAction) : null;
+  const dragIds = new Set(dragPlan?.draggableTaskIds ?? []);
+  const dropLanes = new Set(dragPlan?.dropLanes ?? []);
+
+  const [dragTaskId, setDragTaskId] = useState<number | null>(null);
+  const [hoverLane, setHoverLane] = useState<Lane | null>(null);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent, taskId: number) => {
+      if (!armedAction || !onDragComplete || !dragPlan) return;
+      e.preventDefault();
+      setDragTaskId(taskId);
+
+      const onMove = (ev: PointerEvent) => {
+        const rect = boardRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const pt = clientToBoardPoint(ev.clientX, ev.clientY, rect);
+        setHoverLane(hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes));
+      };
+      const onUp = (ev: PointerEvent) => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        const rect = boardRef.current?.getBoundingClientRect();
+        setDragTaskId(null);
+        setHoverLane(null);
+        if (!rect) return;
+        if (armedAction === 'splitPr') {
+          onDragComplete({ taskId });
+          return;
+        }
+        const pt = clientToBoardPoint(ev.clientX, ev.clientY, rect);
+        const lane = hitTestDropLane(pt.x, pt.y, dragPlan.dropLanes);
+        if (!lane) return;
+        onDragComplete({ taskId, lane });
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    },
+    [armedAction, dragPlan, onDragComplete],
+  );
+
   return (
     <div
       ref={boardRef}
-      className={`board iso-office${hot ? ' review-hell' : ''}`}
+      className={`board iso-office${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
       data-testid="board"
+      data-armed={armedAction ?? undefined}
       style={{ '--review-heat': heat } as CSSProperties}
     >
       <OfficeRoom />
       <FlowArrows flows={scene.flows} />
 
       {scene.dots.map((d) => (
-        <TaskDot key={`${d.lane}-${d.id}`} dot={d} />
+        <TaskDot
+          key={`${d.lane}-${d.id}`}
+          dot={d}
+          draggable={dragIds.has(d.id)}
+          dragging={dragTaskId === d.id}
+          onPointerDown={handlePointerDown}
+        />
       ))}
 
       {scene.stations.map((s) => (
-        <Station key={s.lane} s={s} />
+        <Station
+          key={s.lane}
+          s={s}
+          dropTarget={dropLanes.has(s.lane as 'backlog' | 'coding' | 'review')}
+          hover={hoverLane === s.lane}
+        />
       ))}
       {scene.stations.map((s) => (
         <StationLabel key={`l-${s.lane}`} s={s} />

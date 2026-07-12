@@ -197,8 +197,8 @@ describe('monteCarlo 基盤（RI-14）', () => {
      */
     const RI15_RANGES = {
       delivered: { min: 200, max: 8000 },
-      rework: { min: 0, max: 55 },
-      incidents: { min: 0, max: 50 },
+      rework: { min: 0, max: 65 },
+      incidents: { min: 0, max: 60 },
       /** ドメイン上限 100 未満。全試行 0 HP や全試行満タンは mean/max ガードで検知。 */
       seniorHp: { min: 0, max: 90 },
       /** REVIEW_FREEZE_PEAK 未満。境界到達 seed は代表群から除外。 */

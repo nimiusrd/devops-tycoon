@@ -25,7 +25,7 @@ export const ACTION_DEFS: ActionDef[] = [
     cost: 2,
     cooldownTicks: 50,
     gauge: 0.25,
-    description: '巨大PRを小さく割り、レビューしやすくする（手戻り率↓）',
+    description: '巨大PRをドラッグして割り、レビューしやすくする（手戻り率↓）',
     sideEffect: '処理が一旦巻き戻る',
   },
   {
@@ -46,7 +46,7 @@ export const ACTION_DEFS: ActionDef[] = [
     cost: 1,
     cooldownTicks: 40,
     gauge: 0.2,
-    description: '着手中タスクを差配して一気に前進させる',
+    description: 'タスクをレーンへドラッグ差配して一気に前進させる',
     sideEffect: '偏らせると士気が下がる',
   },
   {

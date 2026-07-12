@@ -2,8 +2,8 @@
  * 介入アクションバー（SPEC 第4.3 / 第6.1 / mockups/main-screen 準拠）。
  *
  * マネジメント集中力（⚡）と、各介入アクション（コスト・CD・Ready）を並べる。
- * クリックで `dispatch` し、状態は上位から読むだけ（第22.2）。
- * RI-51: 対象数バッジ・発動不能理由・成功マイクロフィードバック。
+ * assignTask / splitPr は武装トグル（盤面ドラッグで確定。RI-30）。
+ * 他アクションはクリックで即 `dispatch`。RI-51: 対象数バッジ・発動不能理由。
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -15,8 +15,9 @@ import {
   planActionBarView,
   type ActionBlockReason,
 } from '../render/actionBarView';
+import { isDraggableAction, type DraggableActionId } from '../render/boardDragPlan';
 import { formatActionDefTags, formatActionTooltip } from '../render/eventOutcomeView';
-import type { ActionId, InterventionOutcome, SprintState } from '../sim/types';
+import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
 import { EffectTagList } from './EffectTagList';
 
 const FEEDBACK_TTL_MS = 1000;
@@ -64,10 +65,19 @@ export interface ActionBarProps {
   sprint: SprintState;
   sprintTick: number;
   disabled: boolean;
-  onAction: (id: ActionId) => InterventionOutcome;
+  armedId: DraggableActionId | null;
+  onArm: (id: DraggableActionId | null) => void;
+  onAction: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
 }
 
-export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarProps) {
+export function ActionBar({
+  sprint,
+  sprintTick,
+  disabled,
+  armedId,
+  onArm,
+  onAction,
+}: ActionBarProps) {
   const { focus, config, cooldowns, comboGauge } = sprint;
   const availabilityById = useMemo(() => {
     const map = new Map<ActionId, ReturnType<typeof deriveActionAvailability>>();
@@ -101,9 +111,8 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
     window.setTimeout(() => setShakingId(null), 400);
   }, []);
 
-  const handleAction = useCallback(
-    (id: ActionId) => {
-      const outcome = onAction(id);
+  const applyOutcomeFeedback = useCallback(
+    (id: ActionId, outcome: InterventionOutcome) => {
       if (outcome.ok && outcome.effect) {
         const { focusCost, focusRefund, gaugeGain } = outcome.effect;
         pushFocusPop(`-⚡${focusCost}`, 'cost');
@@ -121,7 +130,22 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
         showToast(formatInterventionFailure(outcome.reason as ActionBlockReason, id));
       }
     },
-    [onAction, pushFocusPop, showToast, triggerShake],
+    [pushFocusPop, showToast, triggerShake],
+  );
+
+  const handleAction = useCallback(
+    (id: ActionId) => {
+      if (isDraggableAction(id)) {
+        const availability = availabilityById.get(id);
+        if (!availability?.canActivate && armedId !== id) return;
+        onArm(armedId === id ? null : id);
+        return;
+      }
+      if (armedId) onArm(null);
+      const outcome = onAction(id);
+      applyOutcomeFeedback(id, outcome);
+    },
+    [armedId, availabilityById, applyOutcomeFeedback, onAction, onArm],
   );
 
   return (
@@ -153,7 +177,8 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
           const availability = availabilityById.get(a.id)!;
           const remaining = cooldowns[a.id] ?? 0;
           const onCooldown = remaining > 0;
-          const ready = availability.canActivate;
+          const armed = armedId === a.id;
+          const ready = availability.canActivate || armed;
           const cdPct = onCooldown ? Math.round((1 - remaining / a.cooldownTicks) * 100) : 100;
           const modRing = sprint.complete
             ? { active: false, remaining: 0, total: 0 }
@@ -168,16 +193,22 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
                 : availability.blockReason === 'cooldown'
                   ? ' oncooldown'
                   : '';
+          const dragHint = isDraggableAction(a.id)
+            ? armed
+              ? '（盤面で対象へドラッグ）'
+              : '（クリックで武装）'
+            : '';
           return (
             <button
               type="button"
               key={a.id}
-              className={`action${tone}${ready ? ' ready' : ''}${blockClass}${shakingId === a.id ? ' shake' : ''}`}
+              className={`action${tone}${ready ? ' ready' : ''}${armed ? ' armed' : ''}${blockClass}${shakingId === a.id ? ' shake' : ''}`}
               data-testid={`action-${a.id}`}
               data-block-reason={availability.blockReason ?? ''}
-              disabled={!ready}
+              data-armed={armed ? 'true' : undefined}
+              disabled={!ready && !armed}
               onClick={() => handleAction(a.id)}
-              title={formatActionTooltip(a)}
+              title={`${formatActionTooltip(a)}${dragHint}`}
             >
               {availability.targetBadge && (
                 <span className="action-target-badge" data-testid={`action-badge-${a.id}`}>
@@ -186,9 +217,14 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
               )}
               <span className="ico">{a.icon}</span>
               <span className="name">{a.label}</span>
-              {!ready && availability.blockMessage && (
+              {!ready && !armed && availability.blockMessage && (
                 <span className="action-block-reason" data-testid={`action-reason-${a.id}`}>
                   {availability.blockMessage}
+                </span>
+              )}
+              {armed && (
+                <span className="action-block-reason" data-testid={`action-armed-${a.id}`}>
+                  武装中
                 </span>
               )}
               <EffectTagList tags={formatActionDefTags(a)} testId={`action-tags-${a.id}`} />

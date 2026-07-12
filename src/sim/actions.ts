@@ -7,17 +7,21 @@
  * 完全に同一挙動になる（入力＝イベント経由。architecture §2）。
  */
 import { getAction } from '../data/actions';
+import { applyAssignTaskEffect, resolveSplitPrTarget } from './assignTask';
 import type { Rng } from './rng';
 import { reviewOne } from './sprint';
 import { appendSprintEvent } from './sprintEvents';
 import type {
   ActionId,
+  ActionTarget,
   InterventionEffect,
   InterventionOutcome,
   SprintState,
   OrgState,
   Task,
 } from './types';
+
+export { ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from './assignTask';
 
 /** アクション定義（データは `src/data/actions.ts`）。 */
 export interface ActionDef {
@@ -42,10 +46,6 @@ export const INTERRUPT_REVIEW_COUNT = 4;
 export const INTERRUPT_HP_COST = 3;
 /** 緊急対応の追加シニアHP消費（UI プレビューと共有）。 */
 export const FIREFIGHT_HP_COST = 2;
-/** タスク差配で進める Coding 進捗量（UI プレビューと共有）。 */
-export const ASSIGN_PROGRESS = 0.5;
-/** タスク差配の士気低下（UI プレビューと共有）。 */
-export const ASSIGN_MORALE_COST = 3;
 /** ペアレビューで捌く PR 数（UI プレビューと共有）。 */
 export const PAIR_REVIEW_COUNT = 2;
 /** ペアレビューで上がる AI Literacy（UI プレビューと共有）。 */
@@ -112,7 +112,13 @@ type EffectPartial = Omit<
  */
 const EFFECTS: Record<
   ActionId,
-  (s: SprintState, o: OrgState, r: Rng, tick: number) => EffectPartial | false
+  (
+    s: SprintState,
+    o: OrgState,
+    r: Rng,
+    tick: number,
+    target?: ActionTarget,
+  ) => EffectPartial | false
 > = {
   // 割り込みレビュー: Review キュー先頭の数件を即処理してスイープする。
   interruptReview(sprint, org, rng, tick) {
@@ -126,14 +132,13 @@ const EFFECTS: Record<
   },
 
   // PR分割: 巨大PRを割り、以降のレビューを通りやすくする（split 印）。
-  splitPr(sprint) {
-    const candidates = [...tasksInLane(sprint, 'review'), ...tasksInLane(sprint, 'coding')];
-    const target =
-      candidates.find((t) => t.kind === 'complex' && !t.split) ?? candidates.find((t) => !t.split);
-    if (!target) return false;
-    target.split = true;
-    target.progress = Math.max(0, target.progress - SPLIT_PROGRESS_PENALTY);
-    return { affectedTaskIds: [target.id] };
+  // target 指定時はそのタスク、省略時は従来の自動選択（RI-30）。
+  splitPr(sprint, _org, _rng, _tick, target) {
+    const task = resolveSplitPrTarget(sprint, target);
+    if (!task) return false;
+    task.split = true;
+    task.progress = Math.max(0, task.progress - SPLIT_PROGRESS_PENALTY);
+    return { affectedTaskIds: [task.id] };
   },
 
   // 緊急対応: 最も延焼が近い火を 1 件、タイマーが切れる前に鎮火して Review へ戻す。
@@ -158,17 +163,9 @@ const EFFECTS: Record<
     return { containedTaskId, hpCost: hp.spent };
   },
 
-  // タスク差配: 着手中タスクを一気に前進させる（偏重で士気低下）。
-  assignTask(sprint, org) {
-    const target =
-      tasksInLane(sprint, 'coding').find((t) => t.kind === 'complex') ??
-      tasksInLane(sprint, 'coding')[0];
-    if (!target) return false;
-    target.progress = clamp(target.progress + ASSIGN_PROGRESS, 0, 0.999);
-    target.split = true;
-    const morale = spendStat(org.morale, ASSIGN_MORALE_COST);
-    org.morale = morale.next;
-    return { affectedTaskIds: [target.id], moraleCost: morale.spent };
+  // タスク差配: 対象指定 or 自動選択で前進（偏重で士気低下。RI-30）。
+  assignTask(sprint, org, _rng, _tick, target) {
+    return applyAssignTaskEffect(sprint, org, target);
   },
 
   // AIスロットル: 一定時間 AI 流入を絞る（Review 渋滞を抑える）。
@@ -233,6 +230,7 @@ export function applyAction(
   org: OrgState,
   rng: Rng,
   tick: number,
+  target?: ActionTarget,
 ): InterventionOutcome {
   if (sprint.complete) return { ok: false, reason: 'complete' };
   const def = getAction(id);
@@ -240,7 +238,7 @@ export function applyAction(
   if ((sprint.cooldowns[id] ?? 0) > 0) return { ok: false, reason: 'cooldown' };
   if (sprint.focus < def.cost) return { ok: false, reason: 'no-focus' };
 
-  const partial = EFFECTS[id](sprint, org, rng, tick);
+  const partial = EFFECTS[id](sprint, org, rng, tick, target);
   if (!partial) return { ok: false, reason: 'no-target' };
 
   sprint.focus -= def.cost;

@@ -139,6 +139,7 @@ export function createSprint(
     modifiers: { andonUntilTick: 0, overtimeUntilTick: 0, throttleUntilTick: 0 },
     comboGauge: 0,
     cardEffects,
+    cardPiles: { drawOrder: [], hand: [], discard: [], played: [] },
     aiAdoption: clamp(AI_ADOPTION * aiAdoptionShare, 0, 1),
     events: [],
     interventionEvents: [],

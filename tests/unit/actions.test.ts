@@ -135,7 +135,8 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
     expectedEffect: (def) => ({
       actionId: 'assignTask',
       affectedTaskIds: [0],
-      moraleCost: ASSIGN_MORALE_COST,
+      // normal は理想差配扱い → 士気コスト半減（RI-30）。
+      moraleCost: Math.max(1, Math.floor(ASSIGN_MORALE_COST / 2)),
       focusCost: def.cost,
       gaugeGain: def.gauge,
     }),

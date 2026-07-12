@@ -28,9 +28,15 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
     case 'setup':
       e.beginSetupSprint();
       return true;
-    case 'sprint':
+    case 'sprint': {
+      // RI-30: オートプレイは手札を可能な限り発動してから進める。
+      const handLen = s.sprint?.cardPiles.hand.length ?? 0;
+      for (let i = 0; i < handLen; i += 1) {
+        const outcome = e.playCard(0);
+        if (!outcome.ok) break;
+      }
       if (opts.skilled) {
-        const sp = s.sprint;
+        const sp = e.snapshot().sprint;
         if (sp && !sp.complete) {
           if (sp.tasks.filter((t) => t.lane === 'review').length >= 6)
             e.dispatch('interruptReview');
@@ -41,6 +47,7 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
         e.step(1_000_000);
       }
       return true;
+    }
     case 'result':
       e.acknowledgeResult();
       return true;

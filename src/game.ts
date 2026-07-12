@@ -9,7 +9,7 @@
 import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import { resolveSeedFromLocation } from './sim/seed';
-import type { ActionId, InterventionOutcome } from './sim/types';
+import type { ActionId, ActionTarget, CardPlayOutcome, InterventionOutcome } from './sim/types';
 import type { DifficultyId, GoalAdjustmentId, RunState } from './sim/run/types';
 import type { LaneAssignment } from './sim/member/types';
 import type { RankingKind, ZoomLevel } from './sim/orgscale/types';
@@ -46,8 +46,10 @@ export interface GameHandle {
   resolveBeat(choiceIndex?: number): RunState;
   /** 指定 ms ぶんスプリントを手動で前進させる。 */
   step(ms: number): RunState;
-  /** 介入アクションを発動する（第6章）。 */
-  dispatch(id: ActionId): InterventionOutcome;
+  /** 介入アクションを発動する（第6章）。target は差配/分割の対象指定（RI-30）。 */
+  dispatch(id: ActionId, target?: ActionTarget): InterventionOutcome;
+  /** 手札からカードを発動する（RI-30 / SPEC 第7.1）。 */
+  playCard(handIndex: number): CardPlayOutcome;
   /** リザルトを確認してドラフトへ進む。 */
   acknowledgeResult(): RunState;
   /** ドラフトでカードを選ぶ。 */
@@ -209,9 +211,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
       return after();
     },
-    dispatch(id) {
-      const outcome = engine.dispatch(id);
+    dispatch(id, target) {
+      const outcome = engine.dispatch(id, target);
       bump();
+      return outcome;
+    },
+    playCard(handIndex) {
+      const outcome = engine.playCard(handIndex);
+      bump();
+      recordIfFinished();
       return outcome;
     },
     acknowledgeResult() {

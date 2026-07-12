@@ -44,7 +44,7 @@ const NO_TARGET_CASES: { id: ActionId; tasks: Task[]; message: string }[] = [
     message: '分割対象なし',
   },
   { id: 'firefight', tasks: [makeTask(0, { lane: 'review' })], message: '炎上なし' },
-  { id: 'assignTask', tasks: [makeTask(0, { lane: 'review' })], message: 'Coding なし' },
+  { id: 'assignTask', tasks: [makeTask(0, { lane: 'review' })], message: '差配対象なし' },
 ];
 
 describe('countActionTargets（RI-51）', () => {
@@ -73,11 +73,17 @@ describe('countActionTargets（RI-51）', () => {
     expect(countActionTargets(sprint, 'splitPr')).toBe(2);
   });
 
-  it('assignTask は Coding があれば 1、なければ 0', () => {
+  it('assignTask は backlog/coding の件数を返し、それ以外は 0', () => {
     const org = createOrgState('default', true);
     expect(
       countActionTargets(makeSprint(org, [makeTask(0, { lane: 'coding' })]), 'assignTask'),
     ).toBe(1);
+    expect(
+      countActionTargets(
+        makeSprint(org, [makeTask(0, { lane: 'backlog' }), makeTask(1, { lane: 'coding' })]),
+        'assignTask',
+      ),
+    ).toBe(2);
     expect(
       countActionTargets(makeSprint(org, [makeTask(0, { lane: 'review' })]), 'assignTask'),
     ).toBe(0);

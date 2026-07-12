@@ -1,15 +1,23 @@
 /**
  * スプリント画面（能動操作フェーズ / SPEC 第4.1 / 第6章）。
  *
- * 盤面（タスク粒の流れ）＋ 介入アクションバー ＋ コンボ/数字ポップ ＋ デッキ。
+ * 盤面（タスク粒の流れ）＋ 介入アクションバー ＋ コンボ/数字ポップ ＋ 手札。
  * スプリント種別（通常/高負荷/ボス）に応じてバナーを変える。状態は読むだけ（第22.2）。
+ * RI-30: assignTask/splitPr は武装→ドラッグ、カードは手札から発動。
  */
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getBoss } from '../data/bosses';
 import { Board } from '../render/Board';
+import type { DraggableActionId } from '../render/boardDragPlan';
 import { reviewQueueLength } from '../render/status';
 import { BURN_TICKS } from '../sim/model';
-import type { ActionId, InterventionOutcome, SprintState } from '../sim/types';
+import type {
+  ActionId,
+  ActionTarget,
+  CardPlayOutcome,
+  InterventionOutcome,
+  SprintState,
+} from '../sim/types';
 import type { RunState } from '../sim/run/types';
 import type { InterventionTrigger } from './InterventionEffects';
 import { ActionBar } from './ActionBar';
@@ -20,23 +28,40 @@ import { PointPops } from './PointPops';
 
 export interface SprintScreenProps {
   state: RunState;
-  onDispatch: (id: ActionId) => InterventionOutcome;
+  onDispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
+  onPlayCard: (handIndex: number) => CardPlayOutcome;
   getSprintSnapshot: () => SprintState | null;
 }
 
-export function SprintScreen({ state, onDispatch, getSprintSnapshot }: SprintScreenProps) {
+export function SprintScreen({
+  state,
+  onDispatch,
+  onPlayCard,
+  getSprintSnapshot,
+}: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
   const [suppressExtinguishTaskIds, setSuppressExtinguishTaskIds] = useState<ReadonlySet<number>>(
     () => new Set(),
   );
+  const [armedId, setArmedId] = useState<DraggableActionId | null>(null);
   const triggerKey = useRef(0);
+  // スプリント完了後は武装を解除（派生表示）。
+  const effectiveArmedId = sprint?.complete ? null : armedId;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setArmedId(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const handleDispatch = useCallback(
-    (id: ActionId): InterventionOutcome => {
+    (id: ActionId, target?: ActionTarget): InterventionOutcome => {
       if (!sprint) return { ok: false, reason: 'complete' };
       const prevTasks = sprint.tasks;
-      const outcome = onDispatch(id);
+      const outcome = onDispatch(id, target);
       if (outcome.ok && outcome.effect) {
         const nextSprint = getSprintSnapshot();
         triggerKey.current += 1;
@@ -51,10 +76,19 @@ export function SprintScreen({ state, onDispatch, getSprintSnapshot }: SprintScr
           setSuppressExtinguishTaskIds(new Set([outcome.effect.containedTaskId]));
           window.setTimeout(() => setSuppressExtinguishTaskIds(new Set()), 700);
         }
+        setArmedId(null);
       }
       return outcome;
     },
     [onDispatch, getSprintSnapshot, sprint, state.sprintTick],
+  );
+
+  const handleDragComplete = useCallback(
+    (target: ActionTarget) => {
+      if (!effectiveArmedId) return;
+      handleDispatch(effectiveArmedId, target);
+    },
+    [effectiveArmedId, handleDispatch],
   );
 
   if (!sprint) return null;
@@ -68,7 +102,6 @@ export function SprintScreen({ state, onDispatch, getSprintSnapshot }: SprintScr
   const jamPct = Math.min(100, (queue / 18) * 100);
   const burning = sprint.tasks.filter((t) => t.lane === 'rework' && t.incident);
   const incidents = burning.length;
-  // 最も延焼が近い火の残り猶予（0..100%）。バーが縮み切る前に鎮火するタイミングゲー（第6.3）。
   const urgentTicks =
     incidents > 0 ? Math.min(...burning.map((t) => t.burnTicksLeft ?? BURN_TICKS)) : 0;
   const burnPct = incidents > 0 ? Math.max(0, (urgentTicks / BURN_TICKS) * 100) : 0;
@@ -113,16 +146,27 @@ export function SprintScreen({ state, onDispatch, getSprintSnapshot }: SprintScr
             sprintTick={state.sprintTick}
             interventionTrigger={interventionTrigger}
             suppressExtinguishTaskIds={suppressExtinguishTaskIds}
+            sprint={sprint}
+            armedAction={effectiveArmedId}
+            onDragComplete={handleDragComplete}
           />
           <EventTicker events={sprint.events} />
         </div>
       </main>
 
-      <DeckBar deck={state.deck} />
+      <DeckBar
+        deck={state.deck}
+        hand={sprint.cardPiles.hand}
+        focus={sprint.focus}
+        playable={!sprint.complete}
+        onPlay={onPlayCard}
+      />
       <ActionBar
         sprint={sprint}
         sprintTick={state.sprintTick}
         disabled={sprint.complete}
+        armedId={effectiveArmedId}
+        onArm={setArmedId}
         onAction={handleDispatch}
       />
     </>

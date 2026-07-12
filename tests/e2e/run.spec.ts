@@ -153,10 +153,18 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
         else if (s.phase === 'sprint') {
           const sprint = s.sprint;
           if (sprint && !sprint.complete) {
-            if (sprint.tasks.filter((task) => task.lane === 'review').length >= 6)
-              g.dispatch('interruptReview');
-            if (sprint.tasks.some((task) => task.lane === 'rework' && task.incident))
-              g.dispatch('firefight');
+            // RI-30: 手札を可能な限り発動してから介入・進行する。
+            while ((g.getState().sprint?.cardPiles.hand.length ?? 0) > 0) {
+              const play = (g as unknown as { playCard(i: number): { ok: boolean } }).playCard(0);
+              if (!play.ok) break;
+            }
+            const live = g.getState().sprint;
+            if (live && !live.complete) {
+              if (live.tasks.filter((task) => task.lane === 'review').length >= 6)
+                g.dispatch('interruptReview');
+              if (live.tasks.some((task) => task.lane === 'rework' && task.incident))
+                g.dispatch('firefight');
+            }
           }
           g.step(300);
         } else if (s.phase === 'result') g.acknowledgeResult();

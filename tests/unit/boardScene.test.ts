@@ -48,7 +48,7 @@ describe('planBoardScene（盤面シーン計画）', () => {
     }
   });
 
-  it('設計座標空間を mockup と同じ 1404×573 で返す', () => {
+  it('設計座標空間を 1404×573 の固定値で返す', () => {
     const scene = planBoardScene([]);
     expect(scene.view).toEqual({ w: BOARD_VIEW.w, h: BOARD_VIEW.h });
   });

@@ -8,7 +8,7 @@
 import type { TeamHealth } from '../sim/orgscale/types';
 import { depthSort, isoProject, type DepthItem, type IsoOptions } from './iso';
 
-/** 健全度ごとの色（緑/黄/赤。mockups/org-screen 準拠）。 */
+/** 健全度ごとの色（緑/黄/赤。旧モック org-screen 由来）。 */
 export const HEALTH_COLOR: Record<TeamHealth, string> = {
   healthy: '#58e0b0',
   congested: '#ffd45c',

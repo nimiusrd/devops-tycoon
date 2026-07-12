@@ -6,9 +6,16 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'playwright-report', 'test-results', 'coverage'] },
+  { ignores: ['dist', 'node_modules', 'playwright-report', 'test-results', 'coverage', 'gallery'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // Node スクリプト（ギャラリー撮影等）。page.evaluate 内でブラウザ globals も使う。
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {

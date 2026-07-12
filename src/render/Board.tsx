@@ -1,5 +1,5 @@
 /**
- * 盤面レンダラ（SPEC 第4.1 / 第18章 / mockups/main-screen 準拠）。
+ * 盤面レンダラ（SPEC 第4.1 / 第18章 準拠）。
  *
  * 「状態を読んで描くだけ」の一方向に徹する（第22.2）。`boardScene` が組み立てた
  * シーン計画を読み、俯瞰オフィス（アイソメ）として描く: 部屋（背景）＋工程ごとの
@@ -203,7 +203,7 @@ export interface BoardProps {
   suppressExtinguishTaskIds?: ReadonlySet<number>;
 }
 
-/** 凡例（mockups の dot 凡例）。 */
+/** 凡例（dot 凡例）。 */
 const LEGEND: { variant: BoardDotPlan['variant']; label: string }[] = [
   { variant: 'ai', label: 'AI利用' },
   { variant: 'rework', label: '手戻り' },

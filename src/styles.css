@@ -745,7 +745,7 @@ body {
   background: linear-gradient(90deg, #cdbff0, #ffffff);
 }
 
-/* ===== 俯瞰オフィス（アイソメ盤面・SPEC 第4.1 / 第18章 / mockups 準拠） ===== */
+/* ===== 俯瞰オフィス（アイソメ盤面・SPEC 第4.1 / 第18章 準拠） ===== */
 /*
  * ステーション/粒は設計空間（1404×573）の % で重ねるため、盤面の箱は必ずこの比率を
  * 保つ必要がある。幅は Board の ResizeObserver が min(スロット幅, スロット高×比率) で
@@ -813,7 +813,7 @@ body {
   transform: translate(-50%, -50%);
   z-index: 4;
   pointer-events: none;
-  /* 盤面幅に対する相対サイズ（mockup の見た目に寄せる）。 */
+  /* 盤面幅に対する相対サイズ（旧モックの見た目由来）。 */
   width: 15%;
 }
 .station-review {
@@ -4039,7 +4039,7 @@ button.card:active {
   position: relative;
 }
 
-/* RI-01: 等角全社盤面（mockups/org-screen 準拠） */
+/* RI-01: 等角全社盤面（旧モック org-screen 由来） */
 .org-board.iso-org {
   position: relative;
   width: 100%;
@@ -4383,7 +4383,7 @@ button.card:active {
   padding: 8px;
 }
 
-/* RI-02: 等角部署盤面（mockups/dept-screen 準拠） */
+/* RI-02: 等角部署盤面（旧モック dept-screen 由来） */
 .dept-board.iso-dept {
   position: relative;
   width: 100%;

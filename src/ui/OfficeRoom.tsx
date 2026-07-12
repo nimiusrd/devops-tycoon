@@ -1,5 +1,5 @@
 /**
- * 俯瞰オフィスの静的背景（床・壁・島スラブ・装飾）。SPEC 第4.1 / mockups/main-screen 準拠。
+ * 俯瞰オフィスの静的背景（床・壁・島スラブ・装飾）。SPEC 第4.1 準拠。
  *
  * アイソメの部屋そのものは状態に依存しない背景なので、ここは純粋な SVG。
  * viewBox は boardScene の設計空間（1404×573）と一致させ、`preserveAspectRatio="none"`

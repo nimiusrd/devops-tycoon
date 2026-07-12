@@ -15,7 +15,7 @@ export type TaskSize = 'small' | 'medium' | 'large';
  */
 export type TaskVariant = 'normal' | 'ai' | 'rework' | 'incident' | 'gold' | 'debt';
 
-/** 種別ごとの色（mockups/main-screen.html 準拠）。 */
+/** 種別ごとの色（旧モック main-screen 由来）。 */
 export const TASK_COLORS: Record<TaskVariant, string> = {
   normal: '#cdbff0',
   ai: '#9a6bff',

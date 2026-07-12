@@ -1,5 +1,5 @@
 /**
- * 全社マップの「シーン計画」（SPEC 第4.8 / mockups/org-screen 準拠）。
+ * 全社マップの「シーン計画」（SPEC 第4.8 準拠）。
  *
  * 何を・どこに描くかを純TSで決める（GPU 不要 → Vitest で数値検証できる。第22.5）。
  * 浮遊プレート・部門ゾーン・チーム島・フローレーン・共通基盤ハブを、
@@ -11,7 +11,7 @@ import type { DepartmentState, OrgScaleState, Team, TeamHealth } from '../sim/or
 import { HEALTH_COLOR, HEALTH_LABEL } from './orgView';
 import { displayName, fireLabel, islandTitle } from './orgIslandView';
 
-/** 設計座標空間（mockups/org-screen.html の viewBox と一致）。 */
+/** 設計座標空間（旧モック org-screen の viewBox 由来）。 */
 export const ORG_VIEW = { w: 1404, h: 573 } as const;
 
 /** 島同士の最小間隔（設計px）。extraTeams 等でチームが増えても重ならないよう拡張する。 */
@@ -23,7 +23,7 @@ export const ISLAND_BADGE_ABOVE = 46;
 export const ISLAND_ACTOR_HALF_H = 65;
 export const ISLAND_MARGIN = 8;
 
-/** 部門ゾーンの静的レイアウト（mockup の縦ストライプ領域）。 */
+/** 部門ゾーンの静的レイアウト（縦ストライプ領域。旧モック由来）。 */
 interface ZoneLayout {
   /** 床クリップ内の矩形（設計px）。 */
   x: number;
@@ -40,7 +40,7 @@ interface ZoneLayout {
   glowCenter: { x: number; y: number; rx: number; ry: number; kind: 'ok' | 'hell' } | null;
 }
 
-/** mockup 準拠の 3 部門ゾーン配置。 */
+/** 旧モック由来の 3 部門ゾーン配置。 */
 const ZONE_LAYOUTS: readonly ZoneLayout[] = [
   {
     x: 0,
@@ -80,7 +80,7 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
 /** 共通基盤ハブ（設計px）。 */
 const HUB = { x: 700, y: 288, labelY: 226 } as const;
 
-/** mockup 準拠の静的フローパス。zone 0/1 は島→ハブ、zone 2 の依存はハブ→島（mockup L259-260）。 */
+/** 旧モック由来の静的フローパス。zone 0/1 は島→ハブ、zone 2 の依存はハブ→島。 */
 const STATIC_FLOWS: readonly { d: string; zoneIndex: number }[] = [
   { d: 'M452,314 Q576,242 700,288', zoneIndex: 0 },
   { d: 'M320,392 Q510,242 700,288', zoneIndex: 0 },
@@ -209,7 +209,7 @@ function zoneSubtitle(dept: DepartmentState): string {
   return `${diag} ・ ${dept.teams.length}チーム`;
 }
 
-/** 部門健全度からゾーン glow の種別を導出する（静的 mockup 既定値ではなく実状態を反映）。 */
+/** 部門健全度からゾーン glow の種別を導出する（静的な既定値ではなく実状態を反映）。 */
 function zoneGlowKind(dept: DepartmentState): 'ok' | 'hell' | null {
   const tone = zoneLabelTone(dept);
   if (tone === 'hell') return 'hell';

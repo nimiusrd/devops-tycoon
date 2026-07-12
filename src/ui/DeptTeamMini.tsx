@@ -1,6 +1,6 @@
 /**
  * 部署ビューのチームミニパイプライン（Coding▸Review▸Done）。
- * mockups/dept-screen.html の 380×220 チーム SVG を簡略化。
+ * 旧モック dept-screen（git 履歴）の 380×220 チーム SVG を簡略化。
  */
 import type { DeptTeamPlan } from '../render/deptBoardScene';
 

@@ -1,6 +1,6 @@
 /**
  * 部署ビューの単一部門等角プレート（床・側面・部門 glow）。
- * mockups/dept-screen.html L216-232 準拠。
+ * レイアウトは旧モック dept-screen（git 履歴の mockups/）由来。
  */
 import type { DeptPlatePlan } from '../render/deptBoardScene';
 

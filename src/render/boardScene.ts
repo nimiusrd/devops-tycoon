@@ -1,10 +1,10 @@
 /**
- * スプリント盤面の「シーン計画」（SPEC 第4.1 / 第18章 / mockups/main-screen 準拠）。
+ * スプリント盤面の「シーン計画」（SPEC 第4.1 / 第18章 準拠）。
  *
  * 何を・どこに描くかを純TSで決める（GPU 不要 → Vitest で数値検証できる。第22.5）。
  * Backlog▸Coding▸Review▸Rework▸Done の各工程を、俯瞰オフィスのアイソメ「ステーション」
  * として配置し、各ステーションのキャラ表情・吹き出し・周囲に積むタスク粒を、
- * スプリント状態から導出する。座標は mockup と同じ設計空間（1404×573）で返し、
+ * スプリント状態から導出する。座標は固定の設計空間（1404×573）で返し、
  * レンダラ（DOM/SVG → 将来 PixiJS）は「読んで描くだけ」にする（第22.2）。
  */
 import { BURN_TICKS } from '../sim/model';
@@ -12,7 +12,7 @@ import type { Lane, Task } from '../sim/types';
 import type { TaskSize, TaskVariant } from './taskView';
 import { taskSize, taskVariant } from './taskView';
 
-/** 設計座標空間（mockups/main-screen.html の viewBox と一致）。 */
+/** 設計座標空間（旧モック main-screen の viewBox 由来）。 */
 export const BOARD_VIEW = { w: 1404, h: 573 } as const;
 
 /** ステーションのキャラ表情（状態から導出）。 */
@@ -24,7 +24,7 @@ interface Point {
   y: number;
 }
 
-/** 1 工程ぶんの静的レイアウト定義（mockup の座標を基準にする）。 */
+/** 1 工程ぶんの静的レイアウト定義（旧モック由来の座標を基準にする）。 */
 interface StationLayout {
   lane: Lane;
   label: string;
@@ -44,7 +44,7 @@ interface StationLayout {
 }
 
 /**
- * 5 工程のステーション配置（mockups/main-screen.html の station 座標準拠）。
+ * 5 工程のステーション配置（旧モック main-screen の station 座標由来）。
  * Backlog → Coding → Review（中央・手前）→ Rework（右奥）→ Done（右手前）。
  */
 const STATIONS: readonly StationLayout[] = [

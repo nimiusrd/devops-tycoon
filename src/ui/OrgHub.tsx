@@ -1,6 +1,6 @@
 /**
  * 全社マップの共通基盤ハブ（サーバーラック + AI ボット）。
- * mockups/org-screen.html L271 準拠。
+ * レイアウトは旧モック org-screen（git 履歴の mockups/）由来。
  */
 import type { OrgHubPlan } from '../render/orgBoardScene';
 

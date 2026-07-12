@@ -1,6 +1,6 @@
 /**
  * 全社マップの浮遊等角プレート（床・側面・部門ストライプ・グリッド）。
- * mockups/org-screen.html L220-248 / boardScene の OfficeRoom パターン準拠。
+ * 旧モック org-screen（git 履歴）/ boardScene の OfficeRoom パターン準拠。
  */
 import type { OrgZonePlan } from '../render/orgBoardScene';
 

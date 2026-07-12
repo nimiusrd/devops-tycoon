@@ -1,6 +1,6 @@
 /**
  * 全社マップのチーム間フローレーン（等角パス + heat 色）。
- * mockups/org-screen.html L256-264 / Board.tsx FlowArrows 準拠。
+ * 旧モック org-screen（git 履歴）/ Board.tsx FlowArrows 準拠。
  */
 import type { OrgFlowPlan } from '../render/orgBoardScene';
 

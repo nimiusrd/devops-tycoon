@@ -6,7 +6,7 @@
  */
 import type { ActionDef } from '../sim/actions';
 
-/** アクションバーに並べる順（mockups/main-screen 準拠）。 */
+/** アクションバーに並べる順（旧モック main-screen 由来）。 */
 export const ACTION_DEFS: ActionDef[] = [
   {
     id: 'interruptReview',

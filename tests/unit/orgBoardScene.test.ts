@@ -84,7 +84,7 @@ describe('planOrgBoardScene (RI-01)', () => {
     expect(Math.abs(row0[0].x - row0[1].x)).toBeGreaterThanOrEqual(MIN_ISLAND_SPACING_X * 0.85);
   });
 
-  it('newbiz のハブ依存フローはハブから島へ向く（mockup 準拠）', () => {
+  it('newbiz のハブ依存フローはハブから島へ向く（旧モック由来のレイアウト）', () => {
     const org = generateOrgScale(orgScaleInput('ri01-flow-dir'));
     const scene = planOrgBoardScene(org);
     const hubToLab = scene.flows.find((f) => f.id === 'flow-4');
@@ -174,12 +174,12 @@ describe('planOrgBoardScene (RI-01)', () => {
     expect(isInOrgView(pos1.x, pos1.y)).toBe(true);
   });
 
-  it('ORG_VIEW は mockup viewBox と一致', () => {
+  it('ORG_VIEW は旧モック由来の viewBox 値を返す', () => {
     expect(ORG_VIEW.w).toBe(1404);
     expect(ORG_VIEW.h).toBe(573);
   });
 
-  it('部門 glow は実際の健全度から導出する（静的 mockup 既定値に依存しない）', () => {
+  it('部門 glow は実際の健全度から導出する（静的な既定値に依存しない）', () => {
     const org = generateOrgScale(orgScaleInput('ri01-glow'));
 
     const healthyProduct = {

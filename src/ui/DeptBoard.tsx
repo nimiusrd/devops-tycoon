@@ -1,5 +1,5 @@
 /**
- * 部署ビューの等角盤面レンダラ（SPEC 第4.9 / mockups/dept-screen 準拠）。
+ * 部署ビューの等角盤面レンダラ（SPEC 第4.9 準拠）。
  */
 import { useLayoutEffect, useRef } from 'react';
 import type { DepartmentState } from '../sim/orgscale/types';

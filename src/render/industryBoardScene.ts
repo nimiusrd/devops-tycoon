@@ -6,7 +6,7 @@
  */
 import type { IndustryState, LeaderboardEntry } from '../sim/orgscale/types';
 
-/** mockups/industry-screen.html の HQ スカイライン SVG viewBox と一致。 */
+/** 旧モック industry-screen の HQ スカイライン SVG viewBox 由来。 */
 export const INDUSTRY_VIEW = { w: 740, h: 360 } as const;
 
 export const INDUSTRY_SKYLINE_LIMIT = 8;

@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:pixi": "PIXI_E2E=1 playwright test --grep @pixi",
+    "gallery": "node scripts/gallery.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

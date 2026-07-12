@@ -1,5 +1,5 @@
 /**
- * 部署ビューの「シーン計画」（SPEC 第4.9 / mockups/dept-screen 準拠）。
+ * 部署ビューの「シーン計画」（SPEC 第4.9 準拠）。
  *
  * 部門内の各チームを Coding▸Review▸Done のミニパイプラインとして等角配置し、
  * チーム間依存（連鎖炎上）をフロー矢印で返す。純 TS → Vitest 検証（第22.5）。
@@ -8,14 +8,14 @@ import type { DepartmentState, Team, TeamHealth } from '../sim/orgscale/types';
 import { HEALTH_COLOR, HEALTH_LABEL } from './orgView';
 import { islandDepth, islandMood, ORG_VIEW, zoneLabelTone } from './orgBoardScene';
 
-/** 設計座標空間（mockups/dept-screen.html の viewBox と一致）。 */
+/** 設計座標空間（旧モック dept-screen の viewBox 由来）。 */
 export const DEPT_VIEW = ORG_VIEW;
 
 const TEAM_MINI_W = 380;
 const TEAM_MINI_H = 220;
 const BANNER_ABOVE = 118;
 
-/** mockup 準拠の 3 チーム配置。 */
+/** 旧モック由来の 3 チーム配置。 */
 const TEAM_LAYOUTS_3: readonly { x: number; y: number }[] = [
   { x: 300, y: 264 },
   { x: 702, y: 374 },
@@ -33,13 +33,13 @@ const TEAM_LAYOUTS_4: readonly { x: number; y: number }[] = [
 /** ミニパイプラインの設計幅（CSS % 換算用）。 */
 export const TEAM_MINI_DESIGN_W = TEAM_MINI_W;
 
-/** mockup 準拠の 3 チーム間依存パス（上流→下流）。 */
+/** 旧モック由来の 3 チーム間依存パス（上流→下流）。 */
 const FLOW_PATHS_3: readonly { from: number; to: number; d: string }[] = [
   { from: 0, to: 1, d: 'M450,274 Q576,314 702,364' },
   { from: 1, to: 2, d: 'M852,374 Q978,314 1104,274' },
 ];
 
-/** 工程ラベル（mockup 前面）。 */
+/** 工程ラベル（前面レイヤ）。 */
 const STAGE_LABELS_3: readonly { lane: DeptLaneId; x: number; y: number }[] = [
   { lane: 'coding', x: 546, y: 314 },
   { lane: 'review', x: 702, y: 296 },

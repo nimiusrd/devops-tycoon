@@ -10,7 +10,7 @@ DevOps Tycoon の計画・設計ドキュメント一式の置き場で、この
 
 - 実装は一通り完了し、`src/`（sim / state / render / ui）と `tests/`（Vitest / Playwright E2E）が揃って `npm run dev` で通しプレイできる。
 - 盤面描画は既定で DOM/SVG、`?renderer=pixi` で全社マップのみ PixiJS に opt-in 切替。
-- SPEC 各章の充足状況（✅/🟡）と残務の追跡先は [spec-mapping.md](./spec-mapping.md) §1・§2 に集約。モックアップは**デザイン・レイアウトの正**として維持する（第22.2）。
+- SPEC 各章の充足状況（✅/🟡）と残務の追跡先は [spec-mapping.md](./spec-mapping.md) §1・§2 に集約。見た目の確認は `npm run gallery`（画面ギャラリー一括撮影）と Playwright 視覚回帰で行う（第22.2/22.5。旧 `mockups/` は廃止済み）。
 - 残務・未解決事項は [remaining-issues.md](./remaining-issues.md) に一本化して追跡する。
 
 ---
@@ -21,7 +21,7 @@ DevOps Tycoon の計画・設計ドキュメント一式の置き場で、この
 | --- | --- |
 | [spec-mapping.md](./spec-mapping.md) | **SPEC 各章 ↔ コードの対応表＋未充足箇所の一覧**。まずここを見る |
 | [architecture.md](./architecture.md) | 技術スタック・レイヤ分離・ディレクトリ構成・横断規律 |
-| [remaining-issues.md](./remaining-issues.md) | **プロジェクト残課題バックログ**（`RI-NN` で ID 管理、1項目 ≒ 1PR。実装後の繰り越し・未解決事項＋モックアップ乖離・SPEC 未充足を統合）。基本ループ再設計（四半期トラック＋ビート）は RI-33 として実装済み |
+| [remaining-issues.md](./remaining-issues.md) | **プロジェクト残課題バックログ**（`RI-NN` で ID 管理、1項目 ≒ 1PR。実装後の繰り越し・未解決事項＋デザイン残務・SPEC 未充足を統合）。基本ループ再設計（四半期トラック＋ビート）は RI-33 として実装済み |
 
 ---
 

@@ -138,7 +138,7 @@ describe('teamLaneCounts / planChainedIndices', () => {
 });
 
 describe('teamDesignPosition', () => {
-  it('3 チーム時は mockup 座標を返す', () => {
+  it('3 チーム時は旧モック由来の固定座標を返す', () => {
     const p0 = teamDesignPosition(0, 3);
     const p1 = teamDesignPosition(1, 3);
     const p2 = teamDesignPosition(2, 3);

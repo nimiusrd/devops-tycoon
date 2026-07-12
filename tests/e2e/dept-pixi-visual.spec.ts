@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import type { RunState } from '../../src/sim/run/types';
 
 const PIXI_SEED = 'dept-pixi-e2e';
-/** 3 チーム部門（mockup 準拠レイアウト＋依存フロー 2 本）。 */
+/** 3 チーム部門（旧モック由来の固定レイアウト＋依存フロー 2 本）。 */
 const DEPT_ID = 'platform';
 
 type GameWindow = Window & {

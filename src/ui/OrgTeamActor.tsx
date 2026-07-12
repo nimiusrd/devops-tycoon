@@ -1,6 +1,6 @@
 /**
  * 全社マップのチーム島アクター（ミニ机 + アバター + AI ボット）。
- * mockups/org-screen.html の team SVG / OfficeActors.tsx 縮小版。
+ * 旧モック org-screen（git 履歴）の team SVG / OfficeActors.tsx 縮小版。
  */
 import type { OrgIslandMood, OrgIslandPlan } from '../render/orgBoardScene';
 

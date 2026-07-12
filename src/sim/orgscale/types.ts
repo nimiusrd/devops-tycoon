@@ -26,7 +26,7 @@ export type TeamHealth = 'healthy' | 'congested' | 'reviewHell';
 /** ランキング種別タブ（SPEC 第4.10: 総合出荷 / 健全経営 / AI活用 / 急成長）。 */
 export type RankingKind = 'overall' | 'healthy' | 'ai' | 'growth';
 
-/** 部門の定義（データ駆動。mockups/org-screen の部門ゾーンに対応）。 */
+/** 部門の定義（データ駆動。全社マップの部門ゾーンに対応）。 */
 export interface DepartmentDef {
   id: string;
   name: string;

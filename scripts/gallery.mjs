@@ -14,8 +14,9 @@
  *   GALLERY_OUT=dir         出力先ディレクトリ（既定: gallery）
  *   GALLERY_CHROMIUM=path   Chromium 実行ファイルの明示指定（通常は不要）
  */
-import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { isAbsolute, relative, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 import { chromium } from '@playwright/test';
 
@@ -34,13 +35,30 @@ if (OUT_REL === '' || OUT_REL.startsWith('..') || isAbsolute(OUT_REL)) {
 }
 const PORT = 5199;
 const VIEWPORT = { width: 1440, height: 900 };
+/** ギャラリー出力ディレクトリの目印。これが無い既存ディレクトリは削除しない。 */
+const MARKER = '.gallery-output';
 
 /** 撮影済み一覧（index.html 生成用）。 */
 const shots = [];
 let counter = 0;
 
-await rm(OUT, { recursive: true, force: true });
+// 既存ディレクトリは、このスクリプトが生成したもの（マーカー付き）のみ削除する。
+// GALLERY_OUT=src のようにソースディレクトリを誤って指しても消さないための保険。
+if (existsSync(OUT)) {
+  const entries = await readdir(OUT);
+  if (entries.length > 0 && !entries.includes(MARKER)) {
+    console.error(
+      `GALLERY_OUT の既存ディレクトリ「${OUT_REL}」はギャラリー出力ではないため削除しません。未使用のディレクトリ名を指定してください`,
+    );
+    process.exit(1);
+  }
+  await rm(OUT, { recursive: true, force: true });
+}
 await mkdir(OUT, { recursive: true });
+await writeFile(
+  join(OUT, MARKER),
+  'npm run gallery の出力ディレクトリ（再実行時に削除されます）\n',
+);
 
 const server = await createServer({
   // host を明示しないと環境によっては IPv6 の ::1 のみにバインドされ、

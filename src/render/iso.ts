@@ -145,6 +145,18 @@ export class SpritePool<T> {
     this.active.clear();
   }
 
+  /**
+   * プールが保持する全インスタンス（active + free）を取り出して空にする。
+   * レンダラ破棄時に、画面から外れて free に残ったスプライトも含めて確実に
+   * destroy するための後始末用（reset は呼ばない）。
+   */
+  drain(): T[] {
+    const all = [...this.active, ...this.free];
+    this.active.clear();
+    this.free.length = 0;
+    return all;
+  }
+
   /** アクティブ数。 */
   get activeCount(): number {
     return this.active.size;

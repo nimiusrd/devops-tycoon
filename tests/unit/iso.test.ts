@@ -116,4 +116,22 @@ describe('SpritePool', () => {
     expect(pool.createdCount).toBe(2);
     expect(pool.reuseCount).toBe(2);
   });
+
+  it('drain で active/free の全インスタンスを取り出して空にする（reset は呼ばない）', () => {
+    const reset = (o: { hot: boolean }) => {
+      o.hot = false;
+    };
+    const pool = new SpritePool(() => ({ hot: true }), { max: 5, reset });
+    const a = pool.acquire()!;
+    const b = pool.acquire()!;
+    pool.release(a); // a は free、b は active のまま
+    const drained = pool.drain();
+    expect(drained).toHaveLength(2);
+    expect(drained).toContain(a);
+    expect(drained).toContain(b);
+    expect(pool.activeCount).toBe(0);
+    expect(pool.freeCount).toBe(0);
+    // 破棄用の取り出しなので reset は呼ばれない（b は hot のまま）。
+    expect(b.hot).toBe(true);
+  });
 });

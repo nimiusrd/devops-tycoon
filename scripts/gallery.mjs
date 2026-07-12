@@ -43,9 +43,17 @@ await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 
 const server = await createServer({
-  server: { port: PORT, strictPort: true, watch: { ignored: [`**/${OUT_REL}/**`] } },
+  // host を明示しないと環境によっては IPv6 の ::1 のみにバインドされ、
+  // 127.0.0.1 への接続が ERR_CONNECTION_REFUSED になる。
+  server: {
+    host: '127.0.0.1',
+    port: PORT,
+    strictPort: true,
+    watch: { ignored: [`**/${OUT_REL}/**`] },
+  },
 });
 await server.listen();
+const baseUrl = server.resolvedUrls?.local[0] ?? `http://127.0.0.1:${PORT}/`;
 
 const browser = await chromium.launch({
   executablePath: process.env.GALLERY_CHROMIUM || undefined,
@@ -75,7 +83,7 @@ async function snapModal(openTestId, panelTestId, closeTestId, name, label) {
   }
 }
 
-await page.goto(`http://127.0.0.1:${PORT}/?seed=${SEED}`);
+await page.goto(`${baseUrl}?seed=${SEED}`);
 await page.waitForSelector('[data-testid="title"]');
 await snap('title', 'タイトル');
 

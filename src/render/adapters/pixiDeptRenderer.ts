@@ -32,6 +32,7 @@ import {
   teamFloorColor,
 } from '../deptPixiView';
 import { SpritePool } from '../iso';
+import { ensureTexturePoolGuard } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
 
 /** 破棄オプション（Pixi v8）。`pixiOrgRenderer` と同値。 */
@@ -346,6 +347,7 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
 
   /** ブラウザでのみ呼ぶ。WebGL コンテキストと描画レイヤを初期化する。 */
   async init(mount: HTMLElement): Promise<void> {
+    ensureTexturePoolGuard();
     const app = new Application();
     await app.init({
       backgroundAlpha: 0,
@@ -554,7 +556,12 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
   /** WebGL リソースを破棄する。init の解決前でも呼べる（disposed で中断させる）。 */
   dispose(): void {
     this.disposed = true;
-    this.pool?.releaseAll();
+    // CanvasText の unload（TexturePool への返却）は renderer 破棄前に済ませる。
+    // app.destroy 後だと TexturePool が先に消え、pipe の後始末が
+    // `returnTexture` で落ちる（free に残った未接続スプライトの Text が対象）。
+    for (const group of this.pool?.drain() ?? []) {
+      group.destroy({ children: true });
+    }
     this.app?.destroy(true, DESTROY_OPTIONS);
     this.app = null;
     this.pool = null;

@@ -10,7 +10,9 @@ type GameWindow = Window & {
     pause(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
+    zoomTo(level: string): RunState;
     focusDept(id: string): RunState;
+    focusTeam(id: string): RunState;
   };
   __deptPixiTest?: {
     freezeForScreenshot(): void;
@@ -95,5 +97,41 @@ test.describe('Pixi 部署ビュー視覚回帰 @pixi', () => {
     await expect
       .poll(async () => page.evaluate(() => (window as GameWindow).game!.getState().zoom.level))
       .toBe('team');
+  });
+
+  test('全社→部署→現場の遷移で WebGL 破棄エラーが出ない @pixi', async ({ page }) => {
+    // 共有 TexturePool は renderer 破棄で clear されるため、画面ごとに Application を
+    // 作る本構成では貸出中テクスチャの返却がクラッシュしうる（pixiTexturePoolGuard）。
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+
+    await page.goto(`/?renderer=pixi&seed=${PIXI_SEED}`);
+    await page.evaluate((s) => {
+      const g = (window as GameWindow).game!;
+      g.pause();
+      g.startRun('normal', [], s);
+      g.zoomTo('company');
+    }, PIXI_SEED);
+    await expect(page.getByTestId('org-pixi-mount')).toBeVisible();
+
+    // 全社 → 部署（org renderer 破棄）。チーム数 4→3→4 でプールの free に
+    // Text 持ち Container を残してから、現場へ（dept renderer 破棄）。
+    await page.evaluate(() => (window as GameWindow).game!.focusDept('product'));
+    await stabilizeForScreenshot(page);
+    await page.evaluate(() => (window as GameWindow).game!.focusDept('platform'));
+    await page.evaluate(() => (window as GameWindow).game!.focusDept('product'));
+    await page.evaluate(() => (window as GameWindow).game!.focusTeam('product-t0'));
+    await expect
+      .poll(async () => page.evaluate(() => (window as GameWindow).game!.getState().zoom.level))
+      .toBe('team');
+    // dispose の後始末（テクスチャ返却）が走りきるまで 1 フレーム余裕を持つ。
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    );
+
+    expect(errors).toEqual([]);
   });
 });

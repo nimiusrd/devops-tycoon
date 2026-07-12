@@ -7,7 +7,8 @@
  * スプリント後のドラフト→デッキ更新による周回（第6章 / 第7章）を担う。
  */
 import { applyAction } from './actions';
-import { applyDeckBaseline, deckEffects, drawDraft } from './cards';
+import { dealHand, drawDraft, playCardFromHand } from './cards';
+import { IDENTITY_CARD_EFFECTS } from './model';
 import { createOrgState } from './org';
 import { createRng, type Rng } from './rng';
 import { DEFAULT_SEED } from './seed';
@@ -15,7 +16,10 @@ import { DEFAULT_SCENARIO } from './scenarios';
 import { createSprint, resolveSprintConfig, stepSprint, summarizeSprint } from './sprint';
 import type {
   ActionId,
+  ActionTarget,
+  CardEffects,
   CardInstance,
+  CardPlayOutcome,
   InterventionOutcome,
   OrgState,
   ScenarioId,
@@ -51,6 +55,8 @@ export class Engine {
   private sprint: SprintState;
   private deck: CardInstance[];
   private sprintIndex = 0;
+  /** スプリント開始時のパッシブ係数（カード未発動ベース）。 */
+  private sprintPassiveEffects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
 
   constructor(init: EngineInit = {}) {
     this.fixedStepMs = init.fixedStepMs ?? FIXED_STEP_MS;
@@ -73,25 +79,37 @@ export class Engine {
     };
   }
 
-  /** シナリオ＋AI＋デッキから、このスプリント開始時の組織状態を作る。 */
-  private buildOrg(carry?: Pick<OrgState, 'deliveryScore' | 'techDebt'>): OrgState {
+  /** シナリオ＋AIから、このスプリント開始時の組織状態を作る（カードは発動時反映）。 */
+  private buildOrg(
+    carry?: Pick<
+      OrgState,
+      'deliveryScore' | 'techDebt' | 'aiLiteracy' | 'aiDependency' | 'quality' | 'testCoverage'
+    >,
+  ): OrgState {
     const org = createOrgState(this.scenario, this.aiEnabled);
-    applyDeckBaseline(org, deckEffects(this.deck));
     if (carry) {
       org.deliveryScore = carry.deliveryScore;
       org.techDebt = carry.techDebt;
+      org.aiLiteracy = carry.aiLiteracy;
+      org.aiDependency = carry.aiDependency;
+      org.quality = carry.quality;
+      org.testCoverage = carry.testCoverage;
     }
     return org;
   }
 
-  /** 現在のデッキ効果を畳み込んでスプリントを生成する。 */
+  /** パッシブのみでスプリントを生成し、手札を配る（RI-30）。 */
   private buildSprint(): SprintState {
-    return createSprint(
+    this.sprintPassiveEffects = { ...IDENTITY_CARD_EFFECTS };
+    const sprint = createSprint(
       resolveSprintConfig(this.scenario),
       this.org,
       this.rng,
-      deckEffects(this.deck),
+      this.sprintPassiveEffects,
     );
+    const dealRng = createRng(`${this.seed}:deal:${this.sprintIndex}`);
+    sprint.cardPiles = dealHand(this.deck.length, dealRng);
+    return sprint;
   }
 
   /** 1 固定ステップ進める。スプリントを 1 tick 駆動する。 */
@@ -117,8 +135,13 @@ export class Engine {
    * 介入アクションを発動する（イベント入力。architecture §2）。
    * 集中力・クールダウン・対象の有無を検査し、成立時のみ状態を更新する。
    */
-  dispatch(id: ActionId): InterventionOutcome {
-    return applyAction(id, this.sprint, this.org, this.rng, this.tick);
+  dispatch(id: ActionId, target?: ActionTarget): InterventionOutcome {
+    return applyAction(id, this.sprint, this.org, this.rng, this.tick, target);
+  }
+
+  /** 手札からカードを発動する（deckIndex。RI-30）。 */
+  playCard(deckIndex: number): CardPlayOutcome {
+    return playCardFromHand(this.sprint, this.org, this.deck, deckIndex, this.sprintPassiveEffects);
   }
 
   /**
@@ -134,6 +157,11 @@ export class Engine {
     this.org = this.buildOrg({
       deliveryScore: this.org.deliveryScore,
       techDebt: this.org.techDebt,
+      // RI-30: playCard の加算系 baseline を次スプリントへ持ち越す。
+      aiLiteracy: this.org.aiLiteracy,
+      aiDependency: this.org.aiDependency,
+      quality: this.org.quality,
+      testCoverage: this.org.testCoverage,
     });
     this.sprint = this.buildSprint();
   }

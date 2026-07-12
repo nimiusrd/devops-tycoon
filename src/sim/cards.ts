@@ -1,14 +1,25 @@
 /**
- * デッキ＝カード効果の集約とドラフト抽選（SPEC 第7章）。
+ * デッキ＝カード効果の集約とドラフト抽選・手札配布（SPEC 第7章 / RI-30）。
  *
  * カード定義（`src/data/cards`）を読み、強化レベルでスケールし、
- * デッキ全体を 1 つの `CardEffects` に畳み込む純TS。乱数はドラフト抽選にのみ使い、
- * 引数の seed付きPRNG から消費する（決定論。第22.3）。
+ * 効果を畳み込む純TS。スプリント中は手札から発動した分だけ係数に入る。
+ * 乱数はドラフト抽選・手札シャッフルにのみ使い、引数の seed付きPRNG から
+ * 消費する（決定論。第22.3）。
  */
 import { CARD_DEFS, RARITY_WEIGHT, getCard } from '../data/cards';
 import { IDENTITY_CARD_EFFECTS } from './model';
 import type { Rng } from './rng';
-import type { CardEffects, CardInstance, OrgState } from './types';
+import type {
+  CardEffects,
+  CardInstance,
+  CardPlayOutcome,
+  OrgState,
+  SprintCardPiles,
+  SprintState,
+} from './types';
+
+/** スプリント開始時に配る手札枚数（SPEC 第7.1）。 */
+export const HAND_SIZE = 3;
 
 const EFFECT_KEYS = Object.keys(IDENTITY_CARD_EFFECTS) as (keyof CardEffects)[];
 
@@ -50,7 +61,19 @@ export function combineEffects(a: CardEffects, b: CardEffects): CardEffects {
   return out;
 }
 
-/** デッキ全体を 1 つの `CardEffects` に畳み込む（範囲クランプ込み）。 */
+/** 効果を範囲クランプする。 */
+export function clampCardEffects(effects: CardEffects): CardEffects {
+  const out: CardEffects = { ...effects };
+  for (const key of EFFECT_KEYS) {
+    out[key] = clampEffect(key, out[key]);
+  }
+  return out;
+}
+
+/**
+ * カード群を 1 つの `CardEffects` に畳み込む（範囲クランプ込み）。
+ * 手札発動・what-if 試算・レガシー検証で使う。全デッキ常時 ON はしない（RI-30）。
+ */
 export function deckEffects(deck: CardInstance[]): CardEffects {
   let acc: CardEffects = { ...IDENTITY_CARD_EFFECTS };
   for (const inst of deck) {
@@ -58,10 +81,7 @@ export function deckEffects(deck: CardInstance[]): CardEffects {
     if (!def) continue;
     acc = combineEffects(acc, scaleEffects(def.base, inst.level));
   }
-  for (const key of EFFECT_KEYS) {
-    acc[key] = clampEffect(key, acc[key]);
-  }
-  return acc;
+  return clampCardEffects(acc);
 }
 
 /**
@@ -73,6 +93,104 @@ export function applyDeckBaseline(org: OrgState, effects: CardEffects): void {
   org.aiDependency = clamp(org.aiDependency + effects.aiDependencyAdd, 0, 100);
   org.quality = clamp(org.quality + effects.qualityAdd, 0, 100);
   org.testCoverage = clamp(org.testCoverage + effects.testCoverageAdd, 0, 100);
+}
+
+/**
+ * 手札発動の集中力コスト（ショップ用 `cost` からスケール。RI-30）。
+ * 強化レベルごとに -1（下限 1）。
+ */
+export function playCost(defCost: number, level: number): number {
+  const base = Math.max(1, Math.round(defCost / 4));
+  return Math.max(1, base - (level - 1));
+}
+
+/** Fisher–Yates でインデックス配列をシャッフル（決定論）。 */
+export function shuffleIndices(indices: number[], rng: Rng): number[] {
+  const out = [...indices];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = out[i]!;
+    out[i] = out[j]!;
+    out[j] = tmp;
+  }
+  return out;
+}
+
+/** 空の手札山。 */
+export function emptyCardPiles(): SprintCardPiles {
+  return { drawOrder: [], hand: [], discard: [], played: [] };
+}
+
+/**
+ * デッキから手札を配る。`drawOrder` をシャッフルし、先頭から `HAND_SIZE` 枚を hand へ。
+ */
+export function dealHand(deckSize: number, rng: Rng, handSize = HAND_SIZE): SprintCardPiles {
+  const drawOrder = shuffleIndices(
+    Array.from({ length: deckSize }, (_, i) => i),
+    rng,
+  );
+  const hand: number[] = [];
+  while (hand.length < handSize && drawOrder.length > 0) {
+    hand.push(drawOrder.shift()!);
+  }
+  return { drawOrder, hand, discard: [], played: [] };
+}
+
+/**
+ * 手札からデッキ位置 `deckIndex` のカードを発動する。
+ * 成功時は `sprint.cardEffects` に合成し、加算系を org へ反映する。
+ * `passiveEffects` はレリック等の常時パッシブ（発動前の基準効果）。
+ */
+export function playCardFromHand(
+  sprint: SprintState,
+  org: OrgState,
+  deck: CardInstance[],
+  deckIndex: number,
+  passiveEffects: CardEffects = IDENTITY_CARD_EFFECTS,
+): CardPlayOutcome {
+  if (sprint.complete) return { ok: false, reason: 'complete' };
+  const handIndex = sprint.cardPiles.hand.indexOf(deckIndex);
+  if (handIndex < 0) return { ok: false, reason: 'no-card' };
+  const inst = deck[deckIndex];
+  if (!inst) return { ok: false, reason: 'invalid' };
+  const def = getCard(inst.defId);
+  if (!def) return { ok: false, reason: 'invalid' };
+
+  const cost = playCost(def.cost, inst.level);
+  if (sprint.focus < cost) return { ok: false, reason: 'no-focus' };
+
+  sprint.focus -= cost;
+  sprint.metrics.focusSpent += cost;
+  sprint.cardPiles.hand.splice(handIndex, 1);
+  sprint.cardPiles.played.push(deckIndex);
+
+  const appliedLevel = inst.baselineAppliedLevel ?? 0;
+  if (appliedLevel < inst.level) {
+    const next = scaleEffects(def.base, inst.level);
+    const prev =
+      appliedLevel > 0 ? scaleEffects(def.base, appliedLevel) : { ...IDENTITY_CARD_EFFECTS };
+    // 加算系だけ差分適用（乗算系は sprint.cardEffects 側）。
+    applyDeckBaseline(org, {
+      ...IDENTITY_CARD_EFFECTS,
+      aiLiteracyAdd: next.aiLiteracyAdd - prev.aiLiteracyAdd,
+      aiDependencyAdd: next.aiDependencyAdd - prev.aiDependencyAdd,
+      qualityAdd: next.qualityAdd - prev.qualityAdd,
+      testCoverageAdd: next.testCoverageAdd - prev.testCoverageAdd,
+    });
+    inst.baselineAppliedLevel = inst.level;
+  }
+
+  let acc = { ...passiveEffects };
+  for (const idx of sprint.cardPiles.played) {
+    const played = deck[idx];
+    if (!played) continue;
+    const playedDef = getCard(played.defId);
+    if (!playedDef) continue;
+    acc = combineEffects(acc, scaleEffects(playedDef.base, played.level));
+  }
+  sprint.cardEffects = clampCardEffects(acc);
+
+  return { ok: true, focusCost: cost, deckIndex };
 }
 
 /** カードを 1 段強化したデッキを返す（コスト減・効果増の枠組み。第7.1）。 */

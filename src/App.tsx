@@ -175,6 +175,7 @@ export default function App({ game }: AppProps) {
         <SprintScreen
           state={state}
           onDispatch={run.dispatch}
+          onPlayCard={run.playCard}
           getSprintSnapshot={run.getSprintSnapshot}
         />
       )}

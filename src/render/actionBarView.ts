@@ -13,6 +13,7 @@ import {
   PAIR_REVIEW_COUNT,
   THROTTLE_TICKS,
 } from '../sim/actions';
+import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { ActionId, SprintState, Task } from '../sim/types';
 
 export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete';
@@ -33,16 +34,12 @@ function tasksInLane(sprint: SprintState, lane: Task['lane']): Task[] {
 
 /** splitPr の分割候補数（EFFECTS と同じ優先順位の母数）。 */
 function splitPrCandidateCount(sprint: SprintState): number {
-  const candidates = [...tasksInLane(sprint, 'review'), ...tasksInLane(sprint, 'coding')];
-  return candidates.filter((t) => !t.split).length;
+  return splitPrCandidates(sprint).length;
 }
 
 /** splitPr が 1 件でも発動可能か（EFFECTS と同じ選択ロジック）。 */
 function hasSplitPrTarget(sprint: SprintState): boolean {
-  const candidates = [...tasksInLane(sprint, 'review'), ...tasksInLane(sprint, 'coding')];
-  return (
-    candidates.some((t) => t.kind === 'complex' && !t.split) || candidates.some((t) => !t.split)
-  );
+  return splitPrCandidates(sprint).length > 0;
 }
 
 /** アクション別の対象数（常時発動系は 0）。 */
@@ -55,7 +52,7 @@ export function countActionTargets(sprint: SprintState, id: ActionId): number {
     case 'splitPr':
       return splitPrCandidateCount(sprint);
     case 'assignTask':
-      return tasksInLane(sprint, 'coding').length > 0 ? 1 : 0;
+      return assignableTasks(sprint).length;
     case 'pairReview':
       return Math.min(tasksInLane(sprint, 'review').length, PAIR_REVIEW_COUNT);
     case 'aiThrottle':
@@ -88,7 +85,7 @@ function formatTargetBadge(id: ActionId, count: number): string | undefined {
     case 'splitPr':
       return count > 0 ? `${count}` : undefined;
     case 'assignTask':
-      return count > 0 ? '1' : undefined;
+      return count > 0 ? `${count}` : undefined;
     default:
       return undefined;
   }
@@ -98,7 +95,7 @@ const NO_TARGET_MESSAGES: Partial<Record<ActionId, string>> = {
   interruptReview: 'Review が空',
   firefight: '炎上なし',
   splitPr: '分割対象なし',
-  assignTask: 'Coding なし',
+  assignTask: '差配対象なし',
 };
 
 const BLOCK_MESSAGES: Record<ActionBlockReason, string> = {
@@ -118,7 +115,7 @@ function hasNoTarget(sprint: SprintState, id: ActionId): boolean {
     case 'splitPr':
       return !hasSplitPrTarget(sprint);
     case 'assignTask':
-      return tasksInLane(sprint, 'coding').length === 0;
+      return assignableTasks(sprint).length === 0;
     default:
       return false;
   }

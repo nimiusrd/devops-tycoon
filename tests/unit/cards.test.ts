@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyDeckBaseline,
+  dealHand,
   deckEffects,
   drawDraft,
+  HAND_SIZE,
+  playCost,
   scaleEffects,
   upgradeCard,
   upgradeCardAt,
@@ -84,6 +87,67 @@ describe('カード効果の状態反映（第7.2）', () => {
   });
 });
 
+describe('手札配布・発動（RI-30）', () => {
+  it('dealHand は同一 seed で再現し HAND_SIZE 枚配る', () => {
+    const a = dealHand(5, createRng('deal:a'));
+    const b = dealHand(5, createRng('deal:a'));
+    expect(a).toEqual(b);
+    expect(a.hand).toHaveLength(HAND_SIZE);
+    expect(a.hand.length + a.drawOrder.length).toBe(5);
+  });
+
+  it('playCost は cost/4 を丸め、強化で下がる', () => {
+    expect(playCost(10, 1)).toBe(3);
+    expect(playCost(10, 2)).toBe(2);
+    expect(playCost(8, 1)).toBe(2);
+  });
+
+  it('playCardFromHand は focus を消費し cardEffects を合成する', () => {
+    const e = createEngine({
+      seed: 'play-card',
+      aiEnabled: true,
+      deck: [{ defId: 'copilot', level: 1 }],
+    });
+    const before = e.snapshot();
+    expect(before.sprint.cardPiles.hand).toHaveLength(1);
+    expect(before.sprint.cardEffects.codingSpeedMul).toBe(1);
+    const outcome = e.playCard(before.sprint.cardPiles.hand[0]!);
+    expect(outcome.ok).toBe(true);
+    const after = e.snapshot();
+    expect(after.sprint.focus).toBeLessThan(before.sprint.focus);
+    expect(after.sprint.cardEffects.codingSpeedMul).toBeGreaterThan(1);
+    expect(after.sprint.cardPiles.hand).toHaveLength(0);
+    expect(after.sprint.cardPiles.played).toEqual([0]);
+  });
+  it('強化後の再発動は加算系の差分だけを適用する', () => {
+    const e = createEngine({
+      seed: 'baseline-upgrade',
+      aiEnabled: true,
+      deck: [{ defId: 'auto-test', level: 1 }],
+    });
+    const deckIndex = e.snapshot().sprint.cardPiles.hand[0]!;
+    expect(e.playCard(deckIndex).ok).toBe(true);
+    const afterFirst = e.snapshot().org.quality;
+
+    // 次スプリントへ進め、強化して再発動。
+    while (!e.isComplete()) e.step(1000);
+    e.nextSprint();
+    const s = e.snapshot();
+    // 加算系 baseline は次スプリントの org に持ち越される。
+    expect(s.org.quality).toBe(afterFirst);
+    // deck[0] を強化
+    (e as unknown as { deck: Array<{ level: number }> }).deck[0]!.level = 2;
+    // 手札に戻す（新スプリントで deal 済み）
+    const hand = s.sprint.cardPiles.hand;
+    expect(hand).toContain(0);
+    const beforeSecond = e.snapshot().org.quality;
+    expect(e.playCard(0).ok).toBe(true);
+    const afterSecond = e.snapshot().org.quality;
+    expect(afterFirst).toBeGreaterThan(0);
+    expect(afterSecond).toBeGreaterThan(beforeSecond);
+  });
+});
+
 describe('ドラフト抽選（第7.1）', () => {
   it('同一 seed なら同じ 3 枚、重複なし', () => {
     const a = drawDraft(createRng('draft:0'));
@@ -112,9 +176,18 @@ describe('ドラフト抽選（第7.1）', () => {
   });
 });
 
-describe('デッキで結果が変わる（DoD: ドラフトでデッキが育つ）', () => {
-  function run(deck: CardInstance[]): SprintResult {
+describe('デッキで結果が変わる（DoD: 手札発動で効果が出る / RI-30）', () => {
+  function run(deck: CardInstance[], playAll = true): SprintResult {
     const e: Engine = createEngine({ seed: 'deck-cmp', aiEnabled: true, deck });
+    if (playAll) {
+      // 手札をすべて発動してからスプリントを進める。
+      while (true) {
+        const hand = e.snapshot().sprint.cardPiles.hand;
+        if (hand.length === 0) break;
+        const outcome = e.playCard(hand[0]!);
+        if (!outcome.ok) break;
+      }
+    }
     let guard = 0;
     while (!e.isComplete() && guard < 100_000) {
       e.step(1000);
@@ -123,7 +196,7 @@ describe('デッキで結果が変わる（DoD: ドラフトでデッキが育�
     return e.result();
   }
 
-  it('カードの有無でリザルトが変わる', () => {
+  it('カードを発動するとリザルトが変わる', () => {
     const base = run([]);
     const carded = run([{ defId: 'auto-test', level: 1 }]);
     const differs =
@@ -134,7 +207,13 @@ describe('デッキで結果が変わる（DoD: ドラフトでデッキが育�
     expect(differs).toBe(true);
   });
 
-  it('同一デッキ・同一 seed なら完全再現する', () => {
+  it('未発動のデッキは結果に影響しない', () => {
+    const base = run([]);
+    const held = run([{ defId: 'auto-test', level: 1 }], false);
+    expect(held).toEqual(base);
+  });
+
+  it('同一デッキ・同一 seed・同一発動なら完全再現する', () => {
     const a = run([{ defId: 'copilot', level: 1 }]);
     const b = run([{ defId: 'copilot', level: 1 }]);
     expect(a).toEqual(b);

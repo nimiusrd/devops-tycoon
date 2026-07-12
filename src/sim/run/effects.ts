@@ -1,17 +1,16 @@
 /**
  * ラン中の係数・パッシブの集約（SPEC 第7 / 第8 / 第11 / 第16章）。
  *
- * デッキ（カード）・レリック・進化ノード・難易度・試練を 1 つの `CardEffects`
+ * レリック・進化ノード・難易度・試練を 1 つの `CardEffects`
  * （スプリントの確率モデルに掛かる係数）と、集中力/実装枠の補正、ラン全体の
- * 数値パッシブに畳み込む純TS。乗算系はスプリントごとに都度合成し、加算系
- * （aiLiteracyAdd 等）は取得時に組織へ反映する想定（engine 側で適用）。
+ * 数値パッシブに畳み込む純TS。カードは手札発動（RI-30）のためここでは含めない。
+ * 加算系（aiLiteracyAdd 等）は取得/発動時に組織へ反映する想定（engine 側で適用）。
  */
 import { getBoss } from '../../data/bosses';
-import { getCard } from '../../data/cards';
 import { getDifficulty, getTrial } from '../../data/difficulties';
 import { getEvolutionNode } from '../../data/evolution';
 import { getRelic } from '../../data/relics';
-import { combineEffects, scaleEffects } from '../cards';
+import { combineEffects } from '../cards';
 import { IDENTITY_CARD_EFFECTS } from '../model';
 import type {
   CardEffects,
@@ -36,6 +35,7 @@ export const IDENTITY_PASSIVES: RunPassives = {
 };
 
 export interface RunModifierInput {
+  /** @deprecated RI-30: デッキは手札発動のため fold に含めない。後方互換で受け取るのみ。 */
   deck: CardInstance[];
   relics: string[];
   evolution: EvolutionState;
@@ -45,7 +45,7 @@ export interface RunModifierInput {
 
 /**
  * このスプリントに掛かる乗算系係数と、集中力/実装枠の補正を畳み込む。
- * 難易度の全体係数・試練・カード・レリック・進化を合成する。
+ * 難易度の全体係数・試練・レリック・進化を合成する（カードは含まない。RI-30）。
  */
 export function foldRunEffects(input: RunModifierInput): RunEffects {
   let effects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
@@ -66,9 +66,8 @@ export function foldRunEffects(input: RunModifierInput): RunEffects {
     frontierModelCostPerDependency += trial.frontierModelCostPerDependency ?? 0;
   }
 
-  for (const inst of input.deck) {
-    effects = combineEffects(effects, scaleEffects(getCard(inst.defId)?.base ?? {}, inst.level));
-  }
+  // RI-30: デッキカードは手札発動のためここでは合成しない。
+  void input.deck;
 
   for (const relicId of input.relics) {
     const relic = getRelic(relicId);

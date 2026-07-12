@@ -205,8 +205,13 @@ export interface WhatIfPreview {
   delivered: WhatIfMetric;
   /** 延焼件数の見込み。 */
   spread: WhatIfMetric;
-  /** カード採用時点で即時敗北する場合。次スプリント試算は行わない。 */
+  /** 編成など、現時点の行動で即時敗北する場合。 */
   immediateLose?: LoseReason;
+  /**
+   * ドラフト獲得自体は安全だが、次スプリントで発動すると敗北する場合（RI-30）。
+   * `immediateLose` とは別表示にする。
+   */
+  loseOnPlay?: LoseReason;
 }
 
 /** 現在の状態に対する次スプリント試算。ドラフト時は候補カード別にも提供する。 */

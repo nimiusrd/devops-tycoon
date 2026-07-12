@@ -2,7 +2,7 @@
  * カード表示（SPEC 第7.2 / 第18 のカードUI）。
  *
  * カード定義を受け取り、レアリティ・コスト・効果・強化レベルを描く純表示。
- * ドラフト（DraftScreen）とデッキ表示（DeckBar）で共用する。
+ * ドラフト（DraftScreen）とデッキ/手札表示（DeckBar）で共用する。
  */
 import { RARITY_LABEL } from '../data/cards';
 import { formatCardTagsAtLevel, formatCardTooltip } from '../render/eventOutcomeView';
@@ -17,6 +17,12 @@ export interface CardViewProps {
   level?: number;
   /** ドラフト選択ボタンにする場合のハンドラ。 */
   onPick?: () => void;
+  /** 手札発動ボタンにする場合のハンドラ（RI-30）。 */
+  onPlay?: () => void;
+  /** 手札発動の集中力コスト表示。 */
+  playCost?: number;
+  /** 発動不可（集中力不足等）。 */
+  disabled?: boolean;
   /** コンパクト表示（デッキバー用）。 */
   compact?: boolean;
   /** このカードを採用した場合の次スプリント試算。 */
@@ -27,16 +33,20 @@ export function CardView({
   def,
   level = 1,
   onPick,
+  onPlay,
+  playCost: playCostValue,
+  disabled = false,
   compact = false,
   whatIfPreview,
 }: CardViewProps) {
   const stars = level > 1 ? '★'.repeat(level - 1) : '';
-  const className = `card card-${def.rarity}${compact ? ' card-compact' : ''}`;
+  const className = `card card-${def.rarity}${compact ? ' card-compact' : ''}${disabled ? ' card-disabled' : ''}${onPlay ? ' card-playable' : ''}`;
+  const costLabel = playCostValue !== undefined ? `⚡${playCostValue}` : String(def.cost);
   const inner = (
     <>
       <div className="card-head">
         <span className={`card-rarity rarity-${def.rarity}`}>{RARITY_LABEL[def.rarity]}</span>
-        <span className="card-cost">{def.cost}</span>
+        <span className="card-cost">{costLabel}</span>
       </div>
       <div className="card-name">
         {def.name}
@@ -60,6 +70,21 @@ export function CardView({
       )}
     </>
   );
+
+  if (onPlay) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={onPlay}
+        disabled={disabled}
+        data-testid={`hand-card-${def.id}`}
+        title={`${formatCardTooltip(def, level)} / 発動 ⚡${playCostValue ?? '?'}`}
+      >
+        {inner}
+      </button>
+    );
+  }
 
   if (onPick) {
     return (

@@ -1493,6 +1493,37 @@ body {
   border: 2px solid var(--line);
   box-shadow: 0 6px 0 #1a1338;
 }
+.assign-assignee {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 72px;
+  padding-right: 8px;
+  border-right: 2px solid var(--line);
+}
+.assign-assignee-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+.assign-assignee-btn {
+  appearance: none;
+  border: 1px solid #7bdcff44;
+  background: #1d1640;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.assign-assignee-btn.on {
+  border-color: #ffd45c;
+  background: #ffd45c22;
+  color: #ffd45c;
+}
 .focus {
   display: flex;
   align-items: center;
@@ -1597,6 +1628,46 @@ body {
     0 0 0 2px #7bdcff33,
     0 4px 0 #1d1640;
 }
+.action.armed {
+  border-color: #ffd45c;
+  box-shadow:
+    0 0 0 2px #ffd45c55,
+    0 4px 0 #1d1640;
+}
+.task-dot.draggable {
+  cursor: grab;
+  outline: 2px solid #7bdcffaa;
+  z-index: 9;
+}
+.task-dot.dragging {
+  cursor: grabbing;
+  outline-color: #ffd45c;
+  z-index: 12;
+}
+.station.drop-target {
+  outline: 2px dashed #7bdcff88;
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+.station.drop-hover {
+  outline-color: #ffd45c;
+  background: #ffd45c22;
+}
+.board.board-armed {
+  cursor: crosshair;
+}
+.card.card-playable {
+  cursor: pointer;
+}
+.card.card-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.deckbar-meta {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-dim);
+}
 .action.ready::before {
   content: 'READY';
   position: absolute;
@@ -1605,6 +1676,18 @@ body {
   font-size: 8px;
   font-weight: 900;
   color: var(--sky);
+}
+/* armed は ready より後に定義し、武装中バッジを優先する。 */
+.action.armed::before,
+.action.armed.ready::before {
+  content: 'ARMED';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffd45c;
 }
 .action.nofocus:not(.ready) {
   border-color: #ff5f5755;

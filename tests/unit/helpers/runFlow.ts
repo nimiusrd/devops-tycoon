@@ -28,9 +28,26 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
     case 'setup':
       e.beginSetupSprint();
       return true;
-    case 'sprint':
+    case 'sprint': {
+      // RI-30: オートプレイは手札を可能な限り発動してから進める。
+      // 先頭が高コストでも後続の安いカードを試す。
+      let guard = 0;
+      while (guard < 24) {
+        guard += 1;
+        const hand = e.snapshot().sprint?.cardPiles.hand ?? [];
+        if (hand.length === 0) break;
+        let playedAny = false;
+        for (const deckIndex of [...hand]) {
+          const outcome = e.playCard(deckIndex);
+          if (outcome.ok) {
+            playedAny = true;
+            break;
+          }
+        }
+        if (!playedAny) break;
+      }
       if (opts.skilled) {
-        const sp = s.sprint;
+        const sp = e.snapshot().sprint;
         if (sp && !sp.complete) {
           if (sp.tasks.filter((t) => t.lane === 'review').length >= 6)
             e.dispatch('interruptReview');
@@ -41,6 +58,7 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
         e.step(1_000_000);
       }
       return true;
+    }
     case 'result':
       e.acknowledgeResult();
       return true;

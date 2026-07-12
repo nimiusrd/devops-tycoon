@@ -18,6 +18,7 @@ type GameWindow = Window & {
     resolveBeat(choiceIndex?: number): RunState;
     step(ms: number): RunState;
     dispatch(id: string): InterventionOutcome;
+    playCard(deckIndex: number): { ok: boolean };
     acknowledgeResult(): RunState;
     chooseCard(defId: string): RunState;
     skipDraft(): RunState;
@@ -25,7 +26,7 @@ type GameWindow = Window & {
     buyShopCard(id: string): RunState;
     buyShopRelic(): RunState;
     leaveShop(): RunState;
-    restChoose(o: string, defId?: string): RunState;
+    restChoose(o: string, deckIndex?: number): RunState;
     assignMember(id: string, assignment: string): RunState;
     setMemberAi(id: string, on: boolean): RunState;
     acknowledgeQuarterReview(): RunState;
@@ -124,57 +125,71 @@ test('RI-21: 組織タイプに対応する画面トーンと状態文を表示�
   await expect(page.getByTestId('runbar-diagnosis')).toContainText(theme.warning);
 });
 
+/** advance 既定オートプレイで休息＋デッキ到達が早い固定 seed（RI-37）。 */
+const E2E_REST_UPGRADE_SEED = 'ri37-rest-0';
+
 test('RI-37: 休息で強化対象カードを選んでレベルを上げられる', async ({ page }) => {
-  // seed 探索 + step(1e6) の page.evaluate は CPU 負荷が高く、
-  // タイムライン記録（RI-53）と無介入ベースライン再実行（RI-55）追加後は
-  // CI の 60s でも超えやすい。
-  test.setTimeout(120_000);
+  await page.goto(`/?seed=${E2E_REST_UPGRADE_SEED}`);
 
-  await page.goto('/?seed=ri37-e2e');
-
-  const reached = await page.evaluate(() => {
-    const g = (window as GameWindow).game!;
-    g.pause();
-    for (const seed of Array.from({ length: 80 }, (_, i) => `ri37-e2e-${i}`)) {
-      g.startRun('easy', [], seed);
-      let s = g.getState();
-      let guard = 0;
-      while (s.status === 'playing' && guard < 60000) {
-        guard += 1;
-        if (s.phase === 'rest' && s.deck.length > 0) {
-          return {
-            ok: true,
-            seed,
-            defId: s.deck[0].defId,
-            level: s.deck[0].level,
-          };
-        }
-        if (s.phase === 'setup') g.beginSetupSprint();
-        else if (s.phase === 'sprint') {
-          const sprint = s.sprint;
-          if (sprint && !sprint.complete) {
-            if (sprint.tasks.filter((task) => task.lane === 'review').length >= 6)
-              g.dispatch('interruptReview');
-            if (sprint.tasks.some((task) => task.lane === 'rework' && task.incident))
-              g.dispatch('firefight');
+  const reached = await page.evaluate(
+    ({ primary, fallbacks }) => {
+      const g = (window as GameWindow).game!;
+      g.pause();
+      const seeds = [primary, ...fallbacks];
+      for (const seed of seeds) {
+        g.startRun('easy', [], seed);
+        let s = g.getState();
+        let guard = 0;
+        while (s.status === 'playing' && guard < 40_000) {
+          guard += 1;
+          if (s.phase === 'rest' && s.deck.length > 0) {
+            return {
+              ok: true,
+              seed,
+              defId: s.deck[0].defId,
+              level: s.deck[0].level,
+            };
           }
-          g.step(300);
-        } else if (s.phase === 'result') g.acknowledgeResult();
-        else if (s.phase === 'draft') {
-          if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
-          else g.skipDraft();
-        } else if (s.phase === 'evolution') g.finishEvolution();
-        else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
-        else if (s.phase === 'shop') g.leaveShop();
-        else if (s.phase === 'rest') g.restChoose('heal');
-        else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
-        else break;
-        s = g.getState();
+          if (s.phase === 'setup') g.beginSetupSprint();
+          else if (s.phase === 'sprint') {
+            // RI-30: 手札を可能な限り発動してから一括進行（runFlow.advance と同じ）。
+            let playGuard = 0;
+            while (playGuard < 24) {
+              playGuard += 1;
+              const hand = g.getState().sprint?.cardPiles.hand ?? [];
+              if (hand.length === 0) break;
+              let playedAny = false;
+              for (const deckIndex of hand) {
+                if (g.playCard(deckIndex).ok) {
+                  playedAny = true;
+                  break;
+                }
+              }
+              if (!playedAny) break;
+            }
+            g.step(1_000_000);
+          } else if (s.phase === 'result') g.acknowledgeResult();
+          else if (s.phase === 'draft') {
+            if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
+            else g.skipDraft();
+          } else if (s.phase === 'evolution') g.finishEvolution();
+          else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+          else if (s.phase === 'shop') g.leaveShop();
+          else if (s.phase === 'rest') g.restChoose('heal');
+          else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
+          else break;
+          s = g.getState();
+        }
       }
-    }
-    const s = g.getState();
-    return { ok: false, phase: s.phase, deckLength: s.deck.length };
-  });
+      const s = g.getState();
+      return { ok: false, phase: s.phase, deckLength: s.deck.length };
+    },
+    {
+      primary: E2E_REST_UPGRADE_SEED,
+      // バランス変更で primary が外れたとき用の短いフォールバック。
+      fallbacks: Array.from({ length: 20 }, (_, i) => `ri37-rest-${i + 1}`),
+    },
+  );
 
   test.skip(!reached.ok, `休息とカード所持の条件に到達できない: ${JSON.stringify(reached)}`);
   if (!reached.ok) return;

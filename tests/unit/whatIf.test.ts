@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getCard } from '../../src/data/cards';
-import { scaleEffects } from '../../src/sim/cards';
+import { dealHand, scaleEffects } from '../../src/sim/cards';
 import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome';
+import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
 import { previewNextSprint } from '../../src/sim/run/whatIf';
 import type { SprintBaselineInput } from '../../src/sim/run/sprintBaseline';
@@ -86,7 +87,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(after.roster).toEqual(before.roster);
   });
 
-  it('即時敗北になるドラフト候補は次スプリント試算を出さない', () => {
+  it('発動すると敗北するドラフト候補は loseOnPlay で警告する（獲得時は即時敗北にしない）', () => {
     const engine = new RunEngine({ seed: 'what-if-lose', difficulty: 'nightmare' });
     engine.startRun();
     const internals = engine as unknown as {
@@ -100,10 +101,77 @@ describe('RI-46 次スプリント what-if 試算', () => {
     internals.draft = ['copilot', 'auto-test'];
 
     const whatIf = engine.whatIfPreview();
-    expect(whatIf?.draftCandidates.copilot?.immediateLose).toBe('aiDependency');
+    expect(whatIf?.draftCandidates.copilot?.loseOnPlay).toBe('aiDependency');
+    expect(whatIf?.draftCandidates.copilot?.immediateLose).toBeUndefined();
     expect(whatIf?.draftCandidates.copilot?.trials).toBe(0);
-    expect(whatIf?.draftCandidates['auto-test']?.immediateLose).toBeUndefined();
+    expect(whatIf?.draftCandidates['auto-test']?.loseOnPlay).toBeUndefined();
     expect(whatIf?.draftCandidates['auto-test']?.trials).toBe(24);
+  });
+
+  it('loseOnPlay は試練の開始時ドリフト後に判定する', () => {
+    // Copilot +5 だけでは CAP 未満だが、frontier-dependency の +5 ドリフト後に発動すると超える。
+    const engine = new RunEngine({
+      seed: 'what-if-drift',
+      difficulty: 'normal',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      org: { aiDependency: number; aiLiteracy: number };
+    };
+    internals.org.aiDependency = AI_DEPENDENCY_CAP - 9; // 86: +5 ドリフト → 91、+5 カード → 96
+    internals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    internals.phase = 'draft';
+    internals.draft = ['copilot', 'docs'];
+
+    const whatIf = engine.whatIfPreview();
+    expect(whatIf?.draftCandidates.copilot?.loseOnPlay).toBe('aiDependency');
+    // docs は依存加算なしなので、ドリフト後でも CAP 未満なら警告なし。
+    expect(whatIf?.draftCandidates.docs?.loseOnPlay).toBeUndefined();
+    expect(whatIf?.draftCandidates.docs?.trials).toBe(24);
+  });
+
+  it('手札に入らないドラフト候補は発動仮定（loseOnPlay）を付けない', () => {
+    const engine = new RunEngine({ seed: 'what-if-hand-miss', difficulty: 'nightmare' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      deck: Array<{ defId: string; level: number }>;
+      org: { aiDependency: number; aiLiteracy: number };
+      sprintIndexInQuarter: number;
+      quarterNumber: number;
+      seed: string;
+    };
+    internals.org.aiDependency = AI_DEPENDENCY_CAP - 5;
+    internals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    // HAND_SIZE=3。既存 8 枚なら新カードが手札に入らない確率が高い。
+    internals.deck = Array.from({ length: 8 }, (_, i) => ({
+      defId: i % 2 === 0 ? 'docs' : 'hire-senior',
+      level: 1,
+    }));
+    internals.phase = 'draft';
+    internals.draft = ['copilot'];
+
+    // 手札に入らない seed を探す（deal と what-if は同じ式）。
+    let found = false;
+    for (let i = 0; i < 40; i++) {
+      internals.seed = `what-if-hand-miss-${i}`;
+      internals.sprintIndexInQuarter = 1;
+      internals.quarterNumber = 1;
+      const nextSprintId = `q1-s2`;
+      const piles = dealHand(9, createRng(`${internals.seed}:deal:${nextSprintId}`));
+      if (piles.hand.includes(8)) continue;
+      // キャッシュを無効化するため whatIfPreview 前にキーが変わるよう seed を反映済み。
+      const whatIf = engine.whatIfPreview();
+      expect(whatIf?.draftCandidates.copilot?.loseOnPlay).toBeUndefined();
+      expect(whatIf?.draftCandidates.copilot?.trials).toBe(24);
+      found = true;
+      break;
+    }
+    expect(found).toBe(true);
   });
 
   it('編成変更後の setup 試算を公開する', () => {

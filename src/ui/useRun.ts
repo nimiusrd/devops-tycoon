@@ -8,7 +8,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { GameHandle } from '../game';
 import type { MetaState } from '../state/meta';
-import type { ActionId, InterventionOutcome, SprintState } from '../sim/types';
+import type {
+  ActionId,
+  ActionTarget,
+  CardPlayOutcome,
+  InterventionOutcome,
+  SprintState,
+} from '../sim/types';
 import type { DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
@@ -25,7 +31,8 @@ export interface UseRun {
   startDailyRun: (dateStr?: string) => void;
   beginSetupSprint: () => void;
   resolveBeat: (choiceIndex?: number) => void;
-  dispatch: (id: ActionId) => InterventionOutcome;
+  dispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
+  playCard: (deckIndex: number) => CardPlayOutcome;
   /** dispatch 直後のスプリント快照（盤面演出用）。 */
   getSprintSnapshot: () => SprintState | null;
   acknowledgeResult: () => void;
@@ -82,7 +89,11 @@ export function useRun(game: GameHandle): UseRun {
     (choiceIndex?: number) => void game.resolveBeat(choiceIndex),
     [game],
   );
-  const dispatch = useCallback((id: ActionId) => game.dispatch(id), [game]);
+  const dispatch = useCallback(
+    (id: ActionId, target?: ActionTarget) => game.dispatch(id, target),
+    [game],
+  );
+  const playCard = useCallback((deckIndex: number) => game.playCard(deckIndex), [game]);
   const getSprintSnapshot = useCallback(() => game.getState().sprint, [game]);
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
   const chooseCard = useCallback((defId: string) => void game.chooseCard(defId), [game]);
@@ -132,6 +143,7 @@ export function useRun(game: GameHandle): UseRun {
     beginSetupSprint,
     resolveBeat,
     dispatch,
+    playCard,
     getSprintSnapshot,
     acknowledgeResult,
     chooseCard,

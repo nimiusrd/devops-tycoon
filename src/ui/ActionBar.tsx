@@ -2,10 +2,10 @@
  * 介入アクションバー（SPEC 第4.3 / 第6.1 / mockups/main-screen 準拠）。
  *
  * マネジメント集中力（⚡）と、各介入アクション（コスト・CD・Ready）を並べる。
- * クリックで `dispatch` し、状態は上位から読むだけ（第22.2）。
- * RI-51: 対象数バッジ・発動不能理由・成功マイクロフィードバック。
+ * assignTask / splitPr は武装トグル（盤面ドラッグで確定。RI-30）。
+ * 他アクションはクリックで即 `dispatch`。RI-51: 対象数バッジ・発動不能理由。
  */
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ACTION_DEFS } from '../data/actions';
 import {
@@ -15,8 +15,9 @@ import {
   planActionBarView,
   type ActionBlockReason,
 } from '../render/actionBarView';
+import { isDraggableAction, planBoardDrag, type DraggableActionId } from '../render/boardDragPlan';
 import { formatActionDefTags, formatActionTooltip } from '../render/eventOutcomeView';
-import type { ActionId, InterventionOutcome, SprintState } from '../sim/types';
+import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
 import { EffectTagList } from './EffectTagList';
 
 const FEEDBACK_TTL_MS = 1000;
@@ -64,10 +65,27 @@ export interface ActionBarProps {
   sprint: SprintState;
   sprintTick: number;
   disabled: boolean;
-  onAction: (id: ActionId) => InterventionOutcome;
+  armedId: DraggableActionId | null;
+  onArm: (id: DraggableActionId | null) => void;
+  onAction: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
+  /** タスク差配の担当（武装中に選択。省略＝理想担当）。 */
+  assignAssignee?: 'ai' | 'senior';
+  onAssignAssigneeChange?: (assignee: 'ai' | 'senior' | undefined) => void;
+  /** ドラッグ発動など ActionBar 外からの結果フィードバック。 */
+  outcomeFeedback?: { id: ActionId; outcome: InterventionOutcome; nonce: number } | null;
 }
 
-export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarProps) {
+export function ActionBar({
+  sprint,
+  sprintTick,
+  disabled,
+  armedId,
+  onArm,
+  onAction,
+  assignAssignee,
+  onAssignAssigneeChange,
+  outcomeFeedback,
+}: ActionBarProps) {
   const { focus, config, cooldowns, comboGauge } = sprint;
   const availabilityById = useMemo(() => {
     const map = new Map<ActionId, ReturnType<typeof deriveActionAvailability>>();
@@ -82,6 +100,7 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
   const [gaugeFlash, setGaugeFlash] = useState(false);
   const [focusPops, setFocusPops] = useState<FocusPop[]>([]);
   const nextPopId = useRef(0);
+  const lastFeedbackNonce = useRef<number | null>(null);
 
   const pushFocusPop = useCallback((text: string, tone: FocusPop['tone']) => {
     const pop: FocusPop = { id: nextPopId.current++, text, tone };
@@ -101,9 +120,8 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
     window.setTimeout(() => setShakingId(null), 400);
   }, []);
 
-  const handleAction = useCallback(
-    (id: ActionId) => {
-      const outcome = onAction(id);
+  const applyOutcomeFeedback = useCallback(
+    (id: ActionId, outcome: InterventionOutcome) => {
       if (outcome.ok && outcome.effect) {
         const { focusCost, focusRefund, gaugeGain } = outcome.effect;
         pushFocusPop(`-⚡${focusCost}`, 'cost');
@@ -121,7 +139,41 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
         showToast(formatInterventionFailure(outcome.reason as ActionBlockReason, id));
       }
     },
-    [onAction, pushFocusPop, showToast, triggerShake],
+    [pushFocusPop, showToast, triggerShake],
+  );
+
+  // ドラッグ経路など ActionBar 外からの発動結果を同じ UI フィードバックへ載せる。
+  useEffect(() => {
+    if (!outcomeFeedback) return;
+    if (lastFeedbackNonce.current === outcomeFeedback.nonce) return;
+    lastFeedbackNonce.current = outcomeFeedback.nonce;
+    applyOutcomeFeedback(outcomeFeedback.id, outcomeFeedback.outcome);
+  }, [outcomeFeedback, applyOutcomeFeedback]);
+
+  const handleAction = useCallback(
+    (id: ActionId) => {
+      if (isDraggableAction(id)) {
+        const availability = availabilityById.get(id);
+        if (!availability?.canActivate && armedId !== id) return;
+        if (armedId === id) {
+          onArm(null);
+          return;
+        }
+        // 候補はあるが描画粒が overflow で無いときは従来どおり自動対象で発動する。
+        const plan = planBoardDrag(sprint, id, assignAssignee);
+        if (!plan) {
+          const outcome = onAction(id);
+          applyOutcomeFeedback(id, outcome);
+          return;
+        }
+        onArm(id);
+        return;
+      }
+      if (armedId) onArm(null);
+      const outcome = onAction(id);
+      applyOutcomeFeedback(id, outcome);
+    },
+    [armedId, assignAssignee, availabilityById, applyOutcomeFeedback, onAction, onArm, sprint],
   );
 
   return (
@@ -148,12 +200,42 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
           </div>
         </div>
       </div>
+      {armedId === 'assignTask' && onAssignAssigneeChange && (
+        <div className="assign-assignee" data-testid="assign-assignee">
+          <span className="assign-assignee-label">担当</span>
+          <button
+            type="button"
+            className={`assign-assignee-btn${!assignAssignee ? ' on' : ''}`}
+            data-testid="assign-assignee-ideal"
+            onClick={() => onAssignAssigneeChange(undefined)}
+          >
+            理想
+          </button>
+          <button
+            type="button"
+            className={`assign-assignee-btn${assignAssignee === 'ai' ? ' on' : ''}`}
+            data-testid="assign-assignee-ai"
+            onClick={() => onAssignAssigneeChange('ai')}
+          >
+            AI
+          </button>
+          <button
+            type="button"
+            className={`assign-assignee-btn${assignAssignee === 'senior' ? ' on' : ''}`}
+            data-testid="assign-assignee-senior"
+            onClick={() => onAssignAssigneeChange('senior')}
+          >
+            シニア
+          </button>
+        </div>
+      )}
       <div className="actions">
         {ACTION_DEFS.map((a) => {
           const availability = availabilityById.get(a.id)!;
           const remaining = cooldowns[a.id] ?? 0;
           const onCooldown = remaining > 0;
-          const ready = availability.canActivate;
+          const armed = armedId === a.id;
+          const ready = availability.canActivate || armed;
           const cdPct = onCooldown ? Math.round((1 - remaining / a.cooldownTicks) * 100) : 100;
           const modRing = sprint.complete
             ? { active: false, remaining: 0, total: 0 }
@@ -168,16 +250,22 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
                 : availability.blockReason === 'cooldown'
                   ? ' oncooldown'
                   : '';
+          const dragHint = isDraggableAction(a.id)
+            ? armed
+              ? '（盤面で対象へドラッグ）'
+              : '（クリックで武装）'
+            : '';
           return (
             <button
               type="button"
               key={a.id}
-              className={`action${tone}${ready ? ' ready' : ''}${blockClass}${shakingId === a.id ? ' shake' : ''}`}
+              className={`action${tone}${ready ? ' ready' : ''}${armed ? ' armed' : ''}${blockClass}${shakingId === a.id ? ' shake' : ''}`}
               data-testid={`action-${a.id}`}
               data-block-reason={availability.blockReason ?? ''}
-              disabled={!ready}
+              data-armed={armed ? 'true' : undefined}
+              disabled={!ready && !armed}
               onClick={() => handleAction(a.id)}
-              title={formatActionTooltip(a)}
+              title={`${formatActionTooltip(a)}${dragHint}`}
             >
               {availability.targetBadge && (
                 <span className="action-target-badge" data-testid={`action-badge-${a.id}`}>
@@ -186,9 +274,14 @@ export function ActionBar({ sprint, sprintTick, disabled, onAction }: ActionBarP
               )}
               <span className="ico">{a.icon}</span>
               <span className="name">{a.label}</span>
-              {!ready && availability.blockMessage && (
+              {!ready && !armed && availability.blockMessage && (
                 <span className="action-block-reason" data-testid={`action-reason-${a.id}`}>
                   {availability.blockMessage}
+                </span>
+              )}
+              {armed && (
+                <span className="action-block-reason" data-testid={`action-armed-${a.id}`}>
+                  武装中
                 </span>
               )}
               <EffectTagList tags={formatActionDefTags(a)} testId={`action-tags-${a.id}`} />

@@ -29,10 +29,54 @@ export type ActionId =
 export type CardRarity = 'common' | 'rare' | 'legendary';
 
 /**
+ * ドラッグ等でプレイヤーが指定する介入ターゲット（RI-30 / SPEC 第6.1）。
+ * `assignTask` / `splitPr` で使用。省略時は従来の自動選択。
+ */
+export interface ActionTarget {
+  /** 対象タスク ID。 */
+  taskId: number;
+  /**
+   * assignTask の差配先レーン。
+   * 省略時はタスクの現レーン上で加速のみ。
+   */
+  lane?: Extract<Lane, 'backlog' | 'coding' | 'review'>;
+  /**
+   * assignTask の担当スタイル。
+   * `senior` = 人間実装（aiAssisted=false）、`ai` = AI 利用（aiAssisted=true）。
+   */
+  assignee?: 'ai' | 'senior';
+}
+
+/**
+ * スプリント局所の手札山（RI-30 / SPEC 第7.1）。
+ * ラン永続の `deck` はコレクション＋強化対象。ここは毎スプリントの配布・発動用。
+ */
+export interface SprintCardPiles {
+  /** まだ引いていない山札（`deck` インデックス。先頭が次に引く）。 */
+  drawOrder: number[];
+  /** 今スプリントの手札（`deck` インデックス）。 */
+  hand: number[];
+  /** 発動済み / 未使用で捨てたカード。 */
+  discard: number[];
+  /** このスプリントで発動し `cardEffects` に入ったもの。 */
+  played: number[];
+}
+
+/** 手札からのカード発動結果（RI-30）。 */
+export interface CardPlayOutcome {
+  ok: boolean;
+  reason?: 'no-focus' | 'no-card' | 'complete' | 'invalid';
+  /** 成功時に消費した集中力。 */
+  focusCost?: number;
+  /** 発動したデッキ位置。 */
+  deckIndex?: number;
+}
+
+/**
  * カード効果（SPEC 第7.2）。工程モデルに掛かる係数の集合。
  * `*Mul` は乗算（1 で無効果）、`*Add` は加算（0 で無効果）。
- * デッキ全体を畳み込んで 1 つの `CardEffects` に集約し、
- * スプリント中の確率モデルが読む（描画・状態は知らない。第22.2）。
+ * スプリント中に発動したカードとレリック等パッシブを畳み込んだ結果を
+ * 確率モデルが読む（描画・状態は知らない。第22.2）。
  */
 export interface CardEffects {
   /** Coding 速度倍率（高いほど速い）。 */
@@ -78,6 +122,11 @@ export interface CardInstance {
   defId: string;
   /** 強化レベル（1 起点。強化で効果増・コスト減）。 */
   level: number;
+  /**
+   * 加算系 baseline を既に反映した強化レベル（RI-30）。
+   * 未設定なら未適用。強化後の再発動では差分だけ org へ足す。
+   */
+  baselineAppliedLevel?: number;
 }
 
 /** 時限モディファイアの種別（介入アクションが設定する）。 */
@@ -291,6 +340,13 @@ export interface SprintMetrics {
   focusSpent: number;
   /** アクション種別ごとの発動回数（リザルトの介入内訳・称号判定用。第4.6）。 */
   actionCounts: Partial<Record<ActionId, number>>;
+  /**
+   * タスク差配の偏り（RI-30）。理想差配以外が続くと士気コストが増える。
+   */
+  assignmentSkew?: {
+    /** 連続ミスマッチ回数。 */
+    mismatchStreak: number;
+  };
 }
 
 /** スプリント全体の状態。 */
@@ -313,8 +369,13 @@ export interface SprintState {
   modifiers: SprintModifiers;
   /** 連携ゲージ 0..1（適切な介入で溜まり、満タンで集中力が回復。第6.2）。 */
   comboGauge: number;
-  /** デッキを畳み込んだカード効果（このスプリント中の確率モデルに掛かる）。 */
+  /**
+   * パッシブ（レリック等）＋発動済みカードを畳み込んだ係数
+   * （このスプリント中の確率モデルに掛かる。RI-30）。
+   */
   cardEffects: CardEffects;
+  /** 手札山（スプリント開始時にデッキから配布。RI-30 / SPEC 第7.1）。 */
+  cardPiles: SprintCardPiles;
   /**
    * このスプリントの実 AI 採用率（0..1）。コーディング流入時に各タスクが AI を
    * 使う確率。編成（AIを配ったコーダーの割合）で決まり、誰も配らなければ 0 になる。

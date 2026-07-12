@@ -2035,6 +2035,7 @@ button.card:active {
   --tc-line: rgba(132, 177, 230, 0.25);
   --tc-cyan: #78ddff;
   --tc-amber: #ffc66d;
+  --tc-pink: #ff7edb;
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
@@ -2051,21 +2052,61 @@ button.card:active {
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(90deg, rgba(5, 7, 19, 0.96), rgba(5, 7, 19, 0.72) 52%, rgba(5, 7, 19, 0.28)),
-    linear-gradient(180deg, transparent 60%, #050713),
-    url('/assets/devops-command-center.jpg') center / cover;
+    radial-gradient(circle at 80% 18%, rgba(120, 221, 255, 0.28), transparent 24%),
+    linear-gradient(90deg, rgba(5, 7, 19, 0.97), rgba(5, 7, 19, 0.72) 44%, rgba(5, 7, 19, 0.18)),
+    linear-gradient(180deg, transparent 58%, #050713);
   animation: titleBreath 18s ease-in-out infinite alternate;
+}
+.title-world-backdrop,
+.title-world-platform,
+.title-world-core {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+.title-world-backdrop {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.92;
+  filter: saturate(1.22) contrast(1.08);
+}
+.title-world-platform {
+  right: clamp(-170px, 3vw, 90px);
+  bottom: clamp(70px, 8vw, 150px);
+  width: min(48vw, 760px);
+  min-width: 440px;
+  opacity: 0.94;
+  filter: drop-shadow(0 30px 70px rgba(0, 0, 0, 0.7));
+  animation: titleFloat 7s ease-in-out infinite alternate;
+}
+.title-world-core {
+  right: clamp(110px, 20vw, 390px);
+  top: clamp(104px, 18vw, 240px);
+  width: min(23vw, 360px);
+  min-width: 190px;
+  opacity: 0.86;
+  mix-blend-mode: screen;
+  animation: titlePulse 5.5s ease-in-out infinite;
 }
 .title-world::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    circle at 67% 36%,
-    transparent 0 15%,
-    rgba(5, 7, 19, 0.22) 48%,
-    rgba(5, 7, 19, 0.78) 100%
-  );
+  background:
+    linear-gradient(
+      90deg,
+      rgba(5, 7, 19, 0.96) 0 34%,
+      rgba(5, 7, 19, 0.5) 58%,
+      rgba(5, 7, 19, 0.2)
+    ),
+    radial-gradient(
+      circle at 68% 38%,
+      transparent 0 18%,
+      rgba(5, 7, 19, 0.22) 50%,
+      rgba(5, 7, 19, 0.82) 100%
+    );
 }
 .title-scanlines {
   position: absolute;
@@ -2208,7 +2249,9 @@ button.card:active {
   font-weight: 850;
   line-height: 0.98;
   letter-spacing: -0.055em;
-  text-shadow: 0 8px 40px #000;
+  text-shadow:
+    0 0 22px rgba(120, 221, 255, 0.18),
+    0 8px 40px #000;
   background: none;
   -webkit-background-clip: initial;
   background-clip: initial;
@@ -2218,7 +2261,7 @@ button.card:active {
   font-style: normal;
   color: transparent;
   -webkit-text-stroke: 1px #d4dcf4;
-  background: linear-gradient(90deg, #fff, #71809e);
+  background: linear-gradient(90deg, #fff, #89f1ff 48%, #ffdc8a);
   -webkit-background-clip: text;
   background-clip: text;
 }
@@ -2237,6 +2280,23 @@ button.card:active {
   display: flex;
   flex-wrap: wrap;
 }
+.title-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+.title-hero-badges span {
+  padding: 7px 10px;
+  border: 1px solid rgba(120, 221, 255, 0.3);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(120, 221, 255, 0.14), rgba(255, 126, 219, 0.1));
+  box-shadow: inset 0 0 18px rgba(120, 221, 255, 0.08);
+  color: #dff7ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
 .title-command .title-meta .pill {
   padding: 5px 9px;
   border: 1px solid var(--tc-line);
@@ -2253,10 +2313,15 @@ button.card:active {
 }
 .title-deck {
   border: 1px solid var(--tc-line);
-  background: linear-gradient(135deg, rgba(10, 14, 31, 0.92), rgba(9, 15, 34, 0.72));
+  background:
+    linear-gradient(135deg, rgba(10, 14, 31, 0.94), rgba(9, 15, 34, 0.76)),
+    radial-gradient(circle at 18% 0%, rgba(120, 221, 255, 0.18), transparent 28%);
   backdrop-filter: blur(22px);
-  box-shadow: 0 28px 80px #000a;
-  border-radius: 0;
+  box-shadow:
+    0 0 0 1px rgba(120, 221, 255, 0.1),
+    0 28px 80px #000a,
+    inset 0 1px rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
   overflow: visible;
 }
 .title-deck-head {
@@ -2327,17 +2392,20 @@ button.card:active {
 .title-command .difficulty-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--tc-line);
+  gap: 10px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(120, 221, 255, 0.08), rgba(255, 255, 255, 0.02));
 }
 .title-command .difficulty-card {
   position: relative;
   min-height: 166px;
   padding: 18px;
-  border: 0;
-  border-radius: 0;
-  background: rgba(9, 14, 30, 0.94);
-  box-shadow: none;
+  border: 1px solid rgba(132, 177, 230, 0.22);
+  border-radius: 16px;
+  background:
+    linear-gradient(160deg, rgba(20, 32, 65, 0.96), rgba(8, 13, 29, 0.96)),
+    radial-gradient(circle at 80% 18%, rgba(120, 221, 255, 0.2), transparent 30%);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.07);
   color: #f5f7ff;
   text-align: left;
   cursor: pointer;
@@ -2345,12 +2413,18 @@ button.card:active {
 }
 .title-command .difficulty-card:hover:not(:disabled) {
   z-index: 1;
+  border-color: rgba(120, 221, 255, 0.62);
   background: #18213b;
   transform: translateY(-2px);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.28),
+    0 0 28px rgba(120, 221, 255, 0.12);
 }
 .title-command .difficulty-card.selected {
-  border: 0;
-  background: linear-gradient(145deg, rgba(40, 56, 93, 0.98), rgba(17, 25, 51, 0.96));
+  border-color: rgba(255, 198, 109, 0.72);
+  background:
+    linear-gradient(145deg, rgba(40, 56, 93, 0.98), rgba(17, 25, 51, 0.96)),
+    radial-gradient(circle at 88% 16%, rgba(255, 198, 109, 0.28), transparent 34%);
   box-shadow:
     inset 0 3px var(--tc-amber),
     inset 0 0 40px #ffb24b12;
@@ -2413,8 +2487,8 @@ button.card:active {
 .title-command .trial-chip {
   padding: 9px 10px;
   border: 1px solid var(--tc-line);
-  border-radius: 2px;
-  background: #10172b99;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(16, 23, 43, 0.94), rgba(17, 38, 70, 0.78));
   box-shadow: none;
   color: #ced8e9;
   font-size: 12px;
@@ -2504,8 +2578,12 @@ button.card:active {
   justify-content: space-between;
   padding: 0 23px;
   border: 0;
-  background: linear-gradient(135deg, #f8c66d, #f08a4c);
-  box-shadow: 0 0 50px #f3a64b30;
+  background:
+    linear-gradient(135deg, #fff0a6 0%, #f8c66d 38%, #ff7a6a 100%),
+    radial-gradient(circle at 20% 20%, #fff, transparent 30%);
+  box-shadow:
+    0 0 50px #f3a64b30,
+    inset 0 1px rgba(255, 255, 255, 0.45);
   color: #111827;
   text-align: left;
   cursor: pointer;
@@ -2606,6 +2684,17 @@ button.card:active {
     transform: translateY(16px) scale(1.04);
   }
 }
+@keyframes titleFloat {
+  to {
+    transform: translate3d(-10px, -18px, 0) rotate(-1deg);
+  }
+}
+@keyframes titlePulse {
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
 @media (max-width: 900px) {
   .title-screen.title-command {
     padding: 0 18px 20px;
@@ -2643,6 +2732,16 @@ button.card:active {
   .title-world {
     background-position: 68% center;
   }
+  .title-world-platform {
+    right: -260px;
+    width: 760px;
+    opacity: 0.45;
+  }
+  .title-world-core {
+    right: 8vw;
+    top: 130px;
+    opacity: 0.5;
+  }
 }
 @media (max-width: 560px) {
   .title-career {
@@ -2679,7 +2778,9 @@ button.card:active {
 }
 @media (prefers-reduced-motion: reduce) {
   .title-world,
-  .title-orbit {
+  .title-orbit,
+  .title-world-platform,
+  .title-world-core {
     animation: none;
   }
   .title-command * {

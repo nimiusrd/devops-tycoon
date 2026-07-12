@@ -53,6 +53,9 @@ export function TitleScreen({
   return (
     <div className="title-screen title-command" data-testid="title">
       <div className="title-world" aria-hidden="true">
+        <img className="title-world-backdrop" src="/assets/title-arena-backdrop.svg" alt="" />
+        <img className="title-world-platform" src="/assets/title-command-platform.svg" alt="" />
+        <img className="title-world-core" src="/assets/title-ai-core.svg" alt="" />
         <div className="title-scanlines" />
         <div className="title-orbit title-orbit-a" />
         <div className="title-orbit title-orbit-b" />
@@ -99,6 +102,11 @@ export function TitleScreen({
             <br />
             1四半期で開発組織の運営を体験するシミュレーション。
           </p>
+          <div className="title-hero-badges" aria-label="ゲームの特徴">
+            <span>WebGL レイヤー想定</span>
+            <span>組織盤面 × カード戦略</span>
+            <span>AI ブースト演出</span>
+          </div>
           <div className="title-meta">
             <span className="pill" data-testid="seed">
               seed <b>{seed}</b>

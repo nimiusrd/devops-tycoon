@@ -1239,7 +1239,7 @@ export class RunEngine {
       org: OrgState,
       playedCards: { defId: string; level: number }[] = [],
     ) => {
-      // beginSprint と同じスプリント間回復を試算側の clone にだけ適用する。
+      // beginSprint と同じ順序: 回復 → 試練ドリフト →（発動仮定なら）加算 baseline。
       const previewOrg = structuredClone(org);
       previewOrg.seniorHp = clamp(
         previewOrg.seniorHp + (100 - previewOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
@@ -1247,6 +1247,11 @@ export class RunEngine {
         100,
       );
       this.applyTrialAiDependencyPressure(previewOrg, this.budget);
+      for (const played of playedCards) {
+        const playedDef = getCard(played.defId);
+        if (!playedDef) continue;
+        applyDeckBaseline(previewOrg, scaleEffects(playedDef.base, played.level));
+      }
       return previewNextSprint(
         this.buildSprintBaselineInput({
           deck,
@@ -1277,15 +1282,20 @@ export class RunEngine {
 
         if (!inHand) {
           // 手札に入らなければ発動できないので、獲得のみの試算（発動仮定なし）。
-          draftCandidates[defId] = previewFor(nextDeck, structuredClone(this.org), []);
+          draftCandidates[defId] = previewFor(nextDeck, this.org, []);
           continue;
         }
 
-        const org = structuredClone(this.org);
-        // 次スプリントで当該カードを 1 枚発動した仮定（RI-30）。
-        applyDeckBaseline(org, scaleEffects(card.base, 1));
-        // 獲得時は即時敗北しない。発動仮定で敗北するなら loseOnPlay として警告する。
-        const loseOnPlay = evaluateLose(org, this.totals);
+        // 発動仮定の敗北判定も beginSprint と同じ順序で評価する。
+        const playOrg = structuredClone(this.org);
+        playOrg.seniorHp = clamp(
+          playOrg.seniorHp + (100 - playOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
+          0,
+          100,
+        );
+        this.applyTrialAiDependencyPressure(playOrg, this.budget);
+        applyDeckBaseline(playOrg, scaleEffects(card.base, 1));
+        const loseOnPlay = evaluateLose(playOrg, this.totals);
         if (loseOnPlay) {
           draftCandidates[defId] = {
             trials: 0,
@@ -1295,7 +1305,7 @@ export class RunEngine {
           };
           continue;
         }
-        draftCandidates[defId] = previewFor(nextDeck, org, [{ defId, level: 1 }]);
+        draftCandidates[defId] = previewFor(nextDeck, this.org, [{ defId, level: 1 }]);
       }
     }
     return { current, draftCandidates };

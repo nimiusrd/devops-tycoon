@@ -108,6 +108,31 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(whatIf?.draftCandidates['auto-test']?.trials).toBe(24);
   });
 
+  it('loseOnPlay は試練の開始時ドリフト後に判定する', () => {
+    // Copilot +5 だけでは CAP 未満だが、frontier-dependency の +5 ドリフト後に発動すると超える。
+    const engine = new RunEngine({
+      seed: 'what-if-drift',
+      difficulty: 'normal',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      org: { aiDependency: number; aiLiteracy: number };
+    };
+    internals.org.aiDependency = AI_DEPENDENCY_CAP - 9; // 86: +5 ドリフト → 91、+5 カード → 96
+    internals.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    internals.phase = 'draft';
+    internals.draft = ['copilot', 'docs'];
+
+    const whatIf = engine.whatIfPreview();
+    expect(whatIf?.draftCandidates.copilot?.loseOnPlay).toBe('aiDependency');
+    // docs は依存加算なしなので、ドリフト後でも CAP 未満なら警告なし。
+    expect(whatIf?.draftCandidates.docs?.loseOnPlay).toBeUndefined();
+    expect(whatIf?.draftCandidates.docs?.trials).toBe(24);
+  });
+
   it('手札に入らないドラフト候補は発動仮定（loseOnPlay）を付けない', () => {
     const engine = new RunEngine({ seed: 'what-if-hand-miss', difficulty: 'nightmare' });
     engine.startRun();

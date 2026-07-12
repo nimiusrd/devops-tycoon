@@ -2031,18 +2031,53 @@ button.card:active {
 
 /* タイトル画面 */
 .title-screen {
-  max-width: 980px;
-  margin: 0 auto;
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  margin: 0;
   padding: 30px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.title-atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, #2b1f52ee 0%, #241a47d8 45%, #1c1438f2 100%),
+    radial-gradient(1100px 460px at 78% 6%, #6b4a9e66 0%, transparent 60%),
+    radial-gradient(900px 420px at 20% 0%, #ffae6b33 0%, transparent 55%),
+    url('/assets/devops-command-center.jpg') center / cover no-repeat;
+  background-position:
+    center,
+    78% 6%,
+    20% 0%,
+    68% center;
+  animation: titleAtmosphereBreath 18s ease-in-out infinite alternate;
+}
+.title-atmosphere::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 70% 35%, transparent 0 18%, #1c143866 55%, #1c1438cc 100%);
+  pointer-events: none;
+}
+.title-content {
+  position: relative;
+  z-index: 1;
+  width: min(980px, 100%);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 22px;
 }
 .title-head {
   text-align: center;
+  padding: 8px 0 4px;
 }
 .title-logo {
-  font-size: 44px;
+  font-size: clamp(36px, 6vw, 48px);
   font-weight: 900;
   margin: 0;
   background: linear-gradient(90deg, var(--sun), var(--coral) 60%, var(--lav));
@@ -2050,6 +2085,8 @@ button.card:active {
   background-clip: text;
   color: transparent;
   letter-spacing: 0.5px;
+  text-shadow: none;
+  filter: drop-shadow(0 4px 18px #1d164088);
 }
 .title-sub {
   color: var(--text-dim);
@@ -2061,12 +2098,48 @@ button.card:active {
   justify-content: center;
   flex-wrap: wrap;
 }
+.title-panel {
+  padding: 16px 18px 18px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 2px solid var(--line);
+  box-shadow: 0 4px 0 #1d1640;
+  backdrop-filter: blur(10px);
+}
+.title-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.title-section-head .title-section-label {
+  margin: 0;
+}
 .title-section-label {
   font-size: 14px;
   color: var(--text-dim);
   margin: 0 0 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+.title-score-mul {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.title-score-mul b {
+  color: var(--sun);
+  font-weight: 900;
+}
+.title-daily-desc {
+  margin: 0 0 12px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.title-daily-desc b {
+  color: var(--cream);
 }
 .difficulty-grid {
   display: grid;
@@ -2077,21 +2150,24 @@ button.card:active {
   text-align: left;
   padding: 14px 16px;
   border-radius: 16px;
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 92%, #1b1438);
   border: 2px solid var(--line);
   color: var(--text);
   cursor: pointer;
   box-shadow: 0 4px 0 #1d1640;
   transition:
     transform 0.12s ease,
-    border-color 0.12s ease;
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .difficulty-card:hover:not(:disabled) {
   transform: translateY(-2px);
 }
 .difficulty-card.selected {
   border-color: var(--sun);
-  box-shadow: 0 0 0 2px var(--sun) inset;
+  box-shadow:
+    0 0 0 2px var(--sun) inset,
+    0 4px 0 #1d1640;
 }
 .difficulty-card:disabled {
   opacity: 0.45;
@@ -2118,6 +2194,13 @@ button.card:active {
   color: var(--text);
   cursor: pointer;
   font-size: 13px;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+.trial-chip:hover {
+  transform: translateY(-1px);
 }
 .trial-chip.on {
   border-color: var(--coral);
@@ -2127,10 +2210,60 @@ button.card:active {
   background: #3a2f12;
   border-color: var(--sun);
 }
+.title-launch-row {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 2px solid var(--line);
+  box-shadow: 0 4px 0 #1d1640;
+  backdrop-filter: blur(10px);
+}
+.title-actions .btn {
+  margin-left: 0;
+}
 .btn-lg {
   align-self: center;
   font-size: 18px;
   padding: 14px 36px;
+}
+.btn-secondary {
+  margin-left: 0;
+}
+@keyframes titleAtmosphereBreath {
+  to {
+    transform: scale(1.03) translate3d(-0.3%, 0, 0);
+  }
+}
+@media (max-width: 640px) {
+  .title-screen {
+    padding: 22px 14px 36px;
+  }
+  .title-content {
+    gap: 16px;
+  }
+  .title-panel,
+  .title-launch-row {
+    padding: 14px;
+  }
+  .difficulty-grid {
+    gap: 10px;
+  }
+  .title-atmosphere {
+    background-position:
+      center,
+      78% 6%,
+      20% 0%,
+      72% center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-atmosphere {
+    animation: none;
+  }
+  .difficulty-card,
+  .trial-chip {
+    transition: none;
+  }
 }
 
 /* ランマップ */

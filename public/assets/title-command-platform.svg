@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-label="Isometric command platform">
+  <defs><filter id="g"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="p" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#1c2b58"/><stop offset="1" stop-color="#070d1c"/></linearGradient></defs>
+  <path d="M450 64 830 254 450 456 70 254z" fill="url(#p)" stroke="#6be7ff" stroke-width="5" opacity=".95"/>
+  <path d="M450 118 710 252 450 390 190 252z" fill="#0c132b" stroke="#8beaff" stroke-opacity=".5" stroke-width="3"/>
+  <g stroke="#4edbff" stroke-opacity=".34" stroke-width="2"><path d="M450 118v272M190 252h520M314 188l260 134M586 188 326 322"/></g>
+  <g filter="url(#g)"><circle cx="450" cy="252" r="76" fill="#47ddff" opacity=".18"/><circle cx="450" cy="252" r="52" fill="none" stroke="#70e7ff" stroke-width="5"/><path d="M410 252h80M450 212v80" stroke="#ffd166" stroke-width="7" stroke-linecap="round"/></g>
+  <g fill="#f5f7ff" opacity=".9"><circle cx="310" cy="218" r="18"/><circle cx="590" cy="220" r="18"/><circle cx="370" cy="326" r="18"/><circle cx="532" cy="326" r="18"/></g>
+  <g fill="#ff7e8b" filter="url(#g)"><circle cx="310" cy="218" r="7"/><circle cx="590" cy="220" r="7"/></g>
+</svg>

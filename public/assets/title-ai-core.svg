@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" role="img" aria-label="AI core sprite">
+  <defs><radialGradient id="c"><stop offset="0" stop-color="#fff7d6"/><stop offset=".28" stop-color="#7af0ff"/><stop offset=".62" stop-color="#7c5cff" stop-opacity=".55"/><stop offset="1" stop-color="#050713" stop-opacity="0"/></radialGradient><filter id="g"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <circle cx="210" cy="210" r="190" fill="url(#c)" opacity=".85"/>
+  <g fill="none" filter="url(#g)"><circle cx="210" cy="210" r="88" stroke="#8ff3ff" stroke-width="6"/><circle cx="210" cy="210" r="126" stroke="#ffd166" stroke-width="3" stroke-dasharray="18 14" opacity=".8"/><path d="M118 210h184M210 118v184M145 145l130 130M275 145 145 275" stroke="#e9fbff" stroke-width="4" stroke-linecap="round" opacity=".8"/></g>
+  <circle cx="210" cy="210" r="35" fill="#fdf6ec" opacity=".95"/>
+</svg>

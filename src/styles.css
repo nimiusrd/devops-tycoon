@@ -2043,7 +2043,6 @@ button.card:active {
   overflow: hidden;
   background: #050713;
   color: #f5f7ff;
-  font-family: Inter, 'Yu Gothic', Meiryo, sans-serif;
   display: block;
   max-width: none;
 }
@@ -2125,14 +2124,14 @@ button.card:active {
   display: block;
 }
 .title-brand b {
-  font-size: 13px;
-  letter-spacing: 0.14em;
+  font-size: 14px;
+  letter-spacing: 0.06em;
 }
 .title-brand small {
   margin-top: 3px;
   color: #8290ad;
-  font-size: 8px;
-  letter-spacing: 0.2em;
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 .title-season {
   text-align: center;
@@ -2143,13 +2142,13 @@ button.card:active {
 }
 .title-season small {
   color: #8393b1;
-  font-size: 8px;
-  letter-spacing: 0.25em;
+  font-size: 11px;
+  letter-spacing: 0.08em;
 }
 .title-season b {
   margin-top: 4px;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 13px;
+  letter-spacing: 0.04em;
 }
 .title-career {
   display: flex;
@@ -2167,8 +2166,8 @@ button.card:active {
 }
 .title-career small {
   color: #7d8caa;
-  font-size: 8px;
-  letter-spacing: 0.13em;
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 .title-career b {
   margin-top: 3px;
@@ -2192,10 +2191,9 @@ button.card:active {
   gap: 9px;
   margin: 0;
   color: var(--tc-cyan);
-  font:
-    700 9px ui-monospace,
-    monospace;
-  letter-spacing: 0.2em;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 .title-eyebrow span {
   width: 24px;
@@ -2246,10 +2244,9 @@ button.card:active {
   background: #0d1427aa;
   box-shadow: none;
   color: #7184a8;
-  font:
-    650 8px ui-monospace,
-    monospace;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 .title-command .title-meta b {
   color: #cbd8ee;
@@ -2278,12 +2275,11 @@ button.card:active {
   gap: 12px;
 }
 .title-step {
-  padding: 6px;
+  padding: 6px 8px;
   border: 1px solid #69ceff55;
   color: var(--tc-cyan);
-  font:
-    700 9px ui-monospace,
-    monospace;
+  font-size: 11px;
+  font-weight: 700;
 }
 .title-deck-head p,
 .title-section-copy p {
@@ -2292,25 +2288,23 @@ button.card:active {
 .title-deck-head p b,
 .title-section-copy p b {
   display: block;
-  font:
-    750 9px ui-monospace,
-    monospace;
-  letter-spacing: 0.14em;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
 }
 .title-deck-head p small,
 .title-section-copy p small {
   color: #7787a7;
-  font-size: 9px;
+  font-size: 11px;
 }
 .title-ready {
   display: flex;
   align-items: center;
   gap: 7px;
   color: #9fb0ca;
-  font:
-    650 8px ui-monospace,
-    monospace;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
 }
 .title-ready i {
   width: 6px;
@@ -2371,16 +2365,14 @@ button.card:active {
 }
 .difficulty-kicker b {
   color: var(--tc-amber);
-  font:
-    750 8px ui-monospace,
-    monospace;
-  letter-spacing: 0.16em;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
 }
 .difficulty-kicker i {
   color: #8392ad;
-  font:
-    700 7px ui-monospace,
-    monospace;
+  font-size: 11px;
+  font-weight: 700;
   font-style: normal;
 }
 .title-command .difficulty-name {
@@ -2392,7 +2384,7 @@ button.card:active {
 .title-command .difficulty-desc {
   display: block;
   color: #8996ad;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 .difficulty-action {
@@ -2401,14 +2393,13 @@ button.card:active {
   bottom: 14px;
   left: 18px;
   color: #7384a5;
-  font:
-    650 7px ui-monospace,
-    monospace;
-  letter-spacing: 0.05em;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 .title-trial-section {
   display: grid !important;
-  grid-template-columns: 245px 1fr;
+  grid-template-columns: minmax(220px, 280px) 1fr;
   align-items: center;
   min-height: 86px;
   padding: 14px 20px !important;
@@ -2426,7 +2417,7 @@ button.card:active {
   background: #10172b99;
   box-shadow: none;
   color: #ced8e9;
-  font-size: 8px;
+  font-size: 12px;
   cursor: pointer;
   transition: 0.2s;
 }
@@ -2444,7 +2435,8 @@ button.card:active {
 .title-command .trial-chip small {
   margin-left: 8px;
   color: var(--tc-amber);
-  font-size: 7px;
+  font-size: 11px;
+  font-weight: 700;
 }
 .title-launch-row {
   display: grid;
@@ -2460,10 +2452,9 @@ button.card:active {
 .title-mission > small {
   display: block;
   color: var(--tc-cyan);
-  font:
-    750 7px ui-monospace,
-    monospace;
-  letter-spacing: 0.16em;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
 }
 .title-daily > b,
 .title-daily > small {
@@ -2471,12 +2462,12 @@ button.card:active {
 }
 .title-daily > b {
   margin-top: 7px;
-  font-size: 12px;
+  font-size: 13px;
 }
 .title-daily > small {
   margin-top: 4px;
   color: #7886a0;
-  font-size: 8px;
+  font-size: 11px;
 }
 .title-daily button {
   margin-top: 11px;
@@ -2484,7 +2475,7 @@ button.card:active {
   border: 0;
   background: transparent;
   color: #b9c9e8;
-  font-size: 8px;
+  font-size: 12px;
   cursor: pointer;
 }
 .title-mission {
@@ -2493,15 +2484,14 @@ button.card:active {
 .title-mission > b {
   display: block;
   margin-top: 8px;
-  font:
-    750 11px ui-monospace,
-    monospace;
+  font-size: 13px;
+  font-weight: 750;
 }
 .title-mission > span {
   display: block;
   margin-top: 15px;
   color: #7f8da7;
-  font-size: 7px;
+  font-size: 11px;
 }
 .title-mission strong {
   margin-left: 7px;
@@ -2532,10 +2522,9 @@ button.card:active {
 .title-launch small {
   display: block;
   margin-bottom: 4px;
-  font:
-    750 7px ui-monospace,
-    monospace;
-  letter-spacing: 0.15em;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
 }
 .title-launch > i {
   font-size: 28px;
@@ -2544,17 +2533,17 @@ button.card:active {
 .title-achievements {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 12px 0;
   color: #7888a5;
-  font-size: 8px;
+  font-size: 12px;
 }
 .title-achievements > span {
   color: var(--tc-cyan);
-  font:
-    700 7px ui-monospace,
-    monospace;
-  letter-spacing: 0.15em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 .title-achievements b {
   font-weight: 600;
@@ -2563,23 +2552,24 @@ button.card:active {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding-top: 14px;
   color: #53617c;
-  font:
-    650 7px ui-monospace,
-    monospace;
-  letter-spacing: 0.1em;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 .title-footer nav {
   display: flex;
-  gap: 6px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 .title-footer button {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #71809c;
-  font-size: 8px;
+  color: #9fb0ca;
+  font-size: 12px;
   cursor: pointer;
 }
 .title-command .title-actions {

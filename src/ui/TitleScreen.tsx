@@ -3,7 +3,7 @@
  *
  * 難易度（解放済みのみ）と試練を選び、ランを開始する。メタ進行（解放状況・
  * 実績）も表示する。世界観の制約（第2.1）に沿った現実的なトーン。
- * 見た目は戦略司令室 UI（デザイン案）に寄せ、値の持ち方は既存実装を維持する。
+ * レイアウトは司令室 UI の構図を使い、文言は SPEC の用語に揃える。
  */
 import { useState } from 'react';
 import { DIFFICULTY_DEFS, TRIAL_DEFS, getTrial } from '../data/difficulties';
@@ -12,10 +12,10 @@ import type { DifficultyId } from '../sim/run/types';
 
 const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
 const DIFFICULTY_TAG: Record<DifficultyId, string> = {
-  easy: 'EASY',
-  normal: 'NORMAL',
-  hard: 'HARD',
-  nightmare: 'NIGHTMARE',
+  easy: 'Easy',
+  normal: 'Normal',
+  hard: 'Hard',
+  nightmare: 'Nightmare',
 };
 
 export interface TitleScreenProps {
@@ -64,22 +64,22 @@ export function TitleScreen({
             D<span>O</span>
           </span>
           <span>
-            <b>DEVOPS TYCOON</b>
-            <small>AI ERA // ORGANIZATION SIM</small>
+            <b>DevOps Tycoon</b>
+            <small>AI時代の開発組織シミュレーター</small>
           </span>
         </div>
         <div className="title-season">
-          <small>SEASON 01</small>
-          <b>THE AGENTIC SHIFT</b>
+          <small>基本単位</small>
+          <b>1ラン = 1四半期</b>
         </div>
         <div className="title-career">
           <span>
-            <small>META RANK</small>
-            <b>{meta.points}</b>
+            <small>メタ進行</small>
+            <b>{meta.points} pt</b>
           </span>
           <span>
-            <small>PERSONAL BEST</small>
-            <b>{meta.bestScore}</b>
+            <small>自己ベスト</small>
+            <b>{meta.bestScore} pt</b>
           </span>
         </div>
       </header>
@@ -87,24 +87,28 @@ export function TitleScreen({
       <div className="title-content">
         <header className="title-head">
           <p className="title-eyebrow">
-            <span /> NEW QUARTER // Q3 2026
+            <span /> ラン開始 — 組織と難易度を選ぶ
           </p>
           <h1 className="title-logo">
-            組織を選び、
+            DevOps Tycoon
             <br />
-            <em>AI時代を生き残れ。</em>
+            <em>制約の中で、AIを活かせ。</em>
           </h1>
           <p className="title-sub">
-            開発文化、技術的負債、そして人間関係。
+            レビュー渋滞、技術的負債、士気、そして AI の効きどころ。
             <br />
-            90日でチームを変革する組織シミュレーション。
+            1四半期で開発組織の運営を体験するシミュレーション。
           </p>
           <div className="title-meta">
             <span className="pill" data-testid="seed">
-              ◈ SEED <b>{seed}</b>
+              seed <b>{seed}</b>
             </span>
-            <span className="pill">⌁ 1 RUN = 1 QUARTER</span>
-            <span className="pill">◎ EST. 18 MIN</span>
+            <span className="pill">
+              難易度 <b>{DIFFICULTY_TAG[difficulty]}</b>
+            </span>
+            <span className="pill">
+              試練 <b>{trials.length}</b>
+            </span>
           </div>
         </header>
 
@@ -113,12 +117,12 @@ export function TitleScreen({
             <div>
               <span className="title-step">01</span>
               <p>
-                <b>CHOOSE YOUR ORGANIZATION</b>
-                <small>開始する組織の成熟度を選択</small>
+                <b>難易度（組織の状態）</b>
+                <small>開始する組織の成熟度を選ぶ</small>
               </p>
             </div>
             <span className="title-ready">
-              <i /> SYSTEM READY
+              <i /> 準備完了
             </span>
           </div>
 
@@ -139,14 +143,14 @@ export function TitleScreen({
                   >
                     <span className="difficulty-kicker">
                       <b>{DIFFICULTY_TAG[id]}</b>
-                      <i>{unlocked ? 'SELECT' : 'LOCKED'}</i>
+                      <i>{unlocked ? '選択可' : '未解放'}</i>
                     </span>
                     <span className="difficulty-name">{def.label}</span>
                     <span className="difficulty-desc">
-                      {unlocked ? def.description : '未解放 — 下位難易度のクリアが必要'}
+                      {unlocked ? def.description : '🔒 未解放（下位難易度をクリアで解放）'}
                     </span>
                     <span className="difficulty-action">
-                      {unlocked ? '組織プロファイルを選択 →' : '条件未達'}
+                      {unlocked ? 'この組織で始める →' : '条件未達'}
                     </span>
                   </button>
                 );
@@ -158,8 +162,8 @@ export function TitleScreen({
             <div className="title-section-copy">
               <span className="title-step">02</span>
               <p>
-                <b>ADD CHALLENGES</b>
-                <small>任意の制約でスコア倍率を上げる</small>
+                <b>試練（ランモディファイア）</b>
+                <small>任意。スコア倍率と引き換えに難度を上げる</small>
               </p>
             </div>
             <div className="trial-row">
@@ -183,22 +187,22 @@ export function TitleScreen({
           {onStartDaily ? (
             <section className="title-launch-row" data-testid="daily-run-section">
               <div className="title-daily">
-                <span>DAILY RUN</span>
-                <b>全員同じ条件で競う</b>
+                <span>デイリーラン</span>
+                <b>全員同じシードで競う</b>
                 <small>
                   UTC {today}・{dailyStatus}
                 </small>
                 <button type="button" data-testid="start-daily-run" onClick={onStartDaily}>
-                  本日のデイリー →
+                  本日のデイリーを始める →
                 </button>
               </div>
               <div className="title-mission">
-                <small>MISSION PROFILE</small>
+                <small>今回の設定</small>
                 <b>
-                  {DIFFICULTY_TAG[difficulty]} / {trials.length} MODS
+                  {DIFFICULTY_TAG[difficulty]} / 試練 {trials.length}
                 </b>
                 <span>
-                  FINAL MULTIPLIER <strong>×{scoreMultiplier.toFixed(2)}</strong>
+                  最終倍率 <strong>×{scoreMultiplier.toFixed(2)}</strong>
                 </span>
               </div>
               <button
@@ -208,7 +212,7 @@ export function TitleScreen({
                 onClick={() => onStart(difficulty, trials)}
               >
                 <span>
-                  <small>BEGIN THE QUARTER</small>
+                  <small>ラン開始</small>
                   四半期を始める
                 </span>
                 <i>→</i>
@@ -230,19 +234,19 @@ export function TitleScreen({
 
         {meta.achievements.length > 0 && (
           <section className="title-achievements">
-            <span>RECENT ACHIEVEMENTS</span>
-            {meta.achievements.slice(0, 3).map((achievement) => (
-              <b key={achievement}>◇ {ACHIEVEMENT_LABEL[achievement] ?? achievement}</b>
+            <span>実績</span>
+            {meta.achievements.map((achievement) => (
+              <b key={achievement}>🏅 {ACHIEVEMENT_LABEL[achievement] ?? achievement}</b>
             ))}
           </section>
         )}
 
         <footer className="title-footer">
-          <span>{selectedDifficulty.label} // BUILD 0.8.21</span>
+          <span>{selectedDifficulty.label}</span>
           <nav>
             {onOpenMetaShop && (
               <button type="button" data-testid="open-meta-shop" onClick={onOpenMetaShop}>
-                研修ツール
+                研修ツール解禁（メタショップ）
               </button>
             )}
             {onOpenAchievements && (

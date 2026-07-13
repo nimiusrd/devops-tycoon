@@ -23,10 +23,12 @@ import {
   planBoardDrag,
   type DraggableActionId,
 } from './boardDragPlan';
+import { BoardPixiLayer } from '../ui/BoardPixiLayer';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
+import { getRendererKind } from './adapters/selectRenderer';
 import {
   planBoardScene,
   type BoardDotPlan,
@@ -139,19 +141,27 @@ function Station({
   s,
   dropTarget,
   hover,
+  pixi,
 }: {
   s: BoardStationPlan;
   dropTarget?: boolean;
   hover?: boolean;
+  /** Pixi 時はキャラを canvas 側が描くため、ドロップ枠のプレースホルダだけ残す。 */
+  pixi?: boolean;
 }) {
   return (
     <div
       className={`station station-${s.lane}${dropTarget ? ' drop-target' : ''}${hover ? ' drop-hover' : ''}`}
       data-testid={`lane-${s.lane}`}
+      data-mood={s.mood}
       data-drop-target={dropTarget ? 'true' : undefined}
-      style={{ left: pct(s.x, VIEW_W), top: pct(s.y, VIEW_H) }}
+      style={{
+        left: pct(s.x, VIEW_W),
+        top: pct(s.y, VIEW_H),
+        ...(pixi ? { aspectRatio: '210 / 190' } : undefined),
+      }}
     >
-      <StationActor lane={s.lane} mood={s.mood} />
+      {!pixi && <StationActor lane={s.lane} mood={s.mood} />}
     </div>
   );
 }
@@ -268,6 +278,9 @@ export function Board({
   onDragComplete,
 }: BoardProps) {
   const scene = planBoardScene(tasks);
+  // 常駐物（フロー線・粒・キャラ）を WebGL で描くか（RI-11。演出・ラベルは DOM 共通）。
+  const usePixi =
+    typeof window !== 'undefined' && getRendererKind(window.location.search) === 'pixi';
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
   const hot = scene.stations.some((s) => s.hot);
@@ -332,22 +345,28 @@ export function Board({
       style={{ '--review-heat': heat } as CSSProperties}
     >
       <OfficeRoom />
-      <FlowArrows flows={scene.flows} />
-
-      {scene.dots.map((d) => (
-        <TaskDot
-          key={`${d.lane}-${d.id}`}
-          dot={d}
-          draggable={dragIds.has(d.id)}
-          dragging={dragTaskId === d.id}
-          onPointerDown={handlePointerDown}
-        />
-      ))}
+      {usePixi ? (
+        <BoardPixiLayer scene={scene} draggableTaskIds={dragIds} dragTaskId={dragTaskId} />
+      ) : (
+        <>
+          <FlowArrows flows={scene.flows} />
+          {scene.dots.map((d) => (
+            <TaskDot
+              key={`${d.lane}-${d.id}`}
+              dot={d}
+              draggable={dragIds.has(d.id)}
+              dragging={dragTaskId === d.id}
+              onPointerDown={handlePointerDown}
+            />
+          ))}
+        </>
+      )}
 
       {scene.stations.map((s) => (
         <Station
           key={s.lane}
           s={s}
+          pixi={usePixi}
           dropTarget={dropLanes.has(s.lane as 'backlog' | 'coding' | 'review')}
           hover={hoverLane === s.lane}
         />

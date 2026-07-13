@@ -14,6 +14,7 @@ import {
   flowDriftOffset,
   flowDriftPeriodMs,
   hitTestBoardDot,
+  lineDashSegments,
 } from '../../src/render/boardPixiView';
 import type { BoardDotPlan } from '../../src/render/boardScene';
 
@@ -123,6 +124,45 @@ describe('fireShake', () => {
     expect(fireShakeOffset(250 * 0.5)).toEqual({ x: -0.7, y: 0.7 });
     expect(fireShakeOffset(250 * 0.75)).toEqual({ x: 0.7, y: 0.7 });
     expect(fireShakeOffset(250)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('lineDashSegments', () => {
+  it('offset 0 は原点から dash/gap で刻む', () => {
+    const segs = lineDashSegments(0, 0, 30, 0, 6, 9, 0);
+    expect(segs).toEqual([
+      [
+        { x: 0, y: 0 },
+        { x: 6, y: 0 },
+      ],
+      [
+        { x: 15, y: 0 },
+        { x: 21, y: 0 },
+      ],
+    ]);
+  });
+
+  it('負の offset でパターンが進行方向へずれる', () => {
+    const segs = lineDashSegments(0, 0, 30, 0, 6, 9, -3);
+    // 始まりが +3 ずれ、先頭に前周期の尻尾（0..0+?）は無い（3 から dash 開始）。
+    expect(segs[0]).toEqual([
+      { x: 3, y: 0 },
+      { x: 9, y: 0 },
+    ]);
+  });
+
+  it('1 周期ぶんの offset で元に戻る（マーチングアンツの連続性）', () => {
+    const a = lineDashSegments(0, 0, 100, 0, 6, 9, 0);
+    const b = lineDashSegments(0, 0, 100, 0, 6, 9, -15);
+    expect(b).toEqual(a);
+  });
+
+  it('斜め線・ゼロ長・不正 dash を処理する', () => {
+    const diag = lineDashSegments(0, 0, 30, 40, 25, 25, 0);
+    expect(diag[0][1].x).toBeCloseTo(15, 5);
+    expect(diag[0][1].y).toBeCloseTo(20, 5);
+    expect(lineDashSegments(5, 5, 5, 5, 6, 9)).toEqual([]);
+    expect(lineDashSegments(0, 0, 10, 0, 0, 9)).toEqual([]);
   });
 });
 

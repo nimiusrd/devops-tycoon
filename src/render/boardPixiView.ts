@@ -105,6 +105,42 @@ export function fireShakeOffset(elapsedMs: number, burnUrgency?: number): BoardP
   }
 }
 
+/** 直線の破線 1 区間（始点→終点）。 */
+export type DashSegment = readonly [BoardPoint, BoardPoint];
+
+/**
+ * 直線を破線区間へ分割する（SVG stroke-dasharray + dashoffset の Pixi 代替）。
+ *
+ * `offset` は CSS `stroke-dashoffset` と同じ向き（負で進行方向へ流れる）。
+ * CSS `dash` アニメ（1s で -15px）を ticker から offset 連続変化で再現し、
+ * offset=0 は SVG の静止状態と一致する（freezeForScreenshot の決定論）。
+ */
+export function lineDashSegments(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  dash: number,
+  gap: number,
+  offset = 0,
+): DashSegment[] {
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (len === 0 || dash <= 0 || gap < 0) return [];
+  const period = dash + gap;
+  const ux = (x2 - x1) / len;
+  const uy = (y2 - y1) / len;
+  const at = (s: number): BoardPoint => ({ x: x1 + ux * s, y: y1 + uy * s });
+  // SVG は「パス距離 s + dashoffset ≡ 0 (mod period)」から dash 区間が始まる。
+  const start = -(((offset % period) + period) % period);
+  const out: DashSegment[] = [];
+  for (let s = start - period; s < len; s += period) {
+    const a = Math.max(s, 0);
+    const b = Math.min(s + dash, len);
+    if (b > a) out.push([at(a), at(b)]);
+  }
+  return out;
+}
+
 /**
  * タスク粒テクスチャのキャッシュキー（RI-07: variant×size で焼き込み共有）。
  * 同じキーの粒は同一 RenderTexture を使い回す。

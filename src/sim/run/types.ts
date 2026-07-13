@@ -88,6 +88,7 @@ export type LoseReason =
   | 'reviewFreeze'
   | 'incidentCascade'
   | 'aiDependency'
+  | 'budgetExhausted'
   | 'bossFailed'
   | 'trustExhausted'
   | 'reorgRequired';

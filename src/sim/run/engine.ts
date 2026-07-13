@@ -596,7 +596,7 @@ export class RunEngine {
     this.diagnosis = diagnose(this.org, this.totals);
 
     if (this.currentSprintKind === 'boss') {
-      const lose = evaluateLose(this.org, this.totals);
+      const lose = evaluateLose(this.org, this.totals, this.budget);
       if (lose) {
         this.status = 'lost';
         this.loseReason = lose;
@@ -626,7 +626,7 @@ export class RunEngine {
       return;
     }
 
-    const lose = evaluateLose(this.org, this.totals);
+    const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
@@ -724,7 +724,7 @@ export class RunEngine {
       this.applyReorgDeparture();
     }
 
-    const lose = evaluateLose(this.org, this.totals);
+    const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
@@ -913,7 +913,7 @@ export class RunEngine {
       this.phase = 'lost';
       return;
     }
-    const lose = evaluateLose(this.org, this.totals);
+    const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
@@ -993,6 +993,7 @@ export class RunEngine {
     offer.bought = true;
     this.addCard(defId, 1);
     // RI-30: 効果は手札発動時。購入だけでは即時敗北しない。
+    this.applyImmediateLose();
   }
 
   /** ショップでレリックを購入する。 */
@@ -1003,6 +1004,7 @@ export class RunEngine {
     this.budget -= relic.cost;
     relic.bought = true;
     this.grantRelic(relic.id);
+    this.applyImmediateLose();
   }
 
   /** ショップを出て編成（setup-pre）へ。採用メンバーを次スプリント前に配置できる。 */
@@ -1041,6 +1043,7 @@ export class RunEngine {
         if (next !== this.roster) {
           this.roster = next;
           this.budget -= RECRUIT_COST;
+          this.applyImmediateLose();
         }
       }
     }
@@ -1070,7 +1073,7 @@ export class RunEngine {
 
   /** 即時敗北条件を評価し、該当すれば lost へ遷移する。 */
   private applyImmediateLose(): boolean {
-    const lose = evaluateLose(this.org, this.totals);
+    const lose = evaluateLose(this.org, this.totals, this.budget);
     if (!lose) return false;
     this.status = 'lost';
     this.loseReason = lose;
@@ -1295,7 +1298,7 @@ export class RunEngine {
         );
         this.applyTrialAiDependencyPressure(playOrg, this.budget);
         applyDeckBaseline(playOrg, scaleEffects(card.base, 1));
-        const loseOnPlay = evaluateLose(playOrg, this.totals);
+        const loseOnPlay = evaluateLose(playOrg, this.totals, this.budget);
         if (loseOnPlay) {
           draftCandidates[defId] = {
             trials: 0,

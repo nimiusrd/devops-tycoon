@@ -16,6 +16,8 @@ export const REVIEW_FREEZE_PEAK = 48;
 export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 6;
 /** AI 依存度がこの値に達すると仕様説明不能＝敗北。 */
 export const AI_DEPENDENCY_CAP = 95;
+/** 予算が尽きると AI ツールを維持できず、ランを継続できない。 */
+export const BUDGET_EXHAUSTED_CAP = 0;
 /**
  * AI 依存を安全に検証できないとみなす AI リテラシー上限。
  * Nightmare の初期値（25）では到達可能、Hard 以上の初期値（35+）では
@@ -50,8 +52,8 @@ export function winView(type: WinType): WinView {
   return { type, ...WIN_META[type] };
 }
 
-/** 敗北条件を評価する（該当なしは null）。スプリント完了ごとに呼ぶ。 */
-export function evaluateLose(org: OrgState, totals: RunTotals): LoseReason | null {
+/** 敗北条件を評価する（該当なしは null）。状態が変化するごとに呼ぶ。 */
+export function evaluateLose(org: OrgState, totals: RunTotals, budget: number): LoseReason | null {
   if (org.seniorHp <= 1) return 'seniorBurnout';
   if (org.morale <= 1) return 'moraleCollapse';
   if (org.techDebt >= TECH_DEBT_CAP) return 'techDebt';
@@ -60,6 +62,7 @@ export function evaluateLose(org: OrgState, totals: RunTotals): LoseReason | nul
     return 'incidentCascade';
   if (org.aiDependency >= AI_DEPENDENCY_CAP && org.aiLiteracy <= AI_LITERACY_UNSAFE_CAP)
     return 'aiDependency';
+  if (budget <= BUDGET_EXHAUSTED_CAP) return 'budgetExhausted';
   return null;
 }
 

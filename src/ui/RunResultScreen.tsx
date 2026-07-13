@@ -25,6 +25,10 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
     label: 'AI 依存の限界',
     desc: 'AI 依存が高まりすぎて、チームが仕様を説明・検証できなくなりました。',
   },
+  budgetExhausted: {
+    label: '予算枯渇',
+    desc: '予算が尽き、AI ツールを維持できなくなりました。',
+  },
   bossFailed: { label: 'ボス突破失敗', desc: '四半期末の試練を突破できませんでした。' },
   trustExhausted: {
     label: '信頼枯渇',

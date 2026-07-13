@@ -135,6 +135,18 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(foundMetaLocked).toBe(true);
   });
 
+  it('RI-32: レリック枠が埋まっている場合、ボス報酬は付与されない', () => {
+    const engine = new RunEngine({ seed: 'ri32-boss-relic-slots', difficulty: 'easy' });
+    const internals = engine as unknown as {
+      relics: string[];
+      grantBossRelic(): string | undefined;
+    };
+    internals.relics = RELIC_DEFS.slice(0, 6).map((relic) => relic.id);
+
+    expect(internals.grantBossRelic()).toBeUndefined();
+    expect(internals.relics).toHaveLength(6);
+  });
+
   it('RI-32: 勝利種別はボス報酬適用前の org で判定する', () => {
     let verified = false;
     for (let i = 0; i < 80; i += 1) {
@@ -226,6 +238,17 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     // 購入だけでは未発動のため敗北しない。
     expect(after.status).toBe('playing');
     expect(after.deck.some((c) => c.defId === 'copilot')).toBe(true);
+
+    const budgetEngine = new RunEngine({ seed: 'ri32-budget-exhausted', difficulty: 'nightmare' });
+    budgetEngine.startRun();
+    const budgetInternals = budgetEngine as unknown as typeof internals;
+    budgetInternals.phase = 'shop';
+    budgetInternals.budget = 10;
+    budgetInternals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+    budgetEngine.buyShopCard('copilot');
+    after = budgetEngine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('budgetExhausted');
   });
 
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {

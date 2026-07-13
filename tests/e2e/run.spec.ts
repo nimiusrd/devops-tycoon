@@ -111,6 +111,97 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
   );
 });
 
+test('RI-32: ボス突破報酬レリックを四半期レビューに表示する', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri32-boss-reward');
+
+  const reached = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    for (let i = 0; i < 30; i += 1) {
+      g.startRun('easy', [], `ri32-boss-reward-${i}`);
+      let state = g.getState();
+      let guard = 0;
+      while (state.status === 'playing' && state.phase !== 'quarterReview' && guard < 60_000) {
+        guard += 1;
+        if (state.phase === 'setup') g.beginSetupSprint();
+        else if (state.phase === 'sprint') g.step(1_000_000);
+        else if (state.phase === 'result') g.acknowledgeResult();
+        else if (state.phase === 'draft') g.skipDraft();
+        else if (state.phase === 'evolution') g.finishEvolution();
+        else if (state.phase === 'beat')
+          g.resolveBeat(state.beat?.kind === 'judgment' ? undefined : 0);
+        else if (state.phase === 'shop') g.leaveShop();
+        else if (state.phase === 'rest') g.restChoose('heal');
+        else break;
+        state = g.getState();
+      }
+      if (state.quarterReview?.bossCleared && state.bossRelicReward) {
+        return { ok: true, relic: state.bossRelicReward };
+      }
+    }
+    return { ok: false };
+  });
+
+  expect(reached.ok).toBe(true);
+  await expect(page.getByTestId('quarter-review')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('boss-relic-reward')).toBeVisible();
+});
+
+for (const [reason, label] of [
+  ['incidentCascade', '障害連鎖によるリリース停止'],
+  ['aiDependency', 'AI 依存の限界'],
+  ['budgetExhausted', '予算枯渇'],
+] as const) {
+  test(`RI-32: ${reason} の敗北理由をラン決着画面に表示する`, async ({ page }) => {
+    await page.goto(`/?renderer=dom&seed=ri32-${reason}`);
+
+    const state = await page.evaluate((loseReason) => {
+      const g = (window as GameWindow).game!;
+      g.pause();
+      g.startRun('nightmare', [], `ri32-${loseReason}`);
+      const engine = (g as unknown as { engine: unknown }).engine as {
+        phase: string;
+        budget: number;
+        draft: string[] | null;
+        shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> } | null;
+        org: { aiDependency: number; aiLiteracy: number };
+        totals: { consecutiveIncidentSprints?: number };
+        sprint: { cardPiles: { hand: number[] } } | null;
+        applyImmediateLose(): boolean;
+      };
+
+      if (loseReason === 'budgetExhausted') {
+        engine.phase = 'shop';
+        engine.budget = 10;
+        engine.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+        return g.buyShopCard('copilot');
+      }
+      if (loseReason === 'aiDependency') {
+        engine.org.aiDependency = 90;
+        engine.org.aiLiteracy = 30;
+        engine.phase = 'draft';
+        engine.draft = ['copilot'];
+        g.chooseCard('copilot');
+        engine.phase = 'setup';
+        g.beginSetupSprint();
+        const handDeckIndex = g
+          .getState()
+          .sprint!.cardPiles.hand.find((index) => g.getState().deck[index]?.defId === 'copilot')!;
+        g.playCard(handDeckIndex);
+        return g.getState();
+      }
+      engine.totals.consecutiveIncidentSprints = 6;
+      engine.applyImmediateLose();
+      g.playCard(-1);
+      return g.getState();
+    }, reason);
+
+    expect(state.loseReason).toBe(reason);
+    await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('run-end-status')).toContainText(label);
+  });
+}
+
 test('RI-21: 組織タイプに対応する画面トーンと状態文を表示する', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=ri21-theme');
   await page.evaluate(() => {

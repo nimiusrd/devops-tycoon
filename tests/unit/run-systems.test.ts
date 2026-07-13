@@ -7,6 +7,7 @@ import { diagnose } from '../../src/sim/diagnosis';
 import {
   AI_DEPENDENCY_CAP,
   AI_LITERACY_UNSAFE_CAP,
+  BUDGET_EXHAUSTED_CAP,
   CONSECUTIVE_INCIDENT_SPRINT_CAP,
   evaluateBoss,
   evaluateLose,
@@ -155,11 +156,11 @@ describe('組織タイプ診断（第13章）', () => {
 
 describe('勝敗判定（第14/15章）', () => {
   it('シニア体力 0 で敗北（燃え尽き）', () => {
-    expect(evaluateLose(org({ seniorHp: 0 }), totals())).toBe('seniorBurnout');
+    expect(evaluateLose(org({ seniorHp: 0 }), totals(), 30)).toBe('seniorBurnout');
   });
 
   it('技術的負債が上限超過で敗北', () => {
-    expect(evaluateLose(org({ techDebt: TECH_DEBT_CAP + 1 }), totals())).toBe('techDebt');
+    expect(evaluateLose(org({ techDebt: TECH_DEBT_CAP + 1 }), totals(), 30)).toBe('techDebt');
   });
 
   it('障害が連続したスプリントではリリース停止になる', () => {
@@ -167,10 +168,15 @@ describe('勝敗判定（第14/15章）', () => {
       evaluateLose(
         org(),
         totals({ consecutiveIncidentSprints: CONSECUTIVE_INCIDENT_SPRINT_CAP - 1 }),
+        30,
       ),
     ).toBeNull();
     expect(
-      evaluateLose(org(), totals({ consecutiveIncidentSprints: CONSECUTIVE_INCIDENT_SPRINT_CAP })),
+      evaluateLose(
+        org(),
+        totals({ consecutiveIncidentSprints: CONSECUTIVE_INCIDENT_SPRINT_CAP }),
+        30,
+      ),
     ).toBe('incidentCascade');
   });
 
@@ -179,25 +185,32 @@ describe('勝敗判定（第14/15章）', () => {
       evaluateLose(
         org({ aiDependency: AI_DEPENDENCY_CAP - 1, aiLiteracy: AI_LITERACY_UNSAFE_CAP }),
         totals(),
+        30,
       ),
     ).toBeNull();
     expect(
       evaluateLose(
         org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: AI_LITERACY_UNSAFE_CAP }),
         totals(),
+        30,
       ),
     ).toBe('aiDependency');
     // Nightmare 初期リテラシー（25）は到達可能、Hard 初期（35）は対象外。
-    expect(evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: 25 }), totals())).toBe(
-      'aiDependency',
-    );
     expect(
-      evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: 35 }), totals()),
+      evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: 25 }), totals(), 30),
+    ).toBe('aiDependency');
+    expect(
+      evaluateLose(org({ aiDependency: AI_DEPENDENCY_CAP, aiLiteracy: 35 }), totals(), 30),
     ).toBeNull();
   });
 
+  it('予算が尽きると AI ツールを維持できず敗北する', () => {
+    expect(evaluateLose(org(), totals(), BUDGET_EXHAUSTED_CAP + 1)).toBeNull();
+    expect(evaluateLose(org(), totals(), BUDGET_EXHAUSTED_CAP)).toBe('budgetExhausted');
+  });
+
   it('健全な組織は敗北条件に当たらない', () => {
-    expect(evaluateLose(org(), totals({ reviewQueuePeak: 5 }))).toBeNull();
+    expect(evaluateLose(org(), totals({ reviewQueuePeak: 5 }), 30)).toBeNull();
   });
 
   it('ボスは clear 条件を満たすと突破できる（大型リリース）', () => {

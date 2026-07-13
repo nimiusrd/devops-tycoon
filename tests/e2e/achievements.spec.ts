@@ -19,7 +19,7 @@ test('タイトルから実績コレクションを開き取得済み／未取�
     localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
   }, META_WITH_ACHIEVEMENT);
 
-  await page.goto('/?seed=achievement-collection-e2e');
+  await page.goto('/?renderer=dom&seed=achievement-collection-e2e');
 
   await page.getByTestId('open-achievements').click();
   await expect(page.getByTestId('achievement-collection')).toBeVisible();

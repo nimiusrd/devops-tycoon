@@ -41,7 +41,7 @@ type GameWindow = Window & {
 test('トラック→ボスまで通しプレイすると勝敗が決まり、ラン決着画面が出る（DoD）', async ({
   page,
 }) => {
-  await page.goto('/?seed=full-run');
+  await page.goto('/?renderer=dom&seed=full-run');
 
   const status = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -112,7 +112,7 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
 });
 
 test('RI-21: 組織タイプに対応する画面トーンと状態文を表示する', async ({ page }) => {
-  await page.goto('/?seed=ri21-theme');
+  await page.goto('/?renderer=dom&seed=ri21-theme');
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     g.pause();
@@ -133,7 +133,7 @@ test('RI-21: 組織タイプに対応する画面トーンと状態文を表示�
 const E2E_REST_UPGRADE_SEED = 'ri37-rest-0';
 
 test('RI-37: 休息で強化対象カードを選んでレベルを上げられる', async ({ page }) => {
-  await page.goto(`/?seed=${E2E_REST_UPGRADE_SEED}`);
+  await page.goto(`/?renderer=dom&seed=${E2E_REST_UPGRADE_SEED}`);
 
   const reached = await page.evaluate(
     ({ primary, fallbacks }) => {
@@ -215,7 +215,7 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
 });
 
 test('ボス未達→四半期レビュー→スコープ削減→次四半期へ継続', async ({ page }) => {
-  await page.goto(`/?seed=${E2E_MISSED_ADJUSTABLE_SEED}`);
+  await page.goto(`/?renderer=dom&seed=${E2E_MISSED_ADJUSTABLE_SEED}`);
 
   const atReview = await page.evaluate(
     ({ seed }) => {
@@ -278,7 +278,7 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
 
 test('継続リソース枯渇→四半期レビュー→ラン終了', async ({ page }) => {
   const { seed, difficulty, outcome: expectedOutcome } = E2E_TERMINAL_SHUTDOWN;
-  await page.goto(`/?seed=${seed}`);
+  await page.goto(`/?renderer=dom&seed=${seed}`);
 
   const atReview = await page.evaluate(
     ({ seed: runSeed, difficulty: runDifficulty, expectedOutcome: expected }) => {
@@ -335,7 +335,7 @@ const TERMINAL_FAILURE_OUTCOMES: readonly QuarterOutcome[] = [
 for (const entry of RI22_TERMINAL_SEEDS) {
   test(`RI-22: ${entry.outcome} で固有の終了演出を表示する`, async ({ page }) => {
     const { seed, difficulty, outcome: expectedOutcome } = entry;
-    await page.goto(`/?seed=${seed}`);
+    await page.goto(`/?renderer=dom&seed=${seed}`);
 
     const atReview = await page.evaluate(
       ({ seed: runSeed, difficulty: runDifficulty, expectedOutcome: expected, terminals }) => {
@@ -416,7 +416,7 @@ for (const entry of RI22_TERMINAL_SEEDS) {
 }
 
 test('ビートの選択イベントを解決すると次スプリントへ進む（第9.4）', async ({ page }) => {
-  await page.goto('/?seed=event-run');
+  await page.goto('/?renderer=dom&seed=event-run');
 
   const found = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -451,7 +451,7 @@ test('ビートの選択イベントを解決すると次スプリントへ進�
 
 test('tone: joke のビートはネタ分類の見た目で表示される（RI-38）', async ({ page }) => {
   const jokeIds = EVENT_DEFS.filter((def) => def.tone === 'joke').map((def) => def.id);
-  await page.goto('/?seed=ri38-joke-ui');
+  await page.goto('/?renderer=dom&seed=ri38-joke-ui');
 
   const found = await page.evaluate((ids) => {
     const g = (window as GameWindow).game!;

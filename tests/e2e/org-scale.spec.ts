@@ -16,7 +16,7 @@ type GameWindow = Window & {
 
 /** タイトルからランを開始し、現場（team）まで進める。 */
 async function startRun(page: import('@playwright/test').Page, seed: string) {
-  await page.goto(`/?seed=${seed}`);
+  await page.goto(`/?renderer=dom&seed=${seed}`);
   await page.evaluate((s) => {
     const g = (window as GameWindow).game!;
     g.pause();

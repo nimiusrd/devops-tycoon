@@ -13,6 +13,7 @@
  *   GALLERY_DIFFICULTY=xxx  難易度（既定: easy。ランが長く続き撮影できる画面が多い）
  *   GALLERY_OUT=dir         出力先ディレクトリ（既定: gallery）
  *   GALLERY_CHROMIUM=path   Chromium 実行ファイルの明示指定（通常は不要）
+ *   GALLERY_RENDERER=dom    DOM/SVG レンダラで撮影（既定はアプリ既定の Pixi）
  */
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
@@ -21,6 +22,8 @@ import { createServer } from 'vite';
 import { chromium } from '@playwright/test';
 
 const SEED = process.env.GALLERY_SEED ?? 'tycoon';
+// 既定は Pixi（アプリの既定レンダラ）。`GALLERY_RENDERER=dom` で DOM/SVG 版を撮影できる。
+const RENDERER = process.env.GALLERY_RENDERER ?? '';
 const DIFFICULTY = process.env.GALLERY_DIFFICULTY ?? 'easy';
 // 出力先はカレントディレクトリ配下に限定する（再帰削除するため、`..` や
 // 絶対パスで作業ツリー外を指されると危険）。
@@ -101,7 +104,7 @@ async function snapModal(openTestId, panelTestId, closeTestId, name, label) {
   }
 }
 
-await page.goto(`${baseUrl}?seed=${SEED}`);
+await page.goto(`${baseUrl}?seed=${SEED}${RENDERER ? `&renderer=${RENDERER}` : ''}`);
 await page.waitForSelector('[data-testid="title"]');
 await snap('title', 'タイトル');
 

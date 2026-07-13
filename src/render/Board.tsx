@@ -29,7 +29,7 @@ import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
-import { getRendererKind } from './adapters/selectRenderer';
+import { usePixiRenderer } from '../ui/usePixiRenderer';
 import { deriveMemberMoodOverrides } from './memberMood';
 import {
   planBoardScene,
@@ -290,8 +290,7 @@ export function Board({
   );
   const scene = planBoardScene(tasks, moodOverrides);
   // 常駐物（フロー線・粒・キャラ）を WebGL で描くか（RI-11。演出・ラベルは DOM 共通）。
-  const usePixi =
-    typeof window !== 'undefined' && getRendererKind(window.location.search) === 'pixi';
+  const { usePixi, onWebglError } = usePixiRenderer();
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
   const hot = scene.stations.some((s) => s.hot);
@@ -371,7 +370,12 @@ export function Board({
     >
       <OfficeRoom />
       {usePixi ? (
-        <BoardPixiLayer scene={scene} draggableTaskIds={dragIds} dragTaskId={dragTaskId} />
+        <BoardPixiLayer
+          scene={scene}
+          draggableTaskIds={dragIds}
+          dragTaskId={dragTaskId}
+          onWebglError={onWebglError}
+        />
       ) : (
         <>
           <FlowArrows flows={scene.flows} />

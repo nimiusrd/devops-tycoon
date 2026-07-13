@@ -43,19 +43,23 @@ function useContainFit(ref: React.RefObject<HTMLDivElement | null>): void {
 export interface DeptPixiBoardProps {
   dept: DepartmentState;
   onFocusTeam: (id: string) => void;
+  /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
+  onWebglError?: () => void;
 }
 
-export function DeptPixiBoard({ dept, onFocusTeam }: DeptPixiBoardProps) {
+export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoardProps) {
   const boardRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiDeptRenderer | null>(null);
   const deptRef = useRef(dept);
   const onFocusTeamRef = useRef(onFocusTeam);
+  const onWebglErrorRef = useRef(onWebglError);
   useContainFit(boardRef);
 
   useLayoutEffect(() => {
     onFocusTeamRef.current = onFocusTeam;
-  }, [onFocusTeam]);
+    onWebglErrorRef.current = onWebglError;
+  }, [onFocusTeam, onWebglError]);
 
   useEffect(() => {
     deptRef.current = dept;
@@ -96,16 +100,23 @@ export function DeptPixiBoard({ dept, onFocusTeam }: DeptPixiBoardProps) {
     };
 
     let cancelled = false;
-    void renderer.init(mount).then(() => {
-      if (cancelled) return;
-      renderer.resize(mount.clientWidth, mount.clientHeight);
-      renderer.render(deptRef.current);
-      if (import.meta.env.DEV) {
-        window.__deptPixiTest = {
-          freezeForScreenshot: () => renderer.freezeForScreenshot(),
-        };
-      }
-    });
+    void renderer
+      .init(mount)
+      .then(() => {
+        if (cancelled) return;
+        renderer.resize(mount.clientWidth, mount.clientHeight);
+        renderer.render(deptRef.current);
+        if (import.meta.env.DEV) {
+          window.__deptPixiTest = {
+            freezeForScreenshot: () => renderer.freezeForScreenshot(),
+          };
+        }
+      })
+      .catch((err: unknown) => {
+        // WebGL 不可の環境では DOM/SVG レンダラへフォールバックする。
+        console.warn('PixiDeptRenderer init failed; falling back to DOM renderer', err);
+        if (!cancelled) onWebglErrorRef.current?.();
+      });
 
     const ro = new ResizeObserver(() => syncLayout());
     ro.observe(mount);

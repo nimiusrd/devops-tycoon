@@ -36,7 +36,7 @@ test('メタショップ購入が次ランのドラフトプールへ反映さ�
     localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
   }, DEFAULT_META);
 
-  await page.goto('/?seed=meta-shop-e2e');
+  await page.goto('/?renderer=dom&seed=meta-shop-e2e');
 
   const result = await page.evaluate(async () => {
     const g = (window as GameWindow).game!;
@@ -92,7 +92,7 @@ test('タイトルからメタショップを開いて購入できる', async ({
     localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
   }, DEFAULT_META);
 
-  await page.goto('/?seed=meta-shop-ui');
+  await page.goto('/?renderer=dom&seed=meta-shop-ui');
 
   await page.getByTestId('open-meta-shop').click();
   await expect(page.getByTestId('meta-shop')).toBeVisible();

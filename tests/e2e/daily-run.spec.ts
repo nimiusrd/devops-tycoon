@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { dailySeed } from '../../src/state/meta';
 
 test('タイトルからデイリーランを開始できる', async ({ page }) => {
-  await page.goto('/?seed=daily-e2e');
+  await page.goto('/?renderer=dom&seed=daily-e2e');
 
   await expect(page.getByTestId('daily-run-section')).toBeVisible();
   await page.getByTestId('start-daily-run').click();

@@ -85,6 +85,22 @@ async function freezePixiForScreenshot(page: import('@playwright/test').Page) {
 test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
   test.skip(!pixiE2e, 'PIXI_E2E=1 のときだけ実行（既定 CI では WebGL を回さない）');
 
+  test('renderer 未指定の既定 URL で Pixi 盤面が起動する @pixi', async ({ page }) => {
+    // 既定レンダラは Pixi（`?renderer=dom` が opt-out。selectRenderer）。
+    await page.goto(`/?seed=${PIXI_SEED}`);
+    await page.evaluate((s) => {
+      const g = (window as GameWindow).game!;
+      g.pause();
+      g.startRun('normal', [], s);
+      g.beginSetupSprint();
+      g.step(100);
+    }, PIXI_SEED);
+    await expect(page.getByTestId('board-pixi-mount')).toBeVisible();
+    await expect
+      .poll(async () => page.getByTestId('board-pixi-mount').getAttribute('data-board-dots'))
+      .toMatch(/^\d+$/);
+  });
+
   test('固定 seed でスプリント盤面 canvas が安定する @pixi', async ({ page }) => {
     await openPixiSprintBoard(page, PIXI_SEED);
     await stabilizeForScreenshot(page);

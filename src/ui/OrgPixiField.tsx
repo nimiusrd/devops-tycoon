@@ -34,10 +34,12 @@ export interface OrgPixiFieldProps {
   departments: readonly DepartmentState[];
   onFocusTeam: (id: string) => void;
   deptColor: (deptId: string) => string;
+  /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
+  onWebglError?: () => void;
 }
 
 export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(function OrgPixiField(
-  { teams, zoom, onFocusTeam, deptColor },
+  { teams, zoom, onFocusTeam, deptColor, onWebglError },
   ref,
 ) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -47,6 +49,7 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
   const prevZoomRef = useRef(zoom);
   const onFocusTeamRef = useRef(onFocusTeam);
   const deptColorRef = useRef(deptColor);
+  const onWebglErrorRef = useRef(onWebglError);
   const initDoneRef = useRef(false);
   /** init / fitToContent と同期した layout 指紋（teams 更新時の refit 判定）。 */
   const layoutFingerprintRef = useRef<string | null>(null);
@@ -58,6 +61,10 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
   useLayoutEffect(() => {
     deptColorRef.current = deptColor;
   }, [deptColor]);
+
+  useLayoutEffect(() => {
+    onWebglErrorRef.current = onWebglError;
+  }, [onWebglError]);
 
   useEffect(() => {
     teamsRef.current = teams;
@@ -140,22 +147,29 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
     };
 
     let cancelled = false;
-    void renderer.init(mount).then(() => {
-      if (cancelled) return;
-      initDoneRef.current = true;
-      const fp = orgLayoutFingerprint(teamsRef.current, ORG_ISO, ORG_PAD);
-      layoutFingerprintRef.current = fp;
-      renderer.fitToContent(teamsRef.current);
-      syncLayout();
-      if (import.meta.env.DEV) {
-        window.__orgPixiTest = {
-          focusTeamCamera: (teamId) => renderer.focusTeamCamera(teamsRef.current, teamId, false),
-          getZoomScale: () => renderer.getZoomScale(),
-          freezeForScreenshot: () => renderer.freezeForScreenshot(),
-          isFocusRingActive: () => renderer.focusRingActive,
-        };
-      }
-    });
+    void renderer
+      .init(mount)
+      .then(() => {
+        if (cancelled) return;
+        initDoneRef.current = true;
+        const fp = orgLayoutFingerprint(teamsRef.current, ORG_ISO, ORG_PAD);
+        layoutFingerprintRef.current = fp;
+        renderer.fitToContent(teamsRef.current);
+        syncLayout();
+        if (import.meta.env.DEV) {
+          window.__orgPixiTest = {
+            focusTeamCamera: (teamId) => renderer.focusTeamCamera(teamsRef.current, teamId, false),
+            getZoomScale: () => renderer.getZoomScale(),
+            freezeForScreenshot: () => renderer.freezeForScreenshot(),
+            isFocusRingActive: () => renderer.focusRingActive,
+          };
+        }
+      })
+      .catch((err: unknown) => {
+        // WebGL 不可の環境では DOM/SVG レンダラへフォールバックする。
+        console.warn('PixiOrgRenderer init failed; falling back to DOM renderer', err);
+        if (!cancelled) onWebglErrorRef.current?.();
+      });
 
     const ro = new ResizeObserver(() => syncLayout());
     ro.observe(mount);

@@ -19,7 +19,7 @@ type GameWindow = Window & {
 };
 
 test('タスク差配は taskId 指定で対象を進められる（RI-30）', async ({ page }) => {
-  await page.goto('/?seed=ri30-assign');
+  await page.goto('/?renderer=dom&seed=ri30-assign');
 
   const result = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -60,7 +60,7 @@ test('タスク差配は taskId 指定で対象を進められる（RI-30）', a
 });
 
 test('手札カードを発動すると focus と cardEffects が変わる（RI-30）', async ({ page }) => {
-  await page.goto('/?seed=ri30-hand');
+  await page.goto('/?renderer=dom&seed=ri30-hand');
 
   const result = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -93,7 +93,7 @@ test('手札カードを発動すると focus と cardEffects が変わる（RI-
 });
 
 test('ActionBar でタスク差配を武装できる（RI-30）', async ({ page }) => {
-  await page.goto('/?seed=ri30-arm');
+  await page.goto('/?renderer=dom&seed=ri30-arm');
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;

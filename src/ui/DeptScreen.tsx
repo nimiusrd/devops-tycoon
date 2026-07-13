@@ -8,11 +8,11 @@
 import { DEPARTMENT_LEVERS } from '../data/levers';
 import type { DepartmentState } from '../sim/orgscale/types';
 import { HEALTH_LABEL } from '../render/orgView';
-import { getRendererKind } from '../render/adapters/selectRenderer';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { DeptBoard } from './DeptBoard';
 import { DeptPixiBoard } from './DeptPixiBoard';
 import { EffectTagList } from './EffectTagList';
+import { usePixiRenderer } from './usePixiRenderer';
 
 export interface DeptScreenProps {
   dept: DepartmentState;
@@ -22,7 +22,7 @@ export interface DeptScreenProps {
 }
 
 export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScreenProps) {
-  const usePixi = getRendererKind(window.location.search) === 'pixi';
+  const { usePixi, onWebglError } = usePixiRenderer();
   return (
     <div className="dept-screen" data-testid="dept-screen">
       <header className="dept-head">
@@ -49,7 +49,7 @@ export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScre
 
       <div className="dept-field" data-testid="dept-field">
         {usePixi ? (
-          <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} />
+          <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} onWebglError={onWebglError} />
         ) : (
           <DeptBoard dept={dept} onFocusTeam={onFocusTeam} />
         )}

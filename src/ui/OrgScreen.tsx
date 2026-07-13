@@ -10,12 +10,12 @@ import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
-import { getRendererKind } from '../render/adapters/selectRenderer';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { EffectTagList } from './EffectTagList';
 import { OrgBoard } from './OrgBoard';
 import { OrgInfraHubPill } from './OrgHub';
 import { OrgPixiField, type OrgPixiFieldHandle } from './OrgPixiField';
+import { usePixiRenderer } from './usePixiRenderer';
 
 export interface OrgScreenProps {
   org: OrgScaleState;
@@ -35,7 +35,7 @@ export function OrgScreen({
   onApplyLever,
 }: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
-  const usePixi = getRendererKind(window.location.search) === 'pixi';
+  const { usePixi, onWebglError } = usePixiRenderer();
   const pixiFieldRef = useRef<OrgPixiFieldHandle>(null);
   const deptColorMap = useMemo(
     () => Object.fromEntries(org.departments.map((d) => [d.def.id, d.def.color])),
@@ -128,6 +128,7 @@ export function OrgScreen({
               departments={org.departments}
               onFocusTeam={onFocusTeam}
               deptColor={deptColor}
+              onWebglError={onWebglError}
             />
           </div>
         ) : (

@@ -18,12 +18,25 @@ declare global {
   }
 }
 
-export type BoardPixiLayerProps = BoardPixiInput;
+export type BoardPixiLayerProps = BoardPixiInput & {
+  /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
+  onWebglError?: () => void;
+};
 
-export function BoardPixiLayer({ scene, draggableTaskIds, dragTaskId }: BoardPixiLayerProps) {
+export function BoardPixiLayer({
+  scene,
+  draggableTaskIds,
+  dragTaskId,
+  onWebglError,
+}: BoardPixiLayerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiBoardRenderer | null>(null);
   const inputRef = useRef<BoardPixiInput>({ scene, draggableTaskIds, dragTaskId });
+  const onWebglErrorRef = useRef(onWebglError);
+
+  useEffect(() => {
+    onWebglErrorRef.current = onWebglError;
+  }, [onWebglError]);
 
   useEffect(() => {
     inputRef.current = { scene, draggableTaskIds, dragTaskId };
@@ -52,16 +65,23 @@ export function BoardPixiLayer({ scene, draggableTaskIds, dragTaskId }: BoardPix
     };
 
     let cancelled = false;
-    void renderer.init(mount).then(() => {
-      if (cancelled) return;
-      renderer.resize(mount.clientWidth, mount.clientHeight);
-      renderer.render(inputRef.current);
-      if (import.meta.env.DEV) {
-        window.__boardPixiTest = {
-          freezeForScreenshot: () => renderer.freezeForScreenshot(),
-        };
-      }
-    });
+    void renderer
+      .init(mount)
+      .then(() => {
+        if (cancelled) return;
+        renderer.resize(mount.clientWidth, mount.clientHeight);
+        renderer.render(inputRef.current);
+        if (import.meta.env.DEV) {
+          window.__boardPixiTest = {
+            freezeForScreenshot: () => renderer.freezeForScreenshot(),
+          };
+        }
+      })
+      .catch((err: unknown) => {
+        // WebGL 不可の環境では DOM/SVG レンダラへフォールバックする。
+        console.warn('PixiBoardRenderer init failed; falling back to DOM renderer', err);
+        if (!cancelled) onWebglErrorRef.current?.();
+      });
 
     const ro = new ResizeObserver(() => syncLayout());
     ro.observe(mount);

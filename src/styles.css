@@ -1139,13 +1139,20 @@ body {
 .result-overlay {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 2rem;
   background: rgba(10, 7, 24, 0.72);
   backdrop-filter: blur(4px);
   z-index: 20;
   animation: fadein 0.25s ease;
+}
+.result-overlay > * {
+  margin-block: auto;
+  flex-shrink: 0;
 }
 @keyframes fadein {
   from {
@@ -1163,11 +1170,6 @@ body {
   border: 2px solid var(--line);
   box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.5);
   text-align: center;
-}
-.sprint-result-card {
-  max-height: calc(100vh - 4rem);
-  max-height: calc(100dvh - 4rem);
-  overflow-y: auto;
 }
 .result-eyebrow {
   margin: 0;
@@ -3571,8 +3573,6 @@ button.card:active {
 
 .quarter-review-card {
   max-width: 640px;
-  max-height: 90vh;
-  overflow-y: auto;
 }
 .quarter-review-title {
   font-size: 1.25rem;

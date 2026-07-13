@@ -133,6 +133,30 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(whatIf?.draftCandidates.docs?.trials).toBe(24);
   });
 
+  it('loseOnPlay は試練コスト後の予算で予算枯渇を判定する', () => {
+    const engine = new RunEngine({
+      seed: 'what-if-budget-pressure',
+      difficulty: 'nightmare',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      budget: number;
+      org: { aiDependency: number; aiLiteracy: number };
+    };
+    // Nightmare 初期依存度 25 + 試練 +5 → 30、ceil(30 * 0.05)=2 を差し引くと予算 0。
+    internals.budget = 2;
+    internals.org.aiDependency = 25;
+    internals.org.aiLiteracy = 40;
+    internals.phase = 'draft';
+    internals.draft = ['docs'];
+
+    const whatIf = engine.whatIfPreview();
+    expect(whatIf?.draftCandidates.docs?.loseOnPlay).toBe('budgetExhausted');
+  });
+
   it('手札に入らないドラフト候補は発動仮定（loseOnPlay）を付けない', () => {
     const engine = new RunEngine({ seed: 'what-if-hand-miss', difficulty: 'nightmare' });
     engine.startRun();

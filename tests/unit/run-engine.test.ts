@@ -251,6 +251,35 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(after.loseReason).toBe('budgetExhausted');
   });
 
+  it('RI-32: 採用で予算が尽きても lost フェーズを保持する', () => {
+    const engine = new RunEngine({ seed: 'ri32-recruit-budget', difficulty: 'nightmare' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      budget: number;
+    };
+    internals.phase = 'rest';
+    internals.budget = 25;
+    engine.restChoose('recruit');
+    const after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('budgetExhausted');
+    expect(after.phase).toBe('lost');
+  });
+
+  it('RI-32: 全社レバーで予算が尽きると即時敗北する', () => {
+    const engine = new RunEngine({ seed: 'ri32-lever-budget', difficulty: 'nightmare' });
+    engine.startRun();
+    engine.zoomTo('company');
+    const before = engine.snapshot();
+    expect(before.budget).toBe(25);
+    expect(engine.applyOrgLever('aiGuideline')).toBe(true);
+    const after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('budgetExhausted');
+    expect(after.phase).toBe('lost');
+  });
+
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {
     const e = new RunEngine({ seed: E2E_MISSED_ADJUSTABLE_SEED, difficulty: 'easy' });
     e.startRun();

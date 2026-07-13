@@ -491,4 +491,29 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(shopState.status).toBe('playing');
     expect(shopGame.getMeta().points).toBe(shopBefore);
   });
+
+  it('RI-32: レリック購入の予算枯渇でもメタ報酬を記録する', () => {
+    const game = createGame({ seed: 'ri32-meta-relic-lose', difficulty: 'nightmare' });
+    game.startRun('nightmare');
+    const before = game.getMeta().points;
+    const internals = game.engine as unknown as {
+      phase: string;
+      budget: number;
+      shop: {
+        cards: Array<{ defId: string; cost: number; bought: boolean }>;
+        relic: { id: string; cost: number; bought: boolean };
+      } | null;
+    };
+    internals.phase = 'shop';
+    internals.budget = 30;
+    internals.shop = {
+      cards: [],
+      relic: { id: 'postmortem', cost: 30, bought: false },
+    };
+
+    const state = game.buyShopRelic();
+    expect(state.status).toBe('lost');
+    expect(state.loseReason).toBe('budgetExhausted');
+    expect(game.getMeta().points).toBeGreaterThan(before);
+  });
 });

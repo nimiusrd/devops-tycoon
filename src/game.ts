@@ -255,7 +255,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     buyShopRelic() {
       engine.buyShopRelic();
       bump();
-      return engine.snapshot();
+      return after();
     },
     leaveShop() {
       engine.leaveShop();
@@ -265,7 +265,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     restChoose(option, deckIndex) {
       engine.restChoose(option, deckIndex);
       bump();
-      return engine.snapshot();
+      return after();
     },
     assignMember(id, assignment) {
       engine.assignMember(id, assignment);
@@ -300,7 +300,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     applyOrgLever(leverId, deptId) {
       engine.applyOrgLever(leverId, deptId);
       bump();
-      return engine.snapshot();
+      return after();
     },
     acknowledgeQuarterReview() {
       engine.acknowledgeQuarterReview();

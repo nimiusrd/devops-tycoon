@@ -1043,7 +1043,7 @@ export class RunEngine {
         if (next !== this.roster) {
           this.roster = next;
           this.budget -= RECRUIT_COST;
-          this.applyImmediateLose();
+          if (this.applyImmediateLose()) return;
         }
       }
     }
@@ -1152,6 +1152,7 @@ export class RunEngine {
     if (!res.changed) return false;
     this.orgAdjust = res.adjust;
     this.budget = res.budget;
+    this.applyImmediateLose();
     return true;
   }
 
@@ -1296,9 +1297,9 @@ export class RunEngine {
           0,
           100,
         );
-        this.applyTrialAiDependencyPressure(playOrg, this.budget);
+        const budgetAfterPressure = this.applyTrialAiDependencyPressure(playOrg, this.budget);
         applyDeckBaseline(playOrg, scaleEffects(card.base, 1));
-        const loseOnPlay = evaluateLose(playOrg, this.totals, this.budget);
+        const loseOnPlay = evaluateLose(playOrg, this.totals, budgetAfterPressure);
         if (loseOnPlay) {
           draftCandidates[defId] = {
             trials: 0,

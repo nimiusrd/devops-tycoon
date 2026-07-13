@@ -27,7 +27,7 @@ import {
 import { planOrgScene, type OrgSceneOptions, type OrgScenePlan, type OrgSprite } from '../orgScene';
 import { truncateName } from '../orgIslandView';
 import { isoLayoutOrigin, layoutIso, orgLayoutFingerprint, ORG_PAD } from '../orgView';
-import { ensureTexturePoolGuard } from './pixiTexturePoolGuard';
+import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
 
 /**
@@ -461,6 +461,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
 
     this.app = app;
     this.viewport = viewport;
+    retainPixiApp();
   }
 
   /** org-field のスクロール窓を更新する（カリングの可視範囲）。 */
@@ -758,6 +759,8 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
       island.destroy({ children: true });
     }
     this.viewport?.destroy();
+    // 自分を生存数から外してから destroy する（共有プール purge の可否判定）。
+    if (this.app) releasePixiApp();
     this.app?.destroy(true, DESTROY_OPTIONS);
     this.app = null;
     this.viewport = null;

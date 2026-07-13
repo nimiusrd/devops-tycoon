@@ -32,7 +32,7 @@ import {
   teamFloorColor,
 } from '../deptPixiView';
 import { SpritePool } from '../iso';
-import { ensureTexturePoolGuard } from './pixiTexturePoolGuard';
+import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
 
 /** 破棄オプション（Pixi v8）。`pixiOrgRenderer` と同値。 */
@@ -374,6 +374,7 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     });
 
     this.app = app;
+    retainPixiApp();
   }
 
   /** init 済みか（React 側の再描画判定用）。 */
@@ -562,6 +563,8 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     for (const group of this.pool?.drain() ?? []) {
       group.destroy({ children: true });
     }
+    // 自分を生存数から外してから destroy する（共有プール purge の可否判定）。
+    if (this.app) releasePixiApp();
     this.app?.destroy(true, DESTROY_OPTIONS);
     this.app = null;
     this.pool = null;

@@ -13,6 +13,10 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
+    // Chromium の場所が特殊な環境向け（gallery の GALLERY_CHROMIUM と同じ発想）。
+    ...(process.env.PLAYWRIGHT_CHROMIUM
+      ? { launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM } }
+      : {}),
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

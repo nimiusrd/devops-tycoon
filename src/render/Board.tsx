@@ -7,7 +7,7 @@
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
  * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
-import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type {
   ActionTarget,
   Lane,
@@ -23,6 +23,7 @@ import {
   planBoardDrag,
   type DraggableActionId,
 } from './boardDragPlan';
+import { hitTestBoardDot } from './boardPixiView';
 import { BoardPixiLayer } from '../ui/BoardPixiLayer';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
@@ -292,7 +293,7 @@ export function Board({
 
   const dragPlan =
     armedAction && sprint ? planBoardDrag(sprint, armedAction, assignAssignee) : null;
-  const dragIds = new Set(dragPlan?.draggableTaskIds ?? []);
+  const dragIds = useMemo(() => new Set(dragPlan?.draggableTaskIds ?? []), [dragPlan]);
   const dropLanes = new Set(dragPlan?.dropLanes ?? []);
 
   const [dragTaskId, setDragTaskId] = useState<number | null>(null);
@@ -336,12 +337,26 @@ export function Board({
     [armedAction, dragPlan, onDragComplete],
   );
 
+  // Pixi 時は粒が canvas 内にあり DOM の pointerdown ターゲットが無いため、
+  // 盤面 div で受けて設計座標から掴む粒を逆引きする（RI-30 の Pixi 対応）。
+  const handleBoardPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      const rect = boardRef.current?.getBoundingClientRect();
+      if (!rect || dragIds.size === 0) return;
+      const pt = clientToBoardPoint(e.clientX, e.clientY, rect);
+      const taskId = hitTestBoardDot(pt, scene.dots, dragIds);
+      if (taskId !== null) handlePointerDown(e, taskId);
+    },
+    [dragIds, scene.dots, handlePointerDown],
+  );
+
   return (
     <div
       ref={boardRef}
       className={`board iso-office${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
       data-testid="board"
       data-armed={armedAction ?? undefined}
+      onPointerDown={usePixi ? handleBoardPointerDown : undefined}
       style={{ '--review-heat': heat } as CSSProperties}
     >
       <OfficeRoom />

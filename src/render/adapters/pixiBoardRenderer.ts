@@ -35,7 +35,7 @@ import {
 import { containFitTransform } from '../deptPixiView';
 import { SpritePool } from '../iso';
 import { TASK_COLORS, TASK_DIAMETER } from '../taskView';
-import { ensureTexturePoolGuard } from './pixiTexturePoolGuard';
+import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
 
 /** 破棄オプション（Pixi v8）。`pixiOrgRenderer` と同値。 */
@@ -367,6 +367,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     });
 
     this.app = app;
+    retainPixiApp();
 
     // CSS keyframes（flybob / bob / flowBobDrift / fireShake / dash）相当の
     // 常時アニメ。座標本体は render() の plan 由来で、ここはオフセットだけを足す。
@@ -696,6 +697,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     // 焼き込みテクスチャは自前管理なので明示破棄する。
     for (const texture of this.textures.values()) texture.destroy(true);
     this.textures.clear();
+    // 自分を生存数から外してから destroy する（共有プール purge の可否判定）。
+    if (this.app) releasePixiApp();
     this.app?.destroy(true, DESTROY_OPTIONS);
     this.app = null;
     this.pool = null;

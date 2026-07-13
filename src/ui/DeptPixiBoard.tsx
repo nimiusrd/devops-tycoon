@@ -66,7 +66,18 @@ export function DeptPixiBoard({ dept, onFocusTeam }: DeptPixiBoardProps) {
     if (!mount) return;
 
     const renderer = new PixiDeptRenderer({
-      onFocusTeam: (id) => onFocusTeamRef.current(id),
+      onFocusTeam: (id) => {
+        const r = rendererRef.current;
+        const team = deptRef.current.teams.find((t) => t.id === id);
+        // RI-04: プレイヤーチームは現場へ着地するため、カメラが寄ってから
+        // 状態遷移する（App の zoom-overlay クロスフェードで着地）。
+        // 非プレイヤーは engine が department 止まりにするので即時遷移。
+        if (r?.isReady && team?.isPlayer) {
+          void r.focusTeamZoom(id).then(() => onFocusTeamRef.current(id));
+        } else {
+          onFocusTeamRef.current(id);
+        }
+      },
       onRenderMetrics: (m) => {
         const el = mountRef.current;
         if (!el) return;

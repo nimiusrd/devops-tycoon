@@ -7,6 +7,7 @@ import {
   BADGE_NAME_MAX_CHARS,
   detailForZoom,
   fireLabel,
+  focusRingTone,
   LOD_BADGE_MAX,
   LOD_DOT_MAX,
   teamIslandView,
@@ -112,5 +113,25 @@ describe('teamIslandView', () => {
     expect(labels.ai).toBeNull();
     expect(labels.fire).toBeNull();
     expect(labels.showBadge).toBe(false);
+  });
+});
+
+describe('focusRingTone（RI-04）', () => {
+  it('炎上中は橙赤・最強', () => {
+    expect(focusRingTone(team({ id: 't', incidents: 2, health: 'healthy' }))).toEqual({
+      color: '#ff7a2f',
+      strength: 1,
+    });
+  });
+
+  it('Review Hell は赤、渋滞は黄、健全は緑（強→弱）', () => {
+    const hell = focusRingTone(team({ id: 't', health: 'reviewHell' }));
+    const jam = focusRingTone(team({ id: 't', health: 'congested' }));
+    const ok = focusRingTone(team({ id: 't', health: 'healthy' }));
+    expect(hell.color).toBe('#ff5f57');
+    expect(jam.color).toBe('#ffd45c');
+    expect(ok.color).toBe('#58e0b0');
+    expect(hell.strength).toBeGreaterThan(jam.strength);
+    expect(jam.strength).toBeGreaterThan(ok.strength);
   });
 });

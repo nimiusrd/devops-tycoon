@@ -10,6 +10,24 @@ import { HEALTH_LABEL } from './orgView';
 /** ズームに連動する詳細度（第22.5 LOD）。 */
 export type OrgIslandDetail = 'dot' | 'badge' | 'card';
 
+/**
+ * ドリルダウン時のフォーカスリング演出トーン（RI-04 / SPEC 第4.11）。
+ * 「移動先の状態（炎上・渋滞）が遷移演出にも反映される」を満たすため、
+ * リングの色と脈動の強さをチーム状態から純関数で導く。
+ */
+export interface FocusRingTone {
+  color: string;
+  /** 演出の強さ 0..1（alpha・リング幅に効く）。悪い状態ほど強い。 */
+  strength: number;
+}
+
+export function focusRingTone(team: Pick<Team, 'incidents' | 'health'>): FocusRingTone {
+  if (team.incidents > 0) return { color: '#ff7a2f', strength: 1 };
+  if (team.health === 'reviewHell') return { color: '#ff5f57', strength: 0.85 };
+  if (team.health === 'congested') return { color: '#ffd45c', strength: 0.6 };
+  return { color: '#58e0b0', strength: 0.4 };
+}
+
 /** LOD 境界: scale < 0.35 → dot、< 0.7 → badge、それ以外 → card。
  * Phase 6d: 暫定値のまま確定（pan/zoom 実測で変更不要）。 */
 export const LOD_DOT_MAX = 0.35;

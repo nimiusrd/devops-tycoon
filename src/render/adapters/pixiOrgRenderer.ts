@@ -25,7 +25,7 @@ import {
   type WorldBounds,
 } from '../orgCamera';
 import { planOrgScene, type OrgSceneOptions, type OrgScenePlan, type OrgSprite } from '../orgScene';
-import { truncateName } from '../orgIslandView';
+import { focusRingTone, truncateName } from '../orgIslandView';
 import { isoLayoutOrigin, layoutIso, orgLayoutFingerprint, ORG_PAD } from '../orgView';
 import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
@@ -387,6 +387,17 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private scrollHost: HTMLElement | null = null;
   /** 直近 render のシーン計画（dev 計測 / デバッグ）。 */
   private lastPlan: OrgScenePlan | null = null;
+  /** フォーカスリング演出（RI-04。world 座標に描き、ticker で拡大フェード）。 */
+  private readonly focusRingGfx = new Graphics();
+  private focusRing: {
+    x: number;
+    y: number;
+    r0: number;
+    r1: number;
+    color: string;
+    strength: number;
+    startMs: number;
+  } | null = null;
 
   constructor(opts: PixiOrgRendererOptions) {
     this.opts = opts;
@@ -423,6 +434,8 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     });
     viewport.drag().pinch().wheel().decelerate();
     viewport.addChild(this.layer);
+    this.focusRingGfx.eventMode = 'none';
+    viewport.addChild(this.focusRingGfx);
     app.stage.addChild(viewport);
 
     const redraw = (): void => {
@@ -455,7 +468,10 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     });
 
     if (!this.tickerBound) {
-      app.ticker.add(() => this.pulseFireStrokes());
+      app.ticker.add(() => {
+        this.pulseFireStrokes();
+        this.updateFocusRing();
+      });
       this.tickerBound = true;
     }
 
@@ -603,6 +619,62 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     });
   }
 
+  /**
+   * 島タップのフォーカスリングを再生する（RI-04 / SPEC 第4.11）。
+   * 「島タップ→フォーカスリング→カメラが寄る」の最初の一拍。色と強さは
+   * 遷移先チームの炎上・渋滞状態から導く（`focusRingTone`）。カメラ演出と
+   * 並行に ticker で拡大フェードし、時間経過で自動消滅する。
+   */
+  playFocusRing(teams: readonly Team[], teamId: string): void {
+    const team = teams.find((t) => t.id === teamId);
+    const bounds = worldBoundsForTeamFocus(teams, teamId, this.opts.isoBase, this.opts.pad);
+    if (!team || !bounds) return;
+    const center = boundsCenter(bounds);
+    const tone = focusRingTone(team);
+    const base = Math.min(bounds.width, bounds.height);
+    this.focusRing = {
+      x: center.x,
+      y: center.y,
+      r0: base * 0.18,
+      r1: base * 0.42,
+      color: tone.color,
+      strength: tone.strength,
+      startMs: performance.now(),
+    };
+  }
+
+  /** フォーカスリング演出の残り時間（ms）。E2E / dev 計測用。 */
+  static readonly FOCUS_RING_MS = 420;
+
+  /** リング演出が再生中か（E2E 検証用）。 */
+  get focusRingActive(): boolean {
+    return this.focusRing !== null;
+  }
+
+  /** ticker: リングを拡大しながらフェードアウトする。 */
+  private updateFocusRing(): void {
+    const ring = this.focusRing;
+    const g = this.focusRingGfx;
+    if (!ring) return;
+    const t = (performance.now() - ring.startMs) / PixiOrgRenderer.FOCUS_RING_MS;
+    g.clear();
+    if (t >= 1) {
+      this.focusRing = null;
+      return;
+    }
+    // easeOutCubic で外へ広がり、alpha は強さ×残り時間で減衰する。
+    const k = 1 - (1 - t) ** 3;
+    const r = ring.r0 + (ring.r1 - ring.r0) * k;
+    const alpha = ring.strength * (1 - t);
+    const scale = this.viewport?.scale.x ?? 1;
+    g.circle(ring.x, ring.y, r).stroke({ color: ring.color, width: 4 / scale, alpha });
+    g.circle(ring.x, ring.y, r * 0.72).stroke({
+      color: ring.color,
+      width: 2 / scale,
+      alpha: alpha * 0.6,
+    });
+  }
+
   /** 炎上菱形 stroke の点滅（browser のみ）。 */
   private pulseFireStrokes(): void {
     if (this.firePulses.length === 0) return;
@@ -624,6 +696,9 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     for (const { gfx, fire } of this.firePulses) {
       gfx.alpha = 0.55 + phase * 0.45 * fire;
     }
+    // 時間依存のフォーカスリングは消してから固定フレームを描く（決定論）。
+    this.focusRing = null;
+    this.focusRingGfx.clear();
     app.render();
   }
 

@@ -124,6 +124,46 @@ export function containFitTransform(
   };
 }
 
+/**
+ * チームミニ盤面へのズームイン変換（RI-04: 部署ビューのドリルダウン演出）。
+ * contain-fit を基準に zoomMul 倍へ寄り、設計座標 (teamX, teamY) が
+ * host（canvas 実寸）の中央へ来る root 変換を返す。
+ */
+export function teamZoomTransform(
+  fit: ContainFitTransform,
+  teamX: number,
+  teamY: number,
+  hostW: number,
+  hostH: number,
+  zoomMul = 1.6,
+): ContainFitTransform {
+  const scale = fit.scale * zoomMul;
+  return {
+    scale,
+    x: hostW / 2 - teamX * scale,
+    y: hostH / 2 - teamY * scale,
+  };
+}
+
+/**
+ * ズームトゥイーンの補間（easeOutCubic）。t は 0..1 にクランプする。
+ * viewport を持たない部署レンダラが root の scale/position を手動で
+ * 動かすための純関数（Vitest で端点・単調性を固定する）。
+ */
+export function zoomTransformAt(
+  t: number,
+  from: ContainFitTransform,
+  to: ContainFitTransform,
+): ContainFitTransform {
+  const clamped = Math.max(0, Math.min(1, t));
+  const k = 1 - (1 - clamped) ** 3;
+  return {
+    scale: from.scale + (to.scale - from.scale) * k,
+    x: from.x + (to.x - from.x) * k,
+    y: from.y + (to.y - from.y) * k,
+  };
+}
+
 /** バナー/タグのトーン配色（styles.css `.dept-team-banner.tone-*` と同値）。 */
 export interface BannerToneColors {
   border: string;

@@ -16,6 +16,7 @@ declare global {
       focusTeamCamera(teamId: string): Promise<void>;
       getZoomScale(): number | null;
       freezeForScreenshot(): void;
+      isFocusRingActive(): boolean;
     };
   }
 }
@@ -92,7 +93,17 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
       onFocusTeam: (id) => {
         const r = rendererRef.current;
         if (r?.isReady) {
-          void r.focusTeamCamera(teamsRef.current, id, true).then(() => {
+          // RI-04: 島タップ → フォーカスリング（遷移先の炎上/渋滞トーン）→
+          // カメラが寄る → 完了後に状態遷移（App の zoom-overlay クロスフェードで着地）。
+          // engine.focusTeam は非プレイヤーを department 止まりにするため、
+          // カメラも部門 bounds へ寄せて着地先と一致させる。
+          const team = teamsRef.current.find((t) => t.id === id);
+          r.playFocusRing(teamsRef.current, id);
+          const camera =
+            team && !team.isPlayer
+              ? r.focusDepartment(teamsRef.current, team.deptId, true)
+              : r.focusTeamCamera(teamsRef.current, id, true);
+          void camera.then(() => {
             onFocusTeamRef.current(id);
           });
         } else {
@@ -141,6 +152,7 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
           focusTeamCamera: (teamId) => renderer.focusTeamCamera(teamsRef.current, teamId, false),
           getZoomScale: () => renderer.getZoomScale(),
           freezeForScreenshot: () => renderer.freezeForScreenshot(),
+          isFocusRingActive: () => renderer.focusRingActive,
         };
       }
     });

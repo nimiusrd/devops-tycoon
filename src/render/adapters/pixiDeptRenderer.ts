@@ -351,7 +351,8 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     from: ContainFitTransform;
     to: ContainFitTransform;
     startMs: number;
-    resolve: () => void;
+    /** true=完走 / false=dispose によるキャンセル。 */
+    resolve: (completed: boolean) => void;
   } | null = null;
   private tickerBound = false;
 
@@ -402,7 +403,10 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     this.app.renderer.resize(boardWidth, boardHeight);
     this.hostW = boardWidth;
     this.hostH = boardHeight;
-    this.zoomTween = null;
+    // ズームトゥイーン進行中は root を触らない（ticker が毎フレーム上書きする）。
+    // スプリント進行中は dept 更新のたびに resize() が呼ばれるため、ここで
+    // トゥイーンを破棄するとドリルダウンの完了 promise が永遠に解決しない。
+    if (this.zoomTween) return;
     const t = containFitTransform(boardWidth, boardHeight, DEPT_VIEW.w, DEPT_VIEW.h);
     this.root.scale.set(t.scale);
     this.root.position.set(t.x, t.y);
@@ -412,14 +416,15 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
    * チームミニ盤面へカメラが寄るズームイン演出（RI-04 / SPEC 第4.11）。
    * 部署ビューは viewport を使わない固定盤面のため、contain-fit を基準に
    * root の scale/position を easeOutCubic で手動トゥイーンする。
-   * 完了で resolve し、呼び出し側はその後に状態遷移（クロスフェード着地）する。
+   * 完走で true、dispose によるキャンセルで false を resolve する。呼び出し側は
+   * true のときだけ状態遷移（クロスフェード着地）する（unmount 後の遷移防止）。
    */
-  focusTeamZoom(teamId: string, durationMs = 360): Promise<void> {
+  focusTeamZoom(teamId: string, durationMs = 360): Promise<boolean> {
     const app = this.app;
     const dept = this.lastDept;
-    if (!app || !dept || this.hostW <= 0 || this.hostH <= 0) return Promise.resolve();
+    if (!app || !dept || this.hostW <= 0 || this.hostH <= 0) return Promise.resolve(true);
     const plan = planDeptBoardScene(dept).teams.find((t) => t.teamId === teamId);
-    if (!plan) return Promise.resolve();
+    if (!plan) return Promise.resolve(true);
 
     const fit = containFitTransform(this.hostW, this.hostH, DEPT_VIEW.w, DEPT_VIEW.h);
     const to = teamZoomTransform(fit, plan.x, plan.y, this.hostW, this.hostH);
@@ -448,7 +453,7 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     this.root.position.set(at.x, at.y);
     if (t >= 1) {
       this.zoomTween = null;
-      tween.resolve();
+      tween.resolve(true);
     }
   }
 
@@ -460,13 +465,13 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
   freezeForScreenshot(): void {
     const app = this.app;
     if (!app) return;
-    // 進行中のズームトゥイーンは終端へ飛ばして確定させる（決定論・promise 解決）。
+    // 進行中のズームトゥイーンは終端へ飛ばして完走扱いで確定させる（決定論・promise 解決）。
     const tween = this.zoomTween;
     if (tween) {
       this.zoomTween = null;
       this.root.scale.set(tween.to.scale);
       this.root.position.set(tween.to.x, tween.to.y);
-      tween.resolve();
+      tween.resolve(true);
     }
     app.ticker.stop();
     app.render();
@@ -626,8 +631,9 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
   /** WebGL リソースを破棄する。init の解決前でも呼べる（disposed で中断させる）。 */
   dispose(): void {
     this.disposed = true;
-    // 進行中トゥイーンの promise を解放する（await 側のハング防止）。
-    this.zoomTween?.resolve();
+    // 進行中トゥイーンは「キャンセル」として解放する（await 側のハング防止。
+    // 成功扱いにすると unmount 後に onFocusTeam の画面遷移が走ってしまう）。
+    this.zoomTween?.resolve(false);
     this.zoomTween = null;
     // CanvasText の unload（TexturePool への返却）は renderer 破棄前に済ませる。
     // app.destroy 後だと TexturePool が先に消え、pipe の後始末が

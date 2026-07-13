@@ -10,6 +10,7 @@ type GameWindow = Window & {
     pause(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
+    beginSetupSprint(): RunState;
     zoomTo(level: string): RunState;
     focusDept(id: string): RunState;
     focusTeam(id: string): RunState;
@@ -96,6 +97,33 @@ test.describe('Pixi 部署ビュー視覚回帰 @pixi', () => {
 
     await expect
       .poll(async () => page.evaluate(() => (window as GameWindow).game!.getState().zoom.level))
+      .toBe('team');
+  });
+
+  test('スプリント進行中（ポーズなし）でもタップのドリルダウンが完了する @pixi', async ({
+    page,
+  }) => {
+    // ライブ更新中は dept prop 変化のたびに DeptPixiBoard が resize() を呼ぶ。
+    // resize がズームトゥイーンを未解決のまま破棄すると focusTeamZoom の完了
+    // promise が解決せず、ポーズ中以外はドリルダウンが効かなくなる（PR #112 P1 回帰）。
+    await page.goto(`/?renderer=pixi&seed=${PIXI_SEED}`);
+    await page.evaluate((s) => {
+      const g = (window as GameWindow).game!;
+      g.startRun('normal', [], s);
+      g.beginSetupSprint(); // ポーズせずスプリントを走らせたまま部署ビューを開く。
+      g.focusDept('product');
+    }, PIXI_SEED);
+    await stabilizeForScreenshot(page);
+
+    const mount = page.getByTestId('dept-pixi-mount');
+    const box = await mount.boundingBox();
+    if (!box) throw new Error('dept-pixi-mount bounding box missing');
+    await page.mouse.click(box.x + box.width * (230 / 1404), box.y + box.height * (318 / 573));
+
+    await expect
+      .poll(async () => page.evaluate(() => (window as GameWindow).game!.getState().zoom.level), {
+        timeout: 10_000,
+      })
       .toBe('team');
   });
 

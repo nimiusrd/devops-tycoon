@@ -76,8 +76,11 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
         // RI-04: プレイヤーチームは現場へ着地するため、カメラが寄ってから
         // 状態遷移する（App の zoom-overlay クロスフェードで着地）。
         // 非プレイヤーは engine が department 止まりにするので即時遷移。
+        // ズーム中に unmount（dispose）されたら completed=false になり遷移しない。
         if (r?.isReady && team?.isPlayer) {
-          void r.focusTeamZoom(id).then(() => onFocusTeamRef.current(id));
+          void r.focusTeamZoom(id).then((completed) => {
+            if (completed) onFocusTeamRef.current(id);
+          });
         } else {
           onFocusTeamRef.current(id);
         }

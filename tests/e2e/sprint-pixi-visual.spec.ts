@@ -130,8 +130,8 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     )) as SprintState;
     const scene = planBoardScene(sprint.tasks);
     const candidateIds = new Set(assignableTasks(sprint).map((t) => t.id));
-    const dot = scene.dots.find((d) => candidateIds.has(d.id) && !d.motion);
-    if (!dot) throw new Error('draggable dot not found on board');
+    const candidates = scene.dots.filter((d) => candidateIds.has(d.id) && !d.motion);
+    if (candidates.length === 0) throw new Error('draggable dot not found on board');
 
     const board = page.getByTestId('board');
     const box = await board.boundingBox();
@@ -141,7 +141,24 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       y: box.y + box.height * (y / 573),
     });
 
-    const from = toPage(dot.x, dot.y);
+    // ラベル・吹き出し等の DOM オーバーレイに覆われた粒は掴めない仕様
+    // （DOM モードと同じ）なので、覆われていない粒を選ぶ。
+    let from: { x: number; y: number } | null = null;
+    for (const dot of candidates) {
+      const pt = toPage(dot.x, dot.y);
+      const covered = await page.evaluate(
+        ([x, y]) =>
+          !!document
+            .elementFromPoint(x, y)
+            ?.closest('.st-label, .bubble, .board-legend, .pile-overflow'),
+        [pt.x, pt.y] as const,
+      );
+      if (!covered) {
+        from = pt;
+        break;
+      }
+    }
+    if (!from) throw new Error('all draggable dots are covered by overlays');
     const to = toPage(622, 251); // Coding ステーションのドロップゾーン中心。
     const before = await page.evaluate(
       () => (window as GameWindow).game!.getState().sprint?.metrics.actionCounts.assignTask ?? 0,

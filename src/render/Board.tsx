@@ -350,6 +350,16 @@ export function Board({
   // 盤面 div で受けて設計座標から掴む粒を逆引きする（RI-30 の Pixi 対応）。
   const handleBoardPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      // ラベル・吹き出し等の小型 DOM オーバーレイの上では掴まない（DOM モードで
+      // 「ラベルが上に乗った粒は掴めない」のと同じ挙動。splitPr は down+up だけで
+      // 確定するため、粒と重なるラベルクリックの誤発動を防ぐ）。全面を覆う装飾
+      // レイヤ（オーラ・演出）は素通しにする（弾くとドラッグ全体が効かなくなる）。
+      if (
+        e.target instanceof Element &&
+        e.target.closest('.st-label, .bubble, .board-legend, .pile-overflow')
+      ) {
+        return;
+      }
       const rect = boardRef.current?.getBoundingClientRect();
       if (!rect || dragIds.size === 0) return;
       const pt = clientToBoardPoint(e.clientX, e.clientY, rect);

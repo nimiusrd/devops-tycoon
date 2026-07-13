@@ -117,7 +117,7 @@
 | RI-39 | XState の役割整理(`phase` 二重管理の解消) | 中 | 未着手 | — | 第22 |
 | RI-40 | 通しテスト(DoD)の再確認 | 低 | 未着手 | — | — |
 | RI-41 | 代表 seed の記録(AIあり/なし差分) | 低 | 完了 | — | — |
-| RI-42 | AI 過信の二重診断の段階分け判断 | 低 | 保留(要判断) | — | 第13 |
+| RI-42 | AI 過信の二重診断の段階分け判断 | 低 | 完了 | — | 第13 |
 
 ---
 
@@ -615,10 +615,11 @@ XState を「遷移契約のテスト用」とするのか、実ランタイム�
 reworkΔ mean≈+6.1（3〜10）、deliveredΔ mean≈-94（-155〜-23）、aiAssistedPct with mean≈87 /
 without 常に 0。`AI_ADOPTION` 等の係数調整は不要。編成個体値の差分は RI-19 のスコープ。
 
-#### RI-42 AI 過信の二重診断の段階分け判断 — 優先度:低 / 保留(要判断)
+#### RI-42 AI 過信の二重診断の段階分け判断 — 優先度:低 / 完了
 
-`diagnoseMissedReasons` で AI Adoption KPI 未達と `aiDependency`＋rework 比率の両方が `aiOverconfidence` を
-立てうる（現状は `Set` で重複排除済み）。診断メッセージを段階分けするかは未判断。
+判断結果: メッセージ分割。パスA（AI Adoption KPI 未達）は `aiAdoptionShortfall`、
+パスB（`aiDependency >= 60` かつ rework 比率 > 0.3）は従来どおり `aiOverconfidence`。
+両方成立時は2行表示。`diagnoseMissedReasons` のユニットテストを追加済み。
 
 ---
 

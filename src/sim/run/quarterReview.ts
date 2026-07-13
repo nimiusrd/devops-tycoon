@@ -154,6 +154,7 @@ const REASON_LABELS: Record<string, string> = {
   scopeOverload: 'スコープ過多: 出荷目標に対して Delivery が不足している。',
   reviewJam: 'レビュー詰まり: Review 待ち行列が限界に近づいた。',
   qualityIssue: '品質問題: Quality / Tech Debt が目標を下回っている。',
+  aiAdoptionShortfall: 'AI Adoption 未達: 経営が求める AI 利用率に届いていない。',
   aiOverconfidence: 'AI 過信: AI 利用率は高いが手戻り・品質が追いついていない。',
   moraleDrop: '士気低下: Morale が目標を下回り、チームの持続力が弱い。',
   incidentSpiral: '障害連鎖: Incident が目標上限を超えた。',
@@ -172,7 +173,7 @@ export function diagnoseMissedReasons(input: DiagnoseInput): string[] {
       if (kpi.id === 'quality' || kpi.id === 'techDebt') reasons.push(REASON_LABELS.qualityIssue);
       if (kpi.id === 'morale') reasons.push(REASON_LABELS.moraleDrop);
       if (kpi.id === 'incident') reasons.push(REASON_LABELS.incidentSpiral);
-      if (kpi.id === 'aiAdoption') reasons.push(REASON_LABELS.aiOverconfidence);
+      if (kpi.id === 'aiAdoption') reasons.push(REASON_LABELS.aiAdoptionShortfall);
     }
   }
   if (totals.reviewQueuePeak >= 32) reasons.push(REASON_LABELS.reviewJam);

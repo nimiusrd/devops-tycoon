@@ -9,6 +9,7 @@ import {
   buildInitialTrust,
   buildQuarterGoal,
   buildQuarterReview,
+  diagnoseMissedReasons,
   evaluateQuarterOutcome,
   measureGoalProgress,
 } from '../../src/sim/run/quarterReview';
@@ -453,5 +454,67 @@ describe('四半期レビュー（Phase 8）', () => {
     for (const id of ids) {
       expect(getGoalAdjustment(id)).toBeDefined();
     }
+  });
+});
+
+const AI_ADOPTION_SHORTFALL = 'AI Adoption 未達: 経営が求める AI 利用率に届いていない。';
+const AI_OVERCONFIDENCE = 'AI 過信: AI 利用率は高いが手戻り・品質が追いついていない。';
+
+describe('diagnoseMissedReasons（RI-42: AI 診断のメッセージ分割）', () => {
+  const baseProgress: GoalKpiProgress[] = [
+    { id: 'delivery', label: 'Delivery', target: 60, actual: 70, status: 'met' },
+  ];
+
+  it('AI Adoption KPI 未達のみなら Adoption 未達メッセージだけを返す', () => {
+    const reasons = diagnoseMissedReasons({
+      progress: [
+        ...baseProgress,
+        { id: 'aiAdoption', label: 'AI Adoption', target: 40, actual: 20, status: 'missed' },
+      ],
+      org: org({ aiDependency: 20 }),
+      totals: totals({ rework: 1, completed: 20 }),
+      bossCleared: true,
+    });
+    expect(reasons).toContain(AI_ADOPTION_SHORTFALL);
+    expect(reasons).not.toContain(AI_OVERCONFIDENCE);
+  });
+
+  it('高 aiDependency + 高手戻り率のみなら AI 過信メッセージだけを返す', () => {
+    const reasons = diagnoseMissedReasons({
+      progress: baseProgress,
+      org: org({ aiDependency: 70 }),
+      totals: totals({ rework: 8, completed: 20 }),
+      bossCleared: true,
+    });
+    expect(reasons).toContain(AI_OVERCONFIDENCE);
+    expect(reasons).not.toContain(AI_ADOPTION_SHORTFALL);
+  });
+
+  it('両方成立時は Adoption 未達と AI 過信の両方を返す', () => {
+    const reasons = diagnoseMissedReasons({
+      progress: [
+        ...baseProgress,
+        { id: 'aiAdoption', label: 'AI Adoption', target: 40, actual: 20, status: 'missed' },
+      ],
+      org: org({ aiDependency: 70 }),
+      totals: totals({ rework: 8, completed: 20 }),
+      bossCleared: true,
+    });
+    expect(reasons).toContain(AI_ADOPTION_SHORTFALL);
+    expect(reasons).toContain(AI_OVERCONFIDENCE);
+  });
+
+  it('どちらも非成立なら AI 関連メッセージを含まない', () => {
+    const reasons = diagnoseMissedReasons({
+      progress: [
+        ...baseProgress,
+        { id: 'aiAdoption', label: 'AI Adoption', target: 40, actual: 50, status: 'met' },
+      ],
+      org: org({ aiDependency: 20 }),
+      totals: totals({ rework: 1, completed: 20 }),
+      bossCleared: true,
+    });
+    expect(reasons).not.toContain(AI_ADOPTION_SHORTFALL);
+    expect(reasons).not.toContain(AI_OVERCONFIDENCE);
   });
 });

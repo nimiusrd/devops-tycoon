@@ -280,6 +280,27 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(after.phase).toBe('lost');
   });
 
+  it('RI-32: スプリント開始時の試練コストで予算が尽きると即時敗北する', () => {
+    const engine = new RunEngine({
+      seed: 'ri32-sprint-budget',
+      difficulty: 'nightmare',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      budget: number;
+      org: { aiDependency: number };
+    };
+    // 依存度 55 + 試練 +5 → 60、ceil(60 * 0.05)=3 を差し引くと予算 0。
+    internals.budget = 3;
+    internals.org.aiDependency = 55;
+    engine.beginSetupSprint();
+    const after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('budgetExhausted');
+    expect(after.phase).toBe('lost');
+  });
+
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {
     const e = new RunEngine({ seed: E2E_MISSED_ADJUSTABLE_SEED, difficulty: 'easy' });
     e.startRun();

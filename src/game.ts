@@ -199,7 +199,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     beginSetupSprint() {
       engine.beginSetupSprint();
       bump();
-      return engine.snapshot();
+      return after();
     },
     resolveBeat(choiceIndex) {
       engine.resolveBeat(choiceIndex);

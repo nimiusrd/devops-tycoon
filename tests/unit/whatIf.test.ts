@@ -157,6 +157,31 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(whatIf?.draftCandidates.docs?.loseOnPlay).toBe('budgetExhausted');
   });
 
+  it('予算だけ変わっても what-if キャッシュは再計算される', () => {
+    const engine = new RunEngine({
+      seed: 'what-if-budget-cache',
+      difficulty: 'nightmare',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      budget: number;
+      org: { aiDependency: number; aiLiteracy: number };
+    };
+    internals.org.aiDependency = 25;
+    internals.org.aiLiteracy = 40;
+    internals.phase = 'draft';
+    internals.draft = ['docs'];
+    internals.budget = 10;
+
+    expect(engine.whatIfPreview()?.draftCandidates.docs?.loseOnPlay).toBeUndefined();
+
+    internals.budget = 2;
+    expect(engine.whatIfPreview()?.draftCandidates.docs?.loseOnPlay).toBe('budgetExhausted');
+  });
+
   it('手札に入らないドラフト候補は発動仮定（loseOnPlay）を付けない', () => {
     const engine = new RunEngine({ seed: 'what-if-hand-miss', difficulty: 'nightmare' });
     engine.startRun();

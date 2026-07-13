@@ -452,6 +452,8 @@ export class RunEngine {
       100,
     );
     this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget);
+    // 試練の開始時コストで予算が尽きた場合はスプリントへ進まず継続不能にする。
+    if (this.applyImmediateLose()) return;
     this.sprintBaselineInput = this.buildSprintBaselineInput({
       deck: this.deck,
       roster: this.roster,
@@ -1224,6 +1226,7 @@ export class RunEngine {
       this.org.morale,
       this.org.techDebt,
       this.org.quality,
+      this.budget,
       mod.reviewLoadAdd ?? 0,
       mod.reworkRateAdd ?? 0,
       mod.taskCountMul ?? 1,

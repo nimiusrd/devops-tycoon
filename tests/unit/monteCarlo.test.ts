@@ -33,6 +33,13 @@ import { IDENTITY_CARD_EFFECTS } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import { resolveSprintConfig } from '../../src/sim/sprint';
 import { playRun } from './helpers/runFlow';
+import {
+  meetsAiAdoptionCausalDoD,
+  RI41_RANGES,
+  RI41_SEEDS,
+  runAiAdoptionComparisons,
+  summarizeAiAdoptionComparisons,
+} from './helpers/aiAdoptionSeeds';
 
 const MC_SEEDS = ['mc-a', 'mc-b', 'mc-c', 'mc-d', 'mc-e'] as const;
 
@@ -453,6 +460,59 @@ describe('monteCarlo 基盤（RI-14）', () => {
       // コンボ改善も有意だが、平均 +8 を超える唯一解にはしない。
       expect(summary.maxComboDelta.mean).toBeGreaterThanOrEqual(1);
       expect(summary.maxComboDelta.mean).toBeLessThanOrEqual(8);
+    });
+  });
+
+  describe('RI-41: AIあり/なし差分の代表 seed', () => {
+    it('同一 seed 群なら AI あり/なしペアが完全再現する', () => {
+      expect(runAiAdoptionComparisons()).toEqual(runAiAdoptionComparisons());
+    });
+
+    it('代表 seed の全件でコア因果（利用率・Review / Rework）が成立する', () => {
+      const comparisons = runAiAdoptionComparisons();
+      expect(comparisons).toHaveLength(RI41_SEEDS.length);
+      const causalWins = comparisons.filter((c) => meetsAiAdoptionCausalDoD(c)).length;
+      // 探索時は 0..31 全件成立。代表 12 本は全件を要求する。
+      expect(causalWins).toBe(RI41_SEEDS.length);
+    });
+
+    it('差分の平均・最大が許容レンジ内に収まる', () => {
+      const summary = summarizeAiAdoptionComparisons(runAiAdoptionComparisons());
+      expect(summary.trials).toBe(RI41_SEEDS.length);
+
+      expect(summary.aiAssistedPctWithout.min).toBe(RI41_RANGES.aiAssistedPctWithout.min);
+      expect(summary.aiAssistedPctWithout.max).toBe(RI41_RANGES.aiAssistedPctWithout.max);
+      expect(summary.aiAssistedPctWith.min).toBeGreaterThanOrEqual(
+        RI41_RANGES.aiAssistedPctWith.min,
+      );
+      expect(summary.aiAssistedPctWith.max).toBeLessThanOrEqual(RI41_RANGES.aiAssistedPctWith.max);
+
+      expect(summary.reviewQueueDelta.mean).toBeGreaterThanOrEqual(
+        RI41_RANGES.reviewQueueDelta.meanMin,
+      );
+      expect(summary.reviewQueueDelta.mean).toBeLessThanOrEqual(
+        RI41_RANGES.reviewQueueDelta.meanMax,
+      );
+      expect(summary.reviewQueueDelta.min).toBeGreaterThanOrEqual(
+        RI41_RANGES.reviewQueueDelta.minFloor,
+      );
+      expect(summary.reviewQueueDelta.max).toBeLessThanOrEqual(
+        RI41_RANGES.reviewQueueDelta.maxCeil,
+      );
+
+      expect(summary.reworkDelta.mean).toBeGreaterThanOrEqual(RI41_RANGES.reworkDelta.meanMin);
+      expect(summary.reworkDelta.mean).toBeLessThanOrEqual(RI41_RANGES.reworkDelta.meanMax);
+      expect(summary.reworkDelta.min).toBeGreaterThanOrEqual(RI41_RANGES.reworkDelta.minFloor);
+      expect(summary.reworkDelta.max).toBeLessThanOrEqual(RI41_RANGES.reworkDelta.maxCeil);
+
+      expect(summary.deliveredDelta.mean).toBeGreaterThanOrEqual(
+        RI41_RANGES.deliveredDelta.meanMin,
+      );
+      expect(summary.deliveredDelta.mean).toBeLessThanOrEqual(RI41_RANGES.deliveredDelta.meanMax);
+      expect(summary.deliveredDelta.min).toBeGreaterThanOrEqual(
+        RI41_RANGES.deliveredDelta.minFloor,
+      );
+      expect(summary.deliveredDelta.max).toBeLessThanOrEqual(RI41_RANGES.deliveredDelta.maxCeil);
     });
   });
 });

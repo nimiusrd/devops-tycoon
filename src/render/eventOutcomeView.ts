@@ -86,6 +86,7 @@ const LOSE_LABELS: Record<LoseReason, string> = {
   reviewFreeze: 'レビュー停止でラン終了',
   incidentCascade: '障害連鎖でリリース停止',
   aiDependency: 'AI 依存過多でラン終了',
+  budgetExhausted: '予算枯渇でラン終了',
   bossFailed: 'ボス失敗でラン終了',
   trustExhausted: '信頼枯渇でラン終了',
   reorgRequired: '再編必要でラン終了',

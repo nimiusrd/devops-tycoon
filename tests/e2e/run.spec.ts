@@ -1,12 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { EVENT_DEFS, effectiveKind, getEvent } from '../../src/data/events';
 import { diagnosisTheme } from '../../src/render/diagnosisTheme';
+import { quarterFailureTheme } from '../../src/render/quarterFailureTheme';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunEngine } from '../../src/sim/run/engine';
-import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
+import type { GoalAdjustmentId, QuarterOutcome, RunState } from '../../src/sim/run/types';
 import {
   E2E_MISSED_ADJUSTABLE_SEED,
+  E2E_TERMINAL_MISSED_CRISIS,
+  E2E_TERMINAL_REORG_REQUIRED,
   E2E_TERMINAL_SHUTDOWN,
+  type TerminalQuarterSeed,
 } from '../../src/sim/run/quarterReviewSeeds';
 
 type GameWindow = Window & {
@@ -316,6 +320,96 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
   await expect(runResult).toHaveAttribute('data-quarter-outcome', expectedOutcome);
   await expect(page.getByTestId('run-end-status')).toBeVisible();
 });
+
+const RI22_TERMINAL_SEEDS: readonly TerminalQuarterSeed[] = [
+  E2E_TERMINAL_REORG_REQUIRED,
+  E2E_TERMINAL_MISSED_CRISIS,
+];
+
+const TERMINAL_FAILURE_OUTCOMES: readonly QuarterOutcome[] = [
+  'shutdown',
+  'reorg_required',
+  'missed_crisis',
+];
+
+for (const entry of RI22_TERMINAL_SEEDS) {
+  test(`RI-22: ${entry.outcome} で固有の終了演出を表示する`, async ({ page }) => {
+    const { seed, difficulty, outcome: expectedOutcome } = entry;
+    await page.goto(`/?seed=${seed}`);
+
+    const atReview = await page.evaluate(
+      ({ seed: runSeed, difficulty: runDifficulty, expectedOutcome: expected, terminals }) => {
+        const g = (window as GameWindow).game!;
+        g.pause();
+        g.startRun(runDifficulty, [], runSeed);
+        let s = g.getState();
+        let guard = 0;
+        while (s.status === 'playing' && guard < 80_000) {
+          guard += 1;
+          if (s.phase === 'quarterReview') {
+            const outcome = s.quarterReview?.outcome;
+            if (outcome && terminals.includes(outcome)) break;
+            if (outcome === 'missed_adjustable') {
+              g.chooseGoalAdjustment(s.quarterReview!.availableAdjustments[0] ?? 'cut_scope');
+            } else {
+              g.acknowledgeQuarterReview();
+            }
+          } else if (s.phase === 'setup') g.beginSetupSprint();
+          else if (s.phase === 'sprint') {
+            // RI-30: 手札を可能な限り発動してから一括進行（runFlow.advance と同じ）。
+            let playGuard = 0;
+            while (playGuard < 24) {
+              playGuard += 1;
+              const hand = g.getState().sprint?.cardPiles.hand ?? [];
+              if (hand.length === 0) break;
+              let playedAny = false;
+              for (const deckIndex of hand) {
+                if (g.playCard(deckIndex).ok) {
+                  playedAny = true;
+                  break;
+                }
+              }
+              if (!playedAny) break;
+            }
+            g.step(1_000_000);
+          } else if (s.phase === 'result') g.acknowledgeResult();
+          else if (s.phase === 'draft') {
+            if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
+            else g.skipDraft();
+          } else if (s.phase === 'evolution') g.finishEvolution();
+          else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+          else if (s.phase === 'shop') g.leaveShop();
+          else if (s.phase === 'rest') g.restChoose('heal');
+          else break;
+          s = g.getState();
+        }
+        const outcome = s.quarterReview?.outcome;
+        if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
+        return {
+          ok: s.phase === 'quarterReview' && outcome === expected,
+          outcome,
+          quarterNumber: s.quarterNumber,
+        };
+      },
+      {
+        seed,
+        difficulty,
+        expectedOutcome,
+        terminals: [...TERMINAL_FAILURE_OUTCOMES],
+      },
+    );
+
+    test.skip(!atReview.ok, `seed が ${expectedOutcome} にならない: ${JSON.stringify(atReview)}`);
+
+    const theme = quarterFailureTheme(expectedOutcome)!;
+    const runResult = page.getByTestId('run-result');
+    await expect(runResult).toBeVisible({ timeout: 5000 });
+    await expect(runResult).toHaveAttribute('data-quarter-outcome', expectedOutcome);
+    await expect(runResult).toHaveClass(new RegExp(theme.toneClass));
+    await expect(page.getByTestId('run-end-status')).toContainText(theme.label);
+    await expect(page.locator('.result-eyebrow')).toContainText(theme.eyebrow);
+  });
+}
 
 test('ビートの選択イベントを解決すると次スプリントへ進む（第9.4）', async ({ page }) => {
   await page.goto('/?seed=event-run');

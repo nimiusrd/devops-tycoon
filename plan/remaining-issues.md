@@ -87,7 +87,7 @@
 | --- | --- | --- | --- | --- | --- |
 | RI-20 | 称号(WinType)の永続コレクション化 | 中 | 完了 | — | 第4.6 / 17 |
 | RI-21 | 診断別の画面演出(6組織タイプ) | 中 | 完了 | — | 第13 / 18.3 |
-| RI-22 | 継続不能種別ごとの終了演出分け | 中 | 未着手 | — | 第15 / 18.3 |
+| RI-22 | 継続不能種別ごとの終了演出分け | 中 | 完了 | — | 第15 / 18.3 |
 | RI-23 | 業界ランキングへのデイリー記録接続 | 中 | 完了 | — | 第4.10 / 17 |
 | RI-24 | メタ解放対象の拡張(メンバー/トレイト/初期カード等) | 低 | 保留(要判断) | — | 第17 |
 | RI-25 | 開始時の組織プリセット(実装 or 足場削除) | 低 | 保留(要判断) | — | 第17 |
@@ -455,10 +455,13 @@ AI Overproduction / Rework Spiral / Senior Sacrifice / Documentation Kingdom）�
 `tests/unit/run-systems.test.ts`（全6タイプ）。E2E: `tests/e2e/run.spec.ts`（画面トーン・状態文・
 ラン結果の診断属性）。
 
-#### RI-22 継続不能種別ごとの終了演出分け — 優先度:中
+#### RI-22 継続不能種別ごとの終了演出分け — 優先度:中 / 完了
 
-`missed_crisis` / `reorg_required` / `shutdown` の終了演出は共通の `lose` 系に集約しているため、
-継続不能の種別ごとに診断・演出を分けるかを判断する（第15 / 18.3）。
+**完了**: `missed_crisis` / `reorg_required` / `shutdown` を共通の `lose` 系から分離し、
+`quarterFailureTheme`（`src/render/quarterFailureTheme.ts`）で種別ごとのトーン・eyebrow・ラベル・説明を返す。
+`RunResultScreen` が `data-quarter-outcome` と `quarter-failure-*` class を付与する。
+Vitest: `tests/unit/quarterFailureTheme.test.ts` / `tests/unit/quarter-review-seeds.test.ts`。
+E2E: `tests/e2e/run.spec.ts`（`E2E_TERMINAL_*` seed で種別固有の終了演出を検証）。
 
 #### RI-23 業界ランキングへのデイリー記録接続 — 優先度:中 / 完了
 

@@ -1274,6 +1274,32 @@ export class RunEngine {
     };
 
     const current = previewFor(this.deck, this.org);
+
+    // beginSprint と同じ開始直後の敗北（試練コストによる予算枯渇など）はカード発動前に起きる。
+    const startOrg = structuredClone(this.org);
+    startOrg.seniorHp = clamp(
+      startOrg.seniorHp + (100 - startOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
+      0,
+      100,
+    );
+    const budgetAfterPressure = this.applyTrialAiDependencyPressure(startOrg, this.budget);
+    const sprintStartLose = evaluateLose(startOrg, this.totals, budgetAfterPressure);
+    if (sprintStartLose) {
+      const immediate: ReturnType<typeof previewNextSprint> = {
+        trials: 0,
+        delivered: { mean: 0, min: 0, max: 0 },
+        spread: { mean: 0, min: 0, max: 0 },
+        immediateLose: sprintStartLose,
+      };
+      const draftCandidates: Record<string, ReturnType<typeof previewNextSprint>> = {};
+      if (this.phase === 'draft' && this.draft) {
+        for (const defId of this.draft) {
+          draftCandidates[defId] = { ...immediate };
+        }
+      }
+      return { current: immediate, draftCandidates };
+    }
+
     const draftCandidates: Record<string, ReturnType<typeof previewNextSprint>> = {};
     if (this.phase === 'draft' && this.draft) {
       for (const defId of this.draft) {
@@ -1300,9 +1326,9 @@ export class RunEngine {
           0,
           100,
         );
-        const budgetAfterPressure = this.applyTrialAiDependencyPressure(playOrg, this.budget);
+        const budgetAfterCardPressure = this.applyTrialAiDependencyPressure(playOrg, this.budget);
         applyDeckBaseline(playOrg, scaleEffects(card.base, 1));
-        const loseOnPlay = evaluateLose(playOrg, this.totals, budgetAfterPressure);
+        const loseOnPlay = evaluateLose(playOrg, this.totals, budgetAfterCardPressure);
         if (loseOnPlay) {
           draftCandidates[defId] = {
             trials: 0,

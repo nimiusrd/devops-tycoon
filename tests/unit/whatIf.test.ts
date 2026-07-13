@@ -133,7 +133,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(whatIf?.draftCandidates.docs?.trials).toBe(24);
   });
 
-  it('loseOnPlay は試練コスト後の予算で予算枯渇を判定する', () => {
+  it('試練コストだけで予算が尽きる場合は immediateLose で警告する', () => {
     const engine = new RunEngine({
       seed: 'what-if-budget-pressure',
       difficulty: 'nightmare',
@@ -146,7 +146,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
       budget: number;
       org: { aiDependency: number; aiLiteracy: number };
     };
-    // Nightmare 初期依存度 25 + 試練 +5 → 30、ceil(30 * 0.05)=2 を差し引くと予算 0。
+    // 依存度 25 + 試練 +5 → 30、ceil(30 * 0.05)=2 を差し引くと予算 0（カード発動前）。
     internals.budget = 2;
     internals.org.aiDependency = 25;
     internals.org.aiLiteracy = 40;
@@ -154,7 +154,9 @@ describe('RI-46 次スプリント what-if 試算', () => {
     internals.draft = ['docs'];
 
     const whatIf = engine.whatIfPreview();
-    expect(whatIf?.draftCandidates.docs?.loseOnPlay).toBe('budgetExhausted');
+    expect(whatIf?.current.immediateLose).toBe('budgetExhausted');
+    expect(whatIf?.draftCandidates.docs?.immediateLose).toBe('budgetExhausted');
+    expect(whatIf?.draftCandidates.docs?.loseOnPlay).toBeUndefined();
   });
 
   it('予算だけ変わっても what-if キャッシュは再計算される', () => {
@@ -176,10 +178,10 @@ describe('RI-46 次スプリント what-if 試算', () => {
     internals.draft = ['docs'];
     internals.budget = 10;
 
-    expect(engine.whatIfPreview()?.draftCandidates.docs?.loseOnPlay).toBeUndefined();
+    expect(engine.whatIfPreview()?.draftCandidates.docs?.immediateLose).toBeUndefined();
 
     internals.budget = 2;
-    expect(engine.whatIfPreview()?.draftCandidates.docs?.loseOnPlay).toBe('budgetExhausted');
+    expect(engine.whatIfPreview()?.draftCandidates.docs?.immediateLose).toBe('budgetExhausted');
   });
 
   it('手札に入らないドラフト候補は発動仮定（loseOnPlay）を付けない', () => {

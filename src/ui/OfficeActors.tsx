@@ -77,6 +77,30 @@ function Eyes({ mood, ink }: { mood: StationMood; ink: string }) {
       </>
     );
   }
+  if (mood === 'exhausted') {
+    // 疲れ果て: 閉じ目（下がり弧）＋濃いクマ＋汗
+    return (
+      <>
+        <ellipse cx="42" cy="53" rx="6.5" ry="3" fill="#b98a92" opacity=".6" />
+        <ellipse cx="58" cy="53" rx="6.5" ry="3" fill="#b98a92" opacity=".6" />
+        <path
+          d="M37 48 q4 4 9 0"
+          stroke={ink}
+          strokeWidth="2.4"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M54 48 q4 4 9 0"
+          stroke={ink}
+          strokeWidth="2.4"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <ellipse cx="68" cy="36" rx="2.5" ry="3.5" fill="#7bdcff" opacity=".85" />
+      </>
+    );
+  }
   if (mood === 'panic') {
     // 見開き（O O）＋メガネ
     return (
@@ -151,6 +175,18 @@ function Mouth({ mood }: { mood: StationMood }) {
         y2="60"
         stroke="#8a4a3a"
         strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+    );
+  }
+  if (mood === 'exhausted') {
+    // へろへろの波線口
+    return (
+      <path
+        d="M44 61 q3 -3 6 0 q3 3 6 0"
+        stroke="#8a4a3a"
+        strokeWidth="2.2"
+        fill="none"
         strokeLinecap="round"
       />
     );

@@ -110,6 +110,36 @@ describe('planBoardScene（盤面シーン計画）', () => {
     expect(planBoardScene(tasksIn('backlog', 8)).stations[0].bubble).toBe('山積みだ…');
   });
 
+  it('moodOverrides はメンバー由来の表情で上書きし、変化時は吹き出しを落とす（RI-08）', () => {
+    const ai = tasksIn('coding', 2, { aiAssisted: true });
+    const coding = (s: ReturnType<typeof planBoardScene>) =>
+      s.stations.find((x) => x.lane === 'coding')!;
+
+    // happy（AIサイコー！）→ exhausted 上書き。文脈が合わない吹き出しは出さない。
+    const overridden = planBoardScene(ai, { coding: 'exhausted' });
+    expect(coding(overridden).mood).toBe('exhausted');
+    expect(coding(overridden).bubble).toBeNull();
+
+    // 同じ表情への上書きは吹き出しを保つ。
+    const same = planBoardScene(ai, { coding: 'happy' });
+    expect(coding(same).bubble).toBe('AIサイコー！');
+  });
+
+  it('moodOverrides でも panic（渋滞・炎上）は勝つ', () => {
+    const panic = planBoardScene(tasksIn('rework', 1, { incident: true, burnTicksLeft: 10 }), {
+      rework: 'cheer',
+    });
+    const rework = panic.stations.find((s) => s.lane === 'rework')!;
+    expect(rework.mood).toBe('panic');
+    expect(rework.bubble).toBe('燃えてる！');
+  });
+
+  it('moodOverrides 省略時は従来どおり（後方互換）', () => {
+    const a = planBoardScene(tasksIn('done', 1));
+    const b = planBoardScene(tasksIn('done', 1), undefined);
+    expect(a.stations).toEqual(b.stations);
+  });
+
   it('粒の配置は決定論（同一入力＝同一座標）', () => {
     const tasks = tasksIn('review', 8);
     const a = planBoardScene(tasks).dots;

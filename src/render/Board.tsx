@@ -30,12 +30,14 @@ import { InterventionEffects, type InterventionTrigger } from '../ui/Interventio
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
 import { getRendererKind } from './adapters/selectRenderer';
+import { deriveMemberMoodOverrides } from './memberMood';
 import {
   planBoardScene,
   type BoardDotPlan,
   type BoardFlow,
   type BoardStationPlan,
 } from './boardScene';
+import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS, TASK_DIAMETER } from './taskView';
 
 const VIEW_W = 1404;
@@ -248,6 +250,8 @@ export interface BoardProps {
   interventionTrigger?: InterventionTrigger | null;
   /** firefight 演出と FireEffects 鎮火の二重再生を避ける task ID。 */
   suppressExtinguishTaskIds?: ReadonlySet<number>;
+  /** 育成メンバーの状態をキャラ表情へ反映する（RI-08）。 */
+  roster?: RosterState | null;
   /** 武装中のドラッグ介入（RI-30）。フル SprintState があると候補判定が正確。 */
   sprint?: SprintState | null;
   armedAction?: DraggableActionId | null;
@@ -273,12 +277,18 @@ export function Board({
   sprintTick = 0,
   interventionTrigger = null,
   suppressExtinguishTaskIds,
+  roster = null,
   sprint = null,
   armedAction = null,
   assignAssignee,
   onDragComplete,
 }: BoardProps) {
-  const scene = planBoardScene(tasks);
+  // 育成メンバーの疲弊/好調を表情上書きへ（RI-08。roster 無しは従来どおり）。
+  const moodOverrides = useMemo(
+    () => (roster ? deriveMemberMoodOverrides(roster) : undefined),
+    [roster],
+  );
+  const scene = planBoardScene(tasks, moodOverrides);
   // 常駐物（フロー線・粒・キャラ）を WebGL で描くか（RI-11。演出・ラベルは DOM 共通）。
   const usePixi =
     typeof window !== 'undefined' && getRendererKind(window.location.search) === 'pixi';

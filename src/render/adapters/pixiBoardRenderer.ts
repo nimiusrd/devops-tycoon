@@ -202,6 +202,19 @@ function drawEyes(g: Graphics, mood: StationMood): void {
       .stroke({ color: INK, width: 2.4, cap: 'round' });
     return;
   }
+  if (mood === 'exhausted') {
+    // 疲れ果て: 閉じ目（下がり弧）＋濃いクマ＋汗（OfficeActors と同値）。
+    g.ellipse(ox + 42, oy + 53, 6.5, 3).fill({ color: '#b98a92', alpha: 0.6 });
+    g.ellipse(ox + 58, oy + 53, 6.5, 3).fill({ color: '#b98a92', alpha: 0.6 });
+    g.moveTo(ox + 37, oy + 48)
+      .quadraticCurveTo(ox + 41, oy + 52, ox + 46, oy + 48)
+      .stroke({ color: INK, width: 2.4, cap: 'round' });
+    g.moveTo(ox + 54, oy + 48)
+      .quadraticCurveTo(ox + 58, oy + 52, ox + 63, oy + 48)
+      .stroke({ color: INK, width: 2.4, cap: 'round' });
+    g.ellipse(ox + 68, oy + 36, 2.5, 3.5).fill({ color: '#7bdcff', alpha: 0.85 });
+    return;
+  }
   if (mood === 'panic') {
     for (const cx of [42, 58]) {
       g.circle(ox + cx, oy + 48, 8)
@@ -249,6 +262,14 @@ function drawMouth(g: Graphics, mood: StationMood): void {
   if (mood === 'tired') {
     g.moveTo(ox + 43, oy + 60)
       .lineTo(ox + 57, oy + 60)
+      .stroke({ color: '#8a4a3a', width: 2.2, cap: 'round' });
+    return;
+  }
+  if (mood === 'exhausted') {
+    // へろへろの波線口（OfficeActors と同値）。
+    g.moveTo(ox + 44, oy + 61)
+      .quadraticCurveTo(ox + 47, oy + 58, ox + 50, oy + 61)
+      .quadraticCurveTo(ox + 53, oy + 64, ox + 56, oy + 61)
       .stroke({ color: '#8a4a3a', width: 2.2, cap: 'round' });
     return;
   }

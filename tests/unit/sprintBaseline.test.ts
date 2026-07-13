@@ -5,6 +5,7 @@ import {
   createSprintFromBaselineInput,
   runNoInterventionBaseline,
   runSprintSimulation,
+  runSprintSimulationFull,
   type SprintBaselineInput,
 } from '../../src/sim/run/sprintBaseline';
 import { resolveSprintConfig } from '../../src/sim/sprint';
@@ -52,5 +53,16 @@ describe('無介入ベースライン（RI-55）', () => {
 
     expect(policyCalls).toBeGreaterThan(0);
     expect(input.org).toEqual(before);
+  });
+
+  it('runSprintSimulationFull はフルリザルトを返し、薄いラッパと整合する', () => {
+    const input = makeInput({ seed: 'ri55-full' });
+    const full = runSprintSimulationFull(input);
+    const thin = runSprintSimulation(input);
+    expect(full.delivered).toBe(thin.delivered);
+    expect(full.spread).toBe(thin.spread);
+    expect(full.maxCombo).toBe(thin.maxCombo);
+    expect(full.aiAssistedPct).toBeGreaterThan(0);
+    expect(full.reviewQueueMax).toBeGreaterThanOrEqual(0);
   });
 });

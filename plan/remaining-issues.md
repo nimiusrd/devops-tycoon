@@ -116,7 +116,7 @@
 | RI-38 | `tone: joke` のネタイベント追加 | 低 | 完了 | — | 第9 |
 | RI-39 | XState の役割整理(`phase` 二重管理の解消) | 中 | 未着手 | — | 第22 |
 | RI-40 | 通しテスト(DoD)の再確認 | 低 | 未着手 | — | — |
-| RI-41 | 代表 seed の記録(AIあり/なし差分) | 低 | 未着手 | — | — |
+| RI-41 | 代表 seed の記録(AIあり/なし差分) | 低 | 完了 | — | — |
 | RI-42 | AI 過信の二重診断の段階分け判断 | 低 | 保留(要判断) | — | 第13 |
 
 ---
@@ -605,9 +605,15 @@ XState を「遷移契約のテスト用」とするのか、実ランタイム�
 依存関係導入後に `npm test` / `npm run test:e2e` / `npm run build` を実行し、マップ→ボス→解放までの DoD を
 緑で確認する。
 
-#### RI-41 代表 seed の記録(AIあり/なし差分) — 優先度:低
+#### RI-41 代表 seed の記録(AIあり/なし差分) — 優先度:低 / 完了
 
-AI あり/なしの差分が seed 固定で安定して観測できる代表 seed を記録し、バランス調整時の回帰確認に使う。
+**完了**: `tests/unit/helpers/aiAdoptionSeeds.ts` に代表 12 seed（`ri41-ai-0..11`）を記録。
+候補 `0..31` を掃引したところ全件でコア因果が成立したため、回帰コストを抑えて先頭 12 本を固定
+（除外なし）。`runSprintSimulationFull`（`aiAdoptionShare` 1 vs 0・無介入・default シナリオ）で
+比較し、`tests/unit/monteCarlo.test.ts` で決定論・全件の方向性（AI 利用率・Review / Rework）・
+差分許容レンジを回帰検知する。2026-07 初回計測（代表 12）: reviewQueueΔ mean≈+9.7（6〜13）、
+reworkΔ mean≈+6.1（3〜10）、deliveredΔ mean≈-94（-155〜-23）、aiAssistedPct with mean≈87 /
+without 常に 0。`AI_ADOPTION` 等の係数調整は不要。編成個体値の差分は RI-19 のスコープ。
 
 #### RI-42 AI 過信の二重診断の段階分け判断 — 優先度:低 / 保留(要判断)
 

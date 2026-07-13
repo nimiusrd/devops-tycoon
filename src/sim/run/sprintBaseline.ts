@@ -11,6 +11,7 @@ import type {
   OrgState,
   SprintBaselineResult,
   SprintConfig,
+  SprintResult,
   SprintState,
 } from '../types';
 
@@ -58,14 +59,14 @@ export function createSprintFromBaselineInput(
 }
 
 /**
- * 同一初期条件のスプリントを任意の介入ポリシーで完了まで再実行する。
+ * 同一初期条件のスプリントを任意の介入ポリシーで完了まで再実行し、フルリザルトを返す。
  *
  * ポリシーを省略すれば無介入になる。入力は clone して扱うため、比較試行同士で状態を共有しない。
  */
-export function runSprintSimulation(
+export function runSprintSimulationFull(
   input: SprintBaselineInput,
   interventionPolicy?: SprintInterventionPolicy,
-): SprintBaselineResult {
+): SprintResult {
   const org = structuredClone(input.org);
   const { sprint, rng } = createSprintFromBaselineInput(input, org);
   let tick = 0;
@@ -79,7 +80,20 @@ export function runSprintSimulation(
     throw new Error(`Baseline sprint did not complete by tick ${tick}`);
   }
 
-  const result = summarizeSprint(sprint, org);
+  return summarizeSprint(sprint, org);
+}
+
+/**
+ * 同一初期条件のスプリントを任意の介入ポリシーで完了まで再実行する。
+ *
+ * ポリシーを省略すれば無介入になる。入力は clone して扱うため、比較試行同士で状態を共有しない。
+ * what-if / RI-56 向けに delivered / spread / maxCombo だけ返す。フル指標は `runSprintSimulationFull`。
+ */
+export function runSprintSimulation(
+  input: SprintBaselineInput,
+  interventionPolicy?: SprintInterventionPolicy,
+): SprintBaselineResult {
+  const result = runSprintSimulationFull(input, interventionPolicy);
   return {
     delivered: result.delivered,
     spread: result.spread,

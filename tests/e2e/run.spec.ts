@@ -340,9 +340,12 @@ for (const entry of RI22_TERMINAL_SEEDS) {
     const atReview = await page.evaluate(
       ({ seed: runSeed, difficulty: runDifficulty, expectedOutcome: expected, terminals }) => {
         const g = (window as GameWindow).game!;
+        // seed 探索は解放プール未適用の RunEngine 前提。g.startRun は
+        // applyUnlockedToEngine するため、shutdown E2E と同様に engine 直呼びする。
+        const engine = (g as unknown as { engine: RunEngine }).engine;
+        engine.startRun(runDifficulty, [], runSeed, { kind: 'normal' });
         g.pause();
-        g.startRun(runDifficulty, [], runSeed);
-        let s = g.getState();
+        let s = engine.snapshot();
         let guard = 0;
         while (s.status === 'playing' && guard < 80_000) {
           guard += 1;
@@ -350,38 +353,39 @@ for (const entry of RI22_TERMINAL_SEEDS) {
             const outcome = s.quarterReview?.outcome;
             if (outcome && terminals.includes(outcome)) break;
             if (outcome === 'missed_adjustable') {
-              g.chooseGoalAdjustment(s.quarterReview!.availableAdjustments[0] ?? 'cut_scope');
+              engine.chooseGoalAdjustment(s.quarterReview!.availableAdjustments[0] ?? 'cut_scope');
             } else {
-              g.acknowledgeQuarterReview();
+              engine.acknowledgeQuarterReview();
             }
-          } else if (s.phase === 'setup') g.beginSetupSprint();
+          } else if (s.phase === 'setup') engine.beginSetupSprint();
           else if (s.phase === 'sprint') {
             // RI-30: 手札を可能な限り発動してから一括進行（runFlow.advance と同じ）。
             let playGuard = 0;
             while (playGuard < 24) {
               playGuard += 1;
-              const hand = g.getState().sprint?.cardPiles.hand ?? [];
+              const hand = engine.snapshot().sprint?.cardPiles.hand ?? [];
               if (hand.length === 0) break;
               let playedAny = false;
-              for (const deckIndex of hand) {
-                if (g.playCard(deckIndex).ok) {
+              for (const deckIndex of [...hand]) {
+                if (engine.playCard(deckIndex).ok) {
                   playedAny = true;
                   break;
                 }
               }
               if (!playedAny) break;
             }
-            g.step(1_000_000);
-          } else if (s.phase === 'result') g.acknowledgeResult();
+            engine.step(1_000_000);
+          } else if (s.phase === 'result') engine.acknowledgeResult();
           else if (s.phase === 'draft') {
-            if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
-            else g.skipDraft();
-          } else if (s.phase === 'evolution') g.finishEvolution();
-          else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
-          else if (s.phase === 'shop') g.leaveShop();
-          else if (s.phase === 'rest') g.restChoose('heal');
+            if (s.draft && s.draft.length > 0) engine.chooseCard(s.draft[0]);
+            else engine.skipDraft();
+          } else if (s.phase === 'evolution') engine.finishEvolution();
+          else if (s.phase === 'beat')
+            engine.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+          else if (s.phase === 'shop') engine.leaveShop();
+          else if (s.phase === 'rest') engine.restChoose('heal');
           else break;
-          s = g.getState();
+          s = engine.snapshot();
         }
         const outcome = s.quarterReview?.outcome;
         if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();

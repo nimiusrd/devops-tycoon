@@ -15,6 +15,8 @@ import {
   quadEndAngleDeg,
   quadPointAt,
   teamFloorColor,
+  teamZoomTransform,
+  zoomTransformAt,
 } from '../../src/render/deptPixiView';
 import { DEPARTMENT_DEFS } from '../../src/data/departments';
 import { aggregateDepartment } from '../../src/sim/orgscale/aggregate';
@@ -163,5 +165,45 @@ describe('teamFloorColor / pileDotOffsets', () => {
     const many = pileDotOffsets(20);
     expect(many.length).toBe(12);
     expect(many.every((d) => d.r === 5)).toBe(true);
+  });
+});
+
+describe('teamZoomTransform / zoomTransformAt（RI-04）', () => {
+  const fit = containFitTransform(1404, 573, 1404, 573); // scale 1, x 0, y 0
+
+  it('チーム設計座標が host 中央へ来る変換を返す', () => {
+    const to = teamZoomTransform(fit, 400, 300, 1404, 573);
+    expect(to.scale).toBeCloseTo(1.6, 5);
+    // 設計 (400,300) → 画面 (400*1.6 + x, 300*1.6 + y) = (702, 286.5)。
+    expect(400 * to.scale + to.x).toBeCloseTo(1404 / 2, 5);
+    expect(300 * to.scale + to.y).toBeCloseTo(573 / 2, 5);
+  });
+
+  it('zoomMul を指定できる', () => {
+    const to = teamZoomTransform(fit, 0, 0, 1000, 500, 2);
+    expect(to.scale).toBeCloseTo(2, 5);
+    expect(to.x).toBeCloseTo(500, 5);
+    expect(to.y).toBeCloseTo(250, 5);
+  });
+
+  it('補間は端点一致・easeOutCubic で単調', () => {
+    const from = { scale: 1, x: 0, y: 0 };
+    const to = { scale: 1.6, x: -200, y: -100 };
+    expect(zoomTransformAt(0, from, to)).toEqual(from);
+    expect(zoomTransformAt(1, from, to)).toEqual(to);
+    // 範囲外はクランプ。
+    expect(zoomTransformAt(-1, from, to)).toEqual(from);
+    expect(zoomTransformAt(2, from, to)).toEqual(to);
+    // easeOut: 前半で半分以上進む。
+    const mid = zoomTransformAt(0.5, from, to);
+    expect(mid.scale).toBeGreaterThan(1.3);
+    expect(mid.scale).toBeLessThan(1.6);
+    // 単調増加。
+    let prev = from.scale;
+    for (let i = 1; i <= 10; i += 1) {
+      const at = zoomTransformAt(i / 10, from, to);
+      expect(at.scale).toBeGreaterThanOrEqual(prev);
+      prev = at.scale;
+    }
   });
 });

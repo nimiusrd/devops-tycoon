@@ -166,6 +166,7 @@ export function SprintScreen({
             sprintTick={state.sprintTick}
             interventionTrigger={interventionTrigger}
             suppressExtinguishTaskIds={suppressExtinguishTaskIds}
+            roster={state.roster}
             sprint={sprint}
             armedAction={armedId}
             assignAssignee={armedId === 'assignTask' ? assignAssignee : undefined}

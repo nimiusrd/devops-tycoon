@@ -30,9 +30,12 @@ import {
   quadEndAngleDeg,
   quadPointAt,
   teamFloorColor,
+  teamZoomTransform,
+  zoomTransformAt,
+  type ContainFitTransform,
 } from '../deptPixiView';
 import { SpritePool } from '../iso';
-import { ensureTexturePoolGuard } from './pixiTexturePoolGuard';
+import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
 
 /** 破棄オプション（Pixi v8）。`pixiOrgRenderer` と同値。 */
@@ -340,6 +343,18 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
   private disposed = false;
   private readonly opts: PixiDeptRendererOptions;
   private lastDept: DepartmentState | null = null;
+  /** 直近 resize の host 実寸（ズームトゥイーンの中心計算用）。 */
+  private hostW = 0;
+  private hostH = 0;
+  /** 進行中のズームトゥイーン（RI-04。viewport が無いので root を手動で動かす）。 */
+  private zoomTween: {
+    from: ContainFitTransform;
+    to: ContainFitTransform;
+    startMs: number;
+    /** true=完走 / false=dispose によるキャンセル。 */
+    resolve: (completed: boolean) => void;
+  } | null = null;
+  private tickerBound = false;
 
   constructor(opts: PixiDeptRendererOptions = {}) {
     this.opts = opts;
@@ -374,6 +389,7 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     });
 
     this.app = app;
+    retainPixiApp();
   }
 
   /** init 済みか（React 側の再描画判定用）。 */
@@ -385,9 +401,60 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
   resize(boardWidth: number, boardHeight: number): void {
     if (!this.app || boardWidth <= 0 || boardHeight <= 0) return;
     this.app.renderer.resize(boardWidth, boardHeight);
+    this.hostW = boardWidth;
+    this.hostH = boardHeight;
+    // ズームトゥイーン進行中は root を触らない（ticker が毎フレーム上書きする）。
+    // スプリント進行中は dept 更新のたびに resize() が呼ばれるため、ここで
+    // トゥイーンを破棄するとドリルダウンの完了 promise が永遠に解決しない。
+    if (this.zoomTween) return;
     const t = containFitTransform(boardWidth, boardHeight, DEPT_VIEW.w, DEPT_VIEW.h);
     this.root.scale.set(t.scale);
     this.root.position.set(t.x, t.y);
+  }
+
+  /**
+   * チームミニ盤面へカメラが寄るズームイン演出（RI-04 / SPEC 第4.11）。
+   * 部署ビューは viewport を使わない固定盤面のため、contain-fit を基準に
+   * root の scale/position を easeOutCubic で手動トゥイーンする。
+   * 完走で true、dispose によるキャンセルで false を resolve する。呼び出し側は
+   * true のときだけ状態遷移（クロスフェード着地）する（unmount 後の遷移防止）。
+   */
+  focusTeamZoom(teamId: string, durationMs = 360): Promise<boolean> {
+    const app = this.app;
+    const dept = this.lastDept;
+    if (!app || !dept || this.hostW <= 0 || this.hostH <= 0) return Promise.resolve(true);
+    const plan = planDeptBoardScene(dept).teams.find((t) => t.teamId === teamId);
+    if (!plan) return Promise.resolve(true);
+
+    const fit = containFitTransform(this.hostW, this.hostH, DEPT_VIEW.w, DEPT_VIEW.h);
+    const to = teamZoomTransform(fit, plan.x, plan.y, this.hostW, this.hostH);
+    const from: ContainFitTransform = {
+      scale: this.root.scale.x,
+      x: this.root.position.x,
+      y: this.root.position.y,
+    };
+
+    if (!this.tickerBound) {
+      app.ticker.add(() => this.updateZoomTween(durationMs));
+      this.tickerBound = true;
+    }
+    return new Promise((resolve) => {
+      this.zoomTween = { from, to, startMs: performance.now(), resolve };
+    });
+  }
+
+  /** ticker: ズームトゥイーンを 1 フレーム進める。 */
+  private updateZoomTween(durationMs: number): void {
+    const tween = this.zoomTween;
+    if (!tween) return;
+    const t = (performance.now() - tween.startMs) / durationMs;
+    const at = zoomTransformAt(t, tween.from, tween.to);
+    this.root.scale.set(at.scale);
+    this.root.position.set(at.x, at.y);
+    if (t >= 1) {
+      this.zoomTween = null;
+      tween.resolve(true);
+    }
   }
 
   /**
@@ -398,6 +465,14 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
   freezeForScreenshot(): void {
     const app = this.app;
     if (!app) return;
+    // 進行中のズームトゥイーンは終端へ飛ばして完走扱いで確定させる（決定論・promise 解決）。
+    const tween = this.zoomTween;
+    if (tween) {
+      this.zoomTween = null;
+      this.root.scale.set(tween.to.scale);
+      this.root.position.set(tween.to.x, tween.to.y);
+      tween.resolve(true);
+    }
     app.ticker.stop();
     app.render();
   }
@@ -556,12 +631,18 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
   /** WebGL リソースを破棄する。init の解決前でも呼べる（disposed で中断させる）。 */
   dispose(): void {
     this.disposed = true;
+    // 進行中トゥイーンは「キャンセル」として解放する（await 側のハング防止。
+    // 成功扱いにすると unmount 後に onFocusTeam の画面遷移が走ってしまう）。
+    this.zoomTween?.resolve(false);
+    this.zoomTween = null;
     // CanvasText の unload（TexturePool への返却）は renderer 破棄前に済ませる。
     // app.destroy 後だと TexturePool が先に消え、pipe の後始末が
     // `returnTexture` で落ちる（free に残った未接続スプライトの Text が対象）。
     for (const group of this.pool?.drain() ?? []) {
       group.destroy({ children: true });
     }
+    // 自分を生存数から外してから destroy する（共有プール purge の可否判定）。
+    if (this.app) releasePixiApp();
     this.app?.destroy(true, DESTROY_OPTIONS);
     this.app = null;
     this.pool = null;

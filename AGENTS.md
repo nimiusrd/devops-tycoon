@@ -10,3 +10,4 @@
 - 標準コマンドは `package.json` の scripts 参照: 開発サーバ `npm run dev`（ポート5174）、ユニット `npm test`（vitest）、E2E `npm run test:e2e`（Playwright / Chromium 必要）、ビルド `npm run build`。
 - 画面の見た目を一括確認するには `npm run gallery`（seed 固定で主要画面を撮影し `gallery/index.html` に一覧を生成。デザイン確認用でコミット対象外。Chromium の場所が特殊な環境では `GALLERY_CHROMIUM=<実行ファイル>` を指定）。
 - E2E の `@pixi` 視覚回帰テストは通常スキップされる。実行は `npm run test:e2e:pixi`（`PIXI_E2E=1`）が必要で、ベースラインスナップショットに依存する。
+- 既定レンダラは PixiJS（WebGL）。`?renderer=dom` で DOM/SVG レンダラへ切り替えられる（WebGL 不可環境は自動フォールバック）。CI 既定の E2E は `renderer=dom` を明示して実 WebGL を回さない。

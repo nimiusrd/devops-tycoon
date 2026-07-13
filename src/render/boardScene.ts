@@ -15,8 +15,23 @@ import { taskSize, taskVariant } from './taskView';
 /** 設計座標空間（旧モック main-screen の viewBox 由来）。 */
 export const BOARD_VIEW = { w: 1404, h: 573 } as const;
 
-/** ステーションのキャラ表情（状態から導出）。 */
-export type StationMood = 'neutral' | 'happy' | 'tired' | 'panic' | 'sad' | 'cheer';
+/** ステーションのキャラ表情（状態から導出）。exhausted はメンバー疲弊（RI-08）。 */
+export type StationMood = 'neutral' | 'happy' | 'tired' | 'panic' | 'sad' | 'cheer' | 'exhausted';
+
+/**
+ * レーン別の表情上書き（RI-08: 育成メンバーのスタミナ/士気を現場キャラへ反映）。
+ * `memberMood.ts` の `deriveMemberMoodOverrides` が供給する。
+ */
+export type StationMoodOverrides = Partial<Record<Lane, StationMood>>;
+
+/**
+ * 盤面由来の表情とメンバー由来の上書きを合成する（純関数）。
+ * panic（渋滞・炎上の緊急シグナル）は常に優先し、それ以外は override > 基底。
+ */
+export function mergeStationMood(base: StationMood, override?: StationMood): StationMood {
+  if (base === 'panic') return base;
+  return override ?? base;
+}
 
 /** 設計座標の点。 */
 interface Point {
@@ -383,9 +398,14 @@ function deriveMood(
  * - 粒は各ステーションの pile を中心に山状に積む（cap 超過は overflow に集約）。
  * - Coding/Rework で progress>0 の粒は工程間フロー上へ補間配置する（RI-05）。
  * - 炎上中のタスクは fire を立て、Review の渋滞で hot/パニック表情にする。
+ * - moodOverrides（メンバー疲弊/好調。RI-08）は panic 以外の表情を上書きする。
+ *   上書きで表情が変わったときは基底の吹き出し（文脈が合わない）を落とす。
  * 純関数・決定論（入力が同じなら同じ計画）。
  */
-export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
+export function planBoardScene(
+  tasks: readonly Task[],
+  moodOverrides?: StationMoodOverrides,
+): BoardScenePlan {
   const byLane = new Map<Lane, Task[]>();
   for (const s of STATIONS) byLane.set(s.lane, []);
   for (const t of tasks) byLane.get(t.lane)?.push(t);
@@ -401,7 +421,9 @@ export function planBoardScene(tasks: readonly Task[]): BoardScenePlan {
     const heat = layout.lane === 'review' ? reviewHeat(count) : 0;
     const hasAi = laneTasks.some((t) => t.aiAssisted);
     const hasIncident = laneTasks.some((t) => t.incident);
-    const { mood, bubble } = deriveMood(layout.lane, count, hot, hasAi, hasIncident);
+    const base = deriveMood(layout.lane, count, hot, hasAi, hasIncident);
+    const mood = mergeStationMood(base.mood, moodOverrides?.[layout.lane]);
+    const bubble = mood === base.mood ? base.bubble : null;
 
     // 上限超過時も炎上タスクは必ず残す（fire メーター/緊急対応が依存するため）。
     // 上限内をまず通常タスクで埋め、炎上は最後＝最上段に積んで目立たせる。

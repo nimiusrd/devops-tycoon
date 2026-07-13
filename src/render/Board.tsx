@@ -7,7 +7,7 @@
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
  * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
-import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type {
   ActionTarget,
   Lane,
@@ -23,16 +23,21 @@ import {
   planBoardDrag,
   type DraggableActionId,
 } from './boardDragPlan';
+import { hitTestBoardDot } from './boardPixiView';
+import { BoardPixiLayer } from '../ui/BoardPixiLayer';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
+import { usePixiRenderer } from '../ui/usePixiRenderer';
+import { deriveMemberMoodOverrides } from './memberMood';
 import {
   planBoardScene,
   type BoardDotPlan,
   type BoardFlow,
   type BoardStationPlan,
 } from './boardScene';
+import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS, TASK_DIAMETER } from './taskView';
 
 const VIEW_W = 1404;
@@ -139,19 +144,27 @@ function Station({
   s,
   dropTarget,
   hover,
+  pixi,
 }: {
   s: BoardStationPlan;
   dropTarget?: boolean;
   hover?: boolean;
+  /** Pixi 時はキャラを canvas 側が描くため、ドロップ枠のプレースホルダだけ残す。 */
+  pixi?: boolean;
 }) {
   return (
     <div
       className={`station station-${s.lane}${dropTarget ? ' drop-target' : ''}${hover ? ' drop-hover' : ''}`}
       data-testid={`lane-${s.lane}`}
+      data-mood={s.mood}
       data-drop-target={dropTarget ? 'true' : undefined}
-      style={{ left: pct(s.x, VIEW_W), top: pct(s.y, VIEW_H) }}
+      style={{
+        left: pct(s.x, VIEW_W),
+        top: pct(s.y, VIEW_H),
+        ...(pixi ? { aspectRatio: '210 / 190' } : undefined),
+      }}
     >
-      <StationActor lane={s.lane} mood={s.mood} />
+      {!pixi && <StationActor lane={s.lane} mood={s.mood} />}
     </div>
   );
 }
@@ -237,6 +250,8 @@ export interface BoardProps {
   interventionTrigger?: InterventionTrigger | null;
   /** firefight 演出と FireEffects 鎮火の二重再生を避ける task ID。 */
   suppressExtinguishTaskIds?: ReadonlySet<number>;
+  /** 育成メンバーの状態をキャラ表情へ反映する（RI-08）。 */
+  roster?: RosterState | null;
   /** 武装中のドラッグ介入（RI-30）。フル SprintState があると候補判定が正確。 */
   sprint?: SprintState | null;
   armedAction?: DraggableActionId | null;
@@ -262,12 +277,20 @@ export function Board({
   sprintTick = 0,
   interventionTrigger = null,
   suppressExtinguishTaskIds,
+  roster = null,
   sprint = null,
   armedAction = null,
   assignAssignee,
   onDragComplete,
 }: BoardProps) {
-  const scene = planBoardScene(tasks);
+  // 育成メンバーの疲弊/好調を表情上書きへ（RI-08。roster 無しは従来どおり）。
+  const moodOverrides = useMemo(
+    () => (roster ? deriveMemberMoodOverrides(roster) : undefined),
+    [roster],
+  );
+  const scene = planBoardScene(tasks, moodOverrides);
+  // 常駐物（フロー線・粒・キャラ）を WebGL で描くか（RI-11。演出・ラベルは DOM 共通）。
+  const { usePixi, onWebglError } = usePixiRenderer();
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
   const hot = scene.stations.some((s) => s.hot);
@@ -279,7 +302,7 @@ export function Board({
 
   const dragPlan =
     armedAction && sprint ? planBoardDrag(sprint, armedAction, assignAssignee) : null;
-  const dragIds = new Set(dragPlan?.draggableTaskIds ?? []);
+  const dragIds = useMemo(() => new Set(dragPlan?.draggableTaskIds ?? []), [dragPlan]);
   const dropLanes = new Set(dragPlan?.dropLanes ?? []);
 
   const [dragTaskId, setDragTaskId] = useState<number | null>(null);
@@ -323,31 +346,66 @@ export function Board({
     [armedAction, dragPlan, onDragComplete],
   );
 
+  // Pixi 時は粒が canvas 内にあり DOM の pointerdown ターゲットが無いため、
+  // 盤面 div で受けて設計座標から掴む粒を逆引きする（RI-30 の Pixi 対応）。
+  const handleBoardPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      // ラベル・吹き出し等の小型 DOM オーバーレイの上では掴まない（DOM モードで
+      // 「ラベルが上に乗った粒は掴めない」のと同じ挙動。splitPr は down+up だけで
+      // 確定するため、粒と重なるラベルクリックの誤発動を防ぐ）。全面を覆う装飾
+      // レイヤ（オーラ・演出）は素通しにする（弾くとドラッグ全体が効かなくなる）。
+      if (
+        e.target instanceof Element &&
+        e.target.closest('.st-label, .bubble, .board-legend, .pile-overflow')
+      ) {
+        return;
+      }
+      const rect = boardRef.current?.getBoundingClientRect();
+      if (!rect || dragIds.size === 0) return;
+      const pt = clientToBoardPoint(e.clientX, e.clientY, rect);
+      const taskId = hitTestBoardDot(pt, scene.dots, dragIds);
+      if (taskId !== null) handlePointerDown(e, taskId);
+    },
+    [dragIds, scene.dots, handlePointerDown],
+  );
+
   return (
     <div
       ref={boardRef}
       className={`board iso-office${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
       data-testid="board"
       data-armed={armedAction ?? undefined}
+      onPointerDown={usePixi ? handleBoardPointerDown : undefined}
       style={{ '--review-heat': heat } as CSSProperties}
     >
       <OfficeRoom />
-      <FlowArrows flows={scene.flows} />
-
-      {scene.dots.map((d) => (
-        <TaskDot
-          key={`${d.lane}-${d.id}`}
-          dot={d}
-          draggable={dragIds.has(d.id)}
-          dragging={dragTaskId === d.id}
-          onPointerDown={handlePointerDown}
+      {usePixi ? (
+        <BoardPixiLayer
+          scene={scene}
+          draggableTaskIds={dragIds}
+          dragTaskId={dragTaskId}
+          onWebglError={onWebglError}
         />
-      ))}
+      ) : (
+        <>
+          <FlowArrows flows={scene.flows} />
+          {scene.dots.map((d) => (
+            <TaskDot
+              key={`${d.lane}-${d.id}`}
+              dot={d}
+              draggable={dragIds.has(d.id)}
+              dragging={dragTaskId === d.id}
+              onPointerDown={handlePointerDown}
+            />
+          ))}
+        </>
+      )}
 
       {scene.stations.map((s) => (
         <Station
           key={s.lane}
           s={s}
+          pixi={usePixi}
           dropTarget={dropLanes.has(s.lane as 'backlog' | 'coding' | 'review')}
           hover={hoverLane === s.lane}
         />

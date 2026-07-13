@@ -12,7 +12,7 @@ type GameWindow = Window & {
 };
 
 test('タイトル画面が表示され、難易度を選んでランを開始できる', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?renderer=dom');
   await expect(page.getByTestId('title')).toBeVisible();
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-run').click();
@@ -22,7 +22,7 @@ test('タイトル画面が表示され、難易度を選んでランを開始�
 });
 
 test('フロンティアモデル依存の試練を選択してランを開始できる', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?renderer=dom');
   const trial = page.getByTestId('trial-frontier-dependency');
   await expect(trial).toContainText('フロンティアモデル依存');
   await trial.click();
@@ -35,7 +35,7 @@ test('フロンティアモデル依存の試練を選択してランを開始�
 });
 
 test('?seed= が UI と window.game に反映される（決定論フック）', async ({ page }) => {
-  await page.goto('/?seed=playwright-smoke');
+  await page.goto('/?renderer=dom&seed=playwright-smoke');
   await expect(page.getByTestId('seed')).toContainText('playwright-smoke');
 
   const seed = await page.evaluate(() => (window as GameWindow).game?.getState().seed);
@@ -43,7 +43,7 @@ test('?seed= が UI と window.game に反映される（決定論フック）',
 });
 
 test('スプリントを開始すると盤面（HUD と5レーン）が表示される', async ({ page }) => {
-  await page.goto('/?seed=board');
+  await page.goto('/?renderer=dom&seed=board');
   await page.getByTestId('difficulty-easy').click();
   await page.getByTestId('start-run').click();
   await page.getByTestId('begin-sprint').click();
@@ -56,7 +56,7 @@ test('スプリントを開始すると盤面（HUD と5レーン）が表示さ
 });
 
 test('window.game.step でスプリントが決定論的に進む（同一 seed で再現）', async ({ page }) => {
-  await page.goto('/?seed=deterministic');
+  await page.goto('/?renderer=dom&seed=deterministic');
   const [a, b] = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     const once = (): number => {

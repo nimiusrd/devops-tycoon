@@ -34,11 +34,11 @@
 | RI-01 | 全社マップ(org-screen)の等角化 | 高 | 完了 | — | 第4.8 / `org-screen.png` |
 | RI-02 | 部署ビュー(dept-screen)の等角化 | 高 | 完了 | — | 第4.9 / `dept-screen.png` |
 | RI-03 | 業界ランキング(industry-screen)の等角化 | 中 | 完了 | — | 第4.10 / `industry-screen.png` |
-| RI-04 | ドリルダウンのカメラ遷移演出 | 中 | 未着手 | RI-11 | 第4.11 / `drilldown.html` |
+| RI-04 | ドリルダウンのカメラ遷移演出 | 中 | 完了 | RI-11 | 第4.11 / `drilldown.html` |
 | RI-05 | タスク粒の工程間移動アニメ | 高 | 完了 | — | 第18.1 |
 | RI-06 | 延焼の連鎖演出 | 高 | 完了 | — | 第18.2 |
-| RI-07 | キャラ/粒のスプライト化(`render/iso.ts`) | 低 | 未着手 | — | 第18 |
-| RI-08 | キャラ表情スプライト(疲れ顔/ガッツポーズ) | 低 | 未着手 | RI-07 | 第18 |
+| RI-07 | キャラ/粒のスプライト化(`render/iso.ts`) | 低 | 完了 | — | 第18 |
+| RI-08 | キャラ表情スプライト(疲れ顔/ガッツポーズ) | 低 | 完了 | RI-07 | 第18 |
 | RI-09 | アクションバーのマネージャー像 | 低 | 未着手 | — | 第4.3 |
 | RI-10 | ジューシー演出の上積み(スイープ/スローモ/ご褒美) | 低 | 未着手 | — | 第18.2 / 18.4 |
 
@@ -64,7 +64,7 @@
 
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
-| RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 進行中 | — | 第22 |
+| RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 完了 | — | 第22 |
 | RI-12 | バンドル分割(動的 import) | 低 | 未着手 | — | 第22 |
 | RI-13 | 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) | 中 | 未着手 | — | 第22 |
 | RI-57 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | 中 | 未着手 | — | 第17 / 22 |
@@ -156,12 +156,18 @@ Vitest: `tests/unit/deptBoardScene.test.ts`。E2E: `tests/e2e/org-scale.spec.ts`
 `IndustryScreen` のフラットな棒グラフスカイラインを置換した。自社が上位枠外でも自社 HQ を末尾に含める。
 Vitest: `tests/unit/industryBoardScene.test.ts`。E2E: `tests/e2e/org-scale.spec.ts`（スカイライン・王冠・自社 HQ 検証）。
 
-#### RI-04 ドリルダウンのカメラ遷移演出 — 優先度:中（依存: RI-11）
+#### RI-04 ドリルダウンのカメラ遷移演出 — 優先度:中（依存: RI-11）/ 完了
 
-- **現状**: 階層移動はオーバーレイ＋クロスフェード（実装済み）。
-- **目標（第4.11。旧 drilldown モック由来の演出案）**: 島タップ→フォーカスリング→**カメラが島へ寄る**→
-  クロスフェードで現場へ着地、の「カメラズーム」演出。遷移先の炎上/渋滞が遷移演出にも反映。
-- **規模感**: 中。Pixi 移植（pixi-viewport）と合わせると素直なので RI-11 と歩調を合わせる。
+**完了**: 島タップ→フォーカスリング→カメラが島へ寄る→クロスフェードで現場着地（第4.11）を実装。
+`src/render/orgIslandView.ts` の `focusRingTone` が遷移先チームの炎上/渋滞状態からリングの色
+（炎上=橙赤 / Review Hell=赤 / 渋滞=黄 / 健全=緑）と強さを導き、「移動先の状態が遷移演出にも
+反映される」を満たす。`pixiOrgRenderer.playFocusRing`（ticker で 420ms 拡大フェード）→
+`focusTeamCamera`（480ms）await → 状態遷移 → App の zoom-overlay クロスフェード、のシーケンス。
+非プレイヤーチームは engine の department 止まりに合わせてカメラも部門 bounds へ寄せる（engine 不変）。
+部署ビューは viewport が無いため `deptPixiView.ts` の `teamZoomTransform` / `zoomTransformAt` で
+root を 360ms 手動トゥイーンする（`focusTeamZoom`）。DOM レンダラは従来のクロスフェードのみ。
+Vitest: `tests/unit/orgIslandView.test.ts` / `deptPixiView.test.ts`。
+E2E: `tests/e2e/org-pixi-visual.spec.ts`（島タップ→リング→現場着地）。
 
 #### RI-05 タスク粒の工程間移動アニメ — 優先度:高 / 完了
 
@@ -181,14 +187,26 @@ Vitest: `tests/unit/boardScene.test.ts`（フロー補間・流動粒・山と�
 `SprintScreen` に演出レイヤを統合。`boardScene` は炎上粒に `burnUrgency`、Rework ステーションに panic 表情を追加。
 Vitest: `tests/unit/fireEffects.test.ts` / `tests/unit/boardScene.test.ts`。
 
-#### RI-07 キャラ/粒のスプライト化(`render/iso.ts`) — 優先度:低
+#### RI-07 キャラ/粒のスプライト化(`render/iso.ts`) — 優先度:低 / 完了
 
-現状 SVG/DOM。PixiJS 移植時にスプライト＋プール（`render/iso.ts`）へ寄せる。粒数・ズーム階層が
-DOM/SVG の限界に近づいたら前倒し。RI-05/RI-06/RI-08 の土台。
+**完了**: スプリント盤面の Pixi 化（RI-11）と同時に実装。タスク粒（variant×size）と
+ステーションキャラ（lane×mood）を `renderer.generateTexture`（resolution 2）で RenderTexture へ
+焼き込み、`Map<string, Texture>` にレイジーキャッシュして Sprite で使い回す
+（`src/render/adapters/pixiBoardRenderer.ts`）。粒 Container は `render/iso.ts` の
+`SpritePool`（budget 96）で再利用し、毎 render `releaseAll()` → plan 順 acquire。
+机は静的スプライトへ分離し、キャラだけが bob/shake する DOM の構造を保つ。
+キャッシュキーは純関数 `dotTextureKey` / `actorTextureKey`（`src/render/boardPixiView.ts`、Vitest 済み）。
 
-#### RI-08 キャラ表情スプライト(疲れ顔/ガッツポーズ) — 優先度:低（依存: RI-07）
+#### RI-08 キャラ表情スプライト(疲れ顔/ガッツポーズ) — 優先度:低（依存: RI-07）/ 完了
 
-キャラクター育成のキャラ表情（💪😩😴🙂）を、移植時にスプライト表現（疲れ顔/ガッツポーズ等）へ拡張する。
+**完了**: `StationMood` に `exhausted` を追加し、`src/render/memberMood.ts` の
+`deriveMemberMoodOverrides` が育成メンバーの `memberExpression`（スタミナ比・休職。SPEC §12.2）を
+レーン配属ごとに集計して表情上書きを導く（半数以上休職→exhausted / 休職+疲労が半数以上→tired /
+過半が絶好調→cheer=ガッツポーズ）。`planBoardScene(tasks, moodOverrides?)` の `mergeStationMood` は
+panic（渋滞・炎上）を常に優先し、上書きで表情が変わったら文脈の合わない吹き出しを落とす。
+DOM（`OfficeActors`）と Pixi（焼き込みテクスチャ）の両方に exhausted 表情（閉じ目＋クマ＋汗・波線口）を
+追加し、Station の `data-mood` で両レンダラの一貫性を検証できる。
+Vitest: `tests/unit/memberMood.test.ts` / `boardScene.test.ts`。
 
 #### RI-09 アクションバーのマネージャー像 — 優先度:低
 
@@ -339,28 +357,37 @@ E2E: `tests/e2e/interventions.spec.ts`（比較値・推定注記）。
 
 ### 技術構成（TECH）
 
-#### RI-11 Pixi 適用範囲の拡張(部署/現場盤面) — 優先度:中 / 進行中
-
-現状は全社マップのみ opt-in（`?renderer=pixi`）。VIS の等角化を進める際、部署ビュー/現場盤面へ PixiJS を
-広げる（粒数・ズーム階層が DOM/SVG の限界に近づいたら）。スプライト＋プールは `render/iso.ts` を供給先に
-（RI-07 と連動）。
+#### RI-11 Pixi 適用範囲の拡張(部署/現場盤面) — 優先度:中 / 完了
 
 **部署ビュー: 完了**。`src/render/adapters/pixiDeptRenderer.ts` が `planDeptBoardScene`（既存の純シーン
 計画）を読んで WebGL 描画する。チームミニ Container は `iso.ts` の `SpritePool` で再利用し、盤面は固定
 設計空間（1404×573）なので viewport は使わず contain-fit の root スケールだけで DOM 版と同じ見え方に
 した。数値計算（フローパス解析・破線分割・contain-fit）は `src/render/deptPixiView.ts` へ分離。
-`DeptScreen` が `?renderer=pixi` で `DeptPixiBoard` へ切り替える（既定は DOM/SVG のまま）。
 Vitest: `tests/unit/deptPixiView.test.ts`。E2E: `tests/e2e/dept-pixi-visual.spec.ts`
 （@pixi opt-in。視覚回帰＋プレイヤーチームタップのドリルダウン）。
 
-**残務: 現場盤面（スプリント盤面）の Pixi 化**。`planBoardScene` は純シーン計画済みだが、DOM 側は
-`FireEffects` / `InterventionEffects` / オーラ / 数字ポップ等の CSS 演出が厚く重なるため、演出の
-Pixi 移植方針（ticker ベースへの置換 or DOM オーバーレイ併用）を決めてから着手する。
+**現場盤面（スプリント盤面）: 完了**。演出の移植方針は **DOM オーバーレイ併用**を採用
+（`FireEffects` / `InterventionEffects` / 数字ポップ / オーラ / ラベル / 吹き出し / 凡例は
+設計座標→% の DOM のまま透明 canvas に重ね、DOM 版と演出コンポーネントを共有）。Pixi 化するのは
+常駐物＝フロー線・タスク粒・ステーションキャラのみで、粒/キャラは RenderTexture 焼き込み＋
+`SpritePool`（RI-07）。CSS keyframes（flybob / bob / flowBobDrift / fireShake / dash）は ticker の
+時間関数（`src/render/boardPixiView.ts`、位相 0 で全オフセット 0）で再現し、`freezeForScreenshot` で
+決定論フレームに固定する。RI-30 のドラッグ介入は盤面 div の DOM pointer＋`hitTestBoardDot` の逆引きで
+成立。実装: `src/render/adapters/pixiBoardRenderer.ts` / `src/ui/BoardPixiLayer.tsx` / `Board.tsx`。
+Vitest: `tests/unit/boardPixiView.test.ts`。E2E: `tests/e2e/sprint-pixi-visual.spec.ts`。
+
+**既定レンダラを Pixi へ切替**。`?renderer=dom` で DOM/SVG へ opt-out（DOM レンダラは維持）。
+WebGL 初期化に失敗した環境は `usePixiRenderer` フックで全画面が DOM へ自動フォールバックする。
+CI 既定の E2E は `renderer=dom` を明示して実 WebGL を回さない方針を維持し、Pixi 経路は
+@pixi スイート（`npm run test:e2e:pixi`）が検証する。副産物として、複数 Application 構成で
+どの renderer の destroy でも共有プール（TexturePool / Batcher の batchPool）が purge されて
+生存 renderer が落ちる Pixi v8 問題に対し、`pixiTexturePoolGuard.ts` へ生存カウンタ
+（`retainPixiApp`/`releasePixiApp`）による release 抑止を追加した。
 
 #### RI-12 バンドル分割(動的 import) — 優先度:低
 
-`npm run build` の index チャンクが 778kB（>500kB 警告、Pixi/WebGL 同梱）。動的 import 等でコード分割するか
-（機能要件ではないが計測値として残す）。
+`npm run build` の index チャンクが 956kB（2026-07 計測。>500kB 警告、Pixi/WebGL 同梱）。動的 import 等で
+コード分割するか（機能要件ではないが計測値として残す）。
 
 #### RI-13 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) — 優先度:中
 

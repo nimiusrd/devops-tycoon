@@ -4,7 +4,7 @@ import type { GameHandle } from '../../src/game';
 type GameWindow = Window & { game?: GameHandle };
 
 test('RI-46: 編成とドラフトで次スプリントのリスク幅を表示する', async ({ page }) => {
-  await page.goto('/?seed=what-if-e2e');
+  await page.goto('/?renderer=dom&seed=what-if-e2e');
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-run').click();
 

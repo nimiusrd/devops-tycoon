@@ -4608,6 +4608,20 @@ button.card:active {
   height: auto;
   filter: drop-shadow(0 4px 6px #0006);
 }
+/* RI-11: スプリント盤面の Pixi 描画領域（?renderer=pixi 時のみマウント）。
+ * フロー(z2)より上・ステーション枠(z4)/ラベル(z7)/吹き出し(z8)/演出より下に置き、
+ * DOM 版と同じ重なり順を保つ。ドラッグは board div の DOM pointer で受けるため
+ * canvas 自体はイベントを取らない。 */
+.board-pixi-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.board-pixi-mount canvas {
+  display: block;
+}
+
 /* RI-11: 部署ビューの Pixi 描画領域（?renderer=pixi 時のみマウント） */
 .dept-pixi-mount {
   position: absolute;

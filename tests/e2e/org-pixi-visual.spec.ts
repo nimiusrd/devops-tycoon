@@ -17,6 +17,7 @@ type GameWindow = Window & {
     focusTeamCamera(teamId: string): Promise<void>;
     getZoomScale(): number | null;
     freezeForScreenshot(): void;
+    isFocusRingActive(): boolean;
   };
 };
 
@@ -107,5 +108,33 @@ test.describe('Pixi 全社マップ視覚回帰 @pixi', () => {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });
+  });
+
+  test('島タップ→フォーカスリング→カメラ→現場着地（RI-04） @pixi', async ({ page }) => {
+    await openPixiOrgMap(page, PIXI_SEED);
+    await stabilizeForScreenshot(page);
+    // プレイヤーチームを card LOD まで寄せてから canvas 中央（島の位置）をタップする。
+    await focusTeamForCardLod(page, CARD_LOD_TEAM_ID);
+
+    const mount = page.getByTestId('org-pixi-mount');
+    const box = await mount.boundingBox();
+    if (!box) throw new Error('org-pixi-mount bounding box missing');
+    // focusTeamCamera は島中心を可視窓中央へスクロールするため、中央タップで島に当たる。
+    const field = page.getByTestId('org-field');
+    const fieldBox = await field.boundingBox();
+    if (!fieldBox) throw new Error('org-field bounding box missing');
+    await page.mouse.click(fieldBox.x + fieldBox.width / 2, fieldBox.y + fieldBox.height / 2);
+
+    // タップ直後: フォーカスリング演出が再生され、カメラ完了後に現場へ着地する。
+    await expect
+      .poll(async () =>
+        page.evaluate(() => (window as GameWindow).__orgPixiTest?.isFocusRingActive() ?? false),
+      )
+      .toBe(true);
+    await expect
+      .poll(async () => page.evaluate(() => (window as GameWindow).game!.getState().zoom.level), {
+        timeout: 10_000,
+      })
+      .toBe('team');
   });
 });

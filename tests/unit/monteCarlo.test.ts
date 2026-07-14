@@ -40,6 +40,12 @@ import {
   runAiAdoptionComparisons,
   summarizeAiAdoptionComparisons,
 } from './helpers/aiAdoptionSeeds';
+import {
+  RI19_RANGES,
+  RI19_SEEDS,
+  runFormationComparisons,
+  summarizeFormationComparisons,
+} from './helpers/formationSeeds';
 
 const MC_SEEDS = ['mc-a', 'mc-b', 'mc-c', 'mc-d', 'mc-e'] as const;
 
@@ -460,6 +466,36 @@ describe('monteCarlo 基盤（RI-14）', () => {
       // コンボ改善も有意だが、平均 +8 を超える唯一解にはしない。
       expect(summary.maxComboDelta.mean).toBeGreaterThanOrEqual(1);
       expect(summary.maxComboDelta.mean).toBeLessThanOrEqual(8);
+    });
+  });
+
+  describe('RI-19: 編成差のスプリント結果への影響レンジ', () => {
+    it('同一 seed 群と編成ペアなら結果が完全再現する', () => {
+      expect(runFormationComparisons()).toEqual(runFormationComparisons());
+    });
+
+    it('代表 seed の全件でコーディング偏重編成のレビュー滞留が増える', () => {
+      const comparisons = runFormationComparisons();
+      expect(comparisons).toHaveLength(RI19_SEEDS.length);
+      expect(
+        comparisons.every((c) => c.codingHeavy.reviewQueueMax > c.balanced.reviewQueueMax),
+      ).toBe(true);
+    });
+
+    it('均衡編成とコーディング偏重編成の差分が許容レンジ内に収まる', () => {
+      const summary = summarizeFormationComparisons(runFormationComparisons());
+
+      expect(summary.trials).toBe(RI19_SEEDS.length);
+      for (const [label, metric] of [
+        ['deliveredDelta', summary.deliveredDelta],
+        ['reviewQueueDelta', summary.reviewQueueDelta],
+        ['reworkDelta', summary.reworkDelta],
+      ] as const) {
+        const range = RI19_RANGES[label];
+        expect(metric.mean).toBeGreaterThanOrEqual(range.meanMin);
+        expect(metric.mean).toBeLessThanOrEqual(range.meanMax);
+        assertWithinRange(metric, { min: range.minFloor, max: range.maxCeil }, `RI-19 ${label}`);
+      }
     });
   });
 

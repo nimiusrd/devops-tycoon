@@ -27,6 +27,62 @@
       "type": "currency",
       "path": "/assets/game/pipeline-token.svg",
       "recommendedUse": "automation currency, pipeline score, upgrade token"
+    },
+    {
+      "id": "observability-orb",
+      "name": "Observability Orb",
+      "type": "observability",
+      "path": "/assets/game/observability-orb.svg",
+      "recommendedUse": "monitoring upgrade, metrics panel, health insight"
+    },
+    {
+      "id": "cache-shield",
+      "name": "Cache Shield",
+      "type": "safety",
+      "path": "/assets/game/cache-shield.svg",
+      "recommendedUse": "resilience buff, cache strategy, defensive upgrade"
+    },
+    {
+      "id": "chaos-monkey",
+      "name": "Chaos Monkey",
+      "type": "hazard",
+      "path": "/assets/game/chaos-monkey.svg",
+      "recommendedUse": "chaos event, random outage, stress test marker"
+    },
+    {
+      "id": "feature-flag",
+      "name": "Feature Flag",
+      "type": "item",
+      "path": "/assets/game/feature-flag.svg",
+      "recommendedUse": "release control, experiment, rollout action"
+    },
+    {
+      "id": "refactor-wrench",
+      "name": "Refactor Wrench",
+      "type": "maintenance",
+      "path": "/assets/game/refactor-wrench.svg",
+      "recommendedUse": "maintenance action, code quality upgrade, repair task"
+    },
+    {
+      "id": "runbook-scroll",
+      "name": "Runbook Scroll",
+      "type": "item",
+      "path": "/assets/game/runbook-scroll.svg",
+      "recommendedUse": "operations checklist, incident mitigation, onboarding aid"
+    },
+    {
+      "id": "service-mesh-node",
+      "name": "Service Mesh Node",
+      "type": "architecture",
+      "path": "/assets/game/service-mesh-node.svg",
+      "recommendedUse": "platform architecture, dependency map, network upgrade"
+    },
+    {
+      "id": "tech-debt-anvil",
+      "name": "Tech Debt Anvil",
+      "type": "hazard",
+      "path": "/assets/game/tech-debt-anvil.svg",
+      "recommendedUse": "technical debt, slowdown debuff, refactor target"
     }
   ]
 }

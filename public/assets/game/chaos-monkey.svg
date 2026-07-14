@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Chaos Monkey</title>
+  <desc id="desc">A mischievous monkey badge for chaos events.</desc>
+  <defs><linearGradient id="fur" x1="46" y1="38" x2="206" y2="220" gradientUnits="userSpaceOnUse"><stop stop-color="#fed7aa"/><stop offset="0.42" stop-color="#b45309"/><stop offset="1" stop-color="#451a03"/></linearGradient><filter id="zap" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <ellipse cx="128" cy="222" rx="64" ry="13" fill="#1c1917" opacity="0.3"/>
+  <circle cx="62" cy="122" r="31" fill="#92400e"/><circle cx="194" cy="122" r="31" fill="#92400e"/>
+  <circle cx="128" cy="127" r="78" fill="url(#fur)" stroke="#fde68a" stroke-width="6"/>
+  <ellipse cx="128" cy="155" rx="47" ry="37" fill="#fed7aa" opacity="0.92"/>
+  <circle cx="99" cy="119" r="10" fill="#111827"/><circle cx="157" cy="119" r="10" fill="#111827"/>
+  <path d="M112 165c11 9 22 9 33 0" fill="none" stroke="#7c2d12" stroke-width="7" stroke-linecap="round"/>
+  <path d="m183 42-19 41 28-6-21 46 47-66-29 7 19-38Z" fill="#facc15" stroke="#fff7ed" stroke-width="3" filter="url(#zap)"/>
+</svg>

@@ -77,7 +77,7 @@ describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
     expect(draft.every((id) => allowed.has(id))).toBe(true);
   });
 
-  it('永続化接続前のメタ更新を復元値で上書きしない', async () => {
+  it('永続化接続前のメタ購入を止め、復元値を正として接続する', async () => {
     let persisted: MetaState | null = null;
     const storage: MetaStorage = {
       load: async () => null,
@@ -87,13 +87,15 @@ describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
     };
     const game = createGame({
       initialMeta: { ...defaultMeta(), points: 100 },
+      metaReady: false,
     });
 
-    expect(game.purchaseMetaUnlock('unlock-devin').ok).toBe(true);
+    expect(game.purchaseMetaUnlock('unlock-devin')).toEqual({ ok: false, reason: 'not_ready' });
     game.attachMetaPersistence({ ...defaultMeta(), points: 999 }, storage);
+    expect(game.purchaseMetaUnlock('unlock-devin').ok).toBe(true);
     await Promise.resolve();
 
-    expect(game.getMeta().points).toBe(50);
+    expect(game.getMeta().points).toBe(949);
     expect(game.getMeta().unlockedCards).toContain('devin');
     expect(persisted).toEqual(game.getMeta());
   });

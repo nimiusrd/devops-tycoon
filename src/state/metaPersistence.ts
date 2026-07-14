@@ -27,6 +27,7 @@ export interface MetaStorage {
 
 export interface LegacyMetaStorage {
   getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
   removeItem(key: string): void;
 }
 
@@ -74,6 +75,20 @@ export class IndexedDbMetaStorage implements MetaStorage {
     });
     this.writes = write.catch(() => undefined);
     return write;
+  }
+}
+
+/** IndexedDB が利用できない環境で旧キーへの保存を継続する。 */
+class LocalStorageMetaStorage implements MetaStorage {
+  constructor(private readonly storage: LegacyMetaStorage) {}
+
+  async load(): Promise<MetaState | null> {
+    const raw = this.storage.getItem(LEGACY_META_STORAGE_KEY);
+    return raw === null ? null : parseLegacyMeta(raw);
+  }
+
+  async save(meta: MetaState): Promise<void> {
+    this.storage.setItem(LEGACY_META_STORAGE_KEY, JSON.stringify(meta));
   }
 }
 
@@ -135,7 +150,10 @@ export async function initializeMetaPersistence(
 
     return { meta: defaultMeta(), storage };
   } catch {
-    // IDB が使えない場合も旧セーブまたは初期値でゲームを起動する。
-    return { meta: legacy.meta ?? defaultMeta(), storage };
+    // IDB が使えない場合も旧セーブまたは初期値で起動し、localStorage への保存を継続する。
+    return {
+      meta: legacy.meta ?? defaultMeta(),
+      storage: legacyStorage ? new LocalStorageMetaStorage(legacyStorage) : storage,
+    };
   }
 }

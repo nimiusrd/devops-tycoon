@@ -23,6 +23,7 @@ function legacyStorage(raw?: string): LegacyMetaStorage & { data: Map<string, st
   return {
     data,
     getItem: (key) => data.get(key) ?? null,
+    setItem: (key, value) => void data.set(key, value),
     removeItem: (key) => void data.delete(key),
   };
 }
@@ -105,6 +106,8 @@ describe('IndexedDB メタ永続化（RI-57）', () => {
 
     expect(initialized.meta).toEqual(expected);
     expect(legacy.data.has(LEGACY_META_STORAGE_KEY)).toBe(true);
+    await initialized.storage.save({ ...expected, points: 24 });
+    expect(JSON.parse(legacy.data.get(LEGACY_META_STORAGE_KEY)!)).toMatchObject({ points: 24 });
   });
 
   it('旧セーブの IndexedDB 保存に失敗した場合も旧キーを残す', async () => {
@@ -121,5 +124,7 @@ describe('IndexedDB メタ永続化（RI-57）', () => {
 
     expect(initialized.meta).toEqual(expected);
     expect(legacy.data.has(LEGACY_META_STORAGE_KEY)).toBe(true);
+    await initialized.storage.save({ ...expected, points: 45 });
+    expect(JSON.parse(legacy.data.get(LEGACY_META_STORAGE_KEY)!)).toMatchObject({ points: 45 });
   });
 });

@@ -92,7 +92,7 @@ export interface GameHandle {
   purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
   /** 現在のメタ進行（解放状況・実績）。 */
   getMeta(): MetaState;
-  /** 起動時の非同期永続化を接続する。メタ更新済みなら現在値を保存する。 */
+  /** 起動時の非同期永続化を接続し、メタ更新を解禁する。 */
   attachMetaPersistence(meta: MetaState, storage: MetaStorage): void;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
   phase(): RunState['phase'];
@@ -116,6 +116,8 @@ export interface CreateGameOptions {
   initialMeta?: MetaState;
   /** メタ進行の保存先。未指定時はメモリ上だけで進行する。 */
   metaStorage?: MetaStorage | null;
+  /** 非同期起動中は false にして、復元前のメタ更新を防ぐ。 */
+  metaReady?: boolean;
 }
 
 export function createGame(options: CreateGameOptions = {}): GameHandle {
@@ -124,7 +126,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let paused = false;
   let meta = options.initialMeta ?? defaultMeta();
   let metaStorage = options.metaStorage ?? null;
-  let metaRevision = 0;
+  let metaReady = options.metaReady ?? true;
   let recorded = false;
   let revision = 0;
   let activeDailyDate: string | null = null;
@@ -148,6 +150,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
   const recordIfFinished = (): void => {
+    if (!metaReady) return;
     const s = engine.snapshot();
     if (recorded || (s.status !== 'won' && s.status !== 'lost')) return;
     recorded = true;
@@ -167,7 +170,6 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     } else {
       meta = applyRunReward(meta, input);
     }
-    metaRevision += 1;
     persistMeta();
   };
 
@@ -336,10 +338,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return engine.snapshot();
     },
     purchaseMetaUnlock(unlockId) {
+      if (!metaReady) return { ok: false, reason: 'not_ready' };
       const result = purchaseUnlock(meta, unlockId);
       if (!result.ok) return { ok: false, reason: result.reason };
       meta = result.meta;
-      metaRevision += 1;
       persistMeta();
       bump();
       return { ok: true };
@@ -349,11 +351,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     attachMetaPersistence(hydratedMeta, storage) {
       metaStorage = storage;
-      if (metaRevision === 0) {
-        meta = hydratedMeta;
-      } else {
-        persistMeta();
-      }
+      meta = hydratedMeta;
+      metaReady = true;
+      recordIfFinished();
+      bump();
     },
     phase() {
       return engine.currentPhase();

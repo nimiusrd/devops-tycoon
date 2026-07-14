@@ -5,12 +5,14 @@
  * Incidents / Senior HP / 介入 と、評価・診断・称号を表示する。
  */
 import { getAction } from '../data/actions';
+import { isSpecialGrade } from '../render/juicyEffects';
 import { planBaselineComparison } from '../render/sprintBaselineComparison';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
 import type { GrowthOutcome } from '../sim/run/types';
 import type { ActionId, SprintResult } from '../sim/types';
 import { SprintTimelineChart } from './SprintTimelineChart';
+import { RewardCeremony } from './JuicyEffects';
 
 interface Row {
   label: string;
@@ -84,6 +86,13 @@ export function SprintResultScreen({
         <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
           {result.grade}
         </div>
+        {isSpecialGrade(result.grade) && (
+          <RewardCeremony
+            kind="grade-s"
+            title="PERFECT DELIVERY"
+            detail="評価 S — チームの流れがきらめいた"
+          />
+        )}
         <dl className="result-rows">
           {buildRows(result).map((row) => (
             <div className="result-row" key={row.label}>
@@ -143,6 +152,7 @@ export function SprintResultScreen({
         </div>
         <div className="result-title">
           <p className="result-section-label">称号</p>
+          <RewardCeremony kind="title" title={result.title} detail="このスプリントの称号を獲得" />
           <p className="result-title-value" data-testid="result-title">
             「{result.title}」
           </p>

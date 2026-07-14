@@ -145,6 +145,7 @@ test('RI-32: ボス突破報酬レリックを四半期レビューに表示す�
   expect(reached.ok).toBe(true);
   await expect(page.getByTestId('quarter-review')).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId('boss-relic-reward')).toBeVisible();
+  await expect(page.getByTestId('reward-ceremony-relic')).toBeVisible();
 });
 
 for (const [reason, label] of [

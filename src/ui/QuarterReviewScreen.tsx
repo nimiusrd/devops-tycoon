@@ -10,6 +10,7 @@ import { formatGoalAdjustmentTags } from '../render/eventOutcomeView';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { ReactNode } from 'react';
 import { EffectTagList } from './EffectTagList';
+import { RewardCeremony } from './JuicyEffects';
 
 export interface QuarterReviewScreenProps {
   state: RunState;
@@ -87,6 +88,11 @@ export function QuarterReviewScreen({
         {bossRelic && (
           <div className="result-diagnosis" data-testid="boss-relic-reward">
             <p className="result-section-label">ボス突破報酬</p>
+            <RewardCeremony
+              kind="relic"
+              title={`${bossRelic.name} を獲得`}
+              detail="組織に新しい文化が宿った"
+            />
             <p className="diagnosis-type">◆ {bossRelic.name}</p>
             <p>{bossRelic.description}</p>
           </div>

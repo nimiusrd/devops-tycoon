@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getBoss } from '../data/bosses';
 import { Board } from '../render/Board';
 import type { DraggableActionId } from '../render/boardDragPlan';
+import { planBossSlowMotion } from '../render/juicyEffects';
 import { reviewQueueLength } from '../render/status';
 import { BURN_TICKS } from '../sim/model';
 import type {
@@ -25,6 +26,7 @@ import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
 import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
+import { SlowMotionOverlay } from './JuicyEffects';
 
 export interface SprintScreenProps {
   state: RunState;
@@ -56,6 +58,9 @@ export function SprintScreen({
   } | null>(null);
   const feedbackNonce = useRef(0);
   const triggerKey = useRef(0);
+  const slowMoTimer = useRef<number | null>(null);
+  const [slowMoKey, setSlowMoKey] = useState(0);
+  const [slowMoPlan, setSlowMoPlan] = useState({ clearedIncidentCount: 0 });
   // 完了中・別スプリントの武装は無効（effect で setState しない）。
   const armedId =
     sprint && !sprint.complete && armed.sprintId === state.currentSprintId ? armed.id : null;
@@ -75,6 +80,13 @@ export function SprintScreen({
     return () => window.removeEventListener('keydown', onKey);
   }, [setArmedId]);
 
+  useEffect(
+    () => () => {
+      if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
+    },
+    [],
+  );
+
   const handleDispatch = useCallback(
     (id: ActionId, target?: ActionTarget): InterventionOutcome => {
       if (!sprint) return { ok: false, reason: 'complete' };
@@ -82,11 +94,26 @@ export function SprintScreen({
       const outcome = onDispatch(id, target);
       if (outcome.ok && outcome.effect) {
         const nextSprint = getSprintSnapshot();
+        const nextTasks = nextSprint ? [...nextSprint.tasks] : [...prevTasks];
+        const slowMotion = planBossSlowMotion(
+          state.currentSprintKind === 'boss',
+          prevTasks,
+          nextTasks,
+        );
+        if (slowMotion.active) {
+          setSlowMoPlan({ clearedIncidentCount: slowMotion.clearedIncidentCount });
+          setSlowMoKey((key) => key + 1);
+          if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
+          slowMoTimer.current = window.setTimeout(() => {
+            setSlowMoKey(0);
+            slowMoTimer.current = null;
+          }, 1_200);
+        }
         triggerKey.current += 1;
         setInterventionTrigger({
           effect: outcome.effect,
           prevTasks: [...prevTasks],
-          nextTasks: nextSprint ? [...nextSprint.tasks] : [...prevTasks],
+          nextTasks,
           currentTick: state.sprintTick,
           key: triggerKey.current,
         });
@@ -98,7 +125,7 @@ export function SprintScreen({
       }
       return outcome;
     },
-    [onDispatch, getSprintSnapshot, setArmedId, sprint, state.sprintTick],
+    [onDispatch, getSprintSnapshot, setArmedId, sprint, state.currentSprintKind, state.sprintTick],
   );
 
   const handleDragComplete = useCallback(
@@ -172,6 +199,9 @@ export function SprintScreen({
             assignAssignee={armedId === 'assignTask' ? assignAssignee : undefined}
             onDragComplete={handleDragComplete}
           />
+          {slowMoKey > 0 && (
+            <SlowMotionOverlay clearedIncidentCount={slowMoPlan.clearedIncidentCount} />
+          )}
           <EventTicker events={sprint.events} />
         </div>
       </main>

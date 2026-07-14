@@ -135,6 +135,47 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(foundMetaLocked).toBe(true);
   });
 
+  it('RI-32: レリック枠が埋まっている場合、ボス報酬は付与されない', () => {
+    const engine = new RunEngine({ seed: 'ri32-boss-relic-slots', difficulty: 'easy' });
+    const internals = engine as unknown as {
+      relics: string[];
+      grantBossRelic(): string | undefined;
+    };
+    internals.relics = RELIC_DEFS.slice(0, 6).map((relic) => relic.id);
+
+    expect(internals.grantBossRelic()).toBeUndefined();
+    expect(internals.relics).toHaveLength(6);
+  });
+
+  it('RI-32: レリック枠が埋まっている場合、ショップ購入は課金も敗北もしない', () => {
+    const engine = new RunEngine({ seed: 'ri32-shop-relic-slots', difficulty: 'nightmare' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      budget: number;
+      relics: string[];
+      shop: {
+        cards: Array<{ defId: string; cost: number; bought: boolean }>;
+        relic: { id: string; cost: number; bought: boolean };
+      } | null;
+    };
+    internals.relics = RELIC_DEFS.slice(0, 6).map((relic) => relic.id);
+    internals.phase = 'shop';
+    internals.budget = 30;
+    internals.shop = {
+      cards: [],
+      relic: { id: 'expectation-mgmt', cost: 30, bought: false },
+    };
+
+    engine.buyShopRelic();
+    const after = engine.snapshot();
+    expect(after.status).toBe('playing');
+    expect(after.phase).toBe('shop');
+    expect(after.budget).toBe(30);
+    expect(after.relics).toHaveLength(6);
+    expect(after.shop?.relic?.bought).toBe(false);
+  });
+
   it('RI-32: 勝利種別はボス報酬適用前の org で判定する', () => {
     let verified = false;
     for (let i = 0; i < 80; i += 1) {
@@ -226,6 +267,67 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     // 購入だけでは未発動のため敗北しない。
     expect(after.status).toBe('playing');
     expect(after.deck.some((c) => c.defId === 'copilot')).toBe(true);
+
+    const budgetEngine = new RunEngine({ seed: 'ri32-budget-exhausted', difficulty: 'nightmare' });
+    budgetEngine.startRun();
+    const budgetInternals = budgetEngine as unknown as typeof internals;
+    budgetInternals.phase = 'shop';
+    budgetInternals.budget = 10;
+    budgetInternals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+    budgetEngine.buyShopCard('copilot');
+    after = budgetEngine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('budgetExhausted');
+  });
+
+  it('RI-32: 採用で予算が尽きても lost フェーズを保持する', () => {
+    const engine = new RunEngine({ seed: 'ri32-recruit-budget', difficulty: 'nightmare' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      budget: number;
+    };
+    internals.phase = 'rest';
+    internals.budget = 25;
+    engine.restChoose('recruit');
+    const after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('budgetExhausted');
+    expect(after.phase).toBe('lost');
+  });
+
+  it('RI-32: 全社レバーで予算が尽きると即時敗北する', () => {
+    const engine = new RunEngine({ seed: 'ri32-lever-budget', difficulty: 'nightmare' });
+    engine.startRun();
+    engine.zoomTo('company');
+    const before = engine.snapshot();
+    expect(before.budget).toBe(25);
+    expect(engine.applyOrgLever('aiGuideline')).toBe(true);
+    const after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('budgetExhausted');
+    expect(after.phase).toBe('lost');
+  });
+
+  it('RI-32: スプリント開始時の試練コストで予算が尽きると即時敗北する', () => {
+    const engine = new RunEngine({
+      seed: 'ri32-sprint-budget',
+      difficulty: 'nightmare',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      budget: number;
+      org: { aiDependency: number };
+    };
+    // 依存度 55 + 試練 +5 → 60、ceil(60 * 0.05)=3 を差し引くと予算 0。
+    internals.budget = 3;
+    internals.org.aiDependency = 55;
+    engine.beginSetupSprint();
+    const after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('budgetExhausted');
+    expect(after.phase).toBe('lost');
   });
 
   it('目標修正後は次四半期（quarterNumber=2）へ進める', () => {

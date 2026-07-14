@@ -7,6 +7,7 @@ const IMMEDIATE_LOSE_LABEL: Partial<Record<LoseReason, string>> = {
   reviewFreeze: 'PR 凍結',
   incidentCascade: '障害連鎖',
   aiDependency: 'AI 依存の限界',
+  budgetExhausted: '予算枯渇',
 };
 
 export function WhatIfPreview({

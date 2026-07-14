@@ -452,6 +452,8 @@ export class RunEngine {
       100,
     );
     this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget);
+    // 試練の開始時コストで予算が尽きた場合はスプリントへ進まず継続不能にする。
+    if (this.applyImmediateLose()) return;
     this.sprintBaselineInput = this.buildSprintBaselineInput({
       deck: this.deck,
       roster: this.roster,
@@ -596,7 +598,7 @@ export class RunEngine {
     this.diagnosis = diagnose(this.org, this.totals);
 
     if (this.currentSprintKind === 'boss') {
-      const lose = evaluateLose(this.org, this.totals);
+      const lose = evaluateLose(this.org, this.totals, this.budget);
       if (lose) {
         this.status = 'lost';
         this.loseReason = lose;
@@ -626,7 +628,7 @@ export class RunEngine {
       return;
     }
 
-    const lose = evaluateLose(this.org, this.totals);
+    const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
@@ -724,7 +726,7 @@ export class RunEngine {
       this.applyReorgDeparture();
     }
 
-    const lose = evaluateLose(this.org, this.totals);
+    const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
@@ -913,7 +915,7 @@ export class RunEngine {
       this.phase = 'lost';
       return;
     }
-    const lose = evaluateLose(this.org, this.totals);
+    const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
@@ -970,6 +972,8 @@ export class RunEngine {
 
   /** ショップ用: メタ解放済みかつ未所持のレリックを 1 つ提示（無ければ undefined）。 */
   private offerRelic(rng: () => number): string | undefined {
+    const slots = foldPassives(this.relics).relicSlots;
+    if (this.relics.length >= slots) return undefined;
     const pool = relicIds().filter(
       (id) => !this.relics.includes(id) && (!this.allowedRelics || this.allowedRelics.has(id)),
     );
@@ -993,6 +997,7 @@ export class RunEngine {
     offer.bought = true;
     this.addCard(defId, 1);
     // RI-30: 効果は手札発動時。購入だけでは即時敗北しない。
+    this.applyImmediateLose();
   }
 
   /** ショップでレリックを購入する。 */
@@ -1000,9 +1005,13 @@ export class RunEngine {
     if (this.phase !== 'shop' || !this.shop?.relic || this.shop.relic.bought) return;
     const relic = this.shop.relic;
     if (this.budget < relic.cost) return;
+    // 枠上限・重複で付与できない場合は課金しない（無償で敗北させない）。
+    const slots = foldPassives(this.relics).relicSlots;
+    if (this.relics.includes(relic.id) || this.relics.length >= slots) return;
     this.budget -= relic.cost;
     relic.bought = true;
     this.grantRelic(relic.id);
+    this.applyImmediateLose();
   }
 
   /** ショップを出て編成（setup-pre）へ。採用メンバーを次スプリント前に配置できる。 */
@@ -1041,6 +1050,7 @@ export class RunEngine {
         if (next !== this.roster) {
           this.roster = next;
           this.budget -= RECRUIT_COST;
+          if (this.applyImmediateLose()) return;
         }
       }
     }
@@ -1070,7 +1080,7 @@ export class RunEngine {
 
   /** 即時敗北条件を評価し、該当すれば lost へ遷移する。 */
   private applyImmediateLose(): boolean {
-    const lose = evaluateLose(this.org, this.totals);
+    const lose = evaluateLose(this.org, this.totals, this.budget);
     if (!lose) return false;
     this.status = 'lost';
     this.loseReason = lose;
@@ -1149,6 +1159,7 @@ export class RunEngine {
     if (!res.changed) return false;
     this.orgAdjust = res.adjust;
     this.budget = res.budget;
+    this.applyImmediateLose();
     return true;
   }
 
@@ -1220,6 +1231,7 @@ export class RunEngine {
       this.org.morale,
       this.org.techDebt,
       this.org.quality,
+      this.budget,
       mod.reviewLoadAdd ?? 0,
       mod.reworkRateAdd ?? 0,
       mod.taskCountMul ?? 1,
@@ -1267,6 +1279,32 @@ export class RunEngine {
     };
 
     const current = previewFor(this.deck, this.org);
+
+    // beginSprint と同じ開始直後の敗北（試練コストによる予算枯渇など）はカード発動前に起きる。
+    const startOrg = structuredClone(this.org);
+    startOrg.seniorHp = clamp(
+      startOrg.seniorHp + (100 - startOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
+      0,
+      100,
+    );
+    const budgetAfterPressure = this.applyTrialAiDependencyPressure(startOrg, this.budget);
+    const sprintStartLose = evaluateLose(startOrg, this.totals, budgetAfterPressure);
+    if (sprintStartLose) {
+      const immediate: ReturnType<typeof previewNextSprint> = {
+        trials: 0,
+        delivered: { mean: 0, min: 0, max: 0 },
+        spread: { mean: 0, min: 0, max: 0 },
+        immediateLose: sprintStartLose,
+      };
+      const draftCandidates: Record<string, ReturnType<typeof previewNextSprint>> = {};
+      if (this.phase === 'draft' && this.draft) {
+        for (const defId of this.draft) {
+          draftCandidates[defId] = { ...immediate };
+        }
+      }
+      return { current: immediate, draftCandidates };
+    }
+
     const draftCandidates: Record<string, ReturnType<typeof previewNextSprint>> = {};
     if (this.phase === 'draft' && this.draft) {
       for (const defId of this.draft) {
@@ -1293,9 +1331,9 @@ export class RunEngine {
           0,
           100,
         );
-        this.applyTrialAiDependencyPressure(playOrg, this.budget);
+        const budgetAfterCardPressure = this.applyTrialAiDependencyPressure(playOrg, this.budget);
         applyDeckBaseline(playOrg, scaleEffects(card.base, 1));
-        const loseOnPlay = evaluateLose(playOrg, this.totals);
+        const loseOnPlay = evaluateLose(playOrg, this.totals, budgetAfterCardPressure);
         if (loseOnPlay) {
           draftCandidates[defId] = {
             trials: 0,

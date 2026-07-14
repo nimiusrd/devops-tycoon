@@ -38,7 +38,8 @@ export const runMachine = createMachine({
     // ラン開始直後は編成（Setup）。いきなり盤面を走らせない。
     title: { on: { START: 'setup' } },
     // setup は第1スプリント前の編成、かつショップ/休息後・次四半期の編成入口（setup-pre）も兼ねる。
-    setup: { on: { BEGIN: 'sprint' } },
+    // 試練コスト等で開始直後に継続不能になる場合は LOST で決着する。
+    setup: { on: { BEGIN: 'sprint', LOST: 'lost' } },
     sprint: {
       on: { SPRINT_DONE: 'result', BOSS_REVIEW: 'quarterReview', LOST: 'lost' },
     },
@@ -53,8 +54,9 @@ export const runMachine = createMachine({
         LOST: 'lost',
       },
     },
-    shop: { on: { RESOLVE: 'setup' } },
-    rest: { on: { RESOLVE: 'setup' } },
+    // 購入・採用で予算枯渇した場合は編成へ戻らず lost へ。
+    shop: { on: { RESOLVE: 'setup', LOST: 'lost' } },
+    rest: { on: { RESOLVE: 'setup', LOST: 'lost' } },
     quarterReview: {
       on: { REVIEW_WON: 'won', REVIEW_CONTINUE: 'setup', REVIEW_LOST: 'lost' },
     },

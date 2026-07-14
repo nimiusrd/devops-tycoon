@@ -33,6 +33,13 @@ describe('ランフェーズマシン（XState / 第3章）', () => {
     expect(drive([...toBeat, 'LOST'])).toBe('lost');
   });
 
+  it('即時敗北は setup / shop / rest からも lost へ遷移できる', () => {
+    expect(drive(['START', 'LOST'])).toBe('lost');
+    const toBeat: RunEvent['type'][] = ['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'];
+    expect(drive([...toBeat, 'ENTER_SHOP', 'LOST'])).toBe('lost');
+    expect(drive([...toBeat, 'ENTER_REST', 'LOST'])).toBe('lost');
+  });
+
   it('ボス完了で四半期レビューへ、承認で won / 継続で setup / 終了で lost', () => {
     expect(drive(['START', 'BEGIN', 'BOSS_REVIEW'])).toBe('quarterReview');
     expect(drive(['START', 'BEGIN', 'BOSS_REVIEW', 'REVIEW_WON'])).toBe('won');

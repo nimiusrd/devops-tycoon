@@ -78,7 +78,7 @@
 | RI-16 | 全社/部門レバー係数の許容レンジ | 中 | 完了 | RI-14 | `src/data/levers.ts` |
 | RI-17 | 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ | 中 | 完了 | RI-14 | `quarterReview.ts` |
 | RI-18 | メタ解放コスト・points 配分の許容レンジ | 中 | 完了 | RI-14 | `src/data/unlocks.ts` |
-| RI-19 | 編成差のスプリント結果への影響レンジ | 低 | 未着手 | RI-14 | — |
+| RI-19 | 編成差のスプリント結果への影響レンジ | 低 | 完了 | RI-14 | — |
 | RI-56 | 介入効果量の許容レンジ(介入あり/なし差の担保) | 中 | 完了 | RI-14 | 第6 / `src/sim/actions.ts` |
 
 ### 機能・メタ進行（FEAT）
@@ -446,9 +446,15 @@ outcome になることを検証。`buildQuarterGoal` は全ボス・全難易�
 メタ解放のコスト（`UNLOCK_DEFS` / `src/data/unlocks.ts`）、`applyRunReward` の points 配分
 （勝利20 / 敗北5 × `scoreMul`）、デイリー固定条件（難易度 normal・試練なし）の暫定値を後続調整する。
 
-#### RI-19 編成差のスプリント結果への影響レンジ — 優先度:低（依存: RI-14）
+#### RI-19 編成差のスプリント結果への影響レンジ — 優先度:低 / 完了（依存: RI-14）
 
-編成差がスプリント結果に与える影響レンジを、代表 seed のモンテカルロで許容レンジ化する。
+**完了**: `tests/unit/helpers/formationSeeds.ts` に、normal 難易度の初回スプリントで初期の均衡編成と
+レビュアー `m2` を coding へ移した偏重編成を同一 seed で比較するヘルパを追加。候補 32 seed の全件で
+偏重編成の Review Queue 最大値が増えることを確認し、先頭 12 seed を代表群として固定した。
+`tests/unit/monteCarlo.test.ts` で決定論・全 seed の因果・Delivered / Review Queue / Rework 差分の
+許容レンジを検証する。初回計測は平均で Delivered +27.75（-35〜+95）、Review Queue +4.33
+（+1〜+8）、Rework -2.67（-6〜0）。極端な崩壊検知用の余裕付きレンジ内だったため、
+`src/sim/member/roster.ts` の係数調整は不要と判断した。
 
 #### RI-56 介入効果量の許容レンジ(介入あり/なし差の担保) — 優先度:中 / 完了（依存: RI-14）
 

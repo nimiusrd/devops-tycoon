@@ -474,9 +474,16 @@ describe('monteCarlo 基盤（RI-14）', () => {
       expect(runFormationComparisons()).toEqual(runFormationComparisons());
     });
 
+    it('代表 seed の全件でコーディング偏重編成のレビュー滞留が増える', () => {
+      const comparisons = runFormationComparisons();
+      expect(comparisons).toHaveLength(RI19_SEEDS.length);
+      expect(
+        comparisons.every((c) => c.codingHeavy.reviewQueueMax > c.balanced.reviewQueueMax),
+      ).toBe(true);
+    });
+
     it('均衡編成とコーディング偏重編成の差分が許容レンジ内に収まる', () => {
       const summary = summarizeFormationComparisons(runFormationComparisons());
-      console.info('RI-19 initial measurement', JSON.stringify(summary));
 
       expect(summary.trials).toBe(RI19_SEEDS.length);
       for (const [label, metric] of [

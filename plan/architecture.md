@@ -17,7 +17,7 @@
 | シミュレーション | 純TS・固定タイムステップ・seed付きPRNG | 確率モデル本体（描画から分離・決定論） |
 | 重い試算 | Web Worker（+Comlink） | what-if 計算・モンテカルロ等 |
 | 静的グラフ | Recharts または visx | リザルト/診断の図 |
-| 保存 | localStorage（現状）→ IndexedDB（idb/Dexie） | セーブ・メタ進行・リプレイ |
+| 保存 | IndexedDB（idb、旧 localStorage から起動時移行） | メタ進行（将来: セーブ・リプレイ） |
 | テスト | Vitest（ロジック）＋ Playwright（実ブラウザ） | 第22.5 の二段構え |
 | バックエンド | 当面なし（ローカル擬似） | 将来: ランキング共有・デイリーラン配信 |
 

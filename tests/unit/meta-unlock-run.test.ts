@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 import { createGame } from '../../src/game';
 import { RunEngine } from '../../src/sim/run/engine';
-import { defaultMeta, saveMeta } from '../../src/state/meta';
+import { defaultMeta, type MetaState } from '../../src/state/meta';
+import type { MetaStorage } from '../../src/state/metaPersistence';
 
 function reachFirstDraft(e: RunEngine): string[] {
   let s = e.snapshot();
@@ -51,25 +52,28 @@ describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
     expect(draft.every((id) => allowed.has(id))).toBe(true);
   });
 
-  it('createGame.purchaseMetaUnlock 後の startRun に購入済みカードが反映される', () => {
-    const data = new Map<string, string>();
-    const storage = {
-      getItem: (k: string) => data.get(k) ?? null,
-      setItem: (k: string, v: string) => void data.set(k, v),
+  it('createGame.purchaseMetaUnlock 後の startRun に購入済みカードが反映される', async () => {
+    let persisted: MetaState | null = null;
+    const storage: MetaStorage = {
+      load: async () => persisted,
+      save: async (meta) => {
+        persisted = meta;
+      },
     };
-    vi.stubGlobal('localStorage', storage);
-    vi.stubGlobal('window', { localStorage: storage });
-    saveMeta({ ...defaultMeta(), points: 100 }, storage);
 
-    const game = createGame({ seed: 'meta-game' });
+    const game = createGame({
+      seed: 'meta-game',
+      initialMeta: { ...defaultMeta(), points: 100 },
+      metaStorage: storage,
+    });
     expect(game.purchaseMetaUnlock('unlock-devin').ok).toBe(true);
+    await Promise.resolve();
+    expect(persisted?.unlockedCards).toContain('devin');
 
     game.startRun('easy', [], 'meta-game');
     const draft = reachFirstDraft(game.engine);
     const allowed = new Set(defaultUnlockedCardIds());
     allowed.add('devin');
     expect(draft.every((id) => allowed.has(id))).toBe(true);
-
-    vi.unstubAllGlobals();
   });
 });

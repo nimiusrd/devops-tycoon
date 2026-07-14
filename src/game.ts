@@ -4,7 +4,7 @@
  * Phase 3 ではラン（1四半期）全体を露出する。E2E / デバッグから、タイトル →
  * マップ → スプリント → リザルト → ドラフト → 進化 → ボス の各フェーズを
  * 一時停止つきで駆動でき、seed で再現できる（第22.3 / 22.5）。
- * ラン決着時にはメタ進行（localStorage）へ報酬を記録する（第17章）。
+ * ラン決着時にはメタ進行を永続化する（第17章）。
  */
 import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
@@ -19,13 +19,13 @@ import {
   dailySeed,
   DAILY_RUN_DIFFICULTY,
   DAILY_RUN_TRIALS,
-  loadMeta,
+  defaultMeta,
   purchaseUnlock,
-  saveMeta,
   unlockedContent,
   utcDateStr,
   type MetaState,
 } from './state/meta';
+import type { MetaStorage } from './state/metaPersistence';
 
 export interface GameHandle {
   /** 自動進行を止める。 */
@@ -110,13 +110,17 @@ export interface CreateGameOptions {
   seed?: string;
   difficulty?: DifficultyId;
   trials?: string[];
+  /** 起動時に永続化層から復元済みのメタ進行。 */
+  initialMeta?: MetaState;
+  /** メタ進行の保存先。未指定時はメモリ上だけで進行する。 */
+  metaStorage?: MetaStorage | null;
 }
 
 export function createGame(options: CreateGameOptions = {}): GameHandle {
   const seed = options.seed ?? resolveSeedFromLocation();
   const engine = createRunEngine({ seed, difficulty: options.difficulty, trials: options.trials });
   let paused = false;
-  let meta = loadMeta();
+  let meta = options.initialMeta ?? defaultMeta();
   let recorded = false;
   let revision = 0;
   let activeDailyDate: string | null = null;
@@ -130,6 +134,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const applyUnlockedToEngine = (): void => {
     const content = unlockedContent(meta);
     engine.setUnlockedContent(content.cards, content.relics);
+  };
+
+  /** 保存失敗でゲーム進行を止めず、直列化はストレージ実装へ委ねる。 */
+  const persistMeta = (): void => {
+    if (!options.metaStorage) return;
+    void options.metaStorage.save(meta).catch(() => undefined);
   };
 
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
@@ -153,7 +163,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     } else {
       meta = applyRunReward(meta, input);
     }
-    saveMeta(meta);
+    persistMeta();
   };
 
   const after = (): RunState => {
@@ -324,7 +334,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const result = purchaseUnlock(meta, unlockId);
       if (!result.ok) return { ok: false, reason: result.reason };
       meta = result.meta;
-      saveMeta(meta);
+      persistMeta();
       bump();
       return { ok: true };
     },

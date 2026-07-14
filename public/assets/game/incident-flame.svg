@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Incident Flame</title>
+  <desc id="desc">A stylized production incident flame icon.</desc>
+  <defs>
+    <radialGradient id="fire" cx="50%" cy="35%" r="70%">
+      <stop stop-color="#fff7ad"/>
+      <stop offset="0.42" stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#dc2626"/>
+    </radialGradient>
+    <filter id="hot" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <ellipse cx="128" cy="222" rx="58" ry="14" fill="#450a0a" opacity="0.32"/>
+  <path d="M146 31c18 38-8 55 23 78 20 15 37 35 37 66 0 43-35 73-78 73s-78-30-78-73c0-33 21-57 43-78 15-15 23-34 19-59 22 9 31 24 34 43 14-13 12-31 0-50Z" fill="url(#fire)" filter="url(#hot)"/>
+  <path d="M132 101c10 23-9 36 10 53 13 11 22 24 22 44 0 25-17 42-38 42s-38-17-38-42c0-19 11-34 25-47 11-10 16-23 14-39 10 5 17 13 19 26 8-9 4-22-14-37Z" fill="#fef3c7" opacity="0.92"/>
+  <path d="M69 79h46M58 104h31M174 81h25M186 108h38" stroke="#fed7aa" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+</svg>

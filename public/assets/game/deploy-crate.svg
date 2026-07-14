@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Deploy Crate</title>
+  <desc id="desc">A glowing shipping crate used for deployment rewards.</desc>
+  <defs>
+    <linearGradient id="crate" x1="44" y1="56" x2="210" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fef3c7"/>
+      <stop offset="0.5" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="48" y1="66" x2="198" y2="196" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#92400e"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <ellipse cx="128" cy="222" rx="76" ry="15" fill="#0f172a" opacity="0.28"/>
+  <path d="M43 91 128 47l85 44v91l-85 43-85-43V91Z" fill="url(#crate)" stroke="url(#edge)" stroke-width="6" stroke-linejoin="round"/>
+  <path d="m43 91 85 43 85-43M128 134v91" fill="none" stroke="#78350f" stroke-opacity="0.45" stroke-width="6" stroke-linejoin="round"/>
+  <path d="m82 71 86 43v36l-24-12-20 28-20-49-46-22 24-24Z" fill="#fef08a" opacity="0.62"/>
+  <path d="M91 164h74" stroke="#fff7ed" stroke-width="10" stroke-linecap="round" opacity="0.86"/>
+  <path d="M107 145h42" stroke="#7c2d12" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+  <circle cx="196" cy="62" r="12" fill="#22c55e" filter="url(#glow)"/>
+  <path d="m190 62 4 4 9-10" fill="none" stroke="#ecfccb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

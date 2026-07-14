@@ -603,6 +603,33 @@ body {
     0 0 24px #3fb6ff88;
   z-index: 15;
 }
+.intervention-sweep-particle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 55%;
+  width: 34px;
+  height: 5px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, #b8ebffcc);
+  filter: blur(1px);
+  opacity: 0.8;
+}
+.intervention-sweep-burst {
+  position: absolute;
+  inset: 16% 18%;
+  border: 2px solid #7bdcff99;
+  border-radius: 50%;
+  background:
+    linear-gradient(90deg, transparent 49.5%, #b8ebff66 50%, transparent 50.5%),
+    linear-gradient(0deg, transparent 49.5%, #b8ebff55 50%, transparent 50.5%);
+  box-shadow:
+    0 0 24px #7bdcff88,
+    inset 0 0 24px #3fb6ff44;
+  pointer-events: none;
+  z-index: 13;
+}
 .intervention-sweep-particle.sweep-rework {
   background: radial-gradient(circle at 35% 35%, #fff8e0, #ffb347 45%, #ff9f43 85%);
   box-shadow:
@@ -1184,6 +1211,109 @@ body {
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 0 24px currentColor;
+}
+.reward-ceremony {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  width: fit-content;
+  min-width: 12rem;
+  margin: 0.45rem auto 0.9rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid #ffe08a99;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #ffe08a22, #ff8fe022);
+  box-shadow: 0 0 22px #ffe08a33;
+  color: var(--sun);
+  overflow: hidden;
+}
+.reward-ceremony::before,
+.reward-ceremony::after {
+  content: '✦';
+  position: absolute;
+  color: #fff6c7;
+  animation: rewardSparkle 1.1s ease-in-out infinite alternate;
+}
+.reward-ceremony::before {
+  top: 0.15rem;
+  left: 0.45rem;
+}
+.reward-ceremony::after {
+  right: 0.45rem;
+  bottom: 0.15rem;
+  animation-delay: 0.35s;
+}
+.reward-ceremony strong {
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+.reward-ceremony small {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+}
+.reward-ceremony-sparkles {
+  position: absolute;
+  top: -0.75rem;
+  right: 0.6rem;
+  color: #fff6c7;
+  font-size: 0.85rem;
+  letter-spacing: 0.35rem;
+  animation: rewardSparkle 0.9s ease-in-out infinite alternate;
+}
+.reward-ceremony-evolution {
+  border-color: var(--mint);
+  background: linear-gradient(135deg, #57e08f22, #7bdcff16);
+  color: var(--mint);
+}
+.reward-ceremony-grade-s {
+  border-color: #ff8fe0cc;
+  background: linear-gradient(135deg, #ff8fe044, #ffe08a33);
+  color: #ffb6eb;
+  box-shadow: 0 0 30px #ff8fe066;
+}
+.reward-ceremony-title {
+  border-color: #7bdcff99;
+  background: linear-gradient(135deg, #7bdcff22, #cdbff022);
+  color: #b8ebff;
+}
+.juicy-slowmo-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.25rem;
+  background: radial-gradient(circle, #ffe08a44 0%, #ff8fe01c 35%, transparent 72%);
+  border: 2px solid #ffe08a88;
+  box-shadow: inset 0 0 80px #ff8fe044;
+  pointer-events: none;
+  z-index: 20;
+  color: #fff6c7;
+  text-align: center;
+}
+.juicy-slowmo-overlay strong {
+  font-size: clamp(1.3rem, 3vw, 2.1rem);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 18px #ffe08acc;
+}
+.juicy-slowmo-overlay small {
+  color: #ffe9a8;
+}
+.juicy-slowmo-label {
+  color: #ffb6eb;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+}
+@keyframes rewardSparkle {
+  from {
+    opacity: 0.35;
+    transform: scale(0.75) rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.15) rotate(10deg);
+  }
 }
 .result-rows {
   margin: 0 0 1.25rem;
@@ -2870,6 +3000,11 @@ button.card:active {
   }
   .title-command * {
     transition: none !important;
+  }
+  .reward-ceremony::before,
+  .reward-ceremony::after,
+  .reward-ceremony-sparkles {
+    animation: none;
   }
 }
 

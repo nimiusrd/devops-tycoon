@@ -11,6 +11,7 @@ import { diagnosisView } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
 import { getDailyRecord, WIN_TITLE_DEFS, type MetaState } from '../state/meta';
 import type { LoseReason, RunState } from '../sim/run/types';
+import { RewardCeremony } from './JuicyEffects';
 
 const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
   seniorBurnout: { label: 'シニア燃え尽き', desc: 'レビューがシニアに集中し、体力が尽きました。' },
@@ -91,6 +92,11 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
             data-collected={titleInCollection ? 'true' : 'false'}
           >
             <p className="result-section-label">今回の勝利称号</p>
+            <RewardCeremony
+              kind="title"
+              title={collectedTitle.label}
+              detail="あなたの組織に刻まれた称号"
+            />
             <p className="result-title-value">🏆 {collectedTitle.label}</p>
             <p className="result-title-description">
               {titleInCollection
@@ -136,6 +142,11 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
         {bossRelic && (
           <div className="result-diagnosis" data-testid="boss-relic-reward">
             <p className="result-section-label">ボス突破報酬</p>
+            <RewardCeremony
+              kind="relic"
+              title={`${bossRelic.name} を獲得`}
+              detail="組織に新しい文化が宿った"
+            />
             <p className="diagnosis-type">◆ {bossRelic.name}</p>
             <p>{bossRelic.description}</p>
           </div>

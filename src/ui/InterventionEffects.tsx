@@ -102,6 +102,19 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
   return (
     <div className="intervention-effects" aria-hidden="true">
       <AnimatePresence>
+        {active.filter((effect) => effect.kind === 'reviewSweep').length >= 2 && (
+          <motion.div
+            key="sweep-burst"
+            className="intervention-sweep-burst"
+            data-testid="intervention-effect-sweep-burst"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: [0, 0.9, 0], scale: [0.7, 1.05, 1.2] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
         {active.map((effect) => {
           switch (effect.kind) {
             case 'reviewSweep':

@@ -4,11 +4,13 @@
  * スプリントで得た進化ポイントを 5 ブランチに割り振る。前提・コストを満たす
  * ノードのみ解放できる。ビルドの個性（どの会社になるか）がここで決まる。
  */
+import { useState } from 'react';
 import { BRANCH_LABEL, EVOLUTION_NODES, type EvolutionBranch } from '../data/evolution';
 import { formatEvolutionNodeTags } from '../render/eventOutcomeView';
 import { canUnlock, isUnlocked } from '../sim/run/evolution';
 import type { RunState } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
+import { RewardCeremony } from './JuicyEffects';
 
 const BRANCH_ORDER: EvolutionBranch[] = ['dev', 'review', 'quality', 'ai', 'culture'];
 
@@ -20,6 +22,10 @@ export interface EvolutionScreenProps {
 
 export function EvolutionScreen({ state, onUnlock, onFinish }: EvolutionScreenProps) {
   const evo = state.evolution;
+  const [unlockedNode, setUnlockedNode] = useState<string | null>(null);
+  const unlockedNodeName = unlockedNode
+    ? EVOLUTION_NODES.find((node) => node.id === unlockedNode)?.name
+    : undefined;
   return (
     <div
       className="result-overlay"
@@ -32,6 +38,13 @@ export function EvolutionScreen({ state, onUnlock, onFinish }: EvolutionScreenPr
         <h2 className="draft-title">
           進化ポイント <b data-testid="evo-points">{evo.points}</b> を割り振る
         </h2>
+        {unlockedNodeName && (
+          <RewardCeremony
+            kind="evolution"
+            title={`${unlockedNodeName} を解放`}
+            detail="組織の新しい枝が伸びた"
+          />
+        )}
         <div className="evolution-branches">
           {BRANCH_ORDER.map((branch) => (
             <div className="evolution-branch" key={branch}>
@@ -46,7 +59,10 @@ export function EvolutionScreen({ state, onUnlock, onFinish }: EvolutionScreenPr
                     className={`evo-node${unlocked ? ' unlocked' : ''}${can ? ' can' : ''}`}
                     data-testid={`evo-${node.id}`}
                     disabled={!can}
-                    onClick={() => onUnlock(node.id)}
+                    onClick={() => {
+                      setUnlockedNode(node.id);
+                      onUnlock(node.id);
+                    }}
                   >
                     <span className="evo-name">{node.name}</span>
                     <EffectTagList

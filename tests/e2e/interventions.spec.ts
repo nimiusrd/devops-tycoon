@@ -74,6 +74,9 @@ test('割り込みレビュー成功時に盤面スイープ演出が出る（RI
   await expect(page.locator('[data-testid^="intervention-effect-sweep-"]').first()).toBeVisible({
     timeout: 3000,
   });
+  await expect(page.getByTestId('intervention-effect-sweep-burst')).toBeVisible({
+    timeout: 3000,
+  });
   await expect(page.getByTestId('event-ticker')).toBeVisible();
   await expect(page.locator('[data-testid^="event-ticker-row-"]').first()).toBeVisible({
     timeout: 3000,

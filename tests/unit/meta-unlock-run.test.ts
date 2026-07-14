@@ -76,4 +76,25 @@ describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
     allowed.add('devin');
     expect(draft.every((id) => allowed.has(id))).toBe(true);
   });
+
+  it('永続化接続前のメタ更新を復元値で上書きしない', async () => {
+    let persisted: MetaState | null = null;
+    const storage: MetaStorage = {
+      load: async () => null,
+      save: async (meta) => {
+        persisted = meta;
+      },
+    };
+    const game = createGame({
+      initialMeta: { ...defaultMeta(), points: 100 },
+    });
+
+    expect(game.purchaseMetaUnlock('unlock-devin').ok).toBe(true);
+    game.attachMetaPersistence({ ...defaultMeta(), points: 999 }, storage);
+    await Promise.resolve();
+
+    expect(game.getMeta().points).toBe(50);
+    expect(game.getMeta().unlockedCards).toContain('devin');
+    expect(persisted).toEqual(game.getMeta());
+  });
 });

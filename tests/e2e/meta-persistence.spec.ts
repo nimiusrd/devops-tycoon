@@ -43,7 +43,7 @@ test('旧 localStorage を IndexedDB へ移行し、購入後も再読み込み�
   });
 
   await page.goto('/?renderer=dom&seed=meta-persistence-e2e');
-  await expect.poll(() => page.evaluate(() => Boolean((window as MetaGameWindow).game))).toBe(true);
+  await expect(page.getByTestId('title')).toBeVisible();
 
   expect(await page.evaluate((key) => localStorage.getItem(key), LEGACY_KEY)).toBeNull();
   await expect
@@ -65,10 +65,12 @@ test('旧 localStorage を IndexedDB へ移行し、購入後も再読み込み�
     });
 
   await page.reload();
-  await expect.poll(() => page.evaluate(() => Boolean((window as MetaGameWindow).game))).toBe(true);
-  expect(await page.evaluate(() => (window as MetaGameWindow).game?.getMeta())).toMatchObject({
-    points: 50,
-    unlockedCards: ['devin'],
-  });
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => (window as MetaGameWindow).game?.getMeta()))
+    .toMatchObject({
+      points: 50,
+      unlockedCards: ['devin'],
+    });
   expect(await page.evaluate((key) => localStorage.getItem(key), LEGACY_KEY)).toBeNull();
 });

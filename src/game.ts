@@ -92,6 +92,8 @@ export interface GameHandle {
   purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
   /** 現在のメタ進行（解放状況・実績）。 */
   getMeta(): MetaState;
+  /** 起動時の非同期永続化を接続する。メタ更新済みなら現在値を保存する。 */
+  attachMetaPersistence(meta: MetaState, storage: MetaStorage): void;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
@@ -121,6 +123,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const engine = createRunEngine({ seed, difficulty: options.difficulty, trials: options.trials });
   let paused = false;
   let meta = options.initialMeta ?? defaultMeta();
+  let metaStorage = options.metaStorage ?? null;
+  let metaRevision = 0;
   let recorded = false;
   let revision = 0;
   let activeDailyDate: string | null = null;
@@ -138,8 +142,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   /** 保存失敗でゲーム進行を止めず、直列化はストレージ実装へ委ねる。 */
   const persistMeta = (): void => {
-    if (!options.metaStorage) return;
-    void options.metaStorage.save(meta).catch(() => undefined);
+    if (!metaStorage) return;
+    void metaStorage.save(meta).catch(() => undefined);
   };
 
   /** ラン決着を検知したら一度だけメタ進行へ報酬を記録する（第17章）。 */
@@ -163,6 +167,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     } else {
       meta = applyRunReward(meta, input);
     }
+    metaRevision += 1;
     persistMeta();
   };
 
@@ -334,12 +339,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const result = purchaseUnlock(meta, unlockId);
       if (!result.ok) return { ok: false, reason: result.reason };
       meta = result.meta;
+      metaRevision += 1;
       persistMeta();
       bump();
       return { ok: true };
     },
     getMeta() {
       return meta;
+    },
+    attachMetaPersistence(hydratedMeta, storage) {
+      metaStorage = storage;
+      if (metaRevision === 0) {
+        meta = hydratedMeta;
+      } else {
+        persistMeta();
+      }
     },
     phase() {
       return engine.currentPhase();

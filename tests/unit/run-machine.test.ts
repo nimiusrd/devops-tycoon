@@ -40,6 +40,14 @@ describe('ランフェーズマシン（XState / 第3章）', () => {
     expect(drive([...toBeat, 'ENTER_REST', 'LOST'])).toBe('lost');
   });
 
+  it('即時敗北はリザルト / ドラフト / 進化 / 四半期レビューからも lost へ遷移できる（レバー等のガード無し経路）', () => {
+    const toResult: RunEvent['type'][] = ['START', 'BEGIN', 'SPRINT_DONE'];
+    expect(drive([...toResult, 'LOST'])).toBe('lost');
+    expect(drive([...toResult, 'ACK', 'LOST'])).toBe('lost');
+    expect(drive([...toResult, 'ACK', 'NEXT', 'LOST'])).toBe('lost');
+    expect(drive(['START', 'BEGIN', 'BOSS_REVIEW', 'LOST'])).toBe('lost');
+  });
+
   it('ボス完了で四半期レビューへ、承認で won / 継続で setup / 終了で lost', () => {
     expect(drive(['START', 'BEGIN', 'BOSS_REVIEW'])).toBe('quarterReview');
     expect(drive(['START', 'BEGIN', 'BOSS_REVIEW', 'REVIEW_WON'])).toBe('won');

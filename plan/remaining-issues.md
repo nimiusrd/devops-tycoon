@@ -114,7 +114,7 @@
 | RI-36 | コンボ/連携ゲージの UI↔sim 検証 E2E | 中 | 完了 | — | 第6.2 |
 | RI-37 | カード強化のショップ/休息接続確認＋強化対象選択 UI | 中 | 完了 | — | 第7 |
 | RI-38 | `tone: joke` のネタイベント追加 | 低 | 完了 | — | 第9 |
-| RI-39 | XState の役割整理(`phase` 二重管理の解消) | 中 | 未着手 | — | 第22 |
+| RI-39 | XState の役割整理(`phase` 二重管理の解消) | 中 | 完了 | — | 第22 |
 | RI-40 | 通しテスト(DoD)の再確認 | 低 | 未着手 | — | — |
 | RI-41 | 代表 seed の記録(AIあり/なし差分) | 低 | 完了 | — | — |
 | RI-42 | AI 過信の二重診断の段階分け判断 | 低 | 完了 | — | 第13 |
@@ -621,10 +621,16 @@ GitHub API 実データモード、チーム対抗ランキング、社内LT/経
 `tests/unit/run-loop.test.ts` で分類を検証し、`tests/e2e/run.spec.ts` で
 `BeatScreen` が `.tone-joke` として描画されることを確認する。
 
-#### RI-39 XState の役割整理(`phase` 二重管理の解消) — 優先度:中
+#### RI-39 XState の役割整理(`phase` 二重管理の解消) — 優先度:中 / 完了
 
-XState を「遷移契約のテスト用」とするのか、実ランタイム遷移にも使うのかを決め、RunEngine の `phase`
-直接代入との二重管理リスクを減らす。
+**完了**: 判断は「XState は遷移契約のテスト/可視化用、実ランタイムは遷移表で検証」。
+`src/sim/run/phases.ts` に純TSのフェーズ遷移表 `RUN_PHASE_TRANSITIONS` を単一の真実源として新設し、
+`runMachine.ts` の XState マシンは手書き定義を撤去して表から生成。`RunEngine` の `phase` 直接代入
+（21箇所）は表を検証する `setPhase()`（不正遷移は `RunPhaseError` を throw）へ置換し、新規ラン・
+タイトル復帰の入口のみ `resetPhase()` に分離。ガード無し経路だった `applyOrgLever` には
+タイトル/終端フェーズのガードを追加し、進行中全フェーズに `LOST` エッジを明示した。
+Vitest: `tests/unit/run-phases.test.ts`（表の形状契約・BFS到達可能性）、`run-machine.test.ts`
+（生成後マシンの回帰＋LOST拡張）、`run-engine.test.ts`（`setPhase` の throw・レバーガード）。
 
 #### RI-40 通しテスト(DoD)の再確認 — 優先度:低
 

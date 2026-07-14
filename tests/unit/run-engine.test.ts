@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, evaluateWinType } from '../../src/sim/outcome';
 import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
+import { RunPhaseError } from '../../src/sim/run/phases';
 import { canAcknowledgeWin } from '../../src/sim/run/quarterReview';
 import type { RunState } from '../../src/sim/run/types';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
@@ -670,5 +671,34 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       guard += 1;
     }
     throw new Error('sprint did not complete within guard');
+  });
+});
+
+describe('フェーズ遷移の検証（setPhase / 遷移表。RI-39）', () => {
+  type PhaseInternals = { setPhase(next: RunState['phase']): void };
+
+  it('遷移表に無い遷移は RunPhaseError を投げる', () => {
+    const e = new RunEngine({ seed: 'phase-guard', difficulty: 'normal' });
+    const internals = e as unknown as PhaseInternals;
+    // title からは setup 以外へ進めない。
+    expect(() => internals.setPhase('won')).toThrow(RunPhaseError);
+    expect(() => internals.setPhase('sprint')).toThrow(RunPhaseError);
+    // 表にあるエッジ（title → setup）は通る。
+    expect(() => internals.setPhase('setup')).not.toThrow();
+    expect(e.snapshot().phase).toBe('setup');
+    // setup からの逆行（→ title）は resetPhase の領分で、setPhase では不正。
+    expect(() => internals.setPhase('title')).toThrow(RunPhaseError);
+  });
+
+  it('タイトル・終端フェーズでは組織レバーが発動しない', () => {
+    const title = new RunEngine({ seed: 'lever-title', difficulty: 'normal' });
+    expect(title.applyOrgLever('aiGuideline')).toBe(false);
+    expect(title.snapshot().phase).toBe('title');
+
+    const finished = new RunEngine({ seed: 'lever-finished', difficulty: 'easy' });
+    const s = playRun(finished);
+    expect(['won', 'lost']).toContain(s.phase);
+    expect(finished.applyOrgLever('aiGuideline')).toBe(false);
+    expect(finished.snapshot().phase).toBe(s.phase);
   });
 });

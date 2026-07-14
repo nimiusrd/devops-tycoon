@@ -972,6 +972,8 @@ export class RunEngine {
 
   /** ショップ用: メタ解放済みかつ未所持のレリックを 1 つ提示（無ければ undefined）。 */
   private offerRelic(rng: () => number): string | undefined {
+    const slots = foldPassives(this.relics).relicSlots;
+    if (this.relics.length >= slots) return undefined;
     const pool = relicIds().filter(
       (id) => !this.relics.includes(id) && (!this.allowedRelics || this.allowedRelics.has(id)),
     );
@@ -1003,6 +1005,9 @@ export class RunEngine {
     if (this.phase !== 'shop' || !this.shop?.relic || this.shop.relic.bought) return;
     const relic = this.shop.relic;
     if (this.budget < relic.cost) return;
+    // 枠上限・重複で付与できない場合は課金しない（無償で敗北させない）。
+    const slots = foldPassives(this.relics).relicSlots;
+    if (this.relics.includes(relic.id) || this.relics.length >= slots) return;
     this.budget -= relic.cost;
     relic.bought = true;
     this.grantRelic(relic.id);

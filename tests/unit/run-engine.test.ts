@@ -147,6 +147,35 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(internals.relics).toHaveLength(6);
   });
 
+  it('RI-32: レリック枠が埋まっている場合、ショップ購入は課金も敗北もしない', () => {
+    const engine = new RunEngine({ seed: 'ri32-shop-relic-slots', difficulty: 'nightmare' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      budget: number;
+      relics: string[];
+      shop: {
+        cards: Array<{ defId: string; cost: number; bought: boolean }>;
+        relic: { id: string; cost: number; bought: boolean };
+      } | null;
+    };
+    internals.relics = RELIC_DEFS.slice(0, 6).map((relic) => relic.id);
+    internals.phase = 'shop';
+    internals.budget = 30;
+    internals.shop = {
+      cards: [],
+      relic: { id: 'expectation-mgmt', cost: 30, bought: false },
+    };
+
+    engine.buyShopRelic();
+    const after = engine.snapshot();
+    expect(after.status).toBe('playing');
+    expect(after.phase).toBe('shop');
+    expect(after.budget).toBe(30);
+    expect(after.relics).toHaveLength(6);
+    expect(after.shop?.relic?.bought).toBe(false);
+  });
+
   it('RI-32: 勝利種別はボス報酬適用前の org で判定する', () => {
     let verified = false;
     for (let i = 0; i < 80; i += 1) {

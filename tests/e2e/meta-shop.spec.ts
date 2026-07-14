@@ -37,6 +37,7 @@ test('メタショップ購入が次ランのドラフトプールへ反映さ�
   }, DEFAULT_META);
 
   await page.goto('/?renderer=dom&seed=meta-shop-e2e');
+  await expect(page.getByTestId('title')).toBeVisible();
 
   const result = await page.evaluate(async () => {
     const g = (window as GameWindow).game!;

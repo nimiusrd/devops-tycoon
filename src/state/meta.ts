@@ -2,8 +2,7 @@
  * メタ進行とアンロック（SPEC 第17章）。
  *
  * ランをまたいで蓄積する進行。ボス撃破でメタ進行ポイント・難易度解放・実績を
- * 得る。永続化は localStorage（architecture §1）。ロジックは純関数に保ち、
- * ストレージは差し替え可能なインターフェースで受けてテスト可能にする。
+ * 得る。ロジックは純関数に保ち、永続化は metaPersistence.ts に分離する。
  */
 import type { BOSS_DEFS } from '../data/bosses';
 import { BOSS_DEFS as ALL_BOSSES } from '../data/bosses';
@@ -16,13 +15,13 @@ import {
 import { winView } from '../sim/outcome';
 import type { DifficultyId, QuarterOutcome, WinType } from '../sim/run/types';
 
-/** localStorage 等の最小インターフェース（テストでモック可能）。 */
-export interface MetaStorage {
+/** 旧 localStorage の移行と互換テストに使う最小インターフェース。 */
+export interface LegacyMetaStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
 }
 
-const STORAGE_KEY = 'devops-tycoon:meta:v1';
+export const LEGACY_META_STORAGE_KEY = 'devops-tycoon:meta:v1';
 
 export interface MetaState {
   /** 累積メタ進行ポイント。 */
@@ -89,6 +88,23 @@ export function defaultMeta(): MetaState {
     unlockedPresets: [],
     dailyRuns: {},
   };
+}
+
+/** 保存値へ現行スキーマの既定値を補完する。 */
+export function normalizeMeta(value: unknown): MetaState {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return defaultMeta();
+  return { ...defaultMeta(), ...(value as Partial<MetaState>) };
+}
+
+/** 旧 JSON セーブを現行スキーマへ復元する。壊れていれば null。 */
+export function parseLegacyMeta(raw: string): MetaState | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return normalizeMeta(parsed);
+  } catch {
+    return null;
+  }
 }
 
 /** デイリーランの固定難易度・試練（全員同一条件）。 */
@@ -374,30 +390,32 @@ export function purchaseUnlock(meta: MetaState, unlockId: string): PurchaseUnloc
 }
 
 /** メタ状態を読み込む（壊れていれば初期値）。SSR/未対応環境では初期値。 */
-export function loadMeta(storage: MetaStorage | null = browserStorage()): MetaState {
+export function loadMeta(storage: LegacyMetaStorage | null = browserStorage()): MetaState {
   if (!storage) return defaultMeta();
   try {
-    const raw = storage.getItem(STORAGE_KEY);
+    const raw = storage.getItem(LEGACY_META_STORAGE_KEY);
     if (!raw) return defaultMeta();
-    const parsed = JSON.parse(raw) as Partial<MetaState>;
-    return { ...defaultMeta(), ...parsed };
+    return parseLegacyMeta(raw) ?? defaultMeta();
   } catch {
     return defaultMeta();
   }
 }
 
 /** メタ状態を保存する（未対応環境では黙って何もしない）。 */
-export function saveMeta(meta: MetaState, storage: MetaStorage | null = browserStorage()): void {
+export function saveMeta(
+  meta: MetaState,
+  storage: LegacyMetaStorage | null = browserStorage(),
+): void {
   if (!storage) return;
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(meta));
+    storage.setItem(LEGACY_META_STORAGE_KEY, JSON.stringify(meta));
   } catch {
     // 容量超過・プライベートモード等は無視（ゲーム進行を止めない）。
   }
 }
 
 /** ブラウザの localStorage（非対応環境では null）。 */
-export function browserStorage(): MetaStorage | null {
+export function browserStorage(): LegacyMetaStorage | null {
   try {
     if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
   } catch {

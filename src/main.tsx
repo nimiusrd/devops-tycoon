@@ -2,10 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { installGame } from './game';
+import { initializeMetaPersistence } from './state/metaPersistence';
 import './styles.css';
 
-// 決定論フック window.game を生成し、App へ渡す（描画は状態を読むだけ）。
-const game = installGame();
+// E2E / デバッグ用の決定論フックは従来どおり同期的に公開する。
+const game = installGame({ metaReady: false });
+const { meta, storage } = await initializeMetaPersistence();
+game.attachMetaPersistence(meta, storage);
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

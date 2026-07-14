@@ -15,12 +15,12 @@ import {
   saveMeta,
   unlockedContent,
   utcDateStr,
-  type MetaStorage,
+  type LegacyMetaStorage,
 } from '../../src/state/meta';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 
 /** メモリ上のストレージ（localStorage 互換）。 */
-function memStorage(): MetaStorage & { data: Map<string, string> } {
+function memStorage(): LegacyMetaStorage & { data: Map<string, string> } {
   const data = new Map<string, string>();
   return {
     data,

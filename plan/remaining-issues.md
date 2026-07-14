@@ -67,7 +67,7 @@
 | RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 完了 | — | 第22 |
 | RI-12 | バンドル分割(動的 import) | 低 | 未着手 | — | 第22 |
 | RI-13 | 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) | 中 | 未着手 | — | 第22 |
-| RI-57 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | 中 | 未着手 | — | 第17 / 22 |
+| RI-57 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | 中 | 完了 | — | 第17 / 22 |
 
 ### バランス（BAL）
 
@@ -395,16 +395,14 @@ CI 既定の E2E は `renderer=dom` を明示して実 WebGL を回さない方�
 基盤候補）、Recharts・visx（指標可視化）の導入要否を判断し、必要なものを入れる。
 IndexedDB（永続化）は RI-57 へ切り出した。
 
-#### RI-57 メタ永続化の IndexedDB 移行＋旧 localStorage 統合 — 優先度:中
+#### RI-57 メタ永続化の IndexedDB 移行＋旧 localStorage 統合 — 優先度:中 / 完了
 
-現状のメタ進行は `localStorage`（`devops-tycoon:meta:v1`）に小さな JSON を同期保存している
-（`src/state/meta.ts`）。architecture §1 の段階移行に従い、永続化先を IndexedDB（idb/Dexie 等）へ移す。
-移行時に旧 `localStorage` セーブを読み取り、欠けたフィールド（例: `collectedWinTypes` / `dailyRuns`）を
-既定値で補完したうえで IndexedDB へ統合し、成功後は旧キーを削除する。
-
-- **スコープ**: `MetaStorage` 抽象の IndexedDB 実装、起動時ワンショット移行、Vitest / Playwright での往復と移行検証。
-- **非スコープ（当面）**: リプレイ・大量履歴の保存設計（必要になったら別 ID で切り出す）。
-- **依存**: なし。将来のセーブ/リプレイ拡張の土台になる。
+**完了**: `src/state/metaPersistence.ts` に `idb` ベースの非同期 `MetaStorage` を追加し、
+起動時に IndexedDB からメタ進行を復元する構成へ移行した。IndexedDB が空の場合は旧
+`localStorage`（`devops-tycoon:meta:v1`）を現行スキーマの既定値で補完して保存し、成功後に旧キーを削除する。
+IndexedDB に既存値がある場合はそちらを正として旧値を破棄し、利用不可・保存失敗時も旧値または初期値で
+ゲームを継続する。Vitest で往復・補完・優先順位・失敗時フォールバックを、Playwright で移行・購入・
+再読み込みを検証する。リプレイ・大量履歴の保存設計は引き続き非スコープ。
 
 ### バランス（BAL）
 

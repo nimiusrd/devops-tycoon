@@ -62,7 +62,8 @@ export function useRun(game: GameHandle): UseRun {
   const [meta, setMeta] = useState<MetaState>(() => game.getMeta());
 
   useEffect(() => {
-    let lastRev = game.revision();
+    // 初回も必ず同期する。React の描画〜effect開始の間に window.game が操作されても取りこぼさない。
+    let lastRev = -1;
     const id = window.setInterval(() => {
       // スプリント進行中は固定タイムステップで前進させる（版番号も進む）。
       if (game.isSprintRunning() && !game.isPaused()) game.step(SIM_STEP_MS);

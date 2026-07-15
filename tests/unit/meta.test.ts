@@ -437,10 +437,29 @@ describe('メタ進行とアンロック（第17章）', () => {
         bestScore: 100,
         unlockedCards: [],
         unlockedRelics: [],
-        unlockedPresets: [],
       }),
     );
     expect(loadMeta(storage).dailyRuns).toEqual({});
+  });
+
+  it('旧セーブの unlockedPresets は読み捨てる（RI-25）', () => {
+    const storage = memStorage();
+    storage.data.set(
+      'devops-tycoon:meta:v1',
+      JSON.stringify({
+        points: 10,
+        unlockedDifficulties: ['easy', 'normal'],
+        defeatedBosses: [],
+        achievements: [],
+        bestScore: 0,
+        unlockedCards: [],
+        unlockedRelics: [],
+        unlockedPresets: ['legacy-preset'],
+      }),
+    );
+    const meta = loadMeta(storage);
+    expect(meta.points).toBe(10);
+    expect(meta).not.toHaveProperty('unlockedPresets');
   });
 
   it('RI-32: カード発動の即時敗北でもメタ報酬を記録する', () => {

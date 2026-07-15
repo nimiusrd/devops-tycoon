@@ -67,7 +67,6 @@ test('業界画面で保存済みデイリー記録を順位付きで表示す�
         bestScore: 1200,
         unlockedCards: [],
         unlockedRelics: [],
-        unlockedPresets: [],
         dailyRuns: {
           '2026-07-09': { bestScore: 800, rewardClaimed: true },
           '2026-07-10': { bestScore: 1200, rewardClaimed: true },

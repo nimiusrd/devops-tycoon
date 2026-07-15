@@ -38,7 +38,6 @@ test('旧 localStorage を IndexedDB へ移行し、購入後も再読み込み�
       bestScore: 0,
       unlockedCards: [],
       unlockedRelics: [],
-      unlockedPresets: [],
     },
   });
 

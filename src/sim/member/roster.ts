@@ -441,3 +441,13 @@ export function rosterSummary(roster: RosterState): {
   }
   return { total: roster.members.length, active, onLeave, coders, reviewers };
 }
+
+/** 休職を除いた稼働エンジニア数（組織スケールの `Team.engineers` へ載せる）。 */
+export function activeEngineerCount(roster: RosterState): number {
+  return roster.members.reduce((n, m) => n + (isActive(m) ? 1 : 0), 0);
+}
+
+/** 稼働かつ AI 配布中の人数（プレイヤーチーム島の AI ボット表示へ載せる）。 */
+export function aiAssignedCount(roster: RosterState): number {
+  return roster.members.reduce((n, m) => n + (isActive(m) && m.aiAssigned ? 1 : 0), 0);
+}

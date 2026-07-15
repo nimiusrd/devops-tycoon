@@ -25,8 +25,10 @@ export interface OrgScaleInput {
   budget: number;
   /** これまでに発動したレバーの蓄積（無指定は無調整）。 */
   adjust?: OrgAdjustState;
-  /** プレイヤーチームの規模（エンジニア数。編成サイズ等から。既定 5）。 */
+  /** プレイヤーチームの規模（稼働エンジニア数。休職除外。既定 5）。 */
   playerEngineers?: number;
+  /** プレイヤーチームの AI 配布人数（ロスター由来。既定 0）。 */
+  playerAiAssigned?: number;
   /**
    * 進行中スプリントの現在のレビュー待ち行列（`totals` は resolveSprint 後に更新される
    * ため、スプリント中に俯瞰すると行列が古くなる。現在値を畳み込んで現場を映す）。
@@ -61,9 +63,15 @@ function applyAdjustToTeam(
   };
 }
 
+/** ライバル島の AI 配布人数を engineers×aiDependency から推定する。 */
+export function estimateRivalAiAssigned(engineers: number, aiDependency: number): number {
+  return Math.max(0, Math.round((engineers * clamp(aiDependency, 0, 100)) / 100));
+}
+
 /** プレイヤーチームの素の指標を実ランから写し取る。 */
 function playerRaw(input: OrgScaleInput) {
   const { org, totals } = input;
+  const engineers = input.playerEngineers ?? 5;
   return {
     aiDependency: Math.round(org.aiDependency),
     // スプリント中は現在の行列/インシデントを優先し、停止中は累積ピーク/未鎮火数を使う。
@@ -72,21 +80,35 @@ function playerRaw(input: OrgScaleInput) {
     morale: Math.round(org.morale),
     techDebt: Math.round(org.techDebt),
     shipping: Math.round(org.deliveryScore),
-    engineers: input.playerEngineers ?? 5,
+    engineers,
+    aiAssignedCount: Math.max(0, input.playerAiAssigned ?? 0),
   };
 }
 
 /** 他チームの素の指標を派生 seed から作る（プレイヤー現場をベースに分散）。 */
 function rivalTeamRaw(rng: () => number, base: ReturnType<typeof playerRaw>) {
   const jitter = (center: number, spread: number) => center + Math.round((rng() * 2 - 1) * spread);
+  // 乱数消費順は従来どおり（ai→…→shipping→engineers）。順序を変えると固定 seed の
+  // ライバル指標がすべてずれるため、RI-27 の追加フィールドは末尾の派生に留める。
+  const aiDependency = clamp(jitter(base.aiDependency, 25), 0, 100);
+  const reviewQueue = Math.max(0, jitter(Math.max(2, base.reviewQueue), 4));
+  const incidents = Math.max(0, Math.round(rng() * 2.4 - 0.6));
+  const morale = clamp(jitter(base.morale, 20), 10, 100);
+  const techDebt = Math.max(0, jitter(Math.max(20, base.techDebt), 40));
+  const shipping = Math.max(
+    0,
+    jitter(Math.max(40, base.shipping), Math.max(40, base.shipping * 0.6)),
+  );
+  const engineers = 3 + Math.floor(rng() * 6);
   return {
-    aiDependency: clamp(jitter(base.aiDependency, 25), 0, 100),
-    reviewQueue: Math.max(0, jitter(Math.max(2, base.reviewQueue), 4)),
-    incidents: Math.max(0, Math.round(rng() * 2.4 - 0.6)),
-    morale: clamp(jitter(base.morale, 20), 10, 100),
-    techDebt: Math.max(0, jitter(Math.max(20, base.techDebt), 40)),
-    shipping: Math.max(0, jitter(Math.max(40, base.shipping), Math.max(40, base.shipping * 0.6))),
-    engineers: 3 + Math.floor(rng() * 6),
+    aiDependency,
+    reviewQueue,
+    incidents,
+    morale,
+    techDebt,
+    shipping,
+    engineers,
+    aiAssignedCount: estimateRivalAiAssigned(engineers, aiDependency),
   };
 }
 
@@ -106,11 +128,16 @@ function buildTeam(args: {
     techDebt: number;
     shipping: number;
     engineers: number;
+    aiAssignedCount: number;
   };
   adj: OrgAdjust;
 }): Team {
   const adjusted = applyAdjustToTeam(args.raw, args.adj);
   const health = teamHealth(adjusted);
+  // ライバルは調整後の AI 依存度で再推定。プレイヤーはロスター由来をそのまま載せる。
+  const aiAssignedCount = args.isPlayer
+    ? args.raw.aiAssignedCount
+    : estimateRivalAiAssigned(args.raw.engineers, adjusted.aiDependency);
   return {
     id: args.id,
     deptId: args.deptId,
@@ -124,6 +151,7 @@ function buildTeam(args: {
     morale: adjusted.morale,
     techDebt: adjusted.techDebt,
     engineers: args.raw.engineers,
+    aiAssignedCount,
     health,
     isPlayer: args.isPlayer,
   };

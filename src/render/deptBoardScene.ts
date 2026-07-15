@@ -322,7 +322,7 @@ export function planDeptBoardScene(dept: DepartmentState): DeptBoardScene {
         x: pos.x,
         y: pos.y - BANNER_ABOVE,
         title: team.isPlayer ? `★ ${team.name}` : team.name,
-        subtitle: `出荷 ${team.shipping} ／ AI依存 ${team.aiDependency}%`,
+        subtitle: `出荷 ${team.shipping} ／ AI依存 ${team.aiDependency}% ／ ${team.engineers}人`,
         tag: healthTag(team.health),
         tone,
       },

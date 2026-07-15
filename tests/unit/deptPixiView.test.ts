@@ -36,6 +36,7 @@ function makeTeam(id: string): Team {
     morale: 70,
     techDebt: 20,
     engineers: 6,
+    aiAssignedCount: 0,
     health: 'healthy',
     isPlayer: false,
   };

@@ -100,6 +100,7 @@ interface IslandParts {
   nameText: Text;
   shippingText: Text;
   aiText: Text;
+  headcountText: Text;
   fireText: Text;
   badge: Graphics;
 }
@@ -145,6 +146,7 @@ function createIslandContainer(): Container {
     nameText: makeText({ fontSize: 13, fill: COLOR_TEXT, bold: true }),
     shippingText: makeText({ fontSize: 11, fill: COLOR_TEXT_DIM }),
     aiText: makeText({ fontSize: 11, fill: COLOR_TEXT_DIM }),
+    headcountText: makeText({ fontSize: 11, fill: COLOR_TEXT_DIM }),
     fireText: makeText({ fontSize: 11, fill: COLOR_FIRE }),
     badge: new Graphics(),
   };
@@ -155,6 +157,7 @@ function createIslandContainer(): Container {
     parts.nameText,
     parts.shippingText,
     parts.aiText,
+    parts.headcountText,
     parts.fireText,
     parts.badge,
   );
@@ -176,6 +179,7 @@ function hideAllParts(parts: IslandParts): void {
   parts.nameText.visible = false;
   parts.shippingText.visible = false;
   parts.aiText.visible = false;
+  parts.headcountText.visible = false;
   parts.fireText.visible = false;
   parts.badge.visible = false;
 }
@@ -275,6 +279,7 @@ function layoutCard(parts: IslandParts, s: OrgSprite): IslandHitBounds & { w: nu
     layoutLabelLine(parts.nameText, labels.name.length > 0 ? labels.name : null, innerW),
     layoutLabelLine(parts.shippingText, labels.shipping, innerW),
     layoutLabelLine(parts.aiText, labels.ai, innerW),
+    layoutLabelLine(parts.headcountText, labels.headcount, innerW),
     layoutLabelLine(parts.fireText, labels.fire, innerW),
   ].filter((h) => h > 0);
 
@@ -285,7 +290,13 @@ function layoutCard(parts: IslandParts, s: OrgSprite): IslandHitBounds & { w: nu
   const topY = -h / 2 + CARD_PAD_Y;
 
   let y = topY;
-  for (const text of [parts.nameText, parts.shippingText, parts.aiText, parts.fireText]) {
+  for (const text of [
+    parts.nameText,
+    parts.shippingText,
+    parts.aiText,
+    parts.headcountText,
+    parts.fireText,
+  ]) {
     if (!text.visible) continue;
     text.position.set(left, y);
     y += text.height + CARD_LINE_GAP;
@@ -462,6 +473,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
         parts.nameText.text = '';
         parts.shippingText.text = '';
         parts.aiText.text = '';
+        parts.headcountText.text = '';
         parts.fireText.text = '';
         hideAllParts(parts);
       },

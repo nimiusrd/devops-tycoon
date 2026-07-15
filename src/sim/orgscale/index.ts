@@ -28,6 +28,6 @@ export {
   healthRank,
   companyScore,
 } from './aggregate';
-export { generateOrgScale, type OrgScaleInput } from './generate';
+export { generateOrgScale, estimateRivalAiAssigned, type OrgScaleInput } from './generate';
 export { emptyAdjust, emptyAdjustState, mergeAdjust, applyLever, type LeverResult } from './levers';
 export { generateIndustry, computeScores, RANKING_KINDS, RANKING_LABEL } from './industry';

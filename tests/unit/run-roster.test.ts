@@ -191,4 +191,21 @@ describe('ロスターのラン統合（第12章）', () => {
     const anyGrowth = a.roster.members.some((m) => m.level > 1 || m.xp > 0 || m.onLeave);
     expect(anyGrowth).toBe(true);
   });
+
+  it('全社マップのプレイヤー島は稼働人数と AI 配布をロスターから映す（RI-27）', () => {
+    const e = new RunEngine({ seed: 'ri27-org-roster', difficulty: 'normal' });
+    toFirstNode(e);
+    const members = e.snapshot().roster.members;
+    // 初期コーダーの AI を外し、残る AI 配布数だけが島へ載ることを確認する。
+    e.setMemberAi(members[0].id, false);
+    e.setMemberAi(members[1].id, false);
+    const roster = e.snapshot().roster;
+    const active = roster.members.filter((m) => !m.onLeave).length;
+    const ai = roster.members.filter((m) => !m.onLeave && m.aiAssigned).length;
+    e.zoomTo('company');
+    const org = e.snapshot().orgScale!;
+    const player = org.departments.flatMap((d) => d.teams).find((t) => t.isPlayer)!;
+    expect(player.engineers).toBe(active);
+    expect(player.aiAssignedCount).toBe(ai);
+  });
 });

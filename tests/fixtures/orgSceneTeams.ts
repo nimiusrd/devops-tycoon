@@ -25,6 +25,7 @@ export function stressOrgTeams(count: number): Team[] {
       morale: 40 + (i % 60),
       techDebt: i * 2,
       engineers: 3 + (i % 6),
+      aiAssignedCount: 0,
       health,
       isPlayer: i === 0,
     };

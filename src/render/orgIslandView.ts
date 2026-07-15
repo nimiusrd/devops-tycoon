@@ -42,8 +42,10 @@ export interface TeamIslandLabels {
   name: string;
   /** 出荷ラベル（card のみ。例: "出荷 42"）。 */
   shipping: string | null;
-  /** AI 依存度ラベル（card のみ。例: "AI 70"）。 */
+  /** AI 依存度ラベル（card のみ。例: "AI 70"。配布中は人数も併記）。 */
   ai: string | null;
+  /** エンジニア人数ラベル（card のみ。例: "5人"）。 */
+  headcount: string | null;
   /** 炎上ラベル（badge/card。例: "🔥3"）。 */
   fire: string | null;
   /** ツールチップ（card 相当）。 */
@@ -100,6 +102,7 @@ export function teamIslandView(team: Team, detail: OrgIslandDetail): TeamIslandL
       name: '',
       shipping: null,
       ai: null,
+      headcount: null,
       fire: null,
       title,
       showBadge: false,
@@ -113,16 +116,24 @@ export function teamIslandView(team: Team, detail: OrgIslandDetail): TeamIslandL
       name: badgeName,
       shipping: null,
       ai: null,
+      headcount: null,
       fire,
       title,
       showBadge: false,
     };
   }
 
+  // card: DOM 島バッジと同系の出荷/AI/人数。AI 配布中はボット相当として人数を併記。
+  const ai =
+    team.aiAssignedCount > 0
+      ? `AI ${team.aiDependency} · 配布${team.aiAssignedCount}`
+      : `AI ${team.aiDependency}`;
+
   return {
     name: displayName(team),
     shipping: `出荷 ${team.shipping}`,
-    ai: `AI ${team.aiDependency}`,
+    ai,
+    headcount: `${team.engineers}人`,
     fire,
     title,
     showBadge: true,

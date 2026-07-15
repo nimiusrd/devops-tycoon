@@ -12,6 +12,7 @@ export { Hud } from './Hud';
 export { SprintResultScreen } from './SprintResultScreen';
 export { SprintTimelineChart } from './SprintTimelineChart';
 export { ActionBar } from './ActionBar';
+export { ManagerPortrait } from './ManagerPortrait';
 export { ComboBadge } from './ComboBadge';
 export { PointPops } from './PointPops';
 export { EventTicker } from './EventTicker';

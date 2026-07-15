@@ -19,6 +19,7 @@ import { isDraggableAction, planBoardDrag, type DraggableActionId } from '../ren
 import { formatActionDefTags, formatActionTooltip } from '../render/eventOutcomeView';
 import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
 import { EffectTagList } from './EffectTagList';
+import { ManagerPortrait } from './ManagerPortrait';
 
 const FEEDBACK_TTL_MS = 1000;
 
@@ -179,8 +180,8 @@ export function ActionBar({
   return (
     <footer className="actionbar" data-testid="action-bar">
       <div className="focus">
-        <div className="focus-icon" aria-hidden="true">
-          🧑‍💼
+        <div className="focus-icon">
+          <ManagerPortrait />
         </div>
         <div className="focus-body">
           <div className="focus-label">マネジメント集中力</div>

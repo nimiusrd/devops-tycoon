@@ -125,7 +125,12 @@ body {
   padding: 0 10px 0 2px;
 }
 .app.app-sprint-layout .focus-icon {
-  font-size: 28px;
+  width: 44px;
+  height: 49px;
+}
+.app.app-sprint-layout .focus-icon .mgr {
+  width: 44px;
+  height: 49px;
 }
 .app.app-sprint-layout .focus-energy {
   font-size: 20px;
@@ -1665,9 +1670,16 @@ body {
   border-right: 2px solid var(--line);
 }
 .focus-icon {
-  font-size: 34px;
-  line-height: 1;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 58px;
+  line-height: 0;
   filter: drop-shadow(0 2px 3px #0006);
+}
+.focus-icon .mgr {
+  display: block;
+  width: 52px;
+  height: 58px;
 }
 .focus-label {
   font-size: 10.5px;

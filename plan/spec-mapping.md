@@ -65,7 +65,7 @@
 
 | 項目 | 該当 SPEC 章 | 状態 | 追跡先 |
 | --- | --- | --- | --- |
-| 演出・ビジュアルの残務（スイープ・スローモー・ご褒美・マネージャー像） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装（カメラ遷移 RI-04・スプライト化 RI-07・表情 RI-08 は完了） | [remaining-issues.md](./remaining-issues.md) RI-09〜RI-10 |
+| 演出・ビジュアルの残務（スイープ・スローモー・ご褒美） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装（カメラ遷移 RI-04・スプライト化 RI-07・表情 RI-08・マネージャー像 RI-09 は完了） | [remaining-issues.md](./remaining-issues.md) RI-10 |
 | リザルトの介入内訳（割り込み×N / 緊急対応×N の表示） | [4.6](../SPEC.md#46-スプリントリザルト画面) | 🟡 `SprintResult` に未集計 | [remaining-issues.md](./remaining-issues.md) RI-29 |
 | 能動操作・カードの操作方式（タスク差配のドラッグ / 手札配布→発動） | [6](../SPEC.md#6-スプリント中の能動操作), [7](../SPEC.md#7-ai導入施策カードデッキ) | ✅ RI-30 で SPEC 準拠 | [remaining-issues.md](./remaining-issues.md) RI-30 |
 | 開始プリセットの永続解放 | [17](../SPEC.md#17-メタ進行とアンロック) | 🟡 未実装（カード/レリックのみ） | [remaining-issues.md](./remaining-issues.md) RI-25 |

@@ -90,6 +90,7 @@ test('スプリント盤面に集中力と介入アクションバーが並ぶ',
   await page.getByTestId('begin-sprint').click();
 
   await expect(page.getByTestId('action-bar')).toBeVisible();
+  await expect(page.getByTestId('manager-portrait')).toBeVisible();
   await expect(page.getByTestId('focus')).toContainText('⚡');
   for (const id of ['interruptReview', 'firefight', 'overtime', 'andon']) {
     await expect(page.getByTestId(`action-${id}`)).toBeVisible();

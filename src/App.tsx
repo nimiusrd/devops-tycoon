@@ -4,35 +4,60 @@
  * タイトル → マップ → スプリント → リザルト → ドラフト → 進化 → … → ボス →
  * 勝敗 を `RunState.phase` でルーティングする。スプリント系のフェーズでは盤面を
  * 背景に残し、リザルト/ドラフト/進化をオーバーレイで重ねる。状態は読むだけ（第22.2）。
+ *
+ * RI-12: 非タイトル画面は動的 import（React.lazy）でチャンク分割する。
  */
-import { useCallback, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { diagnosisTheme } from './render/diagnosisTheme';
 import type { HudMetricSnapshot, RunMetricSnapshot } from './render/status';
+import { Breadcrumb } from './ui/Breadcrumb';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
-import {
-  Breadcrumb,
-  AchievementCollectionScreen,
-  BeatScreen,
-  DeptScreen,
-  DraftScreen,
-  EvolutionScreen,
-  FormationScreen,
-  IndustryScreen,
-  MetaShopScreen,
-  OrgScreen,
-  RestScreen,
-  RunBar,
-  RunResultScreen,
-  QuarterReviewScreen,
-  SetupScreen,
-  ShopScreen,
-  SprintResultScreen,
-  SprintScreen,
-  TitleScreen,
-  useRun,
-} from './ui';
+import { RunBar } from './ui/RunBar';
+import { TitleScreen } from './ui/TitleScreen';
+import { useRun } from './ui/useRun';
 import type { GameHandle } from './game';
+
+const AchievementCollectionScreen = lazy(() =>
+  import('./ui/AchievementCollectionScreen').then((m) => ({
+    default: m.AchievementCollectionScreen,
+  })),
+);
+const BeatScreen = lazy(() => import('./ui/BeatScreen').then((m) => ({ default: m.BeatScreen })));
+const DeptScreen = lazy(() => import('./ui/DeptScreen').then((m) => ({ default: m.DeptScreen })));
+const DraftScreen = lazy(() =>
+  import('./ui/DraftScreen').then((m) => ({ default: m.DraftScreen })),
+);
+const EvolutionScreen = lazy(() =>
+  import('./ui/EvolutionScreen').then((m) => ({ default: m.EvolutionScreen })),
+);
+const FormationScreen = lazy(() =>
+  import('./ui/FormationScreen').then((m) => ({ default: m.FormationScreen })),
+);
+const IndustryScreen = lazy(() =>
+  import('./ui/IndustryScreen').then((m) => ({ default: m.IndustryScreen })),
+);
+const MetaShopScreen = lazy(() =>
+  import('./ui/MetaShopScreen').then((m) => ({ default: m.MetaShopScreen })),
+);
+const OrgScreen = lazy(() => import('./ui/OrgScreen').then((m) => ({ default: m.OrgScreen })));
+const QuarterReviewScreen = lazy(() =>
+  import('./ui/QuarterReviewScreen').then((m) => ({ default: m.QuarterReviewScreen })),
+);
+const RestScreen = lazy(() => import('./ui/RestScreen').then((m) => ({ default: m.RestScreen })));
+const RunResultScreen = lazy(() =>
+  import('./ui/RunResultScreen').then((m) => ({ default: m.RunResultScreen })),
+);
+const SetupScreen = lazy(() =>
+  import('./ui/SetupScreen').then((m) => ({ default: m.SetupScreen })),
+);
+const ShopScreen = lazy(() => import('./ui/ShopScreen').then((m) => ({ default: m.ShopScreen })));
+const SprintResultScreen = lazy(() =>
+  import('./ui/SprintResultScreen').then((m) => ({ default: m.SprintResultScreen })),
+);
+const SprintScreen = lazy(() =>
+  import('./ui/SprintScreen').then((m) => ({ default: m.SprintScreen })),
+);
 
 export interface AppProps {
   game: GameHandle;
@@ -90,7 +115,7 @@ export default function App({ game }: AppProps) {
 
   if (phase === 'title') {
     return (
-      <>
+      <Suspense fallback={null}>
         <TitleScreen
           seed={state.seed}
           meta={meta}
@@ -109,19 +134,25 @@ export default function App({ game }: AppProps) {
         {achievementsOpen && (
           <AchievementCollectionScreen meta={meta} onClose={() => setAchievementsOpen(false)} />
         )}
-      </>
+      </Suspense>
     );
   }
   if (phase === 'won' || phase === 'lost') {
-    return <RunResultScreen state={state} meta={meta} onNewRun={newRun} />;
+    return (
+      <Suspense fallback={null}>
+        <RunResultScreen state={state} meta={meta} onNewRun={newRun} />
+      </Suspense>
+    );
   }
   if (phase === 'quarterReview') {
     return (
-      <QuarterReviewScreen
-        state={state}
-        onAcknowledge={run.acknowledgeQuarterReview}
-        onChooseAdjustment={run.chooseGoalAdjustment}
-      />
+      <Suspense fallback={null}>
+        <QuarterReviewScreen
+          state={state}
+          onAcknowledge={run.acknowledgeQuarterReview}
+          onChooseAdjustment={run.chooseGoalAdjustment}
+        />
+      </Suspense>
     );
   }
 
@@ -163,110 +194,112 @@ export default function App({ game }: AppProps) {
         onSnapshotCaptured={rememberRunMetricSnapshot}
       />
 
-      {phase === 'setup' && (
-        <SetupScreen
-          state={state}
-          onAssign={run.assignMember}
-          onToggleAi={run.setMemberAi}
-          onBegin={run.beginSetupSprint}
-        />
-      )}
-      {showSprint && (
-        <SprintScreen
-          state={state}
-          onDispatch={run.dispatch}
-          onPlayCard={run.playCard}
-          getSprintSnapshot={run.getSprintSnapshot}
-        />
-      )}
-
-      {phase === 'beat' && <BeatScreen state={state} onResolve={run.resolveBeat} />}
-      {phase === 'shop' && (
-        <ShopScreen
-          state={state}
-          onBuyCard={run.buyShopCard}
-          onBuyRelic={run.buyShopRelic}
-          onLeave={run.leaveShop}
-        />
-      )}
-      {phase === 'rest' && <RestScreen state={state} onChoose={run.restChoose} />}
-
-      {phase === 'result' && state.lastResult && (
-        <SprintResultScreen
-          result={state.lastResult}
-          growth={state.lastGrowth}
-          onContinue={run.acknowledgeResult}
-          onAbandon={newRun}
-        />
-      )}
-      {phase === 'draft' && state.draft && (
-        <DraftScreen
-          options={state.draft}
-          sprintNumber={state.sprintsPlayed + 1}
-          previews={state.whatIf?.draftCandidates ?? {}}
-          skipPreview={state.whatIf?.current}
-          onPick={run.chooseCard}
-          onSkip={run.skipDraft}
-        />
-      )}
-      {phase === 'evolution' && (
-        <EvolutionScreen
-          state={state}
-          onUnlock={run.unlockEvolution}
-          onFinish={run.finishEvolution}
-        />
-      )}
-
-      {formationOpen && (
-        <FormationScreen
-          state={state}
-          onAssign={run.assignMember}
-          onToggleAi={run.setMemberAi}
-          onClose={() => setFormationOpen(false)}
-        />
-      )}
-
-      <AnimatePresence>
-        {zoom.level !== 'team' && (
-          <motion.div
-            key={zoom.level}
-            className="zoom-overlay"
-            data-testid="zoom-overlay"
-            data-level={zoom.level}
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-          >
-            <Breadcrumb level={zoom.level} onNavigate={run.zoomTo} />
-            {zoom.level === 'industry' && state.industry && (
-              <IndustryScreen
-                industry={state.industry}
-                meta={meta}
-                onSetKind={run.setRankingKind}
-              />
-            )}
-            {zoom.level === 'company' && state.orgScale && (
-              <OrgScreen
-                org={state.orgScale}
-                budget={state.budget}
-                zoom={zoom}
-                onFocusDept={run.focusDept}
-                onFocusTeam={run.focusTeam}
-                onApplyLever={run.applyOrgLever}
-              />
-            )}
-            {zoom.level === 'department' && focusedDept && (
-              <DeptScreen
-                dept={focusedDept}
-                budget={state.budget}
-                onFocusTeam={run.focusTeam}
-                onApplyLever={run.applyOrgLever}
-              />
-            )}
-          </motion.div>
+      <Suspense fallback={null}>
+        {phase === 'setup' && (
+          <SetupScreen
+            state={state}
+            onAssign={run.assignMember}
+            onToggleAi={run.setMemberAi}
+            onBegin={run.beginSetupSprint}
+          />
         )}
-      </AnimatePresence>
+        {showSprint && (
+          <SprintScreen
+            state={state}
+            onDispatch={run.dispatch}
+            onPlayCard={run.playCard}
+            getSprintSnapshot={run.getSprintSnapshot}
+          />
+        )}
+
+        {phase === 'beat' && <BeatScreen state={state} onResolve={run.resolveBeat} />}
+        {phase === 'shop' && (
+          <ShopScreen
+            state={state}
+            onBuyCard={run.buyShopCard}
+            onBuyRelic={run.buyShopRelic}
+            onLeave={run.leaveShop}
+          />
+        )}
+        {phase === 'rest' && <RestScreen state={state} onChoose={run.restChoose} />}
+
+        {phase === 'result' && state.lastResult && (
+          <SprintResultScreen
+            result={state.lastResult}
+            growth={state.lastGrowth}
+            onContinue={run.acknowledgeResult}
+            onAbandon={newRun}
+          />
+        )}
+        {phase === 'draft' && state.draft && (
+          <DraftScreen
+            options={state.draft}
+            sprintNumber={state.sprintsPlayed + 1}
+            previews={state.whatIf?.draftCandidates ?? {}}
+            skipPreview={state.whatIf?.current}
+            onPick={run.chooseCard}
+            onSkip={run.skipDraft}
+          />
+        )}
+        {phase === 'evolution' && (
+          <EvolutionScreen
+            state={state}
+            onUnlock={run.unlockEvolution}
+            onFinish={run.finishEvolution}
+          />
+        )}
+
+        {formationOpen && (
+          <FormationScreen
+            state={state}
+            onAssign={run.assignMember}
+            onToggleAi={run.setMemberAi}
+            onClose={() => setFormationOpen(false)}
+          />
+        )}
+
+        <AnimatePresence>
+          {zoom.level !== 'team' && (
+            <motion.div
+              key={zoom.level}
+              className="zoom-overlay"
+              data-testid="zoom-overlay"
+              data-level={zoom.level}
+              initial={{ opacity: 0, scale: 1.04 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+            >
+              <Breadcrumb level={zoom.level} onNavigate={run.zoomTo} />
+              {zoom.level === 'industry' && state.industry && (
+                <IndustryScreen
+                  industry={state.industry}
+                  meta={meta}
+                  onSetKind={run.setRankingKind}
+                />
+              )}
+              {zoom.level === 'company' && state.orgScale && (
+                <OrgScreen
+                  org={state.orgScale}
+                  budget={state.budget}
+                  zoom={zoom}
+                  onFocusDept={run.focusDept}
+                  onFocusTeam={run.focusTeam}
+                  onApplyLever={run.applyOrgLever}
+                />
+              )}
+              {zoom.level === 'department' && focusedDept && (
+                <DeptScreen
+                  dept={focusedDept}
+                  budget={state.budget}
+                  onFocusTeam={run.focusTeam}
+                  onApplyLever={run.applyOrgLever}
+                />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Suspense>
     </div>
   );
 }

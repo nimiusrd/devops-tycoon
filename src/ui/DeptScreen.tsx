@@ -5,14 +5,19 @@
  * チーム間依存（連鎖炎上）と部門HUD・部門レバーを見せる。現場と全社の橋渡し層。
  * 状態は読むだけ（第22.2）。
  */
+import { lazy, Suspense } from 'react';
 import { DEPARTMENT_LEVERS } from '../data/levers';
 import type { DepartmentState } from '../sim/orgscale/types';
 import { HEALTH_LABEL } from '../render/orgView';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { DeptBoard } from './DeptBoard';
-import { DeptPixiBoard } from './DeptPixiBoard';
 import { EffectTagList } from './EffectTagList';
 import { usePixiRenderer } from './usePixiRenderer';
+
+/** Pixi 部署盤面は動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
+const DeptPixiBoard = lazy(() =>
+  import('./DeptPixiBoard').then((m) => ({ default: m.DeptPixiBoard })),
+);
 
 export interface DeptScreenProps {
   dept: DepartmentState;
@@ -49,7 +54,9 @@ export function DeptScreen({ dept, budget, onFocusTeam, onApplyLever }: DeptScre
 
       <div className="dept-field" data-testid="dept-field">
         {usePixi ? (
-          <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} onWebglError={onWebglError} />
+          <Suspense fallback={null}>
+            <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} onWebglError={onWebglError} />
+          </Suspense>
         ) : (
           <DeptBoard dept={dept} onFocusTeam={onFocusTeam} />
         )}

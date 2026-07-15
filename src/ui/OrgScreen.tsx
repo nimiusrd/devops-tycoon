@@ -5,7 +5,7 @@
  * チーム島をタップすると現場へドリルダウンし、部門ヘッダから部署ビューへ寄る。
  * 状態は読むだけ（第22.2）。盤面は `orgBoardScene` + `OrgBoard` で等角描画する。
  */
-import { useCallback, useMemo, useRef } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useRef } from 'react';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
@@ -14,8 +14,13 @@ import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeVi
 import { EffectTagList } from './EffectTagList';
 import { OrgBoard } from './OrgBoard';
 import { OrgInfraHubPill } from './OrgHub';
-import { OrgPixiField, type OrgPixiFieldHandle } from './OrgPixiField';
+import type { OrgPixiFieldHandle } from './OrgPixiField';
 import { usePixiRenderer } from './usePixiRenderer';
+
+/** Pixi 全社マップは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
+const OrgPixiField = lazy(() =>
+  import('./OrgPixiField').then((m) => ({ default: m.OrgPixiField })),
+);
 
 export interface OrgScreenProps {
   org: OrgScaleState;
@@ -121,15 +126,17 @@ export function OrgScreen({
               docs={org.infra.docs}
               aiGuideline={org.infra.aiGuideline}
             />
-            <OrgPixiField
-              ref={pixiFieldRef}
-              teams={teams}
-              zoom={zoom}
-              departments={org.departments}
-              onFocusTeam={onFocusTeam}
-              deptColor={deptColor}
-              onWebglError={onWebglError}
-            />
+            <Suspense fallback={null}>
+              <OrgPixiField
+                ref={pixiFieldRef}
+                teams={teams}
+                zoom={zoom}
+                departments={org.departments}
+                onFocusTeam={onFocusTeam}
+                deptColor={deptColor}
+                onWebglError={onWebglError}
+              />
+            </Suspense>
           </div>
         ) : (
           <OrgBoard org={org} onFocusTeam={onFocusTeam} />

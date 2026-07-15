@@ -173,6 +173,22 @@ describe('generateOrgScale', () => {
     }
   });
 
+  it('ライバル生成の乱数消費順を維持し、固定 seed の既存指標を変えない（RI-27）', () => {
+    // engineers draw を shipping より前に移すと、以下の全指標がずれる。
+    const state = generateOrgScale(input({ seed: 'org-rng-order' }));
+    const rival = state.departments.flatMap((d) => d.teams).find((t) => t.id === 'product-t1')!;
+    expect(rival).toMatchObject({
+      aiDependency: 30,
+      reviewQueue: 1,
+      incidents: 1,
+      morale: 50,
+      techDebt: 68,
+      shipping: 496,
+      engineers: 8,
+    });
+    expect(rival.aiAssignedCount).toBe(estimateRivalAiAssigned(8, 30));
+  });
+
   it('部門は定義どおりに構成され、全社HUDが集約される', () => {
     const state = generateOrgScale(input());
     expect(state.deptCount).toBe(DEPARTMENT_DEFS.length);

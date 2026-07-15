@@ -88,15 +88,25 @@ function playerRaw(input: OrgScaleInput) {
 /** 他チームの素の指標を派生 seed から作る（プレイヤー現場をベースに分散）。 */
 function rivalTeamRaw(rng: () => number, base: ReturnType<typeof playerRaw>) {
   const jitter = (center: number, spread: number) => center + Math.round((rng() * 2 - 1) * spread);
-  const engineers = 3 + Math.floor(rng() * 6);
+  // 乱数消費順は従来どおり（ai→…→shipping→engineers）。順序を変えると固定 seed の
+  // ライバル指標がすべてずれるため、RI-27 の追加フィールドは末尾の派生に留める。
   const aiDependency = clamp(jitter(base.aiDependency, 25), 0, 100);
+  const reviewQueue = Math.max(0, jitter(Math.max(2, base.reviewQueue), 4));
+  const incidents = Math.max(0, Math.round(rng() * 2.4 - 0.6));
+  const morale = clamp(jitter(base.morale, 20), 10, 100);
+  const techDebt = Math.max(0, jitter(Math.max(20, base.techDebt), 40));
+  const shipping = Math.max(
+    0,
+    jitter(Math.max(40, base.shipping), Math.max(40, base.shipping * 0.6)),
+  );
+  const engineers = 3 + Math.floor(rng() * 6);
   return {
     aiDependency,
-    reviewQueue: Math.max(0, jitter(Math.max(2, base.reviewQueue), 4)),
-    incidents: Math.max(0, Math.round(rng() * 2.4 - 0.6)),
-    morale: clamp(jitter(base.morale, 20), 10, 100),
-    techDebt: Math.max(0, jitter(Math.max(20, base.techDebt), 40)),
-    shipping: Math.max(0, jitter(Math.max(40, base.shipping), Math.max(40, base.shipping * 0.6))),
+    reviewQueue,
+    incidents,
+    morale,
+    techDebt,
+    shipping,
     engineers,
     aiAssignedCount: estimateRivalAiAssigned(engineers, aiDependency),
   };

@@ -28,6 +28,7 @@ function team(partial: Partial<Team> & Pick<Team, 'id'>): Team {
     morale: 50,
     techDebt: 0,
     engineers: 5,
+    aiAssignedCount: 0,
     health: 'healthy' as TeamHealth,
     isPlayer: false,
     ...partial,

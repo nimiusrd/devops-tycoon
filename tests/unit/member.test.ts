@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../../src/sim/rng';
 import {
+  activeEngineerCount,
+  aiAssignedCount,
   applySprintGrowth,
   assignMember,
   canRecruit,
@@ -351,6 +353,27 @@ describe('編成操作と表情演出', () => {
     expect(memberExpression(member({ stamina: 5, staminaMax: 80 }))).toBe('tired');
     expect(memberExpression(member({ stamina: 80, staminaMax: 80 }))).toBe('great');
     expect(memberExpression(member({ stamina: 40, staminaMax: 80 }))).toBe('normal');
+  });
+});
+
+describe('組織スケール向け個体集約（RI-27）', () => {
+  it('activeEngineerCount は休職者を除外する', () => {
+    const r = roster([
+      member({ id: 'a', onLeave: false }),
+      member({ id: 'b', onLeave: true }),
+      member({ id: 'c', onLeave: false }),
+    ]);
+    expect(activeEngineerCount(r)).toBe(2);
+    expect(rosterSummary(r).active).toBe(2);
+  });
+
+  it('aiAssignedCount は稼働かつ AI 配布中のみ数える', () => {
+    const r = roster([
+      member({ id: 'a', aiAssigned: true, onLeave: false }),
+      member({ id: 'b', aiAssigned: true, onLeave: true }),
+      member({ id: 'c', aiAssigned: false, onLeave: false }),
+    ]);
+    expect(aiAssignedCount(r)).toBe(1);
   });
 });
 

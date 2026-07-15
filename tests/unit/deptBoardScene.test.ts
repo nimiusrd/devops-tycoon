@@ -61,6 +61,7 @@ function team(id: string, health: TeamHealth, reviewQueue = 0): Team {
     morale: 50,
     techDebt: 20,
     engineers: 8,
+    aiAssignedCount: 0,
     health,
     isPlayer: false,
   };
@@ -129,6 +130,15 @@ describe('teamLaneCounts / planChainedIndices', () => {
     t.shipping = 250;
     t.reviewQueue = 5;
     expect(teamLaneCounts(t)).toEqual({ coding: 6, review: 5, done: 3 });
+  });
+
+  it('バナー subtitle にエンジニア数を含める（RI-27）', () => {
+    const t = team('t0', 'healthy');
+    t.engineers = 8;
+    t.shipping = 120;
+    t.aiDependency = 70;
+    const scene = planDeptBoardScene(deptWithTeams([t]));
+    expect(scene.teams[0].banner.subtitle).toBe('出荷 120 ／ AI依存 70% ／ 8人');
   });
 
   it('炎上チームの次インデックスだけ chained になる', () => {

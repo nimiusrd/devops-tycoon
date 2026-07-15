@@ -61,6 +61,11 @@ export interface Team {
   techDebt: number;
   /** エンジニア人数。 */
   engineers: number;
+  /**
+   * AI 配布中の人数（島の AI ボット表示用）。
+   * プレイヤーはロスターの `aiAssigned`、ライバルは engineers×aiDependency から推定。
+   */
+  aiAssignedCount: number;
   /** 健全度（reviewQueue/incidents/aiDependency から導出）。 */
   health: TeamHealth;
   /** 実ランの現場（`OrgState`）を映すプレイヤーチームか。 */

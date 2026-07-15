@@ -10,6 +10,7 @@ import {
   applyLever,
   companyScore,
   emptyAdjustState,
+  estimateRivalAiAssigned,
   generateOrgScale,
   healthRank,
   isOnFire,
@@ -151,6 +152,25 @@ describe('generateOrgScale', () => {
     expect(player).toBeDefined();
     expect(player.shipping).toBe(1234);
     expect(player.morale).toBe(42);
+  });
+
+  it('playerEngineers / playerAiAssigned をプレイヤー島へ載せる（RI-27）', () => {
+    const state = generateOrgScale(input({ playerEngineers: 4, playerAiAssigned: 2 }));
+    const player = state.departments.flatMap((d) => d.teams).find((t) => t.isPlayer)!;
+    expect(player.engineers).toBe(4);
+    expect(player.aiAssignedCount).toBe(2);
+    // 全社 engineers は各チーム合算で、プレイヤー分も含まれる。
+    expect(state.engineers).toBeGreaterThanOrEqual(4);
+  });
+
+  it('ライバルの aiAssignedCount は engineers×aiDependency から推定する（RI-27）', () => {
+    expect(estimateRivalAiAssigned(5, 60)).toBe(3);
+    expect(estimateRivalAiAssigned(3, 10)).toBe(0);
+    const state = generateOrgScale(input({ playerEngineers: 5, playerAiAssigned: 0 }));
+    const rivals = state.departments.flatMap((d) => d.teams).filter((t) => !t.isPlayer);
+    for (const t of rivals) {
+      expect(t.aiAssignedCount).toBe(estimateRivalAiAssigned(t.engineers, t.aiDependency));
+    }
   });
 
   it('部門は定義どおりに構成され、全社HUDが集約される', () => {
@@ -312,6 +332,7 @@ function makeTeam(overrides: Partial<Team>): Team {
     morale: 70,
     techDebt: 10,
     engineers: 5,
+    aiAssignedCount: 0,
     health: 'healthy',
     isPlayer: false,
     ...overrides,

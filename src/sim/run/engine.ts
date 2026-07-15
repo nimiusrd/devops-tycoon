@@ -28,6 +28,8 @@ import {
 } from '../cards';
 import { diagnose } from '../diagnosis';
 import {
+  activeEngineerCount,
+  aiAssignedCount,
   applySprintGrowth,
   assignMember,
   canRecruit,
@@ -1205,7 +1207,8 @@ export class RunEngine {
       diagnosis: this.diagnosis,
       budget: this.budget,
       adjust: this.orgAdjust,
-      playerEngineers: this.roster.members.length,
+      playerEngineers: activeEngineerCount(this.roster),
+      playerAiAssigned: aiAssignedCount(this.roster),
       ...live,
     });
   }

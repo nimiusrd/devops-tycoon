@@ -32,6 +32,8 @@ export {
   recoverStamina,
   memberExpression,
   rosterSummary,
+  activeEngineerCount,
+  aiAssignedCount,
   rankLabel,
   xpForLevel,
   computeStaminaMax,

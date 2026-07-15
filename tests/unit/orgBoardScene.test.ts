@@ -64,6 +64,16 @@ describe('planOrgBoardScene (RI-01)', () => {
     expect(new Set(scene.islands.map((i) => i.teamId)).size).toBe(org.teamCount);
   });
 
+  it('島バッジにエンジニア人数を載せる（RI-27）', () => {
+    const org = generateOrgScale(
+      orgScaleInput('ri27-headcount', { playerEngineers: 4, playerAiAssigned: 1 }),
+    );
+    const scene = planOrgBoardScene(org);
+    const player = scene.islands.find((i) => i.team.isPlayer)!;
+    expect(player.badge.headcount).toBe('4人');
+    expect(player.team.aiAssignedCount).toBe(1);
+  });
+
   it('島の設計座標が ORG_VIEW 範囲内', () => {
     const org = generateOrgScale(orgScaleInput('ri01-bounds'));
     const scene = planOrgBoardScene(org);

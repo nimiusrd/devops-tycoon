@@ -155,6 +155,8 @@ export interface OrgIslandPlan {
     title: string;
     shipping: string;
     ai: string;
+    /** エンジニア人数表示（例: `5人`）。 */
+    headcount: string;
     tag: string;
     tone: 'ok' | 'warn' | 'hell';
   };
@@ -172,6 +174,11 @@ export interface OrgBoardScene {
   hub: OrgHubPlan;
   flows: OrgFlowPlan[];
   islands: OrgIslandPlan[];
+}
+
+/** 島に並べるアバター数（1〜4）。人数スカラーを視覚へ載せる（RI-27）。 */
+export function islandWorkerCount(engineers: number): number {
+  return Math.min(4, Math.max(1, Math.round(engineers)));
 }
 
 /** チームの mood を健全度・インシデントから導出する。 */
@@ -353,6 +360,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
           title: team.name,
           shipping: `出荷 ${team.shipping}`,
           ai: `AI ${team.aiDependency}%`,
+          headcount: `${team.engineers}人`,
           tag: healthTag(team.health),
           tone,
         },

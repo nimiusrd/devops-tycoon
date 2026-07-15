@@ -1,8 +1,9 @@
 /**
  * 全社マップのチーム島アクター（ミニ机 + アバター + AI ボット）。
  * 旧モック org-screen（git 履歴）の team SVG / OfficeActors.tsx 縮小版。
+ * アバター数は `Team.engineers`、AI ボットは `Team.aiAssignedCount` を映す（RI-27）。
  */
-import type { OrgIslandMood, OrgIslandPlan } from '../render/orgBoardScene';
+import { islandWorkerCount, type OrgIslandMood, type OrgIslandPlan } from '../render/orgBoardScene';
 
 function IslandEyes({ mood }: { mood: OrgIslandMood }) {
   const ink = '#33285c';
@@ -135,6 +136,14 @@ const WORKER_PALETTE = [
   { body: '#9a6bff', hair: '#5a3a2a' },
 ];
 
+/** アバター配置（人数に応じて横にずらす）。 */
+const WORKER_SLOTS: readonly { x: number; y: number; scale: number }[] = [
+  { x: 48, y: 64, scale: 1 },
+  { x: 72, y: 60, scale: 0.95 },
+  { x: 96, y: 64, scale: 0.9 },
+  { x: 60, y: 52, scale: 0.85 },
+];
+
 function deskTone(health: OrgIslandPlan['team']['health']): string {
   if (health === 'reviewHell') return '#4a2b45';
   return '#3f3470';
@@ -146,7 +155,8 @@ export function OrgTeamActor({ island }: { island: OrgIslandPlan }) {
   const deskSide = team.health === 'reviewHell' ? '#30192e' : '#2b2050';
   const deskDark = team.health === 'reviewHell' ? '#221320' : '#1f1742';
   const screenColor = team.health === 'reviewHell' ? '#ff6a4a' : '#3fb6ff';
-  const showAi = team.aiDependency >= 55;
+  const workers = islandWorkerCount(team.engineers);
+  const showAi = team.aiAssignedCount > 0;
   const showFire = team.incidents > 0;
   const showAiPile = team.aiDependency >= 80;
 
@@ -173,8 +183,16 @@ export function OrgTeamActor({ island }: { island: OrgIslandPlan }) {
       />
       <polygon points="44,92 70,105 70,113 44,100" fill={deskSide} />
       <polygon points="70,105 96,92 96,100 70,113" fill={deskDark} />
-      <Worker x={55} y={62} scale={1} {...WORKER_PALETTE[0]} mood={mood} />
-      <Worker x={88} y={58} scale={0.95} {...WORKER_PALETTE[1]} mood={mood} />
+      {WORKER_SLOTS.slice(0, workers).map((slot, i) => (
+        <Worker
+          key={i}
+          x={slot.x}
+          y={slot.y}
+          scale={slot.scale}
+          {...WORKER_PALETTE[i % WORKER_PALETTE.length]}
+          mood={mood}
+        />
+      ))}
       {showAi && <AiBot x={104} y={70} scale={0.9} />}
       <polygon points="40,86 70,71 100,86 70,101" fill="#caa06a" />
       <polygon points="40,86 70,101 70,112 40,97" fill="#9a7440" />
@@ -215,7 +233,7 @@ export function OrgIslandBadge({ island }: { island: OrgIslandPlan }) {
     <div className={`org-island-badge tone-${badge.tone}`}>
       <strong>{badge.title}</strong>
       <span className="org-island-meta">
-        {badge.shipping} ／ {badge.ai}
+        {badge.shipping} ／ {badge.ai} ／ {badge.headcount}
       </span>
       <span className="org-island-tag">{badge.tag}</span>
     </div>

@@ -194,6 +194,10 @@ export default function App({ game }: AppProps) {
         onSnapshotCaptured={rememberRunMetricSnapshot}
       />
 
+      {/*
+        各 lazy 画面を別 Suspense に分ける。
+        1 つの境界だと編成/ズーム等の初回ロードで SprintScreen まで null に消える。
+      */}
       <Suspense fallback={null}>
         {phase === 'setup' && (
           <SetupScreen
@@ -203,6 +207,8 @@ export default function App({ game }: AppProps) {
             onBegin={run.beginSetupSprint}
           />
         )}
+      </Suspense>
+      <Suspense fallback={null}>
         {showSprint && (
           <SprintScreen
             state={state}
@@ -211,8 +217,12 @@ export default function App({ game }: AppProps) {
             getSprintSnapshot={run.getSprintSnapshot}
           />
         )}
+      </Suspense>
 
+      <Suspense fallback={null}>
         {phase === 'beat' && <BeatScreen state={state} onResolve={run.resolveBeat} />}
+      </Suspense>
+      <Suspense fallback={null}>
         {phase === 'shop' && (
           <ShopScreen
             state={state}
@@ -221,8 +231,12 @@ export default function App({ game }: AppProps) {
             onLeave={run.leaveShop}
           />
         )}
+      </Suspense>
+      <Suspense fallback={null}>
         {phase === 'rest' && <RestScreen state={state} onChoose={run.restChoose} />}
+      </Suspense>
 
+      <Suspense fallback={null}>
         {phase === 'result' && state.lastResult && (
           <SprintResultScreen
             result={state.lastResult}
@@ -231,6 +245,8 @@ export default function App({ game }: AppProps) {
             onAbandon={newRun}
           />
         )}
+      </Suspense>
+      <Suspense fallback={null}>
         {phase === 'draft' && state.draft && (
           <DraftScreen
             options={state.draft}
@@ -241,6 +257,8 @@ export default function App({ game }: AppProps) {
             onSkip={run.skipDraft}
           />
         )}
+      </Suspense>
+      <Suspense fallback={null}>
         {phase === 'evolution' && (
           <EvolutionScreen
             state={state}
@@ -248,7 +266,9 @@ export default function App({ game }: AppProps) {
             onFinish={run.finishEvolution}
           />
         )}
+      </Suspense>
 
+      <Suspense fallback={null}>
         {formationOpen && (
           <FormationScreen
             state={state}
@@ -257,20 +277,22 @@ export default function App({ game }: AppProps) {
             onClose={() => setFormationOpen(false)}
           />
         )}
+      </Suspense>
 
-        <AnimatePresence>
-          {zoom.level !== 'team' && (
-            <motion.div
-              key={zoom.level}
-              className="zoom-overlay"
-              data-testid="zoom-overlay"
-              data-level={zoom.level}
-              initial={{ opacity: 0, scale: 1.04 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-            >
-              <Breadcrumb level={zoom.level} onNavigate={run.zoomTo} />
+      <AnimatePresence>
+        {zoom.level !== 'team' && (
+          <motion.div
+            key={zoom.level}
+            className="zoom-overlay"
+            data-testid="zoom-overlay"
+            data-level={zoom.level}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            <Breadcrumb level={zoom.level} onNavigate={run.zoomTo} />
+            <Suspense fallback={null}>
               {zoom.level === 'industry' && state.industry && (
                 <IndustryScreen
                   industry={state.industry}
@@ -296,10 +318,10 @@ export default function App({ game }: AppProps) {
                   onApplyLever={run.applyOrgLever}
                 />
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Suspense>
+            </Suspense>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

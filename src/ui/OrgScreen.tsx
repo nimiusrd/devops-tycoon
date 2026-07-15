@@ -52,8 +52,10 @@ export function OrgScreen({
 
   const handleFocusDept = useCallback(
     (deptId: string) => {
-      if (usePixi) {
-        void pixiFieldRef.current?.focusDepartment(deptId).then(() => {
+      // Pixi チャンク未ロード時は ref が null。カメラ演出を待たず遷移する。
+      const field = pixiFieldRef.current;
+      if (usePixi && field) {
+        void field.focusDepartment(deptId).then(() => {
           onFocusDept(deptId);
         });
         return;

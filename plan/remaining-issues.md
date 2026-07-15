@@ -389,10 +389,12 @@ CI 既定の E2E は `renderer=dom` を明示して実 WebGL を回さない方�
 #### RI-12 バンドル分割(動的 import) — 優先度:低 / 完了
 
 **完了**: Pixi ラッパー（`BoardPixiLayer` / `OrgPixiField` / `DeptPixiBoard`）と非タイトル画面を
-`React.lazy` + 動的 `import()` で分割し、`vite.config.ts` の `manualChunks` で `pixi` /
-`motion` vendor を固定した。2026-07 再計測でエントリ `index` は 956kB → 約 334kB（gzip 約 108kB）
-に縮小し >500kB 警告の対象外へ。`pixi` チャンクは約 562kB（gzip 約 158kB）で別ロードとなり、
-`?renderer=dom` やタイトル初回では取得しない。
+`React.lazy` + 動的 `import()` で分割し、`vite.config.ts` の `manualChunks` で `motion`
+（framer-motion）を固定した。`pixi.js` は lazy 側の自然分割に任せ、エントリからの
+`modulepreload` 対象外にした（`pixi` を manualChunks に入れると Vite の preload ヘルパーが
+寄ってエントリが静的 import してしまうため）。2026-07 再計測でエントリ `index` は
+956kB → 約 335kB（gzip 約 109kB）、HTML の preload は `motion` のみ。タイトル初回や
+`?renderer=dom` では Pixi 関連チャンクを取得しない。
 
 #### RI-13 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) — 優先度:中
 

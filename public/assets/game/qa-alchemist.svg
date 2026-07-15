@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">QA Alchemist</title>
+  <desc id="desc">A QA alchemist character mixing test potions and bug fixes.</desc>
+  <defs><linearGradient id="apron" x1="65" y1="88" x2="192" y2="222" gradientUnits="userSpaceOnUse"><stop stop-color="#cffafe"/><stop offset="0.48" stop-color="#0891b2"/><stop offset="1" stop-color="#164e63"/></linearGradient><filter id="bubble" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <ellipse cx="128" cy="226" rx="62" ry="13" fill="#083344" opacity="0.27"/>
+  <circle cx="128" cy="72" r="37" fill="#f1c9a5" stroke="#fff7ed" stroke-width="5"/>
+  <path d="M93 66c7-28 27-39 52-35 18 3 31 15 36 35-26-10-55-10-88 0Z" fill="#0f172a"/>
+  <path d="M72 140c0-29 24-53 53-53h6c29 0 53 24 53 53v64H72v-64Z" fill="url(#apron)" stroke="#cffafe" stroke-width="6"/>
+  <path d="M102 100 128 129l26-29M95 151h66M108 179h40" stroke="#ecfeff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.82"/>
+  <circle cx="114" cy="74" r="5" fill="#111827"/><circle cx="143" cy="74" r="5" fill="#111827"/><path d="M118 91c7 5 15 5 22 0" fill="none" stroke="#7c2d12" stroke-width="5" stroke-linecap="round"/>
+  <path d="M189 139v34c0 13-10 23-23 23s-23-10-23-23v-34h46Z" fill="#0f172a" stroke="#a5f3fc" stroke-width="5"/><path d="M151 164h30" stroke="#67e8f9" stroke-width="16" stroke-linecap="round" filter="url(#bubble)"/><circle cx="178" cy="119" r="7" fill="#67e8f9" filter="url(#bubble)"/><circle cx="198" cy="103" r="5" fill="#a7f3d0" filter="url(#bubble)"/>
+  <path d="M72 158 47 184M184 158l-13 16" stroke="#f1c9a5" stroke-width="12" stroke-linecap="round"/>
+</svg>

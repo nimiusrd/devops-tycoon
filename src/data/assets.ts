@@ -3,6 +3,7 @@ export type GameAsset = {
   name: string;
   type:
     | 'architecture'
+    | 'character'
     | 'currency'
     | 'hazard'
     | 'item'
@@ -99,5 +100,48 @@ export const gameAssets = [
     type: 'hazard',
     path: '/assets/game/tech-debt-anvil.svg',
     recommendedUse: 'technical debt, slowdown debuff, refactor target',
+  },
+
+  {
+    id: 'release-captain',
+    name: 'Release Captain',
+    type: 'character',
+    path: '/assets/game/release-captain.svg',
+    recommendedUse: 'release specialist, launch leader, deployment phase avatar',
+  },
+  {
+    id: 'incident-commander',
+    name: 'Incident Commander',
+    type: 'character',
+    path: '/assets/game/incident-commander.svg',
+    recommendedUse: 'incident response lead, crisis event, mitigation avatar',
+  },
+  {
+    id: 'sre-ranger',
+    name: 'SRE Ranger',
+    type: 'character',
+    path: '/assets/game/sre-ranger.svg',
+    recommendedUse: 'reliability specialist, monitoring action, resilience avatar',
+  },
+  {
+    id: 'platform-architect',
+    name: 'Platform Architect',
+    type: 'character',
+    path: '/assets/game/platform-architect.svg',
+    recommendedUse: 'architecture specialist, platform upgrade, dependency planning avatar',
+  },
+  {
+    id: 'qa-alchemist',
+    name: 'QA Alchemist',
+    type: 'character',
+    path: '/assets/game/qa-alchemist.svg',
+    recommendedUse: 'quality specialist, testing action, bug reduction avatar',
+  },
+  {
+    id: 'product-oracle',
+    name: 'Product Oracle',
+    type: 'character',
+    path: '/assets/game/product-oracle.svg',
+    recommendedUse: 'roadmap specialist, product event, prioritization avatar',
   },
 ] as const satisfies readonly GameAsset[];

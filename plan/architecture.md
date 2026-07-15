@@ -13,7 +13,7 @@
 | UIシェル | React | HUD・アクションバー・カード・ツリー・マップ・リザルト・パンくず |
 | UI演出 | Framer Motion | 画面遷移・マイクロインタラクション |
 | 盤面描画 | DOM/SVG → PixiJS + pixi-viewport（規模拡大時に移行） | タスク粒・アイソメ盤面・フロー・ヒートマップ・延焼 |
-| 状態管理 | Zustand（ラン/メタ状態）＋ XState（フェーズ遷移） | 予測可能な状態とフロー管理 |
+| 状態管理 | 純TS遷移表 `src/sim/run/phases.ts`（フェーズ遷移の単一真実源）＋ Zustand（ラン/メタ状態） | `RunEngine.setPhase()` が表で実遷移を検証。XState マシンは表から生成し契約テスト/可視化用（RI-39） |
 | シミュレーション | 純TS・固定タイムステップ・seed付きPRNG | 確率モデル本体（描画から分離・決定論） |
 | 重い試算 | Web Worker（+Comlink） | what-if 計算・モンテカルロ等 |
 | 静的グラフ | Recharts または visx | リザルト/診断の図 |
@@ -26,7 +26,7 @@
 ## 2. レイヤ分離の原則（最重要）
 
 ```text
-React (UIシェル)  ── 状態を持ち、表示する。Zustand + XState。
+React (UIシェル)  ── 状態を持ち、表示する。Zustand +（フェーズ遷移は sim の遷移表が真実源）。
         │ 読む（一方向）
 Simulation (純TS) ── 固定タイムステップ＋seed付きPRNGで状態を更新。描画を一切知らない。
         │ 読まれる（一方向）
@@ -62,7 +62,7 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
    │  ├─ engine.ts            ← 固定タイムステップのループと step(dt)
    │  └─ scenarios.ts         ← 難易度プリセット（第16章）
    ├─ state/                   ← Zustand ストア + XState マシン
-   │  ├─ runMachine.ts        ← マップ→スプリント→ドラフト→進化（第3章）
+   │  ├─ runMachine.ts        ← sim/run/phases.ts の遷移表から生成（契約テスト/可視化用。第3章 / RI-39）
    │  └─ stores/
    ├─ render/                  ← 描画アダプタ（DOM/SVG → 後でPixi）
    │  ├─ Board.tsx            ← 盤面（タスク粒の流れ）

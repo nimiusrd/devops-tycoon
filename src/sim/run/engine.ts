@@ -78,6 +78,7 @@ import {
   weightedEventPool,
 } from './events';
 import { canUnlock, unlockNode } from './evolution';
+import { canTransition, RunPhaseError } from './phases';
 import {
   applyGoalAdjustment,
   buildInitialTrust,
@@ -293,7 +294,24 @@ export class RunEngine {
     this.allowedCards = init.allowedCards ?? null;
     this.allowedRelics = init.allowedRelics ?? null;
     this.initRun();
-    this.phase = 'title';
+    this.resetPhase('title');
+  }
+
+  /**
+   * フェーズを遷移表（`RUN_PHASE_TRANSITIONS`）で検証して進める。
+   * 表に無い遷移はエンジン実装のバグなので常に throw する（決定論なので再現可能）。
+   */
+  private setPhase(next: RunState['phase']): void {
+    if (!canTransition(this.phase, next)) throw new RunPhaseError(this.phase, next);
+    this.phase = next;
+  }
+
+  /**
+   * フェーズを遷移表を経ずにリセットする（新規ラン・タイトル復帰の入口のみ）。
+   * XState 的にはアクターの再生成に相当し、won/lost からのリスタートもここを通る。
+   */
+  private resetPhase(next: 'title' | 'setup'): void {
+    this.phase = next;
   }
 
   /** ラン開始時点の解放プールを設定する（ラン中は固定）。 */
@@ -315,14 +333,14 @@ export class RunEngine {
     this.initRun();
     this.runKind = options?.kind ?? 'normal';
     this.dailyDate = options?.dailyDate;
-    this.phase = 'setup';
+    this.resetPhase('setup');
   }
 
   /** タイトル画面へ戻る（新しいランの難易度選択へ）。 */
   toTitle(seed?: string): void {
     if (seed !== undefined) this.seed = seed;
     this.initRun();
-    this.phase = 'title';
+    this.resetPhase('title');
   }
 
   /** 内部状態をランの初期状態へ戻す（組織・予算・進化・トラックを作り直す）。 */
@@ -471,7 +489,7 @@ export class RunEngine {
     this.sprintPassiveEffects = { ...this.sprint.cardEffects };
     const dealRng = createRng(`${this.seed}:deal:${this.currentSprintId}`);
     this.sprint.cardPiles = dealHand(this.deck.length, dealRng);
-    this.phase = 'sprint';
+    this.setPhase('sprint');
   }
 
   /**
@@ -602,7 +620,7 @@ export class RunEngine {
       if (lose) {
         this.status = 'lost';
         this.loseReason = lose;
-        this.phase = 'lost';
+        this.setPhase('lost');
         return;
       }
       const boss = getBoss(this.bossId);
@@ -624,7 +642,7 @@ export class RunEngine {
         this.bossRelicReward = this.grantBossRelic();
       }
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
-      this.phase = 'quarterReview';
+      this.setPhase('quarterReview');
       return;
     }
 
@@ -632,7 +650,7 @@ export class RunEngine {
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
-      this.phase = 'lost';
+      this.setPhase('lost');
       return;
     }
 
@@ -640,7 +658,7 @@ export class RunEngine {
       ...this.evolution,
       points: this.evolution.points + this.evoPointsFor(result),
     };
-    this.phase = 'result';
+    this.setPhase('result');
   }
 
   private accumulateTotals(result: SprintResult): void {
@@ -687,13 +705,13 @@ export class RunEngine {
         budget: this.budget,
         usedHeavyActions: this.usedHeavyActions,
       });
-      this.phase = 'won';
+      this.setPhase('won');
       return;
     }
     if (isTerminalFailure(outcome)) {
       this.status = 'lost';
       this.loseReason = loseReasonForOutcome(outcome);
-      this.phase = 'lost';
+      this.setPhase('lost');
     }
   }
 
@@ -730,7 +748,7 @@ export class RunEngine {
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
-      this.phase = 'lost';
+      this.setPhase('lost');
       return;
     }
 
@@ -789,7 +807,7 @@ export class RunEngine {
     this.shop = null;
     this.quarterReview = null;
     this.zoom = { level: 'team', deptId: null, teamId: null };
-    this.phase = 'setup';
+    this.setPhase('setup');
   }
 
   /** リザルトを確認してドラフトへ進む。 */
@@ -800,7 +818,7 @@ export class RunEngine {
       3,
       this.allowedCards ?? undefined,
     );
-    this.phase = 'draft';
+    this.setPhase('draft');
   }
 
   /** ドラフトでカードを選びデッキに加える（加算系の効果は即時に組織へ反映）。 */
@@ -809,14 +827,14 @@ export class RunEngine {
     this.addCard(defId, 1);
     this.draft = null;
     // RI-30: カード効果は手札発動時に反映されるため、獲得時の即時敗北は見ない。
-    this.phase = 'evolution';
+    this.setPhase('evolution');
   }
 
   /** ドラフトをスキップする。 */
   skipDraft(): void {
     if (this.phase !== 'draft') return;
     this.draft = null;
-    this.phase = 'evolution';
+    this.setPhase('evolution');
   }
 
   /** 進化ノードを解放する（加算系効果は即時反映。phase は evolution のまま）。 */
@@ -874,12 +892,15 @@ export class RunEngine {
       def = pickWeighted(weightedEventPool(this.org, this.quarterTotals, fallback), fr);
     }
     if (!def) {
-      // 究極のフォールバック（定義が空のときのみ）。ビートを飛ばして次スプリントへ。
+      // 究極のフォールバック（定義が空のときのみ）。長さゼロのビートとして
+      // beat を経由し（遷移表の FINISH→ENTER_SPRINT 相当）、次スプリントへ直行する。
+      // 同期処理内の2段遷移なのでスナップショットが中間状態を観測することはない。
+      this.setPhase('beat');
       this.launchSprint();
       return;
     }
     this.beat = { eventId: def.id, kind: effectiveKind(def) };
-    this.phase = 'beat';
+    this.setPhase('beat');
   }
 
   /**
@@ -912,25 +933,25 @@ export class RunEngine {
     if (res.forceLose) {
       this.status = 'lost';
       this.loseReason = res.forceLose;
-      this.phase = 'lost';
+      this.setPhase('lost');
       return;
     }
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
       this.status = 'lost';
       this.loseReason = lose;
-      this.phase = 'lost';
+      this.setPhase('lost');
       return;
     }
 
     const leadsTo = choice.leadsTo ?? 'sprint';
     if (leadsTo === 'shop') {
       this.shop = this.buildShop();
-      this.phase = 'shop';
+      this.setPhase('shop');
       return;
     }
     if (leadsTo === 'rest') {
-      this.phase = 'rest';
+      this.setPhase('rest');
       return;
     }
     if (leadsTo === 'sprint-elite') {
@@ -1018,7 +1039,7 @@ export class RunEngine {
   leaveShop(): void {
     if (this.phase !== 'shop') return;
     this.shop = null;
-    this.phase = 'setup';
+    this.setPhase('setup');
   }
 
   // --- 休息 ---
@@ -1054,7 +1075,7 @@ export class RunEngine {
         }
       }
     }
-    this.phase = 'setup';
+    this.setPhase('setup');
   }
 
   /** メンバーをレーンへ配置する（編成。第12.2）。スプリント中は変更しない。 */
@@ -1084,7 +1105,7 @@ export class RunEngine {
     if (!lose) return false;
     this.status = 'lost';
     this.loseReason = lose;
-    this.phase = 'lost';
+    this.setPhase('lost');
     return true;
   }
 
@@ -1155,6 +1176,8 @@ export class RunEngine {
    * 予算不足・スコープ不一致は何も起きない。返り値は適用できたか。
    */
   applyOrgLever(leverId: string, deptId?: string): boolean {
+    // ラン外（タイトル・終端）では発動しない（即時敗北判定が終端フェーズから再遷移しないように）。
+    if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
     const res = applyLever(this.orgAdjust, this.budget, leverId, deptId);
     if (!res.changed) return false;
     this.orgAdjust = res.adjust;

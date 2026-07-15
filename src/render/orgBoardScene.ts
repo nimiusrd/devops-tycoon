@@ -181,6 +181,18 @@ export function islandWorkerCount(engineers: number): number {
   return Math.min(4, Math.max(1, Math.round(engineers)));
 }
 
+/** 島に並べる AI ボット数（0〜3）。配布人数スカラーを視覚へ載せる（RI-27）。 */
+export function islandAiBotCount(aiAssignedCount: number): number {
+  if (aiAssignedCount <= 0) return 0;
+  return Math.min(3, Math.max(1, Math.round(aiAssignedCount)));
+}
+
+/** 島バッジの AI 行（依存度＋配布人数）。Pixi card の表記と揃える。 */
+export function islandAiBadgeLabel(aiDependency: number, aiAssignedCount: number): string {
+  const base = `AI ${aiDependency}%`;
+  return aiAssignedCount > 0 ? `${base} · 配布${aiAssignedCount}` : base;
+}
+
 /** チームの mood を健全度・インシデントから導出する。 */
 export function islandMood(team: Team): OrgIslandMood {
   if (team.health === 'reviewHell' || team.incidents >= 2) return 'panic';
@@ -359,7 +371,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
           y: pos.y - 46,
           title: team.name,
           shipping: `出荷 ${team.shipping}`,
-          ai: `AI ${team.aiDependency}%`,
+          ai: islandAiBadgeLabel(team.aiDependency, team.aiAssignedCount),
           headcount: `${team.engineers}人`,
           tag: healthTag(team.health),
           tone,

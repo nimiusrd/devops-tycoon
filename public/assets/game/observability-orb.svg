@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Observability Orb</title>
+  <desc id="desc">A glowing monitoring orb with metrics rings and signal dots.</desc>
+  <defs>
+    <radialGradient id="orb" cx="45%" cy="35%" r="70%"><stop stop-color="#eff6ff"/><stop offset="0.42" stop-color="#60a5fa"/><stop offset="1" stop-color="#312e81"/></radialGradient>
+    <filter id="glow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <ellipse cx="128" cy="222" rx="62" ry="14" fill="#0f172a" opacity="0.28"/>
+  <circle cx="128" cy="128" r="82" fill="url(#orb)" stroke="#bfdbfe" stroke-width="7"/>
+  <path d="M56 128c24-20 48-30 72-30s48 10 72 30c-24 20-48 30-72 30s-48-10-72-30Z" fill="#020617" opacity="0.5"/>
+  <circle cx="128" cy="128" r="24" fill="#67e8f9" filter="url(#glow)"/>
+  <path d="M86 84c27-18 57-18 84 0M84 176c28 18 60 18 88 0" fill="none" stroke="#dbeafe" stroke-width="7" stroke-linecap="round" opacity="0.78"/>
+  <circle cx="73" cy="79" r="8" fill="#34d399" filter="url(#glow)"/><circle cx="192" cy="92" r="7" fill="#facc15" filter="url(#glow)"/><circle cx="180" cy="184" r="8" fill="#fb7185" filter="url(#glow)"/>
+</svg>

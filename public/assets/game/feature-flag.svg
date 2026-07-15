@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Feature Flag</title>
+  <desc id="desc">A bright feature flag marker on a deployment pole.</desc>
+  <defs><linearGradient id="flag" x1="75" y1="49" x2="202" y2="139" gradientUnits="userSpaceOnUse"><stop stop-color="#fefce8"/><stop offset="0.5" stop-color="#a3e635"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs>
+  <ellipse cx="116" cy="225" rx="54" ry="13" fill="#0f172a" opacity="0.25"/>
+  <path d="M75 42v181" stroke="#e2e8f0" stroke-width="12" stroke-linecap="round"/>
+  <path d="M80 51c39-18 71 24 113 5v89c-42 19-74-23-113-5V51Z" fill="url(#flag)" stroke="#ecfccb" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M110 82h51M110 111h31" stroke="#14532d" stroke-width="8" stroke-linecap="round" opacity="0.64"/>
+  <circle cx="75" cy="42" r="14" fill="#38bdf8" stroke="#e0f2fe" stroke-width="5"/>
+</svg>

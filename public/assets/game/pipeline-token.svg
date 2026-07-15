@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Pipeline Token</title>
+  <desc id="desc">A circular token representing automated delivery pipeline energy.</desc>
+  <defs>
+    <linearGradient id="coin" x1="44" y1="35" x2="210" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ecfeff"/>
+      <stop offset="0.44" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <circle cx="128" cy="128" r="94" fill="url(#coin)" stroke="#ccfbf1" stroke-width="8"/>
+  <circle cx="128" cy="128" r="70" fill="#042f2e" opacity="0.78"/>
+  <path d="M78 130h38l15-31 20 58 14-27h13" fill="none" stroke="#a7f3d0" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <path d="M70 84c15-20 36-31 62-31 21 0 40 7 55 20" fill="none" stroke="#f0fdfa" stroke-width="7" stroke-linecap="round" opacity="0.75"/>
+  <path d="M188 75v31h-31" fill="none" stroke="#f0fdfa" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+  <path d="M186 172c-15 20-36 31-62 31-21 0-40-7-55-20" fill="none" stroke="#99f6e4" stroke-width="7" stroke-linecap="round" opacity="0.7"/>
+  <path d="M68 181v-31h31" fill="none" stroke="#99f6e4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+</svg>

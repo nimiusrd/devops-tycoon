@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Release Captain</title>
+  <desc id="desc">A confident release leader character holding a launch tablet.</desc>
+  <defs><linearGradient id="suit" x1="61" y1="78" x2="194" y2="232" gradientUnits="userSpaceOnUse"><stop stop-color="#38bdf8"/><stop offset="0.55" stop-color="#2563eb"/><stop offset="1" stop-color="#1e1b4b"/></linearGradient><filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <ellipse cx="128" cy="226" rx="61" ry="13" fill="#0f172a" opacity="0.26"/>
+  <path d="M74 142c0-29 22-52 50-52h8c28 0 50 23 50 52v60H74v-60Z" fill="url(#suit)" stroke="#bfdbfe" stroke-width="6"/>
+  <path d="M102 96 128 127l26-31" fill="none" stroke="#e0f2fe" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M74 154 45 178M182 154l28 22" stroke="#fed7aa" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="128" cy="70" r="39" fill="#fed7aa" stroke="#fff7ed" stroke-width="5"/>
+  <path d="M91 69c7-31 28-43 54-36 15 4 25 14 29 30-22-5-42-11-67 6l-7 18c-6-3-9-9-9-18Z" fill="#1e293b"/>
+  <circle cx="114" cy="70" r="5" fill="#111827"/><circle cx="145" cy="70" r="5" fill="#111827"/><path d="M118 88c8 6 17 6 25 0" fill="none" stroke="#9a3412" stroke-width="5" stroke-linecap="round"/>
+  <rect x="137" y="139" width="55" height="41" rx="8" fill="#0f172a" stroke="#93c5fd" stroke-width="5"/><path d="m153 159 10 8 16-20" fill="none" stroke="#22c55e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+</svg>

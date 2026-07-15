@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Refactor Wrench</title>
+  <desc id="desc">A neon wrench for refactoring and maintenance actions.</desc>
+  <defs><linearGradient id="metal" x1="50" y1="37" x2="207" y2="216" gradientUnits="userSpaceOnUse"><stop stop-color="#f8fafc"/><stop offset="0.45" stop-color="#94a3b8"/><stop offset="1" stop-color="#334155"/></linearGradient><filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <ellipse cx="128" cy="223" rx="64" ry="13" fill="#0f172a" opacity="0.25"/>
+  <path d="M178 38c-18-4-38 1-52 15-16 16-20 39-12 58L48 177c-10 10-10 26 0 36s26 10 36 0l66-66c19 8 42 4 58-12 14-14 19-34 15-52l-34 34-28-28 34-34c-5-8-10-13-17-17Z" fill="url(#metal)" stroke="#e0f2fe" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="67" cy="195" r="10" fill="#0f172a" opacity="0.55"/>
+  <path d="M81 75h31M63 103h36M155 179h37" stroke="#22d3ee" stroke-width="8" stroke-linecap="round" filter="url(#glow)"/>
+</svg>

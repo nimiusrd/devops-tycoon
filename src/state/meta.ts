@@ -40,8 +40,6 @@ export interface MetaState {
   unlockedCards: string[];
   /** メタショップで購入済みのレリック定義 ID。 */
   unlockedRelics: string[];
-  /** メタショップで購入済みの開始プリセット ID（将来用）。 */
-  unlockedPresets: string[];
   /** UTC 日付（YYYY-MM-DD）→ デイリーラン記録。 */
   dailyRuns: Record<string, DailyRunRecord>;
 }
@@ -63,7 +61,6 @@ export interface DailyLeaderboardEntry extends DailyRunRecord {
 export interface UnlockedContent {
   cards: ReadonlySet<string>;
   relics: ReadonlySet<string>;
-  presets: ReadonlySet<string>;
 }
 
 export type PurchaseUnlockReason = 'unknown' | 'already_owned' | 'insufficient_points' | 'requires';
@@ -85,7 +82,6 @@ export function defaultMeta(): MetaState {
     bestScore: 0,
     unlockedCards: [],
     unlockedRelics: [],
-    unlockedPresets: [],
     dailyRuns: {},
   };
 }
@@ -93,7 +89,9 @@ export function defaultMeta(): MetaState {
 /** 保存値へ現行スキーマの既定値を補完する。 */
 export function normalizeMeta(value: unknown): MetaState {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return defaultMeta();
-  return { ...defaultMeta(), ...(value as Partial<MetaState>) };
+  // 旧セーブの unlockedPresets（RI-25 で削除した足場）は読み捨てる。
+  const { unlockedPresets: _legacyPresets, ...rest } = value as Record<string, unknown>;
+  return { ...defaultMeta(), ...(rest as Partial<MetaState>) };
 }
 
 /** 旧 JSON セーブを現行スキーマへ復元する。壊れていれば null。 */
@@ -264,7 +262,6 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     bestScore: Math.max(meta.bestScore, input.score),
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
-    unlockedPresets: [...meta.unlockedPresets],
     dailyRuns: { ...meta.dailyRuns },
   };
 
@@ -353,14 +350,12 @@ export function unlockedContent(meta: MetaState): UnlockedContent {
   for (const id of meta.unlockedCards) cards.add(id);
   const relics = new Set(defaultUnlockedRelicIds());
   for (const id of meta.unlockedRelics) relics.add(id);
-  const presets = new Set(meta.unlockedPresets);
-  return { cards, relics, presets };
+  return { cards, relics };
 }
 
 function isUnlockOwned(meta: MetaState, unlock: UnlockDef): boolean {
   if (unlock.kind === 'card') return meta.unlockedCards.includes(unlock.contentId);
-  if (unlock.kind === 'relic') return meta.unlockedRelics.includes(unlock.contentId);
-  return meta.unlockedPresets.includes(unlock.contentId);
+  return meta.unlockedRelics.includes(unlock.contentId);
 }
 
 /** points を消費してコンテンツを永続解放する（不変更新）。 */
@@ -378,13 +373,10 @@ export function purchaseUnlock(meta: MetaState, unlockId: string): PurchaseUnloc
     points: meta.points - unlock.cost,
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
-    unlockedPresets: [...meta.unlockedPresets],
   };
 
   if (unlock.kind === 'card') next.unlockedCards = uniq([...next.unlockedCards, unlock.contentId]);
-  else if (unlock.kind === 'relic')
-    next.unlockedRelics = uniq([...next.unlockedRelics, unlock.contentId]);
-  else next.unlockedPresets = uniq([...next.unlockedPresets, unlock.contentId]);
+  else next.unlockedRelics = uniq([...next.unlockedRelics, unlock.contentId]);
 
   return { meta: next, ok: true };
 }

@@ -10,7 +10,6 @@ const META_WITH_ACHIEVEMENT: MetaState = {
   bestScore: 120,
   unlockedCards: [],
   unlockedRelics: [],
-  unlockedPresets: [],
   dailyRuns: {},
 };
 

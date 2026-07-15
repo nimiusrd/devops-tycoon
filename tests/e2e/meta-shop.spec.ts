@@ -27,7 +27,6 @@ const DEFAULT_META: MetaState = {
   bestScore: 0,
   unlockedCards: [],
   unlockedRelics: [],
-  unlockedPresets: [],
   dailyRuns: {},
 };
 

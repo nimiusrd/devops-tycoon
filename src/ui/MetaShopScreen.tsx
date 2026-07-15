@@ -17,14 +17,12 @@ export interface MetaShopScreenProps {
 
 function isOwned(meta: MetaState, unlock: UnlockDef): boolean {
   if (unlock.kind === 'card') return meta.unlockedCards.includes(unlock.contentId);
-  if (unlock.kind === 'relic') return meta.unlockedRelics.includes(unlock.contentId);
-  return meta.unlockedPresets.includes(unlock.contentId);
+  return meta.unlockedRelics.includes(unlock.contentId);
 }
 
 function contentLabel(unlock: UnlockDef): string {
   if (unlock.kind === 'card') return getCard(unlock.contentId)?.name ?? unlock.contentId;
-  if (unlock.kind === 'relic') return getRelic(unlock.contentId)?.name ?? unlock.contentId;
-  return unlock.contentId;
+  return getRelic(unlock.contentId)?.name ?? unlock.contentId;
 }
 
 export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProps) {

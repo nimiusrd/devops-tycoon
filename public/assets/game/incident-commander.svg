@@ -3,12 +3,12 @@
   <desc id="desc">A calm incident commander character with headset and alert jacket.</desc>
   <defs><linearGradient id="vest" x1="67" y1="87" x2="188" y2="220" gradientUnits="userSpaceOnUse"><stop stop-color="#fde68a"/><stop offset="0.48" stop-color="#f97316"/><stop offset="1" stop-color="#7c2d12"/></linearGradient><filter id="pulse" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
   <ellipse cx="128" cy="226" rx="62" ry="13" fill="#431407" opacity="0.25"/>
+  <path d="M72 145c0-31 24-55 53-55h6c29 0 53 24 53 55v58H72v-58Z" fill="url(#vest)" stroke="#ffedd5" stroke-width="6"/>
+  <path d="M93 113h70M92 145h72M104 179h48" stroke="#fff7ed" stroke-width="8" stroke-linecap="round" opacity="0.78"/>
+  <path d="M72 158 47 186M184 158l25 28" stroke="#f8c9a8" stroke-width="12" stroke-linecap="round"/>
   <circle cx="128" cy="72" r="38" fill="#f8c9a8" stroke="#ffedd5" stroke-width="5"/>
   <path d="M92 69c2-26 19-42 43-42 20 0 34 12 37 31-22-7-47-5-70 10l-4 18c-4-5-6-10-6-17Z" fill="#334155"/>
   <path d="M93 68c-14 6-19 22-14 37M163 68c14 6 19 22 14 37" fill="none" stroke="#0f172a" stroke-width="7" stroke-linecap="round"/>
   <path d="M178 105h-27" stroke="#0f172a" stroke-width="6" stroke-linecap="round"/><circle cx="148" cy="105" r="6" fill="#22d3ee" filter="url(#pulse)"/>
-  <path d="M72 140c0-29 24-53 53-53h6c29 0 53 24 53 53v63H72v-63Z" fill="url(#vest)" stroke="#ffedd5" stroke-width="6"/>
-  <path d="M93 113h70M92 145h72M104 179h48" stroke="#fff7ed" stroke-width="8" stroke-linecap="round" opacity="0.78"/>
   <circle cx="114" cy="73" r="5" fill="#111827"/><circle cx="143" cy="73" r="5" fill="#111827"/><path d="M118 91c7 5 14 5 21 0" fill="none" stroke="#7c2d12" stroke-width="5" stroke-linecap="round"/>
-  <path d="M72 158 47 186M184 158l25 28" stroke="#f8c9a8" stroke-width="12" stroke-linecap="round"/>
 </svg>

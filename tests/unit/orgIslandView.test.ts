@@ -71,17 +71,34 @@ describe('truncateName', () => {
 describe('teamIslandView', () => {
   it('card では DOM TeamIsland 相当のラベルを返す', () => {
     const labels = teamIslandView(
-      team({ id: 't1', name: 'Platform', shipping: 99, aiDependency: 70, incidents: 3 }),
+      team({
+        id: 't1',
+        name: 'Platform',
+        shipping: 99,
+        aiDependency: 70,
+        incidents: 3,
+        engineers: 5,
+      }),
       'card',
     );
     expect(labels).toEqual({
       name: 'Platform',
       shipping: '出荷 99',
       ai: 'AI 70',
+      headcount: '5人',
       fire: '🔥3',
       title: 'Platform（健全）へドリルダウン',
       showBadge: true,
     });
+  });
+
+  it('card で AI 配布中は配布人数を併記する（RI-27 / Pixi）', () => {
+    const labels = teamIslandView(
+      team({ id: 't1', aiDependency: 55, aiAssignedCount: 2, engineers: 4 }),
+      'card',
+    );
+    expect(labels.ai).toBe('AI 55 · 配布2');
+    expect(labels.headcount).toBe('4人');
   });
 
   it('プレイヤーチームは ★ 付き名前', () => {
@@ -103,6 +120,7 @@ describe('teamIslandView', () => {
     expect(labels.name).toBe('Very Lo…');
     expect(labels.shipping).toBeNull();
     expect(labels.ai).toBeNull();
+    expect(labels.headcount).toBeNull();
     expect(labels.fire).toBe('🔥2');
     expect(labels.showBadge).toBe(false);
   });
@@ -112,6 +130,7 @@ describe('teamIslandView', () => {
     expect(labels.name).toBe('');
     expect(labels.shipping).toBeNull();
     expect(labels.ai).toBeNull();
+    expect(labels.headcount).toBeNull();
     expect(labels.fire).toBeNull();
     expect(labels.showBadge).toBe(false);
   });

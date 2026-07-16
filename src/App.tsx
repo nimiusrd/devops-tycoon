@@ -60,17 +60,32 @@ const SprintScreen = lazy(() => loadSprintScreen().then((m) => ({ default: m.Spr
 
 /**
  * SprintScreen チャンク読込中は自動進行を止める。
- * 既に E2E 等で pause 済みなら触らず、自分が止めたときだけ resume する。
+ * 既に E2E 等で pause 済みなら触らず、自分が止めた epoch のままなら resume する。
+ * （読込中に外部が再 pause したら epoch が進むので誤 resume しない。）
  */
 function SprintSuspendFallback({ game }: { game: GameHandle }) {
   useEffect(() => {
     if (game.isPaused()) return;
     game.pause();
+    const epoch = game.getPauseEpoch();
     return () => {
-      game.resume();
+      if (game.getPauseEpoch() === epoch) game.resume();
     };
   }, [game]);
   return null;
+}
+
+/** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
+function TitleModalLoadingFallback() {
+  return (
+    <div
+      className="result-overlay"
+      data-testid="title-modal-loading"
+      role="status"
+      aria-busy="true"
+      aria-label="読み込み中"
+    />
+  );
 }
 
 export interface AppProps {
@@ -128,16 +143,22 @@ export default function App({ game }: AppProps) {
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
   const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
     setFormationOpen(false);
+    setMetaShopOpen(false);
+    setAchievementsOpen(false);
     clearHudSnapshot();
     run.startRun(difficulty, trials);
   };
   const startDailyRun = () => {
     setFormationOpen(false);
+    setMetaShopOpen(false);
+    setAchievementsOpen(false);
     clearHudSnapshot();
     run.startDailyRun();
   };
   const newRun = () => {
     setFormationOpen(false);
+    setMetaShopOpen(false);
+    setAchievementsOpen(false);
     clearHudSnapshot();
     run.newRun();
   };
@@ -153,7 +174,7 @@ export default function App({ game }: AppProps) {
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
         />
-        <Suspense fallback={null}>
+        <Suspense fallback={<TitleModalLoadingFallback />}>
           {metaShopOpen && (
             <MetaShopScreen
               meta={meta}

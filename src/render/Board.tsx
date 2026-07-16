@@ -325,6 +325,9 @@ export function Board({
     (e: React.PointerEvent, taskId: number) => {
       if (!armedAction || !onDragComplete || !dragPlan) return;
       e.preventDefault();
+      // Pixi 未ロード時の DOM fallback 粒から盤面 root の hit-test へバブルしない
+      // （二重に pointerup を登録して onDragComplete が二度走るのを防ぐ）。
+      e.stopPropagation();
       setDragTaskId(taskId);
 
       const onMove = (ev: PointerEvent) => {

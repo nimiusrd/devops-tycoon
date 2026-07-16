@@ -305,6 +305,7 @@ export default function App({ game }: AppProps) {
             sprintNumber={state.sprintsPlayed + 1}
             previews={state.whatIf?.draftCandidates ?? {}}
             skipPreview={state.whatIf?.current}
+            whatIfComputing={state.whatIfStatus === 'computing'}
             onPick={run.chooseCard}
             onSkip={run.skipDraft}
           />

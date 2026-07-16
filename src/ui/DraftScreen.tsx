@@ -17,6 +17,8 @@ export interface DraftScreenProps {
   previews: Record<string, WhatIfPreviewData>;
   /** スキップ（カードを採らない）場合のベースライン試算。 */
   skipPreview?: WhatIfPreviewData;
+  /** what-if Worker 試算中（RI-13）。 */
+  whatIfComputing?: boolean;
   onPick: (defId: string) => void;
   onSkip: () => void;
 }
@@ -26,6 +28,7 @@ export function DraftScreen({
   sprintNumber,
   previews,
   skipPreview,
+  whatIfComputing = false,
   onPick,
   onSkip,
 }: DraftScreenProps) {
@@ -39,13 +42,20 @@ export function DraftScreen({
             const def = getCard(id);
             if (!def) return null;
             return (
-              <CardView key={id} def={def} onPick={() => onPick(id)} whatIfPreview={previews[id]} />
+              <CardView
+                key={id}
+                def={def}
+                onPick={() => onPick(id)}
+                whatIfPreview={previews[id]}
+                whatIfComputing={whatIfComputing}
+              />
             );
           })}
         </div>
-        {skipPreview && (
+        {(skipPreview || whatIfComputing) && (
           <WhatIfPreview
             preview={skipPreview}
+            computing={whatIfComputing && !skipPreview}
             label="スキップ時の予測"
             testId="what-if-draft-skip"
           />

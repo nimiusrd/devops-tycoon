@@ -54,7 +54,7 @@
 | [18（描画基盤）](../SPEC.md#18-視覚表現) | 視覚表現の WebGL 化 | `src/render/adapters/pixiOrgRenderer.ts`, `pixiDeptRenderer.ts`, `pixiBoardRenderer.ts`, `selectRenderer.ts`, `src/ui/OrgPixiField.tsx`, `DeptPixiBoard.tsx`, `BoardPixiLayer.tsx` / `tests/e2e/org-pixi-visual.spec.ts`, `dept-pixi-visual.spec.ts`, `sprint-pixi-visual.spec.ts` | ✅ 全社マップ・部署ビュー・現場盤面を Pixi 化し**既定レンダラは Pixi**（`?renderer=dom` で DOM/SVG へ opt-out。WebGL 不可環境は自動フォールバック。RI-11 完了）。粒/キャラは RenderTexture 焼き込み＋`SpritePool` のスプライト（RI-07） |
 | [19](../SPEC.md#19-面白さの核) | 面白さの核 | 各画面の体験設計に反映（リスク/リターン設計ほか） | ✅ |
 | [20](../SPEC.md#20-教育的価値) | 教育的価値 | `src/sim/diagnosis.ts`（組織タイプ診断による気づき） | ✅ |
-| [22](../SPEC.md#22-技術構成) | 技術構成 | `package.json`, `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `src/state/metaPersistence.ts`, `src/sim/rng.ts`, `src/sim/seed.ts` / `tests/unit/metaPersistence.test.ts`, `rng.test.ts`, `seed.test.ts` ／ 詳細は [architecture.md](./architecture.md) | 🟡 基盤・IndexedDB 永続化・seed付き決定論・テスト二段構え（22.3/22.5）は実装。Web Worker(+Comlink)・Recharts/visx は未導入（[remaining-issues.md](./remaining-issues.md) RI-13） |
+| [22](../SPEC.md#22-技術構成) | 技術構成 | `package.json`, `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `src/state/metaPersistence.ts`, `src/sim/rng.ts`, `src/sim/seed.ts`, `src/sim/run/whatIfState.ts`, `whatIfClient.ts`, `whatIf.worker.ts`, `src/ui/BaselineComparisonChart.tsx` / `tests/unit/metaPersistence.test.ts`, `rng.test.ts`, `seed.test.ts`, `whatIf.test.ts` ／ 詳細は [architecture.md](./architecture.md) | ✅ 基盤・IndexedDB 永続化・seed付き決定論・テスト二段構え（22.3/22.5）に加え、what-if の Web Worker(+Comlink) オフロードとリザルトの Recharts 可視化を実装（[remaining-issues.md](./remaining-issues.md) RI-13）。visx / タイムラインの Recharts 化は意図的に見送り |
 | [23](../SPEC.md#23-拡張案) | 拡張案 | デイリーランを実装: `tests/unit/daily-run.test.ts`, `tests/e2e/daily-run.spec.ts`（他の拡張案は未着手） | 🟡 |
 | [24](../SPEC.md#24-企画の価値) | 企画の価値 | （企画文・実装対象なし） | — |
 | [25](../SPEC.md#25-結論) | 結論 | （企画文・実装対象なし） | — |
@@ -69,7 +69,7 @@
 | リザルトの介入内訳（割り込み×N / 緊急対応×N の表示） | [4.6](../SPEC.md#46-スプリントリザルト画面) | 🟡 `SprintResult` に未集計 | [remaining-issues.md](./remaining-issues.md) RI-29 |
 | 能動操作・カードの操作方式（タスク差配のドラッグ / 手札配布→発動） | [6](../SPEC.md#6-スプリント中の能動操作), [7](../SPEC.md#7-ai導入施策カードデッキ) | ✅ RI-30 で SPEC 準拠 | [remaining-issues.md](./remaining-issues.md) RI-30 |
 | 開始プリセットの永続解放 | [17](../SPEC.md#17-メタ進行とアンロック) | ✅ スコープ外。開始組織は難易度（§16）。足場削除済み | [remaining-issues.md](./remaining-issues.md) RI-25 |
-| 技術構成の残項目（Web Worker+Comlink / Recharts・visx） | [22](../SPEC.md#22-技術構成) | 🟡 未導入 | [remaining-issues.md](./remaining-issues.md) RI-13 |
+| 技術構成の残項目（Web Worker+Comlink / Recharts・visx） | [22](../SPEC.md#22-技術構成) | ✅ RI-13 で Worker+Comlink / Recharts を導入。visx・タイムライン Recharts 化は見送り | [remaining-issues.md](./remaining-issues.md) RI-13 |
 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | [17](../SPEC.md#17-メタ進行とアンロック), [22](../SPEC.md#22-技術構成) | ✅ `idb` による保存、既定値補完付き移行、旧キー削除、失敗時フォールバックを実装 | [remaining-issues.md](./remaining-issues.md) RI-57 |
 | バランス調整（目標修正の代償・outcome 閾値・レバー・解放コスト） | [10](../SPEC.md#10-ランとボススプリント), [14](../SPEC.md#14-勝利条件), [15](../SPEC.md#15-敗北条件--継続不能条件), [16](../SPEC.md#16-難易度設定と試練), [17](../SPEC.md#17-メタ進行とアンロック) | 進行中 | [remaining-issues.md](./remaining-issues.md) RI-14〜RI-19 |
 | 拡張案（デイリーラン以外: GitHub 連携・対抗ランキング ほか） | [23](../SPEC.md#23-拡張案) | 未着手 | [remaining-issues.md](./remaining-issues.md) RI-34 |

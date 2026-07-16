@@ -221,6 +221,9 @@ export interface WhatIfState {
   draftCandidates: Record<string, WhatIfPreview>;
 }
 
+/** UI 向け what-if 試算の進捗（RI-13: Worker オフロード中の表示用）。 */
+export type WhatIfStatus = 'idle' | 'computing' | 'ready';
+
 /** ランの種別（通常 / デイリー）。 */
 export type RunKind = 'normal' | 'daily';
 
@@ -284,6 +287,8 @@ export interface RunState {
   draft: string[] | null;
   /** setup / draft でのみ公開する次スプリントの確率試算。 */
   whatIf: WhatIfState | null;
+  /** what-if 試算の進捗。snapshot() では常に idle（UI 経路の getState のみ更新）。 */
+  whatIfStatus: WhatIfStatus;
   /** ショップの陳列（shop フェーズのみ）。 */
   shop: ShopOffer | null;
   /** 現在の組織タイプ診断（第13章）。 */

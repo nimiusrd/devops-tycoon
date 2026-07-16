@@ -10,7 +10,9 @@ import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import { resolveSeedFromLocation } from './sim/seed';
 import type { ActionId, ActionTarget, CardPlayOutcome, InterventionOutcome } from './sim/types';
-import type { DifficultyId, GoalAdjustmentId, RunState } from './sim/run/types';
+import type { DifficultyId, GoalAdjustmentId, RunState, WhatIfState } from './sim/run/types';
+import { computeWhatIfState, whatIfCacheKey, type WhatIfComputeInput } from './sim/run/whatIfState';
+import { requestWhatIfState } from './sim/run/whatIfClient';
 import type { LaneAssignment } from './sim/member/types';
 import type { RankingKind, ZoomLevel } from './sim/orgscale/types';
 import {
@@ -137,10 +139,59 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let recorded = false;
   let revision = 0;
   let activeDailyDate: string | null = null;
+  /** UI 向け what-if キャッシュ（Worker 完了後も同一キーなら即返却）。 */
+  let whatIfCache: { key: string; value: WhatIfState | null } | null = null;
+  /** 進行中の Worker リクエストのキャッシュキー。 */
+  let whatIfPendingKey: string | null = null;
 
   /** 状態を変えた可能性のある操作の後に版番号を進める。 */
   const bump = (): void => {
     revision += 1;
+  };
+
+  const clearWhatIfCache = (): void => {
+    whatIfCache = null;
+    whatIfPendingKey = null;
+  };
+
+  /** Worker があれば非同期、なければ同期フォールバックで試算する（RI-13）。 */
+  const resolveWhatIf = (): Pick<RunState, 'whatIf' | 'whatIfStatus'> => {
+    const input = engine.whatIfComputeInput();
+    if (!input) {
+      clearWhatIfCache();
+      return { whatIf: null, whatIfStatus: 'idle' };
+    }
+    const key = whatIfCacheKey(input);
+    if (whatIfCache?.key === key) {
+      return {
+        whatIf: whatIfCache.value ? structuredClone(whatIfCache.value) : null,
+        whatIfStatus: 'ready',
+      };
+    }
+
+    // Vitest / Worker 不可環境では同期計算して既存契約を維持する。
+    if (typeof Worker === 'undefined') {
+      const value = computeWhatIfState(input);
+      whatIfCache = { key, value };
+      whatIfPendingKey = null;
+      return {
+        whatIf: value ? structuredClone(value) : null,
+        whatIfStatus: 'ready',
+      };
+    }
+
+    if (whatIfPendingKey !== key) {
+      whatIfPendingKey = key;
+      const requestInput: WhatIfComputeInput = input;
+      void requestWhatIfState(requestInput).then((value) => {
+        if (whatIfPendingKey !== key) return;
+        whatIfCache = { key, value };
+        whatIfPendingKey = null;
+        bump();
+      });
+    }
+
+    return { whatIf: null, whatIfStatus: 'computing' };
   };
 
   /** 最新 meta から解放プールを engine へ反映する（ラン開始時に呼ぶ）。 */
@@ -202,11 +253,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     getState() {
       const state = engine.snapshot();
       // オートプレイやモンテカルロは snapshot を直接使うため、UI 経路だけで試算する。
-      return { ...state, whatIf: engine.whatIfPreview() };
+      return { ...state, ...resolveWhatIf() };
     },
     startRun(difficulty, trials, runSeed) {
       recorded = false;
       activeDailyDate = null;
+      clearWhatIfCache();
       applyUnlockedToEngine();
       engine.startRun(difficulty, trials, runSeed, { kind: 'normal' });
       bump();
@@ -216,6 +268,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       recorded = false;
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
+      clearWhatIfCache();
       applyUnlockedToEngine();
       engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], dailySeed(day), {
         kind: 'daily',
@@ -343,6 +396,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     newRun(runSeed) {
       recorded = false;
       activeDailyDate = null;
+      clearWhatIfCache();
       applyUnlockedToEngine();
       engine.toTitle(runSeed);
       bump();

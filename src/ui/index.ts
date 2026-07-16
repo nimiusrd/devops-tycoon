@@ -29,6 +29,7 @@ export { SprintScreen } from './SprintScreen';
 export { EvolutionScreen } from './EvolutionScreen';
 export { ShopScreen } from './ShopScreen';
 export { RestScreen } from './RestScreen';
+export { RecruitScreen } from './RecruitScreen';
 export { FormationScreen } from './FormationScreen';
 export { RunResultScreen } from './RunResultScreen';
 export { QuarterReviewScreen } from './QuarterReviewScreen';

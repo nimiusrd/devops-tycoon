@@ -30,6 +30,11 @@ export interface EventOutcome {
   grantRelic?: string;
   /** デッキに加えるカード定義 ID。 */
   grantCard?: string;
+  /**
+   * 個体メンバーを 1 人採用する（予算 RECRUIT_COST を消費。空き枠と予算が足りるときのみ）。
+   * RI-26 のイベント即時採用。
+   */
+  grantRecruit?: boolean;
   /** 次スプリント限定の一時効果（一回消費。org の恒久変化とは別軸）。 */
   nextSprint?: SprintModifierDelta;
   /** ステークホルダー信頼の増減（安全側の代償に使う。負で低下）。 */
@@ -47,7 +52,7 @@ export interface EventChoice {
    * 画面遷移を伴う選択の遷移先（旧 shop/rest/elite の統合）。
    * 既定（未指定）は通常スプリントへ進む。resolveBeat はこれで分岐する。
    */
-  leadsTo?: 'sprint' | 'sprint-elite' | 'shop' | 'rest';
+  leadsTo?: 'sprint' | 'sprint-elite' | 'shop' | 'rest' | 'recruit';
 }
 
 export interface EventDef {
@@ -296,6 +301,46 @@ export const EVENT_DEFS: EventDef[] = [
         description: '回復しない（出荷機会は取りに行く）',
         outcome: {},
         leadsTo: 'sprint',
+      },
+    ],
+  },
+  {
+    id: 'recruit-offer',
+    title: 'ヘッドカウント枠が空いた',
+    prompt: '人事から「今四半期なら増員枠を使える」と連絡が来た。面接に進むか。',
+    tone: 'good',
+    weight: 2,
+    choices: [
+      {
+        label: '採用面接へ進む',
+        description: '予算を使ってメンバーを1人迎えられる',
+        outcome: {},
+        leadsTo: 'recruit',
+      },
+      {
+        label: '枠を見送る',
+        description: '人手は増えないが、現場の期待を少し下げる',
+        outcome: { morale: -4 },
+        leadsTo: 'sprint',
+      },
+    ],
+  },
+  {
+    id: 'urgent-hire',
+    title: '急募オファーが来た',
+    prompt: 'エージェント経由で「すぐ入れる候補」がいる。即決を迫られている。',
+    tone: 'good',
+    weight: 1.5,
+    choices: [
+      {
+        label: '即採用する',
+        description: '予算を払い、ベンチにメンバーを1人加える',
+        outcome: { grantRecruit: true },
+      },
+      {
+        label: '見送る',
+        description: '採用コストは抑えるが、増員の期待を裏切る',
+        outcome: { trust: { team: -4 } },
       },
     ],
   },

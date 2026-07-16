@@ -29,8 +29,10 @@ type GameWindow = Window & {
     finishEvolution(): RunState;
     buyShopCard(id: string): RunState;
     buyShopRelic(): RunState;
+    buyShopRecruit(): RunState;
     leaveShop(): RunState;
     restChoose(o: string, deckIndex?: number): RunState;
+    recruitChoose(o: 'hire' | 'skip'): RunState;
     assignMember(id: string, assignment: string): RunState;
     setMemberAi(id: string, on: boolean): RunState;
     acknowledgeQuarterReview(): RunState;
@@ -84,6 +86,9 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
         case 'rest':
           g.restChoose('heal');
           break;
+        case 'recruit':
+          g.recruitChoose('skip');
+          break;
         case 'quarterReview':
           if (s.quarterReview?.outcome === 'missed_adjustable') {
             g.chooseGoalAdjustment(s.quarterReview.availableAdjustments[0] ?? 'cut_scope');
@@ -132,6 +137,7 @@ test('RI-32: ボス突破報酬レリックを四半期レビューに表示す�
           g.resolveBeat(state.beat?.kind === 'judgment' ? undefined : 0);
         else if (state.phase === 'shop') g.leaveShop();
         else if (state.phase === 'rest') g.restChoose('heal');
+        else if (state.phase === 'recruit') g.recruitChoose('skip');
         else break;
         state = g.getState();
       }
@@ -272,6 +278,7 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
           else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
           else if (s.phase === 'shop') g.leaveShop();
           else if (s.phase === 'rest') g.restChoose('heal');
+          else if (s.phase === 'recruit') g.recruitChoose('skip');
           else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
           else break;
           s = g.getState();
@@ -343,6 +350,9 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
           case 'rest':
             g.restChoose('heal');
             break;
+          case 'recruit':
+            g.recruitChoose('skip');
+            break;
           default:
             guard = 60000;
             break;
@@ -393,6 +403,7 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
           engine.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
         else if (s.phase === 'shop') engine.leaveShop();
         else if (s.phase === 'rest') engine.restChoose('heal');
+        else if (s.phase === 'recruit') engine.recruitChoose('skip');
         else guard = 60000;
         s = engine.snapshot();
       }
@@ -476,6 +487,7 @@ for (const entry of RI22_TERMINAL_SEEDS) {
             engine.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
           else if (s.phase === 'shop') engine.leaveShop();
           else if (s.phase === 'rest') engine.restChoose('heal');
+          else if (s.phase === 'recruit') engine.recruitChoose('skip');
           else break;
           s = engine.snapshot();
         }
@@ -527,6 +539,7 @@ test('ビートの選択イベントを解決すると次スプリントへ進�
       else if (s.phase === 'evolution') g.finishEvolution();
       else if (s.phase === 'shop') g.leaveShop();
       else if (s.phase === 'rest') g.restChoose('heal');
+      else if (s.phase === 'recruit') g.recruitChoose('skip');
       else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
       else break;
       s = g.getState();
@@ -565,6 +578,7 @@ test('tone: joke のビートはネタ分類の見た目で表示される（RI-
         else if (s.phase === 'evolution') g.finishEvolution();
         else if (s.phase === 'shop') g.leaveShop();
         else if (s.phase === 'rest') g.restChoose('heal');
+        else if (s.phase === 'recruit') g.recruitChoose('skip');
         else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
         else break;
         s = g.getState();

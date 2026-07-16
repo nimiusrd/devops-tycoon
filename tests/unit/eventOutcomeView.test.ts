@@ -93,6 +93,15 @@ describe('formatEventChoiceTags（選択肢＋画面遷移）', () => {
       { label: '次スプリント 出荷 -30%', tone: 'negative' },
       { label: '休息へ', tone: 'neutral' },
     ]);
+
+    const recruit = EVENT_DEFS.find((e) => e.id === 'recruit-offer')!.choices[0];
+    expect(formatEventChoiceTags(recruit)).toContainEqual({ label: '採用へ', tone: 'neutral' });
+
+    const urgentHire = EVENT_DEFS.find((e) => e.id === 'urgent-hire')!.choices[0];
+    expect(formatEventChoiceTags(urgentHire)).toEqual([
+      { label: '予算 -25', tone: 'negative' },
+      { label: 'メンバー +1', tone: 'positive' },
+    ]);
   });
 
   it('通常スプリント遷移には追加タグを出さない', () => {

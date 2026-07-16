@@ -181,6 +181,11 @@ export function formatEventOutcomeTags(outcome: EventOutcome): EffectTag[] {
     pushTag(tags, `カード獲得: ${name}`, 'positive');
   }
 
+  if (outcome.grantRecruit) {
+    pushTag(tags, `予算 -${RECRUIT_COST}`, 'negative');
+    pushTag(tags, 'メンバー +1', 'positive');
+  }
+
   if (outcome.nextSprint) {
     tags.push(...formatSprintModifierTags(outcome.nextSprint));
   }
@@ -206,6 +211,9 @@ export function formatEventChoiceTags(choice: EventChoice): EffectTag[] {
         break;
       case 'rest':
         pushTag(tags, '休息へ', 'neutral');
+        break;
+      case 'recruit':
+        pushTag(tags, '採用へ', 'neutral');
         break;
     }
   }

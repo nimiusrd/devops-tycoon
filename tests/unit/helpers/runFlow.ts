@@ -4,6 +4,7 @@
  * 旧マップ駆動（enterNode）に代わり、setup→beginSetupSprint / beat→resolveBeat を
  * 既定の選択で消化する。各テストはここを使ってランを進める。
  */
+import { getEvent } from '../../../src/data/events';
 import type { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 
@@ -70,14 +71,32 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
       if (opts.unlockEvolution && s.evolution.points > 0) e.unlockEvolution('review-1');
       e.finishEvolution();
       return true;
-    case 'beat':
-      e.resolveBeat(s.beat?.kind === 'judgment' ? undefined : (opts.beatChoice ?? 0));
+    case 'beat': {
+      if (s.beat?.kind === 'judgment') {
+        e.resolveBeat();
+        return true;
+      }
+      // 明示指定がなければ、即時採用（予算消費）を避けてオートプレイの安定性を保つ。
+      let choice = opts.beatChoice ?? 0;
+      if (opts.beatChoice === undefined && s.beat) {
+        const def = getEvent(s.beat.eventId);
+        const choices = def?.choices ?? [];
+        if (choices[choice]?.outcome.grantRecruit) {
+          const alt = choices.findIndex((c) => !c.outcome.grantRecruit);
+          if (alt >= 0) choice = alt;
+        }
+      }
+      e.resolveBeat(choice);
       return true;
+    }
     case 'shop':
       e.leaveShop();
       return true;
     case 'rest':
       e.restChoose(opts.restOption ?? 'heal');
+      return true;
+    case 'recruit':
+      e.recruitChoose('skip');
       return true;
     case 'quarterReview':
       if (s.quarterReview?.outcome === 'missed_adjustable') {

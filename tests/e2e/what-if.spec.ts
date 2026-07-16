@@ -41,6 +41,9 @@ test('RI-46: 編成とドラフトで次スプリントのリスク幅を表示�
         case 'rest':
           state = game.restChoose('heal');
           break;
+        case 'recruit':
+          state = game.recruitChoose('skip');
+          break;
         default:
           guard = 10_000;
           break;

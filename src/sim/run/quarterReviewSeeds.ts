@@ -3,10 +3,11 @@
  *
  * オートプレイ前提は `tests/unit/helpers/runFlow.ts` の `advance` 既定
  * （draft 先頭採用・beat 選択肢 0・rest=heal・手札全発動・missed_adjustable は先頭の目標修正）。
+ * 即時採用（`grantRecruit`）は既定オートプレイでは避ける。
  * シミュレーションやドラフトプールが変わると outcome がずれることがあるため、
  * 崩れた場合は同条件で再探索し、ここを更新する。
  *
- * RI-30（手札発動）導入後に再探索した seed 群。
+ * RI-26（採用入口拡張）導入後に再探索した seed 群。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
@@ -16,9 +17,9 @@ export const E2E_MISSED_ADJUSTABLE_SEED = 'q8-find-55';
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。
  * 種別固定が必要なら `E2E_TERMINAL_*` を使う。
  */
-export const E2E_SHUTDOWN_SEED = 'ri30-compat-72';
+export const E2E_SHUTDOWN_SEED = 'ri26-hard-901';
 
-/** 継続不能 outcome ごとの固定 seed（RI-30 再探索 / hard）。 */
+/** 継続不能 outcome ごとの固定 seed（RI-26 再探索 / hard）。 */
 export interface TerminalQuarterSeed {
   seed: string;
   difficulty: DifficultyId;
@@ -27,12 +28,12 @@ export interface TerminalQuarterSeed {
   quarterNumber: number;
 }
 
-/** Q1 で shutdown。 */
+/** Q2 で shutdown。 */
 export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
-  seed: 'ri30-hard-212',
+  seed: 'ri26-hard-475',
   difficulty: 'hard',
   outcome: 'shutdown',
-  quarterNumber: 1,
+  quarterNumber: 2,
 };
 
 /**
@@ -40,7 +41,7 @@ export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
-  seed: 'ri30-hard-9',
+  seed: 'ri26-hard-76',
   difficulty: 'hard',
   outcome: 'missed_crisis',
   quarterNumber: 5,
@@ -51,7 +52,7 @@ export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_REORG_REQUIRED: TerminalQuarterSeed = {
-  seed: 'ri30-hard-106',
+  seed: 'ri26-hard-96',
   difficulty: 'hard',
   outcome: 'reorg_required',
   quarterNumber: 3,

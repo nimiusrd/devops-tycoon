@@ -29,6 +29,8 @@ export interface EventApplyResult {
   grantRelic?: string;
   /** 付与カード定義 ID（あれば）。 */
   grantCard?: string;
+  /** 個体採用を試みる（あれば。RI-26）。 */
+  grantRecruit?: boolean;
   /** 出荷ポイント（当期 quarterTotals.delivered + 通算 totals.delivered へ加算）。 */
   delivered: number;
   /** ステークホルダー信頼の増減（あれば）。 */
@@ -67,6 +69,7 @@ export function applyEventOutcome(
     budgetDelta: outcome.budget ?? 0,
     grantRelic: outcome.grantRelic,
     grantCard: outcome.grantCard,
+    grantRecruit: outcome.grantRecruit,
     delivered: outcome.delivered ?? 0,
     trust: outcome.trust,
     forceLose: outcome.forceLose,

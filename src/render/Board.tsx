@@ -393,7 +393,22 @@ export function Board({
     >
       <OfficeRoom />
       {usePixi ? (
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <>
+              <FlowArrows flows={scene.flows} />
+              {scene.dots.map((d) => (
+                <TaskDot
+                  key={`${d.lane}-${d.id}`}
+                  dot={d}
+                  draggable={dragIds.has(d.id)}
+                  dragging={dragTaskId === d.id}
+                  onPointerDown={handlePointerDown}
+                />
+              ))}
+            </>
+          }
+        >
           <BoardPixiLayer
             scene={scene}
             draggableTaskIds={dragIds}

@@ -7,7 +7,7 @@
  *
  * RI-12: 非タイトル画面は動的 import（React.lazy）でチャンク分割する。
  */
-import { lazy, Suspense, useCallback, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { diagnosisTheme } from './render/diagnosisTheme';
 import type { HudMetricSnapshot, RunMetricSnapshot } from './render/status';
@@ -55,9 +55,23 @@ const ShopScreen = lazy(() => import('./ui/ShopScreen').then((m) => ({ default: 
 const SprintResultScreen = lazy(() =>
   import('./ui/SprintResultScreen').then((m) => ({ default: m.SprintResultScreen })),
 );
-const SprintScreen = lazy(() =>
-  import('./ui/SprintScreen').then((m) => ({ default: m.SprintScreen })),
-);
+const loadSprintScreen = () => import('./ui/SprintScreen');
+const SprintScreen = lazy(() => loadSprintScreen().then((m) => ({ default: m.SprintScreen })));
+
+/**
+ * SprintScreen チャンク読込中は自動進行を止める。
+ * 既に E2E 等で pause 済みなら触らず、自分が止めたときだけ resume する。
+ */
+function SprintSuspendFallback({ game }: { game: GameHandle }) {
+  useEffect(() => {
+    if (game.isPaused()) return;
+    game.pause();
+    return () => {
+      game.resume();
+    };
+  }, [game]);
+  return null;
+}
 
 export interface AppProps {
   game: GameHandle;
@@ -95,6 +109,21 @@ export default function App({ game }: AppProps) {
     return lastRunMetricSnapshot.current;
   }, []);
 
+  // setup / shop / rest など次スプリント手前でチャンクを先読みする。
+  useEffect(() => {
+    if (
+      phase === 'setup' ||
+      phase === 'shop' ||
+      phase === 'rest' ||
+      phase === 'beat' ||
+      phase === 'draft' ||
+      phase === 'evolution' ||
+      phase === 'result'
+    ) {
+      void loadSprintScreen();
+    }
+  }, [phase]);
+
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
   const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
@@ -115,7 +144,7 @@ export default function App({ game }: AppProps) {
 
   if (phase === 'title') {
     return (
-      <Suspense fallback={null}>
+      <>
         <TitleScreen
           seed={state.seed}
           meta={meta}
@@ -124,17 +153,19 @@ export default function App({ game }: AppProps) {
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
         />
-        {metaShopOpen && (
-          <MetaShopScreen
-            meta={meta}
-            onPurchase={(id) => run.purchaseMetaUnlock(id)}
-            onClose={() => setMetaShopOpen(false)}
-          />
-        )}
-        {achievementsOpen && (
-          <AchievementCollectionScreen meta={meta} onClose={() => setAchievementsOpen(false)} />
-        )}
-      </Suspense>
+        <Suspense fallback={null}>
+          {metaShopOpen && (
+            <MetaShopScreen
+              meta={meta}
+              onPurchase={(id) => run.purchaseMetaUnlock(id)}
+              onClose={() => setMetaShopOpen(false)}
+            />
+          )}
+          {achievementsOpen && (
+            <AchievementCollectionScreen meta={meta} onClose={() => setAchievementsOpen(false)} />
+          )}
+        </Suspense>
+      </>
     );
   }
   if (phase === 'won' || phase === 'lost') {
@@ -208,7 +239,7 @@ export default function App({ game }: AppProps) {
           />
         )}
       </Suspense>
-      <Suspense fallback={null}>
+      <Suspense fallback={<SprintSuspendFallback game={game} />}>
         {showSprint && (
           <SprintScreen
             state={state}

@@ -11,8 +11,9 @@ export default defineConfig({
     // 載せない（manualChunks で pixi を共有化すると Vite の preload ヘルパーが
     // pixi チャンクに寄り、エントリが静的 import してしまうため使わない）。
     modulePreload: {
-      resolveDependencies(filename, deps) {
-        return deps.filter((dep) => dep.indexOf('pixi') === -1);
+      resolveDependencies(_filename, deps) {
+        // BoardPixiLayer / OrgPixiField など PascalCase のチャンク名も除外する。
+        return deps.filter((dep) => dep.toLowerCase().indexOf('pixi') === -1);
       },
     },
     rollupOptions: {

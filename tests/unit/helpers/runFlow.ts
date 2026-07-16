@@ -19,6 +19,27 @@ export interface PlayOptions {
   restOption?: 'heal' | 'repay' | 'upgrade' | 'recruit';
 }
 
+/**
+ * オートプレイ用のビート選択肢 index。
+ * 明示指定がなければ即時採用（`grantRecruit`）を避け、決定論シードの安定を保つ。
+ */
+export function autoplayBeatChoiceIndex(
+  eventId: string,
+  kind: 'judgment' | 'decision',
+  explicit?: number,
+): number | undefined {
+  if (kind === 'judgment') return undefined;
+  if (explicit !== undefined) return explicit;
+  const def = getEvent(eventId);
+  const choices = def?.choices ?? [];
+  let choice = 0;
+  if (choices[choice]?.outcome.grantRecruit) {
+    const alt = choices.findIndex((c) => !c.outcome.grantRecruit);
+    if (alt >= 0) choice = alt;
+  }
+  return choice;
+}
+
 /** 現在フェーズに応じて 1 ステップ進める（playing のときのみ）。停止すべきなら false。 */
 export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
   const s = e.snapshot();
@@ -72,21 +93,8 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
       e.finishEvolution();
       return true;
     case 'beat': {
-      if (s.beat?.kind === 'judgment') {
-        e.resolveBeat();
-        return true;
-      }
-      // 明示指定がなければ、即時採用（予算消費）を避けてオートプレイの安定性を保つ。
-      let choice = opts.beatChoice ?? 0;
-      if (opts.beatChoice === undefined && s.beat) {
-        const def = getEvent(s.beat.eventId);
-        const choices = def?.choices ?? [];
-        if (choices[choice]?.outcome.grantRecruit) {
-          const alt = choices.findIndex((c) => !c.outcome.grantRecruit);
-          if (alt >= 0) choice = alt;
-        }
-      }
-      e.resolveBeat(choice);
+      if (!s.beat) return false;
+      e.resolveBeat(autoplayBeatChoiceIndex(s.beat.eventId, s.beat.kind, opts.beatChoice));
       return true;
     }
     case 'shop':

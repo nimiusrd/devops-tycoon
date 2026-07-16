@@ -27,6 +27,8 @@ export interface CardViewProps {
   compact?: boolean;
   /** このカードを採用した場合の次スプリント試算。 */
   whatIfPreview?: WhatIfPreviewData;
+  /** what-if Worker 試算中（RI-13）。 */
+  whatIfComputing?: boolean;
 }
 
 export function CardView({
@@ -38,6 +40,7 @@ export function CardView({
   disabled = false,
   compact = false,
   whatIfPreview,
+  whatIfComputing = false,
 }: CardViewProps) {
   const stars = level > 1 ? '★'.repeat(level - 1) : '';
   const className = `card card-${def.rarity}${compact ? ' card-compact' : ''}${disabled ? ' card-disabled' : ''}${onPlay ? ' card-playable' : ''}`;
@@ -63,8 +66,13 @@ export function CardView({
               <li key={i}>{line}</li>
             ))}
           </ul>
-          {whatIfPreview && (
-            <WhatIfPreview preview={whatIfPreview} compact testId={`what-if-card-${def.id}`} />
+          {(whatIfPreview || whatIfComputing) && (
+            <WhatIfPreview
+              preview={whatIfPreview}
+              computing={whatIfComputing && !whatIfPreview}
+              compact
+              testId={`what-if-card-${def.id}`}
+            />
           )}
         </>
       )}

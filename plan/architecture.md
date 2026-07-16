@@ -15,8 +15,8 @@
 | 盤面描画 | DOM/SVG → PixiJS + pixi-viewport（規模拡大時に移行） | タスク粒・アイソメ盤面・フロー・ヒートマップ・延焼 |
 | 状態管理 | 純TS遷移表 `src/sim/run/phases.ts`（フェーズ遷移の単一真実源）＋ Zustand（ラン/メタ状態） | `RunEngine.setPhase()` が表で実遷移を検証。XState マシンは表から生成し契約テスト/可視化用（RI-39） |
 | シミュレーション | 純TS・固定タイムステップ・seed付きPRNG | 確率モデル本体（描画から分離・決定論） |
-| 重い試算 | Web Worker（+Comlink） | what-if 計算・モンテカルロ等 |
-| 静的グラフ | Recharts または visx | リザルト/診断の図 |
+| 重い試算 | Web Worker（+Comlink） | what-if 計算（`whatIf.worker.ts`）。Vitest は同期フォールバック。バランス用モンテカルロ（RI-14）は Node テストのまま |
+| 静的グラフ | Recharts | リザルト「介入の成果」等。タイムライン（RI-53）とライブメーターは自前 SVG / Pixi のまま。visx は未採用 |
 | 保存 | IndexedDB（idb、旧 localStorage から起動時移行） | メタ進行（将来: セーブ・リプレイ） |
 | テスト | Vitest（ロジック）＋ Playwright（実ブラウザ） | 第22.5 の二段構え |
 | バックエンド | 当面なし（ローカル擬似） | 将来: ランキング共有・デイリーラン配信 |

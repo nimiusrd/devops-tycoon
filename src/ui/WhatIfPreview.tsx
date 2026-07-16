@@ -12,15 +12,32 @@ const IMMEDIATE_LOSE_LABEL: Partial<Record<LoseReason, string>> = {
 
 export function WhatIfPreview({
   preview,
+  computing = false,
   testId,
   compact = false,
   label = '次スプリント予測',
 }: {
-  preview: WhatIfPreviewData;
+  preview?: WhatIfPreviewData | null;
+  /** Worker 試算中（RI-13）。preview が無いときローディングを出す。 */
+  computing?: boolean;
   testId?: string;
   compact?: boolean;
   label?: string;
 }) {
+  if (!preview) {
+    if (!computing) return null;
+    return (
+      <div
+        className={`what-if-preview computing${compact ? ' compact' : ''}`}
+        data-testid={testId}
+        data-what-if-status="computing"
+      >
+        <span className="what-if-label">{label}</span>
+        <span className="what-if-computing">試算中…</span>
+      </div>
+    );
+  }
+
   if (preview.immediateLose) {
     const reason = IMMEDIATE_LOSE_LABEL[preview.immediateLose] ?? preview.immediateLose;
     return (

@@ -16,16 +16,7 @@ import { EVENT_DEFS, effectiveKind, getEvent } from '../../data/events';
 import { getEvolutionNode } from '../../data/evolution';
 import { RELIC_DEFS, getRelic } from '../../data/relics';
 import { applyAction } from '../actions';
-import {
-  applyDeckBaseline,
-  combineEffects,
-  dealHand,
-  deckEffects,
-  drawDraft,
-  playCardFromHand,
-  scaleEffects,
-  upgradeCardAt,
-} from '../cards';
+import { applyDeckBaseline, dealHand, drawDraft, playCardFromHand, upgradeCardAt } from '../cards';
 import { diagnose } from '../diagnosis';
 import {
   activeEngineerCount,
@@ -34,7 +25,6 @@ import {
   assignMember,
   canRecruit,
   createInitialRoster,
-  foldFormationEffects,
   pickRecruitArchetype,
   recoverStamina,
   recruitMember,
@@ -70,7 +60,7 @@ import type {
   ZoomLevel,
   ZoomState,
 } from '../orgscale/types';
-import { foldPassives, foldRunEffects, toEffects, withBossEffects } from './effects';
+import { foldPassives, toEffects } from './effects';
 import {
   applyEventOutcome,
   eventEligible,
@@ -90,11 +80,15 @@ import {
   canChooseAdjustment,
   isTerminalFailure,
   loseReasonForOutcome,
-  PAUSE_AI_DEBUFF_MUL,
 } from './quarterReview';
 import { createSprintFromBaselineInput, runNoInterventionBaseline } from './sprintBaseline';
 import type { SprintBaselineInput } from './sprintBaseline';
-import { previewNextSprint } from './whatIf';
+import {
+  applyTrialAiDependencyPressure,
+  BETWEEN_SPRINT_RECOVERY,
+  buildSprintBaselineInput,
+} from './sprintBaselineBuild';
+import { computeWhatIfState, whatIfCacheKey, type WhatIfComputeInput } from './whatIfState';
 import type {
   BeatState,
   DifficultyId,
@@ -123,14 +117,6 @@ const clamp = (v: number, min: number, max: number): number => Math.min(max, Mat
 export const SPRINTS_PER_QUARTER = 6;
 /** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */
 export const DECISION_BEAT_CHANCE = 0.55;
-
-/** 高負荷（elite）スプリントのタスク量倍率。 */
-const ELITE_TASK_MUL = 1.6;
-/**
- * スプリント間のギャップでシニア体力が回復する割合（満タンまでの差分に対して）。
- * 1 回の過負荷は尾を引くが、持続的な過負荷だけが燃え尽きへ至るようにする緩衝。
- */
-const BETWEEN_SPRINT_RECOVERY = 0.5;
 /** 休息（heal）でのシニア体力回復量（UI プレビューと共有）。 */
 export const REST_HEAL = 40;
 /** 休息（heal）での士気回復量。 */
@@ -424,16 +410,13 @@ export class RunEngine {
    * 依存度が高いほど高価なモデルへ安易に寄り、予算消費も増える。
    */
   private applyTrialAiDependencyPressure(org: OrgState, budget: number): number {
-    const { aiDependencyDriftPerSprint, frontierModelCostPerDependency } = foldRunEffects({
+    return applyTrialAiDependencyPressure(org, budget, {
       deck: this.deck,
       relics: this.relics,
       evolution: this.evolution,
       difficulty: this.difficulty,
       trials: this.trials,
     });
-    org.aiDependency = clamp(org.aiDependency + aiDependencyDriftPerSprint, 0, 100);
-    const modelCost = Math.ceil(org.aiDependency * frontierModelCostPerDependency);
-    return Math.max(0, budget - modelCost);
   }
 
   // --- セットアップ → スプリント起動 ---
@@ -516,54 +499,19 @@ export class RunEngine {
     /** what-if: 次スプリントで発動すると仮定するカード（RI-30）。 */
     playedCards?: { defId: string; level: number }[];
   }): SprintBaselineInput {
-    const isBoss = kind === 'boss';
-    const fold = foldRunEffects({
-      deck,
-      relics: this.relics,
-      evolution: this.evolution,
-      difficulty: this.difficulty,
-      trials: this.trials,
-    });
-    // 編成（個体メンバーのレーン配置・AI 配布）を係数へ畳み込み、デッキ等と合成する。
-    const formation = foldFormationEffects(roster);
-    let effects = combineEffects(fold.effects, toEffects(formation.effects));
-    // 手札発動を仮定したカードを係数へ合成（本番 beginSprint では空）。
-    if (playedCards.length > 0) {
-      effects = combineEffects(effects, deckEffects(playedCards));
-    }
-    if (isBoss) effects = withBossEffects(effects, this.bossId);
-    if (this.pauseAiDebuffQuarter === this.quarterNumber) {
-      effects = {
-        ...effects,
-        codingSpeedMul: effects.codingSpeedMul * PAUSE_AI_DEBUFF_MUL,
-        routineSpeedMul: effects.routineSpeedMul * PAUSE_AI_DEBUFF_MUL,
-      };
-    }
-    // 次スプリント限定の一時効果: 手戻り率の加算を係数へ畳み込む。
-    if (modifiers.reworkRateAdd) {
-      effects = { ...effects, reworkRateAdd: effects.reworkRateAdd + modifiers.reworkRateAdd };
-    }
-    const baseMul =
-      kind === 'elite' ? ELITE_TASK_MUL : isBoss ? (getBoss(this.bossId)?.taskCountMul ?? 1) : 1;
-    const mul = baseMul * (modifiers.taskCountMul ?? 1);
-    const config: SprintConfig = {
-      ...this.baseConfig,
-      taskCount: Math.max(4, Math.round(this.baseConfig.taskCount * mul)),
-      focusMax: Math.max(1, this.baseConfig.focusMax + fold.focusBonus + formation.focusBonus),
-      // コーダー不在（formation が大きな負値を返す）なら 0 枠まで落とし、流入を止める。
-      codingSlots: Math.max(
-        0,
-        this.baseConfig.codingSlots + fold.codingSlotBonus + formation.codingSlotBonus,
-      ),
-    };
-    return {
-      seed,
-      config: { ...config },
-      org: structuredClone(org),
-      cardEffects: { ...effects },
-      aiAdoptionShare: formation.aiAdoptionShare,
-      reviewLoadAdd: modifiers.reviewLoadAdd,
-    };
+    return buildSprintBaselineInput(
+      {
+        relics: this.relics,
+        evolution: this.evolution,
+        difficulty: this.difficulty,
+        trials: this.trials,
+        bossId: this.bossId,
+        pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
+        quarterNumber: this.quarterNumber,
+        baseConfig: this.baseConfig,
+      },
+      { deck, roster, org, kind, modifiers, seed, playedCards },
+    );
   }
 
   /** 進行中スプリントを dtMs 分だけ固定タイムステップで進める。 */
@@ -1235,159 +1183,51 @@ export class RunEngine {
     return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;
   }
 
-  /** setup / draft の試算入力を指紋化し、同一条件の再計算を避ける。 */
-  private whatIfCacheKey(): string {
-    const rosterKey = this.roster.members
-      .map((m) => `${m.id}:${m.assignment}:${m.aiAssigned ? 1 : 0}:${m.onLeave ? 1 : 0}`)
-      .join(',');
-    const deckKey = this.deck.map((c) => `${c.defId}:${c.level}`).join(',');
-    const draftKey = this.draft?.join(',') ?? '';
-    const mod = this.pendingSprintModifiers;
-    return [
-      this.phase,
-      this.seed,
-      this.quarterNumber,
-      this.sprintIndexInQuarter,
-      this.pendingSprintKind,
-      deckKey,
-      draftKey,
-      rosterKey,
-      this.org.seniorHp,
-      this.org.aiDependency,
-      this.org.morale,
-      this.org.techDebt,
-      this.org.quality,
-      this.budget,
-      mod.reviewLoadAdd ?? 0,
-      mod.reworkRateAdd ?? 0,
-      mod.taskCountMul ?? 1,
-    ].join('|');
-  }
-
-  /** setup / draft における、次スプリントのリスク幅プレビューを生成する（RI-46）。 */
-  private buildWhatIfState(): WhatIfState | null {
+  /**
+   * Worker / 同期フォールバック向けの what-if 入力スライス。
+   * setup / draft 以外では null。
+   */
+  whatIfComputeInput(): WhatIfComputeInput | null {
     if (this.phase !== 'setup' && this.phase !== 'draft') return null;
-
-    const nextIndex = this.sprintIndexInQuarter + 1;
-    const kind: SprintKind = nextIndex >= this.sprintsPerQuarter ? 'boss' : this.pendingSprintKind;
-    const modifiers = this.phase === 'setup' ? this.pendingSprintModifiers : {};
-    const baseSeed = `${this.seed}:what-if:q${this.quarterNumber}:s${nextIndex}`;
-    const previewFor = (
-      deck: { defId: string; level: number }[],
-      org: OrgState,
-      playedCards: { defId: string; level: number }[] = [],
-    ) => {
-      // beginSprint と同じ順序: 回復 → 試練ドリフト →（発動仮定なら）加算 baseline。
-      const previewOrg = structuredClone(org);
-      previewOrg.seniorHp = clamp(
-        previewOrg.seniorHp + (100 - previewOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-        0,
-        100,
-      );
-      this.applyTrialAiDependencyPressure(previewOrg, this.budget);
-      for (const played of playedCards) {
-        const playedDef = getCard(played.defId);
-        if (!playedDef) continue;
-        applyDeckBaseline(previewOrg, scaleEffects(playedDef.base, played.level));
-      }
-      return previewNextSprint(
-        this.buildSprintBaselineInput({
-          deck,
-          roster: this.roster,
-          org: previewOrg,
-          kind,
-          modifiers,
-          // 候補間で同じ seed 群を使い、選択だけによる差を比較できるようにする。
-          seed: baseSeed,
-          playedCards,
-        }),
-      );
+    return {
+      phase: this.phase,
+      seed: this.seed,
+      quarterNumber: this.quarterNumber,
+      sprintIndexInQuarter: this.sprintIndexInQuarter,
+      sprintsPerQuarter: this.sprintsPerQuarter,
+      pendingSprintKind: this.pendingSprintKind,
+      pendingSprintModifiers: { ...this.pendingSprintModifiers },
+      deck: this.deck.map((c) => ({ ...c })),
+      draft: this.draft ? [...this.draft] : null,
+      roster: structuredClone(this.roster),
+      org: structuredClone(this.org),
+      budget: this.budget,
+      totals: { ...this.totals },
+      relics: [...this.relics],
+      evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
+      difficulty: this.difficulty,
+      trials: [...this.trials],
+      bossId: this.bossId,
+      pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
+      baseConfig: { ...this.baseConfig },
     };
-
-    const current = previewFor(this.deck, this.org);
-
-    // beginSprint と同じ開始直後の敗北（試練コストによる予算枯渇など）はカード発動前に起きる。
-    const startOrg = structuredClone(this.org);
-    startOrg.seniorHp = clamp(
-      startOrg.seniorHp + (100 - startOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-      0,
-      100,
-    );
-    const budgetAfterPressure = this.applyTrialAiDependencyPressure(startOrg, this.budget);
-    const sprintStartLose = evaluateLose(startOrg, this.totals, budgetAfterPressure);
-    if (sprintStartLose) {
-      const immediate: ReturnType<typeof previewNextSprint> = {
-        trials: 0,
-        delivered: { mean: 0, min: 0, max: 0 },
-        spread: { mean: 0, min: 0, max: 0 },
-        immediateLose: sprintStartLose,
-      };
-      const draftCandidates: Record<string, ReturnType<typeof previewNextSprint>> = {};
-      if (this.phase === 'draft' && this.draft) {
-        for (const defId of this.draft) {
-          draftCandidates[defId] = { ...immediate };
-        }
-      }
-      return { current: immediate, draftCandidates };
-    }
-
-    const draftCandidates: Record<string, ReturnType<typeof previewNextSprint>> = {};
-    if (this.phase === 'draft' && this.draft) {
-      for (const defId of this.draft) {
-        const card = getCard(defId);
-        if (!card) continue;
-        const nextDeck = [...this.deck, { defId, level: 1 }];
-        // 次スプリントの dealHand と同じ seed で、新カードが手札に入るか判定する。
-        const nextSprintId = `q${this.quarterNumber}-s${nextIndex}`;
-        const dealRng = createRng(`${this.seed}:deal:${nextSprintId}`);
-        const piles = dealHand(nextDeck.length, dealRng);
-        const newCardIndex = nextDeck.length - 1;
-        const inHand = piles.hand.includes(newCardIndex);
-
-        if (!inHand) {
-          // 手札に入らなければ発動できないので、獲得のみの試算（発動仮定なし）。
-          draftCandidates[defId] = previewFor(nextDeck, this.org, []);
-          continue;
-        }
-
-        // 発動仮定の敗北判定も beginSprint と同じ順序で評価する。
-        const playOrg = structuredClone(this.org);
-        playOrg.seniorHp = clamp(
-          playOrg.seniorHp + (100 - playOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-          0,
-          100,
-        );
-        const budgetAfterCardPressure = this.applyTrialAiDependencyPressure(playOrg, this.budget);
-        applyDeckBaseline(playOrg, scaleEffects(card.base, 1));
-        const loseOnPlay = evaluateLose(playOrg, this.totals, budgetAfterCardPressure);
-        if (loseOnPlay) {
-          draftCandidates[defId] = {
-            trials: 0,
-            delivered: { mean: 0, min: 0, max: 0 },
-            spread: { mean: 0, min: 0, max: 0 },
-            loseOnPlay,
-          };
-          continue;
-        }
-        draftCandidates[defId] = previewFor(nextDeck, this.org, [{ defId, level: 1 }]);
-      }
-    }
-    return { current, draftCandidates };
   }
 
   /**
-   * UI 向けの what-if 試算。オートプレイ／モンテカルロの snapshot 経路からは呼ばない。
+   * UI 向けの what-if 試算（同期）。ユニットテストと Worker 不可環境向け。
+   * オートプレイ／モンテカルロの snapshot 経路からは呼ばない。
    * 同一入力はキャッシュし、編成変更時だけ再計算する。
    * 返却値は独立コピーなので、呼び出し側の変更がキャッシュを汚さない。
    */
   whatIfPreview(): WhatIfState | null {
-    if (this.phase !== 'setup' && this.phase !== 'draft') {
+    const input = this.whatIfComputeInput();
+    if (!input) {
       this.whatIfCache = null;
       return null;
     }
-    const key = this.whatIfCacheKey();
+    const key = whatIfCacheKey(input);
     if (this.whatIfCache?.key !== key) {
-      this.whatIfCache = { key, value: this.buildWhatIfState() };
+      this.whatIfCache = { key, value: computeWhatIfState(input) };
     }
     return this.whatIfCache.value ? structuredClone(this.whatIfCache.value) : null;
   }
@@ -1427,6 +1267,7 @@ export class RunEngine {
       draft: this.draft ? [...this.draft] : null,
       // 重い seed 掃引は whatIfPreview() / game.getState() 側で必要時のみ行う。
       whatIf: null,
+      whatIfStatus: 'idle',
       shop: this.shop
         ? {
             cards: this.shop.cards.map((c) => ({ ...c })),

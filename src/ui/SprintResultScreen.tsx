@@ -6,11 +6,11 @@
  */
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
-import { planBaselineComparison } from '../render/sprintBaselineComparison';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
 import type { GrowthOutcome } from '../sim/run/types';
 import type { ActionId, SprintResult } from '../sim/types';
+import { BaselineComparisonChart } from './BaselineComparisonChart';
 import { SprintTimelineChart } from './SprintTimelineChart';
 import { RewardCeremony } from './JuicyEffects';
 
@@ -72,7 +72,6 @@ export function SprintResultScreen({
   abandonLabel = 'タイトルへ',
 }: SprintResultScreenProps) {
   const analysis = planInterventionAnalysis(result);
-  const baselineComparison = planBaselineComparison(result);
 
   return (
     <div
@@ -118,34 +117,7 @@ export function SprintResultScreen({
             </p>
           </div>
         )}
-        {baselineComparison.showSection && (
-          <div className="result-baseline-comparison" data-testid="result-baseline-comparison">
-            <p className="result-section-label">介入の成果</p>
-            <p className="result-baseline-caption">介入なしの見込み → 実績</p>
-            <dl className="result-rows result-baseline-rows">
-              {baselineComparison.rows.map((row) => (
-                <div
-                  className="result-row result-baseline-row"
-                  data-testid={`result-baseline-row-${row.key}`}
-                  key={row.key}
-                >
-                  <dt>{row.label}</dt>
-                  <dd>
-                    <span className="result-baseline-values">
-                      {row.baseline} → {row.actual}
-                    </span>
-                    <strong className={`result-baseline-delta baseline-delta-${row.tone}`}>
-                      {row.delta}
-                    </strong>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <p className="result-baseline-disclaimer" data-testid="result-baseline-disclaimer">
-              {baselineComparison.disclaimer}
-            </p>
-          </div>
-        )}
+        <BaselineComparisonChart result={result} />
         <div className="result-diagnosis">
           <p className="result-section-label">診断</p>
           <p>{result.diagnosis}</p>

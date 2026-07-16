@@ -66,7 +66,7 @@
 | --- | --- | --- | --- | --- | --- |
 | RI-11 | Pixi 適用範囲の拡張(部署/現場盤面) | 中 | 完了 | — | 第22 |
 | RI-12 | バンドル分割(動的 import) | 低 | 完了 | — | 第22 |
-| RI-13 | 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) | 中 | 未着手 | — | 第22 |
+| RI-13 | 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) | 中 | 完了 | — | 第22 |
 | RI-57 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | 中 | 完了 | — | 第17 / 22 |
 
 ### バランス（BAL）
@@ -396,11 +396,21 @@ CI 既定の E2E は `renderer=dom` を明示して実 WebGL を回さない方�
 956kB → 約 335kB（gzip 約 109kB）、HTML の preload は `motion` のみ。タイトル初回や
 `?renderer=dom` では Pixi 関連チャンクを取得しない。
 
-#### RI-13 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) — 優先度:中
+#### RI-13 未導入の技術スタック(Web Worker+Comlink / Recharts・visx) — 優先度:中 / 完了
 
-第22章で前提とした技術スタックのうち未導入の分。Web Worker + Comlink（モンテカルロ試算の並列化＝RI-14 の
-基盤候補）、Recharts・visx（指標可視化）の導入要否を判断し、必要なものを入れる。
-IndexedDB（永続化）は RI-57 へ切り出した。
+**完了**: 導入要否を判断し、必要なものを入れた。
+
+- **Web Worker + Comlink（導入）**: `computeWhatIfState` を純関数として切り出し
+  （`src/sim/run/whatIfState.ts`）、`whatIf.worker.ts` + Comlink で UI 経路の what-if を
+  オフロード。Worker 不可環境（Vitest）は同期フォールバック。試算中は `whatIfStatus` で
+  「試算中…」を表示する。
+- **Recharts（導入）**: リザルト「介入の成果」を `BaselineComparisonChart`（grouped bar）で可視化。
+  既存 testid / 数値テキストは維持。
+- **visx（導入しない）**: Recharts 1 本に統一し依存を増やさない。
+- **タイムライン（Recharts 化しない）**: RI-53 の自前 SVG（系列ごと独立 y 正規化＋介入マーカー）を維持。
+- **Vitest モンテカルロ（Worker 化しない）**: RI-14 の Node テスト基盤はそのまま。
+
+IndexedDB（永続化）は RI-57 へ切り出し済み。
 
 #### RI-57 メタ永続化の IndexedDB 移行＋旧 localStorage 統合 — 優先度:中 / 完了
 

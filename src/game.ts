@@ -34,6 +34,11 @@ export interface GameHandle {
   resume(): void;
   /** 一時停止中か。 */
   isPaused(): boolean;
+  /**
+   * pause() の呼び出し回数（所有権判定用）。
+   * lazy 読込中の一時 pause が、後続の外部 pause を誤って解除しないために使う。
+   */
+  getPauseEpoch(): number;
   /** 現在のラン状態のスナップショット。 */
   getState(): RunState;
   /** タイトルで選んだ難易度・試練でランを開始する。 */
@@ -124,6 +129,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const seed = options.seed ?? resolveSeedFromLocation();
   const engine = createRunEngine({ seed, difficulty: options.difficulty, trials: options.trials });
   let paused = false;
+  /** pause() の呼び出し回数。resume では進めない。 */
+  let pauseEpoch = 0;
   let meta = options.initialMeta ?? defaultMeta();
   let metaStorage = options.metaStorage ?? null;
   let metaReady = options.metaReady ?? true;
@@ -181,12 +188,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   return {
     pause() {
       paused = true;
+      pauseEpoch += 1;
     },
     resume() {
       paused = false;
     },
     isPaused() {
       return paused;
+    },
+    getPauseEpoch() {
+      return pauseEpoch;
     },
     getState() {
       const state = engine.snapshot();

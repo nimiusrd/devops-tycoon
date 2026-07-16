@@ -7,7 +7,16 @@
  * 座標は設計空間（1404×573）の % で重ねる。将来 PixiJS へ移植する（第22.4）。
  * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import type {
   ActionTarget,
   Lane,
@@ -24,7 +33,6 @@ import {
   type DraggableActionId,
 } from './boardDragPlan';
 import { hitTestBoardDot } from './boardPixiView';
-import { BoardPixiLayer } from '../ui/BoardPixiLayer';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
@@ -39,6 +47,11 @@ import {
 } from './boardScene';
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS, TASK_DIAMETER } from './taskView';
+
+/** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
+const BoardPixiLayer = lazy(() =>
+  import('../ui/BoardPixiLayer').then((m) => ({ default: m.BoardPixiLayer })),
+);
 
 const VIEW_W = 1404;
 const VIEW_H = 573;
@@ -312,6 +325,9 @@ export function Board({
     (e: React.PointerEvent, taskId: number) => {
       if (!armedAction || !onDragComplete || !dragPlan) return;
       e.preventDefault();
+      // Pixi 未ロード時の DOM fallback 粒から盤面 root の hit-test へバブルしない
+      // （二重に pointerup を登録して onDragComplete が二度走るのを防ぐ）。
+      e.stopPropagation();
       setDragTaskId(taskId);
 
       const onMove = (ev: PointerEvent) => {
@@ -380,12 +396,29 @@ export function Board({
     >
       <OfficeRoom />
       {usePixi ? (
-        <BoardPixiLayer
-          scene={scene}
-          draggableTaskIds={dragIds}
-          dragTaskId={dragTaskId}
-          onWebglError={onWebglError}
-        />
+        <Suspense
+          fallback={
+            <>
+              <FlowArrows flows={scene.flows} />
+              {scene.dots.map((d) => (
+                <TaskDot
+                  key={`${d.lane}-${d.id}`}
+                  dot={d}
+                  draggable={dragIds.has(d.id)}
+                  dragging={dragTaskId === d.id}
+                  onPointerDown={handlePointerDown}
+                />
+              ))}
+            </>
+          }
+        >
+          <BoardPixiLayer
+            scene={scene}
+            draggableTaskIds={dragIds}
+            dragTaskId={dragTaskId}
+            onWebglError={onWebglError}
+          />
+        </Suspense>
       ) : (
         <>
           <FlowArrows flows={scene.flows} />

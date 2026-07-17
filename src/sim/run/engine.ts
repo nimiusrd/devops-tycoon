@@ -12,7 +12,7 @@ import { BOSS_DEFS, getBoss } from '../../data/bosses';
 import { getCard } from '../../data/cards';
 import { DEPARTMENT_DEFS } from '../../data/departments';
 import { getDifficulty, getTrial } from '../../data/difficulties';
-import { EVENT_DEFS, effectiveKind, getEvent } from '../../data/events';
+import { EVENT_DEFS, RECRUIT_SKIP_MORALE, effectiveKind, getEvent } from '../../data/events';
 import { getEvolutionNode } from '../../data/evolution';
 import { RELIC_DEFS, getRelic } from '../../data/relics';
 import { applyAction } from '../actions';
@@ -894,10 +894,27 @@ export class RunEngine {
       return;
     }
 
-    // RI-26: イベント即時採用（予算消費。空き枠/予算不足時は no-op）。
+    // RI-26: イベント即時採用（予算消費。失敗時は onRecruitFail で見送り相当の代償）。
     if (res.grantRecruit) {
-      this.tryRecruit(`event-recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`);
+      const hired = this.tryRecruit(
+        `event-recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
+      );
       if (this.status === 'lost') return;
+      if (!hired && choice.outcome.onRecruitFail) {
+        const fail = applyEventOutcome(
+          choice.outcome.onRecruitFail,
+          this.org,
+          foldPassives(this.relics),
+        );
+        this.budget = Math.max(0, this.budget + fail.budgetDelta);
+        if (fail.trust) this.applyTrust(fail.trust);
+        if (fail.forceLose) {
+          this.status = 'lost';
+          this.loseReason = fail.forceLose;
+          this.setPhase('lost');
+          return;
+        }
+      }
     }
 
     const leadsTo = choice.leadsTo ?? 'sprint';
@@ -1041,15 +1058,25 @@ export class RunEngine {
 
   /**
    * 採用フェーズの選択（hire: 採用 / skip: 見送り）。選択後は編成（setup-pre）へ。
-   * RI-26 の専用採用ビート。
+   * RI-26 の専用採用ビート。見送り（および採用失敗）は recruit-offer 見送りと同コスト。
    */
   recruitChoose(option: 'hire' | 'skip'): void {
     if (this.phase !== 'recruit') return;
     if (option === 'hire') {
-      this.tryRecruit(`recruit-phase:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`);
+      const hired = this.tryRecruit(
+        `recruit-phase:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
+      );
       if (this.status === 'lost') return;
+      if (!hired) this.applyRecruitSkipPenalty();
+    } else {
+      this.applyRecruitSkipPenalty();
     }
     this.setPhase('setup');
+  }
+
+  /** 採用フェーズ見送りの士気コスト（`RECRUIT_SKIP_MORALE`。支配戦略防止）。 */
+  private applyRecruitSkipPenalty(): void {
+    this.org.morale = clamp(this.org.morale + RECRUIT_SKIP_MORALE, 0, 100);
   }
 
   /**

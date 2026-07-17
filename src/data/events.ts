@@ -13,6 +13,12 @@ import type {
   StakeholderTrust,
 } from '../sim/run/types';
 
+/**
+ * 採用機会を見送ったときの士気コスト。
+ * `recruit-offer` の見送りと、採用フェーズの skip で共有する（支配戦略防止）。
+ */
+export const RECRUIT_SKIP_MORALE = -4;
+
 /** 選択肢の結果（指定キーのみ適用。Morale 減少はレリックで緩和されうる）。 */
 export interface EventOutcome {
   /** 出荷ポイント（org.deliveryScore と当期 quarterTotals.delivered へ加算）。 */
@@ -35,6 +41,11 @@ export interface EventOutcome {
    * RI-26 のイベント即時採用。
    */
   grantRecruit?: boolean;
+  /**
+   * `grantRecruit` が成立しなかったときに適用する代償（見送り側と同値にする）。
+   * ネストした grantRecruit は持たせない。
+   */
+  onRecruitFail?: Omit<EventOutcome, 'grantRecruit' | 'onRecruitFail'>;
   /** 次スプリント限定の一時効果（一回消費。org の恒久変化とは別軸）。 */
   nextSprint?: SprintModifierDelta;
   /** ステークホルダー信頼の増減（安全側の代償に使う。負で低下）。 */
@@ -320,7 +331,7 @@ export const EVENT_DEFS: EventDef[] = [
       {
         label: '枠を見送る',
         description: '人手は増えないが、現場の期待を少し下げる',
-        outcome: { morale: -4 },
+        outcome: { morale: RECRUIT_SKIP_MORALE },
         leadsTo: 'sprint',
       },
     ],
@@ -334,8 +345,8 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '即採用する',
-        description: '予算を払い、ベンチにメンバーを1人加える',
-        outcome: { grantRecruit: true },
+        description: '予算を払い、ベンチにメンバーを1人加える（採用できない場合は見送り相当）',
+        outcome: { grantRecruit: true, onRecruitFail: { trust: { team: -4 } } },
       },
       {
         label: '見送る',

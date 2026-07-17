@@ -757,6 +757,8 @@ describe('RI-26 採用の入口拡張', () => {
     expect(hired.roster.members.length).toBe(hireBefore.roster.members.length + 1);
     expect(hired.budget).toBe(40 - RECRUIT_COST);
     expect(hired.phase).toBe('setup');
+    // 採用成功時は見送りペナルティを課さない。
+    expect(hired.org.morale).toBe(hireBefore.org.morale);
 
     const skip = new RunEngine({ seed: 'ri26-phase-skip', difficulty: 'easy' });
     skip.startRun();
@@ -768,6 +770,8 @@ describe('RI-26 採用の入口拡張', () => {
     expect(skipped.roster.members.length).toBe(skipBefore.roster.members.length);
     expect(skipped.budget).toBe(skipBefore.budget);
     expect(skipped.phase).toBe('setup');
+    // accept→skip が見送り選択を支配しないよう、士気コストを課す。
+    expect(skipped.org.morale).toBe(skipBefore.org.morale - 4);
   });
 
   it('urgent-hire の grantRecruit で即時採用する', () => {
@@ -783,6 +787,23 @@ describe('RI-26 採用の入口拡張', () => {
     expect(after.roster.members.length).toBe(before.roster.members.length + 1);
     expect(after.budget).toBe(60 - RECRUIT_COST);
     // 即時採用後は通常スプリントへ進む。
+    expect(after.phase).toBe('sprint');
+    expect(after.stakeholderTrust.team).toBe(before.stakeholderTrust.team);
+  });
+
+  it('urgent-hire の採用失敗は見送り相当の信頼低下を課す', () => {
+    const engine = new RunEngine({ seed: 'ri26-event-hire-fail', difficulty: 'easy' });
+    engine.startRun();
+    const before = engine.snapshot();
+    const internals = engine as unknown as ShopRecruitInternals;
+    internals.phase = 'beat';
+    internals.budget = RECRUIT_COST - 1;
+    internals.beat = { eventId: 'urgent-hire', kind: 'decision' };
+    engine.resolveBeat(0);
+    const after = engine.snapshot();
+    expect(after.roster.members.length).toBe(before.roster.members.length);
+    expect(after.budget).toBe(RECRUIT_COST - 1);
+    expect(after.stakeholderTrust.team).toBe(before.stakeholderTrust.team - 4);
     expect(after.phase).toBe('sprint');
   });
 

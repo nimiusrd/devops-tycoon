@@ -2,7 +2,9 @@
  * 採用フェーズ画面（RI-26 の専用採用ビート）。
  *
  * 予算を払ってメンバーを1人迎えるか、見送るかを選ぶ。
+ * 見送りは recruit-offer 見送りと同コスト（士気低下）を課す。
  */
+import { RECRUIT_SKIP_MORALE } from '../data/events';
 import { canRecruit, RECRUIT_COST } from '../sim/member';
 import { formatRestOptionTags } from '../render/eventOutcomeView';
 import type { RunState } from '../sim/run/types';
@@ -52,7 +54,11 @@ export function RecruitScreen({ state, onChoose }: RecruitScreenProps) {
             <span className="rest-icon">🚪</span>
             <div className="rest-body">
               <span className="rest-name">見送る</span>
-              <span className="rest-desc">今回は採用せず、編成へ戻る</span>
+              <EffectTagList
+                tags={[{ label: `士気 ${RECRUIT_SKIP_MORALE}`, tone: 'negative' }]}
+                testId="recruit-tags-skip"
+              />
+              <span className="rest-desc">採用せず編成へ戻る（現場の期待を少し下げる）</span>
             </div>
           </button>
         </div>

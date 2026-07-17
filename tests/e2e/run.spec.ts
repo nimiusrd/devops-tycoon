@@ -249,85 +249,32 @@ test('RI-21: 組織タイプに対応する画面トーンと状態文を表示�
   await expect(page.getByTestId('runbar-diagnosis')).toContainText(theme.warning);
 });
 
-/** advance 既定オートプレイで休息＋デッキ到達が早い固定 seed（RI-37）。 */
-const E2E_REST_UPGRADE_SEED = 'ri37-rest-0';
-
 test('RI-37: 休息で強化対象カードを選んでレベルを上げられる', async ({ page }) => {
-  await page.goto(`/?renderer=dom&seed=${E2E_REST_UPGRADE_SEED}`);
+  await page.goto('/?renderer=dom&seed=ri37-rest-ui');
 
-  const reached = await page.evaluate(
-    ({ primary, fallbacks }) => {
-      const g = (window as GameWindow).game!;
-      // seed 探索は解放プール未適用の RunEngine 前提（g.startRun はメタ解放を載せる）。
-      const engine = (g as unknown as { engine: RunEngine }).engine;
-      g.pause();
-      const seeds = [primary, ...fallbacks];
-      for (const seed of seeds) {
-        engine.startRun('easy', [], seed, { kind: 'normal' });
-        let s = engine.snapshot();
-        let guard = 0;
-        while (s.status === 'playing' && guard < 40_000) {
-          guard += 1;
-          if (s.phase === 'rest' && s.deck.length > 0) {
-            // UI ポーリングが engine 直操作を拾えるよう版番号を進める。
-            g.playCard(-1);
-            return {
-              ok: true,
-              seed,
-              defId: s.deck[0].defId,
-              level: s.deck[0].level,
-            };
-          }
-          if (s.phase === 'setup') engine.beginSetupSprint();
-          else if (s.phase === 'sprint') {
-            // RI-30: 手札を可能な限り発動してから一括進行（runFlow.advance と同じ）。
-            let playGuard = 0;
-            while (playGuard < 24) {
-              playGuard += 1;
-              const hand = engine.snapshot().sprint?.cardPiles.hand ?? [];
-              if (hand.length === 0) break;
-              let playedAny = false;
-              for (const deckIndex of [...hand]) {
-                if (engine.playCard(deckIndex).ok) {
-                  playedAny = true;
-                  break;
-                }
-              }
-              if (!playedAny) break;
-            }
-            engine.step(1_000_000);
-          } else if (s.phase === 'result') engine.acknowledgeResult();
-          else if (s.phase === 'draft') {
-            if (s.draft && s.draft.length > 0) engine.chooseCard(s.draft[0]);
-            else engine.skipDraft();
-          } else if (s.phase === 'evolution') engine.finishEvolution();
-          else if (s.phase === 'beat')
-            engine.resolveBeat((window as GameWindow).__e2eBeatChoice!(s.beat));
-          else if (s.phase === 'shop') engine.leaveShop();
-          else if (s.phase === 'rest') engine.restChoose('heal');
-          else if (s.phase === 'recruit') engine.recruitChoose('skip');
-          else if (s.phase === 'quarterReview') engine.acknowledgeQuarterReview();
-          else break;
-          s = engine.snapshot();
-        }
-      }
-      const s = engine.snapshot();
-      return { ok: false, phase: s.phase, deckLength: s.deck.length };
-    },
-    {
-      primary: E2E_REST_UPGRADE_SEED,
-      // バランス変更で primary が外れたとき用の短いフォールバック。
-      fallbacks: Array.from({ length: 8 }, (_, i) => `ri37-rest-${i + 1}`),
-    },
-  );
+  const target = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    const engine = (g as unknown as { engine: RunEngine }).engine;
+    g.pause();
+    // UI 検証が目的なので、デッキを用意して休息フェーズへ直接置く。
+    engine.startRun('easy', [], 'ri37-rest-ui', { kind: 'normal' });
+    const internals = engine as unknown as {
+      phase: string;
+      deck: Array<{ defId: string; level: number }>;
+    };
+    internals.deck = [{ defId: 'copilot', level: 1 }];
+    internals.phase = 'rest';
+    g.playCard(-1); // revision bump で UI に休息を反映
+    const card = g.getState().deck[0]!;
+    return { defId: card.defId, level: card.level, phase: g.getState().phase };
+  });
 
-  test.skip(!reached.ok, `休息とカード所持の条件に到達できない: ${JSON.stringify(reached)}`);
-  if (!reached.ok) return;
+  expect(target.phase).toBe('rest');
 
   await expect(page.getByTestId('rest')).toBeVisible({ timeout: 5000 });
   await page.getByTestId('rest-upgrade').click();
   await expect(page.getByTestId('rest-upgrade-cards')).toBeVisible();
-  await page.getByTestId(`rest-upgrade-card-${reached.defId}-0`).click();
+  await page.getByTestId(`rest-upgrade-card-${target.defId}-0`).click();
   await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
 
   const upgraded = await page.evaluate(
@@ -335,9 +282,9 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
       const s = (window as GameWindow).game!.getState();
       return s.deck.find((card) => card.defId === defId)?.level;
     },
-    { defId: reached.defId },
+    { defId: target.defId },
   );
-  expect(upgraded).toBe(reached.level + 1);
+  expect(upgraded).toBe(target.level + 1);
 });
 
 test('ボス未達→四半期レビュー→スコープ削減→次四半期へ継続', async ({ page }) => {

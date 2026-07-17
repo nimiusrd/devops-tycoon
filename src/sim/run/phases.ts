@@ -3,7 +3,7 @@
  *
  * **固定トラック（スプリント列）＋スプリント間ビート**の正当な遷移を純TSデータで定義する。
  * 編成（setup）→ スプリント → リザルト → ドラフト → 進化 → ビート（判定/選択）→ 次スプリント …
- * → ボススプリント → 四半期レビュー → 勝敗/継続。ショップ/休息はビートの選択から到達する。
+ * → ボススプリント → 四半期レビュー → 勝敗/継続。ショップ/休息/採用はビートの選択から到達する。
  *
  * この表を `RunEngine.setPhase()`（実ランタイムの遷移検証）と
  * `src/state/runMachine.ts`（XState マシン生成。契約テスト/可視化用）の両方が参照することで、
@@ -18,6 +18,7 @@ export const RUN_EVENT_TYPES = [
   'ENTER_SPRINT',
   'ENTER_SHOP',
   'ENTER_REST',
+  'ENTER_RECRUIT',
   'SPRINT_DONE',
   'BOSS_REVIEW',
   'LOST',
@@ -44,6 +45,7 @@ export const RUN_PHASES: readonly RunPhase[] = [
   'beat',
   'shop',
   'rest',
+  'recruit',
   'quarterReview',
   'won',
   'lost',
@@ -75,11 +77,15 @@ export const RUN_PHASE_TRANSITIONS: Readonly<
     ENTER_SPRINT: 'sprint',
     ENTER_SHOP: 'shop',
     ENTER_REST: 'rest',
+    ENTER_RECRUIT: 'recruit',
+    // 即時採用成功後など、ビートから直接編成へ戻る（RI-26）。
+    RESOLVE: 'setup',
     LOST: 'lost',
   },
   // 購入・採用で予算枯渇した場合は編成へ戻らず lost へ。
   shop: { RESOLVE: 'setup', LOST: 'lost' },
   rest: { RESOLVE: 'setup', LOST: 'lost' },
+  recruit: { RESOLVE: 'setup', LOST: 'lost' },
   quarterReview: { REVIEW_WON: 'won', REVIEW_CONTINUE: 'setup', REVIEW_LOST: 'lost', LOST: 'lost' },
   won: {},
   lost: {},

@@ -12,7 +12,7 @@ import { BOSS_DEFS, getBoss } from '../../data/bosses';
 import { getCard } from '../../data/cards';
 import { DEPARTMENT_DEFS } from '../../data/departments';
 import { getDifficulty, getTrial } from '../../data/difficulties';
-import { EVENT_DEFS, effectiveKind, getEvent } from '../../data/events';
+import { EVENT_DEFS, RECRUIT_SKIP_MORALE, effectiveKind, getEvent } from '../../data/events';
 import { getEvolutionNode } from '../../data/evolution';
 import { RELIC_DEFS, getRelic } from '../../data/relics';
 import { applyAction } from '../actions';
@@ -823,6 +823,13 @@ export class RunEngine {
     if (isBossNext) {
       pool = pool.filter((d) => !d.choices.some((c) => c.leadsTo === 'sprint-elite'));
     }
+    // 採用不能時は採用系ビートを出さない（面接へ進んでも採用できずペナルティだけ、を防ぐ。RI-26）。
+    const canHireNow = canRecruit(this.roster) && this.budget >= RECRUIT_COST;
+    if (!canHireNow) {
+      pool = pool.filter(
+        (d) => !d.choices.some((c) => c.leadsTo === 'recruit' || c.outcome.grantRecruit),
+      );
+    }
     // 組織状態の信号で抽選対象を絞る（minSignal 未達のイベントはプールに入れない）。
     const signals = eventSignals(this.org);
     pool = pool.filter((d) => eventEligible(d, signals));
@@ -855,7 +862,7 @@ export class RunEngine {
 
   /**
    * 提示中ビートを解決する。判定は引数なし（hidden choice[0] を自動適用）、
-   * 選択は choiceIndex。選択の `leadsTo` で sprint(通常/高負荷)/shop/rest へ分岐する。
+   * 選択は choiceIndex。選択の `leadsTo` で sprint(通常/高負荷)/shop/rest/recruit へ分岐する。
    */
   resolveBeat(choiceIndex?: number): void {
     if (this.phase !== 'beat' || !this.beat) return;
@@ -894,6 +901,35 @@ export class RunEngine {
       return;
     }
 
+    // RI-26: イベント即時採用（予算消費。成功時は編成へ戻し配置可能にする。
+    // 失敗時は onRecruitFail で見送り相当の代償を課し、既定の leadsTo へ進む）。
+    if (res.grantRecruit) {
+      const hired = this.tryRecruit(
+        `event-recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
+      );
+      if (this.status === 'lost') return;
+      if (hired) {
+        this.setPhase('setup');
+        return;
+      }
+      if (choice.outcome.onRecruitFail) {
+        const fail = applyEventOutcome(
+          choice.outcome.onRecruitFail,
+          this.org,
+          foldPassives(this.relics),
+        );
+        this.budget = Math.max(0, this.budget + fail.budgetDelta);
+        if (fail.trust) this.applyTrust(fail.trust);
+        if (fail.forceLose) {
+          this.status = 'lost';
+          this.loseReason = fail.forceLose;
+          this.setPhase('lost');
+          return;
+        }
+        if (this.applyImmediateLose()) return;
+      }
+    }
+
     const leadsTo = choice.leadsTo ?? 'sprint';
     if (leadsTo === 'shop') {
       this.shop = this.buildShop();
@@ -902,6 +938,10 @@ export class RunEngine {
     }
     if (leadsTo === 'rest') {
       this.setPhase('rest');
+      return;
+    }
+    if (leadsTo === 'recruit') {
+      this.setPhase('recruit');
       return;
     }
     if (leadsTo === 'sprint-elite') {
@@ -938,7 +978,8 @@ export class RunEngine {
           bought: false,
         }
       : undefined;
-    return { cards, relic };
+    // 採用枠は休息と同コスト（割引なし）。RI-26。
+    return { cards, relic, recruit: { cost: RECRUIT_COST, bought: false } };
   }
 
   /** ショップ用: メタ解放済みかつ未所持のレリックを 1 つ提示（無ければ undefined）。 */
@@ -985,6 +1026,15 @@ export class RunEngine {
     this.applyImmediateLose();
   }
 
+  /** ショップでメンバーを採用する（RI-26）。購入後もショップに残る。 */
+  buyShopRecruit(): void {
+    if (this.phase !== 'shop' || !this.shop?.recruit || this.shop.recruit.bought) return;
+    if (!this.tryRecruit(`shop-recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`)) {
+      return;
+    }
+    this.shop.recruit.bought = true;
+  }
+
   /** ショップを出て編成（setup-pre）へ。採用メンバーを次スプリント前に配置できる。 */
   leaveShop(): void {
     if (this.phase !== 'shop') return;
@@ -1013,19 +1063,53 @@ export class RunEngine {
       this.deck = upgradeCardAt(this.deck, deckIndex ?? 0);
     } else if (option === 'recruit') {
       // 採用は予算を消費する（ラン経済。SPEC 第4.4）。空き枠と予算が揃ったときのみ。
-      if (canRecruit(this.roster) && this.budget >= RECRUIT_COST) {
-        const rng = createRng(
-          `${this.seed}:recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
-        );
-        const next = recruitMember(this.roster, pickRecruitArchetype(rng), rng);
-        if (next !== this.roster) {
-          this.roster = next;
-          this.budget -= RECRUIT_COST;
-          if (this.applyImmediateLose()) return;
-        }
-      }
+      this.tryRecruit(`recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`);
+      if (this.status === 'lost') return;
     }
     this.setPhase('setup');
+  }
+
+  /**
+   * 採用フェーズの選択（hire: 採用 / skip: 見送り）。選択後は編成（setup-pre）へ。
+   * RI-26 の専用採用ビート。見送り（および採用失敗）は recruit-offer 見送りと同経路・同コスト。
+   */
+  recruitChoose(option: 'hire' | 'skip'): void {
+    if (this.phase !== 'recruit') return;
+    if (option === 'hire') {
+      const hired = this.tryRecruit(
+        `recruit-phase:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
+      );
+      if (this.status === 'lost') return;
+      if (!hired && this.applyRecruitSkipPenalty()) return;
+    } else if (this.applyRecruitSkipPenalty()) {
+      return;
+    }
+    this.setPhase('setup');
+  }
+
+  /**
+   * 採用フェーズ見送りの士気コスト（`RECRUIT_SKIP_MORALE`）。
+   * recruit-offer 見送りと同じく `applyEventOutcome`（moraleDamageMul）経由で適用し、即時敗北を評価する。
+   * @returns true なら lost へ遷移済み。
+   */
+  private applyRecruitSkipPenalty(): boolean {
+    applyEventOutcome({ morale: RECRUIT_SKIP_MORALE }, this.org, foldPassives(this.relics));
+    return this.applyImmediateLose();
+  }
+
+  /**
+   * 個体メンバーを 1 人採用する共通コア（休息 / ショップ / 採用フェーズ / イベント）。
+   * 空き枠と予算が揃ったときのみ成功し、成功時は予算を減らし即時敗北を評価する。
+   */
+  private tryRecruit(rngKey: string): boolean {
+    if (!canRecruit(this.roster) || this.budget < RECRUIT_COST) return false;
+    const rng = createRng(`${this.seed}:${rngKey}`);
+    const next = recruitMember(this.roster, pickRecruitArchetype(rng), rng);
+    if (next === this.roster) return false;
+    this.roster = next;
+    this.budget -= RECRUIT_COST;
+    this.applyImmediateLose();
+    return true;
   }
 
   /** メンバーをレーンへ配置する（編成。第12.2）。スプリント中は変更しない。 */
@@ -1272,6 +1356,7 @@ export class RunEngine {
         ? {
             cards: this.shop.cards.map((c) => ({ ...c })),
             relic: this.shop.relic ? { ...this.shop.relic } : undefined,
+            recruit: this.shop.recruit ? { ...this.shop.recruit } : undefined,
           }
         : null,
       diagnosis: this.diagnosis,

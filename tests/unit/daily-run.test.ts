@@ -57,6 +57,9 @@ describe('デイリーラン（spec-mapping §2 M7）', () => {
           case 'rest':
             game.restChoose('heal');
             break;
+          case 'recruit':
+            game.recruitChoose('skip');
+            break;
           case 'quarterReview':
             if (s.quarterReview?.outcome === 'missed_adjustable') {
               game.chooseGoalAdjustment(s.quarterReview.availableAdjustments[0] ?? 'cut_scope');

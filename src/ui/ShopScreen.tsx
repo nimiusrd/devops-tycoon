@@ -1,11 +1,16 @@
 /**
  * ショップ画面（SPEC 第4.4 の $ノード）。
  *
- * 予算でカード購入・レリック購入を行う。予算は四半期の有限資源（第4.7）。
+ * 予算でカード購入・レリック購入・採用を行う。予算は四半期の有限資源（第4.7）。
  */
 import { getCard, RARITY_LABEL } from '../data/cards';
 import { getRelic } from '../data/relics';
-import { formatCardDefTags, formatRelicDefTags } from '../render/eventOutcomeView';
+import { canRecruit } from '../sim/member';
+import {
+  formatCardDefTags,
+  formatRelicDefTags,
+  formatRestOptionTags,
+} from '../render/eventOutcomeView';
 import type { RunState } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
 
@@ -13,13 +18,24 @@ export interface ShopScreenProps {
   state: RunState;
   onBuyCard: (defId: string) => void;
   onBuyRelic: () => void;
+  onBuyRecruit: () => void;
   onLeave: () => void;
 }
 
-export function ShopScreen({ state, onBuyCard, onBuyRelic, onLeave }: ShopScreenProps) {
+export function ShopScreen({
+  state,
+  onBuyCard,
+  onBuyRelic,
+  onBuyRecruit,
+  onLeave,
+}: ShopScreenProps) {
   const shop = state.shop;
   if (!shop) return null;
   const relic = shop.relic ? getRelic(shop.relic.id) : undefined;
+  const recruit = shop.recruit;
+  const rosterHasRoom = canRecruit(state.roster);
+  const canAffordRecruit = recruit ? state.budget >= recruit.cost : false;
+  const canHire = !!recruit && !recruit.bought && rosterHasRoom && canAffordRecruit;
   return (
     <div className="result-overlay" data-testid="shop" role="dialog" aria-label="Shop">
       <div className="shop-panel">
@@ -75,6 +91,34 @@ export function ShopScreen({ state, onBuyCard, onBuyRelic, onLeave }: ShopScreen
               <p className="shop-card-desc">{relic.description}</p>
               <span className="shop-card-cost">
                 {shop.relic.bought ? '購入済み' : `💰${shop.relic.cost}`}
+              </span>
+            </button>
+          )}
+          {recruit && (
+            <button
+              type="button"
+              className={`shop-card shop-recruit${recruit.bought ? ' bought' : ''}`}
+              data-testid="shop-recruit"
+              disabled={!canHire}
+              onClick={onBuyRecruit}
+            >
+              <span className="shop-card-rarity">採用</span>
+              <span className="shop-card-name">🙋 メンバーを採用</span>
+              <EffectTagList
+                tags={formatRestOptionTags('recruit')}
+                testId="shop-recruit-effect-tags"
+              />
+              <p className="shop-card-desc">
+                {recruit.bought
+                  ? '採用済み'
+                  : !rosterHasRoom
+                    ? 'ロスターが満員です'
+                    : !canAffordRecruit
+                      ? `予算が足りません（💰${recruit.cost} 必要）`
+                      : '未来の主力候補を1人迎える（ベンチに加わる）'}
+              </p>
+              <span className="shop-card-cost">
+                {recruit.bought ? '購入済み' : `💰${recruit.cost}`}
               </span>
             </button>
           )}

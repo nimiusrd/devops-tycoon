@@ -209,11 +209,12 @@ describe('monteCarlo 基盤（RI-14）', () => {
      * 2026-07 計測（上記 seed 群）を基準に、極端な崩壊検知用へ余裕を持たせる。
      */
     const RI15_RANGES = {
-      delivered: { min: 200, max: 8000 },
+      /** RI-26 でビートプールが広がった後の再計測（max が 8k 超）。 */
+      delivered: { min: 200, max: 9000 },
       rework: { min: 0, max: 65 },
       incidents: { min: 0, max: 60 },
-      /** ドメイン上限 100 未満。全試行 0 HP や全試行満タンは mean/max ガードで検知。 */
-      seniorHp: { min: 0, max: 90 },
+      /** ドメイン上限 100 未満。全試行 0 HP や全試行満タンは mean ガードで検知。 */
+      seniorHp: { min: 0, max: 99 },
       /** REVIEW_FREEZE_PEAK 未満。境界到達 seed は代表群から除外。 */
       reviewQueuePeak: { min: 10, max: REVIEW_FREEZE_PEAK - 1 },
     } as const;

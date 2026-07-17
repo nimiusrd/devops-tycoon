@@ -71,10 +71,14 @@ export interface GameHandle {
   buyShopCard(defId: string): RunState;
   /** ショップでレリックを買う。 */
   buyShopRelic(): RunState;
+  /** ショップでメンバーを採用する（RI-26）。 */
+  buyShopRecruit(): RunState;
   /** ショップを出る。 */
   leaveShop(): RunState;
   /** 休息の選択（heal / repay / upgrade / recruit）。upgrade はデッキ位置を指定可能。 */
   restChoose(option: 'heal' | 'repay' | 'upgrade' | 'recruit', deckIndex?: number): RunState;
+  /** 採用フェーズの選択（hire / skip）。RI-26。 */
+  recruitChoose(option: 'hire' | 'skip'): RunState;
   /** メンバーをレーンへ配置する（編成。第12章）。 */
   assignMember(id: string, assignment: LaneAssignment): RunState;
   /** メンバーへの AI 配布を切り替える（編成。第12章）。 */
@@ -338,6 +342,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
       return after();
     },
+    buyShopRecruit() {
+      engine.buyShopRecruit();
+      bump();
+      return after();
+    },
     leaveShop() {
       engine.leaveShop();
       bump();
@@ -345,6 +354,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     restChoose(option, deckIndex) {
       engine.restChoose(option, deckIndex);
+      bump();
+      return after();
+    },
+    recruitChoose(option) {
+      engine.recruitChoose(option);
       bump();
       return after();
     },

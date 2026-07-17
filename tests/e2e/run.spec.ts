@@ -13,7 +13,15 @@ import {
   type TerminalQuarterSeed,
 } from '../../src/sim/run/quarterReviewSeeds';
 
+/** page.evaluate 内へ注入する grantRecruit 回避テーブル。 */
+const GRANT_RECRUIT_FLAGS: Record<string, boolean[]> = Object.fromEntries(
+  EVENT_DEFS.map((def) => [def.id, def.choices.map((c) => !!c.outcome.grantRecruit)]),
+);
+
 type GameWindow = Window & {
+  __e2eBeatChoice?: (
+    beat: { eventId: string; kind: 'judgment' | 'decision' } | null | undefined,
+  ) => number | undefined;
   game?: {
     pause(): void;
     getState(): RunState;
@@ -29,14 +37,30 @@ type GameWindow = Window & {
     finishEvolution(): RunState;
     buyShopCard(id: string): RunState;
     buyShopRelic(): RunState;
+    buyShopRecruit(): RunState;
     leaveShop(): RunState;
     restChoose(o: string, deckIndex?: number): RunState;
+    recruitChoose(o: 'hire' | 'skip'): RunState;
     assignMember(id: string, assignment: string): RunState;
     setMemberAi(id: string, on: boolean): RunState;
     acknowledgeQuarterReview(): RunState;
     chooseGoalAdjustment(id: GoalAdjustmentId): RunState;
   };
 };
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript((flags) => {
+    (window as GameWindow).__e2eBeatChoice = (beat) => {
+      if (!beat || beat.kind === 'judgment') return undefined;
+      const list = flags[beat.eventId] ?? [];
+      if (list[0]) {
+        const alt = list.findIndex((flag) => !flag);
+        if (alt >= 0) return alt;
+      }
+      return 0;
+    };
+  }, GRANT_RECRUIT_FLAGS);
+});
 
 test('トラック→ボスまで通しプレイすると勝敗が決まり、ラン決着画面が出る（DoD）', async ({
   page,
@@ -76,13 +100,16 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
           g.finishEvolution();
           break;
         case 'beat':
-          g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+          g.resolveBeat((window as GameWindow).__e2eBeatChoice!(s.beat));
           break;
         case 'shop':
           g.leaveShop();
           break;
         case 'rest':
           g.restChoose('heal');
+          break;
+        case 'recruit':
+          g.recruitChoose('skip');
           break;
         case 'quarterReview':
           if (s.quarterReview?.outcome === 'missed_adjustable') {
@@ -129,9 +156,10 @@ test('RI-32: ボス突破報酬レリックを四半期レビューに表示す�
         else if (state.phase === 'draft') g.skipDraft();
         else if (state.phase === 'evolution') g.finishEvolution();
         else if (state.phase === 'beat')
-          g.resolveBeat(state.beat?.kind === 'judgment' ? undefined : 0);
+          g.resolveBeat((window as GameWindow).__e2eBeatChoice!(state.beat));
         else if (state.phase === 'shop') g.leaveShop();
         else if (state.phase === 'rest') g.restChoose('heal');
+        else if (state.phase === 'recruit') g.recruitChoose('skip');
         else break;
         state = g.getState();
       }
@@ -221,79 +249,32 @@ test('RI-21: 組織タイプに対応する画面トーンと状態文を表示�
   await expect(page.getByTestId('runbar-diagnosis')).toContainText(theme.warning);
 });
 
-/** advance 既定オートプレイで休息＋デッキ到達が早い固定 seed（RI-37）。 */
-const E2E_REST_UPGRADE_SEED = 'ri37-rest-0';
-
 test('RI-37: 休息で強化対象カードを選んでレベルを上げられる', async ({ page }) => {
-  await page.goto(`/?renderer=dom&seed=${E2E_REST_UPGRADE_SEED}`);
+  await page.goto('/?renderer=dom&seed=ri37-rest-ui');
 
-  const reached = await page.evaluate(
-    ({ primary, fallbacks }) => {
-      const g = (window as GameWindow).game!;
-      g.pause();
-      const seeds = [primary, ...fallbacks];
-      for (const seed of seeds) {
-        g.startRun('easy', [], seed);
-        let s = g.getState();
-        let guard = 0;
-        while (s.status === 'playing' && guard < 40_000) {
-          guard += 1;
-          if (s.phase === 'rest' && s.deck.length > 0) {
-            return {
-              ok: true,
-              seed,
-              defId: s.deck[0].defId,
-              level: s.deck[0].level,
-            };
-          }
-          if (s.phase === 'setup') g.beginSetupSprint();
-          else if (s.phase === 'sprint') {
-            // RI-30: 手札を可能な限り発動してから一括進行（runFlow.advance と同じ）。
-            let playGuard = 0;
-            while (playGuard < 24) {
-              playGuard += 1;
-              const hand = g.getState().sprint?.cardPiles.hand ?? [];
-              if (hand.length === 0) break;
-              let playedAny = false;
-              for (const deckIndex of hand) {
-                if (g.playCard(deckIndex).ok) {
-                  playedAny = true;
-                  break;
-                }
-              }
-              if (!playedAny) break;
-            }
-            g.step(1_000_000);
-          } else if (s.phase === 'result') g.acknowledgeResult();
-          else if (s.phase === 'draft') {
-            if (s.draft && s.draft.length > 0) g.chooseCard(s.draft[0]);
-            else g.skipDraft();
-          } else if (s.phase === 'evolution') g.finishEvolution();
-          else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
-          else if (s.phase === 'shop') g.leaveShop();
-          else if (s.phase === 'rest') g.restChoose('heal');
-          else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
-          else break;
-          s = g.getState();
-        }
-      }
-      const s = g.getState();
-      return { ok: false, phase: s.phase, deckLength: s.deck.length };
-    },
-    {
-      primary: E2E_REST_UPGRADE_SEED,
-      // バランス変更で primary が外れたとき用の短いフォールバック。
-      fallbacks: Array.from({ length: 20 }, (_, i) => `ri37-rest-${i + 1}`),
-    },
-  );
+  const target = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    const engine = (g as unknown as { engine: RunEngine }).engine;
+    g.pause();
+    // UI 検証が目的なので、デッキを用意して休息フェーズへ直接置く。
+    engine.startRun('easy', [], 'ri37-rest-ui', { kind: 'normal' });
+    const internals = engine as unknown as {
+      phase: string;
+      deck: Array<{ defId: string; level: number }>;
+    };
+    internals.deck = [{ defId: 'copilot', level: 1 }];
+    internals.phase = 'rest';
+    g.playCard(-1); // revision bump で UI に休息を反映
+    const card = g.getState().deck[0]!;
+    return { defId: card.defId, level: card.level, phase: g.getState().phase };
+  });
 
-  test.skip(!reached.ok, `休息とカード所持の条件に到達できない: ${JSON.stringify(reached)}`);
-  if (!reached.ok) return;
+  expect(target.phase).toBe('rest');
 
   await expect(page.getByTestId('rest')).toBeVisible({ timeout: 5000 });
   await page.getByTestId('rest-upgrade').click();
   await expect(page.getByTestId('rest-upgrade-cards')).toBeVisible();
-  await page.getByTestId(`rest-upgrade-card-${reached.defId}-0`).click();
+  await page.getByTestId(`rest-upgrade-card-${target.defId}-0`).click();
   await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
 
   const upgraded = await page.evaluate(
@@ -301,9 +282,9 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
       const s = (window as GameWindow).game!.getState();
       return s.deck.find((card) => card.defId === defId)?.level;
     },
-    { defId: reached.defId },
+    { defId: target.defId },
   );
-  expect(upgraded).toBe(reached.level + 1);
+  expect(upgraded).toBe(target.level + 1);
 });
 
 test('ボス未達→四半期レビュー→スコープ削減→次四半期へ継続', async ({ page }) => {
@@ -335,13 +316,16 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
             g.finishEvolution();
             break;
           case 'beat':
-            g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+            g.resolveBeat((window as GameWindow).__e2eBeatChoice!(s.beat));
             break;
           case 'shop':
             g.leaveShop();
             break;
           case 'rest':
             g.restChoose('heal');
+            break;
+          case 'recruit':
+            g.recruitChoose('skip');
             break;
           default:
             guard = 60000;
@@ -383,16 +367,33 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
       while (s.status === 'playing' && s.phase !== 'quarterReview' && guard < 60000) {
         guard += 1;
         if (s.phase === 'setup') engine.beginSetupSprint();
-        else if (s.phase === 'sprint') engine.step(1_000_000);
-        else if (s.phase === 'result') engine.acknowledgeResult();
+        else if (s.phase === 'sprint') {
+          // RI-30: 手札を可能な限り発動してから一括進行（runFlow.advance と同じ）。
+          let playGuard = 0;
+          while (playGuard < 24) {
+            playGuard += 1;
+            const hand = engine.snapshot().sprint?.cardPiles.hand ?? [];
+            if (hand.length === 0) break;
+            let playedAny = false;
+            for (const deckIndex of [...hand]) {
+              if (engine.playCard(deckIndex).ok) {
+                playedAny = true;
+                break;
+              }
+            }
+            if (!playedAny) break;
+          }
+          engine.step(1_000_000);
+        } else if (s.phase === 'result') engine.acknowledgeResult();
         else if (s.phase === 'draft' && s.draft && s.draft.length > 0)
           engine.chooseCard(s.draft[0]);
         else if (s.phase === 'draft') engine.skipDraft();
         else if (s.phase === 'evolution') engine.finishEvolution();
         else if (s.phase === 'beat')
-          engine.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+          engine.resolveBeat((window as GameWindow).__e2eBeatChoice!(s.beat));
         else if (s.phase === 'shop') engine.leaveShop();
         else if (s.phase === 'rest') engine.restChoose('heal');
+        else if (s.phase === 'recruit') engine.recruitChoose('skip');
         else guard = 60000;
         s = engine.snapshot();
       }
@@ -473,9 +474,10 @@ for (const entry of RI22_TERMINAL_SEEDS) {
             else engine.skipDraft();
           } else if (s.phase === 'evolution') engine.finishEvolution();
           else if (s.phase === 'beat')
-            engine.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+            engine.resolveBeat((window as GameWindow).__e2eBeatChoice!(s.beat));
           else if (s.phase === 'shop') engine.leaveShop();
           else if (s.phase === 'rest') engine.restChoose('heal');
+          else if (s.phase === 'recruit') engine.recruitChoose('skip');
           else break;
           s = engine.snapshot();
         }
@@ -527,6 +529,7 @@ test('ビートの選択イベントを解決すると次スプリントへ進�
       else if (s.phase === 'evolution') g.finishEvolution();
       else if (s.phase === 'shop') g.leaveShop();
       else if (s.phase === 'rest') g.restChoose('heal');
+      else if (s.phase === 'recruit') g.recruitChoose('skip');
       else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
       else break;
       s = g.getState();
@@ -558,13 +561,14 @@ test('tone: joke のビートはネタ分類の見た目で表示される（RI-
           return { eventId: s.beat.eventId, kind: s.beat.kind };
         }
         if (s.phase === 'setup') g.beginSetupSprint();
-        else if (s.phase === 'beat') g.resolveBeat(s.beat?.kind === 'judgment' ? undefined : 0);
+        else if (s.phase === 'beat') g.resolveBeat((window as GameWindow).__e2eBeatChoice!(s.beat));
         else if (s.phase === 'sprint') g.step(1_000_000);
         else if (s.phase === 'result') g.acknowledgeResult();
         else if (s.phase === 'draft') g.skipDraft();
         else if (s.phase === 'evolution') g.finishEvolution();
         else if (s.phase === 'shop') g.leaveShop();
         else if (s.phase === 'rest') g.restChoose('heal');
+        else if (s.phase === 'recruit') g.recruitChoose('skip');
         else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
         else break;
         s = g.getState();

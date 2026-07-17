@@ -30,6 +30,7 @@ export type RunPhase =
   | 'beat'
   | 'shop'
   | 'rest'
+  | 'recruit'
   | 'quarterReview'
   | 'won'
   | 'lost';
@@ -183,6 +184,8 @@ export interface ShopCardOffer {
 export interface ShopOffer {
   cards: ShopCardOffer[];
   relic?: { id: string; cost: number; bought: boolean };
+  /** 採用枠（予算消費でメンバー+1。RI-26）。 */
+  recruit?: { cost: number; bought: boolean };
 }
 
 /** 開始オプション（デイリーラン等）。 */

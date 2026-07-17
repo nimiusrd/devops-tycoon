@@ -1,7 +1,31 @@
 import { expect, test } from '@playwright/test';
+import { EVENT_DEFS } from '../../src/data/events';
 import type { GameHandle } from '../../src/game';
 
-type GameWindow = Window & { game?: GameHandle };
+type GameWindow = Window & {
+  game?: GameHandle;
+  __e2eBeatChoice?: (
+    beat: { eventId: string; kind: 'judgment' | 'decision' } | null | undefined,
+  ) => number | undefined;
+};
+
+const GRANT_RECRUIT_FLAGS: Record<string, boolean[]> = Object.fromEntries(
+  EVENT_DEFS.map((def) => [def.id, def.choices.map((c) => !!c.outcome.grantRecruit)]),
+);
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript((flags) => {
+    (window as GameWindow).__e2eBeatChoice = (beat) => {
+      if (!beat || beat.kind === 'judgment') return undefined;
+      const list = flags[beat.eventId] ?? [];
+      if (list[0]) {
+        const alt = list.findIndex((flag) => !flag);
+        if (alt >= 0) return alt;
+      }
+      return 0;
+    };
+  }, GRANT_RECRUIT_FLAGS);
+});
 
 test('RI-46: 編成とドラフトで次スプリントのリスク幅を表示する', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=what-if-e2e');
@@ -33,13 +57,16 @@ test('RI-46: 編成とドラフトで次スプリントのリスク幅を表示�
           state = game.finishEvolution();
           break;
         case 'beat':
-          state = game.resolveBeat(0);
+          state = game.resolveBeat((window as GameWindow).__e2eBeatChoice!(state.beat));
           break;
         case 'shop':
           state = game.leaveShop();
           break;
         case 'rest':
           state = game.restChoose('heal');
+          break;
+        case 'recruit':
+          state = game.recruitChoose('skip');
           break;
         default:
           guard = 10_000;

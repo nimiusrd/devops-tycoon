@@ -44,6 +44,9 @@ const OrgScreen = lazy(() => import('./ui/OrgScreen').then((m) => ({ default: m.
 const QuarterReviewScreen = lazy(() =>
   import('./ui/QuarterReviewScreen').then((m) => ({ default: m.QuarterReviewScreen })),
 );
+const RecruitScreen = lazy(() =>
+  import('./ui/RecruitScreen').then((m) => ({ default: m.RecruitScreen })),
+);
 const RestScreen = lazy(() => import('./ui/RestScreen').then((m) => ({ default: m.RestScreen })));
 const RunResultScreen = lazy(() =>
   import('./ui/RunResultScreen').then((m) => ({ default: m.RunResultScreen })),
@@ -280,12 +283,16 @@ export default function App({ game }: AppProps) {
             state={state}
             onBuyCard={run.buyShopCard}
             onBuyRelic={run.buyShopRelic}
+            onBuyRecruit={run.buyShopRecruit}
             onLeave={run.leaveShop}
           />
         )}
       </Suspense>
       <Suspense fallback={null}>
         {phase === 'rest' && <RestScreen state={state} onChoose={run.restChoose} />}
+      </Suspense>
+      <Suspense fallback={null}>
+        {phase === 'recruit' && <RecruitScreen state={state} onChoose={run.recruitChoose} />}
       </Suspense>
 
       <Suspense fallback={null}>

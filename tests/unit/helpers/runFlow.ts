@@ -4,6 +4,7 @@
  * 旧マップ駆動（enterNode）に代わり、setup→beginSetupSprint / beat→resolveBeat を
  * 既定の選択で消化する。各テストはここを使ってランを進める。
  */
+import { getEvent } from '../../../src/data/events';
 import type { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 
@@ -16,6 +17,27 @@ export interface PlayOptions {
   beatChoice?: number;
   /** 休息の選択（既定 heal）。 */
   restOption?: 'heal' | 'repay' | 'upgrade' | 'recruit';
+}
+
+/**
+ * オートプレイ用のビート選択肢 index。
+ * 明示指定がなければ即時採用（`grantRecruit`）を避け、決定論シードの安定を保つ。
+ */
+export function autoplayBeatChoiceIndex(
+  eventId: string,
+  kind: 'judgment' | 'decision',
+  explicit?: number,
+): number | undefined {
+  if (kind === 'judgment') return undefined;
+  if (explicit !== undefined) return explicit;
+  const def = getEvent(eventId);
+  const choices = def?.choices ?? [];
+  let choice = 0;
+  if (choices[choice]?.outcome.grantRecruit) {
+    const alt = choices.findIndex((c) => !c.outcome.grantRecruit);
+    if (alt >= 0) choice = alt;
+  }
+  return choice;
 }
 
 /** 現在フェーズに応じて 1 ステップ進める（playing のときのみ）。停止すべきなら false。 */
@@ -70,14 +92,19 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
       if (opts.unlockEvolution && s.evolution.points > 0) e.unlockEvolution('review-1');
       e.finishEvolution();
       return true;
-    case 'beat':
-      e.resolveBeat(s.beat?.kind === 'judgment' ? undefined : (opts.beatChoice ?? 0));
+    case 'beat': {
+      if (!s.beat) return false;
+      e.resolveBeat(autoplayBeatChoiceIndex(s.beat.eventId, s.beat.kind, opts.beatChoice));
       return true;
+    }
     case 'shop':
       e.leaveShop();
       return true;
     case 'rest':
       e.restChoose(opts.restOption ?? 'heal');
+      return true;
+    case 'recruit':
+      e.recruitChoose('skip');
       return true;
     case 'quarterReview':
       if (s.quarterReview?.outcome === 'missed_adjustable') {

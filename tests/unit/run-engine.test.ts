@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { getRelic, RELIC_DEFS } from '../../src/data/relics';
+import { canRecruit, RECRUIT_COST, ROSTER_CAP } from '../../src/sim/member';
 import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, evaluateWinType } from '../../src/sim/outcome';
 import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
 import { RunPhaseError } from '../../src/sim/run/phases';
 import { canAcknowledgeWin } from '../../src/sim/run/quarterReview';
-import type { RunState } from '../../src/sim/run/types';
+import type { BeatState, RunState } from '../../src/sim/run/types';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../src/sim/run/quarterReviewSeeds';
 import { advance, playRun, playUntil } from './helpers/runFlow';
 
@@ -459,11 +460,15 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
             if (s.shop) {
               for (const c of s.shop.cards) e.buyShopCard(c.defId);
               e.buyShopRelic();
+              if (s.shop.recruit) e.buyShopRecruit();
             }
             e.leaveShop();
             break;
           case 'rest':
             e.restChoose(guard % 2 === 0 ? 'repay' : 'upgrade');
+            break;
+          case 'recruit':
+            e.recruitChoose(guard % 2 === 0 ? 'hire' : 'skip');
             break;
           case 'quarterReview':
             if (s.quarterReview?.outcome === 'missed_adjustable') {
@@ -671,6 +676,193 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       guard += 1;
     }
     throw new Error('sprint did not complete within guard');
+  });
+});
+
+describe('RI-26 採用の入口拡張', () => {
+  type ShopRecruitInternals = {
+    phase: string;
+    budget: number;
+    shop: {
+      cards: Array<{ defId: string; cost: number; bought: boolean }>;
+      recruit?: { cost: number; bought: boolean };
+    } | null;
+    roster: RunState['roster'];
+    beat: BeatState | null;
+  };
+
+  it('buildShop は採用枠を常に載せる', () => {
+    const engine = new RunEngine({ seed: 'ri26-build-shop', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as ShopRecruitInternals & {
+      buildShop: () => NonNullable<ShopRecruitInternals['shop']>;
+    };
+    const shop = internals.buildShop();
+    expect(shop.recruit).toEqual({ cost: RECRUIT_COST, bought: false });
+  });
+
+  it('ショップ採用は予算を消費しメンバーが増え、ショップに残る', () => {
+    const engine = new RunEngine({ seed: 'ri26-shop-hire', difficulty: 'easy' });
+    engine.startRun();
+    const before = engine.snapshot();
+    const internals = engine as unknown as ShopRecruitInternals;
+    internals.phase = 'shop';
+    internals.budget = 50;
+    internals.shop = { cards: [], recruit: { cost: RECRUIT_COST, bought: false } };
+    engine.buyShopRecruit();
+    const after = engine.snapshot();
+    expect(after.roster.members.length).toBe(before.roster.members.length + 1);
+    expect(after.budget).toBe(50 - RECRUIT_COST);
+    expect(after.shop?.recruit?.bought).toBe(true);
+    expect(after.phase).toBe('shop');
+    expect(after.roster.members.at(-1)?.assignment).toBe('bench');
+  });
+
+  it('ショップ採用は予算不足・満員だと no-op', () => {
+    const engine = new RunEngine({ seed: 'ri26-shop-noop', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as ShopRecruitInternals;
+    internals.phase = 'shop';
+    internals.budget = RECRUIT_COST - 1;
+    internals.shop = { cards: [], recruit: { cost: RECRUIT_COST, bought: false } };
+    const beforeBudget = engine.snapshot();
+    engine.buyShopRecruit();
+    expect(engine.snapshot().roster.members.length).toBe(beforeBudget.roster.members.length);
+    expect(engine.snapshot().budget).toBe(RECRUIT_COST - 1);
+    expect(engine.snapshot().shop?.recruit?.bought).toBe(false);
+
+    // 満員でも課金しない。
+    const full = structuredClone(beforeBudget.roster);
+    while (full.members.length < ROSTER_CAP) {
+      const base = full.members[0]!;
+      full.members.push({ ...base, id: `fill-${full.members.length}` });
+    }
+    internals.roster = full;
+    internals.budget = 100;
+    engine.buyShopRecruit();
+    expect(canRecruit(engine.snapshot().roster)).toBe(false);
+    expect(engine.snapshot().budget).toBe(100);
+    expect(engine.snapshot().shop?.recruit?.bought).toBe(false);
+  });
+
+  it('採用フェーズで hire / skip できる', () => {
+    const hire = new RunEngine({ seed: 'ri26-phase-hire', difficulty: 'easy' });
+    hire.startRun();
+    const hireBefore = hire.snapshot();
+    const hireInternals = hire as unknown as ShopRecruitInternals;
+    hireInternals.phase = 'recruit';
+    hireInternals.budget = 40;
+    hire.recruitChoose('hire');
+    const hired = hire.snapshot();
+    expect(hired.roster.members.length).toBe(hireBefore.roster.members.length + 1);
+    expect(hired.budget).toBe(40 - RECRUIT_COST);
+    expect(hired.phase).toBe('setup');
+    // 採用成功時は見送りペナルティを課さない。
+    expect(hired.org.morale).toBe(hireBefore.org.morale);
+
+    const skip = new RunEngine({ seed: 'ri26-phase-skip', difficulty: 'easy' });
+    skip.startRun();
+    const skipBefore = skip.snapshot();
+    const skipInternals = skip as unknown as ShopRecruitInternals;
+    skipInternals.phase = 'recruit';
+    skip.recruitChoose('skip');
+    const skipped = skip.snapshot();
+    expect(skipped.roster.members.length).toBe(skipBefore.roster.members.length);
+    expect(skipped.budget).toBe(skipBefore.budget);
+    expect(skipped.phase).toBe('setup');
+    // accept→skip が見送り選択を支配しないよう、士気コストを課す。
+    expect(skipped.org.morale).toBe(skipBefore.org.morale - 4);
+  });
+
+  it('採用フェーズ見送りは moraleDamageMul を通し、士気崩壊なら lost になる', () => {
+    const engine = new RunEngine({ seed: 'ri26-skip-morale-lose', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as ShopRecruitInternals & {
+      org: { morale: number };
+      relics: string[];
+    };
+    internals.phase = 'recruit';
+    internals.org.morale = 3;
+    internals.relics = [];
+    engine.recruitChoose('skip');
+    const after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('moraleCollapse');
+    expect(after.phase).toBe('lost');
+    expect(after.org.morale).toBe(0);
+  });
+
+  it('urgent-hire の grantRecruit で即時採用し、編成へ戻る', () => {
+    const engine = new RunEngine({ seed: 'ri26-event-hire', difficulty: 'easy' });
+    engine.startRun();
+    const before = engine.snapshot();
+    const internals = engine as unknown as ShopRecruitInternals;
+    internals.phase = 'beat';
+    internals.budget = 60;
+    internals.beat = { eventId: 'urgent-hire', kind: 'decision' };
+    engine.resolveBeat(0);
+    const after = engine.snapshot();
+    expect(after.roster.members.length).toBe(before.roster.members.length + 1);
+    expect(after.budget).toBe(60 - RECRUIT_COST);
+    // 即時採用後は編成へ戻り、ベンチの新メンバーを配置できる。
+    expect(after.phase).toBe('setup');
+    expect(after.roster.members.at(-1)?.assignment).toBe('bench');
+    expect(after.stakeholderTrust.team).toBe(before.stakeholderTrust.team);
+  });
+
+  it('採用不能時は採用系ビートを抽選しない', () => {
+    const engine = new RunEngine({ seed: 'ri26-no-hire-pool', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as ShopRecruitInternals & {
+      advanceBeat: () => void;
+      budget: number;
+    };
+    // 予算不足で採用不能。
+    internals.budget = RECRUIT_COST - 1;
+    for (let i = 0; i < 40; i += 1) {
+      internals.phase = 'evolution';
+      internals.advanceBeat();
+      const beat = engine.snapshot().beat;
+      if (!beat) continue;
+      expect(['recruit-offer', 'urgent-hire']).not.toContain(beat.eventId);
+    }
+  });
+
+  it('urgent-hire の採用失敗は見送り相当の信頼低下を課す', () => {
+    const engine = new RunEngine({ seed: 'ri26-event-hire-fail', difficulty: 'easy' });
+    engine.startRun();
+    const before = engine.snapshot();
+    const internals = engine as unknown as ShopRecruitInternals;
+    internals.phase = 'beat';
+    internals.budget = RECRUIT_COST - 1;
+    internals.beat = { eventId: 'urgent-hire', kind: 'decision' };
+    engine.resolveBeat(0);
+    const after = engine.snapshot();
+    expect(after.roster.members.length).toBe(before.roster.members.length);
+    expect(after.budget).toBe(RECRUIT_COST - 1);
+    expect(after.stakeholderTrust.team).toBe(before.stakeholderTrust.team - 4);
+    expect(after.phase).toBe('sprint');
+  });
+
+  it('recruit-offer 受諾で採用フェーズへ入り、見送りは士気低下してスプリントへ', () => {
+    const accept = new RunEngine({ seed: 'ri26-offer-accept', difficulty: 'easy' });
+    accept.startRun();
+    const acceptInternals = accept as unknown as ShopRecruitInternals;
+    acceptInternals.phase = 'beat';
+    acceptInternals.beat = { eventId: 'recruit-offer', kind: 'decision' };
+    accept.resolveBeat(0);
+    expect(accept.snapshot().phase).toBe('recruit');
+
+    const decline = new RunEngine({ seed: 'ri26-offer-decline', difficulty: 'easy' });
+    decline.startRun();
+    const moraleBefore = decline.snapshot().org.morale;
+    const declineInternals = decline as unknown as ShopRecruitInternals;
+    declineInternals.phase = 'beat';
+    declineInternals.beat = { eventId: 'recruit-offer', kind: 'decision' };
+    decline.resolveBeat(1);
+    const declined = decline.snapshot();
+    expect(declined.phase).toBe('sprint');
+    expect(declined.org.morale).toBe(moraleBefore - 4);
   });
 });
 

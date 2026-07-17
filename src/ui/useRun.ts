@@ -42,8 +42,10 @@ export interface UseRun {
   finishEvolution: () => void;
   buyShopCard: (defId: string) => void;
   buyShopRelic: () => void;
+  buyShopRecruit: () => void;
   leaveShop: () => void;
   restChoose: (option: 'heal' | 'repay' | 'upgrade' | 'recruit', deckIndex?: number) => void;
+  recruitChoose: (option: 'hire' | 'skip') => void;
   assignMember: (id: string, assignment: LaneAssignment) => void;
   setMemberAi: (id: string, on: boolean) => void;
   zoomTo: (level: ZoomLevel) => void;
@@ -103,10 +105,15 @@ export function useRun(game: GameHandle): UseRun {
   const finishEvolution = useCallback(() => void game.finishEvolution(), [game]);
   const buyShopCard = useCallback((defId: string) => void game.buyShopCard(defId), [game]);
   const buyShopRelic = useCallback(() => void game.buyShopRelic(), [game]);
+  const buyShopRecruit = useCallback(() => void game.buyShopRecruit(), [game]);
   const leaveShop = useCallback(() => void game.leaveShop(), [game]);
   const restChoose = useCallback(
     (option: 'heal' | 'repay' | 'upgrade' | 'recruit', deckIndex?: number) =>
       void game.restChoose(option, deckIndex),
+    [game],
+  );
+  const recruitChoose = useCallback(
+    (option: 'hire' | 'skip') => void game.recruitChoose(option),
     [game],
   );
   const assignMember = useCallback(
@@ -153,8 +160,10 @@ export function useRun(game: GameHandle): UseRun {
     finishEvolution,
     buyShopCard,
     buyShopRelic,
+    buyShopRecruit,
     leaveShop,
     restChoose,
+    recruitChoose,
     assignMember,
     setMemberAi,
     zoomTo,

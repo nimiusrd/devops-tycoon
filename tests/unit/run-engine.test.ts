@@ -792,7 +792,7 @@ describe('RI-26 採用の入口拡張', () => {
     expect(after.org.morale).toBe(0);
   });
 
-  it('urgent-hire の grantRecruit で即時採用する', () => {
+  it('urgent-hire の grantRecruit で即時採用し、編成へ戻る', () => {
     const engine = new RunEngine({ seed: 'ri26-event-hire', difficulty: 'easy' });
     engine.startRun();
     const before = engine.snapshot();
@@ -804,9 +804,28 @@ describe('RI-26 採用の入口拡張', () => {
     const after = engine.snapshot();
     expect(after.roster.members.length).toBe(before.roster.members.length + 1);
     expect(after.budget).toBe(60 - RECRUIT_COST);
-    // 即時採用後は通常スプリントへ進む。
-    expect(after.phase).toBe('sprint');
+    // 即時採用後は編成へ戻り、ベンチの新メンバーを配置できる。
+    expect(after.phase).toBe('setup');
+    expect(after.roster.members.at(-1)?.assignment).toBe('bench');
     expect(after.stakeholderTrust.team).toBe(before.stakeholderTrust.team);
+  });
+
+  it('採用不能時は採用系ビートを抽選しない', () => {
+    const engine = new RunEngine({ seed: 'ri26-no-hire-pool', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as ShopRecruitInternals & {
+      advanceBeat: () => void;
+      budget: number;
+    };
+    // 予算不足で採用不能。
+    internals.budget = RECRUIT_COST - 1;
+    for (let i = 0; i < 40; i += 1) {
+      internals.phase = 'evolution';
+      internals.advanceBeat();
+      const beat = engine.snapshot().beat;
+      if (!beat) continue;
+      expect(['recruit-offer', 'urgent-hire']).not.toContain(beat.eventId);
+    }
   });
 
   it('urgent-hire の採用失敗は見送り相当の信頼低下を課す', () => {

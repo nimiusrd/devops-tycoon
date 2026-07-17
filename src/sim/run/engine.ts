@@ -823,6 +823,13 @@ export class RunEngine {
     if (isBossNext) {
       pool = pool.filter((d) => !d.choices.some((c) => c.leadsTo === 'sprint-elite'));
     }
+    // 採用不能時は採用系ビートを出さない（面接へ進んでも採用できずペナルティだけ、を防ぐ。RI-26）。
+    const canHireNow = canRecruit(this.roster) && this.budget >= RECRUIT_COST;
+    if (!canHireNow) {
+      pool = pool.filter(
+        (d) => !d.choices.some((c) => c.leadsTo === 'recruit' || c.outcome.grantRecruit),
+      );
+    }
     // 組織状態の信号で抽選対象を絞る（minSignal 未達のイベントはプールに入れない）。
     const signals = eventSignals(this.org);
     pool = pool.filter((d) => eventEligible(d, signals));
@@ -894,13 +901,18 @@ export class RunEngine {
       return;
     }
 
-    // RI-26: イベント即時採用（予算消費。失敗時は onRecruitFail で見送り相当の代償）。
+    // RI-26: イベント即時採用（予算消費。成功時は編成へ戻し配置可能にする。
+    // 失敗時は onRecruitFail で見送り相当の代償を課し、既定の leadsTo へ進む）。
     if (res.grantRecruit) {
       const hired = this.tryRecruit(
         `event-recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
       );
       if (this.status === 'lost') return;
-      if (!hired && choice.outcome.onRecruitFail) {
+      if (hired) {
+        this.setPhase('setup');
+        return;
+      }
+      if (choice.outcome.onRecruitFail) {
         const fail = applyEventOutcome(
           choice.outcome.onRecruitFail,
           this.org,

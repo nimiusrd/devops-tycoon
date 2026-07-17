@@ -19,12 +19,14 @@ describe('ランフェーズマシン（XState / 第3章）', () => {
     expect(drive(['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'])).toBe('beat');
   });
 
-  it('ビートから通常スプリント／ショップ／休息／採用へ分岐し、編成へ戻る', () => {
+  it('ビートから通常スプリント／ショップ／休息／採用／編成へ分岐できる', () => {
     const toBeat: RunEvent['type'][] = ['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'];
     expect(drive([...toBeat, 'ENTER_SPRINT'])).toBe('sprint');
     expect(drive([...toBeat, 'ENTER_SHOP', 'RESOLVE'])).toBe('setup');
     expect(drive([...toBeat, 'ENTER_REST', 'RESOLVE'])).toBe('setup');
     expect(drive([...toBeat, 'ENTER_RECRUIT', 'RESOLVE'])).toBe('setup');
+    // 即時採用成功など、ビートから直接編成へ戻れる。
+    expect(drive([...toBeat, 'RESOLVE'])).toBe('setup');
     // ショップ・休息後の編成（setup-pre）から次スプリントを開始できる。
     expect(drive([...toBeat, 'ENTER_SHOP', 'RESOLVE', 'BEGIN'])).toBe('sprint');
   });

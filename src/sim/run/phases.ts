@@ -78,6 +78,8 @@ export const RUN_PHASE_TRANSITIONS: Readonly<
     ENTER_SHOP: 'shop',
     ENTER_REST: 'rest',
     ENTER_RECRUIT: 'recruit',
+    // 即時採用成功後など、ビートから直接編成へ戻る（RI-26）。
+    RESOLVE: 'setup',
     LOST: 'lost',
   },
   // 購入・採用で予算枯渇した場合は編成へ戻らず lost へ。

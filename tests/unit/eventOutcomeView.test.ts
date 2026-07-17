@@ -101,6 +101,7 @@ describe('formatEventChoiceTags（選択肢＋画面遷移）', () => {
     expect(formatEventChoiceTags(urgentHire)).toEqual([
       { label: '予算 -25', tone: 'negative' },
       { label: 'メンバー +1', tone: 'positive' },
+      { label: '編成へ', tone: 'neutral' },
       { label: '失敗時 チーム信頼 -4', tone: 'negative' },
     ]);
   });

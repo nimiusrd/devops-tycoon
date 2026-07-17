@@ -184,6 +184,7 @@ export function formatEventOutcomeTags(outcome: EventOutcome): EffectTag[] {
   if (outcome.grantRecruit) {
     pushTag(tags, `予算 -${RECRUIT_COST}`, 'negative');
     pushTag(tags, 'メンバー +1', 'positive');
+    pushTag(tags, '編成へ', 'neutral');
     if (outcome.onRecruitFail) {
       const failTags = formatEventOutcomeTags(outcome.onRecruitFail);
       for (const tag of failTags) {

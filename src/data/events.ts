@@ -345,7 +345,8 @@ export const EVENT_DEFS: EventDef[] = [
     choices: [
       {
         label: '即採用する',
-        description: '予算を払い、ベンチにメンバーを1人加える（採用できない場合は見送り相当）',
+        description:
+          '予算を払い、ベンチにメンバーを1人加えて編成へ戻る（採用できない場合は見送り相当）',
         outcome: { grantRecruit: true, onRecruitFail: { trust: { team: -4 } } },
       },
       {

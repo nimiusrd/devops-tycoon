@@ -28,11 +28,16 @@ import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
 import { SlowMotionOverlay } from './JuicyEffects';
 
+/** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
+const BOSS_SLOWMO_MS = 1_200;
+
 export interface SprintScreenProps {
   state: RunState;
   onDispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
   onPlayCard: (deckIndex: number) => CardPlayOutcome;
   getSprintSnapshot: () => SprintState | null;
+  /** スローモ中に自動進行を止める（RI-10）。 */
+  pauseBriefly: (ms: number) => void;
 }
 
 export function SprintScreen({
@@ -40,6 +45,7 @@ export function SprintScreen({
   onDispatch,
   onPlayCard,
   getSprintSnapshot,
+  pauseBriefly,
 }: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
@@ -103,11 +109,12 @@ export function SprintScreen({
         if (slowMotion.active) {
           setSlowMoPlan({ clearedIncidentCount: slowMotion.clearedIncidentCount });
           setSlowMoKey((key) => key + 1);
+          pauseBriefly(BOSS_SLOWMO_MS);
           if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
           slowMoTimer.current = window.setTimeout(() => {
             setSlowMoKey(0);
             slowMoTimer.current = null;
-          }, 1_200);
+          }, BOSS_SLOWMO_MS);
         }
         triggerKey.current += 1;
         setInterventionTrigger({
@@ -125,7 +132,15 @@ export function SprintScreen({
       }
       return outcome;
     },
-    [onDispatch, getSprintSnapshot, setArmedId, sprint, state.currentSprintKind, state.sprintTick],
+    [
+      onDispatch,
+      getSprintSnapshot,
+      pauseBriefly,
+      setArmedId,
+      sprint,
+      state.currentSprintKind,
+      state.sprintTick,
+    ],
   );
 
   const handleDragComplete = useCallback(

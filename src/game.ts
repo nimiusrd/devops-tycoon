@@ -455,6 +455,24 @@ declare global {
 }
 
 /**
+ * 指定 ms だけ自動進行を一時停止する（RI-10 ボススローモ用）。
+ *
+ * 既に pause 済み（E2E 等）なら触らない。自分が pause した epoch のままなら
+ * タイムアウト後に resume し、途中で外部が再 pause したら解除しない。
+ */
+export function pauseBriefly(
+  game: Pick<GameHandle, 'pause' | 'resume' | 'isPaused' | 'getPauseEpoch'>,
+  ms: number,
+): void {
+  if (game.isPaused()) return;
+  game.pause();
+  const epoch = game.getPauseEpoch();
+  globalThis.setTimeout(() => {
+    if (game.getPauseEpoch() === epoch) game.resume();
+  }, ms);
+}
+
+/**
  * `window.game` を生成して公開する。アプリ起動時に一度だけ呼ぶ。
  */
 export function installGame(options?: CreateGameOptions): GameHandle {

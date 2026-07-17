@@ -48,9 +48,9 @@
 | [16](../SPEC.md#16-難易度設定と試練) | 難易度設定と試練 | `src/data/difficulties.ts`（4 難易度 + `TRIAL_DEFS`）, `src/sim/run/effects.ts`, `src/sim/run/engine.ts` | ✅ 5種の試練を実装。「フロンティアモデル依存」はスプリントごとのAI依存度自然増加と、依存度に応じた予算消費を適用 |
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ進行とアンロック | `src/state/meta.ts`, `src/state/metaPersistence.ts`, `src/data/unlocks.ts`, `src/ui/MetaShopScreen.tsx`, `AchievementCollectionScreen.tsx` / `tests/unit/meta.test.ts`, `metaPersistence.test.ts`, `meta-unlock-run.test.ts`, `unlocks.test.ts` | ✅ IndexedDB によるカード/レリックの永続解放・旧 localStorage 移行・メタショップ・実績閲覧は実装。開始時の組織は難易度（§16）で選定し、メタ解放プリセットはスコープ外（[remaining-issues.md](./remaining-issues.md) RI-25 完了） |
 | [18.1](../SPEC.md#181-基本演出) | 基本演出 | `src/render/taskView.ts`, `src/ui/OfficeActors.tsx`, `src/styles.css` | 🟡 基本演出は実装。ベルトコンベア状の粒移動・AI暴走時の Review 突入は [remaining-issues.md](./remaining-issues.md) RI-05 で残務 |
-| [18.2](../SPEC.md#182-ジューシーな手応え演出) | ジューシーな手応え演出 | `src/ui/PointPops.tsx`, `ComboBadge.tsx` | 🟡 数字ポップ/`COMBO xN` は実装。延焼の連鎖は [remaining-issues.md](./remaining-issues.md) RI-06、割り込みレビューのスイープ・ボスのスローモは RI-10 で残務 |
+| [18.2](../SPEC.md#182-ジューシーな手応え演出) | ジューシーな手応え演出 | `src/ui/PointPops.tsx`, `ComboBadge.tsx`, `InterventionEffects.tsx`, `JuicyEffects.tsx`, `src/render/juicyEffects.ts`, `src/game.ts`（`pauseBriefly`） | ✅ 数字ポップ/`COMBO xN`・延焼（RI-06）・割り込みスイープ・ボススローモ（オーバーレイ＋一時 pause）を実装（[remaining-issues.md](./remaining-issues.md) RI-10 完了） |
 | [18.3](../SPEC.md#183-画面ステート組織の空気感) | 画面ステート（組織の空気感） | `src/render/diagnosisTheme.ts`, `src/App.tsx`, `src/ui/RunBar.tsx`, `src/ui/OrgScreen.tsx`, `src/ui/RunResultScreen.tsx`, `src/styles.css` / `tests/unit/diagnosisTheme.test.ts`, `tests/e2e/run.spec.ts` | ✅ 6 組織タイプ別の背景・色・状態文を実装 |
-| [18.4](../SPEC.md#184-ご褒美演出) | ご褒美演出 | `src/ui/RunResultScreen.tsx`, `src/ui/PointPops.tsx` | 🟡 リザルト表示と数字ポップは実装。レリック獲得・進化解放の手応え演出や評価Sの特別演出は静的表示に留まり残務（[remaining-issues.md](./remaining-issues.md) RI-10） |
+| [18.4](../SPEC.md#184-ご褒美演出) | ご褒美演出 | `src/ui/RunResultScreen.tsx`, `SprintResultScreen.tsx`, `QuarterReviewScreen.tsx`, `EvolutionScreen.tsx`, `JuicyEffects.tsx`, `PointPops.tsx` | ✅ リザルト／数字ポップに加え、レリック獲得・進化解放・評価 S・称号の `RewardCeremony` を実装（[remaining-issues.md](./remaining-issues.md) RI-10 完了） |
 | [18（描画基盤）](../SPEC.md#18-視覚表現) | 視覚表現の WebGL 化 | `src/render/adapters/pixiOrgRenderer.ts`, `pixiDeptRenderer.ts`, `pixiBoardRenderer.ts`, `selectRenderer.ts`, `src/ui/OrgPixiField.tsx`, `DeptPixiBoard.tsx`, `BoardPixiLayer.tsx` / `tests/e2e/org-pixi-visual.spec.ts`, `dept-pixi-visual.spec.ts`, `sprint-pixi-visual.spec.ts` | ✅ 全社マップ・部署ビュー・現場盤面を Pixi 化し**既定レンダラは Pixi**（`?renderer=dom` で DOM/SVG へ opt-out。WebGL 不可環境は自動フォールバック。RI-11 完了）。粒/キャラは RenderTexture 焼き込み＋`SpritePool` のスプライト（RI-07） |
 | [19](../SPEC.md#19-面白さの核) | 面白さの核 | 各画面の体験設計に反映（リスク/リターン設計ほか） | ✅ |
 | [20](../SPEC.md#20-教育的価値) | 教育的価値 | `src/sim/diagnosis.ts`（組織タイプ診断による気づき） | ✅ |
@@ -65,7 +65,7 @@
 
 | 項目 | 該当 SPEC 章 | 状態 | 追跡先 |
 | --- | --- | --- | --- |
-| 演出・ビジュアルの残務（スイープ・スローモー・ご褒美） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.4](../SPEC.md#184-ご褒美演出) | 🟡 中核のみ実装（カメラ遷移 RI-04・スプライト化 RI-07・表情 RI-08・マネージャー像 RI-09 は完了） | [remaining-issues.md](./remaining-issues.md) RI-10 |
+| 演出・ビジュアルの残務（スイープ・スローモー・ご褒美） | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ), [18.2](../SPEC.md#182-ジューシーな手応え演出), [18.4](../SPEC.md#184-ご褒美演出) | ✅ スイープ・ボススローモ（一時 pause）・ご褒美セレモニーを実装（カメラ遷移 RI-04・スプライト化 RI-07・表情 RI-08・マネージャー像 RI-09 も完了） | [remaining-issues.md](./remaining-issues.md) RI-10 |
 | リザルトの介入内訳（割り込み×N / 緊急対応×N の表示） | [4.6](../SPEC.md#46-スプリントリザルト画面) | 🟡 `SprintResult` に未集計 | [remaining-issues.md](./remaining-issues.md) RI-29 |
 | 能動操作・カードの操作方式（タスク差配のドラッグ / 手札配布→発動） | [6](../SPEC.md#6-スプリント中の能動操作), [7](../SPEC.md#7-ai導入施策カードデッキ) | ✅ RI-30 で SPEC 準拠 | [remaining-issues.md](./remaining-issues.md) RI-30 |
 | 開始プリセットの永続解放 | [17](../SPEC.md#17-メタ進行とアンロック) | ✅ スコープ外。開始組織は難易度（§16）。足場削除済み | [remaining-issues.md](./remaining-issues.md) RI-25 |

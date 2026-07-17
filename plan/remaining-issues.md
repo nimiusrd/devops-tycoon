@@ -40,7 +40,7 @@
 | RI-07 | キャラ/粒のスプライト化(`render/iso.ts`) | 低 | 完了 | — | 第18 |
 | RI-08 | キャラ表情スプライト(疲れ顔/ガッツポーズ) | 低 | 完了 | RI-07 | 第18 |
 | RI-09 | アクションバーのマネージャー像 | 低 | 完了 | — | 第4.3 |
-| RI-10 | ジューシー演出の上積み(スイープ/スローモ/ご褒美) | 低 | 未着手 | — | 第18.2 / 18.4 |
+| RI-10 | ジューシー演出の上積み(スイープ/スローモ/ご褒美) | 低 | 完了 | — | 第18.2 / 18.4 |
 
 ### 選択の可視化・フィードバック（UX）
 
@@ -214,10 +214,14 @@ Vitest: `tests/unit/memberMood.test.ts` / `boardScene.test.ts`。
 `src/ui/ManagerPortrait.tsx` として移植し、`ActionBar` の絵文字プレースホルダを置き換えた。
 表情連動は行わず静的マスコット。E2E: `tests/e2e/interventions.spec.ts`（`manager-portrait` 可視）。
 
-#### RI-10 ジューシー演出の上積み(スイープ/スローモ/ご褒美) — 優先度:低
+#### RI-10 ジューシー演出の上積み(スイープ/スローモ/ご褒美) — 優先度:低 / 完了
 
-割り込みレビューの一括処理スイープ、ボス最後の1件のスローモー（第18.2）に加え、レリック獲得・
-進化解放の手応え演出や評価 S の特別演出（第18.4、現状は静的表示）を上積みする。
+**完了**: 割り込みレビューの複数件スイープバースト（`InterventionEffects` / `intervention-sweep-burst`）、
+ボス最終 Incident クリア時のスローモ（`planBossSlowMotion` + `SlowMotionOverlay`）と
+`pauseBriefly` による約 1.2s の自動進行停止（SPEC「時間が一瞬止まる」。E2E 等の外部 pause とは
+epoch 所有権で衝突回避）、レリック獲得・進化解放・評価 S・称号の `RewardCeremony` を接続。
+Vitest: `tests/unit/juicyEffects.test.ts` / `pauseBriefly.test.ts`。
+E2E: `tests/e2e/interventions.spec.ts`（スイープバースト）、`run.spec.ts`（レリックセレモニー）。
 
 ### 選択の可視化・フィードバック（UX）
 
@@ -582,7 +586,7 @@ AI依存度を下げ、効率的な利用へ立て直せる。
 
 ボス突破時に未所持レリックを決定論的に付与し、四半期レビューとラン決着画面に表示する。
 第15 の Incident 連続、AI依存過多、予算枯渇を継続不能として判定し、敗北理由を結果画面に表示する。
-Vitest と Playwright で報酬・各敗北理由の経路を検証済み。レリック獲得演出は RI-10 の対象。
+Vitest と Playwright で報酬・各敗北理由の経路を検証済み。レリック獲得演出は RI-10 で完了。
 
 ### 設計再検討（DESIGN）
 

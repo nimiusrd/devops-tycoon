@@ -774,6 +774,24 @@ describe('RI-26 採用の入口拡張', () => {
     expect(skipped.org.morale).toBe(skipBefore.org.morale - 4);
   });
 
+  it('採用フェーズ見送りは moraleDamageMul を通し、士気崩壊なら lost になる', () => {
+    const engine = new RunEngine({ seed: 'ri26-skip-morale-lose', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as ShopRecruitInternals & {
+      org: { morale: number };
+      relics: string[];
+    };
+    internals.phase = 'recruit';
+    internals.org.morale = 3;
+    internals.relics = [];
+    engine.recruitChoose('skip');
+    const after = engine.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.loseReason).toBe('moraleCollapse');
+    expect(after.phase).toBe('lost');
+    expect(after.org.morale).toBe(0);
+  });
+
   it('urgent-hire の grantRecruit で即時採用する', () => {
     const engine = new RunEngine({ seed: 'ri26-event-hire', difficulty: 'easy' });
     engine.startRun();

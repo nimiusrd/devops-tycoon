@@ -914,6 +914,7 @@ export class RunEngine {
           this.setPhase('lost');
           return;
         }
+        if (this.applyImmediateLose()) return;
       }
     }
 
@@ -1058,7 +1059,7 @@ export class RunEngine {
 
   /**
    * 採用フェーズの選択（hire: 採用 / skip: 見送り）。選択後は編成（setup-pre）へ。
-   * RI-26 の専用採用ビート。見送り（および採用失敗）は recruit-offer 見送りと同コスト。
+   * RI-26 の専用採用ビート。見送り（および採用失敗）は recruit-offer 見送りと同経路・同コスト。
    */
   recruitChoose(option: 'hire' | 'skip'): void {
     if (this.phase !== 'recruit') return;
@@ -1067,16 +1068,21 @@ export class RunEngine {
         `recruit-phase:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`,
       );
       if (this.status === 'lost') return;
-      if (!hired) this.applyRecruitSkipPenalty();
-    } else {
-      this.applyRecruitSkipPenalty();
+      if (!hired && this.applyRecruitSkipPenalty()) return;
+    } else if (this.applyRecruitSkipPenalty()) {
+      return;
     }
     this.setPhase('setup');
   }
 
-  /** 採用フェーズ見送りの士気コスト（`RECRUIT_SKIP_MORALE`。支配戦略防止）。 */
-  private applyRecruitSkipPenalty(): void {
-    this.org.morale = clamp(this.org.morale + RECRUIT_SKIP_MORALE, 0, 100);
+  /**
+   * 採用フェーズ見送りの士気コスト（`RECRUIT_SKIP_MORALE`）。
+   * recruit-offer 見送りと同じく `applyEventOutcome`（moraleDamageMul）経由で適用し、即時敗北を評価する。
+   * @returns true なら lost へ遷移済み。
+   */
+  private applyRecruitSkipPenalty(): boolean {
+    applyEventOutcome({ morale: RECRUIT_SKIP_MORALE }, this.org, foldPassives(this.relics));
+    return this.applyImmediateLose();
   }
 
   /**

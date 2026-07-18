@@ -454,6 +454,32 @@ declare global {
   }
 }
 
+/** `pauseBriefly` のキャンセル。タイマーを消し、所有 epoch なら resume する。 */
+export type PauseBrieflyClear = () => void;
+
+/**
+ * 指定 ms だけ自動進行を一時停止する（RI-10 ボススローモ用）。
+ *
+ * 既に pause 済み（E2E 等）なら触らない。自分が pause した epoch のままなら
+ * タイムアウト後に resume し、途中で外部が再 pause したら解除しない。
+ * 戻り値の clear でタイマー取消＋所有時 resume（画面アンマウント用）。
+ */
+export function pauseBriefly(
+  game: Pick<GameHandle, 'pause' | 'resume' | 'isPaused' | 'getPauseEpoch'>,
+  ms: number,
+): PauseBrieflyClear {
+  if (game.isPaused()) return () => {};
+  game.pause();
+  const epoch = game.getPauseEpoch();
+  const timer = globalThis.setTimeout(() => {
+    if (game.getPauseEpoch() === epoch) game.resume();
+  }, ms);
+  return () => {
+    globalThis.clearTimeout(timer);
+    if (game.getPauseEpoch() === epoch) game.resume();
+  };
+}
+
 /**
  * `window.game` を生成して公開する。アプリ起動時に一度だけ呼ぶ。
  */

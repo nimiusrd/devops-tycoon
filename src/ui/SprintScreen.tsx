@@ -19,6 +19,7 @@ import type {
   InterventionOutcome,
   SprintState,
 } from '../sim/types';
+import type { PauseBrieflyClear } from '../game';
 import type { RunState } from '../sim/run/types';
 import type { InterventionTrigger } from './InterventionEffects';
 import { ActionBar } from './ActionBar';
@@ -28,11 +29,16 @@ import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
 import { SlowMotionOverlay } from './JuicyEffects';
 
+/** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
+const BOSS_SLOWMO_MS = 1_200;
+
 export interface SprintScreenProps {
   state: RunState;
   onDispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
   onPlayCard: (deckIndex: number) => CardPlayOutcome;
   getSprintSnapshot: () => SprintState | null;
+  /** スローモ中に自動進行を止める（RI-10）。戻り値でキャンセル。 */
+  pauseBriefly: (ms: number) => PauseBrieflyClear;
 }
 
 export function SprintScreen({
@@ -40,6 +46,7 @@ export function SprintScreen({
   onDispatch,
   onPlayCard,
   getSprintSnapshot,
+  pauseBriefly,
 }: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
@@ -59,6 +66,7 @@ export function SprintScreen({
   const feedbackNonce = useRef(0);
   const triggerKey = useRef(0);
   const slowMoTimer = useRef<number | null>(null);
+  const clearPauseBriefly = useRef<PauseBrieflyClear | null>(null);
   const [slowMoKey, setSlowMoKey] = useState(0);
   const [slowMoPlan, setSlowMoPlan] = useState({ clearedIncidentCount: 0 });
   // 完了中・別スプリントの武装は無効（effect で setState しない）。
@@ -83,6 +91,8 @@ export function SprintScreen({
   useEffect(
     () => () => {
       if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
+      clearPauseBriefly.current?.();
+      clearPauseBriefly.current = null;
     },
     [],
   );
@@ -103,11 +113,14 @@ export function SprintScreen({
         if (slowMotion.active) {
           setSlowMoPlan({ clearedIncidentCount: slowMotion.clearedIncidentCount });
           setSlowMoKey((key) => key + 1);
+          clearPauseBriefly.current?.();
+          clearPauseBriefly.current = pauseBriefly(BOSS_SLOWMO_MS);
           if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
           slowMoTimer.current = window.setTimeout(() => {
             setSlowMoKey(0);
             slowMoTimer.current = null;
-          }, 1_200);
+            clearPauseBriefly.current = null;
+          }, BOSS_SLOWMO_MS);
         }
         triggerKey.current += 1;
         setInterventionTrigger({
@@ -125,7 +138,15 @@ export function SprintScreen({
       }
       return outcome;
     },
-    [onDispatch, getSprintSnapshot, setArmedId, sprint, state.currentSprintKind, state.sprintTick],
+    [
+      onDispatch,
+      getSprintSnapshot,
+      pauseBriefly,
+      setArmedId,
+      sprint,
+      state.currentSprintKind,
+      state.sprintTick,
+    ],
   );
 
   const handleDragComplete = useCallback(

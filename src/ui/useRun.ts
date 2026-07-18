@@ -6,7 +6,7 @@
  * （E2E が `pause()` した時）は止まる（第22.5）。描画は状態を読むだけ（第22.2）。
  */
 import { useCallback, useEffect, useState } from 'react';
-import type { GameHandle } from '../game';
+import { pauseBriefly as pauseGameBriefly, type GameHandle, type PauseBrieflyClear } from '../game';
 import type { MetaState } from '../state/meta';
 import type {
   ActionId,
@@ -35,6 +35,11 @@ export interface UseRun {
   playCard: (deckIndex: number) => CardPlayOutcome;
   /** dispatch 直後のスプリント快照（盤面演出用）。 */
   getSprintSnapshot: () => SprintState | null;
+  /**
+   * 指定 ms だけ自動進行を止める（RI-10 ボススローモ）。
+   * 既に pause 済みなら触らない。戻り値でキャンセルできる。
+   */
+  pauseBriefly: (ms: number) => PauseBrieflyClear;
   acknowledgeResult: () => void;
   chooseCard: (defId: string) => void;
   skipDraft: () => void;
@@ -98,6 +103,7 @@ export function useRun(game: GameHandle): UseRun {
   );
   const playCard = useCallback((deckIndex: number) => game.playCard(deckIndex), [game]);
   const getSprintSnapshot = useCallback(() => game.getState().sprint, [game]);
+  const pauseBriefly = useCallback((ms: number) => pauseGameBriefly(game, ms), [game]);
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
   const chooseCard = useCallback((defId: string) => void game.chooseCard(defId), [game]);
   const skipDraft = useCallback(() => void game.skipDraft(), [game]);
@@ -153,6 +159,7 @@ export function useRun(game: GameHandle): UseRun {
     dispatch,
     playCard,
     getSprintSnapshot,
+    pauseBriefly,
     acknowledgeResult,
     chooseCard,
     skipDraft,

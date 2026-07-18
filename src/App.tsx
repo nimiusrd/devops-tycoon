@@ -270,6 +270,7 @@ export default function App({ game }: AppProps) {
             onDispatch={run.dispatch}
             onPlayCard={run.playCard}
             getSprintSnapshot={run.getSprintSnapshot}
+            pauseBriefly={run.pauseBriefly}
           />
         )}
       </Suspense>

@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { EVENT_DEFS, effectiveKind, getEvent } from '../../src/data/events';
 import { diagnosisTheme } from '../../src/render/diagnosisTheme';
 import { quarterFailureTheme } from '../../src/render/quarterFailureTheme';
+import type { MetaState } from '../../src/state/meta';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunEngine } from '../../src/sim/run/engine';
 import type { GoalAdjustmentId, QuarterOutcome, RunState } from '../../src/sim/run/types';
@@ -25,6 +26,7 @@ type GameWindow = Window & {
   game?: {
     pause(): void;
     getState(): RunState;
+    getMeta(): MetaState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
     beginSetupSprint(): RunState;
     resolveBeat(choiceIndex?: number): RunState;
@@ -65,11 +67,28 @@ test.beforeEach(async ({ page }) => {
 test('トラック→ボスまで通しプレイすると勝敗が決まり、ラン決着画面が出る（DoD）', async ({
   page,
 }) => {
+  await page.addInitScript(({ key, meta }) => localStorage.setItem(key, JSON.stringify(meta)), {
+    key: 'devops-tycoon:meta:v1',
+    meta: {
+      points: 0,
+      unlockedDifficulties: ['easy', 'normal'],
+      defeatedBosses: [],
+      achievements: [],
+      bestScore: 0,
+      unlockedCards: [],
+      unlockedRelics: [],
+      dailyRuns: {},
+    },
+  });
+
   await page.goto('/?renderer=dom&seed=full-run');
+  // metaReady=false のまま完走すると報酬が落ちるため、hydration 完了（タイトル表示）を待つ
+  await expect(page.getByTestId('title')).toBeVisible();
 
   const status = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     g.pause();
+    const beforePoints = g.getMeta().points;
     g.startRun('easy', [], 'full-run');
     let guard = 0;
     let s = g.getState();
@@ -124,10 +143,25 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
       }
       s = g.getState();
     }
-    return { status: s.status, diagnosis: s.diagnosis };
+    const meta = g.getMeta();
+    return {
+      status: s.status,
+      diagnosis: s.diagnosis,
+      bossId: s.bossId,
+      beforePoints,
+      points: meta.points,
+      achievements: meta.achievements,
+      defeatedBosses: meta.defeatedBosses,
+    };
   });
 
   expect(['won', 'lost']).toContain(status.status);
+  // ラン完走 → applyRunReward 経由でメタ進行へ反映される（勝敗どちらでも points が増える）
+  expect(status.points).toBeGreaterThan(status.beforePoints);
+  if (status.status === 'won') {
+    expect(status.achievements).toContain('first-clear');
+    if (status.bossId) expect(status.defeatedBosses).toContain(status.bossId);
+  }
 
   await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId('run-end-status')).toBeVisible();

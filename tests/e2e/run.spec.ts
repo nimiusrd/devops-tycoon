@@ -160,7 +160,8 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
   expect(status.points).toBeGreaterThan(status.beforePoints);
   if (status.status === 'won') {
     expect(status.achievements).toContain('first-clear');
-    if (status.bossId) expect(status.defeatedBosses).toContain(status.bossId);
+    expect(status.bossId).toBeTruthy();
+    expect(status.defeatedBosses).toContain(status.bossId);
   }
 
   await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });

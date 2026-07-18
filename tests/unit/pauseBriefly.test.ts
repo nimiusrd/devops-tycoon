@@ -53,4 +53,27 @@ describe('pauseBriefly（RI-10）', () => {
     expect(game.isPaused()).toBe(true);
     expect(game.getPauseEpoch()).toBe(externalEpoch);
   });
+
+  it('clear でタイマーをキャンセルし、所有 epoch なら resume する', () => {
+    const game = createGame({ seed: 'ri10-pause-clear' });
+    const clear = pauseBriefly(game, 1_200);
+    expect(game.isPaused()).toBe(true);
+
+    clear();
+    expect(game.isPaused()).toBe(false);
+
+    vi.advanceTimersByTime(1_200);
+    expect(game.isPaused()).toBe(false);
+  });
+
+  it('clear 時に外部が再 pause 済みなら resume しない', () => {
+    const game = createGame({ seed: 'ri10-pause-clear-reowned' });
+    const clear = pauseBriefly(game, 1_200);
+    game.pause();
+    const externalEpoch = game.getPauseEpoch();
+
+    clear();
+    expect(game.isPaused()).toBe(true);
+    expect(game.getPauseEpoch()).toBe(externalEpoch);
+  });
 });

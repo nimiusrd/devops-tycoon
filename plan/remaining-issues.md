@@ -759,9 +759,13 @@ Vitest: `tests/unit/run-phases.test.ts`（表の形状契約・BFS到達可能�
 
 **完了**: 2026-07-18 に全依存導入済みの状態で `npm test`（59 ファイル / 771 テスト）、
 `npm run test:e2e`（40 passed / 11 skipped は @pixi opt-in スイート）、`npm run lint` /
-`npm run format:check`、`npm run build` を実行し、タイトル→トラック→ボス→解放までの DoD が
-緑であることを確認した。Chromium の場所が特殊な環境では `PLAYWRIGHT_CHROMIUM=<実行ファイル>` を
-指定して E2E を実行する（`playwright.config.ts` が対応済み。AGENTS.md にも追記）。
+`npm run format:check`、`npm run build` を実行し、タイトル→固定トラック→ボス→決着→メタ反映までの
+DoD が緑であることを確認した。文言の「マップ→ボス→解放」は RI-33 以降の現行仕様に合わせ読み替え。
+根拠: unit の `run-engine.test.ts` 通し DoD・`meta.test.ts` の `applyRunReward`、e2e の
+`run.spec.ts` 通し DoD（完走後 `getMeta()` で points／勝利時は `first-clear`・撃破ボスを検証）。
+ショップ購入・永続化は `meta-shop.spec.ts` / `meta-persistence.spec.ts` が別途カバー。
+Chromium の場所が特殊な環境では `PLAYWRIGHT_CHROMIUM=<実行ファイル>` を指定して E2E を実行する
+（`playwright.config.ts` が対応済み。AGENTS.md にも追記）。
 
 #### RI-41 代表 seed の記録(AIあり/なし差分) — 優先度:低 / 完了
 

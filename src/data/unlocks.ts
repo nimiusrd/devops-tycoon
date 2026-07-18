@@ -3,6 +3,7 @@
  *
  * ドラフト／ショップのプールにのみ影響する購入対象。イベント等で直接付与される
  * ID はここに含めない（plan spec-mapping.md §2 M7）。
+ * メンバー／トレイト／開始キット（初期カード等）のメタ解放は RI-24 でスコープ外。
  */
 import { CARD_DEFS } from './cards';
 import { EVENT_DEFS } from './events';

@@ -9,5 +9,6 @@
 - 注意（gotcha）: 非ログインの素のシェルでは PATH 先頭の `/exec-daemon/node`（v22）が優先されてしまう。その場合は `export PATH="$HOME/.nvm/versions/node/v24.18.0/bin:$PATH"` を先頭に付けるか、`bash -l` 経由でコマンドを実行すること。
 - 標準コマンドは `package.json` の scripts 参照: 開発サーバ `npm run dev`（ポート5174）、ユニット `npm test`（vitest）、E2E `npm run test:e2e`（Playwright / Chromium 必要）、ビルド `npm run build`。
 - 画面の見た目を一括確認するには `npm run gallery`（seed 固定で主要画面を撮影し `gallery/index.html` に一覧を生成。デザイン確認用でコミット対象外。Chromium の場所が特殊な環境では `GALLERY_CHROMIUM=<実行ファイル>` を指定）。
+- E2E も同様に、Playwright 管理外の Chromium しか無い環境では `PLAYWRIGHT_CHROMIUM=<実行ファイル>` を指定して実行する（`playwright.config.ts` が対応済み。例: `PLAYWRIGHT_CHROMIUM=/opt/pw-browsers/chromium npm run test:e2e`）。
 - E2E の `@pixi` 視覚回帰テストは通常スキップされる。実行は `npm run test:e2e:pixi`（`PIXI_E2E=1`）が必要で、ベースラインスナップショットに依存する。
 - 既定レンダラは PixiJS（WebGL）。`?renderer=dom` で DOM/SVG レンダラへ切り替えられる（WebGL 不可環境は自動フォールバック）。CI 既定の E2E は `renderer=dom` を明示して実 WebGL を回さない。

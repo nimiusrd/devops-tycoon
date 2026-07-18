@@ -26,6 +26,7 @@
 | [2](../SPEC.md#2-コンセプト) | コンセプト（AI導入のコア因果） | `src/sim/sprint.ts`, `src/sim/model/process.ts` / `tests/unit/sprint.test.ts`, `process.test.ts` | ✅ |
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観の制約 | [architecture.md](./architecture.md) §4.5（イベント/ボス/敗北/称号の判断基準） | ✅ |
 | [3](../SPEC.md#3-ゲームの基本ループ) | ゲームの基本ループ | `src/sim/run/phases.ts`, `src/sim/run/engine.ts`, `src/state/runMachine.ts` / `tests/unit/run-phases.test.ts`, `run-machine.test.ts`, `run-engine.test.ts`, `run-loop.test.ts` | ✅ 固定トラック（`SPRINTS_PER_QUARTER`、最終がボス）＋スプリント間ビートで実装（分岐マップは撤去）。フェーズ遷移は遷移表 `phases.ts` が単一の真実源（RI-39） |
+| [3.1](../SPEC.md#31-時間の目安ペーシング規定) | 時間の目安（ペーシング規定） | `src/ui/useRun.ts`（`FRAME_MS` / `SIM_STEP_MS`） | 🟡 規定のみ（2026-07 新設）。現状はスプリントが実時間 約2〜12秒（中央値 約6秒）で完了し、目安「60〜120秒」を大きく下回る。一時停止/倍速 UI も未実装（[remaining-issues.md](./remaining-issues.md) RI-62） |
 | [4.1](../SPEC.md#41-メイン画面-開発ライン能動操作フェーズ) | メイン画面: 開発ライン | `src/ui/SprintScreen.tsx`, `src/ui/OfficeRoom.tsx`, `OfficeActors.tsx`, `src/render/taskView.ts`, `src/render/boardScene.ts` / `tests/unit/taskView.test.ts`, `boardScene.test.ts` | ✅ 8種のタスク見た目・レーン・介入バーに加え、粒の工程間フロー移動（`BoardDotMotion` の補間配置＋方向ドリフト・AI速度差。RI-05）を実装 |
 | [4.2](../SPEC.md#42-ステータス表示) | ステータス表示 | `src/ui/Hud.tsx`, `src/render/status.ts` / `tests/unit/status.test.ts` | ✅ |
 | [4.3](../SPEC.md#43-介入アクションバー) | 介入アクションバー | `src/ui/ActionBar.tsx`, `src/sim/actions.ts`, `src/data/actions.ts` / `tests/unit/actions.test.ts`, `tests/e2e/interventions.spec.ts` | ✅ |
@@ -72,6 +73,7 @@
 | 技術構成の残項目（Web Worker+Comlink / Recharts・visx） | [22](../SPEC.md#22-技術構成) | ✅ RI-13 で Worker+Comlink / Recharts を導入。visx・タイムライン Recharts 化は見送り | [remaining-issues.md](./remaining-issues.md) RI-13 |
 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | [17](../SPEC.md#17-メタ進行とアンロック), [22](../SPEC.md#22-技術構成) | ✅ `idb` による保存、既定値補完付き移行、旧キー削除、失敗時フォールバックを実装 | [remaining-issues.md](./remaining-issues.md) RI-57 |
 | バランス調整（目標修正の代償・outcome 閾値・レバー・解放コスト） | [10](../SPEC.md#10-ランとボススプリント), [14](../SPEC.md#14-勝利条件), [15](../SPEC.md#15-敗北条件--継続不能条件), [16](../SPEC.md#16-難易度設定と試練), [17](../SPEC.md#17-メタ進行とアンロック) | ✅ RI-14〜RI-19 / RI-56 でモンテカルロ許容レンジ検証を整備（暫定値は現状調整不要と判断） | [remaining-issues.md](./remaining-issues.md) RI-14〜RI-19, RI-56 |
+| ゲーム時間の目安（スプリント 60〜120 秒・一時停止/倍速） | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | 未着手（実測 中央値 約6秒。規定を 2026-07 に新設） | [remaining-issues.md](./remaining-issues.md) RI-62 |
 | サウンド演出（BGM・効果音） | [18.3](../SPEC.md#183-画面ステート組織の空気感) | 未着手（音の実装なし） | [remaining-issues.md](./remaining-issues.md) RI-59 |
 | ラン途中セーブ・リプレイ保存（保存の想定用途「セーブ・リプレイ」） | [17](../SPEC.md#17-メタ進行とアンロック), [22](../SPEC.md#22-技術構成), [23](../SPEC.md#23-拡張案) | 未着手（メタ進行のみ永続化済み） | [remaining-issues.md](./remaining-issues.md) RI-58 / RI-61 |
 | 拡張案（デイリーラン以外: GitHub 連携・対抗ランキング ほか） | [23](../SPEC.md#23-拡張案) | 未着手 | [remaining-issues.md](./remaining-issues.md) RI-34 |

@@ -115,7 +115,7 @@
 | RI-37 | カード強化のショップ/休息接続確認＋強化対象選択 UI | 中 | 完了 | — | 第7 |
 | RI-38 | `tone: joke` のネタイベント追加 | 低 | 完了 | — | 第9 |
 | RI-39 | XState の役割整理(`phase` 二重管理の解消) | 中 | 完了 | — | 第22 |
-| RI-40 | 通しテスト(DoD)の再確認 | 低 | 未着手 | — | — |
+| RI-40 | 通しテスト(DoD)の再確認 | 低 | 完了 | — | — |
 | RI-41 | 代表 seed の記録(AIあり/なし差分) | 低 | 完了 | — | — |
 | RI-42 | AI 過信の二重診断の段階分け判断 | 低 | 完了 | — | 第13 |
 
@@ -669,10 +669,14 @@ GitHub API 実データモード、チーム対抗ランキング、社内LT/経
 Vitest: `tests/unit/run-phases.test.ts`（表の形状契約・BFS到達可能性）、`run-machine.test.ts`
 （生成後マシンの回帰＋LOST拡張）、`run-engine.test.ts`（`setPhase` の throw・レバーガード）。
 
-#### RI-40 通しテスト(DoD)の再確認 — 優先度:低
+#### RI-40 通しテスト(DoD)の再確認 — 優先度:低 / 完了
 
-依存関係導入後に `npm test` / `npm run test:e2e` / `npm run build` を実行し、マップ→ボス→解放までの DoD を
-緑で確認する。
+**完了**: `npm test`（771件）/ `npm run test:e2e`（40件パス・`@pixi` 11件スキップ）/
+`npm run build` がいずれも緑であることを再確認。文言の「マップ→ボス→解放」は RI-33 以降の
+現行仕様に合わせ「固定トラック→ボス→決着／メタ解放」と読み替え、根拠は既存テスト群で充足
+（unit: `run-engine.test.ts` 通し DoD・`meta.test.ts` の `applyRunReward`、
+e2e: `run.spec.ts` 通し DoD・`meta-shop.spec.ts` / `meta-persistence.spec.ts`）。
+新規実装・テスト追加は不要だった。
 
 #### RI-41 代表 seed の記録(AIあり/なし差分) — 優先度:低 / 完了
 

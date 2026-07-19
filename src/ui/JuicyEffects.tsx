@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useAudio } from '../audio/useAudio';
 
 export type RewardCeremonyKind = 'relic' | 'evolution' | 'grade-s' | 'title';
 
@@ -27,6 +29,11 @@ export function RewardCeremony({
   title: string;
   detail?: string;
 }) {
+  const { playSfx } = useAudio();
+  useEffect(() => {
+    playSfx('ceremony');
+  }, [kind, playSfx]);
+
   return (
     <motion.div
       className={`reward-ceremony reward-ceremony-${kind}`}

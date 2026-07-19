@@ -41,7 +41,7 @@
 | RI-08 | キャラ表情スプライト(疲れ顔/ガッツポーズ) | 低 | 完了 | RI-07 | 第18 |
 | RI-09 | アクションバーのマネージャー像 | 低 | 完了 | — | 第4.3 |
 | RI-10 | ジューシー演出の上積み(スイープ/スローモ/ご褒美) | 低 | 完了 | — | 第18.2 / 18.4 |
-| RI-59 | サウンド演出(BGM・効果音)の導入 | 低 | 未着手 | — | 第18.3 |
+| RI-59 | サウンド演出(BGM・効果音)の導入 | 低 | 完了 | — | 第18.3 |
 
 ### 選択の可視化・フィードバック（UX）
 
@@ -230,14 +230,15 @@ epoch 所有権で衝突回避）、レリック獲得・進化解放・評価 S
 Vitest: `tests/unit/juicyEffects.test.ts` / `pauseBriefly.test.ts`。
 E2E: `tests/e2e/interventions.spec.ts`（スイープバースト）、`run.spec.ts`（レリックセレモニー）。
 
-#### RI-59 サウンド演出(BGM・効果音)の導入 — 優先度:低 / 未着手
+#### RI-59 サウンド演出(BGM・効果音)の導入 — 優先度:低 / 完了
 
-SPEC §18.3 は組織状態に応じた「軽快なBGM」等の空気感を挙げるが、現状は音の実装が一切ない
-（`src/` に Audio 関連コードなし）。視覚のジューシー演出（RI-10 / RI-47 / RI-50）が揃った今、
-介入ヒット・出荷・延焼・ご褒美セレモニーへの効果音と、診断テーマ（RI-21）連動の BGM トーンを
-検討する。論点: Web Audio の autoplay 制約（初回操作まで無音にする）、ミュート/音量設定の
-永続化先（`MetaState` へ追加）、アセットをコード生成（シンセ）にするか音源ファイルにするか、
-E2E・決定論への非干渉（音は UI 層のみで sim に触れない）。
+**完了**: Web Audio シンセ（音源ファイルなし）で BGM/SFX を UI 層のみに導入。
+`src/audio/audioEngine.ts` / `sounds.ts` / `AudioProvider.tsx` が unlock（初回操作まで無音）・
+ミュート・SFX・診断連動 BGM（bright/cloudy/tense）を担う。SFX は介入ヒット
+（`InterventionEffects`）・出荷（`PointPops`）・延焼（`FireEffects`）・ご褒美セレモニー
+（`RewardCeremony`）に接続。`MetaState.soundMuted` を IndexedDB 永続化し、タイトル footer の
+ミュートトグル（`data-testid="sound-mute"`）から切替。sim 非接触。
+Vitest: `tests/unit/audio.test.ts`。
 
 ### 選択の可視化・フィードバック（UX）
 

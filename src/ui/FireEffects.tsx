@@ -6,6 +6,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAudio } from '../audio/useAudio';
 import {
   createFireSnapshot,
   detectFireEvents,
@@ -43,6 +44,7 @@ export function FireEffects({
   const nextKey = useRef(0);
   const removalTimers = useRef<Map<number, number>>(new Map());
   const [active, setActive] = useState<ActiveEffect[]>([]);
+  const { playSfx } = useAudio();
 
   useEffect(() => {
     const timers = removalTimers.current;
@@ -74,6 +76,9 @@ export function FireEffects({
 
     const positioned = positionFireEffects(filtered, tasks, priorTasks);
     if (positioned.length === 0) return;
+    if (positioned.some((e) => e.kind === 'spread')) {
+      playSfx('fireSpread');
+    }
 
     const batch = positioned.map((effect) => ({
       ...effect,
@@ -94,7 +99,7 @@ export function FireEffects({
       }, duration + 80);
       removalTimers.current.set(effect.key, timer);
     }
-  }, [tasks, metrics, reviewAccumulator, suppressExtinguishTaskIds]);
+  }, [tasks, metrics, reviewAccumulator, suppressExtinguishTaskIds, playSfx]);
 
   return (
     <div className="fire-effects" aria-hidden="true">

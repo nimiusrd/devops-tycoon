@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAudio } from '../audio/useAudio';
 
 interface Pop {
   id: number;
@@ -26,18 +27,20 @@ export function PointPops({ deliveryScore }: PointPopsProps) {
   const prev = useRef(deliveryScore);
   const nextId = useRef(0);
   const [pops, setPops] = useState<Pop[]>([]);
+  const { playSfx } = useAudio();
 
   useEffect(() => {
     const delta = deliveryScore - prev.current;
     prev.current = deliveryScore;
     if (delta <= 0) return;
+    playSfx('ship');
     const pop: Pop = { id: nextId.current++, amount: delta, x: 20 + Math.random() * 60 };
     setPops((cur) => [...cur, pop].slice(-MAX_POPS));
     const timer = window.setTimeout(() => {
       setPops((cur) => cur.filter((p) => p.id !== pop.id));
     }, 1100);
     return () => window.clearTimeout(timer);
-  }, [deliveryScore]);
+  }, [deliveryScore, playSfx]);
 
   return (
     <div className="point-pops" aria-hidden="true">

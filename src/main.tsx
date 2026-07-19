@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { AudioProvider } from './audio/AudioProvider';
 import { installGame } from './game';
 import { initializeMetaPersistence } from './state/metaPersistence';
 import './styles.css';
@@ -12,6 +13,8 @@ game.attachMetaPersistence(meta, storage);
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <App game={game} />
+    <AudioProvider>
+      <App game={game} />
+    </AudioProvider>
   </React.StrictMode>,
 );

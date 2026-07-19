@@ -25,6 +25,8 @@ export interface TitleScreenProps {
   onStartDaily?: () => void;
   onOpenMetaShop?: () => void;
   onOpenAchievements?: () => void;
+  /** サウンドミュート切替（RI-59）。 */
+  onToggleSoundMuted?: () => void;
 }
 
 export function TitleScreen({
@@ -34,6 +36,7 @@ export function TitleScreen({
   onStartDaily,
   onOpenMetaShop,
   onOpenAchievements,
+  onToggleSoundMuted,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -252,6 +255,16 @@ export function TitleScreen({
         <footer className="title-footer">
           <span>{selectedDifficulty.label}</span>
           <nav>
+            {onToggleSoundMuted && (
+              <button
+                type="button"
+                data-testid="sound-mute"
+                aria-pressed={meta.soundMuted}
+                onClick={onToggleSoundMuted}
+              >
+                {meta.soundMuted ? 'ミュート中' : '音あり'}
+              </button>
+            )}
             {onOpenMetaShop && (
               <button type="button" data-testid="open-meta-shop" onClick={onOpenMetaShop}>
                 研修ツール解禁（メタショップ）

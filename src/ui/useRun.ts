@@ -64,6 +64,8 @@ export interface UseRun {
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
+  /** サウンドミュートを永続化する（RI-59）。 */
+  setSoundMuted: (muted: boolean) => void;
 }
 
 export function useRun(game: GameHandle): UseRun {
@@ -154,6 +156,7 @@ export function useRun(game: GameHandle): UseRun {
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
     [game],
   );
+  const setSoundMuted = useCallback((muted: boolean) => void game.setSoundMuted(muted), [game]);
 
   return {
     state,
@@ -189,5 +192,6 @@ export function useRun(game: GameHandle): UseRun {
     chooseGoalAdjustment,
     newRun,
     purchaseMetaUnlock,
+    setSoundMuted,
   };
 }

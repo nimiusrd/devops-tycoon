@@ -189,6 +189,16 @@ export default function App({ game }: AppProps) {
     tutorialDismissedSprintId !== state.currentSprintId &&
     shouldShowTutorialGuide(meta.seenTutorial, tutorialMode);
 
+  // ガイド表示中は自動進行だけ止める（RNG / step 列には触れない。E2E の pause は尊重）。
+  useEffect(() => {
+    if (!tutorialActive || game.isPaused()) return;
+    game.pause();
+    const epoch = game.getPauseEpoch();
+    return () => {
+      if (game.getPauseEpoch() === epoch) game.resume();
+    };
+  }, [tutorialActive, game]);
+
   if (phase === 'title') {
     return (
       <>

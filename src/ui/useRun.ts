@@ -63,6 +63,8 @@ export interface UseRun {
   acknowledgeQuarterReview: () => void;
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
+  continueRun: () => void;
+  hasRunSave: boolean;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
 }
 
@@ -72,6 +74,7 @@ export function useRun(game: GameHandle): UseRun {
   const [lastRunReward, setLastRunReward] = useState<RunRewardBreakdown | null>(() =>
     game.getLastRunReward(),
   );
+  const [hasRunSave, setHasRunSave] = useState(() => game.hasRunSave());
 
   useEffect(() => {
     // 初回も必ず同期する。React の描画〜effect開始の間に window.game が操作されても取りこぼさない。
@@ -87,6 +90,7 @@ export function useRun(game: GameHandle): UseRun {
       setState(next);
       setMeta(game.getMeta());
       setLastRunReward(game.getLastRunReward());
+      setHasRunSave(game.hasRunSave());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -150,6 +154,7 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const newRun = useCallback(() => void game.newRun(), [game]);
+  const continueRun = useCallback(() => void game.continueRun(), [game]);
   const purchaseMetaUnlock = useCallback(
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
     [game],
@@ -159,8 +164,10 @@ export function useRun(game: GameHandle): UseRun {
     state,
     meta,
     lastRunReward,
+    hasRunSave,
     startRun,
     startDailyRun,
+    continueRun,
     beginSetupSprint,
     resolveBeat,
     dispatch,
@@ -188,6 +195,7 @@ export function useRun(game: GameHandle): UseRun {
     acknowledgeQuarterReview,
     chooseGoalAdjustment,
     newRun,
+    continueRun,
     purchaseMetaUnlock,
   };
 }

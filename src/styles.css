@@ -2852,6 +2852,15 @@ button.card:active {
   color: var(--tc-amber);
   font-size: 14px;
 }
+.title-launch-actions {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.title-launch-continue {
+  border-bottom: 1px solid var(--tc-line) !important;
+  background: color-mix(in srgb, var(--tc-accent, #3d8bfd) 22%, transparent) !important;
+}
 .title-launch {
   display: flex;
   align-items: center;

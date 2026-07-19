@@ -30,6 +30,8 @@ import {
   type RunRewardBreakdown,
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
+import type { RunSaveBlob } from './state/runSave';
+import type { RunSaveStorage } from './state/runSavePersistence';
 
 export interface GameHandle {
   /** 自動進行を止める。 */
@@ -109,6 +111,14 @@ export interface GameHandle {
   getLastRunReward(): RunRewardBreakdown | null;
   /** 起動時の非同期永続化を接続し、メタ更新を解禁する。 */
   attachMetaPersistence(meta: MetaState, storage: MetaStorage): void;
+  /** ランセーブ永続化を接続し、既存セーブがあればキャッシュする（RI-58）。 */
+  attachRunSave(storage: RunSaveStorage): Promise<void>;
+  /** 続きから可能なランセーブがあるか。 */
+  hasRunSave(): boolean;
+  /** キャッシュ済みセーブからランを復帰する（失敗時 null）。 */
+  continueRun(): RunState | null;
+  /** ランセーブを破棄する。 */
+  clearRunSave(): void;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
@@ -152,10 +162,42 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let whatIfCache: { key: string; value: WhatIfState | null } | null = null;
   /** 進行中の Worker リクエストのキャッシュキー。 */
   let whatIfPendingKey: string | null = null;
+  let runSaveStorage: RunSaveStorage | null = null;
+  let cachedRunSave: RunSaveBlob | null = null;
 
   /** 状態を変えた可能性のある操作の後に版番号を進める。 */
   const bump = (): void => {
     revision += 1;
+  };
+
+  const clearRunSaveCache = (): void => {
+    cachedRunSave = null;
+    if (runSaveStorage) void runSaveStorage.clear().catch(() => undefined);
+  };
+
+  const buildRunSaveBlob = (): RunSaveBlob | null => {
+    const partial = engine.exportHydrateState();
+    if (!partial) return null;
+    return {
+      ...partial,
+      savedAt: Date.now(),
+      game: { activeDailyDate, recorded },
+    };
+  };
+
+  /** フェーズ境界でランセーブを自動保存。sprint/title は無視、won/lost は破棄。 */
+  const persistRunSave = (): void => {
+    if (!runSaveStorage) return;
+    const phase = engine.currentPhase();
+    if (phase === 'title' || phase === 'sprint') return;
+    if (phase === 'won' || phase === 'lost') {
+      clearRunSaveCache();
+      return;
+    }
+    const blob = buildRunSaveBlob();
+    if (!blob) return;
+    cachedRunSave = blob;
+    void runSaveStorage.save(blob).catch(() => undefined);
   };
 
   const clearWhatIfCache = (): void => {
@@ -246,6 +288,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   const after = (): RunState => {
     recordIfFinished();
+    persistRunSave();
     return engine.snapshot();
   };
 
@@ -273,10 +316,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       lastRunReward = null;
       activeDailyDate = null;
       clearWhatIfCache();
+      clearRunSaveCache();
       applyUnlockedToEngine();
       engine.startRun(difficulty, trials, runSeed, { kind: 'normal' });
       bump();
-      return engine.snapshot();
+      return after();
     },
     startDailyRun(dateStr) {
       recorded = false;
@@ -284,13 +328,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
       clearWhatIfCache();
+      clearRunSaveCache();
       applyUnlockedToEngine();
       engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], dailySeed(day), {
         kind: 'daily',
         dailyDate: day,
       });
       bump();
-      return engine.snapshot();
+      return after();
     },
     beginSetupSprint() {
       engine.beginSetupSprint();
@@ -321,7 +366,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     acknowledgeResult() {
       engine.acknowledgeResult();
       bump();
-      return engine.snapshot();
+      return after();
     },
     chooseCard(defId) {
       engine.chooseCard(defId);
@@ -331,17 +376,17 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     skipDraft() {
       engine.skipDraft();
       bump();
-      return engine.snapshot();
+      return after();
     },
     unlockEvolution(id) {
       engine.unlockEvolution(id);
       bump();
-      return engine.snapshot();
+      return after();
     },
     finishEvolution() {
       engine.finishEvolution();
       bump();
-      return engine.snapshot();
+      return after();
     },
     buyShopCard(defId) {
       engine.buyShopCard(defId);
@@ -361,7 +406,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     leaveShop() {
       engine.leaveShop();
       bump();
-      return engine.snapshot();
+      return after();
     },
     restChoose(option, deckIndex) {
       engine.restChoose(option, deckIndex);
@@ -376,32 +421,32 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     assignMember(id, assignment) {
       engine.assignMember(id, assignment);
       bump();
-      return engine.snapshot();
+      return after();
     },
     setMemberAi(id, on) {
       engine.setMemberAi(id, on);
       bump();
-      return engine.snapshot();
+      return after();
     },
     zoomTo(level) {
       engine.zoomTo(level);
       bump();
-      return engine.snapshot();
+      return after();
     },
     focusDept(id) {
       engine.focusDepartment(id);
       bump();
-      return engine.snapshot();
+      return after();
     },
     focusTeam(id) {
       engine.focusTeam(id);
       bump();
-      return engine.snapshot();
+      return after();
     },
     setRankingKind(kind) {
       engine.setRankingKind(kind);
       bump();
-      return engine.snapshot();
+      return after();
     },
     applyOrgLever(leverId, deptId) {
       engine.applyOrgLever(leverId, deptId);
@@ -416,17 +461,18 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     chooseGoalAdjustment(id) {
       engine.chooseGoalAdjustment(id);
       bump();
-      return engine.snapshot();
+      return after();
     },
     newRun(runSeed) {
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
       clearWhatIfCache();
+      clearRunSaveCache();
       applyUnlockedToEngine();
       engine.toTitle(runSeed);
       bump();
-      return engine.snapshot();
+      return after();
     },
     purchaseMetaUnlock(unlockId) {
       if (!metaReady) return { ok: false, reason: 'not_ready' };
@@ -448,6 +494,37 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       meta = hydratedMeta;
       metaReady = true;
       recordIfFinished();
+      bump();
+    },
+    async attachRunSave(storage) {
+      runSaveStorage = storage;
+      try {
+        cachedRunSave = await storage.load();
+      } catch {
+        cachedRunSave = null;
+      }
+      bump();
+    },
+    hasRunSave() {
+      return cachedRunSave !== null;
+    },
+    continueRun() {
+      if (!cachedRunSave) return null;
+      const blob = cachedRunSave;
+      if (!engine.hydrate(blob)) {
+        clearRunSaveCache();
+        bump();
+        return null;
+      }
+      activeDailyDate = blob.game.activeDailyDate;
+      recorded = blob.game.recorded;
+      lastRunReward = null;
+      clearWhatIfCache();
+      bump();
+      return engine.snapshot();
+    },
+    clearRunSave() {
+      clearRunSaveCache();
       bump();
     },
     phase() {

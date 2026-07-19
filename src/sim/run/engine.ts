@@ -110,6 +110,14 @@ import type {
   WhatIfState,
   WinType,
 } from './types';
+import {
+  isSaveablePhase,
+  RUN_SAVE_ENGINE_VERSION,
+  RUN_SAVE_SCHEMA_VERSION,
+  type RunSaveBlob,
+  type RunSavePrivate,
+  type RunSaveState,
+} from './hydrateState';
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
@@ -1375,6 +1383,156 @@ export class RunEngine {
       orgScale,
       industry: this.industryForSnapshot(orgScale),
     };
+  }
+
+  /**
+   * フェーズ境界セーブ用の hydrate 状態を書き出す（RI-58）。
+   * sprint / title では null（セーブスカム抑制・入口はセーブ不要）。
+   * `game` フィールドは GameHandle 側で埋める。
+   */
+  exportHydrateState(): Omit<RunSaveBlob, 'game' | 'savedAt'> | null {
+    if (!isSaveablePhase(this.phase)) return null;
+    const priv: RunSavePrivate = {
+      allowedCards: this.allowedCards ? [...this.allowedCards] : [],
+      allowedRelics: this.allowedRelics ? [...this.allowedRelics] : [],
+      baseConfig: { ...this.baseConfig },
+      orgAdjust: structuredClone(this.orgAdjust),
+      nextBudgetCap: this.nextBudgetCap,
+      pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
+      winEvalOrg: this.winEvalOrg ? structuredClone(this.winEvalOrg) : null,
+    };
+    const state: RunSaveState = {
+      seed: this.seed,
+      difficulty: this.difficulty,
+      trials: [...this.trials],
+      runKind: this.runKind,
+      dailyDate: this.dailyDate,
+      phase: this.phase,
+      status: this.status,
+      winType: this.winType,
+      loseReason: this.loseReason,
+      bossId: this.bossId,
+      sprintsPerQuarter: this.sprintsPerQuarter,
+      sprintIndexInQuarter: this.sprintIndexInQuarter,
+      beat: this.beat ? { ...this.beat } : null,
+      pendingSprintKind: this.pendingSprintKind,
+      currentSprintKind: this.currentSprintKind,
+      pendingSprintModifiers: { ...this.pendingSprintModifiers },
+      org: structuredClone(this.org),
+      deck: this.deck.map((c) => ({ ...c })),
+      relics: [...this.relics],
+      bossRelicReward: this.bossRelicReward,
+      evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
+      roster: structuredClone(this.roster),
+      lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,
+      budget: this.budget,
+      currentSprintId: this.currentSprintId,
+      sprintTick: 0,
+      lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
+      draft: this.draft ? [...this.draft] : null,
+      shop: this.shop
+        ? {
+            cards: this.shop.cards.map((c) => ({ ...c })),
+            relic: this.shop.relic ? { ...this.shop.relic } : undefined,
+            recruit: this.shop.recruit ? { ...this.shop.recruit } : undefined,
+          }
+        : null,
+      diagnosis: this.diagnosis,
+      sprintsPlayed: this.sprintsPlayed,
+      totals: { ...this.totals },
+      quarterTotals: { ...this.quarterTotals },
+      usedHeavyActions: this.usedHeavyActions,
+      quarterNumber: this.quarterNumber,
+      quarterGoal: { ...this.quarterGoal },
+      stakeholderTrust: { ...this.stakeholderTrust },
+      quarterReview: this.quarterReview ? structuredClone(this.quarterReview) : null,
+      goalAdjustmentsTaken: [...this.goalAdjustmentsTaken],
+      reviewHistory: [...this.reviewHistory],
+      zoom: { ...this.zoom },
+      rankingKind: this.rankingKind,
+    };
+    return {
+      schemaVersion: RUN_SAVE_SCHEMA_VERSION,
+      engineVersion: RUN_SAVE_ENGINE_VERSION,
+      private: priv,
+      state,
+    };
+  }
+
+  /**
+   * フェーズ境界セーブからエンジン状態を復元する（RI-58）。
+   * sprint フェーズや非互換 blob は拒否する。
+   */
+  hydrate(blob: RunSaveBlob): boolean {
+    if (!isSaveablePhase(blob.state.phase)) return false;
+    const s = blob.state;
+    const p = blob.private;
+
+    this.seed = s.seed;
+    this.difficulty = s.difficulty;
+    this.trials = [...s.trials];
+    this.allowedCards = new Set(p.allowedCards);
+    this.allowedRelics = new Set(p.allowedRelics);
+    this.baseConfig = { ...p.baseConfig };
+    this.orgAdjust = structuredClone(p.orgAdjust);
+    this.nextBudgetCap = p.nextBudgetCap;
+    this.pauseAiDebuffQuarter = p.pauseAiDebuffQuarter;
+    this.winEvalOrg = p.winEvalOrg ? structuredClone(p.winEvalOrg) : null;
+
+    this.runKind = s.runKind;
+    this.dailyDate = s.dailyDate;
+    this.phase = s.phase;
+    this.status = s.status;
+    this.winType = s.winType;
+    this.loseReason = s.loseReason;
+    this.bossId = s.bossId;
+    this.sprintsPerQuarter = s.sprintsPerQuarter;
+    this.sprintIndexInQuarter = s.sprintIndexInQuarter;
+    this.beat = s.beat ? { ...s.beat } : null;
+    this.pendingSprintKind = s.pendingSprintKind;
+    this.currentSprintKind = s.currentSprintKind;
+    this.pendingSprintModifiers = { ...s.pendingSprintModifiers };
+    this.org = structuredClone(s.org);
+    this.deck = s.deck.map((c) => ({ ...c }));
+    this.relics = [...s.relics];
+    this.bossRelicReward = s.bossRelicReward;
+    this.evolution = { points: s.evolution.points, unlocked: { ...s.evolution.unlocked } };
+    this.roster = structuredClone(s.roster);
+    this.lastGrowth = s.lastGrowth ? structuredClone(s.lastGrowth) : null;
+    this.budget = s.budget;
+    this.currentSprintId = s.currentSprintId;
+    this.lastResult = s.lastResult ? structuredClone(s.lastResult) : null;
+    this.draft = s.draft ? [...s.draft] : null;
+    this.shop = s.shop
+      ? {
+          cards: s.shop.cards.map((c) => ({ ...c })),
+          relic: s.shop.relic ? { ...s.shop.relic } : undefined,
+          recruit: s.shop.recruit ? { ...s.shop.recruit } : undefined,
+        }
+      : null;
+    this.diagnosis = s.diagnosis;
+    this.sprintsPlayed = s.sprintsPlayed;
+    this.totals = { ...s.totals };
+    this.quarterTotals = { ...s.quarterTotals };
+    this.usedHeavyActions = s.usedHeavyActions;
+    this.quarterNumber = s.quarterNumber;
+    this.quarterGoal = { ...s.quarterGoal };
+    this.stakeholderTrust = { ...s.stakeholderTrust };
+    this.quarterReview = s.quarterReview ? structuredClone(s.quarterReview) : null;
+    this.goalAdjustmentsTaken = [...s.goalAdjustmentsTaken];
+    this.reviewHistory = [...s.reviewHistory];
+    this.zoom = { ...s.zoom };
+    this.rankingKind = s.rankingKind;
+
+    // フェーズ境界制約: スプリント進行状態は持たない。
+    this.sprint = null;
+    this.sprintTick = 0;
+    this.accumulatorMs = 0;
+    this.sprintBaselineInput = null;
+    this.sprintPassiveEffects = { ...IDENTITY_CARD_EFFECTS };
+    this.sprintRng = createRng('init');
+    this.whatIfCache = null;
+    return true;
   }
 }
 

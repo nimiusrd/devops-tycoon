@@ -158,6 +158,13 @@ export default function App({ game }: AppProps) {
     clearHudSnapshot();
     run.startDailyRun();
   };
+  const continueRun = () => {
+    setFormationOpen(false);
+    setMetaShopOpen(false);
+    setAchievementsOpen(false);
+    clearHudSnapshot();
+    run.continueRun();
+  };
   const newRun = () => {
     setFormationOpen(false);
     setMetaShopOpen(false);
@@ -174,6 +181,8 @@ export default function App({ game }: AppProps) {
           meta={meta}
           onStart={startRun}
           onStartDaily={startDailyRun}
+          onContinue={continueRun}
+          hasSave={run.hasRunSave}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
         />

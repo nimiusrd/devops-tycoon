@@ -23,6 +23,8 @@ export interface TitleScreenProps {
   meta: MetaState;
   onStart: (difficulty: DifficultyId, trials: string[]) => void;
   onStartDaily?: () => void;
+  onContinue?: () => void;
+  hasSave?: boolean;
   onOpenMetaShop?: () => void;
   onOpenAchievements?: () => void;
 }
@@ -32,6 +34,8 @@ export function TitleScreen({
   meta,
   onStart,
   onStartDaily,
+  onContinue,
+  hasSave = false,
   onOpenMetaShop,
   onOpenAchievements,
 }: TitleScreenProps) {
@@ -213,21 +217,47 @@ export function TitleScreen({
                   最終倍率 <strong>×{scoreMultiplier.toFixed(2)}</strong>
                 </span>
               </div>
-              <button
-                type="button"
-                className="title-launch"
-                data-testid="start-run"
-                onClick={() => onStart(difficulty, trials)}
-              >
-                <span>
-                  <small>ラン開始</small>
-                  四半期を始める
-                </span>
-                <i>→</i>
-              </button>
+              <div className="title-launch-actions">
+                {hasSave && onContinue && (
+                  <button
+                    type="button"
+                    className="title-launch title-launch-continue"
+                    data-testid="continue-run"
+                    onClick={onContinue}
+                  >
+                    <span>
+                      <small>中断したラン</small>
+                      続きから
+                    </span>
+                    <i>→</i>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="title-launch"
+                  data-testid="start-run"
+                  onClick={() => onStart(difficulty, trials)}
+                >
+                  <span>
+                    <small>ラン開始</small>
+                    四半期を始める
+                  </span>
+                  <i>→</i>
+                </button>
+              </div>
             </section>
           ) : (
             <div className="title-actions">
+              {hasSave && onContinue && (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-lg"
+                  data-testid="continue-run"
+                  onClick={onContinue}
+                >
+                  続きから →
+                </button>
+              )}
               <button
                 type="button"
                 className="btn btn-primary btn-lg"

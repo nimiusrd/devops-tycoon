@@ -31,8 +31,10 @@ import {
   withSoundMuted,
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
+import { labelForReplayKeyframe } from './render/reviewHellReplayView';
 import {
   buildReplayId,
+  normalizeReplay,
   REPLAY_SCHEMA_VERSION,
   type ReplayBlob,
   type ReplayKeyframe,
@@ -152,6 +154,11 @@ export interface GameHandle {
   exitReplay(): RunState;
   /** リプレイ閲覧中か。 */
   isReplayMode(): boolean;
+  /**
+   * リプレイを永続化層へ取り込みキャッシュを更新する（E2E / デバッグ用。RI-34‴）。
+   * 正規化に失敗した場合は false。
+   */
+  importReplay(blob: ReplayBlob): Promise<boolean>;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
@@ -228,7 +235,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (replayMode) return;
     const frame = engine.exportReplayFrame();
     if (!frame) return;
-    const entry: ReplayKeyframe = { phase: frame.phase, frame: structuredClone(frame) };
+    const diagnosis = engine.snapshot().diagnosis;
+    const label = labelForReplayKeyframe(frame, diagnosis);
+    const entry: ReplayKeyframe = {
+      phase: frame.phase,
+      frame: structuredClone(frame),
+      ...(label ? { label } : {}),
+    };
     const last = keyframes[keyframes.length - 1];
     if (last && last.phase === entry.phase) {
       keyframes[keyframes.length - 1] = entry;
@@ -750,6 +763,19 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     isReplayMode() {
       return replayMode;
+    },
+    async importReplay(blob) {
+      if (!replayStorage) return false;
+      const normalized = normalizeReplay(blob);
+      if (!normalized) return false;
+      try {
+        await replayStorage.save(normalized);
+        await refreshReplayCache();
+        bump();
+        return true;
+      } catch {
+        return false;
+      }
     },
     phase() {
       return engine.currentPhase();

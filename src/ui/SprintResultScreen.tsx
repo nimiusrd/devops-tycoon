@@ -7,9 +7,10 @@
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
 import { planBurnCauseLog } from '../render/sprintBurnCauseView';
+import { planReviewHellResultSummary } from '../render/reviewHellReplayView';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
-import type { GrowthOutcome } from '../sim/run/types';
+import type { DiagnosisType, GrowthOutcome } from '../sim/run/types';
 import type { ActionId, SprintResult } from '../sim/types';
 import { BaselineComparisonChart } from './BaselineComparisonChart';
 import { SprintTimelineChart } from './SprintTimelineChart';
@@ -55,6 +56,10 @@ export interface SprintResultScreenProps {
   onAbandon?: () => void;
   continueLabel?: string;
   abandonLabel?: string;
+  /** リプレイ閲覧中か（RI-34‴ 要約用）。 */
+  replayMode?: boolean;
+  /** ラン診断（リプレイ要約用。RI-34‴）。 */
+  diagnosis?: DiagnosisType;
 }
 
 /** 成長セクションに出す要素があるか（昇格・休職・レベルアップ）。 */
@@ -71,9 +76,12 @@ export function SprintResultScreen({
   onAbandon,
   continueLabel = 'カードドラフトへ →',
   abandonLabel = 'タイトルへ',
+  replayMode = false,
+  diagnosis = 'healthyAcceleration',
 }: SprintResultScreenProps) {
   const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
+  const hellSummary = planReviewHellResultSummary(result, { replayMode, diagnosis });
 
   return (
     <div
@@ -84,6 +92,18 @@ export function SprintResultScreen({
     >
       <div className="result-card sprint-result-card">
         <p className="result-eyebrow">SPRINT RESULT</p>
+        {hellSummary.show ? (
+          <div
+            className="result-review-hell-summary tone-review-hell"
+            data-testid="result-review-hell-summary"
+          >
+            <p className="result-section-label">{hellSummary.title}</p>
+            <p data-testid="result-review-hell-peak">{hellSummary.peakLabel}</p>
+            <p className="result-analysis-tip" data-testid="result-review-hell-lesson">
+              {hellSummary.lesson}
+            </p>
+          </div>
+        ) : null}
         <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
           {result.grade}
         </div>

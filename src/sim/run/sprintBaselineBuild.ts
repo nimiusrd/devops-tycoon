@@ -104,9 +104,11 @@ export function buildSprintBaselineInput(
   const baseMul =
     kind === 'elite' ? ELITE_TASK_MUL : isBoss ? (getBoss(ctx.bossId)?.taskCountMul ?? 1) : 1;
   const mul = baseMul * (modifiers.taskCountMul ?? 1);
+  // RI-62: ボスは 90 秒帯の下限を確保（通常スプリントの下限は触らない）。
+  const taskFloor = isBoss ? 26 : 4;
   const config: SprintConfig = {
     ...ctx.baseConfig,
-    taskCount: Math.max(4, Math.round(ctx.baseConfig.taskCount * mul)),
+    taskCount: Math.max(taskFloor, Math.round(ctx.baseConfig.taskCount * mul)),
     focusMax: Math.max(1, ctx.baseConfig.focusMax + fold.focusBonus + formation.focusBonus),
     codingSlots: Math.max(
       0,

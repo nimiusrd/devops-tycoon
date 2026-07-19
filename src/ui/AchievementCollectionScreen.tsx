@@ -1,9 +1,11 @@
 /**
- * 実績コレクション画面（SPEC 第17章）。
+ * 実績コレクション画面（SPEC 第17章 / RI-34″ 失敗図鑑）。
  *
  * 取得済み／未取得の実績を一覧表示し、未取得には獲得条件のヒントを出す。
  * 描画は meta を読むだけ（第22.2）。
  */
+import { diagnosisTheme } from '../render/diagnosisTheme';
+import { FAILURE_ENCYCLOPEDIA_DEFS } from '../sim/diagnosis';
 import { ACHIEVEMENT_DEFS, WIN_TITLE_DEFS, type MetaState } from '../state/meta';
 
 export interface AchievementCollectionScreenProps {
@@ -16,6 +18,10 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
   const earnedCount = ACHIEVEMENT_DEFS.filter((a) => earned.has(a.id)).length;
   const collectedTitles = new Set(meta.collectedWinTypes);
   const titleCount = WIN_TITLE_DEFS.filter((title) => collectedTitles.has(title.id)).length;
+  const collectedDiagnoses = new Set(meta.collectedDiagnoses);
+  const failureCount = FAILURE_ENCYCLOPEDIA_DEFS.filter((def) =>
+    collectedDiagnoses.has(def.type),
+  ).length;
 
   return (
     <div
@@ -79,6 +85,45 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
                   <span className="achievement-card-label">{def.label}</span>
                   <p className="achievement-card-hint" data-testid={`win-title-hint-${def.id}`}>
                     {unlocked ? def.description : def.hint}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+        <section
+          className="title-collection-section"
+          aria-labelledby="failure-encyclopedia-heading"
+          data-testid="failure-encyclopedia"
+        >
+          <p className="result-eyebrow">FAILURE CODEX</p>
+          <h3 id="failure-encyclopedia-heading" className="title-collection-heading">
+            AI導入失敗図鑑{' '}
+            <b data-testid="failure-encyclopedia-count">
+              {failureCount}/{FAILURE_ENCYCLOPEDIA_DEFS.length}
+            </b>
+          </h3>
+          <p className="achievement-collection-lead">
+            ラン終了時の組織タイプ診断から、失敗パターンを集めます。取得済みは教訓も表示されます。
+          </p>
+          <div className="achievement-collection-grid">
+            {FAILURE_ENCYCLOPEDIA_DEFS.map((def) => {
+              const unlocked = collectedDiagnoses.has(def.type);
+              const theme = diagnosisTheme(def.type);
+              return (
+                <div
+                  key={def.type}
+                  className={`achievement-card${unlocked ? ' unlocked' : ' locked'}`}
+                  data-testid={`failure-entry-${def.type}`}
+                  data-unlocked={unlocked ? 'true' : 'false'}
+                >
+                  <span className="achievement-card-icon">{unlocked ? theme.icon : '🔒'}</span>
+                  <span className="achievement-card-label">{def.label}</span>
+                  <p
+                    className="achievement-card-hint"
+                    data-testid={`failure-entry-hint-${def.type}`}
+                  >
+                    {unlocked ? `${def.description} ${def.lesson}` : def.hint}
                   </p>
                 </div>
               );

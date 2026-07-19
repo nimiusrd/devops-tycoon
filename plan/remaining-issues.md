@@ -109,8 +109,9 @@
 | ID | 項目 | 優先度 | 状態 | 依存 | 関連 |
 | --- | --- | --- | --- | --- | --- |
 | RI-33 | ノード選択廃止→イベント判定化【エピック】 | 高 | 実装済み | — | 第3 / 4.4 / 9.4 / 10 |
-| RI-34 | 23章「拡張案」全般【将来エピック】 | 低 | 保留(要判断) | — | 第23 |
+| RI-34 | 23章「拡張案」全般【将来エピック】（ローカルのみ） | 低 | 保留(要判断) | — | 第23 |
 | RI-34′ | 「なぜ燃えたか」解説ログ（§23 の1切片） | 中 | 完了 | — | 第23 / 4.6 |
+| RI-34″ | 「AI導入失敗図鑑」（§23 の1切片） | 中 | 完了 | — | 第23 / 13 / 17 |
 
 ### テスト・保守・技術的負債（QA）
 
@@ -718,9 +719,12 @@ Vitest と Playwright で報酬・各敗北理由の経路を検証済み。レ�
 
 #### RI-34 23章「拡張案」全般【将来エピック】 — 優先度:低 / 保留(要判断)
 
-GitHub API 実データモード、チーム対抗ランキング、社内LT/経営プレゼンモード、ツール別シナリオ、
-「AI導入失敗図鑑」「レビュー地獄リプレイ」等（第23 / 将来拡張）。着手時に個別 ID へ切り出す。
-「なぜ燃えたか」解説ログは RI-34′ として切り出し済み。
+**スコープ**: ローカル完結の拡張のみ。外部 API・共有バックエンド（GitHub 実データ、
+チーム対抗の共有ランキング等）は仕様から削除し対象外。
+残る候補: 社内LT/経営プレゼンモード、ツール別シナリオ、デッキカスタム、組織シナリオ共有、
+組織診断ダッシュボード深掘り、四半期レビュー高度化、「レビュー地獄リプレイ」（RI-61 依存）等。
+着手時に個別 ID へ切り出す。
+「なぜ燃えたか」は RI-34′、「AI導入失敗図鑑」は RI-34″ として切り出し済み。
 
 #### RI-34′ 「なぜ燃えたか」解説ログ — 優先度:中 / 完了
 
@@ -729,9 +733,19 @@ GitHub API 実データモード、チーム対抗ランキング、社内LT/経
 `ignite.source`（`review` | `spread`）で点火原因を区別し、`forceDrain` の受動鎮火も
 `auto-contain` として記録する。`planBurnCauseLog`（`src/render/sprintBurnCauseView.ts`）が
 因果チェーンを組み立て、`SprintResultScreen` に「なぜ燃えたか」セクションを表示する。
-永続化・RunResult・図鑑・リプレイ保存は非スコープ（→ RI-34 / RI-61）。
+永続化・RunResult・図鑑・リプレイ保存は非スコープ（→ RI-34″ / RI-61）。
 Vitest: `tests/unit/sprintBurnCauseView.test.ts` / `sprintEventView.test.ts`。
 Playwright: `tests/e2e/interventions.spec.ts`。
+
+#### RI-34″ 「AI導入失敗図鑑」 — 優先度:中 / 完了
+
+**完了**: 失敗シグネチャ 4 種（`reviewHell` / `aiOverproduction` / `reworkSpiral` /
+`seniorSacrifice`）をラン終了時に `MetaState.collectedDiagnoses` へ収集する。
+`FAILURE_ENCYCLOPEDIA_DEFS`（`src/sim/diagnosis.ts`）が説明・教訓・未取得ヒントを提供し、
+`AchievementCollectionScreen` に「AI導入失敗図鑑」セクションを表示する。
+`RunResultScreen` は失敗型診断時に図鑑登録フィードバックを出す。健全系診断は対象外。
+Vitest: `tests/unit/meta.test.ts` / `diagnosis.test.ts`。
+Playwright: `tests/e2e/achievements.spec.ts`。
 
 ### テスト・保守・技術的負債（QA）
 

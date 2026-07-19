@@ -99,6 +99,68 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(third.collectedWinTypes).toEqual(['healthy', 'aiSuccess']);
   });
 
+  it('ラン終了時の失敗診断を図鑑へ収集し、健全系は無視する（RI-34″）', () => {
+    const loss = applyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 80,
+      scoreMul: 1,
+      maxCombo: 3,
+      diagnosis: 'reviewHell',
+    });
+    expect(loss.collectedDiagnoses).toEqual(['reviewHell']);
+
+    const healthy = applyRunReward(loss, {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 300,
+      scoreMul: 1,
+      maxCombo: 5,
+      diagnosis: 'healthyAcceleration',
+    });
+    expect(healthy.collectedDiagnoses).toEqual(['reviewHell']);
+
+    const again = applyRunReward(healthy, {
+      won: false,
+      difficulty: 'normal',
+      score: 90,
+      scoreMul: 1,
+      maxCombo: 2,
+      diagnosis: 'reviewHell',
+    });
+    expect(again.collectedDiagnoses).toEqual(['reviewHell']);
+
+    const other = applyRunReward(again, {
+      won: true,
+      difficulty: 'normal',
+      winType: 'chaos',
+      bossId: 'big-release',
+      score: 310,
+      scoreMul: 1,
+      maxCombo: 6,
+      diagnosis: 'seniorSacrifice',
+    });
+    expect(other.collectedDiagnoses).toEqual(['reviewHell', 'seniorSacrifice']);
+  });
+
+  it('旧セーブに collectedDiagnoses が欠けていても空配列で補完される', () => {
+    const storage = memStorage();
+    storage.data.set(
+      'devops-tycoon:meta:v1',
+      JSON.stringify({
+        points: 10,
+        unlockedDifficulties: ['easy', 'normal'],
+        defeatedBosses: [],
+        achievements: [],
+        collectedWinTypes: [],
+        bestScore: 0,
+      }),
+    );
+    expect(loadMeta(storage).collectedDiagnoses).toEqual([]);
+  });
+
   it('敗北でも四半期修正経験で学習ボーナスが入る', () => {
     const base = applyRunReward(defaultMeta(), {
       won: false,
@@ -563,6 +625,32 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(afterWin.pointsGained).toBe(0);
     expect(afterWin.meta.points).toBe(afterLoss.meta.points);
     expect(afterWin.meta.collectedWinTypes).toEqual(['aiSuccess']);
+  });
+
+  it('デイリー再走でも失敗診断を図鑑へ収集する（RI-34″）', () => {
+    const dateStr = '2026-06-23';
+    const first = applyDailyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 70,
+      scoreMul: 1,
+      maxCombo: 1,
+      diagnosis: 'reworkSpiral',
+      dateStr,
+    });
+    expect(first.meta.collectedDiagnoses).toEqual(['reworkSpiral']);
+
+    const rerun = applyDailyRunReward(first.meta, {
+      won: false,
+      difficulty: 'normal',
+      score: 90,
+      scoreMul: 1,
+      maxCombo: 2,
+      diagnosis: 'aiOverproduction',
+      dateStr,
+    });
+    expect(rerun.rewardGranted).toBe(false);
+    expect(rerun.meta.collectedDiagnoses).toEqual(['reworkSpiral', 'aiOverproduction']);
   });
 
   it('applyDailyRunReward の再走はベスト未更新時も points を付与しない', () => {

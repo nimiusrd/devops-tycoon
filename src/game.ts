@@ -231,6 +231,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       scoreMul,
       maxCombo: s.totals.maxCombo,
       quarterReviews: s.reviewHistory,
+      diagnosis: s.diagnosis,
     };
     if (s.runKind === 'daily' && activeDailyDate) {
       const daily = applyDailyRunReward(meta, { ...input, dateStr: activeDailyDate });

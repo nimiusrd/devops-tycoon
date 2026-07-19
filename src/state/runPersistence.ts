@@ -8,6 +8,7 @@
 import { isRunSavePhase, type RunPersistState, type RunSavePhase } from '../sim/run/persist';
 import type { DifficultyId, RunKind, RunPhase, RunStatus } from '../sim/run/types';
 import { GAME_DB_NAME, openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from './gameDb';
+import { normalizeReplayKeyframes, type ReplayKeyframe } from './replay';
 
 export type { RunPersistState, RunPersistExtras, RunSavePhase } from '../sim/run/persist';
 export { isRunSavePhase } from '../sim/run/persist';
@@ -34,6 +35,11 @@ export interface RunSave {
   savedAt: number;
   summary: RunSaveSummary;
   state: RunPersistState;
+  /**
+   * 再開後も完走リプレイが前半を保持できるよう、収集済みキーフレームを同梱する（RI-61）。
+   * 旧セーブでは欠落しうる（その場合は空配列）。
+   */
+  replayKeyframes: ReplayKeyframe[];
 }
 
 export interface RunStorage {
@@ -112,11 +118,16 @@ export function parseRunSave(raw: unknown): RunSave | null {
       status: 'playing',
     },
     state: state as unknown as RunPersistState,
+    replayKeyframes: normalizeReplayKeyframes(raw.replayKeyframes),
   };
 }
 
 /** PersistState から IndexedDB レコードを組み立てる。 */
-export function toRunSave(state: RunPersistState, savedAt: number = Date.now()): RunSave {
+export function toRunSave(
+  state: RunPersistState,
+  savedAt: number = Date.now(),
+  replayKeyframes: readonly ReplayKeyframe[] = [],
+): RunSave {
   return {
     schemaVersion: RUN_SAVE_SCHEMA_VERSION,
     savedAt,
@@ -133,6 +144,7 @@ export function toRunSave(state: RunPersistState, savedAt: number = Date.now()):
       status: state.status,
     },
     state: structuredClone(state),
+    replayKeyframes: structuredClone(replayKeyframes) as ReplayKeyframe[],
   };
 }
 

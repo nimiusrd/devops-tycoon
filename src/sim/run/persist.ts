@@ -25,6 +25,15 @@ export function isRunSavePhase(phase: RunPhase): phase is RunSavePhase {
   return SAVEABLE_PHASES.has(phase);
 }
 
+/** リプレイキーフレームとして残すフェーズ（RI-61。容量抑制）。 */
+export type ReplayFramePhase = RunSavePhase | 'won' | 'lost';
+
+const REPLAY_FRAME_PHASES = new Set<RunPhase>(['setup', 'result', 'quarterReview', 'won', 'lost']);
+
+export function isReplayFramePhase(phase: RunPhase): phase is ReplayFramePhase {
+  return REPLAY_FRAME_PHASES.has(phase);
+}
+
 /** snapshot() に載らない内部状態（復元に必須）。 */
 export interface RunPersistExtras {
   baseConfig: SprintConfig;
@@ -53,4 +62,12 @@ export type RunPersistState = Omit<
   orgScale: null;
   industry: null;
   extras: RunPersistExtras;
+};
+
+/**
+ * リプレイ閲覧用フレーム（RI-61）。
+ * 途中セーブと同じ形だが、終端フェーズ won/lost も許容する。
+ */
+export type RunReplayFrame = Omit<RunPersistState, 'phase'> & {
+  phase: ReplayFramePhase;
 };

@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pauseBriefly as pauseGameBriefly, type GameHandle, type PauseBrieflyClear } from '../game';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
+import type { ReplayBlob } from '../state/replay';
 import type { RunSaveSummary } from '../state/runPersistence';
 import type {
   ActionId,
@@ -80,6 +81,10 @@ export interface UseRun {
   acknowledgeQuarterReview: () => void;
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
+  replays: ReplayBlob[];
+  isReplayMode: boolean;
+  openReplay: (id: string, keyframeIndex?: number) => void;
+  exitReplay: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
   setSoundMuted: (muted: boolean) => void;
@@ -97,6 +102,8 @@ export function useRun(game: GameHandle): UseRun {
     game.getRunSaveSummary(),
   );
   const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
+  const [replays, setReplays] = useState<ReplayBlob[]>(() => game.listReplays());
+  const [isReplayMode, setIsReplayMode] = useState(() => game.isReplayMode());
   const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
   const playbackSpeedRef = useRef<PlaybackSpeed>(1);
   const setPlaybackSpeed = useCallback((speed: PlaybackSpeed) => {
@@ -155,6 +162,8 @@ export function useRun(game: GameHandle): UseRun {
       setLastRunReward(game.getLastRunReward());
       setRunSaveSummary(game.getRunSaveSummary());
       setRunEpoch(game.getRunEpoch());
+      setReplays(game.listReplays());
+      setIsReplayMode(game.isReplayMode());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -219,6 +228,11 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const newRun = useCallback(() => void game.newRun(), [game]);
+  const openReplay = useCallback(
+    (id: string, keyframeIndex?: number) => void game.openReplay(id, keyframeIndex),
+    [game],
+  );
+  const exitReplay = useCallback(() => void game.exitReplay(), [game]);
   const purchaseMetaUnlock = useCallback(
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
     [game],
@@ -232,11 +246,15 @@ export function useRun(game: GameHandle): UseRun {
     lastRunReward,
     runSaveSummary,
     runEpoch,
+    replays,
+    isReplayMode,
     playbackSpeed,
     setPlaybackSpeed,
     startRun,
     startDailyRun,
     resumeRun,
+    openReplay,
+    exitReplay,
     beginSetupSprint,
     resolveBeat,
     dispatch,

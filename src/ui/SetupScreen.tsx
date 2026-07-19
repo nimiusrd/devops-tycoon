@@ -15,14 +15,22 @@ export interface SetupScreenProps {
   onAssign: (id: string, assignment: LaneAssignment) => void;
   onToggleAi: (id: string, on: boolean) => void;
   onBegin: () => void;
+  /** リプレイ閲覧など、操作を受け付けないとき。 */
+  readOnly?: boolean;
 }
 
-export function SetupScreen({ state, onAssign, onToggleAi, onBegin }: SetupScreenProps) {
+export function SetupScreen({
+  state,
+  onAssign,
+  onToggleAi,
+  onBegin,
+  readOnly = false,
+}: SetupScreenProps) {
   const boss = getBoss(state.bossId);
   const total = state.sprintsPerQuarter;
   const nextIndex = state.sprintIndexInQuarter + 1;
   return (
-    <div className="run-setup" data-testid="setup">
+    <div className="run-setup" data-testid="setup" data-readonly={readOnly ? 'true' : undefined}>
       <div className="map-banner">
         <span className="pill">第{state.quarterNumber}四半期</span>
         <span className="pill">
@@ -41,12 +49,18 @@ export function SetupScreen({ state, onAssign, onToggleAi, onBegin }: SetupScree
             type="button"
             className="primary-button"
             data-testid="begin-sprint"
+            disabled={readOnly}
             onClick={onBegin}
           >
             スプリント開始 ▶
           </button>
         </div>
-        <FormationGrid state={state} onAssign={onAssign} onToggleAi={onToggleAi} />
+        <FormationGrid
+          state={state}
+          onAssign={onAssign}
+          onToggleAi={onToggleAi}
+          readOnly={readOnly}
+        />
       </div>
     </div>
   );

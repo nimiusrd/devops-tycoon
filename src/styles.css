@@ -3175,8 +3175,13 @@ button.card:active {
   font-size: 15px;
   cursor: pointer;
 }
-.primary-button:hover {
+.primary-button:hover:not(:disabled) {
   filter: brightness(1.06);
+}
+.primary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
 }
 /* トラックで次が山場（ボス）であることの強調。 */
 .boss-next {
@@ -3656,6 +3661,83 @@ button.card:active {
 }
 
 /* メタショップ（第17章） */
+.replay-list-panel {
+  max-width: 720px;
+}
+.replay-list-empty {
+  margin: 16px 0 24px;
+  opacity: 0.8;
+}
+.replay-list-body {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 16px;
+  margin: 16px 0 20px;
+}
+.replay-list-items,
+.replay-list-keyframes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.replay-list-items button,
+.replay-list-keyframes button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #334);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.replay-list-items button.selected,
+.replay-list-keyframes button:hover {
+  border-color: var(--tc-accent, #3d8bfd);
+}
+.replay-list-keyframes h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.replay-list-keyframes button {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.replay-list-keyframes button i {
+  font-style: normal;
+  opacity: 0.75;
+}
+.replay-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: color-mix(in srgb, #c9a227 28%, #111);
+  border-bottom: 1px solid color-mix(in srgb, #c9a227 50%, transparent);
+  font-size: 13px;
+  font-weight: 700;
+  z-index: 40;
+}
+.replay-mode-banner button {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+@media (max-width: 720px) {
+  .replay-list-body {
+    grid-template-columns: 1fr;
+  }
+}
 .meta-shop-panel {
   width: min(860px, 94vw);
   max-height: 90vh;
@@ -4083,8 +4165,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--text);
   transition: border-color 0.12s ease;
 }
-.roster-pill:hover {
+.roster-pill:hover:not(:disabled) {
   border-color: var(--sun);
+}
+.roster-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .roster-faces {
   display: inline-flex;
@@ -4318,8 +4404,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #1f1942;
   color: var(--text);
 }
-.org-pill:hover {
+.org-pill:hover:not(:disabled) {
   border-color: var(--lav);
+}
+.org-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .zoom-overlay {

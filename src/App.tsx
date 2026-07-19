@@ -49,6 +49,9 @@ const IndustryScreen = lazy(() =>
 const MetaShopScreen = lazy(() =>
   import('./ui/MetaShopScreen').then((m) => ({ default: m.MetaShopScreen })),
 );
+const ReplayListScreen = lazy(() =>
+  import('./ui/ReplayListScreen').then((m) => ({ default: m.ReplayListScreen })),
+);
 const OrgScreen = lazy(() => import('./ui/OrgScreen').then((m) => ({ default: m.OrgScreen })));
 const QuarterReviewScreen = lazy(() =>
   import('./ui/QuarterReviewScreen').then((m) => ({ default: m.QuarterReviewScreen })),
@@ -112,6 +115,7 @@ export default function App({ game }: AppProps) {
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
+  const [replayListOpen, setReplayListOpen] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
@@ -171,37 +175,44 @@ export default function App({ game }: AppProps) {
 
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
-  const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
-    audio.unlock();
+  const closeTitleModals = () => {
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
     setHelpOpen(false);
+    setReplayListOpen(false);
+  };
+  const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
+    audio.unlock();
+    closeTitleModals();
     clearHudSnapshot();
     run.startRun(difficulty, trials);
   };
   const startDailyRun = () => {
     audio.unlock();
-    setFormationOpen(false);
-    setMetaShopOpen(false);
-    setAchievementsOpen(false);
-    setHelpOpen(false);
+    closeTitleModals();
     clearHudSnapshot();
     run.startDailyRun();
   };
   const resumeRun = () => {
     audio.unlock();
-    setFormationOpen(false);
-    setMetaShopOpen(false);
-    setAchievementsOpen(false);
+    closeTitleModals();
     clearHudSnapshot();
     run.resumeRun();
   };
+  const openReplay = (id: string, keyframeIndex: number) => {
+    audio.unlock();
+    closeTitleModals();
+    clearHudSnapshot();
+    run.openReplay(id, keyframeIndex);
+  };
+  const exitReplay = () => {
+    closeTitleModals();
+    clearHudSnapshot();
+    run.exitReplay();
+  };
   const newRun = () => {
-    setFormationOpen(false);
-    setMetaShopOpen(false);
-    setAchievementsOpen(false);
-    setHelpOpen(false);
+    closeTitleModals();
     clearHudSnapshot();
     run.newRun();
   };
@@ -224,6 +235,7 @@ export default function App({ game }: AppProps) {
           onStartDaily={startDailyRun}
           onResume={resumeRun}
           resumableSummary={runSaveSummary}
+          onOpenReplays={() => setReplayListOpen(true)}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
           onToggleSoundMuted={() => {
@@ -244,31 +256,54 @@ export default function App({ game }: AppProps) {
           {achievementsOpen && (
             <AchievementCollectionScreen meta={meta} onClose={() => setAchievementsOpen(false)} />
           )}
+          {replayListOpen && (
+            <ReplayListScreen
+              replays={run.replays}
+              onOpen={openReplay}
+              onClose={() => setReplayListOpen(false)}
+            />
+          )}
         </Suspense>
       </>
     );
   }
+
+  const replayBanner = run.isReplayMode ? (
+    <div className="replay-mode-banner" data-testid="replay-mode-banner">
+      <span>リプレイ閲覧中（操作は無効）</span>
+      <button type="button" data-testid="exit-replay" onClick={exitReplay}>
+        タイトルへ戻る
+      </button>
+    </div>
+  ) : null;
+
   if (phase === 'won' || phase === 'lost') {
     return (
-      <Suspense fallback={null}>
-        <RunResultScreen
-          state={state}
-          meta={meta}
-          lastRunReward={lastRunReward}
-          onNewRun={newRun}
-        />
-      </Suspense>
+      <>
+        {replayBanner}
+        <Suspense fallback={null}>
+          <RunResultScreen
+            state={state}
+            meta={meta}
+            lastRunReward={lastRunReward}
+            onNewRun={run.isReplayMode ? exitReplay : newRun}
+          />
+        </Suspense>
+      </>
     );
   }
   if (phase === 'quarterReview') {
     return (
-      <Suspense fallback={null}>
-        <QuarterReviewScreen
-          state={state}
-          onAcknowledge={run.acknowledgeQuarterReview}
-          onChooseAdjustment={run.chooseGoalAdjustment}
-        />
-      </Suspense>
+      <>
+        {replayBanner}
+        <Suspense fallback={null}>
+          <QuarterReviewScreen
+            state={state}
+            onAcknowledge={run.acknowledgeQuarterReview}
+            onChooseAdjustment={run.chooseGoalAdjustment}
+          />
+        </Suspense>
+      </>
     );
   }
 
@@ -294,6 +329,7 @@ export default function App({ game }: AppProps) {
       data-phase={phase}
       data-diagnosis={state.diagnosis}
     >
+      {replayBanner}
       <Hud
         org={state.org}
         orgScale={state.orgScale}
@@ -306,6 +342,7 @@ export default function App({ game }: AppProps) {
         state={state}
         onOpenFormation={() => setFormationOpen(true)}
         onOpenOrg={() => run.zoomTo('company')}
+        readOnly={run.isReplayMode}
         getInitialPreviousSnapshot={getLastRunMetricSnapshot}
         onSnapshotCaptured={rememberRunMetricSnapshot}
       />
@@ -321,6 +358,7 @@ export default function App({ game }: AppProps) {
             onAssign={run.assignMember}
             onToggleAi={run.setMemberAi}
             onBegin={run.beginSetupSprint}
+            readOnly={run.isReplayMode}
           />
         )}
       </Suspense>
@@ -402,6 +440,7 @@ export default function App({ game }: AppProps) {
             onAssign={run.assignMember}
             onToggleAi={run.setMemberAi}
             onClose={() => setFormationOpen(false)}
+            readOnly={run.isReplayMode}
           />
         )}
       </Suspense>

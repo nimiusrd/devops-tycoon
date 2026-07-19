@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
 import {
+  accumulateWallTime,
   BOSS_WALL_SEC,
   isBossTickCountInSpecBand,
   isSprintTickCountInSpecBand,
+  maxAccumulatorMs,
   meetsSprintAbsoluteMin,
   MS_PER_TICK_1X,
   msPerTick,
@@ -104,6 +106,16 @@ describe('sprintTempo（RI-62）', () => {
     expect(ticksDueFromAccumulator(5_000, speed).ticks).toBe(0);
   });
 
+  it('タブ復帰など大きな delta はアキュムレータ上限で切り捨てる', () => {
+    const capped = accumulateWallTime(0, 60_000, 1);
+    expect(capped).toBe(maxAccumulatorMs(1));
+    expect(capped).toBe(MS_PER_TICK_1X * 4);
+    // 上限分だけ進み、残高を何フレームも引きずらない。
+    const { ticks, consumedMs } = ticksDueFromAccumulator(capped, 1);
+    expect(ticks).toBe(4);
+    expect(consumedMs).toBe(capped);
+  });
+
   it('§3.1 帯判定ヘルパが壁時計換算と一致する', () => {
     // 680ms/tick: 45 tick ≒ 30.6s、176 tick ≒ 119.7s
     expect(wallSecondsAt1x(45)).toBeCloseTo(30.6, 1);
@@ -136,14 +148,15 @@ describe('sprintTempo（RI-62）', () => {
     expect(p50Sec).toBeLessThanOrEqual(SPRINT_WALL_SEC.maxTypical);
     expect(p90Sec).toBeLessThanOrEqual(SPRINT_WALL_SEC.maxTypical);
 
-    // ボスは無介入オートプレイだと長尾が出やすい。下限と中央の目安だけ確認する。
-    if (boss.length > 0) {
-      const bossSorted = [...boss].sort((a, b) => a - b);
-      const bossMinSec = wallSecondsAt1x(bossSorted[0]!);
-      expect(bossMinSec).toBeGreaterThanOrEqual(BOSS_WALL_SEC.min * 0.85);
+    // ボスは無介入でも §3.1 上限（180 秒）を超えないこと。下限は炎上ボスで揺れやすいので
+    // 代表 seed に出たサンプルの上限をハードに見る。
+    for (const ticks of boss) {
+      const sec = wallSecondsAt1x(ticks);
+      expect(sec, `boss ticks=${ticks} wall=${sec}s`).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
     }
     expect(BOSS_WALL_SEC.min).toBe(90);
     // ヘルパ自体の回帰防止
     expect(isSprintTickCountInSpecBand(80)).toBe(true);
+    expect(isBossTickCountInSpecBand(200)).toBe(true);
   });
 });

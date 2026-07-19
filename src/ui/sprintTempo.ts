@@ -23,6 +23,27 @@ export type PlaybackSpeed = 0 | 1 | 2;
 /** 1 ポーリングで追いつく最大 tick 数（タブ復帰時の飛び過ぎ防止）。 */
 export const MAX_TICKS_PER_FRAME = 4;
 
+/**
+ * アキュムレータへ積める実時間の上限（ms）。
+ * タブ復帰などで `deltaMs` が膨らんでも、1 フレーム分以上は捨てる。
+ */
+export function maxAccumulatorMs(speed: PlaybackSpeed): number {
+  if (speed <= 0) return 0;
+  return MAX_TICKS_PER_FRAME * msPerTick(speed);
+}
+
+/**
+ * 壁時計差分をアキュムレータへ足す。上限を超えた分は破棄する（タブ復帰対策）。
+ */
+export function accumulateWallTime(
+  accumulatedMs: number,
+  deltaMs: number,
+  speed: PlaybackSpeed,
+): number {
+  if (speed <= 0 || deltaMs <= 0) return 0;
+  return Math.min(accumulatedMs + deltaMs, maxAccumulatorMs(speed));
+}
+
 /** §3.1: 通常スプリントの 1x 実時間レンジ（秒）。 */
 export const SPRINT_WALL_SEC = { minTypical: 60, maxTypical: 120, absoluteMin: 30 } as const;
 

@@ -19,7 +19,13 @@ import type {
 import type { DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
-import { FRAME_MS, SIM_STEP_MS, ticksDueFromAccumulator, type PlaybackSpeed } from './sprintTempo';
+import {
+  accumulateWallTime,
+  FRAME_MS,
+  SIM_STEP_MS,
+  ticksDueFromAccumulator,
+  type PlaybackSpeed,
+} from './sprintTempo';
 
 export type { PlaybackSpeed } from './sprintTempo';
 
@@ -110,7 +116,8 @@ export function useRun(game: GameHandle): UseRun {
       if (game.isSprintRunning() && !game.isPaused()) {
         const speed = playbackSpeedRef.current;
         if (speed > 0) {
-          accumulatedMs += deltaMs;
+          // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
+          accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
           const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
           accumulatedMs -= consumedMs;
           for (let i = 0; i < ticks; i += 1) {

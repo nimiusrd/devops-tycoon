@@ -394,9 +394,10 @@ SPEC に明記はないが、プレイテスト所感 2 回（可視化不足→
 - **テンポ**: `src/ui/sprintTempo.ts` / `useRun.ts`。1x = 680ms/tick の壁時計アキュムレータ。
   `FIXED_STEP_MS` と sim 決定論は非干渉。プレイヤー `playbackSpeed`（0/1/2）は `game.pause()` と独立。
 - **速度 UI**: `SprintScreen` subbar に Pause / 1x / 2x（`data-testid=speed-*`）。
-- **分布**: 工程コア定数・MC 許容レンジを壊さない範囲で `big-release` の
-  `taskCountMul` を 2→1.75 に調整。通常スプリントは既存 tick 分布 × テンポで §3.1 を充足。
-- **検証**: `tests/unit/sprintTempo.test.ts`（代表 6 seed で §3.1 帯）、`pauseBriefly` 独立性。
+- **分布**: ボス `taskCountMul` / `incidentMul` とボス taskFloor を調整し、無介入でも
+  ボス実時間が 180 秒以内に収まるよう圧縮。通常スプリントは既存 tick 分布 × テンポで充足。
+- **検証**: `tests/unit/sprintTempo.test.ts`（代表 seed・タブ復帰切り捨て・ボス上限）、
+  `pauseBriefly` 独立性。終端 seed を再探索。
 
 ### 技術構成（TECH）
 

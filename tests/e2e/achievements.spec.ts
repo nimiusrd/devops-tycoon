@@ -7,6 +7,7 @@ const META_WITH_ACHIEVEMENT: MetaState = {
   defeatedBosses: [],
   achievements: ['first-clear'],
   collectedWinTypes: ['healthy'],
+  collectedDiagnoses: ['reviewHell'],
   bestScore: 120,
   unlockedCards: [],
   unlockedRelics: [],
@@ -40,6 +41,15 @@ test('タイトルから実績コレクションを開き取得済み／未取�
   const noDamageTitle = page.getByTestId('win-title-noDamage');
   await expect(noDamageTitle).toHaveAttribute('data-unlocked', 'false');
   await expect(page.getByTestId('win-title-hint-noDamage')).toContainText('残業');
+
+  await expect(page.getByTestId('failure-encyclopedia')).toBeVisible();
+  await expect(page.getByTestId('failure-encyclopedia-count')).toHaveText('1/4');
+  const reviewHell = page.getByTestId('failure-entry-reviewHell');
+  await expect(reviewHell).toHaveAttribute('data-unlocked', 'true');
+  await expect(page.getByTestId('failure-entry-hint-reviewHell')).toContainText('レビュー枠');
+  const rework = page.getByTestId('failure-entry-reworkSpiral');
+  await expect(rework).toHaveAttribute('data-unlocked', 'false');
+  await expect(page.getByTestId('failure-entry-hint-reworkSpiral')).toContainText('手戻り');
 
   await page.getByTestId('achievement-collection-close').click();
   await expect(page.getByTestId('achievement-collection')).not.toBeVisible();

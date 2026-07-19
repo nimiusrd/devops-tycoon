@@ -12,8 +12,9 @@ import {
   getUnlock,
   type UnlockDef,
 } from '../data/unlocks';
+import { isFailureDiagnosis } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
-import type { DifficultyId, QuarterOutcome, WinType } from '../sim/run/types';
+import type { DiagnosisType, DifficultyId, QuarterOutcome, WinType } from '../sim/run/types';
 
 /** 旧 localStorage の移行と互換テストに使う最小インターフェース。 */
 export interface LegacyMetaStorage {
@@ -34,6 +35,8 @@ export interface MetaState {
   achievements: string[];
   /** 収集済みの勝利称号（WinType、重複なし）。 */
   collectedWinTypes: WinType[];
+  /** 収集済みの AI 導入失敗診断（失敗 4 種のみ、重複なし）。 */
+  collectedDiagnoses: DiagnosisType[];
   /** 自己ベストスコア。 */
   bestScore: number;
   /** メタショップで購入済みのカード定義 ID。 */
@@ -79,6 +82,7 @@ export function defaultMeta(): MetaState {
     defeatedBosses: [],
     achievements: [],
     collectedWinTypes: [],
+    collectedDiagnoses: [],
     bestScore: 0,
     unlockedCards: [],
     unlockedRelics: [],
@@ -156,6 +160,17 @@ export interface RunRewardInput {
   maxCombo: number;
   /** 四半期レビュー履歴（メタ進行ボーナス用）。 */
   quarterReviews?: QuarterOutcome[];
+  /** ラン終了時の組織タイプ診断（失敗図鑑収集用）。 */
+  diagnosis?: DiagnosisType;
+}
+
+/** 失敗診断を図鑑へ追記する（健全系は無視、重複なし）。 */
+function mergeCollectedDiagnoses(
+  current: readonly DiagnosisType[],
+  diagnosis: DiagnosisType | undefined,
+): DiagnosisType[] {
+  if (!diagnosis || !isFailureDiagnosis(diagnosis)) return [...current];
+  return uniq([...current, diagnosis]) as DiagnosisType[];
 }
 
 /** 1 ラン分のメタ進行ポイント内訳（RI-28′ 可視化用）。 */
@@ -303,6 +318,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     defeatedBosses: [...meta.defeatedBosses],
     achievements: [...meta.achievements],
     collectedWinTypes: [...meta.collectedWinTypes],
+    collectedDiagnoses: mergeCollectedDiagnoses(meta.collectedDiagnoses, input.diagnosis),
     bestScore: Math.max(meta.bestScore, input.score),
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
@@ -383,6 +399,7 @@ export function applyDailyRunReward(
     ...meta,
     bestScore: Math.max(meta.bestScore, input.score),
     collectedWinTypes,
+    collectedDiagnoses: mergeCollectedDiagnoses(meta.collectedDiagnoses, input.diagnosis),
     dailyRuns: {
       ...meta.dailyRuns,
       [input.dateStr]: { bestScore: dailyBest, rewardClaimed: true },

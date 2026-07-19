@@ -7,7 +7,7 @@ import { getBoss } from '../data/bosses';
 import { getRelic } from '../data/relics';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { quarterFailureTheme } from '../render/quarterFailureTheme';
-import { diagnosisView } from '../sim/diagnosis';
+import { FAILURE_ENCYCLOPEDIA_DEFS, diagnosisView, isFailureDiagnosis } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
 import {
   getDailyRecord,
@@ -75,6 +75,10 @@ export function RunResultScreen({
     ? WIN_TITLE_DEFS.find((title) => title.id === state.winType)
     : undefined;
   const titleInCollection = !!state.winType && meta.collectedWinTypes.includes(state.winType);
+  const failureEntry = isFailureDiagnosis(state.diagnosis)
+    ? FAILURE_ENCYCLOPEDIA_DEFS.find((entry) => entry.type === state.diagnosis)
+    : undefined;
+  const failureInCollection = !!failureEntry && meta.collectedDiagnoses.includes(failureEntry.type);
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
   const loseLabel = failureTheme?.label ?? lose?.label ?? '敗北';
   const loseDescription = failureTheme?.description ?? lose?.desc;
@@ -154,6 +158,17 @@ export function RunResultScreen({
             <span aria-hidden="true">{theme.icon}</span> {diag.label}
           </p>
           <p>{diag.description}</p>
+          {failureEntry && (
+            <p
+              className="result-title-description"
+              data-testid="failure-encyclopedia-registered"
+              data-collected={failureInCollection ? 'true' : 'false'}
+            >
+              {failureInCollection
+                ? `AI導入失敗図鑑に登録済み — ${failureEntry.lesson}`
+                : `AI導入失敗図鑑の候補: ${failureEntry.hint}`}
+            </p>
+          )}
         </div>
 
         {bossRelic && (

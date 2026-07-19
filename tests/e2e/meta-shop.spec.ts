@@ -25,6 +25,7 @@ const DEFAULT_META: MetaState = {
   defeatedBosses: [],
   achievements: ['review-exceeded'],
   collectedWinTypes: [],
+  collectedDiagnoses: [],
   bestScore: 0,
   unlockedCards: [],
   unlockedRelics: [],

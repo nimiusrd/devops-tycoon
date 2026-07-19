@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pauseBriefly as pauseGameBriefly, type GameHandle, type PauseBrieflyClear } from '../game';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
+import type { RunSaveSummary } from '../state/runPersistence';
 import type {
   ActionId,
   ActionTarget,
@@ -34,6 +35,8 @@ export interface UseRun {
   meta: MetaState;
   /** 直近ランのメタ進行ポイント内訳（未決着時は null）。 */
   lastRunReward: RunRewardBreakdown | null;
+  /** 再開可能なランセーブの要約（無い場合は null）。 */
+  runSaveSummary: RunSaveSummary | null;
   /** ラン開始世代（RI-60）。`window.game.startRun` でも増える。 */
   runEpoch: number;
   /**
@@ -44,6 +47,7 @@ export interface UseRun {
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
   startRun: (difficulty: DifficultyId, trials: string[]) => void;
   startDailyRun: (dateStr?: string) => void;
+  resumeRun: () => void;
   beginSetupSprint: () => void;
   resolveBeat: (choiceIndex?: number) => void;
   dispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
@@ -86,6 +90,9 @@ export function useRun(game: GameHandle): UseRun {
   const [meta, setMeta] = useState<MetaState>(() => game.getMeta());
   const [lastRunReward, setLastRunReward] = useState<RunRewardBreakdown | null>(() =>
     game.getLastRunReward(),
+  );
+  const [runSaveSummary, setRunSaveSummary] = useState<RunSaveSummary | null>(() =>
+    game.getRunSaveSummary(),
   );
   const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
   const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
@@ -144,6 +151,7 @@ export function useRun(game: GameHandle): UseRun {
       setState(next);
       setMeta(game.getMeta());
       setLastRunReward(game.getLastRunReward());
+      setRunSaveSummary(game.getRunSaveSummary());
       setRunEpoch(game.getRunEpoch());
     }, FRAME_MS);
     return () => window.clearInterval(id);
@@ -156,6 +164,7 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const startDailyRun = useCallback((dateStr?: string) => void game.startDailyRun(dateStr), [game]);
+  const resumeRun = useCallback(() => void game.resumeRun(), [game]);
   const beginSetupSprint = useCallback(() => void game.beginSetupSprint(), [game]);
   const resolveBeat = useCallback(
     (choiceIndex?: number) => void game.resolveBeat(choiceIndex),
@@ -218,11 +227,13 @@ export function useRun(game: GameHandle): UseRun {
     state,
     meta,
     lastRunReward,
+    runSaveSummary,
     runEpoch,
     playbackSpeed,
     setPlaybackSpeed,
     startRun,
     startDailyRun,
+    resumeRun,
     beginSetupSprint,
     resolveBeat,
     dispatch,

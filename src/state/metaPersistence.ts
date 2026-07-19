@@ -1,4 +1,4 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { IDBPDatabase } from 'idb';
 import {
   defaultMeta,
   LEGACY_META_STORAGE_KEY,
@@ -6,18 +6,19 @@ import {
   parseLegacyMeta,
   type MetaState,
 } from './meta';
+import {
+  GAME_DB_NAME,
+  META_RECORD_KEY,
+  META_STORE_NAME,
+  openGameDb,
+  type GameDatabase,
+} from './gameDb';
 
-export const META_DB_NAME = 'devops-tycoon';
-export const META_DB_VERSION = 1;
-export const META_STORE_NAME = 'meta';
-const META_RECORD_KEY = 'current';
-
-interface MetaDatabase extends DBSchema {
-  meta: {
-    key: typeof META_RECORD_KEY;
-    value: MetaState;
-  };
-}
+/** @deprecated GAME_DB_NAME を使う。後方互換の再エクスポート。 */
+export const META_DB_NAME = GAME_DB_NAME;
+/** @deprecated GAME_DB_VERSION を使う。後方互換の再エクスポート。 */
+export { GAME_DB_VERSION as META_DB_VERSION } from './gameDb';
+export { META_STORE_NAME };
 
 /** メタ進行の非同期永続化インターフェース。 */
 export interface MetaStorage {
@@ -40,16 +41,10 @@ export interface MetaPersistenceBootstrap {
 export class IndexedDbMetaStorage implements MetaStorage {
   private writes: Promise<void> = Promise.resolve();
 
-  constructor(private readonly dbName: string = META_DB_NAME) {}
+  constructor(private readonly dbName: string = GAME_DB_NAME) {}
 
-  private open(): Promise<IDBPDatabase<MetaDatabase>> {
-    return openDB<MetaDatabase>(this.dbName, META_DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(META_STORE_NAME)) {
-          db.createObjectStore(META_STORE_NAME);
-        }
-      },
-    });
+  private open(): Promise<IDBPDatabase<GameDatabase>> {
+    return openGameDb(this.dbName);
   }
 
   async load(): Promise<MetaState | null> {

@@ -64,6 +64,8 @@ export interface UseRun {
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
+  /** 初見向け段階ガイドを表示済みにする（RI-60）。 */
+  markTutorialSeen: () => void;
 }
 
 export function useRun(game: GameHandle): UseRun {
@@ -154,6 +156,7 @@ export function useRun(game: GameHandle): UseRun {
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
     [game],
   );
+  const markTutorialSeen = useCallback(() => void game.markTutorialSeen(), [game]);
 
   return {
     state,
@@ -189,5 +192,6 @@ export function useRun(game: GameHandle): UseRun {
     chooseGoalAdjustment,
     newRun,
     purchaseMetaUnlock,
+    markTutorialSeen,
   };
 }

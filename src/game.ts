@@ -103,6 +103,8 @@ export interface GameHandle {
   newRun(seed?: string): RunState;
   /** メタショップでコンテンツを永続解放する（points 消費）。 */
   purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
+  /** 初見向け段階ガイドを表示済みにする（RI-60）。 */
+  markTutorialSeen(): void;
   /** 現在のメタ進行（解放状況・実績）。 */
   getMeta(): MetaState;
   /** 直近ランで付与したメタ進行ポイント内訳（未決着時は null）。 */
@@ -436,6 +438,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       persistMeta();
       bump();
       return { ok: true };
+    },
+    markTutorialSeen() {
+      if (!metaReady || meta.seenTutorial) return;
+      meta = { ...meta, seenTutorial: true };
+      persistMeta();
+      bump();
     },
     getMeta() {
       return meta;

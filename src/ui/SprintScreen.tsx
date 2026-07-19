@@ -28,6 +28,7 @@ import { DeckBar } from './DeckBar';
 import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
 import { SlowMotionOverlay } from './JuicyEffects';
+import { TutorialGuide } from './TutorialGuide';
 
 /** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
 const BOSS_SLOWMO_MS = 1_200;
@@ -39,6 +40,10 @@ export interface SprintScreenProps {
   getSprintSnapshot: () => SprintState | null;
   /** スローモ中に自動進行を止める（RI-10）。戻り値でキャンセル。 */
   pauseBriefly: (ms: number) => PauseBrieflyClear;
+  /** 初見向け段階ガイドを表示する（RI-60）。 */
+  showTutorial?: boolean;
+  /** ガイド完了 / スキップ時。 */
+  onTutorialDismiss?: () => void;
 }
 
 export function SprintScreen({
@@ -47,6 +52,8 @@ export function SprintScreen({
   onPlayCard,
   getSprintSnapshot,
   pauseBriefly,
+  showTutorial = false,
+  onTutorialDismiss,
 }: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
@@ -185,7 +192,7 @@ export function SprintScreen({
               : '💻 通常スプリント'}
         </span>
         {isBoss && boss && <span className="pill boss-goal">{boss.description}</span>}
-        <div className="meter-wrap">
+        <div className="meter-wrap" data-testid="jam-meter">
           <span className="meter-label">渋滞メーター</span>
           <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
             <i style={{ width: `${jamPct}%` }} />
@@ -245,6 +252,7 @@ export function SprintScreen({
         onAssignAssigneeChange={setAssignAssignee}
         outcomeFeedback={outcomeFeedback}
       />
+      {showTutorial && onTutorialDismiss && <TutorialGuide onDismiss={onTutorialDismiss} />}
     </>
   );
 }

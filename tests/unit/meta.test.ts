@@ -142,6 +142,45 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(exceeded.points).toBeGreaterThan(normal.points);
   });
 
+  it('RI-28″: 勝利時のレビュー outcome で実績を付与する', () => {
+    const exceeded = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 320,
+      scoreMul: 1,
+      maxCombo: 8,
+      quarterReviews: ['exceeded'],
+    });
+    expect(exceeded.achievements).toContain('review-exceeded');
+    expect(exceeded.achievements).not.toContain('review-survivor');
+
+    const survivor = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 320,
+      scoreMul: 1,
+      maxCombo: 8,
+      quarterReviews: ['missed_adjustable', 'met'],
+    });
+    expect(survivor.achievements).toContain('review-survivor');
+    expect(survivor.achievements).not.toContain('review-exceeded');
+
+    const loss = applyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 100,
+      scoreMul: 1,
+      maxCombo: 4,
+      quarterReviews: ['exceeded', 'missed_adjustable'],
+    });
+    expect(loss.achievements).not.toContain('review-exceeded');
+    expect(loss.achievements).not.toContain('review-survivor');
+  });
+
   it('RI-28′: computeRunRewardBreakdown が基本・学習・レビュー内訳を返す', () => {
     const lossBase = computeRunRewardBreakdown({
       won: false,
@@ -292,18 +331,42 @@ describe('メタ進行とアンロック（第17章）', () => {
   });
 
   it('purchaseUnlock は残高不足・二重購入・成功を判定する', () => {
-    const poor = purchaseUnlock({ ...defaultMeta(), points: 10 }, 'unlock-devin');
+    const poor = purchaseUnlock({ ...defaultMeta(), points: 10 }, 'unlock-claude-code');
     expect(poor.ok).toBe(false);
     expect(poor.reason).toBe('insufficient_points');
 
-    const rich = purchaseUnlock({ ...defaultMeta(), points: 100 }, 'unlock-devin');
+    const rich = purchaseUnlock({ ...defaultMeta(), points: 100 }, 'unlock-claude-code');
     expect(rich.ok).toBe(true);
-    expect(rich.meta.points).toBe(50);
-    expect(rich.meta.unlockedCards).toContain('devin');
+    expect(rich.meta.points).toBe(75);
+    expect(rich.meta.unlockedCards).toContain('claude-code');
 
-    const again = purchaseUnlock(rich.meta, 'unlock-devin');
+    const again = purchaseUnlock(rich.meta, 'unlock-claude-code');
     expect(again.ok).toBe(false);
     expect(again.reason).toBe('already_owned');
+  });
+
+  it('RI-28″: purchaseUnlock は前提実績未達を拒否する', () => {
+    const locked = purchaseUnlock({ ...defaultMeta(), points: 100 }, 'unlock-devin');
+    expect(locked.ok).toBe(false);
+    expect(locked.reason).toBe('requires');
+
+    const unlocked = purchaseUnlock(
+      { ...defaultMeta(), points: 100, achievements: ['review-exceeded'] },
+      'unlock-devin',
+    );
+    expect(unlocked.ok).toBe(true);
+    expect(unlocked.meta.unlockedCards).toContain('devin');
+
+    const hireLocked = purchaseUnlock({ ...defaultMeta(), points: 100 }, 'unlock-hire-senior');
+    expect(hireLocked.ok).toBe(false);
+    expect(hireLocked.reason).toBe('requires');
+
+    const hireOk = purchaseUnlock(
+      { ...defaultMeta(), points: 100, achievements: ['review-survivor'] },
+      'unlock-hire-senior',
+    );
+    expect(hireOk.ok).toBe(true);
+    expect(hireOk.meta.unlockedCards).toContain('hire-senior');
   });
 
   it('unlockedContent の既定プールはメタロック対象を含まない', () => {
@@ -368,6 +431,30 @@ describe('メタ進行とアンロック（第17章）', () => {
       maxCombo: 3,
     });
     for (const id of allBosses.achievements) earnable.add(id);
+
+    const reviewExceeded = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 300,
+      scoreMul: 1,
+      maxCombo: 3,
+      quarterReviews: ['exceeded'],
+    });
+    for (const id of reviewExceeded.achievements) earnable.add(id);
+
+    const reviewSurvivor = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 300,
+      scoreMul: 1,
+      maxCombo: 3,
+      quarterReviews: ['missed_adjustable', 'met'],
+    });
+    for (const id of reviewSurvivor.achievements) earnable.add(id);
 
     for (const id of earnable) {
       expect(definedIds.has(id)).toBe(true);

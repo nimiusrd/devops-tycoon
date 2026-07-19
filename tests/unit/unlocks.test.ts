@@ -45,4 +45,9 @@ describe('UNLOCK_DEFS 整合（RI-18）', () => {
       expect(getUnlock(unlock.id)).toEqual(unlock);
     }
   });
+
+  it('RI-28″: 高コスト解放にレビュー実績の前提が付いている', () => {
+    expect(getUnlock('unlock-devin')?.requires).toBe('review-exceeded');
+    expect(getUnlock('unlock-hire-senior')?.requires).toBe('review-survivor');
+  });
 });

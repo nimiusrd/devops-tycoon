@@ -240,6 +240,16 @@ export const ACHIEVEMENT_DEFS: readonly AchievementDef[] = [
     label: 'Nightmare 制覇',
     hint: 'Nightmare 難易度で四半期を突破する',
   },
+  {
+    id: 'review-exceeded',
+    label: '超過達成クリア',
+    hint: '四半期レビューで超過達成（exceeded）を出してランを勝利する',
+  },
+  {
+    id: 'review-survivor',
+    label: '目標修正からの生還',
+    hint: '四半期レビューで目標修正（missed_adjustable）を経験したうえでランを勝利する',
+  },
 ];
 
 /** 勝利称号の宣言的定義（コレクション表示・獲得条件ヒント）。 */
@@ -312,6 +322,9 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     if (input.maxCombo >= 20) earned.push('combo-master');
     if (input.difficulty === 'nightmare') earned.push('nightmare-clear');
     if (allBossesDefeated(next.defeatedBosses, ALL_BOSSES)) earned.push('all-bosses');
+    const reviews = input.quarterReviews ?? [];
+    if (reviews.includes('exceeded')) earned.push('review-exceeded');
+    if (reviews.includes('missed_adjustable')) earned.push('review-survivor');
     next.achievements = uniq([...next.achievements, ...earned]);
   }
 

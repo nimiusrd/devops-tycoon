@@ -34,7 +34,7 @@ test('旧 localStorage を IndexedDB へ移行し、購入後も再読み込み�
       points: 100,
       unlockedDifficulties: ['easy', 'normal'],
       defeatedBosses: [],
-      achievements: [],
+      achievements: ['review-exceeded'],
       bestScore: 0,
       unlockedCards: [],
       unlockedRelics: [],

@@ -40,6 +40,8 @@ export interface TitleScreenProps {
   resumableSummary?: RunSaveSummary | null;
   onOpenReplays?: () => void;
   onOpenMetaShop?: () => void;
+  /** 研修方針（デッキカスタム。RI-34‴）。 */
+  onOpenDeckPolicy?: () => void;
   onOpenAchievements?: () => void;
   /** サウンドミュート切替（RI-59）。 */
   onToggleSoundMuted?: () => void;
@@ -55,6 +57,7 @@ export function TitleScreen({
   resumableSummary = null,
   onOpenReplays,
   onOpenMetaShop,
+  onOpenDeckPolicy,
   onOpenAchievements,
   onToggleSoundMuted,
   onOpenHelp,
@@ -325,6 +328,12 @@ export function TitleScreen({
             {onOpenMetaShop && (
               <button type="button" data-testid="open-meta-shop" onClick={onOpenMetaShop}>
                 研修ツール解禁（メタショップ）
+              </button>
+            )}
+            {onOpenDeckPolicy && (
+              <button type="button" data-testid="open-deck-policy" onClick={onOpenDeckPolicy}>
+                研修方針
+                {meta.preferredCardIds.length > 0 ? `（${meta.preferredCardIds.length}）` : ''}
               </button>
             )}
             {onOpenAchievements && (

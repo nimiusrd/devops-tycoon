@@ -12,10 +12,14 @@ import {
   dailySeed,
   defaultMeta,
   loadMeta,
+  MAX_PREFERRED_CARDS,
+  normalizeMeta,
   purchaseUnlock,
   saveMeta,
+  sanitizePreferredCardIds,
   unlockedContent,
   utcDateStr,
+  withPreferredCardIds,
   type LegacyMetaStorage,
   type MetaState,
 } from '../../src/state/meta';
@@ -360,6 +364,60 @@ describe('メタ進行とアンロック（第17章）', () => {
       bestScore: 100,
     });
     expect(loadMeta(storage).seenTutorial).toBe(false);
+    expect(loadMeta(storage).preferredCardIds).toEqual([]);
+  });
+
+  it('研修方針 preferredCardIds を正規化し、未解放・超過を落とす（RI-34‴）', () => {
+    expect(normalizeMeta({ preferredCardIds: ['copilot', 'docs'] }).preferredCardIds).toEqual([
+      'copilot',
+      'docs',
+    ]);
+    expect(
+      sanitizePreferredCardIds(
+        ['copilot', 'copilot', 'docs', 'auto-test'],
+        unlockedContent(defaultMeta()).cards,
+      ),
+    ).toEqual(['copilot', 'docs']);
+    expect(sanitizePreferredCardIds(['devin'], unlockedContent(defaultMeta()).cards)).toEqual([]);
+    expect(MAX_PREFERRED_CARDS).toBe(2);
+
+    const withLocked = normalizeMeta({
+      preferredCardIds: ['devin', 'copilot', 'docs', 'auto-test'],
+    });
+    expect(withLocked.preferredCardIds).toEqual(['copilot', 'docs']);
+
+    const meta = withPreferredCardIds(defaultMeta(), ['copilot', 'docs', 'auto-test']);
+    expect(meta.preferredCardIds).toEqual(['copilot', 'docs']);
+    expect(withPreferredCardIds(meta, ['copilot', 'docs'])).toBe(meta);
+
+    const rewarded = applyRunReward(
+      { ...meta, preferredCardIds: ['auto-test'] },
+      {
+        won: false,
+        difficulty: 'normal',
+        score: 10,
+        scoreMul: 1,
+        maxCombo: 0,
+      },
+    );
+    expect(rewarded.preferredCardIds).toEqual(['auto-test']);
+  });
+
+  it('setPreferredCardIds は解放済みのみ永続化する（RI-34‴）', async () => {
+    let persisted: MetaState | null = null;
+    const game = createGame({
+      initialMeta: defaultMeta(),
+      metaStorage: {
+        load: async () => persisted,
+        save: async (m) => {
+          persisted = m;
+        },
+      },
+    });
+    game.setPreferredCardIds(['devin', 'copilot']);
+    await Promise.resolve();
+    expect(game.getMeta().preferredCardIds).toEqual(['copilot']);
+    expect(persisted?.preferredCardIds).toEqual(['copilot']);
   });
 
   it('seenTutorial は報酬適用後も保持され、markTutorialSeen で永続化する（RI-60）', async () => {

@@ -209,6 +209,8 @@ export class RunEngine {
   private trials: string[];
   private allowedCards: ReadonlySet<string> | null = null;
   private allowedRelics: ReadonlySet<string> | null = null;
+  /** ラン開始時に固定した研修方針（優先施策。RI-34‴）。 */
+  private preferredCards: ReadonlySet<string> = new Set();
 
   private bossId!: string;
   private baseConfig!: SprintConfig;
@@ -312,6 +314,11 @@ export class RunEngine {
   setUnlockedContent(cards: ReadonlySet<string>, relics: ReadonlySet<string>): void {
     this.allowedCards = cards;
     this.allowedRelics = relics;
+  }
+
+  /** ラン開始時点の研修方針（優先施策）を設定する（ラン中は固定。RI-34‴）。 */
+  setPreferredCards(cardIds: ReadonlySet<string> | readonly string[]): void {
+    this.preferredCards = cardIds instanceof Set ? cardIds : new Set(cardIds);
   }
 
   /** タイトルで選んだ難易度・試練でランを開始する（phase=setup）。 */
@@ -773,6 +780,7 @@ export class RunEngine {
       createRng(`${this.seed}:draft:${this.sprintsPlayed}`),
       3,
       this.allowedCards ?? undefined,
+      this.preferredCards,
     );
     this.setPhase('draft');
   }
@@ -970,7 +978,7 @@ export class RunEngine {
     const key = `${this.seed}:shop:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`;
     const rng = createRng(key);
     const discount = foldPassives(this.relics).shopDiscount;
-    const cardIds = drawDraft(rng, 3, this.allowedCards ?? undefined);
+    const cardIds = drawDraft(rng, 3, this.allowedCards ?? undefined, this.preferredCards);
     const cards = cardIds.map((defId) => ({
       defId,
       cost: Math.max(1, Math.round((getCard(defId)?.cost ?? 12) * (1 - discount))),
@@ -1404,6 +1412,7 @@ export class RunEngine {
         winEvalOrg: this.winEvalOrg ? structuredClone(this.winEvalOrg) : null,
         allowedCards: this.allowedCards ? [...this.allowedCards] : [],
         allowedRelics: this.allowedRelics ? [...this.allowedRelics] : [],
+        preferredCardIds: [...this.preferredCards],
       },
     };
   }
@@ -1483,6 +1492,9 @@ export class RunEngine {
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
     this.allowedCards = new Set(cloned.extras.allowedCards);
     this.allowedRelics = new Set(cloned.extras.allowedRelics);
+    this.preferredCards = Array.isArray(cloned.extras.preferredCardIds)
+      ? new Set(cloned.extras.preferredCardIds)
+      : new Set();
     this.whatIfCache = null;
   }
 

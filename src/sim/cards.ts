@@ -212,12 +212,27 @@ export function upgradeCardAt(deck: CardInstance[], index: number): CardInstance
 }
 
 /**
+ * 研修方針の優先施策にかかるレアリティ重み倍率（RI-34‴）。
+ * 無料でデッキに入らず、ドラフト／ショップで出やすくするだけ。
+ */
+export const PREFERRED_DRAFT_WEIGHT_MUL = 3;
+
+/**
  * ドラフト候補をレアリティ重み付きで `count` 枚、重複なく抽選する（第7.1）。
  * 乱数は引数の PRNG から消費するため、同一 seed・同一スプリント番号で再現する。
+ * `preferred` に含まれる ID は重みを {@link PREFERRED_DRAFT_WEIGHT_MUL} 倍する（RI-34‴）。
  */
-export function drawDraft(rng: Rng, count = 3, allowed?: ReadonlySet<string>): string[] {
+export function drawDraft(
+  rng: Rng,
+  count = 3,
+  allowed?: ReadonlySet<string>,
+  preferred?: ReadonlySet<string>,
+): string[] {
   const defs = allowed ? CARD_DEFS.filter((c) => allowed.has(c.id)) : CARD_DEFS;
-  const pool = defs.map((c) => ({ id: c.id, weight: RARITY_WEIGHT[c.rarity] }));
+  const pool = defs.map((c) => ({
+    id: c.id,
+    weight: RARITY_WEIGHT[c.rarity] * (preferred?.has(c.id) ? PREFERRED_DRAFT_WEIGHT_MUL : 1),
+  }));
   const picked: string[] = [];
   for (let n = 0; n < count && pool.length > 0; n += 1) {
     const total = pool.reduce((s, c) => s + c.weight, 0);

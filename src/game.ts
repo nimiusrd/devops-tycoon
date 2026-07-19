@@ -32,6 +32,13 @@ import {
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
 import {
+  buildReplayId,
+  REPLAY_SCHEMA_VERSION,
+  type ReplayBlob,
+  type ReplayKeyframe,
+} from './state/replay';
+import type { ReplayStorage } from './state/replayPersistence';
+import {
   toRunSave,
   type RunSave,
   type RunSaveSummary,
@@ -135,6 +142,16 @@ export interface GameHandle {
   getRunSaveSummary(): RunSaveSummary | null;
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
+  /** リプレイ永続化を接続し、一覧をキャッシュする（RI-61）。 */
+  attachReplay(storage: ReplayStorage): Promise<void>;
+  /** 保存済みリプレイ一覧（新しい順）。 */
+  listReplays(): ReplayBlob[];
+  /** リプレイのキーフレームを read-only で開く（失敗時 null）。 */
+  openReplay(id: string, keyframeIndex?: number): RunState | null;
+  /** リプレイ閲覧を終了してタイトルへ戻る。 */
+  exitReplay(): RunState;
+  /** リプレイ閲覧中か。 */
+  isReplayMode(): boolean;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
@@ -176,6 +193,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let metaReady = options.metaReady ?? true;
   let runStorage: RunStorage | null = options.runStorage ?? null;
   let resumableSave: RunSave | null = options.initialRunSave ?? null;
+  let replayStorage: ReplayStorage | null = null;
+  let cachedReplays: ReplayBlob[] = [];
+  let keyframes: ReplayKeyframe[] = [];
+  let replayMode = false;
   let recorded = false;
   let lastRunReward: RunRewardBreakdown | null = null;
   let revision = 0;
@@ -203,9 +224,63 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     void runStorage.clear().catch(() => undefined);
   };
 
+  const appendKeyframeIfNeeded = (): void => {
+    if (replayMode) return;
+    const frame = engine.exportReplayFrame();
+    if (!frame) return;
+    const entry: ReplayKeyframe = { phase: frame.phase, frame: structuredClone(frame) };
+    const last = keyframes[keyframes.length - 1];
+    if (last && last.phase === entry.phase) {
+      keyframes[keyframes.length - 1] = entry;
+      return;
+    }
+    keyframes.push(entry);
+  };
+
+  const refreshReplayCache = async (): Promise<void> => {
+    if (!replayStorage) {
+      cachedReplays = [];
+      return;
+    }
+    try {
+      cachedReplays = await replayStorage.list();
+    } catch {
+      cachedReplays = [];
+    }
+    bump();
+  };
+
+  const commitReplayIfFinished = (): void => {
+    if (!replayStorage || keyframes.length === 0 || replayMode) return;
+    const s = engine.snapshot();
+    if (s.status !== 'won' && s.status !== 'lost') return;
+    const finishedAt = Date.now();
+    const blob: ReplayBlob = {
+      schemaVersion: REPLAY_SCHEMA_VERSION,
+      id: buildReplayId(s.seed, finishedAt),
+      seed: s.seed,
+      difficulty: s.difficulty,
+      trials: [...s.trials],
+      finishedAt,
+      outcome: {
+        status: s.status,
+        winType: s.winType,
+        loseReason: s.loseReason,
+        diagnosis: s.diagnosis,
+        score: s.org.deliveryScore,
+      },
+      keyframes: structuredClone(keyframes),
+    };
+    keyframes = [];
+    void replayStorage
+      .save(blob)
+      .then(() => refreshReplayCache())
+      .catch(() => undefined);
+  };
+
   /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
   const persistSaveableSnapshot = (): void => {
-    if (!runStorage) return;
+    if (replayMode || !runStorage) return;
     const exported = engine.exportPersistState();
     if (!exported) return;
     const save = toRunSave(exported);
@@ -216,11 +291,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /**
    * セーブ可能フェーズなら保存。sprint 中は直前セーブを維持。
    * title / won / lost では破棄する（RI-58）。
+   * あわせてリプレイキーフレームを収集し、終端で commit する（RI-61）。
    */
   const persistRunIfNeeded = (): void => {
-    if (!runStorage) return;
+    if (replayMode) return;
     const phase = engine.currentPhase();
+    appendKeyframeIfNeeded();
     if (phase === 'title' || phase === 'won' || phase === 'lost') {
+      if (phase === 'won' || phase === 'lost') commitReplayIfFinished();
       clearRunSaveInternal();
       return;
     }
@@ -348,9 +426,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return { ...state, ...resolveWhatIf() };
     },
     startRun(difficulty, trials, runSeed) {
+      if (replayMode) return engine.snapshot();
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
+      keyframes = [];
       clearWhatIfCache();
       applyUnlockedToEngine();
       runEpoch += 1;
@@ -359,10 +439,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     startDailyRun(dateStr) {
+      if (replayMode) return engine.snapshot();
       recorded = false;
       lastRunReward = null;
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
+      keyframes = [];
       clearWhatIfCache();
       applyUnlockedToEngine();
       runEpoch += 1;
@@ -377,6 +459,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return runEpoch;
     },
     beginSetupSprint() {
+      if (replayMode) return engine.snapshot();
       // スプリント本体は保存しないが、突入直前の最新編成（setup）を残す。
       persistSaveableSnapshot();
       engine.beginSetupSprint();
@@ -384,6 +467,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     resolveBeat(choiceIndex) {
+      if (replayMode) return engine.snapshot();
       // beat → sprint 直遷移でも直前の離散状態を残す。
       persistSaveableSnapshot();
       engine.resolveBeat(choiceIndex);
@@ -391,17 +475,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return after();
     },
     step(ms) {
+      if (replayMode) return engine.snapshot();
       engine.step(ms);
       bump();
       return after();
     },
     dispatch(id, target) {
+      if (replayMode) return { ok: false, reason: 'complete' };
       const outcome = engine.dispatch(id, target);
       bump();
       // 介入はスプリント中のみ。セーブは更新しない（セーブスカム抑制）。
       return outcome;
     },
     playCard(deckIndex) {
+      if (replayMode) return { ok: false, reason: 'complete' };
       const outcome = engine.playCard(deckIndex);
       bump();
       recordIfFinished();
@@ -409,111 +496,133 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return outcome;
     },
     acknowledgeResult() {
+      if (replayMode) return engine.snapshot();
       engine.acknowledgeResult();
       bump();
       return after();
     },
     chooseCard(defId) {
+      if (replayMode) return engine.snapshot();
       engine.chooseCard(defId);
       bump();
       return after();
     },
     skipDraft() {
+      if (replayMode) return engine.snapshot();
       engine.skipDraft();
       bump();
       return after();
     },
     unlockEvolution(id) {
+      if (replayMode) return engine.snapshot();
       engine.unlockEvolution(id);
       bump();
       // フェーズ非遷移のためセーブしない（リロードで消費前に戻る）。
       return afterLocal();
     },
     finishEvolution() {
+      if (replayMode) return engine.snapshot();
       engine.finishEvolution();
       bump();
       return after();
     },
     buyShopCard(defId) {
+      if (replayMode) return engine.snapshot();
       engine.buyShopCard(defId);
       bump();
       return afterLocal();
     },
     buyShopRelic() {
+      if (replayMode) return engine.snapshot();
       engine.buyShopRelic();
       bump();
       return afterLocal();
     },
     buyShopRecruit() {
+      if (replayMode) return engine.snapshot();
       engine.buyShopRecruit();
       bump();
       return afterLocal();
     },
     leaveShop() {
+      if (replayMode) return engine.snapshot();
       engine.leaveShop();
       bump();
       return after();
     },
     restChoose(option, deckIndex) {
+      if (replayMode) return engine.snapshot();
       engine.restChoose(option, deckIndex);
       bump();
       return after();
     },
     recruitChoose(option) {
+      if (replayMode) return engine.snapshot();
       engine.recruitChoose(option);
       bump();
       return after();
     },
     assignMember(id, assignment) {
+      if (replayMode) return engine.snapshot();
       engine.assignMember(id, assignment);
       bump();
       return afterLocal();
     },
     setMemberAi(id, on) {
+      if (replayMode) return engine.snapshot();
       engine.setMemberAi(id, on);
       bump();
       return afterLocal();
     },
     zoomTo(level) {
+      if (replayMode) return engine.snapshot();
       engine.zoomTo(level);
       bump();
       return afterLocal();
     },
     focusDept(id) {
+      if (replayMode) return engine.snapshot();
       engine.focusDepartment(id);
       bump();
       return afterLocal();
     },
     focusTeam(id) {
+      if (replayMode) return engine.snapshot();
       engine.focusTeam(id);
       bump();
       return afterLocal();
     },
     setRankingKind(kind) {
+      if (replayMode) return engine.snapshot();
       engine.setRankingKind(kind);
       bump();
       return afterLocal();
     },
     applyOrgLever(leverId, deptId) {
+      if (replayMode) return engine.snapshot();
       engine.applyOrgLever(leverId, deptId);
       bump();
       // レバーはフェーズ非遷移だが即時敗北の可能性がある。
       return after();
     },
     acknowledgeQuarterReview() {
+      if (replayMode) return engine.snapshot();
       engine.acknowledgeQuarterReview();
       bump();
       return after();
     },
     chooseGoalAdjustment(id) {
+      if (replayMode) return engine.snapshot();
       engine.chooseGoalAdjustment(id);
       bump();
       return after();
     },
     newRun(runSeed) {
+      replayMode = false;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
+      keyframes = [];
       clearWhatIfCache();
       applyUnlockedToEngine();
       engine.toTitle(runSeed);
@@ -562,7 +671,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
     },
     resumeRun() {
-      if (!resumableSave) return null;
+      if (replayMode || !resumableSave) return null;
       recorded = false;
       lastRunReward = null;
       clearWhatIfCache();
@@ -587,11 +696,55 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearRunSaveInternal();
       bump();
     },
+    async attachReplay(storage) {
+      replayStorage = storage;
+      await refreshReplayCache();
+    },
+    listReplays() {
+      return cachedReplays.map((r) => structuredClone(r));
+    },
+    openReplay(id, keyframeIndex = -1) {
+      const replay = cachedReplays.find((r) => r.id === id);
+      if (!replay || replay.keyframes.length === 0) return null;
+      const index =
+        keyframeIndex < 0
+          ? replay.keyframes.length - 1
+          : Math.min(keyframeIndex, replay.keyframes.length - 1);
+      const frame = replay.keyframes[index];
+      if (!frame) return null;
+      try {
+        engine.hydrateReplayFrame(frame.frame);
+      } catch {
+        return null;
+      }
+      replayMode = true;
+      activeDailyDate = frame.frame.dailyDate ?? null;
+      recorded = true;
+      lastRunReward = null;
+      clearWhatIfCache();
+      paused = true;
+      bump();
+      return engine.snapshot();
+    },
+    exitReplay() {
+      replayMode = false;
+      recorded = false;
+      lastRunReward = null;
+      activeDailyDate = null;
+      keyframes = [];
+      clearWhatIfCache();
+      engine.toTitle();
+      bump();
+      return engine.snapshot();
+    },
+    isReplayMode() {
+      return replayMode;
+    },
     phase() {
       return engine.currentPhase();
     },
     isSprintRunning() {
-      return engine.sprintRunning();
+      return !replayMode && engine.sprintRunning();
     },
     revision() {
       return revision;

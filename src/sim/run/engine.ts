@@ -110,7 +110,12 @@ import type {
   WhatIfState,
   WinType,
 } from './types';
-import { isRunSavePhase, type RunPersistState } from './persist';
+import {
+  isReplayFramePhase,
+  isRunSavePhase,
+  type RunPersistState,
+  type RunReplayFrame,
+} from './persist';
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
@@ -1324,13 +1329,26 @@ export class RunEngine {
    */
   exportPersistState(): RunPersistState | null {
     if (!isRunSavePhase(this.phase) || this.status !== 'playing') return null;
+    return this.buildPersistFrame() as RunPersistState;
+  }
+
+  /**
+   * リプレイキーフレーム用スナップショット（RI-61）。
+   * setup / result / quarterReview / won / lost のみ。sprint は落とす。
+   */
+  exportReplayFrame(): RunReplayFrame | null {
+    if (!isReplayFramePhase(this.phase)) return null;
+    return this.buildPersistFrame();
+  }
+
+  private buildPersistFrame(): RunReplayFrame {
     return {
       seed: this.seed,
       difficulty: this.difficulty,
       trials: [...this.trials],
       runKind: this.runKind,
       dailyDate: this.dailyDate,
-      phase: this.phase,
+      phase: this.phase as RunReplayFrame['phase'],
       status: this.status,
       winType: this.winType,
       loseReason: this.loseReason,
@@ -1395,6 +1413,18 @@ export class RunEngine {
     if (!isRunSavePhase(state.phase) || state.status !== 'playing') {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
+    this.applyPersistFrame(state);
+  }
+
+  /** リプレイキーフレームから閲覧用に復元する（RI-61。won/lost 可）。 */
+  hydrateReplayFrame(frame: RunReplayFrame): void {
+    if (!isReplayFramePhase(frame.phase)) {
+      throw new Error(`cannot hydrate replay frame in phase=${frame.phase}`);
+    }
+    this.applyPersistFrame(frame);
+  }
+
+  private applyPersistFrame(state: RunReplayFrame): void {
     const cloned = structuredClone(state);
     this.seed = cloned.seed;
     this.difficulty = cloned.difficulty;

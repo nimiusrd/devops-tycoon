@@ -4,6 +4,7 @@ import App from './App';
 import { AudioProvider } from './audio/AudioProvider';
 import { installGame } from './game';
 import { initializeMetaPersistence } from './state/metaPersistence';
+import { IndexedDbReplayStorage } from './state/replayPersistence';
 import { initializeRunPersistence } from './state/runPersistence';
 import './styles.css';
 
@@ -15,6 +16,7 @@ const [{ meta, storage }, { save: runSave, storage: runStorage }] = await Promis
 ]);
 game.attachMetaPersistence(meta, storage);
 game.attachRunPersistence(runStorage, runSave);
+await game.attachReplay(new IndexedDbReplayStorage());
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

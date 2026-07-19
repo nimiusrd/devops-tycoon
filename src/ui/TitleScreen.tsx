@@ -38,6 +38,7 @@ export interface TitleScreenProps {
   onStartDaily?: () => void;
   onResume?: () => void;
   resumableSummary?: RunSaveSummary | null;
+  onOpenReplays?: () => void;
   onOpenMetaShop?: () => void;
   onOpenAchievements?: () => void;
   /** サウンドミュート切替（RI-59）。 */
@@ -52,6 +53,7 @@ export function TitleScreen({
   onStartDaily,
   onResume,
   resumableSummary = null,
+  onOpenReplays,
   onOpenMetaShop,
   onOpenAchievements,
   onToggleSoundMuted,
@@ -313,6 +315,11 @@ export function TitleScreen({
             {onOpenHelp && (
               <button type="button" data-testid="open-help" onClick={onOpenHelp}>
                 遊び方
+              </button>
+            )}
+            {onOpenReplays && (
+              <button type="button" data-testid="open-replays" onClick={onOpenReplays}>
+                リプレイ
               </button>
             )}
             {onOpenMetaShop && (

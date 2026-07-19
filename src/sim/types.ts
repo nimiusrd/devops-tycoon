@@ -178,6 +178,9 @@ export type SprintEventKind =
 /** コンボ途切れの理由。 */
 export type ComboBreakReason = 'rework' | 'auto-contain' | 'spread';
 
+/** 点火の原因（RI-34′。「なぜ燃えたか」区別用）。 */
+export type IgniteSource = 'review' | 'spread';
+
 /**
  * スプリント中に記録する構造化イベント（RI-52）。
  * seed 決定論の範囲で append のみ。演出・文言は描画層が読む。
@@ -200,6 +203,8 @@ export type SprintEvent =
       tick: number;
       kind: 'ignite';
       taskId: number;
+      /** Review 落ちか延焼連鎖か（RI-34′）。 */
+      source: IgniteSource;
     }
   | {
       tick: number;
@@ -221,6 +226,12 @@ export type SprintEvent =
       /** 鎮火後も維持されたコンボ。 */
       combo: number;
     };
+
+/** 炎上因果ログ用イベント（RI-34′。ring buffer とは独立して全件保持）。 */
+export type FireSprintEvent = Extract<
+  SprintEvent,
+  { kind: 'ignite' | 'contain' | 'auto-contain' | 'spread' }
+>;
 
 /** スプリント中に有効な時限モディファイア（介入アクションが設定する）。 */
 export interface SprintModifiers {
@@ -392,6 +403,11 @@ export interface SprintState {
    */
   interventionEvents: Array<Extract<SprintEvent, { kind: 'intervention' }>>;
   /**
+   * 炎上関連イベントの全履歴（RI-34′）。リザルトの「なぜ燃えたか」解説用。
+   * `events` の ring buffer とは独立し、件数制限で落とさない。
+   */
+  fireEvents: FireSprintEvent[];
+  /**
    * tick ごとの時系列サンプル（RI-53）。Review 待ち・燃焼数・コンボ・シニアHP。
    * 介入マーカーは `interventionEvents` から抽出する。
    */
@@ -444,6 +460,8 @@ export interface SprintResult {
   timeline: TimelineSample[];
   /** 介入イベント全件（RI-53。タイムラインマーカー用。ring buffer 非適用）。 */
   events: SprintEvent[];
+  /** 炎上関連イベント全件（RI-34′。「なぜ燃えたか」解説用。ring buffer 非適用）。 */
+  fireEvents: FireSprintEvent[];
   /** スプリント終了時の集中力残量（RI-54）。 */
   focusRemaining: number;
   /** マネジメント集中力の上限（RI-54）。 */

@@ -73,11 +73,17 @@ describe('sprintEventView（RI-52）', () => {
         spreadToTaskId: 3,
       }).text,
     ).toBe('延焼! 隣の Review 待ち PR に連鎖');
+    expect(formatSprintEvent({ tick: 8, kind: 'ignite', taskId: 0, source: 'review' }).text).toBe(
+      '点火! Review 落ち PR が炎上',
+    );
+    expect(formatSprintEvent({ tick: 9, kind: 'ignite', taskId: 1, source: 'spread' }).text).toBe(
+      '点火! 延焼で隣の PR が炎上',
+    );
   });
 
   it('直近 N 件を新しい順で返す', () => {
     const events: SprintEvent[] = [
-      { tick: 1, kind: 'ignite', taskId: 0 },
+      { tick: 1, kind: 'ignite', taskId: 0, source: 'review' },
       { tick: 2, kind: 'combo-break', reason: 'rework', taskId: 1 },
       { tick: 3, kind: 'contain', taskId: 2, combo: 1 },
     ];
@@ -89,11 +95,12 @@ describe('sprintEventView（RI-52）', () => {
 });
 
 describe('SprintState.events 記録（RI-52）', () => {
-  it('createSprint は空の events / interventionEvents で始まる', () => {
+  it('createSprint は空の events / interventionEvents / fireEvents で始まる', () => {
     const org = createOrgState('default', true);
     const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
     expect(sprint.events).toEqual([]);
     expect(sprint.interventionEvents).toEqual([]);
+    expect(sprint.fireEvents).toEqual([]);
   });
 
   it('介入成功で intervention イベントを記録する', () => {
@@ -155,7 +162,7 @@ describe('SprintState.events 記録（RI-52）', () => {
     const org = createOrgState('default', true);
     const sprint = makeSprint(org, []);
     for (let i = 0; i < SPRINT_EVENT_LIMIT + 10; i += 1) {
-      appendSprintEvent(sprint, { tick: i, kind: 'ignite', taskId: i });
+      appendSprintEvent(sprint, { tick: i, kind: 'ignite', taskId: i, source: 'review' });
     }
     expect(sprint.events).toHaveLength(SPRINT_EVENT_LIMIT);
     expect(sprint.events[0].tick).toBe(10);
@@ -177,11 +184,27 @@ describe('SprintState.events 記録（RI-52）', () => {
     };
     appendSprintEvent(sprint, intervention);
     for (let i = 0; i < SPRINT_EVENT_LIMIT + 20; i += 1) {
-      appendSprintEvent(sprint, { tick: i + 10, kind: 'ignite', taskId: i });
+      appendSprintEvent(sprint, { tick: i + 10, kind: 'ignite', taskId: i, source: 'review' });
     }
     expect(sprint.events).toHaveLength(SPRINT_EVENT_LIMIT);
     expect(sprint.interventionEvents).toHaveLength(1);
     expect(sprint.interventionEvents[0].tick).toBe(1);
+  });
+
+  it('ring buffer 超過でも fireEvents は全件保持する（RI-34′）', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, []);
+    const total = SPRINT_EVENT_LIMIT + 20;
+    for (let i = 0; i < total; i += 1) {
+      appendSprintEvent(sprint, { tick: i, kind: 'ignite', taskId: i, source: 'review' });
+    }
+    expect(sprint.events).toHaveLength(SPRINT_EVENT_LIMIT);
+    expect(sprint.fireEvents).toHaveLength(total);
+    expect(sprint.fireEvents[0].tick).toBe(0);
+    expect(sprint.fireEvents[total - 1].tick).toBe(total - 1);
+    const result = summarizeSprint(sprint, org);
+    expect(result.fireEvents).toHaveLength(total);
+    expect(result.fireEvents).not.toBe(sprint.fireEvents);
   });
 
   it('ring buffer 超過でも autoContainCount は metrics で保持する', () => {
@@ -192,20 +215,31 @@ describe('SprintState.events 記録（RI-52）', () => {
     expect(sprint.metrics.autoContainCount).toBe(3);
     // ティッカー用 ring buffer を溢れさせ、古い auto-contain を落とす。
     for (let i = 0; i < SPRINT_EVENT_LIMIT + 5; i += 1) {
-      appendSprintEvent(sprint, { tick: i + 100, kind: 'ignite', taskId: i + 100 });
+      appendSprintEvent(sprint, {
+        tick: i + 100,
+        kind: 'ignite',
+        taskId: i + 100,
+        source: 'review',
+      });
     }
     expect(sprint.events.some((e) => e.kind === 'auto-contain')).toBe(false);
+    // fireEvents には auto-contain が残る（RI-34′）。
+    expect(sprint.fireEvents.filter((e) => e.kind === 'auto-contain')).toHaveLength(3);
     const result = summarizeSprint(sprint, org);
     expect(result.autoContainCount).toBe(3);
+    expect(result.fireEvents.filter((e) => e.kind === 'auto-contain')).toHaveLength(3);
   });
 
-  it('maxTicks 到達の forceDrain 鎮火も autoContainCount に含める', () => {
+  it('maxTicks 到達の forceDrain 鎮火も autoContainCount と fireEvents に含める', () => {
     const org = createOrgState('default', true);
     const sprint = makeSprint(org, [burningTask(0, 5), burningTask(1, 5)]);
     sprint.config.maxTicks = 0;
     stepSprint(sprint, org, () => 0.5, 0);
     expect(sprint.complete).toBe(true);
     expect(sprint.metrics.autoContainCount).toBe(2);
-    expect(summarizeSprint(sprint, org).autoContainCount).toBe(2);
+    expect(sprint.fireEvents.filter((e) => e.kind === 'auto-contain')).toHaveLength(2);
+    const result = summarizeSprint(sprint, org);
+    expect(result.autoContainCount).toBe(2);
+    expect(result.fireEvents.filter((e) => e.kind === 'auto-contain')).toHaveLength(2);
   });
 });

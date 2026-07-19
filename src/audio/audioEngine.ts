@@ -92,19 +92,25 @@ export function createAudioEngine(options: AudioEngineOptions = {}): AudioEngine
   return {
     async unlock() {
       if (disposed || unlocked || !AudioCtor) return;
-      await preload();
-      // ユーザジェスチャ内で volume=0 の再生を試み、以後の play を許可させる。
+      // 自動再生制限: preload の await より先に、ユーザ操作タスク内で play を開始する。
+      // canplaythrough 待ちで activation が落ちると、以降の play は拒否されたままになる。
+      let warmed = false;
       try {
         const warm = new AudioCtor(SFX_URLS.interventionHit);
         warm.volume = 0;
-        await warm.play();
+        const playPromise = warm.play();
+        await playPromise;
         warm.pause();
         warm.currentTime = 0;
         warm.src = '';
+        warmed = true;
       } catch {
-        /* warm-up 失敗でも unlocked にはする（以降の操作で再試行） */
+        /* 失敗時は unlocked にせず、次のユーザ操作で再試行する */
       }
+      if (!warmed || disposed) return;
+
       unlocked = true;
+      void preload();
       if (bgmTone !== 'off') startBgm(bgmTone);
     },
     isUnlocked() {

@@ -87,8 +87,8 @@ describe('audioEngine（RI-59 / ファイル再生）', () => {
     vi.restoreAllMocks();
   });
 
-  function mockAudio() {
-    const play = vi.fn(async () => undefined);
+  function mockAudio(options?: { playImpl?: () => Promise<void> }) {
+    const play = vi.fn(options?.playImpl ?? (async () => undefined));
     const pause = vi.fn();
     const load = vi.fn();
     const instances: Array<{
@@ -96,6 +96,7 @@ describe('audioEngine（RI-59 / ファイル再生）', () => {
       loop: boolean;
       muted: boolean;
       volume: number;
+      currentTime: number;
       play: typeof play;
       pause: typeof pause;
       load: typeof load;
@@ -109,6 +110,7 @@ describe('audioEngine（RI-59 / ファイル再生）', () => {
         loop: false,
         muted: false,
         volume: 1,
+        currentTime: 0,
         preload: 'auto',
         play,
         pause,
@@ -176,6 +178,62 @@ describe('audioEngine（RI-59 / ファイル再生）', () => {
     expect(bright?.pause).toHaveBeenCalled();
     const tense = instances.find((el) => el.src.includes('bgm-tense') && el.loop);
     expect(tense).toBeDefined();
+    engine.dispose();
+  });
+
+  it('warm-up 失敗時は unlocked にせず、次の操作で再試行する', async () => {
+    let failOnce = true;
+    const { AudioCtor, play } = mockAudio({
+      playImpl: async () => {
+        if (failOnce) {
+          failOnce = false;
+          throw new Error('NotAllowedError');
+        }
+      },
+    });
+    const engine = createAudioEngine({ AudioCtor });
+    await engine.unlock();
+    expect(engine.isUnlocked()).toBe(false);
+
+    await engine.unlock();
+    expect(engine.isUnlocked()).toBe(true);
+    expect(play).toHaveBeenCalled();
+    engine.dispose();
+  });
+
+  it('unlock では preload 完了前に warm-up play を開始する', async () => {
+    const order: string[] = [];
+    const play = vi.fn(async () => {
+      order.push('play');
+    });
+    const pause = vi.fn();
+    const load = vi.fn(() => {
+      order.push('load');
+    });
+    const AudioCtor = vi.fn(function AudioMock(this: Record<string, unknown>, src?: string) {
+      return {
+        src: src ?? '',
+        loop: false,
+        muted: false,
+        volume: 1,
+        currentTime: 0,
+        preload: 'auto',
+        play,
+        pause,
+        load,
+        addEventListener: vi.fn((type: string, cb: () => void) => {
+          if (type === 'canplaythrough') {
+            // preload の完了を play より後にずらす。
+            setTimeout(cb, 20);
+          }
+        }),
+      };
+    }) as unknown as typeof Audio;
+
+    const engine = createAudioEngine({ AudioCtor });
+    await engine.unlock();
+    expect(engine.isUnlocked()).toBe(true);
+    expect(order[0]).toBe('play');
     engine.dispose();
   });
 });

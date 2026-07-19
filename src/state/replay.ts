@@ -62,6 +62,26 @@ function isReplayFrame(value: unknown): value is RunReplayFrame {
   return true;
 }
 
+/**
+ * キーフレーム配列を正規化する。
+ * 壊れた要素は捨てる（途中セーブの互換補完用。完全な ReplayBlob では別途空配列を拒否）。
+ */
+export function normalizeReplayKeyframes(value: unknown): ReplayKeyframe[] {
+  if (!Array.isArray(value)) return [];
+  const keyframes: ReplayKeyframe[] = [];
+  for (const raw of value) {
+    if (!isObject(raw) || typeof raw.phase !== 'string') continue;
+    if (!isReplayFramePhase(raw.phase as RunPhase)) continue;
+    if (!isReplayFrame(raw.frame)) continue;
+    keyframes.push({
+      phase: raw.phase as ReplayFramePhase,
+      label: typeof raw.label === 'string' ? raw.label : undefined,
+      frame: structuredClone(raw.frame),
+    });
+  }
+  return keyframes;
+}
+
 /** 壊れた／非互換リプレイは null。 */
 export function normalizeReplay(value: unknown): ReplayBlob | null {
   if (!isObject(value)) return null;
@@ -80,17 +100,8 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   }
   if (!Array.isArray(value.keyframes) || value.keyframes.length === 0) return null;
 
-  const keyframes: ReplayKeyframe[] = [];
-  for (const raw of value.keyframes) {
-    if (!isObject(raw) || typeof raw.phase !== 'string') return null;
-    if (!isReplayFramePhase(raw.phase as RunPhase)) return null;
-    if (!isReplayFrame(raw.frame)) return null;
-    keyframes.push({
-      phase: raw.phase as ReplayFramePhase,
-      label: typeof raw.label === 'string' ? raw.label : undefined,
-      frame: structuredClone(raw.frame),
-    });
-  }
+  const keyframes = normalizeReplayKeyframes(value.keyframes);
+  if (keyframes.length !== value.keyframes.length || keyframes.length === 0) return null;
 
   return {
     schemaVersion: REPLAY_SCHEMA_VERSION,

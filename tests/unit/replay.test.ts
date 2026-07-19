@@ -12,6 +12,7 @@ import {
   type ReplayBlob,
 } from '../../src/state/replay';
 import { IndexedDbReplayStorage, MemoryReplayStorage } from '../../src/state/replayPersistence';
+import { MemoryRunStorage } from '../../src/state/runPersistence';
 
 const databases: string[] = [];
 
@@ -148,6 +149,70 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(setupFrame).toBeTruthy();
     const saved = setupFrame!.frame.roster.members.find((m) => m.id === member!.id);
     expect(saved?.assignment).toBe('coding');
+  });
+
+  it('途中セーブ再開後も再開前のキーフレームがリプレイに残る', async () => {
+    const runStorage = new MemoryRunStorage();
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({
+      seed: 'resume-kf',
+      initialMeta: defaultMeta(),
+      runStorage,
+    });
+    await game.attachReplay(replayStorage);
+
+    game.startRun('easy', [], 'resume-kf');
+    expect(game.phase()).toBe('setup');
+    // setup セーブが書かれるまで待つ（同期 Memory でも after 経由）。
+    expect((await runStorage.load())?.replayKeyframes.some((k) => k.phase === 'setup')).toBe(true);
+
+    // リロード相当: 新しいハンドルへ同じセーブを渡して再開。
+    const saved = await runStorage.load();
+    expect(saved).not.toBeNull();
+    const game2 = createGame({
+      seed: 'other',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: saved!,
+    });
+    await game2.attachReplay(replayStorage);
+    expect(game2.resumeRun()?.phase).toBe('setup');
+
+    const guard = 80_000;
+    for (let i = 0; i < guard; i += 1) {
+      const phase = game2.phase();
+      if (phase === 'won' || phase === 'lost') break;
+      if (phase === 'setup') game2.beginSetupSprint();
+      else if (phase === 'sprint') {
+        while (game2.isSprintRunning()) game2.step(100);
+      } else if (phase === 'result') game2.acknowledgeResult();
+      else if (phase === 'draft') game2.skipDraft();
+      else if (phase === 'evolution') game2.finishEvolution();
+      else if (phase === 'beat') game2.resolveBeat(0);
+      else if (phase === 'shop') game2.leaveShop();
+      else if (phase === 'rest') game2.restChoose('heal');
+      else if (phase === 'recruit') game2.recruitChoose('skip');
+      else if (phase === 'quarterReview') {
+        const review = game2.getState().quarterReview;
+        if (review?.outcome === 'missed_adjustable') {
+          game2.chooseGoalAdjustment(review.availableAdjustments[0] ?? 'cut_scope');
+        } else {
+          game2.acknowledgeQuarterReview();
+        }
+      } else break;
+    }
+
+    for (let i = 0; i < 40 && game2.listReplays().length === 0; i += 1) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    const replay = game2.listReplays()[0];
+    expect(replay).toBeTruthy();
+    expect(replay!.keyframes.some((k) => k.phase === 'setup')).toBe(true);
+    expect(
+      replay!.keyframes.some(
+        (k) => k.phase === 'result' || k.phase === 'won' || k.phase === 'lost',
+      ),
+    ).toBe(true);
   });
 
   it('startRun〜決着でキーフレームがリプレイに残る', async () => {

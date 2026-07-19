@@ -283,7 +283,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (replayMode || !runStorage) return;
     const exported = engine.exportPersistState();
     if (!exported) return;
-    const save = toRunSave(exported);
+    // 再開後も完走リプレイが前半を保持できるよう、収集済みキーフレームを同梱する。
+    const save = toRunSave(exported, Date.now(), keyframes);
     resumableSave = save;
     void runStorage.save(save).catch(() => undefined);
   };
@@ -683,6 +684,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearWhatIfCache();
       const save = resumableSave;
       activeDailyDate = save.summary.dailyDate ?? null;
+      // リロード前に集めたキーフレームを引き継ぎ、完走リプレイが前半を欠かないようにする。
+      keyframes = structuredClone(save.replayKeyframes ?? []);
       // ラン中の解放プールはセーブ時点のものを優先（メタショップ購入で変えない）。
       engine.setUnlockedContent(
         new Set(save.state.extras.allowedCards),

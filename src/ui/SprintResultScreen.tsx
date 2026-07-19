@@ -6,6 +6,7 @@
  */
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
+import { planBurnCauseLog } from '../render/sprintBurnCauseView';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
 import type { GrowthOutcome } from '../sim/run/types';
@@ -71,6 +72,7 @@ export function SprintResultScreen({
   continueLabel = 'カードドラフトへ →',
   abandonLabel = 'タイトルへ',
 }: SprintResultScreenProps) {
+  const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
 
   return (
@@ -101,6 +103,33 @@ export function SprintResultScreen({
           ))}
         </dl>
         <SprintTimelineChart timeline={result.timeline} events={result.events} />
+        {burnLog.showSection && (
+          <div className="result-burn-cause" data-testid="result-burn-cause">
+            <p className="result-section-label">なぜ燃えたか</p>
+            <p className="result-burn-cause-headline" data-testid="result-burn-cause-headline">
+              {burnLog.headline}
+            </p>
+            <ul className="result-burn-cause-list">
+              {burnLog.entries.map((entry) => (
+                <li
+                  key={entry.key}
+                  className={`result-burn-cause-entry tone-${entry.tone}`}
+                  data-testid="result-burn-cause-entry"
+                >
+                  <span className="result-burn-cause-icon" aria-hidden="true">
+                    {entry.icon}
+                  </span>
+                  <span className="result-burn-cause-text">{entry.text}</span>
+                </li>
+              ))}
+            </ul>
+            {burnLog.tip && (
+              <p className="result-analysis-tip" data-testid="result-burn-cause-tip">
+                {burnLog.tip}
+              </p>
+            )}
+          </div>
+        )}
         {analysis.showSection && (
           <div className="result-intervention-analysis" data-testid="result-intervention-analysis">
             <p className="result-section-label">介入分析</p>

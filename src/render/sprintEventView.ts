@@ -97,9 +97,10 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
 
     case 'ignite':
       return {
-        key: `${event.tick}:ignite:${event.taskId}`,
+        key: `${event.tick}:ignite:${event.taskId}:${event.source}`,
         icon: '🔥',
-        text: '点火! Review 落ち PR が炎上',
+        text:
+          event.source === 'spread' ? '点火! 延焼で隣の PR が炎上' : '点火! Review 落ち PR が炎上',
         tone: 'warn',
       };
 

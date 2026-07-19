@@ -1427,17 +1427,56 @@ body {
 }
 .result-diagnosis,
 .result-title,
+.result-burn-cause,
 .result-intervention-analysis,
 .result-baseline-comparison {
   margin-bottom: 1rem;
   text-align: left;
 }
+.result-burn-cause,
 .result-intervention-analysis,
 .result-baseline-comparison {
   padding: 0.75rem 0.85rem;
   border-radius: 0.65rem;
   background: rgba(27, 20, 56, 0.45);
   border: 1px solid color-mix(in srgb, var(--lav) 25%, transparent);
+}
+.result-burn-cause-headline {
+  margin: 0 0 0.55rem;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+}
+.result-burn-cause-list {
+  margin: 0 0 0.65rem;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.result-burn-cause-entry {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+.result-burn-cause-entry.tone-good {
+  color: color-mix(in srgb, var(--ok, #7dcea0) 85%, var(--text));
+}
+.result-burn-cause-entry.tone-bad {
+  color: color-mix(in srgb, var(--danger, #e87461) 80%, var(--text));
+}
+.result-burn-cause-entry.tone-warn {
+  color: color-mix(in srgb, var(--warn, #e0b35a) 80%, var(--text));
+}
+.result-burn-cause-icon {
+  flex: 0 0 auto;
+  line-height: 1.45;
+}
+.result-burn-cause-text {
+  flex: 1 1 auto;
 }
 .result-analysis-rows {
   margin-bottom: 0.65rem;

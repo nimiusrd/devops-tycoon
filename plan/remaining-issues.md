@@ -110,6 +110,7 @@
 | --- | --- | --- | --- | --- | --- |
 | RI-33 | ノード選択廃止→イベント判定化【エピック】 | 高 | 実装済み | — | 第3 / 4.4 / 9.4 / 10 |
 | RI-34 | 23章「拡張案」全般【将来エピック】 | 低 | 保留(要判断) | — | 第23 |
+| RI-34′ | 「なぜ燃えたか」解説ログ（§23 の1切片） | 中 | 完了 | — | 第23 / 4.6 |
 
 ### テスト・保守・技術的負債（QA）
 
@@ -717,8 +718,19 @@ Vitest と Playwright で報酬・各敗北理由の経路を検証済み。レ�
 #### RI-34 23章「拡張案」全般【将来エピック】 — 優先度:低 / 保留(要判断)
 
 GitHub API 実データモード、チーム対抗ランキング、社内LT/経営プレゼンモード、ツール別シナリオ、
-「AI導入失敗図鑑」「レビュー地獄リプレイ」「なぜ燃えたか解説ログ」等（第23 / 将来拡張）。着手時に
-個別 ID へ切り出す。
+「AI導入失敗図鑑」「レビュー地獄リプレイ」等（第23 / 将来拡張）。着手時に個別 ID へ切り出す。
+「なぜ燃えたか」解説ログは RI-34′ として切り出し済み。
+
+#### RI-34′ 「なぜ燃えたか」解説ログ — 優先度:中 / 完了
+
+**完了**: 炎上関連イベント（`ignite` / `contain` / `auto-contain` / `spread`）を
+`SprintState.fireEvents` に全件保持し、`summarizeSprint` 経由でリザルトへ渡す。
+`ignite.source`（`review` | `spread`）で点火原因を区別し、`forceDrain` の受動鎮火も
+`auto-contain` として記録する。`planBurnCauseLog`（`src/render/sprintBurnCauseView.ts`）が
+因果チェーンを組み立て、`SprintResultScreen` に「なぜ燃えたか」セクションを表示する。
+永続化・RunResult・図鑑・リプレイ保存は非スコープ（→ RI-34 / RI-61）。
+Vitest: `tests/unit/sprintBurnCauseView.test.ts` / `sprintEventView.test.ts`。
+Playwright: `tests/e2e/interventions.spec.ts`。
 
 ### テスト・保守・技術的負債（QA）
 

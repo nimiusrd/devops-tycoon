@@ -20,6 +20,7 @@ function makeResult(overrides: Partial<SprintResult> = {}): SprintResult {
     diagnosis: 'テスト用',
     timeline: [],
     events: [],
+    fireEvents: [],
     focusRemaining: 5,
     focusMax: 8,
     autoContainCount: 0,

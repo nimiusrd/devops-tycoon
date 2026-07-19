@@ -180,6 +180,39 @@ test('Review に対象があるとき対象数バッジを表示する（RI-51�
   await expect(page.getByTestId('action-interruptReview')).toBeEnabled();
 });
 
+test('炎上があったリザルトに「なぜ燃えたか」解説を表示する（RI-34′）', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri34-burn');
+
+  const summary = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('hard', [], 'ri34-burn');
+    g.beginSetupSprint();
+    let guard = 0;
+    while (guard < 8000) {
+      const s = g.step(100);
+      if (!s.sprint || s.sprint.complete) break;
+      // 鎮火せず炎上を育てる（解説ログの材料を残す）。
+      guard += 1;
+    }
+    const state = g.getState();
+    if (state.phase !== 'result' || !state.lastResult) {
+      throw new Error('スプリントリザルトへ到達できませんでした');
+    }
+    return {
+      incidents: state.lastResult.incidents,
+      fireEvents: state.lastResult.fireEvents.length,
+    };
+  });
+
+  expect(summary.incidents).toBeGreaterThan(0);
+  expect(summary.fireEvents).toBeGreaterThan(0);
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-burn-cause')).toBeVisible();
+  await expect(page.getByTestId('result-burn-cause-headline')).toContainText('点火');
+  await expect(page.getByTestId('result-burn-cause-entry').first()).toBeVisible();
+});
+
 test('介入ありのリザルトに無介入ベースライン比較を表示する（RI-55）', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=ri55-e2e');
 

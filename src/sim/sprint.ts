@@ -35,6 +35,7 @@ import { appendSprintEvent } from './sprintEvents';
 import type {
   ActionId,
   CardEffects,
+  IgniteSource,
   Lane,
   OrgState,
   ScenarioId,
@@ -143,6 +144,7 @@ export function createSprint(
     aiAdoption: clamp(AI_ADOPTION * aiAdoptionShare, 0, 1),
     events: [],
     interventionEvents: [],
+    fireEvents: [],
     timeline: [],
   };
 }
@@ -214,8 +216,14 @@ function advanceCoding(sprint: SprintState, tick: number): void {
  * 切れた時点で自動鎮火（シニアHP大量消費）/延焼のどちらかへ解決される。
  * Review 落ちの障害化と、延焼の連鎖（隣の PR への燃え移り）の両方から呼ばれる。
  * `tick` はイベントログ用（省略時は記録しない＝後方互換の単体テスト向け）。
+ * `source` は「なぜ燃えたか」区別用（RI-34′。省略時は review）。
  */
-export function igniteTask(task: Task, sprint: SprintState, tick?: number): void {
+export function igniteTask(
+  task: Task,
+  sprint: SprintState,
+  tick?: number,
+  source: IgniteSource = 'review',
+): void {
   sprint.metrics.incidentCount += 1;
   task.incident = true;
   task.burnTicksLeft = BURN_TICKS;
@@ -223,7 +231,7 @@ export function igniteTask(task: Task, sprint: SprintState, tick?: number): void
   task.lane = 'rework';
   task.progress = 0;
   if (tick !== undefined) {
-    appendSprintEvent(sprint, { tick, kind: 'ignite', taskId: task.id });
+    appendSprintEvent(sprint, { tick, kind: 'ignite', taskId: task.id, source });
   }
 }
 
@@ -246,7 +254,7 @@ export function reviewOne(
 
   // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。
   if (rng() < incidentProbability(org, task, sprint.cardEffects)) {
-    igniteTask(task, sprint, tick);
+    igniteTask(task, sprint, tick, 'review');
     return;
   }
 
@@ -364,7 +372,7 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
       reason: 'spread',
       taskId: task.id,
     });
-    if (next) igniteTask(next, sprint, tick);
+    if (next) igniteTask(next, sprint, tick, 'spread');
   }
 }
 
@@ -400,7 +408,7 @@ function isStalled(sprint: SprintState): boolean {
  * ただし一度も Coding に入っていない（Backlog のまま＝未着手の）タスクは出荷として
  * 計上しない。コーダー不在で流入が止まったスプリントが「無人でも出荷」になるのを防ぐ。
  */
-function forceDrain(sprint: SprintState, org: OrgState): void {
+function forceDrain(sprint: SprintState, org: OrgState, tick: number): void {
   const m = sprint.metrics;
   for (const task of sprint.tasks) {
     if (task.lane === 'done') continue;
@@ -411,10 +419,17 @@ function forceDrain(sprint: SprintState, org: OrgState): void {
     }
     // まだ燃えていたタスクはスプリント終了時に鎮火扱いで畳む（鎮火+延焼=障害総数を保つ）。
     // 緊急対応できなかった受動鎮火なので autoContainCount にも加算する（RI-54）。
+    // 因果ログ用に auto-contain も記録する（RI-34′。終了時畳みは HP 追加消費なし）。
     if (task.incident) {
       m.contained += 1;
       m.autoContainCount += 1;
       delete task.burnTicksLeft;
+      appendSprintEvent(sprint, {
+        tick,
+        kind: 'auto-contain',
+        taskId: task.id,
+        hpCost: 0,
+      });
     }
     task.lane = 'done';
     task.incident = false;
@@ -436,7 +451,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   // 進行不能（コーダー不在で流入枠 0・稼働中タスクも無し）なら即完了させる。
   // そうしないと Backlog が流れず isDrained も成立せず、maxTicks まで何も起きない画面を待つ。
   if (isStalled(sprint)) {
-    forceDrain(sprint, org);
+    forceDrain(sprint, org, tick);
     sprint.complete = true;
     appendTimelineSample(sprint, org, tick);
     return;
@@ -466,7 +481,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   if (isDrained(sprint)) {
     sprint.complete = true;
   } else if (tick >= sprint.config.maxTicks) {
-    forceDrain(sprint, org);
+    forceDrain(sprint, org, tick);
     sprint.complete = true;
   }
 
@@ -601,6 +616,7 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     diagnosis,
     timeline: sprint.timeline.map((s) => ({ ...s })),
     events: sprint.interventionEvents.map((e) => ({ ...e, effect: { ...e.effect } })),
+    fireEvents: sprint.fireEvents.map((e) => ({ ...e })),
     focusRemaining: sprint.focus,
     focusMax: sprint.config.focusMax,
     autoContainCount: m.autoContainCount,

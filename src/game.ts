@@ -49,6 +49,11 @@ export interface GameHandle {
   startRun(difficulty?: DifficultyId, trials?: string[], seed?: string): RunState;
   /** 本日（または指定 UTC 日）のデイリーランを開始する（第23章）。 */
   startDailyRun(dateStr?: string): RunState;
+  /**
+   * ラン開始ごとに増える世代番号（RI-60）。
+   * `currentSprintId` はランを跨いで再利用されるため、ガイド再表示判定にはこちらを使う。
+   */
+  getRunEpoch(): number;
   /** 編成フェーズ（setup / setup-pre）から次スプリントを開始する。 */
   beginSetupSprint(): RunState;
   /** 提示中ビートを解決する（判定は引数なし、選択は index）。 */
@@ -149,6 +154,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let recorded = false;
   let lastRunReward: RunRewardBreakdown | null = null;
   let revision = 0;
+  /** startRun / startDailyRun のたびに増やす（UI ガイドのセッション区切り）。 */
+  let runEpoch = 0;
   let activeDailyDate: string | null = null;
   /** UI 向け what-if キャッシュ（Worker 完了後も同一キーなら即返却）。 */
   let whatIfCache: { key: string; value: WhatIfState | null } | null = null;
@@ -276,6 +283,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       activeDailyDate = null;
       clearWhatIfCache();
       applyUnlockedToEngine();
+      runEpoch += 1;
       engine.startRun(difficulty, trials, runSeed, { kind: 'normal' });
       bump();
       return engine.snapshot();
@@ -287,12 +295,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       activeDailyDate = day;
       clearWhatIfCache();
       applyUnlockedToEngine();
+      runEpoch += 1;
       engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], dailySeed(day), {
         kind: 'daily',
         dailyDate: day,
       });
       bump();
       return engine.snapshot();
+    },
+    getRunEpoch() {
+      return runEpoch;
     },
     beginSetupSprint() {
       engine.beginSetupSprint();

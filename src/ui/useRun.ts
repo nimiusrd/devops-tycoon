@@ -34,6 +34,8 @@ export interface UseRun {
   meta: MetaState;
   /** 直近ランのメタ進行ポイント内訳（未決着時は null）。 */
   lastRunReward: RunRewardBreakdown | null;
+  /** ラン開始世代（RI-60）。`window.game.startRun` でも増える。 */
+  runEpoch: number;
   /**
    * プレイヤー向け再生速度（RI-62）。0=一時停止 / 1=1x / 2=2x。
    * `game.pause()` とは独立（E2E・ボススローモの epoch と衝突しない）。
@@ -85,6 +87,7 @@ export function useRun(game: GameHandle): UseRun {
   const [lastRunReward, setLastRunReward] = useState<RunRewardBreakdown | null>(() =>
     game.getLastRunReward(),
   );
+  const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
   const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
   const playbackSpeedRef = useRef<PlaybackSpeed>(1);
   const setPlaybackSpeed = useCallback((speed: PlaybackSpeed) => {
@@ -141,6 +144,7 @@ export function useRun(game: GameHandle): UseRun {
       setState(next);
       setMeta(game.getMeta());
       setLastRunReward(game.getLastRunReward());
+      setRunEpoch(game.getRunEpoch());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -214,6 +218,7 @@ export function useRun(game: GameHandle): UseRun {
     state,
     meta,
     lastRunReward,
+    runEpoch,
     playbackSpeed,
     setPlaybackSpeed,
     startRun,

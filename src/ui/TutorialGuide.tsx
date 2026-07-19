@@ -3,15 +3,20 @@
  *
  * UI 層のみ。sim の step / dispatch / RNG には触れない。
  * ハイライトは `document.body[data-tutorial-step]` 経由の CSS で行う。
+ *
+ * チャンク読込後（SprintSuspendFallback 解除後）にマウントされる前提で、
+ * ガイド表示中の自動進行停止をここで所有する。
  */
 import { useEffect, useState } from 'react';
+import type { GameHandle } from '../game';
 import { TUTORIAL_STEPS, type TutorialStepId } from './tutorial';
 
 export interface TutorialGuideProps {
+  game: GameHandle;
   onDismiss: () => void;
 }
 
-export function TutorialGuide({ onDismiss }: TutorialGuideProps) {
+export function TutorialGuide({ game, onDismiss }: TutorialGuideProps) {
   const [index, setIndex] = useState(0);
   const step = TUTORIAL_STEPS[index] ?? TUTORIAL_STEPS[0];
   const isLast = index >= TUTORIAL_STEPS.length - 1;
@@ -23,6 +28,16 @@ export function TutorialGuide({ onDismiss }: TutorialGuideProps) {
       delete document.body.dataset.tutorialStep;
     };
   }, [step.id]);
+
+  // E2E 等が既に pause 済みなら触らない。未 pause なら所有して閉じるまで維持する。
+  useEffect(() => {
+    if (game.isPaused()) return;
+    game.pause();
+    const epoch = game.getPauseEpoch();
+    return () => {
+      if (game.getPauseEpoch() === epoch) game.resume();
+    };
+  }, [game]);
 
   const goNext = () => {
     if (isLast) {

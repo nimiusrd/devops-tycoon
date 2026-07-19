@@ -10,6 +10,7 @@ type GameWindow = Window & {
     markTutorialSeen(): void;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
     beginSetupSprint(): RunState;
+    newRun(seed?: string): RunState;
   };
 };
 
@@ -106,4 +107,14 @@ test('表示済みでも ?tutorial=force ならガイドを再表示できる', 
   await expect(page.getByTestId('tutorial-guide')).toBeVisible();
   await page.getByTestId('tutorial-skip').click();
   await expect(page.getByTestId('tutorial-guide')).not.toBeVisible();
+
+  // 同一ページで新しいランを始めても force なら再表示（sprintId 再利用に依存しない）
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.newRun('tutorial-force-2');
+    g.startRun('easy', [], 'tutorial-force-2');
+    g.beginSetupSprint();
+  });
+  await expect(page.getByTestId('tutorial-guide')).toBeVisible();
 });

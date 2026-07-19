@@ -112,8 +112,8 @@ export default function App({ game }: AppProps) {
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
-  /** ガイドを閉じたスプリント ID。同一スプリント内だけ非表示にする。 */
-  const [tutorialDismissedSprintId, setTutorialDismissedSprintId] = useState<string | null>(null);
+  /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
+  const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
     team: null,
     orgScale: null,
@@ -181,23 +181,13 @@ export default function App({ game }: AppProps) {
     run.newRun();
   };
   const dismissTutorial = () => {
-    setTutorialDismissedSprintId(state.currentSprintId);
+    setTutorialDismissedEpoch(run.runEpoch);
     run.markTutorialSeen();
   };
   const tutorialActive =
     phase === 'sprint' &&
-    tutorialDismissedSprintId !== state.currentSprintId &&
+    tutorialDismissedEpoch !== run.runEpoch &&
     shouldShowTutorialGuide(meta.seenTutorial, tutorialMode);
-
-  // ガイド表示中は自動進行だけ止める（RNG / step 列には触れない。E2E の pause は尊重）。
-  useEffect(() => {
-    if (!tutorialActive || game.isPaused()) return;
-    game.pause();
-    const epoch = game.getPauseEpoch();
-    return () => {
-      if (game.getPauseEpoch() === epoch) game.resume();
-    };
-  }, [tutorialActive, game]);
 
   if (phase === 'title') {
     return (
@@ -315,6 +305,7 @@ export default function App({ game }: AppProps) {
             setPlaybackSpeed={run.setPlaybackSpeed}
             showTutorial={tutorialActive}
             onTutorialDismiss={dismissTutorial}
+            game={game}
           />
         )}
       </Suspense>

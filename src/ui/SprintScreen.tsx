@@ -19,7 +19,7 @@ import type {
   InterventionOutcome,
   SprintState,
 } from '../sim/types';
-import type { PauseBrieflyClear } from '../game';
+import type { GameHandle, PauseBrieflyClear } from '../game';
 import type { RunState } from '../sim/run/types';
 import type { InterventionTrigger } from './InterventionEffects';
 import { ActionBar } from './ActionBar';
@@ -54,6 +54,8 @@ export interface SprintScreenProps {
   showTutorial?: boolean;
   /** ガイド完了 / スキップ時。 */
   onTutorialDismiss?: () => void;
+  /** ガイド表示中の pause 所有に使う（チャンク読込後にマウントされる）。 */
+  game?: GameHandle;
 }
 
 export function SprintScreen({
@@ -66,6 +68,7 @@ export function SprintScreen({
   setPlaybackSpeed,
   showTutorial = false,
   onTutorialDismiss,
+  game,
 }: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
@@ -284,7 +287,9 @@ export function SprintScreen({
         onAssignAssigneeChange={setAssignAssignee}
         outcomeFeedback={outcomeFeedback}
       />
-      {showTutorial && onTutorialDismiss && <TutorialGuide onDismiss={onTutorialDismiss} />}
+      {showTutorial && onTutorialDismiss && game && (
+        <TutorialGuide game={game} onDismiss={onTutorialDismiss} />
+      )}
     </>
   );
 }

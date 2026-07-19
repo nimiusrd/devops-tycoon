@@ -1,7 +1,7 @@
 /**
  * RI-30: タスク差配の対象指定 / 手札発動の E2E。
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import type { ActionTarget, CardPlayOutcome, InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
 

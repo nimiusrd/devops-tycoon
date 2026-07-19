@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { dailySeed } from '../../src/state/meta';
 
 test('タイトルからデイリーランを開始できる', async ({ page }) => {

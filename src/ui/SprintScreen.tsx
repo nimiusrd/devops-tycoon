@@ -19,7 +19,7 @@ import type {
   InterventionOutcome,
   SprintState,
 } from '../sim/types';
-import type { PauseBrieflyClear } from '../game';
+import type { GameHandle, PauseBrieflyClear } from '../game';
 import type { RunState } from '../sim/run/types';
 import type { InterventionTrigger } from './InterventionEffects';
 import { ActionBar } from './ActionBar';
@@ -29,6 +29,7 @@ import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
 import { SlowMotionOverlay } from './JuicyEffects';
 import type { PlaybackSpeed } from './sprintTempo';
+import { TutorialGuide } from './TutorialGuide';
 
 /** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
 const BOSS_SLOWMO_MS = 1_200;
@@ -49,6 +50,12 @@ export interface SprintScreenProps {
   /** プレイヤー向け再生速度（RI-62）。game.pause とは独立。 */
   playbackSpeed: PlaybackSpeed;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
+  /** 初見向け段階ガイドを表示する（RI-60）。 */
+  showTutorial?: boolean;
+  /** ガイド完了 / スキップ時。 */
+  onTutorialDismiss?: () => void;
+  /** ガイド表示中の pause 所有に使う（チャンク読込後にマウントされる）。 */
+  game?: GameHandle;
 }
 
 export function SprintScreen({
@@ -59,6 +66,9 @@ export function SprintScreen({
   pauseBriefly,
   playbackSpeed,
   setPlaybackSpeed,
+  showTutorial = false,
+  onTutorialDismiss,
+  game,
 }: SprintScreenProps) {
   const sprint = state.sprint;
   const [interventionTrigger, setInterventionTrigger] = useState<InterventionTrigger | null>(null);
@@ -217,7 +227,7 @@ export function SprintScreen({
             </button>
           ))}
         </div>
-        <div className="meter-wrap">
+        <div className="meter-wrap" data-testid="jam-meter">
           <span className="meter-label">渋滞メーター</span>
           <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
             <i style={{ width: `${jamPct}%` }} />
@@ -277,6 +287,9 @@ export function SprintScreen({
         onAssignAssigneeChange={setAssignAssignee}
         outcomeFeedback={outcomeFeedback}
       />
+      {showTutorial && onTutorialDismiss && game && (
+        <TutorialGuide game={game} onDismiss={onTutorialDismiss} />
+      )}
     </>
   );
 }

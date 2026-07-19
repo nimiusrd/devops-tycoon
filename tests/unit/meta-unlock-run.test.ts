@@ -63,7 +63,11 @@ describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
 
     const game = createGame({
       seed: 'meta-game',
-      initialMeta: { ...defaultMeta(), points: 100 },
+      initialMeta: {
+        ...defaultMeta(),
+        points: 100,
+        achievements: ['review-exceeded'],
+      },
       metaStorage: storage,
     });
     expect(game.purchaseMetaUnlock('unlock-devin').ok).toBe(true);
@@ -86,12 +90,19 @@ describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
       },
     };
     const game = createGame({
-      initialMeta: { ...defaultMeta(), points: 100 },
+      initialMeta: {
+        ...defaultMeta(),
+        points: 100,
+        achievements: ['review-exceeded'],
+      },
       metaReady: false,
     });
 
     expect(game.purchaseMetaUnlock('unlock-devin')).toEqual({ ok: false, reason: 'not_ready' });
-    game.attachMetaPersistence({ ...defaultMeta(), points: 999 }, storage);
+    game.attachMetaPersistence(
+      { ...defaultMeta(), points: 999, achievements: ['review-exceeded'] },
+      storage,
+    );
     expect(game.purchaseMetaUnlock('unlock-devin').ok).toBe(true);
     await Promise.resolve();
 

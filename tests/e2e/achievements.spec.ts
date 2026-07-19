@@ -22,7 +22,7 @@ test('タイトルから実績コレクションを開き取得済み／未取�
 
   await page.getByTestId('open-achievements').click();
   await expect(page.getByTestId('achievement-collection')).toBeVisible();
-  await expect(page.getByTestId('achievement-count')).toHaveText('1/5');
+  await expect(page.getByTestId('achievement-count')).toHaveText('1/7');
 
   const firstClear = page.getByTestId('achievement-first-clear');
   await expect(firstClear).toHaveAttribute('data-unlocked', 'true');

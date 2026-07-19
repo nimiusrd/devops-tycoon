@@ -20,6 +20,23 @@ export function SlowMotionOverlay({ clearedIncidentCount }: { clearedIncidentCou
   );
 }
 
+/** RI-62③ 重要イベント時の短い注目オーバーレイ。 */
+export function AttentionOverlay({ label, title }: { label: string; title: string }) {
+  return (
+    <motion.div
+      className="juicy-attention-overlay"
+      data-testid="attention-pause"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 0.85, 0.4, 0] }}
+      transition={{ duration: 0.85, times: [0, 0.2, 0.65, 1], ease: 'easeOut' }}
+    >
+      <span className="juicy-attention-label">{label}</span>
+      <strong>{title}</strong>
+      <small>介入のチャンス</small>
+    </motion.div>
+  );
+}
+
 export function RewardCeremony({
   kind,
   title,

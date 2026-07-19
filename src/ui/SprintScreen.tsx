@@ -7,6 +7,12 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getBoss } from '../data/bosses';
+import {
+  ATTENTION_COOLDOWN_MS,
+  ATTENTION_PAUSE_MS,
+  planAttentionPause,
+  type AttentionPausePlan,
+} from '../render/attentionPause';
 import { Board } from '../render/Board';
 import type { DraggableActionId } from '../render/boardDragPlan';
 import { planBossSlowMotion } from '../render/juicyEffects';
@@ -18,6 +24,7 @@ import type {
   CardPlayOutcome,
   InterventionOutcome,
   SprintState,
+  Task,
 } from '../sim/types';
 import type { GameHandle, PauseBrieflyClear } from '../game';
 import type { RunState } from '../sim/run/types';
@@ -27,12 +34,20 @@ import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
 import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
-import { SlowMotionOverlay } from './JuicyEffects';
+import { AttentionOverlay, SlowMotionOverlay } from './JuicyEffects';
 import type { PlaybackSpeed } from './sprintTempo';
 import { TutorialGuide } from './TutorialGuide';
 
 /** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
 const BOSS_SLOWMO_MS = 1_200;
+
+const IDLE_ATTENTION: AttentionPausePlan = {
+  active: false,
+  kind: null,
+  label: '',
+  title: '',
+  meter: null,
+};
 
 const SPEED_OPTIONS: { speed: PlaybackSpeed; label: string; testId: string }[] = [
   { speed: 0, label: '❚❚', testId: 'speed-pause' },
@@ -88,9 +103,16 @@ export function SprintScreen({
   const feedbackNonce = useRef(0);
   const triggerKey = useRef(0);
   const slowMoTimer = useRef<number | null>(null);
+  const attentionTimer = useRef<number | null>(null);
   const clearPauseBriefly = useRef<PauseBrieflyClear | null>(null);
+  const attentionPrevTasks = useRef<readonly Task[] | null>(null);
+  const attentionPrevQueue = useRef<number | null>(null);
+  const attentionSprintId = useRef<string | null>(null);
+  const lastAttentionAt = useRef(0);
   const [slowMoKey, setSlowMoKey] = useState(0);
   const [slowMoPlan, setSlowMoPlan] = useState({ clearedIncidentCount: 0 });
+  const [attentionKey, setAttentionKey] = useState(0);
+  const [attentionPlan, setAttentionPlan] = useState<AttentionPausePlan>(IDLE_ATTENTION);
   // 完了中・別スプリントの武装は無効（effect で setState しない）。
   const armedId =
     sprint && !sprint.complete && armed.sprintId === state.currentSprintId ? armed.id : null;
@@ -113,11 +135,72 @@ export function SprintScreen({
   useEffect(
     () => () => {
       if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
+      if (attentionTimer.current != null) window.clearTimeout(attentionTimer.current);
       clearPauseBriefly.current?.();
       clearPauseBriefly.current = null;
     },
     [],
   );
+
+  // RI-62③: 自動進行での点火・渋滞・ボスIncident をエッジ検出して短い自動ポーズ。
+  useEffect(() => {
+    if (!sprint || sprint.complete) {
+      attentionPrevTasks.current = null;
+      attentionPrevQueue.current = null;
+      attentionSprintId.current = null;
+      return;
+    }
+
+    const nextTasks = sprint.tasks;
+    const nextQueue = reviewQueueLength(nextTasks);
+    const sprintChanged = attentionSprintId.current !== state.currentSprintId;
+    if (sprintChanged || attentionPrevTasks.current == null || attentionPrevQueue.current == null) {
+      attentionSprintId.current = state.currentSprintId;
+      attentionPrevTasks.current = nextTasks;
+      attentionPrevQueue.current = nextQueue;
+      return;
+    }
+
+    const prevTasks = attentionPrevTasks.current;
+    const prevQueue = attentionPrevQueue.current;
+    attentionPrevTasks.current = nextTasks;
+    attentionPrevQueue.current = nextQueue;
+
+    // プレイヤー Pause 中は既に止まっているので自動ポーズ不要。
+    if (playbackSpeed === 0) return;
+
+    const now = performance.now();
+    if (now - lastAttentionAt.current < ATTENTION_COOLDOWN_MS) return;
+
+    const plan = planAttentionPause({
+      isBoss: state.currentSprintKind === 'boss',
+      prevTasks,
+      nextTasks,
+      prevQueue,
+      nextQueue,
+    });
+    if (!plan.active) return;
+
+    lastAttentionAt.current = now;
+    setAttentionPlan(plan);
+    setAttentionKey((key) => key + 1);
+    clearPauseBriefly.current?.();
+    clearPauseBriefly.current = pauseBriefly(ATTENTION_PAUSE_MS);
+    if (attentionTimer.current != null) window.clearTimeout(attentionTimer.current);
+    attentionTimer.current = window.setTimeout(() => {
+      setAttentionKey(0);
+      setAttentionPlan(IDLE_ATTENTION);
+      attentionTimer.current = null;
+      clearPauseBriefly.current = null;
+    }, ATTENTION_PAUSE_MS);
+  }, [
+    sprint,
+    state.currentSprintId,
+    state.currentSprintKind,
+    state.sprintTick,
+    playbackSpeed,
+    pauseBriefly,
+  ]);
 
   const handleDispatch = useCallback(
     (id: ActionId, target?: ActionTarget): InterventionOutcome => {
@@ -135,6 +218,12 @@ export function SprintScreen({
         if (slowMotion.active) {
           setSlowMoPlan({ clearedIncidentCount: slowMotion.clearedIncidentCount });
           setSlowMoKey((key) => key + 1);
+          setAttentionKey(0);
+          setAttentionPlan(IDLE_ATTENTION);
+          if (attentionTimer.current != null) {
+            window.clearTimeout(attentionTimer.current);
+            attentionTimer.current = null;
+          }
           clearPauseBriefly.current?.();
           clearPauseBriefly.current = pauseBriefly(BOSS_SLOWMO_MS);
           if (slowMoTimer.current != null) window.clearTimeout(slowMoTimer.current);
@@ -227,13 +316,18 @@ export function SprintScreen({
             </button>
           ))}
         </div>
-        <div className="meter-wrap" data-testid="jam-meter">
+        <div
+          className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'jam' ? ' attention' : ''}`}
+          data-testid="jam-meter"
+        >
           <span className="meter-label">渋滞メーター</span>
           <div className={`meter${queue >= 12 ? ' jam' : ''}`}>
             <i style={{ width: `${jamPct}%` }} />
           </div>
         </div>
-        <div className="meter-wrap">
+        <div
+          className={`meter-wrap${attentionKey > 0 && attentionPlan.meter === 'fire' ? ' attention' : ''}`}
+        >
           <span className="meter-label">炎上タイマー</span>
           <div className={`meter fire${incidents > 0 ? ' burning' : ''}`} data-testid="fire-meter">
             <i style={{ width: `${burnPct}%` }} />
@@ -264,6 +358,9 @@ export function SprintScreen({
           />
           {slowMoKey > 0 && (
             <SlowMotionOverlay clearedIncidentCount={slowMoPlan.clearedIncidentCount} />
+          )}
+          {attentionKey > 0 && attentionPlan.active && (
+            <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
           )}
           <EventTicker events={sprint.events} />
         </div>

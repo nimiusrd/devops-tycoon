@@ -33,6 +33,8 @@ export interface RunBarProps {
   onOpenFormation?: () => void;
   /** 全社マップへズームアウトする（指定時のみ全社ボタンを表示。第4.7）。 */
   onOpenOrg?: () => void;
+  /** リプレイ閲覧など、操作ボタンを無効化するとき。 */
+  readOnly?: boolean;
   /** RunBar再マウント時にも直前の表示値との差分を出すための初期比較対象。 */
   getInitialPreviousSnapshot?: () => RunMetricSnapshot | null;
   /** 親がRunBar非表示期間をまたいで最後の表示値を保持するための通知。 */
@@ -80,6 +82,7 @@ export function RunBar({
   state,
   onOpenFormation,
   onOpenOrg,
+  readOnly = false,
   getInitialPreviousSnapshot,
   onSnapshotCaptured,
 }: RunBarProps) {
@@ -199,8 +202,13 @@ export function RunBar({
           type="button"
           className="pill roster-pill"
           data-testid="open-formation"
+          disabled={readOnly}
           onClick={onOpenFormation}
-          title={`稼働 ${roster.active} / 休職 ${roster.onLeave}（コーダー${roster.coders}・レビュー${roster.reviewers}）`}
+          title={
+            readOnly
+              ? 'リプレイ閲覧中は編成を開けません'
+              : `稼働 ${roster.active} / 休職 ${roster.onLeave}（コーダー${roster.coders}・レビュー${roster.reviewers}）`
+          }
         >
           <span className="roster-faces" data-testid="roster-faces">
             {state.roster.members.map((m) => (
@@ -231,8 +239,13 @@ export function RunBar({
           type="button"
           className="pill org-pill"
           data-testid="open-org"
+          disabled={readOnly}
           onClick={onOpenOrg}
-          title="全社マップへズームアウト（業界 ▸ 全社 ▸ 部署 ▸ 現場）"
+          title={
+            readOnly
+              ? 'リプレイ閲覧中は全社マップを開けません'
+              : '全社マップへズームアウト（業界 ▸ 全社 ▸ 部署 ▸ 現場）'
+          }
         >
           🗺 全社
         </button>

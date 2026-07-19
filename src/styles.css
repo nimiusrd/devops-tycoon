@@ -3175,8 +3175,13 @@ button.card:active {
   font-size: 15px;
   cursor: pointer;
 }
-.primary-button:hover {
+.primary-button:hover:not(:disabled) {
   filter: brightness(1.06);
+}
+.primary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
 }
 /* トラックで次が山場（ボス）であることの強調。 */
 .boss-next {
@@ -4160,8 +4165,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--text);
   transition: border-color 0.12s ease;
 }
-.roster-pill:hover {
+.roster-pill:hover:not(:disabled) {
   border-color: var(--sun);
+}
+.roster-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .roster-faces {
   display: inline-flex;
@@ -4395,8 +4404,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #1f1942;
   color: var(--text);
 }
-.org-pill:hover {
+.org-pill:hover:not(:disabled) {
   border-color: var(--lav);
+}
+.org-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .zoom-overlay {

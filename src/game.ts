@@ -464,9 +464,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     beginSetupSprint() {
       if (replayMode) return engine.snapshot();
       // スプリント本体は保存しないが、突入直前の最新編成（setup）を残す。
-      // ランセーブとリプレイキーフレームの両方を「実際に走らせた編成」へ更新する。
-      persistSaveableSnapshot();
+      // キーフレームを先に更新してからランセーブへ書く（sprint 中はセーブ更新しないため）。
       appendKeyframeIfNeeded();
+      persistSaveableSnapshot();
       engine.beginSetupSprint();
       bump();
       return after();
@@ -474,8 +474,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     resolveBeat(choiceIndex) {
       if (replayMode) return engine.snapshot();
       // beat → sprint 直遷移でも直前の離散状態を残す。
-      persistSaveableSnapshot();
       appendKeyframeIfNeeded();
+      persistSaveableSnapshot();
       engine.resolveBeat(choiceIndex);
       bump();
       return after();

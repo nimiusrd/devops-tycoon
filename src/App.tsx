@@ -342,6 +342,7 @@ export default function App({ game }: AppProps) {
         state={state}
         onOpenFormation={() => setFormationOpen(true)}
         onOpenOrg={() => run.zoomTo('company')}
+        readOnly={run.isReplayMode}
         getInitialPreviousSnapshot={getLastRunMetricSnapshot}
         onSnapshotCaptured={rememberRunMetricSnapshot}
       />
@@ -357,6 +358,7 @@ export default function App({ game }: AppProps) {
             onAssign={run.assignMember}
             onToggleAi={run.setMemberAi}
             onBegin={run.beginSetupSprint}
+            readOnly={run.isReplayMode}
           />
         )}
       </Suspense>
@@ -438,6 +440,7 @@ export default function App({ game }: AppProps) {
             onAssign={run.assignMember}
             onToggleAi={run.setMemberAi}
             onClose={() => setFormationOpen(false)}
+            readOnly={run.isReplayMode}
           />
         )}
       </Suspense>

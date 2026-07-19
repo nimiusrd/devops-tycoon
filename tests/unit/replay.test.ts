@@ -151,6 +151,30 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(saved?.assignment).toBe('coding');
   });
 
+  it('スプリント突入直前の編成変更がランセーブのキーフレームへも反映される', async () => {
+    const runStorage = new MemoryRunStorage();
+    const game = createGame({
+      seed: 'save-kf-order',
+      initialMeta: defaultMeta(),
+      runStorage,
+    });
+
+    game.startRun('easy', [], 'save-kf-order');
+    const member = game.getState().roster.members[0];
+    expect(member).toBeTruthy();
+    // assignMember は afterLocal のためセーブを更新しない。beginSetupSprint 側で書き込む。
+    game.assignMember(member!.id, 'coding');
+    game.beginSetupSprint();
+    expect(game.phase()).toBe('sprint');
+
+    const saved = await runStorage.load();
+    expect(saved).not.toBeNull();
+    const setup = saved!.replayKeyframes.find((k) => k.phase === 'setup');
+    expect(setup).toBeTruthy();
+    const savedMember = setup!.frame.roster.members.find((m) => m.id === member!.id);
+    expect(savedMember?.assignment).toBe('coding');
+  });
+
   it('途中セーブ再開後も再開前のキーフレームがリプレイに残る', async () => {
     const runStorage = new MemoryRunStorage();
     const replayStorage = new MemoryReplayStorage();

@@ -16,6 +16,8 @@ export interface FormationScreenProps {
   onAssign: (id: string, assignment: LaneAssignment) => void;
   onToggleAi: (id: string, on: boolean) => void;
   onClose: () => void;
+  /** リプレイ閲覧など、操作を受け付けないとき。 */
+  readOnly?: boolean;
 }
 
 /** 編成グリッド（モーダルと setup 画面で共有）。 */
@@ -23,15 +25,21 @@ export function FormationGrid({
   state,
   onAssign,
   onToggleAi,
+  readOnly = false,
 }: {
   state: RunState;
   onAssign: (id: string, assignment: LaneAssignment) => void;
   onToggleAi: (id: string, on: boolean) => void;
+  readOnly?: boolean;
 }) {
-  const locked = state.phase === 'sprint';
+  const locked = readOnly || state.phase === 'sprint';
   return (
     <>
-      {locked && <p className="fm-locked-note">スプリント中は編成を変更できません。</p>}
+      {readOnly ? (
+        <p className="fm-locked-note">リプレイ閲覧中は編成を変更できません。</p>
+      ) : (
+        locked && <p className="fm-locked-note">スプリント中は編成を変更できません。</p>
+      )}
       {(state.whatIf?.current || state.whatIfStatus === 'computing') && (
         <WhatIfPreview
           preview={state.whatIf?.current}
@@ -169,7 +177,13 @@ function MemberCard({
   );
 }
 
-export function FormationScreen({ state, onAssign, onToggleAi, onClose }: FormationScreenProps) {
+export function FormationScreen({
+  state,
+  onAssign,
+  onToggleAi,
+  onClose,
+  readOnly = false,
+}: FormationScreenProps) {
   return (
     <div className="result-overlay" data-testid="formation" role="dialog" aria-label="Formation">
       <div className="formation-panel">
@@ -187,7 +201,12 @@ export function FormationScreen({ state, onAssign, onToggleAi, onClose }: Format
             閉じる
           </button>
         </div>
-        <FormationGrid state={state} onAssign={onAssign} onToggleAi={onToggleAi} />
+        <FormationGrid
+          state={state}
+          onAssign={onAssign}
+          onToggleAi={onToggleAi}
+          readOnly={readOnly}
+        />
       </div>
     </div>
   );

@@ -82,6 +82,13 @@ test('ラン完了後にリプレイ一覧からキーフレームを read-only 
     await page.evaluate(() => (window as ReplayGameWindow).game?.dispatch('pairReview')),
   ).toEqual({ ok: false, reason: 'complete' });
 
+  // setup キーフレームでは操作部が disabled になること。
+  if ((await page.getByTestId('setup').count()) > 0) {
+    await expect(page.getByTestId('begin-sprint')).toBeDisabled();
+    await expect(page.getByTestId('open-formation')).toBeDisabled();
+    await expect(page.getByTestId('open-org')).toBeDisabled();
+  }
+
   await page.getByTestId('exit-replay').click();
   await expect(page.getByTestId('title')).toBeVisible();
   await expect

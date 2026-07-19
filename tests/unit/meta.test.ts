@@ -17,6 +17,7 @@ import {
   unlockedContent,
   utcDateStr,
   type LegacyMetaStorage,
+  type MetaState,
 } from '../../src/state/meta';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 
@@ -358,6 +359,39 @@ describe('メタ進行とアンロック（第17章）', () => {
       achievements: ['first-clear'],
       bestScore: 100,
     });
+    expect(loadMeta(storage).seenTutorial).toBe(false);
+  });
+
+  it('seenTutorial は報酬適用後も保持され、markTutorialSeen で永続化する（RI-60）', async () => {
+    const rewarded = applyRunReward(
+      { ...defaultMeta(), seenTutorial: true },
+      {
+        won: true,
+        difficulty: 'normal',
+        winType: 'normal',
+        bossId: 'big-release',
+        score: 200,
+        scoreMul: 1,
+        maxCombo: 4,
+      },
+    );
+    expect(rewarded.seenTutorial).toBe(true);
+
+    let persisted: MetaState | null = null;
+    const game = createGame({
+      seed: 'tutorial-mark',
+      metaStorage: {
+        load: async () => persisted,
+        save: async (meta) => {
+          persisted = meta;
+        },
+      },
+    });
+    expect(game.getMeta().seenTutorial).toBe(false);
+    game.markTutorialSeen();
+    expect(game.getMeta().seenTutorial).toBe(true);
+    await Promise.resolve();
+    expect(persisted?.seenTutorial).toBe(true);
   });
 
   it('デイリー記録をスコア順・同点時は新しい日付順の順位表にする', () => {

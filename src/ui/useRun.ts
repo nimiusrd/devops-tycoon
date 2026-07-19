@@ -2,10 +2,11 @@
  * ラン進行フック。
  *
  * `window.game`（決定論ラン エンジン）を仲介し、React に最新スナップショットを
- * 供給する。スプリント中のみ固定タイムステップで自動進行し、一時停止中
- * （E2E が `pause()` した時）は止まる（第22.5）。描画は状態を読むだけ（第22.2）。
+ * 供給する。スプリント中のみ壁時計アキュムレータで自動進行し、一時停止中
+ * （E2E が `pause()` した時 / プレイヤー Pause）は止まる（第22.5 / RI-62）。
+ * 描画は状態を読むだけ（第22.2）。
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { pauseBriefly as pauseGameBriefly, type GameHandle, type PauseBrieflyClear } from '../game';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
 import type { RunSaveSummary } from '../state/runPersistence';
@@ -19,11 +20,15 @@ import type {
 import type { DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
+import {
+  accumulateWallTime,
+  FRAME_MS,
+  SIM_STEP_MS,
+  ticksDueFromAccumulator,
+  type PlaybackSpeed,
+} from './sprintTempo';
 
-/** 自動進行の更新間隔（ms）。 */
-const FRAME_MS = 60;
-/** 1 フレームで進めるシミュレーション時間（ms）= 固定ステップ 1 tick。 */
-const SIM_STEP_MS = 100;
+export type { PlaybackSpeed } from './sprintTempo';
 
 export interface UseRun {
   state: RunState;
@@ -32,6 +37,14 @@ export interface UseRun {
   lastRunReward: RunRewardBreakdown | null;
   /** 再開可能なランセーブの要約（無い場合は null）。 */
   runSaveSummary: RunSaveSummary | null;
+  /** ラン開始世代（RI-60）。`window.game.startRun` でも増える。 */
+  runEpoch: number;
+  /**
+   * プレイヤー向け再生速度（RI-62）。0=一時停止 / 1=1x / 2=2x。
+   * `game.pause()` とは独立（E2E・ボススローモの epoch と衝突しない）。
+   */
+  playbackSpeed: PlaybackSpeed;
+  setPlaybackSpeed: (speed: PlaybackSpeed) => void;
   startRun: (difficulty: DifficultyId, trials: string[]) => void;
   startDailyRun: (dateStr?: string) => void;
   resumeRun: () => void;
@@ -68,6 +81,8 @@ export interface UseRun {
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
+  /** 初見向け段階ガイドを表示済みにする（RI-60）。 */
+  markTutorialSeen: () => void;
 }
 
 export function useRun(game: GameHandle): UseRun {
@@ -79,13 +94,55 @@ export function useRun(game: GameHandle): UseRun {
   const [runSaveSummary, setRunSaveSummary] = useState<RunSaveSummary | null>(() =>
     game.getRunSaveSummary(),
   );
+  const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
+  const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
+  const playbackSpeedRef = useRef<PlaybackSpeed>(1);
+  const setPlaybackSpeed = useCallback((speed: PlaybackSpeed) => {
+    playbackSpeedRef.current = speed;
+    setPlaybackSpeedState(speed);
+  }, []);
+
+  // スプリント開始ごとに 1x へ戻す（前スプリントの Pause/2x を持ち越さない）。
+  const lastSprintIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sprintId = state.phase === 'sprint' ? state.currentSprintId : null;
+    if (sprintId && sprintId !== lastSprintIdRef.current) {
+      lastSprintIdRef.current = sprintId;
+      setPlaybackSpeed(1);
+    }
+    if (!sprintId) lastSprintIdRef.current = null;
+  }, [state.phase, state.currentSprintId, setPlaybackSpeed]);
 
   useEffect(() => {
     // 初回も必ず同期する。React の描画〜effect開始の間に window.game が操作されても取りこぼさない。
     let lastRev = -1;
+    let accumulatedMs = 0;
+    let lastWallMs = performance.now();
     const id = window.setInterval(() => {
-      // スプリント進行中は固定タイムステップで前進させる（版番号も進む）。
-      if (game.isSprintRunning() && !game.isPaused()) game.step(SIM_STEP_MS);
+      const now = performance.now();
+      const deltaMs = now - lastWallMs;
+      lastWallMs = now;
+
+      // スプリント進行中は壁時計アキュムレータで固定ステップ前進（RI-62）。
+      // game.isPaused() は E2E / pauseBriefly / lazy 読込用。プレイヤー Pause は playbackSpeed=0。
+      if (game.isSprintRunning() && !game.isPaused()) {
+        const speed = playbackSpeedRef.current;
+        if (speed > 0) {
+          // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
+          accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
+          const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
+          accumulatedMs -= consumedMs;
+          for (let i = 0; i < ticks; i += 1) {
+            if (!game.isSprintRunning() || game.isPaused()) break;
+            game.step(SIM_STEP_MS);
+          }
+        } else {
+          accumulatedMs = 0;
+        }
+      } else {
+        accumulatedMs = 0;
+      }
+
       // 内部ステップでも window.game 経由の外部操作でも、変化時のみ読み直す。
       const rev = game.revision();
       if (rev === lastRev) return;
@@ -95,6 +152,7 @@ export function useRun(game: GameHandle): UseRun {
       setMeta(game.getMeta());
       setLastRunReward(game.getLastRunReward());
       setRunSaveSummary(game.getRunSaveSummary());
+      setRunEpoch(game.getRunEpoch());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -163,12 +221,16 @@ export function useRun(game: GameHandle): UseRun {
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
     [game],
   );
+  const markTutorialSeen = useCallback(() => void game.markTutorialSeen(), [game]);
 
   return {
     state,
     meta,
     lastRunReward,
     runSaveSummary,
+    runEpoch,
+    playbackSpeed,
+    setPlaybackSpeed,
     startRun,
     startDailyRun,
     resumeRun,
@@ -200,5 +262,6 @@ export function useRun(game: GameHandle): UseRun {
     chooseGoalAdjustment,
     newRun,
     purchaseMetaUnlock,
+    markTutorialSeen,
   };
 }

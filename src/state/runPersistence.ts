@@ -87,6 +87,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
 
   if (typeof state.phase !== 'string' || !isRunSavePhase(state.phase as RunPhase)) return null;
   if (state.phase !== summary.phase) return null;
+  if (!isRunStatus(state.status) || state.status !== 'playing') return null;
   if (typeof state.seed !== 'string' || state.seed !== summary.seed) return null;
   if (!isRecord(state.extras)) return null;
   if (!Array.isArray(state.extras.allowedCards)) return null;

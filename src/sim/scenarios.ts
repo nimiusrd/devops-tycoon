@@ -41,6 +41,7 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
       seniorHp: 100,
     },
     sprint: {
+      // RI-62: ベース構成は維持。実時間帯は UI テンポ（MS_PER_TICK_1X）で充足する。
       taskCount: 28,
       codingSlots: 6,
       maxTicks: 1500,

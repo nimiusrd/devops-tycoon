@@ -4,7 +4,7 @@
  * PIXI_E2E=1 のときだけ実行する（既定 CI では WebGL を回さない。architecture §4.2）。
  * 実行: `npm run test:e2e:pixi`
  */
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { planBoardScene } from '../../src/render/boardScene';
 import { assignableTasks } from '../../src/sim/assignTask';
 import type { RunState } from '../../src/sim/run/types';

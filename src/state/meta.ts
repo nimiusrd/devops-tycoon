@@ -45,6 +45,8 @@ export interface MetaState {
   unlockedRelics: string[];
   /** UTC 日付（YYYY-MM-DD）→ デイリーラン記録。 */
   dailyRuns: Record<string, DailyRunRecord>;
+  /** 初見向け段階ガイドを表示済みか（RI-60）。 */
+  seenTutorial: boolean;
 }
 
 /** 1 日分のデイリーラン記録（第23章）。 */
@@ -87,6 +89,7 @@ export function defaultMeta(): MetaState {
     unlockedCards: [],
     unlockedRelics: [],
     dailyRuns: {},
+    seenTutorial: false,
   };
 }
 
@@ -95,7 +98,9 @@ export function normalizeMeta(value: unknown): MetaState {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return defaultMeta();
   // 旧セーブの unlockedPresets（RI-25 で削除した足場）は読み捨てる。
   const { unlockedPresets: _legacyPresets, ...rest } = value as Record<string, unknown>;
-  return { ...defaultMeta(), ...(rest as Partial<MetaState>) };
+  const base = { ...defaultMeta(), ...(rest as Partial<MetaState>) };
+  // 旧セーブや壊れた値は boolean に正規化する。
+  return { ...base, seenTutorial: rest.seenTutorial === true };
 }
 
 /** 旧 JSON セーブを現行スキーマへ復元する。壊れていれば null。 */
@@ -323,6 +328,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
     dailyRuns: { ...meta.dailyRuns },
+    seenTutorial: meta.seenTutorial,
   };
 
   if (input.won) {

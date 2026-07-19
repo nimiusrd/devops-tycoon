@@ -77,6 +77,12 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
 
     expect(parseRunSave({ ...valid, schemaVersion: RUN_SAVE_SCHEMA_VERSION + 1 })).toBeNull();
     expect(parseRunSave({ ...valid, summary: { ...valid.summary, phase: 'sprint' } })).toBeNull();
+    expect(
+      parseRunSave({
+        ...valid,
+        state: { ...valid.state, status: 'lost' },
+      }),
+    ).toBeNull();
     expect(parseRunSave('{invalid')).toBeNull();
 
     const name = `devops-tycoon-run-test-bad-${databases.length}`;
@@ -203,6 +209,58 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
 
     game.newRun('ri58-clear-2');
     expect(game.phase()).toBe('title');
+    await flushSave(storage);
+    expect(await storage.load()).toBeNull();
+    expect(game.hasResumableRun()).toBe(false);
+  });
+
+  it('beginSetupSprint 直前の編成変更をセーブに残す', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({ seed: 'ri58-form', runStorage: storage, metaReady: true });
+    game.attachRunPersistence(storage, null);
+    game.startRun('easy', [], 'ri58-form');
+    const memberId = game.getState().roster.members[0]!.id;
+    game.assignMember(memberId, 'review');
+    expect(game.getState().roster.members.find((m) => m.id === memberId)?.assignment).toBe(
+      'review',
+    );
+
+    game.beginSetupSprint();
+    expect(game.phase()).toBe('sprint');
+    await flushSave(storage);
+    const save = await storage.load();
+    expect(save?.summary.phase).toBe('setup');
+    expect(save?.state.roster.members.find((m) => m.id === memberId)?.assignment).toBe('review');
+  });
+
+  it('ショップ購入で敗北したらセーブを破棄する', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({
+      seed: 'ri58-shop-lose',
+      difficulty: 'nightmare',
+      runStorage: storage,
+      metaReady: true,
+    });
+    game.attachRunPersistence(storage, null);
+    game.startRun('nightmare', [], 'ri58-shop-lose');
+    await flushSave(storage);
+    expect(await storage.load()).not.toBeNull();
+
+    const internals = game.engine as unknown as {
+      phase: string;
+      budget: number;
+      shop: {
+        cards: Array<{ defId: string; cost: number; bought: boolean }>;
+        relic?: { id: string; cost: number; bought: boolean };
+      } | null;
+    };
+    internals.phase = 'shop';
+    internals.budget = 10;
+    internals.shop = { cards: [{ defId: 'copilot', cost: 10, bought: false }] };
+
+    const state = game.buyShopCard('copilot');
+    expect(state.status).toBe('lost');
+    expect(state.phase).toBe('lost');
     await flushSave(storage);
     expect(await storage.load()).toBeNull();
     expect(game.hasResumableRun()).toBe(false);

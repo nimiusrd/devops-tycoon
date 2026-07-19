@@ -15,6 +15,11 @@ import { Breadcrumb } from './ui/Breadcrumb';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
 import { RunBar } from './ui/RunBar';
 import { TitleScreen } from './ui/TitleScreen';
+import {
+  resolveTutorialFromLocation,
+  shouldShowTutorialGuide,
+  type TutorialQuery,
+} from './ui/tutorial';
 import { useRun } from './ui/useRun';
 import type { GameHandle } from './game';
 
@@ -22,6 +27,9 @@ const AchievementCollectionScreen = lazy(() =>
   import('./ui/AchievementCollectionScreen').then((m) => ({
     default: m.AchievementCollectionScreen,
   })),
+);
+const HowToPlayScreen = lazy(() =>
+  import('./ui/HowToPlayScreen').then((m) => ({ default: m.HowToPlayScreen })),
 );
 const BeatScreen = lazy(() => import('./ui/BeatScreen').then((m) => ({ default: m.BeatScreen })));
 const DeptScreen = lazy(() => import('./ui/DeptScreen').then((m) => ({ default: m.DeptScreen })));
@@ -102,6 +110,10 @@ export default function App({ game }: AppProps) {
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
+  const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
+  const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
+  /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
+  const [tutorialDismissedEpoch, setTutorialDismissedEpoch] = useState<number | null>(null);
   const lastHudSnapshot = useRef<Record<HudSnapshotScope, HudMetricSnapshot | null>>({
     team: null,
     orgScale: null,
@@ -148,6 +160,7 @@ export default function App({ game }: AppProps) {
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
+    setHelpOpen(false);
     clearHudSnapshot();
     run.startRun(difficulty, trials);
   };
@@ -155,6 +168,7 @@ export default function App({ game }: AppProps) {
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
+    setHelpOpen(false);
     clearHudSnapshot();
     run.startDailyRun();
   };
@@ -169,9 +183,18 @@ export default function App({ game }: AppProps) {
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
+    setHelpOpen(false);
     clearHudSnapshot();
     run.newRun();
   };
+  const dismissTutorial = () => {
+    setTutorialDismissedEpoch(run.runEpoch);
+    run.markTutorialSeen();
+  };
+  const tutorialActive =
+    phase === 'sprint' &&
+    tutorialDismissedEpoch !== run.runEpoch &&
+    shouldShowTutorialGuide(meta.seenTutorial, tutorialMode);
 
   if (phase === 'title') {
     return (
@@ -185,8 +208,10 @@ export default function App({ game }: AppProps) {
           resumableSummary={runSaveSummary}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
+          onOpenHelp={() => setHelpOpen(true)}
         />
         <Suspense fallback={<TitleModalLoadingFallback />}>
+          {helpOpen && <HowToPlayScreen onClose={() => setHelpOpen(false)} />}
           {metaShopOpen && (
             <MetaShopScreen
               meta={meta}
@@ -285,6 +310,11 @@ export default function App({ game }: AppProps) {
             onPlayCard={run.playCard}
             getSprintSnapshot={run.getSprintSnapshot}
             pauseBriefly={run.pauseBriefly}
+            playbackSpeed={run.playbackSpeed}
+            setPlaybackSpeed={run.setPlaybackSpeed}
+            showTutorial={tutorialActive}
+            onTutorialDismiss={dismissTutorial}
+            game={game}
           />
         )}
       </Suspense>

@@ -23,12 +23,8 @@ export interface GameDatabase extends DBSchema {
   };
   runSave: {
     key: typeof RUN_RECORD_KEY;
-    value: {
-      schemaVersion: number;
-      savedAt: number;
-      summary: Record<string, unknown>;
-      state: unknown;
-    };
+    /** 厳密な形は `parseRunSave` で検証する（循環参照回避のためここは unknown）。 */
+    value: unknown;
   };
 }
 

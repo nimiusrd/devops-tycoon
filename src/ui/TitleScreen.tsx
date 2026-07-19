@@ -40,6 +40,7 @@ export interface TitleScreenProps {
   resumableSummary?: RunSaveSummary | null;
   onOpenMetaShop?: () => void;
   onOpenAchievements?: () => void;
+  onOpenHelp?: () => void;
 }
 
 export function TitleScreen({
@@ -51,6 +52,7 @@ export function TitleScreen({
   resumableSummary = null,
   onOpenMetaShop,
   onOpenAchievements,
+  onOpenHelp,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -295,6 +297,11 @@ export function TitleScreen({
         <footer className="title-footer">
           <span>{selectedDifficulty.label}</span>
           <nav>
+            {onOpenHelp && (
+              <button type="button" data-testid="open-help" onClick={onOpenHelp}>
+                遊び方
+              </button>
+            )}
             {onOpenMetaShop && (
               <button type="button" data-testid="open-meta-shop" onClick={onOpenMetaShop}>
                 研修ツール解禁（メタショップ）

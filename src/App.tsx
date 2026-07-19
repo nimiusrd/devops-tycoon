@@ -172,6 +172,7 @@ export default function App({ game }: AppProps) {
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
   const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
+    audio.unlock();
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
@@ -180,6 +181,7 @@ export default function App({ game }: AppProps) {
     run.startRun(difficulty, trials);
   };
   const startDailyRun = () => {
+    audio.unlock();
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
@@ -188,6 +190,7 @@ export default function App({ game }: AppProps) {
     run.startDailyRun();
   };
   const resumeRun = () => {
+    audio.unlock();
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
@@ -223,7 +226,10 @@ export default function App({ game }: AppProps) {
           resumableSummary={runSaveSummary}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
-          onToggleSoundMuted={() => run.setSoundMuted(!meta.soundMuted)}
+          onToggleSoundMuted={() => {
+            audio.unlock();
+            run.setSoundMuted(!meta.soundMuted);
+          }}
           onOpenHelp={() => setHelpOpen(true)}
         />
         <Suspense fallback={<TitleModalLoadingFallback />}>

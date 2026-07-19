@@ -110,6 +110,7 @@ import type {
   WhatIfState,
   WinType,
 } from './types';
+import { isRunSavePhase, type RunPersistState } from './persist';
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
@@ -1314,6 +1315,145 @@ export class RunEngine {
       this.whatIfCache = { key, value: computeWhatIfState(input) };
     }
     return this.whatIfCache.value ? structuredClone(this.whatIfCache.value) : null;
+  }
+
+  /**
+   * ラン途中セーブ用の永続スナップショット（RI-58）。
+   * セーブ可能フェーズ以外、または playing 以外では null。
+   * スプリント本体は肥大化と RNG 非シリアライズのため常に落とす。
+   */
+  exportPersistState(): RunPersistState | null {
+    if (!isRunSavePhase(this.phase) || this.status !== 'playing') return null;
+    return {
+      seed: this.seed,
+      difficulty: this.difficulty,
+      trials: [...this.trials],
+      runKind: this.runKind,
+      dailyDate: this.dailyDate,
+      phase: this.phase,
+      status: this.status,
+      winType: this.winType,
+      loseReason: this.loseReason,
+      bossId: this.bossId,
+      sprintsPerQuarter: this.sprintsPerQuarter,
+      sprintIndexInQuarter: this.sprintIndexInQuarter,
+      beat: this.beat ? { ...this.beat } : null,
+      pendingSprintKind: this.pendingSprintKind,
+      currentSprintKind: this.currentSprintKind,
+      pendingSprintModifiers: { ...this.pendingSprintModifiers },
+      org: structuredClone(this.org),
+      deck: this.deck.map((c) => ({ ...c })),
+      relics: [...this.relics],
+      bossRelicReward: this.bossRelicReward,
+      evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
+      roster: structuredClone(this.roster),
+      lastGrowth: this.lastGrowth ? structuredClone(this.lastGrowth) : null,
+      budget: this.budget,
+      currentSprintId: this.currentSprintId,
+      sprint: null,
+      sprintTick: 0,
+      lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
+      draft: this.draft ? [...this.draft] : null,
+      whatIf: null,
+      whatIfStatus: 'idle',
+      shop: this.shop
+        ? {
+            cards: this.shop.cards.map((c) => ({ ...c })),
+            relic: this.shop.relic ? { ...this.shop.relic } : undefined,
+            recruit: this.shop.recruit ? { ...this.shop.recruit } : undefined,
+          }
+        : null,
+      diagnosis: this.diagnosis,
+      sprintsPlayed: this.sprintsPlayed,
+      totals: { ...this.totals },
+      quarterTotals: { ...this.quarterTotals },
+      usedHeavyActions: this.usedHeavyActions,
+      quarterNumber: this.quarterNumber,
+      quarterGoal: { ...this.quarterGoal },
+      stakeholderTrust: { ...this.stakeholderTrust },
+      quarterReview: this.quarterReview ? structuredClone(this.quarterReview) : null,
+      goalAdjustmentsTaken: [...this.goalAdjustmentsTaken],
+      reviewHistory: [...this.reviewHistory],
+      zoom: { ...this.zoom },
+      rankingKind: this.rankingKind,
+      orgScale: null,
+      industry: null,
+      extras: {
+        baseConfig: { ...this.baseConfig },
+        orgAdjust: structuredClone(this.orgAdjust),
+        nextBudgetCap: this.nextBudgetCap,
+        pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
+        winEvalOrg: this.winEvalOrg ? structuredClone(this.winEvalOrg) : null,
+        allowedCards: this.allowedCards ? [...this.allowedCards] : [],
+        allowedRelics: this.allowedRelics ? [...this.allowedRelics] : [],
+      },
+    };
+  }
+
+  /** 永続スナップショットからラン状態を復元する（RI-58）。 */
+  hydratePersistState(state: RunPersistState): void {
+    if (!isRunSavePhase(state.phase) || state.status !== 'playing') {
+      throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
+    }
+    const cloned = structuredClone(state);
+    this.seed = cloned.seed;
+    this.difficulty = cloned.difficulty;
+    this.trials = [...cloned.trials];
+    this.runKind = cloned.runKind;
+    this.dailyDate = cloned.dailyDate;
+    this.phase = cloned.phase;
+    this.status = cloned.status;
+    this.winType = cloned.winType;
+    this.loseReason = cloned.loseReason;
+    this.bossId = cloned.bossId;
+    this.sprintsPerQuarter = cloned.sprintsPerQuarter;
+    this.sprintIndexInQuarter = cloned.sprintIndexInQuarter;
+    this.beat = cloned.beat;
+    this.pendingSprintKind = cloned.pendingSprintKind;
+    this.currentSprintKind = cloned.currentSprintKind;
+    this.pendingSprintModifiers = { ...cloned.pendingSprintModifiers };
+    this.org = cloned.org;
+    this.deck = cloned.deck.map((c) => ({ ...c }));
+    this.relics = [...cloned.relics];
+    this.bossRelicReward = cloned.bossRelicReward;
+    this.evolution = {
+      points: cloned.evolution.points,
+      unlocked: { ...cloned.evolution.unlocked },
+    };
+    this.roster = cloned.roster;
+    this.lastGrowth = cloned.lastGrowth;
+    this.budget = cloned.budget;
+    this.currentSprintId = cloned.currentSprintId;
+    this.sprint = null;
+    this.sprintTick = 0;
+    this.accumulatorMs = 0;
+    this.sprintBaselineInput = null;
+    this.sprintPassiveEffects = { ...IDENTITY_CARD_EFFECTS };
+    this.sprintRng = createRng(`${cloned.seed}:hydrated`);
+    this.lastResult = cloned.lastResult;
+    this.draft = cloned.draft ? [...cloned.draft] : null;
+    this.shop = cloned.shop;
+    this.diagnosis = cloned.diagnosis;
+    this.sprintsPlayed = cloned.sprintsPlayed;
+    this.totals = { ...cloned.totals };
+    this.quarterTotals = { ...cloned.quarterTotals };
+    this.usedHeavyActions = cloned.usedHeavyActions;
+    this.quarterNumber = cloned.quarterNumber;
+    this.quarterGoal = { ...cloned.quarterGoal };
+    this.stakeholderTrust = { ...cloned.stakeholderTrust };
+    this.quarterReview = cloned.quarterReview;
+    this.goalAdjustmentsTaken = [...cloned.goalAdjustmentsTaken];
+    this.reviewHistory = [...cloned.reviewHistory];
+    this.zoom = { ...cloned.zoom };
+    this.rankingKind = cloned.rankingKind;
+    this.orgAdjust = structuredClone(cloned.extras.orgAdjust);
+    this.baseConfig = { ...cloned.extras.baseConfig };
+    this.nextBudgetCap = cloned.extras.nextBudgetCap;
+    this.pauseAiDebuffQuarter = cloned.extras.pauseAiDebuffQuarter;
+    this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
+    this.allowedCards = new Set(cloned.extras.allowedCards);
+    this.allowedRelics = new Set(cloned.extras.allowedRelics);
+    this.whatIfCache = null;
   }
 
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */

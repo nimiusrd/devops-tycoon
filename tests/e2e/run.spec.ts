@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { EVENT_DEFS, effectiveKind, getEvent } from '../../src/data/events';
 import { diagnosisTheme } from '../../src/render/diagnosisTheme';
 import { quarterFailureTheme } from '../../src/render/quarterFailureTheme';

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { EVENT_DEFS } from '../../src/data/events';
 import type { GameHandle } from '../../src/game';
 

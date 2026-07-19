@@ -32,7 +32,7 @@ export function RewardCeremony({
   const { playSfx } = useAudio();
   useEffect(() => {
     playSfx('ceremony');
-  }, [kind, playSfx]);
+  }, [kind, title, playSfx]);
 
   return (
     <motion.div

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import type { RunState } from '../../src/sim/run/types';
 
 type GameWindow = Window & {

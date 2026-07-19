@@ -20,6 +20,7 @@ const SFX_MASTER = 0.85;
 export interface AudioEngine {
   unlock(): Promise<void>;
   isUnlocked(): boolean;
+  isDisposed(): boolean;
   setMuted(muted: boolean): void;
   isMuted(): boolean;
   playSfx(id: SfxId): void;
@@ -207,7 +208,11 @@ export function createAudioEngine(): AudioEngine {
     isUnlocked() {
       return unlocked;
     },
+    isDisposed() {
+      return disposed;
+    },
     setMuted(next) {
+      if (disposed) return;
       muted = next;
       applyMute();
     },
@@ -215,7 +220,7 @@ export function createAudioEngine(): AudioEngine {
       return muted;
     },
     playSfx(id) {
-      if (muted || !unlocked) return;
+      if (disposed || muted || !unlocked) return;
       const graph = ensureGraph();
       if (!graph || graph.ctx.state !== 'running') return;
       const patch = SFX_PATCHES[id];

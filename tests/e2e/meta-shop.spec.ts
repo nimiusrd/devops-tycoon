@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import type { MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
 
@@ -31,6 +31,7 @@ const DEFAULT_META: MetaState = {
   unlockedRelics: [],
   dailyRuns: {},
   soundMuted: false,
+  seenTutorial: true,
 };
 
 test('メタショップ購入が次ランのドラフトプールへ反映される', async ({ page }) => {

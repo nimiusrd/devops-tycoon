@@ -2,9 +2,10 @@
  * React 向けオーディオ Provider（RI-59）。
  *
  * エンジン寿命と unlock リスナを担い、各 Juicy コンポーネントは `useAudio()` から呼ぶ。
+ * StrictMode の cleanup→setup では dispose 済みエンジンを捨てて再生成する。
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { createAudioEngine } from './audioEngine';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { createAudioEngine, type AudioEngine } from './audioEngine';
 import { bgmToneForDiagnosis } from './sounds';
 import { AudioContextReact, type AudioApi } from './useAudio';
 
@@ -12,12 +13,20 @@ export interface AudioProviderProps {
   children: ReactNode;
 }
 
+function getOrCreateEngine(ref: { current: AudioEngine | null }): AudioEngine {
+  if (ref.current == null || ref.current.isDisposed()) {
+    ref.current = createAudioEngine();
+  }
+  return ref.current;
+}
+
 export function AudioProvider({ children }: AudioProviderProps) {
-  const [engine] = useState(() => createAudioEngine());
+  const engineRef = useRef<AudioEngine | null>(null);
 
   useEffect(() => {
+    const active = getOrCreateEngine(engineRef);
     const unlock = () => {
-      void engine.unlock();
+      void active.unlock();
     };
     const opts: AddEventListenerOptions = { capture: true, passive: true };
     document.addEventListener('pointerdown', unlock, opts);
@@ -25,34 +34,32 @@ export function AudioProvider({ children }: AudioProviderProps) {
     return () => {
       document.removeEventListener('pointerdown', unlock, opts);
       document.removeEventListener('keydown', unlock, opts);
+      active.dispose();
+      if (engineRef.current === active) {
+        engineRef.current = null;
+      }
     };
-  }, [engine]);
-
-  useEffect(() => {
-    return () => {
-      engine.dispose();
-    };
-  }, [engine]);
+  }, []);
 
   const api = useMemo<AudioApi>(
     () => ({
       playSfx(id) {
-        engine.playSfx(id);
+        getOrCreateEngine(engineRef).playSfx(id);
       },
       setBgmFromDiagnosis(diagnosis) {
-        engine.setBgmTone(bgmToneForDiagnosis(diagnosis));
+        getOrCreateEngine(engineRef).setBgmTone(bgmToneForDiagnosis(diagnosis));
       },
       setBgmOff() {
-        engine.setBgmTone('off');
+        getOrCreateEngine(engineRef).setBgmTone('off');
       },
       setMuted(muted) {
-        engine.setMuted(muted);
+        getOrCreateEngine(engineRef).setMuted(muted);
       },
       unlock() {
-        void engine.unlock();
+        void getOrCreateEngine(engineRef).unlock();
       },
     }),
-    [engine],
+    [],
   );
 
   return <AudioContextReact.Provider value={api}>{children}</AudioContextReact.Provider>;

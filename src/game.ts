@@ -31,6 +31,12 @@ import {
   withSoundMuted,
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
+import {
+  toRunSave,
+  type RunSave,
+  type RunSaveSummary,
+  type RunStorage,
+} from './state/runPersistence';
 
 export interface GameHandle {
   /** 自動進行を止める。 */
@@ -50,6 +56,11 @@ export interface GameHandle {
   startRun(difficulty?: DifficultyId, trials?: string[], seed?: string): RunState;
   /** 本日（または指定 UTC 日）のデイリーランを開始する（第23章）。 */
   startDailyRun(dateStr?: string): RunState;
+  /**
+   * ラン開始ごとに増える世代番号（RI-60）。
+   * `currentSprintId` はランを跨いで再利用されるため、ガイド再表示判定にはこちらを使う。
+   */
+  getRunEpoch(): number;
   /** 編成フェーズ（setup / setup-pre）から次スプリントを開始する。 */
   beginSetupSprint(): RunState;
   /** 提示中ビートを解決する（判定は引数なし、選択は index）。 */
@@ -106,12 +117,24 @@ export interface GameHandle {
   purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
   setSoundMuted(muted: boolean): void;
+  /** 初見向け段階ガイドを表示済みにする（RI-60）。 */
+  markTutorialSeen(): void;
   /** 現在のメタ進行（解放状況・実績）。 */
   getMeta(): MetaState;
   /** 直近ランで付与したメタ進行ポイント内訳（未決着時は null）。 */
   getLastRunReward(): RunRewardBreakdown | null;
   /** 起動時の非同期永続化を接続し、メタ更新を解禁する。 */
   attachMetaPersistence(meta: MetaState, storage: MetaStorage): void;
+  /** 起動時のランセーブ永続化を接続する（まだ hydrate しない）。 */
+  attachRunPersistence(storage: RunStorage, save: RunSave | null): void;
+  /** タイトルから途中セーブを再開する（RI-58）。 */
+  resumeRun(): RunState | null;
+  /** 再開可能なランセーブがあるか。 */
+  hasResumableRun(): boolean;
+  /** タイトル「続きから」用の要約（無い場合は null）。 */
+  getRunSaveSummary(): RunSaveSummary | null;
+  /** ランセーブを破棄する。 */
+  clearRunSave(): void;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
@@ -136,6 +159,10 @@ export interface CreateGameOptions {
   metaStorage?: MetaStorage | null;
   /** 非同期起動中は false にして、復元前のメタ更新を防ぐ。 */
   metaReady?: boolean;
+  /** ラン途中セーブの保存先。未指定時は保存しない。 */
+  runStorage?: RunStorage | null;
+  /** 起動時に読み込んだ再開可能セーブ（まだ hydrate しない）。 */
+  initialRunSave?: RunSave | null;
 }
 
 export function createGame(options: CreateGameOptions = {}): GameHandle {
@@ -147,9 +174,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let meta = options.initialMeta ?? defaultMeta();
   let metaStorage = options.metaStorage ?? null;
   let metaReady = options.metaReady ?? true;
+  let runStorage: RunStorage | null = options.runStorage ?? null;
+  let resumableSave: RunSave | null = options.initialRunSave ?? null;
   let recorded = false;
   let lastRunReward: RunRewardBreakdown | null = null;
   let revision = 0;
+  /** startRun / startDailyRun のたびに増やす（UI ガイドのセッション区切り）。 */
+  let runEpoch = 0;
   let activeDailyDate: string | null = null;
   /** UI 向け what-if キャッシュ（Worker 完了後も同一キーなら即返却）。 */
   let whatIfCache: { key: string; value: WhatIfState | null } | null = null;
@@ -164,6 +195,37 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const clearWhatIfCache = (): void => {
     whatIfCache = null;
     whatIfPendingKey = null;
+  };
+
+  const clearRunSaveInternal = (): void => {
+    resumableSave = null;
+    if (!runStorage) return;
+    void runStorage.clear().catch(() => undefined);
+  };
+
+  /** 現在がセーブ可能フェーズならスナップショットを書き込む。 */
+  const persistSaveableSnapshot = (): void => {
+    if (!runStorage) return;
+    const exported = engine.exportPersistState();
+    if (!exported) return;
+    const save = toRunSave(exported);
+    resumableSave = save;
+    void runStorage.save(save).catch(() => undefined);
+  };
+
+  /**
+   * セーブ可能フェーズなら保存。sprint 中は直前セーブを維持。
+   * title / won / lost では破棄する（RI-58）。
+   */
+  const persistRunIfNeeded = (): void => {
+    if (!runStorage) return;
+    const phase = engine.currentPhase();
+    if (phase === 'title' || phase === 'won' || phase === 'lost') {
+      clearRunSaveInternal();
+      return;
+    }
+    if (phase === 'sprint') return;
+    persistSaveableSnapshot();
   };
 
   /** Worker があれば非同期、なければ同期フォールバックで試算する（RI-13）。 */
@@ -249,6 +311,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   const after = (): RunState => {
     recordIfFinished();
+    persistRunIfNeeded();
+    return engine.snapshot();
+  };
+
+  /**
+   * フェーズ非遷移の操作後（通常はセーブしない）。
+   * ただし即時敗北などで終端へ落ちた場合はセーブを破棄する。
+   */
+  const afterLocal = (): RunState => {
+    recordIfFinished();
+    const phase = engine.currentPhase();
+    if (phase === 'won' || phase === 'lost' || phase === 'title') {
+      persistRunIfNeeded();
+    }
     return engine.snapshot();
   };
 
@@ -277,9 +353,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       activeDailyDate = null;
       clearWhatIfCache();
       applyUnlockedToEngine();
+      runEpoch += 1;
       engine.startRun(difficulty, trials, runSeed, { kind: 'normal' });
       bump();
-      return engine.snapshot();
+      return after();
     },
     startDailyRun(dateStr) {
       recorded = false;
@@ -288,19 +365,27 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       activeDailyDate = day;
       clearWhatIfCache();
       applyUnlockedToEngine();
+      runEpoch += 1;
       engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], dailySeed(day), {
         kind: 'daily',
         dailyDate: day,
       });
       bump();
-      return engine.snapshot();
+      return after();
+    },
+    getRunEpoch() {
+      return runEpoch;
     },
     beginSetupSprint() {
+      // スプリント本体は保存しないが、突入直前の最新編成（setup）を残す。
+      persistSaveableSnapshot();
       engine.beginSetupSprint();
       bump();
       return after();
     },
     resolveBeat(choiceIndex) {
+      // beat → sprint 直遷移でも直前の離散状態を残す。
+      persistSaveableSnapshot();
       engine.resolveBeat(choiceIndex);
       bump();
       return after();
@@ -313,18 +398,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     dispatch(id, target) {
       const outcome = engine.dispatch(id, target);
       bump();
+      // 介入はスプリント中のみ。セーブは更新しない（セーブスカム抑制）。
       return outcome;
     },
     playCard(deckIndex) {
       const outcome = engine.playCard(deckIndex);
       bump();
       recordIfFinished();
+      persistRunIfNeeded();
       return outcome;
     },
     acknowledgeResult() {
       engine.acknowledgeResult();
       bump();
-      return engine.snapshot();
+      return after();
     },
     chooseCard(defId) {
       engine.chooseCard(defId);
@@ -334,37 +421,38 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     skipDraft() {
       engine.skipDraft();
       bump();
-      return engine.snapshot();
+      return after();
     },
     unlockEvolution(id) {
       engine.unlockEvolution(id);
       bump();
-      return engine.snapshot();
+      // フェーズ非遷移のためセーブしない（リロードで消費前に戻る）。
+      return afterLocal();
     },
     finishEvolution() {
       engine.finishEvolution();
       bump();
-      return engine.snapshot();
+      return after();
     },
     buyShopCard(defId) {
       engine.buyShopCard(defId);
       bump();
-      return after();
+      return afterLocal();
     },
     buyShopRelic() {
       engine.buyShopRelic();
       bump();
-      return after();
+      return afterLocal();
     },
     buyShopRecruit() {
       engine.buyShopRecruit();
       bump();
-      return after();
+      return afterLocal();
     },
     leaveShop() {
       engine.leaveShop();
       bump();
-      return engine.snapshot();
+      return after();
     },
     restChoose(option, deckIndex) {
       engine.restChoose(option, deckIndex);
@@ -379,36 +467,37 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     assignMember(id, assignment) {
       engine.assignMember(id, assignment);
       bump();
-      return engine.snapshot();
+      return afterLocal();
     },
     setMemberAi(id, on) {
       engine.setMemberAi(id, on);
       bump();
-      return engine.snapshot();
+      return afterLocal();
     },
     zoomTo(level) {
       engine.zoomTo(level);
       bump();
-      return engine.snapshot();
+      return afterLocal();
     },
     focusDept(id) {
       engine.focusDepartment(id);
       bump();
-      return engine.snapshot();
+      return afterLocal();
     },
     focusTeam(id) {
       engine.focusTeam(id);
       bump();
-      return engine.snapshot();
+      return afterLocal();
     },
     setRankingKind(kind) {
       engine.setRankingKind(kind);
       bump();
-      return engine.snapshot();
+      return afterLocal();
     },
     applyOrgLever(leverId, deptId) {
       engine.applyOrgLever(leverId, deptId);
       bump();
+      // レバーはフェーズ非遷移だが即時敗北の可能性がある。
       return after();
     },
     acknowledgeQuarterReview() {
@@ -419,7 +508,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     chooseGoalAdjustment(id) {
       engine.chooseGoalAdjustment(id);
       bump();
-      return engine.snapshot();
+      return after();
     },
     newRun(runSeed) {
       recorded = false;
@@ -429,7 +518,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       applyUnlockedToEngine();
       engine.toTitle(runSeed);
       bump();
-      return engine.snapshot();
+      return after();
     },
     purchaseMetaUnlock(unlockId) {
       if (!metaReady) return { ok: false, reason: 'not_ready' };
@@ -448,6 +537,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       persistMeta();
       bump();
     },
+    markTutorialSeen() {
+      if (!metaReady || meta.seenTutorial) return;
+      meta = { ...meta, seenTutorial: true };
+      persistMeta();
+      bump();
+    },
     getMeta() {
       return meta;
     },
@@ -459,6 +554,37 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       meta = hydratedMeta;
       metaReady = true;
       recordIfFinished();
+      bump();
+    },
+    attachRunPersistence(storage, save) {
+      runStorage = storage;
+      resumableSave = save;
+      bump();
+    },
+    resumeRun() {
+      if (!resumableSave) return null;
+      recorded = false;
+      lastRunReward = null;
+      clearWhatIfCache();
+      const save = resumableSave;
+      activeDailyDate = save.summary.dailyDate ?? null;
+      // ラン中の解放プールはセーブ時点のものを優先（メタショップ購入で変えない）。
+      engine.setUnlockedContent(
+        new Set(save.state.extras.allowedCards),
+        new Set(save.state.extras.allowedRelics),
+      );
+      engine.hydratePersistState(save.state);
+      bump();
+      return after();
+    },
+    hasResumableRun() {
+      return resumableSave !== null;
+    },
+    getRunSaveSummary() {
+      return resumableSave ? structuredClone(resumableSave.summary) : null;
+    },
+    clearRunSave() {
+      clearRunSaveInternal();
       bump();
     },
     phase() {

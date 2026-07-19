@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { DIFFICULTY_DEFS, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
+import type { RunSaveSummary } from '../state/runPersistence';
 import type { DifficultyId } from '../sim/run/types';
 
 const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
@@ -18,15 +19,30 @@ const DIFFICULTY_TAG: Record<DifficultyId, string> = {
   nightmare: 'Nightmare',
 };
 
+const PHASE_LABEL: Record<RunSaveSummary['phase'], string> = {
+  setup: '編成',
+  result: 'リザルト',
+  draft: 'ドラフト',
+  evolution: '進化',
+  beat: 'イベント',
+  shop: 'ショップ',
+  rest: '休息',
+  recruit: '採用',
+  quarterReview: '四半期レビュー',
+};
+
 export interface TitleScreenProps {
   seed: string;
   meta: MetaState;
   onStart: (difficulty: DifficultyId, trials: string[]) => void;
   onStartDaily?: () => void;
+  onResume?: () => void;
+  resumableSummary?: RunSaveSummary | null;
   onOpenMetaShop?: () => void;
   onOpenAchievements?: () => void;
   /** サウンドミュート切替（RI-59）。 */
   onToggleSoundMuted?: () => void;
+  onOpenHelp?: () => void;
 }
 
 export function TitleScreen({
@@ -34,9 +50,12 @@ export function TitleScreen({
   meta,
   onStart,
   onStartDaily,
+  onResume,
+  resumableSummary = null,
   onOpenMetaShop,
   onOpenAchievements,
   onToggleSoundMuted,
+  onOpenHelp,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -195,6 +214,32 @@ export function TitleScreen({
             </div>
           </section>
 
+          {resumableSummary && onResume ? (
+            <section className="title-resume" data-testid="resume-run-section">
+              <div className="title-resume-copy">
+                <span>中断中のラン</span>
+                <b>
+                  {DIFFICULTY_TAG[resumableSummary.difficulty]} / Q{resumableSummary.quarterNumber}{' '}
+                  {PHASE_LABEL[resumableSummary.phase]}
+                </b>
+                <small>
+                  スプリント {resumableSummary.sprintsPlayed} 完了
+                  {resumableSummary.runKind === 'daily' && resumableSummary.dailyDate
+                    ? ` · デイリー ${resumableSummary.dailyDate}`
+                    : ''}
+                </small>
+              </div>
+              <button
+                type="button"
+                className="title-resume-btn"
+                data-testid="resume-run"
+                onClick={onResume}
+              >
+                続きから再開 →
+              </button>
+            </section>
+          ) : null}
+
           {onStartDaily ? (
             <section className="title-launch-row" data-testid="daily-run-section">
               <div className="title-daily">
@@ -263,6 +308,11 @@ export function TitleScreen({
                 onClick={onToggleSoundMuted}
               >
                 {meta.soundMuted ? 'ミュート中' : '音あり'}
+              </button>
+            )}
+            {onOpenHelp && (
+              <button type="button" data-testid="open-help" onClick={onOpenHelp}>
+                遊び方
               </button>
             )}
             {onOpenMetaShop && (

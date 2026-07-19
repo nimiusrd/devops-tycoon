@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import type { MetaState } from '../../src/state/meta';
 
 const META_WITH_ACHIEVEMENT: MetaState = {
@@ -13,6 +13,7 @@ const META_WITH_ACHIEVEMENT: MetaState = {
   unlockedRelics: [],
   dailyRuns: {},
   soundMuted: false,
+  seenTutorial: true,
 };
 
 test('タイトルから実績コレクションを開き取得済み／未取得を区別表示できる', async ({ page }) => {

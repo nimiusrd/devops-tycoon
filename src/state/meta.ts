@@ -47,6 +47,8 @@ export interface MetaState {
   dailyRuns: Record<string, DailyRunRecord>;
   /** サウンドミュート（RI-59）。UI 層のみ。 */
   soundMuted: boolean;
+  /** 初見向け段階ガイドを表示済みか（RI-60）。 */
+  seenTutorial: boolean;
 }
 
 /** 1 日分のデイリーラン記録（第23章）。 */
@@ -90,6 +92,7 @@ export function defaultMeta(): MetaState {
     unlockedRelics: [],
     dailyRuns: {},
     soundMuted: false,
+    seenTutorial: false,
   };
 }
 
@@ -99,10 +102,11 @@ export function normalizeMeta(value: unknown): MetaState {
   // 旧セーブの unlockedPresets（RI-25 で削除した足場）は読み捨てる。
   const { unlockedPresets: _legacyPresets, ...rest } = value as Record<string, unknown>;
   const base = { ...defaultMeta(), ...(rest as Partial<MetaState>) };
-  // soundMuted は真偽のみ受け入れ、それ以外は既定値へ落とす。
+  // 旧セーブや壊れた値は boolean に正規化する。
   return {
     ...base,
     soundMuted: typeof base.soundMuted === 'boolean' ? base.soundMuted : false,
+    seenTutorial: rest.seenTutorial === true,
   };
 }
 
@@ -338,6 +342,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     unlockedRelics: [...meta.unlockedRelics],
     dailyRuns: { ...meta.dailyRuns },
     soundMuted: meta.soundMuted,
+    seenTutorial: meta.seenTutorial,
   };
 
   if (input.won) {

@@ -84,11 +84,12 @@ Renderer (DOM/SVG → Pixi) ── 状態を読んで描くだけ。双方向バ
 
 - 乱数は seed付き PRNG に一本化、`?seed=` で再現。
 - レンダラは「状態を読んで描くだけ」＝同一状態なら同一フレーム＝スクショ安定。
+- UI 専用クエリ: `?tutorial=`（`1` / `force` / `help` / `off`）。sim には渡さない（RI-60）。
 - **`window.game` の公開 API は `src/game.ts` の `GameHandle` を正とする。** E2E / 外部自動化が使うメソッド:
   - 制御: `pause()` / `resume()` / `isPaused()`
-  - 状態読取: `getState()` / `phase()` / `revision()` / `isSprintRunning()` / `getMeta()`
+  - 状態読取: `getState()` / `phase()` / `revision()` / `isSprintRunning()` / `getMeta()` / `getRunEpoch()`（ラン開始世代。RI-60）
   - ラン開始: `startRun(difficulty?, trials?, seed?)` / `startDailyRun(dateStr?)` / `newRun(seed?)`（旧設計の `loadState(seed, scenario)` は廃止。seed は URL パラメータまたは引数で指定）
-  - メタ進行（第17章）: `purchaseMetaUnlock(unlockId)`（points 消費で永続解放。`getMeta()` で残高・購入済みを読む）
+  - メタ進行（第17章）: `purchaseMetaUnlock(unlockId)`（points 消費で永続解放。`getMeta()` で残高・購入済みを読む） / `markTutorialSeen()`（初見ガイド表示済みフラグ。RI-60）
   - フェーズ駆動（固定トラック＋ビート）: `beginSetupSprint()`（setup/setup-pre から次スプリント開始） / `step(ms)` / `dispatch(id)` / `acknowledgeResult()` / `chooseCard(defId)` / `skipDraft()` / `unlockEvolution(id)` / `finishEvolution()` / `resolveBeat(choiceIndex?)`（判定は引数なし、選択は index） / `buyShopCard(defId)` / `buyShopRelic()` / `leaveShop()` / `restChoose(option)`（option に `recruit` を含む）。旧 `enterNode(id)` / `chooseEvent(index)` は撤去。
   - 編成（第12章）: `assignMember(id, assignment)` / `setMemberAi(id, on)`
   - 組織スケール / ズーム階層（第4.7〜4.11）: `zoomTo(level)` / `focusDept(id)` / `focusTeam(id)` / `setRankingKind(kind)` / `applyOrgLever(leverId, deptId?)`。集約結果（`orgScale` / `industry`）と現在地（`zoom` / `rankingKind`）は `getState()` のスナップショットから読む（描画は読むだけ。第22.2）。

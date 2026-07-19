@@ -97,7 +97,7 @@ export interface AppProps {
 
 export default function App({ game }: AppProps) {
   const run = useRun(game);
-  const { state, meta, lastRunReward } = run;
+  const { state, meta, lastRunReward, runSaveSummary } = run;
   const phase = state.phase;
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
@@ -158,6 +158,13 @@ export default function App({ game }: AppProps) {
     clearHudSnapshot();
     run.startDailyRun();
   };
+  const resumeRun = () => {
+    setFormationOpen(false);
+    setMetaShopOpen(false);
+    setAchievementsOpen(false);
+    clearHudSnapshot();
+    run.resumeRun();
+  };
   const newRun = () => {
     setFormationOpen(false);
     setMetaShopOpen(false);
@@ -174,6 +181,8 @@ export default function App({ game }: AppProps) {
           meta={meta}
           onStart={startRun}
           onStartDaily={startDailyRun}
+          onResume={resumeRun}
+          resumableSummary={runSaveSummary}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
         />

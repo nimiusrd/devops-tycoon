@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { pauseBriefly as pauseGameBriefly, type GameHandle, type PauseBrieflyClear } from '../game';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
+import type { RunSaveSummary } from '../state/runPersistence';
 import type {
   ActionId,
   ActionTarget,
@@ -29,8 +30,11 @@ export interface UseRun {
   meta: MetaState;
   /** 直近ランのメタ進行ポイント内訳（未決着時は null）。 */
   lastRunReward: RunRewardBreakdown | null;
+  /** 再開可能なランセーブの要約（無い場合は null）。 */
+  runSaveSummary: RunSaveSummary | null;
   startRun: (difficulty: DifficultyId, trials: string[]) => void;
   startDailyRun: (dateStr?: string) => void;
+  resumeRun: () => void;
   beginSetupSprint: () => void;
   resolveBeat: (choiceIndex?: number) => void;
   dispatch: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
@@ -72,6 +76,9 @@ export function useRun(game: GameHandle): UseRun {
   const [lastRunReward, setLastRunReward] = useState<RunRewardBreakdown | null>(() =>
     game.getLastRunReward(),
   );
+  const [runSaveSummary, setRunSaveSummary] = useState<RunSaveSummary | null>(() =>
+    game.getRunSaveSummary(),
+  );
 
   useEffect(() => {
     // 初回も必ず同期する。React の描画〜effect開始の間に window.game が操作されても取りこぼさない。
@@ -87,6 +94,7 @@ export function useRun(game: GameHandle): UseRun {
       setState(next);
       setMeta(game.getMeta());
       setLastRunReward(game.getLastRunReward());
+      setRunSaveSummary(game.getRunSaveSummary());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -98,6 +106,7 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const startDailyRun = useCallback((dateStr?: string) => void game.startDailyRun(dateStr), [game]);
+  const resumeRun = useCallback(() => void game.resumeRun(), [game]);
   const beginSetupSprint = useCallback(() => void game.beginSetupSprint(), [game]);
   const resolveBeat = useCallback(
     (choiceIndex?: number) => void game.resolveBeat(choiceIndex),
@@ -159,8 +168,10 @@ export function useRun(game: GameHandle): UseRun {
     state,
     meta,
     lastRunReward,
+    runSaveSummary,
     startRun,
     startDailyRun,
+    resumeRun,
     beginSetupSprint,
     resolveBeat,
     dispatch,

@@ -108,3 +108,21 @@ export class MemoryReplayStorage implements ReplayStorage {
     this.items.clear();
   }
 }
+
+export interface ReplayPersistenceBootstrap {
+  storage: ReplayStorage;
+}
+
+/**
+ * リプレイ保存先を用意する。IndexedDB が使えない場合は MemoryReplayStorage へ切替。
+ */
+export async function initializeReplayPersistence(
+  storage: ReplayStorage = new IndexedDbReplayStorage(),
+): Promise<ReplayPersistenceBootstrap> {
+  try {
+    await storage.list();
+    return { storage };
+  } catch {
+    return { storage: new MemoryReplayStorage() };
+  }
+}

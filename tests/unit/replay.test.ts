@@ -96,12 +96,58 @@ describe('GameHandle リプレイ（RI-61）', () => {
     const opened = game.openReplay(blob.id, 0);
     expect(opened).not.toBeNull();
     expect(game.isReplayMode()).toBe(true);
+    expect(game.isPaused()).toBe(true);
     expect(game.dispatch('pairReview')).toEqual({ ok: false, reason: 'complete' });
     expect(game.beginSetupSprint().phase).toBe(opened!.phase);
 
     game.exitReplay();
     expect(game.isReplayMode()).toBe(false);
+    expect(game.isPaused()).toBe(false);
     expect(game.phase()).toBe('title');
+  });
+
+  it('beginSetupSprint 直前の編成変更が setup キーフレームへ反映される', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'setup-kf', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    game.startRun('easy', [], 'setup-kf');
+    const member = game.getState().roster.members[0];
+    expect(member).toBeTruthy();
+    game.assignMember(member!.id, 'coding');
+    game.beginSetupSprint();
+    while (game.isSprintRunning()) game.step(100);
+    // スプリント完了後もキーフレームはメモリ上に残っているので、決着まで進めて保存を待つ。
+    const guard = 80_000;
+    for (let i = 0; i < guard; i += 1) {
+      const phase = game.phase();
+      if (phase === 'won' || phase === 'lost') break;
+      if (phase === 'setup') game.beginSetupSprint();
+      else if (phase === 'sprint') {
+        while (game.isSprintRunning()) game.step(100);
+      } else if (phase === 'result') game.acknowledgeResult();
+      else if (phase === 'draft') game.skipDraft();
+      else if (phase === 'evolution') game.finishEvolution();
+      else if (phase === 'beat') game.resolveBeat(0);
+      else if (phase === 'shop') game.leaveShop();
+      else if (phase === 'rest') game.restChoose('heal');
+      else if (phase === 'recruit') game.recruitChoose('skip');
+      else if (phase === 'quarterReview') {
+        const review = game.getState().quarterReview;
+        if (review?.outcome === 'missed_adjustable') {
+          game.chooseGoalAdjustment(review.availableAdjustments[0] ?? 'cut_scope');
+        } else {
+          game.acknowledgeQuarterReview();
+        }
+      } else break;
+    }
+    for (let i = 0; i < 40 && game.listReplays().length === 0; i += 1) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    const setupFrame = game.listReplays()[0]?.keyframes.find((k) => k.phase === 'setup');
+    expect(setupFrame).toBeTruthy();
+    const saved = setupFrame!.frame.roster.members.find((m) => m.id === member!.id);
+    expect(saved?.assignment).toBe('coding');
   });
 
   it('startRun〜決着でキーフレームがリプレイに残る', async () => {

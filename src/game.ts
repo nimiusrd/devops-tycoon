@@ -431,6 +431,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       lastRunReward = null;
       activeDailyDate = null;
       keyframes = [];
+      paused = false;
       clearWhatIfCache();
       applyUnlockedToEngine();
       runEpoch += 1;
@@ -445,6 +446,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
       keyframes = [];
+      paused = false;
       clearWhatIfCache();
       applyUnlockedToEngine();
       runEpoch += 1;
@@ -461,7 +463,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     beginSetupSprint() {
       if (replayMode) return engine.snapshot();
       // スプリント本体は保存しないが、突入直前の最新編成（setup）を残す。
+      // ランセーブとリプレイキーフレームの両方を「実際に走らせた編成」へ更新する。
       persistSaveableSnapshot();
+      appendKeyframeIfNeeded();
       engine.beginSetupSprint();
       bump();
       return after();
@@ -470,6 +474,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (replayMode) return engine.snapshot();
       // beat → sprint 直遷移でも直前の離散状態を残す。
       persistSaveableSnapshot();
+      appendKeyframeIfNeeded();
       engine.resolveBeat(choiceIndex);
       bump();
       return after();
@@ -623,6 +628,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       lastRunReward = null;
       activeDailyDate = null;
       keyframes = [];
+      paused = false;
       clearWhatIfCache();
       applyUnlockedToEngine();
       engine.toTitle(runSeed);
@@ -732,6 +738,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       lastRunReward = null;
       activeDailyDate = null;
       keyframes = [];
+      // openReplay で止めた自動進行を解除しないと、通常ラン再開後もスプリントが進まない。
+      paused = false;
       clearWhatIfCache();
       engine.toTitle();
       bump();

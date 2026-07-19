@@ -85,6 +85,7 @@ describe('MetaState.soundMuted（RI-59）', () => {
 describe('audioEngine（RI-59 / ファイル再生）', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   function mockAudio(options?: { playImpl?: () => Promise<void> }) {
@@ -167,17 +168,88 @@ describe('audioEngine（RI-59 / ファイル再生）', () => {
     second.dispose();
   });
 
-  it('BGM トーン切替でループ音源を差し替える', async () => {
+  it('BGM トーン切替はクロスフェードで音源を差し替える（RI-63）', async () => {
+    vi.useFakeTimers();
+    const { AudioCtor, instances, pause } = mockAudio();
+    const engine = createAudioEngine({ AudioCtor });
+    await engine.unlock();
+
+    engine.setBgmTone('bright');
+    const bright = instances.find((el) => el.src.includes('bgm-bright') && el.loop);
+    expect(bright).toBeDefined();
+    expect(bright?.volume).toBe(0);
+    await vi.advanceTimersByTimeAsync(800);
+    expect(bright?.volume).toBeCloseTo(0.35);
+
+    pause.mockClear();
+    engine.setBgmTone('tense');
+    const tense = instances.find((el) => el.src.includes('bgm-tense') && el.loop);
+    expect(tense).toBeDefined();
+    // 並行再生期間: 旧 BGM はまだ止まらず、フェードアウト中。
+    expect(pause).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(350);
+    expect(bright!.volume).toBeGreaterThan(0);
+    expect(bright!.volume).toBeLessThan(0.35);
+    expect(tense!.volume).toBeGreaterThan(0);
+    expect(tense!.volume).toBeLessThan(0.35);
+    // フェード完了: 旧 BGM は停止・解放、新 BGM は既定音量へ。
+    await vi.advanceTimersByTimeAsync(500);
+    expect(pause).toHaveBeenCalled();
+    expect(bright?.src).toBe('');
+    expect(tense?.volume).toBeCloseTo(0.35);
+    engine.dispose();
+  });
+
+  it('off 指定で BGM をフェードアウトして停止する（RI-63）', async () => {
+    vi.useFakeTimers();
+    const { AudioCtor, instances, pause } = mockAudio();
+    const engine = createAudioEngine({ AudioCtor });
+    await engine.unlock();
+    engine.setBgmTone('bright');
+    await vi.advanceTimersByTimeAsync(800);
+    const bright = instances.find((el) => el.src.includes('bgm-bright') && el.loop);
+
+    pause.mockClear();
+    engine.setBgmTone('off');
+    expect(pause).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(800);
+    expect(pause).toHaveBeenCalled();
+    expect(bright?.src).toBe('');
+    expect(bright?.volume).toBe(0);
+    engine.dispose();
+  });
+
+  it('フェード中の dispose はタイマーを残さず即停止する（RI-63）', async () => {
+    vi.useFakeTimers();
+    const { AudioCtor, instances, pause } = mockAudio();
+    const engine = createAudioEngine({ AudioCtor });
+    await engine.unlock();
+    // preload のタイムアウトタイマーを先に消化しておく。
+    await vi.advanceTimersByTimeAsync(2000);
+
+    engine.setBgmTone('bright');
+    pause.mockClear();
+    engine.dispose();
+    expect(pause).toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+    const bright = instances.find((el) => el.src === '' && el.loop);
+    expect(bright).toBeDefined();
+  });
+
+  it('フェード中もミュートが新旧両方の BGM 要素へ反映される（RI-63）', async () => {
+    vi.useFakeTimers();
     const { AudioCtor, instances } = mockAudio();
     const engine = createAudioEngine({ AudioCtor });
     await engine.unlock();
     engine.setBgmTone('bright');
-    const bright = instances.find((el) => el.src.includes('bgm-bright') && el.loop);
-    expect(bright).toBeDefined();
+    await vi.advanceTimersByTimeAsync(800);
     engine.setBgmTone('tense');
-    expect(bright?.pause).toHaveBeenCalled();
+    const bright = instances.find((el) => el.src.includes('bgm-bright') && el.loop);
     const tense = instances.find((el) => el.src.includes('bgm-tense') && el.loop);
-    expect(tense).toBeDefined();
+
+    engine.setMuted(true);
+    expect(bright?.muted).toBe(true);
+    expect(tense?.muted).toBe(true);
     engine.dispose();
   });
 

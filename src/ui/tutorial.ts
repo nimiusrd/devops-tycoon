@@ -65,3 +65,18 @@ export function shouldShowTutorialGuide(seenTutorial: boolean, mode: TutorialQue
   if (mode === '1' || mode === 'force') return true;
   return !seenTutorial;
 }
+
+/**
+ * URL に `tutorial` が無ければ付与する（E2E 既定でガイドを抑止する用途）。
+ * 既に明示されている値は変更しない。
+ */
+export function ensureTutorialQuery(
+  url: string,
+  value: Exclude<TutorialQuery, null> = 'off',
+): string {
+  const parsed = new URL(url, 'http://localhost');
+  if (!parsed.searchParams.has('tutorial')) {
+    parsed.searchParams.set('tutorial', value);
+  }
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}

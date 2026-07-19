@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { TUTORIAL_STEPS, resolveTutorial, shouldShowTutorialGuide } from '../../src/ui/tutorial';
+import {
+  TUTORIAL_STEPS,
+  ensureTutorialQuery,
+  resolveTutorial,
+  shouldShowTutorialGuide,
+} from '../../src/ui/tutorial';
 
 describe('チュートリアルクエリ（RI-60）', () => {
   it('既知の ?tutorial= 値を解決し、未知値は null にする', () => {
@@ -28,5 +33,13 @@ describe('チュートリアルクエリ（RI-60）', () => {
       'jam-meter',
       'combo-gauge',
     ]);
+  });
+
+  it('ensureTutorialQuery は未指定時だけ off を付与し明示値は尊重する', () => {
+    expect(ensureTutorialQuery('/?renderer=dom&seed=ops')).toBe(
+      '/?renderer=dom&seed=ops&tutorial=off',
+    );
+    expect(ensureTutorialQuery('/?renderer=dom&tutorial=1')).toBe('/?renderer=dom&tutorial=1');
+    expect(ensureTutorialQuery('/?tutorial=force&seed=x')).toBe('/?tutorial=force&seed=x');
   });
 });

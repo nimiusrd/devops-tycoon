@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import type { MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
 

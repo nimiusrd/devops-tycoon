@@ -28,10 +28,17 @@ import { DeckBar } from './DeckBar';
 import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
 import { SlowMotionOverlay } from './JuicyEffects';
+import type { PlaybackSpeed } from './sprintTempo';
 import { TutorialGuide } from './TutorialGuide';
 
 /** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
 const BOSS_SLOWMO_MS = 1_200;
+
+const SPEED_OPTIONS: { speed: PlaybackSpeed; label: string; testId: string }[] = [
+  { speed: 0, label: '❚❚', testId: 'speed-pause' },
+  { speed: 1, label: '1x', testId: 'speed-1x' },
+  { speed: 2, label: '2x', testId: 'speed-2x' },
+];
 
 export interface SprintScreenProps {
   state: RunState;
@@ -40,6 +47,9 @@ export interface SprintScreenProps {
   getSprintSnapshot: () => SprintState | null;
   /** スローモ中に自動進行を止める（RI-10）。戻り値でキャンセル。 */
   pauseBriefly: (ms: number) => PauseBrieflyClear;
+  /** プレイヤー向け再生速度（RI-62）。game.pause とは独立。 */
+  playbackSpeed: PlaybackSpeed;
+  setPlaybackSpeed: (speed: PlaybackSpeed) => void;
   /** 初見向け段階ガイドを表示する（RI-60）。 */
   showTutorial?: boolean;
   /** ガイド完了 / スキップ時。 */
@@ -52,6 +62,8 @@ export function SprintScreen({
   onPlayCard,
   getSprintSnapshot,
   pauseBriefly,
+  playbackSpeed,
+  setPlaybackSpeed,
   showTutorial = false,
   onTutorialDismiss,
 }: SprintScreenProps) {
@@ -192,6 +204,26 @@ export function SprintScreen({
               : '💻 通常スプリント'}
         </span>
         {isBoss && boss && <span className="pill boss-goal">{boss.description}</span>}
+        <div
+          className="speed-controls"
+          role="group"
+          aria-label="再生速度"
+          data-testid="speed-controls"
+        >
+          {SPEED_OPTIONS.map(({ speed, label, testId }) => (
+            <button
+              key={speed}
+              type="button"
+              className={`speed-btn${playbackSpeed === speed ? ' active' : ''}`}
+              aria-pressed={playbackSpeed === speed}
+              data-testid={testId}
+              disabled={sprint.complete}
+              onClick={() => setPlaybackSpeed(speed)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="meter-wrap" data-testid="jam-meter">
           <span className="meter-label">渋滞メーター</span>
           <div className={`meter${queue >= 12 ? ' jam' : ''}`}>

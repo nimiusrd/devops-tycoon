@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 import { comboMultiplier } from '../../src/sim/model';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';

@@ -30,6 +30,7 @@ const DEFAULT_META: MetaState = {
   unlockedCards: [],
   unlockedRelics: [],
   dailyRuns: {},
+  soundMuted: false,
   seenTutorial: true,
 };
 

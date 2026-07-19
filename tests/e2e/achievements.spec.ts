@@ -12,6 +12,7 @@ const META_WITH_ACHIEVEMENT: MetaState = {
   unlockedCards: [],
   unlockedRelics: [],
   dailyRuns: {},
+  soundMuted: false,
   seenTutorial: true,
 };
 

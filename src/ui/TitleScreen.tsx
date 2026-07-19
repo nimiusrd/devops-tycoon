@@ -40,6 +40,8 @@ export interface TitleScreenProps {
   resumableSummary?: RunSaveSummary | null;
   onOpenMetaShop?: () => void;
   onOpenAchievements?: () => void;
+  /** サウンドミュート切替（RI-59）。 */
+  onToggleSoundMuted?: () => void;
   onOpenHelp?: () => void;
 }
 
@@ -52,6 +54,7 @@ export function TitleScreen({
   resumableSummary = null,
   onOpenMetaShop,
   onOpenAchievements,
+  onToggleSoundMuted,
   onOpenHelp,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
@@ -297,6 +300,16 @@ export function TitleScreen({
         <footer className="title-footer">
           <span>{selectedDifficulty.label}</span>
           <nav>
+            {onToggleSoundMuted && (
+              <button
+                type="button"
+                data-testid="sound-mute"
+                aria-pressed={meta.soundMuted}
+                onClick={onToggleSoundMuted}
+              >
+                {meta.soundMuted ? 'ミュート中' : '音あり'}
+              </button>
+            )}
             {onOpenHelp && (
               <button type="button" data-testid="open-help" onClick={onOpenHelp}>
                 遊び方

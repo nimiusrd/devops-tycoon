@@ -6,6 +6,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAudio } from '../audio/useAudio';
 import {
   interventionPct,
   planPositionedInterventionReactions,
@@ -42,6 +43,7 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
   const removalTimers = useRef<Map<number, number>>(new Map());
   const seenTriggerKeys = useRef(new Set<number>());
   const [active, setActive] = useState<ActiveEffect[]>([]);
+  const { playSfx } = useAudio();
 
   useEffect(() => {
     const timers = removalTimers.current;
@@ -65,6 +67,7 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
       trigger.currentTick,
     );
     if (positioned.length === 0) return;
+    playSfx('interventionHit');
 
     const firefight = positioned.find((p) => p.kind === 'firefight');
     if (firefight?.kind === 'firefight') {
@@ -97,7 +100,7 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
       }, duration + 80);
       timers.set(effect.key, timer);
     }
-  }, [trigger, onFirefightTaskId]);
+  }, [trigger, onFirefightTaskId, playSfx]);
 
   return (
     <div className="intervention-effects" aria-hidden="true">

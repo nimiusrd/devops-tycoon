@@ -45,6 +45,8 @@ export interface MetaState {
   unlockedRelics: string[];
   /** UTC 日付（YYYY-MM-DD）→ デイリーラン記録。 */
   dailyRuns: Record<string, DailyRunRecord>;
+  /** サウンドミュート（RI-59）。UI 層のみ。 */
+  soundMuted: boolean;
   /** 初見向け段階ガイドを表示済みか（RI-60）。 */
   seenTutorial: boolean;
 }
@@ -89,6 +91,7 @@ export function defaultMeta(): MetaState {
     unlockedCards: [],
     unlockedRelics: [],
     dailyRuns: {},
+    soundMuted: true,
     seenTutorial: false,
   };
 }
@@ -100,7 +103,18 @@ export function normalizeMeta(value: unknown): MetaState {
   const { unlockedPresets: _legacyPresets, ...rest } = value as Record<string, unknown>;
   const base = { ...defaultMeta(), ...(rest as Partial<MetaState>) };
   // 旧セーブや壊れた値は boolean に正規化する。
-  return { ...base, seenTutorial: rest.seenTutorial === true };
+  // soundMuted 未設定は既定ミュート（true）。明示 false のセーブは維持する。
+  return {
+    ...base,
+    soundMuted: typeof rest.soundMuted === 'boolean' ? rest.soundMuted : true,
+    seenTutorial: rest.seenTutorial === true,
+  };
+}
+
+/** ミュート設定を更新した新しい MetaState を返す（RI-59）。 */
+export function withSoundMuted(meta: MetaState, soundMuted: boolean): MetaState {
+  if (meta.soundMuted === soundMuted) return meta;
+  return { ...meta, soundMuted };
 }
 
 /** 旧 JSON セーブを現行スキーマへ復元する。壊れていれば null。 */
@@ -328,6 +342,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
     dailyRuns: { ...meta.dailyRuns },
+    soundMuted: meta.soundMuted,
     seenTutorial: meta.seenTutorial,
   };
 

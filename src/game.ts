@@ -28,6 +28,7 @@ import {
   utcDateStr,
   type MetaState,
   type RunRewardBreakdown,
+  withSoundMuted,
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
 import {
@@ -114,6 +115,8 @@ export interface GameHandle {
   newRun(seed?: string): RunState;
   /** メタショップでコンテンツを永続解放する（points 消費）。 */
   purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
+  /** サウンドミュートを永続化する（RI-59）。 */
+  setSoundMuted(muted: boolean): void;
   /** 初見向け段階ガイドを表示済みにする（RI-60）。 */
   markTutorialSeen(): void;
   /** 現在のメタ進行（解放状況・実績）。 */
@@ -525,6 +528,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       persistMeta();
       bump();
       return { ok: true };
+    },
+    setSoundMuted(muted) {
+      if (!metaReady) return;
+      const next = withSoundMuted(meta, muted);
+      if (next === meta) return;
+      meta = next;
+      persistMeta();
+      bump();
     },
     markTutorialSeen() {
       if (!metaReady || meta.seenTutorial) return;

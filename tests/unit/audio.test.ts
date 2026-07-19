@@ -1,0 +1,239 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createAudioEngine } from '../../src/audio/audioEngine';
+import { BGM_URLS, bgmToneForDiagnosis, SFX_URLS } from '../../src/audio/sounds';
+import { createGame } from '../../src/game';
+import { defaultMeta, normalizeMeta, withSoundMuted } from '../../src/state/meta';
+
+describe('サウンド定義（RI-59）', () => {
+  it('診断を BGM トーンへ束ねる', () => {
+    expect(bgmToneForDiagnosis('healthyAcceleration')).toBe('bright');
+    expect(bgmToneForDiagnosis('documentationKingdom')).toBe('bright');
+    expect(bgmToneForDiagnosis('aiOverproduction')).toBe('cloudy');
+    expect(bgmToneForDiagnosis('seniorSacrifice')).toBe('cloudy');
+    expect(bgmToneForDiagnosis('reviewHell')).toBe('tense');
+    expect(bgmToneForDiagnosis('reworkSpiral')).toBe('tense');
+    expect(bgmToneForDiagnosis(null)).toBe('off');
+  });
+
+  it('SFX / BGM の音源 URL が揃っている', () => {
+    expect(Object.keys(SFX_URLS).sort()).toEqual(
+      ['ceremony', 'fireSpread', 'interventionHit', 'ship'].sort(),
+    );
+    expect(Object.keys(BGM_URLS).sort()).toEqual(['bright', 'cloudy', 'tense'].sort());
+    for (const url of [...Object.values(SFX_URLS), ...Object.values(BGM_URLS)]) {
+      expect(url.startsWith('/assets/audio/')).toBe(true);
+      expect(url.endsWith('.wav')).toBe(true);
+    }
+  });
+});
+
+describe('MetaState.soundMuted（RI-59）', () => {
+  it('defaultMeta はミュートオン', () => {
+    expect(defaultMeta().soundMuted).toBe(true);
+  });
+
+  it('旧セーブに soundMuted が無くても true（既定ミュート）で補完する', () => {
+    const meta = normalizeMeta({
+      points: 3,
+      unlockedDifficulties: ['easy', 'normal'],
+    });
+    expect(meta.soundMuted).toBe(true);
+    expect(meta.points).toBe(3);
+  });
+
+  it('不正な soundMuted は true（既定ミュート）へ落とす', () => {
+    expect(normalizeMeta({ soundMuted: 'yes' }).soundMuted).toBe(true);
+  });
+
+  it('明示 false のセーブは維持する', () => {
+    expect(normalizeMeta({ soundMuted: false }).soundMuted).toBe(false);
+  });
+
+  it('withSoundMuted は不変更新する', () => {
+    const base = defaultMeta();
+    const unmuted = withSoundMuted(base, false);
+    expect(unmuted.soundMuted).toBe(false);
+    expect(base.soundMuted).toBe(true);
+    expect(withSoundMuted(unmuted, false)).toBe(unmuted);
+  });
+
+  it('GameHandle.setSoundMuted がメタを更新する', () => {
+    const game = createGame({ seed: 'sound-mute-unit' });
+    expect(game.getMeta().soundMuted).toBe(true);
+    game.setSoundMuted(false);
+    expect(game.getMeta().soundMuted).toBe(false);
+    game.setSoundMuted(true);
+    expect(game.getMeta().soundMuted).toBe(true);
+  });
+
+  it('applyRunReward 後も soundMuted を保持する', async () => {
+    const { applyRunReward } = await import('../../src/state/meta');
+    const base = withSoundMuted(defaultMeta(), true);
+    const next = applyRunReward(base, {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 100,
+      scoreMul: 1,
+      maxCombo: 1,
+    });
+    expect(next.soundMuted).toBe(true);
+  });
+});
+
+describe('audioEngine（RI-59 / ファイル再生）', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function mockAudio(options?: { playImpl?: () => Promise<void> }) {
+    const play = vi.fn(options?.playImpl ?? (async () => undefined));
+    const pause = vi.fn();
+    const load = vi.fn();
+    const instances: Array<{
+      src: string;
+      loop: boolean;
+      muted: boolean;
+      volume: number;
+      currentTime: number;
+      play: typeof play;
+      pause: typeof pause;
+      load: typeof load;
+      addEventListener: ReturnType<typeof vi.fn>;
+    }> = [];
+
+    const AudioCtor = vi.fn(function AudioMock(this: Record<string, unknown>, src?: string) {
+      const listeners = new Map<string, Set<() => void>>();
+      const el = {
+        src: src ?? '',
+        loop: false,
+        muted: false,
+        volume: 1,
+        currentTime: 0,
+        preload: 'auto',
+        play,
+        pause,
+        load,
+        addEventListener: vi.fn((type: string, cb: () => void) => {
+          const set = listeners.get(type) ?? new Set();
+          set.add(cb);
+          listeners.set(type, set);
+          if (type === 'canplaythrough') queueMicrotask(cb);
+        }),
+      };
+      instances.push(el);
+      return el;
+    });
+
+    return { AudioCtor: AudioCtor as unknown as typeof Audio, play, pause, instances };
+  }
+
+  it('unlock 前は SFX を鳴らさない', async () => {
+    const { AudioCtor, play } = mockAudio();
+    const engine = createAudioEngine({ AudioCtor });
+    engine.playSfx('ship');
+    expect(play).not.toHaveBeenCalled();
+
+    await engine.unlock();
+    expect(engine.isUnlocked()).toBe(true);
+    play.mockClear();
+    engine.playSfx('ship');
+    expect(play).toHaveBeenCalled();
+
+    engine.setMuted(true);
+    play.mockClear();
+    engine.playSfx('ship');
+    expect(play).not.toHaveBeenCalled();
+
+    engine.dispose();
+    expect(engine.isDisposed()).toBe(true);
+  });
+
+  it('dispose 後は再生せず、新しいエンジンは再び使える', async () => {
+    const { AudioCtor, play } = mockAudio();
+    const first = createAudioEngine({ AudioCtor });
+    await first.unlock();
+    first.dispose();
+    play.mockClear();
+    first.playSfx('ship');
+    expect(play).not.toHaveBeenCalled();
+
+    const second = createAudioEngine({ AudioCtor });
+    await second.unlock();
+    play.mockClear();
+    second.playSfx('ship');
+    expect(play).toHaveBeenCalled();
+    second.dispose();
+  });
+
+  it('BGM トーン切替でループ音源を差し替える', async () => {
+    const { AudioCtor, instances } = mockAudio();
+    const engine = createAudioEngine({ AudioCtor });
+    await engine.unlock();
+    engine.setBgmTone('bright');
+    const bright = instances.find((el) => el.src.includes('bgm-bright') && el.loop);
+    expect(bright).toBeDefined();
+    engine.setBgmTone('tense');
+    expect(bright?.pause).toHaveBeenCalled();
+    const tense = instances.find((el) => el.src.includes('bgm-tense') && el.loop);
+    expect(tense).toBeDefined();
+    engine.dispose();
+  });
+
+  it('warm-up 失敗時は unlocked にせず、次の操作で再試行する', async () => {
+    let failOnce = true;
+    const { AudioCtor, play } = mockAudio({
+      playImpl: async () => {
+        if (failOnce) {
+          failOnce = false;
+          throw new Error('NotAllowedError');
+        }
+      },
+    });
+    const engine = createAudioEngine({ AudioCtor });
+    await engine.unlock();
+    expect(engine.isUnlocked()).toBe(false);
+
+    await engine.unlock();
+    expect(engine.isUnlocked()).toBe(true);
+    expect(play).toHaveBeenCalled();
+    engine.dispose();
+  });
+
+  it('unlock では preload 完了前に warm-up play を開始する', async () => {
+    const order: string[] = [];
+    const play = vi.fn(async () => {
+      order.push('play');
+    });
+    const pause = vi.fn();
+    const load = vi.fn(() => {
+      order.push('load');
+    });
+    const AudioCtor = vi.fn(function AudioMock(this: Record<string, unknown>, src?: string) {
+      return {
+        src: src ?? '',
+        loop: false,
+        muted: false,
+        volume: 1,
+        currentTime: 0,
+        preload: 'auto',
+        play,
+        pause,
+        load,
+        addEventListener: vi.fn((type: string, cb: () => void) => {
+          if (type === 'canplaythrough') {
+            // preload の完了を play より後にずらす。
+            setTimeout(cb, 20);
+          }
+        }),
+      };
+    }) as unknown as typeof Audio;
+
+    const engine = createAudioEngine({ AudioCtor });
+    await engine.unlock();
+    expect(engine.isUnlocked()).toBe(true);
+    expect(order[0]).toBe('play');
+    engine.dispose();
+  });
+});

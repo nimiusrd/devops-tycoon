@@ -41,7 +41,8 @@
 | RI-08 | キャラ表情スプライト(疲れ顔/ガッツポーズ) | 低 | 完了 | RI-07 | 第18 |
 | RI-09 | アクションバーのマネージャー像 | 低 | 完了 | — | 第4.3 |
 | RI-10 | ジューシー演出の上積み(スイープ/スローモ/ご褒美) | 低 | 完了 | — | 第18.2 / 18.4 |
-| RI-59 | サウンド演出(BGM・効果音)の導入 | 低 | 未着手 | — | 第18.3 |
+| RI-59 | サウンド演出(BGM・効果音)の導入 | 低 | 完了 | — | 第18.3 |
+| RI-63 | BGM 品質の改善（ループ・音色・診断連動） | 低 | 未着手 | RI-59 | 第18.3 |
 
 ### 選択の可視化・フィードバック（UX）
 
@@ -230,14 +231,24 @@ epoch 所有権で衝突回避）、レリック獲得・進化解放・評価 S
 Vitest: `tests/unit/juicyEffects.test.ts` / `pauseBriefly.test.ts`。
 E2E: `tests/e2e/interventions.spec.ts`（スイープバースト）、`run.spec.ts`（レリックセレモニー）。
 
-#### RI-59 サウンド演出(BGM・効果音)の導入 — 優先度:低 / 未着手
+#### RI-59 サウンド演出(BGM・効果音)の導入 — 優先度:低 / 完了
 
-SPEC §18.3 は組織状態に応じた「軽快なBGM」等の空気感を挙げるが、現状は音の実装が一切ない
-（`src/` に Audio 関連コードなし）。視覚のジューシー演出（RI-10 / RI-47 / RI-50）が揃った今、
-介入ヒット・出荷・延焼・ご褒美セレモニーへの効果音と、診断テーマ（RI-21）連動の BGM トーンを
-検討する。論点: Web Audio の autoplay 制約（初回操作まで無音にする）、ミュート/音量設定の
-永続化先（`MetaState` へ追加）、アセットをコード生成（シンセ）にするか音源ファイルにするか、
-E2E・決定論への非干渉（音は UI 層のみで sim に触れない）。
+**完了**: `public/assets/audio/*.wav` を HTMLAudioElement で再生する BGM/SFX を UI 層のみに導入。
+音源は `scripts/generate-audio-assets.mjs` で生成・コミット。`src/audio/audioEngine.ts` /
+`sounds.ts` / `AudioProvider.tsx` が unlock（初回操作まで無音）・ミュート・SFX・診断連動 BGM
+（bright/cloudy/tense）を担う。SFX は介入ヒット（`InterventionEffects`）・出荷（`PointPops`）・
+延焼（`FireEffects`）・ご褒美セレモニー（`RewardCeremony`）に接続。`MetaState.soundMuted` を
+IndexedDB 永続化し、タイトル footer のミュートトグル（`data-testid="sound-mute"`）から切替。
+既定はミュート（`soundMuted: true`）。sim 非接触。Vitest: `tests/unit/audio.test.ts`。
+BGM の聴感品質は RI-63 へ切り出し。
+
+#### RI-63 BGM 品質の改善（ループ・音色・診断連動） — 優先度:低 / 未着手
+
+RI-59 で診断連動 BGM（bright / cloudy / tense）の配線とプレースホルダ WAV は入ったが、
+現状のループはスクリプト生成の短いアルペジオで、空気感・継ぎ目・曲としての完成度に改善余地がある。
+検討項目: シームレスループ（またはクロスフェード）、診断トーンごとの明確なムード差、
+SFX との音量バランス、必要なら外部制作音源への差し替え。再生経路（HTMLAudio / MetaState ミュート）は
+RI-59 を流用し、アセット差し替え中心で進める。
 
 ### 選択の可視化・フィードバック（UX）
 

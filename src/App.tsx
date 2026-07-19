@@ -9,6 +9,7 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
 import type { HudMetricSnapshot, RunMetricSnapshot } from './render/status';
 import { Breadcrumb } from './ui/Breadcrumb';
@@ -107,6 +108,7 @@ export default function App({ game }: AppProps) {
   const run = useRun(game);
   const { state, meta, lastRunReward, runSaveSummary } = run;
   const phase = state.phase;
+  const audio = useAudio();
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
@@ -154,9 +156,23 @@ export default function App({ game }: AppProps) {
     }
   }, [phase]);
 
+  // RI-59: ミュート設定と診断連動 BGM。
+  useEffect(() => {
+    audio.setMuted(meta.soundMuted);
+  }, [audio, meta.soundMuted]);
+
+  useEffect(() => {
+    if (phase === 'title') {
+      audio.setBgmOff();
+      return;
+    }
+    audio.setBgmFromDiagnosis(state.diagnosis);
+  }, [audio, phase, state.diagnosis]);
+
   // 新しいランへ移る操作では編成モーダルを閉じ、状態を次のランへ持ち越さない
   // （ボススプリント中に開いたまま決着→再開すると勝手に開いて見える問題を防ぐ）。
   const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
+    audio.unlock();
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
@@ -165,6 +181,7 @@ export default function App({ game }: AppProps) {
     run.startRun(difficulty, trials);
   };
   const startDailyRun = () => {
+    audio.unlock();
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
@@ -173,6 +190,7 @@ export default function App({ game }: AppProps) {
     run.startDailyRun();
   };
   const resumeRun = () => {
+    audio.unlock();
     setFormationOpen(false);
     setMetaShopOpen(false);
     setAchievementsOpen(false);
@@ -208,6 +226,10 @@ export default function App({ game }: AppProps) {
           resumableSummary={runSaveSummary}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
+          onToggleSoundMuted={() => {
+            audio.unlock();
+            run.setSoundMuted(!meta.soundMuted);
+          }}
           onOpenHelp={() => setHelpOpen(true)}
         />
         <Suspense fallback={<TitleModalLoadingFallback />}>

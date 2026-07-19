@@ -158,6 +158,52 @@ export interface RunRewardInput {
   quarterReviews?: QuarterOutcome[];
 }
 
+/** 1 ラン分のメタ進行ポイント内訳（RI-28′ 可視化用）。 */
+export interface RunRewardBreakdown {
+  /** 勝敗ベース報酬（試練倍率込み）。 */
+  base: number;
+  /** 敗北時の四半期修正経験ボーナス。 */
+  learningBonus: number;
+  /** 勝利時のレビュー評価ボーナス（exceeded / met）。 */
+  reviewBonus: number;
+  /** reviewBonus の種別。ボーナス無しなら null。 */
+  reviewBonusKind: 'exceeded' | 'met' | null;
+  /** base + learningBonus + reviewBonus。 */
+  total: number;
+  /** 今回ポイントが実際に付与されたか（デイリー再走は false）。 */
+  granted: boolean;
+}
+
+/**
+ * ラン結果からメタ進行ポイントの内訳を計算する（付与はしない）。
+ * `granted` は呼び出し側が上書きできるよう既定 true。
+ */
+export function computeRunRewardBreakdown(input: RunRewardInput): RunRewardBreakdown {
+  const reviews = input.quarterReviews ?? [];
+  const base = Math.round((input.won ? 20 : 5) * Math.max(1, input.scoreMul));
+  const learningBonus =
+    !input.won && reviews.some((r) => r === 'missed_adjustable')
+      ? Math.min(5, 2 + reviews.filter((r) => r === 'missed_adjustable').length)
+      : 0;
+  let reviewBonus = 0;
+  let reviewBonusKind: RunRewardBreakdown['reviewBonusKind'] = null;
+  if (input.won && reviews.some((r) => r === 'exceeded')) {
+    reviewBonus = 3;
+    reviewBonusKind = 'exceeded';
+  } else if (input.won && reviews.includes('met')) {
+    reviewBonus = 1;
+    reviewBonusKind = 'met';
+  }
+  return {
+    base,
+    learningBonus,
+    reviewBonus,
+    reviewBonusKind,
+    total: base + learningBonus + reviewBonus,
+    granted: true,
+  };
+}
+
 const uniq = (xs: string[]): string[] => Array.from(new Set(xs));
 
 /** 実績の宣言的定義（コレクション表示・獲得条件ヒント。第17章）。 */
@@ -240,19 +286,7 @@ export const ACHIEVEMENT_LABEL: Record<string, string> = Object.fromEntries(
  * 勝利時のみ難易度解放・ボス撃破記録・実績解除が進む。
  */
 export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaState {
-  const reviews = input.quarterReviews ?? [];
-  const learningBonus =
-    !input.won && reviews.some((r) => r === 'missed_adjustable')
-      ? Math.min(5, 2 + reviews.filter((r) => r === 'missed_adjustable').length)
-      : 0;
-  const exceededBonus =
-    input.won && reviews.some((r) => r === 'exceeded')
-      ? 3
-      : input.won && reviews.includes('met')
-        ? 1
-        : 0;
-  const gained =
-    Math.round((input.won ? 20 : 5) * Math.max(1, input.scoreMul)) + learningBonus + exceededBonus;
+  const gained = computeRunRewardBreakdown(input).total;
   const next: MetaState = {
     points: meta.points + gained,
     unlockedDifficulties: [...meta.unlockedDifficulties],
@@ -292,6 +326,8 @@ export interface DailyRunRewardResult {
   rewardGranted: boolean;
   /** その日のベストスコアが更新されたか。 */
   dailyBestUpdated: boolean;
+  /** 今回のメタ進行ポイント内訳（再走時は total 0 / granted false）。 */
+  breakdown: RunRewardBreakdown;
 }
 
 /**
@@ -306,6 +342,7 @@ export function applyDailyRunReward(
 
   if (!existing.rewardClaimed) {
     const rewarded = applyRunReward(meta, input);
+    const breakdown = computeRunRewardBreakdown(input);
     const dailyBest = Math.max(existing.bestScore, input.score);
     const next: MetaState = {
       ...rewarded,
@@ -319,6 +356,7 @@ export function applyDailyRunReward(
       pointsGained: rewarded.points - meta.points,
       rewardGranted: true,
       dailyBestUpdated: dailyBest > existing.bestScore,
+      breakdown,
     };
   }
 
@@ -337,7 +375,20 @@ export function applyDailyRunReward(
       [input.dateStr]: { bestScore: dailyBest, rewardClaimed: true },
     },
   };
-  return { meta: next, pointsGained: 0, rewardGranted: false, dailyBestUpdated };
+  return {
+    meta: next,
+    pointsGained: 0,
+    rewardGranted: false,
+    dailyBestUpdated,
+    breakdown: {
+      base: 0,
+      learningBonus: 0,
+      reviewBonus: 0,
+      reviewBonusKind: null,
+      total: 0,
+      granted: false,
+    },
+  };
 }
 
 function allBossesDefeated(defeated: string[], bosses: typeof BOSS_DEFS): boolean {

@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { pauseBriefly as pauseGameBriefly, type GameHandle, type PauseBrieflyClear } from '../game';
-import type { MetaState } from '../state/meta';
+import type { MetaState, RunRewardBreakdown } from '../state/meta';
 import type {
   ActionId,
   ActionTarget,
@@ -27,6 +27,8 @@ const SIM_STEP_MS = 100;
 export interface UseRun {
   state: RunState;
   meta: MetaState;
+  /** 直近ランのメタ進行ポイント内訳（未決着時は null）。 */
+  lastRunReward: RunRewardBreakdown | null;
   startRun: (difficulty: DifficultyId, trials: string[]) => void;
   startDailyRun: (dateStr?: string) => void;
   beginSetupSprint: () => void;
@@ -67,6 +69,9 @@ export interface UseRun {
 export function useRun(game: GameHandle): UseRun {
   const [state, setState] = useState<RunState>(() => game.getState());
   const [meta, setMeta] = useState<MetaState>(() => game.getMeta());
+  const [lastRunReward, setLastRunReward] = useState<RunRewardBreakdown | null>(() =>
+    game.getLastRunReward(),
+  );
 
   useEffect(() => {
     // 初回も必ず同期する。React の描画〜effect開始の間に window.game が操作されても取りこぼさない。
@@ -81,6 +86,7 @@ export function useRun(game: GameHandle): UseRun {
       const next = game.getState();
       setState(next);
       setMeta(game.getMeta());
+      setLastRunReward(game.getLastRunReward());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -152,6 +158,7 @@ export function useRun(game: GameHandle): UseRun {
   return {
     state,
     meta,
+    lastRunReward,
     startRun,
     startDailyRun,
     beginSetupSprint,

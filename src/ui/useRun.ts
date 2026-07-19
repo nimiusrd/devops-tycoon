@@ -195,7 +195,6 @@ export function useRun(game: GameHandle): UseRun {
     acknowledgeQuarterReview,
     chooseGoalAdjustment,
     newRun,
-    continueRun,
     purchaseMetaUnlock,
   };
 }

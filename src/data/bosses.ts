@@ -37,8 +37,9 @@ export const BOSS_DEFS: BossDef[] = [
   {
     id: 'big-release',
     name: '大型リリース',
-    description: 'タスク量が普段の2倍。期限内に目標出荷を達成し、渋滞を捌き切れ。',
-    taskCountMul: 2,
+    description: 'タスク量が普段の約1.75倍。期限内に目標出荷を達成し、渋滞を捌き切れ。',
+    // RI-62: ボス長尾を §3.1（90〜180秒）へ寄せる。
+    taskCountMul: 1.75,
     incidentMul: 1,
     clear: { minSprintDelivered: 90 },
   },

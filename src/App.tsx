@@ -276,6 +276,8 @@ export default function App({ game }: AppProps) {
             onPlayCard={run.playCard}
             getSprintSnapshot={run.getSprintSnapshot}
             pauseBriefly={run.pauseBriefly}
+            playbackSpeed={run.playbackSpeed}
+            setPlaybackSpeed={run.setPlaybackSpeed}
           />
         )}
       </Suspense>

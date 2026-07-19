@@ -76,4 +76,22 @@ describe('pauseBriefly（RI-10）', () => {
     expect(game.isPaused()).toBe(true);
     expect(game.getPauseEpoch()).toBe(externalEpoch);
   });
+
+  it('RI-62: プレイヤー再生速度は game.pause を使わず、pauseBriefly と独立', () => {
+    // プレイヤー Pause は useRun の playbackSpeed=0（UI 状態）。ここでは
+    // game.pause を触らないまま pauseBriefly の epoch 契約が保たれることを確認する。
+    const game = createGame({ seed: 'ri62-player-speed-independent' });
+    expect(game.isPaused()).toBe(false);
+
+    const clear = pauseBriefly(game, 1_200);
+    expect(game.isPaused()).toBe(true);
+    const epoch = game.getPauseEpoch();
+
+    // プレイヤー側の「再開」相当（playbackSpeed を戻す）は game.resume を呼ばない想定。
+    // pauseBriefly のタイマーだけが所有 epoch を resume する。
+    vi.advanceTimersByTime(1_200);
+    expect(game.isPaused()).toBe(false);
+    expect(game.getPauseEpoch()).toBe(epoch);
+    clear();
+  });
 });

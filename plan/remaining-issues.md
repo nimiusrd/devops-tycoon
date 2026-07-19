@@ -232,13 +232,13 @@ E2E: `tests/e2e/interventions.spec.ts`（スイープバースト）、`run.spec
 
 #### RI-59 サウンド演出(BGM・効果音)の導入 — 優先度:低 / 完了
 
-**完了**: Web Audio シンセ（音源ファイルなし）で BGM/SFX を UI 層のみに導入。
-`src/audio/audioEngine.ts` / `sounds.ts` / `AudioProvider.tsx` が unlock（初回操作まで無音）・
-ミュート・SFX・診断連動 BGM（bright/cloudy/tense）を担う。SFX は介入ヒット
-（`InterventionEffects`）・出荷（`PointPops`）・延焼（`FireEffects`）・ご褒美セレモニー
-（`RewardCeremony`）に接続。`MetaState.soundMuted` を IndexedDB 永続化し、タイトル footer の
-ミュートトグル（`data-testid="sound-mute"`）から切替。sim 非接触。
-Vitest: `tests/unit/audio.test.ts`。
+**完了**: `public/assets/audio/*.wav` を HTMLAudioElement で再生する BGM/SFX を UI 層のみに導入。
+音源は `scripts/generate-audio-assets.mjs` で生成・コミット。`src/audio/audioEngine.ts` /
+`sounds.ts` / `AudioProvider.tsx` が unlock（初回操作まで無音）・ミュート・SFX・診断連動 BGM
+（bright/cloudy/tense）を担う。SFX は介入ヒット（`InterventionEffects`）・出荷（`PointPops`）・
+延焼（`FireEffects`）・ご褒美セレモニー（`RewardCeremony`）に接続。`MetaState.soundMuted` を
+IndexedDB 永続化し、タイトル footer のミュートトグル（`data-testid="sound-mute"`）から切替。
+sim 非接触。Vitest: `tests/unit/audio.test.ts`。
 
 ### 選択の可視化・フィードバック（UX）
 

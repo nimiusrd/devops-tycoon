@@ -132,5 +132,56 @@ describe('audioEngine（RI-59）', () => {
     expect(start).not.toHaveBeenCalled();
 
     engine.dispose();
+    expect(engine.isDisposed()).toBe(true);
+  });
+
+  it('dispose 後は再生せず、新しいエンジンは再び使える', async () => {
+    const start = vi.fn();
+    const connect = vi.fn();
+    const makeGain = () => ({
+      gain: {
+        value: 1,
+        setValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        cancelScheduledValues: vi.fn(),
+      },
+      connect,
+      disconnect: vi.fn(),
+    });
+    const makeCtx = () => {
+      const ctx = {
+        state: 'running' as AudioContextState,
+        currentTime: 0,
+        destination: {},
+        createOscillator: vi.fn(() => ({
+          type: 'sine',
+          frequency: { setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() },
+          connect,
+          start,
+          stop: vi.fn(),
+        })),
+        createGain: vi.fn(() => makeGain()),
+        resume: vi.fn(async () => undefined),
+        close: vi.fn(async () => undefined),
+      };
+      return ctx;
+    };
+    const AudioContextMock = vi.fn(function AudioContextMock() {
+      return makeCtx();
+    });
+    vi.stubGlobal('AudioContext', AudioContextMock);
+
+    const first = createAudioEngine();
+    await first.unlock();
+    first.dispose();
+    first.playSfx('ship');
+    expect(start).not.toHaveBeenCalled();
+
+    const second = createAudioEngine();
+    await second.unlock();
+    second.playSfx('ship');
+    expect(start).toHaveBeenCalled();
+    second.dispose();
   });
 });

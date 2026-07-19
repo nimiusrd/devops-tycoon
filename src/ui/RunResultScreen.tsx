@@ -9,9 +9,19 @@ import { diagnosisTheme } from '../render/diagnosisTheme';
 import { quarterFailureTheme } from '../render/quarterFailureTheme';
 import { diagnosisView } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
-import { getDailyRecord, WIN_TITLE_DEFS, type MetaState } from '../state/meta';
+import {
+  getDailyRecord,
+  WIN_TITLE_DEFS,
+  type MetaState,
+  type RunRewardBreakdown,
+} from '../state/meta';
 import type { LoseReason, RunState } from '../sim/run/types';
 import { RewardCeremony } from './JuicyEffects';
+
+const REVIEW_BONUS_LABEL: Record<NonNullable<RunRewardBreakdown['reviewBonusKind']>, string> = {
+  exceeded: '超過達成',
+  met: '達成',
+};
 
 const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
   seniorBurnout: { label: 'シニア燃え尽き', desc: 'レビューがシニアに集中し、体力が尽きました。' },
@@ -44,10 +54,17 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
 export interface RunResultScreenProps {
   state: RunState;
   meta: MetaState;
+  /** 今回ランで付与したメタ進行ポイント内訳。 */
+  lastRunReward?: RunRewardBreakdown | null;
   onNewRun: () => void;
 }
 
-export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps) {
+export function RunResultScreen({
+  state,
+  meta,
+  lastRunReward = null,
+  onNewRun,
+}: RunResultScreenProps) {
   const won = state.status === 'won';
   const boss = getBoss(state.bossId);
   const diag = diagnosisView(state.diagnosis);
@@ -154,6 +171,35 @@ export function RunResultScreen({ state, meta, onNewRun }: RunResultScreenProps)
 
         <div className="result-title">
           <p className="result-section-label">メタ進行</p>
+          {lastRunReward && (
+            <>
+              <p className="result-title-value" data-testid="meta-reward-total">
+                {lastRunReward.granted
+                  ? `今回 +${lastRunReward.total} pt`
+                  : '今回 +0 pt（本日の報酬は受領済み）'}
+              </p>
+              {lastRunReward.granted && (
+                <dl className="result-rows" data-testid="meta-reward-breakdown">
+                  <div className="result-row">
+                    <dt>基本</dt>
+                    <dd>+{lastRunReward.base}</dd>
+                  </div>
+                  {lastRunReward.learningBonus > 0 && (
+                    <div className="result-row" data-testid="meta-reward-learning">
+                      <dt>敗北学習</dt>
+                      <dd>+{lastRunReward.learningBonus}</dd>
+                    </div>
+                  )}
+                  {lastRunReward.reviewBonus > 0 && lastRunReward.reviewBonusKind && (
+                    <div className="result-row" data-testid="meta-reward-review">
+                      <dt>{REVIEW_BONUS_LABEL[lastRunReward.reviewBonusKind]}</dt>
+                      <dd>+{lastRunReward.reviewBonus}</dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+            </>
+          )}
           <p className="result-title-value">
             メタ進行ポイント {meta.points} pt / 自己ベスト {meta.bestScore} pt
           </p>

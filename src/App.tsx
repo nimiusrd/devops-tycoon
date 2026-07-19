@@ -97,7 +97,7 @@ export interface AppProps {
 
 export default function App({ game }: AppProps) {
   const run = useRun(game);
-  const { state, meta } = run;
+  const { state, meta, lastRunReward } = run;
   const phase = state.phase;
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
@@ -195,7 +195,12 @@ export default function App({ game }: AppProps) {
   if (phase === 'won' || phase === 'lost') {
     return (
       <Suspense fallback={null}>
-        <RunResultScreen state={state} meta={meta} onNewRun={newRun} />
+        <RunResultScreen
+          state={state}
+          meta={meta}
+          lastRunReward={lastRunReward}
+          onNewRun={newRun}
+        />
       </Suspense>
     );
   }

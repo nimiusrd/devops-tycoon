@@ -18,6 +18,7 @@ import type { RankingKind, ZoomLevel } from './sim/orgscale/types';
 import {
   applyDailyRunReward,
   applyRunReward,
+  computeRunRewardBreakdown,
   dailySeed,
   DAILY_RUN_DIFFICULTY,
   DAILY_RUN_TRIALS,
@@ -26,6 +27,7 @@ import {
   unlockedContent,
   utcDateStr,
   type MetaState,
+  type RunRewardBreakdown,
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
 
@@ -103,6 +105,8 @@ export interface GameHandle {
   purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
   /** 現在のメタ進行（解放状況・実績）。 */
   getMeta(): MetaState;
+  /** 直近ランで付与したメタ進行ポイント内訳（未決着時は null）。 */
+  getLastRunReward(): RunRewardBreakdown | null;
   /** 起動時の非同期永続化を接続し、メタ更新を解禁する。 */
   attachMetaPersistence(meta: MetaState, storage: MetaStorage): void;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
@@ -141,6 +145,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let metaStorage = options.metaStorage ?? null;
   let metaReady = options.metaReady ?? true;
   let recorded = false;
+  let lastRunReward: RunRewardBreakdown | null = null;
   let revision = 0;
   let activeDailyDate: string | null = null;
   /** UI 向け what-if キャッシュ（Worker 完了後も同一キーなら即返却）。 */
@@ -228,8 +233,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       quarterReviews: s.reviewHistory,
     };
     if (s.runKind === 'daily' && activeDailyDate) {
-      meta = applyDailyRunReward(meta, { ...input, dateStr: activeDailyDate }).meta;
+      const daily = applyDailyRunReward(meta, { ...input, dateStr: activeDailyDate });
+      meta = daily.meta;
+      lastRunReward = daily.breakdown;
     } else {
+      lastRunReward = computeRunRewardBreakdown(input);
       meta = applyRunReward(meta, input);
     }
     persistMeta();
@@ -261,6 +269,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     startRun(difficulty, trials, runSeed) {
       recorded = false;
+      lastRunReward = null;
       activeDailyDate = null;
       clearWhatIfCache();
       applyUnlockedToEngine();
@@ -270,6 +279,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     startDailyRun(dateStr) {
       recorded = false;
+      lastRunReward = null;
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
       clearWhatIfCache();
@@ -409,6 +419,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     newRun(runSeed) {
       recorded = false;
+      lastRunReward = null;
       activeDailyDate = null;
       clearWhatIfCache();
       applyUnlockedToEngine();
@@ -427,6 +438,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     getMeta() {
       return meta;
+    },
+    getLastRunReward() {
+      return lastRunReward;
     },
     attachMetaPersistence(hydratedMeta, storage) {
       metaStorage = storage;

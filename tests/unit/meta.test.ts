@@ -7,6 +7,7 @@ import {
   WIN_TITLE_DEFS,
   applyDailyRunReward,
   applyRunReward,
+  computeRunRewardBreakdown,
   dailyLeaderboardEntries,
   dailySeed,
   defaultMeta,
@@ -139,6 +140,71 @@ describe('メタ進行とアンロック（第17章）', () => {
       quarterReviews: ['exceeded'],
     });
     expect(exceeded.points).toBeGreaterThan(normal.points);
+  });
+
+  it('RI-28′: computeRunRewardBreakdown が基本・学習・レビュー内訳を返す', () => {
+    const lossBase = computeRunRewardBreakdown({
+      won: false,
+      difficulty: 'normal',
+      score: 100,
+      scoreMul: 1,
+      maxCombo: 4,
+    });
+    expect(lossBase).toEqual({
+      base: 5,
+      learningBonus: 0,
+      reviewBonus: 0,
+      reviewBonusKind: null,
+      total: 5,
+      granted: true,
+    });
+
+    const learning = computeRunRewardBreakdown({
+      won: false,
+      difficulty: 'normal',
+      score: 100,
+      scoreMul: 1,
+      maxCombo: 4,
+      quarterReviews: ['missed_adjustable', 'missed_adjustable'],
+    });
+    expect(learning.base).toBe(5);
+    expect(learning.learningBonus).toBe(4);
+    expect(learning.reviewBonus).toBe(0);
+    expect(learning.total).toBe(9);
+
+    const met = computeRunRewardBreakdown({
+      won: true,
+      difficulty: 'normal',
+      score: 320,
+      scoreMul: 1,
+      maxCombo: 8,
+      quarterReviews: ['met'],
+    });
+    expect(met).toMatchObject({
+      base: 20,
+      learningBonus: 0,
+      reviewBonus: 1,
+      reviewBonusKind: 'met',
+      total: 21,
+      granted: true,
+    });
+
+    const exceeded = computeRunRewardBreakdown({
+      won: true,
+      difficulty: 'normal',
+      score: 320,
+      scoreMul: 2,
+      maxCombo: 8,
+      quarterReviews: ['exceeded'],
+    });
+    expect(exceeded).toMatchObject({
+      base: 40,
+      learningBonus: 0,
+      reviewBonus: 3,
+      reviewBonusKind: 'exceeded',
+      total: 43,
+      granted: true,
+    });
   });
 
   it('敗北では難易度解放は進まないがポイントは少し入る', () => {
@@ -355,6 +421,8 @@ describe('メタ進行とアンロック（第17章）', () => {
     });
     expect(first.rewardGranted).toBe(true);
     expect(first.pointsGained).toBeGreaterThan(0);
+    expect(first.breakdown.granted).toBe(true);
+    expect(first.breakdown.total).toBe(first.pointsGained);
     expect(first.meta.dailyRuns[dateStr]?.rewardClaimed).toBe(true);
     expect(first.meta.dailyRuns[dateStr]?.bestScore).toBe(120);
 
@@ -369,6 +437,14 @@ describe('メタ進行とアンロック（第17章）', () => {
     });
     expect(second.rewardGranted).toBe(false);
     expect(second.pointsGained).toBe(0);
+    expect(second.breakdown).toEqual({
+      base: 0,
+      learningBonus: 0,
+      reviewBonus: 0,
+      reviewBonusKind: null,
+      total: 0,
+      granted: false,
+    });
     expect(second.meta.points).toBe(first.meta.points);
     expect(second.meta.dailyRuns[dateStr]?.bestScore).toBe(200);
     expect(second.dailyBestUpdated).toBe(true);
@@ -494,6 +570,10 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(state.status).toBe('lost');
     expect(state.loseReason).toBe('aiDependency');
     expect(game.getMeta().points).toBeGreaterThan(before);
+    const lastReward = game.getLastRunReward();
+    expect(lastReward).not.toBeNull();
+    expect(lastReward!.granted).toBe(true);
+    expect(lastReward!.total).toBe(game.getMeta().points - before);
 
     const shopGame = createGame({ seed: 'ri32-meta-shop-lose', difficulty: 'nightmare' });
     shopGame.startRun('nightmare');

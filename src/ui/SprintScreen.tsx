@@ -10,6 +10,7 @@ import { getBoss } from '../data/bosses';
 import {
   ATTENTION_COOLDOWN_MS,
   ATTENTION_PAUSE_MS,
+  countIgniteEvents,
   planAttentionPause,
   type AttentionPausePlan,
 } from '../render/attentionPause';
@@ -106,7 +107,8 @@ export function SprintScreen({
   const attentionTimer = useRef<number | null>(null);
   const clearPauseBriefly = useRef<PauseBrieflyClear | null>(null);
   const attentionPrevTasks = useRef<readonly Task[] | null>(null);
-  const attentionPrevQueue = useRef<number | null>(null);
+  const attentionPrevReviewQueueMax = useRef<number | null>(null);
+  const attentionPrevIgniteCount = useRef<number | null>(null);
   const attentionSprintId = useRef<string | null>(null);
   const lastAttentionAt = useRef(0);
   const [slowMoKey, setSlowMoKey] = useState(0);
@@ -146,25 +148,35 @@ export function SprintScreen({
   useEffect(() => {
     if (!sprint || sprint.complete) {
       attentionPrevTasks.current = null;
-      attentionPrevQueue.current = null;
+      attentionPrevReviewQueueMax.current = null;
+      attentionPrevIgniteCount.current = null;
       attentionSprintId.current = null;
       return;
     }
 
     const nextTasks = sprint.tasks;
-    const nextQueue = reviewQueueLength(nextTasks);
+    const nextReviewQueueMax = sprint.metrics.reviewQueueMax;
+    const nextIgniteEventCount = countIgniteEvents(sprint.fireEvents);
     const sprintChanged = attentionSprintId.current !== state.currentSprintId;
-    if (sprintChanged || attentionPrevTasks.current == null || attentionPrevQueue.current == null) {
+    if (
+      sprintChanged ||
+      attentionPrevTasks.current == null ||
+      attentionPrevReviewQueueMax.current == null ||
+      attentionPrevIgniteCount.current == null
+    ) {
       attentionSprintId.current = state.currentSprintId;
       attentionPrevTasks.current = nextTasks;
-      attentionPrevQueue.current = nextQueue;
+      attentionPrevReviewQueueMax.current = nextReviewQueueMax;
+      attentionPrevIgniteCount.current = nextIgniteEventCount;
       return;
     }
 
     const prevTasks = attentionPrevTasks.current;
-    const prevQueue = attentionPrevQueue.current;
+    const prevReviewQueueMax = attentionPrevReviewQueueMax.current;
+    const prevIgniteEventCount = attentionPrevIgniteCount.current;
     attentionPrevTasks.current = nextTasks;
-    attentionPrevQueue.current = nextQueue;
+    attentionPrevReviewQueueMax.current = nextReviewQueueMax;
+    attentionPrevIgniteCount.current = nextIgniteEventCount;
 
     // プレイヤー Pause 中は既に止まっているので自動ポーズ不要。
     if (playbackSpeed === 0) return;
@@ -176,8 +188,10 @@ export function SprintScreen({
       isBoss: state.currentSprintKind === 'boss',
       prevTasks,
       nextTasks,
-      prevQueue,
-      nextQueue,
+      prevReviewQueueMax,
+      nextReviewQueueMax,
+      prevIgniteEventCount,
+      nextIgniteEventCount,
     });
     if (!plan.active) return;
 

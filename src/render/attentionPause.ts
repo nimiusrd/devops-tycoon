@@ -6,7 +6,7 @@
  */
 import { REVIEW_HOT_QUEUE } from './boardScene';
 import { planBossSlowMotion } from './juicyEffects';
-import type { Task } from '../sim/types';
+import type { FireSprintEvent, Task } from '../sim/types';
 
 /** 自動ポーズ尺（ms）。ボス最終鎮火スローモより短く介入判断の間を作る。 */
 export const ATTENTION_PAUSE_MS = 900;
@@ -35,12 +35,28 @@ const IDLE: AttentionPausePlan = {
   meter: null,
 };
 
-function incidentCount(tasks: readonly Task[]): number {
+/** 炎上ログのうち点火（review / spread 経由）の件数。 */
+export function countIgniteEvents(events: readonly FireSprintEvent[]): number {
   let n = 0;
-  for (const task of tasks) {
-    if (task.incident) n += 1;
+  for (const event of events) {
+    if (event.kind === 'ignite') n += 1;
   }
   return n;
+}
+
+/** prev に無く next で Incident になった task ID があるか。 */
+export function hasNewIncidentTask(
+  prevTasks: readonly Task[],
+  nextTasks: readonly Task[],
+): boolean {
+  const prevIncidentIds = new Set<number>();
+  for (const task of prevTasks) {
+    if (task.incident) prevIncidentIds.add(task.id);
+  }
+  for (const task of nextTasks) {
+    if (task.incident && !prevIncidentIds.has(task.id)) return true;
+  }
+  return false;
 }
 
 function planForKind(kind: AttentionPauseKind): AttentionPausePlan {
@@ -81,17 +97,32 @@ export function planAttentionPause(input: {
   isBoss: boolean;
   prevTasks: readonly Task[];
   nextTasks: readonly Task[];
-  prevQueue: number;
-  nextQueue: number;
+  /** スプリント累積の Review 待ち最大長（tick 内ピークを含む）。 */
+  prevReviewQueueMax: number;
+  nextReviewQueueMax: number;
+  /** `fireEvents` の ignite 件数（複数 tick 同期でも取りこぼさない）。 */
+  prevIgniteEventCount: number;
+  nextIgniteEventCount: number;
 }): AttentionPausePlan {
-  const { isBoss, prevTasks, nextTasks, prevQueue, nextQueue } = input;
+  const {
+    isBoss,
+    prevTasks,
+    nextTasks,
+    prevReviewQueueMax,
+    nextReviewQueueMax,
+    prevIgniteEventCount,
+    nextIgniteEventCount,
+  } = input;
 
   if (planBossSlowMotion(isBoss, prevTasks, nextTasks).active) {
     return IDLE;
   }
 
-  const ignited = incidentCount(nextTasks) > incidentCount(prevTasks);
-  const jammed = prevQueue < REVIEW_HOT_QUEUE && nextQueue >= REVIEW_HOT_QUEUE;
+  // 件数差分だと「点火と同時に別件が自動鎮火」で見逃すため、task ID / イベントを見る。
+  const ignited =
+    hasNewIncidentTask(prevTasks, nextTasks) || nextIgniteEventCount > prevIgniteEventCount;
+  // 最終キュー長だけだと tick 内ピーク（advanceReview 前）を見逃すため累積 max を使う。
+  const jammed = prevReviewQueueMax < REVIEW_HOT_QUEUE && nextReviewQueueMax >= REVIEW_HOT_QUEUE;
 
   if (ignited && isBoss) return planForKind('bossIncident');
   if (ignited) return planForKind('ignite');

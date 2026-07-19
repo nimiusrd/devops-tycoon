@@ -402,7 +402,8 @@ Vitest: `tests/unit/tutorial.test.ts`。E2E: `tests/e2e/tutorial.spec.ts`。
 - **テンポ**: `src/ui/sprintTempo.ts` / `useRun.ts`。1x = 680ms/tick の壁時計アキュムレータ。
   `FIXED_STEP_MS` と sim 決定論は非干渉。プレイヤー `playbackSpeed`（0/1/2）は `game.pause()` と独立。
 - **速度 UI**: `SprintScreen` subbar に Pause / 1x / 2x（`data-testid=speed-*`）。
-- **③自動ポーズ**: 点火・Review渋滞（queue が 12 を越える瞬間）・ボスIncident 発生で
+- **③自動ポーズ**: 点火（新規 Incident task / ignite イベント）・Review渋滞
+  （`reviewQueueMax` が 12 を越える瞬間）・ボスIncident 発生で
   `pauseBriefly(900ms)` ＋ AttentionOverlay / meter ハイライト（`src/render/attentionPause.ts`）。
   壁時計クールダウン 2.5s。sim 決定論非干渉。ボス最終鎮火スローモ（RI-10）優先。
 - **分布**: ボス `taskCountMul` / `incidentMul` とボス taskFloor を調整し、無介入でも

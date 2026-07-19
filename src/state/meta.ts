@@ -91,7 +91,7 @@ export function defaultMeta(): MetaState {
     unlockedCards: [],
     unlockedRelics: [],
     dailyRuns: {},
-    soundMuted: false,
+    soundMuted: true,
     seenTutorial: false,
   };
 }
@@ -103,9 +103,10 @@ export function normalizeMeta(value: unknown): MetaState {
   const { unlockedPresets: _legacyPresets, ...rest } = value as Record<string, unknown>;
   const base = { ...defaultMeta(), ...(rest as Partial<MetaState>) };
   // 旧セーブや壊れた値は boolean に正規化する。
+  // soundMuted 未設定は既定ミュート（true）。明示 false のセーブは維持する。
   return {
     ...base,
-    soundMuted: typeof base.soundMuted === 'boolean' ? base.soundMuted : false,
+    soundMuted: typeof rest.soundMuted === 'boolean' ? rest.soundMuted : true,
     seenTutorial: rest.seenTutorial === true,
   };
 }

@@ -28,38 +28,42 @@ describe('サウンド定義（RI-59）', () => {
 });
 
 describe('MetaState.soundMuted（RI-59）', () => {
-  it('defaultMeta はミュートオフ', () => {
-    expect(defaultMeta().soundMuted).toBe(false);
+  it('defaultMeta はミュートオン', () => {
+    expect(defaultMeta().soundMuted).toBe(true);
   });
 
-  it('旧セーブに soundMuted が無くても false で補完する', () => {
+  it('旧セーブに soundMuted が無くても true（既定ミュート）で補完する', () => {
     const meta = normalizeMeta({
       points: 3,
       unlockedDifficulties: ['easy', 'normal'],
     });
-    expect(meta.soundMuted).toBe(false);
+    expect(meta.soundMuted).toBe(true);
     expect(meta.points).toBe(3);
   });
 
-  it('不正な soundMuted は false へ落とす', () => {
-    expect(normalizeMeta({ soundMuted: 'yes' }).soundMuted).toBe(false);
+  it('不正な soundMuted は true（既定ミュート）へ落とす', () => {
+    expect(normalizeMeta({ soundMuted: 'yes' }).soundMuted).toBe(true);
+  });
+
+  it('明示 false のセーブは維持する', () => {
+    expect(normalizeMeta({ soundMuted: false }).soundMuted).toBe(false);
   });
 
   it('withSoundMuted は不変更新する', () => {
     const base = defaultMeta();
-    const muted = withSoundMuted(base, true);
-    expect(muted.soundMuted).toBe(true);
-    expect(base.soundMuted).toBe(false);
-    expect(withSoundMuted(muted, true)).toBe(muted);
+    const unmuted = withSoundMuted(base, false);
+    expect(unmuted.soundMuted).toBe(false);
+    expect(base.soundMuted).toBe(true);
+    expect(withSoundMuted(unmuted, false)).toBe(unmuted);
   });
 
   it('GameHandle.setSoundMuted がメタを更新する', () => {
     const game = createGame({ seed: 'sound-mute-unit' });
-    expect(game.getMeta().soundMuted).toBe(false);
-    game.setSoundMuted(true);
     expect(game.getMeta().soundMuted).toBe(true);
     game.setSoundMuted(false);
     expect(game.getMeta().soundMuted).toBe(false);
+    game.setSoundMuted(true);
+    expect(game.getMeta().soundMuted).toBe(true);
   });
 
   it('applyRunReward 後も soundMuted を保持する', async () => {

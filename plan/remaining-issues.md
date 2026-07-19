@@ -42,6 +42,7 @@
 | RI-09 | アクションバーのマネージャー像 | 低 | 完了 | — | 第4.3 |
 | RI-10 | ジューシー演出の上積み(スイープ/スローモ/ご褒美) | 低 | 完了 | — | 第18.2 / 18.4 |
 | RI-59 | サウンド演出(BGM・効果音)の導入 | 低 | 完了 | — | 第18.3 |
+| RI-63 | BGM 品質の改善（ループ・音色・診断連動） | 低 | 未着手 | RI-59 | 第18.3 |
 
 ### 選択の可視化・フィードバック（UX）
 
@@ -238,7 +239,16 @@ E2E: `tests/e2e/interventions.spec.ts`（スイープバースト）、`run.spec
 （bright/cloudy/tense）を担う。SFX は介入ヒット（`InterventionEffects`）・出荷（`PointPops`）・
 延焼（`FireEffects`）・ご褒美セレモニー（`RewardCeremony`）に接続。`MetaState.soundMuted` を
 IndexedDB 永続化し、タイトル footer のミュートトグル（`data-testid="sound-mute"`）から切替。
-sim 非接触。Vitest: `tests/unit/audio.test.ts`。
+既定はミュート（`soundMuted: true`）。sim 非接触。Vitest: `tests/unit/audio.test.ts`。
+BGM の聴感品質は RI-63 へ切り出し。
+
+#### RI-63 BGM 品質の改善（ループ・音色・診断連動） — 優先度:低 / 未着手
+
+RI-59 で診断連動 BGM（bright / cloudy / tense）の配線とプレースホルダ WAV は入ったが、
+現状のループはスクリプト生成の短いアルペジオで、空気感・継ぎ目・曲としての完成度に改善余地がある。
+検討項目: シームレスループ（またはクロスフェード）、診断トーンごとの明確なムード差、
+SFX との音量バランス、必要なら外部制作音源への差し替え。再生経路（HTMLAudio / MetaState ミュート）は
+RI-59 を流用し、アセット差し替え中心で進める。
 
 ### 選択の可視化・フィードバック（UX）
 

@@ -75,6 +75,6 @@
 | メタ永続化の IndexedDB 移行＋旧 localStorage 統合 | [17](../SPEC.md#17-メタ進行とアンロック), [22](../SPEC.md#22-技術構成) | ✅ `idb` による保存、既定値補完付き移行、旧キー削除、失敗時フォールバックを実装 | [remaining-issues.md](./remaining-issues.md) RI-57 |
 | バランス調整（目標修正の代償・outcome 閾値・レバー・解放コスト） | [10](../SPEC.md#10-ランとボススプリント), [14](../SPEC.md#14-勝利条件), [15](../SPEC.md#15-敗北条件--継続不能条件), [16](../SPEC.md#16-難易度設定と試練), [17](../SPEC.md#17-メタ進行とアンロック) | ✅ RI-14〜RI-19 / RI-56 でモンテカルロ許容レンジ検証を整備（暫定値は現状調整不要と判断） | [remaining-issues.md](./remaining-issues.md) RI-14〜RI-19, RI-56 |
 | ゲーム時間の目安（スプリント 60〜120 秒・一時停止/倍速） | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | ✅ RI-62 でテンポ・速度 UI・分布圧縮を実装 | [remaining-issues.md](./remaining-issues.md) RI-62 |
-| サウンド演出（BGM・効果音） | [18.3](../SPEC.md#183-画面ステート組織の空気感) | 完了（WAV ファイル再生 + MetaState.soundMuted） | [remaining-issues.md](./remaining-issues.md) RI-59 |
+| サウンド演出（BGM・効果音） | [18.3](../SPEC.md#183-画面ステート組織の空気感) | 完了（WAV ファイル再生 + MetaState.soundMuted、既定ミュート）。BGM 品質は RI-63 | [remaining-issues.md](./remaining-issues.md) RI-59 / RI-63 |
 | ラン途中セーブ・リプレイ保存（保存の想定用途「セーブ・リプレイ」） | [17](../SPEC.md#17-メタ進行とアンロック), [22](../SPEC.md#22-技術構成), [23](../SPEC.md#23-拡張案) | ✅ セーブ復帰は RI-58 完了。リプレイ保存・閲覧は未着手 | [remaining-issues.md](./remaining-issues.md) RI-58 / RI-61 |
 | 拡張案（デイリーラン・なぜ燃えたか・図鑑以外のローカル拡張） | [23](../SPEC.md#23-拡張案) | 一部着手（RI-34′ / RI-34″ 完了）。外部 API は対象外。本体は保留 | [remaining-issues.md](./remaining-issues.md) RI-34 / RI-34′ / RI-34″ |

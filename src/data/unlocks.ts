@@ -112,9 +112,11 @@ export const UNLOCK_DEFS: UnlockDef[] = [
 
 const UNLOCK_BY_ID = new Map(UNLOCK_DEFS.map((u) => [u.id, u]));
 
-const META_LOCKED_CARD_IDS = new Set(
-  UNLOCK_DEFS.filter((u) => u.kind === 'card').map((u) => u.contentId),
+const CARD_UNLOCK_BY_CONTENT_ID = new Map(
+  UNLOCK_DEFS.filter((u) => u.kind === 'card').map((u) => [u.contentId, u]),
 );
+
+const META_LOCKED_CARD_IDS = new Set(CARD_UNLOCK_BY_CONTENT_ID.keys());
 const META_LOCKED_RELIC_IDS = new Set(
   UNLOCK_DEFS.filter((u) => u.kind === 'relic').map((u) => u.contentId),
 );
@@ -132,6 +134,11 @@ export function defaultUnlockedRelicIds(): ReadonlySet<string> {
 /** 解放定義を ID で取得する。 */
 export function getUnlock(id: string): UnlockDef | undefined {
   return UNLOCK_BY_ID.get(id);
+}
+
+/** カード contentId からメタ解放定義を取得する（既定解放カードは undefined）。 */
+export function getCardUnlockByContentId(contentId: string): UnlockDef | undefined {
+  return CARD_UNLOCK_BY_CONTENT_ID.get(contentId);
 }
 
 /** イベント等で直接付与されるカード／レリック ID（常時解放扱い）。 */

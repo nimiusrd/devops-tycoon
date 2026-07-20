@@ -3963,6 +3963,183 @@ button.card:active {
   color: var(--mint);
 }
 
+/* カードコレクション（RI-65 / SPEC 7.3） */
+.card-collection-panel {
+  width: min(980px, 96vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  text-align: center;
+}
+.card-collection-lead {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+.card-collection-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 0 0 16px;
+}
+.card-collection-filter {
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #211a44;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+.card-collection-filter.active {
+  border-color: var(--mint);
+  color: var(--mint);
+}
+.card-collection-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.9fr);
+  gap: 16px;
+  text-align: left;
+  margin: 0 0 18px;
+  min-height: 280px;
+}
+.card-collection-list {
+  max-height: min(58vh, 520px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.card-collection-section {
+  margin: 0 0 16px;
+}
+.card-collection-section-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--sun);
+  letter-spacing: 0.04em;
+}
+.card-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+}
+.card-collection-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+  background: #211a44;
+  border: 2px solid var(--line);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.card-collection-item:hover {
+  border-color: var(--sky);
+}
+.card-collection-item.selected {
+  border-color: var(--mint);
+}
+.card-collection-item.locked {
+  opacity: 0.78;
+}
+.card-collection-item.preferred {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mint) 55%, transparent);
+}
+.card-collection-locked-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 88px;
+  justify-content: center;
+}
+.card-collection-lock-icon {
+  font-size: 18px;
+}
+.card-collection-locked-name {
+  font-weight: 700;
+  font-size: 13px;
+}
+.card-collection-preferred-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mint);
+  text-align: center;
+}
+.card-collection-detail {
+  padding: 14px;
+  border-radius: 16px;
+  border: 2px solid var(--line);
+  background: #1a1536;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+.card-collection-locked-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.card-collection-detail-name {
+  margin: 0;
+  font-size: 18px;
+}
+.card-collection-unlock-condition {
+  margin: 0;
+  color: var(--sun);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.card-collection-prefer-btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: #211a44;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+.card-collection-prefer-btn.selected {
+  border-color: var(--mint);
+  color: var(--mint);
+}
+.card-collection-prefer-btn.capped,
+.card-collection-prefer-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.card-collection-prefer-count {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+.card-collection-empty {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+@media (max-width: 720px) {
+  .card-collection-layout {
+    grid-template-columns: 1fr;
+  }
+  .card-collection-list {
+    max-height: 42vh;
+  }
+  .card-collection-panel {
+    padding: 16px;
+  }
+}
+
 /* 遊び方ヘルプ / 初見ガイド（RI-60） */
 .how-to-play-panel {
   width: min(640px, 94vw);

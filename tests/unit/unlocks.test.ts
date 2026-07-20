@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   eventDirectGrantIds,
+  getCardUnlockByContentId,
   getUnlock,
   metaUnlockContentIds,
   UNLOCK_DEFS,
@@ -44,6 +45,12 @@ describe('UNLOCK_DEFS 整合（RI-18）', () => {
     for (const unlock of UNLOCK_DEFS) {
       expect(getUnlock(unlock.id)).toEqual(unlock);
     }
+  });
+
+  it('getCardUnlockByContentId でカード解放を contentId から引ける', () => {
+    expect(getCardUnlockByContentId('claude-code')?.id).toBe('unlock-claude-code');
+    expect(getCardUnlockByContentId('devin')?.requires).toBe('review-exceeded');
+    expect(getCardUnlockByContentId('copilot')).toBeUndefined();
   });
 
   it('RI-28″: 高コスト解放にレビュー実績の前提が付いている', () => {

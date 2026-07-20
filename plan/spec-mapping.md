@@ -22,7 +22,7 @@
 | [4.7〜4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 独立チーム、部署・全社・業界、ドリルダウン | `src/sim/orgscale/`, `OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx` | 🟡 ズーム・表示・集約は実装済み。他チームは合成状態のためRI-64 |
 | [5](../SPEC.md#5-プレイヤーが操作するリソース) | 組織・集中力・予算・進化資源 | `src/sim/types.ts`, `src/sim/org.ts`, `src/sim/run/types.ts` | ✅ |
 | [6](../SPEC.md#6-スプリント中の能動操作) | 介入、集中力、コンボ、対象指定 | `src/sim/actions.ts`, `ActionBar.tsx`, `boardDragPlan.ts` | ✅ |
-| [7](../SPEC.md#7-ai導入施策カードデッキ) | デッキ、手札、ドラフト、強化、コレクション | `src/data/cards.ts`, `src/sim/cards.ts`, `CardView.tsx`, `DeckPolicyScreen.tsx` | 🟡 ゲーム内利用は実装済み。全カード図鑑はRI-65 |
+| [7](../SPEC.md#7-ai導入施策カードデッキ) | デッキ、手札、ドラフト、強化、コレクション | `src/data/cards.ts`, `src/sim/cards.ts`, `CardView.tsx`, `DeckPolicyScreen.tsx`, `CardCollectionScreen.tsx` | ✅ |
 | [8](../SPEC.md#8-組織文化レリック) | 恒久パッシブ | `src/data/relics.ts`, `src/sim/run/effects.ts` | ✅ |
 | [9](../SPEC.md#9-ランダムイベント周回進行の中核エンジン) | 状態依存イベント | `src/data/events.ts`, `src/sim/run/events.ts` | ✅ |
 | [10](../SPEC.md#10-ランとボススプリント) | 四半期末ボス | `src/data/bosses.ts`, `src/sim/run/engine.ts` | ✅ |
@@ -43,6 +43,5 @@
 | 課題 | 影響 | 追跡先 |
 | --- | --- | --- |
 | 他チームが独立状態を持たず、任意チームへ入り込めない | 第4.7〜4.11のマクロ／ミクロ戦略 | [RI-64](./remaining-issues.md#ri-64-独立状態を持つ複数チーム運営) |
-| 全カードと解放状況を確認する画面がない | 第7.3のコレクション | [RI-65](./remaining-issues.md#ri-65-カードコレクション画面) |
 | ボス下限・四半期・ラン全体・介入回数の統計検証がない | 第3.1の回帰検知 | [RI-66](./remaining-issues.md#ri-66-ペーシング規定の統計検証補強) |
 | ローカル拡張の一部が未着手 | 第23章 | [RI-34](./remaining-issues.md#ri-34-ローカル完結の将来拡張) |

@@ -17,6 +17,7 @@ export { CardView } from './CardView';
 
 export { MetaShopScreen } from './MetaShopScreen';
 export { DeckPolicyScreen } from './DeckPolicyScreen';
+export { CardCollectionScreen } from './CardCollectionScreen';
 export { AchievementCollectionScreen } from './AchievementCollectionScreen';
 export { TitleScreen } from './TitleScreen';
 export { SetupScreen } from './SetupScreen';

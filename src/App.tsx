@@ -52,6 +52,9 @@ const MetaShopScreen = lazy(() =>
 const DeckPolicyScreen = lazy(() =>
   import('./ui/DeckPolicyScreen').then((m) => ({ default: m.DeckPolicyScreen })),
 );
+const CardCollectionScreen = lazy(() =>
+  import('./ui/CardCollectionScreen').then((m) => ({ default: m.CardCollectionScreen })),
+);
 const ReplayListScreen = lazy(() =>
   import('./ui/ReplayListScreen').then((m) => ({ default: m.ReplayListScreen })),
 );
@@ -118,6 +121,7 @@ export default function App({ game }: AppProps) {
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
   const [deckPolicyOpen, setDeckPolicyOpen] = useState(false);
+  const [cardCollectionOpen, setCardCollectionOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [replayListOpen, setReplayListOpen] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
@@ -183,6 +187,7 @@ export default function App({ game }: AppProps) {
     setFormationOpen(false);
     setMetaShopOpen(false);
     setDeckPolicyOpen(false);
+    setCardCollectionOpen(false);
     setAchievementsOpen(false);
     setHelpOpen(false);
     setReplayListOpen(false);
@@ -243,6 +248,7 @@ export default function App({ game }: AppProps) {
           onOpenReplays={() => setReplayListOpen(true)}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenDeckPolicy={() => setDeckPolicyOpen(true)}
+          onOpenCardCollection={() => setCardCollectionOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
           onToggleSoundMuted={() => {
             audio.unlock();
@@ -264,6 +270,13 @@ export default function App({ game }: AppProps) {
               meta={meta}
               onChange={(ids) => run.setPreferredCardIds(ids)}
               onClose={() => setDeckPolicyOpen(false)}
+            />
+          )}
+          {cardCollectionOpen && (
+            <CardCollectionScreen
+              meta={meta}
+              onChangePreferred={(ids) => run.setPreferredCardIds(ids)}
+              onClose={() => setCardCollectionOpen(false)}
             />
           )}
           {achievementsOpen && (

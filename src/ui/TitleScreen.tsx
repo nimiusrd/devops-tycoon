@@ -42,6 +42,8 @@ export interface TitleScreenProps {
   onOpenMetaShop?: () => void;
   /** 研修方針（デッキカスタム。RI-34⁗）。 */
   onOpenDeckPolicy?: () => void;
+  /** カードコレクション（図鑑。RI-65 / SPEC 7.3）。 */
+  onOpenCardCollection?: () => void;
   onOpenAchievements?: () => void;
   /** サウンドミュート切替（RI-59）。 */
   onToggleSoundMuted?: () => void;
@@ -58,6 +60,7 @@ export function TitleScreen({
   onOpenReplays,
   onOpenMetaShop,
   onOpenDeckPolicy,
+  onOpenCardCollection,
   onOpenAchievements,
   onToggleSoundMuted,
   onOpenHelp,
@@ -334,6 +337,15 @@ export function TitleScreen({
               <button type="button" data-testid="open-deck-policy" onClick={onOpenDeckPolicy}>
                 研修方針
                 {meta.preferredCardIds.length > 0 ? `（${meta.preferredCardIds.length}）` : ''}
+              </button>
+            )}
+            {onOpenCardCollection && (
+              <button
+                type="button"
+                data-testid="open-card-collection"
+                onClick={onOpenCardCollection}
+              >
+                カードコレクション
               </button>
             )}
             {onOpenAchievements && (

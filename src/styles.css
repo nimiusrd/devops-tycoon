@@ -3770,6 +3770,10 @@ button.card:active {
   font-weight: 700;
   z-index: 40;
 }
+.replay-mode-banner-review-hell {
+  background: color-mix(in srgb, #c45c5c 32%, #111);
+  border-bottom-color: color-mix(in srgb, #c45c5c 55%, transparent);
+}
 .replay-mode-banner button {
   border: 1px solid currentColor;
   background: transparent;
@@ -3777,6 +3781,56 @@ button.card:active {
   padding: 4px 10px;
   cursor: pointer;
   font-weight: 700;
+}
+.replay-item-diagnosis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+.replay-review-hell-badge {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, #c45c5c 70%, #fff);
+  color: #ffb4a8;
+}
+.replay-item-review-hell {
+  border-color: color-mix(in srgb, #c45c5c 55%, var(--line, #334));
+}
+.replay-review-hell-panel {
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, #c45c5c 50%, transparent);
+  text-align: left;
+}
+.replay-review-hell-lead,
+.replay-review-hell-burn,
+.replay-review-hell-lesson {
+  margin: 6px 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.replay-review-hell-peak {
+  margin: 8px 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.replay-review-hell-panel .btn {
+  margin-top: 8px;
+  width: 100%;
+}
+.result-review-hell-summary {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, #c45c5c 45%, transparent);
+  text-align: left;
+}
+.result-review-hell-summary p {
+  margin: 4px 0;
 }
 @media (max-width: 720px) {
   .replay-list-body {

@@ -113,6 +113,7 @@
 | RI-34 | 23章「拡張案」全般【将来エピック】（ローカルのみ） | 低 | 保留(要判断) | — | 第23 |
 | RI-34′ | 「なぜ燃えたか」解説ログ（§23 の1切片） | 中 | 完了 | — | 第23 / 4.6 |
 | RI-34″ | 「AI導入失敗図鑑」（§23 の1切片） | 中 | 完了 | — | 第23 / 13 / 17 |
+| RI-34‴ | 「レビュー地獄リプレイ」（§23 の1切片） | 中 | 完了 | RI-61 | 第23 |
 
 ### テスト・保守・技術的負債（QA）
 
@@ -494,7 +495,7 @@ IndexedDB に既存値がある場合はそちらを正として旧値を破棄�
 **完了**: RI-58 のフェーズ境界スナップショットを再利用し、主要キーフレーム（setup /
 result / quarterReview / won / lost）をラン終了時に IndexedDB `replays`（DB v3、上限 10 件）へ保存。
 タイトルから一覧→キーフレームを `hydrateReplayFrame` で read-only 表示。操作は無効化。
-純入力ログ再生・共有 URL・「レビュー地獄リプレイ」専用演出は非スコープ（→ RI-34）。
+純入力ログ再生・共有 URL は非スコープ。「レビュー地獄リプレイ」専用演出は RI-34‴ へ切り出し済み。
 
 ### バランス（BAL）
 
@@ -710,9 +711,10 @@ Vitest と Playwright で報酬・各敗北理由の経路を検証済み。レ�
 **スコープ**: ローカル完結の拡張のみ。外部 API・共有バックエンド（GitHub 実データ、
 チーム対抗の共有ランキング等）は仕様から削除し対象外。
 残る候補: ツール別シナリオ、デッキカスタム、組織シナリオ共有、
-組織診断ダッシュボード深掘り、四半期レビュー高度化、「レビュー地獄リプレイ」（RI-61 依存）等。
+組織診断ダッシュボード深掘り、四半期レビュー高度化 等。
 着手時に個別 ID へ切り出す。
-「なぜ燃えたか」は RI-34′、「AI導入失敗図鑑」は RI-34″ として切り出し済み。
+「なぜ燃えたか」は RI-34′、「AI導入失敗図鑑」は RI-34″、「レビュー地獄リプレイ」は RI-34‴
+として切り出し済み。
 社内LT/経営プレゼンモードは不要と判断し候補から除外（SPEC §23 からも削除）。
 
 #### RI-34′ 「なぜ燃えたか」解説ログ — 優先度:中 / 完了
@@ -735,6 +737,17 @@ Playwright: `tests/e2e/interventions.spec.ts`。
 `RunResultScreen` は失敗型診断時に図鑑登録フィードバックを出す。健全系診断は対象外。
 Vitest: `tests/unit/meta.test.ts` / `diagnosis.test.ts`。
 Playwright: `tests/e2e/achievements.spec.ts`。
+
+#### RI-34‴ 「レビュー地獄リプレイ」 — 優先度:中 / 完了（依存: RI-61）
+
+**完了**: RI-61 キーフレームリプレイ上に `outcome.diagnosis === 'reviewHell'` 向けの専用演出を追加。
+`planReviewHellReplay`（`src/render/reviewHellReplayView.ts`）が一覧バッジ・ピーク・図鑑教訓・
+推奨キーフレーム添字を組み立て、`ReplayListScreen` に専用パネルと「レビュー地獄を開く」CTA を表示。
+閲覧中バナーは専用文言、`SprintResultScreen` はリプレイ時にピーク要約を先頭表示。
+キーフレーム収集時に `ReplayKeyframe.label`（Review peak 等）を付与。
+純入力ログ再生・共有 URL は非スコープのまま。
+Vitest: `tests/unit/reviewHellReplayView.test.ts` / `replay.test.ts`。
+Playwright: `tests/e2e/replay.spec.ts`。
 
 ### テスト・保守・技術的負債（QA）
 

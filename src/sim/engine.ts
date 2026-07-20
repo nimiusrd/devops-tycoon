@@ -3,8 +3,7 @@
  *
  * 描画を一切知らず、固定タイムステップで状態を進める純TS。
  * 同一 seed・同一の step / dispatch 列なら常に同一状態へ収束する。
- * Phase 2 ではスプリント駆動に加え、介入アクションのディスパッチ（イベント入力）と
- * スプリント後のドラフト→デッキ更新による周回（第6章 / 第7章）を担う。
+ * スプリント駆動、介入、カードのドラフトとデッキ更新を担う。
  */
 import { applyAction } from './actions';
 import { dealHand, drawDraft, playCardFromHand } from './cards';
@@ -36,7 +35,7 @@ export interface EngineInit {
   scenario?: ScenarioId;
   /** AI 導入フラグ（本作のコア因果のスイッチ。第2章）。 */
   aiEnabled?: boolean;
-  /** 初期デッキ（既定は空＝Phase 1 と同一挙動）。 */
+  /** 初期デッキ（既定は空）。 */
   deck?: CardInstance[];
   fixedStepMs?: number;
 }

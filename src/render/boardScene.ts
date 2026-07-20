@@ -5,7 +5,7 @@
  * Backlog▸Coding▸Review▸Rework▸Done の各工程を、俯瞰オフィスのアイソメ「ステーション」
  * として配置し、各ステーションのキャラ表情・吹き出し・周囲に積むタスク粒を、
  * スプリント状態から導出する。座標は固定の設計空間（1404×573）で返し、
- * レンダラ（DOM/SVG → 将来 PixiJS）は「読んで描くだけ」にする（第22.2）。
+ * DOM/SVGとPixiJSのレンダラはそれを読んで描くだけにする（第22.2）。
  */
 import { BURN_TICKS } from '../sim/model';
 import type { Lane, Task } from '../sim/types';

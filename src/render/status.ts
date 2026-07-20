@@ -382,7 +382,7 @@ export function diffRunMetricSnapshots(
   return deltas;
 }
 
-/** SimState から表示用ステータスを導出する（Phase 1/2 互換）。 */
+/** SimStateから表示用ステータスを導出する。 */
 export function deriveStatus(state: SimState): StatusView {
   return deriveStatusParts(state.org, state.sprint.tasks);
 }

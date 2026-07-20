@@ -3,8 +3,7 @@
  * カード/レリック/進化ノードの係数表示も同じ `EffectTag` 型で扱う（RI-44）。
  *
  * 数値デルタ・付与・次スプリント効果・画面遷移を、色分け可能な
- * 表示タグへ変換する純関数。sim 層は知らず、後続 RI-45 以降も
- * 共通 `EffectTag` 型を再利用する。
+ * 共通 `EffectTag` へ変換する純関数。sim層は表示を知らない。
  */
 import type { EventChoice, EventOutcome } from '../data/events';
 import type { GoalAdjustmentDef } from '../data/goalAdjustments';

@@ -29,8 +29,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.9.2",
-    "xstate": "^5.0.0",
-    "zustand": "^5.0.0"
+    "xstate": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

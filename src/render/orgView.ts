@@ -45,7 +45,7 @@ export const ORG_PAD = 64;
 /** DOM `.team-island` / Pixi card の幅 px。 */
 export const ORG_CARD_W = 116;
 /** 同時描画スプライト上限（性能予算。第22.5）。
- * Phase 6d: Vitest 大規模 fixture（100/500/1000 件）で culled+予算内を確認。
+ * Vitestの大規模fixture（100/500/1000件）でカリングと表示予算を確認する。
  * 通常ラン（~10 チーム）は overBudget=0。1000 件全可視 stress では 500 件まで描画。 */
 export const ORG_SPRITE_BUDGET = 500;
 

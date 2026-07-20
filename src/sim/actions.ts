@@ -3,8 +3,7 @@
  *
  * 集中力（⚡）の消費・クールダウン・連携ゲージを一元処理し、各アクションの
  * 効果を `sprint`/`org` に破壊的に適用する純TS。乱数は引数の seed付きPRNG
- * からのみ消費する（決定論。第22.3）。介入が無ければスプリントは Phase 1 と
- * 完全に同一挙動になる（入力＝イベント経由。architecture §2）。
+ * からのみ消費する（決定論。第22.3）。入力はイベント経由で受け取る。
  */
 import { getAction } from '../data/actions';
 import { applyAssignTaskEffect, resolveSplitPrTarget } from './assignTask';

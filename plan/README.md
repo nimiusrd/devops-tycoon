@@ -10,6 +10,7 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 | [`SPEC.md`](../SPEC.md) | 体験要件と受入条件の正本 |
 | [spec-mapping.md](./spec-mapping.md) | SPECと実装の対応、未充足箇所 |
 | [remaining-issues.md](./remaining-issues.md) | 未着手・保留課題と完了項目の要約 |
+| [playtest-findings.md](./playtest-findings.md) | 実機プレイで洗い出した改善課題（バランス・UI・ポリッシュ） |
 | [architecture.md](./architecture.md) | 現在の技術構成と横断規律 |
 
 ## 現状

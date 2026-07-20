@@ -128,6 +128,8 @@ test('カードコレクションはキーボード操作と狭い画面に対�
     await expect(page.getByTestId('card-collection-prefer-count')).toHaveText('優先 1 / 2');
   }
 
-  await page.keyboard.press('Escape');
+  // 閉じるボタンにフォーカスした Enter は方針トグルではなく閉じる操作になる。
+  await page.getByTestId('card-collection-close').focus();
+  await page.keyboard.press('Enter');
   await expect(page.getByTestId('card-collection')).toHaveCount(0);
 });

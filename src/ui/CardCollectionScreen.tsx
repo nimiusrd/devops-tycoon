@@ -113,6 +113,15 @@ export function CardCollectionScreen({
         return;
       }
       if (e.key === 'Enter') {
+        // フィルター／詳細トグル／閉じる等に Tab フォーカス中はネイティブ操作を優先する。
+        const active = document.activeElement;
+        if (
+          active instanceof HTMLElement &&
+          active !== document.body &&
+          !active.closest('[data-testid="card-collection-list"]')
+        ) {
+          return;
+        }
         e.preventDefault();
         const current = visibleCards[index];
         if (!current || !unlockedIds.has(current.id)) return;

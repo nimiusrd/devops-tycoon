@@ -43,8 +43,11 @@ seed 固定 25 タスクを endTick 46〜71 で完了し、`maxTicks`=1500（`sr
 達しない。ただしレビュー**回数**はタスク数固定ではない: 手戻りタスクは Rework 経由で Review へ戻り
 （`advanceRework`、`src/sim/sprint.ts:378`）、緊急対応で鎮火したタスクも Review へ戻る（`fire.lane='review'`、
 `src/sim/actions.ts:151`）ため、レビュー試行数＝タスク数＋（手戻り・炎上の再レビュー）となり、手戻り率・炎上率に
-応じて増減する。したがって手戻り・炎上確率を下げる施策（AIスロットル、品質、PR分割など）は再レビューを減らし、
-`REVIEW_HP_COST` と炎上判定回数を**間接的に**減らしうる。一方 `org.seniorHp` は毎 tick `REVIEW_HP_REGEN`=0.7
+応じて増減する。したがって**手戻り率**を下げる施策（品質・PR分割・AIスロットル。`reworkProbability` の quality・
+`task.split`・aiAssisted・aiDependency 項）は再レビュー回数を減らし、`REVIEW_HP_COST` と炎上判定回数を**間接的に**
+減らしうる。ただしこれは「レビュー1件あたりの点火率（`incidentProbability`）」を下げるのとは別で、点火率が参照するのは
+testCoverage・`task.aiAssisted`・カード効果のみ（品質値・`task.split` は参照しない）。一方 `org.seniorHp` は
+毎 tick `REVIEW_HP_REGEN`=0.7
 （炎上中は `BURNING_REGEN_MUL`=0.5 で半減、`src/sim/sprint.ts:474`）で回復し、炎上確率 `incidentProbability` は
 レビュー1件ごとに評価され**待ち行列長を入力に取らない**（`src/sim/model/process.ts`）。よって「待ち行列を短くすれば
 点火が減る」は成り立たない（当初この所見が編成の待ち行列短縮を生存要因としていた点を、Codex レビューの指摘と
@@ -85,9 +88,9 @@ Easy は導入難易度（「モダンなプロダクトチーム」）であり
 改善方向（いずれか／組み合わせ）:
 
 - チュートリアルに「シニア体力（燃え尽き）」と、それを防ぐ最大手段＝炎上を自動鎮火 −12 になる前に緊急対応で
-  −2 鎮火することを追加する。補助として、andon（既存キューを捌く猶予）、AIスロットルや品質・PR分割
-  （手戻り・炎上を減らして再レビューを間接的に減らす）も位置づける。編成での review 増員はスループット策で
-  あり燃え尽き回避の主手段ではない点を明確にする。
+  −2 鎮火することを追加する。補助として、andon（既存キューを捌く猶予）、AIスロットル（レビュー1件あたりの
+  点火率と手戻り率を下げる）、品質・PR分割（手戻り率を下げて再レビューを減らす。点火率自体は下げない）も
+  位置づける。編成での review 増員はスループット策であり燃え尽き回避の主手段ではない点を明確にする。
 - `org.seniorHp` の収支（`REVIEW_HP_COST` / `INCIDENT_HP_COST` / `REVIEW_HP_REGEN`、`src/sim/model/process.ts` ほか）や、
   Easy 序盤の障害率を見直し、標準的な操作理解のプレイが2スプリントで即死しないようにする。
 - 燃え尽きが近いときに盤面・HUD で明確に警告し、対処アクション（緊急対応・andon・スロットル）へ誘導する。

@@ -1,13 +1,17 @@
 /**
- * ファイル再生オーディオエンジン（RI-59）。
+ * ファイル再生オーディオエンジン（RI-59 / RI-63）。
  *
  * HTMLAudioElement で `public/assets/audio/*.wav` を再生する。
  * autoplay 制約のため初回ユーザ操作まで play しない。
+ * BGM のトーン切替は旧トラックのフェードアウトと新トラックの
+ * フェードインを並行させるクロスフェードで行う（RI-63）。
  */
 import { BGM_URLS, SFX_URLS, type BgmToneId, type SfxId } from './sounds';
 
 const SFX_VOLUME = 0.7;
 const BGM_VOLUME = 0.35;
+const BGM_FADE_MS = 700;
+const BGM_FADE_INTERVAL_MS = 50;
 
 export interface AudioEngine {
   unlock(): Promise<void>;
@@ -24,6 +28,8 @@ export interface AudioEngine {
 export interface AudioEngineOptions {
   /** テスト用の Audio コンストラクタ差し替え。 */
   AudioCtor?: typeof Audio;
+  /** BGM クロスフェード時間（ms）。既定 700。 */
+  bgmFadeMs?: number;
 }
 
 function allAssetUrls(): string[] {
@@ -32,19 +38,59 @@ function allAssetUrls(): string[] {
 
 export function createAudioEngine(options: AudioEngineOptions = {}): AudioEngine {
   const AudioCtor = options.AudioCtor ?? (typeof Audio !== 'undefined' ? Audio : null);
+  const fadeMs = options.bgmFadeMs ?? BGM_FADE_MS;
   let unlocked = false;
   let muted = false;
   let bgmTone: BgmToneId = 'off';
   let bgm: HTMLAudioElement | null = null;
   let disposed = false;
   const activeSfx = new Set<HTMLAudioElement>();
+  // フェード中の要素（フェードアウト退役中の旧 BGM を含む）とそのタイマー。
+  const fadeTimers = new Map<HTMLAudioElement, ReturnType<typeof setInterval>>();
 
   const applyMuteTo = (el: HTMLAudioElement): void => {
     el.muted = muted;
   };
 
-  const stopBgm = (): void => {
+  const cancelFade = (el: HTMLAudioElement): void => {
+    const timer = fadeTimers.get(el);
+    if (timer === undefined) return;
+    clearInterval(timer);
+    fadeTimers.delete(el);
+  };
+
+  const rampVolume = (el: HTMLAudioElement, target: number, onDone?: () => void): void => {
+    cancelFade(el);
+    const steps = Math.max(1, Math.round(fadeMs / BGM_FADE_INTERVAL_MS));
+    const delta = (target - el.volume) / steps;
+    let remaining = steps;
+    const timer = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        el.volume = target;
+        cancelFade(el);
+        onDone?.();
+        return;
+      }
+      el.volume = Math.max(0, Math.min(1, el.volume + delta));
+    }, BGM_FADE_INTERVAL_MS);
+    fadeTimers.set(el, timer);
+  };
+
+  /** 現行 BGM をフェードアウトさせて停止する（クロスフェードの旧トラック側）。 */
+  const retireBgm = (): void => {
     if (!bgm) return;
+    const el = bgm;
+    bgm = null;
+    rampVolume(el, 0, () => {
+      el.pause();
+      el.src = '';
+    });
+  };
+
+  const stopBgmImmediate = (): void => {
+    if (!bgm) return;
+    cancelFade(bgm);
     bgm.pause();
     bgm.src = '';
     bgm = null;
@@ -52,16 +98,19 @@ export function createAudioEngine(options: AudioEngineOptions = {}): AudioEngine
 
   const startBgm = (tone: Exclude<BgmToneId, 'off'>): void => {
     if (!AudioCtor || disposed || !unlocked) return;
-    stopBgm();
+    retireBgm();
     const el = new AudioCtor(BGM_URLS[tone]);
     el.loop = true;
     el.preload = 'auto';
-    el.volume = BGM_VOLUME;
+    el.volume = 0;
     applyMuteTo(el);
     bgm = el;
     void el.play().catch(() => {
-      /* autoplay / 未ロードは握りつぶす */
+      // autoplay / 未ロード失敗時はフェードを止め、後続の再開に備え音量だけ整える。
+      cancelFade(el);
+      el.volume = BGM_VOLUME;
     });
+    rampVolume(el, BGM_VOLUME);
   };
 
   const preload = async (): Promise<void> => {
@@ -128,6 +177,7 @@ export function createAudioEngine(options: AudioEngineOptions = {}): AudioEngine
           void bgm.play().catch(() => undefined);
         }
       }
+      for (const el of fadeTimers.keys()) applyMuteTo(el);
       for (const el of activeSfx) applyMuteTo(el);
     },
     isMuted() {
@@ -152,7 +202,7 @@ export function createAudioEngine(options: AudioEngineOptions = {}): AudioEngine
       if (tone === bgmTone) return;
       bgmTone = tone;
       if (tone === 'off') {
-        stopBgm();
+        retireBgm();
         return;
       }
       if (!unlocked) return;
@@ -163,7 +213,13 @@ export function createAudioEngine(options: AudioEngineOptions = {}): AudioEngine
     },
     dispose() {
       disposed = true;
-      stopBgm();
+      for (const [el, timer] of fadeTimers) {
+        clearInterval(timer);
+        el.pause();
+        el.src = '';
+      }
+      fadeTimers.clear();
+      stopBgmImmediate();
       for (const el of activeSfx) {
         el.pause();
         el.src = '';

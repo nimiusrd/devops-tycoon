@@ -104,8 +104,13 @@ test('カードコレクションはキーボード操作と狭い画面に対�
   await expect(page.getByTestId('card-collection-list')).toBeVisible();
   await expect(page.getByTestId('card-collection-detail')).toBeVisible();
 
-  const firstId = CARD_DEFS[0]!.id;
-  const secondId = CARD_DEFS[1]!.id;
+  // 画面上の並びはレアリティ順（common → rare → legendary）。
+  const rarityOrder = { common: 0, rare: 1, legendary: 2 } as const;
+  const orderedIds = [...CARD_DEFS]
+    .sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity])
+    .map((def) => def.id);
+  const firstId = orderedIds[0]!;
+  const secondId = orderedIds[1]!;
   await page.getByTestId(`card-collection-item-${firstId}`).click();
   await expect(page.getByTestId(`card-collection-item-${firstId}`)).toHaveAttribute(
     'aria-pressed',

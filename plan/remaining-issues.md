@@ -756,8 +756,8 @@ Playwright: `tests/e2e/replay.spec.ts`。
 `MetaState.preferredCardIds` に永続化し、ラン開始時に `RunPersistExtras` へスナップショットする。
 `drawDraft` が優先 ID のレアリティ重みを倍率（`PREFERRED_DRAFT_WEIGHT_MUL`）し、
 ドラフト／ショップの出やすさだけを偏らせる。初期所持にはしない（RI-24 / §17 と整合）。
-ラン中のメタ変更は進行中ランの抽選に影響しない。
-Vitest: `tests/unit/meta.test.ts` / `cards.test.ts` / `meta-unlock-run.test.ts`。
+ラン中のメタ変更は進行中ランの抽選に影響しない。デイリーランは同一日比較のため方針を適用しない。
+Vitest: `tests/unit/meta.test.ts` / `cards.test.ts` / `meta-unlock-run.test.ts` / `daily-run.test.ts`。
 Playwright: `tests/e2e/deck-policy.spec.ts`。
 
 ### テスト・保守・技術的負債（QA）

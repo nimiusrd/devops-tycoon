@@ -379,11 +379,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return { whatIf: null, whatIfStatus: 'computing' };
   };
 
-  /** 最新 meta から解放プールと研修方針を engine へ反映する（ラン開始時に呼ぶ）。 */
-  const applyUnlockedToEngine = (): void => {
+  /**
+   * 最新 meta から解放プールと研修方針を engine へ反映する（ラン開始時に呼ぶ）。
+   * デイリーは同一日比較のため研修方針を適用しない（RI-34⁗）。
+   */
+  const applyUnlockedToEngine = (options?: { ignorePreferred?: boolean }): void => {
     const content = unlockedContent(meta);
     engine.setUnlockedContent(content.cards, content.relics);
-    engine.setPreferredCards(meta.preferredCardIds);
+    engine.setPreferredCards(options?.ignorePreferred ? [] : meta.preferredCardIds);
   };
 
   /** 保存失敗でゲーム進行を止めず、直列化はストレージ実装へ委ねる。 */
@@ -482,7 +485,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       keyframes = [];
       paused = false;
       clearWhatIfCache();
-      applyUnlockedToEngine();
+      applyUnlockedToEngine({ ignorePreferred: true });
       runEpoch += 1;
       engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], dailySeed(day), {
         kind: 'daily',

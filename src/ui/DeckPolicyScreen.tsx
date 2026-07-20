@@ -38,7 +38,7 @@ export function DeckPolicyScreen({ meta, onChange, onClose }: DeckPolicyScreenPr
         </h2>
         <p className="deck-policy-lead">
           優先する施策を選ぶと、次ラン以降のドラフト／ショップに出やすくなります。
-          初期デッキには入りません。
+          初期デッキには入りません。デイリーランには適用されません。
         </p>
         <div className="deck-policy-grid" data-testid="deck-policy-grid">
           {candidates.map((def) => {

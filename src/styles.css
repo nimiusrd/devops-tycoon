@@ -1344,6 +1344,51 @@ body {
   font-weight: 900;
   letter-spacing: 0.3em;
 }
+.juicy-attention-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.2rem;
+  background: radial-gradient(circle, #ff7a2f33 0%, #ff3b3018 40%, transparent 70%);
+  border: 2px solid #ff7a2f66;
+  box-shadow: inset 0 0 60px #ff3b3028;
+  pointer-events: none;
+  z-index: 19;
+  color: #fff0e0;
+  text-align: center;
+}
+.juicy-attention-overlay strong {
+  font-size: clamp(1.15rem, 2.6vw, 1.85rem);
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 14px #ff7a2faa;
+}
+.juicy-attention-overlay small {
+  color: #ffd4b0;
+  font-size: 0.75rem;
+}
+.juicy-attention-label {
+  color: #ffb080;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+}
+.meter-wrap.attention .meter {
+  box-shadow:
+    0 0 0 2px #ff7a2fcc,
+    0 0 14px #ff3b3055;
+  animation: attentionMeterPulse 0.45s ease-in-out 2;
+}
+@keyframes attentionMeterPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
 @keyframes rewardSparkle {
   from {
     opacity: 0.35;

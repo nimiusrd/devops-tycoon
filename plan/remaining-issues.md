@@ -403,15 +403,19 @@ Vitest: `tests/unit/tutorial.test.ts`。E2E: `tests/e2e/tutorial.spec.ts`。
 
 #### RI-62 ゲームスピードの調整(スプリントが速すぎて介入できない) — 優先度:高 / 完了
 
-**完了**: ①既定テンポ減速 ＋ ②Pause/1x/2x UI ＋ ④tick 分布圧縮を実装。③自動ポーズは任意上積みのため未着手。
+**完了**: ①既定テンポ減速 ＋ ②Pause/1x/2x UI ＋ ③重要イベント自動ポーズ ＋ ④tick 分布圧縮を実装。
 
 - **テンポ**: `src/ui/sprintTempo.ts` / `useRun.ts`。1x = 680ms/tick の壁時計アキュムレータ。
   `FIXED_STEP_MS` と sim 決定論は非干渉。プレイヤー `playbackSpeed`（0/1/2）は `game.pause()` と独立。
 - **速度 UI**: `SprintScreen` subbar に Pause / 1x / 2x（`data-testid=speed-*`）。
+- **③自動ポーズ**: 点火（新規 Incident task / ignite イベント）・Review渋滞
+  （`reviewQueueMax` が 12 を越える瞬間）・ボスIncident 発生で
+  `pauseBriefly(900ms)` ＋ AttentionOverlay / meter ハイライト（`src/render/attentionPause.ts`）。
+  壁時計クールダウン 2.5s。sim 決定論非干渉。ボス最終鎮火スローモ（RI-10）優先。
 - **分布**: ボス `taskCountMul` / `incidentMul` とボス taskFloor を調整し、無介入でも
   ボス実時間が 180 秒以内に収まるよう圧縮。通常スプリントは既存 tick 分布 × テンポで充足。
 - **検証**: `tests/unit/sprintTempo.test.ts`（代表 seed・タブ復帰切り捨て・ボス上限）、
-  `pauseBriefly` 独立性。終端 seed を再探索。
+  `pauseBriefly` 独立性、`tests/unit/attentionPause.test.ts`。終端 seed を再探索。
 
 ### 技術構成（TECH）
 

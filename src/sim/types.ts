@@ -109,7 +109,7 @@ export interface CardDef {
   id: string;
   name: string;
   rarity: CardRarity;
-  /** 予算コスト（ショップ用。Phase 3 で接続）。 */
+  /** ショップで支払う予算コスト。 */
   cost: number;
   /** 表示用の効果説明（行単位）。 */
   description: string[];

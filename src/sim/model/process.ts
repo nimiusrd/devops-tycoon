@@ -10,9 +10,8 @@ import type { CardEffects, OrgState, Task, TaskKind } from '../types';
 import type { Rng } from '../rng';
 
 /**
- * 無効果のカード効果（デッキが空＝Phase 1 と完全に同一の数値挙動）。
- * すべての確率モデル関数はこれを既定値に取り、デッキが無いときは
- * Phase 1 と 1bit たりとも違わない結果を返す（後方互換）。
+ * 無効果のカード効果。すべての確率モデル関数はこれを既定値に取り、
+ * デッキがないときはカード補正を加えない。
  */
 export const IDENTITY_CARD_EFFECTS: CardEffects = {
   codingSpeedMul: 1,

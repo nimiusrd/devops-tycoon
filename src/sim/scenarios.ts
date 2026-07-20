@@ -1,8 +1,7 @@
 /**
  * 難易度プリセット（SPEC 第16章）。
  *
- * Phase 1 では「標準」のみ。組織の初期パラメータとスプリント構成を
- * データとして持ち、Phase 3 以降で Easy/Hard/Nightmare を追加する。
+ * 組織の初期パラメータとスプリント構成をデータとして持つ。
  */
 import type { ScenarioId, SprintConfig } from './types';
 

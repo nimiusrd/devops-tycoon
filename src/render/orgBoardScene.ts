@@ -3,8 +3,8 @@
  *
  * 何を・どこに描くかを純TSで決める（GPU 不要 → Vitest で数値検証できる。第22.5）。
  * 浮遊プレート・部門ゾーン・チーム島・フローレーン・共通基盤ハブを、
- * 設計座標空間（1404×573）で返し、レンダラ（DOM/SVG → 将来 PixiJS）は
- * 「読んで描くだけ」にする（第22.2）。
+ * 設計座標空間（1404×573）で返し、DOM/SVGとPixiJSのレンダラは
+ * それを読んで描くだけにする（第22.2）。
  */
 import { diagnosisView } from '../sim/diagnosis';
 import type { DepartmentState, OrgScaleState, Team, TeamHealth } from '../sim/orgscale/types';

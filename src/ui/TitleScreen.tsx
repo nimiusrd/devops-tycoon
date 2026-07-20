@@ -100,7 +100,7 @@ export function TitleScreen({
         </div>
         <div className="title-season">
           <small>基本単位</small>
-          <b>1ラン = 1四半期</b>
+          <b>1ラン = 1〜複数四半期</b>
         </div>
         <div className="title-career">
           <span>
@@ -127,10 +127,10 @@ export function TitleScreen({
           <p className="title-sub">
             レビュー渋滞、技術的負債、士気、そして AI の効きどころ。
             <br />
-            1四半期で開発組織の運営を体験するシミュレーション。
+            四半期を重ねて開発組織を立て直すシミュレーション。
           </p>
           <div className="title-hero-badges" aria-label="ゲームの特徴">
-            <span>WebGL レイヤー想定</span>
+            <span>PixiJS / WebGL</span>
             <span>組織盤面 × カード戦略</span>
             <span>AI ブースト演出</span>
           </div>

@@ -11,8 +11,8 @@ export interface HowToPlayScreenProps {
 
 const SECTIONS: readonly { title: string; body: string }[] = [
   {
-    title: '1ラン = 1四半期',
-    body: '難易度と試練を選んで四半期を始めます。スプリントを重ね、ボスを突破して四半期レビューへ進みます。',
+    title: '1ラン = 1〜複数四半期',
+    body: '難易度と試練を選んで四半期を始めます。目標未達でも継続可能なら目標を修正し、組織の状態を引き継いで次四半期へ進みます。',
   },
   {
     title: 'スプリント中の介入',

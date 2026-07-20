@@ -96,9 +96,8 @@ export function resolveSprintConfig(
 /**
  * 新しいスプリント状態を生成する（全タスクは Backlog から開始）。
  * `cardEffects` はデッキを畳み込んだ係数で、未指定（＝デッキ無し）なら
- * Phase 1 と完全に同一の数値挙動になる。集中力は満タンで開始する（第6.2）。
- * `aiAdoptionShare` は編成由来の実 AI 採用率の倍率（0..1）。未指定なら 1（＝従来の
- * 全社的な既定採用率）で、Phase 1〜3 と完全に同一の数値挙動になる（後方互換）。
+ * 無効果になる。集中力は満タンで開始する（第6.2）。
+ * `aiAdoptionShare` は編成由来の実AI採用率の倍率（0..1）。未指定なら1。
  */
 export function createSprint(
   config: SprintConfig,

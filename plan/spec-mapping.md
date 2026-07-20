@@ -17,8 +17,8 @@
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観 | [architecture.md](./architecture.md) §7 | ✅ |
 | [3](../SPEC.md#3-ゲームの基本ループ) | 複数四半期ラン、固定トラック、ビート | `src/sim/run/engine.ts`, `phases.ts`, `events.ts`, `tests/unit/run-loop.test.ts` | ✅ |
 | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | テンポと速度操作 | `src/ui/sprintTempo.ts`, `tests/unit/sprintTempo.test.ts` | 🟡 通常スプリントとボス上限は検証済み。四半期・ラン全体等はRI-66 |
-| [4.1〜4.6](../SPEC.md#4-ゲーム画面) | 現場、HUD、介入、ビート、進化、リザルト | `src/ui/*Screen.tsx`, `src/sim/actions.ts`, `src/render/boardScene.ts`, 関連unit/E2E | ✅ |
-| [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビューと継続 | `QuarterReviewScreen.tsx`, `quarterReview.ts`, `goalAdjustments.ts` | ✅ |
+| [4.1〜4.6](../SPEC.md#4-ゲーム画面) | 現場、HUD、介入、ビート、進化、リザルト | `src/ui/*Screen.tsx`, `src/sim/actions.ts`, `src/render/boardScene.ts`, 関連unit/E2E | 🟡 主要機能は実装済み。デスクトップの操作バー重なりはRI-69、狭幅の操作性はRI-70 |
+| [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビューと継続 | `QuarterReviewScreen.tsx`, `quarterReview.ts`, `goalAdjustments.ts` | 🟡 フロー実装済み。Delivery KPI のスケール不整合はRI-68 |
 | [4.7〜4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 独立チーム、部署・全社・業界、ドリルダウン | `src/sim/orgscale/`, `OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx` | 🟡 ズーム・表示・集約は実装済み。他チームは合成状態のためRI-64 |
 | [5](../SPEC.md#5-プレイヤーが操作するリソース) | 組織・集中力・予算・進化資源 | `src/sim/types.ts`, `src/sim/org.ts`, `src/sim/run/types.ts` | ✅ |
 | [6](../SPEC.md#6-スプリント中の能動操作) | 介入、集中力、コンボ、対象指定 | `src/sim/actions.ts`, `ActionBar.tsx`, `boardDragPlan.ts` | ✅ |
@@ -29,7 +29,7 @@
 | [11](../SPEC.md#11-組織進化ツリー) | ラン内ビルド | `src/data/evolution.ts`, `src/sim/run/evolution.ts` | ✅ |
 | [12](../SPEC.md#12-キャラクター育成) | 個体、成長、編成、スタミナ | `src/sim/member/`, `FormationScreen.tsx`, `tests/unit/member.test.ts` | ✅ |
 | [13](../SPEC.md#13-組織タイプ診断) | 診断と演出 | `src/sim/diagnosis.ts`, `src/render/diagnosisTheme.ts` | ✅ |
-| [14〜16](../SPEC.md#14-勝利条件) | 勝利、継続不能、難易度・試練 | `src/sim/outcome.ts`, `src/data/difficulties.ts`, `quarterReview.ts` | ✅ |
+| [14〜16](../SPEC.md#14-勝利条件) | 勝利、継続不能、難易度・試練 | `src/sim/outcome.ts`, `src/data/difficulties.ts`, `quarterReview.ts` | 🟡 判定は実装済み。Easy 序盤のシニア燃え尽き即死とオンボーディング欠落はRI-67 |
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ |
 | [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
@@ -45,3 +45,7 @@
 | 他チームが独立状態を持たず、任意チームへ入り込めない | 第4.7〜4.11のマクロ／ミクロ戦略 | [RI-64](./remaining-issues.md#ri-64-独立状態を持つ複数チーム運営) |
 | ボス下限・四半期・ラン全体・介入回数の統計検証がない | 第3.1の回帰検知 | [RI-66](./remaining-issues.md#ri-66-ペーシング規定の統計検証補強) |
 | ローカル拡張の一部が未着手 | 第23章 | [RI-34](./remaining-issues.md#ri-34-ローカル完結の将来拡張) |
+| Easy 序盤のシニア燃え尽き即死とオンボーディング欠落 | 第14〜16／第19〜20の導入体験 | [RI-67](./remaining-issues.md#ri-67-オンボーディングとシニア燃え尽きの断絶) |
+| 四半期レビュー Delivery KPI が四半期累計と1スプリント相当目標を比較し自明達成 | 第4.6.1／第15の勝利条件表示 | [RI-68](./remaining-issues.md#ri-68-四半期レビュー-delivery-kpi-のスケール不整合) |
+| デスクトップでスプリント上部操作バーが盤面と重なる | 第4のUI | [RI-69](./remaining-issues.md#ri-69-スプリント上部操作バーと盤面の重なり) |
+| 狭幅で盤面・介入バーへスクロールが必要 | 第4のUI操作性 | [RI-70](./remaining-issues.md#ri-70-モバイルのスプリント操作性) |

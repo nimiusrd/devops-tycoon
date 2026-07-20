@@ -114,7 +114,8 @@ export function planReviewHellReplay(blob: ReplayBlob): ReviewHellReplayView {
   const preferred = blob.keyframes[preferredKeyframeIndex];
   const preferredLabel =
     preferred?.label ??
-    (preferred ? labelForReplayKeyframe(preferred.frame, blob.outcome.diagnosis) : 'キーフレーム');
+    (preferred ? labelForReplayKeyframe(preferred.frame, blob.outcome.diagnosis) : undefined) ??
+    'キーフレーム';
 
   const bestResult: SprintResult | null | undefined =
     peakIndex !== null ? blob.keyframes[peakIndex]?.frame.lastResult : preferred?.frame.lastResult;

@@ -268,7 +268,8 @@ export default function App({ game }: AppProps) {
     );
   }
 
-  const reviewHellReplay = run.isReplayMode && state.diagnosis === 'reviewHell';
+  // 終端診断（ReplayBlob.outcome）で判定する。キーフレーム時点の state.diagnosis とは別。
+  const reviewHellReplay = run.isReplayMode && run.activeReplayDiagnosis === 'reviewHell';
   const replayBanner = run.isReplayMode ? (
     <div
       className={`replay-mode-banner${reviewHellReplay ? ' replay-mode-banner-review-hell' : ''}`}
@@ -417,7 +418,7 @@ export default function App({ game }: AppProps) {
             onContinue={run.acknowledgeResult}
             onAbandon={newRun}
             replayMode={run.isReplayMode}
-            diagnosis={state.diagnosis}
+            diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
           />
         )}
       </Suspense>

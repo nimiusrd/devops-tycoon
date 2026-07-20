@@ -331,7 +331,8 @@ describe('GameHandle リプレイ（RI-61）', () => {
     });
     const resultFrame = structuredClone(blob.keyframes[0]!.frame);
     resultFrame.phase = 'result';
-    resultFrame.diagnosis = 'reviewHell';
+    // キーフレーム時点は別診断でも、終端 outcome が reviewHell なら専用演出対象。
+    resultFrame.diagnosis = 'reworkSpiral';
     resultFrame.lastResult = {
       done: 4,
       delivered: 10,
@@ -364,7 +365,10 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(game.listReplays().some((r) => r.id === 'hell-import')).toBe(true);
     const opened = game.openReplay('hell-import', 1);
     expect(opened?.phase).toBe('result');
-    expect(opened?.diagnosis).toBe('reviewHell');
+    expect(opened?.diagnosis).toBe('reworkSpiral');
+    expect(game.getActiveReplayDiagnosis()).toBe('reviewHell');
     expect(game.isReplayMode()).toBe(true);
+    game.exitReplay();
+    expect(game.getActiveReplayDiagnosis()).toBeNull();
   });
 });

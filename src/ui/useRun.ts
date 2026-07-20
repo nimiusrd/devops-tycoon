@@ -18,7 +18,7 @@ import type {
   InterventionOutcome,
   SprintState,
 } from '../sim/types';
-import type { DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
+import type { DiagnosisType, DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
 import {
@@ -83,6 +83,8 @@ export interface UseRun {
   newRun: () => void;
   replays: ReplayBlob[];
   isReplayMode: boolean;
+  /** 閲覧中リプレイの終端診断（RI-34‴）。非リプレイ時は null。 */
+  activeReplayDiagnosis: DiagnosisType | null;
   openReplay: (id: string, keyframeIndex?: number) => void;
   exitReplay: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
@@ -104,6 +106,9 @@ export function useRun(game: GameHandle): UseRun {
   const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
   const [replays, setReplays] = useState<ReplayBlob[]>(() => game.listReplays());
   const [isReplayMode, setIsReplayMode] = useState(() => game.isReplayMode());
+  const [activeReplayDiagnosis, setActiveReplayDiagnosis] = useState<DiagnosisType | null>(() =>
+    game.getActiveReplayDiagnosis(),
+  );
   const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
   const playbackSpeedRef = useRef<PlaybackSpeed>(1);
   const setPlaybackSpeed = useCallback((speed: PlaybackSpeed) => {
@@ -164,6 +169,7 @@ export function useRun(game: GameHandle): UseRun {
       setRunEpoch(game.getRunEpoch());
       setReplays(game.listReplays());
       setIsReplayMode(game.isReplayMode());
+      setActiveReplayDiagnosis(game.getActiveReplayDiagnosis());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -248,6 +254,7 @@ export function useRun(game: GameHandle): UseRun {
     runEpoch,
     replays,
     isReplayMode,
+    activeReplayDiagnosis,
     playbackSpeed,
     setPlaybackSpeed,
     startRun,

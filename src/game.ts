@@ -10,7 +10,13 @@ import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import { resolveSeedFromLocation } from './sim/seed';
 import type { ActionId, ActionTarget, CardPlayOutcome, InterventionOutcome } from './sim/types';
-import type { DifficultyId, GoalAdjustmentId, RunState, WhatIfState } from './sim/run/types';
+import type {
+  DiagnosisType,
+  DifficultyId,
+  GoalAdjustmentId,
+  RunState,
+  WhatIfState,
+} from './sim/run/types';
 import { computeWhatIfState, whatIfCacheKey, type WhatIfComputeInput } from './sim/run/whatIfState';
 import { requestWhatIfState } from './sim/run/whatIfClient';
 import type { LaneAssignment } from './sim/member/types';
@@ -155,6 +161,11 @@ export interface GameHandle {
   /** リプレイ閲覧中か。 */
   isReplayMode(): boolean;
   /**
+   * 閲覧中リプレイの終端診断（`ReplayBlob.outcome.diagnosis`）。
+   * キーフレーム時点の `state.diagnosis` とは別に保持する（RI-34‴）。
+   */
+  getActiveReplayDiagnosis(): DiagnosisType | null;
+  /**
    * リプレイを永続化層へ取り込みキャッシュを更新する（E2E / デバッグ用。RI-34‴）。
    * 正規化に失敗した場合は false。
    */
@@ -204,6 +215,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
   let replayMode = false;
+  /** 閲覧中リプレイの終端診断（キーフレーム時点の diagnosis と独立。RI-34‴）。 */
+  let activeReplayDiagnosis: DiagnosisType | null = null;
   let recorded = false;
   let lastRunReward: RunRewardBreakdown | null = null;
   let revision = 0;
@@ -740,6 +753,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         return null;
       }
       replayMode = true;
+      activeReplayDiagnosis = replay.outcome.diagnosis;
       activeDailyDate = frame.frame.dailyDate ?? null;
       recorded = true;
       lastRunReward = null;
@@ -750,6 +764,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     exitReplay() {
       replayMode = false;
+      activeReplayDiagnosis = null;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
@@ -763,6 +778,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     isReplayMode() {
       return replayMode;
+    },
+    getActiveReplayDiagnosis() {
+      return activeReplayDiagnosis;
     },
     async importReplay(blob) {
       if (!replayStorage) return false;

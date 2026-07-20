@@ -34,6 +34,7 @@ import {
   utcDateStr,
   type MetaState,
   type RunRewardBreakdown,
+  withPreferredCardIds,
   withSoundMuted,
 } from './state/meta';
 import type { MetaStorage } from './state/metaPersistence';
@@ -132,6 +133,11 @@ export interface GameHandle {
   purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
   setSoundMuted(muted: boolean): void;
+  /**
+   * 研修方針（優先施策）を永続化する（RI-34⁗）。
+   * 解放済みカードのみ。最大 2 枚。ラン中プールは開始時スナップショットのまま。
+   */
+  setPreferredCardIds(cardIds: readonly string[]): void;
   /** 初見向け段階ガイドを表示済みにする（RI-60）。 */
   markTutorialSeen(): void;
   /** 現在のメタ進行（解放状況・実績）。 */
@@ -373,10 +379,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return { whatIf: null, whatIfStatus: 'computing' };
   };
 
-  /** 最新 meta から解放プールを engine へ反映する（ラン開始時に呼ぶ）。 */
-  const applyUnlockedToEngine = (): void => {
+  /**
+   * 最新 meta から解放プールと研修方針を engine へ反映する（ラン開始時に呼ぶ）。
+   * デイリーは同一日比較のため研修方針を適用しない（RI-34⁗）。
+   */
+  const applyUnlockedToEngine = (options?: { ignorePreferred?: boolean }): void => {
     const content = unlockedContent(meta);
     engine.setUnlockedContent(content.cards, content.relics);
+    engine.setPreferredCards(options?.ignorePreferred ? [] : meta.preferredCardIds);
   };
 
   /** 保存失敗でゲーム進行を止めず、直列化はストレージ実装へ委ねる。 */
@@ -475,7 +485,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       keyframes = [];
       paused = false;
       clearWhatIfCache();
-      applyUnlockedToEngine();
+      applyUnlockedToEngine({ ignorePreferred: true });
       runEpoch += 1;
       engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], dailySeed(day), {
         kind: 'daily',
@@ -679,6 +689,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       persistMeta();
       bump();
     },
+    setPreferredCardIds(cardIds) {
+      if (!metaReady) return;
+      const next = withPreferredCardIds(meta, cardIds);
+      if (next === meta) return;
+      meta = next;
+      persistMeta();
+      bump();
+    },
     markTutorialSeen() {
       if (!metaReady || meta.seenTutorial) return;
       meta = { ...meta, seenTutorial: true };
@@ -712,10 +730,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       activeDailyDate = save.summary.dailyDate ?? null;
       // リロード前に集めたキーフレームを引き継ぎ、完走リプレイが前半を欠かないようにする。
       keyframes = structuredClone(save.replayKeyframes ?? []);
-      // ラン中の解放プールはセーブ時点のものを優先（メタショップ購入で変えない）。
+      // ラン中の解放プール／研修方針はセーブ時点のものを優先（メタ変更で変えない）。
       engine.setUnlockedContent(
         new Set(save.state.extras.allowedCards),
         new Set(save.state.extras.allowedRelics),
+      );
+      engine.setPreferredCards(
+        Array.isArray(save.state.extras.preferredCardIds) ? save.state.extras.preferredCardIds : [],
       );
       engine.hydratePersistState(save.state);
       bump();

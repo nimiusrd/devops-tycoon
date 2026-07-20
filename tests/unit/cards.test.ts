@@ -6,6 +6,7 @@ import {
   drawDraft,
   HAND_SIZE,
   playCost,
+  PREFERRED_DRAFT_WEIGHT_MUL,
   scaleEffects,
   upgradeCard,
   upgradeCardAt,
@@ -173,6 +174,27 @@ describe('ドラフト抽選（第7.1）', () => {
   it('allowed 未指定時は従来どおり全カードから抽選する', () => {
     const all = drawDraft(createRng('draft:legacy'));
     expect(all).toHaveLength(3);
+  });
+
+  it('優先施策は同一 seed でも出やすくなり、allowed 外には出ない（RI-34⁗）', () => {
+    expect(PREFERRED_DRAFT_WEIGHT_MUL).toBeGreaterThan(1);
+    const allowed = new Set(['copilot', 'auto-test', 'docs', 'pr-size-limit', 'ai-guideline']);
+    const preferred = new Set(['docs']);
+    let plainHits = 0;
+    let preferredHits = 0;
+    for (let i = 0; i < 200; i += 1) {
+      const plain = drawDraft(createRng(`bias:${i}`), 3, allowed);
+      const biased = drawDraft(createRng(`bias:${i}`), 3, allowed, preferred);
+      if (plain.includes('docs')) plainHits += 1;
+      if (biased.includes('docs')) preferredHits += 1;
+      expect(biased.every((id) => allowed.has(id))).toBe(true);
+      expect(biased).not.toContain('devin');
+    }
+    expect(preferredHits).toBeGreaterThan(plainHits);
+    // 決定論: 同じ入力は同じ結果
+    expect(drawDraft(createRng('bias:0'), 3, allowed, preferred)).toEqual(
+      drawDraft(createRng('bias:0'), 3, allowed, preferred),
+    );
   });
 });
 

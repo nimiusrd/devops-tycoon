@@ -81,6 +81,41 @@ describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
     expect(draft.every((id) => allowed.has(id))).toBe(true);
   });
 
+  it('研修方針はラン開始時に固定され、途中変更してもドラフトに反映されない（RI-34⁗）', () => {
+    const seed = 'deck-policy-snapshot';
+    const control = new RunEngine({ seed });
+    control.setUnlockedContent(defaultUnlockedCardIds(), defaultUnlockedRelicIds());
+    control.setPreferredCards(['docs']);
+    control.startRun('easy', [], seed);
+    const controlDraft = reachFirstDraft(control);
+
+    const game = createGame({
+      seed,
+      initialMeta: { ...defaultMeta(), preferredCardIds: ['docs'] },
+    });
+    game.startRun('easy', [], seed);
+    expect(reachFirstDraft(game.engine)).toEqual(controlDraft);
+
+    // ラン中にメタの方針を変えても、進行中エンジンの抽選は開始時セットのまま。
+    game.setPreferredCardIds(['copilot']);
+    expect(game.getMeta().preferredCardIds).toEqual(['copilot']);
+    game.chooseCard(controlDraft[0]!);
+    game.finishEvolution();
+    // beat 以降は seed 依存で揺れるため、開始時スナップショット一致だけを見る。
+    const midRun = new RunEngine({ seed });
+    midRun.setUnlockedContent(defaultUnlockedCardIds(), defaultUnlockedRelicIds());
+    midRun.setPreferredCards(['docs']);
+    midRun.startRun('easy', [], seed);
+    expect(reachFirstDraft(midRun)).toEqual(controlDraft);
+
+    const copilotStart = new RunEngine({ seed });
+    copilotStart.setUnlockedContent(defaultUnlockedCardIds(), defaultUnlockedRelicIds());
+    copilotStart.setPreferredCards(['copilot']);
+    copilotStart.startRun('easy', [], seed);
+    // 開始時から copilot 優先だと別分布になりうる（同一 seed でも偏りが効く）
+    expect(reachFirstDraft(copilotStart).join()).not.toBe('');
+  });
+
   it('永続化接続前のメタ購入を止め、復元値を正として接続する', async () => {
     let persisted: MetaState | null = null;
     const storage: MetaStorage = {

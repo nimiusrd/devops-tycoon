@@ -49,6 +49,9 @@ const IndustryScreen = lazy(() =>
 const MetaShopScreen = lazy(() =>
   import('./ui/MetaShopScreen').then((m) => ({ default: m.MetaShopScreen })),
 );
+const DeckPolicyScreen = lazy(() =>
+  import('./ui/DeckPolicyScreen').then((m) => ({ default: m.DeckPolicyScreen })),
+);
 const ReplayListScreen = lazy(() =>
   import('./ui/ReplayListScreen').then((m) => ({ default: m.ReplayListScreen })),
 );
@@ -114,6 +117,7 @@ export default function App({ game }: AppProps) {
   const audio = useAudio();
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
+  const [deckPolicyOpen, setDeckPolicyOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [replayListOpen, setReplayListOpen] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
@@ -178,6 +182,7 @@ export default function App({ game }: AppProps) {
   const closeTitleModals = () => {
     setFormationOpen(false);
     setMetaShopOpen(false);
+    setDeckPolicyOpen(false);
     setAchievementsOpen(false);
     setHelpOpen(false);
     setReplayListOpen(false);
@@ -237,6 +242,7 @@ export default function App({ game }: AppProps) {
           resumableSummary={runSaveSummary}
           onOpenReplays={() => setReplayListOpen(true)}
           onOpenMetaShop={() => setMetaShopOpen(true)}
+          onOpenDeckPolicy={() => setDeckPolicyOpen(true)}
           onOpenAchievements={() => setAchievementsOpen(true)}
           onToggleSoundMuted={() => {
             audio.unlock();
@@ -251,6 +257,13 @@ export default function App({ game }: AppProps) {
               meta={meta}
               onPurchase={(id) => run.purchaseMetaUnlock(id)}
               onClose={() => setMetaShopOpen(false)}
+            />
+          )}
+          {deckPolicyOpen && (
+            <DeckPolicyScreen
+              meta={meta}
+              onChange={(ids) => run.setPreferredCardIds(ids)}
+              onClose={() => setDeckPolicyOpen(false)}
             />
           )}
           {achievementsOpen && (

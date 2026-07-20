@@ -24,6 +24,7 @@ const SEEN_META: MetaState = {
   bestScore: 0,
   unlockedCards: [],
   unlockedRelics: [],
+  preferredCardIds: [],
   dailyRuns: {},
   soundMuted: false,
   seenTutorial: true,

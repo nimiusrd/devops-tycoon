@@ -43,6 +43,11 @@ export interface MetaState {
   unlockedCards: string[];
   /** メタショップで購入済みのレリック定義 ID。 */
   unlockedRelics: string[];
+  /**
+   * 研修方針として優先するカード定義 ID（最大 {@link MAX_PREFERRED_CARDS}）。
+   * ドラフト／ショップの出やすさだけを偏らせ、初期所持にはしない（RI-34⁗）。
+   */
+  preferredCardIds: string[];
   /** UTC 日付（YYYY-MM-DD）→ デイリーラン記録。 */
   dailyRuns: Record<string, DailyRunRecord>;
   /** サウンドミュート（RI-59）。UI 層のみ。 */
@@ -50,6 +55,9 @@ export interface MetaState {
   /** 初見向け段階ガイドを表示済みか（RI-60）。 */
   seenTutorial: boolean;
 }
+
+/** 研修方針で選べる優先施策の上限（RI-34⁗）。 */
+export const MAX_PREFERRED_CARDS = 2;
 
 /** 1 日分のデイリーラン記録（第23章）。 */
 export interface DailyRunRecord {
@@ -90,10 +98,29 @@ export function defaultMeta(): MetaState {
     bestScore: 0,
     unlockedCards: [],
     unlockedRelics: [],
+    preferredCardIds: [],
     dailyRuns: {},
     soundMuted: true,
     seenTutorial: false,
   };
+}
+
+/**
+ * 優先施策 ID を正規化する（未知・未解放を落とし、重複除去、上限で切り詰め）。
+ * `allowed` 未指定時は ID の形式だけ整える（解放チェックは呼び出し側）。
+ */
+export function sanitizePreferredCardIds(ids: unknown, allowed?: ReadonlySet<string>): string[] {
+  if (!Array.isArray(ids)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of ids) {
+    if (typeof raw !== 'string' || !raw || seen.has(raw)) continue;
+    if (allowed && !allowed.has(raw)) continue;
+    seen.add(raw);
+    out.push(raw);
+    if (out.length >= MAX_PREFERRED_CARDS) break;
+  }
+  return out;
 }
 
 /** 保存値へ現行スキーマの既定値を補完する。 */
@@ -104,8 +131,10 @@ export function normalizeMeta(value: unknown): MetaState {
   const base = { ...defaultMeta(), ...(rest as Partial<MetaState>) };
   // 旧セーブや壊れた値は boolean に正規化する。
   // soundMuted 未設定は既定ミュート（true）。明示 false のセーブは維持する。
+  const unlocked = unlockedContent(base);
   return {
     ...base,
+    preferredCardIds: sanitizePreferredCardIds(rest.preferredCardIds, unlocked.cards),
     soundMuted: typeof rest.soundMuted === 'boolean' ? rest.soundMuted : true,
     seenTutorial: rest.seenTutorial === true,
   };
@@ -115,6 +144,25 @@ export function normalizeMeta(value: unknown): MetaState {
 export function withSoundMuted(meta: MetaState, soundMuted: boolean): MetaState {
   if (meta.soundMuted === soundMuted) return meta;
   return { ...meta, soundMuted };
+}
+
+/**
+ * 研修方針（優先施策）を更新した新しい MetaState を返す（RI-34⁗）。
+ * 解放済みカードのみ受け付け、最大 {@link MAX_PREFERRED_CARDS} 枚まで。
+ */
+export function withPreferredCardIds(
+  meta: MetaState,
+  preferredCardIds: readonly string[],
+): MetaState {
+  const allowed = unlockedContent(meta).cards;
+  const next = sanitizePreferredCardIds(preferredCardIds, allowed);
+  if (
+    next.length === meta.preferredCardIds.length &&
+    next.every((id, i) => id === meta.preferredCardIds[i])
+  ) {
+    return meta;
+  }
+  return { ...meta, preferredCardIds: next };
 }
 
 /** 旧 JSON セーブを現行スキーマへ復元する。壊れていれば null。 */
@@ -341,6 +389,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     bestScore: Math.max(meta.bestScore, input.score),
     unlockedCards: [...meta.unlockedCards],
     unlockedRelics: [...meta.unlockedRelics],
+    preferredCardIds: [...meta.preferredCardIds],
     dailyRuns: { ...meta.dailyRuns },
     soundMuted: meta.soundMuted,
     seenTutorial: meta.seenTutorial,

@@ -90,6 +90,8 @@ export interface UseRun {
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
   setSoundMuted: (muted: boolean) => void;
+  /** 研修方針（優先施策）を永続化する（RI-34⁗）。 */
+  setPreferredCardIds: (cardIds: readonly string[]) => void;
   /** 初見向け段階ガイドを表示済みにする（RI-60）。 */
   markTutorialSeen: () => void;
 }
@@ -244,6 +246,10 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const setSoundMuted = useCallback((muted: boolean) => void game.setSoundMuted(muted), [game]);
+  const setPreferredCardIds = useCallback(
+    (cardIds: readonly string[]) => void game.setPreferredCardIds(cardIds),
+    [game],
+  );
   const markTutorialSeen = useCallback(() => void game.markTutorialSeen(), [game]);
 
   return {
@@ -291,6 +297,7 @@ export function useRun(game: GameHandle): UseRun {
     newRun,
     purchaseMetaUnlock,
     setSoundMuted,
+    setPreferredCardIds,
     markTutorialSeen,
   };
 }

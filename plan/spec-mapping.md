@@ -56,7 +56,7 @@
 | [19](../SPEC.md#19-面白さの核) | 面白さの核 | 各画面の体験設計に反映（リスク/リターン設計ほか） | ✅ |
 | [20](../SPEC.md#20-教育的価値) | 教育的価値 | `src/sim/diagnosis.ts`（組織タイプ診断による気づき） | ✅ |
 | [22](../SPEC.md#22-技術構成) | 技術構成 | `package.json`, `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `src/state/metaPersistence.ts`, `src/state/runPersistence.ts`, `src/state/gameDb.ts`, `src/sim/rng.ts`, `src/sim/seed.ts`, `src/sim/run/whatIfState.ts`, `whatIfClient.ts`, `whatIf.worker.ts`, `src/ui/BaselineComparisonChart.tsx` / `tests/unit/metaPersistence.test.ts`, `runPersistence.test.ts`, `rng.test.ts`, `seed.test.ts`, `whatIf.test.ts` ／ 詳細は [architecture.md](./architecture.md) | ✅ 基盤・IndexedDB 永続化（メタ＋ラン途中セーブ）・seed付き決定論・テスト二段構え（22.3/22.5）に加え、what-if の Web Worker(+Comlink) オフロードとリザルトの Recharts 可視化を実装（[remaining-issues.md](./remaining-issues.md) RI-13 / RI-58）。visx / タイムラインの Recharts 化は意図的に見送り。リプレイ保存は RI-61 |
-| [23](../SPEC.md#23-拡張案) | 拡張案 | デイリーラン＋「なぜ燃えたか」（RI-34′）＋「AI導入失敗図鑑」（RI-34″）＋「レビュー地獄リプレイ」（RI-34‴）を実装。外部 API 系は仕様から削除。他のローカル拡張は未着手 | 🟡 |
+| [23](../SPEC.md#23-拡張案) | 拡張案 | デイリーラン＋「なぜ燃えたか」（RI-34′）＋「AI導入失敗図鑑」（RI-34″）＋「レビュー地獄リプレイ」（RI-34‴）＋「研修方針」（RI-34⁗）を実装。外部 API 系は仕様から削除。他のローカル拡張は未着手 | 🟡 |
 | [24](../SPEC.md#24-企画の価値) | 企画の価値 | （企画文・実装対象なし） | — |
 | [25](../SPEC.md#25-結論) | 結論 | （企画文・実装対象なし） | — |
 
@@ -77,4 +77,4 @@
 | ゲーム時間の目安（スプリント 60〜120 秒・一時停止/倍速） | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | ✅ RI-62 でテンポ・速度 UI・分布圧縮を実装 | [remaining-issues.md](./remaining-issues.md) RI-62 |
 | サウンド演出（BGM・効果音） | [18.3](../SPEC.md#183-画面ステート組織の空気感) | ✅ RI-59（WAV ファイル再生 + MetaState.soundMuted、既定ミュート）＋ RI-63（3 レイヤ楽曲のシームレスループ・診断トーン別ムード・クロスフェード切替） | [remaining-issues.md](./remaining-issues.md) RI-59 / RI-63 |
 | ラン途中セーブ・リプレイ保存（保存の想定用途「セーブ・リプレイ」） | [17](../SPEC.md#17-メタ進行とアンロック), [22](../SPEC.md#22-技術構成), [23](../SPEC.md#23-拡張案) | ✅ セーブ復帰（RI-58）＋キーフレームリプレイ閲覧（RI-61）。純入力ログ再生は非スコープ | [remaining-issues.md](./remaining-issues.md) RI-58 / RI-61 |
-| 拡張案（デイリーラン・なぜ燃えたか・図鑑・レビュー地獄リプレイ以外のローカル拡張） | [23](../SPEC.md#23-拡張案) | 一部着手（RI-34′ / RI-34″ / RI-34‴ 完了）。外部 API は対象外。本体は保留 | [remaining-issues.md](./remaining-issues.md) RI-34 / RI-34′ / RI-34″ / RI-34‴ |
+| 拡張案（デイリーラン・なぜ燃えたか・図鑑・レビュー地獄リプレイ・研修方針以外のローカル拡張） | [23](../SPEC.md#23-拡張案) | 一部着手（RI-34′ / RI-34″ / RI-34‴ / RI-34⁗ 完了）。外部 API は対象外。本体は保留 | [remaining-issues.md](./remaining-issues.md) RI-34 / RI-34′ / RI-34″ / RI-34‴ / RI-34⁗ |

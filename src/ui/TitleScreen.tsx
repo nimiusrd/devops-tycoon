@@ -40,7 +40,7 @@ export interface TitleScreenProps {
   resumableSummary?: RunSaveSummary | null;
   onOpenReplays?: () => void;
   onOpenMetaShop?: () => void;
-  /** 研修方針（デッキカスタム。RI-34‴）。 */
+  /** 研修方針（デッキカスタム。RI-34⁗）。 */
   onOpenDeckPolicy?: () => void;
   onOpenAchievements?: () => void;
   /** サウンドミュート切替（RI-59）。 */

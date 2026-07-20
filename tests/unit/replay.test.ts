@@ -276,4 +276,99 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(game.listReplays().length).toBeGreaterThan(0);
     expect(game.listReplays()[0]?.keyframes.length).toBeGreaterThan(0);
   });
+
+  it('キーフレームに label が付く（RI-34‴）', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'label-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    game.startRun('easy', [], 'label-replay');
+    const guard = 80_000;
+    for (let i = 0; i < guard; i += 1) {
+      const phase = game.phase();
+      if (phase === 'won' || phase === 'lost') break;
+      if (phase === 'setup') game.beginSetupSprint();
+      else if (phase === 'sprint') {
+        while (game.isSprintRunning()) game.step(100);
+      } else if (phase === 'result') game.acknowledgeResult();
+      else if (phase === 'draft') game.skipDraft();
+      else if (phase === 'evolution') game.finishEvolution();
+      else if (phase === 'beat') game.resolveBeat(0);
+      else if (phase === 'shop') game.leaveShop();
+      else if (phase === 'rest') game.restChoose('heal');
+      else if (phase === 'recruit') game.recruitChoose('skip');
+      else if (phase === 'quarterReview') {
+        const review = game.getState().quarterReview;
+        if (review?.outcome === 'missed_adjustable') {
+          game.chooseGoalAdjustment(review.availableAdjustments[0] ?? 'cut_scope');
+        } else {
+          game.acknowledgeQuarterReview();
+        }
+      } else break;
+    }
+    for (let i = 0; i < 40 && game.listReplays().length === 0; i += 1) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    const replay = game.listReplays()[0];
+    expect(replay).toBeTruthy();
+    const setup = replay!.keyframes.find((k) => k.phase === 'setup');
+    expect(setup?.label).toBe('編成');
+    const result = replay!.keyframes.find((k) => k.phase === 'result');
+    if (result) {
+      expect(result.label).toMatch(/Review peak \d+/);
+    }
+  });
+
+  it('importReplay で reviewHell リプレイを取り込める（RI-34‴）', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'import-hell', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({
+      id: 'hell-import',
+      seed: 'import-hell',
+      outcome: { status: 'lost', diagnosis: 'reviewHell', score: 3, loseReason: 'reviewFreeze' },
+    });
+    const resultFrame = structuredClone(blob.keyframes[0]!.frame);
+    resultFrame.phase = 'result';
+    // キーフレーム時点は別診断でも、終端 outcome が reviewHell なら専用演出対象。
+    resultFrame.diagnosis = 'reworkSpiral';
+    resultFrame.lastResult = {
+      done: 4,
+      delivered: 10,
+      maxCombo: 1,
+      aiAssistedPct: 60,
+      reviewQueueMax: 20,
+      rework: 1,
+      incidents: 1,
+      contained: 0,
+      spread: 1,
+      seniorHpDelta: -20,
+      actionCounts: {},
+      grade: 'D',
+      title: 'PRを増やす者',
+      diagnosis: '渋滞',
+      timeline: [],
+      events: [],
+      fireEvents: [],
+      focusRemaining: 1,
+      focusMax: 8,
+      autoContainCount: 0,
+    };
+    resultFrame.totals = { ...resultFrame.totals, reviewQueuePeak: 20 };
+    blob.keyframes = [
+      { phase: 'setup', frame: blob.keyframes[0]!.frame, label: '編成' },
+      { phase: 'result', frame: resultFrame, label: 'Review peak 20' },
+    ];
+
+    expect(await game.importReplay(blob)).toBe(true);
+    expect(game.listReplays().some((r) => r.id === 'hell-import')).toBe(true);
+    const opened = game.openReplay('hell-import', 1);
+    expect(opened?.phase).toBe('result');
+    expect(opened?.diagnosis).toBe('reworkSpiral');
+    expect(game.getActiveReplayDiagnosis()).toBe('reviewHell');
+    expect(game.isReplayMode()).toBe(true);
+    game.exitReplay();
+    expect(game.getActiveReplayDiagnosis()).toBeNull();
+  });
 });

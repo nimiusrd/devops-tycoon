@@ -281,9 +281,19 @@ export default function App({ game }: AppProps) {
     );
   }
 
+  // 終端診断（ReplayBlob.outcome）で判定する。キーフレーム時点の state.diagnosis とは別。
+  const reviewHellReplay = run.isReplayMode && run.activeReplayDiagnosis === 'reviewHell';
   const replayBanner = run.isReplayMode ? (
-    <div className="replay-mode-banner" data-testid="replay-mode-banner">
-      <span>リプレイ閲覧中（操作は無効）</span>
+    <div
+      className={`replay-mode-banner${reviewHellReplay ? ' replay-mode-banner-review-hell' : ''}`}
+      data-testid="replay-mode-banner"
+      data-review-hell={reviewHellReplay ? 'true' : undefined}
+    >
+      <span>
+        {reviewHellReplay
+          ? 'レビュー地獄リプレイ閲覧中（操作は無効）'
+          : 'リプレイ閲覧中（操作は無効）'}
+      </span>
       <button type="button" data-testid="exit-replay" onClick={exitReplay}>
         タイトルへ戻る
       </button>
@@ -420,6 +430,8 @@ export default function App({ game }: AppProps) {
             growth={state.lastGrowth}
             onContinue={run.acknowledgeResult}
             onAbandon={newRun}
+            replayMode={run.isReplayMode}
+            diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
           />
         )}
       </Suspense>

@@ -367,7 +367,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(loadMeta(storage).preferredCardIds).toEqual([]);
   });
 
-  it('研修方針 preferredCardIds を正規化し、未解放・超過を落とす（RI-34‴）', () => {
+  it('研修方針 preferredCardIds を正規化し、未解放・超過を落とす（RI-34⁗）', () => {
     expect(normalizeMeta({ preferredCardIds: ['copilot', 'docs'] }).preferredCardIds).toEqual([
       'copilot',
       'docs',
@@ -403,7 +403,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(rewarded.preferredCardIds).toEqual(['auto-test']);
   });
 
-  it('setPreferredCardIds は解放済みのみ永続化する（RI-34‴）', async () => {
+  it('setPreferredCardIds は解放済みのみ永続化する（RI-34⁗）', async () => {
     let persisted: MetaState | null = null;
     const game = createGame({
       initialMeta: defaultMeta(),

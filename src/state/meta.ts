@@ -45,7 +45,7 @@ export interface MetaState {
   unlockedRelics: string[];
   /**
    * 研修方針として優先するカード定義 ID（最大 {@link MAX_PREFERRED_CARDS}）。
-   * ドラフト／ショップの出やすさだけを偏らせ、初期所持にはしない（RI-34‴）。
+   * ドラフト／ショップの出やすさだけを偏らせ、初期所持にはしない（RI-34⁗）。
    */
   preferredCardIds: string[];
   /** UTC 日付（YYYY-MM-DD）→ デイリーラン記録。 */
@@ -56,7 +56,7 @@ export interface MetaState {
   seenTutorial: boolean;
 }
 
-/** 研修方針で選べる優先施策の上限（RI-34‴）。 */
+/** 研修方針で選べる優先施策の上限（RI-34⁗）。 */
 export const MAX_PREFERRED_CARDS = 2;
 
 /** 1 日分のデイリーラン記録（第23章）。 */
@@ -147,7 +147,7 @@ export function withSoundMuted(meta: MetaState, soundMuted: boolean): MetaState 
 }
 
 /**
- * 研修方針（優先施策）を更新した新しい MetaState を返す（RI-34‴）。
+ * 研修方針（優先施策）を更新した新しい MetaState を返す（RI-34⁗）。
  * 解放済みカードのみ受け付け、最大 {@link MAX_PREFERRED_CARDS} 枚まで。
  */
 export function withPreferredCardIds(

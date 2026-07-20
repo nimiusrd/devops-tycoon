@@ -176,7 +176,7 @@ describe('ドラフト抽選（第7.1）', () => {
     expect(all).toHaveLength(3);
   });
 
-  it('優先施策は同一 seed でも出やすくなり、allowed 外には出ない（RI-34‴）', () => {
+  it('優先施策は同一 seed でも出やすくなり、allowed 外には出ない（RI-34⁗）', () => {
     expect(PREFERRED_DRAFT_WEIGHT_MUL).toBeGreaterThan(1);
     const allowed = new Set(['copilot', 'auto-test', 'docs', 'pr-size-limit', 'ai-guideline']);
     const preferred = new Set(['docs']);

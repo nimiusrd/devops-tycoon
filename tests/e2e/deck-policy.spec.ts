@@ -28,7 +28,7 @@ const BASE_META: MetaState = {
   seenTutorial: true,
 };
 
-test('タイトルから研修方針を選び、再オープンで選択が維持される（RI-34‴）', async ({ page }) => {
+test('タイトルから研修方針を選び、再オープンで選択が維持される（RI-34⁗）', async ({ page }) => {
   await page.addInitScript((meta) => {
     localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
   }, BASE_META);

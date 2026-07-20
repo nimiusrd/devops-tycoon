@@ -46,7 +46,7 @@ export interface RunPersistExtras {
   allowedRelics: string[];
   /**
    * ラン開始時に固定した研修方針（優先施策 ID）。
-   * 旧セーブでは欠落しうる（復元時は空配列扱い。RI-34‴）。
+   * 旧セーブでは欠落しうる（復元時は空配列扱い。RI-34⁗）。
    */
   preferredCardIds?: string[];
 }

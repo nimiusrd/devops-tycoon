@@ -42,7 +42,7 @@
 | RI-09 | アクションバーのマネージャー像 | 低 | 完了 | — | 第4.3 |
 | RI-10 | ジューシー演出の上積み(スイープ/スローモ/ご褒美) | 低 | 完了 | — | 第18.2 / 18.4 |
 | RI-59 | サウンド演出(BGM・効果音)の導入 | 低 | 完了 | — | 第18.3 |
-| RI-63 | BGM 品質の改善（ループ・音色・診断連動） | 低 | 未着手 | RI-59 | 第18.3 |
+| RI-63 | BGM 品質の改善（ループ・音色・診断連動） | 低 | 完了 | RI-59 | 第18.3 |
 
 ### 選択の可視化・フィードバック（UX）
 
@@ -113,7 +113,8 @@
 | RI-34 | 23章「拡張案」全般【将来エピック】（ローカルのみ） | 低 | 保留(要判断) | — | 第23 |
 | RI-34′ | 「なぜ燃えたか」解説ログ（§23 の1切片） | 中 | 完了 | — | 第23 / 4.6 |
 | RI-34″ | 「AI導入失敗図鑑」（§23 の1切片） | 中 | 完了 | — | 第23 / 13 / 17 |
-| RI-34‴ | カードデッキカスタマイズ（研修方針 / §23 切片） | 中 | 完了 | — | 第23 / 7 / 17 |
+| RI-34‴ | 「レビュー地獄リプレイ」（§23 の1切片） | 中 | 完了 | RI-61 | 第23 |
+| RI-34⁗ | カードデッキカスタマイズ（研修方針 / §23 切片） | 中 | 完了 | — | 第23 / 7 / 17 |
 
 ### テスト・保守・技術的負債（QA）
 
@@ -243,13 +244,19 @@ IndexedDB 永続化し、タイトル footer のミュートトグル（`data-te
 既定はミュート（`soundMuted: true`）。sim 非接触。Vitest: `tests/unit/audio.test.ts`。
 BGM の聴感品質は RI-63 へ切り出し。
 
-#### RI-63 BGM 品質の改善（ループ・音色・診断連動） — 優先度:低 / 未着手
+#### RI-63 BGM 品質の改善（ループ・音色・診断連動） — 優先度:低 / 完了
 
-RI-59 で診断連動 BGM（bright / cloudy / tense）の配線とプレースホルダ WAV は入ったが、
-現状のループはスクリプト生成の短いアルペジオで、空気感・継ぎ目・曲としての完成度に改善余地がある。
-検討項目: シームレスループ（またはクロスフェード）、診断トーンごとの明確なムード差、
-SFX との音量バランス、必要なら外部制作音源への差し替え。再生経路（HTMLAudio / MetaState ミュート）は
-RI-59 を流用し、アセット差し替え中心で進める。
+**完了**: `scripts/generate-audio-assets.mjs` を楽曲レンダラ化（`renderSong`）し、BGM 3 曲を
+bass / pad / lead の 3 レイヤ・コード進行つきの 20〜26 秒ループへ差し替え。ループ端は
+`bakeLoopCrossfade` で末尾を先頭へ等パワークロスフェード焼き込みし、`loop=true` の継ぎ目
+クリックノイズを除去。トーン別ムードは bright=C メジャー（C–G–Am–F、8 分アルペジオ）、
+cloudy=A マイナー 7th 系（パッド主体・疎なリード）、tense=G フリジアン（低音オスティナート＋
+♭II/減5度スタブ）。各曲はピーク正規化（0.55）でラウドネスを統一。`audioEngine.setBgmTone` は
+旧トラックのフェードアウトと新トラックのフェードインを並行させるクロスフェード（約 0.7s、
+`setInterval` の volume ランプ）に変更。Vitest: `tests/unit/audio.test.ts`（クロスフェード・
+off 停止・dispose のタイマー解放・ミュート反映）/ `audioAssets.test.ts`（ループ端連続性・
+長さ・正規化）。HTMLAudio の `loop=true` 自体の微小ギャップはブラウザ依存で残りうるため、
+完全ギャップレスが必要になった場合の Web Audio API 移行は非スコープとして見送り。
 
 ### 選択の可視化・フィードバック（UX）
 
@@ -398,15 +405,19 @@ Vitest: `tests/unit/tutorial.test.ts`。E2E: `tests/e2e/tutorial.spec.ts`。
 
 #### RI-62 ゲームスピードの調整(スプリントが速すぎて介入できない) — 優先度:高 / 完了
 
-**完了**: ①既定テンポ減速 ＋ ②Pause/1x/2x UI ＋ ④tick 分布圧縮を実装。③自動ポーズは任意上積みのため未着手。
+**完了**: ①既定テンポ減速 ＋ ②Pause/1x/2x UI ＋ ③重要イベント自動ポーズ ＋ ④tick 分布圧縮を実装。
 
 - **テンポ**: `src/ui/sprintTempo.ts` / `useRun.ts`。1x = 680ms/tick の壁時計アキュムレータ。
   `FIXED_STEP_MS` と sim 決定論は非干渉。プレイヤー `playbackSpeed`（0/1/2）は `game.pause()` と独立。
 - **速度 UI**: `SprintScreen` subbar に Pause / 1x / 2x（`data-testid=speed-*`）。
+- **③自動ポーズ**: 点火（新規 Incident task / ignite イベント）・Review渋滞
+  （`reviewQueueMax` が 12 を越える瞬間）・ボスIncident 発生で
+  `pauseBriefly(900ms)` ＋ AttentionOverlay / meter ハイライト（`src/render/attentionPause.ts`）。
+  壁時計クールダウン 2.5s。sim 決定論非干渉。ボス最終鎮火スローモ（RI-10）優先。
 - **分布**: ボス `taskCountMul` / `incidentMul` とボス taskFloor を調整し、無介入でも
   ボス実時間が 180 秒以内に収まるよう圧縮。通常スプリントは既存 tick 分布 × テンポで充足。
 - **検証**: `tests/unit/sprintTempo.test.ts`（代表 seed・タブ復帰切り捨て・ボス上限）、
-  `pauseBriefly` 独立性。終端 seed を再探索。
+  `pauseBriefly` 独立性、`tests/unit/attentionPause.test.ts`。終端 seed を再探索。
 
 ### 技術構成（TECH）
 
@@ -485,7 +496,7 @@ IndexedDB に既存値がある場合はそちらを正として旧値を破棄�
 **完了**: RI-58 のフェーズ境界スナップショットを再利用し、主要キーフレーム（setup /
 result / quarterReview / won / lost）をラン終了時に IndexedDB `replays`（DB v3、上限 10 件）へ保存。
 タイトルから一覧→キーフレームを `hydrateReplayFrame` で read-only 表示。操作は無効化。
-純入力ログ再生・共有 URL・「レビュー地獄リプレイ」専用演出は非スコープ（→ RI-34）。
+純入力ログ再生・共有 URL は非スコープ。「レビュー地獄リプレイ」専用演出は RI-34‴ へ切り出し済み。
 
 ### バランス（BAL）
 
@@ -700,11 +711,12 @@ Vitest と Playwright で報酬・各敗北理由の経路を検証済み。レ�
 
 **スコープ**: ローカル完結の拡張のみ。外部 API・共有バックエンド（GitHub 実データ、
 チーム対抗の共有ランキング等）は仕様から削除し対象外。
-残る候補: 社内LT/経営プレゼンモード、ツール別シナリオ、組織シナリオ共有、
-組織診断ダッシュボード深掘り、四半期レビュー高度化、「レビュー地獄リプレイ」（RI-61 依存）等。
+残る候補: ツール別シナリオ、組織シナリオ共有、
+組織診断ダッシュボード深掘り、四半期レビュー高度化 等。
 着手時に個別 ID へ切り出す。
-「なぜ燃えたか」は RI-34′、「AI導入失敗図鑑」は RI-34″、
-「カードデッキカスタマイズ（研修方針）」は RI-34‴ として切り出し済み。
+「なぜ燃えたか」は RI-34′、「AI導入失敗図鑑」は RI-34″、「レビュー地獄リプレイ」は RI-34‴、
+「カードデッキカスタマイズ（研修方針）」は RI-34⁗ として切り出し済み。
+社内LT/経営プレゼンモードは不要と判断し候補から除外（SPEC §23 からも削除）。
 
 #### RI-34′ 「なぜ燃えたか」解説ログ — 優先度:中 / 完了
 
@@ -727,7 +739,18 @@ Playwright: `tests/e2e/interventions.spec.ts`。
 Vitest: `tests/unit/meta.test.ts` / `diagnosis.test.ts`。
 Playwright: `tests/e2e/achievements.spec.ts`。
 
-#### RI-34‴ カードデッキカスタマイズ（研修方針） — 優先度:中 / 完了
+#### RI-34‴ 「レビュー地獄リプレイ」 — 優先度:中 / 完了（依存: RI-61）
+
+**完了**: RI-61 キーフレームリプレイ上に `outcome.diagnosis === 'reviewHell'` 向けの専用演出を追加。
+`planReviewHellReplay`（`src/render/reviewHellReplayView.ts`）が一覧バッジ・ピーク・図鑑教訓・
+推奨キーフレーム添字を組み立て、`ReplayListScreen` に専用パネルと「レビュー地獄を開く」CTA を表示。
+閲覧中バナーは専用文言、`SprintResultScreen` はリプレイ時にピーク要約を先頭表示。
+キーフレーム収集時に `ReplayKeyframe.label`（Review peak 等）を付与。
+純入力ログ再生・共有 URL は非スコープのまま。
+Vitest: `tests/unit/reviewHellReplayView.test.ts` / `replay.test.ts`。
+Playwright: `tests/e2e/replay.spec.ts`。
+
+#### RI-34⁗ カードデッキカスタマイズ（研修方針） — 優先度:中 / 完了
 
 **完了**: ラン外の「研修方針」画面で優先施策を最大 2 枚選べる。選択は
 `MetaState.preferredCardIds` に永続化し、ラン開始時に `RunPersistExtras` へスナップショットする。

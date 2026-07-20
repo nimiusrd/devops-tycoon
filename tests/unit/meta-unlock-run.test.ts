@@ -81,7 +81,7 @@ describe('解放プールのラン反映（spec-mapping §2 M7）', () => {
     expect(draft.every((id) => allowed.has(id))).toBe(true);
   });
 
-  it('研修方針はラン開始時に固定され、途中変更してもドラフトに反映されない（RI-34‴）', () => {
+  it('研修方針はラン開始時に固定され、途中変更してもドラフトに反映されない（RI-34⁗）', () => {
     const seed = 'deck-policy-snapshot';
     const control = new RunEngine({ seed });
     control.setUnlockedContent(defaultUnlockedCardIds(), defaultUnlockedRelicIds());

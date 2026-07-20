@@ -209,7 +209,7 @@ export class RunEngine {
   private trials: string[];
   private allowedCards: ReadonlySet<string> | null = null;
   private allowedRelics: ReadonlySet<string> | null = null;
-  /** ラン開始時に固定した研修方針（優先施策。RI-34‴）。 */
+  /** ラン開始時に固定した研修方針（優先施策。RI-34⁗）。 */
   private preferredCards: ReadonlySet<string> = new Set();
 
   private bossId!: string;
@@ -316,7 +316,7 @@ export class RunEngine {
     this.allowedRelics = relics;
   }
 
-  /** ラン開始時点の研修方針（優先施策）を設定する（ラン中は固定。RI-34‴）。 */
+  /** ラン開始時点の研修方針（優先施策）を設定する（ラン中は固定。RI-34⁗）。 */
   setPreferredCards(cardIds: ReadonlySet<string> | readonly string[]): void {
     this.preferredCards = cardIds instanceof Set ? cardIds : new Set(cardIds);
   }

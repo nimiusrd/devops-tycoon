@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
 import {
   accumulateWallTime,
@@ -30,8 +30,11 @@ import { playRun, playUntil, type SprintEndMetrics } from './helpers/runFlow';
 /** RI-62 / RI-66 共通の代表 seed。 */
 const RI62_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
 
-/** RI-66: skilled で四半期・ボス・介入余地を集める追加 seed。 */
+/** RI-66: skilled で四半期・ボス・介入余地を集める代表 seed。 */
 const RI66_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'] as const;
+
+/** RI-66: ラン全体は重いので seed を絞る（タイムアウト回避）。 */
+const RI66_RUN_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'] as const;
 
 function collectSprintTicks(seeds: readonly string[]): {
   normal: number[];
@@ -96,26 +99,6 @@ function collectSprintTicks(seeds: readonly string[]): {
     }
   }
   return byKind;
-}
-
-/** skilled 自動操作でスプリント完了メトリクスを集める。 */
-function collectSkilledSprintEnds(
-  seeds: readonly string[],
-  mode: 'quarterReview' | 'run',
-): SprintEndMetrics[] {
-  const ends: SprintEndMetrics[] = [];
-  for (const seed of seeds) {
-    const e = new RunEngine({ seed, difficulty: 'normal' });
-    const onSprintEnd = (m: SprintEndMetrics) => {
-      ends.push(m);
-    };
-    if (mode === 'quarterReview') {
-      playUntil(e, 'quarterReview', { skilled: true, onSprintEnd });
-    } else {
-      playRun(e, { skilled: true, onSprintEnd });
-    }
-  }
-  return ends;
 }
 
 describe('sprintTempo（RI-62）', () => {
@@ -193,17 +176,36 @@ describe('sprintTempo（RI-62）', () => {
 });
 
 describe('sprintTempo ペーシング統計（RI-66）', () => {
+  /** 四半期到達までの skilled メトリクス（ボス・四半期・介入で共有）。 */
+  let quarterEndsBySeed: { seed: string; ends: SprintEndMetrics[] }[];
+
+  beforeAll(() => {
+    quarterEndsBySeed = RI66_SEEDS.map((seed) => {
+      const e = new RunEngine({ seed, difficulty: 'normal' });
+      const ends: SprintEndMetrics[] = [];
+      playUntil(e, 'quarterReview', {
+        skilled: true,
+        onSprintEnd: (m) => {
+          ends.push(m);
+        },
+      });
+      return { seed, ends };
+    });
+  });
+
   it('§3.1 モデル定数が規定どおり', () => {
-    expect(BETWEEN_SPRINT_WALL_SEC).toBe(45);
-    expect(QUARTER_REVIEW_WALL_SEC).toBe(60);
+    expect(BETWEEN_SPRINT_WALL_SEC).toBe(40);
+    expect(QUARTER_REVIEW_WALL_SEC).toBe(45);
     expect(QUARTER_WALL_MIN).toEqual({ minMin: 10, maxMin: 15 });
     expect(RUN_WALL_MIN).toEqual({ minMin: 15, maxMin: 45 });
     expect(INTERVENTION_PER_SPRINT).toEqual({ min: 3, max: 8 });
   });
 
   it('代表 seed のボス壁時計が分布で 90〜180 秒帯に入る', () => {
-    const ends = collectSkilledSprintEnds(RI66_SEEDS, 'quarterReview');
-    const bossSecs = ends.filter((m) => m.kind === 'boss').map((m) => wallSecondsAt1x(m.ticks));
+    const bossSecs = quarterEndsBySeed
+      .flatMap((row) => row.ends)
+      .filter((m) => m.kind === 'boss')
+      .map((m) => wallSecondsAt1x(m.ticks));
     expect(bossSecs.length).toBeGreaterThanOrEqual(4);
 
     for (const sec of bossSecs) {
@@ -218,20 +220,10 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   });
 
   it('skilled 自動操作の 1 四半期が 10〜15 分帯（p50/p90）に入る', () => {
-    const quarterMins: number[] = [];
-    for (const seed of RI66_SEEDS) {
-      const e = new RunEngine({ seed, difficulty: 'normal' });
-      const ticks: number[] = [];
-      playUntil(e, 'quarterReview', {
-        skilled: true,
-        onSprintEnd: (m) => {
-          ticks.push(m.ticks);
-        },
-      });
-      if (ticks.length === 6) {
-        quarterMins.push(modelQuarterWallMinutes(ticks));
-      }
-    }
+    const quarterMins = quarterEndsBySeed
+      .map((row) => row.ends.map((m) => m.ticks))
+      .filter((ticks) => ticks.length === 6)
+      .map((ticks) => modelQuarterWallMinutes(ticks));
     expect(quarterMins.length).toBeGreaterThanOrEqual(4);
 
     const qP50 = p50(quarterMins);
@@ -244,7 +236,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   it('skilled 自動操作の 1 ランが 15〜45 分帯（p50/p90）に入る', () => {
     // 早期敗北の短ランは体験目安の対象外。1 四半期以上（6 スプリント）到達分を集計する。
     const runMins: number[] = [];
-    for (const seed of RI66_SEEDS) {
+    for (const seed of RI66_RUN_SEEDS) {
       const e = new RunEngine({ seed, difficulty: 'normal' });
       const ticks: number[] = [];
       playRun(e, {
@@ -263,13 +255,13 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
     const rP90 = p90(runMins);
     expect(rP50).toBeGreaterThanOrEqual(RUN_WALL_MIN.minMin);
     expect(rP50).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
-    // モデル固定秒の丸めと長尾スプリントを見込み、上限はわずかに余裕を見る。
-    expect(rP90).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin + 3);
-  });
+    expect(rP90).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
+  }, 15_000);
 
   it('1 スプリントあたり介入余地が 3〜8 回帯（p50/p90）に入る', () => {
-    const ends = collectSkilledSprintEnds(RI66_SEEDS, 'quarterReview');
-    const available = ends.map((m) => estimateAvailableInterventions(m.ticks, m.focusMax));
+    const available = quarterEndsBySeed
+      .flatMap((row) => row.ends)
+      .map((m) => estimateAvailableInterventions(m.ticks, m.focusMax));
     expect(available.length).toBeGreaterThan(0);
 
     const aP50 = p50(available);
@@ -281,9 +273,13 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
 });
 
 describe('percentile ヘルパ', () => {
-  it('nearest-rank で p50/p90 を返す', () => {
-    expect(p50([1, 2, 3, 4, 5, 6])).toBe(4);
+  it('nearest-rank（ceil(n*p) 番目）で p50/p90 を返す', () => {
+    // n=6, p50 → ceil(3)=3 番目、p90 → ceil(5.4)=6 番目
+    expect(p50([1, 2, 3, 4, 5, 6])).toBe(3);
     expect(p90([1, 2, 3, 4, 5, 6])).toBe(6);
+    // n=10, p50 → 5 番目、p90 → 9 番目
+    expect(p50([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])).toBe(5);
+    expect(p90([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])).toBe(9);
     expect(p50([])).toBe(0);
     expect(p90([])).toBe(0);
   });

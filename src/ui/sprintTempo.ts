@@ -51,6 +51,26 @@ export const SPRINT_WALL_SEC = { minTypical: 60, maxTypical: 120, absoluteMin: 3
 export const BOSS_WALL_SEC = { min: 90, max: 180 } as const;
 
 /**
+ * §3.1: スプリント間（リザルト→ドラフト→進化→ビート）の標準操作秒。
+ * プレイヤー任意のため、回帰検知では帯中央（30〜60）を固定加算する。
+ */
+export const BETWEEN_SPRINT_WALL_SEC = 45;
+
+/**
+ * §3.1: 四半期レビューの標準操作秒（意思決定の目安。回帰検知用モデル）。
+ */
+export const QUARTER_REVIEW_WALL_SEC = 60;
+
+/** §3.1: 1 四半期（スプリント 6 本＋レビュー）の 1x 実時間レンジ（分）。 */
+export const QUARTER_WALL_MIN = { minMin: 10, maxMin: 15 } as const;
+
+/** §3.1: 1 ラン（1〜複数四半期）の 1x 実時間レンジ（分）。 */
+export const RUN_WALL_MIN = { minMin: 15, maxMin: 45 } as const;
+
+/** §3.1: 1 スプリントあたり介入回数の期待レンジ。 */
+export const INTERVENTION_PER_SPRINT = { min: 3, max: 8 } as const;
+
+/**
  * 指定再生速度での実時間/tick（ms）。
  * pause（0）は Infinity（進めない）。
  */

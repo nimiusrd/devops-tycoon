@@ -8,6 +8,17 @@ import { getEvent } from '../../../src/data/events';
 import type { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 
+/** スプリント完了時に渡す収集用メトリクス（RI-66）。 */
+export interface SprintEndMetrics {
+  kind: NonNullable<RunState['currentSprintKind']>;
+  /** 完了時点の sprintTick（壁時計換算の元）。 */
+  ticks: number;
+  /** スプリント開始時の focusMax（利用可能介入回数の見積もり用）。 */
+  focusMax: number;
+  /** skilled ポリシーで成功した介入回数（interruptReview / firefight）。 */
+  interventionsUsed: number;
+}
+
 export interface PlayOptions {
   /** 進化ポイントがあれば review-1 を解放する。 */
   unlockEvolution?: boolean;
@@ -17,7 +28,18 @@ export interface PlayOptions {
   beatChoice?: number;
   /** 休息の選択（既定 heal）。 */
   restOption?: 'heal' | 'repay' | 'upgrade' | 'recruit';
+  /**
+   * スプリント完了直後に呼ばれる（phase が sprint から抜けた直後）。
+   * RI-66 の壁時計・介入回数集計用。
+   */
+  onSprintEnd?: (metrics: SprintEndMetrics) => void;
 }
+
+/**
+ * skilled スプリント中の介入成功回数（複数 advance にまたがる）。
+ * onSprintEnd 時に取り出してリセットする。
+ */
+const skilledInterventionAcc = new WeakMap<RunEngine, number>();
 
 /**
  * オートプレイ用のビート選択肢 index。
@@ -51,6 +73,8 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
       e.beginSetupSprint();
       return true;
     case 'sprint': {
+      const kind = s.currentSprintKind;
+      const focusMax = s.sprint?.config.focusMax ?? 0;
       // RI-30: オートプレイは手札を可能な限り発動してから進める。
       // 先頭が高コストでも後続の安いカードを試す。
       let guard = 0;
@@ -70,14 +94,32 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
       }
       if (opts.skilled) {
         const sp = e.snapshot().sprint;
+        let gained = 0;
         if (sp && !sp.complete) {
-          if (sp.tasks.filter((t) => t.lane === 'review').length >= 6)
-            e.dispatch('interruptReview');
-          if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) e.dispatch('firefight');
+          if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
+            if (e.dispatch('interruptReview').ok) gained += 1;
+          }
+          if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) {
+            if (e.dispatch('firefight').ok) gained += 1;
+          }
+        }
+        if (gained > 0) {
+          skilledInterventionAcc.set(e, (skilledInterventionAcc.get(e) ?? 0) + gained);
         }
         e.step(300);
       } else {
         e.step(1_000_000);
+      }
+      // この advance でスプリントが完了した場合のみ集計（小刻み step の途中は除外）。
+      if (kind && e.snapshot().phase !== 'sprint') {
+        const interventionsUsed = skilledInterventionAcc.get(e) ?? 0;
+        skilledInterventionAcc.set(e, 0);
+        opts.onSprintEnd?.({
+          kind,
+          ticks: e.snapshot().sprintTick,
+          focusMax,
+          interventionsUsed,
+        });
       }
       return true;
     }

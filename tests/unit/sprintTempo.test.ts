@@ -2,21 +2,36 @@ import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
 import {
   accumulateWallTime,
+  BETWEEN_SPRINT_WALL_SEC,
   BOSS_WALL_SEC,
+  INTERVENTION_PER_SPRINT,
   isBossTickCountInSpecBand,
   isSprintTickCountInSpecBand,
   maxAccumulatorMs,
   meetsSprintAbsoluteMin,
   MS_PER_TICK_1X,
   msPerTick,
+  QUARTER_REVIEW_WALL_SEC,
+  QUARTER_WALL_MIN,
+  RUN_WALL_MIN,
   SPRINT_WALL_SEC,
   ticksDueFromAccumulator,
   wallSecondsAt1x,
   type PlaybackSpeed,
 } from '../../src/ui/sprintTempo';
+import {
+  estimateAvailableInterventions,
+  modelQuarterWallMinutes,
+  modelRunWallMinutes,
+} from './helpers/pacingStats';
+import { p50, p90 } from './helpers/percentile';
+import { playRun, playUntil, type SprintEndMetrics } from './helpers/runFlow';
 
-/** RI-62 文書と同じ代表 seed（normal・各 3 スプリント相当を四半期から採取）。 */
+/** RI-62 / RI-66 共通の代表 seed。 */
 const RI62_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
+
+/** RI-66: skilled で四半期・ボス・介入余地を集める追加 seed。 */
+const RI66_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'] as const;
 
 function collectSprintTicks(seeds: readonly string[]): {
   normal: number[];
@@ -83,6 +98,26 @@ function collectSprintTicks(seeds: readonly string[]): {
   return byKind;
 }
 
+/** skilled 自動操作でスプリント完了メトリクスを集める。 */
+function collectSkilledSprintEnds(
+  seeds: readonly string[],
+  mode: 'quarterReview' | 'run',
+): SprintEndMetrics[] {
+  const ends: SprintEndMetrics[] = [];
+  for (const seed of seeds) {
+    const e = new RunEngine({ seed, difficulty: 'normal' });
+    const onSprintEnd = (m: SprintEndMetrics) => {
+      ends.push(m);
+    };
+    if (mode === 'quarterReview') {
+      playUntil(e, 'quarterReview', { skilled: true, onSprintEnd });
+    } else {
+      playRun(e, { skilled: true, onSprintEnd });
+    }
+  }
+  return ends;
+}
+
 describe('sprintTempo（RI-62）', () => {
   it('1x は MS_PER_TICK_1X、2x は半分、pause は進めない', () => {
     expect(MS_PER_TICK_1X).toBe(680);
@@ -139,17 +174,13 @@ describe('sprintTempo（RI-62）', () => {
       ).toBe(true);
     }
 
-    const sorted = [...normal].sort((a, b) => a - b);
-    const p50 = sorted[Math.floor(sorted.length / 2)]!;
-    const p90 = sorted[Math.floor(sorted.length * 0.9)]!;
-    const p50Sec = wallSecondsAt1x(p50);
-    const p90Sec = wallSecondsAt1x(p90);
+    const p50Sec = wallSecondsAt1x(p50(normal));
+    const p90Sec = wallSecondsAt1x(p90(normal));
     expect(p50Sec).toBeGreaterThanOrEqual(SPRINT_WALL_SEC.minTypical);
     expect(p50Sec).toBeLessThanOrEqual(SPRINT_WALL_SEC.maxTypical);
     expect(p90Sec).toBeLessThanOrEqual(SPRINT_WALL_SEC.maxTypical);
 
-    // ボスは無介入でも §3.1 上限（180 秒）を超えないこと。下限は炎上ボスで揺れやすいので
-    // 代表 seed に出たサンプルの上限をハードに見る。
+    // ボス上限は無介入サンプルでも超えない（下限の分布検証は RI-66）。
     for (const ticks of boss) {
       const sec = wallSecondsAt1x(ticks);
       expect(sec, `boss ticks=${ticks} wall=${sec}s`).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
@@ -158,5 +189,102 @@ describe('sprintTempo（RI-62）', () => {
     // ヘルパ自体の回帰防止
     expect(isSprintTickCountInSpecBand(80)).toBe(true);
     expect(isBossTickCountInSpecBand(200)).toBe(true);
+  });
+});
+
+describe('sprintTempo ペーシング統計（RI-66）', () => {
+  it('§3.1 モデル定数が規定どおり', () => {
+    expect(BETWEEN_SPRINT_WALL_SEC).toBe(45);
+    expect(QUARTER_REVIEW_WALL_SEC).toBe(60);
+    expect(QUARTER_WALL_MIN).toEqual({ minMin: 10, maxMin: 15 });
+    expect(RUN_WALL_MIN).toEqual({ minMin: 15, maxMin: 45 });
+    expect(INTERVENTION_PER_SPRINT).toEqual({ min: 3, max: 8 });
+  });
+
+  it('代表 seed のボス壁時計が分布で 90〜180 秒帯に入る', () => {
+    const ends = collectSkilledSprintEnds(RI66_SEEDS, 'quarterReview');
+    const bossSecs = ends.filter((m) => m.kind === 'boss').map((m) => wallSecondsAt1x(m.ticks));
+    expect(bossSecs.length).toBeGreaterThanOrEqual(4);
+
+    for (const sec of bossSecs) {
+      expect(sec, `boss wall=${sec}s`).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
+    }
+
+    const bossP50 = p50(bossSecs);
+    const bossP90 = p90(bossSecs);
+    expect(bossP50).toBeGreaterThanOrEqual(BOSS_WALL_SEC.min);
+    expect(bossP50).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
+    expect(bossP90).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
+  });
+
+  it('skilled 自動操作の 1 四半期が 10〜15 分帯（p50/p90）に入る', () => {
+    const quarterMins: number[] = [];
+    for (const seed of RI66_SEEDS) {
+      const e = new RunEngine({ seed, difficulty: 'normal' });
+      const ticks: number[] = [];
+      playUntil(e, 'quarterReview', {
+        skilled: true,
+        onSprintEnd: (m) => {
+          ticks.push(m.ticks);
+        },
+      });
+      if (ticks.length === 6) {
+        quarterMins.push(modelQuarterWallMinutes(ticks));
+      }
+    }
+    expect(quarterMins.length).toBeGreaterThanOrEqual(4);
+
+    const qP50 = p50(quarterMins);
+    const qP90 = p90(quarterMins);
+    expect(qP50).toBeGreaterThanOrEqual(QUARTER_WALL_MIN.minMin);
+    expect(qP50).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin);
+    expect(qP90).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin);
+  });
+
+  it('skilled 自動操作の 1 ランが 15〜45 分帯（p50/p90）に入る', () => {
+    // 早期敗北の短ランは体験目安の対象外。1 四半期以上（6 スプリント）到達分を集計する。
+    const runMins: number[] = [];
+    for (const seed of RI66_SEEDS) {
+      const e = new RunEngine({ seed, difficulty: 'normal' });
+      const ticks: number[] = [];
+      playRun(e, {
+        skilled: true,
+        onSprintEnd: (m) => {
+          ticks.push(m.ticks);
+        },
+      });
+      if (ticks.length >= 6) {
+        runMins.push(modelRunWallMinutes(ticks));
+      }
+    }
+    expect(runMins.length).toBeGreaterThanOrEqual(4);
+
+    const rP50 = p50(runMins);
+    const rP90 = p90(runMins);
+    expect(rP50).toBeGreaterThanOrEqual(RUN_WALL_MIN.minMin);
+    expect(rP50).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
+    // モデル固定秒の丸めと長尾スプリントを見込み、上限はわずかに余裕を見る。
+    expect(rP90).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin + 3);
+  });
+
+  it('1 スプリントあたり介入余地が 3〜8 回帯（p50/p90）に入る', () => {
+    const ends = collectSkilledSprintEnds(RI66_SEEDS, 'quarterReview');
+    const available = ends.map((m) => estimateAvailableInterventions(m.ticks, m.focusMax));
+    expect(available.length).toBeGreaterThan(0);
+
+    const aP50 = p50(available);
+    const aP90 = p90(available);
+    expect(aP50).toBeGreaterThanOrEqual(INTERVENTION_PER_SPRINT.min);
+    expect(aP50).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
+    expect(aP90).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
+  });
+});
+
+describe('percentile ヘルパ', () => {
+  it('nearest-rank で p50/p90 を返す', () => {
+    expect(p50([1, 2, 3, 4, 5, 6])).toBe(4);
+    expect(p90([1, 2, 3, 4, 5, 6])).toBe(6);
+    expect(p50([])).toBe(0);
+    expect(p90([])).toBe(0);
   });
 });

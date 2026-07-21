@@ -111,6 +111,13 @@ await snap('title', 'タイトル');
 // タイトルから開くメタ画面。
 await snapModal('open-meta-shop', 'meta-shop', 'meta-shop-close', 'meta-shop', 'メタショップ');
 await snapModal(
+  'open-card-collection',
+  'card-collection',
+  'card-collection-close',
+  'card-collection',
+  'カードコレクション',
+);
+await snapModal(
   'open-achievements',
   'achievement-collection',
   'achievement-collection-close',

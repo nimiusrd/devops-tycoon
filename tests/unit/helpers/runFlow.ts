@@ -15,7 +15,7 @@ export interface SprintEndMetrics {
   ticks: number;
   /** スプリント開始時の focusMax（利用可能介入回数の見積もり用）。 */
   focusMax: number;
-  /** skilled ポリシーで成功した介入回数（interruptReview / firefight）。 */
+  /** 介入ポリシーで成功した介入回数。 */
   interventionsUsed: number;
 }
 
@@ -24,6 +24,11 @@ export interface PlayOptions {
   unlockEvolution?: boolean;
   /** スプリントを実プレイ風に小刻みに介入しながら進める。 */
   skilled?: boolean;
+  /**
+   * RI-66: 介入余地検証用。assignTask / firefight / interruptReview を
+   * 可能な限り発動し、step(100) で細かく進める（成立回数の統計用）。
+   */
+  pacingInterventions?: boolean;
   /** ビートの選択 index（decision）。既定 0。 */
   beatChoice?: number;
   /** 休息の選択（既定 heal）。 */
@@ -92,7 +97,19 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
         }
         if (!playedAny) break;
       }
-      if (opts.skilled) {
+      if (opts.pacingInterventions) {
+        let gained = 0;
+        const sp = e.snapshot().sprint;
+        if (sp && !sp.complete) {
+          for (const id of ['assignTask', 'firefight', 'interruptReview'] as const) {
+            if (e.dispatch(id).ok) gained += 1;
+          }
+        }
+        if (gained > 0) {
+          skilledInterventionAcc.set(e, (skilledInterventionAcc.get(e) ?? 0) + gained);
+        }
+        e.step(100);
+      } else if (opts.skilled) {
         const sp = e.snapshot().sprint;
         let gained = 0;
         if (sp && !sp.complete) {

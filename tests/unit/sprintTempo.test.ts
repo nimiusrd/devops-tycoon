@@ -172,10 +172,13 @@ describe('sprintTempo（RI-62）', () => {
 });
 
 describe('sprintTempo ペーシング統計（RI-66）', () => {
-  /** 四半期レビュー到達サンプル（ボス・四半期壁時計用）。 */
+  /** 全 seed のスプリント完了メトリクス（ボス分布用。レビュー未到達も含む）。 */
+  let quarterAttempts: { seed: string; ends: SprintEndMetrics[]; reachedReview: boolean }[];
+  /** 四半期レビュー到達サンプル（四半期壁時計用）。 */
   let reviewedQuarters: { seed: string; ends: SprintEndMetrics[] }[];
 
   beforeAll(() => {
+    quarterAttempts = [];
     reviewedQuarters = [];
     for (const seed of RI66_SEEDS) {
       const e = new RunEngine({ seed, difficulty: 'normal' });
@@ -186,14 +189,16 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
           ends.push(m);
         },
       });
-      if (e.snapshot().phase === 'quarterReview' && ends.length === 6) {
+      const reachedReview = e.snapshot().phase === 'quarterReview' && ends.length === 6;
+      quarterAttempts.push({ seed, ends, reachedReview });
+      if (reachedReview) {
         reviewedQuarters.push({ seed, ends });
       }
     }
   });
 
   it('§3.1 モデル定数が規定どおり', () => {
-    expect(BETWEEN_SPRINT_WALL_SEC).toBe(40);
+    expect(BETWEEN_SPRINT_WALL_SEC).toBe(35);
     expect(QUARTER_REVIEW_WALL_SEC).toBe(45);
     expect(QUARTER_WALL_MIN).toEqual({ minMin: 10, maxMin: 15 });
     expect(RUN_WALL_MIN).toEqual({ minMin: 15, maxMin: 45 });
@@ -201,7 +206,8 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   });
 
   it('代表 seed のボス壁時計が分布で 90〜180 秒帯に入る', () => {
-    const bossSecs = reviewedQuarters
+    // クリア／敗北を問わず完了したボスを集計する（レビュー到達で絞らない）。
+    const bossSecs = quarterAttempts
       .flatMap((row) => row.ends)
       .filter((m) => m.kind === 'boss')
       .map((m) => wallSecondsAt1x(m.ticks));

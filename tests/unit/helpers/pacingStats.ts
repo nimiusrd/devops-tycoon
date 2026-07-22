@@ -13,8 +13,8 @@ import {
 /**
  * 完了スプリント列の 1x 壁時計分をモデル化する。
  *
- * - 四半期レビューに到達した回数だけレビュー秒を加算する（ボス直後敗北は加算しない）。
- * - レビュー済み四半期はスプリント間×5、その後の端数スプリントは間だけ加算する。
+ * - 隣接スプリント間は常に `(n - 1)` 回加算する（四半期をまたぐ間隔も含む）。
+ * - レビュー秒は実際に `quarterReview` へ到達した回数だけ加算する。
  */
 export function modelRunWallMinutes(
   sprintTicks: readonly number[],
@@ -22,19 +22,8 @@ export function modelRunWallMinutes(
 ): number {
   if (sprintTicks.length === 0) return 0;
   const sprintSec = sprintTicks.reduce((sum, ticks) => sum + wallSecondsAt1x(ticks), 0);
-  const reviews = Math.max(0, quarterReviewsReached);
-  const reviewedSprints = Math.min(sprintTicks.length, reviews * 6);
-  const trailing = sprintTicks.length - reviewedSprints;
-
-  let betweenSec = reviews * 5 * BETWEEN_SPRINT_WALL_SEC;
-  if (trailing > 0) {
-    if (reviews > 0) betweenSec += BETWEEN_SPRINT_WALL_SEC; // レビュー後 → 次スプリント
-    betweenSec += Math.max(0, trailing - 1) * BETWEEN_SPRINT_WALL_SEC;
-  } else if (reviews === 0) {
-    betweenSec += Math.max(0, sprintTicks.length - 1) * BETWEEN_SPRINT_WALL_SEC;
-  }
-
-  const reviewSec = reviews * QUARTER_REVIEW_WALL_SEC;
+  const betweenSec = Math.max(0, sprintTicks.length - 1) * BETWEEN_SPRINT_WALL_SEC;
+  const reviewSec = Math.max(0, quarterReviewsReached) * QUARTER_REVIEW_WALL_SEC;
   return (sprintSec + betweenSec + reviewSec) / 60;
 }
 

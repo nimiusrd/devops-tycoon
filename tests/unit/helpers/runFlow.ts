@@ -80,10 +80,11 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
     case 'sprint': {
       const kind = s.currentSprintKind;
       const focusMax = s.sprint?.config.focusMax ?? 0;
+      const sprintsPlayedBefore = s.sprintsPlayed;
       // RI-30: オートプレイは手札を可能な限り発動してから進める。
       // 先頭が高コストでも後続の安いカードを試す。
       let guard = 0;
-      while (guard < 24) {
+      while (guard < 24 && e.snapshot().phase === 'sprint') {
         guard += 1;
         const hand = e.snapshot().sprint?.cardPiles.hand ?? [];
         if (hand.length === 0) break;
@@ -97,46 +98,52 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
         }
         if (!playedAny) break;
       }
-      if (opts.pacingInterventions) {
-        let gained = 0;
-        const sp = e.snapshot().sprint;
-        if (sp && !sp.complete) {
-          for (const id of ['assignTask', 'firefight', 'interruptReview'] as const) {
-            if (e.dispatch(id).ok) gained += 1;
+      // playCard の即時敗北などで phase が変わった場合は step しない。
+      if (e.snapshot().phase === 'sprint') {
+        if (opts.pacingInterventions) {
+          let gained = 0;
+          const sp = e.snapshot().sprint;
+          if (sp && !sp.complete) {
+            for (const id of ['assignTask', 'firefight', 'interruptReview'] as const) {
+              if (e.dispatch(id).ok) gained += 1;
+            }
           }
-        }
-        if (gained > 0) {
-          skilledInterventionAcc.set(e, (skilledInterventionAcc.get(e) ?? 0) + gained);
-        }
-        e.step(100);
-      } else if (opts.skilled) {
-        const sp = e.snapshot().sprint;
-        let gained = 0;
-        if (sp && !sp.complete) {
-          if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
-            if (e.dispatch('interruptReview').ok) gained += 1;
+          if (gained > 0) {
+            skilledInterventionAcc.set(e, (skilledInterventionAcc.get(e) ?? 0) + gained);
           }
-          if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) {
-            if (e.dispatch('firefight').ok) gained += 1;
+          e.step(100);
+        } else if (opts.skilled) {
+          const sp = e.snapshot().sprint;
+          let gained = 0;
+          if (sp && !sp.complete) {
+            if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
+              if (e.dispatch('interruptReview').ok) gained += 1;
+            }
+            if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) {
+              if (e.dispatch('firefight').ok) gained += 1;
+            }
           }
+          if (gained > 0) {
+            skilledInterventionAcc.set(e, (skilledInterventionAcc.get(e) ?? 0) + gained);
+          }
+          e.step(300);
+        } else {
+          e.step(1_000_000);
         }
-        if (gained > 0) {
-          skilledInterventionAcc.set(e, (skilledInterventionAcc.get(e) ?? 0) + gained);
-        }
-        e.step(300);
-      } else {
-        e.step(1_000_000);
       }
-      // この advance でスプリントが完了した場合のみ集計（小刻み step の途中は除外）。
+      // resolveSprint 済み（sprintsPlayed 増加）のときだけ集計。
+      // カード即時敗北などの中断スプリントは ticks を混ぜない。
       if (kind && e.snapshot().phase !== 'sprint') {
         const interventionsUsed = skilledInterventionAcc.get(e) ?? 0;
         skilledInterventionAcc.set(e, 0);
-        opts.onSprintEnd?.({
-          kind,
-          ticks: e.snapshot().sprintTick,
-          focusMax,
-          interventionsUsed,
-        });
+        if (e.snapshot().sprintsPlayed > sprintsPlayedBefore) {
+          opts.onSprintEnd?.({
+            kind,
+            ticks: e.snapshot().sprintTick,
+            focusMax,
+            interventionsUsed,
+          });
+        }
       }
       return true;
     }

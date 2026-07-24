@@ -107,7 +107,7 @@ test('他チームは状態確認後に入り込みで現場へ着地できる�
   await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
 
   await page.getByTestId('team-platform-t1').click();
-  await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'department');
+  await expect(page.getByTestId('dept-screen')).toBeVisible();
   await expect(page.getByTestId('dept-team-panel')).toBeVisible();
   await page.getByTestId('enter-team').click();
 

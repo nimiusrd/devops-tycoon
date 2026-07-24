@@ -51,11 +51,13 @@ const MC_SEEDS = ['mc-a', 'mc-b', 'mc-c', 'mc-d', 'mc-e'] as const;
 
 describe('monteCarlo 基盤（RI-14）', () => {
   describe('summarizeNumeric', () => {
-    it('平均・最小・最大を計算する', () => {
+    it('平均・最小・最大・分位を計算する', () => {
       expect(summarizeNumeric([10, 20, 30])).toEqual({
         mean: 20,
         min: 10,
         max: 30,
+        p50: 20,
+        p90: 30,
         values: [10, 20, 30],
       });
     });
@@ -65,6 +67,8 @@ describe('monteCarlo 基盤（RI-14）', () => {
         mean: 0,
         min: 0,
         max: 0,
+        p50: 0,
+        p90: 0,
         values: [],
       });
     });
@@ -194,6 +198,8 @@ describe('monteCarlo 基盤（RI-14）', () => {
         mean: 100,
         min: 100,
         max: 100,
+        p50: 100,
+        p90: 100,
         values: [100],
       });
     });

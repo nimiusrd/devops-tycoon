@@ -10,6 +10,7 @@ import { RunEngine } from '../../../src/sim/run/engine';
 import type { SprintBaselineResult } from '../../../src/sim/types';
 import type { DifficultyId, RunState, RunStatus, RunTotals } from '../../../src/sim/run/types';
 import { applyRunReward, defaultMeta, type RunRewardInput } from '../../../src/state/meta';
+import { p50 as percentileP50, p90 as percentileP90 } from './percentile';
 import { playRun, type PlayOptions } from './runFlow';
 
 /** 1 試行分のラン終了メトリクス（RI-15 以降の許容レンジ検証用）。 */
@@ -30,6 +31,10 @@ export interface NumericMetricSummary {
   mean: number;
   min: number;
   max: number;
+  /** 中央値（nearest-rank）。 */
+  p50: number;
+  /** 90 パーセンタイル（nearest-rank）。 */
+  p90: number;
   /** 各試行の生値（許容レンジ検証・デバッグ用）。 */
   values: number[];
 }
@@ -226,7 +231,7 @@ export function extractReviewMetrics(seed: string, state: RunState): ReviewMetri
 /** 数値配列を集計する。空配列は 0 で埋める。 */
 export function summarizeNumeric(values: readonly number[]): NumericMetricSummary {
   if (values.length === 0) {
-    return { mean: 0, min: 0, max: 0, values: [] };
+    return { mean: 0, min: 0, max: 0, p50: 0, p90: 0, values: [] };
   }
   const copy = [...values];
   const sum = copy.reduce((a, b) => a + b, 0);
@@ -234,6 +239,8 @@ export function summarizeNumeric(values: readonly number[]): NumericMetricSummar
     mean: sum / copy.length,
     min: Math.min(...copy),
     max: Math.max(...copy),
+    p50: percentileP50(copy),
+    p90: percentileP90(copy),
     values: copy,
   };
 }

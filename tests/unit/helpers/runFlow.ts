@@ -8,16 +8,43 @@ import { getEvent } from '../../../src/data/events';
 import type { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 
+/** スプリント完了時に渡す収集用メトリクス（RI-66）。 */
+export interface SprintEndMetrics {
+  kind: NonNullable<RunState['currentSprintKind']>;
+  /** 完了時点の sprintTick（壁時計換算の元）。 */
+  ticks: number;
+  /** スプリント開始時の focusMax（利用可能介入回数の見積もり用）。 */
+  focusMax: number;
+  /** 介入ポリシーで成功した介入回数。 */
+  interventionsUsed: number;
+}
+
 export interface PlayOptions {
   /** 進化ポイントがあれば review-1 を解放する。 */
   unlockEvolution?: boolean;
   /** スプリントを実プレイ風に小刻みに介入しながら進める。 */
   skilled?: boolean;
+  /**
+   * RI-66: 介入余地検証用。assignTask / firefight / interruptReview を
+   * 可能な限り発動し、step(100) で細かく進める（成立回数の統計用）。
+   */
+  pacingInterventions?: boolean;
   /** ビートの選択 index（decision）。既定 0。 */
   beatChoice?: number;
   /** 休息の選択（既定 heal）。 */
   restOption?: 'heal' | 'repay' | 'upgrade' | 'recruit';
+  /**
+   * スプリント完了直後に呼ばれる（phase が sprint から抜けた直後）。
+   * RI-66 の壁時計・介入回数集計用。
+   */
+  onSprintEnd?: (metrics: SprintEndMetrics) => void;
 }
+
+/**
+ * skilled スプリント中の介入成功回数（複数 advance にまたがる）。
+ * onSprintEnd 時に取り出してリセットする。
+ */
+const skilledInterventionAcc = new WeakMap<RunEngine, number>();
 
 /**
  * オートプレイ用のビート選択肢 index。
@@ -51,10 +78,13 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
       e.beginSetupSprint();
       return true;
     case 'sprint': {
+      const kind = s.currentSprintKind;
+      const focusMax = s.sprint?.config.focusMax ?? 0;
+      const sprintsPlayedBefore = s.sprintsPlayed;
       // RI-30: オートプレイは手札を可能な限り発動してから進める。
       // 先頭が高コストでも後続の安いカードを試す。
       let guard = 0;
-      while (guard < 24) {
+      while (guard < 24 && e.snapshot().phase === 'sprint') {
         guard += 1;
         const hand = e.snapshot().sprint?.cardPiles.hand ?? [];
         if (hand.length === 0) break;
@@ -68,16 +98,52 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
         }
         if (!playedAny) break;
       }
-      if (opts.skilled) {
-        const sp = e.snapshot().sprint;
-        if (sp && !sp.complete) {
-          if (sp.tasks.filter((t) => t.lane === 'review').length >= 6)
-            e.dispatch('interruptReview');
-          if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) e.dispatch('firefight');
+      // playCard の即時敗北などで phase が変わった場合は step しない。
+      if (e.snapshot().phase === 'sprint') {
+        if (opts.pacingInterventions) {
+          let gained = 0;
+          const sp = e.snapshot().sprint;
+          if (sp && !sp.complete) {
+            for (const id of ['assignTask', 'firefight', 'interruptReview'] as const) {
+              if (e.dispatch(id).ok) gained += 1;
+            }
+          }
+          if (gained > 0) {
+            skilledInterventionAcc.set(e, (skilledInterventionAcc.get(e) ?? 0) + gained);
+          }
+          e.step(100);
+        } else if (opts.skilled) {
+          const sp = e.snapshot().sprint;
+          let gained = 0;
+          if (sp && !sp.complete) {
+            if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
+              if (e.dispatch('interruptReview').ok) gained += 1;
+            }
+            if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) {
+              if (e.dispatch('firefight').ok) gained += 1;
+            }
+          }
+          if (gained > 0) {
+            skilledInterventionAcc.set(e, (skilledInterventionAcc.get(e) ?? 0) + gained);
+          }
+          e.step(300);
+        } else {
+          e.step(1_000_000);
         }
-        e.step(300);
-      } else {
-        e.step(1_000_000);
+      }
+      // resolveSprint 済み（sprintsPlayed 増加）のときだけ集計。
+      // カード即時敗北などの中断スプリントは ticks を混ぜない。
+      if (kind && e.snapshot().phase !== 'sprint') {
+        const interventionsUsed = skilledInterventionAcc.get(e) ?? 0;
+        skilledInterventionAcc.set(e, 0);
+        if (e.snapshot().sprintsPlayed > sprintsPlayedBefore) {
+          opts.onSprintEnd?.({
+            kind,
+            ticks: e.snapshot().sprintTick,
+            focusMax,
+            interventionsUsed,
+          });
+        }
       }
       return true;
     }

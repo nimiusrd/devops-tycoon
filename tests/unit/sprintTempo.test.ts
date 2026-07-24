@@ -1,22 +1,36 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
 import {
   accumulateWallTime,
+  BETWEEN_SPRINT_WALL_SEC,
   BOSS_WALL_SEC,
+  INTERVENTION_PER_SPRINT,
   isBossTickCountInSpecBand,
   isSprintTickCountInSpecBand,
   maxAccumulatorMs,
   meetsSprintAbsoluteMin,
   MS_PER_TICK_1X,
   msPerTick,
+  QUARTER_REVIEW_WALL_SEC,
+  QUARTER_WALL_MIN,
+  RUN_WALL_MIN,
   SPRINT_WALL_SEC,
   ticksDueFromAccumulator,
   wallSecondsAt1x,
   type PlaybackSpeed,
 } from '../../src/ui/sprintTempo';
+import { modelQuarterWallMinutes, modelRunWallMinutes } from './helpers/pacingStats';
+import { p50, p90 } from './helpers/percentile';
+import { advance, playUntil, type SprintEndMetrics } from './helpers/runFlow';
 
-/** RI-62 文書と同じ代表 seed（normal・各 3 スプリント相当を四半期から採取）。 */
+/** RI-62 / RI-66 共通の代表 seed。 */
 const RI62_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
+
+/** RI-66: skilled で四半期・ボス・介入余地を集める代表 seed。 */
+const RI66_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'] as const;
+
+/** RI-66: ラン全体は重いので seed を絞る（タイムアウト回避）。 */
+const RI66_RUN_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'] as const;
 
 function collectSprintTicks(seeds: readonly string[]): {
   normal: number[];
@@ -139,17 +153,13 @@ describe('sprintTempo（RI-62）', () => {
       ).toBe(true);
     }
 
-    const sorted = [...normal].sort((a, b) => a - b);
-    const p50 = sorted[Math.floor(sorted.length / 2)]!;
-    const p90 = sorted[Math.floor(sorted.length * 0.9)]!;
-    const p50Sec = wallSecondsAt1x(p50);
-    const p90Sec = wallSecondsAt1x(p90);
+    const p50Sec = wallSecondsAt1x(p50(normal));
+    const p90Sec = wallSecondsAt1x(p90(normal));
     expect(p50Sec).toBeGreaterThanOrEqual(SPRINT_WALL_SEC.minTypical);
     expect(p50Sec).toBeLessThanOrEqual(SPRINT_WALL_SEC.maxTypical);
     expect(p90Sec).toBeLessThanOrEqual(SPRINT_WALL_SEC.maxTypical);
 
-    // ボスは無介入でも §3.1 上限（180 秒）を超えないこと。下限は炎上ボスで揺れやすいので
-    // 代表 seed に出たサンプルの上限をハードに見る。
+    // ボス上限は無介入サンプルでも超えない（下限の分布検証は RI-66）。
     for (const ticks of boss) {
       const sec = wallSecondsAt1x(ticks);
       expect(sec, `boss ticks=${ticks} wall=${sec}s`).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
@@ -158,5 +168,146 @@ describe('sprintTempo（RI-62）', () => {
     // ヘルパ自体の回帰防止
     expect(isSprintTickCountInSpecBand(80)).toBe(true);
     expect(isBossTickCountInSpecBand(200)).toBe(true);
+  });
+});
+
+describe('sprintTempo ペーシング統計（RI-66）', () => {
+  /** 全 seed のスプリント完了メトリクス（ボス分布用。レビュー未到達も含む）。 */
+  let quarterAttempts: { seed: string; ends: SprintEndMetrics[]; reachedReview: boolean }[];
+  /** 四半期レビュー到達サンプル（四半期壁時計用）。 */
+  let reviewedQuarters: { seed: string; ends: SprintEndMetrics[] }[];
+
+  beforeAll(() => {
+    quarterAttempts = [];
+    reviewedQuarters = [];
+    for (const seed of RI66_SEEDS) {
+      const e = new RunEngine({ seed, difficulty: 'normal' });
+      const ends: SprintEndMetrics[] = [];
+      playUntil(e, 'quarterReview', {
+        skilled: true,
+        onSprintEnd: (m) => {
+          ends.push(m);
+        },
+      });
+      const reachedReview = e.snapshot().phase === 'quarterReview' && ends.length === 6;
+      quarterAttempts.push({ seed, ends, reachedReview });
+      if (reachedReview) {
+        reviewedQuarters.push({ seed, ends });
+      }
+    }
+  });
+
+  it('§3.1 モデル定数が規定どおり', () => {
+    expect(BETWEEN_SPRINT_WALL_SEC).toBe(35);
+    expect(QUARTER_REVIEW_WALL_SEC).toBe(45);
+    expect(QUARTER_WALL_MIN).toEqual({ minMin: 10, maxMin: 15 });
+    expect(RUN_WALL_MIN).toEqual({ minMin: 15, maxMin: 45 });
+    expect(INTERVENTION_PER_SPRINT).toEqual({ min: 3, max: 8 });
+  });
+
+  it('代表 seed のボス壁時計が分布で 90〜180 秒帯に入る', () => {
+    // クリア／敗北を問わず完了したボスを集計する（レビュー到達で絞らない）。
+    const bossSecs = quarterAttempts
+      .flatMap((row) => row.ends)
+      .filter((m) => m.kind === 'boss')
+      .map((m) => wallSecondsAt1x(m.ticks));
+    expect(bossSecs.length).toBeGreaterThanOrEqual(4);
+
+    for (const sec of bossSecs) {
+      expect(sec, `boss wall=${sec}s`).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
+    }
+
+    const bossP50 = p50(bossSecs);
+    const bossP90 = p90(bossSecs);
+    expect(bossP50).toBeGreaterThanOrEqual(BOSS_WALL_SEC.min);
+    expect(bossP50).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
+    expect(bossP90).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
+  });
+
+  it('skilled 自動操作の 1 四半期が 10〜15 分帯（p50/p90）に入る', () => {
+    // quarterReview 到達済みのみ（ボス直後敗北でレビュー未到達の 6 本は除外）。
+    expect(reviewedQuarters.length).toBeGreaterThanOrEqual(4);
+    const quarterMins = reviewedQuarters.map((row) =>
+      modelQuarterWallMinutes(row.ends.map((m) => m.ticks)),
+    );
+
+    const qP50 = p50(quarterMins);
+    const qP90 = p90(quarterMins);
+    expect(qP50).toBeGreaterThanOrEqual(QUARTER_WALL_MIN.minMin);
+    expect(qP50).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin);
+    expect(qP90).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin);
+  });
+
+  it('skilled 自動操作の 1 ランが 15〜45 分帯（p50/p90）に入る', () => {
+    // 早期敗北の短ランは体験目安の対象外。四半期レビューへ 1 回以上到達したランだけ集計する。
+    const runMins: number[] = [];
+    for (const seed of RI66_RUN_SEEDS) {
+      const e = new RunEngine({ seed, difficulty: 'normal' });
+      const ticks: number[] = [];
+      let reviews = 0;
+      let guard = 0;
+      while (e.snapshot().status === 'playing' && guard < 40_000) {
+        guard += 1;
+        const before = e.snapshot().phase;
+        if (
+          !advance(e, {
+            skilled: true,
+            onSprintEnd: (m) => {
+              ticks.push(m.ticks);
+            },
+          })
+        ) {
+          break;
+        }
+        const after = e.snapshot().phase;
+        if (before !== 'quarterReview' && after === 'quarterReview') {
+          reviews += 1;
+        }
+      }
+      if (reviews >= 1) {
+        runMins.push(modelRunWallMinutes(ticks, reviews));
+      }
+    }
+    expect(runMins.length).toBeGreaterThanOrEqual(4);
+
+    const rP50 = p50(runMins);
+    const rP90 = p90(runMins);
+    expect(rP50).toBeGreaterThanOrEqual(RUN_WALL_MIN.minMin);
+    expect(rP50).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
+    expect(rP90).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
+  }, 15_000);
+
+  it('1 スプリントあたり介入成立回数が 3〜8 回帯（p50/p90）に入る', () => {
+    // 理論上の CD/focus 余地ではなく、pacing ポリシーで実際に成功した回数を見る。
+    const used: number[] = [];
+    for (const seed of RI66_SEEDS) {
+      const e = new RunEngine({ seed, difficulty: 'normal' });
+      playUntil(e, 'quarterReview', {
+        pacingInterventions: true,
+        onSprintEnd: (m) => {
+          used.push(m.interventionsUsed);
+        },
+      });
+    }
+    expect(used.length).toBeGreaterThan(0);
+
+    const uP50 = p50(used);
+    const uP90 = p90(used);
+    expect(uP50).toBeGreaterThanOrEqual(INTERVENTION_PER_SPRINT.min);
+    expect(uP50).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
+    expect(uP90).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
+  }, 15_000);
+});
+
+describe('percentile ヘルパ', () => {
+  it('nearest-rank（ceil(n*p) 番目）で p50/p90 を返す', () => {
+    // n=6, p50 → ceil(3)=3 番目、p90 → ceil(5.4)=6 番目
+    expect(p50([1, 2, 3, 4, 5, 6])).toBe(3);
+    expect(p90([1, 2, 3, 4, 5, 6])).toBe(6);
+    // n=10, p50 → 5 番目、p90 → 9 番目
+    expect(p50([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])).toBe(5);
+    expect(p90([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])).toBe(9);
+    expect(p50([])).toBe(0);
+    expect(p90([])).toBe(0);
   });
 });

@@ -1,8 +1,9 @@
 /**
- * スプリント実時間テンポ（RI-62 / SPEC §3.1）。
+ * スプリント実時間テンポ（RI-62 / RI-66 / SPEC §3.1）。
  *
  * sim の tick（FIXED_STEP_MS=100）は変更せず、UI 層の壁時計→tick 換算だけを担う。
  * 1x 基準でスプリント 60〜120 秒帯（最短 30 秒以上）を狙う。
+ * 四半期・ラン・介入回数の帯定数もここに置き、統計テストと共有する。
  */
 
 /** 自動進行のポーリング間隔（ms）。UI 同期とアキュムレータ更新に使う。 */
@@ -49,6 +50,26 @@ export const SPRINT_WALL_SEC = { minTypical: 60, maxTypical: 120, absoluteMin: 3
 
 /** §3.1: ボススプリントの 1x 実時間レンジ（秒）。 */
 export const BOSS_WALL_SEC = { min: 90, max: 180 } as const;
+
+/**
+ * §3.1: スプリント間（リザルト→ドラフト→進化→ビート）の標準操作秒。
+ * プレイヤー任意（目安 30〜60）のため、回帰検知では帯内の標準操作 35 秒を固定加算する。
+ */
+export const BETWEEN_SPRINT_WALL_SEC = 35;
+
+/**
+ * §3.1: 四半期レビューの標準操作秒（意思決定の目安。回帰検知用モデル）。
+ */
+export const QUARTER_REVIEW_WALL_SEC = 45;
+
+/** §3.1: 1 四半期（スプリント 6 本＋レビュー）の 1x 実時間レンジ（分）。 */
+export const QUARTER_WALL_MIN = { minMin: 10, maxMin: 15 } as const;
+
+/** §3.1: 1 ラン（1〜複数四半期）の 1x 実時間レンジ（分）。 */
+export const RUN_WALL_MIN = { minMin: 15, maxMin: 45 } as const;
+
+/** §3.1: 1 スプリントあたり介入回数の期待レンジ。 */
+export const INTERVENTION_PER_SPRINT = { min: 3, max: 8 } as const;
 
 /**
  * 指定再生速度での実時間/tick（ms）。

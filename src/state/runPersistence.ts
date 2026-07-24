@@ -13,7 +13,7 @@ import { normalizeReplayKeyframes, type ReplayKeyframe } from './replay';
 export type { RunPersistState, RunPersistExtras, RunSavePhase } from '../sim/run/persist';
 export { isRunSavePhase } from '../sim/run/persist';
 
-export const RUN_SAVE_SCHEMA_VERSION = 1 as const;
+export const RUN_SAVE_SCHEMA_VERSION = 2 as const;
 
 /** タイトル「続きから」表示用の要約。 */
 export interface RunSaveSummary {
@@ -72,7 +72,9 @@ function isRunStatus(value: unknown): value is RunStatus {
 /** 構造が壊れている／非互換なセーブは null（呼び出し側で clear）。 */
 export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRecord(raw)) return null;
-  if (raw.schemaVersion !== RUN_SAVE_SCHEMA_VERSION) return null;
+  // v1 → v2: チーム永続フィールドは hydrate 時に seed から補完する。
+  const schema = raw.schemaVersion;
+  if (schema !== 1 && schema !== RUN_SAVE_SCHEMA_VERSION) return null;
   if (typeof raw.savedAt !== 'number' || !Number.isFinite(raw.savedAt)) return null;
   if (!isRecord(raw.summary) || !isRecord(raw.state)) return null;
 

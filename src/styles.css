@@ -4844,6 +4844,35 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .dept-hud {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
+.dept-team-panel {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+.dept-team-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.dept-team-active {
+  font-size: 12px;
+  color: var(--accent, #6bc);
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.dept-team-stats {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.dept-team-actions {
+  margin-bottom: 10px;
+}
 .org-stat {
   background: var(--panel);
   border: 1px solid var(--line);

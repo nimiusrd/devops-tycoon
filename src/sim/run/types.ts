@@ -7,7 +7,13 @@
  */
 import type { CardEffects, CardInstance, OrgState, SprintResult, SprintState } from '../types';
 import type { GrowthOutcome, RosterState } from '../member/types';
-import type { IndustryState, OrgScaleState, RankingKind, ZoomState } from '../orgscale/types';
+import type {
+  IndustryState,
+  OrgScaleState,
+  RankingKind,
+  TeamRunState,
+  ZoomState,
+} from '../orgscale/types';
 
 // 周回レイヤのデータ定義（src/data/*）が参照しやすいよう、コア型を再エクスポートする。
 export type { CardEffects, CardInstance } from '../types';
@@ -46,6 +52,8 @@ export interface SprintModifierDelta {
   reworkRateAdd?: number;
   /** タスク数の倍率（休息で出荷を手放す等。1 未満で減少）。 */
   taskCountMul?: number;
+  /** 集中力上限への加算（入り込みコスト等。負で減少。RI-64）。 */
+  focusMaxAdd?: number;
 }
 
 /**
@@ -327,6 +335,15 @@ export interface RunState {
   orgScale: OrgScaleState | null;
   /** 業界ランキング（zoom が業界のときのみ生成。null=未表示）。 */
   industry: IndustryState | null;
+
+  /** 全チームの永続状態（RI-64）。 */
+  teams: TeamRunState[];
+  /** 詳細スプリント対象のチーム ID。 */
+  activeTeamId: string;
+  /** ラン開始時のホームチーム ID。 */
+  homeTeamId: string;
+  /** このスプリント数未満では他チームへ入れない（入り込み拘束）。 */
+  teamLockUntilSprint: number;
 }
 
 /** ランを通じて積み上がる集計（複数スプリントの合算）。 */

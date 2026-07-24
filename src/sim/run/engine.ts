@@ -10,6 +10,7 @@
  */
 import { BOSS_DEFS, getBoss } from '../../data/bosses';
 import { getCard } from '../../data/cards';
+import { getLever } from '../../data/levers';
 import { DEPARTMENT_DEFS } from '../../data/departments';
 import { getDifficulty, getTrial } from '../../data/difficulties';
 import { EVENT_DEFS, RECRUIT_SKIP_MORALE, effectiveKind, getEvent } from '../../data/events';
@@ -51,12 +52,29 @@ import type {
   SprintState,
 } from '../types';
 import { IDENTITY_CARD_EFFECTS } from '../model';
-import { applyLever, emptyAdjustState, generateIndustry, generateOrgScale } from '../orgscale';
+import {
+  activeLiveFromOrg,
+  advanceCoarseTeams,
+  appendTeamsToDept,
+  applyEffectToTeam,
+  applyLever,
+  createTeamRoster,
+  emptyAdjustState,
+  ENTER_TEAM_FOCUS_PENALTY,
+  ENTER_TEAM_LOCK_SPRINTS,
+  generateIndustry,
+  HOME_TEAM_ID,
+  initTeamRunStates,
+  orgFromTeam,
+  projectOrgScale,
+  syncTeamFromOrg,
+} from '../orgscale';
 import type {
   IndustryState,
   OrgAdjustState,
   OrgScaleState,
   RankingKind,
+  TeamRunState,
   ZoomLevel,
   ZoomState,
 } from '../orgscale/types';
@@ -161,10 +179,12 @@ function mergeModifiers(a: SprintModifierDelta, b: SprintModifierDelta): SprintM
   const reviewLoadAdd = (a.reviewLoadAdd ?? 0) + (b.reviewLoadAdd ?? 0);
   const reworkRateAdd = (a.reworkRateAdd ?? 0) + (b.reworkRateAdd ?? 0);
   const taskCountMul = (a.taskCountMul ?? 1) * (b.taskCountMul ?? 1);
+  const focusMaxAdd = (a.focusMaxAdd ?? 0) + (b.focusMaxAdd ?? 0);
   return {
     ...(reviewLoadAdd !== 0 ? { reviewLoadAdd } : {}),
     ...(reworkRateAdd !== 0 ? { reworkRateAdd } : {}),
     ...(taskCountMul !== 1 ? { taskCountMul } : {}),
+    ...(focusMaxAdd !== 0 ? { focusMaxAdd } : {}),
   };
 }
 
@@ -270,6 +290,13 @@ export class RunEngine {
   private zoom: ZoomState = { level: 'team', deptId: null, teamId: null };
   private rankingKind: RankingKind = 'overall';
   private orgAdjust: OrgAdjustState = emptyAdjustState();
+  /** 全チームの永続状態（RI-64）。 */
+  private teams: TeamRunState[] = [];
+  private activeTeamId: string = HOME_TEAM_ID;
+  private homeTeamId: string = HOME_TEAM_ID;
+  private teamLockUntilSprint = 0;
+  /** 訪問済みチームのロスター（active 以外はここへ退避）。 */
+  private teamRosters: Record<string, RosterState> = {};
 
   private quarterNumber = 1;
   private quarterGoal!: QuarterGoal;
@@ -401,6 +428,17 @@ export class RunEngine {
     this.zoom = { level: 'team', deptId: null, teamId: null };
     this.rankingKind = 'overall';
     this.orgAdjust = emptyAdjustState();
+    this.homeTeamId = HOME_TEAM_ID;
+    this.activeTeamId = HOME_TEAM_ID;
+    this.teamLockUntilSprint = 0;
+    this.teams = initTeamRunStates({
+      seed: this.seed,
+      org: this.org,
+      homeEngineers: activeEngineerCount(this.roster),
+    });
+    this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
+    // ホームの永続指標を初期 org/roster と揃える。
+    this.syncActiveTeamFromOrg();
     this.status = 'playing';
     this.runKind = 'normal';
     this.dailyDate = undefined;
@@ -577,6 +615,9 @@ export class RunEngine {
     const justLeft = new Set((this.lastGrowth?.wentOnLeave ?? []).map((w) => w.id));
     this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN, justLeft);
     this.diagnosis = diagnose(this.org, this.totals);
+    // RI-64: 選択チームを永続へ同期し、他チームを粗粒度で進める。
+    this.syncActiveTeamFromOrg();
+    this.advanceOtherTeams(`sprint:${this.currentSprintId}`);
 
     if (this.currentSprintKind === 'boss') {
       const lose = evaluateLose(this.org, this.totals, this.budget);
@@ -1196,22 +1237,88 @@ export class RunEngine {
   }
 
   /**
-   * チームへドリルダウンする（第4.11）。
-   * 実在する現場はプレイヤーチームのみなので、プレイヤーチームを選んだときだけ
-   * 現場（team）へ着地する。他の合成チームには遊べる盤面が無いため、嘘の着地を避け、
-   * そのチームが属する部門の部署ビューへ寄せる（注意の粒度を一段だけ下げる）。
-   * 未知の ID は無視する。
+   * チームを状態確認する（第4.11 / RI-64）。
+   * 選択中チームなら現場へ、それ以外は部署ビューへ寄せて指標を見せる（入り込みは enterTeam）。
    */
   focusTeam(id: string): void {
-    const team = this.buildOrgScale()
-      .departments.flatMap((d) => d.teams)
-      .find((t) => t.id === id);
+    const team = this.teams.find((t) => t.id === id);
     if (!team) return;
-    if (team.isPlayer) {
-      this.zoom = { ...this.zoom, level: 'team', teamId: id };
-    } else {
-      this.zoom = { ...this.zoom, level: 'department', deptId: team.deptId, teamId: id };
+    if (id === this.activeTeamId) {
+      this.zoom = { ...this.zoom, level: 'team', teamId: id, deptId: team.deptId };
+      return;
     }
+    this.zoom = { ...this.zoom, level: 'department', deptId: team.deptId, teamId: id };
+  }
+
+  /**
+   * 特定チームへ入り込み、詳細スプリント対象にする（RI-64）。
+   * スプリント中・ロック中は拒否。切替時は集中力ペナルティと期間拘束を付与する。
+   */
+  enterTeam(id: string): boolean {
+    if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
+    if (this.phase === 'sprint') return false;
+    const team = this.teams.find((t) => t.id === id);
+    if (!team) return false;
+    if (id === this.activeTeamId) {
+      this.zoom = { ...this.zoom, level: 'team', teamId: id, deptId: team.deptId };
+      return true;
+    }
+    if (this.sprintsPlayed < this.teamLockUntilSprint) return false;
+
+    this.flushActiveTeam();
+    this.hydrateTeam(id);
+    this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, {
+      focusMaxAdd: ENTER_TEAM_FOCUS_PENALTY,
+    });
+    this.teamLockUntilSprint = this.sprintsPlayed + ENTER_TEAM_LOCK_SPRINTS;
+    this.zoom = { ...this.zoom, level: 'team', teamId: id, deptId: team.deptId };
+    return true;
+  }
+
+  /** 選択中チームの org/roster を永続配列へ書き戻す。 */
+  private syncActiveTeamFromOrg(): void {
+    const idx = this.teams.findIndex((t) => t.id === this.activeTeamId);
+    if (idx < 0) return;
+    const liveQueue = this.sprint
+      ? Math.max(
+          this.sprint.metrics.reviewQueueMax,
+          this.sprint.tasks.filter((t) => t.lane === 'review').length,
+        )
+      : this.totals.reviewQueuePeak;
+    const liveIncidents = this.sprint
+      ? this.sprint.tasks.filter((t) => t.incident).length
+      : Math.max(0, this.totals.incidents - this.totals.contained);
+    this.teams[idx] = syncTeamFromOrg(this.teams[idx], this.org, {
+      engineers: activeEngineerCount(this.roster),
+      reviewQueue: liveQueue,
+      incidents: liveIncidents,
+    });
+    this.teamRosters[this.activeTeamId] = structuredClone(this.roster);
+  }
+
+  private flushActiveTeam(): void {
+    this.syncActiveTeamFromOrg();
+  }
+
+  private hydrateTeam(id: string): void {
+    const team = this.teams.find((t) => t.id === id);
+    if (!team) return;
+    this.activeTeamId = id;
+    this.org = orgFromTeam(team);
+    const cached = this.teamRosters[id];
+    this.roster = cached
+      ? structuredClone(cached)
+      : createTeamRoster(this.seed, id, team.engineers);
+    this.teamRosters[id] = structuredClone(this.roster);
+  }
+
+  private advanceOtherTeams(stepKey: string): void {
+    this.teams = advanceCoarseTeams(this.teams, {
+      seed: this.seed,
+      stepKey,
+      excludeId: this.activeTeamId,
+      adjust: this.orgAdjust,
+    });
   }
 
   /** 業界ランキングの種別タブを切り替える。 */
@@ -1220,16 +1327,46 @@ export class RunEngine {
   }
 
   /**
-   * 全社 / 部門レバーを発動する（四半期予算を消費して下位制約を緩める。第4.7）。
+   * 全社 / 部門 / チームレバーを発動する（四半期予算を消費して下位制約を緩める。第4.7）。
    * 予算不足・スコープ不一致は何も起きない。返り値は適用できたか。
    */
-  applyOrgLever(leverId: string, deptId?: string): boolean {
+  applyOrgLever(leverId: string, deptId?: string, teamId?: string): boolean {
     // ラン外（タイトル・終端）では発動しない（即時敗北判定が終端フェーズから再遷移しないように）。
     if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
-    const res = applyLever(this.orgAdjust, this.budget, leverId, deptId);
+    const res = applyLever(this.orgAdjust, this.budget, leverId, deptId, teamId);
     if (!res.changed) return false;
     this.orgAdjust = res.adjust;
     this.budget = res.budget;
+    if (res.extraTeamsAdded > 0) {
+      const template =
+        this.teams.find((t) => t.id === this.homeTeamId) ??
+        this.teams[0] ??
+        initTeamRunStates({
+          seed: this.seed,
+          org: this.org,
+          homeEngineers: activeEngineerCount(this.roster),
+        })[0];
+      const productCount = this.teams.filter((t) => t.deptId === 'product').length;
+      this.teams = appendTeamsToDept(this.teams, {
+        seed: this.seed,
+        deptId: 'product',
+        count: res.extraTeamsAdded,
+        template,
+        nextIndexStart: productCount,
+      });
+    }
+    if (res.teamId) {
+      const def = getLever(leverId);
+      if (def) {
+        this.teams = this.teams.map((t) =>
+          t.id === res.teamId ? applyEffectToTeam(t, def.effect) : t,
+        );
+        if (res.teamId === this.activeTeamId) {
+          const updated = this.teams.find((t) => t.id === res.teamId);
+          if (updated) this.org = orgFromTeam(updated);
+        }
+      }
+    }
     this.applyImmediateLose();
     return true;
   }
@@ -1246,16 +1383,26 @@ export class RunEngine {
           liveIncidents: this.sprint.tasks.filter((t) => t.incident).length,
         }
       : {};
-    return generateOrgScale({
+    return projectOrgScale({
       seed: this.seed,
-      org: this.org,
-      totals: this.totals,
+      teams: this.teams,
+      homeTeamId: this.homeTeamId,
+      activeTeamId: this.activeTeamId,
+      activeLive: activeLiveFromOrg({
+        org: this.org,
+        totals: this.totals,
+        engineers: activeEngineerCount(this.roster),
+        aiAssignedCount: aiAssignedCount(this.roster),
+        ...live,
+      }),
+      adjust: this.orgAdjust,
       diagnosis: this.diagnosis,
       budget: this.budget,
-      adjust: this.orgAdjust,
-      playerEngineers: activeEngineerCount(this.roster),
-      playerAiAssigned: aiAssignedCount(this.roster),
-      ...live,
+      infraBase: {
+        ci: this.org.testCoverage,
+        docs: this.org.documentation,
+        aiGuideline: this.org.aiLiteracy,
+      },
     });
   }
 
@@ -1413,6 +1560,11 @@ export class RunEngine {
         allowedCards: this.allowedCards ? [...this.allowedCards] : [],
         allowedRelics: this.allowedRelics ? [...this.allowedRelics] : [],
         preferredCardIds: [...this.preferredCards],
+        teams: structuredClone(this.teams),
+        activeTeamId: this.activeTeamId,
+        homeTeamId: this.homeTeamId,
+        teamLockUntilSprint: this.teamLockUntilSprint,
+        teamRosters: structuredClone(this.teamRosters),
       },
     };
   }
@@ -1486,6 +1638,7 @@ export class RunEngine {
     this.zoom = { ...cloned.zoom };
     this.rankingKind = cloned.rankingKind;
     this.orgAdjust = structuredClone(cloned.extras.orgAdjust);
+    if (!this.orgAdjust.byTeam) this.orgAdjust.byTeam = {};
     this.baseConfig = { ...cloned.extras.baseConfig };
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
     this.pauseAiDebuffQuarter = cloned.extras.pauseAiDebuffQuarter;
@@ -1495,6 +1648,27 @@ export class RunEngine {
     this.preferredCards = Array.isArray(cloned.extras.preferredCardIds)
       ? new Set(cloned.extras.preferredCardIds)
       : new Set();
+    // RI-64: チーム状態（旧セーブは seed から補完）。
+    if (Array.isArray(cloned.extras.teams) && cloned.extras.teams.length > 0) {
+      this.teams = structuredClone(cloned.extras.teams);
+      this.activeTeamId = cloned.extras.activeTeamId ?? HOME_TEAM_ID;
+      this.homeTeamId = cloned.extras.homeTeamId ?? HOME_TEAM_ID;
+      this.teamLockUntilSprint = cloned.extras.teamLockUntilSprint ?? 0;
+      this.teamRosters = cloned.extras.teamRosters
+        ? structuredClone(cloned.extras.teamRosters)
+        : { [this.activeTeamId]: structuredClone(this.roster) };
+    } else {
+      this.homeTeamId = HOME_TEAM_ID;
+      this.activeTeamId = HOME_TEAM_ID;
+      this.teamLockUntilSprint = 0;
+      this.teams = initTeamRunStates({
+        seed: this.seed,
+        org: this.org,
+        homeEngineers: activeEngineerCount(this.roster),
+      });
+      this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
+      this.syncActiveTeamFromOrg();
+    }
     this.whatIfCache = null;
   }
 
@@ -1556,6 +1730,10 @@ export class RunEngine {
       rankingKind: this.rankingKind,
       orgScale,
       industry: this.industryForSnapshot(orgScale),
+      teams: structuredClone(this.teams),
+      activeTeamId: this.activeTeamId,
+      homeTeamId: this.homeTeamId,
+      teamLockUntilSprint: this.teamLockUntilSprint,
     };
   }
 }

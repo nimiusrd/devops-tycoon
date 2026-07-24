@@ -117,12 +117,14 @@ export interface GameHandle {
   zoomTo(level: ZoomLevel): RunState;
   /** 部門をフォーカスして部署ビューへ（ドリルダウン。第4.9）。 */
   focusDept(id: string): RunState;
-  /** チームへドリルダウンして現場へ着地する（第4.11）。 */
+  /** チームを状態確認する（選択中なら現場、他は部署。第4.11 / RI-64）。 */
   focusTeam(id: string): RunState;
+  /** 特定チームへ入り込む（集中力コスト・期間拘束。RI-64）。 */
+  enterTeam(id: string): RunState;
   /** 業界ランキングの種別タブを切り替える（第4.10）。 */
   setRankingKind(kind: RankingKind): RunState;
-  /** 全社 / 部門レバーを発動する（四半期予算を消費。第4.8 / 第4.9）。 */
-  applyOrgLever(leverId: string, deptId?: string): RunState;
+  /** 全社 / 部門 / チームレバーを発動する（四半期予算を消費。第4.8 / 第4.9 / RI-64）。 */
+  applyOrgLever(leverId: string, deptId?: string, teamId?: string): RunState;
   /** 四半期レビューを承認する（達成→won / 継続不能→lost）。 */
   acknowledgeQuarterReview(): RunState;
   /** 目標修正を選び次四半期へ進む。 */
@@ -634,15 +636,21 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
       return afterLocal();
     },
+    enterTeam(id) {
+      if (replayMode) return engine.snapshot();
+      engine.enterTeam(id);
+      bump();
+      return afterLocal();
+    },
     setRankingKind(kind) {
       if (replayMode) return engine.snapshot();
       engine.setRankingKind(kind);
       bump();
       return afterLocal();
     },
-    applyOrgLever(leverId, deptId) {
+    applyOrgLever(leverId, deptId, teamId) {
       if (replayMode) return engine.snapshot();
-      engine.applyOrgLever(leverId, deptId);
+      engine.applyOrgLever(leverId, deptId, teamId);
       bump();
       // レバーはフェーズ非遷移だが即時敗北の可能性がある。
       return after();

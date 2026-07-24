@@ -111,8 +111,40 @@ export const DEPARTMENT_LEVERS: readonly LeverDef[] = [
   },
 ];
 
-/** 全レバー（全社 + 部門）。 */
-export const LEVER_DEFS: readonly LeverDef[] = [...COMPANY_LEVERS, ...DEPARTMENT_LEVERS];
+/** チームレバー（RI-64 / SPEC 第4.7）。特定チームのみへ波及する。 */
+export const TEAM_LEVERS: readonly LeverDef[] = [
+  {
+    id: 'teamReviewHelp',
+    name: 'レビュー応援(チーム)',
+    scope: 'team',
+    cost: 6,
+    effect: { reviewQueueDelta: -5 },
+    description: '対象チームにレビュー応援を送り、PRの山を崩す。',
+  },
+  {
+    id: 'teamAiThrottle',
+    name: 'AIスロットル(チーム)',
+    scope: 'team',
+    cost: 5,
+    effect: { aiDependencyDelta: -10 },
+    description: '対象チームのAI流入を絞り、過剰生成を抑える。',
+  },
+  {
+    id: 'teamFirefight',
+    name: '火消し(チーム)',
+    scope: 'team',
+    cost: 8,
+    effect: { incidentDelta: -2, moraleDelta: 3 },
+    description: '対象チームの炎上を鎮火し、士気を回復する。',
+  },
+];
+
+/** 全レバー（全社 + 部門 + チーム）。 */
+export const LEVER_DEFS: readonly LeverDef[] = [
+  ...COMPANY_LEVERS,
+  ...DEPARTMENT_LEVERS,
+  ...TEAM_LEVERS,
+];
 
 /** レバー ID から定義を引く。 */
 export function getLever(id: string): LeverDef | undefined {

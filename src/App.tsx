@@ -518,7 +518,12 @@ export default function App({ game }: AppProps) {
                 <DeptScreen
                   dept={focusedDept}
                   budget={state.budget}
+                  selectedTeamId={zoom.teamId}
+                  activeTeamId={state.activeTeamId}
+                  teamLockUntilSprint={state.teamLockUntilSprint}
+                  sprintsPlayed={state.sprintsPlayed}
                   onFocusTeam={run.focusTeam}
+                  onEnterTeam={run.enterTeam}
                   onApplyLever={run.applyOrgLever}
                 />
               )}

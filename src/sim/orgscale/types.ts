@@ -37,8 +37,49 @@ export interface DepartmentDef {
 }
 
 /**
+ * ラン中に永続するチーム本体（RI-64 / SPEC 第4.7）。
+ * 表示用 `Team` の正本であり、粗粒度 sim・施策・入り込みの対象。
+ */
+export interface TeamRunState {
+  id: string;
+  deptId: string;
+  name: string;
+  /** エンジニア人数。 */
+  engineers: number;
+  /** AI 習熟度 0..100。 */
+  aiLiteracy: number;
+  /** AI依存度 0..100。 */
+  aiDependency: number;
+  /** 士気 0..100。 */
+  morale: number;
+  /** 技術的負債（累積）。 */
+  techDebt: number;
+  /** 出荷（このチームの累積成果）。 */
+  shipping: number;
+  /** レビュー待ち行列（PR の山）。 */
+  reviewQueue: number;
+  /** 炎上中のインシデント数。 */
+  incidents: number;
+  /** レビュー耐性の指標 0..100（高いほど行列が減りやすい）。 */
+  reviewCapacity: number;
+  /** 障害傾向 0..1（粗粒度 tick の炎上発生バイアス）。 */
+  incidentBias: number;
+  /** シニア体力 0..100。 */
+  seniorHp: number;
+  /** AI 導入フラグ。 */
+  aiEnabled: boolean;
+  /** 自動テストによる安全性 0..100。 */
+  testCoverage: number;
+  /** ドキュメント量 0..100。 */
+  documentation: number;
+  /** 品質水準 0..100。 */
+  quality: number;
+}
+
+/**
  * 1 チームの島（SPEC 第4.8）。出荷・AI依存度・状態バッジを持ち、
  * アイソメ格子上の座標（gridX/gridY）で配置される。
+ * 永続 `TeamRunState` からの投影（表示用）。
  */
 export interface Team {
   id: string;
@@ -63,12 +104,12 @@ export interface Team {
   engineers: number;
   /**
    * AI 配布中の人数（島の AI ボット表示用）。
-   * プレイヤーはロスターの `aiAssigned`、ライバルは engineers×aiDependency から推定。
+   * 選択中チームはロスターの `aiAssigned`、他は engineers×aiDependency から推定。
    */
   aiAssignedCount: number;
   /** 健全度（reviewQueue/incidents/aiDependency から導出）。 */
   health: TeamHealth;
-  /** 実ランの現場（`OrgState`）を映すプレイヤーチームか。 */
+  /** ホームチーム（開始時の現場）か。 */
   isPlayer: boolean;
 }
 
@@ -148,19 +189,21 @@ export interface OrgAdjust {
   infraBoost: number;
 }
 
-/** 全社調整 + 部門別調整。生成時にマージして波及させる。 */
+/** 全社調整 + 部門別調整 + チーム別調整。生成時にマージして波及させる。 */
 export interface OrgAdjustState {
   company: OrgAdjust;
   /** 部門 ID → 部門スコープの調整。 */
   byDept: Record<string, OrgAdjust>;
+  /** チーム ID → チームスコープの調整（RI-64）。 */
+  byTeam?: Record<string, OrgAdjust>;
 }
 
 /** レバー 1 種の定義（データ駆動）。 */
 export interface LeverDef {
   id: string;
   name: string;
-  /** 適用範囲。company=全社マップ / department=部署ビュー。 */
-  scope: 'company' | 'department';
+  /** 適用範囲。company=全社 / department=部署 / team=特定チーム（RI-64）。 */
+  scope: 'company' | 'department' | 'team';
   /** 四半期予算コスト。 */
   cost: number;
   /** 効果（OrgAdjust への差分）。 */

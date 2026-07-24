@@ -65,7 +65,7 @@ function DeptTeamBlock({
           width: `${27.064 * plan.scale}%`,
         }}
         onClick={onClick}
-        title={`${team.name}の現場へ`}
+        title={`${team.name}の状態を確認`}
       >
         <DeptTeamMini plan={plan} deptColor={deptColor} />
       </button>
@@ -76,9 +76,10 @@ function DeptTeamBlock({
 export interface DeptBoardProps {
   dept: DepartmentState;
   onFocusTeam: (id: string) => void;
+  selectedTeamId?: string | null;
 }
 
-export function DeptBoard({ dept, onFocusTeam }: DeptBoardProps) {
+export function DeptBoard({ dept, onFocusTeam, selectedTeamId }: DeptBoardProps) {
   const scene = planDeptBoardScene(dept);
   const hot = dept.onFire > 0 || dept.health === 'reviewHell';
   const boardRef = useRef<HTMLDivElement>(null);
@@ -113,7 +114,8 @@ export function DeptBoard({ dept, onFocusTeam }: DeptBoardProps) {
       ))}
 
       <div className="dept-board-hint">
-        チームの島を<b>クリック</b>でそのチームの<b>現場（能動操作）</b>へ
+        チームの島を<b>クリック</b>で状態確認。パネルから<b>入り込む</b>
+        {selectedTeamId ? `（選択: ${selectedTeamId}）` : ''}
       </div>
     </div>
   );

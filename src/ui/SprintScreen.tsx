@@ -355,7 +355,7 @@ export function SprintScreen({
 
       <main className="board-wrap">
         <div className="board-stage">
-          <PointPops deliveryScore={state.org.deliveryScore} />
+          <PointPops deliveryScore={state.org.deliveryScore} teamId={state.activeTeamId} />
           <Board
             tasks={sprint.tasks}
             metrics={sprint.metrics}

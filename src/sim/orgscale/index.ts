@@ -47,6 +47,7 @@ export {
   applyEffectToTeam,
   deriveTeamCapacities,
   normalizeCoarseTotalsDelta,
+  coarseShipToCompleted,
   projectOrgScale,
   assertDeptShippingInvariant,
   activeLiveFromOrg,

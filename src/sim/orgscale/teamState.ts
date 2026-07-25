@@ -12,7 +12,7 @@ import {
   type MemberArchetype,
 } from '../../data/members';
 import { activeEngineerCount, createMember, type RosterState } from '../member';
-import { AI_ADOPTION } from '../model/process';
+import { AI_ADOPTION, TASK_BASE_VALUE } from '../model/process';
 import { createRng } from '../rng';
 import type { DiagnosisType } from '../run/types';
 import type { OrgState } from '../types';
@@ -509,12 +509,13 @@ export function advanceCoarseTeams(
                 shipMul,
             ),
           );
-    // 出荷増分を完了の近似とし、詳細 sim 同様コーダー母数で AI 採用率を按分する。
-    completed += shipGain;
+    // 出荷ポイントをタスク件数相当へ換算してから count 系へ加算する（比率 KPI の歪み防止）。
+    const completedGain = coarseShipToCompleted(shipGain);
+    completed += completedGain;
     const coders = estimateRosterCoderCount(team.engineers);
     const adoptionShare =
       coders > 0 ? estimateRivalAiAssigned(coders, team.aiDependency) / coders : 0;
-    aiAssisted += Math.round(shipGain * AI_ADOPTION * clamp(adoptionShare, 0, 1));
+    aiAssisted += Math.round(completedGain * AI_ADOPTION * clamp(adoptionShare, 0, 1));
     const queuePressure = Math.max(
       0,
       Math.round(team.engineers * 0.35 + team.aiDependency * 0.04 - reviewCap * 0.05 - queueRelief),
@@ -566,6 +567,15 @@ export function advanceCoarseTeams(
     };
   });
   return { teams: next, ignited, completed, aiAssisted };
+}
+
+/**
+ * 粗粒度の出荷ポイントを完了タスク件数へ換算する。
+ * 詳細 sim の標準規模（normal=5pt）を 1 件相当とし、ポイント値を completed に混入させない。
+ */
+export function coarseShipToCompleted(shipGain: number): number {
+  if (shipGain <= 0) return 0;
+  return Math.max(1, Math.round(shipGain / TASK_BASE_VALUE.normal));
 }
 
 /**

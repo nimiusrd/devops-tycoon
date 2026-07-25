@@ -21,15 +21,23 @@ const MAX_POPS = 6;
 
 export interface PointPopsProps {
   deliveryScore: number;
+  /** 選択中チーム。切替時は増分検出をリセットし誤ポップを防ぐ。 */
+  teamId?: string;
 }
 
-export function PointPops({ deliveryScore }: PointPopsProps) {
+export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
   const prev = useRef(deliveryScore);
+  const prevTeamId = useRef(teamId);
   const nextId = useRef(0);
   const [pops, setPops] = useState<Pop[]>([]);
   const { playSfx } = useAudio();
 
   useEffect(() => {
+    if (prevTeamId.current !== teamId) {
+      prevTeamId.current = teamId;
+      prev.current = deliveryScore;
+      return;
+    }
     const delta = deliveryScore - prev.current;
     prev.current = deliveryScore;
     if (delta <= 0) return;
@@ -40,7 +48,7 @@ export function PointPops({ deliveryScore }: PointPopsProps) {
       setPops((cur) => cur.filter((p) => p.id !== pop.id));
     }, 1100);
     return () => window.clearTimeout(timer);
-  }, [deliveryScore, playSfx]);
+  }, [deliveryScore, teamId, playSfx]);
 
   return (
     <div className="point-pops" aria-hidden="true">

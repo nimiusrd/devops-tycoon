@@ -127,6 +127,37 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(keyed).not.toBe(cleared);
   });
 
+  it('what-if キャッシュ指紋はチーム固有の org / 編成能力も区別する', () => {
+    const engine = new RunEngine({ seed: 'what-if-team-fingerprint', difficulty: 'normal' });
+    engine.startRun();
+    const internals = engine as unknown as { phase: string };
+    internals.phase = 'setup';
+    const base = engine.whatIfComputeInput()!;
+    const orgKey = whatIfCacheKey({
+      ...base,
+      org: { ...base.org, testCoverage: base.org.testCoverage + 12, aiLiteracy: 10 },
+    });
+    expect(orgKey).not.toBe(whatIfCacheKey(base));
+    const member = base.roster.members[0]!;
+    const rosterKey = whatIfCacheKey({
+      ...base,
+      roster: {
+        ...base.roster,
+        members: [
+          {
+            ...member,
+            stats: {
+              ...member.stats,
+              implementation: member.stats.implementation + 5,
+            },
+          },
+          ...base.roster.members.slice(1),
+        ],
+      },
+    });
+    expect(rosterKey).not.toBe(whatIfCacheKey(base));
+  });
+
   it('発動すると敗北するドラフト候補は loseOnPlay で警告する（獲得時は即時敗北にしない）', () => {
     const engine = new RunEngine({ seed: 'what-if-lose', difficulty: 'nightmare' });
     engine.startRun();

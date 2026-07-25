@@ -47,4 +47,6 @@ export {
   assertDeptShippingInvariant,
   activeLiveFromOrg,
   teamName,
+  retainNonMetricAdjust,
+  stripMetricAdjustments,
 } from './teamState';

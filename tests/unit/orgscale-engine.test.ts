@@ -11,6 +11,7 @@ import {
   assertDeptShippingInvariant,
   ENTER_TEAM_FOCUS_PENALTY,
   initTeamRunStates,
+  syncTeamFromOrg,
 } from '../../src/sim/orgscale';
 
 function started(seed = 'org-engine'): RunEngine {
@@ -225,7 +226,67 @@ describe('RunEngine: レバー', () => {
     expect(after.teams.find((t) => t.id === 'platform-t1')!.aiDependency).toBeLessThan(target0);
     expect(after.teams.find((t) => t.id === 'newbiz-t0')!.aiDependency).toBe(other0);
   });
+
+  it('全社レバーは正本へ焼き込まれ、入り込み先の詳細状態にも反映される', () => {
+    const e = started();
+    e.zoomTo('company');
+    const before = e.snapshot().teams.find((t) => t.id === 'platform-t1')!.aiDependency;
+    expect(e.applyOrgLever('aiGuideline')).toBe(true);
+    const baked = e.snapshot().teams.find((t) => t.id === 'platform-t1')!.aiDependency;
+    expect(baked).toBe(before - 10);
+    expect(e.exportPersistState()!.extras.orgAdjust.company.aiDependencyDelta).toBe(0);
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    expect(e.snapshot().org.aiDependency).toBe(baked);
+  });
+
+  it('粗粒度進行はレバー差分を永続値へ再加算しない', () => {
+    const e = started('no-double-adjust');
+    e.applyOrgLever('aiGuideline');
+    const afterLever = e.snapshot().teams.find((t) => t.id === 'platform-t0')!.aiDependency;
+    const stepped = advanceCoarseTeams(e.snapshot().teams, {
+      seed: 'no-double-adjust',
+      stepKey: 's1',
+      excludeId: 'product-t0',
+      adjust: e.exportPersistState()!.extras.orgAdjust,
+    });
+    const afterStep = stepped.find((t) => t.id === 'platform-t0')!.aiDependency;
+    // 自然ドリフト（0 or +1）のみ。レバー -10 の再適用は起きない。
+    expect(afterStep - afterLever).toBeGreaterThanOrEqual(0);
+    expect(afterStep - afterLever).toBeLessThanOrEqual(1);
+  });
+
+  it('7人以上のチームへ入り込んでも総人数を失わない', () => {
+    const e = started('big-team');
+    const big = e.snapshot().teams.find((t) => t.engineers >= 7);
+    expect(big).toBeTruthy();
+    const headcount = big!.engineers;
+    expect(e.enterTeam(big!.id)).toBe(true);
+    // ロスターは最大6でも、正本の engineers は維持。
+    expect(e.snapshot().roster.members.length).toBeLessThanOrEqual(6);
+    expect(e.snapshot().teams.find((t) => t.id === big!.id)!.engineers).toBe(headcount);
+    // スプリント無し sync（ロスター人数 < 総人数）でも縮めない。
+    const synced = syncTeamFromOrg(big!, e.snapshot().org, {
+      engineers: e.snapshot().roster.members.length,
+    });
+    expect(synced.engineers).toBe(headcount);
+  });
+
+  it('チーム同期は全ラン累計の行列・炎上で他チームを上書きしない', () => {
+    const e = started('no-totals-bleed');
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    const before = e.snapshot().teams.find((t) => t.id === 'platform-t1')!;
+    // スプリント無しの flush 相当（切替時）でも既存の行列・炎上を保つ。
+    const synced = syncTeamFromOrg(before, e.snapshot().org, {
+      engineers: activeEngineers(e),
+    });
+    expect(synced.reviewQueue).toBe(before.reviewQueue);
+    expect(synced.incidents).toBe(before.incidents);
+  });
 });
+
+function activeEngineers(e: RunEngine): number {
+  return e.snapshot().roster.members.filter((m) => !m.onLeave).length;
+}
 
 describe('RunEngine: 決定論', () => {
   it('同じ seed・同じ操作なら同じ全社マップになる', () => {

@@ -67,6 +67,7 @@ import {
   initTeamRunStates,
   orgFromTeam,
   projectOrgScale,
+  stripMetricAdjustments,
   syncTeamFromOrg,
 } from '../orgscale';
 import type {
@@ -1279,19 +1280,20 @@ export class RunEngine {
   private syncActiveTeamFromOrg(): void {
     const idx = this.teams.findIndex((t) => t.id === this.activeTeamId);
     if (idx < 0) return;
-    const liveQueue = this.sprint
-      ? Math.max(
-          this.sprint.metrics.reviewQueueMax,
-          this.sprint.tasks.filter((t) => t.lane === 'review').length,
-        )
-      : this.totals.reviewQueuePeak;
-    const liveIncidents = this.sprint
-      ? this.sprint.tasks.filter((t) => t.incident).length
-      : Math.max(0, this.totals.incidents - this.totals.contained);
+    // スプリント実測があるときだけ行列・炎上を更新。無ければチーム固有の既存値を保つ
+    // （全ラン共通 totals で他チームの累計を書き込まない）。
+    const sprintExtras = this.sprint
+      ? {
+          reviewQueue: Math.max(
+            this.sprint.metrics.reviewQueueMax,
+            this.sprint.tasks.filter((t) => t.lane === 'review').length,
+          ),
+          incidents: this.sprint.tasks.filter((t) => t.incident).length,
+        }
+      : {};
     this.teams[idx] = syncTeamFromOrg(this.teams[idx], this.org, {
       engineers: activeEngineerCount(this.roster),
-      reviewQueue: liveQueue,
-      incidents: liveIncidents,
+      ...sprintExtras,
     });
     this.teamRosters[this.activeTeamId] = structuredClone(this.roster);
   }
@@ -1304,6 +1306,7 @@ export class RunEngine {
     const team = this.teams.find((t) => t.id === id);
     if (!team) return;
     this.activeTeamId = id;
+    // 上位レバーは適用時に TeamRunState へ焼き込み済みなので、正本からそのまま復元する。
     this.org = orgFromTeam(team);
     const cached = this.teamRosters[id];
     this.roster = cached
@@ -1333,9 +1336,9 @@ export class RunEngine {
   applyOrgLever(leverId: string, deptId?: string, teamId?: string): boolean {
     // ラン外（タイトル・終端）では発動しない（即時敗北判定が終端フェーズから再遷移しないように）。
     if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
+    const def = getLever(leverId);
     const res = applyLever(this.orgAdjust, this.budget, leverId, deptId, teamId);
-    if (!res.changed) return false;
-    this.orgAdjust = res.adjust;
+    if (!res.changed || !def) return false;
     this.budget = res.budget;
     if (res.extraTeamsAdded > 0) {
       const template =
@@ -1355,17 +1358,31 @@ export class RunEngine {
         nextIndexStart: productCount,
       });
     }
-    if (res.teamId) {
-      const def = getLever(leverId);
-      if (def) {
-        this.teams = this.teams.map((t) =>
-          t.id === res.teamId ? applyEffectToTeam(t, def.effect) : t,
-        );
-        if (res.teamId === this.activeTeamId) {
-          const updated = this.teams.find((t) => t.id === res.teamId);
-          if (updated) this.org = orgFromTeam(updated);
-        }
+    // 指標効果は対象チーム正本へ焼き込み、詳細スプリントと俯瞰表示を一致させる。
+    // orgAdjust には infraBoost 等の非指標のみ残し、投影・粗粒度で二重適用しない。
+    if (def.scope === 'company') {
+      this.teams = this.teams.map((t) => applyEffectToTeam(t, def.effect));
+      const active = this.teams.find((t) => t.id === this.activeTeamId);
+      if (active) this.org = orgFromTeam(active);
+      this.orgAdjust = stripMetricAdjustments(res.adjust);
+    } else if (def.scope === 'department' && deptId) {
+      this.teams = this.teams.map((t) =>
+        t.deptId === deptId ? applyEffectToTeam(t, def.effect) : t,
+      );
+      const active = this.teams.find((t) => t.id === this.activeTeamId);
+      if (active && active.deptId === deptId) this.org = orgFromTeam(active);
+      this.orgAdjust = stripMetricAdjustments(res.adjust);
+    } else if (res.teamId) {
+      this.teams = this.teams.map((t) =>
+        t.id === res.teamId ? applyEffectToTeam(t, def.effect) : t,
+      );
+      if (res.teamId === this.activeTeamId) {
+        const updated = this.teams.find((t) => t.id === res.teamId);
+        if (updated) this.org = orgFromTeam(updated);
       }
+      this.orgAdjust = res.adjust;
+    } else {
+      this.orgAdjust = res.adjust;
     }
     this.applyImmediateLose();
     return true;
@@ -1383,6 +1400,8 @@ export class RunEngine {
           liveIncidents: this.sprint.tasks.filter((t) => t.incident).length,
         }
       : {};
+    const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
+    const liveEngineers = Math.max(activeTeam?.engineers ?? 0, activeEngineerCount(this.roster));
     return projectOrgScale({
       seed: this.seed,
       teams: this.teams,
@@ -1391,7 +1410,7 @@ export class RunEngine {
       activeLive: activeLiveFromOrg({
         org: this.org,
         totals: this.totals,
-        engineers: activeEngineerCount(this.roster),
+        engineers: liveEngineers,
         aiAssignedCount: aiAssignedCount(this.roster),
         ...live,
       }),

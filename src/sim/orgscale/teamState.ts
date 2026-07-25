@@ -67,6 +67,31 @@ export function applyAdjustToRaw(
   };
 }
 
+/**
+ * チーム指標へ焼き込んだあと、投影と二重にならないよう指標差分を落とす。
+ * `infraBoost` / `extraTeams` だけ残す（基盤ハブ表示・採用履歴用）。
+ */
+export function retainNonMetricAdjust(adj: OrgAdjust): OrgAdjust {
+  return {
+    ...emptyAdjust(),
+    infraBoost: adj.infraBoost,
+    extraTeams: adj.extraTeams,
+  };
+}
+
+/** 全社・部門レバー適用後に、指標差分を焼き込み済みとして OrgAdjustState から除く。 */
+export function stripMetricAdjustments(adjust: OrgAdjustState): OrgAdjustState {
+  const byDept: Record<string, OrgAdjust> = {};
+  for (const [id, adj] of Object.entries(adjust.byDept)) {
+    byDept[id] = retainNonMetricAdjust(adj);
+  }
+  return {
+    company: retainNonMetricAdjust(adjust.company),
+    byDept,
+    byTeam: { ...(adjust.byTeam ?? {}) },
+  };
+}
+
 /** 初期生成時のホーム素指標（ライバル派生のベース。旧 playerRaw 互換）。 */
 function homeSeedRaw(
   org: OrgState,
@@ -191,7 +216,11 @@ export function initTeamRunStates(args: {
   return teams;
 }
 
-/** 選択中チームの `OrgState` から永続指標へ書き戻す。 */
+/**
+ * 選択中チームの `OrgState` から永続指標へ書き戻す。
+ * `engineers` は詳細ロスター人数で縮めない（チーム総人数の下限を維持）。
+ * `reviewQueue` / `incidents` 未指定時は既存値を保つ（全ラン累計で上書きしない）。
+ */
 export function syncTeamFromOrg(
   team: TeamRunState,
   org: OrgState,
@@ -201,27 +230,26 @@ export function syncTeamFromOrg(
     incidents?: number;
   },
 ): TeamRunState {
+  const engineers = Math.max(1, team.engineers, extras.engineers);
+  const reviewQueue = Math.max(0, extras.reviewQueue ?? team.reviewQueue);
+  const incidents = Math.max(0, extras.incidents ?? team.incidents);
   return {
     ...team,
-    engineers: Math.max(1, extras.engineers),
+    engineers,
     aiLiteracy: Math.round(org.aiLiteracy),
     aiDependency: Math.round(org.aiDependency),
     morale: Math.round(org.morale),
     techDebt: Math.round(org.techDebt),
     shipping: Math.round(org.deliveryScore),
-    reviewQueue: Math.max(0, extras.reviewQueue ?? team.reviewQueue),
-    incidents: Math.max(0, extras.incidents ?? team.incidents),
+    reviewQueue,
+    incidents,
     seniorHp: Math.round(org.seniorHp),
     aiEnabled: org.aiEnabled,
     testCoverage: Math.round(org.testCoverage),
     documentation: Math.round(org.documentation),
     quality: Math.round(org.quality),
-    reviewCapacity: clamp(55 + extras.engineers * 4 - (extras.reviewQueue ?? 0) * 2, 10, 100),
-    incidentBias: clamp(
-      0.08 + (extras.incidents ?? 0) * 0.05 + (100 - org.quality) * 0.002,
-      0.02,
-      0.45,
-    ),
+    reviewCapacity: clamp(55 + engineers * 4 - reviewQueue * 2, 10, 100),
+    incidentBias: clamp(0.08 + incidents * 0.05 + (100 - org.quality) * 0.002, 0.02, 0.45),
   };
 }
 
@@ -241,7 +269,11 @@ export function orgFromTeam(team: TeamRunState): OrgState {
   };
 }
 
-/** 未訪問チーム向けに engineers 人数の簡易ロスターを seed 生成する。 */
+/**
+ * 未訪問チーム向けに簡易ロスターを seed 生成する。
+ * 詳細操作のロスター上限（ROSTER_CAP=6）と、チーム総人数 `TeamRunState.engineers` は分離する。
+ * 7〜8 人チームでもロスターは最大 6 人までとし、総人数は sync 時に縮めない。
+ */
 export function createTeamRoster(seed: string, teamId: string, engineers: number): RosterState {
   const rng = createRng(`${seed}:roster:${teamId}`);
   const count = Math.max(2, Math.min(6, engineers));
@@ -317,6 +349,9 @@ export function appendTeamsToDept(
 /**
  * 非選択チームを粗粒度で 1 ステップ進める（スプリント完了時）。
  * 選択中（excludeId）は詳細 sim 側が正なので触らない。
+ *
+ * `adjust` は悪化圧力の緩和にだけ使い、指標差分を永続値へ加算しない。
+ * （レバー効果は適用時に TeamRunState へ焼き込み済み。投影オーバーレイと二重にしない。）
  */
 export function advanceCoarseTeams(
   teams: readonly TeamRunState[],
@@ -333,7 +368,13 @@ export function advanceCoarseTeams(
     const rng = createRng(`${args.seed}:coarse:${args.stepKey}:${team.id}`);
     const deptAdj = mergeAdjust(adjust.company, adjust.byDept[team.deptId] ?? emptyAdjust());
     const teamAdj = mergeAdjust(deptAdj, adjust.byTeam?.[team.id] ?? emptyAdjust());
-    // 調整は「緩めた制約」として粗粒度の悪化を抑える方向に効かせる。
+    // 負のデルタほど圧力を緩める（永続値への再加算はしない）。
+    const queueRelief = Math.max(0, -teamAdj.reviewQueueDelta) * 0.2;
+    const fireMul = clamp(1 + teamAdj.incidentDelta * 0.12, 0.35, 1.2);
+    const debtRelief = Math.max(0, -teamAdj.techDebtDelta) * 0.05;
+    const aiPressureMul = clamp(1 + teamAdj.aiDependencyDelta * 0.02, 0.4, 1.2);
+    const moraleBias = teamAdj.moraleDelta === 0 ? 0 : Math.sign(teamAdj.moraleDelta) * 0.5;
+
     const shipGain = Math.max(
       4,
       Math.round(
@@ -344,34 +385,29 @@ export function advanceCoarseTeams(
     const queuePressure = Math.max(
       0,
       Math.round(
-        team.engineers * 0.35 +
-          team.aiDependency * 0.04 -
-          team.reviewCapacity * 0.05 +
-          teamAdj.reviewQueueDelta * 0.25,
+        team.engineers * 0.35 + team.aiDependency * 0.04 - team.reviewCapacity * 0.05 - queueRelief,
       ),
     );
     const queueDelta = Math.round((rng() * 2 - 0.7) * 2) + queuePressure;
-    let reviewQueue = Math.max(0, team.reviewQueue + queueDelta + teamAdj.reviewQueueDelta);
+    let reviewQueue = Math.max(0, team.reviewQueue + queueDelta);
     reviewQueue = Math.max(0, reviewQueue - Math.floor(team.reviewCapacity / 25));
 
     const fireRoll = rng();
-    const fireChance = clamp(team.incidentBias + team.aiDependency * 0.0015, 0.02, 0.5);
+    const fireChance = clamp((team.incidentBias + team.aiDependency * 0.0015) * fireMul, 0.02, 0.5);
     let incidents = team.incidents;
     if (fireRoll < fireChance) incidents += 1;
     if (rng() < 0.35 + team.reviewCapacity * 0.004) incidents = Math.max(0, incidents - 1);
-    incidents = Math.max(0, incidents + teamAdj.incidentDelta);
 
     const moraleDelta =
       (reviewQueue > 8 ? -3 : reviewQueue > 4 ? -1 : 1) +
       (incidents > 0 ? -2 : 1) +
-      teamAdj.moraleDelta +
+      moraleBias +
       Math.round((rng() * 2 - 1) * 2);
     const techDebtDelta =
-      Math.round(team.aiDependency * 0.03) -
-      Math.round(team.aiLiteracy * 0.02) +
-      teamAdj.techDebtDelta;
+      Math.round(team.aiDependency * 0.03) - Math.round(team.aiLiteracy * 0.02) - debtRelief;
     const literacyGain = rng() < 0.4 ? 1 : 0;
     const seniorDrain = reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0;
+    const aiDrift = rng() < 0.3 * aiPressureMul ? 1 : 0;
 
     return {
       ...team,
@@ -380,11 +416,7 @@ export function advanceCoarseTeams(
       incidents,
       morale: clamp(team.morale + moraleDelta, 5, 100),
       techDebt: Math.max(0, team.techDebt + techDebtDelta),
-      aiDependency: clamp(
-        team.aiDependency + teamAdj.aiDependencyDelta + (rng() < 0.3 ? 1 : 0),
-        0,
-        100,
-      ),
+      aiDependency: clamp(team.aiDependency + aiDrift, 0, 100),
       aiLiteracy: clamp(team.aiLiteracy + literacyGain, 0, 100),
       seniorHp: clamp(team.seniorHp - seniorDrain + (100 - team.seniorHp) * 0.05, 1, 100),
       quality: clamp(team.quality + (rng() < 0.25 ? -1 : 0), 10, 100),

@@ -375,6 +375,23 @@ export function appendTeamsToDept(
   return [...teams, ...added];
 }
 
+/** 粗粒度進行へ渡す全社モディファイア（詳細 sim の foldRunEffects 相当）。 */
+export type CoarseRunModifiers = {
+  /** 障害発生率倍率（試練 flammable / レリック耐性など）。 */
+  incidentRateMul?: number;
+  /** 出荷増分倍率（codingSpeedMul / pause_ai_rollout など）。 */
+  shipMul?: number;
+  /** 行列消化・鎮火しやすさ（reviewEfficiencyMul 相当）。 */
+  reviewMul?: number;
+};
+
+/** 粗粒度 1 ステップの結果。 */
+export type CoarseStepResult = {
+  teams: TeamRunState[];
+  /** 非選択チームで新規発生した炎上件数（鎮火前。開数差分ではない）。 */
+  ignited: number;
+};
+
 /**
  * 非選択チームを粗粒度で 1 ステップ進める（スプリント完了時）。
  * 選択中（excludeId）は詳細 sim 側が正なので触らない。
@@ -389,10 +406,15 @@ export function advanceCoarseTeams(
     stepKey: string;
     excludeId: string;
     adjust?: OrgAdjustState;
+    modifiers?: CoarseRunModifiers;
   },
-): TeamRunState[] {
+): CoarseStepResult {
   const adjust = args.adjust ?? { company: emptyAdjust(), byDept: {} };
-  return teams.map((team) => {
+  const incidentRateMul = Math.max(0.2, args.modifiers?.incidentRateMul ?? 1);
+  const shipMul = Math.max(0.2, args.modifiers?.shipMul ?? 1);
+  const reviewMul = clamp(args.modifiers?.reviewMul ?? 1, 0.4, 1.8);
+  let ignited = 0;
+  const next = teams.map((team) => {
     if (team.id === args.excludeId) return team;
     const rng = createRng(`${args.seed}:coarse:${args.stepKey}:${team.id}`);
     const deptAdj = mergeAdjust(adjust.company, adjust.byDept[team.deptId] ?? emptyAdjust());
@@ -407,8 +429,9 @@ export function advanceCoarseTeams(
     const shipGain = Math.max(
       4,
       Math.round(
-        (8 + team.engineers * 2.5 + team.aiLiteracy * 0.08) * (0.75 + rng() * 0.5) -
-          team.techDebt * 0.02,
+        ((8 + team.engineers * 2.5 + team.aiLiteracy * 0.08) * (0.75 + rng() * 0.5) -
+          team.techDebt * 0.02) *
+          shipMul,
       ),
     );
     const queuePressure = Math.max(
@@ -419,13 +442,22 @@ export function advanceCoarseTeams(
     );
     const queueDelta = Math.round((rng() * 2 - 0.7) * 2) + queuePressure;
     let reviewQueue = Math.max(0, team.reviewQueue + queueDelta);
-    reviewQueue = Math.max(0, reviewQueue - Math.floor(team.reviewCapacity / 25));
+    reviewQueue = Math.max(0, reviewQueue - Math.floor((team.reviewCapacity / 25) * reviewMul));
 
     const fireRoll = rng();
-    const fireChance = clamp((team.incidentBias + team.aiDependency * 0.0015) * fireMul, 0.02, 0.5);
+    const fireChance = clamp(
+      (team.incidentBias + team.aiDependency * 0.0015) * fireMul * incidentRateMul,
+      0.02,
+      0.5,
+    );
     let incidents = team.incidents;
-    if (fireRoll < fireChance) incidents += 1;
-    if (rng() < 0.35 + team.reviewCapacity * 0.004) incidents = Math.max(0, incidents - 1);
+    if (fireRoll < fireChance) {
+      incidents += 1;
+      ignited += 1;
+    }
+    if (rng() < (0.35 + team.reviewCapacity * 0.004) * reviewMul) {
+      incidents = Math.max(0, incidents - 1);
+    }
 
     const moraleDelta =
       (reviewQueue > 8 ? -3 : reviewQueue > 4 ? -1 : 1) +
@@ -454,19 +486,20 @@ export function advanceCoarseTeams(
       ...deriveTeamCapacities({ engineers: team.engineers, reviewQueue, incidents, quality }),
     };
   });
+  return { teams: next, ignited };
 }
 
 /**
- * 粗粒度 1 ステップの出荷・新規炎上増分を、他チーム平均相当へ正規化する。
- * 全合算だと四半期 KPI が桁違いになるため、人数で割った値だけラン集計へ載せる。
+ * 粗粒度 1 ステップの出荷・炎上発生を、他チーム平均相当へ正規化する。
+ * 炎上は開数差分ではなく発生件数（ignited）を使う（同ステップ鎮火で消えないように）。
  */
 export function normalizeCoarseTotalsDelta(
-  before: readonly Pick<TeamRunState, 'id' | 'shipping' | 'incidents'>[],
-  after: readonly Pick<TeamRunState, 'id' | 'shipping' | 'incidents'>[],
+  before: readonly Pick<TeamRunState, 'id' | 'shipping'>[],
+  after: readonly Pick<TeamRunState, 'id' | 'shipping'>[],
   excludeId: string,
+  ignited: number,
 ): { delivered: number; incidents: number } {
   let deliveredGain = 0;
-  let incidentGain = 0;
   let otherCount = 0;
   for (const team of after) {
     if (team.id === excludeId) continue;
@@ -474,13 +507,12 @@ export function normalizeCoarseTotalsDelta(
     if (!prev) continue;
     otherCount += 1;
     deliveredGain += Math.max(0, team.shipping - prev.shipping);
-    incidentGain += Math.max(0, team.incidents - prev.incidents);
   }
   if (otherCount <= 0) return { delivered: 0, incidents: 0 };
   return {
     delivered: deliveredGain > 0 ? Math.max(1, Math.round(deliveredGain / otherCount)) : 0,
     // 炎上は稀なので 0 切り捨て（毎ステップ最低 +1 だと Incident KPI が即死する）。
-    incidents: Math.max(0, Math.round(incidentGain / otherCount)),
+    incidents: Math.max(0, Math.round(Math.max(0, ignited) / otherCount)),
   };
 }
 

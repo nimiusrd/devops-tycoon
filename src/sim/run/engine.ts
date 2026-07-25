@@ -106,6 +106,7 @@ import {
 } from './events';
 import { canUnlock, unlockNode } from './evolution';
 import { canTransition, RunPhaseError } from './phases';
+import { foldRunEffects } from './effects';
 import {
   applyGoalAdjustment,
   applyGoalOrgEffectsToTeam,
@@ -116,6 +117,7 @@ import {
   canChooseAdjustment,
   isTerminalFailure,
   loseReasonForOutcome,
+  PAUSE_AI_DEBUFF_MUL,
 } from './quarterReview';
 import {
   createSprintFromBaselineInput,
@@ -792,6 +794,12 @@ export class RunEngine {
       this.teams = this.teams.map((t) =>
         t.id === this.activeTeamId ? t : applyGoalOrgEffectsToTeam(t, adjustmentDef),
       );
+      // ラン累計スコア（totals.delivered）にも出荷評価倍率を反映する。
+      const mul = adjustmentDef.orgEffects?.deliveryScoreMul;
+      if (mul !== undefined) {
+        this.totals.delivered = Math.round(this.totals.delivered * mul);
+        this.quarterTotals.delivered = Math.round(this.quarterTotals.delivered * mul);
+      }
     }
 
     if (id === 'reorg_teams') {
@@ -1427,14 +1435,36 @@ export class RunEngine {
 
   private advanceOtherTeams(stepKey: string): void {
     const before = this.teams;
-    this.teams = advanceCoarseTeams(this.teams, {
+    const fold = foldRunEffects({
+      deck: this.deck,
+      relics: this.relics,
+      evolution: this.evolution,
+      difficulty: this.difficulty,
+      trials: this.trials,
+    });
+    let shipMul = fold.effects.codingSpeedMul;
+    if (this.pauseAiDebuffQuarter === this.quarterNumber) {
+      shipMul *= PAUSE_AI_DEBUFF_MUL;
+    }
+    const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey,
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
+      modifiers: {
+        incidentRateMul: fold.effects.incidentRateMul,
+        shipMul,
+        reviewMul: fold.effects.reviewEfficiencyMul,
+      },
     });
+    this.teams = stepped.teams;
     // 粗粒度チームの出荷・新規炎上をラン／四半期集計へ反映する（俯瞰だけの演出にしない）。
-    const delta = normalizeCoarseTotalsDelta(before, this.teams, this.activeTeamId);
+    const delta = normalizeCoarseTotalsDelta(
+      before,
+      this.teams,
+      this.activeTeamId,
+      stepped.ignited,
+    );
     this.totals.delivered += delta.delivered;
     this.quarterTotals.delivered += delta.delivered;
     this.totals.incidents += delta.incidents;

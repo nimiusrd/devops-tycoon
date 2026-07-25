@@ -159,8 +159,8 @@ describe('RunEngine: 独立チーム状態（RI-64）', () => {
       stepKey: 'test-step',
       excludeId: before.activeTeamId,
     });
-    expect(advanced.find((t) => t.id === active.id)).toEqual(active);
-    const otherAfter = advanced.find((t) => t.id === 'platform-t0')!;
+    expect(advanced.teams.find((t) => t.id === active.id)).toEqual(active);
+    const otherAfter = advanced.teams.find((t) => t.id === 'platform-t0')!;
     expect(otherAfter.shipping).not.toBe(otherBefore.shipping);
   });
 
@@ -254,7 +254,7 @@ describe('RunEngine: レバー', () => {
       excludeId: 'product-t0',
       adjust: e.exportPersistState()!.extras.orgAdjust,
     });
-    const afterStep = stepped.find((t) => t.id === 'platform-t0')!.aiDependency;
+    const afterStep = stepped.teams.find((t) => t.id === 'platform-t0')!.aiDependency;
     // 自然ドリフト（0 or +1）のみ。レバー -10 の再適用は起きない。
     expect(afterStep - afterLever).toBeGreaterThanOrEqual(0);
     expect(afterStep - afterLever).toBeLessThanOrEqual(1);
@@ -414,7 +414,7 @@ describe('RunEngine: レバー', () => {
       stepKey: 's1',
       excludeId: 'product-t0',
     });
-    for (const team of stepped) {
+    for (const team of stepped.teams) {
       if (team.id === 'product-t0') continue;
       const expected = Math.min(
         0.45,
@@ -563,25 +563,88 @@ describe('RunEngine: レバー', () => {
     );
   });
 
-  it('粗粒度の新規炎上を他チーム平均相当で正規化する', () => {
+  it('粗粒度の新規炎上を発生件数から他チーム平均相当で正規化する', () => {
     const before = [
-      { id: 'product-t0', shipping: 10, incidents: 0 },
-      { id: 'a', shipping: 10, incidents: 0 },
-      { id: 'b', shipping: 10, incidents: 0 },
-      { id: 'c', shipping: 10, incidents: 1 },
+      { id: 'product-t0', shipping: 10 },
+      { id: 'a', shipping: 10 },
+      { id: 'b', shipping: 10 },
+      { id: 'c', shipping: 10 },
     ];
     const after = [
-      { id: 'product-t0', shipping: 10, incidents: 0 },
-      { id: 'a', shipping: 20, incidents: 3 },
-      { id: 'b', shipping: 16, incidents: 3 },
-      { id: 'c', shipping: 13, incidents: 1 },
+      { id: 'product-t0', shipping: 10 },
+      { id: 'a', shipping: 20 },
+      { id: 'b', shipping: 16 },
+      { id: 'c', shipping: 13 },
     ];
-    const delta = normalizeCoarseTotalsDelta(before, after, 'product-t0');
+    // 開数差分ではなく発生件数を渡す（同ステップ鎮火で開数が戻っても計上される）。
+    const delta = normalizeCoarseTotalsDelta(before, after, 'product-t0', 6);
     // 出荷増分 10+6+3=19 → round(19/3)=6（最低 1 保証）
     expect(delta.delivered).toBe(6);
-    // 炎上増分 3+3+0=6 → round(6/3)=2（0 切り捨て可）
+    // 発生 6 → round(6/3)=2
     expect(delta.incidents).toBe(2);
-    expect(normalizeCoarseTotalsDelta(before, before, 'product-t0').incidents).toBe(0);
+    expect(normalizeCoarseTotalsDelta(before, before, 'product-t0', 0).incidents).toBe(0);
+  });
+
+  it('粗粒度進行は同ステップ鎮火でも炎上発生件数を返す', () => {
+    const teams = initTeamRunStates({
+      seed: 'ignite-count',
+      org: started('ignite-count').snapshot().org,
+      homeEngineers: 3,
+    }).map((t) => (t.id === 'product-t0' ? t : { ...t, incidents: 2, incidentBias: 0.45 }));
+    const stepped = advanceCoarseTeams(teams, {
+      seed: 'ignite-count',
+      stepKey: 'fire-heavy',
+      excludeId: 'product-t0',
+      modifiers: { incidentRateMul: 3, reviewMul: 2 },
+    });
+    // 発生があっても鎮火で開数が減り得る。ignited は発生側の件数。
+    expect(stepped.ignited).toBeGreaterThanOrEqual(0);
+    const netOpenGain = stepped.teams.reduce((a, t) => {
+      if (t.id === 'product-t0') return a;
+      const prev = teams.find((p) => p.id === t.id)!;
+      return a + Math.max(0, t.incidents - prev.incidents);
+    }, 0);
+    expect(stepped.ignited).toBeGreaterThanOrEqual(netOpenGain);
+  });
+
+  it('粗粒度進行に incidentRateMul が効く', () => {
+    const teams = initTeamRunStates({
+      seed: 'coarse-mod',
+      org: started('coarse-mod').snapshot().org,
+      homeEngineers: 3,
+    });
+    const low = advanceCoarseTeams(teams, {
+      seed: 'coarse-mod',
+      stepKey: 'm1',
+      excludeId: 'product-t0',
+      modifiers: { incidentRateMul: 0.2 },
+    });
+    const high = advanceCoarseTeams(teams, {
+      seed: 'coarse-mod',
+      stepKey: 'm1',
+      excludeId: 'product-t0',
+      modifiers: { incidentRateMul: 3 },
+    });
+    expect(high.ignited).toBeGreaterThanOrEqual(low.ignited);
+  });
+
+  it('quality_pivot は totals.delivered にも出荷評価倍率を掛ける', () => {
+    const e = started('delivery-mul-totals');
+    const internals = e as unknown as {
+      phase: string;
+      quarterReview: { outcome: string; availableAdjustments: string[] } | null;
+      startNextQuarter: () => void;
+      totals: { delivered: number };
+    };
+    internals.phase = 'quarterReview';
+    internals.quarterReview = {
+      outcome: 'missed_adjustable',
+      availableAdjustments: ['quality_pivot'],
+    };
+    internals.startNextQuarter = () => undefined;
+    internals.totals.delivered = 200;
+    e.chooseGoalAdjustment('quality_pivot');
+    expect(e.snapshot().totals.delivered).toBe(180);
   });
 
   it('四半期目標修正の org 効果は全チームへ焼き込まれる', () => {

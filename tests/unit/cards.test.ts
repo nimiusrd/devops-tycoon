@@ -163,13 +163,13 @@ describe('手札配布・発動（RI-30）', () => {
     expect(migrated[1]!.baselineAppliedByTeam).toBeUndefined();
   });
 
-  it('migrateBaselineAppliedByTeam は部分マップの不足 ID をレガシーで補完する', () => {
+  it('migrateBaselineAppliedByTeam は部分マップの不足 ID をレガシーで埋めない', () => {
     const deck: CardInstance[] = [
       {
         defId: 'auto-test',
         level: 2,
         baselineAppliedLevel: 1,
-        // 追加チーム継承だけが先に走った状態。
+        // v2 で特定チームにだけ発動済みの状態。
         baselineAppliedByTeam: { 'product-t2': 1 },
       },
     ];
@@ -178,11 +178,7 @@ describe('手札配布・発動（RI-30）', () => {
       'product-t2',
       'platform-t1',
     ]);
-    expect(migrated[0]!.baselineAppliedByTeam).toEqual({
-      'product-t0': 1,
-      'product-t2': 1,
-      'platform-t1': 1,
-    });
+    expect(migrated[0]!.baselineAppliedByTeam).toEqual({ 'product-t2': 1 });
   });
 
   it('baselineAppliedLevelFor はマップ未作成時のみレガシー値を使う', () => {

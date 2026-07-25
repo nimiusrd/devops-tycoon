@@ -578,12 +578,42 @@ describe('RunEngine: レバー', () => {
       { id: 'c', shipping: 13 },
     ];
     // 開数差分ではなく発生件数を渡す（同ステップ鎮火で開数が戻っても計上される）。
-    const delta = normalizeCoarseTotalsDelta(before, after, 'product-t0', 6);
+    const delta = normalizeCoarseTotalsDelta(before, after, 'product-t0', 6, 19, 12);
     // 出荷増分 10+6+3=19 → round(19/3)=6（最低 1 保証）
     expect(delta.delivered).toBe(6);
     // 発生 6 → round(6/3)=2
     expect(delta.incidents).toBe(2);
+    // 完了 19 → round(19/3)=6、AI 支援 12 → round(12/3)=4
+    expect(delta.completed).toBe(6);
+    expect(delta.aiAssisted).toBe(4);
     expect(normalizeCoarseTotalsDelta(before, before, 'product-t0', 0).incidents).toBe(0);
+  });
+
+  it('粗粒度チームの完了・AI 支援を四半期集計へ反映する', () => {
+    const e = started('coarse-ai-adoption');
+    const beforeCompleted = e.snapshot().quarterTotals.completed;
+    const beforeAi = e.snapshot().quarterTotals.aiAssisted;
+    const internals = e as unknown as { advanceOtherTeams: (k: string) => void };
+    internals.advanceOtherTeams('ai-step');
+    const after = e.snapshot().quarterTotals;
+    expect(after.completed).toBeGreaterThan(beforeCompleted);
+    expect(after.aiAssisted).toBeGreaterThanOrEqual(beforeAi);
+    expect(after.aiAssisted).toBeLessThanOrEqual(after.completed);
+  });
+
+  it('v2 hydrate は部分 baseline マップをレガシーで埋めない', () => {
+    const e = started('v2-partial-baseline');
+    const persist = e.exportPersistState()!;
+    persist.deck = [
+      {
+        defId: 'auto-test',
+        level: 1,
+        baselineAppliedLevel: 1,
+        baselineAppliedByTeam: { 'product-t0': 1 },
+      },
+    ];
+    e.hydratePersistState(persist);
+    expect(e.snapshot().deck[0]!.baselineAppliedByTeam).toEqual({ 'product-t0': 1 });
   });
 
   it('粗粒度進行は同ステップ鎮火でも炎上発生件数を返す', () => {

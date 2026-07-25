@@ -1460,17 +1460,23 @@ export class RunEngine {
       },
     });
     this.teams = stepped.teams;
-    // 粗粒度チームの出荷・新規炎上をラン／四半期集計へ反映する（俯瞰だけの演出にしない）。
+    // 粗粒度チームの出荷・炎上・完了・AI 支援をラン／四半期集計へ反映する。
     const delta = normalizeCoarseTotalsDelta(
       before,
       this.teams,
       this.activeTeamId,
       stepped.ignited,
+      stepped.completed,
+      stepped.aiAssisted,
     );
     this.totals.delivered += delta.delivered;
     this.quarterTotals.delivered += delta.delivered;
     this.totals.incidents += delta.incidents;
     this.quarterTotals.incidents += delta.incidents;
+    this.totals.completed += delta.completed;
+    this.quarterTotals.completed += delta.completed;
+    this.totals.aiAssisted += delta.aiAssisted;
+    this.quarterTotals.aiAssisted += delta.aiAssisted;
     // 訪問済みキャッシュのロスターもスプリント間回復を進める（戻ったときに休職が永久化しない）。
     for (const id of Object.keys(this.teamRosters)) {
       if (id === this.activeTeamId) continue;
@@ -1918,7 +1924,7 @@ export class RunEngine {
       if (active) this.org = orgFromTeam(active);
       this.orgAdjust = stripMetricAdjustments(this.orgAdjust);
     }
-    // レガシー baselineAppliedLevel をチーム別マップへ移行／不足 ID を補完する。
+    // マップ無しのレガシー baseline だけ全チームへ移行する（部分マップは欠損補完しない）。
     this.deck = migrateBaselineAppliedByTeam(
       this.deck,
       this.teams.map((t) => t.id),

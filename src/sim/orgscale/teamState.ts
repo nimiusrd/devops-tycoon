@@ -12,6 +12,7 @@ import {
   type MemberArchetype,
 } from '../../data/members';
 import { createMember, type RosterState } from '../member';
+import { AI_ADOPTION } from '../model/process';
 import { createRng } from '../rng';
 import type { DiagnosisType } from '../run/types';
 import type { OrgState } from '../types';
@@ -412,6 +413,10 @@ export type CoarseStepResult = {
   teams: TeamRunState[];
   /** 非選択チームで新規発生した炎上件数（鎮火前。開数差分ではない）。 */
   ignited: number;
+  /** 非選択チームの完了数合算（出荷増分を完了の近似とする）。 */
+  completed: number;
+  /** 非選択チームの AI 支援完了数合算（編成相当の採用率で按分）。 */
+  aiAssisted: number;
 };
 
 /**
@@ -438,6 +443,8 @@ export function advanceCoarseTeams(
   const reviewCapacityMul = clamp(args.modifiers?.reviewCapacityMul ?? 1, 0.5, 2);
   const aiDependencyDrift = Math.max(0, Math.round(args.modifiers?.aiDependencyDrift ?? 0));
   let ignited = 0;
+  let completed = 0;
+  let aiAssisted = 0;
   const next = teams.map((team) => {
     if (team.id === args.excludeId) return team;
     const rng = createRng(`${args.seed}:coarse:${args.stepKey}:${team.id}`);
@@ -459,6 +466,13 @@ export function advanceCoarseTeams(
           shipMul,
       ),
     );
+    // 出荷増分を完了の近似とし、詳細スプリント同様 AI_ADOPTION×配布率で AI 支援を按分する。
+    completed += shipGain;
+    const adoptionShare =
+      team.engineers > 0
+        ? estimateRivalAiAssigned(team.engineers, team.aiDependency) / team.engineers
+        : 0;
+    aiAssisted += Math.round(shipGain * AI_ADOPTION * clamp(adoptionShare, 0, 1));
     const queuePressure = Math.max(
       0,
       Math.round(team.engineers * 0.35 + team.aiDependency * 0.04 - reviewCap * 0.05 - queueRelief),
@@ -509,11 +523,11 @@ export function advanceCoarseTeams(
       ...deriveTeamCapacities({ engineers: team.engineers, reviewQueue, incidents, quality }),
     };
   });
-  return { teams: next, ignited };
+  return { teams: next, ignited, completed, aiAssisted };
 }
 
 /**
- * 粗粒度 1 ステップの出荷・炎上発生を、他チーム平均相当へ正規化する。
+ * 粗粒度 1 ステップの出荷・炎上・完了・AI 支援を、他チーム平均相当へ正規化する。
  * 炎上は開数差分ではなく発生件数（ignited）を使う（同ステップ鎮火で消えないように）。
  */
 export function normalizeCoarseTotalsDelta(
@@ -521,7 +535,9 @@ export function normalizeCoarseTotalsDelta(
   after: readonly Pick<TeamRunState, 'id' | 'shipping'>[],
   excludeId: string,
   ignited: number,
-): { delivered: number; incidents: number } {
+  completedGain = 0,
+  aiAssistedGain = 0,
+): { delivered: number; incidents: number; completed: number; aiAssisted: number } {
   let deliveredGain = 0;
   let otherCount = 0;
   for (const team of after) {
@@ -531,11 +547,18 @@ export function normalizeCoarseTotalsDelta(
     otherCount += 1;
     deliveredGain += Math.max(0, team.shipping - prev.shipping);
   }
-  if (otherCount <= 0) return { delivered: 0, incidents: 0 };
+  if (otherCount <= 0) {
+    return { delivered: 0, incidents: 0, completed: 0, aiAssisted: 0 };
+  }
+  const completed = completedGain > 0 ? Math.max(1, Math.round(completedGain / otherCount)) : 0;
+  const aiAssisted = Math.max(0, Math.round(Math.max(0, aiAssistedGain) / otherCount));
   return {
     delivered: deliveredGain > 0 ? Math.max(1, Math.round(deliveredGain / otherCount)) : 0,
     // 炎上は稀なので 0 切り捨て（毎ステップ最低 +1 だと Incident KPI が即死する）。
     incidents: Math.max(0, Math.round(Math.max(0, ignited) / otherCount)),
+    completed,
+    // 採用率の上限を超えないよう完了数でクリップする。
+    aiAssisted: completed > 0 ? Math.min(completed, aiAssisted) : 0,
   };
 }
 

@@ -926,8 +926,9 @@ describe('RunEngine: レバー', () => {
 
   it('reorg_teams 後はアクティブチームの稼働人数を再同期する', () => {
     const e = started('reorg-resync');
-    const beforeEngineers = e.snapshot().teams.find((t) => t.id === e.snapshot().activeTeamId)!
-      .engineers;
+    const beforeEngineers = e
+      .snapshot()
+      .teams.find((t) => t.id === e.snapshot().activeTeamId)!.engineers;
     expect(beforeEngineers).toBeGreaterThan(2);
     const internals = e as unknown as {
       phase: string;

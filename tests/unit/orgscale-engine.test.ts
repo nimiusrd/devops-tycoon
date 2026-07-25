@@ -13,6 +13,7 @@ import {
   companyOrgFromTeams,
   deriveTeamCapacities,
   ENTER_TEAM_FOCUS_PENALTY,
+  engineersFromRoster,
   estimateRivalAiAssigned,
   estimateRosterCoderCount,
   initTeamRunStates,
@@ -262,22 +263,29 @@ describe('RunEngine: レバー', () => {
     expect(afterStep - afterLever).toBeLessThanOrEqual(1);
   });
 
-  it('7人以上のチームへ入り込んでも総席数を失わず稼働人数は同期する', () => {
+  it('7人以上のチームへ入り込んでも稼働人数を切り捨てない', () => {
     const e = started('big-team');
     const big = e.snapshot().teams.find((t) => t.engineers >= 7);
     expect(big).toBeTruthy();
     const headcount = big!.engineers;
     expect(e.enterTeam(big!.id)).toBe(true);
-    // ロスターは最大6でも、正本の総席数は維持。
+    // ロスターは最大6でも、正本の稼働・総席数は維持。
     expect(e.snapshot().roster.members.length).toBeLessThanOrEqual(6);
     expect(e.snapshot().teams.find((t) => t.id === big!.id)!.engineers).toBe(headcount);
-    // sync 後: 稼働人数はロスター、総席数は headcount で残る。
-    const synced = syncTeamFromOrg(big!, e.snapshot().org, {
-      engineers: e.snapshot().roster.members.length,
-      headcount: e.snapshot().roster.members.length,
-    });
-    expect(synced.engineers).toBe(e.snapshot().roster.members.length);
-    expect(synced.headcount).toBe(headcount);
+    const counts = engineersFromRoster(big!, e.snapshot().roster);
+    expect(counts.engineers).toBe(headcount);
+    expect(counts.headcount).toBe(headcount);
+    // スプリント同期相当でも 6 人へ縮まない。
+    const internals = e as unknown as { syncActiveTeamFromOrg: () => void };
+    internals.syncActiveTeamFromOrg();
+    const after = e.snapshot().teams.find((t) => t.id === big!.id)!;
+    expect(after.engineers).toBe(headcount);
+    expect(after.headcount).toBe(headcount);
+    // ロスター内の休職は減るが、ロスター外席は常時稼働のまま残る。
+    const roster = e.snapshot().roster;
+    roster.members[0]!.onLeave = true;
+    const withLeave = engineersFromRoster(after, roster);
+    expect(withLeave.engineers).toBe(headcount - 1);
   });
 
   it('全員休職なら稼働人数 0 を保持する', () => {

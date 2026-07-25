@@ -73,6 +73,7 @@ import {
   createTeamRoster,
   emptyAdjust,
   emptyAdjustState,
+  engineersFromRoster,
   ENTER_TEAM_FOCUS_PENALTY,
   ENTER_TEAM_LOCK_SPRINTS,
   generateIndustry,
@@ -1395,10 +1396,11 @@ export class RunEngine {
             incidents: this.sprint.tasks.filter((t) => t.incident).length,
           }
         : {};
+    // ロスター上限外の席は常時稼働として残し、7〜8 人チームを 6 人へ縮めない。
+    const counts = engineersFromRoster(this.teams[idx]!, this.roster);
     this.teams[idx] = syncTeamFromOrg(this.teams[idx], this.org, {
-      engineers: activeEngineerCount(this.roster),
-      // ロスター総員で総席数を底上げし、休職で稼働人数だけ減らす。
-      headcount: this.roster.members.length,
+      engineers: counts.engineers,
+      headcount: counts.headcount,
       ...sprintExtras,
     });
     this.teamRosters[this.activeTeamId] = structuredClone(this.roster);
@@ -1540,20 +1542,23 @@ export class RunEngine {
     for (const id of Object.keys(this.teamRosters)) {
       if (id === this.activeTeamId) continue;
       this.teamRosters[id] = recoverStamina(this.teamRosters[id], STAMINA_RECOVER_BETWEEN);
-      // 復職で稼働人数が戻ったら粗粒度正本へも同期する。
+      // 復職で稼働人数が戻ったら粗粒度正本へも同期する（ロスター外席も維持）。
       const idx = this.teams.findIndex((t) => t.id === id);
       if (idx < 0) continue;
       const roster = this.teamRosters[id]!;
-      const active = activeEngineerCount(roster);
       const team = this.teams[idx]!;
-      if (team.engineers === active) continue;
-      const headcount = Math.max(team.headcount ?? team.engineers, roster.members.length, active);
+      const counts = engineersFromRoster(team, roster);
+      if (
+        team.engineers === counts.engineers &&
+        (team.headcount ?? team.engineers) === counts.headcount
+      )
+        continue;
       this.teams[idx] = {
         ...team,
-        engineers: active,
-        headcount,
+        engineers: counts.engineers,
+        headcount: counts.headcount,
         ...deriveTeamCapacities({
-          engineers: active,
+          engineers: counts.engineers,
           reviewQueue: team.reviewQueue,
           incidents: team.incidents,
           quality: team.quality,

@@ -11,7 +11,7 @@ import {
   STARTER_ARCHETYPES,
   type MemberArchetype,
 } from '../../data/members';
-import { createMember, type RosterState } from '../member';
+import { activeEngineerCount, createMember, type RosterState } from '../member';
 import { AI_ADOPTION } from '../model/process';
 import { createRng } from '../rng';
 import type { DiagnosisType } from '../run/types';
@@ -236,8 +236,22 @@ export function initTeamRunStates(args: {
 }
 
 /**
+ * 詳細ロスター（上限6）と総席数の差分を常時稼働として合算する。
+ * 7〜8 人チームへ入り込んでも、ロスター外の席を切り捨てて粗粒度人数を落とさない。
+ */
+export function engineersFromRoster(
+  team: Pick<TeamRunState, 'engineers' | 'headcount'>,
+  roster: RosterState,
+): { engineers: number; headcount: number } {
+  const rosterActive = activeEngineerCount(roster);
+  const headcount = Math.max(team.headcount ?? team.engineers, roster.members.length, rosterActive);
+  const offRoster = Math.max(0, headcount - roster.members.length);
+  return { engineers: rosterActive + offRoster, headcount };
+}
+
+/**
  * 選択中チームの `OrgState` から永続指標へ書き戻す。
- * `engineers` は稼働人数（休職で減る）。総席数は `headcount` で維持する。
+ * `engineers` は稼働人数（休職で減る。ロスター外席は常時稼働）。総席数は `headcount` で維持する。
  * `reviewQueue` / `incidents` 未指定時は既存値を保つ（全ラン累計で上書きしない）。
  */
 export function syncTeamFromOrg(
@@ -245,13 +259,14 @@ export function syncTeamFromOrg(
   org: OrgState,
   extras: {
     engineers: number;
-    /** ロスター総員（休職含む）。未指定時は稼働人数のみ参照。 */
+    /** チーム総席数。未指定時は既存 headcount / engineers を維持。 */
     headcount?: number;
     reviewQueue?: number;
     incidents?: number;
   },
 ): TeamRunState {
   // 全員休職なら稼働 0 を保持する（架空の 1 人を粗粒度へ残さない）。
+  // ただし呼び出し側が `engineersFromRoster` 経由ならロスター外席は残る。
   const engineers = Math.max(0, extras.engineers);
   const headcount = Math.max(0, team.headcount ?? team.engineers, extras.headcount ?? 0, engineers);
   const reviewQueue = Math.max(0, extras.reviewQueue ?? team.reviewQueue);
@@ -323,8 +338,8 @@ export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: Or
 
 /**
  * 未訪問チーム向けに簡易ロスターを seed 生成する。
- * 詳細操作のロスター上限（ROSTER_CAP=6）と、チーム総人数 `TeamRunState.engineers` は分離する。
- * 7〜8 人チームでもロスターは最大 6 人までとし、総人数は sync 時に縮めない。
+ * 詳細操作のロスター上限（ROSTER_CAP=6）と、チーム総人数は分離する。
+ * 7〜8 人チームでもロスターは最大 6 人までとし、超過席は `engineersFromRoster` で常時稼働として残す。
  * `aiDependency` 指定時は投影の推定 AI 配布人数と一致するよう決定論的に割り当てる。
  */
 export function createTeamRoster(

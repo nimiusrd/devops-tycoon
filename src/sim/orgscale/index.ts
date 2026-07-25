@@ -38,6 +38,7 @@ export {
   ENTER_TEAM_LOCK_SPRINTS,
   initTeamRunStates,
   syncTeamFromOrg,
+  engineersFromRoster,
   orgFromTeam,
   companyOrgFromTeams,
   createTeamRoster,

@@ -21,6 +21,7 @@ import {
   applyDeckBaseline,
   dealHand,
   drawDraft,
+  inheritBaselineAppliedForTeams,
   migrateBaselineAppliedByTeam,
   playCardFromHand,
   upgradeCardAt,
@@ -1476,6 +1477,7 @@ export class RunEngine {
           homeEngineers: activeEngineerCount(this.roster),
         })[0];
       const productCount = this.teams.filter((t) => t.deptId === 'product').length;
+      const beforeIds = new Set(this.teams.map((t) => t.id));
       this.teams = appendTeamsToDept(this.teams, {
         seed: this.seed,
         deptId: 'product',
@@ -1483,6 +1485,9 @@ export class RunEngine {
         template,
         nextIndexStart: productCount,
       });
+      // テンプレート指標はカード加算済みなので、新チーム ID にも適用済みレベルを継承する。
+      const newIds = this.teams.filter((t) => !beforeIds.has(t.id)).map((t) => t.id);
+      this.deck = inheritBaselineAppliedForTeams(this.deck, this.homeTeamId, newIds);
     }
     // 指標効果は対象チーム正本へ焼き込み、詳細スプリントと俯瞰表示を一致させる。
     // orgAdjust には infraBoost 等の非指標のみ残し、投影・粗粒度で二重適用しない。
@@ -1850,6 +1855,7 @@ export class RunEngine {
             homeEngineers: activeEngineerCount(this.roster),
           })[0];
         const productCount = this.teams.filter((t) => t.deptId === 'product').length;
+        const beforeIds = new Set(this.teams.map((t) => t.id));
         this.teams = appendTeamsToDept(this.teams, {
           seed: this.seed,
           deptId: 'product',
@@ -1857,6 +1863,8 @@ export class RunEngine {
           template,
           nextIndexStart: productCount,
         });
+        const newIds = this.teams.filter((t) => !beforeIds.has(t.id)).map((t) => t.id);
+        this.deck = inheritBaselineAppliedForTeams(this.deck, this.homeTeamId, newIds);
       }
       this.teams = this.teams.map((t) => {
         const deptAdj = mergeAdjust(

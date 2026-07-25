@@ -48,9 +48,13 @@ export function DeptScreen({
   onApplyLever,
 }: DeptScreenProps) {
   const { usePixi, onWebglError } = usePixiRenderer();
-  // 未選択時は当該部門にいるアクティブチームをパネル対象にする（チームレバー導線）。
-  const panelTeamId =
-    selectedTeamId ?? (dept.teams.some((t) => t.id === activeTeamId) ? activeTeamId : null);
+  // 部署内に無い古い選択 ID は無視し、未選択時はアクティブチームへフォールバックする。
+  const inDept = (id: string | null | undefined) => !!id && dept.teams.some((t) => t.id === id);
+  const panelTeamId = inDept(selectedTeamId)
+    ? selectedTeamId
+    : inDept(activeTeamId)
+      ? activeTeamId
+      : null;
   const selected: Team | undefined = dept.teams.find((t) => t.id === panelTeamId);
   const locked = sprintsPlayed < teamLockUntilSprint;
   // エンジン契約: sprint は全入り込み拒否。quarterReview / beat は他チーム切替のみ拒否。

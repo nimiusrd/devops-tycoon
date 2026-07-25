@@ -67,7 +67,7 @@ export function createSprintFromBaselineInput(
   const sprint = createSprint(input.config, org, rng, input.cardEffects, input.aiAdoptionShare);
 
   // 炎上を先に確保し、行列で backlog を食い尽くして炎上が消えないようにする。
-  // igniteTask だと今スプリントの発生件数に乗るため、引き継ぎは直接盤面へ置く。
+  // 盤面へ直接置くが、鎮火集計と整合するよう発生母数（incidentCount）にも載せる。
   if (input.incidentLoadAdd) {
     let lit = 0;
     for (const task of sprint.tasks) {
@@ -79,6 +79,7 @@ export function createSprintFromBaselineInput(
       task.progress = 0;
       lit += 1;
     }
+    sprint.metrics.incidentCount += lit;
   }
 
   if (input.reviewLoadAdd) {

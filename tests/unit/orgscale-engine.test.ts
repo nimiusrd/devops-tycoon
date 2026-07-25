@@ -583,8 +583,44 @@ describe('RunEngine: レバー', () => {
     const sprint = e.snapshot().sprint!;
     expect(sprint.tasks.filter((t) => t.lane === 'review').length).toBe(5);
     expect(sprint.tasks.filter((t) => t.incident).length).toBe(2);
-    // 引き継ぎ炎上は今スプリントの新規発生件数に載せない。
-    expect(sprint.metrics.incidentCount).toBe(0);
+    // 鎮火集計と整合するよう、引き継ぎ炎上も発生母数へ含める。
+    expect(sprint.metrics.incidentCount).toBe(2);
+  });
+
+  it('採用ドラフトの新チームはホームのカード基準を継承し二重適用しない', () => {
+    const e = started('recruit-inherit-baseline');
+    const persist = e.exportPersistState()!;
+    persist.deck = [{ defId: 'auto-test', level: 1, baselineAppliedByTeam: { 'product-t0': 1 } }];
+    // ホーム品質をカード加算済み相当にしておく。
+    persist.extras.teams = persist.extras.teams!.map((t) =>
+      t.id === 'product-t0' ? { ...t, quality: Math.min(100, t.quality + 10) } : t,
+    );
+    persist.org.quality = persist.extras.teams.find((t) => t.id === 'product-t0')!.quality;
+    e.hydratePersistState(persist);
+    const beforeIds = new Set(e.snapshot().teams.map((t) => t.id));
+    expect(e.applyOrgLever('recruitDraft')).toBe(true);
+    const added = e.snapshot().teams.find((t) => !beforeIds.has(t.id));
+    expect(added).toBeTruthy();
+    const card = e.snapshot().deck[0]!;
+    expect(card.baselineAppliedByTeam?.[added!.id]).toBe(1);
+
+    // 新チームへ入り同じカードを発動しても quality は増えない。
+    const internals = e as unknown as {
+      phase: string;
+      sprint: unknown;
+      teamLockUntilSprint: number;
+    };
+    internals.phase = 'setup';
+    internals.sprint = null;
+    internals.teamLockUntilSprint = 0;
+    expect(e.enterTeam(added!.id)).toBe(true);
+    const qualityBefore = e.snapshot().org.quality;
+    e.beginSetupSprint();
+    const hand = e.snapshot().sprint!.cardPiles.hand;
+    const idx = hand.find((i) => e.snapshot().deck[i]?.defId === 'auto-test');
+    expect(idx).toBeDefined();
+    expect(e.playCard(idx!).ok).toBe(true);
+    expect(e.snapshot().org.quality).toBe(qualityBefore);
   });
 
   it('行列＋炎上が taskCount を超えても炎上枠を先に確保する', () => {

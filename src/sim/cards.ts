@@ -166,6 +166,27 @@ export function migrateBaselineAppliedByTeam(
 }
 
 /**
+ * テンプレート（ホーム等）から派生した新チームへ、継承済みカード基準レベルを記録する。
+ * 指標はテンプレート由来で既に加算済みのため、未記録のままだと二重適用になる。
+ */
+export function inheritBaselineAppliedForTeams(
+  deck: CardInstance[],
+  sourceTeamId: string,
+  newTeamIds: readonly string[],
+): CardInstance[] {
+  if (newTeamIds.length === 0) return deck;
+  return deck.map((inst) => {
+    const inherited = baselineAppliedLevelFor(inst, sourceTeamId);
+    if (inherited <= 0) return inst;
+    const baselineAppliedByTeam = { ...(inst.baselineAppliedByTeam ?? {}) };
+    for (const id of newTeamIds) {
+      baselineAppliedByTeam[id] = Math.max(baselineAppliedByTeam[id] ?? 0, inherited);
+    }
+    return { ...inst, baselineAppliedByTeam };
+  });
+}
+
+/**
  * 手札からデッキ位置 `deckIndex` のカードを発動する。
  * 成功時は `sprint.cardEffects` に合成し、加算系を org へ反映する。
  * `passiveEffects` はレリック等の常時パッシブ（発動前の基準効果）。

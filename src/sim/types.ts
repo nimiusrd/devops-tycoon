@@ -123,10 +123,15 @@ export interface CardInstance {
   /** 強化レベル（1 起点。強化で効果増・コスト減）。 */
   level: number;
   /**
-   * 加算系 baseline を既に反映した強化レベル（RI-30）。
-   * 未設定なら未適用。強化後の再発動では差分だけ org へ足す。
+   * 加算系 baseline を既に反映した強化レベル（RI-30 / レガシー）。
+   * チーム別マップが無い旧セーブ向け。新規適用は `baselineAppliedByTeam` を正とする。
    */
   baselineAppliedLevel?: number;
+  /**
+   * チームごとの加算系 baseline 適用レベル（RI-64）。
+   * 独立チームへ同じカードを持ち込んだとき、チーム別に恒久加算する。
+   */
+  baselineAppliedByTeam?: Record<string, number>;
 }
 
 /** 時限モディファイアの種別（介入アクションが設定する）。 */

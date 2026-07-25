@@ -6,11 +6,13 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
 import { DEPARTMENT_DEFS } from '../../src/data/departments';
+import { diagnose } from '../../src/sim/diagnosis';
 import {
   advanceCoarseTeams,
   assertDeptShippingInvariant,
   ENTER_TEAM_FOCUS_PENALTY,
   initTeamRunStates,
+  orgFromTeam,
   syncTeamFromOrg,
 } from '../../src/sim/orgscale';
 
@@ -332,6 +334,117 @@ describe('RunEngine: レバー', () => {
     expect(teams.find((t) => t.id === 'platform-t1')!.isActive).toBe(true);
     expect(teams.find((t) => t.id === 'product-t0')!.isActive).toBe(false);
     expect(teams.find((t) => t.id === 'product-t0')!.isPlayer).toBe(true);
+  });
+
+  it('result フェーズの施策は残存盤面同期で巻き戻らない', () => {
+    const e = started('lever-after-sprint');
+    e.beginSetupSprint();
+    const internals = e as unknown as {
+      phase: string;
+      sprint: { tasks: Array<{ lane: string; incident?: boolean }> };
+      syncActiveTeamFromOrg: () => void;
+    };
+    for (const task of internals.sprint.tasks.slice(0, 6)) {
+      task.lane = 'review';
+      task.incident = false;
+    }
+    internals.syncActiveTeamFromOrg();
+    // result でも sprint オブジェクトが残る状況を再現する。
+    internals.phase = 'result';
+    const activeId = e.snapshot().activeTeamId;
+    const before = e.snapshot().teams.find((t) => t.id === activeId)!.reviewQueue;
+    expect(before).toBeGreaterThan(0);
+    expect(e.applyOrgLever('teamReviewHelp', undefined, activeId)).toBe(true);
+    const after = e.snapshot().teams.find((t) => t.id === activeId)!.reviewQueue;
+    expect(after).toBe(Math.max(0, before - 5));
+  });
+
+  it('スプリント中のアクティブ施策は盤面件数も下げ、同期で消えない', () => {
+    const e = started('lever-during-sprint');
+    e.beginSetupSprint();
+    const internals = e as unknown as {
+      sprint: { tasks: Array<{ lane: string }> };
+      syncActiveTeamFromOrg: () => void;
+    };
+    for (const task of internals.sprint.tasks.slice(0, 5)) {
+      task.lane = 'review';
+    }
+    internals.syncActiveTeamFromOrg();
+    const activeId = e.snapshot().activeTeamId;
+    expect(e.applyOrgLever('teamReviewHelp', undefined, activeId)).toBe(true);
+    const boardReviews = e.snapshot().sprint!.tasks.filter((t) => t.lane === 'review').length;
+    const teamQueue = e.snapshot().teams.find((t) => t.id === activeId)!.reviewQueue;
+    expect(boardReviews).toBe(teamQueue);
+    expect(teamQueue).toBe(0);
+  });
+
+  it('v1 セーブの extraTeams を移行時に復元する', () => {
+    const e = started('v1-extra-teams');
+    const persist = e.exportPersistState()!;
+    const baseCount = persist.extras.teams!.length;
+    // v1 相当: teams 配列を落とし、購入済み extraTeams だけ残す。
+    delete (persist.extras as { teams?: unknown }).teams;
+    delete (persist.extras as { activeTeamId?: unknown }).activeTeamId;
+    persist.extras.orgAdjust.company.extraTeams = 2;
+    e.hydratePersistState(persist);
+    expect(e.snapshot().teams.length).toBe(baseCount + 2);
+    expect(e.snapshot().teams.filter((t) => t.deptId === 'product').length).toBeGreaterThan(
+      persist.extras.orgAdjust.company.extraTeams,
+    );
+  });
+
+  it('チーム切替で診断を現在指標から再計算する', () => {
+    const e = started('diagnosis-switch');
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    const s = e.snapshot();
+    const team = s.teams.find((t) => t.id === 'platform-t1')!;
+    expect(s.diagnosis).toBe(diagnose(orgFromTeam(team), s.totals));
+  });
+
+  it('粗粒度進行の incidentBias は更新後 quality と整合する', () => {
+    const e = started('coarse-bias');
+    const stepped = advanceCoarseTeams(e.snapshot().teams, {
+      seed: 'coarse-bias',
+      stepKey: 's1',
+      excludeId: 'product-t0',
+    });
+    for (const team of stepped) {
+      if (team.id === 'product-t0') continue;
+      const expected = Math.min(
+        0.45,
+        Math.max(0.02, 0.08 + team.incidents * 0.05 + (100 - team.quality) * 0.002),
+      );
+      expect(team.incidentBias).toBeCloseTo(expected, 8);
+    }
+  });
+
+  it('カードの恒久加算はチーム別に適用される', () => {
+    const e = started('card-baseline-per-team');
+    const persist = e.exportPersistState()!;
+    persist.deck = [{ defId: 'auto-test', level: 1 }, ...persist.deck];
+    e.hydratePersistState(persist);
+    e.beginSetupSprint();
+    const hand = e.snapshot().sprint!.cardPiles.hand;
+    const deckIndex = hand.find((i) => e.snapshot().deck[i]?.defId === 'auto-test');
+    expect(deckIndex).toBeDefined();
+    const homeQuality = e.snapshot().org.quality;
+    expect(e.playCard(deckIndex!).ok).toBe(true);
+    expect(e.snapshot().org.quality).toBeGreaterThan(homeQuality);
+    expect(e.snapshot().deck[deckIndex!]!.baselineAppliedByTeam?.['product-t0']).toBe(1);
+
+    // スプリントを抜けて他チームへ入り、同じカードを再度発動できる（別チーム分）。
+    const internals = e as unknown as { phase: string; sprint: unknown };
+    internals.phase = 'setup';
+    internals.sprint = null;
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    const otherQuality = e.snapshot().org.quality;
+    e.beginSetupSprint();
+    const hand2 = e.snapshot().sprint!.cardPiles.hand;
+    const idx2 = hand2.find((i) => e.snapshot().deck[i]?.defId === 'auto-test');
+    expect(idx2).toBeDefined();
+    expect(e.playCard(idx2!).ok).toBe(true);
+    expect(e.snapshot().org.quality).toBeGreaterThan(otherQuality);
+    expect(e.snapshot().deck[idx2!]!.baselineAppliedByTeam?.['platform-t1']).toBe(1);
   });
 });
 

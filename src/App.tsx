@@ -522,6 +522,7 @@ export default function App({ game }: AppProps) {
                   activeTeamId={state.activeTeamId}
                   teamLockUntilSprint={state.teamLockUntilSprint}
                   sprintsPlayed={state.sprintsPlayed}
+                  phase={state.phase}
                   onFocusTeam={run.focusTeam}
                   onEnterTeam={run.enterTeam}
                   onApplyLever={run.applyOrgLever}

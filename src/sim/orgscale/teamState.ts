@@ -408,6 +408,8 @@ export function advanceCoarseTeams(
     const literacyGain = rng() < 0.4 ? 1 : 0;
     const seniorDrain = reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0;
     const aiDrift = rng() < 0.3 * aiPressureMul ? 1 : 0;
+    // 品質を先に確定し、派生の incidentBias と整合させる。
+    const quality = clamp(team.quality + (rng() < 0.25 ? -1 : 0), 10, 100);
 
     return {
       ...team,
@@ -419,9 +421,8 @@ export function advanceCoarseTeams(
       aiDependency: clamp(team.aiDependency + aiDrift, 0, 100),
       aiLiteracy: clamp(team.aiLiteracy + literacyGain, 0, 100),
       seniorHp: clamp(team.seniorHp - seniorDrain + (100 - team.seniorHp) * 0.05, 1, 100),
-      quality: clamp(team.quality + (rng() < 0.25 ? -1 : 0), 10, 100),
-      reviewCapacity: clamp(55 + team.engineers * 4 - reviewQueue * 2, 10, 100),
-      incidentBias: clamp(0.08 + incidents * 0.05 + (100 - team.quality) * 0.002, 0.02, 0.45),
+      quality,
+      ...deriveTeamCapacities({ engineers: team.engineers, reviewQueue, incidents, quality }),
     };
   });
 }

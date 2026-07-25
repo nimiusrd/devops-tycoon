@@ -9,6 +9,7 @@ import { lazy, Suspense } from 'react';
 import { DEPARTMENT_LEVERS, TEAM_LEVERS } from '../data/levers';
 import { ENTER_TEAM_FOCUS_PENALTY, ENTER_TEAM_LOCK_SPRINTS } from '../sim/orgscale';
 import type { DepartmentState, Team } from '../sim/orgscale/types';
+import type { RunPhase } from '../sim/run/types';
 import { HEALTH_LABEL } from '../render/orgView';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { DeptBoard } from './DeptBoard';
@@ -27,6 +28,8 @@ export interface DeptScreenProps {
   activeTeamId: string;
   teamLockUntilSprint: number;
   sprintsPlayed: number;
+  /** 入り込み可否判定用（sprint / quarterReview はエンジン側で拒否）。 */
+  phase: RunPhase;
   onFocusTeam: (id: string) => void;
   onEnterTeam: (id: string) => void;
   onApplyLever: (leverId: string, deptId?: string, teamId?: string) => void;
@@ -39,6 +42,7 @@ export function DeptScreen({
   activeTeamId,
   teamLockUntilSprint,
   sprintsPlayed,
+  phase,
   onFocusTeam,
   onEnterTeam,
   onApplyLever,
@@ -46,8 +50,12 @@ export function DeptScreen({
   const { usePixi, onWebglError } = usePixiRenderer();
   const selected: Team | undefined = dept.teams.find((t) => t.id === selectedTeamId);
   const locked = sprintsPlayed < teamLockUntilSprint;
-  // 選択中チームへの「現場へ戻る」はロック対象外（切替だけ拘束する）。
-  const canEnter = !!selected && (selected.id === activeTeamId || !locked);
+  // エンジン契約: sprint は全入り込み拒否。quarterReview は他チーム切替のみ拒否。
+  const canEnter = selected
+    ? selected.id === activeTeamId
+      ? phase !== 'sprint'
+      : phase !== 'sprint' && phase !== 'quarterReview' && !locked
+    : false;
 
   return (
     <div className="dept-screen" data-testid="dept-screen">
@@ -111,10 +119,16 @@ export function DeptScreen({
               onClick={() => onEnterTeam(selected.id)}
               title={
                 selected.id === activeTeamId
-                  ? '選択中チームの現場へ戻る'
-                  : locked
-                    ? `入り込み拘束中（あと${teamLockUntilSprint - sprintsPlayed}スプリント）`
-                    : `入り込む（次スプリント集中力${ENTER_TEAM_FOCUS_PENALTY}、${ENTER_TEAM_LOCK_SPRINTS}スプリント拘束）`
+                  ? phase === 'sprint'
+                    ? 'スプリント中は現場へ戻れません'
+                    : '選択中チームの現場へ戻る'
+                  : phase === 'sprint'
+                    ? 'スプリント中はチームを切り替えられません'
+                    : phase === 'quarterReview'
+                      ? '四半期レビュー中はチームを切り替えられません'
+                      : locked
+                        ? `入り込み拘束中（あと${teamLockUntilSprint - sprintsPlayed}スプリント）`
+                        : `入り込む（次スプリント集中力${ENTER_TEAM_FOCUS_PENALTY}、${ENTER_TEAM_LOCK_SPRINTS}スプリント拘束）`
               }
             >
               {selected.id === activeTeamId ? '現場へ戻る' : '入り込む'}

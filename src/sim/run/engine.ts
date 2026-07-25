@@ -598,6 +598,7 @@ export class RunEngine {
       this.deck,
       deckIndex,
       this.sprintPassiveEffects,
+      this.activeTeamId,
     );
     if (outcome.ok) this.applyImmediateLose();
     return outcome;
@@ -1300,18 +1301,50 @@ export class RunEngine {
   private syncActiveTeamFromOrg(): void {
     const idx = this.teams.findIndex((t) => t.id === this.activeTeamId);
     if (idx < 0) return;
-    // スプリントがあるときだけ行列・炎上を更新。ピークではなく「現在の」待機／炎上数を使う。
-    const sprintExtras = this.sprint
-      ? {
-          reviewQueue: this.sprint.tasks.filter((t) => t.lane === 'review').length,
-          incidents: this.sprint.tasks.filter((t) => t.incident).length,
-        }
-      : {};
+    // 実行中スプリントの盤面だけを正とする。result 以降に残った盤面で施策効果を巻き戻さない。
+    const sprintExtras =
+      this.sprint && this.phase === 'sprint'
+        ? {
+            reviewQueue: this.sprint.tasks.filter((t) => t.lane === 'review').length,
+            incidents: this.sprint.tasks.filter((t) => t.incident).length,
+          }
+        : {};
     this.teams[idx] = syncTeamFromOrg(this.teams[idx], this.org, {
       engineers: activeEngineerCount(this.roster),
       ...sprintExtras,
     });
     this.teamRosters[this.activeTeamId] = structuredClone(this.roster);
+  }
+
+  /**
+   * 施策で下がった行列・炎上を実行中盤面にも反映する。
+   * 盤面を触らないと直後の同期／俯瞰 activeLive が古い件数で上書きしてしまう。
+   */
+  private alignSprintBoardToTeam(team: { reviewQueue: number; incidents: number }): void {
+    if (!this.sprint || this.phase !== 'sprint') return;
+    const reviews = this.sprint.tasks.filter((t) => t.lane === 'review');
+    const reviewCut = Math.max(0, reviews.length - Math.max(0, team.reviewQueue));
+    for (let i = 0; i < reviewCut; i += 1) {
+      const task = reviews[i];
+      if (!task) break;
+      // 施策による一掃なので出荷加点はせず、レーンだけ空ける。
+      task.lane = 'done';
+      task.incident = false;
+      delete task.burnTicksLeft;
+    }
+    const fires = this.sprint.tasks.filter((t) => t.incident);
+    const fireCut = Math.max(0, fires.length - Math.max(0, team.incidents));
+    for (let i = 0; i < fireCut; i += 1) {
+      const task = fires[i];
+      if (!task) break;
+      task.incident = false;
+      delete task.burnTicksLeft;
+      if (task.lane === 'rework') {
+        task.lane = 'review';
+        task.progress = 0;
+      }
+      this.sprint.metrics.contained += 1;
+    }
   }
 
   private flushActiveTeam(): void {
@@ -1324,6 +1357,8 @@ export class RunEngine {
     this.activeTeamId = id;
     // 上位レバーは適用時に TeamRunState へ焼き込み済みなので、正本からそのまま復元する。
     this.org = orgFromTeam(team);
+    // 切替直後から全社マップ／業界の組織タイプが新チーム指標と一致するようにする。
+    this.diagnosis = diagnose(this.org, this.totals);
     const cached = this.teamRosters[id];
     this.roster = cached
       ? structuredClone(cached)
@@ -1383,17 +1418,24 @@ export class RunEngine {
     }
     // 指標効果は対象チーム正本へ焼き込み、詳細スプリントと俯瞰表示を一致させる。
     // orgAdjust には infraBoost 等の非指標のみ残し、投影・粗粒度で二重適用しない。
+    let activeTouched = false;
     if (def.scope === 'company') {
       this.teams = this.teams.map((t) => applyEffectToTeam(t, def.effect));
       const active = this.teams.find((t) => t.id === this.activeTeamId);
-      if (active) this.org = orgFromTeam(active);
+      if (active) {
+        this.org = orgFromTeam(active);
+        activeTouched = true;
+      }
       this.orgAdjust = stripMetricAdjustments(res.adjust);
     } else if (def.scope === 'department' && deptId) {
       this.teams = this.teams.map((t) =>
         t.deptId === deptId ? applyEffectToTeam(t, def.effect) : t,
       );
       const active = this.teams.find((t) => t.id === this.activeTeamId);
-      if (active && active.deptId === deptId) this.org = orgFromTeam(active);
+      if (active && active.deptId === deptId) {
+        this.org = orgFromTeam(active);
+        activeTouched = true;
+      }
       this.orgAdjust = stripMetricAdjustments(res.adjust);
     } else if (res.teamId) {
       this.teams = this.teams.map((t) =>
@@ -1401,11 +1443,18 @@ export class RunEngine {
       );
       if (res.teamId === this.activeTeamId) {
         const updated = this.teams.find((t) => t.id === res.teamId);
-        if (updated) this.org = orgFromTeam(updated);
+        if (updated) {
+          this.org = orgFromTeam(updated);
+          activeTouched = true;
+        }
       }
       this.orgAdjust = res.adjust;
     } else {
       this.orgAdjust = res.adjust;
+    }
+    if (activeTouched) {
+      const active = this.teams.find((t) => t.id === this.activeTeamId);
+      if (active) this.alignSprintBoardToTeam(active);
     }
     this.applyImmediateLose();
     return true;
@@ -1415,12 +1464,13 @@ export class RunEngine {
   private buildOrgScale(): OrgScaleState {
     const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
     const liveEngineers = Math.max(activeTeam?.engineers ?? 0, activeEngineerCount(this.roster));
-    // スプリント中は現在のレーン人数、それ以外は選択チームの永続値（ピークやラン累計は使わない）。
-    const reviewQueue = this.sprint
-      ? this.sprint.tasks.filter((t) => t.lane === 'review').length
+    // 実行中スプリントのみ盤面件数。result 以降は正本（施策焼き込み後）を使う。
+    const liveBoard = !!this.sprint && this.phase === 'sprint';
+    const reviewQueue = liveBoard
+      ? this.sprint!.tasks.filter((t) => t.lane === 'review').length
       : (activeTeam?.reviewQueue ?? 0);
-    const incidents = this.sprint
-      ? this.sprint.tasks.filter((t) => t.incident).length
+    const incidents = liveBoard
+      ? this.sprint!.tasks.filter((t) => t.incident).length
       : (activeTeam?.incidents ?? 0);
     return projectOrgScale({
       seed: this.seed,
@@ -1704,6 +1754,26 @@ export class RunEngine {
       });
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
       this.syncActiveTeamFromOrg();
+      // 購入済み extraTeams を永続配列へ復元（applyEffectToTeam は extraTeams を扱わない）。
+      const extraTeams = Math.max(0, Math.round(this.orgAdjust.company.extraTeams));
+      if (extraTeams > 0) {
+        const template =
+          this.teams.find((t) => t.id === this.homeTeamId) ??
+          this.teams[0] ??
+          initTeamRunStates({
+            seed: this.seed,
+            org: this.org,
+            homeEngineers: activeEngineerCount(this.roster),
+          })[0];
+        const productCount = this.teams.filter((t) => t.deptId === 'product').length;
+        this.teams = appendTeamsToDept(this.teams, {
+          seed: this.seed,
+          deptId: 'product',
+          count: extraTeams,
+          template,
+          nextIndexStart: productCount,
+        });
+      }
       this.teams = this.teams.map((t) => {
         const deptAdj = mergeAdjust(
           this.orgAdjust.company,

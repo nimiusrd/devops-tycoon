@@ -137,9 +137,21 @@ export function dealHand(deckSize: number, rng: Rng, handSize = HAND_SIZE): Spri
 }
 
 /**
+ * カードの加算系 baseline 適用済みレベルを返す。
+ * チーム別マップがあればそれを優先し、無ければレガシー単一フィールドへフォールバックする。
+ */
+export function baselineAppliedLevelFor(inst: CardInstance, teamId?: string): number {
+  if (teamId && inst.baselineAppliedByTeam) {
+    return inst.baselineAppliedByTeam[teamId] ?? 0;
+  }
+  return inst.baselineAppliedLevel ?? 0;
+}
+
+/**
  * 手札からデッキ位置 `deckIndex` のカードを発動する。
  * 成功時は `sprint.cardEffects` に合成し、加算系を org へ反映する。
  * `passiveEffects` はレリック等の常時パッシブ（発動前の基準効果）。
+ * `teamId` 指定時はチーム別に適用レベルを追跡する（RI-64）。
  */
 export function playCardFromHand(
   sprint: SprintState,
@@ -147,6 +159,7 @@ export function playCardFromHand(
   deck: CardInstance[],
   deckIndex: number,
   passiveEffects: CardEffects = IDENTITY_CARD_EFFECTS,
+  teamId?: string,
 ): CardPlayOutcome {
   if (sprint.complete) return { ok: false, reason: 'complete' };
   const handIndex = sprint.cardPiles.hand.indexOf(deckIndex);
@@ -164,7 +177,7 @@ export function playCardFromHand(
   sprint.cardPiles.hand.splice(handIndex, 1);
   sprint.cardPiles.played.push(deckIndex);
 
-  const appliedLevel = inst.baselineAppliedLevel ?? 0;
+  const appliedLevel = baselineAppliedLevelFor(inst, teamId);
   if (appliedLevel < inst.level) {
     const next = scaleEffects(def.base, inst.level);
     const prev =
@@ -177,6 +190,12 @@ export function playCardFromHand(
       qualityAdd: next.qualityAdd - prev.qualityAdd,
       testCoverageAdd: next.testCoverageAdd - prev.testCoverageAdd,
     });
+    if (teamId) {
+      inst.baselineAppliedByTeam = {
+        ...(inst.baselineAppliedByTeam ?? {}),
+        [teamId]: inst.level,
+      };
+    }
     inst.baselineAppliedLevel = inst.level;
   }
 

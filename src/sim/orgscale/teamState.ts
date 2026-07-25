@@ -48,6 +48,22 @@ export function estimateRivalAiAssigned(engineers: number, aiDependency: number)
   return Math.max(0, Math.round((engineers * clamp(aiDependency, 0, 100)) / 100));
 }
 
+/**
+ * `createTeamRoster` と同じ配置規則でのコーダー人数。
+ * 俯瞰の AI ボット数を、入り込み後の実ロスター配布と揃えるために使う。
+ */
+export function estimateRosterCoderCount(engineers: number): number {
+  if (engineers <= 0) return 0;
+  const count = Math.max(2, Math.min(6, Math.floor(engineers)));
+  let coders = 0;
+  for (let i = 0; i < count; i += 1) {
+    if (i === 0) coders += 1;
+    else if (i === 1) continue;
+    else if (i % 2 === 0) coders += 1;
+  }
+  return coders;
+}
+
 /** OrgAdjust を 1 チームの表示指標へ適用する。 */
 export function applyAdjustToRaw(
   raw: {
@@ -235,8 +251,9 @@ export function syncTeamFromOrg(
     incidents?: number;
   },
 ): TeamRunState {
-  const engineers = Math.max(1, extras.engineers);
-  const headcount = Math.max(1, team.headcount ?? team.engineers, extras.headcount ?? 0, engineers);
+  // 全員休職なら稼働 0 を保持する（架空の 1 人を粗粒度へ残さない）。
+  const engineers = Math.max(0, extras.engineers);
+  const headcount = Math.max(0, team.headcount ?? team.engineers, extras.headcount ?? 0, engineers);
   const reviewQueue = Math.max(0, extras.reviewQueue ?? team.reviewQueue);
   const incidents = Math.max(0, extras.incidents ?? team.incidents);
   return {
@@ -465,14 +482,18 @@ export function advanceCoarseTeams(
     const moraleBias = teamAdj.moraleDelta === 0 ? 0 : Math.sign(teamAdj.moraleDelta) * 0.5;
     const reviewCap = team.reviewCapacity * reviewCapacityMul;
 
-    const shipGain = Math.max(
-      4,
-      Math.round(
-        ((8 + team.engineers * 2.5 + team.aiLiteracy * 0.08) * (0.75 + rng() * 0.5) -
-          team.techDebt * 0.02) *
-          shipMul,
-      ),
-    );
+    // 稼働 0 なら出荷も 0（休職だらけのチームがベース出荷を出さない）。
+    const shipGain =
+      team.engineers <= 0
+        ? 0
+        : Math.max(
+            4,
+            Math.round(
+              ((8 + team.engineers * 2.5 + team.aiLiteracy * 0.08) * (0.75 + rng() * 0.5) -
+                team.techDebt * 0.02) *
+                shipMul,
+            ),
+          );
     // 出荷増分を完了の近似とし、詳細スプリント同様 AI_ADOPTION×配布率で AI 支援を按分する。
     completed += shipGain;
     const adoptionShare =
@@ -652,7 +673,10 @@ export function projectOrgScale(input: ProjectOrgScaleInput): OrgScaleState {
       const aiAssignedCount =
         isActive && input.activeLive?.aiAssignedCount !== undefined
           ? input.activeLive.aiAssignedCount
-          : estimateRivalAiAssigned(live.engineers, adjusted.aiDependency);
+          : estimateRivalAiAssigned(
+              estimateRosterCoderCount(live.engineers),
+              adjusted.aiDependency,
+            );
       return {
         id: run.id,
         deptId: run.deptId,

@@ -278,6 +278,17 @@ describe('RunEngine: レバー', () => {
     expect(synced.headcount).toBe(headcount);
   });
 
+  it('全員休職なら稼働人数 0 を保持する', () => {
+    const e = started('zero-active');
+    const team = e.snapshot().teams.find((t) => t.id === 'product-t0')!;
+    const synced = syncTeamFromOrg(team, e.snapshot().org, {
+      engineers: 0,
+      headcount: 4,
+    });
+    expect(synced.engineers).toBe(0);
+    expect(synced.headcount).toBe(Math.max(4, team.headcount ?? team.engineers));
+  });
+
   it('チーム同期は全ラン累計の行列・炎上で他チームを上書きしない', () => {
     const e = started('no-totals-bleed');
     expect(e.enterTeam('platform-t1')).toBe(true);
@@ -767,6 +778,18 @@ describe('RunEngine: レバー', () => {
     // ピーク累計は現在行列ではないので 0。未鎮火分だけ圧力として残す。
     expect(home.reviewQueue).toBe(0);
     expect(home.incidents).toBe(5);
+  });
+
+  it('v1 セーブは org.deliveryScore を totals.delivered へ移行する', () => {
+    const e = started('v1-delivery-migrate');
+    const persist = e.exportPersistState()!;
+    // quality_pivot 後のような分岐: org だけ補正済み、totals は旧値のまま。
+    persist.org.deliveryScore = 900;
+    persist.totals.delivered = 1000;
+    delete (persist.extras as { teams?: unknown }).teams;
+    e.hydratePersistState(persist);
+    expect(e.snapshot().totals.delivered).toBe(900);
+    expect(e.snapshot().teams.find((t) => t.id === 'product-t0')!.shipping).toBe(900);
   });
 
   it('v1 セーブで extraTeams 継承後もホームの baseline が残る', () => {

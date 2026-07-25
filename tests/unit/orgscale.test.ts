@@ -11,6 +11,7 @@ import {
   companyScore,
   emptyAdjustState,
   estimateRivalAiAssigned,
+  estimateRosterCoderCount,
   generateOrgScale,
   healthRank,
   isOnFire,
@@ -163,13 +164,16 @@ describe('generateOrgScale', () => {
     expect(state.engineers).toBeGreaterThanOrEqual(4);
   });
 
-  it('ライバルの aiAssignedCount は engineers×aiDependency から推定する（RI-27）', () => {
+  it('ライバルの aiAssignedCount はコーダー数×aiDependency から推定する（RI-27 / RI-64）', () => {
     expect(estimateRivalAiAssigned(5, 60)).toBe(3);
     expect(estimateRivalAiAssigned(3, 10)).toBe(0);
+    expect(estimateRosterCoderCount(6)).toBe(3);
     const state = generateOrgScale(input({ playerEngineers: 5, playerAiAssigned: 0 }));
     const rivals = state.departments.flatMap((d) => d.teams).filter((t) => !t.isPlayer);
     for (const t of rivals) {
-      expect(t.aiAssignedCount).toBe(estimateRivalAiAssigned(t.engineers, t.aiDependency));
+      expect(t.aiAssignedCount).toBe(
+        estimateRivalAiAssigned(estimateRosterCoderCount(t.engineers), t.aiDependency),
+      );
     }
   });
 
@@ -186,7 +190,8 @@ describe('generateOrgScale', () => {
       shipping: 496,
       engineers: 8,
     });
-    expect(rival.aiAssignedCount).toBe(estimateRivalAiAssigned(8, 30));
+    // ロスター上限6・コーダー3 × 依存度30% → 1
+    expect(rival.aiAssignedCount).toBe(estimateRivalAiAssigned(estimateRosterCoderCount(8), 30));
   });
 
   it('部門は定義どおりに構成され、全社HUDが集約される', () => {

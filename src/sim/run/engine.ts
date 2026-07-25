@@ -1013,6 +1013,7 @@ export class RunEngine {
 
     // ハード敗北（判定イベントが直接敗北を起こす場合）。
     if (res.forceLose) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = res.forceLose;
       this.setPhase('lost');
@@ -1020,6 +1021,7 @@ export class RunEngine {
     }
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = lose;
       this.setPhase('lost');
@@ -1046,6 +1048,7 @@ export class RunEngine {
         this.budget = Math.max(0, this.budget + fail.budgetDelta);
         if (fail.trust) this.applyTrust(fail.trust);
         if (fail.forceLose) {
+          this.flushCoarseIncidentCarry();
           this.status = 'lost';
           this.loseReason = fail.forceLose;
           this.setPhase('lost');
@@ -1938,6 +1941,8 @@ export class RunEngine {
       });
       // v1 には粗粒度累積が無い。
       this.coarseIncidentCarry = 0;
+      // v1 の出荷正本は org.deliveryScore。totals.delivered へ写経し報酬分岐を防ぐ。
+      this.totals.delivered = Math.max(0, Math.round(this.org.deliveryScore));
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
       this.syncActiveTeamFromOrg();
       // レガシー baseline を既存チームへ先に移行してから追加チームを継承する。

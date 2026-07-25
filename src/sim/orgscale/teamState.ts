@@ -100,7 +100,8 @@ function homeSeedRaw(
 ) {
   return {
     aiDependency: Math.round(org.aiDependency),
-    reviewQueue: Math.max(0, extras?.reviewQueue ?? 2),
+    // 初期ホームは空盤面。蓄積分は beginSprint で詳細盤面へ投入する。
+    reviewQueue: Math.max(0, extras?.reviewQueue ?? 0),
     incidents: Math.max(0, extras?.incidents ?? 0),
     morale: Math.round(org.morale),
     techDebt: Math.round(org.techDebt),

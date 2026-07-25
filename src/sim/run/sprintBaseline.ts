@@ -4,6 +4,7 @@
  * 本番スプリントと同じ初期入力・seed から状態を再構築し、介入を行わず完了まで進める。
  * 介入によって乱数消費列が変わるため、結果は厳密な反実仮想ではなく同条件での推定として扱う。
  */
+import { BURN_TICKS } from '../model';
 import { createRng, type Rng } from '../rng';
 import { createSprint, stepSprint, summarizeSprint } from '../sprint';
 import type {
@@ -22,6 +23,8 @@ export interface SprintBaselineInput {
   cardEffects: CardEffects;
   aiAdoptionShare: number;
   reviewLoadAdd?: number;
+  /** チーム正本から引き継ぐ炎上件数（スプリント metrics には加算しない）。 */
+  incidentLoadAdd?: number;
 }
 
 /** 同条件シミュレーション中に tick ごとの介入判断へ渡すコンテキスト。 */
@@ -53,6 +56,25 @@ export function createSprintFromBaselineInput(
         moved += 1;
       }
     }
+  }
+
+  // 粗粒度で溜まった炎上を詳細盤面へ戻す（igniteTask だと今スプリントの発生件数に乗ってしまう）。
+  if (input.incidentLoadAdd) {
+    let lit = 0;
+    for (const task of sprint.tasks) {
+      if (lit >= input.incidentLoadAdd) break;
+      if (task.lane !== 'backlog') continue;
+      task.lane = 'rework';
+      task.incident = true;
+      task.burnTicksLeft = BURN_TICKS;
+      task.progress = 0;
+      lit += 1;
+    }
+  }
+
+  const reviewQueue = sprint.tasks.filter((t) => t.lane === 'review').length;
+  if (reviewQueue > sprint.metrics.reviewQueueMax) {
+    sprint.metrics.reviewQueueMax = reviewQueue;
   }
 
   return { sprint, rng };

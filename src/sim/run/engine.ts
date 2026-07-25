@@ -532,7 +532,7 @@ export class RunEngine {
     this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget);
     // 試練の開始時コストで予算が尽きた場合はスプリントへ進まず継続不能にする。
     if (this.applyImmediateLose()) return;
-    this.sprintBaselineInput = this.buildSprintBaselineInput({
+    const baseline = this.buildSprintBaselineInput({
       deck: this.deck,
       roster: this.roster,
       org: this.org,
@@ -540,6 +540,15 @@ export class RunEngine {
       modifiers,
       seed: `${this.seed}:sprint:${this.currentSprintId}`,
     });
+    // 正本の行列・炎上を初期盤面へ投入し、入り込み後に俯瞰の問題が消えないようにする。
+    const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
+    const teamReview = Math.max(0, activeTeam?.reviewQueue ?? 0);
+    const teamIncidents = Math.max(0, activeTeam?.incidents ?? 0);
+    this.sprintBaselineInput = {
+      ...baseline,
+      reviewLoadAdd: (baseline.reviewLoadAdd ?? 0) + teamReview,
+      ...(teamIncidents > 0 ? { incidentLoadAdd: teamIncidents } : {}),
+    };
     const initialized = createSprintFromBaselineInput(this.sprintBaselineInput, this.org);
     this.sprintRng = initialized.rng;
     this.sprintTick = 0;
@@ -1447,6 +1456,10 @@ export class RunEngine {
     // ラン外（タイトル・終端）では発動しない（即時敗北判定が終端フェーズから再遷移しないように）。
     if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
     const def = getLever(leverId);
+    // チームレバーは存在確認してから予算を消費する（未知 ID で予算だけ減らないように）。
+    if (def?.scope === 'team' && (!teamId || !this.teams.some((t) => t.id === teamId))) {
+      return false;
+    }
     const res = applyLever(this.orgAdjust, this.budget, leverId, deptId, teamId);
     if (!res.changed || !def) return false;
     this.budget = res.budget;
@@ -1541,7 +1554,19 @@ export class RunEngine {
       adjust: this.orgAdjust,
       diagnosis: this.diagnosis,
       budget: this.budget,
-      infraBase: companyInfraFromTeams(this.teams),
+      // スプリント中の org 更新（ガイドライン等）を共通基盤へ即時反映する。
+      infraBase: companyInfraFromTeams(
+        this.teams.map((t) =>
+          t.id === this.activeTeamId
+            ? {
+                ...t,
+                aiLiteracy: this.org.aiLiteracy,
+                testCoverage: this.org.testCoverage,
+                documentation: this.org.documentation,
+              }
+            : t,
+        ),
+      ),
     });
   }
 

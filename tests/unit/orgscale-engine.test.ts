@@ -11,6 +11,7 @@ import {
   advanceCoarseTeams,
   assertDeptShippingInvariant,
   companyOrgFromTeams,
+  deriveTeamCapacities,
   ENTER_TEAM_FOCUS_PENALTY,
   initTeamRunStates,
   orgFromTeam,
@@ -565,6 +566,44 @@ describe('RunEngine: レバー', () => {
     for (const team of e.snapshot().teams) {
       expect(card.baselineAppliedByTeam?.[team.id]).toBe(1);
     }
+  });
+
+  it('入り込み先の行列・炎上を次スプリント盤面へ引き継ぐ', () => {
+    const e = started('enter-board-carry');
+    const persist = e.exportPersistState()!;
+    const teams = persist.extras.teams!.map((t) => {
+      if (t.id !== 'platform-t1') return t;
+      const next = { ...t, reviewQueue: 5, incidents: 2 };
+      return { ...next, ...deriveTeamCapacities(next) };
+    });
+    persist.extras.teams = teams;
+    e.hydratePersistState(persist);
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    e.beginSetupSprint();
+    const sprint = e.snapshot().sprint!;
+    expect(sprint.tasks.filter((t) => t.lane === 'review').length).toBe(5);
+    expect(sprint.tasks.filter((t) => t.incident).length).toBe(2);
+    // 引き継ぎ炎上は今スプリントの新規発生件数に載せない。
+    expect(sprint.metrics.incidentCount).toBe(0);
+  });
+
+  it('未知の teamId ではチームレバーが予算を消費しない', () => {
+    const e = started('unknown-team-lever');
+    e.zoomTo('company');
+    const before = e.snapshot().budget;
+    expect(e.applyOrgLever('teamAiThrottle', undefined, 'no-such-team')).toBe(false);
+    expect(e.snapshot().budget).toBe(before);
+  });
+
+  it('全社基盤集約はアクティブチームの最新 org を反映する', () => {
+    const e = started('infra-live-org');
+    e.zoomTo('company');
+    const before = e.snapshot().orgScale!.infra.aiGuideline;
+    const internals = e as unknown as { org: { aiLiteracy: number } };
+    internals.org.aiLiteracy = Math.min(100, internals.org.aiLiteracy + 40);
+    e.zoomTo('company');
+    const after = e.snapshot().orgScale!.infra.aiGuideline;
+    expect(after).toBeGreaterThan(before);
   });
 });
 

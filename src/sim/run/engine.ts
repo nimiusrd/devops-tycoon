@@ -39,11 +39,12 @@ import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng } from '../rng';
 import { DEFAULT_SEED } from '../seed';
-import { resolveSprintConfig, stepSprint, summarizeSprint } from '../sprint';
+import { forceShipReviewTask, resolveSprintConfig, stepSprint, summarizeSprint } from '../sprint';
 import type {
   ActionId,
   ActionTarget,
   CardEffects,
+  CardInstance,
   CardPlayOutcome,
   InterventionOutcome,
   OrgState,
@@ -59,6 +60,7 @@ import {
   applyEffectToTeam,
   applyLever,
   companyInfraFromTeams,
+  companyOrgFromTeams,
   createTeamRoster,
   emptyAdjust,
   emptyAdjustState,
@@ -190,6 +192,16 @@ function mergeModifiers(a: SprintModifierDelta, b: SprintModifierDelta): SprintM
     ...(reworkRateAdd !== 0 ? { reworkRateAdd } : {}),
     ...(taskCountMul !== 1 ? { taskCountMul } : {}),
     ...(focusMaxAdd !== 0 ? { focusMaxAdd } : {}),
+  };
+}
+
+/** スナップショット／永続用にカードを独立コピーする（baseline マップ含む）。 */
+function cloneCardInstance(card: CardInstance): CardInstance {
+  return {
+    ...card,
+    ...(card.baselineAppliedByTeam
+      ? { baselineAppliedByTeam: { ...card.baselineAppliedByTeam } }
+      : {}),
   };
 }
 
@@ -635,12 +647,13 @@ export class RunEngine {
       }
       const boss = getBoss(this.bossId);
       const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
+      // ボス突破は選択中チームの詳細盤面、四半期 KPI は全社集約（他チーム悪化を取りこぼさない）。
+      const companyOrg = companyOrgFromTeams(this.teams, this.org);
       const bossCleared = !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul });
-      // 四半期 KPI は報酬前の org で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
-      // org 指標は選択中チームを正とし、非選択の出荷・炎上増分は totals 側へ反映済み。
+      // 四半期 KPI は報酬前の全社集約で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
-        org: this.org,
+        org: companyOrg,
         totals: this.quarterTotals,
         trust: this.stakeholderTrust,
         budget: this.budget,
@@ -648,7 +661,7 @@ export class RunEngine {
         bossSprintCleared: bossCleared,
       });
       if (bossCleared) {
-        // 勝利種別も報酬前の組織状態で判定する。
+        // 勝利種別は選択中チームの報酬前状態で判定する。
         this.winEvalOrg = structuredClone(this.org);
         this.bossRelicReward = this.grantBossRelic();
       }
@@ -1337,8 +1350,8 @@ export class RunEngine {
     let removed = 0;
     for (const task of calmReviews) {
       if (removed >= reviewCut) break;
-      task.lane = 'done';
-      delete task.burnTicksLeft;
+      // 施策一掃でも出荷集計の帳尻を合わせる（Done にして成果を消さない）。
+      forceShipReviewTask(task, this.sprint, this.org);
       removed += 1;
     }
     const fires = this.sprint.tasks.filter((t) => t.incident);
@@ -1561,7 +1574,7 @@ export class RunEngine {
       sprintsPerQuarter: this.sprintsPerQuarter,
       pendingSprintKind: this.pendingSprintKind,
       pendingSprintModifiers: { ...this.pendingSprintModifiers },
-      deck: this.deck.map((c) => ({ ...c })),
+      deck: this.deck.map(cloneCardInstance),
       draft: this.draft ? [...this.draft] : null,
       roster: structuredClone(this.roster),
       org: structuredClone(this.org),
@@ -1634,7 +1647,7 @@ export class RunEngine {
       currentSprintKind: this.currentSprintKind,
       pendingSprintModifiers: { ...this.pendingSprintModifiers },
       org: structuredClone(this.org),
-      deck: this.deck.map((c) => ({ ...c })),
+      deck: this.deck.map(cloneCardInstance),
       relics: [...this.relics],
       bossRelicReward: this.bossRelicReward,
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
@@ -1650,7 +1663,7 @@ export class RunEngine {
       whatIfStatus: 'idle',
       shop: this.shop
         ? {
-            cards: this.shop.cards.map((c) => ({ ...c })),
+            cards: this.shop.cards.map(cloneCardInstance),
             relic: this.shop.relic ? { ...this.shop.relic } : undefined,
             recruit: this.shop.recruit ? { ...this.shop.recruit } : undefined,
           }
@@ -1723,7 +1736,7 @@ export class RunEngine {
     this.currentSprintKind = cloned.currentSprintKind;
     this.pendingSprintModifiers = { ...cloned.pendingSprintModifiers };
     this.org = cloned.org;
-    this.deck = cloned.deck.map((c) => ({ ...c }));
+    this.deck = cloned.deck.map(cloneCardInstance);
     this.relics = [...cloned.relics];
     this.bossRelicReward = cloned.bossRelicReward;
     this.evolution = {
@@ -1843,7 +1856,7 @@ export class RunEngine {
       currentSprintKind: this.currentSprintKind,
       pendingSprintModifiers: { ...this.pendingSprintModifiers },
       org: structuredClone(this.org),
-      deck: this.deck.map((c) => ({ ...c })),
+      deck: this.deck.map(cloneCardInstance),
       relics: [...this.relics],
       bossRelicReward: this.bossRelicReward,
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },

@@ -372,11 +372,14 @@ describe('RunEngine: レバー', () => {
     }
     internals.syncActiveTeamFromOrg();
     const activeId = e.snapshot().activeTeamId;
+    const deliveredBefore = e.snapshot().sprint!.metrics.delivered;
     expect(e.applyOrgLever('teamReviewHelp', undefined, activeId)).toBe(true);
     const boardReviews = e.snapshot().sprint!.tasks.filter((t) => t.lane === 'review').length;
     const teamQueue = e.snapshot().teams.find((t) => t.id === activeId)!.reviewQueue;
     expect(boardReviews).toBe(teamQueue);
     expect(teamQueue).toBe(0);
+    // 施策で Done にした分は出荷集計へ載せる。
+    expect(e.snapshot().sprint!.metrics.delivered).toBeGreaterThan(deliveredBefore);
   });
 
   it('v1 セーブの extraTeams を移行時に復元する', () => {
@@ -535,7 +538,19 @@ describe('RunEngine: レバー', () => {
     const company = companyOrgFromTeams(s.teams, s.org);
     const avgQuality = Math.round(s.teams.reduce((a, t) => a + t.quality, 0) / s.teams.length);
     expect(company.quality).toBe(avgQuality);
+    expect(company.morale).toBe(s.org.morale);
     expect(company.deliveryScore).toBe(s.teams.reduce((a, t) => a + t.shipping, 0));
+  });
+
+  it('snapshot の baselineAppliedByTeam は独立コピー', () => {
+    const e = started('clone-baseline-map');
+    const persist = e.exportPersistState()!;
+    persist.deck = [{ defId: 'auto-test', level: 1, baselineAppliedByTeam: { 'product-t0': 1 } }];
+    e.hydratePersistState(persist);
+    const snap = e.snapshot();
+    const map = snap.deck[0]!.baselineAppliedByTeam!;
+    map['hacked'] = 9;
+    expect(e.snapshot().deck[0]!.baselineAppliedByTeam).toEqual({ 'product-t0': 1 });
   });
 });
 

@@ -91,6 +91,7 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     mod.reviewLoadAdd ?? 0,
     mod.reworkRateAdd ?? 0,
     mod.taskCountMul ?? 1,
+    mod.focusMaxAdd ?? 0,
   ].join('|');
 }
 
@@ -101,7 +102,8 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   const ctx = baselineContext(input);
   const nextIndex = input.sprintIndexInQuarter + 1;
   const kind: SprintKind = nextIndex >= input.sprintsPerQuarter ? 'boss' : input.pendingSprintKind;
-  const modifiers = input.phase === 'setup' ? input.pendingSprintModifiers : {};
+  // draft 中の入り込みペナルティ等も次スプリントに載るので、試算でも同じ modifiers を使う。
+  const modifiers = input.pendingSprintModifiers;
   const baseSeed = `${input.seed}:what-if:q${input.quarterNumber}:s${nextIndex}`;
 
   const previewFor = (

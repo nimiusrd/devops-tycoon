@@ -5,6 +5,7 @@ import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome
 import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
 import { previewNextSprint } from '../../src/sim/run/whatIf';
+import { whatIfCacheKey } from '../../src/sim/run/whatIfState';
 import type { SprintBaselineInput } from '../../src/sim/run/sprintBaseline';
 
 const input: SprintBaselineInput = {
@@ -85,6 +86,26 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(after.org).toEqual(before.org);
     expect(after.deck).toEqual(before.deck);
     expect(after.roster).toEqual(before.roster);
+  });
+
+  it('ドラフト試算は入り込みの集中力ペナルティを modifiers として引き継ぐ', () => {
+    const engine = new RunEngine({ seed: 'what-if-focus-penalty', difficulty: 'normal' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      pendingSprintModifiers: { focusMaxAdd?: number };
+    };
+    internals.phase = 'draft';
+    internals.draft = ['copilot'];
+    internals.pendingSprintModifiers = { focusMaxAdd: -2 };
+    const draftInput = engine.whatIfComputeInput();
+    expect(draftInput?.phase).toBe('draft');
+    expect(draftInput?.pendingSprintModifiers.focusMaxAdd).toBe(-2);
+    // キャッシュ指紋にも focusMaxAdd を含め、試算条件の取りこぼしを防ぐ。
+    const withPenalty = whatIfCacheKey(draftInput!);
+    const without = whatIfCacheKey({ ...draftInput!, pendingSprintModifiers: {} });
+    expect(withPenalty).not.toBe(without);
   });
 
   it('発動すると敗北するドラフト候補は loseOnPlay で警告する（獲得時は即時敗北にしない）', () => {

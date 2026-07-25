@@ -107,7 +107,11 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       if (qualityAdd <= 0) continue;
 
       const qualityKpi = state.quarterReview.progress.find((kpi) => kpi.id === 'quality');
-      expect(qualityKpi?.actual).toBe(state.org.quality - qualityAdd);
+      // 四半期 KPI は全社集約。報酬は全チームへ焼き込むので、集約品質から差分を戻す。
+      const companyQuality = Math.round(
+        state.teams.reduce((a, t) => a + t.quality, 0) / state.teams.length,
+      );
+      expect(qualityKpi?.actual).toBe(companyQuality - qualityAdd);
       found = true;
       break;
     }

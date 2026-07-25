@@ -44,8 +44,16 @@ export interface TeamRunState {
   id: string;
   deptId: string;
   name: string;
-  /** エンジニア人数。 */
+  /**
+   * 稼働エンジニア人数（休職除く。粗粒度出荷・表示の正）。
+   * 詳細ロスター上限を超える総席数は `headcount` 側で保持する。
+   */
   engineers: number;
+  /**
+   * チーム総席数（休職・ロスター非表示分を含む）。
+   * 旧セーブ欠落時は `engineers` と同一とみなす。
+   */
+  headcount?: number;
   /** AI 習熟度 0..100。 */
   aiLiteracy: number;
   /** AI依存度 0..100。 */

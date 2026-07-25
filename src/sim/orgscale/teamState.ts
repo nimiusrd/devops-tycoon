@@ -168,6 +168,7 @@ function toTeamRunState(args: {
     deptId: args.deptId,
     name: args.name,
     engineers: raw.engineers,
+    headcount: raw.engineers,
     aiLiteracy: raw.aiLiteracy,
     aiDependency: raw.aiDependency,
     morale: raw.morale,
@@ -220,7 +221,7 @@ export function initTeamRunStates(args: {
 
 /**
  * 選択中チームの `OrgState` から永続指標へ書き戻す。
- * `engineers` は詳細ロスター人数で縮めない（チーム総人数の下限を維持）。
+ * `engineers` は稼働人数（休職で減る）。総席数は `headcount` で維持する。
  * `reviewQueue` / `incidents` 未指定時は既存値を保つ（全ラン累計で上書きしない）。
  */
 export function syncTeamFromOrg(
@@ -228,16 +229,20 @@ export function syncTeamFromOrg(
   org: OrgState,
   extras: {
     engineers: number;
+    /** ロスター総員（休職含む）。未指定時は稼働人数のみ参照。 */
+    headcount?: number;
     reviewQueue?: number;
     incidents?: number;
   },
 ): TeamRunState {
-  const engineers = Math.max(1, team.engineers, extras.engineers);
+  const engineers = Math.max(1, extras.engineers);
+  const headcount = Math.max(1, team.headcount ?? team.engineers, extras.headcount ?? 0, engineers);
   const reviewQueue = Math.max(0, extras.reviewQueue ?? team.reviewQueue);
   const incidents = Math.max(0, extras.incidents ?? team.incidents);
   return {
     ...team,
     engineers,
+    headcount,
     aiLiteracy: Math.round(org.aiLiteracy),
     aiDependency: Math.round(org.aiDependency),
     morale: Math.round(org.morale),
@@ -336,7 +341,9 @@ export function createTeamRoster(
   }
   const roster: RosterState = { members, nextId: members.length };
   if (aiDependency === undefined) return roster;
-  const target = estimateRivalAiAssigned(engineers, aiDependency);
+  // 配布目標はチーム総人数ではなく、生成した稼働コーダー数×依存度にする。
+  const coders = roster.members.filter((m) => !m.onLeave && m.assignment === 'coding');
+  const target = estimateRivalAiAssigned(coders.length, aiDependency);
   let assigned = 0;
   return {
     ...roster,
@@ -374,7 +381,7 @@ export function appendTeamsToDept(
       morale: args.template.morale,
       techDebt: args.template.techDebt,
       shipping: Math.max(40, Math.round(args.template.shipping * 0.4)),
-      engineers: args.template.engineers,
+      engineers: args.template.headcount ?? args.template.engineers,
       aiLiteracy: args.template.aiLiteracy,
       seniorHp: args.template.seniorHp,
       aiEnabled: true,

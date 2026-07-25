@@ -658,14 +658,16 @@ export class RunEngine {
     // ここで回復させることで、続くビート／編成ウィンドウで復帰メンバーをすぐ再配置できる。
     const justLeft = new Set((this.lastGrowth?.wentOnLeave ?? []).map((w) => w.id));
     this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN, justLeft);
-    this.diagnosis = diagnose(this.org, this.totals);
     // RI-64: 選択チームを永続へ同期し、他チームを粗粒度で進める。
     this.syncActiveTeamFromOrg();
     this.advanceOtherTeams(`sprint:${this.currentSprintId}`);
+    // 粗粒度の完了・AI 支援を totals へ載せた後で診断する（報酬・図鑑の取りこぼし防止）。
+    this.diagnosis = diagnose(this.org, this.totals);
 
     if (this.currentSprintKind === 'boss') {
       const lose = evaluateLose(this.org, this.totals, this.budget);
       if (lose) {
+        this.flushCoarseIncidentCarry();
         this.status = 'lost';
         this.loseReason = lose;
         this.setPhase('lost');
@@ -700,6 +702,7 @@ export class RunEngine {
 
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = lose;
       this.setPhase('lost');
@@ -750,6 +753,7 @@ export class RunEngine {
     if (this.phase !== 'quarterReview' || !this.quarterReview) return;
     const { outcome } = this.quarterReview;
     if (canAcknowledgeWin(outcome)) {
+      this.flushCoarseIncidentCarry();
       this.status = 'won';
       this.winType = evaluateWinType({
         org: this.winEvalOrg ?? this.org,
@@ -761,6 +765,7 @@ export class RunEngine {
       return;
     }
     if (isTerminalFailure(outcome)) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = loseReasonForOutcome(outcome);
       this.setPhase('lost');
@@ -813,6 +818,7 @@ export class RunEngine {
 
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = lose;
       this.setPhase('lost');
@@ -1252,10 +1258,17 @@ export class RunEngine {
     this.deck.push({ defId, level });
   }
 
+  /** 入り込み拘束中か（他チーム閲覧・切替の機会損失）。 */
+  private isTeamEnterLocked(): boolean {
+    return this.sprintsPlayed < this.teamLockUntilSprint;
+  }
+
   /** 即時敗北条件を評価し、該当すれば lost へ遷移する。 */
   private applyImmediateLose(): boolean {
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (!lose) return false;
+    // 終端前に粗粒度炎上累積を確定する（リザルト／リプレイの取りこぼし防止）。
+    this.flushCoarseIncidentCarry();
     this.status = 'lost';
     this.loseReason = lose;
     this.setPhase('lost');
@@ -1307,6 +1320,8 @@ export class RunEngine {
    * 部署へ移るときは未選択なら先頭部門をフォーカスする。
    */
   zoomTo(level: ZoomLevel): void {
+    // 入り込み拘束中は他チームを見られない（上位ビューへの離脱を拒否）。
+    if (this.isTeamEnterLocked() && level !== 'team') return;
     if (level === 'department' && !this.zoom.deptId) {
       this.zoom.deptId = DEPARTMENT_DEFS[0]?.id ?? null;
     }
@@ -1315,6 +1330,7 @@ export class RunEngine {
 
   /** 部門をフォーカスして部署ビューへ（ドリルダウン）。 */
   focusDepartment(id: string): void {
+    if (this.isTeamEnterLocked()) return;
     if (!DEPARTMENT_DEFS.some((d) => d.id === id)) return;
     this.zoom = { ...this.zoom, level: 'department', deptId: id };
   }
@@ -1322,6 +1338,7 @@ export class RunEngine {
   /**
    * チームを状態確認する（第4.11 / RI-64）。
    * 選択中チームなら現場へ、それ以外は部署ビューへ寄せて指標を見せる（入り込みは enterTeam）。
+   * 入り込み拘束中は非アクティブチームの閲覧も拒否する（機会損失）。
    */
   focusTeam(id: string): void {
     const team = this.teams.find((t) => t.id === id);
@@ -1330,6 +1347,7 @@ export class RunEngine {
       this.zoom = { ...this.zoom, level: 'team', teamId: id, deptId: team.deptId };
       return;
     }
+    if (this.isTeamEnterLocked()) return;
     this.zoom = { ...this.zoom, level: 'department', deptId: team.deptId, teamId: id };
   }
 
@@ -1376,6 +1394,8 @@ export class RunEngine {
         : {};
     this.teams[idx] = syncTeamFromOrg(this.teams[idx], this.org, {
       engineers: activeEngineerCount(this.roster),
+      // ロスター総員で総席数を底上げし、休職で稼働人数だけ減らす。
+      headcount: this.roster.members.length,
       ...sprintExtras,
     });
     this.teamRosters[this.activeTeamId] = structuredClone(this.roster);
@@ -1518,6 +1538,15 @@ export class RunEngine {
     const def = getLever(leverId);
     // チームレバーは存在確認してから予算を消費する（未知 ID で予算だけ減らないように）。
     if (def?.scope === 'team' && (!teamId || !this.teams.some((t) => t.id === teamId))) {
+      return false;
+    }
+    // 入り込み拘束中は他チームへの施策も拒否する（閲覧抑止と一貫させる）。
+    if (
+      def?.scope === 'team' &&
+      teamId &&
+      teamId !== this.activeTeamId &&
+      this.isTeamEnterLocked()
+    ) {
       return false;
     }
     const res = applyLever(this.orgAdjust, this.budget, leverId, deptId, teamId);

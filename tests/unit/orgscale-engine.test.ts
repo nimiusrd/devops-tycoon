@@ -13,7 +13,6 @@ import {
   companyOrgFromTeams,
   deriveTeamCapacities,
   ENTER_TEAM_FOCUS_PENALTY,
-  estimateRivalAiAssigned,
   initTeamRunStates,
   normalizeCoarseTotalsDelta,
   orgFromTeam,
@@ -261,20 +260,22 @@ describe('RunEngine: レバー', () => {
     expect(afterStep - afterLever).toBeLessThanOrEqual(1);
   });
 
-  it('7人以上のチームへ入り込んでも総人数を失わない', () => {
+  it('7人以上のチームへ入り込んでも総席数を失わず稼働人数は同期する', () => {
     const e = started('big-team');
     const big = e.snapshot().teams.find((t) => t.engineers >= 7);
     expect(big).toBeTruthy();
     const headcount = big!.engineers;
     expect(e.enterTeam(big!.id)).toBe(true);
-    // ロスターは最大6でも、正本の engineers は維持。
+    // ロスターは最大6でも、正本の総席数は維持。
     expect(e.snapshot().roster.members.length).toBeLessThanOrEqual(6);
     expect(e.snapshot().teams.find((t) => t.id === big!.id)!.engineers).toBe(headcount);
-    // スプリント無し sync（ロスター人数 < 総人数）でも縮めない。
+    // sync 後: 稼働人数はロスター、総席数は headcount で残る。
     const synced = syncTeamFromOrg(big!, e.snapshot().org, {
       engineers: e.snapshot().roster.members.length,
+      headcount: e.snapshot().roster.members.length,
     });
-    expect(synced.engineers).toBe(headcount);
+    expect(synced.engineers).toBe(e.snapshot().roster.members.length);
+    expect(synced.headcount).toBe(headcount);
   });
 
   it('チーム同期は全ラン累計の行列・炎上で他チームを上書きしない', () => {
@@ -293,6 +294,8 @@ describe('RunEngine: レバー', () => {
     const e = started('projection-no-totals');
     expect(e.enterTeam('platform-t1')).toBe(true);
     const teamQueue = e.snapshot().teams.find((t) => t.id === 'platform-t1')!.reviewQueue;
+    // 拘束を解除して俯瞰投影を検証する。
+    (e as unknown as { teamLockUntilSprint: number }).teamLockUntilSprint = 0;
     e.zoomTo('company');
     const projected = e
       .snapshot()
@@ -333,12 +336,25 @@ describe('RunEngine: レバー', () => {
   it('投影の isActive / isPlayer は選択チームを指す', () => {
     const e = started();
     expect(e.enterTeam('platform-t1')).toBe(true);
+    (e as unknown as { teamLockUntilSprint: number }).teamLockUntilSprint = 0;
     e.zoomTo('company');
     const teams = e.snapshot().orgScale!.departments.flatMap((d) => d.teams);
     expect(teams.find((t) => t.id === 'platform-t1')!.isActive).toBe(true);
     expect(teams.find((t) => t.id === 'platform-t1')!.isPlayer).toBe(true);
     expect(teams.find((t) => t.id === 'product-t0')!.isActive).toBe(false);
     expect(teams.find((t) => t.id === 'product-t0')!.isPlayer).toBe(false);
+  });
+
+  it('入り込み拘束中は他チーム閲覧と上位ズームを拒否する', () => {
+    const e = started('lock-view');
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    expect(e.snapshot().zoom.level).toBe('team');
+    e.zoomTo('company');
+    expect(e.snapshot().zoom.level).toBe('team');
+    e.focusTeam('product-t0');
+    expect(e.snapshot().zoom.level).toBe('team');
+    expect(e.snapshot().zoom.teamId).toBe('platform-t1');
+    expect(e.applyOrgLever('teamFirefight', undefined, 'product-t0')).toBe(false);
   });
 
   it('result フェーズの施策は残存盤面同期で巻き戻らない', () => {
@@ -779,7 +795,10 @@ describe('RunEngine: レバー', () => {
     const roster = e.snapshot().roster;
     const assigned = roster.members.filter((m) => m.aiAssigned).length;
     const coders = roster.members.filter((m) => !m.onLeave && m.assignment === 'coding').length;
-    expect(assigned).toBe(Math.min(estimateRivalAiAssigned(5, 80), coders));
+    // 配布目標はコーダー数×依存度（チーム総人数5ではなくコーダー数基準）。
+    expect(coders).toBeLessThan(5);
+    expect(assigned).toBe(Math.round((coders * 80) / 100));
+    expect(assigned).toBeLessThan(coders);
     expect(assigned).toBeGreaterThan(0);
   });
 
@@ -867,8 +886,8 @@ describe('RunEngine: レバー', () => {
     const sprint = e.snapshot().sprint!;
     expect(sprint.tasks.filter((t) => t.lane === 'review').length).toBe(5);
     expect(sprint.tasks.filter((t) => t.incident).length).toBe(2);
-    // 鎮火集計と整合するよう、引き継ぎ炎上も発生母数へ含める。
-    expect(sprint.metrics.incidentCount).toBe(2);
+    // 引き継ぎ炎上は継続中の事象なので新規発生数には載せない。
+    expect(sprint.metrics.incidentCount).toBe(0);
   });
 
   it('採用ドラフトの新チームはホームのカード基準を継承し二重適用しない', () => {

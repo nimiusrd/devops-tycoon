@@ -18,31 +18,43 @@ const ORDER: ZoomLevel[] = ['industry', 'company', 'department', 'team'];
 export interface BreadcrumbProps {
   level: ZoomLevel;
   onNavigate: (level: ZoomLevel) => void;
+  /** 入り込み拘束中は上位階層への移動を無効化する（他チーム閲覧の機会損失）。 */
+  enterLocked?: boolean;
 }
 
-export function Breadcrumb({ level, onNavigate }: BreadcrumbProps) {
+export function Breadcrumb({ level, onNavigate, enterLocked = false }: BreadcrumbProps) {
   const current = ORDER.indexOf(level);
   return (
     <nav className="breadcrumb" data-testid="breadcrumb" aria-label="ズーム階層">
-      {STEPS.map((step, i) => (
-        <span key={step.level} className="breadcrumb-step">
-          {i > 0 && <span className="breadcrumb-sep">▸</span>}
-          <button
-            type="button"
-            className={`breadcrumb-btn${step.level === level ? ' active' : ''}`}
-            data-testid={`crumb-${step.level}`}
-            data-active={step.level === level}
-            aria-current={step.level === level ? 'page' : undefined}
-            onClick={() => onNavigate(step.level)}
-            title={`${step.label}へ`}
-          >
-            <span aria-hidden>{step.icon}</span>
-            <span className="breadcrumb-label">{step.label}</span>
-          </button>
-        </span>
-      ))}
+      {STEPS.map((step, i) => {
+        const lockedOut = enterLocked && step.level !== 'team';
+        return (
+          <span key={step.level} className="breadcrumb-step">
+            {i > 0 && <span className="breadcrumb-sep">▸</span>}
+            <button
+              type="button"
+              className={`breadcrumb-btn${step.level === level ? ' active' : ''}`}
+              data-testid={`crumb-${step.level}`}
+              data-active={step.level === level}
+              aria-current={step.level === level ? 'page' : undefined}
+              disabled={lockedOut}
+              onClick={() => onNavigate(step.level)}
+              title={lockedOut ? '入り込み拘束中は他チームを俯瞰できません' : `${step.label}へ`}
+            >
+              <span aria-hidden>{step.icon}</span>
+              <span className="breadcrumb-label">{step.label}</span>
+            </button>
+          </span>
+        );
+      })}
       <span className="breadcrumb-hint">
-        {current <= 1 ? '俯瞰して采配' : current === 2 ? 'ボトルネックを診断' : '手を動かす'}
+        {enterLocked
+          ? '入り込み拘束中'
+          : current <= 1
+            ? '俯瞰して采配'
+            : current === 2
+              ? 'ボトルネックを診断'
+              : '手を動かす'}
       </span>
     </nav>
   );

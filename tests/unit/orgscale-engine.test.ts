@@ -626,6 +626,33 @@ describe('RunEngine: レバー', () => {
     expect(after.aiAssisted).toBeLessThanOrEqual(after.completed);
   });
 
+  it('粗粒度炎上の累積はセーブ／復元で維持される', () => {
+    const e = started('coarse-carry-persist');
+    const internals = e as unknown as { coarseIncidentCarry: number };
+    // 四半期途中で未 flush の累積が残っている状態を再現する。
+    internals.coarseIncidentCarry = 1.25;
+    const persist = e.exportPersistState()!;
+    expect(persist.extras.coarseIncidentCarry).toBeCloseTo(1.25, 8);
+
+    const restored = started('coarse-carry-persist-b');
+    restored.hydratePersistState(persist);
+    const restoredInternals = restored as unknown as {
+      coarseIncidentCarry: number;
+      flushCoarseIncidentCarry: () => void;
+      quarterTotals: { incidents: number };
+      totals: { incidents: number };
+    };
+    expect(restoredInternals.coarseIncidentCarry).toBeCloseTo(1.25, 8);
+
+    // 再開後の flush で整数分が KPI に載る（保存前と同値）。
+    const qBefore = restoredInternals.quarterTotals.incidents;
+    const tBefore = restoredInternals.totals.incidents;
+    restoredInternals.flushCoarseIncidentCarry();
+    expect(restoredInternals.quarterTotals.incidents).toBe(qBefore + 1);
+    expect(restoredInternals.totals.incidents).toBe(tBefore + 1);
+    expect(restoredInternals.coarseIncidentCarry).toBe(0);
+  });
+
   it('v2 hydrate は部分 baseline マップをレガシーで埋めない', () => {
     const e = started('v2-partial-baseline');
     const persist = e.exportPersistState()!;

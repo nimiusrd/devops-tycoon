@@ -1797,6 +1797,7 @@ export class RunEngine {
         homeTeamId: this.homeTeamId,
         teamLockUntilSprint: this.teamLockUntilSprint,
         teamRosters: structuredClone(this.teamRosters),
+        coarseIncidentCarry: this.coarseIncidentCarry,
       },
     };
   }
@@ -1880,8 +1881,6 @@ export class RunEngine {
     this.preferredCards = Array.isArray(cloned.extras.preferredCardIds)
       ? new Set(cloned.extras.preferredCardIds)
       : new Set();
-    // 端数繰り越しは永続しない（復元時は四半期内でも 0 から再開）。
-    this.coarseIncidentCarry = 0;
     // RI-64: チーム状態（旧セーブは seed から補完）。
     if (Array.isArray(cloned.extras.teams) && cloned.extras.teams.length > 0) {
       this.teams = structuredClone(cloned.extras.teams);
@@ -1891,6 +1890,8 @@ export class RunEngine {
       this.teamRosters = cloned.extras.teamRosters
         ? structuredClone(cloned.extras.teamRosters)
         : { [this.activeTeamId]: structuredClone(this.roster) };
+      // 四半期内の粗粒度炎上累積を復元（旧セーブ欠落時は 0）。
+      this.coarseIncidentCarry = Math.max(0, cloned.extras.coarseIncidentCarry ?? 0);
     } else {
       // v1 セーブ: チーム配列が無いので初期化し、累積 orgAdjust を正本へ焼き込んでから strip。
       this.homeTeamId = HOME_TEAM_ID;
@@ -1906,6 +1907,7 @@ export class RunEngine {
         homeReviewQueue: 0,
         homeIncidents: Math.max(0, this.totals.incidents - this.totals.contained),
       });
+      // v1 には粗粒度累積が無い。
       this.coarseIncidentCarry = 0;
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
       this.syncActiveTeamFromOrg();

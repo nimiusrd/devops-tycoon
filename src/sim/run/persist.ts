@@ -57,6 +57,11 @@ export interface RunPersistExtras {
   teamLockUntilSprint?: number;
   /** 訪問済みチームのロスター（RI-64）。 */
   teamRosters?: Record<string, RosterState>;
+  /**
+   * 粗粒度炎上の四半期内累積（RI-64）。
+   * 旧セーブでは欠落しうる（復元時は 0）。
+   */
+  coarseIncidentCarry?: number;
 }
 
 /**

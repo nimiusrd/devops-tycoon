@@ -518,7 +518,7 @@ export default function App({ game }: AppProps) {
                 <DeptScreen
                   dept={focusedDept}
                   budget={state.budget}
-                  selectedTeamId={zoom.teamId}
+                  selectedTeamId={zoom.teamId ?? state.activeTeamId}
                   activeTeamId={state.activeTeamId}
                   teamLockUntilSprint={state.teamLockUntilSprint}
                   sprintsPlayed={state.sprintsPlayed}

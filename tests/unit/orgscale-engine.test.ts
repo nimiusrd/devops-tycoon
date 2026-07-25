@@ -587,6 +587,25 @@ describe('RunEngine: レバー', () => {
     expect(sprint.metrics.incidentCount).toBe(0);
   });
 
+  it('行列＋炎上が taskCount を超えても炎上枠を先に確保する', () => {
+    const e = started('enter-board-overflow');
+    const persist = e.exportPersistState()!;
+    // 通常スプリントの taskCount より大きい滞留を載せる。
+    const teams = persist.extras.teams!.map((t) => {
+      if (t.id !== 'platform-t1') return t;
+      const next = { ...t, reviewQueue: 20, incidents: 8 };
+      return { ...next, ...deriveTeamCapacities(next) };
+    });
+    persist.extras.teams = teams;
+    e.hydratePersistState(persist);
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    e.beginSetupSprint();
+    const sprint = e.snapshot().sprint!;
+    expect(sprint.tasks.length).toBeGreaterThanOrEqual(28);
+    expect(sprint.tasks.filter((t) => t.incident).length).toBe(8);
+    expect(sprint.tasks.filter((t) => t.lane === 'review').length).toBe(20);
+  });
+
   it('未知の teamId ではチームレバーが予算を消費しない', () => {
     const e = started('unknown-team-lever');
     e.zoomTo('company');

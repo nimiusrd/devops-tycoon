@@ -108,6 +108,25 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(withPenalty).not.toBe(without);
   });
 
+  it('what-if 入力に選択中チームの行列・炎上を含めキャッシュ指紋にも載せる', () => {
+    const engine = new RunEngine({ seed: 'what-if-board-pressure', difficulty: 'normal' });
+    engine.startRun();
+    const persist = engine.exportPersistState()!;
+    const teams = persist.extras.teams!.map((t) =>
+      t.id === persist.extras.activeTeamId ? { ...t, reviewQueue: 7, incidents: 3 } : t,
+    );
+    persist.extras.teams = teams;
+    engine.hydratePersistState(persist);
+    const internals = engine as unknown as { phase: string };
+    internals.phase = 'setup';
+    const input = engine.whatIfComputeInput();
+    expect(input?.teamReviewQueue).toBe(7);
+    expect(input?.teamIncidents).toBe(3);
+    const keyed = whatIfCacheKey(input!);
+    const cleared = whatIfCacheKey({ ...input!, teamReviewQueue: 0, teamIncidents: 0 });
+    expect(keyed).not.toBe(cleared);
+  });
+
   it('発動すると敗北するドラフト候補は loseOnPlay で警告する（獲得時は即時敗北にしない）', () => {
     const engine = new RunEngine({ seed: 'what-if-lose', difficulty: 'nightmare' });
     engine.startRun();

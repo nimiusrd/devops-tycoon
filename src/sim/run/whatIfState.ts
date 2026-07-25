@@ -15,6 +15,7 @@ import {
   buildSprintBaselineInput,
   type SprintBaselineBuildContext,
 } from './sprintBaselineBuild';
+import { withTeamBoardPressure } from './sprintBaseline';
 import { previewNextSprint } from './whatIf';
 import type {
   DifficultyId,
@@ -50,6 +51,10 @@ export interface WhatIfComputeInput {
   bossId: string;
   pauseAiDebuffQuarter: number | null;
   baseConfig: SprintConfig;
+  /** 選択中チーム正本のレビュー待ち（本番 beginSprint と共有）。 */
+  teamReviewQueue?: number;
+  /** 選択中チーム正本の炎上件数（本番 beginSprint と共有）。 */
+  teamIncidents?: number;
 }
 
 function baselineContext(input: WhatIfComputeInput): SprintBaselineBuildContext {
@@ -92,6 +97,8 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     mod.reworkRateAdd ?? 0,
     mod.taskCountMul ?? 1,
     mod.focusMaxAdd ?? 0,
+    input.teamReviewQueue ?? 0,
+    input.teamIncidents ?? 0,
   ].join('|');
 }
 
@@ -130,15 +137,21 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
       applyDeckBaseline(previewOrg, scaleEffects(playedDef.base, played.level));
     }
     return previewNextSprint(
-      buildSprintBaselineInput(ctx, {
-        deck,
-        roster: input.roster,
-        org: previewOrg,
-        kind,
-        modifiers,
-        seed: baseSeed,
-        playedCards,
-      }),
+      withTeamBoardPressure(
+        buildSprintBaselineInput(ctx, {
+          deck,
+          roster: input.roster,
+          org: previewOrg,
+          kind,
+          modifiers,
+          seed: baseSeed,
+          playedCards,
+        }),
+        {
+          reviewQueue: input.teamReviewQueue ?? 0,
+          incidents: input.teamIncidents ?? 0,
+        },
+      ),
     );
   };
 

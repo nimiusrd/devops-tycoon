@@ -27,6 +27,26 @@ export interface SprintBaselineInput {
   incidentLoadAdd?: number;
 }
 
+/** チーム正本の行列・炎上をベースラインへ載せ、必要なら taskCount を拡張する。 */
+export function withTeamBoardPressure(
+  baseline: SprintBaselineInput,
+  pressure: { reviewQueue?: number; incidents?: number },
+): SprintBaselineInput {
+  const review = Math.max(0, pressure.reviewQueue ?? 0);
+  const incidents = Math.max(0, pressure.incidents ?? 0);
+  const reviewLoadAdd = (baseline.reviewLoadAdd ?? 0) + review;
+  const incidentLoadAdd = (baseline.incidentLoadAdd ?? 0) + incidents;
+  const minTasks = reviewLoadAdd + incidentLoadAdd;
+  const taskCount = Math.max(baseline.config.taskCount, minTasks);
+  return {
+    ...baseline,
+    config:
+      taskCount === baseline.config.taskCount ? baseline.config : { ...baseline.config, taskCount },
+    reviewLoadAdd,
+    ...(incidentLoadAdd > 0 ? { incidentLoadAdd } : {}),
+  };
+}
+
 /** 同条件シミュレーション中に tick ごとの介入判断へ渡すコンテキスト。 */
 export interface SprintSimulationContext {
   sprint: SprintState;
@@ -46,19 +66,8 @@ export function createSprintFromBaselineInput(
   const rng = createRng(input.seed);
   const sprint = createSprint(input.config, org, rng, input.cardEffects, input.aiAdoptionShare);
 
-  if (input.reviewLoadAdd) {
-    let moved = 0;
-    for (const task of sprint.tasks) {
-      if (moved >= input.reviewLoadAdd) break;
-      if (task.lane === 'backlog') {
-        task.lane = 'review';
-        task.progress = 0;
-        moved += 1;
-      }
-    }
-  }
-
-  // 粗粒度で溜まった炎上を詳細盤面へ戻す（igniteTask だと今スプリントの発生件数に乗ってしまう）。
+  // 炎上を先に確保し、行列で backlog を食い尽くして炎上が消えないようにする。
+  // igniteTask だと今スプリントの発生件数に乗るため、引き継ぎは直接盤面へ置く。
   if (input.incidentLoadAdd) {
     let lit = 0;
     for (const task of sprint.tasks) {
@@ -69,6 +78,18 @@ export function createSprintFromBaselineInput(
       task.burnTicksLeft = BURN_TICKS;
       task.progress = 0;
       lit += 1;
+    }
+  }
+
+  if (input.reviewLoadAdd) {
+    let moved = 0;
+    for (const task of sprint.tasks) {
+      if (moved >= input.reviewLoadAdd) break;
+      if (task.lane === 'backlog') {
+        task.lane = 'review';
+        task.progress = 0;
+        moved += 1;
+      }
     }
   }
 

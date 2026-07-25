@@ -113,7 +113,11 @@ import {
   isTerminalFailure,
   loseReasonForOutcome,
 } from './quarterReview';
-import { createSprintFromBaselineInput, runNoInterventionBaseline } from './sprintBaseline';
+import {
+  createSprintFromBaselineInput,
+  runNoInterventionBaseline,
+  withTeamBoardPressure,
+} from './sprintBaseline';
 import type { SprintBaselineInput } from './sprintBaseline';
 import {
   applyTrialAiDependencyPressure,
@@ -542,13 +546,10 @@ export class RunEngine {
     });
     // 正本の行列・炎上を初期盤面へ投入し、入り込み後に俯瞰の問題が消えないようにする。
     const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
-    const teamReview = Math.max(0, activeTeam?.reviewQueue ?? 0);
-    const teamIncidents = Math.max(0, activeTeam?.incidents ?? 0);
-    this.sprintBaselineInput = {
-      ...baseline,
-      reviewLoadAdd: (baseline.reviewLoadAdd ?? 0) + teamReview,
-      ...(teamIncidents > 0 ? { incidentLoadAdd: teamIncidents } : {}),
-    };
+    this.sprintBaselineInput = withTeamBoardPressure(baseline, {
+      reviewQueue: activeTeam?.reviewQueue ?? 0,
+      incidents: activeTeam?.incidents ?? 0,
+    });
     const initialized = createSprintFromBaselineInput(this.sprintBaselineInput, this.org);
     this.sprintRng = initialized.rng;
     this.sprintTick = 0;
@@ -1598,6 +1599,7 @@ export class RunEngine {
    */
   whatIfComputeInput(): WhatIfComputeInput | null {
     if (this.phase !== 'setup' && this.phase !== 'draft') return null;
+    const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
     return {
       phase: this.phase,
       seed: this.seed,
@@ -1619,6 +1621,9 @@ export class RunEngine {
       bossId: this.bossId,
       pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
       baseConfig: { ...this.baseConfig },
+      // 入り込み先の滞留を試算でも本番 beginSprint と同じく載せる。
+      teamReviewQueue: activeTeam?.reviewQueue ?? 0,
+      teamIncidents: activeTeam?.incidents ?? 0,
     };
   }
 

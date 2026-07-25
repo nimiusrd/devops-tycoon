@@ -103,7 +103,7 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
           // RI-04: 島タップ → フォーカスリング（遷移先の炎上/渋滞トーン）→
           // カメラが寄る → 完了後に状態遷移（App の zoom-overlay クロスフェードで着地）。
           // engine.focusTeam は非アクティブを department 止まりにするため、
-          // カメラも着地先と一致させる（isPlayer=ホーム表示、isActive=詳細対象）。
+          // カメラも着地先と一致させる（isPlayer/isActive=詳細シミュレーション対象）。
           const team = teamsRef.current.find((t) => t.id === id);
           r.playFocusRing(teamsRef.current, id);
           const camera =

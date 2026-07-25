@@ -330,14 +330,15 @@ describe('RunEngine: レバー', () => {
     expect(e.enterTeam('product-t0')).toBe(true); // 同一アクティブへの復帰は可
   });
 
-  it('投影の isActive は選択チームを指す', () => {
+  it('投影の isActive / isPlayer は選択チームを指す', () => {
     const e = started();
     expect(e.enterTeam('platform-t1')).toBe(true);
     e.zoomTo('company');
     const teams = e.snapshot().orgScale!.departments.flatMap((d) => d.teams);
     expect(teams.find((t) => t.id === 'platform-t1')!.isActive).toBe(true);
+    expect(teams.find((t) => t.id === 'platform-t1')!.isPlayer).toBe(true);
     expect(teams.find((t) => t.id === 'product-t0')!.isActive).toBe(false);
-    expect(teams.find((t) => t.id === 'product-t0')!.isPlayer).toBe(true);
+    expect(teams.find((t) => t.id === 'product-t0')!.isPlayer).toBe(false);
   });
 
   it('result フェーズの施策は残存盤面同期で巻き戻らない', () => {
@@ -581,12 +582,49 @@ describe('RunEngine: レバー', () => {
     const delta = normalizeCoarseTotalsDelta(before, after, 'product-t0', 6, 19, 12);
     // 出荷増分 10+6+3=19 → round(19/3)=6（最低 1 保証）
     expect(delta.delivered).toBe(6);
-    // 発生 6 → round(6/3)=2
+    // 発生 6 → floor(6/3)=2（端数繰り越し）
     expect(delta.incidents).toBe(2);
+    expect(delta.incidentCarry).toBeCloseTo(0, 8);
     // 完了 19 → round(19/3)=6、AI 支援 12 → round(12/3)=4
     expect(delta.completed).toBe(6);
     expect(delta.aiAssisted).toBe(4);
     expect(normalizeCoarseTotalsDelta(before, before, 'product-t0', 0).incidents).toBe(0);
+  });
+
+  it('粗粒度炎上の端数はステップ間で繰り越す', () => {
+    const before = [
+      { id: 'product-t0', shipping: 10 },
+      { id: 'a', shipping: 10 },
+      { id: 'b', shipping: 10 },
+      { id: 'c', shipping: 10 },
+    ];
+    const after = before;
+    // 9 チーム相当ではなく 3 他チームで 1 件 → 1/3 を繰り越し
+    const step1 = normalizeCoarseTotalsDelta(before, after, 'product-t0', 1, 0, 0, 0);
+    expect(step1.incidents).toBe(0);
+    expect(step1.incidentCarry).toBeCloseTo(1 / 3, 8);
+    const step2 = normalizeCoarseTotalsDelta(
+      before,
+      after,
+      'product-t0',
+      1,
+      0,
+      0,
+      step1.incidentCarry,
+    );
+    expect(step2.incidents).toBe(0);
+    expect(step2.incidentCarry).toBeCloseTo(2 / 3, 8);
+    const step3 = normalizeCoarseTotalsDelta(
+      before,
+      after,
+      'product-t0',
+      1,
+      0,
+      0,
+      step2.incidentCarry,
+    );
+    expect(step3.incidents).toBe(1);
+    expect(step3.incidentCarry).toBeCloseTo(0, 8);
   });
 
   it('粗粒度チームの完了・AI 支援を四半期集計へ反映する', () => {
@@ -686,7 +724,7 @@ describe('RunEngine: レバー', () => {
     );
   });
 
-  it('v1 セーブ移行は累計行列・未鎮火炎上を初期圧力として引き継ぐ', () => {
+  it('v1 セーブ移行はピーク行列を現在バックログへ昇格せず未鎮火炎上だけ引き継ぐ', () => {
     const e = started('v1-pressure');
     const persist = e.exportPersistState()!;
     persist.totals.reviewQueuePeak = 14;
@@ -696,7 +734,8 @@ describe('RunEngine: レバー', () => {
     delete (persist.extras as { activeTeamId?: unknown }).activeTeamId;
     e.hydratePersistState(persist);
     const home = e.snapshot().teams.find((t) => t.id === 'product-t0')!;
-    expect(home.reviewQueue).toBe(14);
+    // ピーク累計は現在行列ではないので 0。未鎮火分だけ圧力として残す。
+    expect(home.reviewQueue).toBe(0);
     expect(home.incidents).toBe(5);
   });
 

@@ -109,7 +109,7 @@ export interface Team {
   aiAssignedCount: number;
   /** 健全度（reviewQueue/incidents/aiDependency から導出）。 */
   health: TeamHealth;
-  /** ホームチーム（開始時の現場）か。 */
+  /** プレイヤー強調対象（現在の詳細スプリント対象）。星印・is-player 表示に使う。 */
   isPlayer: boolean;
   /** 現在の詳細スプリント対象（入り込み中）か。Pixi 遷移予測に使う。 */
   isActive: boolean;

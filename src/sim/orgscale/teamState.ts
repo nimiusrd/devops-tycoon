@@ -529,6 +529,7 @@ export function advanceCoarseTeams(
 /**
  * 粗粒度 1 ステップの出荷・炎上・完了・AI 支援を、他チーム平均相当へ正規化する。
  * 炎上は開数差分ではなく発生件数（ignited）を使う（同ステップ鎮火で消えないように）。
+ * 炎上の端数は `incidentCarry` で次ステップへ繰り越し、ステップ丸めで発生実績を消さない。
  */
 export function normalizeCoarseTotalsDelta(
   before: readonly Pick<TeamRunState, 'id' | 'shipping'>[],
@@ -537,7 +538,14 @@ export function normalizeCoarseTotalsDelta(
   ignited: number,
   completedGain = 0,
   aiAssistedGain = 0,
-): { delivered: number; incidents: number; completed: number; aiAssisted: number } {
+  incidentCarry = 0,
+): {
+  delivered: number;
+  incidents: number;
+  completed: number;
+  aiAssisted: number;
+  incidentCarry: number;
+} {
   let deliveredGain = 0;
   let otherCount = 0;
   for (const team of after) {
@@ -548,17 +556,26 @@ export function normalizeCoarseTotalsDelta(
     deliveredGain += Math.max(0, team.shipping - prev.shipping);
   }
   if (otherCount <= 0) {
-    return { delivered: 0, incidents: 0, completed: 0, aiAssisted: 0 };
+    return {
+      delivered: 0,
+      incidents: 0,
+      completed: 0,
+      aiAssisted: 0,
+      incidentCarry: Math.max(0, incidentCarry),
+    };
   }
   const completed = completedGain > 0 ? Math.max(1, Math.round(completedGain / otherCount)) : 0;
   const aiAssisted = Math.max(0, Math.round(Math.max(0, aiAssistedGain) / otherCount));
+  // 端数繰り越し: 例) 3/9 + 0.33 → 0.66（計上 0）、次で 2/9 + 0.66 → 0.88… と積み上げる。
+  const rawIncidents = Math.max(0, ignited) / otherCount + Math.max(0, incidentCarry);
+  const incidents = Math.floor(rawIncidents + 1e-9);
   return {
     delivered: deliveredGain > 0 ? Math.max(1, Math.round(deliveredGain / otherCount)) : 0,
-    // 炎上は稀なので 0 切り捨て（毎ステップ最低 +1 だと Incident KPI が即死する）。
-    incidents: Math.max(0, Math.round(Math.max(0, ignited) / otherCount)),
+    incidents,
     completed,
     // 採用率の上限を超えないよう完了数でクリップする。
     aiAssisted: completed > 0 ? Math.min(completed, aiAssisted) : 0,
+    incidentCarry: rawIncidents - incidents,
   };
 }
 
@@ -623,7 +640,6 @@ export function projectOrgScale(input: ProjectOrgScaleInput): OrgScaleState {
         run.id === input.activeTeamId && input.activeLive ? { ...run, ...input.activeLive } : run;
       const teamAdj = mergeAdjust(deptAdj, adjust.byTeam?.[run.id] ?? emptyAdjust());
       const adjusted = applyAdjustToRaw(live, teamAdj);
-      const isHome = run.id === input.homeTeamId;
       const isActive = run.id === input.activeTeamId;
       const aiAssignedCount =
         isActive && input.activeLive?.aiAssignedCount !== undefined
@@ -644,7 +660,8 @@ export function projectOrgScale(input: ProjectOrgScaleInput): OrgScaleState {
         engineers: live.engineers,
         aiAssignedCount,
         health: teamHealth(adjusted),
-        isPlayer: isHome,
+        // プレイヤー強調は詳細シミュレーション対象（入り込み先）に合わせる。
+        isPlayer: isActive,
         isActive,
       };
     });

@@ -331,6 +331,8 @@ export class RunEngine {
   private teamLockUntilSprint = 0;
   /** 訪問済みチームのロスター（active 以外はここへ退避）。 */
   private teamRosters: Record<string, RosterState> = {};
+  /** 粗粒度炎上の正規化端数（四半期内で繰り越し）。 */
+  private coarseIncidentCarry = 0;
 
   private quarterNumber = 1;
   private quarterGoal!: QuarterGoal;
@@ -471,6 +473,7 @@ export class RunEngine {
       homeEngineers: activeEngineerCount(this.roster),
     });
     this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
+    this.coarseIncidentCarry = 0;
     // ホームの永続指標を初期 org/roster と揃える。
     this.syncActiveTeamFromOrg();
     this.status = 'playing';
@@ -854,6 +857,7 @@ export class RunEngine {
     }
 
     this.quarterTotals = emptyTotals();
+    this.coarseIncidentCarry = 0;
 
     this.sprintIndexInQuarter = 0;
     this.pendingSprintKind = 'normal';
@@ -1468,7 +1472,9 @@ export class RunEngine {
       stepped.ignited,
       stepped.completed,
       stepped.aiAssisted,
+      this.coarseIncidentCarry,
     );
+    this.coarseIncidentCarry = delta.incidentCarry;
     this.totals.delivered += delta.delivered;
     this.quarterTotals.delivered += delta.delivered;
     this.totals.incidents += delta.incidents;
@@ -1861,6 +1867,8 @@ export class RunEngine {
     this.preferredCards = Array.isArray(cloned.extras.preferredCardIds)
       ? new Set(cloned.extras.preferredCardIds)
       : new Set();
+    // 端数繰り越しは永続しない（復元時は四半期内でも 0 から再開）。
+    this.coarseIncidentCarry = 0;
     // RI-64: チーム状態（旧セーブは seed から補完）。
     if (Array.isArray(cloned.extras.teams) && cloned.extras.teams.length > 0) {
       this.teams = structuredClone(cloned.extras.teams);
@@ -1875,14 +1883,17 @@ export class RunEngine {
       this.homeTeamId = HOME_TEAM_ID;
       this.activeTeamId = HOME_TEAM_ID;
       this.teamLockUntilSprint = 0;
-      // 旧全社マップ互換: 累計ピーク行列と未鎮火炎上を初期圧力として引き継ぐ。
+      // 旧形式に現在行列は無い。ピーク累計をバックログへ昇格させると再開直後に
+      // 処理済みの大量 Review が再投入されるため、行列は 0 から始める。
+      // 未鎮火炎上（発生−鎮火）だけ初期圧力として引き継ぐ。
       this.teams = initTeamRunStates({
         seed: this.seed,
         org: this.org,
         homeEngineers: activeEngineerCount(this.roster),
-        homeReviewQueue: Math.max(0, this.totals.reviewQueuePeak),
+        homeReviewQueue: 0,
         homeIncidents: Math.max(0, this.totals.incidents - this.totals.contained),
       });
+      this.coarseIncidentCarry = 0;
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
       this.syncActiveTeamFromOrg();
       // レガシー baseline を既存チームへ先に移行してから追加チームを継承する。

@@ -1429,7 +1429,7 @@ export class RunEngine {
     const cached = this.teamRosters[id];
     this.roster = cached
       ? structuredClone(cached)
-      : createTeamRoster(this.seed, id, team.engineers);
+      : createTeamRoster(this.seed, id, team.engineers, team.aiDependency);
     this.teamRosters[id] = structuredClone(this.roster);
   }
 
@@ -1455,6 +1455,8 @@ export class RunEngine {
         incidentRateMul: fold.effects.incidentRateMul,
         shipMul,
         reviewMul: fold.effects.reviewEfficiencyMul,
+        reviewCapacityMul: fold.effects.reviewCapacityMul,
+        aiDependencyDrift: fold.aiDependencyDriftPerSprint,
       },
     });
     this.teams = stepped.teams;
@@ -1867,13 +1869,21 @@ export class RunEngine {
       this.homeTeamId = HOME_TEAM_ID;
       this.activeTeamId = HOME_TEAM_ID;
       this.teamLockUntilSprint = 0;
+      // 旧全社マップ互換: 累計ピーク行列と未鎮火炎上を初期圧力として引き継ぐ。
       this.teams = initTeamRunStates({
         seed: this.seed,
         org: this.org,
         homeEngineers: activeEngineerCount(this.roster),
+        homeReviewQueue: Math.max(0, this.totals.reviewQueuePeak),
+        homeIncidents: Math.max(0, this.totals.incidents - this.totals.contained),
       });
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
       this.syncActiveTeamFromOrg();
+      // レガシー baseline を既存チームへ先に移行してから追加チームを継承する。
+      this.deck = migrateBaselineAppliedByTeam(
+        this.deck,
+        this.teams.map((t) => t.id),
+      );
       // 購入済み extraTeams を永続配列へ復元（applyEffectToTeam は extraTeams を扱わない）。
       const extraTeams = Math.max(0, Math.round(this.orgAdjust.company.extraTeams));
       if (extraTeams > 0) {
@@ -1908,7 +1918,7 @@ export class RunEngine {
       if (active) this.org = orgFromTeam(active);
       this.orgAdjust = stripMetricAdjustments(this.orgAdjust);
     }
-    // レガシー baselineAppliedLevel をチーム別マップへ移行（欠落チームへの全量再適用を防ぐ）。
+    // レガシー baselineAppliedLevel をチーム別マップへ移行／不足 ID を補完する。
     this.deck = migrateBaselineAppliedByTeam(
       this.deck,
       this.teams.map((t) => t.id),

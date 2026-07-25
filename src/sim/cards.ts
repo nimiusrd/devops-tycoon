@@ -150,6 +150,7 @@ export function baselineAppliedLevelFor(inst: CardInstance, teamId?: string): nu
 /**
  * レガシー `baselineAppliedLevel` を全チームの `baselineAppliedByTeam` へ写経する。
  * v1 セーブ復元後に別チームで全量再適用しないための移行。
+ * 既に部分マップがある場合（追加チーム継承のみ等）も、不足 ID をレガシー値で補完する。
  */
 export function migrateBaselineAppliedByTeam(
   deck: CardInstance[],
@@ -158,10 +159,21 @@ export function migrateBaselineAppliedByTeam(
   if (teamIds.length === 0) return deck;
   return deck.map((inst) => {
     const legacy = inst.baselineAppliedLevel ?? 0;
-    if (legacy <= 0 || inst.baselineAppliedByTeam) return inst;
-    const baselineAppliedByTeam: Record<string, number> = {};
-    for (const id of teamIds) baselineAppliedByTeam[id] = legacy;
-    return { ...inst, baselineAppliedByTeam };
+    if (legacy <= 0) return inst;
+    if (!inst.baselineAppliedByTeam) {
+      const baselineAppliedByTeam: Record<string, number> = {};
+      for (const id of teamIds) baselineAppliedByTeam[id] = legacy;
+      return { ...inst, baselineAppliedByTeam };
+    }
+    const baselineAppliedByTeam = { ...inst.baselineAppliedByTeam };
+    let changed = false;
+    for (const id of teamIds) {
+      if (baselineAppliedByTeam[id] === undefined) {
+        baselineAppliedByTeam[id] = legacy;
+        changed = true;
+      }
+    }
+    return changed ? { ...inst, baselineAppliedByTeam } : inst;
   });
 }
 

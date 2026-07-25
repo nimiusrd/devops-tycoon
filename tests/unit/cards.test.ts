@@ -163,6 +163,28 @@ describe('手札配布・発動（RI-30）', () => {
     expect(migrated[1]!.baselineAppliedByTeam).toBeUndefined();
   });
 
+  it('migrateBaselineAppliedByTeam は部分マップの不足 ID をレガシーで補完する', () => {
+    const deck: CardInstance[] = [
+      {
+        defId: 'auto-test',
+        level: 2,
+        baselineAppliedLevel: 1,
+        // 追加チーム継承だけが先に走った状態。
+        baselineAppliedByTeam: { 'product-t2': 1 },
+      },
+    ];
+    const migrated = migrateBaselineAppliedByTeam(deck, [
+      'product-t0',
+      'product-t2',
+      'platform-t1',
+    ]);
+    expect(migrated[0]!.baselineAppliedByTeam).toEqual({
+      'product-t0': 1,
+      'product-t2': 1,
+      'platform-t1': 1,
+    });
+  });
+
   it('baselineAppliedLevelFor はマップ未作成時のみレガシー値を使う', () => {
     const legacy: CardInstance = {
       defId: 'auto-test',

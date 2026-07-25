@@ -302,8 +302,14 @@ export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: Or
  * 未訪問チーム向けに簡易ロスターを seed 生成する。
  * 詳細操作のロスター上限（ROSTER_CAP=6）と、チーム総人数 `TeamRunState.engineers` は分離する。
  * 7〜8 人チームでもロスターは最大 6 人までとし、総人数は sync 時に縮めない。
+ * `aiDependency` 指定時は投影の推定 AI 配布人数と一致するよう決定論的に割り当てる。
  */
-export function createTeamRoster(seed: string, teamId: string, engineers: number): RosterState {
+export function createTeamRoster(
+  seed: string,
+  teamId: string,
+  engineers: number,
+  aiDependency?: number,
+): RosterState {
   const rng = createRng(`${seed}:roster:${teamId}`);
   const count = Math.max(2, Math.min(6, engineers));
   const used = new Set<string>();
@@ -327,7 +333,19 @@ export function createTeamRoster(seed: string, teamId: string, engineers: number
     else m.assignment = i % 2 === 0 ? 'coding' : 'bench';
     members.push(m);
   }
-  return { members, nextId: members.length };
+  const roster: RosterState = { members, nextId: members.length };
+  if (aiDependency === undefined) return roster;
+  const target = estimateRivalAiAssigned(engineers, aiDependency);
+  let assigned = 0;
+  return {
+    ...roster,
+    members: roster.members.map((m) => {
+      if (m.onLeave || m.assignment !== 'coding') return { ...m, aiAssigned: false };
+      const on = assigned < target;
+      if (on) assigned += 1;
+      return { ...m, aiAssigned: on };
+    }),
+  };
 }
 
 /** 部門へ新規チームを append する（採用ドラフト等）。 */
@@ -383,6 +401,10 @@ export type CoarseRunModifiers = {
   shipMul?: number;
   /** 行列消化・鎮火しやすさ（reviewEfficiencyMul 相当）。 */
   reviewMul?: number;
+  /** レビュー容量倍率（reviewCapacityMul）。行列消化に掛ける。 */
+  reviewCapacityMul?: number;
+  /** スプリント相当の AI 依存度ドリフト（frontier-dependency 等）。 */
+  aiDependencyDrift?: number;
 };
 
 /** 粗粒度 1 ステップの結果。 */
@@ -413,6 +435,8 @@ export function advanceCoarseTeams(
   const incidentRateMul = Math.max(0.2, args.modifiers?.incidentRateMul ?? 1);
   const shipMul = Math.max(0.2, args.modifiers?.shipMul ?? 1);
   const reviewMul = clamp(args.modifiers?.reviewMul ?? 1, 0.4, 1.8);
+  const reviewCapacityMul = clamp(args.modifiers?.reviewCapacityMul ?? 1, 0.5, 2);
+  const aiDependencyDrift = Math.max(0, Math.round(args.modifiers?.aiDependencyDrift ?? 0));
   let ignited = 0;
   const next = teams.map((team) => {
     if (team.id === args.excludeId) return team;
@@ -425,6 +449,7 @@ export function advanceCoarseTeams(
     const debtRelief = Math.max(0, -teamAdj.techDebtDelta) * 0.05;
     const aiPressureMul = clamp(1 + teamAdj.aiDependencyDelta * 0.02, 0.4, 1.2);
     const moraleBias = teamAdj.moraleDelta === 0 ? 0 : Math.sign(teamAdj.moraleDelta) * 0.5;
+    const reviewCap = team.reviewCapacity * reviewCapacityMul;
 
     const shipGain = Math.max(
       4,
@@ -436,13 +461,11 @@ export function advanceCoarseTeams(
     );
     const queuePressure = Math.max(
       0,
-      Math.round(
-        team.engineers * 0.35 + team.aiDependency * 0.04 - team.reviewCapacity * 0.05 - queueRelief,
-      ),
+      Math.round(team.engineers * 0.35 + team.aiDependency * 0.04 - reviewCap * 0.05 - queueRelief),
     );
     const queueDelta = Math.round((rng() * 2 - 0.7) * 2) + queuePressure;
     let reviewQueue = Math.max(0, team.reviewQueue + queueDelta);
-    reviewQueue = Math.max(0, reviewQueue - Math.floor((team.reviewCapacity / 25) * reviewMul));
+    reviewQueue = Math.max(0, reviewQueue - Math.floor((reviewCap / 25) * reviewMul));
 
     const fireRoll = rng();
     const fireChance = clamp(
@@ -455,7 +478,7 @@ export function advanceCoarseTeams(
       incidents += 1;
       ignited += 1;
     }
-    if (rng() < (0.35 + team.reviewCapacity * 0.004) * reviewMul) {
+    if (rng() < (0.35 + reviewCap * 0.004) * reviewMul) {
       incidents = Math.max(0, incidents - 1);
     }
 
@@ -468,7 +491,7 @@ export function advanceCoarseTeams(
       Math.round(team.aiDependency * 0.03) - Math.round(team.aiLiteracy * 0.02) - debtRelief;
     const literacyGain = rng() < 0.4 ? 1 : 0;
     const seniorDrain = reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0;
-    const aiDrift = rng() < 0.3 * aiPressureMul ? 1 : 0;
+    const randomAiDrift = rng() < 0.3 * aiPressureMul ? 1 : 0;
     // 品質を先に確定し、派生の incidentBias と整合させる。
     const quality = clamp(team.quality + (rng() < 0.25 ? -1 : 0), 10, 100);
 
@@ -479,7 +502,7 @@ export function advanceCoarseTeams(
       incidents,
       morale: clamp(team.morale + moraleDelta, 5, 100),
       techDebt: Math.max(0, team.techDebt + techDebtDelta),
-      aiDependency: clamp(team.aiDependency + aiDrift, 0, 100),
+      aiDependency: clamp(team.aiDependency + aiDependencyDrift + randomAiDrift, 0, 100),
       aiLiteracy: clamp(team.aiLiteracy + literacyGain, 0, 100),
       seniorHp: clamp(team.seniorHp - seniorDrain + (100 - team.seniorHp) * 0.05, 1, 100),
       quality,

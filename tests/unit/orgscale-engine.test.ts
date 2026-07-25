@@ -13,6 +13,7 @@ import {
   companyOrgFromTeams,
   deriveTeamCapacities,
   ENTER_TEAM_FOCUS_PENALTY,
+  estimateRivalAiAssigned,
   initTeamRunStates,
   normalizeCoarseTotalsDelta,
   orgFromTeam,
@@ -626,6 +627,77 @@ describe('RunEngine: レバー', () => {
       modifiers: { incidentRateMul: 3 },
     });
     expect(high.ignited).toBeGreaterThanOrEqual(low.ignited);
+  });
+
+  it('粗粒度進行に aiDependencyDrift と reviewCapacityMul が効く', () => {
+    const teams = initTeamRunStates({
+      seed: 'coarse-drift',
+      org: started('coarse-drift').snapshot().org,
+      homeEngineers: 3,
+    });
+    const base = teams.find((t) => t.id === 'platform-t0')!;
+    const drifted = advanceCoarseTeams(teams, {
+      seed: 'coarse-drift',
+      stepKey: 'd1',
+      excludeId: 'product-t0',
+      modifiers: { aiDependencyDrift: 5, reviewCapacityMul: 2 },
+    });
+    const after = drifted.teams.find((t) => t.id === 'platform-t0')!;
+    expect(after.aiDependency).toBeGreaterThanOrEqual(Math.min(100, base.aiDependency + 5));
+    // レビュー容量倍率で行列がより減る（同 seed・同ステップで容量なしより短いか同等）。
+    const noCap = advanceCoarseTeams(teams, {
+      seed: 'coarse-drift',
+      stepKey: 'd1',
+      excludeId: 'product-t0',
+      modifiers: { aiDependencyDrift: 5, reviewCapacityMul: 1 },
+    });
+    expect(after.reviewQueue).toBeLessThanOrEqual(
+      noCap.teams.find((t) => t.id === 'platform-t0')!.reviewQueue,
+    );
+  });
+
+  it('v1 セーブ移行は累計行列・未鎮火炎上を初期圧力として引き継ぐ', () => {
+    const e = started('v1-pressure');
+    const persist = e.exportPersistState()!;
+    persist.totals.reviewQueuePeak = 14;
+    persist.totals.incidents = 9;
+    persist.totals.contained = 4;
+    delete (persist.extras as { teams?: unknown }).teams;
+    delete (persist.extras as { activeTeamId?: unknown }).activeTeamId;
+    e.hydratePersistState(persist);
+    const home = e.snapshot().teams.find((t) => t.id === 'product-t0')!;
+    expect(home.reviewQueue).toBe(14);
+    expect(home.incidents).toBe(5);
+  });
+
+  it('v1 セーブで extraTeams 継承後もホームの baseline が残る', () => {
+    const e = started('v1-baseline-order');
+    const persist = e.exportPersistState()!;
+    persist.deck = [{ defId: 'auto-test', level: 1, baselineAppliedLevel: 1 }];
+    persist.extras.orgAdjust.company.extraTeams = 1;
+    delete (persist.extras as { teams?: unknown }).teams;
+    e.hydratePersistState(persist);
+    const card = e.snapshot().deck[0]!;
+    expect(card.baselineAppliedByTeam?.['product-t0']).toBe(1);
+    const added = e.snapshot().teams.find((t) => t.deptId === 'product' && t.id !== 'product-t0');
+    expect(added).toBeTruthy();
+    expect(card.baselineAppliedByTeam?.[added!.id]).toBe(1);
+  });
+
+  it('未訪問チームのロスターは aiDependency から AI 配布を復元する', () => {
+    const e = started('roster-ai-restore');
+    const persist = e.exportPersistState()!;
+    persist.extras.teams = persist.extras.teams!.map((t) =>
+      t.id === 'platform-t1' ? { ...t, aiDependency: 80, engineers: 5 } : t,
+    );
+    delete (persist.extras as { teamRosters?: unknown }).teamRosters;
+    e.hydratePersistState(persist);
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    const roster = e.snapshot().roster;
+    const assigned = roster.members.filter((m) => m.aiAssigned).length;
+    const coders = roster.members.filter((m) => !m.onLeave && m.assignment === 'coding').length;
+    expect(assigned).toBe(Math.min(estimateRivalAiAssigned(5, 80), coders));
+    expect(assigned).toBeGreaterThan(0);
   });
 
   it('quality_pivot は totals.delivered にも出荷評価倍率を掛ける', () => {

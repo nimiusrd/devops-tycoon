@@ -538,9 +538,70 @@ describe('RunEngine: レバー', () => {
     const s = e.snapshot();
     const company = companyOrgFromTeams(s.teams, s.org);
     const avgQuality = Math.round(s.teams.reduce((a, t) => a + t.quality, 0) / s.teams.length);
+    const avgMorale = Math.round(s.teams.reduce((a, t) => a + t.morale, 0) / s.teams.length);
+    const avgSenior = Math.round(s.teams.reduce((a, t) => a + t.seniorHp, 0) / s.teams.length);
     expect(company.quality).toBe(avgQuality);
-    expect(company.morale).toBe(s.org.morale);
+    expect(company.morale).toBe(avgMorale);
+    expect(company.seniorHp).toBe(avgSenior);
     expect(company.deliveryScore).toBe(s.teams.reduce((a, t) => a + t.shipping, 0));
+  });
+
+  it('チーム切替後もラン累計出荷（totals.delivered）は維持される', () => {
+    const e = started('run-delivery-persist');
+    const internals = e as unknown as {
+      totals: { delivered: number };
+      advanceOtherTeams: (k: string) => void;
+    };
+    internals.totals.delivered = 420;
+    internals.advanceOtherTeams('delivery-step');
+    const afterAdvance = e.snapshot().totals.delivered;
+    expect(afterAdvance).toBeGreaterThan(420);
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    // 入り込みで org.deliveryScore はチーム出荷に置き換わっても、ラン累計は残る。
+    expect(e.snapshot().totals.delivered).toBe(afterAdvance);
+    expect(e.snapshot().org.deliveryScore).toBe(
+      e.snapshot().teams.find((t) => t.id === 'platform-t1')!.shipping,
+    );
+  });
+
+  it('粗粒度の新規炎上を四半期 Incident KPI へ正規化加算する', () => {
+    const e = started('coarse-incidents');
+    const before = e.snapshot().quarterTotals.incidents;
+    const internals = e as unknown as {
+      teams: Array<{ id: string; incidents: number; [k: string]: unknown }>;
+      advanceOtherTeams: (k: string) => void;
+    };
+    // 非選択チームを低炎上から始め、粗粒度の新規発生を観測しやすくする。
+    internals.teams = internals.teams.map((t) =>
+      t.id === e.snapshot().activeTeamId ? t : { ...t, incidents: 0 },
+    );
+    for (let i = 0; i < 8; i += 1) internals.advanceOtherTeams(`inc-step-${i}`);
+    expect(e.snapshot().quarterTotals.incidents).toBeGreaterThan(before);
+  });
+
+  it('四半期目標修正の org 効果は全チームへ焼き込まれる', () => {
+    const e = started('goal-adj-all-teams');
+    const persist = e.exportPersistState()!;
+    persist.extras.teams = persist.extras.teams!.map((t) =>
+      t.id === 'platform-t0' ? { ...t, techDebt: 40, morale: 70, seniorHp: 50 } : t,
+    );
+    e.hydratePersistState(persist);
+    const reviewInternals = e as unknown as {
+      quarterReview: { outcome: string; availableAdjustments: string[] } | null;
+      phase: string;
+      startNextQuarter: () => void;
+    };
+    reviewInternals.phase = 'quarterReview';
+    reviewInternals.quarterReview = {
+      outcome: 'missed_adjustable',
+      availableAdjustments: ['quality_pivot'],
+    };
+    // startNextQuarter を潰して焼き込み結果だけ検証する。
+    reviewInternals.startNextQuarter = () => undefined;
+    const before = e.snapshot().teams.find((t) => t.id === 'platform-t0')!;
+    e.chooseGoalAdjustment('quality_pivot');
+    const after = e.snapshot().teams.find((t) => t.id === 'platform-t0')!;
+    expect(after.techDebt).toBe(Math.max(0, before.techDebt - 8));
   });
 
   it('snapshot の baselineAppliedByTeam は独立コピー', () => {

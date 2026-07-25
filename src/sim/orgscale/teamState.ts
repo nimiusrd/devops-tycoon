@@ -272,8 +272,7 @@ export function orgFromTeam(team: TeamRunState): OrgState {
 
 /**
  * 全社判定用の組織指標スナップショット（四半期レビュー等）。
- * - 品質・負債・AI 系: 全チーム平均（健全な1チームだけでは押し上げられない）
- * - 士気・シニアHP: 選択中チーム（詳細 sim の継続不能判定と整合）
+ * - 品質・負債・AI・士気・シニアHP: 全チーム平均（健全な1チームだけでは押し上げられない）
  * - 出荷: 合計
  */
 export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: OrgState): OrgState {
@@ -288,8 +287,8 @@ export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: Or
     testCoverage: avg((t) => t.testCoverage),
     documentation: avg((t) => t.documentation),
     quality: avg((t) => t.quality),
-    morale: fallback.morale,
-    seniorHp: fallback.seniorHp,
+    morale: avg((t) => t.morale),
+    seniorHp: avg((t) => t.seniorHp),
     techDebt: avg((t) => t.techDebt),
     deliveryScore: teams.reduce((a, t) => a + t.shipping, 0),
   };

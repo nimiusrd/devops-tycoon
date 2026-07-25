@@ -8,6 +8,8 @@ import type { BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
 import { getDifficulty } from '../../data/difficulties';
 import type { GoalAdjustmentDef } from '../../data/goalAdjustments';
+import { deriveTeamCapacities } from '../orgscale/teamState';
+import type { TeamRunState } from '../orgscale/types';
 import { TECH_DEBT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import type { OrgState } from '../types';
 import type {
@@ -404,6 +406,43 @@ export function applyGoalAdjustment(
     nextBudgetCap,
     pauseAiDebuff: !!def.pauseAiDebuff,
   };
+}
+
+/**
+ * 目標修正の org 効果を 1 チーム正本へ焼き込む（RI-64）。
+ * `applyGoalAdjustment` と同じ差分を、切替後も失われないよう全チームへ適用する。
+ */
+export function applyGoalOrgEffectsToTeam(
+  team: TeamRunState,
+  def: GoalAdjustmentDef,
+): TeamRunState {
+  let next: TeamRunState = { ...team };
+  if (def.orgEffects?.deliveryScoreMul !== undefined) {
+    next = {
+      ...next,
+      shipping: Math.round(next.shipping * def.orgEffects.deliveryScoreMul),
+    };
+  }
+  if (def.orgEffects?.techDebtDelta !== undefined) {
+    next = { ...next, techDebt: Math.max(0, next.techDebt + def.orgEffects.techDebtDelta) };
+  }
+  if (def.orgEffects?.moraleDelta !== undefined) {
+    next = { ...next, morale: clamp(next.morale + def.orgEffects.moraleDelta, 0, 100) };
+  }
+  if (def.orgEffects?.seniorHpDelta !== undefined) {
+    next = { ...next, seniorHp: clamp(next.seniorHp + def.orgEffects.seniorHpDelta, 0, 100) };
+  }
+  if (def.orgEffects?.qualityDelta !== undefined) {
+    next = { ...next, quality: clamp(next.quality + def.orgEffects.qualityDelta, 0, 100) };
+  }
+  if (def.reorgReset) {
+    next = {
+      ...next,
+      seniorHp: clamp(next.seniorHp + REORG_RESET_SENIOR_HP, 0, 100),
+      techDebt: Math.max(0, next.techDebt - Math.abs(REORG_RESET_TECH_DEBT)),
+    };
+  }
+  return { ...next, ...deriveTeamCapacities(next) };
 }
 
 /** outcome がラン継続（目標修正）可能か。 */

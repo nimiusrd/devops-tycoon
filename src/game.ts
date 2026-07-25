@@ -301,7 +301,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         winType: s.winType,
         loseReason: s.loseReason,
         diagnosis: s.diagnosis,
-        score: s.org.deliveryScore,
+        score: s.totals.delivered,
       },
       keyframes: structuredClone(keyframes),
     };
@@ -409,7 +409,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       difficulty: s.difficulty,
       winType: s.winType,
       bossId: s.bossId,
-      score: s.org.deliveryScore,
+      score: s.totals.delivered,
       scoreMul,
       maxCombo: s.totals.maxCombo,
       quarterReviews: s.reviewHistory,

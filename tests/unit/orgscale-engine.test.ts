@@ -309,6 +309,30 @@ describe('RunEngine: レバー', () => {
       Math.min(100, Math.max(10, 55 + after.engineers * 4 - after.reviewQueue * 2)),
     );
   });
+
+  it('四半期レビュー中は他チームへ切り替えられない', () => {
+    const e = started();
+    // quarterReview を強制するため phase を直接は触れないので、enter 拒否だけを確認できるよう
+    // 通常フェーズでの切替は成功し、won/lost/sprint/quarterReview は拒否、という契約のうち
+    // quarterReview 相当は export 後に hydrate で再現する。
+    e.zoomTo('company');
+    const persist = e.exportPersistState()!;
+    (persist as { phase: string }).phase = 'quarterReview';
+    e.hydratePersistState(persist);
+    expect(e.snapshot().phase).toBe('quarterReview');
+    expect(e.enterTeam('platform-t1')).toBe(false);
+    expect(e.enterTeam('product-t0')).toBe(true); // 同一アクティブへの復帰は可
+  });
+
+  it('投影の isActive は選択チームを指す', () => {
+    const e = started();
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    e.zoomTo('company');
+    const teams = e.snapshot().orgScale!.departments.flatMap((d) => d.teams);
+    expect(teams.find((t) => t.id === 'platform-t1')!.isActive).toBe(true);
+    expect(teams.find((t) => t.id === 'product-t0')!.isActive).toBe(false);
+    expect(teams.find((t) => t.id === 'product-t0')!.isPlayer).toBe(true);
+  });
 });
 
 function activeEngineers(e: RunEngine): number {

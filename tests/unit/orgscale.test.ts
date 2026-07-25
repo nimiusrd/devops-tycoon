@@ -351,6 +351,7 @@ function makeTeam(overrides: Partial<Team>): Team {
     aiAssignedCount: 0,
     health: 'healthy',
     isPlayer: false,
+    isActive: false,
     ...overrides,
   };
 }

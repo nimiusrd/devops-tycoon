@@ -509,6 +509,7 @@ export function projectOrgScale(input: ProjectOrgScaleInput): OrgScaleState {
         aiAssignedCount,
         health: teamHealth(adjusted),
         isPlayer: isHome,
+        isActive,
       };
     });
     return aggregateDepartment(def, teams);

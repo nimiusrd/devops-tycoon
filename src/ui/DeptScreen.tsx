@@ -107,12 +107,14 @@ export function DeptScreen({
               type="button"
               className="org-lever"
               data-testid="enter-team"
-              disabled={!canEnter || locked}
+              disabled={!canEnter}
               onClick={() => onEnterTeam(selected.id)}
               title={
-                locked
-                  ? `入り込み拘束中（あと${teamLockUntilSprint - sprintsPlayed}スプリント）`
-                  : `入り込む（次スプリント集中力${ENTER_TEAM_FOCUS_PENALTY}、${ENTER_TEAM_LOCK_SPRINTS}スプリント拘束）`
+                selected.id === activeTeamId
+                  ? '選択中チームの現場へ戻る'
+                  : locked
+                    ? `入り込み拘束中（あと${teamLockUntilSprint - sprintsPlayed}スプリント）`
+                    : `入り込む（次スプリント集中力${ENTER_TEAM_FOCUS_PENALTY}、${ENTER_TEAM_LOCK_SPRINTS}スプリント拘束）`
               }
             >
               {selected.id === activeTeamId ? '現場へ戻る' : '入り込む'}

@@ -60,12 +60,14 @@ import {
   applyLever,
   companyInfraFromTeams,
   createTeamRoster,
+  emptyAdjust,
   emptyAdjustState,
   ENTER_TEAM_FOCUS_PENALTY,
   ENTER_TEAM_LOCK_SPRINTS,
   generateIndustry,
   HOME_TEAM_ID,
   initTeamRunStates,
+  mergeAdjust,
   orgFromTeam,
   projectOrgScale,
   stripMetricAdjustments,
@@ -1280,6 +1282,8 @@ export class RunEngine {
       this.zoom = { ...this.zoom, level: 'team', teamId: id, deptId: team.deptId };
       return true;
     }
+    // 四半期レビュー中の切替は拒否（startNextQuarter が pendingSprintModifiers を消すため）。
+    if (this.phase === 'quarterReview') return false;
     if (this.sprintsPlayed < this.teamLockUntilSprint) return false;
 
     this.flushActiveTeam();
@@ -1296,14 +1300,10 @@ export class RunEngine {
   private syncActiveTeamFromOrg(): void {
     const idx = this.teams.findIndex((t) => t.id === this.activeTeamId);
     if (idx < 0) return;
-    // スプリント実測があるときだけ行列・炎上を更新。無ければチーム固有の既存値を保つ
-    // （全ラン共通 totals で他チームの累計を書き込まない）。
+    // スプリントがあるときだけ行列・炎上を更新。ピークではなく「現在の」待機／炎上数を使う。
     const sprintExtras = this.sprint
       ? {
-          reviewQueue: Math.max(
-            this.sprint.metrics.reviewQueueMax,
-            this.sprint.tasks.filter((t) => t.lane === 'review').length,
-          ),
+          reviewQueue: this.sprint.tasks.filter((t) => t.lane === 'review').length,
           incidents: this.sprint.tasks.filter((t) => t.incident).length,
         }
       : {};
@@ -1415,12 +1415,9 @@ export class RunEngine {
   private buildOrgScale(): OrgScaleState {
     const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
     const liveEngineers = Math.max(activeTeam?.engineers ?? 0, activeEngineerCount(this.roster));
-    // スプリント実測があればそれを、なければ選択チームの永続値を使う（ラン累計は使わない）。
+    // スプリント中は現在のレーン人数、それ以外は選択チームの永続値（ピークやラン累計は使わない）。
     const reviewQueue = this.sprint
-      ? Math.max(
-          this.sprint.metrics.reviewQueueMax,
-          this.sprint.tasks.filter((t) => t.lane === 'review').length,
-        )
+      ? this.sprint.tasks.filter((t) => t.lane === 'review').length
       : (activeTeam?.reviewQueue ?? 0);
     const incidents = this.sprint
       ? this.sprint.tasks.filter((t) => t.incident).length
@@ -1696,6 +1693,7 @@ export class RunEngine {
         ? structuredClone(cloned.extras.teamRosters)
         : { [this.activeTeamId]: structuredClone(this.roster) };
     } else {
+      // v1 セーブ: チーム配列が無いので初期化し、累積 orgAdjust を正本へ焼き込んでから strip。
       this.homeTeamId = HOME_TEAM_ID;
       this.activeTeamId = HOME_TEAM_ID;
       this.teamLockUntilSprint = 0;
@@ -1706,6 +1704,16 @@ export class RunEngine {
       });
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
       this.syncActiveTeamFromOrg();
+      this.teams = this.teams.map((t) => {
+        const deptAdj = mergeAdjust(
+          this.orgAdjust.company,
+          this.orgAdjust.byDept[t.deptId] ?? emptyAdjust(),
+        );
+        return applyEffectToTeam(t, deptAdj);
+      });
+      const active = this.teams.find((t) => t.id === this.activeTeamId);
+      if (active) this.org = orgFromTeam(active);
+      this.orgAdjust = stripMetricAdjustments(this.orgAdjust);
     }
     this.whatIfCache = null;
   }

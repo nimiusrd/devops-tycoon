@@ -111,6 +111,8 @@ export interface Team {
   health: TeamHealth;
   /** ホームチーム（開始時の現場）か。 */
   isPlayer: boolean;
+  /** 現在の詳細スプリント対象（入り込み中）か。Pixi 遷移予測に使う。 */
+  isActive: boolean;
 }
 
 /** 部署ビューの集約（SPEC 第4.9 の部門HUD）。 */

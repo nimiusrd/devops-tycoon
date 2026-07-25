@@ -111,6 +111,7 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   if (aiPct >= 0.5 && reworkRatio < 0.2 && totals.reviewQueuePeak < 16) return 'aiSuccess';
   if (org.morale >= 65 && org.seniorHp >= 50) return 'happiness';
   if (budget >= 40) return 'management';
-  if (totals.incidents >= 8 && org.deliveryScore >= 300) return 'chaos';
+  // 出荷はラン累計（totals.delivered）。選択中チームの org.deliveryScore では他チーム分を取りこぼす。
+  if (totals.incidents >= 8 && totals.delivered >= 300) return 'chaos';
   return 'normal';
 }

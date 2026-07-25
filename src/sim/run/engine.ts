@@ -815,6 +815,8 @@ export class RunEngine {
 
     if (id === 'reorg_teams') {
       this.applyReorgDeparture();
+      // 離脱後の稼働人数を正本・キャッシュへ反映（全社表示の人数ズレを防ぐ）。
+      this.syncActiveTeamFromOrg();
     }
 
     const lose = evaluateLose(this.org, this.totals, this.budget);

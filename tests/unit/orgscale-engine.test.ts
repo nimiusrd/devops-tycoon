@@ -924,6 +924,33 @@ describe('RunEngine: レバー', () => {
     expect(e.snapshot().totals.delivered).toBe(180);
   });
 
+  it('reorg_teams 後はアクティブチームの稼働人数を再同期する', () => {
+    const e = started('reorg-resync');
+    const beforeEngineers = e.snapshot().teams.find((t) => t.id === e.snapshot().activeTeamId)!
+      .engineers;
+    expect(beforeEngineers).toBeGreaterThan(2);
+    const internals = e as unknown as {
+      phase: string;
+      quarterReview: { outcome: string; availableAdjustments: string[] } | null;
+      startNextQuarter: () => void;
+      roster: { members: Array<{ onLeave: boolean }> };
+    };
+    internals.phase = 'quarterReview';
+    internals.quarterReview = {
+      outcome: 'missed_adjustable',
+      availableAdjustments: ['reorg_teams'],
+    };
+    internals.startNextQuarter = () => undefined;
+    e.chooseGoalAdjustment('reorg_teams');
+    const leaveCount = internals.roster.members.filter((m) => m.onLeave).length;
+    expect(leaveCount).toBe(1);
+    const after = e.snapshot().teams.find((t) => t.id === e.snapshot().activeTeamId)!;
+    expect(after.engineers).toBe(beforeEngineers - 1);
+    // キャッシュも離脱後のロスターと一致する。
+    const cached = e.exportPersistState()!.extras.teamRosters?.[e.snapshot().activeTeamId];
+    expect(cached?.members.filter((m) => m.onLeave)).toHaveLength(1);
+  });
+
   it('四半期目標修正の org 効果は全チームへ焼き込まれる', () => {
     const e = started('goal-adj-all-teams');
     const persist = e.exportPersistState()!;

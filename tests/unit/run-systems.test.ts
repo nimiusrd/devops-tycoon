@@ -230,4 +230,33 @@ describe('勝敗判定（第14/15章）', () => {
     });
     expect(win).toBe('noDamage');
   });
+
+  it('カオス勝利の出荷判定は totals.delivered を使う', () => {
+    const baseOrg = org({ deliveryScore: 50, quality: 40, morale: 40, seniorHp: 40 });
+    const baseTotals = {
+      incidents: 8,
+      completed: 40,
+      aiAssisted: 5,
+      rework: 20,
+      reviewQueuePeak: 20,
+      spread: 1,
+    };
+    expect(
+      evaluateWinType({
+        org: baseOrg,
+        totals: totals({ ...baseTotals, delivered: 300 }),
+        budget: 10,
+        usedHeavyActions: true,
+      }),
+    ).toBe('chaos');
+    // 選択中チームの deliveryScore が高くてもラン累計が足りなければカオスにならない。
+    expect(
+      evaluateWinType({
+        org: org({ deliveryScore: 500, quality: 40, morale: 40, seniorHp: 40 }),
+        totals: totals({ ...baseTotals, delivered: 100 }),
+        budget: 10,
+        usedHeavyActions: true,
+      }),
+    ).not.toBe('chaos');
+  });
 });

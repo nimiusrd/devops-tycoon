@@ -233,6 +233,22 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(save?.state.roster.members.find((m) => m.id === memberId)?.assignment).toBe('review');
   });
 
+  it('enterTeam 成功時は setup セーブへ activeTeamId を残す', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({ seed: 'ri64-enter-save', runStorage: storage, metaReady: true });
+    game.attachRunPersistence(storage, null);
+    game.startRun('easy', [], 'ri64-enter-save');
+    await flushSave(storage);
+    expect(game.getState().activeTeamId).toBe('product-t0');
+
+    game.enterTeam('platform-t1');
+    expect(game.getState().activeTeamId).toBe('platform-t1');
+    await flushSave(storage);
+    const save = await storage.load();
+    expect(save?.state.extras.activeTeamId).toBe('platform-t1');
+    expect(save?.state.extras.teamLockUntilSprint).toBeGreaterThan(0);
+  });
+
   it('ショップ購入で敗北したらセーブを破棄する', async () => {
     const storage = new MemoryRunStorage();
     const game = createGame({

@@ -638,9 +638,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     enterTeam(id) {
       if (replayMode) return engine.snapshot();
-      engine.enterTeam(id);
+      const ok = engine.enterTeam(id);
       bump();
-      return afterLocal();
+      // 入り込みは activeTeamId / ロスター / 拘束を変えるので通常セーブへ残す。
+      return ok ? after() : afterLocal();
     },
     setRankingKind(kind) {
       if (replayMode) return engine.snapshot();

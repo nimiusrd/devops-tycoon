@@ -17,7 +17,14 @@ import { EVENT_DEFS, RECRUIT_SKIP_MORALE, effectiveKind, getEvent } from '../../
 import { getEvolutionNode } from '../../data/evolution';
 import { RELIC_DEFS, getRelic } from '../../data/relics';
 import { applyAction } from '../actions';
-import { applyDeckBaseline, dealHand, drawDraft, playCardFromHand, upgradeCardAt } from '../cards';
+import {
+  applyDeckBaseline,
+  dealHand,
+  drawDraft,
+  migrateBaselineAppliedByTeam,
+  playCardFromHand,
+  upgradeCardAt,
+} from '../cards';
 import { diagnose } from '../diagnosis';
 import {
   activeEngineerCount,
@@ -1832,6 +1839,11 @@ export class RunEngine {
       if (active) this.org = orgFromTeam(active);
       this.orgAdjust = stripMetricAdjustments(this.orgAdjust);
     }
+    // レガシー baselineAppliedLevel をチーム別マップへ移行（欠落チームへの全量再適用を防ぐ）。
+    this.deck = migrateBaselineAppliedByTeam(
+      this.deck,
+      this.teams.map((t) => t.id),
+    );
     this.whatIfCache = null;
   }
 

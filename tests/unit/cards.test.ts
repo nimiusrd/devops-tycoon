@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyDeckBaseline,
+  baselineAppliedLevelFor,
   dealHand,
   deckEffects,
   drawDraft,
   HAND_SIZE,
+  migrateBaselineAppliedByTeam,
   playCost,
   PREFERRED_DRAFT_WEIGHT_MUL,
   scaleEffects,
@@ -146,6 +148,36 @@ describe('手札配布・発動（RI-30）', () => {
     const afterSecond = e.snapshot().org.quality;
     expect(afterFirst).toBeGreaterThan(0);
     expect(afterSecond).toBeGreaterThan(beforeSecond);
+  });
+
+  it('migrateBaselineAppliedByTeam はレガシー値を全チームへ写経する', () => {
+    const deck: CardInstance[] = [
+      { defId: 'auto-test', level: 2, baselineAppliedLevel: 1 },
+      { defId: 'copilot', level: 1 },
+    ];
+    const migrated = migrateBaselineAppliedByTeam(deck, ['product-t0', 'platform-t1']);
+    expect(migrated[0]!.baselineAppliedByTeam).toEqual({
+      'product-t0': 1,
+      'platform-t1': 1,
+    });
+    expect(migrated[1]!.baselineAppliedByTeam).toBeUndefined();
+  });
+
+  it('baselineAppliedLevelFor はマップ未作成時のみレガシー値を使う', () => {
+    const legacy: CardInstance = {
+      defId: 'auto-test',
+      level: 2,
+      baselineAppliedLevel: 1,
+    };
+    expect(baselineAppliedLevelFor(legacy, 'platform-t1')).toBe(1);
+    const mapped: CardInstance = {
+      defId: 'auto-test',
+      level: 2,
+      baselineAppliedLevel: 1,
+      baselineAppliedByTeam: { 'product-t0': 1 },
+    };
+    expect(baselineAppliedLevelFor(mapped, 'product-t0')).toBe(1);
+    expect(baselineAppliedLevelFor(mapped, 'platform-t1')).toBe(0);
   });
 });
 

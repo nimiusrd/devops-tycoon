@@ -156,7 +156,7 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
         aria-label="部署ビュー（WebGL）"
       />
       <div className="dept-board-hint">
-        チームの島を<b>クリック</b>でそのチームの<b>現場（能動操作）</b>へ
+        チームの島を<b>クリック</b>で状態確認。パネルから<b>入り込む</b>
       </div>
     </div>
   );

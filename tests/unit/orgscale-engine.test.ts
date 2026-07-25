@@ -552,6 +552,20 @@ describe('RunEngine: レバー', () => {
     map['hacked'] = 9;
     expect(e.snapshot().deck[0]!.baselineAppliedByTeam).toEqual({ 'product-t0': 1 });
   });
+
+  it('hydrate 時にレガシー baselineAppliedLevel を全チームへ移行する', () => {
+    const e = started('migrate-baseline');
+    const persist = e.exportPersistState()!;
+    persist.deck = [{ defId: 'auto-test', level: 2, baselineAppliedLevel: 1 }];
+    // v1 相当: teams を落として復元経路を踏む。
+    delete (persist.extras as { teams?: unknown }).teams;
+    e.hydratePersistState(persist);
+    const card = e.snapshot().deck[0]!;
+    expect(card.baselineAppliedByTeam).toBeTruthy();
+    for (const team of e.snapshot().teams) {
+      expect(card.baselineAppliedByTeam?.[team.id]).toBe(1);
+    }
+  });
 });
 
 function activeEngineers(e: RunEngine): number {

@@ -148,6 +148,24 @@ export function baselineAppliedLevelFor(inst: CardInstance, teamId?: string): nu
 }
 
 /**
+ * レガシー `baselineAppliedLevel` を全チームの `baselineAppliedByTeam` へ写経する。
+ * v1 セーブ復元後に別チームで全量再適用しないための移行。
+ */
+export function migrateBaselineAppliedByTeam(
+  deck: CardInstance[],
+  teamIds: readonly string[],
+): CardInstance[] {
+  if (teamIds.length === 0) return deck;
+  return deck.map((inst) => {
+    const legacy = inst.baselineAppliedLevel ?? 0;
+    if (legacy <= 0 || inst.baselineAppliedByTeam) return inst;
+    const baselineAppliedByTeam: Record<string, number> = {};
+    for (const id of teamIds) baselineAppliedByTeam[id] = legacy;
+    return { ...inst, baselineAppliedByTeam };
+  });
+}
+
+/**
  * 手札からデッキ位置 `deckIndex` のカードを発動する。
  * 成功時は `sprint.cardEffects` に合成し、加算系を org へ反映する。
  * `passiveEffects` はレリック等の常時パッシブ（発動前の基準効果）。

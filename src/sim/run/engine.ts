@@ -676,6 +676,8 @@ export class RunEngine {
       // ボス突破は選択中チームの詳細盤面、四半期 KPI は全社集約（他チーム悪化を取りこぼさない）。
       const companyOrg = companyOrgFromTeams(this.teams, this.org);
       const bossCleared = !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul });
+      // 四半期末の粗粒度炎上端数を切り捨てず KPI 判定前に繰り入れる。
+      this.flushCoarseIncidentCarry();
       // 四半期 KPI は報酬前の全社集約で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
@@ -1437,6 +1439,18 @@ export class RunEngine {
     this.teamRosters[id] = structuredClone(this.roster);
   }
 
+  /**
+   * 四半期末に粗粒度炎上の累積を KPI へ繰り入れる。
+   * ステップごとの丸めで消さず四半期中に溜め、1 未満は四半期境界で破棄する。
+   */
+  private flushCoarseIncidentCarry(): void {
+    const credited = Math.floor(this.coarseIncidentCarry + 1e-9);
+    this.coarseIncidentCarry = 0;
+    if (credited <= 0) return;
+    this.totals.incidents += credited;
+    this.quarterTotals.incidents += credited;
+  }
+
   private advanceOtherTeams(stepKey: string): void {
     const before = this.teams;
     const fold = foldRunEffects({
@@ -1474,11 +1488,10 @@ export class RunEngine {
       stepped.aiAssisted,
       this.coarseIncidentCarry,
     );
-    this.coarseIncidentCarry = delta.incidentCarry;
+    // 炎上は四半期末 flush まで raw 累積（ステップ丸めで 0 固定にしない）。
+    this.coarseIncidentCarry = delta.incidents + delta.incidentCarry;
     this.totals.delivered += delta.delivered;
     this.quarterTotals.delivered += delta.delivered;
-    this.totals.incidents += delta.incidents;
-    this.quarterTotals.incidents += delta.incidents;
     this.totals.completed += delta.completed;
     this.quarterTotals.completed += delta.completed;
     this.totals.aiAssisted += delta.aiAssisted;

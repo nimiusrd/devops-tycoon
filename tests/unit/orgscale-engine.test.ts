@@ -582,8 +582,8 @@ describe('RunEngine: レバー', () => {
     const delta = normalizeCoarseTotalsDelta(before, after, 'product-t0', 6, 19, 12);
     // 出荷増分 10+6+3=19 → round(19/3)=6（最低 1 保証）
     expect(delta.delivered).toBe(6);
-    // 発生 6 → floor(6/3)=2（端数繰り越し）
-    expect(delta.incidents).toBe(2);
+    // 発生 6 → floor(6/(3*2))=1
+    expect(delta.incidents).toBe(1);
     expect(delta.incidentCarry).toBeCloseTo(0, 8);
     // 完了 19 → round(19/3)=6、AI 支援 12 → round(12/3)=4
     expect(delta.completed).toBe(6);
@@ -599,32 +599,19 @@ describe('RunEngine: レバー', () => {
       { id: 'c', shipping: 10 },
     ];
     const after = before;
-    // 9 チーム相当ではなく 3 他チームで 1 件 → 1/3 を繰り越し
+    // 3 他チームで 1 件 → 1/(3*2)=1/6 を繰り越し
     const step1 = normalizeCoarseTotalsDelta(before, after, 'product-t0', 1, 0, 0, 0);
     expect(step1.incidents).toBe(0);
-    expect(step1.incidentCarry).toBeCloseTo(1 / 3, 8);
-    const step2 = normalizeCoarseTotalsDelta(
-      before,
-      after,
-      'product-t0',
-      1,
-      0,
-      0,
-      step1.incidentCarry,
-    );
-    expect(step2.incidents).toBe(0);
-    expect(step2.incidentCarry).toBeCloseTo(2 / 3, 8);
-    const step3 = normalizeCoarseTotalsDelta(
-      before,
-      after,
-      'product-t0',
-      1,
-      0,
-      0,
-      step2.incidentCarry,
-    );
-    expect(step3.incidents).toBe(1);
-    expect(step3.incidentCarry).toBeCloseTo(0, 8);
+    expect(step1.incidentCarry).toBeCloseTo(1 / 6, 8);
+    let carry = step1.incidentCarry;
+    let credited = 0;
+    for (let i = 0; i < 5; i += 1) {
+      const step = normalizeCoarseTotalsDelta(before, after, 'product-t0', 1, 0, 0, carry);
+      credited += step.incidents;
+      carry = step.incidentCarry;
+    }
+    expect(credited).toBe(1);
+    expect(carry).toBeCloseTo(0, 8);
   });
 
   it('粗粒度チームの完了・AI 支援を四半期集計へ反映する', () => {

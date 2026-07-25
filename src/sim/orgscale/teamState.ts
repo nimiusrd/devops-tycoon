@@ -566,8 +566,9 @@ export function normalizeCoarseTotalsDelta(
   }
   const completed = completedGain > 0 ? Math.max(1, Math.round(completedGain / otherCount)) : 0;
   const aiAssisted = Math.max(0, Math.round(Math.max(0, aiAssistedGain) / otherCount));
-  // 端数繰り越し: 例) 3/9 + 0.33 → 0.66（計上 0）、次で 2/9 + 0.66 → 0.88… と積み上げる。
-  const rawIncidents = Math.max(0, ignited) / otherCount + Math.max(0, incidentCarry);
+  // 端数繰り越し: 他チーム平均の 1/2 を四半期中に積み、ステップ丸めで消さない。
+  // （フル平均だと Incident KPI / 勝率が崩壊するため、寄与を半分に抑える。）
+  const rawIncidents = Math.max(0, ignited) / (otherCount * 2) + Math.max(0, incidentCarry);
   const incidents = Math.floor(rawIncidents + 1e-9);
   return {
     delivered: deliveredGain > 0 ? Math.max(1, Math.round(deliveredGain / otherCount)) : 0,

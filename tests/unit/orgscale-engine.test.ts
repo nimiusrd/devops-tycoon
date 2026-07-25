@@ -282,6 +282,33 @@ describe('RunEngine: レバー', () => {
     expect(synced.reviewQueue).toBe(before.reviewQueue);
     expect(synced.incidents).toBe(before.incidents);
   });
+
+  it('俯瞰投影はラン累計で選択チームの行列を汚染しない', () => {
+    const e = started('projection-no-totals');
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    const teamQueue = e.snapshot().teams.find((t) => t.id === 'platform-t1')!.reviewQueue;
+    e.zoomTo('company');
+    const projected = e
+      .snapshot()
+      .orgScale!.departments.flatMap((d) => d.teams)
+      .find((t) => t.id === 'platform-t1')!;
+    expect(projected.reviewQueue).toBe(teamQueue);
+  });
+
+  it('チーム施策後に派生能力を再計算する', () => {
+    const e = started();
+    const before = e.snapshot().teams.find((t) => t.id === 'platform-t1')!;
+    // 障害を増やしてから火消し
+    e.applyOrgLever('teamFirefight', undefined, 'platform-t1');
+    const after = e.snapshot().teams.find((t) => t.id === 'platform-t1')!;
+    expect(after.incidents).toBeLessThanOrEqual(before.incidents);
+    expect(after.incidentBias).toBeLessThanOrEqual(
+      0.08 + after.incidents * 0.05 + (100 - after.quality) * 0.002 + 1e-9,
+    );
+    expect(after.reviewCapacity).toBe(
+      Math.min(100, Math.max(10, 55 + after.engineers * 4 - after.reviewQueue * 2)),
+    );
+  });
 });
 
 function activeEngineers(e: RunEngine): number {

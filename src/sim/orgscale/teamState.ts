@@ -13,7 +13,7 @@ import {
 } from '../../data/members';
 import { createMember, type RosterState } from '../member';
 import { createRng } from '../rng';
-import type { DiagnosisType, RunTotals } from '../run/types';
+import type { DiagnosisType } from '../run/types';
 import type { OrgState } from '../types';
 import { aggregateCompany, aggregateDepartment, teamHealth } from './aggregate';
 import { emptyAdjust, mergeAdjust } from './levers';
@@ -426,15 +426,26 @@ export function advanceCoarseTeams(
   });
 }
 
+/** 行列・障害から派生する耐性・炎上バイアスを再計算する。 */
+export function deriveTeamCapacities(
+  team: Pick<TeamRunState, 'engineers' | 'reviewQueue' | 'incidents' | 'quality'>,
+): Pick<TeamRunState, 'reviewCapacity' | 'incidentBias'> {
+  return {
+    reviewCapacity: clamp(55 + team.engineers * 4 - team.reviewQueue * 2, 10, 100),
+    incidentBias: clamp(0.08 + team.incidents * 0.05 + (100 - team.quality) * 0.002, 0.02, 0.45),
+  };
+}
+
 /** チーム単位の調整を OrgAdjust 効果として直接永続状態へ適用する。 */
 export function applyEffectToTeam(team: TeamRunState, effect: Partial<OrgAdjust>): TeamRunState {
   const adj = { ...emptyAdjust(), ...effect };
   const adjusted = applyAdjustToRaw(team, adj);
-  return {
+  const next = {
     ...team,
     ...adjusted,
     shipping: team.shipping,
   };
+  return { ...next, ...deriveTeamCapacities(next) };
 }
 
 export interface ProjectOrgScaleInput {
@@ -523,26 +534,49 @@ export function assertDeptShippingInvariant(scale: OrgScaleState): boolean {
   return scale.departments.every((d) => d.shipping === d.teams.reduce((s, t) => s + t.shipping, 0));
 }
 
-/** アクティブチームのライブ指標を totals/org から組み立てる。 */
+/**
+ * アクティブチームのライブ指標を org とチーム固有値から組み立てる。
+ * ラン全体の `RunTotals` は混ぜない（他チームの累計ピークで汚染しない）。
+ */
 export function activeLiveFromOrg(args: {
   org: OrgState;
-  totals: RunTotals;
   engineers: number;
   aiAssignedCount: number;
-  liveReviewQueue?: number;
-  liveIncidents?: number;
+  /** 選択チームの永続値、またはスプリント実測。 */
+  reviewQueue: number;
+  incidents: number;
 }): NonNullable<ProjectOrgScaleInput['activeLive']> {
   return {
     aiDependency: Math.round(args.org.aiDependency),
-    reviewQueue: Math.max(args.totals.reviewQueuePeak, args.liveReviewQueue ?? 0),
-    incidents: Math.max(
-      Math.max(0, args.totals.incidents - args.totals.contained),
-      args.liveIncidents ?? 0,
-    ),
+    reviewQueue: Math.max(0, args.reviewQueue),
+    incidents: Math.max(0, args.incidents),
     morale: Math.round(args.org.morale),
     techDebt: Math.round(args.org.techDebt),
     shipping: Math.round(args.org.deliveryScore),
     engineers: args.engineers,
     aiAssignedCount: args.aiAssignedCount,
+  };
+}
+
+/** 全チーム平均から共通基盤ハブの基準値を作る（選択チーム切替で揺れない）。 */
+export function companyInfraFromTeams(teams: readonly TeamRunState[]): {
+  ci: number;
+  docs: number;
+  aiGuideline: number;
+} {
+  if (teams.length === 0) return { ci: 0, docs: 0, aiGuideline: 0 };
+  const n = teams.length;
+  const sum = teams.reduce(
+    (acc, t) => ({
+      ci: acc.ci + t.testCoverage,
+      docs: acc.docs + t.documentation,
+      aiGuideline: acc.aiGuideline + t.aiLiteracy,
+    }),
+    { ci: 0, docs: 0, aiGuideline: 0 },
+  );
+  return {
+    ci: Math.round(sum.ci / n),
+    docs: Math.round(sum.docs / n),
+    aiGuideline: Math.round(sum.aiGuideline / n),
   };
 }

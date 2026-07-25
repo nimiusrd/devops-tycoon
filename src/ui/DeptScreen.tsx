@@ -46,7 +46,8 @@ export function DeptScreen({
   const { usePixi, onWebglError } = usePixiRenderer();
   const selected: Team | undefined = dept.teams.find((t) => t.id === selectedTeamId);
   const locked = sprintsPlayed < teamLockUntilSprint;
-  const canEnter = !!selected && !locked && (selected.id !== activeTeamId || true);
+  // 選択中チームへの「現場へ戻る」はロック対象外（切替だけ拘束する）。
+  const canEnter = !!selected && (selected.id === activeTeamId || !locked);
 
   return (
     <div className="dept-screen" data-testid="dept-screen">

@@ -58,6 +58,7 @@ import {
   appendTeamsToDept,
   applyEffectToTeam,
   applyLever,
+  companyInfraFromTeams,
   createTeamRoster,
   emptyAdjustState,
   ENTER_TEAM_FOCUS_PENALTY,
@@ -848,7 +849,7 @@ export class RunEngine {
     if (this.phase !== 'evolution') return;
     if (!canUnlock(this.evolution, id)) return;
     const node = getEvolutionNodeEffects(id);
-    if (node) applyDeckBaseline(this.org, toEffects(node));
+    if (node) this.applyCompanyBaseline(toEffects(node));
     this.evolution = unlockNode(this.evolution, id);
   }
 
@@ -1207,7 +1208,22 @@ export class RunEngine {
     const relic = getRelic(id);
     if (!relic) return;
     this.relics.push(id);
-    if (relic.effects) applyDeckBaseline(this.org, toEffects(relic.effects));
+    if (relic.effects) this.applyCompanyBaseline(toEffects(relic.effects));
+  }
+
+  /**
+   * 全社加算効果（進化・レリック）を選択中 org と全チーム正本へ焼き込む。
+   * 入り込み先でも効果が消えないようにする（RI-64）。
+   */
+  private applyCompanyBaseline(effects: CardEffects): void {
+    applyDeckBaseline(this.org, effects);
+    this.teams = this.teams.map((t) => ({
+      ...t,
+      aiLiteracy: clamp(t.aiLiteracy + effects.aiLiteracyAdd, 0, 100),
+      aiDependency: clamp(t.aiDependency + effects.aiDependencyAdd, 0, 100),
+      quality: clamp(t.quality + effects.qualityAdd, 0, 100),
+      testCoverage: clamp(t.testCoverage + effects.testCoverageAdd, 0, 100),
+    }));
   }
 
   /** ボス突破報酬として未所持レリックを決定論的に 1 個付与する。 */
@@ -1322,6 +1338,11 @@ export class RunEngine {
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
     });
+    // 訪問済みキャッシュのロスターもスプリント間回復を進める（戻ったときに休職が永久化しない）。
+    for (const id of Object.keys(this.teamRosters)) {
+      if (id === this.activeTeamId) continue;
+      this.teamRosters[id] = recoverStamina(this.teamRosters[id], STAMINA_RECOVER_BETWEEN);
+    }
   }
 
   /** 業界ランキングの種別タブを切り替える。 */
@@ -1340,6 +1361,8 @@ export class RunEngine {
     const res = applyLever(this.orgAdjust, this.budget, leverId, deptId, teamId);
     if (!res.changed || !def) return false;
     this.budget = res.budget;
+    // スプリント中でもライブ org を正本へ先に同期し、焼き込み後の復元で巻き戻さない。
+    this.syncActiveTeamFromOrg();
     if (res.extraTeamsAdded > 0) {
       const template =
         this.teams.find((t) => t.id === this.homeTeamId) ??
@@ -1390,18 +1413,18 @@ export class RunEngine {
 
   /** 現在の全社マップ集約を生成する（決定論。第4.8）。 */
   private buildOrgScale(): OrgScaleState {
-    // 進行中スプリントの現在の渋滞・炎上を取り、俯瞰時の現場を最新に保つ。
-    const live = this.sprint
-      ? {
-          liveReviewQueue: Math.max(
-            this.sprint.metrics.reviewQueueMax,
-            this.sprint.tasks.filter((t) => t.lane === 'review').length,
-          ),
-          liveIncidents: this.sprint.tasks.filter((t) => t.incident).length,
-        }
-      : {};
     const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
     const liveEngineers = Math.max(activeTeam?.engineers ?? 0, activeEngineerCount(this.roster));
+    // スプリント実測があればそれを、なければ選択チームの永続値を使う（ラン累計は使わない）。
+    const reviewQueue = this.sprint
+      ? Math.max(
+          this.sprint.metrics.reviewQueueMax,
+          this.sprint.tasks.filter((t) => t.lane === 'review').length,
+        )
+      : (activeTeam?.reviewQueue ?? 0);
+    const incidents = this.sprint
+      ? this.sprint.tasks.filter((t) => t.incident).length
+      : (activeTeam?.incidents ?? 0);
     return projectOrgScale({
       seed: this.seed,
       teams: this.teams,
@@ -1409,19 +1432,15 @@ export class RunEngine {
       activeTeamId: this.activeTeamId,
       activeLive: activeLiveFromOrg({
         org: this.org,
-        totals: this.totals,
         engineers: liveEngineers,
         aiAssignedCount: aiAssignedCount(this.roster),
-        ...live,
+        reviewQueue,
+        incidents,
       }),
       adjust: this.orgAdjust,
       diagnosis: this.diagnosis,
       budget: this.budget,
-      infraBase: {
-        ci: this.org.testCoverage,
-        docs: this.org.documentation,
-        aiGuideline: this.org.aiLiteracy,
-      },
+      infraBase: companyInfraFromTeams(this.teams),
     });
   }
 

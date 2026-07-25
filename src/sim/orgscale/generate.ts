@@ -86,6 +86,7 @@ export function generateOrgScale(input: OrgScaleInput): OrgScaleState {
     }
   }
 
+  const active = teams.find((t) => t.id === activeTeamId);
   return projectOrgScale({
     seed: input.seed,
     teams,
@@ -93,11 +94,10 @@ export function generateOrgScale(input: OrgScaleInput): OrgScaleState {
     activeTeamId,
     activeLive: activeLiveFromOrg({
       org: input.org,
-      totals: input.totals,
       engineers,
       aiAssignedCount: Math.max(0, input.playerAiAssigned ?? 0),
-      liveReviewQueue: input.liveReviewQueue,
-      liveIncidents: input.liveIncidents,
+      reviewQueue: input.liveReviewQueue ?? active?.reviewQueue ?? 0,
+      incidents: input.liveIncidents ?? active?.incidents ?? 0,
     }),
     adjust,
     diagnosis: input.diagnosis,

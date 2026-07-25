@@ -68,6 +68,8 @@ import {
   HOME_TEAM_ID,
   initTeamRunStates,
   mergeAdjust,
+  companyOrgFromTeams,
+  deriveTeamCapacities,
   orgFromTeam,
   projectOrgScale,
   stripMetricAdjustments,
@@ -634,11 +636,13 @@ export class RunEngine {
       }
       const boss = getBoss(this.bossId);
       const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
-      const bossCleared = !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul });
+      // 四半期 KPI／ボス条件は全チーム平均で見る（非選択チームの悪化を取りこぼさない）。
+      const companyOrg = companyOrgFromTeams(this.teams, this.org);
+      const bossCleared = !!boss && evaluateBoss({ boss, result, org: companyOrg, bossTargetMul });
       // 四半期 KPI は報酬前の org で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
-        org: this.org,
+        org: companyOrg,
         totals: this.quarterTotals,
         trust: this.stakeholderTrust,
         budget: this.budget,
@@ -647,7 +651,7 @@ export class RunEngine {
       });
       if (bossCleared) {
         // 勝利種別も報酬前の組織状態で判定する。
-        this.winEvalOrg = structuredClone(this.org);
+        this.winEvalOrg = structuredClone(companyOrg);
         this.bossRelicReward = this.grantBossRelic();
       }
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
@@ -1220,13 +1224,17 @@ export class RunEngine {
    */
   private applyCompanyBaseline(effects: CardEffects): void {
     applyDeckBaseline(this.org, effects);
-    this.teams = this.teams.map((t) => ({
-      ...t,
-      aiLiteracy: clamp(t.aiLiteracy + effects.aiLiteracyAdd, 0, 100),
-      aiDependency: clamp(t.aiDependency + effects.aiDependencyAdd, 0, 100),
-      quality: clamp(t.quality + effects.qualityAdd, 0, 100),
-      testCoverage: clamp(t.testCoverage + effects.testCoverageAdd, 0, 100),
-    }));
+    this.teams = this.teams.map((t) => {
+      const next = {
+        ...t,
+        aiLiteracy: clamp(t.aiLiteracy + effects.aiLiteracyAdd, 0, 100),
+        aiDependency: clamp(t.aiDependency + effects.aiDependencyAdd, 0, 100),
+        quality: clamp(t.quality + effects.qualityAdd, 0, 100),
+        testCoverage: clamp(t.testCoverage + effects.testCoverageAdd, 0, 100),
+      };
+      // 品質加算後すぐ障害傾向へ反映し、次の粗粒度ステップで取りこぼさない。
+      return { ...next, ...deriveTeamCapacities(next) };
+    });
   }
 
   /** ボス突破報酬として未所持レリックを決定論的に 1 個付与する。 */
@@ -1285,6 +1293,8 @@ export class RunEngine {
     }
     // 四半期レビュー中の切替は拒否（startNextQuarter が pendingSprintModifiers を消すため）。
     if (this.phase === 'quarterReview') return false;
+    // ビート提示中の切替は拒否（適格性・重みは旧チーム、解決は新チームになってしまう）。
+    if (this.phase === 'beat') return false;
     if (this.sprintsPlayed < this.teamLockUntilSprint) return false;
 
     this.flushActiveTeam();
@@ -1322,15 +1332,16 @@ export class RunEngine {
    */
   private alignSprintBoardToTeam(team: { reviewQueue: number; incidents: number }): void {
     if (!this.sprint || this.phase !== 'sprint') return;
-    const reviews = this.sprint.tasks.filter((t) => t.lane === 'review');
-    const reviewCut = Math.max(0, reviews.length - Math.max(0, team.reviewQueue));
-    for (let i = 0; i < reviewCut; i += 1) {
-      const task = reviews[i];
-      if (!task) break;
-      // 施策による一掃なので出荷加点はせず、レーンだけ空ける。
+    // 行列削減は非炎上の Review を優先し、炎上を無料鎮火しない。
+    const reviewCount = () => this.sprint!.tasks.filter((t) => t.lane === 'review').length;
+    const calmReviews = this.sprint.tasks.filter((t) => t.lane === 'review' && !t.incident);
+    const reviewCut = Math.max(0, reviewCount() - Math.max(0, team.reviewQueue));
+    let removed = 0;
+    for (const task of calmReviews) {
+      if (removed >= reviewCut) break;
       task.lane = 'done';
-      task.incident = false;
       delete task.burnTicksLeft;
+      removed += 1;
     }
     const fires = this.sprint.tasks.filter((t) => t.incident);
     const fireCut = Math.max(0, fires.length - Math.max(0, team.incidents));
@@ -1345,6 +1356,13 @@ export class RunEngine {
       }
       this.sprint.metrics.contained += 1;
     }
+    // 炎上温存で切れなかった行列は、実際の盤面件数へ正本を合わせる。
+    const idx = this.teams.findIndex((t) => t.id === this.activeTeamId);
+    if (idx < 0) return;
+    const reviewQueue = reviewCount();
+    const incidents = this.sprint.tasks.filter((t) => t.incident).length;
+    const aligned = { ...this.teams[idx], reviewQueue, incidents };
+    this.teams[idx] = { ...aligned, ...deriveTeamCapacities(aligned) };
   }
 
   private flushActiveTeam(): void {
@@ -1367,12 +1385,31 @@ export class RunEngine {
   }
 
   private advanceOtherTeams(stepKey: string): void {
+    const before = this.teams;
     this.teams = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey,
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
     });
+    // 粗粒度チームの出荷・新規炎上をラン／四半期集計へ反映する（俯瞰だけの演出にしない）。
+    let deliveredGain = 0;
+    let incidentGain = 0;
+    for (const team of this.teams) {
+      if (team.id === this.activeTeamId) continue;
+      const prev = before.find((t) => t.id === team.id);
+      if (!prev) continue;
+      deliveredGain += Math.max(0, team.shipping - prev.shipping);
+      incidentGain += Math.max(0, team.incidents - prev.incidents);
+    }
+    if (deliveredGain > 0) {
+      this.totals.delivered += deliveredGain;
+      this.quarterTotals.delivered += deliveredGain;
+    }
+    if (incidentGain > 0) {
+      this.totals.incidents += incidentGain;
+      this.quarterTotals.incidents += incidentGain;
+    }
     // 訪問済みキャッシュのロスターもスプリント間回復を進める（戻ったときに休職が永久化しない）。
     for (const id of Object.keys(this.teamRosters)) {
       if (id === this.activeTeamId) continue;

@@ -10,6 +10,7 @@ import { diagnose } from '../../src/sim/diagnosis';
 import {
   advanceCoarseTeams,
   assertDeptShippingInvariant,
+  companyOrgFromTeams,
   ENTER_TEAM_FOCUS_PENALTY,
   initTeamRunStates,
   orgFromTeam,
@@ -445,6 +446,97 @@ describe('RunEngine: レバー', () => {
     expect(e.playCard(idx2!).ok).toBe(true);
     expect(e.snapshot().org.quality).toBeGreaterThan(otherQuality);
     expect(e.snapshot().deck[idx2!]!.baselineAppliedByTeam?.['platform-t1']).toBe(1);
+  });
+
+  it('粗粒度チームの出荷増分を四半期集計へ反映する', () => {
+    const e = started('coarse-totals');
+    const beforeDelivered = e.snapshot().quarterTotals.delivered;
+    const beforeShipping = e
+      .snapshot()
+      .teams.filter((t) => t.id !== e.snapshot().activeTeamId)
+      .reduce((a, t) => a + t.shipping, 0);
+    const internals = e as unknown as { advanceOtherTeams: (k: string) => void };
+    internals.advanceOtherTeams('totals-step');
+    const afterShipping = e
+      .snapshot()
+      .teams.filter((t) => t.id !== e.snapshot().activeTeamId)
+      .reduce((a, t) => a + t.shipping, 0);
+    const shippingGain = afterShipping - beforeShipping;
+    expect(shippingGain).toBeGreaterThan(0);
+    expect(e.snapshot().quarterTotals.delivered).toBe(beforeDelivered + shippingGain);
+    expect(e.snapshot().totals.delivered).toBe(beforeDelivered + shippingGain);
+  });
+
+  it('ビート提示中は他チームへ切り替えられない', () => {
+    const e = started('beat-lock');
+    const persist = e.exportPersistState()!;
+    (persist as { phase: string }).phase = 'beat';
+    e.hydratePersistState(persist);
+    expect(e.snapshot().phase).toBe('beat');
+    expect(e.enterTeam('platform-t1')).toBe(false);
+    expect(e.enterTeam('product-t0')).toBe(true);
+  });
+
+  it('全社品質ボーナス後に incidentBias を再計算する', () => {
+    const e = started('company-quality-bias');
+    const before = e.snapshot().teams.find((t) => t.id === 'platform-t0')!;
+    // qualityAdd を持つ進化ノード相当を applyCompanyBaseline 経由で焼く。
+    const internals = e as unknown as {
+      applyCompanyBaseline: (fx: {
+        aiLiteracyAdd: number;
+        aiDependencyAdd: number;
+        qualityAdd: number;
+        testCoverageAdd: number;
+      }) => void;
+    };
+    internals.applyCompanyBaseline({
+      aiLiteracyAdd: 0,
+      aiDependencyAdd: 0,
+      qualityAdd: 20,
+      testCoverageAdd: 0,
+    });
+    const after = e.snapshot().teams.find((t) => t.id === 'platform-t0')!;
+    expect(after.quality).toBe(Math.min(100, before.quality + 20));
+    const expected = Math.min(
+      0.45,
+      Math.max(0.02, 0.08 + after.incidents * 0.05 + (100 - after.quality) * 0.002),
+    );
+    expect(after.incidentBias).toBeCloseTo(expected, 8);
+  });
+
+  it('行列削減は炎上中 Review を無料鎮火しない', () => {
+    const e = started('no-free-contain');
+    e.beginSetupSprint();
+    const internals = e as unknown as {
+      sprint: {
+        tasks: Array<{ lane: string; incident: boolean; burnTicksLeft?: number }>;
+        metrics: { contained: number };
+      };
+      syncActiveTeamFromOrg: () => void;
+    };
+    // Review を炎上付きで埋め、非炎上は少数だけにする。
+    const tasks = internals.sprint.tasks;
+    for (let i = 0; i < Math.min(5, tasks.length); i += 1) {
+      tasks[i]!.lane = 'review';
+      tasks[i]!.incident = i < 4;
+      if (tasks[i]!.incident) tasks[i]!.burnTicksLeft = 3;
+    }
+    internals.syncActiveTeamFromOrg();
+    const containedBefore = internals.sprint.metrics.contained;
+    const burningBefore = internals.sprint.tasks.filter((t) => t.incident).length;
+    expect(e.applyOrgLever('teamReviewHelp', undefined, e.snapshot().activeTeamId)).toBe(true);
+    const burningAfter = e.snapshot().sprint!.tasks.filter((t) => t.incident).length;
+    expect(burningAfter).toBe(burningBefore);
+    expect(e.snapshot().sprint!.metrics.contained).toBe(containedBefore);
+  });
+
+  it('companyOrgFromTeams は全チーム平均を返す', () => {
+    const e = started('company-org');
+    const s = e.snapshot();
+    const company = companyOrgFromTeams(s.teams, s.org);
+    const avgQuality = Math.round(s.teams.reduce((a, t) => a + t.quality, 0) / s.teams.length);
+    expect(company.quality).toBe(avgQuality);
+    expect(company.deliveryScore).toBe(s.teams.reduce((a, t) => a + t.shipping, 0));
   });
 });
 

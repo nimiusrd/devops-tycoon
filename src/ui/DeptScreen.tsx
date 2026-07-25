@@ -50,11 +50,11 @@ export function DeptScreen({
   const { usePixi, onWebglError } = usePixiRenderer();
   const selected: Team | undefined = dept.teams.find((t) => t.id === selectedTeamId);
   const locked = sprintsPlayed < teamLockUntilSprint;
-  // エンジン契約: sprint は全入り込み拒否。quarterReview は他チーム切替のみ拒否。
+  // エンジン契約: sprint は全入り込み拒否。quarterReview / beat は他チーム切替のみ拒否。
   const canEnter = selected
     ? selected.id === activeTeamId
       ? phase !== 'sprint'
-      : phase !== 'sprint' && phase !== 'quarterReview' && !locked
+      : phase !== 'sprint' && phase !== 'quarterReview' && phase !== 'beat' && !locked
     : false;
 
   return (
@@ -126,9 +126,11 @@ export function DeptScreen({
                     ? 'スプリント中はチームを切り替えられません'
                     : phase === 'quarterReview'
                       ? '四半期レビュー中はチームを切り替えられません'
-                      : locked
-                        ? `入り込み拘束中（あと${teamLockUntilSprint - sprintsPlayed}スプリント）`
-                        : `入り込む（次スプリント集中力${ENTER_TEAM_FOCUS_PENALTY}、${ENTER_TEAM_LOCK_SPRINTS}スプリント拘束）`
+                      : phase === 'beat'
+                        ? 'イベント解決中はチームを切り替えられません'
+                        : locked
+                          ? `入り込み拘束中（あと${teamLockUntilSprint - sprintsPlayed}スプリント）`
+                          : `入り込む（次スプリント集中力${ENTER_TEAM_FOCUS_PENALTY}、${ENTER_TEAM_LOCK_SPRINTS}スプリント拘束）`
               }
             >
               {selected.id === activeTeamId ? '現場へ戻る' : '入り込む'}

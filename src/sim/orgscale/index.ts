@@ -39,6 +39,7 @@ export {
   initTeamRunStates,
   syncTeamFromOrg,
   orgFromTeam,
+  companyOrgFromTeams,
   createTeamRoster,
   appendTeamsToDept,
   advanceCoarseTeams,

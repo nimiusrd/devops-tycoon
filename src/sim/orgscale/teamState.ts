@@ -270,6 +270,29 @@ export function orgFromTeam(team: TeamRunState): OrgState {
 }
 
 /**
+ * 全チーム平均の組織指標スナップショット（四半期レビュー等の全社判定用）。
+ * 出荷は合計、その他の 0..100 指標と負債は平均。`aiEnabled` はフォールバックを維持。
+ */
+export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: OrgState): OrgState {
+  if (teams.length === 0) return fallback;
+  const n = teams.length;
+  const avg = (pick: (t: TeamRunState) => number): number =>
+    Math.round(teams.reduce((a, t) => a + pick(t), 0) / n);
+  return {
+    aiEnabled: fallback.aiEnabled,
+    aiDependency: avg((t) => t.aiDependency),
+    aiLiteracy: avg((t) => t.aiLiteracy),
+    testCoverage: avg((t) => t.testCoverage),
+    documentation: avg((t) => t.documentation),
+    quality: avg((t) => t.quality),
+    morale: avg((t) => t.morale),
+    seniorHp: avg((t) => t.seniorHp),
+    techDebt: avg((t) => t.techDebt),
+    deliveryScore: teams.reduce((a, t) => a + t.shipping, 0),
+  };
+}
+
+/**
  * 未訪問チーム向けに簡易ロスターを seed 生成する。
  * 詳細操作のロスター上限（ROSTER_CAP=6）と、チーム総人数 `TeamRunState.engineers` は分離する。
  * 7〜8 人チームでもロスターは最大 6 人までとし、総人数は sync 時に縮めない。

@@ -272,8 +272,12 @@ export function orgFromTeam(team: TeamRunState): OrgState {
 
 /**
  * 全社判定用の組織指標スナップショット（四半期レビュー等）。
- * - 品質・負債・AI・士気・シニアHP: 全チーム平均（健全な1チームだけでは押し上げられない）
+ * - 品質・負債・AI 系: 全チーム平均（健全な1チームだけでは押し上げられない）
+ * - 士気・シニアHP: 選択中チーム（詳細 sim の継続不能判定・四半期 seed 契約と整合）
  * - 出荷: 合計
+ *
+ * 士気/HP を全平均にすると粗粒度チームの消耗で Q1 勝率が潰れるため、
+ * HUD 集約とは分けて選択中チームを正とする（quarterReviewSeeds.ts 参照）。
  */
 export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: OrgState): OrgState {
   if (teams.length === 0) return fallback;
@@ -287,8 +291,8 @@ export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: Or
     testCoverage: avg((t) => t.testCoverage),
     documentation: avg((t) => t.documentation),
     quality: avg((t) => t.quality),
-    morale: avg((t) => t.morale),
-    seniorHp: avg((t) => t.seniorHp),
+    morale: fallback.morale,
+    seniorHp: fallback.seniorHp,
     techDebt: avg((t) => t.techDebt),
     deliveryScore: teams.reduce((a, t) => a + t.shipping, 0),
   };
@@ -450,6 +454,34 @@ export function advanceCoarseTeams(
       ...deriveTeamCapacities({ engineers: team.engineers, reviewQueue, incidents, quality }),
     };
   });
+}
+
+/**
+ * 粗粒度 1 ステップの出荷・新規炎上増分を、他チーム平均相当へ正規化する。
+ * 全合算だと四半期 KPI が桁違いになるため、人数で割った値だけラン集計へ載せる。
+ */
+export function normalizeCoarseTotalsDelta(
+  before: readonly Pick<TeamRunState, 'id' | 'shipping' | 'incidents'>[],
+  after: readonly Pick<TeamRunState, 'id' | 'shipping' | 'incidents'>[],
+  excludeId: string,
+): { delivered: number; incidents: number } {
+  let deliveredGain = 0;
+  let incidentGain = 0;
+  let otherCount = 0;
+  for (const team of after) {
+    if (team.id === excludeId) continue;
+    const prev = before.find((t) => t.id === team.id);
+    if (!prev) continue;
+    otherCount += 1;
+    deliveredGain += Math.max(0, team.shipping - prev.shipping);
+    incidentGain += Math.max(0, team.incidents - prev.incidents);
+  }
+  if (otherCount <= 0) return { delivered: 0, incidents: 0 };
+  return {
+    delivered: deliveredGain > 0 ? Math.max(1, Math.round(deliveredGain / otherCount)) : 0,
+    // 炎上は稀なので 0 切り捨て（毎ステップ最低 +1 だと Incident KPI が即死する）。
+    incidents: Math.max(0, Math.round(incidentGain / otherCount)),
+  };
 }
 
 /** 行列・障害から派生する耐性・炎上バイアスを再計算する。 */

@@ -80,6 +80,7 @@ import {
   initTeamRunStates,
   mergeAdjust,
   deriveTeamCapacities,
+  normalizeCoarseTotalsDelta,
   orgFromTeam,
   projectOrgScale,
   stripMetricAdjustments,
@@ -1433,31 +1434,11 @@ export class RunEngine {
       adjust: this.orgAdjust,
     });
     // 粗粒度チームの出荷・新規炎上をラン／四半期集計へ反映する（俯瞰だけの演出にしない）。
-    // 全チーム合算だと KPI が桁違いになるため、他チーム平均相当（合計÷人数）を足す。
-    let deliveredGain = 0;
-    let incidentGain = 0;
-    let otherCount = 0;
-    for (const team of this.teams) {
-      if (team.id === this.activeTeamId) continue;
-      const prev = before.find((t) => t.id === team.id);
-      if (!prev) continue;
-      otherCount += 1;
-      deliveredGain += Math.max(0, team.shipping - prev.shipping);
-      // 開いている炎上の増加分だけを新規発生として数える（鎮火による減少は除外）。
-      incidentGain += Math.max(0, team.incidents - prev.incidents);
-    }
-    if (otherCount > 0) {
-      if (deliveredGain > 0) {
-        const normalized = Math.max(1, Math.round(deliveredGain / otherCount));
-        this.totals.delivered += normalized;
-        this.quarterTotals.delivered += normalized;
-      }
-      if (incidentGain > 0) {
-        const normalized = Math.max(1, Math.round(incidentGain / otherCount));
-        this.totals.incidents += normalized;
-        this.quarterTotals.incidents += normalized;
-      }
-    }
+    const delta = normalizeCoarseTotalsDelta(before, this.teams, this.activeTeamId);
+    this.totals.delivered += delta.delivered;
+    this.quarterTotals.delivered += delta.delivered;
+    this.totals.incidents += delta.incidents;
+    this.quarterTotals.incidents += delta.incidents;
     // 訪問済みキャッシュのロスターもスプリント間回復を進める（戻ったときに休職が永久化しない）。
     for (const id of Object.keys(this.teamRosters)) {
       if (id === this.activeTeamId) continue;

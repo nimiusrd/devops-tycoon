@@ -14,6 +14,7 @@ import {
   deriveTeamCapacities,
   ENTER_TEAM_FOCUS_PENALTY,
   initTeamRunStates,
+  normalizeCoarseTotalsDelta,
   orgFromTeam,
   syncTeamFromOrg,
 } from '../../src/sim/orgscale';
@@ -533,16 +534,14 @@ describe('RunEngine: レバー', () => {
     expect(e.snapshot().sprint!.metrics.contained).toBe(containedBefore);
   });
 
-  it('companyOrgFromTeams は全チーム平均を返す', () => {
+  it('companyOrgFromTeams は品質等を平均し士気/HPは選択中を使う', () => {
     const e = started('company-org');
     const s = e.snapshot();
     const company = companyOrgFromTeams(s.teams, s.org);
     const avgQuality = Math.round(s.teams.reduce((a, t) => a + t.quality, 0) / s.teams.length);
-    const avgMorale = Math.round(s.teams.reduce((a, t) => a + t.morale, 0) / s.teams.length);
-    const avgSenior = Math.round(s.teams.reduce((a, t) => a + t.seniorHp, 0) / s.teams.length);
     expect(company.quality).toBe(avgQuality);
-    expect(company.morale).toBe(avgMorale);
-    expect(company.seniorHp).toBe(avgSenior);
+    expect(company.morale).toBe(s.org.morale);
+    expect(company.seniorHp).toBe(s.org.seniorHp);
     expect(company.deliveryScore).toBe(s.teams.reduce((a, t) => a + t.shipping, 0));
   });
 
@@ -564,19 +563,25 @@ describe('RunEngine: レバー', () => {
     );
   });
 
-  it('粗粒度の新規炎上を四半期 Incident KPI へ正規化加算する', () => {
-    const e = started('coarse-incidents');
-    const before = e.snapshot().quarterTotals.incidents;
-    const internals = e as unknown as {
-      teams: Array<{ id: string; incidents: number; [k: string]: unknown }>;
-      advanceOtherTeams: (k: string) => void;
-    };
-    // 非選択チームを低炎上から始め、粗粒度の新規発生を観測しやすくする。
-    internals.teams = internals.teams.map((t) =>
-      t.id === e.snapshot().activeTeamId ? t : { ...t, incidents: 0 },
-    );
-    for (let i = 0; i < 8; i += 1) internals.advanceOtherTeams(`inc-step-${i}`);
-    expect(e.snapshot().quarterTotals.incidents).toBeGreaterThan(before);
+  it('粗粒度の新規炎上を他チーム平均相当で正規化する', () => {
+    const before = [
+      { id: 'product-t0', shipping: 10, incidents: 0 },
+      { id: 'a', shipping: 10, incidents: 0 },
+      { id: 'b', shipping: 10, incidents: 0 },
+      { id: 'c', shipping: 10, incidents: 1 },
+    ];
+    const after = [
+      { id: 'product-t0', shipping: 10, incidents: 0 },
+      { id: 'a', shipping: 20, incidents: 3 },
+      { id: 'b', shipping: 16, incidents: 3 },
+      { id: 'c', shipping: 13, incidents: 1 },
+    ];
+    const delta = normalizeCoarseTotalsDelta(before, after, 'product-t0');
+    // 出荷増分 10+6+3=19 → round(19/3)=6（最低 1 保証）
+    expect(delta.delivered).toBe(6);
+    // 炎上増分 3+3+0=6 → round(6/3)=2（0 切り捨て可）
+    expect(delta.incidents).toBe(2);
+    expect(normalizeCoarseTotalsDelta(before, before, 'product-t0').incidents).toBe(0);
   });
 
   it('四半期目標修正の org 効果は全チームへ焼き込まれる', () => {

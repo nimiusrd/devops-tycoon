@@ -1663,7 +1663,7 @@ export class RunEngine {
       whatIfStatus: 'idle',
       shop: this.shop
         ? {
-            cards: this.shop.cards.map(cloneCardInstance),
+            cards: this.shop.cards.map((c) => ({ ...c })),
             relic: this.shop.relic ? { ...this.shop.relic } : undefined,
             recruit: this.shop.recruit ? { ...this.shop.recruit } : undefined,
           }

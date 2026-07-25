@@ -451,10 +451,8 @@ describe('RunEngine: レバー', () => {
   it('粗粒度チームの出荷増分を四半期集計へ反映する', () => {
     const e = started('coarse-totals');
     const beforeDelivered = e.snapshot().quarterTotals.delivered;
-    const beforeShipping = e
-      .snapshot()
-      .teams.filter((t) => t.id !== e.snapshot().activeTeamId)
-      .reduce((a, t) => a + t.shipping, 0);
+    const others = e.snapshot().teams.filter((t) => t.id !== e.snapshot().activeTeamId);
+    const beforeShipping = others.reduce((a, t) => a + t.shipping, 0);
     const internals = e as unknown as { advanceOtherTeams: (k: string) => void };
     internals.advanceOtherTeams('totals-step');
     const afterShipping = e
@@ -463,8 +461,9 @@ describe('RunEngine: レバー', () => {
       .reduce((a, t) => a + t.shipping, 0);
     const shippingGain = afterShipping - beforeShipping;
     expect(shippingGain).toBeGreaterThan(0);
-    expect(e.snapshot().quarterTotals.delivered).toBe(beforeDelivered + shippingGain);
-    expect(e.snapshot().totals.delivered).toBe(beforeDelivered + shippingGain);
+    const normalized = Math.max(1, Math.round(shippingGain / others.length));
+    expect(e.snapshot().quarterTotals.delivered).toBe(beforeDelivered + normalized);
+    expect(e.snapshot().totals.delivered).toBe(beforeDelivered + normalized);
   });
 
   it('ビート提示中は他チームへ切り替えられない', () => {

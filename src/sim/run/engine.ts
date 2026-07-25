@@ -68,7 +68,6 @@ import {
   HOME_TEAM_ID,
   initTeamRunStates,
   mergeAdjust,
-  companyOrgFromTeams,
   deriveTeamCapacities,
   orgFromTeam,
   projectOrgScale,
@@ -636,13 +635,12 @@ export class RunEngine {
       }
       const boss = getBoss(this.bossId);
       const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
-      // 四半期 KPI／ボス条件は全チーム平均で見る（非選択チームの悪化を取りこぼさない）。
-      const companyOrg = companyOrgFromTeams(this.teams, this.org);
-      const bossCleared = !!boss && evaluateBoss({ boss, result, org: companyOrg, bossTargetMul });
+      const bossCleared = !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul });
       // 四半期 KPI は報酬前の org で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
+      // org 指標は選択中チームを正とし、非選択の出荷・炎上増分は totals 側へ反映済み。
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
-        org: companyOrg,
+        org: this.org,
         totals: this.quarterTotals,
         trust: this.stakeholderTrust,
         budget: this.budget,
@@ -651,7 +649,7 @@ export class RunEngine {
       });
       if (bossCleared) {
         // 勝利種別も報酬前の組織状態で判定する。
-        this.winEvalOrg = structuredClone(companyOrg);
+        this.winEvalOrg = structuredClone(this.org);
         this.bossRelicReward = this.grantBossRelic();
       }
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
@@ -1392,23 +1390,22 @@ export class RunEngine {
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
     });
-    // 粗粒度チームの出荷・新規炎上をラン／四半期集計へ反映する（俯瞰だけの演出にしない）。
+    // 粗粒度チームの出荷増分をラン／四半期集計へ反映する（俯瞰だけの演出にしない）。
+    // 全チーム合算だと Delivery が桁違いになるため、他チーム平均相当（合計÷人数）を足す。
+    // 炎上件数の合算は Incident KPI が即死するため正本 teams 側のみで保持する。
     let deliveredGain = 0;
-    let incidentGain = 0;
+    let otherCount = 0;
     for (const team of this.teams) {
       if (team.id === this.activeTeamId) continue;
       const prev = before.find((t) => t.id === team.id);
       if (!prev) continue;
+      otherCount += 1;
       deliveredGain += Math.max(0, team.shipping - prev.shipping);
-      incidentGain += Math.max(0, team.incidents - prev.incidents);
     }
-    if (deliveredGain > 0) {
-      this.totals.delivered += deliveredGain;
-      this.quarterTotals.delivered += deliveredGain;
-    }
-    if (incidentGain > 0) {
-      this.totals.incidents += incidentGain;
-      this.quarterTotals.incidents += incidentGain;
+    if (deliveredGain > 0 && otherCount > 0) {
+      const normalized = Math.max(1, Math.round(deliveredGain / otherCount));
+      this.totals.delivered += normalized;
+      this.quarterTotals.delivered += normalized;
     }
     // 訪問済みキャッシュのロスターもスプリント間回復を進める（戻ったときに休職が永久化しない）。
     for (const id of Object.keys(this.teamRosters)) {

@@ -1519,10 +1519,46 @@ export class RunEngine {
     this.quarterTotals.completed += delta.completed;
     this.totals.aiAssisted += delta.aiAssisted;
     this.quarterTotals.aiAssisted += delta.aiAssisted;
+    // 非選択チームの行列ピークも勝敗・診断へ反映する（ステップ前後の最大を見る）。
+    for (const team of before) {
+      if (team.id === this.activeTeamId) continue;
+      this.totals.reviewQueuePeak = Math.max(this.totals.reviewQueuePeak, team.reviewQueue);
+      this.quarterTotals.reviewQueuePeak = Math.max(
+        this.quarterTotals.reviewQueuePeak,
+        team.reviewQueue,
+      );
+    }
+    for (const team of this.teams) {
+      if (team.id === this.activeTeamId) continue;
+      this.totals.reviewQueuePeak = Math.max(this.totals.reviewQueuePeak, team.reviewQueue);
+      this.quarterTotals.reviewQueuePeak = Math.max(
+        this.quarterTotals.reviewQueuePeak,
+        team.reviewQueue,
+      );
+    }
     // 訪問済みキャッシュのロスターもスプリント間回復を進める（戻ったときに休職が永久化しない）。
     for (const id of Object.keys(this.teamRosters)) {
       if (id === this.activeTeamId) continue;
       this.teamRosters[id] = recoverStamina(this.teamRosters[id], STAMINA_RECOVER_BETWEEN);
+      // 復職で稼働人数が戻ったら粗粒度正本へも同期する。
+      const idx = this.teams.findIndex((t) => t.id === id);
+      if (idx < 0) continue;
+      const roster = this.teamRosters[id]!;
+      const active = activeEngineerCount(roster);
+      const team = this.teams[idx]!;
+      if (team.engineers === active) continue;
+      const headcount = Math.max(team.headcount ?? team.engineers, roster.members.length, active);
+      this.teams[idx] = {
+        ...team,
+        engineers: active,
+        headcount,
+        ...deriveTeamCapacities({
+          engineers: active,
+          reviewQueue: team.reviewQueue,
+          incidents: team.incidents,
+          quality: team.quality,
+        }),
+      };
     }
   }
 

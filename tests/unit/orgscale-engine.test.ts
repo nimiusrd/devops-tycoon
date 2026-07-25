@@ -13,6 +13,8 @@ import {
   companyOrgFromTeams,
   deriveTeamCapacities,
   ENTER_TEAM_FOCUS_PENALTY,
+  estimateRivalAiAssigned,
+  estimateRosterCoderCount,
   initTeamRunStates,
   normalizeCoarseTotalsDelta,
   orgFromTeam,
@@ -482,6 +484,52 @@ describe('RunEngine: レバー', () => {
     expect(e.snapshot().deck[idx2!]!.baselineAppliedByTeam?.['platform-t1']).toBe(1);
   });
 
+  it('粗粒度チームの行列ピークを totals.reviewQueuePeak へ反映する', () => {
+    const e = started('coarse-queue-peak');
+    const persist = e.exportPersistState()!;
+    persist.extras.teams = persist.extras.teams!.map((t) =>
+      t.id === 'platform-t1' ? { ...t, reviewQueue: 40 } : t,
+    );
+    persist.totals.reviewQueuePeak = 10;
+    persist.quarterTotals.reviewQueuePeak = 10;
+    e.hydratePersistState(persist);
+    const internals = e as unknown as { advanceOtherTeams: (k: string) => void };
+    internals.advanceOtherTeams('queue-peak-step');
+    expect(e.snapshot().totals.reviewQueuePeak).toBeGreaterThanOrEqual(40);
+    expect(e.snapshot().quarterTotals.reviewQueuePeak).toBeGreaterThanOrEqual(40);
+  });
+
+  it('非選択チームの復職を稼働人数へ同期する', () => {
+    const e = started('coarse-roster-recover');
+    expect(e.enterTeam('platform-t1')).toBe(true);
+    const internals = e as unknown as {
+      teamRosters: Record<string, { members: Array<{ onLeave: boolean; stamina: number }> }>;
+      teams: Array<{ id: string; engineers: number }>;
+      teamLockUntilSprint: number;
+      advanceOtherTeams: (k: string) => void;
+      flushActiveTeam: () => void;
+      hydrateTeam: (id: string) => void;
+      activeTeamId: string;
+    };
+    // ホームへ戻り、訪問済み platform を非選択にする。
+    internals.teamLockUntilSprint = 0;
+    expect(e.enterTeam('product-t0')).toBe(true);
+    const roster = internals.teamRosters['platform-t1']!;
+    expect(roster).toBeTruthy();
+    // 全員休職扱いにして稼働 0 にし、1 回の回復で復職する直前までスタミナを戻す。
+    for (const m of roster.members) {
+      m.onLeave = true;
+      // RETURN_RATIO=0.4・LEAVE_RECOVERY_MUL=1.25・STAMINA_RECOVER_BETWEEN=16 → +20
+      m.stamina = Math.max(0, Math.ceil(m.staminaMax * 0.4) - 20);
+    }
+    const idx = internals.teams.findIndex((t) => t.id === 'platform-t1');
+    internals.teams[idx]!.engineers = 0;
+    internals.advanceOtherTeams('recover-step');
+    const recovered = internals.teamRosters['platform-t1']!;
+    expect(recovered.members.some((m) => !m.onLeave)).toBe(true);
+    expect(internals.teams[idx]!.engineers).toBeGreaterThan(0);
+  });
+
   it('粗粒度チームの出荷増分を四半期集計へ反映する', () => {
     const e = started('coarse-totals');
     const beforeDelivered = e.snapshot().quarterTotals.delivered;
@@ -736,6 +784,30 @@ describe('RunEngine: レバー', () => {
       modifiers: { incidentRateMul: 3 },
     });
     expect(high.ignited).toBeGreaterThanOrEqual(low.ignited);
+  });
+
+  it('粗粒度AI支援はコーダー母数の採用率で按分する', () => {
+    // 8人・依存度50%: 全員母数なら 4/8、コーダー母数なら 2/3 になり AI 支援が増える。
+    const teams = initTeamRunStates({
+      seed: 'coarse-ai-coders',
+      org: started('coarse-ai-coders').snapshot().org,
+      homeEngineers: 3,
+    }).map((t) =>
+      t.id === 'product-t0' ? t : { ...t, engineers: 8, headcount: 8, aiDependency: 50 },
+    );
+    const stepped = advanceCoarseTeams(teams, {
+      seed: 'coarse-ai-coders',
+      stepKey: 'ai1',
+      excludeId: 'product-t0',
+    });
+    expect(stepped.completed).toBeGreaterThan(0);
+    const coderShare =
+      estimateRivalAiAssigned(estimateRosterCoderCount(8), 50) / estimateRosterCoderCount(8);
+    const engShare = estimateRivalAiAssigned(8, 50) / 8;
+    expect(coderShare).toBeGreaterThan(engShare);
+    // コーダー基準なら AI_ADOPTION×coderShare に近い按分になる（全員母数より多い）。
+    const minExpected = Math.round(stepped.completed * 0.85 * engShare);
+    expect(stepped.aiAssisted).toBeGreaterThan(minExpected);
   });
 
   it('粗粒度進行に aiDependencyDrift と reviewCapacityMul が効く', () => {

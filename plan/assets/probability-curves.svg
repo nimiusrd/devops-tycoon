@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" role="img" aria-labelledby="title desc">
-  <title id="title">Rework確率とIncident確率の代表曲線</title>
+  <title id="title">現行モデルのRework確率とIncident確率の代表曲線</title>
   <desc id="desc">
-    左はAI依存度が上がるとRework確率が上がる様子、右はテストカバレッジが上がるとIncident確率が下がる様子を、AI利用ありとなしで比較する。
+    左は組織の累積AI依存度が上がるとRework確率が上がる様子、右はテストカバレッジが上がるとIncident確率が下がる様子を、対象タスクのAI支援ありとなしで比較する。
   </desc>
   <style>
     .bg { fill: #ffffff; }
@@ -31,12 +31,12 @@
   <rect class="bg" width="1000" height="520" rx="16" />
 
   <g aria-label="凡例">
-    <line class="ai" x1="345" y1="32" x2="385" y2="32" />
-    <circle class="ai-dot" cx="365" cy="32" r="5" />
-    <text class="text" x="395" y="38" font-size="16">AI利用あり</text>
-    <line class="no-ai" x1="520" y1="32" x2="560" y2="32" />
-    <circle class="no-ai-dot" cx="540" cy="32" r="5" />
-    <text class="text" x="570" y="38" font-size="16">AI利用なし</text>
+    <line class="ai" x1="210" y1="32" x2="250" y2="32" />
+    <circle class="ai-dot" cx="230" cy="32" r="5" />
+    <text class="text" x="260" y="38" font-size="16">対象タスク: AI支援あり</text>
+    <line class="no-ai" x1="560" y1="32" x2="600" y2="32" />
+    <circle class="no-ai-dot" cx="580" cy="32" r="5" />
+    <text class="text" x="610" y="38" font-size="16">対象タスク: AI支援なし</text>
   </g>
 
   <g aria-label="AI依存度とRework確率">
@@ -63,7 +63,7 @@
     <text class="muted" x="272.5" y="402" font-size="12" text-anchor="middle">50</text>
     <text class="muted" x="363.75" y="402" font-size="12" text-anchor="middle">75</text>
     <text class="muted" x="455" y="402" font-size="12" text-anchor="middle">100</text>
-    <text class="text" x="272.5" y="430" font-size="14" text-anchor="middle">AI依存度</text>
+    <text class="text" x="272.5" y="430" font-size="14" text-anchor="middle">組織の累積AI依存度</text>
 
     <polyline class="ai" points="90,366.9 181.25,337.3 272.5,284.7 363.75,232.1 455,179.6" />
     <polyline class="no-ai" points="90,366.9 181.25,366.9 272.5,350.4 363.75,297.9 455,245.3" />
@@ -129,5 +129,6 @@
     </g>
   </g>
 
-  <text class="muted" x="500" y="500" font-size="13" text-anchor="middle">線はモデル式から算出した条件付き確率。Monte Carloの観測値ではない。</text>
+  <text class="muted" x="500" y="487" font-size="13" text-anchor="middle">線は現行モデル式から算出した条件付き確率。Monte Carloの観測値ではない。</text>
+  <text class="muted" x="500" y="507" font-size="12" text-anchor="middle">AI支援なしの高依存度側は、AI未導入組織の経時変化ではなく対象タスク単位の感度分析。</text>
 </svg>

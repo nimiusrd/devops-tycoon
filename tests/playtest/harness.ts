@@ -96,6 +96,16 @@ export interface PolicySpec {
    */
   shop?: 'skipBuy' | 'buy';
   /**
+   * 休息フェーズで採用しないときの選択。`RestScreen` には heal / repay / upgrade がある。
+   * - `heal`: 常に回復（既定。既存の統制条件を変えないため）
+   * - `stateAware`: 負債が危険域なら `repay`、そうでなければ `heal`
+   * - `upgrade`: 常にカード強化
+   *
+   * 既定が `heal` 固定だと、負債返済とカード強化が一度も選ばれないまま
+   * F-2 の「スプリント間投資が結果を変えない」の根拠に使われてしまう。
+   */
+  rest?: 'heal' | 'stateAware' | 'upgrade';
+  /**
    * ビート（スプリント間イベント）の選択肢の選び方。
    * - `firstChoice`: 提示順の先頭。初見相当
    * - `stateAware`: 現在の組織状態を見て、削られたくない資源を減らす選択肢を避ける
@@ -334,6 +344,12 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    */
   skilledShopBuy: { ...skilledBase(), shop: 'buy' },
   /**
+   * 休息の選択肢を回復以外にも振る（F-2 のスプリント間投資）。
+   * 統制先は常に回復する `skilledNoHire`。
+   */
+  skilledRestRepay: { ...skilledBase(), rest: 'stateAware' },
+  skilledRestUpgrade: { ...skilledBase(), rest: 'upgrade' },
+  /**
    * 全介入を 1 tick ごとに試行する（RI-77）。
    *
    * これは「発動可能回数の上限」ではない。8種を順に実際に発動するため、先行アクションが
@@ -447,23 +463,50 @@ export interface RunLog {
  * オートプレイ用のビート選択肢 index。
  * 明示指定がなければ即時採用（`grantRecruit`）を避け、決定論シードの安定を保つ。
  */
+/** ビート評価が参照する現在状態。組織値だけでなく予算も要る（予算0は即敗北のため）。 */
+interface BeatCtx {
+  org: RunState['org'];
+  budget: number;
+}
+
 /**
- * 選択肢を現在の組織状態で評価する。減らされたくない資源ほど強く嫌う。
+ * 選択肢を現在の状態で評価する。減らされたくない資源ほど強く嫌う。
  * 実プレイヤーが「シニアが限界なら残業を選ばない」程度の判断をする想定。
+ *
+ * **選ぶと即敗北する選択肢は候補から外す**（`INSTANT_LOSS`）。`evaluateLose`
+ * （`src/sim/outcome.ts`）は `budget <= 0` / `seniorHp <= 1` / `morale <= 1` /
+ * `techDebt >= 90` で敗北を返す。組織値だけを見ていたころは、たとえば残予算10で
+ * `postmortem-culture`（予算 -10・レリック付与）が出るとレリックの加点が予算の減点を上回り、
+ * 予算0＝`budgetExhausted` を自分から選んでいた。避けられる自滅が熟練方針の勝率と
+ * 敗因分布に混ざるため、状態を見て選ぶ `stateAware` では取らない。
  */
-function scoreChoice(outcome: Record<string, unknown>, org: RunState['org']): number {
+const INSTANT_LOSS = -1e6;
+function scoreChoice(outcome: Record<string, unknown>, ctx: BeatCtx): number {
   const num = (v: unknown): number => (typeof v === 'number' ? v : 0);
   const scarcity = (current: number): number => 1 + (100 - current) / 50;
+  const trust = (outcome.trust ?? {}) as Record<string, number>;
+
+  // 適用後に敗北条件へ入る選択肢は取らない。
+  if (
+    ctx.budget + num(outcome.budget) <= 0 ||
+    ctx.org.seniorHp + num(outcome.seniorHp) <= 1 ||
+    ctx.org.morale + num(outcome.morale) <= 1 ||
+    ctx.org.techDebt + num(outcome.techDebt) >= 90
+  ) {
+    return INSTANT_LOSS;
+  }
+
   let score = 0;
   score += num(outcome.delivered) * 0.05;
-  score += num(outcome.budget) * 0.2;
+  // 予算もシニアHP・士気と同じく、残量が少ないほど減少を重く見る。
+  const budget = num(outcome.budget);
+  score += budget >= 0 ? budget * 0.2 : budget * scarcity(Math.min(ctx.budget, 100)) * 0.5;
   const hp = num(outcome.seniorHp);
-  score += hp >= 0 ? hp * 0.5 : hp * scarcity(org.seniorHp) * 1.5;
+  score += hp >= 0 ? hp * 0.5 : hp * scarcity(ctx.org.seniorHp) * 1.5;
   const morale = num(outcome.morale);
-  score += morale >= 0 ? morale * 0.3 : morale * scarcity(org.morale) * 0.8;
+  score += morale >= 0 ? morale * 0.3 : morale * scarcity(ctx.org.morale) * 0.8;
   score -= num(outcome.techDebt) * 0.4;
   score -= num(outcome.aiDependency) * 0.2;
-  const trust = (outcome.trust ?? {}) as Record<string, number>;
   score += (num(trust.management) + num(trust.customers) + num(trust.team)) * 0.2;
   if (outcome.grantRelic) score += 4;
   return score;
@@ -474,27 +517,32 @@ export function autoplayBeatChoiceIndex(
   kind: 'judgment' | 'decision',
   takeRecruit = false,
   mode: PolicySpec['beat'] = 'firstChoice',
-  org?: RunState['org'],
+  ctx?: BeatCtx,
 ): number | undefined {
   if (kind === 'judgment') return undefined;
   const choices = getEvent(eventId)?.choices ?? [];
   if (choices.length === 0) return 0;
   // この盤面で採用すると決めたときだけ即時採用の選択肢を取る。そうでなければ避ける
   // （避けないと「採用なし」「必要なときだけ採用」群に無条件の採用が混ざる）。
+  // ただし即敗北する採用は取らない（予算を使い切る採用など）。
   if (takeRecruit) {
-    const grant = choices.findIndex((c) => c.outcome.grantRecruit);
+    const grant = choices.findIndex(
+      (c) =>
+        c.outcome.grantRecruit &&
+        (!ctx || scoreChoice(c.outcome as Record<string, unknown>, ctx) > INSTANT_LOSS),
+    );
     if (grant >= 0) return grant;
   }
   const allowed = choices
     .map((c, i) => ({ c, i }))
     .filter(({ c }) => takeRecruit || !c.outcome.grantRecruit);
   const pool = allowed.length > 0 ? allowed : choices.map((c, i) => ({ c, i }));
-  if (mode !== 'stateAware' || !org) return pool[0].i;
+  if (mode !== 'stateAware' || !ctx) return pool[0].i;
   // 状態依存: 現在いちばん減らしたくない資源を削る選択肢を避ける。
   let best = pool[0];
-  let bestScore = scoreChoice(pool[0].c.outcome as Record<string, unknown>, org);
+  let bestScore = scoreChoice(pool[0].c.outcome as Record<string, unknown>, ctx);
   for (const cand of pool.slice(1)) {
-    const sc = scoreChoice(cand.c.outcome as Record<string, unknown>, org);
+    const sc = scoreChoice(cand.c.outcome as Record<string, unknown>, ctx);
     if (sc > bestScore) {
       best = cand;
       bestScore = sc;
@@ -617,6 +665,21 @@ function wantsRecruit(s: RunState, spec: PolicySpec): boolean {
   const onLeave = s.roster.members.some((m) => m.onLeave);
   const working = s.roster.members.filter((m) => !m.onLeave && m.assignment !== 'bench').length;
   return (onLeave || working <= 2) && s.budget >= RECRUIT_COST * 2;
+}
+
+/**
+ * 休息フェーズで採用しないときの選択。
+ *
+ * `stateAware` の閾値（負債50以上で返済）は決めた値。敗北条件は `techDebt >= 90`
+ * （`src/sim/outcome.ts`）で、`REST_REPAY` 1回では 90 から安全域まで戻らないため、
+ * 危険域へ入る前に返すという想定で中間に置いた。
+ * `upgrade` は強化対象があるときだけ成立するので、デッキが空なら回復へ落とす。
+ */
+const REST_REPAY_DEBT_THRESHOLD = 50;
+function restChoice(s: RunState, spec: PolicySpec): 'heal' | 'repay' | 'upgrade' {
+  if (spec.rest === 'upgrade') return s.deck.length > 0 ? 'upgrade' : 'heal';
+  if (spec.rest === 'stateAware' && s.org.techDebt >= REST_REPAY_DEBT_THRESHOLD) return 'repay';
+  return 'heal';
 }
 
 /**
@@ -842,7 +905,7 @@ export function runOnce(
           s.beat.kind,
           wantsRecruit(s, spec),
           spec.beat,
-          s.org,
+          { org: s.org, budget: s.budget },
         );
         lastBeat = { eventId: s.beat.eventId, kind: s.beat.kind, choiceIndex: choice };
         e.resolveBeat(choice);
@@ -860,8 +923,8 @@ export function runOnce(
         break;
       case 'rest':
         // 採用方針は休息の選択肢にも適用する（RestScreen に採用がある）。
-        // ただし満員・予算不足では実画面のボタンが無効なので、回復へフォールバックする。
-        e.restChoose(wantsRecruit(s, spec) ? 'recruit' : 'heal');
+        // ただし満員・予算不足では実画面のボタンが無効なので、他の選択へフォールバックする。
+        e.restChoose(wantsRecruit(s, spec) ? 'recruit' : restChoice(s, spec), 0);
         break;
       case 'recruit':
         e.recruitChoose(wantsRecruit(s, spec) ? 'hire' : 'skip');

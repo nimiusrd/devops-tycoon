@@ -37,15 +37,24 @@ const sec = (ticks) => (ticks * MS_PER_TICK_1X) / 1000;
  * 解放イベントが0件になり総数0（p50 が NaN）になるし、一部のノードしか出ない実行では
  * 総数を過小評価して「Q1 で取り切ったラン」を誤判定する。総数は入力ランに依存しない。
  */
-function readEvolutionNodeCount() {
+function readEvolutionTree() {
   const src = readFileSync('src/data/evolution.ts', 'utf8');
   const body = src.split('export const EVOLUTION_NODES')[1];
   if (!body) throw new Error('src/data/evolution.ts から EVOLUTION_NODES を読み取れない');
-  const n = (body.match(/^\s{4}id: '/gm) ?? []).length;
-  if (n === 0) throw new Error('src/data/evolution.ts からノード数を読み取れない');
-  return n;
+  const nodes = (body.match(/^\s{4}id: '/gm) ?? []).length;
+  const costs = [...body.matchAll(/^\s{4}cost: (\d+)/gm)].map((m) => Number(m[1]));
+  if (nodes === 0 || costs.length === 0) {
+    throw new Error('src/data/evolution.ts からノード数・コストを読み取れない');
+  }
+  return { nodes, totalCost: costs.reduce((a, b) => a + b, 0) };
 }
-const EVOLUTION_NODE_COUNT = readEvolutionNodeCount();
+const EVOLUTION_TREE = readEvolutionTree();
+
+/**
+ * 1スプリントで得る進化ポイント。`RunEngine.evoPointsFor` と同じ式。
+ * 複製しているので、実装が変わったらここも直す（`src/sim/run/engine.ts`）。
+ */
+const evoPointsForSprint = (s) => 1 + Math.floor((s.delivered ?? 0) / 40) + (s.kind === 'elite');
 const r1 = (n) => Math.round(n * 10) / 10;
 const pct = (n, d) => (d ? `${Math.round((n / d) * 1000) / 10}%` : '—');
 const quantile = (arr, p) => {
@@ -109,9 +118,18 @@ console.log(`\n## F-7 難易度 × 方針の勝率\n`);
  * （実際 `skilledBase` の複製である `adj*` を6本足したときに easy の平均が動いた）。
  */
 const FIRST_PLAY_POLICY = 'naive';
-console.log(`**成立判定に使う初見相当の方針: ${FIRST_PLAY_POLICY}**`);
-for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
-  const arr = runs.filter((r) => r.difficulty === d && r.policy === FIRST_PLAY_POLICY);
+/**
+ * F-7 は「初見の初勝利カーブ」なので、メタ解放も初見相当（`fresh`）に限る。
+ * `PT_META=full` の結果を初見の勝率として出すと、全カード・レリック解放済みで
+ * ドラフト候補も結果も変わった値を初勝利カーブと誤読する。
+ */
+const freshRuns = runs.filter((r) => (r.meta ?? 'fresh') === 'fresh');
+console.log(`**成立判定に使う初見相当の方針: ${FIRST_PLAY_POLICY}（メタ解放 fresh のみ）**`);
+if (freshRuns.length === 0) {
+  console.log('  fresh のランが無いため F-7 は未計測（PT_META=fresh で実行すること）');
+}
+for (const d of [...new Set(freshRuns.map((r) => r.difficulty))]) {
+  const arr = freshRuns.filter((r) => r.difficulty === d && r.policy === FIRST_PLAY_POLICY);
   if (!arr.length) continue;
   const won = arr.filter((r) => r.status === 'won').length;
   console.log(`  ${d}/${FIRST_PLAY_POLICY}: ${won}/${arr.length} (${pct(won, arr.length)})`);
@@ -397,14 +415,17 @@ const firstAppliedQuarter = (r, label) =>
 
 // `availableAdjustments` は各選択肢の適用後状態で候補を絞るため、方針ごとに
 // 「提示され選べたラン」が異なる。そのまま勝率を並べると選択効果と選抜条件を分離できない。
-// そこで同一難易度・seed で 6方針すべてが同じ四半期に自分の修正を適用できた組だけを残す。
+// そこで同一メタ・難易度・seed で 6方針すべてが同じ四半期に自分の修正を適用できた組だけを残す。
+// キーに `meta` を含めないと fresh と full の同一 seed が衝突し、片方の適用四半期で
+// コホート成立が決まったうえに両プロファイルのランが勝率へ混入する（冒頭の重複排除と同じ理由）。
+const cohortKeyOf = (r) => `${r.meta ?? 'fresh'}|${r.difficulty}|${r.seed}`;
 const adjEntries = Object.entries(ADJ_POLICIES);
 const cohortKeys = (() => {
   const perPolicy = adjEntries.map(([policy, label]) => {
     const m = new Map();
     for (const r of runs.filter((x) => x.policy === policy)) {
       const q = firstAppliedQuarter(r, label);
-      if (q !== null) m.set(`${r.difficulty}|${r.seed}`, q);
+      if (q !== null) m.set(cohortKeyOf(r), q);
     }
     return m;
   });
@@ -419,7 +440,7 @@ const cohortKeys = (() => {
 
 console.log('統制比較（adj* 方針のみ。他方針は提示順の先頭を選ぶため除外）:');
 console.log(
-  `  共通コホート: 全6方針が同一難易度・seed・四半期で自分の修正を適用できた組 = ${cohortKeys.size}組`,
+  `  共通コホート: 全6方針が同一メタ・難易度・seed・四半期で自分の修正を適用できた組 = ${cohortKeys.size}組`,
 );
 if (cohortKeys.size === 0) {
   console.log('  ※ 共通コホートが0組のため、選択効果は未計測');
@@ -428,7 +449,7 @@ for (const [policy, label] of adjEntries) {
   const arr = runs.filter((r) => r.policy === policy);
   if (!arr.length) continue;
   const applied = arr.filter((r) => firstAppliedQuarter(r, label) !== null);
-  const cohort = arr.filter((r) => cohortKeys.has(`${r.difficulty}|${r.seed}`));
+  const cohort = arr.filter((r) => cohortKeys.has(cohortKeyOf(r)));
   const won = cohort.filter((r) => r.status === 'won').length;
   // 「到達四半期」は終端の quarterNumber ではなく、修正を選んだ四半期を使う。
   // 終端値は後続ラン長の差を表してしまい、統制条件の事前状態にならない。
@@ -468,18 +489,35 @@ if (overall) {
 }
 // RI-79 の受入条件は「無介入の評価中央値が熟練方針より低いこと」なので、
 // 同一難易度・同一スプリント番号で無介入と熟練を並べる。
-console.log('\n無介入(passive) vs 熟練(skilledNoHire) — 同一難易度・同一スプリント番号:');
+//
+// **両方針が到達した seed だけで比べる**。到達率が違うまま生存ランを独立に集めると、
+// 早期敗北した低評価 seed が片方からだけ脱落し、生存者バイアスで中央値の優劣が反転しうる
+// （実際に劣っていても生存者の中央値は同じか高く出る）。未到達は別途件数で示す。
+console.log(
+  '\n無介入(passive) vs 熟練(skilledNoHire) — 同一メタ・難易度・seed で両方が到達したスプリントのみ:',
+);
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   for (const n of [1, 2, 3]) {
-    const at = (policy) =>
-      runs
-        .filter((r) => r.difficulty === d && r.policy === policy && r.sprints.length >= n)
-        .map((r) => r.sprints[n - 1]);
-    const a = gradeStats(at('passive'));
-    const b = gradeStats(at('skilledNoHire'));
-    if (!a || !b) continue;
+    const bySeed = (policy) => {
+      const m = new Map();
+      for (const r of runs.filter((x) => x.difficulty === d && x.policy === policy)) {
+        if (r.sprints.length >= n) m.set(`${r.meta ?? 'fresh'}|${r.seed}`, r.sprints[n - 1]);
+      }
+      return m;
+    };
+    const pa = bySeed('passive');
+    const pb = bySeed('skilledNoHire');
+    const shared = [...pa.keys()].filter((k) => pb.has(k));
+    const a = gradeStats(shared.map((k) => pa.get(k)));
+    const b = gradeStats(shared.map((k) => pb.get(k)));
+    const dropped = Math.max(pa.size, pb.size) - shared.length;
+    if (!a || !b) {
+      console.log(`  ${d} S${n}: 両方が到達した seed が無いため未計測`);
+      continue;
+    }
+    const note = dropped > 0 ? ` ※片方のみ到達 ${dropped}件を除外` : '';
     console.log(
-      `  ${d} S${n}: passive 中央値=${a.median}(n=${a.n}) ${JSON.stringify(a.dist)} | skilledNoHire 中央値=${b.median}(n=${b.n}) ${JSON.stringify(b.dist)}`,
+      `  ${d} S${n}: 共通 n=${shared.length} | passive 中央値=${a.median} ${JSON.stringify(a.dist)} | skilledNoHire 中央値=${b.median} ${JSON.stringify(b.dist)}${note}`,
     );
   }
 }
@@ -519,18 +557,45 @@ const commitInQ1 = (run) => {
   const [topBranch, topN] = top();
   return { committed: false, topBranch, topN, total: q1.length };
 };
-// F-11 の主要指標。**方針に依らない**ので成立判定に使える。
-// ブランチの取り方は方針の `evolve` が決めているため（下記参照）、方向の確定を
-// このハーネスから測ることはできない。代わりに「Q1 中に木の何割を取れるか」を見る。
-// Q1 で木を取り切れるなら、そもそも選ぶ対象が無く方向は生まれない。
+// F-11 の主要指標。
+//
+// 方向の確定（ブランチの偏り）は、このハーネスからは測れない。解放順が方針の `evolve` で
+// 固定されているためである（下の参考値を参照）。代わりに「Q1 で木を取り切れてしまうか」を見る。
+// 取り切れるなら、そもそも選ぶ対象が無く方向は生まれない。
+//
+// 標本は**固定した代表方針**に限る。全ランを標本にすると、`evolve: 'none'` の方針や
+// `skilledBase` の複製（`adj*` など）を増減するだけで、ゲームを変えなくても分位点が動く。
+const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
 {
-  const totalNodes = EVOLUTION_NODE_COUNT;
-  const q1Counts = runs
+  const { nodes: totalNodes, totalCost } = EVOLUTION_TREE;
+  console.log('**構造的事実（ランに依存しない）: ツリーの規模とポイントの入手速度**');
+  console.log(`  進化ツリー: ${totalNodes}ノード / 総コスト ${totalCost}（src/data/evolution.ts）`);
+  console.log(
+    '  1スプリントの入手ポイント: 1 + floor(出荷/40)（高負荷は +1）' +
+      '（`RunEngine.evoPointsFor`）',
+  );
+
+  const sample = runs.filter((r) => F11_SAMPLE_POLICIES.includes(r.policy));
+  console.log(
+    `\n**実測（代表方針 ${F11_SAMPLE_POLICIES.join(' / ')} に固定。n=${sample.length}）**`,
+  );
+  const q1Points = sample
+    .map((r) =>
+      (r.sprints ?? [])
+        .filter((s) => s.quarter === 1)
+        .reduce((a, s) => a + evoPointsForSprint(s), 0),
+    )
+    .filter((n) => n > 0);
+  if (q1Points.length > 0) {
+    console.log(
+      `  Q1 で入手する総ポイント: p10=${quantile(q1Points, 0.1)} p50=${quantile(q1Points, 0.5)} ` +
+        `p90=${quantile(q1Points, 0.9)}（ツリー総コスト ${totalCost} に対して）`,
+    );
+  }
+  const q1Counts = sample
     .map((r) => (r.evolutionUnlocks ?? []).filter((u) => u.quarter === 1).length)
     .filter((n) => n > 0);
   const full = q1Counts.filter((n) => n >= totalNodes).length;
-  console.log(`**主要指標（方針に依らない）: Q1 中に解放できる進化ノード数**`);
-  console.log(`  進化ツリーの全ノード数: ${totalNodes}（src/data/evolution.ts から読む）`);
   if (q1Counts.length === 0) {
     console.log('  Q1 解放数: 解放のあるランが無いため未計測');
   } else {
@@ -540,7 +605,7 @@ const commitInQ1 = (run) => {
     );
   }
   console.log(
-    `  Q1 中にツリーを取り切ったラン: ${full}/${runs.length} (${pct(full, runs.length)})`,
+    `  Q1 中にツリーを取り切ったラン: ${full}/${sample.length} (${pct(full, sample.length)})`,
   );
   console.log('  ※ Q1 で全ノードを取れるなら、どのブランチへ寄せるかという選択自体が発生しない。');
 }

@@ -572,10 +572,15 @@ function crisisTriggers(minTrust: number, budget: number, missedCount: number): 
  * `shutdown` も `loseReasonForOutcome` で `trustExhausted` に変換されるため、
  * 信頼枯渇ラベルの実態を見るには両方を分解する必要がある。
  *
- * 注意: エンジンは `companyOrgFromTeams` の全社集約値で判定するが、ここで読めるのは
- * 選択中チームの `state.org` である。複数チームの状態が乖離したランでは条件を
- * 再現できないことがあり、その場合は空配列（レポート上は `none`）になる。
- * `none` が出た件数は、この再現の限界として読むこと。
+ * エンジンは `companyOrgFromTeams(this.teams, this.org)` の全社集約値で判定するが、
+ * ここで使う `morale` / `seniorHp` は再現できている。`companyOrgFromTeams` はこの2つだけ
+ * 平均を取らず `fallback`（＝選択中チームの `this.org`）をそのまま返す仕様であり
+ * （`src/sim/orgscale/teamState.ts`。粗粒度チームの消耗で Q1 勝率が潰れるのを避けるため）、
+ * `snapshot().org` は同じ `this.org` の複製だからである。`trust` と `budget` はラン単位で
+ * チーム別の値を持たない。したがって shutdown の3条件はすべて判定時と同じ入力で再現される。
+ *
+ * 平均を取る `aiDependency` などは選択中チームの値と乖離しうるが、shutdown の判定には
+ * 使われないため、ここには影響しない。
  */
 function shutdownTriggers(
   minTrust: number,

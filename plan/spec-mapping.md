@@ -33,7 +33,7 @@
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ |
 | [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
-| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-1・F-2・F-4・F-7・F-8・F-10・F-12 が未充足でRI-72〜81。F-5・F-9 と F-2 の第4層は成立。F-3・F-11 は未検証 |
+| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-1・F-2・F-4・F-5・F-7・F-8・F-10・F-12 が未充足でRI-72〜83。F-9 は成立。F-3・F-11 は未検証 |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
 | [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), `src/game.ts`, `src/state/`, `tests/` | ✅ |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ等は実装済み | 🟡 残候補はRI-34 |
@@ -58,3 +58,5 @@
 | スプリント評価が S に偏る | 第4.6／第19.1 F-6 | [RI-79](./remaining-issues.md#ri-79-スプリント評価が-s-に偏る) |
 | ドラフトのマリガンが無い | 第7／第19.1 F-12 | [RI-80](./remaining-issues.md#ri-80-ドラフトのマリガンが無い) |
 | 敗北画面に「次の一手」が無い | 第13／第19.1 F-6 | [RI-81](./remaining-issues.md#ri-81-敗北画面に次の一手が無い) |
+| 目標修正の選択が結果を変えない | 第4.6.1／第19.1 F-2 第4層 | [RI-82](./remaining-issues.md#ri-82-目標修正の選択が結果を変えない) |
+| 介入が結果の分散を下げない（F-5 の定義と実装のずれ） | 第6／第19.1 F-5 | [RI-83](./remaining-issues.md#ri-83-介入が結果の分散を下げない) |

@@ -219,10 +219,17 @@ console.log('統制比較（adj* 方針のみ。他方針は提示順の先頭�
 for (const [policy, label] of Object.entries(ADJ_POLICIES)) {
   const arr = runs.filter((r) => r.policy === policy);
   if (!arr.length) continue;
-  const applied = arr.filter((r) => r.goalAdjustments.includes(label));
-  const won = arr.filter((r) => r.status === 'won').length;
+  // 実際にその修正を選べたラン（提示されなかったランはフォールバックしている）
+  const applied = arr.filter((r) => (r.quarters ?? []).some((q) => q.chosenAdjustment === label));
+  const won = applied.filter((r) => r.status === 'won').length;
+  // 「到達四半期」は終端の quarterNumber ではなく、修正を選んだ四半期を使う。
+  // 終端値は後続ラン長の差を表してしまい、統制条件の事前状態にならない。
+  const chosenAt = applied.flatMap((r) =>
+    (r.quarters ?? []).filter((q) => q.chosenAdjustment === label).map((q) => q.quarter),
+  );
+  const finalQ = applied.map((r) => r.quarterNumber);
   console.log(
-    `  ${policy}(${label}): n=${arr.length} 勝率=${pct(won, arr.length)} 実際に${label}を選べたラン=${applied.length} 到達四半期 平均=${r1(mean(arr.map((r) => r.quarterNumber)))} 総スプリント 平均=${r1(mean(arr.map((r) => r.sprintsPlayed)))}`,
+    `  ${policy}(${label}): 提示され選べたラン=${applied.length}/${arr.length} 勝率=${pct(won, applied.length)} 修正を選んだ四半期 平均=${r1(mean(chosenAt))} 最終到達四半期 平均=${r1(mean(finalQ))} 総スプリント 平均=${r1(mean(applied.map((r) => r.sprintsPlayed)))}`,
   );
 }
 

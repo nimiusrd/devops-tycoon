@@ -9,6 +9,7 @@
  * バランス変更の前後で同じコマンドを流せば差分を再計測できる。
  */
 import { getEvent } from '../../src/data/events';
+import { EVOLUTION_NODES } from '../../src/data/evolution';
 import { ACTION_DEFS } from '../../src/data/actions';
 import { CARD_DEFS } from '../../src/data/cards';
 import { RELIC_DEFS } from '../../src/data/relics';
@@ -39,8 +40,13 @@ export interface PolicySpec {
   stepMs: number;
   /** 手札を発動するか。 */
   playCards: boolean;
-  /** 進化ポイントを使うか。 */
-  evolve: boolean;
+  /**
+   * 進化ポイントの使い方。
+   * - `none`: 使わない
+   * - `asListed`: ツリーの定義順（UI 表示順）に上から取る。初見相当
+   * - `reviewFirst`: レビュー容量 → 品質 → AI → 文化 → 開発速度。攻略を知っている前提
+   */
+  evolve: 'none' | 'asListed' | 'reviewFirst';
   /** 編成フェーズで全員に AI を配る / 誰にも配らない。未指定は既定のまま。 */
   ai?: 'all' | 'none';
   /** 編成フェーズでレビューへ寄せる。 */
@@ -83,10 +89,10 @@ const SKILLED_ACTIONS: PolicySpec['actions'] = [
 const ALL_ACTION_IDS = ACTION_DEFS.map((d) => d.id);
 
 /**
- * 進化ノードの解放優先順（レビュー容量 → 品質 → AI → 文化 → 開発速度）。
+ * 攻略を知っている前提の解放順（レビュー容量 → 品質 → AI → 文化 → 開発速度）。
  * 前提ノードのある上位も含め、解放できるものを順に取る。
  */
-const EVOLUTION_PICK_ORDER = [
+const EVOLUTION_ORDER_REVIEW_FIRST = [
   'review-1',
   'review-2',
   'review-3',
@@ -104,12 +110,22 @@ const EVOLUTION_PICK_ORDER = [
   'dev-3',
 ];
 
+/**
+ * 初見相当の解放順。ツリーの定義順＝UI の表示順に上から取るだけで、
+ * どのブランチが有利かの知識を前提にしない。
+ */
+const EVOLUTION_ORDER_AS_LISTED = EVOLUTION_NODES.map((n) => n.id);
+
+function evolutionOrder(mode: PolicySpec['evolve']): readonly string[] {
+  return mode === 'reviewFirst' ? EVOLUTION_ORDER_REVIEW_FIRST : EVOLUTION_ORDER_AS_LISTED;
+}
+
 function skilledBase(): PolicySpec {
   return {
     actions: SKILLED_ACTIONS,
     stepMs: 300,
     playCards: true,
-    evolve: true,
+    evolve: 'reviewFirst',
     recruit: 'skip',
   };
 }
@@ -125,9 +141,9 @@ const single = (id: ActionId): PolicySpec => ({
 /** 方針一覧（SPEC 第19.1.3 の観測に対応）。 */
 export const POLICY_DEFS: Record<string, PolicySpec> = {
   /** 介入もカードも一切使わない完全放置（下限ベースライン）。 */
-  idle: { actions: [], stepMs: 1_000_000, playCards: false, evolve: false, recruit: 'skip' },
+  idle: { actions: [], stepMs: 1_000_000, playCards: false, evolve: 'none', recruit: 'skip' },
   /** 介入なし・カードのみ（F-5 の無介入ベースライン）。 */
-  passive: { actions: [], stepMs: 1_000_000, playCards: true, evolve: false, recruit: 'skip' },
+  passive: { actions: [], stepMs: 1_000_000, playCards: true, evolve: 'none', recruit: 'skip' },
   /** 初見想定。異常が目立ってから反応する。 */
   naive: {
     actions: [
@@ -136,7 +152,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     ],
     stepMs: 600,
     playCards: true,
-    evolve: true,
+    evolve: 'asListed',
     recruit: 'skip',
   },
   /** 上級者想定。閾値低め＋andon＋差配、採用あり。 */
@@ -144,7 +160,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     actions: SKILLED_ACTIONS,
     stepMs: 300,
     playCards: true,
-    evolve: true,
+    evolve: 'reviewFirst',
     recruit: 'hire',
   },
   /** skilled から採用だけを外した統制条件。 */
@@ -165,7 +181,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
     playCards: true,
-    evolve: true,
+    evolve: 'reviewFirst',
     ai: 'all',
     recruit: 'hire',
   },
@@ -173,7 +189,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
     playCards: true,
-    evolve: true,
+    evolve: 'reviewFirst',
     ai: 'none',
     recruit: 'hire',
   },
@@ -181,7 +197,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     actions: [{ id: 'firefight', when: (c) => c.burning >= 1 }, { id: 'assignTask' }],
     stepMs: 300,
     playCards: true,
-    evolve: true,
+    evolve: 'reviewFirst',
     formation: 'reviewHeavy',
     recruit: 'hire',
   },
@@ -205,7 +221,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     stepMs: MS_PER_TICK,
     rotateActions: true,
     playCards: false,
-    evolve: true,
+    evolve: 'reviewFirst',
     recruit: 'skip',
   },
 };
@@ -292,9 +308,17 @@ export interface RunLog {
 export function autoplayBeatChoiceIndex(
   eventId: string,
   kind: 'judgment' | 'decision',
+  recruit: PolicySpec['recruit'] = 'skip',
 ): number | undefined {
   if (kind === 'judgment') return undefined;
   const choices = getEvent(eventId)?.choices ?? [];
+  // 採用方針が hire なら即時採用の選択肢を取る。skip のときだけ避ける
+  // （避けないと「採用なし」群に採用が混ざる）。
+  if (recruit === 'hire') {
+    const grant = choices.findIndex((c) => c.outcome.grantRecruit);
+    if (grant >= 0) return grant;
+    return 0;
+  }
   let choice = 0;
   if (choices[choice]?.outcome.grantRecruit) {
     const alt = choices.findIndex((c) => !c.outcome.grantRecruit);
@@ -496,12 +520,13 @@ export function runOnce(
         else e.skipDraft();
         break;
       case 'evolution': {
-        // 使えるポイントは使い切る（プレイヤーは持ち越さない）。
-        if (spec.evolve) {
+        // 使えるポイントは使い切る（プレイヤーは持ち越さない）。順序は方針で変える。
+        if (spec.evolve !== 'none') {
+          const order = evolutionOrder(spec.evolve);
           let spent = 0;
           while (e.snapshot().evolution.points > 0 && spent < 16) {
             const before = e.snapshot().evolution.points;
-            for (const id of EVOLUTION_PICK_ORDER) {
+            for (const id of order) {
               e.unlockEvolution(id);
               if (e.snapshot().evolution.points < before) break;
             }
@@ -517,10 +542,15 @@ export function runOnce(
           guard = 60_000;
           break;
         }
-        e.resolveBeat(autoplayBeatChoiceIndex(s.beat.eventId, s.beat.kind));
+        e.resolveBeat(autoplayBeatChoiceIndex(s.beat.eventId, s.beat.kind, spec.recruit));
         break;
       }
       case 'shop':
+        // 採用方針は専用フェーズだけでなくショップの採用枠にも適用する。
+        // 適用しないと「採用あり」群に採用機会を見送ったランが混ざる。
+        if (spec.recruit === 'hire' && s.shop?.recruit && !s.shop.recruit.bought) {
+          e.buyShopRecruit();
+        }
         e.leaveShop();
         break;
       case 'rest':

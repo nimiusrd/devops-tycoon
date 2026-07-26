@@ -270,9 +270,10 @@ P(Rework) = (1 - pIncident) × pRework
 | `A_member` | AIを配った稼働コーダーの平均AI習熟度 |
 | `L` | 組織のAIリテラシー |
 | `Q` | 品質 |
-| `T` | `techDebt / TECH_DEBT_CAP` |
+| `T` | `clamp(techDebt / TECH_DEBT_CAP, 0, 1)` |
 
 タスクへ適用する実効手作業能力`M`と実効AI習熟`A`は、初期案ではチーム集約値として算出する。
+粗粒度チームの`techDebt`は`TECH_DEBT_CAP`を超えて増えうるため、`T`は明示的に`[0, 1]`へ収め、負債項の最大寄与を係数どおりに保つ。
 
 ```text
 M = clamp(0.50 × C + 0.30 × I + 0.20 × G, 0, 1)
@@ -396,7 +397,7 @@ C_next =
 
 個人ステータスにはすでに`implementation`、`review`、`aiMastery`があるが、手作業能力の低下と回復を表す状態はない。また、現在のタスクは担当メンバーを保持しない。最初の導入候補はチーム単位の`manualCapability`とし、個人単位へ拡張する場合は、タスクと担当者の対応、成長・消耗、保存スキーマまで同時に設計する。
 
-この再設計は未実装である。上のグラフはあくまで現行式の記録であり、目標モデルの確率曲線ではない。
+この再設計は未実装である。§4.5の[`probability-curves.svg`](./assets/probability-curves.svg)は現行式の記録、§4.5.2の[`proposed-ai-dependency-curves.svg`](./assets/proposed-ai-dependency-curves.svg)は候補式の形状確認用である。SSoT移行時に現行値として照合するのは前者であり、後者を現行ゲームの挙動として扱わない。
 
 ### 4.6 編成と施策の合成
 

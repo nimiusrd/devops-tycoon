@@ -61,7 +61,7 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 | 詳細モデル | [`src/sim/model/process.ts`](../src/sim/model/process.ts) | Coding、Review、Incident、Rework、炎上、コンボ |
 | タスク生成 | [`src/sim/sprint.ts`](../src/sim/sprint.ts) | タスク種別重み、高価値率 |
 | メンバー | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts) | 能力倍率、スタミナ、休職、採用 |
-| 介入 | [`src/sim/actions.ts`](../src/sim/actions.ts) | 効果量、コスト、持続tick |
+| 介入 | [`src/data/actions.ts`](../src/data/actions.ts)、[`src/sim/actions.ts`](../src/sim/actions.ts) | 集中力コスト、クールダウン、ゲージ量、効果量、副作用、持続tick |
 | ラン進行 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) | スプリント数、イベント率、休息、ショップ |
 | KPIと敗北 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts) | 目標、評価閾値、即時敗北条件 |
 | 粗粒度モデル | [`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts) | 出荷、行列、Incident、状態ドリフト |

@@ -83,6 +83,23 @@ const group = (keyFn) => {
 
 // --- F-7 勝率 ---------------------------------------------------------------
 console.log(`\n## F-7 難易度 × 方針の勝率\n`);
+/**
+ * F-7 の成立判定に使う方針。
+ *
+ * F-7 は「初見の初勝利が5ラン前後＝勝率20%前後」を見る基準なので、**初見相当の方針**で
+ * 判定する。全方針の平均は使わない。`adj*` の統制群や `onlyXxx` のような実験用方針を
+ * 足し引きするだけで、ゲームも初見プレイも変わっていないのに平均が動いてしまうためである
+ * （実際 `skilledBase` の複製である `adj*` を6本足したときに easy の平均が動いた）。
+ */
+const FIRST_PLAY_POLICY = 'naive';
+console.log(`**成立判定に使う初見相当の方針: ${FIRST_PLAY_POLICY}**`);
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  const arr = runs.filter((r) => r.difficulty === d && r.policy === FIRST_PLAY_POLICY);
+  if (!arr.length) continue;
+  const won = arr.filter((r) => r.status === 'won').length;
+  console.log(`  ${d}/${FIRST_PLAY_POLICY}: ${won}/${arr.length} (${pct(won, arr.length)})`);
+}
+console.log('\n参考: 方針別の内訳（実験用統制群を含むため、これらの平均は成立判定に使わない）:');
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   const won = arr.filter((r) => r.status === 'won').length;
   console.log(`${k}: ${won}/${arr.length} (${pct(won, arr.length)})`);
@@ -214,14 +231,21 @@ console.log(`\n## F-9 敗因ごとの進行と予兆\n`);
 // 敗因と実験条件は相関する（例: aiDependency はほぼ Nightmare の第1スプリント）。
 // 全体を一つに潰すと難易度差が p50 に混入するため、難易度で層別化する。
 /**
- * 敗北直前の状態を取る。
- * スプリント終了時に負けたランは最後のスプリントが敗北そのものなので1つ前を見るが、
- * 採用・カード・ビートなどスプリント間で負けたランは最後の完了スプリントが直前状態になる。
+ * 敗北直前の状態を取る。ログの末尾が敗北スプリントそのものかどうかで参照先が変わる。
+ *
+ * - スプリントを完走して結果が敗北条件を満たした（`lostSprintCompleted === true`）
+ *   → 末尾が敗北スプリントなので1つ前が直前状態
+ * - スプリント中に結果を残さず即時敗北した（`lostSprintCompleted === false`）
+ *   → 敗北スプリントはログに無く、末尾が最後の完了スプリント＝直前状態
+ * - 採用・カード・ビートなどスプリント間で敗北 → 末尾が直前状態
+ *
+ * ハーネスは `sprintsPlayed` が増えたスプリントしかログへ push しないため、
+ * `lostPhase === 'sprint'` だけで1つ前を選ぶと即時敗北のケースで直前状態を落とす。
  */
 const prevStateOf = (run) => {
   if (run.sprints.length === 0) return undefined;
-  const betweenSprints = run.lostPhase !== undefined && run.lostPhase !== 'sprint';
-  const idx = betweenSprints ? run.sprints.length - 1 : run.sprints.length - 2;
+  const lostAtSprintEnd = run.lostPhase === 'sprint' && run.lostSprintCompleted !== false;
+  const idx = lostAtSprintEnd ? run.sprints.length - 2 : run.sprints.length - 1;
   return idx >= 0 ? run.sprints[idx] : undefined;
 };
 /** 敗北を確定させたビートのイベントID内訳（上位3件）。 */
@@ -449,21 +473,64 @@ console.log(`\n## F-11 Q1 でビルドの方向が決まるか\n`);
 // 分子は「Q1 の解放が特定ブランチへ寄っている」ランに限る。1件だけ取った状態や、
 // 複数ブランチへ均等に投資した状態は「方向が決まった」とは数えない。
 const BRANCH_COMMIT_MIN_NODES = 2; // 同一ブランチで2ノード以上
-const BRANCH_COMMIT_SHARE = 0.5; // かつ Q1 解放の過半がそのブランチ
+const BRANCH_COMMIT_SHARE = 0.5; // かつ その時点までの解放の過半がそのブランチ
+/**
+ * Q1 中に「方向が確定した時点」があったかを判定する。
+ *
+ * F-11 は「方向が Q1 の途中で見え、以降はその方向を伸ばすか曲げるかの判断になる」を求める。
+ * つまり**確定後に曲げること自体は要件を満たす**。Q1 の解放をまとめて最終構成比だけで見ると、
+ * 序盤に同一ブランチへ寄せて方向を出したあと同じ Q1 中に他ブランチへ広げたランが
+ * 「分散」へ落ちてしまう。そこで解放を順に走査し、**一度でも条件を満たした時点**があれば
+ * 確定と数える。順序は記録済みの `sprintIndex`（同点なら記録順）による。
+ */
 const commitInQ1 = (run) => {
-  const q1 = (run.evolutionUnlocks ?? []).filter((u) => u.quarter === 1);
+  const q1 = (run.evolutionUnlocks ?? [])
+    .filter((u) => u.quarter === 1)
+    .map((u, i) => ({ ...u, order: i }))
+    .sort((a, b) => (a.sprintIndex ?? 0) - (b.sprintIndex ?? 0) || a.order - b.order);
   if (q1.length === 0) return null;
   const byBranch = {};
-  for (const u of q1) {
-    const b = u.id.split('-')[0];
+  const top = () => Object.entries(byBranch).sort((a, b) => b[1] - a[1])[0];
+  for (let i = 0; i < q1.length; i += 1) {
+    const b = q1[i].id.split('-')[0];
     byBranch[b] = (byBranch[b] ?? 0) + 1;
+    const [topBranch, topN] = top();
+    if (topN >= BRANCH_COMMIT_MIN_NODES && topN / (i + 1) >= BRANCH_COMMIT_SHARE) {
+      return { committed: true, topBranch, topN, total: q1.length, atSprint: q1[i].sprintIndex };
+    }
   }
-  const [topBranch, topN] = Object.entries(byBranch).sort((a, b) => b[1] - a[1])[0];
-  const committed = topN >= BRANCH_COMMIT_MIN_NODES && topN / q1.length >= BRANCH_COMMIT_SHARE;
-  return { committed, topBranch, topN, total: q1.length };
+  const [topBranch, topN] = top();
+  return { committed: false, topBranch, topN, total: q1.length };
 };
+// F-11 の主要指標。**方針に依らない**ので成立判定に使える。
+// ブランチの取り方は方針の `evolve` が決めているため（下記参照）、方向の確定を
+// このハーネスから測ることはできない。代わりに「Q1 中に木の何割を取れるか」を見る。
+// Q1 で木を取り切れるなら、そもそも選ぶ対象が無く方向は生まれない。
+{
+  const totalNodes = new Set(runs.flatMap((r) => (r.evolutionUnlocks ?? []).map((u) => u.id))).size;
+  const q1Counts = runs
+    .map((r) => (r.evolutionUnlocks ?? []).filter((u) => u.quarter === 1).length)
+    .filter((n) => n > 0);
+  const full = q1Counts.filter((n) => n >= totalNodes).length;
+  console.log(`**主要指標（方針に依らない）: Q1 中に解放できる進化ノード数**`);
+  console.log(`  進化ツリーの全ノード数: ${totalNodes}`);
+  console.log(
+    `  Q1 解放数（解放ありのラン n=${q1Counts.length}）: p10=${quantile(q1Counts, 0.1)} ` +
+      `p50=${quantile(q1Counts, 0.5)} p90=${quantile(q1Counts, 0.9)}`,
+  );
+  console.log(
+    `  Q1 中にツリーを取り切ったラン: ${full}/${runs.length} (${pct(full, runs.length)})`,
+  );
+  console.log('  ※ Q1 で全ノードを取れるなら、どのブランチへ寄せるかという選択自体が発生しない。');
+}
 console.log(
-  `判定: Q1 の解放が同一ブランチ ${BRANCH_COMMIT_MIN_NODES} ノード以上かつ Q1 解放の ${BRANCH_COMMIT_SHARE * 100}% 以上を占める`,
+  `\n参考: Q1 の解放を順に見て、同一ブランチ ${BRANCH_COMMIT_MIN_NODES} ノード以上かつ` +
+    `その時点までの解放の ${BRANCH_COMMIT_SHARE * 100}% 以上を占める時点が一度でもあるか`,
+);
+console.log('（確定後に他ブランチへ広げるのは F-11 が許容するため、最終構成比では判定しない）');
+console.log('  ※ この値は成立判定に使えない。ハーネスの解放順は方針の `evolve` で固定されており、');
+console.log(
+  '     全方針で最初の2ノードが必ず同一ブランチになる。盤面に応じて方向を選ぶ挙動ではない。',
 );
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   const arr = runs.filter((r) => r.difficulty === d);

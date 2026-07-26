@@ -395,6 +395,13 @@ export interface RunLog {
    * 「操作の余地がない画面で敗北」かどうかを判定できない。
    */
   lostBeat?: { eventId: string; kind: string; choiceIndex?: number };
+  /**
+   * `lostPhase === 'sprint'` のとき、敗北したスプリントが結果を残したか。
+   *
+   * `true` なら `sprints` の末尾が敗北スプリントそのもの（直前状態は1つ前）。
+   * `false` ならスプリント中に即時敗北してログが残っていない（末尾が直前状態）。
+   */
+  lostSprintCompleted?: boolean;
   status: string;
   winType?: string;
   loseReason?: string;
@@ -690,6 +697,16 @@ export function runOnce(
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
   /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
   let lostPhase: string | undefined;
+  /**
+   * 敗北したスプリントが結果を残したか。
+   *
+   * `sprint` フェーズでの敗北には2通りある。スプリントを完走して結果が敗北条件を満たした場合と、
+   * カード発動（`playCard` は `applyImmediateLose` を呼ぶ）などで結果を残さずスプリント中に
+   * 終わる場合である。ログは `sprintsPlayed` が増えたときだけ push するので、後者では
+   * `sprints` の末尾が敗北スプリントではなく**最後に完了したスプリント**になる。
+   * 直前状態をどこから取るかが変わるため区別して記録する。
+   */
+  let lostSprintCompleted: boolean | undefined;
   /** 直近に解決したビート（敗北がビートで確定したときに残す）。 */
   let lastBeat: { eventId: string; kind: string; choiceIndex?: number } | undefined;
   let lostBeat: typeof lastBeat;
@@ -698,6 +715,7 @@ export function runOnce(
   while (s.status === 'playing' && guard < 60_000) {
     guard += 1;
     s = e.snapshot();
+    const loggedBefore = sprints.length;
     switch (s.phase) {
       case 'setup':
         // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻す。
@@ -874,6 +892,8 @@ export function runOnce(
     if (next.status !== 'playing' && lostPhase === undefined) {
       lostPhase = s.phase;
       if (s.phase === 'beat') lostBeat = lastBeat;
+      // 同じ反復でログが増えていれば、その末尾が敗北スプリントそのもの。
+      if (s.phase === 'sprint') lostSprintCompleted = sprints.length > loggedBefore;
     }
     s = next;
   }
@@ -886,6 +906,7 @@ export function runOnce(
     evolutionUnlocks,
     ...(f.status === 'lost' ? { lostPhase } : {}),
     ...(f.status === 'lost' && lostBeat ? { lostBeat } : {}),
+    ...(f.status === 'lost' && lostSprintCompleted !== undefined ? { lostSprintCompleted } : {}),
     status: f.status,
     winType: f.winType,
     loseReason: f.loseReason,

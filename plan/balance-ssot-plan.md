@@ -151,6 +151,26 @@ SSoT移行後にAI依存モデルを変更する場合は、次の状態を独�
 
 この変更では、低依存時はAI支援なしが安全でも、高依存・低手作業能力ではAI支援なしが危険になる交差を許容する。単調性テストを「AI依存度が上がると常に全タスクのRework率が上がる」という現在の条件から、状態別の条件へ更新する必要がある。
 
+候補式の係数は、次の安定IDで独立して調整できるようにする。具体式と仮係数は[probability-model.md §4.5.2](./probability-model.md#452-rework候補式)を参照する。
+
+| パラメータID | 役割 |
+| --- | --- |
+| `rework.shared.base` | Reworkの基礎率 |
+| `rework.shared.qualityGapWeight` | 品質不足による共通リスク |
+| `rework.shared.techDebtWeight` | 技術的負債による共通リスク |
+| `rework.manual.skillGapWeight` | AI支援なしでの手作業能力不足 |
+| `rework.manual.dependencyInteraction` | AI依存度と手作業能力不足の相互作用 |
+| `rework.ai.skillGapWeight` | AI支援ありでのAI習熟不足 |
+| `rework.ai.dependencyInteraction` | AI依存度とAI習熟不足の相互作用 |
+| `rework.attemptDecay` | IncidentまたはRework経験後の減衰倍率 |
+| `rework.minimum` / `rework.maximum` | 確率の下限と上限 |
+| `state.aiDependency.gain` | AI支援タスクによる依存度増加 |
+| `state.aiDependency.recovery` | AIなし実装や施策による依存度回復 |
+| `state.manualCapability.decay` | AI支援中の手作業能力低下 |
+| `state.manualCapability.practiceRecovery` | AIなし実装による手作業能力回復 |
+
+能力合成の比率も調整対象にするが、個々の重みは合計1になる不変条件を持たせる。AI習熟を`aiRisk`と編成の`reworkRateAdd`へ重複反映しないことも検証する。
+
 ## 5. バージョンと再現性
 
 SSoT化後の決定論は、次の条件で保証する。
@@ -253,7 +273,9 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 
 - 共有リスク、AI依存、手作業能力、AI習熟の意味を分離する。
 - `manualCapability`をチーム状態として持つか、既存値から導出するかを決める。
-- AI支援あり・なしの確率曲線と、プレイヤーへ提示する判断を先に合意する。
+- 候補式の仮係数で、AI支援あり・なしの交差点と能力別の感度を可視化する。
+- 共有、手作業、AI利用の各リスク項を個別にオン・オフして寄与を検証する。
+- AI支援あり・なしの確率曲線と、プレイヤーへ提示する判断を合意する。
 - 値移動とは別PRで式を変更し、ルールセットを更新する。
 - 詳細モデル、粗粒度モデル、セーブ、リプレイ、診断表示を同時に確認する。
 

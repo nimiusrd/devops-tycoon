@@ -53,8 +53,13 @@ const EVOLUTION_TREE = readEvolutionTree();
 /**
  * 1スプリントで得る進化ポイント。`RunEngine.evoPointsFor` と同じ式。
  * 複製しているので、実装が変わったらここも直す（`src/sim/run/engine.ts`）。
+ *
+ * **ボススプリントは 0**。`resolveSprint()` のボス分岐は四半期レビューへ遷移して
+ * `return` するため、通常スプリント用のポイント加算へ到達しない。含めると
+ * 実際には得られないポイントを F-11 の「Q1 で入手する総ポイント」へ足してしまう。
  */
-const evoPointsForSprint = (s) => 1 + Math.floor((s.delivered ?? 0) / 40) + (s.kind === 'elite');
+const evoPointsForSprint = (s) =>
+  s.kind === 'boss' ? 0 : 1 + Math.floor((s.delivered ?? 0) / 40) + (s.kind === 'elite');
 const r1 = (n) => Math.round(n * 10) / 10;
 const pct = (n, d) => (d ? `${Math.round((n / d) * 1000) / 10}%` : '—');
 const quantile = (arr, p) => {
@@ -228,6 +233,35 @@ console.log(`\n## F-5 出荷の散らばり（同一スプリント番号で比�
 // 全スプリントを連結した CV は、長く生存したランほど標本を多く出し進行段階も混ざるため使わない。
 // 各スプリント番号ごとに、そこへ到達したランだけで CV を出す。
 const CV_SPRINT_INDEXES = [1, 2, 3, 5];
+
+// RI-83 の方針間比較は**共通コホート**で出す。
+// 方針ごとに到達率が違うまま生存ランを別々に母集団にすると、CV 差へ介入効果だけでなく
+// seed の選抜差が混ざる（実際 hard/S5 では到達 seed 数が方針で倍以上違う）。
+const CV_COMPARE_POLICIES = ['noInterventionCtl', 'naive', 'skilledNoHire'];
+console.log('RI-83 の方針間比較（同一メタ・難易度・seed で全方針が到達したスプリントのみ）:');
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  const cells = CV_SPRINT_INDEXES.map((n) => {
+    const bySeed = (policy) => {
+      const m = new Map();
+      for (const r of runs.filter((x) => x.difficulty === d && x.policy === policy)) {
+        if (r.sprints.length >= n)
+          m.set(`${r.meta ?? 'fresh'}|${r.seed}`, r.sprints[n - 1].delivered);
+      }
+      return m;
+    };
+    const maps = CV_COMPARE_POLICIES.map(bySeed);
+    const shared = [...maps[0].keys()].filter((k) => maps.every((m) => m.has(k)));
+    if (shared.length === 0) return `S${n}: 共通到達なし`;
+    const parts = CV_COMPARE_POLICIES.map((policy, i) => {
+      const xs = shared.map((k) => maps[i].get(k));
+      return `${policy}=${fmtCv(xs)}`;
+    });
+    return `S${n}(共通 n=${shared.length}): ${parts.join(' / ')}`;
+  });
+  console.log(`  ${d}: ${cells.join(' | ')}`);
+}
+
+console.log('\n参考: 方針別（各方針の到達ランで独立に集計。方針間の比較には使わない）:');
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   const cells = CV_SPRINT_INDEXES.map((n) => {
     const xs = arr.filter((r) => r.sprints.length >= n).map((r) => r.sprints[n - 1].delivered);

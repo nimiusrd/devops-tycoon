@@ -80,7 +80,7 @@ export interface PolicySpec {
    * - `hire`: 枠と予算がある限り無差別に採る
    * - `skip`: 一切採らない
    * - `selective`: 欠員（休職者あり／実働2名以下）があり、かつ採用後も予算に
-   *   余裕（`RECRUIT_COST` の2倍以上）が残るときだけ採る
+   *   余裕（`RECRUIT_COST` 1回分以上）が残るときだけ採る
    *
    * `hire` と `skip` の比較で分かるのは「無差別採用の是非」までで、実プレイヤーの
    * 「必要なときだけ採る」判断は測れない。`selective` はその第3の条件。
@@ -651,11 +651,17 @@ function assignBenchMembers(e: RunEngine): void {
 }
 
 /**
- * この盤面で採用するか。`selective` は「欠員があり、かつ採用後も予算が残る」ときだけ採る。
+ * この盤面で採用するか。`selective` は「欠員があり、かつ**採用後も**予算が残る」ときだけ採る。
  *
  * 欠員の定義: 休職者がいる、または実働（bench でも onLeave でもない）が2名以下。
- * 予算条件を `RECRUIT_COST` の2倍にしているのは、採用で予算を使い切ると
- * 直後の四半期レビューで `budget<=5` の危機条件へ落ちるため（これも決めた値）。
+ * 予算条件は**採用費を引いた残額**で判定する。`tryRecruit` はこの後さらに `RECRUIT_COST` を
+ * 引くので、引く前の額で見ると「採用後に◯◯残る」という条件にならない。
+ *
+ * 残額の下限は `RECRUIT_COST` 1回分（=25）。当初は2回分にしていたが、それだと
+ * 採用時点で予算75が要る一方、**実測の予算は p50=45 / p90=60 / 最大68 で75へ到達しない**。
+ * 条件が一度も成立せず、この方針が `skilledNoHire` と完全に同一のランになっていた
+ * （40ラン全部が一致）。到達可能な水準へ下げた。下限を置く理由自体は変わらず、
+ * 採用で予算を使い切ると直後の四半期レビューで `budget<=5` の危機条件へ落ちるため。
  */
 function wantsRecruit(s: RunState, spec: PolicySpec): boolean {
   if (spec.recruit === 'skip') return false;
@@ -664,7 +670,7 @@ function wantsRecruit(s: RunState, spec: PolicySpec): boolean {
   if (spec.recruit === 'hire') return true;
   const onLeave = s.roster.members.some((m) => m.onLeave);
   const working = s.roster.members.filter((m) => !m.onLeave && m.assignment !== 'bench').length;
-  return (onLeave || working <= 2) && s.budget >= RECRUIT_COST * 2;
+  return (onLeave || working <= 2) && s.budget - RECRUIT_COST >= RECRUIT_COST;
 }
 
 /**

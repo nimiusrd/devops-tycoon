@@ -19,6 +19,7 @@ import { RECRUIT_COST, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine } from '../../src/sim/run/engine';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
 import type { ActionId } from '../../src/sim/types';
+import { MS_PER_TICK_1X } from '../../src/ui/sprintTempo';
 
 /** 介入の発動可否を判定するための盤面サマリー。 */
 export interface BoardCtx {
@@ -37,7 +38,17 @@ export interface BoardCtx {
 export interface PolicySpec {
   /** 毎ステップ順に試す介入（条件つき）。条件省略は毎回試行。 */
   actions: { id: ActionId; when?: (ctx: BoardCtx) => boolean }[];
-  /** step 幅（ms）。大きいほど反応が鈍い＝初見寄り。 */
+  /**
+   * 1回の介入判断で進めるシミュレーション時間（ms）。大きいほど反応が鈍い＝初見寄り。
+   *
+   * **壁時計の間隔ではない。** `RunEngine.step(dtMs)` は `FIXED_STEP_MS`（=100ms）ごとに
+   * 1 tick 進めるので、この値は `stepMs / 100` tick に相当する。実 UI の 1x では
+   * 1 tick が壁時計 `MS_PER_TICK_1X`（=680ms）なので、換算は
+   * `壁時計 = stepMs / 100 * 680`。つまり `300` は3 tick＝約2.0秒、`600` は6 tick＝約4.1秒。
+   *
+   * 所見へ書くときは必ず `wallClockIntervalSec()` で換算した値を使うこと。
+   * 「300ms 刻み」と書くと実際の約7分の1の反応間隔として読まれる。
+   */
   stepMs: number;
   /**
    * 手札の使い方。
@@ -98,6 +109,19 @@ export interface PolicySpec {
 
 /** `RunEngine.step` の 1 tick 相当（ms）。最小刻みで試行するにはこの値を渡す。 */
 export const MS_PER_TICK = FIXED_STEP_MS;
+
+/** `stepMs` を tick 数へ換算する。 */
+export const stepTicks = (stepMs: number): number => stepMs / MS_PER_TICK;
+
+/**
+ * `stepMs` を実 UI（1x）の壁時計秒へ換算する。
+ *
+ * 所見に「何秒ごとに判断しているか」を書くときはこれを使う。`stepMs` をそのまま
+ * ミリ秒として書くと、実際の約7分の1の反応間隔として読まれる（`MS_PER_TICK_1X` は
+ * `MS_PER_TICK` の 6.8 倍のため）。
+ */
+export const wallClockIntervalSec = (stepMs: number): number =>
+  (stepTicks(stepMs) * MS_PER_TICK_1X) / 1000;
 
 /** メタ進行の解放状態。`fresh` は初見（既定解放のみ）、`full` はやり込み後（全解放）。 */
 export type MetaProfile = 'fresh' | 'full';

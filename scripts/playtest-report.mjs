@@ -29,6 +29,23 @@ function readMsPerTick1x() {
 }
 const MS_PER_TICK_1X = readMsPerTick1x();
 const sec = (ticks) => (ticks * MS_PER_TICK_1X) / 1000;
+
+/**
+ * 進化ツリーの全ノード数を実装（`src/data/evolution.ts`）から読む。
+ *
+ * 観測されたログから推定してはいけない。`PT_POLICIES=idle` のような絞り込み実行では
+ * 解放イベントが0件になり総数0（p50 が NaN）になるし、一部のノードしか出ない実行では
+ * 総数を過小評価して「Q1 で取り切ったラン」を誤判定する。総数は入力ランに依存しない。
+ */
+function readEvolutionNodeCount() {
+  const src = readFileSync('src/data/evolution.ts', 'utf8');
+  const body = src.split('export const EVOLUTION_NODES')[1];
+  if (!body) throw new Error('src/data/evolution.ts から EVOLUTION_NODES を読み取れない');
+  const n = (body.match(/^\s{4}id: '/gm) ?? []).length;
+  if (n === 0) throw new Error('src/data/evolution.ts からノード数を読み取れない');
+  return n;
+}
+const EVOLUTION_NODE_COUNT = readEvolutionNodeCount();
 const r1 = (n) => Math.round(n * 10) / 10;
 const pct = (n, d) => (d ? `${Math.round((n / d) * 1000) / 10}%` : '—');
 const quantile = (arr, p) => {
@@ -507,17 +524,21 @@ const commitInQ1 = (run) => {
 // このハーネスから測ることはできない。代わりに「Q1 中に木の何割を取れるか」を見る。
 // Q1 で木を取り切れるなら、そもそも選ぶ対象が無く方向は生まれない。
 {
-  const totalNodes = new Set(runs.flatMap((r) => (r.evolutionUnlocks ?? []).map((u) => u.id))).size;
+  const totalNodes = EVOLUTION_NODE_COUNT;
   const q1Counts = runs
     .map((r) => (r.evolutionUnlocks ?? []).filter((u) => u.quarter === 1).length)
     .filter((n) => n > 0);
   const full = q1Counts.filter((n) => n >= totalNodes).length;
   console.log(`**主要指標（方針に依らない）: Q1 中に解放できる進化ノード数**`);
-  console.log(`  進化ツリーの全ノード数: ${totalNodes}`);
-  console.log(
-    `  Q1 解放数（解放ありのラン n=${q1Counts.length}）: p10=${quantile(q1Counts, 0.1)} ` +
-      `p50=${quantile(q1Counts, 0.5)} p90=${quantile(q1Counts, 0.9)}`,
-  );
+  console.log(`  進化ツリーの全ノード数: ${totalNodes}（src/data/evolution.ts から読む）`);
+  if (q1Counts.length === 0) {
+    console.log('  Q1 解放数: 解放のあるランが無いため未計測');
+  } else {
+    console.log(
+      `  Q1 解放数（解放ありのラン n=${q1Counts.length}）: p10=${quantile(q1Counts, 0.1)} ` +
+        `p50=${quantile(q1Counts, 0.5)} p90=${quantile(q1Counts, 0.9)}`,
+    );
+  }
   console.log(
     `  Q1 中にツリーを取り切ったラン: ${full}/${runs.length} (${pct(full, runs.length)})`,
   );

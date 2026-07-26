@@ -211,14 +211,33 @@ const prevStateOf = (run) => {
   const idx = betweenSprints ? run.sprints.length - 1 : run.sprints.length - 2;
   return idx >= 0 ? run.sprints[idx] : undefined;
 };
+/** 敗北を確定させたビートのイベントID内訳（上位3件）。 */
+const beatEventsOf = (arr) => {
+  const ev = {};
+  for (const r of arr) {
+    if (!r.lostBeat) continue;
+    const k = `${r.lostBeat.eventId}(${r.lostBeat.kind})`;
+    ev[k] = (ev[k] ?? 0) + 1;
+  }
+  const top = Object.entries(ev)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+  return top.length ? ` | 敗北を確定させたビート ${top.map(([k, n]) => `${k}=${n}`).join(', ')}` : '';
+};
+
 const fmtGroup = (arr) => {
   const sprintsToLose = arr.map((r) => r.sprints.length);
   const prev = arr.map(prevStateOf).filter((x) => x !== undefined);
   const f = (xs, fn) => (xs.length ? r1(mean(xs.map(fn))) : '—');
   const phases = {};
-  for (const r of arr)
-    phases[r.lostPhase ?? 'unknown'] = (phases[r.lostPhase ?? 'unknown'] ?? 0) + 1;
-  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 直前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)}（直前状態あり ${prev.length}/${arr.length}）| 敗北フェーズ ${JSON.stringify(phases)}`;
+  for (const r of arr) {
+    // ビート敗北は judgment（選択不能）と decision（プレイヤーが選べる）で意味が違う。
+    // まとめると「操作の余地がない画面で敗北」かどうかを判定できない。
+    const key =
+      r.lostPhase === 'beat' && r.lostBeat ? `beat:${r.lostBeat.kind}` : (r.lostPhase ?? 'unknown');
+    phases[key] = (phases[key] ?? 0) + 1;
+  }
+  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 直前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)}（直前状態あり ${prev.length}/${arr.length}）| 敗北フェーズ ${JSON.stringify(phases)}${beatEventsOf(arr)}`;
 };
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   console.log(`\n### ${d}`);
@@ -347,21 +366,34 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
 
 // --- F-11 ビルドの方向が決まる時期 ------------------------------------------
 console.log(`\n## F-11 進化ノードの解放時期（ビルドの方向が決まる時期）\n`);
+// 母数は「全ラン」。解放イベントだけを母数にすると、第1スプリントで敗北して進化に
+// 到達しないランや、進化を使わない方針が集計から消え、常に「Q1で100%」になる。
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  const arr = runs.filter((r) => r.difficulty === d);
+  const withQ1 = arr.filter((r) => (r.evolutionUnlocks ?? []).some((u) => u.quarter === 1));
+  const never = arr.filter((r) => (r.evolutionUnlocks ?? []).length === 0);
+  console.log(
+    `${d}: Q1中に解放したラン ${withQ1.length}/${arr.length} (${pct(withQ1.length, arr.length)}) / 一度も解放しなかったラン ${never.length} (${pct(never.length, arr.length)})`,
+  );
+}
+console.log('\n方針別（進化を使う方針のみ）:');
 for (const [policy, arr] of group((r) => r.policy)) {
+  const spec = arr[0];
   const unlocks = arr.flatMap((r) => r.evolutionUnlocks ?? []);
-  if (!unlocks.length) continue;
-  const inQ1 = unlocks.filter((u) => u.quarter === 1).length;
-  const firstQuarters = arr
-    .map((r) => (r.evolutionUnlocks ?? [])[0])
-    .filter(Boolean)
-    .map((u) => u.quarter);
+  if (!unlocks.length) {
+    console.log(`  ${policy}: 進化を使わない方針（解放0件 / ${arr.length}ラン）`);
+    continue;
+  }
+  void spec;
+  const withQ1 = arr.filter((r) => (r.evolutionUnlocks ?? []).some((u) => u.quarter === 1));
+  const never = arr.filter((r) => (r.evolutionUnlocks ?? []).length === 0);
   const branchesQ1 = {};
   for (const u of unlocks.filter((u) => u.quarter === 1)) {
     const b = u.id.split('-')[0];
     branchesQ1[b] = (branchesQ1[b] ?? 0) + 1;
   }
   console.log(
-    `${policy}: 解放 ${unlocks.length}件 うち Q1 ${inQ1}(${pct(inQ1, unlocks.length)}) 初回解放の四半期 p50=${quantile(firstQuarters, 0.5)} Q1のブランチ内訳=${JSON.stringify(branchesQ1)}`,
+    `  ${policy}: Q1解放あり ${withQ1.length}/${arr.length}(${pct(withQ1.length, arr.length)}) 未解放 ${never.length} Q1ブランチ=${JSON.stringify(branchesQ1)}`,
   );
 }
 

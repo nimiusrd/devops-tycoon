@@ -15,6 +15,7 @@ import { CARD_DEFS } from '../../src/data/cards';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
+import { RECRUIT_COST, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine } from '../../src/sim/run/engine';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
 import type { ActionId } from '../../src/sim/types';
@@ -63,8 +64,14 @@ export interface PolicySpec {
   ai?: 'all' | 'none';
   /** 編成フェーズでレビューへ寄せる。 */
   formation?: 'reviewHeavy';
-  /** 採用フェーズの選択。 */
+  /** 採用フェーズの選択。`hire` は採用後にベンチのメンバーを実働レーンへ配置する。 */
   recruit: 'hire' | 'skip';
+  /**
+   * ビート（スプリント間イベント）の選択肢の選び方。
+   * - `firstChoice`: 提示順の先頭。初見相当
+   * - `stateAware`: 現在の組織状態を見て、削られたくない資源を減らす選択肢を避ける
+   */
+  beat?: 'firstChoice' | 'stateAware';
   /** 目標修正の選択（固定）。未指定は提示順の先頭。 */
   goalAdjustment?: GoalAdjustmentId;
   /** 試行順を tick ごとに回転させる（probe の順序バイアス平準化用）。 */
@@ -172,6 +179,7 @@ function skilledBase(): PolicySpec {
     stepMs: 300,
     cards: 'always',
     evolve: 'reviewFirst',
+    beat: 'stateAware',
     recruit: 'skip',
   };
 }
@@ -211,6 +219,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     stepMs: 300,
     cards: 'always',
     evolve: 'reviewFirst',
+    beat: 'stateAware',
     recruit: 'hire',
   },
   /** skilled から採用だけを外した統制条件。 */
@@ -350,6 +359,12 @@ export interface RunLog {
   evolutionUnlocks: { id: string; quarter: number; sprintIndex: number }[];
   /** 敗北したフェーズ（`sprint`=スプリント終了時 / それ以外=スプリント間）。 */
   lostPhase?: string;
+  /**
+   * 敗北がビートで確定したときの、そのビートの内訳。
+   * `judgment` は選択不能、`decision` はプレイヤーが選べる。混ぜると
+   * 「操作の余地がない画面で敗北」かどうかを判定できない。
+   */
+  lostBeat?: { eventId: string; kind: string; choiceIndex?: number };
   status: string;
   winType?: string;
   loseReason?: string;
@@ -371,26 +386,60 @@ export interface RunLog {
  * オートプレイ用のビート選択肢 index。
  * 明示指定がなければ即時採用（`grantRecruit`）を避け、決定論シードの安定を保つ。
  */
+/**
+ * 選択肢を現在の組織状態で評価する。減らされたくない資源ほど強く嫌う。
+ * 実プレイヤーが「シニアが限界なら残業を選ばない」程度の判断をする想定。
+ */
+function scoreChoice(outcome: Record<string, unknown>, org: RunState['org']): number {
+  const num = (v: unknown): number => (typeof v === 'number' ? v : 0);
+  const scarcity = (current: number): number => 1 + (100 - current) / 50;
+  let score = 0;
+  score += num(outcome.delivered) * 0.05;
+  score += num(outcome.budget) * 0.2;
+  const hp = num(outcome.seniorHp);
+  score += hp >= 0 ? hp * 0.5 : hp * scarcity(org.seniorHp) * 1.5;
+  const morale = num(outcome.morale);
+  score += morale >= 0 ? morale * 0.3 : morale * scarcity(org.morale) * 0.8;
+  score -= num(outcome.techDebt) * 0.4;
+  score -= num(outcome.aiDependency) * 0.2;
+  const trust = (outcome.trust ?? {}) as Record<string, number>;
+  score += (num(trust.management) + num(trust.customers) + num(trust.team)) * 0.2;
+  if (outcome.grantRelic) score += 4;
+  return score;
+}
+
 export function autoplayBeatChoiceIndex(
   eventId: string,
   kind: 'judgment' | 'decision',
   recruit: PolicySpec['recruit'] = 'skip',
+  mode: PolicySpec['beat'] = 'firstChoice',
+  org?: RunState['org'],
 ): number | undefined {
   if (kind === 'judgment') return undefined;
   const choices = getEvent(eventId)?.choices ?? [];
+  if (choices.length === 0) return 0;
   // 採用方針が hire なら即時採用の選択肢を取る。skip のときだけ避ける
   // （避けないと「採用なし」群に採用が混ざる）。
   if (recruit === 'hire') {
     const grant = choices.findIndex((c) => c.outcome.grantRecruit);
     if (grant >= 0) return grant;
-    return 0;
   }
-  let choice = 0;
-  if (choices[choice]?.outcome.grantRecruit) {
-    const alt = choices.findIndex((c) => !c.outcome.grantRecruit);
-    if (alt >= 0) choice = alt;
+  const allowed = choices
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => recruit === 'hire' || !c.outcome.grantRecruit);
+  const pool = allowed.length > 0 ? allowed : choices.map((c, i) => ({ c, i }));
+  if (mode !== 'stateAware' || !org) return pool[0].i;
+  // 状態依存: 現在いちばん減らしたくない資源を削る選択肢を避ける。
+  let best = pool[0];
+  let bestScore = scoreChoice(pool[0].c.outcome as Record<string, unknown>, org);
+  for (const cand of pool.slice(1)) {
+    const sc = scoreChoice(cand.c.outcome as Record<string, unknown>, org);
+    if (sc > bestScore) {
+      best = cand;
+      bestScore = sc;
+    }
   }
-  return choice;
+  return best.i;
 }
 
 /**
@@ -475,6 +524,18 @@ function intervene(
   return n;
 }
 
+/**
+ * ベンチにいるメンバーを実働レーンへ配置する。
+ * `recruitMember` は採用直後を必ず `bench` に置くため、配置しないと採用が予算を払うだけになる。
+ * レビュー適性が実装適性以上なら review、それ以外は coding。
+ */
+function assignBenchMembers(e: RunEngine): void {
+  for (const m of e.snapshot().roster.members) {
+    if (m.assignment !== 'bench' || m.onLeave) continue;
+    e.assignMember(m.id, m.stats.review >= m.stats.implementation ? 'review' : 'coding');
+  }
+}
+
 function applySetup(e: RunEngine, spec: PolicySpec): void {
   if (spec.ai) {
     for (const m of e.snapshot().roster.members) e.setMemberAi(m.id, spec.ai === 'all');
@@ -547,6 +608,9 @@ export function runOnce(
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
   /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
   let lostPhase: string | undefined;
+  /** 直近に解決したビート（敗北がビートで確定したときに残す）。 */
+  let lastBeat: { eventId: string; kind: string; choiceIndex?: number } | undefined;
+  let lostBeat: typeof lastBeat;
   let guard = 0;
   let s = e.snapshot();
   while (s.status === 'playing' && guard < 60_000) {
@@ -554,6 +618,8 @@ export function runOnce(
     s = e.snapshot();
     switch (s.phase) {
       case 'setup':
+        // 採用方針では、採ったメンバーをベンチに置いたままにしない。
+        if (spec.recruit === 'hire') assignBenchMembers(e);
         applySetup(e, spec);
         e.beginSetupSprint();
         break;
@@ -647,7 +713,15 @@ export function runOnce(
           guard = 60_000;
           break;
         }
-        e.resolveBeat(autoplayBeatChoiceIndex(s.beat.eventId, s.beat.kind, spec.recruit));
+        const choice = autoplayBeatChoiceIndex(
+          s.beat.eventId,
+          s.beat.kind,
+          spec.recruit,
+          spec.beat,
+          s.org,
+        );
+        lastBeat = { eventId: s.beat.eventId, kind: s.beat.kind, choiceIndex: choice };
+        e.resolveBeat(choice);
         break;
       }
       case 'shop':
@@ -658,10 +732,16 @@ export function runOnce(
         }
         e.leaveShop();
         break;
-      case 'rest':
+      case 'rest': {
         // 採用方針は休息の選択肢にも適用する（RestScreen に採用がある）。
-        e.restChoose(spec.recruit === 'hire' ? 'recruit' : 'heal');
+        // ただし満員・予算不足では実画面のボタンが無効なので、回復へフォールバックする。
+        const canHire =
+          spec.recruit === 'hire' &&
+          s.roster.members.length < ROSTER_CAP &&
+          s.budget >= RECRUIT_COST;
+        e.restChoose(canHire ? 'recruit' : 'heal');
         break;
+      }
       case 'recruit':
         e.recruitChoose(spec.recruit);
         break;
@@ -712,7 +792,10 @@ export function runOnce(
         break;
     }
     const next = e.snapshot();
-    if (next.status !== 'playing' && lostPhase === undefined) lostPhase = s.phase;
+    if (next.status !== 'playing' && lostPhase === undefined) {
+      lostPhase = s.phase;
+      if (s.phase === 'beat') lostBeat = lastBeat;
+    }
     s = next;
   }
   const f = e.snapshot();
@@ -723,6 +806,7 @@ export function runOnce(
     meta,
     evolutionUnlocks,
     ...(f.status === 'lost' ? { lostPhase } : {}),
+    ...(f.status === 'lost' && lostBeat ? { lostBeat } : {}),
     status: f.status,
     winType: f.winType,
     loseReason: f.loseReason,

@@ -225,23 +225,24 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 
 **成立している基準**:
 
-- **F-11 ビルドの方向は第1四半期で決まる**。進化ノードの解放は全方針で 100% が Q1、
-  初回解放の四半期 p50=1。
+- **F-11 ビルドの方向は第1四半期で決まる**（進化に到達する難易度では）。
+  Q1 中に進化ノードを解放したランは easy / normal / hard で 92.3%。
+  nightmare は 14.6% だが、これは 85.4% が第1スプリントで敗北して進化に到達しないため（RI-73）。
 - **F-9 敗因ごとに進行速度が違う**（難易度で層別化しても成立）。normal の敗北までの
-  スプリント数 p50 は `seniorBurnout` 2 / `techDebt` 4 / `reviewFreeze` 8 /
-  `budgetExhausted` 20 / `trustExhausted` 24 / `reorgRequired` 24。
+  スプリント数 p50 は `seniorBurnout` 3 / `techDebt` 4 / `reviewFreeze` 8 /
+  `trustExhausted` 24 / `reorgRequired` 24。決着するフェーズも敗因ごとに違う（RI-84）。
 
 **成立していない基準**:
 
 | 基準 | 未充足の内容 | 対応 |
 | --- | --- | --- |
-| F-1 | 緊急対応のみが全26方針中トップ（22/40）。逆に採用は一貫して勝率を下げる（10/40 vs 16/40） | RI-72 |
+| F-1 | 緊急対応のみが全26方針中トップ（22/40）。逆に採用は一貫して勝率を下げる（9/40 vs 17/40） | RI-72 |
 | F-2 | 第2層（カード）は使い方を変えても勝率を動かさない。第4層（目標修正）も6選択肢で 60〜73% に収まる | RI-77・RI-82 |
 | F-4 | easy の通常スプリントは 58.5% が絶対下限30秒を割る。ボスは全難易度が規定下限割れ | RI-74 |
 | F-5 | 条件を揃えると介入の寄与が期待値・分散ともほぼ消える | RI-83 |
 | F-6 | 無介入と熟練で評価中央値がほぼ同じ | RI-79 |
-| F-7 | 勝率が easy 75% / normal 47% / hard 18% / nightmare 0% | RI-72 |
-| F-8 | Nightmare は260ラン全敗。敗北の大半がスプリント間イベントで確定する | RI-73・RI-84 |
+| F-7 | 勝率が easy 75% / normal 48% / hard 17% / nightmare 0% | RI-72 |
+| F-8 | Nightmare は260ラン全敗。`reviewFreeze` は選択不能な判定イベントでしか確定しない | RI-73・RI-84 |
 | F-10 | 勝利種別が2種のみ。方針で分岐はするが「重アクションを使ったか」でしか分かれない | RI-75 |
 | F-12 | ドラフトのマリガンが無い | RI-80 |
 
@@ -253,9 +254,9 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 
 | 難易度 | 全体 | `idle` | `passive` | `naive` | `skilled` | `onlyFirefight` |
 | --- | --- | --- | --- | --- | --- | --- |
-| easy | **75%**（195/260） | 7/10 | 7/10 | 6/10 | 5/10 | **10/10** |
-| normal | **47%**（123/260） | 0/10 | 2/10 | 5/10 | 4/10 | **8/10** |
-| hard | **18%**（47/260） | 0/10 | 0/10 | 2/10 | 1/10 | **4/10** |
+| easy | **75%**（196/260） | 7/10 | 7/10 | 6/10 | 6/10 | **10/10** |
+| normal | **48%**（125/260） | 0/10 | 2/10 | 5/10 | 3/10 | **8/10** |
+| hard | **17%**（45/260） | 0/10 | 0/10 | 2/10 | 0/10 | **4/10** |
 | nightmare | **0%**（0/260） | 0/10 | 0/10 | 0/10 | 0/10 | 0/10 |
 
 **F-7（初見相当の勝率20%前後）に合うのは hard（初見相当 2/10）だけ**。
@@ -268,21 +269,22 @@ easy は完全放置でも 7/10 勝て、nightmare は260ラン全敗（RI-73）
 | --- | --- |
 | `onlyFirefight`（緊急対応のみ） | **22** |
 | `onlyAndon` | 19 |
-| `skilledNoHire` / `skilledNoCards` | 16 |
-| `reviewHeavy` / `skilledSelectiveCards` | 15 |
-| `onlySplit` / `onlyPair` / `aiFullBet` | 14 |
-| `naive` / `onlyInterrupt` / `noInterventionCtl` | 13 |
-| `onlyAssign` / `noAi` | 12 |
-| `onlyThrottle` | 11 |
-| **`skilled`（採用あり）** | **10** |
-| `probe`（全部撃つ） | 10 |
-| `passive` / `onlyOvertime` | 9 |
+| **`skilledNoHire`（採用なし）** | **17** |
+| `skilledNoCards` / `noInterventionCtl` / `skilledSelectiveCards` | 16 |
+| `onlySplit` / `onlyPair` | 14 |
+| `naive` / `onlyInterrupt` | 13 |
+| `onlyAssign` / `aiFullBet` | 12 |
+| `onlyThrottle` / `noAi` | 11 |
+| `reviewHeavy` / `probe`（全部撃つ） | 10 |
+| `passive` / `onlyOvertime` / **`skilled`（採用あり）** | **9** |
 | `idle` | 7 |
 
 - **緊急対応は「常に打てば得」**。単独で 22/40 と全方針中トップで、複合方針（16/40）を上回る。
-- **採用は「常に見送るのが正解」**。`skilled` 10/40 に対し採用を外した `skilledNoHire` は 16/40。
-  採用方針を専用フェーズ・ショップ・休息・即時採用イベントの全経路に適用した結果である。
-  `budgetExhausted` 敗北は1,040ラン中30件。
+- **採用は「常に見送るのが正解」**。`skilled` 9/40 に対し採用を外した `skilledNoHire` は 17/40。
+  採用方針を全経路（専用フェーズ・ショップ・休息・即時採用イベント）に適用し、さらに
+  **採ったメンバーを能力に応じて実働レーン（review / coding）へ配置した上での結果**である。
+  当初はハーネスが採用メンバーをベンチに残していたため疑いがあったが、配置しても差は
+  縮まらず（10→9 と 16→17）むしろ広がった。`budgetExhausted` 敗北は1,040ラン中19件。
 
 どちらも状況によって正解が入れ替わらず、F-1 の「固定の強手が存在しない」を満たさない。
 
@@ -326,7 +328,7 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 ### RI-75 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）
 
-1,040ラン中365勝の内訳は `healthy` 212（58%）/ `noDamage` 152（42%）/ `happiness` 1。
+1,040ラン中366勝の内訳は `healthy` 208（57%）/ `noDamage` 157（43%）/ `happiness` 1。
 `aiSuccess` / `management` / `chaos` / `normal` は**0件**。
 
 方針別に見ると分布は変わるが、分かれ方は一様である。
@@ -334,11 +336,10 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 | 方針 | 勝利種別 |
 | --- | --- |
 | `onlyAndon` | `healthy` 19 / `noDamage` **0** |
-| `onlyOvertime` | `healthy` 9 / `noDamage` **0** |
 | `skilledNoCards` | `healthy` 16 / `noDamage` **0** |
 | `onlyFirefight` | `noDamage` 20 / `healthy` 2 |
-| `aiFullBet` | `noDamage` 14 / `healthy` **0** |
-| `noAi` | `noDamage` 12 / `healthy` **0** |
+| `aiFullBet` | `noDamage` 11 / `healthy` 1 |
+| `noAi` | `noDamage` 11 / `healthy` **0** |
 
 `evaluateWinType`（`src/sim/outcome.ts:103-118`）の先頭判定が
 `!usedHeavyActions && totals.spread === 0` のため、**残業・アンドンを使ったかどうかだけ**で
@@ -349,8 +350,8 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 | 方針 | 組織診断 |
 | --- | --- |
-| `aiFullBet` | `reviewHell` 24 / `seniorSacrifice` 16 |
-| `noAi` | `documentationKingdom` 11 / `reviewHell` 14 / `healthyAcceleration` 6 / `seniorSacrifice` 8 / `reworkSpiral` 1 |
+| `aiFullBet` | `reviewHell` 12 / `seniorSacrifice` 28 |
+| `noAi` | `documentationKingdom` 10 / `reviewHell` 12 / `healthyAcceleration` 5 / `seniorSacrifice` 12 / `reworkSpiral` 1 |
 
 つまり**ビルドの違いは組織診断には出ているが、勝利種別には反映されていない**。
 F-10 が求めるのは後者なので、勝利種別の判定側を直す余地がある。
@@ -409,11 +410,11 @@ easy p50=7 / hard p50=8 で、第3.1 の「1スプリントあたり 3〜8回」
 
 | outcome | 発火条件 | 件数 |
 | --- | --- | --- |
-| `missed_crisis` | `trust<=15` | 22 |
-| `missed_crisis` | `budget<=5` | **8** |
+| `missed_crisis` | `trust<=15` | 19 |
+| `missed_crisis` | `budget<=5` | **7** |
 | `shutdown` | `seniorHp<=5` かつ `missedCount>=2` | **2** |
 
-`trustExhausted` 32件のうち信頼由来は22件で、残り10件は**予算切れ（8件）とシニア枯渇（2件）**。
+`trustExhausted` 28件のうち信頼由来は19件で、残り9件は**予算切れ（7件）とシニア枯渇（2件）**。
 予算やシニアが原因のランに信頼回復を促しても解決しない。
 
 また `budgetExhausted` / `trustExhausted` / `reorgRequired` は直前スプリントの
@@ -459,20 +460,21 @@ RI-77 のとおりカードは現状ほぼ結果に寄与していないため�
 ### RI-82 目標修正の選択が結果をほとんど変えない（優先度: 中 / F-2 第4層）
 
 目標修正だけを固定する統制方針（**全6選択肢**、各40ラン）。
-そのうち実際に該当の修正が提示され選べたのは各15ランで、
+そのうち実際に該当の修正が提示され選べたのは各17ランで、
 修正を選んだ四半期も 1.3〜1.5 と揃っており、事前状態は比較可能である。
 
 | 選択 | n | 勝率 | 最終到達四半期 平均 | 総スプリント 平均 |
 | --- | --- | --- | --- | --- |
-| `cut_scope`（スコープ削減） | 15 | 60.0% | 2.7 | 14.5 |
-| `extend_deadline`（期限延長） | 15 | 60.0% | 2.8 | 15.6 |
-| `request_budget`（予算要求） | 15 | 60.0% | 2.3 | 12.5 |
-| `pause_ai_rollout`（AI 展開の一時停止） | 15 | 66.7% | 2.6 | 14.2 |
-| `quality_pivot`（品質ピボット） | 15 | **73.3%** | 2.3 | 12.9 |
-| `reorg_teams`（組織再編） | 15 | **73.3%** | 2.5 | 14.7 |
+| `extend_deadline`（期限延長） | 17 | 52.9% | 2.9 | 16.0 |
+| `request_budget`（予算要求） | 17 | 52.9% | 2.6 | 14.1 |
+| `cut_scope`（スコープ削減） | 17 | 58.8% | 2.8 | 15.4 |
+| `pause_ai_rollout`（AI 展開の一時停止） | 17 | 64.7% | 2.7 | 14.8 |
+| `reorg_teams`（組織再編） | 17 | 70.6% | 2.6 | 15.1 |
+| `quality_pivot`（品質ピボット） | 17 | **76.5%** | 2.4 | 13.1 |
 
 効果がまったく異なる選択肢（スコープ削減 / 予算追加 / AI 停止 / 組織リセット）を並べても
-勝率レンジは 60.0〜73.3%（最大差は15ラン中2勝ぶん）に収まる。
+勝率レンジは 52.9〜76.5%（最大差は17ラン中4勝ぶん）に収まる。
+`quality_pivot` と `reorg_teams` がやや優位だが、n=17 では有意と言い切れない。
 
 ### RI-83 条件を揃えると介入の寄与がほぼ消える（優先度: 高 / F-5）
 
@@ -480,14 +482,14 @@ RI-77 のとおりカードは現状ほぼ結果に寄与していないため�
 
 | 方針 | easy | normal | hard | 全40ラン |
 | --- | --- | --- | --- | --- |
-| `noInterventionCtl`（介入なし） | 7/10 | **6/10** | 0/10 | **13** |
+| `noInterventionCtl`（介入なし） | 8/10 | **7/10** | 1/10 | **16** |
 | `naive`（初見の介入） | 6/10 | 5/10 | 2/10 | 13 |
-| `skilledNoHire`（熟練の介入） | 8/10 | 5/10 | 3/10 | 16 |
+| `skilledNoHire`（熟練の介入） | 8/10 | **6/10** | 3/10 | 17 |
 
-**normal では介入しない方が勝っている**（6 vs 5）。全40ランでも介入の寄与は最大 +3 に留まる。
+**normal では介入しない方が勝っている**（7 vs 6、初見の介入は 5）。
+全40ランでも熟練の介入との差は **+1** に留まり、初見の介入はむしろ 3 下回る。
 
-分散も同様で、同一スプリント番号の出荷 CV は easy S2 で
-`noInterventionCtl` 20.3% / `skilledNoHire` 20.8%、S3 で 29.8% / 30.8% とほぼ同じ。
+分散も同様で、同一スプリント番号の出荷 CV に方針間の一貫した差は出ない。
 
 以前「介入は勝率を改善している（完全放置 7 → 熟練 16）」としていたが、これは
 **進化・カード・採用が同時に変わっていた**ためだった。介入だけを統制すると、
@@ -496,41 +498,62 @@ RI-77 のとおりカードは現状ほぼ結果に寄与していないため�
 SPEC 第19.1 F-5 は「無介入は損ではなく不安定。介入の価値は結果の偏差を抑えること」と
 定義しているが、実装は期待値も分散も動かしていない。定義と実装のどちらを動かすかは設計判断である。
 
-### RI-84 敗北の大半がスプリント間フェーズで確定する（優先度: 高 / F-4・F-8）
+### RI-84 レビュー凍結は選択不能な判定イベントでしか確定しない（優先度: 高 / F-4・F-8）
 
-敗北を検知したフェーズを記録すると、**大半がスプリント中ではなくスプリント間のイベント処理で確定**していた。
+敗北を確定させたフェーズを、ビートについては **judgment（選択不能な判定）** と
+**decision（プレイヤーが選ぶ）** に分けて記録した。全674敗の内訳:
 
-| 難易度 | 敗因 | n | 敗北フェーズの内訳 |
-| --- | --- | --- | --- |
-| easy | `seniorBurnout` | 27 | `beat` 27（**全件**） |
-| easy | `reviewFreeze` | 22 | `beat` 22（**全件**） |
-| normal | `seniorBurnout` | 62 | `beat` 61 / `sprint` 1 |
-| normal | `reviewFreeze` | 54 | `beat` 54（**全件**） |
-| hard | `seniorBurnout` | 88 | `beat` 81 / `sprint` 7 |
-| hard | `reviewFreeze` | 74 | `beat` 73 / `sprint` 1 |
-| hard | `techDebt` | 11 | `sprint` 9 / `beat` 2 |
-| hard | `moraleCollapse` | 8 | `sprint` 8（全件） |
+| 決着フェーズ | 件数 | 割合 |
+| --- | --- | --- |
+| `beat:judgment`（選択不能な判定イベント） | 279 | 41% |
+| `sprint`（スプリント終了時） | 261 | 39% |
+| `beat:decision`（選択イベント） | 89 | 13% |
+| `quarterReview` | 39 | 6% |
+| `shop` / `recruit` | 6 | 1% |
 
-`seniorBurnout` と `reviewFreeze` は敗因全体の 55%（1,040ラン中354件）を占めるが、
-そのほぼ全件が**スプリントを走り切った後のビート（スプリント間イベント）で敗北が確定**している。
+敗因ごとに見ると、決着位置は明確に分かれる。
 
-プレイヤー体験としては、リアルタイムで盤面を捌き切った直後に、
-操作の余地がない画面で敗北を告げられることになる。
-F-4 が求める「リアルタイム層で勝負が決まる」構造にも、
-F-8 の「詰みの確定を作らない」にも反する。
+| 敗因 | 決着フェーズ | 敗北を確定させたイベント |
+| --- | --- | --- |
+| **`reviewFreeze`**（183件） | `beat:judgment` **ほぼ100%** | `review-freeze`(judgment) |
+| `seniorBurnout`（183件） | judgment 87 / **decision 65** / sprint 11 | `senior-burnout`(judgment)、`giant-pr`(decision) 45、`ai-test-gen`(decision) 11 |
+| `aiDependency`（215件） | `sprint` 100% | — |
+| `techDebt` / `moraleCollapse` | `sprint` が大半 | — |
+| `budgetExhausted` | `beat:decision` が大半 | `postmortem-culture`(decision) |
+| `trustExhausted` / `reorgRequired` | `quarterReview` 100% | — |
 
-なお `techDebt` と `moraleCollapse` はスプリント中に決まる割合が高く、敗因ごとに手触りが違う
-（F-9 としては良い性質）。問題は主要2敗因の決着位置に偏っている点である。
+**`reviewFreeze` だけが、盤面で対処する機会のないまま判定イベントで確定する**。
+183件（敗因全体の27%）が該当し、プレイヤーはスプリントを走り切った直後に、
+操作の余地がない画面で敗北を告げられる。
+
+一方 `seniorBurnout` は **65件がプレイヤーの選択（`giant-pr` など）を経て確定**しており、
+「操作の余地がない」とは言えない。`aiDependency` / `techDebt` / `moraleCollapse` は
+スプリント中に決まる。
+
+（当初この所見は敗北の大半が「操作の余地がない画面」で確定するとしていたが、これは
+ハーネスがビートの選択肢を常に先頭で取っていたためだった。`urgent-demo` の先頭は
+`seniorHp -10 / morale -15` で、他の選択肢ならその消耗を避けられる。状態を見て選ぶ方針へ変え、
+judgment と decision を分けて記録した結果、対象は `reviewFreeze` に絞られた。
+Codex レビューの指摘による訂正。）
+
+受入条件:
+
+- `reviewFreeze` の敗北が、スプリント中に予兆と対処の機会を伴って決着する。
+  または判定イベントで確定する前のスプリントで、明確な警告が出る。
+- 敗因ごとの決着フェーズ分布（judgment / decision / sprint / quarterReview）を
+  `npm run playtest` で検証し、回帰を検知する。
 
 ## 良かった点（回帰させないため記録）
 
-- **F-11 ビルドの方向は Q1 で決まる**。進化ノードの解放は全方針で 100% が Q1、
-  初回解放の四半期 p50=1。
+- **F-11 ビルドの方向は Q1 で決まる**。Q1 中に進化ノードを解放したランは
+  easy / normal / hard で 92.3%（母数は全ラン。進化に到達しないランも含む）。
+  nightmare の 14.6% は 85.4% が第1スプリントで敗北するためで、F-11 の問題ではない。
 - **F-9 敗因ごとに進行速度と決着位置が違う**。難易度で層別化しても成立する。
-  normal の敗北までのスプリント数 p50 は `seniorBurnout` 2 / `techDebt` 4 /
-  `reviewFreeze` 8 / `budgetExhausted` 20 / `trustExhausted` 24。
-- **ビルドの違いは組織診断に出ている**。`noAi` は `documentationKingdom` 11 /
-  `healthyAcceleration` 6 と、`aiFullBet`（`reviewHell` 24 / `seniorSacrifice` 16）から
+  normal の敗北までのスプリント数 p50 は `seniorBurnout` 3 / `techDebt` 4 /
+  `reviewFreeze` 8 / `trustExhausted` 24。決着フェーズも `aiDependency` は sprint、
+  `reviewFreeze` は judgment ビート、`trustExhausted` は四半期レビューと分かれる。
+- **ビルドの違いは組織診断に出ている**。`noAi` は `documentationKingdom` 10 /
+  `healthyAcceleration` 5 と、`aiFullBet`（`reviewHell` 12 / `seniorSacrifice` 28）から
   明確に分かれる。勝利種別に反映されていないだけで、内部状態は分岐している（RI-75）。
 - **AI の因果は正しく実装されている**。AI 配布を切ると AI 利用率 0%、最終依存度が 100→33 になる。
 - **撃ちすぎは損**（全介入を撃つ `probe` は 10/40 で、熟練の 16/40 を下回る）。
@@ -552,3 +575,11 @@ F-8 の「詰みの確定を作らない」にも反する。
 9. **分散比較にラン長が混入していた** — 同一スプリント番号ごとの CV へ変更。
 10. **目標修正の比較に非統制ランが混入し、対象も3種類だけだった** — 全6種の統制方針へ。
 11. **敗北直前の状態を敗北フェーズで区別していなかった** — 区別した結果 RI-84 が判明した。
+12. **採用したメンバーをベンチに残していた** — `recruitMember` は採用直後を必ず `bench` に置くが、
+    ハーネスが再配置していなかったため、採用が予算を払うだけになっていた。能力に応じて
+    review / coding へ配置した結果、採用が勝率を下げる傾向は**変わらなかった**（10→9 と 16→17）。
+13. **ビートの選択肢を常に先頭で取っていた** — `urgent-demo` の先頭は `seniorHp -10 / morale -15` で、
+    イベント定義の並び順による自滅が敗因分布に混入していた。状態を見て選ぶ方針へ変え、
+    judgment と decision を分けて記録した結果、RI-84 の対象が `reviewFreeze` に絞られた。
+14. **F-11 の母数が解放イベントだけだった** — 進化に到達しないランが消え、常に「Q1で100%」に
+    見えていた。母数を全ランにした。

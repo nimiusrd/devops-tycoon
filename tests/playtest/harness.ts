@@ -524,12 +524,18 @@ export function autoplayBeatChoiceIndex(
   if (choices.length === 0) return 0;
   // この盤面で採用すると決めたときだけ即時採用の選択肢を取る。そうでなければ避ける
   // （避けないと「採用なし」「必要なときだけ採用」群に無条件の採用が混ざる）。
-  // ただし即敗北する採用は取らない（予算を使い切る採用など）。
+  //
+  // ただし即敗北する採用は取らない。採用の可否はイベントの `outcome` だけでは判定できない。
+  // `grantRecruit` は解決時に `tryRecruit` が**さらに** `RECRUIT_COST` を引くため、
+  // 予算がちょうど `RECRUIT_COST` のとき outcome 上は予算差分0でも、実際には予算0＝
+  // `budgetExhausted` になる。採用費を引いた後の予算で評価する。
   if (takeRecruit) {
+    const afterRecruit = ctx && { ...ctx, budget: ctx.budget - RECRUIT_COST };
     const grant = choices.findIndex(
       (c) =>
         c.outcome.grantRecruit &&
-        (!ctx || scoreChoice(c.outcome as Record<string, unknown>, ctx) > INSTANT_LOSS),
+        (!afterRecruit ||
+          scoreChoice(c.outcome as Record<string, unknown>, afterRecruit) > INSTANT_LOSS),
     );
     if (grant >= 0) return grant;
   }
@@ -669,7 +675,11 @@ function wantsRecruit(s: RunState, spec: PolicySpec): boolean {
   if (!roomAndCash) return false;
   if (spec.recruit === 'hire') return true;
   const onLeave = s.roster.members.some((m) => m.onLeave);
-  const working = s.roster.members.filter((m) => !m.onLeave && m.assignment !== 'bench').length;
+  // 復職直後は `onLeave=false` でも `assignment` は `bench` のままで、実働へ戻るのは次の
+  // `setup` である。`bench` を除いて数えると、その間のビート・ショップ・休息・採用フェーズで
+  // 復職者が欠員に見え、不要な採用を打ってしまう。ハーネスは全方針で健常なベンチを
+  // 次の `setup` に必ず配置するので、**休職していないメンバーは戦力として数える**。
+  const working = s.roster.members.filter((m) => !m.onLeave).length;
   return (onLeave || working <= 2) && s.budget - RECRUIT_COST >= RECRUIT_COST;
 }
 

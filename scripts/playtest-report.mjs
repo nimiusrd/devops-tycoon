@@ -60,6 +60,21 @@ const EVOLUTION_TREE = readEvolutionTree();
  */
 const evoPointsForSprint = (s) =>
   s.kind === 'boss' ? 0 : 1 + Math.floor((s.delivered ?? 0) / 40) + (s.kind === 'elite');
+
+/**
+ * ランが Q1 中に**実際に入手した**進化ポイントの合計。
+ *
+ * `resolveSprint()` は結果を記録して `sprintsPlayed` を増やしたあとに敗北判定をし、
+ * 敗北ならポイント加算の前に `return` する。つまりスプリント終了時に敗北したランの
+ * 最後のスプリントはポイントを与えない。ログには結果が残っているので、除外しないと
+ * 実際には得ていないぶんを足してしまう（とくに第1スプリント敗北の多い nightmare）。
+ */
+const q1EvoPoints = (r) => {
+  const sprints = r.sprints ?? [];
+  const lostAtSprintEnd = r.lostPhase === 'sprint' && r.lostSprintCompleted !== false;
+  const earning = lostAtSprintEnd ? sprints.slice(0, -1) : sprints;
+  return earning.filter((s) => s.quarter === 1).reduce((a, s) => a + evoPointsForSprint(s), 0);
+};
 const r1 = (n) => Math.round(n * 10) / 10;
 const pct = (n, d) => (d ? `${Math.round((n / d) * 1000) / 10}%` : '—');
 const quantile = (arr, p) => {
@@ -154,24 +169,48 @@ const SPRINT_BANDS = {
   elite: { min: 60, max: 120, absoluteMin: 30 },
   boss: { min: 90, max: 180 },
 };
+/**
+ * F-4 の成立判定に使う代表方針（固定）。
+ *
+ * 難易度内の全方針を連結すると、方針の構成と生存長がそのまま規定帯の割合の重みになる。
+ * 同じ `skilledBase` の複製（`adj*` など）を足すだけでそのテンポが多重計上され、
+ * 長く生存する方針ほど後半スプリントを多く供給するので、ゲームを変えていないのに
+ * 「下回り97.6%」のような値が動いてしまう。標本を固定して方針数から独立させる。
+ *
+ * 初見・熟練・無介入の3点を採り、テンポの速い側と遅い側の両方を含める。
+ */
+const F4_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'noInterventionCtl'];
+const pacingRows = (arr, kind) =>
+  arr.flatMap((r) => r.sprints.filter((s) => s.kind === kind)).map((s) => sec(s.ticks));
+const printPacing = (label, xs, kind) => {
+  const band = SPRINT_BANDS[kind];
+  const below = xs.filter((x) => x < band.min).length;
+  const above = xs.filter((x) => x > band.max).length;
+  const p50v = quantile(xs, 0.5);
+  const inBand = p50v >= band.min && p50v <= band.max;
+  const absMin =
+    band.absoluteMin === undefined
+      ? ''
+      : ` 絶対下限${band.absoluteMin}s未満=${pct(xs.filter((x) => x < band.absoluteMin).length, xs.length)}`;
+  console.log(
+    `${label}: n=${xs.length} p10=${r1(quantile(xs, 0.1))} p50=${r1(p50v)} p90=${r1(quantile(xs, 0.9))} | 規定${band.min}〜${band.max}s: p50 ${inBand ? '帯内' : '帯外'} 下回り=${pct(below, xs.length)} 上回り=${pct(above, xs.length)}${absMin}`,
+  );
+};
+console.log(`**成立判定に使う代表方針: ${F4_SAMPLE_POLICIES.join(' / ')}（固定）**`);
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  const arr = runs.filter((r) => r.difficulty === d && F4_SAMPLE_POLICIES.includes(r.policy));
+  for (const kind of ['normal', 'elite', 'boss']) {
+    const xs = pacingRows(arr, kind);
+    if (!xs.length) continue;
+    printPacing(`  ${d}/${kind}`, xs, kind);
+  }
+}
+console.log('\n参考: 全方針を連結した値（方針構成に依存するため成立判定に使わない）:');
 for (const [d, arr] of group((r) => r.difficulty)) {
   for (const kind of ['normal', 'elite', 'boss']) {
-    const xs = arr
-      .flatMap((r) => r.sprints.filter((s) => s.kind === kind))
-      .map((s) => sec(s.ticks));
+    const xs = pacingRows(arr, kind);
     if (!xs.length) continue;
-    const band = SPRINT_BANDS[kind];
-    const below = xs.filter((x) => x < band.min).length;
-    const above = xs.filter((x) => x > band.max).length;
-    const p50v = quantile(xs, 0.5);
-    const inBand = p50v >= band.min && p50v <= band.max;
-    const absMin =
-      band.absoluteMin === undefined
-        ? ''
-        : ` 絶対下限${band.absoluteMin}s未満=${pct(xs.filter((x) => x < band.absoluteMin).length, xs.length)}`;
-    console.log(
-      `${d}/${kind}: n=${xs.length} p10=${r1(quantile(xs, 0.1))} p50=${r1(p50v)} p90=${r1(quantile(xs, 0.9))} | 規定${band.min}〜${band.max}s: p50 ${inBand ? '帯内' : '帯外'} 下回り=${pct(below, xs.length)} 上回り=${pct(above, xs.length)}${absMin}`,
-    );
+    printPacing(`${d}/${kind}`, xs, kind);
   }
 }
 
@@ -613,16 +652,11 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
   console.log(
     `\n**実測（代表方針 ${F11_SAMPLE_POLICIES.join(' / ')} に固定。n=${sample.length}）**`,
   );
-  const q1Points = sample
-    .map((r) =>
-      (r.sprints ?? [])
-        .filter((s) => s.quarter === 1)
-        .reduce((a, s) => a + evoPointsForSprint(s), 0),
-    )
-    .filter((n) => n > 0);
+  const q1Points = sample.map(q1EvoPoints).filter((n) => n > 0);
   if (q1Points.length > 0) {
     console.log(
-      `  Q1 で入手する総ポイント: p10=${quantile(q1Points, 0.1)} p50=${quantile(q1Points, 0.5)} ` +
+      `  Q1 で入手する総ポイント（1点以上得たラン n=${q1Points.length}）: ` +
+        `p10=${quantile(q1Points, 0.1)} p50=${quantile(q1Points, 0.5)} ` +
         `p90=${quantile(q1Points, 0.9)}（ツリー総コスト ${totalCost} に対して）`,
     );
   }

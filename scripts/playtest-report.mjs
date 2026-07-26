@@ -266,7 +266,33 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
     console.log(`  ${reason}: ${fmtGroup(arr)}`);
   }
 }
-console.log('\n全体（難易度を跨ぐため参考値）:');
+// 難易度だけでは方針差が残る（例: onlyFirefight と idle では生存長が違う）。
+// 敗北の多い代表方針の中でも比較して、敗因固有の進行速度が方針に依らないことを確認する。
+console.log('\n### 同一難易度・同一方針内（代表方針）');
+const F9_POLICIES = ['naive', 'skilledNoHire', 'onlyFirefight', 'noInterventionCtl'];
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  for (const policy of F9_POLICIES) {
+    const lost = runs.filter((r) => r.difficulty === d && r.policy === policy && r.loseReason);
+    if (lost.length === 0) continue;
+    const byReason = new Map();
+    for (const r of lost) {
+      if (!byReason.has(r.loseReason)) byReason.set(r.loseReason, []);
+      byReason.get(r.loseReason).push(r);
+    }
+    const cells = [...byReason.entries()]
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(
+        ([reason, arr]) =>
+          `${reason} n=${arr.length} p50=${quantile(
+            arr.map((r) => r.sprints.length),
+            0.5,
+          )}`,
+      );
+    console.log(`  ${d}/${policy}: ${cells.join(' | ')}`);
+  }
+}
+
+console.log('\n全体（難易度・方針を跨ぐため参考値）:');
 {
   const byReason = new Map();
   for (const r of runs.filter((r) => r.loseReason)) {

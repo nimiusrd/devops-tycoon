@@ -3,7 +3,8 @@
  * sim 層に置き、state 永続化と engine の双方から参照する。
  */
 import type { OrgState, SprintConfig } from '../types';
-import type { OrgAdjustState } from '../orgscale/types';
+import type { OrgAdjustState, TeamRunState } from '../orgscale/types';
+import type { RosterState } from '../member/types';
 import type { RunPhase, RunState } from './types';
 
 /** セーブ可能な離散フェーズ（sprint / title / won / lost は除外）。 */
@@ -49,15 +50,38 @@ export interface RunPersistExtras {
    * 旧セーブでは欠落しうる（復元時は空配列扱い。RI-34⁗）。
    */
   preferredCardIds?: string[];
+  /** 全チームの永続状態（RI-64。旧セーブでは欠落しうる）。 */
+  teams?: TeamRunState[];
+  activeTeamId?: string;
+  homeTeamId?: string;
+  teamLockUntilSprint?: number;
+  /** 訪問済みチームのロスター（RI-64）。 */
+  teamRosters?: Record<string, RosterState>;
+  /**
+   * 粗粒度炎上の四半期内累積（RI-64）。
+   * 旧セーブでは欠落しうる（復元時は 0）。
+   */
+  coarseIncidentCarry?: number;
 }
 
 /**
  * エンジン復元用本体。
- * sprint / whatIf / orgScale / industry は永続せず、復元時に再生成または null とする。
+ * sprint / whatIf / orgScale / industry / teams は永続せず、
+ * teams は extras、orgScale/industry は復元時に再生成または null とする。
  */
 export type RunPersistState = Omit<
   RunState,
-  'whatIf' | 'whatIfStatus' | 'orgScale' | 'industry' | 'phase' | 'sprint' | 'sprintTick'
+  | 'whatIf'
+  | 'whatIfStatus'
+  | 'orgScale'
+  | 'industry'
+  | 'phase'
+  | 'sprint'
+  | 'sprintTick'
+  | 'teams'
+  | 'activeTeamId'
+  | 'homeTeamId'
+  | 'teamLockUntilSprint'
 > & {
   phase: RunSavePhase;
   sprint: null;

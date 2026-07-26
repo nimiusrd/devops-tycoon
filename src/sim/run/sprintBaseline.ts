@@ -4,6 +4,7 @@
  * 本番スプリントと同じ初期入力・seed から状態を再構築し、介入を行わず完了まで進める。
  * 介入によって乱数消費列が変わるため、結果は厳密な反実仮想ではなく同条件での推定として扱う。
  */
+import { BURN_TICKS } from '../model';
 import { createRng, type Rng } from '../rng';
 import { createSprint, stepSprint, summarizeSprint } from '../sprint';
 import type {
@@ -22,6 +23,28 @@ export interface SprintBaselineInput {
   cardEffects: CardEffects;
   aiAdoptionShare: number;
   reviewLoadAdd?: number;
+  /** チーム正本から引き継ぐ炎上件数（スプリント metrics には加算しない）。 */
+  incidentLoadAdd?: number;
+}
+
+/** チーム正本の行列・炎上をベースラインへ載せ、必要なら taskCount を拡張する。 */
+export function withTeamBoardPressure(
+  baseline: SprintBaselineInput,
+  pressure: { reviewQueue?: number; incidents?: number },
+): SprintBaselineInput {
+  const review = Math.max(0, pressure.reviewQueue ?? 0);
+  const incidents = Math.max(0, pressure.incidents ?? 0);
+  const reviewLoadAdd = (baseline.reviewLoadAdd ?? 0) + review;
+  const incidentLoadAdd = (baseline.incidentLoadAdd ?? 0) + incidents;
+  const minTasks = reviewLoadAdd + incidentLoadAdd;
+  const taskCount = Math.max(baseline.config.taskCount, minTasks);
+  return {
+    ...baseline,
+    config:
+      taskCount === baseline.config.taskCount ? baseline.config : { ...baseline.config, taskCount },
+    reviewLoadAdd,
+    ...(incidentLoadAdd > 0 ? { incidentLoadAdd } : {}),
+  };
 }
 
 /** 同条件シミュレーション中に tick ごとの介入判断へ渡すコンテキスト。 */
@@ -43,6 +66,21 @@ export function createSprintFromBaselineInput(
   const rng = createRng(input.seed);
   const sprint = createSprint(input.config, org, rng, input.cardEffects, input.aiAdoptionShare);
 
+  // 炎上を先に確保し、行列で backlog を食い尽くして炎上が消えないようにする。
+  // 引き継ぎ炎上は継続中の事象なので incidentCount（新規発生）には載せない。
+  if (input.incidentLoadAdd) {
+    let lit = 0;
+    for (const task of sprint.tasks) {
+      if (lit >= input.incidentLoadAdd) break;
+      if (task.lane !== 'backlog') continue;
+      task.lane = 'rework';
+      task.incident = true;
+      task.burnTicksLeft = BURN_TICKS;
+      task.progress = 0;
+      lit += 1;
+    }
+  }
+
   if (input.reviewLoadAdd) {
     let moved = 0;
     for (const task of sprint.tasks) {
@@ -53,6 +91,11 @@ export function createSprintFromBaselineInput(
         moved += 1;
       }
     }
+  }
+
+  const reviewQueue = sprint.tasks.filter((t) => t.lane === 'review').length;
+  if (reviewQueue > sprint.metrics.reviewQueueMax) {
+    sprint.metrics.reviewQueueMax = reviewQueue;
   }
 
   return { sprint, rng };

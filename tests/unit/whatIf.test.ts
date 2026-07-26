@@ -5,6 +5,7 @@ import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome
 import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
 import { previewNextSprint } from '../../src/sim/run/whatIf';
+import { whatIfCacheKey } from '../../src/sim/run/whatIfState';
 import type { SprintBaselineInput } from '../../src/sim/run/sprintBaseline';
 
 const input: SprintBaselineInput = {
@@ -85,6 +86,76 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(after.org).toEqual(before.org);
     expect(after.deck).toEqual(before.deck);
     expect(after.roster).toEqual(before.roster);
+  });
+
+  it('ドラフト試算は入り込みの集中力ペナルティを modifiers として引き継ぐ', () => {
+    const engine = new RunEngine({ seed: 'what-if-focus-penalty', difficulty: 'normal' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      pendingSprintModifiers: { focusMaxAdd?: number };
+    };
+    internals.phase = 'draft';
+    internals.draft = ['copilot'];
+    internals.pendingSprintModifiers = { focusMaxAdd: -2 };
+    const draftInput = engine.whatIfComputeInput();
+    expect(draftInput?.phase).toBe('draft');
+    expect(draftInput?.pendingSprintModifiers.focusMaxAdd).toBe(-2);
+    // キャッシュ指紋にも focusMaxAdd を含め、試算条件の取りこぼしを防ぐ。
+    const withPenalty = whatIfCacheKey(draftInput!);
+    const without = whatIfCacheKey({ ...draftInput!, pendingSprintModifiers: {} });
+    expect(withPenalty).not.toBe(without);
+  });
+
+  it('what-if 入力に選択中チームの行列・炎上を含めキャッシュ指紋にも載せる', () => {
+    const engine = new RunEngine({ seed: 'what-if-board-pressure', difficulty: 'normal' });
+    engine.startRun();
+    const persist = engine.exportPersistState()!;
+    const teams = persist.extras.teams!.map((t) =>
+      t.id === persist.extras.activeTeamId ? { ...t, reviewQueue: 7, incidents: 3 } : t,
+    );
+    persist.extras.teams = teams;
+    engine.hydratePersistState(persist);
+    const internals = engine as unknown as { phase: string };
+    internals.phase = 'setup';
+    const input = engine.whatIfComputeInput();
+    expect(input?.teamReviewQueue).toBe(7);
+    expect(input?.teamIncidents).toBe(3);
+    const keyed = whatIfCacheKey(input!);
+    const cleared = whatIfCacheKey({ ...input!, teamReviewQueue: 0, teamIncidents: 0 });
+    expect(keyed).not.toBe(cleared);
+  });
+
+  it('what-if キャッシュ指紋はチーム固有の org / 編成能力も区別する', () => {
+    const engine = new RunEngine({ seed: 'what-if-team-fingerprint', difficulty: 'normal' });
+    engine.startRun();
+    const internals = engine as unknown as { phase: string };
+    internals.phase = 'setup';
+    const base = engine.whatIfComputeInput()!;
+    const orgKey = whatIfCacheKey({
+      ...base,
+      org: { ...base.org, testCoverage: base.org.testCoverage + 12, aiLiteracy: 10 },
+    });
+    expect(orgKey).not.toBe(whatIfCacheKey(base));
+    const member = base.roster.members[0]!;
+    const rosterKey = whatIfCacheKey({
+      ...base,
+      roster: {
+        ...base.roster,
+        members: [
+          {
+            ...member,
+            stats: {
+              ...member.stats,
+              implementation: member.stats.implementation + 5,
+            },
+          },
+          ...base.roster.members.slice(1),
+        ],
+      },
+    });
+    expect(rosterKey).not.toBe(whatIfCacheKey(base));
   });
 
   it('発動すると敗北するドラフト候補は loseOnPlay で警告する（獲得時は即時敗北にしない）', () => {

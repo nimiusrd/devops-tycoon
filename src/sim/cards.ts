@@ -137,9 +137,65 @@ export function dealHand(deckSize: number, rng: Rng, handSize = HAND_SIZE): Spri
 }
 
 /**
+ * カードの加算系 baseline 適用済みレベルを返す。
+ * チーム別マップがあればそれを優先し、無ければレガシー単一フィールドへフォールバックする。
+ */
+export function baselineAppliedLevelFor(inst: CardInstance, teamId?: string): number {
+  if (teamId && inst.baselineAppliedByTeam) {
+    return inst.baselineAppliedByTeam[teamId] ?? 0;
+  }
+  return inst.baselineAppliedLevel ?? 0;
+}
+
+/**
+ * レガシー `baselineAppliedLevel` を全チームの `baselineAppliedByTeam` へ写経する。
+ * v1 セーブ（マップ無し）復元後に別チームで全量再適用しないための移行。
+ *
+ * 既に部分マップがある場合は触らない。v2 で特定チームにだけ発動したカードを
+ * 未訪問チームまで適用済み扱いにすると、恒久加算が二度と反映されなくなる。
+ */
+export function migrateBaselineAppliedByTeam(
+  deck: CardInstance[],
+  teamIds: readonly string[],
+): CardInstance[] {
+  if (teamIds.length === 0) return deck;
+  return deck.map((inst) => {
+    const legacy = inst.baselineAppliedLevel ?? 0;
+    if (legacy <= 0) return inst;
+    // 部分マップ（チーム別適用の正本）がある場合は欠損をレガシーで埋めない。
+    if (inst.baselineAppliedByTeam) return inst;
+    const baselineAppliedByTeam: Record<string, number> = {};
+    for (const id of teamIds) baselineAppliedByTeam[id] = legacy;
+    return { ...inst, baselineAppliedByTeam };
+  });
+}
+
+/**
+ * テンプレート（ホーム等）から派生した新チームへ、継承済みカード基準レベルを記録する。
+ * 指標はテンプレート由来で既に加算済みのため、未記録のままだと二重適用になる。
+ */
+export function inheritBaselineAppliedForTeams(
+  deck: CardInstance[],
+  sourceTeamId: string,
+  newTeamIds: readonly string[],
+): CardInstance[] {
+  if (newTeamIds.length === 0) return deck;
+  return deck.map((inst) => {
+    const inherited = baselineAppliedLevelFor(inst, sourceTeamId);
+    if (inherited <= 0) return inst;
+    const baselineAppliedByTeam = { ...(inst.baselineAppliedByTeam ?? {}) };
+    for (const id of newTeamIds) {
+      baselineAppliedByTeam[id] = Math.max(baselineAppliedByTeam[id] ?? 0, inherited);
+    }
+    return { ...inst, baselineAppliedByTeam };
+  });
+}
+
+/**
  * 手札からデッキ位置 `deckIndex` のカードを発動する。
  * 成功時は `sprint.cardEffects` に合成し、加算系を org へ反映する。
  * `passiveEffects` はレリック等の常時パッシブ（発動前の基準効果）。
+ * `teamId` 指定時はチーム別に適用レベルを追跡する（RI-64）。
  */
 export function playCardFromHand(
   sprint: SprintState,
@@ -147,6 +203,7 @@ export function playCardFromHand(
   deck: CardInstance[],
   deckIndex: number,
   passiveEffects: CardEffects = IDENTITY_CARD_EFFECTS,
+  teamId?: string,
 ): CardPlayOutcome {
   if (sprint.complete) return { ok: false, reason: 'complete' };
   const handIndex = sprint.cardPiles.hand.indexOf(deckIndex);
@@ -164,7 +221,7 @@ export function playCardFromHand(
   sprint.cardPiles.hand.splice(handIndex, 1);
   sprint.cardPiles.played.push(deckIndex);
 
-  const appliedLevel = inst.baselineAppliedLevel ?? 0;
+  const appliedLevel = baselineAppliedLevelFor(inst, teamId);
   if (appliedLevel < inst.level) {
     const next = scaleEffects(def.base, inst.level);
     const prev =
@@ -177,6 +234,12 @@ export function playCardFromHand(
       qualityAdd: next.qualityAdd - prev.qualityAdd,
       testCoverageAdd: next.testCoverageAdd - prev.testCoverageAdd,
     });
+    if (teamId) {
+      inst.baselineAppliedByTeam = {
+        ...(inst.baselineAppliedByTeam ?? {}),
+        [teamId]: inst.level,
+      };
+    }
     inst.baselineAppliedLevel = inst.level;
   }
 

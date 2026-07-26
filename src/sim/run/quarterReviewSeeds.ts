@@ -8,6 +8,8 @@
  * 崩れた場合は同条件で再探索し、ここを更新する。
  *
  * RI-62（ボス長尾調整）後に再探索した seed 群。
+ * RI-64 で四半期 KPI を全社集約しても、士気・シニアHPは選択中チーム基準のため
+ * これらの seed 契約は維持する。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 

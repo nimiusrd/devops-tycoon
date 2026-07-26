@@ -15,6 +15,7 @@ import {
   buildSprintBaselineInput,
   type SprintBaselineBuildContext,
 } from './sprintBaselineBuild';
+import { withTeamBoardPressure } from './sprintBaseline';
 import { previewNextSprint } from './whatIf';
 import type {
   DifficultyId,
@@ -50,6 +51,10 @@ export interface WhatIfComputeInput {
   bossId: string;
   pauseAiDebuffQuarter: number | null;
   baseConfig: SprintConfig;
+  /** 選択中チーム正本のレビュー待ち（本番 beginSprint と共有）。 */
+  teamReviewQueue?: number;
+  /** 選択中チーム正本の炎上件数（本番 beginSprint と共有）。 */
+  teamIncidents?: number;
 }
 
 function baselineContext(input: WhatIfComputeInput): SprintBaselineBuildContext {
@@ -67,12 +72,27 @@ function baselineContext(input: WhatIfComputeInput): SprintBaselineBuildContext 
 
 /** setup / draft の試算入力を指紋化し、同一条件の再計算を避ける。 */
 export function whatIfCacheKey(input: WhatIfComputeInput): string {
+  // 編成効果（能力・トレイト・ランク）まで含める。切替後の古いプレビュー再利用を防ぐ。
   const rosterKey = input.roster.members
-    .map((m) => `${m.id}:${m.assignment}:${m.aiAssigned ? 1 : 0}:${m.onLeave ? 1 : 0}`)
+    .map((m) =>
+      [
+        m.id,
+        m.assignment,
+        m.aiAssigned ? 1 : 0,
+        m.onLeave ? 1 : 0,
+        m.rank,
+        m.level,
+        m.stats.implementation,
+        m.stats.review,
+        m.stats.aiMastery,
+        m.traits.join('+'),
+      ].join(':'),
+    )
     .join(',');
   const deckKey = input.deck.map((c) => `${c.defId}:${c.level}`).join(',');
   const draftKey = input.draft?.join(',') ?? '';
   const mod = input.pendingSprintModifiers;
+  const org = input.org;
   return [
     input.phase,
     input.seed,
@@ -82,15 +102,22 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     deckKey,
     draftKey,
     rosterKey,
-    input.org.seniorHp,
-    input.org.aiDependency,
-    input.org.morale,
-    input.org.techDebt,
-    input.org.quality,
+    org.seniorHp,
+    org.aiDependency,
+    org.morale,
+    org.techDebt,
+    org.quality,
+    org.testCoverage,
+    org.aiLiteracy,
+    org.documentation,
+    org.aiEnabled ? 1 : 0,
     input.budget,
     mod.reviewLoadAdd ?? 0,
     mod.reworkRateAdd ?? 0,
     mod.taskCountMul ?? 1,
+    mod.focusMaxAdd ?? 0,
+    input.teamReviewQueue ?? 0,
+    input.teamIncidents ?? 0,
   ].join('|');
 }
 
@@ -101,7 +128,8 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   const ctx = baselineContext(input);
   const nextIndex = input.sprintIndexInQuarter + 1;
   const kind: SprintKind = nextIndex >= input.sprintsPerQuarter ? 'boss' : input.pendingSprintKind;
-  const modifiers = input.phase === 'setup' ? input.pendingSprintModifiers : {};
+  // draft 中の入り込みペナルティ等も次スプリントに載るので、試算でも同じ modifiers を使う。
+  const modifiers = input.pendingSprintModifiers;
   const baseSeed = `${input.seed}:what-if:q${input.quarterNumber}:s${nextIndex}`;
 
   const previewFor = (
@@ -128,15 +156,21 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
       applyDeckBaseline(previewOrg, scaleEffects(playedDef.base, played.level));
     }
     return previewNextSprint(
-      buildSprintBaselineInput(ctx, {
-        deck,
-        roster: input.roster,
-        org: previewOrg,
-        kind,
-        modifiers,
-        seed: baseSeed,
-        playedCards,
-      }),
+      withTeamBoardPressure(
+        buildSprintBaselineInput(ctx, {
+          deck,
+          roster: input.roster,
+          org: previewOrg,
+          kind,
+          modifiers,
+          seed: baseSeed,
+          playedCards,
+        }),
+        {
+          reviewQueue: input.teamReviewQueue ?? 0,
+          incidents: input.teamIncidents ?? 0,
+        },
+      ),
     );
   };
 

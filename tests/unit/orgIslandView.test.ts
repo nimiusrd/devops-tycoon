@@ -31,6 +31,7 @@ function team(partial: Partial<Team> & Pick<Team, 'id'>): Team {
     aiAssignedCount: 0,
     health: 'healthy' as TeamHealth,
     isPlayer: false,
+    isActive: false,
     ...partial,
   };
 }

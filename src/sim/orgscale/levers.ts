@@ -1,8 +1,8 @@
 /**
- * レバー適用の純関数（SPEC 第4.8 / 第4.9）。
+ * レバー適用の純関数（SPEC 第4.8 / 第4.9 / RI-64）。
  *
- * レバーの効果を `OrgAdjustState`（全社 + 部門別）へ畳み込み、予算を差し引く。
- * 蓄積された調整は `generateOrgScale` が全チーム／対象部門へ波及させる（第4.7）。
+ * レバーの効果を `OrgAdjustState`（全社 + 部門別 + チーム別）へ畳み込み、予算を差し引く。
+ * 蓄積された調整は投影時に対象へ波及させる（第4.7）。
  * 予算不足や未知のレバーは「変化なし」を返す（呼び出し側で安全に扱える）。
  */
 import { getLever } from '../../data/levers';
@@ -23,7 +23,7 @@ export function emptyAdjust(): OrgAdjust {
 
 /** 無調整の `OrgAdjustState`。 */
 export function emptyAdjustState(): OrgAdjustState {
-  return { company: emptyAdjust(), byDept: {} };
+  return { company: emptyAdjust(), byDept: {}, byTeam: {} };
 }
 
 /** 2 つの `OrgAdjust` を加算合成する（部門 = 全社 + 部門スコープ）。 */
@@ -50,42 +50,85 @@ export interface LeverResult {
   budget: number;
   changed: boolean;
   cost: number;
+  /** 適用したレバー定義の extraTeams（呼び出し側で永続配列へ append）。 */
+  extraTeamsAdded: number;
+  /** チームスコープで適用した対象 ID。 */
+  teamId?: string;
 }
 
 /**
  * レバーを適用した新しい調整状態と残予算を返す（不変）。
- * 部門レバーには `deptId` が必須。予算不足・スコープ不一致は変化なし。
+ * 部門レバーには `deptId`、チームレバーには `teamId` が必須。
+ * 予算不足・スコープ不一致は変化なし。
  */
 export function applyLever(
   adjust: OrgAdjustState,
   budget: number,
   leverId: string,
   deptId?: string,
+  teamId?: string,
 ): LeverResult {
   const def = getLever(leverId);
-  const fail: LeverResult = { adjust, budget, changed: false, cost: 0 };
+  const fail: LeverResult = {
+    adjust,
+    budget,
+    changed: false,
+    cost: 0,
+    extraTeamsAdded: 0,
+  };
   if (!def) return fail;
   if (budget < def.cost) return fail;
   if (def.scope === 'department' && !deptId) return fail;
-  if (def.scope === 'company' && deptId) return fail;
+  if (def.scope === 'team' && !teamId) return fail;
+  if (def.scope === 'company' && (deptId || teamId)) return fail;
+  if (def.scope === 'department' && teamId) return fail;
+  if (def.scope === 'team' && deptId) return fail;
+
+  const byTeam = { ...(adjust.byTeam ?? {}) };
+  const extraTeamsAdded = Math.max(0, Math.round(def.effect.extraTeams ?? 0));
 
   if (def.scope === 'company') {
     return {
-      adjust: { company: addEffect(adjust.company, def.effect), byDept: { ...adjust.byDept } },
+      adjust: {
+        company: addEffect(adjust.company, def.effect),
+        byDept: { ...adjust.byDept },
+        byTeam,
+      },
       budget: budget - def.cost,
       changed: true,
       cost: def.cost,
+      extraTeamsAdded,
     };
   }
+
+  if (def.scope === 'team') {
+    const id = teamId as string;
+    // チーム効果は呼び出し側が TeamRunState へ直接適用する（投影オーバーレイと二重にしない）。
+    return {
+      adjust: {
+        company: adjust.company,
+        byDept: { ...adjust.byDept },
+        byTeam: { ...(adjust.byTeam ?? {}) },
+      },
+      budget: budget - def.cost,
+      changed: true,
+      cost: def.cost,
+      extraTeamsAdded: 0,
+      teamId: id,
+    };
+  }
+
   const id = deptId as string;
   const prev = adjust.byDept[id] ?? emptyAdjust();
   return {
     adjust: {
       company: adjust.company,
       byDept: { ...adjust.byDept, [id]: addEffect(prev, def.effect) },
+      byTeam,
     },
     budget: budget - def.cost,
     changed: true,
     cost: def.cost,
+    extraTeamsAdded: 0,
   };
 }

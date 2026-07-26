@@ -39,6 +39,7 @@ function makeTeam(id: string): Team {
     aiAssignedCount: 0,
     health: 'healthy',
     isPlayer: false,
+    isActive: false,
   };
 }
 

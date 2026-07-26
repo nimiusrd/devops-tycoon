@@ -76,8 +76,9 @@ export interface UseRun {
   zoomTo: (level: ZoomLevel) => void;
   focusDept: (id: string) => void;
   focusTeam: (id: string) => void;
+  enterTeam: (id: string) => void;
   setRankingKind: (kind: RankingKind) => void;
-  applyOrgLever: (leverId: string, deptId?: string) => void;
+  applyOrgLever: (leverId: string, deptId?: string, teamId?: string) => void;
   acknowledgeQuarterReview: () => void;
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
@@ -225,9 +226,11 @@ export function useRun(game: GameHandle): UseRun {
   const zoomTo = useCallback((level: ZoomLevel) => void game.zoomTo(level), [game]);
   const focusDept = useCallback((id: string) => void game.focusDept(id), [game]);
   const focusTeam = useCallback((id: string) => void game.focusTeam(id), [game]);
+  const enterTeam = useCallback((id: string) => void game.enterTeam(id), [game]);
   const setRankingKind = useCallback((kind: RankingKind) => void game.setRankingKind(kind), [game]);
   const applyOrgLever = useCallback(
-    (leverId: string, deptId?: string) => void game.applyOrgLever(leverId, deptId),
+    (leverId: string, deptId?: string, teamId?: string) =>
+      void game.applyOrgLever(leverId, deptId, teamId),
     [game],
   );
   const acknowledgeQuarterReview = useCallback(() => void game.acknowledgeQuarterReview(), [game]);
@@ -290,6 +293,7 @@ export function useRun(game: GameHandle): UseRun {
     zoomTo,
     focusDept,
     focusTeam,
+    enterTeam,
     setRankingKind,
     applyOrgLever,
     acknowledgeQuarterReview,

@@ -109,7 +109,13 @@ export function buildSprintBaselineInput(
   const config: SprintConfig = {
     ...ctx.baseConfig,
     taskCount: Math.max(taskFloor, Math.round(ctx.baseConfig.taskCount * mul)),
-    focusMax: Math.max(1, ctx.baseConfig.focusMax + fold.focusBonus + formation.focusBonus),
+    focusMax: Math.max(
+      1,
+      ctx.baseConfig.focusMax +
+        fold.focusBonus +
+        formation.focusBonus +
+        (modifiers.focusMaxAdd ?? 0),
+    ),
     codingSlots: Math.max(
       0,
       ctx.baseConfig.codingSlots + fold.codingSlotBonus + formation.codingSlotBonus,

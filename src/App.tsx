@@ -495,7 +495,11 @@ export default function App({ game }: AppProps) {
             exit={{ opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
           >
-            <Breadcrumb level={zoom.level} onNavigate={run.zoomTo} />
+            <Breadcrumb
+              level={zoom.level}
+              onNavigate={run.zoomTo}
+              enterLocked={state.sprintsPlayed < state.teamLockUntilSprint}
+            />
             <Suspense fallback={null}>
               {zoom.level === 'industry' && state.industry && (
                 <IndustryScreen
@@ -518,7 +522,13 @@ export default function App({ game }: AppProps) {
                 <DeptScreen
                   dept={focusedDept}
                   budget={state.budget}
+                  selectedTeamId={zoom.teamId ?? state.activeTeamId}
+                  activeTeamId={state.activeTeamId}
+                  teamLockUntilSprint={state.teamLockUntilSprint}
+                  sprintsPlayed={state.sprintsPlayed}
+                  phase={state.phase}
                   onFocusTeam={run.focusTeam}
+                  onEnterTeam={run.enterTeam}
                   onApplyLever={run.applyOrgLever}
                 />
               )}

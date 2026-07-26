@@ -24,6 +24,7 @@ function team(partial: Partial<Team> & Pick<Team, 'id' | 'gridX' | 'gridY'>): Te
     aiAssignedCount: 0,
     health: 'healthy' as TeamHealth,
     isPlayer: false,
+    isActive: false,
     ...partial,
   };
 }

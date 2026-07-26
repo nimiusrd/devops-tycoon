@@ -294,6 +294,24 @@ export function reviewOne(
 }
 
 /**
+ * 施策などで Review を確実に出荷する（点火・手戻り判定なし）。
+ * シニアHPは消費せず、コンボも伸ばさない（組織支援による一掃）。
+ */
+export function forceShipReviewTask(task: Task, sprint: SprintState, org: OrgState): void {
+  if (task.lane !== 'review') return;
+  const m = sprint.metrics;
+  task.lane = 'done';
+  task.incident = false;
+  delete task.burnTicksLeft;
+  m.doneCount += 1;
+  m.completedCount += 1;
+  const value = Math.round(taskValue(task));
+  m.delivered += value;
+  org.deliveryScore += value;
+  if (task.aiAssisted) m.aiAssistedCompleted += 1;
+}
+
+/**
  * Review をシニア体力に応じたスループットで処理する（残業中は加速）。
  * 火が燃えている間はシニアが火事対応に気を取られ、スループットが落ちる（第6.3）。
  */

@@ -134,7 +134,7 @@ export function RunResultScreen({
           </div>
           <div className="result-row">
             <dt>累計出荷</dt>
-            <dd data-testid="run-delivered">{state.org.deliveryScore} pt</dd>
+            <dd data-testid="run-delivered">{t.delivered} pt</dd>
           </div>
           <div className="result-row">
             <dt>スプリント</dt>
@@ -220,7 +220,7 @@ export function RunResultScreen({
           </p>
           {isDaily && state.dailyDate && (
             <p className="result-daily" data-testid="run-daily-summary">
-              デイリー {state.dailyDate} — 今回 {state.org.deliveryScore} pt
+              デイリー {state.dailyDate} — 今回 {t.delivered} pt
               {dailyRecord ? ` / 今日のベスト ${dailyRecord.bestScore} pt` : ''}
               {dailyRecord?.rewardClaimed ? '（本日の報酬は受領済み）' : ''}
             </p>

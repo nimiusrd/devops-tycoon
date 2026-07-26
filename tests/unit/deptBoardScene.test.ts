@@ -64,6 +64,7 @@ function team(id: string, health: TeamHealth, reviewQueue = 0): Team {
     aiAssignedCount: 0,
     health,
     isPlayer: false,
+    isActive: false,
   };
 }
 

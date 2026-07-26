@@ -1,22 +1,25 @@
 /**
- * 組織スケール状態の決定論生成（SPEC 第4.8 / 第22.3）。
+ * 組織スケール状態の決定論生成・投影（SPEC 第4.8 / 第22.3 / RI-64）。
  *
- * 実ランの現場（`OrgState` + 集計）を「プレイヤーチーム」として写し取り、
- * 同じ seed から他チーム・他部門を派生させて全社マップを組み立てる。
- * 全社/部門レバーの蓄積（`OrgAdjustState`）を全チーム／対象部門へ波及させてから
- * 集約する（規模効果。第4.7）。乱数はチーム単位で派生 seed から引く。
+ * ラン中の正本は `TeamRunState[]`（`teamState.ts`）。本モジュールの
+ * `generateOrgScale` は単発生成（テスト・旧互換）用に初期化→投影する。
+ * エンジンは永続 teams を `projectOrgScale` へ渡す。
  */
-import { DEPARTMENT_DEFS } from '../../data/departments';
-import { createRng } from '../rng';
 import type { DiagnosisType, RunTotals } from '../run/types';
 import type { OrgState } from '../types';
-import { aggregateCompany, aggregateDepartment, teamHealth } from './aggregate';
-import { emptyAdjust, mergeAdjust } from './levers';
-import type { DepartmentDef, OrgAdjust, OrgAdjustState, OrgScaleState, Team } from './types';
+import { emptyAdjustState } from './levers';
+import {
+  activeLiveFromOrg,
+  appendTeamsToDept,
+  HOME_TEAM_ID,
+  initTeamRunStates,
+  projectOrgScale,
+} from './teamState';
+import type { OrgAdjustState, OrgScaleState } from './types';
 
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+export { estimateRivalAiAssigned } from './teamState';
 
-/** 全社生成の入力。実ランの現場状態と予算・調整を渡す。 */
+/** 全社生成の入力。実ランの現場状態と予算・調整を渡す（単発生成用）。 */
 export interface OrgScaleInput {
   seed: string;
   org: OrgState;
@@ -36,170 +39,73 @@ export interface OrgScaleInput {
   liveReviewQueue?: number;
   /** 進行中スプリントで盤面に残る未鎮火インシデント数（同上）。 */
   liveIncidents?: number;
-}
-
-/** チーム名（A,B,C... 26 を超えたら番号）。 */
-function teamName(index: number): string {
-  return index < 26 ? `チーム${String.fromCharCode(0x41 + index)}` : `チーム${index + 1}`;
-}
-
-/** OrgAdjust を 1 チームの素の指標へ適用する（規模効果の波及）。 */
-function applyAdjustToTeam(
-  raw: {
-    aiDependency: number;
-    reviewQueue: number;
-    incidents: number;
-    morale: number;
-    techDebt: number;
-  },
-  adj: OrgAdjust,
-) {
-  return {
-    aiDependency: clamp(raw.aiDependency + adj.aiDependencyDelta, 0, 100),
-    reviewQueue: Math.max(0, raw.reviewQueue + adj.reviewQueueDelta),
-    incidents: Math.max(0, raw.incidents + adj.incidentDelta),
-    morale: clamp(raw.morale + adj.moraleDelta, 0, 100),
-    techDebt: Math.max(0, raw.techDebt + adj.techDebtDelta),
-  };
-}
-
-/** ライバル島の AI 配布人数を engineers×aiDependency から推定する。 */
-export function estimateRivalAiAssigned(engineers: number, aiDependency: number): number {
-  return Math.max(0, Math.round((engineers * clamp(aiDependency, 0, 100)) / 100));
-}
-
-/** プレイヤーチームの素の指標を実ランから写し取る。 */
-function playerRaw(input: OrgScaleInput) {
-  const { org, totals } = input;
-  const engineers = input.playerEngineers ?? 5;
-  return {
-    aiDependency: Math.round(org.aiDependency),
-    // スプリント中は現在の行列/インシデントを優先し、停止中は累積ピーク/未鎮火数を使う。
-    reviewQueue: Math.max(totals.reviewQueuePeak, input.liveReviewQueue ?? 0),
-    incidents: Math.max(Math.max(0, totals.incidents - totals.contained), input.liveIncidents ?? 0),
-    morale: Math.round(org.morale),
-    techDebt: Math.round(org.techDebt),
-    shipping: Math.round(org.deliveryScore),
-    engineers,
-    aiAssignedCount: Math.max(0, input.playerAiAssigned ?? 0),
-  };
-}
-
-/** 他チームの素の指標を派生 seed から作る（プレイヤー現場をベースに分散）。 */
-function rivalTeamRaw(rng: () => number, base: ReturnType<typeof playerRaw>) {
-  const jitter = (center: number, spread: number) => center + Math.round((rng() * 2 - 1) * spread);
-  // 乱数消費順は従来どおり（ai→…→shipping→engineers）。順序を変えると固定 seed の
-  // ライバル指標がすべてずれるため、RI-27 の追加フィールドは末尾の派生に留める。
-  const aiDependency = clamp(jitter(base.aiDependency, 25), 0, 100);
-  const reviewQueue = Math.max(0, jitter(Math.max(2, base.reviewQueue), 4));
-  const incidents = Math.max(0, Math.round(rng() * 2.4 - 0.6));
-  const morale = clamp(jitter(base.morale, 20), 10, 100);
-  const techDebt = Math.max(0, jitter(Math.max(20, base.techDebt), 40));
-  const shipping = Math.max(
-    0,
-    jitter(Math.max(40, base.shipping), Math.max(40, base.shipping * 0.6)),
-  );
-  const engineers = 3 + Math.floor(rng() * 6);
-  return {
-    aiDependency,
-    reviewQueue,
-    incidents,
-    morale,
-    techDebt,
-    shipping,
-    engineers,
-    aiAssignedCount: estimateRivalAiAssigned(engineers, aiDependency),
-  };
-}
-
-/** 1 チームを組み立てる（素の指標 → 調整適用 → 健全度導出）。 */
-function buildTeam(args: {
-  id: string;
-  deptId: string;
-  name: string;
-  gridX: number;
-  gridY: number;
-  isPlayer: boolean;
-  raw: {
-    aiDependency: number;
-    reviewQueue: number;
-    incidents: number;
-    morale: number;
-    techDebt: number;
-    shipping: number;
-    engineers: number;
-    aiAssignedCount: number;
-  };
-  adj: OrgAdjust;
-}): Team {
-  const adjusted = applyAdjustToTeam(args.raw, args.adj);
-  const health = teamHealth(adjusted);
-  // ライバルは調整後の AI 依存度で再推定。プレイヤーはロスター由来をそのまま載せる。
-  const aiAssignedCount = args.isPlayer
-    ? args.raw.aiAssignedCount
-    : estimateRivalAiAssigned(args.raw.engineers, adjusted.aiDependency);
-  return {
-    id: args.id,
-    deptId: args.deptId,
-    name: args.name,
-    gridX: args.gridX,
-    gridY: args.gridY,
-    shipping: args.raw.shipping,
-    aiDependency: adjusted.aiDependency,
-    reviewQueue: adjusted.reviewQueue,
-    incidents: adjusted.incidents,
-    morale: adjusted.morale,
-    techDebt: adjusted.techDebt,
-    engineers: args.raw.engineers,
-    aiAssignedCount,
-    health,
-    isPlayer: args.isPlayer,
-  };
+  /**
+   * 永続チーム配列（指定時は再初期化せず投影のみ。RI-64）。
+   * 無指定なら seed から一度だけ初期化して投影する。
+   */
+  teams?: ReturnType<typeof initTeamRunStates>;
+  homeTeamId?: string;
+  activeTeamId?: string;
 }
 
 /**
- * 全社マップ状態を生成する。プレイヤーチームは先頭部門の先頭チームに置く。
- * 採用ドラフト/組織再編による `extraTeams` は先頭部門へ加える。
+ * 全社マップ状態を生成する。
+ * `teams` 未指定時はホーム＋ライバルを seed から初期化し、
+ * `adjust.company.extraTeams` 分を先頭部門へ append してから投影する（テスト互換）。
  */
 export function generateOrgScale(input: OrgScaleInput): OrgScaleState {
-  const adjust = input.adjust ?? { company: emptyAdjust(), byDept: {} };
-  const pRaw = playerRaw(input);
-
-  const departments = DEPARTMENT_DEFS.map((def: DepartmentDef, d: number) => {
-    const deptAdj = mergeAdjust(adjust.company, adjust.byDept[def.id] ?? emptyAdjust());
-    const extra = d === 0 ? Math.max(0, Math.round(adjust.company.extraTeams)) : 0;
-    const count = Math.max(1, def.teamCount + extra);
-    const teams: Team[] = [];
-    for (let t = 0; t < count; t += 1) {
-      const isPlayer = d === 0 && t === 0;
-      const rng = createRng(`${input.seed}:team:${def.id}:${t}`);
-      const raw = isPlayer ? pRaw : rivalTeamRaw(rng, pRaw);
-      teams.push(
-        buildTeam({
-          id: `${def.id}-t${t}`,
-          deptId: def.id,
-          name: teamName(t),
-          gridX: t,
-          gridY: d,
-          isPlayer,
-          raw,
-          adj: deptAdj,
-        }),
-      );
+  const engineers = input.playerEngineers ?? 5;
+  const adjust = input.adjust ?? emptyAdjustState();
+  let teams =
+    input.teams ??
+    initTeamRunStates({
+      seed: input.seed,
+      org: input.org,
+      homeEngineers: engineers,
+      homeReviewQueue: Math.max(input.totals.reviewQueuePeak, input.liveReviewQueue ?? 0),
+      homeIncidents: Math.max(
+        Math.max(0, input.totals.incidents - input.totals.contained),
+        input.liveIncidents ?? 0,
+      ),
+    });
+  const homeTeamId = input.homeTeamId ?? HOME_TEAM_ID;
+  const activeTeamId = input.activeTeamId ?? homeTeamId;
+  // 単発生成では extraTeams をここで反映（エンジン経路は apply 時に append 済み）。
+  if (!input.teams) {
+    const extra = Math.max(0, Math.round(adjust.company.extraTeams));
+    if (extra > 0) {
+      const template = teams.find((t) => t.id === homeTeamId) ?? teams[0];
+      const productCount = teams.filter((t) => t.deptId === 'product').length;
+      teams = appendTeamsToDept(teams, {
+        seed: input.seed,
+        deptId: 'product',
+        count: extra,
+        template,
+        nextIndexStart: productCount,
+      });
     }
-    return aggregateDepartment(def, teams);
-  });
+  }
 
-  const infra = {
-    ci: clamp(Math.round(input.org.testCoverage + adjust.company.infraBoost), 0, 100),
-    docs: clamp(Math.round(input.org.documentation + adjust.company.infraBoost), 0, 100),
-    aiGuideline: clamp(Math.round(input.org.aiLiteracy + adjust.company.infraBoost), 0, 100),
-  };
-
-  return aggregateCompany(departments, {
+  const active = teams.find((t) => t.id === activeTeamId);
+  return projectOrgScale({
     seed: input.seed,
-    budget: input.budget,
+    teams,
+    homeTeamId,
+    activeTeamId,
+    activeLive: activeLiveFromOrg({
+      org: input.org,
+      engineers,
+      aiAssignedCount: Math.max(0, input.playerAiAssigned ?? 0),
+      reviewQueue: input.liveReviewQueue ?? active?.reviewQueue ?? 0,
+      incidents: input.liveIncidents ?? active?.incidents ?? 0,
+    }),
+    adjust,
     diagnosis: input.diagnosis,
-    infra,
+    budget: input.budget,
+    infraBase: {
+      ci: input.org.testCoverage,
+      docs: input.org.documentation,
+      aiGuideline: input.org.aiLiteracy,
+    },
   });
 }

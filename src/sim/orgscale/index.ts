@@ -10,6 +10,7 @@ export type {
   RankingKind,
   DepartmentDef,
   Team,
+  TeamRunState,
   DepartmentState,
   OrgScaleState,
   OrgAdjust,
@@ -31,3 +32,30 @@ export {
 export { generateOrgScale, estimateRivalAiAssigned, type OrgScaleInput } from './generate';
 export { emptyAdjust, emptyAdjustState, mergeAdjust, applyLever, type LeverResult } from './levers';
 export { generateIndustry, computeScores, RANKING_KINDS, RANKING_LABEL } from './industry';
+export {
+  HOME_TEAM_ID,
+  ENTER_TEAM_FOCUS_PENALTY,
+  ENTER_TEAM_LOCK_SPRINTS,
+  initTeamRunStates,
+  syncTeamFromOrg,
+  engineersFromRoster,
+  orgFromTeam,
+  companyOrgFromTeams,
+  createTeamRoster,
+  appendTeamsToDept,
+  advanceCoarseTeams,
+  applyEffectToTeam,
+  deriveTeamCapacities,
+  normalizeCoarseTotalsDelta,
+  coarseShipToCompleted,
+  projectOrgScale,
+  assertDeptShippingInvariant,
+  activeLiveFromOrg,
+  companyInfraFromTeams,
+  teamName,
+  retainNonMetricAdjust,
+  stripMetricAdjustments,
+  estimateRosterCoderCount,
+  type CoarseRunModifiers,
+  type CoarseStepResult,
+} from './teamState';

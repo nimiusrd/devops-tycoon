@@ -9,8 +9,9 @@ type GameWindow = Window & {
     zoomTo(level: string): RunState;
     focusDept(id: string): RunState;
     focusTeam(id: string): RunState;
+    enterTeam(id: string): RunState;
     setRankingKind(kind: string): RunState;
-    applyOrgLever(leverId: string, deptId?: string): RunState;
+    applyOrgLever(leverId: string, deptId?: string, teamId?: string): RunState;
   };
 };
 
@@ -85,7 +86,7 @@ test('業界画面で保存済みデイリー記録を順位付きで表示す�
   await expect(page.getByTestId('daily-record-2026-07-09')).toContainText('#3');
 });
 
-test('チーム島をタップすると現場へドリルダウンしてオーバーレイが閉じる（第4.11）', async ({
+test('ホームチーム島をタップすると現場へドリルダウンしてオーバーレイが閉じる（第4.11）', async ({
   page,
 }) => {
   await startRun(page, 'drill-e2e');
@@ -95,10 +96,29 @@ test('チーム島をタップすると現場へドリルダウンしてオー�
   await expect(player).toBeVisible();
   await player.click();
 
-  // 現場へ着地 → オーバーレイは消える。
+  // 選択中ホームは focusTeam で現場へ着地 → オーバーレイは消える。
   await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
   const teamId = await page.evaluate(() => (window as GameWindow).game!.getState().zoom.teamId);
   expect(teamId).toBe('product-t0');
+});
+
+test('他チームは状態確認後に入り込みで現場へ着地できる（RI-64）', async ({ page }) => {
+  await startRun(page, 'enter-team-e2e');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+
+  await page.getByTestId('team-platform-t1').click();
+  await expect(page.getByTestId('dept-screen')).toBeVisible();
+  await expect(page.getByTestId('dept-team-panel')).toBeVisible();
+  await page.getByTestId('enter-team').click();
+
+  await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+  const state = await page.evaluate(() => {
+    const s = (window as GameWindow).game!.getState();
+    return { active: s.activeTeamId, level: s.zoom.level, lock: s.teamLockUntilSprint };
+  });
+  expect(state.active).toBe('platform-t1');
+  expect(state.level).toBe('team');
+  expect(state.lock).toBe(1);
 });
 
 test('全社レバーで四半期予算が減り、全社AI依存度が下がる（第4.8）', async ({ page }) => {

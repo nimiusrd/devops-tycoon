@@ -10,13 +10,23 @@
  */
 import { BOSS_DEFS, getBoss } from '../../data/bosses';
 import { getCard } from '../../data/cards';
+import { getGoalAdjustment } from '../../data/goalAdjustments';
+import { getLever } from '../../data/levers';
 import { DEPARTMENT_DEFS } from '../../data/departments';
 import { getDifficulty, getTrial } from '../../data/difficulties';
 import { EVENT_DEFS, RECRUIT_SKIP_MORALE, effectiveKind, getEvent } from '../../data/events';
 import { getEvolutionNode } from '../../data/evolution';
 import { RELIC_DEFS, getRelic } from '../../data/relics';
 import { applyAction } from '../actions';
-import { applyDeckBaseline, dealHand, drawDraft, playCardFromHand, upgradeCardAt } from '../cards';
+import {
+  applyDeckBaseline,
+  dealHand,
+  drawDraft,
+  inheritBaselineAppliedForTeams,
+  migrateBaselineAppliedByTeam,
+  playCardFromHand,
+  upgradeCardAt,
+} from '../cards';
 import { diagnose } from '../diagnosis';
 import {
   activeEngineerCount,
@@ -38,11 +48,12 @@ import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng } from '../rng';
 import { DEFAULT_SEED } from '../seed';
-import { resolveSprintConfig, stepSprint, summarizeSprint } from '../sprint';
+import { forceShipReviewTask, resolveSprintConfig, stepSprint, summarizeSprint } from '../sprint';
 import type {
   ActionId,
   ActionTarget,
   CardEffects,
+  CardInstance,
   CardPlayOutcome,
   InterventionOutcome,
   OrgState,
@@ -51,12 +62,37 @@ import type {
   SprintState,
 } from '../types';
 import { IDENTITY_CARD_EFFECTS } from '../model';
-import { applyLever, emptyAdjustState, generateIndustry, generateOrgScale } from '../orgscale';
+import {
+  activeLiveFromOrg,
+  advanceCoarseTeams,
+  appendTeamsToDept,
+  applyEffectToTeam,
+  applyLever,
+  companyInfraFromTeams,
+  companyOrgFromTeams,
+  createTeamRoster,
+  emptyAdjust,
+  emptyAdjustState,
+  engineersFromRoster,
+  ENTER_TEAM_FOCUS_PENALTY,
+  ENTER_TEAM_LOCK_SPRINTS,
+  generateIndustry,
+  HOME_TEAM_ID,
+  initTeamRunStates,
+  mergeAdjust,
+  deriveTeamCapacities,
+  normalizeCoarseTotalsDelta,
+  orgFromTeam,
+  projectOrgScale,
+  stripMetricAdjustments,
+  syncTeamFromOrg,
+} from '../orgscale';
 import type {
   IndustryState,
   OrgAdjustState,
   OrgScaleState,
   RankingKind,
+  TeamRunState,
   ZoomLevel,
   ZoomState,
 } from '../orgscale/types';
@@ -71,8 +107,10 @@ import {
 } from './events';
 import { canUnlock, unlockNode } from './evolution';
 import { canTransition, RunPhaseError } from './phases';
+import { foldRunEffects } from './effects';
 import {
   applyGoalAdjustment,
+  applyGoalOrgEffectsToTeam,
   buildInitialTrust,
   buildQuarterGoal,
   buildQuarterReview,
@@ -80,8 +118,13 @@ import {
   canChooseAdjustment,
   isTerminalFailure,
   loseReasonForOutcome,
+  PAUSE_AI_DEBUFF_MUL,
 } from './quarterReview';
-import { createSprintFromBaselineInput, runNoInterventionBaseline } from './sprintBaseline';
+import {
+  createSprintFromBaselineInput,
+  runNoInterventionBaseline,
+  withTeamBoardPressure,
+} from './sprintBaseline';
 import type { SprintBaselineInput } from './sprintBaseline';
 import {
   applyTrialAiDependencyPressure,
@@ -161,10 +204,22 @@ function mergeModifiers(a: SprintModifierDelta, b: SprintModifierDelta): SprintM
   const reviewLoadAdd = (a.reviewLoadAdd ?? 0) + (b.reviewLoadAdd ?? 0);
   const reworkRateAdd = (a.reworkRateAdd ?? 0) + (b.reworkRateAdd ?? 0);
   const taskCountMul = (a.taskCountMul ?? 1) * (b.taskCountMul ?? 1);
+  const focusMaxAdd = (a.focusMaxAdd ?? 0) + (b.focusMaxAdd ?? 0);
   return {
     ...(reviewLoadAdd !== 0 ? { reviewLoadAdd } : {}),
     ...(reworkRateAdd !== 0 ? { reworkRateAdd } : {}),
     ...(taskCountMul !== 1 ? { taskCountMul } : {}),
+    ...(focusMaxAdd !== 0 ? { focusMaxAdd } : {}),
+  };
+}
+
+/** スナップショット／永続用にカードを独立コピーする（baseline マップ含む）。 */
+function cloneCardInstance(card: CardInstance): CardInstance {
+  return {
+    ...card,
+    ...(card.baselineAppliedByTeam
+      ? { baselineAppliedByTeam: { ...card.baselineAppliedByTeam } }
+      : {}),
   };
 }
 
@@ -270,6 +325,15 @@ export class RunEngine {
   private zoom: ZoomState = { level: 'team', deptId: null, teamId: null };
   private rankingKind: RankingKind = 'overall';
   private orgAdjust: OrgAdjustState = emptyAdjustState();
+  /** 全チームの永続状態（RI-64）。 */
+  private teams: TeamRunState[] = [];
+  private activeTeamId: string = HOME_TEAM_ID;
+  private homeTeamId: string = HOME_TEAM_ID;
+  private teamLockUntilSprint = 0;
+  /** 訪問済みチームのロスター（active 以外はここへ退避）。 */
+  private teamRosters: Record<string, RosterState> = {};
+  /** 粗粒度炎上の正規化端数（四半期内で繰り越し）。 */
+  private coarseIncidentCarry = 0;
 
   private quarterNumber = 1;
   private quarterGoal!: QuarterGoal;
@@ -401,6 +465,18 @@ export class RunEngine {
     this.zoom = { level: 'team', deptId: null, teamId: null };
     this.rankingKind = 'overall';
     this.orgAdjust = emptyAdjustState();
+    this.homeTeamId = HOME_TEAM_ID;
+    this.activeTeamId = HOME_TEAM_ID;
+    this.teamLockUntilSprint = 0;
+    this.teams = initTeamRunStates({
+      seed: this.seed,
+      org: this.org,
+      homeEngineers: activeEngineerCount(this.roster),
+    });
+    this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
+    this.coarseIncidentCarry = 0;
+    // ホームの永続指標を初期 org/roster と揃える。
+    this.syncActiveTeamFromOrg();
     this.status = 'playing';
     this.runKind = 'normal';
     this.dailyDate = undefined;
@@ -470,13 +546,19 @@ export class RunEngine {
     this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget);
     // 試練の開始時コストで予算が尽きた場合はスプリントへ進まず継続不能にする。
     if (this.applyImmediateLose()) return;
-    this.sprintBaselineInput = this.buildSprintBaselineInput({
+    const baseline = this.buildSprintBaselineInput({
       deck: this.deck,
       roster: this.roster,
       org: this.org,
       kind,
       modifiers,
       seed: `${this.seed}:sprint:${this.currentSprintId}`,
+    });
+    // 正本の行列・炎上を初期盤面へ投入し、入り込み後に俯瞰の問題が消えないようにする。
+    const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
+    this.sprintBaselineInput = withTeamBoardPressure(baseline, {
+      reviewQueue: activeTeam?.reviewQueue ?? 0,
+      incidents: activeTeam?.incidents ?? 0,
     });
     const initialized = createSprintFromBaselineInput(this.sprintBaselineInput, this.org);
     this.sprintRng = initialized.rng;
@@ -556,6 +638,7 @@ export class RunEngine {
       this.deck,
       deckIndex,
       this.sprintPassiveEffects,
+      this.activeTeamId,
     );
     if (outcome.ok) this.applyImmediateLose();
     return outcome;
@@ -576,11 +659,16 @@ export class RunEngine {
     // ここで回復させることで、続くビート／編成ウィンドウで復帰メンバーをすぐ再配置できる。
     const justLeft = new Set((this.lastGrowth?.wentOnLeave ?? []).map((w) => w.id));
     this.roster = recoverStamina(this.roster, STAMINA_RECOVER_BETWEEN, justLeft);
+    // RI-64: 選択チームを永続へ同期し、他チームを粗粒度で進める。
+    this.syncActiveTeamFromOrg();
+    this.advanceOtherTeams(`sprint:${this.currentSprintId}`);
+    // 粗粒度の完了・AI 支援を totals へ載せた後で診断する（報酬・図鑑の取りこぼし防止）。
     this.diagnosis = diagnose(this.org, this.totals);
 
     if (this.currentSprintKind === 'boss') {
       const lose = evaluateLose(this.org, this.totals, this.budget);
       if (lose) {
+        this.flushCoarseIncidentCarry();
         this.status = 'lost';
         this.loseReason = lose;
         this.setPhase('lost');
@@ -588,11 +676,15 @@ export class RunEngine {
       }
       const boss = getBoss(this.bossId);
       const bossTargetMul = getDifficulty(this.difficulty).bossTargetMul;
+      // ボス突破は選択中チームの詳細盤面、四半期 KPI は全社集約（他チーム悪化を取りこぼさない）。
+      const companyOrg = companyOrgFromTeams(this.teams, this.org);
       const bossCleared = !!boss && evaluateBoss({ boss, result, org: this.org, bossTargetMul });
-      // 四半期 KPI は報酬前の org で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
+      // 四半期末の粗粒度炎上端数を切り捨てず KPI 判定前に繰り入れる。
+      this.flushCoarseIncidentCarry();
+      // 四半期 KPI は報酬前の全社集約で判定する（報酬の加算効果が同じ四半期を書き換えないように）。
       this.quarterReview = buildQuarterReview({
         goal: this.quarterGoal,
-        org: this.org,
+        org: companyOrg,
         totals: this.quarterTotals,
         trust: this.stakeholderTrust,
         budget: this.budget,
@@ -600,7 +692,7 @@ export class RunEngine {
         bossSprintCleared: bossCleared,
       });
       if (bossCleared) {
-        // 勝利種別も報酬前の組織状態で判定する。
+        // 勝利種別は選択中チームの報酬前状態で判定する。
         this.winEvalOrg = structuredClone(this.org);
         this.bossRelicReward = this.grantBossRelic();
       }
@@ -611,6 +703,7 @@ export class RunEngine {
 
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = lose;
       this.setPhase('lost');
@@ -661,6 +754,7 @@ export class RunEngine {
     if (this.phase !== 'quarterReview' || !this.quarterReview) return;
     const { outcome } = this.quarterReview;
     if (canAcknowledgeWin(outcome)) {
+      this.flushCoarseIncidentCarry();
       this.status = 'won';
       this.winType = evaluateWinType({
         org: this.winEvalOrg ?? this.org,
@@ -672,6 +766,7 @@ export class RunEngine {
       return;
     }
     if (isTerminalFailure(outcome)) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = loseReasonForOutcome(outcome);
       this.setPhase('lost');
@@ -703,12 +798,30 @@ export class RunEngine {
     this.nextBudgetCap = applied.nextBudgetCap;
     if (applied.pauseAiDebuff) this.pauseAiDebuffQuarter = this.quarterNumber + 1;
 
+    // org 効果は選択中だけでなく全チーム正本へ焼き込む（切替で消えないように）。
+    this.syncActiveTeamFromOrg();
+    const adjustmentDef = getGoalAdjustment(id);
+    if (adjustmentDef) {
+      this.teams = this.teams.map((t) =>
+        t.id === this.activeTeamId ? t : applyGoalOrgEffectsToTeam(t, adjustmentDef),
+      );
+      // ラン累計スコア（totals.delivered）にも出荷評価倍率を反映する。
+      const mul = adjustmentDef.orgEffects?.deliveryScoreMul;
+      if (mul !== undefined) {
+        this.totals.delivered = Math.round(this.totals.delivered * mul);
+        this.quarterTotals.delivered = Math.round(this.quarterTotals.delivered * mul);
+      }
+    }
+
     if (id === 'reorg_teams') {
       this.applyReorgDeparture();
+      // 離脱後の稼働人数を正本・キャッシュへ反映（全社表示の人数ズレを防ぐ）。
+      this.syncActiveTeamFromOrg();
     }
 
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = lose;
       this.setPhase('lost');
@@ -755,6 +868,7 @@ export class RunEngine {
     }
 
     this.quarterTotals = emptyTotals();
+    this.coarseIncidentCarry = 0;
 
     this.sprintIndexInQuarter = 0;
     this.pendingSprintKind = 'normal';
@@ -806,7 +920,7 @@ export class RunEngine {
     if (this.phase !== 'evolution') return;
     if (!canUnlock(this.evolution, id)) return;
     const node = getEvolutionNodeEffects(id);
-    if (node) applyDeckBaseline(this.org, toEffects(node));
+    if (node) this.applyCompanyBaseline(toEffects(node));
     this.evolution = unlockNode(this.evolution, id);
   }
 
@@ -902,6 +1016,7 @@ export class RunEngine {
 
     // ハード敗北（判定イベントが直接敗北を起こす場合）。
     if (res.forceLose) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = res.forceLose;
       this.setPhase('lost');
@@ -909,6 +1024,7 @@ export class RunEngine {
     }
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (lose) {
+      this.flushCoarseIncidentCarry();
       this.status = 'lost';
       this.loseReason = lose;
       this.setPhase('lost');
@@ -935,6 +1051,7 @@ export class RunEngine {
         this.budget = Math.max(0, this.budget + fail.budgetDelta);
         if (fail.trust) this.applyTrust(fail.trust);
         if (fail.forceLose) {
+          this.flushCoarseIncidentCarry();
           this.status = 'lost';
           this.loseReason = fail.forceLose;
           this.setPhase('lost');
@@ -1147,10 +1264,17 @@ export class RunEngine {
     this.deck.push({ defId, level });
   }
 
+  /** 入り込み拘束中か（他チーム閲覧・切替の機会損失）。 */
+  private isTeamEnterLocked(): boolean {
+    return this.sprintsPlayed < this.teamLockUntilSprint;
+  }
+
   /** 即時敗北条件を評価し、該当すれば lost へ遷移する。 */
   private applyImmediateLose(): boolean {
     const lose = evaluateLose(this.org, this.totals, this.budget);
     if (!lose) return false;
+    // 終端前に粗粒度炎上累積を確定する（リザルト／リプレイの取りこぼし防止）。
+    this.flushCoarseIncidentCarry();
     this.status = 'lost';
     this.loseReason = lose;
     this.setPhase('lost');
@@ -1165,7 +1289,26 @@ export class RunEngine {
     const relic = getRelic(id);
     if (!relic) return;
     this.relics.push(id);
-    if (relic.effects) applyDeckBaseline(this.org, toEffects(relic.effects));
+    if (relic.effects) this.applyCompanyBaseline(toEffects(relic.effects));
+  }
+
+  /**
+   * 全社加算効果（進化・レリック）を選択中 org と全チーム正本へ焼き込む。
+   * 入り込み先でも効果が消えないようにする（RI-64）。
+   */
+  private applyCompanyBaseline(effects: CardEffects): void {
+    applyDeckBaseline(this.org, effects);
+    this.teams = this.teams.map((t) => {
+      const next = {
+        ...t,
+        aiLiteracy: clamp(t.aiLiteracy + effects.aiLiteracyAdd, 0, 100),
+        aiDependency: clamp(t.aiDependency + effects.aiDependencyAdd, 0, 100),
+        quality: clamp(t.quality + effects.qualityAdd, 0, 100),
+        testCoverage: clamp(t.testCoverage + effects.testCoverageAdd, 0, 100),
+      };
+      // 品質加算後すぐ障害傾向へ反映し、次の粗粒度ステップで取りこぼさない。
+      return { ...next, ...deriveTeamCapacities(next) };
+    });
   }
 
   /** ボス突破報酬として未所持レリックを決定論的に 1 個付与する。 */
@@ -1183,6 +1326,8 @@ export class RunEngine {
    * 部署へ移るときは未選択なら先頭部門をフォーカスする。
    */
   zoomTo(level: ZoomLevel): void {
+    // 入り込み拘束中は他チームを見られない（上位ビューへの離脱を拒否）。
+    if (this.isTeamEnterLocked() && level !== 'team') return;
     if (level === 'department' && !this.zoom.deptId) {
       this.zoom.deptId = DEPARTMENT_DEFS[0]?.id ?? null;
     }
@@ -1191,26 +1336,236 @@ export class RunEngine {
 
   /** 部門をフォーカスして部署ビューへ（ドリルダウン）。 */
   focusDepartment(id: string): void {
+    if (this.isTeamEnterLocked()) return;
     if (!DEPARTMENT_DEFS.some((d) => d.id === id)) return;
     this.zoom = { ...this.zoom, level: 'department', deptId: id };
   }
 
   /**
-   * チームへドリルダウンする（第4.11）。
-   * 実在する現場はプレイヤーチームのみなので、プレイヤーチームを選んだときだけ
-   * 現場（team）へ着地する。他の合成チームには遊べる盤面が無いため、嘘の着地を避け、
-   * そのチームが属する部門の部署ビューへ寄せる（注意の粒度を一段だけ下げる）。
-   * 未知の ID は無視する。
+   * チームを状態確認する（第4.11 / RI-64）。
+   * 選択中チームなら現場へ、それ以外は部署ビューへ寄せて指標を見せる（入り込みは enterTeam）。
+   * 入り込み拘束中は非アクティブチームの閲覧も拒否する（機会損失）。
    */
   focusTeam(id: string): void {
-    const team = this.buildOrgScale()
-      .departments.flatMap((d) => d.teams)
-      .find((t) => t.id === id);
+    const team = this.teams.find((t) => t.id === id);
     if (!team) return;
-    if (team.isPlayer) {
-      this.zoom = { ...this.zoom, level: 'team', teamId: id };
-    } else {
-      this.zoom = { ...this.zoom, level: 'department', deptId: team.deptId, teamId: id };
+    if (id === this.activeTeamId) {
+      this.zoom = { ...this.zoom, level: 'team', teamId: id, deptId: team.deptId };
+      return;
+    }
+    if (this.isTeamEnterLocked()) return;
+    this.zoom = { ...this.zoom, level: 'department', deptId: team.deptId, teamId: id };
+  }
+
+  /**
+   * 特定チームへ入り込み、詳細スプリント対象にする（RI-64）。
+   * スプリント中・ロック中は拒否。切替時は集中力ペナルティと期間拘束を付与する。
+   */
+  enterTeam(id: string): boolean {
+    if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
+    if (this.phase === 'sprint') return false;
+    const team = this.teams.find((t) => t.id === id);
+    if (!team) return false;
+    if (id === this.activeTeamId) {
+      this.zoom = { ...this.zoom, level: 'team', teamId: id, deptId: team.deptId };
+      return true;
+    }
+    // 四半期レビュー中の切替は拒否（startNextQuarter が pendingSprintModifiers を消すため）。
+    if (this.phase === 'quarterReview') return false;
+    // ビート提示中の切替は拒否（適格性・重みは旧チーム、解決は新チームになってしまう）。
+    if (this.phase === 'beat') return false;
+    if (this.sprintsPlayed < this.teamLockUntilSprint) return false;
+
+    this.flushActiveTeam();
+    this.hydrateTeam(id);
+    this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, {
+      focusMaxAdd: ENTER_TEAM_FOCUS_PENALTY,
+    });
+    this.teamLockUntilSprint = this.sprintsPlayed + ENTER_TEAM_LOCK_SPRINTS;
+    this.zoom = { ...this.zoom, level: 'team', teamId: id, deptId: team.deptId };
+    return true;
+  }
+
+  /** 選択中チームの org/roster を永続配列へ書き戻す。 */
+  private syncActiveTeamFromOrg(): void {
+    const idx = this.teams.findIndex((t) => t.id === this.activeTeamId);
+    if (idx < 0) return;
+    // 実行中スプリントの盤面だけを正とする。result 以降に残った盤面で施策効果を巻き戻さない。
+    const sprintExtras =
+      this.sprint && this.phase === 'sprint'
+        ? {
+            reviewQueue: this.sprint.tasks.filter((t) => t.lane === 'review').length,
+            incidents: this.sprint.tasks.filter((t) => t.incident).length,
+          }
+        : {};
+    // ロスター上限外の席は常時稼働として残し、7〜8 人チームを 6 人へ縮めない。
+    const counts = engineersFromRoster(this.teams[idx]!, this.roster);
+    this.teams[idx] = syncTeamFromOrg(this.teams[idx], this.org, {
+      engineers: counts.engineers,
+      headcount: counts.headcount,
+      ...sprintExtras,
+    });
+    this.teamRosters[this.activeTeamId] = structuredClone(this.roster);
+  }
+
+  /**
+   * 施策で下がった行列・炎上を実行中盤面にも反映する。
+   * 盤面を触らないと直後の同期／俯瞰 activeLive が古い件数で上書きしてしまう。
+   */
+  private alignSprintBoardToTeam(team: { reviewQueue: number; incidents: number }): void {
+    if (!this.sprint || this.phase !== 'sprint') return;
+    // 行列削減は非炎上の Review を優先し、炎上を無料鎮火しない。
+    const reviewCount = () => this.sprint!.tasks.filter((t) => t.lane === 'review').length;
+    const calmReviews = this.sprint.tasks.filter((t) => t.lane === 'review' && !t.incident);
+    const reviewCut = Math.max(0, reviewCount() - Math.max(0, team.reviewQueue));
+    let removed = 0;
+    for (const task of calmReviews) {
+      if (removed >= reviewCut) break;
+      // 施策一掃でも出荷集計の帳尻を合わせる（Done にして成果を消さない）。
+      forceShipReviewTask(task, this.sprint, this.org);
+      removed += 1;
+    }
+    const fires = this.sprint.tasks.filter((t) => t.incident);
+    const fireCut = Math.max(0, fires.length - Math.max(0, team.incidents));
+    for (let i = 0; i < fireCut; i += 1) {
+      const task = fires[i];
+      if (!task) break;
+      task.incident = false;
+      delete task.burnTicksLeft;
+      if (task.lane === 'rework') {
+        task.lane = 'review';
+        task.progress = 0;
+      }
+      this.sprint.metrics.contained += 1;
+    }
+    // 炎上温存で切れなかった行列は、実際の盤面件数へ正本を合わせる。
+    const idx = this.teams.findIndex((t) => t.id === this.activeTeamId);
+    if (idx < 0) return;
+    const reviewQueue = reviewCount();
+    const incidents = this.sprint.tasks.filter((t) => t.incident).length;
+    const aligned = { ...this.teams[idx], reviewQueue, incidents };
+    this.teams[idx] = { ...aligned, ...deriveTeamCapacities(aligned) };
+  }
+
+  private flushActiveTeam(): void {
+    this.syncActiveTeamFromOrg();
+  }
+
+  private hydrateTeam(id: string): void {
+    const team = this.teams.find((t) => t.id === id);
+    if (!team) return;
+    this.activeTeamId = id;
+    // 上位レバーは適用時に TeamRunState へ焼き込み済みなので、正本からそのまま復元する。
+    this.org = orgFromTeam(team);
+    // 切替直後から全社マップ／業界の組織タイプが新チーム指標と一致するようにする。
+    this.diagnosis = diagnose(this.org, this.totals);
+    const cached = this.teamRosters[id];
+    this.roster = cached
+      ? structuredClone(cached)
+      : createTeamRoster(this.seed, id, team.engineers, team.aiDependency);
+    this.teamRosters[id] = structuredClone(this.roster);
+  }
+
+  /**
+   * 四半期末に粗粒度炎上の累積を KPI へ繰り入れる。
+   * ステップごとの丸めで消さず四半期中に溜め、1 未満は四半期境界で破棄する。
+   */
+  private flushCoarseIncidentCarry(): void {
+    const credited = Math.floor(this.coarseIncidentCarry + 1e-9);
+    this.coarseIncidentCarry = 0;
+    if (credited <= 0) return;
+    this.totals.incidents += credited;
+    this.quarterTotals.incidents += credited;
+  }
+
+  private advanceOtherTeams(stepKey: string): void {
+    const before = this.teams;
+    const fold = foldRunEffects({
+      deck: this.deck,
+      relics: this.relics,
+      evolution: this.evolution,
+      difficulty: this.difficulty,
+      trials: this.trials,
+    });
+    let shipMul = fold.effects.codingSpeedMul;
+    if (this.pauseAiDebuffQuarter === this.quarterNumber) {
+      shipMul *= PAUSE_AI_DEBUFF_MUL;
+    }
+    const stepped = advanceCoarseTeams(this.teams, {
+      seed: this.seed,
+      stepKey,
+      excludeId: this.activeTeamId,
+      adjust: this.orgAdjust,
+      modifiers: {
+        incidentRateMul: fold.effects.incidentRateMul,
+        shipMul,
+        reviewMul: fold.effects.reviewEfficiencyMul,
+        reviewCapacityMul: fold.effects.reviewCapacityMul,
+        aiDependencyDrift: fold.aiDependencyDriftPerSprint,
+      },
+    });
+    this.teams = stepped.teams;
+    // 粗粒度チームの出荷・炎上・完了・AI 支援をラン／四半期集計へ反映する。
+    const delta = normalizeCoarseTotalsDelta(
+      before,
+      this.teams,
+      this.activeTeamId,
+      stepped.ignited,
+      stepped.completed,
+      stepped.aiAssisted,
+      this.coarseIncidentCarry,
+    );
+    // 炎上は四半期末 flush まで raw 累積（ステップ丸めで 0 固定にしない）。
+    this.coarseIncidentCarry = delta.incidents + delta.incidentCarry;
+    this.totals.delivered += delta.delivered;
+    this.quarterTotals.delivered += delta.delivered;
+    this.totals.completed += delta.completed;
+    this.quarterTotals.completed += delta.completed;
+    this.totals.aiAssisted += delta.aiAssisted;
+    this.quarterTotals.aiAssisted += delta.aiAssisted;
+    // 非選択チームの行列ピークも勝敗・診断へ反映する（ステップ前後の最大を見る）。
+    for (const team of before) {
+      if (team.id === this.activeTeamId) continue;
+      this.totals.reviewQueuePeak = Math.max(this.totals.reviewQueuePeak, team.reviewQueue);
+      this.quarterTotals.reviewQueuePeak = Math.max(
+        this.quarterTotals.reviewQueuePeak,
+        team.reviewQueue,
+      );
+    }
+    for (const team of this.teams) {
+      if (team.id === this.activeTeamId) continue;
+      this.totals.reviewQueuePeak = Math.max(this.totals.reviewQueuePeak, team.reviewQueue);
+      this.quarterTotals.reviewQueuePeak = Math.max(
+        this.quarterTotals.reviewQueuePeak,
+        team.reviewQueue,
+      );
+    }
+    // 訪問済みキャッシュのロスターもスプリント間回復を進める（戻ったときに休職が永久化しない）。
+    for (const id of Object.keys(this.teamRosters)) {
+      if (id === this.activeTeamId) continue;
+      this.teamRosters[id] = recoverStamina(this.teamRosters[id], STAMINA_RECOVER_BETWEEN);
+      // 復職で稼働人数が戻ったら粗粒度正本へも同期する（ロスター外席も維持）。
+      const idx = this.teams.findIndex((t) => t.id === id);
+      if (idx < 0) continue;
+      const roster = this.teamRosters[id]!;
+      const team = this.teams[idx]!;
+      const counts = engineersFromRoster(team, roster);
+      if (
+        team.engineers === counts.engineers &&
+        (team.headcount ?? team.engineers) === counts.headcount
+      )
+        continue;
+      this.teams[idx] = {
+        ...team,
+        engineers: counts.engineers,
+        headcount: counts.headcount,
+        ...deriveTeamCapacities({
+          engineers: counts.engineers,
+          reviewQueue: team.reviewQueue,
+          incidents: team.incidents,
+          quality: team.quality,
+        }),
+      };
     }
   }
 
@@ -1220,42 +1575,137 @@ export class RunEngine {
   }
 
   /**
-   * 全社 / 部門レバーを発動する（四半期予算を消費して下位制約を緩める。第4.7）。
+   * 全社 / 部門 / チームレバーを発動する（四半期予算を消費して下位制約を緩める。第4.7）。
    * 予算不足・スコープ不一致は何も起きない。返り値は適用できたか。
    */
-  applyOrgLever(leverId: string, deptId?: string): boolean {
+  applyOrgLever(leverId: string, deptId?: string, teamId?: string): boolean {
     // ラン外（タイトル・終端）では発動しない（即時敗北判定が終端フェーズから再遷移しないように）。
     if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
-    const res = applyLever(this.orgAdjust, this.budget, leverId, deptId);
-    if (!res.changed) return false;
-    this.orgAdjust = res.adjust;
+    const def = getLever(leverId);
+    // チームレバーは存在確認してから予算を消費する（未知 ID で予算だけ減らないように）。
+    if (def?.scope === 'team' && (!teamId || !this.teams.some((t) => t.id === teamId))) {
+      return false;
+    }
+    // 入り込み拘束中は他チームへの施策も拒否する（閲覧抑止と一貫させる）。
+    if (
+      def?.scope === 'team' &&
+      teamId &&
+      teamId !== this.activeTeamId &&
+      this.isTeamEnterLocked()
+    ) {
+      return false;
+    }
+    const res = applyLever(this.orgAdjust, this.budget, leverId, deptId, teamId);
+    if (!res.changed || !def) return false;
     this.budget = res.budget;
+    // スプリント中でもライブ org を正本へ先に同期し、焼き込み後の復元で巻き戻さない。
+    this.syncActiveTeamFromOrg();
+    if (res.extraTeamsAdded > 0) {
+      const template =
+        this.teams.find((t) => t.id === this.homeTeamId) ??
+        this.teams[0] ??
+        initTeamRunStates({
+          seed: this.seed,
+          org: this.org,
+          homeEngineers: activeEngineerCount(this.roster),
+        })[0];
+      const productCount = this.teams.filter((t) => t.deptId === 'product').length;
+      const beforeIds = new Set(this.teams.map((t) => t.id));
+      this.teams = appendTeamsToDept(this.teams, {
+        seed: this.seed,
+        deptId: 'product',
+        count: res.extraTeamsAdded,
+        template,
+        nextIndexStart: productCount,
+      });
+      // テンプレート指標はカード加算済みなので、新チーム ID にも適用済みレベルを継承する。
+      const newIds = this.teams.filter((t) => !beforeIds.has(t.id)).map((t) => t.id);
+      this.deck = inheritBaselineAppliedForTeams(this.deck, this.homeTeamId, newIds);
+    }
+    // 指標効果は対象チーム正本へ焼き込み、詳細スプリントと俯瞰表示を一致させる。
+    // orgAdjust には infraBoost 等の非指標のみ残し、投影・粗粒度で二重適用しない。
+    let activeTouched = false;
+    if (def.scope === 'company') {
+      this.teams = this.teams.map((t) => applyEffectToTeam(t, def.effect));
+      const active = this.teams.find((t) => t.id === this.activeTeamId);
+      if (active) {
+        this.org = orgFromTeam(active);
+        activeTouched = true;
+      }
+      this.orgAdjust = stripMetricAdjustments(res.adjust);
+    } else if (def.scope === 'department' && deptId) {
+      this.teams = this.teams.map((t) =>
+        t.deptId === deptId ? applyEffectToTeam(t, def.effect) : t,
+      );
+      const active = this.teams.find((t) => t.id === this.activeTeamId);
+      if (active && active.deptId === deptId) {
+        this.org = orgFromTeam(active);
+        activeTouched = true;
+      }
+      this.orgAdjust = stripMetricAdjustments(res.adjust);
+    } else if (res.teamId) {
+      this.teams = this.teams.map((t) =>
+        t.id === res.teamId ? applyEffectToTeam(t, def.effect) : t,
+      );
+      if (res.teamId === this.activeTeamId) {
+        const updated = this.teams.find((t) => t.id === res.teamId);
+        if (updated) {
+          this.org = orgFromTeam(updated);
+          activeTouched = true;
+        }
+      }
+      this.orgAdjust = res.adjust;
+    } else {
+      this.orgAdjust = res.adjust;
+    }
+    if (activeTouched) {
+      const active = this.teams.find((t) => t.id === this.activeTeamId);
+      if (active) this.alignSprintBoardToTeam(active);
+    }
     this.applyImmediateLose();
     return true;
   }
 
   /** 現在の全社マップ集約を生成する（決定論。第4.8）。 */
   private buildOrgScale(): OrgScaleState {
-    // 進行中スプリントの現在の渋滞・炎上を取り、俯瞰時の現場を最新に保つ。
-    const live = this.sprint
-      ? {
-          liveReviewQueue: Math.max(
-            this.sprint.metrics.reviewQueueMax,
-            this.sprint.tasks.filter((t) => t.lane === 'review').length,
-          ),
-          liveIncidents: this.sprint.tasks.filter((t) => t.incident).length,
-        }
-      : {};
-    return generateOrgScale({
+    const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
+    const liveEngineers = Math.max(activeTeam?.engineers ?? 0, activeEngineerCount(this.roster));
+    // 実行中スプリントのみ盤面件数。result 以降は正本（施策焼き込み後）を使う。
+    const liveBoard = !!this.sprint && this.phase === 'sprint';
+    const reviewQueue = liveBoard
+      ? this.sprint!.tasks.filter((t) => t.lane === 'review').length
+      : (activeTeam?.reviewQueue ?? 0);
+    const incidents = liveBoard
+      ? this.sprint!.tasks.filter((t) => t.incident).length
+      : (activeTeam?.incidents ?? 0);
+    return projectOrgScale({
       seed: this.seed,
-      org: this.org,
-      totals: this.totals,
+      teams: this.teams,
+      homeTeamId: this.homeTeamId,
+      activeTeamId: this.activeTeamId,
+      activeLive: activeLiveFromOrg({
+        org: this.org,
+        engineers: liveEngineers,
+        aiAssignedCount: aiAssignedCount(this.roster),
+        reviewQueue,
+        incidents,
+      }),
+      adjust: this.orgAdjust,
       diagnosis: this.diagnosis,
       budget: this.budget,
-      adjust: this.orgAdjust,
-      playerEngineers: activeEngineerCount(this.roster),
-      playerAiAssigned: aiAssignedCount(this.roster),
-      ...live,
+      // スプリント中の org 更新（ガイドライン等）を共通基盤へ即時反映する。
+      infraBase: companyInfraFromTeams(
+        this.teams.map((t) =>
+          t.id === this.activeTeamId
+            ? {
+                ...t,
+                aiLiteracy: this.org.aiLiteracy,
+                testCoverage: this.org.testCoverage,
+                documentation: this.org.documentation,
+              }
+            : t,
+        ),
+      ),
     });
   }
 
@@ -1287,6 +1737,7 @@ export class RunEngine {
    */
   whatIfComputeInput(): WhatIfComputeInput | null {
     if (this.phase !== 'setup' && this.phase !== 'draft') return null;
+    const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
     return {
       phase: this.phase,
       seed: this.seed,
@@ -1295,7 +1746,7 @@ export class RunEngine {
       sprintsPerQuarter: this.sprintsPerQuarter,
       pendingSprintKind: this.pendingSprintKind,
       pendingSprintModifiers: { ...this.pendingSprintModifiers },
-      deck: this.deck.map((c) => ({ ...c })),
+      deck: this.deck.map(cloneCardInstance),
       draft: this.draft ? [...this.draft] : null,
       roster: structuredClone(this.roster),
       org: structuredClone(this.org),
@@ -1308,6 +1759,9 @@ export class RunEngine {
       bossId: this.bossId,
       pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
       baseConfig: { ...this.baseConfig },
+      // 入り込み先の滞留を試算でも本番 beginSprint と同じく載せる。
+      teamReviewQueue: activeTeam?.reviewQueue ?? 0,
+      teamIncidents: activeTeam?.incidents ?? 0,
     };
   }
 
@@ -1368,7 +1822,7 @@ export class RunEngine {
       currentSprintKind: this.currentSprintKind,
       pendingSprintModifiers: { ...this.pendingSprintModifiers },
       org: structuredClone(this.org),
-      deck: this.deck.map((c) => ({ ...c })),
+      deck: this.deck.map(cloneCardInstance),
       relics: [...this.relics],
       bossRelicReward: this.bossRelicReward,
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
@@ -1413,6 +1867,12 @@ export class RunEngine {
         allowedCards: this.allowedCards ? [...this.allowedCards] : [],
         allowedRelics: this.allowedRelics ? [...this.allowedRelics] : [],
         preferredCardIds: [...this.preferredCards],
+        teams: structuredClone(this.teams),
+        activeTeamId: this.activeTeamId,
+        homeTeamId: this.homeTeamId,
+        teamLockUntilSprint: this.teamLockUntilSprint,
+        teamRosters: structuredClone(this.teamRosters),
+        coarseIncidentCarry: this.coarseIncidentCarry,
       },
     };
   }
@@ -1452,7 +1912,7 @@ export class RunEngine {
     this.currentSprintKind = cloned.currentSprintKind;
     this.pendingSprintModifiers = { ...cloned.pendingSprintModifiers };
     this.org = cloned.org;
-    this.deck = cloned.deck.map((c) => ({ ...c }));
+    this.deck = cloned.deck.map(cloneCardInstance);
     this.relics = [...cloned.relics];
     this.bossRelicReward = cloned.bossRelicReward;
     this.evolution = {
@@ -1486,6 +1946,7 @@ export class RunEngine {
     this.zoom = { ...cloned.zoom };
     this.rankingKind = cloned.rankingKind;
     this.orgAdjust = structuredClone(cloned.extras.orgAdjust);
+    if (!this.orgAdjust.byTeam) this.orgAdjust.byTeam = {};
     this.baseConfig = { ...cloned.extras.baseConfig };
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
     this.pauseAiDebuffQuarter = cloned.extras.pauseAiDebuffQuarter;
@@ -1495,6 +1956,82 @@ export class RunEngine {
     this.preferredCards = Array.isArray(cloned.extras.preferredCardIds)
       ? new Set(cloned.extras.preferredCardIds)
       : new Set();
+    // RI-64: チーム状態（旧セーブは seed から補完）。
+    if (Array.isArray(cloned.extras.teams) && cloned.extras.teams.length > 0) {
+      this.teams = structuredClone(cloned.extras.teams);
+      this.activeTeamId = cloned.extras.activeTeamId ?? HOME_TEAM_ID;
+      this.homeTeamId = cloned.extras.homeTeamId ?? HOME_TEAM_ID;
+      this.teamLockUntilSprint = cloned.extras.teamLockUntilSprint ?? 0;
+      this.teamRosters = cloned.extras.teamRosters
+        ? structuredClone(cloned.extras.teamRosters)
+        : { [this.activeTeamId]: structuredClone(this.roster) };
+      // 四半期内の粗粒度炎上累積を復元（旧セーブ欠落時は 0）。
+      this.coarseIncidentCarry = Math.max(0, cloned.extras.coarseIncidentCarry ?? 0);
+    } else {
+      // v1 セーブ: チーム配列が無いので初期化し、累積 orgAdjust を正本へ焼き込んでから strip。
+      this.homeTeamId = HOME_TEAM_ID;
+      this.activeTeamId = HOME_TEAM_ID;
+      this.teamLockUntilSprint = 0;
+      // 旧形式に現在行列は無い。ピーク累計をバックログへ昇格させると再開直後に
+      // 処理済みの大量 Review が再投入されるため、行列は 0 から始める。
+      // 未鎮火炎上（発生−鎮火）だけ初期圧力として引き継ぐ。
+      this.teams = initTeamRunStates({
+        seed: this.seed,
+        org: this.org,
+        homeEngineers: activeEngineerCount(this.roster),
+        homeReviewQueue: 0,
+        homeIncidents: Math.max(0, this.totals.incidents - this.totals.contained),
+      });
+      // v1 には粗粒度累積が無い。
+      this.coarseIncidentCarry = 0;
+      // v1 の出荷正本は org.deliveryScore。totals.delivered へ写経し報酬分岐を防ぐ。
+      this.totals.delivered = Math.max(0, Math.round(this.org.deliveryScore));
+      this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
+      this.syncActiveTeamFromOrg();
+      // レガシー baseline を既存チームへ先に移行してから追加チームを継承する。
+      this.deck = migrateBaselineAppliedByTeam(
+        this.deck,
+        this.teams.map((t) => t.id),
+      );
+      // 購入済み extraTeams を永続配列へ復元（applyEffectToTeam は extraTeams を扱わない）。
+      const extraTeams = Math.max(0, Math.round(this.orgAdjust.company.extraTeams));
+      if (extraTeams > 0) {
+        const template =
+          this.teams.find((t) => t.id === this.homeTeamId) ??
+          this.teams[0] ??
+          initTeamRunStates({
+            seed: this.seed,
+            org: this.org,
+            homeEngineers: activeEngineerCount(this.roster),
+          })[0];
+        const productCount = this.teams.filter((t) => t.deptId === 'product').length;
+        const beforeIds = new Set(this.teams.map((t) => t.id));
+        this.teams = appendTeamsToDept(this.teams, {
+          seed: this.seed,
+          deptId: 'product',
+          count: extraTeams,
+          template,
+          nextIndexStart: productCount,
+        });
+        const newIds = this.teams.filter((t) => !beforeIds.has(t.id)).map((t) => t.id);
+        this.deck = inheritBaselineAppliedForTeams(this.deck, this.homeTeamId, newIds);
+      }
+      this.teams = this.teams.map((t) => {
+        const deptAdj = mergeAdjust(
+          this.orgAdjust.company,
+          this.orgAdjust.byDept[t.deptId] ?? emptyAdjust(),
+        );
+        return applyEffectToTeam(t, deptAdj);
+      });
+      const active = this.teams.find((t) => t.id === this.activeTeamId);
+      if (active) this.org = orgFromTeam(active);
+      this.orgAdjust = stripMetricAdjustments(this.orgAdjust);
+    }
+    // マップ無しのレガシー baseline だけ全チームへ移行する（部分マップは欠損補完しない）。
+    this.deck = migrateBaselineAppliedByTeam(
+      this.deck,
+      this.teams.map((t) => t.id),
+    );
     this.whatIfCache = null;
   }
 
@@ -1519,7 +2056,7 @@ export class RunEngine {
       currentSprintKind: this.currentSprintKind,
       pendingSprintModifiers: { ...this.pendingSprintModifiers },
       org: structuredClone(this.org),
-      deck: this.deck.map((c) => ({ ...c })),
+      deck: this.deck.map(cloneCardInstance),
       relics: [...this.relics],
       bossRelicReward: this.bossRelicReward,
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
@@ -1556,6 +2093,10 @@ export class RunEngine {
       rankingKind: this.rankingKind,
       orgScale,
       industry: this.industryForSnapshot(orgScale),
+      teams: structuredClone(this.teams),
+      activeTeamId: this.activeTeamId,
+      homeTeamId: this.homeTeamId,
+      teamLockUntilSprint: this.teamLockUntilSprint,
     };
   }
 }

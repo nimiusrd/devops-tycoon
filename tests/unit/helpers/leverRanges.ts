@@ -7,9 +7,12 @@
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
 import { LEVER_DEFS } from '../../../src/data/levers';
 import {
+  applyEffectToTeam,
   applyLever,
   emptyAdjustState,
   generateOrgScale,
+  HOME_TEAM_ID,
+  initTeamRunStates,
   type OrgScaleInput,
 } from '../../../src/sim/orgscale';
 import type { LeverDef, OrgAdjust, OrgScaleState, Team } from '../../../src/sim/orgscale/types';
@@ -19,6 +22,7 @@ import { assertWithinRange, summarizeNumeric } from './monteCarlo';
 export const LEVER_COST_RANGE_BY_SCOPE = {
   company: { min: 1, max: 45 },
   department: { min: 1, max: 18 },
+  team: { min: 1, max: 12 },
 } as const;
 
 /** レバー 1 回あたりの効果量上限（絶対値）。 */
@@ -168,11 +172,13 @@ export function applyLeverOnBaseline(
   lever: LeverDef,
   baselineInput: OrgScaleInput,
   deptId = DEPARTMENT_DEFS[0].id,
+  teamId = 'product-t1',
 ): { budget: number; state: OrgScaleState } {
   const budget = Math.max(lever.cost + 20, baselineInput.budget ?? 100);
   const dept = lever.scope === 'department' ? deptId : undefined;
+  const team = lever.scope === 'team' ? teamId : undefined;
   const priorAdjust = baselineInput.adjust ?? emptyAdjustState();
-  const res = applyLever(priorAdjust, budget, lever.id, dept);
+  const res = applyLever(priorAdjust, budget, lever.id, dept, team);
   if (!res.changed) {
     throw new Error(`${lever.id}: 代表 baseline で applyLever が失敗しました`);
   }
@@ -180,7 +186,26 @@ export function applyLeverOnBaseline(
     throw new Error(`${lever.id}: 適用後 budget=${res.budget} が負です`);
   }
 
-  const state = generateOrgScale({ ...baselineInput, budget: res.budget, adjust: res.adjust });
+  let input: OrgScaleInput = { ...baselineInput, budget: res.budget, adjust: res.adjust };
+  // チームレバーは永続状態へ直接適用する経路を単発生成で再現する。
+  if (lever.scope === 'team' && res.teamId) {
+    let teams =
+      baselineInput.teams ??
+      initTeamRunStates({
+        seed: baselineInput.seed,
+        org: baselineInput.org,
+        homeEngineers: baselineInput.playerEngineers ?? 5,
+      });
+    teams = teams.map((t) => (t.id === res.teamId ? applyEffectToTeam(t, lever.effect) : t));
+    input = {
+      ...input,
+      teams,
+      homeTeamId: baselineInput.homeTeamId ?? HOME_TEAM_ID,
+      activeTeamId: baselineInput.activeTeamId ?? HOME_TEAM_ID,
+    };
+  }
+
+  const state = generateOrgScale(input);
   assertOrgScaleHealthy(state, lever.id);
   return { budget: res.budget, state };
 }
@@ -267,7 +292,7 @@ export function assertLeverImpactRanges(
   }
 }
 
-/** 全 12 レバーの主効果を代表 seed 群で一括検証する。 */
+/** 全社・部門レバー（従来 12 種）の主効果を代表 seed 群で一括検証する。 */
 export const RI16_LEVER_IMPACT_RANGES: Record<
   string,
   Partial<Record<LeverImpactMetric, { min: number; max: number }>>
@@ -294,8 +319,10 @@ export function assertAllLeverImpactRanges(
   seedPrefixes: readonly string[],
   baselineFactory: (seed: string) => OrgScaleInput,
 ): void {
+  // チームレバー（RI-64）は対象が単一チームのため別テストで検証する。
+  const legacy = LEVER_DEFS.filter((l) => l.scope !== 'team');
   assertLeverImpactRanges(
-    LEVER_DEFS.map((l) => l.id),
+    legacy.map((l) => l.id),
     seedPrefixes,
     baselineFactory,
     RI16_LEVER_IMPACT_RANGES,

@@ -169,7 +169,7 @@ export function extractRunMetrics(seed: string, state: RunState): RunMetrics {
     seniorHp: state.org.seniorHp,
     reviewQueuePeak: state.totals.reviewQueuePeak,
     sprintsPlayed: state.sprintsPlayed,
-    deliveryScore: state.org.deliveryScore,
+    deliveryScore: state.totals.delivered,
   };
 }
 
@@ -181,7 +181,7 @@ export function buildRunRewardInput(state: RunState): RunRewardInput {
     difficulty: state.difficulty,
     winType: state.winType,
     bossId: state.bossId,
-    score: state.org.deliveryScore,
+    score: state.totals.delivered,
     scoreMul,
     maxCombo: state.totals.maxCombo,
     quarterReviews: state.reviewHistory,

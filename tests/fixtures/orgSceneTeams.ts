@@ -28,6 +28,7 @@ export function stressOrgTeams(count: number): Team[] {
       aiAssignedCount: 0,
       health,
       isPlayer: i === 0,
+      isActive: i === 0,
     };
   });
 }

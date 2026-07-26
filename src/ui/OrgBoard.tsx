@@ -124,7 +124,7 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
       ))}
 
       <div className="org-board-hint">
-        チームの島を<b>クリック</b>すると現場へ<b>ドリルダウン</b>
+        チームの島を<b>クリック</b>で状態確認（部署へ）。選択中チームは現場へ
       </div>
     </div>
   );

@@ -144,3 +144,12 @@ tests/
 - ボス、四半期、ラン全体を含むペーシング統計検証の補強
 
 詳細と受入条件は[残課題バックログ](plan/remaining-issues.md)を参照してください。
+
+## ライセンス
+
+ソースコード、生成スクリプト、ドキュメントなどは[MIT License](LICENSE)で公開しています。
+
+`public/assets/`内の指定画像と生成済み音声は
+[Creative Commons Attribution 4.0 International（CC BY 4.0）](https://creativecommons.org/licenses/by/4.0/)
+で公開しています。対象ファイル、制作方法、必要なクレジットは
+[ASSETS.md](ASSETS.md)を参照してください。

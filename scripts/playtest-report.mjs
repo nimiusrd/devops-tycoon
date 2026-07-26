@@ -222,7 +222,9 @@ const beatEventsOf = (arr) => {
   const top = Object.entries(ev)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
-  return top.length ? ` | 敗北を確定させたビート ${top.map(([k, n]) => `${k}=${n}`).join(', ')}` : '';
+  return top.length
+    ? ` | 敗北を確定させたビート ${top.map(([k, n]) => `${k}=${n}`).join(', ')}`
+    : '';
 };
 
 const fmtGroup = (arr) => {

@@ -64,8 +64,26 @@ export interface PolicySpec {
   ai?: 'all' | 'none';
   /** 編成フェーズでレビューへ寄せる。 */
   formation?: 'reviewHeavy';
-  /** 採用フェーズの選択。`hire` は採用後にベンチのメンバーを実働レーンへ配置する。 */
-  recruit: 'hire' | 'skip';
+  /**
+   * 採用の方針。採用後はいずれもベンチのメンバーを実働レーンへ配置する。
+   * - `hire`: 枠と予算がある限り無差別に採る
+   * - `skip`: 一切採らない
+   * - `selective`: 欠員（休職者あり／実働2名以下）があり、かつ採用後も予算に
+   *   余裕（`RECRUIT_COST` の2倍以上）が残るときだけ採る
+   *
+   * `hire` と `skip` の比較で分かるのは「無差別採用の是非」までで、実プレイヤーの
+   * 「必要なときだけ採る」判断は測れない。`selective` はその第3の条件。
+   */
+  recruit: 'hire' | 'skip' | 'selective';
+  /**
+   * ショップでのカード・レリック購入。採用枠は `recruit` 側で扱う。
+   * - `skipBuy`: 買わない（既定。既存の統制条件を変えないため）
+   * - `buy`: 予算に余裕がある範囲でレリック → カードの順に買う
+   *
+   * F-2 のスプリント間投資にはショップも含まれるが、`skipBuy` だけでは
+   * 「投資しない」条件しか測れない。
+   */
+  shop?: 'skipBuy' | 'buy';
   /**
    * ビート（スプリント間イベント）の選択肢の選び方。
    * - `firstChoice`: 提示順の先頭。初見相当
@@ -185,14 +203,16 @@ function skilledBase(): PolicySpec {
 }
 
 /**
- * 単一介入だけを打つ方針。進化順は比較対象の `skilledNoHire` と同じ `reviewFirst` に揃える
- * （揃えないと介入構成と進化順が同時に変わり、F-1 の判定を帰属できない）。
+ * 単一介入だけを打つ方針。介入構成**以外**は比較対象の `skilledNoHire` と揃える。
+ * 進化順（`reviewFirst`）とビート選択（`stateAware`）を揃えないと、勝率差に進化順や
+ * イベント判断の巧拙が混入し、F-1 の判定を介入構成へ帰属できない。
  */
 const single = (id: ActionId): PolicySpec => ({
   actions: [{ id }],
   stepMs: 300,
   cards: 'always',
   evolve: 'reviewFirst',
+  beat: 'stateAware',
   recruit: 'skip',
 });
 
@@ -279,6 +299,16 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   adjRequestBudget: { ...skilledBase(), goalAdjustment: 'request_budget' },
   adjPauseAiRollout: { ...skilledBase(), goalAdjustment: 'pause_ai_rollout' },
   adjReorgTeams: { ...skilledBase(), goalAdjustment: 'reorg_teams' },
+  /**
+   * 採用の第3の条件（欠員があるときだけ採る）。`skilled`（無差別採用）・
+   * `skilledNoHire`（一切採らない）と3点で比較する。
+   */
+  skilledSelectiveHire: { ...skilledBase(), recruit: 'selective' },
+  /**
+   * ショップでカード・レリックを買う方針（F-2 のスプリント間投資）。
+   * 統制先は同条件で買わない `skilledNoHire`。
+   */
+  skilledShopBuy: { ...skilledBase(), shop: 'buy' },
   /**
    * 全介入を 1 tick ごとに試行する（RI-77）。
    *
@@ -411,22 +441,22 @@ function scoreChoice(outcome: Record<string, unknown>, org: RunState['org']): nu
 export function autoplayBeatChoiceIndex(
   eventId: string,
   kind: 'judgment' | 'decision',
-  recruit: PolicySpec['recruit'] = 'skip',
+  takeRecruit = false,
   mode: PolicySpec['beat'] = 'firstChoice',
   org?: RunState['org'],
 ): number | undefined {
   if (kind === 'judgment') return undefined;
   const choices = getEvent(eventId)?.choices ?? [];
   if (choices.length === 0) return 0;
-  // 採用方針が hire なら即時採用の選択肢を取る。skip のときだけ避ける
-  // （避けないと「採用なし」群に採用が混ざる）。
-  if (recruit === 'hire') {
+  // この盤面で採用すると決めたときだけ即時採用の選択肢を取る。そうでなければ避ける
+  // （避けないと「採用なし」「必要なときだけ採用」群に無条件の採用が混ざる）。
+  if (takeRecruit) {
     const grant = choices.findIndex((c) => c.outcome.grantRecruit);
     if (grant >= 0) return grant;
   }
   const allowed = choices
     .map((c, i) => ({ c, i }))
-    .filter(({ c }) => recruit === 'hire' || !c.outcome.grantRecruit);
+    .filter(({ c }) => takeRecruit || !c.outcome.grantRecruit);
   const pool = allowed.length > 0 ? allowed : choices.map((c, i) => ({ c, i }));
   if (mode !== 'stateAware' || !org) return pool[0].i;
   // 状態依存: 現在いちばん減らしたくない資源を削る選択肢を避ける。
@@ -538,6 +568,48 @@ function assignBenchMembers(e: RunEngine): void {
   for (const m of e.snapshot().roster.members) {
     if (m.assignment !== 'bench' || m.onLeave) continue;
     e.assignMember(m.id, m.stats.review >= m.stats.implementation ? 'review' : 'coding');
+  }
+}
+
+/**
+ * この盤面で採用するか。`selective` は「欠員があり、かつ採用後も予算が残る」ときだけ採る。
+ *
+ * 欠員の定義: 休職者がいる、または実働（bench でも onLeave でもない）が2名以下。
+ * 予算条件を `RECRUIT_COST` の2倍にしているのは、採用で予算を使い切ると
+ * 直後の四半期レビューで `budget<=5` の危機条件へ落ちるため（これも決めた値）。
+ */
+function wantsRecruit(s: RunState, spec: PolicySpec): boolean {
+  if (spec.recruit === 'skip') return false;
+  const roomAndCash = s.roster.members.length < ROSTER_CAP && s.budget >= RECRUIT_COST;
+  if (!roomAndCash) return false;
+  if (spec.recruit === 'hire') return true;
+  const onLeave = s.roster.members.some((m) => m.onLeave);
+  const working = s.roster.members.filter((m) => !m.onLeave && m.assignment !== 'bench').length;
+  return (onLeave || working <= 2) && s.budget >= RECRUIT_COST * 2;
+}
+
+/**
+ * ショップでカード・レリックを買う。レリックを先にするのは枠が有限で買い逃しが効くため。
+ * 予算は `RECRUIT_COST` 分を残す（採用機会と四半期レビューの予算条件を潰さないため）。
+ */
+function buyShopItems(e: RunEngine): void {
+  const reserve = RECRUIT_COST;
+  const relic = e.snapshot().shop?.relic;
+  if (relic && !relic.bought && e.snapshot().budget - relic.cost >= reserve) {
+    e.buyShopRelic();
+  }
+  // 陳列は購入で `bought` が立つので、毎回取り直して安い順に買えるだけ買う。
+  for (;;) {
+    const s = e.snapshot();
+    // カード購入は `applyImmediateLose` を呼ぶ。敗北したらフェーズが外れるので抜ける。
+    if (s.phase !== 'shop') break;
+    const affordable = (s.shop?.cards ?? [])
+      .filter((c) => !c.bought && s.budget - c.cost >= reserve)
+      .sort((a, b) => a.cost - b.cost);
+    if (affordable.length === 0) break;
+    e.buyShopCard(affordable[0].defId);
+    // 予算不足などで `bought` が立たなければ無限ループになるため、変化が無ければ抜ける。
+    if (!e.snapshot().shop?.cards.find((c) => c.defId === affordable[0].defId)?.bought) break;
   }
 }
 
@@ -726,7 +798,7 @@ export function runOnce(
         const choice = autoplayBeatChoiceIndex(
           s.beat.eventId,
           s.beat.kind,
-          spec.recruit,
+          wantsRecruit(s, spec),
           spec.beat,
           s.org,
         );
@@ -737,23 +809,20 @@ export function runOnce(
       case 'shop':
         // 採用方針は専用フェーズだけでなくショップの採用枠にも適用する。
         // 適用しないと「採用あり」群に採用機会を見送ったランが混ざる。
-        if (spec.recruit === 'hire' && s.shop?.recruit && !s.shop.recruit.bought) {
+        if (s.shop?.recruit && !s.shop.recruit.bought && wantsRecruit(s, spec)) {
           e.buyShopRecruit();
         }
+        // カード・レリックはスプリント間投資（F-2）の一部。買う方針だけ買う。
+        if (spec.shop === 'buy') buyShopItems(e);
         e.leaveShop();
         break;
-      case 'rest': {
+      case 'rest':
         // 採用方針は休息の選択肢にも適用する（RestScreen に採用がある）。
         // ただし満員・予算不足では実画面のボタンが無効なので、回復へフォールバックする。
-        const canHire =
-          spec.recruit === 'hire' &&
-          s.roster.members.length < ROSTER_CAP &&
-          s.budget >= RECRUIT_COST;
-        e.restChoose(canHire ? 'recruit' : 'heal');
+        e.restChoose(wantsRecruit(s, spec) ? 'recruit' : 'heal');
         break;
-      }
       case 'recruit':
-        e.recruitChoose(spec.recruit);
+        e.recruitChoose(wantsRecruit(s, spec) ? 'hire' : 'skip');
         break;
       case 'quarterReview': {
         const qr = s.quarterReview;

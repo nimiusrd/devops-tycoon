@@ -324,9 +324,9 @@ console.log('四半期 outcome:', JSON.stringify(outcomeCounts));
 console.log('missed_crisis の発火条件:', JSON.stringify(crisisTrig));
 console.log('shutdown の発火条件:', JSON.stringify(shutdownTrig));
 console.log(
-  '  ※ shutdown はエンジン側が全社集約値で判定するが、ログは選択中チームの値から復元している。',
+  '  ※ shutdown の判定入力は再現できている。companyOrgFromTeams は morale / seniorHp だけ',
 );
-console.log('  ※ 復元できなかったものは none として出る。');
+console.log('     平均を取らず選択中チームの値をそのまま使い、trust / budget はラン単位のため。');
 
 // --- F-2 第4層: 目標修正の選択別の後続 --------------------------------------
 console.log(`\n## F-2 第4層 目標修正\n`);
@@ -344,21 +344,59 @@ const ADJ_POLICIES = {
   adjPauseAiRollout: 'pause_ai_rollout',
   adjReorgTeams: 'reorg_teams',
 };
+/**
+ * 各ランで最初にその方針の修正が適用された四半期。無ければ null。
+ *
+ * adj* 6方針は `goalAdjustment` 以外すべて同一なので、**最初の修正までは同一 seed の
+ * 6ランが完全に同じ経過をたどる**。したがって最初の修正時点の事前状態と提示候補も同一で、
+ * ここを揃えれば選択効果だけを取り出せる。
+ */
+const firstAppliedQuarter = (r, label) =>
+  (r.quarters ?? []).find((q) => q.chosenAdjustment === label)?.quarter ?? null;
+
+// `availableAdjustments` は各選択肢の適用後状態で候補を絞るため、方針ごとに
+// 「提示され選べたラン」が異なる。そのまま勝率を並べると選択効果と選抜条件を分離できない。
+// そこで同一難易度・seed で 6方針すべてが同じ四半期に自分の修正を適用できた組だけを残す。
+const adjEntries = Object.entries(ADJ_POLICIES);
+const cohortKeys = (() => {
+  const perPolicy = adjEntries.map(([policy, label]) => {
+    const m = new Map();
+    for (const r of runs.filter((x) => x.policy === policy)) {
+      const q = firstAppliedQuarter(r, label);
+      if (q !== null) m.set(`${r.difficulty}|${r.seed}`, q);
+    }
+    return m;
+  });
+  if (perPolicy.length === 0) return new Set();
+  const [head, ...rest] = perPolicy;
+  const keys = new Set();
+  for (const [k, q] of head) {
+    if (rest.every((m) => m.get(k) === q)) keys.add(k);
+  }
+  return keys;
+})();
+
 console.log('統制比較（adj* 方針のみ。他方針は提示順の先頭を選ぶため除外）:');
-for (const [policy, label] of Object.entries(ADJ_POLICIES)) {
+console.log(
+  `  共通コホート: 全6方針が同一難易度・seed・四半期で自分の修正を適用できた組 = ${cohortKeys.size}組`,
+);
+if (cohortKeys.size === 0) {
+  console.log('  ※ 共通コホートが0組のため、選択効果は未計測');
+}
+for (const [policy, label] of adjEntries) {
   const arr = runs.filter((r) => r.policy === policy);
   if (!arr.length) continue;
-  // 実際にその修正を選べたラン（提示されなかったランはフォールバックしている）
-  const applied = arr.filter((r) => (r.quarters ?? []).some((q) => q.chosenAdjustment === label));
-  const won = applied.filter((r) => r.status === 'won').length;
+  const applied = arr.filter((r) => firstAppliedQuarter(r, label) !== null);
+  const cohort = arr.filter((r) => cohortKeys.has(`${r.difficulty}|${r.seed}`));
+  const won = cohort.filter((r) => r.status === 'won').length;
   // 「到達四半期」は終端の quarterNumber ではなく、修正を選んだ四半期を使う。
   // 終端値は後続ラン長の差を表してしまい、統制条件の事前状態にならない。
-  const chosenAt = applied.flatMap((r) =>
-    (r.quarters ?? []).filter((q) => q.chosenAdjustment === label).map((q) => q.quarter),
-  );
-  const finalQ = applied.map((r) => r.quarterNumber);
+  const chosenAt = cohort.map((r) => firstAppliedQuarter(r, label)).filter((q) => q !== null);
   console.log(
-    `  ${policy}(${label}): 提示され選べたラン=${applied.length}/${arr.length} 勝率=${pct(won, applied.length)} 修正を選んだ四半期 平均=${r1(mean(chosenAt))} 最終到達四半期 平均=${r1(mean(finalQ))} 総スプリント 平均=${r1(mean(applied.map((r) => r.sprintsPlayed)))}`,
+    `  ${policy}(${label}): 参考[提示され選べたラン=${applied.length}/${arr.length}] ` +
+      `共通コホート n=${cohort.length} 勝率=${pct(won, cohort.length)} ` +
+      `修正を選んだ四半期 平均=${r1(mean(chosenAt))} ` +
+      `総スプリント 平均=${r1(mean(cohort.map((r) => r.sprintsPlayed)))}`,
   );
 }
 

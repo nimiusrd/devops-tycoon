@@ -33,7 +33,7 @@
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ |
 | [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
-| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-1・F-2・F-4・F-5・F-6・F-7・F-8・F-10・F-11・F-12 が未充足でRI-72〜85。F-9 は成立。F-11 は未充足でRI-85。F-3 は未検証 |
+| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-1・F-2・F-4・F-5・F-6・F-7・F-8・F-10・F-11・F-12 が未充足でRI-72〜87。F-9 は成立。F-11 は未充足でRI-85。F-3 は未検証 |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
 | [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), `src/game.ts`, `src/state/`, `tests/` | ✅ |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ等は実装済み | 🟡 残候補はRI-34 |
@@ -62,3 +62,5 @@
 | 条件を揃えると介入の寄与がほぼ消える（F-5 の定義と実装のずれ） | 第6／第19.1 F-5 | [RI-83](./remaining-issues.md#ri-83-条件を揃えると介入の寄与がほぼ消える) |
 | レビュー凍結が選択不能な判定イベントでしか確定しない | 第4／第19.1 F-4・F-8 | [RI-84](./remaining-issues.md#ri-84-レビュー凍結が選択不能な判定イベントでしか確定しない) |
 | Q1 の進化解放が分散し、ビルドの方向が確定しない | 第11／第19.1 F-11 | [RI-85](./remaining-issues.md#ri-85-q1-の進化解放が分散しビルドの方向が確定しない) |
+| セキュリティ軸が存在しない | 第19.1 F-10 のビルド表 | [RI-86](./remaining-issues.md#ri-86-セキュリティ軸が存在しない) |
+| インフラコスト軸が存在しない | 第19.1 F-10 のビルド表 | [RI-87](./remaining-issues.md#ri-87-インフラコスト軸が存在しない) |

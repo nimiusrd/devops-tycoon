@@ -40,6 +40,21 @@ AI導入による開発速度の向上と、レビュー渋滞・手戻り・技
 
 データはブラウザのIndexedDBへ保存されます。バックエンドや外部APIは使用しません。ブラウザのサイトデータを削除すると、メタ進行、ラン途中セーブ、リプレイも削除されます。
 
+## プレイする
+
+公開版は GitHub Pages で遊べます。
+
+- [https://nimiusrd.github.io/devops-tycoon/](https://nimiusrd.github.io/devops-tycoon/)
+
+初回のみ、リポジトリの Settings → Pages → Build and deployment → Source を **GitHub Actions** にしてください。以降は `main` への push で自動デプロイされます。
+
+Pages 相当のビルドをローカルで確認する場合:
+
+```bash
+PAGES_BASE=/devops-tycoon/ npm run build
+PAGES_BASE=/devops-tycoon/ npm run preview
+```
+
 ## クイックスタート
 
 ### 必要環境

@@ -56,6 +56,28 @@ const SKILLED_ACTIONS: PolicySpec['actions'] = [
 
 const ALL_ACTION_IDS = ACTION_DEFS.map((d) => d.id);
 
+/**
+ * 進化ノードの解放優先順（レビュー容量 → 品質 → AI → 文化 → 開発速度）。
+ * 前提ノードのある上位も含め、解放できるものを順に取る。
+ */
+const EVOLUTION_PICK_ORDER = [
+  'review-1',
+  'review-2',
+  'review-3',
+  'quality-1',
+  'quality-2',
+  'quality-3',
+  'ai-1',
+  'ai-2',
+  'ai-3',
+  'culture-1',
+  'culture-2',
+  'culture-3',
+  'dev-1',
+  'dev-2',
+  'dev-3',
+];
+
 function skilledBase(): PolicySpec {
   return {
     actions: SKILLED_ACTIONS,
@@ -401,10 +423,17 @@ export function runOnce(seed: string, difficulty: string, policy: string): RunLo
         else e.skipDraft();
         break;
       case 'evolution': {
-        if (spec.evolve && s.evolution.points > 0) {
-          for (const id of ['review-1', 'quality-1', 'ai-1', 'culture-1']) {
-            e.unlockEvolution(id);
-            if (e.snapshot().evolution.unlocked[id]) break;
+        // 使えるポイントは使い切る（プレイヤーは持ち越さない）。
+        if (spec.evolve) {
+          let spent = 0;
+          while (e.snapshot().evolution.points > 0 && spent < 16) {
+            const before = e.snapshot().evolution.points;
+            for (const id of EVOLUTION_PICK_ORDER) {
+              e.unlockEvolution(id);
+              if (e.snapshot().evolution.points < before) break;
+            }
+            if (e.snapshot().evolution.points >= before) break;
+            spent += 1;
           }
         }
         e.finishEvolution();

@@ -17,8 +17,17 @@ import { readFileSync } from 'node:fs';
 const file = process.argv[2] ?? 'playtest-out/runs.json';
 const raw = JSON.parse(readFileSync(file, 'utf8'));
 
-/** MS_PER_TICK_1X（src/ui/sprintTempo.ts）。 */
-const MS_PER_TICK_1X = 680;
+/**
+ * テンポ換算は実装（`src/ui/sprintTempo.ts`）の定数から読む。
+ * 複製するとゲーム側のテンポ調整に追随できず、秒換算と 30/60秒 判定だけが旧値のまま残る。
+ */
+function readMsPerTick1x() {
+  const src = readFileSync('src/ui/sprintTempo.ts', 'utf8');
+  const m = src.match(/export const MS_PER_TICK_1X\s*=\s*(\d+)/);
+  if (!m) throw new Error('src/ui/sprintTempo.ts から MS_PER_TICK_1X を読み取れない');
+  return Number(m[1]);
+}
+const MS_PER_TICK_1X = readMsPerTick1x();
 const sec = (ticks) => (ticks * MS_PER_TICK_1X) / 1000;
 const r1 = (n) => Math.round(n * 10) / 10;
 const pct = (n, d) => (d ? `${Math.round((n / d) * 1000) / 10}%` : '—');
@@ -28,12 +37,14 @@ const quantile = (arr, p) => {
   return b[Math.round((b.length - 1) * p)];
 };
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+/** 標本が2件未満なら分散を推定できない。0 を返すと「完全に安定」と誤読されるため NaN。 */
 const cv = (a) => {
-  if (a.length < 2) return 0;
+  if (a.length < 2) return NaN;
   const m = mean(a);
-  if (!m) return 0;
+  if (!m) return NaN;
   return Math.sqrt(mean(a.map((x) => (x - m) ** 2))) / m;
 };
+const fmtCv = (a) => (Number.isNaN(cv(a)) ? '未計測' : pct(cv(a), 1));
 
 // --- 母数（重複排除） -------------------------------------------------------
 const byKey = new Map();
@@ -80,7 +91,8 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
 // --- F-4 ペーシング ---------------------------------------------------------
 console.log(`\n## F-4 スプリント長（1x 換算・秒）\n`);
 for (const [d, arr] of group((r) => r.difficulty)) {
-  for (const kind of ['normal', 'boss']) {
+  // elite（高負荷スプリント）も第3.1 の時間目標の対象なので独立区分として出す。
+  for (const kind of ['normal', 'elite', 'boss']) {
     const xs = arr
       .flatMap((r) => r.sprints.filter((s) => s.kind === kind))
       .map((s) => sec(s.ticks));
@@ -156,7 +168,7 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
     const xs = arr.filter((r) => r.sprints.length >= n).map((r) => r.sprints[n - 1].delivered);
     if (xs.length === 0) return `S${n}: 未到達`;
     const reach = xs.length === arr.length ? '' : `(到達 ${xs.length}/${arr.length})`;
-    return `S${n}: 平均=${r1(mean(xs))} CV=${pct(cv(xs), 1)}${reach}`;
+    return `S${n}: 平均=${r1(mean(xs))} CV=${fmtCv(xs)}${reach}`;
   });
   console.log(`${k}: ${cells.join(' | ')}`);
 }
@@ -188,11 +200,25 @@ for (const [policy, arr] of group((r) => r.policy)) {
 console.log(`\n## F-9 敗因ごとの進行と予兆\n`);
 // 敗因と実験条件は相関する（例: aiDependency はほぼ Nightmare の第1スプリント）。
 // 全体を一つに潰すと難易度差が p50 に混入するため、難易度で層別化する。
+/**
+ * 敗北直前の状態を取る。
+ * スプリント終了時に負けたランは最後のスプリントが敗北そのものなので1つ前を見るが、
+ * 採用・カード・ビートなどスプリント間で負けたランは最後の完了スプリントが直前状態になる。
+ */
+const prevStateOf = (run) => {
+  if (run.sprints.length === 0) return undefined;
+  const betweenSprints = run.lostPhase !== undefined && run.lostPhase !== 'sprint';
+  const idx = betweenSprints ? run.sprints.length - 1 : run.sprints.length - 2;
+  return idx >= 0 ? run.sprints[idx] : undefined;
+};
 const fmtGroup = (arr) => {
   const sprintsToLose = arr.map((r) => r.sprints.length);
-  const prev = arr.filter((r) => r.sprints.length >= 2).map((r) => r.sprints[r.sprints.length - 2]);
+  const prev = arr.map(prevStateOf).filter((x) => x !== undefined);
   const f = (xs, fn) => (xs.length ? r1(mean(xs.map(fn))) : '—');
-  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 1つ前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)}`;
+  const phases = {};
+  for (const r of arr)
+    phases[r.lostPhase ?? 'unknown'] = (phases[r.lostPhase ?? 'unknown'] ?? 0) + 1;
+  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 直前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)}（直前状態あり ${prev.length}/${arr.length}）| 敗北フェーズ ${JSON.stringify(phases)}`;
 };
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   console.log(`\n### ${d}`);
@@ -276,29 +302,68 @@ for (const [policy, label] of Object.entries(ADJ_POLICIES)) {
   );
 }
 
-// --- F-6 評価分布 -----------------------------------------------------------
+// --- F-6 評価分布（方針比較） -----------------------------------------------
 console.log(`\n## F-6 スプリント評価の分布\n`);
-const grades = {};
-let gradeTotal = 0;
-for (const run of runs) {
-  for (const s of run.sprints) {
+const GRADE_RANK = { D: 0, C: 1, B: 2, A: 3, S: 4 };
+const RANK_GRADE = ['D', 'C', 'B', 'A', 'S'];
+const gradeStats = (sprints) => {
+  const dist = {};
+  const ranks = [];
+  for (const s of sprints) {
     if (!s.grade) continue;
-    grades[s.grade] = (grades[s.grade] ?? 0) + 1;
-    gradeTotal += 1;
+    dist[s.grade] = (dist[s.grade] ?? 0) + 1;
+    ranks.push(GRADE_RANK[s.grade] ?? 0);
+  }
+  if (!ranks.length) return null;
+  return { dist, n: ranks.length, median: RANK_GRADE[quantile(ranks, 0.5)] };
+};
+const overall = gradeStats(runs.flatMap((r) => r.sprints));
+if (overall) {
+  console.log(
+    `全体 n=${overall.n} 中央値=${overall.median}`,
+    Object.entries(overall.dist)
+      .sort()
+      .map(([g, n]) => `${g}=${n}(${pct(n, overall.n)})`)
+      .join(' '),
+  );
+}
+// RI-79 の受入条件は「無介入の評価中央値が熟練方針より低いこと」なので、
+// 同一難易度・同一スプリント番号で無介入と熟練を並べる。
+console.log('\n無介入(passive) vs 熟練(skilledNoHire) — 同一難易度・同一スプリント番号:');
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  for (const n of [1, 2, 3]) {
+    const at = (policy) =>
+      runs
+        .filter((r) => r.difficulty === d && r.policy === policy && r.sprints.length >= n)
+        .map((r) => r.sprints[n - 1]);
+    const a = gradeStats(at('passive'));
+    const b = gradeStats(at('skilledNoHire'));
+    if (!a || !b) continue;
+    console.log(
+      `  ${d} S${n}: passive 中央値=${a.median}(n=${a.n}) ${JSON.stringify(a.dist)} | skilledNoHire 中央値=${b.median}(n=${b.n}) ${JSON.stringify(b.dist)}`,
+    );
   }
 }
-console.log(
-  `n=${gradeTotal}`,
-  Object.entries(grades)
-    .sort()
-    .map(([g, n]) => `${g}=${n}(${pct(n, gradeTotal)})`)
-    .join(' '),
-);
-const passiveGrades = {};
-for (const run of runs.filter((r) => r.policy === 'passive')) {
-  for (const s of run.sprints) passiveGrades[s.grade] = (passiveGrades[s.grade] ?? 0) + 1;
+
+// --- F-11 ビルドの方向が決まる時期 ------------------------------------------
+console.log(`\n## F-11 進化ノードの解放時期（ビルドの方向が決まる時期）\n`);
+for (const [policy, arr] of group((r) => r.policy)) {
+  const unlocks = arr.flatMap((r) => r.evolutionUnlocks ?? []);
+  if (!unlocks.length) continue;
+  const inQ1 = unlocks.filter((u) => u.quarter === 1).length;
+  const firstQuarters = arr
+    .map((r) => (r.evolutionUnlocks ?? [])[0])
+    .filter(Boolean)
+    .map((u) => u.quarter);
+  const branchesQ1 = {};
+  for (const u of unlocks.filter((u) => u.quarter === 1)) {
+    const b = u.id.split('-')[0];
+    branchesQ1[b] = (branchesQ1[b] ?? 0) + 1;
+  }
+  console.log(
+    `${policy}: 解放 ${unlocks.length}件 うち Q1 ${inQ1}(${pct(inQ1, unlocks.length)}) 初回解放の四半期 p50=${quantile(firstQuarters, 0.5)} Q1のブランチ内訳=${JSON.stringify(branchesQ1)}`,
+  );
 }
-console.log('無介入(passive)のみ:', JSON.stringify(passiveGrades));
 
 // --- AI 依存度 --------------------------------------------------------------
 console.log(`\n## RI-73 / RI-76 AI 依存度と利用率\n`);

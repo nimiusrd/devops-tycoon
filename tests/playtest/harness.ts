@@ -46,12 +46,19 @@ export interface PolicySpec {
    */
   cards: 'none' | 'always' | 'selective';
   /**
-   * 進化ポイントの使い方。
+   * 進化ポイントの使い方（解放するブランチの優先順）。
    * - `none`: 使わない
    * - `asListed`: ツリーの定義順（UI 表示順）に上から取る。初見相当
-   * - `reviewFirst`: レビュー容量 → 品質 → AI → 文化 → 開発速度。攻略を知っている前提
+   * - `reviewFirst`: レビュー容量 → 品質 → AI → 文化 → 開発速度
+   * - `aiFirst`: AI → 開発速度 → 品質 → レビュー → 文化。AI ビルド
+   * - `qualityFirst`: 品質 → レビュー → 文化 → 開発速度 → AI。品質ビルド
    */
-  evolve: 'none' | 'asListed' | 'reviewFirst';
+  evolve: 'none' | 'asListed' | 'reviewFirst' | 'aiFirst' | 'qualityFirst';
+  /**
+   * ドラフトの選び方。`first` は提示順の先頭。
+   * それ以外は該当キーワードを含むカードを優先し、無ければ先頭を取る。
+   */
+  draft?: 'first' | 'ai' | 'quality';
   /** 編成フェーズで全員に AI を配る / 誰にも配らない。未指定は既定のまま。 */
   ai?: 'all' | 'none';
   /** 編成フェーズでレビューへ寄せる。 */
@@ -121,8 +128,42 @@ const EVOLUTION_ORDER_REVIEW_FIRST = [
  */
 const EVOLUTION_ORDER_AS_LISTED = EVOLUTION_NODES.map((n) => n.id);
 
+/** ブランチ接頭辞の並びから解放順を組む（各ブランチは 1→2→3 の順）。 */
+const orderFromBranches = (branches: readonly string[]): readonly string[] =>
+  branches.flatMap((b) => [1, 2, 3].map((n) => `${b}-${n}`));
+
+const EVOLUTION_ORDER_AI_FIRST = orderFromBranches(['ai', 'dev', 'quality', 'review', 'culture']);
+const EVOLUTION_ORDER_QUALITY_FIRST = orderFromBranches([
+  'quality',
+  'review',
+  'culture',
+  'dev',
+  'ai',
+]);
+
 function evolutionOrder(mode: PolicySpec['evolve']): readonly string[] {
-  return mode === 'reviewFirst' ? EVOLUTION_ORDER_REVIEW_FIRST : EVOLUTION_ORDER_AS_LISTED;
+  switch (mode) {
+    case 'reviewFirst':
+      return EVOLUTION_ORDER_REVIEW_FIRST;
+    case 'aiFirst':
+      return EVOLUTION_ORDER_AI_FIRST;
+    case 'qualityFirst':
+      return EVOLUTION_ORDER_QUALITY_FIRST;
+    default:
+      return EVOLUTION_ORDER_AS_LISTED;
+  }
+}
+
+/** ドラフト選好に合うカード ID を選ぶ（無ければ先頭）。 */
+const DRAFT_PREFERENCE: Record<'ai' | 'quality', readonly string[]> = {
+  ai: ['copilot', 'claude-code', 'devin', 'ai-guideline'],
+  quality: ['auto-test', 'pr-size-limit', 'docs', 'review-bot', 'hire-senior'],
+};
+
+function pickDraft(offer: readonly string[], mode: PolicySpec['draft']): string {
+  if (!mode || mode === 'first') return offer[0];
+  const prefer = DRAFT_PREFERENCE[mode];
+  return offer.find((id) => prefer.includes(id)) ?? offer[0];
 }
 
 function skilledBase(): PolicySpec {
@@ -190,7 +231,8 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
     cards: 'always',
-    evolve: 'reviewFirst',
+    evolve: 'aiFirst',
+    draft: 'ai',
     ai: 'all',
     recruit: 'hire',
   },
@@ -198,7 +240,8 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
     cards: 'always',
-    evolve: 'reviewFirst',
+    evolve: 'qualityFirst',
+    draft: 'quality',
     ai: 'none',
     recruit: 'hire',
   },
@@ -303,6 +346,10 @@ export interface RunLog {
   policy: string;
   /** メタ進行の解放状態（`fresh`=初見相当 / `full`=全解放）。 */
   meta: MetaProfile;
+  /** 進化ノードの解放イベント（F-11「Q1 で方向が決まるか」の判定用）。 */
+  evolutionUnlocks: { id: string; quarter: number; sprintIndex: number }[];
+  /** 敗北したフェーズ（`sprint`=スプリント終了時 / それ以外=スプリント間）。 */
+  lostPhase?: string;
   status: string;
   winType?: string;
   loseReason?: string;
@@ -497,6 +544,9 @@ export function runOnce(
   e.startRun();
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
+  const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
+  /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
+  let lostPhase: string | undefined;
   let guard = 0;
   let s = e.snapshot();
   while (s.status === 'playing' && guard < 60_000) {
@@ -560,7 +610,7 @@ export function runOnce(
         e.acknowledgeResult();
         break;
       case 'draft':
-        if (s.draft && s.draft.length > 0) e.chooseCard(s.draft[0]);
+        if (s.draft && s.draft.length > 0) e.chooseCard(pickDraft(s.draft, spec.draft));
         else e.skipDraft();
         break;
       case 'evolution': {
@@ -570,11 +620,22 @@ export function runOnce(
           let spent = 0;
           while (e.snapshot().evolution.points > 0 && spent < 16) {
             const before = e.snapshot().evolution.points;
+            const beforeIds = new Set(Object.keys(e.snapshot().evolution.unlocked));
             for (const id of order) {
               e.unlockEvolution(id);
               if (e.snapshot().evolution.points < before) break;
             }
-            if (e.snapshot().evolution.points >= before) break;
+            const after = e.snapshot();
+            if (after.evolution.points >= before) break;
+            // どのノードをいつ解放したかを残す（F-11 はタイミングが判定対象）。
+            for (const id of Object.keys(after.evolution.unlocked)) {
+              if (beforeIds.has(id)) continue;
+              evolutionUnlocks.push({
+                id,
+                quarter: after.quarterNumber,
+                sprintIndex: after.sprintIndexInQuarter,
+              });
+            }
             spent += 1;
           }
         }
@@ -598,7 +659,8 @@ export function runOnce(
         e.leaveShop();
         break;
       case 'rest':
-        e.restChoose('heal');
+        // 採用方針は休息の選択肢にも適用する（RestScreen に採用がある）。
+        e.restChoose(spec.recruit === 'hire' ? 'recruit' : 'heal');
         break;
       case 'recruit':
         e.recruitChoose(spec.recruit);
@@ -649,7 +711,9 @@ export function runOnce(
         guard = 60_000;
         break;
     }
-    s = e.snapshot();
+    const next = e.snapshot();
+    if (next.status !== 'playing' && lostPhase === undefined) lostPhase = s.phase;
+    s = next;
   }
   const f = e.snapshot();
   return {
@@ -657,6 +721,8 @@ export function runOnce(
     difficulty,
     policy,
     meta,
+    evolutionUnlocks,
+    ...(f.status === 'lost' ? { lostPhase } : {}),
     status: f.status,
     winType: f.winType,
     loseReason: f.loseReason,

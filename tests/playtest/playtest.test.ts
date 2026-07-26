@@ -48,9 +48,21 @@ function parseMeta(raw: string): MetaProfile {
 
 const DIFFS = parseDiffs(process.env.PT_DIFFS ?? 'easy,normal,hard,nightmare');
 const POLICIES = parsePolicies(process.env.PT_POLICIES ?? Object.keys(POLICY_DEFS).join(','));
-const SEEDS = (
-  process.env.PT_SEEDS ?? Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`).join(',')
-).split(',');
+/** seed も trim する。空白付きの `pt-2 ` は別 seed 扱いになり再現・結合を壊す。 */
+function parseSeeds(raw: string): string[] {
+  const list = raw
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+  if (list.length === 0) throw new Error('PT_SEEDS が空');
+  const dup = list.filter((x, i) => list.indexOf(x) !== i);
+  if (dup.length > 0) throw new Error(`PT_SEEDS に重複: ${[...new Set(dup)].join(', ')}`);
+  return list;
+}
+
+const SEEDS = parseSeeds(
+  process.env.PT_SEEDS ?? Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`).join(','),
+);
 const META = parseMeta(process.env.PT_META ?? 'fresh');
 const OUT = process.env.PT_OUT ?? 'playtest-out/runs.json';
 

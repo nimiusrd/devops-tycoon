@@ -10,6 +10,10 @@
  */
 import { getEvent } from '../../src/data/events';
 import { ACTION_DEFS } from '../../src/data/actions';
+import { CARD_DEFS } from '../../src/data/cards';
+import { RELIC_DEFS } from '../../src/data/relics';
+import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
+import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { RunEngine } from '../../src/sim/run/engine';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
 import type { ActionId } from '../../src/sim/types';
@@ -45,6 +49,28 @@ export interface PolicySpec {
   recruit: 'hire' | 'skip';
   /** 目標修正の選択（固定）。未指定は提示順の先頭。 */
   goalAdjustment?: GoalAdjustmentId;
+  /** 試行順を tick ごとに回転させる（probe の順序バイアス平準化用）。 */
+  rotateActions?: boolean;
+}
+
+/** `RunEngine.step` の 1 tick 相当（ms）。最小刻みで試行するにはこの値を渡す。 */
+export const MS_PER_TICK = FIXED_STEP_MS;
+
+/** メタ進行の解放状態。`fresh` は初見（既定解放のみ）、`full` はやり込み後（全解放）。 */
+export type MetaProfile = 'fresh' | 'full';
+
+/**
+ * 解放コンテンツを実プレイに合わせる（`game.startRun` の `setUnlockedContent` 相当）。
+ * 指定しないと `RunEngine` は全コンテンツを候補にしてしまい、初見プレイと条件がずれる。
+ */
+function unlockedFor(profile: MetaProfile): { cards: Set<string>; relics: Set<string> } {
+  if (profile === 'full') {
+    return {
+      cards: new Set(CARD_DEFS.map((c) => c.id)),
+      relics: new Set(RELIC_DEFS.map((r) => r.id)),
+    };
+  }
+  return { cards: new Set(defaultUnlockedCardIds()), relics: new Set(defaultUnlockedRelicIds()) };
 }
 
 const SKILLED_ACTIONS: PolicySpec['actions'] = [
@@ -167,12 +193,17 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   adjExtendDeadline: { ...skilledBase(), goalAdjustment: 'extend_deadline' },
   adjQualityPivot: { ...skilledBase(), goalAdjustment: 'quality_pivot' },
   /**
-   * 毎 tick 全介入を試行する上限測定用（RI-77）。
-   * 成功回数＝実際に発動できた上限、失敗理由の内訳＝どの制約が縛っているか。
+   * 全介入を 1 tick ごとに試行する（RI-77）。
+   *
+   * これは「発動可能回数の上限」ではない。8種を順に実際に発動するため、先行アクションが
+   * 集中力・盤面を消費して後続の機会を消す。試行順は tick ごとに回転させて順序バイアスを
+   * 平準化しているが、あくまで**全介入を同時に撃ち続けた場合の成立数**として読むこと。
+   * アクション単体の対象不足は、順序の影響を受けない `onlyXxx` 方針の `no-target` で見る。
    */
   probe: {
     actions: ALL_ACTION_IDS.map((id) => ({ id })),
-    stepMs: 300,
+    stepMs: MS_PER_TICK,
+    rotateActions: true,
     playCards: false,
     evolve: true,
     recruit: 'skip',
@@ -222,6 +253,12 @@ export interface QuarterLog {
   missedCount: number;
   /** `missed_crisis` を発火させうる条件のうち、実際に成立していたもの。 */
   crisisTriggers: string[];
+  /** `shutdown` を発火させうる条件のうち、実際に成立していたもの。 */
+  shutdownTriggers: string[];
+  /** シニアHP（`shutdown` 判定の入力）。 */
+  seniorHp: number;
+  /** 士気（`shutdown` 判定の入力）。 */
+  morale: number;
   chosenAdjustment?: string;
 }
 
@@ -229,6 +266,8 @@ export interface RunLog {
   seed: string;
   difficulty: string;
   policy: string;
+  /** メタ進行の解放状態（`fresh`=初見相当 / `full`=全解放）。 */
+  meta: MetaProfile;
   status: string;
   winType?: string;
   loseReason?: string;
@@ -310,7 +349,11 @@ function intervene(
   const ctx = boardCtx(e.snapshot());
   if (!ctx) return 0;
   let n = 0;
-  for (const a of spec.actions) {
+  // 固定順だと先頭のアクションが集中力を独占するため、probe では tick ごとに順を回す。
+  const order = spec.rotateActions
+    ? spec.actions.map((_, i) => spec.actions[(i + ctx.tick) % spec.actions.length])
+    : spec.actions;
+  for (const a of order) {
     if (a.when && !a.when(ctx)) continue;
     const outcome = e.dispatch(a.id);
     if (outcome.ok) {
@@ -351,11 +394,41 @@ function crisisTriggers(minTrust: number, budget: number, missedCount: number): 
   return hit;
 }
 
+/**
+ * `shutdown` を発火させうる条件のうち、実際に成立していたものを列挙する。
+ * `shutdown` も `loseReasonForOutcome` で `trustExhausted` に変換されるため、
+ * 信頼枯渇ラベルの実態を見るには両方を分解する必要がある。
+ */
+function shutdownTriggers(
+  minTrust: number,
+  budget: number,
+  morale: number,
+  seniorHp: number,
+  missedCount: number,
+): string[] {
+  const hit: string[] = [];
+  if (minTrust <= 10) hit.push('trust<=10');
+  if (budget <= 0 && morale <= 15) hit.push('budget<=0&morale<=15');
+  if (seniorHp <= 5 && missedCount >= 2) hit.push('seniorHp<=5&missed>=2');
+  return hit;
+}
+
 /** 1ランを最後まで自動プレイし、計測ログを返す。 */
-export function runOnce(seed: string, difficulty: string, policy: string): RunLog {
+export function runOnce(
+  seed: string,
+  difficulty: string,
+  policy: string,
+  meta: MetaProfile = 'fresh',
+): RunLog {
   const spec = POLICY_DEFS[policy];
   if (!spec) throw new Error(`unknown policy: ${policy}`);
-  const e = new RunEngine({ seed, difficulty: difficulty as RunState['difficulty'] });
+  const unlocked = unlockedFor(meta);
+  const e = new RunEngine({
+    seed,
+    difficulty: difficulty as RunState['difficulty'],
+    allowedCards: unlocked.cards,
+    allowedRelics: unlocked.relics,
+  });
   e.startRun();
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
@@ -472,6 +545,15 @@ export function runOnce(seed: string, difficulty: string, policy: string): RunLo
             budget: Math.round(s.budget),
             missedCount,
             crisisTriggers: crisisTriggers(minTrust, s.budget, missedCount),
+            shutdownTriggers: shutdownTriggers(
+              minTrust,
+              s.budget,
+              s.org.morale,
+              s.org.seniorHp,
+              missedCount,
+            ),
+            seniorHp: Math.round(s.org.seniorHp),
+            morale: Math.round(s.org.morale),
           };
           if (qr.outcome === 'missed_adjustable') {
             const want = spec.goalAdjustment;
@@ -500,6 +582,7 @@ export function runOnce(seed: string, difficulty: string, policy: string): RunLo
     seed,
     difficulty,
     policy,
+    meta,
     status: f.status,
     winType: f.winType,
     loseReason: f.loseReason,
@@ -533,11 +616,12 @@ export function runMatrix(
   difficulties: readonly string[],
   policies: readonly string[],
   seeds: readonly string[],
+  meta: MetaProfile = 'fresh',
 ): RunLog[] {
   const out: RunLog[] = [];
   for (const d of difficulties) {
     for (const p of policies) {
-      for (const seed of seeds) out.push(runOnce(seed, d, p));
+      for (const seed of seeds) out.push(runOnce(seed, d, p, meta));
     }
   }
   return out;

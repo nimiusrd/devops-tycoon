@@ -6,9 +6,11 @@
  * 集計方針:
  * - 母数は `(難易度, 方針, seed)` で重複排除する（同一条件は決定論により必ず一致するため）。
  * - 出荷の散らばりは、ラン長の差が混入しないよう**1スプリントあたり出荷**と
- *   **全方針が到達する固定区間（第1四半期の最初の N スプリント）**の両方で見る。
+ *   **全ランが必ず到達する第1スプリント**で見る。固定窓を長く取ると早期敗北ランが
+ *   母数から落ち、不安定な方針ほど低分散に見えるため。
  * - 介入は「発動した回数」と「発動できなかった理由（対象なし / 集中力 / クールダウン）」を分けて出す。
- * - `trustExhausted` は `missed_crisis` の別名なので、発火条件（信頼 / 予算 / KPI未達件数）へ分解する。
+ * - `trustExhausted` は `missed_crisis` と `shutdown` の両方から作られるので、
+ *   それぞれの発火条件へ分解する。
  */
 import { readFileSync } from 'node:fs';
 
@@ -108,16 +110,50 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   );
 }
 
+// --- RI-77 アクション別の対象不足 -------------------------------------------
+console.log(`\n## RI-77 アクション別の対象不足（単一介入方針。順序バイアスなし）\n`);
+const SINGLE = {
+  onlyFirefight: 'firefight',
+  onlyInterrupt: 'interruptReview',
+  onlyOvertime: 'overtime',
+  onlyAndon: 'andon',
+  onlyAssign: 'assignTask',
+  onlySplit: 'splitPr',
+  onlyPair: 'pairReview',
+  onlyThrottle: 'aiThrottle',
+};
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  const cells = [];
+  for (const [policy, action] of Object.entries(SINGLE)) {
+    const sprints = runs
+      .filter((r) => r.difficulty === d && r.policy === policy)
+      .flatMap((r) => r.sprints);
+    let ok = 0;
+    let noTarget = 0;
+    for (const s of sprints) {
+      ok += s.attempts?.[action]?.ok ?? 0;
+      noTarget += s.attempts?.[action]?.['no-target'] ?? 0;
+    }
+    const total = ok + noTarget;
+    cells.push(`${action} ok=${ok}/no-target=${noTarget}(${pct(noTarget, total)})`);
+  }
+  console.log(`${d}: ${cells.join(' | ')}`);
+}
+
 // --- F-5 分散（ラン長を揃える） --------------------------------------------
 console.log(`\n## F-5 出荷の散らばり（ラン長の差を除く）\n`);
-const FIXED_WINDOW = 3; // 全方針が到達する第1四半期の先頭スプリント数
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   const perSprint = arr.flatMap((r) => r.sprints.map((s) => s.delivered));
-  const windowed = arr
-    .filter((r) => r.sprints.length >= FIXED_WINDOW)
-    .map((r) => r.sprints.slice(0, FIXED_WINDOW).reduce((a, s) => a + s.delivered, 0));
+  // 全ランが必ず到達する第1スプリントで比較する。窓を長く取ると早期敗北ランが落ちる。
+  const first = arr.filter((r) => r.sprints.length >= 1).map((r) => r.sprints[0].delivered);
+  const firstCell =
+    first.length === arr.length
+      ? `第1スプリント出荷 平均=${r1(mean(first))} CV=${pct(cv(first), 1)}`
+      : first.length === 0
+        ? `第1スプリント出荷 未計測（到達 0/${arr.length}）`
+        : `第1スプリント出荷 平均=${r1(mean(first))} CV=${pct(cv(first), 1)}（到達 ${first.length}/${arr.length}）`;
   console.log(
-    `${k}: 1スプリント出荷 平均=${r1(mean(perSprint))} CV=${pct(cv(perSprint), 1)} | 先頭${FIXED_WINDOW}スプリント累計 n=${windowed.length} 平均=${r1(mean(windowed))} CV=${pct(cv(windowed), 1)} | 累計出荷CV=${pct(cv(arr.map((r) => r.totalDelivered)), 1)}`,
+    `${k}: 1スプリント出荷 平均=${r1(mean(perSprint))} CV=${pct(cv(perSprint), 1)} | ${firstCell} | 参考:累計出荷CV=${pct(cv(arr.map((r) => r.totalDelivered)), 1)}（ラン長の差を含むため F-5 の判定には使わない）`,
   );
 }
 
@@ -147,19 +183,24 @@ for (const [reason, arr] of loseGroups) {
 }
 
 // --- RI-78 trustExhausted の発火要因分解 ------------------------------------
-console.log(`\n## RI-78 四半期 outcome の発火要因（missed_crisis / reorg_required）\n`);
-const triggerCounts = {};
+console.log(`\n## RI-78 四半期 outcome の発火要因\n`);
+const crisisTrig = {};
+const shutdownTrig = {};
 const outcomeCounts = {};
 for (const run of runs) {
   for (const q of run.quarters ?? []) {
     outcomeCounts[q.outcome] = (outcomeCounts[q.outcome] ?? 0) + 1;
-    if (q.outcome !== 'missed_crisis') continue;
-    const key = q.crisisTriggers.length ? q.crisisTriggers.join('+') : 'none';
-    triggerCounts[key] = (triggerCounts[key] ?? 0) + 1;
+    const key = (list) => (list?.length ? list.join('+') : 'none');
+    // missed_crisis / shutdown はどちらも loseReasonForOutcome で trustExhausted になる。
+    if (q.outcome === 'missed_crisis')
+      crisisTrig[key(q.crisisTriggers)] = (crisisTrig[key(q.crisisTriggers)] ?? 0) + 1;
+    if (q.outcome === 'shutdown')
+      shutdownTrig[key(q.shutdownTriggers)] = (shutdownTrig[key(q.shutdownTriggers)] ?? 0) + 1;
   }
 }
 console.log('四半期 outcome:', JSON.stringify(outcomeCounts));
-console.log('missed_crisis の発火条件:', JSON.stringify(triggerCounts));
+console.log('missed_crisis の発火条件:', JSON.stringify(crisisTrig));
+console.log('shutdown の発火条件:', JSON.stringify(shutdownTrig));
 
 // --- F-2 第4層: 目標修正の選択別の後続 --------------------------------------
 console.log(`\n## F-2 第4層 目標修正\n`);
@@ -167,12 +208,21 @@ const withAdj = runs.filter((r) => r.goalAdjustments.length > 0);
 console.log(
   `目標修正を1回以上経験: ${withAdj.length}/${runs.length} (${pct(withAdj.length, runs.length)})`,
 );
-const adjFirst = group((r) => r.goalAdjustments[0] ?? '');
-for (const [adj, arr] of adjFirst) {
-  if (!adj) continue;
+// 統制比較は、目標修正だけを固定した adj* 方針に限る。
+// 他の方針は提示順の先頭（多くは cut_scope）を選ぶため、混ぜると比較にならない。
+const ADJ_POLICIES = {
+  adjCutScope: 'cut_scope',
+  adjExtendDeadline: 'extend_deadline',
+  adjQualityPivot: 'quality_pivot',
+};
+console.log('統制比較（adj* 方針のみ。他方針は提示順の先頭を選ぶため除外）:');
+for (const [policy, label] of Object.entries(ADJ_POLICIES)) {
+  const arr = runs.filter((r) => r.policy === policy);
+  if (!arr.length) continue;
+  const applied = arr.filter((r) => r.goalAdjustments.includes(label));
   const won = arr.filter((r) => r.status === 'won').length;
   console.log(
-    `初回選択=${adj}: n=${arr.length} 勝率=${pct(won, arr.length)} 到達四半期 平均=${r1(mean(arr.map((r) => r.quarterNumber)))} 総スプリント 平均=${r1(mean(arr.map((r) => r.sprintsPlayed)))}`,
+    `  ${policy}(${label}): n=${arr.length} 勝率=${pct(won, arr.length)} 実際に${label}を選べたラン=${applied.length} 到達四半期 平均=${r1(mean(arr.map((r) => r.quarterNumber)))} 総スプリント 平均=${r1(mean(arr.map((r) => r.sprintsPlayed)))}`,
   );
 }
 

@@ -12,6 +12,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "playtest": "vitest run --config vitest.playtest.config.ts",
+    "playtest:report": "node scripts/playtest-report.mjs",
     "test:e2e": "playwright test",
     "test:e2e:pixi": "PIXI_E2E=1 playwright test --grep @pixi",
     "gallery": "node scripts/gallery.mjs",

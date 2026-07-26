@@ -525,9 +525,14 @@ function intervene(
 }
 
 /**
- * ベンチにいるメンバーを実働レーンへ配置する。
- * `recruitMember` は採用直後を必ず `bench` に置くため、配置しないと採用が予算を払うだけになる。
- * レビュー適性が実装適性以上なら review、それ以外は coding。
+ * ベンチにいるメンバーを実働レーンへ配置する。レビュー適性が実装適性以上なら review、
+ * それ以外は coding。
+ *
+ * ベンチに来る経路は2つあり、**どちらも全方針で配置する**。
+ * - 採用（`recruitMember` は採用直後を必ず `bench` に置く）
+ * - 休職からの復帰（`recoverStamina` は `onLeave` を外すだけで `assignment` は `bench` のまま）
+ *
+ * 採用方針でのみ配置すると、復職者を戦力に戻すかどうかが採用の比較へ混入する。
  */
 function assignBenchMembers(e: RunEngine): void {
   for (const m of e.snapshot().roster.members) {
@@ -618,8 +623,8 @@ export function runOnce(
     s = e.snapshot();
     switch (s.phase) {
       case 'setup':
-        // 採用方針では、採ったメンバーをベンチに置いたままにしない。
-        if (spec.recruit === 'hire') assignBenchMembers(e);
+        // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻す。
+        assignBenchMembers(e);
         applySetup(e, spec);
         e.beginSetupSprint();
         break;

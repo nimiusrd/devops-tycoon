@@ -90,17 +90,30 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
 
 // --- F-4 ペーシング ---------------------------------------------------------
 console.log(`\n## F-4 スプリント長（1x 換算・秒）\n`);
+// SPEC 第3.1: 通常 60〜120秒（絶対下限30秒）、ボス 90〜180秒。
+// elite（高負荷）は「スプリント1本」の目標が同じく必要なので通常帯で判定する。
+const SPRINT_BANDS = {
+  normal: { min: 60, max: 120, absoluteMin: 30 },
+  elite: { min: 60, max: 120, absoluteMin: 30 },
+  boss: { min: 90, max: 180 },
+};
 for (const [d, arr] of group((r) => r.difficulty)) {
-  // elite（高負荷スプリント）も第3.1 の時間目標の対象なので独立区分として出す。
   for (const kind of ['normal', 'elite', 'boss']) {
     const xs = arr
       .flatMap((r) => r.sprints.filter((s) => s.kind === kind))
       .map((s) => sec(s.ticks));
     if (!xs.length) continue;
-    const under30 = xs.filter((x) => x < 30).length;
-    const under60 = xs.filter((x) => x < 60).length;
+    const band = SPRINT_BANDS[kind];
+    const below = xs.filter((x) => x < band.min).length;
+    const above = xs.filter((x) => x > band.max).length;
+    const p50v = quantile(xs, 0.5);
+    const inBand = p50v >= band.min && p50v <= band.max;
+    const absMin =
+      band.absoluteMin === undefined
+        ? ''
+        : ` 絶対下限${band.absoluteMin}s未満=${pct(xs.filter((x) => x < band.absoluteMin).length, xs.length)}`;
     console.log(
-      `${d}/${kind}: n=${xs.length} p10=${r1(quantile(xs, 0.1))} p50=${r1(quantile(xs, 0.5))} p90=${r1(quantile(xs, 0.9))} <30s=${pct(under30, xs.length)} <60s=${pct(under60, xs.length)}`,
+      `${d}/${kind}: n=${xs.length} p10=${r1(quantile(xs, 0.1))} p50=${r1(p50v)} p90=${r1(quantile(xs, 0.9))} | 規定${band.min}〜${band.max}s: p50 ${inBand ? '帯内' : '帯外'} 下回り=${pct(below, xs.length)} 上回り=${pct(above, xs.length)}${absMin}`,
     );
   }
 }
@@ -367,35 +380,49 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
 }
 
 // --- F-11 ビルドの方向が決まる時期 ------------------------------------------
-console.log(`\n## F-11 進化ノードの解放時期（ビルドの方向が決まる時期）\n`);
-// 母数は「全ラン」。解放イベントだけを母数にすると、第1スプリントで敗北して進化に
-// 到達しないランや、進化を使わない方針が集計から消え、常に「Q1で100%」になる。
+console.log(`\n## F-11 Q1 でビルドの方向が決まるか\n`);
+// 母数は全ラン（進化に到達しないランも含める）。
+// 分子は「Q1 の解放が特定ブランチへ寄っている」ランに限る。1件だけ取った状態や、
+// 複数ブランチへ均等に投資した状態は「方向が決まった」とは数えない。
+const BRANCH_COMMIT_MIN_NODES = 2; // 同一ブランチで2ノード以上
+const BRANCH_COMMIT_SHARE = 0.5; // かつ Q1 解放の過半がそのブランチ
+const commitInQ1 = (run) => {
+  const q1 = (run.evolutionUnlocks ?? []).filter((u) => u.quarter === 1);
+  if (q1.length === 0) return null;
+  const byBranch = {};
+  for (const u of q1) {
+    const b = u.id.split('-')[0];
+    byBranch[b] = (byBranch[b] ?? 0) + 1;
+  }
+  const [topBranch, topN] = Object.entries(byBranch).sort((a, b) => b[1] - a[1])[0];
+  const committed = topN >= BRANCH_COMMIT_MIN_NODES && topN / q1.length >= BRANCH_COMMIT_SHARE;
+  return { committed, topBranch, topN, total: q1.length };
+};
+console.log(
+  `判定: Q1 の解放が同一ブランチ ${BRANCH_COMMIT_MIN_NODES} ノード以上かつ Q1 解放の ${BRANCH_COMMIT_SHARE * 100}% 以上を占める`,
+);
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   const arr = runs.filter((r) => r.difficulty === d);
-  const withQ1 = arr.filter((r) => (r.evolutionUnlocks ?? []).some((u) => u.quarter === 1));
-  const never = arr.filter((r) => (r.evolutionUnlocks ?? []).length === 0);
+  const results = arr.map(commitInQ1);
+  const committed = results.filter((x) => x?.committed).length;
+  const spread = results.filter((x) => x && !x.committed).length;
+  const never = results.filter((x) => x === null).length;
   console.log(
-    `${d}: Q1中に解放したラン ${withQ1.length}/${arr.length} (${pct(withQ1.length, arr.length)}) / 一度も解放しなかったラン ${never.length} (${pct(never.length, arr.length)})`,
+    `${d}: Q1で方向確定 ${committed}/${arr.length} (${pct(committed, arr.length)}) / Q1解放ありだが分散 ${spread} / Q1解放なし ${never}`,
   );
 }
 console.log('\n方針別（進化を使う方針のみ）:');
 for (const [policy, arr] of group((r) => r.policy)) {
-  const spec = arr[0];
-  const unlocks = arr.flatMap((r) => r.evolutionUnlocks ?? []);
-  if (!unlocks.length) {
-    console.log(`  ${policy}: 進化を使わない方針（解放0件 / ${arr.length}ラン）`);
+  const results = arr.map(commitInQ1);
+  if (results.every((x) => x === null)) {
+    console.log(`  ${policy}: 進化を使わない方針（Q1解放0 / ${arr.length}ラン）`);
     continue;
   }
-  void spec;
-  const withQ1 = arr.filter((r) => (r.evolutionUnlocks ?? []).some((u) => u.quarter === 1));
-  const never = arr.filter((r) => (r.evolutionUnlocks ?? []).length === 0);
-  const branchesQ1 = {};
-  for (const u of unlocks.filter((u) => u.quarter === 1)) {
-    const b = u.id.split('-')[0];
-    branchesQ1[b] = (branchesQ1[b] ?? 0) + 1;
-  }
+  const committed = results.filter((x) => x?.committed);
+  const branches = {};
+  for (const c of committed) branches[c.topBranch] = (branches[c.topBranch] ?? 0) + 1;
   console.log(
-    `  ${policy}: Q1解放あり ${withQ1.length}/${arr.length}(${pct(withQ1.length, arr.length)}) 未解放 ${never.length} Q1ブランチ=${JSON.stringify(branchesQ1)}`,
+    `  ${policy}: 方向確定 ${committed.length}/${arr.length}(${pct(committed.length, arr.length)}) 確定ブランチ=${JSON.stringify(branches)}`,
   );
 }
 

@@ -5,9 +5,8 @@
  *
  * 集計方針:
  * - 母数は `(難易度, 方針, seed)` で重複排除する（同一条件は決定論により必ず一致するため）。
- * - 出荷の散らばりは、ラン長の差が混入しないよう**1スプリントあたり出荷**と
- *   **全ランが必ず到達する第1スプリント**で見る。固定窓を長く取ると早期敗北ランが
- *   母数から落ち、不安定な方針ほど低分散に見えるため。
+ * - 出荷の散らばりは**同一スプリント番号ごと**に比較する。全スプリントを連結した CV は、
+ *   長く生存したランほど標本を多く出し進行段階も混ざるため、ラン長の差が残る。
  * - 介入は「発動した回数」と「発動できなかった理由（対象なし / 集中力 / クールダウン）」を分けて出す。
  * - `trustExhausted` は `missed_crisis` と `shutdown` の両方から作られるので、
  *   それぞれの発火条件へ分解する。
@@ -140,21 +139,19 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   console.log(`${d}: ${cells.join(' | ')}`);
 }
 
-// --- F-5 分散（ラン長を揃える） --------------------------------------------
-console.log(`\n## F-5 出荷の散らばり（ラン長の差を除く）\n`);
+// --- F-5 分散（同一スプリント番号で比較） ----------------------------------
+console.log(`\n## F-5 出荷の散らばり（同一スプリント番号で比較）\n`);
+// 全スプリントを連結した CV は、長く生存したランほど標本を多く出し進行段階も混ざるため使わない。
+// 各スプリント番号ごとに、そこへ到達したランだけで CV を出す。
+const CV_SPRINT_INDEXES = [1, 2, 3, 5];
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
-  const perSprint = arr.flatMap((r) => r.sprints.map((s) => s.delivered));
-  // 全ランが必ず到達する第1スプリントで比較する。窓を長く取ると早期敗北ランが落ちる。
-  const first = arr.filter((r) => r.sprints.length >= 1).map((r) => r.sprints[0].delivered);
-  const firstCell =
-    first.length === arr.length
-      ? `第1スプリント出荷 平均=${r1(mean(first))} CV=${pct(cv(first), 1)}`
-      : first.length === 0
-        ? `第1スプリント出荷 未計測（到達 0/${arr.length}）`
-        : `第1スプリント出荷 平均=${r1(mean(first))} CV=${pct(cv(first), 1)}（到達 ${first.length}/${arr.length}）`;
-  console.log(
-    `${k}: 1スプリント出荷 平均=${r1(mean(perSprint))} CV=${pct(cv(perSprint), 1)} | ${firstCell} | 参考:累計出荷CV=${pct(cv(arr.map((r) => r.totalDelivered)), 1)}（ラン長の差を含むため F-5 の判定には使わない）`,
-  );
+  const cells = CV_SPRINT_INDEXES.map((n) => {
+    const xs = arr.filter((r) => r.sprints.length >= n).map((r) => r.sprints[n - 1].delivered);
+    if (xs.length === 0) return `S${n}: 未到達`;
+    const reach = xs.length === arr.length ? '' : `(到達 ${xs.length}/${arr.length})`;
+    return `S${n}: 平均=${r1(mean(xs))} CV=${pct(cv(xs), 1)}${reach}`;
+  });
+  console.log(`${k}: ${cells.join(' | ')}`);
 }
 
 // --- F-10 勝利種別 ----------------------------------------------------------
@@ -201,6 +198,10 @@ for (const run of runs) {
 console.log('四半期 outcome:', JSON.stringify(outcomeCounts));
 console.log('missed_crisis の発火条件:', JSON.stringify(crisisTrig));
 console.log('shutdown の発火条件:', JSON.stringify(shutdownTrig));
+console.log(
+  '  ※ shutdown はエンジン側が全社集約値で判定するが、ログは選択中チームの値から復元している。',
+);
+console.log('  ※ 復元できなかったものは none として出る。');
 
 // --- F-2 第4層: 目標修正の選択別の後続 --------------------------------------
 console.log(`\n## F-2 第4層 目標修正\n`);

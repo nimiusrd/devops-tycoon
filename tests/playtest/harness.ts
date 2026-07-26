@@ -130,11 +130,15 @@ function skilledBase(): PolicySpec {
   };
 }
 
+/**
+ * 単一介入だけを打つ方針。進化順は比較対象の `skilledNoHire` と同じ `reviewFirst` に揃える
+ * （揃えないと介入構成と進化順が同時に変わり、F-1 の判定を帰属できない）。
+ */
 const single = (id: ActionId): PolicySpec => ({
   actions: [{ id }],
   stepMs: 300,
   playCards: true,
-  evolve: true,
+  evolve: 'reviewFirst',
   recruit: 'skip',
 });
 
@@ -208,6 +212,9 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   adjCutScope: { ...skilledBase(), goalAdjustment: 'cut_scope' },
   adjExtendDeadline: { ...skilledBase(), goalAdjustment: 'extend_deadline' },
   adjQualityPivot: { ...skilledBase(), goalAdjustment: 'quality_pivot' },
+  adjRequestBudget: { ...skilledBase(), goalAdjustment: 'request_budget' },
+  adjPauseAiRollout: { ...skilledBase(), goalAdjustment: 'pause_ai_rollout' },
+  adjReorgTeams: { ...skilledBase(), goalAdjustment: 'reorg_teams' },
   /**
    * 全介入を 1 tick ごとに試行する（RI-77）。
    *
@@ -422,6 +429,11 @@ function crisisTriggers(minTrust: number, budget: number, missedCount: number): 
  * `shutdown` を発火させうる条件のうち、実際に成立していたものを列挙する。
  * `shutdown` も `loseReasonForOutcome` で `trustExhausted` に変換されるため、
  * 信頼枯渇ラベルの実態を見るには両方を分解する必要がある。
+ *
+ * 注意: エンジンは `companyOrgFromTeams` の全社集約値で判定するが、ここで読めるのは
+ * 選択中チームの `state.org` である。複数チームの状態が乖離したランでは条件を
+ * 再現できないことがあり、その場合は空配列（レポート上は `none`）になる。
+ * `none` が出た件数は、この再現の限界として読むこと。
  */
 function shutdownTriggers(
   minTrust: number,

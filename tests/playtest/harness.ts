@@ -38,8 +38,13 @@ export interface PolicySpec {
   actions: { id: ActionId; when?: (ctx: BoardCtx) => boolean }[];
   /** step 幅（ms）。大きいほど反応が鈍い＝初見寄り。 */
   stepMs: number;
-  /** 手札を発動するか。 */
-  playCards: boolean;
+  /**
+   * 手札の使い方。
+   * - `none`: 使わない
+   * - `always`: 手札を集中力が尽きるまで無差別に発動する
+   * - `selective`: 集中力に余裕があり、盤面が切迫していないときだけ発動する
+   */
+  cards: 'none' | 'always' | 'selective';
   /**
    * 進化ポイントの使い方。
    * - `none`: 使わない
@@ -124,7 +129,7 @@ function skilledBase(): PolicySpec {
   return {
     actions: SKILLED_ACTIONS,
     stepMs: 300,
-    playCards: true,
+    cards: 'always',
     evolve: 'reviewFirst',
     recruit: 'skip',
   };
@@ -137,7 +142,7 @@ function skilledBase(): PolicySpec {
 const single = (id: ActionId): PolicySpec => ({
   actions: [{ id }],
   stepMs: 300,
-  playCards: true,
+  cards: 'always',
   evolve: 'reviewFirst',
   recruit: 'skip',
 });
@@ -145,9 +150,9 @@ const single = (id: ActionId): PolicySpec => ({
 /** 方針一覧（SPEC 第19.1.3 の観測に対応）。 */
 export const POLICY_DEFS: Record<string, PolicySpec> = {
   /** 介入もカードも一切使わない完全放置（下限ベースライン）。 */
-  idle: { actions: [], stepMs: 1_000_000, playCards: false, evolve: 'none', recruit: 'skip' },
+  idle: { actions: [], stepMs: 1_000_000, cards: 'none', evolve: 'none', recruit: 'skip' },
   /** 介入なし・カードのみ（F-5 の無介入ベースライン）。 */
-  passive: { actions: [], stepMs: 1_000_000, playCards: true, evolve: 'none', recruit: 'skip' },
+  passive: { actions: [], stepMs: 1_000_000, cards: 'always', evolve: 'none', recruit: 'skip' },
   /** 初見想定。異常が目立ってから反応する。 */
   naive: {
     actions: [
@@ -155,7 +160,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
       { id: 'interruptReview', when: (c) => c.reviewLen >= 12 },
     ],
     stepMs: 600,
-    playCards: true,
+    cards: 'always',
     evolve: 'asListed',
     recruit: 'skip',
   },
@@ -163,14 +168,14 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   skilled: {
     actions: SKILLED_ACTIONS,
     stepMs: 300,
-    playCards: true,
+    cards: 'always',
     evolve: 'reviewFirst',
     recruit: 'hire',
   },
   /** skilled から採用だけを外した統制条件。 */
   skilledNoHire: skilledBase(),
   /** skilled から採用とカードを外した統制条件。 */
-  skilledNoCards: { ...skilledBase(), playCards: false },
+  skilledNoCards: { ...skilledBase(), cards: 'none' },
   /** 単一介入だけを打ち続ける（F-1 の固定強手検出）。 */
   onlyFirefight: single('firefight'),
   onlyInterrupt: single('interruptReview'),
@@ -184,7 +189,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   aiFullBet: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
-    playCards: true,
+    cards: 'always',
     evolve: 'reviewFirst',
     ai: 'all',
     recruit: 'hire',
@@ -192,7 +197,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   noAi: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
-    playCards: true,
+    cards: 'always',
     evolve: 'reviewFirst',
     ai: 'none',
     recruit: 'hire',
@@ -200,11 +205,18 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   reviewHeavy: {
     actions: [{ id: 'firefight', when: (c) => c.burning >= 1 }, { id: 'assignTask' }],
     stepMs: 300,
-    playCards: true,
+    cards: 'always',
     evolve: 'reviewFirst',
     formation: 'reviewHeavy',
     recruit: 'hire',
   },
+  /**
+   * F-5 用の統制条件。`skilledNoHire` から介入だけを外し、
+   * カード・進化・採用は揃える（進化条件が違うと分散差を介入に帰属できない）。
+   */
+  noInterventionCtl: { ...skilledBase(), actions: [] },
+  /** カードを状況に応じて選ぶ方針（無差別発動との比較用。RI-77）。 */
+  skilledSelectiveCards: { ...skilledBase(), cards: 'selective' },
   /**
    * 目標修正の選択別の後続差分を見る統制条件（F-2 第4層）。
    * 提示されないときだけ提示順の先頭へフォールバックする。
@@ -227,7 +239,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     actions: ALL_ACTION_IDS.map((id) => ({ id })),
     stepMs: MS_PER_TICK,
     rotateActions: true,
-    playCards: false,
+    cards: 'none',
     evolve: 'reviewFirst',
     recruit: 'skip',
   },
@@ -334,10 +346,27 @@ export function autoplayBeatChoiceIndex(
   return choice;
 }
 
-function playHand(e: RunEngine): void {
+/**
+ * `selective` の発動条件。
+ * 介入用の集中力を残し、盤面が切迫していないときだけカードを切る。
+ */
+function shouldPlaySelective(e: RunEngine): boolean {
+  const s = e.snapshot();
+  const sp = s.sprint;
+  if (!sp) return false;
+  const focusRatio = sp.config.focusMax > 0 ? sp.focus / sp.config.focusMax : 0;
+  const reviewLen = sp.tasks.filter((t) => t.lane === 'review').length;
+  const burning = sp.tasks.filter((t) => t.lane === 'rework' && t.incident).length;
+  // 集中力を6割以上残していて、渋滞も炎上も起きていないときだけ投資に回す。
+  return focusRatio >= 0.6 && reviewLen < 6 && burning === 0;
+}
+
+function playHand(e: RunEngine, mode: PolicySpec['cards']): void {
+  if (mode === 'none') return;
   let guard = 0;
   while (guard < 24 && e.snapshot().phase === 'sprint') {
     guard += 1;
+    if (mode === 'selective' && !shouldPlaySelective(e)) break;
     const hand = e.snapshot().sprint?.cardPiles.hand ?? [];
     if (hand.length === 0) break;
     let played = false;
@@ -486,11 +515,14 @@ export function runOnce(
         const before = s.sprintsPlayed;
         const attempts: Record<string, Partial<Record<DispatchReason, number>>> = {};
         let interventions = 0;
-        if (spec.playCards) playHand(e);
+        playHand(e, spec.cards);
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
           interventions += intervene(e, spec, attempts);
+          if (e.snapshot().phase !== 'sprint') break;
+          // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
+          if (spec.cards === 'selective') playHand(e, 'selective');
           if (e.snapshot().phase !== 'sprint') break;
           e.step(spec.stepMs);
         }

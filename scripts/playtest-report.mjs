@@ -4,7 +4,8 @@
  *   node scripts/playtest-report.mjs [runs.json]
  *
  * 集計方針:
- * - 母数は `(難易度, 方針, seed)` で重複排除する（同一条件は決定論により必ず一致するため）。
+ * - 母数は `(メタ解放, 難易度, 方針, seed)` で重複排除する。`PT_META` が違えばドラフト候補が
+ *   変わり同一条件ではないため、キーに含めないと片方が静かに消える。
  * - 出荷の散らばりは**同一スプリント番号ごと**に比較する。全スプリントを連結した CV は、
  *   長く生存したランほど標本を多く出し進行段階も混ざるため、ラン長の差が残る。
  * - 介入は「発動した回数」と「発動できなかった理由（対象なし / 集中力 / クールダウン）」を分けて出す。
@@ -37,11 +38,17 @@ const cv = (a) => {
 // --- 母数（重複排除） -------------------------------------------------------
 const byKey = new Map();
 for (const run of raw) {
-  byKey.set(`${run.difficulty}|${run.policy}|${run.seed}`, run);
+  byKey.set(`${run.meta ?? 'fresh'}|${run.difficulty}|${run.policy}|${run.seed}`, run);
 }
 const runs = [...byKey.values()];
+const metaProfiles = [...new Set(runs.map((r) => r.meta ?? 'fresh'))];
 console.log(`## 母数\n`);
 console.log(`延べ実行 ${raw.length} / ユニーク ${runs.length} / 重複 ${raw.length - runs.length}`);
+console.log(`メタ解放プロファイル: ${metaProfiles.join(', ')}`);
+if (metaProfiles.length > 1) {
+  console.log('  ※ 複数プロファイルが混在している。以下の全体集計はプロファイルを跨いだ値なので、');
+  console.log('     条件別に見るときはプロファイルごとに分けて実行すること。');
+}
 const policiesPerDiff = new Map();
 for (const run of runs) {
   if (!policiesPerDiff.has(run.difficulty)) policiesPerDiff.set(run.difficulty, new Set());
@@ -154,7 +161,7 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   console.log(`${k}: ${cells.join(' | ')}`);
 }
 
-// --- F-10 勝利種別 ----------------------------------------------------------
+// --- F-10 勝利種別（方針別） ------------------------------------------------
 console.log(`\n## F-10 勝利種別 / 組織診断\n`);
 const winTypes = {};
 const diagnoses = {};
@@ -162,21 +169,53 @@ for (const run of runs) {
   if (run.winType) winTypes[run.winType] = (winTypes[run.winType] ?? 0) + 1;
   diagnoses[run.diagnosis] = (diagnoses[run.diagnosis] ?? 0) + 1;
 }
-console.log('勝利種別:', JSON.stringify(winTypes));
-console.log('組織診断:', JSON.stringify(diagnoses));
+console.log('全体 勝利種別:', JSON.stringify(winTypes));
+console.log('全体 組織診断:', JSON.stringify(diagnoses));
+// F-10 は「方針を変えると勝ち筋が変わるか」なので、方針別の分布を出す。
+console.log('\n方針別（勝利があった方針のみ。勝利種別 / 診断）:');
+for (const [policy, arr] of group((r) => r.policy)) {
+  const wt = {};
+  const dg = {};
+  for (const r of arr) {
+    if (r.winType) wt[r.winType] = (wt[r.winType] ?? 0) + 1;
+    dg[r.diagnosis] = (dg[r.diagnosis] ?? 0) + 1;
+  }
+  if (Object.keys(wt).length === 0) continue;
+  console.log(`  ${policy}: ${JSON.stringify(wt)} / ${JSON.stringify(dg)}`);
+}
 
-// --- F-9 敗因ごとの手触り ---------------------------------------------------
+// --- F-9 敗因ごとの手触り（難易度で層別化） ---------------------------------
 console.log(`\n## F-9 敗因ごとの進行と予兆\n`);
-const loseGroups = group((r) => r.loseReason ?? '');
-for (const [reason, arr] of loseGroups) {
-  if (!reason) continue;
+// 敗因と実験条件は相関する（例: aiDependency はほぼ Nightmare の第1スプリント）。
+// 全体を一つに潰すと難易度差が p50 に混入するため、難易度で層別化する。
+const fmtGroup = (arr) => {
   const sprintsToLose = arr.map((r) => r.sprints.length);
   const prev = arr.filter((r) => r.sprints.length >= 2).map((r) => r.sprints[r.sprints.length - 2]);
-  const last = arr.filter((r) => r.sprints.length >= 1).map((r) => r.sprints[r.sprints.length - 1]);
-  const fmt = (xs, f) => (xs.length ? r1(mean(xs.map(f))) : '—');
-  console.log(
-    `${reason}: n=${arr.length} 敗北までのスプリント数 p50=${quantile(sprintsToLose, 0.5)} | 1つ前 hp=${fmt(prev, (s) => s.seniorHpAfter)} morale=${fmt(prev, (s) => s.moraleAfter)} debt=${fmt(prev, (s) => s.techDebtAfter)} budget=${fmt(prev, (s) => s.budgetAfter)} rq=${fmt(prev, (s) => s.reviewQueueMax)} | 最終 hp=${fmt(last, (s) => s.seniorHpAfter)} budget=${fmt(last, (s) => s.budgetAfter)}`,
-  );
+  const f = (xs, fn) => (xs.length ? r1(mean(xs.map(fn))) : '—');
+  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 1つ前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)}`;
+};
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  console.log(`\n### ${d}`);
+  const lost = runs.filter((r) => r.difficulty === d && r.loseReason);
+  const byReason = new Map();
+  for (const r of lost) {
+    if (!byReason.has(r.loseReason)) byReason.set(r.loseReason, []);
+    byReason.get(r.loseReason).push(r);
+  }
+  for (const [reason, arr] of [...byReason.entries()].sort((a, b) => b[1].length - a[1].length)) {
+    console.log(`  ${reason}: ${fmtGroup(arr)}`);
+  }
+}
+console.log('\n全体（難易度を跨ぐため参考値）:');
+{
+  const byReason = new Map();
+  for (const r of runs.filter((r) => r.loseReason)) {
+    if (!byReason.has(r.loseReason)) byReason.set(r.loseReason, []);
+    byReason.get(r.loseReason).push(r);
+  }
+  for (const [reason, arr] of [...byReason.entries()].sort((a, b) => b[1].length - a[1].length)) {
+    console.log(`  ${reason}: ${fmtGroup(arr)}`);
+  }
 }
 
 // --- RI-78 trustExhausted の発火要因分解 ------------------------------------
@@ -215,6 +254,9 @@ const ADJ_POLICIES = {
   adjCutScope: 'cut_scope',
   adjExtendDeadline: 'extend_deadline',
   adjQualityPivot: 'quality_pivot',
+  adjRequestBudget: 'request_budget',
+  adjPauseAiRollout: 'pause_ai_rollout',
+  adjReorgTeams: 'reorg_teams',
 };
 console.log('統制比較（adj* 方針のみ。他方針は提示順の先頭を選ぶため除外）:');
 for (const [policy, label] of Object.entries(ADJ_POLICIES)) {

@@ -75,17 +75,18 @@ gh run view <RUN_ID> --json jobs \
 ```markdown
 ## サマリー
 - run: <url>
-- 採番: RI-NN（再ベースラインのため新規）
+- エピック: RI-NN（再ベースラインのため新規）
+- 実装単位: RI-NN-A1 …（件数 M、最優先 RI-NN-A1）
 - 全体 total: X% / covered: Y%
 - ワースト: file (Z%)
 
 ## 推奨着手順
-| Batch | 対象 | 受入 |
+| ID | 対象 | 受入 |
 | --- | --- | --- |
-| A | ... | ... |
+| RI-NN-A1 | … | total 70%+ |
 
 ## 文書
-- plan/mutation-remediation.md を RI-NN 向けに更新
-- 旧ミューテーション RI は完了（後続 RI-NN に置換）
+- plan/mutation-remediation.md をエピック RI-NN + 実装単位付きで更新
+- 旧ミューテーションエピックは完了（後続 RI-NN に置換）
 ```
 

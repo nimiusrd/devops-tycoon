@@ -74,15 +74,18 @@ Easy でも無介入・素直プレイだと第1四半期スプリント2でシ�
 
 Stryker（`src/sim` / `src/state`）のベースライン run
 [30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
-で全体 mutation score 約 73%。Survived / NoCoverage が多いファイルのユニットテストを強化する。実装手順・バッチ分割・再計測方法は[mutation-remediation.md](./mutation-remediation.md)を正とする。
+で全体 mutation score 約 73%。Survived / NoCoverage が多いファイルのユニットテストを強化する。
 
-ミューテーション改善の RI は **フルシャード再ベースライン実行ごとに新規採番**する（欠番再利用なし）。再計測で計画を作り直す場合は新 ID を発行し、本項は完了扱いにして未消化分を新計画へ引き継ぐ。手順は[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
+- **エピック**: `RI-72`（本項）
+- **実装単位**: `RI-72-A1` 形式。一覧・受入・やる事の正本は[mutation-remediation.md](./mutation-remediation.md)
+- 再ベースライン時は新エピックを採番し、実装単位も `RI-{N}-…` で振り直す。手順は[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)
 
 受入条件:
 
-- [mutation-remediation.md](./mutation-remediation.md) の Batch A〜D の受入を満たす（本ベースライン）。
+- [mutation-remediation.md](./mutation-remediation.md) の Group A–D 実装単位が完了する（本ベースライン）。
 - 全体 mutation score (total) がおおむね 80%以上（必須 CI ゲートにはしない）。
 - 原則はテスト追加のみ。スコア目的の本番ロジック改変をしない。
+- 実装 PR は **1PR = 1実装単位 ID**。
 
 ### RI-34 ローカル完結の将来拡張
 
@@ -122,7 +125,7 @@ RI-24とRI-25は「追加実装しない」と決定して完了した項目を�
 ## 4. バックログ運用
 
 - IDは`RI-NN`の連番とし、欠番を再利用しない。
-- ミューテーション改善（再ベースライン）は実行ごとに新しい`RI-NN`を採番する。詳細は[mutation-remediation.md](./mutation-remediation.md)と[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
+- ミューテーション改善はエピック`RI-{N}`（再ベースラインごと）と実装単位`RI-{N}-{GROUP}{SEQ}`（1PR）に分ける。詳細は[mutation-remediation.md](./mutation-remediation.md)と[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
 - 状態は`未着手`、`進行中`、`保留（要判断）`、`完了`を使う。
 - 1項目は原則1PRで完了できる大きさに分割する。エピックは受入条件と分割順を記載する。
 - 完了時は詳細な実装日誌を追記せず、上の完了要約と[spec-mapping.md](./spec-mapping.md)を更新する。

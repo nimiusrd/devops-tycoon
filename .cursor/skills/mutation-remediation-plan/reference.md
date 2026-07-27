@@ -75,6 +75,7 @@ gh run view <RUN_ID> --json jobs \
 ```markdown
 ## サマリー
 - run: <url>
+- 採番: RI-NN（再ベースラインのため新規）
 - 全体 total: X% / covered: Y%
 - ワースト: file (Z%)
 
@@ -84,5 +85,7 @@ gh run view <RUN_ID> --json jobs \
 | A | ... | ... |
 
 ## 文書
-- plan/mutation-remediation.md を更新済み / 新規作成
+- plan/mutation-remediation.md を RI-NN 向けに更新
+- 旧ミューテーション RI は完了（後続 RI-NN に置換）
 ```
+

@@ -1,6 +1,6 @@
 ---
 name: mutation-remediation-plan
-description: Fetches Stryker mutation test results from GitHub Actions artifacts, aggregates scores and Survived/NoCoverage hotspots, and writes an implementer-ready remediation plan. Use when asked to analyze mutation reports, plan mutation score improvements, process Mutation workflow runs, update RI-72, or draft plan/mutation-remediation.md from a GHA run URL.
+description: Fetches Stryker mutation test results from GitHub Actions artifacts, aggregates scores and Survived/NoCoverage hotspots, and writes an implementer-ready remediation plan with a new backlog RI ID per baseline run. Use when asked to analyze mutation reports, plan mutation score improvements, process Mutation workflow runs, rebaseline mutation remediation, or draft/update plan/mutation-remediation.md from a GHA run URL.
 ---
 
 # ミューテーション結果からの実装計画
@@ -12,7 +12,20 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 - 設定: [`stryker.config.json`](../../../stryker.config.json)
 - GHA: [`.github/workflows/mutation.yml`](../../../.github/workflows/mutation.yml)（シャード並列、任意／週次）
 - 計画の正本テンプレ: [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md)
-- バックログ: RI-72（[`plan/remaining-issues.md`](../../../plan/remaining-issues.md)）
+- バックログ: [`plan/remaining-issues.md`](../../../plan/remaining-issues.md)（**フルシャード再ベースライン実行ごとに新しい RI-NN を採番**）
+
+## バックログ ID の採番
+
+フルシャード結果から計画を書く／更新するたびに、**必ず新しい `RI-NN` を1つ採番**する。同じ RI を再利用してベースラインを上書きしない。
+
+1. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) とリポジトリ全体から既存 `RI-(\d+)` の最大番号を求める（欠番は再利用しない）。
+2. 新 ID = `RI-{max+1}`。
+3. 表に新行を追加し、詳細節を書く。タイトル例: `ミューテーションテストに基づくユニットテスト強化（run <RUN_ID>）`。
+4. [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) の「バックログ ID」を新 ID に差し替え、対象 run / score / Batch をそのベースライン用に更新する。
+5. 直前のミューテーション改善 RI（未着手・進行中）があれば **完了** にし、完了要約へ「後続ベースライン `RI-XX` に置換。未消化 Batch は新計画へ引き継ぎ」と短く書く。未消化 Batch の中身は新計画側に残す（旧 RI に実装を続けない）。
+6. [`plan/README.md`](../../../plan/README.md) の mutation 行は「現行 RI-XX」が分かるよう更新する。
+
+部分分析（custom / `mutate` 指定）では **新しい RI を採番しない**。全体ベースラインも書き換えない。
 
 ## 手順
 
@@ -26,7 +39,7 @@ gh run list --workflow=mutation.yml --limit 5 --json databaseId,conclusion,statu
 
 成功（`conclusion=success`）で artifact がある run を選ぶ。失敗のみの場合はログ原因を報告して終了する。
 
-**ベースライン用**はフルシャード実行のみを使う。artifact 名が `mutation-report-<shard>` で、想定シャード（`sim-root`, `sim-run-engine`, `sim-run-rest`, `sim-orgscale`, `sim-member-model`, `state`）が揃っていることを確認する。`mutation-report-custom` のみ、または `mutate` 入力付きの部分実行は **対象範囲限定の分析** とし、全体ベースラインや Batch 順の上書きには使わない。
+**ベースライン用**はフルシャード実行のみを使う。artifact 名が `mutation-report-<shard>` で、想定シャード（`sim-root`, `sim-run-engine`, `sim-run-rest`, `sim-orgscale`, `sim-member-model`, `state`）が揃っていることを確認する。`mutation-report-custom` のみ、または `mutate` 入力付きの部分実行は **対象範囲限定の分析** とし、全体ベースラインや Batch 順の上書き・新 RI 採番には使わない。
 
 run の `headSha` を控える。手順4の実装・テスト照合は、その SHA のツリーで行う（`git checkout` / worktree、または現 `HEAD` との差分を明記）。SHA が一致しないまま弱点判定しない。
 
@@ -72,14 +85,14 @@ gh run download <RUN_ID> -D "$OUT"
 
 広範な探索は `explore` サブエージェントを使ってよい。
 
-### 5. 計画を書く／更新する
+### 5. 新 RI を採番し計画を書く
 
-[`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) を新規作成またはベースライン節を更新する。含めるもの:
+「バックログ ID の採番」に従い新 `RI-NN` を発行してから、[`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) をそのベースライン用に更新（または新規作成）する。含めるもの:
 
-- 対象 run URL・`headSha`・全体 score（フルシャード時）
+- 対象 run URL・`headSha`・**新 RI-NN**・全体 score（フルシャード時）
 - 目的 / 非目的（必須ゲート化しない、原則テストのみ強化）
-- 作業ルール（1PR=1バッチ、再計測コマンド、PR に Before/After を書く）
-- **Batch A→E** の優先順（ワースト・Survived 絶対数・NoCoverage を重視）
+- 作業ルール（1PR=1バッチ、再計測コマンド、PR に Before/After と RI-NN を書く）
+- **Batch A→E** の優先順（ワースト・Survived 絶対数・NoCoverage を重視）。前回計画から未消化があれば引き継ぎを明記
 - 各バッチの対象ファイル、既存テスト、やる事、受入条件
 - 典型的 Survived の直し方表
 - 再計測:
@@ -88,16 +101,15 @@ gh run download <RUN_ID> -D "$OUT"
 npm run test:mutation:force -- --mutate <file>
 ```
 
-未登録なら [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) に RI を追加し、[`plan/README.md`](../../../plan/README.md) からリンクする。既存 RI-72 があれば受入と文書へのリンクを整合させる。
-
 ### 6. ユーザーへの提示
 
 日本語で簡潔に:
 
-1. 全体・シャードの score サマリー（部分 run なら範囲を明示）
-2. 推奨 Batch 順（表）
-3. 計画ファイルへのパス
-4. 実装は別エージェント／別 PR で行う旨（依頼が計画のみの場合）
+1. **採番した RI-NN** と対象 run
+2. 全体・シャードの score サマリー（部分 run なら範囲を明示し、RI 未採番である旨）
+3. 推奨 Batch 順（表）
+4. 計画ファイルへのパス
+5. 実装は別エージェント／別 PR で行う旨（依頼が計画のみの場合）
 
 ## 優先度の付け方
 
@@ -117,6 +129,8 @@ npm run test:mutation:force -- --mutate <file>
 - 単一ジョブでコア全体フル再計測を前提にしない（シャードまたは `--mutate`）
 - artifact が無い run を根拠に数値計画を作らない
 - custom / 部分 `mutate` run の集計で全体ベースラインを上書きしない
+- **同じ RI のまま別 run のベースラインへ上書きしない**（必ず新 ID）
+- 欠番の RI 番号を再利用しない
 
 ## 追加リソース
 

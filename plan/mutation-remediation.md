@@ -5,8 +5,8 @@
 （2026-07-27、シャード並列・成功）。
 
 関連設定: [`stryker.config.json`](../stryker.config.json)、[`.github/workflows/mutation.yml`](../.github/workflows/mutation.yml)。  
-バックログ ID: **RI-72**（[`remaining-issues.md`](./remaining-issues.md)）。  
-再ベースライン（新しい Mutation run から本計画を更新）: [`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
+バックログ ID: **RI-72**（[`remaining-issues.md`](./remaining-issues.md)）— 本ベースライン（run 30261978402）専用。  
+再ベースライン（新しいフルシャード Mutation run から計画を更新）: [`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md) に従い **新しい RI-NN を採番**し、本ファイルの ID・数値・Batch を差し替える。旧 RI は完了扱いにして未消化分を新計画へ引き継ぐ。
 
 ## 1. 目的と非目的
 
@@ -157,6 +157,7 @@ npm run test:mutation:force -- --mutate src/sim/orgscale/industry.ts
 
 ## 7. 完了時のバックログ更新
 
-- バッチ完了ごとに本ファイルの該当行に ✅ と再計測 score を追記してよい（短く）。
-- RI-72 を完了にする条件: 全体 total **おおむね 80%+**、かつ Batch A–D の受入を満たす。
-- 完了時は [`remaining-issues.md`](./remaining-issues.md) の RI-72 を完了要約へ移し、本ファイルは残すか「完了・履歴参照」と明示する。
+- バッチ完了ごとに本ファイルの該当行に ✅ と再計測 score を追記してよい（短く）。PR には現行の RI-NN を明記する。
+- **現行 RI を完了にする条件**: そのベースライン計画の Batch A–D の受入を満たし、全体 total がおおむね 80%以上。
+- **再ベースライン時**: スキルに従い新 RI を採番する。旧 RI は完了要約へ「後続 RI-XX に置換」と移し、未消化 Batch は新計画へ引き継ぐ（旧 ID での実装継続はしない）。
+- 完了時は [`remaining-issues.md`](./remaining-issues.md) を更新し、本ファイルは現行ベースラインの正本として残す。

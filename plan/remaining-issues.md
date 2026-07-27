@@ -12,7 +12,7 @@
 | RI-69 | スプリント上部操作バーと盤面の重なり | 中 | 未着手 | 第4 |
 | RI-70 | モバイルのスプリント操作性 | 中 | 未着手 | 第4 |
 | RI-71 | favicon 未設定による 404 | 低 | 未着手 | — |
-| RI-72 | ミューテーションテストに基づくユニットテスト強化 | 中 | 未着手 | 第22.5 |
+| RI-72 | ミューテーションテストに基づくユニットテスト強化（run 30261978402） | 中 | 未着手 | 第22.5 |
 | RI-34 | ローカル完結の将来拡張 | 低 | 保留（要判断） | 第23 |
 
 RI-67〜71 は 2026-07-20 のプレイテストで洗い出した。経緯・再現条件・実測は[playtest-findings.md](./playtest-findings.md)を参照する。
@@ -70,15 +70,17 @@ Easy でも無介入・素直プレイだと第1四半期スプリント2でシ�
 - `<link rel="icon">` とアイコン配置で 404 が出ない。
 - ブラウザタブにアイコンが表示される。
 
-### RI-72 ミューテーションテストに基づくユニットテスト強化
+### RI-72 ミューテーションテストに基づくユニットテスト強化（run 30261978402）
 
 Stryker（`src/sim` / `src/state`）のベースライン run
 [30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
 で全体 mutation score 約 73%。Survived / NoCoverage が多いファイルのユニットテストを強化する。実装手順・バッチ分割・再計測方法は[mutation-remediation.md](./mutation-remediation.md)を正とする。
 
+ミューテーション改善の RI は **フルシャード再ベースライン実行ごとに新規採番**する（欠番再利用なし）。再計測で計画を作り直す場合は新 ID を発行し、本項は完了扱いにして未消化分を新計画へ引き継ぐ。手順は[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
+
 受入条件:
 
-- [mutation-remediation.md](./mutation-remediation.md) の Batch A〜D の受入を満たす。
+- [mutation-remediation.md](./mutation-remediation.md) の Batch A〜D の受入を満たす（本ベースライン）。
 - 全体 mutation score (total) がおおむね 80%以上（必須 CI ゲートにはしない）。
 - 原則はテスト追加のみ。スコア目的の本番ロジック改変をしない。
 
@@ -120,6 +122,7 @@ RI-24とRI-25は「追加実装しない」と決定して完了した項目を�
 ## 4. バックログ運用
 
 - IDは`RI-NN`の連番とし、欠番を再利用しない。
+- ミューテーション改善（再ベースライン）は実行ごとに新しい`RI-NN`を採番する。詳細は[mutation-remediation.md](./mutation-remediation.md)と[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
 - 状態は`未着手`、`進行中`、`保留（要判断）`、`完了`を使う。
 - 1項目は原則1PRで完了できる大きさに分割する。エピックは受入条件と分割順を記載する。
 - 完了時は詳細な実装日誌を追記せず、上の完了要約と[spec-mapping.md](./spec-mapping.md)を更新する。

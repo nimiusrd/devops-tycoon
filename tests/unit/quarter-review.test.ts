@@ -1,22 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import { BOSS_DEFS, getBoss } from '../../src/data/bosses';
+import type { BossDef } from '../../src/data/bosses';
 import { getDifficulty } from '../../src/data/difficulties';
 import { getGoalAdjustment } from '../../src/data/goalAdjustments';
 import { createOrgState } from '../../src/sim/org';
 import {
+  OUTCOME_LABELS,
   applyGoalAdjustment,
+  applyGoalOrgEffectsToTeam,
   availableAdjustments,
+  canAcknowledgeWin,
+  canChooseAdjustment,
   buildInitialTrust,
   buildQuarterGoal,
   buildQuarterReview,
   diagnoseMissedReasons,
   evaluateQuarterOutcome,
+  isTerminalFailure,
+  loseReasonForOutcome,
   measureGoalProgress,
 } from '../../src/sim/run/quarterReview';
 import type { OrgState } from '../../src/sim/types';
+import type { TeamRunState } from '../../src/sim/orgscale/types';
 import type {
   DifficultyId,
   GoalKpiProgress,
+  GoalAdjustmentId,
   QuarterGoal,
   QuarterOutcome,
   RunTotals,
@@ -24,6 +33,29 @@ import type {
 } from '../../src/sim/run/types';
 
 const org = (o: Partial<OrgState> = {}): OrgState => ({ ...createOrgState('default', true), ...o });
+
+const team = (t: Partial<TeamRunState> = {}): TeamRunState => ({
+  id: 'product-t0',
+  deptId: 'product',
+  name: 'チームA',
+  engineers: 5,
+  headcount: 5,
+  aiLiteracy: 50,
+  aiDependency: 40,
+  morale: 50,
+  techDebt: 40,
+  shipping: 100,
+  reviewQueue: 2,
+  incidents: 1,
+  reviewCapacity: 60,
+  incidentBias: 0.1,
+  seniorHp: 50,
+  aiEnabled: true,
+  testCoverage: 50,
+  documentation: 50,
+  quality: 60,
+  ...t,
+});
 
 const totals = (t: Partial<RunTotals> = {}): RunTotals => ({
   delivered: 0,
@@ -454,6 +486,270 @@ describe('四半期レビュー（Phase 8）', () => {
     for (const id of ids) {
       expect(getGoalAdjustment(id)).toBeDefined();
     }
+  });
+
+  it('RI-72-C1: outcome 補助関数と表示ラベルが全 outcome を分類する', () => {
+    const cases: Array<{
+      outcome: QuarterOutcome;
+      choose: boolean;
+      acknowledge: boolean;
+      terminal: boolean;
+      loseReason: ReturnType<typeof loseReasonForOutcome>;
+      label: string;
+    }> = [
+      {
+        outcome: 'exceeded',
+        choose: false,
+        acknowledge: true,
+        terminal: false,
+        loseReason: 'trustExhausted',
+        label: '超過達成',
+      },
+      {
+        outcome: 'met',
+        choose: false,
+        acknowledge: true,
+        terminal: false,
+        loseReason: 'trustExhausted',
+        label: '目標達成',
+      },
+      {
+        outcome: 'missed_adjustable',
+        choose: true,
+        acknowledge: false,
+        terminal: false,
+        loseReason: 'trustExhausted',
+        label: '未達（修正可能）',
+      },
+      {
+        outcome: 'missed_crisis',
+        choose: false,
+        acknowledge: false,
+        terminal: true,
+        loseReason: 'trustExhausted',
+        label: '深刻な未達',
+      },
+      {
+        outcome: 'reorg_required',
+        choose: false,
+        acknowledge: false,
+        terminal: true,
+        loseReason: 'reorgRequired',
+        label: '組織再編が必要',
+      },
+      {
+        outcome: 'shutdown',
+        choose: false,
+        acknowledge: false,
+        terminal: true,
+        loseReason: 'trustExhausted',
+        label: '継続不能',
+      },
+    ];
+
+    expect(Object.keys(OUTCOME_LABELS).sort()).toEqual(cases.map((c) => c.outcome).sort());
+    for (const c of cases) {
+      expect(canChooseAdjustment(c.outcome), c.outcome).toBe(c.choose);
+      expect(canAcknowledgeWin(c.outcome), c.outcome).toBe(c.acknowledge);
+      expect(isTerminalFailure(c.outcome), c.outcome).toBe(c.terminal);
+      expect(loseReasonForOutcome(c.outcome), c.outcome).toBe(c.loseReason);
+      expect(OUTCOME_LABELS[c.outcome], c.outcome).toBe(c.label);
+    }
+  });
+
+  it('RI-72-C1: KPI 比較のちょうど境界を固定する', () => {
+    const statusFor = (input: {
+      delivered?: number;
+      quality?: number;
+      techDebt?: number;
+      morale?: number;
+      incidents?: number;
+      aiAssisted?: number;
+      completed?: number;
+    }) =>
+      Object.fromEntries(
+        measureGoalProgress({
+          goal: {
+            deliveryTarget: 100,
+            qualityTarget: 80,
+            techDebtLimit: 40,
+            moraleTarget: 50,
+            incidentLimit: 8,
+            aiAdoptionTarget: 40,
+          },
+          org: org({
+            quality: input.quality ?? 80,
+            techDebt: input.techDebt ?? 40,
+            morale: input.morale ?? 50,
+          }),
+          totals: totals({
+            delivered: input.delivered ?? 100,
+            incidents: input.incidents ?? 8,
+            aiAssisted: input.aiAssisted ?? 2,
+            completed: input.completed ?? 5,
+          }),
+        }).map((p) => [p.id, p.status]),
+      ) as Record<GoalKpiProgress['id'], GoalKpiProgress['status']>;
+
+    expect(statusFor({ delivered: 99 }).delivery).toBe('missed');
+    expect(statusFor({ delivered: 100 }).delivery).toBe('met');
+    expect(statusFor({ delivered: 114 }).delivery).toBe('met');
+    expect(statusFor({ delivered: 115 }).delivery).toBe('exceeded');
+    expect(statusFor({ quality: 91 }).quality).toBe('met');
+    expect(statusFor({ quality: 92 }).quality).toBe('exceeded');
+    expect(statusFor({ techDebt: 30 }).techDebt).toBe('exceeded');
+    expect(statusFor({ techDebt: 31 }).techDebt).toBe('met');
+    expect(statusFor({ techDebt: 40 }).techDebt).toBe('met');
+    expect(statusFor({ techDebt: 41 }).techDebt).toBe('missed');
+    expect(statusFor({ incidents: 6 }).incident).toBe('exceeded');
+    expect(statusFor({ incidents: 7 }).incident).toBe('met');
+    expect(statusFor({ incidents: 8 }).incident).toBe('met');
+    expect(statusFor({ incidents: 9 }).incident).toBe('missed');
+    expect(statusFor({ aiAssisted: 1, completed: 3 }).aiAdoption).toBe('missed');
+    expect(statusFor({ aiAssisted: 2, completed: 5 }).aiAdoption).toBe('met');
+    expect(statusFor({ aiAssisted: 23, completed: 50 }).aiAdoption).toBe('exceeded');
+  });
+
+  it('RI-72-C1: buildQuarterGoal は未定義 clear と prior AI 分岐を固定する', () => {
+    const emptyBoss: BossDef = {
+      id: 'empty',
+      name: 'empty',
+      description: 'no optional clear fields',
+      taskCountMul: 1,
+      incidentMul: 1,
+      clear: {},
+    };
+    const diff = getDifficulty('normal');
+    const base = buildQuarterGoal(emptyBoss, 'normal', 1);
+    expect(base).toEqual({
+      deliveryTarget: Math.max(30, Math.round(60 * diff.taskCountMul)),
+      qualityTarget: 45,
+      techDebtLimit: 55,
+      moraleTarget: 40,
+      incidentLimit: 6,
+    });
+    expect(base.aiAdoptionTarget).toBeUndefined();
+
+    const priorWithoutAi = buildQuarterGoal(emptyBoss, 'normal', 1, {
+      ...base,
+      deliveryTarget: 21,
+    });
+    expect(priorWithoutAi.deliveryTarget).toBe(20);
+    expect(priorWithoutAi.aiAdoptionTarget).toBeUndefined();
+
+    const priorWithAi = buildQuarterGoal(emptyBoss, 'normal', 1, {
+      ...base,
+      deliveryTarget: 80,
+      aiAdoptionTarget: 35,
+    });
+    expect(priorWithAi.deliveryTarget).toBe(76);
+    expect(priorWithAi.aiAdoptionTarget).toBe(35);
+  });
+
+  it('RI-72-C1: AI 過信診断は rework 比率 0.3 ちょうどでは成立しない', () => {
+    const base = {
+      progress: [{ id: 'delivery', label: 'Delivery', target: 60, actual: 70, status: 'met' }],
+      bossCleared: true,
+    } satisfies Pick<Parameters<typeof diagnoseMissedReasons>[0], 'progress' | 'bossCleared'>;
+
+    expect(
+      diagnoseMissedReasons({
+        ...base,
+        org: org({ aiDependency: 60 }),
+        totals: totals({ rework: 3, completed: 10 }),
+      }),
+    ).not.toContain(AI_OVERCONFIDENCE);
+    expect(
+      diagnoseMissedReasons({
+        ...base,
+        org: org({ aiDependency: 60 }),
+        totals: totals({ rework: 4, completed: 10 }),
+      }),
+    ).toContain(AI_OVERCONFIDENCE);
+    expect(
+      diagnoseMissedReasons({
+        ...base,
+        org: org({ aiDependency: 59 }),
+        totals: totals({ rework: 4, completed: 10 }),
+      }),
+    ).not.toContain(AI_OVERCONFIDENCE);
+    expect(
+      diagnoseMissedReasons({
+        ...base,
+        org: org({ aiDependency: 60 }),
+        totals: totals({ rework: 1, completed: 0 }),
+      }),
+    ).toContain(AI_OVERCONFIDENCE);
+  });
+
+  it('RI-72-C1: availableAdjustments は outcome と hard lose 後状態で絞り込む', () => {
+    const trust = buildInitialTrust('normal');
+    const outcomes: QuarterOutcome[] = [
+      'exceeded',
+      'met',
+      'missed_crisis',
+      'reorg_required',
+      'shutdown',
+    ];
+
+    for (const outcome of outcomes) {
+      expect(availableAdjustments(outcome, trust, 30, org(), totals()), outcome).toEqual([]);
+    }
+    expect(
+      availableAdjustments('missed_adjustable', trust, 30, org({ techDebt: 90 }), totals()),
+    ).toEqual(['quality_pivot', 'reorg_teams']);
+    expect(
+      availableAdjustments('missed_adjustable', trust, 30, org(), totals({ reviewQueuePeak: 48 })),
+    ).toEqual([]);
+    expect(
+      availableAdjustments('missed_adjustable', trust, 30, org({ seniorHp: 1 }), totals()),
+    ).toEqual(['reorg_teams']);
+    expect(
+      availableAdjustments('missed_adjustable', trust, 30, org({ morale: 1 }), totals()),
+    ).toEqual([]);
+  });
+
+  it('RI-72-C1: 未知の目標修正 ID は入力を変えずに返す', () => {
+    const input = {
+      goal: { ...goal },
+      trust: buildInitialTrust('normal'),
+      org: org({ deliveryScore: 100, morale: 50, seniorHp: 50, techDebt: 40, quality: 60 }),
+      budget: 30,
+      goalAdjustmentsTaken: [] as GoalAdjustmentId[],
+      nextBudgetCap: null as number | null,
+    };
+
+    expect(applyGoalAdjustment(input, 'unknown_adjustment' as GoalAdjustmentId)).toEqual({
+      ...input,
+      pauseAiDebuff: false,
+    });
+  });
+
+  it('RI-72-C1: チーム正本への目標修正 org 効果を焼き込む', () => {
+    const base = team({
+      shipping: 101,
+      morale: 5,
+      seniorHp: 90,
+      techDebt: 3,
+      reviewQueue: 30,
+      incidents: 4,
+      quality: 96,
+    });
+    const qualityPivot = applyGoalOrgEffectsToTeam(base, getGoalAdjustment('quality_pivot')!);
+    expect(qualityPivot.shipping).toBe(91);
+    expect(qualityPivot.techDebt).toBe(0);
+    expect(qualityPivot.morale).toBe(base.morale);
+    expect(qualityPivot.seniorHp).toBe(base.seniorHp);
+    expect(qualityPivot.reviewCapacity).toBe(15);
+    expect(qualityPivot.incidentBias).toBeCloseTo(0.288);
+
+    const reorg = applyGoalOrgEffectsToTeam(base, getGoalAdjustment('reorg_teams')!);
+    expect(reorg.shipping).toBe(base.shipping);
+    expect(reorg.morale).toBe(0);
+    expect(reorg.seniorHp).toBe(100);
+    expect(reorg.techDebt).toBe(0);
+    expect(reorg.reviewCapacity).toBe(15);
+    expect(reorg.incidentBias).toBeCloseTo(0.288);
   });
 });
 

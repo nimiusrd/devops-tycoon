@@ -181,8 +181,18 @@ const FIRST_PLAY_POLICY = 'naive';
  */
 const freshRuns = runs.filter((r) => (r.meta ?? 'fresh') === 'fresh');
 console.log(`**成立判定に使う初見相当の方針: ${FIRST_PLAY_POLICY}（メタ解放 fresh のみ）**`);
+// **`naive` のランがあるかまで見る。** `freshRuns` が空でないことだけを確認していると、
+// `PT_POLICIES=skilledNoHire` のように `naive` だけを外した実行で未計測メッセージが出ず、
+// 直後のループも何も出さないため「成立判定に使う方針: naive」という見出しだけが残り、
+// F-7 を計測済みと誤認させる。
+const firstPlayRuns = freshRuns.filter((r) => r.policy === FIRST_PLAY_POLICY);
 if (freshRuns.length === 0) {
   console.log('  fresh のランが無いため F-7 は未計測（PT_META=fresh で実行すること）');
+} else if (firstPlayRuns.length === 0) {
+  console.log(
+    `  ${FIRST_PLAY_POLICY} のランが無いため F-7 は未計測` +
+      `（PT_POLICIES で ${FIRST_PLAY_POLICY} を含めて実行すること）`,
+  );
 }
 for (const d of [...new Set(freshRuns.map((r) => r.difficulty))]) {
   const arr = freshRuns.filter((r) => r.difficulty === d && r.policy === FIRST_PLAY_POLICY);

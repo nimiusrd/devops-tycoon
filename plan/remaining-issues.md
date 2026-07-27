@@ -92,7 +92,7 @@ Easy でも無介入・素直プレイだと第1四半期スプリント2でシ�
 
 F-7 は**初見相当の方針（`naive`）の勝率**で判定する。全方針の平均は使わない（`adj*` の統制群や `onlyXxx` のような実験用方針を足し引きするだけで、ゲームも初見プレイも変わっていないのに平均が動くため）。`naive`（メタ解放も初見相当の `fresh`）の勝率は easy 5/10（50%）/ normal 5/10（50%）/ hard 1/10（10%）/ nightmare 0/10（0%）。SPEC 第19.1 F-7 が目標とする「初勝利5ラン前後＝勝率20%前後」に**合う難易度が無い**。easy と normal は初見でも半分勝ててしまい、hard は 10%、nightmare は全敗する。50% から 10% へ一段で落ちており、中間の 20% 前後に当たる難易度が存在しない。easy は完全放置（介入もカードも使わない `idle`）でも 5/10 勝てる。nightmare は300ラン全敗（RI-73）。参考値として全方針平均は easy 72.7% / normal 40.7% / hard 7.7% / nightmare 0% だが、これは実験用統制群を含むため成立判定には使わない。
 
-F-1 の違反は2方向にある。**緊急対応単独（`onlyFirefight`）とアンドン単独（`onlyAndon`）がともに 17/40 で首位タイ**（全難易度合計）だが、複合方針 `skilledNoHire` 16/40 との差は**1勝**しかない。`onlyFirefight` は難易度別でも easy 10/10 と、複合方針（8/10）を上回る。**この差はビート評価を直すたびに縮んでおり**（19/16 対 14 → 17/17 対 16）、「単一介入が複合を明確に上回る」という当初の根拠は弱まっている。F-1 の違反として残すかどうかは再検証が要る。無差別採用側（`skilled` 11/40 対 `skilledNoHire` 16/40）の差は保っている。単一介入群は進化順（`reviewFirst`）とビート選択（`stateAware`）を `skilledNoHire` と揃えてあるため、差は介入構成のみに帰属できる。緊急対応は「打てるときに打てば得」で状況によって正解が入れ替わらず、他の介入を選ぶ理由が薄い。なお全介入を 1 tick ごとに撃つ `probe` は 10/40 と弱く、乱打が損になる関係自体は成立している。介入の反応間隔は `skilled` が約2.0秒、`naive` が約4.1秒（1x 換算）である。
+F-1 の違反は2方向にある。**アンドン単独（`onlyAndon`）18/40 と緊急対応単独（`onlyFirefight`）17/40 が首位**（全難易度合計）だが、複合方針 `skilledNoHire` 16/40 との差は**1〜2勝**しかない。`onlyFirefight` は難易度別でも easy 10/10 と、複合方針（8/10）を上回る。**この差はビート評価を直すたびに縮んでおり**（19/16 対 14 → 18/17 対 16）、「単一介入が複合を明確に上回る」という当初の根拠は弱まっている。F-1 の違反として残すかどうかは再検証が要る。無差別採用側（`skilled` 11/40 対 `skilledNoHire` 16/40）の差は保っている。単一介入群は進化順（`reviewFirst`）とビート選択（`stateAware`）を `skilledNoHire` と揃えてあるため、差は介入構成のみに帰属できる。緊急対応は「打てるときに打てば得」で状況によって正解が入れ替わらず、他の介入を選ぶ理由が薄い。なお全介入を 1 tick ごとに撃つ `probe` は 10/40 と弱く、乱打が損になる関係自体は成立している。介入の反応間隔は `skilled` が約2.0秒、`naive` が約4.1秒（1x 換算）である。
 
 統制実験（同一 seed、条件を1つずつ外す）では、**無差別採用が一貫して勝率を下げる**（全40ランで `skilled` 11 vs `skilledNoHire` 16。難易度別は easy 7/8、normal 4/5、hard 0/3）。採用方針を全経路（専用フェーズ・ショップ・休息・即時採用イベント）へ適用し、採用・復職の双方でベンチのメンバーを実働レーンへ配置した上での結果である。`budgetExhausted` 敗北は1,240ラン中14件。
 
@@ -141,7 +141,7 @@ SPEC 第3.1 の規定は通常60〜120秒（絶対下限30秒）・ボス90〜18
 
 ### RI-75 勝利種別が実質2種で、最も受動的なプレイが最上位勝利を取る
 
-1,240ラン中385勝の内訳は `healthy` 203（53%）/ `noDamage` 181（47%）/ `happiness` 1 で、`aiSuccess` / `management` / `chaos` / `normal` は0件、`happiness` も1件しかなく実質2種である。`evaluateWinType`（`src/sim/outcome.ts:103-118`）が固定の優先順ラダーで、先頭の判定が `!usedHeavyActions && totals.spread === 0` のため、残業もアンドンも使わない受動的なプレイほど「やり込み枠」であるはずのノーダメージ勝利になる。実測でも勝利種別は「重アクションを使ったか」だけで分岐している。組織診断も同様に偏る（`seniorSacrifice` 763 / `reviewHell` 398 / `documentationKingdom` 39 / `aiOverproduction` 25 / `healthyAcceleration` 14 / `reworkSpiral` 1）。ただしビルド方針ごとに見ると診断は明確に分かれており（`noAi` は `documentationKingdom` 10 / `healthyAcceleration` 5、`aiFullBet` は `reviewHell` 14 / `seniorSacrifice` 26）、内部状態は分岐しているのに勝利種別へ反映されていない。SPEC 第19.1 F-10 が求める「ビルドによって目指す勝ち筋が変わる」が成立していない。
+1,240ラン中387勝の内訳は `healthy` 205（53%）/ `noDamage` 181（47%）/ `happiness` 1 で、`aiSuccess` / `management` / `chaos` / `normal` は0件、`happiness` も1件しかなく実質2種である。`evaluateWinType`（`src/sim/outcome.ts:103-118`）が固定の優先順ラダーで、先頭の判定が `!usedHeavyActions && totals.spread === 0` のため、残業もアンドンも使わない受動的なプレイほど「やり込み枠」であるはずのノーダメージ勝利になる。実測でも勝利種別は「重アクションを使ったか」だけで分岐している。組織診断も同様に偏る（`seniorSacrifice` 758 / `reviewHell` 401 / `documentationKingdom` 40 / `aiOverproduction` 26 / `healthyAcceleration` 14 / `reworkSpiral` 1）。ただしビルド方針ごとに見ると診断は明確に分かれており（`noAi` は `documentationKingdom` 10 / `healthyAcceleration` 5、`aiFullBet` は `reviewHell` 14 / `seniorSacrifice` 26）、内部状態は分岐しているのに勝利種別へ反映されていない。SPEC 第19.1 F-10 が求める「ビルドによって目指す勝ち筋が変わる」が成立していない。
 
 受入条件:
 
@@ -160,7 +160,7 @@ SPEC 第3.1 の規定は通常60〜120秒（絶対下限30秒）・ボス90〜18
 
 なおこの統制条件にも残差がある。`spec.ai` が変えるのはロスターの `aiAssigned` だけで、そこから決まるのは intake の AI 採用率（`aiAdoptionShare`）である。`org.aiEnabled` は true のままなので、`assignTask` 介入が `defaultAssignee` 経由で個別タスクを AI へ回す経路が残る（実測で492スプリント中5件、最大4%）。残差は小さく上の結論を動かさないが、「AI を完全に断つ」条件を測るには `org.aiEnabled` 側も落とす別の統制が要る。
 
-AI の on/off が状態へ伝播していること自体は正しい（AI 利用率 0%、最終 AI 依存度 100→47.4）。問題は、「AI を入れると出荷が増え、その代償として別の何かが悪化する」という因果が出荷の増減として体感できないことである。なお以前この節は「AI 配布を全解除すると出荷 334.5→291.4」を因果の根拠にしていたが、これは統制条件ではない `noAi`（AI に加えて andon・進化ブランチ・ドラフト選好・採用まで違う）の値で、しかも現在は向きが逆である。
+AI の on/off が状態へ伝播していること自体は正しい（AI 利用率 0%、最終 AI 依存度 100→46.9）。問題は、「AI を入れると出荷が増え、その代償として別の何かが悪化する」という因果が出荷の増減として体感できないことである。なお以前この節は「AI 配布を全解除すると出荷 334.5→291.4」を因果の根拠にしていたが、これは統制条件ではない `noAi`（AI に加えて andon・進化ブランチ・ドラフト選好・採用まで違う）の値で、しかも現在は向きが逆である。
 
 選択の入口は存在する。新規ランは第1スプリント前に必ず `SetupScreen`（見出し「編成 — スプリント開始前に配置とAIを決める」）を通り、`FormationScreen.tsx:172` の「🤖 AI配布中」ボタンから `setMemberAi` で解除できる。したがって課題は場の不在ではなく次の3点である。(1) 既定が ON で、既定のまま進むのが有利なため、選び直す動機が無い。(2) 解除側の代償が一方的に大きい。`noAi` は全難易度合計 11/40 で、`budgetExhausted` 敗北14件のうち**11件**を占める。AI で稼げないぶん予算を維持できず、AI 導入が実質必須になっている。(3) 導入が編成画面の on/off だけで段階が無く、「どこまで広げるか」を四半期を通じて問い直す機会が無い。
 
@@ -202,7 +202,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 第一に、`budgetExhausted` / `trustExhausted` / `reorgRequired` は直前スプリントのシニアHP 30〜38・士気 96〜100 のまま終わる（`seniorBurnout` は 12.6、`techDebt` は 11.8）。盤面上は健全に見えるのに終了するため、F-6（次の一手が分かる）と F-8（詰みの確定を作らない）を満たさない。
 
-第二に、**`trustExhausted` ラベルが3種類の原因を1つに潰している**。`loseReasonForOutcome`（`src/sim/run/quarterReview.ts:464`）は `missed_crisis` と `shutdown` の**両方**を `trustExhausted` に変換する。1,240ランでの発火条件の内訳は、`missed_crisis` が `trust<=15` 21件 / `budget<=5` 1件、`shutdown` が `seniorHp<=5 かつ missedCount>=2` 4件 / `trust<=10` 1件。つまり `trustExhausted` 27件のうち信頼由来は22件で、**残り5件は予算切れ（1件）とシニア枯渇（4件）**である。予算やシニアが原因のランに信頼回復を促しても解決しない。この内訳は判定時と同じ入力から復元できている（`companyOrgFromTeams` は `morale` / `seniorHp` を平均せず選択中チームの値をそのまま使い、`trust` / `budget` はラン単位のため）。
+第二に、**`trustExhausted` ラベルが3種類の原因を1つに潰している**。`loseReasonForOutcome`（`src/sim/run/quarterReview.ts:464`）は `missed_crisis` と `shutdown` の**両方**を `trustExhausted` に変換する。1,240ランでの発火条件の内訳は、`missed_crisis` が `trust<=15` 19件 / `budget<=5` 1件、`shutdown` が `seniorHp<=5 かつ missedCount>=2` 3件 / `trust<=10` 1件。つまり `trustExhausted` 24件のうち信頼由来は20件で、**残り4件は予算切れ（1件）とシニア枯渇（3件）**である。予算やシニアが原因のランに信頼回復を促しても解決しない。この内訳は判定時と同じ入力から復元できている（`companyOrgFromTeams` は `morale` / `seniorHp` を平均せず選択中チームの値をそのまま使い、`trust` / `budget` はラン単位のため）。
 
 受入条件:
 
@@ -216,7 +216,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 **これは F-6 の根拠ではない。** SPEC 第19.1 F-6 は「敗北画面・リザルト・組織診断から具体的な次の一手と現場への示唆が読み取れるか」を要求する基準で、スプリント評価の中央値とは別物である。F-6 の判定は RI-81（敗北画面の提示内容）で行う。ここで見るのは「操作の巧拙がスプリント評価に反映されるか」（第4.6 の評価表示）だけである。
 
-1,240ラン・9,482スプリントの評価分布は S が59.1%、A が25.8% で、S と A が84.9% を占める。同一難易度・同一スプリント番号で、かつ**両方針が到達した seed だけ**で無介入 `passive` と熟練 `skilledNoHire` の中央値を比べても、10条件中6条件で一致する。差が出る4条件のうち3条件は1段階で、`hard S3` だけが2段階（C → A）開くが、これは共通 n=5 の小標本である。RI-79 の受入条件「無介入の評価中央値が熟練方針より明確に低い」を満たさない。
+1,240ラン・9,420スプリントの評価分布は S が58.9%、A が26.0% で、S と A が84.9% を占める。同一難易度・同一スプリント番号で、かつ**両方針が到達した seed だけ**で無介入 `passive` と熟練 `skilledNoHire` の中央値を比べても、10条件中6条件で一致する。差が出る4条件のうち3条件は1段階で、`hard S3` だけが2段階（C → A）開くが、これは共通 n=5 の小標本である。RI-79 の受入条件「無介入の評価中央値が熟練方針より明確に低い」を満たさない。
 
 受入条件:
 
@@ -281,9 +281,9 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 敗北を確定させたフェーズを、ビートについては judgment（選択不能な判定）と decision（プレイヤーが選ぶ）に分けて記録した。
 
-敗因ごとに決着位置は分かれる。**`reviewFreeze`（298件）は例外なく100%が `review-freeze`(judgment) で確定**し、盤面で対処する機会がない。プレイヤーはスプリントを走り切った直後に、操作の余地がない画面で敗北を告げられる。一方 `seniorBurnout`（203件）は judgment / **decision** / sprint が混在し、選択を経て確定するものが相当数ある。`aiDependency`（255件）・`techDebt`（31件）・`moraleCollapse`（15件）はスプリント中、`trustExhausted`（27件）・`reorgRequired`（12件）は四半期レビューで決まる。
+敗因ごとに決着位置は分かれる。**`reviewFreeze`（295件）は例外なく100%が `review-freeze`(judgment) で確定**し、盤面で対処する機会がない。プレイヤーはスプリントを走り切った直後に、操作の余地がない画面で敗北を告げられる。一方 `seniorBurnout`（206件）は judgment / **decision** / sprint が混在し、選択を経て確定するものが相当数ある。`aiDependency`（255件）・`techDebt`（31件）・`moraleCollapse`（15件）はスプリント中、`trustExhausted`（24件）・`reorgRequired`（13件）は四半期レビューで決まる。
 
-全855敗の決着フェーズは `beat:judgment` 462（54%）/ `sprint` 315（37%）/ `quarterReview` 39（5%）/ `beat:decision` 33（4%）/ `shop`・`rest`・`recruit` 6（1%）。`beat:decision` はビート選択の統制を進めた結果 90件（12%）→ 40件（5%）→ 33件（4%）と段階的に減った。最初は `firstChoice` が `urgent-demo` のようにシニアHPを削る先頭選択肢を無条件に取っていた分、次は評価に予算が入っておらず `postmortem-culture` で予算0＝即敗北を自分から選んでいた分である。**選択イベントで負けるランの多くは盤面を見て選べば避けられる**一方、`reviewFreeze` にはその余地が無い。
+全853敗の決着フェーズは `beat:judgment` 461（54%）/ `sprint` 316（37%）/ `quarterReview` 37（4%）/ `beat:decision` 33（4%）/ `shop`・`rest`・`recruit` 6（1%）。`beat:decision` はビート選択の統制を進めた結果 90件（12%）→ 40件（5%）→ 33件（4%）と段階的に減った。最初は `firstChoice` が `urgent-demo` のようにシニアHPを削る先頭選択肢を無条件に取っていた分、次は評価に予算が入っておらず `postmortem-culture` で予算0＝即敗北を自分から選んでいた分である。**選択イベントで負けるランの多くは盤面を見て選べば避けられる**一方、`reviewFreeze` にはその余地が無い。
 
 当初この所見は敗北の大半が「操作の余地がない画面」で確定するとしていたが、これはハーネスがビートの選択肢を常に先頭で取っていたためだった（`urgent-demo` の先頭は `seniorHp -10 / morale -15`）。状態を見て選ぶ方針へ変え、judgment と decision を分けて記録した結果、対象は `reviewFreeze` に絞られた。
 

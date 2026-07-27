@@ -16,7 +16,8 @@ import { RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { RECRUIT_COST, ROSTER_CAP } from '../../src/sim/member/roster';
-import { RunEngine } from '../../src/sim/run/engine';
+import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
+import { foldPassives } from '../../src/sim/run/effects';
 import { ELITE_TASK_MUL } from '../../src/sim/run/sprintBaselineBuild';
 import type { GoalAdjustmentId, RunState, StakeholderTrust } from '../../src/sim/run/types';
 import type { ActionId } from '../../src/sim/types';
@@ -484,6 +485,18 @@ interface BeatCtx {
   org: RunState['org'];
   budget: number;
   trust: StakeholderTrust;
+  /**
+   * 士気減少の軽減倍率（レリックの `moraleDamageMul` を畳んだ値）。
+   * `applyEventOutcome` は**負の**士気差分にだけこれを掛けるので、素の差分で敗北判定すると
+   * 実際には生き残る選択肢を確定敗北として外してしまう
+   * （士気6・`expectation-mgmt` 所持で `giant-pr` の -6 は -4.5 になり士気1.5で生存する）。
+   */
+  moraleDamageMul: number;
+  /**
+   * この方針が休息フェーズで実際に選ぶ内容。`leadsTo: 'rest'` の価値は選ぶ内容で変わる。
+   * `upgrade` はカードを強化するだけでシニアHPも士気も回復しない。
+   */
+  rest: PolicySpec['rest'];
 }
 
 /**
@@ -540,15 +553,26 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
     ctx.trust.team + num(trust.team),
   );
 
-  // 適用後に敗北条件へ入る選択肢は取らない。
-  // 信頼だけは即座に敗北するのではなく**次の四半期レビューで確定する**が、そこへ至る操作は
-  // 残っていないので、実質的に確定敗北として扱う。
+  // 士気の減少はレリックで軽減される。実際に適用される量で判定する。
+  const moraleRaw = num(outcome.morale);
+  const moraleEff = moraleRaw < 0 ? moraleRaw * ctx.moraleDamageMul : moraleRaw;
+
+  // **確定敗北の選択肢だけを外す。**
+  //
+  // ここに挙げた4条件は `evaluateLose`（`src/sim/outcome.ts`）が状態を見て即座に返すもので、
+  // 踏んだ時点で敗北が確定する。
+  //
+  // **信頼はここに含めない。** 信頼が効くのは四半期 outcome の判定で、
+  // `evaluateQuarterOutcome`（`src/sim/run/quarterReview.ts`）は
+  // **ボス突破かつ全KPI達成なら `met` / `exceeded` を先に返してから** `minTrust <= 10` の
+  // `shutdown` を見る。つまり信頼10以下でも、次のレビューで目標を達成すれば勝てる。
+  // 確定敗北として候補から外すと、勝ち得る選択肢を落として方針比較を歪める。
+  // 危険域はリスクとして重く減点するにとどめる（下の `TRUST_SHUTDOWN` の項）。
   if (
     ctx.budget + num(outcome.budget) <= 0 ||
     ctx.org.seniorHp + num(outcome.seniorHp) <= 1 ||
-    ctx.org.morale + num(outcome.morale) <= 1 ||
-    ctx.org.techDebt + num(outcome.techDebt) >= 90 ||
-    trustAfter <= TRUST_SHUTDOWN
+    ctx.org.morale + moraleEff <= 1 ||
+    ctx.org.techDebt + num(outcome.techDebt) >= 90
   ) {
     return INSTANT_LOSS;
   }
@@ -573,7 +597,7 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   score += budget >= 0 ? budget * 0.2 : budget * scarcity(Math.min(ctx.budget, 100)) * 0.5;
   const hp = applied(ctx.org.seniorHp, num(outcome.seniorHp));
   score += hp >= 0 ? hp * 0.5 : hp * scarcity(ctx.org.seniorHp) * 1.5;
-  const morale = applied(ctx.org.morale, num(outcome.morale));
+  const morale = applied(ctx.org.morale, moraleEff);
   score += morale >= 0 ? morale * 0.3 : morale * scarcity(ctx.org.morale) * 0.8;
   // 負債は下限0のみ（`Math.max(0, ...)`）。上限クランプは無い。
   score -= (Math.max(0, ctx.org.techDebt + num(outcome.techDebt)) - ctx.org.techDebt) * 0.4;
@@ -594,7 +618,10 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   const trustMin = Math.min(ctx.trust.management, ctx.trust.customers, ctx.trust.team);
   score +=
     trustDelta >= 0 ? trustDelta * 0.2 : trustDelta * scarcity(Math.min(trustMin, 100)) * 0.5;
+  // 危険域へ踏み込むぶんは重く減点する。`shutdown` の閾値（10以下）は
+  // 「次のレビューで目標を達成できなければ敗北」なので、危機域（15以下）よりさらに重い。
   if (trustAfter <= TRUST_CRISIS && trustMin > TRUST_CRISIS) score -= 6;
+  if (trustAfter <= TRUST_SHUTDOWN && trustMin > TRUST_SHUTDOWN) score -= 25;
   if (outcome.grantRelic) score += 4;
   // カード付与もデッキが太る分の価値がある。レリック（恒久パッシブ・枠が有限）より軽く見る。
   if (outcome.grantCard) score += 2;
@@ -629,11 +656,21 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   score -= num(next.reworkRateAdd) * 10;
   score += num(next.focusMaxAdd) * 0.3;
 
-  // 休息フェーズへの遷移そのものにも回復機会の価値がある（`REST_HEAL` 相当）。
-  // 消耗しているほど価値が高い。
+  // **休息の価値は方針が実際に選ぶ内容で決まる。** `leadsTo: 'rest'` へ一律に回復価値を
+  // 与えると、カードを強化するだけの `skilledRestUpgrade` や負債を返す `skilledRestRepay` に
+  // 存在しない回復を期待することになり、ショップ・休息投資の比較が歪む。
   if (choice.leadsTo === 'rest') {
-    const worst = Math.min(ctx.org.seniorHp, ctx.org.morale);
-    score += (ELITE_HEADROOM_MIN - worst) * 0.05;
+    const choiceAtRest = restChoiceFor(ctx.rest, ctx.org.techDebt);
+    if (choiceAtRest === 'heal') {
+      // クランプ後に実際に回復する量で見る（満タンに近ければ価値は小さい）。
+      score += applied(ctx.org.seniorHp, REST_HEAL) * 0.5;
+      score += applied(ctx.org.morale, REST_MORALE_HEAL) * 0.3;
+    } else if (choiceAtRest === 'repay') {
+      score += Math.min(REST_REPAY, ctx.org.techDebt) * 0.4;
+    } else {
+      // カード強化。盤面の状態には依らない一定の投資価値として置く。
+      score += 2;
+    }
   }
   return score;
 }
@@ -858,8 +895,23 @@ function wantsRecruit(s: RunState, spec: PolicySpec): boolean {
  */
 const REST_REPAY_DEBT_THRESHOLD = 50;
 function restChoice(s: RunState, spec: PolicySpec): 'heal' | 'repay' | 'upgrade' {
-  if (spec.rest === 'upgrade') return s.deck.length > 0 ? 'upgrade' : 'heal';
-  if (spec.rest === 'stateAware' && s.org.techDebt >= REST_REPAY_DEBT_THRESHOLD) return 'repay';
+  return restChoiceFor(spec.rest, s.org.techDebt, s.deck.length > 0);
+}
+
+/**
+ * 休息フェーズで選ぶ内容を、方針と負債から決める。
+ *
+ * `restChoice` と**同じ判断をビート評価からも参照する**ために切り出してある。
+ * 評価側が `leadsTo: 'rest'` へ一律の回復価値を与えていると、カード強化しかしない方針にも
+ * 回復を期待してしまい、実際の挙動と乖離する。
+ */
+function restChoiceFor(
+  rest: PolicySpec['rest'],
+  techDebt: number,
+  hasDeck = true,
+): 'heal' | 'repay' | 'upgrade' {
+  if (rest === 'upgrade') return hasDeck ? 'upgrade' : 'heal';
+  if (rest === 'stateAware' && techDebt >= REST_REPAY_DEBT_THRESHOLD) return 'repay';
   return 'heal';
 }
 
@@ -1114,7 +1166,13 @@ export function runOnce(
           s.beat.kind,
           wantsRecruit(s, spec),
           spec.beat,
-          { org: s.org, budget: s.budget, trust: s.stakeholderTrust },
+          {
+            org: s.org,
+            budget: s.budget,
+            trust: s.stakeholderTrust,
+            moraleDamageMul: foldPassives(s.relics).moraleDamageMul,
+            rest: spec.rest,
+          },
         );
         lastBeat = { eventId: s.beat.eventId, kind: s.beat.kind, choiceIndex: choice };
         e.resolveBeat(choice);

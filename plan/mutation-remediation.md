@@ -105,8 +105,8 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | [RI-72-A1](#ri-72-a1--industry-スコア式の境界と係数) | industry スコア式の境界と係数 | 完了 | `src/sim/orgscale/industry.ts` |
 | [RI-72-A2](#ri-72-a2--whatifstate-のキーと-modifier) | whatIfState のキーと modifier | 完了 | `src/sim/run/whatIfState.ts` |
 | [RI-72-A3](#ri-72-a3--whatifclient-の初カバー) | whatIfClient の初カバー | 完了 | `src/sim/run/whatIfClient.ts` |
-| [RI-72-B1](#ri-72-b1--replaypersistence-の失敗系) | replayPersistence の失敗系 | 未着手 | `src/state/replayPersistence.ts` |
-| [RI-72-B2](#ri-72-b2--metapersistence-の壊れた入力) | metaPersistence の壊れた入力 | 未着手 | `src/state/metaPersistence.ts` |
+| [RI-72-B1](#ri-72-b1--replaypersistence-の失敗系) | replayPersistence の失敗系 | 完了 | `src/state/replayPersistence.ts` |
+| [RI-72-B2](#ri-72-b2--metapersistence-の壊れた入力) | metaPersistence の壊れた入力 | 完了 | `src/state/metaPersistence.ts` |
 | [RI-72-B3](#ri-72-b3--replay-正規化の条件枝) | replay 正規化の条件枝 | 完了 | `src/state/replay.ts` |
 | [RI-72-B4](#ri-72-b4--runpersistence-の境界) | runPersistence の境界 | 未着手 | `src/state/runPersistence.ts` |
 | [RI-72-C1](#ri-72-c1--quarterreview-の閾値と-outcome) | quarterReview の閾値と outcome | 未着手 | `src/sim/run/quarterReview.ts` |
@@ -184,12 +184,14 @@ After: total 78.13% / covered 78.13% / S=7 / NC=0（local: `npm run test:mutatio
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/state/replayPersistence.ts`](../src/state/replayPersistence.ts) |
 | Baseline | total 50% / covered 73.81% / S=11 / NC=20 |
 | 既存テスト | [`tests/unit/replay.test.ts`](../tests/unit/replay.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/state/replayPersistence.ts` |
 | 受入 | total **70%+** |
+
+After: total 88.71% / covered 88.71% / S=7 / NC=0 / T=4（ローカル `npm run test:mutation:force -- --mutate src/state/replayPersistence.ts`）
 
 やる事:
 
@@ -199,12 +201,14 @@ After: total 78.13% / covered 78.13% / S=7 / NC=0（local: `npm run test:mutatio
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/state/metaPersistence.ts`](../src/state/metaPersistence.ts) |
 | Baseline | total 59.02% / covered 83.72% / S=7 / NC=18 |
 | 既存テスト | [`tests/unit/metaPersistence.test.ts`](../tests/unit/metaPersistence.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/state/metaPersistence.ts` |
 | 受入 | total **70%+** |
+
+After: total 81.97% / covered 81.97% / S=11 / NC=0（local: `npm run test:mutation:force -- --mutate src/state/metaPersistence.ts`）
 
 やる事:
 

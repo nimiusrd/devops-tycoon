@@ -10,6 +10,7 @@ import { DIFFICULTY_DEFS, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import type { RunSaveSummary } from '../state/runPersistence';
 import type { DifficultyId } from '../sim/run/types';
+import { publicUrl } from '../utils/publicUrl';
 
 const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
 const DIFFICULTY_TAG: Record<DifficultyId, string> = {
@@ -83,9 +84,17 @@ export function TitleScreen({
   return (
     <div className="title-screen title-command" data-testid="title">
       <div className="title-world" aria-hidden="true">
-        <img className="title-world-backdrop" src="/assets/title-arena-backdrop.svg" alt="" />
-        <img className="title-world-platform" src="/assets/title-command-platform.svg" alt="" />
-        <img className="title-world-core" src="/assets/title-ai-core.svg" alt="" />
+        <img
+          className="title-world-backdrop"
+          src={publicUrl('assets/title-arena-backdrop.svg')}
+          alt=""
+        />
+        <img
+          className="title-world-platform"
+          src={publicUrl('assets/title-command-platform.svg')}
+          alt=""
+        />
+        <img className="title-world-core" src={publicUrl('assets/title-ai-core.svg')} alt="" />
         <div className="title-scanlines" />
         <div className="title-orbit title-orbit-a" />
         <div className="title-orbit title-orbit-b" />

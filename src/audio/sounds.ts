@@ -5,13 +5,14 @@
  * sim 層には触れない（描画・演出専用）。
  */
 import type { DiagnosisType } from '../sim/run/types';
+import { publicUrl } from '../utils/publicUrl';
 
 export type SfxId = 'interventionHit' | 'ship' | 'fireSpread' | 'ceremony';
 
 /** BGM の空気感トーン（診断 6 種を 3 系統に束ねる）。 */
 export type BgmToneId = 'bright' | 'cloudy' | 'tense' | 'off';
 
-const AUDIO_BASE = '/assets/audio';
+const AUDIO_BASE = publicUrl('assets/audio');
 
 /** SFX ID → 音源 URL。 */
 export const SFX_URLS: Record<SfxId, string> = {

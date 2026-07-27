@@ -40,6 +40,21 @@ AI導入による開発速度の向上と、レビュー渋滞・手戻り・技
 
 データはブラウザのIndexedDBへ保存されます。バックエンドや外部APIは使用しません。ブラウザのサイトデータを削除すると、メタ進行、ラン途中セーブ、リプレイも削除されます。
 
+## プレイする
+
+公開版は GitHub Pages で遊べます。
+
+- [https://nimiusrd.github.io/devops-tycoon/](https://nimiusrd.github.io/devops-tycoon/)
+
+初回のみ、リポジトリの Settings → Pages → Build and deployment → Source を **GitHub Actions** にしてください。以降は `main` への push で自動デプロイされます。
+
+Pages 相当のビルドをローカルで確認する場合:
+
+```bash
+PAGES_BASE=/devops-tycoon/ npm run build
+PAGES_BASE=/devops-tycoon/ npm run preview
+```
+
 ## クイックスタート
 
 ### 必要環境
@@ -81,6 +96,8 @@ http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
 | `npm run build` | TypeScript検査と本番ビルド |
 | `npm test` | Vitestのユニットテストを実行 |
 | `npm run test:watch` | Vitestをwatchモードで実行 |
+| `npm run test:mutation` | Strykerで`src/sim` / `src/state`のミューテーションテストを実行（incremental・ローカル用・CI非必須） |
+| `npm run test:mutation:force` | incrementalキャッシュを無視して対象変異を再実行する |
 | `npm run test:e2e` | Playwrightの標準E2Eを実行 |
 | `npm run test:e2e:pixi` | PixiJSの視覚回帰テストを実行 |
 | `npm run gallery` | 主要画面を撮影して`gallery/index.html`を生成 |
@@ -90,6 +107,14 @@ http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
 | `npm run format:check` | Prettier差分を確認 |
 | `npm run format` | Prettierで整形 |
 | `npm run audio:generate` | BGM・効果音アセットを再生成 |
+
+`test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
+
+GitHub Actions では [Mutation](.github/workflows/mutation.yml) ワークフローを **手動（workflow_dispatch）または週次スケジュール** で実行できます。PR / push の必須 CI には含めていません。
+
+コア全体は約 6,700 mutant・単一ジョブだと数時間かかるため、既定はディレクトリ単位の **並列シャード** で実行します。手動実行で `mutate` を指定すると、そのパターンだけを単一ジョブで回せます。`force` で incremental キャッシュを無視できます。レポートはシャードごとの artifact、incremental JSON はシャード単位の Actions cache に残ります。
+
+壁時計の目安（初回・incremental なし）: シャードあたりおおむね数十分〜2時間。単一ジョブでコア全体を回すと推定 3〜6 時間で、180 分タイムアウトに達し得ます。
 
 PlaywrightのChromiumが未導入の場合は、先に次を実行します。
 
@@ -110,7 +135,7 @@ Chromiumの実行ファイルを明示する環境では、`PLAYWRIGHT_CHROMIUM`
 | 永続化 | IndexedDB / idb |
 | 重い試算 | Web Worker / Comlink |
 | グラフ | Recharts |
-| テスト | Vitest / Playwright |
+| テスト | Vitest / Playwright / Stryker（コアロジックのミューテーション・ローカル） |
 
 `RunEngine`をラン状態の正本とし、Reactとレンダラはスナップショットを読んで表示します。シミュレーションは描画と永続化から分離し、同じseedと入力で同じ結果を返します。
 
@@ -137,6 +162,7 @@ tests/
 - [SPEC.md](SPEC.md) — 体験要件と受入条件
 - [plan/spec-mapping.md](plan/spec-mapping.md) — SPECと実装の対応
 - [plan/remaining-issues.md](plan/remaining-issues.md) — 現在の未充足・保留課題
+- [plan/mutation-remediation.md](plan/mutation-remediation.md) — ミューテーション結果に基づくテスト強化指示（RI-72）
 - [plan/architecture.md](plan/architecture.md) — 技術構成と横断規律
 - [plan/README.md](plan/README.md) — 計画文書の索引
 
@@ -148,3 +174,12 @@ tests/
 - 面白さの判定基準（[SPEC 第19.1](SPEC.md)）に対するバランス上の未充足（難易度カーブ、単一介入の優位、勝利種別の分岐、AI 導入の意思決定、カードの寄与）
 
 詳細と受入条件は[残課題バックログ](plan/remaining-issues.md)を参照してください。
+
+## ライセンス
+
+ソースコード、生成スクリプト、ドキュメントなどは[MIT License](LICENSE)で公開しています。
+
+`public/assets/`内の指定画像と生成済み音声は
+[Creative Commons Attribution 4.0 International（CC BY 4.0）](https://creativecommons.org/licenses/by/4.0/)
+で公開しています。対象ファイル、制作方法、必要なクレジットは
+[ASSETS.md](ASSETS.md)を参照してください。

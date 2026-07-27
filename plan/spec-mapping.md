@@ -13,7 +13,7 @@
 | SPEC | 内容 | 主な実装・テスト | 状態 |
 | --- | --- | --- | --- |
 | [1](../SPEC.md#1-企画概要) | 企画概要 | — | — |
-| [2](../SPEC.md#2-コンセプト) | AI導入と組織制約の因果 | `src/sim/sprint.ts`, `src/sim/model/process.ts`, `tests/unit/process.test.ts` | 🟡 on/off は状態へ伝播する。ただし AI 配布だけを外すと1スプリントの出荷がむしろ増え、実務感覚と逆向き。RI-77 |
+| [2](../SPEC.md#2-コンセプト) | AI導入と組織制約の因果 | [probability-model.md](./probability-model.md), `src/sim/sprint.ts`, `src/sim/model/process.ts`, `tests/unit/process.test.ts` | 🟡 on/off は状態へ伝播する。ただし AI 配布だけを外すと1スプリントの出荷がむしろ増え、実務感覚と逆向き。RI-77 |
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観 | [architecture.md](./architecture.md) §7 | ✅ |
 | [3](../SPEC.md#3-ゲームの基本ループ) | 複数四半期ラン、固定トラック、ビート | `src/sim/run/engine.ts`, `phases.ts`, `events.ts`, `tests/unit/run-loop.test.ts` | ✅ |
 | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | テンポと速度操作 | `src/ui/sprintTempo.ts`, `tests/unit/sprintTempo.test.ts`, `tests/unit/helpers/pacingStats.ts` | ✅ |
@@ -24,7 +24,7 @@
 | [6](../SPEC.md#6-スプリント中の能動操作) | 介入、集中力、コンボ、対象指定 | `src/sim/actions.ts`, `ActionBar.tsx`, `boardDragPlan.ts` | ✅ |
 | [7](../SPEC.md#7-ai導入施策カードデッキ) | デッキ、手札、ドラフト、強化、コレクション | `src/data/cards.ts`, `src/sim/cards.ts`, `CardView.tsx`, `DeckPolicyScreen.tsx`, `CardCollectionScreen.tsx` | ✅ |
 | [8](../SPEC.md#8-組織文化レリック) | 恒久パッシブ | `src/data/relics.ts`, `src/sim/run/effects.ts` | ✅ |
-| [9](../SPEC.md#9-ランダムイベント周回進行の中核エンジン) | 状態依存イベント | `src/data/events.ts`, `src/sim/run/events.ts` | ✅ |
+| [9](../SPEC.md#9-ランダムイベント周回進行の中核エンジン) | 状態依存イベント | [probability-model.md](./probability-model.md), `src/data/events.ts`, `src/sim/run/events.ts` | ✅ |
 | [10](../SPEC.md#10-ランとボススプリント) | 四半期末ボス | `src/data/bosses.ts`, `src/sim/run/engine.ts` | ✅ |
 | [11](../SPEC.md#11-組織進化ツリー) | ラン内ビルド | `src/data/evolution.ts`, `src/sim/run/evolution.ts` | ✅ |
 | [12](../SPEC.md#12-キャラクター育成) | 個体、成長、編成、スタミナ | `src/sim/member/`, `FormationScreen.tsx`, `tests/unit/member.test.ts` | ✅ |
@@ -35,7 +35,7 @@
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-1・F-2・F-4・F-5・F-6・F-7・F-8・F-10・F-11・F-12 が未充足でRI-73〜87。F-9 は**部分検証**（進行速度と決着位置のみ成立。「打てた手」の差は未計測でRI-89）。F-3 は未検証 |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
-| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), `src/game.ts`, `src/state/`, `tests/` | ✅ |
+| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), `src/game.ts`, `src/state/`, `tests/` | ✅ |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ等は実装済み | 🟡 残候補はRI-34 |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
 

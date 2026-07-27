@@ -3,6 +3,8 @@ node_modules
 coverage
 playwright-report
 test-results
+reports
+.stryker-tmp
 mockups
 *.png
 package-lock.json

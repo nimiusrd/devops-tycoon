@@ -1,0 +1,143 @@
+# コアロジック（src/sim / src/state）のミューテーションテスト。
+# PR / push の必須ゲートにはしない。手動または週次スケジュールでのみ実行する。
+#
+# 全体は約 6,700 mutant・数時間規模のため、既定はディレクトリ単位で並列シャードする。
+# カスタム mutate を指定した場合のみ単一ジョブで実行する。
+name: Mutation
+
+on:
+  schedule:
+    # 毎週月曜 03:00 UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      mutate:
+        description: 'mutate パターン（空ならシャード分割でコア全体を実行）'
+        required: false
+        type: string
+        default: ''
+      force:
+        description: 'incremental キャッシュを無視して再実行する'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # 手動で mutate を指定したときだけ単一ジョブ
+  mutation-custom:
+    name: Stryker (custom)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mutate != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore Stryker incremental cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental-custom.json
+          key: stryker-incremental-custom-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-incremental-custom-${{ runner.os }}-
+      - name: Run mutation tests
+        run: |
+          set -euo pipefail
+          args=(--incrementalFile reports/stryker-incremental-custom.json --mutate "${MUTATE}")
+          if [ "${FORCE}" = "true" ]; then
+            args+=(--force)
+          fi
+          npx stryker run "${args[@]}"
+        env:
+          FORCE: ${{ inputs.force }}
+          MUTATE: ${{ inputs.mutate }}
+      - name: Upload mutation reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report-custom
+          path: |
+            reports/mutation/
+            reports/stryker-incremental-custom.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  # スケジュール / 手動（mutate 未指定）はシャード並列
+  mutation-sharded:
+    name: Stryker (${{ matrix.id }})
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mutate == '') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 変異数の目安（計測時点）: root ~1.6k / engine ~1.5k / run-rest ~1.2k /
+          # orgscale ~1.0k / member+model ~0.4k / state ~0.9k
+          - id: sim-root
+            mutate: src/sim/*.ts,!src/sim/types.ts,!src/sim/index.ts
+          - id: sim-run-engine
+            mutate: src/sim/run/engine.ts
+          - id: sim-run-rest
+            mutate: src/sim/run/**/*.ts,!src/sim/run/engine.ts,!src/sim/run/**/index.ts,!src/sim/run/**/types.ts
+          - id: sim-orgscale
+            mutate: src/sim/orgscale/**/*.ts,!src/sim/orgscale/**/index.ts,!src/sim/orgscale/**/types.ts
+          - id: sim-member-model
+            mutate: src/sim/member/**/*.ts,src/sim/model/**/*.ts,!src/sim/**/index.ts,!src/sim/**/types.ts
+          - id: state
+            mutate: src/state/**/*.ts,!src/state/**/index.ts,!src/state/**/types.ts
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # シャード単位で incremental を分離（並列ジョブの競合を避ける）
+      - name: Restore Stryker incremental cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental-${{ matrix.id }}.json
+          key: stryker-incremental-${{ matrix.id }}-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-incremental-${{ matrix.id }}-${{ runner.os }}-
+
+      - name: Run mutation tests
+        run: |
+          set -euo pipefail
+          args=(
+            --incrementalFile "reports/stryker-incremental-${SHARD_ID}.json"
+            --mutate "${MUTATE}"
+          )
+          if [ "${FORCE}" = "true" ]; then
+            args+=(--force)
+          fi
+          echo "Shard=${SHARD_ID}"
+          echo "Mutate=${MUTATE}"
+          npx stryker run "${args[@]}"
+        env:
+          FORCE: ${{ inputs.force }}
+          MUTATE: ${{ matrix.mutate }}
+          SHARD_ID: ${{ matrix.id }}
+
+      - name: Upload mutation reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report-${{ matrix.id }}
+          path: |
+            reports/mutation/
+            reports/stryker-incremental-${{ matrix.id }}.json
+          if-no-files-found: warn
+          retention-days: 30

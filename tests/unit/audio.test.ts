@@ -20,8 +20,9 @@ describe('サウンド定義（RI-59）', () => {
       ['ceremony', 'fireSpread', 'interventionHit', 'ship'].sort(),
     );
     expect(Object.keys(BGM_URLS).sort()).toEqual(['bright', 'cloudy', 'tense'].sort());
+    const audioPrefix = `${import.meta.env.BASE_URL}assets/audio/`;
     for (const url of [...Object.values(SFX_URLS), ...Object.values(BGM_URLS)]) {
-      expect(url.startsWith('/assets/audio/')).toBe(true);
+      expect(url.startsWith(audioPrefix)).toBe(true);
       expect(url.endsWith('.wav')).toBe(true);
     }
   });

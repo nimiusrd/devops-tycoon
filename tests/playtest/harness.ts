@@ -17,6 +17,7 @@ import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/
 import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { RECRUIT_COST, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine } from '../../src/sim/run/engine';
+import { ELITE_TASK_MUL } from '../../src/sim/run/sprintBaselineBuild';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
 import type { ActionId } from '../../src/sim/types';
 import { MS_PER_TICK_1X } from '../../src/ui/sprintTempo';
@@ -489,7 +490,30 @@ interface BeatCtx {
  * 敗因分布に混ざるため、状態を見て選ぶ `stateAware` では取らない。
  */
 const INSTANT_LOSS = -1e6;
-function scoreChoice(outcome: Record<string, unknown>, ctx: BeatCtx): number {
+/**
+ * 高負荷スプリントを受けてよい最低体力（シニアHPと士気の低い方）。
+ * これを上回るぶんは出荷機会、下回るぶんは渋滞・炎上のリスクとして評価する。
+ */
+const ELITE_HEADROOM_MIN = 45;
+/** 体力1あたりの重み。上の閾値との差にこれを掛ける。 */
+const ELITE_HEADROOM_WEIGHT = 0.15;
+/** 技術的負債（0〜100 を 0〜1 に正規化）1あたりの重み。負債が高いほど手戻りへ回る。 */
+const ELITE_DEBT_WEIGHT = 4;
+
+/** 選択肢のうち評価に必要な部分。`leadsTo` を見るため `outcome` だけでは足りない。 */
+interface ScorableChoice {
+  outcome: Record<string, unknown>;
+  leadsTo?: string;
+}
+
+/** `EventChoice` を評価用の形へ落とす（`EventOutcome` に index signature が無いため）。 */
+const scorable = (c: { outcome: unknown; leadsTo?: string }): ScorableChoice => ({
+  outcome: (c.outcome ?? {}) as Record<string, unknown>,
+  leadsTo: c.leadsTo,
+});
+
+function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
+  const outcome = choice.outcome;
   const num = (v: unknown): number => (typeof v === 'number' ? v : 0);
   const scarcity = (current: number): number => 1 + (100 - current) / 50;
   const trust = (outcome.trust ?? {}) as Record<string, number>;
@@ -517,6 +541,18 @@ function scoreChoice(outcome: Record<string, unknown>, ctx: BeatCtx): number {
   score -= num(outcome.aiDependency) * 0.2;
   score += (num(trust.management) + num(trust.customers) + num(trust.team)) * 0.2;
   if (outcome.grantRelic) score += 4;
+
+  // **遷移先スプリントの負荷も見る。** `outcome` だけを採点すると `leadsTo` を認識できない。
+  // `elite-offer` は高負荷側の `outcome` が空（=0点）、通常側が信頼-4（=負点）なので、
+  // 組織がどれだけ消耗していても常に高負荷側を選んでしまっていた。実際の高負荷スプリントは
+  // タスク量が `ELITE_TASK_MUL`（=1.6）倍で、余力があれば出荷機会、消耗していれば
+  // 渋滞と炎上の増幅になる。この固定選択が熟練系方針の勝率と敗因へ混ざる。
+  if (choice.leadsTo === 'sprint-elite') {
+    const load = ELITE_TASK_MUL - 1;
+    const worst = Math.min(ctx.org.seniorHp, ctx.org.morale);
+    score += load * (worst - ELITE_HEADROOM_MIN) * ELITE_HEADROOM_WEIGHT;
+    score -= load * (ctx.org.techDebt / 100) * ELITE_DEBT_WEIGHT;
+  }
   return score;
 }
 
@@ -540,7 +576,7 @@ export function autoplayBeatChoiceIndex(
   // 採用費を引いた後の予算で敗北しないか。`grantRecruit` の選択肢はこれで判定する。
   const afterRecruit = ctx && { ...ctx, budget: ctx.budget - RECRUIT_COST };
   const recruitIsSafe = (c: (typeof choices)[number]): boolean =>
-    !afterRecruit || scoreChoice(c.outcome as Record<string, unknown>, afterRecruit) > INSTANT_LOSS;
+    !afterRecruit || scoreChoice(scorable(c), afterRecruit) > INSTANT_LOSS;
   if (takeRecruit) {
     const grant = choices.findIndex((c) => c.outcome.grantRecruit && recruitIsSafe(c));
     if (grant >= 0) return grant;
@@ -555,9 +591,9 @@ export function autoplayBeatChoiceIndex(
   if (mode !== 'stateAware' || !ctx) return pool[0].i;
   // 状態依存: 現在いちばん減らしたくない資源を削る選択肢を避ける。
   let best = pool[0];
-  let bestScore = scoreChoice(pool[0].c.outcome as Record<string, unknown>, ctx);
+  let bestScore = scoreChoice(scorable(pool[0].c), ctx);
   for (const cand of pool.slice(1)) {
-    const sc = scoreChoice(cand.c.outcome as Record<string, unknown>, ctx);
+    const sc = scoreChoice(scorable(cand.c), ctx);
     if (sc > bestScore) {
       best = cand;
       bestScore = sc;
@@ -672,6 +708,38 @@ function assignBenchMembers(e: RunEngine): void {
 }
 
 /**
+ * ベンチ配置に加えて、**方針固有の AI 配布・編成も適用する**。
+ *
+ * `applySetup` を `setup` フェーズだけで呼ぶと、復職者に方針が反映されない。
+ * `resolveBeat()` は既定の `leadsTo === 'sprint'` で `launchSprint()` を直接呼んで
+ * `setup` を通らないためである。方針どおりでない編成が F-10 のビルド比較や
+ * RI-76 の AI 統制へ混ざるので、ベンチを戻すのと同じタイミングで方針も掛け直す。
+ *
+ * **この修正で動いた数値は無い**（現行1,240ランでは復職者に方針が掛かり直す経路が
+ * 実際には踏まれていない）。経路の穴自体は実在するので予防として残す。
+ * なお `noAiCtl` に AI 利用が残るのはこれが原因ではなく、`assignTask` 介入が
+ * `defaultAssignee` 経由で個別タスクを AI へ回すためである（`org.aiEnabled` は true のまま）。
+ * `aiFullBet` が100%に届かないのも `AI_ADOPTION`（=0.85）の確率抽選のばらつきで、仕様どおり。
+ *
+ * 順序は「ベンチ配置 → 編成 → AI」。`reviewHeavy` は coding のメンバーを見て動かすため
+ * ベンチ配置の後でなければ復職者を拾えず、AI 配布はレーンに依らないので最後でよい。
+ */
+function applyRosterPolicy(e: RunEngine, spec: PolicySpec): void {
+  assignBenchMembers(e);
+  if (spec.formation === 'reviewHeavy') {
+    let coders = 0;
+    for (const m of e.snapshot().roster.members) {
+      if (m.assignment !== 'coding') continue;
+      coders += 1;
+      if (coders > 1) e.assignMember(m.id, 'review');
+    }
+  }
+  if (spec.ai) {
+    for (const m of e.snapshot().roster.members) e.setMemberAi(m.id, spec.ai === 'all');
+  }
+}
+
+/**
  * この盤面で採用するか。`selective` は「欠員があり、かつ**採用後も**予算が残る」ときだけ採る。
  *
  * 欠員の定義: 休職者がいる、または実働（bench でも onLeave でもない）が2名以下。
@@ -765,18 +833,12 @@ function buyShopItems(e: RunEngine, spec: PolicySpec): void {
   }
 }
 
+/**
+ * `setup` フェーズの編成。中身は `applyRosterPolicy` と同じで、
+ * 「setup でしか掛からない方針」を作らないために一本化してある。
+ */
 function applySetup(e: RunEngine, spec: PolicySpec): void {
-  if (spec.ai) {
-    for (const m of e.snapshot().roster.members) e.setMemberAi(m.id, spec.ai === 'all');
-  }
-  if (spec.formation === 'reviewHeavy') {
-    let coders = 0;
-    for (const m of e.snapshot().roster.members) {
-      if (m.assignment !== 'coding') continue;
-      coders += 1;
-      if (coders > 1) e.assignMember(m.id, 'review');
-    }
-  }
+  applyRosterPolicy(e, spec);
 }
 
 /**
@@ -861,14 +923,15 @@ export function runOnce(
     guard += 1;
     s = e.snapshot();
     const loggedBefore = sprints.length;
-    // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻す。
+    // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻し、方針固有の編成も掛け直す。
     //
-    // `setup` だけで配置すると復職者がベンチのまま次スプリントを迎える経路が残る。
-    // `resolveBeat()` は既定の `leadsTo === 'sprint'` で `launchSprint()` を直接呼び、
-    // `setup` を通らないためである。復帰は `resolveSprint` の `recoverStamina` で起きるので、
-    // 「スプリント終了 → ビート → 次スプリント」の間に配置の機会が無い。
-    // `assignMember` は `sprint` フェーズでは何もしないので、それ以外の全フェーズで呼ぶ。
-    if (s.phase !== 'sprint') assignBenchMembers(e);
+    // `setup` だけで適用すると、復職者がベンチのまま・方針の AI 配布や編成が未適用のまま
+    // 次スプリントを迎える経路が残る。`resolveBeat()` は既定の `leadsTo === 'sprint'` で
+    // `launchSprint()` を直接呼び、`setup` を通らないためである。復帰は `resolveSprint` の
+    // `recoverStamina` で起きるので、「スプリント終了 → ビート → 次スプリント」の間に
+    // 適用の機会が無い。`assignMember` は `sprint` フェーズでは何もしないので、
+    // それ以外の全フェーズで呼ぶ。
+    if (s.phase !== 'sprint') applyRosterPolicy(e, spec);
     switch (s.phase) {
       case 'setup':
         applySetup(e, spec);

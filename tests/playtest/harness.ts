@@ -11,6 +11,17 @@
 import { getEvent } from '../../src/data/events';
 import { EVOLUTION_NODES } from '../../src/data/evolution';
 import { ACTION_DEFS } from '../../src/data/actions';
+import {
+  FIREFIGHT_HP_COST,
+  INTERRUPT_HP_COST,
+  OVERTIME_HP_COST,
+  OVERTIME_MORALE_COST,
+} from '../../src/sim/actions';
+import {
+  computeAssignMoraleCost,
+  defaultAssignee,
+  resolveAssignTaskTarget,
+} from '../../src/sim/assignTask';
 import { CARD_DEFS } from '../../src/data/cards';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
@@ -366,6 +377,10 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    * 集中力・盤面を消費して後続の機会を消す。試行順は tick ごとに回転させて順序バイアスを
    * 平準化しているが、あくまで**全介入を同時に撃ち続けた場合の成立数**として読むこと。
    * アクション単体の対象不足は、順序の影響を受けない `onlyXxx` 方針の `no-target` で見る。
+   *
+   * 自滅回避（`survivesSelfCost`）はこの方針にも掛かる。シニアHP・士気を削る4種は
+   * 敗北閾値の手前で見送られ、内訳の `self-loss` に出る。撃ち続けて自滅すればランがそこで
+   * 終わり、以降のスプリントぶんの成立数が丸ごと欠けるので、塞いだ方が上限の推定は素直になる。
    */
   probe: {
     actions: ALL_ACTION_IDS.map((id) => ({ id })),
@@ -378,7 +393,19 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
 };
 
 /** 介入の試行結果内訳（RI-78 の「発動可能だった回数」測定用）。 */
-export type DispatchReason = 'ok' | 'cooldown' | 'no-focus' | 'no-target' | 'complete' | 'other';
+/**
+ * 介入の試行結果。`self-loss` だけはエンジンの返す理由ではなく、
+ * **ハーネスが撃たずに見送った**ことを表す（`survivesSelfCost` 参照）。
+ * エンジン由来の不成立と混ぜないため別の値にしてある。
+ */
+export type DispatchReason =
+  | 'ok'
+  | 'cooldown'
+  | 'no-focus'
+  | 'no-target'
+  | 'complete'
+  | 'self-loss'
+  | 'other';
 
 export interface SprintLog {
   quarter: number;
@@ -448,10 +475,32 @@ export interface RunLog {
   /**
    * `lostPhase === 'sprint'` のとき、敗北したスプリントが結果を残したか。
    *
-   * `true` なら `sprints` の末尾が敗北スプリントそのもの（直前状態は1つ前）。
-   * `false` ならスプリント中に即時敗北してログが残っていない（末尾が直前状態）。
+   * `true` なら `sprints` の末尾が敗北スプリントそのもの、
+   * `false` ならスプリント中に即時敗北してログが残っていない。
+   *
+   * 直前状態の参照先を決めるために入れたフィールドだが、その用途は `lostPrevState` が
+   * 引き継いだ。現在は「敗北したスプリントが結果を残したか」の分類にだけ使う。
    */
   lostSprintCompleted?: boolean;
+  /**
+   * **敗北を確定させた処理に入る直前**の組織状態。
+   *
+   * 以前は「最後に完了したスプリントの終了時点」を直前状態として読んでいたが、
+   * スプリント終了とその敗北の間にはビート・ショップ・休息・setup が挟まる。
+   * 例えば `giant-pr` の士気 -6 で負けたランでは、レポートには**その手前の休息で
+   * 回復した後の値**ではなく前スプリント末尾の値が出ており、「敗北直前の士気」が
+   * 実際より高くも低くも出ていた。ループの各反復で処理前の状態を控え、
+   * 敗北を検知した反復の控えをそのまま残す。
+   */
+  lostPrevState?: {
+    seniorHp: number;
+    morale: number;
+    techDebt: number;
+    aiDependency: number;
+    budget: number;
+    /** 控えを取った時点のフェーズ（どの処理の直前かを読めるようにする）。 */
+    phase: string;
+  };
   status: string;
   winType?: string;
   loseReason?: string;
@@ -819,6 +868,75 @@ function boardCtx(s: RunState): BoardCtx | null {
   };
 }
 
+/**
+ * その介入が消費する組織資源。`src/sim` の定数・関数から求める（式は複製しない）。
+ *
+ * ここに無いアクション（`splitPr` / `pairReview` / `aiThrottle` / `andon`）は
+ * seniorHp・Morale を減らさないので自滅しない。
+ *
+ * `assignTask` だけはコストが対象タスクと担当の適性で変わる（理想差配は半減、
+ * ミスマッチは連続回数ぶん加算）。ハーネスは対象を指定せずエンジンに選ばせるので、
+ * **エンジンと同じ選択関数**（`resolveAssignTaskTarget` / `defaultAssignee`）を通して
+ * 実際に払う額を求める。最悪値で代用すると、コスト1の理想差配まで士気7以下で
+ * 見送ることになり、今度は「打てる手を打たない」歪みが入る。
+ */
+function selfCostOf(id: ActionId, s: RunState): { hp?: number; morale?: number } | undefined {
+  switch (id) {
+    case 'interruptReview':
+      return { hp: INTERRUPT_HP_COST };
+    case 'firefight':
+      return { hp: FIREFIGHT_HP_COST };
+    case 'overtime':
+      return { hp: OVERTIME_HP_COST, morale: OVERTIME_MORALE_COST };
+    case 'assignTask': {
+      const sp = s.sprint;
+      if (!sp) return undefined;
+      const task = resolveAssignTaskTarget(sp);
+      // 対象が無ければ `applyAssignTaskEffect` は false を返し、士気は減らない。
+      if (!task) return undefined;
+      const assignee = defaultAssignee(task, s.org);
+      const streak = sp.metrics.assignmentSkew?.mismatchStreak ?? 0;
+      return { morale: computeAssignMoraleCost(task.kind, assignee, streak) };
+    }
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * その介入を撃っても敗北閾値を跨がないか。
+ *
+ * **全方針に掛ける。** `when` は盤面の件数しか見ていなかったので、例えば seniorHp 3 で
+ * `firefight`（HP 消費 2）を撃つと 1 まで落ち、`evaluateLose` の `seniorHp <= 1` に触れて
+ * その場で負ける。方針が「自分から負けにいく」分の敗北が混ざると、介入構成の比較
+ *（F-1 の単一介入 vs 複合）が介入の巧拙ではなく自滅回数の差になってしまう。
+ *
+ * どの方針も「わざと自滅する打ち方」としては定義していない（`naive` は*反応が遅い*方針、
+ * `probe` は*発動可能回数の上限*の測定）。したがって除外は方針の性格を変えない一方、
+ * 混入する自滅は全方針の測定を等しく汚す。`probe` では自滅で早期終了する分だけ
+ * 上限を過小評価するので、ここを塞ぐと測定精度が上がる。
+ */
+function survivesSelfCost(id: ActionId, s: RunState): boolean {
+  const cost = selfCostOf(id, s);
+  if (!cost) return true;
+  if (cost.hp !== undefined && s.org.seniorHp - cost.hp <= 1) return false;
+  if (cost.morale !== undefined && s.org.morale - cost.morale <= 1) return false;
+  return true;
+}
+
+/** 敗北直前の参照に使う組織状態の控え（`RunLog.lostPrevState`）。 */
+function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
+  const r1 = (v: number): number => Math.round(v * 10) / 10;
+  return {
+    seniorHp: r1(s.org.seniorHp),
+    morale: r1(s.org.morale),
+    techDebt: r1(s.org.techDebt),
+    aiDependency: r1(s.org.aiDependency),
+    budget: r1(s.budget),
+    phase: s.phase,
+  };
+}
+
 function bump(
   attempts: Record<string, Partial<Record<DispatchReason, number>>>,
   id: string,
@@ -845,9 +963,15 @@ function intervene(
     // 例: `firefight` が炎上タスクを Review へ戻すとキューが増え、`interruptReview` が
     // 抜くとキューが減る。ループ開始時の盤面で `when` を評価すると、増えたのに見送ったり
     // 減ったのに andon を撃ったりして、方針定義どおりの挙動にならない。
-    const ctx = boardCtx(e.snapshot());
+    const st = e.snapshot();
+    const ctx = boardCtx(st);
     if (!ctx) break;
     if (a.when && !a.when(ctx)) continue;
+    // 自滅する一手は方針に関係なく見送る（内訳には `self-loss` として残す）。
+    if (!survivesSelfCost(a.id, st)) {
+      bump(attempts, a.id, 'self-loss');
+      continue;
+    }
     const outcome = e.dispatch(a.id);
     if (outcome.ok) {
       bump(attempts, a.id, 'ok');
@@ -1116,11 +1240,17 @@ export function runOnce(
   /** 直近に解決したビート（敗北がビートで確定したときに残す）。 */
   let lastBeat: { eventId: string; kind: string; choiceIndex?: number } | undefined;
   let lostBeat: typeof lastBeat;
+  /**
+   * 敗北を確定させた処理の直前状態。ループの各反復の冒頭で控え、
+   * その反復で敗北を検知したらその控えを採用する。
+   */
+  let lostPrevState: RunLog['lostPrevState'];
   let guard = 0;
   let s = e.snapshot();
   while (s.status === 'playing' && guard < 60_000) {
     guard += 1;
     s = e.snapshot();
+    const beforeAction = orgSnapshot(s);
     const loggedBefore = sprints.length;
     // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻し、方針固有の編成も掛け直す。
     //
@@ -1314,6 +1444,7 @@ export function runOnce(
     const next = e.snapshot();
     if (next.status !== 'playing' && lostPhase === undefined) {
       lostPhase = s.phase;
+      lostPrevState = beforeAction;
       if (s.phase === 'beat') lostBeat = lastBeat;
       // 同じ反復でログが増えていれば、その末尾が敗北スプリントそのもの。
       if (s.phase === 'sprint') lostSprintCompleted = sprints.length > loggedBefore;
@@ -1330,6 +1461,7 @@ export function runOnce(
     ...(f.status === 'lost' ? { lostPhase } : {}),
     ...(f.status === 'lost' && lostBeat ? { lostBeat } : {}),
     ...(f.status === 'lost' && lostSprintCompleted !== undefined ? { lostSprintCompleted } : {}),
+    ...(f.status === 'lost' && lostPrevState ? { lostPrevState } : {}),
     status: f.status,
     winType: f.winType,
     loseReason: f.loseReason,

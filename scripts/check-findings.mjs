@@ -15,7 +15,14 @@
  */
 import { readFileSync, existsSync } from 'node:fs';
 
-const RUNS = 'playtest-out/runs.json';
+/**
+ * 検査対象。`PT_OUT` と第1引数で差し替えられる。
+ *
+ * `PT_OUT=/tmp/runs.json npm run playtest` は正式にサポートされた使い方なのに、
+ * 既定ファイルだけを読んでいると「成功した計測を無いことにする」か、
+ * 「前回の既定ファイルが残っていればそちらを最新として検査する」ことになる。
+ */
+const RUNS = process.argv[2] ?? process.env.PT_OUT ?? 'playtest-out/runs.json';
 const DOCS = ['plan/playtest-findings.md', 'plan/remaining-issues.md'];
 
 /**
@@ -124,6 +131,36 @@ for (const file of DOCS) {
       if (v !== want) {
         problems.push(`${at}: \`${policy}\` の行に ${v} とあるが実測は ${want}`);
       }
+    }
+  });
+}
+
+// --- 難易度別の全方針合計 -----------------------------------------------
+//
+// `| easy | 72.3%（224/310） | ... |` の形の行を検査する。方針別勝利数だけを見ていたため、
+// この表の 225/310・127/310・33/310 という**実測と合わない値**（合計385で、総勝利387と不整合）が
+// 検査を通り抜けてレビューで指摘された。難易度ごとの勝敗は曖昧さなく計算できるので機械検査に載せる。
+const byDifficulty = new Map();
+for (const r of runs) {
+  const e = byDifficulty.get(r.difficulty) ?? { w: 0, n: 0 };
+  e.n += 1;
+  if (r.status === 'won') e.w += 1;
+  byDifficulty.set(r.difficulty, e);
+}
+for (const file of DOCS) {
+  const raw = readFileSync(file, 'utf8');
+  const cut = raw.indexOf(AS_OF_SECTION);
+  const body = cut >= 0 ? raw.slice(0, cut) : raw;
+  body.split('\n').forEach((line, i) => {
+    const m = line.match(/^\|\s*(easy|normal|hard|nightmare)\s*\|[^|]*?（(\d+)\/(\d+)）/);
+    if (!m) return;
+    const [, diff, won, total] = m;
+    const actual = byDifficulty.get(diff);
+    if (!actual) return;
+    if (Number(won) !== actual.w || Number(total) !== actual.n) {
+      problems.push(
+        `${file}:${i + 1}: ${diff} の全方針合計が ${won}/${total} と書かれているが実測は ${actual.w}/${actual.n}`,
+      );
     }
   });
 }

@@ -298,7 +298,9 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
       }
     }
   }
-  const summary = ['ok', 'no-target', 'no-focus', 'cooldown']
+  // `self-loss` はエンジンが弾いた不成立ではなく、ハーネスが自滅回避で見送った回数。
+  // 「打てる手があったのに打たなかった」量なので、他の理由と並べて見えるようにする。
+  const summary = ['ok', 'no-target', 'no-focus', 'cooldown', 'self-loss']
     .map((x) => `${x}=${totals[x] ?? 0}`)
     .join(' ');
   console.log(
@@ -423,18 +425,28 @@ console.log(`\n## F-9 敗因ごとの進行と予兆\n`);
 // 敗因と実験条件は相関する（例: aiDependency はほぼ Nightmare の第1スプリント）。
 // 全体を一つに潰すと難易度差が p50 に混入するため、難易度で層別化する。
 /**
- * 敗北直前の状態を取る。ログの末尾が敗北スプリントそのものかどうかで参照先が変わる。
+ * 敗北直前の状態を取る。
  *
- * - スプリントを完走して結果が敗北条件を満たした（`lostSprintCompleted === true`）
- *   → 末尾が敗北スプリントなので1つ前が直前状態
- * - スプリント中に結果を残さず即時敗北した（`lostSprintCompleted === false`）
- *   → 敗北スプリントはログに無く、末尾が最後の完了スプリント＝直前状態
- * - 採用・カード・ビートなどスプリント間で敗北 → 末尾が直前状態
+ * ハーネスが記録する `lostPrevState` は**敗北を確定させた処理へ入る直前**の組織状態
+ * （そのスプリントの開始時点、あるいはそのビート・ショップ・休息の直前）である。
+ * これがあるときは常にこちらを使う。
  *
- * ハーネスは `sprintsPlayed` が増えたスプリントしかログへ push しないため、
- * `lostPhase === 'sprint'` だけで1つ前を選ぶと即時敗北のケースで直前状態を落とす。
+ * 旧経路（スプリントログからの推定）は、末尾が敗北スプリントかどうかで参照先を変えるが、
+ * **どちらに転んでも「あるスプリントの終了時点」しか返せない**。スプリント終了と敗北の間には
+ * ビート・ショップ・休息・setup が挟まり、そこでの増減が丸ごと落ちる。休息で回復した直後に
+ * ビートで負けたランでは、回復前の低い値が「直前」として出ていた。`lostPrevState` を持たない
+ * 旧い出力のためだけに残す。
  */
 const prevStateOf = (run) => {
+  if (run.lostPrevState) {
+    const p = run.lostPrevState;
+    return {
+      seniorHpAfter: p.seniorHp,
+      moraleAfter: p.morale,
+      techDebtAfter: p.techDebt,
+      budgetAfter: p.budget,
+    };
+  }
   if (run.sprints.length === 0) return undefined;
   const lostAtSprintEnd = run.lostPhase === 'sprint' && run.lostSprintCompleted !== false;
   const idx = lostAtSprintEnd ? run.sprints.length - 2 : run.sprints.length - 1;

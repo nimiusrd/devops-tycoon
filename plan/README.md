@@ -8,6 +8,8 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 | ファイル | 用途 |
 | --- | --- |
 | [`SPEC.md`](../SPEC.md) | 体験要件と受入条件の正本 |
+| [probability-model.md](./probability-model.md) | 確率モデル、seed設計、数式、粗粒度進行、検証方法 |
+| [balance-ssot-plan.md](./balance-ssot-plan.md) | バランスパラメータSSoTの設計、移行計画、検証方針 |
 | [spec-mapping.md](./spec-mapping.md) | SPECと実装の対応、未充足箇所 |
 | [remaining-issues.md](./remaining-issues.md) | 未着手・保留課題と完了項目の要約 |
 | [playtest-findings.md](./playtest-findings.md) | 実機プレイで洗い出した改善課題（バランス・UI・ポリッシュ） |
@@ -18,6 +20,8 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 
 - Vite + React 19 + TypeScript + PixiJSのフロントエンド単体ゲーム。
 - `RunEngine`をラン状態の正本とし、seed付き決定論でシミュレーションする。
+- 確率モデルの構造と変更規律は[probability-model.md](./probability-model.md)を正とする。
+- バランスパラメータSSoTは未実装であり、導入順序と判断事項は[balance-ssot-plan.md](./balance-ssot-plan.md)にまとめる。
 - 既定描画はPixiJS。`?renderer=dom`とWebGL不可時はDOM/SVGへフォールバックする。
 - IndexedDBにメタ進行、ラン途中セーブ、リプレイを保存する。
 - Vitestでロジック、Playwrightで操作・視覚回帰を検証する。

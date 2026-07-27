@@ -127,6 +127,27 @@ const group = (keyFn) => {
   return m;
 };
 
+/**
+ * 固定標本の指標が使えるかを検査する。
+ *
+ * `PT_POLICIES` での絞り込み実行は正式にサポートしているので、代表方針が揃わない結果でも
+ * レポートは動く。しかしそのまま「代表N方針（固定）」と表示して成立判定へ使うと、
+ * 実際には1方針だけの値を固定標本と誤認する。欠けている方針を明示して未計測にする。
+ */
+const missingPolicies = (required) => required.filter((p) => !runs.some((r) => r.policy === p));
+const sampleGuard = (label, required) => {
+  const missing = missingPolicies(required);
+  if (missing.length === 0) {
+    console.log(`**${label}: ${required.join(' / ')}（固定）**`);
+    return true;
+  }
+  console.log(
+    `**${label}: 未計測** — 代表方針 ${missing.join(' / ')} がこの実行に含まれていない` +
+      `（必要: ${required.join(' / ')}）。参考値のみ表示する。`,
+  );
+  return false;
+};
+
 // --- F-7 勝率 ---------------------------------------------------------------
 console.log(`\n## F-7 難易度 × 方針の勝率\n`);
 /**
@@ -164,11 +185,33 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
 console.log(`\n## F-4 スプリント長（1x 換算・秒）\n`);
 // SPEC 第3.1: 通常 60〜120秒（絶対下限30秒）、ボス 90〜180秒。
 // elite（高負荷）は「スプリント1本」の目標が同じく必要なので通常帯で判定する。
-const SPRINT_BANDS = {
-  normal: { min: 60, max: 120, absoluteMin: 30 },
-  elite: { min: 60, max: 120, absoluteMin: 30 },
-  boss: { min: 90, max: 180 },
-};
+/**
+ * 規定帯は実装（`src/ui/sprintTempo.ts`）の `SPRINT_WALL_SEC` / `BOSS_WALL_SEC` から読む。
+ * ここで複製すると、テンポ調整で共有定数を変えたとき秒換算だけが追随して帯判定が
+ * 旧値のまま残り、正常を違反・違反を正常として報告してしまう。
+ */
+function readSprintBands() {
+  const src = readFileSync('src/ui/sprintTempo.ts', 'utf8');
+  const num = (constName, field) => {
+    const m = src.match(
+      new RegExp(`export const ${constName}\\s*=\\s*\\{[^}]*?\\b${field}:\\s*(\\d+)`, 's'),
+    );
+    if (!m) throw new Error(`src/ui/sprintTempo.ts から ${constName}.${field} を読み取れない`);
+    return Number(m[1]);
+  };
+  const typical = {
+    min: num('SPRINT_WALL_SEC', 'minTypical'),
+    max: num('SPRINT_WALL_SEC', 'maxTypical'),
+    absoluteMin: num('SPRINT_WALL_SEC', 'absoluteMin'),
+  };
+  return {
+    normal: typical,
+    // elite（高負荷）も「スプリント1本」の目標が同じく必要なので通常帯で判定する。
+    elite: typical,
+    boss: { min: num('BOSS_WALL_SEC', 'min'), max: num('BOSS_WALL_SEC', 'max') },
+  };
+}
+const SPRINT_BANDS = readSprintBands();
 /**
  * F-4 の成立判定に使う代表方針（固定）。
  *
@@ -196,13 +239,14 @@ const printPacing = (label, xs, kind) => {
     `${label}: n=${xs.length} p10=${r1(quantile(xs, 0.1))} p50=${r1(p50v)} p90=${r1(quantile(xs, 0.9))} | 規定${band.min}〜${band.max}s: p50 ${inBand ? '帯内' : '帯外'} 下回り=${pct(below, xs.length)} 上回り=${pct(above, xs.length)}${absMin}`,
   );
 };
-console.log(`**成立判定に使う代表方針: ${F4_SAMPLE_POLICIES.join(' / ')}（固定）**`);
-for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
-  const arr = runs.filter((r) => r.difficulty === d && F4_SAMPLE_POLICIES.includes(r.policy));
-  for (const kind of ['normal', 'elite', 'boss']) {
-    const xs = pacingRows(arr, kind);
-    if (!xs.length) continue;
-    printPacing(`  ${d}/${kind}`, xs, kind);
+if (sampleGuard('成立判定に使う代表方針', F4_SAMPLE_POLICIES)) {
+  for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+    const arr = runs.filter((r) => r.difficulty === d && F4_SAMPLE_POLICIES.includes(r.policy));
+    for (const kind of ['normal', 'elite', 'boss']) {
+      const xs = pacingRows(arr, kind);
+      if (!xs.length) continue;
+      printPacing(`  ${d}/${kind}`, xs, kind);
+    }
   }
 }
 console.log('\n参考: 全方針を連結した値（方針構成に依存するため成立判定に使わない）:');
@@ -649,9 +693,18 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
   );
 
   const sample = runs.filter((r) => F11_SAMPLE_POLICIES.includes(r.policy));
-  console.log(
-    `\n**実測（代表方針 ${F11_SAMPLE_POLICIES.join(' / ')} に固定。n=${sample.length}）**`,
-  );
+  const f11Missing = missingPolicies(F11_SAMPLE_POLICIES);
+  console.log('');
+  if (f11Missing.length > 0) {
+    console.log(
+      `**実測: 未計測** — 代表方針 ${f11Missing.join(' / ')} がこの実行に含まれていない` +
+        `（必要: ${F11_SAMPLE_POLICIES.join(' / ')}）。以下は参考値。`,
+    );
+  } else {
+    console.log(
+      `**実測（代表方針 ${F11_SAMPLE_POLICIES.join(' / ')} に固定。n=${sample.length}）**`,
+    );
+  }
   const q1Points = sample.map(q1EvoPoints).filter((n) => n > 0);
   if (q1Points.length > 0) {
     console.log(

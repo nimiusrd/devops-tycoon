@@ -529,19 +529,20 @@ export function autoplayBeatChoiceIndex(
   // `grantRecruit` は解決時に `tryRecruit` が**さらに** `RECRUIT_COST` を引くため、
   // 予算がちょうど `RECRUIT_COST` のとき outcome 上は予算差分0でも、実際には予算0＝
   // `budgetExhausted` になる。採用費を引いた後の予算で評価する。
+  // 採用費を引いた後の予算で敗北しないか。`grantRecruit` の選択肢はこれで判定する。
+  const afterRecruit = ctx && { ...ctx, budget: ctx.budget - RECRUIT_COST };
+  const recruitIsSafe = (c: (typeof choices)[number]): boolean =>
+    !afterRecruit || scoreChoice(c.outcome as Record<string, unknown>, afterRecruit) > INSTANT_LOSS;
   if (takeRecruit) {
-    const afterRecruit = ctx && { ...ctx, budget: ctx.budget - RECRUIT_COST };
-    const grant = choices.findIndex(
-      (c) =>
-        c.outcome.grantRecruit &&
-        (!afterRecruit ||
-          scoreChoice(c.outcome as Record<string, unknown>, afterRecruit) > INSTANT_LOSS),
-    );
+    const grant = choices.findIndex((c) => c.outcome.grantRecruit && recruitIsSafe(c));
     if (grant >= 0) return grant;
   }
+  // 安全判定に落ちた採用肢は、後続の候補集合からも外す。
+  // ここで `takeRecruit` だけを理由に通すと、上で弾いた同じ選択肢が
+  // 「見送りより高得点」として選び直され、`tryRecruit` の控除で `budgetExhausted` になる。
   const allowed = choices
     .map((c, i) => ({ c, i }))
-    .filter(({ c }) => takeRecruit || !c.outcome.grantRecruit);
+    .filter(({ c }) => !c.outcome.grantRecruit || (takeRecruit && recruitIsSafe(c)));
   const pool = allowed.length > 0 ? allowed : choices.map((c, i) => ({ c, i }));
   if (mode !== 'stateAware' || !ctx) return pool[0].i;
   // 状態依存: 現在いちばん減らしたくない資源を削る選択肢を避ける。
@@ -617,14 +618,20 @@ function intervene(
   spec: PolicySpec,
   attempts: Record<string, Partial<Record<DispatchReason, number>>>,
 ): number {
-  const ctx = boardCtx(e.snapshot());
-  if (!ctx) return 0;
+  const first = boardCtx(e.snapshot());
+  if (!first) return 0;
   let n = 0;
   // 固定順だと先頭のアクションが集中力を独占するため、probe では tick ごとに順を回す。
   const order = spec.rotateActions
-    ? spec.actions.map((_, i) => spec.actions[(i + ctx.tick) % spec.actions.length])
+    ? spec.actions.map((_, i) => spec.actions[(i + first.tick) % spec.actions.length])
     : spec.actions;
   for (const a of order) {
+    // **各 dispatch の直前に盤面を取り直す。** 同じ tick 内でも先行の介入がレーンを変える。
+    // 例: `firefight` が炎上タスクを Review へ戻すとキューが増え、`interruptReview` が
+    // 抜くとキューが減る。ループ開始時の盤面で `when` を評価すると、増えたのに見送ったり
+    // 減ったのに andon を撃ったりして、方針定義どおりの挙動にならない。
+    const ctx = boardCtx(e.snapshot());
+    if (!ctx) break;
     if (a.when && !a.when(ctx)) continue;
     const outcome = e.dispatch(a.id);
     if (outcome.ok) {
@@ -696,6 +703,22 @@ function restChoice(s: RunState, spec: PolicySpec): 'heal' | 'repay' | 'upgrade'
   if (spec.rest === 'upgrade') return s.deck.length > 0 ? 'upgrade' : 'heal';
   if (spec.rest === 'stateAware' && s.org.techDebt >= REST_REPAY_DEBT_THRESHOLD) return 'repay';
   return 'heal';
+}
+
+/**
+ * 強化するデッキ位置。**最もレベルの低いカード**を選ぶ（同率は先頭）。
+ *
+ * `deckIndex` を 0 固定にすると、ドラフトやショップで後から入ったカードが一度も強化候補に
+ * ならず、同じ1枚だけが繰り返しレベルアップする。実画面では任意の位置を選べるので、
+ * 固定のままでは「休息でカードを強化しても寄与しない」の根拠にならない。
+ * どのカードを伸ばすかの選好（効果種別など）までは見ておらず、これも決めた基準である。
+ */
+function restUpgradeIndex(s: RunState): number {
+  let best = 0;
+  for (let i = 1; i < s.deck.length; i += 1) {
+    if (s.deck[i].level < s.deck[best].level) best = i;
+  }
+  return best;
 }
 
 /**
@@ -940,7 +963,7 @@ export function runOnce(
       case 'rest':
         // 採用方針は休息の選択肢にも適用する（RestScreen に採用がある）。
         // ただし満員・予算不足では実画面のボタンが無効なので、他の選択へフォールバックする。
-        e.restChoose(wantsRecruit(s, spec) ? 'recruit' : restChoice(s, spec), 0);
+        e.restChoose(wantsRecruit(s, spec) ? 'recruit' : restChoice(s, spec), restUpgradeIndex(s));
         break;
       case 'recruit':
         e.recruitChoose(wantsRecruit(s, spec) ? 'hire' : 'skip');

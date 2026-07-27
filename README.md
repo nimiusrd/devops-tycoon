@@ -159,6 +159,7 @@ tests/
 - [SPEC.md](SPEC.md) — 体験要件と受入条件
 - [plan/spec-mapping.md](plan/spec-mapping.md) — SPECと実装の対応
 - [plan/remaining-issues.md](plan/remaining-issues.md) — 現在の未充足・保留課題
+- [plan/mutation-remediation.md](plan/mutation-remediation.md) — ミューテーション結果に基づくテスト強化指示（RI-72）
 - [plan/architecture.md](plan/architecture.md) — 技術構成と横断規律
 - [plan/README.md](plan/README.md) — 計画文書の索引
 

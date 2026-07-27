@@ -12,6 +12,7 @@
 | RI-69 | スプリント上部操作バーと盤面の重なり | 中 | 未着手 | 第4 |
 | RI-70 | モバイルのスプリント操作性 | 中 | 未着手 | 第4 |
 | RI-71 | favicon 未設定による 404 | 低 | 未着手 | — |
+| RI-72 | ミューテーションテストに基づくユニットテスト強化 | 中 | 未着手 | 第22.5 |
 | RI-34 | ローカル完結の将来拡張 | 低 | 保留（要判断） | 第23 |
 
 RI-67〜71 は 2026-07-20 のプレイテストで洗い出した。経緯・再現条件・実測は[playtest-findings.md](./playtest-findings.md)を参照する。
@@ -68,6 +69,18 @@ Easy でも無介入・素直プレイだと第1四半期スプリント2でシ�
 
 - `<link rel="icon">` とアイコン配置で 404 が出ない。
 - ブラウザタブにアイコンが表示される。
+
+### RI-72 ミューテーションテストに基づくユニットテスト強化
+
+Stryker（`src/sim` / `src/state`）のベースライン run
+[30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
+で全体 mutation score 約 73%。Survived / NoCoverage が多いファイルのユニットテストを強化する。実装手順・バッチ分割・再計測方法は[mutation-remediation.md](./mutation-remediation.md)を正とする。
+
+受入条件:
+
+- [mutation-remediation.md](./mutation-remediation.md) の Batch A〜D の受入を満たす。
+- 全体 mutation score (total) がおおむね 80%以上（必須 CI ゲートにはしない）。
+- 原則はテスト追加のみ。スコア目的の本番ロジック改変をしない。
 
 ### RI-34 ローカル完結の将来拡張
 

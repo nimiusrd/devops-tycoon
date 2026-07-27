@@ -107,15 +107,15 @@ Stryker（`src/sim` / `src/state`）のベースライン run
 - 実装 PR は **1PR = 1実装単位 ID**。
 ### RI-73 難易度カーブと、常に正解／常に不正解な手がある構造
 
-F-7 は**初見相当の方針（`naive`）の勝率**で判定する。全方針の平均は使わない（`adj*` の統制群や `onlyXxx` のような実験用方針を足し引きするだけで、ゲームも初見プレイも変わっていないのに平均が動くため）。`naive`（メタ解放も初見相当の `fresh`）の勝率は easy 5/10（50%）/ normal 5/10（50%）/ hard 1/10（10%）/ nightmare 0/10（0%）。SPEC 第19.1 F-7 が目標とする「初勝利5ラン前後＝勝率20%前後」に**合う難易度が無い**。easy と normal は初見でも半分勝ててしまい、hard は 10%、nightmare は全敗する。50% から 10% へ一段で落ちており、中間の 20% 前後に当たる難易度が存在しない。easy は完全放置（介入もカードも使わない `idle`）でも 5/10 勝てる。nightmare は310ラン全敗（RI-74）。参考値として全方針平均は easy 72.3% / normal 40.0% / hard 11.0% / nightmare 0% だが、これは実験用統制群を含むため成立判定には使わない。
+F-7 は**初見相当の方針（`naive`）の勝率**で判定する。全方針の平均は使わない（`adj*` の統制群や `onlyXxx` のような実験用方針を足し引きするだけで、ゲームも初見プレイも変わっていないのに平均が動くため）。`naive`（メタ解放も初見相当の `fresh`）の勝率は easy 5/10（50%）/ normal 5/10（50%）/ hard 1/10（10%）/ nightmare 0/10（0%）。SPEC 第19.1 F-7 が目標とする「初勝利5ラン前後＝勝率20%前後」に**合う難易度が無い**。easy と normal は初見でも半分勝ててしまい、hard は 10%、nightmare は全敗する。50% から 10% へ一段で落ちており、中間の 20% 前後に当たる難易度が存在しない。easy は完全放置（介入もカードも使わない `idle`）でも 5/10 勝てる。nightmare は310ラン全敗（RI-74）。参考値として全方針平均は easy 72.3% / normal 40.0% / hard 12.6% / nightmare 0% だが、これは実験用統制群を含むため成立判定には使わない。
 
-F-1 の違反は2方向にある。**アンドン単独（`onlyAndon`）18/40 と緊急対応単独（`onlyFirefight`）16/40 が首位**（全難易度合計）だが、複合方針 `skilledNoHire` 15/40 との差は**1〜3勝**しかない。`onlyFirefight` は難易度別でも easy 10/10 と、複合方針（8/10）を上回る。**この差はビート評価を直すたびに縮んでおり**（19/16 対 14 → 18/17 対 16 → 18/16 対 15）、「単一介入が複合を明確に上回る」という当初の根拠は弱まっている。F-1 の違反として残すかどうかは再検証が要る。無差別採用側（`skilled` 11/40 対 `skilledNoHire` 15/40）の差は保っている。単一介入群は進化順（`reviewFirst`）とビート選択（`stateAware`）を `skilledNoHire` と揃えてあるため、差は介入構成のみに帰属できる。緊急対応は「打てるときに打てば得」で状況によって正解が入れ替わらず、他の介入を選ぶ理由が薄い。なお全介入を 1 tick ごとに撃つ `probe` は 10/40 と弱く、乱打が損になる関係自体は成立している。介入の反応間隔は `skilled` が約2.0秒、`naive` が約4.1秒（1x 換算）である。
+F-1 の違反は2方向にある。**アンドン単独（`onlyAndon`）18/40 と緊急対応単独（`onlyFirefight`）17/40 が首位**（全難易度合計）だが、複合方針 `skilledNoHire` 16/40 との差は**1〜2勝**しかない。`onlyFirefight` は難易度別でも easy 10/10 と、複合方針（8/10）を上回る。**この差はビート評価を直すたびに縮んでおり**（19/16 対 14 → 18/17 対 16）、「単一介入が複合を明確に上回る」という当初の根拠は弱まっている。F-1 の違反として残すかどうかは再検証が要る。無差別採用側（`skilled` 11/40 対 `skilledNoHire` 16/40）の差は保っている。単一介入群は進化順（`reviewFirst`）とビート選択（`stateAware`）を `skilledNoHire` と揃えてあるため、差は介入構成のみに帰属できる。緊急対応は「打てるときに打てば得」で状況によって正解が入れ替わらず、他の介入を選ぶ理由が薄い。なお全介入を 1 tick ごとに撃つ `probe` は 10/40 と弱く、乱打が損になる関係自体は成立している。介入の反応間隔は `skilled` が約2.0秒、`naive` が約4.1秒（1x 換算）である。
 
-統制実験（同一 seed、条件を1つずつ外す）では、**無差別採用が一貫して勝率を下げる**（全40ランで `skilled` 11 vs `skilledNoHire` 15。難易度別は easy 7/8、normal 4/5、hard 0/2）。採用方針を全経路（専用フェーズ・ショップ・休息・即時採用イベント）へ適用し、採用・復職の双方でベンチのメンバーを実働レーンへ配置した上での結果である。`budgetExhausted` 敗北は1,240ラン中14件。
+統制実験（同一 seed、条件を1つずつ外す）では、**無差別採用が一貫して勝率を下げる**（全40ランで `skilled` 11 vs `skilledNoHire` 16。難易度別は easy 7/8、normal 4/5、hard 0/3）。採用方針を全経路（専用フェーズ・ショップ・休息・即時採用イベント）へ適用し、採用・復職の双方でベンチのメンバーを実働レーンへ配置した上での結果である。`budgetExhausted` 敗北は1,240ラン中14件。
 
-さらに**「必要なときだけ採る」も見送りと同じ**だった。欠員（休職者あり／実働2名以下）があり、かつ**採用費を引いた残額**が `RECRUIT_COST`（=25）以上あるときだけ採る `skilledSelectiveHire` は **15/40** で、採らない `skilledNoHire` 15/40 と**完全に同数**である（難易度別も 8/5/2/0 で一致）。無差別に採ると大きく損をし、選択的に採っても得にならない。F-1 の観点では、緊急対応が「常に打てば得」であるのと対称に、**採用が「常に見送るのが正解」**になっている。
+さらに**「必要なときだけ採る」も見送りと同じ**だった。欠員（休職者あり／実働2名以下）があり、かつ**採用費を引いた残額**が `RECRUIT_COST`（=25）以上あるときだけ採る `skilledSelectiveHire` は **16/40** で、採らない `skilledNoHire` 16/40 と**完全に同数**である（難易度別も 8/5/3/0 で一致）。無差別に採ると大きく損をし、選択的に採っても得にならない。F-1 の観点では、緊急対応が「常に打てば得」であるのと対称に、**採用が「常に見送るのが正解」**になっている。
 
-一方**カードは寄与している**（無差別 15 / 状況選択 11 / 不使用 8。向きは easy 8対6・normal 5対1・hard 2対1 の3難易度で一致）。ショップ投資と休息の選択は、差が0〜1しか無く寄与を確認できない（`skilledShopBuy` 15/40・`skilledRestUpgrade` 16/40・`skilledRestRepay` 16/40 と `skilledNoHire` 15/40）。詳細は RI-78。
+一方**カードは寄与している**（無差別 16 / 状況選択 11 / 不使用 8。向きは easy 8対6・normal 5対1・hard 3対1 の3難易度で一致）。ショップ投資と休息の選択は、差が0〜1しか無く寄与を確認できない（`skilledShopBuy` 16/40・`skilledRestUpgrade` 16/40・`skilledRestRepay` 15/40 と `skilledNoHire` 16/40）。詳細は RI-78。
 
 受入条件:
 
@@ -158,7 +158,7 @@ SPEC 第3.1 の規定は通常60〜120秒（絶対下限30秒）・ボス90〜18
 
 ### RI-76 勝利種別が実質2種で、最も受動的なプレイが最上位勝利を取る
 
-1,240ラン中382勝の内訳は `healthy` 200（52%）/ `noDamage` 181（47%）/ `happiness` 1 で、`aiSuccess` / `management` / `chaos` / `normal` は0件、`happiness` も1件しかなく実質2種である。`evaluateWinType`（`src/sim/outcome.ts:103-118`）が固定の優先順ラダーで、先頭の判定が `!usedHeavyActions && totals.spread === 0` のため、残業もアンドンも使わない受動的なプレイほど「やり込み枠」であるはずのノーダメージ勝利になる。実測でも勝利種別は「重アクションを使ったか」だけで分岐している。組織診断も同様に偏る（`seniorSacrifice` 764 / `reviewHell` 395 / `documentationKingdom` 40 / `aiOverproduction` 26 / `healthyAcceleration` 14 / `reworkSpiral` 1）。ただしビルド方針ごとに見ると診断は明確に分かれており（`noAi` は `documentationKingdom` 10 / `healthyAcceleration` 5、`aiFullBet` は `reviewHell` 14 / `seniorSacrifice` 26）、内部状態は分岐しているのに勝利種別へ反映されていない。SPEC 第19.1 F-10 が求める「ビルドによって目指す勝ち筋が変わる」が成立していない。
+1,240ラン中387勝の内訳は `healthy` 205（53%）/ `noDamage` 181（47%）/ `happiness` 1 で、`aiSuccess` / `management` / `chaos` / `normal` は0件、`happiness` も1件しかなく実質2種である。`evaluateWinType`（`src/sim/outcome.ts:103-118`）が固定の優先順ラダーで、先頭の判定が `!usedHeavyActions && totals.spread === 0` のため、残業もアンドンも使わない受動的なプレイほど「やり込み枠」であるはずのノーダメージ勝利になる。実測でも勝利種別は「重アクションを使ったか」だけで分岐している。組織診断も同様に偏る（`seniorSacrifice` 758 / `reviewHell` 401 / `documentationKingdom` 40 / `aiOverproduction` 26 / `healthyAcceleration` 14 / `reworkSpiral` 1）。ただしビルド方針ごとに見ると診断は明確に分かれており（`noAi` は `documentationKingdom` 10 / `healthyAcceleration` 5、`aiFullBet` は `reviewHell` 14 / `seniorSacrifice` 26）、内部状態は分岐しているのに勝利種別へ反映されていない。SPEC 第19.1 F-10 が求める「ビルドによって目指す勝ち筋が変わる」が成立していない。
 
 受入条件:
 
@@ -199,7 +199,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 なおこの結論は当初逆だった（「カードは集中力を消費するだけで寄与しない」）。ハーネスが同一 tick 内で複数介入を試すとき `when` の判定にループ開始時点の盤面を使い続けていたためで、各 `dispatch` の直前に盤面を取り直すよう直したところ差が 3勝ぶん→5勝ぶんへ広がり向きも揃った。
 
-**残る未充足はショップ層と休息の選択である。** ショップでレリック→カードを買う `skilledShopBuy` は 15/40 で、何も投資しない `skilledNoHire` 15/40 と**完全に同数**である。休息の選択を回復以外へ振る `skilledRestUpgrade` / `skilledRestRepay` はいずれも 16/40 で1つ上回るだけである。カード層のような全難易度で一致する7勝ぶんの差とは質が違い、seed 差と区別できない。**直近5回の再計測で `skilledRestUpgrade` は 13→15→13→16→16、`skilledShopBuy` は 14→13→14→16→15、`skilledRestRepay` は 15→16 と動き、そのたびに順位が入れ替わっており、この層については「差が無い」以上を主張すべきではない。** SPEC 第19.1 F-2 が求める「スプリント間の投資が結果を変える」は、**ショップ層と休息の選択で成立を確認できない**。
+**残る未充足はショップ層と休息の選択である。** ショップでレリック→カードを買う `skilledShopBuy` と休息でカードを強化する `skilledRestUpgrade` はいずれも 16/40 で、何も投資しない `skilledNoHire` 16/40 と**完全に同数**である。休息で負債を返す `skilledRestRepay` だけが 15/40 で1つ下回る。カード層のような全難易度で一致する8勝ぶんの差とは質が違い、seed 差と区別できない。**直近4回の再計測で `skilledRestUpgrade` は 13→15→13→16、`skilledShopBuy` は 14→13→14→16 と動き、そのたびに順位が入れ替わっており、この層については「差が無い」以上を主張すべきではない。** SPEC 第19.1 F-2 が求める「スプリント間の投資が結果を変える」は、**ショップ層と休息の選択で成立を確認できない**。
 
 対象不足（`no-target`）はアクションによって大きく異なる（単一介入方針で測った、試行のうち `no-target` で失敗した割合）。`firefight` は easy 約9割 / normal 約85% / hard 約77%、`assignTask` は難易度が上がるほど空振りし hard で9割超。`interruptReview` と `splitPr` はおおむね4〜6割。一方 `overtime` / `andon` / `pairReview` / `aiThrottle` は対象を要さず 0%。とくに `assignTask` は難易度が上がるほど空振りし、`firefight` は easy で約9割が空振りする。
 
@@ -215,9 +215,9 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 ### RI-79 予算枯渇・信頼枯渇が予兆なく終わり、敗因ラベルが実態と一致しない
 
-敗因ごとの進行速度は明確に異なり（敗北までのスプリント数 p50 が `aiDependency` 1 / `moraleCollapse` 2 / `seniorBurnout` 3 / `reviewFreeze` 8 / `techDebt` 13 / `budgetExhausted` 11 / `reorgRequired` 18 / `trustExhausted` 24）、この点は F-9 として良い。問題は予兆とラベルの2点である。
+敗因ごとの進行速度は明確に異なり（敗北までのスプリント数 p50 が `aiDependency` 1 / `moraleCollapse` 2 / `seniorBurnout` 3 / `reviewFreeze` 8 / `techDebt` 9 / `budgetExhausted` 11 / `reorgRequired` 18 / `trustExhausted` 24）、この点は F-9 として良い。問題は予兆とラベルの2点である。
 
-第一に、`budgetExhausted` / `trustExhausted` / `reorgRequired` は**敗北を確定させた処理の直前**にシニアHP 29.9〜39.5・士気 96.2〜100 のまま終わる。盤面上は健全に見えるのに終了するため、F-6（次の一手が分かる）と F-8（詰みの確定を作らない）を満たさない。なお直前状態を実時点の控え（`lostPrevState`）へ直したところ、`seniorBurnout` の直前シニアHP は 12.6 → 23.5、`techDebt` は 11.8 → 48.5 へ上がった。**この2敗因も「資源が枯れてから負ける」のではなく、健全な値から選択不能なビート1回で落ちている**（`seniorBurnout` 200件中148件が judgment）ので、予兆の乏しさは上の3敗因に限らない。
+第一に、`budgetExhausted` / `trustExhausted` / `reorgRequired` は**敗北を確定させた処理の直前**にシニアHP 30.0〜39.5・士気 96.2〜100 のまま終わる。盤面上は健全に見えるのに終了するため、F-6（次の一手が分かる）と F-8（詰みの確定を作らない）を満たさない。なお直前状態を実時点の控え（`lostPrevState`）へ直したところ、`seniorBurnout` の直前シニアHP は 12.6 → 19.1、`techDebt` は 11.8 → 52.3 へ上がった。**この2敗因も「資源が枯れてから負ける」のではなく、健全な値から選択不能なビート1回で落ちている**（`seniorBurnout` 206件中160件が judgment）ので、予兆の乏しさは上の3敗因に限らない。
 
 第二に、**`trustExhausted` ラベルが3種類の原因を1つに潰している**。`loseReasonForOutcome`（`src/sim/run/quarterReview.ts:464`）は `missed_crisis` と `shutdown` の**両方**を `trustExhausted` に変換する。1,240ランでの発火条件の内訳は、`missed_crisis` が `trust<=15` 19件 / `budget<=5` 1件、`shutdown` が `seniorHp<=5 かつ missedCount>=2` 3件 / `trust<=10` 1件。つまり `trustExhausted` 24件のうち信頼由来は20件で、**残り4件は予算切れ（1件）とシニア枯渇（3件）**である。予算やシニアが原因のランに信頼回復を促しても解決しない。この内訳は判定時と同じ入力から復元できている（`companyOrgFromTeams` は `morale` / `seniorHp` を平均せず選択中チームの値をそのまま使い、`trust` / `budget` はラン単位のため）。
 
@@ -300,7 +300,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 敗因ごとに決着位置は分かれる。**`reviewFreeze`（295件）は例外なく100%が `review-freeze`(judgment) で確定**し、盤面で対処する機会がない。プレイヤーはスプリントを走り切った直後に、操作の余地がない画面で敗北を告げられる。一方 `seniorBurnout`（206件）は judgment / **decision** / sprint が混在し、選択を経て確定するものが相当数ある。`aiDependency`（255件）・`techDebt`（31件）・`moraleCollapse`（15件）はスプリント中、`trustExhausted`（24件）・`reorgRequired`（13件）は四半期レビューで決まる。
 
-全858敗の決着フェーズは `beat:judgment` 455（53%）/ `sprint` 327（38%）/ `quarterReview` 37（4%）/ `beat:decision` 33（4%）/ `shop`・`rest`・`recruit` 6（1%）。`beat:decision` はビート選択の統制を進めた結果 90件（12%）→ 40件（5%）→ 33件（4%）と段階的に減った。最初は `firstChoice` が `urgent-demo` のようにシニアHPを削る先頭選択肢を無条件に取っていた分、次は評価に予算が入っておらず `postmortem-culture` で予算0＝即敗北を自分から選んでいた分である。**選択イベントで負けるランの多くは盤面を見て選べば避けられる**一方、`reviewFreeze` にはその余地が無い。
+全853敗の決着フェーズは `beat:judgment` 461（54%）/ `sprint` 316（37%）/ `quarterReview` 37（4%）/ `beat:decision` 33（4%）/ `shop`・`rest`・`recruit` 6（1%）。`beat:decision` はビート選択の統制を進めた結果 90件（12%）→ 40件（5%）→ 33件（4%）と段階的に減った。最初は `firstChoice` が `urgent-demo` のようにシニアHPを削る先頭選択肢を無条件に取っていた分、次は評価に予算が入っておらず `postmortem-culture` で予算0＝即敗北を自分から選んでいた分である。**選択イベントで負けるランの多くは盤面を見て選べば避けられる**一方、`reviewFreeze` にはその余地が無い。
 
 当初この所見は敗北の大半が「操作の余地がない画面」で確定するとしていたが、これはハーネスがビートの選択肢を常に先頭で取っていたためだった（`urgent-demo` の先頭は `seniorHp -10 / morale -15`）。状態を見て選ぶ方針へ変え、judgment と decision を分けて記録した結果、対象は `reviewFreeze` に絞られた。
 

@@ -22,8 +22,13 @@ description: "GitHub Actions ワークフローの外部アクションを最新
 # まず Release を試す
 gh api "repos/<owner>/<repository>/releases/latest" --jq '{tag:.tag_name, published:.published_at}'
 
-# Release が無い（404 等）場合はタグを列挙し、安定版のバージョンタグ（vX / vX.Y.Z）から最新を選ぶ
-gh api "repos/<owner>/<repository>/tags?per_page=30" --jq '.[].name'
+# Release が無い（404 等）場合は全ページを取得し、安定版バージョンタグから SemVer 最大を選ぶ
+# - プレリリース（-rc / -beta 等）と非バージョンタグは除外
+# - vX / vX.Y / vX.Y.Z を対象にし、sort -V で比較する
+gh api --paginate "repos/<owner>/<repository>/tags?per_page=100" --jq '.[].name' \
+  | grep -E '^v?[0-9]+(\.[0-9]+){0,2}$' \
+  | sort -V \
+  | tail -n 1
 ```
 
 3. タグが指すコミットSHAを解決する（annotated / nested tag は peel する）:

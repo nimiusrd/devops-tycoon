@@ -113,6 +113,7 @@ flowchart LR
     registry --> fingerprint["ルールセット指紋"]
     content["既存のsrc/data定義"] --> game
     content --> generator
+    content --> fingerprint
     generator --> tables["パラメータ一覧"]
     generator --> graphs["確率・感度グラフ"]
     fingerprint --> saves["セーブ・リプレイ・デイリー"]
@@ -180,7 +181,7 @@ SSoT化後の決定論は、次の条件で保証する。
   → 同じ結果
 ```
 
-係数を変えれば、同じseedでも結果が変わる場合がある。この違いを不具合と仕様変更に切り分けるため、手動管理する`BALANCE_RULESET_VERSION`と、定義から算出する指紋を持つ。
+係数を変えれば、同じseedでも結果が変わる場合がある。この違いを不具合と仕様変更に切り分けるため、手動管理する`BALANCE_RULESET_VERSION`と、定義から算出する指紋を持つ。指紋の入力には新しいバランスレジストリだけでなく、カード、イベント、レリック、難易度など既存の`src/data`定義のうち、ゲーム結果へ影響するID、値、重みも含める。対象を安定した順序で正規化してから算出し、コンテンツ変更でもルールセットの違いを自動検出できるようにする。
 
 | 保存対象 | 推奨方針 |
 | --- | --- |

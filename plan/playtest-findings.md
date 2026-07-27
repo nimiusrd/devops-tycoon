@@ -278,14 +278,19 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 
 - **F-9 のうち進行速度と決着位置は成立している**（**F-9 全体の成立ではない**。下記の限界を参照）。
   難易度別の p50 は `aiDependency` 1 / `moraleCollapse` 2 / `seniorBurnout` 3 / `reviewFreeze` 8 /
-  `techDebt` 8 / `budgetExhausted` 9 / `reorgRequired` 18 / `trustExhausted` 24 と明確に分かれ、
+  `budgetExhausted` 10 / `techDebt` 10 / `reorgRequired` 18 / `trustExhausted` 24 と明確に分かれ、
   決着するフェーズも敗因ごとに違う（RI-84）。
 
-  同一難易度・同一方針内でも、**`reviewFreeze` は easy / normal / hard の `naive` /
-  `skilledNoHire` / `onlyFirefight` / `noInterventionCtl` すべてで p50=8 と完全に一貫**しており、
-  方針差の混入が無いことを確認できる。一方 `seniorBurnout` は同じ層別化で p50 が 3〜22 とばらつく。
-  ただしこちらは層あたり n=1〜3 しかなく、**方針差なのか標本の小ささなのかを区別できない**。
-  層別化で確認できたのは `reviewFreeze` についてのみである。
+  同一難易度・同一方針内でも `reviewFreeze` はおおむね一貫する。easy / normal / hard の
+  `naive` / `skilledNoHire` / `onlyFirefight` / `noInterventionCtl` の11層のうち**10層で p50=8**。
+  ただし**例外が1つある**。`hard` の `noInterventionCtl` だけ **n=3 / p50=2** で、他層と大きく違う。
+  介入しない条件では別の敗因（`seniorBurnout` n=4、`techDebt` n=3）が先に来て、
+  `reviewFreeze` へ至るのは早期に凍結した3ランだけ、という偏りが出ているためと考えられる。
+  n=3 の小標本なので断定はできないが、「すべてで完全に一貫」とは言えない。
+
+  一方 `seniorBurnout` は同じ層別化で p50 が 3〜22 とばらつく。こちらは層あたり n=1〜4 しかなく、
+  **方針差なのか標本の小ささなのかを区別できない**。層別化で確認できたのは
+  `reviewFreeze` の「11層中10層で p50=8」までである。
 
   **未検証の部分**: F-9 は進行速度に加えて「その時点で**打てた手**が敗因ごとに異なる」ことも
   要求するが、これは測れていない。`SprintLog.attempts` に残るのは各方針が**実際に試した**
@@ -440,7 +445,7 @@ SPEC 第3.1 の規定は**通常60〜120秒（絶対下限30秒）・ボス90〜
 | --- | --- |
 | `onlyAndon` | `healthy` 17 / `noDamage` **0** |
 | `skilledNoCards` | `healthy` 9 / `noDamage` **0** |
-| `onlyFirefight` | `noDamage` 16 / `healthy` 1 |
+| `onlyFirefight` | `noDamage` **17** / `healthy` 0 |
 | `aiFullBet` | `noDamage` 12 / `healthy` 1 |
 | `noAi` | `noDamage` 11 / `healthy` **0** |
 
@@ -453,8 +458,8 @@ SPEC 第3.1 の規定は**通常60〜120秒（絶対下限30秒）・ボス90〜
 
 | 方針 | 組織診断 |
 | --- | --- |
-| `aiFullBet` | `reviewHell` 12 / `seniorSacrifice` 28 |
-| `noAi` | `documentationKingdom` 10 / `reviewHell` 12 / `healthyAcceleration` 5 / `seniorSacrifice` 12 / `reworkSpiral` 1 |
+| `aiFullBet` | `reviewHell` 13 / `seniorSacrifice` 27 |
+| `noAi` | `documentationKingdom` 10 / `reviewHell` 12 / `healthyAcceleration` 4 / `seniorSacrifice` 13 / `reworkSpiral` 1 |
 
 つまり**ビルドの違いは組織診断には出ているが、勝利種別には反映されていない**。
 F-10 が求めるのは後者なので、勝利種別の判定側を直す余地がある。
@@ -565,17 +570,25 @@ S と A で 84.2% を占める。
 
 同一難易度・同一スプリント番号での中央値比較（無介入 `passive` vs 熟練 `skilledNoHire`）:
 
-| 条件 | `passive` | `skilledNoHire` |
-| --- | --- | --- |
-| easy S1 | S | S |
-| easy S2 | A | S |
-| easy S3 | S | S |
-| normal S1 | A | A |
-| normal S2 | B | B |
-| normal S3 | A | S |
-| hard S1 | C | B |
+| 条件 | 共通 n | `passive` | `skilledNoHire` | 差 |
+| --- | --- | --- | --- | --- |
+| easy S1 | 10 | S | S | 一致 |
+| easy S2 | 9 | A | S | 1段階 |
+| easy S3 | 9 | S | S | 一致 |
+| normal S1 | 10 | A | A | 一致 |
+| normal S2 | 9 | B | B | 一致 |
+| normal S3 | 8 | A | S | 1段階 |
+| hard S1 | 10 | C | B | 1段階 |
+| hard S2 | 9 | B | B | 一致 |
+| hard S3 | 5 | C | A | **2段階** |
+| nightmare S1 | 10 | D | D | 一致 |
 
-7条件中4条件で中央値が一致し、差が出るのも1段階のみ。
+（nightmare S2・S3 は両方針が到達した seed が無く未計測。）
+
+**10条件中6条件で中央値が一致する。** 差が出る4条件のうち3条件は1段階で、
+`hard S3` だけが2段階（C → A）開く。ただしこれは共通 n=5 の小標本で、
+`passive` 側の3ランが早期敗北して脱落した後の比較である。
+半数以上の条件で無介入と熟練の評価が同じになるため、
 RI-79 の受入条件「無介入の評価中央値が熟練方針より明確に低い」を満たさない。
 
 ### RI-80 ドラフトのマリガンが無い（優先度: 中 / F-12）
@@ -757,9 +770,10 @@ Codex レビューの指摘による訂正。）
   normal の敗北までのスプリント数 p50 は `seniorBurnout` 3 / `reviewFreeze` 8 /
   `techDebt` 20 / `trustExhausted` 24。決着フェーズも `aiDependency` は sprint、
   `reviewFreeze` は judgment ビート、`trustExhausted` は四半期レビューと分かれる。
-  `reviewFreeze` は同一難易度・同一方針内でも p50=8 で一貫する。
+  `reviewFreeze` は同一難易度・同一方針内でも11層中10層で p50=8（例外は hard の
+  `noInterventionCtl` のみ。n=3 / p50=2）。
 - **ビルドの違いは組織診断に出ている**。`noAi` は `documentationKingdom` 10 /
-  `healthyAcceleration` 5 と、`aiFullBet`（`reviewHell` 12 / `seniorSacrifice` 28）から
+  `healthyAcceleration` 4 と、`aiFullBet`（`reviewHell` 13 / `seniorSacrifice` 27）から
   明確に分かれる。勝利種別に反映されていないだけで、内部状態は分岐している（RI-75）。
 - **AI の因果は正しく実装されている**。AI 配布を切ると AI 利用率 0%、最終依存度が 100→28〜36 になる。
 - **撃ちすぎは損**（全介入を撃つ `probe` は 10/40 で、熟練の 14/40 を下回る）。

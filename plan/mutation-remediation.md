@@ -2,12 +2,53 @@
 
 実装役向けの作業指示書。ベースラインは GitHub Actions
 [Mutation run 30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
-（2026-07-27、シャード並列・成功）。
+（2026-07-27、シャード並列・成功）。  
+`headSha`: `c065e01ea73cb8df431210dbd6f354cfd3c4059e`
 
 関連設定: [`stryker.config.json`](../stryker.config.json)、[`.github/workflows/mutation.yml`](../.github/workflows/mutation.yml)。  
-バックログ ID: **RI-72**（[`remaining-issues.md`](./remaining-issues.md)）。
+ベースライン（エピック）: **RI-72**（[`remaining-issues.md`](./remaining-issues.md)）— run 30261978402 専用。  
+実装単位: 下表の **`RI-72-A1` 形式**（1 ID = 1PR）。  
+再ベースライン: [`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md) に従い、**run ID が変わったときだけ**新しいエピック `RI-{N}` を採番し、実装単位も `RI-{N}-…` で振り直す。同じ run の計画修正では既存エピックを再利用する。旧エピックは完了扱い、未消化単位は新計画へ引き継ぐ。
 
-## 1. 目的と非目的
+## 1. ID フォーマット
+
+| 種別 | 形式 | 例 | 意味 |
+| --- | --- | --- | --- |
+| エピック（ベースライン） | `RI-{N}` | `RI-72` | フルシャード Mutation run 1回分の計画全体。`remaining-issues.md` に載せる |
+| 実装単位 | `RI-{N}-{GROUP}{SEQ}` | `RI-72-A1` | 1PR で完了する作業。`GROUP` は優先グループ（A=最高…）、`SEQ` はグループ内の連番（1起算、ゼロ埋めなし） |
+
+規則:
+
+- `{N}` は既存 `RI-(\d+)` の最大+1（欠番再利用なし）。再ベースラインごとに新規。
+- `{GROUP}` は大文字1文字 `A`–`Z`。優先度の高い順に A から振る。
+- `{SEQ}` はグループ内で着手順に 1, 2, 3…。途中追加は末尾採番（欠番再利用なし）。
+- **1実装単位 = 1PR。** ブランチ名・PR タイトル先頭に ID を含める（例: `RI-72-A1: industry の mutation 耐性を上げる`）。
+- 実装単位の正本は**本ファイル**。`remaining-issues.md` にはエピックだけを載せ、単位一覧へリンクする。
+
+### 実装単位エントリの書式（必須項目）
+
+各単位は次の見出し＋表＋箇条書きとする。
+
+```markdown
+### RI-{N}-{GROUP}{SEQ} — {短いタイトル}
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 / 進行中 / 完了 |
+| 対象 | `path/to/file.ts`（複数可ならカンマ区切り、原則1ファイル） |
+| Baseline | total X% / covered Y% / S=n / NC=n |
+| 既存テスト | `tests/unit/….test.ts` または なし |
+| 再計測 | `npm run test:mutation:force -- --mutate {path}` |
+| 受入 | 数値目標を1行（例: total 70%+） |
+
+やる事:
+
+- {具体的な断言・ケース}
+```
+
+完了したら `状態` を `完了` にし、表の下に `After: total …% / S=…（run またはローカル）` を1行追記する。
+
+## 2. 目的と非目的
 
 **目的**
 
@@ -20,7 +61,7 @@
 - スコアのためだけの本番ロジック変更（挙動を変えるリファクタは別課題）。
 - 6シャードの HTML レポートを1本に統合すること（必須ではない）。
 
-## 2. ベースライン数値
+## 3. ベースライン数値
 
 全体合算（Ignored 除くスコア対象）:
 
@@ -43,99 +84,374 @@
 
 Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOperator` / `ArithmeticOperator` / `StringLiteral` / `LogicalOperator`。
 
-**目標（ゲートではない目安）**
+**エピック受入（ゲートではない目安）**
 
-- 短期: 全体 total **80%+**、下記ワーストファイルを **70%未満から脱出**
+- Group A–D の実装単位が完了し、全体 total **おおむね 80%+**
 - 中期: `engine` / `quarterReview` / `industry` の covered **85%+**
 
-## 3. 作業ルール（実装役共通）
+## 4. 作業ルール（実装役共通）
 
 1. **原則はテスト追加・強化のみ。** 本番コード変更は、バグ修正が必要と判明したときに限る。
-2. 意図的に落とさない分岐（表示用文言、到達不能な防御節など）だけ `// Stryker disable next-line` 等を検討する。安易な一括 disable は禁止。
-3. 1PR は **1バッチ**（下表）に収める。Batch D はさらにファイル／テーマで分割してよい。
-4. 変更前に `npm test`、変更後に対象の mutation 再計測と `npm run lint` / `npm run format:check`。
-5. 再計測コマンド（ローカルまたは GHA `mutate` 入力）:
+2. 意図的に落とさない分岐だけ `// Stryker disable next-line` 等を検討する。安易な一括 disable は禁止。
+3. **1PR = 1実装単位 ID。** 複数単位をまとめる場合は事前に計画側で ID を統合してから着手する。
+4. 変更前に `npm test`、変更後に単位の「再計測」コマンドと `npm run lint` / `npm run format:check`。
+5. PR 本文に **実装単位 ID**、Before/After の score（total / covered）と Survived 数を記す。
+6. 日本語でコミット・PR する（リポジトリ慣例）。
 
-```bash
-# 例: 単一ファイル（推奨）
-npm run test:mutation:force -- --mutate src/sim/orgscale/industry.ts
+## 5. 実装単位一覧（着手順）
 
-# 例: GHA 手動実行で mutate に同じパターンを渡す
-```
-
-6. PR 本文に **Before/After の score（total / covered）と Survived 数** を記す。
-7. 日本語でコミット・PR する（リポジトリ慣例）。
-
-## 4. バッチ一覧（この順で着手）
-
-### Batch A — ワースト3（優先度最高）
-
-| 対象 | Baseline total | Survived / NC | 既存テスト | やる事 |
-| --- | --- | --- | --- | --- |
-| [`src/sim/orgscale/industry.ts`](../src/sim/orgscale/industry.ts) | **31.5%** | S71 | [`tests/unit/orgscale-industry.test.ts`](../tests/unit/orgscale-industry.test.ts) | `computeScores` 系の係数を1変数ずつ固定断言。`Math.min`/`Math.max` 境界、同点 tie-break、league 境界、rival 生成レンジ |
-| [`src/sim/run/whatIfState.ts`](../src/sim/run/whatIfState.ts) | **48.2%** | S57 | [`tests/unit/whatIf.test.ts`](../tests/unit/whatIf.test.ts) | `whatIfCacheKey` / state 構築を直接叩き、キー差分・draft join・modifier の `\|\|`/`&&`・clamp を断言 |
-| [`src/sim/run/whatIfClient.ts`](../src/sim/run/whatIfClient.ts) | **0%** | NC32 | **なし** | Worker/Comlink をモックし、成功・import 失敗・remote 例外後 fallback・`resetWhatIfClientForTests` をカバー |
-
-受入（Batch A）:
-
-- 上記3ファイルがいずれも total **70%+**（`whatIfClient` は covered ベースで実用カバレッジがあり、NoCoverage を大幅減）
-- 既存 `npm test` がグリーン
-
-### Batch B — Persistence / リプレイ正規化
-
-| 対象 | Baseline total | 既存テスト | やる事 |
+| ID | タイトル | 状態 | 対象 |
 | --- | --- | --- | --- |
-| [`src/state/replayPersistence.ts`](../src/state/replayPersistence.ts) | 50% | [`tests/unit/replay.test.ts`](../tests/unit/replay.test.ts) | `get`/`clear`/Memory 上限/`initializeReplayPersistence` fallback/write failure を直接テスト |
-| [`src/state/metaPersistence.ts`](../src/state/metaPersistence.ts) | 59% | [`tests/unit/metaPersistence.test.ts`](../tests/unit/metaPersistence.test.ts) | IDB 上の壊れた meta、legacy remove 失敗、legacy 無し fallback |
-| [`src/state/replay.ts`](../src/state/replay.ts) | 60% | [`tests/unit/replay.test.ts`](../tests/unit/replay.test.ts) | outcome/trials/difficulty/frame 破損、`normalizeReplayKeyframes` の部分破棄と clone 性（ConditionalExpression 対策） |
-| [`src/state/runPersistence.ts`](../src/state/runPersistence.ts) | 63% | [`tests/unit/runPersistence.test.ts`](../tests/unit/runPersistence.test.ts) | v1/壊れた `replayKeyframes`、`clear` 直呼び、summary/extras 不正値 |
+| [RI-72-A1](#ri-72-a1--industry-スコア式の境界と係数) | industry スコア式の境界と係数 | 未着手 | `src/sim/orgscale/industry.ts` |
+| [RI-72-A2](#ri-72-a2--whatifstate-のキーと-modifier) | whatIfState のキーと modifier | 未着手 | `src/sim/run/whatIfState.ts` |
+| [RI-72-A3](#ri-72-a3--whatifclient-の初カバー) | whatIfClient の初カバー | 未着手 | `src/sim/run/whatIfClient.ts` |
+| [RI-72-B1](#ri-72-b1--replaypersistence-の失敗系) | replayPersistence の失敗系 | 未着手 | `src/state/replayPersistence.ts` |
+| [RI-72-B2](#ri-72-b2--metapersistence-の壊れた入力) | metaPersistence の壊れた入力 | 未着手 | `src/state/metaPersistence.ts` |
+| [RI-72-B3](#ri-72-b3--replay-正規化の条件枝) | replay 正規化の条件枝 | 未着手 | `src/state/replay.ts` |
+| [RI-72-B4](#ri-72-b4--runpersistence-の境界) | runPersistence の境界 | 未着手 | `src/state/runPersistence.ts` |
+| [RI-72-C1](#ri-72-c1--quarterreview-の閾値と-outcome) | quarterReview の閾値と outcome | 未着手 | `src/sim/run/quarterReview.ts` |
+| [RI-72-D1](#ri-72-d1--engine-phase-guard) | engine phase guard | 未着手 | `src/sim/run/engine.ts` |
+| [RI-72-D2](#ri-72-d2--engine-shop--rest--recruit) | engine shop / rest / recruit | 未着手 | `src/sim/run/engine.ts` |
+| [RI-72-D3](#ri-72-d3--engine-hydrate--セーブ復元) | engine hydrate / セーブ復元 | 未着手 | `src/sim/run/engine.ts` |
+| [RI-72-D4](#ri-72-d4--engine-勝敗と-quarterreview-突入) | engine 勝敗と quarterReview 突入 | 未着手 | `src/sim/run/engine.ts` |
+| [RI-72-D5](#ri-72-d5--engine-nocoverage-潰し) | engine NoCoverage 潰し | 未着手 | `src/sim/run/engine.ts` |
+| [RI-72-E1](#ri-72-e1--generate-の-teams--id-分岐) | generate の teams / id 分岐 | 未着手 | `src/sim/orgscale/generate.ts` |
+| [RI-72-E2](#ri-72-e2--effects-の-fold-係数) | effects の fold 係数 | 未着手 | `src/sim/run/effects.ts` |
+| [RI-72-E3](#ri-72-e3--sprintbaselinebuild-の入力差分) | sprintBaselineBuild の入力差分 | 未着手 | `src/sim/run/sprintBaselineBuild.ts` |
+| [RI-72-E4](#ri-72-e4--events-の残-survived) | events の残 Survived | 未着手 | `src/sim/run/events.ts` |
+| [RI-72-E5](#ri-72-e5--outcome-の敗北閾値) | outcome の敗北閾値 | 未着手 | `src/sim/outcome.ts` |
+| [RI-72-E6](#ri-72-e6--assigntask-の-nocoverage) | assignTask の NoCoverage | 未着手 | `src/sim/assignTask.ts` |
+| [RI-72-E7](#ri-72-e7--meta-の残-survived) | meta の残 Survived | 未着手 | `src/state/meta.ts` |
+| [RI-72-E8](#ri-72-e8--roster-の残-survived) | roster の残 Survived | 未着手 | `src/sim/member/roster.ts` |
 
-受入（Batch B）: 各ファイル total **70%+**。
+### Group A — ワースト（P0）
 
-### Batch C — 四半期レビュー
+### RI-72-A1 — industry スコア式の境界と係数
 
-| 対象 | Baseline | Survived | 既存テスト | やる事 |
-| --- | --- | --- | --- | --- |
-| [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts) | 62.3% | **191** | [`tests/unit/quarter-review.test.ts`](../tests/unit/quarter-review.test.ts)、[`quarter-review-seeds.test.ts`](../tests/unit/quarter-review-seeds.test.ts) | `canChooseAdjustment` / `loseReasonForOutcome` / rework 比率閾値（0.3）/ goal 未定義枝 / `OUTCOME_LABELS` 近傍を明示断言 |
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/orgscale/industry.ts`](../src/sim/orgscale/industry.ts) |
+| Baseline | total 31.48% / covered 32.38% / S=71 / NC=3 |
+| 既存テスト | [`tests/unit/orgscale-industry.test.ts`](../tests/unit/orgscale-industry.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/orgscale/industry.ts` |
+| 受入 | total **70%+** |
 
-受入（Batch C）: total **75%+** または Survived を大幅減（目安 191 → 100 以下）。
+やる事:
 
-注: RI-68（Delivery KPI スケール）は別課題。本バッチは **テスト強化のみ**。仕様変更が必要なら RI-68 側の PR に回す。
+- `computeScores` 系の係数を1変数ずつ固定断言
+- `Math.min` / `Math.max` 境界、同点 tie-break、league 境界、rival 生成レンジ
 
-### Batch D — RunEngine（分割推奨）
+### RI-72-A2 — whatIfState のキーと modifier
 
-| 対象 | Baseline | Survived / NC | 既存テスト |
-| --- | --- | --- | --- |
-| [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) | 65.1% | **S467 / NC67** | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) ほか通し系 |
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/whatIfState.ts`](../src/sim/run/whatIfState.ts) |
+| Baseline | total 48.18% / covered 48.18% / S=57 / NC=0 |
+| 既存テスト | [`tests/unit/whatIf.test.ts`](../tests/unit/whatIf.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/whatIfState.ts` |
+| 受入 | total **70%+** |
 
-方針: **通しプレイテストを増やさない。** 固定入力の小さい単体ケースで枝を刺す。
+やる事:
 
-分割例（各々1PR可）:
+- `whatIfCacheKey` / state 構築を直接叩き、キー差分・draft join・modifier の `||` / `&&`・clamp を断言
 
-1. D1: phase guard / 不正遷移 / `RunPhaseError`
-2. D2: shop / rest / recruit の選択枝
-3. D3: hydrate / セーブ復元まわり
-4. D4: 敗北・勝利・quarterReview 突入条件
-5. D5: NoCoverage 行の洗い出し（未使用枝なら disable 検討、到達可能ならテスト）
+### RI-72-A3 — whatIfClient の初カバー
 
-受入（Batch D 完了時）: engine total **75%+**、NoCoverage 半減以上。
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/whatIfClient.ts`](../src/sim/run/whatIfClient.ts) |
+| Baseline | total 0% / covered n/a / S=0 / NC=32 |
+| 既存テスト | なし |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/whatIfClient.ts` |
+| 受入 | NoCoverage を大幅減、covered ベースで実用カバレッジあり（目安 total **70%+** または NC≤5） |
 
-### Batch E — 中優先の残り（P2）
+やる事:
 
-スコアまたは Survived 数で効くものから順に、ファイル単位 PR でよい。
+- Worker/Comlink をモックし、成功・import 失敗・remote 例外後 fallback・`resetWhatIfClientForTests` をカバー
 
-| 対象 | Baseline total | メモ |
-| --- | --- | --- |
-| [`src/sim/orgscale/generate.ts`](../src/sim/orgscale/generate.ts) | 56.9% | teams 指定・home/activeTeam・extraTeams |
-| [`src/sim/run/effects.ts`](../src/sim/run/effects.ts) | 69.1% | fold 系の係数・空入力 |
-| [`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts) | 63.2% | ビルド入力差分 |
-| [`src/sim/run/events.ts`](../src/sim/run/events.ts) | 79.2% | Survived 残の条件枝 |
-| [`src/sim/outcome.ts`](../src/sim/outcome.ts) | 72.3% | 敗北条件・閾値 |
-| [`src/sim/assignTask.ts`](../src/sim/assignTask.ts) | 72.9% | NoCoverage 40 あり |
-| [`src/state/meta.ts`](../src/state/meta.ts) | 76.4% | Survived 65（数が多い） |
-| [`src/sim/member/roster.ts`](../src/sim/member/roster.ts) | 80.0% | Survived 56 |
+### Group B — Persistence / リプレイ
 
-## 5. 典型的な Survived の直し方
+### RI-72-B1 — replayPersistence の失敗系
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/state/replayPersistence.ts`](../src/state/replayPersistence.ts) |
+| Baseline | total 50% / covered 73.81% / S=11 / NC=20 |
+| 既存テスト | [`tests/unit/replay.test.ts`](../tests/unit/replay.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/state/replayPersistence.ts` |
+| 受入 | total **70%+** |
+
+やる事:
+
+- `get` / `clear` / Memory 上限 / `initializeReplayPersistence` fallback / write failure を直接テスト
+
+### RI-72-B2 — metaPersistence の壊れた入力
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/state/metaPersistence.ts`](../src/state/metaPersistence.ts) |
+| Baseline | total 59.02% / covered 83.72% / S=7 / NC=18 |
+| 既存テスト | [`tests/unit/metaPersistence.test.ts`](../tests/unit/metaPersistence.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/state/metaPersistence.ts` |
+| 受入 | total **70%+** |
+
+やる事:
+
+- IDB 上の壊れた meta、legacy remove 失敗、legacy 無し fallback
+
+### RI-72-B3 — replay 正規化の条件枝
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/state/replay.ts`](../src/state/replay.ts) |
+| Baseline | total 60.14% / covered 65.93% / S=46 / NC=13 |
+| 既存テスト | [`tests/unit/replay.test.ts`](../tests/unit/replay.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/state/replay.ts` |
+| 受入 | total **70%+** |
+
+やる事:
+
+- outcome / trials / difficulty / frame 破損、`normalizeReplayKeyframes` の部分破棄と clone 性（ConditionalExpression 対策）
+
+### RI-72-B4 — runPersistence の境界
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/state/runPersistence.ts`](../src/state/runPersistence.ts) |
+| Baseline | total 63.03% / covered 69.27% / S=59 / NC=19 |
+| 既存テスト | [`tests/unit/runPersistence.test.ts`](../tests/unit/runPersistence.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/state/runPersistence.ts` |
+| 受入 | total **70%+** |
+
+やる事:
+
+- v1 / 壊れた `replayKeyframes`、`clear` 直呼び、summary / extras 不正値
+
+### Group C — 四半期レビュー
+
+### RI-72-C1 — quarterReview の閾値と outcome
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts) |
+| Baseline | total 62.27% / covered 63.69% / S=191 / NC=12 |
+| 既存テスト | [`tests/unit/quarter-review.test.ts`](../tests/unit/quarter-review.test.ts)、[`quarter-review-seeds.test.ts`](../tests/unit/quarter-review-seeds.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/quarterReview.ts` |
+| 受入 | total **75%+** または Survived ≤100 |
+
+やる事:
+
+- `canChooseAdjustment` / `loseReasonForOutcome` / rework 比率閾値（0.3）/ goal 未定義枝 / `OUTCOME_LABELS` 近傍を明示断言
+- 仕様変更（Delivery KPI）は RI-68。本単位はテスト強化のみ
+
+### Group D — RunEngine（通しを増やさない）
+
+### RI-72-D1 — engine phase guard
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は phase 枝に限定） |
+| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
+| 受入 | 対象枝の Survived を削減（PR に Before/After の該当箇所を記載）。D1–D5 完了後にファイル total **75%+**、NC 半減 |
+
+やる事:
+
+- phase guard / 不正遷移 / `RunPhaseError` を小さい固定入力で断言
+
+### RI-72-D2 — engine shop / rest / recruit
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は shop/rest/recruit 枝に限定） |
+| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
+| 受入 | shop / rest / recruit 選択枝の Survived 削減を PR に記載 |
+
+やる事:
+
+- shop / rest / recruit の選択枝を固定入力で刺す（通しプレイを増やさない）
+
+### RI-72-D3 — engine hydrate / セーブ復元
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は hydrate/復元枝に限定） |
+| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts)、persistence 系 |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
+| 受入 | hydrate / 復元枝の Survived 削減を PR に記載 |
+
+やる事:
+
+- hydrate / セーブ復元まわりの条件・副作用を断言
+
+### RI-72-D4 — engine 勝敗と quarterReview 突入
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は勝敗/QR 突入枝に限定） |
+| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
+| 受入 | 勝敗・quarterReview 突入条件の Survived 削減を PR に記載 |
+
+やる事:
+
+- 敗北・勝利・quarterReview 突入条件を小さい固定入力で断言
+
+### RI-72-D5 — engine NoCoverage 潰し
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は NC 潰し） |
+| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
+| 受入 | NoCoverage **半減以下**。D1–D5 後にファイル total **75%+** |
+
+やる事:
+
+- NoCoverage 行の洗い出し。到達可能ならテスト、死コードなら削除または正当な disable
+
+### Group E — 中優先（P2）
+
+### RI-72-E1 — generate の teams / id 分岐
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/orgscale/generate.ts`](../src/sim/orgscale/generate.ts) |
+| Baseline | total 56.86% / covered 56.86% / S=22 / NC=0 |
+| 既存テスト | [`tests/unit/orgscale.test.ts`](../tests/unit/orgscale.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/orgscale/generate.ts` |
+| 受入 | total **70%+** |
+
+やる事:
+
+- `teams` 指定時、`homeTeamId` / `activeTeamId`、extraTeams 非適用を明示
+
+### RI-72-E2 — effects の fold 係数
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/effects.ts`](../src/sim/run/effects.ts) |
+| Baseline | total 69.12% / covered 69.12% / S=21 / NC=0 |
+| 既存テスト | run-systems 系を確認して拡張 |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/effects.ts` |
+| 受入 | total **75%+** |
+
+やる事:
+
+- fold 系の係数・空入力を断言
+
+### RI-72-E3 — sprintBaselineBuild の入力差分
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts) |
+| Baseline | total 63.16% / covered 69.23% / S=16 / NC=5 |
+| 既存テスト | sprintBaseline 系を確認して拡張 |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/sprintBaselineBuild.ts` |
+| 受入 | total **70%+** |
+
+やる事:
+
+- ビルド入力差分で結果が変わることを断言
+
+### RI-72-E4 — events の残 Survived
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/run/events.ts`](../src/sim/run/events.ts) |
+| Baseline | total 79.21% / covered 80% / S=20 / NC=1 |
+| 既存テスト | run-systems 系を確認して拡張 |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/events.ts` |
+| 受入 | Survived 半減または total **85%+** |
+
+やる事:
+
+- 残 Survived の条件枝を明示断言
+
+### RI-72-E5 — outcome の敗北閾値
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/outcome.ts`](../src/sim/outcome.ts) |
+| Baseline | total 72.29% / covered 79.47% / S=31 / NC=15 |
+| 既存テスト | 関連ユニットを確認して拡張 |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/outcome.ts` |
+| 受入 | total **80%+** |
+
+やる事:
+
+- 敗北条件・閾値の境界を断言
+
+### RI-72-E6 — assignTask の NoCoverage
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/assignTask.ts`](../src/sim/assignTask.ts) |
+| Baseline | total 72.86% / covered 85% / S=36 / NC=40 |
+| 既存テスト | [`tests/unit/assignTask.test.ts`](../tests/unit/assignTask.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/assignTask.ts` |
+| 受入 | NC 半減かつ total **80%+** |
+
+やる事:
+
+- NoCoverage 行へ到達する入力を追加
+
+### RI-72-E7 — meta の残 Survived
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/state/meta.ts`](../src/state/meta.ts) |
+| Baseline | total 76.42% / covered 79.75% / S=65 / NC=14 |
+| 既存テスト | meta 系ユニットを確認して拡張 |
+| 再計測 | `npm run test:mutation:force -- --mutate src/state/meta.ts` |
+| 受入 | Survived 半減または total **85%+** |
+
+やる事:
+
+- Survived が多い条件枝を優先して断言
+
+### RI-72-E8 — roster の残 Survived
+
+| 項目 | 内容 |
+| --- | --- |
+| 状態 | 未着手 |
+| 対象 | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts) |
+| Baseline | total 80% / covered 83.53% / S=56 / NC=15 |
+| 既存テスト | member 系ユニットを確認して拡張 |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/member/roster.ts` |
+| 受入 | Survived 半減または total **88%+** |
+
+やる事:
+
+- Survived が多い条件枝を優先して断言
+
+## 6. 典型的な Survived の直し方
 
 | Mutator | よくある欠け | 直し方 |
 | --- | --- | --- |
@@ -147,15 +463,15 @@ npm run test:mutation:force -- --mutate src/sim/orgscale/industry.ts
 | BlockStatement | 早期 return 本体が空でも通る | 副作用（状態変化）を断言 |
 | NoCoverage | テストがその行を通っていない | 到達する入力を追加。死コードなら削除 or disable |
 
-## 6. 運用メモ（インフラ）
+## 7. 運用メモ（インフラ）
 
 - 週次 / 手動 Mutation はシャード並列のまま。初回は重いが、incremental cache が載れば差分だけになる。
 - 単一ジョブでコア全体を回すと数時間・180分タイムアウトのリスクあり。**通常はシャードまたは `--mutate`。**
 - `ignoreStatic: true` 済み。`vitest.mutation.config.ts` で testTimeout 60s。
-- 低価値 mutator のグローバル `excludedMutations` は、Batch A–D の後に必要なら別 PR で検討。
+- 低価値 mutator のグローバル `excludedMutations` は、Group A–D の後に必要なら別実装単位で検討。
 
-## 7. 完了時のバックログ更新
+## 8. エピック完了・再ベースライン
 
-- バッチ完了ごとに本ファイルの該当行に ✅ と再計測 score を追記してよい（短く）。
-- RI-72 を完了にする条件: 全体 total **おおむね 80%+**、かつ Batch A–D の受入を満たす。
-- 完了時は [`remaining-issues.md`](./remaining-issues.md) の RI-72 を完了要約へ移し、本ファイルは残すか「完了・履歴参照」と明示する。
+- 実装単位完了時: 本ファイルの該当単位を `完了` にし After score を追記。PR に単位 ID を明記。
+- **エピック RI-72 完了条件**: Group A–D の単位が完了し、全体 total がおおむね 80%以上。
+- **再ベースライン時**: 新エピック `RI-{N}` を採番し、実装単位を `RI-{N}-A1`… で振り直す。旧単位の未消化は新 ID に内容をコピーして引き継ぐ（旧 ID での実装継続はしない）。

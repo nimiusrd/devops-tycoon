@@ -12,7 +12,7 @@
 | RI-69 | スプリント上部操作バーと盤面の重なり | 中 | 未着手 | 第4 |
 | RI-70 | モバイルのスプリント操作性 | 中 | 未着手 | 第4 |
 | RI-71 | favicon 未設定による 404 | 低 | 未着手 | — |
-| RI-72 | ミューテーションテストに基づくユニットテスト強化 | 中 | 未着手 | 第22.5 |
+| RI-72 | ミューテーションテストに基づくユニットテスト強化（run 30261978402） | 中 | 未着手 | 第22.5 |
 | RI-34 | ローカル完結の将来拡張 | 低 | 保留（要判断） | 第23 |
 
 RI-67〜71 は 2026-07-20 のプレイテストで洗い出した。経緯・再現条件・実測は[playtest-findings.md](./playtest-findings.md)を参照する。
@@ -70,17 +70,22 @@ Easy でも無介入・素直プレイだと第1四半期スプリント2でシ�
 - `<link rel="icon">` とアイコン配置で 404 が出ない。
 - ブラウザタブにアイコンが表示される。
 
-### RI-72 ミューテーションテストに基づくユニットテスト強化
+### RI-72 ミューテーションテストに基づくユニットテスト強化（run 30261978402）
 
 Stryker（`src/sim` / `src/state`）のベースライン run
 [30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
-で全体 mutation score 約 73%。Survived / NoCoverage が多いファイルのユニットテストを強化する。実装手順・バッチ分割・再計測方法は[mutation-remediation.md](./mutation-remediation.md)を正とする。
+で全体 mutation score 約 73%。Survived / NoCoverage が多いファイルのユニットテストを強化する。
+
+- **エピック**: `RI-72`（本項）
+- **実装単位**: `RI-72-A1` 形式。一覧・受入・やる事の正本は[mutation-remediation.md](./mutation-remediation.md)
+- 再ベースライン時は **run ID が変わったときだけ** 新エピックを採番し、実装単位も `RI-{N}-…` で振り直す。同じ run の計画修正では既存エピックを再利用する。手順は[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)
 
 受入条件:
 
-- [mutation-remediation.md](./mutation-remediation.md) の Batch A〜D の受入を満たす。
+- [mutation-remediation.md](./mutation-remediation.md) の Group A–D 実装単位が完了する（本ベースライン）。
 - 全体 mutation score (total) がおおむね 80%以上（必須 CI ゲートにはしない）。
 - 原則はテスト追加のみ。スコア目的の本番ロジック改変をしない。
+- 実装 PR は **1PR = 1実装単位 ID**。
 
 ### RI-34 ローカル完結の将来拡張
 
@@ -120,6 +125,7 @@ RI-24とRI-25は「追加実装しない」と決定して完了した項目を�
 ## 4. バックログ運用
 
 - IDは`RI-NN`の連番とし、欠番を再利用しない。
+- ミューテーション改善はエピック`RI-{N}`（再ベースラインごと）と実装単位`RI-{N}-{GROUP}{SEQ}`（1PR）に分ける。詳細は[mutation-remediation.md](./mutation-remediation.md)と[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
 - 状態は`未着手`、`進行中`、`保留（要判断）`、`完了`を使う。
 - 1項目は原則1PRで完了できる大きさに分割する。エピックは受入条件と分割順を記載する。
 - 完了時は詳細な実装日誌を追記せず、上の完了要約と[spec-mapping.md](./spec-mapping.md)を更新する。

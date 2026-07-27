@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { getCard } from '../../src/data/cards';
 import { dealHand, scaleEffects } from '../../src/sim/cards';
+import type { RosterState } from '../../src/sim/member/types';
 import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome';
 import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
 import { previewNextSprint } from '../../src/sim/run/whatIf';
-import { whatIfCacheKey } from '../../src/sim/run/whatIfState';
+import {
+  computeWhatIfState,
+  whatIfCacheKey,
+  type WhatIfComputeInput,
+} from '../../src/sim/run/whatIfState';
 import type { SprintBaselineInput } from '../../src/sim/run/sprintBaseline';
 
 const input: SprintBaselineInput = {
@@ -42,6 +47,124 @@ const input: SprintBaselineInput = {
   },
   aiAdoptionShare: 0.5,
 };
+
+const directRoster: RosterState = {
+  members: [
+    {
+      id: 'm1',
+      name: 'Direct Coder',
+      rank: 'senior',
+      level: 2,
+      xp: 0,
+      stats: { implementation: 60, review: 80, aiMastery: 40 },
+      stamina: 10,
+      staminaMax: 10,
+      traits: [],
+      assignment: 'coding',
+      aiAssigned: true,
+      onLeave: false,
+    },
+    {
+      id: 'm2',
+      name: 'Direct Reviewer',
+      rank: 'middle',
+      level: 1,
+      xp: 0,
+      stats: { implementation: 35, review: 70, aiMastery: 20 },
+      stamina: 9,
+      staminaMax: 9,
+      traits: [],
+      assignment: 'review',
+      aiAssigned: false,
+      onLeave: false,
+    },
+  ],
+  nextId: 2,
+};
+
+function emptyRunTotals() {
+  return {
+    delivered: 0,
+    done: 0,
+    rework: 0,
+    incidents: 0,
+    contained: 0,
+    spread: 0,
+    aiAssisted: 0,
+    completed: 0,
+    reviewQueuePeak: 0,
+    maxCombo: 0,
+    consecutiveIncidentSprints: 0,
+  };
+}
+
+function directWhatIfInput(overrides: Partial<WhatIfComputeInput> = {}): WhatIfComputeInput {
+  const base: WhatIfComputeInput = {
+    phase: 'draft',
+    seed: 'what-if-direct',
+    quarterNumber: 2,
+    sprintIndexInQuarter: 1,
+    sprintsPerQuarter: 4,
+    pendingSprintKind: 'elite',
+    pendingSprintModifiers: {
+      reviewLoadAdd: 2,
+      reworkRateAdd: 0.15,
+      taskCountMul: 1.5,
+      focusMaxAdd: -1,
+    },
+    deck: [
+      { defId: 'docs', level: 1 },
+      { defId: 'auto-test', level: 2 },
+    ],
+    draft: ['copilot', 'auto-test'],
+    roster: structuredClone(directRoster),
+    org: {
+      aiEnabled: true,
+      aiDependency: 22,
+      aiLiteracy: 30,
+      testCoverage: 45,
+      documentation: 35,
+      quality: 50,
+      morale: 55,
+      seniorHp: 40,
+      techDebt: 6,
+      deliveryScore: 0,
+    },
+    budget: 30,
+    totals: emptyRunTotals(),
+    relics: [],
+    evolution: { points: 0, unlocked: {} },
+    difficulty: 'normal',
+    trials: [],
+    bossId: 'legacy-monolith',
+    pauseAiDebuffQuarter: null,
+    baseConfig: {
+      taskCount: 4,
+      codingSlots: 1,
+      focusMax: 3,
+      maxTicks: 1_000,
+    },
+    teamReviewQueue: 4,
+    teamIncidents: 2,
+  };
+  return {
+    ...base,
+    ...overrides,
+    pendingSprintModifiers: overrides.pendingSprintModifiers ?? { ...base.pendingSprintModifiers },
+    deck: overrides.deck ?? base.deck.map((card) => ({ ...card })),
+    draft: overrides.draft === undefined ? [...base.draft!] : overrides.draft,
+    roster: overrides.roster ?? structuredClone(base.roster),
+    org: overrides.org ?? { ...base.org },
+    totals: overrides.totals ?? { ...base.totals },
+    relics: overrides.relics ?? [...base.relics],
+    evolution: overrides.evolution ?? {
+      points: base.evolution.points,
+      unlocked: { ...base.evolution.unlocked },
+    },
+    trials: overrides.trials ?? [...base.trials],
+    baseConfig: overrides.baseConfig ?? { ...base.baseConfig },
+  };
+}
 
 describe('RI-46 次スプリント what-if 試算', () => {
   it('同じ入力は期待値・観測レンジを決定論的に返す', () => {
@@ -320,5 +443,184 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(second?.current.trials).toBe(24);
     expect(second?.current.delivered.max).toBeGreaterThanOrEqual(0);
     expect(second).not.toBe(first);
+  });
+});
+
+describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
+  it('cache key は draft join と modifier default を含む全入力指紋を固定する', () => {
+    expect(whatIfCacheKey(directWhatIfInput())).toBe(
+      [
+        'draft',
+        'what-if-direct',
+        2,
+        1,
+        'elite',
+        'docs:1,auto-test:2',
+        'copilot,auto-test',
+        'm1:coding:1:0:senior:2:60:80:40:,m2:review:0:0:middle:1:35:70:20:',
+        40,
+        22,
+        55,
+        6,
+        50,
+        45,
+        30,
+        35,
+        1,
+        30,
+        2,
+        0.15,
+        1.5,
+        -1,
+        4,
+        2,
+      ].join('|'),
+    );
+
+    expect(
+      whatIfCacheKey(
+        directWhatIfInput({
+          draft: null,
+          pendingSprintModifiers: {},
+          teamReviewQueue: undefined,
+          teamIncidents: undefined,
+        }),
+      ),
+    ).toBe(
+      [
+        'draft',
+        'what-if-direct',
+        2,
+        1,
+        'elite',
+        'docs:1,auto-test:2',
+        '',
+        'm1:coding:1:0:senior:2:60:80:40:,m2:review:0:0:middle:1:35:70:20:',
+        40,
+        22,
+        55,
+        6,
+        50,
+        45,
+        30,
+        35,
+        1,
+        30,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+      ].join('|'),
+    );
+  });
+
+  it('cache key は編成・deck・org・budget・draft 順序の差分を区別する', () => {
+    const base = directWhatIfInput();
+    const baseKey = whatIfCacheKey(base);
+    const member = base.roster.members[0]!;
+
+    const changedInputs: WhatIfComputeInput[] = [
+      directWhatIfInput({ deck: [{ defId: 'docs', level: 2 }] }),
+      directWhatIfInput({ draft: ['auto-test', 'copilot'] }),
+      directWhatIfInput({ org: { ...base.org, aiEnabled: false } }),
+      directWhatIfInput({ org: { ...base.org, seniorHp: 41 } }),
+      directWhatIfInput({ budget: base.budget + 1 }),
+      directWhatIfInput({
+        roster: {
+          ...base.roster,
+          members: [
+            {
+              ...member,
+              assignment: 'bench',
+              aiAssigned: false,
+              onLeave: true,
+              rank: 'middle',
+              level: member.level + 1,
+              stats: {
+                implementation: member.stats.implementation + 1,
+                review: member.stats.review + 1,
+                aiMastery: member.stats.aiMastery + 1,
+              },
+              traits: ['aiArtisan'],
+            },
+            ...base.roster.members.slice(1),
+          ],
+        },
+      }),
+    ];
+
+    for (const changed of changedInputs) {
+      expect(whatIfCacheKey(changed)).not.toBe(baseKey);
+    }
+  });
+
+  it('setup では draft があっても候補を作らず、draft null でも安全に空候補を返す', () => {
+    const setupState = computeWhatIfState(directWhatIfInput({ phase: 'setup' }));
+    expect(setupState?.current.trials).toBe(24);
+    expect(setupState?.draftCandidates).toEqual({});
+
+    const draftlessState = computeWhatIfState(directWhatIfInput({ draft: null }));
+    expect(draftlessState?.current.trials).toBe(24);
+    expect(draftlessState?.draftCandidates).toEqual({});
+
+    expect(
+      computeWhatIfState(directWhatIfInput({ phase: 'sprint' as WhatIfComputeInput['phase'] })),
+    ).toBeNull();
+  });
+
+  it('draft 候補は有効カードだけを評価し、獲得候補ごとの結果を公開する', () => {
+    const state = computeWhatIfState(directWhatIfInput({ draft: ['missing-card', 'docs'] }));
+
+    expect(Object.keys(state!.draftCandidates)).toEqual(['docs']);
+    expect(state!.draftCandidates.docs!.trials).toBe(24);
+    expect(state!.draftCandidates.docs!.delivered.mean).not.toBe(state!.current.delivered.mean);
+    expect(state!.draftCandidates.docs!.loseOnPlay).toBeUndefined();
+  });
+
+  it('modifier とチーム滞留は state 構築結果に反映される', () => {
+    const plain = computeWhatIfState(
+      directWhatIfInput({
+        pendingSprintModifiers: {},
+        teamReviewQueue: 0,
+        teamIncidents: 0,
+      }),
+    )!;
+    const pressured = computeWhatIfState(directWhatIfInput())!;
+
+    expect(pressured.current.trials).toBe(24);
+    expect(pressured.current.delivered).toEqual({ mean: 91.41666666666667, min: 45, max: 118 });
+    expect(pressured.current.spread).toEqual({ mean: 0, min: 0, max: 0 });
+    expect(pressured.current.delivered).not.toEqual(plain.current.delivered);
+  });
+
+  it('開始時敗北では current と draft 候補をゼロ試行の immediateLose にそろえる', () => {
+    const state = computeWhatIfState(
+      directWhatIfInput({
+        draft: ['copilot', 'docs'],
+        org: { ...directWhatIfInput().org, seniorHp: -98 },
+      }),
+    )!;
+
+    expect(state.current).toEqual({
+      trials: 0,
+      delivered: { mean: 0, min: 0, max: 0 },
+      spread: { mean: 0, min: 0, max: 0 },
+      immediateLose: 'seniorBurnout',
+    });
+    expect(state.draftCandidates).toEqual({
+      copilot: state.current,
+      docs: state.current,
+    });
+
+    expect(
+      computeWhatIfState(
+        directWhatIfInput({
+          draft: ['copilot'],
+          org: { ...directWhatIfInput().org, seniorHp: -96 },
+        }),
+      )!.current.immediateLose,
+    ).toBeUndefined();
   });
 });

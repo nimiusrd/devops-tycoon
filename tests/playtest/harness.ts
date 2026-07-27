@@ -513,6 +513,8 @@ interface BeatCtx {
    */
   relics: readonly string[];
   relicSlots: number;
+  /** 休息の回復量に乗るレリックボーナス（`foldPassives(relics).restHealBonus`）。 */
+  restHealBonus: number;
 }
 
 /**
@@ -571,10 +573,12 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   const trust = (outcome.trust ?? {}) as Record<string, number>;
 
   // 適用後の信頼（最小値）。信頼は3者それぞれに差分が乗るので最小値で見る。
+  // `applyTrust` は 0〜100 に丸めるので、閾値判定も丸めた後の値で見る。
+  const clamp100 = (v: number): number => Math.min(100, Math.max(0, v));
   const trustAfter = Math.min(
-    ctx.trust.management + num(trust.management),
-    ctx.trust.customers + num(trust.customers),
-    ctx.trust.team + num(trust.team),
+    clamp100(ctx.trust.management + num(trust.management)),
+    clamp100(ctx.trust.customers + num(trust.customers)),
+    clamp100(ctx.trust.team + num(trust.team)),
   );
 
   // 士気の減少はレリックで軽減される。実際に適用される量で判定する。
@@ -638,7 +642,14 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
     applied(ctx.org.aiLiteracy, num(outcome.aiLiteracy)) * 0.25 * scarcity(ctx.org.aiLiteracy);
   // 信頼も予算・シニアHP・士気と同じく、残量が少ないほど減少を重く見る。
   // 危機域（`missed_crisis` の閾値）へ踏み込む場合はさらに重くする。
-  const trustDelta = num(trust.management) + num(trust.customers) + num(trust.team);
+  //
+  // **差分はクランプ後の実効値で見る。** `applyTrust` は各信頼値を 0〜100 に丸めるので、
+  // 残量2で -8 を受けても実際には -2 しか動かない。素の差分で採点すると、
+  // 実害の小さい選択肢を過大に嫌って負債や消耗を増やす側を選びうる。
+  const trustDelta =
+    applied(ctx.trust.management, num(trust.management)) +
+    applied(ctx.trust.customers, num(trust.customers)) +
+    applied(ctx.trust.team, num(trust.team));
   const trustMin = Math.min(ctx.trust.management, ctx.trust.customers, ctx.trust.team);
   score +=
     trustDelta >= 0 ? trustDelta * 0.2 : trustDelta * scarcity(Math.min(trustMin, 100)) * 0.5;
@@ -694,7 +705,8 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
     const choiceAtRest = restChoiceFor(ctx.rest, ctx.org.techDebt);
     if (choiceAtRest === 'heal') {
       // クランプ後に実際に回復する量で見る（満タンに近ければ価値は小さい）。
-      score += applied(ctx.org.seniorHp, REST_HEAL) * 0.5;
+      // `restChoose('heal')` は `REST_HEAL` に `restHealBonus`（`flow-first` で +10）を足す。
+      score += applied(ctx.org.seniorHp, REST_HEAL + ctx.restHealBonus) * 0.5;
       score += applied(ctx.org.morale, REST_MORALE_HEAL) * 0.3;
       // **個体スタミナの回復と復職も採点する。** `recoverStamina` は休職者に
       // `LEAVE_RECOVERY_MUL` 倍を与え、`staminaMax * RETURN_RATIO` を超えたら復帰させる。
@@ -888,9 +900,22 @@ function applyRosterPolicy(e: RunEngine, spec: PolicySpec): void {
   if (spec.formation === 'reviewHeavy') {
     let coders = 0;
     for (const m of e.snapshot().roster.members) {
-      if (m.assignment !== 'coding') continue;
+      if (m.assignment !== 'coding' || m.onLeave) continue;
       coders += 1;
       if (coders > 1) e.assignMember(m.id, 'review');
+    }
+    // **コーダーを0人にしない。** 唯一残したコーダーが休職すると、余剰を移すだけの
+    // このループでは補充されず、稼働中のレビュー担当がいてもコーダー不在で次スプリントへ入る。
+    // `foldFormationEffects()` はコーダー不在で coding slot を0・速度を0.15 へ落とすため、
+    // 実プレイヤーなら編成画面で1人戻せる局面がほぼ無人スプリントになり、
+    // F-10 の `reviewHeavy` 比較へ編成方針ではなく自動再配置の欠落が混ざる。
+    if (coders === 0) {
+      const candidate = e
+        .snapshot()
+        .roster.members.filter((m) => !m.onLeave && m.assignment === 'review')
+        // 実装適性が高い方を戻す（レビュー適性の高い担当をレビューに残す）。
+        .sort((a, b) => b.stats.implementation - a.stats.implementation)[0];
+      if (candidate) e.assignMember(candidate.id, 'coding');
     }
   }
   if (spec.ai) {
@@ -1215,6 +1240,7 @@ export function runOnce(
             roster: s.roster,
             relics: s.relics,
             relicSlots: foldPassives(s.relics).relicSlots,
+            restHealBonus: foldPassives(s.relics).restHealBonus,
           },
         );
         lastBeat = { eventId: s.beat.eventId, kind: s.beat.kind, choiceIndex: choice };

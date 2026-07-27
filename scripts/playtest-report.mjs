@@ -321,9 +321,15 @@ const SINGLE = {
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   const cells = [];
   for (const [policy, action] of Object.entries(SINGLE)) {
-    const sprints = runs
-      .filter((r) => r.difficulty === d && r.policy === policy)
-      .flatMap((r) => r.sprints);
+    const policyRuns = runs.filter((r) => r.difficulty === d && r.policy === policy);
+    // **方針が未実行のセルは「0回」ではなく未計測と書く。** `PT_POLICIES` で単一介入方針を
+    // 除外した絞り込み実行でも、空の集計結果は `ok=0/no-target=0(—)` として出てしまい、
+    // 「実行していない」のか「実行したが対象が一度も無かった」のかを区別できない。
+    if (policyRuns.length === 0) {
+      cells.push(`${action} 未計測(${policy} 未実行)`);
+      continue;
+    }
+    const sprints = policyRuns.flatMap((r) => r.sprints);
     let ok = 0;
     let noTarget = 0;
     for (const s of sprints) {

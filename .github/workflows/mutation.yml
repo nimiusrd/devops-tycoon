@@ -1,0 +1,75 @@
+# コアロジック（src/sim / src/state）のミューテーションテスト。
+# PR / push の必須ゲートにはしない。手動または週次スケジュールでのみ実行する。
+name: Mutation
+
+on:
+  schedule:
+    # 毎週月曜 03:00 UTC（フル実行は重いため週次）
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      mutate:
+        description: 'mutate パターン（空なら stryker.config.json の既定）'
+        required: false
+        type: string
+        default: ''
+      force:
+        description: 'incremental キャッシュを無視して再実行する'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    name: Stryker (sim/state)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # 前回実行の incremental 結果を復元（同一 runner OS の最新を優先）
+      - name: Restore Stryker incremental cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental.json
+          key: stryker-incremental-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-incremental-${{ runner.os }}-
+
+      - name: Run mutation tests
+        run: |
+          set -euo pipefail
+          args=()
+          if [ "${FORCE}" = "true" ]; then
+            args+=(--force)
+          fi
+          if [ -n "${MUTATE}" ]; then
+            args+=(--mutate "${MUTATE}")
+          fi
+          npx stryker run "${args[@]}"
+        env:
+          FORCE: ${{ inputs.force }}
+          MUTATE: ${{ inputs.mutate }}
+
+      - name: Upload mutation reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report
+          path: |
+            reports/mutation/
+            reports/stryker-incremental.json
+          if-no-files-found: warn
+          retention-days: 30

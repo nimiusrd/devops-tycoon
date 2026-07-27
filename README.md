@@ -108,6 +108,8 @@ http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
 
 `test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
 
+GitHub Actions では [Mutation](.github/workflows/mutation.yml) ワークフローを **手動（workflow_dispatch）または週次スケジュール** で実行できます。PR / push の必須 CI には含めていません。手動実行時は `mutate`（対象パターン）と `force`（キャッシュ無視）を指定できます。レポートと incremental JSON は Actions の artifact / cache に残ります。
+
 PlaywrightのChromiumが未導入の場合は、先に次を実行します。
 
 ```bash

@@ -96,6 +96,7 @@ http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
 | `npm run build` | TypeScript検査と本番ビルド |
 | `npm test` | Vitestのユニットテストを実行 |
 | `npm run test:watch` | Vitestをwatchモードで実行 |
+| `npm run test:mutation` | Strykerで`src/sim` / `src/state`のミューテーションテストを実行（ローカル用・CI非必須） |
 | `npm run test:e2e` | Playwrightの標準E2Eを実行 |
 | `npm run test:e2e:pixi` | PixiJSの視覚回帰テストを実行 |
 | `npm run gallery` | 主要画面を撮影して`gallery/index.html`を生成 |
@@ -123,7 +124,7 @@ Chromiumの実行ファイルを明示する環境では、`PLAYWRIGHT_CHROMIUM`
 | 永続化 | IndexedDB / idb |
 | 重い試算 | Web Worker / Comlink |
 | グラフ | Recharts |
-| テスト | Vitest / Playwright |
+| テスト | Vitest / Playwright / Stryker（コアロジックのミューテーション・ローカル） |
 
 `RunEngine`をラン状態の正本とし、Reactとレンダラはスナップショットを読んで表示します。シミュレーションは描画と永続化から分離し、同じseedと入力で同じ結果を返します。
 

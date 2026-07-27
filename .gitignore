@@ -17,6 +17,8 @@ playwright-report/
 test-results/
 blob-report/
 .playwright/
+reports/mutation/
+.stryker-tmp/
 
 # logs
 logs/

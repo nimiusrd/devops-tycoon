@@ -283,8 +283,8 @@ for (const [d, arr] of group((r) => r.difficulty)) {
   }
 }
 
-// --- F-4 / RI-77 介入の発動と、できなかった理由 -----------------------------
-console.log(`\n## RI-77 介入の発動回数と、発動できなかった理由\n`);
+// --- F-4 / RI-78 介入の発動と、できなかった理由 -----------------------------
+console.log(`\n## RI-78 介入の発動回数と、発動できなかった理由\n`);
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   const sprints = arr.flatMap((r) => r.sprints);
   if (!sprints.length) continue;
@@ -306,8 +306,8 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   );
 }
 
-// --- RI-77 アクション別の対象不足 -------------------------------------------
-console.log(`\n## RI-77 アクション別の対象不足（単一介入方針。順序バイアスなし）\n`);
+// --- RI-78 アクション別の対象不足 -------------------------------------------
+console.log(`\n## RI-78 アクション別の対象不足（単一介入方針。順序バイアスなし）\n`);
 const SINGLE = {
   onlyFirefight: 'firefight',
   onlyInterrupt: 'interruptReview',
@@ -342,7 +342,7 @@ console.log(`\n## F-5 出荷の散らばり（同一スプリント番号で比�
 // 各スプリント番号ごとに、そこへ到達したランだけで CV を出す。
 const CV_SPRINT_INDEXES = [1, 2, 3, 5];
 
-// RI-83 の方針間比較は**共通コホート**で出す。
+// RI-84 の方針間比較は**共通コホート**で出す。
 // 方針ごとに到達率が違うまま生存ランを別々に母集団にすると、CV 差へ介入効果だけでなく
 // seed の選抜差が混ざる（実際 hard/S5 では到達 seed 数が方針で倍以上違う）。
 const CV_COMPARE_POLICIES = ['noInterventionCtl', 'naive', 'skilledNoHire'];
@@ -350,7 +350,7 @@ const CV_COMPARE_POLICIES = ['noInterventionCtl', 'naive', 'skilledNoHire'];
 // 対応差ではなく周辺分布の分散なので、fresh と full を同じ配列へ入れるとメタ解放による
 // 平均・分散の差が介入効果へ混入する。
 console.log(
-  'RI-83 の方針間比較（同一メタ・難易度・seed で全方針が到達したスプリントのみ。メタ別）:',
+  'RI-84 の方針間比較（同一メタ・難易度・seed で全方針が到達したスプリントのみ。メタ別）:',
 );
 for (const meta of metaProfiles) {
   for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
@@ -514,8 +514,8 @@ console.log('\n全体（難易度・方針を跨ぐため参考値）:');
   }
 }
 
-// --- RI-78 trustExhausted の発火要因分解 ------------------------------------
-console.log(`\n## RI-78 四半期 outcome の発火要因\n`);
+// --- RI-79 trustExhausted の発火要因分解 ------------------------------------
+console.log(`\n## RI-79 四半期 outcome の発火要因\n`);
 const crisisTrig = {};
 const shutdownTrig = {};
 const outcomeCounts = {};
@@ -639,16 +639,16 @@ console.log(
     '初回選択の効果は「次四半期まで生存」で見る。',
 );
 
-// --- スプリント評価の分布（RI-79。F-6 の判定には使わない） -------------------
+// --- スプリント評価の分布（RI-80。F-6 の判定には使わない） -------------------
 //
 // **これは F-6 の根拠ではない。** SPEC 第19.1 F-6 は「敗北画面・リザルト・組織診断から
 // 具体的な次の一手と現場への示唆が読み取れるか」を要求する基準で、スプリント評価の
 // 中央値とは別物である。無介入と熟練の評価が一致しても敗北時の説明品質は分からないし、
 // 分かれても F-6 の成立は確認できない。F-6 は敗北時に実際に表示される診断・助言を
-// 記録して評価する必要があり、それは RI-81 で扱う。
+// 記録して評価する必要があり、それは RI-82 で扱う。
 //
-// ここで見るのは「操作の巧拙がスプリント評価に反映されるか」（RI-79）だけである。
-console.log(`\n## RI-79 スプリント評価の分布（F-6 の判定には使わない）\n`);
+// ここで見るのは「操作の巧拙がスプリント評価に反映されるか」（RI-80）だけである。
+console.log(`\n## RI-80 スプリント評価の分布（F-6 の判定には使わない）\n`);
 const GRADE_RANK = { D: 0, C: 1, B: 2, A: 3, S: 4 };
 const RANK_GRADE = ['D', 'C', 'B', 'A', 'S'];
 const gradeStats = (sprints) => {
@@ -672,7 +672,7 @@ if (overall) {
       .join(' '),
   );
 }
-// RI-79 の受入条件は「無介入の評価中央値が熟練方針より低いこと」なので、
+// RI-80 の受入条件は「無介入の評価中央値が熟練方針より低いこと」なので、
 // 同一難易度・同一スプリント番号で無介入と熟練を並べる。
 //
 // **両方針が到達した seed だけで比べる**。到達率が違うまま生存ランを独立に集めると、
@@ -852,7 +852,7 @@ for (const [policy, arr] of group((r) => r.policy)) {
 }
 
 // --- AI 依存度 --------------------------------------------------------------
-console.log(`\n## RI-73 / RI-76 AI 依存度と利用率\n`);
+console.log(`\n## RI-74 / RI-77 AI 依存度と利用率\n`);
 
 // AI の因果は `noAiCtl`（`skilledNoHire` から AI 配布だけを外す）で見る。
 // ビルド差分の `noAi` は andon の有無・進化ブランチ・ドラフト選好・採用まで同時に違うため、

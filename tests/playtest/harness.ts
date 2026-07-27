@@ -324,14 +324,14 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    */
   noInterventionCtl: { ...skilledBase(), actions: [] },
   /**
-   * RI-76 用の統制条件。`skilledNoHire` から **AI 配布だけ**を外す。
+   * RI-77 用の統制条件。`skilledNoHire` から **AI 配布だけ**を外す。
    *
    * ビルド差分の `noAi` は AI に加えて andon の有無・進化ブランチ（`qualityFirst`）・
    * ドラフト選好（`quality`）・採用（`hire`）まで同時に違うため、出荷や勝率の差を
    * AI へ帰属できない。AI の因果を見るにはこちらを使う。
    */
   noAiCtl: { ...skilledBase(), ai: 'none' },
-  /** カードを状況に応じて選ぶ方針（無差別発動との比較用。RI-77）。 */
+  /** カードを状況に応じて選ぶ方針（無差別発動との比較用。RI-78）。 */
   skilledSelectiveCards: { ...skilledBase(), cards: 'selective' },
   /**
    * 目標修正の選択別の後続差分を見る統制条件（F-2 第4層）。
@@ -360,7 +360,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   skilledRestRepay: { ...skilledBase(), rest: 'stateAware' },
   skilledRestUpgrade: { ...skilledBase(), rest: 'upgrade' },
   /**
-   * 全介入を 1 tick ごとに試行する（RI-77）。
+   * 全介入を 1 tick ごとに試行する（RI-78）。
    *
    * これは「発動可能回数の上限」ではない。8種を順に実際に発動するため、先行アクションが
    * 集中力・盤面を消費して後続の機会を消す。試行順は tick ごとに回転させて順序バイアスを
@@ -377,7 +377,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   },
 };
 
-/** 介入の試行結果内訳（RI-77 の「発動可能だった回数」測定用）。 */
+/** 介入の試行結果内訳（RI-78 の「発動可能だった回数」測定用）。 */
 export type DispatchReason = 'ok' | 'cooldown' | 'no-focus' | 'no-target' | 'complete' | 'other';
 
 export interface SprintLog {
@@ -407,7 +407,7 @@ export interface SprintLog {
   budgetAfter: number;
 }
 
-/** 四半期レビュー到達時のスナップショット（RI-78 の発火要因分解用）。 */
+/** 四半期レビュー到達時のスナップショット（RI-79 の発火要因分解用）。 */
 export interface QuarterLog {
   quarter: number;
   outcome: string;
@@ -832,7 +832,7 @@ function assignBenchMembers(e: RunEngine): void {
  * `applySetup` を `setup` フェーズだけで呼ぶと、復職者に方針が反映されない。
  * `resolveBeat()` は既定の `leadsTo === 'sprint'` で `launchSprint()` を直接呼んで
  * `setup` を通らないためである。方針どおりでない編成が F-10 のビルド比較や
- * RI-76 の AI 統制へ混ざるので、ベンチを戻すのと同じタイミングで方針も掛け直す。
+ * RI-77 の AI 統制へ混ざるので、ベンチを戻すのと同じタイミングで方針も掛け直す。
  *
  * **この修正で動いた数値は無い**（現行1,240ランでは復職者に方針が掛かり直す経路が
  * 実際には踏まれていない）。経路の穴自体は実在するので予防として残す。

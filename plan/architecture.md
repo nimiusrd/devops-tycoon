@@ -1,6 +1,6 @@
 # アーキテクチャと横断規律
 
-現行実装の技術構成と、機能追加時に維持する境界をまとめる。体験要件は[`SPEC.md`](../SPEC.md)、実装対応は[spec-mapping.md](./spec-mapping.md)を正とする。
+現行実装の技術構成と、機能追加時に維持する境界をまとめる。体験要件は[`SPEC.md`](../SPEC.md)、確率モデルは[probability-model.md](./probability-model.md)、バランスパラメータSSoTの導入計画は[balance-ssot-plan.md](./balance-ssot-plan.md)、実装対応は[spec-mapping.md](./spec-mapping.md)を正とする。
 
 ## 1. 技術スタック
 
@@ -34,7 +34,7 @@ IndexedDB ◀──── Meta / RunSave / Replayの直列化境界
 - `RunEngine`がラン状態とフェーズの正本。`src/sim/run/phases.ts`が許可遷移の正本。
 - ReactとRendererは状態を読んで表示し、シミュレーション内部を直接変更しない。
 - `src/sim/`はReact、PixiJS、IndexedDBを知らない。
-- 乱数はseed付きPRNGへ集約し、同じseedと入力で同じ結果を返す。
+- 乱数はseed付きPRNGへ集約し、同じseedと入力で同じ結果を返す。派生seedと乱数消費順の規律は[probability-model.md](./probability-model.md)に従う。
 - `window.game`の公開契約は`src/game.ts`の`GameHandle`を正とする。`engine`直接参照はデバッグ専用。
 
 ## 3. ディレクトリ責務
@@ -61,6 +61,7 @@ IndexedDB ◀──── Meta / RunSave / Replayの直列化境界
 ## 5. データと永続化
 
 - カード、レリック、進化、イベント、難易度は`src/data/`の定義を正とする。
+- 調整対象の基本値は、[balance-ssot-plan.md](./balance-ssot-plan.md)に従って型付きの分割レジストリへ段階的に移す。現時点では未実装である。
 - SPEC内の具体例は方向性であり、データ定義と完全一致する必要はない。ただし第2章の因果関係は維持する。
 - 永続データはスキーマバージョンを持ち、読み込み時に検証・既定値補完する。
 - 独立チーム状態を追加する場合は、ラン保存、次四半期継続、リプレイの各直列化境界を同時に更新する。

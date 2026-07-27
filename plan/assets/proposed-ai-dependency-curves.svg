@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" role="img" aria-labelledby="title desc">
+  <title id="title">AI依存度とRework確率の候補曲線</title>
+  <desc id="desc">
+    候補式の仮係数において、AI依存度が低い間はAI支援なしのRework確率が低く、約43%で交差し、高依存度ではAI支援なしの方が高くなる。
+  </desc>
+  <style>
+    .bg { fill: #ffffff; }
+    .panel { fill: #f8fafc; stroke: #cbd5e1; }
+    .grid { stroke: #cbd5e1; stroke-width: 1; }
+    .axis { stroke: #64748b; stroke-width: 1.5; }
+    .text { fill: #334155; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .muted { fill: #64748b; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .ai { fill: none; stroke: #2563eb; stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+    .manual { fill: none; stroke: #dc2626; stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+    .ai-dot { fill: #2563eb; }
+    .manual-dot { fill: #dc2626; }
+    .cross { fill: #ffffff; stroke: #7c3aed; stroke-width: 3; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0f172a; }
+      .panel { fill: #111827; stroke: #475569; }
+      .grid { stroke: #334155; }
+      .axis { stroke: #94a3b8; }
+      .text { fill: #e2e8f0; }
+      .muted { fill: #94a3b8; }
+      .ai { stroke: #60a5fa; }
+      .manual { stroke: #f87171; }
+      .ai-dot { fill: #60a5fa; }
+      .manual-dot { fill: #f87171; }
+      .cross { fill: #111827; stroke: #c4b5fd; }
+    }
+  </style>
+
+  <rect class="bg" width="760" height="460" rx="16" />
+
+  <g aria-label="凡例">
+    <line class="ai" x1="145" y1="32" x2="185" y2="32" />
+    <circle class="ai-dot" cx="165" cy="32" r="5" />
+    <text class="text" x="195" y="38" font-size="15">対象タスク: AI支援あり</text>
+    <line class="manual" x1="440" y1="32" x2="480" y2="32" />
+    <circle class="manual-dot" cx="460" cy="32" r="5" />
+    <text class="text" x="490" y="38" font-size="15">対象タスク: AI支援なし</text>
+  </g>
+
+  <rect class="panel" x="30" y="60" width="700" height="340" rx="12" />
+  <text class="text" x="380" y="91" font-size="20" font-weight="600" text-anchor="middle">AI依存度とRework確率（候補式・仮係数）</text>
+  <text class="muted" x="380" y="116" font-size="13" text-anchor="middle">M 60 / A 50 / Quality 60 / Tech Debt 20% / 初回Review</text>
+
+  <line class="grid" x1="90" y1="130" x2="700" y2="130" />
+  <line class="grid" x1="90" y1="173" x2="700" y2="173" />
+  <line class="grid" x1="90" y1="216" x2="700" y2="216" />
+  <line class="grid" x1="90" y1="259" x2="700" y2="259" />
+  <line class="grid" x1="90" y1="302" x2="700" y2="302" />
+  <line class="grid" x1="90" y1="345" x2="700" y2="345" />
+  <line class="axis" x1="90" y1="130" x2="90" y2="345" />
+  <line class="axis" x1="90" y1="345" x2="700" y2="345" />
+
+  <text class="muted" x="78" y="350" font-size="12" text-anchor="end">0%</text>
+  <text class="muted" x="78" y="307" font-size="12" text-anchor="end">5%</text>
+  <text class="muted" x="78" y="264" font-size="12" text-anchor="end">10%</text>
+  <text class="muted" x="78" y="221" font-size="12" text-anchor="end">15%</text>
+  <text class="muted" x="78" y="178" font-size="12" text-anchor="end">20%</text>
+  <text class="muted" x="78" y="135" font-size="12" text-anchor="end">25%</text>
+
+  <text class="muted" x="90" y="367" font-size="12" text-anchor="middle">0</text>
+  <text class="muted" x="242.5" y="367" font-size="12" text-anchor="middle">25</text>
+  <text class="muted" x="395" y="367" font-size="12" text-anchor="middle">50</text>
+  <text class="muted" x="547.5" y="367" font-size="12" text-anchor="middle">75</text>
+  <text class="muted" x="700" y="367" font-size="12" text-anchor="middle">100</text>
+  <text class="text" x="395" y="391" font-size="14" text-anchor="middle">チームのAI依存度</text>
+
+  <polyline class="ai" points="90,229.8 242.5,214.7 395,199.7 547.5,184.6 700,169.6" />
+  <polyline class="manual" points="90,245.2 242.5,221.2 395,197.1 547.5,173 700,148.9" />
+
+  <g class="ai-dot">
+    <circle cx="90" cy="229.8" r="5" />
+    <circle cx="242.5" cy="214.7" r="5" />
+    <circle cx="395" cy="199.7" r="5" />
+    <circle cx="547.5" cy="184.6" r="5" />
+    <circle cx="700" cy="169.6" r="5" />
+  </g>
+  <g class="manual-dot">
+    <circle cx="90" cy="245.2" r="5" />
+    <circle cx="242.5" cy="221.2" r="5" />
+    <circle cx="395" cy="197.1" r="5" />
+    <circle cx="547.5" cy="173" r="5" />
+    <circle cx="700" cy="148.9" r="5" />
+  </g>
+
+  <circle class="cross" cx="351.4" cy="204" r="7" />
+  <text class="text" x="351.4" y="190" font-size="12" text-anchor="middle">約43%で交差</text>
+
+  <text class="muted" x="380" y="423" font-size="13" text-anchor="middle">候補式の形状確認用。係数と交差点はMonte Carlo検証前の仮値。</text>
+  <text class="muted" x="380" y="444" font-size="12" text-anchor="middle">手作業能力MとAI習熟Aの構成により、交差点は前後する。</text>
+</svg>

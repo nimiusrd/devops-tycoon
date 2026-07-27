@@ -78,7 +78,7 @@ Stryker（`src/sim` / `src/state`）のベースライン run
 
 - **エピック**: `RI-72`（本項）
 - **実装単位**: `RI-72-A1` 形式。一覧・受入・やる事の正本は[mutation-remediation.md](./mutation-remediation.md)
-- 再ベースライン時は新エピックを採番し、実装単位も `RI-{N}-…` で振り直す。手順は[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)
+- 再ベースライン時は **run ID が変わったときだけ** 新エピックを採番し、実装単位も `RI-{N}-…` で振り直す。同じ run の計画修正では既存エピックを再利用する。手順は[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)
 
 受入条件:
 

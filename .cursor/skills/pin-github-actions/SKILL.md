@@ -1,6 +1,6 @@
 ---
 name: pin-github-actions
-description: GitHub Actions ワークフローの外部アクションを最新リリースへ更新し、フルコミットSHAでピン留めする。Use when asked to pin actions to commit SHA, update third-party GitHub Actions, harden workflows, or refresh uses: versions in .github/workflows.
+description: "GitHub Actions ワークフローの外部アクションを最新リリースへ更新し、フルコミットSHAでピン留めする。Use when asked to pin actions to commit SHA, update third-party GitHub Actions, harden workflows, or refresh uses: versions in .github/workflows."
 ---
 
 # GitHub Actions の最新化と SHA 固定
@@ -25,8 +25,13 @@ gh api "repos/<owner>/<action>/releases/latest" --jq '{tag:.tag_name, published:
 3. タグが指すコミットSHAを解決する（annotated tag は peel する）:
 
 ```bash
-# object.type が commit ならその SHA、tag なら git/tags で object.sha を取得
-gh api "repos/<owner>/<action>/git/ref/tags/<tag>"
+# 1) タグ ref を取得
+gh api "repos/<owner>/<action>/git/ref/tags/<tag>" --jq '{type:.object.type, sha:.object.sha}'
+
+# 2) object.type が tag（annotated）なら、tag object からコミット SHA を取得
+gh api "repos/<owner>/<action>/git/tags/<object.sha>" --jq '.object.sha'
+
+# object.type が commit（lightweight）なら、その sha をそのまま使う
 ```
 
 4. メジャーバージョン更新がある場合はリリースノートの破壊的変更を確認し、現行の `with:` が壊れるときだけ入力を最小修正する。壊さないなら `with:` / ジョブ構成は変えない。

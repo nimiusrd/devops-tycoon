@@ -102,7 +102,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 
 | ID | タイトル | 状態 | 対象 |
 | --- | --- | --- | --- |
-| [RI-72-A1](#ri-72-a1--industry-スコア式の境界と係数) | industry スコア式の境界と係数 | 未着手 | `src/sim/orgscale/industry.ts` |
+| [RI-72-A1](#ri-72-a1--industry-スコア式の境界と係数) | industry スコア式の境界と係数 | 完了 | `src/sim/orgscale/industry.ts` |
 | [RI-72-A2](#ri-72-a2--whatifstate-のキーと-modifier) | whatIfState のキーと modifier | 未着手 | `src/sim/run/whatIfState.ts` |
 | [RI-72-A3](#ri-72-a3--whatifclient-の初カバー) | whatIfClient の初カバー | 未着手 | `src/sim/run/whatIfClient.ts` |
 | [RI-72-B1](#ri-72-b1--replaypersistence-の失敗系) | replayPersistence の失敗系 | 未着手 | `src/state/replayPersistence.ts` |
@@ -130,12 +130,14 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/orgscale/industry.ts`](../src/sim/orgscale/industry.ts) |
 | Baseline | total 31.48% / covered 32.38% / S=71 / NC=3 |
 | 既存テスト | [`tests/unit/orgscale-industry.test.ts`](../tests/unit/orgscale-industry.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/orgscale/industry.ts` |
 | 受入 | total **70%+** |
+
+After: total 92.59% / covered 93.46% / S=7（local）
 
 やる事:
 

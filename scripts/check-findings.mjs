@@ -29,7 +29,32 @@ if (!existsSync(RUNS)) {
   process.exit(1);
 }
 
-const runs = JSON.parse(readFileSync(RUNS, 'utf8'));
+const loaded = JSON.parse(readFileSync(RUNS, 'utf8'));
+const runs = Array.isArray(loaded) ? loaded : loaded.runs;
+const cohort = Array.isArray(loaded) ? null : loaded.cohort;
+
+/**
+ * **既定コホートの出力でなければ検査しない。**
+ *
+ * 所見に書かれた勝利数は「4難易度 × 10 seed × fresh」の40ラン中の値である。
+ * 絞り込み実行（`PT_DIFFS=easy` など）の出力をそのまま突き合わせると、
+ * 例えば `onlyAndon` の実測が9勝になり、文書の正しい19勝を不一致として報告してしまう。
+ * 一致しない条件では「検査した」と言えないので、未計測として明示的に降りる。
+ */
+if (!cohort) {
+  console.log('コホート情報の無い出力なので未計測（`npm run playtest` で再生成すること）。');
+  process.exit(0);
+}
+if (!cohort.isDefault) {
+  console.log(
+    '既定コホートではないため未計測: ' +
+      `難易度=${cohort.difficulties.join(',')} / seed=${cohort.seeds.length}件 / ` +
+      `方針=${cohort.policies.length}件 / meta=${cohort.meta}`,
+  );
+  console.log('  所見の数値は4難易度 × 10 seed × fresh の40ラン中の勝利数を前提にしている。');
+  process.exit(0);
+}
+
 const wins = new Map();
 for (const r of runs) {
   const e = wins.get(r.policy) ?? { w: 0, n: 0 };

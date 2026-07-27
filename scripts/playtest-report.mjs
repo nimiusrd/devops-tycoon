@@ -15,7 +15,13 @@
 import { readFileSync } from 'node:fs';
 
 const file = process.argv[2] ?? 'playtest-out/runs.json';
-const raw = JSON.parse(readFileSync(file, 'utf8'));
+const loaded = JSON.parse(readFileSync(file, 'utf8'));
+/**
+ * 出力は `{ generatedAt, cohort, runs }`。配列だけの旧形式も読めるようにしておく
+ * （手元に残った古い出力を渡したときに黙って0件集計にならないように）。
+ */
+const raw = Array.isArray(loaded) ? loaded : loaded.runs;
+const cohort = Array.isArray(loaded) ? null : loaded.cohort;
 
 /**
  * テンポ換算は実装（`src/ui/sprintTempo.ts`）の定数から読む。
@@ -101,6 +107,15 @@ const runs = [...byKey.values()];
 const metaProfiles = [...new Set(runs.map((r) => r.meta ?? 'fresh'))];
 console.log(`## 母数\n`);
 console.log(`延べ実行 ${raw.length} / ユニーク ${runs.length} / 重複 ${raw.length - runs.length}`);
+if (cohort) {
+  console.log(
+    `コホート: 難易度=${cohort.difficulties.join(',')} / seed=${cohort.seeds.length}件 / ` +
+      `方針=${cohort.policies.length}件 / meta=${cohort.meta}` +
+      (cohort.isDefault ? '' : '（**既定コホートではない。所見の数値と直接は比較できない**）'),
+  );
+} else {
+  console.log('  ※ コホート情報の無い旧形式。どの条件で回した出力か確認できない。');
+}
 console.log(`メタ解放プロファイル: ${metaProfiles.join(', ')}`);
 if (metaProfiles.length > 1) {
   console.log('  ※ 複数プロファイルが混在している。以下の全体集計はプロファイルを跨いだ値なので、');

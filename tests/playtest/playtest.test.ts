@@ -9,7 +9,7 @@
  * - `PT_META`    メタ進行の解放状態（`fresh`=初見相当・既定 / `full`=全解放）
  * - `PT_OUT`     出力先 JSON（既定 `playtest-out/runs.json`）
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTY_DEFS } from '../../src/data/difficulties';
@@ -66,8 +66,21 @@ const SEEDS = parseSeeds(
 const META = parseMeta(process.env.PT_META ?? 'fresh');
 const OUT = process.env.PT_OUT ?? 'playtest-out/runs.json';
 
+/** 既定コホート（所見ドキュメントが前提にしている条件）。 */
+const DEFAULT_DIFFS = ['easy', 'normal', 'hard', 'nightmare'];
+const DEFAULT_SEEDS = Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`);
+
 describe('playtest matrix', () => {
   it('難易度 × 方針 × seed を回して結果を書き出す', { timeout: 3_600_000 }, () => {
+    // **走り始める前に旧出力を消す。**
+    //
+    // `runMatrix` が例外を投げたり、終端未到達の assertion で落ちたりすると、この実行は
+    // `OUT` に一度も触れない。前回の成功結果がそのまま残るので、続けて
+    // `playtest:report` / `playtest:check` を回すと、失敗したバランス変更ではなく
+    // **旧コードの結果を最新値として集計してしまう**。消しておけば
+    // 「先に `npm run playtest` を実行すること」で止まる。
+    rmSync(OUT, { force: true });
+
     const runs = runMatrix(DIFFS, POLICIES, SEEDS, META);
     expect(runs.length).toBe(DIFFS.length * POLICIES.length * SEEDS.length);
 
@@ -80,7 +93,28 @@ describe('playtest matrix', () => {
     ).toEqual([]);
 
     mkdirSync(dirname(OUT), { recursive: true });
-    writeFileSync(OUT, JSON.stringify(runs), 'utf8');
-    console.log(`runs=${runs.length} meta=${META} -> ${OUT}`);
+    // **どのコホートを回したかを一緒に書き出す。** 絞り込み実行（`PT_DIFFS=easy` など）の
+    // 出力を、全難易度×全 seed を前提にした所見の数値と突き合わせると偽陽性が出る。
+    // 読む側（`playtest:check`）が条件を確認できるようにしておく。
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      cohort: {
+        difficulties: DIFFS,
+        policies: POLICIES,
+        seeds: SEEDS,
+        meta: META,
+        /** 所見ドキュメントが前提にしている既定コホートか（方針の増減は許容する）。 */
+        isDefault:
+          DEFAULT_DIFFS.every((d) => DIFFS.includes(d)) &&
+          DIFFS.length === DEFAULT_DIFFS.length &&
+          DEFAULT_SEEDS.every((x) => SEEDS.includes(x)) &&
+          SEEDS.length === DEFAULT_SEEDS.length &&
+          POLICIES.length === Object.keys(POLICY_DEFS).length &&
+          META === 'fresh',
+      },
+      runs,
+    };
+    writeFileSync(OUT, JSON.stringify(payload), 'utf8');
+    console.log(`runs=${runs.length} meta=${META} default=${payload.cohort.isDefault} -> ${OUT}`);
   });
 });

@@ -298,9 +298,7 @@ for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
       }
     }
   }
-  // `self-loss` はエンジンが弾いた不成立ではなく、ハーネスが自滅回避で見送った回数。
-  // 「打てる手があったのに打たなかった」量なので、他の理由と並べて見えるようにする。
-  const summary = ['ok', 'no-target', 'no-focus', 'cooldown', 'self-loss']
+  const summary = ['ok', 'no-target', 'no-focus', 'cooldown']
     .map((x) => `${x}=${totals[x] ?? 0}`)
     .join(' ');
   console.log(

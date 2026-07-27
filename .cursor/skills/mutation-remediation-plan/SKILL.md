@@ -1,6 +1,6 @@
 ---
 name: mutation-remediation-plan
-description: Fetches Stryker mutation test results from GitHub Actions artifacts, aggregates scores and Survived/NoCoverage hotspots, and writes an implementer-ready remediation plan with a new backlog RI ID per baseline run. Use when asked to analyze mutation reports, plan mutation score improvements, process Mutation workflow runs, rebaseline mutation remediation, or draft/update plan/mutation-remediation.md from a GHA run URL.
+description: Fetches Stryker mutation test results from GitHub Actions artifacts, aggregates scores and Survived/NoCoverage hotspots, and writes an implementer-ready remediation plan. Mints a new epic RI only for a new full-shard baseline run ID; same-run edits reuse the epic. Use when asked to analyze mutation reports, plan mutation score improvements, process Mutation workflow runs, rebaseline mutation remediation, or draft/update plan/mutation-remediation.md from a GHA run URL.
 ---
 
 # ミューテーション結果からの実装計画
@@ -12,7 +12,7 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 - 設定: [`stryker.config.json`](../../../stryker.config.json)
 - GHA: [`.github/workflows/mutation.yml`](../../../.github/workflows/mutation.yml)（シャード並列、任意／週次）
 - 計画の正本テンプレ: [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md)
-- バックログ: [`plan/remaining-issues.md`](../../../plan/remaining-issues.md)（**フルシャード再ベースライン実行ごとに新しい RI-NN を採番**）
+- バックログ: [`plan/remaining-issues.md`](../../../plan/remaining-issues.md)（**フルシャードの run ID が変わったときだけ新しいエピックを採番**）
 
 ## バックログ ID の採番
 
@@ -128,16 +128,21 @@ gh run download <RUN_ID> -D "$OUT"
 
 広範な探索は `explore` サブエージェントを使ってよい。
 
-### 5. 新エピックと実装単位を採番し計画を書く
+### 5. 計画を書く／更新する
 
-「バックログ ID の採番」に従い新エピック `RI-{N}` と実装単位 `RI-{N}-A1`… を発行してから、[`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) をそのベースライン用に更新する。含めるもの:
+現行 [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) の run ID と比較する。
 
-- 対象 run URL・`headSha`・**エピック ID**・全体 score（フルシャード時）
+- **同じ run**: 既存エピックを再利用し、実装単位の追記・Baseline 補完・書式修正のみ行う（新エピック採番なし）。
+- **新しいフルシャード run**: 「バックログ ID の採番」に従い新エピック `RI-{N}` と実装単位 `RI-{N}-A1`… を発行して差し替える。
+
+計画に含めるもの:
+
+- 対象 run URL・**`headSha`**・エピック ID・全体 score（フルシャード時）
 - **ID フォーマット節**（エピック / 実装単位）とエントリ書式
 - 目的 / 非目的（必須ゲート化しない、原則テストのみ強化）
 - 作業ルール（**1PR=1実装単位**、再計測コマンド、PR に単位 ID と Before/After）
-- 実装単位一覧表＋各単位の必須エントリ（状態 / 対象 / Baseline / 既存テスト / 再計測 / 受入 / やる事）
-- 前回計画から未消化があれば、新単位 ID へ内容を引き継いだ旨を明記
+- 実装単位一覧表＋各単位の必須エントリ。**Baseline は `total / covered / S / NC` をすべて記録**（artifact 失効後も比較できるようにする）
+- 前回計画から未消化があれば、新単位 ID へ内容を引き継いだ旨を明記（新 run のとき）
 - 典型的 Survived の直し方表
 - 再計測例:
 

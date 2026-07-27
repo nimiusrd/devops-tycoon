@@ -11,7 +11,7 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 | [spec-mapping.md](./spec-mapping.md) | SPECと実装の対応、未充足箇所 |
 | [remaining-issues.md](./remaining-issues.md) | 未着手・保留課題と完了項目の要約 |
 | [playtest-findings.md](./playtest-findings.md) | 実機プレイで洗い出した改善課題（バランス・UI・ポリッシュ） |
-| [mutation-remediation.md](./mutation-remediation.md) | ミューテーション結果に基づくテスト強化の実装指示（現行ベースラインの RI。再計測時は新 ID） |
+| [mutation-remediation.md](./mutation-remediation.md) | ミューテーション結果に基づくテスト強化（エピック RI + 実装単位 `RI-N-A1`。再計測時は新エピック） |
 | [architecture.md](./architecture.md) | 現在の技術構成と横断規律 |
 
 ## 現状

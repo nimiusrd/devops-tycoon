@@ -4,7 +4,7 @@
   "testRunner": "vitest",
   "coverageAnalysis": "perTest",
   "vitest": {
-    "configFile": "vitest.config.ts",
+    "configFile": "vitest.mutation.config.ts",
     "related": true
   },
   "mutate": [

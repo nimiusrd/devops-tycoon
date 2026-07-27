@@ -18,14 +18,19 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 
 ### エピック（ベースライン）
 
-フルシャード結果から計画を書く／更新するたびに、**必ず新しいエピック `RI-{N}` を1つ採番**する。同じ RI を再利用してベースラインを上書きしない。
+**新しいフルシャード run**（現行計画に記録された run ID と異なる）で計画を作る／差し替えるときだけ、新しいエピック `RI-{N}` を採番する。  
+**同じ run ID** の計画追記・書式修正・単位の補完では、既存エピックを再利用し、未完了エピックを完了扱いにしない。
+
+新規 run のとき:
 
 1. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) とリポジトリ全体から既存エピック番号 `RI-(\d+)`（ハイフン無しの本体）の最大を求める（欠番は再利用しない）。実装単位 `RI-72-A1` の `-A1` は番号計算に含めない。
 2. 新エピック = `RI-{max+1}`。
 3. 表に新行を追加し、詳細節を書く。タイトル例: `ミューテーションテストに基づくユニットテスト強化（run <RUN_ID>）`。実装単位一覧は [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) へリンク。
-4. [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) をそのベースライン用に更新する。
+4. [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) をそのベースライン用に更新する（**run ID と `headSha` を必ず記録**）。
 5. 直前のミューテーション改善エピック（未着手・進行中）があれば **完了** にし、完了要約へ「後続ベースライン `RI-XX` に置換。未消化の実装単位は新計画へ引き継ぎ」と短く書く。
 6. [`plan/README.md`](../../../plan/README.md) の mutation 行は「現行 RI-XX」が分かるよう更新する。
+
+同じ run の再編集時は手順 4 のみ（エピック採番・旧エピック完了は行わない）。
 
 部分分析（custom / `mutate` 指定）では **新しいエピックも実装単位も採番しない**。
 
@@ -78,7 +83,8 @@ gh run list --workflow=mutation.yml --limit 5 --json databaseId,conclusion,statu
 
 **ベースライン用**はフルシャード実行のみを使う。artifact 名が `mutation-report-<shard>` で、想定シャード（`sim-root`, `sim-run-engine`, `sim-run-rest`, `sim-orgscale`, `sim-member-model`, `state`）が揃っていることを確認する。`mutation-report-custom` のみ、または `mutate` 入力付きの部分実行は **対象範囲限定の分析** とし、全体ベースラインや Batch 順の上書き・新 RI 採番には使わない。
 
-run の `headSha` を控える。手順4の実装・テスト照合は、その SHA のツリーで行う（`git checkout` / worktree、または現 `HEAD` との差分を明記）。SHA が一致しないまま弱点判定しない。
+run の `headSha` を控える。手順4の実装・テスト照合は、その SHA のツリーで行う。  
+**作業ブランチを `git checkout <headSha>` で切り替えない。** 確認は `git show <headSha>:path`、または読み取り専用の別 worktree に限定する。計画・バックログの更新コミットは現行ブランチ上で行う。現行 `HEAD` と `headSha` が異なる場合は差分を明記する。SHA 未確認のまま弱点判定しない。
 
 ### 2. artifact を取得する
 
@@ -168,9 +174,11 @@ npm run test:mutation:force -- --mutate <file>
 - 単一ジョブでコア全体フル再計測を前提にしない（シャードまたは `--mutate`）
 - artifact が無い run を根拠に数値計画を作らない
 - custom / 部分 `mutate` run の集計で全体ベースラインを上書きしない
-- **同じエピック RI のまま別 run のベースラインへ上書きしない**（必ず新エピック）
+- **異なるフルシャード run** なのに既存エピックのままベースライン数値を上書きしない（新エピックを採番する）
+- **同じ run** の文書修正で新エピックを誤って採番し、未完了エピックを完了扱いにしない
 - 実装単位 ID をエピック無しで採番しない / 1PR に複数単位を詰め込まない（要統合なら計画側で先に ID をまとめる）
 - 欠番のエピック番号・単位 SEQ を再利用しない
+- 作業ブランチを baseline `headSha` に checkout したまま文書を更新しない
 
 ## 追加リソース
 

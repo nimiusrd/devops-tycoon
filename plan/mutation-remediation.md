@@ -2,12 +2,13 @@
 
 実装役向けの作業指示書。ベースラインは GitHub Actions
 [Mutation run 30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
-（2026-07-27、シャード並列・成功）。
+（2026-07-27、シャード並列・成功）。  
+`headSha`: `c065e01ea73cb8df431210dbd6f354cfd3c4059e`
 
 関連設定: [`stryker.config.json`](../stryker.config.json)、[`.github/workflows/mutation.yml`](../.github/workflows/mutation.yml)。  
 ベースライン（エピック）: **RI-72**（[`remaining-issues.md`](./remaining-issues.md)）— run 30261978402 専用。  
 実装単位: 下表の **`RI-72-A1` 形式**（1 ID = 1PR）。  
-再ベースライン: [`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md) に従い新しいエピック `RI-{N}` を採番し、実装単位も `RI-{N}-…` で振り直す。旧エピックは完了扱い、未消化単位は新計画へ引き継ぐ。
+再ベースライン: [`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md) に従い、**run ID が変わったときだけ**新しいエピック `RI-{N}` を採番し、実装単位も `RI-{N}-…` で振り直す。同じ run の計画修正では既存エピックを再利用する。旧エピックは完了扱い、未消化単位は新計画へ引き継ぐ。
 
 ## 1. ID フォーマット
 
@@ -131,7 +132,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/orgscale/industry.ts`](../src/sim/orgscale/industry.ts) |
-| Baseline | total 31.5% / S=71 / NC=少 |
+| Baseline | total 31.48% / covered 32.38% / S=71 / NC=3 |
 | 既存テスト | [`tests/unit/orgscale-industry.test.ts`](../tests/unit/orgscale-industry.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/orgscale/industry.ts` |
 | 受入 | total **70%+** |
@@ -147,7 +148,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/whatIfState.ts`](../src/sim/run/whatIfState.ts) |
-| Baseline | total 48.2% / S=57 |
+| Baseline | total 48.18% / covered 48.18% / S=57 / NC=0 |
 | 既存テスト | [`tests/unit/whatIf.test.ts`](../tests/unit/whatIf.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/whatIfState.ts` |
 | 受入 | total **70%+** |
@@ -162,7 +163,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/whatIfClient.ts`](../src/sim/run/whatIfClient.ts) |
-| Baseline | total 0% / NC=32 |
+| Baseline | total 0% / covered n/a / S=0 / NC=32 |
 | 既存テスト | なし |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/whatIfClient.ts` |
 | 受入 | NoCoverage を大幅減、covered ベースで実用カバレッジあり（目安 total **70%+** または NC≤5） |
@@ -179,7 +180,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/state/replayPersistence.ts`](../src/state/replayPersistence.ts) |
-| Baseline | total 50% |
+| Baseline | total 50% / covered 73.81% / S=11 / NC=20 |
 | 既存テスト | [`tests/unit/replay.test.ts`](../tests/unit/replay.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/state/replayPersistence.ts` |
 | 受入 | total **70%+** |
@@ -194,7 +195,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/state/metaPersistence.ts`](../src/state/metaPersistence.ts) |
-| Baseline | total 59% |
+| Baseline | total 59.02% / covered 83.72% / S=7 / NC=18 |
 | 既存テスト | [`tests/unit/metaPersistence.test.ts`](../tests/unit/metaPersistence.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/state/metaPersistence.ts` |
 | 受入 | total **70%+** |
@@ -209,7 +210,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/state/replay.ts`](../src/state/replay.ts) |
-| Baseline | total 60% / S=46 |
+| Baseline | total 60.14% / covered 65.93% / S=46 / NC=13 |
 | 既存テスト | [`tests/unit/replay.test.ts`](../tests/unit/replay.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/state/replay.ts` |
 | 受入 | total **70%+** |
@@ -224,7 +225,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/state/runPersistence.ts`](../src/state/runPersistence.ts) |
-| Baseline | total 63% |
+| Baseline | total 63.03% / covered 69.27% / S=59 / NC=19 |
 | 既存テスト | [`tests/unit/runPersistence.test.ts`](../tests/unit/runPersistence.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/state/runPersistence.ts` |
 | 受入 | total **70%+** |
@@ -241,7 +242,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts) |
-| Baseline | total 62.3% / S=191 |
+| Baseline | total 62.27% / covered 63.69% / S=191 / NC=12 |
 | 既存テスト | [`tests/unit/quarter-review.test.ts`](../tests/unit/quarter-review.test.ts)、[`quarter-review-seeds.test.ts`](../tests/unit/quarter-review-seeds.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/quarterReview.ts` |
 | 受入 | total **75%+** または Survived ≤100 |
@@ -259,7 +260,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
-| Baseline | total 65.1% / S=467 / NC=67（ファイル全体。本単位は phase 枝に限定） |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は phase 枝に限定） |
 | 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
 | 受入 | 対象枝の Survived を削減（PR に Before/After の該当箇所を記載）。D1–D5 完了後にファイル total **75%+**、NC 半減 |
@@ -274,7 +275,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
-| Baseline | （D1 に同じ・ファイル全体） |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は shop/rest/recruit 枝に限定） |
 | 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
 | 受入 | shop / rest / recruit 選択枝の Survived 削減を PR に記載 |
@@ -289,7 +290,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
-| Baseline | （ファイル全体） |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は hydrate/復元枝に限定） |
 | 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts)、persistence 系 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
 | 受入 | hydrate / 復元枝の Survived 削減を PR に記載 |
@@ -304,7 +305,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
-| Baseline | （ファイル全体） |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は勝敗/QR 突入枝に限定） |
 | 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
 | 受入 | 勝敗・quarterReview 突入条件の Survived 削減を PR に記載 |
@@ -319,7 +320,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
-| Baseline | NC=67（ファイル全体） |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は NC 潰し） |
 | 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
 | 受入 | NoCoverage **半減以下**。D1–D5 後にファイル total **75%+** |
@@ -336,7 +337,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/orgscale/generate.ts`](../src/sim/orgscale/generate.ts) |
-| Baseline | total 56.9% |
+| Baseline | total 56.86% / covered 56.86% / S=22 / NC=0 |
 | 既存テスト | [`tests/unit/orgscale.test.ts`](../tests/unit/orgscale.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/orgscale/generate.ts` |
 | 受入 | total **70%+** |
@@ -351,7 +352,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/effects.ts`](../src/sim/run/effects.ts) |
-| Baseline | total 69.1% |
+| Baseline | total 69.12% / covered 69.12% / S=21 / NC=0 |
 | 既存テスト | run-systems 系を確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/effects.ts` |
 | 受入 | total **75%+** |
@@ -366,7 +367,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts) |
-| Baseline | total 63.2% |
+| Baseline | total 63.16% / covered 69.23% / S=16 / NC=5 |
 | 既存テスト | sprintBaseline 系を確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/sprintBaselineBuild.ts` |
 | 受入 | total **70%+** |
@@ -381,7 +382,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/run/events.ts`](../src/sim/run/events.ts) |
-| Baseline | total 79.2% / S=20 |
+| Baseline | total 79.21% / covered 80% / S=20 / NC=1 |
 | 既存テスト | run-systems 系を確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/events.ts` |
 | 受入 | Survived 半減または total **85%+** |
@@ -396,7 +397,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/outcome.ts`](../src/sim/outcome.ts) |
-| Baseline | total 72.3% |
+| Baseline | total 72.29% / covered 79.47% / S=31 / NC=15 |
 | 既存テスト | 関連ユニットを確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/outcome.ts` |
 | 受入 | total **80%+** |
@@ -411,7 +412,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/assignTask.ts`](../src/sim/assignTask.ts) |
-| Baseline | total 72.9% / NC=40 |
+| Baseline | total 72.86% / covered 85% / S=36 / NC=40 |
 | 既存テスト | [`tests/unit/assignTask.test.ts`](../tests/unit/assignTask.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/assignTask.ts` |
 | 受入 | NC 半減かつ total **80%+** |
@@ -426,7 +427,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/state/meta.ts`](../src/state/meta.ts) |
-| Baseline | total 76.4% / S=65 |
+| Baseline | total 76.42% / covered 79.75% / S=65 / NC=14 |
 | 既存テスト | meta 系ユニットを確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/state/meta.ts` |
 | 受入 | Survived 半減または total **85%+** |
@@ -441,7 +442,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | --- | --- |
 | 状態 | 未着手 |
 | 対象 | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts) |
-| Baseline | total 80.0% / S=56 |
+| Baseline | total 80% / covered 83.53% / S=56 / NC=15 |
 | 既存テスト | member 系ユニットを確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/member/roster.ts` |
 | 受入 | Survived 半減または total **88%+** |

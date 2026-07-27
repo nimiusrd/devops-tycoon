@@ -27,9 +27,12 @@
 
 ## 集計スクリプト例
 
+このリポジトリは `"type": "module"` のため、例は ESM で書く。ファイルに保存する場合は `.mjs` を推奨。
+
 ```javascript
-// node で incremental JSON を読み、ファイル単位に集計する例
-const fs = require('fs');
+// save as /tmp/summarize-mutants.mjs && node /tmp/summarize-mutants.mjs path/to/stryker-incremental.json
+import fs from 'node:fs';
+
 const j = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const rows = [];
 for (const [file, info] of Object.entries(j.files || {})) {

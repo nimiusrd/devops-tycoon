@@ -103,7 +103,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | ID | タイトル | 状態 | 対象 |
 | --- | --- | --- | --- |
 | [RI-72-A1](#ri-72-a1--industry-スコア式の境界と係数) | industry スコア式の境界と係数 | 未着手 | `src/sim/orgscale/industry.ts` |
-| [RI-72-A2](#ri-72-a2--whatifstate-のキーと-modifier) | whatIfState のキーと modifier | 未着手 | `src/sim/run/whatIfState.ts` |
+| [RI-72-A2](#ri-72-a2--whatifstate-のキーと-modifier) | whatIfState のキーと modifier | 完了 | `src/sim/run/whatIfState.ts` |
 | [RI-72-A3](#ri-72-a3--whatifclient-の初カバー) | whatIfClient の初カバー | 未着手 | `src/sim/run/whatIfClient.ts` |
 | [RI-72-B1](#ri-72-b1--replaypersistence-の失敗系) | replayPersistence の失敗系 | 未着手 | `src/state/replayPersistence.ts` |
 | [RI-72-B2](#ri-72-b2--metapersistence-の壊れた入力) | metaPersistence の壊れた入力 | 未着手 | `src/state/metaPersistence.ts` |
@@ -146,7 +146,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/run/whatIfState.ts`](../src/sim/run/whatIfState.ts) |
 | Baseline | total 48.18% / covered 48.18% / S=57 / NC=0 |
 | 既存テスト | [`tests/unit/whatIf.test.ts`](../tests/unit/whatIf.test.ts) |
@@ -156,6 +156,8 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 やる事:
 
 - `whatIfCacheKey` / state 構築を直接叩き、キー差分・draft join・modifier の `||` / `&&`・clamp を断言
+
+After: total 80.91% / covered 80.91% / S=21 / NC=0（ローカル `npm run test:mutation:force -- --mutate src/sim/run/whatIfState.ts`）
 
 ### RI-72-A3 — whatIfClient の初カバー
 

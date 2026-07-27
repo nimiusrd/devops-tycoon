@@ -57,6 +57,20 @@ function parseMeta(raw: string): MetaProfile {
   return raw as MetaProfile;
 }
 
+/**
+ * 出力先と、その**即時無効化**。
+ *
+ * 環境変数の解析（`parseDiffs` など）より前に置く。解析はモジュール初期化中に例外を投げうるので、
+ * 削除を後ろに置くと `PT_DIFFS=typo npx vitest run --config vitest.playtest.config.ts` のような
+ * 直接実行で旧出力が残り、その後の `playtest:report` / `playtest:check` が
+ * 失敗した実行ではなく前回の結果を最新値として読んでしまう。
+ *
+ * npm スクリプト経路は `scripts/invalidate-playtest-out.mjs` が型検査より前に消しているが、
+ * `vitest` を直接叩く経路はここが唯一の防波堤になる。
+ */
+const OUT = process.env.PT_OUT ?? 'playtest-out/runs.json';
+rmSync(OUT, { force: true });
+
 const DIFFS = parseDiffs(process.env.PT_DIFFS ?? 'easy,normal,hard,nightmare');
 const POLICIES = parsePolicies(process.env.PT_POLICIES ?? Object.keys(POLICY_DEFS).join(','));
 /** seed も trim する。空白付きの `pt-2 ` は別 seed 扱いになり再現・結合を壊す。 */
@@ -75,7 +89,6 @@ const SEEDS = parseSeeds(
   process.env.PT_SEEDS ?? Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`).join(','),
 );
 const META = parseMeta(process.env.PT_META ?? 'fresh');
-const OUT = process.env.PT_OUT ?? 'playtest-out/runs.json';
 
 /** 既定コホート（所見ドキュメントが前提にしている条件）。 */
 const DEFAULT_DIFFS = ['easy', 'normal', 'hard', 'nightmare'];
@@ -90,15 +103,6 @@ function sameSet(a: readonly string[], b: readonly string[]): boolean {
 
 describe('playtest matrix', () => {
   it('難易度 × 方針 × seed を回して結果を書き出す', { timeout: 3_600_000 }, () => {
-    // **走り始める前に旧出力を消す。**
-    //
-    // `runMatrix` が例外を投げたり、終端未到達の assertion で落ちたりすると、この実行は
-    // `OUT` に一度も触れない。前回の成功結果がそのまま残るので、続けて
-    // `playtest:report` / `playtest:check` を回すと、失敗したバランス変更ではなく
-    // **旧コードの結果を最新値として集計してしまう**。消しておけば
-    // 「先に `npm run playtest` を実行すること」で止まる。
-    rmSync(OUT, { force: true });
-
     const runs = runMatrix(DIFFS, POLICIES, SEEDS, META);
     expect(runs.length).toBe(DIFFS.length * POLICIES.length * SEEDS.length);
 

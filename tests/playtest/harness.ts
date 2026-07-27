@@ -504,6 +504,15 @@ interface BeatCtx {
    * ロスターを見ないと休息の主要な利益を0点として攻め続ける側を選んでしまう。
    */
   roster: RunState['roster'];
+  /**
+   * 所持レリックと枠数。`RunEngine.grantRelic()` は**既に持っている／枠が満杯**なら
+   * 何もせず終了する（`src/sim/run/engine.ts`）。無条件に加点すると、実際には得られない
+   * レリックの架空の価値で代償（信頼低下など）を上書きしてしまう。
+   * 例: `expectation-mgmt` を所持した状態で `urgent-demo` が再登場すると、
+   * レリックを得られないのに管理信頼-8 の選択肢が高得点になる。
+   */
+  relics: readonly string[];
+  relicSlots: number;
 }
 
 /**
@@ -637,7 +646,14 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   // 「次のレビューで目標を達成できなければ敗北」なので、危機域（15以下）よりさらに重い。
   if (trustAfter <= TRUST_CRISIS && trustMin > TRUST_CRISIS) score -= 6;
   if (trustAfter <= TRUST_SHUTDOWN && trustMin > TRUST_SHUTDOWN) score -= 25;
-  if (outcome.grantRelic) score += 4;
+  // 実際に獲得できるときだけ加点する（重複・枠満杯では `grantRelic` が no-op になる）。
+  if (
+    typeof outcome.grantRelic === 'string' &&
+    !ctx.relics.includes(outcome.grantRelic) &&
+    ctx.relics.length < ctx.relicSlots
+  ) {
+    score += 4;
+  }
   // カード付与もデッキが太る分の価値がある。レリック（恒久パッシブ・枠が有限）より軽く見る。
   if (outcome.grantCard) score += 2;
 
@@ -1197,6 +1213,8 @@ export function runOnce(
             moraleDamageMul: foldPassives(s.relics).moraleDamageMul,
             rest: spec.rest,
             roster: s.roster,
+            relics: s.relics,
+            relicSlots: foldPassives(s.relics).relicSlots,
           },
         );
         lastBeat = { eventId: s.beat.eventId, kind: s.beat.kind, choiceIndex: choice };

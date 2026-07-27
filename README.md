@@ -96,6 +96,8 @@ http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
 | `npm run build` | TypeScript検査と本番ビルド |
 | `npm test` | Vitestのユニットテストを実行 |
 | `npm run test:watch` | Vitestをwatchモードで実行 |
+| `npm run test:mutation` | Strykerで`src/sim` / `src/state`のミューテーションテストを実行（incremental・ローカル用・CI非必須） |
+| `npm run test:mutation:force` | incrementalキャッシュを無視して対象変異を再実行する |
 | `npm run test:e2e` | Playwrightの標準E2Eを実行 |
 | `npm run test:e2e:pixi` | PixiJSの視覚回帰テストを実行 |
 | `npm run gallery` | 主要画面を撮影して`gallery/index.html`を生成 |
@@ -103,6 +105,10 @@ http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
 | `npm run format:check` | Prettier差分を確認 |
 | `npm run format` | Prettierで整形 |
 | `npm run audio:generate` | BGM・効果音アセットを再生成 |
+
+`test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
+
+GitHub Actions では [Mutation](.github/workflows/mutation.yml) ワークフローを **手動（workflow_dispatch）または週次スケジュール** で実行できます。PR / push の必須 CI には含めていません。手動実行時は `mutate`（対象パターン）と `force`（キャッシュ無視）を指定できます。レポートと incremental JSON は Actions の artifact / cache に残ります。
 
 PlaywrightのChromiumが未導入の場合は、先に次を実行します。
 
@@ -123,7 +129,7 @@ Chromiumの実行ファイルを明示する環境では、`PLAYWRIGHT_CHROMIUM`
 | 永続化 | IndexedDB / idb |
 | 重い試算 | Web Worker / Comlink |
 | グラフ | Recharts |
-| テスト | Vitest / Playwright |
+| テスト | Vitest / Playwright / Stryker（コアロジックのミューテーション・ローカル） |
 
 `RunEngine`をラン状態の正本とし、Reactとレンダラはスナップショットを読んで表示します。シミュレーションは描画と永続化から分離し、同じseedと入力で同じ結果を返します。
 

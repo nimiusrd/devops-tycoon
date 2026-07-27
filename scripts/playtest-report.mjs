@@ -763,13 +763,32 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
       `**実測（代表方針 ${F11_SAMPLE_POLICIES.join(' / ')} に固定。n=${sample.length}）**`,
     );
   }
-  const q1Points = sample.map(q1EvoPoints).filter((n) => n > 0);
+  // **0点のランを落とした分布と、全ランの分布を両方出す。**
+  // 条件付き分布（>0）だけを `n=160` の実測として書くと標本を取り違える。
+  // 0点になるのは Q1 の第1スプリントで敗北したラン（実測ではすべて nightmare）で、
+  // そもそも「方向を選ぶ」局面に到達していない。どちらを根拠にするかは本文で明示する。
+  const q1All = sample.map(q1EvoPoints);
+  const q1Points = q1All.filter((n) => n > 0);
+  const zeros = q1All.length - q1Points.length;
+  if (q1All.length > 0) {
+    console.log(
+      `  Q1 で入手する総ポイント（全 n=${q1All.length}）: ` +
+        `p10=${quantile(q1All, 0.1)} p50=${quantile(q1All, 0.5)} ` +
+        `p90=${quantile(q1All, 0.9)}（ツリー総コスト ${totalCost} に対して）`,
+    );
+  }
   if (q1Points.length > 0) {
     console.log(
-      `  Q1 で入手する総ポイント（1点以上得たラン n=${q1Points.length}）: ` +
+      `  うち1点以上得たラン（n=${q1Points.length} / 0点は${zeros}件）: ` +
         `p10=${quantile(q1Points, 0.1)} p50=${quantile(q1Points, 0.5)} ` +
-        `p90=${quantile(q1Points, 0.9)}（ツリー総コスト ${totalCost} に対して）`,
+        `p90=${quantile(q1Points, 0.9)}`,
     );
+    const zeroDiffs = {};
+    for (const r of sample) {
+      if (q1EvoPoints(r) > 0) continue;
+      zeroDiffs[r.difficulty] = (zeroDiffs[r.difficulty] ?? 0) + 1;
+    }
+    console.log(`    0点ランの難易度内訳: ${JSON.stringify(zeroDiffs)}`);
   }
   const q1Counts = sample
     .map((r) => (r.evolutionUnlocks ?? []).filter((u) => u.quarter === 1).length)

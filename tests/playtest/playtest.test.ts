@@ -30,12 +30,23 @@ function parseDiffs(raw: string): string[] {
   return list;
 }
 
+/**
+ * 方針の重複は拒否する。件数だけを見て既定コホートを判定していたため、
+ * 31件のうち1つを落として別の1つを重複させると `isDefault=true` が通り、
+ * 落ちた方針は `playtest:check` の集計に現れないまま「一致」と表示されうる。
+ */
 function parsePolicies(raw: string): string[] {
-  const list = raw.split(',').map((x) => x.trim());
+  const list = raw
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+  if (list.length === 0) throw new Error('PT_POLICIES が空');
   const unknown = list.filter((p) => !POLICY_DEFS[p]);
   if (unknown.length > 0) {
     throw new Error(`PT_POLICIES に未知の方針: ${unknown.join(', ')}`);
   }
+  const dup = list.filter((x, i) => list.indexOf(x) !== i);
+  if (dup.length > 0) throw new Error(`PT_POLICIES に重複: ${[...new Set(dup)].join(', ')}`);
   return list;
 }
 
@@ -70,6 +81,13 @@ const OUT = process.env.PT_OUT ?? 'playtest-out/runs.json';
 const DEFAULT_DIFFS = ['easy', 'normal', 'hard', 'nightmare'];
 const DEFAULT_SEEDS = Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`);
 
+/** 2つの文字列リストが集合として一致するか（重複や欠落を件数で誤魔化させない）。 */
+function sameSet(a: readonly string[], b: readonly string[]): boolean {
+  const sa = new Set(a);
+  const sb = new Set(b);
+  return sa.size === sb.size && sa.size === a.length && [...sa].every((x) => sb.has(x));
+}
+
 describe('playtest matrix', () => {
   it('難易度 × 方針 × seed を回して結果を書き出す', { timeout: 3_600_000 }, () => {
     // **走り始める前に旧出力を消す。**
@@ -103,13 +121,17 @@ describe('playtest matrix', () => {
         policies: POLICIES,
         seeds: SEEDS,
         meta: META,
-        /** 所見ドキュメントが前提にしている既定コホートか（方針の増減は許容する）。 */
+        /**
+         * 所見ドキュメントが前提にしている既定コホートか。
+         *
+         * **件数ではなく集合の一致で見る。** 件数だけだと、1方針を落として別の方針を
+         * 重複指定した入力が既定として通ってしまう（`parsePolicies` でも重複を弾いているが、
+         * 判定側でも取りこぼさないようにする）。
+         */
         isDefault:
-          DEFAULT_DIFFS.every((d) => DIFFS.includes(d)) &&
-          DIFFS.length === DEFAULT_DIFFS.length &&
-          DEFAULT_SEEDS.every((x) => SEEDS.includes(x)) &&
-          SEEDS.length === DEFAULT_SEEDS.length &&
-          POLICIES.length === Object.keys(POLICY_DEFS).length &&
+          sameSet(DIFFS, DEFAULT_DIFFS) &&
+          sameSet(SEEDS, DEFAULT_SEEDS) &&
+          sameSet(POLICIES, Object.keys(POLICY_DEFS)) &&
           META === 'fresh',
       },
       runs,

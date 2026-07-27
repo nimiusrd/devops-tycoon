@@ -555,15 +555,39 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
 
   let score = 0;
   score += num(outcome.delivered) * 0.05;
+
+  /**
+   * **クランプ後に実際に動く量で採点する。**
+   *
+   * `applyEventOutcome`（`src/sim/run/events.ts`）は組織指標を 0..100 にクランプするので、
+   * 上限に張り付いた指標への加算は効かない。素の差分で採点すると、たとえば士気100 の
+   * `standup-acronym-storm` で「士気+4・負債+2」が加点され、実際には負債だけが増える
+   * 選択肢を選んでしまう。
+   */
+  const applied = (current: number, delta: number): number =>
+    Math.min(100, Math.max(0, current + delta)) - current;
+
   // 予算もシニアHP・士気と同じく、残量が少ないほど減少を重く見る。
+  // 予算は 0..100 のクランプが無い（`budgetDelta` として engine が加減する）ので素の差分。
   const budget = num(outcome.budget);
   score += budget >= 0 ? budget * 0.2 : budget * scarcity(Math.min(ctx.budget, 100)) * 0.5;
-  const hp = num(outcome.seniorHp);
+  const hp = applied(ctx.org.seniorHp, num(outcome.seniorHp));
   score += hp >= 0 ? hp * 0.5 : hp * scarcity(ctx.org.seniorHp) * 1.5;
-  const morale = num(outcome.morale);
+  const morale = applied(ctx.org.morale, num(outcome.morale));
   score += morale >= 0 ? morale * 0.3 : morale * scarcity(ctx.org.morale) * 0.8;
-  score -= num(outcome.techDebt) * 0.4;
-  score -= num(outcome.aiDependency) * 0.2;
+  // 負債は下限0のみ（`Math.max(0, ...)`）。上限クランプは無い。
+  score -= (Math.max(0, ctx.org.techDebt + num(outcome.techDebt)) - ctx.org.techDebt) * 0.4;
+  score -= applied(ctx.org.aiDependency, num(outcome.aiDependency)) * 0.2;
+
+  // **品質系の指標も採点する。** ここが未評価だと、品質・テスト・AIリテラシーを上げる
+  // 選択肢が一律0点になり、士気や出荷の小さな加点に必ず負ける。品質ビルドと AI ビルドの
+  // 比較（F-10）に、方針と無関係な固定選択が混ざる。
+  score += applied(ctx.org.quality, num(outcome.quality)) * 0.3;
+  score += applied(ctx.org.testCoverage, num(outcome.testCoverage)) * 0.25;
+  // AI リテラシーは `aiDependency` 敗北（依存95以上かつリテラシー30以下）の回避軸なので、
+  // 低いときほど重く見る。
+  score +=
+    applied(ctx.org.aiLiteracy, num(outcome.aiLiteracy)) * 0.25 * scarcity(ctx.org.aiLiteracy);
   // 信頼も予算・シニアHP・士気と同じく、残量が少ないほど減少を重く見る。
   // 危機域（`missed_crisis` の閾値）へ踏み込む場合はさらに重くする。
   const trustDelta = num(trust.management) + num(trust.customers) + num(trust.team);
@@ -572,6 +596,8 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
     trustDelta >= 0 ? trustDelta * 0.2 : trustDelta * scarcity(Math.min(trustMin, 100)) * 0.5;
   if (trustAfter <= TRUST_CRISIS && trustMin > TRUST_CRISIS) score -= 6;
   if (outcome.grantRelic) score += 4;
+  // カード付与もデッキが太る分の価値がある。レリック（恒久パッシブ・枠が有限）より軽く見る。
+  if (outcome.grantCard) score += 2;
 
   // **遷移先スプリントの負荷も見る。** `outcome` だけを採点すると `leadsTo` を認識できない。
   // `elite-offer` は高負荷側の `outcome` が空（=0点）、通常側が信頼-4（=負点）なので、
@@ -583,6 +609,31 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
     const worst = Math.min(ctx.org.seniorHp, ctx.org.morale);
     score += load * (worst - ELITE_HEADROOM_MIN) * ELITE_HEADROOM_WEIGHT;
     score -= load * (ctx.org.techDebt / 100) * ELITE_DEBT_WEIGHT;
+  }
+
+  // **`nextSprint` の一時効果も採点する。** `rest-offer` は「休む」が
+  // `nextSprint.taskCountMul=0.7`、「攻め続ける」が空の `outcome` で、どちらも0点だったため
+  // 提示順の先頭（＝常に休む）が無条件に選ばれていた。組織状態や四半期目標に関係なく
+  // 毎回タスクを30%減らす固定選択が、F-4 の所要時間と方針別勝率へ混ざる。
+  const next = (outcome.nextSprint ?? {}) as Record<string, unknown>;
+  if (next.taskCountMul !== undefined) {
+    // タスク減は消耗しているほど価値があり、余力があるなら出荷機会を捨てる損になる。
+    // 高負荷スプリントの評価と符号を揃える（あちらは増加、こちらは減少）。
+    const relief = 1 - num(next.taskCountMul);
+    const worst = Math.min(ctx.org.seniorHp, ctx.org.morale);
+    score += relief * (ELITE_HEADROOM_MIN - worst) * ELITE_HEADROOM_WEIGHT;
+    score += relief * (ctx.org.techDebt / 100) * ELITE_DEBT_WEIGHT;
+  }
+  // レビュー初期負荷・手戻り率・集中力上限は、いずれも次スプリントを直接苦しくする。
+  score -= num(next.reviewLoadAdd) * 0.3;
+  score -= num(next.reworkRateAdd) * 10;
+  score += num(next.focusMaxAdd) * 0.3;
+
+  // 休息フェーズへの遷移そのものにも回復機会の価値がある（`REST_HEAL` 相当）。
+  // 消耗しているほど価値が高い。
+  if (choice.leadsTo === 'rest') {
+    const worst = Math.min(ctx.org.seniorHp, ctx.org.morale);
+    score += (ELITE_HEADROOM_MIN - worst) * 0.05;
   }
   return score;
 }

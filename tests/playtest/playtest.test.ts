@@ -9,7 +9,7 @@
  * - `PT_META`    メタ進行の解放状態（`fresh`=初見相当・既定 / `full`=全解放）
  * - `PT_OUT`     出力先 JSON（既定 `playtest-out/runs.json`）
  */
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTY_DEFS } from '../../src/data/difficulties';
@@ -58,18 +58,14 @@ function parseMeta(raw: string): MetaProfile {
 }
 
 /**
- * 出力先と、その**即時無効化**。
+ * 出力先。**旧出力の削除はここではやらない。**
  *
- * 環境変数の解析（`parseDiffs` など）より前に置く。解析はモジュール初期化中に例外を投げうるので、
- * 削除を後ろに置くと `PT_DIFFS=typo npx vitest run --config vitest.playtest.config.ts` のような
- * 直接実行で旧出力が残り、その後の `playtest:report` / `playtest:check` が
- * 失敗した実行ではなく前回の結果を最新値として読んでしまう。
- *
- * npm スクリプト経路は `scripts/invalidate-playtest-out.mjs` が型検査より前に消しているが、
- * `vitest` を直接叩く経路はここが唯一の防波堤になる。
+ * 静的 import はこのモジュール本体より先に評価されるので、ここへ置いても `harness.ts` の
+ * 変換・初期化エラーには間に合わない。削除は `tests/playtest/globalSetup.ts`
+ *（テストモジュールの読み込み前に走る）と `scripts/invalidate-playtest-out.mjs`
+ *（npm スクリプトで型検査より前に走る）が担う。
  */
 const OUT = process.env.PT_OUT ?? 'playtest-out/runs.json';
-rmSync(OUT, { force: true });
 
 const DIFFS = parseDiffs(process.env.PT_DIFFS ?? 'easy,normal,hard,nightmare');
 const POLICIES = parsePolicies(process.env.PT_POLICIES ?? Object.keys(POLICY_DEFS).join(','));

@@ -93,20 +93,34 @@ for (const file of DOCS) {
       }
     }
 
-    // 2) 勝利数を載せた表の行。方針名がちょうど1つの行だけを見る
-    //    （複数方針を1セルに並べた行は、どの数値がどれに対応するか一意に決まらない）。
+    // 2) 勝利数を載せた表の行。
+    //
+    // **複数方針を1行にまとめた行も検査する。** 順位表には
+    // `| **\`skilledNoHire\`** / \`skilledShopBuy\` / ... | **16** |` のように
+    // 同じ勝利数の方針を並べた行があり、以前はこれを丸ごと除外していた。そのため
+    // グループ内の1方針だけが変化しても旧値のまま検査を通り、この検査を入れた目的
+    //（再計測値の取りこぼし防止）が主要な表で働いていなかった。
+    //
+    // 独立した数値セルが**ちょうど1つ**なら、その値は行内の全方針に共通する勝利数なので、
+    // 各方針と個別に照合できる。数値セルが複数ある行（難易度別内訳を併記した表など）は
+    // どの数値がどれに対応するか一意に決まらないので、対応が取れる 1) の経路に任せる。
     if (!line.trim().startsWith('|') || !isWinTable(header)) return;
     const named = [...new Set([...line.matchAll(/`(\w+)`/g)].map((m) => m[1]))].filter((p) =>
       wins.has(p),
     );
-    if (named.length !== 1) return;
-    const policy = named[0];
-    const want = wins.get(policy).w;
+    if (named.length === 0) return;
+    const values = [];
     for (const cell of line.split('|').slice(1, -1)) {
       const m = cell.trim().match(/^\*{0,2}(\d{1,3})\*{0,2}$/);
       if (!m) continue;
       const v = Number(m[1]);
       if (v > 40) continue; // 40ラン中の勝利数ではない
+      values.push(v);
+    }
+    if (values.length !== 1) return;
+    const v = values[0];
+    for (const policy of named) {
+      const want = wins.get(policy).w;
       if (v !== want) {
         problems.push(`${at}: \`${policy}\` の行に ${v} とあるが実測は ${want}`);
       }

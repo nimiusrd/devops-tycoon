@@ -321,27 +321,36 @@ const CV_SPRINT_INDEXES = [1, 2, 3, 5];
 // 方針ごとに到達率が違うまま生存ランを別々に母集団にすると、CV 差へ介入効果だけでなく
 // seed の選抜差が混ざる（実際 hard/S5 では到達 seed 数が方針で倍以上違う）。
 const CV_COMPARE_POLICIES = ['noInterventionCtl', 'naive', 'skilledNoHire'];
-console.log('RI-83 の方針間比較（同一メタ・難易度・seed で全方針が到達したスプリントのみ）:');
-for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
-  const cells = CV_SPRINT_INDEXES.map((n) => {
-    const bySeed = (policy) => {
-      const m = new Map();
-      for (const r of runs.filter((x) => x.difficulty === d && x.policy === policy)) {
-        if (r.sprints.length >= n)
-          m.set(`${r.meta ?? 'fresh'}|${r.seed}`, r.sprints[n - 1].delivered);
-      }
-      return m;
-    };
-    const maps = CV_COMPARE_POLICIES.map(bySeed);
-    const shared = [...maps[0].keys()].filter((k) => maps.every((m) => m.has(k)));
-    if (shared.length === 0) return `S${n}: 共通到達なし`;
-    const parts = CV_COMPARE_POLICIES.map((policy, i) => {
-      const xs = shared.map((k) => maps[i].get(k));
-      return `${policy}=${fmtCv(xs)}`;
+// **メタプロファイルごとに分ける。** キーに `meta` を含めて対応は取れていても、CV は
+// 対応差ではなく周辺分布の分散なので、fresh と full を同じ配列へ入れるとメタ解放による
+// 平均・分散の差が介入効果へ混入する。
+console.log(
+  'RI-83 の方針間比較（同一メタ・難易度・seed で全方針が到達したスプリントのみ。メタ別）:',
+);
+for (const meta of metaProfiles) {
+  for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+    const cells = CV_SPRINT_INDEXES.map((n) => {
+      const bySeed = (policy) => {
+        const m = new Map();
+        const pool = runs.filter(
+          (x) => (x.meta ?? 'fresh') === meta && x.difficulty === d && x.policy === policy,
+        );
+        for (const r of pool) {
+          if (r.sprints.length >= n) m.set(r.seed, r.sprints[n - 1].delivered);
+        }
+        return m;
+      };
+      const maps = CV_COMPARE_POLICIES.map(bySeed);
+      const shared = [...maps[0].keys()].filter((k) => maps.every((m) => m.has(k)));
+      if (shared.length === 0) return `S${n}: 共通到達なし`;
+      const parts = CV_COMPARE_POLICIES.map((policy, i) => {
+        const xs = shared.map((k) => maps[i].get(k));
+        return `${policy}=${fmtCv(xs)}`;
+      });
+      return `S${n}(共通 n=${shared.length}): ${parts.join(' / ')}`;
     });
-    return `S${n}(共通 n=${shared.length}): ${parts.join(' / ')}`;
-  });
-  console.log(`  ${d}: ${cells.join(' | ')}`);
+    console.log(`  [${meta}] ${d}: ${cells.join(' | ')}`);
+  }
 }
 
 console.log('\n参考: 方針別（各方針の到達ランで独立に集計。方針間の比較には使わない）:');
@@ -562,25 +571,59 @@ console.log(
 if (cohortKeys.size === 0) {
   console.log('  ※ 共通コホートが0組のため、選択効果は未計測');
 }
+/**
+ * 初回修正の**直後1四半期**の結果。
+ *
+ * 最終勝率は初回選択の効果ではない。共通コホートで揃うのは最初の修正までで、その後の修正は
+ * 方針間で統制されていない（同じ seed でも、ある方針は `request_budget` を2回選んだ後に
+ * `cut_scope` を3回選び、別の方針は1回で終わる）。ラン全体の勝敗・総スプリントには
+ * その後続選択がすべて乗るので、初回選択へ帰属できない。
+ *
+ * 初回修正の四半期を Q とすると、Q+1 の四半期レビューまでに何が起きたかを見る。
+ * この範囲なら後続の修正はまだ1回しか挟まらない。
+ */
+const afterFirstAdjustment = (r, label) => {
+  const q = firstAppliedQuarter(r, label);
+  if (q === null) return null;
+  const qs = r.quarters ?? [];
+  const next = qs.find((x) => x.quarter === q + 1);
+  return {
+    // Q+1 へ到達したか（＝初回修正の直後を生き延びたか）
+    survived: next !== undefined || r.status === 'won',
+    nextOutcome: next?.outcome ?? (r.status === 'won' ? 'won' : 'lost'),
+  };
+};
+
 for (const [policy, label] of adjEntries) {
   const arr = runs.filter((r) => r.policy === policy);
   if (!arr.length) continue;
   const applied = arr.filter((r) => firstAppliedQuarter(r, label) !== null);
   const cohort = arr.filter((r) => cohortKeys.has(cohortKeyOf(r)));
   const won = cohort.filter((r) => r.status === 'won').length;
-  // 「到達四半期」は終端の quarterNumber ではなく、修正を選んだ四半期を使う。
-  // 終端値は後続ラン長の差を表してしまい、統制条件の事前状態にならない。
-  const chosenAt = cohort.map((r) => firstAppliedQuarter(r, label)).filter((q) => q !== null);
+  const after = cohort.map((r) => afterFirstAdjustment(r, label)).filter((x) => x !== null);
+  const survived = after.filter((x) => x.survived).length;
   console.log(
     `  ${policy}(${label}): 参考[提示され選べたラン=${applied.length}/${arr.length}] ` +
-      `共通コホート n=${cohort.length} 勝率=${pct(won, cohort.length)} ` +
-      `修正を選んだ四半期 平均=${r1(mean(chosenAt))} ` +
-      `総スプリント 平均=${r1(mean(cohort.map((r) => r.sprintsPlayed)))}`,
+      `共通コホート n=${cohort.length} | ` +
+      `**初回修正の次四半期まで生存=${pct(survived, after.length)}** | ` +
+      `参考[ラン全体の勝率=${pct(won, cohort.length)} 総スプリント 平均=${r1(mean(cohort.map((r) => r.sprintsPlayed)))}]`,
   );
 }
+console.log(
+  '  ※ ラン全体の勝率・総スプリントは後続の目標修正が統制されていないため参考値。' +
+    '初回選択の効果は「次四半期まで生存」で見る。',
+);
 
-// --- F-6 評価分布（方針比較） -----------------------------------------------
-console.log(`\n## F-6 スプリント評価の分布\n`);
+// --- スプリント評価の分布（RI-79。F-6 の判定には使わない） -------------------
+//
+// **これは F-6 の根拠ではない。** SPEC 第19.1 F-6 は「敗北画面・リザルト・組織診断から
+// 具体的な次の一手と現場への示唆が読み取れるか」を要求する基準で、スプリント評価の
+// 中央値とは別物である。無介入と熟練の評価が一致しても敗北時の説明品質は分からないし、
+// 分かれても F-6 の成立は確認できない。F-6 は敗北時に実際に表示される診断・助言を
+// 記録して評価する必要があり、それは RI-81 で扱う。
+//
+// ここで見るのは「操作の巧拙がスプリント評価に反映されるか」（RI-79）だけである。
+console.log(`\n## RI-79 スプリント評価の分布（F-6 の判定には使わない）\n`);
 const GRADE_RANK = { D: 0, C: 1, B: 2, A: 3, S: 4 };
 const RANK_GRADE = ['D', 'C', 'B', 'A', 'S'];
 const gradeStats = (sprints) => {

@@ -722,11 +722,22 @@ function restUpgradeIndex(s: RunState): number {
 }
 
 /**
- * ショップでカード・レリックを買う。レリックを先にするのは枠が有限で買い逃しが効くため。
- * 予算は `RECRUIT_COST` 分を残す（採用機会と四半期レビューの予算条件を潰さないため）。
+ * 四半期レビューの危機条件（`budget<=5`）に対して残す安全余裕。
+ * 採用しない方針はこれだけ残せばよく、`RECRUIT_COST`（=25）を残すのは過剰に保守的。
  */
-function buyShopItems(e: RunEngine): void {
-  const reserve = RECRUIT_COST;
+const SHOP_BUDGET_FLOOR = 10;
+
+/**
+ * ショップでカード・レリックを買う。レリックを先にするのは枠が有限で買い逃しが効くため。
+ *
+ * 残す予算は**採用方針で変える**。採用する方針は次の採用機会のために `RECRUIT_COST` を残すが、
+ * 採用しない方針（`skilledShopBuy` は `recruit: 'skip'`）にその予約は要らない。
+ * 一律に25を残すと、たとえば予算30で8のカードが出ても買えず（買っても22残り、
+ * 危機条件の5には十分余裕がある）、「ショップへ投資する」条件が実際には
+ * 多くの機会を見送る保守方針になってしまう。
+ */
+function buyShopItems(e: RunEngine, spec: PolicySpec): void {
+  const reserve = spec.recruit === 'skip' ? SHOP_BUDGET_FLOOR : RECRUIT_COST;
   const relic = e.snapshot().shop?.relic;
   if (relic && !relic.bought && e.snapshot().budget - relic.cost >= reserve) {
     e.buyShopRelic();
@@ -963,7 +974,7 @@ export function runOnce(
           e.buyShopRecruit();
         }
         // カード・レリックはスプリント間投資（F-2）の一部。買う方針だけ買う。
-        if (spec.shop === 'buy') buyShopItems(e);
+        if (spec.shop === 'buy') buyShopItems(e, spec);
         e.leaveShop();
         break;
       case 'rest':

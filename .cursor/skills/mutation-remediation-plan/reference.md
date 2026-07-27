@@ -3,7 +3,7 @@
 ## artifact レイアウト
 
 ```text
-/tmp/mutation-results/
+/tmp/mutation-results-<RUN_ID>/
 ├── mutation-report-sim-root/
 │   ├── stryker-incremental-sim-root.json
 │   └── mutation/index.html
@@ -12,7 +12,8 @@
 └── ...
 ```
 
-シャード名は workflow の `matrix.id` と一致する（例: `sim-root`, `sim-run-engine`, `state`）。
+シャード名は workflow の `matrix.id` と一致する（例: `sim-root`, `sim-run-engine`, `state`）。  
+フルシャード baseline では上記6シャード分が揃っていること。`mutation-report-custom` のみの run は部分分析。
 
 ## status の意味
 

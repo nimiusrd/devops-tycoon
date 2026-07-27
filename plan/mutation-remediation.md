@@ -5,7 +5,8 @@
 （2026-07-27、シャード並列・成功）。
 
 関連設定: [`stryker.config.json`](../stryker.config.json)、[`.github/workflows/mutation.yml`](../.github/workflows/mutation.yml)。  
-バックログ ID: **RI-72**（[`remaining-issues.md`](./remaining-issues.md)）。
+バックログ ID: **RI-72**（[`remaining-issues.md`](./remaining-issues.md)）。  
+再ベースライン（新しい Mutation run から本計画を更新）: [`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
 
 ## 1. 目的と非目的
 

@@ -809,6 +809,50 @@ for (const [policy, arr] of group((r) => r.policy)) {
 
 // --- AI 依存度 --------------------------------------------------------------
 console.log(`\n## RI-73 / RI-76 AI 依存度と利用率\n`);
+
+// AI の因果は `noAiCtl`（`skilledNoHire` から AI 配布だけを外す）で見る。
+// ビルド差分の `noAi` は andon の有無・進化ブランチ・ドラフト選好・採用まで同時に違うため、
+// 出荷や勝率の差を AI へ帰属できない。
+//
+// 出荷は**同一 seed の同一スプリント番号**で対応を取る。方針ごとに到達スプリント数が違うので、
+// 到達スプリントを平均するだけだと生存者の構成差が出荷差に化ける。
+const AI_CTL = ['skilledNoHire', 'noAiCtl'];
+console.log('AI 配布だけを外した統制比較（同一 seed・同一スプリント番号で両方が到達した分のみ）:');
+for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+  const cells = [1, 2, 3].map((n) => {
+    const bySeed = (policy) => {
+      const m = new Map();
+      for (const r of runs.filter((x) => x.difficulty === d && x.policy === policy)) {
+        if (r.sprints.length >= n)
+          m.set(`${r.meta ?? 'fresh'}|${r.seed}`, r.sprints[n - 1].delivered);
+      }
+      return m;
+    };
+    const maps = AI_CTL.map(bySeed);
+    const shared = [...maps[0].keys()].filter((k) => maps.every((m) => m.has(k)));
+    if (!shared.length) return `S${n}: 共通到達なし`;
+    const parts = AI_CTL.map(
+      (policy, i) => `${policy}=${r1(mean(shared.map((k) => maps[i].get(k))))}`,
+    );
+    return `S${n}(共通 n=${shared.length}): ${parts.join(' / ')}`;
+  });
+  console.log(`  ${d} 出荷: ${cells.join(' | ')}`);
+}
+for (const policy of AI_CTL) {
+  const arr = runs.filter((r) => r.policy === policy);
+  if (!arr.length) continue;
+  const sp = arr.flatMap((r) => r.sprints);
+  console.log(
+    `  ${policy}: 勝利=${arr.filter((r) => r.status === 'won').length}/${arr.length} ` +
+      `AI利用率 平均=${r1(mean(sp.map((s) => s.aiPct)))} ` +
+      `最終AI依存度 平均=${r1(mean(arr.map((r) => r.finalOrg.aiDependency)))}`,
+  );
+}
+if (!runs.some((r) => r.policy === 'noAiCtl')) {
+  console.log('  ※ noAiCtl が標本に無いため、AI の因果は未計測');
+}
+
+console.log('\n参考: 難易度 × 方針の内訳:');
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   const sprints = arr.flatMap((r) => r.sprints);
   if (!sprints.length) continue;

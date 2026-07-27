@@ -321,6 +321,14 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    * カード・進化・採用は揃える（進化条件が違うと分散差を介入に帰属できない）。
    */
   noInterventionCtl: { ...skilledBase(), actions: [] },
+  /**
+   * RI-76 用の統制条件。`skilledNoHire` から **AI 配布だけ**を外す。
+   *
+   * ビルド差分の `noAi` は AI に加えて andon の有無・進化ブランチ（`qualityFirst`）・
+   * ドラフト選好（`quality`）・採用（`hire`）まで同時に違うため、出荷や勝率の差を
+   * AI へ帰属できない。AI の因果を見るにはこちらを使う。
+   */
+  noAiCtl: { ...skilledBase(), ai: 'none' },
   /** カードを状況に応じて選ぶ方針（無差別発動との比較用。RI-77）。 */
   skilledSelectiveCards: { ...skilledBase(), cards: 'selective' },
   /**

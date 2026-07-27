@@ -26,6 +26,8 @@
     "playwright-report",
     "test-results"
   ],
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json",
   "reporters": ["html", "clear-text", "progress"],
   "htmlReporter": {
     "fileName": "reports/mutation/index.html"

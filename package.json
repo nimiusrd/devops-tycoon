@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:mutation": "stryker run",
+    "test:mutation:force": "stryker run --force",
     "test:e2e": "playwright test",
     "test:e2e:pixi": "PIXI_E2E=1 playwright test --grep @pixi",
     "gallery": "node scripts/gallery.mjs",

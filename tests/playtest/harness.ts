@@ -18,7 +18,7 @@ import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { RECRUIT_COST, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine } from '../../src/sim/run/engine';
 import { ELITE_TASK_MUL } from '../../src/sim/run/sprintBaselineBuild';
-import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
+import type { GoalAdjustmentId, RunState, StakeholderTrust } from '../../src/sim/run/types';
 import type { ActionId } from '../../src/sim/types';
 import { MS_PER_TICK_1X } from '../../src/ui/sprintTempo';
 
@@ -472,10 +472,18 @@ export interface RunLog {
  * オートプレイ用のビート選択肢 index。
  * 明示指定がなければ即時採用（`grantRecruit`）を避け、決定論シードの安定を保つ。
  */
-/** ビート評価が参照する現在状態。組織値だけでなく予算も要る（予算0は即敗北のため）。 */
+/**
+ * ビート評価が参照する現在状態。
+ *
+ * 組織値だけでなく**予算とステークホルダー信頼**も要る。予算0は即敗北であり、
+ * 信頼はどれか1つでも10以下になると次の四半期レビューで `shutdown` が確定するためである
+ * （`outcomeFor`、`src/sim/run/quarterReview.ts`）。信頼を入れないと、残量に関係なく
+ * 固定点で採点されて確定敗北を安全候補として選ぶ。
+ */
 interface BeatCtx {
   org: RunState['org'];
   budget: number;
+  trust: StakeholderTrust;
 }
 
 /**
@@ -490,6 +498,13 @@ interface BeatCtx {
  * 敗因分布に混ざるため、状態を見て選ぶ `stateAware` では取らない。
  */
 const INSTANT_LOSS = -1e6;
+/**
+ * 四半期レビューで `shutdown`（＝敗北）が確定する信頼の下限。
+ * `outcomeFor` の `minTrust <= 10`（`src/sim/run/quarterReview.ts`）に対応する。
+ */
+const TRUST_SHUTDOWN = 10;
+/** `missed_crisis` になる信頼の下限。ここを割ると立て直しが難しくなる。 */
+const TRUST_CRISIS = 15;
 /**
  * 高負荷スプリントを受けてよい最低体力（シニアHPと士気の低い方）。
  * これを上回るぶんは出荷機会、下回るぶんは渋滞・炎上のリスクとして評価する。
@@ -518,12 +533,22 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   const scarcity = (current: number): number => 1 + (100 - current) / 50;
   const trust = (outcome.trust ?? {}) as Record<string, number>;
 
+  // 適用後の信頼（最小値）。信頼は3者それぞれに差分が乗るので最小値で見る。
+  const trustAfter = Math.min(
+    ctx.trust.management + num(trust.management),
+    ctx.trust.customers + num(trust.customers),
+    ctx.trust.team + num(trust.team),
+  );
+
   // 適用後に敗北条件へ入る選択肢は取らない。
+  // 信頼だけは即座に敗北するのではなく**次の四半期レビューで確定する**が、そこへ至る操作は
+  // 残っていないので、実質的に確定敗北として扱う。
   if (
     ctx.budget + num(outcome.budget) <= 0 ||
     ctx.org.seniorHp + num(outcome.seniorHp) <= 1 ||
     ctx.org.morale + num(outcome.morale) <= 1 ||
-    ctx.org.techDebt + num(outcome.techDebt) >= 90
+    ctx.org.techDebt + num(outcome.techDebt) >= 90 ||
+    trustAfter <= TRUST_SHUTDOWN
   ) {
     return INSTANT_LOSS;
   }
@@ -539,7 +564,13 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   score += morale >= 0 ? morale * 0.3 : morale * scarcity(ctx.org.morale) * 0.8;
   score -= num(outcome.techDebt) * 0.4;
   score -= num(outcome.aiDependency) * 0.2;
-  score += (num(trust.management) + num(trust.customers) + num(trust.team)) * 0.2;
+  // 信頼も予算・シニアHP・士気と同じく、残量が少ないほど減少を重く見る。
+  // 危機域（`missed_crisis` の閾値）へ踏み込む場合はさらに重くする。
+  const trustDelta = num(trust.management) + num(trust.customers) + num(trust.team);
+  const trustMin = Math.min(ctx.trust.management, ctx.trust.customers, ctx.trust.team);
+  score +=
+    trustDelta >= 0 ? trustDelta * 0.2 : trustDelta * scarcity(Math.min(trustMin, 100)) * 0.5;
+  if (trustAfter <= TRUST_CRISIS && trustMin > TRUST_CRISIS) score -= 6;
   if (outcome.grantRelic) score += 4;
 
   // **遷移先スプリントの負荷も見る。** `outcome` だけを採点すると `leadsTo` を認識できない。
@@ -1032,7 +1063,7 @@ export function runOnce(
           s.beat.kind,
           wantsRecruit(s, spec),
           spec.beat,
-          { org: s.org, budget: s.budget },
+          { org: s.org, budget: s.budget, trust: s.stakeholderTrust },
         );
         lastBeat = { eventId: s.beat.eventId, kind: s.beat.kind, choiceIndex: choice };
         e.resolveBeat(choice);

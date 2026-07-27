@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "playtest": "tsc --noEmit -p tsconfig.playtest.json && vitest run --config vitest.playtest.config.ts",
     "playtest:report": "node scripts/playtest-report.mjs",
+    "playtest:check": "node scripts/check-findings.mjs",
     "test:e2e": "playwright test",
     "test:e2e:pixi": "PIXI_E2E=1 playwright test --grep @pixi",
     "gallery": "node scripts/gallery.mjs",

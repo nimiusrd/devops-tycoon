@@ -842,10 +842,16 @@ export function runOnce(
     guard += 1;
     s = e.snapshot();
     const loggedBefore = sprints.length;
+    // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻す。
+    //
+    // `setup` だけで配置すると復職者がベンチのまま次スプリントを迎える経路が残る。
+    // `resolveBeat()` は既定の `leadsTo === 'sprint'` で `launchSprint()` を直接呼び、
+    // `setup` を通らないためである。復帰は `resolveSprint` の `recoverStamina` で起きるので、
+    // 「スプリント終了 → ビート → 次スプリント」の間に配置の機会が無い。
+    // `assignMember` は `sprint` フェーズでは何もしないので、それ以外の全フェーズで呼ぶ。
+    if (s.phase !== 'sprint') assignBenchMembers(e);
     switch (s.phase) {
       case 'setup':
-        // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻す。
-        assignBenchMembers(e);
         applySetup(e, spec);
         e.beginSetupSprint();
         break;

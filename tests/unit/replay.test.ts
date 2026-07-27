@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto';
 import { deleteDB } from 'idb';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../src/game';
 import { RunEngine } from '../../src/sim/run/engine';
+import { openGameDb, REPLAYS_STORE_NAME } from '../../src/state/gameDb';
 import { defaultMeta } from '../../src/state/meta';
 import {
   buildReplayId,
@@ -11,7 +12,12 @@ import {
   REPLAY_SCHEMA_VERSION,
   type ReplayBlob,
 } from '../../src/state/replay';
-import { IndexedDbReplayStorage, MemoryReplayStorage } from '../../src/state/replayPersistence';
+import {
+  IndexedDbReplayStorage,
+  initializeReplayPersistence,
+  MemoryReplayStorage,
+  type ReplayStorage,
+} from '../../src/state/replayPersistence';
 import { MemoryRunStorage } from '../../src/state/runPersistence';
 
 const databases: string[] = [];
@@ -19,6 +25,12 @@ const databases: string[] = [];
 afterEach(async () => {
   await Promise.all(databases.splice(0).map((name) => deleteDB(name)));
 });
+
+function nextReplayDbName(label: string): string {
+  const name = `devops-tycoon-${label}-${databases.length}`;
+  databases.push(name);
+  return name;
+}
 
 function makeBlob(partial: Partial<ReplayBlob> & Pick<ReplayBlob, 'id' | 'seed'>): ReplayBlob {
   const engine = new RunEngine({ seed: partial.seed, difficulty: 'easy' });
@@ -62,8 +74,7 @@ describe('リプレイ正規化（RI-61）', () => {
 
 describe('IndexedDB リプレイ永続化（RI-61）', () => {
   it('上限超過で古いリプレイを削除する', async () => {
-    const name = `devops-tycoon-replay-${databases.length}`;
-    databases.push(name);
+    const name = nextReplayDbName('replay');
     const storage = new IndexedDbReplayStorage(name);
 
     for (let i = 0; i < REPLAY_MAX_COUNT + 3; i += 1) {
@@ -80,6 +91,138 @@ describe('IndexedDB リプレイ永続化（RI-61）', () => {
     expect(listed).toHaveLength(REPLAY_MAX_COUNT);
     expect(listed[0]?.id).toBe(`id-${REPLAY_MAX_COUNT + 2}`);
     expect(listed.some((r) => r.id === 'id-0')).toBe(false);
+  });
+});
+
+describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
+  it('IndexedDB get は保存済み blob を返し、欠損と不正レコードは null にする', async () => {
+    const name = nextReplayDbName('replay-get');
+    const storage = new IndexedDbReplayStorage(name);
+    const blob = makeBlob({ id: 'idb-get', seed: 'idb-get', finishedAt: 2000 });
+
+    await storage.save(blob);
+    const loaded = await storage.get(blob.id);
+    expect(loaded).toEqual(blob);
+    expect(loaded).not.toBe(blob);
+    expect(await storage.get('missing')).toBeNull();
+
+    const db = await openGameDb(name);
+    try {
+      await db.put(REPLAYS_STORE_NAME, { ...blob, keyframes: [] }, 'invalid');
+    } finally {
+      db.close();
+    }
+    expect(await storage.get('invalid')).toBeNull();
+  });
+
+  it('IndexedDB clear は保存済みリプレイをすべて削除する', async () => {
+    const name = nextReplayDbName('replay-clear');
+    const storage = new IndexedDbReplayStorage(name);
+    await storage.save(makeBlob({ id: 'clear-a', seed: 'clear-a', finishedAt: 1000 }));
+    await storage.save(makeBlob({ id: 'clear-b', seed: 'clear-b', finishedAt: 2000 }));
+
+    await storage.clear();
+
+    expect(await storage.list()).toEqual([]);
+    expect(await storage.get('clear-a')).toBeNull();
+  });
+
+  it('IndexedDB save 失敗後も次の書き込みと読み取りが継続できる', async () => {
+    const name = nextReplayDbName('replay-write-failure');
+    const storage = new IndexedDbReplayStorage(name);
+    const originalPut = IDBObjectStore.prototype.put;
+    const putSpy = vi.spyOn(IDBObjectStore.prototype, 'put');
+    putSpy.mockImplementationOnce(function (
+      this: IDBObjectStore,
+      value: unknown,
+      key?: IDBValidKey,
+    ) {
+      if (key === 'fail-first') {
+        throw new DOMException('forced replay write failure', 'InvalidStateError');
+      }
+      return originalPut.call(this, value, key);
+    });
+
+    await expect(
+      storage.save(makeBlob({ id: 'fail-first', seed: 'fail-first', finishedAt: 1000 })),
+    ).rejects.toThrow('forced replay write failure');
+    putSpy.mockRestore();
+
+    const recovered = makeBlob({ id: 'after-failure', seed: 'after-failure', finishedAt: 2000 });
+    await storage.save(recovered);
+
+    expect(await storage.get('fail-first')).toBeNull();
+    expect(await storage.get('after-failure')).toEqual(recovered);
+  });
+
+  it('MemoryReplayStorage は clone を返し、上限超過時に古いリプレイを削除する', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT + 2; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `memory-${i}`,
+          seed: `memory-${i}`,
+          finishedAt: 1000 + i,
+        }),
+      );
+    }
+
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.map((r) => r.id)).toEqual([
+      'memory-11',
+      'memory-10',
+      'memory-9',
+      'memory-8',
+      'memory-7',
+      'memory-6',
+      'memory-5',
+      'memory-4',
+      'memory-3',
+      'memory-2',
+    ]);
+    expect(await storage.get('memory-0')).toBeNull();
+
+    const loaded = await storage.get('memory-11');
+    expect(loaded).not.toBeNull();
+    loaded!.outcome.score = 999;
+    expect((await storage.get('memory-11'))?.outcome.score).toBe(10);
+
+    await storage.clear();
+    expect(await storage.list()).toEqual([]);
+  });
+
+  it('initializeReplayPersistence は一覧取得成功時に渡した storage を使う', async () => {
+    const storage: ReplayStorage = {
+      list: vi.fn(async () => []),
+      get: vi.fn(),
+      save: vi.fn(),
+      clear: vi.fn(),
+    };
+
+    const bootstrap = await initializeReplayPersistence(storage);
+
+    expect(bootstrap.storage).toBe(storage);
+    expect(storage.list).toHaveBeenCalledTimes(1);
+  });
+
+  it('initializeReplayPersistence は初期一覧取得に失敗したら MemoryReplayStorage へ fallback する', async () => {
+    const storage: ReplayStorage = {
+      list: vi.fn(async () => {
+        throw new Error('idb unavailable');
+      }),
+      get: vi.fn(),
+      save: vi.fn(),
+      clear: vi.fn(),
+    };
+
+    const bootstrap = await initializeReplayPersistence(storage);
+    const blob = makeBlob({ id: 'fallback-memory', seed: 'fallback-memory' });
+
+    expect(bootstrap.storage).toBeInstanceOf(MemoryReplayStorage);
+    expect(bootstrap.storage).not.toBe(storage);
+    await bootstrap.storage.save(blob);
+    expect(await bootstrap.storage.get(blob.id)).toEqual(blob);
   });
 });
 

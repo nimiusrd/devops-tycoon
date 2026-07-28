@@ -245,6 +245,15 @@ for (const r of runs) {
   if (r.status !== 'lost') continue;
   loseCounts.set(r.loseReason, (loseCounts.get(r.loseReason) ?? 0) + 1);
 }
+// 方針ごとの勝利種別。
+const ALL_WIN_TYPES = new Set(runs.filter((r) => r.winType).map((r) => r.winType));
+const winTypeByPolicy = new Map();
+for (const r of runs) {
+  if (!winTypeByPolicy.has(r.policy)) winTypeByPolicy.set(r.policy, new Map());
+  if (!r.winType) continue;
+  const m = winTypeByPolicy.get(r.policy);
+  m.set(r.winType, (m.get(r.winType) ?? 0) + 1);
+}
 // 方針ごとの診断内訳。
 const diagByPolicy = new Map();
 for (const r of runs) {
@@ -272,6 +281,29 @@ for (const file of DOCS) {
           if (want2 !== undefined && Number(m[2]) !== want2) {
             problems.push(`${at}: ${rule.label2} が ${m[2]} と書かれているが実測は ${want2}`);
           }
+        }
+      }
+    }
+    // 「`reviewFreeze`（296件）」— 敗因ごとの件数。
+    // RI-85 の敗因表がこの形で、旧コホートの値が残ってレビューで指摘された。
+    for (const m of line.matchAll(/`(\w+)`\s*(?:\*\*)?（\s*(\d+)\s*件）/g)) {
+      if (!loseCounts.has(m[1])) continue;
+      const actual = loseCounts.get(m[1]);
+      if (Number(m[2]) !== actual) {
+        problems.push(`${at}: \`${m[1]}\` が ${m[2]}件 と書かれているが実測は ${actual}件`);
+      }
+    }
+    // 「| `noAi` | `noDamage` 12 / `healthy` **0** |」— 方針別の勝利種別。
+    for (const pm of line.matchAll(/`(\w+)`\s*\|\s*((?:`\w+`\s*\*{0,2}\d+\*{0,2}\s*\/?\s*)+)/g)) {
+      const wt = winTypeByPolicy.get(pm[1]);
+      if (!wt) continue;
+      for (const w of pm[2].matchAll(/`(\w+)`\s*\*{0,2}(\d+)\*{0,2}/g)) {
+        if (!ALL_WIN_TYPES.has(w[1])) continue;
+        const actual = wt.get(w[1]) ?? 0;
+        if (Number(w[2]) !== actual) {
+          problems.push(
+            `${at}: \`${pm[1]}\` の勝利種別 \`${w[1]}\` が ${w[2]} と書かれているが実測は ${actual}`,
+          );
         }
       }
     }

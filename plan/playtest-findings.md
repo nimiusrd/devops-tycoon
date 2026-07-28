@@ -275,7 +275,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 **閾値の変更で順位が入れ替わりうる結論**（`naive` と `skilled` の優劣、カードの `selective` の効果、
 `skilledSelectiveHire` の「欠員」の定義、ショップの購入順）と、
 **閾値に依らない結論**（Nightmare の第1スプリント全敗、ボスの規定下限割れ、勝利種別が実質2種、
-`reviewFreeze` が全295件 judgment ビートで確定すること）を区別して読む必要がある。
+`reviewFreeze` が全296件 judgment ビートで確定すること）を区別して読む必要がある。
 後者は方針をどう定義しても変わらない。
 
 とくに `skilledSelectiveHire` の閾値は一度直している。当初は「採用後も `RECRUIT_COST` の
@@ -847,15 +847,15 @@ SPEC 第19.1 F-5 は「無介入は損ではなく不安定。介入の価値は
 
 | 敗因 | 決着フェーズ | 敗北を確定させたイベント |
 | --- | --- | --- |
-| **`reviewFreeze`**（295件） | `beat:judgment` **100%** | `review-freeze`(judgment) |
-| `seniorBurnout`（206件） | judgment / **decision** / sprint が混在 | `senior-burnout`(judgment)、`giant-ai-pr-judgment`(judgment)、`giant-pr`(decision) |
+| **`reviewFreeze`**（296件） | `beat:judgment` **100%** | `review-freeze`(judgment) |
+| `seniorBurnout`（209件） | judgment / **decision** / sprint が混在 | `senior-burnout`(judgment)、`giant-ai-pr-judgment`(judgment)、`giant-pr`(decision) |
 | `aiDependency`（255件） | `sprint` 100% | — |
 | `techDebt`（31件） / `moraleCollapse`（15件） | `sprint` が大半 | — |
 | `trustExhausted` / `reorgRequired` | `quarterReview` 100% | — |
 
 **`reviewFreeze` だけが、盤面で対処する機会のないまま判定イベントで確定する**。
-295件（敗因全体の35%）が該当し、プレイヤーはスプリントを走り切った直後に、
-操作の余地がない画面で敗北を告げられる。しかも全295件が例外なく `review-freeze`(judgment) で
+296件（敗因全体の35%）が該当し、プレイヤーはスプリントを走り切った直後に、
+操作の余地がない画面で敗北を告げられる。しかも全296件が例外なく `review-freeze`(judgment) で
 決着しており、他の決着経路が1件も無い。
 
 一方 `seniorBurnout` は相当数が**プレイヤーの選択（`giant-pr` など）を経て確定**しており、

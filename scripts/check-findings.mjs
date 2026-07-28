@@ -303,6 +303,14 @@ for (const file of DOCS) {
         }
       }
     }
+    // 表の「`seniorBurnout`（209件）」「**`reviewFreeze`**（296件）」— 敗因別の件数。
+    for (const m of line.matchAll(/`(\w+)`\s*（\s*(\d+)\s*件\s*）/g)) {
+      if (!loseCounts.has(m[1])) continue;
+      const actual = loseCounts.get(m[1]);
+      if (Number(m[2]) !== actual) {
+        problems.push(`${at}: \`${m[1]}\` が ${m[2]}件 と書かれているが実測は ${actual}件`);
+      }
+    }
   });
 }
 

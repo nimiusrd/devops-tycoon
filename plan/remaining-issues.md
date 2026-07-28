@@ -299,7 +299,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 敗北を確定させたフェーズを、ビートについては judgment（選択不能な判定）と decision（プレイヤーが選ぶ）に分けて記録した。
 
-敗因ごとに決着位置は分かれる。**`reviewFreeze`（295件）は例外なく100%が `review-freeze`(judgment) で確定**し、盤面で対処する機会がない。プレイヤーはスプリントを走り切った直後に、操作の余地がない画面で敗北を告げられる。一方 `seniorBurnout`（206件）は judgment / **decision** / sprint が混在し、選択を経て確定するものが相当数ある。`aiDependency`（255件）・`techDebt`（31件）・`moraleCollapse`（15件）はスプリント中、`trustExhausted`（24件）・`reorgRequired`（13件）は四半期レビューで決まる。
+敗因ごとに決着位置は分かれる。**`reviewFreeze`（296件）は例外なく100%が `review-freeze`(judgment) で確定**し、盤面で対処する機会がない。プレイヤーはスプリントを走り切った直後に、操作の余地がない画面で敗北を告げられる。一方 `seniorBurnout`（209件）は judgment / **decision** / sprint が混在し、選択を経て確定するものが相当数ある。`aiDependency`（255件）・`techDebt`（31件）・`moraleCollapse`（15件）はスプリント中、`trustExhausted`（28件）・`reorgRequired`（16件）は四半期レビューで決まる。
 
 全850敗の決着フェーズは `beat:judgment` 470（55%）/ `sprint` 319（38%）/ `quarterReview` 44（5%）/ `beat:decision` 17（2%）。`beat:decision` はビート選択の統制を進めた結果 90件（12%）→ 40件（5%）→ 34件（4%）→ **17件（2%）** と段階的に減った。最後の半減はビルド差分3方針を `stateAware` へ揃えた分である（RI-90）。最初は `firstChoice` が `urgent-demo` のようにシニアHPを削る先頭選択肢を無条件に取っていた分、次は評価に予算が入っておらず `postmortem-culture` で予算0＝即敗北を自分から選んでいた分である。**選択イベントで負けるランの多くは盤面を見て選べば避けられる**一方、`reviewFreeze` にはその余地が無い。
 

@@ -462,12 +462,14 @@ After: total 99.01% / covered 99.01% / S=1 / NC=0 / T=1（local: `npm run test:m
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/state/meta.ts`](../src/state/meta.ts) |
 | Baseline | total 76.42% / covered 79.75% / S=65 / NC=14 |
 | 既存テスト | meta 系ユニットを確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/state/meta.ts` |
 | 受入 | Survived 半減または total **85%+** |
+
+After: total 88.66% / covered 91.38% / S=28 / NC=10（ローカル `npm run test:mutation:force -- --incrementalFile /tmp/stryker-meta-after-final-e7.json --mutate src/state/meta.ts --reporters clear-text,json --concurrency 4`）
 
 やる事:
 

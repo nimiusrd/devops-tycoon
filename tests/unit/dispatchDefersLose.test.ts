@@ -15,6 +15,7 @@
 import { describe, it, expect } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
 import { FIREFIGHT_HP_COST } from '../../src/sim/actions';
+import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome';
 
 /** 炎上タスクが出るまでスプリントを進める。出なければ undefined。 */
 function advanceToBurning(e: RunEngine): boolean {
@@ -56,16 +57,31 @@ describe('dispatch は敗北判定をスプリント終了まで延期する', (
   });
 
   it('カード発動は逆に即時敗北判定を行う（対比）', () => {
-    // `playCard` だけが `applyImmediateLose()` を呼ぶ。両者を混同しないための対比。
-    const src = readEngineSource();
-    expect(src).toMatch(/playCard\([^)]*\)[\s\S]{0,900}?applyImmediateLose\(\)/);
-    const dispatchBody = src.slice(src.indexOf('  dispatch(id: ActionId'));
-    const dispatchEnd = dispatchBody.indexOf('\n  }');
-    expect(dispatchBody.slice(0, dispatchEnd)).not.toContain('applyImmediateLose');
+    const e = new RunEngine({ seed: 'pt-card-immediate-lose', difficulty: 'nightmare' });
+    e.startRun();
+    const internal = e as unknown as {
+      phase: string;
+      draft: string[] | null;
+      org: { aiDependency: number; aiLiteracy: number };
+    };
+    internal.org.aiDependency = AI_DEPENDENCY_CAP - 5;
+    internal.org.aiLiteracy = AI_LITERACY_UNSAFE_CAP;
+    internal.phase = 'draft';
+    internal.draft = ['copilot'];
+    e.chooseCard('copilot');
+    internal.phase = 'setup';
+    e.beginSetupSprint();
+
+    const before = e.snapshot();
+    const copilot = before.sprint!.cardPiles.hand.find(
+      (idx) => before.deck[idx]?.defId === 'copilot',
+    );
+    expect(copilot).toBeDefined();
+    expect(e.playCard(copilot!).ok).toBe(true);
+
+    const after = e.snapshot();
+    expect(after.status).toBe('lost');
+    expect(after.phase).toBe('lost');
+    expect(after.loseReason).toBe('aiDependency');
   });
 });
-
-function readEngineSource(): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('node:fs').readFileSync('src/sim/run/engine.ts', 'utf8');
-}

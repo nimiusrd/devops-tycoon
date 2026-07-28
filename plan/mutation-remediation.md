@@ -119,7 +119,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | [RI-72-E2](#ri-72-e2--effects-の-fold-係数) | effects の fold 係数 | 完了 | `src/sim/run/effects.ts` |
 | [RI-72-E3](#ri-72-e3--sprintbaselinebuild-の入力差分) | sprintBaselineBuild の入力差分 | 未着手 | `src/sim/run/sprintBaselineBuild.ts` |
 | [RI-72-E4](#ri-72-e4--events-の残-survived) | events の残 Survived | 完了 | `src/sim/run/events.ts` |
-| [RI-72-E5](#ri-72-e5--outcome-の敗北閾値) | outcome の敗北閾値 | 未着手 | `src/sim/outcome.ts` |
+| [RI-72-E5](#ri-72-e5--outcome-の敗北閾値) | outcome の敗北閾値 | 完了 | `src/sim/outcome.ts` |
 | [RI-72-E6](#ri-72-e6--assigntask-の-nocoverage) | assignTask の NoCoverage | 未着手 | `src/sim/assignTask.ts` |
 | [RI-72-E7](#ri-72-e7--meta-の残-survived) | meta の残 Survived | 未着手 | `src/state/meta.ts` |
 | [RI-72-E8](#ri-72-e8--roster-の残-survived) | roster の残 Survived | 未着手 | `src/sim/member/roster.ts` |
@@ -432,12 +432,14 @@ After: total 99.01% / covered 99.01% / S=1 / NC=0 / T=1（local: `npm run test:m
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/outcome.ts`](../src/sim/outcome.ts) |
 | Baseline | total 72.29% / covered 79.47% / S=31 / NC=15 |
 | 既存テスト | 関連ユニットを確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/outcome.ts` |
 | 受入 | total **80%+** |
+
+After: total 96.43% / covered 96.43% / S=6 / NC=0（local: `npm run test:mutation:force -- --mutate src/sim/outcome.ts --reporters clear-text,json --concurrency 4`）
 
 やる事:
 

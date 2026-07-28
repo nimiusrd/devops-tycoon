@@ -116,7 +116,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | [RI-72-D4](#ri-72-d4--engine-勝敗と-quarterreview-突入) | engine 勝敗と quarterReview 突入 | 完了 | `src/sim/run/engine.ts` |
 | [RI-72-D5](#ri-72-d5--engine-nocoverage-潰し) | engine NoCoverage 潰し | 未着手 | `src/sim/run/engine.ts` |
 | [RI-72-E1](#ri-72-e1--generate-の-teams--id-分岐) | generate の teams / id 分岐 | 完了 | `src/sim/orgscale/generate.ts` |
-| [RI-72-E2](#ri-72-e2--effects-の-fold-係数) | effects の fold 係数 | 未着手 | `src/sim/run/effects.ts` |
+| [RI-72-E2](#ri-72-e2--effects-の-fold-係数) | effects の fold 係数 | 完了 | `src/sim/run/effects.ts` |
 | [RI-72-E3](#ri-72-e3--sprintbaselinebuild-の入力差分) | sprintBaselineBuild の入力差分 | 未着手 | `src/sim/run/sprintBaselineBuild.ts` |
 | [RI-72-E4](#ri-72-e4--events-の残-survived) | events の残 Survived | 未着手 | `src/sim/run/events.ts` |
 | [RI-72-E5](#ri-72-e5--outcome-の敗北閾値) | outcome の敗北閾値 | 未着手 | `src/sim/outcome.ts` |
@@ -377,12 +377,14 @@ After: total 96.08% / covered 96.08% / S=2 / NC=0（ローカル `npm run test:m
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/run/effects.ts`](../src/sim/run/effects.ts) |
 | Baseline | total 69.12% / covered 69.12% / S=21 / NC=0 |
-| 既存テスト | run-systems 系を確認して拡張 |
+| 既存テスト | [`tests/unit/run-systems.test.ts`](../tests/unit/run-systems.test.ts)、[`tests/unit/effects.test.ts`](../tests/unit/effects.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/effects.ts` |
 | 受入 | total **75%+** |
+
+After: total 92.65% / covered 92.65% / S=5 / NC=0（local: `npm run test:mutation:force -- --mutate src/sim/run/effects.ts --testFiles tests/unit/run-systems.test.ts,tests/unit/effects.test.ts`）
 
 やる事:
 

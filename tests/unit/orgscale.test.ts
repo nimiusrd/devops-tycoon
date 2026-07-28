@@ -7,6 +7,7 @@ import { COMPANY_LEVERS, DEPARTMENT_LEVERS, LEVER_DEFS } from '../../src/data/le
 import {
   aggregateDepartment,
   aggregateHealth,
+  appendTeamsToDept,
   applyLever,
   companyScore,
   emptyAdjustState,
@@ -14,6 +15,8 @@ import {
   estimateRosterCoderCount,
   generateOrgScale,
   healthRank,
+  HOME_TEAM_ID,
+  initTeamRunStates,
   isOnFire,
   teamHealth,
   type OrgScaleInput,
@@ -229,6 +232,13 @@ describe('generateOrgScale', () => {
     expect(playerOf(live).health).toBe('reviewHell');
   });
 
+  it('累積インシデントから未鎮火分だけをホームチームへ初期反映する', () => {
+    const state = generateOrgScale(input({ totals: totals({ incidents: 7, contained: 4 }) }));
+    const player = state.departments.flatMap((d) => d.teams).find((t) => t.isPlayer)!;
+
+    expect(player.incidents).toBe(3);
+  });
+
   it('採用ドラフト(extraTeams)で先頭部門のチームが増える', () => {
     const base = generateOrgScale(input());
     const more = generateOrgScale(
@@ -237,6 +247,160 @@ describe('generateOrgScale', () => {
       }),
     );
     expect(more.teamCount).toBe(base.teamCount + 2);
+  });
+
+  it('採用ドラフト(extraTeams)は product 部門の既存数に続く ID で追加する', () => {
+    const state = generateOrgScale(
+      input({
+        seed: 'ri72-e1-extra-ids',
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 2 }, byDept: {} },
+      }),
+    );
+    const productIds = state.departments
+      .find((d) => d.def.id === 'product')!
+      .teams.map((t) => t.id);
+
+    expect(productIds).toEqual([
+      'product-t0',
+      'product-t1',
+      'product-t2',
+      'product-t3',
+      'product-t4',
+      'product-t5',
+    ]);
+  });
+
+  it('採用ドラフト(extraTeams)は homeTeamId の既存チームをテンプレートにする', () => {
+    const seed = 'ri72-e1-extra-template';
+    const orgState = org({ deliveryScore: 950, morale: 63, techDebt: 45, aiDependency: 38 });
+    const runTotals = totals({ reviewQueuePeak: 5, incidents: 4, contained: 1 });
+    const baseTeams = initTeamRunStates({
+      seed,
+      org: orgState,
+      homeEngineers: 5,
+      homeReviewQueue: runTotals.reviewQueuePeak,
+      homeIncidents: runTotals.incidents - runTotals.contained,
+    });
+    const template = baseTeams.find((t) => t.id === 'platform-t1')!;
+    const expectedAdded = appendTeamsToDept(baseTeams, {
+      seed,
+      deptId: 'product',
+      count: 1,
+      template,
+      nextIndexStart: baseTeams.filter((t) => t.deptId === 'product').length,
+    }).find((t) => t.id === 'product-t4')!;
+
+    const state = generateOrgScale(
+      input({
+        seed,
+        org: orgState,
+        totals: runTotals,
+        homeTeamId: 'platform-t1',
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 1 }, byDept: {} },
+      }),
+    );
+    const added = state.departments
+      .find((d) => d.def.id === 'product')!
+      .teams.find((t) => t.id === 'product-t4')!;
+
+    expect(added).toMatchObject({
+      aiDependency: expectedAdded.aiDependency,
+      reviewQueue: expectedAdded.reviewQueue,
+      incidents: expectedAdded.incidents,
+      morale: expectedAdded.morale,
+      techDebt: expectedAdded.techDebt,
+      shipping: expectedAdded.shipping,
+      engineers: expectedAdded.engineers,
+    });
+  });
+
+  it('teams 指定時は homeTeamId を既定のアクティブチームとして投影する', () => {
+    const teams = initTeamRunStates({
+      seed: 'ri72-e1-teams',
+      org: org({ deliveryScore: 900, morale: 60 }),
+      homeEngineers: 5,
+    });
+
+    const state = generateOrgScale(
+      input({
+        teams,
+        homeTeamId: 'platform-t1',
+        org: org({ deliveryScore: 1350, morale: 48, techDebt: 77, aiDependency: 34 }),
+        playerEngineers: 7,
+        playerAiAssigned: 3,
+      }),
+    );
+    const flattened = state.departments.flatMap((d) => d.teams);
+    const defaultHome = flattened.find((t) => t.id === HOME_TEAM_ID)!;
+    const activeHome = flattened.find((t) => t.id === 'platform-t1')!;
+
+    expect(state.teamCount).toBe(teams.length);
+    expect(defaultHome.isActive).toBe(false);
+    expect(defaultHome.isPlayer).toBe(false);
+    expect(activeHome).toMatchObject({
+      isActive: true,
+      isPlayer: true,
+      shipping: 1350,
+      morale: 48,
+      techDebt: 77,
+      aiDependency: 34,
+      engineers: 7,
+      aiAssignedCount: 3,
+    });
+  });
+
+  it('teams 指定時は activeTeamId が homeTeamId より優先され、extraTeams を追加しない', () => {
+    const teams = initTeamRunStates({
+      seed: 'ri72-e1-active',
+      org: org({ deliveryScore: 800, morale: 55 }),
+      homeEngineers: 4,
+      homeReviewQueue: 2,
+      homeIncidents: 1,
+    }).map((team) => (team.id === 'newbiz-t2' ? { ...team, reviewQueue: 11, incidents: 4 } : team));
+    const state = generateOrgScale(
+      input({
+        teams,
+        homeTeamId: 'platform-t1',
+        activeTeamId: 'newbiz-t2',
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 3 }, byDept: {} },
+        org: org({ deliveryScore: 2222, morale: 39 }),
+        playerEngineers: 6,
+        playerAiAssigned: 2,
+      }),
+    );
+    const flattened = state.departments.flatMap((d) => d.teams);
+    const home = flattened.find((t) => t.id === 'platform-t1')!;
+    const active = flattened.find((t) => t.id === 'newbiz-t2')!;
+
+    expect(state.teamCount).toBe(teams.length);
+    expect(state.departments.find((d) => d.def.id === 'product')!.teams).toHaveLength(
+      teams.filter((t) => t.deptId === 'product').length,
+    );
+    expect(home.isActive).toBe(false);
+    expect(home.isPlayer).toBe(false);
+    expect(active).toMatchObject({
+      isActive: true,
+      isPlayer: true,
+      shipping: 2222,
+      morale: 39,
+      reviewQueue: 11,
+      incidents: 4,
+      engineers: 6,
+      aiAssignedCount: 2,
+    });
+  });
+
+  it('teams 指定時に activeTeamId が存在しなくても投影できる', () => {
+    const teams = initTeamRunStates({
+      seed: 'ri72-e1-missing-active',
+      org: org(),
+      homeEngineers: 5,
+    });
+
+    const state = generateOrgScale(input({ teams, activeTeamId: 'missing-team' }));
+
+    expect(state.teamCount).toBe(teams.length);
+    expect(state.departments.flatMap((d) => d.teams).filter((t) => t.isActive)).toHaveLength(0);
   });
 });
 

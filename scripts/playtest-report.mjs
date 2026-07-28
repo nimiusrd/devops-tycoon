@@ -13,6 +13,7 @@
  *   それぞれの発火条件へ分解する。
  */
 import { readFileSync } from 'node:fs';
+import { generationMismatch } from './playtest-generation.mjs';
 
 /**
  * 集計対象。`PT_OUT` と第1引数で差し替えられる（`scripts/check-findings.mjs` と同じ規則）。
@@ -29,6 +30,15 @@ const loaded = JSON.parse(readFileSync(file, 'utf8'));
  */
 const raw = Array.isArray(loaded) ? loaded : loaded.runs;
 const cohort = Array.isArray(loaded) ? null : loaded.cohort;
+
+/**
+ * 測定後にコードが変わっていたら**先頭で警告する**。
+ *
+ * このレポートは `src/ui/sprintTempo.ts` や `src/data/evolution.ts` の定数を実行時に読み直すので、
+ * 旧ランと新定数を混ぜた集計になりうる。`playtest:check` と違って集計自体は続ける
+ *（過去の出力を読み直す用途があるため）が、値をそのまま所見へ写さないよう明示する。
+ */
+const STALE = generationMismatch(loaded);
 
 /**
  * テンポ換算は実装（`src/ui/sprintTempo.ts`）の定数から読む。
@@ -113,6 +123,7 @@ for (const run of raw) {
 const runs = [...byKey.values()];
 const metaProfiles = [...new Set(runs.map((r) => r.meta ?? 'fresh'))];
 console.log(`## 母数\n`);
+if (STALE) console.log(`> **警告**: ${STALE}\n`);
 console.log(`延べ実行 ${raw.length} / ユニーク ${runs.length} / 重複 ${raw.length - runs.length}`);
 if (cohort) {
   console.log(
@@ -453,6 +464,7 @@ const prevStateOf = (run) => {
       techDebtAfter: p.techDebt,
       budgetAfter: p.budget,
       aiDepAfter: p.aiDependency,
+      minTrustAfter: p.minTrust,
     };
   }
   if (run.sprints.length === 0) return undefined;
@@ -488,7 +500,7 @@ const fmtGroup = (arr) => {
       r.lostPhase === 'beat' && r.lostBeat ? `beat:${r.lostBeat.kind}` : (r.lostPhase ?? 'unknown');
     phases[key] = (phases[key] ?? 0) + 1;
   }
-  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 直前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)} aiDep=${f(prev, (s) => s.aiDepAfter)}（直前状態あり ${prev.length}/${arr.length}）| 敗北フェーズ ${JSON.stringify(phases)}${beatEventsOf(arr)}`;
+  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 直前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)} aiDep=${f(prev, (s) => s.aiDepAfter)} 最小信頼=${f(prev, (s) => s.minTrustAfter)}（直前状態あり ${prev.length}/${arr.length}）| 敗北フェーズ ${JSON.stringify(phases)}${beatEventsOf(arr)}`;
 };
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   console.log(`\n### ${d}`);

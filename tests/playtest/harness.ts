@@ -472,6 +472,18 @@ export interface RunLog {
     techDebt: number;
     aiDependency: number;
     budget: number;
+    /**
+     * ステークホルダー信頼の最小値と3者の内訳。
+     *
+     * `trustExhausted` は敗因の多数（実測25件中20件が信頼閾値由来）を占めるのに、
+     * 組織値と予算だけでは**その敗因を起こした指標が「直前」に出ない**。
+     * 他の敗因が自分の指標を表示できるのと揃えるため、最小値と内訳の両方を残す
+     * （`outcomeFor` の判定は最小値だが、どのステークホルダーが落ちたかは内訳でしか分からない）。
+     */
+    minTrust: number;
+    trustManagement: number;
+    trustCustomers: number;
+    trustTeam: number;
     /** 控えを取った時点のフェーズ（どの処理の直前かを読めるようにする）。 */
     phase: string;
   };
@@ -851,6 +863,16 @@ function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
     techDebt: r1(s.org.techDebt),
     aiDependency: r1(s.org.aiDependency),
     budget: r1(s.budget),
+    minTrust: r1(
+      Math.min(
+        s.stakeholderTrust.management,
+        s.stakeholderTrust.customers,
+        s.stakeholderTrust.team,
+      ),
+    ),
+    trustManagement: r1(s.stakeholderTrust.management),
+    trustCustomers: r1(s.stakeholderTrust.customers),
+    trustTeam: r1(s.stakeholderTrust.team),
     phase: s.phase,
   };
 }

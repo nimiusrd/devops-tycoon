@@ -14,6 +14,7 @@
  * 誤検出して役に立たなくなる。ここは取りこぼしが最も多く、かつ曖昧さなく判定できる一点に絞る。
  */
 import { readFileSync, existsSync } from 'node:fs';
+import { generationMismatch } from './playtest-generation.mjs';
 
 /**
  * 検査対象。`PT_OUT` と第1引数で差し替えられる。
@@ -48,6 +49,18 @@ const cohort = Array.isArray(loaded) ? null : loaded.cohort;
  * 例えば `onlyAndon` の実測が9勝になり、文書の正しい19勝を不一致として報告してしまう。
  * 一致しない条件では「検査した」と言えないので、未計測として明示的に降りる。
  */
+/**
+ * **測定後にコードが変わっていたら検査しない。**
+ *
+ * 世代が違う出力を突き合わせると、現行コードでは再現しない数値を「一致」と報告するか、
+ * 直したはずの値を不一致として報告することになる。どちらも検査の意味が無い。
+ */
+const stale = generationMismatch(loaded);
+if (stale) {
+  console.log(`未計測: ${stale}`);
+  process.exit(0);
+}
+
 if (!cohort) {
   console.log('コホート情報の無い出力なので未計測（`npm run playtest` で再生成すること）。');
   process.exit(0);
@@ -161,6 +174,36 @@ for (const file of DOCS) {
       problems.push(
         `${file}:${i + 1}: ${diff} の全方針合計が ${won}/${total} と書かれているが実測は ${actual.w}/${actual.n}`,
       );
+    }
+  });
+}
+
+// --- 総勝利数・総敗北数 ---------------------------------------------------
+//
+// 勝敗の総数は散文にも表にも繰り返し出る（「1,240ラン中N勝の内訳は…」「全N敗の内訳:」）。
+// 方針別と難易度別だけを検査していたため、採用の自滅を直して 387→388 と動いたとき
+// 散文側が旧値のまま残り、レビューで指摘された。総数は曖昧さなく計算できる。
+const totalWon = runs.filter((r) => r.status === 'won').length;
+const totalLost = runs.filter((r) => r.status === 'lost').length;
+for (const file of DOCS) {
+  const raw = readFileSync(file, 'utf8');
+  const cut = raw.indexOf(AS_OF_SECTION);
+  const body = cut >= 0 ? raw.slice(0, cut) : raw;
+  body.split('\n').forEach((line, i) => {
+    const at = `${file}:${i + 1}`;
+    // 「1,240ラン中387勝」形式。ラン数は桁区切りの有無を問わない。
+    for (const m of line.matchAll(/([\d,]+)ラン中\s*(\d+)\s*勝/g)) {
+      const total = Number(m[1].replace(/,/g, ''));
+      if (total !== runs.length) continue; // 別コホートを指す記述は対象外
+      if (Number(m[2]) !== totalWon) {
+        problems.push(`${at}: 総勝利が ${m[2]} と書かれているが実測は ${totalWon}`);
+      }
+    }
+    // 「全853敗」形式。
+    for (const m of line.matchAll(/全\s*(\d+)\s*敗/g)) {
+      if (Number(m[1]) !== totalLost) {
+        problems.push(`${at}: 総敗北が ${m[1]} と書かれているが実測は ${totalLost}`);
+      }
     }
   });
 }

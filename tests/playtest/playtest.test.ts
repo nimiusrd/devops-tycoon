@@ -14,6 +14,7 @@ import { dirname } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTY_DEFS } from '../../src/data/difficulties';
 import { POLICY_DEFS, runMatrix, type MetaProfile } from './harness';
+import { currentGeneration } from '../../scripts/playtest-generation.mjs';
 
 const VALID_DIFFS = new Set(Object.keys(DIFFICULTY_DEFS));
 const VALID_META = new Set<MetaProfile>(['fresh', 'full']);
@@ -116,6 +117,14 @@ describe('playtest matrix', () => {
     // 読む側（`playtest:check`）が条件を確認できるようにしておく。
     const payload = {
       generatedAt: new Date().toISOString(),
+      /**
+       * 測定に使ったソースの世代（`src/` と `tests/playtest/` の内容ハッシュ）。
+       *
+       * 時刻とコホートだけでは、**測定に成功した後でコードを変えて再計測せずに
+       * `playtest:report` / `playtest:check` だけを流す**経路を検出できない。
+       * 旧出力の削除（`globalSetup`）は実行が落ちた場合しか守らないので別物である。
+       */
+      generation: currentGeneration(),
       cohort: {
         difficulties: DIFFS,
         policies: POLICIES,

@@ -6,8 +6,9 @@ import {
   foldRunEffects,
   toEffects,
   withBossEffects,
+  type RunModifierInput,
 } from '../../src/sim/run/effects';
-import type { EvolutionState, RunModifierInput } from '../../src/sim/run/types';
+import type { EvolutionState } from '../../src/sim/run/types';
 
 const emptyEvolution: EvolutionState = { points: 0, unlocked: {} };
 

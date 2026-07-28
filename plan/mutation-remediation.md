@@ -350,7 +350,7 @@ After: D4 対象行レンジ total 100.00% / covered 100.00% / K=39 / T=6 / S=0 
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
 | 受入 | NoCoverage **半減以下**。D1–D5 後にファイル total **75%+** |
 
-After: total 60.84% / covered 61.24% / S=590 / T=48 / NC=10（local: `npm run test:mutation:force -- --mutate src/sim/run/engine.ts --testFiles "tests/unit/run-engine.test.ts,tests/unit/run-engine-d2-shop.test.ts,tests/unit/run-engine-d3-hydrate.test.ts,tests/unit/run-engine-d4-outcome.test.ts,tests/unit/run-engine-d5-nocoverage.test.ts" --reporters clear-text,json --concurrency 4`）。Before 同条件（D5 追加前の既存関連 4 ファイル）は total 4.50% / covered 5.66% / S=1150 / T=4 / NC=313。計画 Baseline NC=67 に対しても NC=10 で半減以下を達成。
+After: total 60.84% / covered 61.24% / S=590 / T=47 / NC=10（local: `npm run test:mutation:force -- --mutate src/sim/run/engine.ts --testFiles "tests/unit/run-engine.test.ts,tests/unit/run-engine-d2-shop.test.ts,tests/unit/run-engine-d3-hydrate.test.ts,tests/unit/run-engine-d4-outcome.test.ts,tests/unit/run-engine-d5-nocoverage.test.ts" --reporters clear-text,json --concurrency 4`）。Before 同条件（D5 追加前の既存関連 4 ファイル）は total 4.50% / covered 5.66% / S=1150 / T=4 / NC=313。計画 Baseline NC=67 に対しても NC=10 で半減以下を達成。
 
 やる事:
 

@@ -1,10 +1,6 @@
 name: CI
 
 on:
-  # クレジット切れやランナー確保失敗で走らなかったコミットを、後から手動で実行できるようにする。
-  # `pull_request` 契機だけだと、既にプッシュ済みのコミットに対して CI を回す手段が無い
-  # （空コミットは paths-ignore の対象になり、変更ファイル0件では起動しない）。
-  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:

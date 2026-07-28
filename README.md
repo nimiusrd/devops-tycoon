@@ -101,6 +101,8 @@ http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
 | `npm run test:e2e` | Playwrightの標準E2Eを実行 |
 | `npm run test:e2e:pixi` | PixiJSの視覚回帰テストを実行 |
 | `npm run gallery` | 主要画面を撮影して`gallery/index.html`を生成 |
+| `npm run playtest` | 全難易度×方針でランを自動プレイし結果を`playtest-out/`へ出力 |
+| `npm run playtest:report` | プレイテスト結果をSPEC第19.1の判定基準ごとに集計 |
 | `npm run lint` | ESLintを実行 |
 | `npm run format:check` | Prettier差分を確認 |
 | `npm run format` | Prettierで整形 |
@@ -151,7 +153,8 @@ src/
 
 tests/
 ├── unit/      # ロジック、不変条件、統計レンジ
-└── e2e/       # ブラウザ操作と視覚回帰
+├── e2e/       # ブラウザ操作と視覚回帰
+└── playtest/  # バランス計測用オートプレイ（npm run playtest。npm test の対象外）
 ```
 
 ## ドキュメント
@@ -168,6 +171,7 @@ tests/
 コアループは通しプレイ可能です。現在の主要な未充足は次のとおりです。
 
 - ボス、四半期、ラン全体を含むペーシング統計検証の補強
+- 面白さの判定基準（[SPEC 第19.1](SPEC.md)）に対するバランス上の未充足（難易度カーブ、単一介入の優位、勝利種別の分岐、AI 導入の意思決定、カードの寄与）
 
 詳細と受入条件は[残課題バックログ](plan/remaining-issues.md)を参照してください。
 

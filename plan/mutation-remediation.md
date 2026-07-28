@@ -112,7 +112,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | [RI-72-C1](#ri-72-c1--quarterreview-の閾値と-outcome) | quarterReview の閾値と outcome | 完了 | `src/sim/run/quarterReview.ts` |
 | [RI-72-D1](#ri-72-d1--engine-phase-guard) | engine phase guard | 完了 | `src/sim/run/engine.ts` |
 | [RI-72-D2](#ri-72-d2--engine-shop--rest--recruit) | engine shop / rest / recruit | 未着手 | `src/sim/run/engine.ts` |
-| [RI-72-D3](#ri-72-d3--engine-hydrate--セーブ復元) | engine hydrate / セーブ復元 | 未着手 | `src/sim/run/engine.ts` |
+| [RI-72-D3](#ri-72-d3--engine-hydrate--セーブ復元) | engine hydrate / セーブ復元 | 完了 | `src/sim/run/engine.ts` |
 | [RI-72-D4](#ri-72-d4--engine-勝敗と-quarterreview-突入) | engine 勝敗と quarterReview 突入 | 未着手 | `src/sim/run/engine.ts` |
 | [RI-72-D5](#ri-72-d5--engine-nocoverage-潰し) | engine NoCoverage 潰し | 未着手 | `src/sim/run/engine.ts` |
 | [RI-72-E1](#ri-72-e1--generate-の-teams--id-分岐) | generate の teams / id 分岐 | 未着手 | `src/sim/orgscale/generate.ts` |
@@ -307,12 +307,14 @@ Full engine mutation は `npm run test:mutation:force -- --mutate src/sim/run/en
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
 | Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は hydrate/復元枝に限定） |
-| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts)、persistence 系 |
+| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts)、persistence 系、[`tests/unit/run-engine-d3-hydrate.test.ts`](../tests/unit/run-engine-d3-hydrate.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
 | 受入 | hydrate / 復元枝の Survived 削減を PR に記載 |
+
+After: D3 対象行レンジ total 61.83% / covered 62.31% / K=81 / S=49 / NC=1（local: `npm run test:mutation:force -- --incrementalFile /tmp/stryker-d3-after-related-v2.json --mutate src/sim/run/engine.ts:1788-2035 --testFiles tests/unit/runPersistence.test.ts,tests/unit/orgscale-engine.test.ts,tests/unit/whatIf.test.ts,tests/unit/run-engine-d3-hydrate.test.ts --reporters clear-text --concurrency 4`。Before 同条件は total 33.59% / covered 37.61% / K=44 / S=73 / NC=14）
 
 やる事:
 

@@ -109,7 +109,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | [RI-72-B2](#ri-72-b2--metapersistence-の壊れた入力) | metaPersistence の壊れた入力 | 完了 | `src/state/metaPersistence.ts` |
 | [RI-72-B3](#ri-72-b3--replay-正規化の条件枝) | replay 正規化の条件枝 | 完了 | `src/state/replay.ts` |
 | [RI-72-B4](#ri-72-b4--runpersistence-の境界) | runPersistence の境界 | 完了 | `src/state/runPersistence.ts` |
-| [RI-72-C1](#ri-72-c1--quarterreview-の閾値と-outcome) | quarterReview の閾値と outcome | 未着手 | `src/sim/run/quarterReview.ts` |
+| [RI-72-C1](#ri-72-c1--quarterreview-の閾値と-outcome) | quarterReview の閾値と outcome | 完了 | `src/sim/run/quarterReview.ts` |
 | [RI-72-D1](#ri-72-d1--engine-phase-guard) | engine phase guard | 未着手 | `src/sim/run/engine.ts` |
 | [RI-72-D2](#ri-72-d2--engine-shop--rest--recruit) | engine shop / rest / recruit | 未着手 | `src/sim/run/engine.ts` |
 | [RI-72-D3](#ri-72-d3--engine-hydrate--セーブ復元) | engine hydrate / セーブ復元 | 未着手 | `src/sim/run/engine.ts` |
@@ -254,12 +254,14 @@ After: total 84.36% / covered 84.76% / S=32 / NC=1 / T=3（ローカル `npm run
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts) |
 | Baseline | total 62.27% / covered 63.69% / S=191 / NC=12 |
 | 既存テスト | [`tests/unit/quarter-review.test.ts`](../tests/unit/quarter-review.test.ts)、[`quarter-review-seeds.test.ts`](../tests/unit/quarter-review-seeds.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/quarterReview.ts` |
 | 受入 | total **75%+** または Survived ≤100 |
+
+After: total 75.28% / covered 76.13% / S=127 / NC=6（ローカル `npm run test:mutation:force -- --mutate src/sim/run/quarterReview.ts`）
 
 やる事:
 

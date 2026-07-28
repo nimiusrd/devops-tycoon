@@ -284,13 +284,22 @@ for (const file of DOCS) {
         }
       }
     }
-    // 「`reviewFreeze`（296件）」— 敗因ごとの件数。
-    // RI-85 の敗因表がこの形で、旧コホートの値が残ってレビューで指摘された。
-    for (const m of line.matchAll(/`(\w+)`\s*(?:\*\*)?（\s*(\d+)\s*件）/g)) {
+    // 敗因ごとの件数。**曖昧さの無い2つの形だけ**を見る。
+    //   1) `reviewFreeze`（296件）    — RI-85 の敗因表と本文
+    //   2) `reviewFreeze` が全296件   — 「全件がこの経路」と述べる本文
+    //
+    // **裸の「`name` N件」は対象にしない。** 「`aiDependency` 10件が消える」のように
+    // 部分集合の件数を指す用法があり、全体の件数と区別できないため誤検出になる。
+    // （実際、間に任意の4文字を許す正規表現にしたら、`が全29`+`6件` のように
+    //   桁の途中で切って偽陽性を6件出した。）
+    for (const m of line.matchAll(
+      /`(\w+)`\s*(?:\*\*)?(?:（\s*(\d+)\s*件\s*）|\s*が全\s*(\d+)\s*件)/g,
+    )) {
+      const written = m[2] ?? m[3];
       if (!loseCounts.has(m[1])) continue;
       const actual = loseCounts.get(m[1]);
-      if (Number(m[2]) !== actual) {
-        problems.push(`${at}: \`${m[1]}\` が ${m[2]}件 と書かれているが実測は ${actual}件`);
+      if (Number(written) !== actual) {
+        problems.push(`${at}: \`${m[1]}\` が ${written}件 と書かれているが実測は ${actual}件`);
       }
     }
     // 「| `noAi` | `noDamage` 12 / `healthy` **0** |」— 方針別の勝利種別。
@@ -333,14 +342,6 @@ for (const file of DOCS) {
             `${at}: \`${policy}\` の \`${d[1]}\` が ${d[2]} と書かれているが実測は ${actual}`,
           );
         }
-      }
-    }
-    // 表の「`seniorBurnout`（209件）」「**`reviewFreeze`**（296件）」— 敗因別の件数。
-    for (const m of line.matchAll(/`(\w+)`\s*（\s*(\d+)\s*件\s*）/g)) {
-      if (!loseCounts.has(m[1])) continue;
-      const actual = loseCounts.get(m[1]);
-      if (Number(m[2]) !== actual) {
-        problems.push(`${at}: \`${m[1]}\` が ${m[2]}件 と書かれているが実測は ${actual}件`);
       }
     }
   });

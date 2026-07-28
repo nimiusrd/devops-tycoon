@@ -716,8 +716,14 @@ if (overall) {
 // **両方針が到達した seed だけで比べる**。到達率が違うまま生存ランを独立に集めると、
 // 早期敗北した低評価 seed が片方からだけ脱落し、生存者バイアスで中央値の優劣が反転しうる
 // （実際に劣っていても生存者の中央値は同じか高く出る）。未到達は別途件数で示す。
+//
+// **無介入側は `noInterventionCtl` を使う。** `passive` は介入だけでなく進化を `none`、
+// ビート判断を `firstChoice` にしているため、`skilledNoHire` との差へ進化効果と
+// イベント選択の巧拙まで混ざり、評価差を「操作の巧拙」へ帰属できない。
+// `noInterventionCtl` はカード・進化・採用・ビート条件を `skilledNoHire` と揃えたうえで
+// 介入だけを外した統制条件である。
 console.log(
-  '\n無介入(passive) vs 熟練(skilledNoHire) — 同一メタ・難易度・seed で両方が到達したスプリントのみ:',
+  '\n無介入(noInterventionCtl) vs 熟練(skilledNoHire) — 同一メタ・難易度・seed で両方が到達したスプリントのみ:',
 );
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   for (const n of [1, 2, 3]) {
@@ -728,7 +734,7 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
       }
       return m;
     };
-    const pa = bySeed('passive');
+    const pa = bySeed('noInterventionCtl');
     const pb = bySeed('skilledNoHire');
     const shared = [...pa.keys()].filter((k) => pb.has(k));
     const a = gradeStats(shared.map((k) => pa.get(k)));
@@ -740,7 +746,7 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
     }
     const note = dropped > 0 ? ` ※片方のみ到達 ${dropped}件を除外` : '';
     console.log(
-      `  ${d} S${n}: 共通 n=${shared.length} | passive 中央値=${a.median} ${JSON.stringify(a.dist)} | skilledNoHire 中央値=${b.median} ${JSON.stringify(b.dist)}${note}`,
+      `  ${d} S${n}: 共通 n=${shared.length} | noInterventionCtl 中央値=${a.median} ${JSON.stringify(a.dist)} | skilledNoHire 中央値=${b.median} ${JSON.stringify(b.dist)}${note}`,
     );
   }
 }

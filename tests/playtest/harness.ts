@@ -291,7 +291,15 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   onlySplit: single('splitPr'),
   onlyPair: single('pairReview'),
   onlyThrottle: single('aiThrottle'),
-  /** ビルド差分（F-10）。 */
+  /**
+   * ビルド差分（F-10）。
+   *
+   * **ビート選択は `stateAware` に揃えてある。** 既定の `firstChoice` のままだと、
+   * 比較対象の `skilledNoHire`（`stateAware`）との差へビルド構成だけでなく
+   * イベント判断の巧拙が混ざる。実際、揃える前は予算10で `postmortem-culture` が出ると
+   * この3方針だけが予算-10（＝残高0で即敗北）の先頭選択肢を取っており、
+   * `budgetExhausted` 敗北8件すべてがこの経路だった（RI-90）。
+   */
   aiFullBet: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
@@ -299,6 +307,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     evolve: 'aiFirst',
     draft: 'ai',
     ai: 'all',
+    beat: 'stateAware',
     recruit: 'hire',
   },
   noAi: {
@@ -308,6 +317,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     evolve: 'qualityFirst',
     draft: 'quality',
     ai: 'none',
+    beat: 'stateAware',
     recruit: 'hire',
   },
   reviewHeavy: {
@@ -316,6 +326,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     cards: 'always',
     evolve: 'reviewFirst',
     formation: 'reviewHeavy',
+    beat: 'stateAware',
     recruit: 'hire',
   },
   /**

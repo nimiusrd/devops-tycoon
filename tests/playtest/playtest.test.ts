@@ -100,6 +100,12 @@ function sameSet(a: readonly string[], b: readonly string[]): boolean {
 
 describe('playtest matrix', () => {
   it('難易度 × 方針 × seed を回して結果を書き出す', { timeout: 3_600_000 }, () => {
+    // **実行前の世代を控える。** 下で書き出す世代を完了後にだけ計算すると、
+    // 実行中に `src/` や `tests/playtest/` を編集した場合、ランは既に読み込まれた
+    // 変更前のモジュールで進むのに、出力へは変更後の世代が付く。その出力は
+    // `playtest:report` / `playtest:check` を世代一致として通ってしまう。
+    const generationBefore = currentGeneration();
+
     const runs = runMatrix(DIFFS, POLICIES, SEEDS, META);
     expect(runs.length).toBe(DIFFS.length * POLICIES.length * SEEDS.length);
 
@@ -110,6 +116,12 @@ describe('playtest matrix', () => {
       stuck.map((r) => `${r.difficulty}/${r.policy}/${r.seed}=${r.status}`),
       '終端（won / lost）に到達しなかったランがある',
     ).toEqual([]);
+
+    // 実行中にソースが変わっていたら、この測定はどちらの世代の結果とも言えない。書き出さない。
+    expect(
+      currentGeneration(),
+      '実行中に src/ または tests/playtest/ が変更された。測定結果と世代が対応しないため書き出さない',
+    ).toBe(generationBefore);
 
     mkdirSync(dirname(OUT), { recursive: true });
     // **どのコホートを回したかを一緒に書き出す。** 絞り込み実行（`PT_DIFFS=easy` など）の
@@ -124,7 +136,7 @@ describe('playtest matrix', () => {
        * `playtest:report` / `playtest:check` だけを流す**経路を検出できない。
        * 旧出力の削除（`globalSetup`）は実行が落ちた場合しか守らないので別物である。
        */
-      generation: currentGeneration(),
+      generation: generationBefore,
       cohort: {
         difficulties: DIFFS,
         policies: POLICIES,

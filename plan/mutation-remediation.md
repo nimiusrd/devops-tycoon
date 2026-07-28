@@ -400,12 +400,14 @@ After: total 92.65% / covered 92.65% / S=5 / NC=0（local: `npm run test:mutatio
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts) |
 | Baseline | total 63.16% / covered 69.23% / S=16 / NC=5 |
 | 既存テスト | sprintBaseline 系を確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/sprintBaselineBuild.ts` |
 | 受入 | total **70%+** |
+
+After: total 92.98% / covered 92.98% / S=4 / NC=0（local: `npm run test:mutation:force -- --mutate src/sim/run/sprintBaselineBuild.ts`）
 
 やる事:
 

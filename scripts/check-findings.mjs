@@ -214,6 +214,96 @@ for (const file of DOCS) {
   });
 }
 
+// --- 散文の定型表現 -------------------------------------------------------
+//
+// 所見は同じ量を表と散文の両方へ書く。表だけを検査していたため、
+// 「良かった点」節の「熟練の 14/40」「使う14 vs 使わない8」のように
+// **方針名を伴わない言い回し**が旧コホートのまま残り、レビューで繰り返し指摘された。
+// 汎用の散文解析は不可能だが、この文書で実際に繰り返される言い回しは有限なので、
+// 対応表として明示的に持つ。新しい言い回しを増やしたらここへ足すこと。
+const winOf = (policy) => wins.get(policy)?.w;
+const PROSE_RULES = [
+  // 「熟練の 16/40」（方針名を書かずに `skilledNoHire` を指す）
+  {
+    re: /熟練の\s*(\d{1,3})\/40/g,
+    want: () => winOf('skilledNoHire'),
+    label: '熟練（skilledNoHire）',
+  },
+  // 「使う16 vs 使わない8」（カードの寄与）
+  {
+    re: /使う\s*(\d{1,3})\s*vs\s*使わない\s*(\d{1,3})/g,
+    want: () => winOf('skilledNoHire'),
+    want2: () => winOf('skilledNoCards'),
+    label: 'カード使用（skilledNoHire）',
+    label2: 'カード不使用（skilledNoCards）',
+  },
+];
+// 敗因別の件数（実測から求める）。
+const ALL_DIAGNOSES = new Set(runs.map((r) => r.diagnosis));
+const loseCounts = new Map();
+for (const r of runs) {
+  if (r.status !== 'lost') continue;
+  loseCounts.set(r.loseReason, (loseCounts.get(r.loseReason) ?? 0) + 1);
+}
+// 方針ごとの診断内訳。
+const diagByPolicy = new Map();
+for (const r of runs) {
+  if (!diagByPolicy.has(r.policy)) diagByPolicy.set(r.policy, new Map());
+  const m = diagByPolicy.get(r.policy);
+  m.set(r.diagnosis, (m.get(r.diagnosis) ?? 0) + 1);
+}
+
+for (const file of DOCS) {
+  const raw = readFileSync(file, 'utf8');
+  const cut = raw.indexOf(AS_OF_SECTION);
+  const body = cut >= 0 ? raw.slice(0, cut) : raw;
+  body.split('\n').forEach((line, i) => {
+    const at = `${file}:${i + 1}`;
+    for (const rule of PROSE_RULES) {
+      rule.re.lastIndex = 0;
+      let m;
+      while ((m = rule.re.exec(line))) {
+        const want = rule.want();
+        if (want !== undefined && Number(m[1]) !== want) {
+          problems.push(`${at}: ${rule.label} が ${m[1]} と書かれているが実測は ${want}`);
+        }
+        if (rule.want2) {
+          const want2 = rule.want2();
+          if (want2 !== undefined && Number(m[2]) !== want2) {
+            problems.push(`${at}: ${rule.label2} が ${m[2]} と書かれているが実測は ${want2}`);
+          }
+        }
+      }
+    }
+    // 「`a` / `b` / `c`（実測合計296件）」— 列挙した敗因の合計。
+    for (const m of line.matchAll(/((?:`\w+`\s*\/\s*)+`\w+`)\s*（実測合計\s*(\d+)\s*件）/g)) {
+      const names = [...m[1].matchAll(/`(\w+)`/g)].map((x) => x[1]);
+      if (!names.every((n) => loseCounts.has(n))) continue;
+      const actual = names.reduce((a, n) => a + loseCounts.get(n), 0);
+      if (Number(m[2]) !== actual) {
+        problems.push(
+          `${at}: ${names.join('+')} の合計が ${m[2]} と書かれているが実測は ${actual}`,
+        );
+      }
+    }
+    // 「`noAi` は `documentationKingdom` 10 / `healthyAcceleration` 5」— 方針別の診断件数。
+    for (const pm of line.matchAll(/`(\w+)`\s*は\s*((?:`\w+`\s*\d+\s*\/?\s*)+)/g)) {
+      const policy = pm[1];
+      const dm = diagByPolicy.get(policy);
+      if (!dm) continue;
+      for (const d of pm[2].matchAll(/`(\w+)`\s*(\d+)/g)) {
+        if (!dm.has(d[1]) && !ALL_DIAGNOSES.has(d[1])) continue;
+        const actual = dm.get(d[1]) ?? 0;
+        if (Number(d[2]) !== actual) {
+          problems.push(
+            `${at}: \`${policy}\` の \`${d[1]}\` が ${d[2]} と書かれているが実測は ${actual}`,
+          );
+        }
+      }
+    }
+  });
+}
+
 if (problems.length > 0) {
   console.error(`方針別勝利数がドキュメントと実測でずれている（${problems.length}件）:`);
   for (const p of problems) console.error(`  ${p}`);

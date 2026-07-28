@@ -218,9 +218,9 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 敗因ごとの進行速度は明確に異なり（敗北までのスプリント数 p50 が `aiDependency` 1 / `moraleCollapse` 2 / `seniorBurnout` 3 / `reviewFreeze` 8 / `techDebt` 9 / `reorgRequired` 18 / `trustExhausted` 24）、この点は F-9 として良い。問題は予兆とラベルの2点である。
 
-第一に、`trustExhausted` / `reorgRequired` は**敗北を確定させた処理の直前**にシニアHP 33.4〜35.6・士気 97.8〜100 のまま終わる。盤面上は健全に見えるのに終了するため、F-6（次の一手が分かる）と F-8（詰みの確定を作らない）を満たさない。なお直前状態を実時点の控え（`lostPrevState`）へ直したところ、`seniorBurnout` の直前シニアHP は 12.6 → 19.2、`techDebt` は 11.8 → 52.3 へ上がった。**この2敗因も「資源が枯れてから負ける」のではなく、健全な値から選択不能なビート1回で落ちている**（`seniorBurnout` 210件中169件が judgment）ので、予兆の乏しさは上の3敗因に限らない。
+第一に、`trustExhausted` / `reorgRequired` は**敗北を確定させた処理の直前**にシニアHP 33.8〜36.4・士気 98.0〜100 のまま終わる。盤面上は健全に見えるのに終了するため、F-6（次の一手が分かる）と F-8（詰みの確定を作らない）を満たさない。なお直前状態を実時点の控え（`lostPrevState`）へ直したところ、`seniorBurnout` の直前シニアHP は 12.6 → 19.9、`techDebt` は 11.8 → 52.4 へ上がった。**この2敗因も「資源が枯れてから負ける」のではなく、健全な値から選択不能なビート1回で落ちている**（`seniorBurnout` 209件中168件が judgment）ので、予兆の乏しさは上の3敗因に限らない。
 
-第二に、**`trustExhausted` ラベルが3種類の原因を1つに潰している**。`loseReasonForOutcome`（`src/sim/run/quarterReview.ts:464`）は `missed_crisis` と `shutdown` の**両方**を `trustExhausted` に変換する。1,240ランでの発火条件の内訳は、`missed_crisis` が `trust<=15` 20件 / `budget<=5` 1件、`shutdown` が `seniorHp<=5 かつ missedCount>=2` 4件 / `trust<=10` 1件。つまり `trustExhausted` 26件のうち信頼由来は21件で、**残り5件は予算切れ（1件）とシニア枯渇（4件）**である。予算やシニアが原因のランに信頼回復を促しても解決しない。この内訳は判定時と同じ入力から復元できている（`companyOrgFromTeams` は `morale` / `seniorHp` を平均せず選択中チームの値をそのまま使い、`trust` / `budget` はラン単位のため）。
+第二に、**`trustExhausted` ラベルが3種類の原因を1つに潰している**。`loseReasonForOutcome`（`src/sim/run/quarterReview.ts:464`）は `missed_crisis` と `shutdown` の**両方**を `trustExhausted` に変換する。1,240ランでの発火条件の内訳は、`missed_crisis` が `trust<=15` 21件 / `budget<=5` 1件 / 両方の同時成立 1件、`shutdown` が `seniorHp<=5 かつ missedCount>=2` 4件 / `trust<=10` 1件。つまり `trustExhausted` 28件のうち信頼由来は23件で、**残り5件は予算切れ（1件）とシニア枯渇（4件）**である。予算やシニアが原因のランに信頼回復を促しても解決しない。この内訳は判定時と同じ入力から復元できている（`companyOrgFromTeams` は `morale` / `seniorHp` を平均せず選択中チームの値をそのまま使い、`trust` / `budget` はラン単位のため）。
 
 受入条件:
 
@@ -301,7 +301,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 敗因ごとに決着位置は分かれる。**`reviewFreeze`（295件）は例外なく100%が `review-freeze`(judgment) で確定**し、盤面で対処する機会がない。プレイヤーはスプリントを走り切った直後に、操作の余地がない画面で敗北を告げられる。一方 `seniorBurnout`（206件）は judgment / **decision** / sprint が混在し、選択を経て確定するものが相当数ある。`aiDependency`（255件）・`techDebt`（31件）・`moraleCollapse`（15件）はスプリント中、`trustExhausted`（24件）・`reorgRequired`（13件）は四半期レビューで決まる。
 
-全850敗の決着フェーズは `beat:judgment` 473（56%）/ `sprint` 319（38%）/ `quarterReview` 41（5%）/ `beat:decision` 17（2%）。`beat:decision` はビート選択の統制を進めた結果 90件（12%）→ 40件（5%）→ 34件（4%）→ **17件（2%）** と段階的に減った。最後の半減はビルド差分3方針を `stateAware` へ揃えた分である（RI-90）。最初は `firstChoice` が `urgent-demo` のようにシニアHPを削る先頭選択肢を無条件に取っていた分、次は評価に予算が入っておらず `postmortem-culture` で予算0＝即敗北を自分から選んでいた分である。**選択イベントで負けるランの多くは盤面を見て選べば避けられる**一方、`reviewFreeze` にはその余地が無い。
+全850敗の決着フェーズは `beat:judgment` 470（55%）/ `sprint` 319（38%）/ `quarterReview` 44（5%）/ `beat:decision` 17（2%）。`beat:decision` はビート選択の統制を進めた結果 90件（12%）→ 40件（5%）→ 34件（4%）→ **17件（2%）** と段階的に減った。最後の半減はビルド差分3方針を `stateAware` へ揃えた分である（RI-90）。最初は `firstChoice` が `urgent-demo` のようにシニアHPを削る先頭選択肢を無条件に取っていた分、次は評価に予算が入っておらず `postmortem-culture` で予算0＝即敗北を自分から選んでいた分である。**選択イベントで負けるランの多くは盤面を見て選べば避けられる**一方、`reviewFreeze` にはその余地が無い。
 
 当初この所見は敗北の大半が「操作の余地がない画面」で確定するとしていたが、これはハーネスがビートの選択肢を常に先頭で取っていたためだった（`urgent-demo` の先頭は `seniorHp -10 / morale -15`）。状態を見て選ぶ方針へ変え、judgment と decision を分けて記録した結果、対象は `reviewFreeze` に絞られた。
 

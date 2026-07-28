@@ -114,7 +114,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | [RI-72-D2](#ri-72-d2--engine-shop--rest--recruit) | engine shop / rest / recruit | 完了 | `src/sim/run/engine.ts` |
 | [RI-72-D3](#ri-72-d3--engine-hydrate--セーブ復元) | engine hydrate / セーブ復元 | 完了 | `src/sim/run/engine.ts` |
 | [RI-72-D4](#ri-72-d4--engine-勝敗と-quarterreview-突入) | engine 勝敗と quarterReview 突入 | 完了 | `src/sim/run/engine.ts` |
-| [RI-72-D5](#ri-72-d5--engine-nocoverage-潰し) | engine NoCoverage 潰し | 未着手 | `src/sim/run/engine.ts` |
+| [RI-72-D5](#ri-72-d5--engine-nocoverage-潰し) | engine NoCoverage 潰し | 進行中 | `src/sim/run/engine.ts` |
 | [RI-72-E1](#ri-72-e1--generate-の-teams--id-分岐) | generate の teams / id 分岐 | 完了 | `src/sim/orgscale/generate.ts` |
 | [RI-72-E2](#ri-72-e2--effects-の-fold-係数) | effects の fold 係数 | 完了 | `src/sim/run/effects.ts` |
 | [RI-72-E3](#ri-72-e3--sprintbaselinebuild-の入力差分) | sprintBaselineBuild の入力差分 | 未着手 | `src/sim/run/sprintBaselineBuild.ts` |
@@ -279,7 +279,7 @@ After: total 75.28% / covered 76.13% / S=127 / NC=6（ローカル `npm run test
 | Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は phase 枝に限定） |
 | 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
-| 受入 | 対象枝の Survived を削減（PR に Before/After の該当箇所を記載）。D1–D5 完了後にファイル total **75%+**、NC 半減 |
+| 受入 | 対象枝の Survived を削減（PR に Before/After の該当箇所を記載） |
 
 After: D1 対象行レンジ total 85.19% / covered 85.19% / K=23 / T=23 / S=8 / NC=0（local: `npm run test:mutation:force -- --mutate "src/sim/run/engine.ts:364-366,src/sim/run/engine.ts:517-519,src/sim/run/engine.ts:753-755,src/sim/run/engine.ts:777-779,src/sim/run/engine.ts:891-893,src/sim/run/engine.ts:903-905,src/sim/run/engine.ts:912-914,src/sim/run/engine.ts:919-921,src/sim/run/engine.ts:928-930,src/sim/run/engine.ts:995-997" --testFiles tests/unit/run-engine.test.ts --reporters clear-text --concurrency 4`。Before 同レンジは total 53.70% / covered 58.00% / K=6 / T=23 / S=21 / NC=4）
 Full engine mutation は `npm run test:mutation:force -- --mutate src/sim/run/engine.ts --reporters clear-text --concurrency 4` を試行し、dry run 成功（389 tests / 1533 mutants instrumented）後に中断されたため D1 対象行レンジの数値を採用。
@@ -343,16 +343,22 @@ After: D4 対象行レンジ total 100.00% / covered 100.00% / K=39 / T=6 / S=0 
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 進行中 |
 | 対象 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) |
-| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は NC 潰し） |
-| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts) |
-| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts` |
-| 受入 | NoCoverage **半減以下**。D1–D5 後にファイル total **75%+** |
+| Baseline | total 65.14% / covered 68.12% / S=467 / NC=67（ファイル全体。本単位は NC 潰し＋ファイル total） |
+| 既存テスト | [`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts)、[`tests/unit/run-engine-d2-shop.test.ts`](../tests/unit/run-engine-d2-shop.test.ts)、[`tests/unit/run-engine-d3-hydrate.test.ts`](../tests/unit/run-engine-d3-hydrate.test.ts)、[`tests/unit/run-engine-d4-outcome.test.ts`](../tests/unit/run-engine-d4-outcome.test.ts)、[`tests/unit/run-engine-d5-nocoverage.test.ts`](../tests/unit/run-engine-d5-nocoverage.test.ts) |
+| 再計測 | `npm run test:mutation:force -- --mutate src/sim/run/engine.ts`（原則 `--testFiles` で絞らない） |
+| 受入 | NoCoverage **半減以下** かつ ファイル total **75%+** |
+
+進捗: NC=10（Baseline NC=67 から半減以下は達成）。total は参考計測 60.84%（D1–D5 関連 `--testFiles` 限定）で **75% 未達**のため完了にしない。
+
+After（途中）: NC=10 / total 60.84% / covered 61.24% / S=590 / T=47（local: `npm run test:mutation:force -- --mutate src/sim/run/engine.ts --testFiles "tests/unit/run-engine.test.ts,tests/unit/run-engine-d2-shop.test.ts,tests/unit/run-engine-d3-hydrate.test.ts,tests/unit/run-engine-d4-outcome.test.ts,tests/unit/run-engine-d5-nocoverage.test.ts" --reporters clear-text,json --concurrency 4`）。フルスイート再計測と残 Survived 潰しが残作業。
 
 やる事:
 
 - NoCoverage 行の洗い出し。到達可能ならテスト、死コードなら削除または正当な disable
+- フルスイート（または related 全体）で `engine.ts` を再計測し、ファイル total **75%+** まで残 Survived を潰す
+- 通しプレイを増やさず、小さい固定入力で足りる枝から断言する
 
 ### Group E — 中優先（P2）
 

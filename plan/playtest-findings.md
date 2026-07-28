@@ -494,7 +494,7 @@ SPEC 第3.1 の規定は**通常60〜120秒（絶対下限30秒）・ボス90〜
 | 方針 | 組織診断 |
 | --- | --- |
 | `aiFullBet` | `reviewHell` 14 / `seniorSacrifice` 26 |
-| `noAi` | `documentationKingdom` 10 / `reviewHell` 11 / `healthyAcceleration` 5 / `seniorSacrifice` 13 / `reworkSpiral` 1 |
+| `noAi` | `documentationKingdom` 8 / `reviewHell` 9 / `healthyAcceleration` 5 / `seniorSacrifice` 18 |
 
 つまり**ビルドの違いは組織診断には出ているが、勝利種別には反映されていない**。
 F-10 が求めるのは後者なので、勝利種別の判定側を直す余地がある。

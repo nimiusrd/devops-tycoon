@@ -286,8 +286,10 @@ for (const file of DOCS) {
         );
       }
     }
-    // 「`noAi` は `documentationKingdom` 10 / `healthyAcceleration` 5」— 方針別の診断件数。
-    for (const pm of line.matchAll(/`(\w+)`\s*は\s*((?:`\w+`\s*\d+\s*\/?\s*)+)/g)) {
+    // 方針別の診断件数。散文（「`noAi` は `documentationKingdom` 8 / ...」）と
+    // 表の行（「| `noAi` | `documentationKingdom` 8 / ... |」）の両方を拾う。
+    // **`は` だけを見ていて表形式を取りこぼしていた**（RI-76 の診断表が旧値のまま残った）。
+    for (const pm of line.matchAll(/`(\w+)`\s*(?:は|\|)\s*((?:`\w+`\s*\d+\s*\/?\s*)+)/g)) {
       const policy = pm[1];
       const dm = diagByPolicy.get(policy);
       if (!dm) continue;

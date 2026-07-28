@@ -1,0 +1,12 @@
+{
+  // プレイテスト用ハーネスの型検査。
+  // ルートの tsconfig.json は include が "src" のみで tests/ を型検査しないため、
+  // 方針定義（PolicySpec）の型崩れを検知できない。実行前に必ず通す（npm run playtest）。
+  // playtest.test.ts は node 組み込みモジュールを使い @types/node が要るため対象外。
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.playtest.tsbuildinfo"
+  },
+  "include": ["src", "tests/playtest/harness.ts"],
+  "references": []
+}

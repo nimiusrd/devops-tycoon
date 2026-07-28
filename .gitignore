@@ -49,3 +49,6 @@ lerna-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# playtest output (npm run playtest)
+playtest-out/

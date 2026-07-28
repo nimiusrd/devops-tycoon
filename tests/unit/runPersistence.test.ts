@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { deleteDB } from 'idb';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../src/game';
 import { createRunEngine } from '../../src/sim/run/engine';
 import { openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from '../../src/state/gameDb';
@@ -11,6 +11,7 @@ import {
   parseRunSave,
   toRunSave,
   RUN_SAVE_SCHEMA_VERSION,
+  type RunSave,
 } from '../../src/state/runPersistence';
 
 const databases: string[] = [];
@@ -19,6 +20,15 @@ function indexedDbStorage(): IndexedDbRunStorage {
   const name = `devops-tycoon-run-test-${databases.length}`;
   databases.push(name);
   return new IndexedDbRunStorage(name);
+}
+
+function makeRunSave(seed = 'ri72-run-save'): RunSave {
+  const engine = createRunEngine({ seed });
+  engine.startRun('easy', [], seed, { kind: 'daily', dailyDate: '2026-07-27' });
+  const state = engine.exportPersistState();
+  const frame = engine.exportReplayFrame();
+  if (!state || !frame) throw new Error('failed to export run save fixture');
+  return toRunSave(state, 1234, [{ phase: 'setup', label: '編成', frame }]);
 }
 
 /** fire-and-forget の IndexedDB 書き込みが完了するまで待つ。 */
@@ -96,6 +106,147 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     );
     badDb.close();
     expect(await badStorage.load()).toBeNull();
+  });
+
+  it('v1 セーブを v2 として受け入れ、不足 replayKeyframes は空配列に正規化する', () => {
+    const valid = makeRunSave('ri72-v1');
+    const parsed = parseRunSave({
+      ...valid,
+      schemaVersion: 1,
+      replayKeyframes: undefined,
+    });
+
+    expect(parsed).toMatchObject({
+      schemaVersion: RUN_SAVE_SCHEMA_VERSION,
+      savedAt: 1234,
+      summary: {
+        seed: 'ri72-v1',
+        runKind: 'daily',
+        dailyDate: '2026-07-27',
+        status: 'playing',
+      },
+    });
+    expect(parsed?.replayKeyframes).toEqual([]);
+  });
+
+  it('壊れた replayKeyframes だけを捨て、正常要素は clone して残す', () => {
+    const valid = makeRunSave('ri72-keyframes');
+    const goodKeyframe = valid.replayKeyframes[0]!;
+    const parsed = parseRunSave({
+      ...valid,
+      replayKeyframes: [
+        goodKeyframe,
+        { phase: 'setup', label: 123, frame: goodKeyframe.frame },
+        { phase: 'sprint', frame: goodKeyframe.frame },
+        { phase: 'setup', frame: { ...goodKeyframe.frame, phase: 'sprint' } },
+        { phase: 'setup', frame: { ...goodKeyframe.frame, extras: { allowedCards: [] } } },
+        null,
+      ],
+    });
+
+    expect(parsed?.replayKeyframes).toHaveLength(2);
+    expect(parsed?.replayKeyframes[0]).toEqual(goodKeyframe);
+    expect(parsed?.replayKeyframes[0]).not.toBe(goodKeyframe);
+    expect(parsed?.replayKeyframes[0]?.frame).not.toBe(goodKeyframe.frame);
+    expect(parsed?.replayKeyframes[1]?.label).toBeUndefined();
+  });
+
+  it('summary の不正値は個別に拒否する', () => {
+    const valid = makeRunSave('ri72-bad-summary');
+    const withSummary = (summary: Record<string, unknown>) => ({
+      ...valid,
+      summary: { ...valid.summary, ...summary },
+    });
+
+    expect(parseRunSave(null)).toBeNull();
+    expect(parseRunSave([])).toBeNull();
+    expect(parseRunSave({ ...valid, savedAt: Number.NaN })).toBeNull();
+    expect(parseRunSave({ ...valid, summary: [] })).toBeNull();
+    expect(parseRunSave({ ...valid, state: [] })).toBeNull();
+    expect(parseRunSave(withSummary({ seed: 42 }))).toBeNull();
+    expect(parseRunSave(withSummary({ difficulty: 'casual' }))).toBeNull();
+    expect(parseRunSave(withSummary({ trials: 'trial-a' }))).toBeNull();
+    expect(parseRunSave(withSummary({ trials: ['trial-a', 1] }))).toBeNull();
+    expect(parseRunSave(withSummary({ runKind: 'weekly' }))).toBeNull();
+    expect(parseRunSave(withSummary({ dailyDate: 20260727 }))).toBeNull();
+    expect(parseRunSave(withSummary({ phase: 'sprint' }))).toBeNull();
+    expect(parseRunSave(withSummary({ quarterNumber: '1' }))).toBeNull();
+    expect(parseRunSave(withSummary({ sprintIndexInQuarter: '0' }))).toBeNull();
+    expect(parseRunSave(withSummary({ sprintsPlayed: '0' }))).toBeNull();
+    expect(parseRunSave(withSummary({ status: 'won' }))).toBeNull();
+  });
+
+  it('state と extras の不正値は個別に拒否する', () => {
+    const valid = makeRunSave('ri72-bad-state');
+    const withState = (state: Record<string, unknown>) => ({
+      ...valid,
+      state: { ...valid.state, ...state },
+    });
+    const withExtras = (extras: Record<string, unknown>) =>
+      withState({ extras: { ...valid.state.extras, ...extras } });
+
+    expect(parseRunSave(withState({ phase: 'title' }))).toBeNull();
+    expect(parseRunSave(withState({ phase: 'result' }))).toBeNull();
+    expect(parseRunSave(withState({ status: 'lost' }))).toBeNull();
+    expect(parseRunSave(withState({ seed: 'other-seed' }))).toBeNull();
+    expect(parseRunSave(withState({ extras: null }))).toBeNull();
+    expect(parseRunSave(withState({ extras: [] }))).toBeNull();
+    expect(parseRunSave(withExtras({ allowedCards: 'copilot' }))).toBeNull();
+    expect(parseRunSave(withExtras({ allowedRelics: 'coffee' }))).toBeNull();
+    expect(parseRunSave(withExtras({ baseConfig: [] }))).toBeNull();
+    expect(parseRunSave(withExtras({ orgAdjust: null }))).toBeNull();
+  });
+
+  it('IndexedDbRunStorage clear は直接呼びで保存済みセーブを削除する', async () => {
+    const storage = indexedDbStorage();
+    const save = makeRunSave('ri72-clear-direct');
+    await storage.save(save);
+    expect(await storage.load()).toEqual(save);
+
+    await storage.clear();
+
+    expect(await storage.load()).toBeNull();
+    const next = makeRunSave('ri72-clear-next');
+    await storage.save(next);
+    expect(await storage.load()).toEqual(next);
+  });
+
+  it('IndexedDbRunStorage clear 失敗後も次の保存と読み取りが継続できる', async () => {
+    const storage = indexedDbStorage();
+    await storage.save(makeRunSave('ri72-clear-fail-first'));
+    const originalDelete = IDBObjectStore.prototype.delete;
+    const deleteSpy = vi.spyOn(IDBObjectStore.prototype, 'delete');
+    deleteSpy.mockImplementationOnce(function (
+      this: IDBObjectStore,
+      query: IDBValidKey | IDBKeyRange,
+    ) {
+      if (query === RUN_RECORD_KEY) {
+        throw new DOMException('forced run clear failure', 'InvalidStateError');
+      }
+      return originalDelete.call(this, query);
+    });
+
+    await expect(storage.clear()).rejects.toThrow('forced run clear failure');
+    deleteSpy.mockRestore();
+
+    const recovered = makeRunSave('ri72-clear-recovered');
+    await storage.save(recovered);
+    expect(await storage.load()).toEqual(recovered);
+  });
+
+  it('MemoryRunStorage は保存値と読み取り値を clone し、clear で破棄する', async () => {
+    const storage = new MemoryRunStorage();
+    const save = makeRunSave('ri72-memory-clone');
+    await storage.save(save);
+    save.summary.seed = 'mutated-after-save';
+
+    const loaded = await storage.load();
+    expect(loaded?.summary.seed).toBe('ri72-memory-clone');
+    loaded!.summary.seed = 'mutated-after-load';
+    expect((await storage.load())?.summary.seed).toBe('ri72-memory-clone');
+
+    await storage.clear();
+    expect(await storage.load()).toBeNull();
   });
 
   it('sprint フェーズでは export せず、result 到達後に export できる', () => {

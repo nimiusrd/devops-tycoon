@@ -948,6 +948,29 @@ function assignBenchMembers(e: RunEngine): void {
 }
 
 /**
+ * 稼働中のコーダーが0人にならないようにする。**方針を問わず適用する。**
+ *
+ * `foldFormationEffects()` はコーダー不在で coding slot を0・速度を0.15 へ落とすので、
+ * 健常なレビュー担当が残っているのにほぼ無人のスプリントを始めてしまう。実プレイヤーなら
+ * 編成画面で1人戻せる局面なので、これは方針の違いではなく自動再配置の欠落である。
+ *
+ * **当初 `reviewHeavy` 専用の補正として入れたが、それでは足りなかった。**
+ * `assignBenchMembers` はレビュー適性が実装適性以上のメンバーを review へ置くため、
+ * coding にいた全員が休職すると、どの方針でもコーダーが0人になりうる。
+ * 実測では easy/normal/hard の `noAiCtl`/`pt-4` と normal の `noAi`/`pt-9` で
+ * 実際に `setup` へ到達しており、**RI-77 の AI 統制比較（`noAiCtl`）に混ざっていた**。
+ */
+function ensureAtLeastOneCoder(e: RunEngine): void {
+  const members = e.snapshot().roster.members;
+  if (members.some((m) => m.assignment === 'coding' && !m.onLeave)) return;
+  const candidate = members
+    .filter((m) => !m.onLeave && m.assignment === 'review')
+    // 実装適性が高い方を戻す（レビュー適性の高い担当をレビューに残す）。
+    .sort((a, b) => b.stats.implementation - a.stats.implementation)[0];
+  if (candidate) e.assignMember(candidate.id, 'coding');
+}
+
+/**
  * ベンチ配置に加えて、**方針固有の AI 配布・編成も適用する**。
  *
  * `applySetup` を `setup` フェーズだけで呼ぶと、復職者に方針が反映されない。
@@ -973,20 +996,8 @@ function applyRosterPolicy(e: RunEngine, spec: PolicySpec): void {
       coders += 1;
       if (coders > 1) e.assignMember(m.id, 'review');
     }
-    // **コーダーを0人にしない。** 唯一残したコーダーが休職すると、余剰を移すだけの
-    // このループでは補充されず、稼働中のレビュー担当がいてもコーダー不在で次スプリントへ入る。
-    // `foldFormationEffects()` はコーダー不在で coding slot を0・速度を0.15 へ落とすため、
-    // 実プレイヤーなら編成画面で1人戻せる局面がほぼ無人スプリントになり、
-    // F-10 の `reviewHeavy` 比較へ編成方針ではなく自動再配置の欠落が混ざる。
-    if (coders === 0) {
-      const candidate = e
-        .snapshot()
-        .roster.members.filter((m) => !m.onLeave && m.assignment === 'review')
-        // 実装適性が高い方を戻す（レビュー適性の高い担当をレビューに残す）。
-        .sort((a, b) => b.stats.implementation - a.stats.implementation)[0];
-      if (candidate) e.assignMember(candidate.id, 'coding');
-    }
   }
+  ensureAtLeastOneCoder(e);
   if (spec.ai) {
     for (const m of e.snapshot().roster.members) e.setMemberAi(m.id, spec.ai === 'all');
   }

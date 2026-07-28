@@ -14,7 +14,14 @@
  */
 import { readFileSync } from 'node:fs';
 
-const file = process.argv[2] ?? 'playtest-out/runs.json';
+/**
+ * 集計対象。`PT_OUT` と第1引数で差し替えられる（`scripts/check-findings.mjs` と同じ規則）。
+ *
+ * `PT_OUT=/tmp/runs.json npm run playtest` は正式にサポートした使い方なので、続けて
+ * `PT_OUT=... npm run playtest:report` を流したときに既定ファイルだけを読むと、
+ * 既定が無ければ失敗し、前回の既定ファイルが残っていれば**今回ではなく古い測定**を集計する。
+ */
+const file = process.argv[2] ?? process.env.PT_OUT ?? 'playtest-out/runs.json';
 const loaded = JSON.parse(readFileSync(file, 'utf8'));
 /**
  * 出力は `{ generatedAt, cohort, runs }`。配列だけの旧形式も読めるようにしておく
@@ -438,11 +445,14 @@ console.log(`\n## F-9 敗因ごとの進行と予兆\n`);
 const prevStateOf = (run) => {
   if (run.lostPrevState) {
     const p = run.lostPrevState;
+    // `aiDepAfter` まで引き継ぐ。既定行列の Nightmare 主要敗因は `aiDependency`（255件）で、
+    // 依存度を落とすとその敗因の「直前」から**敗因そのものの指標**が消える。
     return {
       seniorHpAfter: p.seniorHp,
       moraleAfter: p.morale,
       techDebtAfter: p.techDebt,
       budgetAfter: p.budget,
+      aiDepAfter: p.aiDependency,
     };
   }
   if (run.sprints.length === 0) return undefined;
@@ -478,7 +488,7 @@ const fmtGroup = (arr) => {
       r.lostPhase === 'beat' && r.lostBeat ? `beat:${r.lostBeat.kind}` : (r.lostPhase ?? 'unknown');
     phases[key] = (phases[key] ?? 0) + 1;
   }
-  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 直前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)}（直前状態あり ${prev.length}/${arr.length}）| 敗北フェーズ ${JSON.stringify(phases)}${beatEventsOf(arr)}`;
+  return `n=${arr.length} p50=${quantile(sprintsToLose, 0.5)} | 直前 hp=${f(prev, (s) => s.seniorHpAfter)} morale=${f(prev, (s) => s.moraleAfter)} debt=${f(prev, (s) => s.techDebtAfter)} budget=${f(prev, (s) => s.budgetAfter)} aiDep=${f(prev, (s) => s.aiDepAfter)}（直前状態あり ${prev.length}/${arr.length}）| 敗北フェーズ ${JSON.stringify(phases)}${beatEventsOf(arr)}`;
 };
 for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   console.log(`\n### ${d}`);

@@ -974,7 +974,15 @@ function applyRosterPolicy(e: RunEngine, spec: PolicySpec): void {
  */
 function wantsRecruit(s: RunState, spec: PolicySpec): boolean {
   if (spec.recruit === 'skip') return false;
-  const roomAndCash = s.roster.members.length < ROSTER_CAP && s.budget >= RECRUIT_COST;
+  // **採用後に予算が残ることまで見る。** `tryRecruit` は `budget >= RECRUIT_COST` なら通し、
+  // 差し引いた後で `applyImmediateLose()` を呼ぶ（`src/sim/run/engine.ts`）。予算がちょうど
+  // `RECRUIT_COST` だと残高0＝`budget <= BUDGET_EXHAUSTED_CAP` で `budgetExhausted` になる。
+  //
+  // **介入（`dispatch`）と違い、採用は本当に即時敗北を判定する。** 実測でも
+  // `budgetExhausted` 14件中6件が予算ちょうど25からの採用で、いずれも shop / rest / recruit
+  // フェーズだった。ビートの `grantRecruit` 経路は既に採用費を引いた額で評価しているので、
+  // ここを見ないと**同じ採用でも経路によって自滅したりしなかったり**する。
+  const roomAndCash = s.roster.members.length < ROSTER_CAP && s.budget - RECRUIT_COST > 0;
   if (!roomAndCash) return false;
   if (spec.recruit === 'hire') return true;
   const onLeave = s.roster.members.some((m) => m.onLeave);

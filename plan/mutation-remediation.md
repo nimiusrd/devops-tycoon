@@ -447,12 +447,14 @@ After: total 99.01% / covered 99.01% / S=1 / NC=0 / T=1（local: `npm run test:m
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/assignTask.ts`](../src/sim/assignTask.ts) |
 | Baseline | total 72.86% / covered 85% / S=36 / NC=40 |
 | 既存テスト | [`tests/unit/assignTask.test.ts`](../tests/unit/assignTask.test.ts) |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/assignTask.ts` |
 | 受入 | NC 半減かつ total **80%+** |
+
+After: total 89.29% / covered 89.29% / S=30 / NC=0（ローカル `npm run test:mutation:force -- --mutate src/sim/assignTask.ts`）
 
 やる事:
 

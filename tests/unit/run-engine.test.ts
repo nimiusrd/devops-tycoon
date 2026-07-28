@@ -871,6 +871,145 @@ describe('RI-26 採用の入口拡張', () => {
   });
 });
 
+describe('RI-72-D1 phase guards', () => {
+  type PhaseGuardInternals = {
+    phase: RunState['phase'];
+    beat: BeatState | null;
+    quarterReview: NonNullable<RunState['quarterReview']> | null;
+    evolution: RunState['evolution'];
+    setPhase(next: RunState['phase']): void;
+  };
+
+  const internalsOf = (engine: RunEngine): PhaseGuardInternals =>
+    engine as unknown as PhaseGuardInternals;
+
+  const makeQuarterReview = (
+    outcome: NonNullable<RunState['quarterReview']>['outcome'],
+  ): NonNullable<RunState['quarterReview']> => ({
+    goal: {
+      deliveryTarget: 10,
+      qualityTarget: 10,
+      techDebtLimit: 90,
+      moraleTarget: 10,
+      incidentLimit: 5,
+    },
+    outcome,
+    trust: { management: 50, customers: 50, team: 50 },
+    progress: [],
+    missedReasons: [],
+    availableAdjustments: outcome === 'missed_adjustable' ? ['cut_scope'] : [],
+    bossCleared: true,
+  });
+
+  it('RunPhaseError は不正遷移の from/to とメッセージを保持し phase を動かさない', () => {
+    const cases: Array<[RunState['phase'], RunState['phase']]> = [
+      ['title', 'sprint'],
+      ['setup', 'title'],
+      ['beat', 'quarterReview'],
+      ['won', 'lost'],
+    ];
+
+    for (const [from, to] of cases) {
+      const engine = new RunEngine({ seed: `ri72-d1-${from}-${to}`, difficulty: 'easy' });
+      const internals = internalsOf(engine);
+      internals.phase = from;
+
+      let thrown: unknown;
+      try {
+        internals.setPhase(to);
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toBeInstanceOf(RunPhaseError);
+      expect(thrown).toMatchObject({ name: 'RunPhaseError', from, to });
+      expect((thrown as Error).message).toBe(
+        `不正なフェーズ遷移: ${from} → ${to}（RUN_PHASE_TRANSITIONS に無い遷移）`,
+      );
+      expect(engine.currentPhase()).toBe(from);
+    }
+  });
+
+  it('setup 以外の beginSetupSprint はスプリントを起動しない', () => {
+    const engine = new RunEngine({ seed: 'ri72-d1-begin-setup-title', difficulty: 'easy' });
+    const before = engine.snapshot();
+
+    expect(() => engine.beginSetupSprint()).not.toThrow();
+
+    expect(engine.snapshot()).toEqual(before);
+  });
+
+  it('result/draft/evolution の入口は phase が違うと何もしない', () => {
+    const cases: Array<{
+      name: string;
+      arrange?: (internals: PhaseGuardInternals) => void;
+      act: (engine: RunEngine) => void;
+    }> = [
+      { name: 'acknowledgeResult', act: (engine) => engine.acknowledgeResult() },
+      { name: 'chooseCard', act: (engine) => engine.chooseCard('copilot') },
+      { name: 'skipDraft', act: (engine) => engine.skipDraft() },
+      {
+        name: 'unlockEvolution',
+        arrange: (internals) => {
+          internals.evolution = { points: 1, unlocked: {} };
+        },
+        act: (engine) => engine.unlockEvolution('review-1'),
+      },
+      { name: 'finishEvolution', act: (engine) => engine.finishEvolution() },
+    ];
+
+    for (const { name, arrange, act } of cases) {
+      const engine = new RunEngine({ seed: `ri72-d1-${name}`, difficulty: 'easy' });
+      engine.startRun();
+      arrange?.(internalsOf(engine));
+      const before = engine.snapshot();
+
+      expect(() => act(engine)).not.toThrow();
+      expect(engine.snapshot()).toEqual(before);
+    }
+  });
+
+  it('beat/quarterReview の stale payload は対象 phase 以外で無視する', () => {
+    const cases: Array<{
+      name: string;
+      arrange: (internals: PhaseGuardInternals) => void;
+      act: (engine: RunEngine) => void;
+    }> = [
+      {
+        name: 'resolveBeat',
+        arrange: (internals) => {
+          internals.beat = { eventId: 'urgent-demo', kind: 'decision' };
+        },
+        act: (engine) => engine.resolveBeat(0),
+      },
+      {
+        name: 'acknowledgeQuarterReview',
+        arrange: (internals) => {
+          internals.quarterReview = makeQuarterReview('met');
+        },
+        act: (engine) => engine.acknowledgeQuarterReview(),
+      },
+      {
+        name: 'chooseGoalAdjustment',
+        arrange: (internals) => {
+          internals.quarterReview = makeQuarterReview('missed_adjustable');
+        },
+        act: (engine) => engine.chooseGoalAdjustment('cut_scope'),
+      },
+    ];
+
+    for (const { name, arrange, act } of cases) {
+      const engine = new RunEngine({ seed: `ri72-d1-${name}`, difficulty: 'easy' });
+      engine.startRun();
+      arrange(internalsOf(engine));
+      const before = engine.snapshot();
+
+      expect(() => act(engine)).not.toThrow();
+      expect(engine.snapshot()).toEqual(before);
+    }
+  });
+});
+
 describe('フェーズ遷移の検証（setPhase / 遷移表。RI-39）', () => {
   type PhaseInternals = { setPhase(next: RunState['phase']): void };
 

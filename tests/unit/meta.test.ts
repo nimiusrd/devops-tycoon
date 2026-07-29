@@ -882,4 +882,275 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(state.loseReason).toBe('budgetExhausted');
     expect(game.getMeta().points).toBeGreaterThan(before);
   });
+
+  it('RI-72-E7: 報酬内訳の mixed review と勝敗条件を exact に返す', () => {
+    expect(
+      computeRunRewardBreakdown({
+        won: false,
+        difficulty: 'normal',
+        score: 100,
+        scoreMul: 1,
+        maxCombo: 4,
+        quarterReviews: ['met', 'missed_adjustable'],
+      }),
+    ).toMatchObject({
+      base: 5,
+      learningBonus: 3,
+      reviewBonus: 0,
+      reviewBonusKind: null,
+      total: 8,
+    });
+
+    expect(
+      computeRunRewardBreakdown({
+        won: false,
+        difficulty: 'normal',
+        score: 100,
+        scoreMul: 1,
+        maxCombo: 4,
+        quarterReviews: ['met'],
+      }),
+    ).toMatchObject({
+      learningBonus: 0,
+      reviewBonus: 0,
+      reviewBonusKind: null,
+      total: 5,
+    });
+
+    expect(
+      computeRunRewardBreakdown({
+        won: true,
+        difficulty: 'normal',
+        score: 320,
+        scoreMul: 1,
+        maxCombo: 8,
+        quarterReviews: ['met', 'exceeded'],
+      }),
+    ).toMatchObject({
+      base: 20,
+      learningBonus: 0,
+      reviewBonus: 3,
+      reviewBonusKind: 'exceeded',
+      total: 23,
+    });
+
+    expect(
+      computeRunRewardBreakdown({
+        won: true,
+        difficulty: 'normal',
+        score: 320,
+        scoreMul: 1,
+        maxCombo: 8,
+        quarterReviews: ['missed_adjustable'],
+      }),
+    ).toMatchObject({
+      learningBonus: 0,
+      reviewBonus: 0,
+      reviewBonusKind: null,
+      total: 20,
+    });
+  });
+
+  it('RI-72-E7: 勝利報酬は実績・難易度・ボス条件を exact に反映する', () => {
+    const noBoss = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      score: 200,
+      scoreMul: 1,
+      maxCombo: 19,
+    });
+    expect(noBoss.defeatedBosses).toEqual([]);
+    expect(noBoss.achievements).toEqual(['first-clear']);
+    expect(noBoss.collectedWinTypes).toEqual(['normal']);
+
+    const comboBoundary = applyRunReward(defaultMeta(), {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'big-release',
+      score: 220,
+      scoreMul: 1,
+      maxCombo: 20,
+    });
+    expect(comboBoundary.achievements).toEqual(['first-clear', 'combo-master']);
+
+    const hardClear = applyRunReward(
+      { ...defaultMeta(), unlockedDifficulties: ['easy', 'normal', 'hard'] },
+      {
+        won: true,
+        difficulty: 'hard',
+        winType: 'normal',
+        bossId: 'major-incident',
+        score: 260,
+        scoreMul: 1,
+        maxCombo: 5,
+      },
+    );
+    expect(hardClear.unlockedDifficulties).toEqual(['easy', 'normal', 'hard', 'nightmare']);
+    expect(hardClear.achievements).toEqual(['first-clear']);
+
+    const nightmareClear = applyRunReward(
+      { ...defaultMeta(), unlockedDifficulties: ['easy', 'normal', 'hard', 'nightmare'] },
+      {
+        won: true,
+        difficulty: 'nightmare',
+        winType: 'normal',
+        bossId: 'security-audit',
+        score: 400,
+        scoreMul: 1,
+        maxCombo: 5,
+      },
+    );
+    expect(nightmareClear.unlockedDifficulties).toEqual(['easy', 'normal', 'hard', 'nightmare']);
+    expect(nightmareClear.achievements).toEqual(['first-clear', 'nightmare-clear']);
+  });
+
+  it('RI-72-E7: 勝利報酬は既存配列を保持し、全ボス実績を最後だけ付与する', () => {
+    const base: MetaState = {
+      ...defaultMeta(),
+      unlockedDifficulties: ['easy', 'normal', 'hard'],
+      defeatedBosses: ['big-release'],
+      achievements: ['first-clear'],
+      collectedWinTypes: ['healthy'],
+      collectedDiagnoses: ['reviewHell'],
+      unlockedCards: ['claude-code'],
+      unlockedRelics: ['strong-ci'],
+      dailyRuns: {
+        '2026-07-01': { bestScore: 100, rewardClaimed: true },
+      },
+    };
+
+    const loss = applyRunReward(base, {
+      won: false,
+      difficulty: 'normal',
+      score: 80,
+      scoreMul: 1,
+      maxCombo: 3,
+    });
+    expect(loss.achievements).toEqual(['first-clear']);
+    expect(loss.collectedWinTypes).toEqual(['healthy']);
+    expect(loss.unlockedCards).toEqual(['claude-code']);
+    expect(loss.unlockedRelics).toEqual(['strong-ci']);
+    expect(loss.dailyRuns).toEqual(base.dailyRuns);
+
+    const duplicateHard = applyRunReward(base, {
+      won: true,
+      difficulty: 'normal',
+      winType: 'normal',
+      bossId: 'major-incident',
+      score: 300,
+      scoreMul: 1,
+      maxCombo: 5,
+    });
+    expect(duplicateHard.unlockedDifficulties).toEqual(['easy', 'normal', 'hard']);
+    expect(duplicateHard.achievements).toEqual(['first-clear']);
+
+    const partial = applyRunReward(
+      { ...defaultMeta(), defeatedBosses: ['big-release'] },
+      {
+        won: true,
+        difficulty: 'normal',
+        winType: 'normal',
+        bossId: 'major-incident',
+        score: 300,
+        scoreMul: 1,
+        maxCombo: 5,
+      },
+    );
+    expect(partial.defeatedBosses).toEqual(['big-release', 'major-incident']);
+    expect(partial.achievements).toEqual(['first-clear']);
+
+    const all = applyRunReward(
+      {
+        ...defaultMeta(),
+        defeatedBosses: ['big-release', 'major-incident', 'security-audit'],
+      },
+      {
+        won: true,
+        difficulty: 'normal',
+        winType: 'normal',
+        bossId: 'exec-review',
+        score: 300,
+        scoreMul: 1,
+        maxCombo: 5,
+      },
+    );
+    expect(all.defeatedBosses).toEqual([
+      'big-release',
+      'major-incident',
+      'security-audit',
+      'exec-review',
+    ]);
+    expect(all.achievements).toEqual(['first-clear', 'all-bosses']);
+  });
+
+  it('RI-72-E7: preferred card 正規化と更新差分を exact に扱う', () => {
+    expect(
+      sanitizePreferredCardIds([123, undefined, '', 'copilot', 'copilot', 'docs', 'auto-test']),
+    ).toEqual(['copilot', 'docs']);
+    expect(normalizeMeta({ seenTutorial: true, soundMuted: false })).toMatchObject({
+      seenTutorial: true,
+      soundMuted: false,
+    });
+    expect(normalizeMeta(['not-object'])).toEqual(defaultMeta());
+
+    const meta = withPreferredCardIds(defaultMeta(), ['copilot', 'docs', 'auto-test']);
+    expect(meta.preferredCardIds).toEqual(['copilot', 'docs']);
+
+    const changed = withPreferredCardIds(meta, ['copilot', 'auto-test']);
+    expect(changed).not.toBe(meta);
+    expect(changed.preferredCardIds).toEqual(['copilot', 'auto-test']);
+
+    const shortened = withPreferredCardIds(meta, ['copilot']);
+    expect(shortened).not.toBe(meta);
+    expect(shortened.preferredCardIds).toEqual(['copilot']);
+  });
+
+  it('RI-72-E7: purchaseUnlock は unknown・同額・relic 分岐を exact に返す', () => {
+    expect(purchaseUnlock(defaultMeta(), 'unlock-missing')).toEqual({
+      meta: defaultMeta(),
+      ok: false,
+      reason: 'unknown',
+    });
+
+    const exactCost = purchaseUnlock({ ...defaultMeta(), points: 25 }, 'unlock-claude-code');
+    expect(exactCost.ok).toBe(true);
+    expect(exactCost.meta.points).toBe(0);
+    expect(exactCost.meta.unlockedCards).toEqual(['claude-code']);
+
+    const card = purchaseUnlock(
+      {
+        ...defaultMeta(),
+        points: 100,
+        unlockedCards: ['review-bot'],
+        unlockedRelics: ['strong-ci'],
+      },
+      'unlock-claude-code',
+    );
+    expect(card.ok).toBe(true);
+    expect(card.meta.unlockedCards).toEqual(['review-bot', 'claude-code']);
+    expect(card.meta.unlockedRelics).toEqual(['strong-ci']);
+
+    const relicAgain = purchaseUnlock(
+      { ...defaultMeta(), points: 100, unlockedRelics: ['psych-safety'] },
+      'unlock-psych-safety',
+    );
+    expect(relicAgain.ok).toBe(false);
+    expect(relicAgain.reason).toBe('already_owned');
+
+    const relic = purchaseUnlock(
+      {
+        ...defaultMeta(),
+        points: 100,
+        unlockedCards: ['claude-code'],
+        unlockedRelics: ['strong-ci'],
+      },
+      'unlock-psych-safety',
+    );
+    expect(relic.ok).toBe(true);
+    expect(relic.meta.points).toBe(65);
+    expect(relic.meta.unlockedCards).toEqual(['claude-code']);
+    expect(relic.meta.unlockedRelics).toEqual(['strong-ci', 'psych-safety']);
+  });
 });

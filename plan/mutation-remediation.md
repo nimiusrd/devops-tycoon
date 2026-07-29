@@ -117,12 +117,12 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | [RI-72-D5](#ri-72-d5--engine-nocoverage-潰し) | engine NoCoverage 潰し | 完了 | `src/sim/run/engine.ts` |
 | [RI-72-E1](#ri-72-e1--generate-の-teams--id-分岐) | generate の teams / id 分岐 | 完了 | `src/sim/orgscale/generate.ts` |
 | [RI-72-E2](#ri-72-e2--effects-の-fold-係数) | effects の fold 係数 | 完了 | `src/sim/run/effects.ts` |
-| [RI-72-E3](#ri-72-e3--sprintbaselinebuild-の入力差分) | sprintBaselineBuild の入力差分 | 未着手 | `src/sim/run/sprintBaselineBuild.ts` |
+| [RI-72-E3](#ri-72-e3--sprintbaselinebuild-の入力差分) | sprintBaselineBuild の入力差分 | 完了 | `src/sim/run/sprintBaselineBuild.ts` |
 | [RI-72-E4](#ri-72-e4--events-の残-survived) | events の残 Survived | 完了 | `src/sim/run/events.ts` |
 | [RI-72-E5](#ri-72-e5--outcome-の敗北閾値) | outcome の敗北閾値 | 完了 | `src/sim/outcome.ts` |
-| [RI-72-E6](#ri-72-e6--assigntask-の-nocoverage) | assignTask の NoCoverage | 未着手 | `src/sim/assignTask.ts` |
-| [RI-72-E7](#ri-72-e7--meta-の残-survived) | meta の残 Survived | 未着手 | `src/state/meta.ts` |
-| [RI-72-E8](#ri-72-e8--roster-の残-survived) | roster の残 Survived | 未着手 | `src/sim/member/roster.ts` |
+| [RI-72-E6](#ri-72-e6--assigntask-の-nocoverage) | assignTask の NoCoverage | 完了 | `src/sim/assignTask.ts` |
+| [RI-72-E7](#ri-72-e7--meta-の残-survived) | meta の残 Survived | 完了 | `src/state/meta.ts` |
+| [RI-72-E8](#ri-72-e8--roster-の残-survived) | roster の残 Survived | 完了 | `src/sim/member/roster.ts` |
 
 ### Group A — ワースト（P0）
 
@@ -483,12 +483,14 @@ After: total 88.66% / covered 91.38% / S=28 / NC=10（ローカル `npm run test
 
 | 項目 | 内容 |
 | --- | --- |
-| 状態 | 未着手 |
+| 状態 | 完了 |
 | 対象 | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts) |
 | Baseline | total 80% / covered 83.53% / S=56 / NC=15 |
 | 既存テスト | member 系ユニットを確認して拡張 |
 | 再計測 | `npm run test:mutation:force -- --mutate src/sim/member/roster.ts` |
 | 受入 | Survived 半減または total **88%+** |
+
+After: total 94.65% / covered 94.65% / S=19 / NC=0 / T=12（ローカル `npm run test:mutation:force -- --mutate src/sim/member/roster.ts --reporters clear-text,json --concurrency 4`）
 
 やる事:
 

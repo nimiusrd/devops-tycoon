@@ -9,17 +9,22 @@ import {
   computeStaminaMax,
   createInitialRoster,
   createMember,
+  effectiveAiMastery,
+  effectiveImpl,
   effectiveReview,
   foldFormationEffects,
   memberExpression,
+  pickRecruitArchetype,
+  rankLabel,
   recoverStamina,
   recruitMember,
   rosterSummary,
   setAiAssigned,
   ROSTER_CAP,
+  xpForLevel,
 } from '../../src/sim/member';
 import type { Member, RosterState } from '../../src/sim/member';
-import { RECRUIT_ARCHETYPES } from '../../src/data/members';
+import { MEMBER_NAMES, RECRUIT_ARCHETYPES } from '../../src/data/members';
 
 /** テスト用の個体ビルダ。 */
 function member(over: Partial<Member> = {}): Member {
@@ -44,6 +49,36 @@ function roster(members: Member[]): RosterState {
   return { members, nextId: members.length };
 }
 
+function sequenceRng(values: number[]): () => number {
+  let i = 0;
+  return () => values[Math.min(i++, values.length - 1)] ?? 0;
+}
+
+describe('ランク・基本式', () => {
+  it('ランクラベルと必要XPを固定する', () => {
+    expect(rankLabel('junior')).toBe('ジュニア');
+    expect(rankLabel('middle')).toBe('ミドル');
+    expect(rankLabel('senior')).toBe('シニア');
+    expect(xpForLevel(1)).toBe(80);
+    expect(xpForLevel(4)).toBe(170);
+    expect(xpForLevel(8)).toBe(290);
+  });
+
+  it('スタミナ上限と有効ステータスはランク・レベル・トレイト倍率を反映する', () => {
+    expect(computeStaminaMax('middle', 3, [])).toBe(89);
+    expect(computeStaminaMax('middle', 3, ['burnoutProne'])).toBe(64);
+    expect(
+      effectiveImpl(
+        member({ rank: 'senior', stats: { implementation: 80 }, traits: ['megaPrMaker'] }),
+      ),
+    ).toBe(125);
+    expect(
+      effectiveReview(member({ rank: 'senior', stats: { review: 80 }, traits: ['reviewDemon'] })),
+    ).toBe(130);
+    expect(effectiveAiMastery(member({ rank: 'junior', stats: { aiMastery: 100 } }))).toBe(82);
+  });
+});
+
 describe('初期ロスター生成（第12章）', () => {
   it('コーダー2 + レビュアー1 を満タンのスタミナで配置する', () => {
     const r = createInitialRoster(createRng('roster-a'));
@@ -61,6 +96,12 @@ describe('初期ロスター生成（第12章）', () => {
     const a = createInitialRoster(createRng('same'));
     const b = createInitialRoster(createRng('same'));
     expect(a).toEqual(b);
+  });
+
+  it('名前抽選が重複し続けると初期メンバーへ連番を付ける', () => {
+    const r = createInitialRoster(sequenceRng([0]));
+    expect(r.members.map((m) => m.name)).toEqual(['アオイ', 'アオイ2', 'アオイ3']);
+    expect(r.members.map((m) => m.id)).toEqual(['m0', 'm1', 'm2']);
   });
 });
 
@@ -154,6 +195,57 @@ describe('編成効果の集約（個体値→CardEffects）', () => {
     // 並列枠も削る（beginSprint の下限まで落とす負値）。
     expect(noCoder.codingSlotBonus).toBeLessThan(0);
   });
+
+  it('編成効果の下限・上限と空コーダー時の値を固定する', () => {
+    const noCoder = foldFormationEffects(roster([member({ id: 'r', assignment: 'review' })]));
+    expect(noCoder.effects.codingSpeedMul).toBe(0.15);
+    expect(noCoder.codingSlotBonus).toBe(-99);
+
+    const weak = foldFormationEffects(
+      roster([member({ id: 'c', assignment: 'coding', stats: { implementation: -100 } })]),
+    );
+    expect(weak.effects.codingSpeedMul).toBe(0.6);
+
+    const strong = foldFormationEffects(
+      roster([
+        member({ id: 'c1', assignment: 'coding', stats: { implementation: 300 } }),
+        member({ id: 'c2', assignment: 'coding', stats: { implementation: 300 } }),
+        member({ id: 'c3', assignment: 'coding', stats: { implementation: 300 } }),
+        member({ id: 'c4', assignment: 'coding', stats: { implementation: 300 } }),
+        member({ id: 'c5', assignment: 'coding', stats: { implementation: 300 } }),
+      ]),
+    );
+    expect(strong.effects.codingSpeedMul).toBe(1.8);
+    expect(strong.codingSlotBonus).toBe(3);
+  });
+
+  it('レビュー負荷トレイトとシニア配置の focusBonus を厳密に畳み込む', () => {
+    const plain = foldFormationEffects(
+      roster([
+        member({ id: 'c', assignment: 'coding' }),
+        member({ id: 'r', assignment: 'review', stats: { review: 50 } }),
+      ]),
+    );
+    const mega = foldFormationEffects(
+      roster([
+        member({ id: 'c', assignment: 'coding', traits: ['megaPrMaker'] }),
+        member({ id: 'r', assignment: 'review', stats: { review: 50 } }),
+      ]),
+    );
+    expect(plain.effects.reviewEfficiencyMul).toBe(0.95);
+    expect(mega.effects.reviewEfficiencyMul).toBeCloseTo(0.855);
+
+    const seniors = foldFormationEffects(
+      roster([
+        member({ id: 's1', rank: 'senior', assignment: 'coding' }),
+        member({ id: 's2', rank: 'senior', assignment: 'review' }),
+        member({ id: 's3', rank: 'senior', assignment: 'review' }),
+        member({ id: 'bench', rank: 'senior', assignment: 'bench' }),
+        member({ id: 'leave', rank: 'senior', assignment: 'review', onLeave: true }),
+      ]),
+    );
+    expect(seniors.focusBonus).toBe(2);
+  });
 });
 
 describe('AI配布が実採用率に反映される（第12.2 / レビュー#C）', () => {
@@ -194,6 +286,31 @@ describe('AI配布が実採用率に反映される（第12.2 / レビュー#C�
     expect(foldFormationEffects(reviewerAi).aiAdoptionShare).toBe(0);
   });
 
+  it('AI未配布のコーダーは手戻り・障害率へ影響せず、配布時だけ係数を動かす', () => {
+    const noAi = foldFormationEffects(
+      roster([
+        member({ id: 'a', assignment: 'coding', aiAssigned: false, stats: { aiMastery: 0 } }),
+      ]),
+    );
+    expect(noAi.effects.reworkRateAdd).toBe(0);
+    expect(noAi.effects.incidentRateMul).toBe(1);
+
+    const riskyAi = foldFormationEffects(
+      roster([
+        member({ id: 'a', assignment: 'coding', aiAssigned: true, stats: { aiMastery: 0 } }),
+      ]),
+    );
+    expect(riskyAi.effects.reworkRateAdd).toBe(0.09);
+    expect(riskyAi.effects.incidentRateMul).toBe(1.05);
+  });
+
+  it('setAiAssigned はコーディング担当だけ true にでき、対象なしなら同じロスターを返す', () => {
+    const r = roster([member({ id: 'a', assignment: 'coding', aiAssigned: false })]);
+    const enabled = setAiAssigned(r, 'a', true);
+    expect(enabled.members[0].aiAssigned).toBe(true);
+    expect(setAiAssigned(r, 'missing', true)).toBe(r);
+  });
+
   it('setAiAssigned は非ブール値を真偽値へ強制する（structuredClone を壊さない）', () => {
     const r = roster([member({ id: 'a', assignment: 'coding', aiAssigned: false })]);
     // 素の JS から関数など非ブール値が来てもクローン可能な boolean を保つ。
@@ -231,9 +348,74 @@ describe('トレイト効果（第12.1）', () => {
     const { outcome } = applySprintGrowth(r, { delivered: 50, done: 10 }, createRng('doc'));
     expect(outcome.docGain).toBeGreaterThan(0);
   });
+
+  it('休職中のドキュメント魔はドキュメントを積まない', () => {
+    const r = roster([
+      member({ id: 'a', assignment: 'bench', traits: ['docMaster'], onLeave: true }),
+    ]);
+    const { outcome } = applySprintGrowth(r, { delivered: 50, done: 10 }, sequenceRng([0.99]));
+    expect(outcome.docGain).toBe(0);
+  });
 });
 
 describe('成長・昇格（第12.2）', () => {
+  it('1スプリントの経験値・消耗を厳密に反映し、イベントなしなら結果配列は空', () => {
+    const r = roster([member({ id: 'a', assignment: 'coding', xp: 0, stamina: 80 })]);
+    const { roster: after, outcome } = applySprintGrowth(
+      r,
+      { delivered: 10, done: 10 },
+      sequenceRng([0.99]),
+    );
+    expect(after.members[0]).toMatchObject({ xp: 30, level: 1, rank: 'middle', stamina: 58 });
+    expect(outcome).toEqual({ promotions: [], leveledUp: [], wentOnLeave: [], docGain: 0 });
+  });
+
+  it('経験値が閾値ちょうどに達するとレベルアップし、ミドル・シニア昇格を記録する', () => {
+    const level2 = applySprintGrowth(
+      roster([
+        member({ id: 'a', name: '境界', rank: 'middle', level: 1, xp: 50, assignment: 'coding' }),
+      ]),
+      { delivered: 0, done: 10 },
+      sequenceRng([0.99]),
+    );
+    expect(level2.roster.members[0]).toMatchObject({ level: 2, xp: 0, rank: 'middle' });
+    expect(level2.outcome.leveledUp).toEqual(['a']);
+    expect(level2.outcome.promotions).toEqual([]);
+
+    const toMiddle = applySprintGrowth(
+      roster([
+        member({ id: 'j', name: '昇格J', rank: 'junior', level: 3, xp: 101, assignment: 'coding' }),
+      ]),
+      { delivered: 0, done: 10 },
+      sequenceRng([0.99]),
+    );
+    expect(toMiddle.roster.members[0]).toMatchObject({ level: 4, rank: 'middle' });
+    expect(toMiddle.outcome.promotions).toEqual([{ id: 'j', name: '昇格J', to: 'middle' }]);
+
+    const toSenior = applySprintGrowth(
+      roster([
+        member({ id: 's', name: '昇格S', rank: 'middle', level: 7, xp: 230, assignment: 'coding' }),
+      ]),
+      { delivered: 0, done: 10 },
+      sequenceRng([0.99]),
+    );
+    expect(toSenior.roster.members[0]).toMatchObject({ level: 8, rank: 'senior' });
+    expect(toSenior.outcome.promotions).toEqual([{ id: 's', name: '昇格S', to: 'senior' }]);
+  });
+
+  it('AI配布とレビューレーンのスタミナ消耗を固定する', () => {
+    const after = applySprintGrowth(
+      roster([
+        member({ id: 'ai', assignment: 'coding', aiAssigned: true, stamina: 80 }),
+        member({ id: 'review', assignment: 'review', stamina: 80 }),
+        member({ id: 'demon', assignment: 'review', traits: ['reviewDemon'], stamina: 80 }),
+      ]),
+      { delivered: 0, done: 0 },
+      sequenceRng([0.99]),
+    ).roster;
+    expect(after.members.map((m) => m.stamina)).toEqual([61, 52, 43]);
+  });
+
   it('配置された稼働メンバーは経験値を得てレベルアップし、やがて昇格する', () => {
     let r = roster([member({ id: 'a', rank: 'junior', level: 1, assignment: 'coding' })]);
     let promoted = false;
@@ -279,6 +461,44 @@ describe('成長・昇格（第12.2）', () => {
 });
 
 describe('スタミナと離脱（休職）（第12.2）', () => {
+  it('離脱判定の閾値と乱数境界を固定する', () => {
+    let calls = 0;
+    const atThreshold = applySprintGrowth(
+      roster([member({ id: 'a', assignment: 'coding', stamina: 36 })]),
+      { delivered: 0, done: 0 },
+      () => {
+        calls += 1;
+        return 0.99;
+      },
+    );
+    expect(atThreshold.roster.members[0].stamina).toBe(14);
+    expect(atThreshold.roster.members[0].onLeave).toBe(false);
+    expect(calls).toBe(1);
+
+    const boundaryRng = applySprintGrowth(
+      roster([member({ id: 'b', assignment: 'coding', stamina: 22, aiAssigned: false })]),
+      { delivered: 0, done: 0 },
+      sequenceRng([0.5]),
+    );
+    expect(boundaryRng.roster.members[0].stamina).toBe(0);
+    expect(boundaryRng.roster.members[0].onLeave).toBe(false);
+
+    const leave = applySprintGrowth(
+      roster([
+        member({ id: 'c', name: '離脱者', assignment: 'coding', stamina: 22, aiAssigned: true }),
+      ]),
+      { delivered: 0, done: 0 },
+      sequenceRng([0]),
+    );
+    expect(leave.outcome.wentOnLeave).toEqual([{ id: 'c', name: '離脱者' }]);
+    expect(leave.roster.members[0]).toMatchObject({
+      stamina: 3,
+      onLeave: true,
+      assignment: 'bench',
+      aiAssigned: false,
+    });
+  });
+
   it('連続稼働でスタミナが枯渇し、やがて休職する', () => {
     let r = roster([member({ id: 'a', assignment: 'review', stamina: 30, staminaMax: 80 })]);
     let leftAt = -1;
@@ -304,6 +524,20 @@ describe('スタミナと離脱（休職）（第12.2）', () => {
     expect(after.members[0].stamina).toBeGreaterThan(0);
   });
 
+  it('休職中は復帰閾値未満なら休職を継続し、閾値ちょうどで復帰する', () => {
+    const below = recoverStamina(
+      roster([member({ id: 'a', assignment: 'bench', stamina: 0, staminaMax: 80, onLeave: true })]),
+      25,
+    );
+    expect(below.members[0]).toMatchObject({ stamina: 31, onLeave: true });
+
+    const exact = recoverStamina(
+      roster([member({ id: 'a', assignment: 'bench', stamina: 0, staminaMax: 80, onLeave: true })]),
+      25.6,
+    );
+    expect(exact.members[0]).toMatchObject({ stamina: 32, onLeave: false });
+  });
+
   it('skipIds のメンバーは回復しない（休職直後の即復帰を防ぐ）', () => {
     const r = roster([
       member({ id: 'a', assignment: 'bench', stamina: 0, staminaMax: 50, onLeave: true }),
@@ -324,6 +558,13 @@ describe('編成操作と表情演出', () => {
     expect(moved).not.toBe(r);
     expect(moved.members[0].assignment).toBe('review');
     expect(r.members[0].assignment).toBe('coding');
+  });
+
+  it('assignMember は対象なしなら同じロスターを返し、coding への移動では既存AI配布を保つ', () => {
+    const r = roster([member({ id: 'a', assignment: 'review', aiAssigned: true })]);
+    expect(assignMember(r, 'missing', 'coding')).toBe(r);
+    const moved = assignMember(r, 'a', 'coding');
+    expect(moved.members[0]).toMatchObject({ assignment: 'coding', aiAssigned: true });
   });
 
   it('休職中のメンバーは配置できない', () => {
@@ -354,6 +595,12 @@ describe('編成操作と表情演出', () => {
     expect(memberExpression(member({ stamina: 80, staminaMax: 80 }))).toBe('great');
     expect(memberExpression(member({ stamina: 40, staminaMax: 80 }))).toBe('normal');
   });
+
+  it('表情の境界値は 25% と 80% ちょうどを normal とし、上限0は tired に倒す', () => {
+    expect(memberExpression(member({ stamina: 20, staminaMax: 80 }))).toBe('normal');
+    expect(memberExpression(member({ stamina: 64, staminaMax: 80 }))).toBe('normal');
+    expect(memberExpression(member({ stamina: 1, staminaMax: 0 }))).toBe('tired');
+  });
 });
 
 describe('組織スケール向け個体集約（RI-27）', () => {
@@ -378,6 +625,25 @@ describe('組織スケール向け個体集約（RI-27）', () => {
 });
 
 describe('採用（第12.2）', () => {
+  it('採用候補アーキタイプは乱数を候補数に掛けて選ぶ', () => {
+    expect(pickRecruitArchetype(sequenceRng([0]))).toBe(RECRUIT_ARCHETYPES[0]);
+    expect(pickRecruitArchetype(sequenceRng([0.999]))).toBe(
+      RECRUIT_ARCHETYPES[RECRUIT_ARCHETYPES.length - 1],
+    );
+  });
+
+  it('採用時の名前重複が続くと + を付け、次IDを採番してベンチに入れる', () => {
+    const r = roster([member({ id: 'a', name: MEMBER_NAMES[0] })]);
+    const hired = recruitMember(r, RECRUIT_ARCHETYPES[0], sequenceRng([0]));
+    expect(hired.members[1]).toMatchObject({
+      id: 'm1',
+      name: `${MEMBER_NAMES[0]}+`,
+      assignment: 'bench',
+      aiAssigned: false,
+    });
+    expect(hired.nextId).toBe(2);
+  });
+
   it('上限まで採用でき、満員になると採用できない', () => {
     let r = roster([member({ id: 'a' })]);
     let guard = 0;

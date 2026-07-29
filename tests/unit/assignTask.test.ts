@@ -2,7 +2,7 @@
  * タスク差配の純関数テスト（RI-30）。
  */
 import { describe, expect, it } from 'vitest';
-import { applyAction, ASSIGN_MORALE_COST } from '../../src/sim/actions';
+import { applyAction, ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from '../../src/sim/actions';
 import {
   applyAssignTaskEffect,
   assignableTasks,
@@ -86,6 +86,22 @@ describe('resolve / canMove', () => {
     const backlog = sprint.tasks[0]!;
     expect(canMoveToLane(sprint, backlog, 'coding')).toBe(false);
   });
+
+  it('同一レーンは許可し、不正レーン・review 移動・非対象レーンからの移動は拒否する', () => {
+    const org = createOrgState('default', true);
+    const coding = makeTask(0, { lane: 'coding' });
+    const backlog = makeTask(1, { lane: 'backlog' });
+    const review = makeTask(2, { lane: 'review' });
+    const done = makeTask(3, { lane: 'done' });
+    const sprint = makeSprint(org, [coding, backlog, review, done]);
+
+    expect(canMoveToLane(sprint, coding, 'coding')).toBe(true);
+    expect(canMoveToLane(sprint, backlog, 'coding')).toBe(true);
+    expect(canMoveToLane(sprint, coding, 'done')).toBe(false);
+    expect(canMoveToLane(sprint, coding, 'review')).toBe(false);
+    expect(canMoveToLane(sprint, review, 'coding')).toBe(false);
+    expect(canMoveToLane(sprint, done, 'coding')).toBe(false);
+  });
 });
 
 function sprintSlots(org: OrgState): number {
@@ -165,6 +181,21 @@ describe('applyAssignTaskEffect / applyAction', () => {
     expect(resolveSplitPrTarget(bothComplex)?.id).toBe(1);
   });
 
+  it('target 指定の splitPr は存在・未分割・Review/Coding の条件を満たすタスクだけ返す', () => {
+    const org = createOrgState('default', true);
+    const coding = makeTask(0, { lane: 'coding', split: false });
+    const review = makeTask(1, { lane: 'review', split: false });
+    const split = makeTask(2, { lane: 'review', split: true });
+    const rework = makeTask(3, { lane: 'rework', split: false });
+    const sprint = makeSprint(org, [coding, review, split, rework]);
+
+    expect(resolveSplitPrTarget(sprint, { taskId: 99 })).toBeUndefined();
+    expect(resolveSplitPrTarget(sprint, { taskId: 2 })).toBeUndefined();
+    expect(resolveSplitPrTarget(sprint, { taskId: 3 })).toBeUndefined();
+    expect(resolveSplitPrTarget(sprint, { taskId: 0 })).toBe(coding);
+    expect(resolveSplitPrTarget(sprint, { taskId: 1 })).toBe(review);
+  });
+
   it('AI 無効時の明示 AI 指定は失敗しレーンを動かさない', () => {
     const org = createOrgState('default', false);
     const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog', kind: 'routine' })]);
@@ -176,8 +207,15 @@ describe('applyAssignTaskEffect / applyAction', () => {
 
   it('defaultAssignee は kind に従う', () => {
     const org = createOrgState('default', true);
+    const aiDisabled = createOrgState('default', false);
     expect(defaultAssignee(makeTask(0, { kind: 'routine' }), org)).toBe('ai');
+    expect(defaultAssignee(makeTask(0, { kind: 'routine' }), aiDisabled)).toBe('senior');
     expect(defaultAssignee(makeTask(0, { kind: 'complex' }), org)).toBe('senior');
+    expect(defaultAssignee(makeTask(0, { kind: 'normal', aiAssisted: true }), org)).toBe('ai');
+    expect(defaultAssignee(makeTask(0, { kind: 'normal', aiAssisted: true }), aiDisabled)).toBe(
+      'senior',
+    );
+    expect(defaultAssignee(makeTask(0, { kind: 'normal', aiAssisted: false }), org)).toBe('senior');
   });
 
   it('Backlog ドロップは拒否し、Backlog タスクは Coding へ上げて加速する', () => {
@@ -187,7 +225,38 @@ describe('applyAssignTaskEffect / applyAction', () => {
     const ok = applyAssignTaskEffect(sprint, org, { taskId: 0, assignee: 'senior' });
     expect(ok).not.toBe(false);
     expect(sprint.tasks[0]!.lane).toBe('coding');
-    expect(sprint.tasks[0]!.progress).toBeGreaterThan(0);
+    expect(sprint.tasks[0]!.progress).toBe(ASSIGN_PROGRESS);
+  });
+
+  it('明示レーン移動は Coding への移動だけ成功し、失敗時はレーンを保持する', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog', progress: 0.2 })]);
+
+    const moved = applyAssignTaskEffect(sprint, org, {
+      taskId: 0,
+      lane: 'coding',
+      assignee: 'senior',
+    });
+    expect(moved).toEqual({ affectedTaskIds: [0], moraleCost: 1 });
+    expect(sprint.tasks[0]!.lane).toBe('coding');
+    expect(sprint.tasks[0]!.progress).toBeCloseTo(0.2 + ASSIGN_PROGRESS);
+
+    const rejected = makeSprint(org, [makeTask(1, { lane: 'coding' })]);
+    expect(applyAssignTaskEffect(rejected, org, { taskId: 1, lane: 'review' })).toBe(false);
+    expect(rejected.tasks[0]!.lane).toBe('coding');
+  });
+
+  it('Coding WIP 満杯では Backlog 自動引き上げも失敗する', () => {
+    const org = createOrgState('default', true);
+    const slots = sprintSlots(org);
+    const sprint = makeSprint(org, [
+      makeTask(0, { lane: 'backlog', progress: 0 }),
+      ...Array.from({ length: slots }, (_, i) => makeTask(i + 1, { lane: 'coding' })),
+    ]);
+
+    expect(applyAssignTaskEffect(sprint, org, { taskId: 0, assignee: 'senior' })).toBe(false);
+    expect(sprint.tasks[0]!.lane).toBe('backlog');
+    expect(sprint.tasks[0]!.progress).toBe(0);
   });
 
   it('AI 割当への切替で依存度が上がる', () => {
@@ -199,5 +268,49 @@ describe('applyAssignTaskEffect / applyAction', () => {
     applyAssignTaskEffect(sprint, org, { taskId: 0, assignee: 'ai' });
     expect(org.aiDependency).toBeGreaterThan(before);
     expect(sprint.tasks[0]!.aiAssisted).toBe(true);
+  });
+
+  it('AI 割当済みの維持では依存度を増やさず、senior 指定では AI 支援を外す', () => {
+    const org = createOrgState('default', true);
+    org.aiDependency = 40;
+    const sprint = makeSprint(org, [
+      makeTask(0, { lane: 'coding', kind: 'routine', aiAssisted: true }),
+      makeTask(1, { lane: 'coding', kind: 'normal', aiAssisted: true }),
+    ]);
+
+    expect(applyAssignTaskEffect(sprint, org, { taskId: 0, assignee: 'ai' })).not.toBe(false);
+    expect(org.aiDependency).toBe(40);
+    expect(sprint.tasks[0]!.aiAssisted).toBe(true);
+
+    expect(applyAssignTaskEffect(sprint, org, { taskId: 1, assignee: 'senior' })).not.toBe(false);
+    expect(org.aiDependency).toBe(40);
+    expect(sprint.tasks[1]!.aiAssisted).toBe(false);
+  });
+
+  it('AI 無効時は既定担当が senior になり、ミスマッチ streak は増減する', () => {
+    const org = createOrgState('default', false);
+    org.morale = 10;
+    const sprint = makeSprint(org, [
+      makeTask(0, { lane: 'coding', kind: 'routine' }),
+      makeTask(1, { lane: 'coding', kind: 'complex' }),
+      makeTask(2, { lane: 'coding', kind: 'complex' }),
+    ]);
+    sprint.metrics.assignmentSkew = { mismatchStreak: 2 };
+
+    const mismatch = applyAssignTaskEffect(sprint, org, { taskId: 0 });
+    expect(mismatch).toEqual({ affectedTaskIds: [0], moraleCost: ASSIGN_MORALE_COST + 2 });
+    expect(sprint.metrics.assignmentSkew).toEqual({ mismatchStreak: 3 });
+
+    const ideal = applyAssignTaskEffect(sprint, org, { taskId: 1, assignee: 'senior' });
+    expect(ideal).toEqual({
+      affectedTaskIds: [1],
+      moraleCost: Math.max(1, Math.floor(ASSIGN_MORALE_COST / 2)),
+    });
+    expect(sprint.metrics.assignmentSkew).toEqual({ mismatchStreak: 0 });
+
+    org.morale = 1;
+    const clamped = applyAssignTaskEffect(sprint, org, { taskId: 2, assignee: 'senior' });
+    expect(clamped).toEqual({ affectedTaskIds: [2], moraleCost: 1 });
+    expect(org.morale).toBe(0);
   });
 });

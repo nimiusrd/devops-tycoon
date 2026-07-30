@@ -89,7 +89,7 @@ gh run view <RUN_ID> --json jobs \
 | RI-NN-A1 | … | total 70%+ |
 
 ## 文書
-- plan/mutation-remediation.md をエピック RI-NN + 実装単位付きで更新
+- plan/mutation-remediation.md をエピック RI-NN + 実装単位付きで更新（並列衝突回避: 実装 PR は計画を触らず、状態はバッチ同期）
 - 旧ミューテーションエピックは完了（後続 RI-NN に置換）
 ```
 

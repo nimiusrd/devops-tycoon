@@ -395,6 +395,7 @@ RI-24とRI-25は「追加実装しない」と決定して完了した項目を�
 
 - IDは`RI-NN`の連番とし、欠番を再利用しない。
 - ミューテーション改善はエピック`RI-{N}`（再ベースラインごと）と実装単位`RI-{N}-{GROUP}{SEQ}`（1PR）に分ける。詳細は[mutation-remediation.md](./mutation-remediation.md)と[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
+- ミューテーション実装単位の並列 PR では計画ファイルの状態更新を含めない（受入は PR 本文、計画への転記はバッチ同期／エピック完了 PR）。
 - 状態は`未着手`、`進行中`、`保留（要判断）`、`完了`を使う。
 - 1項目は原則1PRで完了できる大きさに分割する。エピックは受入条件と分割順を記載する。
 - 完了時は詳細な実装日誌を追記せず、上の完了要約と[spec-mapping.md](./spec-mapping.md)を更新する。

@@ -29,7 +29,7 @@ node scripts/mutation-units-status.mjs --all
 npm run mutation:units:status -- --fail-if-incomplete
 ```
 
-`--fail-if-incomplete` は次を失敗にする: 索引にある単位ファイルの欠落、索引 0 件、`状態` が完了以外。
+`--fail-if-incomplete` は次を失敗にする: 索引にある単位ファイルの欠落、索引 0 件、`状態` が完了以外、完了なのに `After:` が空。未知の CLI 引数も拒否する。
 
 ## ファイル書式
 

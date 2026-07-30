@@ -21,21 +21,42 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const unitsDir = path.join(root, 'plan', 'mutation-units');
 const planPath = path.join(root, 'plan', 'mutation-remediation.md');
 const argv = process.argv.slice(2);
-const args = new Set(argv);
-const asJson = args.has('--json');
-const failIfIncomplete = args.has('--fail-if-incomplete');
-const allEpics = args.has('--all');
 
-function flagValue(name) {
-  const i = argv.indexOf(name);
-  if (i < 0) return null;
-  const v = argv[i + 1];
-  if (!v || v.startsWith('--')) {
-    console.error(`missing value for ${name}`);
-    process.exit(1);
+const KNOWN_FLAGS = new Set(['--json', '--fail-if-incomplete', '--all', '--epic']);
+
+function parseArgs(raw) {
+  const flags = new Set();
+  let epic = null;
+  for (let i = 0; i < raw.length; i++) {
+    const a = raw[i];
+    if (a === '--epic') {
+      const v = raw[i + 1];
+      if (!v || v.startsWith('--')) {
+        console.error('missing value for --epic');
+        process.exit(1);
+      }
+      epic = v;
+      i++;
+      continue;
+    }
+    if (!a.startsWith('--')) {
+      console.error(`unexpected argument: ${a}`);
+      process.exit(1);
+    }
+    if (!KNOWN_FLAGS.has(a)) {
+      console.error(`unknown option: ${a}`);
+      console.error(`known options: ${[...KNOWN_FLAGS].sort().join(', ')}`);
+      process.exit(1);
+    }
+    flags.add(a);
   }
-  return v;
+  return { flags, epic };
 }
+
+const { flags, epic: epicFlag } = parseArgs(argv);
+const asJson = flags.has('--json');
+const failIfIncomplete = flags.has('--fail-if-incomplete');
+const allEpics = flags.has('--all');
 
 function readPlanText() {
   if (!fs.existsSync(planPath)) return '';
@@ -47,13 +68,25 @@ function readCurrentEpic(planText = readPlanText()) {
   return m?.[1] ?? null;
 }
 
+/** RI-{N}-{GROUP}{SEQ} を数値順に並べる（A10 が A2 より後） */
+function compareUnitId(a, b) {
+  const pa = a.match(/^RI-(\d+)-([A-Z])(\d+)$/);
+  const pb = b.match(/^RI-(\d+)-([A-Z])(\d+)$/);
+  if (!pa || !pb) return a.localeCompare(b, 'en');
+  const n = Number(pa[1]) - Number(pb[1]);
+  if (n !== 0) return n;
+  const g = pa[2].localeCompare(pb[2], 'en');
+  if (g !== 0) return g;
+  return Number(pa[3]) - Number(pb[3]);
+}
+
 /** 静的索引の単位リンクから ID を集める（例: [RI-72-A1](./mutation-units/RI-72-A1.md)） */
 function readIndexedUnitIds(planText = readPlanText()) {
   const ids = new Set();
   for (const m of planText.matchAll(/\[(RI-\d+-[A-Z]\d+)\]\(\.\/mutation-units\/\1\.md\)/g)) {
     ids.add(m[1]);
   }
-  return [...ids].sort((a, b) => a.localeCompare(b, 'en'));
+  return [...ids].sort(compareUnitId);
 }
 
 function epicOfUnitId(id) {
@@ -95,7 +128,6 @@ function parseUnit(filePath) {
   };
 }
 
-const epicFlag = flagValue('--epic');
 if (epicFlag && !/^RI-\d+$/.test(epicFlag)) {
   console.error(`invalid --epic ${epicFlag} (expected RI-N)`);
   process.exit(1);
@@ -126,9 +158,9 @@ const indexedIds = readIndexedUnitIds(planText).filter(
 const units = fs
   .readdirSync(unitsDir)
   .filter((name) => /^RI-\d+-[A-Z]\d+\.md$/.test(name))
-  .sort((a, b) => a.localeCompare(b, 'en'))
   .map((name) => parseUnit(path.join(unitsDir, name)))
-  .filter((u) => allEpics || u.epic === currentEpic);
+  .filter((u) => allEpics || u.epic === currentEpic)
+  .sort((a, b) => compareUnitId(a.id, b.id));
 
 const presentIds = new Set(units.map((u) => u.id));
 const missingIds = indexedIds.filter((id) => !presentIds.has(id));
@@ -175,6 +207,7 @@ if (asJson) {
 
 if (failIfIncomplete) {
   const incomplete = units.filter((u) => u.status !== '完了');
+  const missingAfter = units.filter((u) => u.status === '完了' && !u.after);
   const problems = [];
   if (indexedIds.length === 0) {
     problems.push('indexed units: 0 (static index has no unit links for this scope)');
@@ -184,6 +217,9 @@ if (failIfIncomplete) {
   }
   if (incomplete.length > 0) {
     problems.push(`incomplete: ${incomplete.map((u) => `${u.id}(${u.status})`).join(', ')}`);
+  }
+  if (missingAfter.length > 0) {
+    problems.push(`missing After: ${missingAfter.map((u) => u.id).join(', ')}`);
   }
   if (problems.length > 0) {
     console.error(`\n${problems.join('\n')}`);

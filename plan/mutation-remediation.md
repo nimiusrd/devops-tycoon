@@ -114,7 +114,7 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 | `plan/mutation-units/<ID>.md` | その単位の実装 PR | **自分の ID のファイルだけ**更新。他単位と衝突しない |
 | `plan/remaining-issues.md` / `plan/README.md` | エピック採番・エピック完了の親 PR | 実装単位 PR は触らない |
 
-状態の横断表示は共有 md へ書き戻さず、次で読む:
+状態の横断表示は共有 md へ書き戻さず、現行エピック分だけを次で読む（旧単位ファイルは既定で除外）:
 
 ```bash
 npm run mutation:units:status
@@ -174,7 +174,7 @@ npm run mutation:units:status
 ## 8. エピック完了・再ベースライン
 
 - 実装単位の受入達成時: 同じ実装 PR で **単位ファイル**の `状態` を `完了` にし `After:` を追記。PR 本文にも単位 ID と Before/After を記す。
-- エピック完了判定: `npm run mutation:units:status -- --fail-if-incomplete` が成功すること（または同等の確認）。
+- エピック完了判定: `npm run mutation:units:status -- --fail-if-incomplete` が成功すること（現行エピックの単位のみ。または同等の確認）。
 - **エピック RI-72 完了条件**: 実装単位 A1–E8（Group A–D を含む）がすべて完了していること。全体 total おおむね 80%+ は完了条件に含めない（再ベースライン推奨）。
 - **RI-72 状態**: **完了**（実装単位 A1–E8 すべて完了）。全体 total のフルシャード再計測は未実施で、次の Mutation run で新エピックを採番して追う。
 - **再ベースライン時**: 新エピック `RI-{N}` を採番し、実装単位を `RI-{N}-A1`… で振り直す。旧単位の未消化は **新 ID の単位ファイル**へ内容をコピーして引き継ぐ（旧 ID での実装継続はしない）。`plan/mutation-units/` 分割と静的索引（状態列なし）を維持する。

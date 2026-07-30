@@ -94,7 +94,7 @@ Easy でも無介入・素直プレイだと第1四半期スプリント2でシ�
 
 **完了。** ベースライン run
 [30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
-向けの実装単位 `RI-72-A1`〜`RI-72-E8` をすべて完了した（正本は[mutation-remediation.md](./mutation-remediation.md)）。
+向けの実装単位 `RI-72-A1`〜`RI-72-E8` をすべて完了した（単位の正本は[mutation-units/](./mutation-units/)、エピック共通は[mutation-remediation.md](./mutation-remediation.md)）。
 
 エピック完了条件は実装単位の完了であり、全体 mutation score おおむね 80%+ は再ベースライン推奨（完了条件外）。フルシャード再計測は未実施で、次の Mutation run では新エピックを採番する。
 

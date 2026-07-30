@@ -71,7 +71,7 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 - …
 ```
 
-[`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) には **静的索引**（ID / タイトル / 対象 / 単位ファイルへのリンク）だけを置く。**状態列は置かない**（並列 PR が同じ表を更新して衝突するため）。横断表示は `npm run mutation:units:status`（読み取り専用）。
+[`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) には **静的索引**（ID / タイトル / 対象 / 単位ファイルへのリンク）だけを置く。**状態列は置かない**（並列 PR が同じ表を更新して衝突するため）。横断表示は `npm run mutation:units:status`（読み取り専用。現行エピックのみ。`--all` / `--epic` で範囲変更可）。
 
 ### 並列実装（構造で衝突を避ける）
 

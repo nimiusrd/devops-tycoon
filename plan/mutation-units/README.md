@@ -17,12 +17,19 @@
 
 ## 状態の一覧表示
 
-共有ファイルへ状態を書き戻さず、単位ファイルから集計する:
+共有ファイルへ状態を書き戻さず、単位ファイルから集計する。  
+既定は [`mutation-remediation.md`](../mutation-remediation.md) の現行エピックに属する単位のみ（旧エピックの残ファイルは含めない）。
 
 ```bash
 npm run mutation:units:status
-npm run mutation:units:status -- --json
+npm run --silent mutation:units:status -- --json
+node scripts/mutation-units-status.mjs --json
+node scripts/mutation-units-status.mjs --epic RI-72
+node scripts/mutation-units-status.mjs --all
+npm run mutation:units:status -- --fail-if-incomplete
 ```
+
+`--json` を `jq` 等へ渡すときは、npm のライフサイクルバナーを避けるため **`--silent` 付き**か **`node` 直呼び**を使う。
 
 ## ファイル書式
 

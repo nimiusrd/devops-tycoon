@@ -29,7 +29,7 @@ node scripts/mutation-units-status.mjs --all
 npm run mutation:units:status -- --fail-if-incomplete
 ```
 
-`--fail-if-incomplete` は次を失敗にする: 索引にある `<ID>.md` の欠落、索引 0 件、索引リンクの表示IDとリンク先の不一致／不正、ファイル名と `<!-- mutation-unit: -->` の不一致またはコメント欠落、`状態` が完了以外、完了なのに実測の `After:` が無い（空・`…` プレースホルダー不可）。未知の CLI 引数も拒否する。存在判定の正本は**ファイル名**。
+`--fail-if-incomplete` は次を失敗にする: 索引にある `<ID>.md` の欠落、索引 0 件、単位 ID ラベルのリンク先が `./mutation-units/<ID>.md` でない／不一致、ファイル名と `<!-- mutation-unit: -->` の不一致またはコメント欠落、`状態` が完了以外、完了なのに実測の `After:` が無い（total / covered / S / NC が数値付きで必須。空・`…` プレースホルダー不可）。未知の CLI 引数も拒否する。存在判定の正本は**ファイル名**。
 
 ## ファイル書式
 

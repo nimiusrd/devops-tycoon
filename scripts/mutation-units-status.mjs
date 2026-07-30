@@ -80,38 +80,36 @@ function compareUnitId(a, b) {
   return Number(pa[3]) - Number(pb[3]);
 }
 
-const UNIT_ID_RE = /^RI-\d+-[A-Z]\d+$/;
-
 /**
  * 静的索引の単位リンクを検証しつつ ID を集める。
- * 表示 ID とリンク先を別々に見て、不一致・不正リンクを返す。
- * README やディレクトリへのリンクは対象外。
+ * 単位 ID ラベルのリンクを起点に、リンク先が ./mutation-units/<ID>.md であることを検査する。
  */
 function readIndexedUnits(planText = readPlanText()) {
   const ids = new Set();
   const badLinks = [];
-  for (const m of planText.matchAll(/\[([^\]]+)\]\(\.\/mutation-units\/([^)]*)\)/g)) {
-    const label = m[1].trim();
-    const hrefFile = m[2].trim();
-    const labelId = UNIT_ID_RE.test(label) ? label : null;
-    const hrefIsUnitFile = /^RI-\d+-[A-Z]\d+\.md$/.test(hrefFile);
-    // 単位ファイル以外（README.md・ディレクトリ・説明用リンク）は索引対象外
-    if (!labelId && !hrefIsUnitFile) {
-      continue;
-    }
-
-    const hrefId = hrefIsUnitFile ? hrefFile.slice(0, -'.md'.length) : null;
-    if (!labelId || !hrefId || !UNIT_ID_RE.test(hrefId)) {
-      badLinks.push({ label, hrefFile, reason: 'invalid-id-or-href' });
-      continue;
-    }
-    if (labelId !== hrefId) {
-      badLinks.push({ label: labelId, hrefFile, reason: 'label-href-mismatch' });
-      ids.add(labelId);
-      ids.add(hrefId);
-      continue;
-    }
+  for (const m of planText.matchAll(/\[(RI-\d+-[A-Z]\d+)\]\(([^)]*)\)/g)) {
+    const labelId = m[1];
+    const href = m[2].trim();
     ids.add(labelId);
+    const expected = `./mutation-units/${labelId}.md`;
+    if (href === expected) {
+      continue;
+    }
+    const unitHref = href.match(/^\.\/mutation-units\/(RI-\d+-[A-Z]\d+)\.md$/);
+    if (unitHref) {
+      badLinks.push({
+        label: labelId,
+        href,
+        reason: 'label-href-mismatch',
+      });
+      ids.add(unitHref[1]);
+      continue;
+    }
+    badLinks.push({
+      label: labelId,
+      href,
+      reason: 'invalid-id-or-href',
+    });
   }
   return {
     indexedIds: [...ids].sort(compareUnitId),
@@ -164,14 +162,17 @@ function parseUnit(filePath) {
   };
 }
 
-/** 完了記録として受理できる After か（プレースホルダーのみは不可） */
+/** 完了記録として受理できる After か（total/covered/S/NC が数値付きで揃っていること） */
 function isRecordedAfter(after) {
   if (!after || !after.trim()) return false;
   const t = after.trim();
   // テンプレートの省略記号（… / ...）を含む行は未記録扱い
   if (/[…⋯]/.test(t) || /(^|[^\d])\.\.\.([^\d]|$)/.test(t)) return false;
-  // 実測っぽい数字（% または S=/NC= 等）が必要
-  return /\d+(\.\d+)?%/.test(t) || /\bS\s*=\s*\d+/i.test(t) || /\bNC\s*=\s*\d+/i.test(t);
+  const hasTotal = /\btotal\s+\d+(\.\d+)?%/i.test(t);
+  const hasCovered = /\bcovered\s+\d+(\.\d+)?%/i.test(t);
+  const hasS = /\bS\s*=\s*\d+/i.test(t);
+  const hasNc = /\bNC\s*=\s*\d+/i.test(t);
+  return hasTotal && hasCovered && hasS && hasNc;
 }
 
 if (epicFlag && !/^RI-\d+$/.test(epicFlag)) {
@@ -278,9 +279,7 @@ if (failIfIncomplete) {
   }
   if (badLinks.length > 0) {
     problems.push(
-      `bad index links: ${badLinks
-        .map((b) => `[${b.label}](./mutation-units/${b.hrefFile}) (${b.reason})`)
-        .join(', ')}`,
+      `bad index links: ${badLinks.map((b) => `[${b.label}](${b.href}) (${b.reason})`).join(', ')}`,
     );
   }
   if (missingIds.length > 0) {

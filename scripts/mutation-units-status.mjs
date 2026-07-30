@@ -85,28 +85,28 @@ const UNIT_ID_RE = /^RI-\d+-[A-Z]\d+$/;
 /**
  * 静的索引の単位リンクを検証しつつ ID を集める。
  * 表示 ID とリンク先を別々に見て、不一致・不正リンクを返す。
+ * README やディレクトリへのリンクは対象外。
  */
 function readIndexedUnits(planText = readPlanText()) {
   const ids = new Set();
   const badLinks = [];
-  for (const m of planText.matchAll(/\[([^\]]+)\]\(\.\/mutation-units\/([^)]+?)\)/g)) {
+  for (const m of planText.matchAll(/\[([^\]]+)\]\(\.\/mutation-units\/([^)]*)\)/g)) {
     const label = m[1].trim();
     const hrefFile = m[2].trim();
     const labelId = UNIT_ID_RE.test(label) ? label : null;
-    const hrefId = hrefFile.endsWith('.md')
-      ? (() => {
-          const base = hrefFile.slice(0, -3);
-          return UNIT_ID_RE.test(base) ? base : null;
-        })()
-      : null;
+    const hrefIsUnitFile = /^RI-\d+-[A-Z]\d+\.md$/.test(hrefFile);
+    // 単位ファイル以外（README.md・ディレクトリ・説明用リンク）は索引対象外
+    if (!labelId && !hrefIsUnitFile) {
+      continue;
+    }
 
-    if (!labelId || !hrefId) {
+    const hrefId = hrefIsUnitFile ? hrefFile.slice(0, -'.md'.length) : null;
+    if (!labelId || !hrefId || !UNIT_ID_RE.test(hrefId)) {
       badLinks.push({ label, hrefFile, reason: 'invalid-id-or-href' });
       continue;
     }
     if (labelId !== hrefId) {
       badLinks.push({ label: labelId, hrefFile, reason: 'label-href-mismatch' });
-      // どちらも候補として欠落判定に使えるよう両方入れる
       ids.add(labelId);
       ids.add(hrefId);
       continue;

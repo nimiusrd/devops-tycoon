@@ -49,7 +49,7 @@
 - {具体的な断言・ケース}
 ```
 
-`After:` はテンプレートに置かない。完了時に実装 PR で例えば `After: total 92.59% / covered 93.46% / S=7 / NC=0（local）` を追記する（total / covered / S / NC を数値付きで揃える）。
+`After:` はテンプレートに置かない。完了時に実装 PR で例えば `After: total 92.59% / covered 93.46% / S=7 / NC=1（local）` を追記する（total / covered / S / NC を数値付きで揃える）。
 
 ## 2. 目的と非目的
 

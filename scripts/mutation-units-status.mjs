@@ -209,7 +209,9 @@ const units = fs
   .sort((a, b) => compareUnitId(a.basenameId, b.basenameId));
 
 const presentIds = new Set(units.map((u) => u.basenameId));
+const indexedIdSet = new Set(indexedIds);
 const missingIds = indexedIds.filter((id) => !presentIds.has(id));
+const orphanIds = units.map((u) => u.basenameId).filter((id) => !indexedIdSet.has(id));
 const idMismatches = units.filter((u) => u.idMismatch);
 
 if (asJson) {
@@ -221,6 +223,7 @@ if (asJson) {
         scope: allEpics ? 'all' : 'epic',
         indexedIds,
         missingIds,
+        orphanIds,
         badLinks,
         idMismatches: idMismatches.map((u) => ({
           file: u.file,
@@ -245,6 +248,9 @@ if (asJson) {
   if (missingIds.length > 0) {
     console.log(`- 欠落（索引にあるがファイル名の .md なし）: ${missingIds.length}`);
   }
+  if (orphanIds.length > 0) {
+    console.log(`- orphan（ファイルはあるが索引にない）: ${orphanIds.length}`);
+  }
   if (idMismatches.length > 0) {
     console.log(`- ID不一致（ファイル名≠コメント、またはコメント欠落）: ${idMismatches.length}`);
   }
@@ -262,6 +268,8 @@ if (asJson) {
       status = u.commentId
         ? `${u.status}（ID不一致:${u.commentId}）`
         : `${u.status}（mutation-unitコメント欠落）`;
+    } else if (orphanIds.includes(u.basenameId)) {
+      status = `${u.status}（索引なし）`;
     }
     console.log(`| ${u.basenameId} | ${status} | ${target} | ${after} |`);
   }
@@ -284,6 +292,9 @@ if (failIfIncomplete) {
   }
   if (missingIds.length > 0) {
     problems.push(`missing files: ${missingIds.map((id) => `${id}.md`).join(', ')}`);
+  }
+  if (orphanIds.length > 0) {
+    problems.push(`orphan files (not in index): ${orphanIds.map((id) => `${id}.md`).join(', ')}`);
   }
   if (idMismatches.length > 0) {
     problems.push(

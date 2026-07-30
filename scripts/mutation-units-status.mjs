@@ -227,9 +227,19 @@ function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
   return hasS && hasNc;
 }
 
-/** 完了記録として受理できる After か（total/covered/S/NC が数値付きで揃っていること） */
+/**
+ * After 行のうち実測本体だけを取る。
+ * 「Before …」以降の併記（比較用 Before 値）は拾わない。
+ */
+function afterPrimaryText(after) {
+  if (!after) return '';
+  const cut = after.search(/\bBefore\b/);
+  return (cut < 0 ? after : after.slice(0, cut)).trim();
+}
+
+/** 完了記録として受理できる After か（本体に total/covered/S/NC が数値付きで揃っていること） */
 function isRecordedAfter(after) {
-  return hasRequiredMetrics(after, { allowCoveredNa: false });
+  return hasRequiredMetrics(afterPrimaryText(after), { allowCoveredNa: false });
 }
 
 /** Baseline として受理できるか（covered は n/a も可: NoCoverage のみの初回など） */
@@ -252,16 +262,22 @@ if (!fs.existsSync(unitsDir)) {
 }
 
 const planText = readPlanText();
-const currentEpic = allEpics ? null : (epicFlag ?? readCurrentEpic(planText));
+const planCurrentEpic = readCurrentEpic(planText);
+const currentEpic = allEpics ? null : (epicFlag ?? planCurrentEpic);
 if (!allEpics && !currentEpic) {
   console.error(
     'could not determine current epic from plan/mutation-remediation.md; pass --epic RI-N or --all',
   );
   process.exit(1);
 }
+// 静的索引は現行エピックのみ保持する運用のため、--all または現行以外の --epic では
+// 索引依存検査（欠落・orphan・索引0件・リンク不正）を抑止する。
+const skipIndexIntegrity =
+  allEpics || Boolean(epicFlag && planCurrentEpic && epicFlag !== planCurrentEpic);
 
-const { indexedIds: allIndexedIds, badLinks } = readIndexedUnits(planText);
+const { indexedIds: allIndexedIds, badLinks: allBadLinks } = readIndexedUnits(planText);
 const indexedIds = allIndexedIds.filter((id) => allEpics || epicOfUnitId(id) === currentEpic);
+const badLinks = skipIndexIntegrity ? [] : allBadLinks;
 
 const candidateNames = fs
   .readdirSync(unitsDir)
@@ -280,9 +296,9 @@ const units = candidateNames
 
 const presentIds = new Set(units.map((u) => u.basenameId));
 const indexedIdSet = new Set(indexedIds);
-const missingIds = indexedIds.filter((id) => !presentIds.has(id));
-// orphan は現行エピック範囲でのみ判定（--all では旧エピック保管ファイルを誤検出しない）
-const orphanIds = allEpics
+const missingIds = skipIndexIntegrity ? [] : indexedIds.filter((id) => !presentIds.has(id));
+// orphan は現行エピックの索引整合でのみ判定
+const orphanIds = skipIndexIntegrity
   ? []
   : units.map((u) => u.basenameId).filter((id) => !indexedIdSet.has(id));
 const idMismatches = units.filter((u) => u.idMismatch);
@@ -293,7 +309,9 @@ if (asJson) {
       {
         unitsDir: path.relative(root, unitsDir),
         epic: allEpics ? null : currentEpic,
+        planCurrentEpic,
         scope: allEpics ? 'all' : 'epic',
+        indexIntegrity: !skipIndexIntegrity,
         indexedIds,
         missingIds,
         orphanIds,
@@ -363,7 +381,7 @@ if (failIfIncomplete) {
   const missingAfter = units.filter((u) => u.status === '完了' && !isRecordedAfter(u.after));
   const missingBaseline = units.filter((u) => !isRecordedBaseline(u.baseline));
   const problems = [];
-  if (indexedIds.length === 0) {
+  if (!skipIndexIntegrity && indexedIds.length === 0) {
     problems.push('indexed units: 0 (static index table has no unit links for this scope)');
   }
   if (badLinks.length > 0) {

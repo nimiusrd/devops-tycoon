@@ -107,9 +107,11 @@ function parseTargets(targetCell) {
 
 function parseUnit(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
-  const id =
-    (text.match(/<!--\s*mutation-unit:\s*(RI-\d+-[A-Z]\d+)\s*-->/) || [])[1] ||
-    path.basename(filePath, '.md');
+  const basenameId = path.basename(filePath, '.md');
+  const commentId =
+    (text.match(/<!--\s*mutation-unit:\s*(RI-\d+-[A-Z]\d+)\s*-->/) || [])[1] || null;
+  // 存在・欠落の正本はファイル名。コメントは整合チェック用。
+  const id = basenameId;
   const title = (text.match(/^#\s+(RI-\d+-[A-Z]\d+)\s+[—-]\s+(.+)$/m) || [])[2]?.trim() || '';
   const status = (text.match(/\|\s*状態\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '不明';
   const targetCell = (text.match(/\|\s*対象\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
@@ -117,7 +119,10 @@ function parseUnit(filePath) {
   const after = (text.match(/^After:\s*(.+)$/m) || [])[1]?.trim() || '';
   return {
     id,
-    epic: epicOfUnitId(id),
+    basenameId,
+    commentId,
+    idMismatch: Boolean(commentId && commentId !== basenameId),
+    epic: epicOfUnitId(basenameId),
     title,
     status,
     targets,
@@ -170,10 +175,11 @@ const units = fs
   .filter((name) => /^RI-\d+-[A-Z]\d+\.md$/.test(name))
   .map((name) => parseUnit(path.join(unitsDir, name)))
   .filter((u) => allEpics || u.epic === currentEpic)
-  .sort((a, b) => compareUnitId(a.id, b.id));
+  .sort((a, b) => compareUnitId(a.basenameId, b.basenameId));
 
-const presentIds = new Set(units.map((u) => u.id));
+const presentIds = new Set(units.map((u) => u.basenameId));
 const missingIds = indexedIds.filter((id) => !presentIds.has(id));
+const idMismatches = units.filter((u) => u.idMismatch);
 
 if (asJson) {
   console.log(
@@ -184,6 +190,11 @@ if (asJson) {
         scope: allEpics ? 'all' : 'epic',
         indexedIds,
         missingIds,
+        idMismatches: idMismatches.map((u) => ({
+          file: u.file,
+          basenameId: u.basenameId,
+          commentId: u.commentId,
+        })),
         units,
       },
       null,
@@ -200,7 +211,10 @@ if (asJson) {
     console.log(`- ${status}: ${n}`);
   }
   if (missingIds.length > 0) {
-    console.log(`- 欠落（索引にあるがファイルなし）: ${missingIds.length}`);
+    console.log(`- 欠落（索引にあるがファイル名の .md なし）: ${missingIds.length}`);
+  }
+  if (idMismatches.length > 0) {
+    console.log(`- ID不一致（ファイル名≠コメント）: ${idMismatches.length}`);
   }
   console.log('');
   console.log('| ID | 状態 | 対象 | After |');
@@ -208,7 +222,8 @@ if (asJson) {
   for (const u of units) {
     const after = u.after.replace(/\|/g, '\\|');
     const target = u.targets.map((t) => `\`${t}\``).join(', ') || '—';
-    console.log(`| ${u.id} | ${u.status} | ${target} | ${after} |`);
+    const status = u.idMismatch ? `${u.status}（ID不一致:${u.commentId}）` : u.status;
+    console.log(`| ${u.basenameId} | ${status} | ${target} | ${after} |`);
   }
   for (const id of missingIds) {
     console.log(`| ${id} | 欠落 | — | — |`);
@@ -223,7 +238,14 @@ if (failIfIncomplete) {
     problems.push('indexed units: 0 (static index has no unit links for this scope)');
   }
   if (missingIds.length > 0) {
-    problems.push(`missing files: ${missingIds.join(', ')}`);
+    problems.push(`missing files: ${missingIds.map((id) => `${id}.md`).join(', ')}`);
+  }
+  if (idMismatches.length > 0) {
+    problems.push(
+      `id mismatch: ${idMismatches
+        .map((u) => `${u.basenameId}.md comment=${u.commentId}`)
+        .join(', ')}`,
+    );
   }
   if (incomplete.length > 0) {
     problems.push(`incomplete: ${incomplete.map((u) => `${u.id}(${u.status})`).join(', ')}`);

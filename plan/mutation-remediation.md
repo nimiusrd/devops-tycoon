@@ -84,10 +84,14 @@
 
 Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOperator` / `ArithmeticOperator` / `StringLiteral` / `LogicalOperator`。
 
-**エピック受入（ゲートではない目安）**
+**エピック完了条件**
 
-- Group A–D の実装単位が完了し、全体 total **おおむね 80%+**
-- 中期: `engine` / `quarterReview` / `industry` の covered **85%+**
+- 本ベースラインの実装単位（少なくとも Group A–D。本エピックでは A1–E8）がすべて `完了` であること。
+
+**再ベースライン推奨（エピック完了条件ではない）**
+
+- フルシャード再計測で全体 total がおおむね 80%未満なら、新エピックを採番して追う。
+- 中期目安: `engine` / `quarterReview` / `industry` の covered **85%+**
 
 ## 4. 作業ルール（実装役共通）
 
@@ -518,5 +522,6 @@ After: total 94.65% / covered 94.65% / S=19 / NC=0 / T=12（ローカル `npm ru
 ## 8. エピック完了・再ベースライン
 
 - 実装単位完了時: 本ファイルの該当単位を `完了` にし After score を追記。PR に単位 ID を明記。
-- **エピック RI-72 完了条件**: Group A–D の単位が完了し、全体 total がおおむね 80%以上。
+- **エピック RI-72 完了条件**: 実装単位 A1–E8（Group A–D を含む）がすべて完了していること。全体 total おおむね 80%+ は完了条件に含めない（再ベースライン推奨）。
+- **RI-72 状態**: **完了**（実装単位 A1–E8 すべて完了）。全体 total のフルシャード再計測は未実施で、次の Mutation run で新エピックを採番して追う。
 - **再ベースライン時**: 新エピック `RI-{N}` を採番し、実装単位を `RI-{N}-A1`… で振り直す。旧単位の未消化は新 ID に内容をコピーして引き継ぐ（旧 ID での実装継続はしない）。

@@ -80,13 +80,43 @@ function compareUnitId(a, b) {
   return Number(pa[3]) - Number(pb[3]);
 }
 
-/** 静的索引の単位リンクから ID を集める（例: [RI-72-A1](./mutation-units/RI-72-A1.md)） */
-function readIndexedUnitIds(planText = readPlanText()) {
+const UNIT_ID_RE = /^RI-\d+-[A-Z]\d+$/;
+
+/**
+ * 静的索引の単位リンクを検証しつつ ID を集める。
+ * 表示 ID とリンク先を別々に見て、不一致・不正リンクを返す。
+ */
+function readIndexedUnits(planText = readPlanText()) {
   const ids = new Set();
-  for (const m of planText.matchAll(/\[(RI-\d+-[A-Z]\d+)\]\(\.\/mutation-units\/\1\.md\)/g)) {
-    ids.add(m[1]);
+  const badLinks = [];
+  for (const m of planText.matchAll(/\[([^\]]+)\]\(\.\/mutation-units\/([^)]+?)\)/g)) {
+    const label = m[1].trim();
+    const hrefFile = m[2].trim();
+    const labelId = UNIT_ID_RE.test(label) ? label : null;
+    const hrefId = hrefFile.endsWith('.md')
+      ? (() => {
+          const base = hrefFile.slice(0, -3);
+          return UNIT_ID_RE.test(base) ? base : null;
+        })()
+      : null;
+
+    if (!labelId || !hrefId) {
+      badLinks.push({ label, hrefFile, reason: 'invalid-id-or-href' });
+      continue;
+    }
+    if (labelId !== hrefId) {
+      badLinks.push({ label: labelId, hrefFile, reason: 'label-href-mismatch' });
+      // どちらも候補として欠落判定に使えるよう両方入れる
+      ids.add(labelId);
+      ids.add(hrefId);
+      continue;
+    }
+    ids.add(labelId);
   }
-  return [...ids].sort(compareUnitId);
+  return {
+    indexedIds: [...ids].sort(compareUnitId),
+    badLinks,
+  };
 }
 
 function epicOfUnitId(id) {
@@ -121,7 +151,8 @@ function parseUnit(filePath) {
     id,
     basenameId,
     commentId,
-    idMismatch: Boolean(commentId && commentId !== basenameId),
+    // 必須コメント欠落・不正・ファイル名不一致はすべて ID 不整合
+    idMismatch: !commentId || commentId !== basenameId,
     epic: epicOfUnitId(basenameId),
     title,
     status,
@@ -166,9 +197,8 @@ if (!allEpics && !currentEpic) {
   process.exit(1);
 }
 
-const indexedIds = readIndexedUnitIds(planText).filter(
-  (id) => allEpics || epicOfUnitId(id) === currentEpic,
-);
+const { indexedIds: allIndexedIds, badLinks } = readIndexedUnits(planText);
+const indexedIds = allIndexedIds.filter((id) => allEpics || epicOfUnitId(id) === currentEpic);
 
 const units = fs
   .readdirSync(unitsDir)
@@ -190,6 +220,7 @@ if (asJson) {
         scope: allEpics ? 'all' : 'epic',
         indexedIds,
         missingIds,
+        badLinks,
         idMismatches: idMismatches.map((u) => ({
           file: u.file,
           basenameId: u.basenameId,
@@ -214,7 +245,10 @@ if (asJson) {
     console.log(`- 欠落（索引にあるがファイル名の .md なし）: ${missingIds.length}`);
   }
   if (idMismatches.length > 0) {
-    console.log(`- ID不一致（ファイル名≠コメント）: ${idMismatches.length}`);
+    console.log(`- ID不一致（ファイル名≠コメント、またはコメント欠落）: ${idMismatches.length}`);
+  }
+  if (badLinks.length > 0) {
+    console.log(`- 索引リンク不正: ${badLinks.length}`);
   }
   console.log('');
   console.log('| ID | 状態 | 対象 | After |');
@@ -222,7 +256,12 @@ if (asJson) {
   for (const u of units) {
     const after = u.after.replace(/\|/g, '\\|');
     const target = u.targets.map((t) => `\`${t}\``).join(', ') || '—';
-    const status = u.idMismatch ? `${u.status}（ID不一致:${u.commentId}）` : u.status;
+    let status = u.status;
+    if (u.idMismatch) {
+      status = u.commentId
+        ? `${u.status}（ID不一致:${u.commentId}）`
+        : `${u.status}（mutation-unitコメント欠落）`;
+    }
     console.log(`| ${u.basenameId} | ${status} | ${target} | ${after} |`);
   }
   for (const id of missingIds) {
@@ -237,13 +276,24 @@ if (failIfIncomplete) {
   if (indexedIds.length === 0) {
     problems.push('indexed units: 0 (static index has no unit links for this scope)');
   }
+  if (badLinks.length > 0) {
+    problems.push(
+      `bad index links: ${badLinks
+        .map((b) => `[${b.label}](./mutation-units/${b.hrefFile}) (${b.reason})`)
+        .join(', ')}`,
+    );
+  }
   if (missingIds.length > 0) {
     problems.push(`missing files: ${missingIds.map((id) => `${id}.md`).join(', ')}`);
   }
   if (idMismatches.length > 0) {
     problems.push(
       `id mismatch: ${idMismatches
-        .map((u) => `${u.basenameId}.md comment=${u.commentId}`)
+        .map((u) =>
+          u.commentId
+            ? `${u.basenameId}.md comment=${u.commentId}`
+            : `${u.basenameId}.md comment=missing`,
+        )
         .join(', ')}`,
     );
   }

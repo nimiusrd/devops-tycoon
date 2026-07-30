@@ -128,6 +128,16 @@ function parseUnit(filePath) {
   };
 }
 
+/** 完了記録として受理できる After か（プレースホルダーのみは不可） */
+function isRecordedAfter(after) {
+  if (!after || !after.trim()) return false;
+  const t = after.trim();
+  // テンプレートの省略記号（… / ...）を含む行は未記録扱い
+  if (/[…⋯]/.test(t) || /(^|[^\d])\.\.\.([^\d]|$)/.test(t)) return false;
+  // 実測っぽい数字（% または S=/NC= 等）が必要
+  return /\d+(\.\d+)?%/.test(t) || /\bS\s*=\s*\d+/i.test(t) || /\bNC\s*=\s*\d+/i.test(t);
+}
+
 if (epicFlag && !/^RI-\d+$/.test(epicFlag)) {
   console.error(`invalid --epic ${epicFlag} (expected RI-N)`);
   process.exit(1);
@@ -207,7 +217,7 @@ if (asJson) {
 
 if (failIfIncomplete) {
   const incomplete = units.filter((u) => u.status !== '完了');
-  const missingAfter = units.filter((u) => u.status === '完了' && !u.after);
+  const missingAfter = units.filter((u) => u.status === '完了' && !isRecordedAfter(u.after));
   const problems = [];
   if (indexedIds.length === 0) {
     problems.push('indexed units: 0 (static index has no unit links for this scope)');
@@ -219,7 +229,7 @@ if (failIfIncomplete) {
     problems.push(`incomplete: ${incomplete.map((u) => `${u.id}(${u.status})`).join(', ')}`);
   }
   if (missingAfter.length > 0) {
-    problems.push(`missing After: ${missingAfter.map((u) => u.id).join(', ')}`);
+    problems.push(`missing/placeholder After: ${missingAfter.map((u) => u.id).join(', ')}`);
   }
   if (problems.length > 0) {
     console.error(`\n${problems.join('\n')}`);

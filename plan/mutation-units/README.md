@@ -29,11 +29,12 @@ node scripts/mutation-units-status.mjs --all
 npm run mutation:units:status -- --fail-if-incomplete
 ```
 
-`--fail-if-incomplete` は次を失敗にする: 索引にある単位ファイルの欠落、索引 0 件、`状態` が完了以外、完了なのに `After:` が空。未知の CLI 引数も拒否する。
+`--fail-if-incomplete` は次を失敗にする: 索引にある単位ファイルの欠落、索引 0 件、`状態` が完了以外、完了なのに実測の `After:` が無い（空・`…` プレースホルダー不可）。未知の CLI 引数も拒否する。
 
 ## ファイル書式
 
-先頭コメントで ID を固定し、本文は次の形にする（計画作成時にスキルが生成）。
+先頭コメントで ID を固定し、本文は次の形にする（計画作成時にスキルが生成）。  
+`After:` 行は**計画テンプレートに含めない**。完了時に実装 PR で追記する。
 
 ```markdown
 <!-- mutation-unit: RI-{N}-{GROUP}{SEQ} -->
@@ -52,6 +53,10 @@ npm run mutation:units:status -- --fail-if-incomplete
 やる事:
 
 - …
+```
 
-After: total …% / covered …% / S=… / NC=…（完了時）
+完了時の追記例:
+
+```markdown
+After: total 92.59% / covered 93.46% / S=7 / NC=0（local）
 ```

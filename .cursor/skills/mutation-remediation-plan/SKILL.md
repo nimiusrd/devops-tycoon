@@ -11,7 +11,8 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 
 - 設定: [`stryker.config.json`](../../../stryker.config.json)
 - GHA: [`.github/workflows/mutation.yml`](../../../.github/workflows/mutation.yml)（シャード並列、任意／週次）
-- 計画の正本テンプレ: [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md)
+- エピック共通計画: [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md)（静的索引。状態列なし）
+- 実装単位（1ファイル=1PR）: [`plan/mutation-units/`](../../../plan/mutation-units/)
 - バックログ: [`plan/remaining-issues.md`](../../../plan/remaining-issues.md)（**フルシャードの run ID が変わったときだけ新しいエピックを採番**）
 
 ## バックログ ID の採番
@@ -26,17 +27,19 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 1. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) とリポジトリ全体から既存エピック番号 `RI-(\d+)`（ハイフン無しの本体）の最大を求める（欠番は再利用しない）。実装単位 `RI-72-A1` の `-A1` は番号計算に含めない。
 2. 新エピック = `RI-{max+1}`。
 3. 表に新行を追加し、詳細節を書く。タイトル例: `ミューテーションテストに基づくユニットテスト強化（run <RUN_ID>）`。実装単位一覧は [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) へリンク。
-4. [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) をそのベースライン用に更新する（**run ID と `headSha` を必ず記録**）。
-5. 直前のミューテーション改善エピック（未着手・進行中）があれば **完了** にし、完了要約へ「後続ベースライン `RI-XX` に置換。未消化の実装単位は新計画へ引き継ぎ」と短く書く。
-6. [`plan/README.md`](../../../plan/README.md) の mutation 行は「現行 RI-XX」が分かるよう更新する。
+4. [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) をそのベースライン用に更新する（**run ID と `headSha` を必ず記録**）。静的索引（状態列なし）と単位ファイルへのリンクを置く。
+5. [`plan/mutation-units/`](../../../plan/mutation-units/) に各実装単位ファイル `RI-{N}-….md` を新規作成する（旧エピックの単位ファイルは残してよいが、未消化内容は新 ID ファイルへコピーして引き継ぐ）。
+6. 直前のミューテーション改善エピック（未着手・進行中）があれば **完了** にし、完了要約へ「後続ベースライン `RI-XX` に置換。未消化の実装単位は新計画へ引き継ぎ」と短く書く。
+7. [`plan/README.md`](../../../plan/README.md) の mutation 行は「現行 RI-XX」が分かるよう更新する。
 
-同じ run の再編集時は手順 4 のみ（エピック採番・旧エピック完了は行わない）。
+同じ run の再編集時は手順 4–5 のみ（エピック採番・旧エピック完了は行わない）。
 
 部分分析（custom / `mutate` 指定）では **新しいエピックも実装単位も採番しない**。
 
-### 実装単位（1PR）
+### 実装単位（1PR・1ファイル）
 
-エピック配下の作業は次の形式で採番し、[`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) にのみ詳細を置く（`remaining-issues.md` にはエピックだけ）。
+エピック配下の作業は次の形式で採番する。`remaining-issues.md` にはエピックだけ。  
+**進捗と詳細の正本は単位ファイル** [`plan/mutation-units/RI-{N}-{GROUP}{SEQ}.md`](../../../plan/mutation-units/)（単一の巨大 md に埋め込まない）。
 
 | 種別 | 形式 | 例 |
 | --- | --- | --- |
@@ -45,12 +48,14 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 
 - `{GROUP}`: 優先グループ `A`–`Z`（A が最高）
 - `{SEQ}`: グループ内連番（1起算、ゼロ埋めなし、欠番再利用なし）
-- **1実装単位 = 1PR。** タイトル先頭に ID を付ける
+- **1実装単位 = 1PR = 1単位ファイル。** タイトル先頭に ID を付ける
 
-各単位は次の書式で書く（必須）:
+各単位ファイルの書式（必須。詳細は [`mutation-units/README.md`](../../../plan/mutation-units/README.md)）:
 
 ```markdown
-### RI-{N}-{GROUP}{SEQ} — {短いタイトル}
+<!-- mutation-unit: RI-{N}-{GROUP}{SEQ} -->
+
+# RI-{N}-{GROUP}{SEQ} — {短いタイトル}
 
 | 項目 | 内容 |
 | --- | --- |
@@ -66,18 +71,14 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 - …
 ```
 
-一覧表（ID / タイトル / 状態 / 対象）をセクション先頭に置き、詳細をその下に続ける。
+[`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) には **静的索引**（ID / タイトル / 対象 / 単位ファイルへのリンク）だけを置く。**状態列は置かない**（並列 PR が同じ表を更新して衝突するため）。横断表示は `npm run mutation:units:status`（読み取り専用）。
 
-### 並列実装と計画ファイル（必須ルール）
+### 並列実装（構造で衝突を避ける）
 
-同一エピックの実装単位を並列 PR にするとき、**各 PR が `plan/mutation-remediation.md` の一覧・状態を更新すると必ず衝突する**（RI-72 で多発）。計画文書に次を明記する。
-
-1. **実装単位 PR は `plan/mutation-remediation.md` / `plan/remaining-issues.md` / `plan/README.md` を変更しない。** テスト（とやむを得ない最小の本番修正）のみ。
-2. **受入証跡は実装 PR 本文**に Before/After（total / covered / S / NC）を書く。
-3. **計画ファイルの `状態`・`After:`・一覧表の更新はバッチ同期 PR**（マージ済み分のまとめ、またはエピック完了 PR）で行う。親 / babysit が担当してよい。
-4. **同一対象ソースを複数単位に割る場合**は、計画に「シリアル」または「単位専用の新規テストファイル（共有テストを編集しない）」と書く。
-
-再ベースラインで計画を差し替えるときも、この節を落とさない。
+1. 実装単位 PR は **自分の `plan/mutation-units/<ID>.md` だけ**を更新する（`状態` / `After:`）。`mutation-remediation.md` の索引は触らない。
+2. PR 本文にも Before/After を書く（レビュー用）。進捗の正本は単位ファイル。
+3. 同一対象ソースを複数単位に割る場合は「シリアル」または「単位専用の新規テストファイル（共有テストを編集しない）」と計画に書く。
+4. **バッチ同期や「後で転記」に頼らない。** 状態更新は実装 PR に含める（ファイルが分かれているので衝突しない）。
 
 ## 手順
 
@@ -142,17 +143,17 @@ gh run download <RUN_ID> -D "$OUT"
 
 現行 [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) の run ID と比較する。
 
-- **同じ run**: 既存エピックを再利用し、実装単位の追記・Baseline 補完・書式修正のみ行う（新エピック採番なし）。
-- **新しいフルシャード run**: 「バックログ ID の採番」に従い新エピック `RI-{N}` と実装単位 `RI-{N}-A1`… を発行して差し替える。
+- **同じ run**: 既存エピックを再利用し、単位ファイルの追記・Baseline 補完・書式修正のみ行う（新エピック採番なし）。
+- **新しいフルシャード run**: 「バックログ ID の採番」に従い新エピック `RI-{N}` と単位ファイル `RI-{N}-A1.md`… を発行して差し替える。
 
 計画に含めるもの:
 
 - 対象 run URL・**`headSha`**・エピック ID・全体 score（フルシャード時）
-- **ID フォーマット節**（エピック / 実装単位）とエントリ書式
+- **ID フォーマット節**と単位ファイル書式、`mutation-units/` 分割の説明
 - 目的 / 非目的（必須ゲート化しない、原則テストのみ強化）
-- 作業ルール（**1PR=1実装単位**、再計測コマンド、PR に単位 ID と Before/After、**並列時は計画ファイルを触らない／状態はバッチ同期**）
-- 実装単位一覧表＋各単位の必須エントリ。**Baseline は `total / covered / S / NC` をすべて記録**（artifact 失効後も比較できるようにする）
-- 前回計画から未消化があれば、新単位 ID へ内容を引き継いだ旨を明記（新 run のとき）
+- 作業ルール（**1PR=1実装単位=1単位ファイル**、再計測、PR 本文＋単位ファイルの Before/After）
+- **静的索引**（状態列なし）＋各 `plan/mutation-units/<ID>.md`。**Baseline は `total / covered / S / NC` を単位ファイルにすべて記録**
+- 前回計画から未消化があれば、新単位 ID ファイルへ内容を引き継いだ旨を明記（新 run のとき）
 - 同一ファイルを複数単位に割る場合の衝突回避方針（シリアル or 専用テストファイル）
 - 典型的 Survived の直し方表
 - 再計測例:
@@ -169,8 +170,8 @@ npm run test:mutation:force -- --mutate <file>
 2. 対象 run
 3. 全体・シャードの score サマリー（部分 run なら範囲を明示し、RI 未採番である旨）
 4. 推奨着手順（実装単位 ID の表）
-5. 計画ファイルへのパス
-6. 実装は別エージェント／別 PR（単位 ID ごと）で行う旨（依頼が計画のみの場合）
+5. 計画ファイル（`mutation-remediation.md`）と単位ディレクトリ（`mutation-units/`）へのパス
+6. 実装は別エージェント／別 PR（単位 ID ごと。各自が自分の単位ファイルを更新）で行う旨（依頼が計画のみの場合）
 
 ## 優先度の付け方
 
@@ -195,8 +196,9 @@ npm run test:mutation:force -- --mutate <file>
 - 実装単位 ID をエピック無しで採番しない / 1PR に複数単位を詰め込まない（要統合なら計画側で先に ID をまとめる）
 - 欠番のエピック番号・単位 SEQ を再利用しない
 - 作業ブランチを baseline `headSha` に checkout したまま文書を更新しない
-- 実装単位 PR に計画ファイル（`plan/mutation-remediation.md` 等）の状態更新を含めさせる運用を計画に書かない（並列衝突の再発）
-- 並列ルール節を再ベースライン計画から省略しない
+- 実装単位の詳細・状態を再び `mutation-remediation.md` 単一ファイルへ埋め込まない（並列衝突の再発）
+- 静的索引に状態列を復活させない / バッチ同期前提の運用に戻さない
+- `plan/mutation-units/` 分割を再ベースライン計画から省略しない
 
 ## 追加リソース
 

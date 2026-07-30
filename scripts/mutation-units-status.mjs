@@ -25,6 +25,8 @@ const argv = process.argv.slice(2);
 const KNOWN_FLAGS = new Set(['--json', '--fail-if-incomplete', '--all', '--epic']);
 /** SEQ は1起算・ゼロ埋めなし。エピック番号も先頭ゼロなし。 */
 const UNIT_ID_RE = /^RI-[1-9]\d*-[A-Z][1-9]\d*$/;
+/** 索引・見出しから「RI らしい」ラベルを先に拾う（ゼロ埋め等の不正形式も含む） */
+const LOOSE_UNIT_ID_RE = /\b(RI-\d+-[A-Z]\d+)\b/;
 
 function parseArgs(raw) {
   const flags = new Set();
@@ -96,21 +98,27 @@ function compareUnitId(a, b) {
 }
 
 /**
- * 静的索引表の行から単位 ID を集める。
- * 第1セルに単位 ID があればリンク構文の成否に関係なく索引対象とし、壊れた構文は badLinks へ。
+ * 静的索引表の行から単位 ID と対象列を集める。
+ * 第1セルに RI らしいラベルがあればリンク構文の成否に関係なく検出し、
+ * 不正形式・壊れた構文は badLinks へ（妥当な ID のみ indexedIds）。
  */
 function readIndexedUnits(planText = readPlanText()) {
   const section = extractIndexSection(planText);
   const ids = new Set();
   const badLinks = [];
+  /** @type {Map<string, string[]>} */
+  const indexTargets = new Map();
 
-  function rememberId(label, href, reason) {
-    if (ids.has(label)) {
-      badLinks.push({ label, href, reason: 'duplicate-index-id' });
-      return;
+  function rememberId(label, href, reason, { index = true } = {}) {
+    if (index) {
+      if (ids.has(label)) {
+        badLinks.push({ label, href, reason: 'duplicate-index-id' });
+        return false;
+      }
+      ids.add(label);
     }
-    ids.add(label);
     if (reason) badLinks.push({ label, href, reason });
+    return true;
   }
 
   for (const line of section.split('\n')) {
@@ -120,19 +128,33 @@ function readIndexedUnits(planText = readPlanText()) {
     const cells = line.split('|').slice(1, -1);
     if (cells.length === 0) continue;
     const first = cells[0].trim();
-    const idMatch = first.match(/\b(RI-[1-9]\d*-[A-Z][1-9]\d*)\b/);
+    const idMatch = first.match(LOOSE_UNIT_ID_RE);
     if (!idMatch) continue;
     const label = idMatch[1];
+    const targetCell = (cells[2] || '').trim();
+    const targets = parseTargets(targetCell);
+
+    if (!isValidUnitId(label)) {
+      const looseLink = first.match(/^\[([^\]]+)\]\(([^)]*)\)$/);
+      rememberId(label, looseLink ? looseLink[2].trim() : first, 'invalid-unit-id', {
+        index: false,
+      });
+      continue;
+    }
 
     const linkMatch = first.match(/^\[([^\]]+)\]\(([^)]*)\)$/);
     if (!linkMatch) {
-      rememberId(label, first, 'broken-link-syntax');
+      if (rememberId(label, first, 'broken-link-syntax')) {
+        indexTargets.set(label, targets);
+      }
       continue;
     }
     const linkLabel = linkMatch[1].trim();
     const href = linkMatch[2].trim();
-    if (linkLabel !== label || !isValidUnitId(label)) {
-      rememberId(label, href, 'invalid-unit-id');
+    if (linkLabel !== label) {
+      if (rememberId(label, href, 'invalid-unit-id')) {
+        indexTargets.set(label, targets);
+      }
       continue;
     }
     if (ids.has(label)) {
@@ -140,6 +162,7 @@ function readIndexedUnits(planText = readPlanText()) {
       continue;
     }
     ids.add(label);
+    indexTargets.set(label, targets);
     const expected = `./mutation-units/${label}.md`;
     if (href === expected) {
       continue;
@@ -155,6 +178,7 @@ function readIndexedUnits(planText = readPlanText()) {
   return {
     indexedIds: [...ids].sort(compareUnitId),
     badLinks,
+    indexTargets,
   };
 }
 
@@ -174,15 +198,26 @@ function parseTargets(targetCell) {
     .filter(Boolean);
 }
 
+function sameTargets(a, b) {
+  const norm = (xs) =>
+    [...xs]
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .sort()
+      .join('\0');
+  return norm(a) === norm(b);
+}
+
 function parseUnit(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
   const basenameId = path.basename(filePath, '.md');
   const commentId =
     (text.match(/<!--\s*mutation-unit:\s*(RI-[1-9]\d*-[A-Z][1-9]\d*)\s*-->/) || [])[1] || null;
-  // 存在・欠落の正本はファイル名。コメントは整合チェック用。
+  // 存在・欠落の正本はファイル名。コメント・見出しは整合チェック用。
   const id = basenameId;
-  const title =
-    (text.match(/^#\s+(RI-[1-9]\d*-[A-Z][1-9]\d*)\s+[—-]\s+(.+)$/m) || [])[2]?.trim() || '';
+  const headingMatch = text.match(/^#\s+(RI-[1-9]\d*-[A-Z][1-9]\d*)\s+[—-]\s+(.+)$/m);
+  const headingId = headingMatch?.[1] || null;
+  const title = headingMatch?.[2]?.trim() || '';
   const status = (text.match(/\|\s*状態\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '不明';
   const targetCell = (text.match(/\|\s*対象\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
   const targets = parseTargets(targetCell);
@@ -192,8 +227,9 @@ function parseUnit(filePath) {
     id,
     basenameId,
     commentId,
-    // 必須コメント欠落・不正・ファイル名不一致はすべて ID 不整合
-    idMismatch: !commentId || commentId !== basenameId,
+    headingId,
+    // コメント／見出しの欠落・不正・ファイル名不一致はすべて ID 不整合
+    idMismatch: !commentId || commentId !== basenameId || !headingId || headingId !== basenameId,
     epic: epicOfUnitId(basenameId),
     title,
     status,
@@ -222,9 +258,18 @@ function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
   const coveredPct = t.match(/\bcovered\s+(\d+(?:\.\d+)?)%/i);
   const coveredNa = allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t);
   if (!coveredNa && (!coveredPct || !isPercentInRange(coveredPct[1]))) return false;
+  const ncM = t.match(/\bNC\s*=\s*(\d+)/i);
   const hasS = /\bS\s*=\s*\d+/i.test(t);
-  const hasNc = /\bNC\s*=\s*\d+/i.test(t);
-  return hasS && hasNc;
+  if (!hasS || !ncM) return false;
+  // total 分母にだけ NC が載るため covered >= total。NC=0 なら両者は一致。
+  if (!coveredNa) {
+    const total = Number(totalM[1]);
+    const covered = Number(coveredPct[1]);
+    const nc = Number(ncM[1]);
+    if (covered < total) return false;
+    if (nc === 0 && covered !== total) return false;
+  }
+  return true;
 }
 
 /**
@@ -275,7 +320,11 @@ if (!allEpics && !currentEpic) {
 const skipIndexIntegrity =
   allEpics || Boolean(epicFlag && planCurrentEpic && epicFlag !== planCurrentEpic);
 
-const { indexedIds: allIndexedIds, badLinks: allBadLinks } = readIndexedUnits(planText);
+const {
+  indexedIds: allIndexedIds,
+  badLinks: allBadLinks,
+  indexTargets: allIndexTargets,
+} = readIndexedUnits(planText);
 const indexedIds = allIndexedIds.filter((id) => allEpics || epicOfUnitId(id) === currentEpic);
 const badLinks = skipIndexIntegrity ? [] : allBadLinks;
 
@@ -302,6 +351,16 @@ const orphanIds = skipIndexIntegrity
   ? []
   : units.map((u) => u.basenameId).filter((id) => !indexedIdSet.has(id));
 const idMismatches = units.filter((u) => u.idMismatch);
+const targetMismatches = skipIndexIntegrity
+  ? []
+  : units
+      .filter((u) => indexedIdSet.has(u.basenameId))
+      .filter((u) => !sameTargets(allIndexTargets.get(u.basenameId) || [], u.targets))
+      .map((u) => ({
+        id: u.basenameId,
+        index: allIndexTargets.get(u.basenameId) || [],
+        unit: u.targets,
+      }));
 
 if (asJson) {
   console.log(
@@ -321,7 +380,9 @@ if (asJson) {
           file: u.file,
           basenameId: u.basenameId,
           commentId: u.commentId,
+          headingId: u.headingId,
         })),
+        targetMismatches,
         units,
       },
       null,
@@ -347,7 +408,10 @@ if (asJson) {
     console.log(`- 不正な単位IDファイル: ${invalidIdFiles.length}`);
   }
   if (idMismatches.length > 0) {
-    console.log(`- ID不一致（ファイル名≠コメント、またはコメント欠落）: ${idMismatches.length}`);
+    console.log(`- ID不一致（ファイル名≠コメント／見出し、または欠落）: ${idMismatches.length}`);
+  }
+  if (targetMismatches.length > 0) {
+    console.log(`- 対象不一致（索引≠単位ファイル）: ${targetMismatches.length}`);
   }
   if (badLinks.length > 0) {
     console.log(`- 索引リンク不正: ${badLinks.length}`);
@@ -360,11 +424,16 @@ if (asJson) {
     const target = u.targets.map((t) => `\`${t}\``).join(', ') || '—';
     let status = u.status;
     if (u.idMismatch) {
-      status = u.commentId
-        ? `${u.status}（ID不一致:${u.commentId}）`
-        : `${u.status}（mutation-unitコメント欠落）`;
+      const bits = [];
+      if (!u.commentId) bits.push('コメント欠落');
+      else if (u.commentId !== u.basenameId) bits.push(`コメント=${u.commentId}`);
+      if (!u.headingId) bits.push('見出し欠落');
+      else if (u.headingId !== u.basenameId) bits.push(`見出し=${u.headingId}`);
+      status = `${u.status}（ID不一致:${bits.join(', ')}）`;
     } else if (orphanIds.includes(u.basenameId)) {
       status = `${u.status}（索引なし）`;
+    } else if (targetMismatches.some((m) => m.id === u.basenameId)) {
+      status = `${u.status}（対象不一致）`;
     }
     console.log(`| ${u.basenameId} | ${status} | ${target} | ${after} |`);
   }
@@ -381,6 +450,11 @@ if (failIfIncomplete) {
   const missingAfter = units.filter((u) => u.status === '完了' && !isRecordedAfter(u.after));
   const missingBaseline = units.filter((u) => !isRecordedBaseline(u.baseline));
   const problems = [];
+  if (units.length === 0) {
+    problems.push(
+      `units: 0 (no unit files in scope ${allEpics ? 'all' : currentEpic}; refusing empty success)`,
+    );
+  }
   if (!skipIndexIntegrity && indexedIds.length === 0) {
     problems.push('indexed units: 0 (static index table has no unit links for this scope)');
   }
@@ -401,12 +475,20 @@ if (failIfIncomplete) {
   if (idMismatches.length > 0) {
     problems.push(
       `id mismatch: ${idMismatches
-        .map((u) =>
-          u.commentId
-            ? `${u.basenameId}.md comment=${u.commentId}`
-            : `${u.basenameId}.md comment=missing`,
-        )
+        .map((u) => {
+          const bits = [`file=${u.basenameId}`];
+          bits.push(u.commentId ? `comment=${u.commentId}` : 'comment=missing');
+          bits.push(u.headingId ? `heading=${u.headingId}` : 'heading=missing');
+          return `${u.basenameId}.md (${bits.join(', ')})`;
+        })
         .join(', ')}`,
+    );
+  }
+  if (targetMismatches.length > 0) {
+    problems.push(
+      `target mismatch: ${targetMismatches
+        .map((m) => `${m.id} index=[${m.index.join(', ')}] unit=[${m.unit.join(', ')}]`)
+        .join('; ')}`,
     );
   }
   if (incomplete.length > 0) {

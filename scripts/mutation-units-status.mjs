@@ -23,6 +23,8 @@ const planPath = path.join(root, 'plan', 'mutation-remediation.md');
 const argv = process.argv.slice(2);
 
 const KNOWN_FLAGS = new Set(['--json', '--fail-if-incomplete', '--all', '--epic']);
+/** SEQ は1起算・ゼロ埋めなし。エピック番号も先頭ゼロなし。 */
+const UNIT_ID_RE = /^RI-[1-9]\d*-[A-Z][1-9]\d*$/;
 
 function parseArgs(raw) {
   const flags = new Set();
@@ -58,6 +60,10 @@ const asJson = flags.has('--json');
 const failIfIncomplete = flags.has('--fail-if-incomplete');
 const allEpics = flags.has('--all');
 
+function isValidUnitId(id) {
+  return UNIT_ID_RE.test(id);
+}
+
 function readPlanText() {
   if (!fs.existsSync(planPath)) return '';
   return fs.readFileSync(planPath, 'utf8');
@@ -66,6 +72,15 @@ function readPlanText() {
 function readCurrentEpic(planText = readPlanText()) {
   const m = planText.match(/ベースライン（エピック）:\s*\*\*(RI-\d+)\*\*/);
   return m?.[1] ?? null;
+}
+
+/** §5 静的索引セクションだけを切り出す */
+function extractIndexSection(planText) {
+  const start = planText.search(/^## 5\.\s+実装単位一覧/m);
+  if (start < 0) return '';
+  const rest = planText.slice(start);
+  const next = rest.search(/\n## (?!5\.)/);
+  return next < 0 ? rest : rest.slice(0, next);
 }
 
 /** RI-{N}-{GROUP}{SEQ} を数値順に並べる（A10 が A2 より後） */
@@ -81,24 +96,29 @@ function compareUnitId(a, b) {
 }
 
 /**
- * 静的索引の単位リンクを検証しつつ ID を集める。
+ * 静的索引表の単位リンクだけを検証しつつ ID を集める。
  * 単位 ID ラベルのリンクを起点に、リンク先が ./mutation-units/<ID>.md であることを検査する。
  */
 function readIndexedUnits(planText = readPlanText()) {
+  const section = extractIndexSection(planText);
   const ids = new Set();
   const badLinks = [];
-  for (const m of planText.matchAll(/\[(RI-\d+-[A-Z]\d+)\]\(([^)]*)\)/g)) {
-    const labelId = m[1];
+  for (const m of section.matchAll(/^\|\s*\[([^\]]+)\]\(([^)]*)\)\s*\|/gm)) {
+    const label = m[1].trim();
     const href = m[2].trim();
-    ids.add(labelId);
-    const expected = `./mutation-units/${labelId}.md`;
+    if (!isValidUnitId(label)) {
+      badLinks.push({ label, href, reason: 'invalid-unit-id' });
+      continue;
+    }
+    ids.add(label);
+    const expected = `./mutation-units/${label}.md`;
     if (href === expected) {
       continue;
     }
-    const unitHref = href.match(/^\.\/mutation-units\/(RI-\d+-[A-Z]\d+)\.md$/);
+    const unitHref = href.match(/^\.\/mutation-units\/(RI-[1-9]\d*-[A-Z][1-9]\d*)\.md$/);
     if (unitHref) {
       badLinks.push({
-        label: labelId,
+        label,
         href,
         reason: 'label-href-mismatch',
       });
@@ -106,7 +126,7 @@ function readIndexedUnits(planText = readPlanText()) {
       continue;
     }
     badLinks.push({
-      label: labelId,
+      label,
       href,
       reason: 'invalid-id-or-href',
     });
@@ -137,10 +157,11 @@ function parseUnit(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
   const basenameId = path.basename(filePath, '.md');
   const commentId =
-    (text.match(/<!--\s*mutation-unit:\s*(RI-\d+-[A-Z]\d+)\s*-->/) || [])[1] || null;
+    (text.match(/<!--\s*mutation-unit:\s*(RI-[1-9]\d*-[A-Z][1-9]\d*)\s*-->/) || [])[1] || null;
   // 存在・欠落の正本はファイル名。コメントは整合チェック用。
   const id = basenameId;
-  const title = (text.match(/^#\s+(RI-\d+-[A-Z]\d+)\s+[—-]\s+(.+)$/m) || [])[2]?.trim() || '';
+  const title =
+    (text.match(/^#\s+(RI-[1-9]\d*-[A-Z][1-9]\d*)\s+[—-]\s+(.+)$/m) || [])[2]?.trim() || '';
   const status = (text.match(/\|\s*状態\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '不明';
   const targetCell = (text.match(/\|\s*対象\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
   const targets = parseTargets(targetCell);
@@ -175,8 +196,8 @@ function isRecordedAfter(after) {
   return hasTotal && hasCovered && hasS && hasNc;
 }
 
-if (epicFlag && !/^RI-\d+$/.test(epicFlag)) {
-  console.error(`invalid --epic ${epicFlag} (expected RI-N)`);
+if (epicFlag && !/^RI-[1-9]\d*$/.test(epicFlag)) {
+  console.error(`invalid --epic ${epicFlag} (expected RI-N without leading zeros)`);
   process.exit(1);
 }
 if (allEpics && epicFlag) {
@@ -201,9 +222,17 @@ if (!allEpics && !currentEpic) {
 const { indexedIds: allIndexedIds, badLinks } = readIndexedUnits(planText);
 const indexedIds = allIndexedIds.filter((id) => allEpics || epicOfUnitId(id) === currentEpic);
 
-const units = fs
+const candidateNames = fs
   .readdirSync(unitsDir)
-  .filter((name) => /^RI-\d+-[A-Z]\d+\.md$/.test(name))
+  .filter((name) => /^RI-.+\.md$/.test(name) && name !== 'README.md');
+const invalidIdFiles = candidateNames
+  .map((name) => name.slice(0, -'.md'.length))
+  .filter((id) => !isValidUnitId(id))
+  .filter((id) => allEpics || epicOfUnitId(id) === currentEpic || !epicOfUnitId(id))
+  .sort(compareUnitId);
+
+const units = candidateNames
+  .filter((name) => isValidUnitId(name.slice(0, -'.md'.length)))
   .map((name) => parseUnit(path.join(unitsDir, name)))
   .filter((u) => allEpics || u.epic === currentEpic)
   .sort((a, b) => compareUnitId(a.basenameId, b.basenameId));
@@ -211,7 +240,10 @@ const units = fs
 const presentIds = new Set(units.map((u) => u.basenameId));
 const indexedIdSet = new Set(indexedIds);
 const missingIds = indexedIds.filter((id) => !presentIds.has(id));
-const orphanIds = units.map((u) => u.basenameId).filter((id) => !indexedIdSet.has(id));
+// orphan は現行エピック範囲でのみ判定（--all では旧エピック保管ファイルを誤検出しない）
+const orphanIds = allEpics
+  ? []
+  : units.map((u) => u.basenameId).filter((id) => !indexedIdSet.has(id));
 const idMismatches = units.filter((u) => u.idMismatch);
 
 if (asJson) {
@@ -224,6 +256,7 @@ if (asJson) {
         indexedIds,
         missingIds,
         orphanIds,
+        invalidIdFiles,
         badLinks,
         idMismatches: idMismatches.map((u) => ({
           file: u.file,
@@ -251,6 +284,9 @@ if (asJson) {
   if (orphanIds.length > 0) {
     console.log(`- orphan（ファイルはあるが索引にない）: ${orphanIds.length}`);
   }
+  if (invalidIdFiles.length > 0) {
+    console.log(`- 不正な単位IDファイル: ${invalidIdFiles.length}`);
+  }
   if (idMismatches.length > 0) {
     console.log(`- ID不一致（ファイル名≠コメント、またはコメント欠落）: ${idMismatches.length}`);
   }
@@ -276,6 +312,9 @@ if (asJson) {
   for (const id of missingIds) {
     console.log(`| ${id} | 欠落 | — | — |`);
   }
+  for (const id of invalidIdFiles) {
+    console.log(`| ${id} | 不正ID | — | — |`);
+  }
 }
 
 if (failIfIncomplete) {
@@ -283,7 +322,7 @@ if (failIfIncomplete) {
   const missingAfter = units.filter((u) => u.status === '完了' && !isRecordedAfter(u.after));
   const problems = [];
   if (indexedIds.length === 0) {
-    problems.push('indexed units: 0 (static index has no unit links for this scope)');
+    problems.push('indexed units: 0 (static index table has no unit links for this scope)');
   }
   if (badLinks.length > 0) {
     problems.push(
@@ -295,6 +334,9 @@ if (failIfIncomplete) {
   }
   if (orphanIds.length > 0) {
     problems.push(`orphan files (not in index): ${orphanIds.map((id) => `${id}.md`).join(', ')}`);
+  }
+  if (invalidIdFiles.length > 0) {
+    problems.push(`invalid unit id files: ${invalidIdFiles.map((id) => `${id}.md`).join(', ')}`);
   }
   if (idMismatches.length > 0) {
     problems.push(

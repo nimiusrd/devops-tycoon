@@ -29,7 +29,7 @@ node scripts/mutation-units-status.mjs --all
 npm run mutation:units:status -- --fail-if-incomplete
 ```
 
-`--json` を `jq` 等へ渡すときは、npm のライフサイクルバナーを避けるため **`--silent` 付き**か **`node` 直呼び**を使う。
+`--fail-if-incomplete` は次を失敗にする: 索引にある単位ファイルの欠落、索引 0 件、`状態` が完了以外。
 
 ## ファイル書式
 

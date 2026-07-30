@@ -37,11 +37,23 @@ function flagValue(name) {
   return v;
 }
 
-function readCurrentEpic() {
-  if (!fs.existsSync(planPath)) return null;
-  const text = fs.readFileSync(planPath, 'utf8');
-  const m = text.match(/ベースライン（エピック）:\s*\*\*(RI-\d+)\*\*/);
+function readPlanText() {
+  if (!fs.existsSync(planPath)) return '';
+  return fs.readFileSync(planPath, 'utf8');
+}
+
+function readCurrentEpic(planText = readPlanText()) {
+  const m = planText.match(/ベースライン（エピック）:\s*\*\*(RI-\d+)\*\*/);
   return m?.[1] ?? null;
+}
+
+/** 静的索引の単位リンクから ID を集める（例: [RI-72-A1](./mutation-units/RI-72-A1.md)） */
+function readIndexedUnitIds(planText = readPlanText()) {
+  const ids = new Set();
+  for (const m of planText.matchAll(/\[(RI-\d+-[A-Z]\d+)\]\(\.\/mutation-units\/\1\.md\)/g)) {
+    ids.add(m[1]);
+  }
+  return [...ids].sort((a, b) => a.localeCompare(b, 'en'));
 }
 
 function epicOfUnitId(id) {
@@ -98,13 +110,18 @@ if (!fs.existsSync(unitsDir)) {
   process.exit(1);
 }
 
-const currentEpic = allEpics ? null : (epicFlag ?? readCurrentEpic());
+const planText = readPlanText();
+const currentEpic = allEpics ? null : (epicFlag ?? readCurrentEpic(planText));
 if (!allEpics && !currentEpic) {
   console.error(
     'could not determine current epic from plan/mutation-remediation.md; pass --epic RI-N or --all',
   );
   process.exit(1);
 }
+
+const indexedIds = readIndexedUnitIds(planText).filter(
+  (id) => allEpics || epicOfUnitId(id) === currentEpic,
+);
 
 const units = fs
   .readdirSync(unitsDir)
@@ -113,6 +130,9 @@ const units = fs
   .map((name) => parseUnit(path.join(unitsDir, name)))
   .filter((u) => allEpics || u.epic === currentEpic);
 
+const presentIds = new Set(units.map((u) => u.id));
+const missingIds = indexedIds.filter((id) => !presentIds.has(id));
+
 if (asJson) {
   console.log(
     JSON.stringify(
@@ -120,6 +140,8 @@ if (asJson) {
         unitsDir: path.relative(root, unitsDir),
         epic: allEpics ? null : currentEpic,
         scope: allEpics ? 'all' : 'epic',
+        indexedIds,
+        missingIds,
         units,
       },
       null,
@@ -135,6 +157,9 @@ if (asJson) {
   for (const [status, n] of [...counts.entries()].sort()) {
     console.log(`- ${status}: ${n}`);
   }
+  if (missingIds.length > 0) {
+    console.log(`- 欠落（索引にあるがファイルなし）: ${missingIds.length}`);
+  }
   console.log('');
   console.log('| ID | 状態 | 対象 | After |');
   console.log('| --- | --- | --- | --- |');
@@ -143,12 +168,25 @@ if (asJson) {
     const target = u.targets.map((t) => `\`${t}\``).join(', ') || '—';
     console.log(`| ${u.id} | ${u.status} | ${target} | ${after} |`);
   }
+  for (const id of missingIds) {
+    console.log(`| ${id} | 欠落 | — | — |`);
+  }
 }
 
 if (failIfIncomplete) {
   const incomplete = units.filter((u) => u.status !== '完了');
+  const problems = [];
+  if (indexedIds.length === 0) {
+    problems.push('indexed units: 0 (static index has no unit links for this scope)');
+  }
+  if (missingIds.length > 0) {
+    problems.push(`missing files: ${missingIds.join(', ')}`);
+  }
   if (incomplete.length > 0) {
-    console.error(`\nincomplete: ${incomplete.map((u) => `${u.id}(${u.status})`).join(', ')}`);
+    problems.push(`incomplete: ${incomplete.map((u) => `${u.id}(${u.status})`).join(', ')}`);
+  }
+  if (problems.length > 0) {
+    console.error(`\n${problems.join('\n')}`);
     process.exit(1);
   }
 }

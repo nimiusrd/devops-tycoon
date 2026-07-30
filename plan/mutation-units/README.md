@@ -29,7 +29,7 @@ node scripts/mutation-units-status.mjs --all
 npm run mutation:units:status -- --fail-if-incomplete
 ```
 
-`--fail-if-incomplete` は次を失敗にする: §5 静的索引表にある `<ID>.md` の欠落、現行エピックで索引にない orphan ファイル、ゼロ埋め等の不正単位ID、索引 0 件、単位 ID ラベルのリンク先が `./mutation-units/<ID>.md` でない／不一致、ファイル名と `<!-- mutation-unit: -->` の不一致またはコメント欠落、`状態` が完了以外、完了なのに実測の `After:` が無い（total / covered / S / NC が数値付きで必須）。`--all` では旧エピック保管ファイルを orphan 扱いしない。未知の CLI 引数も拒否する。
+`--fail-if-incomplete` は次を失敗にする: §5 静的索引表にある `<ID>.md` の欠落、索引行の重複 ID、現行エピックで索引にない orphan ファイル、ゼロ埋め等の不正単位ID、索引 0 件、単位 ID ラベルのリンク先が `./mutation-units/<ID>.md` でない／不一致、ファイル名と `<!-- mutation-unit: -->` の不一致またはコメント欠落、`状態` が完了以外、Baseline に total / covered(または n/a) / S / NC が無い、完了なのに実測の `After:` が無い（total / covered / S / NC が数値付きで必須）。`--all` では旧エピック保管ファイルを orphan 扱いしない。未知の CLI 引数も拒否する。
 
 ## ファイル書式
 

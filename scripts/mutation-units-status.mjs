@@ -110,6 +110,10 @@ function readIndexedUnits(planText = readPlanText()) {
       badLinks.push({ label, href, reason: 'invalid-unit-id' });
       continue;
     }
+    if (ids.has(label)) {
+      badLinks.push({ label, href, reason: 'duplicate-index-id' });
+      continue;
+    }
     ids.add(label);
     const expected = `./mutation-units/${label}.md`;
     if (href === expected) {
@@ -165,6 +169,7 @@ function parseUnit(filePath) {
   const status = (text.match(/\|\s*状態\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '不明';
   const targetCell = (text.match(/\|\s*対象\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
   const targets = parseTargets(targetCell);
+  const baseline = (text.match(/\|\s*Baseline\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
   const after = (text.match(/^After:\s*(.+)$/m) || [])[1]?.trim() || '';
   return {
     id,
@@ -178,22 +183,33 @@ function parseUnit(filePath) {
     targets,
     /** @deprecated 互換用。複数対象は targets を使う */
     target: targets.join(', '),
+    baseline,
     after,
     file: path.relative(root, filePath),
   };
 }
 
-/** 完了記録として受理できる After か（total/covered/S/NC が数値付きで揃っていること） */
-function isRecordedAfter(after) {
-  if (!after || !after.trim()) return false;
-  const t = after.trim();
-  // テンプレートの省略記号（… / ...）を含む行は未記録扱い
+/** Baseline / After の score 指標が揃っているか */
+function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
+  if (!text || !text.trim()) return false;
+  const t = text.trim();
   if (/[…⋯]/.test(t) || /(^|[^\d])\.\.\.([^\d]|$)/.test(t)) return false;
   const hasTotal = /\btotal\s+\d+(\.\d+)?%/i.test(t);
-  const hasCovered = /\bcovered\s+\d+(\.\d+)?%/i.test(t);
+  const hasCovered =
+    /\bcovered\s+\d+(\.\d+)?%/i.test(t) || (allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t));
   const hasS = /\bS\s*=\s*\d+/i.test(t);
   const hasNc = /\bNC\s*=\s*\d+/i.test(t);
   return hasTotal && hasCovered && hasS && hasNc;
+}
+
+/** 完了記録として受理できる After か（total/covered/S/NC が数値付きで揃っていること） */
+function isRecordedAfter(after) {
+  return hasRequiredMetrics(after, { allowCoveredNa: false });
+}
+
+/** Baseline として受理できるか（covered は n/a も可: NoCoverage のみの初回など） */
+function isRecordedBaseline(baseline) {
+  return hasRequiredMetrics(baseline, { allowCoveredNa: true });
 }
 
 if (epicFlag && !/^RI-[1-9]\d*$/.test(epicFlag)) {
@@ -320,6 +336,7 @@ if (asJson) {
 if (failIfIncomplete) {
   const incomplete = units.filter((u) => u.status !== '完了');
   const missingAfter = units.filter((u) => u.status === '完了' && !isRecordedAfter(u.after));
+  const missingBaseline = units.filter((u) => !isRecordedBaseline(u.baseline));
   const problems = [];
   if (indexedIds.length === 0) {
     problems.push('indexed units: 0 (static index table has no unit links for this scope)');
@@ -351,6 +368,9 @@ if (failIfIncomplete) {
   }
   if (incomplete.length > 0) {
     problems.push(`incomplete: ${incomplete.map((u) => `${u.id}(${u.status})`).join(', ')}`);
+  }
+  if (missingBaseline.length > 0) {
+    problems.push(`missing/incomplete Baseline: ${missingBaseline.map((u) => u.id).join(', ')}`);
   }
   if (missingAfter.length > 0) {
     problems.push(`missing/placeholder After: ${missingAfter.map((u) => u.id).join(', ')}`);

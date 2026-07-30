@@ -96,18 +96,43 @@ function compareUnitId(a, b) {
 }
 
 /**
- * 静的索引表の単位リンクだけを検証しつつ ID を集める。
- * 単位 ID ラベルのリンクを起点に、リンク先が ./mutation-units/<ID>.md であることを検査する。
+ * 静的索引表の行から単位 ID を集める。
+ * 第1セルに単位 ID があればリンク構文の成否に関係なく索引対象とし、壊れた構文は badLinks へ。
  */
 function readIndexedUnits(planText = readPlanText()) {
   const section = extractIndexSection(planText);
   const ids = new Set();
   const badLinks = [];
-  for (const m of section.matchAll(/^\|\s*\[([^\]]+)\]\(([^)]*)\)\s*\|/gm)) {
-    const label = m[1].trim();
-    const href = m[2].trim();
-    if (!isValidUnitId(label)) {
-      badLinks.push({ label, href, reason: 'invalid-unit-id' });
+
+  function rememberId(label, href, reason) {
+    if (ids.has(label)) {
+      badLinks.push({ label, href, reason: 'duplicate-index-id' });
+      return;
+    }
+    ids.add(label);
+    if (reason) badLinks.push({ label, href, reason });
+  }
+
+  for (const line of section.split('\n')) {
+    if (!/^\|/.test(line)) continue;
+    if (/^\|\s*[-:| ]+\s*\|/.test(line)) continue;
+    if (/^\|\s*ID\s*\|/i.test(line)) continue;
+    const cells = line.split('|').slice(1, -1);
+    if (cells.length === 0) continue;
+    const first = cells[0].trim();
+    const idMatch = first.match(/\b(RI-[1-9]\d*-[A-Z][1-9]\d*)\b/);
+    if (!idMatch) continue;
+    const label = idMatch[1];
+
+    const linkMatch = first.match(/^\[([^\]]+)\]\(([^)]*)\)$/);
+    if (!linkMatch) {
+      rememberId(label, first, 'broken-link-syntax');
+      continue;
+    }
+    const linkLabel = linkMatch[1].trim();
+    const href = linkMatch[2].trim();
+    if (linkLabel !== label || !isValidUnitId(label)) {
+      rememberId(label, href, 'invalid-unit-id');
       continue;
     }
     if (ids.has(label)) {
@@ -121,19 +146,11 @@ function readIndexedUnits(planText = readPlanText()) {
     }
     const unitHref = href.match(/^\.\/mutation-units\/(RI-[1-9]\d*-[A-Z][1-9]\d*)\.md$/);
     if (unitHref) {
-      badLinks.push({
-        label,
-        href,
-        reason: 'label-href-mismatch',
-      });
-      ids.add(unitHref[1]);
+      badLinks.push({ label, href, reason: 'label-href-mismatch' });
+      if (!ids.has(unitHref[1])) ids.add(unitHref[1]);
       continue;
     }
-    badLinks.push({
-      label,
-      href,
-      reason: 'invalid-id-or-href',
-    });
+    badLinks.push({ label, href, reason: 'invalid-id-or-href' });
   }
   return {
     indexedIds: [...ids].sort(compareUnitId),
@@ -190,16 +207,24 @@ function parseUnit(filePath) {
 }
 
 /** Baseline / After の score 指標が揃っているか */
+/** total / covered の % が 0–100 の範囲内か */
+function isPercentInRange(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 && n <= 100;
+}
+
 function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
   if (!text || !text.trim()) return false;
   const t = text.trim();
   if (/[…⋯]/.test(t) || /(^|[^\d])\.\.\.([^\d]|$)/.test(t)) return false;
-  const hasTotal = /\btotal\s+\d+(\.\d+)?%/i.test(t);
-  const hasCovered =
-    /\bcovered\s+\d+(\.\d+)?%/i.test(t) || (allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t));
+  const totalM = t.match(/\btotal\s+(\d+(?:\.\d+)?)%/i);
+  if (!totalM || !isPercentInRange(totalM[1])) return false;
+  const coveredPct = t.match(/\bcovered\s+(\d+(?:\.\d+)?)%/i);
+  const coveredNa = allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t);
+  if (!coveredNa && (!coveredPct || !isPercentInRange(coveredPct[1]))) return false;
   const hasS = /\bS\s*=\s*\d+/i.test(t);
   const hasNc = /\bNC\s*=\s*\d+/i.test(t);
-  return hasTotal && hasCovered && hasS && hasNc;
+  return hasS && hasNc;
 }
 
 /** 完了記録として受理できる After か（total/covered/S/NC が数値付きで揃っていること） */

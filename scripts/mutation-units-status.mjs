@@ -470,6 +470,10 @@ const titleMismatches = skipIndexIntegrity
         index: allIndexTitles.get(u.basenameId) || '',
         unit: u.title || '',
       }));
+const emptyTargets = units.filter((u) => u.targets.length === 0).map((u) => u.basenameId);
+const emptyIndexTargets = skipIndexIntegrity
+  ? []
+  : indexedIds.filter((id) => (allIndexTargets.get(id) || []).length === 0);
 
 if (asJson) {
   console.log(
@@ -499,6 +503,8 @@ if (asJson) {
         })),
         targetMismatches,
         titleMismatches,
+        emptyTargets,
+        emptyIndexTargets,
         units,
       },
       null,
@@ -535,6 +541,12 @@ if (asJson) {
   if (targetMismatches.length > 0) {
     console.log(`- 対象不一致（索引≠単位ファイル）: ${targetMismatches.length}`);
   }
+  if (emptyTargets.length > 0 || emptyIndexTargets.length > 0) {
+    console.log(
+      `- 対象が空: 単位=${emptyTargets.length}` +
+        (skipIndexIntegrity ? '' : ` / 索引=${emptyIndexTargets.length}`),
+    );
+  }
   if (titleMismatches.length > 0) {
     console.log(`- タイトル不一致（索引≠見出し）: ${titleMismatches.length}`);
   }
@@ -558,6 +570,8 @@ if (asJson) {
       status = `${u.status}（ID不一致:${bits.join(', ')}）`;
     } else if (orphanIds.includes(u.basenameId)) {
       status = `${u.status}（索引なし）`;
+    } else if (emptyTargets.includes(u.basenameId)) {
+      status = `${u.status}（対象空）`;
     } else if (targetMismatches.some((m) => m.id === u.basenameId)) {
       status = `${u.status}（対象不一致）`;
     } else if (u.metaDuplicate) {
@@ -629,6 +643,12 @@ if (failIfIncomplete) {
         })
         .join(', ')}`,
     );
+  }
+  if (emptyTargets.length > 0) {
+    problems.push(`empty targets: ${emptyTargets.map((id) => `${id}.md`).join(', ')}`);
+  }
+  if (emptyIndexTargets.length > 0) {
+    problems.push(`empty index targets: ${emptyIndexTargets.join(', ')}`);
   }
   if (targetMismatches.length > 0) {
     problems.push(

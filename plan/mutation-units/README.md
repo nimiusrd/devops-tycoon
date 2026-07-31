@@ -29,7 +29,7 @@ node scripts/mutation-units-status.mjs --all
 npm run mutation:units:status -- --fail-if-incomplete
 ```
 
-`--fail-if-incomplete` は次を失敗にする: スコープ内の単位ファイル 0 件、§5 静的索引表にある `<ID>.md` の欠落、索引行の重複 ID・壊れたリンク構文・ゼロ埋め等の不正形式 ID、現行エピックで索引にない orphan ファイル、不正単位IDファイル、索引 0 件、単位 ID ラベルのリンク先が `./mutation-units/<ID>.md` でない／不一致、索引の対象列と単位ファイル `対象` の不一致、ファイル名と `<!-- mutation-unit: -->`／見出し ID の不一致または欠落、`状態` が完了以外、Baseline に total / covered(または n/a) / S / NC が無い、完了なのに実測の `After:` が無い（`Before` 併記より前の本体に、total / covered は 0–100% かつ covered ≥ total、NC=0 なら両者一致、S / NC は数値必須）。`--all`、および現行エピック以外を明示した `--epic` では索引依存検査（欠落・orphan・索引0件・リンク不正・対象不一致）を抑止し、旧エピック保管ファイルの横断表示に使える（ただし単位 0 件は常に失敗）。未知の CLI 引数も拒否する。
+`--fail-if-incomplete` は次を失敗にする: スコープ内の単位ファイル 0 件、§5 静的索引表にある `<ID>.md` の欠落、索引行の重複 ID・壊れたリンク構文・ゼロ埋め等の不正形式 ID、現行エピックで索引にない orphan ファイル、README 以外で単位 ID として不正な `.md`（`RI_72_Z99.md` / `ri-72-A1.md` 等）、索引 0 件、単位 ID ラベルのリンク先が `./mutation-units/<ID>.md` でない／不一致、索引のタイトル／対象列と単位ファイル見出し／`対象` の不一致、ファイル名と `<!-- mutation-unit: -->`／見出し ID の不一致または欠落、`状態` が完了以外、Baseline に total / covered(または n/a) / S / NC が無い、完了なのに実測の `After:` が無い（`Before` 併記より前の本体に、total / covered は 0–100% かつ covered ≥ total、NC=0 なら両者一致、S / NC は数値必須）。索引表はコードスパン内の `|` と `\|` を列区切りにしない。`--all`、および現行エピック以外を明示した `--epic` では索引依存検査（欠落・orphan・索引0件・リンク不正・タイトル／対象不一致）を抑止し、旧エピック保管ファイルの横断表示に使える（ただし単位 0 件は常に失敗）。未知の CLI 引数も拒否する。
 
 ## ファイル書式
 

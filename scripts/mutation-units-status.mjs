@@ -98,7 +98,49 @@ function compareUnitId(a, b) {
 }
 
 /**
- * 静的索引表の行から単位 ID と対象列を集める。
+ * Markdown 表行をセルに分割する。
+ * コードスパン内の `|` とエスケープ `\|` は列区切りにしない。
+ */
+function splitMarkdownTableCells(line) {
+  const cells = [];
+  let cur = '';
+  let inCode = false;
+  let i = line.startsWith('|') ? 1 : 0;
+  while (i < line.length) {
+    const ch = line[i];
+    if (ch === '`') {
+      inCode = !inCode;
+      cur += ch;
+      i++;
+      continue;
+    }
+    if (!inCode && ch === '\\' && line[i + 1] === '|') {
+      cur += '\\|';
+      i += 2;
+      continue;
+    }
+    if (!inCode && ch === '|') {
+      cells.push(cur.trim());
+      cur = '';
+      i++;
+      continue;
+    }
+    cur += ch;
+    i++;
+  }
+  if (cur.trim() !== '' || !line.endsWith('|')) {
+    cells.push(cur.trim());
+  }
+  return cells;
+}
+
+/** 索引タイトルと見出しタイトルの比較用（`\|` を `|` に戻し空白を正規化） */
+function normalizeTitle(text) {
+  return text.trim().replace(/\\\|/g, '|').replace(/\s+/g, ' ');
+}
+
+/**
+ * 静的索引表の行から単位 ID・タイトル・対象列を集める。
  * 第1セルに RI らしいラベルがあればリンク構文の成否に関係なく検出し、
  * 不正形式・壊れた構文は badLinks へ（妥当な ID のみ indexedIds）。
  */
@@ -108,6 +150,8 @@ function readIndexedUnits(planText = readPlanText()) {
   const badLinks = [];
   /** @type {Map<string, string[]>} */
   const indexTargets = new Map();
+  /** @type {Map<string, string>} */
+  const indexTitles = new Map();
 
   function rememberId(label, href, reason, { index = true } = {}) {
     if (index) {
@@ -121,16 +165,22 @@ function readIndexedUnits(planText = readPlanText()) {
     return true;
   }
 
+  function rememberMeta(label, title, targets) {
+    indexTitles.set(label, title);
+    indexTargets.set(label, targets);
+  }
+
   for (const line of section.split('\n')) {
     if (!/^\|/.test(line)) continue;
     if (/^\|\s*[-:| ]+\s*\|/.test(line)) continue;
     if (/^\|\s*ID\s*\|/i.test(line)) continue;
-    const cells = line.split('|').slice(1, -1);
+    const cells = splitMarkdownTableCells(line);
     if (cells.length === 0) continue;
-    const first = cells[0].trim();
+    const first = cells[0];
     const idMatch = first.match(LOOSE_UNIT_ID_RE);
     if (!idMatch) continue;
     const label = idMatch[1];
+    const title = (cells[1] || '').trim();
     const targetCell = (cells[2] || '').trim();
     const targets = parseTargets(targetCell);
 
@@ -145,7 +195,7 @@ function readIndexedUnits(planText = readPlanText()) {
     const linkMatch = first.match(/^\[([^\]]+)\]\(([^)]*)\)$/);
     if (!linkMatch) {
       if (rememberId(label, first, 'broken-link-syntax')) {
-        indexTargets.set(label, targets);
+        rememberMeta(label, title, targets);
       }
       continue;
     }
@@ -153,7 +203,7 @@ function readIndexedUnits(planText = readPlanText()) {
     const href = linkMatch[2].trim();
     if (linkLabel !== label) {
       if (rememberId(label, href, 'invalid-unit-id')) {
-        indexTargets.set(label, targets);
+        rememberMeta(label, title, targets);
       }
       continue;
     }
@@ -162,7 +212,7 @@ function readIndexedUnits(planText = readPlanText()) {
       continue;
     }
     ids.add(label);
-    indexTargets.set(label, targets);
+    rememberMeta(label, title, targets);
     const expected = `./mutation-units/${label}.md`;
     if (href === expected) {
       continue;
@@ -179,6 +229,7 @@ function readIndexedUnits(planText = readPlanText()) {
     indexedIds: [...ids].sort(compareUnitId),
     badLinks,
     indexTargets,
+    indexTitles,
   };
 }
 
@@ -324,13 +375,15 @@ const {
   indexedIds: allIndexedIds,
   badLinks: allBadLinks,
   indexTargets: allIndexTargets,
+  indexTitles: allIndexTitles,
 } = readIndexedUnits(planText);
 const indexedIds = allIndexedIds.filter((id) => allEpics || epicOfUnitId(id) === currentEpic);
 const badLinks = skipIndexIntegrity ? [] : allBadLinks;
 
+// README 以外の .md を列挙し、妥当な単位 ID 以外は不正ファイルとして扱う
 const candidateNames = fs
   .readdirSync(unitsDir)
-  .filter((name) => /^RI-.+\.md$/.test(name) && name !== 'README.md');
+  .filter((name) => name.endsWith('.md') && name !== 'README.md');
 const invalidIdFiles = candidateNames
   .map((name) => name.slice(0, -'.md'.length))
   .filter((id) => !isValidUnitId(id))
@@ -361,6 +414,19 @@ const targetMismatches = skipIndexIntegrity
         index: allIndexTargets.get(u.basenameId) || [],
         unit: u.targets,
       }));
+const titleMismatches = skipIndexIntegrity
+  ? []
+  : units
+      .filter((u) => indexedIdSet.has(u.basenameId))
+      .filter(
+        (u) =>
+          normalizeTitle(allIndexTitles.get(u.basenameId) || '') !== normalizeTitle(u.title || ''),
+      )
+      .map((u) => ({
+        id: u.basenameId,
+        index: allIndexTitles.get(u.basenameId) || '',
+        unit: u.title || '',
+      }));
 
 if (asJson) {
   console.log(
@@ -383,6 +449,7 @@ if (asJson) {
           headingId: u.headingId,
         })),
         targetMismatches,
+        titleMismatches,
         units,
       },
       null,
@@ -413,6 +480,9 @@ if (asJson) {
   if (targetMismatches.length > 0) {
     console.log(`- 対象不一致（索引≠単位ファイル）: ${targetMismatches.length}`);
   }
+  if (titleMismatches.length > 0) {
+    console.log(`- タイトル不一致（索引≠見出し）: ${titleMismatches.length}`);
+  }
   if (badLinks.length > 0) {
     console.log(`- 索引リンク不正: ${badLinks.length}`);
   }
@@ -434,6 +504,8 @@ if (asJson) {
       status = `${u.status}（索引なし）`;
     } else if (targetMismatches.some((m) => m.id === u.basenameId)) {
       status = `${u.status}（対象不一致）`;
+    } else if (titleMismatches.some((m) => m.id === u.basenameId)) {
+      status = `${u.status}（タイトル不一致）`;
     }
     console.log(`| ${u.basenameId} | ${status} | ${target} | ${after} |`);
   }
@@ -488,6 +560,13 @@ if (failIfIncomplete) {
     problems.push(
       `target mismatch: ${targetMismatches
         .map((m) => `${m.id} index=[${m.index.join(', ')}] unit=[${m.unit.join(', ')}]`)
+        .join('; ')}`,
+    );
+  }
+  if (titleMismatches.length > 0) {
+    problems.push(
+      `title mismatch: ${titleMismatches
+        .map((m) => `${m.id} index=${JSON.stringify(m.index)} unit=${JSON.stringify(m.unit)}`)
         .join('; ')}`,
     );
   }

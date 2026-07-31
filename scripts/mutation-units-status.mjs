@@ -25,8 +25,11 @@ const argv = process.argv.slice(2);
 const KNOWN_FLAGS = new Set(['--json', '--fail-if-incomplete', '--all', '--epic']);
 /** SEQ は1起算・ゼロ埋めなし。エピック番号も先頭ゼロなし。 */
 const UNIT_ID_RE = /^RI-[1-9]\d*-[A-Z][1-9]\d*$/;
-/** 索引・見出しから「RI らしい」ラベルを先に拾う（ゼロ埋め等の不正形式も含む） */
-const LOOSE_UNIT_ID_RE = /\b(RI-\d+-[A-Z]\d+)\b/;
+/**
+ * 索引・見出しから「RI らしい」ラベルを先に拾う。
+ * ゼロ埋め・複数文字グループ・SEQ 欠落（RI-72-A / RI-72-AA1 等）も含めてから妥当性検査する。
+ */
+const LOOSE_UNIT_ID_RE = /\b(RI-\d+-[A-Za-z][A-Za-z0-9]*)\b/;
 
 function parseArgs(raw) {
   const flags = new Set();
@@ -267,8 +270,12 @@ function countMetaRows(text, label) {
 function parseUnit(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
   const basenameId = path.basename(filePath, '.md');
-  const commentId =
-    (text.match(/<!--\s*mutation-unit:\s*(RI-[1-9]\d*-[A-Z][1-9]\d*)\s*-->/) || [])[1] || null;
+  const unitComments = [...text.matchAll(/<!--\s*mutation-unit:\s*([^>]*?)\s*-->/g)].map((m) =>
+    m[1].trim(),
+  );
+  const commentCount = unitComments.length;
+  const commentId = commentCount === 1 && isValidUnitId(unitComments[0]) ? unitComments[0] : null;
+  const commentAtStart = /^\s*<!--\s*mutation-unit:\s*[^>]*?-->/.test(text);
   // 存在・欠落の正本はファイル名。コメント・見出しは整合チェック用。
   const id = basenameId;
   const headingMatch = text.match(/^#\s+(RI-[1-9]\d*-[A-Z][1-9]\d*)\s+[—-]\s+(.+)$/m);
@@ -290,15 +297,23 @@ function parseUnit(filePath) {
     id,
     basenameId,
     commentId,
+    commentCount,
     headingId,
-    // コメント／見出しの欠落・不正・ファイル名不一致はすべて ID 不整合
-    idMismatch: !commentId || commentId !== basenameId || !headingId || headingId !== basenameId,
+    // コメントは先頭にちょうど1件。見出し・ファイル名とも一致必須。
+    idMismatch:
+      commentCount !== 1 ||
+      !commentAtStart ||
+      !commentId ||
+      commentId !== basenameId ||
+      !headingId ||
+      headingId !== basenameId,
     metaDuplicate,
     metaCounts: {
       status: statusCount,
       target: targetCount,
       baseline: baselineCount,
       after: afterCount,
+      comment: commentCount,
     },
     epic: epicOfUnitId(basenameId),
     title,
@@ -328,8 +343,9 @@ function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
   const coveredPct = t.match(/\bcovered\s+(\d+(?:\.\d+)?)%/i);
   const coveredNa = allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t);
   if (!coveredNa && (!coveredPct || !isPercentInRange(coveredPct[1]))) return false;
-  const ncM = t.match(/\bNC\s*=\s*(\d+)/i);
-  const sM = t.match(/\bS\s*=\s*(\d+)/i);
+  // S/NC は件数。`S=7.5` のように小数へ部分一致しないようトークン境界を要求する。
+  const ncM = t.match(/\bNC\s*=\s*(\d+)(?![.\d])/i);
+  const sM = t.match(/\bS\s*=\s*(\d+)(?![.\d])/i);
   if (!sM || !ncM) return false;
   const total = Number(totalM[1]);
   const nc = Number(ncM[1]);
@@ -473,6 +489,7 @@ if (asJson) {
           file: u.file,
           basenameId: u.basenameId,
           commentId: u.commentId,
+          commentCount: u.commentCount,
           headingId: u.headingId,
         })),
         foreignIndexIds,
@@ -533,7 +550,8 @@ if (asJson) {
     let status = u.status;
     if (u.idMismatch) {
       const bits = [];
-      if (!u.commentId) bits.push('コメント欠落');
+      if (u.commentCount !== 1) bits.push(`コメント数=${u.commentCount}`);
+      else if (!u.commentId) bits.push('コメント不正');
       else if (u.commentId !== u.basenameId) bits.push(`コメント=${u.commentId}`);
       if (!u.headingId) bits.push('見出し欠落');
       else if (u.headingId !== u.basenameId) bits.push(`見出し=${u.headingId}`);
@@ -594,6 +612,7 @@ if (failIfIncomplete) {
       `id mismatch: ${idMismatches
         .map((u) => {
           const bits = [`file=${u.basenameId}`];
+          bits.push(`comments=${u.commentCount}`);
           bits.push(u.commentId ? `comment=${u.commentId}` : 'comment=missing');
           bits.push(u.headingId ? `heading=${u.headingId}` : 'heading=missing');
           return `${u.basenameId}.md (${bits.join(', ')})`;

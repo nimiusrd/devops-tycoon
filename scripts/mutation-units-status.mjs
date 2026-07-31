@@ -343,9 +343,9 @@ function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
   const coveredPct = t.match(/\bcovered\s+(\d+(?:\.\d+)?)%/i);
   const coveredNa = allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t);
   if (!coveredNa && (!coveredPct || !isPercentInRange(coveredPct[1]))) return false;
-  // S/NC は件数。`S=7.5` のように小数へ部分一致しないようトークン境界を要求する。
-  const ncM = t.match(/\bNC\s*=\s*(\d+)(?![.\d])/i);
-  const sM = t.match(/\bS\s*=\s*(\d+)(?![.\d])/i);
+  // S/NC は件数。小数・指数・接尾辞（`7.5` / `7e3` / `7foo`）へ部分一致しない。
+  const ncM = t.match(/\bNC\s*=\s*(\d+)(?![\w.])/i);
+  const sM = t.match(/\bS\s*=\s*(\d+)(?![\w.])/i);
   if (!sM || !ncM) return false;
   const total = Number(totalM[1]);
   const nc = Number(ncM[1]);
@@ -426,10 +426,10 @@ const foreignIndexIds = skipIndexIntegrity
 const candidateNames = fs
   .readdirSync(unitsDir)
   .filter((name) => name.endsWith('.md') && name !== 'README.md');
+// 不正 ID はエピック・スコープ判定より先にすべて拾う（RI-072-A1 のようなゼロ埋めを黙殺しない）
 const invalidIdFiles = candidateNames
   .map((name) => name.slice(0, -'.md'.length))
   .filter((id) => !isValidUnitId(id))
-  .filter((id) => allEpics || epicOfUnitId(id) === currentEpic || !epicOfUnitId(id))
   .sort(compareUnitId);
 
 const units = candidateNames

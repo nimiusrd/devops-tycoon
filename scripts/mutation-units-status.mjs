@@ -259,6 +259,11 @@ function sameTargets(a, b) {
   return norm(a) === norm(b);
 }
 
+function countMetaRows(text, label) {
+  const re = new RegExp(`^\\|\\s*${label}\\s*\\|`, 'gm');
+  return [...text.matchAll(re)].length;
+}
+
 function parseUnit(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
   const basenameId = path.basename(filePath, '.md');
@@ -269,6 +274,13 @@ function parseUnit(filePath) {
   const headingMatch = text.match(/^#\s+(RI-[1-9]\d*-[A-Z][1-9]\d*)\s+[—-]\s+(.+)$/m);
   const headingId = headingMatch?.[1] || null;
   const title = headingMatch?.[2]?.trim() || '';
+  const statusCount = countMetaRows(text, '状態');
+  const targetCount = countMetaRows(text, '対象');
+  const baselineCount = countMetaRows(text, 'Baseline');
+  const afterCount = [...text.matchAll(/^After:\s*/gm)].length;
+  // 必須メタはちょうど1行。After は0または1（完了時は別途必須）
+  const metaDuplicate =
+    statusCount !== 1 || targetCount !== 1 || baselineCount !== 1 || afterCount > 1;
   const status = (text.match(/\|\s*状態\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '不明';
   const targetCell = (text.match(/\|\s*対象\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
   const targets = parseTargets(targetCell);
@@ -281,6 +293,13 @@ function parseUnit(filePath) {
     headingId,
     // コメント／見出しの欠落・不正・ファイル名不一致はすべて ID 不整合
     idMismatch: !commentId || commentId !== basenameId || !headingId || headingId !== basenameId,
+    metaDuplicate,
+    metaCounts: {
+      status: statusCount,
+      target: targetCount,
+      baseline: baselineCount,
+      after: afterCount,
+    },
     epic: epicOfUnitId(basenameId),
     title,
     status,
@@ -310,16 +329,19 @@ function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
   const coveredNa = allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t);
   if (!coveredNa && (!coveredPct || !isPercentInRange(coveredPct[1]))) return false;
   const ncM = t.match(/\bNC\s*=\s*(\d+)/i);
-  const hasS = /\bS\s*=\s*\d+/i.test(t);
-  if (!hasS || !ncM) return false;
-  // total 分母にだけ NC が載るため covered >= total。NC=0 なら両者は一致。
-  if (!coveredNa) {
-    const total = Number(totalM[1]);
-    const covered = Number(coveredPct[1]);
-    const nc = Number(ncM[1]);
-    if (covered < total) return false;
-    if (nc === 0 && covered !== total) return false;
+  const sM = t.match(/\bS\s*=\s*(\d+)/i);
+  if (!sM || !ncM) return false;
+  const total = Number(totalM[1]);
+  const nc = Number(ncM[1]);
+  const s = Number(sM[1]);
+  // covered n/a は NoCoverage のみ（total=0 / S=0 / NC>0）の Baseline に限定
+  if (coveredNa) {
+    return total === 0 && s === 0 && nc > 0;
   }
+  // total 分母にだけ NC が載るため covered >= total。NC=0 なら両者は一致。
+  const covered = Number(coveredPct[1]);
+  if (covered < total) return false;
+  if (nc === 0 && covered !== total) return false;
   return true;
 }
 
@@ -379,6 +401,10 @@ const {
 } = readIndexedUnits(planText);
 const indexedIds = allIndexedIds.filter((id) => allEpics || epicOfUnitId(id) === currentEpic);
 const badLinks = skipIndexIntegrity ? [] : allBadLinks;
+// 現行索引に別エピック ID が混入していたら拒否（フィルタで黙って落とさない）
+const foreignIndexIds = skipIndexIntegrity
+  ? []
+  : allIndexedIds.filter((id) => epicOfUnitId(id) !== currentEpic).sort(compareUnitId);
 
 // README 以外の .md を列挙し、妥当な単位 ID 以外は不正ファイルとして扱う
 const candidateNames = fs
@@ -404,6 +430,7 @@ const orphanIds = skipIndexIntegrity
   ? []
   : units.map((u) => u.basenameId).filter((id) => !indexedIdSet.has(id));
 const idMismatches = units.filter((u) => u.idMismatch);
+const metaDuplicates = units.filter((u) => u.metaDuplicate);
 const targetMismatches = skipIndexIntegrity
   ? []
   : units
@@ -448,6 +475,11 @@ if (asJson) {
           commentId: u.commentId,
           headingId: u.headingId,
         })),
+        foreignIndexIds,
+        metaDuplicates: metaDuplicates.map((u) => ({
+          id: u.basenameId,
+          counts: u.metaCounts,
+        })),
         targetMismatches,
         titleMismatches,
         units,
@@ -477,6 +509,12 @@ if (asJson) {
   if (idMismatches.length > 0) {
     console.log(`- ID不一致（ファイル名≠コメント／見出し、または欠落）: ${idMismatches.length}`);
   }
+  if (metaDuplicates.length > 0) {
+    console.log(`- メタデータ行の重複／欠落: ${metaDuplicates.length}`);
+  }
+  if (foreignIndexIds.length > 0) {
+    console.log(`- 索引の別エピック混入: ${foreignIndexIds.length}`);
+  }
   if (targetMismatches.length > 0) {
     console.log(`- 対象不一致（索引≠単位ファイル）: ${targetMismatches.length}`);
   }
@@ -504,6 +542,8 @@ if (asJson) {
       status = `${u.status}（索引なし）`;
     } else if (targetMismatches.some((m) => m.id === u.basenameId)) {
       status = `${u.status}（対象不一致）`;
+    } else if (u.metaDuplicate) {
+      status = `${u.status}（メタ重複）`;
     } else if (titleMismatches.some((m) => m.id === u.basenameId)) {
       status = `${u.status}（タイトル不一致）`;
     }
@@ -535,6 +575,11 @@ if (failIfIncomplete) {
       `bad index links: ${badLinks.map((b) => `[${b.label}](${b.href}) (${b.reason})`).join(', ')}`,
     );
   }
+  if (foreignIndexIds.length > 0) {
+    problems.push(
+      `foreign epic ids in current index: ${foreignIndexIds.join(', ')} (expected ${currentEpic} only)`,
+    );
+  }
   if (missingIds.length > 0) {
     problems.push(`missing files: ${missingIds.map((id) => `${id}.md`).join(', ')}`);
   }
@@ -552,6 +597,16 @@ if (failIfIncomplete) {
           bits.push(u.commentId ? `comment=${u.commentId}` : 'comment=missing');
           bits.push(u.headingId ? `heading=${u.headingId}` : 'heading=missing');
           return `${u.basenameId}.md (${bits.join(', ')})`;
+        })
+        .join(', ')}`,
+    );
+  }
+  if (metaDuplicates.length > 0) {
+    problems.push(
+      `duplicate/missing metadata rows: ${metaDuplicates
+        .map((u) => {
+          const c = u.metaCounts;
+          return `${u.basenameId}.md (状態=${c.status}, 対象=${c.target}, Baseline=${c.baseline}, After=${c.after})`;
         })
         .join(', ')}`,
     );

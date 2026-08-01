@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Mutation: numbering/progress via GitHub Issues only; no repo-side ID reservation.
+# Mutation: Issue-only numbering; doc examples use RI-N placeholders (not digits).

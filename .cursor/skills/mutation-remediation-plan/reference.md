@@ -79,17 +79,17 @@ gh run view <RUN_ID> --json jobs \
 ## サマリー
 - run: <url>
 - エピック: RI-NN（再ベースラインのため新規）
-- 実装単位: RI-NN-A1 …（件数 M、最優先 RI-NN-A1）
-- 全体 total: X% / covered: Y%
-- ワースト: file (Z%)
+- 実装単位 Issue: RI-NN-A1 …（件数 M、最優先 RI-NN-A1）
+- 全体スコア（参考スナップショット）: total X% / covered Y%
+- ワースト: file（Survived / NoCoverage が多い）
 
 ## 推奨着手順
 | ID | 対象 | 受入 |
 | --- | --- | --- |
-| RI-NN-A1 | … | total 70%+ |
+| RI-NN-A1 | … | 主要 Survived / NoCoverage をテストで潰す |
 
-## 文書
-- plan/mutation-remediation.md をエピック RI-NN + 実装単位付きで更新
+## 文書 / Issue
+- plan/mutation-remediation.md をエピック RI-NN の方針・run 記録で更新
+- 実装単位は GitHub Issue として作成し、エピックのサブイシューに紐づける（単位 MD・本文リンク表は作らない）
 - 旧ミューテーションエピックは完了（後続 RI-NN に置換）
 ```
-

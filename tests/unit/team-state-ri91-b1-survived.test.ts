@@ -227,12 +227,17 @@ describe('RI-91-B1 teamState survived mutants', () => {
     });
 
     it('byTeam 調整は緩和に効き永続指標へ焼き込まない', () => {
+      // 行列圧力と炎上バイアスを高め、byTeam 無視時に plain===relieved になる穴を塞ぐ。
       const teams = [
         makeTeam({ id: 'home' }),
         makeTeam({
           id: 'pressured',
+          engineers: 8,
+          headcount: 8,
           reviewQueue: 10,
+          reviewCapacity: 10,
           incidents: 1,
+          incidentBias: 0.4,
           aiDependency: 40,
           shipping: 50,
         }),
@@ -260,9 +265,17 @@ describe('RI-91-B1 teamState survived mutants', () => {
       });
       const plainT = plain.teams.find((t) => t.id === 'pressured')!;
       const relievedT = relieved.teams.find((t) => t.id === 'pressured')!;
-      expect(relievedT.reviewQueue).toBeLessThanOrEqual(plainT.reviewQueue);
-      // 指標差分は永続値へ加算されない（shipping 増分の床は同条件で一致しうる）。
+      // byTeam を無視すると同値になるため、厳密減少と exact 値で刺す。
+      expect(plainT.reviewQueue).toBe(14);
+      expect(relievedT.reviewQueue).toBe(10);
+      expect(relievedT.reviewQueue).toBeLessThan(plainT.reviewQueue);
+      expect(plain.ignited).toBe(1);
+      expect(relieved.ignited).toBe(0);
+      expect(plainT.incidents).toBe(1);
+      expect(relievedT.incidents).toBe(0);
+      // 指標差分は永続値へ加算されない。
       expect(relievedT.aiDependency).toBe(plainT.aiDependency);
+      expect(relievedT.aiDependency).toBe(40);
     });
   });
 });

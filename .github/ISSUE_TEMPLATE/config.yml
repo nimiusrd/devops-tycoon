@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Epic lists child issue links; GitHub shows open/closed on those links.
+# Prefer GitHub sub-issues under the epic; body links are optional.

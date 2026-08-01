@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Mutation units: sub-issues only under the epic (reuse same run only).
+# Mutation units: sub-issues only; resume by matching run URL/headSha.

@@ -25,28 +25,31 @@ Mutation の実装単位は対応後に参照する必要が薄い。共有 Mark
 
 ### エピック（ベースライン）
 
-**新しいフルシャード run**（現行計画に記録された run ID と異なる）で計画を作る／差し替えるときだけ、新しいエピック `RI-{N}` を採番する。  
-**同じ run ID** の計画追記・書式修正・Issue の補完では、既存エピックを再利用し、未完了エピックを完了扱いにしない。
+まず今回の run について、中断再開も含めて既存のエピックを探す（`mutation-remediation.md` だけを見ない）:
 
-新規 run のとき:
+1. タイトルが `[RI-\d+]` のエピック Issue（open/closed 両方）を検索し、本文の **run URL と `headSha` が今回と一致**するものがあれば、その `RI-{N}` を再利用する。
+2. 無ければ [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) に今回の run ID を含むエピック行があれば、その `RI-{N}` を再利用する。
+3. どちらも無く、[`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) の記録 run が今回と同じなら **同じ run の再編集**（下節）。
+4. それ以外が **新しいフルシャード run**。未完了エピックを完了扱いにしないまま、下記「新規 run」へ進む。
 
-1. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) とリポジトリ全体から既存エピック番号 `RI-(\d+)`（ハイフン無しの本体）の最大を求める（欠番は再利用しない）。実装単位 `RI-72-A1` の `-A1` は番号計算に含めない。
-2. 候補 `RI-{max+1}` について GitHub Issue を検索する（タイトル `[RI-{N}]` / `[RI-{N}-…]`、open/closed 両方）。
-   - エピック Issue 本文の **run URL と `headSha` が今回の run と一致**するときだけ再利用する（同じ ID の二重作成を避ける）。
-   - タイトルだけ一致して run / `headSha` が違う、または本文に run 記録が無い途中残骸は **使用済み ID** として扱い、`RI-{max+2}` 以降を採番する（別 run の弱点を流用しない）。
-3. エピック用トラッキング Issue を作成または（手順2で許可された場合のみ）再利用する（タイトル `[RI-{N}] …`。本文に **今回の** run URL・`headSha`・方針）。
+### 新規 run
+
+1. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) とリポジトリ全体から既存エピック番号 `RI-(\d+)`（ハイフン無しの本体）の最大を求める（欠番は再利用しない）。実装単位 `RI-72-A1` の `-A1` は番号計算に含めない。上節で再利用 ID が決まっていればそれを使い、無ければ `RI-{max+1}`。
+2. 採番候補のタイトル `[RI-{N}]` が既にあり、本文の run / `headSha` が今回と違う、または記録が無い途中残骸なら **使用済み ID** として扱い、次の空き番号へ進む（別 run の弱点を流用しない）。
+3. エピック用トラッキング Issue を作成または再利用する（タイトル `[RI-{N}] …`。本文に **今回の** run URL・`headSha`・方針）。
 4. 足りない実装単位 Issue だけ作成する（タイトル `[RI-{N}-{GROUP}{SEQ}] …`。テンプレは [`.github/ISSUE_TEMPLATE/mutation-unit.md`](../../../.github/ISSUE_TEMPLATE/mutation-unit.md)）。未消化の旧単位があれば新 ID / 新 Issue へ内容を引き継ぐ。
 5. 各実装単位をエピックの **サブイシュー**として紐づける（UI、または GraphQL `addSubIssue`）。進捗の正本はサブイシュー関係だけにする。
 6. **エピック Issue と必要なサブイシューが揃ったことを確認する。** `gh issue create` / サブイシュー紐づけが使えずユーザーへ手順だけ渡す場合は、ここで中断する（旧エピックの完了扱いや計画の新エピック切替は行わない。作成確認後に再開）。
 7. **文書切替より先に**、直前のミューテーション改善エピック（未着手・進行中）があれば文書上 **完了** にし、完了要約へ「後続ベースライン `RI-XX` に置換。未消化は新 Issue へ引き継ぎ」と書く。あわせて **旧エピック Issue と、引き継いだ旧サブイシューをすべて close** する（コメント例: `RI-XX へ置換。未消化は #<新Issue> へ引き継ぎ`）。中断再開で手順が飛ばないよう、旧 close を新文書反映より前に固定する。
-8. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) に新行と詳細節を追加する。タイトル例: `ミューテーションテストに基づくユニットテスト強化（run <RUN_ID>）`。エピック Issue へリンクする。
+8. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) に新行と詳細節を追加する（既にあれば内容を今回の run / エピック Issue に揃える）。タイトル例: `ミューテーションテストに基づくユニットテスト強化（run <RUN_ID>）`。エピック Issue へリンクする。
 9. [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) をそのベースライン用に更新する（**run ID と `headSha` を必ず記録**）。実装単位の静的索引や単位 MD は置かない。
 10. [`plan/README.md`](../../../plan/README.md) の mutation 行は「現行 RI-XX」が分かるよう更新する。
 
-**同じ run の再編集時**は手順 9 と次のみ（エピック採番は行わない）:
+**同じ run の再編集時**（エピック採番は行わない）:
 
-- 方針文書の追記・書式修正
-- 置換済みのはずの **旧エピック / 旧サブイシューが open のまま残っていないか**確認し、残っていれば手順7相当で close する
+- 方針文書（`mutation-remediation.md`）の追記・書式修正。run / `headSha` が今回と一致していることを確認する
+- [`plan/README.md`](../../../plan/README.md) の現行エピック表記が今回の `RI-{N}` と一致しているか確認し、ずれていれば直す
+- 置換済みのはずの **旧エピック / 旧サブイシューが open のまま残っていないか**確認し、残っていれば新規 run の手順7相当で close する
 - エピックのサブイシュー一覧を見る。不足分だけ Issue を追加し、サブイシューとして紐づける。既存 Issue の本文はテンプレで上書きしない
 - エピックがすでに close / `remaining-issues.md` が完了なら、不足分を足す前にエピック Issue を **reopen** し、バックログを **進行中** に戻す
 
@@ -139,7 +142,7 @@ gh run download <RUN_ID> -D "$OUT"
 
 現行 [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) の run ID と比較する。
 
-- **同じ run**: 既存エピックを再利用し、旧 Issue の残留 close・必要なら reopen のうえ、サブイシュー一覧を見て不足だけ追加・紐づけする。
+- **同じ run / 中断再開**: Issue・`remaining-issues`・計画のどれかに今回の run があればそのエピックを再利用し、README 同期・旧 Issue 残留 close・必要なら reopen のうえ不足だけ追加する。
 - **新しいフルシャード run**: 「バックログ ID の採番」に従い、同一 run の途中 Issue のみ再利用 → 不足サブイシュー作成 → 旧 Issue close → 文書切替、の順で進める。
 
 リポジトリに含めるもの:
@@ -191,6 +194,8 @@ gh run download <RUN_ID> -D "$OUT"
 - 再ベースライン時に引き継いだ旧子 Issue を open のまま残す
 - 途中作成済みの `[RI-{N}-…]` Issue を無視して同 ID を二重作成する
 - run URL / `headSha` が一致しない別 run の途中 Issue を再利用する
+- 中断再開時に、今回 run と一致する既存エピックを無視して次番号を採番する
+- 同じ run の再開で `plan/README.md` の現行エピック表記を放置する
 - サブイシューがすべて closed なのにエピック Issue / `remaining-issues.md` を完了にしない
 - 完了済みエピックへ不足 Issue を足すとき、親 Issue / バックログを reopen・進行中に戻さない
 - 文書切替後の中断再開で、置換対象の旧 Issue を open のまま残す

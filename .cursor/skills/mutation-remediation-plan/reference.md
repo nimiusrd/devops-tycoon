@@ -80,17 +80,17 @@ gh run view <RUN_ID> --json jobs \
 - run: <url>
 - エピック: RI-NN（再ベースラインのため新規）
 - 実装単位: RI-NN-A1 …（件数 M、最優先 RI-NN-A1）
-- 全体 total: X% / covered: Y%
-- ワースト: file (Z%)
+- 全体スコア（参考スナップショット）: total X% / covered Y%
+- ワースト: file（Survived / NoCoverage が多い）
 
 ## 推奨着手順
 | ID | 対象 | 受入 |
 | --- | --- | --- |
-| RI-NN-A1 | … | total 70%+ |
+| RI-NN-A1 | … | 主要 Survived / NoCoverage をテストで潰す |
 
 ## 文書
 - plan/mutation-remediation.md をエピック RI-NN + 静的索引で更新（状態列なし）
-- plan/mutation-units/RI-NN-….md を単位ごとに新規作成（進捗の正本）
+- plan/mutation-units/RI-NN-….md を単位ごとに新規作成（進捗の正本。達成率は書かない）
 - 旧ミューテーションエピックは完了（後続 RI-NN に置換）
 ```
 

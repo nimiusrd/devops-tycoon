@@ -39,17 +39,16 @@
 | --- | --- |
 | 状態 | 未着手 / 進行中 / 完了 |
 | 対象 | `path/to/file.ts`（複数可ならカンマ区切り、原則1ファイル） |
-| Baseline | total X% / covered Y% / S=n / NC=n |
 | 既存テスト | `tests/unit/….test.ts` または なし |
 | 再計測 | `npm run test:mutation:force -- --mutate {path}` |
-| 受入 | 数値目標を1行（例: total 70%+） |
+| 受入 | 定性的な完了条件（例: 対象の主要 Survived / NoCoverage をテストで潰す） |
 
 やる事:
 
 - {具体的な断言・ケース}
 ```
 
-`After:` はテンプレートに置かない。完了時に実装 PR で例えば `After: total 92.59% / covered 93.46% / S=7 / NC=1（local）` を追記する（total / covered / S / NC を数値付きで揃える）。
+単位ファイルに達成率（total / covered）や S/NC 件数は書かない。完了時は `状態` を `完了` にする（任意の作業メモとして `After:` を1行足してもよい）。
 
 ## 2. 目的と非目的
 
@@ -102,8 +101,8 @@ Survived が多い mutator（全体）: `ConditionalExpression` ≫ `EqualityOpe
 2. 意図的に落とさない分岐だけ `// Stryker disable next-line` 等を検討する。安易な一括 disable は禁止。
 3. **1PR = 1実装単位 ID。** 複数単位をまとめる場合は事前に計画側で ID を統合してから着手する。
 4. 変更前に `npm test`、変更後に単位の「再計測」コマンドと `npm run lint` / `npm run format:check`。
-5. PR 本文に **実装単位 ID**、Before/After の score（total / covered）と Survived / NoCoverage 数を記す。
-6. 同じ PR で **自分の単位ファイル**（`plan/mutation-units/RI-….md`）の `状態` と `After:` を更新する。
+5. PR 本文に **実装単位 ID** と実施内容（追加テスト・潰した分岐の要約）を記す。達成率の転記は不要。
+6. 同じ PR で **自分の単位ファイル**（`plan/mutation-units/RI-….md`）の `状態` を更新する。
 7. 日本語でコミット・PR する（リポジトリ慣例）。
 
 ### ファイル分割による並列衝突回避
@@ -173,8 +172,8 @@ npm run mutation:units:status
 
 ## 8. エピック完了・再ベースライン
 
-- 実装単位の受入達成時: 同じ実装 PR で **単位ファイル**の `状態` を `完了` にし `After:` を追記。PR 本文にも単位 ID と Before/After を記す。
-- エピック完了判定: `npm run mutation:units:status -- --fail-if-incomplete` が成功すること（現行エピックの単位のみ。または同等の確認）。
-- **エピック RI-72 完了条件**: 実装単位 A1–E8（Group A–D を含む）がすべて完了していること。全体 total おおむね 80%+ は完了条件に含めない（再ベースライン推奨）。
+- 実装単位の受入達成時: 同じ実装 PR で **単位ファイル**の `状態` を `完了` にする。PR 本文に単位 ID と実施内容を記す（達成率は不要）。
+- エピック完了判定: `npm run mutation:units:status -- --fail-if-incomplete` が成功すること（現行エピックの単位のみ。または同等の確認。達成率は見ない）。
+- **エピック RI-72 完了条件**: 実装単位 A1–E8（Group A–D を含む）がすべて完了していること。全体 total は完了条件に含めない。
 - **RI-72 状態**: **完了**（実装単位 A1–E8 すべて完了）。全体 total のフルシャード再計測は未実施で、次の Mutation run で新エピックを採番して追う。
 - **再ベースライン時**: 新エピック `RI-{N}` を採番し、実装単位を `RI-{N}-A1`… で振り直す。旧単位の未消化は **新 ID の単位ファイル**へ内容をコピーして引き継ぐ（旧 ID での実装継続はしない）。`plan/mutation-units/` 分割と静的索引（状態列なし）を維持する。

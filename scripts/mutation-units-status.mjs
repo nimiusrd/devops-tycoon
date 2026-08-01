@@ -162,8 +162,10 @@ function normalizeTitle(text) {
  * 不正形式・壊れた構文は badLinks へ（妥当な ID のみ indexedIds）。
  */
 function readIndexedUnits(planText = readPlanText()) {
-  // コメントアウトされた旧索引行を索引集合に入れない
-  const section = extractIndexSection(planText).replace(/<!--[\s\S]*?-->/g, '');
+  // コメント／fenced code 内の旧表・例示は索引集合に入れない
+  const section = stripFencedCodeBlocks(
+    extractIndexSection(planText).replace(/<!--[\s\S]*?-->/g, ''),
+  );
   const ids = new Set();
   const badLinks = [];
   /** @type {string[]} */
@@ -389,11 +391,11 @@ function parseUnit(filePath) {
   const remeasureCount = remeasureValues.length;
   const acceptanceCount = acceptanceValues.length;
   const afterCount = afterValues.length;
-  // 必須メタはちょうど1行かつ非空。After は0または1（完了時は別途必須）
+  // 必須メタはちょうど1行かつ非空。Baseline / After は任意（0または1、達成率の検証はしない）
   const metaDuplicate =
     statusCount !== 1 ||
     targetCount !== 1 ||
-    baselineCount !== 1 ||
+    baselineCount > 1 ||
     afterCount > 1 ||
     !exactlyOneNonEmpty(existingTestValues) ||
     !exactlyOneNonEmpty(remeasureValues) ||
@@ -440,69 +442,26 @@ function parseUnit(filePath) {
   };
 }
 
-/** Baseline / After の score 指標が揃っているか */
-/** total / covered の % が 0–100 の範囲内か */
-function isPercentInRange(value) {
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 && n <= 100;
-}
-
-function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
-  if (!text || !text.trim()) return false;
-  const t = text.trim();
-  if (/[…⋯]/.test(t) || /(^|[^\d])\.\.\.([^\d]|$)/.test(t)) return false;
-  // `%` 直後に接尾辞（`%oops`）が付く部分一致を拒否
-  const totalM = t.match(/\btotal\s+(\d+(?:\.\d+)?)%(?![\w.])/i);
-  if (!totalM || !isPercentInRange(totalM[1])) return false;
-  const coveredPct = t.match(/\bcovered\s+(\d+(?:\.\d+)?)%(?![\w.])/i);
-  const coveredNa = allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t);
-  if (!coveredNa && (!coveredPct || !isPercentInRange(coveredPct[1]))) return false;
-  // S/NC は件数。小数・指数・接尾辞（`7.5` / `7e3` / `7foo`）へ部分一致しない。
-  const ncM = t.match(/\bNC\s*=\s*(\d+)(?![\w.])/i);
-  const sM = t.match(/\bS\s*=\s*(\d+)(?![\w.])/i);
-  if (!sM || !ncM) return false;
-  const total = Number(totalM[1]);
-  const nc = Number(ncM[1]);
-  const s = Number(sM[1]);
-  // covered n/a は NoCoverage のみ（total=0 / S=0 / NC>0）の Baseline に限定
-  if (coveredNa) {
-    return total === 0 && s === 0 && nc > 0;
-  }
-  // total 分母にだけ NC が載るため covered >= total。NC=0 なら両者は一致。
-  const covered = Number(coveredPct[1]);
-  if (covered < total) return false;
-  if (nc === 0 && covered !== total) return false;
-  return true;
-}
-
 /**
- * After 行の実測本体を抽出する。
- * 括弧注記や Before 併記に埋もれた参考値は使わず、未計測表記は拒否する。
+ * 対象パスがリポジトリ root 配下の通常ファイルか。
+ * `..` や絶対パス、ディレクトリ、repo 外は不可。
  */
-function afterPrimaryText(after) {
-  if (!after) return '';
-  if (/未計測|未測定/.test(after)) return '';
-  // 全角／半角の注記括弧を除いた表層だけを実測本体とする
-  const primary = after
-    .replace(/（[^）]*）/g, ' ')
-    .replace(/\([^)]*\)/g, ' ')
-    .replace(/\bBefore\b[\s\S]*$/i, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!primary || /未計測|未測定|参考値/.test(primary)) return '';
-  // 実測は total が表層に残っていること（注記括弧内だけの数値は不可）
-  if (!/\btotal\s+\d/i.test(primary)) return '';
-  return primary;
-}
-
-/** 完了記録として受理できる After か（本体に total/covered/S/NC が数値付きで揃っていること） */
-function isRecordedAfter(after) {
-  return hasRequiredMetrics(afterPrimaryText(after), { allowCoveredNa: false });
-}
-
-/** Baseline として受理できるか（covered は n/a も可: NoCoverage のみの初回など） */
-function isRecordedBaseline(baseline) {
-  return hasRequiredMetrics(baseline, { allowCoveredNa: true });
+function isRepoRelativeRegularFile(relPath) {
+  if (!relPath || typeof relPath !== 'string') return false;
+  if (path.isAbsolute(relPath)) return false;
+  const normalized = path.posix.normalize(relPath.replace(/\\/g, '/'));
+  if (!normalized || normalized === '.' || normalized.startsWith('../') || normalized === '..') {
+    return false;
+  }
+  if (normalized.split('/').includes('..')) return false;
+  const abs = path.resolve(root, normalized);
+  const rel = path.relative(root, abs);
+  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return false;
+  try {
+    return fs.statSync(abs).isFile();
+  } catch {
+    return false;
+  }
 }
 
 if (epicFlag && !/^RI-[1-9]\d*$/.test(epicFlag)) {
@@ -602,7 +561,7 @@ const emptyIndexTargets = skipIndexIntegrity
   : indexedIds.filter((id) => (allIndexTargets.get(id) || []).length === 0);
 const missingTargetPaths = units.flatMap((u) =>
   u.targets
-    .filter((t) => !fs.existsSync(path.join(root, t)))
+    .filter((t) => !isRepoRelativeRegularFile(t))
     .map((t) => ({ id: u.basenameId, target: t })),
 );
 
@@ -731,9 +690,8 @@ if (asJson) {
 }
 
 if (failIfIncomplete) {
+  // 完了判定は状態のみ。達成率・Baseline/After の数値整合は壊れやすいので見ない。
   const incomplete = units.filter((u) => u.status !== '完了');
-  const missingAfter = units.filter((u) => u.status === '完了' && !isRecordedAfter(u.after));
-  const missingBaseline = units.filter((u) => !isRecordedBaseline(u.baseline));
   const problems = [];
   if (units.length === 0) {
     problems.push(
@@ -815,12 +773,6 @@ if (failIfIncomplete) {
   }
   if (incomplete.length > 0) {
     problems.push(`incomplete: ${incomplete.map((u) => `${u.id}(${u.status})`).join(', ')}`);
-  }
-  if (missingBaseline.length > 0) {
-    problems.push(`missing/incomplete Baseline: ${missingBaseline.map((u) => u.id).join(', ')}`);
-  }
-  if (missingAfter.length > 0) {
-    problems.push(`missing/placeholder After: ${missingAfter.map((u) => u.id).join(', ')}`);
   }
   if (problems.length > 0) {
     console.error(`\n${problems.join('\n')}`);

@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Mutation units: sub-issues only; resume by matching run URL/headSha.
+# Mutation units: sub-issues only; reuse unlinked unit issues on resume.

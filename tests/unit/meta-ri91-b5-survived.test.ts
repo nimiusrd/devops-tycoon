@@ -306,14 +306,16 @@ describe('RI-91-B5 meta survived mutants', () => {
 
   describe('applyDailyRunReward / nextDifficulty 周辺 Survived', () => {
     it('初回デイリーは pointsGained === breakdown.total で差分と一致', () => {
-      const before = defaultMeta();
+      // points > 0 でないと `rewarded.points - meta.points` → `+` 置換が生き残る
+      const before: MetaState = { ...defaultMeta(), points: 10 };
       const result = applyDailyRunReward(before, {
         ...baseInput({ won: true, score: 200, maxCombo: 5, winType: 'normal' }),
         dateStr: '2026-08-01',
       });
       expect(result.rewardGranted).toBe(true);
       expect(result.pointsGained).toBe(result.breakdown.total);
-      expect(result.meta.points - before.points).toBe(result.pointsGained);
+      expect(result.pointsGained).toBe(result.meta.points - before.points);
+      expect(result.meta.points).toBe(10 + result.breakdown.total);
       expect(result.dailyBestUpdated).toBe(true);
     });
 
@@ -395,13 +397,7 @@ describe('RI-91-B5 meta survived mutants', () => {
       expect(result.meta.dailyRuns['2026-08-01']?.bestScore).toBe(400);
     });
 
-    it('nextDifficulty: easy→normal、nightmare で難易度配列不変', () => {
-      const fromEasy = applyRunReward(defaultMeta(), {
-        ...baseInput({ won: true, difficulty: 'easy', score: 100, maxCombo: 3, winType: 'normal' }),
-      });
-      // default は既に normal 解放済みなので配列は変化なし（includes で弾く）
-      expect(fromEasy.unlockedDifficulties).toEqual(['easy', 'normal']);
-
+    it('nextDifficulty: easy→normal、nightmare / 未知難易度で配列不変', () => {
       const onlyEasy: MetaState = {
         ...defaultMeta(),
         unlockedDifficulties: ['easy'],
@@ -425,6 +421,22 @@ describe('RI-91-B5 meta survived mutants', () => {
         }),
       });
       expect(stay.unlockedDifficulties).toEqual(['easy', 'normal', 'hard', 'nightmare']);
+
+      // indexOf が -1 のとき i >= 0 が効く（true / || 置換で 'easy' が誤解放される）
+      const noEasy: MetaState = {
+        ...defaultMeta(),
+        unlockedDifficulties: ['normal'],
+      };
+      const unknown = applyRunReward(noEasy, {
+        ...baseInput({
+          won: true,
+          difficulty: 'unknown' as RunRewardInput['difficulty'],
+          score: 100,
+          maxCombo: 3,
+          winType: 'normal',
+        }),
+      });
+      expect(unknown.unlockedDifficulties).toEqual(['normal']);
     });
 
     it('defaultMeta の空配列フィールドはリテラル [] と一致', () => {

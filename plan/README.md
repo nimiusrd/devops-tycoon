@@ -13,8 +13,7 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 | [spec-mapping.md](./spec-mapping.md) | SPECと実装の対応、未充足箇所 |
 | [remaining-issues.md](./remaining-issues.md) | 未着手・保留課題と完了項目の要約 |
 | [playtest-findings.md](./playtest-findings.md) | 実機プレイで洗い出した改善課題（バランス・UI・ポリッシュ） |
-| [mutation-remediation.md](./mutation-remediation.md) | ミューテーション改善のエピック共通計画（静的索引） |
-| [mutation-units/](./mutation-units/) | 実装単位ごと（1ファイル=1PR。状態・詳細の正本。達成率は書かない） |
+| [mutation-remediation.md](./mutation-remediation.md) | ミューテーション改善の方針（実装単位は GitHub Issue） |
 | [architecture.md](./architecture.md) | 現在の技術構成と横断規律 |
 
 ## 現状
@@ -26,7 +25,7 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 - 既定描画はPixiJS。`?renderer=dom`とWebGL不可時はDOM/SVGへフォールバックする。
 - IndexedDBにメタ進行、ラン途中セーブ、リプレイを保存する。
 - Vitestでロジック、Playwrightで操作・視覚回帰を検証する。
-- コアループは実装済み。優先度「高」の未着手課題は、オンボーディングとシニア燃え尽きの断絶（RI-67）、四半期レビュー Delivery KPI のスケール不整合（RI-68）など。ミューテーション改善エピック RI-72（run 30261978402）は完了。再ベースライン時は新 ID。全容は[remaining-issues.md](./remaining-issues.md)を参照。
+- コアループは実装済み。優先度「高」の未着手課題は、オンボーディングとシニア燃え尽きの断絶（RI-67）、四半期レビュー Delivery KPI のスケール不整合（RI-68）など。ミューテーション改善エピック RI-72（run 30261978402）は完了。次回以降の実装単位は GitHub Issue で管理する。全容は[remaining-issues.md](./remaining-issues.md)を参照。
 
 ## 確定した設計判断
 

@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Mutation units: sub-issues only; close old epic+all open children on rebase.
+# Mutation units: sub-issues only; reserve epic ID on parent create; close unused open PRs on rebase.

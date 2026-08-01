@@ -276,11 +276,18 @@ function metaRowValues(text, label) {
 }
 
 /**
- * HTML コメントと fenced code block を除いた本文。
+ * HTML コメントと fenced code block（``` / ~~~）を除いた本文。
  * コメントアウト／例示用コード内の進捗表・After を有効な記録として拾わない。
  */
 function visibleUnitBody(text) {
-  return text.replace(/<!--[\s\S]*?-->/g, '').replace(/```[\s\S]*?```/g, '');
+  return text
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/~~~[\s\S]*?~~~/g, '');
+}
+
+function exactlyOneNonEmpty(values) {
+  return values.length === 1 && values[0].length > 0;
 }
 
 function parseUnit(filePath) {
@@ -302,14 +309,26 @@ function parseUnit(filePath) {
   const statusValues = metaRowValues(body, '状態');
   const targetValues = metaRowValues(body, '対象');
   const baselineValues = metaRowValues(body, 'Baseline');
+  const existingTestValues = metaRowValues(body, '既存テスト');
+  const remeasureValues = metaRowValues(body, '再計測');
+  const acceptanceValues = metaRowValues(body, '受入');
   const afterValues = [...body.matchAll(/^After:\s*(.+)$/gm)].map((m) => m[1].trim());
   const statusCount = statusValues.length;
   const targetCount = targetValues.length;
   const baselineCount = baselineValues.length;
+  const existingTestCount = existingTestValues.length;
+  const remeasureCount = remeasureValues.length;
+  const acceptanceCount = acceptanceValues.length;
   const afterCount = afterValues.length;
-  // 必須メタはちょうど1行。After は0または1（完了時は別途必須）
+  // 必須メタはちょうど1行かつ非空。After は0または1（完了時は別途必須）
   const metaDuplicate =
-    statusCount !== 1 || targetCount !== 1 || baselineCount !== 1 || afterCount > 1;
+    statusCount !== 1 ||
+    targetCount !== 1 ||
+    baselineCount !== 1 ||
+    afterCount > 1 ||
+    !exactlyOneNonEmpty(existingTestValues) ||
+    !exactlyOneNonEmpty(remeasureValues) ||
+    !exactlyOneNonEmpty(acceptanceValues);
   const status = statusValues[0] || '不明';
   const targetCell = targetValues[0] || '';
   const targets = parseTargets(targetCell);
@@ -334,6 +353,9 @@ function parseUnit(filePath) {
       status: statusCount,
       target: targetCount,
       baseline: baselineCount,
+      existingTest: existingTestCount,
+      remeasure: remeasureCount,
+      acceptance: acceptanceCount,
       after: afterCount,
       comment: commentCount,
     },
@@ -671,7 +693,7 @@ if (failIfIncomplete) {
       `duplicate/missing metadata rows: ${metaDuplicates
         .map((u) => {
           const c = u.metaCounts;
-          return `${u.basenameId}.md (状態=${c.status}, 対象=${c.target}, Baseline=${c.baseline}, After=${c.after})`;
+          return `${u.basenameId}.md (状態=${c.status}, 対象=${c.target}, Baseline=${c.baseline}, 既存テスト=${c.existingTest}, 再計測=${c.remeasure}, 受入=${c.acceptance}, After=${c.after})`;
         })
         .join(', ')}`,
     );

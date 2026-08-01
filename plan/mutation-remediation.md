@@ -9,14 +9,15 @@
 
 | 種別 | 形式 | 管理場所 | 例 |
 | --- | --- | --- | --- |
-| エピック（ベースライン） | `RI-{N}` | `remaining-issues.md` ＋ トラッキング Issue | `RI-72` |
-| 実装単位 | `RI-{N}-{GROUP}{SEQ}` | **GitHub Issue**（1 Issue = 1PR） | `RI-73-A1` |
+| エピック（ベースライン） | `RI-{N}` | **GitHub Issue**（タイトル `[RI-{N}]`） | `RI-91` |
+| 実装単位 | `RI-{N}-{GROUP}{SEQ}` | **GitHub Issue**（1 Issue = 1PR。エピックのサブイシュー） | `RI-91-A1` |
 
 規則:
 
-- `{N}` は既存 `RI-(\d+)` の最大+1（欠番再利用なし）。最大は `remaining-issues.md`（予約行含む）と open/closed のエピック Issue タイトルも見て決める。フルシャード run の再ベースラインごとに新規エピック。親 Issue 作成直後に `remaining-issues.md` へ予約行を書く。
+- 採番・進捗の正本は GitHub Issue。`remaining-issues.md` に予約行や番号台帳を置かない。
+- `{N}` は open/closed のエピック Issue タイトルから見た既存 `RI-(\d+)` の最大+1（欠番再利用なし）。一般バックログとの衝突回避のため文書上の既存 ID は読み取るだけ。フルシャード run の再ベースラインごとに新規エピック。親 Issue 作成が番号予約であり、作成直後に同 ID の競合を再確認する。
 - `{GROUP}` は大文字1文字 `A`–`Z`（A が最高優先）。`{SEQ}` はグループ内 1, 2, 3…（ゼロ埋め・欠番再利用なし）。
-- **1実装単位 = 1 Issue = 1PR。** Issue / PR タイトル先頭に ID（例: `[RI-73-A1] industry の mutation 耐性を上げる`）。
+- **1実装単位 = 1 Issue = 1PR。** Issue / PR タイトル先頭に ID（例: `[RI-91-A1] industry の mutation 耐性を上げる`）。
 - 進捗の正本は Issue の open/close。共有 Markdown に状態列や達成率を置かない（並列コンフリクトと本末転倒を避ける）。
 - 達成率（total / covered / S / NC）は Issue 必須項目にも完了条件にもしない。
 - 完了後は Issue を close するだけでよい（リポジトリへ単位ファイルを残さない）。
@@ -33,7 +34,7 @@
 
 エピック用トラッキング Issue には run URL・`headSha`・方針を置く。実装単位は **GitHub のサブイシュー**としてエピック配下にぶら下げる（本文への子リンク列挙はしない）。  
 子の open / closed はサブイシュー一覧で識別する（別途状態表は作らない）。  
-サブイシューがすべて closed になったらエピック Issue も close し、`remaining-issues.md` を完了にする。完了後に不足分を足すときはエピックを reopen し、バックログを進行中へ戻す。  
+サブイシューがすべて closed になったらエピック Issue も close する。完了後に不足分を足すときはエピックを reopen する。  
 再ベースラインでは、親 Issue・サブイシューが揃ったことを確認してから open PR を整理し、その後で **旧エピック Issue 自体**と配下の **全 open サブイシュー**を置換／不要理由付きで close する。引き継ぐ open PR は ID / `Fixes`・`Closes` を新 Issue へ付け替え、引き継がない open PR も理由付きで close する。Issue 運用前に完了した履歴エピック（親 Issue 無し）は Issue 同期対象外。途中作成 Issue の再利用は、本文の run URL / `headSha` が一致するときだけ（番号にかかわらず検索する。未紐づけの作成済み単位 Issue も二重作成しない）。
 
 ### 並列作業

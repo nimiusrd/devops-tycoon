@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Mutation units: sub-issues only; reserve epic ID on parent create; close unused open PRs on rebase.
+# Mutation: numbering/progress via GitHub Issues only; no repo-side ID reservation.

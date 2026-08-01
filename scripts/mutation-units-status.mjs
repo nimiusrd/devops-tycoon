@@ -269,17 +269,18 @@ function sameTargets(a, b) {
   return norm(a) === norm(b);
 }
 
-function countMetaRows(text, label) {
-  const re = new RegExp(`^\\|\\s*${label}\\s*\\|`, 'gm');
-  return [...text.matchAll(re)].length;
+/** 行頭の正規メタデータ行だけから値を取る（インライン例 `| 状態 | … |` は無視） */
+function metaRowValues(text, label) {
+  const re = new RegExp(`^\\|\\s*${label}\\s*\\|\\s*([^|\\n]*)\\|`, 'gm');
+  return [...text.matchAll(re)].map((m) => m[1].trim());
 }
 
 /**
- * 先頭の mutation-unit マーカー以外の HTML コメントを除いた本文。
- * コメントアウトされた進捗表・After を有効な記録として拾わない。
+ * HTML コメントと fenced code block を除いた本文。
+ * コメントアウト／例示用コード内の進捗表・After を有効な記録として拾わない。
  */
 function visibleUnitBody(text) {
-  return text.replace(/<!--[\s\S]*?-->/g, '');
+  return text.replace(/<!--[\s\S]*?-->/g, '').replace(/```[\s\S]*?```/g, '');
 }
 
 function parseUnit(filePath) {
@@ -291,25 +292,29 @@ function parseUnit(filePath) {
   const commentCount = unitComments.length;
   const commentId = commentCount === 1 && isValidUnitId(unitComments[0]) ? unitComments[0] : null;
   const commentAtStart = /^\s*<!--\s*mutation-unit:\s*[^>]*?-->/.test(text);
-  // 進捗メタは HTML コメント外の本文だけから読む
+  // 進捗メタは HTML コメント／コードフェンス外の本文だけから読む
   const body = visibleUnitBody(text);
   // 存在・欠落の正本はファイル名。コメント・見出しは整合チェック用。
   const id = basenameId;
   const headingMatch = body.match(/^#\s+(RI-[1-9]\d*-[A-Z][1-9]\d*)\s+[—-]\s+(.+)$/m);
   const headingId = headingMatch?.[1] || null;
   const title = headingMatch?.[2]?.trim() || '';
-  const statusCount = countMetaRows(body, '状態');
-  const targetCount = countMetaRows(body, '対象');
-  const baselineCount = countMetaRows(body, 'Baseline');
-  const afterCount = [...body.matchAll(/^After:\s*/gm)].length;
+  const statusValues = metaRowValues(body, '状態');
+  const targetValues = metaRowValues(body, '対象');
+  const baselineValues = metaRowValues(body, 'Baseline');
+  const afterValues = [...body.matchAll(/^After:\s*(.+)$/gm)].map((m) => m[1].trim());
+  const statusCount = statusValues.length;
+  const targetCount = targetValues.length;
+  const baselineCount = baselineValues.length;
+  const afterCount = afterValues.length;
   // 必須メタはちょうど1行。After は0または1（完了時は別途必須）
   const metaDuplicate =
     statusCount !== 1 || targetCount !== 1 || baselineCount !== 1 || afterCount > 1;
-  const status = (body.match(/\|\s*状態\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '不明';
-  const targetCell = (body.match(/\|\s*対象\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
+  const status = statusValues[0] || '不明';
+  const targetCell = targetValues[0] || '';
   const targets = parseTargets(targetCell);
-  const baseline = (body.match(/\|\s*Baseline\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
-  const after = (body.match(/^After:\s*(.+)$/m) || [])[1]?.trim() || '';
+  const baseline = baselineValues[0] || '';
+  const after = afterValues[0] || '';
   return {
     id,
     basenameId,

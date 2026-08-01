@@ -19,6 +19,8 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Issu
 
 Mutation の実装単位は対応後に参照する必要が薄い。共有 Markdown や単位ファイルに状態・達成率を置くと、並列コンフリクトや壊れやすい数値ゲートが増えて本末転倒になる。Issue の open/close だけを進捗にする。
 
+**進捗の見方:** エピック Issue 本文に子 Issue へのリンク（`#123`）を列挙する。GitHub 上で各リンクの open / closed が表示されるので、それだけを正本にする（別途状態表や MD 転記はしない）。
+
 ## バックログ ID の採番
 
 ### エピック（ベースライン）
@@ -29,21 +31,25 @@ Mutation の実装単位は対応後に参照する必要が薄い。共有 Mark
 新規 run のとき:
 
 1. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) とリポジトリ全体から既存エピック番号 `RI-(\d+)`（ハイフン無しの本体）の最大を求める（欠番は再利用しない）。実装単位 `RI-72-A1` の `-A1` は番号計算に含めない。
-2. 新エピック = `RI-{max+1}`。
-3. **先に実装単位 Issue を作成**し、番号を確定する（タイトル `[RI-{N}-{GROUP}{SEQ}] …`。テンプレは [`.github/ISSUE_TEMPLATE/mutation-unit.md`](../../../.github/ISSUE_TEMPLATE/mutation-unit.md)）。未消化の旧単位があれば新 ID / 新 Issue へ内容を引き継ぐ。
-4. **エピック用トラッキング Issue を作成**する（タイトル `[RI-{N}] …`。本文に run URL・`headSha`・方針、および手順3で確定した子 Issue への実リンク）。プレースホルダ `#…` のまま残さない。子を後から足した場合はエピック本文を実番号で更新する。
-5. **Issue が実際に作成できたことを確認してから**文書を切り替える。`gh issue create` が使えずユーザーへ本文案だけ渡す場合は、ここで中断する（旧エピックの完了扱いや計画の新エピック切替は行わない。作成確認後に再開）。
+2. 候補 `RI-{max+1}` について、先に GitHub Issue を検索する（タイトル `[RI-{N}]` / `[RI-{N}-…]`、open/closed 両方）。**途中まで作成済みなら再利用**し、同じ ID の Issue を二重に作らない。無ければ新エピック = `RI-{max+1}`。
+3. 足りない実装単位 Issue だけ作成する（タイトル `[RI-{N}-{GROUP}{SEQ}] …`。テンプレは [`.github/ISSUE_TEMPLATE/mutation-unit.md`](../../../.github/ISSUE_TEMPLATE/mutation-unit.md)）。未消化の旧単位があれば新 ID / 新 Issue へ内容を引き継ぐ。
+4. エピック用トラッキング Issue を作成または更新する（タイトル `[RI-{N}] …`。本文に run URL・`headSha`・方針、および子 Issue への**実リンク**）。プレースホルダを残さない。子の open/closed はエピック上のリンク表示で識別する。
+5. **エピック Issue と必要な子 Issue が揃ったことを確認してから**文書を切り替える。`gh issue create` が使えずユーザーへ本文案だけ渡す場合は、ここで中断する（旧エピックの完了扱いや計画の新エピック切替は行わない。作成確認後に再開）。
 6. [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) に新行と詳細節を追加する。タイトル例: `ミューテーションテストに基づくユニットテスト強化（run <RUN_ID>）`。エピック Issue へリンクする。
 7. [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) をそのベースライン用に更新する（**run ID と `headSha` を必ず記録**）。実装単位の静的索引や単位 MD は置かない。
-8. 直前のミューテーション改善エピック（未着手・進行中）があれば文書上 **完了** にし、完了要約へ「後続ベースライン `RI-XX` に置換。未消化は新 Issue へ引き継ぎ」と書く。あわせて **旧エピック Issue と、引き継いだ旧子 Issue をすべて close** する（コメント例: `RI-XX へ置換。未消化は #<新Issue> へ引き継ぎ`）。close しないと旧・新の両方で同じ作業が open のまま残る。
+8. 直前のミューテーション改善エピック（未着手・進行中）があれば文書上 **完了** にし、完了要約へ「後続ベースライン `RI-XX` に置換。未消化は新 Issue へ引き継ぎ」と書く。あわせて **旧エピック Issue と、引き継いだ旧子 Issue をすべて close** する（コメント例: `RI-XX へ置換。未消化は #<新Issue> へ引き継ぎ`）。
 9. [`plan/README.md`](../../../plan/README.md) の mutation 行は「現行 RI-XX」が分かるよう更新する。
 
 **同じ run の再編集時**は手順 7 と次のみ（エピック採番・旧エピック完了は行わない）:
 
 - 方針文書の追記・書式修正
-- 補完前に、現行エピック配下の実装単位 Issue を **open / closed 両方**列挙する（タイトルの `[RI-{N}-…]` で検索）。ID・対象・状態を突き合わせ、閉じ済み ID の再利用や同内容の重複作成を防ぐ
-- **不足している実装単位 Issue だけ追加**する。既存 Issue の本文・進捗をテンプレで上書きしない
-- 追加したらエピック Issue 本文の子一覧を実番号で更新する
+- エピック Issue 本文の子リンクを見る（GitHub が表示する open/closed で足りる）。不足分だけ Issue を追加し、エピック本文の一覧を更新する。既存 Issue の本文はテンプレで上書きしない
+
+**エピック完了時**（再ベースラインを待たない）:
+
+- エピック本文の子リンクがすべて closed になったら、エピック Issue を close する
+- [`plan/remaining-issues.md`](../../../plan/remaining-issues.md) のエピックを **完了** にし、短い完了要約を書く
+- [`plan/README.md`](../../../plan/README.md) の現行表記を更新する
 
 部分分析（custom / `mutate` 指定）では **新しいエピックも実装単位も採番しない**。
 
@@ -58,7 +64,7 @@ Mutation の実装単位は対応後に参照する必要が薄い。共有 Mark
 - `{SEQ}`: グループ内連番（1起算、ゼロ埋めなし、欠番再利用なし）
 - **1実装単位 = 1 Issue = 1PR。** タイトル先頭に `[ID]` を付ける
 - Issue に達成率（total / covered / S / NC）を必須で書かせない・完了ゲートにしない
-- 完了は Issue を close（PR の `Fixes #n` / `Closes #n` でよい）
+- 完了は Issue を close（PR の `Fixes #n` / `Closes #n` でよい）。子が揃って closed ならエピックも close する
 
 ### 並列実装
 
@@ -128,8 +134,8 @@ gh run download <RUN_ID> -D "$OUT"
 
 現行 [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) の run ID と比較する。
 
-- **同じ run**: 既存エピックを再利用し、open/closed 両方を列挙したうえで方針文書の追記と不足 Issue の追加のみ。
-- **新しいフルシャード run**: 「バックログ ID の採番」に従い、子 Issue → エピック Issue（実リンク）→ 作成確認後に文書切替 → 旧 Issue close、の順で進める。
+- **同じ run**: 既存エピックを再利用し、エピック本文の子リンクを見て不足 Issue だけ追加する。
+- **新しいフルシャード run**: 「バックログ ID の採番」に従い、途中作成済み Issue の再利用 → 不足子の作成 → エピック（実リンク）→ 作成確認後に文書切替 → 旧 Issue close、の順で進める。
 
 リポジトリに含めるもの:
 
@@ -178,7 +184,8 @@ gh run download <RUN_ID> -D "$OUT"
 - Issue / 計画に達成率を必須項目や完了ゲートとして載せる
 - Issue 未作成のまま旧エピックを完了扱いにする／計画だけ新エピックへ切り替える
 - 再ベースライン時に引き継いだ旧子 Issue を open のまま残す
-- 同じ run の補完で closed Issue を見ずに SEQ を採番し、ID を再利用する
+- 途中作成済みの `[RI-{N}-…]` Issue を無視して同 ID を二重作成する
+- 子がすべて closed なのにエピック Issue / `remaining-issues.md` を完了にしない
 
 ## 追加リソース
 

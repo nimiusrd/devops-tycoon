@@ -371,6 +371,25 @@ describe('RI-91-B3 sprint survived mutants', () => {
       });
     });
 
+    it('rollKind は重み合計を超える乱数で normal にフォールバックする', () => {
+      const org = createOrgState('default', false);
+      // KIND_WEIGHTS 合計 1.0 のため r>=1 はどの帯にも入らず 'normal' へ落ちる。
+      const sprint = createSprint(resolveSprintConfig('default'), org, () => 1);
+      expect(sprint.tasks.length).toBeGreaterThan(0);
+      expect(sprint.tasks.every((t) => t.kind === 'normal')).toBe(true);
+    });
+
+    it('AI スロットル中の intake は aiAssisted を必ず false にする', () => {
+      const org = createOrgState('default', true);
+      const task = makeTask(0, { lane: 'backlog', aiAssisted: true });
+      const sprint = makeSprint(org, [task]);
+      sprint.modifiers.throttleUntilTick = 10;
+      // decideAiAssisted が true になり得る乱数でも、スロットル側の false が勝つ。
+      stepSprint(sprint, org, () => 0, 0);
+      expect(task.lane).toBe('coding');
+      expect(task.aiAssisted).toBe(false);
+    });
+
     it('summarizeSprint の timeline は浅いコピーである', () => {
       const org = createOrgState('default', false);
       const sprint = makeSprint(org, []);

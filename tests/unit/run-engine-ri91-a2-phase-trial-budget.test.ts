@@ -1,24 +1,82 @@
 import { describe, expect, it } from 'vitest';
 import { getDifficulty } from '../../src/data/difficulties';
+import type { GrowthOutcome, RosterState } from '../../src/sim/member';
+import { HOME_TEAM_ID } from '../../src/sim/orgscale/teamState';
+import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
-import type { RunState } from '../../src/sim/run/types';
-import type { OrgState, SprintState } from '../../src/sim/types';
+import type { RunState, RunTotals } from '../../src/sim/run/types';
+import { createSprint } from '../../src/sim/sprint';
+import type { OrgState, SprintMetrics, SprintState } from '../../src/sim/types';
 
 type A2Internals = {
   accumulatorMs: number;
   activeTeamId: string;
   budget: number;
+  currentSprintId: string | null;
+  currentSprintKind: RunState['currentSprintKind'];
+  homeTeamId: string;
+  lastGrowth: GrowthOutcome | null;
   org: OrgState;
   phase: RunState['phase'];
+  roster: RosterState;
   sprint: SprintState | null;
   sprintBaselineInput: { reviewLoadAdd?: number; incidentLoadAdd?: number } | null;
   sprintTick: number;
   status: RunState['status'];
+  teamRosters: Record<string, RosterState>;
   teams: { id: string; reviewQueue: number; incidents: number }[];
+  totals: RunTotals;
   usedHeavyActions: boolean;
+  applyGrowth(result: unknown): void;
+  resolveSprint(): void;
 };
 
 const asInternals = (engine: RunEngine): A2Internals => engine as unknown as A2Internals;
+
+const zeroTotals = (): RunTotals => ({
+  delivered: 0,
+  done: 0,
+  rework: 0,
+  incidents: 0,
+  contained: 0,
+  spread: 0,
+  aiAssisted: 0,
+  completed: 0,
+  reviewQueuePeak: 0,
+  maxCombo: 0,
+  consecutiveIncidentSprints: 0,
+});
+
+const makeOrg = (overrides: Partial<OrgState> = {}): OrgState => ({
+  aiEnabled: true,
+  aiDependency: 35,
+  aiLiteracy: 50,
+  testCoverage: 45,
+  documentation: 30,
+  quality: 50,
+  morale: 45,
+  seniorHp: 50,
+  techDebt: 40,
+  deliveryScore: 0,
+  ...overrides,
+});
+
+const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState => {
+  const sprint = createSprint(
+    { taskCount: 0, codingSlots: 1, maxTicks: 1, focusMax: 3 },
+    org,
+    createRng('ri-91-a2-fixed-sprint'),
+  );
+  return {
+    ...sprint,
+    complete: true,
+    metrics: {
+      ...sprint.metrics,
+      seniorHpStart: org.seniorHp,
+      ...metrics,
+    },
+  };
+};
 
 describe('RI-91-A2 RunEngine phase / trial / budget', () => {
   it('trialBudgetMul は未知 ID を 1 扱いし、budgetMul は積算（除算ではない）', () => {
@@ -206,5 +264,103 @@ describe('RI-91-A2 RunEngine phase / trial / budget', () => {
     // find 失敗時は OptionalChaining フォールバックで 0。除去すると throw、?? 除去でも 9/4 が載る。
     expect(i.sprintBaselineInput?.reviewLoadAdd ?? 0).toBe(0);
     expect(i.sprintBaselineInput?.incidentLoadAdd).toBeUndefined();
+  });
+
+  it('initRun は home teamRosters を空オブジェクトにしない', () => {
+    const engine = new RunEngine({ seed: 'ri-91-a2-team-rosters', difficulty: 'easy' });
+    engine.startRun();
+    const i = asInternals(engine);
+    expect(i.homeTeamId).toBe(HOME_TEAM_ID);
+    expect(i.teamRosters[HOME_TEAM_ID]).toEqual(i.roster);
+    expect(Object.keys(i.teamRosters)).toEqual([HOME_TEAM_ID]);
+  });
+
+  it('resolveSprint は sprint / currentSprintId 欠落で early return する', () => {
+    const engine = new RunEngine({ seed: 'ri-91-a2-resolve-guard', difficulty: 'easy' });
+    engine.startRun();
+    const i = asInternals(engine);
+    const org = makeOrg();
+    i.phase = 'sprint';
+    i.status = 'playing';
+    i.currentSprintKind = 'normal';
+    i.totals = zeroTotals();
+    i.org = org;
+
+    i.sprint = null;
+    i.currentSprintId = 'q1-s1';
+    expect(() => i.resolveSprint()).not.toThrow();
+    expect(engine.snapshot().sprintsPlayed).toBe(0);
+
+    i.sprint = completeSprint(org);
+    i.currentSprintId = null;
+    expect(() => i.resolveSprint()).not.toThrow();
+    expect(engine.snapshot().sprintsPlayed).toBe(0);
+
+    i.sprint = null;
+    i.currentSprintId = null;
+    expect(() => i.resolveSprint()).not.toThrow();
+    expect(engine.snapshot().sprintsPlayed).toBe(0);
+  });
+
+  it('resolveSprint は直前に休職したメンバーをスタミナ回復から除外する', () => {
+    const engine = new RunEngine({ seed: 'ri-91-a2-just-left', difficulty: 'easy' });
+    engine.startRun();
+    const i = asInternals(engine);
+    const org = makeOrg();
+    const member = i.roster.members[0]!;
+    i.phase = 'sprint';
+    i.status = 'playing';
+    i.currentSprintKind = 'normal';
+    i.currentSprintId = 'q1-s1';
+    i.org = org;
+    i.totals = zeroTotals();
+    i.sprint = completeSprint(org);
+    i.sprintBaselineInput = null;
+    i.roster = {
+      ...i.roster,
+      members: i.roster.members.map((m) =>
+        m.id === member.id
+          ? { ...m, onLeave: true, stamina: 0, staminaMax: 50, assignment: 'bench' as const }
+          : m,
+      ),
+    };
+
+    const growth: GrowthOutcome = {
+      promotions: [],
+      leveledUp: [],
+      wentOnLeave: [{ id: member.id, name: member.name }],
+      docGain: 0,
+    };
+    i.applyGrowth = () => {
+      i.lastGrowth = growth;
+    };
+
+    i.resolveSprint();
+
+    const after = engine.snapshot().roster.members.find((m) => m.id === member.id)!;
+    // skip 無しだと STAMINA_RECOVER_BETWEEN*1.25=20 で RETURN_RATIO ちょうど復帰する。
+    expect(after.onLeave).toBe(true);
+    expect(after.stamina).toBe(0);
+  });
+
+  it('resolveSprint は lastGrowth が null でも throw しない', () => {
+    const engine = new RunEngine({ seed: 'ri-91-a2-last-growth-null', difficulty: 'easy' });
+    engine.startRun();
+    const i = asInternals(engine);
+    const org = makeOrg();
+    i.phase = 'sprint';
+    i.status = 'playing';
+    i.currentSprintKind = 'normal';
+    i.currentSprintId = 'q1-s1';
+    i.org = org;
+    i.totals = zeroTotals();
+    i.sprint = completeSprint(org);
+    i.sprintBaselineInput = null;
+    i.applyGrowth = () => {
+      i.lastGrowth = null;
+    };
+
+    expect(() => i.resolveSprint()).not.toThrow();
+    expect(engine.snapshot().sprintsPlayed).toBe(1);
   });
 });

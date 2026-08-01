@@ -279,8 +279,9 @@ describe('RI-91-C2 whatIfCacheKey / whatIfClient survived mutants', () => {
         }),
       },
       {
+        // 複数トレイトでないと join('+') → join('') が生き残る。
         label: 'roster.traits',
-        input: withMember(base, { traits: ['aiArtisan'] }),
+        input: withMember(base, { traits: ['aiArtisan', 'juniorStar'] }),
       },
       {
         label: 'org.seniorHp',
@@ -394,6 +395,12 @@ describe('RI-91-C2 whatIfCacheKey / whatIfClient survived mutants', () => {
       expect(whatIfCacheKey(directWhatIfInput({ draft: null }))).toBe(
         whatIfCacheKey(directWhatIfInput({ draft: [] })),
       );
+    });
+
+    it('traits は + 区切りで指紋に載る（空文字 join を殺す）', () => {
+      const key = whatIfCacheKey(withMember(base, { traits: ['aiArtisan', 'juniorStar'] }));
+      expect(key).toContain('aiArtisan+juniorStar');
+      expect(key).not.toContain('aiArtisanjuniorStar');
     });
   });
 

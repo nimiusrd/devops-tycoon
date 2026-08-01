@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Prefer GitHub sub-issues under the epic; body links are optional.
+# Mutation units are tracked only as GitHub sub-issues under the epic.

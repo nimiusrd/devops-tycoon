@@ -30,5 +30,5 @@ npm run test:mutation:force -- --mutate path/to/file.ts
 ## メモ
 
 - 1 Issue = 1PR。完了時は PR で `Fixes #このIssue` して close する。
-- エピック Issue の **サブイシュー**として紐づける（推奨）。
+- エピック Issue の **サブイシュー**として紐づける。
 - 計画 MD や単位ファイルへの状態・達成率の書き戻しは不要。

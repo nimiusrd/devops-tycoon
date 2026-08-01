@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Mutation: Issue-only numbering; doc examples use RI-N placeholders (not digits).
+# Mutation: conflict retitle loop; no older-run rebase without confirm.

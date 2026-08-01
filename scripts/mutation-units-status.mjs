@@ -26,10 +26,10 @@ const KNOWN_FLAGS = new Set(['--json', '--fail-if-incomplete', '--all', '--epic'
 /** SEQ は1起算・ゼロ埋めなし。エピック番号も先頭ゼロなし。 */
 const UNIT_ID_RE = /^RI-[1-9]\d*-[A-Z][1-9]\d*$/;
 /**
- * 索引・見出しから「RI らしい」ラベルを先に拾う。
- * ゼロ埋め・複数文字グループ・SEQ 欠落（RI-72-A / RI-72-AA1 等）も含めてから妥当性検査する。
+ * 索引・見出しから「RI らしい」ラベルを先に拾う（大文字小文字を問わない）。
+ * ゼロ埋め・複数文字グループ・SEQ 欠落（RI-72-A / RI-72-AA1 / ri-72-A1 等）も含めてから妥当性検査する。
  */
-const LOOSE_UNIT_ID_RE = /\b(RI-\d+-[A-Za-z][A-Za-z0-9]*)\b/;
+const LOOSE_UNIT_ID_RE = /\b(RI-\d+-[A-Za-z][A-Za-z0-9]*)\b/i;
 
 function parseArgs(raw) {
   const flags = new Set();
@@ -180,22 +180,29 @@ function readIndexedUnits(planText = readPlanText()) {
     const cells = splitMarkdownTableCells(line);
     if (cells.length === 0) continue;
     const first = cells[0];
-    const idMatch = first.match(LOOSE_UNIT_ID_RE);
-    if (!idMatch) continue;
-    const label = idMatch[1];
+    if (!first) continue;
+    const linkMatchEarly = first.match(/^\[([^\]]+)\]\(([^)]*)\)$/);
+    const firstLabel = (linkMatchEarly ? linkMatchEarly[1] : first).trim();
+    // 第1セルを候補として先に取り、RI らしい誤記（小文字化含む）を見落とさない
+    const looksLikeUnitRow =
+      LOOSE_UNIT_ID_RE.test(first) ||
+      /mutation-units\//i.test(first) ||
+      /^\[/.test(first) ||
+      /^RI-/i.test(firstLabel);
+    if (!looksLikeUnitRow) continue;
+    const idMatch = firstLabel.match(LOOSE_UNIT_ID_RE) || first.match(LOOSE_UNIT_ID_RE);
+    const label = idMatch ? idMatch[1] : firstLabel;
     const title = (cells[1] || '').trim();
     const targetCell = (cells[2] || '').trim();
     const targets = parseTargets(targetCell);
 
     if (!isValidUnitId(label)) {
-      const looseLink = first.match(/^\[([^\]]+)\]\(([^)]*)\)$/);
-      rememberId(label, looseLink ? looseLink[2].trim() : first, 'invalid-unit-id', {
-        index: false,
-      });
+      const href = linkMatchEarly ? linkMatchEarly[2].trim() : first;
+      rememberId(label, href, 'invalid-unit-id', { index: false });
       continue;
     }
 
-    const linkMatch = first.match(/^\[([^\]]+)\]\(([^)]*)\)$/);
+    const linkMatch = linkMatchEarly;
     if (!linkMatch) {
       if (rememberId(label, first, 'broken-link-syntax')) {
         rememberMeta(label, title, targets);
@@ -267,6 +274,14 @@ function countMetaRows(text, label) {
   return [...text.matchAll(re)].length;
 }
 
+/**
+ * 先頭の mutation-unit マーカー以外の HTML コメントを除いた本文。
+ * コメントアウトされた進捗表・After を有効な記録として拾わない。
+ */
+function visibleUnitBody(text) {
+  return text.replace(/<!--[\s\S]*?-->/g, '');
+}
+
 function parseUnit(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
   const basenameId = path.basename(filePath, '.md');
@@ -276,23 +291,25 @@ function parseUnit(filePath) {
   const commentCount = unitComments.length;
   const commentId = commentCount === 1 && isValidUnitId(unitComments[0]) ? unitComments[0] : null;
   const commentAtStart = /^\s*<!--\s*mutation-unit:\s*[^>]*?-->/.test(text);
+  // 進捗メタは HTML コメント外の本文だけから読む
+  const body = visibleUnitBody(text);
   // 存在・欠落の正本はファイル名。コメント・見出しは整合チェック用。
   const id = basenameId;
-  const headingMatch = text.match(/^#\s+(RI-[1-9]\d*-[A-Z][1-9]\d*)\s+[—-]\s+(.+)$/m);
+  const headingMatch = body.match(/^#\s+(RI-[1-9]\d*-[A-Z][1-9]\d*)\s+[—-]\s+(.+)$/m);
   const headingId = headingMatch?.[1] || null;
   const title = headingMatch?.[2]?.trim() || '';
-  const statusCount = countMetaRows(text, '状態');
-  const targetCount = countMetaRows(text, '対象');
-  const baselineCount = countMetaRows(text, 'Baseline');
-  const afterCount = [...text.matchAll(/^After:\s*/gm)].length;
+  const statusCount = countMetaRows(body, '状態');
+  const targetCount = countMetaRows(body, '対象');
+  const baselineCount = countMetaRows(body, 'Baseline');
+  const afterCount = [...body.matchAll(/^After:\s*/gm)].length;
   // 必須メタはちょうど1行。After は0または1（完了時は別途必須）
   const metaDuplicate =
     statusCount !== 1 || targetCount !== 1 || baselineCount !== 1 || afterCount > 1;
-  const status = (text.match(/\|\s*状態\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '不明';
-  const targetCell = (text.match(/\|\s*対象\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
+  const status = (body.match(/\|\s*状態\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '不明';
+  const targetCell = (body.match(/\|\s*対象\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
   const targets = parseTargets(targetCell);
-  const baseline = (text.match(/\|\s*Baseline\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
-  const after = (text.match(/^After:\s*(.+)$/m) || [])[1]?.trim() || '';
+  const baseline = (body.match(/\|\s*Baseline\s*\|\s*([^|\n]+)\|/) || [])[1]?.trim() || '';
+  const after = (body.match(/^After:\s*(.+)$/m) || [])[1]?.trim() || '';
   return {
     id,
     basenameId,
@@ -362,13 +379,23 @@ function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
 }
 
 /**
- * After 行のうち実測本体だけを取る。
- * 「Before …」以降の併記（比較用 Before 値）は拾わない。
+ * After 行の実測本体を抽出する。
+ * 括弧注記や Before 併記に埋もれた参考値は使わず、未計測表記は拒否する。
  */
 function afterPrimaryText(after) {
   if (!after) return '';
-  const cut = after.search(/\bBefore\b/);
-  return (cut < 0 ? after : after.slice(0, cut)).trim();
+  if (/未計測|未測定/.test(after)) return '';
+  // 全角／半角の注記括弧を除いた表層だけを実測本体とする
+  const primary = after
+    .replace(/（[^）]*）/g, ' ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\bBefore\b[\s\S]*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!primary || /未計測|未測定|参考値/.test(primary)) return '';
+  // 実測は total が表層に残っていること（注記括弧内だけの数値は不可）
+  if (!/\btotal\s+\d/i.test(primary)) return '';
+  return primary;
 }
 
 /** 完了記録として受理できる After か（本体に total/covered/S/NC が数値付きで揃っていること） */

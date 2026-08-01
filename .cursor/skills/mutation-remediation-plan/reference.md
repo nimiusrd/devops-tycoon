@@ -84,12 +84,12 @@ gh run view <RUN_ID> --json jobs \
 - ワースト: file（Survived / NoCoverage が多い）
 
 ## 推奨着手順
-| ID | Issue | 対象 | 受入 |
-| --- | --- | --- | --- |
-| RI-NN-A1 | #… | … | 主要 Survived / NoCoverage をテストで潰す |
+| ID | 対象 | 受入 |
+| --- | --- | --- |
+| RI-NN-A1 | … | 主要 Survived / NoCoverage をテストで潰す |
 
 ## 文書 / Issue
 - plan/mutation-remediation.md をエピック RI-NN の方針・run 記録で更新
-- 実装単位は GitHub Issue として作成（単位 MD は作らない。達成率は書かない）
+- 実装単位は GitHub Issue として作成し、エピックのサブイシューに紐づける（単位 MD・本文リンク表は作らない）
 - 旧ミューテーションエピックは完了（後続 RI-NN に置換）
 ```

@@ -276,14 +276,45 @@ function metaRowValues(text, label) {
 }
 
 /**
- * HTML コメントと fenced code block（``` / ~~~）を除いた本文。
+ * Markdown fenced code を除外する。
+ * 開始 fence の文字種（` / ~）と長さを記録し、同種かつ開始長以上の閉じ fence まで落とす。
+ */
+function stripFencedCodeBlocks(text) {
+  const lines = text.split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const open = lines[i].match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+    if (!open) {
+      out.push(lines[i]);
+      continue;
+    }
+    const marker = open[1];
+    const fenceChar = marker[0];
+    const fenceLen = marker.length;
+    // info string に同じ fence 文字が含まれる開始行は fence とみなさない（CommonMark）
+    if (fenceChar === '`' && open[2].includes('`')) {
+      out.push(lines[i]);
+      continue;
+    }
+    i++;
+    while (i < lines.length) {
+      const close = lines[i].match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
+      if (close && close[1][0] === fenceChar && close[1].length >= fenceLen) {
+        break;
+      }
+      i++;
+    }
+    // 開始〜閉じ（または EOF）までスキップ
+  }
+  return out.join('\n');
+}
+
+/**
+ * HTML コメントと fenced code block を除いた本文。
  * コメントアウト／例示用コード内の進捗表・After を有効な記録として拾わない。
  */
 function visibleUnitBody(text) {
-  return text
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/~~~[\s\S]*?~~~/g, '');
+  return stripFencedCodeBlocks(text.replace(/<!--[\s\S]*?-->/g, ''));
 }
 
 function exactlyOneNonEmpty(values) {

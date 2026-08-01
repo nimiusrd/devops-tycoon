@@ -83,14 +83,35 @@
 - 単一ジョブでコア全体を回すと数時間・180分タイムアウトのリスクあり。**通常はシャードまたは `--mutate`。**
 - `ignoreStatic: true` 済み。`vitest.mutation.config.ts` で testTimeout 60s。
 
-## 6. RI-72（完了・単位 MD 廃止）
+## 6. 現行ベースライン: RI-91
+
+エピック Issue: [#187 `[RI-91] ミューテーションテストに基づくユニットテスト強化（run 30698016740）`](https://github.com/nimiusrd/devops-tycoon/issues/187)
+
+ベースラインは GitHub Actions
+[Mutation run 30698016740](https://github.com/nimiusrd/devops-tycoon/actions/runs/30698016740)
+（2026-08-01、フルシャード・成功）。  
+`headSha`: `b2035e6b796dd0465c6b2e21ab24a7095d9f17f6`
+
+実装単位はエピック配下の **サブイシュー**（A1–A6 / B1–B6 / C1–C5）。進捗の正本はサブイシューの open/close。単位 MD や本ファイルへの状態・達成率の書き戻しはしない。
+
+参考スナップショット（再計測義務なし）:
+
+| 指標 | 値 |
+| --- | --- |
+| Mutation score (total) | 87.2% |
+| Mutation score (covered) | 88.2% |
+| Killed / Survived / Timeout / NoCoverage | 5027 / 744 / 526 / 71 |
+
+優先の目安: `src/sim/run/engine.ts`（Survived 370）→ teamState / quarterReview / sprint / persistence → whatIf* / evolution / aggregate 周辺。
+
+## 7. 履歴: RI-72（完了・単位 MD 廃止）
 
 ベースラインは GitHub Actions
 [Mutation run 30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
 （2026-07-27、シャード並列・成功）。  
 `headSha`: `c065e01ea73cb8df431210dbd6f354cfd3c4059e`
 
-**状態: 完了**（実装単位 A1–E8）。かつての `plan/mutation-units/` 分割と状態ゲートは廃止した。完了後に参照しない単位詳細はリポジトリに残さない。
+**状態: 完了**（実装単位 A1–E8）。親 Issue 無しの履歴エピック。かつての `plan/mutation-units/` 分割と状態ゲートは廃止済み。
 
 当時の参考スナップショット（再計測義務なし）:
 
@@ -99,5 +120,3 @@
 | Mutation score (total) | 約 73.4% |
 | Mutation score (covered) | 約 77.3% |
 | Killed / Survived / Timeout / NoCoverage | 4157 / 1375 / 513 / 321 |
-
-**次回以降:** 新しいフルシャード run でエピック `RI-{N}` を採番し、実装単位は GitHub Issue として切る（本ファイルの方針とスキルに従う）。

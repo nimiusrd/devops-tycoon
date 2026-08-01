@@ -74,7 +74,7 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Batc
 - …
 ```
 
-単位ファイルに total / covered / S / NC などの達成率は書かない（壊れやすく完了ゲートにも使わない）。
+単位ファイル分割は並列時のマージコンフリクト回避が目的。total / covered / S / NC などの達成率を単位ファイルや完了ゲートに載せるのは本末転倒なので書かない。
 
 [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md) には **静的索引**（ID / タイトル / 対象 / 単位ファイルへのリンク）だけを置く。**状態列は置かない**（並列 PR が同じ表を更新して衝突するため）。横断表示は `npm run mutation:units:status`（読み取り専用。現行エピックのみ。`--all` / `--epic` で範囲変更可）。
 
@@ -202,7 +202,7 @@ npm run test:mutation:force -- --mutate <file>
 - 欠番のエピック番号・単位 SEQ を再利用しない
 - 作業ブランチを baseline `headSha` に checkout したまま文書を更新しない
 - 同じ run の再編集で既存の単位ファイル（`状態` など進捗）をテンプレートで上書きしない
-- 単位ファイルに達成率（total / covered / S / NC）を書かせない・完了ゲートで検証しない
+- 単位ファイルに達成率（total / covered / S / NC）を書かせない・完了ゲートで検証しない（並列コンフリクト回避の本末転倒を避ける）
 - 静的索引に状態列を復活させない / バッチ同期前提の運用に戻さない
 - `plan/mutation-units/` 分割を再ベースライン計画から省略しない
 

@@ -690,7 +690,7 @@ if (asJson) {
 }
 
 if (failIfIncomplete) {
-  // 完了判定は状態のみ。達成率・Baseline/After の数値整合は壊れやすいので見ない。
+  // 完了判定は状態のみ。達成率は並列コンフリクト回避の趣旨に反するので検証しない。
   const incomplete = units.filter((u) => u.status !== '完了');
   const problems = [];
   if (units.length === 0) {

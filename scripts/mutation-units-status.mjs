@@ -103,26 +103,40 @@ function compareUnitId(a, b) {
 /**
  * Markdown 表行をセルに分割する。
  * コードスパン内の `|` とエスケープ `\|` は列区切りにしない。
+ * 複数バッククォート（`` … ``）も同じ長さの閉じまで1つのコードスパンとして扱う。
  */
 function splitMarkdownTableCells(line) {
   const cells = [];
   let cur = '';
-  let inCode = false;
+  let codeFenceLen = 0;
   let i = line.startsWith('|') ? 1 : 0;
   while (i < line.length) {
     const ch = line[i];
     if (ch === '`') {
-      inCode = !inCode;
-      cur += ch;
-      i++;
+      let n = 1;
+      while (i + n < line.length && line[i + n] === '`') n++;
+      if (codeFenceLen === 0) {
+        codeFenceLen = n;
+        cur += '`'.repeat(n);
+        i += n;
+        continue;
+      }
+      if (n === codeFenceLen) {
+        codeFenceLen = 0;
+        cur += '`'.repeat(n);
+        i += n;
+        continue;
+      }
+      cur += '`'.repeat(n);
+      i += n;
       continue;
     }
-    if (!inCode && ch === '\\' && line[i + 1] === '|') {
+    if (codeFenceLen === 0 && ch === '\\' && line[i + 1] === '|') {
       cur += '\\|';
       i += 2;
       continue;
     }
-    if (!inCode && ch === '|') {
+    if (codeFenceLen === 0 && ch === '|') {
       cells.push(cur.trim());
       cur = '';
       i++;
@@ -148,9 +162,12 @@ function normalizeTitle(text) {
  * 不正形式・壊れた構文は badLinks へ（妥当な ID のみ indexedIds）。
  */
 function readIndexedUnits(planText = readPlanText()) {
-  const section = extractIndexSection(planText);
+  // コメントアウトされた旧索引行を索引集合に入れない
+  const section = extractIndexSection(planText).replace(/<!--[\s\S]*?-->/g, '');
   const ids = new Set();
   const badLinks = [];
+  /** @type {string[]} */
+  const indexSchemaErrors = [];
   /** @type {Map<string, string[]>} */
   const indexTargets = new Map();
   /** @type {Map<string, string>} */
@@ -173,12 +190,29 @@ function readIndexedUnits(planText = readPlanText()) {
     indexTargets.set(label, targets);
   }
 
+  function rejectIndexColumns(line, cells, where) {
+    if (cells.some((c) => /^\s*状態\s*$/.test(c))) {
+      indexSchemaErrors.push(`${where}: status column is forbidden (${line.trim()})`);
+      return true;
+    }
+    if (cells.length !== 3) {
+      indexSchemaErrors.push(
+        `${where}: expected exactly 3 columns (ID | タイトル | 対象), got ${cells.length} (${line.trim()})`,
+      );
+      return true;
+    }
+    return false;
+  }
+
   for (const line of section.split('\n')) {
     if (!/^\|/.test(line)) continue;
     if (/^\|\s*[-:| ]+\s*\|/.test(line)) continue;
-    if (/^\|\s*ID\s*\|/i.test(line)) continue;
     const cells = splitMarkdownTableCells(line);
     if (cells.length === 0) continue;
+    if (/^\|\s*ID\s*\|/i.test(line)) {
+      rejectIndexColumns(line, cells, 'index header');
+      continue;
+    }
     const first = cells[0];
     if (!first) continue;
     const linkMatchEarly = first.match(/^\[([^\]]+)\]\(([^)]*)\)$/);
@@ -190,6 +224,7 @@ function readIndexedUnits(planText = readPlanText()) {
       /^\[/.test(first) ||
       /^RI-/i.test(firstLabel);
     if (!looksLikeUnitRow) continue;
+    if (rejectIndexColumns(line, cells, 'index row')) continue;
     const idMatch = firstLabel.match(LOOSE_UNIT_ID_RE) || first.match(LOOSE_UNIT_ID_RE);
     const label = idMatch ? idMatch[1] : firstLabel;
     const title = (cells[1] || '').trim();
@@ -238,6 +273,7 @@ function readIndexedUnits(planText = readPlanText()) {
   return {
     indexedIds: [...ids].sort(compareUnitId),
     badLinks,
+    indexSchemaErrors,
     indexTargets,
     indexTitles,
   };
@@ -249,7 +285,8 @@ function epicOfUnitId(id) {
 }
 
 function parseTargets(targetCell) {
-  const spans = [...targetCell.matchAll(/`([^`]+)`/g)].map((m) => m[1].trim()).filter(Boolean);
+  // 単一・複数バッククォートのコードスパン両方に対応
+  const spans = [...targetCell.matchAll(/(`+)([^`]*?)\1/g)].map((m) => m[2].trim()).filter(Boolean);
   if (spans.length > 0) return spans;
   const plain = targetCell.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
   if (!plain) return [];
@@ -343,7 +380,8 @@ function parseUnit(filePath) {
   const existingTestValues = metaRowValues(body, '既存テスト');
   const remeasureValues = metaRowValues(body, '再計測');
   const acceptanceValues = metaRowValues(body, '受入');
-  const afterValues = [...body.matchAll(/^After:\s*(.+)$/gm)].map((m) => m[1].trim());
+  // 物理行ごとに数える（空の `After:` も1件。改行をまたいで次行と結合しない）
+  const afterValues = [...body.matchAll(/^After:([^\n]*)$/gm)].map((m) => m[1].trim());
   const statusCount = statusValues.length;
   const targetCount = targetValues.length;
   const baselineCount = baselineValues.length;
@@ -413,9 +451,10 @@ function hasRequiredMetrics(text, { allowCoveredNa = false } = {}) {
   if (!text || !text.trim()) return false;
   const t = text.trim();
   if (/[…⋯]/.test(t) || /(^|[^\d])\.\.\.([^\d]|$)/.test(t)) return false;
-  const totalM = t.match(/\btotal\s+(\d+(?:\.\d+)?)%/i);
+  // `%` 直後に接尾辞（`%oops`）が付く部分一致を拒否
+  const totalM = t.match(/\btotal\s+(\d+(?:\.\d+)?)%(?![\w.])/i);
   if (!totalM || !isPercentInRange(totalM[1])) return false;
-  const coveredPct = t.match(/\bcovered\s+(\d+(?:\.\d+)?)%/i);
+  const coveredPct = t.match(/\bcovered\s+(\d+(?:\.\d+)?)%(?![\w.])/i);
   const coveredNa = allowCoveredNa && /\bcovered\s+n\/a\b/i.test(t);
   if (!coveredNa && (!coveredPct || !isPercentInRange(coveredPct[1]))) return false;
   // S/NC は件数。小数・指数・接尾辞（`7.5` / `7e3` / `7foo`）へ部分一致しない。
@@ -497,11 +536,13 @@ const skipIndexIntegrity =
 const {
   indexedIds: allIndexedIds,
   badLinks: allBadLinks,
+  indexSchemaErrors: allIndexSchemaErrors,
   indexTargets: allIndexTargets,
   indexTitles: allIndexTitles,
 } = readIndexedUnits(planText);
 const indexedIds = allIndexedIds.filter((id) => allEpics || epicOfUnitId(id) === currentEpic);
 const badLinks = skipIndexIntegrity ? [] : allBadLinks;
+const indexSchemaErrors = skipIndexIntegrity ? [] : allIndexSchemaErrors;
 // 現行索引に別エピック ID が混入していたら拒否（フィルタで黙って落とさない）
 const foreignIndexIds = skipIndexIntegrity
   ? []
@@ -559,6 +600,11 @@ const emptyTargets = units.filter((u) => u.targets.length === 0).map((u) => u.ba
 const emptyIndexTargets = skipIndexIntegrity
   ? []
   : indexedIds.filter((id) => (allIndexTargets.get(id) || []).length === 0);
+const missingTargetPaths = units.flatMap((u) =>
+  u.targets
+    .filter((t) => !fs.existsSync(path.join(root, t)))
+    .map((t) => ({ id: u.basenameId, target: t })),
+);
 
 if (asJson) {
   console.log(
@@ -574,6 +620,7 @@ if (asJson) {
         orphanIds,
         invalidIdFiles,
         badLinks,
+        indexSchemaErrors,
         idMismatches: idMismatches.map((u) => ({
           file: u.file,
           basenameId: u.basenameId,
@@ -590,6 +637,7 @@ if (asJson) {
         titleMismatches,
         emptyTargets,
         emptyIndexTargets,
+        missingTargetPaths,
         units,
       },
       null,
@@ -632,11 +680,17 @@ if (asJson) {
         (skipIndexIntegrity ? '' : ` / 索引=${emptyIndexTargets.length}`),
     );
   }
+  if (missingTargetPaths.length > 0) {
+    console.log(`- 対象パスが存在しない: ${missingTargetPaths.length}`);
+  }
   if (titleMismatches.length > 0) {
     console.log(`- タイトル不一致（索引≠見出し）: ${titleMismatches.length}`);
   }
   if (badLinks.length > 0) {
     console.log(`- 索引リンク不正: ${badLinks.length}`);
+  }
+  if (indexSchemaErrors.length > 0) {
+    console.log(`- 索引列構成不正: ${indexSchemaErrors.length}`);
   }
   console.log('');
   console.log('| ID | 状態 | 対象 | After |');
@@ -657,6 +711,8 @@ if (asJson) {
       status = `${u.status}（索引なし）`;
     } else if (emptyTargets.includes(u.basenameId)) {
       status = `${u.status}（対象空）`;
+    } else if (missingTargetPaths.some((m) => m.id === u.basenameId)) {
+      status = `${u.status}（対象不在）`;
     } else if (targetMismatches.some((m) => m.id === u.basenameId)) {
       status = `${u.status}（対象不一致）`;
     } else if (u.metaDuplicate) {
@@ -691,6 +747,9 @@ if (failIfIncomplete) {
     problems.push(
       `bad index links: ${badLinks.map((b) => `[${b.label}](${b.href}) (${b.reason})`).join(', ')}`,
     );
+  }
+  if (indexSchemaErrors.length > 0) {
+    problems.push(`invalid index schema: ${indexSchemaErrors.join('; ')}`);
   }
   if (foreignIndexIds.length > 0) {
     problems.push(
@@ -734,6 +793,11 @@ if (failIfIncomplete) {
   }
   if (emptyIndexTargets.length > 0) {
     problems.push(`empty index targets: ${emptyIndexTargets.join(', ')}`);
+  }
+  if (missingTargetPaths.length > 0) {
+    problems.push(
+      `missing target paths: ${missingTargetPaths.map((m) => `${m.id}:${m.target}`).join(', ')}`,
+    );
   }
   if (targetMismatches.length > 0) {
     problems.push(

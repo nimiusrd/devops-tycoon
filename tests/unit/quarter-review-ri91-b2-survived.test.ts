@@ -279,30 +279,45 @@ describe('RI-91-B2: quarterReview survived mutants', () => {
   });
 
   describe('buildQuarterReview win path', () => {
-    it('met / exceeded では missedReasons が空配列', () => {
+    it('met / exceeded では missedReasons が空配列（diagnose 非空条件でも）', () => {
+      // reviewJam 成立条件を載せ、win 条件が壊れると diagnose 経由で非空になるようにする。
+      const inputTrust = trust({ management: 71, customers: 66, team: 61 });
       const metReview = buildQuarterReview({
         goal: goal(),
         org: org({ quality: 80, morale: 50, techDebt: 40 }),
-        totals: totals({ delivered: 100, incidents: 8, completed: 10 }),
-        trust: trust(),
+        totals: totals({
+          delivered: 100,
+          incidents: 8,
+          completed: 10,
+          reviewQueuePeak: 32,
+        }),
+        trust: inputTrust,
         budget: 40,
         quarterNumber: 1,
         bossSprintCleared: true,
       });
       expect(metReview.outcome).toBe('met');
       expect(metReview.missedReasons).toEqual([]);
+      expect(metReview.trust).toEqual(inputTrust);
+      expect(metReview.trust).not.toBe(inputTrust);
 
       const exceededReview = buildQuarterReview({
         goal: goal(),
         org: org({ quality: 92, morale: 58, techDebt: 30 }),
-        totals: totals({ delivered: 115, incidents: 6, completed: 10 }),
-        trust: trust(),
+        totals: totals({
+          delivered: 115,
+          incidents: 6,
+          completed: 10,
+          reviewQueuePeak: 32,
+        }),
+        trust: inputTrust,
         budget: 40,
         quarterNumber: 1,
         bossSprintCleared: true,
       });
       expect(exceededReview.outcome).toBe('exceeded');
       expect(exceededReview.missedReasons).toEqual([]);
+      expect(exceededReview.trust).toEqual(inputTrust);
     });
 
     it('missed 経路では診断結果が入る（空配列初期値の置換を殺す）', () => {

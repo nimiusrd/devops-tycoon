@@ -1,2 +1,2 @@
 blank_issues_enabled: true
-# Mutation units are tracked only as GitHub sub-issues under the epic.
+# Mutation units: sub-issues only under the epic (reuse same run only).

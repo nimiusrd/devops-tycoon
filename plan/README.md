@@ -14,7 +14,7 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 | [remaining-issues.md](./remaining-issues.md) | 未着手・保留課題と完了項目の要約 |
 | [playtest-findings.md](./playtest-findings.md) | 実機プレイで洗い出した改善課題（バランス・UI・ポリッシュ） |
 | [mutation-remediation.md](./mutation-remediation.md) | ミューテーション改善のエピック共通計画（静的索引） |
-| [mutation-units/](./mutation-units/) | 実装単位ごと（1ファイル=1PR。状態・After の正本） |
+| [mutation-units/](./mutation-units/) | 実装単位ごと（1ファイル=1PR。状態・詳細の正本。達成率は書かない） |
 | [architecture.md](./architecture.md) | 現在の技術構成と横断規律 |
 
 ## 現状

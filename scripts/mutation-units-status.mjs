@@ -161,11 +161,14 @@ function normalizeTitle(text) {
  * 第1セルに RI らしいラベルがあればリンク構文の成否に関係なく検出し、
  * 不正形式・壊れた構文は badLinks へ（妥当な ID のみ indexedIds）。
  */
+/** HTML コメントを除去する。閉じ `-->` が無い場合は EOF までコメント扱い。 */
+function stripHtmlComments(text) {
+  return text.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+}
+
 function readIndexedUnits(planText = readPlanText()) {
   // コメント／fenced code 内の旧表・例示は索引集合に入れない
-  const section = stripFencedCodeBlocks(
-    extractIndexSection(planText).replace(/<!--[\s\S]*?-->/g, ''),
-  );
+  const section = stripFencedCodeBlocks(stripHtmlComments(extractIndexSection(planText)));
   const ids = new Set();
   const badLinks = [];
   /** @type {string[]} */
@@ -192,8 +195,9 @@ function readIndexedUnits(planText = readPlanText()) {
     indexTargets.set(label, targets);
   }
 
-  function rejectIndexColumns(line, cells, where) {
-    if (cells.some((c) => /^\s*状態\s*$/.test(c))) {
+  function rejectIndexColumns(line, cells, where, { checkStatusColumn = false } = {}) {
+    // 「状態」列の禁止はヘッダーのみ。データ行のタイトルが「状態」でも誤検出しない。
+    if (checkStatusColumn && cells.some((c) => /^\s*状態\s*$/.test(c))) {
       indexSchemaErrors.push(`${where}: status column is forbidden (${line.trim()})`);
       return true;
     }
@@ -212,7 +216,7 @@ function readIndexedUnits(planText = readPlanText()) {
     const cells = splitMarkdownTableCells(line);
     if (cells.length === 0) continue;
     if (/^\|\s*ID\s*\|/i.test(line)) {
-      rejectIndexColumns(line, cells, 'index header');
+      rejectIndexColumns(line, cells, 'index header', { checkStatusColumn: true });
       continue;
     }
     const first = cells[0];
@@ -286,16 +290,62 @@ function epicOfUnitId(id) {
   return m?.[1] ?? null;
 }
 
-function parseTargets(targetCell) {
-  // 単一・複数バッククォートのコードスパン両方に対応
-  const spans = [...targetCell.matchAll(/(`+)([^`]*?)\1/g)].map((m) => m[2].trim()).filter(Boolean);
-  if (spans.length > 0) return spans;
-  const plain = targetCell.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
-  if (!plain) return [];
-  return plain
+/**
+ * リンク記法を除いた断片から、コードスパンとプレーンパスをすべて取り出す。
+ * 混在（`missing.ts, `exists.ts``）でもどちらも捨てない。
+ */
+function parseTargetsRaw(fragment) {
+  if (!fragment || !fragment.trim()) return [];
+  const spans = [];
+  let residual = '';
+  let i = 0;
+  const s = fragment;
+  while (i < s.length) {
+    if (s[i] === '`') {
+      let n = 1;
+      while (i + n < s.length && s[i + n] === '`') n++;
+      const marker = '`'.repeat(n);
+      const closeIdx = s.indexOf(marker, i + n);
+      if (closeIdx === -1) {
+        residual += s.slice(i);
+        break;
+      }
+      const inner = s.slice(i + n, closeIdx).trim();
+      if (inner) spans.push(inner);
+      i = closeIdx + n;
+      continue;
+    }
+    residual += s[i];
+    i++;
+  }
+  const plain = residual
     .split(/[,、]/)
-    .map((s) => s.trim())
+    .map((part) => part.trim())
     .filter(Boolean);
+  return [...spans, ...plain];
+}
+
+/**
+ * 対象セルからパスをすべて取り出す。
+ * [`path`](url) はラベル側を正とし、コードスパンとプレーンの混在も両方拾う。
+ */
+function parseTargets(targetCell) {
+  if (!targetCell || !targetCell.trim()) return [];
+  const found = [];
+  // 単位ファイルの [`path`](../../path) はラベルのパスを使う（href の ../ は見ない）
+  const withoutLinks = targetCell.replace(/\[([^\]]*)\]\(([^)]*)\)/g, (_m, label) => {
+    found.push(...parseTargetsRaw(label));
+    return ' ';
+  });
+  found.push(...parseTargetsRaw(withoutLinks));
+  const seen = new Set();
+  const out = [];
+  for (const t of found) {
+    if (seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
 }
 
 function sameTargets(a, b) {
@@ -353,7 +403,7 @@ function stripFencedCodeBlocks(text) {
  * コメントアウト／例示用コード内の進捗表・After を有効な記録として拾わない。
  */
 function visibleUnitBody(text) {
-  return stripFencedCodeBlocks(text.replace(/<!--[\s\S]*?-->/g, ''));
+  return stripFencedCodeBlocks(stripHtmlComments(text));
 }
 
 function exactlyOneNonEmpty(values) {
@@ -444,7 +494,7 @@ function parseUnit(filePath) {
 
 /**
  * 対象パスがリポジトリ root 配下の通常ファイルか。
- * `..` や絶対パス、ディレクトリ、repo 外は不可。
+ * `..`・絶対パス・ディレクトリ・symlink（特に repo 外へ飛ぶもの）は不可。
  */
 function isRepoRelativeRegularFile(relPath) {
   if (!relPath || typeof relPath !== 'string') return false;
@@ -458,7 +508,15 @@ function isRepoRelativeRegularFile(relPath) {
   const rel = path.relative(root, abs);
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return false;
   try {
-    return fs.statSync(abs).isFile();
+    const st = fs.lstatSync(abs);
+    if (st.isSymbolicLink()) {
+      // リンク自体は root 配下でも、解決先が repo 外なら拒否
+      const real = fs.realpathSync(abs);
+      const relReal = path.relative(root, real);
+      if (!relReal || relReal.startsWith('..') || path.isAbsolute(relReal)) return false;
+      return fs.statSync(real).isFile();
+    }
+    return st.isFile();
   } catch {
     return false;
   }

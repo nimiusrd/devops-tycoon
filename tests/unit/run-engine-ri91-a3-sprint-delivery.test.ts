@@ -190,10 +190,10 @@ describe('RI-91-A3 RunEngine sprint resolve / delivery', () => {
       expect(i.roster).toEqual(beforeRoster);
     });
 
-    it('docGain が 0 のとき documentation を加算しない', () => {
+    it('docGain が 0 のとき documentation へ代入しない', () => {
       const engine = new RunEngine({ seed: 'ri-91-a3-doc-zero', difficulty: 'easy' });
       const i = arrangeSprint(engine, { org: { documentation: 40 } });
-      // ドキュメント魔なし → docGain 0。>0 を >=0 にすると誤って加算する。
+      // ドキュメント魔なし → docGain 0。>0→>=0 / true でも 40+0=40 なので、代入回数で観測する。
       i.roster = {
         nextId: 1,
         members: [
@@ -208,8 +208,21 @@ describe('RI-91-A3 RunEngine sprint resolve / delivery', () => {
           },
         ],
       };
+      let docValue = 40;
+      let writeCount = 0;
+      Object.defineProperty(i.org, 'documentation', {
+        configurable: true,
+        enumerable: true,
+        get: () => docValue,
+        set: (next: number) => {
+          writeCount += 1;
+          docValue = next;
+        },
+      });
+
       i.applyGrowth({ delivered: 10, done: 10 });
       expect(i.lastGrowth?.docGain).toBe(0);
+      expect(writeCount).toBe(0);
       expect(i.org.documentation).toBe(40);
     });
 
@@ -441,6 +454,16 @@ describe('RI-91-A3 RunEngine sprint resolve / delivery', () => {
 
       i.applyTrust({ management: -8, customers: 5 });
       expect(i.stakeholderTrust).toEqual({ management: 44, customers: 60, team: 70 });
+    });
+
+    it('applyTrust は team 単独差分でも加算し、他フィールドは不変', () => {
+      const engine = new RunEngine({ seed: 'ri-91-a3-apply-trust-team', difficulty: 'easy' });
+      engine.startRun('easy', [], 'ri-91-a3-apply-trust-team');
+      const i = asInternals(engine);
+      i.stakeholderTrust = { management: 40, customers: 55, team: 70 };
+      // 採用イベント相当の { team: -4 }。management ガード常時実行だと NaN 汚染する。
+      i.applyTrust({ team: -4 });
+      expect(i.stakeholderTrust).toEqual({ management: 40, customers: 55, team: 66 });
     });
 
     it('leadsTo sprint-elite は pending を elite にして currentSprintKind を elite にする', () => {

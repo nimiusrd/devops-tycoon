@@ -38,13 +38,6 @@ const makeTeam = (overrides: Partial<Team> = {}): Team => ({
   ...overrides,
 });
 
-/** techDebt=0 / aiDependency=50 なら index = morale * 0.6。 */
-const rankInput = (morale: number) => ({
-  morale,
-  techDebt: 0,
-  aiDependency: 50,
-});
-
 describe('RI-91-C1 orgscale aggregate/levers survived mutants', () => {
   describe('teamHealth queue / incident 境界', () => {
     it('reviewHell は incidents>=2 または reviewQueue>=12（直前は別ランク）', () => {
@@ -64,18 +57,18 @@ describe('RI-91-C1 orgscale aggregate/levers survived mutants', () => {
   });
 
   describe('healthRank index 境界', () => {
+    // techDebt 係数 0.25 で整数境界を作り、morale/0.6 の浮動小数点誤差を避ける
     it.each([
-      // index = morale * 0.6（techDebt=0, aiDependency=50）
-      { morale: 55 / 0.6, expected: 'S', note: 'index=55 ちょうど' },
-      { morale: 54.9 / 0.6, expected: 'A', note: 'index=54.9 → A' },
-      { morale: 40 / 0.6, expected: 'A', note: 'index=40 ちょうど' },
-      { morale: 39.9 / 0.6, expected: 'B', note: 'index=39.9 → B' },
-      { morale: 25 / 0.6, expected: 'B', note: 'index=25 ちょうど' },
-      { morale: 24.9 / 0.6, expected: 'C', note: 'index=24.9 → C' },
-      { morale: 10 / 0.6, expected: 'C', note: 'index=10 ちょうど' },
-      { morale: 9.9 / 0.6, expected: 'D', note: 'index=9.9 → D' },
-    ] as const)('$note → $expected', ({ morale, expected }) => {
-      expect(healthRank(rankInput(morale))).toBe(expected);
+      { morale: 100, techDebt: 20, expected: 'S', note: 'index=55 ちょうど' },
+      { morale: 100, techDebt: 21, expected: 'A', note: 'index=54.75 → A' },
+      { morale: 100, techDebt: 80, expected: 'A', note: 'index=40 ちょうど' },
+      { morale: 100, techDebt: 81, expected: 'B', note: 'index=39.75 → B' },
+      { morale: 50, techDebt: 20, expected: 'B', note: 'index=25 ちょうど' },
+      { morale: 50, techDebt: 21, expected: 'C', note: 'index=24.75 → C' },
+      { morale: 50, techDebt: 80, expected: 'C', note: 'index=10 ちょうど' },
+      { morale: 50, techDebt: 81, expected: 'D', note: 'index=9.75 → D' },
+    ] as const)('$note → $expected', ({ morale, techDebt, expected }) => {
+      expect(healthRank({ morale, techDebt, aiDependency: 50 })).toBe(expected);
     });
   });
 
@@ -105,11 +98,14 @@ describe('RI-91-C1 orgscale aggregate/levers survived mutants', () => {
       expect(dept.reviewResilience).toBe(40);
 
       // 2 チーム平均 queue=5 → 100 - 30 = 70
+      // aiDependency / morale もチーム値を読む（map Arrow→undefined を殺す）
       const avgDept = aggregateDepartment(DEPARTMENT_DEFS[0], [
-        makeTeam({ id: 'a', reviewQueue: 8 }),
-        makeTeam({ id: 'b', reviewQueue: 2 }),
+        makeTeam({ id: 'a', reviewQueue: 8, aiDependency: 20, morale: 40 }),
+        makeTeam({ id: 'b', reviewQueue: 2, aiDependency: 80, morale: 80 }),
       ]);
       expect(avgDept.reviewResilience).toBe(70);
+      expect(avgDept.aiDependency).toBe(50);
+      expect(avgDept.morale).toBe(60);
     });
 
     it('companyScore の炎上・負債係数を exact で固定する', () => {
@@ -237,6 +233,17 @@ describe('RI-91-C1 orgscale aggregate/levers survived mutants', () => {
       expect(res.budget).toBe(100 - 12);
       expect(res.adjust.byTeam).toEqual(seededAdjust.byTeam);
       expect(res.adjust.byDept.product.reviewQueueDelta).toBe(-3 + -4);
+    });
+
+    it('company レバー成功時は既存 byDept / byTeam を保持する', () => {
+      const res = applyLever(seededAdjust, 100, 'aiGuideline');
+      expect(res.changed).toBe(true);
+      expect(res.budget).toBe(75);
+      expect(res.adjust.company.aiDependencyDelta).toBe(-10);
+      expect(res.adjust.company.infraBoost).toBe(6);
+      // byDept: {} 置換を殺す
+      expect(res.adjust.byDept).toEqual(seededAdjust.byDept);
+      expect(res.adjust.byTeam).toEqual(seededAdjust.byTeam);
     });
   });
 });

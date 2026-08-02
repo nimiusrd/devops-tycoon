@@ -51,11 +51,18 @@ export const BASELINE_SPRINT_DELIVERY_FLOOR = 60;
 /** 新規四半期目標の Delivery 下限（旧 30 を四半期累計スケールへ）。 */
 export const MIN_QUARTER_DELIVERY_TARGET = 30 * QUARTER_DELIVERY_SCALE;
 
-/** priorGoal 減衰時の Delivery 下限（旧 20）。 */
-export const MIN_PRIOR_QUARTER_DELIVERY_TARGET = 20 * QUARTER_DELIVERY_SCALE;
+/**
+ * priorGoal 減衰時の Delivery 下限。
+ * 緩和の積み重ねでも代表的な四半期実績帯（約2000〜2500）の半分付近を下回らないようにする。
+ */
+export const MIN_PRIOR_QUARTER_DELIVERY_TARGET = Math.round(
+  BASELINE_SPRINT_DELIVERY_FLOOR * SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL * 0.7,
+);
 
-/** 目標修正適用後の Delivery 下限（旧 15）。 */
-export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = 15 * QUARTER_DELIVERY_SCALE;
+/** 目標修正適用後の Delivery 下限。 */
+export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = Math.round(
+  BASELINE_SPRINT_DELIVERY_FLOOR * SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL * 0.65,
+);
 
 /** 難易度に応じた初期信頼。 */
 export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
@@ -289,9 +296,12 @@ export function availableAdjustments(
   budget: number,
   org: OrgState,
   totals: RunTotals,
+  taken: readonly GoalAdjustmentId[] = [],
 ): GoalAdjustmentId[] {
   if (outcome !== 'missed_adjustable') return [];
+  const takenSet = new Set(taken);
   return allGoalAdjustmentIds().filter((id) => {
+    if (takenSet.has(id)) return false;
     const def = getGoalAdjustment(id);
     if (!def) return false;
     const nextManagement = clamp(trust.management + (def.trustDelta.management ?? 0), 0, 100);
@@ -315,6 +325,8 @@ export interface BuildReviewInput {
   quarterNumber: number;
   /** ボススプリント単体の突破可否（evaluateBoss）。 */
   bossSprintCleared: boolean;
+  /** ラン内で既に選んだ目標修正（再選択防止）。 */
+  goalAdjustmentsTaken?: readonly GoalAdjustmentId[];
 }
 
 /** 四半期レビューの完全スナップショットを構築する。 */
@@ -329,8 +341,22 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     budget: input.budget,
     quarterNumber: input.quarterNumber,
   });
+  let finalOutcome = outcome;
+  const adjustments = availableAdjustments(
+    outcome,
+    input.trust,
+    input.budget,
+    input.org,
+    input.totals,
+    input.goalAdjustmentsTaken ?? [],
+  );
+  // 修正可能でも提示できる手段が無い（再選択済み・信頼不足など）なら継続不能へ落とす。
+  if (finalOutcome === 'missed_adjustable' && adjustments.length === 0) {
+    finalOutcome = 'missed_crisis';
+  }
+
   const missedReasons =
-    outcome === 'exceeded' || outcome === 'met'
+    finalOutcome === 'exceeded' || finalOutcome === 'met'
       ? []
       : diagnoseMissedReasons({
           progress,
@@ -341,17 +367,11 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
 
   return {
     goal: input.goal,
-    outcome,
+    outcome: finalOutcome,
     trust: { ...input.trust },
     progress,
     missedReasons,
-    availableAdjustments: availableAdjustments(
-      outcome,
-      input.trust,
-      input.budget,
-      input.org,
-      input.totals,
-    ),
+    availableAdjustments: finalOutcome === 'missed_adjustable' ? adjustments : [],
     bossCleared,
   };
 }

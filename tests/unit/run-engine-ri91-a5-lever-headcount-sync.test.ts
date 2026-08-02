@@ -178,6 +178,24 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
     });
     expect(afterMismatch.reviewCapacity).toBe(caps.reviewCapacity);
     expect(afterMismatch.incidentBias).toBe(caps.incidentBias);
+
+    // engineers は一致、古い headcount だけ不一致 → 後段比較を無視する変異を殺す
+    const headOnlyRoster = makeRoster(i.roster, 4, 'head-only');
+    i.teamRosters[zero.id] = headOnlyRoster;
+    const headOnlyIdx = i.teams.findIndex((t) => t.id === zero.id);
+    i.teams[headOnlyIdx] = {
+      ...i.teams[headOnlyIdx]!,
+      engineers: 4,
+      headcount: 2,
+    };
+    const headOnlyCounts = engineersFromRoster(i.teams[headOnlyIdx]!, headOnlyRoster);
+    expect(headOnlyCounts.engineers).toBe(4);
+    expect(headOnlyCounts.headcount).toBe(4);
+
+    i.advanceOtherTeams('headcount-only-mismatch');
+    const afterHeadOnly = i.teams.find((t) => t.id === zero.id)!;
+    expect(afterHeadOnly.engineers).toBe(4);
+    expect(afterHeadOnly.headcount).toBe(4);
   });
 
   it('active チームの roster は advanceOtherTeams の同期対象外', () => {
@@ -272,15 +290,21 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     const active = i.activeTeamId;
     const other = i.teams.find((t) => t.id !== active)!.id;
     const otherBefore = i.teams.find((t) => t.id === other)!.reviewQueue;
+    const activeBefore = i.teams.find((t) => t.id === active)!.reviewQueue;
 
     i.teamLockUntilSprint = i.sprintsPlayed + 2;
     expect(engine.applyOrgLever('teamReviewHelp', undefined, other)).toBe(false);
     expect(i.budget).toBe(100);
     expect(i.teams.find((t) => t.id === other)!.reviewQueue).toBe(otherBefore);
 
+    // ロック中でも滞在中チームへの施策は許可する（全拒否変異を殺す）
+    expect(engine.applyOrgLever('teamReviewHelp', undefined, active)).toBe(true);
+    expect(i.budget).toBe(94);
+    expect(i.teams.find((t) => t.id === active)!.reviewQueue).toBe(Math.max(0, activeBefore - 5));
+
     i.teamLockUntilSprint = 0;
     expect(engine.applyOrgLever('teamReviewHelp', undefined, other)).toBe(true);
-    expect(i.budget).toBe(94);
+    expect(i.budget).toBe(88);
     expect(i.teams.find((t) => t.id === other)!.reviewQueue).toBe(Math.max(0, otherBefore - 5));
   });
 
@@ -323,8 +347,21 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     const engine = createEngine('ri-91-a5-company-effect');
     const i = asInternals(engine);
     i.budget = 100;
+    i.teamLockUntilSprint = 0;
+    const homeId = i.homeTeamId;
+    const nonHome = i.teams.find((t) => t.id !== homeId)!;
+    expect(engine.enterTeam(nonHome.id)).toBe(true);
+    expect(i.activeTeamId).toBe(nonHome.id);
+    expect(i.activeTeamId).not.toBe(i.teams[0]!.id);
+
+    // 非ホーム固有の依存度を付け、先頭チーム同期変異を殺す
+    const activeIdx = i.teams.findIndex((t) => t.id === nonHome.id);
+    i.teams[activeIdx] = { ...i.teams[activeIdx]!, aiDependency: 77 };
+    i.org = { ...i.org, aiDependency: 77 };
+    const homeIdx = i.teams.findIndex((t) => t.id === homeId);
+    i.teams[homeIdx] = { ...i.teams[homeIdx]!, aiDependency: 40 };
+
     const beforeDeps = i.teams.map((t) => ({ id: t.id, aiDependency: t.aiDependency }));
-    const activeBefore = i.org.aiDependency;
 
     expect(engine.applyOrgLever('aiGuideline')).toBe(true);
     expect(i.budget).toBe(75);
@@ -333,8 +370,10 @@ describe('RI-91-A5 applyOrgLever effects', () => {
       expect(team.aiDependency).toBe(prev.aiDependency - 10);
     }
     const active = i.teams.find((t) => t.id === i.activeTeamId)!;
+    expect(active.id).toBe(nonHome.id);
+    expect(i.org.aiDependency).toBe(67);
     expect(i.org.aiDependency).toBe(active.aiDependency);
-    expect(i.org.aiDependency).toBe(activeBefore - 10);
+    expect(i.org.aiDependency).not.toBe(i.teams[homeIdx]!.aiDependency);
     expect(i.orgAdjust.company.aiDependencyDelta).toBe(0);
     expect(i.orgAdjust.company.infraBoost).toBe(6);
   });
@@ -381,6 +420,39 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     // active は別部門 → orgFromTeam 非適用・sprint 非 align（activeTouched=false）
     expect(i.org.aiDependency).toBe(orgDepBefore);
     expect(i.sprint!.tasks.filter((t) => t.lane === 'review')).toHaveLength(reviewBefore);
+  });
+
+  it('department レバーは active 部門なら org 同期と sprint 盤面 align を行う', () => {
+    const engine = createEngine('ri-91-a5-dept-active');
+    engine.beginSetupSprint();
+    const i = asInternals(engine);
+    i.budget = 100;
+    i.teamLockUntilSprint = 0;
+    i.sprint!.metrics.contained = 0;
+
+    const active = i.teams.find((t) => t.id === i.activeTeamId)!;
+    const targetDept = active.deptId;
+    const base = i.sprint!.tasks[0]!;
+    // 非炎上 Review 3 + 炎上 Review 1。sync→effect(-4)→align で非炎上だけ消え炎上1が残る。
+    i.sprint!.tasks = [
+      taskFrom(base, { id: 510, lane: 'review', incident: false, progress: 0.2 }),
+      taskFrom(base, { id: 511, lane: 'review', incident: false, progress: 0.3 }),
+      taskFrom(base, { id: 512, lane: 'review', incident: false, progress: 0.4 }),
+      taskFrom(base, { id: 513, lane: 'review', incident: true, burnTicksLeft: 3 }),
+    ];
+    const reviewsBefore = i.sprint!.tasks.filter((t) => t.lane === 'review').length;
+    expect(reviewsBefore).toBe(4);
+
+    expect(engine.applyOrgLever('reviewReinforce', targetDept)).toBe(true);
+    expect(i.budget).toBe(88);
+
+    const updated = i.teams.find((t) => t.id === active.id)!;
+    const remainingReviews = i.sprint!.tasks.filter((t) => t.lane === 'review');
+    // activeTouched 経路が無いと盤面は 4 のまま残る
+    expect(remainingReviews).toHaveLength(1);
+    expect(remainingReviews.every((t) => t.incident)).toBe(true);
+    expect(updated.reviewQueue).toBe(1);
+    expect(i.org.aiDependency).toBe(updated.aiDependency);
   });
 
   it('team レバーは非 active では org/align せず、active では盤面を揃える', () => {

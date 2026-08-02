@@ -85,6 +85,9 @@ body {
 .app.app-sprint-layout .stat-morale {
   padding-bottom: 30px;
 }
+.app.app-sprint-layout .stat-seniorHp {
+  padding-bottom: 30px;
+}
 .app.app-sprint-layout .runbar,
 .app.app-sprint-layout .subbar {
   flex-shrink: 0;

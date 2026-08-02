@@ -420,9 +420,9 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(persisted?.preferredCardIds).toEqual(['copilot']);
   });
 
-  it('seenTutorial は報酬適用後も保持され、markTutorialSeen で永続化する（RI-60）', async () => {
+  it('seenTutorial は報酬適用後も保持され、markTutorialSeen で永続化する（RI-60 / RI-67）', async () => {
     const rewarded = applyRunReward(
-      { ...defaultMeta(), seenTutorial: true },
+      { ...defaultMeta(), seenTutorial: true, seenTutorialVersion: 2 },
       {
         won: true,
         difficulty: 'normal',
@@ -434,6 +434,7 @@ describe('メタ進行とアンロック（第17章）', () => {
       },
     );
     expect(rewarded.seenTutorial).toBe(true);
+    expect(rewarded.seenTutorialVersion).toBe(2);
 
     let persisted: MetaState | null = null;
     const game = createGame({
@@ -446,10 +447,24 @@ describe('メタ進行とアンロック（第17章）', () => {
       },
     });
     expect(game.getMeta().seenTutorial).toBe(false);
+    expect(game.getMeta().seenTutorialVersion).toBe(0);
     game.markTutorialSeen();
     expect(game.getMeta().seenTutorial).toBe(true);
+    expect(game.getMeta().seenTutorialVersion).toBe(2);
     await Promise.resolve();
     expect(persisted?.seenTutorial).toBe(true);
+    expect(persisted?.seenTutorialVersion).toBe(2);
+  });
+
+  it('旧 seenTutorial:true セーブは版1へ移行し、現行版未満として扱う（RI-67）', () => {
+    expect(normalizeMeta({ seenTutorial: true })).toMatchObject({
+      seenTutorial: true,
+      seenTutorialVersion: 1,
+    });
+    expect(normalizeMeta({ seenTutorial: true, seenTutorialVersion: 2 })).toMatchObject({
+      seenTutorial: true,
+      seenTutorialVersion: 2,
+    });
   });
 
   it('デイリー記録をスコア順・同点時は新しい日付順の順位表にする', () => {
@@ -1091,6 +1106,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     ).toEqual(['copilot', 'docs']);
     expect(normalizeMeta({ seenTutorial: true, soundMuted: false })).toMatchObject({
       seenTutorial: true,
+      seenTutorialVersion: 1,
       soundMuted: false,
     });
     expect(normalizeMeta(['not-object'])).toEqual(defaultMeta());

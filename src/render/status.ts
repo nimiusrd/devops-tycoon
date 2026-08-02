@@ -58,6 +58,35 @@ export interface StatusMetricView {
   barPct?: number;
   fillClass?: string;
   risk?: RiskLevel;
+  /** 炎上リスクと混同しない燃え尽き向けの短い警告（RI-67）。 */
+  warningChip?: string;
+}
+
+/** シニア体力 HUD の help（RI-67）。 */
+export const SENIOR_HP_HELP =
+  'メンバー個別のスタミナとは別の抽象値です。炎上があるときは自動鎮火の前に緊急対応で消すのが最大の守りです。アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルはAI由来の点火・手戻りを下げ、休息で戻します。';
+
+/** シニア体力の詳細・警告チップ文言（RI-67）。炎上があるときだけ緊急対応へ誘導する。 */
+export function seniorHpHudCopy(
+  seniorHpPct: number,
+  hasBurning: boolean,
+): {
+  detail: string;
+  warningChip?: string;
+} {
+  if (seniorHpPct < 25) {
+    return {
+      detail: hasBurning ? '燃え尽き寸前・緊急対応で鎮火' : '燃え尽き寸前・アンドンや休息で守る',
+      warningChip: '燃え尽き危険',
+    };
+  }
+  if (seniorHpPct < 50) {
+    return {
+      detail: hasBurning ? '低下中・炎上は緊急対応で' : '低下中・アンドンや休息で守る',
+      warningChip: '体力注意',
+    };
+  }
+  return { detail: '25%未満は危険' };
 }
 
 export type HudMetricKey =
@@ -205,6 +234,7 @@ export function deriveHudMetrics(
 ): StatusMetricView[] {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const queue = reviewQueueLength(tasks);
+  const hasBurning = tasks.some((task) => task.incident);
   const devSpeedDetail = org.aiEnabled ? 'AI支援で高速' : '通常速度';
 
   return [
@@ -264,8 +294,8 @@ export function deriveHudMetrics(
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
       tone: higherBetterTone(s.seniorHpPct, 50, 25),
-      detail: '25%未満は危険',
-      help: 'レビュー・火消しを支える余力です。休憩や負荷軽減で回復します。',
+      ...seniorHpHudCopy(s.seniorHpPct, hasBurning),
+      help: SENIOR_HP_HELP,
       barPct: s.seniorHpPct,
       fillClass: 'fill-hp',
     },

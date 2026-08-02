@@ -1,30 +1,39 @@
 /**
- * 初見向けオンボーディング（RI-60）。
+ * 初見向けオンボーディング（RI-60 / RI-67）。
  *
  * sim 決定論の外側（UI 層のみ）。`?tutorial=` は E2E / 強制再表示用のフック。
  */
+import { TUTORIAL_CONTENT_VERSION } from '../state/meta';
+
+export { LEGACY_TUTORIAL_VERSION, TUTORIAL_CONTENT_VERSION } from '../state/meta';
 
 /** `?tutorial=` の解釈結果。 */
 export type TutorialQuery = '1' | 'force' | 'help' | 'off' | null;
 
-/** 段階ガイドのステップ ID（ハイライト対象の data-testid と一致）。 */
-export type TutorialStepId = 'action-bar' | 'jam-meter' | 'combo-gauge';
+/** 段階ガイドのステップ ID（`data-tutorial-step` と一致）。 */
+export type TutorialStepId = 'action-bar' | 'senior-hp' | 'jam-meter' | 'combo-gauge';
 
 export interface TutorialStep {
   id: TutorialStepId;
-  /** ハイライト対象の data-testid。 */
-  targetTestId: TutorialStepId;
+  /** ハイライト対象の data-testid（ステップ ID と異なる場合あり）。 */
+  targetTestId: string;
   title: string;
   body: string;
 }
 
-/** 初回ラン限定ガイド（介入バー → レビュー渋滞 → コンボ）。 */
+/** 初回ラン限定ガイド（介入バー → シニア体力 → レビュー渋滞 → コンボ）。 */
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     id: 'action-bar',
     targetTestId: 'action-bar',
     title: '介入バー',
-    body: 'マネジメント集中力を使って現場へ介入します。レビュー割込みや消火など、状況に合う一手を選びましょう。武装してから盤面へドラッグする操作もあります。',
+    body: 'マネジメント集中力を使って現場へ介入します。燃え尽きを防ぐ最大の一手は緊急対応（炎上を自動鎮火の前に消す）です。アンドンは既存キューを捌く猶予、AIスロットルは点火率と手戻り率を下げ、品質・PR分割は手戻り率だけを下げます。編成の review 増員はスループット策であり、燃え尽き回避の主手段ではありません。',
+  },
+  {
+    id: 'senior-hp',
+    targetTestId: 'hud-seniorHp',
+    title: 'シニア体力',
+    body: 'シニア体力はメンバー個別のスタミナとは別の抽象値です。尽きるとシニア燃え尽きで敗北します。炎上の自動鎮火は大きく削るので、その前に緊急対応で消しましょう。アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルはAI由来の点火・手戻りを下げ、休息で体力を戻します。',
   },
   {
     id: 'jam-meter',
@@ -59,11 +68,12 @@ export function resolveTutorialFromLocation(): TutorialQuery {
 /**
  * スプリント段階ガイドを出すか。
  * `force` / `1` は表示済みでも再表示。`off` / `help` は出さない。
+ * 通常起動では `seenTutorialVersion` が現行版未満なら再表示する（RI-67）。
  */
-export function shouldShowTutorialGuide(seenTutorial: boolean, mode: TutorialQuery): boolean {
+export function shouldShowTutorialGuide(seenTutorialVersion: number, mode: TutorialQuery): boolean {
   if (mode === 'off' || mode === 'help') return false;
   if (mode === '1' || mode === 'force') return true;
-  return !seenTutorial;
+  return seenTutorialVersion < TUTORIAL_CONTENT_VERSION;
 }
 
 /**

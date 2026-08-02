@@ -30,6 +30,7 @@ import {
   DAILY_RUN_TRIALS,
   defaultMeta,
   purchaseUnlock,
+  TUTORIAL_CONTENT_VERSION,
   unlockedContent,
   utcDateStr,
   type MetaState,
@@ -707,8 +708,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
     },
     markTutorialSeen() {
-      if (!metaReady || meta.seenTutorial) return;
-      meta = { ...meta, seenTutorial: true };
+      if (!metaReady || meta.seenTutorialVersion >= TUTORIAL_CONTENT_VERSION) return;
+      meta = {
+        ...meta,
+        seenTutorial: true,
+        seenTutorialVersion: TUTORIAL_CONTENT_VERSION,
+      };
       persistMeta();
       bump();
     },

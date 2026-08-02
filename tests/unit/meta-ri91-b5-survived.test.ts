@@ -260,6 +260,7 @@ describe('RI-91-B5 meta survived mutants', () => {
         dailyRuns: {},
         soundMuted: true,
         seenTutorial: false,
+        seenTutorialVersion: 0,
       });
     });
 

@@ -233,7 +233,7 @@ export default function App({ game }: AppProps) {
   const tutorialActive =
     phase === 'sprint' &&
     tutorialDismissedEpoch !== run.runEpoch &&
-    shouldShowTutorialGuide(meta.seenTutorial, tutorialMode);
+    shouldShowTutorialGuide(meta.seenTutorialVersion, tutorialMode);
 
   if (phase === 'title') {
     return (

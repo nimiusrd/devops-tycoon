@@ -16,6 +16,15 @@ import { isFailureDiagnosis } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
 import type { DiagnosisType, DifficultyId, QuarterOutcome, WinType } from '../sim/run/types';
 
+/**
+ * 現行チュートリアル内容の版（RI-67）。
+ * `src/ui/tutorial.ts` のガイド内容と同期させる。
+ */
+export const TUTORIAL_CONTENT_VERSION = 2;
+
+/** 旧 RI-60（3ステップ）完了セーブの版。 */
+export const LEGACY_TUTORIAL_VERSION = 1;
+
 /** 旧 localStorage の移行と互換テストに使う最小インターフェース。 */
 export interface LegacyMetaStorage {
   getItem(key: string): string | null;
@@ -52,8 +61,13 @@ export interface MetaState {
   dailyRuns: Record<string, DailyRunRecord>;
   /** サウンドミュート（RI-59）。UI 層のみ。 */
   soundMuted: boolean;
-  /** 初見向け段階ガイドを表示済みか（RI-60）。 */
+  /** 初見向け段階ガイドを表示済みか（RI-60。互換用。版は seenTutorialVersion）。 */
   seenTutorial: boolean;
+  /**
+   * 表示済みチュートリアル内容の版（RI-67）。
+   * 現行 {@link TUTORIAL_CONTENT_VERSION} 未満なら再表示する。
+   */
+  seenTutorialVersion: number;
 }
 
 /** 研修方針で選べる優先施策の上限（RI-34⁗）。 */
@@ -102,6 +116,7 @@ export function defaultMeta(): MetaState {
     dailyRuns: {},
     soundMuted: true,
     seenTutorial: false,
+    seenTutorialVersion: 0,
   };
 }
 
@@ -132,11 +147,18 @@ export function normalizeMeta(value: unknown): MetaState {
   // 旧セーブや壊れた値は boolean に正規化する。
   // soundMuted 未設定は既定ミュート（true）。明示 false のセーブは維持する。
   const unlocked = unlockedContent(base);
+  const seenTutorialVersion =
+    typeof rest.seenTutorialVersion === 'number' && Number.isFinite(rest.seenTutorialVersion)
+      ? Math.max(0, Math.floor(rest.seenTutorialVersion))
+      : rest.seenTutorial === true
+        ? LEGACY_TUTORIAL_VERSION
+        : 0;
   return {
     ...base,
     preferredCardIds: sanitizePreferredCardIds(rest.preferredCardIds, unlocked.cards),
     soundMuted: typeof rest.soundMuted === 'boolean' ? rest.soundMuted : true,
-    seenTutorial: rest.seenTutorial === true,
+    seenTutorialVersion,
+    seenTutorial: seenTutorialVersion >= TUTORIAL_CONTENT_VERSION || rest.seenTutorial === true,
   };
 }
 
@@ -393,6 +415,7 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     dailyRuns: { ...meta.dailyRuns },
     soundMuted: meta.soundMuted,
     seenTutorial: meta.seenTutorial,
+    seenTutorialVersion: meta.seenTutorialVersion,
   };
 
   if (input.won) {

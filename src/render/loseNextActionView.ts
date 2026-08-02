@@ -24,6 +24,8 @@ export interface LoseNextActionSnapshot {
   seniorHp?: number;
   missedKpiCount?: number;
   reviewQueuePeak?: number;
+  /** 終了時の四半期番号（reorg_required の Q2+ 条件用）。 */
+  quarterNumber?: number;
 }
 
 export interface LoseNextActionOptions {
@@ -80,12 +82,10 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
   reorgRequired: {
     nextAction:
-      '連続未達を避けるため、早い四半期で目標修正を選び、品質・士気・障害の下限を先に立て直す。',
+      '連続未達を避けるため、品質・士気・障害の下限を先に立て直し、信頼を削る目標修正に頼らない。',
     insight: '同じ未達を繰り返すと、現場改善ではなく組織再編という外からの決着になる。',
   },
 };
-
-const REORG_REQUIRED_ACTION: LoseNextActionView = LOSE_NEXT_ACTIONS.reorgRequired;
 
 function minTrustOf(snapshot: LoseNextActionSnapshot): number | undefined {
   if (snapshot.trust === undefined) return undefined;
@@ -127,6 +127,26 @@ export function classifyMissedCrisisCause(
   if (minTrust !== undefined && minTrust <= 15) return 'trust';
   if (snapshot.budget !== undefined && snapshot.budget <= 5) return 'budget';
   if (snapshot.missedKpiCount !== undefined && snapshot.missedKpiCount >= 4) return 'kpiMissed';
+  return 'unknown';
+}
+
+/** `evaluateQuarterOutcome` と同じ優先順で reorg_required の主因を分類する。 */
+export type ReorgCause = 'kpiMissed' | 'trust' | 'unknown';
+
+export function classifyReorgCause(snapshot: LoseNextActionSnapshot = {}): ReorgCause {
+  const minTrust = minTrustOf(snapshot);
+  const missed = snapshot.missedKpiCount;
+  if (
+    snapshot.quarterNumber !== undefined &&
+    snapshot.quarterNumber >= 2 &&
+    missed !== undefined &&
+    missed >= 3
+  ) {
+    return 'kpiMissed';
+  }
+  if (minTrust !== undefined && minTrust <= 20 && missed !== undefined && missed >= 2) {
+    return 'trust';
+  }
   return 'unknown';
 }
 
@@ -174,6 +194,19 @@ const MISSED_CRISIS_ACTIONS: Record<MissedCrisisCause, LoseNextActionView> = {
   },
 };
 
+const REORG_REQUIRED_ACTIONS: Record<ReorgCause, LoseNextActionView> = {
+  kpiMissed: {
+    nextAction:
+      'Q2 以降に未達KPIが3件以上重ならないよう、四半期中に品質・士気・障害の下限を立て直す。',
+    insight: '未達が積み上がると、組織再編という外からの決着になる。',
+  },
+  trust: {
+    nextAction: '信頼を削る目標修正を避け、未達を2件未満に抑えて信頼低下と未達の重なりを防ぐ。',
+    insight: '信頼が低いときの目標修正は、同じ未達数でも再編条件へ押し込みやすい。',
+  },
+  unknown: LOSE_NEXT_ACTIONS.reorgRequired,
+};
+
 function quarterOutcomeAction(
   outcome: QuarterOutcome,
   snapshot: LoseNextActionSnapshot,
@@ -182,7 +215,9 @@ function quarterOutcomeAction(
   if (outcome === 'missed_crisis') {
     return MISSED_CRISIS_ACTIONS[classifyMissedCrisisCause(snapshot)];
   }
-  if (outcome === 'reorg_required') return REORG_REQUIRED_ACTION;
+  if (outcome === 'reorg_required') {
+    return REORG_REQUIRED_ACTIONS[classifyReorgCause(snapshot)];
+  }
   return undefined;
 }
 

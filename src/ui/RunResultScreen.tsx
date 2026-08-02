@@ -95,6 +95,7 @@ export function RunResultScreen({
             missedKpiCount: state.quarterReview?.progress.filter((p) => p.status === 'missed')
               .length,
             reviewQueuePeak: state.totals.reviewQueuePeak,
+            quarterNumber: state.quarterNumber,
           },
         })
       : null;

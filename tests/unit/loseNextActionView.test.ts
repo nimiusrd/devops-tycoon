@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   classifyMissedCrisisCause,
+  classifyReorgCause,
   classifyShutdownCause,
   loseNextActionView,
 } from '../../src/render/loseNextActionView';
@@ -139,5 +140,43 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
       },
     });
     expect(kpi.nextAction).toMatch(/未達KPI|KPI/);
+  });
+
+  it('reorg_required はトリガー別に助言を分ける', () => {
+    const kpi = loseNextActionView('reorgRequired', {
+      quarterOutcome: 'reorg_required',
+      snapshot: {
+        quarterNumber: 2,
+        missedKpiCount: 3,
+        trust: { management: 50, customers: 50, team: 50 },
+      },
+    });
+    expect(
+      classifyReorgCause({
+        quarterNumber: 2,
+        missedKpiCount: 3,
+        trust: { management: 50, customers: 50, team: 50 },
+      }),
+    ).toBe('kpiMissed');
+    expect(kpi.nextAction).toMatch(/未達KPI|3件/);
+    expect(kpi.nextAction).not.toContain('目標修正');
+
+    const trust = loseNextActionView('reorgRequired', {
+      quarterOutcome: 'reorg_required',
+      snapshot: {
+        quarterNumber: 1,
+        missedKpiCount: 2,
+        trust: { management: 18, customers: 40, team: 40 },
+      },
+    });
+    expect(
+      classifyReorgCause({
+        quarterNumber: 1,
+        missedKpiCount: 2,
+        trust: { management: 18, customers: 40, team: 40 },
+      }),
+    ).toBe('trust');
+    expect(trust.nextAction).toMatch(/信頼/);
+    expect(trust.nextAction).toContain('目標修正を避け');
   });
 });

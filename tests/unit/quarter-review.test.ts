@@ -723,6 +723,12 @@ describe('四半期レビュー（Phase 8）', () => {
     });
     expect(review.outcome).toBe('missed_crisis');
     expect(review.availableAdjustments).toEqual([]);
+    expect(review.adjustmentOptionsExhausted).toBe(true);
+    // 信頼が残っていても敗因は信頼枯渇ではなく修正手段の枯渇。
+    expect(
+      Math.min(review.trust.management, review.trust.customers, review.trust.team),
+    ).toBeGreaterThan(20);
+    expect(loseReasonForOutcome(review.outcome, review)).toBe('goalAdjustmentsExhausted');
   });
 
   it('RI-68: 同じ目標修正は再提示せず、繰り返し緩和でも下限を割らない', () => {

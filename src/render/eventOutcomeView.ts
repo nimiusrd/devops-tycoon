@@ -89,6 +89,7 @@ const LOSE_LABELS: Record<LoseReason, string> = {
   bossFailed: 'ボス失敗でラン終了',
   trustExhausted: '信頼枯渇でラン終了',
   reorgRequired: '再編必要でラン終了',
+  goalAdjustmentsExhausted: '修正手段枯渇でラン終了',
 };
 
 /** 値が増えるほど悪化する指標（符号ではなく増減方向で tone を反転する）。 */

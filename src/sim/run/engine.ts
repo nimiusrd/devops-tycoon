@@ -770,7 +770,7 @@ export class RunEngine {
     if (isTerminalFailure(outcome)) {
       this.flushCoarseIncidentCarry();
       this.status = 'lost';
-      this.loseReason = loseReasonForOutcome(outcome);
+      this.loseReason = loseReasonForOutcome(outcome, this.quarterReview);
       this.setPhase('lost');
     }
   }

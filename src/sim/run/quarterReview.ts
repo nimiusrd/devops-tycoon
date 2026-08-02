@@ -342,6 +342,7 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     quarterNumber: input.quarterNumber,
   });
   let finalOutcome = outcome;
+  let adjustmentOptionsExhausted = false;
   const adjustments = availableAdjustments(
     outcome,
     input.trust,
@@ -353,6 +354,7 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
   // 修正可能でも提示できる手段が無い（再選択済み・信頼不足など）なら継続不能へ落とす。
   if (finalOutcome === 'missed_adjustable' && adjustments.length === 0) {
     finalOutcome = 'missed_crisis';
+    adjustmentOptionsExhausted = true;
   }
 
   const missedReasons =
@@ -373,6 +375,7 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     missedReasons,
     availableAdjustments: finalOutcome === 'missed_adjustable' ? adjustments : [],
     bossCleared,
+    ...(adjustmentOptionsExhausted ? { adjustmentOptionsExhausted: true } : {}),
   };
 }
 
@@ -522,8 +525,13 @@ export function isTerminalFailure(outcome: QuarterOutcome): boolean {
 }
 
 /** 継続不能時の loseReason。 */
-export function loseReasonForOutcome(outcome: QuarterOutcome): 'trustExhausted' | 'reorgRequired' {
-  return outcome === 'reorg_required' ? 'reorgRequired' : 'trustExhausted';
+export function loseReasonForOutcome(
+  outcome: QuarterOutcome,
+  review?: Pick<QuarterReview, 'adjustmentOptionsExhausted'>,
+): 'trustExhausted' | 'reorgRequired' | 'goalAdjustmentsExhausted' {
+  if (outcome === 'reorg_required') return 'reorgRequired';
+  if (review?.adjustmentOptionsExhausted) return 'goalAdjustmentsExhausted';
+  return 'trustExhausted';
 }
 
 export const OUTCOME_LABELS: Record<QuarterOutcome, string> = {

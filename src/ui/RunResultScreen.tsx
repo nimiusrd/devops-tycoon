@@ -49,6 +49,10 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
     label: '組織再編',
     desc: '目標未達が重なり、大規模再編としてプロジェクトが終了しました。',
   },
+  goalAdjustmentsExhausted: {
+    label: '修正手段の枯渇',
+    desc: '目標修正の選択肢を使い切り、未達を次四半期へ繰り越せなくなりました。',
+  },
 };
 
 export interface RunResultScreenProps {

@@ -100,7 +100,9 @@ export type LoseReason =
   | 'budgetExhausted'
   | 'bossFailed'
   | 'trustExhausted'
-  | 'reorgRequired';
+  | 'reorgRequired'
+  /** 目標修正の選択肢を使い切り、未達を繰り越せなくなった（RI-68）。 */
+  | 'goalAdjustmentsExhausted';
 
 /** ステークホルダー ID（四半期レビュー / SPEC 第4.6.1）。 */
 export type StakeholderId = 'management' | 'customers' | 'team';
@@ -160,6 +162,11 @@ export interface QuarterReview {
   missedReasons: string[];
   availableAdjustments: GoalAdjustmentId[];
   bossCleared: boolean;
+  /**
+   * 修正可能だったが提示手段が空のため継続不能へ落としたか（RI-68）。
+   * true のとき loseReason は信頼枯渇ではなく goalAdjustmentsExhausted。
+   */
+  adjustmentOptionsExhausted?: boolean;
 }
 
 /** 難易度（SPEC 第16章）。 */

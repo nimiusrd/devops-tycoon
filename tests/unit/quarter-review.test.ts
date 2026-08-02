@@ -705,6 +705,7 @@ describe('四半期レビュー（Phase 8）', () => {
   it('RI-68: 提示できる目標修正が無い missed_adjustable は missed_crisis になる', () => {
     // seniorHp=1 で org 非改善の修正は wouldHardLose、reorg は team 信頼不足で弾く。
     // 未達は Quality のみにして shutdown（seniorHp<=5 かつ未達>=2）を避ける。
+    // 安全性フィルタで候補が空でも「使い切り」ではなく通常の継続不能理由へ分類する。
     const review = buildQuarterReview({
       goal: buildQuarterGoal(getBoss('big-release')!, 'normal', 1),
       org: org({ quality: 30, morale: 50, techDebt: 40, seniorHp: 1 }),
@@ -716,8 +717,7 @@ describe('四半期レビュー（Phase 8）', () => {
     });
     expect(review.outcome).toBe('missed_crisis');
     expect(review.availableAdjustments).toEqual([]);
-    expect(review.adjustmentOptionsExhausted).toBe(true);
-    expect(loseReasonForOutcome(review.outcome, review)).toBe('goalAdjustmentsExhausted');
+    expect(loseReasonForOutcome(review.outcome)).toBe('trustExhausted');
   });
 
   it('RI-68: cut_scope を繰り返しても Delivery 下限で実績比が壊れない', () => {

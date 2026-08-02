@@ -49,10 +49,6 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
     label: '組織再編',
     desc: '目標未達が重なり、大規模再編としてプロジェクトが終了しました。',
   },
-  goalAdjustmentsExhausted: {
-    label: '修正手段の枯渇',
-    desc: '目標修正の選択肢を使い切り、未達を次四半期へ繰り越せなくなりました。',
-  },
 };
 
 export interface RunResultScreenProps {
@@ -84,12 +80,8 @@ export function RunResultScreen({
     : undefined;
   const failureInCollection = !!failureEntry && meta.collectedDiagnoses.includes(failureEntry.type);
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
-  // 修正手段枯渇は outcome が missed_crisis でも loseReason の文言を優先する（RI-68）。
-  const preferLoseReason = state.loseReason === 'goalAdjustmentsExhausted';
-  const loseLabel = preferLoseReason
-    ? (lose?.label ?? '敗北')
-    : (failureTheme?.label ?? lose?.label ?? '敗北');
-  const loseDescription = preferLoseReason ? lose?.desc : (failureTheme?.description ?? lose?.desc);
+  const loseLabel = failureTheme?.label ?? lose?.label ?? '敗北';
+  const loseDescription = failureTheme?.description ?? lose?.desc;
   const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
   const t = state.totals;
   const isDaily = state.runKind === 'daily';

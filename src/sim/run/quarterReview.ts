@@ -357,7 +357,6 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     quarterNumber: input.quarterNumber,
   });
   let finalOutcome = outcome;
-  let adjustmentOptionsExhausted = false;
   const adjustments = availableAdjustments(
     outcome,
     input.trust,
@@ -365,10 +364,11 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     input.org,
     input.totals,
   );
-  // 修正可能でも提示できる手段が無い（信頼不足など）なら継続不能へ落とす。
+  // 修正可能でも安全性フィルタで提示手段が空なら継続不能へ落とす。
+  // これは「選択肢を使い切った」ではなく一時的に実行可能な候補が無い状態なので、
+  // loseReason は通常の missed_crisis と同じく trustExhausted 側へ分類する。
   if (finalOutcome === 'missed_adjustable' && adjustments.length === 0) {
     finalOutcome = 'missed_crisis';
-    adjustmentOptionsExhausted = true;
   }
 
   const missedReasons =
@@ -389,7 +389,6 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     missedReasons,
     availableAdjustments: finalOutcome === 'missed_adjustable' ? adjustments : [],
     bossCleared,
-    ...(adjustmentOptionsExhausted ? { adjustmentOptionsExhausted: true } : {}),
   };
 }
 
@@ -539,12 +538,8 @@ export function isTerminalFailure(outcome: QuarterOutcome): boolean {
 }
 
 /** 継続不能時の loseReason。 */
-export function loseReasonForOutcome(
-  outcome: QuarterOutcome,
-  review?: Pick<QuarterReview, 'adjustmentOptionsExhausted'>,
-): 'trustExhausted' | 'reorgRequired' | 'goalAdjustmentsExhausted' {
+export function loseReasonForOutcome(outcome: QuarterOutcome): 'trustExhausted' | 'reorgRequired' {
   if (outcome === 'reorg_required') return 'reorgRequired';
-  if (review?.adjustmentOptionsExhausted) return 'goalAdjustmentsExhausted';
   return 'trustExhausted';
 }
 

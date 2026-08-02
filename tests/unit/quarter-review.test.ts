@@ -9,6 +9,7 @@ import {
   OUTCOME_LABELS,
   BASELINE_SPRINT_DELIVERY_FLOOR,
   NORMAL_SPRINTS_PER_QUARTER,
+  QUARTER_DELIVERY_GOAL_MUL,
   QUARTER_DELIVERY_SCALE,
   QUARTER_DELIVERY_THROUGHPUT_MUL,
   MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
@@ -639,9 +640,8 @@ describe('四半期レビュー（Phase 8）', () => {
       incidentMul: 1,
       clear: {},
     };
-    const diff = getDifficulty('normal');
     const base = buildQuarterGoal(emptyBoss, 'normal', 1);
-    const baseline = BASELINE_SPRINT_DELIVERY_FLOOR * diff.taskCountMul;
+    const baseline = BASELINE_SPRINT_DELIVERY_FLOOR * QUARTER_DELIVERY_GOAL_MUL.normal;
     expect(base).toEqual({
       deliveryTarget: Math.max(
         MIN_QUARTER_DELIVERY_TARGET,
@@ -780,6 +780,49 @@ describe('四半期レビュー（Phase 8）', () => {
     // 旧バグでは全 seed が数十倍の自明超過になり、ここが落ちる。
     expect(ratios.some((r) => r <= 1.15)).toBe(true);
   });
+
+  it('RI-68: Delivery 目標倍率は難易度別に校正され normal を基準に並ぶ', () => {
+    const boss = getBoss('big-release')!;
+    const easy = buildQuarterGoal(boss, 'easy', 1);
+    const normal = buildQuarterGoal(boss, 'normal', 1);
+    const hard = buildQuarterGoal(boss, 'hard', 1);
+    expect(QUARTER_DELIVERY_GOAL_MUL.easy).toBeGreaterThan(QUARTER_DELIVERY_GOAL_MUL.normal);
+    expect(QUARTER_DELIVERY_GOAL_MUL.hard).toBeGreaterThan(QUARTER_DELIVERY_GOAL_MUL.normal);
+    expect(easy.deliveryTarget / normal.deliveryTarget).toBeCloseTo(
+      QUARTER_DELIVERY_GOAL_MUL.easy,
+      2,
+    );
+    expect(hard.deliveryTarget / normal.deliveryTarget).toBeCloseTo(
+      QUARTER_DELIVERY_GOAL_MUL.hard,
+      2,
+    );
+  });
+
+  it(
+    'RI-68: easy/normal/hard で Delivery の達成と未達が分岐する',
+    { timeout: 90_000 },
+    () => {
+      const difficulties: DifficultyId[] = ['easy', 'normal', 'hard'];
+      for (const difficulty of difficulties) {
+        let reached = 0;
+        let achieved = 0;
+        let missed = 0;
+        for (let i = 0; i < 40; i += 1) {
+          const engine = new RunEngine({ seed: `probe-${i}`, difficulty });
+          const state = playUntil(engine, 'quarterReview', { skilled: true });
+          if (state.phase !== 'quarterReview' || !state.quarterReview) continue;
+          const delivery = state.quarterReview.progress.find((p) => p.id === 'delivery');
+          if (!delivery) continue;
+          reached += 1;
+          if (delivery.status === 'missed') missed += 1;
+          else achieved += 1;
+        }
+        expect(reached, difficulty).toBeGreaterThanOrEqual(6);
+        expect(achieved, `${difficulty}:achieved`).toBeGreaterThan(0);
+        expect(missed, `${difficulty}:missed`).toBeGreaterThan(0);
+      }
+    },
+  );
 
   it('RI-72-C1: AI 過信診断は rework 比率 0.3 ちょうどでは成立しない', () => {
     const base = {

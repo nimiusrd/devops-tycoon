@@ -6,7 +6,6 @@
  */
 import type { BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
-import { getDifficulty } from '../../data/difficulties';
 import type { GoalAdjustmentDef } from '../../data/goalAdjustments';
 import { deriveTeamCapacities } from '../orgscale/teamState';
 import type { TeamRunState } from '../orgscale/types';
@@ -65,6 +64,19 @@ export const MIN_PRIOR_QUARTER_DELIVERY_TARGET = Math.round(
  */
 export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = MIN_PRIOR_QUARTER_DELIVERY_TARGET;
 
+/**
+ * 難易度別の四半期 Delivery 目標倍率（RI-68）。
+ * `bossTargetMul * taskCountMul` は Easy で目標を縮めすぎ・Hard で上げすぎになり、
+ * 組織プリセットのスループット差と二重に効いて達成分岐が潰れる。
+ * skilled 実測（実績/目標の中央付近が met 帯 ≈1.0）に合わせて独立校正する。
+ */
+export const QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
+  easy: 1.15,
+  normal: 1,
+  hard: 1.12,
+  nightmare: 1.2,
+};
+
 /** 難易度に応じた初期信頼。 */
 export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
   const base =
@@ -76,13 +88,14 @@ export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
 export function buildQuarterGoal(
   boss: BossDef,
   difficulty: DifficultyId,
-  bossTargetMul: number,
+  /** @deprecated Delivery 目標には使わない。呼び出し互換のため残す。 */
+  _bossTargetMul: number,
   priorGoal?: QuarterGoal,
 ): QuarterGoal {
   const c = boss.clear;
-  const diff = getDifficulty(difficulty);
   // RI-68: 通常5本は共通床、ボス1本だけ minSprintDelivered を使う（ボス床を6本分に掛けない）。
-  const scale = bossTargetMul * diff.taskCountMul;
+  // Delivery 目標倍率は難易度別定数。ボス突破側の bossTargetMul / taskCountMul とは分離する。
+  const scale = QUARTER_DELIVERY_GOAL_MUL[difficulty];
   const baselineFloor = BASELINE_SPRINT_DELIVERY_FLOOR * scale;
   const bossFloor = (c.minSprintDelivered ?? BASELINE_SPRINT_DELIVERY_FLOOR) * scale;
   const quarterFloor = baselineFloor * NORMAL_SPRINTS_PER_QUARTER + bossFloor;

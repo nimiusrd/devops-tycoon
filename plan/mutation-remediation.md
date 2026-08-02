@@ -83,7 +83,7 @@
 - 単一ジョブでコア全体を回すと数時間・180分タイムアウトのリスクあり。**通常はシャードまたは `--mutate`。**
 - `ignoreStatic: true` 済み。`vitest.mutation.config.ts` で testTimeout 60s。
 
-## 6. 現行ベースライン: RI-91
+## 6. 履歴: RI-91（完了）
 
 エピック Issue: [#187 `[RI-91] ミューテーションテストに基づくユニットテスト強化（run 30698016740）`](https://github.com/nimiusrd/devops-tycoon/issues/187)
 
@@ -92,17 +92,16 @@
 （2026-08-01、フルシャード・成功）。  
 `headSha`: `b2035e6b796dd0465c6b2e21ab24a7095d9f17f6`
 
-実装単位はエピック配下の **サブイシュー**（A1–A6 / B1–B6 / C1–C5）。進捗の正本はサブイシューの open/close。単位 MD や本ファイルへの状態・達成率の書き戻しはしない。
+**状態: 完了**（実装単位 A1–A6 / B1–B6 / C1–C5。サブイシューすべて closed のうえエピック Issue を close）。  
+次のフルシャード成功 run が出るまで、新しいミューテーション改善エピックは採番しない。単位 MD や本ファイルへの状態・達成率の書き戻しはしない。
 
-参考スナップショット（再計測義務なし）:
+着手時の参考スナップショット（再計測義務なし）:
 
 | 指標 | 値 |
 | --- | --- |
 | Mutation score (total) | 87.2% |
 | Mutation score (covered) | 88.2% |
 | Killed / Survived / Timeout / NoCoverage | 5027 / 744 / 526 / 71 |
-
-優先の目安: `src/sim/run/engine.ts`（Survived 370）→ teamState / quarterReview / sprint / persistence → whatIf* / evolution / aggregate 周辺。
 
 ## 7. 履歴: RI-72（完了・単位 MD 廃止）
 

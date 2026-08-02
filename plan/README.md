@@ -25,7 +25,7 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 - 既定描画はPixiJS。`?renderer=dom`とWebGL不可時はDOM/SVGへフォールバックする。
 - IndexedDBにメタ進行、ラン途中セーブ、リプレイを保存する。
 - Vitestでロジック、Playwrightで操作・視覚回帰を検証する。
-- コアループは実装済み。優先度「高」の未着手課題は、オンボーディングとシニア燃え尽きの断絶（RI-67）など。ミューテーション改善の現行エピックは [RI-91](https://github.com/nimiusrd/devops-tycoon/issues/187)（run 30698016740）。採番・進捗の正本は GitHub Issue（本ディレクトリに番号予約しない）。一般バックログの全容は[remaining-issues.md](./remaining-issues.md)を参照。
+- コアループは実装済み。優先度「高」の未着手課題は、オンボーディングとシニア燃え尽きの断絶（RI-67）など。ミューテーション改善の直近エピック [RI-91](https://github.com/nimiusrd/devops-tycoon/issues/187)（run 30698016740）は完了。次のフルシャード成功 run が出るまで新エピックは採番しない。採番・進捗の正本は GitHub Issue（本ディレクトリに番号予約しない）。一般バックログの全容は[remaining-issues.md](./remaining-issues.md)を参照。
 
 ## 確定した設計判断
 

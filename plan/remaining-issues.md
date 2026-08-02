@@ -13,7 +13,7 @@
 | RI-70 | モバイルのスプリント操作性 | 中 | 未着手 | 第4 |
 | RI-71 | favicon 未設定による 404 | 低 | 未着手 | — |
 | RI-72 | ミューテーションテストに基づくユニットテスト強化（run 30261978402） | 中 | 完了 | 第22.5 |
-| RI-91 | ミューテーションテストに基づくユニットテスト強化（[#187](https://github.com/nimiusrd/devops-tycoon/issues/187)） | 中 | —（Issue） | 第22.5 |
+| RI-91 | ミューテーションテストに基づくユニットテスト強化（[#187](https://github.com/nimiusrd/devops-tycoon/issues/187)） | 中 | 完了 | 第22.5 |
 | RI-73 | 難易度カーブと、常に正解／常に不正解な手がある構造 | 高 | 未着手 | 第19.1（F-1・F-7）/ 第16 |
 | RI-74 | Nightmare は AI 依存を意識しない方針で第1スプリント敗北が確定する | 高 | 未着手 | 第19.1（F-8・F-9）/ 第15・16 |
 | RI-75 | スプリントが規定帯をほぼ全面的に下回る | 高 | 未着手 | 第3.1 / 第19.1（F-4） |
@@ -88,13 +88,13 @@ Easy でも無介入・素直プレイだと第1四半期スプリント2でシ�
 
 **完了。** ベースライン run
 [30261978402](https://github.com/nimiusrd/devops-tycoon/actions/runs/30261978402)
-向けの実装単位 `RI-72-A1`〜`RI-72-E8` をすべて完了した。単位 MD（`plan/mutation-units/`）は廃止済み。後継は [RI-91](#ri-91-ミューテーションテストに基づくユニットテスト強化run-30698016740)。
+向けの実装単位 `RI-72-A1`〜`RI-72-E8` をすべて完了した。単位 MD（`plan/mutation-units/`）は廃止済み。後継の [RI-91](#ri-91-ミューテーションテストに基づくユニットテスト強化run-30698016740) も完了。
 
 ### RI-91 ミューテーションテストに基づくユニットテスト強化（run 30698016740）
 
-エピック Issue [#187](https://github.com/nimiusrd/devops-tycoon/issues/187)。ベースライン run
+**完了。** エピック Issue [#187](https://github.com/nimiusrd/devops-tycoon/issues/187)。ベースライン run
 [30698016740](https://github.com/nimiusrd/devops-tycoon/actions/runs/30698016740)
-（`headSha` `b2035e6b796dd0465c6b2e21ab24a7095d9f17f6`）。実装単位はエピックのサブイシュー（A1–C5）。採番・進捗の正本は GitHub Issue（本表の状態列は同期しない）。方針は[mutation-remediation.md](./mutation-remediation.md)。
+（`headSha` `b2035e6b796dd0465c6b2e21ab24a7095d9f17f6`）向けの実装単位 A1–A6 / B1–B6 / C1–C5 をすべて完了した。方針は[mutation-remediation.md](./mutation-remediation.md)。
 
 ### RI-73 難易度カーブと、常に正解／常に不正解な手がある構造
 

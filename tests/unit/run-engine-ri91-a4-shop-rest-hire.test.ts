@@ -5,13 +5,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RELIC_DEFS } from '../../src/data/relics';
 import type { CardInstance } from '../../src/sim/cards';
-import {
-  RECRUIT_COST,
-  REST_STAMINA_RECOVER,
-  ROSTER_CAP,
-  type RosterState,
-} from '../../src/sim/member';
-import { REST_HEAL, REST_MORALE_HEAL, REST_REPAY, RunEngine } from '../../src/sim/run/engine';
+import { RECRUIT_COST, ROSTER_CAP, type RosterState } from '../../src/sim/member';
+import { RunEngine } from '../../src/sim/run/engine';
 import type { BeatState, RunState, ShopOffer } from '../../src/sim/run/types';
 import type { OrgState } from '../../src/sim/types';
 
@@ -266,6 +261,13 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
   });
 
   it('REST_* 効果量は clamp 外入力で exact（加減算の変異を否定）', () => {
+    // 仕様値をリテラルで固定（実装定数の同時変更では通さない）。
+    const restHeal = 40;
+    const restMoraleHeal = 10;
+    const restStaminaRecover = 45;
+    const restRepay = 30;
+    const flowFirstBonus = 10;
+
     const heal = createEngine('ri-91-a4-rest-heal');
     const healI = asInternals(heal);
     healI.phase = 'rest';
@@ -281,12 +283,12 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
 
     const healed = heal.snapshot();
     // + → - だと 20-40-10 → clamp 0、morale 40-10=30、stamina 10-45。
-    expect(healed.org.seniorHp).toBe(20 + REST_HEAL + 10);
-    expect(healed.org.seniorHp).not.toBe(20 - REST_HEAL - 10);
-    expect(healed.org.morale).toBe(40 + REST_MORALE_HEAL);
-    expect(healed.org.morale).not.toBe(40 - REST_MORALE_HEAL);
-    expect(healed.roster.members[0].stamina).toBe(10 + REST_STAMINA_RECOVER);
-    expect(healed.roster.members[0].stamina).not.toBe(10 - REST_STAMINA_RECOVER);
+    expect(healed.org.seniorHp).toBe(20 + restHeal + flowFirstBonus);
+    expect(healed.org.seniorHp).not.toBe(20 - restHeal - flowFirstBonus);
+    expect(healed.org.morale).toBe(40 + restMoraleHeal);
+    expect(healed.org.morale).not.toBe(40 - restMoraleHeal);
+    expect(healed.roster.members[0].stamina).toBe(10 + restStaminaRecover);
+    expect(healed.roster.members[0].stamina).not.toBe(10 - restStaminaRecover);
     expect(healed.phase).toBe('setup');
 
     const repay = createEngine('ri-91-a4-rest-repay');
@@ -294,13 +296,13 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
     repayI.phase = 'rest';
     repayI.org.techDebt = 100;
     repay.restChoose('repay');
-    expect(repay.snapshot().org.techDebt).toBe(100 - REST_REPAY);
-    expect(repay.snapshot().org.techDebt).not.toBe(100 + REST_REPAY);
+    expect(repay.snapshot().org.techDebt).toBe(100 - restRepay);
+    expect(repay.snapshot().org.techDebt).not.toBe(100 + restRepay);
 
     const repayFloor = createEngine('ri-91-a4-rest-repay-floor');
     const repayFloorI = asInternals(repayFloor);
     repayFloorI.phase = 'rest';
-    repayFloorI.org.techDebt = REST_REPAY - 10;
+    repayFloorI.org.techDebt = restRepay - 10;
     repayFloor.restChoose('repay');
     expect(repayFloor.snapshot().org.techDebt).toBe(0);
   });

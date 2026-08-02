@@ -50,15 +50,14 @@ export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
 };
 
 /**
- * Q2 で reorg_required。
+ * Q3 で reorg_required。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
- * RI-68（目標修正の再選択禁止）後に再探索。
  */
 export const E2E_TERMINAL_REORG_REQUIRED: TerminalQuarterSeed = {
-  seed: 'ri68t-34',
+  seed: 'ri62e-hard-12',
   difficulty: 'hard',
   outcome: 'reorg_required',
-  quarterNumber: 2,
+  quarterNumber: 3,
 };
 
 export const E2E_TERMINAL_SEEDS: readonly TerminalQuarterSeed[] = [

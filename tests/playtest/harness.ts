@@ -438,6 +438,8 @@ export interface QuarterLog {
   seniorHp: number;
   /** 士気（`shutdown` 判定の入力）。 */
   morale: number;
+  /** 目標修正の提示手段が空のため継続不能へ落としたか（RI-68）。 */
+  adjustmentOptionsExhausted?: boolean;
   chosenAdjustment?: string;
 }
 
@@ -1130,13 +1132,19 @@ function applySetup(e: RunEngine, spec: PolicySpec): void {
 
 /**
  * `missed_crisis` を発火させうる条件のうち、実際に成立していたものを列挙する。
- * `evaluateQuarterOutcome`（`src/sim/run/quarterReview.ts`）の判定と対応させる。
+ * `evaluateQuarterOutcome` / `buildQuarterReview`（`src/sim/run/quarterReview.ts`）と対応させる。
  */
-function crisisTriggers(minTrust: number, budget: number, missedCount: number): string[] {
+function crisisTriggers(
+  minTrust: number,
+  budget: number,
+  missedCount: number,
+  adjustmentOptionsExhausted = false,
+): string[] {
   const hit: string[] = [];
   if (minTrust <= 15) hit.push('trust<=15');
   if (budget <= 5) hit.push('budget<=5');
   if (missedCount >= 4) hit.push('missed>=4');
+  if (adjustmentOptionsExhausted) hit.push('adjustments_exhausted');
   return hit;
 }
 
@@ -1364,6 +1372,7 @@ export function runOnce(
         if (qr) {
           const minTrust = Math.min(qr.trust.management, qr.trust.customers, qr.trust.team);
           const missedCount = qr.progress.filter((p) => p.status === 'missed').length;
+          const exhausted = !!qr.adjustmentOptionsExhausted;
           const log: QuarterLog = {
             quarter: s.quarterNumber,
             outcome: qr.outcome,
@@ -1374,7 +1383,7 @@ export function runOnce(
             minTrust: Math.round(minTrust),
             budget: Math.round(s.budget),
             missedCount,
-            crisisTriggers: crisisTriggers(minTrust, s.budget, missedCount),
+            crisisTriggers: crisisTriggers(minTrust, s.budget, missedCount, exhausted),
             shutdownTriggers: shutdownTriggers(
               minTrust,
               s.budget,
@@ -1384,6 +1393,7 @@ export function runOnce(
             ),
             seniorHp: Math.round(s.org.seniorHp),
             morale: Math.round(s.org.morale),
+            ...(exhausted ? { adjustmentOptionsExhausted: true } : {}),
           };
           if (qr.outcome === 'missed_adjustable') {
             const want = spec.goalAdjustment;

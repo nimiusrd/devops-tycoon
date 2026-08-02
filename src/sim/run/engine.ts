@@ -691,7 +691,6 @@ export class RunEngine {
         budget: this.budget,
         quarterNumber: this.quarterNumber,
         bossSprintCleared: bossCleared,
-        goalAdjustmentsTaken: this.goalAdjustmentsTaken,
       });
       if (bossCleared) {
         // 勝利種別は選択中チームの報酬前状態で判定する。

@@ -557,19 +557,26 @@ console.log(`\n## RI-79 四半期 outcome の発火要因\n`);
 const crisisTrig = {};
 const shutdownTrig = {};
 const outcomeCounts = {};
+let adjustmentExhaustedCrisis = 0;
 for (const run of runs) {
   for (const q of run.quarters ?? []) {
     outcomeCounts[q.outcome] = (outcomeCounts[q.outcome] ?? 0) + 1;
     const key = (list) => (list?.length ? list.join('+') : 'none');
-    // missed_crisis / shutdown はどちらも loseReasonForOutcome で trustExhausted になる。
-    if (q.outcome === 'missed_crisis')
+    // missed_crisis は信頼・予算・未達数に加え、修正手段枯渇（RI-68）でも発火する。
+    // 枯渇経路の loseReason は goalAdjustmentsExhausted であり trustExhausted ではない。
+    if (q.outcome === 'missed_crisis') {
       crisisTrig[key(q.crisisTriggers)] = (crisisTrig[key(q.crisisTriggers)] ?? 0) + 1;
+      if (q.adjustmentOptionsExhausted || q.crisisTriggers?.includes('adjustments_exhausted')) {
+        adjustmentExhaustedCrisis += 1;
+      }
+    }
     if (q.outcome === 'shutdown')
       shutdownTrig[key(q.shutdownTriggers)] = (shutdownTrig[key(q.shutdownTriggers)] ?? 0) + 1;
   }
 }
 console.log('四半期 outcome:', JSON.stringify(outcomeCounts));
 console.log('missed_crisis の発火条件:', JSON.stringify(crisisTrig));
+console.log(`missed_crisis のうち修正手段枯渇: ${adjustmentExhaustedCrisis}`);
 console.log('shutdown の発火条件:', JSON.stringify(shutdownTrig));
 console.log(
   '  ※ shutdown の判定入力は再現できている。companyOrgFromTeams は morale / seniorHp だけ',

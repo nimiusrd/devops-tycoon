@@ -703,83 +703,29 @@ describe('四半期レビュー（Phase 8）', () => {
   });
 
   it('RI-68: 提示できる目標修正が無い missed_adjustable は missed_crisis になる', () => {
+    // seniorHp=1 で org 非改善の修正は wouldHardLose、reorg は team 信頼不足で弾く。
+    // 未達は Quality のみにして shutdown（seniorHp<=5 かつ未達>=2）を避ける。
     const review = buildQuarterReview({
-      goal: buildQuarterGoal(getBoss('exec-review')!, 'normal', 1),
-      org: org({ quality: 30, morale: 50, techDebt: 40 }),
-      totals: totals({ delivered: 500, incidents: 2, completed: 20 }),
-      trust: buildInitialTrust('normal'),
+      goal: buildQuarterGoal(getBoss('big-release')!, 'normal', 1),
+      org: org({ quality: 30, morale: 50, techDebt: 40, seniorHp: 1 }),
+      totals: totals({ delivered: 5000, incidents: 2, completed: 20 }),
+      trust: { management: 60, customers: 60, team: 25 },
       budget: 40,
       quarterNumber: 1,
       bossSprintCleared: false,
-      // 全修正を使い切った状態を模擬。
-      goalAdjustmentsTaken: [
-        'cut_scope',
-        'extend_deadline',
-        'quality_pivot',
-        'request_budget',
-        'pause_ai_rollout',
-        'reorg_teams',
-      ],
     });
     expect(review.outcome).toBe('missed_crisis');
     expect(review.availableAdjustments).toEqual([]);
     expect(review.adjustmentOptionsExhausted).toBe(true);
-    // 信頼が残っていても敗因は信頼枯渇ではなく修正手段の枯渇。
-    expect(
-      Math.min(review.trust.management, review.trust.customers, review.trust.team),
-    ).toBeGreaterThan(20);
     expect(loseReasonForOutcome(review.outcome, review)).toBe('goalAdjustmentsExhausted');
   });
 
-  it('RI-68: 同じ目標修正は再提示せず、繰り返し緩和でも下限を割らない', () => {
-    const trust = buildInitialTrust('normal');
-    expect(
-      availableAdjustments('missed_adjustable', trust, 30, org(), totals(), ['cut_scope']),
-    ).not.toContain('cut_scope');
-
+  it('RI-68: cut_scope を繰り返しても Delivery 下限で実績比が壊れない', () => {
     const boss = getBoss('exec-review')!;
-    const initial = buildQuarterGoal(boss, 'normal', 1);
-    const firstReview = buildQuarterReview({
-      goal: initial,
-      org: org({ quality: 30, morale: 50, techDebt: 40 }),
-      totals: totals({ delivered: 500, incidents: 2, completed: 20 }),
-      trust,
-      budget: 40,
-      quarterNumber: 1,
-      bossSprintCleared: false,
-      goalAdjustmentsTaken: [],
-    });
-    expect(firstReview.outcome).toBe('missed_adjustable');
-    expect(firstReview.availableAdjustments).toContain('cut_scope');
-
-    const applied = applyGoalAdjustment(
-      {
-        goal: initial,
-        trust,
-        org: org(),
-        budget: 40,
-        goalAdjustmentsTaken: [],
-        nextBudgetCap: null,
-      },
-      'cut_scope',
-    );
-    let goal = buildQuarterGoal(boss, 'normal', 1, applied.goal);
-    // 取得済み cut_scope は次四半期以降に再提示されない。
-    const secondReview = buildQuarterReview({
-      goal,
-      org: org({ quality: 30, morale: 50, techDebt: 40 }),
-      totals: totals({ delivered: 500, incidents: 2, completed: 20 }),
-      trust,
-      budget: 40,
-      quarterNumber: 2,
-      bossSprintCleared: false,
-      goalAdjustmentsTaken: applied.goalAdjustmentsTaken,
-    });
-    expect(secondReview.availableAdjustments).not.toContain('cut_scope');
-
-    // 仮に乗算緩和を重ねても prior/adjust 下限で実績比が壊れない。
-    for (const id of ['extend_deadline', 'quality_pivot', 'pause_ai_rollout'] as const) {
-      const next = applyGoalAdjustment(
+    let goal = buildQuarterGoal(boss, 'normal', 1);
+    const trust = buildInitialTrust('normal');
+    for (let i = 0; i < 3; i += 1) {
+      const cut = applyGoalAdjustment(
         {
           goal,
           trust,
@@ -788,9 +734,9 @@ describe('四半期レビュー（Phase 8）', () => {
           goalAdjustmentsTaken: [],
           nextBudgetCap: null,
         },
-        id,
+        'cut_scope',
       );
-      goal = buildQuarterGoal(boss, 'normal', 1, next.goal);
+      goal = buildQuarterGoal(boss, 'normal', 1, cut.goal);
     }
     expect(goal.deliveryTarget).toBeGreaterThanOrEqual(MIN_PRIOR_QUARTER_DELIVERY_TARGET);
     expect(2478 / goal.deliveryTarget).toBeLessThan(2.5);

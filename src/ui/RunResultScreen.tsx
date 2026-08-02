@@ -84,8 +84,12 @@ export function RunResultScreen({
     : undefined;
   const failureInCollection = !!failureEntry && meta.collectedDiagnoses.includes(failureEntry.type);
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
-  const loseLabel = failureTheme?.label ?? lose?.label ?? '敗北';
-  const loseDescription = failureTheme?.description ?? lose?.desc;
+  // 修正手段枯渇は outcome が missed_crisis でも loseReason の文言を優先する（RI-68）。
+  const preferLoseReason = state.loseReason === 'goalAdjustmentsExhausted';
+  const loseLabel = preferLoseReason
+    ? (lose?.label ?? '敗北')
+    : (failureTheme?.label ?? lose?.label ?? '敗北');
+  const loseDescription = preferLoseReason ? lose?.desc : (failureTheme?.description ?? lose?.desc);
   const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
   const t = state.totals;
   const isDaily = state.runKind === 'daily';

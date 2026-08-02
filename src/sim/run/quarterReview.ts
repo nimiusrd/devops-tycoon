@@ -59,10 +59,11 @@ export const MIN_PRIOR_QUARTER_DELIVERY_TARGET = Math.round(
   BASELINE_SPRINT_DELIVERY_FLOOR * SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL * 0.7,
 );
 
-/** 目標修正適用後の Delivery 下限。 */
-export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = Math.round(
-  BASELINE_SPRINT_DELIVERY_FLOOR * SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL * 0.65,
-);
+/**
+ * 目標修正適用後の Delivery 下限。
+ * prior 下限と同じにして「緩和 → 次期開始で戻る」の見かけ差をなくす。
+ */
+export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = MIN_PRIOR_QUARTER_DELIVERY_TARGET;
 
 /** 難易度に応じた初期信頼。 */
 export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
@@ -296,12 +297,9 @@ export function availableAdjustments(
   budget: number,
   org: OrgState,
   totals: RunTotals,
-  taken: readonly GoalAdjustmentId[] = [],
 ): GoalAdjustmentId[] {
   if (outcome !== 'missed_adjustable') return [];
-  const takenSet = new Set(taken);
   return allGoalAdjustmentIds().filter((id) => {
-    if (takenSet.has(id)) return false;
     const def = getGoalAdjustment(id);
     if (!def) return false;
     const nextManagement = clamp(trust.management + (def.trustDelta.management ?? 0), 0, 100);
@@ -316,6 +314,25 @@ export function availableAdjustments(
   });
 }
 
+/**
+ * 目標修正選択後に次四半期へ持ち越される Delivery 目標のプレビュー（RI-68）。
+ * 適用時下限と prior 減衰下限の両方を反映する。
+ */
+export function previewNextQuarterDeliveryTarget(
+  currentDeliveryTarget: number,
+  def: GoalAdjustmentDef,
+): number {
+  let next = currentDeliveryTarget;
+  const ge = def.goalEffects;
+  if (ge.deliveryMul !== undefined) {
+    next = Math.max(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET, Math.round(next * ge.deliveryMul));
+  }
+  if (ge.deliveryAdd !== undefined) {
+    next = Math.max(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET, next + ge.deliveryAdd);
+  }
+  return Math.max(MIN_PRIOR_QUARTER_DELIVERY_TARGET, Math.round(next * 0.95));
+}
+
 export interface BuildReviewInput {
   goal: QuarterGoal;
   org: OrgState;
@@ -325,8 +342,6 @@ export interface BuildReviewInput {
   quarterNumber: number;
   /** ボススプリント単体の突破可否（evaluateBoss）。 */
   bossSprintCleared: boolean;
-  /** ラン内で既に選んだ目標修正（再選択防止）。 */
-  goalAdjustmentsTaken?: readonly GoalAdjustmentId[];
 }
 
 /** 四半期レビューの完全スナップショットを構築する。 */
@@ -349,9 +364,8 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     input.budget,
     input.org,
     input.totals,
-    input.goalAdjustmentsTaken ?? [],
   );
-  // 修正可能でも提示できる手段が無い（再選択済み・信頼不足など）なら継続不能へ落とす。
+  // 修正可能でも提示できる手段が無い（信頼不足など）なら継続不能へ落とす。
   if (finalOutcome === 'missed_adjustable' && adjustments.length === 0) {
     finalOutcome = 'missed_crisis';
     adjustmentOptionsExhausted = true;

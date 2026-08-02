@@ -127,7 +127,10 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
 
   it('シニア体力と士気は低下すると危険域として表示する', () => {
     const state = withOrg({ seniorHp: 20, morale: 30 });
-    const metrics = deriveHudMetrics(state.org, state.sprint.tasks);
+    const burning = state.sprint.tasks.map((task, index) =>
+      index === 0 ? { ...task, incident: true, lane: 'rework' as const } : task,
+    );
+    const metrics = deriveHudMetrics(state.org, burning);
 
     expect(metrics.find((m) => m.id === 'seniorHp')).toMatchObject({
       direction: 'higher-better',
@@ -147,11 +150,21 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
 
   it('RI-67: シニア体力の注意域では燃え尽き向け警告を出す', () => {
     const emptyTasks = withOrg({}).sprint.tasks;
-    const watch = deriveHudMetrics(withOrg({ seniorHp: 40 }).org, emptyTasks);
-    expect(watch.find((m) => m.id === 'seniorHp')).toMatchObject({
+    const burning = emptyTasks.map((task, index) =>
+      index === 0 ? { ...task, incident: true, lane: 'rework' as const } : task,
+    );
+    const watchBurning = deriveHudMetrics(withOrg({ seniorHp: 40 }).org, burning);
+    expect(watchBurning.find((m) => m.id === 'seniorHp')).toMatchObject({
       tone: 'watch',
       detail: '低下中・炎上は緊急対応で',
       warningChip: '体力注意',
+    });
+
+    const dangerNoFire = deriveHudMetrics(withOrg({ seniorHp: 20 }).org, emptyTasks);
+    expect(dangerNoFire.find((m) => m.id === 'seniorHp')).toMatchObject({
+      tone: 'danger',
+      detail: '燃え尽き寸前・アンドンや休息で守る',
+      warningChip: '燃え尽き危険',
     });
 
     const good = deriveHudMetrics(withOrg({ seniorHp: 80 }).org, emptyTasks).find(

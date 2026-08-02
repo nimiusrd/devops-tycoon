@@ -3,6 +3,9 @@
  *
  * sim 決定論の外側（UI 層のみ）。`?tutorial=` は E2E / 強制再表示用のフック。
  */
+import { TUTORIAL_CONTENT_VERSION } from '../state/meta';
+
+export { LEGACY_TUTORIAL_VERSION, TUTORIAL_CONTENT_VERSION } from '../state/meta';
 
 /** `?tutorial=` の解釈結果。 */
 export type TutorialQuery = '1' | 'force' | 'help' | 'off' | null;
@@ -30,7 +33,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: 'senior-hp',
     targetTestId: 'hud-seniorHp',
     title: 'シニア体力',
-    body: 'シニア体力はメンバー個別のスタミナとは別の抽象値です。尽きるとシニア燃え尽きで敗北します。炎上の自動鎮火は大きく削るので、その前に緊急対応で消しましょう。アンドンやAIスロットルで流入を抑え、休息で戻すのも有効です。',
+    body: 'シニア体力はメンバー個別のスタミナとは別の抽象値です。尽きるとシニア燃え尽きで敗北します。炎上の自動鎮火は大きく削るので、その前に緊急対応で消しましょう。アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルはAI由来の点火・手戻りを下げ、休息で体力を戻します。',
   },
   {
     id: 'jam-meter',
@@ -65,11 +68,12 @@ export function resolveTutorialFromLocation(): TutorialQuery {
 /**
  * スプリント段階ガイドを出すか。
  * `force` / `1` は表示済みでも再表示。`off` / `help` は出さない。
+ * 通常起動では `seenTutorialVersion` が現行版未満なら再表示する（RI-67）。
  */
-export function shouldShowTutorialGuide(seenTutorial: boolean, mode: TutorialQuery): boolean {
+export function shouldShowTutorialGuide(seenTutorialVersion: number, mode: TutorialQuery): boolean {
   if (mode === 'off' || mode === 'help') return false;
   if (mode === '1' || mode === 'force') return true;
-  return !seenTutorial;
+  return seenTutorialVersion < TUTORIAL_CONTENT_VERSION;
 }
 
 /**

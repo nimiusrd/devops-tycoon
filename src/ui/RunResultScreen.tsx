@@ -6,6 +6,7 @@
 import { getBoss } from '../data/bosses';
 import { getRelic } from '../data/relics';
 import { diagnosisTheme } from '../render/diagnosisTheme';
+import { loseNextActionView } from '../render/loseNextActionView';
 import { quarterFailureTheme } from '../render/quarterFailureTheme';
 import { FAILURE_ENCYCLOPEDIA_DEFS, diagnosisView, isFailureDiagnosis } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
@@ -82,6 +83,7 @@ export function RunResultScreen({
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
   const loseLabel = failureTheme?.label ?? lose?.label ?? '敗北';
   const loseDescription = failureTheme?.description ?? lose?.desc;
+  const nextAction = !won && state.loseReason ? loseNextActionView(state.loseReason) : null;
   const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
   const t = state.totals;
   const isDaily = state.runKind === 'daily';
@@ -106,6 +108,17 @@ export function RunResultScreen({
           {won ? '🏆 ' + (win?.label ?? '勝利') : `${failureTheme?.icon ?? '💥'} ${loseLabel}`}
         </div>
         <p className="run-end-desc">{won ? win?.description : loseDescription}</p>
+        {nextAction && (
+          <div className="result-lose-next-action" data-testid="lose-next-action-section">
+            <p className="result-section-label">次の一手</p>
+            <p className="result-analysis-tip" data-testid="lose-next-action">
+              {nextAction.nextAction}
+            </p>
+            <p className="result-analysis-tip" data-testid="lose-insight">
+              {nextAction.insight}
+            </p>
+          </div>
+        )}
         {won && collectedTitle && (
           <div
             className="result-title result-win-title"

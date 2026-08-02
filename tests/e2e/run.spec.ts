@@ -263,6 +263,10 @@ for (const [reason, label] of [
     expect(state.loseReason).toBe(reason);
     await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });
     await expect(page.getByTestId('run-end-status')).toContainText(label);
+    await expect(page.getByTestId('lose-next-action')).toBeVisible();
+    await expect(page.getByTestId('lose-insight')).toBeVisible();
+    await expect(page.getByTestId('lose-next-action')).not.toHaveText('');
+    await expect(page.getByTestId('lose-insight')).not.toHaveText('');
   });
 }
 

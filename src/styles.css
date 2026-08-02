@@ -1508,9 +1508,13 @@ body {
 .result-title,
 .result-burn-cause,
 .result-intervention-analysis,
-.result-baseline-comparison {
+.result-baseline-comparison,
+.result-lose-next-action {
   margin-bottom: 1rem;
   text-align: left;
+}
+.result-lose-next-action .result-analysis-tip + .result-analysis-tip {
+  margin-top: 0.35rem;
 }
 .result-burn-cause,
 .result-intervention-analysis,

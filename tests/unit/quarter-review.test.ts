@@ -776,8 +776,9 @@ describe('四半期レビュー（Phase 8）', () => {
       expect(ratio).toBeGreaterThan(0.1);
       expect(ratio).toBeLessThan(10);
     }
-    // すべて自明超過（旧バグ: 実績が目標の数十倍）にならないこと。
-    expect(ratios.every((r) => r > 10)).toBe(false);
+    // 超過閾値（actual >= target * 1.15）未満の seed が少なくとも1件あること。
+    // 旧バグでは全 seed が数十倍の自明超過になり、ここが落ちる。
+    expect(ratios.some((r) => r <= 1.15)).toBe(true);
   });
 
   it('RI-72-C1: AI 過信診断は rework 比率 0.3 ちょうどでは成立しない', () => {

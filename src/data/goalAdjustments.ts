@@ -46,7 +46,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     description: 'Delivery 目標を下げ、次期へ継続しやすくする。顧客の期待値を調整する。',
     trustDelta: { customers: -15 },
     budgetDelta: 0,
-    goalEffects: { deliveryMul: 0.75, deliveryAdd: -20 },
+    // RI-68: deliveryAdd は四半期累計スケール（旧 -20 × 6スプリント × スループット比5）。
+    goalEffects: { deliveryMul: 0.75, deliveryAdd: -600 },
   },
   {
     id: 'extend_deadline',
@@ -71,7 +72,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     description: '採用・AIツール・外部支援を得る。次期の予算制約が厳しくなる。',
     trustDelta: { management: -18 },
     budgetDelta: 20,
-    goalEffects: { deliveryAdd: 10 },
+    // RI-68: deliveryAdd は四半期累計スケール（旧 10 × 6スプリント × スループット比5）。
+    goalEffects: { deliveryAdd: 300 },
     nextBudgetCapDelta: -15,
   },
   {

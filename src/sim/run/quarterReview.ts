@@ -12,6 +12,7 @@ import { deriveTeamCapacities } from '../orgscale/teamState';
 import type { TeamRunState } from '../orgscale/types';
 import { TECH_DEBT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import type { OrgState } from '../types';
+import { SPRINTS_PER_QUARTER } from './constants';
 import type {
   DifficultyId,
   GoalAdjustmentId,
@@ -32,6 +33,24 @@ export const REORG_RESET_TECH_DEBT = -8;
 /** pauseAiDebuff 適用時の出荷速度倍率（次四半期）。 */
 export const PAUSE_AI_DEBUFF_MUL = 0.85;
 
+/**
+ * ボス突破床（1スプリント）に対する通常スループット比（RI-68）。
+ * playtest 実測の 1スプリント出荷（約250〜400）と minSprintDelivered（約40〜90）から設定。
+ */
+export const QUARTER_DELIVERY_THROUGHPUT_MUL = 5;
+
+/** 1スプリント床 → 四半期累計目標への換算係数。 */
+export const QUARTER_DELIVERY_SCALE = SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL;
+
+/** 新規四半期目標の Delivery 下限（旧 30 を四半期累計スケールへ）。 */
+export const MIN_QUARTER_DELIVERY_TARGET = 30 * QUARTER_DELIVERY_SCALE;
+
+/** priorGoal 減衰時の Delivery 下限（旧 20）。 */
+export const MIN_PRIOR_QUARTER_DELIVERY_TARGET = 20 * QUARTER_DELIVERY_SCALE;
+
+/** 目標修正適用後の Delivery 下限（旧 15）。 */
+export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = 15 * QUARTER_DELIVERY_SCALE;
+
 /** 難易度に応じた初期信頼。 */
 export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
   const base =
@@ -48,9 +67,13 @@ export function buildQuarterGoal(
 ): QuarterGoal {
   const c = boss.clear;
   const diff = getDifficulty(difficulty);
-  const baseDelivery = Math.round((c.minSprintDelivered ?? 60) * bossTargetMul * diff.taskCountMul);
+  // RI-68: deliveryTarget は四半期累計出荷ポイント。minSprintDelivered は1スプリント床なので拡げる。
+  const sprintFloor = (c.minSprintDelivered ?? 60) * bossTargetMul * diff.taskCountMul;
   const goal: QuarterGoal = {
-    deliveryTarget: Math.max(30, baseDelivery),
+    deliveryTarget: Math.max(
+      MIN_QUARTER_DELIVERY_TARGET,
+      Math.round(sprintFloor * QUARTER_DELIVERY_SCALE),
+    ),
     qualityTarget: c.minQuality ?? 45,
     techDebtLimit: c.maxTechDebt ?? 55,
     moraleTarget: c.minMorale ?? 40,
@@ -59,7 +82,10 @@ export function buildQuarterGoal(
   if (c.minAiPct !== undefined) goal.aiAdoptionTarget = c.minAiPct;
 
   if (priorGoal) {
-    goal.deliveryTarget = Math.max(20, Math.round(priorGoal.deliveryTarget * 0.95));
+    goal.deliveryTarget = Math.max(
+      MIN_PRIOR_QUARTER_DELIVERY_TARGET,
+      Math.round(priorGoal.deliveryTarget * 0.95),
+    );
     goal.qualityTarget = priorGoal.qualityTarget;
     goal.techDebtLimit = priorGoal.techDebtLimit;
     goal.moraleTarget = priorGoal.moraleTarget;
@@ -86,7 +112,7 @@ export function measureGoalProgress(input: MeasureInput): GoalKpiProgress[] {
   const kpis: GoalKpiProgress[] = [
     {
       id: 'delivery',
-      label: 'Delivery',
+      label: 'Delivery（四半期累計）',
       target: goal.deliveryTarget,
       actual: totals.delivered,
       status: compareHigher(totals.delivered, goal.deliveryTarget),
@@ -357,10 +383,16 @@ export function applyGoalAdjustment(
   const goal: QuarterGoal = { ...input.goal };
   const ge = def.goalEffects;
   if (ge.deliveryMul !== undefined) {
-    goal.deliveryTarget = Math.max(15, Math.round(goal.deliveryTarget * ge.deliveryMul));
+    goal.deliveryTarget = Math.max(
+      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+      Math.round(goal.deliveryTarget * ge.deliveryMul),
+    );
   }
   if (ge.deliveryAdd !== undefined) {
-    goal.deliveryTarget = Math.max(15, goal.deliveryTarget + ge.deliveryAdd);
+    goal.deliveryTarget = Math.max(
+      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+      goal.deliveryTarget + ge.deliveryAdd,
+    );
   }
   if (ge.qualityAdd !== undefined) goal.qualityTarget += ge.qualityAdd;
   if (ge.moraleAdd !== undefined) goal.moraleTarget += ge.moraleAdd;

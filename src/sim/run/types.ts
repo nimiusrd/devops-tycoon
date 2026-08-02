@@ -107,6 +107,7 @@ export type StakeholderId = 'management' | 'customers' | 'team';
 
 /** 四半期目標（Delivery / Quality / Tech Debt / Morale / Incident）。 */
 export interface QuarterGoal {
+  /** 四半期累計の出荷ポイント目標（RI-68。1スプリント床ではない）。 */
   deliveryTarget: number;
   qualityTarget: number;
   techDebtLimit: number;

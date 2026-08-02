@@ -4,8 +4,13 @@ import type { BossDef } from '../../src/data/bosses';
 import { getDifficulty } from '../../src/data/difficulties';
 import { getGoalAdjustment } from '../../src/data/goalAdjustments';
 import { createOrgState } from '../../src/sim/org';
+import { RunEngine } from '../../src/sim/run/engine';
 import {
   OUTCOME_LABELS,
+  QUARTER_DELIVERY_SCALE,
+  MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+  MIN_PRIOR_QUARTER_DELIVERY_TARGET,
+  MIN_QUARTER_DELIVERY_TARGET,
   applyGoalAdjustment,
   applyGoalOrgEffectsToTeam,
   availableAdjustments,
@@ -20,6 +25,7 @@ import {
   loseReasonForOutcome,
   measureGoalProgress,
 } from '../../src/sim/run/quarterReview';
+import { playUntil } from './helpers/runFlow';
 import type { OrgState } from '../../src/sim/types';
 import type { TeamRunState } from '../../src/sim/orgscale/types';
 import type {
@@ -198,7 +204,7 @@ describe('四半期レビュー（Phase 8）', () => {
 
   it('各目標修正アクションの効果と代償が決定論で反映される', () => {
     const input = {
-      goal: { ...goal },
+      goal: { ...goal, deliveryTarget: 60 * QUARTER_DELIVERY_SCALE },
       trust: buildInitialTrust('normal'),
       org: org({ deliveryScore: 100, morale: 50, techDebt: 40 }),
       budget: 30,
@@ -354,7 +360,12 @@ describe('四半期レビュー（Phase 8）', () => {
 
   it('RI-17: 目標修正の代償と補正が安全なレンジに収まる', () => {
     const input = {
-      goal: { ...goal, aiAdoptionTarget: 40 },
+      goal: {
+        ...goal,
+        // RI-68: 四半期累計スケールの代表値（旧 sprint 床 60 × SCALE）。
+        deliveryTarget: 60 * QUARTER_DELIVERY_SCALE,
+        aiAdoptionTarget: 40,
+      },
       trust: buildInitialTrust('normal'),
       org: org({ deliveryScore: 100, morale: 50, seniorHp: 50, techDebt: 40, quality: 60 }),
       budget: 40,
@@ -378,8 +389,10 @@ describe('四半期レビュー（Phase 8）', () => {
       ).toBeGreaterThanOrEqual(40);
       expect(result.budget, id).toBeGreaterThanOrEqual(30);
       expect(result.budget, id).toBeLessThanOrEqual(60);
-      expect(result.goal.deliveryTarget, id).toBeGreaterThanOrEqual(25);
-      expect(result.goal.deliveryTarget, id).toBeLessThanOrEqual(75);
+      expect(result.goal.deliveryTarget, id).toBeGreaterThanOrEqual(
+        MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+      );
+      expect(result.goal.deliveryTarget, id).toBeLessThanOrEqual(2500);
       expect(result.goal.qualityTarget, id).toBeGreaterThanOrEqual(45);
       expect(result.goal.qualityTarget, id).toBeLessThanOrEqual(55);
       expect(result.goal.moraleTarget, id).toBeGreaterThanOrEqual(35);
@@ -407,8 +420,10 @@ describe('四半期レビュー（Phase 8）', () => {
       for (const difficulty of difficulties) {
         const diff = getDifficulty(difficulty);
         const g = buildQuarterGoal(boss, difficulty, diff.bossTargetMul);
-        expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeGreaterThanOrEqual(30);
-        expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeLessThanOrEqual(160);
+        expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeGreaterThanOrEqual(
+          MIN_QUARTER_DELIVERY_TARGET,
+        );
+        expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeLessThanOrEqual(4500);
         expect(g.qualityTarget, `${boss.id}:${difficulty}:quality`).toBeGreaterThanOrEqual(40);
         expect(g.qualityTarget, `${boss.id}:${difficulty}:quality`).toBeLessThanOrEqual(55);
         expect(g.techDebtLimit, `${boss.id}:${difficulty}:techDebt`).toBeGreaterThanOrEqual(40);
@@ -426,7 +441,9 @@ describe('四半期レビュー（Phase 8）', () => {
         expect(next.deliveryTarget, `${boss.id}:${difficulty}:prior`).toBeLessThan(
           g.deliveryTarget,
         );
-        expect(next.deliveryTarget, `${boss.id}:${difficulty}:prior`).toBeGreaterThanOrEqual(20);
+        expect(next.deliveryTarget, `${boss.id}:${difficulty}:prior`).toBeGreaterThanOrEqual(
+          MIN_PRIOR_QUARTER_DELIVERY_TARGET,
+        );
         expect(next.qualityTarget).toBe(g.qualityTarget);
         expect(next.techDebtLimit).toBe(g.techDebtLimit);
         expect(next.moraleTarget).toBe(g.moraleTarget);
@@ -622,7 +639,10 @@ describe('四半期レビュー（Phase 8）', () => {
     const diff = getDifficulty('normal');
     const base = buildQuarterGoal(emptyBoss, 'normal', 1);
     expect(base).toEqual({
-      deliveryTarget: Math.max(30, Math.round(60 * diff.taskCountMul)),
+      deliveryTarget: Math.max(
+        MIN_QUARTER_DELIVERY_TARGET,
+        Math.round(60 * diff.taskCountMul * QUARTER_DELIVERY_SCALE),
+      ),
       qualityTarget: 45,
       techDebtLimit: 55,
       moraleTarget: 40,
@@ -632,18 +652,56 @@ describe('四半期レビュー（Phase 8）', () => {
 
     const priorWithoutAi = buildQuarterGoal(emptyBoss, 'normal', 1, {
       ...base,
-      deliveryTarget: 21,
+      deliveryTarget: MIN_PRIOR_QUARTER_DELIVERY_TARGET + 1,
     });
-    expect(priorWithoutAi.deliveryTarget).toBe(20);
+    expect(priorWithoutAi.deliveryTarget).toBe(MIN_PRIOR_QUARTER_DELIVERY_TARGET);
     expect(priorWithoutAi.aiAdoptionTarget).toBeUndefined();
 
     const priorWithAi = buildQuarterGoal(emptyBoss, 'normal', 1, {
       ...base,
-      deliveryTarget: 80,
+      deliveryTarget: 80 * QUARTER_DELIVERY_SCALE,
       aiAdoptionTarget: 35,
     });
-    expect(priorWithAi.deliveryTarget).toBe(76);
+    expect(priorWithAi.deliveryTarget).toBe(Math.round(80 * QUARTER_DELIVERY_SCALE * 0.95));
     expect(priorWithAi.aiAdoptionTarget).toBe(35);
+  });
+
+  it('RI-68: Delivery 目標と実績は四半期累計の同単位で比較される', () => {
+    const boss = getBoss('big-release')!;
+    const quarterGoal = buildQuarterGoal(boss, 'normal', 1);
+    expect(quarterGoal.deliveryTarget).toBeGreaterThanOrEqual(MIN_QUARTER_DELIVERY_TARGET);
+
+    const progress = measureGoalProgress({
+      goal: quarterGoal,
+      org: org({ quality: 50, morale: 50, techDebt: 30 }),
+      totals: totals({ delivered: 1693, incidents: 2, completed: 40, aiAssisted: 10 }),
+    });
+    const delivery = progress.find((p) => p.id === 'delivery');
+    expect(delivery?.label).toBe('Delivery（四半期累計）');
+    expect(delivery?.target).toBe(quarterGoal.deliveryTarget);
+    expect(delivery?.actual).toBe(1693);
+    // sprint 床スケール（〜90）との比較ではない: 目標と実績は同桁。
+    expect(delivery!.target / delivery!.actual).toBeGreaterThan(0.4);
+    expect(delivery!.target / delivery!.actual).toBeLessThan(2.5);
+  });
+
+  it('RI-68: 代表 seed の四半期レビューで Delivery 比が極端にならない', () => {
+    const ratios: number[] = [];
+    for (let i = 0; i < 8; i += 1) {
+      const engine = new RunEngine({ seed: `ri68-delivery-${i}`, difficulty: 'normal' });
+      const state = playUntil(engine, 'quarterReview', { skilled: true });
+      if (state.phase !== 'quarterReview' || !state.quarterReview) continue;
+      const delivery = state.quarterReview.progress.find((p) => p.id === 'delivery');
+      if (!delivery || delivery.target <= 0) continue;
+      ratios.push(delivery.actual / delivery.target);
+    }
+    expect(ratios.length).toBeGreaterThanOrEqual(4);
+    for (const ratio of ratios) {
+      expect(ratio).toBeGreaterThan(0.1);
+      expect(ratio).toBeLessThan(10);
+    }
+    // すべて自明超過（旧バグ: 実績が目標の数十倍）にならないこと。
+    expect(ratios.every((r) => r > 10)).toBe(false);
   });
 
   it('RI-72-C1: AI 過信診断は rework 比率 0.3 ちょうどでは成立しない', () => {

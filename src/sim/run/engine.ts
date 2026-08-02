@@ -1951,7 +1951,11 @@ export class RunEngine {
     this.rankingKind = cloned.rankingKind;
     this.orgAdjust = structuredClone(cloned.extras.orgAdjust);
     if (!this.orgAdjust.byTeam) this.orgAdjust.byTeam = {};
-    this.baseConfig = { ...cloned.extras.baseConfig };
+    const legacyBaseConfig = cloned.extras.baseConfig;
+    const hadAiDependencyPerTask = legacyBaseConfig.aiDependencyPerTask !== undefined;
+    this.baseConfig = { ...legacyBaseConfig };
+    // RI-74: 旧セーブ（係数未保存）も現行難易度定義の上昇量へ補完する。
+    this.applyDifficultyAiDependencyPerTask();
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
     this.pauseAiDebuffQuarter = cloned.extras.pauseAiDebuffQuarter;
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
@@ -2036,7 +2040,41 @@ export class RunEngine {
       this.deck,
       this.teams.map((t) => t.id),
     );
+    // RI-74: 未プレイの旧 Nightmare セーブ（初期依存 55）を現行初期値へ寄せる。
+    if (!hadAiDependencyPerTask) {
+      this.migrateLegacyNightmareAiDependencyBase();
+    }
     this.whatIfCache = null;
+  }
+
+  /** 難易度定義の `aiDependencyPerTask` を baseConfig へ同期する（RI-74）。 */
+  private applyDifficultyAiDependencyPerTask(): void {
+    const perTask = getDifficulty(this.difficulty).aiDependencyPerTask;
+    if (perTask !== undefined) {
+      this.baseConfig.aiDependencyPerTask = perTask;
+      return;
+    }
+    if ('aiDependencyPerTask' in this.baseConfig) {
+      delete this.baseConfig.aiDependencyPerTask;
+    }
+  }
+
+  /**
+   * 旧 Nightmare 初期依存度（55）の未プレイセーブを現行初期値へ移行する（RI-74）。
+   * 進行中ランの依存度は触らない。
+   */
+  private migrateLegacyNightmareAiDependencyBase(): void {
+    if (this.difficulty !== 'nightmare') return;
+    if (this.sprintsPlayed !== 0) return;
+    if (this.phase !== 'setup') return;
+    const nextBase = getDifficulty('nightmare').org.aiDependencyBase;
+    const legacyBase = 55;
+    if (this.org.aiDependency !== legacyBase) return;
+    this.org.aiDependency = nextBase;
+    this.teams = this.teams.map((team) =>
+      team.aiDependency === legacyBase ? { ...team, aiDependency: nextBase } : team,
+    );
+    this.syncActiveTeamFromOrg();
   }
 
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */

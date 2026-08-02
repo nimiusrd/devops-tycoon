@@ -137,6 +137,28 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     });
     expect(metrics.find((m) => m.id === 'aiDependency')?.detail).toMatch(/Literacy 25/);
     expect(metrics.find((m) => m.id === 'aiDependency')?.help).toMatch(/95/);
+
+    // 俯瞰では全社集約依存度とチーム Literacy を混ぜない
+    const orgScale: OrgScaleState = {
+      seed: 'status',
+      departments: [],
+      shipping: 180,
+      teamCount: 4,
+      deptCount: 1,
+      engineers: 16,
+      aiDependency: 60,
+      techDebt: 12,
+      morale: 91,
+      onFire: 0,
+      diagnosis: state.diagnosis,
+      infra: { ci: 0, docs: 0, aiGuideline: 0 },
+      budget: 20,
+      score: 160,
+      healthRank: 'A',
+    };
+    const scaled = deriveHudMetrics(state.org, state.sprint.tasks, orgScale);
+    expect(scaled.find((m) => m.id === 'aiDependency')?.warningChip).toBeUndefined();
+    expect(scaled.find((m) => m.id === 'aiDependency')?.detail).not.toMatch(/Literacy/);
   });
 
   it('シニア体力と士気は低下すると危険域として表示する', () => {

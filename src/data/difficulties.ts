@@ -97,8 +97,11 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       seniorHp: 80,
     },
     taskCountMul: 1.2,
-    /** RI-74: S1 全AI割当でも cap 未満になる上昇量（他難易度は既定 2.2 のまま）。 */
-    aiDependencyPerTask: 1.5,
+    /**
+     * RI-74: S1 全AI割当でも cap 未満になる上昇量（他難易度は既定 2.2 のまま）。
+     * `frontier-dependency` の開始時 +5 ドリフト込みでも 42+5+34×1.35 < 95。
+     */
+    aiDependencyPerTask: 1.35,
     globalEffects: { reworkRateAdd: 0.1, incidentRateMul: 1.25, reviewEfficiencyMul: 0.85 },
     startBudget: 25,
     bossTargetMul: 1.3,

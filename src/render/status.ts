@@ -93,6 +93,14 @@ export function seniorHpHudCopy(
   return { detail: '25%未満は危険' };
 }
 
+export interface AiDependencyHudCopyOptions {
+  /**
+   * 全社集約など、依存度と Literacy のスコープが一致しない表示。
+   * true のときは敗北条件チップを出さず、過信域の一般警告だけにする（RI-74）。
+   */
+  suppressLoseWarning?: boolean;
+}
+
 /**
  * AI依存度の詳細・警告チップ文言（RI-74）。
  * 低リテラシーかつ依存度が注意帯以上なら、数スプリント前から予兆を出す。
@@ -100,10 +108,16 @@ export function seniorHpHudCopy(
 export function aiDependencyHudCopy(
   aiDependencyPct: number,
   aiLiteracy: number,
+  options: AiDependencyHudCopyOptions = {},
 ): {
   detail: string;
   warningChip?: string;
 } {
+  if (options.suppressLoseWarning) {
+    if (aiDependencyPct >= 75) return { detail: '75%以上は過信域' };
+    if (aiDependencyPct >= 50) return { detail: '50%以上は注意帯' };
+    return { detail: '75%以上は過信域' };
+  }
   const literacy = Math.round(aiLiteracy);
   const detail = `Literacy ${literacy}・95%かつLiteracy≤30で敗北`;
   if (literacy <= 30 && aiDependencyPct >= 50) {
@@ -338,7 +352,10 @@ export function deriveHudMetrics(
       direction: 'lower-better',
       directionLabel: LOWER_BETTER,
       tone: lowerBetterTone(s.aiDependencyPct, 50, 75),
-      ...aiDependencyHudCopy(s.aiDependencyPct, org.aiLiteracy),
+      ...aiDependencyHudCopy(s.aiDependencyPct, org.aiLiteracy, {
+        // 俯瞰中は依存度が全社集約、Literacy は選択中チームのままなので混ぜない。
+        suppressLoseWarning: !!orgScale,
+      }),
       help: AI_DEPENDENCY_HELP,
       barPct: s.aiDependencyPct,
       fillClass: 'fill-ai',

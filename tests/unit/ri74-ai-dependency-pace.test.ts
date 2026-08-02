@@ -67,13 +67,16 @@ describe('RI-74 AI依存ペースと回避経路', () => {
 
   it('S1 全タスクを AI 割当しても Nightmare は依存敗北に届かない', () => {
     const baseTasks = 28;
-    expect(DIFFICULTY_DEFS.nightmare.aiDependencyPerTask).toBe(1.5);
+    const frontierDrift = 5;
+    expect(DIFFICULTY_DEFS.nightmare.aiDependencyPerTask).toBe(1.35);
     expect(DIFFICULTY_DEFS.normal.aiDependencyPerTask).toBeUndefined();
     for (const id of ['easy', 'normal', 'hard', 'nightmare'] as const) {
       const def = getDifficulty(id);
       const taskCount = Math.round(baseTasks * def.taskCountMul);
       const org = orgFromDifficulty(id);
-      org.aiDependency = depAfterAllAiTasks(id, org.aiDependency, taskCount);
+      // Nightmare は試練ドリフト込みの最悪値でも cap 未満であること
+      const start = id === 'nightmare' ? org.aiDependency + frontierDrift : org.aiDependency;
+      org.aiDependency = depAfterAllAiTasks(id, start, taskCount);
       const reason = evaluateLose(org, EMPTY_TOTALS, 100);
       if (id === 'nightmare') {
         expect(org.aiDependency).toBeLessThan(AI_DEPENDENCY_CAP);
@@ -106,6 +109,45 @@ describe('RI-74 AI依存ペースと回避経路', () => {
         expect(s.org.aiDependency).toBeLessThan(AI_DEPENDENCY_CAP);
       }
     }
+  });
+
+  it('frontier-dependency 試練付き Nightmare でも無介入 S1 は aiDependency で敗北しない', () => {
+    const seeds = ['ri74-trial-14', 'ri74-trial-1', 'ri74-trial-2'];
+    for (const seed of seeds) {
+      const e = new RunEngine({ seed, difficulty: 'nightmare' });
+      e.startRun('nightmare', ['frontier-dependency'], seed);
+      e.beginSetupSprint();
+      let guard = 0;
+      while (e.snapshot().phase === 'sprint' && guard < 5000) {
+        guard += 1;
+        e.step(1_000_000);
+      }
+      const s = e.snapshot();
+      expect(guard).toBeLessThan(5000);
+      if (s.status === 'lost') {
+        expect(s.loseReason).not.toBe('aiDependency');
+      } else {
+        expect(s.org.aiDependency).toBeLessThan(AI_DEPENDENCY_CAP);
+      }
+    }
+  });
+
+  it('旧 Nightmare セーブは復元時に係数と未プレイ初期依存度を補完する', () => {
+    const e = new RunEngine({ seed: 'ri74-hydrate', difficulty: 'nightmare' });
+    e.startRun();
+    const persist = e.exportPersistState();
+    expect(persist).not.toBeNull();
+    // 旧セーブ相当: 係数欠落 + 旧初期依存 55
+    delete persist!.extras.baseConfig.aiDependencyPerTask;
+    persist!.org.aiDependency = 55;
+    persist!.extras.teams = persist!.extras.teams?.map((t) => ({ ...t, aiDependency: 55 }));
+
+    const restored = new RunEngine({ seed: 'ri74-hydrate-2', difficulty: 'normal' });
+    restored.hydratePersistState(persist!);
+    const s = restored.snapshot();
+    expect(s.difficulty).toBe('nightmare');
+    expect(s.org.aiDependency).toBe(42);
+    expect(restored.exportPersistState()?.extras.baseConfig.aiDependencyPerTask).toBe(1.35);
   });
 
   it('pairReview 1回で Nightmare 初期リテラシーが unsafe cap を超える', () => {
@@ -152,6 +194,11 @@ describe('RI-74 AI依存ペースと回避経路', () => {
 
     const safe = aiDependencyHudCopy(40, 45);
     expect(safe.warningChip).toBeUndefined();
+
+    // 俯瞰（スコープ不一致）では敗北条件チップを出さない
+    const aggregated = aiDependencyHudCopy(60, 25, { suppressLoseWarning: true });
+    expect(aggregated.warningChip).toBeUndefined();
+    expect(aggregated.detail).not.toMatch(/Literacy/);
 
     const lose = loseNextActionView('aiDependency');
     expect(lose.nextAction).toMatch(/95/);

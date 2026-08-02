@@ -295,6 +295,26 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
     expect(frame!.extras.allowedRelics).toEqual(['postmortem']);
     expect(frame!.extras.preferredCardIds).toEqual(['docs', 'auto-test']);
 
+    // snapshot 側も非空 ObjectLiteral を exact 断言（frame だけの検査だと Survived になる）。
+    const snapBeforeMutate = engine.snapshot();
+    expect(snapBeforeMutate).toMatchObject({
+      phase: 'won',
+      status: 'won',
+      winType: 'noDamage',
+      loseReason: undefined,
+      bossRelicReward: 'small-pr',
+      whatIfStatus: 'idle',
+    });
+    expect(snapBeforeMutate.trials).toEqual(['half-budget']);
+    expect(snapBeforeMutate.relics).toEqual(['postmortem']);
+    expect(snapBeforeMutate.goalAdjustmentsTaken).toEqual(['cut_scope', 'quality_pivot']);
+    expect(snapBeforeMutate.reviewHistory).toEqual(['met', 'exceeded']);
+    expect(snapBeforeMutate.pendingSprintModifiers).toEqual({ focusMaxAdd: -2, reviewLoadAdd: 3 });
+    expect(snapBeforeMutate.quarterTotals).toEqual({ ...totals, delivered: 90 });
+    expect(snapBeforeMutate.stakeholderTrust).toEqual(trust(72));
+    expect(snapBeforeMutate.quarterGoal).toEqual(goal());
+    expect(snapBeforeMutate.evolution).toEqual({ points: 2, unlocked: { 'dev-1': true } });
+
     // clone 独立性: source を壊しても frame は不変。
     i.relics.push('mutated');
     i.reviewHistory.push('shutdown');
@@ -306,22 +326,6 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
     expect(frame!.goalAdjustmentsTaken).toEqual(['cut_scope', 'quality_pivot']);
     expect(frame!.pendingSprintModifiers).toEqual({ focusMaxAdd: -2, reviewLoadAdd: 3 });
     expect(frame!.evolution).toEqual({ points: 2, unlocked: { 'dev-1': true } });
-
-    const snap = engine.snapshot();
-    expect(snap).toMatchObject({
-      phase: 'won',
-      status: 'won',
-      winType: 'noDamage',
-      loseReason: undefined,
-      bossRelicReward: 'small-pr',
-      whatIfStatus: 'idle',
-    });
-    expect(snap.trials).toEqual(['half-budget']);
-    expect(snap.relics).toEqual(['postmortem', 'mutated']);
-    expect(snap.goalAdjustmentsTaken).toEqual(['cut_scope', 'quality_pivot', 'reorg_teams']);
-    expect(snap.reviewHistory).toEqual(['met', 'exceeded', 'shutdown']);
-    expect(snap.quarterGoal).toEqual(goal());
-    expect(snap.evolution).toEqual({ points: 2, unlocked: { 'dev-1': true, 'dev-2': true } });
   });
 
   it('lost の exportReplayFrame / snapshot は loseReason と空でない履歴配列を exact 保持する', () => {
@@ -369,7 +373,26 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
     expect(snap.reviewHistory).toEqual(['missed_crisis', 'shutdown']);
     expect(snap.goalAdjustmentsTaken).toEqual(['request_budget']);
     expect(snap.relics).toEqual(['postmortem']);
+    expect(snap.pendingSprintModifiers).toEqual({ reworkRateAdd: 0.1 });
+    expect(snap.quarterTotals).toEqual({ ...zeroTotals(), delivered: 8, incidents: 2 });
+    expect(snap.stakeholderTrust).toEqual(trust(12));
     expect(snap.zoom).toEqual({ level: 'team', deptId: 'product', teamId: HOME_TEAM_ID });
+  });
+
+  it('解放プール未指定の RunEngine は extras の allowed* を空配列で保存する', () => {
+    const engine = new RunEngine({ seed: 'ri-91-a6-empty-pools', difficulty: 'normal' });
+    engine.startRun('normal', [], 'ri-91-a6-empty-pools');
+    const persist = engine.exportPersistState();
+    expect(persist?.extras.allowedCards).toEqual([]);
+    expect(persist?.extras.allowedRelics).toEqual([]);
+
+    const i = asInternals(engine);
+    i.phase = 'lost';
+    i.status = 'lost';
+    i.loseReason = 'budgetExhausted';
+    const replay = engine.exportReplayFrame();
+    expect(replay?.extras.allowedCards).toEqual([]);
+    expect(replay?.extras.allowedRelics).toEqual([]);
   });
 
   it('hydrateReplayFrame は won 終端の winType / relics / extras を副作用付きで復元する', () => {
@@ -397,11 +420,26 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
 
     const restored = createEngine('ri-91-a6-hydrate-won-dst');
     restored.setPreferredCards(['auto-test']);
+    won.org = makeOrg({ quality: 64, morale: 55, deliveryScore: 40 });
+    won.roster = {
+      ...won.roster,
+      members: won.roster.members.map((m, idx) =>
+        idx === 0 ? { ...m, name: 'Hydrate Member' } : m,
+      ),
+    };
+    won.quarterReview = makeReview('exceeded');
+
     restored.hydrateReplayFrame(won);
 
-    // source 改変が復元後へ漏れないこと。
+    // structuredClone 欠落時に共有されうる直接代入フィールドも改変する。
+    const originalOrgQuality = won.org.quality;
+    const originalMemberName = won.roster.members[0]!.name;
+    const originalReviewOutcome = won.quarterReview!.outcome;
     won.relics.push('leak');
     won.extras.preferredCardIds = ['leaked'];
+    won.org.quality = 1;
+    won.roster.members[0]!.name = 'Leaked Member';
+    won.quarterReview!.outcome = 'shutdown';
 
     const frame = restored.exportReplayFrame();
     expect(frame).toMatchObject({
@@ -422,6 +460,9 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
     expect(frame!.quarterGoal).toEqual(goal());
     expect(frame!.stakeholderTrust).toEqual(trust(88));
     expect(frame!.zoom).toEqual({ level: 'dept', deptId: 'platform', teamId: null });
+    expect(frame!.org.quality).toBe(originalOrgQuality);
+    expect(frame!.roster.members[0]?.name).toBe(originalMemberName);
+    expect(frame!.quarterReview?.outcome).toBe(originalReviewOutcome);
     expect(frame!.extras.preferredCardIds).toEqual(['copilot']);
     expect(frame!.extras.allowedCards).toEqual(['docs']);
     expect(frame!.extras.allowedRelics).toEqual(['postmortem']);
@@ -487,7 +528,14 @@ describe('RI-91-A6 applyPersistFrame hydrate branches', () => {
 
   it('legacy + extraTeams で home が teams[0] 以外でも home を template にする', () => {
     const legacy = setupPersist('ri-91-a6-home-not-first');
-    legacy.deck = [{ defId: 'auto-test', level: 1, baselineAppliedLevel: 1 }];
+    // 部分マップあり: migrate は既存非 home を埋めない。newIds だけ継承されることを刺す。
+    legacy.deck = [
+      {
+        defId: 'auto-test',
+        level: 1,
+        baselineAppliedByTeam: { [HOME_TEAM_ID]: 1 },
+      },
+    ];
     legacy.extras.orgAdjust.company.extraTeams = 1;
     // syncActiveTeamFromOrg 後の home 指標を distinctive にする。
     legacy.org = makeOrg({ quality: 88, morale: 66, deliveryScore: 12 });
@@ -512,14 +560,13 @@ describe('RI-91-A6 applyPersistFrame hydrate branches', () => {
     expect(appendSpy.newIds).toHaveLength(1);
     const addedId = appendSpy.newIds[0]!;
     expect(addedId).not.toBe(HOME_TEAM_ID);
-    // migrate で既存全チームへ配った後、newIds だけ追加継承する。
-    expect(snap.deck[0]?.baselineAppliedByTeam?.[HOME_TEAM_ID]).toBe(1);
-    expect(snap.deck[0]?.baselineAppliedByTeam?.[addedId]).toBe(1);
-    // filter→this.teams mutation だと newIds が TeamRunState[] になりキーが壊れる。
+    expect(snap.deck[0]?.baselineAppliedByTeam).toEqual({
+      [HOME_TEAM_ID]: 1,
+      [addedId]: 1,
+    });
+    // newIds に既存非 home が混ざるとキーが増える。
+    expect(snap.deck[0]?.baselineAppliedByTeam).not.toHaveProperty(snap.teams[0]!.id);
     expect(snap.deck[0]?.baselineAppliedByTeam).not.toHaveProperty('[object Object]');
-    expect(Object.keys(snap.deck[0]?.baselineAppliedByTeam ?? {}).sort()).toEqual(
-      snap.teams.map((t) => t.id).sort(),
-    );
   });
 
   it('legacy で active が無いとき org を orgFromTeam で上書きしない', () => {
@@ -542,11 +589,12 @@ describe('RI-91-A6 applyPersistFrame hydrate branches', () => {
     expect(snap.totals.delivered).toBe(44);
   });
 
-  it('legacy + active ありでは org を active チームから再構築する', () => {
+  it('legacy + active ありでは org を調整後の active チームから再構築する', () => {
     const legacy = setupPersist('ri-91-a6-active-org');
-    // sync 後の home を distinctive にし、末尾の orgFromTeam で戻ることを確認する。
+    // sync 後に applyEffectToTeam で morale だけ差し、orgFromTeam で戻ることを観測する。
     legacy.org = makeOrg({ quality: 73, morale: 61, deliveryScore: 19, techDebt: 28 });
     legacy.extras.orgAdjust.company.extraTeams = 0;
+    legacy.extras.orgAdjust.company.moraleDelta = -15;
     delete (legacy.extras as { teams?: unknown }).teams;
 
     const restored = createEngine('ri-91-a6-active-org-dst');
@@ -554,11 +602,14 @@ describe('RI-91-A6 applyPersistFrame hydrate branches', () => {
 
     const snap = restored.snapshot();
     const home = snap.teams.find((t) => t.id === HOME_TEAM_ID)!;
-    expect(home.quality).toBe(73);
+    expect(home.morale).toBe(46);
+    expect(snap.org.morale).toBe(46);
+    expect(snap.org.morale).not.toBe(61);
     expect(snap.org.quality).toBe(73);
-    expect(snap.org.morale).toBe(61);
     expect(snap.org.techDebt).toBe(28);
     expect(snap.org.deliveryScore).toBe(19);
+    // 指標差分は焼き込み後に strip される。
+    expect(restored.exportPersistState()?.extras.orgAdjust.company.moraleDelta).toBe(0);
   });
 });
 
@@ -609,5 +660,25 @@ describe('RI-91-A6 getEvolutionNodeEffects via unlockEvolution', () => {
     expect(snap.org.testCoverage).not.toBe(beforeCoverage);
     // BlockStatement {} だと points/unlocked も org も変わらない。
     expect(snap.phase).toBe('evolution');
+  });
+
+  it('ポイント不足・既解放では org と evolution を変えず効果を適用しない', () => {
+    const short = createEngine('ri-91-a6-evo-short');
+    const shortI = asInternals(short);
+    shortI.phase = 'evolution';
+    shortI.evolution = { points: 0, unlocked: {} };
+    const shortOrg = structuredClone(shortI.org);
+    short.unlockEvolution('quality-1');
+    expect(short.snapshot().evolution).toEqual({ points: 0, unlocked: {} });
+    expect(short.snapshot().org).toEqual(shortOrg);
+
+    const unlocked = createEngine('ri-91-a6-evo-unlocked');
+    const unlockedI = asInternals(unlocked);
+    unlockedI.phase = 'evolution';
+    unlockedI.evolution = { points: 5, unlocked: { 'quality-1': true } };
+    const unlockedOrg = structuredClone(unlockedI.org);
+    unlocked.unlockEvolution('quality-1');
+    expect(unlocked.snapshot().evolution).toEqual({ points: 5, unlocked: { 'quality-1': true } });
+    expect(unlocked.snapshot().org).toEqual(unlockedOrg);
   });
 });

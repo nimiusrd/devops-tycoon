@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loseNextActionView } from '../../src/render/loseNextActionView';
+import { classifyShutdownCause, loseNextActionView } from '../../src/render/loseNextActionView';
 import type { LoseReason } from '../../src/sim/run/types';
 
 const ALL_LOSE_REASONS: readonly LoseReason[] = [
@@ -39,13 +39,14 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     const view = loseNextActionView('seniorBurnout');
     expect(view.nextAction).toContain('緊急対応');
     expect(view.nextAction).toContain('休息');
-    expect(view.nextAction).not.toContain('割り込みレビュー');
+    expect(view.nextAction).not.toMatch(/割り込みレビューで負荷を分散/);
   });
 
-  it('budgetExhausted は全社レバーではなく追加予算申請を勧める', () => {
+  it('budgetExhausted は追加予算申請と支出抑制に限定する', () => {
     const view = loseNextActionView('budgetExhausted');
-    expect(view.nextAction).toMatch(/追加予算申請|AI導入一時停止/);
+    expect(view.nextAction).toContain('追加予算申請');
     expect(view.nextAction).not.toContain('全社レバー');
+    expect(view.nextAction).not.toContain('AI導入一時停止');
   });
 
   it('moraleCollapse はレリックではなく休息で士気を戻す', () => {
@@ -54,13 +55,52 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     expect(view.nextAction).not.toContain('レリック');
   });
 
-  it('四半期 outcome があるときは trustExhausted より outcome 固有の助言を返す', () => {
-    const missed = loseNextActionView('trustExhausted', { quarterOutcome: 'missed_crisis' });
-    expect(missed.nextAction).toMatch(/KPI|予算|信頼/);
-    expect(missed.insight).toContain('深刻な未達');
+  it('reviewFreeze の低HP経路では割り込みレビューを勧めない', () => {
+    const view = loseNextActionView('reviewFreeze', {
+      snapshot: { seniorHp: 40, reviewQueuePeak: 12 },
+    });
+    expect(view.nextAction).toContain('休息');
+    expect(view.nextAction).toMatch(/割り込みレビューでシニアHPを削らず|割り込みレビューに頼/);
+  });
 
-    const shutdown = loseNextActionView('trustExhausted', { quarterOutcome: 'shutdown' });
-    expect(shutdown.nextAction).toMatch(/信頼|予算|士気|シニアHP/);
-    expect(shutdown.insight).toContain('継続不能');
+  it('reviewFreeze のキュー経路では渋滞対策を示す', () => {
+    const view = loseNextActionView('reviewFreeze', {
+      snapshot: { seniorHp: 80, reviewQueuePeak: 50 },
+    });
+    expect(view.nextAction).toMatch(/AIスロットル|PR分割|レビュー応援/);
+  });
+
+  it('shutdown はトリガー別に助言を分ける', () => {
+    const trust = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'shutdown',
+      snapshot: { trust: { management: 8, customers: 40, team: 40 } },
+    });
+    expect(classifyShutdownCause({ trust: { management: 8, customers: 40, team: 40 } })).toBe(
+      'trust',
+    );
+    expect(trust.nextAction).toMatch(/信頼/);
+    expect(trust.nextAction).not.toContain('目標修正で継続資源');
+
+    const budgetMorale = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'shutdown',
+      snapshot: {
+        trust: { management: 50, customers: 50, team: 50 },
+        budget: 0,
+        morale: 10,
+      },
+    });
+    expect(budgetMorale.nextAction).toMatch(/追加予算申請|士気/);
+
+    const hpMissed = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'shutdown',
+      snapshot: {
+        trust: { management: 50, customers: 50, team: 50 },
+        budget: 20,
+        morale: 50,
+        seniorHp: 3,
+        missedKpiCount: 2,
+      },
+    });
+    expect(hpMissed.nextAction).toMatch(/シニアHP|未達/);
   });
 });

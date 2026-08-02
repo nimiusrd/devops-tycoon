@@ -87,6 +87,15 @@ export function RunResultScreen({
     !won && state.loseReason
       ? loseNextActionView(state.loseReason, {
           quarterOutcome: state.quarterReview?.outcome,
+          snapshot: {
+            trust: state.quarterReview?.trust,
+            budget: state.budget,
+            morale: state.org.morale,
+            seniorHp: state.org.seniorHp,
+            missedKpiCount: state.quarterReview?.progress.filter((p) => p.status === 'missed')
+              .length,
+            reviewQueuePeak: state.totals.reviewQueuePeak,
+          },
         })
       : null;
   const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;

@@ -5,9 +5,9 @@
  * 現実の開発現場への示唆を返す。描画・状態は知らない純関数。
  *
  * 四半期レビュー由来の敗北は `loseReason` が粗い（missed_crisis / shutdown が
- * ともに trustExhausted）ため、`quarterOutcome` があればそちらを優先する。
+ * ともに trustExhausted）ため、`quarterOutcome` と終了時スナップショットで助言を分ける。
  */
-import type { LoseReason, QuarterOutcome } from '../sim/run/types';
+import type { LoseReason, QuarterOutcome, StakeholderTrust } from '../sim/run/types';
 
 export interface LoseNextActionView {
   /** 次のランで変える具体的な一手。 */
@@ -16,9 +16,21 @@ export interface LoseNextActionView {
   insight: string;
 }
 
+/** 終了時点の観測値（経路別の助言に使う。任意）。 */
+export interface LoseNextActionSnapshot {
+  trust?: StakeholderTrust;
+  budget?: number;
+  morale?: number;
+  seniorHp?: number;
+  missedKpiCount?: number;
+  reviewQueuePeak?: number;
+}
+
 export interface LoseNextActionOptions {
   /** 四半期レビュー由来の継続不能 outcome（ある場合のみ）。 */
   quarterOutcome?: QuarterOutcome;
+  /** 終了時点の信頼・予算・組織などの観測値。 */
+  snapshot?: LoseNextActionSnapshot;
 }
 
 const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
@@ -39,7 +51,7 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
   reviewFreeze: {
     nextAction:
-      '割り込みレビューとAIスロットルで渋滞を崩し、レビュー応援やPR分割でピークを先に抑える。',
+      'AIスロットル・PR分割・レビュー応援で渋滞を抑え、割り込みレビューや炎上放置でシニアHPを削らず、休息でHPを戻して低HPからの凍結も避ける。',
     insight: '実装量だけ増やすと、ボトルネックは必ずレビュー側へ移る。',
   },
   incidentCascade: {
@@ -53,7 +65,7 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
   budgetExhausted: {
     nextAction:
-      'ショップのAIツール買い足しを抑え、目標修正の追加予算申請やAI導入一時停止で余力を作ってから投資する。',
+      'ショップのAIツール買い足しや採用・レバー支出を抑え、目標修正の追加予算申請で残高を増やしてから投資する。',
     insight: 'ツール費用を見ずに導入を広げると、成果の前に運用自体が止まる。',
   },
   bossFailed: {
@@ -73,32 +85,107 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
 };
 
-/** 四半期 outcome 固有の次の一手（loseReason の粗い写像を補う）。 */
-const QUARTER_OUTCOME_ACTIONS: Partial<Record<QuarterOutcome, LoseNextActionView>> = {
-  missed_crisis: {
+const MISSED_CRISIS_ACTION: LoseNextActionView = {
+  nextAction:
+    'KPI未達・予算下限・信頼低下のどれが危機かを見極め、スコープ削減・追加予算申請・期限延長など原因に合う目標修正で継続条件を守る。',
+  insight: '深刻な未達は信頼だけでなく、予算や複数KPIの崩れでも同じ終了になる。',
+};
+
+const REORG_REQUIRED_ACTION: LoseNextActionView = LOSE_NEXT_ACTIONS.reorgRequired;
+
+/** `evaluateQuarterOutcome` と同じ優先順で shutdown の主因を分類する。 */
+export type ShutdownCause = 'trust' | 'budgetMorale' | 'seniorHpMissed' | 'unknown';
+
+export function classifyShutdownCause(snapshot: LoseNextActionSnapshot = {}): ShutdownCause {
+  const minTrust =
+    snapshot.trust !== undefined
+      ? Math.min(snapshot.trust.management, snapshot.trust.customers, snapshot.trust.team)
+      : undefined;
+  if (minTrust !== undefined && minTrust <= 10) return 'trust';
+  if (
+    snapshot.budget !== undefined &&
+    snapshot.morale !== undefined &&
+    snapshot.budget <= 0 &&
+    snapshot.morale <= 15
+  ) {
+    return 'budgetMorale';
+  }
+  if (
+    snapshot.seniorHp !== undefined &&
+    snapshot.missedKpiCount !== undefined &&
+    snapshot.seniorHp <= 5 &&
+    snapshot.missedKpiCount >= 2
+  ) {
+    return 'seniorHpMissed';
+  }
+  return 'unknown';
+}
+
+const SHUTDOWN_ACTIONS: Record<ShutdownCause, LoseNextActionView> = {
+  trust: {
     nextAction:
-      'KPI未達・予算下限・信頼低下のどれが危機かを見極め、スコープ削減・追加予算申請・期限延長など原因に合う目標修正で継続条件を守る。',
-    insight: '深刻な未達は信頼だけでなく、予算や複数KPIの崩れでも同じ終了になる。',
+      '信頼を削る目標修正や経営向けイベントを避け、未達が出る前にKPIを達成して信頼の下限に近づかない。',
+    insight:
+      '信頼だけが底をついてもプロジェクトは止まり、その局面で信頼をさらに削る選択は逆効果になる。',
   },
-  shutdown: {
-    nextAction:
-      '信頼・予算・士気・シニアHPの下限を同時に監視し、休息と目標修正で継続資源を先に立て直してから負荷を上げる。',
-    insight: '継続不能は単一KPIではなく、信頼と現場資源が同時に底をついたときに決まる。',
+  budgetMorale: {
+    nextAction: '予算を使い切る前に追加予算申請で残高を確保し、休息で士気を戻してから投資する。',
+    insight: '予算ゼロと士気低下が重なると、現場を休ませる余力すら残らない。',
   },
-  reorg_required: {
+  seniorHpMissed: {
+    nextAction: '緊急対応と休息でシニアHPを守りつつ、未達KPIを減らして継続不能の条件を同時に外す。',
+    insight: 'シニアが枯れ、未達が重なると、現場も評価も立て直せなくなる。',
+  },
+  unknown: {
     nextAction:
-      '連続未達を避けるため、早い四半期で目標修正を選び、品質・士気・障害の下限を先に立て直す。',
-    insight: '同じ未達を繰り返すと、現場改善ではなく組織再編という外からの決着になる。',
+      '信頼・予算・士気・シニアHPのどの下限が先に危ないかを見極め、信頼を削る選択を避けつつ足りない資源だけを立て直す。',
+    insight: '継続不能の条件は複数あり、原因と違う手を打つと悪化することがある。',
   },
 };
+
+function quarterOutcomeAction(
+  outcome: QuarterOutcome,
+  snapshot: LoseNextActionSnapshot,
+): LoseNextActionView | undefined {
+  if (outcome === 'shutdown') return SHUTDOWN_ACTIONS[classifyShutdownCause(snapshot)];
+  if (outcome === 'missed_crisis') return MISSED_CRISIS_ACTION;
+  if (outcome === 'reorg_required') return REORG_REQUIRED_ACTION;
+  return undefined;
+}
+
+function reviewFreezeAction(snapshot: LoseNextActionSnapshot): LoseNextActionView {
+  const peak = snapshot.reviewQueuePeak;
+  const hp = snapshot.seniorHp;
+  const queuePath = peak !== undefined && peak >= 48;
+  const hpPath = hp !== undefined && hp <= 45;
+
+  if (hpPath && !queuePath) {
+    return {
+      nextAction:
+        '割り込みレビューでシニアHPを削らず、緊急対応と休息でHPを戻し、AIスロットルで流入を抑えて低HPからのレビュー凍結を避ける。',
+      insight: 'レビュー担当が枯れると、キューがまだでも出荷ライン自体が止まる。',
+    };
+  }
+  if (queuePath && !hpPath) {
+    return {
+      nextAction:
+        'AIスロットル・PR分割・レビュー応援で渋滞ピークを先に下げ、割り込みレビューに頼ってシニアHPを削らない。',
+      insight: '実装量だけ増やすと、ボトルネックは必ずレビュー側へ移る。',
+    };
+  }
+  return LOSE_NEXT_ACTIONS.reviewFreeze;
+}
 
 /** 敗因に対応する次の一手と現場示唆を返す。 */
 export function loseNextActionView(
   reason: LoseReason,
   options: LoseNextActionOptions = {},
 ): LoseNextActionView {
-  const fromOutcome = options.quarterOutcome
-    ? QUARTER_OUTCOME_ACTIONS[options.quarterOutcome]
-    : undefined;
-  return fromOutcome ?? LOSE_NEXT_ACTIONS[reason];
+  const snapshot = options.snapshot ?? {};
+  if (options.quarterOutcome) {
+    const fromOutcome = quarterOutcomeAction(options.quarterOutcome, snapshot);
+    if (fromOutcome) return fromOutcome;
+  }
+  if (reason === 'reviewFreeze') return reviewFreezeAction(snapshot);
+  return LOSE_NEXT_ACTIONS[reason];
 }

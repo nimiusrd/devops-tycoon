@@ -88,6 +88,9 @@ body {
 .app.app-sprint-layout .stat-seniorHp {
   padding-bottom: 30px;
 }
+.app.app-sprint-layout .stat-aiDependency {
+  padding-bottom: 30px;
+}
 .app.app-sprint-layout .runbar,
 .app.app-sprint-layout .subbar {
   flex-shrink: 0;
@@ -391,6 +394,9 @@ body {
   border: 2px solid #ffffff44;
 }
 .stat-seniorHp {
+  padding-bottom: 30px;
+}
+.stat-aiDependency {
   padding-bottom: 30px;
 }
 .burnout-chip.tone-watch {

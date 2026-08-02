@@ -1886,7 +1886,7 @@ export class RunEngine {
     if (!isRunSavePhase(state.phase) || state.status !== 'playing') {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
-    this.applyPersistFrame(state);
+    this.applyPersistFrame(state, { migrateLegacyAiDependency: true });
   }
 
   /** リプレイキーフレームから閲覧用に復元する（RI-61。won/lost 可）。 */
@@ -1894,10 +1894,14 @@ export class RunEngine {
     if (!isReplayFramePhase(frame.phase)) {
       throw new Error(`cannot hydrate replay frame in phase=${frame.phase}`);
     }
-    this.applyPersistFrame(frame);
+    // リプレイは記録値の read-only 表示。旧セーブ移行は再開用 hydrate に限定する。
+    this.applyPersistFrame(frame, { migrateLegacyAiDependency: false });
   }
 
-  private applyPersistFrame(state: RunReplayFrame): void {
+  private applyPersistFrame(
+    state: RunReplayFrame,
+    options: { migrateLegacyAiDependency: boolean },
+  ): void {
     const cloned = structuredClone(state);
     this.seed = cloned.seed;
     this.difficulty = cloned.difficulty;
@@ -2041,7 +2045,8 @@ export class RunEngine {
       this.teams.map((t) => t.id),
     );
     // RI-74: 未プレイの旧 Nightmare セーブ（初期依存 55）を現行初期値へ寄せる。
-    if (!hadAiDependencyPerTask) {
+    // リプレイキーフレームでは記録値を改変しない。
+    if (options.migrateLegacyAiDependency && !hadAiDependencyPerTask) {
       this.migrateLegacyNightmareAiDependencyBase();
     }
     this.whatIfCache = null;
@@ -2061,6 +2066,7 @@ export class RunEngine {
 
   /**
    * 旧 Nightmare 初期依存度（55）の未プレイセーブを現行初期値へ移行する（RI-74）。
+   * ライバルチームは旧ベース±揺らぎのため、差分を全チームへ適用する。
    * 進行中ランの依存度は触らない。
    */
   private migrateLegacyNightmareAiDependencyBase(): void {
@@ -2070,10 +2076,12 @@ export class RunEngine {
     const nextBase = getDifficulty('nightmare').org.aiDependencyBase;
     const legacyBase = 55;
     if (this.org.aiDependency !== legacyBase) return;
+    const delta = nextBase - legacyBase;
     this.org.aiDependency = nextBase;
-    this.teams = this.teams.map((team) =>
-      team.aiDependency === legacyBase ? { ...team, aiDependency: nextBase } : team,
-    );
+    this.teams = this.teams.map((team) => ({
+      ...team,
+      aiDependency: Math.max(0, Math.min(100, team.aiDependency + delta)),
+    }));
     this.syncActiveTeamFromOrg();
   }
 

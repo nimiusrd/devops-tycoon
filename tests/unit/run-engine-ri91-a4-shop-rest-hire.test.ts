@@ -326,10 +326,17 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
   });
 
   it('offerRelic は枠満杯または解放プール空なら relic なし', () => {
-    const fullSlots = createEngine('ri-91-a4-relic-full');
+    // 枠ちょうど満杯でも、未所持の解放レリックが残っていればスキップする（>= → > / if false を潰す）。
+    const fullSlots = createEngine('ri-91-a4-relic-full', {
+      allowedRelics: new Set(['postmortem']),
+    });
     const fullI = enterDecisionBeat(fullSlots, 'shop-offer');
     fullI.budget = 100;
-    fullI.relics = RELIC_DEFS.slice(0, 6).map((r) => r.id);
+    fullI.relics = RELIC_DEFS.filter((r) => r.id !== 'postmortem')
+      .slice(0, 6)
+      .map((r) => r.id);
+    expect(fullI.relics).toHaveLength(6);
+    expect(fullI.relics.includes('postmortem')).toBe(false);
     fullSlots.resolveBeat(0);
     expect(fullSlots.snapshot().shop?.relic).toBeUndefined();
 
@@ -342,6 +349,89 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
     emptyPool.resolveBeat(0);
     expect(emptyPool.snapshot().shop?.relic).toBeUndefined();
     expect(emptyPool.snapshot().shop?.recruit).toEqual({ cost: RECRUIT_COST, bought: false });
+  });
+
+  it('buyShopCard は defId 一致のみ購入し、phase 外の shop API は no-op', () => {
+    // defId === defId → true だと先頭の未購入カードを誤購入する。
+    const engine = createEngine('ri-91-a4-defid');
+    const i = asInternals(engine);
+    i.phase = 'shop';
+    i.budget = 100;
+    i.deck = [];
+    i.shop = {
+      cards: [
+        { defId: 'auto-test', cost: 18, bought: false },
+        { defId: 'docs', cost: 15, bought: false },
+      ],
+    };
+    engine.buyShopCard('docs');
+    expect(engine.snapshot()).toMatchObject({
+      budget: 85,
+      deck: [{ defId: 'docs', level: 1 }],
+      shop: {
+        cards: [
+          { defId: 'auto-test', cost: 18, bought: false },
+          { defId: 'docs', cost: 15, bought: true },
+        ],
+      },
+    });
+
+    // phase !== 'shop' を外す変異を潰す（shop 実体は残す）。
+    const offPhase = createEngine('ri-91-a4-off-phase');
+    const off = asInternals(offPhase);
+    off.phase = 'setup';
+    off.budget = 100;
+    off.deck = [];
+    off.relics = [];
+    off.shop = {
+      cards: [{ defId: 'docs', cost: 12, bought: false }],
+      relic: { id: 'postmortem', cost: 30, bought: false },
+      recruit: { cost: RECRUIT_COST, bought: false },
+    };
+    const rosterSize = off.roster.members.length;
+    offPhase.buyShopCard('docs');
+    offPhase.buyShopRelic();
+    offPhase.buyShopRecruit();
+    offPhase.leaveShop();
+    expect(offPhase.snapshot()).toMatchObject({
+      phase: 'setup',
+      budget: 100,
+      deck: [],
+      relics: [],
+      shop: {
+        cards: [{ defId: 'docs', cost: 12, bought: false }],
+        relic: { id: 'postmortem', cost: 30, bought: false },
+        recruit: { cost: RECRUIT_COST, bought: false },
+      },
+    });
+    expect(offPhase.snapshot().roster.members).toHaveLength(rosterSize);
+  });
+
+  it('shop=null でも buyShopRelic/Recruit は throw せず、空デッキ upgrade は採用しない', () => {
+    // OptionalChaining 除去変異は shop=null で TypeError になる。
+    const nullShop = createEngine('ri-91-a4-null-shop');
+    const nullI = asInternals(nullShop);
+    nullI.phase = 'shop';
+    nullI.budget = 100;
+    nullI.shop = null;
+    expect(() => nullShop.buyShopRelic()).not.toThrow();
+    expect(() => nullShop.buyShopRecruit()).not.toThrow();
+    expect(nullShop.snapshot().budget).toBe(100);
+
+    // option === 'recruit' → true だと空デッキ upgrade が tryRecruit してしまう。
+    const emptyUpgrade = createEngine('ri-91-a4-empty-upgrade');
+    const emptyI = asInternals(emptyUpgrade);
+    emptyI.phase = 'rest';
+    emptyI.deck = [];
+    emptyI.budget = 100;
+    const beforeSize = emptyI.roster.members.length;
+    emptyUpgrade.restChoose('upgrade');
+    expect(emptyUpgrade.snapshot()).toMatchObject({
+      phase: 'setup',
+      budget: 100,
+      deck: [],
+    });
+    expect(emptyUpgrade.snapshot().roster.members).toHaveLength(beforeSize);
   });
 
   it('rest / recruitChoose の採用コスト境界と NoCoverage（同一ロスター参照）を刺す', () => {

@@ -108,11 +108,28 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(await badStorage.load()).toBeNull();
   });
 
-  it('v1 セーブを v2 として受け入れ、不足 replayKeyframes は空配列に正規化する', () => {
-    const valid = makeRunSave('ri72-v1');
+  it('RI-68: v1/v2 セーブは Delivery スケール非互換のため破棄する', () => {
+    const valid = makeRunSave('ri68-old-schema');
+    expect(
+      parseRunSave({
+        ...valid,
+        schemaVersion: 1,
+        replayKeyframes: undefined,
+      }),
+    ).toBeNull();
+    expect(
+      parseRunSave({
+        ...valid,
+        schemaVersion: 2,
+      }),
+    ).toBeNull();
+  });
+
+  it('現行スキーマのセーブは不足 replayKeyframes を空配列に正規化する', () => {
+    const valid = makeRunSave('ri68-current-schema');
     const parsed = parseRunSave({
       ...valid,
-      schemaVersion: 1,
+      schemaVersion: RUN_SAVE_SCHEMA_VERSION,
       replayKeyframes: undefined,
     });
 
@@ -120,7 +137,7 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
       schemaVersion: RUN_SAVE_SCHEMA_VERSION,
       savedAt: 1234,
       summary: {
-        seed: 'ri72-v1',
+        seed: 'ri68-current-schema',
         runKind: 'daily',
         dailyDate: '2026-07-27',
         status: 'playing',

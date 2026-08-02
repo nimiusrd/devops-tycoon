@@ -666,6 +666,27 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(priorWithAi.aiAdoptionTarget).toBe(35);
   });
 
+  it('RI-68: cut_scope 後も Delivery 目標が四半期実績帯から大きく外れない', () => {
+    const boss = getBoss('exec-review')!;
+    const before = buildQuarterGoal(boss, 'normal', 1);
+    const cut = applyGoalAdjustment(
+      {
+        goal: before,
+        trust: buildInitialTrust('normal'),
+        org: org(),
+        budget: 30,
+        goalAdjustmentsTaken: [],
+        nextBudgetCap: null,
+      },
+      'cut_scope',
+    );
+    const next = buildQuarterGoal(boss, 'normal', 1, cut.goal);
+    // 代表的な四半期実績（約 2000〜2500）に対し 3 倍超の自明超過に戻らないこと。
+    const representativeActual = 2478;
+    expect(next.deliveryTarget).toBeGreaterThan(representativeActual / 2.5);
+    expect(cut.goal.deliveryTarget / before.deliveryTarget).toBeCloseTo(0.8, 5);
+  });
+
   it('RI-68: Delivery 目標と実績は四半期累計の同単位で比較される', () => {
     const boss = getBoss('big-release')!;
     const quarterGoal = buildQuarterGoal(boss, 'normal', 1);

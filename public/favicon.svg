@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="DevOps Tycoon">
+  <rect width="32" height="32" rx="4" fill="#0a0f20"/>
+  <path
+    fill="none"
+    stroke="#78ddff"
+    stroke-width="1.5"
+    d="M3 3h20l6 6v20H9l-6-6z"
+  />
+  <text
+    x="7"
+    y="22"
+    fill="#e9fbff"
+    font-family="ui-sans-serif, system-ui, sans-serif"
+    font-size="14"
+    font-weight="800"
+    letter-spacing="-0.5"
+  >D</text>
+  <text
+    x="17"
+    y="22"
+    fill="#ffc66d"
+    font-family="ui-sans-serif, system-ui, sans-serif"
+    font-size="14"
+    font-weight="800"
+    letter-spacing="-0.5"
+  >O</text>
+</svg>

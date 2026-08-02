@@ -4,6 +4,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RELIC_DEFS } from '../../src/data/relics';
+import type { CardInstance } from '../../src/sim/cards';
 import {
   RECRUIT_COST,
   REST_STAMINA_RECOVER,
@@ -11,11 +12,15 @@ import {
   type RosterState,
 } from '../../src/sim/member';
 import { REST_HEAL, REST_MORALE_HEAL, REST_REPAY, RunEngine } from '../../src/sim/run/engine';
-import type { BeatState, CardInstance, RunState, ShopOffer } from '../../src/sim/run/types';
+import type { BeatState, RunState, ShopOffer } from '../../src/sim/run/types';
 import type { OrgState } from '../../src/sim/types';
 
 const recruitMemberMock = vi.hoisted(() => ({
   returnSame: false,
+}));
+
+const upgradeCardAtMock = vi.hoisted(() => ({
+  calls: 0,
 }));
 
 vi.mock('../../src/sim/member', async (importOriginal) => {
@@ -29,6 +34,17 @@ vi.mock('../../src/sim/member', async (importOriginal) => {
     ) => {
       if (recruitMemberMock.returnSame) return roster;
       return actual.recruitMember(roster, arch, rng);
+    },
+  };
+});
+
+vi.mock('../../src/sim/cards', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/sim/cards')>();
+  return {
+    ...actual,
+    upgradeCardAt: (deck: CardInstance[], index: number) => {
+      upgradeCardAtMock.calls += 1;
+      return actual.upgradeCardAt(deck, index);
     },
   };
 });
@@ -92,6 +108,7 @@ function fillRoster(roster: RosterState): RosterState {
 
 afterEach(() => {
   recruitMemberMock.returnSame = false;
+  upgradeCardAtMock.calls = 0;
 });
 
 describe('RI-91-A4 RunEngine shop / rest / hire', () => {
@@ -313,6 +330,8 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
 
     const state = engine.snapshot();
     expect(state.phase).toBe('shop');
+    // shop RNG キー空文字 / sprintIndex ±1 は並びが変わる。
+    expect(state.shop!.cards.map((c) => c.defId)).toEqual(['auto-test', 'pr-size-limit', 'docs']);
     // auto-test 18*0.8=14.4→14 / docs 15*0.8=12 / pr-size-limit 8*0.8=6.4→6 / relic 30*0.8=24
     expect(Object.fromEntries(state.shop!.cards.map((c) => [c.defId, c.cost]))).toEqual({
       'auto-test': 14,
@@ -407,7 +426,7 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
     expect(offPhase.snapshot().roster.members).toHaveLength(rosterSize);
   });
 
-  it('shop=null でも buyShopRelic/Recruit は throw せず、空デッキ upgrade は採用しない', () => {
+  it('shop=null でも buyShopRelic/Recruit は throw せず、空デッキ upgrade は強化も採用もしない', () => {
     // OptionalChaining 除去変異は shop=null で TypeError になる。
     const nullShop = createEngine('ri-91-a4-null-shop');
     const nullI = asInternals(nullShop);
@@ -418,6 +437,7 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
     expect(() => nullShop.buyShopRecruit()).not.toThrow();
     expect(nullShop.snapshot().budget).toBe(100);
 
+    // deck.length > 0 を外すと空デッキでも upgradeCardAt が呼ばれる。
     // option === 'recruit' → true だと空デッキ upgrade が tryRecruit してしまう。
     const emptyUpgrade = createEngine('ri-91-a4-empty-upgrade');
     const emptyI = asInternals(emptyUpgrade);
@@ -425,13 +445,72 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
     emptyI.deck = [];
     emptyI.budget = 100;
     const beforeSize = emptyI.roster.members.length;
+    const upgradeCallsBefore = upgradeCardAtMock.calls;
     emptyUpgrade.restChoose('upgrade');
+    expect(upgradeCardAtMock.calls).toBe(upgradeCallsBefore);
     expect(emptyUpgrade.snapshot()).toMatchObject({
       phase: 'setup',
       budget: 100,
       deck: [],
     });
     expect(emptyUpgrade.snapshot().roster.members).toHaveLength(beforeSize);
+  });
+
+  it('採用 RNG キーと offerRelic 抽選の決定論を固定する', () => {
+    // rng キー空文字 / sprintIndex ±1 変異は採用アーキタイプが変わる。
+    const rest = createEngine('ri-91-a4-rng-key');
+    const restI = asInternals(rest);
+    restI.phase = 'rest';
+    restI.budget = RECRUIT_COST + 25;
+    const restBefore = new Set(restI.roster.members.map((m) => m.id));
+    rest.restChoose('recruit');
+    const restHired = rest.snapshot().roster.members.find((m) => !restBefore.has(m.id));
+    expect(restHired).toMatchObject({
+      id: 'm3',
+      name: 'カエデ',
+      rank: 'middle',
+      traits: ['megaPrMaker'],
+    });
+
+    const shop = createEngine('ri-91-a4-shop-rng');
+    const shopI = asInternals(shop);
+    shopI.phase = 'shop';
+    shopI.budget = 100;
+    shopI.shop = { cards: [], recruit: { cost: RECRUIT_COST, bought: false } };
+    const shopBefore = new Set(shopI.roster.members.map((m) => m.id));
+    shop.buyShopRecruit();
+    const shopHired = shop.snapshot().roster.members.find((m) => !shopBefore.has(m.id));
+    expect(shopHired).toMatchObject({
+      id: 'm3',
+      name: 'アオイ',
+      rank: 'middle',
+      traits: ['megaPrMaker'],
+    });
+
+    const phase = createEngine('ri-91-a4-phase-rng');
+    const phaseI = asInternals(phase);
+    phaseI.phase = 'recruit';
+    phaseI.budget = RECRUIT_COST + 25;
+    const phaseBefore = new Set(phaseI.roster.members.map((m) => m.id));
+    phase.recruitChoose('hire');
+    const phaseHired = phase.snapshot().roster.members.find((m) => !phaseBefore.has(m.id));
+    expect(phaseHired).toMatchObject({
+      id: 'm3',
+      name: 'サキ',
+      rank: 'junior',
+      traits: ['docMaster'],
+    });
+
+    // rng()*pool.length → / だと常に先頭（postmortem）になる。
+    const multi = createEngine('ri-91-a4-pick2', {
+      allowedRelics: new Set(['postmortem', 'doc-driven', 'small-pr', 'strong-ci']),
+    });
+    const multiI = enterDecisionBeat(multi, 'shop-offer');
+    multiI.budget = 100;
+    multiI.relics = [];
+    multi.resolveBeat(0);
+    expect(multi.snapshot().shop?.relic?.id).toBe('small-pr');
+    expect(multi.snapshot().shop?.relic?.id).not.toBe('postmortem');
   });
 
   it('rest / recruitChoose の採用コスト境界と NoCoverage（同一ロスター参照）を刺す', () => {

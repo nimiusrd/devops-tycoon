@@ -28,7 +28,7 @@ const SEEN_META: MetaState = {
   dailyRuns: {},
   soundMuted: false,
   seenTutorial: true,
-  seenTutorialVersion: 2,
+  seenTutorialVersion: 3,
 };
 
 test('タイトルから遊び方ヘルプを開ける', async ({ page }) => {

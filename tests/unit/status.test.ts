@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEngine } from '../../src/sim/engine';
 import {
+  aiDependencyHudCopy,
   deriveHudMetrics,
   deriveStatus,
   deriveHudStatusParts,
@@ -123,6 +124,19 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       direction: 'lower-better',
       tone: 'danger',
     });
+  });
+
+  it('低リテラシーかつ依存度注意帯では AI依存の予兆チップを出す（RI-74）', () => {
+    expect(aiDependencyHudCopy(55, 25).warningChip).toMatch(/依存危険/);
+    expect(aiDependencyHudCopy(40, 45).warningChip).toBeUndefined();
+
+    const state = withOrg({ aiDependency: 60, aiLiteracy: 25 });
+    const metrics = deriveHudMetrics(state.org, state.sprint.tasks);
+    expect(metrics.find((m) => m.id === 'aiDependency')).toMatchObject({
+      warningChip: '依存危険・ペアか抑制',
+    });
+    expect(metrics.find((m) => m.id === 'aiDependency')?.detail).toMatch(/Literacy 25/);
+    expect(metrics.find((m) => m.id === 'aiDependency')?.help).toMatch(/95/);
   });
 
   it('シニア体力と士気は低下すると危険域として表示する', () => {

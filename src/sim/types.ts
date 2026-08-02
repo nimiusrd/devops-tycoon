@@ -320,6 +320,11 @@ export interface SprintConfig {
   maxTicks: number;
   /** マネジメント集中力の上限（毎スプリント満タンへ回復。第6.2）。 */
   focusMax: number;
+  /**
+   * AI 割当タスク 1 件あたりの依存度上昇（未指定時は `AI_DEP_PER_TASK`）。
+   * 難易度プリセットから RunEngine が注入する（RI-74）。
+   */
+  aiDependencyPerTask?: number;
 }
 
 /** スプリント進行中に積み上がる集計値（リザルトの素）。 */

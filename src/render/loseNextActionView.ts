@@ -64,7 +64,7 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
   aiDependency: {
     nextAction:
-      'ペアレビューでAIリテラシーを上げるか、全社AIガイドラインや部門／チームのAIスロットル（レバー）で依存度を下げる。',
+      'AIリテラシーが30以下のまま依存度が95に達すると敗北する。ペアレビューでリテラシーを上げて条件を外すか、AI利用ガイドライン（カード）や全社AIガイドライン・部門／チームのAIスロットル（レバー）で依存度を下げる。',
     insight: 'AIに任せきりだと、仕様を説明・検証できる人がいなくなり判断が止まる。',
   },
   budgetExhausted: {

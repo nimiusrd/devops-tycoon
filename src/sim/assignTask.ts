@@ -150,7 +150,8 @@ export function applyAssignTaskEffect(
   const wantAi = assignee === 'ai' && org.aiEnabled;
   if (wantAi && !task.aiAssisted) {
     // intake() と同様、AI 割当への切替で依存度を上げる。
-    org.aiDependency = clamp(org.aiDependency + AI_DEP_PER_TASK, 0, 100);
+    const gain = sprint.config.aiDependencyPerTask ?? AI_DEP_PER_TASK;
+    org.aiDependency = clamp(org.aiDependency + gain, 0, 100);
   }
   task.aiAssisted = wantAi;
 

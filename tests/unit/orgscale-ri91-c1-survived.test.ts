@@ -239,7 +239,7 @@ describe('RI-91-C1 orgscale aggregate/levers survived mutants', () => {
       const res = applyLever(seededAdjust, 100, 'aiGuideline');
       expect(res.changed).toBe(true);
       expect(res.budget).toBe(75);
-      expect(res.adjust.company.aiDependencyDelta).toBe(-10);
+      expect(res.adjust.company.aiDependencyDelta).toBe(-16);
       expect(res.adjust.company.infraBoost).toBe(6);
       // byDept: {} 置換を殺す
       expect(res.adjust.byDept).toEqual(seededAdjust.byDept);

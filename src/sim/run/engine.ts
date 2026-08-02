@@ -418,6 +418,9 @@ export class RunEngine {
     this.baseConfig = {
       ...base,
       taskCount: Math.max(6, Math.round(base.taskCount * diff.taskCountMul)),
+      ...(diff.aiDependencyPerTask !== undefined
+        ? { aiDependencyPerTask: diff.aiDependencyPerTask }
+        : {}),
     };
     this.org = buildRunOrg(this.difficulty);
     this.deck = [];

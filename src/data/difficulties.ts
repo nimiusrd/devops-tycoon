@@ -22,6 +22,11 @@ export interface DifficultyDef {
   startBudget: number;
   /** ボス突破目標の倍率（高難度ほど厳しい）。 */
   bossTargetMul: number;
+  /**
+   * AI 割当タスク 1 件あたりの依存度上昇（未指定時は `AI_DEP_PER_TASK`）。
+   * Nightmare は S1 即死を避けるためグローバル既定より低くする（RI-74）。
+   */
+  aiDependencyPerTask?: number;
 }
 
 export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
@@ -83,7 +88,7 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
     label: 'Nightmare: すべてが暗黙知',
     description: 'ドキュメントもテストもない。AI がもっともらしい嘘をつく。経営は倍速を期待。',
     org: {
-      aiDependencyBase: 55,
+      aiDependencyBase: 42,
       aiLiteracy: 25,
       testCoverage: 20,
       documentation: 15,
@@ -92,6 +97,8 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       seniorHp: 80,
     },
     taskCountMul: 1.2,
+    /** RI-74: S1 全AI割当でも cap 未満になる上昇量（他難易度は既定 2.2 のまま）。 */
+    aiDependencyPerTask: 1.5,
     globalEffects: { reworkRateAdd: 0.1, incidentRateMul: 1.25, reviewEfficiencyMul: 0.85 },
     startBudget: 25,
     bossTargetMul: 1.3,

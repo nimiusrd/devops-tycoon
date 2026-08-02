@@ -33,7 +33,8 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
   it('aiDependency はペアレビューまたは依存度を下げるレバーを示す', () => {
     const view = loseNextActionView('aiDependency');
     expect(view.nextAction).toMatch(/ペアレビュー/);
-    expect(view.nextAction).toMatch(/AIガイドライン|レバー/);
+    expect(view.nextAction).toMatch(/95/);
+    expect(view.nextAction).toMatch(/AIガイドライン|レバー|ガイドライン/);
     expect(view.nextAction).not.toMatch(/AIガイドライン／AIスロットル/);
     expect(view.insight).toMatch(/AI|検証|判断/);
   });

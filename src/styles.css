@@ -374,6 +374,31 @@ body {
   right: 9px;
   bottom: 7px;
 }
+/* RI-67: 炎上リスクチップと別枠で燃え尽きを示す */
+.burnout-chip {
+  position: absolute;
+  top: auto;
+  right: 9px;
+  bottom: 7px;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #fff;
+  border: 2px solid #ffffff44;
+}
+.stat-seniorHp {
+  padding-bottom: 30px;
+}
+.burnout-chip.tone-watch {
+  background: #d99a2b;
+  border-color: #ffd98a;
+}
+.burnout-chip.tone-danger {
+  background: #ff5f57;
+  border-color: #ffb0ac;
+  animation: riskpulse 1.1s ease-in-out infinite;
+}
 @keyframes riskpulse {
   0%,
   100% {
@@ -4232,6 +4257,7 @@ button.card:active {
   gap: 8px;
 }
 body[data-tutorial-step='action-bar'] [data-testid='action-bar'],
+body[data-tutorial-step='senior-hp'] [data-testid='hud-seniorHp'],
 body[data-tutorial-step='jam-meter'] [data-testid='jam-meter'],
 body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   outline: 2px solid var(--sun);

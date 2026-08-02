@@ -58,6 +58,26 @@ export interface StatusMetricView {
   barPct?: number;
   fillClass?: string;
   risk?: RiskLevel;
+  /** 炎上リスクと混同しない燃え尽き向けの短い警告（RI-67）。 */
+  warningChip?: string;
+}
+
+/** シニア体力 HUD の help（RI-67。敗北画面の次の一手と整合）。 */
+export const SENIOR_HP_HELP =
+  'メンバー個別のスタミナとは別の抽象値です。炎上の自動鎮火は大きく削るので、その前に緊急対応で消すのが最大の守りです。アンドンやAIスロットルで流入を抑え、休息で戻します。';
+
+/** シニア体力の詳細・警告チップ文言（RI-67）。 */
+export function seniorHpHudCopy(seniorHpPct: number): {
+  detail: string;
+  warningChip?: string;
+} {
+  if (seniorHpPct < 25) {
+    return { detail: '燃え尽き寸前・緊急対応で鎮火', warningChip: '燃え尽き危険' };
+  }
+  if (seniorHpPct < 50) {
+    return { detail: '低下中・炎上は緊急対応で', warningChip: '体力注意' };
+  }
+  return { detail: '25%未満は危険' };
 }
 
 export type HudMetricKey =
@@ -264,8 +284,8 @@ export function deriveHudMetrics(
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
       tone: higherBetterTone(s.seniorHpPct, 50, 25),
-      detail: '25%未満は危険',
-      help: 'レビュー・火消しを支える余力です。休憩や負荷軽減で回復します。',
+      ...seniorHpHudCopy(s.seniorHpPct),
+      help: SENIOR_HP_HELP,
       barPct: s.seniorHpPct,
       fillClass: 'fill-hp',
     },

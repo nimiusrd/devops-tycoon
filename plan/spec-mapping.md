@@ -29,7 +29,7 @@
 | [11](../SPEC.md#11-組織進化ツリー) | ラン内ビルド | `src/data/evolution.ts`, `src/sim/run/evolution.ts` | ✅ |
 | [12](../SPEC.md#12-キャラクター育成) | 個体、成長、編成、スタミナ | `src/sim/member/`, `FormationScreen.tsx`, `tests/unit/member.test.ts` | ✅ |
 | [13](../SPEC.md#13-組織タイプ診断) | 診断と演出 | `src/sim/diagnosis.ts`, `src/render/diagnosisTheme.ts` | ✅ |
-| [14〜16](../SPEC.md#14-勝利条件) | 勝利、継続不能、難易度・試練 | `src/sim/outcome.ts`, `src/data/difficulties.ts`, `quarterReview.ts` | 🟡 判定は実装済み。Easy 序盤のシニア燃え尽き即死とオンボーディング欠落はRI-67 |
+| [14〜16](../SPEC.md#14-勝利条件) | 勝利、継続不能、難易度・試練 | `src/sim/outcome.ts`, `src/data/difficulties.ts`, `quarterReview.ts` | ✅ 判定は実装済み。Easy 序盤の燃え尽き導線は RI-67 でチュートリアル／HUD を補強 |
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ |
 | [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
@@ -44,7 +44,6 @@
 | 課題 | 影響 | 追跡先 |
 | --- | --- | --- |
 | ローカル拡張の一部が未着手 | 第23章 | [RI-34](./remaining-issues.md#ri-34-ローカル完結の将来拡張) |
-| Easy 序盤のシニア燃え尽き即死とオンボーディング欠落 | 第14〜16／第19〜20の導入体験 | [RI-67](./remaining-issues.md#ri-67-オンボーディングとシニア燃え尽きの断絶) |
 | デスクトップでスプリント上部操作バーが盤面と重なる | 第4のUI | [RI-69](./remaining-issues.md#ri-69-スプリント上部操作バーと盤面の重なり) |
 | 狭幅で盤面・介入バーへスクロールが必要 | 第4のUI操作性 | [RI-70](./remaining-issues.md#ri-70-モバイルのスプリント操作性) |
 | 難易度カーブと、常に正解／常に不正解な手がある | 第16／第19.1 F-1・F-7 | [RI-73](./remaining-issues.md#ri-73-難易度カーブと常に正解常に不正解な手がある構造) |

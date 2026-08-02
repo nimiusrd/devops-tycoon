@@ -133,12 +133,35 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       direction: 'higher-better',
       tone: 'danger',
       barPct: 20,
+      detail: '燃え尽き寸前・緊急対応で鎮火',
+      warningChip: '燃え尽き危険',
     });
+    expect(metrics.find((m) => m.id === 'seniorHp')?.help).toContain('緊急対応');
+    expect(metrics.find((m) => m.id === 'seniorHp')?.help).toContain('抽象値');
     expect(metrics.find((m) => m.id === 'morale')).toMatchObject({
       direction: 'higher-better',
       tone: 'danger',
       risk: 'HIGH',
     });
+  });
+
+  it('RI-67: シニア体力の注意域では燃え尽き向け警告を出す', () => {
+    const emptyTasks = withOrg({}).sprint.tasks;
+    const watch = deriveHudMetrics(withOrg({ seniorHp: 40 }).org, emptyTasks);
+    expect(watch.find((m) => m.id === 'seniorHp')).toMatchObject({
+      tone: 'watch',
+      detail: '低下中・炎上は緊急対応で',
+      warningChip: '体力注意',
+    });
+
+    const good = deriveHudMetrics(withOrg({ seniorHp: 80 }).org, emptyTasks).find(
+      (m) => m.id === 'seniorHp',
+    );
+    expect(good).toMatchObject({
+      tone: 'good',
+      detail: '25%未満は危険',
+    });
+    expect(good?.warningChip).toBeUndefined();
   });
 });
 

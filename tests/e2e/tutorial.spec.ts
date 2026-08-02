@@ -37,6 +37,8 @@ test('タイトルから遊び方ヘルプを開ける', async ({ page }) => {
   await page.getByTestId('open-help').click();
   await expect(page.getByTestId('how-to-play')).toBeVisible();
   await expect(page.getByTestId('how-to-play')).toContainText('介入バー');
+  await expect(page.getByTestId('how-to-play')).toContainText('シニア体力と燃え尽き');
+  await expect(page.getByTestId('how-to-play')).toContainText('緊急対応');
 
   await page.getByTestId('how-to-play-close').click();
   await expect(page.getByTestId('how-to-play')).not.toBeVisible();
@@ -61,9 +63,13 @@ test('?tutorial=1 で初回ガイドを進め、表示済みフラグが永続�
   await expect(page.getByTestId('tutorial-guide')).toBeVisible();
   await expect(page.getByTestId('tutorial-step-action-bar')).toBeVisible();
   await expect(page.getByTestId('action-bar')).toBeVisible();
+  await expect(page.getByTestId('hud-seniorHp')).toBeVisible();
   await expect(page.getByTestId('jam-meter')).toBeVisible();
   await expect(page.getByTestId('combo-gauge')).toBeVisible();
 
+  await page.getByTestId('tutorial-next').click();
+  await expect(page.getByTestId('tutorial-step-senior-hp')).toBeVisible();
+  await expect(page.getByTestId('tutorial-guide')).toContainText('緊急対応');
   await page.getByTestId('tutorial-next').click();
   await expect(page.getByTestId('tutorial-step-jam-meter')).toBeVisible();
   await page.getByTestId('tutorial-next').click();

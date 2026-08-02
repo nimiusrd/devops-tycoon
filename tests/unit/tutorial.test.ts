@@ -27,12 +27,24 @@ describe('チュートリアルクエリ（RI-60）', () => {
     expect(shouldShowTutorialGuide(false, 'help')).toBe(false);
   });
 
-  it('段階ガイドは介入バー→渋滞→コンボの順', () => {
+  it('段階ガイドは介入バー→シニア体力→渋滞→コンボの順（RI-67）', () => {
     expect(TUTORIAL_STEPS.map((step) => step.id)).toEqual([
       'action-bar',
+      'senior-hp',
       'jam-meter',
       'combo-gauge',
     ]);
+    expect(TUTORIAL_STEPS.find((step) => step.id === 'senior-hp')).toMatchObject({
+      targetTestId: 'hud-seniorHp',
+    });
+    const actionBar = TUTORIAL_STEPS.find((step) => step.id === 'action-bar');
+    expect(actionBar?.body).toContain('緊急対応');
+    expect(actionBar?.body).toContain('アンドン');
+    expect(actionBar?.body).toContain('AIスロットル');
+    const seniorHp = TUTORIAL_STEPS.find((step) => step.id === 'senior-hp');
+    expect(seniorHp?.body).toContain('抽象値');
+    expect(seniorHp?.body).toContain('緊急対応');
+    expect(seniorHp?.body).toContain('自動鎮火');
   });
 
   it('ensureTutorialQuery は未指定時だけ off を付与し明示値は尊重する', () => {

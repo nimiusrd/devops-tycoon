@@ -107,6 +107,11 @@ function HudStat({ metric, feedback }: { metric: StatusMetricView; feedback?: Ac
         </div>
       )}
       <FeedbackPop feedback={feedback} />
+      {metric.warningChip && (
+        <div className={`burnout-chip tone-${metric.tone}`} data-testid="senior-burnout-warning">
+          {metric.warningChip}
+        </div>
+      )}
       {metric.risk && (
         <div className={`risk-chip risk-${metric.risk}`} data-testid="risk">
           炎上 {metric.risk}

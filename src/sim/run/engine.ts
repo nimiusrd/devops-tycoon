@@ -108,6 +108,7 @@ import {
 import { canUnlock, unlockNode } from './evolution';
 import { canTransition, RunPhaseError } from './phases';
 import { foldRunEffects } from './effects';
+import { SPRINTS_PER_QUARTER } from './constants';
 import {
   applyGoalAdjustment,
   applyGoalOrgEffectsToTeam,
@@ -118,6 +119,7 @@ import {
   canChooseAdjustment,
   isTerminalFailure,
   loseReasonForOutcome,
+  MIN_QUARTER_DELIVERY_TARGET,
   PAUSE_AI_DEBUFF_MUL,
 } from './quarterReview';
 import {
@@ -162,8 +164,7 @@ import {
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
-/** 1 四半期あたりのスプリント数（最終インデックスがボス）。 */
-export const SPRINTS_PER_QUARTER = 6;
+export { SPRINTS_PER_QUARTER };
 /** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */
 export const DECISION_BEAT_CHANCE = 0.55;
 /** 休息（heal）でのシニア体力回復量（UI プレビューと共有）。 */
@@ -432,7 +433,7 @@ export class RunEngine {
     this.quarterGoal = boss
       ? buildQuarterGoal(boss, this.difficulty, diff.bossTargetMul)
       : {
-          deliveryTarget: 60,
+          deliveryTarget: MIN_QUARTER_DELIVERY_TARGET,
           qualityTarget: 45,
           techDebtLimit: 55,
           moraleTarget: 40,

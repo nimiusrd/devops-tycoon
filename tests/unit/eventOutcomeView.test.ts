@@ -252,9 +252,20 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
     const def = getGoalAdjustment('cut_scope')!;
     expect(formatGoalAdjustmentTags(def)).toEqual([
       { label: '顧客信頼 -15', tone: 'negative' },
-      { label: 'Delivery目標 75%', tone: 'positive' },
-      { label: 'Delivery目標 -20', tone: 'positive' },
+      { label: 'Delivery目標 80%', tone: 'positive' },
     ]);
+  });
+
+  it('RI-68: 現在目標を渡すと下限反映後の次期 Delivery を表示する', () => {
+    const def = getGoalAdjustment('cut_scope')!;
+    // Easy major-incident 相当の 1301。0.8 倍すると下限に張り付く。
+    const tags = formatGoalAdjustmentTags(def, { currentDeliveryTarget: 1301 });
+    expect(tags).toContainEqual({ label: '顧客信頼 -15', tone: 'negative' });
+    const delivery = tags.find((t) => t.label.startsWith('次期Delivery'));
+    expect(delivery).toBeDefined();
+    expect(delivery!.label).toMatch(/^次期Delivery \d+/);
+    // 表示上の 80% ではなく、下限適用後の実質比率になる。
+    expect(delivery!.label).not.toContain('80%');
   });
 
   it('組織再編の即時効果とリセットをタグ化する', () => {

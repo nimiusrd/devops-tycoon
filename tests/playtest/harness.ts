@@ -1130,7 +1130,7 @@ function applySetup(e: RunEngine, spec: PolicySpec): void {
 
 /**
  * `missed_crisis` を発火させうる条件のうち、実際に成立していたものを列挙する。
- * `evaluateQuarterOutcome`（`src/sim/run/quarterReview.ts`）の判定と対応させる。
+ * `evaluateQuarterOutcome` / `buildQuarterReview`（`src/sim/run/quarterReview.ts`）と対応させる。
  */
 function crisisTriggers(minTrust: number, budget: number, missedCount: number): string[] {
   const hit: string[] = [];

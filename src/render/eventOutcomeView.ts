@@ -32,6 +32,7 @@ import {
   PAUSE_AI_DEBUFF_MUL,
   REORG_RESET_SENIOR_HP,
   REORG_RESET_TECH_DEBT,
+  previewNextQuarterDeliveryTarget,
 } from '../sim/run/quarterReview';
 import { RECRUIT_COST, REST_STAMINA_RECOVER } from '../sim/member/roster';
 import { REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../sim/run/engine';
@@ -423,6 +424,10 @@ const PAUSE_AI_DEBUFF_PCT = Math.round((1 - PAUSE_AI_DEBUFF_MUL) * 100);
 export interface FormatGoalAdjustmentOptions {
   /** 次期目標に AI Adoption KPI がある場合のみ true。 */
   hasAiAdoptionTarget?: boolean;
+  /** 現在の Delivery 目標。渡すと下限反映後の次期目標を表示する（RI-68）。 */
+  currentDeliveryTarget?: number;
+  /** Delivery 効果のプレビューに使う定義全体（下限反映の計算用）。 */
+  adjustmentDef?: GoalAdjustmentDef;
 }
 
 /** 目標修正の goalEffects からタグ一覧を生成する。 */
@@ -431,16 +436,29 @@ function formatGoalEffectTags(
   opts?: FormatGoalAdjustmentOptions,
 ): EffectTag[] {
   const tags: EffectTag[] = [];
-  if (goalEffects.deliveryMul !== undefined && goalEffects.deliveryMul !== 1) {
-    const pct = Math.round(goalEffects.deliveryMul * 100);
-    pushTag(tags, `Delivery目標 ${pct}%`, goalEffects.deliveryMul < 1 ? 'positive' : 'negative');
-  }
-  if (goalEffects.deliveryAdd !== undefined && goalEffects.deliveryAdd !== 0) {
-    pushTag(
-      tags,
-      `Delivery目標 ${formatSignedDelta(goalEffects.deliveryAdd)}`,
-      goalEffects.deliveryAdd < 0 ? 'positive' : 'negative',
-    );
+  const current = opts?.currentDeliveryTarget;
+  const def = opts?.adjustmentDef;
+  if (
+    current !== undefined &&
+    def &&
+    ((goalEffects.deliveryMul !== undefined && goalEffects.deliveryMul !== 1) ||
+      (goalEffects.deliveryAdd !== undefined && goalEffects.deliveryAdd !== 0))
+  ) {
+    const next = previewNextQuarterDeliveryTarget(current, def);
+    const pct = Math.round((next / Math.max(1, current)) * 100);
+    pushTag(tags, `次期Delivery ${next}（${pct}%）`, next <= current ? 'positive' : 'negative');
+  } else {
+    if (goalEffects.deliveryMul !== undefined && goalEffects.deliveryMul !== 1) {
+      const pct = Math.round(goalEffects.deliveryMul * 100);
+      pushTag(tags, `Delivery目標 ${pct}%`, goalEffects.deliveryMul < 1 ? 'positive' : 'negative');
+    }
+    if (goalEffects.deliveryAdd !== undefined && goalEffects.deliveryAdd !== 0) {
+      pushTag(
+        tags,
+        `Delivery目標 ${formatSignedDelta(goalEffects.deliveryAdd)}`,
+        goalEffects.deliveryAdd < 0 ? 'positive' : 'negative',
+      );
+    }
   }
   if (goalEffects.qualityAdd !== undefined && goalEffects.qualityAdd !== 0) {
     pushTag(
@@ -542,7 +560,7 @@ export function formatGoalAdjustmentTags(
     pushTag(tags, `予算 ${formatSignedDelta(def.budgetDelta)}`, toneFromDelta(def.budgetDelta));
   }
 
-  tags.push(...formatGoalEffectTags(def.goalEffects, opts));
+  tags.push(...formatGoalEffectTags(def.goalEffects, { ...opts, adjustmentDef: def }));
 
   if (def.orgEffects || def.reorgReset) {
     const orgEffects = { ...def.orgEffects };

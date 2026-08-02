@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | RI-64 | 独立状態を持つ複数チーム運営 | 高 | 完了 | 第4.7〜4.11 |
 | RI-67 | オンボーディングとシニア燃え尽きの断絶 | 高 | 未着手 | 第14〜16 / 19〜20 |
-| RI-68 | 四半期レビュー Delivery KPI のスケール不整合 | 高 | 未着手 | 第4.6.1 / 15 |
+| RI-68 | 四半期レビュー Delivery KPI のスケール不整合 | 高 | 完了 | 第4.6.1 / 15 |
 | RI-69 | スプリント上部操作バーと盤面の重なり | 中 | 未着手 | 第4 |
 | RI-70 | モバイルのスプリント操作性 | 中 | 未着手 | 第4 |
 | RI-71 | favicon 未設定による 404 | 低 | 未着手 | — |
@@ -55,14 +55,7 @@ Easy でも無介入・素直プレイだと第1四半期スプリント2でシ�
 
 ### RI-68 四半期レビュー Delivery KPI のスケール不整合
 
-四半期レビューで Delivery 目標（概ね1スプリント相当）に対し、四半期累計 `quarterTotals.delivered` を比較しているため、看板KPI「出荷ポイント＝勝利条件の進捗」が常に自明達成となる（実測: Q2 目標20 vs 実績1693）。目標生成は `src/sim/run/quarterReview.ts` の `deliveryTarget`。
-
-受入条件:
-
-- `deliveryTarget` と判定値の単位（1スプリント平均 vs 四半期累計）を一致させる。
-- Delivery 目標が四半期を通じて意味のある達成／未達の分岐を生む。
-- 実際に効く制約（Morale・Quality・Incident・燃え尽き）が勝敗条件として表示で伝わる。
-- 代表 seed で目標と実績の分布が妥当な範囲に収まることを検証する。
+完了。`deliveryTarget` を四半期累計スケール（`SPRINTS_PER_QUARTER × QUARTER_DELIVERY_THROUGHPUT_MUL`）へ拡げ、`quarterTotals.delivered` と同単位で比較するようにした。目標修正の `deliveryAdd`・下限、UI ラベル「Delivery（四半期累計）」、代表 seed 分布テストも更新。詳細は Git 履歴と `tests/unit/quarter-review.test.ts` を参照。
 
 ### RI-69 スプリント上部操作バーと盤面の重なり
 

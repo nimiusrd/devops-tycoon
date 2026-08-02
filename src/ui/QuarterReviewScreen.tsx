@@ -128,6 +128,7 @@ export function QuarterReviewScreen({
                     <EffectTagList
                       tags={formatGoalAdjustmentTags(def, {
                         hasAiAdoptionTarget: review.goal.aiAdoptionTarget !== undefined,
+                        currentDeliveryTarget: review.goal.deliveryTarget,
                       })}
                       testId={`adjustment-tags-${id}`}
                     />

@@ -6,12 +6,12 @@
  */
 import type { BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
-import { getDifficulty } from '../../data/difficulties';
 import type { GoalAdjustmentDef } from '../../data/goalAdjustments';
 import { deriveTeamCapacities } from '../orgscale/teamState';
 import type { TeamRunState } from '../orgscale/types';
 import { TECH_DEBT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import type { OrgState } from '../types';
+import { SPRINTS_PER_QUARTER } from './constants';
 import type {
   DifficultyId,
   GoalAdjustmentId,
@@ -32,6 +32,51 @@ export const REORG_RESET_TECH_DEBT = -8;
 /** pauseAiDebuff 適用時の出荷速度倍率（次四半期）。 */
 export const PAUSE_AI_DEBUFF_MUL = 0.85;
 
+/**
+ * ボス突破床（1スプリント）に対する通常スループット比（RI-68）。
+ * playtest 実測の 1スプリント出荷（約250〜400）と minSprintDelivered（約40〜90）から設定。
+ */
+export const QUARTER_DELIVERY_THROUGHPUT_MUL = 5;
+
+/** 1スプリント床 → 四半期累計目標への換算係数（下限・目標修正の基準）。 */
+export const QUARTER_DELIVERY_SCALE = SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL;
+
+/** 四半期のうち通常スプリント本数（最終1本がボス）。 */
+export const NORMAL_SPRINTS_PER_QUARTER = SPRINTS_PER_QUARTER - 1;
+
+/** 通常スプリントの Delivery 床（ボス種別によらない基準）。 */
+export const BASELINE_SPRINT_DELIVERY_FLOOR = 60;
+
+/** 新規四半期目標の Delivery 下限（旧 30 を四半期累計スケールへ）。 */
+export const MIN_QUARTER_DELIVERY_TARGET = 30 * QUARTER_DELIVERY_SCALE;
+
+/**
+ * priorGoal 減衰時の Delivery 下限。
+ * 緩和の積み重ねでも代表的な四半期実績帯（約2000〜2500）の半分付近を下回らないようにする。
+ */
+export const MIN_PRIOR_QUARTER_DELIVERY_TARGET = Math.round(
+  BASELINE_SPRINT_DELIVERY_FLOOR * SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL * 0.7,
+);
+
+/**
+ * 目標修正適用後の Delivery 下限。
+ * prior 下限と同じにして「緩和 → 次期開始で戻る」の見かけ差をなくす。
+ */
+export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = MIN_PRIOR_QUARTER_DELIVERY_TARGET;
+
+/**
+ * 難易度別の四半期 Delivery 目標倍率（RI-68）。
+ * `bossTargetMul * taskCountMul` は Easy で目標を縮めすぎ・Hard で上げすぎになり、
+ * 組織プリセットのスループット差と二重に効いて達成分岐が潰れる。
+ * skilled 実測（実績/目標の中央付近が met 帯 ≈1.0）に合わせて独立校正する。
+ */
+export const QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
+  easy: 1.15,
+  normal: 1,
+  hard: 1.12,
+  nightmare: 1.2,
+};
+
 /** 難易度に応じた初期信頼。 */
 export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
   const base =
@@ -43,14 +88,22 @@ export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
 export function buildQuarterGoal(
   boss: BossDef,
   difficulty: DifficultyId,
-  bossTargetMul: number,
+  /** @deprecated Delivery 目標には使わない。呼び出し互換のため残す。 */
+  _bossTargetMul: number,
   priorGoal?: QuarterGoal,
 ): QuarterGoal {
   const c = boss.clear;
-  const diff = getDifficulty(difficulty);
-  const baseDelivery = Math.round((c.minSprintDelivered ?? 60) * bossTargetMul * diff.taskCountMul);
+  // RI-68: 通常5本は共通床、ボス1本だけ minSprintDelivered を使う（ボス床を6本分に掛けない）。
+  // Delivery 目標倍率は難易度別定数。ボス突破側の bossTargetMul / taskCountMul とは分離する。
+  const scale = QUARTER_DELIVERY_GOAL_MUL[difficulty];
+  const baselineFloor = BASELINE_SPRINT_DELIVERY_FLOOR * scale;
+  const bossFloor = (c.minSprintDelivered ?? BASELINE_SPRINT_DELIVERY_FLOOR) * scale;
+  const quarterFloor = baselineFloor * NORMAL_SPRINTS_PER_QUARTER + bossFloor;
   const goal: QuarterGoal = {
-    deliveryTarget: Math.max(30, baseDelivery),
+    deliveryTarget: Math.max(
+      MIN_QUARTER_DELIVERY_TARGET,
+      Math.round(quarterFloor * QUARTER_DELIVERY_THROUGHPUT_MUL),
+    ),
     qualityTarget: c.minQuality ?? 45,
     techDebtLimit: c.maxTechDebt ?? 55,
     moraleTarget: c.minMorale ?? 40,
@@ -59,7 +112,10 @@ export function buildQuarterGoal(
   if (c.minAiPct !== undefined) goal.aiAdoptionTarget = c.minAiPct;
 
   if (priorGoal) {
-    goal.deliveryTarget = Math.max(20, Math.round(priorGoal.deliveryTarget * 0.95));
+    goal.deliveryTarget = Math.max(
+      MIN_PRIOR_QUARTER_DELIVERY_TARGET,
+      Math.round(priorGoal.deliveryTarget * 0.95),
+    );
     goal.qualityTarget = priorGoal.qualityTarget;
     goal.techDebtLimit = priorGoal.techDebtLimit;
     goal.moraleTarget = priorGoal.moraleTarget;
@@ -86,7 +142,7 @@ export function measureGoalProgress(input: MeasureInput): GoalKpiProgress[] {
   const kpis: GoalKpiProgress[] = [
     {
       id: 'delivery',
-      label: 'Delivery',
+      label: 'Delivery（四半期累計）',
       target: goal.deliveryTarget,
       actual: totals.delivered,
       status: compareHigher(totals.delivered, goal.deliveryTarget),
@@ -271,6 +327,25 @@ export function availableAdjustments(
   });
 }
 
+/**
+ * 目標修正選択後に次四半期へ持ち越される Delivery 目標のプレビュー（RI-68）。
+ * 適用時下限と prior 減衰下限の両方を反映する。
+ */
+export function previewNextQuarterDeliveryTarget(
+  currentDeliveryTarget: number,
+  def: GoalAdjustmentDef,
+): number {
+  let next = currentDeliveryTarget;
+  const ge = def.goalEffects;
+  if (ge.deliveryMul !== undefined) {
+    next = Math.max(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET, Math.round(next * ge.deliveryMul));
+  }
+  if (ge.deliveryAdd !== undefined) {
+    next = Math.max(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET, next + ge.deliveryAdd);
+  }
+  return Math.max(MIN_PRIOR_QUARTER_DELIVERY_TARGET, Math.round(next * 0.95));
+}
+
 export interface BuildReviewInput {
   goal: QuarterGoal;
   org: OrgState;
@@ -294,8 +369,23 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
     budget: input.budget,
     quarterNumber: input.quarterNumber,
   });
+  let finalOutcome = outcome;
+  const adjustments = availableAdjustments(
+    outcome,
+    input.trust,
+    input.budget,
+    input.org,
+    input.totals,
+  );
+  // 修正可能でも安全性フィルタで提示手段が空なら継続不能へ落とす。
+  // これは「選択肢を使い切った」ではなく一時的に実行可能な候補が無い状態なので、
+  // loseReason は通常の missed_crisis と同じく trustExhausted 側へ分類する。
+  if (finalOutcome === 'missed_adjustable' && adjustments.length === 0) {
+    finalOutcome = 'missed_crisis';
+  }
+
   const missedReasons =
-    outcome === 'exceeded' || outcome === 'met'
+    finalOutcome === 'exceeded' || finalOutcome === 'met'
       ? []
       : diagnoseMissedReasons({
           progress,
@@ -306,17 +396,11 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
 
   return {
     goal: input.goal,
-    outcome,
+    outcome: finalOutcome,
     trust: { ...input.trust },
     progress,
     missedReasons,
-    availableAdjustments: availableAdjustments(
-      outcome,
-      input.trust,
-      input.budget,
-      input.org,
-      input.totals,
-    ),
+    availableAdjustments: finalOutcome === 'missed_adjustable' ? adjustments : [],
     bossCleared,
   };
 }
@@ -357,10 +441,16 @@ export function applyGoalAdjustment(
   const goal: QuarterGoal = { ...input.goal };
   const ge = def.goalEffects;
   if (ge.deliveryMul !== undefined) {
-    goal.deliveryTarget = Math.max(15, Math.round(goal.deliveryTarget * ge.deliveryMul));
+    goal.deliveryTarget = Math.max(
+      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+      Math.round(goal.deliveryTarget * ge.deliveryMul),
+    );
   }
   if (ge.deliveryAdd !== undefined) {
-    goal.deliveryTarget = Math.max(15, goal.deliveryTarget + ge.deliveryAdd);
+    goal.deliveryTarget = Math.max(
+      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+      goal.deliveryTarget + ge.deliveryAdd,
+    );
   }
   if (ge.qualityAdd !== undefined) goal.qualityTarget += ge.qualityAdd;
   if (ge.moraleAdd !== undefined) goal.moraleTarget += ge.moraleAdd;
@@ -462,7 +552,8 @@ export function isTerminalFailure(outcome: QuarterOutcome): boolean {
 
 /** 継続不能時の loseReason。 */
 export function loseReasonForOutcome(outcome: QuarterOutcome): 'trustExhausted' | 'reorgRequired' {
-  return outcome === 'reorg_required' ? 'reorgRequired' : 'trustExhausted';
+  if (outcome === 'reorg_required') return 'reorgRequired';
+  return 'trustExhausted';
 }
 
 export const OUTCOME_LABELS: Record<QuarterOutcome, string> = {

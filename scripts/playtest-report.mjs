@@ -561,9 +561,11 @@ for (const run of runs) {
   for (const q of run.quarters ?? []) {
     outcomeCounts[q.outcome] = (outcomeCounts[q.outcome] ?? 0) + 1;
     const key = (list) => (list?.length ? list.join('+') : 'none');
-    // missed_crisis / shutdown はどちらも loseReasonForOutcome で trustExhausted になる。
-    if (q.outcome === 'missed_crisis')
+    // missed_crisis は信頼・予算・未達数のほか、安全性フィルタで修正候補が空のときにも発火する。
+    // 後者も loseReason は trustExhausted（「選択肢を使い切った」とは区別する）。
+    if (q.outcome === 'missed_crisis') {
       crisisTrig[key(q.crisisTriggers)] = (crisisTrig[key(q.crisisTriggers)] ?? 0) + 1;
+    }
     if (q.outcome === 'shutdown')
       shutdownTrig[key(q.shutdownTriggers)] = (shutdownTrig[key(q.shutdownTriggers)] ?? 0) + 1;
   }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { classifyShutdownCause, loseNextActionView } from '../../src/render/loseNextActionView';
+import {
+  classifyMissedCrisisCause,
+  classifyShutdownCause,
+  loseNextActionView,
+} from '../../src/render/loseNextActionView';
 import type { LoseReason } from '../../src/sim/run/types';
 
 const ALL_LOSE_REASONS: readonly LoseReason[] = [
@@ -104,5 +108,36 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
       },
     });
     expect(hpMissed.nextAction).toMatch(/シニアHP|未達/);
+  });
+
+  it('missed_crisis はトリガー別に助言を分ける', () => {
+    const trust = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'missed_crisis',
+      snapshot: { trust: { management: 12, customers: 40, team: 40 } },
+    });
+    expect(classifyMissedCrisisCause({ trust: { management: 12, customers: 40, team: 40 } })).toBe(
+      'trust',
+    );
+    expect(trust.nextAction).toMatch(/信頼/);
+    expect(trust.nextAction).not.toContain('目標修正で継続条件');
+
+    const budget = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'missed_crisis',
+      snapshot: {
+        trust: { management: 50, customers: 50, team: 50 },
+        budget: 4,
+      },
+    });
+    expect(budget.nextAction).toContain('追加予算申請');
+
+    const kpi = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'missed_crisis',
+      snapshot: {
+        trust: { management: 50, customers: 50, team: 50 },
+        budget: 20,
+        missedKpiCount: 4,
+      },
+    });
+    expect(kpi.nextAction).toMatch(/未達KPI|KPI/);
   });
 });

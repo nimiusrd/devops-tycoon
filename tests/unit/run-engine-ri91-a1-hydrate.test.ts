@@ -6,6 +6,7 @@ import { ENTER_TEAM_FOCUS_PENALTY } from '../../src/sim/orgscale/teamState';
 import type { TeamRunState } from '../../src/sim/orgscale/types';
 import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
+import { MIN_QUARTER_DELIVERY_TARGET } from '../../src/sim/run/quarterReview';
 import type { BeatState, RunState, RunTotals, SprintModifierDelta } from '../../src/sim/run/types';
 import { createSprint } from '../../src/sim/sprint';
 import type { OrgState, SprintMetrics, SprintState } from '../../src/sim/types';
@@ -175,7 +176,7 @@ describe('RI-91-A1 RunEngine construct / hydrate helpers', () => {
     const engine = new RunEngine({ seed: 'ri-91-a1-boss-fallback', difficulty: 'normal' });
     engine.startRun('normal', [], 'ri-91-a1-boss-fallback');
     expect(engine.snapshot().quarterGoal).toEqual({
-      deliveryTarget: 60,
+      deliveryTarget: MIN_QUARTER_DELIVERY_TARGET,
       qualityTarget: 45,
       techDebtLimit: 55,
       moraleTarget: 40,

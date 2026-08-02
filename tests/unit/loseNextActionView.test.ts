@@ -24,9 +24,11 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     }
   });
 
-  it('aiDependency はペアレビューまたは依存抑制の一手を示す', () => {
+  it('aiDependency はペアレビューまたは依存度を下げるレバーを示す', () => {
     const view = loseNextActionView('aiDependency');
-    expect(view.nextAction).toMatch(/ペアレビュー|AIガイドライン|AIスロットル/);
+    expect(view.nextAction).toMatch(/ペアレビュー/);
+    expect(view.nextAction).toMatch(/AIガイドライン|レバー/);
+    expect(view.nextAction).not.toMatch(/AIガイドライン／AIスロットル/);
     expect(view.insight).toMatch(/AI|検証|判断/);
   });
 

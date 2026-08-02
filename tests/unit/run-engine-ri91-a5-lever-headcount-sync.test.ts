@@ -198,7 +198,7 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
     expect(i.teams[activeIdx]!.headcount).toBe(1);
   });
 
-  it('粗粒度の completed / aiAssisted 加算と reviewQueuePeak を exact に積む', () => {
+  it('粗粒度の completed / aiAssisted 加算と before 側 reviewQueuePeak を exact に積む', () => {
     const engine = createEngine('ri-91-a5-totals-peak');
     const i = asInternals(engine);
     const inactive = i.teams.find((t) => t.id !== i.activeTeamId)!;
@@ -213,12 +213,42 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
 
     i.advanceOtherTeams('totals-peak');
 
-    expect(i.totals.reviewQueuePeak).toBeGreaterThanOrEqual(40);
-    expect(i.quarterTotals.reviewQueuePeak).toBeGreaterThanOrEqual(40);
-    expect(i.totals.completed).toBeGreaterThan(100);
-    expect(i.quarterTotals.completed).toBeGreaterThan(20);
-    expect(i.totals.aiAssisted).toBeGreaterThanOrEqual(50);
-    expect(i.quarterTotals.aiAssisted).toBeGreaterThanOrEqual(10);
+    // seed 固定: completed +5 / aiAssisted +1（加算削除や -= 変異を殺す）
+    expect(i.totals.completed).toBe(105);
+    expect(i.quarterTotals.completed).toBe(25);
+    expect(i.totals.aiAssisted).toBe(51);
+    expect(i.quarterTotals.aiAssisted).toBe(11);
+    // ステップ前 40 がピークになる（after は 38 へ減る seed）
+    expect(i.totals.reviewQueuePeak).toBe(40);
+    expect(i.quarterTotals.reviewQueuePeak).toBe(40);
+  });
+
+  it('粗粒度進行後に増えた reviewQueue もピークへ反映する', () => {
+    const engine = createEngine('ri-91-a5-peak-after-1');
+    const i = asInternals(engine);
+    // before ループだけでは peak=0 のまま。after ループが必須。
+    i.teams = i.teams.map((t) =>
+      t.id === i.activeTeamId
+        ? t
+        : {
+            ...t,
+            reviewQueue: 0,
+            engineers: 14,
+            aiDependency: 95,
+            reviewCapacity: 8,
+          },
+    );
+    i.totals.reviewQueuePeak = 0;
+    i.quarterTotals.reviewQueuePeak = 0;
+
+    i.advanceOtherTeams('peak-after');
+
+    const afterMax = Math.max(
+      ...i.teams.filter((t) => t.id !== i.activeTeamId).map((t) => t.reviewQueue),
+    );
+    expect(afterMax).toBe(11);
+    expect(i.totals.reviewQueuePeak).toBe(11);
+    expect(i.quarterTotals.reviewQueuePeak).toBe(11);
   });
 });
 
@@ -273,6 +303,7 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     expect(engine.applyOrgLever('aiGuideline')).toBe(true);
     expect(i.teams).toHaveLength(teamCount);
 
+    const existingNonHome = i.teams.find((t) => t.id !== homeId)!.id;
     const idsBefore = new Set(i.teams.map((t) => t.id));
     expect(engine.applyOrgLever('recruitDraft')).toBe(true);
     expect(i.teams).toHaveLength(teamCount + 1);
@@ -281,6 +312,11 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     const card = i.deck.find((c) => c.defId === 'auto-test')!;
     expect(card.baselineAppliedByTeam?.[newIds[0]!]).toBe(1);
     expect(card.baselineAppliedByTeam?.[homeId]).toBe(1);
+    // 既存の非ホームには継承しない（全チームへ newIds 誤伝播を殺す）
+    expect(card.baselineAppliedByTeam?.[existingNonHome]).toBeUndefined();
+    expect(Object.keys(card.baselineAppliedByTeam ?? {}).sort()).toEqual(
+      [homeId, newIds[0]!].sort(),
+    );
   });
 
   it('company レバーは全チームへ焼き込み、org 同期と metric strip を行う', () => {

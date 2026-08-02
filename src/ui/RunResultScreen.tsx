@@ -83,7 +83,12 @@ export function RunResultScreen({
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
   const loseLabel = failureTheme?.label ?? lose?.label ?? '敗北';
   const loseDescription = failureTheme?.description ?? lose?.desc;
-  const nextAction = !won && state.loseReason ? loseNextActionView(state.loseReason) : null;
+  const nextAction =
+    !won && state.loseReason
+      ? loseNextActionView(state.loseReason, {
+          quarterOutcome: state.quarterReview?.outcome,
+        })
+      : null;
   const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
   const t = state.totals;
   const isDaily = state.runKind === 'daily';

@@ -3,8 +3,11 @@
  *
  * 敗因ラベル（何が起きたか）とは別に、次のランで変える具体操作と
  * 現実の開発現場への示唆を返す。描画・状態は知らない純関数。
+ *
+ * 四半期レビュー由来の敗北は `loseReason` が粗い（missed_crisis / shutdown が
+ * ともに trustExhausted）ため、`quarterOutcome` があればそちらを優先する。
  */
-import type { LoseReason } from '../sim/run/types';
+import type { LoseReason, QuarterOutcome } from '../sim/run/types';
 
 export interface LoseNextActionView {
   /** 次のランで変える具体的な一手。 */
@@ -13,10 +16,15 @@ export interface LoseNextActionView {
   insight: string;
 }
 
+export interface LoseNextActionOptions {
+  /** 四半期レビュー由来の継続不能 outcome（ある場合のみ）。 */
+  quarterOutcome?: QuarterOutcome;
+}
+
 const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   seniorBurnout: {
     nextAction:
-      '炎上は自動鎮火でシニアHPが大きく削られる前に緊急対応で消し、割り込みレビューで負荷を分散する。',
+      '炎上は自動鎮火でシニアHPが大きく削られる前に緊急対応で消し、アンドンやAIスロットルで流入を抑えてから休息でHPを戻す。',
     insight: 'レビューを1人に依存させると、速度ではなくその1人が壊れる。',
   },
   techDebt: {
@@ -26,7 +34,7 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
   moraleCollapse: {
     nextAction:
-      '残業号令や偏ったタスク差配を控え、休息・レリック・レバーで士気を戻してから負荷を上げる。',
+      '残業号令や偏ったタスク差配を控え、休息で士気を戻し、火消し部隊など士気が上がるレバーだけを使ってから負荷を上げる。',
     insight: '短期のスループットのために士気を削ると、チームは一気に機能しなくなる。',
   },
   reviewFreeze: {
@@ -45,7 +53,7 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
   budgetExhausted: {
     nextAction:
-      'ショップのAIツール買い足しを抑え、全社レバーや目標修正でコストを先に抑えてから投資する。',
+      'ショップのAIツール買い足しを抑え、目標修正の追加予算申請やAI導入一時停止で余力を作ってから投資する。',
     insight: 'ツール費用を見ずに導入を広げると、成果の前に運用自体が止まる。',
   },
   bossFailed: {
@@ -65,7 +73,32 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
 };
 
+/** 四半期 outcome 固有の次の一手（loseReason の粗い写像を補う）。 */
+const QUARTER_OUTCOME_ACTIONS: Partial<Record<QuarterOutcome, LoseNextActionView>> = {
+  missed_crisis: {
+    nextAction:
+      'KPI未達・予算下限・信頼低下のどれが危機かを見極め、スコープ削減・追加予算申請・期限延長など原因に合う目標修正で継続条件を守る。',
+    insight: '深刻な未達は信頼だけでなく、予算や複数KPIの崩れでも同じ終了になる。',
+  },
+  shutdown: {
+    nextAction:
+      '信頼・予算・士気・シニアHPの下限を同時に監視し、休息と目標修正で継続資源を先に立て直してから負荷を上げる。',
+    insight: '継続不能は単一KPIではなく、信頼と現場資源が同時に底をついたときに決まる。',
+  },
+  reorg_required: {
+    nextAction:
+      '連続未達を避けるため、早い四半期で目標修正を選び、品質・士気・障害の下限を先に立て直す。',
+    insight: '同じ未達を繰り返すと、現場改善ではなく組織再編という外からの決着になる。',
+  },
+};
+
 /** 敗因に対応する次の一手と現場示唆を返す。 */
-export function loseNextActionView(reason: LoseReason): LoseNextActionView {
-  return LOSE_NEXT_ACTIONS[reason];
+export function loseNextActionView(
+  reason: LoseReason,
+  options: LoseNextActionOptions = {},
+): LoseNextActionView {
+  const fromOutcome = options.quarterOutcome
+    ? QUARTER_OUTCOME_ACTIONS[options.quarterOutcome]
+    : undefined;
+  return fromOutcome ?? LOSE_NEXT_ACTIONS[reason];
 }

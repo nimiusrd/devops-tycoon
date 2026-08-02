@@ -7,9 +7,19 @@ import { describe, expect, it } from 'vitest';
 import { getAction } from '../../src/data/actions';
 import { getCard } from '../../src/data/cards';
 import { dealHand, drawDraft, playCost } from '../../src/sim/cards';
-import { createEngine } from '../../src/sim/engine';
+import { createEngine, type Engine } from '../../src/sim/engine';
 import { createOrgState } from '../../src/sim/org';
 import { createRng } from '../../src/sim/rng';
+
+/** sprint.test.ts と同様、完走待ちに上限を置きハングを防ぐ。 */
+function runToComplete(engine: Engine, maxSteps = 100_000): void {
+  let guard = 0;
+  while (!engine.isComplete() && guard < maxSteps) {
+    engine.step(1000);
+    guard += 1;
+  }
+  expect(engine.isComplete()).toBe(true);
+}
 
 describe('RI-91-C4 engine survived mutants', () => {
   describe('既定値', () => {
@@ -81,7 +91,7 @@ describe('RI-91-C4 engine survived mutants', () => {
     it('完走後の draft / draftOptions は seed:draft:index と一致する', () => {
       const seed = 'ri-91-c4-draft';
       const e = createEngine({ seed, aiEnabled: true, fixedStepMs: 100 });
-      while (!e.isComplete()) e.step(1000);
+      runToComplete(e);
       const s = e.snapshot();
       const expected = drawDraft(createRng(`${seed}:draft:${s.sprintIndex}`));
       expect(s.draft).toEqual(expected);
@@ -97,7 +107,7 @@ describe('RI-91-C4 engine survived mutants', () => {
         deck: [{ defId: 'copilot', level: 1 }],
         fixedStepMs: 100,
       });
-      while (!e.isComplete()) e.step(1000);
+      runToComplete(e);
       const beforeDeck = e.snapshot().deck;
       expect(beforeDeck).toEqual([{ defId: 'copilot', level: 1 }]);
       e.nextSprint();
@@ -120,7 +130,7 @@ describe('RI-91-C4 engine survived mutants', () => {
         fixedStepMs: 100,
       });
       expect(e.playCard(0).ok).toBe(true);
-      while (!e.isComplete()) e.step(1000);
+      runToComplete(e);
       const before = e.snapshot();
       expect(before.org.quality).toBeGreaterThan(createOrgState('default', true).quality);
 

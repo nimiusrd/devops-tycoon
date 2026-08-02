@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  classifyExhaustedStakeholder,
   classifyMissedCrisisCause,
   classifyReorgCause,
   classifyShutdownCause,
@@ -85,8 +86,17 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     expect(classifyShutdownCause({ trust: { management: 8, customers: 40, team: 40 } })).toBe(
       'trust',
     );
-    expect(trust.nextAction).toMatch(/信頼/);
+    expect(classifyExhaustedStakeholder({ management: 8, customers: 40, team: 40 }, 10)).toBe(
+      'management',
+    );
+    expect(trust.nextAction).toMatch(/経営|延期交渉/);
     expect(trust.nextAction).not.toContain('目標修正で継続資源');
+
+    const teamTrust = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'shutdown',
+      snapshot: { trust: { management: 40, customers: 40, team: 8 } },
+    });
+    expect(teamTrust.nextAction).toMatch(/急募|採用/);
 
     const budgetMorale = loseNextActionView('trustExhausted', {
       quarterOutcome: 'shutdown',
@@ -119,7 +129,7 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     expect(classifyMissedCrisisCause({ trust: { management: 12, customers: 40, team: 40 } })).toBe(
       'trust',
     );
-    expect(trust.nextAction).toMatch(/信頼/);
+    expect(trust.nextAction).toMatch(/経営|延期交渉/);
     expect(trust.nextAction).not.toContain('目標修正で継続条件');
 
     const budget = loseNextActionView('trustExhausted', {
@@ -137,9 +147,10 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
         trust: { management: 50, customers: 50, team: 50 },
         budget: 20,
         missedKpiCount: 4,
+        missedKpiIds: ['delivery', 'quality', 'techDebt', 'morale'],
       },
     });
-    expect(kpi.nextAction).toMatch(/未達KPI|KPI/);
+    expect(kpi.nextAction).toMatch(/Delivery|Quality|Tech Debt|Morale/);
   });
 
   it('reorg_required はトリガー別に助言を分ける', () => {
@@ -148,6 +159,7 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
       snapshot: {
         quarterNumber: 2,
         missedKpiCount: 3,
+        missedKpiIds: ['delivery', 'techDebt', 'aiAdoption'],
         trust: { management: 50, customers: 50, team: 50 },
       },
     });
@@ -158,7 +170,8 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
         trust: { management: 50, customers: 50, team: 50 },
       }),
     ).toBe('kpiMissed');
-    expect(kpi.nextAction).toMatch(/未達KPI|3件/);
+    expect(kpi.nextAction).toMatch(/Delivery|Tech Debt|AI Adoption/);
+    expect(kpi.nextAction).not.toContain('品質・士気・障害');
     expect(kpi.nextAction).not.toContain('目標修正');
 
     const trust = loseNextActionView('reorgRequired', {
@@ -176,7 +189,6 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
         trust: { management: 18, customers: 40, team: 40 },
       }),
     ).toBe('trust');
-    expect(trust.nextAction).toMatch(/信頼/);
-    expect(trust.nextAction).toContain('目標修正を避け');
+    expect(trust.nextAction).toMatch(/経営|目標修正/);
   });
 });

@@ -94,6 +94,9 @@ export function RunResultScreen({
             seniorHp: state.org.seniorHp,
             missedKpiCount: state.quarterReview?.progress.filter((p) => p.status === 'missed')
               .length,
+            missedKpiIds: state.quarterReview?.progress
+              .filter((p) => p.status === 'missed')
+              .map((p) => p.id),
             reviewQueuePeak: state.totals.reviewQueuePeak,
             quarterNumber: state.quarterNumber,
           },

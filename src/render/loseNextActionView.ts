@@ -7,7 +7,7 @@
  * 四半期レビュー由来の敗北は `loseReason` が粗い（missed_crisis / shutdown が
  * ともに trustExhausted）ため、`quarterOutcome` と終了時スナップショットで助言を分ける。
  */
-import type { LoseReason, QuarterOutcome, StakeholderTrust } from '../sim/run/types';
+import type { LoseReason, QuarterOutcome, StakeholderId, StakeholderTrust } from '../sim/run/types';
 
 export interface LoseNextActionView {
   /** 次のランで変える具体的な一手。 */
@@ -23,6 +23,8 @@ export interface LoseNextActionSnapshot {
   morale?: number;
   seniorHp?: number;
   missedKpiCount?: number;
+  /** 未達 KPI の id（delivery / quality / techDebt / morale / incident / aiAdoption）。 */
+  missedKpiIds?: readonly string[];
   reviewQueuePeak?: number;
   /** 終了時の四半期番号（reorg_required の Q2+ 条件用）。 */
   quarterNumber?: number;
@@ -87,9 +89,89 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
 };
 
+const KPI_HINTS: Record<string, { label: string; tip: string }> = {
+  delivery: { label: 'Delivery', tip: '介入とカードで出荷を伸ばす' },
+  quality: { label: 'Quality', tip: '手戻り抑制と品質系カードで品質を上げる' },
+  techDebt: { label: 'Tech Debt', tip: '休息返済と標準化で負債を下げる' },
+  morale: { label: 'Morale', tip: '休息と残業抑制で士気を守る' },
+  incident: { label: 'Incident', tip: '緊急対応で障害を抑える' },
+  aiAdoption: { label: 'AI Adoption', tip: 'AI利用率の底上げを優先する' },
+};
+
 function minTrustOf(snapshot: LoseNextActionSnapshot): number | undefined {
   if (snapshot.trust === undefined) return undefined;
   return Math.min(snapshot.trust.management, snapshot.trust.customers, snapshot.trust.team);
+}
+
+/** 閾値以下に落ちた信頼先を返す（複数なら multiple）。 */
+export type ExhaustedStakeholder = StakeholderId | 'multiple' | 'unknown';
+
+export function classifyExhaustedStakeholder(
+  trust: StakeholderTrust | undefined,
+  threshold: number,
+): ExhaustedStakeholder {
+  if (!trust) return 'unknown';
+  const hit = (['management', 'customers', 'team'] as const).filter((id) => trust[id] <= threshold);
+  if (hit.length === 0) return 'unknown';
+  if (hit.length > 1) return 'multiple';
+  return hit[0];
+}
+
+function trustStakeholderAction(
+  stakeholder: ExhaustedStakeholder,
+  insight: string,
+): LoseNextActionView {
+  switch (stakeholder) {
+    case 'management':
+      return {
+        nextAction:
+          '延期交渉や案件見送りなど経営信頼を削る選択を避け、信頼をさらに削る目標修正に頼らない。',
+        insight,
+      };
+    case 'customers':
+      return {
+        nextAction:
+          'スコープ削減や品質ピボットなど顧客信頼を削る目標修正を避け、顧客向けの未達を先に立て直す。',
+        insight,
+      };
+    case 'team':
+      return {
+        nextAction:
+          '急募の見送りや採用失敗でチーム信頼を削らず、予算があるときだけ採用して期待を裏切らない。',
+        insight,
+      };
+    case 'multiple':
+      return {
+        nextAction:
+          '経営・顧客・チームのどれも削る目標修正とイベントを避け、信頼コストの高い選択を重ねない。',
+        insight,
+      };
+    case 'unknown':
+      return {
+        nextAction:
+          '信頼を削る目標修正やイベントを避け、未達が出る前にKPIを達成して信頼の下限に近づかない。',
+        insight,
+      };
+  }
+}
+
+function missedKpiAction(
+  snapshot: LoseNextActionSnapshot,
+  fallback: LoseNextActionView,
+  prefix: string,
+  insight: string,
+): LoseNextActionView {
+  const ids = snapshot.missedKpiIds ?? [];
+  const hints = ids
+    .map((id) => KPI_HINTS[id])
+    .filter((h): h is { label: string; tip: string } => !!h);
+  if (hints.length === 0) return fallback;
+  const labels = hints.map((h) => h.label).join('・');
+  const tips = hints.map((h) => h.tip).join('／');
+  return {
+    nextAction: `${prefix}未達の${labels}を立て直す（${tips}）。`,
+    insight,
+  };
 }
 
 /** `evaluateQuarterOutcome` と同じ優先順で shutdown の主因を分類する。 */
@@ -150,13 +232,7 @@ export function classifyReorgCause(snapshot: LoseNextActionSnapshot = {}): Reorg
   return 'unknown';
 }
 
-const SHUTDOWN_ACTIONS: Record<ShutdownCause, LoseNextActionView> = {
-  trust: {
-    nextAction:
-      '信頼を削る目標修正や経営向けイベントを避け、未達が出る前にKPIを達成して信頼の下限に近づかない。',
-    insight:
-      '信頼だけが底をついてもプロジェクトは止まり、その局面で信頼をさらに削る選択は逆効果になる。',
-  },
+const SHUTDOWN_FALLBACK: Record<Exclude<ShutdownCause, 'trust'>, LoseNextActionView> = {
   budgetMorale: {
     nextAction: '予算を使い切る前に追加予算申請で残高を確保し、休息で士気を戻してから投資する。',
     insight: '予算ゼロと士気低下が重なると、現場を休ませる余力すら残らない。',
@@ -172,20 +248,14 @@ const SHUTDOWN_ACTIONS: Record<ShutdownCause, LoseNextActionView> = {
   },
 };
 
-const MISSED_CRISIS_ACTIONS: Record<MissedCrisisCause, LoseNextActionView> = {
-  trust: {
-    nextAction:
-      '信頼を削る目標修正や経営向けイベントを避け、未達が出る前にKPIを達成して信頼の下限に近づかない。',
-    insight: '信頼が先に枯れる深刻な未達では、さらに信頼を削る目標修正は危機を深めるだけになる。',
-  },
+const MISSED_CRISIS_FALLBACK: Record<
+  Exclude<MissedCrisisCause, 'trust' | 'kpiMissed'>,
+  LoseNextActionView
+> = {
   budget: {
     nextAction:
       'ショップやレバーの支出を抑え、予算が底をつく前に追加予算申請で残高を確保してから投資する。',
     insight: '予算下限での継続不能は、成果不足ではなく運用費の先食いでも起きる。',
-  },
-  kpiMissed: {
-    nextAction: '四半期中に未達KPIを立て直し、修正に頼る回数を減らして複数KPIの同時未達を避ける。',
-    insight: '未達が重なると、どの修正を選んでも信頼コストを払い続けることになる。',
   },
   unknown: {
     nextAction:
@@ -194,30 +264,69 @@ const MISSED_CRISIS_ACTIONS: Record<MissedCrisisCause, LoseNextActionView> = {
   },
 };
 
-const REORG_REQUIRED_ACTIONS: Record<ReorgCause, LoseNextActionView> = {
-  kpiMissed: {
-    nextAction:
-      'Q2 以降に未達KPIが3件以上重ならないよう、四半期中に品質・士気・障害の下限を立て直す。',
-    insight: '未達が積み上がると、組織再編という外からの決着になる。',
-  },
-  trust: {
-    nextAction: '信頼を削る目標修正を避け、未達を2件未満に抑えて信頼低下と未達の重なりを防ぐ。',
-    insight: '信頼が低いときの目標修正は、同じ未達数でも再編条件へ押し込みやすい。',
-  },
-  unknown: LOSE_NEXT_ACTIONS.reorgRequired,
-};
+function shutdownAction(snapshot: LoseNextActionSnapshot): LoseNextActionView {
+  const cause = classifyShutdownCause(snapshot);
+  if (cause === 'trust') {
+    return trustStakeholderAction(
+      classifyExhaustedStakeholder(snapshot.trust, 10),
+      '信頼だけが底をついてもプロジェクトは止まり、その局面で信頼をさらに削る選択は逆効果になる。',
+    );
+  }
+  return SHUTDOWN_FALLBACK[cause];
+}
+
+function missedCrisisAction(snapshot: LoseNextActionSnapshot): LoseNextActionView {
+  const cause = classifyMissedCrisisCause(snapshot);
+  if (cause === 'trust') {
+    return trustStakeholderAction(
+      classifyExhaustedStakeholder(snapshot.trust, 15),
+      '信頼が先に枯れる深刻な未達では、さらに信頼を削る目標修正は危機を深めるだけになる。',
+    );
+  }
+  if (cause === 'kpiMissed') {
+    return missedKpiAction(
+      snapshot,
+      {
+        nextAction:
+          '四半期中に未達KPIを立て直し、修正に頼る回数を減らして複数KPIの同時未達を避ける。',
+        insight: '未達が重なると、どの修正を選んでも信頼コストを払い続けることになる。',
+      },
+      '四半期中に',
+      '未達が重なると、どの修正を選んでも信頼コストを払い続けることになる。',
+    );
+  }
+  return MISSED_CRISIS_FALLBACK[cause];
+}
+
+function reorgRequiredAction(snapshot: LoseNextActionSnapshot): LoseNextActionView {
+  const cause = classifyReorgCause(snapshot);
+  if (cause === 'kpiMissed') {
+    return missedKpiAction(
+      snapshot,
+      {
+        nextAction: 'Q2 以降に未達KPIが3件以上重ならないよう、四半期中に未達軸を立て直す。',
+        insight: '未達が積み上がると、組織再編という外からの決着になる。',
+      },
+      'Q2 以降に未達が3件以上重ならないよう、四半期中に',
+      '未達が積み上がると、組織再編という外からの決着になる。',
+    );
+  }
+  if (cause === 'trust') {
+    return trustStakeholderAction(
+      classifyExhaustedStakeholder(snapshot.trust, 20),
+      '信頼が低いときの目標修正は、同じ未達数でも再編条件へ押し込みやすい。',
+    );
+  }
+  return LOSE_NEXT_ACTIONS.reorgRequired;
+}
 
 function quarterOutcomeAction(
   outcome: QuarterOutcome,
   snapshot: LoseNextActionSnapshot,
 ): LoseNextActionView | undefined {
-  if (outcome === 'shutdown') return SHUTDOWN_ACTIONS[classifyShutdownCause(snapshot)];
-  if (outcome === 'missed_crisis') {
-    return MISSED_CRISIS_ACTIONS[classifyMissedCrisisCause(snapshot)];
-  }
-  if (outcome === 'reorg_required') {
-    return REORG_REQUIRED_ACTIONS[classifyReorgCause(snapshot)];
-  }
+  if (outcome === 'shutdown') return shutdownAction(snapshot);
+  if (outcome === 'missed_crisis') return missedCrisisAction(snapshot);
+  if (outcome === 'reorg_required') return reorgRequiredAction(snapshot);
   return undefined;
 }
 

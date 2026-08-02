@@ -7,7 +7,10 @@ import { createOrgState } from '../../src/sim/org';
 import { RunEngine } from '../../src/sim/run/engine';
 import {
   OUTCOME_LABELS,
+  BASELINE_SPRINT_DELIVERY_FLOOR,
+  NORMAL_SPRINTS_PER_QUARTER,
   QUARTER_DELIVERY_SCALE,
+  QUARTER_DELIVERY_THROUGHPUT_MUL,
   MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
   MIN_PRIOR_QUARTER_DELIVERY_TARGET,
   MIN_QUARTER_DELIVERY_TARGET,
@@ -638,10 +641,13 @@ describe('四半期レビュー（Phase 8）', () => {
     };
     const diff = getDifficulty('normal');
     const base = buildQuarterGoal(emptyBoss, 'normal', 1);
+    const baseline = BASELINE_SPRINT_DELIVERY_FLOOR * diff.taskCountMul;
     expect(base).toEqual({
       deliveryTarget: Math.max(
         MIN_QUARTER_DELIVERY_TARGET,
-        Math.round(60 * diff.taskCountMul * QUARTER_DELIVERY_SCALE),
+        Math.round(
+          (baseline * NORMAL_SPRINTS_PER_QUARTER + baseline) * QUARTER_DELIVERY_THROUGHPUT_MUL,
+        ),
       ),
       qualityTarget: 45,
       techDebtLimit: 55,
@@ -664,6 +670,15 @@ describe('四半期レビュー（Phase 8）', () => {
     });
     expect(priorWithAi.deliveryTarget).toBe(Math.round(80 * QUARTER_DELIVERY_SCALE * 0.95));
     expect(priorWithAi.aiAdoptionTarget).toBe(35);
+  });
+
+  it('RI-68: Delivery 目標はボス床を全スプリントへ掛けずボス差を抑える', () => {
+    const big = buildQuarterGoal(getBoss('big-release')!, 'normal', 1);
+    const major = buildQuarterGoal(getBoss('major-incident')!, 'normal', 1);
+    // 旧式（ボス床×6）だと 2700/1200=2.25 倍。通常5+ボス1なら差は小さくなる。
+    expect(big.deliveryTarget / major.deliveryTarget).toBeLessThan(1.3);
+    expect(big.deliveryTarget).toBe(1950);
+    expect(major.deliveryTarget).toBe(1700);
   });
 
   it('RI-68: cut_scope 後も Delivery 目標が四半期実績帯から大きく外れない', () => {

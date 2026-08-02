@@ -39,8 +39,14 @@ export const PAUSE_AI_DEBUFF_MUL = 0.85;
  */
 export const QUARTER_DELIVERY_THROUGHPUT_MUL = 5;
 
-/** 1スプリント床 → 四半期累計目標への換算係数。 */
+/** 1スプリント床 → 四半期累計目標への換算係数（下限・目標修正の基準）。 */
 export const QUARTER_DELIVERY_SCALE = SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL;
+
+/** 四半期のうち通常スプリント本数（最終1本がボス）。 */
+export const NORMAL_SPRINTS_PER_QUARTER = SPRINTS_PER_QUARTER - 1;
+
+/** 通常スプリントの Delivery 床（ボス種別によらない基準）。 */
+export const BASELINE_SPRINT_DELIVERY_FLOOR = 60;
 
 /** 新規四半期目標の Delivery 下限（旧 30 を四半期累計スケールへ）。 */
 export const MIN_QUARTER_DELIVERY_TARGET = 30 * QUARTER_DELIVERY_SCALE;
@@ -67,12 +73,15 @@ export function buildQuarterGoal(
 ): QuarterGoal {
   const c = boss.clear;
   const diff = getDifficulty(difficulty);
-  // RI-68: deliveryTarget は四半期累計出荷ポイント。minSprintDelivered は1スプリント床なので拡げる。
-  const sprintFloor = (c.minSprintDelivered ?? 60) * bossTargetMul * diff.taskCountMul;
+  // RI-68: 通常5本は共通床、ボス1本だけ minSprintDelivered を使う（ボス床を6本分に掛けない）。
+  const scale = bossTargetMul * diff.taskCountMul;
+  const baselineFloor = BASELINE_SPRINT_DELIVERY_FLOOR * scale;
+  const bossFloor = (c.minSprintDelivered ?? BASELINE_SPRINT_DELIVERY_FLOOR) * scale;
+  const quarterFloor = baselineFloor * NORMAL_SPRINTS_PER_QUARTER + bossFloor;
   const goal: QuarterGoal = {
     deliveryTarget: Math.max(
       MIN_QUARTER_DELIVERY_TARGET,
-      Math.round(sprintFloor * QUARTER_DELIVERY_SCALE),
+      Math.round(quarterFloor * QUARTER_DELIVERY_THROUGHPUT_MUL),
     ),
     qualityTarget: c.minQuality ?? 45,
     techDebtLimit: c.maxTechDebt ?? 55,

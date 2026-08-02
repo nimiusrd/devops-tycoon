@@ -798,31 +798,27 @@ describe('四半期レビュー（Phase 8）', () => {
     );
   });
 
-  it(
-    'RI-68: easy/normal/hard で Delivery の達成と未達が分岐する',
-    { timeout: 90_000 },
-    () => {
-      const difficulties: DifficultyId[] = ['easy', 'normal', 'hard'];
-      for (const difficulty of difficulties) {
-        let reached = 0;
-        let achieved = 0;
-        let missed = 0;
-        for (let i = 0; i < 40; i += 1) {
-          const engine = new RunEngine({ seed: `probe-${i}`, difficulty });
-          const state = playUntil(engine, 'quarterReview', { skilled: true });
-          if (state.phase !== 'quarterReview' || !state.quarterReview) continue;
-          const delivery = state.quarterReview.progress.find((p) => p.id === 'delivery');
-          if (!delivery) continue;
-          reached += 1;
-          if (delivery.status === 'missed') missed += 1;
-          else achieved += 1;
-        }
-        expect(reached, difficulty).toBeGreaterThanOrEqual(6);
-        expect(achieved, `${difficulty}:achieved`).toBeGreaterThan(0);
-        expect(missed, `${difficulty}:missed`).toBeGreaterThan(0);
+  it('RI-68: easy/normal/hard で Delivery の達成と未達が分岐する', { timeout: 90_000 }, () => {
+    const difficulties: DifficultyId[] = ['easy', 'normal', 'hard'];
+    for (const difficulty of difficulties) {
+      let reached = 0;
+      let achieved = 0;
+      let missed = 0;
+      for (let i = 0; i < 40; i += 1) {
+        const engine = new RunEngine({ seed: `probe-${i}`, difficulty });
+        const state = playUntil(engine, 'quarterReview', { skilled: true });
+        if (state.phase !== 'quarterReview' || !state.quarterReview) continue;
+        const delivery = state.quarterReview.progress.find((p) => p.id === 'delivery');
+        if (!delivery) continue;
+        reached += 1;
+        if (delivery.status === 'missed') missed += 1;
+        else achieved += 1;
       }
-    },
-  );
+      expect(reached, difficulty).toBeGreaterThanOrEqual(6);
+      expect(achieved, `${difficulty}:achieved`).toBeGreaterThan(0);
+      expect(missed, `${difficulty}:missed`).toBeGreaterThan(0);
+    }
+  });
 
   it('RI-72-C1: AI 過信診断は rework 比率 0.3 ちょうどでは成立しない', () => {
     const base = {

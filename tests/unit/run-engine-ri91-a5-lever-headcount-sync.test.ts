@@ -19,17 +19,36 @@ type A5Internals = {
   budget: number;
   coarseIncidentCarry: number;
   deck: CardInstance[];
+  difficulty: RunState['difficulty'];
+  evolution: RunState['evolution'];
   homeTeamId: string;
   org: OrgState;
   orgAdjust: {
-    company: { aiDependencyDelta: number; infraBoost: number; extraTeams: number };
-    byDept: Record<string, unknown>;
+    company: {
+      aiDependencyDelta: number;
+      infraBoost: number;
+      extraTeams: number;
+      reviewQueueDelta: number;
+    };
+    byDept: Record<
+      string,
+      {
+        aiDependencyDelta: number;
+        reviewQueueDelta: number;
+        incidentDelta: number;
+        moraleDelta: number;
+        techDebtDelta: number;
+        extraTeams: number;
+        infraBoost: number;
+      }
+    >;
     byTeam: Record<string, unknown>;
   };
   pauseAiDebuffQuarter: number | null;
   phase: RunState['phase'];
   quarterNumber: number;
   quarterTotals: RunTotals;
+  relics: string[];
   roster: RosterState;
   sprint: SprintState | null;
   sprintsPlayed: number;
@@ -38,6 +57,7 @@ type A5Internals = {
   teamRosters: Record<string, RosterState>;
   teams: TeamRunState[];
   totals: RunTotals;
+  trials: string[];
   advanceOtherTeams(stepKey: string): void;
   flushCoarseIncidentCarry(): void;
 };
@@ -260,6 +280,25 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
     expect(i.totals.delivered).toBe(19);
     expect(i.quarterTotals.delivered).toBe(19);
     expect(i.totals.completed).toBe(4);
+  });
+
+  it('foldRunEffects 由来の粗粒度 modifiers が非 active へ効く', () => {
+    const engine = createEngine('ri-91-a5-fold-mods');
+    const i = asInternals(engine);
+    // incidentRateMul / reviewMul / reviewCapacityMul / aiDependencyDrift を非中立化
+    i.relics = ['postmortem', 'small-pr', 'flow-first'];
+    i.trials = ['frontier-dependency'];
+    i.teams = i.teams.map((t) =>
+      t.id === i.activeTeamId ? t : { ...t, reviewQueue: 10, aiDependency: 40, incidents: 1 },
+    );
+
+    i.advanceOtherTeams('fold');
+
+    const others = i.teams.filter((t) => t.id !== i.activeTeamId);
+    // drift=5 (+稀に +1)。mods を 1/1/1/0 に固定する変異を殺す。
+    expect(others.map((t) => t.aiDependency)).toEqual([46, 45, 45, 45, 45, 45, 45, 45, 46]);
+    // reviewCapacityMul/reviewMul により行列が中立時より下がる
+    expect(others.map((t) => t.reviewQueue)).toEqual([5, 7, 9, 6, 6, 7, 7, 6, 7]);
   });
 
   it('粗粒度炎上 carry を加算し flush で incidents へ繰り入れる', () => {
@@ -524,17 +563,33 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     // active は別部門 → orgFromTeam 非適用・sprint 非 align（activeTouched=false）
     expect(i.org.aiDependency).toBe(orgDepBefore);
     expect(i.sprint!.tasks.filter((t) => t.lane === 'review')).toHaveLength(reviewBefore);
+    // 部門 metric は焼き込み後に strip（二重適用を防ぐ）
+    const deptAdj = i.orgAdjust.byDept[targetDept];
+    expect(deptAdj).toBeTruthy();
+    expect(deptAdj.reviewQueueDelta).toBe(0);
+    expect(deptAdj.aiDependencyDelta).toBe(0);
+    expect(deptAdj.incidentDelta).toBe(0);
+    expect(deptAdj.moraleDelta).toBe(0);
+    expect(deptAdj.techDebtDelta).toBe(0);
   });
 
   it('department レバーは active 部門なら org 同期と sprint 盤面 align を行う', () => {
     const engine = createEngine('ri-91-a5-dept-active');
-    engine.beginSetupSprint();
     const i = asInternals(engine);
     i.budget = 100;
     i.teamLockUntilSprint = 0;
+    // 先頭/ホーム以外へ入り、active 検索を teams[0] 固定する変異を殺す
+    const nonHome = i.teams.find((t) => t.id !== i.homeTeamId && t.id !== i.teams[0]!.id)!;
+    expect(engine.enterTeam(nonHome.id)).toBe(true);
+    expect(i.activeTeamId).not.toBe(i.teams[0]!.id);
+    i.teamLockUntilSprint = 0;
+    engine.beginSetupSprint();
     i.sprint!.metrics.contained = 0;
 
-    const active = i.teams.find((t) => t.id === i.activeTeamId)!;
+    const activeIdx = i.teams.findIndex((t) => t.id === i.activeTeamId);
+    i.teams[activeIdx] = { ...i.teams[activeIdx]!, aiDependency: 73 };
+    i.org = { ...i.org, aiDependency: 73 };
+    const active = i.teams[activeIdx]!;
     const targetDept = active.deptId;
     const base = i.sprint!.tasks[0]!;
     // 非炎上 Review 3 + 炎上 Review 1。sync→effect(-4)→align で非炎上だけ消え炎上1が残る。
@@ -557,6 +612,8 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     expect(remainingReviews.every((t) => t.incident)).toBe(true);
     expect(updated.reviewQueue).toBe(1);
     expect(i.org.aiDependency).toBe(updated.aiDependency);
+    expect(i.org.aiDependency).toBe(73);
+    expect(i.org.aiDependency).not.toBe(i.teams[0]!.aiDependency);
   });
 
   it('team レバーは非 active では org/align せず、active では盤面を揃える', () => {
@@ -634,8 +691,13 @@ describe('RI-91-A5 buildOrgScale', () => {
 
   it('active のライブ基盤値だけを全社 infra 集約へ載せる', () => {
     const engine = createEngine('ri-91-a5-infra');
-    engine.beginSetupSprint();
     const i = asInternals(engine);
+    i.teamLockUntilSprint = 0;
+    const nonHome = i.teams.find((t) => t.id !== i.homeTeamId && t.id !== i.teams[0]!.id)!;
+    expect(engine.enterTeam(nonHome.id)).toBe(true);
+    expect(i.activeTeamId).not.toBe(i.teams[0]!.id);
+    i.teamLockUntilSprint = 0;
+    engine.beginSetupSprint();
     i.org = { ...i.org, testCoverage: 90, documentation: 80, aiLiteracy: 70 };
     i.teams = i.teams.map((t) =>
       t.id === i.activeTeamId
@@ -644,6 +706,7 @@ describe('RI-91-A5 buildOrgScale', () => {
     );
     engine.zoomTo('company');
     // active=org(90/80/70), 他9チーム=(20/30/40) → 平均 27/35/43
+    // teams[0] 判定変異だとホーム側の TeamRunState(20/30/40) が混ざり平均がずれる
     expect(engine.snapshot().orgScale!.infra).toEqual({
       ci: 27,
       docs: 35,
@@ -662,16 +725,18 @@ describe('RI-91-A5 buildOrgScale', () => {
       taskFrom(base, { id: 802, lane: 'review', incident: true, burnTicksLeft: 1 }),
     ];
     const activeIdx = i.teams.findIndex((t) => t.id === i.activeTeamId);
-    i.teams[activeIdx] = { ...i.teams[activeIdx]!, reviewQueue: 1, incidents: 0 };
+    // 盤面 3/2 とも 0 とも異なる非ゼロ正本
+    i.teams[activeIdx] = { ...i.teams[activeIdx]!, reviewQueue: 1, incidents: 5 };
     i.phase = 'result';
+    i.teamLockUntilSprint = 0;
     engine.zoomTo('company');
 
     const projected = engine
       .snapshot()
       .orgScale!.departments.flatMap((d) => d.teams)
       .find((t) => t.id === i.activeTeamId)!;
-    // phase==='sprint' 条件を外すと残存盤面の 3/2 になる
+    // phase==='sprint' 条件を外すと残存盤面の 3/2、&& 0 変異だと incidents=0
     expect(projected.reviewQueue).toBe(1);
-    expect(projected.incidents).toBe(0);
+    expect(projected.incidents).toBe(5);
   });
 });

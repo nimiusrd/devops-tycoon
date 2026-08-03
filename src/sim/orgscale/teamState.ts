@@ -13,6 +13,7 @@ import {
 } from '../../data/members';
 import { activeEngineerCount, createMember, type RosterState } from '../member';
 import { AI_ADOPTION, TASK_BASE_VALUE } from '../model/process';
+import { AI_LITERACY_UNSAFE_CAP } from '../outcome';
 import { createRng } from '../rng';
 import type { DiagnosisType } from '../run/types';
 import type { OrgState } from '../types';
@@ -138,7 +139,9 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
   const jitter = (center: number, spread: number) => center + Math.round((rng() * 2 - 1) * spread);
   // 乱数消費順は従来どおり（ai→…→shipping→engineers）。順序を変えると固定 seed の
   // ライバル指標がすべてずれるため、追加フィールドは末尾の派生に留める。
-  const aiDependency = clamp(jitter(base.aiDependency, 25), 0, 100);
+  // RI-74: 低リテラシー組織では rival の依存度振れ幅を抑え、enterTeam 後の S1 即死を防ぐ。
+  const depSpread = base.aiLiteracy <= AI_LITERACY_UNSAFE_CAP ? 10 : 25;
+  const aiDependency = clamp(jitter(base.aiDependency, depSpread), 0, 100);
   const reviewQueue = Math.max(0, jitter(Math.max(2, base.reviewQueue), 4));
   const incidents = Math.max(0, Math.round(rng() * 2.4 - 0.6));
   const morale = clamp(jitter(base.morale, 20), 10, 100);

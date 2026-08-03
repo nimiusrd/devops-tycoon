@@ -2066,9 +2066,9 @@ export class RunEngine {
 
   /**
    * 旧 Nightmare 初期依存度（55）の未プレイセーブを現行初期値へ移行する（RI-74）。
-   * 判定はアクティブ org ではなくホームチーム（旧ベースそのもの）を使う。
-   * setup 中に rival へ入ったセーブでは org が ±25 揺らぎ値になり得るため。
-   * ライバル相対は差分適用で保ち、進行中ランの依存度は触らない。
+   * 呼び出し側で係数欠落を確認済み。ホーム等値は見ない（setup 中のレバー焼き込みや
+   * rival 進入で org / ホームが 55 以外になり得るため）。旧→新ベース差分を全チームへ適用し、
+   * 既に焼き込まれた施策差分は相対として残す。進行中ランは触らない。
    */
   private migrateLegacyNightmareAiDependencyBase(): void {
     if (this.difficulty !== 'nightmare') return;
@@ -2076,8 +2076,6 @@ export class RunEngine {
     if (this.phase !== 'setup') return;
     const nextBase = getDifficulty('nightmare').org.aiDependencyBase;
     const legacyBase = 55;
-    const home = this.teams.find((team) => team.id === this.homeTeamId);
-    if (!home || home.aiDependency !== legacyBase) return;
     const delta = nextBase - legacyBase;
     this.teams = this.teams.map((team) => ({
       ...team,

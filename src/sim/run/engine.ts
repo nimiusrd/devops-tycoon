@@ -80,6 +80,7 @@ import {
   HOME_TEAM_ID,
   initTeamRunStates,
   mergeAdjust,
+  RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY,
   deriveTeamCapacities,
   normalizeCoarseTotalsDelta,
   orgFromTeam,
@@ -2068,7 +2069,8 @@ export class RunEngine {
    * 旧 Nightmare 初期依存度（55）の未プレイセーブを現行初期値へ移行する（RI-74）。
    * 呼び出し側で係数欠落を確認済み。ホーム等値は見ない（setup 中のレバー焼き込みや
    * rival 進入で org / ホームが 55 以外になり得るため）。旧→新ベース差分を全チームへ適用し、
-   * 既に焼き込まれた施策差分は相対として残す。進行中ランは触らない。
+   * ライバルは旧 ±25 が残らないよう現行の低リテラシー振れ幅へクランプする。
+   * 進行中ランは触らない。
    */
   private migrateLegacyNightmareAiDependencyBase(): void {
     if (this.difficulty !== 'nightmare') return;
@@ -2077,10 +2079,15 @@ export class RunEngine {
     const nextBase = getDifficulty('nightmare').org.aiDependencyBase;
     const legacyBase = 55;
     const delta = nextBase - legacyBase;
-    this.teams = this.teams.map((team) => ({
-      ...team,
-      aiDependency: Math.max(0, Math.min(100, team.aiDependency + delta)),
-    }));
+    const rivalMin = nextBase - RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY;
+    const rivalMax = nextBase + RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY;
+    this.teams = this.teams.map((team) => {
+      let aiDependency = Math.max(0, Math.min(100, team.aiDependency + delta));
+      if (team.id !== this.homeTeamId) {
+        aiDependency = Math.max(rivalMin, Math.min(rivalMax, aiDependency));
+      }
+      return { ...team, aiDependency };
+    });
     const active = this.teams.find((team) => team.id === this.activeTeamId);
     if (active) this.org = orgFromTeam(active);
   }

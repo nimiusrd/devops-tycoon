@@ -205,8 +205,9 @@ describe('RI-74 AI依存ペースと回避経路', () => {
     restored.hydratePersistState(persist!);
     const saved = restored.exportPersistState()!;
     expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(42);
-    expect(saved.extras.teams!.find((t) => t.id === rival.id)!.aiDependency).toBe(54); // 67-13
-    expect(saved.org.aiDependency).toBe(54);
+    // 67-13=54 は現行 ±10（42..52）を超えるため 52 へクランプ
+    expect(saved.extras.teams!.find((t) => t.id === rival.id)!.aiDependency).toBe(52);
+    expect(saved.org.aiDependency).toBe(52);
     expect(saved.extras.activeTeamId).toBe(rival.id);
   });
 
@@ -231,10 +232,49 @@ describe('RI-74 AI依存ペースと回避経路', () => {
     restored.hydratePersistState(persist!);
     const saved = restored.exportPersistState()!;
     expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(26); // 39-13
-    expect(saved.extras.teams!.find((t) => t.id === rivalBefore.id)!.aiDependency).toBe(
-      rivalBeforeDep - 13,
-    );
+    const rivalAfter = saved.extras.teams!.find((t) => t.id === rivalBefore.id)!.aiDependency;
+    expect(rivalAfter).toBeGreaterThanOrEqual(32);
+    expect(rivalAfter).toBeLessThanOrEqual(52);
+    expect(rivalAfter).toBe(Math.max(32, Math.min(52, rivalBeforeDep - 13)));
     expect(saved.org.aiDependency).toBe(26);
+  });
+
+  it('旧 ±25 の高依存 rival は移行時に現行 ±10 へ収める', () => {
+    const e = new RunEngine({ seed: 'old-20', difficulty: 'nightmare' });
+    e.startRun('nightmare', ['frontier-dependency'], 'old-20');
+    const persist = e.exportPersistState();
+    expect(persist).not.toBeNull();
+    delete persist!.extras.baseConfig.aiDependencyPerTask;
+    const homeId = persist!.extras.homeTeamId!;
+    persist!.extras.teams = persist!.extras.teams!.map((t) =>
+      t.id === homeId
+        ? { ...t, aiDependency: 55 }
+        : t.id === 'platform-t1'
+          ? { ...t, aiDependency: 80, aiLiteracy: 20 }
+          : { ...t, aiDependency: 60 },
+    );
+    persist!.org.aiDependency = 55;
+
+    const restored = new RunEngine({ seed: 'old-20-restored', difficulty: 'normal' });
+    restored.hydratePersistState(persist!);
+    const saved = restored.exportPersistState()!;
+    expect(saved.trials).toContain('frontier-dependency');
+    expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(42);
+    expect(saved.extras.teams!.find((t) => t.id === 'platform-t1')!.aiDependency).toBe(52);
+    // クランプ後の rival でも frontier 付き無介入 S1 で依存敗北しない
+    expect(restored.enterTeam('platform-t1')).toBe(true);
+    restored.beginSetupSprint();
+    let guard = 0;
+    while (restored.snapshot().phase === 'sprint' && guard < 5000) {
+      guard += 1;
+      restored.step(1_000_000);
+    }
+    const s = restored.snapshot();
+    if (s.status === 'lost') {
+      expect(s.loseReason).not.toBe('aiDependency');
+    } else {
+      expect(s.org.aiDependency).toBeLessThan(AI_DEPENDENCY_CAP);
+    }
   });
 
   it('Nightmare のライバル依存度は低リテラシー時に振れ幅が抑えられる', () => {

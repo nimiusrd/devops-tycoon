@@ -134,13 +134,24 @@ function homeSeedRaw(
   };
 }
 
+/** 通常の rival AI依存度振れ幅。 */
+export const RIVAL_AI_DEPENDENCY_SPREAD = 25;
+/**
+ * 低リテラシー組織の rival AI依存度振れ幅（RI-74）。
+ * 旧セーブ移行時のクランプ上限としても使う。
+ */
+export const RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY = 10;
+
 /** 他チームの素の指標を派生 seed から作る（ホームをベースに分散。初期化専用）。 */
 function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
   const jitter = (center: number, spread: number) => center + Math.round((rng() * 2 - 1) * spread);
   // 乱数消費順は従来どおり（ai→…→shipping→engineers）。順序を変えると固定 seed の
   // ライバル指標がすべてずれるため、追加フィールドは末尾の派生に留める。
   // RI-74: 低リテラシー組織では rival の依存度振れ幅を抑え、enterTeam 後の S1 即死を防ぐ。
-  const depSpread = base.aiLiteracy <= AI_LITERACY_UNSAFE_CAP ? 10 : 25;
+  const depSpread =
+    base.aiLiteracy <= AI_LITERACY_UNSAFE_CAP
+      ? RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY
+      : RIVAL_AI_DEPENDENCY_SPREAD;
   const aiDependency = clamp(jitter(base.aiDependency, depSpread), 0, 100);
   const reviewQueue = Math.max(0, jitter(Math.max(2, base.reviewQueue), 4));
   const incidents = Math.max(0, Math.round(rng() * 2.4 - 0.6));

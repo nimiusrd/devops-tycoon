@@ -68,7 +68,7 @@ export const SENIOR_HP_HELP =
 
 /** AI依存度 HUD の help（RI-74）。 */
 export const AI_DEPENDENCY_HELP =
-  'AI任せが強いほどレビュー負荷と手戻りリスクが上がります。リテラシーが30以下のまま依存度が95に達すると敗北します。ペアレビューでリテラシーを上げるか、ガイドライン／AIスロットルで依存度を下げてください。';
+  'AI任せが強いほどレビュー負荷と手戻りリスクが上がります。リテラシーが30以下のまま依存度が95に達すると敗北します。ペアレビューでリテラシーを上げるか、AI利用ガイドライン（カード）や全社／部門／チームのAIレバーで依存度を下げてください。介入バーのAIスロットルは新規流入を抑えるだけで、既に上がった依存度は下げません。';
 
 /** シニア体力の詳細・警告チップ文言（RI-67）。炎上があるときだけ緊急対応へ誘導する。 */
 export function seniorHpHudCopy(
@@ -123,7 +123,7 @@ export function aiDependencyHudCopy(
   if (literacy <= 30 && aiDependencyPct >= 50) {
     return {
       detail,
-      warningChip: '依存危険・ペアか抑制',
+      warningChip: '依存危険・ペアかガイド',
     };
   }
   if (aiDependencyPct >= 75) {

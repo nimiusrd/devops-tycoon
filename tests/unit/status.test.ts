@@ -133,7 +133,7 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     const state = withOrg({ aiDependency: 60, aiLiteracy: 25 });
     const metrics = deriveHudMetrics(state.org, state.sprint.tasks);
     expect(metrics.find((m) => m.id === 'aiDependency')).toMatchObject({
-      warningChip: '依存危険・ペアか抑制',
+      warningChip: '依存危険・ペアかガイド',
     });
     expect(metrics.find((m) => m.id === 'aiDependency')?.detail).toMatch(/Literacy 25/);
     expect(metrics.find((m) => m.id === 'aiDependency')?.help).toMatch(/95/);

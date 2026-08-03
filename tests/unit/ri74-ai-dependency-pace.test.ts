@@ -166,7 +166,8 @@ describe('RI-74 AI依存ペースと回避経路', () => {
       ...t,
       aiDependency: i === 0 ? 55 : 55 + (i % 2 === 0 ? 12 : -8),
     }));
-    const rivalBefore = persist!.extras.teams!.find((t) => t.id !== persist!.extras.activeTeamId)!;
+    const homeId = persist!.extras.homeTeamId ?? persist!.extras.activeTeamId!;
+    const rivalBefore = persist!.extras.teams!.find((t) => t.id !== homeId)!;
     const rivalDeltaExpected = rivalBefore.aiDependency - 55;
 
     const restored = new RunEngine({ seed: 'ri74-hydrate-2', difficulty: 'normal' });
@@ -179,6 +180,34 @@ describe('RI-74 AI依存ペースと回避経路', () => {
       .exportPersistState()!
       .extras.teams!.find((t) => t.id === rivalBefore.id)!;
     expect(rivalAfter.aiDependency).toBe(42 + rivalDeltaExpected);
+  });
+
+  it('setup 中にライバルへ入った旧 Nightmare セーブもホーム基準で移行する', () => {
+    const e = new RunEngine({ seed: 'ri74-hydrate-rival', difficulty: 'nightmare' });
+    e.startRun();
+    const persist = e.exportPersistState();
+    expect(persist).not.toBeNull();
+    delete persist!.extras.baseConfig.aiDependencyPerTask;
+    const homeId = persist!.extras.homeTeamId!;
+    const rival = persist!.extras.teams!.find((t) => t.id !== homeId)!;
+    // 旧セーブ: ホームは 55、アクティブはライバル（揺らぎ値）で保存されている
+    persist!.extras.teams = persist!.extras.teams!.map((t) =>
+      t.id === homeId
+        ? { ...t, aiDependency: 55 }
+        : t.id === rival.id
+          ? { ...t, aiDependency: 67 }
+          : { ...t, aiDependency: 55 + 9 },
+    );
+    persist!.extras.activeTeamId = rival.id;
+    persist!.org = { ...persist!.org, aiDependency: 67, aiLiteracy: 18 };
+
+    const restored = new RunEngine({ seed: 'ri74-hydrate-rival-2', difficulty: 'normal' });
+    restored.hydratePersistState(persist!);
+    const saved = restored.exportPersistState()!;
+    expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(42);
+    expect(saved.extras.teams!.find((t) => t.id === rival.id)!.aiDependency).toBe(54); // 67-13
+    expect(saved.org.aiDependency).toBe(54);
+    expect(saved.extras.activeTeamId).toBe(rival.id);
   });
 
   it('リプレイ復元では旧 Nightmare の記録依存度を改変しない', () => {

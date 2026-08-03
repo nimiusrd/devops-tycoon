@@ -93,12 +93,22 @@ body {
   flex-shrink: 0;
 }
 .app.app-sprint-layout .subbar {
-  gap: 8px;
-  padding: 6px 12px;
+  gap: 6px;
+  padding: 4px 10px;
 }
 .app.app-sprint-layout .board-wrap {
-  flex: 1 1 auto;
-  min-height: clamp(180px, 38vh, 420px);
+  /* contain スロット: 盤面 intrinsic 高さを flex 計算から切り離し、はみ出しを遮断する */
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.app.app-sprint-layout .meter {
+  width: 140px;
+}
+.app.app-sprint-layout .combo-badge {
+  height: auto;
+  max-height: 34px;
+  overflow: hidden;
 }
 .app.app-sprint-layout .deckbar {
   flex-shrink: 0;
@@ -152,7 +162,10 @@ body {
     overflow-y: visible;
   }
   .app.app-sprint-layout .board-wrap {
+    /* 狭幅・低高さはページスクロール可。盤面の最低可視高だけ確保する */
+    flex: 1 1 auto;
     min-height: clamp(140px, 28vh, 320px);
+    overflow: hidden;
   }
 }
 
@@ -1665,7 +1678,8 @@ body {
   display: flex;
   align-items: center;
   min-width: 0;
-  height: 30px;
+  max-height: 34px;
+  overflow: hidden;
 }
 .combo-inner {
   display: flex;

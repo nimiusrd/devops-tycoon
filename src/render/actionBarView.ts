@@ -115,6 +115,17 @@ export function deriveActionAvailability(
   // org 省略時は対象判定に org を使わない（canApplyAction は org 非依存）。
   const gate = canApplyAction(id, sprint, org ?? ({} as OrgState), tick);
   if (!gate.ok) {
+    // assignTask: canApplyAction は Coding に自動選択対象がある場合のみ ok を返すが、
+    // アクションバーの武装表示は Backlog から昇格可能なタスクがあれば有効とする。
+    // apply 時（target なし）は依然として Coding 自動選択に従うため、厳密性は保たれる。
+    if (id === 'assignTask' && gate.reason === 'no-target' && assignableTasks(sprint).length > 0) {
+      return {
+        actionId: id,
+        canActivate: true,
+        targetCount,
+        targetBadge: badge,
+      };
+    }
     return {
       actionId: id,
       canActivate: false,

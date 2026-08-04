@@ -931,7 +931,22 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   if (s.budget <= 15) out.push('budgetExhausted');
   // trustExhausted: trust が低い場合に加え、四半期レビューで shutdown/missed_crisis になりうる
   // budget/HP 経路もカバーする（budget<=5 → missed_crisis, seniorHp<=10 → shutdown 前兆）。
-  if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
+  // missedCount>=4 → missed_crisis 経路のプロキシ: 四半期後半で多 KPI 同時未達圧力が高い場合。
+  const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
+  const kpiMissCount = [
+    s.quarterTotals.delivered < s.quarterGoal.deliveryTarget,
+    s.org.quality < s.quarterGoal.qualityTarget,
+    s.org.techDebt > s.quarterGoal.techDebtLimit,
+    s.org.morale < s.quarterGoal.moraleTarget,
+    s.quarterTotals.incidents > s.quarterGoal.incidentLimit,
+  ].filter(Boolean).length;
+  if (
+    minTrust <= 25 ||
+    s.budget <= 5 ||
+    s.org.seniorHp <= 10 ||
+    (lateInQuarter && kpiMissCount >= 4)
+  )
+    out.push('trustExhausted');
   // reviewFreeze: キューピーク超過に加え、低シニアHP時の review-freeze 判定イベントをカバー。
   // seniorHpLow >= 0.55（seniorHp <= 45）でイベントが抽選対象になる。
   const reviewQueueDanger = s.totals.reviewQueuePeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
@@ -942,13 +957,11 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
     out.push('incidentCascade');
   if (s.currentSprintKind === 'boss') out.push('bossFailed');
-  // reorgRequired: trust+quarter 条件に加え、Q2 以降の遅延中スプリントで出荷未達が深刻な場合。
-  // missedCount >= 3 の代替プロキシ: sprintIndexInQuarter が後半かつ出荷が目標の50%未満。
-  const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
-  const deliveryAtRisk = s.quarterTotals.delivered < s.quarterGoal.deliveryTarget * 0.5;
+  // reorgRequired: trust+quarter 条件に加え、Q2 以降の遅延中スプリントで多 KPI 未達リスクが高い場合。
+  // missedCount >= 3 の代替プロキシ: lateInQuarter かつ kpiMissCount（出荷含む複数 KPI）が 3 以上。
   if (
     (minTrust <= 20 && s.quarterNumber >= 2) ||
-    (s.quarterNumber >= 2 && lateInQuarter && deliveryAtRisk)
+    (s.quarterNumber >= 2 && lateInQuarter && kpiMissCount >= 3)
   )
     out.push('reorgRequired');
   return out;
@@ -1333,7 +1346,9 @@ export function runOnce(
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
           sampleAvailableInDanger(e, availableInDangerByReason);
-          interventions += intervene(e, spec, attempts);
+          const n = intervene(e, spec, attempts);
+          interventions += n;
+          if (n > 0) sampleAvailableInDanger(e, availableInDangerByReason);
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
           if (spec.cards === 'selective') playHand(e, 'selective');

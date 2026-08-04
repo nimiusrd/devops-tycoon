@@ -333,6 +333,12 @@ describe('evaluateWinType', () => {
       totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 10, spread: 1 },
       budget: 10,
     });
+    // reviewHell（ピーク16〜19）と重なる場合は aiSuccess にしない。
+    win('normal', {
+      org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 40 },
+      totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 18, spread: 1 },
+      budget: 10,
+    });
   });
 
   it('幸福・経営・カオス・健全はビルド指標で分岐する（RI-76）', () => {
@@ -374,7 +380,20 @@ describe('evaluateWinType', () => {
     win('healthy', {
       org: {
         quality: 55,
-        morale: 50,
+        morale: 60,
+        seniorHp: 40,
+        aiLiteracy: 50,
+        testCoverage: 70,
+        documentation: 60,
+      },
+      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 10,
+    });
+    // documentationKingdom 経路でも士気下限未満なら健全にしない。
+    win('normal', {
+      org: {
+        quality: 55,
+        morale: 59,
         seniorHp: 40,
         aiLiteracy: 50,
         testCoverage: 70,

@@ -130,8 +130,14 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'noDamage';
   }
 
-  // AI ビルド: 利用率と検証能力の両立。
-  if (aiPct >= 0.55 && reworkRatio < 0.22 && totals.reviewQueuePeak < 20 && org.aiLiteracy >= 40) {
+  // AI ビルド: 利用率と検証能力の両立。reviewHell（ピーク16+）とは重ならない。
+  if (
+    aiPct >= 0.55 &&
+    reworkRatio < 0.22 &&
+    totals.reviewQueuePeak < 16 &&
+    org.aiLiteracy >= 40 &&
+    diagnosis !== 'reviewHell'
+  ) {
     return 'aiSuccess';
   }
 
@@ -150,8 +156,13 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'chaos';
   }
 
-  // 品質・ドキュメント寄りの健全（診断が documentationKingdom なら閾値を緩める）。
-  if (diagnosis === 'documentationKingdom' && org.quality >= 55 && reworkRatio < 0.22) {
+  // 品質・ドキュメント寄りの健全（診断が documentationKingdom なら閾値を緩める。士気下限は維持）。
+  if (
+    diagnosis === 'documentationKingdom' &&
+    org.quality >= 55 &&
+    org.morale >= 60 &&
+    reworkRatio < 0.22
+  ) {
     return 'healthy';
   }
   if (org.quality >= 65 && org.morale >= 65 && reworkRatio < 0.2) {

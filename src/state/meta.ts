@@ -327,7 +327,7 @@ export const ACHIEVEMENT_DEFS: readonly AchievementDef[] = [
   {
     id: 'no-damage',
     label: 'ノーダメージ突破',
-    hint: '残業・アンドンを使わず延焼ゼロでボスを突破する（ノーダメージ勝利）',
+    hint: '残業・アンドン未使用・延焼ゼロに加え、品質・士気・シニア体力を高水準で保ち健全系診断でボスを突破する（ノーダメージ勝利）',
   },
   {
     id: 'combo-master',
@@ -371,7 +371,8 @@ const WIN_TITLE_HINTS: Record<WinType, string> = {
   management: '予算に余裕を残してボスを突破する',
   happiness: 'Morale とシニア体力を高く保ってボスを突破する',
   chaos: '障害を乗り越えて高い出荷を達成し、ボスを突破する',
-  noDamage: '残業・アンドンを使わず、延焼ゼロでボスを突破する',
+  noDamage:
+    '残業・アンドン未使用・延焼ゼロに加え、品質・士気・シニア体力を高水準で保ち健全系診断でボスを突破する',
 };
 
 const WIN_TYPE_ORDER: readonly WinType[] = [

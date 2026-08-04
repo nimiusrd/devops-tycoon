@@ -4,8 +4,8 @@
  * 敗因ラベル（何が起きたか）とは別に、次のランで変える具体操作と
  * 現実の開発現場への示唆を返す。描画・状態は知らない純関数。
  *
- * 四半期レビュー由来の敗北は `loseReason` が粗い（missed_crisis / shutdown が
- * ともに trustExhausted）ため、`quarterOutcome` と終了時スナップショットで助言を分ける。
+ * 四半期レビュー由来の敗北は RI-79 で原因別 loseReason へ分解済み。
+ * 助言は `quarterOutcome` と終了時スナップショットでもさらに細分化する。
  */
 import type { LoseReason, QuarterOutcome, StakeholderId, StakeholderTrust } from '../sim/run/types';
 
@@ -86,6 +86,11 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
     nextAction:
       '連続未達を避けるため、品質・士気・障害の下限を先に立て直し、信頼を削る目標修正に頼らない。',
     insight: '同じ未達を繰り返すと、現場改善ではなく組織再編という外からの決着になる。',
+  },
+  kpiMissed: {
+    nextAction:
+      '未達KPIを四半期の早い段階で特定し、スコープ削減やステークホルダーケアで継続条件を守ってから伸ばす。',
+    insight: '未達の件数そのものが継続不能条件になる。原因と違う手を打っても件数は減らない。',
   },
 };
 
@@ -359,7 +364,14 @@ export function loseNextActionView(
   options: LoseNextActionOptions = {},
 ): LoseNextActionView {
   const snapshot = options.snapshot ?? {};
-  if (options.quarterOutcome) {
+  // ハード敗北原因（seniorBurnout/techDebt/moraleCollapse/reviewFreeze）が
+  // missed_crisis から降格した場合も cause-specific 助言を優先する（RI-79）。
+  const isHardLoseCause =
+    reason === 'seniorBurnout' ||
+    reason === 'techDebt' ||
+    reason === 'moraleCollapse' ||
+    reason === 'reviewFreeze';
+  if (options.quarterOutcome && !(isHardLoseCause && options.quarterOutcome === 'missed_crisis')) {
     const fromOutcome = quarterOutcomeAction(options.quarterOutcome, snapshot);
     if (fromOutcome) return fromOutcome;
   }

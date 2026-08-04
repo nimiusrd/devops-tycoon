@@ -389,9 +389,9 @@ describe('RI-91-B2: quarterReview survived mutants', () => {
     });
 
     it('availableAdjustments 側でも team trustDelta の加減を区別する', () => {
-      const baseTrust = trust({ management: 70, customers: 70, team: 31 });
-      // team 31 + (-20) = 11 → min>10 で通過。team 31 - (-20) = 51 でも通過してしまうため、
-      // 境界の非提示側を合わせて Arithmetic を刺す。
+      const baseTrust = trust({ management: 70, customers: 70, team: 36 });
+      // team 36 + (-20) = 16 → 危機閾値(15)より上で通過。
+      // team 36 - (-20) = 56 でも通過してしまうため、境界の非提示側を合わせて Arithmetic を刺す。
       expect(
         availableAdjustments(
           'missed_adjustable',
@@ -405,7 +405,7 @@ describe('RI-91-B2: quarterReview survived mutants', () => {
       expect(
         availableAdjustments(
           'missed_adjustable',
-          trust({ management: 70, customers: 70, team: 30 }),
+          trust({ management: 70, customers: 70, team: 35 }),
           40,
           org({ morale: 50, seniorHp: 50, techDebt: 40 }),
           totals(),

@@ -315,7 +315,7 @@ describe('RI-72-D4 engine outcome / quarterReview entry', () => {
   it('quarterReview の継続不能 outcome は loseReason を固定マッピングして lost へ入る', () => {
     const cases: Array<[QuarterOutcome, RunState['loseReason']]> = [
       ['shutdown', 'trustExhausted'],
-      ['missed_crisis', 'trustExhausted'],
+      ['missed_crisis', 'kpiMissed'],
       ['reorg_required', 'reorgRequired'],
     ];
 

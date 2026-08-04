@@ -469,6 +469,41 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(adjustments).not.toContain('pause_ai_rollout');
   });
 
+  it('RI-79: request_budget は注意帯でも提示し、申請後の信頼は危機閾値より上に残る', () => {
+    const trust: StakeholderTrust = { management: 21, customers: 60, team: 60 };
+    const adjustments = availableAdjustments('missed_adjustable', trust, 30, org(), totals());
+    expect(adjustments).toContain('request_budget');
+    const applied = applyGoalAdjustment(
+      {
+        goal,
+        trust,
+        org: org(),
+        budget: 30,
+        goalAdjustmentsTaken: [],
+        nextBudgetCap: null,
+      },
+      'request_budget',
+    );
+    expect(applied.trust.management).toBeGreaterThan(15);
+  });
+
+  it('RI-79: stakeholder_care の Delivery 代償は次期目標を上げる', () => {
+    const inputGoal = { ...goal, deliveryTarget: 1950 };
+    const applied = applyGoalAdjustment(
+      {
+        goal: inputGoal,
+        trust: buildInitialTrust('normal'),
+        org: org(),
+        budget: 40,
+        goalAdjustmentsTaken: [],
+        nextBudgetCap: null,
+      },
+      'stakeholder_care',
+    );
+    expect(applied.goal.deliveryTarget).toBe(1950 + 80);
+    expect(applied.trust.management).toBeGreaterThan(buildInitialTrust('normal').management);
+  });
+
   it('四半期 KPI は達成でもボス単体未達なら missed_adjustable になる', () => {
     const review = buildQuarterReview({
       goal,
@@ -495,7 +530,7 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(adjustments).not.toContain('reorg_teams');
   });
 
-  it('6種類の目標修正定義がすべて存在する', () => {
+  it('7種類の目標修正定義がすべて存在する', () => {
     const ids = [
       'cut_scope',
       'extend_deadline',
@@ -503,6 +538,7 @@ describe('四半期レビュー（Phase 8）', () => {
       'request_budget',
       'pause_ai_rollout',
       'reorg_teams',
+      'stakeholder_care',
     ] as const;
     for (const id of ids) {
       expect(getGoalAdjustment(id)).toBeDefined();
@@ -573,9 +609,82 @@ describe('四半期レビュー（Phase 8）', () => {
       expect(canChooseAdjustment(c.outcome), c.outcome).toBe(c.choose);
       expect(canAcknowledgeWin(c.outcome), c.outcome).toBe(c.acknowledge);
       expect(isTerminalFailure(c.outcome), c.outcome).toBe(c.terminal);
+      // 入力なしは後方互換フォールバック（RI-79 の原因分解は別テスト）。
       expect(loseReasonForOutcome(c.outcome), c.outcome).toBe(c.loseReason);
       expect(OUTCOME_LABELS[c.outcome], c.outcome).toBe(c.label);
     }
+  });
+
+  it('RI-79: loseReasonForOutcome は発火条件ごとにラベルを分解する', () => {
+    const baseProgress = [
+      { id: 'delivery', label: 'D', target: 1, actual: 0, status: 'missed' as const },
+      { id: 'quality', label: 'Q', target: 1, actual: 0, status: 'missed' as const },
+      { id: 'techDebt', label: 'T', target: 1, actual: 0, status: 'missed' as const },
+      { id: 'morale', label: 'M', target: 1, actual: 0, status: 'missed' as const },
+    ];
+    const healthyOrg = org({ morale: 50, seniorHp: 50 });
+
+    expect(
+      loseReasonForOutcome('missed_crisis', {
+        progress: baseProgress,
+        trust: { management: 10, customers: 40, team: 40 },
+        org: healthyOrg,
+        budget: 40,
+        quarterNumber: 1,
+      }),
+    ).toBe('trustExhausted');
+
+    expect(
+      loseReasonForOutcome('missed_crisis', {
+        progress: baseProgress.slice(0, 1),
+        trust: { management: 40, customers: 40, team: 40 },
+        org: healthyOrg,
+        budget: 3,
+        quarterNumber: 1,
+      }),
+    ).toBe('kpiMissed');
+
+    expect(
+      loseReasonForOutcome('missed_crisis', {
+        progress: baseProgress.slice(0, 1),
+        trust: { management: 40, customers: 40, team: 40 },
+        org: healthyOrg,
+        budget: 0,
+        quarterNumber: 1,
+      }),
+    ).toBe('budgetExhausted');
+
+    expect(
+      loseReasonForOutcome('missed_crisis', {
+        progress: baseProgress,
+        trust: { management: 40, customers: 40, team: 40 },
+        org: healthyOrg,
+        budget: 40,
+        quarterNumber: 1,
+      }),
+    ).toBe('kpiMissed');
+
+    expect(
+      loseReasonForOutcome('shutdown', {
+        progress: baseProgress.slice(0, 2),
+        trust: { management: 40, customers: 40, team: 40 },
+        org: org({ morale: 10, seniorHp: 50 }),
+        budget: 0,
+        quarterNumber: 1,
+      }),
+    ).toBe('budgetExhausted');
+
+    expect(
+      loseReasonForOutcome('shutdown', {
+        progress: baseProgress.slice(0, 2),
+        trust: { management: 40, customers: 40, team: 40 },
+        org: org({ morale: 50, seniorHp: 3 }),
+        budget: 40,
+        quarterNumber: 1,
+      }),
+    ).toBe('seniorBurnout');
+
+    expect(loseReasonForOutcome('reorg_required')).toBe('reorgRequired');
   });
 
   it('RI-72-C1: KPI 比較のちょうど境界を固定する', () => {
@@ -717,7 +826,16 @@ describe('四半期レビュー（Phase 8）', () => {
     });
     expect(review.outcome).toBe('missed_crisis');
     expect(review.availableAdjustments).toEqual([]);
-    expect(loseReasonForOutcome(review.outcome)).toBe('trustExhausted');
+    // 空候補の原因（シニア枯渇）を信頼フォールバックへ落とさない（RI-79）。
+    expect(
+      loseReasonForOutcome(review.outcome, {
+        progress: review.progress,
+        trust: review.trust,
+        org: org({ quality: 30, morale: 50, techDebt: 40, seniorHp: 1 }),
+        budget: 40,
+        quarterNumber: 1,
+      }),
+    ).toBe('seniorBurnout');
   });
 
   it('RI-68: cut_scope を繰り返しても Delivery 下限で実績比が壊れない', () => {

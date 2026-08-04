@@ -140,7 +140,8 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     totals.reviewQueuePeak < 16 &&
     org.aiLiteracy >= 40 &&
     diagnosis !== 'reviewHell' &&
-    diagnosis !== 'aiOverproduction'
+    diagnosis !== 'aiOverproduction' &&
+    diagnosis !== 'seniorSacrifice'
   ) {
     return 'aiSuccess';
   }

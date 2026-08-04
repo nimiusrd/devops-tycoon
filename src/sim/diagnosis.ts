@@ -104,7 +104,7 @@ export function diagnosisView(type: DiagnosisType): DiagnosisView {
  */
 export function diagnose(org: OrgState, totals: RunTotals): DiagnosisType {
   const completed = Math.max(1, totals.completed);
-  const reworkRatio = totals.rework / completed;
+  const reworkRatio = totals.rework / Math.max(1, totals.rework + totals.done);
   const aiPct = totals.aiAssisted / completed;
   const queuePeak = totals.reviewQueuePeak;
 

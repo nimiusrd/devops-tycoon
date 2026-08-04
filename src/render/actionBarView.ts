@@ -1,20 +1,20 @@
 /**
- * 介入アクションバーの表示計画（RI-51）。
+ * 介入アクションバーの表示計画（RI-51 / RI-89）。
  *
- * `src/sim/actions.ts` の EFFECTS と同じ対象判定を純関数で再現し、
- * 対象数バッジ・発動不能理由を UI に供給する（描画専用。第22.2）。
+ * 発動可否は sim 公開の `canApplyAction` を正とし、対象数バッジだけ UI 側で導出する。
  */
-import { getAction } from '../data/actions';
 import {
   activeIncidents,
+  ALL_ACTION_IDS,
   ANDON_TICKS,
+  canApplyAction,
   INTERRUPT_REVIEW_COUNT,
   OVERTIME_TICKS,
   PAIR_REVIEW_COUNT,
   THROTTLE_TICKS,
 } from '../sim/actions';
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
-import type { ActionId, SprintState, Task } from '../sim/types';
+import type { ActionId, OrgState, SprintState, Task } from '../sim/types';
 
 export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete';
 
@@ -32,16 +32,6 @@ function tasksInLane(sprint: SprintState, lane: Task['lane']): Task[] {
   return sprint.tasks.filter((t) => t.lane === lane);
 }
 
-/** splitPr の分割候補数（EFFECTS と同じ優先順位の母数）。 */
-function splitPrCandidateCount(sprint: SprintState): number {
-  return splitPrCandidates(sprint).length;
-}
-
-/** splitPr が 1 件でも発動可能か（EFFECTS と同じ選択ロジック）。 */
-function hasSplitPrTarget(sprint: SprintState): boolean {
-  return splitPrCandidates(sprint).length > 0;
-}
-
 /** アクション別の対象数（常時発動系は 0）。 */
 export function countActionTargets(sprint: SprintState, id: ActionId): number {
   switch (id) {
@@ -50,7 +40,7 @@ export function countActionTargets(sprint: SprintState, id: ActionId): number {
     case 'firefight':
       return activeIncidents(sprint).length;
     case 'splitPr':
-      return splitPrCandidateCount(sprint);
+      return splitPrCandidates(sprint).length;
     case 'assignTask':
       return assignableTasks(sprint).length;
     case 'pairReview':
@@ -67,11 +57,6 @@ export function countActionTargets(sprint: SprintState, id: ActionId): number {
 /** 対象不要アクションか（modifier 系）。 */
 function isAlwaysAvailable(id: ActionId): boolean {
   return id === 'aiThrottle' || id === 'overtime' || id === 'andon';
-}
-
-/** 対象が無いと no-target になるアクションか。 */
-function requiresTarget(id: ActionId): boolean {
-  return !isAlwaysAvailable(id) && id !== 'pairReview';
 }
 
 function formatTargetBadge(id: ActionId, count: number): string | undefined {
@@ -105,73 +90,41 @@ const BLOCK_MESSAGES: Record<ActionBlockReason, string> = {
   complete: 'スプリント終了',
 };
 
-function hasNoTarget(sprint: SprintState, id: ActionId): boolean {
-  if (!requiresTarget(id)) return false;
-  switch (id) {
-    case 'interruptReview':
-      return tasksInLane(sprint, 'review').length === 0;
-    case 'firefight':
-      return activeIncidents(sprint).length === 0;
-    case 'splitPr':
-      return !hasSplitPrTarget(sprint);
-    case 'assignTask':
-      return assignableTasks(sprint).length === 0;
-    default:
-      return false;
-  }
-}
-
 /** 1 アクションの利用可否を導出する。 */
 export function deriveActionAvailability(
   sprint: SprintState,
   id: ActionId,
   disabled = false,
+  org?: OrgState,
+  tick = 0,
 ): ActionAvailability {
-  const def = getAction(id);
   const targetCount = countActionTargets(sprint, id);
+  const badge = formatTargetBadge(id, targetCount);
 
-  if (disabled || sprint.complete) {
+  if (disabled) {
     return {
       actionId: id,
       canActivate: false,
       blockReason: 'complete',
       blockMessage: BLOCK_MESSAGES.complete,
       targetCount,
-      targetBadge: formatTargetBadge(id, targetCount),
+      targetBadge: badge,
     };
   }
 
-  const remaining = sprint.cooldowns[id] ?? 0;
-  if (remaining > 0) {
+  // org 省略時は対象判定に org を使わない（canApplyAction は org 非依存）。
+  const gate = canApplyAction(id, sprint, org ?? ({} as OrgState), tick);
+  if (!gate.ok) {
     return {
       actionId: id,
       canActivate: false,
-      blockReason: 'cooldown',
-      blockMessage: BLOCK_MESSAGES.cooldown,
+      blockReason: gate.reason,
+      blockMessage:
+        gate.reason === 'no-target'
+          ? (NO_TARGET_MESSAGES[id] ?? BLOCK_MESSAGES['no-target'])
+          : BLOCK_MESSAGES[gate.reason],
       targetCount,
-      targetBadge: formatTargetBadge(id, targetCount),
-    };
-  }
-
-  if (!def || sprint.focus < def.cost) {
-    return {
-      actionId: id,
-      canActivate: false,
-      blockReason: 'no-focus',
-      blockMessage: BLOCK_MESSAGES['no-focus'],
-      targetCount,
-      targetBadge: formatTargetBadge(id, targetCount),
-    };
-  }
-
-  if (hasNoTarget(sprint, id)) {
-    return {
-      actionId: id,
-      canActivate: false,
-      blockReason: 'no-target',
-      blockMessage: NO_TARGET_MESSAGES[id] ?? BLOCK_MESSAGES['no-target'],
-      targetCount,
-      targetBadge: formatTargetBadge(id, targetCount),
+      targetBadge: badge,
     };
   }
 
@@ -179,23 +132,18 @@ export function deriveActionAvailability(
     actionId: id,
     canActivate: true,
     targetCount,
-    targetBadge: formatTargetBadge(id, targetCount),
+    targetBadge: badge,
   };
 }
 
 /** 全アクションの利用可否一覧。 */
-export function planActionBarView(sprint: SprintState, disabled = false): ActionAvailability[] {
-  const ids: ActionId[] = [
-    'interruptReview',
-    'splitPr',
-    'firefight',
-    'assignTask',
-    'aiThrottle',
-    'pairReview',
-    'overtime',
-    'andon',
-  ];
-  return ids.map((id) => deriveActionAvailability(sprint, id, disabled));
+export function planActionBarView(
+  sprint: SprintState,
+  disabled = false,
+  org?: OrgState,
+  tick = 0,
+): ActionAvailability[] {
+  return ALL_ACTION_IDS.map((id) => deriveActionAvailability(sprint, id, disabled, org, tick));
 }
 
 /** 失敗理由の表示用短文（トースト等）。 */

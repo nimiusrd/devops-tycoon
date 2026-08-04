@@ -4,6 +4,7 @@ import {
   ANDON_TICKS,
   applyAction,
   ASSIGN_MORALE_COST,
+  canApplyAction,
   FIREFIGHT_HP_COST,
   INTERRUPT_HP_COST,
   OVERTIME_HP_COST,
@@ -387,5 +388,61 @@ describe('介入で結果が変わる（DoD: 操作で結果が変わる）', ()
     const result = e.result();
     expect(result.actionCounts.interruptReview).toBe(1);
     expect(result.actionCounts.overtime).toBe(1);
+  });
+});
+
+describe('canApplyAction（RI-89 読み取り専用）', () => {
+  it('盤面を変更せずに対象不足を検知する', () => {
+    const org = createOrgState();
+    const sprint = makeSprint(org, []);
+    const before = structuredClone(sprint);
+    expect(canApplyAction('interruptReview', sprint, org, TICK)).toEqual({
+      ok: false,
+      reason: 'no-target',
+    });
+    expect(canApplyAction('firefight', sprint, org, TICK)).toEqual({
+      ok: false,
+      reason: 'no-target',
+    });
+    expect(sprint).toEqual(before);
+    expect(org).toEqual(createOrgState());
+  });
+
+  it('applyAction と同じゲート順で complete / cooldown / focus を返す', () => {
+    const org = createOrgState();
+    const sprint = makeSprint(org, [makeTask(1)]);
+    sprint.complete = true;
+    expect(canApplyAction('overtime', sprint, org, TICK).ok).toBe(false);
+    expect(canApplyAction('overtime', sprint, org, TICK)).toMatchObject({ reason: 'complete' });
+
+    sprint.complete = false;
+    sprint.cooldowns.overtime = 3;
+    expect(canApplyAction('overtime', sprint, org, TICK)).toEqual({
+      ok: false,
+      reason: 'cooldown',
+    });
+
+    sprint.cooldowns.overtime = 0;
+    sprint.focus = 0;
+    expect(canApplyAction('overtime', sprint, org, TICK)).toEqual({
+      ok: false,
+      reason: 'no-focus',
+    });
+  });
+
+  it('可なときは applyAction も成功し、否なときは失敗理由が一致する', () => {
+    const org = createOrgState();
+    const sprint = makeSprint(org, [makeTask(1), burningTask(2)]);
+    sprint.focus = 10;
+    expect(canApplyAction('firefight', sprint, org, TICK)).toEqual({ ok: true });
+    const ok = applyAction('firefight', sprint, org, rng, TICK);
+    expect(ok.ok).toBe(true);
+
+    const empty = makeSprint(createOrgState(), []);
+    empty.focus = 10;
+    const gate = canApplyAction('firefight', empty, createOrgState(), TICK);
+    const applied = applyAction('firefight', empty, createOrgState(), rng, TICK);
+    expect(gate).toEqual({ ok: false, reason: 'no-target' });
+    expect(applied).toMatchObject({ ok: false, reason: 'no-target' });
   });
 });

@@ -14,6 +14,7 @@ import { ACTION_DEFS } from '../../src/data/actions';
 import { CARD_DEFS } from '../../src/data/cards';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
+import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
@@ -513,6 +514,11 @@ export interface RunLog {
   deckSize: number;
   evolutionUnlocked: number;
   goalAdjustments: string[];
+  /**
+   * 危険域に入っているあいだに発動可能だった介入の和集合（RI-89）。
+   * `canApplyAction` による盤面非破壊観測。attempts（実際に試した手）とは別。
+   */
+  availableActionsInDanger: string[];
 }
 
 /**
@@ -888,6 +894,35 @@ function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
   };
 }
 
+/** F-9 / RI-89: 敗因予兆の危険域（HUD・四半期閾値の手前）。 */
+function isDangerZone(s: RunState): boolean {
+  const minTrust = Math.min(
+    s.stakeholderTrust.management,
+    s.stakeholderTrust.customers,
+    s.stakeholderTrust.team,
+  );
+  const reviewLen = s.sprint?.tasks.filter((t) => t.lane === 'review').length ?? 0;
+  return (
+    s.org.seniorHp < 50 ||
+    s.org.morale < 40 ||
+    s.org.techDebt >= 60 ||
+    (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) ||
+    s.budget <= 15 ||
+    minTrust <= 25 ||
+    reviewLen >= 12
+  );
+}
+
+/** 危険域で発動可能な介入を和集合へ追記する（盤面非破壊）。 */
+function sampleAvailableInDanger(e: RunEngine, into: Set<string>): void {
+  const s = e.snapshot();
+  if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
+  if (!isDangerZone(s)) return;
+  for (const id of ALL_ACTION_IDS) {
+    if (canApplyAction(id, s.sprint, s.org, s.sprintTick).ok) into.add(id);
+  }
+}
+
 function bump(
   attempts: Record<string, Partial<Record<DispatchReason, number>>>,
   id: string,
@@ -1189,6 +1224,8 @@ export function runOnce(
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
+  /** 危険域で発動可能だった介入の和集合（RI-89）。 */
+  const availableInDanger = new Set<string>();
   /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
   let lostPhase: string | undefined;
   /**
@@ -1242,6 +1279,7 @@ export function runOnce(
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
+          sampleAvailableInDanger(e, availableInDanger);
           interventions += intervene(e, spec, attempts);
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
@@ -1434,6 +1472,7 @@ export function runOnce(
     diagnosis: f.diagnosis,
     sprints,
     quarters,
+    availableActionsInDanger: [...availableInDanger].sort(),
     finalOrg: {
       aiEnabled: f.org.aiEnabled,
       aiDependency: Math.round(f.org.aiDependency),

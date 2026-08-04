@@ -203,7 +203,14 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
     const engine = createEngine('ri-91-a6-won');
     engine.setPreferredCards(['docs', 'auto-test']);
     const i = asInternals(engine);
-    const org = makeOrg({ quality: 70, morale: 70, seniorHp: 55 });
+    const org = makeOrg({
+      quality: 70,
+      morale: 70,
+      seniorHp: 65,
+      aiLiteracy: 50,
+      testCoverage: 40,
+      documentation: 40,
+    });
     const totals: RunTotals = {
       ...zeroTotals(),
       delivered: 120,

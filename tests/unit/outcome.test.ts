@@ -243,7 +243,11 @@ describe('winView', () => {
     ['management', '経営勝利', '予算に余裕を残しながら成果を最大化した。'],
     ['happiness', '現場幸福勝利', 'Morale とシニア体力を高く保ち続けた。'],
     ['chaos', 'カオス勝利', '障害を連発しながら、なぜか出荷だけは最大化した。'],
-    ['noDamage', 'ノーダメージ勝利', '残業・アンドンを使わず、延焼を一度も許さずに突破した。'],
+    [
+      'noDamage',
+      'ノーダメージ勝利',
+      '残業・アンドンを使わず延焼も許さず、品質・士気・シニア体力まで高水準で守り切った。',
+    ],
   ] as const)('%s の表示情報を返す', (type, label, description) => {
     expect(winView(type)).toEqual({ type, label, description });
   });
@@ -281,35 +285,188 @@ describe('evaluateWinType', () => {
     ).toBe(expected);
   };
 
-  it('ノーダメージは重い介入なし、かつ延焼0のとき最優先になる', () => {
-    win('noDamage', { totals: { spread: 0 }, usedHeavyActions: false });
-    win('normal', { totals: { spread: 1 }, usedHeavyActions: false });
-    win('normal', { totals: { spread: 0 }, usedHeavyActions: true });
-  });
-
-  it('健全勝利は品質・士気60以上、かつ手戻り率25%未満で成立する', () => {
-    win('healthy', { org: { quality: 60, morale: 60 }, totals: { completed: 4, rework: 0 } });
-    win('normal', { org: { quality: 60, morale: 59 }, totals: { completed: 4, rework: 0 } });
-    win('normal', { org: { quality: 59, morale: 60 }, totals: { completed: 4, rework: 0 } });
-    win('normal', { org: { quality: 60, morale: 60 }, totals: { completed: 4, rework: 1 } });
-  });
-
-  it('AI導入成功はAI比率50%以上、手戻り率20%未満、レビュー待ちピーク16未満で成立する', () => {
-    win('aiSuccess', {
-      totals: { completed: 10, aiAssisted: 5, rework: 1, reviewQueuePeak: 15 },
+  it('ノーダメージは高水準の健全指標と健全診断を要求し、受動だけでは取れない（RI-76）', () => {
+    win('noDamage', {
+      org: {
+        quality: 70,
+        morale: 70,
+        seniorHp: 60,
+        testCoverage: 40,
+        documentation: 40,
+        aiLiteracy: 50,
+      },
+      totals: { spread: 0, completed: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
+      usedHeavyActions: false,
+      budget: 10,
     });
-    win('normal', { totals: { completed: 10, aiAssisted: 4, rework: 1, reviewQueuePeak: 15 } });
-    win('normal', { totals: { completed: 10, aiAssisted: 5, rework: 2, reviewQueuePeak: 15 } });
-    win('normal', { totals: { completed: 10, aiAssisted: 5, rework: 1, reviewQueuePeak: 16 } });
+    // 重介入なし・延焼0だけでは足りない（旧ラダーの受動ノーダメ）。
+    win('normal', {
+      org: { quality: 50, morale: 50, seniorHp: 30, aiLiteracy: 50 },
+      totals: { spread: 0, completed: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
+      usedHeavyActions: false,
+      budget: 10,
+    });
+    // 重介入ありだとノーダメにはならず、幸福など別種別へ落ちる。
+    win('happiness', {
+      org: {
+        quality: 70,
+        morale: 70,
+        seniorHp: 60,
+        testCoverage: 40,
+        documentation: 40,
+        aiLiteracy: 50,
+      },
+      totals: { spread: 0, completed: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
+      usedHeavyActions: true,
+      budget: 10,
+    });
   });
 
-  it('幸福・経営・カオス勝利はそれぞれの境界値ちょうどで成立する', () => {
-    win('happiness', { org: { morale: 65, seniorHp: 50 } });
-    win('normal', { org: { morale: 65, seniorHp: 49 } });
-    win('normal', { org: { morale: 64, seniorHp: 50 } });
-    win('management', { budget: 40 });
-    win('chaos', { totals: { incidents: 8, delivered: 300 } });
-    win('normal', { totals: { incidents: 8, delivered: 299 } });
-    win('normal', { totals: { incidents: 7, delivered: 300 } });
+  it('AI導入成功は利用率・検証・Literacy で成立し、健全より先に評価される（RI-76）', () => {
+    win('aiSuccess', {
+      org: { quality: 80, morale: 80, seniorHp: 40, aiLiteracy: 40 },
+      totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 10, spread: 1 },
+      budget: 10,
+    });
+    win('normal', {
+      org: { quality: 50, morale: 50, seniorHp: 30, aiLiteracy: 39 },
+      totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 10, spread: 1 },
+      budget: 10,
+    });
+  });
+
+  it('幸福・経営・カオス・健全はビルド指標で分岐する（RI-76）', () => {
+    win('happiness', {
+      org: { morale: 70, seniorHp: 55, quality: 50, aiLiteracy: 50 },
+      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 10,
+    });
+    win('management', {
+      org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
+      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 35,
+    });
+    win('chaos', {
+      org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
+      totals: {
+        completed: 20,
+        aiAssisted: 0,
+        rework: 2,
+        reviewQueuePeak: 4,
+        spread: 1,
+        incidents: 6,
+        delivered: 250,
+      },
+      budget: 10,
+    });
+    win('healthy', {
+      org: {
+        quality: 65,
+        morale: 65,
+        seniorHp: 30,
+        aiLiteracy: 50,
+        testCoverage: 40,
+        documentation: 40,
+      },
+      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 10,
+    });
+    win('healthy', {
+      org: {
+        quality: 55,
+        morale: 50,
+        seniorHp: 40,
+        aiLiteracy: 50,
+        testCoverage: 70,
+        documentation: 60,
+      },
+      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 10,
+    });
+  });
+
+  it('代表ビルド入力で勝利種別が3種以上に分かれる（RI-76）', () => {
+    const types = new Set<WinType>([
+      evaluateWinType({
+        org: org({
+          quality: 72,
+          morale: 72,
+          seniorHp: 65,
+          aiLiteracy: 55,
+          testCoverage: 40,
+          documentation: 40,
+        }),
+        totals: runTotals({
+          spread: 0,
+          completed: 40,
+          rework: 4,
+          aiAssisted: 0,
+          reviewQueuePeak: 6,
+        }),
+        budget: 12,
+        usedHeavyActions: false,
+      }),
+      evaluateWinType({
+        org: org({ quality: 60, morale: 55, seniorHp: 40, aiLiteracy: 55 }),
+        totals: runTotals({
+          completed: 40,
+          aiAssisted: 28,
+          rework: 6,
+          reviewQueuePeak: 12,
+          spread: 1,
+        }),
+        budget: 12,
+        usedHeavyActions: true,
+      }),
+      evaluateWinType({
+        org: org({ quality: 50, morale: 75, seniorHp: 60, aiLiteracy: 50 }),
+        totals: runTotals({
+          completed: 40,
+          aiAssisted: 5,
+          rework: 4,
+          reviewQueuePeak: 8,
+          spread: 1,
+        }),
+        budget: 12,
+        usedHeavyActions: true,
+      }),
+      evaluateWinType({
+        org: org({ quality: 50, morale: 45, seniorHp: 35, aiLiteracy: 50 }),
+        totals: runTotals({
+          completed: 40,
+          aiAssisted: 5,
+          rework: 4,
+          reviewQueuePeak: 8,
+          spread: 2,
+          incidents: 8,
+          delivered: 320,
+        }),
+        budget: 12,
+        usedHeavyActions: true,
+      }),
+      evaluateWinType({
+        org: org({
+          quality: 66,
+          morale: 66,
+          seniorHp: 35,
+          aiLiteracy: 50,
+          testCoverage: 40,
+          documentation: 40,
+        }),
+        totals: runTotals({
+          completed: 40,
+          aiAssisted: 5,
+          rework: 4,
+          reviewQueuePeak: 8,
+          spread: 1,
+        }),
+        budget: 12,
+        usedHeavyActions: true,
+      }),
+    ]);
+    expect(types.size).toBeGreaterThanOrEqual(3);
+    expect(types.has('noDamage')).toBe(true);
+    expect(types.has('aiSuccess')).toBe(true);
+    expect(types.has('happiness')).toBe(true);
   });
 });

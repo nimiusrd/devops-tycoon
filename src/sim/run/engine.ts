@@ -766,6 +766,7 @@ export class RunEngine {
         totals: this.totals,
         budget: this.budget,
         usedHeavyActions: this.usedHeavyActions,
+        diagnosis: this.diagnosis,
       });
       this.setPhase('won');
       return;

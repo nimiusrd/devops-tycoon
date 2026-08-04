@@ -221,10 +221,17 @@ describe('勝敗判定（第14/15章）', () => {
     expect(evaluateBoss({ boss, result: weak, org: org(), bossTargetMul: 1 })).toBe(false);
   });
 
-  it('残業/アンドン未使用かつ延焼ゼロなら ノーダメージ勝利', () => {
+  it('ノーダメージ勝利は高水準の健全指標まで要求する（RI-76）', () => {
     const win = evaluateWinType({
-      org: org(),
-      totals: totals({ spread: 0, completed: 30, aiAssisted: 5 }),
+      org: org({
+        quality: 70,
+        morale: 70,
+        seniorHp: 60,
+        aiLiteracy: 50,
+        testCoverage: 40,
+        documentation: 40,
+      }),
+      totals: totals({ spread: 0, completed: 30, aiAssisted: 5, rework: 2, reviewQueuePeak: 4 }),
       budget: 10,
       usedHeavyActions: false,
     });
@@ -232,7 +239,13 @@ describe('勝敗判定（第14/15章）', () => {
   });
 
   it('カオス勝利の出荷判定は totals.delivered を使う', () => {
-    const baseOrg = org({ deliveryScore: 50, quality: 40, morale: 40, seniorHp: 40 });
+    const baseOrg = org({
+      deliveryScore: 50,
+      quality: 40,
+      morale: 40,
+      seniorHp: 40,
+      aiLiteracy: 50,
+    });
     const baseTotals = {
       incidents: 8,
       completed: 40,
@@ -244,7 +257,7 @@ describe('勝敗判定（第14/15章）', () => {
     expect(
       evaluateWinType({
         org: baseOrg,
-        totals: totals({ ...baseTotals, delivered: 300 }),
+        totals: totals({ ...baseTotals, delivered: 250 }),
         budget: 10,
         usedHeavyActions: true,
       }),
@@ -252,7 +265,7 @@ describe('勝敗判定（第14/15章）', () => {
     // 選択中チームの deliveryScore が高くてもラン累計が足りなければカオスにならない。
     expect(
       evaluateWinType({
-        org: org({ deliveryScore: 500, quality: 40, morale: 40, seniorHp: 40 }),
+        org: org({ deliveryScore: 500, quality: 40, morale: 40, seniorHp: 40, aiLiteracy: 50 }),
         totals: totals({ ...baseTotals, delivered: 100 }),
         budget: 10,
         usedHeavyActions: true,

@@ -16,6 +16,7 @@ import type {
   DifficultyId,
   GoalAdjustmentId,
   GoalKpiProgress,
+  LoseReason,
   QuarterGoal,
   QuarterOutcome,
   QuarterReview,
@@ -379,7 +380,7 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
   );
   // 修正可能でも安全性フィルタで提示手段が空なら継続不能へ落とす。
   // これは「選択肢を使い切った」ではなく一時的に実行可能な候補が無い状態なので、
-  // loseReason は通常の missed_crisis と同じく trustExhausted 側へ分類する。
+  // loseReason は missed_crisis と同じ原因分解（RI-79）へ回す。
   if (finalOutcome === 'missed_adjustable' && adjustments.length === 0) {
     finalOutcome = 'missed_crisis';
   }
@@ -550,9 +551,38 @@ export function isTerminalFailure(outcome: QuarterOutcome): boolean {
   return outcome === 'shutdown' || outcome === 'reorg_required' || outcome === 'missed_crisis';
 }
 
-/** 継続不能時の loseReason。 */
-export function loseReasonForOutcome(outcome: QuarterOutcome): 'trustExhausted' | 'reorgRequired' {
+/** 継続不能時の loseReason 分解に使う観測値（RI-79）。 */
+export type LoseReasonOutcomeInput = Pick<
+  OutcomeInput,
+  'trust' | 'org' | 'budget' | 'progress' | 'quarterNumber'
+>;
+
+/**
+ * 継続不能時の loseReason。
+ * `evaluateQuarterOutcome` と同じ優先順で発火条件をラベルへ反映する（RI-79）。
+ * 非継続不能 outcome や入力欠落時は後方互換のフォールバックを返す。
+ */
+export function loseReasonForOutcome(
+  outcome: QuarterOutcome,
+  input?: LoseReasonOutcomeInput,
+): LoseReason {
   if (outcome === 'reorg_required') return 'reorgRequired';
+  if (!isTerminalFailure(outcome) || !input) return 'trustExhausted';
+
+  const missedCount = input.progress.filter((p) => p.status === 'missed').length;
+  const minTrust = Math.min(input.trust.management, input.trust.customers, input.trust.team);
+
+  if (outcome === 'shutdown') {
+    if (minTrust <= 10) return 'trustExhausted';
+    if (input.budget <= 0 && input.org.morale <= 15) return 'budgetExhausted';
+    if (input.org.seniorHp <= 5 && missedCount >= 2) return 'seniorBurnout';
+    return 'trustExhausted';
+  }
+
+  // missed_crisis（空候補からの降格を含む）
+  if (minTrust <= 15) return 'trustExhausted';
+  if (input.budget <= 5) return 'budgetExhausted';
+  if (missedCount >= 4) return 'kpiMissed';
   return 'trustExhausted';
 }
 

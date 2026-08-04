@@ -19,6 +19,7 @@ const ALL_LOSE_REASONS: readonly LoseReason[] = [
   'bossFailed',
   'trustExhausted',
   'reorgRequired',
+  'kpiMissed',
 ];
 
 describe('loseNextActionView（RI-82 / F-6）', () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createEngine } from '../../src/sim/engine';
 import {
   aiDependencyHudCopy,
+  budgetHudCopy,
   deriveHudMetrics,
   deriveStatus,
   deriveHudStatusParts,
@@ -10,6 +11,7 @@ import {
   hudMetricSnapshot,
   riskLevel,
   runMetricSnapshot,
+  trustHudCopy,
   type HudMetricSnapshot,
   type RunMetricSnapshot,
 } from '../../src/render/status';
@@ -211,6 +213,24 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       detail: '25%未満は危険',
     });
     expect(good?.warningChip).toBeUndefined();
+  });
+
+  it('予算・信頼の危険域で予兆チップを出す（RI-79）', () => {
+    expect(budgetHudCopy(3)).toMatchObject({ tone: 'danger', warningChip: '予算危険' });
+    expect(budgetHudCopy(12)).toMatchObject({ tone: 'watch', warningChip: '予算注意' });
+    expect(budgetHudCopy(40).warningChip).toBeUndefined();
+
+    expect(trustHudCopy({ management: 10, customers: 40, team: 40 })).toMatchObject({
+      tone: 'danger',
+      warningChip: '信頼危険',
+      minTrust: 10,
+    });
+    expect(trustHudCopy({ management: 22, customers: 40, team: 40 })).toMatchObject({
+      tone: 'watch',
+      warningChip: '信頼注意',
+      minTrust: 22,
+    });
+    expect(trustHudCopy({ management: 40, customers: 40, team: 40 }).warningChip).toBeUndefined();
   });
 });
 

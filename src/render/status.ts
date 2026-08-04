@@ -423,6 +423,62 @@ export function diffHudMetricSnapshots(
   return deltas;
 }
 
+/**
+ * 予算の詳細・警告チップ（RI-79）。
+ * 四半期危機（budget<=5 / shutdown の budget<=0）の手前から予兆する。
+ */
+export function budgetHudCopy(budget: number): {
+  tone: StatusMetricTone;
+  detail: string;
+  warningChip?: string;
+} {
+  if (budget <= 5) {
+    return {
+      tone: 'danger',
+      detail: '予算危機・追加申請や支出抑制で延命',
+      warningChip: '予算危険',
+    };
+  }
+  if (budget <= 15) {
+    return {
+      tone: 'watch',
+      detail: '予算注意・追加申請や買い物抑制を検討',
+      warningChip: '予算注意',
+    };
+  }
+  return { tone: 'good', detail: '15以下で注意' };
+}
+
+/**
+ * ステークホルダー信頼の詳細・警告チップ（RI-79）。
+ * missed_crisis（minTrust<=15）/ shutdown（<=10）の手前から予兆する。
+ */
+export function trustHudCopy(trust: StakeholderTrust): {
+  tone: StatusMetricTone;
+  detail: string;
+  warningChip?: string;
+  minTrust: number;
+} {
+  const minTrust = Math.min(trust.management, trust.customers, trust.team);
+  if (minTrust <= 15) {
+    return {
+      tone: 'danger',
+      detail: '信頼危機・ケアや未達回避で延命',
+      warningChip: '信頼危険',
+      minTrust,
+    };
+  }
+  if (minTrust <= 25) {
+    return {
+      tone: 'watch',
+      detail: '信頼注意・削る選択を避けて立て直す',
+      warningChip: '信頼注意',
+      minTrust,
+    };
+  }
+  return { tone: 'good', detail: '25以下で注意', minTrust };
+}
+
 /** RunBar の差分検出に使うラン横断指標だけを抜き出す。 */
 export function runMetricSnapshot(input: {
   budget: number;

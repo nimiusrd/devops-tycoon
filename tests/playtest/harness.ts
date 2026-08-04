@@ -354,6 +354,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   adjRequestBudget: { ...skilledBase(), goalAdjustment: 'request_budget' },
   adjPauseAiRollout: { ...skilledBase(), goalAdjustment: 'pause_ai_rollout' },
   adjReorgTeams: { ...skilledBase(), goalAdjustment: 'reorg_teams' },
+  adjStakeholderCare: { ...skilledBase(), goalAdjustment: 'stakeholder_care' },
   /**
    * 採用の第3の条件（欠員があるときだけ採る）。`skilled`（無差別採用）・
    * `skilledNoHire`（一切採らない）と3点で比較する。
@@ -1142,8 +1143,8 @@ function crisisTriggers(minTrust: number, budget: number, missedCount: number): 
 
 /**
  * `shutdown` を発火させうる条件のうち、実際に成立していたものを列挙する。
- * `shutdown` も `loseReasonForOutcome` で `trustExhausted` に変換されるため、
- * 信頼枯渇ラベルの実態を見るには両方を分解する必要がある。
+ * RI-79 以降は `loseReasonForOutcome` が信頼/予算/シニアへ分解するが、
+ * 発火条件の生データとしても両方を残す。
  *
  * エンジンは `companyOrgFromTeams(this.teams, this.org)` の全社集約値で判定するが、
  * ここで使う `morale` / `seniorHp` は再現できている。`companyOrgFromTeams` はこの2つだけ

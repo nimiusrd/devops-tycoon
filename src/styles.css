@@ -3386,6 +3386,29 @@ button.card:active {
 .runbar .diagnosis-status {
   margin-left: auto;
 }
+.runbar-warning {
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: #00000044;
+}
+.runbar-warning.tone-watch {
+  color: #ffc857;
+  border: 1px solid #ffc85766;
+}
+.runbar-warning.tone-danger {
+  color: #ff6b8a;
+  border: 1px solid #ff6b8a66;
+}
+.pill.tone-watch {
+  border-color: #ffc85788;
+}
+.pill.tone-danger {
+  border-color: #ff6b8a88;
+}
 .diagnosis-status {
   display: flex;
   align-items: center;

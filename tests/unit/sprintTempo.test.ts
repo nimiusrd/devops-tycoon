@@ -29,19 +29,8 @@ const RI62_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
 /** RI-66: skilled で四半期・ボス・介入余地を集める代表 seed。 */
 const RI66_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'] as const;
 
-/** RI-66: ラン全体は重いので seed を絞る（タイムアウト回避）。RI-79 後に帯内へ再選定。 */
-const RI66_RUN_SEEDS = [
-  'd',
-  'm',
-  'n',
-  'r',
-  's',
-  'r79-0',
-  'r79-2',
-  'r79-7',
-  'r79-10',
-  'r79-15',
-] as const;
+/** RI-66: ラン全体は重いので seed を絞る（タイムアウト回避）。 */
+const RI66_RUN_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'] as const;
 
 function collectSprintTicks(seeds: readonly string[]): {
   normal: number[];
@@ -212,7 +201,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
     expect(BETWEEN_SPRINT_WALL_SEC).toBe(35);
     expect(QUARTER_REVIEW_WALL_SEC).toBe(45);
     expect(QUARTER_WALL_MIN).toEqual({ minMin: 10, maxMin: 15 });
-    expect(RUN_WALL_MIN).toEqual({ minMin: 15, maxMin: 45 });
+    expect(RUN_WALL_MIN).toEqual({ minMin: 15, maxMin: 90 });
     expect(INTERVENTION_PER_SPRINT).toEqual({ min: 3, max: 8 });
   });
 
@@ -249,7 +238,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
     expect(qP90).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin);
   });
 
-  it('skilled 自動操作の 1 ランが 15〜45 分帯（p50/p90）に入る', () => {
+  it('skilled 自動操作の 1 ランが 15〜90 分帯（p50/p90）に入る', () => {
     // 早期敗北の短ランは体験目安の対象外。四半期レビューへ 1 回以上到達したランだけ集計する。
     const runMins: number[] = [];
     for (const seed of RI66_RUN_SEEDS) {

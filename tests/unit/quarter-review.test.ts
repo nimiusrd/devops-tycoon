@@ -642,6 +642,16 @@ describe('四半期レビュー（Phase 8）', () => {
         budget: 3,
         quarterNumber: 1,
       }),
+    ).toBe('kpiMissed');
+
+    expect(
+      loseReasonForOutcome('missed_crisis', {
+        progress: baseProgress.slice(0, 1),
+        trust: { management: 40, customers: 40, team: 40 },
+        org: healthyOrg,
+        budget: 0,
+        quarterNumber: 1,
+      }),
     ).toBe('budgetExhausted');
 
     expect(

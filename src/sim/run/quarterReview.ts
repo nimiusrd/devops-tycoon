@@ -599,9 +599,10 @@ export function loseReasonForOutcome(
   // missed_crisis（空候補からの降格を含む）: ハード敗北条件を信頼フォールバックより先に見る。
   if (hard) return hard;
   if (minTrust <= 15) return 'trustExhausted';
-  if (input.budget <= 5) return 'budgetExhausted';
+  if (input.budget <= 0) return 'budgetExhausted';
   if (missedCount >= 4) return 'kpiMissed';
-  return 'trustExhausted';
+  // 空候補降格などで上記条件が全て非該当の場合も trustExhausted より kpiMissed が実態に近い。
+  return 'kpiMissed';
 }
 
 export const OUTCOME_LABELS: Record<QuarterOutcome, string> = {

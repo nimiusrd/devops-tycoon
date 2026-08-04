@@ -2438,6 +2438,17 @@ button.card:active {
   flex-wrap: wrap;
   margin-bottom: 1.25rem;
 }
+.draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+}
+.draft-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .what-if-preview {
   display: flex;
   flex-wrap: wrap;

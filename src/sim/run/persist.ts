@@ -62,6 +62,8 @@ export interface RunPersistExtras {
    * 旧セーブでは欠落しうる（復元時は 0）。
    */
   coarseIncidentCarry?: number;
+  /** 今ドラフトでのマリガン使用済み（RI-81。旧セーブでは欠落しうる）。 */
+  draftMulliganUsed?: boolean;
 }
 
 /**

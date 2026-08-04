@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { canRecruit, RECRUIT_COST, ROSTER_CAP } from '../../src/sim/member';
 import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, evaluateWinType } from '../../src/sim/outcome';
-import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
+import { RunEngine, SPRINTS_PER_QUARTER, DRAFT_MULLIGAN_COST } from '../../src/sim/run/engine';
 import { RunPhaseError } from '../../src/sim/run/phases';
 import { canAcknowledgeWin } from '../../src/sim/run/quarterReview';
 import type { BeatState, RunState } from '../../src/sim/run/types';
@@ -378,6 +378,95 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     s = e.snapshot();
     expect(s.phase).toBe('draft');
     expect(s.evolution.points).toBeGreaterThan(0);
+  });
+
+  it('RI-81: ドラフトマリガンは予算を払い1回だけ引き直す', () => {
+    const e = new RunEngine({ seed: 'ri81-mulligan', difficulty: 'easy' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    let s = e.snapshot();
+    expect(s.phase).toBe('draft');
+    expect(s.draftMulliganUsed).toBe(false);
+    const beforeDraft = [...(s.draft ?? [])];
+    const beforeBudget = s.budget;
+
+    e.mulliganDraft();
+    s = e.snapshot();
+    expect(s.phase).toBe('draft');
+    expect(s.draftMulliganUsed).toBe(true);
+    expect(s.budget).toBe(beforeBudget - 8);
+    expect(s.draft).toHaveLength(3);
+    // 集合が変わらない抽選は再試行するため、順序一致だけでなく集合も異なる。
+    expect([...s.draft!].sort()).not.toEqual([...beforeDraft].sort());
+
+    const midDraft = [...(s.draft ?? [])];
+    const midBudget = s.budget;
+    e.mulliganDraft();
+    s = e.snapshot();
+    expect(s.draft).toEqual(midDraft);
+    expect(s.budget).toBe(midBudget);
+  });
+
+  it('RI-81: マリガン後に古いドラフト ID を chooseCard しても受け付けない', () => {
+    const e = new RunEngine({ seed: 'ri81-mulligan', difficulty: 'easy' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    let s = e.snapshot();
+    expect(s.phase).toBe('draft');
+    const oldDraft = [...(s.draft ?? [])];
+
+    e.mulliganDraft();
+    s = e.snapshot();
+    const newDraft = [...(s.draft ?? [])];
+    expect(s.phase).toBe('draft');
+
+    // 旧ドラフトと新ドラフトが異なることを前提に旧 ID で chooseCard しても無視される。
+    const staleId = oldDraft.find((id) => !newDraft.includes(id));
+    if (staleId) {
+      e.chooseCard(staleId);
+      expect(e.snapshot().phase).toBe('draft');
+      expect(e.snapshot().draft).toEqual(newDraft);
+    }
+
+    // 新ドラフトの ID なら受け付け evolution へ進む。
+    e.chooseCard(newDraft[0]!);
+    expect(e.snapshot().phase).toBe('evolution');
+  });
+
+  it('RI-81: 予算不足ではマリガンできない', () => {
+    const e = new RunEngine({ seed: 'ri81-mulligan-poor', difficulty: 'easy' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    const internals = e as unknown as { budget: number; draft: string[] | null };
+    internals.budget = 7;
+    const before = [...(e.snapshot().draft ?? [])];
+    e.mulliganDraft();
+    const after = e.snapshot();
+    expect(after.budget).toBe(7);
+    expect(after.draftMulliganUsed).toBe(false);
+    expect(after.draft).toEqual(before);
+  });
+
+  it('RI-81: 予算がコストちょうど（8）のときもマリガンできない（budget > cost が必要）', () => {
+    const e = new RunEngine({ seed: 'ri81-mulligan-exact', difficulty: 'easy' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    const internals = e as unknown as { budget: number; draft: string[] | null };
+    internals.budget = DRAFT_MULLIGAN_COST; // exactly 8 — should be rejected
+    const before = [...(e.snapshot().draft ?? [])];
+    e.mulliganDraft();
+    const after = e.snapshot();
+    expect(after.budget).toBe(DRAFT_MULLIGAN_COST);
+    expect(after.draftMulliganUsed).toBe(false);
+    expect(after.draft).toEqual(before);
   });
 
   it('RI-55: 無介入スプリントの実績は同条件ベースラインと一致する', () => {

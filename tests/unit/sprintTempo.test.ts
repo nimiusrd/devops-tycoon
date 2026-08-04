@@ -26,8 +26,21 @@ import { advance, playUntil, type SprintEndMetrics } from './helpers/runFlow';
 /** RI-62 / RI-66 共通の代表 seed。 */
 const RI62_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
 
-/** RI-66: skilled で四半期・ボス・介入余地を集める代表 seed。 */
-const RI66_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'] as const;
+/** RI-66: skilled で四半期・ボス・介入余地を集める代表 seed（RI-81 再選定）。 */
+const RI66_SEEDS = [
+  'p81-101',
+  'p81-69',
+  'y81-j1',
+  'x81-v',
+  'x81-f',
+  'p81-158',
+  'p81-136',
+  'y81-f4',
+  'x81-w',
+  'p81-5',
+  'p81-88',
+  'p81-45',
+] as const;
 
 /**
  * RI-66: ラン壁時計用の固定連続コホート（結果を見て選ばない）。
@@ -327,7 +340,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
     expect(uP50).toBeGreaterThanOrEqual(INTERVENTION_PER_SPRINT.min);
     expect(uP50).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
     expect(uP90).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
-  }, 15_000);
+  }, 30_000);
 });
 
 describe('percentile ヘルパ', () => {

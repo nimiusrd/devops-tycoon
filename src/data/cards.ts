@@ -97,6 +97,42 @@ export const CARD_DEFS: CardDef[] = [
     description: ['小さな PR を機械レビューで下支え', 'たまに誤検知でノイズが混じる'],
     base: { reviewEfficiencyMul: 1.2 },
   },
+  // RI-81: 初期プール拡張（メタ解放なし）。ドラフト3枚の組み合わせに意味を出す。
+  {
+    id: 'static-analysis',
+    name: '静的解析導入',
+    rarity: 'common',
+    cost: 12,
+    description: ['CI で静的解析を回し手戻りを減らす', 'ルール整備のあいだ速度は少し落ちる'],
+    base: { reworkRateAdd: -0.08, qualityAdd: 6, codingSpeedMul: 0.97 },
+  },
+  {
+    id: 'feature-flags',
+    name: 'フィーチャーフラグ',
+    rarity: 'common',
+    cost: 14,
+    description: ['段階リリースで障害を抑えつつ進める', '実装は進むがフラグ管理のコストがある'],
+    base: { incidentRateMul: 0.85, codingSpeedMul: 1.05 },
+  },
+  {
+    id: 'code-owners',
+    name: 'CODEOWNERS整備',
+    rarity: 'rare',
+    cost: 16,
+    description: ['領域オーナーを明示してレビューを回す', '手戻りも少し減る'],
+    base: { reviewEfficiencyMul: 1.18, reworkRateAdd: -0.04 },
+  },
+  {
+    id: 'pair-programming',
+    name: 'ペアプログラミング',
+    rarity: 'common',
+    cost: 10,
+    description: [
+      '重要タスクを二人で進め品質を守る',
+      '単体のコーディング速度は落ちるが手戻りを減らす',
+    ],
+    base: { reworkRateAdd: -0.07, codingSpeedMul: 0.93, qualityAdd: 4 },
+  },
 ];
 
 const BY_ID = new Map(CARD_DEFS.map((c) => [c.id, c]));

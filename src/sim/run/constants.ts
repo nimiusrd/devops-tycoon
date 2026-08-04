@@ -6,3 +6,9 @@
 
 /** 1 四半期あたりのスプリント数（最終インデックスがボス）。 */
 export const SPRINTS_PER_QUARTER = 6;
+
+/**
+ * ドラフト引き直し（マリガン）の予算コスト（RI-81 / F-12）。
+ * 安い common カード帯より少し安く、スキップより有利になりすぎない迷い水準。
+ */
+export const DRAFT_MULLIGAN_COST = 8;

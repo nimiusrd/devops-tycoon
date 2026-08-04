@@ -21,6 +21,7 @@ type D4Internals = {
   budget: number;
   currentSprintId: string | null;
   currentSprintKind: RunState['currentSprintKind'];
+  diagnosis: RunState['diagnosis'];
   org: OrgState;
   phase: RunState['phase'];
   quarterGoal: QuarterGoal;
@@ -312,10 +313,66 @@ describe('RI-72-D4 engine outcome / quarterReview entry', () => {
     });
   });
 
+  it('勝利承認時に保存済み診断を再計算してから winType を決める', () => {
+    const engine = new RunEngine({ seed: 'ri-76-ack-rediagnose', difficulty: 'easy' });
+    engine.startRun('easy', [], 'ri-76-ack-rediagnose');
+    const internals = asInternals(engine);
+    const org = makeOrg({ quality: 50, morale: 50, seniorHp: 30 });
+    // 旧式 rework/completed では希釈されて healthy になりうるが、現行は done 分母で reworkSpiral。
+    const totals: RunTotals = {
+      ...zeroTotals(),
+      delivered: 100,
+      done: 100,
+      rework: 40,
+      completed: 500,
+      reviewQueuePeak: 4,
+    };
+    internals.phase = 'quarterReview';
+    internals.org = org;
+    internals.totals = totals;
+    internals.budget = 10;
+    internals.usedHeavyActions = true;
+    internals.quarterReview = makeReview('met');
+    internals.winEvalOrg = structuredClone(org);
+    internals.diagnosis = 'healthyAcceleration';
+
+    engine.acknowledgeQuarterReview();
+
+    expect(engine.snapshot().diagnosis).toBe('reworkSpiral');
+    expect(engine.snapshot().winType).toBe(
+      evaluateWinType({
+        org,
+        totals,
+        budget: 10,
+        usedHeavyActions: true,
+        diagnosis: 'reworkSpiral',
+      }),
+    );
+  });
+
+  it('hydrate は保存済み diagnosis を現行ロジックで塗り替える', () => {
+    const engine = new RunEngine({ seed: 'ri-76-hydrate-rediagnose', difficulty: 'easy' });
+    engine.startRun('easy', [], 'ri-76-hydrate-rediagnose');
+    const state = engine.exportPersistState();
+    if (!state) throw new Error('expected exportable save');
+    state.totals = {
+      ...state.totals,
+      done: 100,
+      rework: 40,
+      completed: 500,
+      reviewQueuePeak: 4,
+    };
+    state.diagnosis = 'healthyAcceleration';
+
+    const restored = new RunEngine({ seed: 'other', difficulty: 'easy' });
+    restored.hydratePersistState(state);
+    expect(restored.snapshot().diagnosis).toBe('reworkSpiral');
+  });
+
   it('quarterReview の継続不能 outcome は loseReason を固定マッピングして lost へ入る', () => {
     const cases: Array<[QuarterOutcome, RunState['loseReason']]> = [
       ['shutdown', 'trustExhausted'],
-      ['missed_crisis', 'trustExhausted'],
+      ['missed_crisis', 'kpiMissed'],
       ['reorg_required', 'reorgRequired'],
     ];
 

@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { defaultUnlockedCardIds } from '../../src/data/unlocks';
 import type { MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
 
@@ -43,7 +44,8 @@ test('メタショップ購入が次ランのドラフトプールへ反映さ�
   await page.goto('/?renderer=dom&seed=meta-shop-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
-  const result = await page.evaluate(async () => {
+  const allowedDraft = [...defaultUnlockedCardIds(), 'devin'];
+  const result = await page.evaluate(async (allowed) => {
     const g = (window as GameWindow).game!;
     g.pause();
 
@@ -78,13 +80,10 @@ test('メタショップ購入が次ランのドラフトプールへ反映さ�
 
     if (s.phase !== 'draft' || !s.draft) return { ok: false, step: 'draft-phase' };
 
-    const onlyUnlocked = s.draft.every((id) => {
-      const defaults = ['copilot', 'auto-test', 'pr-size-limit', 'ai-guideline', 'docs', 'devin'];
-      return defaults.includes(id);
-    });
+    const onlyUnlocked = s.draft.every((id) => allowed.includes(id));
 
     return { ok: onlyUnlocked, draft: s.draft, points: meta.points };
-  });
+  }, allowedDraft);
 
   expect(result.ok).toBe(true);
   if (!result.ok) {

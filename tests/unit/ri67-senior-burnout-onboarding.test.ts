@@ -21,7 +21,7 @@ describe('RI-67 オンボーディングとシニア燃え尽き', () => {
     );
   });
 
-  it('Easy・review-hell で緊急対応あり方針は2スプリント以内に seniorBurnout しない', () => {
+  it('Easy・序盤代表 seed で緊急対応あり方針は2スプリント以内に seniorBurnout しない', () => {
     const engine = new RunEngine({ seed: 'review-hell', difficulty: 'easy' });
     engine.startRun();
 

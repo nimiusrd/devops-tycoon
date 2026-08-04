@@ -3,10 +3,13 @@
  *
  * 敗北条件（シニア燃え尽き・負債超過・士気崩壊・レビュー凍結）と、ボス突破時の
  * 勝利種別（通常/健全/AI導入成功/経営/現場幸福/カオス/ノーダメ）を判定する純TS。
+ *
+ * RI-76: 勝利種別ラダーは診断・ビルド指標を反映し、受動プレイのノーダメ到達を防ぐ。
  */
 import type { BossDef } from '../data/bosses';
+import { diagnose } from './diagnosis';
 import type { OrgState, SprintResult } from './types';
-import type { LoseReason, RunTotals, WinType } from './run/types';
+import type { DiagnosisType, LoseReason, RunTotals, WinType } from './run/types';
 
 /** 技術的負債がこの値を超えると開発停止＝敗北。 */
 export const TECH_DEBT_CAP = 90;
@@ -43,7 +46,8 @@ const WIN_META: Record<WinType, { label: string; description: string }> = {
   chaos: { label: 'カオス勝利', description: '障害を連発しながら、なぜか出荷だけは最大化した。' },
   noDamage: {
     label: 'ノーダメージ勝利',
-    description: '残業・アンドンを使わず、延焼を一度も許さずに突破した。',
+    description:
+      '残業・アンドンを使わず延焼も許さず、品質・士気・シニア体力まで高水準で守り切った。',
   },
 };
 
@@ -94,24 +98,81 @@ export interface WinEvalInput {
   totals: RunTotals;
   budget: number;
   usedHeavyActions: boolean;
+  /** 省略時は org+totals から導出する（RI-76）。 */
+  diagnosis?: DiagnosisType;
 }
 
 /**
- * ボス突破時に達成した最上位の勝利種別を返す。
- * やり込み（ノーダメ）から順に評価し、最後に通常勝利へフォールバックする。
+ * ボス突破時に達成した最上位の勝利種別を返す（RI-76）。
+ *
+ * ノーダメはやり込み枠として高水準の健全指標と健全系診断を要求する。
+ * ビルド差が出るよう AI / 幸福 / 経営 / カオスを健全の前に評価し、最後に通常勝利へ落とす。
  */
 export function evaluateWinType(input: WinEvalInput): WinType {
   const { org, totals, budget, usedHeavyActions } = input;
+  const diagnosis = input.diagnosis ?? diagnose(org, totals);
+  // aiPct はラン全体の完了タスク数を分母にする（粗粒度チーム分も含む totals.completed が適切）。
+  // reworkRatio は粗粒度チームの completed で希釈されないよう、選択チームの done を分母にする。
+  // rework/(rework+done) だと閾値単位が変わるため、従来どおり rework/done を維持する。
   const completed = Math.max(1, totals.completed);
-  const reworkRatio = totals.rework / completed;
+  const reworkRatio = totals.rework / Math.max(1, totals.done);
   const aiPct = totals.aiAssisted / completed;
+  const healthyDiagnosis =
+    diagnosis === 'healthyAcceleration' || diagnosis === 'documentationKingdom';
 
-  if (!usedHeavyActions && totals.spread === 0) return 'noDamage';
-  if (org.quality >= 60 && org.morale >= 60 && reworkRatio < 0.25) return 'healthy';
-  if (aiPct >= 0.5 && reworkRatio < 0.2 && totals.reviewQueuePeak < 16) return 'aiSuccess';
-  if (org.morale >= 65 && org.seniorHp >= 50) return 'happiness';
-  if (budget >= 40) return 'management';
+  // やり込み枠: 重介入なし・延焼0に加え、受動放置では届きにくい高水準を要求する。
+  if (
+    !usedHeavyActions &&
+    totals.spread === 0 &&
+    org.quality >= 70 &&
+    org.morale >= 70 &&
+    org.seniorHp >= 60 &&
+    reworkRatio < 0.15 &&
+    healthyDiagnosis
+  ) {
+    return 'noDamage';
+  }
+
+  // AI ビルド: 利用率と検証能力の両立。reviewHell（ピーク16+）・aiOverproduction とは重ならない。
+  if (
+    aiPct >= 0.55 &&
+    reworkRatio < 0.22 &&
+    totals.reviewQueuePeak < 16 &&
+    org.aiLiteracy >= 40 &&
+    diagnosis !== 'reviewHell' &&
+    diagnosis !== 'aiOverproduction' &&
+    diagnosis !== 'seniorSacrifice'
+  ) {
+    return 'aiSuccess';
+  }
+
+  // 人を守るビルド。
+  if (org.morale >= 70 && org.seniorHp >= 55) {
+    return 'happiness';
+  }
+
+  // 経営余裕。
+  if (budget >= 35) {
+    return 'management';
+  }
+
   // 出荷はラン累計（totals.delivered）。選択中チームの org.deliveryScore では他チーム分を取りこぼす。
-  if (totals.incidents >= 8 && totals.delivered >= 300) return 'chaos';
+  if (totals.incidents >= 6 && totals.delivered >= 250) {
+    return 'chaos';
+  }
+
+  // 品質・ドキュメント寄りの健全（診断が documentationKingdom なら閾値を緩める。士気下限は維持）。
+  if (
+    diagnosis === 'documentationKingdom' &&
+    org.quality >= 55 &&
+    org.morale >= 60 &&
+    reworkRatio < 0.22
+  ) {
+    return 'healthy';
+  }
+  if (org.quality >= 65 && org.morale >= 65 && reworkRatio < 0.2) {
+    return 'healthy';
+  }
+
   return 'normal';
 }

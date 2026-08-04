@@ -189,7 +189,7 @@ console.log(`\n## F-7 難易度 × 方針の勝率\n`);
  * F-7 は「初見の初勝利が5ラン前後＝勝率20%前後」を見る基準なので、**初見相当の方針**で
  * 判定する。全方針の平均は使わない。`adj*` の統制群や `onlyXxx` のような実験用方針を
  * 足し引きするだけで、ゲームも初見プレイも変わっていないのに平均が動いてしまうためである
- * （実際 `skilledBase` の複製である `adj*` を6本足したときに easy の平均が動いた）。
+ * （実際 `skilledBase` の複製である `adj*` を7本足したときに easy の平均が動いた）。
  */
 const FIRST_PLAY_POLICY = 'naive';
 /**
@@ -637,12 +637,13 @@ const ADJ_POLICIES = {
   adjRequestBudget: 'request_budget',
   adjPauseAiRollout: 'pause_ai_rollout',
   adjReorgTeams: 'reorg_teams',
+  adjStakeholderCare: 'stakeholder_care',
 };
 /**
  * 各ランで最初にその方針の修正が適用された四半期。無ければ null。
  *
- * adj* 6方針は `goalAdjustment` 以外すべて同一なので、**最初の修正までは同一 seed の
- * 6ランが完全に同じ経過をたどる**。したがって最初の修正時点の事前状態と提示候補も同一で、
+ * adj* 7方針は `goalAdjustment` 以外すべて同一なので、**最初の修正までは同一 seed の
+ * 7ランが完全に同じ経過をたどる**。したがって最初の修正時点の事前状態と提示候補も同一で、
  * ここを揃えれば選択効果だけを取り出せる。
  */
 const firstAppliedQuarter = (r, label) =>
@@ -650,7 +651,7 @@ const firstAppliedQuarter = (r, label) =>
 
 // `availableAdjustments` は各選択肢の適用後状態で候補を絞るため、方針ごとに
 // 「提示され選べたラン」が異なる。そのまま勝率を並べると選択効果と選抜条件を分離できない。
-// そこで同一メタ・難易度・seed で 6方針すべてが同じ四半期に自分の修正を適用できた組だけを残す。
+// そこで同一メタ・難易度・seed で 7方針すべてが同じ四半期に自分の修正を適用できた組だけを残す。
 // キーに `meta` を含めないと fresh と full の同一 seed が衝突し、片方の適用四半期で
 // コホート成立が決まったうえに両プロファイルのランが勝率へ混入する（冒頭の重複排除と同じ理由）。
 const cohortKeyOf = (r) => `${r.meta ?? 'fresh'}|${r.difficulty}|${r.seed}`;
@@ -675,7 +676,7 @@ const cohortKeys = (() => {
 
 console.log('統制比較（adj* 方針のみ。他方針は提示順の先頭を選ぶため除外）:');
 console.log(
-  `  共通コホート: 全6方針が同一メタ・難易度・seed・四半期で自分の修正を適用できた組 = ${cohortKeys.size}組`,
+  `  共通コホート: 全7方針が同一メタ・難易度・seed・四半期で自分の修正を適用できた組 = ${cohortKeys.size}組`,
 );
 if (cohortKeys.size === 0) {
   console.log('  ※ 共通コホートが0組のため、選択効果は未計測');

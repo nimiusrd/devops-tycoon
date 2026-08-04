@@ -16,6 +16,7 @@ import type {
   DifficultyId,
   GoalAdjustmentId,
   GoalKpiProgress,
+  LoseReason,
   QuarterGoal,
   QuarterOutcome,
   QuarterReview,
@@ -320,7 +321,8 @@ export function availableAdjustments(
     const nextTeam = clamp(trust.team + (def.trustDelta.team ?? 0), 0, 100);
     const nextBudget = budget + def.budgetDelta;
     if (nextCustomers < 5 || nextManagement < 5 || nextTeam < 5) return false;
-    if (Math.min(nextManagement, nextCustomers, nextTeam) <= 10) return false;
+    // 危機閾値（evaluateQuarterOutcome の minTrust<=15）と揃える。
+    if (Math.min(nextManagement, nextCustomers, nextTeam) <= 15) return false;
     if (nextBudget <= 5) return false;
     if (wouldHardLose(orgAfterAdjustment(org, def), totals)) return false;
     return true;
@@ -379,7 +381,7 @@ export function buildQuarterReview(input: BuildReviewInput): QuarterReview {
   );
   // 修正可能でも安全性フィルタで提示手段が空なら継続不能へ落とす。
   // これは「選択肢を使い切った」ではなく一時的に実行可能な候補が無い状態なので、
-  // loseReason は通常の missed_crisis と同じく trustExhausted 側へ分類する。
+  // loseReason は missed_crisis と同じ原因分解（RI-79）へ回す。
   if (finalOutcome === 'missed_adjustable' && adjustments.length === 0) {
     finalOutcome = 'missed_crisis';
   }
@@ -550,10 +552,57 @@ export function isTerminalFailure(outcome: QuarterOutcome): boolean {
   return outcome === 'shutdown' || outcome === 'reorg_required' || outcome === 'missed_crisis';
 }
 
-/** 継続不能時の loseReason。 */
-export function loseReasonForOutcome(outcome: QuarterOutcome): 'trustExhausted' | 'reorgRequired' {
+/** 継続不能時の loseReason 分解に使う観測値（RI-79）。 */
+export type LoseReasonOutcomeInput = Pick<
+  OutcomeInput,
+  'trust' | 'org' | 'budget' | 'progress' | 'quarterNumber'
+> & {
+  /** 空候補降格時のハード敗北（レビュー凍結）判定用。 */
+  totals?: Pick<RunTotals, 'reviewQueuePeak'>;
+};
+
+/** 安全性フィルタと同じハード敗北条件を loseReason へ写す。 */
+function hardLoseReasonFromOrg(
+  org: OrgState,
+  totals?: Pick<RunTotals, 'reviewQueuePeak'>,
+): LoseReason | null {
+  if (org.seniorHp <= 1) return 'seniorBurnout';
+  if (org.morale <= 1) return 'moraleCollapse';
+  if (org.techDebt >= TECH_DEBT_CAP) return 'techDebt';
+  if ((totals?.reviewQueuePeak ?? 0) >= REVIEW_FREEZE_PEAK) return 'reviewFreeze';
+  return null;
+}
+
+/**
+ * 継続不能時の loseReason。
+ * `evaluateQuarterOutcome` と同じ優先順で発火条件をラベルへ反映する（RI-79）。
+ * 非継続不能 outcome や入力欠落時は後方互換のフォールバックを返す。
+ */
+export function loseReasonForOutcome(
+  outcome: QuarterOutcome,
+  input?: LoseReasonOutcomeInput,
+): LoseReason {
   if (outcome === 'reorg_required') return 'reorgRequired';
-  return 'trustExhausted';
+  if (!isTerminalFailure(outcome) || !input) return 'trustExhausted';
+
+  const missedCount = input.progress.filter((p) => p.status === 'missed').length;
+  const minTrust = Math.min(input.trust.management, input.trust.customers, input.trust.team);
+  const hard = hardLoseReasonFromOrg(input.org, input.totals);
+
+  if (outcome === 'shutdown') {
+    if (minTrust <= 10) return 'trustExhausted';
+    if (input.budget <= 0 && input.org.morale <= 15) return 'budgetExhausted';
+    if (input.org.seniorHp <= 5 && missedCount >= 2) return 'seniorBurnout';
+    return hard ?? 'trustExhausted';
+  }
+
+  // missed_crisis（空候補からの降格を含む）: ハード敗北条件を信頼フォールバックより先に見る。
+  if (hard) return hard;
+  if (minTrust <= 15) return 'trustExhausted';
+  if (input.budget <= 0) return 'budgetExhausted';
+  if (missedCount >= 4) return 'kpiMissed';
+  // 空候補降格などで上記条件が全て非該当の場合も trustExhausted より kpiMissed が実態に近い。
+  return 'kpiMissed';
 }
 
 export const OUTCOME_LABELS: Record<QuarterOutcome, string> = {

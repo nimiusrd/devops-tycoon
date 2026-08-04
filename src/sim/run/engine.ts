@@ -109,7 +109,7 @@ import {
 import { canUnlock, unlockNode } from './evolution';
 import { canTransition, RunPhaseError } from './phases';
 import { foldRunEffects } from './effects';
-import { SPRINTS_PER_QUARTER } from './constants';
+import { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER } from './constants';
 import {
   applyGoalAdjustment,
   applyGoalOrgEffectsToTeam,
@@ -165,7 +165,7 @@ import {
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
-export { SPRINTS_PER_QUARTER };
+export { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER };
 /** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */
 export const DECISION_BEAT_CHANCE = 0.55;
 /** 休息（heal）でのシニア体力回復量（UI プレビューと共有）。 */
@@ -313,6 +313,8 @@ export class RunEngine {
   private sprintPassiveEffects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
   private lastResult: SprintResult | null = null;
   private draft: string[] | null = null;
+  /** 今ドラフトでのマリガン使用済み（RI-81）。 */
+  private draftMulliganUsed = false;
   private shop: ShopOffer | null = null;
 
   private diagnosis: RunState['diagnosis'] = 'healthyAcceleration';
@@ -761,11 +763,16 @@ export class RunEngine {
     if (canAcknowledgeWin(outcome)) {
       this.flushCoarseIncidentCarry();
       this.status = 'won';
+      // 旧セーブに保存された診断は旧式 rework/completed の可能性があるため、
+      // 勝利判定直前に現行ロジックで再計算する。
+      const winOrg = this.winEvalOrg ?? this.org;
+      this.diagnosis = diagnose(winOrg, this.totals);
       this.winType = evaluateWinType({
-        org: this.winEvalOrg ?? this.org,
+        org: winOrg,
         totals: this.totals,
         budget: this.budget,
         usedHeavyActions: this.usedHeavyActions,
+        diagnosis: this.diagnosis,
       });
       this.setPhase('won');
       return;
@@ -773,7 +780,15 @@ export class RunEngine {
     if (isTerminalFailure(outcome)) {
       this.flushCoarseIncidentCarry();
       this.status = 'lost';
-      this.loseReason = loseReasonForOutcome(outcome);
+      // loseReason の分類も buildQuarterReview と同じ全社集約 org で行う（RI-79）。
+      this.loseReason = loseReasonForOutcome(outcome, {
+        progress: this.quarterReview.progress,
+        trust: this.quarterReview.trust,
+        org: companyOrgFromTeams(this.teams, this.org),
+        budget: this.budget,
+        quarterNumber: this.quarterNumber,
+        totals: this.totals,
+      });
       this.setPhase('lost');
     }
   }
@@ -895,6 +910,7 @@ export class RunEngine {
   /** リザルトを確認してドラフトへ進む。 */
   acknowledgeResult(): void {
     if (this.phase !== 'result') return;
+    this.draftMulliganUsed = false;
     this.draft = drawDraft(
       createRng(`${this.seed}:draft:${this.sprintsPlayed}`),
       3,
@@ -907,8 +923,10 @@ export class RunEngine {
   /** ドラフトでカードを選びデッキに加える（加算系の効果は即時に組織へ反映）。 */
   chooseCard(defId: string): void {
     if (this.phase !== 'draft') return;
+    if (!this.draft?.includes(defId)) return;
     this.addCard(defId, 1);
     this.draft = null;
+    this.draftMulliganUsed = false;
     // RI-30: カード効果は手札発動時に反映されるため、獲得時の即時敗北は見ない。
     this.setPhase('evolution');
   }
@@ -917,7 +935,35 @@ export class RunEngine {
   skipDraft(): void {
     if (this.phase !== 'draft') return;
     this.draft = null;
+    this.draftMulliganUsed = false;
     this.setPhase('evolution');
+  }
+
+  /**
+   * ドラフトを予算コストで引き直す（RI-81 / F-12）。
+   * 1ドラフトあたり1回。phase は draft のまま候補だけ差し替える。
+   * 元候補と同じ集合になる抽選は最大数回まで再試行する。
+   */
+  mulliganDraft(): void {
+    if (this.phase !== 'draft' || !this.draft) return;
+    if (this.draftMulliganUsed) return;
+    if (this.budget <= DRAFT_MULLIGAN_COST) return;
+    const previousKey = [...this.draft].sort().join('\0');
+    let next = this.draft;
+    for (let attempt = 0; attempt < 16; attempt += 1) {
+      const candidate = drawDraft(
+        createRng(`${this.seed}:draft:${this.sprintsPlayed}:m1:${attempt}`),
+        3,
+        this.allowedCards ?? undefined,
+        this.preferredCards,
+      );
+      next = candidate;
+      if ([...candidate].sort().join('\0') !== previousKey) break;
+    }
+    this.budget -= DRAFT_MULLIGAN_COST;
+    this.draftMulliganUsed = true;
+    this.draft = next;
+    if (this.applyImmediateLose()) return;
   }
 
   /** 進化ノードを解放する（加算系効果は即時反映。phase は evolution のまま）。 */
@@ -1839,6 +1885,7 @@ export class RunEngine {
       sprintTick: 0,
       lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
       draft: this.draft ? [...this.draft] : null,
+      draftMulliganUsed: this.draftMulliganUsed,
       whatIf: null,
       whatIfStatus: 'idle',
       shop: this.shop
@@ -1878,6 +1925,7 @@ export class RunEngine {
         teamLockUntilSprint: this.teamLockUntilSprint,
         teamRosters: structuredClone(this.teamRosters),
         coarseIncidentCarry: this.coarseIncidentCarry,
+        draftMulliganUsed: this.draftMulliganUsed,
       },
     };
   }
@@ -1888,6 +1936,8 @@ export class RunEngine {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
     this.applyPersistFrame(state, { migrateLegacyAiDependency: true });
+    // schema v3 のままでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
+    this.diagnosis = diagnose(this.org, this.totals);
   }
 
   /** リプレイキーフレームから閲覧用に復元する（RI-61。won/lost 可）。 */
@@ -1940,6 +1990,8 @@ export class RunEngine {
     this.sprintRng = createRng(`${cloned.seed}:hydrated`);
     this.lastResult = cloned.lastResult;
     this.draft = cloned.draft ? [...cloned.draft] : null;
+    this.draftMulliganUsed =
+      cloned.draftMulliganUsed === true || cloned.extras.draftMulliganUsed === true;
     this.shop = cloned.shop;
     this.diagnosis = cloned.diagnosis;
     this.sprintsPlayed = cloned.sprintsPlayed;
@@ -2125,6 +2177,7 @@ export class RunEngine {
       sprintTick: this.sprint ? this.sprintTick : 0,
       lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
       draft: this.draft ? [...this.draft] : null,
+      draftMulliganUsed: this.draftMulliganUsed,
       // 重い seed 掃引は whatIfPreview() / game.getState() 側で必要時のみ行う。
       whatIf: null,
       whatIfStatus: 'idle',

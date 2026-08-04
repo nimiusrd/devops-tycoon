@@ -63,6 +63,7 @@ export interface UseRun {
   acknowledgeResult: () => void;
   chooseCard: (defId: string) => void;
   skipDraft: () => void;
+  mulliganDraft: () => void;
   unlockEvolution: (id: string) => void;
   finishEvolution: () => void;
   buyShopCard: (defId: string) => void;
@@ -200,6 +201,7 @@ export function useRun(game: GameHandle): UseRun {
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);
   const chooseCard = useCallback((defId: string) => void game.chooseCard(defId), [game]);
   const skipDraft = useCallback(() => void game.skipDraft(), [game]);
+  const mulliganDraft = useCallback(() => void game.mulliganDraft(), [game]);
   const unlockEvolution = useCallback((id: string) => void game.unlockEvolution(id), [game]);
   const finishEvolution = useCallback(() => void game.finishEvolution(), [game]);
   const buyShopCard = useCallback((defId: string) => void game.buyShopCard(defId), [game]);
@@ -280,6 +282,7 @@ export function useRun(game: GameHandle): UseRun {
     acknowledgeResult,
     chooseCard,
     skipDraft,
+    mulliganDraft,
     unlockEvolution,
     finishEvolution,
     buyShopCard,

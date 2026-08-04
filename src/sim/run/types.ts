@@ -100,7 +100,9 @@ export type LoseReason =
   | 'budgetExhausted'
   | 'bossFailed'
   | 'trustExhausted'
-  | 'reorgRequired';
+  | 'reorgRequired'
+  /** 四半期 KPI 未達件数由来の継続不能（RI-79）。 */
+  | 'kpiMissed';
 
 /** ステークホルダー ID（四半期レビュー / SPEC 第4.6.1）。 */
 export type StakeholderId = 'management' | 'customers' | 'team';
@@ -139,7 +141,9 @@ export type GoalAdjustmentId =
   | 'quality_pivot'
   | 'request_budget'
   | 'pause_ai_rollout'
-  | 'reorg_teams';
+  | 'reorg_teams'
+  /** 信頼危険域からの延命（RI-79）。 */
+  | 'stakeholder_care';
 
 /** KPI ごとの達成状況（レビュー UI 用）。 */
 export interface GoalKpiProgress {
@@ -297,6 +301,8 @@ export interface RunState {
   lastResult: SprintResult | null;
   /** ドラフト候補（draft フェーズのみ）。 */
   draft: string[] | null;
+  /** 今ドラフトでマリガンを使ったか（RI-81。draft 以外は false）。 */
+  draftMulliganUsed: boolean;
   /** setup / draft でのみ公開する次スプリントの確率試算。 */
   whatIf: WhatIfState | null;
   /** what-if 試算の進捗。snapshot() では常に idle（UI 経路の getState のみ更新）。 */

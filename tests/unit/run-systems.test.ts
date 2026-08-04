@@ -129,7 +129,14 @@ describe('組織タイプ診断（第13章）', () => {
   });
 
   it('手戻り比率が高ければ Rework Spiral', () => {
-    expect(diagnose(org(), totals({ rework: 10, completed: 20 }))).toBe('reworkSpiral');
+    expect(diagnose(org(), totals({ rework: 10, done: 20, completed: 20 }))).toBe('reworkSpiral');
+  });
+
+  it('粗粒度 completed で手戻り率が希釈されない（分母は done）', () => {
+    // rework/done = 32/100 = 0.32 で境界到達。completed を分母にすると 32/500 で未達になる。
+    expect(
+      diagnose(org(), totals({ rework: 32, done: 100, completed: 500, reviewQueuePeak: 4 })),
+    ).toBe('reworkSpiral');
   });
 
   it('レビュー待ちのピークが限界なら Review Hell', () => {
@@ -138,13 +145,18 @@ describe('組織タイプ診断（第13章）', () => {
 
   it('AI 実装が過多で検証が詰まれば AI Overproduction', () => {
     expect(
-      diagnose(org(), totals({ aiAssisted: 12, rework: 2, reviewQueuePeak: 12, completed: 20 })),
+      diagnose(
+        org(),
+        totals({ aiAssisted: 12, rework: 2, done: 18, reviewQueuePeak: 12, completed: 20 }),
+      ),
     ).toBe('aiOverproduction');
   });
 
   it('テスト/ドキュメントが整い手戻りが少なければ Documentation Kingdom', () => {
     const solid = org({ testCoverage: 80, documentation: 70 });
-    expect(diagnose(solid, totals({ rework: 1, completed: 30 }))).toBe('documentationKingdom');
+    expect(diagnose(solid, totals({ rework: 1, done: 29, completed: 30 }))).toBe(
+      'documentationKingdom',
+    );
   });
 
   it('崩壊シグネチャがなければ Healthy Acceleration', () => {
@@ -221,10 +233,24 @@ describe('勝敗判定（第14/15章）', () => {
     expect(evaluateBoss({ boss, result: weak, org: org(), bossTargetMul: 1 })).toBe(false);
   });
 
-  it('残業/アンドン未使用かつ延焼ゼロなら ノーダメージ勝利', () => {
+  it('ノーダメージ勝利は高水準の健全指標まで要求する（RI-76）', () => {
     const win = evaluateWinType({
-      org: org(),
-      totals: totals({ spread: 0, completed: 30, aiAssisted: 5 }),
+      org: org({
+        quality: 70,
+        morale: 70,
+        seniorHp: 60,
+        aiLiteracy: 50,
+        testCoverage: 40,
+        documentation: 40,
+      }),
+      totals: totals({
+        spread: 0,
+        completed: 30,
+        done: 30,
+        aiAssisted: 5,
+        rework: 2,
+        reviewQueuePeak: 4,
+      }),
       budget: 10,
       usedHeavyActions: false,
     });
@@ -232,7 +258,13 @@ describe('勝敗判定（第14/15章）', () => {
   });
 
   it('カオス勝利の出荷判定は totals.delivered を使う', () => {
-    const baseOrg = org({ deliveryScore: 50, quality: 40, morale: 40, seniorHp: 40 });
+    const baseOrg = org({
+      deliveryScore: 50,
+      quality: 40,
+      morale: 40,
+      seniorHp: 40,
+      aiLiteracy: 50,
+    });
     const baseTotals = {
       incidents: 8,
       completed: 40,
@@ -244,7 +276,7 @@ describe('勝敗判定（第14/15章）', () => {
     expect(
       evaluateWinType({
         org: baseOrg,
-        totals: totals({ ...baseTotals, delivered: 300 }),
+        totals: totals({ ...baseTotals, delivered: 250 }),
         budget: 10,
         usedHeavyActions: true,
       }),
@@ -252,7 +284,7 @@ describe('勝敗判定（第14/15章）', () => {
     // 選択中チームの deliveryScore が高くてもラン累計が足りなければカオスにならない。
     expect(
       evaluateWinType({
-        org: org({ deliveryScore: 500, quality: 40, morale: 40, seniorHp: 40 }),
+        org: org({ deliveryScore: 500, quality: 40, morale: 40, seniorHp: 40, aiLiteracy: 50 }),
         totals: totals({ ...baseTotals, delivered: 100 }),
         budget: 10,
         usedHeavyActions: true,

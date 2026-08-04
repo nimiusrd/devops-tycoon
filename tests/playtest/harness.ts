@@ -27,9 +27,10 @@ import type {
   GoalAdjustmentId,
   LoseReason,
   RunState,
+  RunTotals,
   StakeholderTrust,
 } from '../../src/sim/run/types';
-import type { ActionId } from '../../src/sim/types';
+import type { ActionId, OrgState } from '../../src/sim/types';
 import { MS_PER_TICK_1X } from '../../src/ui/sprintTempo';
 
 /** 介入の発動可否を判定するための盤面サマリー。 */
@@ -361,6 +362,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   adjRequestBudget: { ...skilledBase(), goalAdjustment: 'request_budget' },
   adjPauseAiRollout: { ...skilledBase(), goalAdjustment: 'pause_ai_rollout' },
   adjReorgTeams: { ...skilledBase(), goalAdjustment: 'reorg_teams' },
+  adjStakeholderCare: { ...skilledBase(), goalAdjustment: 'stakeholder_care' },
   /**
    * 採用の第3の条件（欠員があるときだけ採る）。`skilled`（無差別採用）・
    * `skilledNoHire`（一切採らない）と3点で比較する。
@@ -848,7 +850,7 @@ function shouldPlaySelective(e: RunEngine): boolean {
   return focusRatio >= 0.6 && reviewLen < 6 && burning === 0;
 }
 
-function playHand(e: RunEngine, mode: PolicySpec['cards']): void {
+function playHand(e: RunEngine, mode: PolicySpec['cards'], onPlayed?: () => void): void {
   if (mode === 'none') return;
   let guard = 0;
   while (guard < 24 && e.snapshot().phase === 'sprint') {
@@ -860,6 +862,8 @@ function playHand(e: RunEngine, mode: PolicySpec['cards']): void {
     for (const deckIndex of [...hand]) {
       if (e.playCard(deckIndex).ok) {
         played = true;
+        // カード間でも介入可能な局面を危険域サンプルへ残す（一括発動の欠測防止）。
+        onPlayed?.();
         break;
       }
     }
@@ -920,6 +924,53 @@ type DangerLoseReason = Extract<
   | 'reorgRequired'
 >;
 
+/**
+ * 実行中スプリントを含む全社 KPI 用 org。
+ * 選択中チームは syncActiveTeamFromOrg まで teams[] が古いままなので、live org で上書きする。
+ */
+function liveCompanyOrgForKpi(s: RunState): OrgState {
+  const teams = s.teams.map((t) =>
+    t.id !== s.activeTeamId
+      ? t
+      : {
+          ...t,
+          quality: s.org.quality,
+          techDebt: s.org.techDebt,
+          aiDependency: s.org.aiDependency,
+          aiLiteracy: s.org.aiLiteracy,
+          testCoverage: s.org.testCoverage,
+          documentation: s.org.documentation,
+          morale: s.org.morale,
+          seniorHp: s.org.seniorHp,
+          aiEnabled: s.org.aiEnabled,
+          shipping: s.org.deliveryScore,
+        },
+  );
+  return companyOrgFromTeams(teams, s.org);
+}
+
+/**
+ * 実行中スプリント実績を足した四半期 totals。
+ * quarterTotals は resolveSprint の accumulateTotals まで現スプリントを含まない。
+ */
+function liveQuarterTotalsForKpi(s: RunState): RunTotals {
+  const m = s.sprint?.metrics;
+  if (!m) return s.quarterTotals;
+  return {
+    ...s.quarterTotals,
+    delivered: s.quarterTotals.delivered + m.delivered,
+    done: s.quarterTotals.done + m.doneCount,
+    rework: s.quarterTotals.rework + m.reworkCount,
+    incidents: s.quarterTotals.incidents + m.incidentCount,
+    contained: s.quarterTotals.contained + m.contained,
+    spread: s.quarterTotals.spread + m.spread,
+    aiAssisted: s.quarterTotals.aiAssisted + m.aiAssistedCompleted,
+    completed: s.quarterTotals.completed + m.completedCount,
+    reviewQueuePeak: Math.max(s.quarterTotals.reviewQueuePeak, m.reviewQueueMax),
+    maxCombo: Math.max(s.quarterTotals.maxCombo, m.maxCombo),
+  };
+}
+
 function activeDangerReasons(s: RunState): DangerLoseReason[] {
   const minTrust = Math.min(
     s.stakeholderTrust.management,
@@ -936,12 +987,11 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   // budget/HP 経路もカバーする（budget<=5 → missed_crisis, seniorHp<=10 → shutdown 前兆）。
   // missedCount>=4 → missed_crisis 経路のプロキシ: 四半期後半で多 KPI 同時未達圧力が高い場合。
   const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
-  // 四半期判定と同じ全社集約 org と measureGoalProgress（aiAdoption 含む）で未達数を数える。
-  const companyOrg = companyOrgFromTeams(s.teams, s.org);
+  // 四半期判定と同じ全社集約＋実行中スプリント合成で未達数を数える（1スプリント遅れを防ぐ）。
   const kpiMissCount = measureGoalProgress({
     goal: s.quarterGoal,
-    org: companyOrg,
-    totals: s.quarterTotals,
+    org: liveCompanyOrgForKpi(s),
+    totals: liveQuarterTotalsForKpi(s),
   }).filter((p) => p.status === 'missed').length;
   if (
     minTrust <= 25 ||
@@ -1269,8 +1319,8 @@ function crisisTriggers(minTrust: number, budget: number, missedCount: number): 
 
 /**
  * `shutdown` を発火させうる条件のうち、実際に成立していたものを列挙する。
- * `shutdown` も `loseReasonForOutcome` で `trustExhausted` に変換されるため、
- * 信頼枯渇ラベルの実態を見るには両方を分解する必要がある。
+ * RI-79 以降は `loseReasonForOutcome` が信頼/予算/シニアへ分解するが、
+ * 発火条件の生データとしても両方を残す。
  *
  * エンジンは `companyOrgFromTeams(this.teams, this.org)` の全社集約値で判定するが、
  * ここで使う `morale` / `seniorHp` は再現できている。`companyOrgFromTeams` はこの2つだけ
@@ -1367,19 +1417,18 @@ export function runOnce(
         const before = s.sprintsPlayed;
         const attempts: Record<string, Partial<Record<DispatchReason, number>>> = {};
         let interventions = 0;
-        sampleAvailableInDanger(e, availableInDangerByReason);
-        playHand(e, spec.cards);
+        const sampleDanger = (): void => sampleAvailableInDanger(e, availableInDangerByReason);
+        sampleDanger();
+        playHand(e, spec.cards, sampleDanger);
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
-          sampleAvailableInDanger(e, availableInDangerByReason);
-          const n = intervene(e, spec, attempts, () =>
-            sampleAvailableInDanger(e, availableInDangerByReason),
-          );
+          sampleDanger();
+          const n = intervene(e, spec, attempts, sampleDanger);
           interventions += n;
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
-          if (spec.cards === 'selective') playHand(e, 'selective');
+          if (spec.cards === 'selective') playHand(e, 'selective', sampleDanger);
           if (e.snapshot().phase !== 'sprint') break;
           e.step(spec.stepMs);
         }

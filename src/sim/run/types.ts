@@ -297,6 +297,8 @@ export interface RunState {
   lastResult: SprintResult | null;
   /** ドラフト候補（draft フェーズのみ）。 */
   draft: string[] | null;
+  /** 今ドラフトでマリガンを使ったか（RI-81。draft 以外は false）。 */
+  draftMulliganUsed: boolean;
   /** setup / draft でのみ公開する次スプリントの確率試算。 */
   whatIf: WhatIfState | null;
   /** what-if 試算の進捗。snapshot() では常に idle（UI 経路の getState のみ更新）。 */

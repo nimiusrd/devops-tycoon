@@ -109,7 +109,7 @@ import {
 import { canUnlock, unlockNode } from './evolution';
 import { canTransition, RunPhaseError } from './phases';
 import { foldRunEffects } from './effects';
-import { SPRINTS_PER_QUARTER } from './constants';
+import { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER } from './constants';
 import {
   applyGoalAdjustment,
   applyGoalOrgEffectsToTeam,
@@ -165,7 +165,7 @@ import {
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
-export { SPRINTS_PER_QUARTER };
+export { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER };
 /** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */
 export const DECISION_BEAT_CHANCE = 0.55;
 /** 休息（heal）でのシニア体力回復量（UI プレビューと共有）。 */
@@ -313,6 +313,8 @@ export class RunEngine {
   private sprintPassiveEffects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
   private lastResult: SprintResult | null = null;
   private draft: string[] | null = null;
+  /** 今ドラフトでのマリガン使用済み（RI-81）。 */
+  private draftMulliganUsed = false;
   private shop: ShopOffer | null = null;
 
   private diagnosis: RunState['diagnosis'] = 'healthyAcceleration';
@@ -895,6 +897,7 @@ export class RunEngine {
   /** リザルトを確認してドラフトへ進む。 */
   acknowledgeResult(): void {
     if (this.phase !== 'result') return;
+    this.draftMulliganUsed = false;
     this.draft = drawDraft(
       createRng(`${this.seed}:draft:${this.sprintsPlayed}`),
       3,
@@ -909,6 +912,7 @@ export class RunEngine {
     if (this.phase !== 'draft') return;
     this.addCard(defId, 1);
     this.draft = null;
+    this.draftMulliganUsed = false;
     // RI-30: カード効果は手札発動時に反映されるため、獲得時の即時敗北は見ない。
     this.setPhase('evolution');
   }
@@ -917,7 +921,27 @@ export class RunEngine {
   skipDraft(): void {
     if (this.phase !== 'draft') return;
     this.draft = null;
+    this.draftMulliganUsed = false;
     this.setPhase('evolution');
+  }
+
+  /**
+   * ドラフトを予算コストで引き直す（RI-81 / F-12）。
+   * 1ドラフトあたり1回。phase は draft のまま候補だけ差し替える。
+   */
+  mulliganDraft(): void {
+    if (this.phase !== 'draft' || !this.draft) return;
+    if (this.draftMulliganUsed) return;
+    if (this.budget < DRAFT_MULLIGAN_COST) return;
+    this.budget -= DRAFT_MULLIGAN_COST;
+    this.draftMulliganUsed = true;
+    this.draft = drawDraft(
+      createRng(`${this.seed}:draft:${this.sprintsPlayed}:m1`),
+      3,
+      this.allowedCards ?? undefined,
+      this.preferredCards,
+    );
+    if (this.applyImmediateLose()) return;
   }
 
   /** 進化ノードを解放する（加算系効果は即時反映。phase は evolution のまま）。 */
@@ -1839,6 +1863,7 @@ export class RunEngine {
       sprintTick: 0,
       lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
       draft: this.draft ? [...this.draft] : null,
+      draftMulliganUsed: this.draftMulliganUsed,
       whatIf: null,
       whatIfStatus: 'idle',
       shop: this.shop
@@ -1878,6 +1903,7 @@ export class RunEngine {
         teamLockUntilSprint: this.teamLockUntilSprint,
         teamRosters: structuredClone(this.teamRosters),
         coarseIncidentCarry: this.coarseIncidentCarry,
+        draftMulliganUsed: this.draftMulliganUsed,
       },
     };
   }
@@ -1940,6 +1966,8 @@ export class RunEngine {
     this.sprintRng = createRng(`${cloned.seed}:hydrated`);
     this.lastResult = cloned.lastResult;
     this.draft = cloned.draft ? [...cloned.draft] : null;
+    this.draftMulliganUsed =
+      cloned.draftMulliganUsed === true || cloned.extras.draftMulliganUsed === true;
     this.shop = cloned.shop;
     this.diagnosis = cloned.diagnosis;
     this.sprintsPlayed = cloned.sprintsPlayed;
@@ -2125,6 +2153,7 @@ export class RunEngine {
       sprintTick: this.sprint ? this.sprintTick : 0,
       lastResult: this.lastResult ? structuredClone(this.lastResult) : null,
       draft: this.draft ? [...this.draft] : null,
+      draftMulliganUsed: this.draftMulliganUsed,
       // 重い seed 掃引は whatIfPreview() / game.getState() 側で必要時のみ行う。
       whatIf: null,
       whatIfStatus: 'idle',

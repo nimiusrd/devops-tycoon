@@ -94,6 +94,8 @@ export interface GameHandle {
   chooseCard(defId: string): RunState;
   /** ドラフトをスキップする。 */
   skipDraft(): RunState;
+  /** ドラフトを予算コストで引き直す（RI-81）。 */
+  mulliganDraft(): RunState;
   /** 進化ノードを解放する。 */
   unlockEvolution(id: string): RunState;
   /** 進化フェーズを終えて次のビートへ進む。 */
@@ -555,6 +557,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     skipDraft() {
       if (replayMode) return engine.snapshot();
       engine.skipDraft();
+      bump();
+      return after();
+    },
+    mulliganDraft() {
+      if (replayMode) return engine.snapshot();
+      engine.mulliganDraft();
       bump();
       return after();
     },

@@ -453,11 +453,14 @@ export default function App({ game }: AppProps) {
           <DraftScreen
             options={state.draft}
             sprintNumber={state.sprintsPlayed + 1}
+            budget={state.budget}
+            mulliganUsed={state.draftMulliganUsed}
             previews={state.whatIf?.draftCandidates ?? {}}
             skipPreview={state.whatIf?.current}
             whatIfComputing={state.whatIfStatus === 'computing'}
             onPick={run.chooseCard}
             onSkip={run.skipDraft}
+            onMulligan={run.mulliganDraft}
           />
         )}
       </Suspense>

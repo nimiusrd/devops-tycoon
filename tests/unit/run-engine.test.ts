@@ -380,6 +380,51 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(s.evolution.points).toBeGreaterThan(0);
   });
 
+  it('RI-81: ドラフトマリガンは予算を払い1回だけ引き直す', () => {
+    const e = new RunEngine({ seed: 'ri81-mulligan', difficulty: 'easy' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    let s = e.snapshot();
+    expect(s.phase).toBe('draft');
+    expect(s.draftMulliganUsed).toBe(false);
+    const beforeDraft = [...(s.draft ?? [])];
+    const beforeBudget = s.budget;
+
+    e.mulliganDraft();
+    s = e.snapshot();
+    expect(s.phase).toBe('draft');
+    expect(s.draftMulliganUsed).toBe(true);
+    expect(s.budget).toBe(beforeBudget - 8);
+    expect(s.draft).toHaveLength(3);
+    // 別 RNG キーなので同一 seed でも初回提示と一致しない（一致しても3枚集合の再抽選は許容しない）。
+    expect(s.draft).not.toEqual(beforeDraft);
+
+    const midDraft = [...(s.draft ?? [])];
+    const midBudget = s.budget;
+    e.mulliganDraft();
+    s = e.snapshot();
+    expect(s.draft).toEqual(midDraft);
+    expect(s.budget).toBe(midBudget);
+  });
+
+  it('RI-81: 予算不足ではマリガンできない', () => {
+    const e = new RunEngine({ seed: 'ri81-mulligan-poor', difficulty: 'easy' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    const internals = e as unknown as { budget: number; draft: string[] | null };
+    internals.budget = 7;
+    const before = [...(e.snapshot().draft ?? [])];
+    e.mulliganDraft();
+    const after = e.snapshot();
+    expect(after.budget).toBe(7);
+    expect(after.draftMulliganUsed).toBe(false);
+    expect(after.draft).toEqual(before);
+  });
+
   it('RI-55: 無介入スプリントの実績は同条件ベースラインと一致する', () => {
     const e = new RunEngine({ seed: 'ri55-no-intervention', difficulty: 'normal' });
     e.startRun();

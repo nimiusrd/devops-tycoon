@@ -14,11 +14,14 @@ import { CARD_DEFS } from '../../src/data/cards';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
+import { assignableTasks } from '../../src/sim/assignTask';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
+import { companyOrgFromTeams } from '../../src/sim/orgscale';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
+import { measureGoalProgress } from '../../src/sim/run/quarterReview';
 import { ELITE_TASK_MUL } from '../../src/sim/run/sprintBaselineBuild';
 import type {
   GoalAdjustmentId,
@@ -933,13 +936,13 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   // budget/HP 経路もカバーする（budget<=5 → missed_crisis, seniorHp<=10 → shutdown 前兆）。
   // missedCount>=4 → missed_crisis 経路のプロキシ: 四半期後半で多 KPI 同時未達圧力が高い場合。
   const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
-  const kpiMissCount = [
-    s.quarterTotals.delivered < s.quarterGoal.deliveryTarget,
-    s.org.quality < s.quarterGoal.qualityTarget,
-    s.org.techDebt > s.quarterGoal.techDebtLimit,
-    s.org.morale < s.quarterGoal.moraleTarget,
-    s.quarterTotals.incidents > s.quarterGoal.incidentLimit,
-  ].filter(Boolean).length;
+  // 四半期判定と同じ全社集約 org と measureGoalProgress（aiAdoption 含む）で未達数を数える。
+  const companyOrg = companyOrgFromTeams(s.teams, s.org);
+  const kpiMissCount = measureGoalProgress({
+    goal: s.quarterGoal,
+    org: companyOrg,
+    totals: s.quarterTotals,
+  }).filter((p) => p.status === 'missed').length;
   if (
     minTrust <= 25 ||
     s.budget <= 5 ||
@@ -948,11 +951,9 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   )
     out.push('trustExhausted');
   // reviewFreeze: キューピーク超過に加え、低シニアHP時の review-freeze 判定イベントをカバー。
-  // seniorHpLow >= 0.55（seniorHp <= 45）でイベントが抽選対象になる。
+  // イベント抽選は seniorHpLow >= 0.55（seniorHp <= 45）のみで、Review 件数条件は無い。
   const reviewQueueDanger = s.totals.reviewQueuePeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
-  const reviewLaneLen = s.sprint?.tasks.filter((t) => t.lane === 'review').length ?? 0;
-  // seniorHpLow >= 0.55（seniorHp <= 45）で review-freeze 判定イベントが抽選対象になる。
-  const reviewFreezeEventRisk = s.org.seniorHp <= 45 && reviewLaneLen >= 4;
+  const reviewFreezeEventRisk = s.org.seniorHp <= 45;
   if (reviewQueueDanger || reviewFreezeEventRisk) out.push('reviewFreeze');
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
     out.push('incidentCascade');
@@ -967,6 +968,19 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   return out;
 }
 
+/** 対象省略で不可でも、明示 target（Backlog→Coding ドラッグ）なら差配できるか。 */
+function canApplyAssignTaskWithExplicitTarget(
+  sprint: NonNullable<RunState['sprint']>,
+  org: RunState['org'],
+  tick: number,
+): boolean {
+  for (const task of assignableTasks(sprint)) {
+    const target = { taskId: task.id, lane: 'coding' as const };
+    if (canApplyAction('assignTask', sprint, org, tick, target).ok) return true;
+  }
+  return false;
+}
+
 /** アクティブな危険種別ごとの発動可能介入を和集合へ追記する（盤面非破壊）。 */
 function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, Set<string>>): void {
   const s = e.snapshot();
@@ -975,7 +989,17 @@ function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, S
   if (dangers.length === 0) return;
   const available: string[] = [];
   for (const id of ALL_ACTION_IDS) {
-    if (canApplyAction(id, s.sprint, s.org, s.sprintTick).ok) available.push(id);
+    if (canApplyAction(id, s.sprint, s.org, s.sprintTick).ok) {
+      available.push(id);
+      continue;
+    }
+    // UI は Coding 空でも Backlog ドラッグ可なら assignTask を武装するため、明示 target も試す。
+    if (
+      id === 'assignTask' &&
+      canApplyAssignTaskWithExplicitTarget(s.sprint, s.org, s.sprintTick)
+    ) {
+      available.push(id);
+    }
   }
   for (const reason of dangers) {
     let set = byReason.get(reason);
@@ -1001,6 +1025,7 @@ function intervene(
   e: RunEngine,
   spec: PolicySpec,
   attempts: Record<string, Partial<Record<DispatchReason, number>>>,
+  onSuccess?: () => void,
 ): number {
   const first = boardCtx(e.snapshot());
   if (!first) return 0;
@@ -1021,6 +1046,8 @@ function intervene(
     if (outcome.ok) {
       bump(attempts, a.id, 'ok');
       n += 1;
+      // バッチ後一度ではなく、各成功直後に危険域を再観測する（一時的な選択肢の欠落防止）。
+      onSuccess?.();
     } else {
       const reason = (outcome.reason ?? 'other') as DispatchReason;
       bump(attempts, a.id, reason);
@@ -1346,9 +1373,10 @@ export function runOnce(
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
           sampleAvailableInDanger(e, availableInDangerByReason);
-          const n = intervene(e, spec, attempts);
+          const n = intervene(e, spec, attempts, () =>
+            sampleAvailableInDanger(e, availableInDangerByReason),
+          );
           interventions += n;
-          if (n > 0) sampleAvailableInDanger(e, availableInDangerByReason);
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
           if (spec.cards === 'selective') playHand(e, 'selective');

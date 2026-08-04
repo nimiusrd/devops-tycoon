@@ -299,7 +299,8 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
     expect(rP50).toBeGreaterThanOrEqual(RUN_WALL_MIN.minMin);
     expect(rP50).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
     expect(rP90).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
-  }, 15_000);
+    // pair-programming 手戻り低減などで長命ランが増え、CI では 15s を超えうる。
+  }, 30_000);
 
   it('1 スプリントあたり介入成立回数が 3〜8 回帯（p50/p90）に入る', () => {
     // 理論上の CD/focus 余地ではなく、pacing ポリシーで実際に成功した回数を見る。

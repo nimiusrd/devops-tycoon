@@ -537,6 +537,7 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
       const freq = new Map();
       let withSample = 0;
       let emptySample = 0;
+      const gaps = [];
       for (const r of arr) {
         // 未観測（フィールドなし）と「観測したが空集合」を区別する。
         if (!Object.prototype.hasOwnProperty.call(r, 'availableActionsInDanger')) continue;
@@ -545,6 +546,11 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
         withSample += 1;
         if (avail.length === 0) emptySample += 1;
         for (const id of avail) freq.set(id, (freq.get(id) ?? 0) + 1);
+        // F-8: 非空の手が最後に見えた完了スプリント数と敗北時点の差。
+        const lastNonEmpty = r.availableActionsInDangerLastNonEmpty;
+        if (lastNonEmpty && typeof r.sprintsPlayed === 'number') {
+          gaps.push(Math.max(0, r.sprintsPlayed - lastNonEmpty.sprintsPlayed));
+        }
       }
       const ranked = [...freq.entries()]
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
@@ -552,8 +558,10 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
       // 空集合サンプルだけの敗因も比較対象に残す。
       const setKey = withSample > 0 ? [...freq.keys()].sort().join(',') : null;
       if (setKey !== null) sets.push(setKey);
+      const gapNote =
+        gaps.length > 0 ? ` | 非空手→敗北のスプリント差 p50=${quantile(gaps, 0.5)}` : '';
       console.log(
-        `    ${reason}: n=${arr.length} 危険域サンプル ${withSample}/${arr.length}（空集合 ${emptySample}）| 集合 {${ranked.join(', ') || '—'}}`,
+        `    ${reason}: n=${arr.length} 危険域サンプル ${withSample}/${arr.length}（空集合 ${emptySample}）| 集合 {${ranked.join(', ') || '—'}}${gapNote}`,
       );
     }
     const distinct = new Set(sets);

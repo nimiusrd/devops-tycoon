@@ -529,6 +529,23 @@ export interface RunLog {
    * `canApplyAction` による盤面非破壊観測。attempts（実際に試した手）とは別。
    */
   availableActionsInDanger?: string[];
+  /**
+   * 最終敗因の危険域で、非空の手が最後に見えた時点（F-8「何スプリント前から消えたか」用）。
+   * 危険域は観測したが一度も非空が無ければ省略。
+   */
+  availableActionsInDangerLastNonEmpty?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  /** 最終敗因の危険域で最後に取ったサンプル（空集合もありうる）。 */
+  availableActionsInDangerLastSample?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
 }
 
 /**
@@ -918,11 +935,29 @@ type DangerLoseReason = Extract<
   | 'aiDependency'
   | 'budgetExhausted'
   | 'trustExhausted'
+  | 'kpiMissed'
   | 'reviewFreeze'
   | 'incidentCascade'
   | 'bossFailed'
   | 'reorgRequired'
 >;
+
+/** 敗因ごとの危険域観測トラック（和集合＋時系列）。 */
+type DangerTrack = {
+  actions: Set<string>;
+  lastSample: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  lastNonEmpty: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  } | null;
+};
 
 /**
  * 実行中スプリントを含む全社 KPI 用 org。
@@ -983,9 +1018,8 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   if (s.org.techDebt >= 60) out.push('techDebt');
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
   if (s.budget <= 15) out.push('budgetExhausted');
-  // trustExhausted: trust が低い場合に加え、四半期レビューで shutdown/missed_crisis になりうる
-  // budget/HP 経路もカバーする（budget<=5 → missed_crisis, seniorHp<=10 → shutdown 前兆）。
-  // missedCount>=4 → missed_crisis 経路のプロキシ: 四半期後半で多 KPI 同時未達圧力が高い場合。
+  // trustExhausted: trust / budget / HP 経路（missed_crisis・shutdown 前兆）。
+  // KPI 未達だけの missed_crisis は loseReasonForOutcome が kpiMissed を返すため分離する。
   const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
   // 四半期判定と同じ全社集約＋実行中スプリント合成で未達数を数える（1スプリント遅れを防ぐ）。
   const kpiMissCount = measureGoalProgress({
@@ -993,16 +1027,12 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
     org: liveCompanyOrgForKpi(s),
     totals: liveQuarterTotalsForKpi(s),
   }).filter((p) => p.status === 'missed').length;
-  if (
-    minTrust <= 25 ||
-    s.budget <= 5 ||
-    s.org.seniorHp <= 10 ||
-    (lateInQuarter && kpiMissCount >= 4)
-  )
-    out.push('trustExhausted');
-  // reviewFreeze: キューピーク超過に加え、低シニアHP時の review-freeze 判定イベントをカバー。
+  if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
+  if (lateInQuarter && kpiMissCount >= 4) out.push('kpiMissed');
+  // reviewFreeze: 累計ピークに加え実行中スプリントの reviewQueueMax も見る（完了前に48到達しうる）。
   // イベント抽選は seniorHpLow >= 0.55（seniorHp <= 45）のみで、Review 件数条件は無い。
-  const reviewQueueDanger = s.totals.reviewQueuePeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
+  const liveReviewPeak = Math.max(s.totals.reviewQueuePeak, s.sprint?.metrics.reviewQueueMax ?? 0);
+  const reviewQueueDanger = liveReviewPeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
   const reviewFreezeEventRisk = s.org.seniorHp <= 45;
   if (reviewQueueDanger || reviewFreezeEventRisk) out.push('reviewFreeze');
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
@@ -1031,8 +1061,8 @@ function canApplyAssignTaskWithExplicitTarget(
   return false;
 }
 
-/** アクティブな危険種別ごとの発動可能介入を和集合へ追記する（盤面非破壊）。 */
-function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, Set<string>>): void {
+/** アクティブな危険種別ごとの発動可能介入を和集合・最終サンプルへ追記する（盤面非破壊）。 */
+function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, DangerTrack>): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
   const dangers = activeDangerReasons(s);
@@ -1051,14 +1081,22 @@ function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, S
       available.push(id);
     }
   }
+  const sample = {
+    sprintsPlayed: s.sprintsPlayed,
+    quarter: s.quarterNumber,
+    index: s.sprintIndexInQuarter,
+    actions: [...available].sort(),
+  };
   for (const reason of dangers) {
-    let set = byReason.get(reason);
-    if (!set) {
+    let track = byReason.get(reason);
+    if (!track) {
       // 空集合も「危険域を観測した」印として残す。
-      set = new Set();
-      byReason.set(reason, set);
+      track = { actions: new Set(), lastSample: sample, lastNonEmpty: null };
+      byReason.set(reason, track);
     }
-    for (const id of available) set.add(id);
+    for (const id of available) track.actions.add(id);
+    track.lastSample = sample;
+    if (available.length > 0) track.lastNonEmpty = sample;
   }
 }
 
@@ -1366,8 +1404,8 @@ export function runOnce(
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
-  /** 危険種別ごとの発動可能介入の和集合（RI-89）。キーがある＝その危険域を観測。 */
-  const availableInDangerByReason = new Map<DangerLoseReason, Set<string>>();
+  /** 危険種別ごとの発動可能介入トラック（RI-89）。キーがある＝その危険域を観測。 */
+  const availableInDangerByReason = new Map<DangerLoseReason, DangerTrack>();
   /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
   let lostPhase: string | undefined;
   /**
@@ -1430,7 +1468,13 @@ export function runOnce(
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
           if (spec.cards === 'selective') playHand(e, 'selective', sampleDanger);
           if (e.snapshot().phase !== 'sprint') break;
-          e.step(spec.stepMs);
+          // stepMs を固定 tick に分割し、各 tick 後に危険域を観測（tick 間の一時的な手を拾う）。
+          const ticks = Math.max(1, Math.floor(spec.stepMs / MS_PER_TICK));
+          for (let t = 0; t < ticks; t += 1) {
+            e.step(MS_PER_TICK);
+            if (e.snapshot().phase !== 'sprint') break;
+            sampleDanger();
+          }
         }
         const after = e.snapshot();
         if (after.sprintsPlayed > before) {
@@ -1618,11 +1662,16 @@ export function runOnce(
     sprints,
     quarters,
     ...(f.loseReason && availableInDangerByReason.has(f.loseReason as DangerLoseReason)
-      ? {
-          availableActionsInDanger: [
-            ...availableInDangerByReason.get(f.loseReason as DangerLoseReason)!,
-          ].sort(),
-        }
+      ? (() => {
+          const track = availableInDangerByReason.get(f.loseReason as DangerLoseReason)!;
+          return {
+            availableActionsInDanger: [...track.actions].sort(),
+            availableActionsInDangerLastSample: track.lastSample,
+            ...(track.lastNonEmpty
+              ? { availableActionsInDangerLastNonEmpty: track.lastNonEmpty }
+              : {}),
+          };
+        })()
       : {}),
     finalOrg: {
       aiEnabled: f.org.aiEnabled,

@@ -233,13 +233,37 @@ describe('RI-74 AI依存ペースと回避経路', () => {
     const saved = restored.exportPersistState()!;
     expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(26); // 39-13
     const rivalAfter = saved.extras.teams!.find((t) => t.id === rivalBefore.id)!.aiDependency;
-    expect(rivalAfter).toBeGreaterThanOrEqual(32);
-    expect(rivalAfter).toBeLessThanOrEqual(52);
-    expect(rivalAfter).toBe(Math.max(32, Math.min(52, rivalBeforeDep - 13)));
+    // 高依存側のみ上限クランプ。レバー済み低依存は下限へ引き上げない
+    expect(rivalAfter).toBe(Math.min(52, rivalBeforeDep - 13));
     expect(saved.org.aiDependency).toBe(26);
   });
 
-  it('旧 ±25 の高依存 rival は移行時に現行 ±10 へ収める', () => {
+  it('移行時に施策済み rival の低依存を下限へ引き上げない', () => {
+    const e = new RunEngine({ seed: 'ri74-hydrate-rival-lever', difficulty: 'nightmare' });
+    e.startRun();
+    const persist = e.exportPersistState();
+    expect(persist).not.toBeNull();
+    delete persist!.extras.baseConfig.aiDependencyPerTask;
+    const homeId = persist!.extras.homeTeamId!;
+    const rival = persist!.extras.teams!.find((t) => t.id !== homeId)!;
+    // 旧生成最小 30 + 全社ガイドライン -10 → 20。差分 -13 後は 7（下限 32 へ上げない）
+    persist!.extras.teams = persist!.extras.teams!.map((t) =>
+      t.id === homeId
+        ? { ...t, aiDependency: 55 }
+        : t.id === rival.id
+          ? { ...t, aiDependency: 20, aiLiteracy: 20 }
+          : { ...t, aiDependency: 55 },
+    );
+    persist!.org = { ...persist!.org, aiDependency: 55 };
+
+    const restored = new RunEngine({ seed: 'ri74-hydrate-rival-lever-2', difficulty: 'normal' });
+    restored.hydratePersistState(persist!);
+    const saved = restored.exportPersistState()!;
+    expect(saved.extras.teams!.find((t) => t.id === homeId)!.aiDependency).toBe(42);
+    expect(saved.extras.teams!.find((t) => t.id === rival.id)!.aiDependency).toBe(7);
+  });
+
+  it('旧 ±25 の高依存 rival は移行時に現行 ±10 上限へ抑える', () => {
     const e = new RunEngine({ seed: 'old-20', difficulty: 'nightmare' });
     e.startRun('nightmare', ['frontier-dependency'], 'old-20');
     const persist = e.exportPersistState();

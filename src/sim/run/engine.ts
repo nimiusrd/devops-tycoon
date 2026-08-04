@@ -2069,7 +2069,8 @@ export class RunEngine {
    * 旧 Nightmare 初期依存度（55）の未プレイセーブを現行初期値へ移行する（RI-74）。
    * 呼び出し側で係数欠落を確認済み。ホーム等値は見ない（setup 中のレバー焼き込みや
    * rival 進入で org / ホームが 55 以外になり得るため）。旧→新ベース差分を全チームへ適用し、
-   * ライバルは旧 ±25 が残らないよう現行の低リテラシー振れ幅へクランプする。
+   * ライバルは旧 ±25 の高依存側だけを現行の低リテラシー上限へ抑える（下限は付けない。
+   * レバー焼き込み済みの低依存を引き上げて施策効果を消さないため）。
    * 進行中ランは触らない。
    */
   private migrateLegacyNightmareAiDependencyBase(): void {
@@ -2079,12 +2080,11 @@ export class RunEngine {
     const nextBase = getDifficulty('nightmare').org.aiDependencyBase;
     const legacyBase = 55;
     const delta = nextBase - legacyBase;
-    const rivalMin = nextBase - RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY;
     const rivalMax = nextBase + RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY;
     this.teams = this.teams.map((team) => {
       let aiDependency = Math.max(0, Math.min(100, team.aiDependency + delta));
       if (team.id !== this.homeTeamId) {
-        aiDependency = Math.max(rivalMin, Math.min(rivalMax, aiDependency));
+        aiDependency = Math.min(rivalMax, aiDependency);
       }
       return { ...team, aiDependency };
     });

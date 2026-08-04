@@ -409,6 +409,34 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(s.budget).toBe(midBudget);
   });
 
+  it('RI-81: マリガン後に古いドラフト ID を chooseCard しても受け付けない', () => {
+    const e = new RunEngine({ seed: 'ri81-mulligan', difficulty: 'easy' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    let s = e.snapshot();
+    expect(s.phase).toBe('draft');
+    const oldDraft = [...(s.draft ?? [])];
+
+    e.mulliganDraft();
+    s = e.snapshot();
+    const newDraft = [...(s.draft ?? [])];
+    expect(s.phase).toBe('draft');
+
+    // 旧ドラフトと新ドラフトが異なることを前提に旧 ID で chooseCard しても無視される。
+    const staleId = oldDraft.find((id) => !newDraft.includes(id));
+    if (staleId) {
+      e.chooseCard(staleId);
+      expect(e.snapshot().phase).toBe('draft');
+      expect(e.snapshot().draft).toEqual(newDraft);
+    }
+
+    // 新ドラフトの ID なら受け付け evolution へ進む。
+    e.chooseCard(newDraft[0]!);
+    expect(e.snapshot().phase).toBe('evolution');
+  });
+
   it('RI-81: 予算不足ではマリガンできない', () => {
     const e = new RunEngine({ seed: 'ri81-mulligan-poor', difficulty: 'easy' });
     e.startRun();

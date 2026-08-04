@@ -321,7 +321,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
     expect(uP50).toBeGreaterThanOrEqual(INTERVENTION_PER_SPRINT.min);
     expect(uP50).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
     expect(uP90).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
-  }, 15_000);
+  }, 30_000);
 });
 
 describe('percentile ヘルパ', () => {

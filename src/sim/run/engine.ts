@@ -910,6 +910,7 @@ export class RunEngine {
   /** ドラフトでカードを選びデッキに加える（加算系の効果は即時に組織へ反映）。 */
   chooseCard(defId: string): void {
     if (this.phase !== 'draft') return;
+    if (!this.draft?.includes(defId)) return;
     this.addCard(defId, 1);
     this.draft = null;
     this.draftMulliganUsed = false;

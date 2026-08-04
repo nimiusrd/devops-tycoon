@@ -881,7 +881,7 @@ Delivery Score、Quality、Moraleをすべて一定以上に保ってクリア�
 
 ### AI導入成功勝利
 
-AI利用率を一定以上にしつつ、Rework率とReview詰まりを抑えてクリアする。
+AI利用率を一定以上にしつつ、AI Literacy を一定以上に保ち、Rework率とReview詰まりを抑えてクリアする。
 
 ### 経営勝利
 

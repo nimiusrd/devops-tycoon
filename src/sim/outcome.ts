@@ -130,13 +130,14 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'noDamage';
   }
 
-  // AI ビルド: 利用率と検証能力の両立。reviewHell（ピーク16+）とは重ならない。
+  // AI ビルド: 利用率と検証能力の両立。reviewHell（ピーク16+）・aiOverproduction とは重ならない。
   if (
     aiPct >= 0.55 &&
     reworkRatio < 0.22 &&
     totals.reviewQueuePeak < 16 &&
     org.aiLiteracy >= 40 &&
-    diagnosis !== 'reviewHell'
+    diagnosis !== 'reviewHell' &&
+    diagnosis !== 'aiOverproduction'
   ) {
     return 'aiSuccess';
   }

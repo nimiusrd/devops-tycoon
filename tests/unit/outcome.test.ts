@@ -339,6 +339,12 @@ describe('evaluateWinType', () => {
       totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 18, spread: 1 },
       budget: 10,
     });
+    // aiOverproduction（高AI率かつキュー詰まり）と重なる場合も aiSuccess にしない。
+    win('normal', {
+      org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 55 },
+      totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 12, spread: 1 },
+      budget: 10,
+    });
   });
 
   it('幸福・経営・カオス・健全はビルド指標で分岐する（RI-76）', () => {
@@ -431,7 +437,7 @@ describe('evaluateWinType', () => {
           completed: 40,
           aiAssisted: 28,
           rework: 6,
-          reviewQueuePeak: 12,
+          reviewQueuePeak: 8,
           spread: 1,
         }),
         budget: 12,

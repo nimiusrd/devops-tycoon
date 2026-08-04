@@ -367,7 +367,8 @@ export interface WinTitleDef {
 const WIN_TITLE_HINTS: Record<WinType, string> = {
   normal: 'ボスを突破して四半期を完遂する',
   healthy: '出荷・品質・士気をすべて高く保ってボスを突破する',
-  aiSuccess: 'AI 利用率を高めつつ、手戻りとレビュー渋滞を抑えてボスを突破する',
+  aiSuccess:
+    'AI 利用率を高め、AI リテラシー 40 以上を維持しつつ、手戻りとレビュー渋滞を抑えてボスを突破する',
   management: '予算に余裕を残してボスを突破する',
   happiness: 'Morale とシニア体力を高く保ってボスを突破する',
   chaos: '障害を乗り越えて高い出荷を達成し、ボスを突破する',

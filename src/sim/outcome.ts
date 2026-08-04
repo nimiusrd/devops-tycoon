@@ -112,10 +112,10 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   const { org, totals, budget, usedHeavyActions } = input;
   const diagnosis = input.diagnosis ?? diagnose(org, totals);
   // aiPct はラン全体の完了タスク数を分母にする（粗粒度チーム分も含む totals.completed が適切）。
-  // reworkRatio は粗粒度チームの completed で希釈されないよう、スプリント帰属フィールドだけで計算する。
-  // totals.rework / (totals.rework + totals.done) = 選択チームのスプリント処理タスク中の手戻り割合。
+  // reworkRatio は粗粒度チームの completed で希釈されないよう、選択チームの done を分母にする。
+  // rework/(rework+done) だと閾値単位が変わるため、従来どおり rework/done を維持する。
   const completed = Math.max(1, totals.completed);
-  const reworkRatio = totals.rework / Math.max(1, totals.rework + totals.done);
+  const reworkRatio = totals.rework / Math.max(1, totals.done);
   const aiPct = totals.aiAssisted / completed;
   const healthyDiagnosis =
     diagnosis === 'healthyAcceleration' || diagnosis === 'documentationKingdom';

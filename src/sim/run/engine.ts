@@ -761,8 +761,12 @@ export class RunEngine {
     if (canAcknowledgeWin(outcome)) {
       this.flushCoarseIncidentCarry();
       this.status = 'won';
+      // 旧セーブに保存された診断は旧式 rework/completed の可能性があるため、
+      // 勝利判定直前に現行ロジックで再計算する。
+      const winOrg = this.winEvalOrg ?? this.org;
+      this.diagnosis = diagnose(winOrg, this.totals);
       this.winType = evaluateWinType({
-        org: this.winEvalOrg ?? this.org,
+        org: winOrg,
         totals: this.totals,
         budget: this.budget,
         usedHeavyActions: this.usedHeavyActions,
@@ -1889,6 +1893,8 @@ export class RunEngine {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
     this.applyPersistFrame(state, { migrateLegacyAiDependency: true });
+    // schema v3 のままでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
+    this.diagnosis = diagnose(this.org, this.totals);
   }
 
   /** リプレイキーフレームから閲覧用に復元する（RI-61。won/lost 可）。 */

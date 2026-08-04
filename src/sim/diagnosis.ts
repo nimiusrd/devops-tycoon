@@ -104,7 +104,10 @@ export function diagnosisView(type: DiagnosisType): DiagnosisView {
  */
 export function diagnose(org: OrgState, totals: RunTotals): DiagnosisType {
   const completed = Math.max(1, totals.completed);
-  const reworkRatio = totals.rework / Math.max(1, totals.rework + totals.done);
+  // 手戻り率は選択チームのスプリント完了数（done）を分母にする。
+  // totals.completed は粗粒度チーム分を含むため希釈され、rework/(rework+done) は
+  // 分母変更だけで既存閾値の境界がずれる。done なら従来単位を保ったまま希釈を避ける。
+  const reworkRatio = totals.rework / Math.max(1, totals.done);
   const aiPct = totals.aiAssisted / completed;
   const queuePeak = totals.reviewQueuePeak;
 

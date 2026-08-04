@@ -129,7 +129,14 @@ describe('組織タイプ診断（第13章）', () => {
   });
 
   it('手戻り比率が高ければ Rework Spiral', () => {
-    expect(diagnose(org(), totals({ rework: 10, completed: 20 }))).toBe('reworkSpiral');
+    expect(diagnose(org(), totals({ rework: 10, done: 20, completed: 20 }))).toBe('reworkSpiral');
+  });
+
+  it('粗粒度 completed で手戻り率が希釈されない（分母は done）', () => {
+    // rework/done = 32/100 = 0.32 で境界到達。completed を分母にすると 32/500 で未達になる。
+    expect(
+      diagnose(org(), totals({ rework: 32, done: 100, completed: 500, reviewQueuePeak: 4 })),
+    ).toBe('reworkSpiral');
   });
 
   it('レビュー待ちのピークが限界なら Review Hell', () => {

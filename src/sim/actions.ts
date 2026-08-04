@@ -6,7 +6,12 @@
  * からのみ消費する（決定論。第22.3）。入力はイベント経由で受け取る。
  */
 import { getAction } from '../data/actions';
-import { applyAssignTaskEffect, assignableTasks, resolveSplitPrTarget } from './assignTask';
+import {
+  applyAssignTaskEffect,
+  assignableTasks,
+  canApplyAssignTaskTarget,
+  resolveSplitPrTarget,
+} from './assignTask';
 import type { Rng } from './rng';
 import { reviewOne } from './sprint';
 import { appendSprintEvent } from './sprintEvents';
@@ -237,8 +242,14 @@ function addComboGauge(sprint: SprintState, gain: number): number {
 /**
  * 対象の有無だけを読む（盤面非破壊 / RI-89）。
  * `applyAction` の EFFECTS と同じ条件。pairReview と modifier 系は常に true。
+ * `assignTask` で target 指定時は移動先・担当条件まで見るため `org` が必要。
  */
-export function hasActionTarget(id: ActionId, sprint: SprintState, target?: ActionTarget): boolean {
+export function hasActionTarget(
+  id: ActionId,
+  sprint: SprintState,
+  target?: ActionTarget,
+  org?: OrgState,
+): boolean {
   switch (id) {
     case 'interruptReview':
       return tasksInLane(sprint, 'review').length > 0;
@@ -247,7 +258,10 @@ export function hasActionTarget(id: ActionId, sprint: SprintState, target?: Acti
     case 'firefight':
       return mostUrgentIncident(sprint) !== undefined;
     case 'assignTask':
-      return assignableTasks(sprint).length > 0;
+      // 武装時（target なし）は候補の有無。指定時は apply と同じ対象・レーン・担当条件。
+      if (!target) return assignableTasks(sprint).length > 0;
+      if (!org) return false;
+      return canApplyAssignTaskTarget(sprint, org, target);
     case 'pairReview':
     case 'aiThrottle':
     case 'overtime':
@@ -265,7 +279,7 @@ export function hasActionTarget(id: ActionId, sprint: SprintState, target?: Acti
 export function canApplyAction(
   id: ActionId,
   sprint: SprintState,
-  _org: OrgState,
+  org: OrgState,
   _tick: number,
   target?: ActionTarget,
 ): { ok: true } | { ok: false; reason: ActionGateReason } {
@@ -274,7 +288,7 @@ export function canApplyAction(
   if (!def) return { ok: false, reason: 'no-target' };
   if ((sprint.cooldowns[id] ?? 0) > 0) return { ok: false, reason: 'cooldown' };
   if (sprint.focus < def.cost) return { ok: false, reason: 'no-focus' };
-  if (!hasActionTarget(id, sprint, target)) return { ok: false, reason: 'no-target' };
+  if (!hasActionTarget(id, sprint, target, org)) return { ok: false, reason: 'no-target' };
   return { ok: true };
 }
 

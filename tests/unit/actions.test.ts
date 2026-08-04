@@ -445,4 +445,20 @@ describe('canApplyAction（RI-89 読み取り専用）', () => {
     expect(gate).toEqual({ ok: false, reason: 'no-target' });
     expect(applied).toMatchObject({ ok: false, reason: 'no-target' });
   });
+
+  it('指定 target が無効なら assignTask は no-target（他候補があっても）', () => {
+    const org = createOrgState();
+    const sprint = makeSprint(org, [
+      makeTask(1, { lane: 'coding' }),
+      makeTask(2, { lane: 'review' }),
+    ]);
+    sprint.focus = 10;
+    const bad = { taskId: 2 };
+    const gate = canApplyAction('assignTask', sprint, org, TICK, bad);
+    const applied = applyAction('assignTask', sprint, org, rng, TICK, bad);
+    expect(gate).toEqual({ ok: false, reason: 'no-target' });
+    expect(applied).toMatchObject({ ok: false, reason: 'no-target' });
+    // target 省略時は Coding 候補があれば可
+    expect(canApplyAction('assignTask', sprint, org, TICK)).toEqual({ ok: true });
+  });
 });

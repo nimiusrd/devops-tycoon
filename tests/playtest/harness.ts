@@ -20,7 +20,12 @@ import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/me
 import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
 import { ELITE_TASK_MUL } from '../../src/sim/run/sprintBaselineBuild';
-import type { GoalAdjustmentId, RunState, StakeholderTrust } from '../../src/sim/run/types';
+import type {
+  GoalAdjustmentId,
+  LoseReason,
+  RunState,
+  StakeholderTrust,
+} from '../../src/sim/run/types';
 import type { ActionId } from '../../src/sim/types';
 import { MS_PER_TICK_1X } from '../../src/ui/sprintTempo';
 
@@ -515,10 +520,12 @@ export interface RunLog {
   evolutionUnlocked: number;
   goalAdjustments: string[];
   /**
-   * 危険域に入っているあいだに発動可能だった介入の和集合（RI-89）。
+   * 最終敗因に対応する危険域で発動可能だった介入の和集合（RI-89）。
+   * その敗因の危険域を一度も観測していなければ省略。
+   * 観測したが打てる手がゼロなら空配列（未観測とは区別する）。
    * `canApplyAction` による盤面非破壊観測。attempts（実際に試した手）とは別。
    */
-  availableActionsInDanger: string[];
+  availableActionsInDanger?: string[];
 }
 
 /**
@@ -894,32 +901,57 @@ function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
   };
 }
 
-/** F-9 / RI-89: 敗因予兆の危険域（HUD・四半期閾値の手前）。 */
-function isDangerZone(s: RunState): boolean {
+/**
+ * F-9 / RI-89: 敗因予兆の危険域（HUD・四半期閾値の手前）。
+ * 指標ごとに対応する敗因へ紐づけ、最終敗因の窓だけを報告できるようにする。
+ */
+type DangerLoseReason = Extract<
+  LoseReason,
+  | 'seniorBurnout'
+  | 'moraleCollapse'
+  | 'techDebt'
+  | 'aiDependency'
+  | 'budgetExhausted'
+  | 'trustExhausted'
+  | 'reviewFreeze'
+>;
+
+function activeDangerReasons(s: RunState): DangerLoseReason[] {
   const minTrust = Math.min(
     s.stakeholderTrust.management,
     s.stakeholderTrust.customers,
     s.stakeholderTrust.team,
   );
   const reviewLen = s.sprint?.tasks.filter((t) => t.lane === 'review').length ?? 0;
-  return (
-    s.org.seniorHp < 50 ||
-    s.org.morale < 40 ||
-    s.org.techDebt >= 60 ||
-    (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) ||
-    s.budget <= 15 ||
-    minTrust <= 25 ||
-    reviewLen >= 12
-  );
+  const out: DangerLoseReason[] = [];
+  if (s.org.seniorHp < 50) out.push('seniorBurnout');
+  if (s.org.morale < 40) out.push('moraleCollapse');
+  if (s.org.techDebt >= 60) out.push('techDebt');
+  if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
+  if (s.budget <= 15) out.push('budgetExhausted');
+  if (minTrust <= 25) out.push('trustExhausted');
+  if (reviewLen >= 12) out.push('reviewFreeze');
+  return out;
 }
 
-/** 危険域で発動可能な介入を和集合へ追記する（盤面非破壊）。 */
-function sampleAvailableInDanger(e: RunEngine, into: Set<string>): void {
+/** アクティブな危険種別ごとの発動可能介入を和集合へ追記する（盤面非破壊）。 */
+function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, Set<string>>): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
-  if (!isDangerZone(s)) return;
+  const dangers = activeDangerReasons(s);
+  if (dangers.length === 0) return;
+  const available: string[] = [];
   for (const id of ALL_ACTION_IDS) {
-    if (canApplyAction(id, s.sprint, s.org, s.sprintTick).ok) into.add(id);
+    if (canApplyAction(id, s.sprint, s.org, s.sprintTick).ok) available.push(id);
+  }
+  for (const reason of dangers) {
+    let set = byReason.get(reason);
+    if (!set) {
+      // 空集合も「危険域を観測した」印として残す。
+      set = new Set();
+      byReason.set(reason, set);
+    }
+    for (const id of available) set.add(id);
   }
 }
 
@@ -1224,8 +1256,8 @@ export function runOnce(
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
-  /** 危険域で発動可能だった介入の和集合（RI-89）。 */
-  const availableInDanger = new Set<string>();
+  /** 危険種別ごとの発動可能介入の和集合（RI-89）。キーがある＝その危険域を観測。 */
+  const availableInDangerByReason = new Map<DangerLoseReason, Set<string>>();
   /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
   let lostPhase: string | undefined;
   /**
@@ -1279,7 +1311,7 @@ export function runOnce(
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
-          sampleAvailableInDanger(e, availableInDanger);
+          sampleAvailableInDanger(e, availableInDangerByReason);
           interventions += intervene(e, spec, attempts);
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
@@ -1472,7 +1504,13 @@ export function runOnce(
     diagnosis: f.diagnosis,
     sprints,
     quarters,
-    availableActionsInDanger: [...availableInDanger].sort(),
+    ...(f.loseReason && availableInDangerByReason.has(f.loseReason as DangerLoseReason)
+      ? {
+          availableActionsInDanger: [
+            ...availableInDangerByReason.get(f.loseReason as DangerLoseReason)!,
+          ].sort(),
+        }
+      : {}),
     finalOrg: {
       aiEnabled: f.org.aiEnabled,
       aiDependency: Math.round(f.org.aiDependency),

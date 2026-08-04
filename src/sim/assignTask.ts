@@ -118,12 +118,15 @@ export function computeAssignMoraleCost(
   return ASSIGN_MORALE_COST + Math.min(3, mismatchStreak);
 }
 
-/** タスク差配を適用する。成功時はペイロード、失敗時は false。 */
-export function applyAssignTaskEffect(
+/**
+ * `applyAssignTaskEffect` と同じ前提を盤面非破壊で判定する（RI-89）。
+ * target 省略時は自動選択対象の有無のみ見る。
+ */
+export function canApplyAssignTaskTarget(
   sprint: SprintState,
   org: OrgState,
   target?: ActionTarget,
-): { affectedTaskIds: number[]; moraleCost: number } | false {
+): boolean {
   const task = resolveAssignTaskTarget(sprint, target);
   if (!task) return false;
 
@@ -131,19 +134,36 @@ export function applyAssignTaskEffect(
   if (target?.lane === 'backlog') return false;
 
   // 失敗時にレーンを動かさないよう、担当の妥当性を先に検査する。
-  const assignee = target?.assignee ?? defaultAssignee(task, org);
-  if (assignee === 'ai' && !org.aiEnabled && target?.assignee === 'ai') {
-    return false;
-  }
+  if (target?.assignee === 'ai' && !org.aiEnabled) return false;
 
   if (target?.lane && target.lane !== task.lane) {
     if (!canMoveToLane(sprint, task, target.lane)) return false;
+  }
+
+  // Backlog に残る場合は Coding へ上げられる必要がある（効果適用時と同じ）。
+  const laneAfter = target?.lane && target.lane !== task.lane ? target.lane : task.lane;
+  if (laneAfter === 'backlog') {
+    if (!canMoveToLane(sprint, task, 'coding')) return false;
+  }
+  return true;
+}
+
+/** タスク差配を適用する。成功時はペイロード、失敗時は false。 */
+export function applyAssignTaskEffect(
+  sprint: SprintState,
+  org: OrgState,
+  target?: ActionTarget,
+): { affectedTaskIds: number[]; moraleCost: number } | false {
+  if (!canApplyAssignTaskTarget(sprint, org, target)) return false;
+  const task = resolveAssignTaskTarget(sprint, target)!;
+  const assignee = target?.assignee ?? defaultAssignee(task, org);
+
+  if (target?.lane && target.lane !== task.lane) {
     task.lane = target.lane;
   }
 
   // Backlog に残ったまま加速すると intake で進捗が消えるため Coding へ上げる。
   if (task.lane === 'backlog') {
-    if (!canMoveToLane(sprint, task, 'coding')) return false;
     task.lane = 'coding';
   }
 

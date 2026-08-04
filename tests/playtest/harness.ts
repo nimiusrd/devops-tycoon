@@ -16,7 +16,6 @@ import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
 import { assignableTasks } from '../../src/sim/assignTask';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
-import { companyOrgFromTeams } from '../../src/sim/orgscale';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
@@ -27,10 +26,9 @@ import type {
   GoalAdjustmentId,
   LoseReason,
   RunState,
-  RunTotals,
   StakeholderTrust,
 } from '../../src/sim/run/types';
-import type { ActionId, OrgState } from '../../src/sim/types';
+import type { ActionId } from '../../src/sim/types';
 import { MS_PER_TICK_1X } from '../../src/ui/sprintTempo';
 
 /** 介入の発動可否を判定するための盤面サマリー。 */
@@ -972,54 +970,8 @@ type DangerTrack = {
   } | null;
 };
 
-/**
- * 実行中スプリントを含む全社 KPI 用 org。
- * 選択中チームは syncActiveTeamFromOrg まで teams[] が古いままなので、live org で上書きする。
- */
-function liveCompanyOrgForKpi(s: RunState): OrgState {
-  const teams = s.teams.map((t) =>
-    t.id !== s.activeTeamId
-      ? t
-      : {
-          ...t,
-          quality: s.org.quality,
-          techDebt: s.org.techDebt,
-          aiDependency: s.org.aiDependency,
-          aiLiteracy: s.org.aiLiteracy,
-          testCoverage: s.org.testCoverage,
-          documentation: s.org.documentation,
-          morale: s.org.morale,
-          seniorHp: s.org.seniorHp,
-          aiEnabled: s.org.aiEnabled,
-          shipping: s.org.deliveryScore,
-        },
-  );
-  return companyOrgFromTeams(teams, s.org);
-}
-
-/**
- * 実行中スプリント実績を足した四半期 totals。
- * quarterTotals は resolveSprint の accumulateTotals まで現スプリントを含まない。
- */
-function liveQuarterTotalsForKpi(s: RunState): RunTotals {
-  const m = s.sprint?.metrics;
-  if (!m) return s.quarterTotals;
-  return {
-    ...s.quarterTotals,
-    delivered: s.quarterTotals.delivered + m.delivered,
-    done: s.quarterTotals.done + m.doneCount,
-    rework: s.quarterTotals.rework + m.reworkCount,
-    incidents: s.quarterTotals.incidents + m.incidentCount,
-    contained: s.quarterTotals.contained + m.contained,
-    spread: s.quarterTotals.spread + m.spread,
-    aiAssisted: s.quarterTotals.aiAssisted + m.aiAssistedCompleted,
-    completed: s.quarterTotals.completed + m.completedCount,
-    reviewQueuePeak: Math.max(s.quarterTotals.reviewQueuePeak, m.reviewQueueMax),
-    maxCombo: Math.max(s.quarterTotals.maxCombo, m.maxCombo),
-  };
-}
-
-function activeDangerReasons(s: RunState): DangerLoseReason[] {
+function activeDangerReasons(e: RunEngine): DangerLoseReason[] {
+  const s = e.snapshot();
   const minTrust = Math.min(
     s.stakeholderTrust.management,
     s.stakeholderTrust.customers,
@@ -1034,12 +986,15 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   // trustExhausted: trust / budget / HP 経路（missed_crisis・shutdown 前兆）。
   // KPI 未達だけの missed_crisis は loseReasonForOutcome が kpiMissed を返すため分離する。
   const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
-  // 四半期判定と同じ全社集約＋実行中スプリント合成で未達数を数える（1スプリント遅れを防ぐ）。
-  const kpiMissCount = measureGoalProgress({
-    goal: s.quarterGoal,
-    org: liveCompanyOrgForKpi(s),
-    totals: liveQuarterTotalsForKpi(s),
-  }).filter((p) => p.status === 'missed').length;
+  // 完了時と同じく、選択中 live＋非選択の粗粒度進行を合成した KPI で未達数を数える。
+  const liveKpi = e.previewLiveQuarterKpi();
+  const kpiMissCount = liveKpi
+    ? measureGoalProgress({
+        goal: s.quarterGoal,
+        org: liveKpi.org,
+        totals: liveKpi.totals,
+      }).filter((p) => p.status === 'missed').length
+    : 0;
   if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
   // kpiMissed: 未達4件以上に加え、missed_crisis フォールバック（trust/budget 枯渇・ハード非該当）の前兆。
   // 例: 予算1〜5・信頼はまだ閾値超・未達が少なくても loseReasonForOutcome は kpiMissed を返しうる。
@@ -1081,7 +1036,7 @@ function canApplyAssignTaskWithExplicitTarget(
 function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, DangerTrack>): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
-  const dangers = activeDangerReasons(s);
+  const dangers = activeDangerReasons(e);
   if (dangers.length === 0) return;
   const available: string[] = [];
   for (const id of ALL_ACTION_IDS) {

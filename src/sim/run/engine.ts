@@ -2144,6 +2144,92 @@ export class RunEngine {
     if (active) this.org = orgFromTeam(active);
   }
 
+  /**
+   * 実行中スプリント完了時点の全社 KPI 投影（盤面非破壊 / RI-89）。
+   * 選択中チームは live org＋sprint metrics、非選択は `advanceOtherTeams` 相当の粗粒度進行を合成する。
+   */
+  previewLiveQuarterKpi(): { org: OrgState; totals: RunTotals } | null {
+    if (this.phase !== 'sprint' || !this.sprint || !this.currentSprintId) return null;
+
+    const before = this.teams;
+    const fold = foldRunEffects({
+      deck: this.deck,
+      relics: this.relics,
+      evolution: this.evolution,
+      difficulty: this.difficulty,
+      trials: this.trials,
+    });
+    let shipMul = fold.effects.codingSpeedMul;
+    if (this.pauseAiDebuffQuarter === this.quarterNumber) {
+      shipMul *= PAUSE_AI_DEBUFF_MUL;
+    }
+    const stepped = advanceCoarseTeams(this.teams, {
+      seed: this.seed,
+      stepKey: `sprint:${this.currentSprintId}`,
+      excludeId: this.activeTeamId,
+      adjust: this.orgAdjust,
+      modifiers: {
+        incidentRateMul: fold.effects.incidentRateMul,
+        shipMul,
+        reviewMul: fold.effects.reviewEfficiencyMul,
+        reviewCapacityMul: fold.effects.reviewCapacityMul,
+        aiDependencyDrift: fold.aiDependencyDriftPerSprint,
+      },
+    });
+    const delta = normalizeCoarseTotalsDelta(
+      before,
+      stepped.teams,
+      this.activeTeamId,
+      stepped.ignited,
+      stepped.completed,
+      stepped.aiAssisted,
+      this.coarseIncidentCarry,
+    );
+
+    const projectedTeams = stepped.teams.map((t) =>
+      t.id !== this.activeTeamId
+        ? t
+        : {
+            ...t,
+            quality: this.org.quality,
+            techDebt: this.org.techDebt,
+            aiDependency: this.org.aiDependency,
+            aiLiteracy: this.org.aiLiteracy,
+            testCoverage: this.org.testCoverage,
+            documentation: this.org.documentation,
+            morale: this.org.morale,
+            seniorHp: this.org.seniorHp,
+            aiEnabled: this.org.aiEnabled,
+            shipping: this.org.deliveryScore,
+          },
+    );
+    const org = companyOrgFromTeams(projectedTeams, this.org);
+    const m = this.sprint.metrics;
+    let reviewQueuePeak = Math.max(this.quarterTotals.reviewQueuePeak, m.reviewQueueMax);
+    for (const team of before) {
+      if (team.id === this.activeTeamId) continue;
+      reviewQueuePeak = Math.max(reviewQueuePeak, team.reviewQueue);
+    }
+    for (const team of stepped.teams) {
+      if (team.id === this.activeTeamId) continue;
+      reviewQueuePeak = Math.max(reviewQueuePeak, team.reviewQueue);
+    }
+    const totals: RunTotals = {
+      ...this.quarterTotals,
+      delivered: this.quarterTotals.delivered + m.delivered + delta.delivered,
+      done: this.quarterTotals.done + m.doneCount,
+      rework: this.quarterTotals.rework + m.reworkCount,
+      incidents: this.quarterTotals.incidents + m.incidentCount + delta.incidents,
+      contained: this.quarterTotals.contained + m.contained,
+      spread: this.quarterTotals.spread + m.spread,
+      aiAssisted: this.quarterTotals.aiAssisted + m.aiAssistedCompleted + delta.aiAssisted,
+      completed: this.quarterTotals.completed + m.completedCount + delta.completed,
+      reviewQueuePeak,
+      maxCombo: Math.max(this.quarterTotals.maxCombo, m.maxCombo),
+    };
+    return { org, totals };
+  }
+
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */
   snapshot(): RunState {
     const orgScale = this.orgScaleForSnapshot();

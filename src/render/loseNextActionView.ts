@@ -364,7 +364,14 @@ export function loseNextActionView(
   options: LoseNextActionOptions = {},
 ): LoseNextActionView {
   const snapshot = options.snapshot ?? {};
-  if (options.quarterOutcome) {
+  // ハード敗北原因（seniorBurnout/techDebt/moraleCollapse/reviewFreeze）が
+  // missed_crisis から降格した場合も cause-specific 助言を優先する（RI-79）。
+  const isHardLoseCause =
+    reason === 'seniorBurnout' ||
+    reason === 'techDebt' ||
+    reason === 'moraleCollapse' ||
+    reason === 'reviewFreeze';
+  if (options.quarterOutcome && !(isHardLoseCause && options.quarterOutcome === 'missed_crisis')) {
     const fromOutcome = quarterOutcomeAction(options.quarterOutcome, snapshot);
     if (fromOutcome) return fromOutcome;
   }

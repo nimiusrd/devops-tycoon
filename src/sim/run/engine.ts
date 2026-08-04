@@ -773,10 +773,11 @@ export class RunEngine {
     if (isTerminalFailure(outcome)) {
       this.flushCoarseIncidentCarry();
       this.status = 'lost';
+      // loseReason の分類も buildQuarterReview と同じ全社集約 org で行う（RI-79）。
       this.loseReason = loseReasonForOutcome(outcome, {
         progress: this.quarterReview.progress,
         trust: this.quarterReview.trust,
-        org: this.org,
+        org: companyOrgFromTeams(this.teams, this.org),
         budget: this.budget,
         quarterNumber: this.quarterNumber,
         totals: this.totals,

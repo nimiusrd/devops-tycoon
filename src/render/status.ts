@@ -426,6 +426,8 @@ export function diffHudMetricSnapshots(
 /**
  * 予算の詳細・警告チップ（RI-79）。
  * 四半期危機（budget<=5 / shutdown の budget<=0）の手前から予兆する。
+ * budget<=5 は missed_crisis 以上が確定するため追加申請（request_budget）は
+ * 提示せず支出抑制のみを案内する。
  */
 export function budgetHudCopy(budget: number): {
   tone: StatusMetricTone;
@@ -435,7 +437,7 @@ export function budgetHudCopy(budget: number): {
   if (budget <= 5) {
     return {
       tone: 'danger',
-      detail: '予算危機・追加申請や支出抑制で延命',
+      detail: '予算危機・支出抑制で残高を守る',
       warningChip: '予算危険',
     };
   }

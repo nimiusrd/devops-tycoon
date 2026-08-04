@@ -123,6 +123,39 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     expect(hpMissed.nextAction).toMatch(/シニアHP|未達/);
   });
 
+  it('missed_crisis でもハード敗北原因は cause-specific 助言を使う（RI-79）', () => {
+    // seniorBurnout が missed_crisis 経由で降格しても seniorBurnout 固有の一手を返す。
+    const seniorBurnout = loseNextActionView('seniorBurnout', {
+      quarterOutcome: 'missed_crisis',
+      snapshot: { seniorHp: 1, reviewQueuePeak: 10 },
+    });
+    expect(seniorBurnout.nextAction).toContain('緊急対応');
+    expect(seniorBurnout.nextAction).not.toContain('信頼');
+
+    // techDebt が missed_crisis 経由でも techDebt 固有の一手を返す。
+    const techDebt = loseNextActionView('techDebt', {
+      quarterOutcome: 'missed_crisis',
+      snapshot: {},
+    });
+    expect(techDebt.nextAction).toContain('休息');
+    expect(techDebt.nextAction).toContain('負債');
+
+    // moraleCollapse が missed_crisis 経由でも moraleCollapse 固有の一手を返す。
+    const moraleCollapse = loseNextActionView('moraleCollapse', {
+      quarterOutcome: 'missed_crisis',
+      snapshot: {},
+    });
+    expect(moraleCollapse.nextAction).toContain('休息');
+    expect(moraleCollapse.nextAction).toContain('士気');
+
+    // reviewFreeze が missed_crisis 経由でも reviewFreeze 固有の一手を返す。
+    const reviewFreeze = loseNextActionView('reviewFreeze', {
+      quarterOutcome: 'missed_crisis',
+      snapshot: { seniorHp: 40, reviewQueuePeak: 50 },
+    });
+    expect(reviewFreeze.nextAction).toMatch(/AIスロットル|PR分割|レビュー応援/);
+  });
+
   it('missed_crisis はトリガー別に助言を分ける', () => {
     const trust = loseNextActionView('trustExhausted', {
       quarterOutcome: 'missed_crisis',

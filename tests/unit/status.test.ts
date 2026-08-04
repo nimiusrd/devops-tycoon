@@ -219,6 +219,9 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     expect(budgetHudCopy(3)).toMatchObject({ tone: 'danger', warningChip: '予算危険' });
     expect(budgetHudCopy(12)).toMatchObject({ tone: 'watch', warningChip: '予算注意' });
     expect(budgetHudCopy(40).warningChip).toBeUndefined();
+    // budget<=5 は missed_crisis 以上確定のため追加申請は案内しない（RI-79）。
+    expect(budgetHudCopy(3).detail).not.toContain('追加申請');
+    expect(budgetHudCopy(3).detail).toContain('支出抑制');
 
     expect(trustHudCopy({ management: 10, customers: 40, team: 40 })).toMatchObject({
       tone: 'danger',

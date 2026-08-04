@@ -10,12 +10,12 @@
  */
 import { getEvent } from '../../src/data/events';
 import { EVOLUTION_NODES } from '../../src/data/evolution';
-import { ACTION_DEFS } from '../../src/data/actions';
 import { CARD_DEFS } from '../../src/data/cards';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
+import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
@@ -164,8 +164,6 @@ const SKILLED_ACTIONS: PolicySpec['actions'] = [
   { id: 'andon', when: (c) => c.reviewLen >= 10 },
   { id: 'assignTask' },
 ];
-
-const ALL_ACTION_IDS = ACTION_DEFS.map((d) => d.id);
 
 /**
  * 攻略を知っている前提の解放順（レビュー容量 → 品質 → AI → 文化 → 開発速度）。
@@ -914,6 +912,9 @@ type DangerLoseReason = Extract<
   | 'budgetExhausted'
   | 'trustExhausted'
   | 'reviewFreeze'
+  | 'incidentCascade'
+  | 'bossFailed'
+  | 'reorgRequired'
 >;
 
 function activeDangerReasons(s: RunState): DangerLoseReason[] {
@@ -922,7 +923,6 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
     s.stakeholderTrust.customers,
     s.stakeholderTrust.team,
   );
-  const reviewLen = s.sprint?.tasks.filter((t) => t.lane === 'review').length ?? 0;
   const out: DangerLoseReason[] = [];
   if (s.org.seniorHp < 50) out.push('seniorBurnout');
   if (s.org.morale < 40) out.push('moraleCollapse');
@@ -930,7 +930,11 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
   if (s.budget <= 15) out.push('budgetExhausted');
   if (minTrust <= 25) out.push('trustExhausted');
-  if (reviewLen >= 12) out.push('reviewFreeze');
+  if (s.totals.reviewQueuePeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75)) out.push('reviewFreeze');
+  if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
+    out.push('incidentCascade');
+  if (s.currentSprintKind === 'boss') out.push('bossFailed');
+  if (minTrust <= 20 && s.quarterNumber >= 2) out.push('reorgRequired');
   return out;
 }
 
@@ -1307,6 +1311,7 @@ export function runOnce(
         const before = s.sprintsPlayed;
         const attempts: Record<string, Partial<Record<DispatchReason, number>>> = {};
         let interventions = 0;
+        sampleAvailableInDanger(e, availableInDangerByReason);
         playHand(e, spec.cards);
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {

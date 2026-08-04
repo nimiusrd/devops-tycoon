@@ -185,13 +185,27 @@ body {
   }
   .app.app-sprint-layout:has(.hud.hud-compact) .board-wrap {
     flex: 1 1 0;
-    min-height: 0;
+    /* 0 だと短い画面で盤面だけ潰れ切る。親は overflow-y:auto なので超過分はスクロールへ */
+    min-height: clamp(96px, 18vh, 220px);
     overflow: hidden;
   }
   .app.app-sprint-layout:has(.hud.hud-compact) .actionbar {
     position: sticky;
     bottom: 0;
     z-index: 6;
+  }
+}
+
+/* 短い viewport（SE 縦や横向き）では contain を緩め、盤面最低高を優先する */
+@media (max-width: 860px) and (max-height: 720px) {
+  .app.app-sprint-layout:has(.hud.hud-compact) {
+    max-height: none;
+    overflow-y: visible;
+  }
+  .app.app-sprint-layout:has(.hud.hud-compact) .board-wrap {
+    flex: 1 1 auto;
+    min-height: clamp(140px, 28vh, 320px);
+    overflow: hidden;
   }
 }
 

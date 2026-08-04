@@ -63,19 +63,29 @@ function useNarrowHud(): boolean {
 
 function pickCompactMetrics(metrics: StatusMetricView[]): StatusMetricView[] {
   const byId = new Map(metrics.map((metric) => [metric.id, metric]));
-  const ranked = [...metrics].sort((a, b) => {
-    const toneDiff = TONE_RANK[a.tone] - TONE_RANK[b.tone];
-    if (toneDiff !== 0) return toneDiff;
-    return COMPACT_PRIORITY_IDS.indexOf(a.id) - COMPACT_PRIORITY_IDS.indexOf(b.id);
-  });
   const picked: StatusMetricView[] = [];
   const seen = new Set<StatusMetricId>();
+
+  // 出荷は tone が常に good なので、危険トーン優先だけで埋めると落ちる。先に確保する。
+  const delivery = byId.get('delivery');
+  if (delivery) {
+    picked.push(delivery);
+    seen.add('delivery');
+  }
+
+  const ranked = metrics
+    .filter((metric) => !seen.has(metric.id))
+    .sort((a, b) => {
+      const toneDiff = TONE_RANK[a.tone] - TONE_RANK[b.tone];
+      if (toneDiff !== 0) return toneDiff;
+      return COMPACT_PRIORITY_IDS.indexOf(a.id) - COMPACT_PRIORITY_IDS.indexOf(b.id);
+    });
   for (const metric of ranked) {
     if (picked.length >= COMPACT_CHIP_LIMIT) break;
     picked.push(metric);
     seen.add(metric.id);
   }
-  // 危険が少ないときは主要指標で埋める（出荷は常に含める）。
+  // 危険が少ないときは主要指標で埋める。
   for (const id of COMPACT_PRIORITY_IDS) {
     if (picked.length >= COMPACT_CHIP_LIMIT) break;
     if (seen.has(id)) continue;
@@ -207,12 +217,15 @@ export interface HudProps {
 
 function CompactChip({ metric }: { metric: StatusMetricView }) {
   const valueText = `${metric.value}${metric.unit ?? ''}`;
+  const riskText = metric.risk && metric.risk !== 'LOW' ? `炎上 ${metric.risk}` : undefined;
+  // ガイド/CSS/E2E はフル表示と同じ `hud-seniorHp` を対象にする。
+  const testId = metric.id === 'seniorHp' ? 'hud-seniorHp' : `hud-compact-${metric.id}`;
   return (
     <span
       className={`hud-compact-chip tone-${metric.tone}`}
-      data-testid={`hud-compact-${metric.id}`}
+      data-testid={testId}
       data-tone={metric.tone}
-      title={`${metric.label}: ${valueText}`}
+      title={`${metric.label}: ${valueText}${riskText ? `。${riskText}` : ''}`}
     >
       <span className="hud-compact-chip-icon" aria-hidden="true">
         {metric.icon}
@@ -220,9 +233,7 @@ function CompactChip({ metric }: { metric: StatusMetricView }) {
       <span className="hud-compact-chip-label">{metric.label}</span>
       <span className="hud-compact-chip-value">{valueText}</span>
       {metric.warningChip && <span className="hud-compact-chip-warn">{metric.warningChip}</span>}
-      {metric.risk && metric.risk !== 'LOW' && (
-        <span className={`hud-compact-chip-risk risk-${metric.risk}`}>炎上</span>
-      )}
+      {riskText && <span className={`hud-compact-chip-risk risk-${metric.risk}`}>{riskText}</span>}
     </span>
   );
 }

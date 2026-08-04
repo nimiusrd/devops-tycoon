@@ -65,8 +65,8 @@ export const QUARTER_REVIEW_WALL_SEC = 45;
 /** §3.1: 1 四半期（スプリント 6 本＋レビュー）の 1x 実時間レンジ（分）。 */
 export const QUARTER_WALL_MIN = { minMin: 10, maxMin: 15 } as const;
 
-/** §3.1: 1 ラン（1〜複数四半期）の 1x 実時間レンジ（分）。RI-79 の信頼回復緩和により長命ランが増えた。 */
-export const RUN_WALL_MIN = { minMin: 15, maxMin: 90 } as const;
+/** §3.1: 1 ラン（1〜複数四半期）の 1x 実時間レンジ（分）。 */
+export const RUN_WALL_MIN = { minMin: 15, maxMin: 45 } as const;
 
 /** §3.1: 1 スプリントあたり介入回数の期待レンジ。 */
 export const INTERVENTION_PER_SPRINT = { min: 3, max: 8 } as const;

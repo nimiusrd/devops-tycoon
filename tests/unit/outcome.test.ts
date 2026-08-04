@@ -257,6 +257,7 @@ describe('evaluateWinType', () => {
   const runTotals = (overrides: Partial<RunTotals> = {}): RunTotals =>
     totals({
       delivered: 100,
+      done: 10,
       rework: 3,
       spread: 1,
       aiAssisted: 0,
@@ -295,14 +296,14 @@ describe('evaluateWinType', () => {
         documentation: 40,
         aiLiteracy: 50,
       },
-      totals: { spread: 0, completed: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
+      totals: { spread: 0, completed: 20, done: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
       usedHeavyActions: false,
       budget: 10,
     });
     // 重介入なし・延焼0だけでは足りない（旧ラダーの受動ノーダメ）。
     win('normal', {
       org: { quality: 50, morale: 50, seniorHp: 30, aiLiteracy: 50 },
-      totals: { spread: 0, completed: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
+      totals: { spread: 0, completed: 20, done: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
       usedHeavyActions: false,
       budget: 10,
     });
@@ -316,7 +317,7 @@ describe('evaluateWinType', () => {
         documentation: 40,
         aiLiteracy: 50,
       },
-      totals: { spread: 0, completed: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
+      totals: { spread: 0, completed: 20, done: 20, rework: 2, aiAssisted: 0, reviewQueuePeak: 4 },
       usedHeavyActions: true,
       budget: 10,
     });
@@ -325,24 +326,52 @@ describe('evaluateWinType', () => {
   it('AI導入成功は利用率・検証・Literacy で成立し、健全より先に評価される（RI-76）', () => {
     win('aiSuccess', {
       org: { quality: 80, morale: 80, seniorHp: 40, aiLiteracy: 40 },
-      totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 10, spread: 1 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 12,
+        rework: 3,
+        reviewQueuePeak: 10,
+        spread: 1,
+      },
       budget: 10,
     });
     win('normal', {
       org: { quality: 50, morale: 50, seniorHp: 30, aiLiteracy: 39 },
-      totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 10, spread: 1 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 12,
+        rework: 3,
+        reviewQueuePeak: 10,
+        spread: 1,
+      },
       budget: 10,
     });
     // reviewHell（ピーク16〜19）と重なる場合は aiSuccess にしない。
     win('normal', {
       org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 40 },
-      totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 18, spread: 1 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 12,
+        rework: 3,
+        reviewQueuePeak: 18,
+        spread: 1,
+      },
       budget: 10,
     });
     // aiOverproduction（高AI率かつキュー詰まり）と重なる場合も aiSuccess にしない。
     win('normal', {
       org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 55 },
-      totals: { completed: 20, aiAssisted: 12, rework: 3, reviewQueuePeak: 12, spread: 1 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 12,
+        rework: 3,
+        reviewQueuePeak: 12,
+        spread: 1,
+      },
       budget: 10,
     });
   });
@@ -350,18 +379,19 @@ describe('evaluateWinType', () => {
   it('幸福・経営・カオス・健全はビルド指標で分岐する（RI-76）', () => {
     win('happiness', {
       org: { morale: 70, seniorHp: 55, quality: 50, aiLiteracy: 50 },
-      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
       budget: 10,
     });
     win('management', {
       org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
-      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
       budget: 35,
     });
     win('chaos', {
       org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
       totals: {
         completed: 20,
+        done: 20,
         aiAssisted: 0,
         rework: 2,
         reviewQueuePeak: 4,
@@ -380,7 +410,7 @@ describe('evaluateWinType', () => {
         testCoverage: 40,
         documentation: 40,
       },
-      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
       budget: 10,
     });
     win('healthy', {
@@ -392,7 +422,7 @@ describe('evaluateWinType', () => {
         testCoverage: 70,
         documentation: 60,
       },
-      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
       budget: 10,
     });
     // documentationKingdom 経路でも士気下限未満なら健全にしない。
@@ -405,7 +435,7 @@ describe('evaluateWinType', () => {
         testCoverage: 70,
         documentation: 60,
       },
-      totals: { completed: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
       budget: 10,
     });
   });
@@ -424,6 +454,7 @@ describe('evaluateWinType', () => {
         totals: runTotals({
           spread: 0,
           completed: 40,
+          done: 40,
           rework: 4,
           aiAssisted: 0,
           reviewQueuePeak: 6,
@@ -435,6 +466,7 @@ describe('evaluateWinType', () => {
         org: org({ quality: 60, morale: 55, seniorHp: 40, aiLiteracy: 55 }),
         totals: runTotals({
           completed: 40,
+          done: 40,
           aiAssisted: 28,
           rework: 6,
           reviewQueuePeak: 8,
@@ -447,6 +479,7 @@ describe('evaluateWinType', () => {
         org: org({ quality: 50, morale: 75, seniorHp: 60, aiLiteracy: 50 }),
         totals: runTotals({
           completed: 40,
+          done: 40,
           aiAssisted: 5,
           rework: 4,
           reviewQueuePeak: 8,
@@ -459,6 +492,7 @@ describe('evaluateWinType', () => {
         org: org({ quality: 50, morale: 45, seniorHp: 35, aiLiteracy: 50 }),
         totals: runTotals({
           completed: 40,
+          done: 40,
           aiAssisted: 5,
           rework: 4,
           reviewQueuePeak: 8,
@@ -480,6 +514,7 @@ describe('evaluateWinType', () => {
         }),
         totals: runTotals({
           completed: 40,
+          done: 40,
           aiAssisted: 5,
           rework: 4,
           reviewQueuePeak: 8,

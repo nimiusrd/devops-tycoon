@@ -231,7 +231,14 @@ describe('勝敗判定（第14/15章）', () => {
         testCoverage: 40,
         documentation: 40,
       }),
-      totals: totals({ spread: 0, completed: 30, aiAssisted: 5, rework: 2, reviewQueuePeak: 4 }),
+      totals: totals({
+        spread: 0,
+        completed: 30,
+        done: 30,
+        aiAssisted: 5,
+        rework: 2,
+        reviewQueuePeak: 4,
+      }),
       budget: 10,
       usedHeavyActions: false,
     });

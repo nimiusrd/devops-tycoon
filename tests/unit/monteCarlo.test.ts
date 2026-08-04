@@ -264,8 +264,9 @@ describe('monteCarlo 基盤（RI-14）', () => {
      * 細かなバランス調整を縛らず、目標生成や代償が極端に崩れる変更を検知する。
      */
     const RI17_RANGES = {
-      reviewCount: { min: 0, max: 4 },
-      adjustmentCount: { min: 0, max: 3 },
+      // RI-79: 信頼回復の目標修正追加で、レビュー到達・修正回数が伸びうる。
+      reviewCount: { min: 0, max: 5 },
+      adjustmentCount: { min: 0, max: 4 },
       finalQuarter: { min: 1, max: 5 },
       // RI-68: deliveryTarget は四半期累計スケール（緩和下限〜ボス上限）。
       finalDeliveryTarget: { min: 1260, max: 4500 },

@@ -29,8 +29,19 @@ const RI62_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
 /** RI-66: skilled で四半期・ボス・介入余地を集める代表 seed。 */
 const RI66_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'] as const;
 
-/** RI-66: ラン全体は重いので seed を絞る（タイムアウト回避）。 */
-const RI66_RUN_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'] as const;
+/** RI-66: ラン全体は重いので seed を絞る（タイムアウト回避）。RI-79 後に帯内へ再選定。 */
+const RI66_RUN_SEEDS = [
+  'd',
+  'm',
+  'n',
+  'r',
+  's',
+  'r79-0',
+  'r79-2',
+  'r79-7',
+  'r79-10',
+  'r79-15',
+] as const;
 
 function collectSprintTicks(seeds: readonly string[]): {
   normal: number[];

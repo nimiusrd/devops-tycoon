@@ -42,7 +42,7 @@ export function DraftScreen({
   onSkip,
   onMulligan,
 }: DraftScreenProps) {
-  const canMulligan = !mulliganUsed && budget >= DRAFT_MULLIGAN_COST;
+  const canMulligan = !mulliganUsed && budget > DRAFT_MULLIGAN_COST;
 
   return (
     <div className="result-overlay" data-testid="draft" role="dialog" aria-label="Card Draft">
@@ -82,7 +82,7 @@ export function DraftScreen({
             title={
               mulliganUsed
                 ? 'このドラフトではすでに引き直しています'
-                : budget < DRAFT_MULLIGAN_COST
+                : budget <= DRAFT_MULLIGAN_COST
                   ? `予算が足りません（必要 ${DRAFT_MULLIGAN_COST}）`
                   : `予算 ${DRAFT_MULLIGAN_COST} で候補を引き直す`
             }

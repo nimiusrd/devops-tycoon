@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { canRecruit, RECRUIT_COST, ROSTER_CAP } from '../../src/sim/member';
 import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, evaluateWinType } from '../../src/sim/outcome';
-import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
+import { RunEngine, SPRINTS_PER_QUARTER, DRAFT_MULLIGAN_COST } from '../../src/sim/run/engine';
 import { RunPhaseError } from '../../src/sim/run/phases';
 import { canAcknowledgeWin } from '../../src/sim/run/quarterReview';
 import type { BeatState, RunState } from '../../src/sim/run/types';
@@ -449,6 +449,22 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     e.mulliganDraft();
     const after = e.snapshot();
     expect(after.budget).toBe(7);
+    expect(after.draftMulliganUsed).toBe(false);
+    expect(after.draft).toEqual(before);
+  });
+
+  it('RI-81: 予算がコストちょうど（8）のときもマリガンできない（budget > cost が必要）', () => {
+    const e = new RunEngine({ seed: 'ri81-mulligan-exact', difficulty: 'easy' });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    const internals = e as unknown as { budget: number; draft: string[] | null };
+    internals.budget = DRAFT_MULLIGAN_COST; // exactly 8 — should be rejected
+    const before = [...(e.snapshot().draft ?? [])];
+    e.mulliganDraft();
+    const after = e.snapshot();
+    expect(after.budget).toBe(DRAFT_MULLIGAN_COST);
     expect(after.draftMulliganUsed).toBe(false);
     expect(after.draft).toEqual(before);
   });

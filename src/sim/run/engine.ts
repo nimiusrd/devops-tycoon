@@ -934,7 +934,7 @@ export class RunEngine {
   mulliganDraft(): void {
     if (this.phase !== 'draft' || !this.draft) return;
     if (this.draftMulliganUsed) return;
-    if (this.budget < DRAFT_MULLIGAN_COST) return;
+    if (this.budget <= DRAFT_MULLIGAN_COST) return;
     const previousKey = [...this.draft].sort().join('\0');
     let next = this.draft;
     for (let attempt = 0; attempt < 16; attempt += 1) {

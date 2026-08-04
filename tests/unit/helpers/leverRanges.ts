@@ -298,7 +298,7 @@ export const RI16_LEVER_IMPACT_RANGES: Record<
   Partial<Record<LeverImpactMetric, { min: number; max: number }>>
 > = {
   recruitDraft: { teamCount: { min: 1, max: 1 }, morale: { min: -5, max: -1 } },
-  aiGuideline: { aiDependency: { min: -15, max: -5 }, infraCi: { min: 4, max: 8 } },
+  aiGuideline: { aiDependency: { min: -20, max: -12 }, infraCi: { min: 4, max: 8 } },
   infraInvest: { playerReviewQueue: { min: -5, max: -1 }, infraCi: { min: 10, max: 14 } },
   standardize: { techDebt: { min: -220, max: -150 }, infraCi: { min: 8, max: 12 } },
   firefighters: { morale: { min: 1, max: 8 }, onFire: { min: -10, max: -1 } },
@@ -309,7 +309,7 @@ export const RI16_LEVER_IMPACT_RANGES: Record<
   },
   reviewReinforce: { playerReviewQueue: { min: -6, max: -2 } },
   prSizeLimit: { playerReviewQueue: { min: -4, max: -1 }, techDebt: { min: -80, max: -10 } },
-  aiThrottleDept: { playerAiDependency: { min: -10, max: -6 } },
+  aiThrottleDept: { playerAiDependency: { min: -14, max: -10 } },
   seniorHiring: { playerReviewQueue: { min: -5, max: -1 }, playerMorale: { min: 2, max: 4 } },
   dependencyCleanup: { techDebt: { min: -60, max: -5 }, onFire: { min: -4, max: -1 } },
   deptFreeze: { onFire: { min: -4, max: -1 }, playerMorale: { min: -6, max: -2 } },

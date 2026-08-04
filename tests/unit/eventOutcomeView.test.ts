@@ -241,7 +241,7 @@ describe('formatLeverDefTags（レバー効果タグ / RI-45）', () => {
   it('AIガイドラインの逆指標を正しく色分けする', () => {
     const lever = COMPANY_LEVERS.find((l) => l.id === 'aiGuideline')!;
     expect(formatLeverDefTags(lever)).toEqual([
-      { label: 'AI依存度 -10', tone: 'positive' },
+      { label: 'AI依存度 -16', tone: 'positive' },
       { label: '共通基盤 +6', tone: 'positive' },
     ]);
   });

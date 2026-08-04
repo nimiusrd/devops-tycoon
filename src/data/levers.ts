@@ -22,7 +22,7 @@ export const COMPANY_LEVERS: readonly LeverDef[] = [
     name: '全社AIガイドライン',
     scope: 'company',
     cost: 25,
-    effect: { aiDependencyDelta: -10, infraBoost: 6 },
+    effect: { aiDependencyDelta: -16, infraBoost: 6 },
     description: '雑なAI利用を全社で抑え、AI依存度を下げる。',
   },
   {
@@ -82,7 +82,7 @@ export const DEPARTMENT_LEVERS: readonly LeverDef[] = [
     name: 'AIスロットル(部門)',
     scope: 'department',
     cost: 8,
-    effect: { aiDependencyDelta: -8 },
+    effect: { aiDependencyDelta: -12 },
     description: '部門のAI流入を絞り、過剰生成を抑える。',
   },
   {
@@ -126,7 +126,7 @@ export const TEAM_LEVERS: readonly LeverDef[] = [
     name: 'AIスロットル(チーム)',
     scope: 'team',
     cost: 5,
-    effect: { aiDependencyDelta: -10 },
+    effect: { aiDependencyDelta: -16 },
     description: '対象チームのAI流入を絞り、過剰生成を抑える。',
   },
   {

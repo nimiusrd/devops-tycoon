@@ -71,7 +71,7 @@ export const CARD_DEFS: CardDef[] = [
     rarity: 'rare',
     cost: 12,
     description: ['AI 利用のルールと教育を整備', '効率的な利用が定着し、依存と手戻りが減る'],
-    base: { aiLiteracyAdd: 15, aiDependencyAdd: -10, reworkRateAdd: -0.08 },
+    base: { aiLiteracyAdd: 20, aiDependencyAdd: -18, reworkRateAdd: -0.08 },
   },
   {
     id: 'docs',

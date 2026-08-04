@@ -242,7 +242,7 @@ describe('RunEngine: レバー', () => {
     const before = e.snapshot().teams.find((t) => t.id === 'platform-t1')!.aiDependency;
     expect(e.applyOrgLever('aiGuideline')).toBe(true);
     const baked = e.snapshot().teams.find((t) => t.id === 'platform-t1')!.aiDependency;
-    expect(baked).toBe(before - 10);
+    expect(baked).toBe(before - 16);
     expect(e.exportPersistState()!.extras.orgAdjust.company.aiDependencyDelta).toBe(0);
     expect(e.enterTeam('platform-t1')).toBe(true);
     expect(e.snapshot().org.aiDependency).toBe(baked);

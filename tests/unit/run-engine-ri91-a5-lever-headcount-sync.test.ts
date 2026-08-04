@@ -484,11 +484,11 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     expect(i.budget).toBe(75);
     for (const prev of beforeDeps) {
       const team = i.teams.find((t) => t.id === prev.id)!;
-      expect(team.aiDependency).toBe(prev.aiDependency - 10);
+      expect(team.aiDependency).toBe(prev.aiDependency - 16);
     }
     const active = i.teams.find((t) => t.id === i.activeTeamId)!;
     expect(active.id).toBe(nonHome.id);
-    expect(i.org.aiDependency).toBe(67);
+    expect(i.org.aiDependency).toBe(61);
     expect(i.org.aiDependency).toBe(active.aiDependency);
     expect(i.org.aiDependency).not.toBe(i.teams[homeIdx]!.aiDependency);
     expect(i.orgAdjust.company.aiDependencyDelta).toBe(0);
@@ -656,8 +656,8 @@ describe('RI-91-A5 applyOrgLever effects', () => {
     i.org = { ...i.org, aiDependency: 80, morale: 40 };
     i.budget = 100;
     expect(engine.applyOrgLever('teamAiThrottle', undefined, activeId)).toBe(true);
-    expect(i.teams.find((t) => t.id === activeId)!.aiDependency).toBe(70);
-    expect(i.org.aiDependency).toBe(70);
+    expect(i.teams.find((t) => t.id === activeId)!.aiDependency).toBe(64);
+    expect(i.org.aiDependency).toBe(64);
     expect(i.org.aiDependency).not.toBe(i.teams.find((t) => t.id === otherId)!.aiDependency);
   });
 });

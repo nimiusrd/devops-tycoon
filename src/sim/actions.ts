@@ -48,7 +48,7 @@ export const FIREFIGHT_HP_COST = 2;
 /** ペアレビューで捌く PR 数（UI プレビューと共有）。 */
 export const PAIR_REVIEW_COUNT = 2;
 /** ペアレビューで上がる AI Literacy（UI プレビューと共有）。 */
-export const PAIR_LITERACY_GAIN = 4;
+export const PAIR_LITERACY_GAIN = 6;
 /** PR分割の進捗巻き戻し（UI プレビューと共有）。 */
 export const SPLIT_PROGRESS_PENALTY = 0.2;
 

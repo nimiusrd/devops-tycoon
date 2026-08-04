@@ -66,6 +66,10 @@ export interface StatusMetricView {
 export const SENIOR_HP_HELP =
   'メンバー個別のスタミナとは別の抽象値です。炎上があるときは自動鎮火の前に緊急対応で消すのが最大の守りです。アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルはAI由来の点火・手戻りを下げ、休息で戻します。';
 
+/** AI依存度 HUD の help（RI-74）。 */
+export const AI_DEPENDENCY_HELP =
+  'AI任せが強いほどレビュー負荷と手戻りリスクが上がります。リテラシーが30以下のまま依存度が95に達すると敗北します。ペアレビューでリテラシーを上げるか、AI利用ガイドライン（カード）や全社／部門／チームのAIレバーで依存度を下げてください。介入バーのAIスロットルは新規流入を抑えるだけで、既に上がった依存度は下げません。';
+
 /** シニア体力の詳細・警告チップ文言（RI-67）。炎上があるときだけ緊急対応へ誘導する。 */
 export function seniorHpHudCopy(
   seniorHpPct: number,
@@ -87,6 +91,45 @@ export function seniorHpHudCopy(
     };
   }
   return { detail: '25%未満は危険' };
+}
+
+export interface AiDependencyHudCopyOptions {
+  /**
+   * 全社集約など、依存度と Literacy のスコープが一致しない表示。
+   * true のときは敗北条件チップを出さず、過信域の一般警告だけにする（RI-74）。
+   */
+  suppressLoseWarning?: boolean;
+}
+
+/**
+ * AI依存度の詳細・警告チップ文言（RI-74）。
+ * 低リテラシーかつ依存度が注意帯以上なら、数スプリント前から予兆を出す。
+ */
+export function aiDependencyHudCopy(
+  aiDependencyPct: number,
+  aiLiteracy: number,
+  options: AiDependencyHudCopyOptions = {},
+): {
+  detail: string;
+  warningChip?: string;
+} {
+  if (options.suppressLoseWarning) {
+    if (aiDependencyPct >= 75) return { detail: '75%以上は過信域' };
+    if (aiDependencyPct >= 50) return { detail: '50%以上は注意帯' };
+    return { detail: '75%以上は過信域' };
+  }
+  const literacy = Math.round(aiLiteracy);
+  const detail = `Literacy ${literacy}・95%かつLiteracy≤30で敗北`;
+  if (literacy <= 30 && aiDependencyPct >= 50) {
+    return {
+      detail,
+      warningChip: '依存危険・ペアかガイド',
+    };
+  }
+  if (aiDependencyPct >= 75) {
+    return { detail: `${detail}・過信域` };
+  }
+  return { detail };
 }
 
 export type HudMetricKey =
@@ -309,8 +352,11 @@ export function deriveHudMetrics(
       direction: 'lower-better',
       directionLabel: LOWER_BETTER,
       tone: lowerBetterTone(s.aiDependencyPct, 50, 75),
-      detail: '75%以上は過信域',
-      help: 'AI任せが強いほどレビュー負荷と手戻りリスクが上がります。',
+      ...aiDependencyHudCopy(s.aiDependencyPct, org.aiLiteracy, {
+        // 俯瞰中は依存度が全社集約、Literacy は選択中チームのままなので混ぜない。
+        suppressLoseWarning: !!orgScale,
+      }),
+      help: AI_DEPENDENCY_HELP,
       barPct: s.aiDependencyPct,
       fillClass: 'fill-ai',
     },

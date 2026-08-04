@@ -409,7 +409,7 @@ describe('applyLever', () => {
     const res = applyLever(emptyAdjustState(), 100, 'aiGuideline');
     expect(res.changed).toBe(true);
     expect(res.budget).toBe(75); // cost 25
-    expect(res.adjust.company.aiDependencyDelta).toBe(-10);
+    expect(res.adjust.company.aiDependencyDelta).toBe(-16);
   });
 
   it('予算不足は変化なし', () => {

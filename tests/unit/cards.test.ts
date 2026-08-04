@@ -51,8 +51,8 @@ describe('カード効果の状態反映（第7.2）', () => {
   it('AI利用ガイドラインは教育で AI Literacy を上げ、AI依存度を下げる', () => {
     const o = org({ aiLiteracy: 40, aiDependency: 55 });
     applyDeckBaseline(o, deckEffects([{ defId: 'ai-guideline', level: 1 }]));
-    expect(o.aiLiteracy).toBe(55);
-    expect(o.aiDependency).toBe(45);
+    expect(o.aiLiteracy).toBe(60);
+    expect(o.aiDependency).toBe(37);
   });
 
   it('強化レベルが上がるほど効果が強まる', () => {

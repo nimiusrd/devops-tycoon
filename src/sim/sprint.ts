@@ -190,7 +190,8 @@ function intake(sprint: SprintState, org: OrgState, rng: Rng, tick: number): voi
     task.progress = 0;
     task.aiAssisted = throttled ? false : decideAiAssisted(org, rng, sprint.aiAdoption);
     if (task.aiAssisted) {
-      org.aiDependency = clamp(org.aiDependency + AI_DEP_PER_TASK, 0, 100);
+      const gain = sprint.config.aiDependencyPerTask ?? AI_DEP_PER_TASK;
+      org.aiDependency = clamp(org.aiDependency + gain, 0, 100);
     }
     coding += 1;
   }

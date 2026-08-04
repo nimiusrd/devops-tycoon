@@ -80,6 +80,7 @@ import {
   HOME_TEAM_ID,
   initTeamRunStates,
   mergeAdjust,
+  RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY,
   deriveTeamCapacities,
   normalizeCoarseTotalsDelta,
   orgFromTeam,
@@ -418,6 +419,9 @@ export class RunEngine {
     this.baseConfig = {
       ...base,
       taskCount: Math.max(6, Math.round(base.taskCount * diff.taskCountMul)),
+      ...(diff.aiDependencyPerTask !== undefined
+        ? { aiDependencyPerTask: diff.aiDependencyPerTask }
+        : {}),
     };
     this.org = buildRunOrg(this.difficulty);
     this.deck = [];
@@ -1883,7 +1887,7 @@ export class RunEngine {
     if (!isRunSavePhase(state.phase) || state.status !== 'playing') {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
-    this.applyPersistFrame(state);
+    this.applyPersistFrame(state, { migrateLegacyAiDependency: true });
   }
 
   /** リプレイキーフレームから閲覧用に復元する（RI-61。won/lost 可）。 */
@@ -1891,10 +1895,14 @@ export class RunEngine {
     if (!isReplayFramePhase(frame.phase)) {
       throw new Error(`cannot hydrate replay frame in phase=${frame.phase}`);
     }
-    this.applyPersistFrame(frame);
+    // リプレイは記録値の read-only 表示。旧セーブ移行は再開用 hydrate に限定する。
+    this.applyPersistFrame(frame, { migrateLegacyAiDependency: false });
   }
 
-  private applyPersistFrame(state: RunReplayFrame): void {
+  private applyPersistFrame(
+    state: RunReplayFrame,
+    options: { migrateLegacyAiDependency: boolean },
+  ): void {
     const cloned = structuredClone(state);
     this.seed = cloned.seed;
     this.difficulty = cloned.difficulty;
@@ -1948,7 +1956,11 @@ export class RunEngine {
     this.rankingKind = cloned.rankingKind;
     this.orgAdjust = structuredClone(cloned.extras.orgAdjust);
     if (!this.orgAdjust.byTeam) this.orgAdjust.byTeam = {};
-    this.baseConfig = { ...cloned.extras.baseConfig };
+    const legacyBaseConfig = cloned.extras.baseConfig;
+    const hadAiDependencyPerTask = legacyBaseConfig.aiDependencyPerTask !== undefined;
+    this.baseConfig = { ...legacyBaseConfig };
+    // RI-74: 旧セーブ（係数未保存）も現行難易度定義の上昇量へ補完する。
+    this.applyDifficultyAiDependencyPerTask();
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
     this.pauseAiDebuffQuarter = cloned.extras.pauseAiDebuffQuarter;
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
@@ -2033,7 +2045,51 @@ export class RunEngine {
       this.deck,
       this.teams.map((t) => t.id),
     );
+    // RI-74: 未プレイの旧 Nightmare セーブ（初期依存 55）を現行初期値へ寄せる。
+    // リプレイキーフレームでは記録値を改変しない。
+    if (options.migrateLegacyAiDependency && !hadAiDependencyPerTask) {
+      this.migrateLegacyNightmareAiDependencyBase();
+    }
     this.whatIfCache = null;
+  }
+
+  /** 難易度定義の `aiDependencyPerTask` を baseConfig へ同期する（RI-74）。 */
+  private applyDifficultyAiDependencyPerTask(): void {
+    const perTask = getDifficulty(this.difficulty).aiDependencyPerTask;
+    if (perTask !== undefined) {
+      this.baseConfig.aiDependencyPerTask = perTask;
+      return;
+    }
+    if ('aiDependencyPerTask' in this.baseConfig) {
+      delete this.baseConfig.aiDependencyPerTask;
+    }
+  }
+
+  /**
+   * 旧 Nightmare 初期依存度（55）の未プレイセーブを現行初期値へ移行する（RI-74）。
+   * 呼び出し側で係数欠落を確認済み。ホーム等値は見ない（setup 中のレバー焼き込みや
+   * rival 進入で org / ホームが 55 以外になり得るため）。旧→新ベース差分を全チームへ適用し、
+   * ライバルは旧 ±25 の高依存側だけを現行の低リテラシー上限へ抑える（下限は付けない。
+   * レバー焼き込み済みの低依存を引き上げて施策効果を消さないため）。
+   * 進行中ランは触らない。
+   */
+  private migrateLegacyNightmareAiDependencyBase(): void {
+    if (this.difficulty !== 'nightmare') return;
+    if (this.sprintsPlayed !== 0) return;
+    if (this.phase !== 'setup') return;
+    const nextBase = getDifficulty('nightmare').org.aiDependencyBase;
+    const legacyBase = 55;
+    const delta = nextBase - legacyBase;
+    const rivalMax = nextBase + RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY;
+    this.teams = this.teams.map((team) => {
+      let aiDependency = Math.max(0, Math.min(100, team.aiDependency + delta));
+      if (team.id !== this.homeTeamId) {
+        aiDependency = Math.min(rivalMax, aiDependency);
+      }
+      return { ...team, aiDependency };
+    });
+    const active = this.teams.find((team) => team.id === this.activeTeamId);
+    if (active) this.org = orgFromTeam(active);
   }
 
   /** スナップショット（独立コピー）。レンダラ・E2E はこれを読む。 */

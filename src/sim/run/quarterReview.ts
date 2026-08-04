@@ -321,7 +321,8 @@ export function availableAdjustments(
     const nextTeam = clamp(trust.team + (def.trustDelta.team ?? 0), 0, 100);
     const nextBudget = budget + def.budgetDelta;
     if (nextCustomers < 5 || nextManagement < 5 || nextTeam < 5) return false;
-    if (Math.min(nextManagement, nextCustomers, nextTeam) <= 10) return false;
+    // 危機閾値（evaluateQuarterOutcome の minTrust<=15）と揃える。
+    if (Math.min(nextManagement, nextCustomers, nextTeam) <= 15) return false;
     if (nextBudget <= 5) return false;
     if (wouldHardLose(orgAfterAdjustment(org, def), totals)) return false;
     return true;
@@ -555,7 +556,22 @@ export function isTerminalFailure(outcome: QuarterOutcome): boolean {
 export type LoseReasonOutcomeInput = Pick<
   OutcomeInput,
   'trust' | 'org' | 'budget' | 'progress' | 'quarterNumber'
->;
+> & {
+  /** 空候補降格時のハード敗北（レビュー凍結）判定用。 */
+  totals?: Pick<RunTotals, 'reviewQueuePeak'>;
+};
+
+/** 安全性フィルタと同じハード敗北条件を loseReason へ写す。 */
+function hardLoseReasonFromOrg(
+  org: OrgState,
+  totals?: Pick<RunTotals, 'reviewQueuePeak'>,
+): LoseReason | null {
+  if (org.seniorHp <= 1) return 'seniorBurnout';
+  if (org.morale <= 1) return 'moraleCollapse';
+  if (org.techDebt >= TECH_DEBT_CAP) return 'techDebt';
+  if ((totals?.reviewQueuePeak ?? 0) >= REVIEW_FREEZE_PEAK) return 'reviewFreeze';
+  return null;
+}
 
 /**
  * 継続不能時の loseReason。
@@ -571,15 +587,17 @@ export function loseReasonForOutcome(
 
   const missedCount = input.progress.filter((p) => p.status === 'missed').length;
   const minTrust = Math.min(input.trust.management, input.trust.customers, input.trust.team);
+  const hard = hardLoseReasonFromOrg(input.org, input.totals);
 
   if (outcome === 'shutdown') {
     if (minTrust <= 10) return 'trustExhausted';
     if (input.budget <= 0 && input.org.morale <= 15) return 'budgetExhausted';
     if (input.org.seniorHp <= 5 && missedCount >= 2) return 'seniorBurnout';
-    return 'trustExhausted';
+    return hard ?? 'trustExhausted';
   }
 
-  // missed_crisis（空候補からの降格を含む）
+  // missed_crisis（空候補からの降格を含む）: ハード敗北条件を信頼フォールバックより先に見る。
+  if (hard) return hard;
   if (minTrust <= 15) return 'trustExhausted';
   if (input.budget <= 5) return 'budgetExhausted';
   if (missedCount >= 4) return 'kpiMissed';

@@ -70,8 +70,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     id: 'request_budget',
     label: '追加予算申請',
     description: '採用・AIツール・外部支援を得る。次期の予算制約が厳しくなる。',
-    // RI-79: 経営信頼が注意帯でも選べるようコストを緩め、予算危険域からの延命を残す。
-    trustDelta: { management: -10 },
+    // RI-79: 注意帯（21〜25）でも選べ、申請後も危機閾値（15）より上に残す。
+    trustDelta: { management: -5 },
     budgetDelta: 20,
     // RI-68: deliveryAdd は四半期累計スケール（旧 10 × SPRINTS_PER_QUARTER × THROUGHPUT_MUL）。
     goalEffects: { deliveryAdd: 300 },
@@ -99,10 +99,12 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
   {
     id: 'stakeholder_care',
     label: 'ステークホルダーケア',
-    description: '説明責任と期待調整で信頼を戻す。予算と次期 Delivery を払う（RI-79）。',
+    description:
+      '説明責任と期待調整で信頼を戻す。予算と次期 Delivery 目標の上積みを払う（RI-79）。',
     trustDelta: { management: 12, customers: 10, team: 8 },
     budgetDelta: -12,
-    goalEffects: { deliveryMul: 0.9, deliveryAdd: 80 },
+    // deliveryAdd のみ（乗算緩和は付けない）。次期目標を上げて代償にする。
+    goalEffects: { deliveryAdd: 80 },
   },
 ];
 

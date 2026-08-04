@@ -469,6 +469,41 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(adjustments).not.toContain('pause_ai_rollout');
   });
 
+  it('RI-79: request_budget は注意帯でも提示し、申請後の信頼は危機閾値より上に残る', () => {
+    const trust: StakeholderTrust = { management: 21, customers: 60, team: 60 };
+    const adjustments = availableAdjustments('missed_adjustable', trust, 30, org(), totals());
+    expect(adjustments).toContain('request_budget');
+    const applied = applyGoalAdjustment(
+      {
+        goal,
+        trust,
+        org: org(),
+        budget: 30,
+        goalAdjustmentsTaken: [],
+        nextBudgetCap: null,
+      },
+      'request_budget',
+    );
+    expect(applied.trust.management).toBeGreaterThan(15);
+  });
+
+  it('RI-79: stakeholder_care の Delivery 代償は次期目標を上げる', () => {
+    const inputGoal = { ...goal, deliveryTarget: 1950 };
+    const applied = applyGoalAdjustment(
+      {
+        goal: inputGoal,
+        trust: buildInitialTrust('normal'),
+        org: org(),
+        budget: 40,
+        goalAdjustmentsTaken: [],
+        nextBudgetCap: null,
+      },
+      'stakeholder_care',
+    );
+    expect(applied.goal.deliveryTarget).toBe(1950 + 80);
+    expect(applied.trust.management).toBeGreaterThan(buildInitialTrust('normal').management);
+  });
+
   it('四半期 KPI は達成でもボス単体未達なら missed_adjustable になる', () => {
     const review = buildQuarterReview({
       goal,
@@ -781,7 +816,7 @@ describe('四半期レビュー（Phase 8）', () => {
     });
     expect(review.outcome).toBe('missed_crisis');
     expect(review.availableAdjustments).toEqual([]);
-    // 信頼・予算・KPI件数いずれも危機閾値外のためフォールバック（空候補降格）。
+    // 空候補の原因（シニア枯渇）を信頼フォールバックへ落とさない（RI-79）。
     expect(
       loseReasonForOutcome(review.outcome, {
         progress: review.progress,
@@ -790,7 +825,7 @@ describe('四半期レビュー（Phase 8）', () => {
         budget: 40,
         quarterNumber: 1,
       }),
-    ).toBe('trustExhausted');
+    ).toBe('seniorBurnout');
   });
 
   it('RI-68: cut_scope を繰り返しても Delivery 下限で実績比が壊れない', () => {

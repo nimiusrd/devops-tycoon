@@ -779,6 +779,7 @@ export class RunEngine {
         org: this.org,
         budget: this.budget,
         quarterNumber: this.quarterNumber,
+        totals: this.totals,
       });
       this.setPhase('lost');
     }

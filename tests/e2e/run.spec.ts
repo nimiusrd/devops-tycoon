@@ -543,7 +543,22 @@ for (const entry of RI22_TERMINAL_SEEDS) {
     await expect(runResult).toBeVisible({ timeout: 5000 });
     await expect(runResult).toHaveAttribute('data-quarter-outcome', expectedOutcome);
     await expect(runResult).toHaveClass(new RegExp(theme.toneClass));
-    await expect(page.getByTestId('run-end-status')).toContainText(theme.label);
+    // RI-79: バッジは outcome theme ではなく原因別 loseReason ラベルを優先表示する。
+    const loseReason = await page.evaluate(
+      () => (window as GameWindow).game!.getState().loseReason,
+    );
+    const loseLabels: Record<string, string> = {
+      reorgRequired: '組織再編',
+      budgetExhausted: '予算枯渇',
+      trustExhausted: '信頼枯渇',
+      seniorBurnout: 'シニア燃え尽き',
+      kpiMissed: 'KPI未達の累積',
+      moraleCollapse: 'チーム崩壊',
+      techDebt: '技術的負債の崩壊',
+      reviewFreeze: 'PR 凍結',
+    };
+    expect(loseReason).toBeTruthy();
+    await expect(page.getByTestId('run-end-status')).toContainText(loseLabels[loseReason!]!);
     await expect(page.locator('.result-eyebrow')).toContainText(theme.eyebrow);
   });
 }

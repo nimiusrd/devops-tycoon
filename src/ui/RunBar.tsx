@@ -11,8 +11,10 @@ import { getRelic } from '../data/relics';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
 import {
+  budgetHudCopy,
   diffRunMetricSnapshots,
   runMetricSnapshot,
+  trustHudCopy,
   type RunMetricDelta,
   type RunMetricSnapshot,
 } from '../render/status';
@@ -143,6 +145,8 @@ export function RunBar({
   const trustFeedbackTone = trustFeedbacks.some((feedback) => feedback.tone === 'negative')
     ? 'negative'
     : 'positive';
+  const budgetCopy = budgetHudCopy(state.budget);
+  const trustCopy = trustHudCopy(state.stakeholderTrust);
 
   return (
     <div className="subbar runbar" data-testid="runbar">
@@ -162,22 +166,35 @@ export function RunBar({
         )}
       </span>
       <span
-        className={`pill run-metric-pill${budgetFeedback ? ` run-feedback flash-${budgetFeedback.tone}` : ''}`}
+        className={`pill run-metric-pill tone-${budgetCopy.tone}${budgetFeedback ? ` run-feedback flash-${budgetFeedback.tone}` : ''}`}
         data-testid="budget"
+        title={budgetCopy.detail}
+        data-tone={budgetCopy.tone}
       >
         💰<b>{state.budget}</b>
+        {budgetCopy.warningChip && (
+          <span className={`runbar-warning tone-${budgetCopy.tone}`} data-testid="budget-warning">
+            {budgetCopy.warningChip}
+          </span>
+        )}
         {budgetFeedback && <RunFeedbackPop feedbacks={[budgetFeedback]} />}
       </span>
       <span
-        className={`pill run-metric-pill trust-pill${trustFeedbacks.length > 0 ? ` run-feedback flash-${trustFeedbackTone}` : ''}`}
+        className={`pill run-metric-pill trust-pill tone-${trustCopy.tone}${trustFeedbacks.length > 0 ? ` run-feedback flash-${trustFeedbackTone}` : ''}`}
         data-testid="stakeholder-trust"
-        title="ステークホルダー信頼（経営 / 顧客 / チーム）"
+        title={`ステークホルダー信頼（経営 / 顧客 / チーム）。${trustCopy.detail}`}
+        data-tone={trustCopy.tone}
       >
         🤝
         <b>
           {state.stakeholderTrust.management}/{state.stakeholderTrust.customers}/
           {state.stakeholderTrust.team}
         </b>
+        {trustCopy.warningChip && (
+          <span className={`runbar-warning tone-${trustCopy.tone}`} data-testid="trust-warning">
+            {trustCopy.warningChip}
+          </span>
+        )}
         {trustFeedbacks.length > 0 && <RunFeedbackPop feedbacks={trustFeedbacks} />}
       </span>
       <span className="pill" data-testid="evo-points-bar">

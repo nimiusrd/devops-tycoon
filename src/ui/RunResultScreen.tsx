@@ -50,6 +50,10 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
     label: '組織再編',
     desc: '目標未達が重なり、大規模再編としてプロジェクトが終了しました。',
   },
+  kpiMissed: {
+    label: 'KPI未達の累積',
+    desc: '四半期目標の未達が重なり、継続判断を下せませんでした。',
+  },
 };
 
 export interface RunResultScreenProps {
@@ -81,8 +85,9 @@ export function RunResultScreen({
     : undefined;
   const failureInCollection = !!failureEntry && meta.collectedDiagnoses.includes(failureEntry.type);
   const lose = !won && state.loseReason ? LOSE_LABEL[state.loseReason] : null;
-  const loseLabel = failureTheme?.label ?? lose?.label ?? '敗北';
-  const loseDescription = failureTheme?.description ?? lose?.desc;
+  // RI-79: 原因別 loseReason ラベルを優先し、outcome 演出は tone/icon 用に残す。
+  const loseLabel = lose?.label ?? failureTheme?.label ?? '敗北';
+  const loseDescription = lose?.desc ?? failureTheme?.description;
   const nextAction =
     !won && state.loseReason
       ? loseNextActionView(state.loseReason, {

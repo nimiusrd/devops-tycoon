@@ -322,6 +322,7 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
     'request_budget',
     'pause_ai_rollout',
     'reorg_teams',
+    'stakeholder_care',
   ] as const)('%s は非空タグを返す', (id) => {
     const def = getGoalAdjustment(id)!;
     const tags = formatGoalAdjustmentTags(def);

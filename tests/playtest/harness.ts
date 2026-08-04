@@ -935,7 +935,9 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   // reviewFreeze: キューピーク超過に加え、低シニアHP時の review-freeze 判定イベントをカバー。
   // seniorHpLow >= 0.55（seniorHp <= 45）でイベントが抽選対象になる。
   const reviewQueueDanger = s.totals.reviewQueuePeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
-  const reviewFreezeEventRisk = s.org.seniorHp <= 45 && (s.sprint?.reviewQueue ?? 0) >= 4;
+  const reviewLaneLen = s.sprint?.tasks.filter((t) => t.lane === 'review').length ?? 0;
+  // seniorHpLow >= 0.55（seniorHp <= 45）で review-freeze 判定イベントが抽選対象になる。
+  const reviewFreezeEventRisk = s.org.seniorHp <= 45 && reviewLaneLen >= 4;
   if (reviewQueueDanger || reviewFreezeEventRisk) out.push('reviewFreeze');
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
     out.push('incidentCascade');

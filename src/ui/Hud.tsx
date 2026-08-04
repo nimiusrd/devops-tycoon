@@ -4,6 +4,8 @@
  * 出荷ポイント・開発速度・レビュー耐性・品質・シニア体力・AI依存度・
  * 技術的負債・士気を表示し、炎上リスクをチップで示す。
  * ラン中は組織状態（持続）と進行中スプリントのタスクから導出する（第22.2）。
+ *
+ * RI-70: 狭幅では KPI を折り畳み要約し、盤面と介入バーを1画面に収める。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -15,12 +17,77 @@ import {
   type Grade,
   type HudMetricDelta,
   type HudMetricSnapshot,
+  type StatusMetricId,
+  type StatusMetricTone,
   type StatusMetricView,
 } from '../render/status';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
 
 const FEEDBACK_TTL_MS = 1000;
+/** 狭幅ブレークポイント（styles.css の 860px と同期）。 */
+const NARROW_HUD_QUERY = '(max-width: 860px)';
+/** 要約チップの上限。危険トーンを優先し、残りは主要指標で埋める。 */
+const COMPACT_CHIP_LIMIT = 5;
+const COMPACT_PRIORITY_IDS: StatusMetricId[] = [
+  'delivery',
+  'seniorHp',
+  'morale',
+  'aiDependency',
+  'techDebt',
+  'quality',
+  'devSpeed',
+  'reviewCapacity',
+];
+const TONE_RANK: Record<StatusMetricTone, number> = {
+  danger: 0,
+  watch: 1,
+  good: 2,
+};
+
+function useNarrowHud(): boolean {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(NARROW_HUD_QUERY).matches : false,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia(NARROW_HUD_QUERY);
+    const onChange = () => setNarrow(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  return narrow;
+}
+
+function pickCompactMetrics(metrics: StatusMetricView[]): StatusMetricView[] {
+  const byId = new Map(metrics.map((metric) => [metric.id, metric]));
+  const ranked = [...metrics].sort((a, b) => {
+    const toneDiff = TONE_RANK[a.tone] - TONE_RANK[b.tone];
+    if (toneDiff !== 0) return toneDiff;
+    return COMPACT_PRIORITY_IDS.indexOf(a.id) - COMPACT_PRIORITY_IDS.indexOf(b.id);
+  });
+  const picked: StatusMetricView[] = [];
+  const seen = new Set<StatusMetricId>();
+  for (const metric of ranked) {
+    if (picked.length >= COMPACT_CHIP_LIMIT) break;
+    picked.push(metric);
+    seen.add(metric.id);
+  }
+  // 危険が少ないときは主要指標で埋める（出荷は常に含める）。
+  for (const id of COMPACT_PRIORITY_IDS) {
+    if (picked.length >= COMPACT_CHIP_LIMIT) break;
+    if (seen.has(id)) continue;
+    const metric = byId.get(id);
+    if (!metric) continue;
+    picked.push(metric);
+    seen.add(id);
+  }
+  return picked.sort(
+    (a, b) => COMPACT_PRIORITY_IDS.indexOf(a.id) - COMPACT_PRIORITY_IDS.indexOf(b.id),
+  );
+}
 
 interface ActiveHudFeedback extends HudMetricDelta {
   id: number;
@@ -138,6 +205,28 @@ export interface HudProps {
   onSnapshotCaptured?: (snapshot: HudMetricSnapshot, scope: HudSnapshotScope) => void;
 }
 
+function CompactChip({ metric }: { metric: StatusMetricView }) {
+  const valueText = `${metric.value}${metric.unit ?? ''}`;
+  return (
+    <span
+      className={`hud-compact-chip tone-${metric.tone}`}
+      data-testid={`hud-compact-${metric.id}`}
+      data-tone={metric.tone}
+      title={`${metric.label}: ${valueText}`}
+    >
+      <span className="hud-compact-chip-icon" aria-hidden="true">
+        {metric.icon}
+      </span>
+      <span className="hud-compact-chip-label">{metric.label}</span>
+      <span className="hud-compact-chip-value">{valueText}</span>
+      {metric.warningChip && <span className="hud-compact-chip-warn">{metric.warningChip}</span>}
+      {metric.risk && metric.risk !== 'LOW' && (
+        <span className={`hud-compact-chip-risk risk-${metric.risk}`}>炎上</span>
+      )}
+    </span>
+  );
+}
+
 export function Hud({
   org,
   orgScale,
@@ -154,6 +243,11 @@ export function Hud({
   const nextFeedbackId = useRef(0);
   const feedbackTimers = useRef(new Set<ReturnType<typeof window.setTimeout>>());
   const [feedbacks, setFeedbacks] = useState<ActiveHudFeedback[]>([]);
+  const narrow = useNarrowHud();
+  const [expanded, setExpanded] = useState(false);
+  // 広幅では常にフル表示。expanded は狭幅のときだけ効く（リサイズ時にリセットしない）。
+  const compact = narrow && !expanded;
+  const compactMetrics = useMemo(() => pickCompactMetrics(metrics), [metrics]);
 
   useEffect(() => {
     const scopeChanged = previousScope.current !== null && previousScope.current !== snapshotScope;
@@ -207,16 +301,39 @@ export function Hud({
   );
 
   const feedbackByKey = new Map(feedbacks.map((feedback) => [feedback.key, feedback]));
+  const hudClass = compact ? 'hud hud-compact' : 'hud';
 
   return (
-    <header className="hud" data-testid="hud">
-      {metrics.map((metric) => (
-        <HudStat
-          key={metric.id}
-          metric={metric}
-          feedback={metric.feedbackKey ? feedbackByKey.get(metric.feedbackKey) : undefined}
-        />
-      ))}
+    <header className={hudClass} data-testid="hud" data-compact={compact ? 'true' : 'false'}>
+      {narrow && (
+        <button
+          type="button"
+          className="hud-toggle"
+          data-testid="hud-toggle"
+          aria-expanded={expanded}
+          aria-controls="hud-metrics"
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? 'KPIを畳む' : 'KPIを展開'}
+        </button>
+      )}
+      {compact ? (
+        <div className="hud-compact-row" id="hud-metrics" data-testid="hud-compact">
+          {compactMetrics.map((metric) => (
+            <CompactChip key={metric.id} metric={metric} />
+          ))}
+        </div>
+      ) : (
+        <div className="hud-metrics" id="hud-metrics">
+          {metrics.map((metric) => (
+            <HudStat
+              key={metric.id}
+              metric={metric}
+              feedback={metric.feedbackKey ? feedbackByKey.get(metric.feedbackKey) : undefined}
+            />
+          ))}
+        </div>
+      )}
     </header>
   );
 }

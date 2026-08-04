@@ -929,12 +929,26 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
   if (s.org.techDebt >= 60) out.push('techDebt');
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
   if (s.budget <= 15) out.push('budgetExhausted');
-  if (minTrust <= 25) out.push('trustExhausted');
-  if (s.totals.reviewQueuePeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75)) out.push('reviewFreeze');
+  // trustExhausted: trust が低い場合に加え、四半期レビューで shutdown/missed_crisis になりうる
+  // budget/HP 経路もカバーする（budget<=5 → missed_crisis, seniorHp<=10 → shutdown 前兆）。
+  if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
+  // reviewFreeze: キューピーク超過に加え、低シニアHP時の review-freeze 判定イベントをカバー。
+  // seniorHpLow >= 0.55（seniorHp <= 45）でイベントが抽選対象になる。
+  const reviewQueueDanger = s.totals.reviewQueuePeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
+  const reviewFreezeEventRisk = s.org.seniorHp <= 45 && (s.sprint?.reviewQueue ?? 0) >= 4;
+  if (reviewQueueDanger || reviewFreezeEventRisk) out.push('reviewFreeze');
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
     out.push('incidentCascade');
   if (s.currentSprintKind === 'boss') out.push('bossFailed');
-  if (minTrust <= 20 && s.quarterNumber >= 2) out.push('reorgRequired');
+  // reorgRequired: trust+quarter 条件に加え、Q2 以降の遅延中スプリントで出荷未達が深刻な場合。
+  // missedCount >= 3 の代替プロキシ: sprintIndexInQuarter が後半かつ出荷が目標の50%未満。
+  const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
+  const deliveryAtRisk = s.quarterTotals.delivered < s.quarterGoal.deliveryTarget * 0.5;
+  if (
+    (minTrust <= 20 && s.quarterNumber >= 2) ||
+    (s.quarterNumber >= 2 && lateInQuarter && deliveryAtRisk)
+  )
+    out.push('reorgRequired');
   return out;
 }
 

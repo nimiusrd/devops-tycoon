@@ -252,6 +252,21 @@ describe('monteCarlo 基盤（RI-14）', () => {
       assertWithinRange(summary.seniorHp, RI15_RANGES.seniorHp, 'seniorHp');
       assertWithinRange(summary.reviewQueuePeak, RI15_RANGES.reviewQueuePeak, 'reviewQueuePeak');
     });
+
+    it('連続インデックス群（0..24）も極端な崩壊を検知できる最低勝率フロアを満たす', () => {
+      /**
+       * 連続 seed ri81-mc-0..24 の実測勝率は 4/25（16%）。
+       * 代表群の winRate > 0.2 は選別済みで歪みやすいため、プール拡張後の
+       * 極端な崩壊を検知するための下限として別途 0.10 フロアを設ける。
+       */
+      const results = runMonteCarlo({
+        seedPrefix: RI15_SEED_PREFIX,
+        trials: 25,
+        difficulty: 'normal',
+      });
+      const summary = summarizeMonteCarlo(results);
+      expect(summary.winRate).toBeGreaterThanOrEqual(0.1);
+    });
   });
 
   describe('RI-17: 四半期レビューの代償・outcome 閾値・目標生成の許容レンジ', () => {

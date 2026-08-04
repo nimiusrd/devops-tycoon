@@ -127,8 +127,11 @@ export const CARD_DEFS: CardDef[] = [
     name: 'ペアプログラミング',
     rarity: 'common',
     cost: 10,
-    description: ['重要タスクを二人で進め品質を守る', '単体のコーディング速度は落ちる'],
-    base: { reviewCapacityMul: 1.1, codingSpeedMul: 0.93, qualityAdd: 4 },
+    description: [
+      '重要タスクを二人で進め品質を守る',
+      '単体のコーディング速度は落ちるが手戻りを減らす',
+    ],
+    base: { reworkRateAdd: -0.07, codingSpeedMul: 0.93, qualityAdd: 4 },
   },
 ];
 

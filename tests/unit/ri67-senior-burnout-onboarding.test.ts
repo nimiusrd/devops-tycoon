@@ -22,8 +22,7 @@ describe('RI-67 オンボーディングとシニア燃え尽き', () => {
   });
 
   it('Easy・序盤代表 seed で緊急対応あり方針は2スプリント以内に seniorBurnout しない', () => {
-    // RI-81 カードプール拡張後、旧 `review-hell` は S2 以内に燃え尽きるため再選定。
-    const engine = new RunEngine({ seed: 'review-hell-1', difficulty: 'easy' });
+    const engine = new RunEngine({ seed: 'review-hell', difficulty: 'easy' });
     engine.startRun();
 
     let guard = 0;

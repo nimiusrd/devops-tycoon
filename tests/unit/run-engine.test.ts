@@ -398,8 +398,8 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(s.draftMulliganUsed).toBe(true);
     expect(s.budget).toBe(beforeBudget - 8);
     expect(s.draft).toHaveLength(3);
-    // 別 RNG キーなので同一 seed でも初回提示と一致しない（一致しても3枚集合の再抽選は許容しない）。
-    expect(s.draft).not.toEqual(beforeDraft);
+    // 集合が変わらない抽選は再試行するため、順序一致だけでなく集合も異なる。
+    expect([...s.draft!].sort()).not.toEqual([...beforeDraft].sort());
 
     const midDraft = [...(s.draft ?? [])];
     const midBudget = s.budget;

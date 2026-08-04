@@ -928,19 +928,27 @@ export class RunEngine {
   /**
    * ドラフトを予算コストで引き直す（RI-81 / F-12）。
    * 1ドラフトあたり1回。phase は draft のまま候補だけ差し替える。
+   * 元候補と同じ集合になる抽選は最大数回まで再試行する。
    */
   mulliganDraft(): void {
     if (this.phase !== 'draft' || !this.draft) return;
     if (this.draftMulliganUsed) return;
     if (this.budget < DRAFT_MULLIGAN_COST) return;
+    const previousKey = [...this.draft].sort().join('\0');
+    let next = this.draft;
+    for (let attempt = 0; attempt < 16; attempt += 1) {
+      const candidate = drawDraft(
+        createRng(`${this.seed}:draft:${this.sprintsPlayed}:m1:${attempt}`),
+        3,
+        this.allowedCards ?? undefined,
+        this.preferredCards,
+      );
+      next = candidate;
+      if ([...candidate].sort().join('\0') !== previousKey) break;
+    }
     this.budget -= DRAFT_MULLIGAN_COST;
     this.draftMulliganUsed = true;
-    this.draft = drawDraft(
-      createRng(`${this.seed}:draft:${this.sprintsPlayed}:m1`),
-      3,
-      this.allowedCards ?? undefined,
-      this.preferredCards,
-    );
+    this.draft = next;
     if (this.applyImmediateLose()) return;
   }
 

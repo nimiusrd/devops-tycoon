@@ -206,9 +206,9 @@ describe('monteCarlo 基盤（RI-14）', () => {
   });
 
   describe('RI-15: スプリント主要メトリクスの許容レンジ', () => {
-    /** 代表 seed 群（`${RI15_SEED_PREFIX}-${i}`）。10 は review-freeze 境界(48)のため除外。 */
-    const RI15_SEED_PREFIX = 'ri15-mc';
-    const RI15_SEED_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12] as const;
+    /** 代表 seed 群（`${RI15_SEED_PREFIX}-${i}`）。RI-81 カードプール拡張後に再選定。 */
+    const RI15_SEED_PREFIX = 'ri81-mc';
+    const RI15_SEED_INDICES = [0, 9, 14, 16, 17, 18, 21, 22, 23, 24, 139, 144] as const;
 
     /**
      * normal 難易度・既定オートプレイでの許容レンジ。

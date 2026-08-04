@@ -530,10 +530,17 @@ export interface RunLog {
    */
   availableActionsInDanger?: string[];
   /**
-   * 最終敗因の危険域で、非空の手が最後に見えた時点（F-8「何スプリント前から消えたか」用）。
-   * 危険域は観測したが一度も非空が無ければ省略。
+   * 最終敗因の危険域で、非空の機械的発動可能手が最後に見えた時点。
+   * 危険域は観測したが一度も非空が無ければ省略（その場合は firstSample を参照）。
    */
   availableActionsInDangerLastNonEmpty?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  /** 最終敗因の危険域で最初に取ったサンプル（常時空集合ランの打ち切り起点）。 */
+  availableActionsInDangerFirstSample?: {
     sprintsPlayed: number;
     quarter: number;
     index: number;
@@ -945,6 +952,12 @@ type DangerLoseReason = Extract<
 /** 敗因ごとの危険域観測トラック（和集合＋時系列）。 */
 type DangerTrack = {
   actions: Set<string>;
+  firstSample: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
   lastSample: {
     sprintsPlayed: number;
     quarter: number;
@@ -1028,7 +1041,10 @@ function activeDangerReasons(s: RunState): DangerLoseReason[] {
     totals: liveQuarterTotalsForKpi(s),
   }).filter((p) => p.status === 'missed').length;
   if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
+  // kpiMissed: 未達4件以上に加え、missed_crisis フォールバック（trust/budget 枯渇・ハード非該当）の前兆。
+  // 例: 予算1〜5・信頼はまだ閾値超・未達が少なくても loseReasonForOutcome は kpiMissed を返しうる。
   if (lateInQuarter && kpiMissCount >= 4) out.push('kpiMissed');
+  if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
   // reviewFreeze: 累計ピークに加え実行中スプリントの reviewQueueMax も見る（完了前に48到達しうる）。
   // イベント抽選は seniorHpLow >= 0.55（seniorHp <= 45）のみで、Review 件数条件は無い。
   const liveReviewPeak = Math.max(s.totals.reviewQueuePeak, s.sprint?.metrics.reviewQueueMax ?? 0);
@@ -1090,8 +1106,13 @@ function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, D
   for (const reason of dangers) {
     let track = byReason.get(reason);
     if (!track) {
-      // 空集合も「危険域を観測した」印として残す。
-      track = { actions: new Set(), lastSample: sample, lastNonEmpty: null };
+      // 空集合も「危険域を観測した」印として残す。初回サンプルは常時空集合の起点にも使う。
+      track = {
+        actions: new Set(),
+        firstSample: sample,
+        lastSample: sample,
+        lastNonEmpty: null,
+      };
       byReason.set(reason, track);
     }
     for (const id of available) track.actions.add(id);
@@ -1666,6 +1687,7 @@ export function runOnce(
           const track = availableInDangerByReason.get(f.loseReason as DangerLoseReason)!;
           return {
             availableActionsInDanger: [...track.actions].sort(),
+            availableActionsInDangerFirstSample: track.firstSample,
             availableActionsInDangerLastSample: track.lastSample,
             ...(track.lastNonEmpty
               ? { availableActionsInDangerLastNonEmpty: track.lastNonEmpty }

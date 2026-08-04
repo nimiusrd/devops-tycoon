@@ -538,6 +538,7 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
       let withSample = 0;
       let emptySample = 0;
       const gaps = [];
+      const neverHadHandsGaps = [];
       for (const r of arr) {
         // 未観測（フィールドなし）と「観測したが空集合」を区別する。
         if (!Object.prototype.hasOwnProperty.call(r, 'availableActionsInDanger')) continue;
@@ -546,10 +547,20 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
         withSample += 1;
         if (avail.length === 0) emptySample += 1;
         for (const id of avail) freq.set(id, (freq.get(id) ?? 0) + 1);
-        // F-8: 非空の手が最後に見えた完了スプリント数と敗北時点の差。
+        // 機械的発動可能手が消えた／最初から無かった時点→敗北までのスプリント差。
+        // 完了時敗北ではサンプルの sprintsPlayed は加算前なので、ラン末尾から1本除く。
+        if (typeof r.sprintsPlayed !== 'number') continue;
+        let loseSprints = r.sprintsPlayed;
+        if (r.lostPhase === 'sprint' && r.lostSprintCompleted === true) {
+          loseSprints = Math.max(0, r.sprintsPlayed - 1);
+        }
         const lastNonEmpty = r.availableActionsInDangerLastNonEmpty;
-        if (lastNonEmpty && typeof r.sprintsPlayed === 'number') {
-          gaps.push(Math.max(0, r.sprintsPlayed - lastNonEmpty.sprintsPlayed));
+        const firstSample = r.availableActionsInDangerFirstSample;
+        if (lastNonEmpty) {
+          gaps.push(Math.max(0, loseSprints - lastNonEmpty.sprintsPlayed));
+        } else if (firstSample) {
+          // 危険域では一度も非空手なし＝最も強い早期詰み候補。別群として集計する。
+          neverHadHandsGaps.push(Math.max(0, loseSprints - firstSample.sprintsPlayed));
         }
       }
       const ranked = [...freq.entries()]
@@ -559,9 +570,13 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
       const setKey = withSample > 0 ? [...freq.keys()].sort().join(',') : null;
       if (setKey !== null) sets.push(setKey);
       const gapNote =
-        gaps.length > 0 ? ` | 非空手→敗北のスプリント差 p50=${quantile(gaps, 0.5)}` : '';
+        gaps.length > 0 ? ` | 非空手→敗北差 p50=${quantile(gaps, 0.5)} (n=${gaps.length})` : '';
+      const neverNote =
+        neverHadHandsGaps.length > 0
+          ? ` | 常時空集合→敗北差 p50=${quantile(neverHadHandsGaps, 0.5)} (n=${neverHadHandsGaps.length})`
+          : '';
       console.log(
-        `    ${reason}: n=${arr.length} 危険域サンプル ${withSample}/${arr.length}（空集合 ${emptySample}）| 集合 {${ranked.join(', ') || '—'}}${gapNote}`,
+        `    ${reason}: n=${arr.length} 危険域サンプル ${withSample}/${arr.length}（空集合 ${emptySample}）| 集合 {${ranked.join(', ') || '—'}}${gapNote}${neverNote}`,
       );
     }
     const distinct = new Set(sets);

@@ -60,7 +60,7 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
 
   it('ボス到達後は四半期レビューフェーズになる', () => {
     // RI-75: boss-seek-0 は早期敗北するため、レビュー到達確認済み seed を使う。
-    const e = new RunEngine({ seed: 'ri75f-easy-6', difficulty: 'easy' });
+    const e = new RunEngine({ seed: 'ri75i-easy-18', difficulty: 'easy' });
     e.startRun();
     const s = playUntil(e, 'quarterReview', { skilled: true });
     expect(s.phase).toBe('quarterReview');

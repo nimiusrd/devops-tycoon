@@ -977,17 +977,19 @@ function activeDangerReasons(e: RunEngine): DangerLoseReason[] {
     s.stakeholderTrust.customers,
     s.stakeholderTrust.team,
   );
+  // 完了時と同じく、選択中 live＋非選択の粗粒度進行を合成した KPI。
+  const liveKpi = e.previewLiveQuarterKpi();
   const out: DangerLoseReason[] = [];
   if (s.org.seniorHp < 50) out.push('seniorBurnout');
   if (s.org.morale < 40) out.push('moraleCollapse');
-  if (s.org.techDebt >= 60) out.push('techDebt');
+  // techDebt: 四半期ハード敗北は全社平均負債を見るため、投影 org も危険域へ含める。
+  const liveTechDebt = liveKpi?.org.techDebt ?? s.org.techDebt;
+  if (s.org.techDebt >= 60 || liveTechDebt >= 60) out.push('techDebt');
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
   if (s.budget <= 15) out.push('budgetExhausted');
   // trustExhausted: trust / budget / HP 経路（missed_crisis・shutdown 前兆）。
   // KPI 未達だけの missed_crisis は loseReasonForOutcome が kpiMissed を返すため分離する。
   const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
-  // 完了時と同じく、選択中 live＋非選択の粗粒度進行を合成した KPI で未達数を数える。
-  const liveKpi = e.previewLiveQuarterKpi();
   const kpiMissCount = liveKpi
     ? measureGoalProgress({
         goal: s.quarterGoal,
@@ -1000,9 +1002,13 @@ function activeDangerReasons(e: RunEngine): DangerLoseReason[] {
   // 例: 予算1〜5・信頼はまだ閾値超・未達が少なくても loseReasonForOutcome は kpiMissed を返しうる。
   if (lateInQuarter && kpiMissCount >= 4) out.push('kpiMissed');
   if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
-  // reviewFreeze: 累計ピークに加え実行中スプリントの reviewQueueMax も見る（完了前に48到達しうる）。
+  // reviewFreeze: ラン累計・選択中スプリント・投影した非選択ピークの最大を見る。
   // イベント抽選は seniorHpLow >= 0.55（seniorHp <= 45）のみで、Review 件数条件は無い。
-  const liveReviewPeak = Math.max(s.totals.reviewQueuePeak, s.sprint?.metrics.reviewQueueMax ?? 0);
+  const liveReviewPeak = Math.max(
+    s.totals.reviewQueuePeak,
+    s.sprint?.metrics.reviewQueueMax ?? 0,
+    liveKpi?.totals.reviewQueuePeak ?? 0,
+  );
   const reviewQueueDanger = liveReviewPeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
   const reviewFreezeEventRisk = s.org.seniorHp <= 45;
   if (reviewQueueDanger || reviewFreezeEventRisk) out.push('reviewFreeze');

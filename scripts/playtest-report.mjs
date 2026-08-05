@@ -548,10 +548,11 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
         if (avail.length === 0) emptySample += 1;
         for (const id of avail) freq.set(id, (freq.get(id) ?? 0) + 1);
         // 機械的発動可能手が消えた／最初から無かった時点→敗北までのスプリント差。
-        // 完了時敗北ではサンプルの sprintsPlayed は加算前なので、ラン末尾から1本除く。
+        // サンプルは完了加算前。未完了スプリント内の即時敗北だけ加算後と一致するので除かない。
         if (typeof r.sprintsPlayed !== 'number') continue;
+        const midSprintInstantLose = r.lostPhase === 'sprint' && r.lostSprintCompleted === false;
         let loseSprints = r.sprintsPlayed;
-        if (r.lostPhase === 'sprint' && r.lostSprintCompleted === true) {
+        if (!midSprintInstantLose) {
           loseSprints = Math.max(0, r.sprintsPlayed - 1);
         }
         const lastNonEmpty = r.availableActionsInDangerLastNonEmpty;

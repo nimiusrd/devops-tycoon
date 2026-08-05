@@ -179,17 +179,52 @@ test('RI-32: ボス突破報酬レリックを四半期レビューに表示す�
   const reached = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     g.pause();
-    for (let i = 0; i < 30; i += 1) {
+    // RI-75: 無介入の大ステップでは easy でもボス到達率が落ちるため、
+    // unit の playUntil({ skilled: true }) と同じくカード発動＋介入＋小刻み step で進める。
+    // 到達確認済み seed を先に試し、だめなら従来どおり探索する。
+    const seedIndices = [1, 14, 19, 34, 36, ...Array.from({ length: 30 }, (_, i) => i)];
+    const tried = new Set<number>();
+    for (const i of seedIndices) {
+      if (tried.has(i)) continue;
+      tried.add(i);
       g.startRun('easy', [], `ri32-boss-reward-${i}`);
       let state = g.getState();
       let guard = 0;
       while (state.status === 'playing' && state.phase !== 'quarterReview' && guard < 60_000) {
         guard += 1;
         if (state.phase === 'setup') g.beginSetupSprint();
-        else if (state.phase === 'sprint') g.step(1_000_000);
-        else if (state.phase === 'result') g.acknowledgeResult();
-        else if (state.phase === 'draft') g.skipDraft();
-        else if (state.phase === 'evolution') g.finishEvolution();
+        else if (state.phase === 'sprint') {
+          let cardGuard = 0;
+          while (cardGuard < 24 && g.getState().phase === 'sprint') {
+            cardGuard += 1;
+            const hand = g.getState().sprint?.cardPiles.hand ?? [];
+            if (hand.length === 0) break;
+            let playedAny = false;
+            for (const deckIndex of [...hand]) {
+              if (g.playCard(deckIndex).ok) {
+                playedAny = true;
+                break;
+              }
+            }
+            if (!playedAny) break;
+          }
+          if (g.getState().phase === 'sprint') {
+            const sp = g.getState().sprint;
+            if (sp && !sp.complete) {
+              if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
+                g.dispatch('interruptReview');
+              }
+              if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) {
+                g.dispatch('firefight');
+              }
+            }
+            g.step(300);
+          }
+        } else if (state.phase === 'result') g.acknowledgeResult();
+        else if (state.phase === 'draft') {
+          if (state.draft && state.draft.length > 0) g.chooseCard(state.draft[0]);
+          else g.skipDraft();
+        } else if (state.phase === 'evolution') g.finishEvolution();
         else if (state.phase === 'beat')
           g.resolveBeat((window as GameWindow).__e2eBeatChoice!(state.beat));
         else if (state.phase === 'shop') g.leaveShop();

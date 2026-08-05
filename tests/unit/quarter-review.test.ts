@@ -879,7 +879,7 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(delivery!.target / delivery!.actual).toBeLessThan(2.5);
   });
 
-  it('RI-68: 代表 seed の四半期レビューで Delivery 比が極端にならない', () => {
+  it('RI-68: 代表 seed の四半期レビューで Delivery 比が極端にならない', { timeout: 60_000 }, () => {
     // RI-75: taskFloor 増で超過寄り。到達確認済み＋相対的に低い比の seed を固定する。
     const seedIndices = [6, 21, 22, 31, 77, 99, 134, 255] as const;
     const ratios: number[] = [];

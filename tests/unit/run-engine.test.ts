@@ -184,8 +184,9 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
 
   it('RI-32: 勝利種別はボス報酬適用前の org で判定する', () => {
     let verified = false;
-    // RI-75: ボス床・タスク量増で勝利到達が稀になるため、探索幅と timeout を広げる。
-    for (let i = 0; i < 400; i += 1) {
+    // RI-75: ボス床・タスク量増で勝利到達が稀。既知 seed を先に試し、だめなら探索する。
+    const candidates = [339, ...Array.from({ length: 400 }, (_, i) => i).filter((i) => i !== 339)];
+    for (const i of candidates) {
       const engine = new RunEngine({ seed: `ri32-win-type-${i}`, difficulty: 'easy' });
       engine.startRun();
       const state = playUntil(engine, 'quarterReview', { skilled: true });

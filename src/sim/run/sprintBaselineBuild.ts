@@ -14,10 +14,10 @@ import type { SprintBaselineInput } from './sprintBaseline';
 import type { DifficultyId, EvolutionState, SprintKind, SprintModifierDelta } from './types';
 
 /**
- * 高負荷（elite）スプリントのタスク量倍率（normal 基準）。
- * playtest 方針の負荷感採点でも参照する。実際の適用は `eliteTaskMul`。
+ * 高負荷（elite）スプリントのタスク量倍率の代表値（normal）。
+ * 実際の適用と playtest 採点は難易度別の `eliteTaskMul` を使う。
  */
-export const ELITE_TASK_MUL = 1.6;
+export const ELITE_TASK_MUL = 1.2;
 
 /**
  * 難易度別の elite タスク倍率（RI-75）。
@@ -38,7 +38,8 @@ export function eliteTaskMul(difficulty: DifficultyId): number {
 
 /**
  * 通常/elite スプリントのタスク数下限（RI-75）。
- * 休憩などの taskCountMul 減衰でも絶対下限30秒を割らない床。
+ * 種別倍率適用後の床。一時 modifier（休息の taskCountMul 減衰など）は床の後に掛け、
+ * 絶対下限30秒は `minCompleteTick` 側で担保する。
  */
 export function normalTaskFloor(difficulty: DifficultyId): number {
   switch (difficulty) {
@@ -177,12 +178,13 @@ export function buildSprintBaselineInput(
       : isBoss
         ? (getBoss(ctx.bossId)?.taskCountMul ?? 1)
         : 1;
-  const mul = baseMul * (modifiers.taskCountMul ?? 1);
-  // RI-75: ボスは山場の長さ、通常/elite は絶対下限30秒を割らない床。
+  // RI-75: ボスは山場の長さ、通常/elite は帯の床。休息などの一時減衰は床の後に掛ける。
   const taskFloor = isBoss ? bossTaskFloor(ctx.difficulty) : normalTaskFloor(ctx.difficulty);
+  const floored = Math.max(taskFloor, Math.round(ctx.baseConfig.taskCount * baseMul));
+  const taskCount = Math.max(1, Math.round(floored * (modifiers.taskCountMul ?? 1)));
   const config: SprintConfig = {
     ...ctx.baseConfig,
-    taskCount: Math.max(taskFloor, Math.round(ctx.baseConfig.taskCount * mul)),
+    taskCount,
     // RI-75: 早期ドレインでも絶対下限30秒を割らない。
     minCompleteTick: SPRINT_MIN_COMPLETE_TICK,
     // RI-75: ボスは §3.1 上限（180秒）で打ち切り、消耗時の長尾を防ぐ。

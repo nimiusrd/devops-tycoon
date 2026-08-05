@@ -316,7 +316,10 @@ export interface SprintConfig {
   taskCount: number;
   /** 同時に Coding できる開発者数（WIP 上限）。 */
   codingSlots: number;
-  /** 無限ループ防止の最大 tick。超過時は残りを強制的に Done へ流す。 */
+  /**
+   * 無限ループ防止の最大 tick。
+   * 超過時は未完了タスクを盤面から畳む（出荷・完了数は計上しない）。
+   */
   maxTicks: number;
   /**
    * スプリント完了に必要な最小 tick（RI-75）。

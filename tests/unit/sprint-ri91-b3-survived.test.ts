@@ -107,8 +107,8 @@ describe('RI-91-B3 sprint survived mutants', () => {
     });
   });
 
-  describe('forceDrain via stepSprint(maxTicks)', () => {
-    it('炎上タスクを鎮火計上し doneCount/delivered を += する', () => {
+  describe('abandonInFlight via stepSprint(maxTicks)', () => {
+    it('炎上タスクを鎮火計上するが doneCount/delivered は加算しない', () => {
       const org = createOrgState('default', false);
       org.deliveryScore = 0;
       org.seniorHp = 5; // advanceBurning の自動鎮火を避ける（余力不足）
@@ -121,7 +121,6 @@ describe('RI-91-B3 sprint survived mutants', () => {
       });
       const sprint = makeSprint(org, [task]);
       sprint.config.maxTicks = 0;
-      const value = taskValue(task);
 
       stepSprint(sprint, org, () => 0.5, 0);
 
@@ -130,22 +129,21 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(task.incident).toBe(false);
       expect(sprint.metrics.contained).toBe(1);
       expect(sprint.metrics.autoContainCount).toBe(1);
-      expect(sprint.metrics.doneCount).toBe(1);
-      expect(sprint.metrics.completedCount).toBe(1);
-      expect(sprint.metrics.delivered).toBe(value);
-      expect(org.deliveryScore).toBe(value);
+      expect(sprint.metrics.doneCount).toBe(0);
+      expect(sprint.metrics.completedCount).toBe(0);
+      expect(sprint.metrics.delivered).toBe(0);
+      expect(org.deliveryScore).toBe(0);
       expect(sprint.metrics.spread).toBe(0);
     });
 
-    it('非 incident の coding は contained せず出荷だけ計上する', () => {
+    it('非 incident の coding は contained も出荷も計上せず畳む', () => {
       const org = createOrgState('default', false);
       org.deliveryScore = 0;
       const task = makeTask(0, { lane: 'coding', progress: 0, incident: false });
       const sprint = makeSprint(org, [task]);
       sprint.config.maxTicks = 0;
-      // coding 進行を止め、intake も空にして forceDrain だけを見る。
+      // coding 進行を止め、intake も空にして abandon だけを見る。
       sprint.config.codingSlots = 0;
-      const value = taskValue(task);
 
       stepSprint(sprint, org, () => 0.5, 0);
 
@@ -153,10 +151,10 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(task.lane).toBe('done');
       expect(sprint.metrics.contained).toBe(0);
       expect(sprint.metrics.autoContainCount).toBe(0);
-      expect(sprint.metrics.doneCount).toBe(1);
-      expect(sprint.metrics.completedCount).toBe(1);
-      expect(sprint.metrics.delivered).toBe(value);
-      expect(org.deliveryScore).toBe(value);
+      expect(sprint.metrics.doneCount).toBe(0);
+      expect(sprint.metrics.completedCount).toBe(0);
+      expect(sprint.metrics.delivered).toBe(0);
+      expect(org.deliveryScore).toBe(0);
     });
 
     it('Backlog のみは lane を畳むが出荷は計上しない', () => {
@@ -164,7 +162,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       org.deliveryScore = 7;
       const task = makeTask(0, { lane: 'backlog' });
       const sprint = makeSprint(org, [task]);
-      // コーダー不在 + 稼働タスク無し → isStalled → 即 forceDrain
+      // コーダー不在 + 稼働タスク無し → isStalled → 即 abandonInFlight
       sprint.config.codingSlots = 0;
 
       stepSprint(sprint, org, () => 0.5, 0);
@@ -178,7 +176,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(org.deliveryScore).toBe(7);
     });
 
-    it('forceDrain でも aiAssisted のときだけ aiAssistedCompleted を += する', () => {
+    it('maxTicks 打ち切りでは aiAssistedCompleted も加算しない', () => {
       const org = createOrgState('default', true);
       const assisted = makeTask(0, {
         lane: 'coding',
@@ -198,10 +196,25 @@ describe('RI-91-B3 sprint survived mutants', () => {
 
       stepSprint(sprint, org, () => 0.5, 0);
 
-      expect(sprint.metrics.doneCount).toBe(2);
-      expect(sprint.metrics.completedCount).toBe(2);
-      expect(sprint.metrics.aiAssistedCompleted).toBe(1);
+      expect(sprint.metrics.doneCount).toBe(0);
+      expect(sprint.metrics.completedCount).toBe(0);
+      expect(sprint.metrics.aiAssistedCompleted).toBe(0);
     });
+  });
+
+  it('minCompleteTick 待ち中はシニアHP自然回復しない', () => {
+    const org = createOrgState('default', false);
+    org.seniorHp = 40;
+    const sprint = makeSprint(org, []);
+    sprint.config.minCompleteTick = 5;
+
+    stepSprint(sprint, org, () => 0.5, 0);
+    expect(sprint.complete).toBe(false);
+    expect(org.seniorHp).toBe(40);
+
+    stepSprint(sprint, org, () => 0.5, 5);
+    expect(sprint.complete).toBe(true);
+    expect(org.seniorHp).toBe(40);
   });
 
   describe('computeTitleAndDiagnosis 境界', () => {

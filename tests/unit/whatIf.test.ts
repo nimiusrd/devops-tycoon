@@ -590,12 +590,12 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
     const pressured = computeWhatIfState(directWhatIfInput())!;
 
     expect(pressured.current.trials).toBe(24);
-    // RI-75: taskFloor / taskCountMul 増に合わせた golden（決定論）。
-    expect(pressured.current.delivered).toEqual({ mean: 412.0833333333333, min: 316, max: 522 });
+    // RI-75: 床の後に一時 modifier を掛ける順序に合わせた golden（決定論）。
+    expect(pressured.current.delivered).toEqual({ mean: 590.0416666666666, min: 504, max: 677 });
     expect(pressured.current.spread).toEqual({
-      mean: 19.041666666666668,
-      min: 3,
-      max: 37,
+      mean: 50.75,
+      min: 7,
+      max: 96,
     });
     expect(pressured.current.delivered).not.toEqual(plain.current.delivered);
   });

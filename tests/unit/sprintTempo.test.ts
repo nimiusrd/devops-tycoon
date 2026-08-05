@@ -363,7 +363,8 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
         runMins.push(modelRunWallMinutes(ticks, reviews));
       }
     }
-    expect(runMins.length).toBeGreaterThanOrEqual(4);
+    // RI-75: maxTicks 打ち切りを出荷なしにすると四半期到達が減る。到達分だけで帯を見る。
+    expect(runMins.length).toBeGreaterThanOrEqual(2);
 
     const rP50 = p50(runMins);
     expect(rP50).toBeGreaterThanOrEqual(RUN_WALL_MIN.minMin);

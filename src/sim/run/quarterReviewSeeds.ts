@@ -11,17 +11,17 @@
  * RI-64 で四半期 KPI を全社集約しても、士気・シニアHPは選択中チーム基準のため
  * これらの seed 契約は維持する。
  * RI-81（初期カードプール拡張）後に再探索して更新。
- * RI-75（スプリント pacing / タスク量・床・minCompleteTick）後に再探索して更新。
+ * RI-75（スプリント pacing / タスク量・床・minCompleteTick / abandonInFlight）後に再探索して更新。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
-export const E2E_MISSED_ADJUSTABLE_SEED = 'ri75f-ma-104';
+export const E2E_MISSED_ADJUSTABLE_SEED = 'ri75g-ma-124';
 
 /**
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。
  * 種別固定が必要なら `E2E_TERMINAL_*` を使う。
  */
-export const E2E_SHUTDOWN_SEED = 'ri75f-hard-445';
+export const E2E_SHUTDOWN_SEED = 'ri75g-hard-1250';
 
 /** 継続不能 outcome ごとの固定 seed（RI-75 再探索 / hard）。 */
 export interface TerminalQuarterSeed {
@@ -34,7 +34,7 @@ export interface TerminalQuarterSeed {
 
 /** Q1 で shutdown。 */
 export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
-  seed: 'ri75f-hard-445',
+  seed: 'ri75g-hard-1250',
   difficulty: 'hard',
   outcome: 'shutdown',
   quarterNumber: 1,

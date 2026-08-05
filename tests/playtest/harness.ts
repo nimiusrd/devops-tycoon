@@ -53,8 +53,8 @@ export interface PolicySpec {
    *
    * **壁時計の間隔ではない。** `RunEngine.step(dtMs)` は `FIXED_STEP_MS`（=100ms）ごとに
    * 1 tick 進めるので、この値は `stepMs / 100` tick に相当する。実 UI の 1x では
-   * 1 tick が壁時計 `MS_PER_TICK_1X`（=680ms）なので、換算は
-   * `壁時計 = stepMs / 100 * 680`。つまり `300` は3 tick＝約2.0秒、`600` は6 tick＝約4.1秒。
+   * 1 tick が壁時計 `MS_PER_TICK_1X`（`src/ui/sprintTempo.ts`）なので、換算は
+   * `壁時計 = stepMs / 100 * MS_PER_TICK_1X`。`300` は3 tick、`600` は6 tick。
    *
    * 所見へ書くときは必ず `wallClockIntervalSec()` で換算した値を使うこと。
    * 「300ms 刻み」と書くと実際の約7分の1の反応間隔として読まれる。

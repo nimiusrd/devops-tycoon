@@ -11,18 +11,19 @@
  * RI-64 で四半期 KPI を全社集約しても、士気・シニアHPは選択中チーム基準のため
  * これらの seed 契約は維持する。
  * RI-81（初期カードプール拡張）後に再探索して更新。
+ * RI-75（スプリント pacing / タスク量）後に再探索して更新。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
-export const E2E_MISSED_ADJUSTABLE_SEED = 'ri81e-ma-43';
+export const E2E_MISSED_ADJUSTABLE_SEED = 'ri75e-ma-48';
 
 /**
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。
  * 種別固定が必要なら `E2E_TERMINAL_*` を使う。
  */
-export const E2E_SHUTDOWN_SEED = 'ri81e-hard-24';
+export const E2E_SHUTDOWN_SEED = 'ri75e-hard-55';
 
-/** 継続不能 outcome ごとの固定 seed（RI-81 再探索 / hard）。 */
+/** 継続不能 outcome ごとの固定 seed（RI-75 再探索 / hard）。 */
 export interface TerminalQuarterSeed {
   seed: string;
   difficulty: DifficultyId;
@@ -33,32 +34,32 @@ export interface TerminalQuarterSeed {
 
 /** Q1 で shutdown。 */
 export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
-  seed: 'ri81e-hard-24',
+  seed: 'ri75e-hard-55',
   difficulty: 'hard',
   outcome: 'shutdown',
   quarterNumber: 1,
 };
 
 /**
- * Q1 で missed_crisis。
+ * Q4 で missed_crisis。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
-  seed: 'ri81e-hard-55',
+  seed: 'ri75e-hard-396',
   difficulty: 'hard',
   outcome: 'missed_crisis',
-  quarterNumber: 1,
+  quarterNumber: 4,
 };
 
 /**
- * Q3 で reorg_required。
+ * Q7 で reorg_required。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_REORG_REQUIRED: TerminalQuarterSeed = {
-  seed: 'ri81e-hard-28',
+  seed: 'ri75e-hard-29',
   difficulty: 'hard',
   outcome: 'reorg_required',
-  quarterNumber: 3,
+  quarterNumber: 7,
 };
 
 export const E2E_TERMINAL_SEEDS: readonly TerminalQuarterSeed[] = [

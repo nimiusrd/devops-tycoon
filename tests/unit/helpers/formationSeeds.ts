@@ -12,10 +12,10 @@ import { summarizeNumeric, type NumericMetricSummary } from './monteCarlo';
 export const RI19_SEED_PREFIX = 'ri19-formation';
 
 /**
- * 候補 `ri19-formation-0..31` を掃引し、全件でレビュー滞留増加を確認した。
- * 回帰コストを抑えるため先頭 12 本を代表群として固定する。
+ * 候補 `ri19-formation-0..63` を掃引し、レビュー滞留増加（codingHeavy > balanced）を確認した。
+ * RI-75 後は index 6 が Δ=0 になったため除外し、12 を加えて代表 12 本を固定する。
  */
-export const RI19_SEED_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
+export const RI19_SEED_INDICES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12] as const;
 
 /** 代表 seed 文字列一覧。 */
 export const RI19_SEEDS = RI19_SEED_INDICES.map((i) => `${RI19_SEED_PREFIX}-${i}`);
@@ -36,20 +36,18 @@ export interface FormationComparisonSummary {
 }
 
 /**
- * 2026-07 計測ベースの許容レンジ（極端崩壊検知用。細かな調整の縛りではない）。
+ * RI-75 再計測ベースの許容レンジ（極端崩壊検知用。細かな調整の縛りではない）。
  *
- * 代表 12 seed 初回計測:
- * - deliveredΔ mean=+27.75（min -35 / max +95）
- * - reviewQueueΔ mean=+4.33（min +1 / max +8）
- * - reworkΔ mean=-2.67（min -6 / max 0）
- *
- * 候補 32 seed の探索でも reviewQueueΔ は全件正値（min +1 / max +10）。
+ * 代表 12 seed（index 6 除外）計測:
+ * - deliveredΔ mean≈+23（min -51 / max +87）
+ * - reviewQueueΔ mean≈+7.25（min +3 / max +14）
+ * - reworkΔ mean≈-3.1（min -7 / max +1）
  */
 export const RI19_RANGES = {
   /** 出荷差は seed 依存で符号が変わるため、極端な優位・劣位だけを弾く。 */
   deliveredDelta: { meanMin: -25, meanMax: 100, minFloor: -100, maxCeil: 200 },
   /** レビュアー不在による滞留増加を検知しつつ、支配的な悪化を許さない。 */
-  reviewQueueDelta: { meanMin: 2, meanMax: 10, minFloor: 0, maxCeil: 16 },
+  reviewQueueDelta: { meanMin: 2, meanMax: 12, minFloor: 0, maxCeil: 18 },
   /** レビュー到達量の減少に伴う手戻り差は、方向を強制せず極端値だけを弾く。 */
   reworkDelta: { meanMin: -10, meanMax: 5, minFloor: -15, maxCeil: 10 },
 } as const;

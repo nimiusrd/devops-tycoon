@@ -590,7 +590,7 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
     const pressured = computeWhatIfState(directWhatIfInput())!;
 
     expect(pressured.current.trials).toBe(24);
-    expect(pressured.current.delivered).toEqual({ mean: 91.41666666666667, min: 45, max: 118 });
+    expect(pressured.current.delivered).toEqual({ mean: 73.54166666666667, min: 37, max: 96 });
     expect(pressured.current.spread).toEqual({ mean: 0, min: 0, max: 0 });
     expect(pressured.current.delivered).not.toEqual(plain.current.delivered);
   });

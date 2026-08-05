@@ -50,10 +50,19 @@ describe('dispatch は敗北判定をスプリント終了まで延期する', (
     expect(after.status).toBe('playing');
     expect(after.phase).toBe('sprint');
 
-    // さらに自然回復するので、スプリント終了時には閾値を上回り得る。
-    e.step(100);
-    expect(e.snapshot().org.seniorHp).toBeGreaterThan(1);
-    expect(e.snapshot().status).toBe('playing');
+    // firefight で Review に戻したタスクが直後に処理され HP が一時的に下がることがある。
+    // 自然回復で数 tick 以内に閾値を上回り、なお playing のままであること。
+    let recovered = false;
+    for (let i = 0; i < 20; i += 1) {
+      e.step(100);
+      const s = e.snapshot();
+      expect(s.status).toBe('playing');
+      if (s.org.seniorHp > 1) {
+        recovered = true;
+        break;
+      }
+    }
+    expect(recovered).toBe(true);
   });
 
   it('カード発動は逆に即時敗北判定を行う（対比）', () => {

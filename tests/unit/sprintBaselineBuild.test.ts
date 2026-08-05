@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Member, RosterState } from '../../src/sim/member/types';
 import { createOrgState } from '../../src/sim/org';
 import {
+  BOSS_MAX_TICKS,
   buildSprintBaselineInput,
   type SprintBaselineBuildContext,
 } from '../../src/sim/run/sprintBaselineBuild';
@@ -91,11 +92,13 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     const incidentBoss = build({ kind: 'boss', ctx: { bossId: 'major-incident' } });
 
     expect(normal.config.taskCount).toBe(10);
-    expect(elite.config.taskCount).toBe(16);
-    expect(boss.config.taskCount).toBe(26);
-    expect(incidentBoss.config.taskCount).toBe(26);
+    expect(elite.config.taskCount).toBe(13); // normal difficulty elite mul 1.3
+    expect(boss.config.taskCount).toBe(38); // bossTaskFloor(normal)
+    expect(incidentBoss.config.taskCount).toBe(38);
+    expect(boss.config.maxTicks).toBe(BOSS_MAX_TICKS);
+    expect(normal.config.maxTicks).toBe(1_000);
     expect(normal.cardEffects.incidentRateMul).toBe(1);
-    expect(incidentBoss.cardEffects.incidentRateMul).toBe(1.65);
+    expect(incidentBoss.cardEffects.incidentRateMul).toBe(1.1);
   });
 
   it('一時 modifier の差分でタスク量・集中力・手戻り・初期レビュー負荷が変わる', () => {

@@ -184,8 +184,8 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
 
   it('RI-32: 勝利種別はボス報酬適用前の org で判定する', () => {
     let verified = false;
-    // 全社平均の士気/HP で四半期判定が厳しくなったため、探索幅を広げる。
-    for (let i = 0; i < 160; i += 1) {
+    // RI-75: ボス床・タスク量増で勝利到達が稀になるため、探索幅と timeout を広げる。
+    for (let i = 0; i < 400; i += 1) {
       const engine = new RunEngine({ seed: `ri32-win-type-${i}`, difficulty: 'easy' });
       engine.startRun();
       const state = playUntil(engine, 'quarterReview', { skilled: true });
@@ -215,7 +215,7 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       break;
     }
     expect(verified).toBe(true);
-  }, 20_000);
+  }, 90_000);
 
   it('RI-32: カード発動で AI 依存上限を超えると即時敗北する', () => {
     const engine = new RunEngine({ seed: 'ri32-card-lose-direct', difficulty: 'nightmare' });

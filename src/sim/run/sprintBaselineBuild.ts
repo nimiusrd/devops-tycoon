@@ -13,8 +13,53 @@ import { PAUSE_AI_DEBUFF_MUL } from './quarterReview';
 import type { SprintBaselineInput } from './sprintBaseline';
 import type { DifficultyId, EvolutionState, SprintKind, SprintModifierDelta } from './types';
 
-/** 高負荷（elite）スプリントのタスク量倍率。 */
+/**
+ * 高負荷（elite）スプリントのタスク量倍率（normal 基準）。
+ * playtest 方針の負荷感採点でも参照する。実際の適用は `eliteTaskMul`。
+ */
 export const ELITE_TASK_MUL = 1.6;
+
+/**
+ * 難易度別の elite タスク倍率（RI-75）。
+ * hard/nightmare は非効率で長尾になりやすいので倍率を抑え、easy は帯下限を確保する。
+ */
+export function eliteTaskMul(difficulty: DifficultyId): number {
+  switch (difficulty) {
+    case 'easy':
+      return 1.35;
+    case 'normal':
+      return 1.3;
+    case 'hard':
+      return 1.2;
+    case 'nightmare':
+      return 1;
+  }
+}
+
+/**
+ * ボススプリントのタスク数下限（RI-75）。
+ * easy/normal は通常より長く、nightmare は非効率で長尾になりやすいので床を抑える。
+ */
+export function bossTaskFloor(difficulty: DifficultyId): number {
+  switch (difficulty) {
+    case 'easy':
+      return 48;
+    case 'normal':
+      return 38;
+    case 'hard':
+      return 28;
+    case 'nightmare':
+      return 40;
+  }
+}
+
+/**
+ * ボスの最大 tick（RI-75）。
+ * エンジンは `stepSprint(tick)` の後に `sprintTick++` するため、完了時の表示 tick は +1 される。
+ * `MS_PER_TICK_1X=690` で完了時壁時計が180秒以内になるよう 259 とする（259→表示260 tick≒179.4s）。
+ * テンポ定数を変えたら `sprintTempo` 側の対応テストと同期すること。
+ */
+export const BOSS_MAX_TICKS = 259;
 
 /**
  * スプリント間のギャップでシニア体力が回復する割合（満タンまでの差分に対して）。
@@ -102,13 +147,19 @@ export function buildSprintBaselineInput(
     effects = { ...effects, reworkRateAdd: effects.reworkRateAdd + modifiers.reworkRateAdd };
   }
   const baseMul =
-    kind === 'elite' ? ELITE_TASK_MUL : isBoss ? (getBoss(ctx.bossId)?.taskCountMul ?? 1) : 1;
+    kind === 'elite'
+      ? eliteTaskMul(ctx.difficulty)
+      : isBoss
+        ? (getBoss(ctx.bossId)?.taskCountMul ?? 1)
+        : 1;
   const mul = baseMul * (modifiers.taskCountMul ?? 1);
-  // RI-62: ボスは 90 秒帯の下限を確保（通常スプリントの下限は触らない）。
-  const taskFloor = isBoss ? 26 : 4;
+  // RI-75: ボスは taskFloor で下限を確保し、通常スプリントより長くする。
+  const taskFloor = isBoss ? bossTaskFloor(ctx.difficulty) : 4;
   const config: SprintConfig = {
     ...ctx.baseConfig,
     taskCount: Math.max(taskFloor, Math.round(ctx.baseConfig.taskCount * mul)),
+    // RI-75: ボスは §3.1 上限（180秒）で打ち切り、消耗時の長尾を防ぐ。
+    ...(isBoss ? { maxTicks: Math.min(ctx.baseConfig.maxTicks, BOSS_MAX_TICKS) } : {}),
     focusMax: Math.max(
       1,
       ctx.baseConfig.focusMax +

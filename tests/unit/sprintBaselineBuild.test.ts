@@ -91,10 +91,11 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     const boss = build({ kind: 'boss' });
     const incidentBoss = build({ kind: 'boss', ctx: { bossId: 'major-incident' } });
 
-    expect(normal.config.taskCount).toBe(10);
-    expect(elite.config.taskCount).toBe(13); // normal difficulty elite mul 1.3
-    expect(boss.config.taskCount).toBe(38); // bossTaskFloor(normal)
-    expect(incidentBoss.config.taskCount).toBe(38);
+    // 通常/elite も RI-75 の normalTaskFloor(normal)=50 が効く。
+    expect(normal.config.taskCount).toBe(50);
+    expect(elite.config.taskCount).toBe(50);
+    expect(boss.config.taskCount).toBe(58); // bossTaskFloor(normal)
+    expect(incidentBoss.config.taskCount).toBe(58);
     expect(boss.config.maxTicks).toBe(BOSS_MAX_TICKS);
     expect(normal.config.maxTicks).toBe(1_000);
     expect(normal.cardEffects.incidentRateMul).toBe(1);
@@ -112,8 +113,8 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
       },
     });
 
-    expect(unchanged.config.taskCount).toBe(10);
-    expect(modified.config.taskCount).toBe(12);
+    expect(unchanged.config.taskCount).toBe(50); // normalTaskFloor
+    expect(modified.config.taskCount).toBe(50); // floor が mul 1.2 より大きい
     expect(unchanged.config.focusMax).toBe(4);
     expect(modified.config.focusMax).toBe(1);
     expect(unchanged.cardEffects.reworkRateAdd).toBe(0);

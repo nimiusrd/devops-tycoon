@@ -318,6 +318,11 @@ export interface SprintConfig {
   codingSlots: number;
   /** 無限ループ防止の最大 tick。超過時は残りを強制的に Done へ流す。 */
   maxTicks: number;
+  /**
+   * スプリント完了に必要な最小 tick（RI-75）。
+   * Backlog が先に枯れても、この tick 未満では完了せず §3.1 絶対下限を守る。
+   */
+  minCompleteTick?: number;
   /** マネジメント集中力の上限（毎スプリント満タンへ回復。第6.2）。 */
   focusMax: number;
   /**

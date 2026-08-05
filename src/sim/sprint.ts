@@ -466,11 +466,13 @@ function forceDrain(sprint: SprintState, org: OrgState, tick: number): void {
 export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: number): void {
   if (sprint.complete) return;
 
-  // 進行不能（コーダー不在で流入枠 0・稼働中タスクも無し）なら即完了させる。
+  // 進行不能（コーダー不在で流入枠 0・稼働中タスクも無し）なら完了させる。
   // そうしないと Backlog が流れず isDrained も成立せず、maxTicks まで何も起きない画面を待つ。
+  // RI-75: ただし絶対下限 tick 未満なら待機（空回り）し、短尺スプリントを防ぐ。
   if (isStalled(sprint)) {
     forceDrain(sprint, org, tick);
-    sprint.complete = true;
+    const minTick = sprint.config.minCompleteTick ?? 0;
+    if (tick >= minTick) sprint.complete = true;
     appendTimelineSample(sprint, org, tick);
     return;
   }
@@ -497,7 +499,9 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   tickCooldowns(sprint);
 
   if (isDrained(sprint)) {
-    sprint.complete = true;
+    // RI-75: 早期ドレインでも §3.1 絶対下限（表示 tick）を下回らないよう待機する。
+    const minTick = sprint.config.minCompleteTick ?? 0;
+    if (tick >= minTick) sprint.complete = true;
   } else if (tick >= sprint.config.maxTicks) {
     forceDrain(sprint, org, tick);
     sprint.complete = true;

@@ -14,9 +14,9 @@ export const SIM_STEP_MS = 100;
 
 /**
  * 1x 再生時の実時間/tick（ms）。
- * RI-75: 難易度別タスク量と組み合わせ、全難易度の p50 を §3.1 帯へ寄せる。
+ * RI-75: 難易度別タスク量と組み合わせ、F-4 代表方針の p50 を §3.1 帯へ寄せる。
  */
-export const MS_PER_TICK_1X = 690;
+export const MS_PER_TICK_1X = 780;
 
 /** プレイヤー向け再生速度。0=一時停止、1=1x、2=2x。 */
 export type PlaybackSpeed = 0 | 1 | 2;

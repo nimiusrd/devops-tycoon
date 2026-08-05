@@ -43,8 +43,8 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       morale: 75,
       seniorHp: 100,
     },
-    // RI-75: 短尺の easy をタスク量で帯へ寄せる。効率バフは絶対下限割れを助長するため外す。
-    taskCountMul: 1.55,
+    // RI-75: F-4 代表方針でも通常 p50 が60秒帯に入るよう底上げ。
+    taskCountMul: 1.85,
     startBudget: 60,
     bossTargetMul: 0.85,
   },
@@ -61,8 +61,8 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       morale: 70,
       seniorHp: 100,
     },
-    // RI-75: skilled の p50/絶対下限と無介入長尾のバランス。
-    taskCountMul: 1.32,
+    // RI-75: F-4 代表方針の通常 p50 を60秒帯へ。
+    taskCountMul: 1.65,
     startBudget: 45,
     bossTargetMul: 1,
   },
@@ -79,8 +79,8 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       morale: 60,
       seniorHp: 90,
     },
-    // RI-75: 通常 p50 を下限付近に維持しつつ elite 長尾を抑える。
-    taskCountMul: 1.2,
+    // RI-75: F-4 でも通常帯を維持（elite は別倍率で長尾抑制）。
+    taskCountMul: 1.4,
     globalEffects: { reworkRateAdd: 0.05, reviewEfficiencyMul: 0.92 },
     startBudget: 35,
     bossTargetMul: 1.15,
@@ -98,8 +98,8 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       morale: 55,
       seniorHp: 80,
     },
-    // RI-75: 通常は帯内。elite 長尾抑制のため微減。
-    taskCountMul: 1.05,
+    // RI-75: 非効率で長くなりやすい。床は低め、倍率はベース相当。
+    taskCountMul: 1,
     /**
      * RI-74: S1 全AI割当でも cap 未満になる上昇量（他難易度は既定 2.2 のまま）。
      * 低リテラシー時のライバル上限（ホーム+10）と `frontier-dependency` の開始時 +5 を

@@ -26,40 +26,65 @@ export const ELITE_TASK_MUL = 1.6;
 export function eliteTaskMul(difficulty: DifficultyId): number {
   switch (difficulty) {
     case 'easy':
-      return 1.35;
+      return 1.25;
     case 'normal':
-      return 1.3;
-    case 'hard':
       return 1.2;
+    case 'hard':
+      return 1.15;
     case 'nightmare':
-      return 1;
+      return 1.15;
   }
 }
 
 /**
+ * 通常/elite スプリントのタスク数下限（RI-75）。
+ * 休憩などの taskCountMul 減衰でも絶対下限30秒を割らない床。
+ */
+export function normalTaskFloor(difficulty: DifficultyId): number {
+  switch (difficulty) {
+    case 'easy':
+      return 55;
+    case 'normal':
+      return 50;
+    case 'hard':
+      return 42;
+    case 'nightmare':
+      // 非効率で長い。絶対下限は minCompleteTick 側で担保する。
+      return 32;
+  }
+}
+
+/**
+ * スプリント完了の最小 tick（RI-75）。
+ * エンジンは完了後に sprintTick++ するため、表示 tick が絶対下限30秒以上になる値にする。
+ * `MS_PER_TICK_1X=780` → 表示39 tick ≒ 30.4s になるよう 38。
+ */
+export const SPRINT_MIN_COMPLETE_TICK = 38;
+
+/**
  * ボススプリントのタスク数下限（RI-75）。
- * easy/normal は通常より長く、nightmare は非効率で長尾になりやすいので床を抑える。
+ * easy/normal は通常より長く、hard/nightmare は終盤消耗の長尾を抑える。
  */
 export function bossTaskFloor(difficulty: DifficultyId): number {
   switch (difficulty) {
     case 'easy':
-      return 48;
+      return 68;
     case 'normal':
-      return 38;
+      return 58;
     case 'hard':
-      return 28;
+      return 52;
     case 'nightmare':
-      return 40;
+      return 56;
   }
 }
 
 /**
  * ボスの最大 tick（RI-75）。
  * エンジンは `stepSprint(tick)` の後に `sprintTick++` するため、完了時の表示 tick は +1 される。
- * `MS_PER_TICK_1X=690` で完了時壁時計が180秒以内になるよう 259 とする（259→表示260 tick≒179.4s）。
+ * `MS_PER_TICK_1X=780` で完了時壁時計が180秒以内になるよう 229 とする（229→表示230 tick≒179.4s）。
  * テンポ定数を変えたら `sprintTempo` 側の対応テストと同期すること。
  */
-export const BOSS_MAX_TICKS = 259;
+export const BOSS_MAX_TICKS = 229;
 
 /**
  * スプリント間のギャップでシニア体力が回復する割合（満タンまでの差分に対して）。
@@ -153,11 +178,13 @@ export function buildSprintBaselineInput(
         ? (getBoss(ctx.bossId)?.taskCountMul ?? 1)
         : 1;
   const mul = baseMul * (modifiers.taskCountMul ?? 1);
-  // RI-75: ボスは taskFloor で下限を確保し、通常スプリントより長くする。
-  const taskFloor = isBoss ? bossTaskFloor(ctx.difficulty) : 4;
+  // RI-75: ボスは山場の長さ、通常/elite は絶対下限30秒を割らない床。
+  const taskFloor = isBoss ? bossTaskFloor(ctx.difficulty) : normalTaskFloor(ctx.difficulty);
   const config: SprintConfig = {
     ...ctx.baseConfig,
     taskCount: Math.max(taskFloor, Math.round(ctx.baseConfig.taskCount * mul)),
+    // RI-75: 早期ドレインでも絶対下限30秒を割らない。
+    minCompleteTick: SPRINT_MIN_COMPLETE_TICK,
     // RI-75: ボスは §3.1 上限（180秒）で打ち切り、消耗時の長尾を防ぐ。
     ...(isBoss ? { maxTicks: Math.min(ctx.baseConfig.maxTicks, BOSS_MAX_TICKS) } : {}),
     focusMax: Math.max(

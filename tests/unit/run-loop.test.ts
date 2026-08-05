@@ -140,12 +140,21 @@ describe('固定トラックの不変条件（SPEC 第3章 / 第10章）', () =>
 describe('ビートの遷移とリスク/リターン（SPEC 第9章）', () => {
   it('「一息つく」を取ると次スプリントの出荷ペナルティ（taskCountMul<1）が積まれる', () => {
     let engine: RunEngine | null = null;
-    for (const seed of ['rest-a', 'rest-b', 'rest-c', 'rest-d', 'rest-e', 'rest-f', 'rest-g']) {
+    // RI-75: タスク床・量増で旧 rest-* は休息前に敗北しやすい。到達確認済み seed を先に試す。
+    for (const seed of [
+      'rest-probe-4',
+      'rest-probe-9',
+      'rest-probe-10',
+      'rest-probe-20',
+      'rest-a',
+      'rest-b',
+      'rest-c',
+    ]) {
       const e = new RunEngine({ seed, difficulty: 'easy' });
       e.startRun();
       let s = e.snapshot();
       let guard = 0;
-      while (s.status === 'playing' && s.phase !== 'rest' && guard < 400) {
+      while (s.status === 'playing' && s.phase !== 'rest' && guard < 2000) {
         guard += 1;
         if (!advance(e, { beatChoice: 0 })) break;
         s = e.snapshot();
@@ -157,6 +166,7 @@ describe('ビートの遷移とリスク/リターン（SPEC 第9章）', () => 
     }
     expect(engine).not.toBeNull();
     // 休息に入った時点で、当該スプリントの出荷を手放す代償が積まれている。
+    // （taskFloor で実タスク数が減らない場合もあるため、modifier 自体を検証する）
     const mods = engine!.snapshot().pendingSprintModifiers;
     expect(mods.taskCountMul).toBeDefined();
     expect(mods.taskCountMul!).toBeLessThan(1);

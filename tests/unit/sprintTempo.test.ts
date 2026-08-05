@@ -219,44 +219,48 @@ describe('sprintTempo（RI-62）', () => {
     expect(isBossTickCountInSpecBand(230)).toBe(true); // ≒179.4s
   });
 
-  it('代表 seed の通常スプリントが §3.1（最短30秒・中央60〜120）を満たす', () => {
-    // RI-75: p50 帯は skilled（実プレイに近い）で見る。無介入は絶対下限の回帰用。
-    const noInt = collectSprintTicks(RI62_SEEDS);
-    expect(noInt.normal.length).toBeGreaterThan(0);
-    for (const ticks of noInt.normal) {
-      expect(
-        meetsSprintAbsoluteMin(ticks),
-        `normal ticks=${ticks} wall=${wallSecondsAt1x(ticks)}s < ${SPRINT_WALL_SEC.absoluteMin}s`,
-      ).toBe(true);
-    }
+  it(
+    '代表 seed の通常スプリントが §3.1（最短30秒・中央60〜120）を満たす',
+    { timeout: 30_000 },
+    () => {
+      // RI-75: p50 帯は skilled（実プレイに近い）で見る。無介入は絶対下限の回帰用。
+      const noInt = collectSprintTicks(RI62_SEEDS);
+      expect(noInt.normal.length).toBeGreaterThan(0);
+      for (const ticks of noInt.normal) {
+        expect(
+          meetsSprintAbsoluteMin(ticks),
+          `normal ticks=${ticks} wall=${wallSecondsAt1x(ticks)}s < ${SPRINT_WALL_SEC.absoluteMin}s`,
+        ).toBe(true);
+      }
 
-    const skilledSecs: number[] = [];
-    const skilledBossSecs: number[] = [];
-    for (const seed of RI62_SEEDS) {
-      const e = new RunEngine({ seed, difficulty: 'normal' });
-      playUntil(e, 'quarterReview', {
-        skilled: true,
-        onSprintEnd: (m) => {
-          if (m.kind === 'normal') skilledSecs.push(wallSecondsAt1x(m.ticks));
-          if (m.kind === 'boss') skilledBossSecs.push(wallSecondsAt1x(m.ticks));
-        },
-      });
-    }
-    expect(skilledSecs.length).toBeGreaterThan(0);
-    const p50Sec = p50(skilledSecs);
-    expect(p50Sec).toBeGreaterThanOrEqual(SPRINT_WALL_SEC.minTypical);
-    expect(p50Sec).toBeLessThanOrEqual(SPRINT_WALL_SEC.maxTypical);
+      const skilledSecs: number[] = [];
+      const skilledBossSecs: number[] = [];
+      for (const seed of RI62_SEEDS) {
+        const e = new RunEngine({ seed, difficulty: 'normal' });
+        playUntil(e, 'quarterReview', {
+          skilled: true,
+          onSprintEnd: (m) => {
+            if (m.kind === 'normal') skilledSecs.push(wallSecondsAt1x(m.ticks));
+            if (m.kind === 'boss') skilledBossSecs.push(wallSecondsAt1x(m.ticks));
+          },
+        });
+      }
+      expect(skilledSecs.length).toBeGreaterThan(0);
+      const p50Sec = p50(skilledSecs);
+      expect(p50Sec).toBeGreaterThanOrEqual(SPRINT_WALL_SEC.minTypical);
+      expect(p50Sec).toBeLessThanOrEqual(SPRINT_WALL_SEC.maxTypical);
 
-    // ボスは p50/p90 で帯を見る（稀な炎上外れ値は分布側）。
-    if (skilledBossSecs.length > 0) {
-      expect(p50(skilledBossSecs)).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
-      expect(p90(skilledBossSecs)).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
-    }
-    expect(BOSS_WALL_SEC.min).toBe(90);
-    // ヘルパ自体の回帰防止
-    expect(isSprintTickCountInSpecBand(80)).toBe(true);
-    expect(isBossTickCountInSpecBand(200)).toBe(true);
-  });
+      // ボスは p50/p90 で帯を見る（稀な炎上外れ値は分布側）。
+      if (skilledBossSecs.length > 0) {
+        expect(p50(skilledBossSecs)).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
+        expect(p90(skilledBossSecs)).toBeLessThanOrEqual(BOSS_WALL_SEC.max);
+      }
+      expect(BOSS_WALL_SEC.min).toBe(90);
+      // ヘルパ自体の回帰防止
+      expect(isSprintTickCountInSpecBand(80)).toBe(true);
+      expect(isBossTickCountInSpecBand(200)).toBe(true);
+    },
+  );
 });
 
 describe('sprintTempo ペーシング統計（RI-66）', () => {
@@ -265,6 +269,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   /** 四半期レビュー到達サンプル（四半期壁時計用）。 */
   let reviewedQuarters: { seed: string; ends: SprintEndMetrics[] }[];
 
+  // RI-75: スプリントが長くなり 12 seed の skilled 収集が既定 hookTimeout(10s) を超える。
   beforeAll(() => {
     quarterAttempts = [];
     reviewedQuarters = [];
@@ -283,7 +288,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
         reviewedQuarters.push({ seed, ends });
       }
     }
-  });
+  }, 60_000);
 
   it('§3.1 モデル定数が規定どおり', () => {
     expect(BETWEEN_SPRINT_WALL_SEC).toBe(35);

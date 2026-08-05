@@ -1130,6 +1130,33 @@ function activeEngineers(e: RunEngine): number {
   return e.snapshot().roster.members.filter((m) => !m.onLeave).length;
 }
 
+describe('RunEngine: previewLiveQuarterKpi（RI-89）', () => {
+  it('非選択チームの粗粒度進行を totals に合成し、盤面は変えない', () => {
+    const e = started('preview-kpi-coarse');
+    e.beginSetupSprint();
+    const before = e.snapshot();
+    expect(before.phase).toBe('sprint');
+    expect(before.teams.length).toBeGreaterThan(1);
+
+    const preview = e.previewLiveQuarterKpi();
+    expect(preview).not.toBeNull();
+    // 選択中スプリント metrics が 0 でも、他チーム粗粒度で delivered/completed が増えうる。
+    expect(preview!.totals.delivered).toBeGreaterThanOrEqual(before.quarterTotals.delivered);
+    expect(preview!.totals.completed).toBeGreaterThanOrEqual(before.quarterTotals.completed);
+
+    const after = e.snapshot();
+    expect(after.teams).toEqual(before.teams);
+    expect(after.quarterTotals).toEqual(before.quarterTotals);
+    expect(after.org).toEqual(before.org);
+  });
+
+  it('sprint 以外では null', () => {
+    const e = started('preview-kpi-setup');
+    expect(e.snapshot().phase).toBe('setup');
+    expect(e.previewLiveQuarterKpi()).toBeNull();
+  });
+});
+
 describe('RunEngine: 決定論', () => {
   it('同じ seed・同じ操作なら同じ全社マップになる', () => {
     const a = started('det-seed');

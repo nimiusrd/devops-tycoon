@@ -6,7 +6,12 @@
  * からのみ消費する（決定論。第22.3）。入力はイベント経由で受け取る。
  */
 import { getAction } from '../data/actions';
-import { applyAssignTaskEffect, resolveSplitPrTarget } from './assignTask';
+import {
+  applyAssignTaskEffect,
+  canApplyAssignTaskTarget,
+  resolveAssignTaskTarget,
+  resolveSplitPrTarget,
+} from './assignTask';
 import type { Rng } from './rng';
 import { reviewOne } from './sprint';
 import { appendSprintEvent } from './sprintEvents';
@@ -21,6 +26,21 @@ import type {
 } from './types';
 
 export { ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from './assignTask';
+
+/** `canApplyAction` / `applyAction` が共有する失敗理由。 */
+export type ActionGateReason = 'complete' | 'cooldown' | 'no-focus' | 'no-target';
+
+/** 介入バー／playtest 観測で列挙する全 ActionId（表示順）。 */
+export const ALL_ACTION_IDS: readonly ActionId[] = [
+  'interruptReview',
+  'splitPr',
+  'firefight',
+  'assignTask',
+  'aiThrottle',
+  'pairReview',
+  'overtime',
+  'andon',
+] as const;
 
 /** アクション定義（データは `src/data/actions.ts`）。 */
 export interface ActionDef {
@@ -220,6 +240,60 @@ function addComboGauge(sprint: SprintState, gain: number): number {
 }
 
 /**
+ * 対象の有無だけを読む（盤面非破壊 / RI-89）。
+ * `applyAction` の EFFECTS と同じ条件。pairReview と modifier 系は常に true。
+ * `assignTask` で target 指定時は移動先・担当条件まで見るため `org` が必要。
+ */
+export function hasActionTarget(
+  id: ActionId,
+  sprint: SprintState,
+  target?: ActionTarget,
+  org?: OrgState,
+): boolean {
+  switch (id) {
+    case 'interruptReview':
+      return tasksInLane(sprint, 'review').length > 0;
+    case 'splitPr':
+      return resolveSplitPrTarget(sprint, target) !== undefined;
+    case 'firefight':
+      return mostUrgentIncident(sprint) !== undefined;
+    case 'assignTask':
+      // 武装時（target なし）は apply と同じ自動選択対象（Coding 限定）の有無で判定する。
+      // assignableTasks は Backlog まで含むため、apply と不一致になる。
+      if (!target) return resolveAssignTaskTarget(sprint) !== undefined;
+      if (!org) return false;
+      return canApplyAssignTaskTarget(sprint, org, target);
+    case 'pairReview':
+    case 'aiThrottle':
+    case 'overtime':
+    case 'andon':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * 盤面を変更せずに発動可否を判定する（RI-89）。
+ * 判定順・意味は `applyAction` と同じ（complete → cooldown → focus → target）。
+ */
+export function canApplyAction(
+  id: ActionId,
+  sprint: SprintState,
+  org: OrgState,
+  _tick: number,
+  target?: ActionTarget,
+): { ok: true } | { ok: false; reason: ActionGateReason } {
+  if (sprint.complete) return { ok: false, reason: 'complete' };
+  const def = getAction(id);
+  if (!def) return { ok: false, reason: 'no-target' };
+  if ((sprint.cooldowns[id] ?? 0) > 0) return { ok: false, reason: 'cooldown' };
+  if (sprint.focus < def.cost) return { ok: false, reason: 'no-focus' };
+  if (!hasActionTarget(id, sprint, target, org)) return { ok: false, reason: 'no-target' };
+  return { ok: true };
+}
+
+/**
  * 介入アクションを発動する。集中力・クールダウン・対象の有無を検査し、
  * 成立時のみコストを消費して効果を適用する。`sprint`/`org` を破壊的に更新する。
  */
@@ -231,12 +305,10 @@ export function applyAction(
   tick: number,
   target?: ActionTarget,
 ): InterventionOutcome {
-  if (sprint.complete) return { ok: false, reason: 'complete' };
-  const def = getAction(id);
-  if (!def) return { ok: false, reason: 'no-target' };
-  if ((sprint.cooldowns[id] ?? 0) > 0) return { ok: false, reason: 'cooldown' };
-  if (sprint.focus < def.cost) return { ok: false, reason: 'no-focus' };
+  const gate = canApplyAction(id, sprint, org, tick, target);
+  if (!gate.ok) return { ok: false, reason: gate.reason };
 
+  const def = getAction(id)!;
   const partial = EFFECTS[id](sprint, org, rng, tick, target);
   if (!partial) return { ok: false, reason: 'no-target' };
 

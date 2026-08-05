@@ -10,16 +10,24 @@
  */
 import { getEvent } from '../../src/data/events';
 import { EVOLUTION_NODES } from '../../src/data/evolution';
-import { ACTION_DEFS } from '../../src/data/actions';
 import { CARD_DEFS } from '../../src/data/cards';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
+import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
+import { assignableTasks } from '../../src/sim/assignTask';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
+import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
+import { measureGoalProgress } from '../../src/sim/run/quarterReview';
 import { ELITE_TASK_MUL } from '../../src/sim/run/sprintBaselineBuild';
-import type { GoalAdjustmentId, RunState, StakeholderTrust } from '../../src/sim/run/types';
+import type {
+  GoalAdjustmentId,
+  LoseReason,
+  RunState,
+  StakeholderTrust,
+} from '../../src/sim/run/types';
 import type { ActionId } from '../../src/sim/types';
 import { MS_PER_TICK_1X } from '../../src/ui/sprintTempo';
 
@@ -158,8 +166,6 @@ const SKILLED_ACTIONS: PolicySpec['actions'] = [
   { id: 'andon', when: (c) => c.reviewLen >= 10 },
   { id: 'assignTask' },
 ];
-
-const ALL_ACTION_IDS = ACTION_DEFS.map((d) => d.id);
 
 /**
  * 攻略を知っている前提の解放順（レビュー容量 → 品質 → AI → 文化 → 開発速度）。
@@ -514,6 +520,37 @@ export interface RunLog {
   deckSize: number;
   evolutionUnlocked: number;
   goalAdjustments: string[];
+  /**
+   * 最終敗因に対応する危険域で発動可能だった介入の和集合（RI-89）。
+   * その敗因の危険域を一度も観測していなければ省略。
+   * 観測したが打てる手がゼロなら空配列（未観測とは区別する）。
+   * `canApplyAction` による盤面非破壊観測。attempts（実際に試した手）とは別。
+   */
+  availableActionsInDanger?: string[];
+  /**
+   * 最終敗因の危険域で、非空の機械的発動可能手が最後に見えた時点。
+   * 危険域は観測したが一度も非空が無ければ省略（その場合は firstSample を参照）。
+   */
+  availableActionsInDangerLastNonEmpty?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  /** 最終敗因の危険域で最初に取ったサンプル（常時空集合ランの打ち切り起点）。 */
+  availableActionsInDangerFirstSample?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  /** 最終敗因の危険域で最後に取ったサンプル（空集合もありうる）。 */
+  availableActionsInDangerLastSample?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
 }
 
 /**
@@ -835,7 +872,7 @@ function shouldPlaySelective(e: RunEngine): boolean {
   return focusRatio >= 0.6 && reviewLen < 6 && burning === 0;
 }
 
-function playHand(e: RunEngine, mode: PolicySpec['cards']): void {
+function playHand(e: RunEngine, mode: PolicySpec['cards'], onPlayed?: () => void): void {
   if (mode === 'none') return;
   let guard = 0;
   while (guard < 24 && e.snapshot().phase === 'sprint') {
@@ -847,6 +884,8 @@ function playHand(e: RunEngine, mode: PolicySpec['cards']): void {
     for (const deckIndex of [...hand]) {
       if (e.playCard(deckIndex).ok) {
         played = true;
+        // カード間でも介入可能な局面を危険域サンプルへ残す（一括発動の欠測防止）。
+        onPlayed?.();
         break;
       }
     }
@@ -889,6 +928,160 @@ function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
   };
 }
 
+/**
+ * F-9 / RI-89: 敗因予兆の危険域（HUD・四半期閾値の手前）。
+ * 指標ごとに対応する敗因へ紐づけ、最終敗因の窓だけを報告できるようにする。
+ */
+type DangerLoseReason = Extract<
+  LoseReason,
+  | 'seniorBurnout'
+  | 'moraleCollapse'
+  | 'techDebt'
+  | 'aiDependency'
+  | 'budgetExhausted'
+  | 'trustExhausted'
+  | 'kpiMissed'
+  | 'reviewFreeze'
+  | 'incidentCascade'
+  | 'bossFailed'
+  | 'reorgRequired'
+>;
+
+/** 敗因ごとの危険域観測トラック（和集合＋時系列）。 */
+type DangerTrack = {
+  actions: Set<string>;
+  firstSample: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  lastSample: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  lastNonEmpty: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  } | null;
+};
+
+function activeDangerReasons(e: RunEngine): DangerLoseReason[] {
+  const s = e.snapshot();
+  const minTrust = Math.min(
+    s.stakeholderTrust.management,
+    s.stakeholderTrust.customers,
+    s.stakeholderTrust.team,
+  );
+  // 完了時と同じく、選択中 live＋非選択の粗粒度進行を合成した KPI。
+  const liveKpi = e.previewLiveQuarterKpi();
+  const out: DangerLoseReason[] = [];
+  if (s.org.seniorHp < 50) out.push('seniorBurnout');
+  if (s.org.morale < 40) out.push('moraleCollapse');
+  // techDebt: 四半期ハード敗北は全社平均負債を見るため、投影 org も危険域へ含める。
+  const liveTechDebt = liveKpi?.org.techDebt ?? s.org.techDebt;
+  if (s.org.techDebt >= 60 || liveTechDebt >= 60) out.push('techDebt');
+  if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
+  if (s.budget <= 15) out.push('budgetExhausted');
+  // trustExhausted: trust / budget / HP 経路（missed_crisis・shutdown 前兆）。
+  // KPI 未達だけの missed_crisis は loseReasonForOutcome が kpiMissed を返すため分離する。
+  const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
+  const kpiMissCount = liveKpi
+    ? measureGoalProgress({
+        goal: s.quarterGoal,
+        org: liveKpi.org,
+        totals: liveKpi.totals,
+      }).filter((p) => p.status === 'missed').length
+    : 0;
+  if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
+  // kpiMissed: 未達4件以上に加え、missed_crisis フォールバック（trust/budget 枯渇・ハード非該当）の前兆。
+  // 例: 予算1〜5・信頼はまだ閾値超・未達が少なくても loseReasonForOutcome は kpiMissed を返しうる。
+  if (lateInQuarter && kpiMissCount >= 4) out.push('kpiMissed');
+  if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
+  // reviewFreeze: ラン累計・選択中スプリント・投影した非選択ピークの最大を見る。
+  // イベント抽選は seniorHpLow >= 0.55（seniorHp <= 45）のみで、Review 件数条件は無い。
+  const liveReviewPeak = Math.max(
+    s.totals.reviewQueuePeak,
+    s.sprint?.metrics.reviewQueueMax ?? 0,
+    liveKpi?.totals.reviewQueuePeak ?? 0,
+  );
+  const reviewQueueDanger = liveReviewPeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
+  const reviewFreezeEventRisk = s.org.seniorHp <= 45;
+  if (reviewQueueDanger || reviewFreezeEventRisk) out.push('reviewFreeze');
+  if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
+    out.push('incidentCascade');
+  if (s.currentSprintKind === 'boss') out.push('bossFailed');
+  // reorgRequired: trust+quarter 条件に加え、Q2 以降の遅延中スプリントで多 KPI 未達リスクが高い場合。
+  // missedCount >= 3 の代替プロキシ: lateInQuarter かつ kpiMissCount（出荷含む複数 KPI）が 3 以上。
+  if (
+    (minTrust <= 20 && s.quarterNumber >= 2) ||
+    (s.quarterNumber >= 2 && lateInQuarter && kpiMissCount >= 3)
+  )
+    out.push('reorgRequired');
+  return out;
+}
+
+/** 対象省略で不可でも、明示 target（Backlog→Coding ドラッグ）なら差配できるか。 */
+function canApplyAssignTaskWithExplicitTarget(
+  sprint: NonNullable<RunState['sprint']>,
+  org: RunState['org'],
+  tick: number,
+): boolean {
+  for (const task of assignableTasks(sprint)) {
+    const target = { taskId: task.id, lane: 'coding' as const };
+    if (canApplyAction('assignTask', sprint, org, tick, target).ok) return true;
+  }
+  return false;
+}
+
+/** アクティブな危険種別ごとの発動可能介入を和集合・最終サンプルへ追記する（盤面非破壊）。 */
+function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, DangerTrack>): void {
+  const s = e.snapshot();
+  if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
+  const dangers = activeDangerReasons(e);
+  if (dangers.length === 0) return;
+  const available: string[] = [];
+  for (const id of ALL_ACTION_IDS) {
+    if (canApplyAction(id, s.sprint, s.org, s.sprintTick).ok) {
+      available.push(id);
+      continue;
+    }
+    // UI は Coding 空でも Backlog ドラッグ可なら assignTask を武装するため、明示 target も試す。
+    if (
+      id === 'assignTask' &&
+      canApplyAssignTaskWithExplicitTarget(s.sprint, s.org, s.sprintTick)
+    ) {
+      available.push(id);
+    }
+  }
+  const sample = {
+    sprintsPlayed: s.sprintsPlayed,
+    quarter: s.quarterNumber,
+    index: s.sprintIndexInQuarter,
+    actions: [...available].sort(),
+  };
+  for (const reason of dangers) {
+    let track = byReason.get(reason);
+    if (!track) {
+      // 空集合も「危険域を観測した」印として残す。初回サンプルは常時空集合の起点にも使う。
+      track = {
+        actions: new Set(),
+        firstSample: sample,
+        lastSample: sample,
+        lastNonEmpty: null,
+      };
+      byReason.set(reason, track);
+    }
+    for (const id of available) track.actions.add(id);
+    track.lastSample = sample;
+    if (available.length > 0) track.lastNonEmpty = sample;
+  }
+}
+
 function bump(
   attempts: Record<string, Partial<Record<DispatchReason, number>>>,
   id: string,
@@ -902,6 +1095,7 @@ function intervene(
   e: RunEngine,
   spec: PolicySpec,
   attempts: Record<string, Partial<Record<DispatchReason, number>>>,
+  onSuccess?: () => void,
 ): number {
   const first = boardCtx(e.snapshot());
   if (!first) return 0;
@@ -922,6 +1116,8 @@ function intervene(
     if (outcome.ok) {
       bump(attempts, a.id, 'ok');
       n += 1;
+      // バッチ後一度ではなく、各成功直後に危険域を再観測する（一時的な選択肢の欠落防止）。
+      onSuccess?.();
     } else {
       const reason = (outcome.reason ?? 'other') as DispatchReason;
       bump(attempts, a.id, reason);
@@ -1190,6 +1386,8 @@ export function runOnce(
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
+  /** 危険種別ごとの発動可能介入トラック（RI-89）。キーがある＝その危険域を観測。 */
+  const availableInDangerByReason = new Map<DangerLoseReason, DangerTrack>();
   /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
   let lostPhase: string | undefined;
   /**
@@ -1239,16 +1437,26 @@ export function runOnce(
         const before = s.sprintsPlayed;
         const attempts: Record<string, Partial<Record<DispatchReason, number>>> = {};
         let interventions = 0;
-        playHand(e, spec.cards);
+        const sampleDanger = (): void => sampleAvailableInDanger(e, availableInDangerByReason);
+        sampleDanger();
+        playHand(e, spec.cards, sampleDanger);
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
-          interventions += intervene(e, spec, attempts);
+          sampleDanger();
+          const n = intervene(e, spec, attempts, sampleDanger);
+          interventions += n;
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
-          if (spec.cards === 'selective') playHand(e, 'selective');
+          if (spec.cards === 'selective') playHand(e, 'selective', sampleDanger);
           if (e.snapshot().phase !== 'sprint') break;
-          e.step(spec.stepMs);
+          // stepMs を固定 tick に分割し、各 tick 後に危険域を観測（tick 間の一時的な手を拾う）。
+          const ticks = Math.max(1, Math.floor(spec.stepMs / MS_PER_TICK));
+          for (let t = 0; t < ticks; t += 1) {
+            e.step(MS_PER_TICK);
+            if (e.snapshot().phase !== 'sprint') break;
+            sampleDanger();
+          }
         }
         const after = e.snapshot();
         if (after.sprintsPlayed > before) {
@@ -1435,6 +1643,19 @@ export function runOnce(
     diagnosis: f.diagnosis,
     sprints,
     quarters,
+    ...(f.loseReason && availableInDangerByReason.has(f.loseReason as DangerLoseReason)
+      ? (() => {
+          const track = availableInDangerByReason.get(f.loseReason as DangerLoseReason)!;
+          return {
+            availableActionsInDanger: [...track.actions].sort(),
+            availableActionsInDangerFirstSample: track.firstSample,
+            availableActionsInDangerLastSample: track.lastSample,
+            ...(track.lastNonEmpty
+              ? { availableActionsInDangerLastNonEmpty: track.lastNonEmpty }
+              : {}),
+          };
+        })()
+      : {}),
     finalOrg: {
       aiEnabled: f.org.aiEnabled,
       aiDependency: Math.round(f.org.aiDependency),

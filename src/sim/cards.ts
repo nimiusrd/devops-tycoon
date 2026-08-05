@@ -206,6 +206,8 @@ export function playCardFromHand(
   teamId?: string,
 ): CardPlayOutcome {
   if (sprint.complete) return { ok: false, reason: 'complete' };
+  // RI-75: minCompleteTick 待ち（盤面枯渇後のパディング）ではカード発動しない。
+  if (!sprint.tasks.some((t) => t.lane !== 'done')) return { ok: false, reason: 'complete' };
   const handIndex = sprint.cardPiles.hand.indexOf(deckIndex);
   if (handIndex < 0) return { ok: false, reason: 'no-card' };
   const inst = deck[deckIndex];

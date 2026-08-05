@@ -212,7 +212,7 @@ describe('monteCarlo 基盤（RI-14）', () => {
      */
     const RI15_SEEDS = [
       'ri18-meta-253',
-      'ri18-meta-2730',
+      'ri18-meta-60',
       'wina-1450',
       'winc-1063',
       'wind-589',

@@ -45,6 +45,8 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
     },
     // RI-75: F-4 代表方針でも通常 p50 が60秒帯に入るよう底上げ。
     taskCountMul: 1.85,
+    // 序盤オンボーディングの消耗を抑える（タスク量は F-4 帯維持のまま）。
+    globalEffects: { reworkRateAdd: -0.04, reviewEfficiencyMul: 1.1 },
     startBudget: 60,
     bossTargetMul: 0.85,
   },

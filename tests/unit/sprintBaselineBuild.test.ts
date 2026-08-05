@@ -91,11 +91,15 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     const boss = build({ kind: 'boss' });
     const incidentBoss = build({ kind: 'boss', ctx: { bossId: 'major-incident' } });
 
-    // 通常/elite も RI-75 の normalTaskFloor(normal)=50 が効く。
+    // 通常は床、elite は床×eliteTaskMul(normal)=1.12。
     expect(normal.config.taskCount).toBe(50);
-    expect(elite.config.taskCount).toBe(50);
+    expect(elite.config.taskCount).toBe(56);
     expect(boss.config.taskCount).toBe(58); // bossTaskFloor(normal)
     expect(incidentBoss.config.taskCount).toBe(58);
+    const nightmareNormal = build({ kind: 'normal', ctx: { difficulty: 'nightmare' } });
+    const nightmareElite = build({ kind: 'elite', ctx: { difficulty: 'nightmare' } });
+    expect(nightmareNormal.config.taskCount).toBe(32);
+    expect(nightmareElite.config.taskCount).toBe(37); // 32 * eliteTaskMul(nightmare)
     expect(boss.config.maxTicks).toBe(BOSS_MAX_TICKS);
     expect(normal.config.maxTicks).toBe(1_000);
     expect(normal.cardEffects.incidentRateMul).toBe(1);

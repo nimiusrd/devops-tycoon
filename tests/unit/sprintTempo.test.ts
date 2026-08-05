@@ -368,8 +368,8 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
 
     const rP50 = p50(runMins);
     expect(rP50).toBeGreaterThanOrEqual(RUN_WALL_MIN.minMin);
-    // RI-75: スプリント帯充足後の長命ランは SPEC 目安45分を超えうる。回帰上限は75分。
-    expect(rP50).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin + 30);
+    // §3.1 の 1 ラン上限（45分）。長命外れ値は p90 ではなく p50 で回帰する。
+    expect(rP50).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
   }, 60_000);
 
   it('1 スプリントあたり介入成立回数が 3〜8 回帯（p50/p90）に入る', () => {

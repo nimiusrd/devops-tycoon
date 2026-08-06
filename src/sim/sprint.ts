@@ -510,7 +510,9 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
     const minTick = sprint.config.minCompleteTick ?? 0;
     if (tick >= minTick) sprint.complete = true;
   } else if (tick >= sprint.config.maxTicks) {
+    // RI-75: 時間切れは出荷なしで畳み、打ち切り印を付けてボス突破を失敗させる。
     abandonInFlight(sprint, tick);
+    sprint.metrics.timedOut = true;
     sprint.complete = true;
   }
 
@@ -649,5 +651,6 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     focusRemaining: sprint.focus,
     focusMax: sprint.config.focusMax,
     autoContainCount: m.autoContainCount,
+    ...(m.timedOut ? { timedOut: true as const } : {}),
   };
 }

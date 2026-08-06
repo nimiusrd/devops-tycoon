@@ -173,7 +173,25 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(sprint.metrics.completedCount).toBe(0);
       expect(sprint.metrics.delivered).toBe(0);
       expect(sprint.metrics.contained).toBe(0);
+      expect(sprint.metrics.timedOut).toBeFalsy();
       expect(org.deliveryScore).toBe(7);
+    });
+
+    it('maxTicks 打ち切りでは timedOut を立て出荷は加算しない', () => {
+      const org = createOrgState('default', false);
+      org.deliveryScore = 0;
+      const task = makeTask(0, { lane: 'coding', progress: 0.5, incident: false });
+      const sprint = makeSprint(org, [task]);
+      sprint.config.maxTicks = 0;
+      sprint.config.codingSlots = 0;
+      sprint.metrics.delivered = 80;
+
+      stepSprint(sprint, org, () => 0.5, 0);
+
+      expect(sprint.complete).toBe(true);
+      expect(sprint.metrics.timedOut).toBe(true);
+      expect(sprint.metrics.delivered).toBe(80);
+      expect(summarizeSprint(sprint, org).timedOut).toBe(true);
     });
 
     it('maxTicks 打ち切りでは aiAssistedCompleted も加算しない', () => {

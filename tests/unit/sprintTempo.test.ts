@@ -438,15 +438,15 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4）', () => {
         SPRINT_WALL_SEC.maxTypical,
       );
 
-      if (elite.length >= 4) {
-        const eliteP50 = f4Quantile(elite, 0.5);
-        expect(eliteP50, `${difficulty} elite p50=${eliteP50}`).toBeGreaterThanOrEqual(
-          SPRINT_WALL_SEC.minTypical,
-        );
-        expect(eliteP50, `${difficulty} elite p50=${eliteP50}`).toBeLessThanOrEqual(
-          SPRINT_WALL_SEC.maxTypical,
-        );
-      }
+      // elite も F-4 受入対象。サンプル不足で p50 検証をスキップしない。
+      expect(elite.length, `${difficulty} elite samples`).toBeGreaterThanOrEqual(4);
+      const eliteP50 = f4Quantile(elite, 0.5);
+      expect(eliteP50, `${difficulty} elite p50=${eliteP50}`).toBeGreaterThanOrEqual(
+        SPRINT_WALL_SEC.minTypical,
+      );
+      expect(eliteP50, `${difficulty} elite p50=${eliteP50}`).toBeLessThanOrEqual(
+        SPRINT_WALL_SEC.maxTypical,
+      );
 
       const bossP50 = f4Quantile(boss, 0.5);
       const bossP90 = f4Quantile(boss, 0.9);

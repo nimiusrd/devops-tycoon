@@ -376,6 +376,11 @@ export interface SprintMetrics {
     /** 連続ミスマッチ回数。 */
     mismatchStreak: number;
   };
+  /**
+   * maxTicks 打ち切りで未完了タスクを畳んだか（RI-75）。
+   * ボス突破判定では出荷条件を満たしていても失敗扱いにする。
+   */
+  timedOut?: boolean;
 }
 
 /** スプリント全体の状態。 */
@@ -486,6 +491,11 @@ export interface SprintResult {
   focusMax: number;
   /** 自動鎮火回数（RI-54。緊急対応を打てなかった炎上の受動対応）。 */
   autoContainCount: number;
+  /**
+   * maxTicks 打ち切りで未完了を畳んだか（RI-75）。
+   * 省略時は false。ボス突破判定で失敗扱いにする。
+   */
+  timedOut?: boolean;
   /** 同一 seed・同一開始条件から無介入で再実行した推定値（RI-55）。 */
   baseline?: SprintBaselineResult;
 }

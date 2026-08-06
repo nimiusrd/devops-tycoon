@@ -675,7 +675,7 @@ test('tone: joke のビートはネタ分類の見た目で表示される（RI-
   await expect(page.getByRole('heading', { name: event.title })).toBeVisible();
 });
 
-test('RI-85: 低HPで凍結予兆が出て review-freeze は選択可能な decision になる', async ({ page }) => {
+test('RI-85: 低HPで凍結予兆が出て review-freeze は即敗北しない', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=ri85-freeze-ui');
   await expect(page.getByTestId('title')).toBeVisible();
 
@@ -697,7 +697,7 @@ test('RI-85: 低HPで凍結予兆が出て review-freeze は選択可能な deci
   await expect(page.getByTestId('review-freeze-warning')).toBeVisible();
   await expect(page.getByTestId('review-freeze-warning')).toContainText('凍結注意');
 
-  await page.evaluate(() => {
+  const after = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     const engine = (g as unknown as { engine: RunEngine }).engine as unknown as {
       org: { seniorHp: number };
@@ -706,15 +706,15 @@ test('RI-85: 低HPで凍結予兆が出て review-freeze は選択可能な deci
     };
     engine.org.seniorHp = 40;
     engine.phase = 'beat';
-    engine.beat = { eventId: 'review-freeze', kind: 'decision' };
-    g.playCard(-1);
+    engine.beat = { eventId: 'review-freeze', kind: 'judgment' };
+    g.resolveBeat();
+    const s = g.getState();
+    return { status: s.status, loseReason: s.loseReason, seniorHp: s.org.seniorHp };
   });
 
-  await expect(page.getByTestId('beat')).toBeVisible();
-  await expect(page.getByTestId('beat')).toHaveAttribute('data-kind', 'decision');
-  await expect(page.getByTestId('beat-choice-0')).toBeVisible();
-  await expect(page.getByTestId('beat-choice-1')).toBeVisible();
-  await expect(page.getByTestId('beat-choice-2')).toBeVisible();
-  await page.getByTestId('beat-choice-0').click();
+  expect(after.status).toBe('playing');
+  expect(after.loseReason).toBeUndefined();
+  // soft judgment の消耗はスプリント間回復後も無被害より低い。
+  expect(after.seniorHp).toBeLessThan(100);
   await expect(page.getByTestId('run-result')).toHaveCount(0);
 });

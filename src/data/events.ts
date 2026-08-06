@@ -427,38 +427,24 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'review-freeze',
     title: 'レビューが完全に停止した',
-    prompt: 'レビュー担当が機能停止し、出荷ラインが止まった。どう立て直す？',
+    prompt: 'レビュー担当が機能停止し、出荷ラインが止まった。次スプリントでの立て直しが必要だ。',
     tone: 'bad',
-    // RI-85: 即死 judgment をやめ、回復 / 流入抑制 / 押し通しの decision にする。
-    // 抽選資格は従来どおりシニアHP 枯渇寸前（HP <= 約45）のみ。
-    kind: 'decision',
+    // RI-85: 即死 forceLose をやめ、senior-burnout 型の soft judgment にする。
+    // judgment プールに残しビート抽選比を維持する（decision 化は seed 契約を崩す）。
+    // 予兆は HUD（reviewFreezeHudCopy）。決着は以後のスプリント対処 / ピーク経路へ委ねる。
+    kind: 'judgment',
     weight: 0.25,
     triggers: { seniorHpLow: 4 },
     minSignal: { seniorHpLow: 0.55 },
     choices: [
       {
-        label: 'ラインを一時停止して回復する',
-        description: '出荷を犠牲にしてシニアHPを戻し、次スプリントの流入を抑える',
+        label: '了解',
+        description: 'ラインは止まった。休息でHPを戻し、流入を抑えて立て直す',
         outcome: {
-          seniorHp: 22,
-          delivered: -18,
-          morale: -5,
-          nextSprint: { taskCountMul: 0.85 },
+          seniorHp: -10,
+          morale: -3,
+          nextSprint: { reviewLoadAdd: 2 },
         },
-      },
-      {
-        label: '流入を絞って押し通す',
-        description: '品質を落としてでも負荷を下げ、なんとかラインを維持する',
-        outcome: {
-          seniorHp: 12,
-          quality: -6,
-          nextSprint: { reviewLoadAdd: -3 },
-        },
-      },
-      {
-        label: 'このまま走り続ける',
-        description: 'レビューが止まり、出荷ラインが機能停止する',
-        outcome: { forceLose: 'reviewFreeze' },
       },
     ],
   },

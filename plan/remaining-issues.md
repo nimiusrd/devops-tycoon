@@ -219,7 +219,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 ### RI-85 レビュー凍結が選択不能な判定イベントでしか確定しない
 
-完了。`review-freeze` を回復 / 流入抑制 / 押し通し（`forceLose`）の 3 択 decision に変更し、スプリント中の HUD に `reviewFreezeHudCopy`（凍結注意 / PR凍結危険）を追加した。playtest では `reviewFreeze` はスプリント中のピーク経路で決着し、即死 judgment 100% の状態を解消。詳細は Git 履歴と `tests/unit/ri85-review-freeze.test.ts` / `tests/e2e/run.spec.ts` を参照。
+完了。`review-freeze` の即死 `forceLose` をやめ senior-burnout 型の soft judgment にし、スプリント中の HUD に `reviewFreezeHudCopy`（凍結注意 / PR凍結危険）を追加した。決着は以後のスプリント対処 / ピーク経路へ委ね、即死 judgment 100% の状態を解消。詳細は Git 履歴と `tests/unit/ri85-review-freeze.test.ts` / `tests/e2e/run.spec.ts` を参照。
 
 ### RI-86 Q1 で進化ツリーを取り切れてしまい、ビルドの方向という概念が成立しない
 

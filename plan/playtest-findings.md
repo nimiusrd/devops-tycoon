@@ -812,12 +812,11 @@ SPEC 第19.1 F-5 は「無介入は損ではなく不安定。介入の価値は
 
 ### RI-85 レビュー凍結は選択不能な判定イベントでしか確定しない（優先度: 高 / F-4） — 完了
 
-`review-freeze` を即死 judgment から 3 択 decision（回復 / 流入抑制 / 押し通し）へ変更し、
+`review-freeze` の即死 `forceLose` をやめ soft judgment（消耗＋次スプリント負荷）へ変更し、
 スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を追加した。
 
 再計測（1,280ラン、敗北 1,275）では `reviewFreeze`（22件）はすべて `sprint` で決着し、
-即死 judgment 経路は消えた。押し通し肢は `stateAware` / 既定オートプレイが避け、
-ピーク経路（`REVIEW_FREEZE_PEAK`）だけが残る。
+即死イベント経路は消えた。ピーク経路（`REVIEW_FREEZE_PEAK`）とスプリント中の対処へ委ねる。
 
 | 決着フェーズ | 件数 | 割合 |
 | --- | --- | --- |

@@ -13,7 +13,7 @@ import {
   resolveSplitPrTarget,
 } from './assignTask';
 import type { Rng } from './rng';
-import { reviewOne } from './sprint';
+import { isAwaitingMinCompleteTick, reviewOne } from './sprint';
 import { appendSprintEvent } from './sprintEvents';
 import type {
   ActionId,
@@ -286,11 +286,7 @@ export function canApplyAction(
 ): { ok: true } | { ok: false; reason: ActionGateReason } {
   if (sprint.complete) return { ok: false, reason: 'complete' };
   // RI-75: minCompleteTick 待ち（盤面枯渇後のパディング）では介入を受け付けない。
-  // minCompleteTick 未設定の合成盤面（単体テスト）では従来どおり許可する。
-  const minTick = sprint.config.minCompleteTick ?? 0;
-  if (minTick > 0 && !sprint.tasks.some((t) => t.lane !== 'done')) {
-    return { ok: false, reason: 'complete' };
-  }
+  if (isAwaitingMinCompleteTick(sprint)) return { ok: false, reason: 'complete' };
   const def = getAction(id);
   if (!def) return { ok: false, reason: 'no-target' };
   if ((sprint.cooldowns[id] ?? 0) > 0) return { ok: false, reason: 'cooldown' };

@@ -48,7 +48,13 @@ import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng } from '../rng';
 import { DEFAULT_SEED } from '../seed';
-import { forceShipReviewTask, resolveSprintConfig, stepSprint, summarizeSprint } from '../sprint';
+import {
+  forceShipReviewTask,
+  isAwaitingMinCompleteTick,
+  resolveSprintConfig,
+  stepSprint,
+  summarizeSprint,
+} from '../sprint';
 import type {
   ActionId,
   ActionTarget,
@@ -1632,6 +1638,10 @@ export class RunEngine {
   applyOrgLever(leverId: string, deptId?: string, teamId?: string): boolean {
     // ラン外（タイトル・終端）では発動しない（即時敗北判定が終端フェーズから再遷移しないように）。
     if (this.phase === 'title' || this.phase === 'won' || this.phase === 'lost') return false;
+    // RI-75: minCompleteTick 待ち（時間調整だけのパディング）では組織レバーも拒否する。
+    if (this.phase === 'sprint' && this.sprint && isAwaitingMinCompleteTick(this.sprint)) {
+      return false;
+    }
     const def = getLever(leverId);
     // チームレバーは存在確認してから予算を消費する（未知 ID で予算だけ減らないように）。
     if (def?.scope === 'team' && (!teamId || !this.teams.some((t) => t.id === teamId))) {

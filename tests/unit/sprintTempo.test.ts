@@ -49,20 +49,21 @@ const RI75_SEEDS = [
   'pt-10',
 ] as const;
 
-/** RI-66: skilled で四半期・ボス・介入余地を集める代表 seed（RI-81 再選定）。 */
+/**
+ * RI-66: skilled で四半期・ボス・介入余地を集める代表 seed（RI-75 再選定）。
+ * 四半期レビュー到達かつ壁時計が §3.1（≤15分）に入るものを固定する。
+ */
 const RI66_SEEDS = [
-  'p81-101',
-  'p81-69',
-  'y81-j1',
-  'x81-v',
-  'x81-f',
-  'p81-158',
-  'p81-136',
-  'y81-f4',
-  'x81-w',
-  'p81-5',
-  'p81-88',
-  'p81-45',
+  'q75-11',
+  'q75-27',
+  'q75-28',
+  'q75-36',
+  'q75-46',
+  'q75-88',
+  'q75-93',
+  'q75-113',
+  'q75-120',
+  'q75-129',
 ] as const;
 
 /**
@@ -317,8 +318,8 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
 
   it('skilled 自動操作の 1 四半期が 10〜15 分帯（p50/p90）に入る', () => {
     // quarterReview 到達済みのみ（ボス直後敗北でレビュー未到達の 6 本は除外）。
-    // RI-75: タスク床引き上げ後は到達率が下がるため、到達分だけで帯を見る。
-    if (reviewedQuarters.length < 2) return;
+    // 到達サンプル不足は成功扱いせず失敗させる（回帰を隠さない）。
+    expect(reviewedQuarters.length).toBeGreaterThanOrEqual(4);
     const quarterMins = reviewedQuarters.map((row) =>
       modelQuarterWallMinutes(row.ends.map((m) => m.ticks)),
     );
@@ -326,9 +327,9 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
     const qP50 = p50(quarterMins);
     const qP90 = p90(quarterMins);
     expect(qP50).toBeGreaterThanOrEqual(QUARTER_WALL_MIN.minMin);
-    // RI-75: スプリント長充足で四半期も伸びる。上限は18分まで許容。
-    expect(qP50).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin + 3);
-    expect(qP90).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin + 5);
+    // §3.1 の 1 四半期上限（15分）。テスト内で緩めない。
+    expect(qP50).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin);
+    expect(qP90).toBeLessThanOrEqual(QUARTER_WALL_MIN.maxMin);
   });
 
   it('skilled 自動操作の 1 ランが 15〜45 分帯（p50）に入る', () => {

@@ -411,6 +411,18 @@ function isDrained(sprint: SprintState): boolean {
 }
 
 /**
+ * RI-75: minCompleteTick 待ち（盤面枯渇後のパディング）か。
+ * 介入・カード・組織レバーは時間調整だけの区間で結果を書き換えない。
+ * minCompleteTick 未設定の合成盤面では false（単体テスト互換）。
+ */
+export function isAwaitingMinCompleteTick(sprint: SprintState): boolean {
+  if (sprint.complete) return false;
+  const minTick = sprint.config.minCompleteTick ?? 0;
+  if (minTick <= 0) return false;
+  return isDrained(sprint);
+}
+
+/**
  * これ以上は永遠に進まない状態か。流入枠が 0（コーダー不在）で、稼働中の工程
  * （coding/review/rework）にタスクが 1 件も無ければ、Backlog は二度と流れない。
  */

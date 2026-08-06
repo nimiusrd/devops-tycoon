@@ -28,7 +28,10 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
   seniorBurnout: { label: 'シニア燃え尽き', desc: 'レビューがシニアに集中し、体力が尽きました。' },
   techDebt: { label: '技術的負債の崩壊', desc: '負債が上限を超え、開発が立ち行かなくなりました。' },
   moraleCollapse: { label: 'チーム崩壊', desc: '士気が尽き、チームが機能しなくなりました。' },
-  reviewFreeze: { label: 'PR 凍結', desc: 'レビュー待ちが限界を超え、出荷が止まりました。' },
+  reviewFreeze: {
+    label: 'PR 凍結',
+    desc: 'レビュー担当の枯渇か待ち行列の限界で、出荷ラインが止まりました。',
+  },
   incidentCascade: {
     label: '障害連鎖によるリリース停止',
     desc: '障害が連続し、安定したリリースを継続できなくなりました。',

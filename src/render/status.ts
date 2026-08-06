@@ -4,9 +4,19 @@
  * OrgState とスプリントの現況から、画面上部に出す
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
+import { REVIEW_FREEZE_PEAK } from '../sim/outcome';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import type { StakeholderTrust } from '../sim/run/types';
 import type { OrgState, SimState, Task } from '../sim/types';
+
+/** `review-freeze` イベント抽選の資格帯（seniorHpLow >= 0.55 ⇔ HP <= 45）。 */
+export const REVIEW_FREEZE_EVENT_HP = 45;
+/** HUD「PR凍結危険」のシニアHP閾値。 */
+export const REVIEW_FREEZE_DANGER_HP = 30;
+/** HUD「凍結注意」のキューピーク閾値（敗北ピークの 75%・playtest 危険域と揃える）。 */
+export const REVIEW_FREEZE_WATCH_PEAK = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+/** HUD「PR凍結危険」のキューピーク閾値。 */
+export const REVIEW_FREEZE_DANGER_PEAK = REVIEW_FREEZE_PEAK - 4;
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
 export type RiskLevel = 'LOW' | 'MED' | 'HIGH';
@@ -269,14 +279,54 @@ export function deriveHudStatusParts(
   };
 }
 
+/**
+ * レビュー凍結（RI-85）の詳細・警告チップ。
+ * イベント抽選帯（seniorHp<=45）とキューピーク接近を、燃え尽きチップとは別に予兆する。
+ */
+export function reviewFreezeHudCopy(
+  seniorHp: number,
+  reviewQueuePeak: number,
+): {
+  tone: StatusMetricTone;
+  detail: string;
+  warningChip?: string;
+} {
+  const eventRisk = seniorHp <= REVIEW_FREEZE_EVENT_HP;
+  const peakWatch = reviewQueuePeak >= REVIEW_FREEZE_WATCH_PEAK;
+  const peakDanger = reviewQueuePeak >= REVIEW_FREEZE_DANGER_PEAK;
+  const hpDanger = seniorHp <= REVIEW_FREEZE_DANGER_HP;
+  if (!eventRisk && !peakWatch) {
+    return { tone: 'good', detail: `Review待ちピーク ${Math.round(reviewQueuePeak)}` };
+  }
+  if (hpDanger || peakDanger) {
+    return {
+      tone: 'danger',
+      detail: eventRisk
+        ? '凍結危険・休息でHPを戻し流入を抑える（割り込みのHP消費に注意）'
+        : '凍結危険・AIスロットルやPR分割でピークを下げる',
+      warningChip: 'PR凍結危険',
+    };
+  }
+  return {
+    tone: 'watch',
+    detail: eventRisk
+      ? '凍結注意・休息や流入抑制でレビュー担当を守る'
+      : '凍結注意・渋滞ピークが限界に近い',
+    warningChip: '凍結注意',
+  };
+}
+
 /** HUD の表示メタデータを、既存のステータス導出値から組み立てる。 */
 export function deriveHudMetrics(
   org: OrgState,
   tasks: Task[],
   orgScale?: OrgScaleState | null,
+  reviewQueuePeak = 0,
 ): StatusMetricView[] {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const queue = reviewQueueLength(tasks);
+  const livePeak = Math.max(reviewQueuePeak, queue);
+  const freezeCopy = reviewFreezeHudCopy(org.seniorHp, livePeak);
   const hasBurning = tasks.some((task) => task.incident);
   const devSpeedDetail = org.aiEnabled ? 'AI支援で高速' : '通常速度';
 
@@ -312,8 +362,9 @@ export function deriveHudMetrics(
       value: s.reviewCapacity,
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
-      tone: gradeTone(s.reviewCapacity),
-      detail: `Review待ち ${queue}`,
+      tone: freezeCopy.warningChip ? freezeCopy.tone : gradeTone(s.reviewCapacity),
+      detail: freezeCopy.warningChip ? freezeCopy.detail : `Review待ち ${queue}`,
+      warningChip: freezeCopy.warningChip,
       help: 'レビュー詰まりへの耐性です。シニア体力が落ちるほど悪化します。',
     },
     {

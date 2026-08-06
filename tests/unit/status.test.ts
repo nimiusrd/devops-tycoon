@@ -9,6 +9,7 @@ import {
   diffRunMetricSnapshots,
   diffHudMetricSnapshots,
   hudMetricSnapshot,
+  reviewFreezeHudCopy,
   riskLevel,
   runMetricSnapshot,
   trustHudCopy,
@@ -234,6 +235,22 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       minTrust: 22,
     });
     expect(trustHudCopy({ management: 40, customers: 40, team: 40 }).warningChip).toBeUndefined();
+  });
+
+  it('レビュー凍結の危険域で予兆チップを出す（RI-85）', () => {
+    expect(reviewFreezeHudCopy(80, 0).warningChip).toBeUndefined();
+    expect(reviewFreezeHudCopy(45, 0)).toMatchObject({
+      tone: 'watch',
+      warningChip: '凍結注意',
+    });
+    expect(reviewFreezeHudCopy(30, 0)).toMatchObject({
+      tone: 'danger',
+      warningChip: 'PR凍結危険',
+    });
+    const metrics = deriveHudMetrics(withOrg({ seniorHp: 40 }).org, []);
+    expect(metrics.find((m) => m.id === 'reviewCapacity')).toMatchObject({
+      warningChip: '凍結注意',
+    });
   });
 });
 

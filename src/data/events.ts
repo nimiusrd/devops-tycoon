@@ -427,18 +427,37 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'review-freeze',
     title: 'レビューが完全に停止した',
-    prompt: 'レビュー担当が機能停止し、出荷ラインが止まった。',
+    prompt: 'レビュー担当が機能停止し、出荷ラインが止まった。どう立て直す？',
     tone: 'bad',
-    kind: 'judgment',
+    // RI-85: 即死 judgment をやめ、回復 / 流入抑制 / 押し通しの decision にする。
+    // 抽選資格は従来どおりシニアHP 枯渇寸前（HP <= 約45）のみ。
+    kind: 'decision',
     weight: 0.25,
     triggers: { seniorHpLow: 4 },
-    // ハード敗北。シニアHP が枯渇寸前（HP <= 約45）のときだけ抽選対象にする。
-    // 健全なランがビートの乱数だけで回避不能に終了しないようにする。
     minSignal: { seniorHpLow: 0.55 },
     choices: [
       {
-        label: '了解',
-        description: 'レビューが完全に止まり、出荷ラインが機能停止する',
+        label: 'ラインを一時停止して回復する',
+        description: '出荷を犠牲にしてシニアHPを戻し、次スプリントの流入を抑える',
+        outcome: {
+          seniorHp: 22,
+          delivered: -18,
+          morale: -5,
+          nextSprint: { taskCountMul: 0.85 },
+        },
+      },
+      {
+        label: '流入を絞って押し通す',
+        description: '品質を落としてでも負荷を下げ、なんとかラインを維持する',
+        outcome: {
+          seniorHp: 12,
+          quality: -6,
+          nextSprint: { reviewLoadAdd: -3 },
+        },
+      },
+      {
+        label: 'このまま走り続ける',
+        description: 'レビューが止まり、出荷ラインが機能停止する',
         outcome: { forceLose: 'reviewFreeze' },
       },
     ],

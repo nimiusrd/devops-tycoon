@@ -370,6 +370,10 @@ export default function App({ game }: AppProps) {
         org={state.org}
         orgScale={state.orgScale}
         tasks={tasks}
+        reviewQueuePeak={Math.max(
+          state.totals.reviewQueuePeak,
+          state.sprint?.metrics.reviewQueueMax ?? 0,
+        )}
         snapshotScope={hudSnapshotScope}
         getInitialPreviousSnapshot={getLastHudSnapshot}
         onSnapshotCaptured={rememberHudSnapshot}

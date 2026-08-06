@@ -9,8 +9,11 @@ type GameWindow = Window & {
   ) => number | undefined;
 };
 
-const GRANT_RECRUIT_FLAGS: Record<string, boolean[]> = Object.fromEntries(
-  EVENT_DEFS.map((def) => [def.id, def.choices.map((c) => !!c.outcome.grantRecruit)]),
+const AVOID_CHOICE_FLAGS: Record<string, boolean[]> = Object.fromEntries(
+  EVENT_DEFS.map((def) => [
+    def.id,
+    def.choices.map((c) => !!c.outcome.grantRecruit || !!c.outcome.forceLose),
+  ]),
 );
 
 test.beforeEach(async ({ page }) => {
@@ -18,13 +21,11 @@ test.beforeEach(async ({ page }) => {
     (window as GameWindow).__e2eBeatChoice = (beat) => {
       if (!beat || beat.kind === 'judgment') return undefined;
       const list = flags[beat.eventId] ?? [];
-      if (list[0]) {
-        const alt = list.findIndex((flag) => !flag);
-        if (alt >= 0) return alt;
-      }
+      const preferred = list.findIndex((flag) => !flag);
+      if (preferred >= 0) return preferred;
       return 0;
     };
-  }, GRANT_RECRUIT_FLAGS);
+  }, AVOID_CHOICE_FLAGS);
 });
 
 test('RI-46: 編成とドラフトで次スプリントのリスク幅を表示する', async ({ page }) => {

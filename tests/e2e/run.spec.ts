@@ -14,9 +14,12 @@ import {
   type TerminalQuarterSeed,
 } from '../../src/sim/run/quarterReviewSeeds';
 
-/** page.evaluate 内へ注入する grantRecruit 回避テーブル。 */
-const GRANT_RECRUIT_FLAGS: Record<string, boolean[]> = Object.fromEntries(
-  EVENT_DEFS.map((def) => [def.id, def.choices.map((c) => !!c.outcome.grantRecruit)]),
+/** page.evaluate 内へ注入する「避けるべき選択肢」テーブル（採用即時 / 即敗北）。 */
+const AVOID_CHOICE_FLAGS: Record<string, boolean[]> = Object.fromEntries(
+  EVENT_DEFS.map((def) => [
+    def.id,
+    def.choices.map((c) => !!c.outcome.grantRecruit || !!c.outcome.forceLose),
+  ]),
 );
 
 type GameWindow = Window & {
@@ -55,13 +58,11 @@ test.beforeEach(async ({ page }) => {
     (window as GameWindow).__e2eBeatChoice = (beat) => {
       if (!beat || beat.kind === 'judgment') return undefined;
       const list = flags[beat.eventId] ?? [];
-      if (list[0]) {
-        const alt = list.findIndex((flag) => !flag);
-        if (alt >= 0) return alt;
-      }
+      const preferred = list.findIndex((flag) => !flag);
+      if (preferred >= 0) return preferred;
       return 0;
     };
-  }, GRANT_RECRUIT_FLAGS);
+  }, AVOID_CHOICE_FLAGS);
 });
 
 test('トラック→ボスまで通しプレイすると勝敗が決まり、ラン決着画面が出る（DoD）', async ({
@@ -672,4 +673,48 @@ test('tone: joke のビートはネタ分類の見た目で表示される（RI-
   await expect(page.locator('.event-panel.tone-joke')).toBeVisible();
   await expect(page.getByTestId('beat')).toHaveAttribute('data-kind', effectiveKind(event));
   await expect(page.getByRole('heading', { name: event.title })).toBeVisible();
+});
+
+test('RI-85: 低HPで凍結予兆が出て review-freeze は選択可能な decision になる', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri85-freeze-ui');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('easy', [], 'ri85-freeze-ui');
+    g.beginSetupSprint();
+    const engine = (g as unknown as { engine: RunEngine }).engine as unknown as {
+      org: { seniorHp: number };
+      phase: string;
+      beat: { eventId: string; kind: 'judgment' | 'decision' } | null;
+    };
+    engine.org.seniorHp = 40;
+    // 内部改変だけでは revision が進まないので、UI ポーリングを起こす。
+    g.playCard(-1);
+  });
+
+  await expect(page.getByTestId('review-freeze-warning')).toBeVisible();
+  await expect(page.getByTestId('review-freeze-warning')).toContainText('凍結注意');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    const engine = (g as unknown as { engine: RunEngine }).engine as unknown as {
+      org: { seniorHp: number };
+      phase: string;
+      beat: { eventId: string; kind: 'judgment' | 'decision' } | null;
+    };
+    engine.org.seniorHp = 40;
+    engine.phase = 'beat';
+    engine.beat = { eventId: 'review-freeze', kind: 'decision' };
+    g.playCard(-1);
+  });
+
+  await expect(page.getByTestId('beat')).toBeVisible();
+  await expect(page.getByTestId('beat')).toHaveAttribute('data-kind', 'decision');
+  await expect(page.getByTestId('beat-choice-0')).toBeVisible();
+  await expect(page.getByTestId('beat-choice-1')).toBeVisible();
+  await expect(page.getByTestId('beat-choice-2')).toBeVisible();
+  await page.getByTestId('beat-choice-0').click();
+  await expect(page.getByTestId('run-result')).toHaveCount(0);
 });

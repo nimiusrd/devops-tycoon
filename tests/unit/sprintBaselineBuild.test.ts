@@ -117,11 +117,15 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
       },
     });
     const rested = build({ modifiers: { taskCountMul: 0.7 } });
+    const restedBoss = build({ kind: 'boss', modifiers: { taskCountMul: 0.7 } });
 
     expect(unchanged.config.taskCount).toBe(50); // normalTaskFloor
     // 床の後に一時 mul を掛ける（休息の出荷機会放棄が床に吸収されない）。
     expect(modified.config.taskCount).toBe(60);
     expect(rested.config.taskCount).toBe(35);
+    // ボスは休息 mul でもボス床を割り込まず、通常床より長い山場を残す。
+    expect(restedBoss.config.taskCount).toBe(58);
+    expect(restedBoss.config.taskCount).toBeGreaterThan(unchanged.config.taskCount);
     expect(unchanged.config.focusMax).toBe(4);
     expect(modified.config.focusMax).toBe(1);
     expect(unchanged.cardEffects.reworkRateAdd).toBe(0);

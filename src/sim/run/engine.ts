@@ -1946,7 +1946,7 @@ export class RunEngine {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
     this.applyPersistFrame(state, { migrateLegacyAiDependency: true });
-    // schema v3 のままでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
+    // 現行スキーマでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
     this.diagnosis = diagnose(this.org, this.totals);
   }
 

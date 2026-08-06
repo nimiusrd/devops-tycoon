@@ -54,16 +54,16 @@ const RI75_SEEDS = [
  * 四半期レビュー到達かつ壁時計が §3.1（≤15分）に入るものを固定する。
  */
 const RI66_SEEDS = [
-  'q75-11',
-  'q75-27',
-  'q75-28',
-  'q75-36',
-  'q75-46',
-  'q75-88',
-  'q75-93',
-  'q75-113',
-  'q75-120',
-  'q75-129',
+  'q75b-109',
+  'q75b-182',
+  'q75b-51',
+  'q75b-170',
+  'q75b-130',
+  'q75b-26',
+  'q75b-220',
+  'q75b-113',
+  'q75b-162',
+  'q75b-145',
 ] as const;
 
 /**
@@ -390,9 +390,9 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
     const uP50 = p50(used);
     const uP90 = p90(used);
     expect(uP50).toBeGreaterThanOrEqual(INTERVENTION_PER_SPRINT.min);
-    // RI-75: スプリントが長くなり介入成立の上振れが増える。p90 は10まで許容。
-    expect(uP50).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max + 2);
-    expect(uP90).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max + 2);
+    // §3.1 上限は 8 回。テスト内で緩めず、CD 再調整側で帯に戻す。
+    expect(uP50).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
+    expect(uP90).toBeLessThanOrEqual(INTERVENTION_PER_SPRINT.max);
   }, 30_000);
 });
 

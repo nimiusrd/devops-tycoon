@@ -179,9 +179,11 @@ export function buildSprintBaselineInput(
         ? (getBoss(ctx.bossId)?.taskCountMul ?? 1)
         : 1;
   // RI-75: 床はベースへ。elite 倍率と休息などの一時減衰は床の後に掛け、差が消えないようにする。
+  // ボスは山場として通常より長い床を守る。休息 mul でボス床を割り込ませない。
   const taskFloor = isBoss ? bossTaskFloor(ctx.difficulty) : normalTaskFloor(ctx.difficulty);
   const flooredBase = Math.max(taskFloor, ctx.baseConfig.taskCount);
-  const taskCount = Math.max(1, Math.round(flooredBase * baseMul * (modifiers.taskCountMul ?? 1)));
+  const scaled = Math.max(1, Math.round(flooredBase * baseMul * (modifiers.taskCountMul ?? 1)));
+  const taskCount = isBoss ? Math.max(taskFloor, scaled) : scaled;
   const config: SprintConfig = {
     ...ctx.baseConfig,
     taskCount,

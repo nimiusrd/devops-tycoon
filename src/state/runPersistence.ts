@@ -13,8 +13,11 @@ import { normalizeReplayKeyframes, type ReplayKeyframe } from './replay';
 export type { RunPersistState, RunPersistExtras, RunSavePhase } from '../sim/run/persist';
 export { isRunSavePhase } from '../sim/run/persist';
 
-/** RI-68: Delivery 目標が四半期累計スケールになったため v1/v2 は非互換。 */
-export const RUN_SAVE_SCHEMA_VERSION = 3 as const;
+/**
+ * RI-68: Delivery 目標が四半期累計スケールになったため v1/v2 は非互換。
+ * RI-75: タスク床／Delivery 目標倍率の再校正で進行中四半期の目標スケールが変わるため v3 も非互換。
+ */
+export const RUN_SAVE_SCHEMA_VERSION = 4 as const;
 
 /** タイトル「続きから」表示用の要約。 */
 export interface RunSaveSummary {
@@ -73,7 +76,7 @@ function isRunStatus(value: unknown): value is RunStatus {
 /** 構造が壊れている／非互換なセーブは null（呼び出し側で clear）。 */
 export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRecord(raw)) return null;
-  // v1/v2 → v3: Delivery KPI スケール変更により旧セーブは破棄する（RI-68）。
+  // v1/v2 → v3（RI-68）、v3 → v4（RI-75）: Delivery 目標スケール変更により旧セーブは破棄する。
   const schema = raw.schemaVersion;
   if (schema !== RUN_SAVE_SCHEMA_VERSION) return null;
   if (typeof raw.savedAt !== 'number' || !Number.isFinite(raw.savedAt)) return null;

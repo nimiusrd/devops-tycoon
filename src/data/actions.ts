@@ -13,7 +13,8 @@ export const ACTION_DEFS: ActionDef[] = [
     label: '割り込みレビュー',
     icon: '🛂',
     cost: 3,
-    cooldownTicks: 60,
+    // RI-75: スプリント長延伸後も §3.1 の介入上限（8回/スプリント）を超えないよう CD を延ばす。
+    cooldownTicks: 70,
     gauge: 0.34,
     description: 'Review キューから複数 PR を即座に捌く',
     sideEffect: 'シニアHPを少量消費',
@@ -33,7 +34,8 @@ export const ACTION_DEFS: ActionDef[] = [
     label: '緊急対応',
     icon: '🔥',
     cost: 1,
-    cooldownTicks: 30,
+    // RI-75: 上記と同じく介入頻度を §3.1 帯へ戻す。
+    cooldownTicks: 40,
     gauge: 0.34,
     tone: 'danger',
     description: '炎上タスクを延焼前に鎮火する',
@@ -44,7 +46,8 @@ export const ACTION_DEFS: ActionDef[] = [
     label: 'タスク差配',
     icon: '🎯',
     cost: 1,
-    cooldownTicks: 40,
+    // RI-75: 上記と同じく介入頻度を §3.1 帯へ戻す。
+    cooldownTicks: 50,
     gauge: 0.2,
     description: 'タスクをレーンへドラッグ差配して一気に前進させる',
     sideEffect: '偏らせると士気が下がる',

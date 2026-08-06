@@ -20,6 +20,7 @@ import {
   REVIEW_HP_COST,
   REVIEW_HP_REGEN,
   SPREAD_MORALE_COST,
+  STABILITY_REWORK_MUL,
   codingProgressPerTick,
   comboMultiplier,
   decideAiAssisted,
@@ -136,7 +137,12 @@ export function createSprint(
     complete: false,
     focus: config.focusMax,
     cooldowns: {},
-    modifiers: { andonUntilTick: 0, overtimeUntilTick: 0, throttleUntilTick: 0 },
+    modifiers: {
+      andonUntilTick: 0,
+      overtimeUntilTick: 0,
+      throttleUntilTick: 0,
+      stabilityUntilTick: 0,
+    },
     comboGauge: 0,
     cardEffects,
     cardPiles: { drawOrder: [], hand: [], discard: [], played: [] },
@@ -173,6 +179,14 @@ function countLane(tasks: Task[], lane: Lane): number {
 /** 残業号令が発動中か。 */
 function isOvertime(sprint: SprintState, tick: number): boolean {
   return tick < sprint.modifiers.overtimeUntilTick;
+}
+
+/**
+ * 介入後の短い安定期間か。安全側の介入だけが作るため、残業号令のような
+ * 速度優先の手では乱数の下振れを打ち消さない。
+ */
+function isStabilized(sprint: SprintState, tick: number | undefined): boolean {
+  return tick !== undefined && tick < sprint.modifiers.stabilityUntilTick;
 }
 
 /**
@@ -253,6 +267,7 @@ export function reviewOne(
   org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST, 0, 100);
 
   // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。
+  const reworkMul = isStabilized(sprint, tick) ? STABILITY_REWORK_MUL : 1;
   if (rng() < incidentProbability(org, task, sprint.cardEffects)) {
     igniteTask(task, sprint, tick, 'review');
     return;
@@ -261,7 +276,7 @@ export function reviewOne(
   // 2) 手戻り判定（AI依存度が高いほど増える。第22.5 の不変条件）
   if (
     task.reworkAttempts < MAX_REWORK &&
-    rng() < reworkProbability(org, task, sprint.cardEffects)
+    rng() < reworkProbability(org, task, sprint.cardEffects) * reworkMul
   ) {
     m.reworkCount += 1;
     m.combo = 0;

@@ -335,6 +335,7 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
   it('割り込みレビューの効果量と副作用をタグ化する', () => {
     const def = getAction('interruptReview')!;
     expect(formatActionDefTags(def)).toEqual([
+      { label: '運用安定 90tick', tone: 'positive' },
       { label: 'Review 最大4件処理', tone: 'positive' },
       { label: 'シニアHP -3', tone: 'negative' },
       { label: '連携 +34%', tone: 'positive' },

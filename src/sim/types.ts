@@ -246,6 +246,12 @@ export interface SprintModifiers {
   overtimeUntilTick: number;
   /** この tick 未満の間、AI 流入を絞る（AIスロットル）。 */
   throttleUntilTick: number;
+  /**
+   * この tick 未満の間、介入で整えた工程を維持する。
+   * 安全側の介入を打つと Review の手戻りを抑え、無介入との差を
+   * 平均出荷ではなく下振れの出やすさとして表す（RI-84 / F-5）。
+   */
+  stabilityUntilTick: number;
 }
 
 /**

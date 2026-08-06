@@ -84,6 +84,11 @@ export const BURNING_REVIEW_SLOWDOWN = 0.65;
 /** 火が燃えている間のシニア体力自然回復の倍率（気が休まらない）。 */
 export const BURNING_REGEN_MUL = 0.5;
 
+/** 安全側の介入で工程が落ち着く期間（RI-84 / F-5）。 */
+export const STABILITY_TICKS = 90;
+/** 安定した運用中に掛ける手戻り率倍率（RI-84 / F-5）。 */
+export const STABILITY_REWORK_MUL = 0.5;
+
 /** Rework の所要 tick。 */
 export const REWORK_TICKS = 4;
 /** タスク 1 件あたりの手戻り上限（これを超えると強制的に通す）。 */

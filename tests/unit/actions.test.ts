@@ -12,11 +12,12 @@ import {
   OVERTIME_TICKS,
   PAIR_LITERACY_GAIN,
   PAIR_REVIEW_COUNT,
+  STABILITY_TICKS,
   THROTTLE_TICKS,
 } from '../../src/sim/actions';
 import { BURN_TICKS } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
-import { createSprint, resolveSprintConfig } from '../../src/sim/sprint';
+import { createSprint, resolveSprintConfig, reviewOne } from '../../src/sim/sprint';
 import { createEngine, type Engine } from '../../src/sim/engine';
 import type {
   ActionId,
@@ -241,8 +242,47 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(sprint.metrics.focusSpent).toBe(focusSpent0 + def.cost);
       expect(sprint.metrics.actionCounts[id]).toBe(actionCount0 + 1);
       expect(sprint.comboGauge).toBeCloseTo(gauge0 + def.gauge, 5);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(
+        def.stabilizesFlow ? TICK + STABILITY_TICKS : 0,
+      );
       fixture.assertEffect({ sprint, org, before });
     });
+  });
+
+  it('安全側の介入で作る運用安定は、Review の手戻りを抑える', () => {
+    const riskyOrg = () => ({
+      ...createOrgState('default', true),
+      aiDependency: 90,
+      aiLiteracy: 10,
+      quality: 20,
+    });
+    const riskyTask = () => makeTask(0, { aiAssisted: true });
+    // 1回目は炎上を外し、2回目の 0.35 は素の手戻り率では発生し、安定時は通過する。
+    const boundaryRng = (() => {
+      const values = [0.99, 0.35];
+      return () => values.shift() ?? 0.99;
+    })();
+
+    const unstableOrg = riskyOrg();
+    const unstable = makeSprint(unstableOrg, [riskyTask()]);
+    reviewOne(unstable.tasks[0], unstable, unstableOrg, boundaryRng, TICK);
+    expect(unstable.tasks[0].lane).toBe('rework');
+
+    const stableOrg = riskyOrg();
+    const stable = makeSprint(stableOrg, [riskyTask()]);
+    stable.modifiers.stabilityUntilTick = TICK + 1;
+    reviewOne(
+      stable.tasks[0],
+      stable,
+      stableOrg,
+      (() => {
+        const values = [0.99, 0.35];
+        return () => values.shift() ?? 0.99;
+      })(),
+      TICK,
+    );
+    expect(stable.tasks[0].lane).toBe('done');
+    expect(stable.tasks[0].incident).toBe(false);
   });
 
   describe('失敗理由の共通契約', () => {

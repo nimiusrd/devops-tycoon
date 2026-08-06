@@ -24,6 +24,7 @@ import {
   PAIR_LITERACY_GAIN,
   PAIR_REVIEW_COUNT,
   SPLIT_PROGRESS_PENALTY,
+  STABILITY_TICKS,
   THROTTLE_TICKS,
   type ActionDef,
 } from '../sim/actions';
@@ -594,6 +595,10 @@ export function formatGoalAdjustmentTags(
 /** 介入アクション定義から効果タグ一覧を生成する（RI-45）。 */
 export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
+
+  if (def.stabilizesFlow) {
+    pushTag(tags, `運用安定 ${STABILITY_TICKS}tick`, 'positive');
+  }
 
   switch (def.id) {
     case 'interruptReview':

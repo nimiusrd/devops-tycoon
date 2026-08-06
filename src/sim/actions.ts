@@ -6,6 +6,7 @@
  * からのみ消費する（決定論。第22.3）。入力はイベント経由で受け取る。
  */
 import { getAction } from '../data/actions';
+import { STABILITY_TICKS } from './model';
 import {
   applyAssignTaskEffect,
   canApplyAssignTaskTarget,
@@ -26,6 +27,7 @@ import type {
 } from './types';
 
 export { ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from './assignTask';
+export { STABILITY_TICKS } from './model';
 
 /** `canApplyAction` / `applyAction` が共有する失敗理由。 */
 export type ActionGateReason = 'complete' | 'cooldown' | 'no-focus' | 'no-target';
@@ -53,6 +55,8 @@ export interface ActionDef {
   cooldownTicks: number;
   /** 成功時に得る連携ゲージ量（0..1）。 */
   gauge: number;
+  /** 安全側の介入なら、短時間の運用安定を作る（RI-84 / F-5）。 */
+  stabilizesFlow?: boolean;
   description: string;
   sideEffect: string;
   /** 見た目分類（危険＝赤 / 重い）。 */
@@ -319,6 +323,11 @@ export function applyAction(
   sprint.metrics.interventionsUsed += 1;
   sprint.metrics.focusSpent += def.cost;
   sprint.metrics.actionCounts[id] = (sprint.metrics.actionCounts[id] ?? 0) + 1;
+  if (def.stabilizesFlow) {
+    // 連続介入は持続時間を積み増さず、最後の介入から一定時間だけ工程を整える。
+    // 無限に安全になるのではなく、盤面を見続ける価値を残す。
+    sprint.modifiers.stabilityUntilTick = tick + STABILITY_TICKS;
+  }
   const focusRefund = addComboGauge(sprint, def.gauge);
 
   const effect: InterventionEffect = {

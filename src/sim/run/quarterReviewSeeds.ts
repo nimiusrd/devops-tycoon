@@ -41,14 +41,14 @@ export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
 };
 
 /**
- * Q3 で missed_crisis。
+ * Q4 で missed_crisis。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
-  seed: 'ri75f-hard-43',
+  seed: 'ri75k-hard-343',
   difficulty: 'hard',
   outcome: 'missed_crisis',
-  quarterNumber: 3,
+  quarterNumber: 4,
 };
 
 /**

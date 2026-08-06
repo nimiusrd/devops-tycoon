@@ -277,8 +277,8 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 **閾値の変更で順位が入れ替わりうる結論**（`naive` と `skilled` の優劣、カードの `selective` の効果、
 `skilledSelectiveHire` の「欠員」の定義、ショップの購入順）と、
 **閾値に依らない結論**（Nightmare の第1スプリント全敗、ボスの規定下限割れ、勝利種別が実質2種、
-`reviewFreeze` が全296件 judgment ビートで確定すること）を区別して読む必要がある。
-後者は方針をどう定義しても変わらない。
+修正前に `reviewFreeze` が judgment ビートだけで確定していたこと）を区別して読む必要がある。
+後者は方針をどう定義しても変わらない（RI-85 で judgment 即死経路は解消済み）。
 
 とくに `skilledSelectiveHire` の閾値は一度直している。当初は「採用後も `RECRUIT_COST` の
 2倍が残る」条件にしていたが、これは採用時点で予算75を要求する一方**実測の予算は最大68**で、
@@ -810,65 +810,31 @@ SPEC 第19.1 F-5 は「無介入は損ではなく不安定。介入の価値は
 定義しているが、実装は期待値も分散も動かしていない。**実装を定義へ寄せる**方針で決着済み
 （2026-07-26。SPEC 第19.1 F-5 に記載）。
 
-### RI-85 レビュー凍結は選択不能な判定イベントでしか確定しない（優先度: 高 / F-4）
+### RI-85 レビュー凍結は選択不能な判定イベントでしか確定しない（優先度: 高 / F-4） — 完了
 
-> **これは F-8 の直接の根拠にはならない。** SPEC 第19.1 F-8 の観測条件は
-> 「敗北が確定する**何スプリント前から**実質的な選択肢が消えていたか」であり、
-> 最終イベントが選択不能であることだけでは満たせない。直前まで有効な回避策があり、
-> 最後だけ judgment で決着するランも同じ形になるためである。
-> 各時点の機械的発動可否は RI-89 で記録できるが、それが敗北回避に有効だったかの
-> 反実仮想は未実装である。
->
-> ここで言えるのは「**決着の瞬間に操作の余地が無い**」までで、
-> それが「詰みが早くから確定していた」ことを意味するかは未検証である。
+`review-freeze` を即死 judgment から 3 択 decision（回復 / 流入抑制 / 押し通し）へ変更し、
+スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を追加した。
 
-敗北を確定させたフェーズを、ビートについては **judgment（選択不能な判定）** と
-**decision（プレイヤーが選ぶ）** に分けて記録した。全850敗の内訳:
+再計測（1,280ラン、敗北 1,275）では `reviewFreeze`（22件）はすべて `sprint` で決着し、
+即死 judgment 経路は消えた。押し通し肢は `stateAware` / 既定オートプレイが避け、
+ピーク経路（`REVIEW_FREEZE_PEAK`）だけが残る。
 
 | 決着フェーズ | 件数 | 割合 |
 | --- | --- | --- |
-| `beat:judgment`（選択不能な判定イベント） | 470 | 55% |
-| `sprint`（スプリント終了時） | 319 | 38% |
-| `quarterReview` | 44 | 5% |
-| `beat:decision`（選択イベント） | 17 | 2% |
+| `sprint`（スプリント終了時） | 643 | 50% |
+| `beat:judgment`（選択不能な判定イベント） | 568 | 45% |
+| `beat:decision`（選択イベント） | 38 | 3% |
+| `quarterReview` | 26 | 2% |
 
-なお `beat:decision` は、ビート選択の統制を進めた結果 90件（12%）→ 40件（5%）→ **33件（4%）**
-と段階的に減った。最初は `firstChoice` が `urgent-demo` のようにシニアHPを削る先頭選択肢を
-無条件に取っていた分、次は評価に予算が入っておらず `postmortem-culture` で予算0＝即敗北を
-自分から選んでいた分である。**選択イベントで負けるランの多くは、盤面を見て選べば避けられる**。
-残る17件がプレイヤーの選択を経た敗北の実数に近い。
+| 敗因 | 決着フェーズ |
+| --- | --- |
+| **`reviewFreeze`**（22件） | `sprint` **100%** |
+| `seniorBurnout`（1041件） | judgment / decision / sprint / quarterReview が混在 |
+| `techDebt`（174件） / `moraleCollapse`（26件） | `sprint` が大半 |
+| `aiDependency`（7件） | `sprint` 100% |
+| `reorgRequired`（3件） | `quarterReview` 100% |
 
-敗因ごとに見ると、決着位置は明確に分かれる。
-
-| 敗因 | 決着フェーズ | 敗北を確定させたイベント |
-| --- | --- | --- |
-| **`reviewFreeze`**（296件） | `beat:judgment` **100%** | `review-freeze`(judgment) |
-| `seniorBurnout`（209件） | judgment / **decision** / sprint が混在 | `senior-burnout`(judgment)、`giant-ai-pr-judgment`(judgment)、`giant-pr`(decision) |
-| `aiDependency`（255件） | `sprint` 100% | — |
-| `techDebt`（31件） / `moraleCollapse`（15件） | `sprint` が大半 | — |
-| `trustExhausted`（28件） / `reorgRequired`（16件） | `quarterReview` 100% | — |
-
-**`reviewFreeze` だけが、盤面で対処する機会のないまま判定イベントで確定する**。
-296件（敗因全体の35%）が該当し、プレイヤーはスプリントを走り切った直後に、
-操作の余地がない画面で敗北を告げられる。しかも全296件が例外なく `review-freeze`(judgment) で
-決着しており、他の決着経路が1件も無い。
-
-一方 `seniorBurnout` は相当数が**プレイヤーの選択（`giant-pr` など）を経て確定**しており、
-「操作の余地がない」とは言えない。`aiDependency`（255件）/ `techDebt` / `moraleCollapse` は
-スプリント中に決まる。
-
-（当初この所見は敗北の大半が「操作の余地がない画面」で確定するとしていたが、これは
-ハーネスがビートの選択肢を常に先頭で取っていたためだった。`urgent-demo` の先頭は
-`seniorHp -10 / morale -15` で、他の選択肢ならその消耗を避けられる。状態を見て選ぶ方針へ変え、
-judgment と decision を分けて記録した結果、対象は `reviewFreeze` に絞られた。
-Codex レビューの指摘による訂正。）
-
-受入条件:
-
-- `reviewFreeze` の敗北が、スプリント中に予兆と対処の機会を伴って決着する。
-  または判定イベントで確定する前のスプリントで、明確な警告が出る。
-- 敗因ごとの決着フェーズ分布（judgment / decision / sprint / quarterReview）を
-  `npm run playtest` で検証し、回帰を検知する。
+回帰は `tests/unit/ri85-review-freeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
 
 ### RI-86 Q1 で進化ツリーを取り切れてしまい、ビルドの方向という概念が成立しない（優先度: 中 / F-11）
 

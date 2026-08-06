@@ -13,8 +13,79 @@ import { PAUSE_AI_DEBUFF_MUL } from './quarterReview';
 import type { SprintBaselineInput } from './sprintBaseline';
 import type { DifficultyId, EvolutionState, SprintKind, SprintModifierDelta } from './types';
 
-/** 高負荷（elite）スプリントのタスク量倍率。 */
-export const ELITE_TASK_MUL = 1.6;
+/**
+ * 高負荷（elite）スプリントのタスク量倍率の代表値（normal）。
+ * 実際の適用と playtest 採点は難易度別の `eliteTaskMul` を使う。
+ */
+export const ELITE_TASK_MUL = 1.12;
+
+/**
+ * 難易度別の elite タスク倍率（RI-75）。
+ * hard/nightmare は非効率で長尾になりやすいので倍率を抑え、easy は帯下限を確保する。
+ */
+export function eliteTaskMul(difficulty: DifficultyId): number {
+  switch (difficulty) {
+    case 'easy':
+      return 1.18;
+    case 'normal':
+      return 1.12;
+    case 'hard':
+      return 1.1;
+    case 'nightmare':
+      return 1.15;
+  }
+}
+
+/**
+ * 通常/elite スプリントのタスク数下限（RI-75）。
+ * ベースタスク数へ適用し、その後に elite / 一時 modifier を掛ける。
+ * 絶対下限30秒は `minCompleteTick` 側で担保する。
+ */
+export function normalTaskFloor(difficulty: DifficultyId): number {
+  switch (difficulty) {
+    case 'easy':
+      return 55;
+    case 'normal':
+      return 50;
+    case 'hard':
+      return 42;
+    case 'nightmare':
+      // 非効率で長い。絶対下限は minCompleteTick 側で担保する。
+      return 32;
+  }
+}
+
+/**
+ * スプリント完了の最小 tick（RI-75）。
+ * エンジンは完了後に sprintTick++ するため、表示 tick が絶対下限30秒以上になる値にする。
+ * `MS_PER_TICK_1X=780` → 表示39 tick ≒ 30.4s になるよう 38。
+ */
+export const SPRINT_MIN_COMPLETE_TICK = 38;
+
+/**
+ * ボススプリントのタスク数下限（RI-75）。
+ * easy/normal は通常より長く、hard/nightmare は終盤消耗の長尾を抑える。
+ */
+export function bossTaskFloor(difficulty: DifficultyId): number {
+  switch (difficulty) {
+    case 'easy':
+      return 68;
+    case 'normal':
+      return 58;
+    case 'hard':
+      return 52;
+    case 'nightmare':
+      return 56;
+  }
+}
+
+/**
+ * ボスの最大 tick（RI-75）。
+ * エンジンは `stepSprint(tick)` の後に `sprintTick++` するため、完了時の表示 tick は +1 される。
+ * `MS_PER_TICK_1X=780` で完了時壁時計が180秒以内になるよう 229 とする（229→表示230 tick≒179.4s）。
+ * テンポ定数を変えたら `sprintTempo` 側の対応テストと同期すること。
+ */
+export const BOSS_MAX_TICKS = 229;
 
 /**
  * スプリント間のギャップでシニア体力が回復する割合（満タンまでの差分に対して）。
@@ -102,13 +173,24 @@ export function buildSprintBaselineInput(
     effects = { ...effects, reworkRateAdd: effects.reworkRateAdd + modifiers.reworkRateAdd };
   }
   const baseMul =
-    kind === 'elite' ? ELITE_TASK_MUL : isBoss ? (getBoss(ctx.bossId)?.taskCountMul ?? 1) : 1;
-  const mul = baseMul * (modifiers.taskCountMul ?? 1);
-  // RI-62: ボスは 90 秒帯の下限を確保（通常スプリントの下限は触らない）。
-  const taskFloor = isBoss ? 26 : 4;
+    kind === 'elite'
+      ? eliteTaskMul(ctx.difficulty)
+      : isBoss
+        ? (getBoss(ctx.bossId)?.taskCountMul ?? 1)
+        : 1;
+  // RI-75: 床はベースへ。elite 倍率と休息などの一時減衰は床の後に掛け、差が消えないようにする。
+  // ボスは山場として通常より長い床を守る。休息 mul でボス床を割り込ませない。
+  const taskFloor = isBoss ? bossTaskFloor(ctx.difficulty) : normalTaskFloor(ctx.difficulty);
+  const flooredBase = Math.max(taskFloor, ctx.baseConfig.taskCount);
+  const scaled = Math.max(1, Math.round(flooredBase * baseMul * (modifiers.taskCountMul ?? 1)));
+  const taskCount = isBoss ? Math.max(taskFloor, scaled) : scaled;
   const config: SprintConfig = {
     ...ctx.baseConfig,
-    taskCount: Math.max(taskFloor, Math.round(ctx.baseConfig.taskCount * mul)),
+    taskCount,
+    // RI-75: 早期ドレインでも絶対下限30秒を割らない。
+    minCompleteTick: SPRINT_MIN_COMPLETE_TICK,
+    // RI-75: ボスは §3.1 上限（180秒）で打ち切り、消耗時の長尾を防ぐ。
+    ...(isBoss ? { maxTicks: Math.min(ctx.baseConfig.maxTicks, BOSS_MAX_TICKS) } : {}),
     focusMax: Math.max(
       1,
       ctx.baseConfig.focusMax +

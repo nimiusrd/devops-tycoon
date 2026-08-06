@@ -108,7 +108,7 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(await badStorage.load()).toBeNull();
   });
 
-  it('RI-68: v1/v2 セーブは Delivery スケール非互換のため破棄する', () => {
+  it('RI-68/RI-75: 旧スキーマのセーブは Delivery スケール非互換のため破棄する', () => {
     const valid = makeRunSave('ri68-old-schema');
     expect(
       parseRunSave({
@@ -121,6 +121,13 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
       parseRunSave({
         ...valid,
         schemaVersion: 2,
+      }),
+    ).toBeNull();
+    // RI-75: v3 は旧 Delivery 目標スケールのまま残る進行中セーブを再開させない。
+    expect(
+      parseRunSave({
+        ...valid,
+        schemaVersion: 3,
       }),
     ).toBeNull();
   });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Member, RosterState } from '../../src/sim/member/types';
 import { createOrgState } from '../../src/sim/org';
 import {
+  BOSS_MAX_TICKS,
   buildSprintBaselineInput,
   type SprintBaselineBuildContext,
 } from '../../src/sim/run/sprintBaselineBuild';
@@ -90,12 +91,19 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     const boss = build({ kind: 'boss' });
     const incidentBoss = build({ kind: 'boss', ctx: { bossId: 'major-incident' } });
 
-    expect(normal.config.taskCount).toBe(10);
-    expect(elite.config.taskCount).toBe(16);
-    expect(boss.config.taskCount).toBe(26);
-    expect(incidentBoss.config.taskCount).toBe(26);
+    // 通常は床、elite は床×eliteTaskMul(normal)=1.12。
+    expect(normal.config.taskCount).toBe(50);
+    expect(elite.config.taskCount).toBe(56);
+    expect(boss.config.taskCount).toBe(58); // bossTaskFloor(normal)
+    expect(incidentBoss.config.taskCount).toBe(58);
+    const nightmareNormal = build({ kind: 'normal', ctx: { difficulty: 'nightmare' } });
+    const nightmareElite = build({ kind: 'elite', ctx: { difficulty: 'nightmare' } });
+    expect(nightmareNormal.config.taskCount).toBe(32);
+    expect(nightmareElite.config.taskCount).toBe(37); // 32 * eliteTaskMul(nightmare)
+    expect(boss.config.maxTicks).toBe(BOSS_MAX_TICKS);
+    expect(normal.config.maxTicks).toBe(1_000);
     expect(normal.cardEffects.incidentRateMul).toBe(1);
-    expect(incidentBoss.cardEffects.incidentRateMul).toBe(1.65);
+    expect(incidentBoss.cardEffects.incidentRateMul).toBe(1.1);
   });
 
   it('一時 modifier の差分でタスク量・集中力・手戻り・初期レビュー負荷が変わる', () => {
@@ -108,9 +116,16 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
         reviewLoadAdd: 3,
       },
     });
+    const rested = build({ modifiers: { taskCountMul: 0.7 } });
+    const restedBoss = build({ kind: 'boss', modifiers: { taskCountMul: 0.7 } });
 
-    expect(unchanged.config.taskCount).toBe(10);
-    expect(modified.config.taskCount).toBe(12);
+    expect(unchanged.config.taskCount).toBe(50); // normalTaskFloor
+    // 床の後に一時 mul を掛ける（休息の出荷機会放棄が床に吸収されない）。
+    expect(modified.config.taskCount).toBe(60);
+    expect(rested.config.taskCount).toBe(35);
+    // ボスは休息 mul でもボス床を割り込まず、通常床より長い山場を残す。
+    expect(restedBoss.config.taskCount).toBe(58);
+    expect(restedBoss.config.taskCount).toBeGreaterThan(unchanged.config.taskCount);
     expect(unchanged.config.focusMax).toBe(4);
     expect(modified.config.focusMax).toBe(1);
     expect(unchanged.cardEffects.reworkRateAdd).toBe(0);

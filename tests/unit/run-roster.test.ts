@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../../src/sim/run/engine';
 import { RECRUIT_COST, STAMINA_RECOVER_BETWEEN, canRecruit } from '../../src/sim/member';
+import { SPRINT_MIN_COMPLETE_TICK } from '../../src/sim/run/sprintBaselineBuild';
 import type { RunState } from '../../src/sim/run/types';
 import { playRun, playUntil } from './helpers/runFlow';
+
+/** RI-75 後も休息に到達する代表 seed（旧 rest-* は早期敗北しやすい）。 */
+const REST_SEEDS = [
+  'rest-probe-4',
+  'rest-probe-9',
+  'rest-probe-10',
+  'rest-probe-20',
+  'rest-probe-24',
+  'rest-a',
+  'rest-b',
+] as const;
 
 /**
  * 休息に到達したエンジンを返す（ビートの「一息つく」を選んで休息へ入る）。
@@ -11,7 +23,7 @@ import { playRun, playUntil } from './helpers/runFlow';
 function reachRest(seed: string): RunEngine | null {
   const e = new RunEngine({ seed, difficulty: 'easy' });
   e.startRun();
-  const s = playUntil(e, 'rest', { beatChoice: 0 }, 400);
+  const s = playUntil(e, 'rest', { beatChoice: 0 }, 2000);
   return s.phase === 'rest' ? e : null;
 }
 
@@ -68,7 +80,7 @@ describe('ロスターのラン統合（第12章）', () => {
 
   it('休息の採用は予算を消費し、メンバーが1人増える（ラン経済）', () => {
     let engine: RunEngine | null = null;
-    for (const seed of ['rest-a', 'rest-b', 'rest-c', 'rest-d', 'rest-e', 'rest-f', 'rest-g']) {
+    for (const seed of REST_SEEDS) {
       engine = reachRest(seed);
       if (engine) break;
     }
@@ -90,7 +102,7 @@ describe('ロスターのラン統合（第12章）', () => {
 
   it('採用は予算未満だと no-op（ロスター・予算とも不変）', () => {
     let engine: RunEngine | null = null;
-    for (const seed of ['rest-a', 'rest-b', 'rest-c', 'rest-d', 'rest-e', 'rest-f', 'rest-g']) {
+    for (const seed of REST_SEEDS) {
       engine = reachRest(seed);
       if (engine) break;
     }
@@ -137,10 +149,11 @@ describe('ロスターのラン統合（第12章）', () => {
     // 全メンバーをベンチへ（稼働コーダー 0）。
     for (const m of s.roster.members) e.assignMember(m.id, 'bench');
     e.beginSetupSprint();
-    // 1 ステップ（100ms=1 tick）で即完了する（maxTicks を待たない）。
-    e.step(100);
+    // RI-75: minCompleteTick 未満では stalled でも完了しない。下限+1 tick で完了する。
+    e.step(100 * (SPRINT_MIN_COMPLETE_TICK + 1));
     const after = e.snapshot();
     expect(after.phase).toBe('result');
+    expect(after.sprintTick).toBeGreaterThanOrEqual(SPRINT_MIN_COMPLETE_TICK + 1);
     // 流入が止まり強制 drain も未着手を計上しないため、出荷・完了ともに 0。
     expect(after.lastResult!.delivered).toBe(0);
     expect(after.lastResult!.done).toBe(0);

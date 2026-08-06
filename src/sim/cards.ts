@@ -9,6 +9,7 @@
 import { CARD_DEFS, RARITY_WEIGHT, getCard } from '../data/cards';
 import { IDENTITY_CARD_EFFECTS } from './model';
 import type { Rng } from './rng';
+import { isAwaitingMinCompleteTick } from './sprint';
 import type {
   CardEffects,
   CardInstance,
@@ -206,6 +207,8 @@ export function playCardFromHand(
   teamId?: string,
 ): CardPlayOutcome {
   if (sprint.complete) return { ok: false, reason: 'complete' };
+  // RI-75: minCompleteTick 待ち（盤面枯渇後のパディング）ではカード発動しない。
+  if (isAwaitingMinCompleteTick(sprint)) return { ok: false, reason: 'complete' };
   const handIndex = sprint.cardPiles.hand.indexOf(deckIndex);
   if (handIndex < 0) return { ok: false, reason: 'no-card' };
   const inst = deck[deckIndex];

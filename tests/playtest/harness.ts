@@ -21,8 +21,9 @@ import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/me
 import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
 import { measureGoalProgress } from '../../src/sim/run/quarterReview';
-import { ELITE_TASK_MUL } from '../../src/sim/run/sprintBaselineBuild';
+import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
 import type {
+  DifficultyId,
   GoalAdjustmentId,
   LoseReason,
   RunState,
@@ -53,8 +54,8 @@ export interface PolicySpec {
    *
    * **壁時計の間隔ではない。** `RunEngine.step(dtMs)` は `FIXED_STEP_MS`（=100ms）ごとに
    * 1 tick 進めるので、この値は `stepMs / 100` tick に相当する。実 UI の 1x では
-   * 1 tick が壁時計 `MS_PER_TICK_1X`（=680ms）なので、換算は
-   * `壁時計 = stepMs / 100 * 680`。つまり `300` は3 tick＝約2.0秒、`600` は6 tick＝約4.1秒。
+   * 1 tick が壁時計 `MS_PER_TICK_1X`（`src/ui/sprintTempo.ts`）なので、換算は
+   * `壁時計 = stepMs / 100 * MS_PER_TICK_1X`。`300` は3 tick、`600` は6 tick。
    *
    * 所見へ書くときは必ず `wallClockIntervalSec()` で換算した値を使うこと。
    * 「300ms 刻み」と書くと実際の約7分の1の反応間隔として読まれる。
@@ -599,6 +600,8 @@ interface BeatCtx {
   relicSlots: number;
   /** 休息の回復量に乗るレリックボーナス（`foldPassives(relics).restHealBonus`）。 */
   restHealBonus: number;
+  /** elite 負荷採点に使う難易度（`eliteTaskMul` と同期）。 */
+  difficulty: DifficultyId;
 }
 
 /**
@@ -755,10 +758,10 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   // **遷移先スプリントの負荷も見る。** `outcome` だけを採点すると `leadsTo` を認識できない。
   // `elite-offer` は高負荷側の `outcome` が空（=0点）、通常側が信頼-4（=負点）なので、
   // 組織がどれだけ消耗していても常に高負荷側を選んでしまっていた。実際の高負荷スプリントは
-  // タスク量が `ELITE_TASK_MUL`（=1.6）倍で、余力があれば出荷機会、消耗していれば
+  // タスク量が `eliteTaskMul(difficulty)` 倍で、余力があれば出荷機会、消耗していれば
   // 渋滞と炎上の増幅になる。この固定選択が熟練系方針の勝率と敗因へ混ざる。
   if (choice.leadsTo === 'sprint-elite') {
-    const load = ELITE_TASK_MUL - 1;
+    const load = eliteTaskMul(ctx.difficulty) - 1;
     const worst = Math.min(ctx.org.seniorHp, ctx.org.morale);
     score += load * (worst - ELITE_HEADROOM_MIN) * ELITE_HEADROOM_WEIGHT;
     score -= load * (ctx.org.techDebt / 100) * ELITE_DEBT_WEIGHT;
@@ -1544,6 +1547,7 @@ export function runOnce(
             relics: s.relics,
             relicSlots: foldPassives(s.relics).relicSlots,
             restHealBonus: foldPassives(s.relics).restHealBonus,
+            difficulty: s.difficulty,
           },
         );
         lastBeat = { eventId: s.beat.eventId, kind: s.beat.kind, choiceIndex: choice };

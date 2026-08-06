@@ -590,8 +590,13 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
     const pressured = computeWhatIfState(directWhatIfInput())!;
 
     expect(pressured.current.trials).toBe(24);
-    expect(pressured.current.delivered).toEqual({ mean: 91.41666666666667, min: 45, max: 118 });
-    expect(pressured.current.spread).toEqual({ mean: 0, min: 0, max: 0 });
+    // RI-75: elite を床の後に掛ける順序に合わせた golden（決定論）。
+    expect(pressured.current.delivered).toEqual({ mean: 656.75, min: 561, max: 782 });
+    expect(pressured.current.spread).toEqual({
+      mean: 62.916666666666664,
+      min: 10,
+      max: 110,
+    });
     expect(pressured.current.delivered).not.toEqual(plain.current.delivered);
   });
 

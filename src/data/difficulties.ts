@@ -43,7 +43,9 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       morale: 75,
       seniorHp: 100,
     },
-    taskCountMul: 0.9,
+    // RI-75: F-4 代表方針でも通常 p50 が60秒帯に入るよう底上げ。
+    taskCountMul: 1.85,
+    // 序盤オンボーディングの消耗を抑える（タスク量は F-4 帯維持のまま）。
     globalEffects: { reworkRateAdd: -0.04, reviewEfficiencyMul: 1.1 },
     startBudget: 60,
     bossTargetMul: 0.85,
@@ -61,7 +63,8 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       morale: 70,
       seniorHp: 100,
     },
-    taskCountMul: 1,
+    // RI-75: F-4 代表方針の通常 p50 を60秒帯へ。
+    taskCountMul: 1.65,
     startBudget: 45,
     bossTargetMul: 1,
   },
@@ -78,7 +81,8 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       morale: 60,
       seniorHp: 90,
     },
-    taskCountMul: 1.1,
+    // RI-75: F-4 でも通常帯を維持（elite は別倍率で長尾抑制）。
+    taskCountMul: 1.4,
     globalEffects: { reworkRateAdd: 0.05, reviewEfficiencyMul: 0.92 },
     startBudget: 35,
     bossTargetMul: 1.15,
@@ -96,11 +100,12 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
       morale: 55,
       seniorHp: 80,
     },
-    taskCountMul: 1.2,
+    // RI-75: 非効率で長くなりやすい。床は低め、倍率はベース相当。
+    taskCountMul: 1,
     /**
      * RI-74: S1 全AI割当でも cap 未満になる上昇量（他難易度は既定 2.2 のまま）。
      * 低リテラシー時のライバル上限（ホーム+10）と `frontier-dependency` の開始時 +5 を
-     * S1・S2 に織り込み、最悪 52+5+34×0.8+5 = 89.2 で介入余地を残す。
+     * S1・S2 に織り込み、最悪 52+5+29×0.8+5 = 85.2 で介入余地を残す。
      */
     aiDependencyPerTask: 0.8,
     globalEffects: { reworkRateAdd: 0.1, incidentRateMul: 1.25, reviewEfficiencyMul: 0.85 },

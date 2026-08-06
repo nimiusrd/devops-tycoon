@@ -81,6 +81,8 @@ export interface BossEvalInput {
 /** ボススプリントの突破可否を、定義の `clear` 条件で評価する。 */
 export function evaluateBoss(input: BossEvalInput): boolean {
   const { boss, result, org, bossTargetMul } = input;
+  // RI-75: maxTicks 打ち切りは盤面未完了の時間切れ。出荷条件を満たしても突破しない。
+  if (result.timedOut) return false;
   const c = boss.clear;
   if (c.minSprintDelivered !== undefined) {
     if (result.delivered < c.minSprintDelivered * bossTargetMul) return false;

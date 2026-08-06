@@ -230,7 +230,7 @@ describe('SprintState.events 記録（RI-52）', () => {
     expect(result.fireEvents.filter((e) => e.kind === 'auto-contain')).toHaveLength(3);
   });
 
-  it('maxTicks 到達の forceDrain 鎮火も autoContainCount と fireEvents に含める', () => {
+  it('maxTicks 到達の abandonInFlight 鎮火も autoContainCount と fireEvents に含める', () => {
     const org = createOrgState('default', true);
     const sprint = makeSprint(org, [burningTask(0, 5), burningTask(1, 5)]);
     sprint.config.maxTicks = 0;

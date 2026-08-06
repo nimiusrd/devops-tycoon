@@ -411,6 +411,18 @@ function isDrained(sprint: SprintState): boolean {
 }
 
 /**
+ * RI-75: minCompleteTick 待ち（盤面枯渇後のパディング）か。
+ * 介入・カード・組織レバーは時間調整だけの区間で結果を書き換えない。
+ * minCompleteTick 未設定の合成盤面では false（単体テスト互換）。
+ */
+export function isAwaitingMinCompleteTick(sprint: SprintState): boolean {
+  if (sprint.complete) return false;
+  const minTick = sprint.config.minCompleteTick ?? 0;
+  if (minTick <= 0) return false;
+  return isDrained(sprint);
+}
+
+/**
  * これ以上は永遠に進まない状態か。流入枠が 0（コーダー不在）で、稼働中の工程
  * （coding/review/rework）にタスクが 1 件も無ければ、Backlog は二度と流れない。
  */
@@ -422,22 +434,14 @@ function isStalled(sprint: SprintState): boolean {
 }
 
 /**
- * 上限到達時、捌け残ったタスクを強制的に Done へ流す。
- * ただし一度も Coding に入っていない（Backlog のまま＝未着手の）タスクは出荷として
- * 計上しない。コーダー不在で流入が止まったスプリントが「無人でも出荷」になるのを防ぐ。
+ * stalled / maxTicks 到達時、未完了タスクを盤面から畳む。
+ * 出荷・完了数は計上しない（未着手のまま畳む／時間切れの水増しを防ぐ。RI-75）。
+ * 炎上中のタスクは鎮火扱い（autoContain）して畳む。
  */
-function forceDrain(sprint: SprintState, org: OrgState, tick: number): void {
+function abandonInFlight(sprint: SprintState, tick: number): void {
   const m = sprint.metrics;
   for (const task of sprint.tasks) {
     if (task.lane === 'done') continue;
-    // 未着手（Backlog）のタスクは盤面を畳むため done へ移すだけで、出荷は計上しない。
-    if (task.lane === 'backlog') {
-      task.lane = 'done';
-      continue;
-    }
-    // まだ燃えていたタスクはスプリント終了時に鎮火扱いで畳む（鎮火+延焼=障害総数を保つ）。
-    // 緊急対応できなかった受動鎮火なので autoContainCount にも加算する（RI-54）。
-    // 因果ログ用に auto-contain も記録する（RI-34′。終了時畳みは HP 追加消費なし）。
     if (task.incident) {
       m.contained += 1;
       m.autoContainCount += 1;
@@ -451,11 +455,6 @@ function forceDrain(sprint: SprintState, org: OrgState, tick: number): void {
     }
     task.lane = 'done';
     task.incident = false;
-    m.doneCount += 1;
-    m.completedCount += 1;
-    m.delivered += taskValue(task);
-    org.deliveryScore += taskValue(task);
-    if (task.aiAssisted) m.aiAssistedCompleted += 1;
   }
 }
 
@@ -466,11 +465,21 @@ function forceDrain(sprint: SprintState, org: OrgState, tick: number): void {
 export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: number): void {
   if (sprint.complete) return;
 
-  // 進行不能（コーダー不在で流入枠 0・稼働中タスクも無し）なら即完了させる。
+  // RI-75: 早期ドレイン後の下限待ちでは盤面副作用を止める（HP回復・工程進行など）。
+  if (isDrained(sprint)) {
+    const minTick = sprint.config.minCompleteTick ?? 0;
+    if (tick >= minTick) sprint.complete = true;
+    appendTimelineSample(sprint, org, tick);
+    return;
+  }
+
+  // 進行不能（コーダー不在で流入枠 0・稼働中タスクも無し）なら完了させる。
   // そうしないと Backlog が流れず isDrained も成立せず、maxTicks まで何も起きない画面を待つ。
+  // RI-75: ただし絶対下限 tick 未満なら待機（空回り）し、短尺スプリントを防ぐ。
   if (isStalled(sprint)) {
-    forceDrain(sprint, org, tick);
-    sprint.complete = true;
+    abandonInFlight(sprint, tick);
+    const minTick = sprint.config.minCompleteTick ?? 0;
+    if (tick >= minTick) sprint.complete = true;
     appendTimelineSample(sprint, org, tick);
     return;
   }
@@ -497,9 +506,13 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   tickCooldowns(sprint);
 
   if (isDrained(sprint)) {
-    sprint.complete = true;
+    // RI-75: 早期ドレインでも §3.1 絶対下限（表示 tick）を下回らないよう待機する。
+    const minTick = sprint.config.minCompleteTick ?? 0;
+    if (tick >= minTick) sprint.complete = true;
   } else if (tick >= sprint.config.maxTicks) {
-    forceDrain(sprint, org, tick);
+    // RI-75: 時間切れは出荷なしで畳み、打ち切り印を付けてボス突破を失敗させる。
+    abandonInFlight(sprint, tick);
+    sprint.metrics.timedOut = true;
     sprint.complete = true;
   }
 
@@ -638,5 +651,6 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     focusRemaining: sprint.focus,
     focusMax: sprint.config.focusMax,
     autoContainCount: m.autoContainCount,
+    ...(m.timedOut ? { timedOut: true as const } : {}),
   };
 }

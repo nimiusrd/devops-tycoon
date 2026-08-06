@@ -316,8 +316,16 @@ export interface SprintConfig {
   taskCount: number;
   /** 同時に Coding できる開発者数（WIP 上限）。 */
   codingSlots: number;
-  /** 無限ループ防止の最大 tick。超過時は残りを強制的に Done へ流す。 */
+  /**
+   * 無限ループ防止の最大 tick。
+   * 超過時は未完了タスクを盤面から畳む（出荷・完了数は計上しない）。
+   */
   maxTicks: number;
+  /**
+   * スプリント完了に必要な最小 tick（RI-75）。
+   * Backlog が先に枯れても、この tick 未満では完了せず §3.1 絶対下限を守る。
+   */
+  minCompleteTick?: number;
   /** マネジメント集中力の上限（毎スプリント満タンへ回復。第6.2）。 */
   focusMax: number;
   /**
@@ -368,6 +376,11 @@ export interface SprintMetrics {
     /** 連続ミスマッチ回数。 */
     mismatchStreak: number;
   };
+  /**
+   * maxTicks 打ち切りで未完了タスクを畳んだか（RI-75）。
+   * ボス突破判定では出荷条件を満たしていても失敗扱いにする。
+   */
+  timedOut?: boolean;
 }
 
 /** スプリント全体の状態。 */
@@ -478,6 +491,11 @@ export interface SprintResult {
   focusMax: number;
   /** 自動鎮火回数（RI-54。緊急対応を打てなかった炎上の受動対応）。 */
   autoContainCount: number;
+  /**
+   * maxTicks 打ち切りで未完了を畳んだか（RI-75）。
+   * 省略時は false。ボス突破判定で失敗扱いにする。
+   */
+  timedOut?: boolean;
   /** 同一 seed・同一開始条件から無介入で再実行した推定値（RI-55）。 */
   baseline?: SprintBaselineResult;
 }

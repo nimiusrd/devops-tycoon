@@ -37,9 +37,9 @@ export const BOSS_DEFS: BossDef[] = [
   {
     id: 'big-release',
     name: '大型リリース',
-    description: 'タスク量が普段の約1.75倍。期限内に目標出荷を達成し、渋滞を捌き切れ。',
-    // RI-62: ボス長尾を §3.1（90〜180秒）へ寄せる。
-    taskCountMul: 1.75,
+    description: 'タスク量が普段より多い。期限内に目標出荷を達成し、渋滞を捌き切れ。',
+    // RI-75: タスク床で山場の長さを確保し、倍率は難易度横断の上限超過を避ける。
+    taskCountMul: 1,
     incidentMul: 1,
     clear: { minSprintDelivered: 90 },
   },
@@ -47,16 +47,16 @@ export const BOSS_DEFS: BossDef[] = [
     id: 'major-incident',
     name: '本番大規模障害',
     description: '複数の炎上が連続発生。緊急対応で鎮火しつつ、延焼を許すな。',
-    // RI-62: 無介入でも 180 秒以内に収まるよう炎上連鎖を抑える。
-    taskCountMul: 1.15,
-    incidentMul: 1.65,
+    taskCountMul: 1,
+    // RI-75: 炎上長尾を抑えつつ、障害ボスらしい圧は残す。
+    incidentMul: 1.1,
     clear: { maxSpread: 2, minSprintDelivered: 40 },
   },
   {
     id: 'security-audit',
     name: 'セキュリティ監査',
     description: 'Tech Debt が高いほど失点。品質・テストの蓄積が問われる査定戦。',
-    taskCountMul: 1.2,
+    taskCountMul: 1,
     incidentMul: 1,
     clear: { maxTechDebt: 40, minQuality: 50 },
   },
@@ -64,7 +64,7 @@ export const BOSS_DEFS: BossDef[] = [
     id: 'exec-review',
     name: '経営レビュー',
     description: 'AI 利用率と健全性（Morale・Quality）を両立して見せよ。',
-    taskCountMul: 1.25,
+    taskCountMul: 1,
     incidentMul: 1,
     clear: { minAiPct: 40, minMorale: 45, minQuality: 45 },
   },

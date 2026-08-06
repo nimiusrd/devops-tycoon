@@ -186,6 +186,17 @@ describe('evaluateBoss', () => {
     ).toBe(true);
   });
 
+  it('maxTicks 打ち切りは clear 条件を満たしても突破失敗になる', () => {
+    expect(
+      evaluateBoss({
+        boss: { ...boss, clear: {} },
+        result: sprintResult({ delivered: 999, timedOut: true }),
+        org: org({ techDebt: 0, morale: 100, quality: 100 }),
+        bossTargetMul: 1,
+      }),
+    ).toBe(false);
+  });
+
   it.each([
     [
       'minSprintDelivered',

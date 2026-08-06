@@ -59,7 +59,8 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
   });
 
   it('ボス到達後は四半期レビューフェーズになる', () => {
-    const e = new RunEngine({ seed: 'boss-seek-0', difficulty: 'easy' });
+    // RI-75: boss-seek-0 は早期敗北するため、レビュー到達確認済み seed を使う。
+    const e = new RunEngine({ seed: 'ri75j-easy-7', difficulty: 'easy' });
     e.startRun();
     const s = playUntil(e, 'quarterReview', { skilled: true });
     expect(s.phase).toBe('quarterReview');
@@ -95,8 +96,14 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
 
   it('RI-32: ボス報酬は四半期レビュー判定後に付与され KPI を書き換えない', () => {
     let found = false;
-    for (let i = 0; i < 40; i += 1) {
-      const seed = `ri32-kpi-order-${i}`;
+    // RI-75: qualityAdd 付きボス報酬の既知 seed を先に試し、だめなら探索する。
+    const candidates = [
+      'ri32b-38',
+      'ri32b-79',
+      'ri32b-140',
+      ...Array.from({ length: 80 }, (_, i) => `ri32-kpi-order-${i}`),
+    ];
+    for (const seed of candidates) {
       const engine = new RunEngine({ seed, difficulty: 'easy' });
       engine.startRun();
       const state = playUntil(engine, 'quarterReview', { skilled: true });
@@ -116,15 +123,22 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       break;
     }
     expect(found).toBe(true);
-  });
+  }, 60_000);
 
   it('RI-32: ボス報酬はショップ解放プール外のレリックも付与できる', () => {
     const shopOnly = new Set(['postmortem', 'small-pr', 'primary-source', 'expectation-mgmt']);
     let foundMetaLocked = false;
+    // RI-75: meta ロック報酬の既知 seed を先に試し、だめなら探索する。
+    const candidates = [
+      'ri32b-15',
+      'ri32b-27',
+      'ri32b-42',
+      ...Array.from({ length: 100 }, (_, i) => `ri32-boss-pool-${i}`),
+    ];
 
-    for (let i = 0; i < 80; i += 1) {
+    for (const seed of candidates) {
       const engine = new RunEngine({
-        seed: `ri32-boss-pool-${i}`,
+        seed,
         difficulty: 'easy',
         allowedRelics: shopOnly,
       });
@@ -139,7 +153,7 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     }
 
     expect(foundMetaLocked).toBe(true);
-  });
+  }, 90_000);
 
   it('RI-32: レリック枠が埋まっている場合、ボス報酬は付与されない', () => {
     const engine = new RunEngine({ seed: 'ri32-boss-relic-slots', difficulty: 'easy' });
@@ -184,38 +198,52 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
 
   it('RI-32: 勝利種別はボス報酬適用前の org で判定する', () => {
     let verified = false;
-    // 全社平均の士気/HP で四半期判定が厳しくなったため、探索幅を広げる。
-    for (let i = 0; i < 160; i += 1) {
-      const engine = new RunEngine({ seed: `ri32-win-type-${i}`, difficulty: 'easy' });
+    // RI-75: easy では met/exceeded 到達がほぼ消える。normal + 目標修正継続で既知 seed を先に試す。
+    const candidates = [252, ...Array.from({ length: 400 }, (_, i) => i).filter((i) => i !== 252)];
+    for (const i of candidates) {
+      const engine = new RunEngine({ seed: `ri32-win-type-${i}`, difficulty: 'normal' });
       engine.startRun();
-      const state = playUntil(engine, 'quarterReview', { skilled: true });
-      if (!state.quarterReview || !canAcknowledgeWin(state.quarterReview.outcome)) continue;
-      if (!state.bossRelicReward) continue;
+      let state = playUntil(engine, 'quarterReview', {}, 80_000);
+      let guard = 0;
+      while (state.status === 'playing' && state.phase === 'quarterReview' && guard < 40) {
+        guard += 1;
+        if (
+          state.quarterReview &&
+          canAcknowledgeWin(state.quarterReview.outcome) &&
+          state.bossRelicReward
+        ) {
+          const effects = getRelic(state.bossRelicReward)?.effects ?? {};
+          const preRewardOrg = {
+            ...state.org,
+            quality: Math.max(0, state.org.quality - (effects.qualityAdd ?? 0)),
+            testCoverage: Math.max(0, state.org.testCoverage - (effects.testCoverageAdd ?? 0)),
+            aiLiteracy: Math.max(0, state.org.aiLiteracy - (effects.aiLiteracyAdd ?? 0)),
+            aiDependency: Math.max(0, state.org.aiDependency - (effects.aiDependencyAdd ?? 0)),
+          };
+          const expected = evaluateWinType({
+            org: preRewardOrg,
+            totals: state.totals,
+            budget: state.budget,
+            usedHeavyActions: state.usedHeavyActions,
+          });
 
-      const effects = getRelic(state.bossRelicReward)?.effects ?? {};
-      const preRewardOrg = {
-        ...state.org,
-        quality: Math.max(0, state.org.quality - (effects.qualityAdd ?? 0)),
-        testCoverage: Math.max(0, state.org.testCoverage - (effects.testCoverageAdd ?? 0)),
-        aiLiteracy: Math.max(0, state.org.aiLiteracy - (effects.aiLiteracyAdd ?? 0)),
-        aiDependency: Math.max(0, state.org.aiDependency - (effects.aiDependencyAdd ?? 0)),
-      };
-      const expected = evaluateWinType({
-        org: preRewardOrg,
-        totals: state.totals,
-        budget: state.budget,
-        usedHeavyActions: state.usedHeavyActions,
-      });
-
-      engine.acknowledgeQuarterReview();
-      const after = engine.snapshot();
-      expect(after.status).toBe('won');
-      expect(after.winType).toBe(expected);
-      verified = true;
-      break;
+          engine.acknowledgeQuarterReview();
+          const after = engine.snapshot();
+          expect(after.status).toBe('won');
+          expect(after.winType).toBe(expected);
+          verified = true;
+          break;
+        }
+        if (!advance(engine)) break;
+        state = engine.snapshot();
+        if (state.status === 'playing' && state.phase !== 'quarterReview') {
+          state = playUntil(engine, 'quarterReview', {}, 80_000);
+        }
+      }
+      if (verified) break;
     }
     expect(verified).toBe(true);
-  }, 20_000);
+  }, 120_000);
 
   it('RI-32: カード発動で AI 依存上限を超えると即時敗北する', () => {
     const engine = new RunEngine({ seed: 'ri32-card-lose-direct', difficulty: 'nightmare' });
@@ -585,7 +613,15 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     let engine: RunEngine | null = null;
     let targetIndex = -1;
 
-    for (const seed of ['ri37-upgrade-a', 'ri37-upgrade-b', 'ri37-upgrade-c', 'ri37-upgrade-d']) {
+    // RI-75: 旧 ri37-upgrade-* は休息前敗北しやすい。到達確認済み seed を先に試す。
+    for (const seed of [
+      'rest-probe-4',
+      'rest-probe-9',
+      'ri37-upgrade-a',
+      'ri37-upgrade-b',
+      'ri37-upgrade-c',
+      'ri37-upgrade-d',
+    ]) {
       const e = new RunEngine({ seed, difficulty: 'easy' });
       e.startRun();
       let s = e.snapshot();

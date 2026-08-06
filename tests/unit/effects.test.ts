@@ -147,7 +147,7 @@ describe('boss effects', () => {
 
     expect(withBossEffects(base, 'major-incident')).toEqual({
       ...base,
-      incidentRateMul: 0.8 * 1.65,
+      incidentRateMul: 0.8 * 1.1,
     });
   });
 });

@@ -13,7 +13,7 @@ import {
   resolveSplitPrTarget,
 } from './assignTask';
 import type { Rng } from './rng';
-import { reviewOne } from './sprint';
+import { isAwaitingMinCompleteTick, reviewOne } from './sprint';
 import { appendSprintEvent } from './sprintEvents';
 import type {
   ActionId,
@@ -285,6 +285,8 @@ export function canApplyAction(
   target?: ActionTarget,
 ): { ok: true } | { ok: false; reason: ActionGateReason } {
   if (sprint.complete) return { ok: false, reason: 'complete' };
+  // RI-75: minCompleteTick 待ち（盤面枯渇後のパディング）では介入を受け付けない。
+  if (isAwaitingMinCompleteTick(sprint)) return { ok: false, reason: 'complete' };
   const def = getAction(id);
   if (!def) return { ok: false, reason: 'no-target' };
   if ((sprint.cooldowns[id] ?? 0) > 0) return { ok: false, reason: 'cooldown' };

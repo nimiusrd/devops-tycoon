@@ -423,8 +423,8 @@ describe('RI-74 AI依存ペースと回避経路', () => {
     // 序盤（0・10件）は nightmare が easy より高い。後半は Nightmare の低い上昇量が効く
     expect(nightmare.deps[0]).toBeGreaterThan(easy.deps[0]);
     expect(nightmare.deps[1]).toBeGreaterThan(easy.deps[1]);
-    // S1 全タスク AI 割当でも nightmare は cap 未満
-    expect(s1TaskCount).toBe(34);
+    // S1 全タスク AI 割当でも nightmare は cap 未満（taskCountMul 由来）
+    expect(s1TaskCount).toBe(Math.round(28 * DIFFICULTY_DEFS.nightmare.taskCountMul));
     expect(nightmare.deps[3]).toBeLessThan(AI_DEPENDENCY_CAP);
   });
 });

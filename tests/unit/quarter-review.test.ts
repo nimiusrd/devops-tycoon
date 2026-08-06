@@ -921,9 +921,10 @@ describe('四半期レビュー（Phase 8）', () => {
   it('RI-68: easy/normal/hard で Delivery の達成と未達が分岐する', { timeout: 60_000 }, () => {
     // RI-75: Delivery 目標再校正後に達成・未達の両方がある seed を難易度別に固定する。
     const seedsByDifficulty: Record<'easy' | 'normal' | 'hard', readonly number[]> = {
-      easy: [2, 14, 20, 31, 39],
-      normal: [1, 14, 20, 22, 23, 31, 37, 39],
-      hard: [22, 23, 31, 35, 39, 51, 62, 68, 72, 74],
+      // RI-75: 介入 CD 再調整後も達成/未達が両立する probe seed を固定する。
+      easy: [2, 14, 20, 39, 100],
+      normal: [10, 14, 23, 28, 35, 39],
+      hard: [22, 39, 40, 51, 54, 68],
     };
     const meanRatioByDifficulty: Record<'easy' | 'normal' | 'hard', number> = {
       easy: 0,

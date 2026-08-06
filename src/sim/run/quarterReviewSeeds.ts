@@ -21,7 +21,7 @@ export const E2E_MISSED_ADJUSTABLE_SEED = 'ri75h-ma-169';
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。
  * 種別固定が必要なら `E2E_TERMINAL_*` を使う。
  */
-export const E2E_SHUTDOWN_SEED = 'ri75g-hard-1250';
+export const E2E_SHUTDOWN_SEED = 'ri75j-hard-252';
 
 /** 継続不能 outcome ごとの固定 seed（RI-75 再探索 / hard）。 */
 export interface TerminalQuarterSeed {
@@ -34,7 +34,7 @@ export interface TerminalQuarterSeed {
 
 /** Q1 で shutdown。 */
 export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
-  seed: 'ri75g-hard-1250',
+  seed: 'ri75j-hard-252',
   difficulty: 'hard',
   outcome: 'shutdown',
   quarterNumber: 1,

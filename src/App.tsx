@@ -11,7 +11,11 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
-import type { HudMetricSnapshot, RunMetricSnapshot } from './render/status';
+import {
+  reviewFreezeWarningPeak,
+  type HudMetricSnapshot,
+  type RunMetricSnapshot,
+} from './render/status';
 import { Breadcrumb } from './ui/Breadcrumb';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
 import { RunBar } from './ui/RunBar';
@@ -370,6 +374,13 @@ export default function App({ game }: AppProps) {
         org={state.org}
         orgScale={state.orgScale}
         tasks={tasks}
+        // 通算 peak は単調増加で解消後も警告が残るため使わない。
+        // 詳細スプリント peak + 全チーム現在キュー（非選択チーム / スプリント外の持ち越し含む）。
+        // 選択中盤面の現在キュー長は deriveHudMetrics 側で畳み込む。
+        reviewQueuePeak={reviewFreezeWarningPeak(
+          state.sprint?.metrics.reviewQueueMax ?? 0,
+          state.teams.map((team) => team.reviewQueue),
+        )}
         snapshotScope={hudSnapshotScope}
         getInitialPreviousSnapshot={getLastHudSnapshot}
         onSnapshotCaptured={rememberHudSnapshot}

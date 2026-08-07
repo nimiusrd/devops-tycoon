@@ -187,7 +187,13 @@ function HudStat({ metric, feedback }: { metric: StatusMetricView; feedback?: Ac
       {metric.warningChip && (
         <div
           className={`burnout-chip tone-${metric.tone}`}
-          data-testid={metric.id === 'seniorHp' ? 'senior-burnout-warning' : `${metric.id}-warning`}
+          data-testid={
+            metric.id === 'seniorHp'
+              ? 'senior-burnout-warning'
+              : metric.id === 'reviewCapacity'
+                ? 'review-freeze-warning'
+                : `${metric.id}-warning`
+          }
         >
           {metric.warningChip}
         </div>
@@ -207,6 +213,12 @@ export interface HudProps {
   orgScale?: OrgScaleState | null;
   /** 進行中スプリントのタスク（渋滞・リスク導出用。非スプリント時は空配列）。 */
   tasks: Task[];
+  /**
+   * ライブのレビュー待ちピーク（RI-85 凍結予兆）。
+   * 進行中スプリント peak と全チーム現在キューを渡す。通算 totals は使わない。
+   * 未指定時は現在キュー長だけで判定する。
+   */
+  reviewQueuePeak?: number;
   /** 現場HUDと全社集約HUDのように、表示元が変わる境界では差分を出さない。 */
   snapshotScope: HudSnapshotScope;
   /** HUD再マウント時にも直前の表示値との差分を出すための初期比較対象。 */
@@ -242,13 +254,14 @@ export function Hud({
   org,
   orgScale,
   tasks,
+  reviewQueuePeak = 0,
   snapshotScope,
   getInitialPreviousSnapshot,
   onSnapshotCaptured,
 }: HudProps) {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const snapshot = useMemo(() => hudMetricSnapshot(s), [s]);
-  const metrics = deriveHudMetrics(org, tasks, orgScale);
+  const metrics = deriveHudMetrics(org, tasks, orgScale, reviewQueuePeak);
   const previousSnapshot = useRef<HudMetricSnapshot | null>(null);
   const previousScope = useRef<HudSnapshotScope | null>(null);
   const nextFeedbackId = useRef(0);

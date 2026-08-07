@@ -674,8 +674,8 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
 
   // **確定敗北の選択肢だけを外す。**
   //
-  // ここに挙げた4条件は `evaluateLose`（`src/sim/outcome.ts`）が状態を見て即座に返すもので、
-  // 踏んだ時点で敗北が確定する。
+  // ここに挙げた条件は `evaluateLose`（`src/sim/outcome.ts`）が状態を見て即座に返すもの、
+  // または outcome が直接 `forceLose` を指定するもので、踏んだ時点で敗北が確定する。
   //
   // **信頼はここに含めない。** 信頼が効くのは四半期 outcome の判定で、
   // `evaluateQuarterOutcome`（`src/sim/run/quarterReview.ts`）は
@@ -684,6 +684,7 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   // 確定敗北として候補から外すと、勝ち得る選択肢を落として方針比較を歪める。
   // 危険域はリスクとして重く減点するにとどめる（下の `TRUST_SHUTDOWN` の項）。
   if (
+    outcome.forceLose ||
     ctx.budget + num(outcome.budget) <= 0 ||
     ctx.org.seniorHp + num(outcome.seniorHp) <= 1 ||
     ctx.org.morale + moraleEff <= 1 ||

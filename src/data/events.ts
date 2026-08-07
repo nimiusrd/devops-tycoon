@@ -52,6 +52,11 @@ export interface EventOutcome {
   trust?: Partial<StakeholderTrust>;
   /** 判定イベントが直接ハード敗北を起こす場合の理由（例: 'reviewFreeze'）。 */
   forceLose?: LoseReason;
+  /**
+   * 適用後の seniorHp / morale を evaluateLose 閾値（<=1）より上にフロアする。
+   * soft judgment が resolveBeat 直後の即時敗北へ直結するのを防ぐ。
+   */
+  preserveAboveLose?: boolean;
 }
 
 export interface EventChoice {
@@ -86,6 +91,11 @@ export interface EventDef {
    * ハード敗北など、健全な組織で起きてはならない事象を「組織が荒れたときだけ」に限定する。
    */
   minSignal?: Partial<Record<EventSignal, number>>;
+  /**
+   * 抽選対象になるための信号上限（0..1）。指定した全信号が上限以下のときのみプールに入る。
+   * soft judgment の消耗が即時敗北へ直結する帯を除外するために使う。
+   */
+  maxSignal?: Partial<Record<EventSignal, number>>;
   choices: EventChoice[];
 }
 
@@ -427,19 +437,27 @@ export const EVENT_DEFS: EventDef[] = [
   {
     id: 'review-freeze',
     title: 'レビューが完全に停止した',
-    prompt: 'レビュー担当が機能停止し、出荷ラインが止まった。',
+    prompt: 'レビュー担当が機能停止し、出荷ラインが止まった。次スプリントでの立て直しが必要だ。',
     tone: 'bad',
+    // RI-85: 即死 forceLose をやめ、senior-burnout 型の soft judgment にする。
+    // judgment プールに残しビート抽選比を維持する（decision 化や maxSignal 帯制限は seed 契約を崩す）。
+    // 予兆は HUD（reviewFreezeHudCopy）。決着は以後のスプリント対処 / ピーク経路へ委ねる。
     kind: 'judgment',
     weight: 0.25,
     triggers: { seniorHpLow: 4 },
-    // ハード敗北。シニアHP が枯渇寸前（HP <= 約45）のときだけ抽選対象にする。
-    // 健全なランがビートの乱数だけで回避不能に終了しないようにする。
     minSignal: { seniorHpLow: 0.55 },
     choices: [
       {
         label: '了解',
-        description: 'レビューが完全に止まり、出荷ラインが機能停止する',
-        outcome: { forceLose: 'reviewFreeze' },
+        description: 'ラインは止まった。休息でHPを戻し、流入を抑えて立て直す',
+        // reviewLoadAdd は付けない。閾値直前の持ち越しキューへ加算すると、
+        // 操作前に reviewQueueMax が REVIEW_FREEZE_PEAK を越え敗北が確定してしまう。
+        // 低リソース時の即時敗北は preserveAboveLose で防ぐ（抽選比は変えない）。
+        outcome: {
+          seniorHp: -10,
+          morale: -3,
+          preserveAboveLose: true,
+        },
       },
     ],
   },

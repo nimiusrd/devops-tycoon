@@ -66,6 +66,12 @@ describe('formatEventOutcomeTags（イベント効果タグ）', () => {
     expect(nextTags).toContainEqual({ label: '次スプリント 手戻り率 +15%', tone: 'negative' });
     expect(nextTags).toContainEqual({ label: '次スプリント 出荷 -30%', tone: 'negative' });
 
+    const reliefTags = formatEventOutcomeTags({ nextSprint: { reviewLoadAdd: -3 } });
+    expect(reliefTags).toContainEqual({
+      label: '次スプリント レビュー負荷 -3',
+      tone: 'positive',
+    });
+
     const loseTags = formatEventOutcomeTags({ forceLose: 'reviewFreeze' });
     expect(loseTags).toEqual([{ label: 'レビュー停止でラン終了', tone: 'negative' }]);
   });

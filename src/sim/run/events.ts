@@ -64,6 +64,11 @@ export function applyEventOutcome(
   if (outcome.aiDependency)
     org.aiDependency = clamp(org.aiDependency + outcome.aiDependency, 0, 100);
   if (outcome.techDebt) org.techDebt = Math.max(0, org.techDebt + outcome.techDebt);
+  // soft judgment: resolveBeat 直後の evaluateLose（seniorHp/morale <= 1）を回避する。
+  if (outcome.preserveAboveLose) {
+    if (org.seniorHp <= 1) org.seniorHp = 2;
+    if (org.morale <= 1) org.morale = 2;
+  }
 
   return {
     budgetDelta: outcome.budget ?? 0,
@@ -142,13 +147,19 @@ export function eventsOfKind(pool: EventDef[], kind: 'judgment' | 'decision'): E
 }
 
 /**
- * イベントが現在の組織状態で抽選対象になるか（`minSignal` の全下限を満たすか）。
+ * イベントが現在の組織状態で抽選対象になるか（`minSignal` / `maxSignal` を満たすか）。
  * ハード敗北など、健全な組織では起きてはならない事象をプールから除外するために使う。
  */
 export function eventEligible(def: EventDef, signals: Record<EventSignal, number>): boolean {
-  if (!def.minSignal) return true;
-  for (const [sig, min] of Object.entries(def.minSignal) as [EventSignal, number][]) {
-    if (signals[sig] < min) return false;
+  if (def.minSignal) {
+    for (const [sig, min] of Object.entries(def.minSignal) as [EventSignal, number][]) {
+      if (signals[sig] < min) return false;
+    }
+  }
+  if (def.maxSignal) {
+    for (const [sig, max] of Object.entries(def.maxSignal) as [EventSignal, number][]) {
+      if (signals[sig] > max) return false;
+    }
   }
   return true;
 }

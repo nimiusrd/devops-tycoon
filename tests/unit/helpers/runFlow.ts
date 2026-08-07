@@ -60,8 +60,8 @@ export function autoplayBeatChoiceIndex(
   const def = getEvent(eventId);
   const choices = def?.choices ?? [];
   let choice = 0;
-  if (choices[choice]?.outcome.grantRecruit) {
-    const alt = choices.findIndex((c) => !c.outcome.grantRecruit);
+  if (choices[choice]?.outcome.grantRecruit || choices[choice]?.outcome.forceLose) {
+    const alt = choices.findIndex((c) => !c.outcome.grantRecruit && !c.outcome.forceLose);
     if (alt >= 0) choice = alt;
   }
   return choice;

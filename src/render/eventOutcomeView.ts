@@ -142,7 +142,8 @@ function pushTag(tags: EffectTag[], label: string, tone: EffectTagTone): void {
 function formatSprintModifierTags(mod: SprintModifierDelta): EffectTag[] {
   const tags: EffectTag[] = [];
   if (mod.reviewLoadAdd && mod.reviewLoadAdd !== 0) {
-    pushTag(tags, `次スプリント レビュー負荷 ${formatSignedDelta(mod.reviewLoadAdd)}`, 'negative');
+    const tone: EffectTagTone = mod.reviewLoadAdd > 0 ? 'negative' : 'positive';
+    pushTag(tags, `次スプリント レビュー負荷 ${formatSignedDelta(mod.reviewLoadAdd)}`, tone);
   }
   if (mod.reworkRateAdd && mod.reworkRateAdd !== 0) {
     pushTag(tags, `次スプリント 手戻り率 ${formatPercentDelta(mod.reworkRateAdd)}`, 'negative');

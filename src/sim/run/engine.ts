@@ -115,7 +115,13 @@ import {
 import { canUnlock, unlockNode } from './evolution';
 import { canTransition, RunPhaseError } from './phases';
 import { foldRunEffects } from './effects';
-import { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER } from './constants';
+import {
+  DRAFT_MULLIGAN_COST,
+  EVO_POINTS_BASE,
+  EVO_POINTS_DELIVERED_DIVISOR,
+  EVO_POINTS_ELITE_BONUS,
+  SPRINTS_PER_QUARTER,
+} from './constants';
 import {
   applyGoalAdjustment,
   applyGoalOrgEffectsToTeam,
@@ -758,8 +764,8 @@ export class RunEngine {
   }
 
   private evoPointsFor(result: SprintResult): number {
-    const base = 1 + Math.floor(result.delivered / 40);
-    return this.currentSprintKind === 'elite' ? base + 1 : base;
+    const base = EVO_POINTS_BASE + Math.floor(result.delivered / EVO_POINTS_DELIVERED_DIVISOR);
+    return this.currentSprintKind === 'elite' ? base + EVO_POINTS_ELITE_BONUS : base;
   }
 
   /** 四半期レビューを承認する（達成→won / 継続不能→lost）。 */

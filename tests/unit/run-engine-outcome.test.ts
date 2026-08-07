@@ -751,10 +751,11 @@ describe('RI-91-A6 getEvolutionNodeEffects via unlockEvolution', () => {
     const engine = createEngine('ri-91-a6-evo');
     const i = asInternals(engine);
     i.phase = 'evolution';
-    i.evolution = { points: 1, unlocked: {} };
-    const beforeCoverage = i.org.testCoverage;
     const node = getEvolutionNode('quality-1');
     expect(node?.effects?.testCoverageAdd).toBe(12);
+    const cost = node!.cost;
+    i.evolution = { points: cost, unlocked: {} };
+    const beforeCoverage = i.org.testCoverage;
 
     engine.unlockEvolution('quality-1');
 

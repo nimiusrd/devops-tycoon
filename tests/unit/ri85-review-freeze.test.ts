@@ -1,3 +1,4 @@
+/** RI-85: review-freeze soft judgment regression coverage. */
 import { describe, expect, it } from 'vitest';
 import { effectiveKind, getEvent } from '../../src/data/events';
 import {

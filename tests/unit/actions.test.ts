@@ -257,9 +257,10 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       quality: 20,
     });
     const riskyTask = () => makeTask(0, { aiAssisted: true });
-    // 1回目は炎上を外し、2回目の 0.35 は素の手戻り率では発生し、安定時は通過する。
+    // 1回目は炎上を外す。2回目の 0.165 は素の手戻り率（0.392）では発生し、
+    // 安定時の0.4倍（0.1568）では通過する。0.45倍以上へ戻すと回帰する境界値。
     const boundaryRng = (() => {
-      const values = [0.99, 0.35];
+      const values = [0.99, 0.165];
       return () => values.shift() ?? 0.99;
     })();
 
@@ -276,7 +277,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       stable,
       stableOrg,
       (() => {
-        const values = [0.99, 0.35];
+        const values = [0.99, 0.165];
         return () => values.shift() ?? 0.99;
       })(),
       TICK,

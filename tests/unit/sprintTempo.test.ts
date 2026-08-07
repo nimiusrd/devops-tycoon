@@ -500,20 +500,25 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
     }
   }, 180_000);
 
-  it('F-5 初見コホートでは、戦術介入も S1 出荷のばらつきを全難易度で抑える', () => {
+  it('F-5 初見コホートでは、戦術・熟練介入とも S1 出荷のばらつきを全難易度で抑える', () => {
     for (const difficulty of RI75_DIFFICULTIES) {
       const control = s1DeliveredBySeed(runs, difficulty, 'noInterventionCtl');
-      const naive = s1DeliveredBySeed(runs, difficulty, 'naive');
-      const sharedSeeds = RI75_SEEDS.filter((seed) => control.has(seed) && naive.has(seed));
+      for (const policy of ['naive', 'skilledNoHire'] as const) {
+        const intervention = s1DeliveredBySeed(runs, difficulty, policy);
+        const sharedSeeds = RI75_SEEDS.filter(
+          (seed) => control.has(seed) && intervention.has(seed),
+        );
 
-      // 生存状況で seed を選抜せず、事前固定した fresh の10本をそのまま比較する。
-      expect(sharedSeeds, `${difficulty} S1 common seeds`).toEqual([...RI75_SEEDS]);
+        // 生存状況で seed を選抜せず、事前固定した fresh の10本をそのまま比較する。
+        expect(sharedSeeds, `${difficulty}/${policy} S1 common seeds`).toEqual([...RI75_SEEDS]);
 
-      const controlCv = f5Cv(sharedSeeds.map((seed) => control.get(seed)!));
-      const naiveCv = f5Cv(sharedSeeds.map((seed) => naive.get(seed)!));
-      expect(naiveCv, `${difficulty} naive CV=${naiveCv} vs control=${controlCv}`).toBeLessThan(
-        controlCv,
-      );
+        const controlCv = f5Cv(sharedSeeds.map((seed) => control.get(seed)!));
+        const interventionCv = f5Cv(sharedSeeds.map((seed) => intervention.get(seed)!));
+        expect(
+          interventionCv,
+          `${difficulty} ${policy} CV=${interventionCv} vs control=${controlCv}`,
+        ).toBeLessThan(controlCv);
+      }
     }
   });
 });

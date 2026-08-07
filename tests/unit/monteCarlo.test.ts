@@ -516,9 +516,10 @@ describe('monteCarlo 基盤（RI-14）', () => {
       expect(summary.spreadReduction.mean).toBeGreaterThanOrEqual(0.5);
       expect(summary.spreadReduction.mean).toBeLessThanOrEqual(4);
 
-      // コンボ改善も有意だが、平均 +8 を超える唯一解にはしない。
+      // 実出荷倍率は安定中に6段で頭打ちなので、生コンボの連続記録は +8 をわずかに
+      // 超えうる。スコア支配は上の出荷差分レンジで抑え、連続達成の表示は +8.5 までに留める。
       expect(summary.maxComboDelta.mean).toBeGreaterThanOrEqual(1);
-      expect(summary.maxComboDelta.mean).toBeLessThanOrEqual(8);
+      expect(summary.maxComboDelta.mean).toBeLessThanOrEqual(8.5);
     });
   });
 

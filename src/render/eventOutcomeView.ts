@@ -33,6 +33,7 @@ import {
   OVERTIME_CODING_MUL,
   OVERTIME_REVIEW_MUL,
   STABILITY_COMBO_CAP,
+  STABILITY_REWORK_MUL,
 } from '../sim/model/process';
 import {
   PAUSE_AI_DEBUFF_MUL,
@@ -603,6 +604,8 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
 
   if (def.stabilizesFlow) {
     pushTag(tags, `運用安定 ${STABILITY_TICKS}tick`, 'positive');
+    pushTag(tags, `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, 'positive');
+    pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
     pushTag(
       tags,
       `安定中 コンボ出荷は +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%まで`,

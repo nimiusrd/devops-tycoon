@@ -924,8 +924,8 @@ describe('四半期レビュー（Phase 8）', () => {
       // RI-84: 安定化の再校正後も、到達・達成・未達を含む固定 seed を使う。
       easy: [103, 14, 20, 39, 100, 380],
       normal: [10, 14, 238, 28, 35, 39],
-      // F-5: skilled でレビュー到達かつ未達となる probe-74 へ差し替える。
-      hard: [9, 40, 51, 54, 68, 74],
+      // RI-84: 手戻り抑制0.4倍後も、到達・達成・未達が共存する固定 probe を使う。
+      hard: [20, 113, 74, 93, 97, 120],
     };
     const meanRatioByDifficulty: Record<'easy' | 'normal' | 'hard', number> = {
       easy: 0,

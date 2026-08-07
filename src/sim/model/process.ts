@@ -87,7 +87,7 @@ export const BURNING_REGEN_MUL = 0.5;
 /** 安全側の介入で工程が落ち着く期間（RI-84 / F-5）。 */
 export const STABILITY_TICKS = 180;
 /** 安定した運用中に掛ける手戻り率倍率（RI-84 / F-5）。 */
-export const STABILITY_REWORK_MUL = 0.5;
+export const STABILITY_REWORK_MUL = 0.4;
 /** 安定中に許す連続出荷ボーナスの最大段数（RI-84 / F-5）。 */
 export const STABILITY_COMBO_CAP = 6;
 

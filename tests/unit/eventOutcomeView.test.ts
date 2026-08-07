@@ -6,7 +6,12 @@ import { getGoalAdjustment } from '../../src/data/goalAdjustments';
 import { COMPANY_LEVERS } from '../../src/data/levers';
 import { getRelic } from '../../src/data/relics';
 import { getAction } from '../../src/data/actions';
-import { COMBO_BONUS_PER, STABILITY_COMBO_CAP, STABILITY_TICKS } from '../../src/sim/model';
+import {
+  COMBO_BONUS_PER,
+  STABILITY_COMBO_CAP,
+  STABILITY_REWORK_MUL,
+  STABILITY_TICKS,
+} from '../../src/sim/model';
 import {
   formatActionDefTags,
   formatCardDefTags,
@@ -337,6 +342,8 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
     const def = getAction('interruptReview')!;
     expect(formatActionDefTags(def)).toEqual([
       { label: `運用安定 ${STABILITY_TICKS}tick`, tone: 'positive' },
+      { label: `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, tone: 'positive' },
+      { label: '安定中 燃え尽き時の延焼を停止', tone: 'positive' },
       {
         label: `安定中 コンボ出荷は +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%まで`,
         tone: 'neutral',

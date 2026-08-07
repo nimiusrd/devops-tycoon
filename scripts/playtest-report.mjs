@@ -856,6 +856,10 @@ const BRANCH_COMMIT_SHARE = 0.5; // かつ その時点までの解放の過半�
  * 序盤に同一ブランチへ寄せて方向を出したあと同じ Q1 中に他ブランチへ広げたランが
  * 「分散」へ落ちてしまう。そこで解放を順に走査し、**一度でも条件を満たした時点**があれば
  * 確定と数える。順序は記録済みの `sprintIndex`（同点なら記録順）による。
+ *
+ * さらに、同一進化フェーズ（同一 `sprintIndex`）での連続取得だけでは確定としない。
+ * ポイントが余っていると盤面が変わらないまま同ブランチを2段買えてしまい、
+ * 「別フェーズでの継続選択」という F-11 の意図を測れないためである。
  */
 const commitInQ1 = (run) => {
   const q1 = (run.evolutionUnlocks ?? [])
@@ -864,12 +868,16 @@ const commitInQ1 = (run) => {
     .sort((a, b) => (a.sprintIndex ?? 0) - (b.sprintIndex ?? 0) || a.order - b.order);
   if (q1.length === 0) return null;
   const byBranch = {};
+  const sprintsByBranch = {};
   const top = () => Object.entries(byBranch).sort((a, b) => b[1] - a[1])[0];
   for (let i = 0; i < q1.length; i += 1) {
     const b = q1[i].id.split('-')[0];
     byBranch[b] = (byBranch[b] ?? 0) + 1;
+    if (!sprintsByBranch[b]) sprintsByBranch[b] = new Set();
+    sprintsByBranch[b].add(q1[i].sprintIndex ?? 0);
     const [topBranch, topN] = top();
-    if (topN >= BRANCH_COMMIT_MIN_NODES && topN / (i + 1) >= BRANCH_COMMIT_SHARE) {
+    const multiPhase = (sprintsByBranch[topBranch]?.size ?? 0) >= 2;
+    if (topN >= BRANCH_COMMIT_MIN_NODES && topN / (i + 1) >= BRANCH_COMMIT_SHARE && multiPhase) {
       return { committed: true, topBranch, topN, total: q1.length, atSprint: q1[i].sprintIndex };
     }
   }
@@ -954,14 +962,17 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
 }
 console.log(
   `\n参考: Q1 の解放を順に見て、同一ブランチ ${BRANCH_COMMIT_MIN_NODES} ノード以上かつ` +
-    `その時点までの解放の ${BRANCH_COMMIT_SHARE * 100}% 以上を占める時点が一度でもあるか`,
+    `その時点までの解放の ${BRANCH_COMMIT_SHARE * 100}% 以上を占め、` +
+    `かつそのブランチの解放が複数スプリントにまたがる時点が一度でもあるか`,
 );
-console.log('（確定後に他ブランチへ広げるのは F-11 が許容するため、最終構成比では判定しない）');
+console.log(
+  '（同一フェーズの連続取得だけでは確定としない。確定後に他ブランチへ広げるのは F-11 が許容するため、最終構成比では判定しない）',
+);
 console.log(
   '  ※ 固定順方針（`reviewFirst` 等）の値は成立判定に使えない。解放順が方針で固定されており、',
 );
 console.log(
-  '     最初の2ノードが必ず同一ブランチになる。方向の確定時期は `skilledStateEvolve`（`evolve: stateAware`）で測る。',
+  '     同一フェーズで同ブランチを連続取得しやすい。方向の確定時期は `skilledStateEvolve`（`evolve: stateAware`）で測る。',
 );
 const F11_DIRECTION_POLICY = 'skilledStateEvolve';
 {

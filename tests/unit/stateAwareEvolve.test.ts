@@ -126,6 +126,25 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
     expect(order[0]).toBe('dev');
   });
 
+  it('review を既に1ノード取っていれば同点帯では他ブランチへ曲がる', () => {
+    const org = createOrgState('default', true);
+    const order = stateAwareEvolveBranches({
+      org: {
+        ...org,
+        seniorHp: 15,
+        techDebt: 55,
+        testCoverage: 30,
+        morale: 70,
+        quality: 60,
+        aiDependency: 10,
+      },
+      totals: totals({ delivered: 200, completed: 20 }),
+      reviewQueuePeak: 18,
+      unlocked: ['review-1'],
+    });
+    expect(order[0]).toBe('quality');
+  });
+
   it('review を既に2ノード取っていれば他ブランチへ曲がる', () => {
     const org = createOrgState('default', true);
     const order = stateAwareEvolveBranches({

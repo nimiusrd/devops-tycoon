@@ -344,7 +344,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | F-8 | Nightmare は330ラン全敗し、打つ機会が一度も無い。「何スプリント前から実質的な選択肢が消えたか」は未計測（RI-89 は機械的発動可否のみで、回避有効性の反実仮想は未実装） | RI-74 |
 | F-9 | 進行速度と決着位置は敗因ごとに違う。「打てた手」の観測手段は RI-89 で追加済み（差の再計測は playtest:report） | RI-89（完了） |
 | F-10 | 勝利が 5/1,320 と少なく、種別は `management` 3 / `chaos` 2。旧コホートの「実質2種」は再現できない | RI-76 |
-| F-11 | Q1 ポイント p50=44 に対しツリー総コストは86。代表方針の全解放は 6.9%。`skilledStateEvolve` で方向確定を計測 | RI-86（完了） |
+| F-11 | Q1 ポイント p50=44 に対しツリー総コストは86。代表方針の全解放は 6.9%。`skilledStateEvolve` の方向確定は複数スプリント継続で計測 | RI-86（完了） |
 | F-12 | ~~ドラフトのマリガンが無い~~ → RI-81 でマリガンを実装済み | RI-81（完了） |
 
 ## 課題一覧
@@ -824,9 +824,9 @@ SPEC 第19.1 F-5 は「無介入は損ではなく不安定。介入の価値は
 | 敗因 | 決着フェーズ |
 | --- | --- |
 | **`reviewFreeze`**（23件） | `sprint` **100%** |
-| `seniorBurnout`（807件） | judgment / decision / sprint / quarterReview が混在 |
-| `techDebt`（306件） / `moraleCollapse`（42件） | `sprint` が大半 |
-| `aiDependency`（133件） | `sprint` 100% |
+| `seniorBurnout`（804件） | judgment / decision / sprint / quarterReview が混在 |
+| `techDebt`（309件） / `moraleCollapse`（43件） | `sprint` が大半 |
+| `aiDependency`（132件） | `sprint` 100% |
 | `reorgRequired`（4件） | `quarterReview` 100% |
 
 回帰は `tests/unit/ri85-review-freeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
@@ -852,8 +852,9 @@ F-4・勝率帯を守るコスト、culture/ai は中段から高くして横断
 | Q1 解放数 p10 / p50 / p90（解放ありのラン n=160） | 5 / **10** / 14 |
 | Q1 中にツリーを取り切ったラン | **11/160（6.9%）** |
 
-**方向確定**（`skilledStateEvolve`、`evolve: stateAware`、n=40）: Q1 で方向確定 36/40（90%）、
-確定ブランチ分布は review 20 / ai 15 / quality 1（分散 4）。確定スプリント p50=1。
+**方向確定**（`skilledStateEvolve`、`evolve: stateAware`、n=40）: Q1 で方向確定 14/40（35%）、
+確定ブランチは review 14（分散 26）。確定スプリント p50=2。
+同一進化フェーズの連続取得だけでは確定とせず、複数スプリントにまたがる継続選択を要求する。
 固定順方針のブランチ偏りは成立判定に使わない。
 
 ## 良かった点（回帰させないため記録）

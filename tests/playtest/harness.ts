@@ -273,11 +273,15 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   if (totals.completed >= 5 && totals.delivered < totals.completed * 5) scores.dev += 3;
   else if (totals.delivered < 50 && totals.completed >= 5) scores.dev += 2;
 
-  // 既に2ノード以上取ったブランチは減点し、他方向へ曲げる余地を残す。
+  // 既取得ブランチは1ノード目から減点する。
+  // 減点を2ノード以降に限ると、同一進化フェーズでポイントが余っているとき
+  // 盤面が変わらないまま同ブランチを連続取得し、F-11 の「同一ブランチ2ノード」が
+  // 構造だけで成立してしまう。
   for (const b of Object.keys(scores) as EvolutionBranch[]) {
     const n = unlockedCount(b);
     if (n >= 3) scores[b] -= 5;
     else if (n >= 2) scores[b] -= 3;
+    else if (n >= 1) scores[b] -= 2;
   }
 
   // どれも閾値未達なら、相対的に弱い柱へ寄せる（常に review 固定になるのを防ぐ）。

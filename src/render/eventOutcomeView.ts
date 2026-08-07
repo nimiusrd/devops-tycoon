@@ -28,7 +28,11 @@ import {
   THROTTLE_TICKS,
   type ActionDef,
 } from '../sim/actions';
-import { OVERTIME_CODING_MUL, OVERTIME_REVIEW_MUL } from '../sim/model/process';
+import {
+  OVERTIME_CODING_MUL,
+  OVERTIME_REVIEW_MUL,
+  STABILITY_DELIVERY_FLOOR_PER_TASK,
+} from '../sim/model/process';
 import {
   PAUSE_AI_DEBUFF_MUL,
   REORG_RESET_SENIOR_HP,
@@ -598,6 +602,14 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
 
   if (def.stabilizesFlow) {
     pushTag(tags, `運用安定 ${STABILITY_TICKS}tick`, 'positive');
+  }
+  if (def.commitsDelivery) {
+    pushTag(tags, `出荷コミット ${STABILITY_TICKS}tick`, 'positive');
+    pushTag(
+      tags,
+      `全タスク完了時 出荷下限 タスク数 x${STABILITY_DELIVERY_FLOOR_PER_TASK}`,
+      'positive',
+    );
   }
 
   switch (def.id) {

@@ -6,7 +6,7 @@ import { getGoalAdjustment } from '../../src/data/goalAdjustments';
 import { COMPANY_LEVERS } from '../../src/data/levers';
 import { getRelic } from '../../src/data/relics';
 import { getAction } from '../../src/data/actions';
-import { STABILITY_TICKS } from '../../src/sim/model';
+import { STABILITY_DELIVERY_FLOOR_PER_TASK, STABILITY_TICKS } from '../../src/sim/model';
 import {
   formatActionDefTags,
   formatCardDefTags,
@@ -349,6 +349,28 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
       label: '炎上1件鎮火',
       tone: 'positive',
     });
+  });
+
+  it.each(['assignTask', 'andon'] as const)(
+    '%s は出荷コミットの期限と出荷下限を発動前に示す',
+    (id) => {
+      const tags = formatActionDefTags(getAction(id)!);
+
+      expect(tags).toContainEqual({
+        label: `出荷コミット ${STABILITY_TICKS}tick`,
+        tone: 'positive',
+      });
+      expect(tags).toContainEqual({
+        label: `全タスク完了時 出荷下限 タスク数 x${STABILITY_DELIVERY_FLOOR_PER_TASK}`,
+        tone: 'positive',
+      });
+    },
+  );
+
+  it.each(['interruptReview', 'firefight'] as const)('%s は出荷コミットを示さない', (id) => {
+    expect(formatActionDefTags(getAction(id)!)).not.toContainEqual(
+      expect.objectContaining({ label: expect.stringContaining('出荷コミット') }),
+    );
   });
 
   it.each([

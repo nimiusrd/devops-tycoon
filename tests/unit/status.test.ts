@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createEngine } from '../../src/sim/engine';
 import {
+  REVIEW_FREEZE_DANGER_PEAK,
+  REVIEW_FREEZE_WATCH_PEAK,
   aiDependencyHudCopy,
   budgetHudCopy,
   deriveHudMetrics,
@@ -9,6 +11,7 @@ import {
   diffRunMetricSnapshots,
   diffHudMetricSnapshots,
   hudMetricSnapshot,
+  reviewFreezeHudCopy,
   riskLevel,
   runMetricSnapshot,
   trustHudCopy,
@@ -234,6 +237,32 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       minTrust: 22,
     });
     expect(trustHudCopy({ management: 40, customers: 40, team: 40 }).warningChip).toBeUndefined();
+  });
+
+  it('レビュー凍結の危険域で予兆チップを出す（RI-85）', () => {
+    expect(reviewFreezeHudCopy(0).warningChip).toBeUndefined();
+    expect(reviewFreezeHudCopy(REVIEW_FREEZE_WATCH_PEAK)).toMatchObject({
+      tone: 'watch',
+      warningChip: '凍結注意',
+    });
+    expect(reviewFreezeHudCopy(REVIEW_FREEZE_DANGER_PEAK)).toMatchObject({
+      tone: 'danger',
+      warningChip: 'PR凍結危険',
+    });
+    // 低HPだけでは凍結チップを出さない（燃え尽き側の警告に任せる）。
+    expect(
+      deriveHudMetrics(withOrg({ seniorHp: 40 }).org, []).find((m) => m.id === 'reviewCapacity')
+        ?.warningChip,
+    ).toBeUndefined();
+    const metrics = deriveHudMetrics(
+      withOrg({ seniorHp: 80 }).org,
+      [],
+      null,
+      REVIEW_FREEZE_WATCH_PEAK,
+    );
+    expect(metrics.find((m) => m.id === 'reviewCapacity')).toMatchObject({
+      warningChip: '凍結注意',
+    });
   });
 });
 

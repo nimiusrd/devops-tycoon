@@ -65,19 +65,17 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     expect(view.nextAction).not.toContain('レリック');
   });
 
-  it('reviewFreeze の低HP経路では割り込みレビューを勧めない', () => {
-    const view = loseNextActionView('reviewFreeze', {
+  it('reviewFreeze は待ち行列ピーク向けの渋滞対策を示す', () => {
+    const lowHpButQueueLose = loseNextActionView('reviewFreeze', {
       snapshot: { seniorHp: 40, reviewQueuePeak: 12 },
     });
-    expect(view.nextAction).toContain('休息');
-    expect(view.nextAction).toMatch(/割り込みレビューでシニアHPを削らず|割り込みレビューに頼/);
-  });
-
-  it('reviewFreeze のキュー経路では渋滞対策を示す', () => {
-    const view = loseNextActionView('reviewFreeze', {
+    const queuePath = loseNextActionView('reviewFreeze', {
       snapshot: { seniorHp: 80, reviewQueuePeak: 50 },
     });
-    expect(view.nextAction).toMatch(/AIスロットル|PR分割|レビュー応援/);
+    // 低HP専用分岐は廃止（現行の reviewFreeze 経路はピーク閾値のみ）。
+    expect(lowHpButQueueLose.nextAction).toMatch(/AIスロットル|PR分割|レビュー応援/);
+    expect(lowHpButQueueLose.nextAction).not.toMatch(/低HPからのレビュー凍結/);
+    expect(queuePath.nextAction).toMatch(/AIスロットル|PR分割|レビュー応援/);
   });
 
   it('shutdown はトリガー別に助言を分ける', () => {

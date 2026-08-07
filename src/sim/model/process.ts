@@ -117,6 +117,14 @@ export function comboMultiplier(combo: number): number {
   return 1 + Math.min(COMBO_BONUS_CAP, Math.max(0, combo) * COMBO_BONUS_PER);
 }
 
+/**
+ * 現在の運用状態で実出荷へ適用するコンボ倍率。
+ * 安定中は連続出荷ボーナスを抑えるため、表示・計上とも同じ上限を使う。
+ */
+export function deliveryComboMultiplier(combo: number, stabilized: boolean): number {
+  return comboMultiplier(stabilized ? Math.min(combo, STABILITY_COMBO_CAP) : combo);
+}
+
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
 /**

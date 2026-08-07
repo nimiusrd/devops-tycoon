@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import { comboMultiplier } from '../../src/sim/model';
+import { STABILITY_COMBO_CAP, comboMultiplier } from '../../src/sim/model';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
 
@@ -140,6 +140,34 @@ test('コンボと連携ゲージの UI 表示が sim 状態と一致する（RI
   await expect(comboElement).toHaveAttribute('data-combo', String(combo));
   await expect(comboElement).toContainText(`COMBO ×${combo}`);
   await expect(comboElement).toContainText(`出荷倍率 ${comboMultiplier(combo).toFixed(1)}x`);
+});
+
+test('運用安定中のコンボ表示は実際の出荷倍率を示す（RI-84）', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri84-stable-combo');
+
+  await page.evaluate((combo) => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'ri84-stable-combo');
+    g.beginSetupSprint();
+    const engine = (
+      g as unknown as {
+        engine: { sprint: NonNullable<RunState['sprint']>; sprintTick: number };
+      }
+    ).engine;
+    const sprint = engine.sprint;
+    sprint.metrics.combo = combo;
+    sprint.modifiers.stabilityUntilTick = engine.sprintTick + 1;
+    // 状態を進めずに revision だけ更新し、UI へ合成状態を反映する。
+    g.step(0);
+  }, STABILITY_COMBO_CAP + 1);
+
+  const comboElement = page.getByTestId('combo');
+  await expect(comboElement).toHaveAttribute('data-combo', String(STABILITY_COMBO_CAP + 1));
+  await expect(comboElement).toContainText(`COMBO ×${STABILITY_COMBO_CAP + 1}`);
+  await expect(comboElement).toContainText(
+    `出荷倍率 ${comboMultiplier(STABILITY_COMBO_CAP).toFixed(1)}x`,
+  );
 });
 
 test('Review が空のとき割り込みレビューは無効＋理由表示（RI-51）', async ({ page }) => {

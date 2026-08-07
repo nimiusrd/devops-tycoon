@@ -3,8 +3,8 @@ import type { Member, RosterState } from '../../src/sim/member/types';
 import { createOrgState } from '../../src/sim/org';
 import {
   BOSS_MAX_TICKS,
+  BOSS_MIN_COMPLETE_TICK,
   buildSprintBaselineInput,
-  HARD_BOSS_MIN_COMPLETE_TICK,
   type SprintBaselineBuildContext,
 } from '../../src/sim/run/sprintBaselineBuild';
 import type { SprintModifierDelta } from '../../src/sim/run/types';
@@ -91,14 +91,12 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     const elite = build({ kind: 'elite' });
     const boss = build({ kind: 'boss' });
     const incidentBoss = build({ kind: 'boss', ctx: { bossId: 'major-incident' } });
-    const hardBoss = build({ kind: 'boss', ctx: { difficulty: 'hard' } });
 
     // 通常は床、elite は床×eliteTaskMul(normal)=1.12。
     expect(normal.config.taskCount).toBe(50);
     expect(elite.config.taskCount).toBe(56);
     expect(boss.config.taskCount).toBe(58); // bossTaskFloor(normal)
     expect(incidentBoss.config.taskCount).toBe(58);
-    expect(hardBoss.config.minCompleteTick).toBe(HARD_BOSS_MIN_COMPLETE_TICK);
     const nightmareNormal = build({ kind: 'normal', ctx: { difficulty: 'nightmare' } });
     const nightmareElite = build({ kind: 'elite', ctx: { difficulty: 'nightmare' } });
     expect(nightmareNormal.config.taskCount).toBe(32);
@@ -108,6 +106,15 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(normal.cardEffects.incidentRateMul).toBe(1);
     expect(incidentBoss.cardEffects.incidentRateMul).toBe(1.1);
   });
+
+  it.each(['easy', 'normal', 'hard', 'nightmare'] as const)(
+    '%s のボスは最短90秒の完了下限を使う',
+    (difficulty) => {
+      const boss = build({ kind: 'boss', ctx: { difficulty } });
+
+      expect(boss.config.minCompleteTick).toBe(BOSS_MIN_COMPLETE_TICK);
+    },
+  );
 
   it('一時 modifier の差分でタスク量・集中力・手戻り・初期レビュー負荷が変わる', () => {
     const unchanged = build();

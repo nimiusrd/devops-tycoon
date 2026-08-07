@@ -1,5 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { BOSS_MAX_TICKS, SPRINT_MIN_COMPLETE_TICK } from '../../src/sim/run/sprintBaselineBuild';
+import {
+  BOSS_MAX_TICKS,
+  BOSS_MIN_COMPLETE_TICK,
+  SPRINT_MIN_COMPLETE_TICK,
+} from '../../src/sim/run/sprintBaselineBuild';
 import { RunEngine } from '../../src/sim/run/engine';
 import type { DifficultyId } from '../../src/sim/run/types';
 import {
@@ -181,6 +185,8 @@ describe('sprintTempo（RI-62）', () => {
     expect(wallSecondsAt1x(SPRINT_MIN_COMPLETE_TICK + 1)).toBeGreaterThanOrEqual(
       SPRINT_WALL_SEC.absoluteMin,
     );
+    // 全難易度のボス用下限は表示 tick（+1）でも §3.1 の90秒以上。
+    expect(wallSecondsAt1x(BOSS_MIN_COMPLETE_TICK + 1)).toBeGreaterThanOrEqual(BOSS_WALL_SEC.min);
   });
 
   it('アキュムレータから速度に応じた tick 数を返す', () => {
@@ -446,6 +452,11 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
 
       expect(normal.length, `${difficulty} normal samples`).toBeGreaterThan(0);
       expect(boss.length, `${difficulty} boss samples`).toBeGreaterThan(0);
+
+      // p50 だけでなく、早期ドレインした個別ボスも §3.1 の90秒を下回らない。
+      for (const sec of boss) {
+        expect(sec, `${difficulty} boss wall=${sec}s`).toBeGreaterThanOrEqual(BOSS_WALL_SEC.min);
+      }
 
       for (const sec of normal) {
         expect(sec, `${difficulty} normal wall=${sec}s`).toBeGreaterThanOrEqual(

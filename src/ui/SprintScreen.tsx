@@ -350,7 +350,10 @@ export function SprintScreen({
             🔥{incidents}
           </span>
         </div>
-        <ComboBadge combo={sprint.metrics.combo} />
+        <ComboBadge
+          combo={sprint.metrics.combo}
+          stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
+        />
       </div>
 
       <main className="board-wrap">

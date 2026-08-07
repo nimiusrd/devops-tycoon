@@ -15,7 +15,13 @@ import {
   STABILITY_TICKS,
   THROTTLE_TICKS,
 } from '../../src/sim/actions';
-import { BURN_TICKS, STABILITY_COMBO_CAP } from '../../src/sim/model';
+import {
+  BURN_TICKS,
+  deliveryComboMultiplier,
+  STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
+  STABILITY_HIGH_VALUE_MUL,
+  taskValue,
+} from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import { createSprint, resolveSprintConfig, reviewOne, stepSprint } from '../../src/sim/sprint';
 import { createEngine, type Engine } from '../../src/sim/engine';
@@ -304,20 +310,27 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
   it('安全側の介入で作る運用安定は、連続出荷ボーナスの計上を抑える', () => {
     const stableOrg = createOrgState('default', true);
     const stable = makeSprint(stableOrg, [makeTask(0, { kind: 'complex', highValue: true })]);
-    stable.metrics.combo = STABILITY_COMBO_CAP;
-    stable.metrics.maxCombo = STABILITY_COMBO_CAP;
+    stable.metrics.combo = STABILITY_HIGH_VALUE_COMBO_THRESHOLD;
+    stable.metrics.maxCombo = STABILITY_HIGH_VALUE_COMBO_THRESHOLD;
     stable.modifiers.stabilityUntilTick = TICK + 1;
 
     const unstableOrg = createOrgState('default', true);
     const unstable = makeSprint(unstableOrg, [makeTask(0, { kind: 'complex', highValue: true })]);
-    unstable.metrics.combo = STABILITY_COMBO_CAP;
-    unstable.metrics.maxCombo = STABILITY_COMBO_CAP;
+    unstable.metrics.combo = STABILITY_HIGH_VALUE_COMBO_THRESHOLD;
+    unstable.metrics.maxCombo = STABILITY_HIGH_VALUE_COMBO_THRESHOLD;
 
     reviewOne(stable.tasks[0], stable, stableOrg, rng, TICK);
     reviewOne(unstable.tasks[0], unstable, unstableOrg, rng, TICK);
 
-    expect(stable.metrics.combo).toBe(STABILITY_COMBO_CAP + 1);
-    expect(stable.metrics.maxCombo).toBe(STABILITY_COMBO_CAP + 1);
+    expect(stable.metrics.combo).toBe(STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1);
+    expect(stable.metrics.maxCombo).toBe(STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1);
+    expect(stable.metrics.delivered).toBe(
+      Math.round(
+        taskValue(stable.tasks[0]) *
+          STABILITY_HIGH_VALUE_MUL *
+          deliveryComboMultiplier(stable.metrics.combo, true),
+      ),
+    );
     expect(stable.metrics.delivered).toBeLessThan(unstable.metrics.delivered);
   });
 

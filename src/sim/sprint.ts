@@ -20,6 +20,8 @@ import {
   REVIEW_HP_COST,
   REVIEW_HP_REGEN,
   SPREAD_MORALE_COST,
+  STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
+  STABILITY_HIGH_VALUE_MUL,
   STABILITY_REWORK_MUL,
   codingProgressPerTick,
   deliveryComboMultiplier,
@@ -306,7 +308,11 @@ export function reviewOne(
   // 安定運用は大きな連続出荷ボーナスを積み上げず、着実な流れを選ぶ。
   // コンボ自体は維持し、出荷の上乗せだけを抑えることで安全側の介入が
   // スコアの上振れを増やすだけにならないようにする。
-  const value = Math.round(taskValue(task) * deliveryComboMultiplier(m.combo, stabilized));
+  const stableValue =
+    stabilized && task.highValue && m.combo > STABILITY_HIGH_VALUE_COMBO_THRESHOLD
+      ? taskValue(task) * STABILITY_HIGH_VALUE_MUL
+      : taskValue(task);
+  const value = Math.round(stableValue * deliveryComboMultiplier(m.combo, stabilized));
   m.delivered += value;
   org.deliveryScore += value;
   if (task.aiAssisted) m.aiAssistedCompleted += 1;
@@ -369,10 +375,11 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
   for (const task of expired) {
     task.incident = false;
     delete task.burnTicksLeft;
+    const stabilized = isStabilized(sprint, tick);
     m.combo = 0;
     // 安定中は既知の復旧手順で延焼を止める。炎上時間と通常の手戻りは残すため、
     // 出荷を直接増やさずに下振れの連鎖だけを抑える。
-    if (org.seniorHp >= INCIDENT_CONTAIN_HP || isStabilized(sprint, tick)) {
+    if (org.seniorHp >= INCIDENT_CONTAIN_HP || stabilized) {
       // 自動鎮火: シニアが総出で消す。緊急対応より大幅に高くつく受動対応。
       m.contained += 1;
       m.autoContainCount += 1;

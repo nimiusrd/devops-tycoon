@@ -72,11 +72,12 @@ export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = MIN_PRIOR_QUARTER_DELIVERY_T
  * skilled 実測（実績/目標の中央付近が met 帯 ≈1.0）に合わせて独立校正する。
  */
 export const QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
-  // RI-75: タスク量増後の skilled 実績に合わせ再校正（達成と未達が両立する帯）。
-  easy: 2.15,
-  normal: 1.95,
-  hard: 1.5,
-  nightmare: 1.65,
+  // RI-75/RI-84: タスク量増と安定中の高価値上振れ抑制後の skilled 実績に合わせ再校正。
+  // 難易度ごとに達成と未達が両立する帯を保つ。
+  easy: 2.0,
+  normal: 1.8,
+  hard: 1.4,
+  nightmare: 1.55,
 };
 
 /** 難易度に応じた初期信頼。 */

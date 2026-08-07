@@ -786,8 +786,9 @@ describe('四半期レビュー（Phase 8）', () => {
     const major = buildQuarterGoal(getBoss('major-incident')!, 'normal', 1);
     // 旧式（ボス床×6）だと 2700/1200=2.25 倍。通常5+ボス1なら差は小さくなる。
     expect(big.deliveryTarget / major.deliveryTarget).toBeLessThan(1.3);
-    expect(big.deliveryTarget).toBe(3803);
-    expect(major.deliveryTarget).toBe(3315);
+    // RI-84: 安定中の高価値上振れ抑制後の目標再校正値。
+    expect(big.deliveryTarget).toBe(3510);
+    expect(major.deliveryTarget).toBe(3060);
   });
 
   it('RI-68: cut_scope 後も Delivery 目標が四半期実績帯から大きく外れない', () => {

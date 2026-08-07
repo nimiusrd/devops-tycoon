@@ -33,6 +33,8 @@ import {
   OVERTIME_CODING_MUL,
   OVERTIME_REVIEW_MUL,
   STABILITY_COMBO_CAP,
+  STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
+  STABILITY_HIGH_VALUE_MUL,
   STABILITY_REWORK_MUL,
 } from '../sim/model/process';
 import {
@@ -605,6 +607,11 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
   if (def.stabilizesFlow) {
     pushTag(tags, `運用安定 ${STABILITY_TICKS}tick`, 'positive');
     pushTag(tags, `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, 'positive');
+    pushTag(
+      tags,
+      `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
+      'neutral',
+    );
     pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
     pushTag(
       tags,

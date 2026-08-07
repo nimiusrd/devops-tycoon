@@ -53,6 +53,9 @@ const RI75_SEEDS = [
   'pt-10',
 ] as const;
 
+/** RI-84 / F-5: 先頭3スプリントを同一番号で比較する。 */
+const F5_SPRINT_NUMBERS = [1, 2, 3] as const;
+
 /**
  * RI-66: skilled で四半期・ボス・介入余地を集める代表 seed（RI-75 再選定）。
  * 四半期レビュー到達かつ壁時計が §3.1（≤15分）に入るものを固定する。
@@ -418,16 +421,17 @@ function f5Cv(values: readonly number[]): number {
   return Math.sqrt(variance) / mean;
 }
 
-function s1DeliveredBySeed(
+function deliveredBySeed(
   runs: readonly RunLog[],
   difficulty: DifficultyId,
   policy: (typeof F4_POLICIES)[number],
+  sprintNumber: number,
 ): Map<string, number> {
   const bySeed = new Map<string, number>();
   for (const run of runs) {
     if (run.difficulty !== difficulty || run.policy !== policy) continue;
-    const s1 = run.sprints[0];
-    if (s1) bySeed.set(run.seed, s1.delivered);
+    const sprint = run.sprints.find((item) => item.quarter === 1 && item.index === sprintNumber);
+    if (sprint) bySeed.set(run.seed, sprint.delivered);
   }
   return bySeed;
 }
@@ -500,24 +504,37 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
     }
   }, 180_000);
 
-  it('F-5 初見コホートでは、戦術・熟練介入とも S1 出荷のばらつきを全難易度で抑える', () => {
+  it('F-5 初見コホートでは、戦術・熟練介入とも先頭3スプリントの出荷ばらつきを抑える', () => {
     for (const difficulty of RI75_DIFFICULTIES) {
-      const control = s1DeliveredBySeed(runs, difficulty, 'noInterventionCtl');
-      for (const policy of ['naive', 'skilledNoHire'] as const) {
-        const intervention = s1DeliveredBySeed(runs, difficulty, policy);
-        const sharedSeeds = RI75_SEEDS.filter(
-          (seed) => control.has(seed) && intervention.has(seed),
+      for (const sprintNumber of F5_SPRINT_NUMBERS) {
+        const valuesByPolicy = F4_POLICIES.map((policy) =>
+          deliveredBySeed(runs, difficulty, policy, sprintNumber),
+        );
+        const sharedSeeds = RI75_SEEDS.filter((seed) =>
+          valuesByPolicy.every((values) => values.has(seed)),
         );
 
-        // 生存状況で seed を選抜せず、事前固定した fresh の10本をそのまま比較する。
-        expect(sharedSeeds, `${difficulty}/${policy} S1 common seeds`).toEqual([...RI75_SEEDS]);
-
-        const controlCv = f5Cv(sharedSeeds.map((seed) => control.get(seed)!));
-        const interventionCv = f5Cv(sharedSeeds.map((seed) => intervention.get(seed)!));
+        // 生存状況で seed を選抜せず、事前固定した共通到達コホートを比較する。
+        // S3 は敗北前の到達数が減るため、2本以上を必須にして同一 seed の比較を残す。
+        const minSharedSeeds = sprintNumber === 1 ? RI75_SEEDS.length : sprintNumber === 2 ? 7 : 2;
         expect(
-          interventionCv,
-          `${difficulty} ${policy} CV=${interventionCv} vs control=${controlCv}`,
-        ).toBeLessThan(controlCv);
+          sharedSeeds.length,
+          `${difficulty} S${sprintNumber} common seeds`,
+        ).toBeGreaterThanOrEqual(minSharedSeeds);
+
+        const controlCv = f5Cv(sharedSeeds.map((seed) => valuesByPolicy[2].get(seed)!));
+        for (const [policy, policyIndex] of [
+          ['naive', 0],
+          ['skilledNoHire', 1],
+        ] as const) {
+          const interventionCv = f5Cv(
+            sharedSeeds.map((seed) => valuesByPolicy[policyIndex].get(seed)!),
+          );
+          expect(
+            interventionCv,
+            `${difficulty} S${sprintNumber} ${policy} CV=${interventionCv} vs control=${controlCv}`,
+          ).toBeLessThan(controlCv);
+        }
       }
     }
   });

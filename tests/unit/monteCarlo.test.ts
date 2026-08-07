@@ -505,8 +505,9 @@ describe('monteCarlo 基盤（RI-14）', () => {
       expect(comparisons.reduce((sum, c) => sum + c.interruptsUsed, 0)).toBeGreaterThan(1);
       expect(comparisons.reduce((sum, c) => sum + c.firefightsUsed, 0)).toBeGreaterThan(1);
 
-      // 平均 5〜25% の出荷改善を手応えの目安とし、単一 seed でも 75% 超の支配を許さない。
-      expect(summary.deliveredDelta.mean).toBeGreaterThan(10);
+      // 安定化で高価値の上振れを抑える再校正後も、平均 5〜25% の相対改善を維持し、
+      // 絶対差は 9pt を超える手応えを残す。単一 seed でも 75% 超の支配を許さない。
+      expect(summary.deliveredDelta.mean).toBeGreaterThan(9);
       expect(summary.deliveredDeltaRatio.mean).toBeGreaterThanOrEqual(0.05);
       expect(summary.deliveredDeltaRatio.mean).toBeLessThanOrEqual(0.25);
       expect(summary.deliveredDeltaRatio.max).toBeLessThanOrEqual(0.75);

@@ -90,6 +90,10 @@ export const STABILITY_TICKS = 180;
 export const STABILITY_REWORK_MUL = 0.4;
 /** 安定中に許す連続出荷ボーナスの最大段数（RI-84 / F-5）。 */
 export const STABILITY_COMBO_CAP = 6;
+/** 安定中に高価値タスクの上振れを抑え始めるコンボ閾値（RI-84 / F-5）。 */
+export const STABILITY_HIGH_VALUE_COMBO_THRESHOLD = STABILITY_COMBO_CAP + 2;
+/** 閾値超過時の高価値タスク倍率。安定運用では通常タスクを優先して分散を抑える。 */
+export const STABILITY_HIGH_VALUE_MUL = 0.5;
 
 /** Rework の所要 tick。 */
 export const REWORK_TICKS = 4;

@@ -89,12 +89,13 @@ export const STABILITY_TICKS = 180;
 /** 安定した運用中に掛ける手戻り率倍率（RI-84 / F-5）。 */
 export const STABILITY_REWORK_MUL = 0.4;
 /** 安定中に許す連続出荷ボーナスの最大段数（RI-84 / F-5）。 */
-export const STABILITY_COMBO_CAP = 6;
+export const STABILITY_COMBO_CAP = 8;
+/** 安定中に上限を超えたコンボ上振れを残す割合（急な平均落ち込みを避ける）。 */
+export const STABILITY_COMBO_TAIL_MUL = 0.5;
 /** 安定中に高価値タスクの上振れを抑え始めるコンボ閾値（RI-84 / F-5）。 */
-export const STABILITY_HIGH_VALUE_COMBO_THRESHOLD = STABILITY_COMBO_CAP + 2;
+export const STABILITY_HIGH_VALUE_COMBO_THRESHOLD = 8;
 /** 閾値超過時の高価値タスク倍率。安定運用では通常タスクを優先して分散を抑える。 */
-export const STABILITY_HIGH_VALUE_MUL = 0.5;
-
+export const STABILITY_HIGH_VALUE_MUL = 0.7;
 /** Rework の所要 tick。 */
 export const REWORK_TICKS = 4;
 /** タスク 1 件あたりの手戻り上限（これを超えると強制的に通す）。 */
@@ -123,10 +124,14 @@ export function comboMultiplier(combo: number): number {
 
 /**
  * 現在の運用状態で実出荷へ適用するコンボ倍率。
- * 安定中は連続出荷ボーナスを抑えるため、表示・計上とも同じ上限を使う。
+ * 安定中は連続出荷ボーナスの基準段数を揃え、上限超過分は一部だけ残す。
+ * 表示と計上で同じ倍率を使い、安定化が平均出荷を急落させないようにする。
  */
 export function deliveryComboMultiplier(combo: number, stabilized: boolean): number {
-  return comboMultiplier(stabilized ? Math.min(combo, STABILITY_COMBO_CAP) : combo);
+  const raw = comboMultiplier(combo);
+  if (!stabilized || combo <= STABILITY_COMBO_CAP) return raw;
+  const cap = comboMultiplier(STABILITY_COMBO_CAP);
+  return cap + (raw - cap) * STABILITY_COMBO_TAIL_MUL;
 }
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));

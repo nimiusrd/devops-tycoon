@@ -384,6 +384,14 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     evolve: 'asListed',
     recruit: 'skip',
   },
+  /** naive と同じ初見条件で、介入だけを外した F-5 の因果統制。 */
+  naiveNoInterventionCtl: {
+    actions: [],
+    stepMs: 600,
+    cards: 'always',
+    evolve: 'asListed',
+    recruit: 'skip',
+  },
   /** 上級者想定。閾値低め＋andon＋差配、採用あり。 */
   skilled: {
     actions: SKILLED_ACTIONS,

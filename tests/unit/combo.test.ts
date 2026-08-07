@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   COMBO_BONUS_CAP,
   STABILITY_COMBO_CAP,
+  STABILITY_COMBO_TAIL_MUL,
   comboMultiplier,
   deliveryComboMultiplier,
 } from '../../src/sim/model';
@@ -33,10 +34,14 @@ describe('comboMultiplier（第6.2）', () => {
     expect(comboMultiplier(1000)).toBeCloseTo(1 + COMBO_BONUS_CAP);
   });
 
-  it('運用安定中は実出荷倍率を安定用コンボ上限に合わせる', () => {
+  it('運用安定中は基準段数を揃え、上限超過分だけ上振れを残す', () => {
     const combo = STABILITY_COMBO_CAP + 1;
+    const cap = comboMultiplier(STABILITY_COMBO_CAP);
+    const raw = comboMultiplier(combo);
 
-    expect(deliveryComboMultiplier(combo, true)).toBe(comboMultiplier(STABILITY_COMBO_CAP));
+    expect(deliveryComboMultiplier(combo, true)).toBeCloseTo(
+      cap + (raw - cap) * STABILITY_COMBO_TAIL_MUL,
+    );
     expect(deliveryComboMultiplier(combo, false)).toBe(comboMultiplier(combo));
   });
 });

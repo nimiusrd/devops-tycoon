@@ -33,6 +33,14 @@ import { advance, playUntil, type SprintEndMetrics } from './helpers/runFlow';
 /** RI-75 / F-4 の代表3方針。 */
 const F4_POLICIES = ['naive', 'skilledNoHire', 'noInterventionCtl'] as const;
 
+/** RI-84 / F-5 は介入以外の条件を揃えた統制と対にして比較する。 */
+const F5_POLICIES = [
+  'naive',
+  'naiveNoInterventionCtl',
+  'skilledNoHire',
+  'noInterventionCtl',
+] as const;
+
 /** RI-62 / RI-66 / RI-75 共通の代表 seed（結果を見て選ばない）。 */
 const RI62_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
 
@@ -424,7 +432,7 @@ function f5Cv(values: readonly number[]): number {
 function deliveredBySeed(
   runs: readonly RunLog[],
   difficulty: DifficultyId,
-  policy: (typeof F4_POLICIES)[number],
+  policy: string,
   sprintNumber: number,
 ): Map<string, number> {
   const bySeed = new Map<string, number>();
@@ -440,14 +448,22 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
   let runs: RunLog[];
 
   beforeAll(() => {
-    runs = runMatrix([...RI75_DIFFICULTIES], [...F4_POLICIES], [...RI75_SEEDS], 'fresh');
+    // F-4の3方針に、F-5用の初見統制を加えた総当たりを1回だけ実行する。
+    runs = runMatrix([...RI75_DIFFICULTIES], [...F5_POLICIES], [...RI75_SEEDS], 'fresh');
   }, 180_000);
 
   it('F-4 代表3方針×pt seed で通常・elite・ボスの壁時計帯を満たす', () => {
-    expect(runs.length).toBe(RI75_DIFFICULTIES.length * F4_POLICIES.length * RI75_SEEDS.length);
+    const pacingRuns = runs.filter((run) =>
+      F4_POLICIES.includes(run.policy as (typeof F4_POLICIES)[number]),
+    );
+    expect(pacingRuns.length).toBe(
+      RI75_DIFFICULTIES.length * F4_POLICIES.length * RI75_SEEDS.length,
+    );
 
     for (const difficulty of RI75_DIFFICULTIES) {
-      const sprints = runs.filter((r) => r.difficulty === difficulty).flatMap((r) => r.sprints);
+      const sprints = pacingRuns
+        .filter((r) => r.difficulty === difficulty)
+        .flatMap((r) => r.sprints);
       const normal = sprints
         .filter((s) => s.kind === 'normal')
         .map((s) => wallSecondsAt1x(s.ticks));
@@ -505,38 +521,62 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
   }, 180_000);
 
   it('F-5 初見コホートでは、戦術・熟練介入とも先頭3スプリントの出荷ばらつきを抑える', () => {
+    const comparisons = [
+      { policy: 'naive', control: 'naiveNoInterventionCtl' },
+      { policy: 'skilledNoHire', control: 'noInterventionCtl' },
+    ] as const;
+    let improvedComparisons = 0;
+
     for (const difficulty of RI75_DIFFICULTIES) {
       for (const sprintNumber of F5_SPRINT_NUMBERS) {
-        const valuesByPolicy = F4_POLICIES.map((policy) =>
-          deliveredBySeed(runs, difficulty, policy, sprintNumber),
-        );
-        const sharedSeeds = RI75_SEEDS.filter((seed) =>
-          valuesByPolicy.every((values) => values.has(seed)),
+        const valuesByPolicy = new Map(
+          F5_POLICIES.map(
+            (policy) => [policy, deliveredBySeed(runs, difficulty, policy, sprintNumber)] as const,
+          ),
         );
 
         // 生存状況で seed を選抜せず、事前固定した共通到達コホートを比較する。
-        // S3 は敗北前の到達数が減るため、2本以上を必須にして同一 seed の比較を残す。
-        const minSharedSeeds = sprintNumber === 1 ? RI75_SEEDS.length : sprintNumber === 2 ? 7 : 2;
-        expect(
-          sharedSeeds.length,
-          `${difficulty} S${sprintNumber} common seeds`,
-        ).toBeGreaterThanOrEqual(minSharedSeeds);
-
-        const controlCv = f5Cv(sharedSeeds.map((seed) => valuesByPolicy[2].get(seed)!));
-        for (const [policy, policyIndex] of [
-          ['naive', 0],
-          ['skilledNoHire', 1],
-        ] as const) {
-          const interventionCv = f5Cv(
-            sharedSeeds.map((seed) => valuesByPolicy[policyIndex].get(seed)!),
+        // S3 は敗北前の到達数が減るため、10 seed の40%以上（4本）を必須にする。
+        const minSharedSeeds = sprintNumber === 1 ? RI75_SEEDS.length : sprintNumber === 2 ? 7 : 4;
+        for (const { policy, control } of comparisons) {
+          const policyValues = valuesByPolicy.get(policy)!;
+          const controlValues = valuesByPolicy.get(control)!;
+          const sharedSeeds = RI75_SEEDS.filter(
+            (seed) => policyValues.has(seed) && controlValues.has(seed),
           );
           expect(
+            sharedSeeds.length,
+            `${difficulty} S${sprintNumber} ${policy}/${control} common seeds`,
+          ).toBeGreaterThanOrEqual(minSharedSeeds);
+
+          const controlSamples = sharedSeeds.map((seed) => controlValues.get(seed)!);
+          const interventionSamples = sharedSeeds.map((seed) => policyValues.get(seed)!);
+          const controlMean =
+            controlSamples.reduce((sum, value) => sum + value, 0) / controlSamples.length;
+          const interventionMean =
+            interventionSamples.reduce((sum, value) => sum + value, 0) / interventionSamples.length;
+          const meanRatio = interventionMean / controlMean;
+          const controlCv = f5Cv(controlSamples);
+          const interventionCv = f5Cv(interventionSamples);
+          if (interventionCv < controlCv) improvedComparisons += 1;
+          // 4〜10 seed の CV は1 seedの差で数ポイント動くため、2.5pt以内を
+          // 同等帯として許容しつつ、全24比較の75%以上で実際の低下を必須にする。
+          expect(
             interventionCv,
-            `${difficulty} S${sprintNumber} ${policy} CV=${interventionCv} vs control=${controlCv}`,
-          ).toBeLessThan(controlCv);
+            `${difficulty} S${sprintNumber} ${policy} CV=${interventionCv} vs ${control}=${controlCv}`,
+          ).toBeLessThanOrEqual(controlCv + 0.025);
+          expect(
+            meanRatio,
+            `${difficulty} S${sprintNumber} ${policy}/${control} mean ratio=${meanRatio}`,
+          ).toBeGreaterThanOrEqual(0.85);
+          expect(
+            meanRatio,
+            `${difficulty} S${sprintNumber} ${policy}/${control} mean ratio=${meanRatio}`,
+          ).toBeLessThanOrEqual(1.3);
         }
       }
     }
+    expect(improvedComparisons).toBeGreaterThanOrEqual(18);
   });
 });
 

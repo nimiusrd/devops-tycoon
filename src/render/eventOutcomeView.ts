@@ -33,6 +33,7 @@ import {
   OVERTIME_CODING_MUL,
   OVERTIME_REVIEW_MUL,
   STABILITY_COMBO_CAP,
+  STABILITY_COMBO_TAIL_MUL,
   STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
   STABILITY_HIGH_VALUE_MUL,
   STABILITY_REWORK_MUL,
@@ -616,7 +617,7 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
     pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
     pushTag(
       tags,
-      `安定中 コンボ出荷は +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%まで`,
+      `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
       'neutral',
     );
   }

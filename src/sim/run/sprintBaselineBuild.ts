@@ -27,12 +27,13 @@ export function eliteTaskMul(difficulty: DifficultyId): number {
   switch (difficulty) {
     case 'easy':
       // RI-86 で進化ノードの取得時期が後ろへずれたため、easy elite の p50 が
-      // 120 秒帯をわずかに超えないよう再校正する（1.18→1.15）。
-      return 1.15;
+      // 120 秒帯をわずかに超えないよう再校正する（1.18→1.10）。
+      return 1.1;
     case 'normal':
       return 1.12;
     case 'hard':
-      return 1.1;
+      // 安定化の平均再校正後も elite p50 を120秒帯へ収める。
+      return 1.09;
     case 'nightmare':
       return 1.15;
   }

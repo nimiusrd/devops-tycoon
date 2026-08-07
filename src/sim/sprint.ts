@@ -308,10 +308,12 @@ export function reviewOne(
   // 安定運用は大きな連続出荷ボーナスを積み上げず、着実な流れを選ぶ。
   // コンボ自体は維持し、出荷の上乗せだけを抑えることで安全側の介入が
   // スコアの上振れを増やすだけにならないようにする。
-  const stableValue =
-    stabilized && task.highValue && m.combo > STABILITY_HIGH_VALUE_COMBO_THRESHOLD
-      ? taskValue(task) * STABILITY_HIGH_VALUE_MUL
-      : taskValue(task);
+  const stableValue = stabilized
+    ? taskValue(task) *
+      (task.highValue && m.combo > STABILITY_HIGH_VALUE_COMBO_THRESHOLD
+        ? STABILITY_HIGH_VALUE_MUL
+        : 1)
+    : taskValue(task);
   const value = Math.round(stableValue * deliveryComboMultiplier(m.combo, stabilized));
   m.delivered += value;
   org.deliveryScore += value;

@@ -2546,6 +2546,24 @@ button.card:active {
   .actions {
     grid-template-columns: repeat(4, 1fr);
   }
+
+  /*
+   * 狭幅のアクションカードは4列に畳むため、長い効果タグを通常折返しすると
+   * 1タグだけでカードの高さが大きく伸びる。全文は action の title で確認できるため、
+   * カード内は1行の省略表示にして、盤面とアクションバーを viewport 内へ収める。
+   */
+  .app.app-sprint-layout .action .effect-tags {
+    width: 100%;
+    min-width: 0;
+  }
+  .app.app-sprint-layout .action .effect-tag {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* ===== Phase 3: 周回・育成・診断 ===== */

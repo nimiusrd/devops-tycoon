@@ -26,7 +26,9 @@ export const ELITE_TASK_MUL = 1.12;
 export function eliteTaskMul(difficulty: DifficultyId): number {
   switch (difficulty) {
     case 'easy':
-      return 1.18;
+      // RI-86 で進化ノードの取得時期が後ろへずれたため、easy elite の p50 が
+      // 120 秒帯をわずかに超えないよう再校正する（1.18→1.15）。
+      return 1.15;
     case 'normal':
       return 1.12;
     case 'hard':

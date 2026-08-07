@@ -584,6 +584,12 @@ export function goalCarryoverHudCopy(input: {
   if (effects.qualityAdd !== undefined && effects.qualityAdd !== 0) {
     parts.push(`品質${effects.qualityAdd >= 0 ? '+' : ''}${effects.qualityAdd}`);
   }
+  if (effects.techDebtDelta !== undefined && effects.techDebtDelta !== 0) {
+    parts.push(`負債${effects.techDebtDelta >= 0 ? '+' : ''}${effects.techDebtDelta}/S`);
+  }
+  if (effects.seniorHpDelta !== undefined && effects.seniorHpDelta !== 0) {
+    parts.push(`シニア${effects.seniorHpDelta >= 0 ? '+' : ''}${effects.seniorHpDelta}/S`);
+  }
   const summary = parts.length > 0 ? parts.join(' / ') : '効果適用中';
   const shipDown = (effects.codingSpeedMul ?? 1) < 1;
   return {

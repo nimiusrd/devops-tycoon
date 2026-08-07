@@ -18,7 +18,12 @@ export type GoalNextQuarterEffects = Partial<
     | 'incidentRateMul'
     | 'qualityAdd'
   >
->;
+> & {
+  /** スプリント開始ごとの Tech Debt 差分（負で改善）。 */
+  techDebtDelta?: number;
+  /** スプリント開始ごとのシニア HP 差分。 */
+  seniorHpDelta?: number;
+};
 
 export interface GoalAdjustmentDef {
   id: GoalAdjustmentId;
@@ -71,8 +76,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     // RI-68: 絶対減算は累計スケールで目標を潰すため、緩和は乗算のみにする。
     goalEffects: { deliveryMul: 0.8 },
-    // RI-83: 焦点化で次四半期の出荷を押し上げる。
-    nextQuarterEffects: { codingSpeedMul: 1.12, routineSpeedMul: 1.12 },
+    // RI-83: 焦点化で出荷を上げる。Tech Debt / シニア消耗局面では効きにくい。
+    nextQuarterEffects: { codingSpeedMul: 1.15, routineSpeedMul: 1.15 },
   },
   {
     id: 'extend_deadline',
@@ -82,10 +87,11 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: -10,
     goalEffects: { qualityAdd: 5, moraleAdd: 5, deliveryMul: 0.9 },
     nextQuarterEffects: {
-      codingSpeedMul: 0.92,
-      routineSpeedMul: 0.92,
+      codingSpeedMul: 0.95,
+      routineSpeedMul: 0.95,
       reworkRateAdd: -0.08,
       reviewEfficiencyMul: 1.1,
+      seniorHpDelta: 5,
     },
   },
   {
@@ -97,10 +103,11 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     goalEffects: { techDebtLimitAdd: 15, incidentLimitAdd: 3, deliveryMul: 0.85 },
     orgEffects: { deliveryScoreMul: 0.9, techDebtDelta: -8 },
     nextQuarterEffects: {
-      codingSpeedMul: 0.88,
-      routineSpeedMul: 0.88,
+      codingSpeedMul: 0.92,
+      routineSpeedMul: 0.92,
       incidentRateMul: 0.75,
       qualityAdd: 4,
+      techDebtDelta: -4,
     },
   },
   {
@@ -127,8 +134,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     goalEffects: { aiAdoptionAdd: -15, deliveryMul: 0.92 },
     pauseAiDebuff: true,
-    // 出荷 -15% は pauseAiDebuff 側で畳み込む。ここでは安定化サイドを載せる。
-    nextQuarterEffects: { reworkRateAdd: -0.1, incidentRateMul: 0.7 },
+    // 出荷 -15% は pauseAiDebuff 側で畳み込む。安定化とシニア負荷の緩和を載せる。
+    nextQuarterEffects: { reworkRateAdd: -0.1, incidentRateMul: 0.7, seniorHpDelta: 3 },
   },
   {
     id: 'reorg_teams',
@@ -139,11 +146,11 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     goalEffects: { moraleAdd: -5 },
     orgEffects: { moraleDelta: -10, seniorHpDelta: 25, techDebtDelta: -5 },
     reorgReset: true,
-    // RI-83: 即時リセットは維持しつつ、次四半期に再編の混乱コストを残す。
+    // RI-83: 即時リセット後もレビュー回復を四半期中維持する。
     nextQuarterEffects: {
-      codingSpeedMul: 0.9,
-      routineSpeedMul: 0.9,
       reviewEfficiencyMul: 1.2,
+      seniorHpDelta: 3,
+      techDebtDelta: -2,
     },
   },
   {

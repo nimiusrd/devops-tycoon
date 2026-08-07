@@ -124,6 +124,7 @@ import {
 } from './constants';
 import {
   applyGoalAdjustment,
+  applyGoalCarryoverOrgTick,
   applyGoalCarryoverToEffects,
   applyGoalOrgEffectsToTeam,
   buildInitialTrust,
@@ -566,6 +567,29 @@ export class RunEngine {
       0,
       100,
     );
+    // RI-83: 目標修正の次四半期 org 継続差分（Tech Debt / シニア HP）。全チームへ。
+    this.org = applyGoalCarryoverOrgTick(
+      this.org,
+      this.goalCarryoverId,
+      this.goalCarryoverQuarter,
+      this.quarterNumber,
+    );
+    this.teams = this.teams.map((t) => {
+      const seeded = {
+        ...this.org,
+        techDebt: t.techDebt,
+        seniorHp: t.seniorHp,
+      };
+      const next = applyGoalCarryoverOrgTick(
+        seeded,
+        this.goalCarryoverId,
+        this.goalCarryoverQuarter,
+        this.quarterNumber,
+      );
+      const updated = { ...t, techDebt: next.techDebt, seniorHp: next.seniorHp };
+      return { ...updated, ...deriveTeamCapacities(updated) };
+    });
+    this.syncActiveTeamFromOrg();
     this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget);
     // 試練の開始時コストで予算が尽きた場合はスプリントへ進まず継続不能にする。
     if (this.applyImmediateLose()) return;

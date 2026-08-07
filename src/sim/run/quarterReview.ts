@@ -54,6 +54,7 @@ export function hasNextQuarterCarryover(def: GoalAdjustmentDef): boolean {
 /**
  * アクティブな目標修正キャリーオーバーを CardEffects へ合成する（RI-83）。
  * 四半期不一致・未知 ID では入力をそのまま返す。
+ * org 継続差分（techDebt / seniorHp）は `applyGoalCarryoverOrgTick` 側。
  */
 export function applyGoalCarryoverToEffects(
   effects: CardEffects,
@@ -65,7 +66,15 @@ export function applyGoalCarryoverToEffects(
   const def = getGoalAdjustment(carryoverId);
   if (!def) return effects;
   const partial = resolveNextQuarterEffects(def);
-  if (Object.keys(partial).length === 0) return effects;
+  const hasCardEffects =
+    partial.codingSpeedMul !== undefined ||
+    partial.routineSpeedMul !== undefined ||
+    partial.reviewEfficiencyMul !== undefined ||
+    partial.reviewCapacityMul !== undefined ||
+    partial.reworkRateAdd !== undefined ||
+    partial.incidentRateMul !== undefined ||
+    partial.qualityAdd !== undefined;
+  if (!hasCardEffects) return effects;
   return {
     ...effects,
     codingSpeedMul: effects.codingSpeedMul * (partial.codingSpeedMul ?? 1),
@@ -76,6 +85,29 @@ export function applyGoalCarryoverToEffects(
     incidentRateMul: effects.incidentRateMul * (partial.incidentRateMul ?? 1),
     qualityAdd: effects.qualityAdd + (partial.qualityAdd ?? 0),
   };
+}
+
+/**
+ * スプリント開始時に目標修正キャリーオーバーの org 継続差分を適用する（RI-83）。
+ */
+export function applyGoalCarryoverOrgTick(
+  org: OrgState,
+  carryoverId: GoalAdjustmentId | null,
+  carryoverQuarter: number | null,
+  quarterNumber: number,
+): OrgState {
+  if (carryoverId === null || carryoverQuarter !== quarterNumber) return org;
+  const def = getGoalAdjustment(carryoverId);
+  if (!def) return org;
+  const partial = resolveNextQuarterEffects(def);
+  let next = org;
+  if (partial.techDebtDelta !== undefined && partial.techDebtDelta !== 0) {
+    next = { ...next, techDebt: Math.max(0, next.techDebt + partial.techDebtDelta) };
+  }
+  if (partial.seniorHpDelta !== undefined && partial.seniorHpDelta !== 0) {
+    next = { ...next, seniorHp: clamp(next.seniorHp + partial.seniorHpDelta, 0, 100) };
+  }
+  return next;
 }
 
 /**

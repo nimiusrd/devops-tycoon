@@ -15,6 +15,7 @@ import {
   MIN_PRIOR_QUARTER_DELIVERY_TARGET,
   MIN_QUARTER_DELIVERY_TARGET,
   applyGoalAdjustment,
+  applyGoalCarryoverOrgTick,
   applyGoalCarryoverToEffects,
   applyGoalOrgEffectsToTeam,
   availableAdjustments,
@@ -578,9 +579,16 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(pause.incidentRateMul).toBeCloseTo(0.7);
 
     const cut = applyGoalCarryoverToEffects({ ...IDENTITY_CARD_EFFECTS }, 'cut_scope', 2, 2);
-    expect(cut.codingSpeedMul).toBeCloseTo(1.12);
+    expect(cut.codingSpeedMul).toBeCloseTo(1.15);
     const expired = applyGoalCarryoverToEffects({ ...IDENTITY_CARD_EFFECTS }, 'cut_scope', 2, 3);
     expect(expired.codingSpeedMul).toBe(1);
+
+    const before = org({ techDebt: 40, seniorHp: 30 });
+    const pivoted = applyGoalCarryoverOrgTick(before, 'quality_pivot', 2, 2);
+    expect(pivoted.techDebt).toBe(36);
+    expect(applyGoalCarryoverOrgTick(before, 'quality_pivot', 2, 3)).toEqual(before);
+    const extended = applyGoalCarryoverOrgTick(before, 'extend_deadline', 2, 2);
+    expect(extended.seniorHp).toBe(35);
   });
 
   it('RI-72-C1: outcome 補助関数と表示ラベルが全 outcome を分類する', () => {

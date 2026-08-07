@@ -238,9 +238,9 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     });
 
     expect(inactive.cardEffects.codingSpeedMul).toBe(1);
-    expect(cut.cardEffects.codingSpeedMul).toBeCloseTo(1.12);
-    expect(cut.cardEffects.routineSpeedMul).toBeCloseTo(1.12);
-    expect(quality.cardEffects.codingSpeedMul).toBeCloseTo(0.88);
+    expect(cut.cardEffects.codingSpeedMul).toBeCloseTo(1.15);
+    expect(cut.cardEffects.routineSpeedMul).toBeCloseTo(1.15);
+    expect(quality.cardEffects.codingSpeedMul).toBeCloseTo(0.92);
     expect(quality.cardEffects.incidentRateMul).toBeCloseTo(0.75);
     expect(quality.cardEffects.qualityAdd).toBe(4);
   });

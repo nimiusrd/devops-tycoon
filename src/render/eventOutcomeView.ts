@@ -627,6 +627,20 @@ function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
       toneFromDelta(effects.qualityAdd),
     );
   }
+  if (effects.techDebtDelta !== undefined && effects.techDebtDelta !== 0) {
+    pushTag(
+      tags,
+      `次四半期 Tech Debt ${formatSignedDelta(effects.techDebtDelta)}/スプリント`,
+      toneFromAdd(effects.techDebtDelta, true),
+    );
+  }
+  if (effects.seniorHpDelta !== undefined && effects.seniorHpDelta !== 0) {
+    pushTag(
+      tags,
+      `次四半期 シニアHP ${formatSignedDelta(effects.seniorHpDelta)}/スプリント`,
+      toneFromDelta(effects.seniorHpDelta),
+    );
+  }
   return tags;
 }
 

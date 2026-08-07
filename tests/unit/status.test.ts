@@ -274,7 +274,7 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
         goalCarryoverQuarter: 2,
         quarterNumber: 2,
       }).detail,
-    ).toContain('出荷+12%');
+    ).toContain('出荷+15%');
   });
 
   it('レビュー凍結の危険域で予兆チップを出す（RI-85）', () => {

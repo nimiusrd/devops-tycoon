@@ -244,28 +244,34 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   const unlockedCount = (branch: EvolutionBranch): number =>
     unlocked.filter((id) => id.startsWith(`${branch}-`)).length;
 
-  // レビューは「実際に詰まった／シニアが危険」ときだけ強く押す。常時バイアスにしない。
-  if (reviewQueuePeak >= 10) scores.review += 4;
-  else if (reviewQueuePeak >= 6) scores.review += 2;
-  if (org.seniorHp < 40) scores.review += 3;
-  else if (org.seniorHp < 50) scores.review += 1;
+  // キュー高止まりは実ランでほぼ共通なので、主信号はシニアHPの危機度。
+  // 旧実装は peak>=10 で +4 かつ HP<40 で +3 と重なり、全コホートが review 固定になっていた。
+  if (org.seniorHp < 18) scores.review += 4;
+  else if (org.seniorHp < 25) scores.review += 2;
+  else if (org.seniorHp < 40) scores.review += 0.5;
+  if (reviewQueuePeak >= 18) scores.review += 1.5;
+  else if (reviewQueuePeak >= 14) scores.review += 0.5;
 
-  if (org.techDebt >= 50) scores.quality += 4;
-  else if (org.techDebt >= 35) scores.quality += 2;
-  if (org.testCoverage < 40) scores.quality += 2;
-  if (org.aiDependency >= 55 && org.aiLiteracy < 45) scores.quality += 2;
+  if (org.techDebt >= 45) scores.quality += 4;
+  else if (org.techDebt >= 25) scores.quality += 2.5;
+  else if (org.techDebt >= 10) scores.quality += 1;
+  if (org.testCoverage < 35) scores.quality += 2;
+  else if (org.testCoverage < 45) scores.quality += 1;
 
-  if (org.aiDependency >= 55 && org.aiLiteracy >= 45) scores.ai += 4;
-  else if (org.aiDependency >= 40) scores.ai += 2;
-  else if (org.aiEnabled && org.aiLiteracy < 40) scores.ai += 1;
+  // リテラシー不足を最優先。依存だけ高い（導入難易度で頻出）場合は中程度に抑える。
+  if (org.aiDependency >= 45 && org.aiLiteracy < 40) scores.ai += 4;
+  else if (org.aiDependency >= 85 && org.aiLiteracy >= 40) scores.ai += 3;
+  else if (org.aiDependency >= 55) scores.ai += 1.5;
+  else if (org.aiEnabled && org.aiLiteracy < 35) scores.ai += 1;
 
-  if (org.morale < 45) scores.culture += 3;
-  else if (org.morale < 55) scores.culture += 1;
-  if (org.quality < 40) scores.culture += 2;
+  if (org.morale < 50) scores.culture += 4;
+  else if (org.morale < 70) scores.culture += 2.5;
+  else if (org.morale < 85) scores.culture += 1;
+  if (org.quality < 40) scores.culture += 1.5;
 
   // 出荷効率が悪い／累計出荷が伸びていないときだけ開発へ。
-  if (totals.completed >= 8 && totals.delivered < totals.completed * 6) scores.dev += 3;
-  else if (totals.delivered < 60 && totals.completed >= 8) scores.dev += 2;
+  if (totals.completed >= 5 && totals.delivered < totals.completed * 5) scores.dev += 3;
+  else if (totals.delivered < 50 && totals.completed >= 5) scores.dev += 2;
 
   // 既に2ノード以上取ったブランチは減点し、他方向へ曲げる余地を残す。
   for (const b of Object.keys(scores) as EvolutionBranch[]) {

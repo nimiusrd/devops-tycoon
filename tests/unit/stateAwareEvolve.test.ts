@@ -24,12 +24,12 @@ const base = (over: Parameters<typeof stateAwareEvolveBranches>[0]) =>
   stateAwareEvolveBranches({ unlocked: [], ...over });
 
 describe('stateAwareEvolveBranches (RI-86)', () => {
-  it('レビュー詰まりなら review を先頭にする', () => {
+  it('シニア危機＋高キューなら review を先頭にする', () => {
     const org = createOrgState('default', true);
     const order = base({
-      org: { ...org, seniorHp: 35, techDebt: 10, morale: 70, testCoverage: 60, quality: 60 },
+      org: { ...org, seniorHp: 15, techDebt: 10, morale: 70, testCoverage: 60, quality: 60 },
       totals: totals({ delivered: 200, completed: 20 }),
-      reviewQueuePeak: 12,
+      reviewQueuePeak: 18,
     });
     expect(order[0]).toBe('review');
   });
@@ -52,13 +52,13 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
     expect(order[0]).toBe('quality');
   });
 
-  it('AI 依存が高くリテラシーも足りていれば ai を先頭にする', () => {
+  it('AI 依存が高くリテラシー不足なら ai を先頭にする', () => {
     const org = createOrgState('default', true);
     const order = base({
       org: {
         ...org,
         aiDependency: 70,
-        aiLiteracy: 60,
+        aiLiteracy: 30,
         techDebt: 10,
         seniorHp: 80,
         morale: 70,
@@ -67,6 +67,25 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
       },
       totals: totals({ delivered: 200, completed: 20 }),
       reviewQueuePeak: 2,
+    });
+    expect(order[0]).toBe('ai');
+  });
+
+  it('導入難易度の高依存・中リテラシーでも ai を選べる', () => {
+    const org = createOrgState('default', true);
+    const order = base({
+      org: {
+        ...org,
+        aiDependency: 100,
+        aiLiteracy: 60,
+        techDebt: 0,
+        seniorHp: 27,
+        morale: 100,
+        testCoverage: 60,
+        quality: 60,
+      },
+      totals: totals({ delivered: 500, completed: 20 }),
+      reviewQueuePeak: 16,
     });
     expect(order[0]).toBe('ai');
   });
@@ -112,7 +131,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
     const order = stateAwareEvolveBranches({
       org: {
         ...org,
-        seniorHp: 35,
+        seniorHp: 15,
         techDebt: 55,
         testCoverage: 30,
         morale: 70,
@@ -120,7 +139,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
         aiDependency: 10,
       },
       totals: totals({ delivered: 200, completed: 20 }),
-      reviewQueuePeak: 12,
+      reviewQueuePeak: 18,
       unlocked: ['review-1', 'review-2'],
     });
     expect(order[0]).toBe('quality');

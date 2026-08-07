@@ -1,6 +1,6 @@
 /**
- * RI-91-C4: src/sim/run/evolution.ts の Survived / NoCoverage mutation を潰す。
- * 共有の run-systems.test.ts は触らず、単位専用ファイルで exact 断言する。
+ * src/sim/run/evolution.ts の単体テスト。
+ * ミューテーションテストの Survived / NoCoverage mutation を exact 断言で潰す（旧 RI-91-C4）。
  */
 import { describe, expect, it } from 'vitest';
 import { EVOLUTION_NODES, getEvolutionNode } from '../../src/data/evolution';

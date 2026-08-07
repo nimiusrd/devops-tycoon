@@ -20,10 +20,13 @@ const totals = (t: Partial<RunTotals> = {}): RunTotals => ({
   ...t,
 });
 
+const base = (over: Parameters<typeof stateAwareEvolveBranches>[0]) =>
+  stateAwareEvolveBranches({ unlocked: [], ...over });
+
 describe('stateAwareEvolveBranches (RI-86)', () => {
   it('レビュー詰まりなら review を先頭にする', () => {
     const org = createOrgState('default', true);
-    const order = stateAwareEvolveBranches({
+    const order = base({
       org: { ...org, seniorHp: 35, techDebt: 10, morale: 70, testCoverage: 60, quality: 60 },
       totals: totals({ delivered: 200, completed: 20 }),
       reviewQueuePeak: 12,
@@ -33,7 +36,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
 
   it('技術的負債が高いなら quality を先頭にする', () => {
     const org = createOrgState('default', true);
-    const order = stateAwareEvolveBranches({
+    const order = base({
       org: {
         ...org,
         techDebt: 55,
@@ -51,7 +54,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
 
   it('AI 依存が高くリテラシーも足りていれば ai を先頭にする', () => {
     const org = createOrgState('default', true);
-    const order = stateAwareEvolveBranches({
+    const order = base({
       org: {
         ...org,
         aiDependency: 70,
@@ -70,7 +73,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
 
   it('士気が低いなら culture を先頭にする', () => {
     const org = createOrgState('default', true);
-    const order = stateAwareEvolveBranches({
+    const order = base({
       org: {
         ...org,
         morale: 35,
@@ -88,7 +91,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
 
   it('出荷が伸びていないなら dev を先頭にする', () => {
     const org = createOrgState('default', true);
-    const order = stateAwareEvolveBranches({
+    const order = base({
       org: {
         ...org,
         seniorHp: 80,
@@ -102,5 +105,24 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
       reviewQueuePeak: 2,
     });
     expect(order[0]).toBe('dev');
+  });
+
+  it('review を既に2ノード取っていれば他ブランチへ曲がる', () => {
+    const org = createOrgState('default', true);
+    const order = stateAwareEvolveBranches({
+      org: {
+        ...org,
+        seniorHp: 35,
+        techDebt: 55,
+        testCoverage: 30,
+        morale: 70,
+        quality: 60,
+        aiDependency: 10,
+      },
+      totals: totals({ delivered: 200, completed: 20 }),
+      reviewQueuePeak: 12,
+      unlocked: ['review-1', 'review-2'],
+    });
+    expect(order[0]).toBe('quality');
   });
 });

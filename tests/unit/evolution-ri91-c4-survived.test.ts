@@ -56,9 +56,9 @@ describe('RI-91-C4 evolution survived mutants', () => {
       expect(unlockableNodes({ points: 0, unlocked: {} })).toEqual([]);
     });
 
-    it('points=1 ならルート 5 件を EVOLUTION_NODES 順で返す', () => {
+    it('points=1 なら cost<=1 のルートだけ返す', () => {
       const expected = EVOLUTION_NODES.filter((n) => !n.requires && n.cost <= 1).map((n) => n.id);
-      expect(expected).toEqual(['dev-1', 'review-1', 'quality-1', 'ai-1', 'culture-1']);
+      expect(expected).toEqual(['dev-1', 'review-1', 'quality-1']);
       expect(unlockableNodes({ points: 1, unlocked: {} })).toEqual(expected);
     });
 
@@ -67,12 +67,10 @@ describe('RI-91-C4 evolution survived mutants', () => {
       const ids = unlockableNodes({ points: midCost, unlocked: { 'dev-1': true } });
       expect(ids).toContain('dev-2');
       expect(ids).not.toContain('dev-1');
-      // ルートで未解放かつ cost<=mid のものも含む
       expect(ids).toContain('review-1');
       expect(ids).toContain('quality-1');
-      expect(ids).toContain('ai-1');
-      expect(ids).toContain('culture-1');
-      expect(ids).not.toContain('dev-3'); // requires: dev-2
+      expect(ids).not.toContain('ai-1'); // cost 4 > mid 3
+      expect(ids).not.toContain('dev-3');
     });
   });
 });

@@ -38,10 +38,10 @@ export const BRANCH_LABEL: Record<EvolutionBranch, string> = {
 /**
  * ブランチごとに上から順に解放していく（`requires` で直列化）。
  *
- * RI-86 / F-11: 入手速度は据え置き、ノードコストを上げて希少性を作る。
- * Q1 中央値帯（旧実測 p50≈44）ではツリー総コストに届かず、1〜2 ブランチへ寄せる選択になる。
- * ティア目安: 起点 1 / 中段はブランチにより 3〜4 / ペーシング先端（dev・review）7 / その他先端 20〜24。総コスト 101。
- * 起点〜中段は早く取れ（F-4 / 方向づけ）、先端の重さで Q1 全解放を防ぐ。
+ * RI-86 / F-11: 入手速度は据え置き。dev/review/quality の序盤は F-4・勝率を守るコスト、
+ * culture/ai は中段から高くして横断ビルドを抑える。先端はラン後半で届く水準
+ * （旧20〜24は勝率を壊したため引き下げ）。
+ * ティア目安: ペーシング寄り 1-3-7 / quality 1-4-11 / culture・ai 4-8-11〜13。総コスト 86。
  */
 export const EVOLUTION_NODES: EvolutionNodeDef[] = [
   // 開発力
@@ -121,7 +121,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'quality',
     name: 'Incident 耐性',
     description: '手戻り耐性と品質文化を底上げ',
-    cost: 20,
+    cost: 11,
     requires: 'quality-2',
     effects: { reworkRateAdd: -0.1, qualityAdd: 8 },
   },
@@ -131,7 +131,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'ai',
     name: 'AI 成功率向上',
     description: 'AI 活用の精度を上げ、手戻りを抑える',
-    cost: 1,
+    cost: 4,
     effects: { reworkRateAdd: -0.1 },
   },
   {
@@ -139,7 +139,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'ai',
     name: 'AI Literacy 逓増',
     description: 'チーム全体の AI リテラシーを底上げ',
-    cost: 4,
+    cost: 8,
     requires: 'ai-1',
     effects: { aiLiteracyAdd: 18 },
   },
@@ -148,7 +148,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'ai',
     name: 'Devin 枠',
     description: '自律型 AI の実装枠を組織に組み込む',
-    cost: 24,
+    cost: 13,
     requires: 'ai-2',
     effects: { codingSpeedMul: 1.2 },
   },
@@ -158,7 +158,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'culture',
     name: '集中力上限 +2',
     description: 'マネジメント集中力の上限を引き上げる',
-    cost: 1,
+    cost: 4,
     focusBonus: 2,
   },
   {
@@ -166,7 +166,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'culture',
     name: '品質文化',
     description: '品質を重視する文化を根付かせる',
-    cost: 4,
+    cost: 8,
     requires: 'culture-1',
     effects: { qualityAdd: 10 },
   },
@@ -175,7 +175,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'culture',
     name: '集中力上限 +3',
     description: '集中力の余裕をさらに確保する',
-    cost: 20,
+    cost: 11,
     requires: 'culture-2',
     focusBonus: 3,
   },

@@ -216,8 +216,14 @@ const EVOLUTION_ORDER_QUALITY_FIRST = orderFromBranches([
 export interface EvolveBoardCtx {
   org: OrgState;
   totals: RunTotals;
-  /** 直前までのレビューキューピーク（totals と直前スプリントの大きい方）。 */
+  /**
+   * **直近スプリント**のレビューキューピーク。
+   * ラン累積の `totals.reviewQueuePeak` を使うと、一度詰まっただけで以降ずっと
+   * review 固定になり、盤面依存の方向選択を測れない。
+   */
   reviewQueuePeak: number;
+  /** 既に解放済みのノード ID（同一ブランチへ張り付くのを避けるために使う）。 */
+  unlocked: readonly string[];
 }
 
 /**
@@ -234,7 +240,9 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
     culture: 0,
     dev: 0,
   };
-  const { org, totals, reviewQueuePeak } = ctx;
+  const { org, totals, reviewQueuePeak, unlocked } = ctx;
+  const unlockedCount = (branch: EvolutionBranch): number =>
+    unlocked.filter((id) => id.startsWith(`${branch}-`)).length;
 
   // レビューは「実際に詰まった／シニアが危険」ときだけ強く押す。常時バイアスにしない。
   if (reviewQueuePeak >= 10) scores.review += 4;
@@ -259,8 +267,15 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   if (totals.completed >= 8 && totals.delivered < totals.completed * 6) scores.dev += 3;
   else if (totals.delivered < 60 && totals.completed >= 8) scores.dev += 2;
 
+  // 既に2ノード以上取ったブランチは減点し、他方向へ曲げる余地を残す。
+  for (const b of Object.keys(scores) as EvolutionBranch[]) {
+    const n = unlockedCount(b);
+    if (n >= 3) scores[b] -= 5;
+    else if (n >= 2) scores[b] -= 3;
+  }
+
   // どれも閾値未達なら、相対的に弱い柱へ寄せる（常に review 固定になるのを防ぐ）。
-  if (Math.max(...Object.values(scores)) === 0) {
+  if (Math.max(...Object.values(scores)) <= 0) {
     const weakness: Record<EvolutionBranch, number> = {
       review: 100 - org.seniorHp,
       quality: org.techDebt + (100 - org.testCoverage) * 0.5,
@@ -1591,20 +1606,30 @@ export function runOnce(
         // 使えるポイントは使い切る（プレイヤーは持ち越さない）。順序は方針で変える。
         if (spec.evolve !== 'none') {
           const snap = e.snapshot();
-          const evolveCtx: EvolveBoardCtx = {
-            org: snap.org,
-            totals: snap.totals,
-            reviewQueuePeak: Math.max(
-              snap.totals.reviewQueuePeak,
-              ...sprints.map((sp) => sp.reviewQueueMax),
-            ),
-          };
-          // stateAware はフェーズ到達時点の盤面で順を決める（解放のたびに振り直さない）。
-          const order = evolutionOrder(spec.evolve, evolveCtx);
+          const recentPeak = sprints.length > 0 ? sprints[sprints.length - 1]!.reviewQueueMax : 0;
+          // 固定順方針は一度決めた順を維持。stateAware は解放のたびに盤面と既解放を見直す。
+          const fixedOrder =
+            spec.evolve === 'stateAware'
+              ? null
+              : evolutionOrder(spec.evolve, {
+                  org: snap.org,
+                  totals: snap.totals,
+                  reviewQueuePeak: recentPeak,
+                  unlocked: Object.keys(snap.evolution.unlocked),
+                });
           let spent = 0;
           while (e.snapshot().evolution.points > 0 && spent < 16) {
-            const before = e.snapshot().evolution.points;
-            const beforeIds = new Set(Object.keys(e.snapshot().evolution.unlocked));
+            const beforeSnap = e.snapshot();
+            const before = beforeSnap.evolution.points;
+            const beforeIds = new Set(Object.keys(beforeSnap.evolution.unlocked));
+            const order =
+              fixedOrder ??
+              evolutionOrder('stateAware', {
+                org: beforeSnap.org,
+                totals: beforeSnap.totals,
+                reviewQueuePeak: recentPeak,
+                unlocked: Object.keys(beforeSnap.evolution.unlocked),
+              });
             for (const id of order) {
               e.unlockEvolution(id);
               if (e.snapshot().evolution.points < before) break;

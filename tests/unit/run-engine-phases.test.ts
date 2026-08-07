@@ -1,3 +1,7 @@
+/**
+ * RunEngine の phase 遷移・試練（trial）・予算まわりのミューテーション回帰テスト。
+ * Stryker の Survived / NoCoverage mutation を exact 断言で潰す（旧 RI-91-A2）。
+ */
 import { describe, expect, it } from 'vitest';
 import { getDifficulty } from '../../src/data/difficulties';
 import type { GrowthOutcome, RosterState } from '../../src/sim/member';

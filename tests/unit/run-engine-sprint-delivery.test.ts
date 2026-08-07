@@ -1,6 +1,6 @@
 /**
- * RI-91-A3: engine.ts sprint resolve / delivery 周辺の Survived を潰す。
- * 共有テストは触らず、単位専用ファイルで exact 断言する。
+ * RunEngine の sprint resolve / delivery まわりのミューテーション回帰テスト。
+ * Stryker の Survived mutation を exact 断言で潰す（旧 RI-91-A3）。
  */
 import { describe, expect, it } from 'vitest';
 import type { GrowthOutcome, RosterState } from '../../src/sim/member';

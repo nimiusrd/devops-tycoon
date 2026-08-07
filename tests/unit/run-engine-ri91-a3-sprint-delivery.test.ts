@@ -264,6 +264,7 @@ describe('RI-91-A3 RunEngine sprint resolve / delivery', () => {
   });
 
   describe('evoPointsFor via resolveSprint', () => {
+    // 1 + floor(出荷/40)、elite +1（`EVO_POINTS_*` in constants.ts）
     it.each([
       { delivered: 0, kind: 'normal' as const, expectedGain: 1 },
       { delivered: 39, kind: 'normal' as const, expectedGain: 1 },

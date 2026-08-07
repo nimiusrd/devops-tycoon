@@ -74,15 +74,34 @@ function readEvolutionTree() {
 const EVOLUTION_TREE = readEvolutionTree();
 
 /**
+ * 進化ポイント式の定数。`src/sim/run/constants.ts` と同期する（パース失敗時はここで落とす）。
+ * RI-86: 分母 100 / ツリー総コスト 46 で Q1 全解放を防ぐ。
+ */
+function readEvoPointsFormula() {
+  const src = readFileSync('src/sim/run/constants.ts', 'utf8');
+  const base = Number(src.match(/EVO_POINTS_BASE = (\d+)/)?.[1]);
+  const divisor = Number(src.match(/EVO_POINTS_DELIVERED_DIVISOR = (\d+)/)?.[1]);
+  const elite = Number(src.match(/EVO_POINTS_ELITE_BONUS = (\d+)/)?.[1]);
+  if (![base, divisor, elite].every((n) => Number.isFinite(n) && n > 0)) {
+    throw new Error('src/sim/run/constants.ts から進化ポイント定数を読み取れない');
+  }
+  return { base, divisor, elite };
+}
+const EVO_POINTS = readEvoPointsFormula();
+
+/**
  * 1スプリントで得る進化ポイント。`RunEngine.evoPointsFor` と同じ式。
- * 複製しているので、実装が変わったらここも直す（`src/sim/run/engine.ts`）。
  *
  * **ボススプリントは 0**。`resolveSprint()` のボス分岐は四半期レビューへ遷移して
  * `return` するため、通常スプリント用のポイント加算へ到達しない。含めると
  * 実際には得られないポイントを F-11 の「Q1 で入手する総ポイント」へ足してしまう。
  */
 const evoPointsForSprint = (s) =>
-  s.kind === 'boss' ? 0 : 1 + Math.floor((s.delivered ?? 0) / 40) + (s.kind === 'elite');
+  s.kind === 'boss'
+    ? 0
+    : EVO_POINTS.base +
+      Math.floor((s.delivered ?? 0) / EVO_POINTS.divisor) +
+      (s.kind === 'elite' ? EVO_POINTS.elite : 0);
 
 /**
  * ランが Q1 中に**実際に入手した**進化ポイントの合計。
@@ -837,6 +856,10 @@ const BRANCH_COMMIT_SHARE = 0.5; // かつ その時点までの解放の過半�
  * 序盤に同一ブランチへ寄せて方向を出したあと同じ Q1 中に他ブランチへ広げたランが
  * 「分散」へ落ちてしまう。そこで解放を順に走査し、**一度でも条件を満たした時点**があれば
  * 確定と数える。順序は記録済みの `sprintIndex`（同点なら記録順）による。
+ *
+ * さらに、同一進化フェーズ（同一 `sprintIndex`）での連続取得だけでは確定としない。
+ * ポイントが余っていると盤面が変わらないまま同ブランチを2段買えてしまい、
+ * 「別フェーズでの継続選択」という F-11 の意図を測れないためである。
  */
 const commitInQ1 = (run) => {
   const q1 = (run.evolutionUnlocks ?? [])
@@ -845,12 +868,16 @@ const commitInQ1 = (run) => {
     .sort((a, b) => (a.sprintIndex ?? 0) - (b.sprintIndex ?? 0) || a.order - b.order);
   if (q1.length === 0) return null;
   const byBranch = {};
+  const sprintsByBranch = {};
   const top = () => Object.entries(byBranch).sort((a, b) => b[1] - a[1])[0];
   for (let i = 0; i < q1.length; i += 1) {
     const b = q1[i].id.split('-')[0];
     byBranch[b] = (byBranch[b] ?? 0) + 1;
+    if (!sprintsByBranch[b]) sprintsByBranch[b] = new Set();
+    sprintsByBranch[b].add(q1[i].sprintIndex ?? 0);
     const [topBranch, topN] = top();
-    if (topN >= BRANCH_COMMIT_MIN_NODES && topN / (i + 1) >= BRANCH_COMMIT_SHARE) {
+    const multiPhase = (sprintsByBranch[topBranch]?.size ?? 0) >= 2;
+    if (topN >= BRANCH_COMMIT_MIN_NODES && topN / (i + 1) >= BRANCH_COMMIT_SHARE && multiPhase) {
       return { committed: true, topBranch, topN, total: q1.length, atSprint: q1[i].sprintIndex };
     }
   }
@@ -871,7 +898,8 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
   console.log('**構造的事実（ランに依存しない）: ツリーの規模とポイントの入手速度**');
   console.log(`  進化ツリー: ${totalNodes}ノード / 総コスト ${totalCost}（src/data/evolution.ts）`);
   console.log(
-    '  1スプリントの入手ポイント: 1 + floor(出荷/40)（高負荷は +1）' +
+    `  1スプリントの入手ポイント: ${EVO_POINTS.base} + floor(出荷/${EVO_POINTS.divisor})` +
+      `（高負荷は +${EVO_POINTS.elite}）` +
       '（`RunEngine.evoPointsFor`）',
   );
 
@@ -934,24 +962,51 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
 }
 console.log(
   `\n参考: Q1 の解放を順に見て、同一ブランチ ${BRANCH_COMMIT_MIN_NODES} ノード以上かつ` +
-    `その時点までの解放の ${BRANCH_COMMIT_SHARE * 100}% 以上を占める時点が一度でもあるか`,
+    `その時点までの解放の ${BRANCH_COMMIT_SHARE * 100}% 以上を占め、` +
+    `かつそのブランチの解放が複数スプリントにまたがる時点が一度でもあるか`,
 );
-console.log('（確定後に他ブランチへ広げるのは F-11 が許容するため、最終構成比では判定しない）');
-console.log('  ※ この値は成立判定に使えない。ハーネスの解放順は方針の `evolve` で固定されており、');
 console.log(
-  '     全方針で最初の2ノードが必ず同一ブランチになる。盤面に応じて方向を選ぶ挙動ではない。',
+  '（同一フェーズの連続取得だけでは確定としない。確定後に他ブランチへ広げるのは F-11 が許容するため、最終構成比では判定しない）',
 );
-for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
-  const arr = runs.filter((r) => r.difficulty === d);
-  const results = arr.map(commitInQ1);
-  const committed = results.filter((x) => x?.committed).length;
-  const spread = results.filter((x) => x && !x.committed).length;
-  const never = results.filter((x) => x === null).length;
-  console.log(
-    `${d}: Q1で方向確定 ${committed}/${arr.length} (${pct(committed, arr.length)}) / Q1解放ありだが分散 ${spread} / Q1解放なし ${never}`,
-  );
+console.log(
+  '  ※ 固定順方針（`reviewFirst` 等）の値は成立判定に使えない。解放順が方針で固定されており、',
+);
+console.log(
+  '     同一フェーズで同ブランチを連続取得しやすい。方向の確定時期は `skilledStateEvolve`（`evolve: stateAware`）で測る。',
+);
+const F11_DIRECTION_POLICY = 'skilledStateEvolve';
+{
+  const arr = runs.filter((r) => r.policy === F11_DIRECTION_POLICY);
+  if (arr.length === 0) {
+    console.log(
+      `\n**方向確定（${F11_DIRECTION_POLICY}）: 未計測** — PT_POLICIES に含めて実行すること。`,
+    );
+  } else {
+    const results = arr.map(commitInQ1);
+    const committed = results.filter((x) => x?.committed);
+    const spread = results.filter((x) => x && !x.committed).length;
+    const never = results.filter((x) => x === null).length;
+    const branches = {};
+    const atSprint = [];
+    for (const c of committed) {
+      branches[c.topBranch] = (branches[c.topBranch] ?? 0) + 1;
+      if (c.atSprint != null) atSprint.push(c.atSprint);
+    }
+    console.log(`\n**方向確定（${F11_DIRECTION_POLICY}、盤面依存ブランチ選択。n=${arr.length}）**`);
+    console.log(
+      `  Q1で方向確定 ${committed.length}/${arr.length} (${pct(committed.length, arr.length)})` +
+        ` / 解放ありだが分散 ${spread} / Q1解放なし ${never}`,
+    );
+    console.log(`  確定ブランチ分布: ${JSON.stringify(branches)}`);
+    if (atSprint.length > 0) {
+      console.log(
+        `  確定スプリント（四半期内 index）: p10=${quantile(atSprint, 0.1)}` +
+          ` p50=${quantile(atSprint, 0.5)} p90=${quantile(atSprint, 0.9)}`,
+      );
+    }
+  }
 }
-console.log('\n方針別（進化を使う方針のみ）:');
+console.log('\n方針別（進化を使う方針のみ・参考）:');
 for (const [policy, arr] of group((r) => r.policy)) {
   const results = arr.map(commitInQ1);
   if (results.every((x) => x === null)) {

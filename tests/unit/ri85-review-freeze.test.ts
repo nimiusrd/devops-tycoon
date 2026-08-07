@@ -34,23 +34,14 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
     expect(def!.choices[0]?.outcome.nextSprint?.reviewLoadAdd).toBeUndefined();
   });
 
-  it('seniorHp / 士気境界で抽選適格が切り替わる', () => {
+  it('seniorHp 境界で抽選適格が切り替わる', () => {
     const def = getEvent('review-freeze')!;
     const eligible = createOrgState('default', true);
     eligible.seniorHp = REVIEW_FREEZE_EVENT_HP;
-    eligible.morale = 50;
-    const hpTooHigh = createOrgState('default', true);
-    hpTooHigh.seniorHp = REVIEW_FREEZE_EVENT_HP + 1;
-    const hpNearDeath = createOrgState('default', true);
-    hpNearDeath.seniorHp = 11; // -10 で <=1 になり得る帯は maxSignal で除外
-    hpNearDeath.morale = 50;
-    const moraleNearDeath = createOrgState('default', true);
-    moraleNearDeath.seniorHp = 40;
-    moraleNearDeath.morale = 4; // -3 で <=1 になり得る帯は maxSignal で除外
+    const blocked = createOrgState('default', true);
+    blocked.seniorHp = REVIEW_FREEZE_EVENT_HP + 1;
     expect(eventEligible(def, eventSignals(eligible))).toBe(true);
-    expect(eventEligible(def, eventSignals(hpTooHigh))).toBe(false);
-    expect(eventEligible(def, eventSignals(hpNearDeath))).toBe(false);
-    expect(eventEligible(def, eventSignals(moraleNearDeath))).toBe(false);
+    expect(eventEligible(def, eventSignals(blocked))).toBe(false);
   });
 
   it('了解後もランは継続し、reviewFreeze / seniorBurnout 即敗北にはならない', () => {
@@ -67,6 +58,24 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
     expect(after.loseReason).toBeUndefined();
     // soft judgment の HP 減はスプリント間回復のあとも、無被害（100）より低い。
     expect(after.org.seniorHp).toBeLessThan(100);
+    expect(after.org.seniorHp).toBeGreaterThan(1);
+    expect(after.org.morale).toBeGreaterThan(1);
+  });
+
+  it('低リソースでも preserveAboveLose により即時敗北しない', () => {
+    const def = getEvent('review-freeze')!;
+    expect(def.choices[0]?.outcome.preserveAboveLose).toBe(true);
+    const engine = new RunEngine({ seed: 'ri85-floor', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as BeatInternals;
+    internals.org.seniorHp = 8;
+    internals.org.morale = 3;
+    internals.phase = 'beat';
+    internals.beat = { eventId: 'review-freeze', kind: 'judgment' };
+    engine.resolveBeat();
+    const after = engine.snapshot();
+    expect(after.status).toBe('playing');
+    expect(after.loseReason).toBeUndefined();
     expect(after.org.seniorHp).toBeGreaterThan(1);
     expect(after.org.morale).toBeGreaterThan(1);
   });

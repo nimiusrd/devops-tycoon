@@ -70,6 +70,13 @@ describe('applyEventOutcome の条件枝', () => {
     expect(res).toEqual({ budgetDelta: 0, delivered: 0 });
   });
 
+  it('preserveAboveLose は適用後の HP / 士気を敗北閾値より上にフロアする', () => {
+    const base = org({ seniorHp: 8, morale: 3 });
+    applyEventOutcome({ seniorHp: -10, morale: -3, preserveAboveLose: true }, base, passives(1));
+    expect(base.seniorHp).toBe(2);
+    expect(base.morale).toBe(2);
+  });
+
   it('指定された outcome だけを加算し、正の Morale はダメージ軽減しない', () => {
     const base = org({
       deliveryScore: 10,

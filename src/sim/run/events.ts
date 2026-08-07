@@ -64,6 +64,11 @@ export function applyEventOutcome(
   if (outcome.aiDependency)
     org.aiDependency = clamp(org.aiDependency + outcome.aiDependency, 0, 100);
   if (outcome.techDebt) org.techDebt = Math.max(0, org.techDebt + outcome.techDebt);
+  // soft judgment: resolveBeat 直後の evaluateLose（seniorHp/morale <= 1）を回避する。
+  if (outcome.preserveAboveLose) {
+    if (org.seniorHp <= 1) org.seniorHp = 2;
+    if (org.morale <= 1) org.morale = 2;
+  }
 
   return {
     budgetDelta: outcome.budget ?? 0,

@@ -134,8 +134,8 @@ export interface CardInstance {
   baselineAppliedByTeam?: Record<string, number>;
 }
 
-/** 時限モディファイアの種別（介入アクションが設定する）。 */
-export type InterventionModifierKind = 'andon' | 'overtime' | 'throttle';
+/** 時限モディファイアの種別（介入アクション由来の効果と運用安定）。 */
+export type InterventionModifierKind = 'andon' | 'overtime' | 'stability' | 'throttle';
 
 /** 介入アクション成功時の効果ペイロード（RI-49）。UI 演出・ログはこれを読む。 */
 export interface InterventionEffect {
@@ -252,6 +252,14 @@ export interface SprintModifiers {
    * 平均出荷ではなく下振れの出やすさとして表す（RI-84 / F-5）。
    */
   stabilityUntilTick: number;
+  /**
+   * この tick 未満の間、工程を構造的に整えた介入による出荷コミットを維持する。
+   * 一時的な火消し・割り込みレビューで全体の安定表示だけが更新されても、
+   * 期限切れの出荷下限を復活させない（RI-84 / F-5）。
+   *
+   * 既存のリプレイ状態との互換用に optional とし、未指定は無効として扱う。
+   */
+  deliveryCommitUntilTick?: number;
 }
 
 /**

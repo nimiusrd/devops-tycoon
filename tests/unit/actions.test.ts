@@ -15,9 +15,9 @@ import {
   STABILITY_TICKS,
   THROTTLE_TICKS,
 } from '../../src/sim/actions';
-import { BURN_TICKS } from '../../src/sim/model';
+import { BURN_TICKS, STABILITY_DELIVERY_FLOOR_PER_TASK } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
-import { createSprint, resolveSprintConfig, reviewOne } from '../../src/sim/sprint';
+import { createSprint, resolveSprintConfig, reviewOne, stepSprint } from '../../src/sim/sprint';
 import { createEngine, type Engine } from '../../src/sim/engine';
 import type {
   ActionId,
@@ -245,6 +245,11 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(sprint.modifiers.stabilityUntilTick).toBe(
         def.stabilizesFlow ? TICK + STABILITY_TICKS : 0,
       );
+      expect(sprint.modifiers.deliveryCommitUntilTick).toBe(
+        def.commitsDelivery ? TICK + STABILITY_TICKS : 0,
+      );
+      expect(def.commitsDelivery ?? false).toBe(id === 'assignTask' || id === 'andon');
+      expect(def.commitsDelivery ? def.stabilizesFlow : true).toBe(true);
       fixture.assertEffect({ sprint, org, before });
     });
   });
@@ -283,6 +288,151 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
     );
     expect(stable.tasks[0].lane).toBe('done');
     expect(stable.tasks[0].incident).toBe(false);
+  });
+
+  it('運用安定は安全側の介入後、完了時だけ不足した出荷をコミット下限まで補う', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(
+      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 2 }),
+      org,
+      rng,
+    );
+    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
+    sprint.metrics.delivered = 20;
+    sprint.metrics.actionCounts.assignTask = 1;
+    sprint.modifiers.stabilityUntilTick = 3;
+    sprint.modifiers.deliveryCommitUntilTick = 3;
+    const deliveryBefore = org.deliveryScore;
+    const floor = Math.round(4 * STABILITY_DELIVERY_FLOOR_PER_TASK);
+
+    stepSprint(sprint, org, rng, 1);
+    expect(sprint.complete).toBe(false);
+    expect(sprint.metrics.delivered).toBe(20);
+
+    stepSprint(sprint, org, rng, 2);
+    expect(sprint.complete).toBe(true);
+    expect(sprint.metrics.delivered).toBe(floor);
+    expect(org.deliveryScore).toBe(deliveryBefore + floor - 20);
+  });
+
+  it('構造介入のコミット期限が切れたら、戦術介入で安定表示が残っても出荷下限を得ない', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(
+      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0 }),
+      org,
+      rng,
+    );
+    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
+    sprint.metrics.delivered = 20;
+    // 過去の差配後に割り込みレビューなどが安定表示だけを更新した状態を模す。
+    sprint.metrics.actionCounts.assignTask = 1;
+    sprint.metrics.actionCounts.interruptReview = 1;
+    sprint.modifiers.stabilityUntilTick = 100;
+    sprint.modifiers.deliveryCommitUntilTick = 2;
+
+    stepSprint(sprint, org, rng, 2);
+
+    expect(sprint.complete).toBe(true);
+    expect(sprint.metrics.delivered).toBe(20);
+  });
+
+  it('maxTicks 打ち切りでは、コミット期限中でも出荷下限を得ない', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(
+      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0, maxTicks: 0 }),
+      org,
+      rng,
+    );
+    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'backlog' }));
+    sprint.metrics.delivered = 20;
+    sprint.metrics.actionCounts.assignTask = 1;
+    sprint.modifiers.stabilityUntilTick = 100;
+    sprint.modifiers.deliveryCommitUntilTick = 100;
+
+    stepSprint(sprint, org, rng, 0);
+
+    expect(sprint.complete).toBe(true);
+    expect(sprint.metrics.timedOut).toBe(true);
+    expect(sprint.metrics.delivered).toBe(20);
+  });
+
+  it('stalled で畳んで minCompleteTick を待った後も、出荷下限を得ない', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(
+      resolveSprintConfig('default', { taskCount: 4, codingSlots: 0, minCompleteTick: 2 }),
+      org,
+      rng,
+    );
+    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'backlog' }));
+    sprint.metrics.delivered = 20;
+    sprint.metrics.actionCounts.assignTask = 1;
+    sprint.modifiers.stabilityUntilTick = 100;
+    sprint.modifiers.deliveryCommitUntilTick = 100;
+
+    stepSprint(sprint, org, rng, 1);
+    expect(sprint.complete).toBe(false);
+    expect(sprint.modifiers.deliveryCommitUntilTick).toBe(0);
+    expect(sprint.metrics.delivered).toBe(20);
+
+    stepSprint(sprint, org, rng, 2);
+    expect(sprint.complete).toBe(true);
+    expect(sprint.metrics.delivered).toBe(20);
+  });
+
+  it.each(['interruptReview', 'firefight'] as const)(
+    '%s のような戦術手だけでは、安定中でも出荷下限を得ない',
+    (actionId) => {
+      const org = createOrgState('default', true);
+      const sprint = createSprint(
+        resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0 }),
+        org,
+        rng,
+      );
+      sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
+      sprint.metrics.delivered = 20;
+      sprint.metrics.actionCounts[actionId] = 1;
+      sprint.modifiers.stabilityUntilTick = 100;
+
+      stepSprint(sprint, org, rng, 1);
+
+      expect(sprint.complete).toBe(true);
+      expect(sprint.metrics.delivered).toBe(20);
+    },
+  );
+
+  it('旧リプレイでコミット期限が無いときは、出荷下限を得ない', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(
+      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0 }),
+      org,
+      rng,
+    );
+    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
+    sprint.metrics.delivered = 20;
+    sprint.metrics.actionCounts.assignTask = 1;
+    sprint.modifiers.stabilityUntilTick = 100;
+    delete sprint.modifiers.deliveryCommitUntilTick;
+
+    stepSprint(sprint, org, rng, 1);
+
+    expect(sprint.complete).toBe(true);
+    expect(sprint.metrics.delivered).toBe(20);
+  });
+
+  it('残業号令だけでは運用安定の出荷下限を得ない', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(
+      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0 }),
+      org,
+      rng,
+    );
+    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
+    sprint.metrics.delivered = 20;
+    sprint.metrics.actionCounts.overtime = 1;
+
+    stepSprint(sprint, org, rng, 1);
+    expect(sprint.complete).toBe(true);
+    expect(sprint.metrics.delivered).toBe(20);
   });
 
   describe('失敗理由の共通契約', () => {

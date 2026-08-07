@@ -11,6 +11,7 @@ import {
   INTERRUPT_REVIEW_COUNT,
   OVERTIME_TICKS,
   PAIR_REVIEW_COUNT,
+  STABILITY_TICKS,
   THROTTLE_TICKS,
 } from '../sim/actions';
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
@@ -165,32 +166,45 @@ export function formatInterventionFailure(reason: ActionBlockReason, actionId?: 
   return BLOCK_MESSAGES[reason];
 }
 
-/** 時限モディファイアの残り tick（ActionBar リング表示用 / RI-50）。 */
+/** 時限モディファイアの残り tick（ActionBar のリング／共通ステータス表示用）。 */
 export interface ModifierRingState {
   active: boolean;
   remaining: number;
   total: number;
 }
 
+/** ActionButton と共通ステータスで表示する時限効果。 */
+export type ModifierRingTarget = ActionId | 'stability' | 'deliveryCommit';
+
 const MODIFIER_RING_BY_ACTION: Partial<
   Record<
-    ActionId,
-    { untilKey: 'throttleUntilTick' | 'overtimeUntilTick' | 'andonUntilTick'; total: number }
+    ModifierRingTarget,
+    {
+      untilKey:
+        | 'throttleUntilTick'
+        | 'overtimeUntilTick'
+        | 'andonUntilTick'
+        | 'stabilityUntilTick'
+        | 'deliveryCommitUntilTick';
+      total: number;
+    }
   >
 > = {
   aiThrottle: { untilKey: 'throttleUntilTick', total: THROTTLE_TICKS },
   overtime: { untilKey: 'overtimeUntilTick', total: OVERTIME_TICKS },
   andon: { untilKey: 'andonUntilTick', total: ANDON_TICKS },
+  stability: { untilKey: 'stabilityUntilTick', total: STABILITY_TICKS },
+  deliveryCommit: { untilKey: 'deliveryCommitUntilTick', total: STABILITY_TICKS },
 };
 
 export function deriveModifierRing(
   sprint: SprintState,
   sprintTick: number,
-  actionId: ActionId,
+  target: ModifierRingTarget,
 ): ModifierRingState {
-  const entry = MODIFIER_RING_BY_ACTION[actionId];
+  const entry = MODIFIER_RING_BY_ACTION[target];
   if (!entry) return { active: false, remaining: 0, total: 0 };
-  const until = sprint.modifiers[entry.untilKey];
+  const until = sprint.modifiers[entry.untilKey] ?? 0;
   const remaining = Math.max(0, until - sprintTick);
   if (remaining <= 0) return { active: false, remaining: 0, total: entry.total };
   return { active: true, remaining, total: entry.total };

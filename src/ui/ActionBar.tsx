@@ -88,6 +88,18 @@ export function ActionBar({
   outcomeFeedback,
 }: ActionBarProps) {
   const { focus, config, cooldowns, comboGauge } = sprint;
+  const stabilityRing = sprint.complete
+    ? { active: false, remaining: 0, total: 0 }
+    : deriveModifierRing(sprint, sprintTick, 'stability');
+  const deliveryCommitRing = sprint.complete
+    ? { active: false, remaining: 0, total: 0 }
+    : deriveModifierRing(sprint, sprintTick, 'deliveryCommit');
+  const stabilityPct = stabilityRing.active
+    ? Math.round((stabilityRing.remaining / stabilityRing.total) * 100)
+    : 0;
+  const deliveryCommitPct = deliveryCommitRing.active
+    ? Math.round((deliveryCommitRing.remaining / deliveryCommitRing.total) * 100)
+    : 0;
   const availabilityById = useMemo(() => {
     const map = new Map<ActionId, ReturnType<typeof deriveActionAvailability>>();
     for (const item of planActionBarView(sprint, disabled)) {
@@ -199,6 +211,36 @@ export function ActionBar({
           >
             <i style={{ width: `${Math.round(comboGauge * 100)}%` }} />
           </div>
+          {stabilityRing.active && (
+            <div
+              className="stability-status"
+              data-testid="stability-status"
+              title={`運用安定: 残り ${stabilityRing.remaining} tick`}
+            >
+              <span className="stability-status-label">🛡 運用安定</span>
+              <strong className="stability-status-value">
+                残り {stabilityRing.remaining} tick
+              </strong>
+              <span className="stability-status-meter" aria-hidden="true">
+                <i style={{ width: `${stabilityPct}%` }} />
+              </span>
+            </div>
+          )}
+          {deliveryCommitRing.active && (
+            <div
+              className="stability-status delivery-commit-status"
+              data-testid="delivery-commit-status"
+              title={`出荷コミット: 残り ${deliveryCommitRing.remaining} tick`}
+            >
+              <span className="stability-status-label">📦 出荷コミット</span>
+              <strong className="stability-status-value">
+                残り {deliveryCommitRing.remaining} tick
+              </strong>
+              <span className="stability-status-meter" aria-hidden="true">
+                <i style={{ width: `${deliveryCommitPct}%` }} />
+              </span>
+            </div>
+          )}
         </div>
       </div>
       {armedId === 'assignTask' && onAssignAssigneeChange && (

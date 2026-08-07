@@ -20,6 +20,7 @@ import {
   REVIEW_HP_COST,
   REVIEW_HP_REGEN,
   SPREAD_MORALE_COST,
+  STABILITY_DELIVERY_FLOOR_PER_TASK,
   STABILITY_REWORK_MUL,
   codingProgressPerTick,
   comboMultiplier,
@@ -142,6 +143,7 @@ export function createSprint(
       overtimeUntilTick: 0,
       throttleUntilTick: 0,
       stabilityUntilTick: 0,
+      deliveryCommitUntilTick: 0,
     },
     comboGauge: 0,
     cardEffects,
@@ -449,6 +451,27 @@ function isStalled(sprint: SprintState): boolean {
 }
 
 /**
+ * 安全側の介入は、上振れをさらに伸ばすのではなく、崩れた工程でも約束できる
+ * 出荷量を下限として守る。介入なしと残業号令だけではこのコミットを得られない。
+ */
+function settleStabilityDeliveryFloor(sprint: SprintState, org: OrgState, tick: number): void {
+  if (tick >= (sprint.modifiers.deliveryCommitUntilTick ?? 0)) return;
+
+  const floor = Math.round(sprint.config.taskCount * STABILITY_DELIVERY_FLOOR_PER_TASK);
+  const shortfall = Math.max(0, floor - sprint.metrics.delivered);
+  if (shortfall === 0) return;
+
+  sprint.metrics.delivered += shortfall;
+  org.deliveryScore += shortfall;
+}
+
+function completeDrainedSprint(sprint: SprintState, org: OrgState, tick: number): void {
+  if (sprint.complete) return;
+  settleStabilityDeliveryFloor(sprint, org, tick);
+  sprint.complete = true;
+}
+
+/**
  * stalled / maxTicks 到達時、未完了タスクを盤面から畳む。
  * 出荷・完了数は計上しない（未着手のまま畳む／時間切れの水増しを防ぐ。RI-75）。
  * 炎上中のタスクは鎮火扱い（autoContain）して畳む。
@@ -483,7 +506,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   // RI-75: 早期ドレイン後の下限待ちでは盤面副作用を止める（HP回復・工程進行など）。
   if (isDrained(sprint)) {
     const minTick = sprint.config.minCompleteTick ?? 0;
-    if (tick >= minTick) sprint.complete = true;
+    if (tick >= minTick) completeDrainedSprint(sprint, org, tick);
     appendTimelineSample(sprint, org, tick);
     return;
   }
@@ -494,6 +517,9 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   if (isStalled(sprint)) {
     abandonInFlight(sprint, tick);
     const minTick = sprint.config.minCompleteTick ?? 0;
+    // 流入不能で畳んだケースは出荷を約束できないため、運用安定の下限は適用しない。
+    sprint.modifiers.stabilityUntilTick = 0;
+    sprint.modifiers.deliveryCommitUntilTick = 0;
     if (tick >= minTick) sprint.complete = true;
     appendTimelineSample(sprint, org, tick);
     return;
@@ -523,7 +549,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   if (isDrained(sprint)) {
     // RI-75: 早期ドレインでも §3.1 絶対下限（表示 tick）を下回らないよう待機する。
     const minTick = sprint.config.minCompleteTick ?? 0;
-    if (tick >= minTick) sprint.complete = true;
+    if (tick >= minTick) completeDrainedSprint(sprint, org, tick);
   } else if (tick >= sprint.config.maxTicks) {
     // RI-75: 時間切れは出荷なしで畳み、打ち切り印を付けてボス突破を失敗させる。
     abandonInFlight(sprint, tick);

@@ -921,17 +921,17 @@ describe('四半期レビュー（Phase 8）', () => {
   it('RI-68: 難易度に応じて Delivery の達成・未達が分岐する', { timeout: 60_000 }, () => {
     // RI-75: Delivery 目標再校正後に達成・未達の両方がある seed を難易度別に固定する。
     const seedsByDifficulty: Record<'easy' | 'normal' | 'hard', readonly number[]> = {
-      // RI-75: 介入 CD 再調整後も達成/未達が両立する probe seed を固定する。
-      easy: [2, 14, 20, 39, 100],
+      // RI-84: skilled でレビュー到達かつ未達となる probe-380 を加える。
+      easy: [2, 14, 20, 39, 100, 380],
       normal: [10, 14, 23, 28, 35, 39],
-      hard: [22, 39, 40, 51, 54, 68],
+      // F-5: skilled でレビュー到達かつ未達となる probe-74 へ差し替える。
+      hard: [39, 40, 51, 54, 68, 74],
     };
     const meanRatioByDifficulty: Record<'easy' | 'normal' | 'hard', number> = {
       easy: 0,
       normal: 0,
       hard: 0,
     };
-    let missedTotal = 0;
     for (const difficulty of ['easy', 'normal', 'hard'] as const) {
       let reached = 0;
       let achieved = 0;
@@ -949,11 +949,10 @@ describe('四半期レビュー（Phase 8）', () => {
         ratioSum += delivery.actual / delivery.target;
       }
       meanRatioByDifficulty[difficulty] = ratioSum / Math.max(1, reached);
-      missedTotal += missed;
       expect(reached, difficulty).toBeGreaterThanOrEqual(4);
       expect(achieved, `${difficulty}:achieved`).toBeGreaterThan(0);
+      expect(missed, `${difficulty}:missed`).toBeGreaterThan(0);
     }
-    expect(missedTotal, '全難易度のいずれかで未達が残る').toBeGreaterThan(0);
     expect(meanRatioByDifficulty.hard, 'hard:meanRatio').toBeLessThan(meanRatioByDifficulty.easy);
     expect(meanRatioByDifficulty.hard, 'hard:meanRatio').toBeLessThanOrEqual(
       meanRatioByDifficulty.normal + 0.05,

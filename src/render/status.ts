@@ -280,6 +280,19 @@ export function deriveHudStatusParts(
 }
 
 /**
+ * HUD 凍結予兆用のライブピーク。
+ * 進行中スプリントのピークと全チームの現在キューを畳み込む（通算 peak は使わない）。
+ */
+export function reviewFreezeWarningPeak(
+  sprintReviewQueueMax: number,
+  teamReviewQueues: readonly number[],
+): number {
+  let peak = Math.max(0, sprintReviewQueueMax);
+  for (const q of teamReviewQueues) peak = Math.max(peak, q);
+  return peak;
+}
+
+/**
  * レビュー凍結（RI-85）の詳細・警告チップ。
  * イベント抽選帯（seniorHp<=45）とキューピーク接近を、燃え尽きチップとは別に予兆する。
  */

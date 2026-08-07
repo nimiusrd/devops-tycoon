@@ -214,8 +214,8 @@ export interface HudProps {
   /** 進行中スプリントのタスク（渋滞・リスク導出用。非スプリント時は空配列）。 */
   tasks: Task[];
   /**
-   * 進行中スプリントのレビュー待ちピーク（RI-85 凍結予兆）。
-   * 通算 totals.reviewQueuePeak は渡さない（解消後も警告が残るため）。
+   * ライブのレビュー待ちピーク（RI-85 凍結予兆）。
+   * 進行中スプリント peak と全チーム現在キューを渡す。通算 totals は使わない。
    * 未指定時は現在キュー長だけで判定する。
    */
   reviewQueuePeak?: number;

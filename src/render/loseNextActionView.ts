@@ -55,7 +55,7 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   },
   reviewFreeze: {
     nextAction:
-      'AIスロットル・PR分割・レビュー応援で渋滞を抑え、割り込みレビューや炎上放置でシニアHPを削らず、休息でHPを戻して低HPからの凍結も避ける。',
+      'AIスロットル・PR分割・レビュー応援で渋滞ピークを先に下げ、割り込みレビューに頼ってシニアHPを削らない。',
     insight: '実装量だけ増やすと、ボトルネックは必ずレビュー側へ移る。',
   },
   incidentCascade: {
@@ -335,29 +335,6 @@ function quarterOutcomeAction(
   return undefined;
 }
 
-function reviewFreezeAction(snapshot: LoseNextActionSnapshot): LoseNextActionView {
-  const peak = snapshot.reviewQueuePeak;
-  const hp = snapshot.seniorHp;
-  const queuePath = peak !== undefined && peak >= 48;
-  const hpPath = hp !== undefined && hp <= 45;
-
-  if (hpPath && !queuePath) {
-    return {
-      nextAction:
-        '割り込みレビューでシニアHPを削らず、緊急対応と休息でHPを戻し、AIスロットルで流入を抑えて低HPからのレビュー凍結を避ける。',
-      insight: 'レビュー担当が枯れると、キューがまだでも出荷ライン自体が止まる。',
-    };
-  }
-  if (queuePath && !hpPath) {
-    return {
-      nextAction:
-        'AIスロットル・PR分割・レビュー応援で渋滞ピークを先に下げ、割り込みレビューに頼ってシニアHPを削らない。',
-      insight: '実装量だけ増やすと、ボトルネックは必ずレビュー側へ移る。',
-    };
-  }
-  return LOSE_NEXT_ACTIONS.reviewFreeze;
-}
-
 /** 敗因に対応する次の一手と現場示唆を返す。 */
 export function loseNextActionView(
   reason: LoseReason,
@@ -375,6 +352,6 @@ export function loseNextActionView(
     const fromOutcome = quarterOutcomeAction(options.quarterOutcome, snapshot);
     if (fromOutcome) return fromOutcome;
   }
-  if (reason === 'reviewFreeze') return reviewFreezeAction(snapshot);
+  // reviewFreeze の現行経路は reviewQueuePeak 閾値のみ（低HPは seniorBurnout）。
   return LOSE_NEXT_ACTIONS[reason];
 }

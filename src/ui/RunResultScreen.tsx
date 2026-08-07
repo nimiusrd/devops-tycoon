@@ -30,7 +30,7 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
   moraleCollapse: { label: 'チーム崩壊', desc: '士気が尽き、チームが機能しなくなりました。' },
   reviewFreeze: {
     label: 'PR 凍結',
-    desc: 'レビュー担当の枯渇か待ち行列の限界で、出荷ラインが止まりました。',
+    desc: 'レビュー待ち行列が限界に達し、出荷ラインが止まりました。',
   },
   incidentCascade: {
     label: '障害連鎖によるリリース停止',

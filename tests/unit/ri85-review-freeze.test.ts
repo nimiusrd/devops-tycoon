@@ -8,6 +8,7 @@ import {
   REVIEW_FREEZE_WATCH_PEAK,
   deriveHudMetrics,
   reviewFreezeHudCopy,
+  reviewFreezeWarningPeak,
 } from '../../src/render/status';
 import { REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { eventEligible, eventSignals } from '../../src/sim/run/events';
@@ -33,21 +34,31 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
     expect(def!.choices[0]?.outcome.nextSprint?.reviewLoadAdd).toBeUndefined();
   });
 
-  it('seniorHp 境界で抽選適格が切り替わる', () => {
+  it('seniorHp / 士気境界で抽選適格が切り替わる', () => {
     const def = getEvent('review-freeze')!;
     const eligible = createOrgState('default', true);
     eligible.seniorHp = REVIEW_FREEZE_EVENT_HP;
-    const blocked = createOrgState('default', true);
-    blocked.seniorHp = REVIEW_FREEZE_EVENT_HP + 1;
+    eligible.morale = 50;
+    const hpTooHigh = createOrgState('default', true);
+    hpTooHigh.seniorHp = REVIEW_FREEZE_EVENT_HP + 1;
+    const hpNearDeath = createOrgState('default', true);
+    hpNearDeath.seniorHp = 11; // -10 で <=1 になり得る帯は maxSignal で除外
+    hpNearDeath.morale = 50;
+    const moraleNearDeath = createOrgState('default', true);
+    moraleNearDeath.seniorHp = 40;
+    moraleNearDeath.morale = 4; // -3 で <=1 になり得る帯は maxSignal で除外
     expect(eventEligible(def, eventSignals(eligible))).toBe(true);
-    expect(eventEligible(def, eventSignals(blocked))).toBe(false);
+    expect(eventEligible(def, eventSignals(hpTooHigh))).toBe(false);
+    expect(eventEligible(def, eventSignals(hpNearDeath))).toBe(false);
+    expect(eventEligible(def, eventSignals(moraleNearDeath))).toBe(false);
   });
 
-  it('了解後もランは継続し、reviewFreeze 即敗北にはならない', () => {
+  it('了解後もランは継続し、reviewFreeze / seniorBurnout 即敗北にはならない', () => {
     const engine = new RunEngine({ seed: 'ri85-soft', difficulty: 'easy' });
     engine.startRun();
     const internals = engine as unknown as BeatInternals;
     internals.org.seniorHp = 40;
+    internals.org.morale = 50;
     internals.phase = 'beat';
     internals.beat = { eventId: 'review-freeze', kind: 'judgment' };
     engine.resolveBeat();
@@ -57,6 +68,7 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
     // soft judgment の HP 減はスプリント間回復のあとも、無被害（100）より低い。
     expect(after.org.seniorHp).toBeLessThan(100);
     expect(after.org.seniorHp).toBeGreaterThan(1);
+    expect(after.org.morale).toBeGreaterThan(1);
   });
 
   it('reviewFreezeHudCopy は HP / ピーク閾値でチップを出す', () => {
@@ -103,5 +115,11 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
         (m) => m.id === 'reviewCapacity',
       ),
     ).toMatchObject({ warningChip: '凍結注意', tone: 'watch' });
+  });
+
+  it('reviewFreezeWarningPeak は非選択チームの現在キューも畳み込む', () => {
+    expect(reviewFreezeWarningPeak(0, [])).toBe(0);
+    expect(reviewFreezeWarningPeak(10, [4, 36, 2])).toBe(36);
+    expect(reviewFreezeWarningPeak(40, [12])).toBe(40);
   });
 });

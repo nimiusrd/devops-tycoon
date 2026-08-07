@@ -265,7 +265,7 @@ describe('effectiveEventWeight / pickWeighted の境界', () => {
   });
 });
 
-describe('eventEligible の minSignal 条件', () => {
+describe('eventEligible の minSignal / maxSignal 条件', () => {
   it('minSignal 未指定は対象になり、指定時は全条件を下限以上で満たす必要がある', () => {
     expect(eventEligible(event({}), signals({}))).toBe(true);
     expect(
@@ -279,6 +279,18 @@ describe('eventEligible の minSignal 条件', () => {
         event({ minSignal: { seniorHpLow: 0.55, moraleLow: 0.25 } }),
         signals({ seniorHpLow: 0.54, moraleLow: 0.99 }),
       ),
+    ).toBe(false);
+  });
+
+  it('maxSignal 指定時は全条件を上限以下で満たす必要がある', () => {
+    expect(
+      eventEligible(
+        event({ maxSignal: { seniorHpLow: 0.88, moraleLow: 0.95 } }),
+        signals({ seniorHpLow: 0.88, moraleLow: 0.95 }),
+      ),
+    ).toBe(true);
+    expect(
+      eventEligible(event({ maxSignal: { seniorHpLow: 0.88 } }), signals({ seniorHpLow: 0.89 })),
     ).toBe(false);
   });
 });

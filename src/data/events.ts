@@ -86,6 +86,11 @@ export interface EventDef {
    * ハード敗北など、健全な組織で起きてはならない事象を「組織が荒れたときだけ」に限定する。
    */
   minSignal?: Partial<Record<EventSignal, number>>;
+  /**
+   * 抽選対象になるための信号上限（0..1）。指定した全信号が上限以下のときのみプールに入る。
+   * soft judgment の消耗が即時敗北へ直結する帯を除外するために使う。
+   */
+  maxSignal?: Partial<Record<EventSignal, number>>;
   choices: EventChoice[];
 }
 
@@ -435,7 +440,9 @@ export const EVENT_DEFS: EventDef[] = [
     kind: 'judgment',
     weight: 0.25,
     triggers: { seniorHpLow: 4 },
+    // HP<=45 かつ、消耗（HP-10 / 士気-3）後も敗北閾値（<=1）を超える帯だけ抽選する。
     minSignal: { seniorHpLow: 0.55 },
+    maxSignal: { seniorHpLow: 0.88, moraleLow: 0.95 },
     choices: [
       {
         label: '了解',

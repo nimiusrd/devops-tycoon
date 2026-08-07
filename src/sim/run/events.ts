@@ -142,13 +142,19 @@ export function eventsOfKind(pool: EventDef[], kind: 'judgment' | 'decision'): E
 }
 
 /**
- * イベントが現在の組織状態で抽選対象になるか（`minSignal` の全下限を満たすか）。
+ * イベントが現在の組織状態で抽選対象になるか（`minSignal` / `maxSignal` を満たすか）。
  * ハード敗北など、健全な組織では起きてはならない事象をプールから除外するために使う。
  */
 export function eventEligible(def: EventDef, signals: Record<EventSignal, number>): boolean {
-  if (!def.minSignal) return true;
-  for (const [sig, min] of Object.entries(def.minSignal) as [EventSignal, number][]) {
-    if (signals[sig] < min) return false;
+  if (def.minSignal) {
+    for (const [sig, min] of Object.entries(def.minSignal) as [EventSignal, number][]) {
+      if (signals[sig] < min) return false;
+    }
+  }
+  if (def.maxSignal) {
+    for (const [sig, max] of Object.entries(def.maxSignal) as [EventSignal, number][]) {
+      if (signals[sig] > max) return false;
+    }
   }
   return true;
 }

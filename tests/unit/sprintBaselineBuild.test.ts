@@ -4,6 +4,7 @@ import { createOrgState } from '../../src/sim/org';
 import {
   BOSS_MAX_TICKS,
   buildSprintBaselineInput,
+  HARD_BOSS_MIN_COMPLETE_TICK,
   type SprintBaselineBuildContext,
 } from '../../src/sim/run/sprintBaselineBuild';
 import type { SprintModifierDelta } from '../../src/sim/run/types';
@@ -90,12 +91,14 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     const elite = build({ kind: 'elite' });
     const boss = build({ kind: 'boss' });
     const incidentBoss = build({ kind: 'boss', ctx: { bossId: 'major-incident' } });
+    const hardBoss = build({ kind: 'boss', ctx: { difficulty: 'hard' } });
 
     // 通常は床、elite は床×eliteTaskMul(normal)=1.12。
     expect(normal.config.taskCount).toBe(50);
     expect(elite.config.taskCount).toBe(56);
     expect(boss.config.taskCount).toBe(58); // bossTaskFloor(normal)
     expect(incidentBoss.config.taskCount).toBe(58);
+    expect(hardBoss.config.minCompleteTick).toBe(HARD_BOSS_MIN_COMPLETE_TICK);
     const nightmareNormal = build({ kind: 'normal', ctx: { difficulty: 'nightmare' } });
     const nightmareElite = build({ kind: 'elite', ctx: { difficulty: 'nightmare' } });
     expect(nightmareNormal.config.taskCount).toBe(32);

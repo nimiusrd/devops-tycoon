@@ -21,7 +21,7 @@ import {
   wallSecondsAt1x,
   type PlaybackSpeed,
 } from '../../src/ui/sprintTempo';
-import { runMatrix } from '../playtest/harness';
+import { runMatrix, type RunLog } from '../playtest/harness';
 import { modelQuarterWallMinutes, modelRunWallMinutes } from './helpers/pacingStats';
 import { p50, p90 } from './helpers/percentile';
 import { advance, playUntil, type SprintEndMetrics } from './helpers/runFlow';
@@ -403,9 +403,37 @@ function f4Quantile(values: readonly number[], p: number): number {
   return sorted[Math.round((sorted.length - 1) * p)]!;
 }
 
-describe('sprintTempo 全難易度ペーシング（RI-75 / F-4）', () => {
+/** playtest-report.mjs と同じ母標準偏差 CV。S1 の共通 seed 比較に使う。 */
+function f5Cv(values: readonly number[]): number {
+  if (values.length < 2) return NaN;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  if (mean === 0) return NaN;
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  return Math.sqrt(variance) / mean;
+}
+
+function s1DeliveredBySeed(
+  runs: readonly RunLog[],
+  difficulty: DifficultyId,
+  policy: (typeof F4_POLICIES)[number],
+): Map<string, number> {
+  const bySeed = new Map<string, number>();
+  for (const run of runs) {
+    if (run.difficulty !== difficulty || run.policy !== policy) continue;
+    const s1 = run.sprints[0];
+    if (s1) bySeed.set(run.seed, s1.delivered);
+  }
+  return bySeed;
+}
+
+describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）', () => {
+  let runs: RunLog[];
+
+  beforeAll(() => {
+    runs = runMatrix([...RI75_DIFFICULTIES], [...F4_POLICIES], [...RI75_SEEDS], 'fresh');
+  }, 180_000);
+
   it('F-4 代表3方針×pt seed で通常・elite・ボスの壁時計帯を満たす', () => {
-    const runs = runMatrix([...RI75_DIFFICULTIES], [...F4_POLICIES], [...RI75_SEEDS], 'fresh');
     expect(runs.length).toBe(RI75_DIFFICULTIES.length * F4_POLICIES.length * RI75_SEEDS.length);
 
     for (const difficulty of RI75_DIFFICULTIES) {
@@ -460,6 +488,23 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4）', () => {
       );
     }
   }, 180_000);
+
+  it('F-5 初見コホートでは、戦術介入も S1 出荷のばらつきを全難易度で抑える', () => {
+    for (const difficulty of RI75_DIFFICULTIES) {
+      const control = s1DeliveredBySeed(runs, difficulty, 'noInterventionCtl');
+      const naive = s1DeliveredBySeed(runs, difficulty, 'naive');
+      const sharedSeeds = RI75_SEEDS.filter((seed) => control.has(seed) && naive.has(seed));
+
+      // 生存状況で seed を選抜せず、事前固定した fresh の10本をそのまま比較する。
+      expect(sharedSeeds, `${difficulty} S1 common seeds`).toEqual([...RI75_SEEDS]);
+
+      const controlCv = f5Cv(sharedSeeds.map((seed) => control.get(seed)!));
+      const naiveCv = f5Cv(sharedSeeds.map((seed) => naive.get(seed)!));
+      expect(naiveCv, `${difficulty} naive CV=${naiveCv} vs control=${controlCv}`).toBeLessThan(
+        controlCv,
+      );
+    }
+  });
 });
 
 describe('percentile ヘルパ', () => {

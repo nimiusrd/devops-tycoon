@@ -57,11 +57,6 @@ export interface ActionDef {
   gauge: number;
   /** 安全側の介入なら、短時間の運用安定を作る（RI-84 / F-5）。 */
   stabilizesFlow?: boolean;
-  /**
-   * 工程そのものを整える介入なら、安定中のコミット出荷下限を得る。
-   * 炎上への即応・割り込みレビューのような戦術手は、手戻り抑制だけを得る。
-   */
-  commitsDelivery?: boolean;
   description: string;
   sideEffect: string;
   /** 見た目分類（危険＝赤 / 重い）。 */
@@ -320,24 +315,22 @@ export function applyAction(
   if (!gate.ok) return { ok: false, reason: gate.reason };
 
   const def = getAction(id)!;
+  const stabilityUntilTick = sprint.modifiers.stabilityUntilTick;
+  if (def.stabilizesFlow) {
+    // 割り込み／ペアレビューがこの場で reviewOne を呼んでも、安定化を適用する。
+    sprint.modifiers.stabilityUntilTick = tick + STABILITY_TICKS;
+  }
   const partial = EFFECTS[id](sprint, org, rng, tick, target);
-  if (!partial) return { ok: false, reason: 'no-target' };
+  if (!partial) {
+    sprint.modifiers.stabilityUntilTick = stabilityUntilTick;
+    return { ok: false, reason: 'no-target' };
+  }
 
   sprint.focus -= def.cost;
   sprint.cooldowns[id] = def.cooldownTicks;
   sprint.metrics.interventionsUsed += 1;
   sprint.metrics.focusSpent += def.cost;
   sprint.metrics.actionCounts[id] = (sprint.metrics.actionCounts[id] ?? 0) + 1;
-  if (def.stabilizesFlow) {
-    // 連続介入は持続時間を積み増さず、最後の介入から一定時間だけ工程を整える。
-    // 無限に安全になるのではなく、盤面を見続ける価値を残す。
-    sprint.modifiers.stabilityUntilTick = tick + STABILITY_TICKS;
-  }
-  if (def.commitsDelivery) {
-    // 出荷コミットは工程を構造的に整えた手だけが持つ。戦術手で安定表示を更新しても、
-    // 期限切れのコミットを復活させないよう別の期限として管理する。
-    sprint.modifiers.deliveryCommitUntilTick = tick + STABILITY_TICKS;
-  }
   const focusRefund = addComboGauge(sprint, def.gauge);
 
   const effect: InterventionEffect = {

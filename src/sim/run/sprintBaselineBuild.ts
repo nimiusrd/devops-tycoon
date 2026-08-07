@@ -63,6 +63,12 @@ export function normalTaskFloor(difficulty: DifficultyId): number {
 export const SPRINT_MIN_COMPLETE_TICK = 38;
 
 /**
+ * hard のボス完了に必要な最小 tick。表示 tick は +1 されるため、116 tick で約90.5秒になる。
+ * 安定化による結果再校正後も §3.1 のボス最短90秒を守り、タスク量・出荷には介入しない。
+ */
+export const HARD_BOSS_MIN_COMPLETE_TICK = 115;
+
+/**
  * ボススプリントのタスク数下限（RI-75）。
  * easy/normal は通常より長く、hard/nightmare は終盤消耗の長尾を抑える。
  */
@@ -187,8 +193,9 @@ export function buildSprintBaselineInput(
   const config: SprintConfig = {
     ...ctx.baseConfig,
     taskCount,
-    // RI-75: 早期ドレインでも絶対下限30秒を割らない。
-    minCompleteTick: SPRINT_MIN_COMPLETE_TICK,
+    // RI-75: 早期ドレインでも絶対下限30秒を割らない。hard のボスは §3.1 の90秒下限も守る。
+    minCompleteTick:
+      isBoss && ctx.difficulty === 'hard' ? HARD_BOSS_MIN_COMPLETE_TICK : SPRINT_MIN_COMPLETE_TICK,
     // RI-75: ボスは §3.1 上限（180秒）で打ち切り、消耗時の長尾を防ぐ。
     ...(isBoss ? { maxTicks: Math.min(ctx.baseConfig.maxTicks, BOSS_MAX_TICKS) } : {}),
     focusMax: Math.max(

@@ -174,18 +174,13 @@ export interface ModifierRingState {
 }
 
 /** ActionButton と共通ステータスで表示する時限効果。 */
-export type ModifierRingTarget = ActionId | 'stability' | 'deliveryCommit';
+export type ModifierRingTarget = ActionId | 'stability';
 
 const MODIFIER_RING_BY_ACTION: Partial<
   Record<
     ModifierRingTarget,
     {
-      untilKey:
-        | 'throttleUntilTick'
-        | 'overtimeUntilTick'
-        | 'andonUntilTick'
-        | 'stabilityUntilTick'
-        | 'deliveryCommitUntilTick';
+      untilKey: 'throttleUntilTick' | 'overtimeUntilTick' | 'andonUntilTick' | 'stabilityUntilTick';
       total: number;
     }
   >
@@ -194,7 +189,6 @@ const MODIFIER_RING_BY_ACTION: Partial<
   overtime: { untilKey: 'overtimeUntilTick', total: OVERTIME_TICKS },
   andon: { untilKey: 'andonUntilTick', total: ANDON_TICKS },
   stability: { untilKey: 'stabilityUntilTick', total: STABILITY_TICKS },
-  deliveryCommit: { untilKey: 'deliveryCommitUntilTick', total: STABILITY_TICKS },
 };
 
 export function deriveModifierRing(

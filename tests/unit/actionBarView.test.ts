@@ -222,24 +222,6 @@ describe('deriveModifierRing（RI-84）', () => {
       total: STABILITY_TICKS,
     });
   });
-
-  it('出荷コミットは運用安定と別の期限で、期限切れなら非表示にする', () => {
-    const org = createOrgState('default', true);
-    const sprint = makeSprint(org, []);
-    sprint.modifiers.stabilityUntilTick = 132;
-    sprint.modifiers.deliveryCommitUntilTick = 90;
-
-    expect(deriveModifierRing(sprint, 42, 'deliveryCommit')).toEqual({
-      active: true,
-      remaining: 48,
-      total: STABILITY_TICKS,
-    });
-    expect(deriveModifierRing(sprint, 90, 'deliveryCommit')).toEqual({
-      active: false,
-      remaining: 0,
-      total: STABILITY_TICKS,
-    });
-  });
 });
 
 describe('formatInterventionFailure（RI-51）', () => {

@@ -2328,16 +2328,6 @@ body {
   background: linear-gradient(90deg, #57e08f, #9ff0bd);
   transition: width 0.15s linear;
 }
-.delivery-commit-status {
-  color: #ffd980;
-}
-.delivery-commit-status .stability-status-value {
-  color: #fff1bd;
-}
-.delivery-commit-status .stability-status-meter > i {
-  background: linear-gradient(90deg, #ffbf4a, #ffe496);
-}
-
 /* デッキ / 手札（第7章） */
 .deckbar {
   display: flex;

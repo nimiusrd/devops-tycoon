@@ -15,7 +15,7 @@ import {
   STABILITY_TICKS,
   THROTTLE_TICKS,
 } from '../../src/sim/actions';
-import { BURN_TICKS, STABILITY_DELIVERY_FLOOR_PER_TASK } from '../../src/sim/model';
+import { BURN_TICKS, STABILITY_COMBO_CAP } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import { createSprint, resolveSprintConfig, reviewOne, stepSprint } from '../../src/sim/sprint';
 import { createEngine, type Engine } from '../../src/sim/engine';
@@ -245,11 +245,6 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(sprint.modifiers.stabilityUntilTick).toBe(
         def.stabilizesFlow ? TICK + STABILITY_TICKS : 0,
       );
-      expect(sprint.modifiers.deliveryCommitUntilTick).toBe(
-        def.commitsDelivery ? TICK + STABILITY_TICKS : 0,
-      );
-      expect(def.commitsDelivery ?? false).toBe(id === 'assignTask' || id === 'andon');
-      expect(def.commitsDelivery ? def.stabilizesFlow : true).toBe(true);
       fixture.assertEffect({ sprint, org, before });
     });
   });
@@ -290,7 +285,66 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
     expect(stable.tasks[0].incident).toBe(false);
   });
 
-  it('運用安定は安全側の介入後、完了時だけ不足した出荷をコミット下限まで補う', () => {
+  it('安全側の介入で作る運用安定は、燃え尽き時の延焼を防ぐ', () => {
+    const org = createOrgState('default', true);
+    org.seniorHp = 0;
+    const sprint = makeSprint(org, [burningTask(0, 1)]);
+    sprint.modifiers.stabilityUntilTick = TICK + 1;
+
+    stepSprint(sprint, org, rng, TICK);
+
+    expect(sprint.tasks[0].incident).toBe(false);
+    expect(sprint.tasks[0].lane).toBe('rework');
+    expect(sprint.metrics.contained).toBe(1);
+    expect(sprint.metrics.autoContainCount).toBe(1);
+    expect(sprint.metrics.spread).toBe(0);
+  });
+
+  it('安全側の介入で作る運用安定は、連続出荷ボーナスの計上を抑える', () => {
+    const stableOrg = createOrgState('default', true);
+    const stable = makeSprint(stableOrg, [makeTask(0, { kind: 'complex', highValue: true })]);
+    stable.metrics.combo = STABILITY_COMBO_CAP;
+    stable.metrics.maxCombo = STABILITY_COMBO_CAP;
+    stable.modifiers.stabilityUntilTick = TICK + 1;
+
+    const unstableOrg = createOrgState('default', true);
+    const unstable = makeSprint(unstableOrg, [makeTask(0, { kind: 'complex', highValue: true })]);
+    unstable.metrics.combo = STABILITY_COMBO_CAP;
+    unstable.metrics.maxCombo = STABILITY_COMBO_CAP;
+
+    reviewOne(stable.tasks[0], stable, stableOrg, rng, TICK);
+    reviewOne(unstable.tasks[0], unstable, unstableOrg, rng, TICK);
+
+    expect(stable.metrics.combo).toBe(STABILITY_COMBO_CAP + 1);
+    expect(stable.metrics.maxCombo).toBe(STABILITY_COMBO_CAP + 1);
+    expect(stable.metrics.delivered).toBeLessThan(unstable.metrics.delivered);
+  });
+
+  it.each(['interruptReview', 'pairReview'] as const)(
+    '%s の即時 Review にも運用安定を適用する',
+    (actionId) => {
+      const org = {
+        ...createOrgState('default', true),
+        aiDependency: 90,
+        aiLiteracy: 10,
+        quality: 20,
+      };
+      const sprint = makeSprint(org, [makeTask(0, { aiAssisted: true })]);
+      const boundaryRng = (() => {
+        const values = [0.99, 0.35];
+        return () => values.shift() ?? 0.99;
+      })();
+
+      const outcome = applyAction(actionId, sprint, org, boundaryRng, TICK);
+
+      expect(outcome.ok).toBe(true);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+      expect(sprint.tasks[0].lane).toBe('done');
+      expect(sprint.tasks[0].incident).toBe(false);
+    },
+  );
+
+  it('運用安定は完了時に出荷を直接加算しない', () => {
     const org = createOrgState('default', true);
     const sprint = createSprint(
       resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 2 }),
@@ -299,11 +353,8 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
     );
     sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
     sprint.metrics.delivered = 20;
-    sprint.metrics.actionCounts.assignTask = 1;
     sprint.modifiers.stabilityUntilTick = 3;
-    sprint.modifiers.deliveryCommitUntilTick = 3;
     const deliveryBefore = org.deliveryScore;
-    const floor = Math.round(4 * STABILITY_DELIVERY_FLOOR_PER_TASK);
 
     stepSprint(sprint, org, rng, 1);
     expect(sprint.complete).toBe(false);
@@ -311,134 +362,15 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
 
     stepSprint(sprint, org, rng, 2);
     expect(sprint.complete).toBe(true);
-    expect(sprint.metrics.delivered).toBe(floor);
-    expect(org.deliveryScore).toBe(deliveryBefore + floor - 20);
-  });
-
-  it('構造介入のコミット期限が切れたら、戦術介入で安定表示が残っても出荷下限を得ない', () => {
-    const org = createOrgState('default', true);
-    const sprint = createSprint(
-      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0 }),
-      org,
-      rng,
-    );
-    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
-    sprint.metrics.delivered = 20;
-    // 過去の差配後に割り込みレビューなどが安定表示だけを更新した状態を模す。
-    sprint.metrics.actionCounts.assignTask = 1;
-    sprint.metrics.actionCounts.interruptReview = 1;
-    sprint.modifiers.stabilityUntilTick = 100;
-    sprint.modifiers.deliveryCommitUntilTick = 2;
-
-    stepSprint(sprint, org, rng, 2);
-
-    expect(sprint.complete).toBe(true);
     expect(sprint.metrics.delivered).toBe(20);
-  });
-
-  it('maxTicks 打ち切りでは、コミット期限中でも出荷下限を得ない', () => {
-    const org = createOrgState('default', true);
-    const sprint = createSprint(
-      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0, maxTicks: 0 }),
-      org,
-      rng,
-    );
-    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'backlog' }));
-    sprint.metrics.delivered = 20;
-    sprint.metrics.actionCounts.assignTask = 1;
-    sprint.modifiers.stabilityUntilTick = 100;
-    sprint.modifiers.deliveryCommitUntilTick = 100;
-
-    stepSprint(sprint, org, rng, 0);
-
-    expect(sprint.complete).toBe(true);
-    expect(sprint.metrics.timedOut).toBe(true);
-    expect(sprint.metrics.delivered).toBe(20);
-  });
-
-  it('stalled で畳んで minCompleteTick を待った後も、出荷下限を得ない', () => {
-    const org = createOrgState('default', true);
-    const sprint = createSprint(
-      resolveSprintConfig('default', { taskCount: 4, codingSlots: 0, minCompleteTick: 2 }),
-      org,
-      rng,
-    );
-    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'backlog' }));
-    sprint.metrics.delivered = 20;
-    sprint.metrics.actionCounts.assignTask = 1;
-    sprint.modifiers.stabilityUntilTick = 100;
-    sprint.modifiers.deliveryCommitUntilTick = 100;
-
-    stepSprint(sprint, org, rng, 1);
-    expect(sprint.complete).toBe(false);
-    expect(sprint.modifiers.deliveryCommitUntilTick).toBe(0);
-    expect(sprint.metrics.delivered).toBe(20);
-
-    stepSprint(sprint, org, rng, 2);
-    expect(sprint.complete).toBe(true);
-    expect(sprint.metrics.delivered).toBe(20);
-  });
-
-  it.each(['interruptReview', 'firefight'] as const)(
-    '%s のような戦術手だけでは、安定中でも出荷下限を得ない',
-    (actionId) => {
-      const org = createOrgState('default', true);
-      const sprint = createSprint(
-        resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0 }),
-        org,
-        rng,
-      );
-      sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
-      sprint.metrics.delivered = 20;
-      sprint.metrics.actionCounts[actionId] = 1;
-      sprint.modifiers.stabilityUntilTick = 100;
-
-      stepSprint(sprint, org, rng, 1);
-
-      expect(sprint.complete).toBe(true);
-      expect(sprint.metrics.delivered).toBe(20);
-    },
-  );
-
-  it('旧リプレイでコミット期限が無いときは、出荷下限を得ない', () => {
-    const org = createOrgState('default', true);
-    const sprint = createSprint(
-      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0 }),
-      org,
-      rng,
-    );
-    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
-    sprint.metrics.delivered = 20;
-    sprint.metrics.actionCounts.assignTask = 1;
-    sprint.modifiers.stabilityUntilTick = 100;
-    delete sprint.modifiers.deliveryCommitUntilTick;
-
-    stepSprint(sprint, org, rng, 1);
-
-    expect(sprint.complete).toBe(true);
-    expect(sprint.metrics.delivered).toBe(20);
-  });
-
-  it('残業号令だけでは運用安定の出荷下限を得ない', () => {
-    const org = createOrgState('default', true);
-    const sprint = createSprint(
-      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 0 }),
-      org,
-      rng,
-    );
-    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
-    sprint.metrics.delivered = 20;
-    sprint.metrics.actionCounts.overtime = 1;
-
-    stepSprint(sprint, org, rng, 1);
-    expect(sprint.complete).toBe(true);
-    expect(sprint.metrics.delivered).toBe(20);
+    expect(org.deliveryScore).toBe(deliveryBefore);
   });
 
   describe('失敗理由の共通契約', () => {
     it.each(NO_TARGET_CASES)('$id は対象なしで no-target（コスト不消費）', ({ id, tasks }) => {
       const org = createOrgState('default', true);
       const sprint = makeSprint(org, tasks);
+      sprint.modifiers.stabilityUntilTick = TICK + 7;
       const focus0 = sprint.focus;
 
       const outcome = applyAction(id, sprint, org, rng, TICK);
@@ -447,6 +379,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(outcome.effect).toBeUndefined();
       expect(sprint.focus).toBe(focus0);
       expect(sprint.metrics.interventionsUsed).toBe(0);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + 7);
     });
 
     it('クールダウン中は cooldown で失敗し集中力は減らない', () => {

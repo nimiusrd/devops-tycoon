@@ -20,7 +20,7 @@ import {
   REVIEW_HP_COST,
   REVIEW_HP_REGEN,
   SPREAD_MORALE_COST,
-  STABILITY_DELIVERY_FLOOR_PER_TASK,
+  STABILITY_COMBO_CAP,
   STABILITY_REWORK_MUL,
   codingProgressPerTick,
   comboMultiplier,
@@ -143,7 +143,6 @@ export function createSprint(
       overtimeUntilTick: 0,
       throttleUntilTick: 0,
       stabilityUntilTick: 0,
-      deliveryCommitUntilTick: 0,
     },
     comboGauge: 0,
     cardEffects,
@@ -269,7 +268,8 @@ export function reviewOne(
   org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST, 0, 100);
 
   // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。
-  const reworkMul = isStabilized(sprint, tick) ? STABILITY_REWORK_MUL : 1;
+  const stabilized = isStabilized(sprint, tick);
+  const reworkMul = stabilized ? STABILITY_REWORK_MUL : 1;
   if (rng() < incidentProbability(org, task, sprint.cardEffects)) {
     igniteTask(task, sprint, tick, 'review');
     return;
@@ -304,7 +304,11 @@ export function reviewOne(
   m.completedCount += 1;
   m.combo += 1;
   if (m.combo > m.maxCombo) m.maxCombo = m.combo;
-  const value = Math.round(taskValue(task) * comboMultiplier(m.combo));
+  // 安定運用は大きな連続出荷ボーナスを積み上げず、着実な流れを選ぶ。
+  // コンボ自体は維持し、出荷の上乗せだけを抑えることで安全側の介入が
+  // スコアの上振れを増やすだけにならないようにする。
+  const deliveryCombo = stabilized ? Math.min(m.combo, STABILITY_COMBO_CAP) : m.combo;
+  const value = Math.round(taskValue(task) * comboMultiplier(deliveryCombo));
   m.delivered += value;
   org.deliveryScore += value;
   if (task.aiAssisted) m.aiAssistedCompleted += 1;
@@ -368,7 +372,9 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
     task.incident = false;
     delete task.burnTicksLeft;
     m.combo = 0;
-    if (org.seniorHp >= INCIDENT_CONTAIN_HP) {
+    // 安定中は既知の復旧手順で延焼を止める。炎上時間と通常の手戻りは残すため、
+    // 出荷を直接増やさずに下振れの連鎖だけを抑える。
+    if (org.seniorHp >= INCIDENT_CONTAIN_HP || isStabilized(sprint, tick)) {
       // 自動鎮火: シニアが総出で消す。緊急対応より大幅に高くつく受動対応。
       m.contained += 1;
       m.autoContainCount += 1;
@@ -450,24 +456,8 @@ function isStalled(sprint: SprintState): boolean {
   );
 }
 
-/**
- * 安全側の介入は、上振れをさらに伸ばすのではなく、崩れた工程でも約束できる
- * 出荷量を下限として守る。介入なしと残業号令だけではこのコミットを得られない。
- */
-function settleStabilityDeliveryFloor(sprint: SprintState, org: OrgState, tick: number): void {
-  if (tick >= (sprint.modifiers.deliveryCommitUntilTick ?? 0)) return;
-
-  const floor = Math.round(sprint.config.taskCount * STABILITY_DELIVERY_FLOOR_PER_TASK);
-  const shortfall = Math.max(0, floor - sprint.metrics.delivered);
-  if (shortfall === 0) return;
-
-  sprint.metrics.delivered += shortfall;
-  org.deliveryScore += shortfall;
-}
-
-function completeDrainedSprint(sprint: SprintState, org: OrgState, tick: number): void {
+function completeDrainedSprint(sprint: SprintState): void {
   if (sprint.complete) return;
-  settleStabilityDeliveryFloor(sprint, org, tick);
   sprint.complete = true;
 }
 
@@ -506,7 +496,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   // RI-75: 早期ドレイン後の下限待ちでは盤面副作用を止める（HP回復・工程進行など）。
   if (isDrained(sprint)) {
     const minTick = sprint.config.minCompleteTick ?? 0;
-    if (tick >= minTick) completeDrainedSprint(sprint, org, tick);
+    if (tick >= minTick) completeDrainedSprint(sprint);
     appendTimelineSample(sprint, org, tick);
     return;
   }
@@ -517,9 +507,6 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   if (isStalled(sprint)) {
     abandonInFlight(sprint, tick);
     const minTick = sprint.config.minCompleteTick ?? 0;
-    // 流入不能で畳んだケースは出荷を約束できないため、運用安定の下限は適用しない。
-    sprint.modifiers.stabilityUntilTick = 0;
-    sprint.modifiers.deliveryCommitUntilTick = 0;
     if (tick >= minTick) sprint.complete = true;
     appendTimelineSample(sprint, org, tick);
     return;
@@ -549,7 +536,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   if (isDrained(sprint)) {
     // RI-75: 早期ドレインでも §3.1 絶対下限（表示 tick）を下回らないよう待機する。
     const minTick = sprint.config.minCompleteTick ?? 0;
-    if (tick >= minTick) completeDrainedSprint(sprint, org, tick);
+    if (tick >= minTick) completeDrainedSprint(sprint);
   } else if (tick >= sprint.config.maxTicks) {
     // RI-75: 時間切れは出荷なしで畳み、打ち切り印を付けてボス突破を失敗させる。
     abandonInFlight(sprint, tick);

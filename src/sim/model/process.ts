@@ -88,8 +88,8 @@ export const BURNING_REGEN_MUL = 0.5;
 export const STABILITY_TICKS = 180;
 /** 安定した運用中に掛ける手戻り率倍率（RI-84 / F-5）。 */
 export const STABILITY_REWORK_MUL = 0.5;
-/** 安定した工程が守る、タスク 1 件あたりのコミット済み出荷ポイント。 */
-export const STABILITY_DELIVERY_FLOOR_PER_TASK = 10.5;
+/** 安定中に許す連続出荷ボーナスの最大段数（RI-84 / F-5）。 */
+export const STABILITY_COMBO_CAP = 6;
 
 /** Rework の所要 tick。 */
 export const REWORK_TICKS = 4;

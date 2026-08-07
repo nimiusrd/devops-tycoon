@@ -921,11 +921,11 @@ describe('四半期レビュー（Phase 8）', () => {
   it('RI-68: 難易度に応じて Delivery の達成・未達が分岐する', { timeout: 60_000 }, () => {
     // RI-75: Delivery 目標再校正後に達成・未達の両方がある seed を難易度別に固定する。
     const seedsByDifficulty: Record<'easy' | 'normal' | 'hard', readonly number[]> = {
-      // RI-84: skilled でレビュー到達かつ未達となる probe-380 を加える。
-      easy: [2, 14, 20, 39, 100, 380],
-      normal: [10, 14, 23, 28, 35, 39],
+      // RI-84: 安定化の再校正後も、到達・達成・未達を含む固定 seed を使う。
+      easy: [103, 14, 20, 39, 100, 380],
+      normal: [10, 14, 238, 28, 35, 39],
       // F-5: skilled でレビュー到達かつ未達となる probe-74 へ差し替える。
-      hard: [39, 40, 51, 54, 68, 74],
+      hard: [9, 40, 51, 54, 68, 74],
     };
     const meanRatioByDifficulty: Record<'easy' | 'normal' | 'hard', number> = {
       easy: 0,

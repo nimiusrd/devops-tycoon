@@ -11,8 +11,6 @@ import type { OrgState, SimState, Task } from '../sim/types';
 
 /** `review-freeze` イベント抽選の資格帯（seniorHpLow >= 0.55 ⇔ HP <= 45）。 */
 export const REVIEW_FREEZE_EVENT_HP = 45;
-/** HUD「PR凍結危険」のシニアHP閾値。 */
-export const REVIEW_FREEZE_DANGER_HP = 30;
 /** HUD「凍結注意」のキューピーク閾値（敗北ピークの 75%・playtest 危険域と揃える）。 */
 export const REVIEW_FREEZE_WATCH_PEAK = Math.round(REVIEW_FREEZE_PEAK * 0.75);
 /** HUD「PR凍結危険」のキューピーク閾値。 */
@@ -294,37 +292,28 @@ export function reviewFreezeWarningPeak(
 
 /**
  * レビュー凍結（RI-85）の詳細・警告チップ。
- * イベント抽選帯（seniorHp<=45）とキューピーク接近を、燃え尽きチップとは別に予兆する。
+ * 敗北経路はキューピークのみなので、予兆もライブピークだけで出す（低HPは燃え尽き側）。
  */
-export function reviewFreezeHudCopy(
-  seniorHp: number,
-  reviewQueuePeak: number,
-): {
+export function reviewFreezeHudCopy(reviewQueuePeak: number): {
   tone: StatusMetricTone;
   detail: string;
   warningChip?: string;
 } {
-  const eventRisk = seniorHp <= REVIEW_FREEZE_EVENT_HP;
   const peakWatch = reviewQueuePeak >= REVIEW_FREEZE_WATCH_PEAK;
   const peakDanger = reviewQueuePeak >= REVIEW_FREEZE_DANGER_PEAK;
-  const hpDanger = seniorHp <= REVIEW_FREEZE_DANGER_HP;
-  if (!eventRisk && !peakWatch) {
+  if (!peakWatch) {
     return { tone: 'good', detail: `Review待ちピーク ${Math.round(reviewQueuePeak)}` };
   }
-  if (hpDanger || peakDanger) {
+  if (peakDanger) {
     return {
       tone: 'danger',
-      detail: eventRisk
-        ? '凍結危険・休息でHPを戻し流入を抑える（割り込みのHP消費に注意）'
-        : '凍結危険・AIスロットルやPR分割でピークを下げる',
+      detail: '凍結危険・AIスロットルやPR分割でピークを下げる',
       warningChip: 'PR凍結危険',
     };
   }
   return {
     tone: 'watch',
-    detail: eventRisk
-      ? '凍結注意・休息や流入抑制でレビュー担当を守る'
-      : '凍結注意・渋滞ピークが限界に近い',
+    detail: '凍結注意・渋滞ピークが限界に近い',
     warningChip: '凍結注意',
   };
 }
@@ -339,7 +328,7 @@ export function deriveHudMetrics(
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const queue = reviewQueueLength(tasks);
   const livePeak = Math.max(reviewQueuePeak, queue);
-  const freezeCopy = reviewFreezeHudCopy(org.seniorHp, livePeak);
+  const freezeCopy = reviewFreezeHudCopy(livePeak);
   const hasBurning = tasks.some((task) => task.incident);
   const devSpeedDetail = org.aiEnabled ? 'AI支援で高速' : '通常速度';
 

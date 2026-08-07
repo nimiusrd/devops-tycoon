@@ -675,7 +675,7 @@ test('tone: joke のビートはネタ分類の見た目で表示される（RI-
   await expect(page.getByRole('heading', { name: event.title })).toBeVisible();
 });
 
-test('RI-85: 低HPで凍結予兆が出て review-freeze は即敗北しない', async ({ page }) => {
+test('RI-85: キューピークで凍結予兆が出て review-freeze は即敗北しない', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=ri85-freeze-ui');
   await expect(page.getByTestId('title')).toBeVisible();
 
@@ -686,10 +686,12 @@ test('RI-85: 低HPで凍結予兆が出て review-freeze は即敗北しない',
     g.beginSetupSprint();
     const engine = (g as unknown as { engine: RunEngine }).engine as unknown as {
       org: { seniorHp: number };
+      teams: { reviewQueue: number }[];
       phase: string;
       beat: { eventId: string; kind: 'judgment' | 'decision' } | null;
     };
-    engine.org.seniorHp = 40;
+    // 凍結予兆はライブピーク条件。低HPだけでは出さない。
+    for (const team of engine.teams) team.reviewQueue = 36;
     // 内部改変だけでは revision が進まないので、UI ポーリングを起こす。
     g.playCard(-1);
   });

@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest';
 import { effectiveKind, getEvent } from '../../src/data/events';
 import {
-  REVIEW_FREEZE_DANGER_HP,
   REVIEW_FREEZE_DANGER_PEAK,
   REVIEW_FREEZE_EVENT_HP,
   REVIEW_FREEZE_WATCH_PEAK,
@@ -80,22 +79,14 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
     expect(after.org.morale).toBeGreaterThan(1);
   });
 
-  it('reviewFreezeHudCopy は HP / ピーク閾値でチップを出す', () => {
+  it('reviewFreezeHudCopy はキューピーク閾値だけでチップを出す', () => {
     expect(REVIEW_FREEZE_WATCH_PEAK).toBe(Math.round(REVIEW_FREEZE_PEAK * 0.75));
-    expect(reviewFreezeHudCopy(80, 0).warningChip).toBeUndefined();
-    expect(reviewFreezeHudCopy(REVIEW_FREEZE_EVENT_HP, 0)).toMatchObject({
+    expect(reviewFreezeHudCopy(0).warningChip).toBeUndefined();
+    expect(reviewFreezeHudCopy(REVIEW_FREEZE_WATCH_PEAK)).toMatchObject({
       tone: 'watch',
       warningChip: '凍結注意',
     });
-    expect(reviewFreezeHudCopy(REVIEW_FREEZE_DANGER_HP, 0)).toMatchObject({
-      tone: 'danger',
-      warningChip: 'PR凍結危険',
-    });
-    expect(reviewFreezeHudCopy(80, REVIEW_FREEZE_WATCH_PEAK)).toMatchObject({
-      tone: 'watch',
-      warningChip: '凍結注意',
-    });
-    expect(reviewFreezeHudCopy(80, REVIEW_FREEZE_DANGER_PEAK)).toMatchObject({
+    expect(reviewFreezeHudCopy(REVIEW_FREEZE_DANGER_PEAK)).toMatchObject({
       tone: 'danger',
       warningChip: 'PR凍結危険',
     });
@@ -103,22 +94,20 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
 
   it('deriveHudMetrics のレビュー耐性に凍結予兆を載せる', () => {
     const org = createOrgState('default', true);
-    org.seniorHp = 40;
-    const metrics = deriveHudMetrics(org, [], null, 0);
+    org.seniorHp = 80;
+    const metrics = deriveHudMetrics(org, [], null, REVIEW_FREEZE_WATCH_PEAK);
     expect(metrics.find((m) => m.id === 'reviewCapacity')).toMatchObject({
       warningChip: '凍結注意',
       tone: 'watch',
     });
   });
 
-  it('HUD 予兆は進行中スプリント peak / 現在キューだけを見て、通算 peak には依存しない', () => {
-    // App は totals.reviewQueuePeak を渡さない。空キュー + sprint peak=0 ならチップなし。
+  it('低HPだけでは凍結予兆を出さず、ライブピークがあるときだけ出す', () => {
     const org = createOrgState('default', true);
-    org.seniorHp = 80;
+    org.seniorHp = 40;
     expect(
       deriveHudMetrics(org, [], null, 0).find((m) => m.id === 'reviewCapacity')?.warningChip,
     ).toBeUndefined();
-    // 進行中スプリントの peak だけ渡したとき（通算ではなく live）は警告する。
     expect(
       deriveHudMetrics(org, [], null, REVIEW_FREEZE_WATCH_PEAK).find(
         (m) => m.id === 'reviewCapacity',

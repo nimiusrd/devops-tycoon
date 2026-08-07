@@ -29,6 +29,8 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
     expect(def!.choices).toHaveLength(1);
     expect(def!.choices[0]?.outcome.forceLose).toBeUndefined();
     expect(def!.choices[0]?.outcome.seniorHp).toBeLessThan(0);
+    // 閾値直前キューへの加算で操作前に敗北確定しないよう、次スプリント負荷は付けない。
+    expect(def!.choices[0]?.outcome.nextSprint?.reviewLoadAdd).toBeUndefined();
   });
 
   it('seniorHp 境界で抽選適格が切り替わる', () => {
@@ -86,5 +88,20 @@ describe('RI-85 review-freeze soft judgment と予兆', () => {
       warningChip: '凍結注意',
       tone: 'watch',
     });
+  });
+
+  it('HUD 予兆は進行中スプリント peak / 現在キューだけを見て、通算 peak には依存しない', () => {
+    // App は totals.reviewQueuePeak を渡さない。空キュー + sprint peak=0 ならチップなし。
+    const org = createOrgState('default', true);
+    org.seniorHp = 80;
+    expect(
+      deriveHudMetrics(org, [], null, 0).find((m) => m.id === 'reviewCapacity')?.warningChip,
+    ).toBeUndefined();
+    // 進行中スプリントの peak だけ渡したとき（通算ではなく live）は警告する。
+    expect(
+      deriveHudMetrics(org, [], null, REVIEW_FREEZE_WATCH_PEAK).find(
+        (m) => m.id === 'reviewCapacity',
+      ),
+    ).toMatchObject({ warningChip: '凍結注意', tone: 'watch' });
   });
 });

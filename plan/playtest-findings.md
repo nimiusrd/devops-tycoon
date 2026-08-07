@@ -812,8 +812,9 @@ SPEC 第19.1 F-5 は「無介入は損ではなく不安定。介入の価値は
 
 ### RI-85 レビュー凍結は選択不能な判定イベントでしか確定しない（優先度: 高 / F-4） — 完了
 
-`review-freeze` の即死 `forceLose` をやめ soft judgment（消耗＋次スプリント負荷）へ変更し、
-スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を追加した。
+`review-freeze` の即死 `forceLose` をやめ soft judgment（消耗中心。閾値直前の即敗北を避けるため
+`reviewLoadAdd` は付けない）へ変更し、スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を
+追加した。予兆のピーク入力は通算ではなく進行中スプリントのピーク／現在キューを使う。
 
 再計測（1,280ラン、敗北 1,275）では `reviewFreeze`（22件）はすべて `sprint` で決着し、
 即死イベント経路は消えた。ピーク経路（`REVIEW_FREEZE_PEAK`）とスプリント中の対処へ委ねる。

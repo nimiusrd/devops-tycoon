@@ -440,10 +440,11 @@ export const EVENT_DEFS: EventDef[] = [
       {
         label: '了解',
         description: 'ラインは止まった。休息でHPを戻し、流入を抑えて立て直す',
+        // reviewLoadAdd は付けない。閾値直前の持ち越しキューへ加算すると、
+        // 操作前に reviewQueueMax が REVIEW_FREEZE_PEAK を越え敗北が確定してしまう。
         outcome: {
           seniorHp: -10,
           morale: -3,
-          nextSprint: { reviewLoadAdd: 2 },
         },
       },
     ],

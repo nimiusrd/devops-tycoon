@@ -370,10 +370,9 @@ export default function App({ game }: AppProps) {
         org={state.org}
         orgScale={state.orgScale}
         tasks={tasks}
-        reviewQueuePeak={Math.max(
-          state.totals.reviewQueuePeak,
-          state.sprint?.metrics.reviewQueueMax ?? 0,
-        )}
+        // 通算 peak は単調増加で解消後も警告が残るため、進行中スプリントのピークのみ渡す。
+        // 現在キュー長は deriveHudMetrics 側で畳み込む。
+        reviewQueuePeak={state.sprint?.metrics.reviewQueueMax ?? 0}
         snapshotScope={hudSnapshotScope}
         getInitialPreviousSnapshot={getLastHudSnapshot}
         onSnapshotCaptured={rememberHudSnapshot}

@@ -35,7 +35,7 @@ const totals = (t: Partial<RunTotals> = {}): RunTotals => ({
 });
 
 describe('進化ツリーの解放（第11章）', () => {
-  const fresh: EvolutionState = { points: 3, unlocked: {} };
+  const fresh: EvolutionState = { points: 4, unlocked: {} };
 
   it('前提ノードが未解放だと解放できない', () => {
     expect(canUnlock(fresh, 'dev-2')).toBe(false); // dev-1 が前提
@@ -45,7 +45,7 @@ describe('進化ツリーの解放（第11章）', () => {
   it('ポイントを消費して解放し、前提が満たされると次が解放可能になる', () => {
     const afterOne = unlockNode(fresh, 'dev-1');
     expect(isUnlocked(afterOne, 'dev-1')).toBe(true);
-    expect(afterOne.points).toBe(2); // dev-1 は cost 1
+    expect(afterOne.points).toBe(3); // dev-1 は cost 1
     expect(canUnlock(afterOne, 'dev-2')).toBe(true);
     expect(fresh.unlocked['dev-1']).toBeUndefined(); // 元状態は不変
   });

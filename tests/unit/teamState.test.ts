@@ -1,6 +1,6 @@
 /**
- * RI-91-B1: src/sim/orgscale/teamState.ts の Survived / 境界 mutation を潰す。
- * 共有の orgscale-engine テストは触らず、単位専用ファイルで exact 断言する。
+ * src/sim/orgscale/teamState.ts の単体テスト。
+ * ミューテーションテストの Survived / 境界 mutation を exact 断言で潰す（旧 RI-91-B1）。
  */
 import { describe, expect, it } from 'vitest';
 import { TASK_BASE_VALUE } from '../../src/sim/model/process';

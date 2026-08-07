@@ -181,6 +181,28 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
     });
   });
 
+  it('hydratePersistState は旧 pauseAiDebuffQuarter を pause_ai キャリーオーバーへ復元する（RI-83）', () => {
+    const legacy = setupSave('ri83-legacy-pause-ai');
+    delete (legacy as { goalCarryoverQuarter?: unknown }).goalCarryoverQuarter;
+    delete (legacy as { goalCarryoverId?: unknown }).goalCarryoverId;
+    delete (legacy.extras as { goalCarryoverQuarter?: unknown }).goalCarryoverQuarter;
+    delete (legacy.extras as { goalCarryoverId?: unknown }).goalCarryoverId;
+    legacy.extras.pauseAiDebuffQuarter = 2;
+
+    const restored = started('ri83-legacy-pause-ai-target');
+    restored.hydratePersistState(legacy);
+
+    expect(restored.snapshot()).toMatchObject({
+      goalCarryoverQuarter: 2,
+      goalCarryoverId: 'pause_ai_rollout',
+    });
+    expect(restored.whatIfComputeInput()).toMatchObject({
+      goalCarryoverQuarter: 2,
+      goalCarryoverId: 'pause_ai_rollout',
+      pauseAiDebuffQuarter: 2,
+    });
+  });
+
   it('hydratePersistState は旧 save extras の欠落値を既定値へ補完する', () => {
     const legacy = setupSave('ri72-d3-legacy-save');
     legacy.org.deliveryScore = 12.4;

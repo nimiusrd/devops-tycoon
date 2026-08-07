@@ -13,6 +13,7 @@ import { formatRelicTooltip } from '../render/eventOutcomeView';
 import {
   budgetHudCopy,
   diffRunMetricSnapshots,
+  goalCarryoverHudCopy,
   runMetricSnapshot,
   trustHudCopy,
   type RunMetricDelta,
@@ -147,6 +148,11 @@ export function RunBar({
     : 'positive';
   const budgetCopy = budgetHudCopy(state.budget);
   const trustCopy = trustHudCopy(state.stakeholderTrust);
+  const carryoverCopy = goalCarryoverHudCopy({
+    goalCarryoverId: state.goalCarryoverId,
+    goalCarryoverQuarter: state.goalCarryoverQuarter,
+    quarterNumber: state.quarterNumber,
+  });
 
   return (
     <div className="subbar runbar" data-testid="runbar">
@@ -197,6 +203,22 @@ export function RunBar({
         )}
         {trustFeedbacks.length > 0 && <RunFeedbackPop feedbacks={trustFeedbacks} />}
       </span>
+      {carryoverCopy.warningChip && (
+        <span
+          className={`pill run-metric-pill tone-${carryoverCopy.tone}`}
+          data-testid="goal-carryover"
+          title={carryoverCopy.detail}
+          data-tone={carryoverCopy.tone}
+        >
+          修正
+          <span
+            className={`runbar-warning tone-${carryoverCopy.tone}`}
+            data-testid="goal-carryover-warning"
+          >
+            {carryoverCopy.warningChip}
+          </span>
+        </span>
+      )}
       <span className="pill" data-testid="evo-points-bar">
         ⭐<b>{state.evolution.points}</b>
       </span>

@@ -384,6 +384,8 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
         'baseConfig',
         'coarseIncidentCarry',
         'draftMulliganUsed',
+        'goalCarryoverId',
+        'goalCarryoverQuarter',
         'homeTeamId',
         'nextBudgetCap',
         'orgAdjust',

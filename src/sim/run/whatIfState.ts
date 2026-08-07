@@ -20,6 +20,7 @@ import { previewNextSprint } from './whatIf';
 import type {
   DifficultyId,
   EvolutionState,
+  GoalAdjustmentId,
   RunTotals,
   SprintKind,
   SprintModifierDelta,
@@ -49,7 +50,10 @@ export interface WhatIfComputeInput {
   difficulty: DifficultyId;
   trials: string[];
   bossId: string;
-  pauseAiDebuffQuarter: number | null;
+  /** @deprecated RI-83: goalCarryover* を優先。 */
+  pauseAiDebuffQuarter?: number | null;
+  goalCarryoverQuarter?: number | null;
+  goalCarryoverId?: GoalAdjustmentId | null;
   baseConfig: SprintConfig;
   /** 選択中チーム正本のレビュー待ち（本番 beginSprint と共有）。 */
   teamReviewQueue?: number;
@@ -64,7 +68,9 @@ function baselineContext(input: WhatIfComputeInput): SprintBaselineBuildContext 
     difficulty: input.difficulty,
     trials: input.trials,
     bossId: input.bossId,
-    pauseAiDebuffQuarter: input.pauseAiDebuffQuarter,
+    goalCarryoverQuarter: input.goalCarryoverQuarter ?? null,
+    goalCarryoverId: input.goalCarryoverId ?? null,
+    pauseAiDebuffQuarter: input.pauseAiDebuffQuarter ?? null,
     quarterNumber: input.quarterNumber,
     baseConfig: input.baseConfig,
   };
@@ -118,6 +124,8 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     mod.focusMaxAdd ?? 0,
     input.teamReviewQueue ?? 0,
     input.teamIncidents ?? 0,
+    input.goalCarryoverQuarter ?? input.pauseAiDebuffQuarter ?? '',
+    input.goalCarryoverId ?? '',
   ].join('|');
 }
 

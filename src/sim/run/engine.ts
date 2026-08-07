@@ -124,16 +124,17 @@ import {
 } from './constants';
 import {
   applyGoalAdjustment,
+  applyGoalCarryoverToEffects,
   applyGoalOrgEffectsToTeam,
   buildInitialTrust,
   buildQuarterGoal,
   buildQuarterReview,
   canAcknowledgeWin,
   canChooseAdjustment,
+  hasNextQuarterCarryover,
   isTerminalFailure,
   loseReasonForOutcome,
   MIN_QUARTER_DELIVERY_TARGET,
-  PAUSE_AI_DEBUFF_MUL,
 } from './quarterReview';
 import {
   createSprintFromBaselineInput,
@@ -358,8 +359,10 @@ export class RunEngine {
   private goalAdjustmentsTaken: GoalAdjustmentId[] = [];
   private reviewHistory: QuarterOutcome[] = [];
   private nextBudgetCap: number | null = null;
-  /** pause_ai_rollout の速度デバフが有効な四半期（その四半期のみ）。 */
-  private pauseAiDebuffQuarter: number | null = null;
+  /** 目標修正の次四半期物理キャリーオーバーが有効な四半期（RI-83）。 */
+  private goalCarryoverQuarter: number | null = null;
+  /** アクティブなキャリーオーバーの目標修正 ID（RI-83）。 */
+  private goalCarryoverId: GoalAdjustmentId | null = null;
   /** UI 向け what-if 試算のキャッシュ（同一入力の再計算を避ける）。 */
   private whatIfCache: { key: string; value: WhatIfState | null } | null = null;
 
@@ -461,7 +464,8 @@ export class RunEngine {
     this.goalAdjustmentsTaken = [];
     this.reviewHistory = [];
     this.nextBudgetCap = null;
-    this.pauseAiDebuffQuarter = null;
+    this.goalCarryoverQuarter = null;
+    this.goalCarryoverId = null;
     this.sprintsPerQuarter = SPRINTS_PER_QUARTER;
     this.sprintIndexInQuarter = 0;
     this.pendingSprintKind = 'normal';
@@ -620,7 +624,10 @@ export class RunEngine {
         difficulty: this.difficulty,
         trials: this.trials,
         bossId: this.bossId,
-        pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
+        goalCarryoverQuarter: this.goalCarryoverQuarter,
+        goalCarryoverId: this.goalCarryoverId,
+        pauseAiDebuffQuarter:
+          this.goalCarryoverId === 'pause_ai_rollout' ? this.goalCarryoverQuarter : null,
         quarterNumber: this.quarterNumber,
         baseConfig: this.baseConfig,
       },
@@ -828,11 +835,18 @@ export class RunEngine {
     this.budget = applied.budget;
     this.goalAdjustmentsTaken = applied.goalAdjustmentsTaken;
     this.nextBudgetCap = applied.nextBudgetCap;
-    if (applied.pauseAiDebuff) this.pauseAiDebuffQuarter = this.quarterNumber + 1;
 
     // org 効果は選択中だけでなく全チーム正本へ焼き込む（切替で消えないように）。
     this.syncActiveTeamFromOrg();
     const adjustmentDef = getGoalAdjustment(id);
+    // RI-83: 次四半期だけ効く物理キャリーオーバーを記録する。
+    if (adjustmentDef && hasNextQuarterCarryover(adjustmentDef)) {
+      this.goalCarryoverQuarter = this.quarterNumber + 1;
+      this.goalCarryoverId = id;
+    } else {
+      this.goalCarryoverQuarter = null;
+      this.goalCarryoverId = null;
+    }
     if (adjustmentDef) {
       this.teams = this.teams.map((t) =>
         t.id === this.activeTeamId ? t : applyGoalOrgEffectsToTeam(t, adjustmentDef),
@@ -1541,6 +1555,29 @@ export class RunEngine {
     this.quarterTotals.incidents += credited;
   }
 
+  /** 粗粒度進行用に、キャリーオーバー込みの係数を畳み込む（RI-83）。 */
+  private coarseModifiersFromFold(fold: ReturnType<typeof foldRunEffects>): {
+    incidentRateMul: number;
+    shipMul: number;
+    reviewMul: number;
+    reviewCapacityMul: number;
+    aiDependencyDrift: number;
+  } {
+    const effects = applyGoalCarryoverToEffects(
+      fold.effects,
+      this.goalCarryoverId,
+      this.goalCarryoverQuarter,
+      this.quarterNumber,
+    );
+    return {
+      incidentRateMul: effects.incidentRateMul,
+      shipMul: effects.codingSpeedMul,
+      reviewMul: effects.reviewEfficiencyMul,
+      reviewCapacityMul: effects.reviewCapacityMul,
+      aiDependencyDrift: fold.aiDependencyDriftPerSprint,
+    };
+  }
+
   private advanceOtherTeams(stepKey: string): void {
     const before = this.teams;
     const fold = foldRunEffects({
@@ -1550,22 +1587,12 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
-    let shipMul = fold.effects.codingSpeedMul;
-    if (this.pauseAiDebuffQuarter === this.quarterNumber) {
-      shipMul *= PAUSE_AI_DEBUFF_MUL;
-    }
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey,
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
-      modifiers: {
-        incidentRateMul: fold.effects.incidentRateMul,
-        shipMul,
-        reviewMul: fold.effects.reviewEfficiencyMul,
-        reviewCapacityMul: fold.effects.reviewCapacityMul,
-        aiDependencyDrift: fold.aiDependencyDriftPerSprint,
-      },
+      modifiers: this.coarseModifiersFromFold(fold),
     });
     this.teams = stepped.teams;
     // 粗粒度チームの出荷・炎上・完了・AI 支援をラン／四半期集計へ反映する。
@@ -1824,7 +1851,10 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: [...this.trials],
       bossId: this.bossId,
-      pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
+      goalCarryoverQuarter: this.goalCarryoverQuarter,
+      goalCarryoverId: this.goalCarryoverId,
+      pauseAiDebuffQuarter:
+        this.goalCarryoverId === 'pause_ai_rollout' ? this.goalCarryoverQuarter : null,
       baseConfig: { ...this.baseConfig },
       // 入り込み先の滞留を試算でも本番 beginSprint と同じく載せる。
       teamReviewQueue: activeTeam?.reviewQueue ?? 0,
@@ -1921,6 +1951,8 @@ export class RunEngine {
       stakeholderTrust: { ...this.stakeholderTrust },
       quarterReview: this.quarterReview ? structuredClone(this.quarterReview) : null,
       goalAdjustmentsTaken: [...this.goalAdjustmentsTaken],
+      goalCarryoverQuarter: this.goalCarryoverQuarter,
+      goalCarryoverId: this.goalCarryoverId,
       reviewHistory: [...this.reviewHistory],
       zoom: { ...this.zoom },
       rankingKind: this.rankingKind,
@@ -1930,7 +1962,11 @@ export class RunEngine {
         baseConfig: { ...this.baseConfig },
         orgAdjust: structuredClone(this.orgAdjust),
         nextBudgetCap: this.nextBudgetCap,
-        pauseAiDebuffQuarter: this.pauseAiDebuffQuarter,
+        goalCarryoverQuarter: this.goalCarryoverQuarter,
+        goalCarryoverId: this.goalCarryoverId,
+        // 旧セーブ互換: pause_ai のときだけ legacy フィールドも書く。
+        pauseAiDebuffQuarter:
+          this.goalCarryoverId === 'pause_ai_rollout' ? this.goalCarryoverQuarter : null,
         winEvalOrg: this.winEvalOrg ? structuredClone(this.winEvalOrg) : null,
         allowedCards: this.allowedCards ? [...this.allowedCards] : [],
         allowedRelics: this.allowedRelics ? [...this.allowedRelics] : [],
@@ -2030,7 +2066,24 @@ export class RunEngine {
     // RI-74: 旧セーブ（係数未保存）も現行難易度定義の上昇量へ補完する。
     this.applyDifficultyAiDependencyPerTask();
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
-    this.pauseAiDebuffQuarter = cloned.extras.pauseAiDebuffQuarter;
+    // RI-83: 本体 → extras → legacy pauseAiDebuffQuarter の順で復元する。
+    const topCarryoverQuarter = cloned.goalCarryoverQuarter ?? null;
+    const topCarryoverId = cloned.goalCarryoverId ?? null;
+    const extrasCarryoverQuarter = cloned.extras.goalCarryoverQuarter ?? null;
+    const extrasCarryoverId = cloned.extras.goalCarryoverId ?? null;
+    if (topCarryoverQuarter != null && topCarryoverId != null) {
+      this.goalCarryoverQuarter = topCarryoverQuarter;
+      this.goalCarryoverId = topCarryoverId;
+    } else if (extrasCarryoverQuarter != null && extrasCarryoverId != null) {
+      this.goalCarryoverQuarter = extrasCarryoverQuarter;
+      this.goalCarryoverId = extrasCarryoverId;
+    } else if (cloned.extras.pauseAiDebuffQuarter != null) {
+      this.goalCarryoverQuarter = cloned.extras.pauseAiDebuffQuarter;
+      this.goalCarryoverId = 'pause_ai_rollout';
+    } else {
+      this.goalCarryoverQuarter = null;
+      this.goalCarryoverId = null;
+    }
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
     this.allowedCards = new Set(cloned.extras.allowedCards);
     this.allowedRelics = new Set(cloned.extras.allowedRelics);
@@ -2175,22 +2228,12 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
-    let shipMul = fold.effects.codingSpeedMul;
-    if (this.pauseAiDebuffQuarter === this.quarterNumber) {
-      shipMul *= PAUSE_AI_DEBUFF_MUL;
-    }
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey: `sprint:${this.currentSprintId}`,
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
-      modifiers: {
-        incidentRateMul: fold.effects.incidentRateMul,
-        shipMul,
-        reviewMul: fold.effects.reviewEfficiencyMul,
-        reviewCapacityMul: fold.effects.reviewCapacityMul,
-        aiDependencyDrift: fold.aiDependencyDriftPerSprint,
-      },
+      modifiers: this.coarseModifiersFromFold(fold),
     });
     const delta = normalizeCoarseTotalsDelta(
       before,
@@ -2300,6 +2343,8 @@ export class RunEngine {
       stakeholderTrust: { ...this.stakeholderTrust },
       quarterReview: this.quarterReview ? structuredClone(this.quarterReview) : null,
       goalAdjustmentsTaken: [...this.goalAdjustmentsTaken],
+      goalCarryoverQuarter: this.goalCarryoverQuarter,
+      goalCarryoverId: this.goalCarryoverId,
       reviewHistory: [...this.reviewHistory],
       zoom: { ...this.zoom },
       rankingKind: this.rankingKind,

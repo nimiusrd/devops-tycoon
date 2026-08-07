@@ -4,9 +4,11 @@
  * OrgState とスプリントの現況から、画面上部に出す
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
+import { getGoalAdjustment } from '../data/goalAdjustments';
 import { REVIEW_FREEZE_PEAK } from '../sim/outcome';
 import type { OrgScaleState } from '../sim/orgscale/types';
-import type { StakeholderTrust } from '../sim/run/types';
+import { resolveNextQuarterEffects } from '../sim/run/quarterReview';
+import type { GoalAdjustmentId, StakeholderTrust } from '../sim/run/types';
 import type { OrgState, SimState, Task } from '../sim/types';
 
 /** `review-freeze` イベント抽選の資格帯（seniorHpLow >= 0.55 ⇔ HP <= 45）。 */
@@ -532,6 +534,63 @@ export function trustHudCopy(trust: StakeholderTrust): {
     };
   }
   return { tone: 'good', detail: '25以下で注意', minTrust };
+}
+
+/**
+ * 目標修正の次四半期キャリーオーバー表示（RI-83）。
+ * 有効四半期でのみチップを出し、選んだ代償が追跡できるようにする。
+ */
+export function goalCarryoverHudCopy(input: {
+  goalCarryoverId: GoalAdjustmentId | null;
+  goalCarryoverQuarter: number | null;
+  quarterNumber: number;
+}): {
+  tone: StatusMetricTone;
+  detail: string;
+  warningChip?: string;
+} {
+  const { goalCarryoverId, goalCarryoverQuarter, quarterNumber } = input;
+  if (
+    goalCarryoverId === null ||
+    goalCarryoverQuarter === null ||
+    goalCarryoverQuarter !== quarterNumber
+  ) {
+    return { tone: 'good', detail: '持ち越し代償なし' };
+  }
+  const def = getGoalAdjustment(goalCarryoverId);
+  if (!def) return { tone: 'good', detail: '持ち越し代償なし' };
+  const effects = resolveNextQuarterEffects(def);
+  const parts: string[] = [];
+  if (effects.codingSpeedMul !== undefined && effects.codingSpeedMul !== 1) {
+    const pct = Math.round((effects.codingSpeedMul - 1) * 100);
+    parts.push(`出荷${pct >= 0 ? '+' : ''}${pct}%`);
+  }
+  if (effects.reviewEfficiencyMul !== undefined && effects.reviewEfficiencyMul !== 1) {
+    const pct = Math.round((effects.reviewEfficiencyMul - 1) * 100);
+    parts.push(`レビュー${pct >= 0 ? '+' : ''}${pct}%`);
+  }
+  if (effects.reviewCapacityMul !== undefined && effects.reviewCapacityMul !== 1) {
+    const pct = Math.round((effects.reviewCapacityMul - 1) * 100);
+    parts.push(`容量${pct >= 0 ? '+' : ''}${pct}%`);
+  }
+  if (effects.incidentRateMul !== undefined && effects.incidentRateMul !== 1) {
+    const pct = Math.round((effects.incidentRateMul - 1) * 100);
+    parts.push(`障害${pct >= 0 ? '+' : ''}${pct}%`);
+  }
+  if (effects.reworkRateAdd !== undefined && effects.reworkRateAdd !== 0) {
+    const pct = Math.round(effects.reworkRateAdd * 100);
+    parts.push(`Rework${pct >= 0 ? '+' : ''}${pct}`);
+  }
+  if (effects.qualityAdd !== undefined && effects.qualityAdd !== 0) {
+    parts.push(`品質${effects.qualityAdd >= 0 ? '+' : ''}${effects.qualityAdd}`);
+  }
+  const summary = parts.length > 0 ? parts.join(' / ') : '効果適用中';
+  const shipDown = (effects.codingSpeedMul ?? 1) < 1;
+  return {
+    tone: shipDown ? 'watch' : 'good',
+    detail: `${def.label}の持ち越し: ${summary}`,
+    warningChip: def.label,
+  };
 }
 
 /** RunBar の差分検出に使うラン横断指標だけを抜き出す。 */

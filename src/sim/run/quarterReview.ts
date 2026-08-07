@@ -6,11 +6,11 @@
  */
 import type { BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
-import type { GoalAdjustmentDef } from '../../data/goalAdjustments';
+import type { GoalAdjustmentDef, GoalNextQuarterEffects } from '../../data/goalAdjustments';
 import { deriveTeamCapacities } from '../orgscale/teamState';
 import type { TeamRunState } from '../orgscale/types';
 import { TECH_DEBT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
-import type { OrgState } from '../types';
+import type { CardEffects, OrgState } from '../types';
 import { SPRINTS_PER_QUARTER } from './constants';
 import type {
   DifficultyId,
@@ -32,6 +32,51 @@ export const REORG_RESET_TECH_DEBT = -8;
 
 /** pauseAiDebuff 適用時の出荷速度倍率（次四半期）。 */
 export const PAUSE_AI_DEBUFF_MUL = 0.85;
+
+/**
+ * 次四半期に適用する物理効果を解決する（RI-83）。
+ * `pauseAiDebuff` は出荷速度倍率へ畳み込む。
+ */
+export function resolveNextQuarterEffects(def: GoalAdjustmentDef): GoalNextQuarterEffects {
+  const out: GoalNextQuarterEffects = { ...def.nextQuarterEffects };
+  if (def.pauseAiDebuff) {
+    out.codingSpeedMul = (out.codingSpeedMul ?? 1) * PAUSE_AI_DEBUFF_MUL;
+    out.routineSpeedMul = (out.routineSpeedMul ?? 1) * PAUSE_AI_DEBUFF_MUL;
+  }
+  return out;
+}
+
+/** 定義に次四半期キャリーオーバーがあるか。 */
+export function hasNextQuarterCarryover(def: GoalAdjustmentDef): boolean {
+  return Object.keys(resolveNextQuarterEffects(def)).length > 0;
+}
+
+/**
+ * アクティブな目標修正キャリーオーバーを CardEffects へ合成する（RI-83）。
+ * 四半期不一致・未知 ID では入力をそのまま返す。
+ */
+export function applyGoalCarryoverToEffects(
+  effects: CardEffects,
+  carryoverId: GoalAdjustmentId | null,
+  carryoverQuarter: number | null,
+  quarterNumber: number,
+): CardEffects {
+  if (carryoverId === null || carryoverQuarter !== quarterNumber) return effects;
+  const def = getGoalAdjustment(carryoverId);
+  if (!def) return effects;
+  const partial = resolveNextQuarterEffects(def);
+  if (Object.keys(partial).length === 0) return effects;
+  return {
+    ...effects,
+    codingSpeedMul: effects.codingSpeedMul * (partial.codingSpeedMul ?? 1),
+    routineSpeedMul: effects.routineSpeedMul * (partial.routineSpeedMul ?? 1),
+    reviewEfficiencyMul: effects.reviewEfficiencyMul * (partial.reviewEfficiencyMul ?? 1),
+    reviewCapacityMul: effects.reviewCapacityMul * (partial.reviewCapacityMul ?? 1),
+    reworkRateAdd: effects.reworkRateAdd + (partial.reworkRateAdd ?? 0),
+    incidentRateMul: effects.incidentRateMul * (partial.incidentRateMul ?? 1),
+    qualityAdd: effects.qualityAdd + (partial.qualityAdd ?? 0),
+  };
+}
 
 /**
  * ボス突破床（1スプリント）に対する通常スループット比（RI-68）。

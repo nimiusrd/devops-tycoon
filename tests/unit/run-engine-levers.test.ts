@@ -12,7 +12,7 @@ import {
   type TeamRunState,
 } from '../../src/sim/orgscale';
 import { RunEngine } from '../../src/sim/run/engine';
-import type { RunState, RunTotals } from '../../src/sim/run/types';
+import type { GoalAdjustmentId, RunState, RunTotals } from '../../src/sim/run/types';
 import type { OrgState, SprintState, Task } from '../../src/sim/types';
 
 type A5Internals = {
@@ -45,7 +45,8 @@ type A5Internals = {
     >;
     byTeam: Record<string, unknown>;
   };
-  pauseAiDebuffQuarter: number | null;
+  goalCarryoverQuarter: number | null;
+  goalCarryoverId: GoalAdjustmentId | null;
   phase: RunState['phase'];
   quarterNumber: number;
   quarterTotals: RunTotals;
@@ -269,7 +270,8 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
   it('非中立な shipMul（pauseAiDebuff）が粗粒度 delivered に効く', () => {
     const engine = createEngine('ri-91-a5-mod-pause');
     const i = asInternals(engine);
-    i.pauseAiDebuffQuarter = i.quarterNumber;
+    i.goalCarryoverQuarter = i.quarterNumber;
+    i.goalCarryoverId = 'pause_ai_rollout';
     i.totals.delivered = 0;
     i.totals.completed = 0;
     i.quarterTotals.delivered = 0;

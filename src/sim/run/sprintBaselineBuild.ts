@@ -9,9 +9,15 @@ import { foldFormationEffects } from '../member';
 import type { RosterState } from '../member/types';
 import type { OrgState, SprintConfig } from '../types';
 import { foldRunEffects, toEffects, withBossEffects } from './effects';
-import { PAUSE_AI_DEBUFF_MUL } from './quarterReview';
+import { applyGoalCarryoverToEffects } from './quarterReview';
 import type { SprintBaselineInput } from './sprintBaseline';
-import type { DifficultyId, EvolutionState, SprintKind, SprintModifierDelta } from './types';
+import type {
+  DifficultyId,
+  EvolutionState,
+  GoalAdjustmentId,
+  SprintKind,
+  SprintModifierDelta,
+} from './types';
 
 /**
  * 高負荷（elite）スプリントのタスク量倍率の代表値（normal）。
@@ -99,7 +105,15 @@ export interface SprintBaselineBuildContext {
   difficulty: DifficultyId;
   trials: string[];
   bossId: string;
-  pauseAiDebuffQuarter: number | null;
+  /**
+   * @deprecated RI-83: `goalCarryoverQuarter` / `goalCarryoverId` を使う。
+   * 旧 what-if / テスト互換のため残す（pause_ai_rollout として解釈）。
+   */
+  pauseAiDebuffQuarter?: number | null;
+  /** 目標修正キャリーオーバーが有効な四半期（RI-83）。 */
+  goalCarryoverQuarter?: number | null;
+  /** 目標修正キャリーオーバーの ID（RI-83）。 */
+  goalCarryoverId?: GoalAdjustmentId | null;
   quarterNumber: number;
   baseConfig: SprintConfig;
 }
@@ -162,13 +176,11 @@ export function buildSprintBaselineInput(
     effects = combineEffects(effects, deckEffects(playedCards));
   }
   if (isBoss) effects = withBossEffects(effects, ctx.bossId);
-  if (ctx.pauseAiDebuffQuarter === ctx.quarterNumber) {
-    effects = {
-      ...effects,
-      codingSpeedMul: effects.codingSpeedMul * PAUSE_AI_DEBUFF_MUL,
-      routineSpeedMul: effects.routineSpeedMul * PAUSE_AI_DEBUFF_MUL,
-    };
-  }
+  const carryoverQuarter = ctx.goalCarryoverQuarter ?? ctx.pauseAiDebuffQuarter ?? null;
+  const carryoverId =
+    ctx.goalCarryoverId ??
+    (ctx.pauseAiDebuffQuarter === ctx.quarterNumber ? 'pause_ai_rollout' : null);
+  effects = applyGoalCarryoverToEffects(effects, carryoverId, carryoverQuarter, ctx.quarterNumber);
   if (modifiers.reworkRateAdd) {
     effects = { ...effects, reworkRateAdd: effects.reworkRateAdd + modifiers.reworkRateAdd };
   }

@@ -15,6 +15,7 @@ import {
   MIN_PRIOR_QUARTER_DELIVERY_TARGET,
   MIN_QUARTER_DELIVERY_TARGET,
   applyGoalAdjustment,
+  applyGoalCarryoverToEffects,
   applyGoalOrgEffectsToTeam,
   availableAdjustments,
   canAcknowledgeWin,
@@ -24,12 +25,16 @@ import {
   buildQuarterReview,
   diagnoseMissedReasons,
   evaluateQuarterOutcome,
+  hasNextQuarterCarryover,
   isTerminalFailure,
   loseReasonForOutcome,
   measureGoalProgress,
+  PAUSE_AI_DEBUFF_MUL,
+  resolveNextQuarterEffects,
   REORG_RESET_SENIOR_HP,
   REORG_RESET_TECH_DEBT,
 } from '../../src/sim/run/quarterReview';
+import { IDENTITY_CARD_EFFECTS } from '../../src/sim/model';
 import { playUntil } from './helpers/runFlow';
 import type { OrgState } from '../../src/sim/types';
 import type { TeamRunState } from '../../src/sim/orgscale/types';
@@ -544,6 +549,38 @@ describe('四半期レビュー（Phase 8）', () => {
     for (const id of ids) {
       expect(getGoalAdjustment(id)).toBeDefined();
     }
+  });
+
+  it('RI-83: 全目標修正に次四半期キャリーオーバーがあり、効果量が分岐する', () => {
+    const ids = [
+      'cut_scope',
+      'extend_deadline',
+      'quality_pivot',
+      'request_budget',
+      'pause_ai_rollout',
+      'reorg_teams',
+      'stakeholder_care',
+    ] as const;
+    const shipMuls = new Set<number>();
+    for (const id of ids) {
+      const def = getGoalAdjustment(id)!;
+      expect(hasNextQuarterCarryover(def), id).toBe(true);
+      const effects = resolveNextQuarterEffects(def);
+      expect(Object.keys(effects).length, id).toBeGreaterThan(0);
+      if (effects.codingSpeedMul !== undefined) shipMuls.add(effects.codingSpeedMul);
+    }
+    // 少なくとも出荷速度が複数帯に分かれる。
+    expect(shipMuls.size).toBeGreaterThanOrEqual(4);
+
+    const pause = resolveNextQuarterEffects(getGoalAdjustment('pause_ai_rollout')!);
+    expect(pause.codingSpeedMul).toBeCloseTo(PAUSE_AI_DEBUFF_MUL);
+    expect(pause.reworkRateAdd).toBeCloseTo(-0.1);
+    expect(pause.incidentRateMul).toBeCloseTo(0.7);
+
+    const cut = applyGoalCarryoverToEffects({ ...IDENTITY_CARD_EFFECTS }, 'cut_scope', 2, 2);
+    expect(cut.codingSpeedMul).toBeCloseTo(1.12);
+    const expired = applyGoalCarryoverToEffects({ ...IDENTITY_CARD_EFFECTS }, 'cut_scope', 2, 3);
+    expect(expired.codingSpeedMul).toBe(1);
   });
 
   it('RI-72-C1: outcome 補助関数と表示ラベルが全 outcome を分類する', () => {

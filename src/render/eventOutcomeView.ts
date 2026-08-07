@@ -29,10 +29,10 @@ import {
 } from '../sim/actions';
 import { OVERTIME_CODING_MUL, OVERTIME_REVIEW_MUL } from '../sim/model/process';
 import {
-  PAUSE_AI_DEBUFF_MUL,
   REORG_RESET_SENIOR_HP,
   REORG_RESET_TECH_DEBT,
   previewNextQuarterDeliveryTarget,
+  resolveNextQuarterEffects,
 } from '../sim/run/quarterReview';
 import { RECRUIT_COST, REST_STAMINA_RECOVER } from '../sim/member/roster';
 import { REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../sim/run/engine';
@@ -420,9 +420,6 @@ function toneFromGoalTargetAdd(value: number): EffectTagTone {
   return 'neutral';
 }
 
-/** reorgReset 時の追加 org 効果（`applyGoalAdjustment` と一致）。 */
-const PAUSE_AI_DEBUFF_PCT = Math.round((1 - PAUSE_AI_DEBUFF_MUL) * 100);
-
 export interface FormatGoalAdjustmentOptions {
   /** 次期目標に AI Adoption KPI がある場合のみ true。 */
   hasAiAdoptionTarget?: boolean;
@@ -581,14 +578,55 @@ export function formatGoalAdjustmentTags(
     );
   }
 
-  if (def.pauseAiDebuff) {
-    pushTag(tags, `次四半期 出荷速度 -${PAUSE_AI_DEBUFF_PCT}%`, 'negative');
-  }
+  tags.push(...formatNextQuarterEffectTags(def));
 
   if (def.reorgReset) {
     pushTag(tags, 'レビュー詰まり・属人化リセット', 'positive');
   }
 
+  return tags;
+}
+
+/** 次四半期物理キャリーオーバーをタグ化する（RI-83）。 */
+function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
+  const tags: EffectTag[] = [];
+  const effects = resolveNextQuarterEffects(def);
+  const pushMulPct = (label: string, mul: number | undefined) => {
+    if (mul === undefined || mul === 1) return;
+    const pct = Math.round((mul - 1) * 100);
+    pushTag(
+      tags,
+      `次四半期 ${label} ${formatSignedDelta(pct)}%`,
+      pct < 0 ? 'negative' : 'positive',
+    );
+  };
+  pushMulPct('出荷速度', effects.codingSpeedMul);
+  // routine は出荷速度と同値で載せるため、差分があるときだけ別タグにする。
+  if (
+    effects.routineSpeedMul !== undefined &&
+    effects.routineSpeedMul !== 1 &&
+    effects.routineSpeedMul !== effects.codingSpeedMul
+  ) {
+    pushMulPct('定型速度', effects.routineSpeedMul);
+  }
+  pushMulPct('レビュー効率', effects.reviewEfficiencyMul);
+  pushMulPct('レビュー容量', effects.reviewCapacityMul);
+  if (effects.incidentRateMul !== undefined && effects.incidentRateMul !== 1) {
+    const pct = Math.round((effects.incidentRateMul - 1) * 100);
+    // 障害率低下はプレイヤーにとって良い。
+    pushTag(tags, `次四半期 障害率 ${formatSignedDelta(pct)}%`, pct < 0 ? 'positive' : 'negative');
+  }
+  if (effects.reworkRateAdd !== undefined && effects.reworkRateAdd !== 0) {
+    const pct = Math.round(effects.reworkRateAdd * 100);
+    pushTag(tags, `次四半期 Rework ${formatSignedDelta(pct)}pt`, pct < 0 ? 'positive' : 'negative');
+  }
+  if (effects.qualityAdd !== undefined && effects.qualityAdd !== 0) {
+    pushTag(
+      tags,
+      `次四半期 品質 ${formatSignedDelta(effects.qualityAdd)}`,
+      toneFromDelta(effects.qualityAdd),
+    );
+  }
   return tags;
 }
 

@@ -3,7 +3,22 @@
  *
  * 効果・代償・表示文言をデータで持ち、シミュレーションは純関数で適用する（architecture §4.3）。
  */
+import type { CardEffects } from '../sim/types';
 import type { GoalAdjustmentId } from '../sim/run/types';
+
+/** 次四半期だけ効く物理キャリーオーバー（RI-83）。 */
+export type GoalNextQuarterEffects = Partial<
+  Pick<
+    CardEffects,
+    | 'codingSpeedMul'
+    | 'routineSpeedMul'
+    | 'reviewEfficiencyMul'
+    | 'reviewCapacityMul'
+    | 'reworkRateAdd'
+    | 'incidentRateMul'
+    | 'qualityAdd'
+  >
+>;
 
 export interface GoalAdjustmentDef {
   id: GoalAdjustmentId;
@@ -33,10 +48,18 @@ export interface GoalAdjustmentDef {
   };
   /** 次四半期開始時の予算上限（request_budget 用）。 */
   nextBudgetCapDelta?: number;
-  /** 次四半期の AI 成功率デバフを有効化（pause_ai_rollout 用）。 */
+  /**
+   * 次四半期の AI 成功率デバフを有効化（pause_ai_rollout 用）。
+   * 適用時は `nextQuarterEffects` へ `PAUSE_AI_DEBUFF_MUL` を畳み込む。
+   */
   pauseAiDebuff?: boolean;
   /** 組織再編: レビュー詰まり・属人化をリセット（reorg_teams 用）。 */
   reorgReset?: boolean;
+  /**
+   * 次四半期だけ効くスプリント物理（RI-83）。
+   * KPI/信頼の一回差分とは別に、選択差をスプリント挙動へ載せる。
+   */
+  nextQuarterEffects?: GoalNextQuarterEffects;
 }
 
 export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
@@ -48,6 +71,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     // RI-68: 絶対減算は累計スケールで目標を潰すため、緩和は乗算のみにする。
     goalEffects: { deliveryMul: 0.8 },
+    // RI-83: 焦点化で次四半期の出荷を押し上げる。
+    nextQuarterEffects: { codingSpeedMul: 1.12, routineSpeedMul: 1.12 },
   },
   {
     id: 'extend_deadline',
@@ -56,6 +81,12 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     trustDelta: { management: -12 },
     budgetDelta: -10,
     goalEffects: { qualityAdd: 5, moraleAdd: 5, deliveryMul: 0.9 },
+    nextQuarterEffects: {
+      codingSpeedMul: 0.92,
+      routineSpeedMul: 0.92,
+      reworkRateAdd: -0.08,
+      reviewEfficiencyMul: 1.1,
+    },
   },
   {
     id: 'quality_pivot',
@@ -65,6 +96,12 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     goalEffects: { techDebtLimitAdd: 15, incidentLimitAdd: 3, deliveryMul: 0.85 },
     orgEffects: { deliveryScoreMul: 0.9, techDebtDelta: -8 },
+    nextQuarterEffects: {
+      codingSpeedMul: 0.88,
+      routineSpeedMul: 0.88,
+      incidentRateMul: 0.75,
+      qualityAdd: 4,
+    },
   },
   {
     id: 'request_budget',
@@ -76,6 +113,11 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     // RI-68: deliveryAdd は四半期累計スケール（旧 10 × SPRINTS_PER_QUARTER × THROUGHPUT_MUL）。
     goalEffects: { deliveryAdd: 300 },
     nextBudgetCapDelta: -15,
+    nextQuarterEffects: {
+      codingSpeedMul: 1.08,
+      routineSpeedMul: 1.08,
+      reviewCapacityMul: 1.15,
+    },
   },
   {
     id: 'pause_ai_rollout',
@@ -85,6 +127,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     goalEffects: { aiAdoptionAdd: -15, deliveryMul: 0.92 },
     pauseAiDebuff: true,
+    // 出荷 -15% は pauseAiDebuff 側で畳み込む。ここでは安定化サイドを載せる。
+    nextQuarterEffects: { reworkRateAdd: -0.1, incidentRateMul: 0.7 },
   },
   {
     id: 'reorg_teams',
@@ -95,6 +139,12 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     goalEffects: { moraleAdd: -5 },
     orgEffects: { moraleDelta: -10, seniorHpDelta: 25, techDebtDelta: -5 },
     reorgReset: true,
+    // RI-83: 即時リセットは維持しつつ、次四半期に再編の混乱コストを残す。
+    nextQuarterEffects: {
+      codingSpeedMul: 0.9,
+      routineSpeedMul: 0.9,
+      reviewEfficiencyMul: 1.2,
+    },
   },
   {
     id: 'stakeholder_care',
@@ -105,6 +155,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: -12,
     // deliveryAdd のみ（乗算緩和は付けない）。次期目標を上げて代償にする。
     goalEffects: { deliveryAdd: 80 },
+    nextQuarterEffects: { codingSpeedMul: 0.95, routineSpeedMul: 0.95 },
   },
 ];
 

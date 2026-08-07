@@ -474,6 +474,8 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
         -1,
         4,
         2,
+        '',
+        '',
       ].join('|'),
     );
 
@@ -512,6 +514,8 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
         0,
         0,
         0,
+        '',
+        '',
       ].join('|'),
     );
   });

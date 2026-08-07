@@ -209,6 +209,39 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(inactive.cardEffects.routineSpeedMul).toBe(1);
     expect(active.cardEffects.codingSpeedMul).toBe(0.85);
     expect(active.cardEffects.routineSpeedMul).toBe(0.85);
-    expect(active.cardEffects.reviewEfficiencyMul).toBe(1);
+    // RI-83: pause_ai は安定化サイドも乗る。
+    expect(active.cardEffects.reworkRateAdd).toBeCloseTo(-0.1);
+    expect(active.cardEffects.incidentRateMul).toBeCloseTo(0.7);
+  });
+
+  it('RI-83: goalCarryover は一致四半期だけ効き、IDごとに物理が分岐する', () => {
+    const inactive = build({
+      ctx: {
+        goalCarryoverQuarter: 2,
+        goalCarryoverId: 'cut_scope',
+        quarterNumber: 1,
+      },
+    });
+    const cut = build({
+      ctx: {
+        goalCarryoverQuarter: 1,
+        goalCarryoverId: 'cut_scope',
+        quarterNumber: 1,
+      },
+    });
+    const quality = build({
+      ctx: {
+        goalCarryoverQuarter: 1,
+        goalCarryoverId: 'quality_pivot',
+        quarterNumber: 1,
+      },
+    });
+
+    expect(inactive.cardEffects.codingSpeedMul).toBe(1);
+    expect(cut.cardEffects.codingSpeedMul).toBeCloseTo(1.12);
+    expect(cut.cardEffects.routineSpeedMul).toBeCloseTo(1.12);
+    expect(quality.cardEffects.codingSpeedMul).toBeCloseTo(0.88);
+    expect(quality.cardEffects.incidentRateMul).toBeCloseTo(0.75);
+    expect(quality.cardEffects.qualityAdd).toBe(4);
   });
 });

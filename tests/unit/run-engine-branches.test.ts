@@ -30,6 +30,8 @@ type EngineInternals = {
   coarseIncidentCarry: number;
   draft: string[] | null;
   goalAdjustmentsTaken: RunState['goalAdjustmentsTaken'];
+  goalCarryoverQuarter: number | null;
+  goalCarryoverId: RunState['goalCarryoverId'];
   nextBudgetCap: number | null;
   org: OrgState;
   phase: RunState['phase'];
@@ -421,7 +423,8 @@ describe('RI-72-D5 RunEngine NoCoverage reachable branches', () => {
         onLeave: false,
       })),
     };
-    i.pauseAiDebuffQuarter = 1;
+    i.goalCarryoverQuarter = 1;
+    i.goalCarryoverId = 'pause_ai_rollout';
     engine.beginSetupSprint();
     i.sprint!.complete = true;
     i.sprint!.metrics.delivered = 1;
@@ -457,7 +460,15 @@ describe('RI-72-D5 RunEngine NoCoverage reachable branches', () => {
     const pause = new RunEngine({ seed: 'ri-72-d5-pause-ai', difficulty: 'easy' });
     arrangeAdjustment(pause, ['pause_ai_rollout']);
     pause.chooseGoalAdjustment('pause_ai_rollout');
-    expect(pause.whatIfComputeInput()).toMatchObject({ pauseAiDebuffQuarter: 2 });
+    expect(pause.whatIfComputeInput()).toMatchObject({
+      pauseAiDebuffQuarter: 2,
+      goalCarryoverQuarter: 2,
+      goalCarryoverId: 'pause_ai_rollout',
+    });
+    expect(pause.snapshot()).toMatchObject({
+      goalCarryoverQuarter: 2,
+      goalCarryoverId: 'pause_ai_rollout',
+    });
 
     const exhausted = new RunEngine({ seed: 'ri-72-d5-adjustment-lose', difficulty: 'easy' });
     const exhaustedInternals = arrangeAdjustment(exhausted, ['extend_deadline']);

@@ -27,9 +27,11 @@ import type {
   GoalAdjustmentId,
   LoseReason,
   RunState,
+  RunTotals,
   StakeholderTrust,
 } from '../../src/sim/run/types';
-import type { ActionId } from '../../src/sim/types';
+import type { ActionId, OrgState } from '../../src/sim/types';
+import type { EvolutionBranch } from '../../src/data/evolution';
 import { MS_PER_TICK_1X } from '../../src/ui/sprintTempo';
 
 /** 介入の発動可否を判定するための盤面サマリー。 */
@@ -75,8 +77,9 @@ export interface PolicySpec {
    * - `reviewFirst`: レビュー容量 → 品質 → AI → 文化 → 開発速度
    * - `aiFirst`: AI → 開発速度 → 品質 → レビュー → 文化。AI ビルド
    * - `qualityFirst`: 品質 → レビュー → 文化 → 開発速度 → AI。品質ビルド
+   * - `stateAware`: 直前スプリントまでの組織状態を見てブランチ順を決める（RI-86 / F-11）
    */
-  evolve: 'none' | 'asListed' | 'reviewFirst' | 'aiFirst' | 'qualityFirst';
+  evolve: 'none' | 'asListed' | 'reviewFirst' | 'aiFirst' | 'qualityFirst' | 'stateAware';
   /**
    * ドラフトの選び方。`first` は提示順の先頭。
    * それ以外は該当キーワードを含むカードを優先し、無ければ先頭を取る。
@@ -209,7 +212,83 @@ const EVOLUTION_ORDER_QUALITY_FIRST = orderFromBranches([
   'ai',
 ]);
 
-function evolutionOrder(mode: PolicySpec['evolve']): readonly string[] {
+/** `stateAware` 進化が参照する盤面（解放フェーズ到達時点）。 */
+export interface EvolveBoardCtx {
+  org: OrgState;
+  totals: RunTotals;
+  /** 直前までのレビューキューピーク（totals と直前スプリントの大きい方）。 */
+  reviewQueuePeak: number;
+}
+
+/**
+ * 盤面に応じたブランチ優先順（RI-86 / F-11）。
+ *
+ * 固定順の方針では「最初の2ノードが必ず同一ブランチ」になり、方向の確定時期を測れない。
+ * ここではボトルネックに応じて先頭ブランチを変える。
+ */
+export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[] {
+  const scores: Record<EvolutionBranch, number> = {
+    review: 0,
+    quality: 0,
+    ai: 0,
+    culture: 0,
+    dev: 0,
+  };
+  const { org, totals, reviewQueuePeak } = ctx;
+
+  // レビューは「実際に詰まった／シニアが危険」ときだけ強く押す。常時バイアスにしない。
+  if (reviewQueuePeak >= 10) scores.review += 4;
+  else if (reviewQueuePeak >= 6) scores.review += 2;
+  if (org.seniorHp < 40) scores.review += 3;
+  else if (org.seniorHp < 50) scores.review += 1;
+
+  if (org.techDebt >= 50) scores.quality += 4;
+  else if (org.techDebt >= 35) scores.quality += 2;
+  if (org.testCoverage < 40) scores.quality += 2;
+  if (org.aiDependency >= 55 && org.aiLiteracy < 45) scores.quality += 2;
+
+  if (org.aiDependency >= 55 && org.aiLiteracy >= 45) scores.ai += 4;
+  else if (org.aiDependency >= 40) scores.ai += 2;
+  else if (org.aiEnabled && org.aiLiteracy < 40) scores.ai += 1;
+
+  if (org.morale < 45) scores.culture += 3;
+  else if (org.morale < 55) scores.culture += 1;
+  if (org.quality < 40) scores.culture += 2;
+
+  // 出荷効率が悪い／累計出荷が伸びていないときだけ開発へ。
+  if (totals.completed >= 8 && totals.delivered < totals.completed * 6) scores.dev += 3;
+  else if (totals.delivered < 60 && totals.completed >= 8) scores.dev += 2;
+
+  // どれも閾値未達なら、相対的に弱い柱へ寄せる（常に review 固定になるのを防ぐ）。
+  if (Math.max(...Object.values(scores)) === 0) {
+    const weakness: Record<EvolutionBranch, number> = {
+      review: 100 - org.seniorHp,
+      quality: org.techDebt + (100 - org.testCoverage) * 0.5,
+      ai: org.aiDependency * 0.5 + (100 - org.aiLiteracy) * 0.5,
+      culture: 100 - org.morale + (100 - org.quality) * 0.3,
+      dev: Math.max(0, 120 - totals.delivered),
+    };
+    let best: EvolutionBranch = 'review';
+    for (const b of Object.keys(weakness) as EvolutionBranch[]) {
+      if (weakness[b] > weakness[best]) best = b;
+    }
+    scores[best] += 1;
+  }
+
+  // 同点時の安定したタイブレーク（レビュー → 品質 → …）。スコア差を上書きしない微小量。
+  const tie: Record<EvolutionBranch, number> = {
+    review: 0.05,
+    quality: 0.04,
+    ai: 0.03,
+    culture: 0.02,
+    dev: 0.01,
+  };
+  return (Object.keys(scores) as EvolutionBranch[]).sort(
+    (a, b) => scores[b] + tie[b] - (scores[a] + tie[a]),
+  );
+}
+
+function evolutionOrder(mode: PolicySpec['evolve'], ctx?: EvolveBoardCtx): readonly string[] {
   switch (mode) {
     case 'reviewFirst':
       return EVOLUTION_ORDER_REVIEW_FIRST;
@@ -217,6 +296,10 @@ function evolutionOrder(mode: PolicySpec['evolve']): readonly string[] {
       return EVOLUTION_ORDER_AI_FIRST;
     case 'qualityFirst':
       return EVOLUTION_ORDER_QUALITY_FIRST;
+    case 'stateAware':
+      return orderFromBranches(
+        ctx ? stateAwareEvolveBranches(ctx) : ['review', 'quality', 'ai', 'culture', 'dev'],
+      );
     default:
       return EVOLUTION_ORDER_AS_LISTED;
   }
@@ -395,6 +478,11 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     evolve: 'reviewFirst',
     recruit: 'skip',
   },
+  /**
+   * RI-86 / F-11 用。`skilledNoHire` と同じ介入・カードだが、進化ブランチを盤面で選ぶ。
+   * 固定順方針では方向の確定時期を測れないため、この方針で commit 時期を観測する。
+   */
+  skilledStateEvolve: { ...skilledBase(), evolve: 'stateAware' },
 };
 
 /** 介入の試行結果内訳（RI-78 の「発動可能だった回数」測定用）。 */
@@ -1502,7 +1590,17 @@ export function runOnce(
       case 'evolution': {
         // 使えるポイントは使い切る（プレイヤーは持ち越さない）。順序は方針で変える。
         if (spec.evolve !== 'none') {
-          const order = evolutionOrder(spec.evolve);
+          const snap = e.snapshot();
+          const evolveCtx: EvolveBoardCtx = {
+            org: snap.org,
+            totals: snap.totals,
+            reviewQueuePeak: Math.max(
+              snap.totals.reviewQueuePeak,
+              ...sprints.map((sp) => sp.reviewQueueMax),
+            ),
+          };
+          // stateAware はフェーズ到達時点の盤面で順を決める（解放のたびに振り直さない）。
+          const order = evolutionOrder(spec.evolve, evolveCtx);
           let spent = 0;
           while (e.snapshot().evolution.points > 0 && spent < 16) {
             const before = e.snapshot().evolution.points;

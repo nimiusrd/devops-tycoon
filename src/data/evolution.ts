@@ -35,7 +35,14 @@ export const BRANCH_LABEL: Record<EvolutionBranch, string> = {
   culture: '文化',
 };
 
-/** ブランチごとに上から順に解放していく（`requires` で直列化）。 */
+/**
+ * ブランチごとに上から順に解放していく（`requires` で直列化）。
+ *
+ * RI-86 / F-11: 入手速度は据え置き、ノードコストを上げて希少性を作る。
+ * Q1 中央値帯（旧実測 p50≈44）ではツリー総コストに届かず、1〜2 ブランチへ寄せる選択になる。
+ * ティア目安: 起点 1 / 中段はブランチにより 3〜4 / ペーシング先端（dev・review）7 / その他先端 20〜24。総コスト 101。
+ * 起点〜中段は早く取れ（F-4 / 方向づけ）、先端の重さで Q1 全解放を防ぐ。
+ */
 export const EVOLUTION_NODES: EvolutionNodeDef[] = [
   // 開発力
   {
@@ -51,7 +58,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'dev',
     name: '並列実装枠 +1',
     description: '同時に進められる Coding 枠を増やす',
-    cost: 2,
+    cost: 3,
     requires: 'dev-1',
     codingSlotBonus: 1,
   },
@@ -60,7 +67,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'dev',
     name: '定型処理の自動化',
     description: 'ルーティン作業を自動化し、定型タスクを速く回す',
-    cost: 2,
+    cost: 7,
     requires: 'dev-2',
     effects: { routineSpeedMul: 1.3 },
   },
@@ -78,7 +85,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'review',
     name: '自動レビュー解放',
     description: '機械レビューで小さな PR を先回りする',
-    cost: 2,
+    cost: 3,
     requires: 'review-1',
     effects: { reviewEfficiencyMul: 1.18 },
   },
@@ -87,7 +94,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'review',
     name: '割り込みレビュー強化',
     description: '割り込みレビュー体制をさらに強化する',
-    cost: 2,
+    cost: 7,
     requires: 'review-2',
     effects: { reviewCapacityMul: 1.2 },
   },
@@ -105,7 +112,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'quality',
     name: '防御バリア常設',
     description: 'インシデントを未然に弾く防御線を常設',
-    cost: 2,
+    cost: 4,
     requires: 'quality-1',
     effects: { incidentRateMul: 0.82 },
   },
@@ -114,7 +121,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'quality',
     name: 'Incident 耐性',
     description: '手戻り耐性と品質文化を底上げ',
-    cost: 2,
+    cost: 20,
     requires: 'quality-2',
     effects: { reworkRateAdd: -0.1, qualityAdd: 8 },
   },
@@ -132,7 +139,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'ai',
     name: 'AI Literacy 逓増',
     description: 'チーム全体の AI リテラシーを底上げ',
-    cost: 2,
+    cost: 4,
     requires: 'ai-1',
     effects: { aiLiteracyAdd: 18 },
   },
@@ -141,7 +148,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'ai',
     name: 'Devin 枠',
     description: '自律型 AI の実装枠を組織に組み込む',
-    cost: 3,
+    cost: 24,
     requires: 'ai-2',
     effects: { codingSpeedMul: 1.2 },
   },
@@ -159,7 +166,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'culture',
     name: '品質文化',
     description: '品質を重視する文化を根付かせる',
-    cost: 2,
+    cost: 4,
     requires: 'culture-1',
     effects: { qualityAdd: 10 },
   },
@@ -168,7 +175,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'culture',
     name: '集中力上限 +3',
     description: '集中力の余裕をさらに確保する',
-    cost: 2,
+    cost: 20,
     requires: 'culture-2',
     focusBonus: 3,
   },

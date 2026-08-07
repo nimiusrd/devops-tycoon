@@ -62,11 +62,12 @@ describe('RI-91-C4 evolution survived mutants', () => {
       expect(unlockableNodes({ points: 1, unlocked: {} })).toEqual(expected);
     });
 
-    it('dev-1 解放済 + points=2 なら次ノードを含み既解放を含まない', () => {
-      const ids = unlockableNodes({ points: 2, unlocked: { 'dev-1': true } });
+    it('dev-1 解放済 + points=中段コストなら次ノードを含み既解放を含まない', () => {
+      const midCost = getEvolutionNode('dev-2')!.cost;
+      const ids = unlockableNodes({ points: midCost, unlocked: { 'dev-1': true } });
       expect(ids).toContain('dev-2');
       expect(ids).not.toContain('dev-1');
-      // ルートで未解放かつ cost<=2 のものも含む
+      // ルートで未解放かつ cost<=mid のものも含む
       expect(ids).toContain('review-1');
       expect(ids).toContain('quality-1');
       expect(ids).toContain('ai-1');

@@ -1,18 +1,21 @@
 /**
- * RI-91-A6: engine.ts defeat/victory/misc（persist / hydrate / snapshot）の
- * Survived / NoCoverage mutation を潰す。共有テストは触らず、単位専用ファイルで exact 断言する。
+ * RunEngine の勝敗確定（outcome / quarterReview）と persist / snapshot まわりの
+ * ミューテーション回帰テスト。Stryker の Survived / NoCoverage mutation を
+ * exact 断言で潰す（旧 RI-72-D4 / RI-91-A6）。
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getEvolutionNode } from '../../src/data/evolution';
 import type { CardInstance } from '../../src/sim/cards';
 import type { RosterState } from '../../src/sim/member';
-import { evaluateWinType } from '../../src/sim/outcome';
+import { AI_LITERACY_UNSAFE_CAP, TECH_DEBT_CAP, evaluateWinType } from '../../src/sim/outcome';
 import {
   HOME_TEAM_ID,
   emptyAdjust,
   emptyAdjustState,
   type TeamRunState,
 } from '../../src/sim/orgscale';
+import { deriveTeamCapacities } from '../../src/sim/orgscale/teamState';
+import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
 import type { RunPersistState, RunReplayFrame } from '../../src/sim/run/persist';
 import type {
@@ -24,7 +27,8 @@ import type {
   RunTotals,
   StakeholderTrust,
 } from '../../src/sim/run/types';
-import type { OrgState } from '../../src/sim/types';
+import { createSprint } from '../../src/sim/sprint';
+import type { OrgState, SprintMetrics, SprintState } from '../../src/sim/types';
 
 const initTeamMock = vi.hoisted(() => ({
   mode: 'passthrough' as 'passthrough' | 'emptyFirst' | 'homeNotFirst' | 'noHome',
@@ -77,8 +81,16 @@ vi.mock('../../src/sim/orgscale', async (importOriginal) => {
   };
 });
 
-type A6Internals = {
+type EngineInternals = {
+  bossId: string;
   budget: number;
+  currentSprintId: string | null;
+  currentSprintKind: RunState['currentSprintKind'];
+  diagnosis: RunState['diagnosis'];
+  quarterNumber: number;
+  sprint: SprintState | null;
+  sprintBaselineInput: unknown;
+  resolveSprint(): void;
   deck: CardInstance[];
   evolution: RunState['evolution'];
   goalAdjustmentsTaken: GoalAdjustmentId[];
@@ -106,7 +118,7 @@ type A6Internals = {
   homeTeamId: string;
 };
 
-const asInternals = (engine: RunEngine): A6Internals => engine as unknown as A6Internals;
+const asInternals = (engine: RunEngine): EngineInternals => engine as unknown as EngineInternals;
 
 const zeroTotals = (): RunTotals => ({
   delivered: 0,
@@ -189,6 +201,90 @@ function setupPersist(seed: string): RunPersistState {
 function asReplayFrame(state: RunPersistState, patch: Partial<RunState> = {}): RunReplayFrame {
   return { ...structuredClone(state), ...patch } as RunReplayFrame;
 }
+
+const singleActiveTeam = (template: TeamRunState, org: OrgState): TeamRunState => ({
+  ...template,
+  engineers: 2,
+  headcount: 2,
+  aiLiteracy: org.aiLiteracy,
+  aiDependency: org.aiDependency,
+  morale: org.morale,
+  techDebt: org.techDebt,
+  shipping: org.deliveryScore,
+  reviewQueue: 0,
+  incidents: 0,
+  seniorHp: org.seniorHp,
+  aiEnabled: org.aiEnabled,
+  testCoverage: org.testCoverage,
+  documentation: org.documentation,
+  quality: org.quality,
+  ...deriveTeamCapacities({
+    engineers: 2,
+    reviewQueue: 0,
+    incidents: 0,
+    quality: org.quality,
+  }),
+});
+
+const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState => {
+  const sprint = createSprint(
+    { taskCount: 0, codingSlots: 1, maxTicks: 1, focusMax: 3 },
+    org,
+    createRng('ri-72-d4-fixed-sprint'),
+  );
+  return {
+    ...sprint,
+    complete: true,
+    metrics: {
+      ...sprint.metrics,
+      seniorHpStart: org.seniorHp,
+      ...metrics,
+    },
+  };
+};
+
+const arrangeResolvedSprint = (
+  engine: RunEngine,
+  options: {
+    kind: RunState['currentSprintKind'];
+    org?: Partial<OrgState>;
+    metrics?: Partial<SprintMetrics>;
+    budget?: number;
+    totals?: Partial<RunTotals>;
+    quarterTotals?: Partial<RunTotals>;
+    quarterGoal?: QuarterGoal;
+    stakeholderTrust?: StakeholderTrust;
+    quarterNumber?: number;
+  },
+): EngineInternals => {
+  engine.startRun('easy', [], 'ri-72-d4-fixed');
+  const internals = asInternals(engine);
+  const org = makeOrg(options.org);
+  const totals = { ...zeroTotals(), ...options.totals };
+  const quarterTotals = { ...zeroTotals(), ...options.quarterTotals };
+
+  internals.phase = 'sprint';
+  internals.status = 'playing';
+  internals.bossId = 'big-release';
+  internals.currentSprintKind = options.kind;
+  internals.currentSprintId = `q${options.quarterNumber ?? 1}-${options.kind}`;
+  internals.org = org;
+  internals.budget = options.budget ?? 10;
+  internals.totals = totals;
+  internals.quarterTotals = quarterTotals;
+  internals.quarterGoal = options.quarterGoal ?? goal();
+  internals.quarterNumber = options.quarterNumber ?? 1;
+  internals.stakeholderTrust = options.stakeholderTrust ?? trust();
+  internals.sprint = completeSprint(org, options.metrics);
+  internals.sprintBaselineInput = null;
+  internals.teams = [
+    singleActiveTeam(
+      internals.teams.find((team) => team.id === internals.activeTeamId) ?? internals.teams[0]!,
+      org,
+    ),
+  ];
+  return internals;
+};
 
 afterEach(() => {
   initTeamMock.mode = 'passthrough';
@@ -689,5 +785,239 @@ describe('RI-91-A6 getEvolutionNodeEffects via unlockEvolution', () => {
     unlocked.unlockEvolution('quality-1');
     expect(unlocked.snapshot().evolution).toEqual({ points: 5, unlocked: { 'quality-1': true } });
     expect(unlocked.snapshot().org).toEqual(unlockedOrg);
+  });
+});
+
+describe('RI-72-D4 engine outcome / quarterReview entry', () => {
+  it('通常スプリントは敗北しきい値未満なら result、Tech Debt が 90 ちょうどで lost へ入る', () => {
+    const safe = new RunEngine({ seed: 'ri-72-d4-normal-safe', difficulty: 'easy' });
+    arrangeResolvedSprint(safe, {
+      kind: 'normal',
+      org: { techDebt: TECH_DEBT_CAP - 1, morale: 2, seniorHp: 2 },
+      budget: 1,
+    }).resolveSprint();
+
+    expect(safe.snapshot()).toMatchObject({
+      phase: 'result',
+      status: 'playing',
+      loseReason: undefined,
+    });
+
+    const lost = new RunEngine({ seed: 'ri-72-d4-normal-lost', difficulty: 'easy' });
+    arrangeResolvedSprint(lost, {
+      kind: 'normal',
+      org: { techDebt: TECH_DEBT_CAP, morale: 2, seniorHp: 2 },
+      budget: 1,
+    }).resolveSprint();
+
+    expect(lost.snapshot()).toMatchObject({
+      phase: 'lost',
+      status: 'lost',
+      loseReason: 'techDebt',
+    });
+  });
+
+  it('ボススプリントでも即時敗北条件が先に成立すると quarterReview を作らず lost へ入る', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d4-boss-lost-first', difficulty: 'easy' });
+    arrangeResolvedSprint(engine, {
+      kind: 'boss',
+      org: { aiDependency: 95, aiLiteracy: AI_LITERACY_UNSAFE_CAP },
+      metrics: { delivered: 90, doneCount: 1, completedCount: 1 },
+      budget: 1,
+    }).resolveSprint();
+
+    const state = engine.snapshot();
+    expect(state.phase).toBe('lost');
+    expect(state.status).toBe('lost');
+    expect(state.loseReason).toBe('aiDependency');
+    expect(state.quarterReview).toBeNull();
+    expect(state.reviewHistory).toEqual([]);
+  });
+
+  it('ボス突破かつKPIが目標値ちょうどなら met の quarterReview へ入り、勝利は承認まで保留する', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d4-boss-met', difficulty: 'easy' });
+    arrangeResolvedSprint(engine, {
+      kind: 'boss',
+      org: { quality: 50, morale: 45, techDebt: 40 },
+      metrics: { delivered: 90, doneCount: 1, completedCount: 1 },
+      budget: 10,
+    }).resolveSprint();
+
+    const state = engine.snapshot();
+    expect(state.phase).toBe('quarterReview');
+    expect(state.status).toBe('playing');
+    expect(state.quarterReview).toMatchObject({
+      bossCleared: true,
+      outcome: 'met',
+    });
+    expect(
+      state.quarterReview?.progress.map(({ id, actual, target, status }) => ({
+        id,
+        actual,
+        target,
+        status,
+      })),
+    ).toEqual([
+      { id: 'delivery', actual: 90, target: 90, status: 'met' },
+      { id: 'quality', actual: 50, target: 50, status: 'met' },
+      { id: 'techDebt', actual: 40, target: 40, status: 'met' },
+      { id: 'morale', actual: 45, target: 45, status: 'met' },
+      { id: 'incident', actual: 0, target: 2, status: 'exceeded' },
+    ]);
+    expect(state.reviewHistory).toEqual(['met']);
+    expect(state.winType).toBeUndefined();
+  });
+
+  it('ボス突破失敗でも即時敗北でなければ missed_adjustable の quarterReview へ入る', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d4-boss-missed-adjustable', difficulty: 'easy' });
+    arrangeResolvedSprint(engine, {
+      kind: 'boss',
+      org: { quality: 50, morale: 45, techDebt: 40 },
+      metrics: { delivered: 76, doneCount: 1, completedCount: 1 },
+      quarterGoal: { ...goal(), deliveryTarget: 70 },
+      budget: 10,
+    }).resolveSprint();
+
+    const state = engine.snapshot();
+    expect(state.phase).toBe('quarterReview');
+    expect(state.status).toBe('playing');
+    expect(state.quarterReview).toMatchObject({
+      bossCleared: false,
+      outcome: 'missed_adjustable',
+    });
+    expect(state.bossRelicReward).toBeUndefined();
+    expect(state.reviewHistory).toEqual(['missed_adjustable']);
+  });
+
+  it('quarterReview の met 承認で won へ入り、固定入力の勝利種別を記録する', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d4-ack-win', difficulty: 'easy' });
+    engine.startRun('easy', [], 'ri-72-d4-ack-win');
+    const internals = asInternals(engine);
+    const org = makeOrg({ quality: 50, morale: 50, seniorHp: 30 });
+    const totals: RunTotals = {
+      ...zeroTotals(),
+      delivered: 100,
+      done: 10,
+      rework: 3,
+      spread: 1,
+      completed: 10,
+    };
+    internals.phase = 'quarterReview';
+    internals.org = org;
+    internals.totals = totals;
+    internals.budget = 10;
+    internals.usedHeavyActions = true;
+    internals.quarterReview = makeReview('met');
+    internals.winEvalOrg = null;
+
+    engine.acknowledgeQuarterReview();
+
+    expect(engine.snapshot()).toMatchObject({
+      phase: 'won',
+      status: 'won',
+      winType: evaluateWinType({
+        org,
+        totals,
+        budget: 10,
+        usedHeavyActions: true,
+      }),
+    });
+  });
+
+  it('勝利承認時に保存済み診断を再計算してから winType を決める', () => {
+    const engine = new RunEngine({ seed: 'ri-76-ack-rediagnose', difficulty: 'easy' });
+    engine.startRun('easy', [], 'ri-76-ack-rediagnose');
+    const internals = asInternals(engine);
+    const org = makeOrg({ quality: 50, morale: 50, seniorHp: 30 });
+    // 旧式 rework/completed では希釈されて healthy になりうるが、現行は done 分母で reworkSpiral。
+    const totals: RunTotals = {
+      ...zeroTotals(),
+      delivered: 100,
+      done: 100,
+      rework: 40,
+      completed: 500,
+      reviewQueuePeak: 4,
+    };
+    internals.phase = 'quarterReview';
+    internals.org = org;
+    internals.totals = totals;
+    internals.budget = 10;
+    internals.usedHeavyActions = true;
+    internals.quarterReview = makeReview('met');
+    internals.winEvalOrg = structuredClone(org);
+    internals.diagnosis = 'healthyAcceleration';
+
+    engine.acknowledgeQuarterReview();
+
+    expect(engine.snapshot().diagnosis).toBe('reworkSpiral');
+    expect(engine.snapshot().winType).toBe(
+      evaluateWinType({
+        org,
+        totals,
+        budget: 10,
+        usedHeavyActions: true,
+        diagnosis: 'reworkSpiral',
+      }),
+    );
+  });
+
+  it('hydrate は保存済み diagnosis を現行ロジックで塗り替える', () => {
+    const engine = new RunEngine({ seed: 'ri-76-hydrate-rediagnose', difficulty: 'easy' });
+    engine.startRun('easy', [], 'ri-76-hydrate-rediagnose');
+    const state = engine.exportPersistState();
+    if (!state) throw new Error('expected exportable save');
+    state.totals = {
+      ...state.totals,
+      done: 100,
+      rework: 40,
+      completed: 500,
+      reviewQueuePeak: 4,
+    };
+    state.diagnosis = 'healthyAcceleration';
+
+    const restored = new RunEngine({ seed: 'other', difficulty: 'easy' });
+    restored.hydratePersistState(state);
+    expect(restored.snapshot().diagnosis).toBe('reworkSpiral');
+  });
+
+  it('quarterReview の継続不能 outcome は loseReason を固定マッピングして lost へ入る', () => {
+    const cases: Array<[QuarterOutcome, RunState['loseReason']]> = [
+      ['shutdown', 'trustExhausted'],
+      ['missed_crisis', 'kpiMissed'],
+      ['reorg_required', 'reorgRequired'],
+    ];
+
+    for (const [outcome, loseReason] of cases) {
+      const engine = new RunEngine({ seed: `ri-72-d4-ack-${outcome}`, difficulty: 'easy' });
+      engine.startRun('easy', [], `ri-72-d4-ack-${outcome}`);
+      const internals = asInternals(engine);
+      internals.phase = 'quarterReview';
+      internals.quarterReview = makeReview(outcome);
+
+      engine.acknowledgeQuarterReview();
+
+      expect(engine.snapshot()).toMatchObject({
+        phase: 'lost',
+        status: 'lost',
+        loseReason,
+      });
+    }
+  });
+
+  it('quarterReview の missed_adjustable 承認は勝敗を確定せず同じ phase に残る', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d4-ack-adjustable', difficulty: 'easy' });
+    engine.startRun('easy', [], 'ri-72-d4-ack-adjustable');
+    const internals = asInternals(engine);
+    internals.phase = 'quarterReview';
+    internals.quarterReview = makeReview('missed_adjustable');
+
+    engine.acknowledgeQuarterReview();
+
+    expect(engine.snapshot()).toMatchObject({
+      phase: 'quarterReview',
+      status: 'playing',
+      winType: undefined,
+      loseReason: undefined,
+    });
   });
 });

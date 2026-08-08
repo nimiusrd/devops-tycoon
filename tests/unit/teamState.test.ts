@@ -226,6 +226,34 @@ describe('RI-91-B1 teamState survived mutants', () => {
       expect(high.morale - low.morale).toBe(-4); // -3 - (+1)
     });
 
+    it('RI-83: reworkRateAdd 低下は粗粒度の行列圧力を緩める', () => {
+      const teams = [
+        makeTeam({ id: 'home' }),
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 40,
+        }),
+      ];
+      const plain = advanceCoarseTeams(teams, {
+        seed: 'ri83-coarse-rework',
+        stepKey: 'r1',
+        excludeId: 'home',
+      });
+      const improved = advanceCoarseTeams(teams, {
+        seed: 'ri83-coarse-rework',
+        stepKey: 'r1',
+        excludeId: 'home',
+        modifiers: { reworkRateAdd: -0.1 },
+      });
+      const plainQ = plain.teams.find((t) => t.id === 'pressured')!.reviewQueue;
+      const improvedQ = improved.teams.find((t) => t.id === 'pressured')!.reviewQueue;
+      expect(improvedQ).toBeLessThan(plainQ);
+    });
+
     it('byTeam 調整は緩和に効き永続指標へ焼き込まない', () => {
       // 行列圧力と炎上バイアスを高め、byTeam 無視時に plain===relieved になる穴を塞ぐ。
       const teams = [

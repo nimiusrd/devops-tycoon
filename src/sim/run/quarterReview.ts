@@ -6,11 +6,11 @@
  */
 import type { BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
-import type { GoalAdjustmentDef } from '../../data/goalAdjustments';
+import type { GoalAdjustmentDef, GoalNextQuarterEffects } from '../../data/goalAdjustments';
 import { deriveTeamCapacities } from '../orgscale/teamState';
 import type { TeamRunState } from '../orgscale/types';
 import { TECH_DEBT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
-import type { OrgState } from '../types';
+import type { CardEffects, OrgState } from '../types';
 import { SPRINTS_PER_QUARTER } from './constants';
 import type {
   DifficultyId,
@@ -32,6 +32,106 @@ export const REORG_RESET_TECH_DEBT = -8;
 
 /** pauseAiDebuff 適用時の出荷速度倍率（次四半期）。 */
 export const PAUSE_AI_DEBUFF_MUL = 0.85;
+
+/**
+ * 次四半期に適用する物理効果を解決する（RI-83）。
+ * `pauseAiDebuff` は出荷速度倍率へ畳み込む。
+ */
+export function resolveNextQuarterEffects(def: GoalAdjustmentDef): GoalNextQuarterEffects {
+  const out: GoalNextQuarterEffects = { ...def.nextQuarterEffects };
+  if (def.pauseAiDebuff) {
+    // 出荷速度は codingSpeedMul のみ。routine にも同じ倍率を入れると定型で二重乗算になる。
+    out.codingSpeedMul = (out.codingSpeedMul ?? 1) * PAUSE_AI_DEBUFF_MUL;
+  }
+  return out;
+}
+
+/** 定義に次四半期キャリーオーバーがあるか。 */
+export function hasNextQuarterCarryover(def: GoalAdjustmentDef): boolean {
+  return Object.keys(resolveNextQuarterEffects(def)).length > 0;
+}
+
+/**
+ * アクティブな目標修正キャリーオーバーを CardEffects へ合成する（RI-83）。
+ * 四半期不一致・未知 ID では入力をそのまま返す。
+ * org 継続差分（techDebt / seniorHp）は `applyGoalCarryoverOrgTick` 側。
+ */
+export function applyGoalCarryoverToEffects(
+  effects: CardEffects,
+  carryoverId: GoalAdjustmentId | null,
+  carryoverQuarter: number | null,
+  quarterNumber: number,
+): CardEffects {
+  if (carryoverId === null || carryoverQuarter !== quarterNumber) return effects;
+  const def = getGoalAdjustment(carryoverId);
+  if (!def) return effects;
+  const partial = resolveNextQuarterEffects(def);
+  const hasCardEffects =
+    partial.codingSpeedMul !== undefined ||
+    partial.routineSpeedMul !== undefined ||
+    partial.reviewEfficiencyMul !== undefined ||
+    partial.reviewCapacityMul !== undefined ||
+    partial.reworkRateAdd !== undefined ||
+    partial.incidentRateMul !== undefined;
+  if (!hasCardEffects) return effects;
+  return {
+    ...effects,
+    codingSpeedMul: effects.codingSpeedMul * (partial.codingSpeedMul ?? 1),
+    routineSpeedMul: effects.routineSpeedMul * (partial.routineSpeedMul ?? 1),
+    reviewEfficiencyMul: effects.reviewEfficiencyMul * (partial.reviewEfficiencyMul ?? 1),
+    reviewCapacityMul: effects.reviewCapacityMul * (partial.reviewCapacityMul ?? 1),
+    reworkRateAdd: effects.reworkRateAdd + (partial.reworkRateAdd ?? 0),
+    incidentRateMul: effects.incidentRateMul * (partial.incidentRateMul ?? 1),
+    // qualityAdd は applyGoalCarryoverOrgTick で org へ適用する（二重適用を避ける）。
+  };
+}
+
+/**
+ * 次四半期キャリーオーバーに org 継続差分があるか（RI-83）。
+ * アクティブチーム値が飽和して実値が変わらなくても、他チーム更新の判定に使う。
+ */
+export function hasGoalCarryoverOrgDelta(
+  carryoverId: GoalAdjustmentId | null,
+  carryoverQuarter: number | null,
+  quarterNumber: number,
+): boolean {
+  if (carryoverId === null || carryoverQuarter !== quarterNumber) return false;
+  const def = getGoalAdjustment(carryoverId);
+  if (!def) return false;
+  const partial = resolveNextQuarterEffects(def);
+  return (
+    (partial.techDebtDelta !== undefined && partial.techDebtDelta !== 0) ||
+    (partial.seniorHpDelta !== undefined && partial.seniorHpDelta !== 0) ||
+    (partial.qualityAdd !== undefined && partial.qualityAdd !== 0)
+  );
+}
+
+/**
+ * スプリント開始時に目標修正キャリーオーバーの org 継続差分を適用する（RI-83）。
+ * `qualityAdd` も CardEffects に残さずここで組織値へ焼き込む（stepSprint は参照しない）。
+ */
+export function applyGoalCarryoverOrgTick(
+  org: OrgState,
+  carryoverId: GoalAdjustmentId | null,
+  carryoverQuarter: number | null,
+  quarterNumber: number,
+): OrgState {
+  if (carryoverId === null || carryoverQuarter !== quarterNumber) return org;
+  const def = getGoalAdjustment(carryoverId);
+  if (!def) return org;
+  const partial = resolveNextQuarterEffects(def);
+  let next = org;
+  if (partial.techDebtDelta !== undefined && partial.techDebtDelta !== 0) {
+    next = { ...next, techDebt: Math.max(0, next.techDebt + partial.techDebtDelta) };
+  }
+  if (partial.seniorHpDelta !== undefined && partial.seniorHpDelta !== 0) {
+    next = { ...next, seniorHp: clamp(next.seniorHp + partial.seniorHpDelta, 0, 100) };
+  }
+  if (partial.qualityAdd !== undefined && partial.qualityAdd !== 0) {
+    next = { ...next, quality: clamp(next.quality + partial.qualityAdd, 0, 100) };
+  }
+  return next;
+}
 
 /**
  * ボス突破床（1スプリント）に対する通常スループット比（RI-68）。

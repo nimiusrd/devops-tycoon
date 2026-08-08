@@ -14,6 +14,8 @@ import {
   MIN_PRIOR_QUARTER_DELIVERY_TARGET,
   MIN_QUARTER_DELIVERY_TARGET,
   applyGoalAdjustment,
+  applyGoalCarryoverOrgTick,
+  applyGoalCarryoverToEffects,
   applyGoalOrgEffectsToTeam,
   availableAdjustments,
   canAcknowledgeWin,
@@ -23,12 +25,17 @@ import {
   buildQuarterReview,
   diagnoseMissedReasons,
   evaluateQuarterOutcome,
+  hasGoalCarryoverOrgDelta,
+  hasNextQuarterCarryover,
   isTerminalFailure,
   loseReasonForOutcome,
   measureGoalProgress,
+  PAUSE_AI_DEBUFF_MUL,
+  resolveNextQuarterEffects,
   REORG_RESET_SENIOR_HP,
   REORG_RESET_TECH_DEBT,
 } from '../../src/sim/run/quarterReview';
+import { IDENTITY_CARD_EFFECTS } from '../../src/sim/model';
 import { playUntil } from './helpers/runFlow';
 import type { OrgState } from '../../src/sim/types';
 import type { TeamRunState } from '../../src/sim/orgscale/types';
@@ -528,6 +535,80 @@ describe('四半期レビュー（Phase 8）', () => {
     for (const id of ids) {
       expect(getGoalAdjustment(id)).toBeDefined();
     }
+  });
+
+  it('RI-83: 目標修正の次四半期キャリーオーバーが分岐する', () => {
+    // cut_scope は目標バー緩和が本体で物理キャリーなし（既定オートプレイ経路を壊さない）。
+    expect(hasNextQuarterCarryover(getGoalAdjustment('cut_scope')!)).toBe(false);
+    const ids = [
+      'extend_deadline',
+      'quality_pivot',
+      'request_budget',
+      'pause_ai_rollout',
+      'reorg_teams',
+      'stakeholder_care',
+    ] as const;
+    const shipMuls = new Set<number>();
+    for (const id of ids) {
+      const def = getGoalAdjustment(id)!;
+      expect(hasNextQuarterCarryover(def), id).toBe(true);
+      const effects = resolveNextQuarterEffects(def);
+      expect(Object.keys(effects).length, id).toBeGreaterThan(0);
+      if (effects.codingSpeedMul !== undefined) shipMuls.add(effects.codingSpeedMul);
+    }
+    // 少なくとも出荷速度が複数帯に分かれる。
+    expect(shipMuls.size).toBeGreaterThanOrEqual(3);
+
+    const pause = resolveNextQuarterEffects(getGoalAdjustment('pause_ai_rollout')!);
+    expect(pause.codingSpeedMul).toBeCloseTo(PAUSE_AI_DEBUFF_MUL);
+    expect(pause.routineSpeedMul).toBeUndefined();
+    expect(pause.reworkRateAdd).toBeCloseTo(-0.1);
+    expect(pause.incidentRateMul).toBeCloseTo(0.7);
+
+    const request = applyGoalCarryoverToEffects(
+      { ...IDENTITY_CARD_EFFECTS },
+      'request_budget',
+      2,
+      2,
+    );
+    expect(request.codingSpeedMul).toBeCloseTo(1.08);
+    // 一律出荷バフは coding のみ。routine 同値は定型で 1.08² になる。
+    expect(request.routineSpeedMul).toBe(1);
+    expect(request.reviewCapacityMul).toBeCloseTo(1.15);
+    const qualityEffects = resolveNextQuarterEffects(getGoalAdjustment('quality_pivot')!);
+    expect(qualityEffects.codingSpeedMul).toBeCloseTo(0.92);
+    expect(qualityEffects.routineSpeedMul).toBeUndefined();
+    const careEffects = resolveNextQuarterEffects(getGoalAdjustment('stakeholder_care')!);
+    expect(careEffects.codingSpeedMul).toBeCloseTo(0.97);
+    expect(careEffects.routineSpeedMul).toBeUndefined();
+    const expired = applyGoalCarryoverToEffects(
+      { ...IDENTITY_CARD_EFFECTS },
+      'request_budget',
+      2,
+      3,
+    );
+    expect(expired.codingSpeedMul).toBe(1);
+
+    const before = org({ techDebt: 40, seniorHp: 30, quality: 50 });
+    const pivoted = applyGoalCarryoverOrgTick(before, 'quality_pivot', 2, 2);
+    expect(pivoted.techDebt).toBe(36);
+    expect(pivoted.quality).toBe(54);
+    expect(applyGoalCarryoverOrgTick(before, 'quality_pivot', 2, 3)).toEqual(before);
+    const extended = applyGoalCarryoverOrgTick(before, 'extend_deadline', 2, 2);
+    expect(extended.seniorHp).toBe(35);
+
+    // 実値が変わらなくても、定義に org 差分があればチーム更新対象と判定する。
+    expect(hasGoalCarryoverOrgDelta('extend_deadline', 2, 2)).toBe(true);
+    expect(hasGoalCarryoverOrgDelta('quality_pivot', 2, 2)).toBe(true);
+    expect(hasGoalCarryoverOrgDelta('cut_scope', 2, 2)).toBe(false);
+    expect(hasGoalCarryoverOrgDelta('request_budget', 2, 2)).toBe(false);
+    expect(hasGoalCarryoverOrgDelta('extend_deadline', 2, 3)).toBe(false);
+    const saturated = org({ techDebt: 0, seniorHp: 100, quality: 100 });
+    expect(applyGoalCarryoverOrgTick(saturated, 'extend_deadline', 2, 2).seniorHp).toBe(100);
+    expect(applyGoalCarryoverOrgTick(saturated, 'quality_pivot', 2, 2)).toMatchObject({
+      techDebt: 0,
+      quality: 100,
+    });
   });
 
   it('RI-72-C1: outcome 補助関数と表示ラベルが全 outcome を分類する', () => {

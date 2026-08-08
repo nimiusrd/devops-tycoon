@@ -15,11 +15,13 @@ import {
   buildSprintBaselineInput,
   type SprintBaselineBuildContext,
 } from './sprintBaselineBuild';
+import { applyGoalCarryoverOrgTick } from './quarterReview';
 import { withTeamBoardPressure } from './sprintBaseline';
 import { previewNextSprint } from './whatIf';
 import type {
   DifficultyId,
   EvolutionState,
+  GoalAdjustmentId,
   RunTotals,
   SprintKind,
   SprintModifierDelta,
@@ -49,7 +51,10 @@ export interface WhatIfComputeInput {
   difficulty: DifficultyId;
   trials: string[];
   bossId: string;
-  pauseAiDebuffQuarter: number | null;
+  /** @deprecated RI-83: goalCarryover* を優先。 */
+  pauseAiDebuffQuarter?: number | null;
+  goalCarryoverQuarter?: number | null;
+  goalCarryoverId?: GoalAdjustmentId | null;
   baseConfig: SprintConfig;
   /** 選択中チーム正本のレビュー待ち（本番 beginSprint と共有）。 */
   teamReviewQueue?: number;
@@ -64,7 +69,9 @@ function baselineContext(input: WhatIfComputeInput): SprintBaselineBuildContext 
     difficulty: input.difficulty,
     trials: input.trials,
     bossId: input.bossId,
-    pauseAiDebuffQuarter: input.pauseAiDebuffQuarter,
+    goalCarryoverQuarter: input.goalCarryoverQuarter ?? null,
+    goalCarryoverId: input.goalCarryoverId ?? null,
+    pauseAiDebuffQuarter: input.pauseAiDebuffQuarter ?? null,
     quarterNumber: input.quarterNumber,
     baseConfig: input.baseConfig,
   };
@@ -118,6 +125,8 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     mod.focusMaxAdd ?? 0,
     input.teamReviewQueue ?? 0,
     input.teamIncidents ?? 0,
+    input.goalCarryoverQuarter ?? input.pauseAiDebuffQuarter ?? '',
+    input.goalCarryoverId ?? '',
   ].join('|');
 }
 
@@ -132,17 +141,25 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   const modifiers = input.pendingSprintModifiers;
   const baseSeed = `${input.seed}:what-if:q${input.quarterNumber}:s${nextIndex}`;
 
+  const applySprintStartOrg = (org: OrgState): OrgState => {
+    // 本番 beginSprint と同じ順: 回復 → 目標修正キャリーオーバー → 試練圧力。
+    let next = structuredClone(org);
+    next.seniorHp = clamp(next.seniorHp + (100 - next.seniorHp) * BETWEEN_SPRINT_RECOVERY, 0, 100);
+    next = applyGoalCarryoverOrgTick(
+      next,
+      input.goalCarryoverId ?? null,
+      input.goalCarryoverQuarter ?? input.pauseAiDebuffQuarter ?? null,
+      input.quarterNumber,
+    );
+    return next;
+  };
+
   const previewFor = (
     deck: { defId: string; level: number }[],
     org: OrgState,
     playedCards: { defId: string; level: number }[] = [],
   ): WhatIfPreview => {
-    const previewOrg = structuredClone(org);
-    previewOrg.seniorHp = clamp(
-      previewOrg.seniorHp + (100 - previewOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-      0,
-      100,
-    );
+    const previewOrg = applySprintStartOrg(org);
     applyTrialAiDependencyPressure(previewOrg, input.budget, {
       deck: input.deck,
       relics: input.relics,
@@ -176,12 +193,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
 
   const current = previewFor(input.deck, input.org);
 
-  const startOrg = structuredClone(input.org);
-  startOrg.seniorHp = clamp(
-    startOrg.seniorHp + (100 - startOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-    0,
-    100,
-  );
+  const startOrg = applySprintStartOrg(input.org);
   const budgetAfterPressure = applyTrialAiDependencyPressure(startOrg, input.budget, {
     deck: input.deck,
     relics: input.relics,
@@ -223,12 +235,9 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
         continue;
       }
 
-      const playOrg = structuredClone(input.org);
-      playOrg.seniorHp = clamp(
-        playOrg.seniorHp + (100 - playOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-        0,
-        100,
-      );
+      // 手札入りの発動仮定でも beginSprint と同じ org 開始処理を使う。
+      // 回復だけだと quality_pivot 等の Tech Debt 持ち越しが抜け、生存候補を loseOnPlay と誤表示する。
+      const playOrg = applySprintStartOrg(input.org);
       const budgetAfterCardPressure = applyTrialAiDependencyPressure(playOrg, input.budget, {
         deck: input.deck,
         relics: input.relics,

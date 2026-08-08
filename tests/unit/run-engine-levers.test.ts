@@ -12,7 +12,7 @@ import {
   type TeamRunState,
 } from '../../src/sim/orgscale';
 import { RunEngine } from '../../src/sim/run/engine';
-import type { RunState, RunTotals } from '../../src/sim/run/types';
+import type { GoalAdjustmentId, RunState, RunTotals } from '../../src/sim/run/types';
 import type { OrgState, SprintState, Task } from '../../src/sim/types';
 
 type A5Internals = {
@@ -45,7 +45,8 @@ type A5Internals = {
     >;
     byTeam: Record<string, unknown>;
   };
-  pauseAiDebuffQuarter: number | null;
+  goalCarryoverQuarter: number | null;
+  goalCarryoverId: GoalAdjustmentId | null;
   phase: RunState['phase'];
   quarterNumber: number;
   quarterTotals: RunTotals;
@@ -269,7 +270,8 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
   it('非中立な shipMul（pauseAiDebuff）が粗粒度 delivered に効く', () => {
     const engine = createEngine('ri-91-a5-mod-pause');
     const i = asInternals(engine);
-    i.pauseAiDebuffQuarter = i.quarterNumber;
+    i.goalCarryoverQuarter = i.quarterNumber;
+    i.goalCarryoverId = 'pause_ai_rollout';
     i.totals.delivered = 0;
     i.totals.completed = 0;
     i.quarterTotals.delivered = 0;
@@ -281,6 +283,32 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
     expect(i.totals.delivered).toBe(19);
     expect(i.quarterTotals.delivered).toBe(19);
     expect(i.totals.completed).toBe(4);
+  });
+
+  it('RI-83: pause_ai の reworkRateAdd が粗粒度の非選択チーム行列を下げる', () => {
+    const base = createEngine('ri-83-coarse-rework');
+    const withPause = createEngine('ri-83-coarse-rework');
+    const baseI = asInternals(base);
+    const pauseI = asInternals(withPause);
+    for (const i of [baseI, pauseI]) {
+      i.teams = i.teams.map((t) =>
+        t.id === i.activeTeamId ? t : { ...t, reviewQueue: 12, engineers: 8, reviewCapacity: 10 },
+      );
+    }
+    pauseI.goalCarryoverQuarter = pauseI.quarterNumber;
+    pauseI.goalCarryoverId = 'pause_ai_rollout';
+
+    baseI.advanceOtherTeams('rework');
+    pauseI.advanceOtherTeams('rework');
+
+    const baseQueues = baseI.teams
+      .filter((t) => t.id !== baseI.activeTeamId)
+      .map((t) => t.reviewQueue);
+    const pauseQueues = pauseI.teams
+      .filter((t) => t.id !== pauseI.activeTeamId)
+      .map((t) => t.reviewQueue);
+    expect(pauseQueues.every((q, idx) => q <= baseQueues[idx]!)).toBe(true);
+    expect(pauseQueues.some((q, idx) => q < baseQueues[idx]!)).toBe(true);
   });
 
   it('foldRunEffects 由来の粗粒度 modifiers が非 active へ効く', () => {

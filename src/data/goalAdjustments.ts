@@ -3,7 +3,27 @@
  *
  * 効果・代償・表示文言をデータで持ち、シミュレーションは純関数で適用する（architecture §4.3）。
  */
+import type { CardEffects } from '../sim/types';
 import type { GoalAdjustmentId } from '../sim/run/types';
+
+/** 次四半期だけ効く物理キャリーオーバー（RI-83）。 */
+export type GoalNextQuarterEffects = Partial<
+  Pick<
+    CardEffects,
+    | 'codingSpeedMul'
+    | 'routineSpeedMul'
+    | 'reviewEfficiencyMul'
+    | 'reviewCapacityMul'
+    | 'reworkRateAdd'
+    | 'incidentRateMul'
+    | 'qualityAdd'
+  >
+> & {
+  /** スプリント開始ごとの Tech Debt 差分（負で改善）。 */
+  techDebtDelta?: number;
+  /** スプリント開始ごとのシニア HP 差分。 */
+  seniorHpDelta?: number;
+};
 
 export interface GoalAdjustmentDef {
   id: GoalAdjustmentId;
@@ -33,10 +53,18 @@ export interface GoalAdjustmentDef {
   };
   /** 次四半期開始時の予算上限（request_budget 用）。 */
   nextBudgetCapDelta?: number;
-  /** 次四半期の AI 成功率デバフを有効化（pause_ai_rollout 用）。 */
+  /**
+   * 次四半期の AI 成功率デバフを有効化（pause_ai_rollout 用）。
+   * 適用時は `nextQuarterEffects` へ `PAUSE_AI_DEBUFF_MUL` を畳み込む。
+   */
   pauseAiDebuff?: boolean;
   /** 組織再編: レビュー詰まり・属人化をリセット（reorg_teams 用）。 */
   reorgReset?: boolean;
+  /**
+   * 次四半期だけ効くスプリント物理（RI-83）。
+   * KPI/信頼の一回差分とは別に、選択差をスプリント挙動へ載せる。
+   */
+  nextQuarterEffects?: GoalNextQuarterEffects;
 }
 
 export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
@@ -48,6 +76,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     // RI-68: 絶対減算は累計スケールで目標を潰すため、緩和は乗算のみにする。
     goalEffects: { deliveryMul: 0.8 },
+    // RI-83: スコープ削減は Delivery 目標緩和が本体。物理キャリーは付けない。
+    // （出荷バフは reviewFreeze を招き、レビューバフだけでも既定オートプレイ勝率を崩す。）
   },
   {
     id: 'extend_deadline',
@@ -56,6 +86,13 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     trustDelta: { management: -12 },
     budgetDelta: -10,
     goalEffects: { qualityAdd: 5, moraleAdd: 5, deliveryMul: 0.9 },
+    nextQuarterEffects: {
+      // 出荷ペナルティは付けない（既定オートプレイが cut→extend と進む経路で
+      // スプリントが延びて reviewFreeze に転ぶのを避ける）。
+      reworkRateAdd: -0.08,
+      reviewEfficiencyMul: 1.1,
+      seniorHpDelta: 5,
+    },
   },
   {
     id: 'quality_pivot',
@@ -65,6 +102,13 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     goalEffects: { techDebtLimitAdd: 15, incidentLimitAdd: 3, deliveryMul: 0.85 },
     orgEffects: { deliveryScoreMul: 0.9, techDebtDelta: -8 },
+    nextQuarterEffects: {
+      // codingSpeedMul のみ（routine は coding に乗算されるため同値設定は二重適用になる）。
+      codingSpeedMul: 0.92,
+      incidentRateMul: 0.75,
+      qualityAdd: 4,
+      techDebtDelta: -4,
+    },
   },
   {
     id: 'request_budget',
@@ -76,6 +120,11 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     // RI-68: deliveryAdd は四半期累計スケール（旧 10 × SPRINTS_PER_QUARTER × THROUGHPUT_MUL）。
     goalEffects: { deliveryAdd: 300 },
     nextBudgetCapDelta: -15,
+    nextQuarterEffects: {
+      // codingSpeedMul のみ（routine 同値設定は定型タスクで二重乗算になる）。
+      codingSpeedMul: 1.08,
+      reviewCapacityMul: 1.15,
+    },
   },
   {
     id: 'pause_ai_rollout',
@@ -85,6 +134,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     goalEffects: { aiAdoptionAdd: -15, deliveryMul: 0.92 },
     pauseAiDebuff: true,
+    // 出荷 -15% は pauseAiDebuff 側で畳み込む。安定化とシニア負荷の緩和を載せる。
+    nextQuarterEffects: { reworkRateAdd: -0.1, incidentRateMul: 0.7, seniorHpDelta: 3 },
   },
   {
     id: 'reorg_teams',
@@ -95,6 +146,12 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     goalEffects: { moraleAdd: -5 },
     orgEffects: { moraleDelta: -10, seniorHpDelta: 25, techDebtDelta: -5 },
     reorgReset: true,
+    // RI-83: 即時リセット後もレビュー回復を四半期中維持する。
+    nextQuarterEffects: {
+      reviewEfficiencyMul: 1.2,
+      seniorHpDelta: 3,
+      techDebtDelta: -2,
+    },
   },
   {
     id: 'stakeholder_care',
@@ -105,6 +162,9 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: -12,
     // deliveryAdd のみ（乗算緩和は付けない）。次期目標を上げて代償にする。
     goalEffects: { deliveryAdd: 80 },
+    // 説明コストは軽めに。強い出荷減は既定経路の勝率回帰を壊す。
+    // codingSpeedMul のみ（routine 同値設定は定型タスクで二重乗算になる）。
+    nextQuarterEffects: { codingSpeedMul: 0.97 },
   },
 ];
 

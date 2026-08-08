@@ -331,6 +331,13 @@ export interface RunState {
   quarterReview: QuarterReview | null;
   /** これまでに選んだ目標修正（次期制約・メタ報酬用）。 */
   goalAdjustmentsTaken: GoalAdjustmentId[];
+  /**
+   * 目標修正の次四半期物理キャリーオーバーが有効な四半期（RI-83）。
+   * 一致する四半期のスプリントだけ効果を適用する。
+   */
+  goalCarryoverQuarter: number | null;
+  /** アクティブなキャリーオーバーの目標修正 ID（RI-83）。 */
+  goalCarryoverId: GoalAdjustmentId | null;
   /** 四半期レビュー履歴（メタ進行報酬用）。 */
   reviewHistory: QuarterOutcome[];
 

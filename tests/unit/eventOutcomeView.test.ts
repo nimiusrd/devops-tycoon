@@ -328,6 +328,26 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
       label: '次四半期 出荷速度 -15%',
       tone: 'negative',
     });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '次四半期 障害率 -30%',
+      tone: 'positive',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '次四半期 Rework -10pt',
+      tone: 'positive',
+    });
+  });
+
+  it('品質キャリーオーバーはスプリント単位でタグ化する（RI-83）', () => {
+    const def = getGoalAdjustment('quality_pivot')!;
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '次四半期 品質 +4/スプリント',
+      tone: 'positive',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '次四半期 Tech Debt -4/スプリント',
+      tone: 'positive',
+    });
   });
 
   it.each([

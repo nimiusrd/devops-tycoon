@@ -218,7 +218,50 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(inactive.cardEffects.codingSpeedMul).toBe(1);
     expect(inactive.cardEffects.routineSpeedMul).toBe(1);
     expect(active.cardEffects.codingSpeedMul).toBe(0.85);
-    expect(active.cardEffects.routineSpeedMul).toBe(0.85);
-    expect(active.cardEffects.reviewEfficiencyMul).toBe(1);
+    // routine には pause 倍率を載せない（定型で coding×routine の二重減算を避ける）。
+    expect(active.cardEffects.routineSpeedMul).toBe(1);
+    // RI-83: pause_ai は安定化サイドも乗る。
+    expect(active.cardEffects.reworkRateAdd).toBeCloseTo(-0.1);
+    expect(active.cardEffects.incidentRateMul).toBeCloseTo(0.7);
+  });
+
+  it('RI-83: goalCarryover は一致四半期だけ効き、IDごとに物理が分岐する', () => {
+    const inactive = build({
+      ctx: {
+        goalCarryoverQuarter: 2,
+        goalCarryoverId: 'quality_pivot',
+        quarterNumber: 1,
+      },
+    });
+    const request = build({
+      ctx: {
+        goalCarryoverQuarter: 1,
+        goalCarryoverId: 'request_budget',
+        quarterNumber: 1,
+      },
+    });
+    const quality = build({
+      ctx: {
+        goalCarryoverQuarter: 1,
+        goalCarryoverId: 'quality_pivot',
+        quarterNumber: 1,
+      },
+    });
+
+    expect(inactive.cardEffects.codingSpeedMul).toBe(request.cardEffects.codingSpeedMul / 1.08);
+    expect(request.cardEffects.codingSpeedMul / inactive.cardEffects.codingSpeedMul).toBeCloseTo(
+      1.08,
+    );
+    expect(
+      request.cardEffects.reviewCapacityMul / inactive.cardEffects.reviewCapacityMul,
+    ).toBeCloseTo(1.15);
+    expect(quality.cardEffects.codingSpeedMul / inactive.cardEffects.codingSpeedMul).toBeCloseTo(
+      0.92,
+    );
+    expect(quality.cardEffects.incidentRateMul / inactive.cardEffects.incidentRateMul).toBeCloseTo(
+      0.75,
+    );
+    // qualityAdd は CardEffects ではなく org tick で適用する。
+    expect(quality.cardEffects.qualityAdd).toBe(inactive.cardEffects.qualityAdd);
   });
 });

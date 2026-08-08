@@ -5,7 +5,7 @@
 import type { OrgState, SprintConfig } from '../types';
 import type { OrgAdjustState, TeamRunState } from '../orgscale/types';
 import type { RosterState } from '../member/types';
-import type { RunPhase, RunState } from './types';
+import type { GoalAdjustmentId, RunPhase, RunState } from './types';
 
 /** セーブ可能な離散フェーズ（sprint / title / won / lost は除外）。 */
 export type RunSavePhase = Exclude<RunPhase, 'title' | 'sprint' | 'won' | 'lost'>;
@@ -40,7 +40,15 @@ export interface RunPersistExtras {
   baseConfig: SprintConfig;
   orgAdjust: OrgAdjustState;
   nextBudgetCap: number | null;
+  /**
+   * @deprecated RI-83: `goalCarryoverQuarter` / `goalCarryoverId` を優先。
+   * 旧セーブ互換のため残す（pause_ai_rollout として解釈）。
+   */
   pauseAiDebuffQuarter: number | null;
+  /** 目標修正キャリーオーバーが有効な四半期（RI-83。旧セーブでは欠落しうる）。 */
+  goalCarryoverQuarter?: number | null;
+  /** 目標修正キャリーオーバーの ID（RI-83。旧セーブでは欠落しうる）。 */
+  goalCarryoverId?: GoalAdjustmentId | null;
   winEvalOrg: OrgState | null;
   /** ラン開始時に固定した解放プール。 */
   allowedCards: string[];

@@ -10,6 +10,7 @@ import {
   deriveHudStatusParts,
   diffRunMetricSnapshots,
   diffHudMetricSnapshots,
+  goalCarryoverHudCopy,
   hudMetricSnapshot,
   reviewFreezeHudCopy,
   riskLevel,
@@ -237,6 +238,50 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       minTrust: 22,
     });
     expect(trustHudCopy({ management: 40, customers: 40, team: 40 }).warningChip).toBeUndefined();
+  });
+
+  it('目標修正キャリーオーバーの有効四半期だけチップを出す（RI-83）', () => {
+    expect(
+      goalCarryoverHudCopy({
+        goalCarryoverId: 'pause_ai_rollout',
+        goalCarryoverQuarter: 2,
+        quarterNumber: 1,
+      }).warningChip,
+    ).toBeUndefined();
+    expect(
+      goalCarryoverHudCopy({
+        goalCarryoverId: 'pause_ai_rollout',
+        goalCarryoverQuarter: 2,
+        quarterNumber: 2,
+      }),
+    ).toMatchObject({
+      tone: 'watch',
+      warningChip: 'AI 導入一時停止',
+    });
+    expect(
+      goalCarryoverHudCopy({
+        goalCarryoverId: 'extend_deadline',
+        goalCarryoverQuarter: 2,
+        quarterNumber: 2,
+      }),
+    ).toMatchObject({
+      tone: 'good',
+      warningChip: '期限延長',
+    });
+    expect(
+      goalCarryoverHudCopy({
+        goalCarryoverId: 'extend_deadline',
+        goalCarryoverQuarter: 2,
+        quarterNumber: 2,
+      }).detail,
+    ).toMatch(/シニア|Rework|レビュー/);
+    expect(
+      goalCarryoverHudCopy({
+        goalCarryoverId: 'quality_pivot',
+        goalCarryoverQuarter: 2,
+        quarterNumber: 2,
+      }).detail,
+    ).toMatch(/品質\+4\/S/);
   });
 
   it('レビュー凍結の危険域で予兆チップを出す（RI-85）', () => {

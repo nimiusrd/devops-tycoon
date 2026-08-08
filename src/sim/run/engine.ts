@@ -1600,6 +1600,7 @@ export class RunEngine {
     reviewMul: number;
     reviewCapacityMul: number;
     reworkRateAdd: number;
+    seniorHpCostMul: number;
     aiDependencyDrift: number;
   } {
     const effects = applyGoalCarryoverToEffects(
@@ -1617,6 +1618,8 @@ export class RunEngine {
       reviewMul: effects.reviewEfficiencyMul,
       reviewCapacityMul: effects.reviewCapacityMul,
       reworkRateAdd,
+      // RI-73: 詳細 sim と同じ seniorHpCostMul を粗粒度の消耗にも載せる。
+      seniorHpCostMul: effects.seniorHpCostMul,
       aiDependencyDrift: fold.aiDependencyDriftPerSprint,
     };
   }

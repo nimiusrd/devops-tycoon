@@ -254,6 +254,33 @@ describe('RI-91-B1 teamState survived mutants', () => {
       expect(improvedQ).toBeLessThan(plainQ);
     });
 
+    it('RI-73: seniorHpCostMul が粗粒度のシニア消耗に掛かる', () => {
+      const teams = [
+        makeTeam({ id: 'home' }),
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          seniorHp: 50,
+        }),
+      ];
+      const plain = advanceCoarseTeams(teams, {
+        seed: 'ri73-coarse-hp',
+        stepKey: 's1',
+        excludeId: 'home',
+      });
+      const eased = advanceCoarseTeams(teams, {
+        seed: 'ri73-coarse-hp',
+        stepKey: 's1',
+        excludeId: 'home',
+        modifiers: { seniorHpCostMul: 0.5 },
+      });
+      const plainHp = plain.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      const easedHp = eased.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      expect(easedHp).toBeGreaterThan(plainHp);
+    });
+
     it('byTeam 調整は緩和に効き永続指標へ焼き込まない', () => {
       // 行列圧力と炎上バイアスを高め、byTeam 無視時に plain===relieved になる穴を塞ぐ。
       const teams = [

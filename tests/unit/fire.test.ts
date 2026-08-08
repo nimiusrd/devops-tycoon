@@ -3,6 +3,7 @@ import { applyAction, mostUrgentIncident } from '../../src/sim/actions';
 import {
   BURN_TICKS,
   DEBT_PER_SPREAD,
+  IDENTITY_CARD_EFFECTS,
   INCIDENT_CONTAIN_HP,
   INCIDENT_HP_COST,
 } from '../../src/sim/model';
@@ -98,6 +99,22 @@ describe('炎上タイマー: 時間切れの解決（第6.3）', () => {
     expect(neighbor.lane).toBe('rework');
     expect(neighbor.burnTicksLeft).toBe(BURN_TICKS);
     expect(sprint.metrics.incidentCount).toBe(1);
+  });
+
+  it('RI-73: seniorHpCostMul 時は割引後コスト以上なら自動鎮火できる', () => {
+    const org = createOrgState('default', true);
+    // 既定閾値 12 未満だが、mul=0.5 ならコスト 6 なので鎮火できる帯。
+    org.seniorHp = 10;
+    const sprint = makeSprint(org, [burningTask(0, 1)]);
+    sprint.cardEffects = { ...IDENTITY_CARD_EFFECTS, seniorHpCostMul: 0.5 };
+    stepSprint(sprint, org, () => 0.99, 0);
+    expect(sprint.metrics.contained).toBe(1);
+    expect(sprint.metrics.spread).toBe(0);
+    const contain = sprint.events.find((e) => e.kind === 'auto-contain');
+    expect(contain && 'hpCost' in contain ? contain.hpCost : undefined).toBeCloseTo(
+      INCIDENT_HP_COST * 0.5,
+      5,
+    );
   });
 });
 

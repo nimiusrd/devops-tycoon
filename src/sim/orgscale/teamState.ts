@@ -462,6 +462,11 @@ export type CoarseRunModifiers = {
    * 負値ほど戻りが減り、粗粒度では行列圧力の緩和として効く（RI-83）。
    */
   reworkRateAdd?: number;
+  /**
+   * シニア体力消費倍率（詳細 sim の seniorHpCostMul 相当。RI-73）。
+   * 粗粒度の seniorDrain に掛ける。
+   */
+  seniorHpCostMul?: number;
   /** スプリント相当の AI 依存度ドリフト（frontier-dependency 等）。 */
   aiDependencyDrift?: number;
 };
@@ -500,6 +505,7 @@ export function advanceCoarseTeams(
   const reviewMul = clamp(args.modifiers?.reviewMul ?? 1, 0.4, 1.8);
   const reviewCapacityMul = clamp(args.modifiers?.reviewCapacityMul ?? 1, 0.5, 2);
   const reworkRateAdd = clamp(args.modifiers?.reworkRateAdd ?? 0, -0.5, 0.5);
+  const seniorHpCostMul = clamp(args.modifiers?.seniorHpCostMul ?? 1, 0.3, 3);
   const aiDependencyDrift = Math.max(0, Math.round(args.modifiers?.aiDependencyDrift ?? 0));
   let ignited = 0;
   let completed = 0;
@@ -575,7 +581,7 @@ export function advanceCoarseTeams(
     const techDebtDelta =
       Math.round(team.aiDependency * 0.03) - Math.round(team.aiLiteracy * 0.02) - debtRelief;
     const literacyGain = rng() < 0.4 ? 1 : 0;
-    const seniorDrain = reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0;
+    const seniorDrain = (reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0) * seniorHpCostMul;
     const randomAiDrift = rng() < 0.3 * aiPressureMul ? 1 : 0;
     // 品質を先に確定し、派生の incidentBias と整合させる。
     const quality = clamp(team.quality + (rng() < 0.25 ? -1 : 0), 10, 100);

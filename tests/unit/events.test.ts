@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { EventDef } from '../../src/data/events';
-import { createOrgState } from '../../src/sim/org';
 import { TECH_DEBT_CAP } from '../../src/sim/outcome';
 import {
   applyEventOutcome,
@@ -10,9 +9,7 @@ import {
   pickWeighted,
 } from '../../src/sim/run/events';
 import type { EventSignal, RunPassives } from '../../src/sim/run/types';
-import type { OrgState } from '../../src/sim/types';
-
-const org = (o: Partial<OrgState> = {}): OrgState => ({ ...createOrgState('default', true), ...o });
+import { org } from './helpers/orgFixtures';
 
 const passives = (moraleDamageMul = 1): RunPassives => ({
   moraleDamageMul,

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { BOSS_DEFS, getBoss, type BossDef } from '../../src/data/bosses';
 import { getDifficulty } from '../../src/data/difficulties';
 import { getGoalAdjustment } from '../../src/data/goalAdjustments';
-import { createOrgState } from '../../src/sim/org';
 import { RunEngine } from '../../src/sim/run/engine';
 import {
   OUTCOME_LABELS,
@@ -42,8 +41,7 @@ import type {
   RunTotals,
   StakeholderTrust,
 } from '../../src/sim/run/types';
-
-const org = (o: Partial<OrgState> = {}): OrgState => ({ ...createOrgState('default', true), ...o });
+import { org, totals } from './helpers/orgFixtures';
 
 const team = (t: Partial<TeamRunState> = {}): TeamRunState => ({
   id: 'product-t0',
@@ -65,20 +63,6 @@ const team = (t: Partial<TeamRunState> = {}): TeamRunState => ({
   testCoverage: 50,
   documentation: 50,
   quality: 60,
-  ...t,
-});
-
-const totals = (t: Partial<RunTotals> = {}): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
   ...t,
 });
 

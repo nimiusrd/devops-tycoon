@@ -15,7 +15,7 @@
 | [1](../SPEC.md#1-企画概要) | 企画概要 | — | — |
 | [2](../SPEC.md#2-コンセプト) | AI導入と組織制約の因果 | [probability-model.md](./probability-model.md), `src/sim/sprint.ts`, `src/sim/model/process.ts`, `tests/unit/process.test.ts` | 🟡 on/off は状態へ伝播する。ただし AI 配布だけを外すと1スプリントの出荷がむしろ増え、実務感覚と逆向き。RI-77 |
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観 | [architecture.md](./architecture.md) §7 | ✅ |
-| [3](../SPEC.md#3-ゲームの基本ループ) | 複数四半期ラン、固定トラック、ビート | `src/sim/run/engine.ts`, `phases.ts`, `events.ts`, `tests/unit/run-loop.test.ts` | ✅ |
+| [3](../SPEC.md#3-ゲームの基本ループ) | 複数四半期ラン、固定トラック、ビート | `src/sim/run/engine.ts`, `phases.ts`, `events.ts`, `tests/unit/runLoop.test.ts` | ✅ |
 | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | テンポと速度操作 | `src/ui/sprintTempo.ts`, `tests/unit/sprintTempo.test.ts`, `tests/unit/helpers/pacingStats.ts` | ✅ |
 | [4.1〜4.6](../SPEC.md#4-ゲーム画面) | 現場、HUD、介入、ビート、進化、リザルト | `src/ui/*Screen.tsx`, `src/sim/actions.ts`, `src/render/boardScene.ts`, 関連unit/E2E | 🟢 主要機能は実装済み。デスクトップの操作バー重なりはRI-69、狭幅の操作性はRI-70で解消 |
 | [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビューと継続 | `QuarterReviewScreen.tsx`, `quarterReview.ts`, `goalAdjustments.ts` | ✅ Delivery KPI は四半期累計スケールで整合（RI-68） |

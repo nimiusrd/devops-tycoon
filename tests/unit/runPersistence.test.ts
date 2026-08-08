@@ -166,12 +166,30 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         ...valid.state,
         difficulty: 'normal',
         phase: 'quarterReview',
+        org: { ...valid.state.org, quality: 99 },
+        quarterTotals: { ...valid.state.quarterTotals, delivered: 1260, completed: 1 },
+        extras: {
+          ...valid.state.extras,
+          teams: valid.state.extras.teams?.map((team) => ({ ...team, quality: 99 })),
+        },
         quarterGoal: { ...valid.state.quarterGoal, deliveryTarget: 1260 },
         quarterReview: {
           goal: { ...valid.state.quarterGoal, deliveryTarget: 1260 },
           outcome: 'met',
           trust: { ...valid.state.stakeholderTrust },
-          progress: [],
+          progress: [
+            {
+              id: 'delivery',
+              label: 'Delivery（四半期累計）',
+              target: 1260,
+              actual: 1260,
+              status: 'met',
+            },
+            { id: 'quality', label: 'Quality', target: 45, actual: 40, status: 'missed' },
+            { id: 'techDebt', label: 'Tech Debt', target: 55, actual: 40, status: 'met' },
+            { id: 'morale', label: 'Morale', target: 40, actual: 50, status: 'met' },
+            { id: 'incident', label: 'Incident', target: 6, actual: 1, status: 'met' },
+          ],
           missedReasons: [],
           availableAdjustments: [],
           bossCleared: true,
@@ -186,6 +204,10 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(review?.progress.find((item) => item.id === 'delivery')?.target).toBe(
       MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
     );
+    expect(review?.progress.find((item) => item.id === 'quality')).toMatchObject({
+      actual: 40,
+      status: 'missed',
+    });
     expect(review?.outcome).not.toBe('met');
   });
 

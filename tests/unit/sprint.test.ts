@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEngine, type Engine } from '../../src/sim/engine';
-import type {
-  SprintResult,
-  OrgState,
-  SprintMetrics,
-  SprintState,
-  Task,
-  TimelineSample,
-} from '../../src/sim/types';
+import type { SprintResult, SprintMetrics, SprintState, TimelineSample } from '../../src/sim/types';
 import { REVIEW_HP_COST, TASK_BASE_VALUE, taskValue } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import {
@@ -21,6 +14,7 @@ import {
   stepSprint,
   summarizeSprint,
 } from '../../src/sim/sprint';
+import { makeSprint, makeTask } from './helpers/sprintFixtures';
 
 /** スプリントを最後まで自動進行させ、リザルトを返す。 */
 function runSprint(seed: string, aiEnabled: boolean): { engine: Engine; result: SprintResult } {
@@ -97,26 +91,6 @@ describe('リザルトの整合性', () => {
     expect(result.diagnosis.length).toBeGreaterThan(0);
   });
 });
-
-const makeTask = (id: number, overrides: Partial<Task> = {}): Task => ({
-  id,
-  kind: 'normal',
-  highValue: false,
-  aiAssisted: false,
-  lane: 'review',
-  progress: 0,
-  reworkAttempts: 0,
-  wasReworked: false,
-  incident: false,
-  debt: false,
-  ...overrides,
-});
-
-function makeSprint(org: OrgState, tasks: Task[]): SprintState {
-  const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
-  sprint.tasks = tasks;
-  return sprint;
-}
 
 function patchMetrics(sprint: SprintState, overrides: Partial<SprintMetrics>): void {
   Object.assign(sprint.metrics, overrides);

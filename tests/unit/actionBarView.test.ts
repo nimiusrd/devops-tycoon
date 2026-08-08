@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { STABILITY_TICKS } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import type { ActionId, OrgState, SprintState, Task } from '../../src/sim/types';
 import {
   countActionTargets,
   deriveActionAvailability,
+  deriveModifierRing,
   formatInterventionFailure,
   planActionBarView,
 } from '../../src/render/actionBarView';
@@ -173,6 +175,32 @@ describe('planActionBarView（RI-51）', () => {
       'overtime',
       'andon',
     ]);
+  });
+});
+
+describe('deriveModifierRing（RI-84）', () => {
+  it('運用安定の残り tick と進捗母数を返す', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, []);
+    sprint.modifiers.stabilityUntilTick = 132;
+
+    expect(deriveModifierRing(sprint, 42, 'stability')).toEqual({
+      active: true,
+      remaining: 90,
+      total: STABILITY_TICKS,
+    });
+  });
+
+  it('期限を過ぎた運用安定は非表示にする', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, []);
+    sprint.modifiers.stabilityUntilTick = 42;
+
+    expect(deriveModifierRing(sprint, 42, 'stability')).toEqual({
+      active: false,
+      remaining: 0,
+      total: STABILITY_TICKS,
+    });
   });
 });
 

@@ -134,8 +134,8 @@ export interface CardInstance {
   baselineAppliedByTeam?: Record<string, number>;
 }
 
-/** 時限モディファイアの種別（介入アクションが設定する）。 */
-export type InterventionModifierKind = 'andon' | 'overtime' | 'throttle';
+/** 時限モディファイアの種別（介入アクション由来の効果と運用安定）。 */
+export type InterventionModifierKind = 'andon' | 'overtime' | 'stability' | 'throttle';
 
 /** 介入アクション成功時の効果ペイロード（RI-49）。UI 演出・ログはこれを読む。 */
 export interface InterventionEffect {
@@ -246,6 +246,12 @@ export interface SprintModifiers {
   overtimeUntilTick: number;
   /** この tick 未満の間、AI 流入を絞る（AIスロットル）。 */
   throttleUntilTick: number;
+  /**
+   * この tick 未満の間、介入で整えた工程を維持する。
+   * 安全側の介入を打つと Review の手戻りを抑え、無介入との差を
+   * 平均出荷ではなく下振れの出やすさとして表す（RI-84 / F-5）。
+   */
+  stabilityUntilTick: number;
 }
 
 /**

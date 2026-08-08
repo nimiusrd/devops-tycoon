@@ -5,18 +5,20 @@
  * Framer Motion で弾むマイクロインタラクションを付ける（状態は読むだけ。第22.2）。
  */
 import { AnimatePresence, motion } from 'framer-motion';
-import { comboMultiplier } from '../sim/model';
+import { deliveryComboMultiplier } from '../sim/model';
 
 export interface ComboBadgeProps {
   combo: number;
+  /** 安定中は、実出荷と同じコンボ上限を倍率表示へ反映する。 */
+  stabilized?: boolean;
 }
 
 /** これ未満のコンボは表示しない（チラつき防止）。 */
 const SHOW_FROM = 2;
 
-export function ComboBadge({ combo }: ComboBadgeProps) {
+export function ComboBadge({ combo, stabilized = false }: ComboBadgeProps) {
   const visible = combo >= SHOW_FROM;
-  const mult = comboMultiplier(combo);
+  const mult = deliveryComboMultiplier(combo, stabilized);
   return (
     <div className="combo-badge" data-testid="combo" data-combo={combo}>
       <AnimatePresence>

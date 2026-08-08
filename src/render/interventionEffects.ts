@@ -5,7 +5,7 @@
  * シミュレーション層は触らず、描画専用（第22.2）。座標は fireEffects と同様に
  * 設計空間 1404×573 を使う。
  */
-import { ANDON_TICKS, OVERTIME_TICKS, THROTTLE_TICKS } from '../sim/actions';
+import { ANDON_TICKS, OVERTIME_TICKS, STABILITY_TICKS, THROTTLE_TICKS } from '../sim/actions';
 import type {
   InterventionEffect,
   InterventionModifierKind,
@@ -54,6 +54,7 @@ const MODIFIER_TOTALS: Record<InterventionModifierKind, number> = {
   throttle: THROTTLE_TICKS,
   overtime: OVERTIME_TICKS,
   andon: ANDON_TICKS,
+  stability: STABILITY_TICKS,
 };
 
 /** 設計 px → 盤面内の % 文字列。Board / FireEffects と同式。 */
@@ -238,6 +239,7 @@ export function deriveActiveBoardAuras(
     { kind: 'throttle', until: modifiers.throttleUntilTick, total: THROTTLE_TICKS },
     { kind: 'overtime', until: modifiers.overtimeUntilTick, total: OVERTIME_TICKS },
     { kind: 'andon', until: modifiers.andonUntilTick, total: ANDON_TICKS },
+    { kind: 'stability', until: modifiers.stabilityUntilTick, total: STABILITY_TICKS },
   ];
   return entries.flatMap(({ kind, until, total }) => {
     const remainingTicks = Math.max(0, until - sprintTick);

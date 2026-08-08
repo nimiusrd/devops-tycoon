@@ -67,11 +67,19 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
   });
 
   it('RI-32: ボス突破時に未所持レリックを決定論的に1つ獲得する', () => {
+    // CI での探索時間を抑えるため、現行バランスで突破を確認済みの seed を先に試す。
+    // 将来のバランス調整で突破できなくなった場合も、既存の探索で報酬契約を検証する。
+    const knownWinningSeed = 'ri32-boss-reward-13';
+    const candidateSeeds = [
+      knownWinningSeed,
+      ...Array.from({ length: 30 }, (_, i) => `ri32-boss-reward-${i}`).filter(
+        (seed) => seed !== knownWinningSeed,
+      ),
+    ];
     let winningSeed: string | undefined;
     let state: RunState | undefined;
 
-    for (let i = 0; i < 30; i += 1) {
-      const seed = `ri32-boss-reward-${i}`;
+    for (const seed of candidateSeeds) {
       const engine = new RunEngine({ seed, difficulty: 'easy' });
       engine.startRun();
       const snapshot = playUntil(engine, 'quarterReview', { skilled: true });

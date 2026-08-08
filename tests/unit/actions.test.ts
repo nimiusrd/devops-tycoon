@@ -12,9 +12,17 @@ import {
   OVERTIME_TICKS,
   PAIR_LITERACY_GAIN,
   PAIR_REVIEW_COUNT,
+  STABILITY_TICKS,
   THROTTLE_TICKS,
 } from '../../src/sim/actions';
+import {
+  deliveryComboMultiplier,
+  STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
+  STABILITY_HIGH_VALUE_MUL,
+  taskValue,
+} from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
+import { createSprint, resolveSprintConfig, reviewOne, stepSprint } from '../../src/sim/sprint';
 import { createEngine, type Engine } from '../../src/sim/engine';
 import type {
   ActionId,
@@ -220,14 +228,143 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(sprint.metrics.focusSpent).toBe(focusSpent0 + def.cost);
       expect(sprint.metrics.actionCounts[id]).toBe(actionCount0 + 1);
       expect(sprint.comboGauge).toBeCloseTo(gauge0 + def.gauge, 5);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(
+        def.stabilizesFlow ? TICK + STABILITY_TICKS : 0,
+      );
       fixture.assertEffect({ sprint, org, before });
     });
+  });
+
+  it('安全側の介入で作る運用安定は、Review の手戻りを抑える', () => {
+    const riskyOrg = () => ({
+      ...createOrgState('default', true),
+      aiDependency: 90,
+      aiLiteracy: 10,
+      quality: 20,
+    });
+    const riskyTask = () => makeTask(0, { aiAssisted: true });
+    // 1回目は炎上を外す。2回目の 0.165 は素の手戻り率（0.392）では発生し、
+    // 安定時の0.4倍（0.1568）では通過する。0.45倍以上へ戻すと回帰する境界値。
+    const boundaryRng = (() => {
+      const values = [0.99, 0.165];
+      return () => values.shift() ?? 0.99;
+    })();
+
+    const unstableOrg = riskyOrg();
+    const unstable = makeSprint(unstableOrg, [riskyTask()]);
+    reviewOne(unstable.tasks[0], unstable, unstableOrg, boundaryRng, TICK);
+    expect(unstable.tasks[0].lane).toBe('rework');
+
+    const stableOrg = riskyOrg();
+    const stable = makeSprint(stableOrg, [riskyTask()]);
+    stable.modifiers.stabilityUntilTick = TICK + 1;
+    reviewOne(
+      stable.tasks[0],
+      stable,
+      stableOrg,
+      (() => {
+        const values = [0.99, 0.165];
+        return () => values.shift() ?? 0.99;
+      })(),
+      TICK,
+    );
+    expect(stable.tasks[0].lane).toBe('done');
+    expect(stable.tasks[0].incident).toBe(false);
+  });
+
+  it('安全側の介入で作る運用安定は、燃え尽き時の延焼を防ぐ', () => {
+    const org = createOrgState('default', true);
+    org.seniorHp = 0;
+    const sprint = makeSprint(org, [burningTask(0, 1)]);
+    sprint.modifiers.stabilityUntilTick = TICK + 1;
+
+    stepSprint(sprint, org, rng, TICK);
+
+    expect(sprint.tasks[0].incident).toBe(false);
+    expect(sprint.tasks[0].lane).toBe('rework');
+    expect(sprint.metrics.contained).toBe(1);
+    expect(sprint.metrics.autoContainCount).toBe(1);
+    expect(sprint.metrics.spread).toBe(0);
+  });
+
+  it('安全側の介入で作る運用安定は、連続出荷ボーナスの計上を抑える', () => {
+    const stableOrg = createOrgState('default', true);
+    const stable = makeSprint(stableOrg, [makeTask(0, { kind: 'complex', highValue: true })]);
+    stable.metrics.combo = STABILITY_HIGH_VALUE_COMBO_THRESHOLD;
+    stable.metrics.maxCombo = STABILITY_HIGH_VALUE_COMBO_THRESHOLD;
+    stable.modifiers.stabilityUntilTick = TICK + 1;
+
+    const unstableOrg = createOrgState('default', true);
+    const unstable = makeSprint(unstableOrg, [makeTask(0, { kind: 'complex', highValue: true })]);
+    unstable.metrics.combo = STABILITY_HIGH_VALUE_COMBO_THRESHOLD;
+    unstable.metrics.maxCombo = STABILITY_HIGH_VALUE_COMBO_THRESHOLD;
+
+    reviewOne(stable.tasks[0], stable, stableOrg, rng, TICK);
+    reviewOne(unstable.tasks[0], unstable, unstableOrg, rng, TICK);
+
+    expect(stable.metrics.combo).toBe(STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1);
+    expect(stable.metrics.maxCombo).toBe(STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1);
+    expect(stable.metrics.delivered).toBe(
+      Math.round(
+        taskValue(stable.tasks[0]) *
+          STABILITY_HIGH_VALUE_MUL *
+          deliveryComboMultiplier(stable.metrics.combo, true),
+      ),
+    );
+    expect(stable.metrics.delivered).toBeLessThan(unstable.metrics.delivered);
+  });
+
+  it.each(['interruptReview', 'pairReview'] as const)(
+    '%s の即時 Review にも運用安定を適用する',
+    (actionId) => {
+      const org = {
+        ...createOrgState('default', true),
+        aiDependency: 90,
+        aiLiteracy: 10,
+        quality: 20,
+      };
+      const sprint = makeSprint(org, [makeTask(0, { aiAssisted: true })]);
+      const boundaryRng = (() => {
+        const values = [0.99, 0.35];
+        return () => values.shift() ?? 0.99;
+      })();
+
+      const outcome = applyAction(actionId, sprint, org, boundaryRng, TICK);
+
+      expect(outcome.ok).toBe(true);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+      expect(sprint.tasks[0].lane).toBe('done');
+      expect(sprint.tasks[0].incident).toBe(false);
+    },
+  );
+
+  it('運用安定は完了時に出荷を直接加算しない', () => {
+    const org = createOrgState('default', true);
+    const sprint = createSprint(
+      resolveSprintConfig('default', { taskCount: 4, minCompleteTick: 2 }),
+      org,
+      rng,
+    );
+    sprint.tasks = Array.from({ length: 4 }, (_, id) => makeTask(id, { lane: 'done' }));
+    sprint.metrics.delivered = 20;
+    sprint.modifiers.stabilityUntilTick = 3;
+    const deliveryBefore = org.deliveryScore;
+
+    stepSprint(sprint, org, rng, 1);
+    expect(sprint.complete).toBe(false);
+    expect(sprint.metrics.delivered).toBe(20);
+
+    stepSprint(sprint, org, rng, 2);
+    expect(sprint.complete).toBe(true);
+    expect(sprint.metrics.delivered).toBe(20);
+    expect(org.deliveryScore).toBe(deliveryBefore);
   });
 
   describe('失敗理由の共通契約', () => {
     it.each(NO_TARGET_CASES)('$id は対象なしで no-target（コスト不消費）', ({ id, tasks }) => {
       const org = createOrgState('default', true);
       const sprint = makeSprint(org, tasks);
+      sprint.modifiers.stabilityUntilTick = TICK + 7;
       const focus0 = sprint.focus;
 
       const outcome = applyAction(id, sprint, org, rng, TICK);
@@ -236,6 +373,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(outcome.effect).toBeUndefined();
       expect(sprint.focus).toBe(focus0);
       expect(sprint.metrics.interventionsUsed).toBe(0);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + 7);
     });
 
     it('クールダウン中は cooldown で失敗し集中力は減らない', () => {

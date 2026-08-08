@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ACTION_DEFS } from '../../src/data/actions';
 import { ANDON_TICKS, applyAction, OVERTIME_TICKS, THROTTLE_TICKS } from '../../src/sim/actions';
-import { BURN_TICKS } from '../../src/sim/model';
+import { BURN_TICKS, STABILITY_TICKS } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import type { InterventionEffect, OrgState, SprintState, Task } from '../../src/sim/types';
 import {
@@ -160,12 +160,18 @@ describe('interventionEffects (RI-50)', () => {
 
   it('deriveActiveBoardAuras は sprintTick から残り tick を導出する', () => {
     const auras = deriveActiveBoardAuras(
-      { throttleUntilTick: 70, overtimeUntilTick: 0, andonUntilTick: 55 },
+      {
+        throttleUntilTick: 70,
+        overtimeUntilTick: 0,
+        andonUntilTick: 55,
+        stabilityUntilTick: 132,
+      },
       42,
     );
     expect(auras).toEqual([
       { kind: 'throttle', remainingTicks: 28, totalTicks: THROTTLE_TICKS },
       { kind: 'andon', remainingTicks: 13, totalTicks: ANDON_TICKS },
+      { kind: 'stability', remainingTicks: 90, totalTicks: STABILITY_TICKS },
     ]);
   });
 });

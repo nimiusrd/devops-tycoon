@@ -6,6 +6,7 @@
  * からのみ消費する（決定論。第22.3）。入力はイベント経由で受け取る。
  */
 import { getAction } from '../data/actions';
+import { STABILITY_TICKS } from './model';
 import {
   applyAssignTaskEffect,
   canApplyAssignTaskTarget,
@@ -26,6 +27,7 @@ import type {
 } from './types';
 
 export { ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from './assignTask';
+export { STABILITY_TICKS } from './model';
 
 /** `canApplyAction` / `applyAction` が共有する失敗理由。 */
 export type ActionGateReason = 'complete' | 'cooldown' | 'no-focus' | 'no-target';
@@ -53,6 +55,8 @@ export interface ActionDef {
   cooldownTicks: number;
   /** 成功時に得る連携ゲージ量（0..1）。 */
   gauge: number;
+  /** 安全側の介入なら、短時間の運用安定を作る（RI-84 / F-5）。 */
+  stabilizesFlow?: boolean;
   description: string;
   sideEffect: string;
   /** 見た目分類（危険＝赤 / 重い）。 */
@@ -311,8 +315,16 @@ export function applyAction(
   if (!gate.ok) return { ok: false, reason: gate.reason };
 
   const def = getAction(id)!;
+  const stabilityUntilTick = sprint.modifiers.stabilityUntilTick;
+  if (def.stabilizesFlow) {
+    // 割り込み／ペアレビューがこの場で reviewOne を呼んでも、安定化を適用する。
+    sprint.modifiers.stabilityUntilTick = tick + STABILITY_TICKS;
+  }
   const partial = EFFECTS[id](sprint, org, rng, tick, target);
-  if (!partial) return { ok: false, reason: 'no-target' };
+  if (!partial) {
+    sprint.modifiers.stabilityUntilTick = stabilityUntilTick;
+    return { ok: false, reason: 'no-target' };
+  }
 
   sprint.focus -= def.cost;
   sprint.cooldowns[id] = def.cooldownTicks;

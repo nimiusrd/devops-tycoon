@@ -7,6 +7,15 @@ import { COMPANY_LEVERS } from '../../src/data/levers';
 import { getRelic } from '../../src/data/relics';
 import { getAction } from '../../src/data/actions';
 import {
+  COMBO_BONUS_PER,
+  STABILITY_COMBO_CAP,
+  STABILITY_COMBO_TAIL_MUL,
+  STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
+  STABILITY_HIGH_VALUE_MUL,
+  STABILITY_REWORK_MUL,
+  STABILITY_TICKS,
+} from '../../src/sim/model';
+import {
   formatActionDefTags,
   formatCardDefTags,
   formatCardEffectsTags,
@@ -341,6 +350,17 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
   it('割り込みレビューの効果量と副作用をタグ化する', () => {
     const def = getAction('interruptReview')!;
     expect(formatActionDefTags(def)).toEqual([
+      { label: `運用安定 ${STABILITY_TICKS}tick`, tone: 'positive' },
+      { label: `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, tone: 'positive' },
+      {
+        label: `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
+        tone: 'neutral',
+      },
+      { label: '安定中 燃え尽き時の延焼を停止', tone: 'positive' },
+      {
+        label: `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
+        tone: 'neutral',
+      },
       { label: 'Review 最大4件処理', tone: 'positive' },
       { label: 'シニアHP -3', tone: 'negative' },
       { label: '連携 +34%', tone: 'positive' },

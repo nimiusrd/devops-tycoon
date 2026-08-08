@@ -2,6 +2,7 @@ import { deleteDB } from 'idb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../src/game';
 import { createRunEngine } from '../../src/sim/run/engine';
+import { MIN_ADJUSTED_QUARTER_DELIVERY_TARGET } from '../../src/sim/run/quarterReview';
 import { openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from '../../src/state/gameDb';
 import {
   IndexedDbRunStorage,
@@ -131,6 +132,97 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         schemaVersion: 3,
       }),
     ).toBeNull();
+  });
+
+  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して v5 として復元する', () => {
+    const valid = makeRunSave('ri84-v4-goal-migration');
+    const legacyDeliveryTarget = 1950;
+    const parsed = parseRunSave({
+      ...valid,
+      schemaVersion: 4,
+      state: {
+        ...valid.state,
+        difficulty: 'normal',
+        quarterGoal: {
+          ...valid.state.quarterGoal,
+          deliveryTarget: legacyDeliveryTarget,
+        },
+      },
+      summary: { ...valid.summary, difficulty: 'normal' },
+    });
+
+    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
+      Math.round((legacyDeliveryTarget * 1.8) / 1.95),
+    );
+  });
+
+  it('RI-84: v4 の quarterReview は移行後の目標から再構築する', () => {
+    const valid = makeRunSave('ri84-v4-review-migration');
+    const parsed = parseRunSave({
+      ...valid,
+      schemaVersion: 4,
+      summary: { ...valid.summary, difficulty: 'normal', phase: 'quarterReview' },
+      state: {
+        ...valid.state,
+        difficulty: 'normal',
+        phase: 'quarterReview',
+        org: { ...valid.state.org, quality: 99 },
+        quarterTotals: {
+          ...valid.state.quarterTotals,
+          delivered: 1260,
+          completed: 2,
+          rework: 1,
+        },
+        extras: {
+          ...valid.state.extras,
+          teams: valid.state.extras.teams?.map((team) => ({
+            ...team,
+            aiDependency: 40,
+            quality: 99,
+          })),
+          winEvalOrg: { ...valid.state.org, aiDependency: 90 },
+        },
+        quarterGoal: { ...valid.state.quarterGoal, deliveryTarget: 1260 },
+        quarterReview: {
+          goal: { ...valid.state.quarterGoal, deliveryTarget: 1260 },
+          outcome: 'met',
+          trust: { ...valid.state.stakeholderTrust },
+          progress: [
+            {
+              id: 'delivery',
+              label: 'Delivery（四半期累計）',
+              target: 1260,
+              actual: 1260,
+              status: 'met',
+            },
+            { id: 'quality', label: 'Quality', target: 45, actual: 40, status: 'missed' },
+            { id: 'techDebt', label: 'Tech Debt', target: 55, actual: 40, status: 'met' },
+            { id: 'morale', label: 'Morale', target: 40, actual: 50, status: 'met' },
+            { id: 'incident', label: 'Incident', target: 6, actual: 1, status: 'met' },
+          ],
+          missedReasons: [],
+          availableAdjustments: [],
+          bossCleared: true,
+        },
+      },
+    });
+
+    const review = parsed?.state.quarterReview;
+    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET);
+    expect(review?.goal.deliveryTarget).toBe(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET);
+    expect(review?.progress.length).toBeGreaterThan(0);
+    expect(review?.progress.find((item) => item.id === 'delivery')?.target).toBe(
+      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+    );
+    expect(review?.progress.find((item) => item.id === 'quality')).toMatchObject({
+      actual: 40,
+      status: 'missed',
+    });
+    expect(review?.missedReasons).not.toContain(
+      'AI 過信: AI 利用率は高いが手戻り・品質が追いついていない。',
+    );
+    expect(review?.outcome).not.toBe('met');
   });
 
   it('現行スキーマのセーブは不足 replayKeyframes を空配列に正規化する', () => {

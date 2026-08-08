@@ -3,6 +3,7 @@ import type { Member, RosterState } from '../../src/sim/member/types';
 import { createOrgState } from '../../src/sim/org';
 import {
   BOSS_MAX_TICKS,
+  BOSS_MIN_COMPLETE_TICK,
   buildSprintBaselineInput,
   type SprintBaselineBuildContext,
 } from '../../src/sim/run/sprintBaselineBuild';
@@ -105,6 +106,15 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(normal.cardEffects.incidentRateMul).toBe(1);
     expect(incidentBoss.cardEffects.incidentRateMul).toBe(1.1);
   });
+
+  it.each(['easy', 'normal', 'hard', 'nightmare'] as const)(
+    '%s のボスは最短90秒の完了下限を使う',
+    (difficulty) => {
+      const boss = build({ kind: 'boss', ctx: { difficulty } });
+
+      expect(boss.config.minCompleteTick).toBe(BOSS_MIN_COMPLETE_TICK);
+    },
+  );
 
   it('一時 modifier の差分でタスク量・集中力・手戻り・初期レビュー負荷が変わる', () => {
     const unchanged = build();

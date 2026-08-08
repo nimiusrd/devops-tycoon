@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { COMBO_BONUS_CAP, comboMultiplier } from '../../src/sim/model';
+import {
+  COMBO_BONUS_CAP,
+  STABILITY_COMBO_CAP,
+  STABILITY_COMBO_TAIL_MUL,
+  comboMultiplier,
+  deliveryComboMultiplier,
+} from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import { createSprint, resolveSprintConfig, reviewOne } from '../../src/sim/sprint';
 import type { Task } from '../../src/sim/types';
@@ -26,6 +32,17 @@ describe('comboMultiplier（第6.2）', () => {
 
   it('上限で頭打ちになる', () => {
     expect(comboMultiplier(1000)).toBeCloseTo(1 + COMBO_BONUS_CAP);
+  });
+
+  it('運用安定中は基準段数を揃え、上限超過分だけ上振れを残す', () => {
+    const combo = STABILITY_COMBO_CAP + 1;
+    const cap = comboMultiplier(STABILITY_COMBO_CAP);
+    const raw = comboMultiplier(combo);
+
+    expect(deliveryComboMultiplier(combo, true)).toBeCloseTo(
+      cap + (raw - cap) * STABILITY_COMBO_TAIL_MUL,
+    );
+    expect(deliveryComboMultiplier(combo, false)).toBe(comboMultiplier(combo));
   });
 });
 

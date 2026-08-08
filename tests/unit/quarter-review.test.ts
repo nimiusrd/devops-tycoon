@@ -771,8 +771,9 @@ describe('四半期レビュー（Phase 8）', () => {
     const major = buildQuarterGoal(getBoss('major-incident')!, 'normal', 1);
     // 旧式（ボス床×6）だと 2700/1200=2.25 倍。通常5+ボス1なら差は小さくなる。
     expect(big.deliveryTarget / major.deliveryTarget).toBeLessThan(1.3);
-    expect(big.deliveryTarget).toBe(3803);
-    expect(major.deliveryTarget).toBe(3315);
+    // RI-84: 安定中の高価値上振れ抑制後の目標再校正値。
+    expect(big.deliveryTarget).toBe(3510);
+    expect(major.deliveryTarget).toBe(3060);
   });
 
   it('RI-68: cut_scope 後も Delivery 目標が四半期実績帯から大きく外れない', () => {
@@ -903,13 +904,14 @@ describe('四半期レビュー（Phase 8）', () => {
     );
   });
 
-  it('RI-68: easy/normal/hard で Delivery の達成と未達が分岐する', { timeout: 60_000 }, () => {
+  it('RI-68: 難易度に応じて Delivery の達成・未達が分岐する', { timeout: 60_000 }, () => {
     // RI-75: Delivery 目標再校正後に達成・未達の両方がある seed を難易度別に固定する。
     const seedsByDifficulty: Record<'easy' | 'normal' | 'hard', readonly number[]> = {
-      // RI-75: 介入 CD 再調整後も達成/未達が両立する probe seed を固定する。
-      easy: [2, 14, 20, 39, 100],
-      normal: [10, 14, 23, 28, 35, 39],
-      hard: [22, 39, 40, 51, 54, 68],
+      // RI-84: 安定化の再校正後も、到達・達成・未達を含む固定 seed を使う。
+      easy: [103, 14, 20, 39, 100, 380],
+      normal: [10, 14, 238, 28, 35, 39],
+      // RI-84: 手戻り抑制0.4倍後も、到達・達成・未達が共存する固定 probe を使う。
+      hard: [20, 113, 74, 93, 97, 120],
     };
     const meanRatioByDifficulty: Record<'easy' | 'normal' | 'hard', number> = {
       easy: 0,

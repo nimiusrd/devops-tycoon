@@ -24,10 +24,20 @@ import {
   PAIR_LITERACY_GAIN,
   PAIR_REVIEW_COUNT,
   SPLIT_PROGRESS_PENALTY,
+  STABILITY_TICKS,
   THROTTLE_TICKS,
   type ActionDef,
 } from '../sim/actions';
-import { OVERTIME_CODING_MUL, OVERTIME_REVIEW_MUL } from '../sim/model/process';
+import {
+  COMBO_BONUS_PER,
+  OVERTIME_CODING_MUL,
+  OVERTIME_REVIEW_MUL,
+  STABILITY_COMBO_CAP,
+  STABILITY_COMBO_TAIL_MUL,
+  STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
+  STABILITY_HIGH_VALUE_MUL,
+  STABILITY_REWORK_MUL,
+} from '../sim/model/process';
 import {
   PAUSE_AI_DEBUFF_MUL,
   REORG_RESET_SENIOR_HP,
@@ -595,6 +605,22 @@ export function formatGoalAdjustmentTags(
 /** 介入アクション定義から効果タグ一覧を生成する（RI-45）。 */
 export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
+
+  if (def.stabilizesFlow) {
+    pushTag(tags, `運用安定 ${STABILITY_TICKS}tick`, 'positive');
+    pushTag(tags, `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, 'positive');
+    pushTag(
+      tags,
+      `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
+      'neutral',
+    );
+    pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
+    pushTag(
+      tags,
+      `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
+      'neutral',
+    );
+  }
 
   switch (def.id) {
     case 'interruptReview':

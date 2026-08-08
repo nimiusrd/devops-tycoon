@@ -20,8 +20,11 @@ import {
   REVIEW_HP_COST,
   REVIEW_HP_REGEN,
   SPREAD_MORALE_COST,
+  STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
+  STABILITY_HIGH_VALUE_MUL,
+  STABILITY_REWORK_MUL,
   codingProgressPerTick,
-  comboMultiplier,
+  deliveryComboMultiplier,
   decideAiAssisted,
   incidentProbability,
   reviewPerTick,
@@ -136,7 +139,12 @@ export function createSprint(
     complete: false,
     focus: config.focusMax,
     cooldowns: {},
-    modifiers: { andonUntilTick: 0, overtimeUntilTick: 0, throttleUntilTick: 0 },
+    modifiers: {
+      andonUntilTick: 0,
+      overtimeUntilTick: 0,
+      throttleUntilTick: 0,
+      stabilityUntilTick: 0,
+    },
     comboGauge: 0,
     cardEffects,
     cardPiles: { drawOrder: [], hand: [], discard: [], played: [] },
@@ -173,6 +181,14 @@ function countLane(tasks: Task[], lane: Lane): number {
 /** 残業号令が発動中か。 */
 function isOvertime(sprint: SprintState, tick: number): boolean {
   return tick < sprint.modifiers.overtimeUntilTick;
+}
+
+/**
+ * 介入後の短い安定期間か。安全側の介入だけが作るため、残業号令のような
+ * 速度優先の手では乱数の下振れを打ち消さない。
+ */
+function isStabilized(sprint: SprintState, tick: number | undefined): boolean {
+  return tick !== undefined && tick < sprint.modifiers.stabilityUntilTick;
 }
 
 /**
@@ -253,6 +269,8 @@ export function reviewOne(
   org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST, 0, 100);
 
   // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。
+  const stabilized = isStabilized(sprint, tick);
+  const reworkMul = stabilized ? STABILITY_REWORK_MUL : 1;
   if (rng() < incidentProbability(org, task, sprint.cardEffects)) {
     igniteTask(task, sprint, tick, 'review');
     return;
@@ -261,7 +279,7 @@ export function reviewOne(
   // 2) 手戻り判定（AI依存度が高いほど増える。第22.5 の不変条件）
   if (
     task.reworkAttempts < MAX_REWORK &&
-    rng() < reworkProbability(org, task, sprint.cardEffects)
+    rng() < reworkProbability(org, task, sprint.cardEffects) * reworkMul
   ) {
     m.reworkCount += 1;
     m.combo = 0;
@@ -287,7 +305,16 @@ export function reviewOne(
   m.completedCount += 1;
   m.combo += 1;
   if (m.combo > m.maxCombo) m.maxCombo = m.combo;
-  const value = Math.round(taskValue(task) * comboMultiplier(m.combo));
+  // 安定運用は大きな連続出荷ボーナスを積み上げず、着実な流れを選ぶ。
+  // コンボ自体は維持し、出荷の上乗せだけを抑えることで安全側の介入が
+  // スコアの上振れを増やすだけにならないようにする。
+  const stableValue = stabilized
+    ? taskValue(task) *
+      (task.highValue && m.combo > STABILITY_HIGH_VALUE_COMBO_THRESHOLD
+        ? STABILITY_HIGH_VALUE_MUL
+        : 1)
+    : taskValue(task);
+  const value = Math.round(stableValue * deliveryComboMultiplier(m.combo, stabilized));
   m.delivered += value;
   org.deliveryScore += value;
   if (task.aiAssisted) m.aiAssistedCompleted += 1;
@@ -350,8 +377,11 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
   for (const task of expired) {
     task.incident = false;
     delete task.burnTicksLeft;
+    const stabilized = isStabilized(sprint, tick);
     m.combo = 0;
-    if (org.seniorHp >= INCIDENT_CONTAIN_HP) {
+    // 安定中は既知の復旧手順で延焼を止める。炎上時間と通常の手戻りは残すため、
+    // 出荷を直接増やさずに下振れの連鎖だけを抑える。
+    if (org.seniorHp >= INCIDENT_CONTAIN_HP || stabilized) {
       // 自動鎮火: シニアが総出で消す。緊急対応より大幅に高くつく受動対応。
       m.contained += 1;
       m.autoContainCount += 1;
@@ -433,6 +463,11 @@ function isStalled(sprint: SprintState): boolean {
   );
 }
 
+function completeDrainedSprint(sprint: SprintState): void {
+  if (sprint.complete) return;
+  sprint.complete = true;
+}
+
 /**
  * stalled / maxTicks 到達時、未完了タスクを盤面から畳む。
  * 出荷・完了数は計上しない（未着手のまま畳む／時間切れの水増しを防ぐ。RI-75）。
@@ -468,7 +503,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   // RI-75: 早期ドレイン後の下限待ちでは盤面副作用を止める（HP回復・工程進行など）。
   if (isDrained(sprint)) {
     const minTick = sprint.config.minCompleteTick ?? 0;
-    if (tick >= minTick) sprint.complete = true;
+    if (tick >= minTick) completeDrainedSprint(sprint);
     appendTimelineSample(sprint, org, tick);
     return;
   }
@@ -508,7 +543,7 @@ export function stepSprint(sprint: SprintState, org: OrgState, rng: Rng, tick: n
   if (isDrained(sprint)) {
     // RI-75: 早期ドレインでも §3.1 絶対下限（表示 tick）を下回らないよう待機する。
     const minTick = sprint.config.minCompleteTick ?? 0;
-    if (tick >= minTick) sprint.complete = true;
+    if (tick >= minTick) completeDrainedSprint(sprint);
   } else if (tick >= sprint.config.maxTicks) {
     // RI-75: 時間切れは出荷なしで畳み、打ち切り印を付けてボス突破を失敗させる。
     abandonInFlight(sprint, tick);

@@ -41,15 +41,15 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 
 ### RI-64 独立状態を持つ複数チーム運営
 
-完了。各チームは `TeamRunState` として永続し、非選択は粗粒度 sim・選択中は詳細スプリント、全社／部署／チーム施策と入り込みコスト、任意チームへのドリルダウン、保存／リプレイを接続した。詳細はGit履歴と `tests/unit/runEngineOrgscale.test.ts` / `tests/e2e/org-scale.spec.ts` を参照。
+完了。各チームは `TeamRunState` として永続し、非選択は粗粒度 sim・選択中は詳細スプリント、全社／部署／チーム施策と入り込みコスト、任意チームへのドリルダウン、保存／リプレイを接続した。詳細はGit履歴と `tests/unit/sim/runEngineOrgscale.test.ts` / `tests/e2e/org-scale.spec.ts` を参照。
 
 ### RI-67 オンボーディングとシニア燃え尽きの断絶
 
-完了。チュートリアルにシニア体力ステップを追加し、緊急対応を燃え尽き回避の主手段として導く。遊び方ヘルプと HUD（help・危険時チップ）も同期。sim 定数は変更せず、Easy・`review-hell` で緊急対応あり方針が2スプリント以内に `seniorBurnout` しないことをユニットテストで固定。詳細は Git 履歴と `tests/unit/seniorBurnoutOnboarding.test.ts` / `tests/e2e/tutorial.spec.ts` を参照。
+完了。チュートリアルにシニア体力ステップを追加し、緊急対応を燃え尽き回避の主手段として導く。遊び方ヘルプと HUD（help・危険時チップ）も同期。sim 定数は変更せず、Easy・`review-hell` で緊急対応あり方針が2スプリント以内に `seniorBurnout` しないことをユニットテストで固定。詳細は Git 履歴と `tests/unit/scenarios/seniorBurnoutOnboarding.test.ts` / `tests/e2e/tutorial.spec.ts` を参照。
 
 ### RI-68 四半期レビュー Delivery KPI のスケール不整合
 
-完了。`deliveryTarget` を四半期累計スケール（`SPRINTS_PER_QUARTER × QUARTER_DELIVERY_THROUGHPUT_MUL`）へ拡げ、`quarterTotals.delivered` と同単位で比較するようにした。目標修正の `deliveryAdd`・下限、UI ラベル「Delivery（四半期累計）」、代表 seed 分布テストも更新。詳細は Git 履歴と `tests/unit/quarterReview.test.ts` を参照。
+完了。`deliveryTarget` を四半期累計スケール（`SPRINTS_PER_QUARTER × QUARTER_DELIVERY_THROUGHPUT_MUL`）へ拡げ、`quarterTotals.delivered` と同単位で比較するようにした。目標修正の `deliveryAdd`・下限、UI ラベル「Delivery（四半期累計）」、代表 seed 分布テストも更新。詳細は Git 履歴と `tests/unit/sim/quarterReview.test.ts` を参照。
 
 ### RI-69 スプリント上部操作バーと盤面の重なり
 
@@ -102,7 +102,7 @@ F-1 の違反は2方向にある。**緊急対応単独（`onlyFirefight`）1/40
 
 ### RI-74 Nightmare は AI 依存を意識しない方針で第1スプリント敗北が確定する
 
-完了。Nightmare 初期依存度を下げ、難易度限定の `aiDependencyPerTask` で S1 即死を解消。既存回避手段（`pairReview` / `ai-guideline` / AI 系レバー）の効果量を強化し、チュートリアル・遊び方・敗北 nextAction・HUD 予兆で発見性を補強。詳細は Git 履歴と `tests/unit/aiDependencyPace.test.ts` を参照。
+完了。Nightmare 初期依存度を下げ、難易度限定の `aiDependencyPerTask` で S1 即死を解消。既存回避手段（`pairReview` / `ai-guideline` / AI 系レバー）の効果量を強化し、チュートリアル・遊び方・敗北 nextAction・HUD 予兆で発見性を補強。詳細は Git 履歴と `tests/unit/scenarios/aiDependencyPace.test.ts` を参照。
 
 ### RI-75 スプリントが規定帯をほぼ全面的に下回る
 
@@ -182,23 +182,23 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 ### RI-82 敗北画面に「次の一手」が無い
 
-完了。`LoseReason` ごとの次の一手と現場示唆を `loseNextActionView` で返し、敗北時の `RunResultScreen` に常時表示する。失敗図鑑の診断由来教訓とは役割分担のまま。詳細は Git 履歴と `tests/unit/loseNextActionView.test.ts` / `tests/e2e/run.spec.ts` を参照。
+完了。`LoseReason` ごとの次の一手と現場示唆を `loseNextActionView` で返し、敗北時の `RunResultScreen` に常時表示する。失敗図鑑の診断由来教訓とは役割分担のまま。詳細は Git 履歴と `tests/unit/render/loseNextActionView.test.ts` / `tests/e2e/run.spec.ts` を参照。
 
 ### RI-83 目標修正の選択が結果を変えない
 
 完了。各目標修正に次四半期だけ効く物理キャリーオーバー（`nextQuarterEffects` / `goalCarryover*`）を追加し、出荷・レビュー・障害率に加え Tech Debt / シニア HP のスプリント継続差分で選択差を分岐させた。RunBar に持ち越しチップ、選択タグに「次四半期 …」を表示。旧 `pauseAiDebuffQuarter` セーブは `pause_ai_rollout` として互換復元する。
 
-再計測（adj* 7方針×各40ラン、共通コホート6組）の「初回修正の次四半期まで生存」は `quality_pivot` 50% / `extend_deadline`・`reorg_teams` 33.3% / `pause_ai_rollout` 16.7% / `cut_scope`・`request_budget`・`stakeholder_care` 0%（最大差50pt、3帯）。コホートの敗因は Tech Debt / シニア燃え尽きが中心で、負債削減・シニア回復を持つ選択が有利、出荷焦点や信頼ケアだけでは不利になる（F-1）。詳細は Git 履歴と `tests/unit/quarterReview.test.ts` / `sprintBaselineBuild.test.ts` / `status.test.ts` を参照。
+再計測（adj* 7方針×各40ラン、共通コホート6組）の「初回修正の次四半期まで生存」は `quality_pivot` 50% / `extend_deadline`・`reorg_teams` 33.3% / `pause_ai_rollout` 16.7% / `cut_scope`・`request_budget`・`stakeholder_care` 0%（最大差50pt、3帯）。コホートの敗因は Tech Debt / シニア燃え尽きが中心で、負債削減・シニア回復を持つ選択が有利、出荷焦点や信頼ケアだけでは不利になる（F-1）。詳細は Git 履歴と `tests/unit/sim/quarterReview.test.ts` / `sprintBaselineBuild.test.ts` / `status.test.ts` を参照。
 
 ### RI-84 条件を揃えると介入の寄与がほぼ消える
 
 完了。安全側の介入（残業号令を除く）に時限の「運用安定」（`stabilityUntilTick` / `STABILITY_TICKS=180`）を付与し、安定中は Review 手戻り率を `STABILITY_REWORK_MUL=0.4` へ抑え、燃え尽き時の延焼を封じ、高価値コンボの上振れを抑える。ActionBar に運用安定リング／チップ、効果タグで持続と倍率を表示。旧セーブの Delivery 倍率は復元時に現行へ移行する。
 
-機構と表示はユニット・E2E で固定（`tests/unit/actions.test.ts` / `combo.test.ts` / `eventOutcomeView.test.ts` / `tests/e2e/interventions.spec.ts`）。`playtest:report` の F-5 CV 比較も維持。コホート全体の勝率差は現行でもほぼ 0 勝帯のため RI-73 後の再計測が前提。詳細は Git 履歴（PR #239）を参照。
+機構と表示はユニット・E2E で固定（`tests/unit/sim/actions.test.ts` / `combo.test.ts` / `eventOutcomeView.test.ts` / `tests/e2e/interventions.spec.ts`）。`playtest:report` の F-5 CV 比較も維持。コホート全体の勝率差は現行でもほぼ 0 勝帯のため RI-73 後の再計測が前提。詳細は Git 履歴（PR #239）を参照。
 
 ### RI-85 レビュー凍結が選択不能な判定イベントでしか確定しない
 
-完了。`review-freeze` の即死 `forceLose` をやめ senior-burnout 型の soft judgment にし、スプリント中の HUD に `reviewFreezeHudCopy`（凍結注意 / PR凍結危険）を追加した。決着は以後のスプリント対処 / ピーク経路へ委ね、即死 judgment 100% の状態を解消。詳細は Git 履歴と `tests/unit/reviewFreeze.test.ts` / `tests/e2e/run.spec.ts` を参照。
+完了。`review-freeze` の即死 `forceLose` をやめ senior-burnout 型の soft judgment にし、スプリント中の HUD に `reviewFreezeHudCopy`（凍結注意 / PR凍結危険）を追加した。決着は以後のスプリント対処 / ピーク経路へ委ね、即死 judgment 100% の状態を解消。詳細は Git 履歴と `tests/unit/scenarios/reviewFreeze.test.ts` / `tests/e2e/run.spec.ts` を参照。
 
 ### RI-86 Q1 で進化ツリーを取り切れてしまい、ビルドの方向という概念が成立しない
 

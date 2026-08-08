@@ -418,7 +418,7 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 | nightmare | 高負荷 | 8 | 61.6秒 | **帯内** | 50% | 12.5% | 0% |
 | nightmare | ボス | 12 | 127.9秒 | **帯内** | 16.7% | 0% | — |
 
-回帰は `tests/unit/sprintTempo.test.ts` の F-4 ハーネス検証（代表3方針 × `pt-1..10`）で固定。
+回帰は `tests/unit/ui/sprintTempo.test.ts` の F-4 ハーネス検証（代表3方針 × `pt-1..10`）で固定。
 
 ### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）
 
@@ -730,7 +730,7 @@ F-5 の定義（介入は期待値底上げではなく下振れ抑制）へ実�
 Review 手戻り率を `STABILITY_REWORK_MUL=0.4` へ抑え、燃え尽き時の延焼を封じ、高価値コンボの
 上振れを抑える。ActionBar に運用安定表示、効果タグで持続と倍率を出す。
 
-回帰は `tests/unit/actions.test.ts` / `combo.test.ts` / `eventOutcomeView.test.ts` と
+回帰は `tests/unit/sim/actions.test.ts` / `combo.test.ts` / `eventOutcomeView.test.ts` と
 E2E（`tests/e2e/interventions.spec.ts`）で固定。`playtest:report` の F-5 CV 比較も維持する。
 
 実装前コホートでは `noInterventionCtl` / `naive` / `skilledNoHire` がいずれも 0/40 で、
@@ -761,7 +761,7 @@ E2E（`tests/e2e/interventions.spec.ts`）で固定。`playtest:report` の F-5 
 | `aiDependency`（132件） | `sprint` 100% |
 | `reorgRequired`（4件） | `quarterReview` 100% |
 
-回帰は `tests/unit/reviewFreeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
+回帰は `tests/unit/scenarios/reviewFreeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
 
 ### RI-86 Q1 で進化ツリーを取り切れてしまい、ビルドの方向という概念が成立しない（優先度: 中 / F-11）— 進行中
 
@@ -1125,7 +1125,7 @@ F-4・勝率帯を守るコスト、culture/ai は中段から高くして横断
 
     ガードを撤去し、集計値は撤去前（=正しい値）へ戻した。上記の 382 / 34 などは
     **実在しない規則の下での値なので、どこにも残さない**。
-    再発防止に `tests/unit/dispatchDefersLose.test.ts` を置いた。この機構はレビューでも
+    再発防止に `tests/unit/sim/dispatchDefersLose.test.ts` を置いた。この機構はレビューでも
     2回続けて逆に判断されており（1回目は「即死するから見送れ」、2回目は「即死しない」）、
     コードを読むだけでは取り違えやすい。**実装の挙動を仮定でなく実行で確かめること。**
 85. **敗北直前の状態が「前スプリントの終了時点」だった** — スプリント終了と敗北の間には

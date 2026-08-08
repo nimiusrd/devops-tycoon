@@ -3,22 +3,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { createOrgState } from '../../src/sim/org';
-import type { RunTotals } from '../../src/sim/run/types';
 import { stateAwareEvolveBranches } from '../playtest/harness';
-
-const totals = (t: Partial<RunTotals> = {}): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
-  ...t,
-});
+import { totals } from './helpers/orgFixtures';
 
 const base = (over: Parameters<typeof stateAwareEvolveBranches>[0]) =>
   stateAwareEvolveBranches({ unlocked: [], ...over });

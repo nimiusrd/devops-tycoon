@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { applyEventOutcome } from '../../src/sim/run/events';
 import { canUnlock, isUnlocked, unlockNode } from '../../src/sim/run/evolution';
 import { foldPassives, foldRunEffects } from '../../src/sim/run/effects';
-import { createOrgState } from '../../src/sim/org';
 import { diagnose } from '../../src/sim/diagnosis';
 import {
   AI_DEPENDENCY_CAP,
@@ -15,24 +14,9 @@ import {
   TECH_DEBT_CAP,
 } from '../../src/sim/outcome';
 import { getBoss } from '../../src/data/bosses';
-import type { EvolutionState, RunTotals } from '../../src/sim/run/types';
-import type { OrgState, SprintResult } from '../../src/sim/types';
-
-const org = (o: Partial<OrgState> = {}): OrgState => ({ ...createOrgState('default', true), ...o });
-
-const totals = (t: Partial<RunTotals> = {}): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
-  ...t,
-});
+import type { EvolutionState } from '../../src/sim/run/types';
+import type { SprintResult } from '../../src/sim/types';
+import { org, totals } from './helpers/orgFixtures';
 
 describe('進化ツリーの解放（第11章）', () => {
   const fresh: EvolutionState = { points: 4, unlocked: {} };

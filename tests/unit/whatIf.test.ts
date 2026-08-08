@@ -38,6 +38,7 @@ const input: SprintBaselineInput = {
     routineSpeedMul: 1,
     reviewEfficiencyMul: 1,
     reviewCapacityMul: 1,
+    seniorHpCostMul: 1,
     reworkRateAdd: 0,
     incidentRateMul: 1,
     aiLiteracyAdd: 0,
@@ -501,12 +502,12 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
     const pressured = computeWhatIfState(directWhatIfInput())!;
 
     expect(pressured.current.trials).toBe(24);
-    // RI-75: elite を床の後に掛ける順序に合わせた golden（決定論）。
-    expect(pressured.current.delivered).toEqual({ mean: 656.75, min: 561, max: 782 });
+    // RI-73: normal seniorHpCostMul 後の golden（決定論）。
+    expect(pressured.current.delivered).toEqual({ mean: 665.4166666666666, min: 565, max: 785 });
     expect(pressured.current.spread).toEqual({
-      mean: 62.916666666666664,
-      min: 10,
-      max: 110,
+      mean: 33.125,
+      min: 0,
+      max: 95,
     });
     expect(pressured.current.delivered).not.toEqual(plain.current.delivered);
   });

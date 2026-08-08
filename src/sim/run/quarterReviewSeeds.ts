@@ -13,10 +13,11 @@
  * RI-81（初期カードプール拡張）後に再探索して更新。
  * RI-75（スプリント pacing / タスク量・床・minCompleteTick / abandonInFlight）後に再探索して更新。
  * RI-84（安定中の高価値上振れ抑制・Delivery目標再校正）後に再探索して更新。
+ * RI-73（easy/normal の seniorHpCostMul）後に missed_adjustable seed を再探索して更新。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
-export const E2E_MISSED_ADJUSTABLE_SEED = 'ri75h-ma-169';
+export const E2E_MISSED_ADJUSTABLE_SEED = 'ri73-ma-128';
 
 /**
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。

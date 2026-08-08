@@ -5,7 +5,7 @@
  * チーム間依存（連鎖炎上）をフロー矢印で返す。純 TS → Vitest 検証（第22.5）。
  */
 import type { DepartmentState, Team, TeamHealth } from '../sim/orgscale/types';
-import { HEALTH_COLOR, HEALTH_LABEL } from './orgView';
+import { HEALTH_COLOR } from './orgView';
 import { islandDepth, islandMood, ORG_VIEW, zoneLabelTone } from './orgBoardScene';
 
 /** 設計座標空間（旧モック dept-screen の viewBox 由来）。 */
@@ -348,7 +348,3 @@ export function isInDeptView(x: number, y: number, margin = 80): boolean {
   return x >= -margin && x <= DEPT_VIEW.w + margin && y >= -margin && y <= DEPT_VIEW.h + margin;
 }
 
-/** 部門ラベル補助（HUD と整合）。 */
-export function deptHealthLabel(dept: DepartmentState): string {
-  return HEALTH_LABEL[dept.health];
-}

@@ -13,7 +13,3 @@ export const DEPARTMENT_DEFS: readonly DepartmentDef[] = [
   { id: 'newbiz', name: '新規事業部', color: '#9e5a4a', teamCount: 3 },
 ];
 
-/** 部門 ID から定義を引く。 */
-export function getDepartment(id: string): DepartmentDef | undefined {
-  return DEPARTMENT_DEFS.find((d) => d.id === id);
-}

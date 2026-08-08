@@ -7,7 +7,12 @@
  */
 import { isRunSavePhase, type RunPersistState, type RunSavePhase } from '../sim/run/persist';
 import type { DifficultyId, RunKind, RunPhase, RunStatus } from '../sim/run/types';
-import { QUARTER_DELIVERY_GOAL_MUL, MIN_QUARTER_DELIVERY_TARGET } from '../sim/run/quarterReview';
+import { companyOrgFromTeams } from '../sim/orgscale';
+import {
+  buildQuarterReview,
+  MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+  QUARTER_DELIVERY_GOAL_MUL,
+} from '../sim/run/quarterReview';
 import { GAME_DB_NAME, openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from './gameDb';
 import { normalizeReplayKeyframes, type ReplayKeyframe } from './replay';
 
@@ -100,11 +105,31 @@ function migrateV4DeliveryGoal(
       ...(state.quarterGoal as Record<string, unknown>),
       // 目標修正（cut_scope等）後の値も同じ倍率比で移行し、調整結果を保つ。
       deliveryTarget: Math.max(
-        MIN_QUARTER_DELIVERY_TARGET,
+        MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
         Math.round((deliveryTarget * currentScale) / legacyScale),
       ),
     } as RunPersistState['quarterGoal'],
   };
+}
+
+/** v4の四半期レビューを、移行後の目標と現行判定式から再構築する。 */
+function rebuildV4QuarterReview(state: RunPersistState): RunPersistState | null {
+  if (state.phase !== 'quarterReview') return state;
+  if (!state.quarterReview || typeof state.quarterReview.bossCleared !== 'boolean') return null;
+
+  const companyOrg = companyOrgFromTeams(state.extras.teams ?? [], state.org);
+  const quarterReview = buildQuarterReview({
+    goal: state.quarterGoal,
+    org: companyOrg,
+    totals: state.quarterTotals,
+    trust: state.stakeholderTrust,
+    budget: state.budget,
+    quarterNumber: state.quarterNumber,
+    bossSprintCleared: state.quarterReview.bossCleared,
+  });
+  const reviewHistory = [...state.reviewHistory];
+  if (reviewHistory.length > 0) reviewHistory[reviewHistory.length - 1] = quarterReview.outcome;
+  return { ...state, quarterReview, reviewHistory };
 }
 
 /** 構造が壊れている／非互換なセーブは null（呼び出し側で clear）。 */
@@ -146,7 +171,11 @@ export function parseRunSave(raw: unknown): RunSave | null {
     schema === LEGACY_RUN_SAVE_SCHEMA_VERSION
       ? migrateV4DeliveryGoal(state, summary.difficulty)
       : (state as unknown as RunPersistState);
-  if (!migratedState) return null;
+  const stateWithCurrentReview =
+    schema === LEGACY_RUN_SAVE_SCHEMA_VERSION && migratedState
+      ? rebuildV4QuarterReview(migratedState)
+      : migratedState;
+  if (!stateWithCurrentReview) return null;
 
   // セーブ時は sprint を落とす契約。残っていても復元側で無視する。
   return {
@@ -164,7 +193,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
       sprintsPlayed: summary.sprintsPlayed,
       status: 'playing',
     },
-    state: migratedState,
+    state: stateWithCurrentReview,
     replayKeyframes: normalizeReplayKeyframes(raw.replayKeyframes),
   };
 }

@@ -3,7 +3,6 @@ import { ACTION_DEFS } from '../../src/data/actions';
 import { ANDON_TICKS, applyAction, OVERTIME_TICKS, THROTTLE_TICKS } from '../../src/sim/actions';
 import { BURN_TICKS, STABILITY_TICKS } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
-import { createSprint, resolveSprintConfig } from '../../src/sim/sprint';
 import type { InterventionEffect, OrgState, SprintState, Task } from '../../src/sim/types';
 import {
   deriveActiveBoardAuras,
@@ -13,29 +12,13 @@ import {
   positionInterventionReactions,
 } from '../../src/render/interventionEffects';
 import { findBoardFlow } from '../../src/render/boardScene';
+import { makeSprint as makeSprintWith, makeTask } from './helpers/sprintFixtures';
 
 const TICK = 42;
 const rng = () => 0.99;
 
-const makeTask = (id: number, overrides: Partial<Task> = {}): Task => ({
-  id,
-  kind: 'normal',
-  highValue: false,
-  aiAssisted: false,
-  lane: 'review',
-  progress: 0,
-  reworkAttempts: 0,
-  wasReworked: false,
-  incident: false,
-  debt: false,
-  ...overrides,
-});
-
-function makeSprint(org: OrgState, tasks: Task[]): SprintState {
-  const sprint = createSprint(resolveSprintConfig('default'), org, rng);
-  sprint.tasks = tasks;
-  return sprint;
-}
+/** このファイルの固定 rng を束ねた共通フィクスチャの別名。 */
+const makeSprint = (org: OrgState, tasks: Task[]): SprintState => makeSprintWith(org, tasks, rng);
 
 function applyAndGetEffect(id: InterventionEffect['actionId']): {
   effect: InterventionEffect;

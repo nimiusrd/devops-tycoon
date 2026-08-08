@@ -1,3 +1,7 @@
+/**
+ * RunEngine の到達しづらい分岐・survived mutant の掃討テスト。
+ * Stryker の Survived / NoCoverage mutation を exact 断言で潰す（旧 RI-72-D5）。
+ */
 import { describe, expect, it } from 'vitest';
 import { DEPARTMENT_DEFS } from '../../src/data/departments';
 import { EVENT_DEFS, type EventDef } from '../../src/data/events';
@@ -11,14 +15,19 @@ import type {
   QuarterReview,
   RunState,
   RunTotals,
+  ShopOffer,
   StakeholderTrust,
 } from '../../src/sim/run/types';
 import type { OrgState, SprintState, Task } from '../../src/sim/types';
+import { adjustableReview, zeroTotals } from './helpers/runEngineFixtures';
 
-type D5Internals = {
+type EngineInternals = {
   activeTeamId: string;
   budget: number;
   beat: RunState['beat'];
+  relics: string[];
+  shop: ShopOffer | null;
+  usedHeavyActions: boolean;
   coarseIncidentCarry: number;
   draft: string[] | null;
   goalAdjustmentsTaken: RunState['goalAdjustmentsTaken'];
@@ -41,43 +50,12 @@ type D5Internals = {
   resolveSprint(): void;
 };
 
-const asInternals = (engine: RunEngine): D5Internals => engine as unknown as D5Internals;
-
-const zeroTotals = (): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
-  consecutiveIncidentSprints: 0,
-});
-
-const adjustableReview = (adjustments: QuarterReview['availableAdjustments']): QuarterReview => ({
-  goal: {
-    deliveryTarget: 80,
-    qualityTarget: 50,
-    techDebtLimit: 50,
-    moraleTarget: 45,
-    incidentLimit: 3,
-    aiAdoptionTarget: 40,
-  },
-  outcome: 'missed_adjustable',
-  trust: { management: 60, customers: 60, team: 60 },
-  progress: [],
-  missedReasons: [],
-  availableAdjustments: adjustments,
-  bossCleared: false,
-});
+const asInternals = (engine: RunEngine): EngineInternals => engine as unknown as EngineInternals;
 
 const arrangeAdjustment = (
   engine: RunEngine,
   adjustments: QuarterReview['availableAdjustments'],
-): D5Internals => {
+): EngineInternals => {
   engine.startRun('easy', [], `ri-72-d5-adjust-${adjustments.join('-')}`);
   const i = asInternals(engine);
   i.phase = 'quarterReview';
@@ -470,5 +448,135 @@ describe('RI-72-D5 RunEngine NoCoverage reachable branches', () => {
     expect(after.phase).toBe('setup');
     expect(after.roster.members.filter((m) => !m.onLeave)).toHaveLength(beforeActive - 1);
     expect(after.org.seniorHp).toBeGreaterThan(45);
+  });
+});
+
+const taskFrom = (base: Task, patch: Partial<Task>): Task => ({
+  ...base,
+  id: patch.id ?? base.id,
+  lane: patch.lane ?? base.lane,
+  progress: patch.progress ?? base.progress,
+  incident: patch.incident ?? false,
+  burnTicksLeft: patch.burnTicksLeft,
+  reworkAttempts: patch.reworkAttempts ?? 0,
+  wasReworked: patch.wasReworked ?? false,
+  debt: patch.debt ?? false,
+});
+
+describe('RI-72-D5 RunEngine survived mutants', () => {
+  it('heavy action だけが usedHeavyActions を立て、通常アクションでは立てない', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d5-survived-heavy', difficulty: 'easy' });
+    engine.startRun();
+    engine.beginSetupSprint();
+    const i = asInternals(engine);
+    i.sprint!.focus = 100;
+
+    expect(engine.dispatch('aiThrottle').ok).toBe(true);
+    expect(i.usedHeavyActions).toBe(false);
+
+    expect(engine.dispatch('overtime').ok).toBe(true);
+    expect(i.usedHeavyActions).toBe(true);
+  });
+
+  it('shop relic と recruit の guard/成功を公開 API 経由で固定する', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d5-survived-shop', difficulty: 'easy' });
+    engine.startRun();
+    const i = asInternals(engine);
+    i.phase = 'shop';
+    i.budget = 100;
+
+    i.shop = { cards: [] };
+    engine.buyShopRelic();
+    expect(i.budget).toBe(100);
+    expect(i.relics).toEqual([]);
+
+    i.shop = { cards: [], relic: { id: 'psych-safety', cost: 20, bought: true } };
+    engine.buyShopRelic();
+    expect(i.budget).toBe(100);
+    expect(i.relics).toEqual([]);
+
+    i.shop = { cards: [], relic: { id: 'psych-safety', cost: 120, bought: false } };
+    engine.buyShopRelic();
+    expect(i.budget).toBe(100);
+    expect(i.relics).toEqual([]);
+
+    i.shop = { cards: [], relic: { id: 'psych-safety', cost: 20, bought: false } };
+    engine.buyShopRelic();
+    expect(i.budget).toBe(80);
+    expect(i.relics).toEqual(['psych-safety']);
+    expect(i.shop.relic?.bought).toBe(true);
+
+    i.shop = { cards: [], relic: { id: 'psych-safety', cost: 20, bought: false } };
+    engine.buyShopRelic();
+    expect(i.budget).toBe(80);
+    expect(i.relics).toEqual(['psych-safety']);
+
+    i.shop = { cards: [] };
+    engine.buyShopRecruit();
+    expect(i.budget).toBe(80);
+
+    i.shop = { cards: [], recruit: { cost: RECRUIT_COST, bought: true } };
+    engine.buyShopRecruit();
+    expect(i.budget).toBe(80);
+
+    i.shop = { cards: [], recruit: { cost: RECRUIT_COST, bought: false } };
+    engine.buyShopRecruit();
+    expect(i.budget).toBe(80 - RECRUIT_COST);
+    expect(i.shop.recruit?.bought).toBe(true);
+  });
+
+  it('sprint 中の orgScale は正本チームではなくライブ盤面の行列と炎上数を使う', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d5-survived-live-board', difficulty: 'easy' });
+    engine.startRun();
+    engine.beginSetupSprint();
+    const i = asInternals(engine);
+    const active = i.teams.find((team) => team.id === i.activeTeamId)!;
+    active.reviewQueue = 0;
+    active.incidents = 0;
+
+    const base = i.sprint!.tasks[0]!;
+    i.sprint!.tasks = [
+      taskFrom(base, { id: 200, lane: 'review', incident: false }),
+      taskFrom(base, { id: 201, lane: 'review', incident: true, burnTicksLeft: 4 }),
+      taskFrom(base, { id: 202, lane: 'rework', incident: true, burnTicksLeft: 2 }),
+    ];
+    engine.zoomTo('company');
+
+    const activeProjection = engine
+      .snapshot()
+      .orgScale!.departments.flatMap((department) => department.teams)
+      .find((team) => team.id === i.activeTeamId)!;
+
+    expect(activeProjection.reviewQueue).toBe(2);
+    expect(activeProjection.incidents).toBe(2);
+    expect(activeProjection.engineers).toBeGreaterThanOrEqual(i.roster.members.length);
+  });
+
+  it('active team のチームレバーは sprint 盤面とチーム正本の review/incidents を同期する', () => {
+    const engine = new RunEngine({ seed: 'ri-72-d5-survived-align', difficulty: 'easy' });
+    engine.startRun();
+    engine.beginSetupSprint();
+    const i = asInternals(engine);
+    i.budget = 100;
+    i.teamLockUntilSprint = 0;
+    i.sprint!.metrics.contained = 0;
+
+    const base = i.sprint!.tasks[0]!;
+    i.sprint!.tasks = [
+      taskFrom(base, { id: 300, lane: 'review', incident: false, progress: 0.2 }),
+      taskFrom(base, { id: 301, lane: 'review', incident: false, progress: 0.4 }),
+      taskFrom(base, { id: 302, lane: 'review', incident: true, burnTicksLeft: 5 }),
+      taskFrom(base, { id: 303, lane: 'rework', incident: true, burnTicksLeft: 2 }),
+    ];
+
+    expect(engine.applyOrgLever('teamReviewHelp', undefined, i.activeTeamId)).toBe(true);
+
+    const remainingReviews = i.sprint!.tasks.filter((task) => task.lane === 'review');
+    const remainingIncidents = i.sprint!.tasks.filter((task) => task.incident);
+    const active = i.teams.find((team) => team.id === i.activeTeamId)!;
+    expect(remainingReviews).toHaveLength(1);
+    expect(remainingIncidents).toHaveLength(2);
+    expect(active.reviewQueue).toBe(1);
+    expect(active.incidents).toBe(2);
   });
 });

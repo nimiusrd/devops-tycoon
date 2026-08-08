@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { EVENT_DEFS, effectiveKind, getEvent } from '../../src/data/events';
-import { createOrgState } from '../../src/sim/org';
 import { RunEngine, SPRINTS_PER_QUARTER } from '../../src/sim/run/engine';
 import {
   applyEventOutcome,
@@ -10,11 +9,10 @@ import {
   weightedEventPool,
 } from '../../src/sim/run/events';
 import { foldPassives } from '../../src/sim/run/effects';
-import type { OrgState, SprintModifierDelta } from '../../src/sim/types';
+import type { SprintModifierDelta } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
 import { advance } from './helpers/runFlow';
-
-const org = (o: Partial<OrgState> = {}): OrgState => ({ ...createOrgState('default', true), ...o });
+import { org } from './helpers/orgFixtures';
 
 describe('イベント種別と重み付け（SPEC 第9章）', () => {
   it('effectiveKind は kind 明示を優先し、未指定は choices 長で既定解決する', () => {

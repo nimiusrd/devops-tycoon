@@ -1,6 +1,7 @@
 /**
- * RI-91-A5: engine.ts advanceOtherTeams / applyOrgLever 周辺の Survived / NoCoverage を潰す。
- * 共有テストは触らず、単位専用ファイルで exact 断言する。
+ * RunEngine の advanceOtherTeams / applyOrgLever / buildOrgScale まわりの
+ * ミューテーション回帰テスト。Stryker の Survived / NoCoverage mutation を
+ * exact 断言で潰す（旧 RI-91-A5）。
  */
 import { describe, expect, it } from 'vitest';
 import type { CardInstance } from '../../src/sim/cards';

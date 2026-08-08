@@ -20,12 +20,6 @@ import type {
 } from './types';
 
 /**
- * 高負荷（elite）スプリントのタスク量倍率の代表値（normal）。
- * 実際の適用と playtest 採点は難易度別の `eliteTaskMul` を使う。
- */
-export const ELITE_TASK_MUL = 1.12;
-
-/**
  * 難易度別の elite タスク倍率（RI-75）。
  * hard/nightmare は非効率で長尾になりやすいので倍率を抑え、easy は帯下限を確保する。
  */

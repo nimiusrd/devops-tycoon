@@ -14,3 +14,4 @@ export { EVOLUTION_NODES, getEvolutionNode, BRANCH_LABEL } from './evolution';
 export { DIFFICULTY_DEFS, getDifficulty, TRIAL_DEFS, getTrial } from './difficulties';
 export { TRAIT_DEFS, getTrait, foldTraitModifiers } from './traits';
 export { MEMBER_NAMES, STARTER_ARCHETYPES, RECRUIT_ARCHETYPES } from './members';
+export * from './assets';

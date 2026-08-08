@@ -1599,6 +1599,7 @@ export class RunEngine {
     shipMul: number;
     reviewMul: number;
     reviewCapacityMul: number;
+    reworkRateAdd: number;
     aiDependencyDrift: number;
   } {
     const effects = applyGoalCarryoverToEffects(
@@ -1612,6 +1613,8 @@ export class RunEngine {
       shipMul: effects.codingSpeedMul,
       reviewMul: effects.reviewEfficiencyMul,
       reviewCapacityMul: effects.reviewCapacityMul,
+      // extend_deadline / pause_ai_rollout の Rework 改善を非選択チームへも載せる。
+      reworkRateAdd: effects.reworkRateAdd,
       aiDependencyDrift: fold.aiDependencyDriftPerSprint,
     };
   }

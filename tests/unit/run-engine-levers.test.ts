@@ -285,6 +285,32 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
     expect(i.totals.completed).toBe(4);
   });
 
+  it('RI-83: pause_ai の reworkRateAdd が粗粒度の非選択チーム行列を下げる', () => {
+    const base = createEngine('ri-83-coarse-rework');
+    const withPause = createEngine('ri-83-coarse-rework');
+    const baseI = asInternals(base);
+    const pauseI = asInternals(withPause);
+    for (const i of [baseI, pauseI]) {
+      i.teams = i.teams.map((t) =>
+        t.id === i.activeTeamId ? t : { ...t, reviewQueue: 12, engineers: 8, reviewCapacity: 10 },
+      );
+    }
+    pauseI.goalCarryoverQuarter = pauseI.quarterNumber;
+    pauseI.goalCarryoverId = 'pause_ai_rollout';
+
+    baseI.advanceOtherTeams('rework');
+    pauseI.advanceOtherTeams('rework');
+
+    const baseQueues = baseI.teams
+      .filter((t) => t.id !== baseI.activeTeamId)
+      .map((t) => t.reviewQueue);
+    const pauseQueues = pauseI.teams
+      .filter((t) => t.id !== pauseI.activeTeamId)
+      .map((t) => t.reviewQueue);
+    expect(pauseQueues.every((q, idx) => q <= baseQueues[idx]!)).toBe(true);
+    expect(pauseQueues.some((q, idx) => q < baseQueues[idx]!)).toBe(true);
+  });
+
   it('foldRunEffects 由来の粗粒度 modifiers が非 active へ効く', () => {
     const engine = createEngine('ri-91-a5-fold-mods');
     const i = asInternals(engine);

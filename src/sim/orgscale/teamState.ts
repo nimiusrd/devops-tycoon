@@ -457,6 +457,11 @@ export type CoarseRunModifiers = {
   reviewMul?: number;
   /** レビュー容量倍率（reviewCapacityMul）。行列消化に掛ける。 */
   reviewCapacityMul?: number;
+  /**
+   * Rework 率加算（詳細 sim の reworkRateAdd 相当）。
+   * 負値ほど戻りが減り、粗粒度では行列圧力の緩和として効く（RI-83）。
+   */
+  reworkRateAdd?: number;
   /** スプリント相当の AI 依存度ドリフト（frontier-dependency 等）。 */
   aiDependencyDrift?: number;
 };
@@ -494,6 +499,7 @@ export function advanceCoarseTeams(
   const shipMul = Math.max(0.2, args.modifiers?.shipMul ?? 1);
   const reviewMul = clamp(args.modifiers?.reviewMul ?? 1, 0.4, 1.8);
   const reviewCapacityMul = clamp(args.modifiers?.reviewCapacityMul ?? 1, 0.5, 2);
+  const reworkRateAdd = clamp(args.modifiers?.reworkRateAdd ?? 0, -0.5, 0.5);
   const aiDependencyDrift = Math.max(0, Math.round(args.modifiers?.aiDependencyDrift ?? 0));
   let ignited = 0;
   let completed = 0;
@@ -505,6 +511,8 @@ export function advanceCoarseTeams(
     const teamAdj = mergeAdjust(deptAdj, adjust.byTeam?.[team.id] ?? emptyAdjust());
     // 負のデルタほど圧力を緩める（永続値への再加算はしない）。
     const queueRelief = Math.max(0, -teamAdj.reviewQueueDelta) * 0.2;
+    // Rework 低下は戻りレビュー減として行列圧力を緩める（上昇は圧力増）。
+    const reworkRelief = -reworkRateAdd * 20;
     const fireMul = clamp(1 + teamAdj.incidentDelta * 0.12, 0.35, 1.2);
     const debtRelief = Math.max(0, -teamAdj.techDebtDelta) * 0.05;
     const aiPressureMul = clamp(1 + teamAdj.aiDependencyDelta * 0.02, 0.4, 1.2);
@@ -532,7 +540,13 @@ export function advanceCoarseTeams(
     aiAssisted += Math.round(completedGain * AI_ADOPTION * clamp(adoptionShare, 0, 1));
     const queuePressure = Math.max(
       0,
-      Math.round(team.engineers * 0.35 + team.aiDependency * 0.04 - reviewCap * 0.05 - queueRelief),
+      Math.round(
+        team.engineers * 0.35 +
+          team.aiDependency * 0.04 -
+          reviewCap * 0.05 -
+          queueRelief -
+          reworkRelief,
+      ),
     );
     const queueDelta = Math.round((rng() * 2 - 0.7) * 2) + queuePressure;
     let reviewQueue = Math.max(0, team.reviewQueue + queueDelta);

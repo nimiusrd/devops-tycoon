@@ -15,7 +15,6 @@ import {
   type TeamRunState,
 } from '../../src/sim/orgscale';
 import { deriveTeamCapacities } from '../../src/sim/orgscale/teamState';
-import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
 import type { RunPersistState, RunReplayFrame } from '../../src/sim/run/persist';
 import type {
@@ -27,8 +26,12 @@ import type {
   RunTotals,
   StakeholderTrust,
 } from '../../src/sim/run/types';
-import { createSprint } from '../../src/sim/sprint';
 import type { OrgState, SprintMetrics, SprintState } from '../../src/sim/types';
+import {
+  completeSprint as completeSprintWith,
+  makeOrg,
+  zeroTotals,
+} from './helpers/runEngineFixtures';
 
 const initTeamMock = vi.hoisted(() => ({
   mode: 'passthrough' as 'passthrough' | 'emptyFirst' | 'homeNotFirst' | 'noHome',
@@ -120,20 +123,6 @@ type EngineInternals = {
 
 const asInternals = (engine: RunEngine): EngineInternals => engine as unknown as EngineInternals;
 
-const zeroTotals = (): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
-  consecutiveIncidentSprints: 0,
-});
-
 const goal = (): QuarterGoal => ({
   deliveryTarget: 90,
   qualityTarget: 50,
@@ -146,20 +135,6 @@ const trust = (value = 60): StakeholderTrust => ({
   management: value,
   customers: value,
   team: value,
-});
-
-const makeOrg = (overrides: Partial<OrgState> = {}): OrgState => ({
-  aiEnabled: true,
-  aiDependency: 35,
-  aiLiteracy: 50,
-  testCoverage: 45,
-  documentation: 30,
-  quality: 50,
-  morale: 45,
-  seniorHp: 50,
-  techDebt: 40,
-  deliveryScore: 0,
-  ...overrides,
 });
 
 const makeReview = (outcome: QuarterOutcome): QuarterReview => ({
@@ -226,22 +201,9 @@ const singleActiveTeam = (template: TeamRunState, org: OrgState): TeamRunState =
   }),
 });
 
-const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState => {
-  const sprint = createSprint(
-    { taskCount: 0, codingSlots: 1, maxTicks: 1, focusMax: 3 },
-    org,
-    createRng('ri-72-d4-fixed-sprint'),
-  );
-  return {
-    ...sprint,
-    complete: true,
-    metrics: {
-      ...sprint.metrics,
-      seniorHpStart: org.seniorHp,
-      ...metrics,
-    },
-  };
-};
+/** このファイル固定 seed を束ねた共通フィクスチャの別名。 */
+const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState =>
+  completeSprintWith('ri-72-d4-fixed-sprint', org, metrics);
 
 const arrangeResolvedSprint = (
   engine: RunEngine,

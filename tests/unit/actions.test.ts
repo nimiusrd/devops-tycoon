@@ -14,9 +14,7 @@ import {
   PAIR_REVIEW_COUNT,
   THROTTLE_TICKS,
 } from '../../src/sim/actions';
-import { BURN_TICKS } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
-import { createSprint, resolveSprintConfig } from '../../src/sim/sprint';
 import { createEngine, type Engine } from '../../src/sim/engine';
 import type {
   ActionId,
@@ -26,32 +24,13 @@ import type {
   SprintState,
   Task,
 } from '../../src/sim/types';
+import { burningTask, makeSprint as makeSprintWith, makeTask } from './helpers/sprintFixtures';
 
 const TICK = 42;
 const rng = () => 0.99;
 
-const makeTask = (id: number, overrides: Partial<Task> = {}): Task => ({
-  id,
-  kind: 'normal',
-  highValue: false,
-  aiAssisted: false,
-  lane: 'review',
-  progress: 0,
-  reworkAttempts: 0,
-  wasReworked: false,
-  incident: false,
-  debt: false,
-  ...overrides,
-});
-
-const burningTask = (id: number, burnTicksLeft = BURN_TICKS): Task =>
-  makeTask(id, { lane: 'rework', incident: true, burnTicksLeft, reworkAttempts: 1 });
-
-function makeSprint(org: OrgState, tasks: Task[]): SprintState {
-  const sprint = createSprint(resolveSprintConfig('default'), org, rng);
-  sprint.tasks = tasks;
-  return sprint;
-}
+/** このファイルの固定 rng を束ねた共通フィクスチャの別名。 */
+const makeSprint = (org: OrgState, tasks: Task[]): SprintState => makeSprintWith(org, tasks, rng);
 
 const reviewCount = (s: SimState): number =>
   s.sprint.tasks.filter((t) => t.lane === 'review').length;

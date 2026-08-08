@@ -1,16 +1,23 @@
 /**
- * RunEngine の phase 遷移・試練（trial）・予算まわりのミューテーション回帰テスト。
- * Stryker の Survived / NoCoverage mutation を exact 断言で潰す（旧 RI-91-A2）。
+ * RunEngine の phase 遷移・phase ガード・試練（trial）・予算まわりのテスト。
+ * 遷移表（setPhase / RunPhaseError）と、phase 外呼び出しが状態を動かさないこと、
+ * および Stryker の Survived / NoCoverage mutation を exact 断言で潰す。
+ * （旧 RI-39 / RI-72-D1 / RI-91-A2）
  */
 import { describe, expect, it } from 'vitest';
 import { getDifficulty } from '../../src/data/difficulties';
 import type { GrowthOutcome, RosterState } from '../../src/sim/member';
 import { HOME_TEAM_ID } from '../../src/sim/orgscale/teamState';
-import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
-import type { RunState, RunTotals } from '../../src/sim/run/types';
-import { createSprint } from '../../src/sim/sprint';
+import { RunPhaseError } from '../../src/sim/run/phases';
+import type { BeatState, RunState, RunTotals } from '../../src/sim/run/types';
 import type { OrgState, SprintMetrics, SprintState } from '../../src/sim/types';
+import { playRun } from './helpers/runFlow';
+import {
+  completeSprint as completeSprintWith,
+  makeOrg,
+  zeroTotals,
+} from './helpers/runEngineFixtures';
 
 type A2Internals = {
   accumulatorMs: number;
@@ -37,50 +44,9 @@ type A2Internals = {
 
 const asInternals = (engine: RunEngine): A2Internals => engine as unknown as A2Internals;
 
-const zeroTotals = (): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
-  consecutiveIncidentSprints: 0,
-});
-
-const makeOrg = (overrides: Partial<OrgState> = {}): OrgState => ({
-  aiEnabled: true,
-  aiDependency: 35,
-  aiLiteracy: 50,
-  testCoverage: 45,
-  documentation: 30,
-  quality: 50,
-  morale: 45,
-  seniorHp: 50,
-  techDebt: 40,
-  deliveryScore: 0,
-  ...overrides,
-});
-
-const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState => {
-  const sprint = createSprint(
-    { taskCount: 0, codingSlots: 1, maxTicks: 1, focusMax: 3 },
-    org,
-    createRng('ri-91-a2-fixed-sprint'),
-  );
-  return {
-    ...sprint,
-    complete: true,
-    metrics: {
-      ...sprint.metrics,
-      seniorHpStart: org.seniorHp,
-      ...metrics,
-    },
-  };
-};
+/** このファイル固定 seed を束ねた共通フィクスチャの別名。 */
+const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState =>
+  completeSprintWith('ri-91-a2-fixed-sprint', org, metrics);
 
 describe('RI-91-A2 RunEngine phase / trial / budget', () => {
   it('trialBudgetMul は未知 ID を 1 扱いし、budgetMul は積算（除算ではない）', () => {
@@ -366,5 +332,173 @@ describe('RI-91-A2 RunEngine phase / trial / budget', () => {
 
     expect(() => i.resolveSprint()).not.toThrow();
     expect(engine.snapshot().sprintsPlayed).toBe(1);
+  });
+});
+
+describe('RI-72-D1 phase guards', () => {
+  type PhaseGuardInternals = {
+    phase: RunState['phase'];
+    beat: BeatState | null;
+    quarterReview: NonNullable<RunState['quarterReview']> | null;
+    evolution: RunState['evolution'];
+    setPhase(next: RunState['phase']): void;
+  };
+
+  const internalsOf = (engine: RunEngine): PhaseGuardInternals =>
+    engine as unknown as PhaseGuardInternals;
+
+  const makeQuarterReview = (
+    outcome: NonNullable<RunState['quarterReview']>['outcome'],
+  ): NonNullable<RunState['quarterReview']> => ({
+    goal: {
+      deliveryTarget: 10,
+      qualityTarget: 10,
+      techDebtLimit: 90,
+      moraleTarget: 10,
+      incidentLimit: 5,
+    },
+    outcome,
+    trust: { management: 50, customers: 50, team: 50 },
+    progress: [],
+    missedReasons: [],
+    availableAdjustments: outcome === 'missed_adjustable' ? ['cut_scope'] : [],
+    bossCleared: true,
+  });
+
+  it('RunPhaseError は不正遷移の from/to とメッセージを保持し phase を動かさない', () => {
+    const cases: Array<[RunState['phase'], RunState['phase']]> = [
+      ['title', 'sprint'],
+      ['setup', 'title'],
+      ['beat', 'quarterReview'],
+      ['won', 'lost'],
+    ];
+
+    for (const [from, to] of cases) {
+      const engine = new RunEngine({ seed: `ri72-d1-${from}-${to}`, difficulty: 'easy' });
+      const internals = internalsOf(engine);
+      internals.phase = from;
+
+      let thrown: unknown;
+      try {
+        internals.setPhase(to);
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toBeInstanceOf(RunPhaseError);
+      expect(thrown).toMatchObject({ name: 'RunPhaseError', from, to });
+      expect((thrown as Error).message).toBe(
+        `不正なフェーズ遷移: ${from} → ${to}（RUN_PHASE_TRANSITIONS に無い遷移）`,
+      );
+      expect(engine.currentPhase()).toBe(from);
+    }
+  });
+
+  it('setup 以外の beginSetupSprint はスプリントを起動しない', () => {
+    const engine = new RunEngine({ seed: 'ri72-d1-begin-setup-title', difficulty: 'easy' });
+    const before = engine.snapshot();
+
+    expect(() => engine.beginSetupSprint()).not.toThrow();
+
+    expect(engine.snapshot()).toEqual(before);
+  });
+
+  it('result/draft/evolution の入口は phase が違うと何もしない', () => {
+    const cases: Array<{
+      name: string;
+      arrange?: (internals: PhaseGuardInternals) => void;
+      act: (engine: RunEngine) => void;
+    }> = [
+      { name: 'acknowledgeResult', act: (engine) => engine.acknowledgeResult() },
+      { name: 'chooseCard', act: (engine) => engine.chooseCard('copilot') },
+      { name: 'skipDraft', act: (engine) => engine.skipDraft() },
+      {
+        name: 'unlockEvolution',
+        arrange: (internals) => {
+          internals.evolution = { points: 1, unlocked: {} };
+        },
+        act: (engine) => engine.unlockEvolution('review-1'),
+      },
+      { name: 'finishEvolution', act: (engine) => engine.finishEvolution() },
+    ];
+
+    for (const { name, arrange, act } of cases) {
+      const engine = new RunEngine({ seed: `ri72-d1-${name}`, difficulty: 'easy' });
+      engine.startRun();
+      arrange?.(internalsOf(engine));
+      const before = engine.snapshot();
+
+      expect(() => act(engine)).not.toThrow();
+      expect(engine.snapshot()).toEqual(before);
+    }
+  });
+
+  it('beat/quarterReview の stale payload は対象 phase 以外で無視する', () => {
+    const cases: Array<{
+      name: string;
+      arrange: (internals: PhaseGuardInternals) => void;
+      act: (engine: RunEngine) => void;
+    }> = [
+      {
+        name: 'resolveBeat',
+        arrange: (internals) => {
+          internals.beat = { eventId: 'urgent-demo', kind: 'decision' };
+        },
+        act: (engine) => engine.resolveBeat(0),
+      },
+      {
+        name: 'acknowledgeQuarterReview',
+        arrange: (internals) => {
+          internals.quarterReview = makeQuarterReview('met');
+        },
+        act: (engine) => engine.acknowledgeQuarterReview(),
+      },
+      {
+        name: 'chooseGoalAdjustment',
+        arrange: (internals) => {
+          internals.quarterReview = makeQuarterReview('missed_adjustable');
+        },
+        act: (engine) => engine.chooseGoalAdjustment('cut_scope'),
+      },
+    ];
+
+    for (const { name, arrange, act } of cases) {
+      const engine = new RunEngine({ seed: `ri72-d1-${name}`, difficulty: 'easy' });
+      engine.startRun();
+      arrange(internalsOf(engine));
+      const before = engine.snapshot();
+
+      expect(() => act(engine)).not.toThrow();
+      expect(engine.snapshot()).toEqual(before);
+    }
+  });
+});
+
+describe('フェーズ遷移の検証（setPhase / 遷移表。RI-39）', () => {
+  type PhaseInternals = { setPhase(next: RunState['phase']): void };
+
+  it('遷移表に無い遷移は RunPhaseError を投げる', () => {
+    const e = new RunEngine({ seed: 'phase-guard', difficulty: 'normal' });
+    const internals = e as unknown as PhaseInternals;
+    // title からは setup 以外へ進めない。
+    expect(() => internals.setPhase('won')).toThrow(RunPhaseError);
+    expect(() => internals.setPhase('sprint')).toThrow(RunPhaseError);
+    // 表にあるエッジ（title → setup）は通る。
+    expect(() => internals.setPhase('setup')).not.toThrow();
+    expect(e.snapshot().phase).toBe('setup');
+    // setup からの逆行（→ title）は resetPhase の領分で、setPhase では不正。
+    expect(() => internals.setPhase('title')).toThrow(RunPhaseError);
+  });
+
+  it('タイトル・終端フェーズでは組織レバーが発動しない', () => {
+    const title = new RunEngine({ seed: 'lever-title', difficulty: 'normal' });
+    expect(title.applyOrgLever('aiGuideline')).toBe(false);
+    expect(title.snapshot().phase).toBe('title');
+
+    const finished = new RunEngine({ seed: 'lever-finished', difficulty: 'easy' });
+    const s = playRun(finished);
+    expect(['won', 'lost']).toContain(s.phase);
+    expect(finished.applyOrgLever('aiGuideline')).toBe(false);
+    expect(finished.snapshot().phase).toBe(s.phase);
   });
 });

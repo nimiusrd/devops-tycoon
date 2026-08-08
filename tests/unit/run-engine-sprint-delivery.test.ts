@@ -4,7 +4,6 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { GrowthOutcome, RosterState } from '../../src/sim/member';
-import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
 import type {
   BeatState,
@@ -13,8 +12,13 @@ import type {
   RunTotals,
   StakeholderTrust,
 } from '../../src/sim/run/types';
-import { createSprint } from '../../src/sim/sprint';
 import type { OrgState, SprintMetrics, SprintResult, SprintState } from '../../src/sim/types';
+import {
+  adjustableReview,
+  completeSprint as completeSprintWith,
+  makeOrg,
+  zeroTotals,
+} from './helpers/runEngineFixtures';
 
 type A3Internals = {
   beat: BeatState | null;
@@ -45,50 +49,9 @@ type A3Internals = {
 
 const asInternals = (engine: RunEngine): A3Internals => engine as unknown as A3Internals;
 
-const zeroTotals = (): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
-  consecutiveIncidentSprints: 0,
-});
-
-const makeOrg = (overrides: Partial<OrgState> = {}): OrgState => ({
-  aiEnabled: true,
-  aiDependency: 35,
-  aiLiteracy: 50,
-  testCoverage: 45,
-  documentation: 30,
-  quality: 50,
-  morale: 45,
-  seniorHp: 50,
-  techDebt: 40,
-  deliveryScore: 0,
-  ...overrides,
-});
-
-const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState => {
-  const sprint = createSprint(
-    { taskCount: 0, codingSlots: 1, maxTicks: 1, focusMax: 3 },
-    org,
-    createRng('ri-91-a3-fixed-sprint'),
-  );
-  return {
-    ...sprint,
-    complete: true,
-    metrics: {
-      ...sprint.metrics,
-      seniorHpStart: org.seniorHp,
-      ...metrics,
-    },
-  };
-};
+/** このファイル固定 seed を束ねた共通フィクスチャの別名。 */
+const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState =>
+  completeSprintWith('ri-91-a3-fixed-sprint', org, metrics);
 
 const sprintResult = (overrides: Partial<SprintResult> = {}): SprintResult =>
   ({
@@ -138,23 +101,6 @@ const arrangeSprint = (
   i.budget = 100;
   return i;
 };
-
-const adjustableReview = (adjustments: QuarterReview['availableAdjustments']): QuarterReview => ({
-  goal: {
-    deliveryTarget: 80,
-    qualityTarget: 50,
-    techDebtLimit: 50,
-    moraleTarget: 45,
-    incidentLimit: 3,
-    aiAdoptionTarget: 40,
-  },
-  outcome: 'missed_adjustable',
-  trust: { management: 60, customers: 60, team: 60 },
-  progress: [],
-  missedReasons: [],
-  availableAdjustments: adjustments,
-  bossCleared: false,
-});
 
 describe('RI-91-A3 RunEngine sprint resolve / delivery', () => {
   describe('applyGrowth / documentation', () => {

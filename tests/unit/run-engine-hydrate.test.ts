@@ -19,8 +19,12 @@ import type {
   ShopOffer,
   SprintModifierDelta,
 } from '../../src/sim/run/types';
-import { createSprint } from '../../src/sim/sprint';
 import type { OrgState, SprintMetrics, SprintState } from '../../src/sim/types';
+import {
+  completeSprint as completeSprintWith,
+  makeOrg,
+  zeroTotals,
+} from './helpers/runEngineFixtures';
 
 type PersistInternals = {
   phase: RunState['phase'];
@@ -305,50 +309,9 @@ type A1Internals = {
 
 const asInternals = (engine: RunEngine): A1Internals => engine as unknown as A1Internals;
 
-const zeroTotals = (): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
-  consecutiveIncidentSprints: 0,
-});
-
-const makeOrg = (overrides: Partial<OrgState> = {}): OrgState => ({
-  aiEnabled: true,
-  aiDependency: 35,
-  aiLiteracy: 50,
-  testCoverage: 45,
-  documentation: 30,
-  quality: 50,
-  morale: 45,
-  seniorHp: 50,
-  techDebt: 40,
-  deliveryScore: 0,
-  ...overrides,
-});
-
-const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState => {
-  const sprint = createSprint(
-    { taskCount: 0, codingSlots: 1, maxTicks: 1, focusMax: 3 },
-    org,
-    createRng('ri-91-a1-fixed-sprint'),
-  );
-  return {
-    ...sprint,
-    complete: true,
-    metrics: {
-      ...sprint.metrics,
-      seniorHpStart: org.seniorHp,
-      ...metrics,
-    },
-  };
-};
+/** このファイル固定 seed を束ねた共通フィクスチャの別名。 */
+const completeSprint = (org: OrgState, metrics: Partial<SprintMetrics> = {}): SprintState =>
+  completeSprintWith('ri-91-a1-fixed-sprint', org, metrics);
 
 const arrangeResolvedSprint = (
   engine: RunEngine,

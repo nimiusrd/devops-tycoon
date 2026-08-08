@@ -40,11 +40,11 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 
 ### RI-64 独立状態を持つ複数チーム運営
 
-完了。各チームは `TeamRunState` として永続し、非選択は粗粒度 sim・選択中は詳細スプリント、全社／部署／チーム施策と入り込みコスト、任意チームへのドリルダウン、保存／リプレイを接続した。詳細はGit履歴と `tests/unit/orgscale-engine.test.ts` / `tests/e2e/org-scale.spec.ts` を参照。
+完了。各チームは `TeamRunState` として永続し、非選択は粗粒度 sim・選択中は詳細スプリント、全社／部署／チーム施策と入り込みコスト、任意チームへのドリルダウン、保存／リプレイを接続した。詳細はGit履歴と `tests/unit/run-engine-orgscale.test.ts` / `tests/e2e/org-scale.spec.ts` を参照。
 
 ### RI-67 オンボーディングとシニア燃え尽きの断絶
 
-完了。チュートリアルにシニア体力ステップを追加し、緊急対応を燃え尽き回避の主手段として導く。遊び方ヘルプと HUD（help・危険時チップ）も同期。sim 定数は変更せず、Easy・`review-hell` で緊急対応あり方針が2スプリント以内に `seniorBurnout` しないことをユニットテストで固定。詳細は Git 履歴と `tests/unit/ri67-senior-burnout-onboarding.test.ts` / `tests/e2e/tutorial.spec.ts` を参照。
+完了。チュートリアルにシニア体力ステップを追加し、緊急対応を燃え尽き回避の主手段として導く。遊び方ヘルプと HUD（help・危険時チップ）も同期。sim 定数は変更せず、Easy・`review-hell` で緊急対応あり方針が2スプリント以内に `seniorBurnout` しないことをユニットテストで固定。詳細は Git 履歴と `tests/unit/seniorBurnoutOnboarding.test.ts` / `tests/e2e/tutorial.spec.ts` を参照。
 
 ### RI-68 四半期レビュー Delivery KPI のスケール不整合
 
@@ -101,7 +101,7 @@ F-1 の違反は2方向にある。**緊急対応単独（`onlyFirefight`）1/40
 
 ### RI-74 Nightmare は AI 依存を意識しない方針で第1スプリント敗北が確定する
 
-完了。Nightmare 初期依存度を下げ、難易度限定の `aiDependencyPerTask` で S1 即死を解消。既存回避手段（`pairReview` / `ai-guideline` / AI 系レバー）の効果量を強化し、チュートリアル・遊び方・敗北 nextAction・HUD 予兆で発見性を補強。詳細は Git 履歴と `tests/unit/ri74-ai-dependency-pace.test.ts` を参照。
+完了。Nightmare 初期依存度を下げ、難易度限定の `aiDependencyPerTask` で S1 即死を解消。既存回避手段（`pairReview` / `ai-guideline` / AI 系レバー）の効果量を強化し、チュートリアル・遊び方・敗北 nextAction・HUD 予兆で発見性を補強。詳細は Git 履歴と `tests/unit/aiDependencyPace.test.ts` を参照。
 
 ### RI-75 スプリントが規定帯をほぼ全面的に下回る
 
@@ -206,7 +206,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 ### RI-85 レビュー凍結が選択不能な判定イベントでしか確定しない
 
-完了。`review-freeze` の即死 `forceLose` をやめ senior-burnout 型の soft judgment にし、スプリント中の HUD に `reviewFreezeHudCopy`（凍結注意 / PR凍結危険）を追加した。決着は以後のスプリント対処 / ピーク経路へ委ね、即死 judgment 100% の状態を解消。詳細は Git 履歴と `tests/unit/ri85-review-freeze.test.ts` / `tests/e2e/run.spec.ts` を参照。
+完了。`review-freeze` の即死 `forceLose` をやめ senior-burnout 型の soft judgment にし、スプリント中の HUD に `reviewFreezeHudCopy`（凍結注意 / PR凍結危険）を追加した。決着は以後のスプリント対処 / ピーク経路へ委ね、即死 judgment 100% の状態を解消。詳細は Git 履歴と `tests/unit/reviewFreeze.test.ts` / `tests/e2e/run.spec.ts` を参照。
 
 ### RI-86 Q1 で進化ツリーを取り切れてしまい、ビルドの方向という概念が成立しない
 

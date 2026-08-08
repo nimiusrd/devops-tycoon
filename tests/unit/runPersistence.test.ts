@@ -167,10 +167,20 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         difficulty: 'normal',
         phase: 'quarterReview',
         org: { ...valid.state.org, quality: 99 },
-        quarterTotals: { ...valid.state.quarterTotals, delivered: 1260, completed: 1 },
+        quarterTotals: {
+          ...valid.state.quarterTotals,
+          delivered: 1260,
+          completed: 2,
+          rework: 1,
+        },
         extras: {
           ...valid.state.extras,
-          teams: valid.state.extras.teams?.map((team) => ({ ...team, quality: 99 })),
+          teams: valid.state.extras.teams?.map((team) => ({
+            ...team,
+            aiDependency: 40,
+            quality: 99,
+          })),
+          winEvalOrg: { ...valid.state.org, aiDependency: 90 },
         },
         quarterGoal: { ...valid.state.quarterGoal, deliveryTarget: 1260 },
         quarterReview: {
@@ -208,6 +218,9 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
       actual: 40,
       status: 'missed',
     });
+    expect(review?.missedReasons).not.toContain(
+      'AI 過信: AI 利用率は高いが手戻り・品質が追いついていない。',
+    );
     expect(review?.outcome).not.toBe('met');
   });
 

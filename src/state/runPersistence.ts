@@ -213,11 +213,10 @@ function rebuildV4QuarterReview(state: RunPersistState): RunPersistState | null 
     const actual = progress.find((item) => item.id === id)?.actual;
     if (actual !== undefined) reviewOrg[id === 'techDebt' ? 'techDebt' : id] = actual;
   }
-  // seniorHp / aiDependency は KPI progress に含まれないため、ボス報酬前スナップショット
-  // が存在する旧セーブではそこから補完する。無い場合は現行集約値へフォールバックする。
+  // seniorHp は KPI progress に含まれないため、ボス報酬前スナップショットが存在する
+  // 旧セーブではそこから補完する。AI 依存度は全社集約値を維持する。
   if (state.extras.winEvalOrg) {
     reviewOrg.seniorHp = state.extras.winEvalOrg.seniorHp;
-    reviewOrg.aiDependency = state.extras.winEvalOrg.aiDependency;
   }
 
   const outcome = evaluateQuarterOutcome({

@@ -990,7 +990,8 @@ describe('四半期レビュー（Phase 8）', () => {
     const seedsByDifficulty: Record<'easy' | 'normal' | 'hard', readonly number[]> = {
       // RI-84: 安定化の再校正後も、到達・達成・未達を含む固定 seed を使う。
       easy: [103, 14, 20, 39, 100, 380],
-      normal: [10, 14, 238, 28, 35, 39],
+      // RI-73: normal に seniorHpCostMul を入れた後も達成/未達が共存する probe。
+      normal: [3, 5, 6, 10, 14, 28],
       // RI-84: 手戻り抑制0.4倍後も、到達・達成・未達が共存する固定 probe を使う。
       hard: [20, 113, 74, 93, 97, 120],
     };

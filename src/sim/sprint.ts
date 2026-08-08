@@ -12,7 +12,6 @@ import {
   BURN_TICKS,
   DEBT_PER_SPREAD,
   IDENTITY_CARD_EFFECTS,
-  INCIDENT_CONTAIN_HP,
   INCIDENT_HP_COST,
   MAX_REWORK,
   OVERTIME_CODING_MUL,
@@ -266,7 +265,8 @@ export function reviewOne(
   tick?: number,
 ): void {
   const m = sprint.metrics;
-  org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST, 0, 100);
+  const hpCostMul = sprint.cardEffects.seniorHpCostMul;
+  org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST * hpCostMul, 0, 100);
 
   // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。
   const stabilized = isStabilized(sprint, tick);
@@ -381,12 +381,14 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
     m.combo = 0;
     // 安定中は既知の復旧手順で延焼を止める。炎上時間と通常の手戻りは残すため、
     // 出荷を直接増やさずに下振れの連鎖だけを抑える。
-    if (org.seniorHp >= INCIDENT_CONTAIN_HP || stabilized) {
+    // RI-73: 鎮火可否は割引後コストと揃える（変更前は CONTAIN_HP == HP_COST == 12）。
+    const incidentHpCost = INCIDENT_HP_COST * sprint.cardEffects.seniorHpCostMul;
+    if (org.seniorHp >= incidentHpCost || stabilized) {
       // 自動鎮火: シニアが総出で消す。緊急対応より大幅に高くつく受動対応。
       m.contained += 1;
       m.autoContainCount += 1;
       const hpBefore = org.seniorHp;
-      org.seniorHp = clamp(org.seniorHp - INCIDENT_HP_COST, 0, 100);
+      org.seniorHp = clamp(org.seniorHp - incidentHpCost, 0, 100);
       const hpCost = hpBefore - org.seniorHp;
       appendSprintEvent(sprint, {
         tick,

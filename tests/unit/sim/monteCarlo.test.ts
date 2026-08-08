@@ -209,20 +209,21 @@ describe('monteCarlo 基盤（RI-14）', () => {
     /**
      * 代表 seed 群。RI-75（taskFloor / taskCountMul 増）後は既定オートプレイの勝率が
      * 極端に稀なため、勝利確認済み seed と敗北 seed を混在させて固定する。
+     * RI-73（normal seniorHpCostMul）後、REVIEW_FREEZE_PEAK 到達 seed を差し替えた。
      */
     const RI15_SEEDS = [
       'ri18-meta-253',
       'ri18-meta-60',
       'wina-1450',
-      'winc-1063',
       'wind-589',
-      'wind-2161',
       'wine-886',
-      'ri18-meta-10',
       'ri18-meta-20',
       'ri18-meta-30',
       'ri18-meta-40',
       'ri18-meta-50',
+      'ri73-mc-1',
+      'ri73-mc-4',
+      'ri73-mc-14',
     ] as const;
 
     /** 連続インデックス崩壊検知用（勝率は期待せず、決着と出荷の床だけ見る）。 */
@@ -236,9 +237,10 @@ describe('monteCarlo 基盤（RI-14）', () => {
       /** 勝利ランの長寿化で delivered 上振れ。極端な無出荷・桁外れだけ弾く。 */
       delivered: { min: 200, max: 25000 },
       rework: { min: 0, max: 80 },
-      incidents: { min: 0, max: 70 },
-      /** ドメイン上限 100 未満。全試行 0 HP や全試行満タンは mean ガードで検知。 */
-      seniorHp: { min: 0, max: 99 },
+      // RI-73: normal の seniorHpCostMul で生存が伸び、累積障害の上限外れを拾う。
+      incidents: { min: 0, max: 80 },
+      /** ドメイン上限 100。RI-73 の消耗緩和後は端数で 99 超もあり得る。 */
+      seniorHp: { min: 0, max: 100 },
       /** REVIEW_FREEZE_PEAK 未満。境界到達 seed は代表群から除外。 */
       reviewQueuePeak: { min: 10, max: REVIEW_FREEZE_PEAK - 1 },
     } as const;

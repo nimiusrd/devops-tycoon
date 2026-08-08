@@ -22,9 +22,9 @@ const input = (overrides: Partial<RunModifierInput> = {}): RunModifierInput => (
 });
 
 describe('run effects fold', () => {
-  it('空入力では全係数と補正が identity になる', () => {
+  it('空入力でも難易度の globalEffects は畳み込まれる（RI-73: normal の seniorHpCostMul）', () => {
     expect(foldRunEffects(input())).toEqual({
-      effects: { ...IDENTITY_CARD_EFFECTS },
+      effects: { ...IDENTITY_CARD_EFFECTS, seniorHpCostMul: 0.8 },
       focusBonus: 0,
       codingSlotBonus: 0,
       aiDependencyDriftPerSprint: 0,
@@ -80,6 +80,7 @@ describe('run effects fold', () => {
       routineSpeedMul: 1.3,
       reviewEfficiencyMul: 0.92 * 0.85 * 1.15 * 1.18,
       reviewCapacityMul: 1.2,
+      seniorHpCostMul: 1,
       reworkRateAdd: 0.05 - 0.08 - 0.12 - 0.1 - 0.1,
       incidentRateMul: 1.3 * 0.9 * 0.85 * 0.82,
       aiLiteracyAdd: 18,
@@ -93,7 +94,7 @@ describe('run effects fold', () => {
     expect(folded.frontierModelCostPerDependency).toBe(0.05);
   });
 
-  it('deck は常時効果に含めない', () => {
+  it('deck は常時効果に含めない（難易度係数のみ残る）', () => {
     const folded = foldRunEffects(
       input({
         deck: [
@@ -103,7 +104,7 @@ describe('run effects fold', () => {
       }),
     );
 
-    expect(folded.effects).toEqual({ ...IDENTITY_CARD_EFFECTS });
+    expect(folded.effects).toEqual({ ...IDENTITY_CARD_EFFECTS, seniorHpCostMul: 0.8 });
   });
 });
 

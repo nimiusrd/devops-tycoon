@@ -17,7 +17,7 @@
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
-export const E2E_MISSED_ADJUSTABLE_SEED = 'ri73-ma-128';
+export const E2E_MISSED_ADJUSTABLE_SEED = 'ri73b-ma-21';
 
 /**
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。

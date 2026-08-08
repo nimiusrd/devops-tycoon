@@ -502,12 +502,12 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
     const pressured = computeWhatIfState(directWhatIfInput())!;
 
     expect(pressured.current.trials).toBe(24);
-    // RI-73: normal seniorHpCostMul 後の golden（決定論）。
-    expect(pressured.current.delivered).toEqual({ mean: 665.4166666666666, min: 565, max: 785 });
+    // RI-73: seniorHpCostMul（詳細+粗粒度+鎮火閾値）後の golden（決定論）。
+    expect(pressured.current.delivered).toEqual({ mean: 665.5, min: 571, max: 784 });
     expect(pressured.current.spread).toEqual({
-      mean: 33.125,
+      mean: 29.5,
       min: 0,
-      max: 95,
+      max: 91,
     });
     expect(pressured.current.delivered).not.toEqual(plain.current.delivered);
   });

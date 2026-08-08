@@ -393,4 +393,3 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
 export function isInOrgView(x: number, y: number, margin = 80): boolean {
   return x >= -margin && x <= ORG_VIEW.w + margin && y >= -margin && y <= ORG_VIEW.h + margin;
 }
-

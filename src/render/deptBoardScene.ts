@@ -347,4 +347,3 @@ export function planDeptBoardScene(dept: DepartmentState): DeptBoardScene {
 export function isInDeptView(x: number, y: number, margin = 80): boolean {
   return x >= -margin && x <= DEPT_VIEW.w + margin && y >= -margin && y <= DEPT_VIEW.h + margin;
 }
-

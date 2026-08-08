@@ -14,7 +14,6 @@ import {
   type GameDatabase,
 } from './gameDb';
 
-
 /** メタ進行の非同期永続化インターフェース。 */
 export interface MetaStorage {
   load(): Promise<MetaState | null>;

@@ -171,7 +171,6 @@ export interface InterventionOutcome {
   effect?: InterventionEffect;
 }
 
-
 /** コンボ途切れの理由。 */
 export type ComboBreakReason = 'rework' | 'auto-contain' | 'spread';
 

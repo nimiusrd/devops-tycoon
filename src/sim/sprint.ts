@@ -266,7 +266,8 @@ export function reviewOne(
   tick?: number,
 ): void {
   const m = sprint.metrics;
-  org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST, 0, 100);
+  const hpCostMul = sprint.cardEffects.seniorHpCostMul;
+  org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST * hpCostMul, 0, 100);
 
   // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。
   const stabilized = isStabilized(sprint, tick);
@@ -386,7 +387,8 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
       m.contained += 1;
       m.autoContainCount += 1;
       const hpBefore = org.seniorHp;
-      org.seniorHp = clamp(org.seniorHp - INCIDENT_HP_COST, 0, 100);
+      const incidentHpCost = INCIDENT_HP_COST * sprint.cardEffects.seniorHpCostMul;
+      org.seniorHp = clamp(org.seniorHp - incidentHpCost, 0, 100);
       const hpCost = hpBefore - org.seniorHp;
       appendSprintEvent(sprint, {
         tick,

@@ -246,6 +246,7 @@ const CARD_MUL_EFFECTS = [
   { key: 'routineSpeedMul' as const, label: '定型タスク速度' },
   { key: 'reviewEfficiencyMul' as const, label: 'レビュー効率' },
   { key: 'reviewCapacityMul' as const, label: 'レビュー容量' },
+  { key: 'seniorHpCostMul' as const, label: 'シニア消耗', inverse: true },
   { key: 'incidentRateMul' as const, label: 'Incident率', inverse: true },
 ];
 

@@ -26,9 +26,9 @@ import type {
 export function eliteTaskMul(difficulty: DifficultyId): number {
   switch (difficulty) {
     case 'easy':
-      // RI-86 で進化ノードの取得時期が後ろへずれたため、easy elite の p50 が
-      // 120 秒帯をわずかに超えないよう再校正する（1.18→1.10）。
-      return 1.1;
+      // RI-73: seniorHpCostMul 緩和で平均シニアHPが上がり elite が短縮したため、
+      // F-4 の elite p50 帯（60〜120s）へ戻す（1.10→1.24）。
+      return 1.24;
     case 'normal':
       return 1.12;
     case 'hard':

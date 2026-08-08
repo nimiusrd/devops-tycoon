@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createEngine, type Engine } from '../../src/sim/engine';
 import type { SprintResult, SprintMetrics, SprintState, TimelineSample } from '../../src/sim/types';
-import { REVIEW_HP_COST, TASK_BASE_VALUE, taskValue } from '../../src/sim/model';
+import {
+  IDENTITY_CARD_EFFECTS,
+  REVIEW_HP_COST,
+  TASK_BASE_VALUE,
+  taskValue,
+} from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import {
   computeGrade,
@@ -381,6 +386,20 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(sprint.metrics.combo).toBe(1);
       expect(org.morale).toBe(50.5);
       expect(org.seniorHp).toBeCloseTo(hpBefore - REVIEW_HP_COST, 5);
+    });
+
+    it('RI-73: seniorHpCostMul がレビュー時のシニア体力消費に掛かる', () => {
+      const rng = () => 0.99;
+      const org = createOrgState('default', false);
+      org.seniorHp = 80;
+      const task = makeTask(0, { lane: 'review' });
+      const sprint = makeSprint(org, [task]);
+      sprint.cardEffects = { ...IDENTITY_CARD_EFFECTS, seniorHpCostMul: 0.5 };
+      const hpBefore = org.seniorHp;
+
+      reviewOne(task, sprint, org, rng);
+
+      expect(org.seniorHp).toBeCloseTo(hpBefore - REVIEW_HP_COST * 0.5, 5);
     });
 
     it('grade しきい値ちょうどと −1 ペナルティで S/A/B/C/D を区別する', () => {

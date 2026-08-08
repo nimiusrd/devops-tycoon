@@ -174,6 +174,7 @@ export const MIN_ADJUSTED_QUARTER_DELIVERY_TARGET = MIN_PRIOR_QUARTER_DELIVERY_T
 export const QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
   // RI-75/RI-84: タスク量増と安定中の高価値上振れ抑制後の skilled 実績に合わせ再校正。
   // 難易度ごとに達成と未達が両立する帯を保つ。
+  // RI-73/F-7 は Delivery 倍率ではなく seniorHpCostMul で勝率帯を作る（目標分岐を壊さない）。
   easy: 2.0,
   normal: 1.8,
   hard: 1.4,

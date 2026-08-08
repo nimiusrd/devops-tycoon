@@ -45,8 +45,13 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
     },
     // RI-75: F-4 代表方針でも通常 p50 が60秒帯に入るよう底上げ。
     taskCountMul: 1.85,
-    // 序盤オンボーディングの消耗を抑える（タスク量は F-4 帯維持のまま）。
-    globalEffects: { reworkRateAdd: -0.04, reviewEfficiencyMul: 1.1 },
+    // RI-73/F-7: 手戻り抑制は RI-75 値を維持。seniorHpCostMul で消耗だけ下げて勝率帯を作る。
+    // 平均HP上昇によるレビュー加速は eliteTaskMul（sprintBaselineBuild）側で相殺する。
+    globalEffects: {
+      reworkRateAdd: -0.04,
+      reviewEfficiencyMul: 1.05,
+      seniorHpCostMul: 0.68,
+    },
     startBudget: 60,
     bossTargetMul: 0.85,
   },
@@ -57,14 +62,18 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
     org: {
       aiDependencyBase: 35,
       aiLiteracy: 45,
-      testCoverage: 55,
-      documentation: 50,
-      quality: 60,
+      testCoverage: 58,
+      documentation: 52,
+      quality: 62,
       morale: 70,
       seniorHp: 100,
     },
     // RI-75: F-4 代表方針の通常 p50 を60秒帯へ。
     taskCountMul: 1.65,
+    // RI-73/F-7: テンポ係数は触らず、シニア消耗だけ緩和して導入難易度の勝率帯を作る。
+    globalEffects: {
+      seniorHpCostMul: 0.8,
+    },
     startBudget: 45,
     bossTargetMul: 1,
   },

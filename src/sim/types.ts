@@ -87,6 +87,11 @@ export interface CardEffects {
   reviewEfficiencyMul: number;
   /** レビュー容量倍率（シニア採用など。reviewEfficiency と別軸）。 */
   reviewCapacityMul: number;
+  /**
+   * シニア体力消費倍率（レビュー処理・自動鎮火。1 で無効果）。
+   * 難易度の globalEffects で easy/normal の消耗を抑える（RI-73 / F-7）。
+   */
+  seniorHpCostMul: number;
   /** Rework 率への加算（負で減少）。 */
   reworkRateAdd: number;
   /** Incident 率への乗算（1 で無効果）。 */

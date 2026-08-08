@@ -72,8 +72,7 @@ export function applyGoalCarryoverToEffects(
     partial.reviewEfficiencyMul !== undefined ||
     partial.reviewCapacityMul !== undefined ||
     partial.reworkRateAdd !== undefined ||
-    partial.incidentRateMul !== undefined ||
-    partial.qualityAdd !== undefined;
+    partial.incidentRateMul !== undefined;
   if (!hasCardEffects) return effects;
   return {
     ...effects,
@@ -83,12 +82,13 @@ export function applyGoalCarryoverToEffects(
     reviewCapacityMul: effects.reviewCapacityMul * (partial.reviewCapacityMul ?? 1),
     reworkRateAdd: effects.reworkRateAdd + (partial.reworkRateAdd ?? 0),
     incidentRateMul: effects.incidentRateMul * (partial.incidentRateMul ?? 1),
-    qualityAdd: effects.qualityAdd + (partial.qualityAdd ?? 0),
+    // qualityAdd は applyGoalCarryoverOrgTick で org へ適用する（二重適用を避ける）。
   };
 }
 
 /**
  * スプリント開始時に目標修正キャリーオーバーの org 継続差分を適用する（RI-83）。
+ * `qualityAdd` も CardEffects に残さずここで組織値へ焼き込む（stepSprint は参照しない）。
  */
 export function applyGoalCarryoverOrgTick(
   org: OrgState,
@@ -106,6 +106,9 @@ export function applyGoalCarryoverOrgTick(
   }
   if (partial.seniorHpDelta !== undefined && partial.seniorHpDelta !== 0) {
     next = { ...next, seniorHp: clamp(next.seniorHp + partial.seniorHpDelta, 0, 100) };
+  }
+  if (partial.qualityAdd !== undefined && partial.qualityAdd !== 0) {
+    next = { ...next, quality: clamp(next.quality + partial.qualityAdd, 0, 100) };
   }
   return next;
 }

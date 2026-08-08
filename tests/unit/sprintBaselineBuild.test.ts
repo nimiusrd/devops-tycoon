@@ -218,14 +218,14 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     const inactive = build({
       ctx: {
         goalCarryoverQuarter: 2,
-        goalCarryoverId: 'cut_scope',
+        goalCarryoverId: 'quality_pivot',
         quarterNumber: 1,
       },
     });
-    const cut = build({
+    const request = build({
       ctx: {
         goalCarryoverQuarter: 1,
-        goalCarryoverId: 'cut_scope',
+        goalCarryoverId: 'request_budget',
         quarterNumber: 1,
       },
     });
@@ -237,11 +237,20 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
       },
     });
 
-    expect(inactive.cardEffects.codingSpeedMul).toBe(1);
-    expect(cut.cardEffects.codingSpeedMul).toBeCloseTo(1.15);
-    expect(cut.cardEffects.routineSpeedMul).toBeCloseTo(1.15);
-    expect(quality.cardEffects.codingSpeedMul).toBeCloseTo(0.92);
-    expect(quality.cardEffects.incidentRateMul).toBeCloseTo(0.75);
-    expect(quality.cardEffects.qualityAdd).toBe(4);
+    expect(inactive.cardEffects.codingSpeedMul).toBe(request.cardEffects.codingSpeedMul / 1.08);
+    expect(request.cardEffects.codingSpeedMul / inactive.cardEffects.codingSpeedMul).toBeCloseTo(
+      1.08,
+    );
+    expect(
+      request.cardEffects.reviewCapacityMul / inactive.cardEffects.reviewCapacityMul,
+    ).toBeCloseTo(1.15);
+    expect(quality.cardEffects.codingSpeedMul / inactive.cardEffects.codingSpeedMul).toBeCloseTo(
+      0.92,
+    );
+    expect(quality.cardEffects.incidentRateMul / inactive.cardEffects.incidentRateMul).toBeCloseTo(
+      0.75,
+    );
+    // qualityAdd は CardEffects ではなく org tick で適用する。
+    expect(quality.cardEffects.qualityAdd).toBe(inactive.cardEffects.qualityAdd);
   });
 });

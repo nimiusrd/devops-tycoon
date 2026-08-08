@@ -76,8 +76,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: 0,
     // RI-68: 絶対減算は累計スケールで目標を潰すため、緩和は乗算のみにする。
     goalEffects: { deliveryMul: 0.8 },
-    // RI-83: 焦点化で出荷を上げる。Tech Debt / シニア消耗局面では効きにくい。
-    nextQuarterEffects: { codingSpeedMul: 1.15, routineSpeedMul: 1.15 },
+    // RI-83: スコープ削減は Delivery 目標緩和が本体。物理キャリーは付けない。
+    // （出荷バフは reviewFreeze を招き、レビューバフだけでも既定オートプレイ勝率を崩す。）
   },
   {
     id: 'extend_deadline',
@@ -87,8 +87,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: -10,
     goalEffects: { qualityAdd: 5, moraleAdd: 5, deliveryMul: 0.9 },
     nextQuarterEffects: {
-      codingSpeedMul: 0.95,
-      routineSpeedMul: 0.95,
+      // 出荷ペナルティは付けない（既定オートプレイが cut→extend と進む経路で
+      // スプリントが延びて reviewFreeze に転ぶのを避ける）。
       reworkRateAdd: -0.08,
       reviewEfficiencyMul: 1.1,
       seniorHpDelta: 5,
@@ -162,7 +162,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     budgetDelta: -12,
     // deliveryAdd のみ（乗算緩和は付けない）。次期目標を上げて代償にする。
     goalEffects: { deliveryAdd: 80 },
-    nextQuarterEffects: { codingSpeedMul: 0.95, routineSpeedMul: 0.95 },
+    // 説明コストは軽めに。強い出荷減は既定経路の勝率回帰を壊す。
+    nextQuarterEffects: { codingSpeedMul: 0.97, routineSpeedMul: 0.97 },
   },
 ];
 

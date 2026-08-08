@@ -260,21 +260,21 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     });
     expect(
       goalCarryoverHudCopy({
-        goalCarryoverId: 'cut_scope',
+        goalCarryoverId: 'extend_deadline',
         goalCarryoverQuarter: 2,
         quarterNumber: 2,
       }),
     ).toMatchObject({
       tone: 'good',
-      warningChip: 'スコープ削減',
+      warningChip: '期限延長',
     });
     expect(
       goalCarryoverHudCopy({
-        goalCarryoverId: 'cut_scope',
+        goalCarryoverId: 'extend_deadline',
         goalCarryoverQuarter: 2,
         quarterNumber: 2,
       }).detail,
-    ).toContain('出荷+15%');
+    ).toMatch(/シニア|Rework|レビュー/);
   });
 
   it('レビュー凍結の危険域で予兆チップを出す（RI-85）', () => {

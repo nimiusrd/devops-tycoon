@@ -552,9 +552,10 @@ describe('四半期レビュー（Phase 8）', () => {
     }
   });
 
-  it('RI-83: 全目標修正に次四半期キャリーオーバーがあり、効果量が分岐する', () => {
+  it('RI-83: 目標修正の次四半期キャリーオーバーが分岐する', () => {
+    // cut_scope は目標バー緩和が本体で物理キャリーなし（既定オートプレイ経路を壊さない）。
+    expect(hasNextQuarterCarryover(getGoalAdjustment('cut_scope')!)).toBe(false);
     const ids = [
-      'cut_scope',
       'extend_deadline',
       'quality_pivot',
       'request_budget',
@@ -571,21 +572,33 @@ describe('四半期レビュー（Phase 8）', () => {
       if (effects.codingSpeedMul !== undefined) shipMuls.add(effects.codingSpeedMul);
     }
     // 少なくとも出荷速度が複数帯に分かれる。
-    expect(shipMuls.size).toBeGreaterThanOrEqual(4);
+    expect(shipMuls.size).toBeGreaterThanOrEqual(3);
 
     const pause = resolveNextQuarterEffects(getGoalAdjustment('pause_ai_rollout')!);
     expect(pause.codingSpeedMul).toBeCloseTo(PAUSE_AI_DEBUFF_MUL);
     expect(pause.reworkRateAdd).toBeCloseTo(-0.1);
     expect(pause.incidentRateMul).toBeCloseTo(0.7);
 
-    const cut = applyGoalCarryoverToEffects({ ...IDENTITY_CARD_EFFECTS }, 'cut_scope', 2, 2);
-    expect(cut.codingSpeedMul).toBeCloseTo(1.15);
-    const expired = applyGoalCarryoverToEffects({ ...IDENTITY_CARD_EFFECTS }, 'cut_scope', 2, 3);
+    const request = applyGoalCarryoverToEffects(
+      { ...IDENTITY_CARD_EFFECTS },
+      'request_budget',
+      2,
+      2,
+    );
+    expect(request.codingSpeedMul).toBeCloseTo(1.08);
+    expect(request.reviewCapacityMul).toBeCloseTo(1.15);
+    const expired = applyGoalCarryoverToEffects(
+      { ...IDENTITY_CARD_EFFECTS },
+      'request_budget',
+      2,
+      3,
+    );
     expect(expired.codingSpeedMul).toBe(1);
 
-    const before = org({ techDebt: 40, seniorHp: 30 });
+    const before = org({ techDebt: 40, seniorHp: 30, quality: 50 });
     const pivoted = applyGoalCarryoverOrgTick(before, 'quality_pivot', 2, 2);
     expect(pivoted.techDebt).toBe(36);
+    expect(pivoted.quality).toBe(54);
     expect(applyGoalCarryoverOrgTick(before, 'quality_pivot', 2, 3)).toEqual(before);
     const extended = applyGoalCarryoverOrgTick(before, 'extend_deadline', 2, 2);
     expect(extended.seniorHp).toBe(35);

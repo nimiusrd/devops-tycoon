@@ -259,7 +259,6 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
     expect(formatGoalAdjustmentTags(def)).toEqual([
       { label: '顧客信頼 -15', tone: 'negative' },
       { label: 'Delivery目標 80%', tone: 'positive' },
-      { label: '次四半期 出荷速度 +15%', tone: 'positive' },
     ]);
   });
 

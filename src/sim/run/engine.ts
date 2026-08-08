@@ -567,29 +567,44 @@ export class RunEngine {
       0,
       100,
     );
-    // RI-83: 目標修正の次四半期 org 継続差分（Tech Debt / シニア HP）。全チームへ。
+    // RI-83: 目標修正の次四半期 org 継続差分（Tech Debt / シニア HP / 品質）。
+    // 差分が無い選択ではチーム再計算を走らせない（deriveTeamCapacities の毎スプリント実行は
+    // 既定オートプレイ経路の勝率を壊す）。
+    const orgBeforeCarry = this.org;
     this.org = applyGoalCarryoverOrgTick(
       this.org,
       this.goalCarryoverId,
       this.goalCarryoverQuarter,
       this.quarterNumber,
     );
-    this.teams = this.teams.map((t) => {
-      const seeded = {
-        ...this.org,
-        techDebt: t.techDebt,
-        seniorHp: t.seniorHp,
-      };
-      const next = applyGoalCarryoverOrgTick(
-        seeded,
-        this.goalCarryoverId,
-        this.goalCarryoverQuarter,
-        this.quarterNumber,
-      );
-      const updated = { ...t, techDebt: next.techDebt, seniorHp: next.seniorHp };
-      return { ...updated, ...deriveTeamCapacities(updated) };
-    });
-    this.syncActiveTeamFromOrg();
+    const orgTickApplied =
+      this.org.techDebt !== orgBeforeCarry.techDebt ||
+      this.org.seniorHp !== orgBeforeCarry.seniorHp ||
+      this.org.quality !== orgBeforeCarry.quality;
+    if (orgTickApplied) {
+      this.teams = this.teams.map((t) => {
+        const seeded = {
+          ...this.org,
+          techDebt: t.techDebt,
+          seniorHp: t.seniorHp,
+          quality: t.quality,
+        };
+        const next = applyGoalCarryoverOrgTick(
+          seeded,
+          this.goalCarryoverId,
+          this.goalCarryoverQuarter,
+          this.quarterNumber,
+        );
+        const updated = {
+          ...t,
+          techDebt: next.techDebt,
+          seniorHp: next.seniorHp,
+          quality: next.quality,
+        };
+        return { ...updated, ...deriveTeamCapacities(updated) };
+      });
+      this.syncActiveTeamFromOrg();
+    }
     this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget);
     // 試練の開始時コストで予算が尽きた場合はスプリントへ進まず継続不能にする。
     if (this.applyImmediateLose()) return;

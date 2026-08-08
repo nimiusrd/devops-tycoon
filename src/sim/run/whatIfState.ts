@@ -15,6 +15,7 @@ import {
   buildSprintBaselineInput,
   type SprintBaselineBuildContext,
 } from './sprintBaselineBuild';
+import { applyGoalCarryoverOrgTick } from './quarterReview';
 import { withTeamBoardPressure } from './sprintBaseline';
 import { previewNextSprint } from './whatIf';
 import type {
@@ -140,17 +141,25 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   const modifiers = input.pendingSprintModifiers;
   const baseSeed = `${input.seed}:what-if:q${input.quarterNumber}:s${nextIndex}`;
 
+  const applySprintStartOrg = (org: OrgState): OrgState => {
+    // 本番 beginSprint と同じ順: 回復 → 目標修正キャリーオーバー → 試練圧力。
+    let next = structuredClone(org);
+    next.seniorHp = clamp(next.seniorHp + (100 - next.seniorHp) * BETWEEN_SPRINT_RECOVERY, 0, 100);
+    next = applyGoalCarryoverOrgTick(
+      next,
+      input.goalCarryoverId ?? null,
+      input.goalCarryoverQuarter ?? input.pauseAiDebuffQuarter ?? null,
+      input.quarterNumber,
+    );
+    return next;
+  };
+
   const previewFor = (
     deck: { defId: string; level: number }[],
     org: OrgState,
     playedCards: { defId: string; level: number }[] = [],
   ): WhatIfPreview => {
-    const previewOrg = structuredClone(org);
-    previewOrg.seniorHp = clamp(
-      previewOrg.seniorHp + (100 - previewOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-      0,
-      100,
-    );
+    const previewOrg = applySprintStartOrg(org);
     applyTrialAiDependencyPressure(previewOrg, input.budget, {
       deck: input.deck,
       relics: input.relics,
@@ -184,12 +193,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
 
   const current = previewFor(input.deck, input.org);
 
-  const startOrg = structuredClone(input.org);
-  startOrg.seniorHp = clamp(
-    startOrg.seniorHp + (100 - startOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-    0,
-    100,
-  );
+  const startOrg = applySprintStartOrg(input.org);
   const budgetAfterPressure = applyTrialAiDependencyPressure(startOrg, input.budget, {
     deck: input.deck,
     relics: input.relics,

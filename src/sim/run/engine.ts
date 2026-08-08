@@ -1608,13 +1608,15 @@ export class RunEngine {
       this.goalCarryoverQuarter,
       this.quarterNumber,
     );
+    // Rework はこれまで粗粒度未適用だったため、カード等のベース分は足さず
+    // 目標修正キャリーオーバー差分だけを載せる（既存 seed / 勝率を壊さない）。
+    const reworkRateAdd = effects.reworkRateAdd - fold.effects.reworkRateAdd;
     return {
       incidentRateMul: effects.incidentRateMul,
       shipMul: effects.codingSpeedMul,
       reviewMul: effects.reviewEfficiencyMul,
       reviewCapacityMul: effects.reviewCapacityMul,
-      // extend_deadline / pause_ai_rollout の Rework 改善を非選択チームへも載せる。
-      reworkRateAdd: effects.reworkRateAdd,
+      reworkRateAdd,
       aiDependencyDrift: fold.aiDependencyDriftPerSprint,
     };
   }

@@ -11,27 +11,8 @@ import {
   stepSprint,
   summarizeSprint,
 } from '../../src/sim/sprint';
-import type { OrgState, SprintEvent, SprintState, Task, TimelineSample } from '../../src/sim/types';
-
-const makeTask = (id: number, overrides: Partial<Task> = {}): Task => ({
-  id,
-  kind: 'normal',
-  highValue: false,
-  aiAssisted: false,
-  lane: 'review',
-  progress: 0,
-  reworkAttempts: 0,
-  wasReworked: false,
-  incident: false,
-  debt: false,
-  ...overrides,
-});
-
-function makeSprint(org: OrgState, tasks: Task[]): SprintState {
-  const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
-  sprint.tasks = tasks;
-  return sprint;
-}
+import type { SprintEvent, TimelineSample } from '../../src/sim/types';
+import { makeSprint, makeTask } from './helpers/sprintFixtures';
 
 describe('sprintTimelineView（RI-53）', () => {
   const samples: TimelineSample[] = [

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatRecentSprintEvents, formatSprintEvent } from '../../src/render/sprintEventView';
 import { applyAction } from '../../src/sim/actions';
-import { BURN_TICKS, INCIDENT_CONTAIN_HP } from '../../src/sim/model';
+import { INCIDENT_CONTAIN_HP } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
 import {
   createSprint,
@@ -11,30 +11,8 @@ import {
   summarizeSprint,
 } from '../../src/sim/sprint';
 import { SPRINT_EVENT_LIMIT, appendSprintEvent } from '../../src/sim/sprintEvents';
-import type { OrgState, SprintEvent, SprintState, Task } from '../../src/sim/types';
-
-const makeTask = (id: number, overrides: Partial<Task> = {}): Task => ({
-  id,
-  kind: 'normal',
-  highValue: false,
-  aiAssisted: false,
-  lane: 'review',
-  progress: 0,
-  reworkAttempts: 0,
-  wasReworked: false,
-  incident: false,
-  debt: false,
-  ...overrides,
-});
-
-const burningTask = (id: number, burnTicksLeft = BURN_TICKS): Task =>
-  makeTask(id, { lane: 'rework', incident: true, burnTicksLeft, reworkAttempts: 1 });
-
-function makeSprint(org: OrgState, tasks: Task[]): SprintState {
-  const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
-  sprint.tasks = tasks;
-  return sprint;
-}
+import type { SprintEvent } from '../../src/sim/types';
+import { burningTask, makeSprint, makeTask } from './helpers/sprintFixtures';
 
 describe('sprintEventView（RI-52）', () => {
   it('割り込みレビュー介入を文言化する', () => {

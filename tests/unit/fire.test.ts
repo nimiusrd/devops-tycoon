@@ -7,31 +7,8 @@ import {
   INCIDENT_HP_COST,
 } from '../../src/sim/model';
 import { createOrgState } from '../../src/sim/org';
-import { createSprint, resolveSprintConfig, reviewOne, stepSprint } from '../../src/sim/sprint';
-import type { OrgState, SprintState, Task } from '../../src/sim/types';
-
-const makeTask = (id: number, overrides: Partial<Task> = {}): Task => ({
-  id,
-  kind: 'normal',
-  highValue: false,
-  aiAssisted: false,
-  lane: 'review',
-  progress: 0,
-  reworkAttempts: 0,
-  wasReworked: false,
-  incident: false,
-  debt: false,
-  ...overrides,
-});
-
-const burningTask = (id: number, burnTicksLeft = BURN_TICKS): Task =>
-  makeTask(id, { lane: 'rework', incident: true, burnTicksLeft, reworkAttempts: 1 });
-
-function makeSprint(org: OrgState, tasks: Task[]): SprintState {
-  const sprint = createSprint(resolveSprintConfig('default'), org, () => 0.5);
-  sprint.tasks = tasks;
-  return sprint;
-}
+import { reviewOne, stepSprint } from '../../src/sim/sprint';
+import { burningTask, makeSprint, makeTask } from './helpers/sprintFixtures';
 
 describe('炎上タイマー: 点火（第6.3）', () => {
   it('Review 落ちの障害は即決着せず、タイマー付きで点火する', () => {

@@ -623,7 +623,7 @@ function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
   if (effects.qualityAdd !== undefined && effects.qualityAdd !== 0) {
     pushTag(
       tags,
-      `次四半期 品質 ${formatSignedDelta(effects.qualityAdd)}`,
+      `次四半期 品質 ${formatSignedDelta(effects.qualityAdd)}/スプリント`,
       toneFromDelta(effects.qualityAdd),
     );
   }

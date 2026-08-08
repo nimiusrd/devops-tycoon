@@ -329,6 +329,18 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
     });
   });
 
+  it('品質キャリーオーバーはスプリント単位でタグ化する（RI-83）', () => {
+    const def = getGoalAdjustment('quality_pivot')!;
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '次四半期 品質 +4/スプリント',
+      tone: 'positive',
+    });
+    expect(formatGoalAdjustmentTags(def)).toContainEqual({
+      label: '次四半期 Tech Debt -4/スプリント',
+      tone: 'positive',
+    });
+  });
+
   it.each([
     'cut_scope',
     'extend_deadline',

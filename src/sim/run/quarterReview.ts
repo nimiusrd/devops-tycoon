@@ -87,6 +87,26 @@ export function applyGoalCarryoverToEffects(
 }
 
 /**
+ * 次四半期キャリーオーバーに org 継続差分があるか（RI-83）。
+ * アクティブチーム値が飽和して実値が変わらなくても、他チーム更新の判定に使う。
+ */
+export function hasGoalCarryoverOrgDelta(
+  carryoverId: GoalAdjustmentId | null,
+  carryoverQuarter: number | null,
+  quarterNumber: number,
+): boolean {
+  if (carryoverId === null || carryoverQuarter !== quarterNumber) return false;
+  const def = getGoalAdjustment(carryoverId);
+  if (!def) return false;
+  const partial = resolveNextQuarterEffects(def);
+  return (
+    (partial.techDebtDelta !== undefined && partial.techDebtDelta !== 0) ||
+    (partial.seniorHpDelta !== undefined && partial.seniorHpDelta !== 0) ||
+    (partial.qualityAdd !== undefined && partial.qualityAdd !== 0)
+  );
+}
+
+/**
  * スプリント開始時に目標修正キャリーオーバーの org 継続差分を適用する（RI-83）。
  * `qualityAdd` も CardEffects に残さずここで組織値へ焼き込む（stepSprint は参照しない）。
  */

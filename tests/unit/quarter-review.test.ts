@@ -26,6 +26,7 @@ import {
   buildQuarterReview,
   diagnoseMissedReasons,
   evaluateQuarterOutcome,
+  hasGoalCarryoverOrgDelta,
   hasNextQuarterCarryover,
   isTerminalFailure,
   loseReasonForOutcome,
@@ -602,6 +603,19 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(applyGoalCarryoverOrgTick(before, 'quality_pivot', 2, 3)).toEqual(before);
     const extended = applyGoalCarryoverOrgTick(before, 'extend_deadline', 2, 2);
     expect(extended.seniorHp).toBe(35);
+
+    // 実値が変わらなくても、定義に org 差分があればチーム更新対象と判定する。
+    expect(hasGoalCarryoverOrgDelta('extend_deadline', 2, 2)).toBe(true);
+    expect(hasGoalCarryoverOrgDelta('quality_pivot', 2, 2)).toBe(true);
+    expect(hasGoalCarryoverOrgDelta('cut_scope', 2, 2)).toBe(false);
+    expect(hasGoalCarryoverOrgDelta('request_budget', 2, 2)).toBe(false);
+    expect(hasGoalCarryoverOrgDelta('extend_deadline', 2, 3)).toBe(false);
+    const saturated = org({ techDebt: 0, seniorHp: 100, quality: 100 });
+    expect(applyGoalCarryoverOrgTick(saturated, 'extend_deadline', 2, 2).seniorHp).toBe(100);
+    expect(applyGoalCarryoverOrgTick(saturated, 'quality_pivot', 2, 2)).toMatchObject({
+      techDebt: 0,
+      quality: 100,
+    });
   });
 
   it('RI-72-C1: outcome 補助関数と表示ラベルが全 outcome を分類する', () => {

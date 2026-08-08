@@ -132,6 +132,7 @@ import {
   buildQuarterReview,
   canAcknowledgeWin,
   canChooseAdjustment,
+  hasGoalCarryoverOrgDelta,
   hasNextQuarterCarryover,
   isTerminalFailure,
   loseReasonForOutcome,
@@ -568,20 +569,18 @@ export class RunEngine {
       100,
     );
     // RI-83: 目標修正の次四半期 org 継続差分（Tech Debt / シニア HP / 品質）。
-    // 差分が無い選択ではチーム再計算を走らせない（deriveTeamCapacities の毎スプリント実行は
-    // 既定オートプレイ経路の勝率を壊す）。
-    const orgBeforeCarry = this.org;
+    // 定義に org 差分が無い選択ではチーム再計算を走らせない（deriveTeamCapacities の毎スプリント
+    // 実行は既定オートプレイ経路の勝率を壊す）。アクティブ側が上限・下限で実値が変わらなくても、
+    // 非アクティブチームへは同じ差分を適用する。
     this.org = applyGoalCarryoverOrgTick(
       this.org,
       this.goalCarryoverId,
       this.goalCarryoverQuarter,
       this.quarterNumber,
     );
-    const orgTickApplied =
-      this.org.techDebt !== orgBeforeCarry.techDebt ||
-      this.org.seniorHp !== orgBeforeCarry.seniorHp ||
-      this.org.quality !== orgBeforeCarry.quality;
-    if (orgTickApplied) {
+    if (
+      hasGoalCarryoverOrgDelta(this.goalCarryoverId, this.goalCarryoverQuarter, this.quarterNumber)
+    ) {
       this.teams = this.teams.map((t) => {
         const seeded = {
           ...this.org,

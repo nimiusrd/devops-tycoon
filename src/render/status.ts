@@ -582,7 +582,7 @@ export function goalCarryoverHudCopy(input: {
     parts.push(`Rework${pct >= 0 ? '+' : ''}${pct}`);
   }
   if (effects.qualityAdd !== undefined && effects.qualityAdd !== 0) {
-    parts.push(`品質${effects.qualityAdd >= 0 ? '+' : ''}${effects.qualityAdd}`);
+    parts.push(`品質${effects.qualityAdd >= 0 ? '+' : ''}${effects.qualityAdd}/S`);
   }
   if (effects.techDebtDelta !== undefined && effects.techDebtDelta !== 0) {
     parts.push(`負債${effects.techDebtDelta >= 0 ? '+' : ''}${effects.techDebtDelta}/S`);

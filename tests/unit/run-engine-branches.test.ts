@@ -437,6 +437,24 @@ describe('RI-72-D5 RunEngine NoCoverage reachable branches', () => {
     expect(updated.headcount).toBe(6);
   });
 
+  it('RI-83: アクティブチームが飽和しても他チームへ org キャリーを適用する', () => {
+    const engine = new RunEngine({ seed: 'ri-83-saturate-active', difficulty: 'easy' });
+    engine.startRun();
+    const i = asInternals(engine);
+    i.goalCarryoverQuarter = i.quarterNumber;
+    i.goalCarryoverId = 'extend_deadline';
+    i.org = { ...i.org, seniorHp: 100 };
+    i.teams = i.teams.map((t) =>
+      t.id === i.activeTeamId ? { ...t, seniorHp: 100 } : { ...t, seniorHp: 40 },
+    );
+    engine.beginSetupSprint();
+    const snap = engine.snapshot();
+    expect(snap.org.seniorHp).toBe(100);
+    const inactive = snap.teams.filter((t) => t.id !== snap.activeTeamId);
+    expect(inactive.length).toBeGreaterThan(0);
+    expect(inactive.every((t) => t.seniorHp === 45)).toBe(true);
+  });
+
   it('四半期調整の特殊枝で delivery 乗算・予算上限・AI停止・再編離脱を通す', () => {
     const quality = new RunEngine({ seed: 'ri-72-d5-quality-pivot', difficulty: 'easy' });
     const qualityInternals = arrangeAdjustment(quality, ['quality_pivot']);

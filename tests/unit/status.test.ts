@@ -275,6 +275,13 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
         quarterNumber: 2,
       }).detail,
     ).toMatch(/シニア|Rework|レビュー/);
+    expect(
+      goalCarryoverHudCopy({
+        goalCarryoverId: 'quality_pivot',
+        goalCarryoverQuarter: 2,
+        quarterNumber: 2,
+      }).detail,
+    ).toMatch(/品質\+4\/S/);
   });
 
   it('レビュー凍結の危険域で予兆チップを出す（RI-85）', () => {

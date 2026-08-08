@@ -601,12 +601,9 @@ function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
     );
   };
   pushMulPct('出荷速度', effects.codingSpeedMul);
-  // routine は出荷速度と同値で載せるため、差分があるときだけ別タグにする。
-  if (
-    effects.routineSpeedMul !== undefined &&
-    effects.routineSpeedMul !== 1 &&
-    effects.routineSpeedMul !== effects.codingSpeedMul
-  ) {
+  // routineSpeedMul は coding への追加乗算。定義側で同値を載せない（二重適用になる）。
+  // 追加の定型倍率があるときだけ別タグにする。
+  if (effects.routineSpeedMul !== undefined && effects.routineSpeedMul !== 1) {
     pushMulPct('定型速度', effects.routineSpeedMul);
   }
   pushMulPct('レビュー効率', effects.reviewEfficiencyMul);

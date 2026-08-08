@@ -208,7 +208,8 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(inactive.cardEffects.codingSpeedMul).toBe(1);
     expect(inactive.cardEffects.routineSpeedMul).toBe(1);
     expect(active.cardEffects.codingSpeedMul).toBe(0.85);
-    expect(active.cardEffects.routineSpeedMul).toBe(0.85);
+    // routine には pause 倍率を載せない（定型で coding×routine の二重減算を避ける）。
+    expect(active.cardEffects.routineSpeedMul).toBe(1);
     // RI-83: pause_ai は安定化サイドも乗る。
     expect(active.cardEffects.reworkRateAdd).toBeCloseTo(-0.1);
     expect(active.cardEffects.incidentRateMul).toBeCloseTo(0.7);

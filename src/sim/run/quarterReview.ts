@@ -40,8 +40,8 @@ export const PAUSE_AI_DEBUFF_MUL = 0.85;
 export function resolveNextQuarterEffects(def: GoalAdjustmentDef): GoalNextQuarterEffects {
   const out: GoalNextQuarterEffects = { ...def.nextQuarterEffects };
   if (def.pauseAiDebuff) {
+    // 出荷速度は codingSpeedMul のみ。routine にも同じ倍率を入れると定型で二重乗算になる。
     out.codingSpeedMul = (out.codingSpeedMul ?? 1) * PAUSE_AI_DEBUFF_MUL;
-    out.routineSpeedMul = (out.routineSpeedMul ?? 1) * PAUSE_AI_DEBUFF_MUL;
   }
   return out;
 }

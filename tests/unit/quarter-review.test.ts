@@ -561,6 +561,7 @@ describe('四半期レビュー（Phase 8）', () => {
 
     const pause = resolveNextQuarterEffects(getGoalAdjustment('pause_ai_rollout')!);
     expect(pause.codingSpeedMul).toBeCloseTo(PAUSE_AI_DEBUFF_MUL);
+    expect(pause.routineSpeedMul).toBeUndefined();
     expect(pause.reworkRateAdd).toBeCloseTo(-0.1);
     expect(pause.incidentRateMul).toBeCloseTo(0.7);
 
@@ -571,7 +572,15 @@ describe('四半期レビュー（Phase 8）', () => {
       2,
     );
     expect(request.codingSpeedMul).toBeCloseTo(1.08);
+    // 一律出荷バフは coding のみ。routine 同値は定型で 1.08² になる。
+    expect(request.routineSpeedMul).toBe(1);
     expect(request.reviewCapacityMul).toBeCloseTo(1.15);
+    const qualityEffects = resolveNextQuarterEffects(getGoalAdjustment('quality_pivot')!);
+    expect(qualityEffects.codingSpeedMul).toBeCloseTo(0.92);
+    expect(qualityEffects.routineSpeedMul).toBeUndefined();
+    const careEffects = resolveNextQuarterEffects(getGoalAdjustment('stakeholder_care')!);
+    expect(careEffects.codingSpeedMul).toBeCloseTo(0.97);
+    expect(careEffects.routineSpeedMul).toBeUndefined();
     const expired = applyGoalCarryoverToEffects(
       { ...IDENTITY_CARD_EFFECTS },
       'request_budget',

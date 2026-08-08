@@ -103,8 +103,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     goalEffects: { techDebtLimitAdd: 15, incidentLimitAdd: 3, deliveryMul: 0.85 },
     orgEffects: { deliveryScoreMul: 0.9, techDebtDelta: -8 },
     nextQuarterEffects: {
+      // codingSpeedMul のみ（routine は coding に乗算されるため同値設定は二重適用になる）。
       codingSpeedMul: 0.92,
-      routineSpeedMul: 0.92,
       incidentRateMul: 0.75,
       qualityAdd: 4,
       techDebtDelta: -4,
@@ -121,8 +121,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     goalEffects: { deliveryAdd: 300 },
     nextBudgetCapDelta: -15,
     nextQuarterEffects: {
+      // codingSpeedMul のみ（routine 同値設定は定型タスクで二重乗算になる）。
       codingSpeedMul: 1.08,
-      routineSpeedMul: 1.08,
       reviewCapacityMul: 1.15,
     },
   },
@@ -163,7 +163,8 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     // deliveryAdd のみ（乗算緩和は付けない）。次期目標を上げて代償にする。
     goalEffects: { deliveryAdd: 80 },
     // 説明コストは軽めに。強い出荷減は既定経路の勝率回帰を壊す。
-    nextQuarterEffects: { codingSpeedMul: 0.97, routineSpeedMul: 0.97 },
+    // codingSpeedMul のみ（routine 同値設定は定型タスクで二重乗算になる）。
+    nextQuarterEffects: { codingSpeedMul: 0.97 },
   },
 ];
 

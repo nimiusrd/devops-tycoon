@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getCard } from '../../src/data/cards';
 import { dealHand, scaleEffects } from '../../src/sim/cards';
 import type { RosterState } from '../../src/sim/member/types';
-import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP } from '../../src/sim/outcome';
+import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, TECH_DEBT_CAP } from '../../src/sim/outcome';
 import { createRng } from '../../src/sim/rng';
 import { RunEngine } from '../../src/sim/run/engine';
 import { previewNextSprint } from '../../src/sim/run/whatIf';
@@ -300,6 +300,31 @@ describe('RI-46 次スプリント what-if 試算', () => {
     expect(whatIf?.draftCandidates.copilot?.trials).toBe(0);
     expect(whatIf?.draftCandidates['auto-test']?.loseOnPlay).toBeUndefined();
     expect(whatIf?.draftCandidates['auto-test']?.trials).toBe(24);
+  });
+
+  it('RI-83: loseOnPlay 判定にも目標修正の org キャリーオーバーを含める', () => {
+    // Tech Debt が CAP ちょうどのとき、quality_pivot の -4/スプリント無しだと
+    // 手札入り候補が誤って loseOnPlay: techDebt になる。
+    const engine = new RunEngine({ seed: 'what-if-goal-carry-lose', difficulty: 'easy' });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      org: { techDebt: number };
+      quarterNumber: number;
+      goalCarryoverQuarter: number | null;
+      goalCarryoverId: string | null;
+    };
+    internals.org.techDebt = TECH_DEBT_CAP;
+    internals.goalCarryoverQuarter = internals.quarterNumber;
+    internals.goalCarryoverId = 'quality_pivot';
+    internals.phase = 'draft';
+    internals.draft = ['docs'];
+
+    const whatIf = engine.whatIfPreview();
+    expect(whatIf?.current.immediateLose).toBeUndefined();
+    expect(whatIf?.draftCandidates.docs?.loseOnPlay).toBeUndefined();
+    expect(whatIf?.draftCandidates.docs?.trials).toBeGreaterThan(0);
   });
 
   it('loseOnPlay は試練の開始時ドリフト後に判定する', () => {

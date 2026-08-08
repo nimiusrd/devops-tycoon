@@ -235,12 +235,9 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
         continue;
       }
 
-      const playOrg = structuredClone(input.org);
-      playOrg.seniorHp = clamp(
-        playOrg.seniorHp + (100 - playOrg.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-        0,
-        100,
-      );
+      // 手札入りの発動仮定でも beginSprint と同じ org 開始処理を使う。
+      // 回復だけだと quality_pivot 等の Tech Debt 持ち越しが抜け、生存候補を loseOnPlay と誤表示する。
+      const playOrg = applySprintStartOrg(input.org);
       const budgetAfterCardPressure = applyTrialAiDependencyPressure(playOrg, input.budget, {
         deck: input.deck,
         relics: input.relics,

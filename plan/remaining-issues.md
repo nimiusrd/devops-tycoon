@@ -41,7 +41,7 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 
 ### RI-64 独立状態を持つ複数チーム運営
 
-完了。各チームは `TeamRunState` として永続し、非選択は粗粒度 sim・選択中は詳細スプリント、全社／部署／チーム施策と入り込みコスト、任意チームへのドリルダウン、保存／リプレイを接続した。詳細はGit履歴と `tests/unit/run-engine-orgscale.test.ts` / `tests/e2e/org-scale.spec.ts` を参照。
+完了。各チームは `TeamRunState` として永続し、非選択は粗粒度 sim・選択中は詳細スプリント、全社／部署／チーム施策と入り込みコスト、任意チームへのドリルダウン、保存／リプレイを接続した。詳細はGit履歴と `tests/unit/runEngineOrgscale.test.ts` / `tests/e2e/org-scale.spec.ts` を参照。
 
 ### RI-67 オンボーディングとシニア燃え尽きの断絶
 
@@ -49,7 +49,7 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 
 ### RI-68 四半期レビュー Delivery KPI のスケール不整合
 
-完了。`deliveryTarget` を四半期累計スケール（`SPRINTS_PER_QUARTER × QUARTER_DELIVERY_THROUGHPUT_MUL`）へ拡げ、`quarterTotals.delivered` と同単位で比較するようにした。目標修正の `deliveryAdd`・下限、UI ラベル「Delivery（四半期累計）」、代表 seed 分布テストも更新。詳細は Git 履歴と `tests/unit/quarter-review.test.ts` を参照。
+完了。`deliveryTarget` を四半期累計スケール（`SPRINTS_PER_QUARTER × QUARTER_DELIVERY_THROUGHPUT_MUL`）へ拡げ、`quarterTotals.delivered` と同単位で比較するようにした。目標修正の `deliveryAdd`・下限、UI ラベル「Delivery（四半期累計）」、代表 seed 分布テストも更新。詳細は Git 履歴と `tests/unit/quarterReview.test.ts` を参照。
 
 ### RI-69 スプリント上部操作バーと盤面の重なり
 
@@ -188,7 +188,7 @@ AI の on/off が状態へ伝播していること自体は正しい（AI 利用
 
 完了。各目標修正に次四半期だけ効く物理キャリーオーバー（`nextQuarterEffects` / `goalCarryover*`）を追加し、出荷・レビュー・障害率に加え Tech Debt / シニア HP のスプリント継続差分で選択差を分岐させた。RunBar に持ち越しチップ、選択タグに「次四半期 …」を表示。旧 `pauseAiDebuffQuarter` セーブは `pause_ai_rollout` として互換復元する。
 
-再計測（adj* 7方針×各40ラン、共通コホート6組）の「初回修正の次四半期まで生存」は `quality_pivot` 50% / `extend_deadline`・`reorg_teams` 33.3% / `pause_ai_rollout` 16.7% / `cut_scope`・`request_budget`・`stakeholder_care` 0%（最大差50pt、3帯）。コホートの敗因は Tech Debt / シニア燃え尽きが中心で、負債削減・シニア回復を持つ選択が有利、出荷焦点や信頼ケアだけでは不利になる（F-1）。詳細は Git 履歴と `tests/unit/quarter-review.test.ts` / `sprintBaselineBuild.test.ts` / `status.test.ts` を参照。
+再計測（adj* 7方針×各40ラン、共通コホート6組）の「初回修正の次四半期まで生存」は `quality_pivot` 50% / `extend_deadline`・`reorg_teams` 33.3% / `pause_ai_rollout` 16.7% / `cut_scope`・`request_budget`・`stakeholder_care` 0%（最大差50pt、3帯）。コホートの敗因は Tech Debt / シニア燃え尽きが中心で、負債削減・シニア回復を持つ選択が有利、出荷焦点や信頼ケアだけでは不利になる（F-1）。詳細は Git 履歴と `tests/unit/quarterReview.test.ts` / `sprintBaselineBuild.test.ts` / `status.test.ts` を参照。
 
 ### RI-84 条件を揃えると介入の寄与がほぼ消える
 

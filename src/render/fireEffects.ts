@@ -51,9 +51,6 @@ export type PositionedFireEffect =
     }
   | { kind: 'ignite'; taskId: number; x: number; y: number };
 
-const VIEW_W = 1404;
-const VIEW_H = 573;
-
 /** スプリント状態から演出検出用スナップショットを作る。 */
 export function createFireSnapshot(
   tasks: readonly Task[],
@@ -499,5 +496,3 @@ export function positionFireEffects(
     }
   });
 }
-
-export const FIRE_VIEW = { w: VIEW_W, h: VIEW_H } as const;

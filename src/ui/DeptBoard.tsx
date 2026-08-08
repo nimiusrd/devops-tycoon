@@ -3,7 +3,12 @@
  */
 import { useLayoutEffect, useRef } from 'react';
 import type { DepartmentState } from '../sim/orgscale/types';
-import { DEPT_VIEW, planDeptBoardScene, type DeptTeamPlan } from '../render/deptBoardScene';
+import {
+  DEPT_VIEW,
+  planDeptBoardScene,
+  TEAM_MINI_DESIGN_W,
+  type DeptTeamPlan,
+} from '../render/deptBoardScene';
 import { DeptDependencyFlows } from './DeptDependencyFlows';
 import { DeptPlate } from './DeptPlate';
 import { DeptTeamBanner, DeptTeamMini } from './DeptTeamMini';
@@ -62,7 +67,7 @@ function DeptTeamBlock({
         style={{
           left: pct(plan.x, VIEW_W),
           top: pct(plan.y, VIEW_H),
-          width: `${27.064 * plan.scale}%`,
+          width: `${(TEAM_MINI_DESIGN_W / VIEW_W) * 100 * plan.scale}%`,
         }}
         onClick={onClick}
         title={`${team.name}の状態を確認`}

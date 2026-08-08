@@ -33,6 +33,3 @@ export const runMachine = createMachine({
     ]),
   ),
 });
-
-/** マシンの状態値（= フェーズ）の集合。`RunPhase` と一致することを型で保証する。 */
-export type RunMachinePhase = RunPhase;

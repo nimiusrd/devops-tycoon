@@ -171,15 +171,6 @@ export interface InterventionOutcome {
   effect?: InterventionEffect;
 }
 
-/** スプリント内イベントの種別（RI-52/53。文言は持たず UI がフォーマットする）。 */
-export type SprintEventKind =
-  | 'intervention'
-  | 'combo-break'
-  | 'ignite'
-  | 'auto-contain'
-  | 'spread'
-  | 'contain';
-
 /** コンボ途切れの理由。 */
 export type ComboBreakReason = 'rework' | 'auto-contain' | 'spread';
 

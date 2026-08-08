@@ -14,12 +14,6 @@ import {
   type GameDatabase,
 } from './gameDb';
 
-/** @deprecated GAME_DB_NAME を使う。後方互換の再エクスポート。 */
-export const META_DB_NAME = GAME_DB_NAME;
-/** @deprecated GAME_DB_VERSION を使う。後方互換の再エクスポート。 */
-export { GAME_DB_VERSION as META_DB_VERSION } from './gameDb';
-export { META_STORE_NAME };
-
 /** メタ進行の非同期永続化インターフェース。 */
 export interface MetaStorage {
   load(): Promise<MetaState | null>;

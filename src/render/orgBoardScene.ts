@@ -6,7 +6,6 @@
  * 設計座標空間（1404×573）で返し、DOM/SVGとPixiJSのレンダラは
  * それを読んで描くだけにする（第22.2）。
  */
-import { diagnosisView } from '../sim/diagnosis';
 import type { DepartmentState, OrgScaleState, Team, TeamHealth } from '../sim/orgscale/types';
 import { HEALTH_COLOR, HEALTH_LABEL } from './orgView';
 import { displayName, fireLabel, islandTitle } from './orgIslandView';
@@ -393,9 +392,4 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
 /** 設計座標が ORG_VIEW 範囲内か（テスト用）。 */
 export function isInOrgView(x: number, y: number, margin = 80): boolean {
   return x >= -margin && x <= ORG_VIEW.w + margin && y >= -margin && y <= ORG_VIEW.h + margin;
-}
-
-/** 全社診断ラベル（zone label 補助）。 */
-export function orgDiagnosisLabel(org: OrgScaleState): string {
-  return diagnosisView(org.diagnosis).label;
 }

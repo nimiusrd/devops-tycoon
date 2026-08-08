@@ -617,7 +617,7 @@ SetupとDraftでは、同じ開始条件を24個の派生seedで無介入実行�
 - 保存・復元後も進行結果が一致する
 - チームごとの派生seedと粗粒度進行が再現する
 
-主なテストは[`tests/unit/rng.test.ts`](../tests/unit/rng.test.ts)、[`tests/unit/sprint.test.ts`](../tests/unit/sprint.test.ts)、[`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts)、[`tests/unit/orgscale-engine.test.ts`](../tests/unit/orgscale-engine.test.ts)。
+主なテストは[`tests/unit/rng.test.ts`](../tests/unit/rng.test.ts)、[`tests/unit/sprint.test.ts`](../tests/unit/sprint.test.ts)、[`tests/unit/run-engine.test.ts`](../tests/unit/run-engine.test.ts)、[`tests/unit/run-engine-orgscale.test.ts`](../tests/unit/run-engine-orgscale.test.ts)。
 
 ### 9.2 因果の不変条件
 

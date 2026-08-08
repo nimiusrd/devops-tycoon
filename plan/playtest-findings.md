@@ -837,7 +837,7 @@ SPEC 第19.1 F-5 は「無介入は損ではなく不安定。介入の価値は
 | `aiDependency`（132件） | `sprint` 100% |
 | `reorgRequired`（4件） | `quarterReview` 100% |
 
-回帰は `tests/unit/ri85-review-freeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
+回帰は `tests/unit/reviewFreeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
 
 ### RI-86 Q1 で進化ツリーを取り切れてしまい、ビルドの方向という概念が成立しない（優先度: 中 / F-11）— 進行中
 

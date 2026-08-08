@@ -19,6 +19,7 @@ import type {
   StakeholderTrust,
 } from '../../src/sim/run/types';
 import type { OrgState, SprintState, Task } from '../../src/sim/types';
+import { adjustableReview, zeroTotals } from './helpers/runEngineFixtures';
 
 type EngineInternals = {
   activeTeamId: string;
@@ -50,37 +51,6 @@ type EngineInternals = {
 };
 
 const asInternals = (engine: RunEngine): EngineInternals => engine as unknown as EngineInternals;
-
-const zeroTotals = (): RunTotals => ({
-  delivered: 0,
-  done: 0,
-  rework: 0,
-  incidents: 0,
-  contained: 0,
-  spread: 0,
-  aiAssisted: 0,
-  completed: 0,
-  reviewQueuePeak: 0,
-  maxCombo: 0,
-  consecutiveIncidentSprints: 0,
-});
-
-const adjustableReview = (adjustments: QuarterReview['availableAdjustments']): QuarterReview => ({
-  goal: {
-    deliveryTarget: 80,
-    qualityTarget: 50,
-    techDebtLimit: 50,
-    moraleTarget: 45,
-    incidentLimit: 3,
-    aiAdoptionTarget: 40,
-  },
-  outcome: 'missed_adjustable',
-  trust: { management: 60, customers: 60, team: 60 },
-  progress: [],
-  missedReasons: [],
-  availableAdjustments: adjustments,
-  bossCleared: false,
-});
 
 const arrangeAdjustment = (
   engine: RunEngine,

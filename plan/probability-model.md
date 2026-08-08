@@ -617,7 +617,7 @@ SetupとDraftでは、同じ開始条件を24個の派生seedで無介入実行�
 - 保存・復元後も進行結果が一致する
 - チームごとの派生seedと粗粒度進行が再現する
 
-主なテストは[`tests/unit/rng.test.ts`](../tests/unit/rng.test.ts)、[`tests/unit/sprint.test.ts`](../tests/unit/sprint.test.ts)、[`tests/unit/runEngine.test.ts`](../tests/unit/runEngine.test.ts)、[`tests/unit/runEngineOrgscale.test.ts`](../tests/unit/runEngineOrgscale.test.ts)。
+主なテストは[`tests/unit/sim/rng.test.ts`](../tests/unit/sim/rng.test.ts)、[`tests/unit/sim/sprint.test.ts`](../tests/unit/sim/sprint.test.ts)、[`tests/unit/sim/runEngine.test.ts`](../tests/unit/sim/runEngine.test.ts)、[`tests/unit/sim/runEngineOrgscale.test.ts`](../tests/unit/sim/runEngineOrgscale.test.ts)。
 
 ### 9.2 因果の不変条件
 
@@ -632,7 +632,7 @@ SetupとDraftでは、同じ開始条件を24個の派生seedで無介入実行�
 - 技術的負債が高いほど負債系イベントの重みが増える
 - 粗粒度モデルでもIncident倍率、Review容量、AI依存ドリフトが同じ方向へ効く
 
-主なテストは[`tests/unit/process.test.ts`](../tests/unit/process.test.ts)、[`tests/unit/runLoop.test.ts`](../tests/unit/runLoop.test.ts)、[`tests/unit/member.test.ts`](../tests/unit/member.test.ts)、[`tests/unit/monteCarlo.test.ts`](../tests/unit/monteCarlo.test.ts)。
+主なテストは[`tests/unit/sim/process.test.ts`](../tests/unit/sim/process.test.ts)、[`tests/unit/sim/runLoop.test.ts`](../tests/unit/sim/runLoop.test.ts)、[`tests/unit/sim/member.test.ts`](../tests/unit/sim/member.test.ts)、[`tests/unit/sim/monteCarlo.test.ts`](../tests/unit/sim/monteCarlo.test.ts)。
 
 ### 9.3 統計レンジ
 

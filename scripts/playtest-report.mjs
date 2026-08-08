@@ -385,39 +385,49 @@ console.log(`\n## F-5 出荷の散らばり（同一スプリント番号で比�
 // 各スプリント番号ごとに、そこへ到達したランだけで CV を出す。
 const CV_SPRINT_INDEXES = [1, 2, 3, 5];
 
-// RI-84 の方針間比較は**共通コホート**で出す。
-// 方針ごとに到達率が違うまま生存ランを別々に母集団にすると、CV 差へ介入効果だけでなく
-// seed の選抜差が混ざる（実際 hard/S5 では到達 seed 数が方針で倍以上違う）。
-const CV_COMPARE_POLICIES = ['noInterventionCtl', 'naive', 'skilledNoHire'];
+// RI-84 の方針間比較は**介入以外を揃えたペアの共通コホート**で出す。
+// naive は asListed / firstChoice、skilledNoHire は reviewFirst / stateAware なので、
+// 1つの無介入方針を両方へ使うと進化・ビート選択の差が CV へ混ざる。
+const CV_COMPARE_PAIRS = [
+  { policy: 'naive', control: 'naiveNoInterventionCtl' },
+  { policy: 'skilledNoHire', control: 'noInterventionCtl' },
+];
+const CV_COMPARE_POLICIES = [
+  ...new Set(CV_COMPARE_PAIRS.flatMap(({ policy, control }) => [policy, control])),
+];
 // **メタプロファイルごとに分ける。** キーに `meta` を含めて対応は取れていても、CV は
 // 対応差ではなく周辺分布の分散なので、fresh と full を同じ配列へ入れるとメタ解放による
 // 平均・分散の差が介入効果へ混入する。
-console.log(
-  'RI-84 の方針間比較（同一メタ・難易度・seed で全方針が到達したスプリントのみ。メタ別）:',
-);
-for (const meta of metaProfiles) {
-  for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
-    const cells = CV_SPRINT_INDEXES.map((n) => {
-      const bySeed = (policy) => {
-        const m = new Map();
-        const pool = runs.filter(
-          (x) => (x.meta ?? 'fresh') === meta && x.difficulty === d && x.policy === policy,
-        );
-        for (const r of pool) {
-          if (r.sprints.length >= n) m.set(r.seed, r.sprints[n - 1].delivered);
-        }
-        return m;
-      };
-      const maps = CV_COMPARE_POLICIES.map(bySeed);
-      const shared = [...maps[0].keys()].filter((k) => maps.every((m) => m.has(k)));
-      if (shared.length === 0) return `S${n}: 共通到達なし`;
-      const parts = CV_COMPARE_POLICIES.map((policy, i) => {
-        const xs = shared.map((k) => maps[i].get(k));
-        return `${policy}=${fmtCv(xs)}`;
+if (sampleGuard('F-5 の統制ペア', CV_COMPARE_POLICIES)) {
+  console.log(
+    'RI-84 の方針間比較（同一メタ・難易度・seed で各ペアが到達したスプリントのみ。メタ別）:',
+  );
+  for (const meta of metaProfiles) {
+    for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
+      const cells = CV_SPRINT_INDEXES.map((n) => {
+        const bySeed = (policy) => {
+          const m = new Map();
+          const pool = runs.filter(
+            (x) => (x.meta ?? 'fresh') === meta && x.difficulty === d && x.policy === policy,
+          );
+          for (const r of pool) {
+            if (r.sprints.length >= n) m.set(r.seed, r.sprints[n - 1].delivered);
+          }
+          return m;
+        };
+        const pairParts = CV_COMPARE_PAIRS.map(({ policy, control }) => {
+          const policyBySeed = bySeed(policy);
+          const controlBySeed = bySeed(control);
+          const shared = [...policyBySeed.keys()].filter((k) => controlBySeed.has(k));
+          if (shared.length === 0) return `${policy}/${control}: 共通到達なし`;
+          const policyCv = fmtCv(shared.map((k) => policyBySeed.get(k)));
+          const controlCv = fmtCv(shared.map((k) => controlBySeed.get(k)));
+          return `${policy}=${policyCv} vs ${control}=${controlCv}(共通 n=${shared.length})`;
+        });
+        return `S${n}: ${pairParts.join(' / ')}`;
       });
-      return `S${n}(共通 n=${shared.length}): ${parts.join(' / ')}`;
-    });
-    console.log(`  [${meta}] ${d}: ${cells.join(' | ')}`);
+      console.log(`  [${meta}] ${d}: ${cells.join(' | ')}`);
+    }
   }
 }
 

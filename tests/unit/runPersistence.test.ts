@@ -132,6 +132,29 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     ).toBeNull();
   });
 
+  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して v5 として復元する', () => {
+    const valid = makeRunSave('ri84-v4-goal-migration');
+    const legacyDeliveryTarget = 1950;
+    const parsed = parseRunSave({
+      ...valid,
+      schemaVersion: 4,
+      state: {
+        ...valid.state,
+        difficulty: 'normal',
+        quarterGoal: {
+          ...valid.state.quarterGoal,
+          deliveryTarget: legacyDeliveryTarget,
+        },
+      },
+      summary: { ...valid.summary, difficulty: 'normal' },
+    });
+
+    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
+      Math.round((legacyDeliveryTarget * 1.8) / 1.95),
+    );
+  });
+
   it('現行スキーマのセーブは不足 replayKeyframes を空配列に正規化する', () => {
     const valid = makeRunSave('ri68-current-schema');
     const parsed = parseRunSave({

@@ -450,7 +450,7 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
   beforeAll(() => {
     // F-4の3方針に、F-5用の初見統制を加えた総当たりを1回だけ実行する。
     runs = runMatrix([...RI75_DIFFICULTIES], [...F5_POLICIES], [...RI75_SEEDS], 'fresh');
-  }, 180_000);
+  }, 300_000);
 
   it('F-4 代表3方針×pt seed で通常・elite・ボスの壁時計帯を満たす', () => {
     const pacingRuns = runs.filter((run) =>

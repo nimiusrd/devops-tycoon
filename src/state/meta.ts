@@ -582,8 +582,15 @@ export function saveMeta(
   }
 }
 
-/** ブラウザの localStorage（非対応環境では null）。 */
-export function browserStorage(): LegacyMetaStorage | null {
+/**
+ * ブラウザの localStorage（非対応環境では null）。
+ *
+ * 戻り値は `LegacyMetaStorage` ではなく実体の `Storage` を返す。
+ * 利用側で必要なメソッドが違う（meta は読み書きのみ、metaPersistence は
+ * 移行後の削除も要る）ため、狭い型で返すと利用側ごとに同じ実装を
+ * 複製することになる。
+ */
+export function browserStorage(): Storage | null {
   try {
     if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
   } catch {

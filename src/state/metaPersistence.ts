@@ -1,5 +1,6 @@
 import type { IDBPDatabase } from 'idb';
 import {
+  browserStorage,
   defaultMeta,
   LEGACY_META_STORAGE_KEY,
   normalizeMeta,
@@ -81,15 +82,6 @@ class LocalStorageMetaStorage implements MetaStorage {
   }
 }
 
-function browserLegacyStorage(): LegacyMetaStorage | null {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
-  } catch {
-    // Storage へのアクセス自体が拒否される環境がある。
-  }
-  return null;
-}
-
 function readLegacyMeta(storage: LegacyMetaStorage | null): {
   found: boolean;
   meta: MetaState | null;
@@ -119,7 +111,7 @@ function removeLegacyMeta(storage: LegacyMetaStorage | null): void {
  */
 export async function initializeMetaPersistence(
   storage: MetaStorage = new IndexedDbMetaStorage(),
-  legacyStorage: LegacyMetaStorage | null = browserLegacyStorage(),
+  legacyStorage: LegacyMetaStorage | null = browserStorage(),
 ): Promise<MetaPersistenceBootstrap> {
   const legacy = readLegacyMeta(legacyStorage);
 

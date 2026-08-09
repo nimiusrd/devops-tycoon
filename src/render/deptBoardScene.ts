@@ -4,9 +4,10 @@
  * 部門内の各チームを Coding▸Review▸Done のミニパイプラインとして等角配置し、
  * チーム間依存（連鎖炎上）をフロー矢印で返す。純 TS → Vitest 検証（第22.5）。
  */
-import type { DepartmentState, Team, TeamHealth } from '../sim/orgscale/types';
+import type { DepartmentState, Team } from '../sim/orgscale/types';
 import { HEALTH_COLOR } from './orgView';
 import { islandDepth, islandMood, ORG_VIEW, zoneLabelTone } from './orgBoardScene';
+import { badgeTone, healthTag } from './teamHealthTheme';
 
 /** 設計座標空間（旧モック dept-screen の viewBox 由来）。 */
 export const DEPT_VIEW = ORG_VIEW;
@@ -110,18 +111,6 @@ export interface DeptBoardScene {
   teams: DeptTeamPlan[];
   flows: DeptFlowPlan[];
   stageLabels: DeptStageLabelPlan[];
-}
-
-function badgeTone(health: TeamHealth): 'ok' | 'warn' | 'hell' {
-  if (health === 'reviewHell') return 'hell';
-  if (health === 'congested') return 'warn';
-  return 'ok';
-}
-
-function healthTag(health: TeamHealth): string {
-  if (health === 'reviewHell') return 'Review Hell';
-  if (health === 'congested') return '渋滞ぎみ';
-  return 'Healthy';
 }
 
 /** チーム内の工程粒数（現行 DeptScreen と一致）。 */

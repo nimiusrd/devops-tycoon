@@ -5,8 +5,8 @@
  * 落とす純関数群。描画も乱数も知らない（第22.2 / 22.3）。
  */
 import type { DepartmentState, OrgScaleState, Team, TeamHealth } from './types';
+import { clamp } from '../clamp';
 
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 const avg = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
 /** チームの状態から健全度を決める（渋滞・炎上・AI過依存の優先順）。 */

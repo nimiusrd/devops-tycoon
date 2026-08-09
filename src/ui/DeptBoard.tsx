@@ -13,14 +13,11 @@ import { DeptDependencyFlows } from './DeptDependencyFlows';
 import { DeptPlate } from './DeptPlate';
 import { DeptTeamBanner, DeptTeamMini } from './DeptTeamMini';
 import { useContainFit } from './useContainFit';
+import { pct } from './pct';
 
 const VIEW_W = DEPT_VIEW.w;
 const VIEW_H = DEPT_VIEW.h;
 const VIEW_RATIO = VIEW_W / VIEW_H;
-
-function pct(value: number, total: number): string {
-  return `${(value / total) * 100}%`;
-}
 
 function DeptTeamBlock({
   plan,

@@ -28,8 +28,7 @@ import type {
   WhatIfPreview,
   WhatIfState,
 } from './types';
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+import { clamp } from '../clamp';
 
 /** Worker / メインスレッドで共有するシリアライズ可能な what-if 入力。 */
 export interface WhatIfComputeInput {

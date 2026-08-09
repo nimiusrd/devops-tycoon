@@ -12,14 +12,11 @@ import { OrgHubLabel, OrgHubSvg } from './OrgHub';
 import { OrgPlate } from './OrgPlate';
 import { OrgIslandBadge, OrgTeamActor } from './OrgTeamActor';
 import { useContainFit } from './useContainFit';
+import { pct } from './pct';
 
 const VIEW_W = ORG_VIEW.w;
 const VIEW_H = ORG_VIEW.h;
 const VIEW_RATIO = VIEW_W / VIEW_H;
-
-function pct(value: number, total: number): string {
-  return `${(value / total) * 100}%`;
-}
 
 function ZoneLabel({
   label,

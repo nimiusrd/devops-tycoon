@@ -23,8 +23,7 @@ import type {
   RunTotals,
   StakeholderTrust,
 } from './types';
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+import { clamp } from '../clamp';
 
 /** 組織再編（reorgReset）時の即時 org 効果加算。 */
 export const REORG_RESET_SENIOR_HP = 20;

@@ -8,6 +8,7 @@
  */
 import type { CardEffects, OrgState, Task, TaskKind } from '../types';
 import type { Rng } from '../rng';
+import { clamp } from '../clamp';
 
 /**
  * 無効果のカード効果。すべての確率モデル関数はこれを既定値に取り、
@@ -134,8 +135,6 @@ export function deliveryComboMultiplier(combo: number, stabilized: boolean): num
   const cap = comboMultiplier(STABILITY_COMBO_CAP);
   return cap + (raw - cap) * STABILITY_COMBO_TAIL_MUL;
 }
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
 /**
  * Coding の所要 tick（規模・AI利用・カード効果で変化）。

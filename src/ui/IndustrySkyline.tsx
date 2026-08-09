@@ -4,13 +4,14 @@
  * OrgBoard / DeptBoard と同様に、設計座標空間（740×360）の % 配置と
  * contain-fit で SVG と DOM ラベルの座標系を一致させる。
  */
-import { useLayoutEffect, useRef } from 'react';
+import { useRef } from 'react';
 import type { IndustryState } from '../sim/orgscale/types';
 import {
   INDUSTRY_VIEW,
   planIndustryBoardScene,
   type IndustryBuildingPlan,
 } from '../render/industryBoardScene';
+import { useContainFit } from './useContainFit';
 
 const VIEW_W = INDUSTRY_VIEW.w;
 const VIEW_H = INDUSTRY_VIEW.h;
@@ -18,24 +19,6 @@ const VIEW_RATIO = VIEW_W / VIEW_H;
 
 function pct(value: number, total: number): string {
   return `${(value / total) * 100}%`;
-}
-
-function useContainFit(ref: React.RefObject<HTMLDivElement | null>): void {
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const slot = el?.parentElement;
-    if (!el || !slot) return;
-    const apply = () => {
-      const w = slot.clientWidth;
-      const h = slot.clientHeight;
-      if (w === 0 || h === 0) return;
-      el.style.width = `${Math.min(w, h * VIEW_RATIO)}px`;
-    };
-    apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(slot);
-    return () => ro.disconnect();
-  }, [ref]);
 }
 
 function windowsFor(building: IndustryBuildingPlan) {
@@ -93,7 +76,7 @@ export function IndustrySkyline({ industry }: { industry: IndustryState }) {
   const scene = planIndustryBoardScene(industry);
   const buildings = [...scene.buildings].sort((a, b) => a.zIndex - b.zIndex);
   const boardRef = useRef<HTMLDivElement>(null);
-  useContainFit(boardRef);
+  useContainFit(boardRef, VIEW_RATIO);
 
   return (
     <div className="industry-skyline-slot" data-testid="industry-skyline" aria-hidden>

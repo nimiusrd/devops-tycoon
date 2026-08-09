@@ -7,16 +7,7 @@
  * 座標は設計空間（1404×573）の % で重ね、PixiJSとDOMの描画を切り替える。
  * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react';
+import { lazy, Suspense, useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type {
   ActionTarget,
   Lane,
@@ -47,6 +38,7 @@ import {
 } from './boardScene';
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS, TASK_DIAMETER } from './taskView';
+import { useContainFit } from '../ui/useContainFit';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const BoardPixiLayer = lazy(() =>
@@ -68,24 +60,6 @@ function pct(value: number, total: number): string {
  * CSS だけでは「狭いスロットでは幅基準・低いスロットでは高さ基準」を自動で選べないため、
  * ResizeObserver でスロット実寸から算出する（描画専用の純レイアウト。決定論に影響しない）。
  */
-function useContainFit(ref: React.RefObject<HTMLDivElement | null>): void {
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const slot = el?.parentElement;
-    if (!el || !slot) return;
-    const apply = () => {
-      const w = slot.clientWidth;
-      const h = slot.clientHeight;
-      if (w === 0 || h === 0) return;
-      el.style.width = `${Math.min(w, h * VIEW_RATIO)}px`;
-    };
-    apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(slot);
-    return () => ro.disconnect();
-  }, [ref]);
-}
-
 function TaskDot({
   dot,
   draggable,
@@ -310,7 +284,7 @@ export function Board({
   const heat = scene.stations.reduce((m, s) => Math.max(m, s.heat), 0);
 
   const boardRef = useRef<HTMLDivElement>(null);
-  useContainFit(boardRef);
+  useContainFit(boardRef, VIEW_RATIO);
   const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
 
   const dragPlan =

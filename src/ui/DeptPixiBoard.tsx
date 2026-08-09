@@ -9,6 +9,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { DepartmentState } from '../sim/orgscale/types';
 import { DEPT_VIEW } from '../render/deptBoardScene';
 import { PixiDeptRenderer } from '../render/adapters/pixiDeptRenderer';
+import { useContainFit } from './useContainFit';
 
 /** Playwright Pixi 視覚回帰向け（dev のみ）。 */
 declare global {
@@ -22,24 +23,6 @@ declare global {
 const VIEW_RATIO = DEPT_VIEW.w / DEPT_VIEW.h;
 
 /** 盤面を親スロットに「両軸 contain」で収める（DeptBoard の useContainFit と同じ）。 */
-function useContainFit(ref: React.RefObject<HTMLDivElement | null>): void {
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const slot = el?.parentElement;
-    if (!el || !slot) return;
-    const apply = () => {
-      const w = slot.clientWidth;
-      const h = slot.clientHeight;
-      if (w === 0 || h === 0) return;
-      el.style.width = `${Math.min(w, h * VIEW_RATIO)}px`;
-    };
-    apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(slot);
-    return () => ro.disconnect();
-  }, [ref]);
-}
-
 export interface DeptPixiBoardProps {
   dept: DepartmentState;
   onFocusTeam: (id: string) => void;
@@ -54,7 +37,7 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
   const deptRef = useRef(dept);
   const onFocusTeamRef = useRef(onFocusTeam);
   const onWebglErrorRef = useRef(onWebglError);
-  useContainFit(boardRef);
+  useContainFit(boardRef, VIEW_RATIO);
 
   useLayoutEffect(() => {
     onFocusTeamRef.current = onFocusTeam;

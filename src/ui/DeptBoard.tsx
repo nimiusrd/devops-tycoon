@@ -1,7 +1,7 @@
 /**
  * 部署ビューの等角盤面レンダラ（SPEC 第4.9 準拠）。
  */
-import { useLayoutEffect, useRef } from 'react';
+import { useRef } from 'react';
 import type { DepartmentState } from '../sim/orgscale/types';
 import {
   DEPT_VIEW,
@@ -12,6 +12,7 @@ import {
 import { DeptDependencyFlows } from './DeptDependencyFlows';
 import { DeptPlate } from './DeptPlate';
 import { DeptTeamBanner, DeptTeamMini } from './DeptTeamMini';
+import { useContainFit } from './useContainFit';
 
 const VIEW_W = DEPT_VIEW.w;
 const VIEW_H = DEPT_VIEW.h;
@@ -19,24 +20,6 @@ const VIEW_RATIO = VIEW_W / VIEW_H;
 
 function pct(value: number, total: number): string {
   return `${(value / total) * 100}%`;
-}
-
-function useContainFit(ref: React.RefObject<HTMLDivElement | null>): void {
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const slot = el?.parentElement;
-    if (!el || !slot) return;
-    const apply = () => {
-      const w = slot.clientWidth;
-      const h = slot.clientHeight;
-      if (w === 0 || h === 0) return;
-      el.style.width = `${Math.min(w, h * VIEW_RATIO)}px`;
-    };
-    apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(slot);
-    return () => ro.disconnect();
-  }, [ref]);
 }
 
 function DeptTeamBlock({
@@ -88,7 +71,7 @@ export function DeptBoard({ dept, onFocusTeam, selectedTeamId }: DeptBoardProps)
   const scene = planDeptBoardScene(dept);
   const hot = dept.onFire > 0 || dept.health === 'reviewHell';
   const boardRef = useRef<HTMLDivElement>(null);
-  useContainFit(boardRef);
+  useContainFit(boardRef, VIEW_RATIO);
 
   return (
     <div

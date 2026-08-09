@@ -342,6 +342,39 @@ if (f10Start < 0 || f10End < 0) {
   }
 }
 
+// `remaining-issues.md` にも同じ現行コホートの総内訳があるため、概要だけでなくこちらも検査する。
+const remainingRaw = readFileSync(DOCS[1], 'utf8');
+const remainingCut = remainingRaw.indexOf(AS_OF_SECTION);
+const remainingBody = remainingCut >= 0 ? remainingRaw.slice(0, remainingCut) : remainingRaw;
+const remainingStart = remainingBody.indexOf('### RI-76 ');
+const remainingEnd =
+  remainingStart >= 0 ? remainingBody.indexOf('\n### RI-77 ', remainingStart) : -1;
+if (remainingStart < 0 || remainingEnd < 0) {
+  problems.push(`${DOCS[1]}: RI-76 の F-10 集計節を見つけられない`);
+} else {
+  const remainingSection = remainingBody.slice(remainingStart, remainingEnd);
+  const summary = remainingSection.match(
+    /現行\s+[\d,]+ランでは\s+\d+勝（((?:`\w+`\s*\d+\s*\/\s*)+`\w+`\s*\d+)/s,
+  );
+  if (!summary) {
+    problems.push(`${DOCS[1]}: F-10 の総勝利種別内訳が無い`);
+  } else {
+    const written = winTypeCountsFromText(summary[1]);
+    for (const [type, count] of totalWinTypeCounts) {
+      if (written.get(type) !== count) {
+        problems.push(
+          `${DOCS[1]}: F-10 総内訳の \`${type}\` が ${written.get(type) ?? 0} と書かれているが実測は ${count}`,
+        );
+      }
+    }
+    for (const [type, count] of written) {
+      if (!totalWinTypeCounts.has(type)) {
+        problems.push(`${DOCS[1]}: F-10 総内訳に実測で勝利の無い \`${type}\` ${count} がある`);
+      }
+    }
+  }
+}
+
 for (const file of DOCS) {
   const raw = readFileSync(file, 'utf8');
   const cut = raw.indexOf(AS_OF_SECTION);

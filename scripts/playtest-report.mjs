@@ -861,6 +861,9 @@ const BRANCH_COMMIT_SHARE = 0.5; // かつ その時点までの解放の過半�
 const F11_DIRECTION_SAMPLE_SIZE = 40;
 const F11_DIRECTION_ACCEPTANCE_RATE = 0.5;
 const F11_DIRECTION_ACCEPTANCE_MIN_BRANCHES = 2;
+const F11_EXPECTED_META = 'fresh';
+const F11_EXPECTED_DIFFICULTIES = ['easy', 'normal', 'hard', 'nightmare'];
+const F11_EXPECTED_SEEDS = Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`);
 /**
  * Q1 中に「方向が確定した時点」があったかを判定する。
  *
@@ -890,7 +893,7 @@ const commitInQ1 = (run) => {
     sprintsByBranch[b].add(q1[i].sprintIndex ?? 0);
     const [topBranch, topN] = top();
     const multiPhase = (sprintsByBranch[topBranch]?.size ?? 0) >= 2;
-    if (topN >= BRANCH_COMMIT_MIN_NODES && topN / (i + 1) >= BRANCH_COMMIT_SHARE && multiPhase) {
+    if (topN >= BRANCH_COMMIT_MIN_NODES && topN / (i + 1) > BRANCH_COMMIT_SHARE && multiPhase) {
       return { committed: true, topBranch, topN, total: q1.length, atSprint: q1[i].sprintIndex };
     }
   }
@@ -975,7 +978,7 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
 }
 console.log(
   `\n参考: Q1 の解放を順に見て、同一ブランチ ${BRANCH_COMMIT_MIN_NODES} ノード以上かつ` +
-    `その時点までの解放の ${BRANCH_COMMIT_SHARE * 100}% 以上を占め、` +
+    `その時点までの解放の ${BRANCH_COMMIT_SHARE * 100}% を超えて占め、` +
     `かつそのブランチの解放が複数スプリントにまたがる時点が一度でもあるか`,
 );
 console.log(
@@ -1011,14 +1014,45 @@ const F11_DIRECTION_POLICY = 'skilledStateEvolve';
         ` / 解放ありだが分散 ${spread} / Q1解放なし ${never}`,
     );
     console.log(`  確定ブランチ分布: ${JSON.stringify(branches)}`);
+    const sameSet = (actual, expected) => {
+      const values = new Set(actual ?? []);
+      return (
+        (actual ?? []).length === expected.length &&
+        values.size === expected.length &&
+        expected.every((value) => values.has(value))
+      );
+    };
+    const expectedSampleKeys = new Set(
+      F11_EXPECTED_DIFFICULTIES.flatMap((difficulty) =>
+        F11_EXPECTED_SEEDS.map((seed) => `${difficulty}|${seed}`),
+      ),
+    );
+    const actualSampleKeys = new Set(arr.map((run) => `${run.difficulty}|${run.seed}`));
+    const sampleCompositionAccepted = Boolean(
+      cohort &&
+      cohort.isDefault === true &&
+      cohort.meta === F11_EXPECTED_META &&
+      sameSet(cohort.difficulties, F11_EXPECTED_DIFFICULTIES) &&
+      sameSet(cohort.seeds, F11_EXPECTED_SEEDS) &&
+      arr.length === F11_DIRECTION_SAMPLE_SIZE &&
+      arr.every((run) => run.meta === F11_EXPECTED_META) &&
+      actualSampleKeys.size === expectedSampleKeys.size &&
+      [...expectedSampleKeys].every((key) => actualSampleKeys.has(key)),
+    );
+    console.log(
+      `  標本構成: ${sampleCompositionAccepted ? 'fresh × 4難易度 × pt-1〜pt-10（受入判定対象）' : '前提外のため受入判定は未計測'}`,
+    );
     const minCommitted = Math.ceil(F11_DIRECTION_SAMPLE_SIZE * F11_DIRECTION_ACCEPTANCE_RATE);
     const sampleSizeAccepted = arr.length === F11_DIRECTION_SAMPLE_SIZE;
     const branchDiversityAccepted =
       Object.keys(branches).length >= F11_DIRECTION_ACCEPTANCE_MIN_BRANCHES;
     const directionAccepted =
-      sampleSizeAccepted && committed.length >= minCommitted && branchDiversityAccepted;
+      sampleCompositionAccepted &&
+      sampleSizeAccepted &&
+      committed.length >= minCommitted &&
+      branchDiversityAccepted;
     console.log(
-      `  受入判定: ${directionAccepted ? '充足' : '未充足'}（標本 n=${arr.length}/${F11_DIRECTION_SAMPLE_SIZE}` +
+      `  受入判定: ${sampleCompositionAccepted ? (directionAccepted ? '充足' : '未充足') : '未計測'}（標本 n=${arr.length}/${F11_DIRECTION_SAMPLE_SIZE}` +
         `、方向確定 ${committed.length}/${minCommitted} 以上` +
         `、確定ブランチ ${Object.keys(branches).length}/${F11_DIRECTION_ACCEPTANCE_MIN_BRANCHES} 以上）`,
     );

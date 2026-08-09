@@ -25,6 +25,7 @@ import type {
   OrgState,
   Task,
 } from './types';
+import { spendStat } from './orgStat';
 
 export { ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from './assignTask';
 export { STABILITY_TICKS } from './model';
@@ -93,11 +94,6 @@ export const GAUGE_FOCUS_REFUND = 3;
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
 /** clamp 適用後の実際の消費量（0..100 境界）。 */
-function spendStat(current: number, amount: number): { next: number; spent: number } {
-  const next = clamp(current - amount, 0, 100);
-  return { next, spent: current - next };
-}
-
 /** clamp 適用後の実際の増加量（0..100 境界）。 */
 function gainStat(current: number, amount: number): { next: number; gained: number } {
   const next = clamp(current + amount, 0, 100);

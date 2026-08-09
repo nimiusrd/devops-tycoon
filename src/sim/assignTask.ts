@@ -6,6 +6,7 @@
  */
 import type { ActionTarget, Lane, OrgState, SprintState, Task, TaskKind } from './types';
 import { AI_DEP_PER_TASK } from './model';
+import { spendStat } from './orgStat';
 
 /** タスク差配で進める Coding 進捗量（UI プレビューと共有）。 */
 export const ASSIGN_PROGRESS = 0.5;
@@ -13,11 +14,6 @@ export const ASSIGN_PROGRESS = 0.5;
 export const ASSIGN_MORALE_COST = 3;
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
-
-function spendStat(current: number, amount: number): { next: number; spent: number } {
-  const next = clamp(current - amount, 0, 100);
-  return { next, spent: current - next };
-}
 
 /** 差配可能なタスク（Coding、および Coding へ上げられる Backlog）。 */
 export function assignableTasks(sprint: SprintState): Task[] {

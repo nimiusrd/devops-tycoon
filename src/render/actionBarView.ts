@@ -12,10 +12,11 @@ import {
   OVERTIME_TICKS,
   PAIR_REVIEW_COUNT,
   STABILITY_TICKS,
+  tasksInLane,
   THROTTLE_TICKS,
 } from '../sim/actions';
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
-import type { ActionId, OrgState, SprintState, Task } from '../sim/types';
+import type { ActionId, OrgState, SprintState } from '../sim/types';
 
 export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete';
 
@@ -27,10 +28,6 @@ export interface ActionAvailability {
   blockMessage?: string;
   targetCount: number;
   targetBadge?: string;
-}
-
-function tasksInLane(sprint: SprintState, lane: Task['lane']): Task[] {
-  return sprint.tasks.filter((t) => t.lane === lane);
 }
 
 /** アクション別の対象数（常時発動系は 0）。 */

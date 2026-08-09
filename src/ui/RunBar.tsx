@@ -23,6 +23,7 @@ import { diagnosisView } from '../sim/diagnosis';
 import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
+import { formatSigned } from './formatSigned';
 
 const FEEDBACK_TTL_MS = 1600;
 
@@ -51,10 +52,6 @@ const FACE: Record<MemberExpression, string> = {
   normal: '🙂',
   great: '💪',
 };
-
-function formatSigned(delta: number): string {
-  return delta > 0 ? `+${delta}` : `${delta}`;
-}
 
 function RunFeedbackPop({ feedbacks }: { feedbacks: ActiveRunFeedback[] }) {
   const tone = feedbacks.some((feedback) => feedback.tone === 'negative') ? 'negative' : 'positive';

@@ -23,6 +23,7 @@ import {
 } from '../render/status';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
+import { formatSigned } from './formatSigned';
 
 const FEEDBACK_TTL_MS = 1000;
 /** 狭幅ブレークポイント（styles.css の 860px と同期）。 */
@@ -107,10 +108,6 @@ export type HudSnapshotScope = 'team' | 'orgScale';
 
 function GradeValue({ grade }: { grade: Grade }) {
   return <span className={`v grade grade-${grade}`}>{grade}</span>;
-}
-
-function formatSigned(delta: number): string {
-  return delta > 0 ? `+${delta}` : `${delta}`;
 }
 
 function FeedbackPop({ feedback }: { feedback?: ActiveHudFeedback }) {

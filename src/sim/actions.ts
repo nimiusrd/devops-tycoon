@@ -100,7 +100,8 @@ function gainStat(current: number, amount: number): { next: number; gained: numb
   return { next, gained: next - current };
 }
 
-function tasksInLane(sprint: SprintState, lane: Task['lane']): Task[] {
+/** 指定レーンのタスク（介入の対象数バッジと効果本体で共有）。 */
+export function tasksInLane(sprint: SprintState, lane: Task['lane']): Task[] {
   return sprint.tasks.filter((t) => t.lane === lane);
 }
 

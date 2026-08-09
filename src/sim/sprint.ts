@@ -570,6 +570,30 @@ export function aiAssistedPct(metrics: SprintMetrics): number {
   return Math.round((metrics.aiAssistedCompleted / metrics.completedCount) * 100);
 }
 
+/** 健全比から評価ランクへ変換する境界（RI-80）。 */
+const GRADE_THRESHOLDS = {
+  S: 0.955,
+  A: 0.8,
+  B: 0.62,
+  C: 0.4,
+} as const;
+
+/** 評価へ反映する、工程を安定化する介入（RI-80）。 */
+const STABILIZING_ACTIONS: readonly ActionId[] = [
+  'interruptReview',
+  'splitPr',
+  'firefight',
+  'assignTask',
+  'aiThrottle',
+  'pairReview',
+  'andon',
+];
+
+/** 成立した安定化介入1回あたりの運用判断ボーナス。 */
+const STABILIZING_ACTION_BONUS = 0.0045;
+/** 介入の連打だけでSにならないための上限。 */
+const MAX_STABILIZING_ACTION_BONUS = 0.015;
+
 /**
  * 評価（S/A/B/C/D）。出荷量を母数に、手戻り・障害・延焼・シニア消耗の
  * ペナルティを差し引いた「健全比」で段階化する。AI を雑に入れて渋滞・手戻りが
@@ -581,11 +605,22 @@ export function computeGrade(sprint: SprintState, org: OrgState): string {
   const penalties =
     m.reworkCount * 5 + m.incidentCount * 6 + m.spread * 10 + Math.max(0, hpLoss - 20) * 0.7;
   const base = Math.max(1, m.delivered);
-  const ratio = (m.delivered - penalties) / base;
-  if (ratio >= 0.92) return 'S';
-  if (ratio >= 0.8) return 'A';
-  if (ratio >= 0.62) return 'B';
-  if (ratio >= 0.4) return 'C';
+  const outcomeRatio = (m.delivered - penalties) / base;
+  // 成立した安定化介入は「事故を起こさなかった」だけでは残りにくい運用判断として
+  // 少しだけ加点する。残業号令は速度優先の危険な手なので対象外とし、上限も設ける。
+  const stabilizingActions = STABILIZING_ACTIONS.reduce(
+    (total, id) => total + (m.actionCounts[id] ?? 0),
+    0,
+  );
+  const managementBonus = Math.min(
+    MAX_STABILIZING_ACTION_BONUS,
+    stabilizingActions * STABILIZING_ACTION_BONUS,
+  );
+  const ratio = outcomeRatio + managementBonus;
+  if (ratio >= GRADE_THRESHOLDS.S) return 'S';
+  if (ratio >= GRADE_THRESHOLDS.A) return 'A';
+  if (ratio >= GRADE_THRESHOLDS.B) return 'B';
+  if (ratio >= GRADE_THRESHOLDS.C) return 'C';
   return 'D';
 }
 

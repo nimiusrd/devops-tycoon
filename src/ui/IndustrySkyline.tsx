@@ -12,14 +12,11 @@ import {
   type IndustryBuildingPlan,
 } from '../render/industryBoardScene';
 import { useContainFit } from './useContainFit';
+import { pct } from './pct';
 
 const VIEW_W = INDUSTRY_VIEW.w;
 const VIEW_H = INDUSTRY_VIEW.h;
 const VIEW_RATIO = VIEW_W / VIEW_H;
-
-function pct(value: number, total: number): string {
-  return `${(value / total) * 100}%`;
-}
 
 function windowsFor(building: IndustryBuildingPlan) {
   const rows = Array.from({ length: building.windowRows }, (_, i) => i);

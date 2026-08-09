@@ -407,7 +407,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(org.seniorHp).toBeCloseTo(hpBefore - REVIEW_HP_COST * 0.5, 5);
     });
 
-    it('grade しきい値ちょうどと −1 ペナルティで S/A/B/C/D を区別する', () => {
+    it('RI-80: grade しきい値ちょうどとペナルティで S/A/B/C/D を区別する', () => {
       const org = createOrgState('default', false);
       org.seniorHp = 100;
       const sprint = makeSprint(org, []);
@@ -426,10 +426,10 @@ describe('RI-91-B3 sprint survived mutants', () => {
         });
       };
 
-      // 0.92 ちょうど: hp ペナルティのみ 8 → (hpLoss-20)*0.7 = 8 → hpLoss = 220/7
-      setPenalties({ hpLoss: 220 / 7 });
+      // 0.955 ちょうど: hp ペナルティのみ 4.5 → (hpLoss-20)*0.7 = 4.5 → hpLoss = 185/7
+      setPenalties({ hpLoss: 185 / 7 });
       expect(computeGrade(sprint, org)).toBe('S');
-      // 0.92 −ε: rework=2 → p=10 → 0.90 → A
+      // S 境界未満: rework=2 → p=10 → 0.90 → A
       setPenalties({ reworkCount: 2 });
       expect(computeGrade(sprint, org)).toBe('A');
 
@@ -453,6 +453,27 @@ describe('RI-91-B3 sprint survived mutants', () => {
       // −1: p=61 → 0.39 → D
       setPenalties({ reworkCount: 1, incidentCount: 1, spread: 5 });
       expect(computeGrade(sprint, org)).toBe('D');
+    });
+
+    it('RI-80: 成立した安定化介入は加点し、残業号令は加点しない', () => {
+      const org = createOrgState('default', false);
+      const sprint = makeSprint(org, []);
+      patchMetrics(sprint, {
+        delivered: 100,
+        reworkCount: 1,
+        incidentCount: 0,
+        spread: 0,
+        actionCounts: {},
+      });
+
+      // outcomeRatio=0.95 は単独では S に届かない。
+      expect(computeGrade(sprint, org)).toBe('A');
+
+      patchMetrics(sprint, { actionCounts: { firefight: 2 } });
+      expect(computeGrade(sprint, org)).toBe('S');
+
+      patchMetrics(sprint, { actionCounts: { overtime: 2 } });
+      expect(computeGrade(sprint, org)).toBe('A');
     });
   });
 

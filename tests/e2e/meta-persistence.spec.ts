@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures';
 import type { MetaState } from '../../src/state/meta';
+import { seedMeta } from './seedMeta';
 
 type MetaGameWindow = Window & {
   game?: {
@@ -7,8 +8,6 @@ type MetaGameWindow = Window & {
     purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
   };
 };
-
-const LEGACY_KEY = 'devops-tycoon:meta:v1';
 
 async function storedMeta(page: import('@playwright/test').Page): Promise<MetaState | null> {
   return page.evaluate(async () => {
@@ -27,26 +26,22 @@ async function storedMeta(page: import('@playwright/test').Page): Promise<MetaSt
   });
 }
 
-test('旧 localStorage を IndexedDB へ移行し、購入後も再読み込みで復元する', async ({ page }) => {
-  await page.addInitScript(({ key, meta }) => localStorage.setItem(key, JSON.stringify(meta)), {
-    key: LEGACY_KEY,
-    meta: {
-      points: 100,
-      unlockedDifficulties: ['easy', 'normal'],
-      defeatedBosses: [],
-      achievements: ['review-exceeded'],
-      bestScore: 0,
-      unlockedCards: [],
-      unlockedRelics: [],
-    },
+test('IndexedDB の保存済みメタを読み、購入後も再読み込みで復元する', async ({ page }) => {
+  await seedMeta(page, {
+    points: 100,
+    unlockedDifficulties: ['easy', 'normal'],
+    defeatedBosses: [],
+    achievements: ['review-exceeded'],
+    bestScore: 0,
+    unlockedCards: [],
+    unlockedRelics: [],
   });
 
   await page.goto('/?renderer=dom&seed=meta-persistence-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
-  expect(await page.evaluate((key) => localStorage.getItem(key), LEGACY_KEY)).toBeNull();
   await expect
-    .poll(() => storedMeta(page))
+    .poll(() => page.evaluate(() => (window as MetaGameWindow).game?.getMeta()))
     .toMatchObject({
       points: 100,
       collectedWinTypes: [],
@@ -71,5 +66,4 @@ test('旧 localStorage を IndexedDB へ移行し、購入後も再読み込み�
       points: 50,
       unlockedCards: ['devin'],
     });
-  expect(await page.evaluate((key) => localStorage.getItem(key), LEGACY_KEY)).toBeNull();
 });

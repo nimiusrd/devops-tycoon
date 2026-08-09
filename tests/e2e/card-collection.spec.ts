@@ -2,6 +2,7 @@ import { expect, test } from './fixtures';
 import { CARD_DEFS } from '../../src/data/cards';
 import { defaultUnlockedCardIds } from '../../src/data/unlocks';
 import type { MetaState } from '../../src/state/meta';
+import { seedMeta } from './seedMeta';
 
 type GameWindow = Window & {
   game?: {
@@ -32,9 +33,7 @@ const unlockedCardId = CARD_DEFS.find((def) => defaultUnlocked.has(def.id))!.id;
 test('タイトルからカードコレクションを開き、一覧・詳細・フィルターを操作できる（RI-65）', async ({
   page,
 }) => {
-  await page.addInitScript((meta) => {
-    localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
-  }, BASE_META);
+  await seedMeta(page, BASE_META);
 
   await page.goto('/?renderer=dom&seed=card-collection-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
@@ -91,9 +90,7 @@ test('タイトルからカードコレクションを開き、一覧・詳細�
 });
 
 test('カードコレクションはキーボード操作と狭い画面に対応する（RI-65）', async ({ page }) => {
-  await page.addInitScript((meta) => {
-    localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
-  }, BASE_META);
+  await seedMeta(page, BASE_META);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?renderer=dom&seed=card-collection-keyboard');

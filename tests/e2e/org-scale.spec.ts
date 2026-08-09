@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures';
 import type { RunState } from '../../src/sim/run/types';
+import { seedMeta } from './seedMeta';
 
 type GameWindow = Window & {
   game?: {
@@ -57,24 +58,19 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
 });
 
 test('業界画面で保存済みデイリー記録を順位付きで表示する（RI-23）', async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      'devops-tycoon:meta:v1',
-      JSON.stringify({
-        points: 0,
-        unlockedDifficulties: ['easy', 'normal'],
-        defeatedBosses: [],
-        achievements: [],
-        bestScore: 1200,
-        unlockedCards: [],
-        unlockedRelics: [],
-        dailyRuns: {
-          '2026-07-09': { bestScore: 800, rewardClaimed: true },
-          '2026-07-10': { bestScore: 1200, rewardClaimed: true },
-          '2026-07-11': { bestScore: 1200, rewardClaimed: false },
-        },
-      }),
-    );
+  await seedMeta(page, {
+    points: 0,
+    unlockedDifficulties: ['easy', 'normal'],
+    defeatedBosses: [],
+    achievements: [],
+    bestScore: 1200,
+    unlockedCards: [],
+    unlockedRelics: [],
+    dailyRuns: {
+      '2026-07-09': { bestScore: 800, rewardClaimed: true },
+      '2026-07-10': { bestScore: 1200, rewardClaimed: true },
+      '2026-07-11': { bestScore: 1200, rewardClaimed: false },
+    },
   });
   await startRun(page, 'daily-ranking-e2e');
   await page.evaluate(() => (window as GameWindow).game!.zoomTo('industry'));

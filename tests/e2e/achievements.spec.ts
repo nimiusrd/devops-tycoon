@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures';
 import type { MetaState } from '../../src/state/meta';
+import { seedMeta } from './seedMeta';
 
 const META_WITH_ACHIEVEMENT: MetaState = {
   points: 0,
@@ -18,9 +19,7 @@ const META_WITH_ACHIEVEMENT: MetaState = {
 };
 
 test('タイトルから実績コレクションを開き取得済み／未取得を区別表示できる', async ({ page }) => {
-  await page.addInitScript((meta) => {
-    localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
-  }, META_WITH_ACHIEVEMENT);
+  await seedMeta(page, META_WITH_ACHIEVEMENT);
 
   await page.goto('/?renderer=dom&seed=achievement-collection-e2e');
 

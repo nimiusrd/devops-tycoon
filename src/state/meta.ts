@@ -25,12 +25,6 @@ export const TUTORIAL_CONTENT_VERSION = 3;
 /** 旧 RI-60（3ステップ）完了セーブの版。 */
 export const LEGACY_TUTORIAL_VERSION = 1;
 
-/** 旧 localStorage の移行と互換テストに使う最小インターフェース。 */
-export interface LegacyMetaStorage {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-}
-
 export const LEGACY_META_STORAGE_KEY = 'devops-tycoon:meta:v1';
 
 export interface MetaState {
@@ -555,39 +549,4 @@ export function purchaseUnlock(meta: MetaState, unlockId: string): PurchaseUnloc
   else next.unlockedRelics = uniq([...next.unlockedRelics, unlock.contentId]);
 
   return { meta: next, ok: true };
-}
-
-/** メタ状態を読み込む（壊れていれば初期値）。SSR/未対応環境では初期値。 */
-export function loadMeta(storage: LegacyMetaStorage | null = browserStorage()): MetaState {
-  if (!storage) return defaultMeta();
-  try {
-    const raw = storage.getItem(LEGACY_META_STORAGE_KEY);
-    if (!raw) return defaultMeta();
-    return parseLegacyMeta(raw) ?? defaultMeta();
-  } catch {
-    return defaultMeta();
-  }
-}
-
-/** メタ状態を保存する（未対応環境では黙って何もしない）。 */
-export function saveMeta(
-  meta: MetaState,
-  storage: LegacyMetaStorage | null = browserStorage(),
-): void {
-  if (!storage) return;
-  try {
-    storage.setItem(LEGACY_META_STORAGE_KEY, JSON.stringify(meta));
-  } catch {
-    // 容量超過・プライベートモード等は無視（ゲーム進行を止めない）。
-  }
-}
-
-/** ブラウザの localStorage（非対応環境では null）。 */
-export function browserStorage(): LegacyMetaStorage | null {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
-  } catch {
-    // アクセス自体が例外になる環境がある。
-  }
-  return null;
 }

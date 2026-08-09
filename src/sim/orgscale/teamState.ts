@@ -27,8 +27,7 @@ import type {
   Team,
   TeamRunState,
 } from './types';
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+import { clamp } from '../clamp';
 
 /** ホームチーム ID（先頭部門の先頭）。 */
 export const HOME_TEAM_ID = 'product-t0';

@@ -23,8 +23,7 @@ import type {
   MemberRank,
   RosterState,
 } from './types';
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+import { clamp } from '../clamp';
 
 // --- 育成・編成のパラメータ（バランス調整の集約点）---
 

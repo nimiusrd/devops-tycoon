@@ -49,8 +49,7 @@ import type {
   TaskKind,
   TimelineSample,
 } from './types';
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+import { clamp } from './clamp';
 
 /** タスク規模の出現分布（合計 1）。 */
 const KIND_WEIGHTS: { kind: TaskKind; weight: number }[] = [

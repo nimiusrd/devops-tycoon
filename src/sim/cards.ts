@@ -18,6 +18,7 @@ import type {
   SprintCardPiles,
   SprintState,
 } from './types';
+import { clamp } from './clamp';
 
 /** スプリント開始時に配る手札枚数（SPEC 第7.1）。 */
 export const HAND_SIZE = 3;
@@ -28,8 +29,6 @@ const EFFECT_KEYS = Object.keys(IDENTITY_CARD_EFFECTS) as (keyof CardEffects)[];
 function isMul(key: keyof CardEffects): boolean {
   return IDENTITY_CARD_EFFECTS[key] === 1;
 }
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
 /** 効果フィールドを健全な範囲へ収める（暴走・逆転防止）。 */
 function clampEffect(key: keyof CardEffects, value: number): number {

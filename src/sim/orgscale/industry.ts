@@ -16,6 +16,7 @@ import type {
   RankingKind,
   RivalOrg,
 } from './types';
+import { clamp } from '../clamp';
 
 /** 他組織の数（自社を加えて total = RIVAL_COUNT + 1）。 */
 const RIVAL_COUNT = 11;
@@ -47,8 +48,6 @@ export const RANKING_LABEL: Record<RankingKind, string> = {
   ai: 'AI活用',
   growth: '急成長',
 };
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
 /** 評価軸の入力（自社・他社で共通）。 */
 interface ScoreInput {

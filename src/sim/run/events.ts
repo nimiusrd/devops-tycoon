@@ -18,8 +18,7 @@ import type {
   SprintModifierDelta,
   StakeholderTrust,
 } from './types';
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+import { clamp } from '../clamp';
 
 /** イベント適用後に engine が処理する差分（予算・付与・出荷・信頼・敗北・次スプリント）。 */
 export interface EventApplyResult {

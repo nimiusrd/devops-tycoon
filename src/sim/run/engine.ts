@@ -177,8 +177,7 @@ import {
   type RunPersistState,
   type RunReplayFrame,
 } from './persist';
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+import { clamp } from '../clamp';
 
 export { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER };
 /** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */

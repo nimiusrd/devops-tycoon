@@ -7,13 +7,12 @@
 import type { ActionTarget, Lane, OrgState, SprintState, Task, TaskKind } from './types';
 import { AI_DEP_PER_TASK } from './model';
 import { spendStat } from './orgStat';
+import { clamp } from './clamp';
 
 /** タスク差配で進める Coding 進捗量（UI プレビューと共有）。 */
 export const ASSIGN_PROGRESS = 0.5;
 /** タスク差配の士気低下（UI プレビューと共有）。 */
 export const ASSIGN_MORALE_COST = 3;
-
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
 /** 差配可能なタスク（Coding、および Coding へ上げられる Backlog）。 */
 export function assignableTasks(sprint: SprintState): Task[] {

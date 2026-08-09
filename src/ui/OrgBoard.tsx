@@ -4,13 +4,14 @@
  * `orgBoardScene` が組み立てたシーン計画を読み、俯瞰オフィス（アイソメ）として描く。
  * 座標は設計空間（1404×573）の % で重ねる。Board.tsx と同型（第22.2）。
  */
-import { useLayoutEffect, useRef } from 'react';
+import { useRef } from 'react';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { ORG_VIEW, planOrgBoardScene, type OrgIslandPlan } from '../render/orgBoardScene';
 import { OrgFlowLanes } from './OrgFlowLanes';
 import { OrgHubLabel, OrgHubSvg } from './OrgHub';
 import { OrgPlate } from './OrgPlate';
 import { OrgIslandBadge, OrgTeamActor } from './OrgTeamActor';
+import { useContainFit } from './useContainFit';
 
 const VIEW_W = ORG_VIEW.w;
 const VIEW_H = ORG_VIEW.h;
@@ -18,24 +19,6 @@ const VIEW_RATIO = VIEW_W / VIEW_H;
 
 function pct(value: number, total: number): string {
   return `${(value / total) * 100}%`;
-}
-
-function useContainFit(ref: React.RefObject<HTMLDivElement | null>): void {
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const slot = el?.parentElement;
-    if (!el || !slot) return;
-    const apply = () => {
-      const w = slot.clientWidth;
-      const h = slot.clientHeight;
-      if (w === 0 || h === 0) return;
-      el.style.width = `${Math.min(w, h * VIEW_RATIO)}px`;
-    };
-    apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(slot);
-    return () => ro.disconnect();
-  }, [ref]);
 }
 
 function ZoneLabel({
@@ -93,7 +76,7 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
   const scene = planOrgBoardScene(org);
   const hot = org.onFire > 0 || org.departments.some((d) => d.health === 'reviewHell');
   const boardRef = useRef<HTMLDivElement>(null);
-  useContainFit(boardRef);
+  useContainFit(boardRef, VIEW_RATIO);
 
   return (
     <div

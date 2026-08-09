@@ -5,6 +5,7 @@
  */
 import { getBoss } from '../../data/bosses';
 import { combineEffects, deckEffects } from '../cards';
+import { clamp } from '../clamp';
 import { foldFormationEffects } from '../member';
 import type { RosterState } from '../member/types';
 import type { OrgState, SprintConfig } from '../types';
@@ -143,7 +144,6 @@ export function applyTrialAiDependencyPressure(
     deck: { defId: string; level: number }[];
   },
 ): number {
-  const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
   const { aiDependencyDriftPerSprint, frontierModelCostPerDependency } = foldRunEffects({
     deck: ctx.deck,
     relics: ctx.relics,

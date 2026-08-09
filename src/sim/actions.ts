@@ -26,6 +26,7 @@ import type {
   Task,
 } from './types';
 import { spendStat } from './orgStat';
+import { clamp } from './clamp';
 
 export { ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from './assignTask';
 export { STABILITY_TICKS } from './model';
@@ -91,9 +92,6 @@ export const THROTTLE_TICKS = 40;
 /** 連携ゲージが満タンになったとき回復する集中力。 */
 export const GAUGE_FOCUS_REFUND = 3;
 
-const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
-
-/** clamp 適用後の実際の消費量（0..100 境界）。 */
 /** clamp 適用後の実際の増加量（0..100 境界）。 */
 function gainStat(current: number, amount: number): { next: number; gained: number } {
   const next = clamp(current + amount, 0, 100);

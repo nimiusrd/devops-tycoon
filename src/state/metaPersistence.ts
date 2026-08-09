@@ -90,59 +90,24 @@ function browserLegacyStorage(): LegacyMetaStorage | null {
   return null;
 }
 
-function readLegacyMeta(storage: LegacyMetaStorage | null): {
-  found: boolean;
-  meta: MetaState | null;
-} {
-  if (!storage) return { found: false, meta: null };
-  try {
-    const raw = storage.getItem(LEGACY_META_STORAGE_KEY);
-    return raw === null
-      ? { found: false, meta: null }
-      : { found: true, meta: parseLegacyMeta(raw) };
-  } catch {
-    return { found: false, meta: null };
-  }
-}
-
-function removeLegacyMeta(storage: LegacyMetaStorage | null): void {
-  try {
-    storage?.removeItem(LEGACY_META_STORAGE_KEY);
-  } catch {
-    // IndexedDB への保存は完了しているため、削除失敗だけで起動を止めない。
-  }
-}
-
 /**
- * IndexedDB を読み込み、空なら旧 localStorage を一度だけ移行する。
- * IndexedDB が既に存在する場合はそちらを正とし、旧データは破棄する。
+ * IndexedDB からメタ状態を読み込む。空なら初期値で始める。
+ *
+ * 旧 localStorage からの移行は完了済みのため行わない（移行は #166 で導入し、
+ * その後の起動で消化された）。IndexedDB が使えない環境では localStorage へ
+ * 保存を継続する。
  */
 export async function initializeMetaPersistence(
   storage: MetaStorage = new IndexedDbMetaStorage(),
   legacyStorage: LegacyMetaStorage | null = browserLegacyStorage(),
 ): Promise<MetaPersistenceBootstrap> {
-  const legacy = readLegacyMeta(legacyStorage);
-
   try {
     const persisted = await storage.load();
-    if (persisted) {
-      if (legacy.found) removeLegacyMeta(legacyStorage);
-      return { meta: persisted, storage };
-    }
-
-    if (legacy.found) {
-      const migrated = legacy.meta ?? defaultMeta();
-      await storage.save(migrated);
-      removeLegacyMeta(legacyStorage);
-      return { meta: migrated, storage };
-    }
-
-    return { meta: defaultMeta(), storage };
+    return { meta: persisted ?? defaultMeta(), storage };
   } catch {
-    // IDB が使えない場合も旧セーブまたは初期値で起動し、localStorage への保存を継続する。
-    return {
-      meta: legacy.meta ?? defaultMeta(),
-      storage: legacyStorage ? new LocalStorageMetaStorage(legacyStorage) : storage,
-    };
+    // IDB が使えない環境では localStorage が唯一の保存先なので、既存の保存を読んで継続する。
+    if (!legacyStorage) return { meta: defaultMeta(), storage };
+    const fallback = new LocalStorageMetaStorage(legacyStorage);
+    return { meta: (await fallback.load()) ?? defaultMeta(), storage: fallback };
   }
 }

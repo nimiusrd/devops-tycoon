@@ -11,33 +11,19 @@ import {
   dailyLeaderboardEntries,
   dailySeed,
   defaultMeta,
-  loadMeta,
   MAX_PREFERRED_CARDS,
   normalizeMeta,
   purchaseUnlock,
-  saveMeta,
   sanitizePreferredCardIds,
   unlockedContent,
   utcDateStr,
   withPreferredCardIds,
-  type LegacyMetaStorage,
   type MetaState,
-  browserStorage,
   getDailyRecord,
   parseLegacyMeta,
   type RunRewardInput,
 } from '../../../src/state/meta';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../../src/data/unlocks';
-
-/** メモリ上のストレージ（localStorage 互換）。 */
-function memStorage(): LegacyMetaStorage & { data: Map<string, string> } {
-  const data = new Map<string, string>();
-  return {
-    data,
-    getItem: (k) => data.get(k) ?? null,
-    setItem: (k, v) => void data.set(k, v),
-  };
-}
 
 describe('メタ進行とアンロック（第17章）', () => {
   it('初期状態では easy/normal だけ解放されている', () => {
@@ -155,19 +141,15 @@ describe('メタ進行とアンロック（第17章）', () => {
   });
 
   it('旧セーブに collectedDiagnoses が欠けていても空配列で補完される', () => {
-    const storage = memStorage();
-    storage.data.set(
-      'devops-tycoon:meta:v1',
-      JSON.stringify({
-        points: 10,
-        unlockedDifficulties: ['easy', 'normal'],
-        defeatedBosses: [],
-        achievements: [],
-        collectedWinTypes: [],
-        bestScore: 0,
-      }),
-    );
-    expect(loadMeta(storage).collectedDiagnoses).toEqual([]);
+    const raw = JSON.stringify({
+      points: 10,
+      unlockedDifficulties: ['easy', 'normal'],
+      defeatedBosses: [],
+      achievements: [],
+      collectedWinTypes: [],
+      bestScore: 0,
+    });
+    expect(parseLegacyMeta(raw)?.collectedDiagnoses).toEqual([]);
   });
 
   it('敗北でも四半期修正経験で学習ボーナスが入る', () => {
@@ -329,8 +311,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(next.points).toBeGreaterThan(0);
   });
 
-  it('保存して読み込むと往復する（差し替えストレージ）', () => {
-    const storage = memStorage();
+  it('JSON 化して読み戻すと往復する', () => {
     const meta = applyRunReward(defaultMeta(), {
       won: true,
       difficulty: 'normal',
@@ -339,36 +320,30 @@ describe('メタ進行とアンロック（第17章）', () => {
       scoreMul: 1,
       maxCombo: 3,
     });
-    saveMeta(meta, storage);
-    expect(loadMeta(storage)).toEqual(meta);
+    expect(parseLegacyMeta(JSON.stringify(meta))).toEqual(meta);
   });
 
-  it('壊れた保存データは初期値へフォールバックする', () => {
-    const storage = memStorage();
-    storage.data.set('devops-tycoon:meta:v1', '{not json');
-    expect(loadMeta(storage)).toEqual(defaultMeta());
+  it('壊れた保存データは null を返す（呼び出し側で初期値へ倒す）', () => {
+    expect(parseLegacyMeta('{not json')).toBeNull();
   });
 
   it('旧セーブに新フィールドが欠けていても既定値で補完される', () => {
-    const storage = memStorage();
-    storage.data.set(
-      'devops-tycoon:meta:v1',
-      JSON.stringify({
-        points: 42,
-        unlockedDifficulties: ['easy', 'normal'],
-        defeatedBosses: [],
-        achievements: ['first-clear'],
-        bestScore: 100,
-      }),
-    );
-    expect(loadMeta(storage)).toEqual({
+    const raw = JSON.stringify({
+      points: 42,
+      unlockedDifficulties: ['easy', 'normal'],
+      defeatedBosses: [],
+      achievements: ['first-clear'],
+      bestScore: 100,
+    });
+    const restored = parseLegacyMeta(raw);
+    expect(restored).toEqual({
       ...defaultMeta(),
       points: 42,
       achievements: ['first-clear'],
       bestScore: 100,
     });
-    expect(loadMeta(storage).seenTutorial).toBe(false);
-    expect(loadMeta(storage).preferredCardIds).toEqual([]);
+    expect(restored?.seenTutorial).toBe(false);
+    expect(restored?.preferredCardIds).toEqual([]);
   });
 
   it('研修方針 preferredCardIds を正規化し、未解放・超過を落とす（RI-34⁗）', () => {
@@ -788,39 +763,31 @@ describe('メタ進行とアンロック（第17章）', () => {
   });
 
   it('旧セーブに dailyRuns が欠けていても既定値で補完される', () => {
-    const storage = memStorage();
-    storage.data.set(
-      'devops-tycoon:meta:v1',
-      JSON.stringify({
-        points: 42,
-        unlockedDifficulties: ['easy', 'normal'],
-        defeatedBosses: [],
-        achievements: ['first-clear'],
-        bestScore: 100,
-        unlockedCards: [],
-        unlockedRelics: [],
-      }),
-    );
-    expect(loadMeta(storage).dailyRuns).toEqual({});
+    const raw = JSON.stringify({
+      points: 42,
+      unlockedDifficulties: ['easy', 'normal'],
+      defeatedBosses: [],
+      achievements: ['first-clear'],
+      bestScore: 100,
+      unlockedCards: [],
+      unlockedRelics: [],
+    });
+    expect(parseLegacyMeta(raw)?.dailyRuns).toEqual({});
   });
 
   it('旧セーブの unlockedPresets は読み捨てる（RI-25）', () => {
-    const storage = memStorage();
-    storage.data.set(
-      'devops-tycoon:meta:v1',
-      JSON.stringify({
-        points: 10,
-        unlockedDifficulties: ['easy', 'normal'],
-        defeatedBosses: [],
-        achievements: [],
-        bestScore: 0,
-        unlockedCards: [],
-        unlockedRelics: [],
-        unlockedPresets: ['legacy-preset'],
-      }),
-    );
-    const meta = loadMeta(storage);
-    expect(meta.points).toBe(10);
+    const raw = JSON.stringify({
+      points: 10,
+      unlockedDifficulties: ['easy', 'normal'],
+      defeatedBosses: [],
+      achievements: [],
+      bestScore: 0,
+      unlockedCards: [],
+      unlockedRelics: [],
+      unlockedPresets: ['legacy-preset'],
+    });
+    const meta = parseLegacyMeta(raw);
+    expect(meta?.points).toBe(10);
     expect(meta).not.toHaveProperty('unlockedPresets');
   });
 
@@ -1370,78 +1337,6 @@ describe('RI-91-B5 meta survived mutants', () => {
       expect(parseLegacyMeta(raw)).toEqual(
         normalizeMeta({ points: 17, unlockedDifficulties: ['easy'] }),
       );
-    });
-  });
-
-  describe('browserStorage / loadMeta / saveMeta NoCoverage', () => {
-    it('window.localStorage ありなら同一参照を返す', () => {
-      const fake: LegacyMetaStorage = {
-        getItem: () => null,
-        setItem: () => undefined,
-      };
-      vi.stubGlobal('window', { localStorage: fake });
-      expect(browserStorage()).toBe(fake);
-    });
-
-    it('localStorage 欠落・falsy なら null', () => {
-      vi.stubGlobal('window', {});
-      expect(browserStorage()).toBeNull();
-      vi.stubGlobal('window', { localStorage: null });
-      expect(browserStorage()).toBeNull();
-      vi.stubGlobal('window', { localStorage: undefined });
-      expect(browserStorage()).toBeNull();
-    });
-
-    it('localStorage getter が throw したら catch で null', () => {
-      vi.stubGlobal('window', {
-        get localStorage(): LegacyMetaStorage {
-          throw new Error('SecurityError');
-        },
-      });
-      expect(browserStorage()).toBeNull();
-    });
-
-    it('loadMeta(null) は defaultMeta を返す', () => {
-      expect(loadMeta(null)).toEqual({
-        points: 0,
-        unlockedDifficulties: ['easy', 'normal'],
-        defeatedBosses: [],
-        achievements: [],
-        collectedWinTypes: [],
-        collectedDiagnoses: [],
-        bestScore: 0,
-        unlockedCards: [],
-        unlockedRelics: [],
-        preferredCardIds: [],
-        dailyRuns: {},
-        soundMuted: true,
-        seenTutorial: false,
-        seenTutorialVersion: 0,
-      });
-    });
-
-    it('saveMeta(_, null) は throw しない', () => {
-      expect(() => saveMeta(defaultMeta(), null)).not.toThrow();
-    });
-
-    it('storage getItem が throw したら defaultMeta', () => {
-      const storage: LegacyMetaStorage = {
-        getItem: () => {
-          throw new Error('quota');
-        },
-        setItem: () => undefined,
-      };
-      expect(loadMeta(storage)).toEqual(defaultMeta());
-    });
-
-    it('saveMeta の setItem throw は握りつぶす', () => {
-      const storage: LegacyMetaStorage = {
-        getItem: () => null,
-        setItem: () => {
-          throw new Error('quota exceeded');
-        },
-      };
-      expect(() => saveMeta(defaultMeta(), storage)).not.toThrow();
     });
   });
 

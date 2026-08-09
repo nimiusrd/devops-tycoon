@@ -16,6 +16,7 @@ import { OrgBoard } from './OrgBoard';
 import { OrgInfraHubPill } from './OrgHub';
 import type { OrgPixiFieldHandle } from './OrgPixiField';
 import { usePixiRenderer } from './usePixiRenderer';
+import { Stat } from './Stat';
 
 /** Pixi 全社マップは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const OrgPixiField = lazy(() =>
@@ -165,25 +166,6 @@ export function OrgScreen({
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-  testid,
-}: {
-  label: string;
-  value: number | string;
-  tone?: 'good' | 'warn' | 'bad' | 'budget';
-  testid?: string;
-}) {
-  return (
-    <div className={`org-stat${tone ? ` tone-${tone}` : ''}`}>
-      <dt>{label}</dt>
-      <dd data-testid={testid}>{value}</dd>
     </div>
   );
 }

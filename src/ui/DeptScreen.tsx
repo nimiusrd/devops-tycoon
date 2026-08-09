@@ -15,6 +15,7 @@ import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeVi
 import { DeptBoard } from './DeptBoard';
 import { EffectTagList } from './EffectTagList';
 import { usePixiRenderer } from './usePixiRenderer';
+import { Stat } from './Stat';
 
 /** Pixi 部署盤面は動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const DeptPixiBoard = lazy(() =>
@@ -186,25 +187,6 @@ export function DeptScreen({
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-  testid,
-}: {
-  label: string;
-  value: number | string;
-  tone?: 'good' | 'bad';
-  testid?: string;
-}) {
-  return (
-    <div className={`org-stat${tone ? ` tone-${tone}` : ''}`}>
-      <dt>{label}</dt>
-      <dd data-testid={testid}>{value}</dd>
     </div>
   );
 }

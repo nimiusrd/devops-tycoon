@@ -55,12 +55,28 @@ export class IndexedDbMetaStorage implements MetaStorage {
   }
 }
 
+/** メモリ上だけで動く MetaStorage（テスト / IDB 不可時）。 */
+export class MemoryMetaStorage implements MetaStorage {
+  private state: MetaState | null = null;
+
+  async load(): Promise<MetaState | null> {
+    return this.state ? structuredClone(this.state) : null;
+  }
+
+  async save(meta: MetaState): Promise<void> {
+    this.state = structuredClone(meta);
+  }
+}
+
 /**
  * IndexedDB からメタ状態を読み込む。空なら初期値で始める。
  *
  * 保存先は IndexedDB のみ。localStorage への移行・フォールバックは廃止した。
- * IndexedDB が使えない環境では初期値で起動し、保存は行われない
- * （`game.ts` の persistMeta が save の失敗を握りつぶす）。
+ *
+ * 読み込みに失敗したセッションでは、以降の保存先をメモリへ切り替える。
+ * 一過性の失敗（トランザクション abort など）で初期値から再開したあと、
+ * その初期値ベースの状態を既存レコードへ書き戻して進行を消さないため。
+ * ラン／リプレイの永続化も同じ方針（MemoryRunStorage / MemoryReplayStorage）。
  */
 export async function initializeMetaPersistence(
   storage: MetaStorage = new IndexedDbMetaStorage(),
@@ -69,6 +85,6 @@ export async function initializeMetaPersistence(
     const persisted = await storage.load();
     return { meta: persisted ?? defaultMeta(), storage };
   } catch {
-    return { meta: defaultMeta(), storage };
+    return { meta: defaultMeta(), storage: new MemoryMetaStorage() };
   }
 }

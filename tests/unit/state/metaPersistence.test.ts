@@ -4,6 +4,7 @@ import { defaultMeta, type MetaState } from '../../../src/state/meta';
 import {
   IndexedDbMetaStorage,
   initializeMetaPersistence,
+  MemoryMetaStorage,
   type MetaStorage,
 } from '../../../src/state/metaPersistence';
 
@@ -78,15 +79,19 @@ describe('initializeMetaPersistence', () => {
     expect(storage.saveCalls).toBe(0);
   });
 
-  it('IndexedDB が使えない環境でも throw せず初期値で起動する', async () => {
-    // 保存先は IndexedDB のみなので、この環境では永続化されない。
-    // 起動を止めないことと、渡した storage をそのまま返すことだけを保証する。
-    const storage = fakeIdb({ load: 'throw', save: 'throw' });
+  it('読み込みに失敗したら初期値で起動し、保存先をメモリへ切り替える', async () => {
+    // 一過性の失敗で初期値から再開したあと、その状態を既存レコードへ
+    // 書き戻さないよう、読めなかった storage は以降の保存に使わない。
+    const storage = fakeIdb({ load: 'throw', save: 'ok' });
 
     const initialized = await initializeMetaPersistence(storage);
 
     expect(initialized.meta).toEqual(defaultMeta());
-    expect(initialized.storage).toBe(storage);
+    expect(initialized.storage).not.toBe(storage);
+    expect(initialized.storage).toBeInstanceOf(MemoryMetaStorage);
+
+    await initialized.storage.save({ ...defaultMeta(), points: 3 });
     expect(storage.saveCalls).toBe(0);
+    expect(await initialized.storage.load()).toEqual({ ...defaultMeta(), points: 3 });
   });
 });

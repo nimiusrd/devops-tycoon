@@ -273,15 +273,17 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   if (totals.completed >= 5 && totals.delivered < totals.completed * 5) scores.dev += 3;
   else if (totals.delivered < 50 && totals.completed >= 5) scores.dev += 2;
 
-  // 既取得ブランチは1ノード目から減点する。
-  // 減点を2ノード以降に限ると、同一進化フェーズでポイントが余っているとき
-  // 盤面が変わらないまま同ブランチを連続取得し、F-11 の「同一ブランチ2ノード」が
-  // 構造だけで成立してしまう。
+  // 既取得ブランチの減点。
+  // 同一進化フェーズでの連続取得は playtest-report の commitInQ1 が
+  // multiPhase（複数 sprintIndex）を要求するため確定扱いにしない。
+  // 1ノード目から -2 すると中強度の quality/ai/culture が2スプリント目で曲がり、
+  // 継続方向が review（強い危機信号）一択になるため、n≥1 は弱い減点に留める。
+  // n≥2 以降は確定後の横展開を促すため従来どおり強く減点する。
   for (const b of Object.keys(scores) as EvolutionBranch[]) {
     const n = unlockedCount(b);
     if (n >= 3) scores[b] -= 5;
     else if (n >= 2) scores[b] -= 3;
-    else if (n >= 1) scores[b] -= 2;
+    else if (n >= 1) scores[b] -= 0.5;
   }
 
   // どれも閾値未達なら、相対的に弱い柱へ寄せる（常に review 固定になるのを防ぐ）。

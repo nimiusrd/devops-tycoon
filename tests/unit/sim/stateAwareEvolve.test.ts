@@ -112,7 +112,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
     expect(order[0]).toBe('dev');
   });
 
-  it('review を既に1ノード取っていれば同点帯では他ブランチへ曲がる', () => {
+  it('強い競合があるとき review を1ノード取っていれば他ブランチへ曲がる', () => {
     const org = createOrgState('default', true);
     const order = stateAwareEvolveBranches({
       org: {
@@ -148,5 +148,63 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
       unlocked: ['review-1', 'review-2'],
     });
     expect(order[0]).toBe('quality');
+  });
+
+  it('中強度の quality 信号なら1ノード既得でも同ブランチを継続する', () => {
+    const org = createOrgState('default', true);
+    const order = stateAwareEvolveBranches({
+      org: {
+        ...org,
+        techDebt: 30,
+        testCoverage: 50,
+        seniorHp: 80,
+        morale: 75,
+        aiDependency: 10,
+        quality: 60,
+      },
+      totals: totals({ delivered: 200, completed: 20 }),
+      reviewQueuePeak: 2,
+      unlocked: ['quality-1'],
+    });
+    expect(order[0]).toBe('quality');
+  });
+
+  it('中強度の culture 信号なら1ノード既得でも同ブランチを継続する', () => {
+    const org = createOrgState('default', true);
+    const order = stateAwareEvolveBranches({
+      org: {
+        ...org,
+        morale: 60,
+        quality: 55,
+        seniorHp: 80,
+        techDebt: 10,
+        testCoverage: 60,
+        aiDependency: 10,
+      },
+      totals: totals({ delivered: 200, completed: 20 }),
+      reviewQueuePeak: 2,
+      unlocked: ['culture-1'],
+    });
+    expect(order[0]).toBe('culture');
+  });
+
+  it('中強度の ai 信号なら1ノード既得でも同ブランチを継続する', () => {
+    const org = createOrgState('default', true);
+    const order = stateAwareEvolveBranches({
+      org: {
+        ...org,
+        aiDependency: 60,
+        aiLiteracy: 50,
+        techDebt: 5,
+        seniorHp: 80,
+        morale: 75,
+        testCoverage: 60,
+        quality: 60,
+      },
+      totals: totals({ delivered: 200, completed: 20 }),
+      reviewQueuePeak: 2,
+      unlocked: ['ai-1'],
+    });
+    expect(order[0]).toBe('ai');
   });
 });

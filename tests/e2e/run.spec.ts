@@ -358,6 +358,16 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
     { defId: target.defId },
   );
   expect(upgraded).toBe(target.level + 1);
+
+  const nextSprint = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    const pending = g.getState().pendingSprintModifiers;
+    const next = g.beginSetupSprint();
+    return { pending, focusMax: next.sprint?.config.focusMax ?? 0 };
+  });
+  expect(nextSprint.pending.focusMaxAdd).toBe(2);
+  expect(nextSprint.focusMax).toBeGreaterThan(0);
+  await expect(page.getByTestId('focus')).toContainText('⚡');
 });
 
 test('ボス未達→四半期レビュー→スコープ削減→次四半期へ継続', async ({ page }) => {

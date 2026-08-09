@@ -35,7 +35,7 @@ export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: Dec
               if (!inst) return null;
               const def = getCard(inst.defId);
               if (!def) return null;
-              const cost = playCost(def.cost, inst.level);
+              const cost = playCost(def.focusCost, inst.level);
               const canPlay = focus >= cost;
               return (
                 <CardView

@@ -73,6 +73,18 @@ describe('formatEventOutcomeTags（イベント効果タグ）', () => {
       tone: 'positive',
     });
 
+    const preventionTags = formatEventOutcomeTags({
+      nextSprint: { reworkRateAdd: -0.08, focusMaxAdd: 2 },
+    });
+    expect(preventionTags).toContainEqual({
+      label: '次スプリント 手戻り率 -8%',
+      tone: 'positive',
+    });
+    expect(preventionTags).toContainEqual({
+      label: '次スプリント 集中力上限 +2',
+      tone: 'positive',
+    });
+
     const loseTags = formatEventOutcomeTags({ forceLose: 'reviewFreeze' });
     expect(loseTags).toEqual([{ label: 'レビュー停止でラン終了', tone: 'negative' }]);
   });
@@ -441,7 +453,14 @@ describe('formatRestOptionTags（休息タグ / RI-45）', () => {
   });
 
   it('repay / recruit の効果をタグ化する', () => {
-    expect(formatRestOptionTags('repay')).toEqual([{ label: 'Tech Debt -30', tone: 'positive' }]);
+    expect(formatRestOptionTags('repay')).toEqual([
+      { label: 'Tech Debt -30', tone: 'positive' },
+      { label: '次スプリント 手戻り率 -8%', tone: 'positive' },
+    ]);
+    expect(formatRestOptionTags('upgrade')).toEqual([
+      { label: '選択カード +1Lv', tone: 'positive' },
+      { label: '次スプリント 集中力上限 +2', tone: 'positive' },
+    ]);
     expect(formatRestOptionTags('recruit')).toEqual([
       { label: '予算 -25', tone: 'negative' },
       { label: 'メンバー +1', tone: 'positive' },

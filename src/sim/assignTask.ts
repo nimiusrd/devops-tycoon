@@ -70,7 +70,7 @@ export function canMoveToLane(sprint: SprintState, task: Task, lane: Lane): bool
   return true;
 }
 
-/** target 省略時は Coding 内の complex 優先（従来挙動）。 */
+/** target 省略時は Coding 内の complex を優先し、空き枠があれば Backlog も選ぶ。 */
 export function resolveAssignTaskTarget(
   sprint: SprintState,
   target?: ActionTarget,
@@ -81,8 +81,8 @@ export function resolveAssignTaskTarget(
     if (task.lane !== 'backlog' && task.lane !== 'coding') return undefined;
     return task;
   }
-  const coding = sprint.tasks.filter((t) => t.lane === 'coding');
-  return coding.find((t) => t.kind === 'complex') ?? coding[0];
+  const candidates = assignableTasks(sprint);
+  return candidates.find((t) => t.kind === 'complex') ?? candidates[0];
 }
 
 /** PR分割の対象解決（省略時は Review→Coding の順で complex 優先。従来互換）。 */

@@ -6,6 +6,7 @@ import { applyAction, ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from '../../../src/s
 import {
   applyAssignTaskEffect,
   assignableTasks,
+  canApplyAssignTaskTarget,
   canMoveToLane,
   computeAssignMoraleCost,
   defaultAssignee,
@@ -65,6 +66,16 @@ describe('resolve / canMove', () => {
       makeTask(1, { kind: 'complex' }),
     ]);
     expect(resolveAssignTaskTarget(sprint)?.id).toBe(1);
+  });
+
+  it('target 省略時は Coding が空なら空き枠の Backlog を自動対象にする', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog', kind: 'normal' })]);
+    expect(resolveAssignTaskTarget(sprint)?.id).toBe(0);
+    expect(canApplyAssignTaskTarget(sprint, org)).toBe(true);
+    const outcome = applyAssignTaskEffect(sprint, org);
+    expect(outcome).not.toBe(false);
+    expect(sprint.tasks[0]!.lane).toBe('coding');
   });
 
   it('target 指定時は backlog/coding のみ', () => {

@@ -257,8 +257,7 @@ export function hasActionTarget(
     case 'firefight':
       return mostUrgentIncident(sprint) !== undefined;
     case 'assignTask':
-      // 武装時（target なし）は apply と同じ自動選択対象（Coding 限定）の有無で判定する。
-      // assignableTasks は Backlog まで含むため、apply と不一致になる。
+      // 武装時（target なし）は apply と同じ自動選択対象（空き枠の Backlog を含む）の有無で判定する。
       if (!target) return resolveAssignTaskTarget(sprint) !== undefined;
       if (!org) return false;
       return canApplyAssignTaskTarget(sprint, org, target);

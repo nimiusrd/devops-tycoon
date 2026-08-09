@@ -113,12 +113,13 @@ export interface PolicySpec {
    * 休息フェーズで採用しないときの選択。`RestScreen` には heal / repay / upgrade がある。
    * - `heal`: 常に回復（既定。既存の統制条件を変えないため）
    * - `stateAware`: 負債が危険域なら `repay`、そうでなければ `heal`
+   * - `repay`: 休息到達時に常に返済（RI-78 の統制条件）
    * - `upgrade`: 常にカード強化
    *
    * 既定が `heal` 固定だと、負債返済とカード強化が一度も選ばれないまま
    * F-2 の「スプリント間投資が結果を変えない」の根拠に使われてしまう。
    */
-  rest?: 'heal' | 'stateAware' | 'upgrade';
+  rest?: 'heal' | 'repay' | 'stateAware' | 'upgrade';
   /**
    * ビート（スプリント間イベント）の選択肢の選び方。
    * - `firstChoice`: 提示順の先頭。初見相当
@@ -494,7 +495,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    * 休息の選択肢を回復以外にも振る（F-2 のスプリント間投資）。
    * 統制先は常に回復する `skilledNoHire`。
    */
-  skilledRestRepay: { ...skilledBase(), rest: 'stateAware' },
+  skilledRestRepay: { ...skilledBase(), rest: 'repay' },
   skilledRestUpgrade: { ...skilledBase(), rest: 'upgrade' },
   /**
    * 全介入を 1 tick ごとに試行する（RI-78）。
@@ -529,11 +530,19 @@ export interface SprintLog {
   kind: string;
   ticks: number;
   focusMax: number;
+  /** 初回観測時点で Coding 枠に空きがあったか。 */
+  codingSlotAvailable: boolean;
   focusRemaining: number;
   /** 方針が実際に成立させた介入回数。 */
   interventions: number;
+  /** スプリント中に実際に発動したカード枚数。 */
+  cardsPlayed: number;
   /** 介入 ID ごとの試行結果内訳（probe 方針では発動可能性の上限測定になる）。 */
   attempts: Record<string, Partial<Record<DispatchReason, number>>>;
+  /** 集中力・クールダウンを除いた対象あり区間の開始回数。 */
+  opportunityWindows: Partial<Record<ActionId, number>>;
+  /** スプリント冒頭の初回判断で対象があったか。 */
+  initialOpportunity: Partial<Record<ActionId, boolean>>;
   delivered: number;
   reviewQueueMax: number;
   incidents: number;
@@ -548,6 +557,17 @@ export interface SprintLog {
   techDebtAfter: number;
   aiDepAfter: number;
   budgetAfter: number;
+}
+
+/** スプリント間投資の実績（同一 seed・位置で統制と対応付ける）。 */
+export interface InvestmentLog {
+  quarter: number;
+  index: number;
+  kind: 'shop' | 'rest';
+  /** 休息で実際に選んだ選択肢。ショップでは省略。 */
+  choice?: 'heal' | 'repay' | 'upgrade' | 'recruit';
+  shopCardsBought?: number;
+  shopRelicBought?: boolean;
 }
 
 /** 四半期レビュー到達時のスナップショット（RI-79 の発火要因分解用）。 */
@@ -636,6 +656,8 @@ export interface RunLog {
   sprintsPlayed: number;
   diagnosis: string;
   sprints: SprintLog[];
+  /** ショップ訪問・購入と休息選択のログ。 */
+  investments: InvestmentLog[];
   quarters: QuarterLog[];
   finalOrg: Record<string, number | boolean>;
   totalDelivered: number;
@@ -1165,6 +1187,38 @@ function canApplyAssignTaskWithExplicitTarget(
   return false;
 }
 
+/** 集中力・クールダウンを満たす前提で、対象が存在するかを観測する。 */
+function hasTargetOpportunity(
+  id: ActionId,
+  sprint: NonNullable<RunState['sprint']>,
+  org: RunState['org'],
+  tick: number,
+): boolean {
+  const probe = {
+    ...sprint,
+    focus: sprint.config.focusMax,
+    cooldowns: {},
+  };
+  const gate = canApplyAction(id, probe, org, tick);
+  if (gate.ok) return true;
+  return id === 'assignTask' && canApplyAssignTaskWithExplicitTarget(sprint, org, tick);
+}
+
+/** 対象あり区間の開始を記録する（同一状態の連続観測は1区間）。 */
+function observeOpportunityWindows(
+  e: RunEngine,
+  open: Record<string, boolean>,
+  windows: Partial<Record<ActionId, number>>,
+): void {
+  const s = e.snapshot();
+  if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
+  for (const id of ['assignTask', 'firefight'] as const) {
+    const available = hasTargetOpportunity(id, s.sprint, s.org, s.sprintTick);
+    if (available && !open[id]) windows[id] = (windows[id] ?? 0) + 1;
+    open[id] = available;
+  }
+}
+
 /** アクティブな危険種別ごとの発動可能介入を和集合・最終サンプルへ追記する（盤面非破壊）。 */
 function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, DangerTrack>): void {
   const s = e.snapshot();
@@ -1388,6 +1442,7 @@ function restChoiceFor(
   hasDeck = true,
 ): 'heal' | 'repay' | 'upgrade' {
   if (rest === 'upgrade') return hasDeck ? 'upgrade' : 'heal';
+  if (rest === 'repay') return 'repay';
   if (rest === 'stateAware' && techDebt >= REST_REPAY_DEBT_THRESHOLD) return 'repay';
   return 'heal';
 }
@@ -1512,6 +1567,7 @@ export function runOnce(
   e.startRun();
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
+  const investments: InvestmentLog[] = [];
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
   /** 危険種別ごとの発動可能介入トラック（RI-89）。キーがある＝その危険域を観測。 */
   const availableInDangerByReason = new Map<DangerLoseReason, DangerTrack>();
@@ -1561,12 +1617,32 @@ export function runOnce(
         const quarter = s.quarterNumber;
         const index = s.sprintIndexInQuarter;
         const focusMax = s.sprint?.config.focusMax ?? 0;
+        const codingSlotAvailable = s.sprint
+          ? s.sprint.tasks.filter((task) => task.lane === 'coding').length <
+            s.sprint.config.codingSlots
+          : false;
         const before = s.sprintsPlayed;
         const attempts: Record<string, Partial<Record<DispatchReason, number>>> = {};
+        const opportunityOpen: Record<string, boolean> = {};
+        const opportunityWindows: Partial<Record<ActionId, number>> = {};
+        const initialOpportunity: Partial<Record<ActionId, boolean>> = s.sprint
+          ? {
+              assignTask: hasTargetOpportunity('assignTask', s.sprint, s.org, s.sprintTick),
+              firefight: hasTargetOpportunity('firefight', s.sprint, s.org, s.sprintTick),
+            }
+          : {};
         let interventions = 0;
-        const sampleDanger = (): void => sampleAvailableInDanger(e, availableInDangerByReason);
+        let cardsPlayed = 0;
+        const sampleDanger = (): void => {
+          observeOpportunityWindows(e, opportunityOpen, opportunityWindows);
+          sampleAvailableInDanger(e, availableInDangerByReason);
+        };
+        const onCardPlayed = (): void => {
+          cardsPlayed += 1;
+          sampleDanger();
+        };
         sampleDanger();
-        playHand(e, spec.cards, sampleDanger);
+        playHand(e, spec.cards, onCardPlayed);
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
@@ -1575,7 +1651,7 @@ export function runOnce(
           interventions += n;
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
-          if (spec.cards === 'selective') playHand(e, 'selective', sampleDanger);
+          if (spec.cards === 'selective') playHand(e, 'selective', onCardPlayed);
           if (e.snapshot().phase !== 'sprint') break;
           // stepMs を固定 tick に分割し、各 tick 後に危険域を観測（tick 間の一時的な手を拾う）。
           const ticks = Math.max(1, Math.floor(spec.stepMs / MS_PER_TICK));
@@ -1594,9 +1670,13 @@ export function runOnce(
             kind,
             ticks: after.sprintTick,
             focusMax,
+            codingSlotAvailable,
             focusRemaining: r?.focusRemaining ?? 0,
             interventions,
+            cardsPlayed,
             attempts,
+            opportunityWindows,
+            initialOpportunity,
             delivered: r?.delivered ?? 0,
             reviewQueueMax: r?.reviewQueueMax ?? 0,
             incidents: r?.incidents ?? 0,
@@ -1698,7 +1778,13 @@ export function runOnce(
         e.resolveBeat(choice);
         break;
       }
-      case 'shop':
+      case 'shop': {
+        const nextIndex = s.sprintIndexInQuarter + 1;
+        const beforeShop = s.shop;
+        const beforeCards = new Set(
+          (beforeShop?.cards ?? []).filter((card) => card.bought).map((card) => card.defId),
+        );
+        const beforeRelicBought = beforeShop?.relic?.bought ?? false;
         // 採用方針は専用フェーズだけでなくショップの採用枠にも適用する。
         // 適用しないと「採用あり」群に採用機会を見送ったランが混ざる。
         if (s.shop?.recruit && !s.shop.recruit.bought && wantsRecruit(s, spec)) {
@@ -1706,13 +1792,28 @@ export function runOnce(
         }
         // カード・レリックはスプリント間投資（F-2）の一部。買う方針だけ買う。
         if (spec.shop === 'buy') buyShopItems(e, spec);
+        const afterShop = e.snapshot().shop;
+        investments.push({
+          quarter: s.quarterNumber,
+          index: nextIndex,
+          kind: 'shop',
+          shopCardsBought: (afterShop?.cards ?? []).filter(
+            (card) => card.bought && !beforeCards.has(card.defId),
+          ).length,
+          shopRelicBought: Boolean(afterShop?.relic?.bought && !beforeRelicBought),
+        });
         e.leaveShop();
         break;
-      case 'rest':
+      }
+      case 'rest': {
+        const nextIndex = s.sprintIndexInQuarter + 1;
         // 採用方針は休息の選択肢にも適用する（RestScreen に採用がある）。
         // ただし満員・予算不足では実画面のボタンが無効なので、他の選択へフォールバックする。
-        e.restChoose(wantsRecruit(s, spec) ? 'recruit' : restChoice(s, spec), restUpgradeIndex(s));
+        const choice = wantsRecruit(s, spec) ? 'recruit' : restChoice(s, spec);
+        investments.push({ quarter: s.quarterNumber, index: nextIndex, kind: 'rest', choice });
+        e.restChoose(choice, restUpgradeIndex(s));
         break;
+      }
       case 'recruit':
         e.recruitChoose(wantsRecruit(s, spec) ? 'hire' : 'skip');
         break;
@@ -1791,6 +1892,7 @@ export function runOnce(
     diagnosis: f.diagnosis,
     sprints,
     quarters,
+    investments,
     ...(f.loseReason && availableInDangerByReason.has(f.loseReason as DangerLoseReason)
       ? (() => {
           const track = availableInDangerByReason.get(f.loseReason as DangerLoseReason)!;

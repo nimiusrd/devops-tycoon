@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CARD_DEFS } from '../../../src/data/cards';
 import {
   applyDeckBaseline,
   baselineAppliedLevelFor,
@@ -103,10 +104,10 @@ describe('手札配布・発動（RI-30）', () => {
     expect(a.hand.length + a.drawOrder.length).toBe(5);
   });
 
-  it('playCost は cost/4 を丸め、強化で下がる', () => {
-    expect(playCost(10, 1)).toBe(3);
-    expect(playCost(10, 2)).toBe(2);
-    expect(playCost(8, 1)).toBe(2);
+  it('playCost は明示した focusCost を使い、強化で下がる', () => {
+    expect(playCost(2, 1)).toBe(2);
+    expect(playCost(3, 2)).toBe(2);
+    expect(playCost(4, 1)).toBe(4);
   });
 
   it('playCardFromHand は focus を消費し cardEffects を合成する', () => {
@@ -452,11 +453,32 @@ describe('RI-91-C3 cards NoCoverage / Survived mutants', () => {
   });
 
   describe('playCost / scaleEffects exact', () => {
-    it('playCost は round(cost/4) と強化減・下限1を固定する', () => {
-      expect(playCost(6, 1)).toBe(2); // round(6/4)=2
-      expect(playCost(10, 1)).toBe(3);
-      expect(playCost(10, 4)).toBe(1); // base 3 - 3 → 下限 1
-      expect(playCost(1, 1)).toBe(1); // max(1, round(0.25))=1
+    it('playCost は明示 focusCost と強化減・下限1を固定する', () => {
+      expect(playCost(2, 1)).toBe(2);
+      expect(playCost(3, 1)).toBe(3);
+      expect(playCost(3, 4)).toBe(1); // base 3 - 3 → 下限 1
+      expect(playCost(4, 1)).toBe(4);
+      expect(playCost(0.5, 1)).toBe(1); // 不正な小数も下限1へ
+    });
+
+    it('全カードは集中力費用を2〜4で定義し、ショップ価格と分離する', () => {
+      expect(CARD_DEFS.every((def) => def.focusCost >= 2 && def.focusCost <= 4)).toBe(true);
+      expect(Object.fromEntries(CARD_DEFS.map((def) => [def.id, def.focusCost]))).toEqual({
+        copilot: 2,
+        'pr-size-limit': 2,
+        docs: 2,
+        'static-analysis': 2,
+        'feature-flags': 2,
+        'pair-programming': 2,
+        'auto-test': 3,
+        'claude-code': 3,
+        'ai-guideline': 3,
+        'review-bot': 3,
+        'code-owners': 3,
+        devin: 4,
+        'hire-senior': 4,
+      });
+      expect(CARD_DEFS.find((def) => def.id === 'copilot')?.cost).toBe(10);
     });
 
     it('scaleEffects はレベル係数 k=1+0.5*max(0,level-1) を exact で返す', () => {

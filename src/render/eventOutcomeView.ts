@@ -45,7 +45,13 @@ import {
   resolveNextQuarterEffects,
 } from '../sim/run/quarterReview';
 import { RECRUIT_COST, REST_STAMINA_RECOVER } from '../sim/member/roster';
-import { REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../sim/run/engine';
+import {
+  REST_HEAL,
+  REST_MORALE_HEAL,
+  REST_REPAY,
+  REST_REPAY_REWORK_RATE,
+  REST_UPGRADE_FOCUS_MAX,
+} from '../sim/run/engine';
 import type { CardEffects, CardDef } from '../sim/types';
 import type { LeverDef, OrgAdjust } from '../sim/orgscale/types';
 import type { LoseReason, RunPassives, SprintModifierDelta } from '../sim/run/types';
@@ -147,12 +153,20 @@ function formatSprintModifierTags(mod: SprintModifierDelta): EffectTag[] {
     pushTag(tags, `次スプリント レビュー負荷 ${formatSignedDelta(mod.reviewLoadAdd)}`, tone);
   }
   if (mod.reworkRateAdd && mod.reworkRateAdd !== 0) {
-    pushTag(tags, `次スプリント 手戻り率 ${formatPercentDelta(mod.reworkRateAdd)}`, 'negative');
+    pushTag(
+      tags,
+      `次スプリント 手戻り率 ${formatPercentDelta(mod.reworkRateAdd)}`,
+      mod.reworkRateAdd < 0 ? 'positive' : 'negative',
+    );
   }
   if (mod.taskCountMul !== undefined && mod.taskCountMul !== 1) {
     const pct = Math.round((mod.taskCountMul - 1) * 100);
     const tone: EffectTagTone = pct >= 0 ? 'positive' : 'negative';
     pushTag(tags, `次スプリント 出荷 ${pct >= 0 ? '+' : ''}${pct}%`, tone);
+  }
+  if (mod.focusMaxAdd && mod.focusMaxAdd !== 0) {
+    const tone = mod.focusMaxAdd > 0 ? 'positive' : 'negative';
+    pushTag(tags, `次スプリント 集中力上限 ${formatSignedDelta(mod.focusMaxAdd)}`, tone);
   }
   return tags;
 }
@@ -741,9 +755,15 @@ export function formatRestOptionTags(
     }
     case 'repay':
       pushTag(tags, `Tech Debt -${REST_REPAY}`, 'positive');
+      pushTag(
+        tags,
+        `次スプリント 手戻り率 ${formatPercentDelta(REST_REPAY_REWORK_RATE)}`,
+        'positive',
+      );
       break;
     case 'upgrade':
-      pushTag(tags, 'デッキ先頭 +1Lv', 'positive');
+      pushTag(tags, '選択カード +1Lv', 'positive');
+      pushTag(tags, `次スプリント 集中力上限 +${REST_UPGRADE_FOCUS_MAX}`, 'positive');
       break;
     case 'recruit':
       pushTag(tags, `予算 -${RECRUIT_COST}`, 'negative');

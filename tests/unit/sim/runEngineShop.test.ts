@@ -7,7 +7,13 @@ import { RECRUIT_SKIP_MORALE } from '../../../src/data/events';
 import { RELIC_DEFS } from '../../../src/data/relics';
 import type { CardInstance } from '../../../src/sim/cards';
 import { RECRUIT_COST, ROSTER_CAP, type RosterState } from '../../../src/sim/member';
-import { REST_HEAL, REST_REPAY, RunEngine } from '../../../src/sim/run/engine';
+import {
+  REST_HEAL,
+  REST_REPAY,
+  REST_REPAY_REWORK_RATE,
+  REST_UPGRADE_FOCUS_MAX,
+  RunEngine,
+} from '../../../src/sim/run/engine';
 import type { BeatState, RunState, ShopOffer } from '../../../src/sim/run/types';
 import type { OrgState } from '../../../src/sim/types';
 
@@ -649,6 +655,11 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
     expect(state.phase).toBe('rest');
     expect(state.pendingSprintModifiers).toEqual({ taskCountMul: 0.7 });
     expect(restInternals.beat).toBeNull();
+    restEngine.restChoose('repay');
+    expect(restEngine.snapshot().pendingSprintModifiers).toEqual({
+      reworkRateAdd: -0.08,
+      taskCountMul: 0.7,
+    });
 
     const recruitEngine = createEngine('ri-72-d2-recruit-beat');
     enterDecisionBeat(recruitEngine, 'recruit-offer');
@@ -816,6 +827,9 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
     repay.org.techDebt = REST_REPAY - 10;
     repayEngine.restChoose('repay');
     expect(repayEngine.snapshot().org.techDebt).toBe(0);
+    expect(repayEngine.snapshot().pendingSprintModifiers).toEqual({
+      reworkRateAdd: REST_REPAY_REWORK_RATE,
+    });
 
     const upgradeEngine = createEngine('ri-72-d2-rest-upgrade');
     const upgrade = asInternals(upgradeEngine);
@@ -829,6 +843,9 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
       { defId: 'docs', level: 1 },
       { defId: 'auto-test', level: 3 },
     ]);
+    expect(upgradeEngine.snapshot().pendingSprintModifiers).toEqual({
+      focusMaxAdd: REST_UPGRADE_FOCUS_MAX,
+    });
 
     const defaultUpgradeEngine = createEngine('ri-72-d2-rest-upgrade-default');
     const defaultUpgrade = asInternals(defaultUpgradeEngine);
@@ -842,6 +859,9 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
       { defId: 'docs', level: 2 },
       { defId: 'auto-test', level: 2 },
     ]);
+    expect(defaultUpgradeEngine.snapshot().pendingSprintModifiers).toEqual({
+      focusMaxAdd: REST_UPGRADE_FOCUS_MAX,
+    });
 
     const emptyUpgradeEngine = createEngine('ri-72-d2-rest-upgrade-empty');
     const emptyUpgrade = asInternals(emptyUpgradeEngine);

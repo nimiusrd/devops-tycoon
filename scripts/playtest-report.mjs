@@ -379,6 +379,168 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
   console.log(`${d}: ${cells.join(' | ')}`);
 }
 
+// --- RI-78 スプリント間投資の共通機会 ---------------------------------------
+console.log(`\n## RI-78 スプリント間投資（共通機会・次スプリント KPI）\n`);
+const runIdentity = (r) => `${r.meta ?? 'fresh'}|${r.difficulty}|${r.seed}`;
+const sprintIdentity = (s) => `${s.quarter}|${s.index}`;
+const sprintAfterInvestment = (run, event) =>
+  (run.sprints ?? []).find((s) => s.quarter === event.quarter && s.index === event.index) ?? null;
+const pairedInvestmentRows = (policy, control, kind, predicate) => {
+  const treatmentRuns = new Map(
+    runs.filter((r) => r.policy === policy).map((r) => [runIdentity(r), r]),
+  );
+  const controlRuns = new Map(
+    runs.filter((r) => r.policy === control).map((r) => [runIdentity(r), r]),
+  );
+  const rows = [];
+  for (const [identity, treatment] of treatmentRuns) {
+    const ctl = controlRuns.get(identity);
+    if (!ctl) continue;
+    const controlEvents = new Map(
+      (ctl.investments ?? [])
+        .filter((event) => event.kind === kind)
+        .map((event) => [sprintIdentity(event), event]),
+    );
+    for (const event of (treatment.investments ?? []).filter(
+      (candidate) =>
+        candidate.kind === kind &&
+        predicate(candidate, controlEvents.get(sprintIdentity(candidate))),
+    )) {
+      const controlEvent = controlEvents.get(sprintIdentity(event));
+      const treatmentSprint = sprintAfterInvestment(treatment, event);
+      const controlSprint = controlEvent ? sprintAfterInvestment(ctl, controlEvent) : null;
+      if (controlEvent && treatmentSprint && controlSprint) {
+        rows.push({ event, controlEvent, treatmentSprint, controlSprint });
+      }
+    }
+  }
+  return rows;
+};
+const meanField = (rows, side, field) => mean(rows.map((row) => row[side][field] ?? 0));
+const printInvestmentPair = (label, rows, fields) => {
+  if (!rows.length) {
+    console.log(`${label}: 共通機会なし（未計測）`);
+    return;
+  }
+  const deltas = fields.map(({ label: fieldLabel, field, lowerIsBetter = false }) => {
+    const treatment = meanField(rows, 'treatmentSprint', field);
+    const control = meanField(rows, 'controlSprint', field);
+    const delta = treatment - control;
+    const better = lowerIsBetter ? delta < 0 : delta > 0;
+    return `${fieldLabel} ${r1(treatment)} vs ${r1(control)} (${delta >= 0 ? '+' : ''}${r1(delta)})${better ? ' 改善' : ''}`;
+  });
+  console.log(`${label}: n=${rows.length} | ${deltas.join(' / ')}`);
+};
+
+const repayRows = pairedInvestmentRows(
+  'skilledRestRepay',
+  'skilledNoHire',
+  'rest',
+  (event, controlEvent) => event.choice === 'repay' && controlEvent?.choice === 'heal',
+);
+printInvestmentPair('返済 vs 回復', repayRows, [
+  { label: 'Rework', field: 'rework', lowerIsBetter: true },
+  { label: 'Tech Debt', field: 'techDebtAfter', lowerIsBetter: true },
+]);
+
+const upgradeRows = pairedInvestmentRows(
+  'skilledRestUpgrade',
+  'skilledNoHire',
+  'rest',
+  (event, controlEvent) => event.choice === 'upgrade' && controlEvent?.choice === 'heal',
+);
+printInvestmentPair('強化 vs 回復', upgradeRows, [
+  { label: 'カード発動数', field: 'cardsPlayed' },
+  { label: '集中力上限', field: 'focusMax' },
+  { label: '出荷', field: 'delivered' },
+]);
+
+const shopRows = pairedInvestmentRows(
+  'skilledShopBuy',
+  'skilledNoHire',
+  'shop',
+  (event, controlEvent) =>
+    Boolean((event.shopCardsBought ?? 0) > 0 || event.shopRelicBought) &&
+    controlEvent !== undefined,
+);
+if (shopRows.length) {
+  const improved = shopRows.filter(
+    ({ treatmentSprint: t, controlSprint: c }) =>
+      t.delivered > c.delivered ||
+      t.rework < c.rework ||
+      t.reviewQueueMax < c.reviewQueueMax ||
+      t.seniorHpAfter > c.seniorHpAfter,
+  ).length;
+  console.log(
+    `ショップ購入 vs 統制: n=${shopRows.length} | KPIいずれか改善=${improved}/${shopRows.length} (${pct(improved, shopRows.length)})`,
+  );
+  printInvestmentPair('  ショップ購入詳細', shopRows, [
+    { label: '出荷', field: 'delivered' },
+    { label: 'Rework', field: 'rework', lowerIsBetter: true },
+    { label: 'Reviewピーク', field: 'reviewQueueMax', lowerIsBetter: true },
+    { label: 'HP', field: 'seniorHpAfter' },
+  ]);
+} else {
+  console.log('ショップ購入 vs 統制: 共通の実購入機会なし（未計測）');
+}
+
+const cardsPair = (() => {
+  const treatment = new Map(
+    runs.filter((r) => r.policy === 'skilledSelectiveCards').map((r) => [runIdentity(r), r]),
+  );
+  const control = new Map(
+    runs.filter((r) => r.policy === 'skilledNoCards').map((r) => [runIdentity(r), r]),
+  );
+  const rows = [];
+  for (const [identity, t] of treatment) {
+    const c = control.get(identity);
+    if (!c) continue;
+    rows.push({ t, c });
+  }
+  return rows;
+})();
+if (cardsPair.length) {
+  const tWins = cardsPair.filter(({ t }) => t.status === 'won').length;
+  const cWins = cardsPair.filter(({ c }) => c.status === 'won').length;
+  const tPlayed = mean(
+    cardsPair.map(({ t }) => (t.sprints ?? []).reduce((n, s) => n + (s.cardsPlayed ?? 0), 0)),
+  );
+  const cPlayed = mean(
+    cardsPair.map(({ c }) => (c.sprints ?? []).reduce((n, s) => n + (s.cardsPlayed ?? 0), 0)),
+  );
+  const tSurvive = mean(cardsPair.map(({ t }) => t.sprintsPlayed));
+  const cSurvive = mean(cardsPair.map(({ c }) => c.sprintsPlayed));
+  console.log(
+    `選択カード vs 無カード: 共通ラン n=${cardsPair.length} | 勝利 ${tWins} vs ${cWins} | 生存スプリント平均 ${r1(tSurvive)} vs ${r1(cSurvive)} | 発動カード平均 ${r1(tPlayed)} vs ${r1(cPlayed)}`,
+  );
+} else {
+  console.log('選択カード vs 無カード: 共通ランなし（未計測）');
+}
+
+const opportunityPolicies = [
+  ['onlyAssign', 'assignTask'],
+  ['onlyFirefight', 'firefight'],
+];
+for (const [policy, action] of opportunityPolicies) {
+  const rows = runs.filter((r) => r.policy === policy).flatMap((r) => r.sprints ?? []);
+  if (!rows.length) {
+    console.log(`${action} 対象あり区間: 未計測（${policy} 未実行）`);
+    continue;
+  }
+  const relevant =
+    action === 'assignTask'
+      ? rows.filter((s) => s.codingSlotAvailable)
+      : rows.filter((s) => s.incidents > 0);
+  const withWindow = relevant.filter((s) =>
+    action === 'assignTask'
+      ? Boolean(s.initialOpportunity?.[action])
+      : (s.opportunityWindows?.[action] ?? 0) > 0,
+  ).length;
+  console.log(
+    `${action} 対象あり区間: 条件該当 ${withWindow}/${relevant.length} (${pct(withWindow, relevant.length)}) | 完了スプリント全体で区間あり=${pct(rows.filter((s) => (s.opportunityWindows?.[action] ?? 0) > 0).length, rows.length)}`,
+  );
+}
+
 // --- F-5 分散（同一スプリント番号で比較） ----------------------------------
 console.log(`\n## F-5 出荷の散らばり（同一スプリント番号で比較）\n`);
 // 全スプリントを連結した CV は、長く生存したランほど標本を多く出し進行段階も混ざるため使わない。

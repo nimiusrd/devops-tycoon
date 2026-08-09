@@ -6,9 +6,10 @@
  * 設計座標空間（1404×573）で返し、DOM/SVGとPixiJSのレンダラは
  * それを読んで描くだけにする（第22.2）。
  */
-import type { DepartmentState, OrgScaleState, Team, TeamHealth } from '../sim/orgscale/types';
+import type { DepartmentState, OrgScaleState, Team } from '../sim/orgscale/types';
 import { HEALTH_COLOR, HEALTH_LABEL } from './orgView';
 import { displayName, fireLabel, islandTitle } from './orgIslandView';
+import { badgeTone, healthTag } from './teamHealthTheme';
 
 /** 設計座標空間（旧モック org-screen の viewBox 由来）。 */
 export const ORG_VIEW = { w: 1404, h: 573 } as const;
@@ -198,20 +199,6 @@ export function islandMood(team: Team): OrgIslandMood {
   if (team.health === 'congested') return 'tired';
   if (team.morale < 35) return 'sad';
   return 'neutral';
-}
-
-/** バッジの tone を健全度から導出する。 */
-function badgeTone(health: TeamHealth): 'ok' | 'warn' | 'hell' {
-  if (health === 'reviewHell') return 'hell';
-  if (health === 'congested') return 'warn';
-  return 'ok';
-}
-
-/** バッジ tag 文言。 */
-function healthTag(health: TeamHealth): string {
-  if (health === 'reviewHell') return 'Review Hell';
-  if (health === 'congested') return '渋滞ぎみ';
-  return 'Healthy';
 }
 
 /** 部門ラベルの tone。 */

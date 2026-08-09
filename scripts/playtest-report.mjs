@@ -858,6 +858,9 @@ console.log(`\n## F-11 Q1 でビルドの方向が決まるか\n`);
 // 複数ブランチへ均等に投資した状態は「方向が決まった」とは数えない。
 const BRANCH_COMMIT_MIN_NODES = 2; // 同一ブランチで2ノード以上
 const BRANCH_COMMIT_SHARE = 0.5; // かつ その時点までの解放の過半がそのブランチ
+const F11_DIRECTION_SAMPLE_SIZE = 40;
+const F11_DIRECTION_ACCEPTANCE_RATE = 0.5;
+const F11_DIRECTION_ACCEPTANCE_MIN_BRANCHES = 2;
 /**
  * Q1 中に「方向が確定した時点」があったかを判定する。
  *
@@ -1008,6 +1011,17 @@ const F11_DIRECTION_POLICY = 'skilledStateEvolve';
         ` / 解放ありだが分散 ${spread} / Q1解放なし ${never}`,
     );
     console.log(`  確定ブランチ分布: ${JSON.stringify(branches)}`);
+    const minCommitted = Math.ceil(F11_DIRECTION_SAMPLE_SIZE * F11_DIRECTION_ACCEPTANCE_RATE);
+    const sampleSizeAccepted = arr.length === F11_DIRECTION_SAMPLE_SIZE;
+    const branchDiversityAccepted =
+      Object.keys(branches).length >= F11_DIRECTION_ACCEPTANCE_MIN_BRANCHES;
+    const directionAccepted =
+      sampleSizeAccepted && committed.length >= minCommitted && branchDiversityAccepted;
+    console.log(
+      `  受入判定: ${directionAccepted ? '充足' : '未充足'}（標本 n=${arr.length}/${F11_DIRECTION_SAMPLE_SIZE}` +
+        `、方向確定 ${committed.length}/${minCommitted} 以上` +
+        `、確定ブランチ ${Object.keys(branches).length}/${F11_DIRECTION_ACCEPTANCE_MIN_BRANCHES} 以上）`,
+    );
     if (atSprint.length > 0) {
       console.log(
         `  確定スプリント（四半期内 index）: p10=${quantile(atSprint, 0.1)}` +

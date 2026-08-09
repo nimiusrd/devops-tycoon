@@ -212,7 +212,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 
 - 対象: `main`（`8629f5f`）
 - 方法: `npm run playtest`（`tests/playtest/harness.ts`）→ `npm run playtest:report`
-- 母数: **4難易度 × 33方針 × seed `pt-1`〜`pt-10` = 1,320ラン**
+- 母数: **4難易度 × 34方針 × seed `pt-1`〜`pt-10` = 1,360ラン**
 - 本書とバックログに書いた**方針別の勝利数は `npm run playtest:check` で実測と突き合わせている**
   （`scripts/check-findings.mjs`）。再計測のたびに手で追うと必ず取りこぼすため
   （実際、方針を1つ足しただけの回で概要と詳細表がずれ、レビューで指摘された）
@@ -333,10 +333,6 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   **実質的な選択肢**が消えた時点」の反実仮想評価ではない（効果が無い介入も可と出る）。
   上記 1,240 ラン時点の所見はまだ**進行速度と決着位置の差**までである。
 
-- **F-11 は成立している**。Q1 全解放は 13/160（8.1%）と稀で、盤面依存 evolve
-  （`skilledStateEvolve`）の複数スプリント方向確定は 40ラン中13件、確定ブランチは
-  `ai` / `review` / `quality` に分かれる（RI-86）。
-
 **成立していない基準**:
 
 | 基準 | 未充足の内容 | 対応 |
@@ -349,8 +345,8 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | F-7 | ~~初見相当の勝率が全難易度 0/10~~ → easy/normal で `naive` 1/10（10%）。`idle` は全難易度 0/10 | RI-73（F-7 完了） |
 | F-8 | Nightmare は330ラン全敗し、打つ機会が一度も無い。「何スプリント前から実質的な選択肢が消えたか」は未計測（RI-89 は機械的発動可否のみで、回避有効性の反実仮想は未実装） | RI-74 |
 | F-9 | 進行速度と決着位置は敗因ごとに違う。「打てた手」の観測手段は RI-89 で追加済み（差の再計測は playtest:report） | RI-89（完了） |
-| F-10 | 勝利が 5/1,320 と少なく、種別は `management` 3 / `chaos` 2。旧コホートの「実質2種」は再現できない | RI-76 |
-| F-11 | ~~希少性のみで方向確定が review 一択~~ → 全解放 8.1%・解放数 p50=11。盤面依存 evolve の方向確定は 40ラン中13件で `ai` 10 / `review` 2 / `quality` 1（`skilledStateEvolve`） | RI-86（完了） |
+| F-10 | 現行 1,360ランでは勝利種別が複数に広がるが、ビルドごとの勝ち筋が3種以上に有意に分かれる受入条件は未達 | RI-76 |
+| F-11 | 希少性・分岐多様化は実装済みだが、方向確定は 13/40（32.5%）で、受入閾値 20/40（50%）未達 | RI-86（進行中） |
 | F-12 | ~~ドラフトのマリガンが無い~~ → RI-81 でマリガンを実装済み | RI-81（完了） |
 
 ## 課題一覧
@@ -426,20 +422,43 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 ### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）
 
-1,320ラン中5勝の内訳は `management` 3 / `chaos` 2。
-`healthy` / `noDamage` / `happiness` / `aiSuccess` / `normal` は**0件**。
-勝数が極端に少ないため、以前のコホートで見ていた「実質 `healthy` と `noDamage` の2種」
-という分布は**現行では再現できない**。
+現行コホートは **1,360ラン中75勝（敗北1,285）**で、勝利種別の内訳は
+`management` 48 / `chaos` 15 / `happiness` 12。`healthy` / `noDamage` /
+`aiSuccess` / `normal` は 0件だった。
+3種の勝利種別は出現したが、F-10 の受入条件である「複数ビルドで勝利種別が3種以上に
+有意に分かれる」ことは、方針別の勝数が少なく分布も混在するためまだ確認できない。
 
 勝利があった方針だけを列挙する。
 
 | 方針 | 勝利種別 |
 | --- | --- |
-| `onlyFirefight` | `management` 2 |
+| `naive` | `management` 2 |
 | `skilled` | `chaos` 2 |
+| `skilledNoHire` | `management` 1 |
+| `skilledNoCards` | `happiness` 2 / `management` 4 |
+| `onlyAndon` | `management` 2 / `chaos` 2 |
 | `onlyThrottle` | `management` 3 |
-| `noAiCtl` | `management` 3 |
-| `probe` | `management` 6 |
+| `noAi` | `happiness` 2 / `chaos` 1 |
+| `reviewHeavy` | `chaos` 3 |
+| `noAiCtl` | `management` 3 / `happiness` 1 |
+| `skilledSelectiveCards` | `management` 2 / `happiness` 2 / `chaos` 1 |
+| `adjCutScope` | `management` 1 |
+| `adjExtendDeadline` | `happiness` 1 / `management` 1 |
+| `adjQualityPivot` | `management` 5 |
+| `adjRequestBudget` | `management` 1 |
+| `adjPauseAiRollout` | `management` 6 |
+| `adjReorgTeams` | `management` 1 |
+| `adjStakeholderCare` | `chaos` 1 |
+| `skilledSelectiveHire` | `happiness` 1 |
+| `skilledShopBuy` | `chaos` 3 |
+| `skilledRestRepay` | `management` 1 |
+| `skilledRestUpgrade` | `management` 2 |
+| `probe` | `management` 6 / `happiness` 3 / `chaos` 2 |
+| `skilledStateEvolve` | `management` 2 |
+| `onlyFirefight` | `management` 2 |
+| `onlyAssign` | `management` 1 |
+| `onlySplit` | `management` 1 |
+| `noInterventionCtl` | `management` 1 |
 
 `evaluateWinType`（`src/sim/outcome.ts:113-180`）の優先順位は次のとおり。
 
@@ -453,7 +472,8 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 7. それ以外は **`normal`**
 
 したがって `noDamage` と `healthy` は、残業・アンドンの有無「だけ」で入れ替わる構造ではない。
-現行コホートの5勝（`management` / `chaos`）からも、旧来の「実質2種」は再現できない。
+この総数・種別内訳・方針別表は、旧コホートの数値を混ぜず、同じ
+`playtest-out/runs.json` から生成した現行集計に揃えている。
 
 一方、**組織診断はビルドで明確に分かれる**（進化ブランチとドラフト選好を分岐させた結果）。
 
@@ -760,7 +780,7 @@ RI-73（F-1 残）と合わせて行う。
 
 回帰は `tests/unit/scenarios/reviewFreeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
 
-### RI-86 Q1 で進化ツリーを取り切れてしまい、ビルドの方向という概念が成立しない（優先度: 中 / F-11）— 完了
+### RI-86 Q1 で進化ツリーを取り切れてしまい、ビルドの方向という概念が成立しない（優先度: 中 / F-11）— 進行中（希少性・分岐多様化は実装済み）
 
 ノードコスト引き上げ（総コスト **26→86**、入手式据え置き）で希少性を入れ、
 盤面依存の `skilledStateEvolve` と複数スプリント継続の方向確定指標を追加した。
@@ -775,6 +795,12 @@ RI-73（F-1 残）と合わせて行う。
 | 進化ツリー | **15ノード / 総コスト 86** |
 | 1スプリントの入手ポイント | `1 + floor(出荷/40)`（高負荷は +1） |
 
+**受入条件（固定）**:
+
+- 代表4方針（`naive` / `skilledNoHire` / `aiFullBet` / `noAi`、n=160）で Q1 の全解放率が低いこと。
+- `skilledStateEvolve`（n=40）で、Q1 の方向確定が **20/40（50%）以上**であること。
+- 方向確定したランのブランチが **2種類以上**に分かれること。
+
 **実測**（代表4方針 `naive` / `skilledNoHire` / `aiFullBet` / `noAi`、n=160）:
 
 | 指標 | 実測 |
@@ -785,6 +811,8 @@ RI-73（F-1 残）と合わせて行う。
 
 **方向確定**（`skilledStateEvolve`、`evolve: stateAware`、n=40）: Q1 で方向確定 13/40（32.5%）、
 確定ブランチは `ai` 10 / `review` 2 / `quality` 1（分散 26 / Q1解放なし 1）。確定スプリント p50=2。
+ブランチ数の条件（3種類）は満たすが、方向確定率は受入閾値 20/40（50%）に届かないため、
+RI-86 と F-11 は未完了として追跡する。
 同一進化フェーズの連続取得だけでは確定とせず、複数スプリントにまたがる継続選択を要求する。
 固定順方針のブランチ偏りは成立判定に使わない。
 

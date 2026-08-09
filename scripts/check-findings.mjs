@@ -262,6 +262,86 @@ for (const r of runs) {
   m.set(r.diagnosis, (m.get(r.diagnosis) ?? 0) + 1);
 }
 
+// --- F-10 勝利種別の完全一致 ----------------------------------------------
+//
+// 既存の行単位チェックは、表に書かれた勝利種別が実測と一致するかだけを見ていた。
+// そのため `probe` の management 6 が正しくても、同じ方針の happiness / chaos を
+// 表から落としたまま通過できた。F-10 は「勝利種別の分布」自体が結論なので、現行
+// RI-76 節の方針別表と総内訳を、実測の非ゼロ集合と完全一致させる。
+const winTypeCountsFromText = (text) => {
+  const out = new Map();
+  for (const m of text.matchAll(/`(\w+)`\s*(\d+)/g)) out.set(m[1], Number(m[2]));
+  return out;
+};
+const totalWinTypeCounts = new Map();
+for (const counts of winTypeByPolicy.values()) {
+  for (const [type, count] of counts) {
+    totalWinTypeCounts.set(type, (totalWinTypeCounts.get(type) ?? 0) + count);
+  }
+}
+const findingsRaw = readFileSync(DOCS[0], 'utf8');
+const findingsCut = findingsRaw.indexOf(AS_OF_SECTION);
+const findingsBody = findingsCut >= 0 ? findingsRaw.slice(0, findingsCut) : findingsRaw;
+const f10Start = findingsBody.indexOf('### RI-76 ');
+const f10End = f10Start >= 0 ? findingsBody.indexOf('\n### RI-77 ', f10Start) : -1;
+if (f10Start < 0 || f10End < 0) {
+  problems.push(`${DOCS[0]}: RI-76 の F-10 集計節を見つけられない`);
+} else {
+  const f10Section = findingsBody.slice(f10Start, f10End);
+  const table = new Map();
+  const f10TableSection = f10Section.split('\n`evaluateWinType`')[0];
+  for (const line of f10TableSection.split('\n')) {
+    const row = line.match(/^\|\s*`(\w+)`\s*\|\s*(.*?)\s*\|\s*$/);
+    if (!row) continue;
+    table.set(row[1], winTypeCountsFromText(row[2]));
+  }
+  for (const [policy, expected] of winTypeByPolicy) {
+    if (expected.size === 0) continue;
+    const written = table.get(policy);
+    if (!written) {
+      problems.push(`${DOCS[0]}: F-10 方針別表に勝利のある \`${policy}\` が無い`);
+      continue;
+    }
+    for (const [type, count] of expected) {
+      if (written.get(type) !== count) {
+        problems.push(
+          `${DOCS[0]}: F-10 の \`${policy}\` / \`${type}\` が ${written.get(type) ?? 0} と書かれているが実測は ${count}`,
+        );
+      }
+    }
+    for (const [type, count] of written) {
+      if (!expected.has(type)) {
+        problems.push(
+          `${DOCS[0]}: F-10 の \`${policy}\` / \`${type}\` が ${count} と書かれているが実測は 0`,
+        );
+      }
+    }
+  }
+  for (const policy of table.keys()) {
+    if (!winTypeByPolicy.get(policy)?.size) {
+      problems.push(`${DOCS[0]}: F-10 方針別表に実測で勝利の無い \`${policy}\` がある`);
+    }
+  }
+  const summary = f10Section.match(/勝利種別の内訳は\s*((?:`\w+`\s*\d+\s*\/\s*)+`\w+`\s*\d+)/s);
+  if (!summary) {
+    problems.push(`${DOCS[0]}: F-10 の総勝利種別内訳が無い`);
+  } else {
+    const written = winTypeCountsFromText(summary[1]);
+    for (const [type, count] of totalWinTypeCounts) {
+      if (written.get(type) !== count) {
+        problems.push(
+          `${DOCS[0]}: F-10 総内訳の \`${type}\` が ${written.get(type) ?? 0} と書かれているが実測は ${count}`,
+        );
+      }
+    }
+    for (const [type, count] of written) {
+      if (!totalWinTypeCounts.has(type)) {
+        problems.push(`${DOCS[0]}: F-10 総内訳に実測で勝利の無い \`${type}\` ${count} がある`);
+      }
+    }
+  }
+}
+
 for (const file of DOCS) {
   const raw = readFileSync(file, 'utf8');
   const cut = raw.indexOf(AS_OF_SECTION);

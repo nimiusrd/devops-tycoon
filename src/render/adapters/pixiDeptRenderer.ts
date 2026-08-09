@@ -67,6 +67,8 @@ const PLATE = {
 export interface DeptRenderMetrics {
   teams: number;
   flows: number;
+  /** 現在の部門で取得済みの人物SVG種類数（視覚回帰の安定化用）。 */
+  assets: number;
 }
 
 export interface PixiDeptRendererOptions {
@@ -94,6 +96,10 @@ interface TeamParts {
   mini: Container;
   /** ミニ盤面のベクタ形状（床・机・粒・キャラをまとめて描く）。 */
   gfx: Graphics;
+  /** SVG取得前／失敗時に表示するCodingの旧人物。 */
+  codingFallback: Graphics;
+  /** SVG取得前／失敗時に表示するReviewの旧人物。 */
+  reviewFallback: Graphics;
   shelfEmoji: Text;
   codingEmoji: Text;
   reviewEmoji: Text;
@@ -115,6 +121,8 @@ function createTeamContainer(): Container {
   const mini = new Container();
   mini.pivot.set(190, 120);
   const gfx = new Graphics();
+  const codingFallback = new Graphics();
+  const reviewFallback = new Graphics();
   const shelfEmoji = makeText({ fontSize: 11, fill: COLOR_CREAM });
   const codingEmoji = makeText({ fontSize: 9, fill: COLOR_CREAM });
   const reviewEmoji = makeText({ fontSize: 9, fill: COLOR_CREAM });
@@ -125,7 +133,18 @@ function createTeamContainer(): Container {
   const reviewAsset = new Sprite();
   reviewAsset.anchor.set(0.5);
   reviewAsset.visible = false;
-  mini.addChild(gfx, codingAsset, reviewAsset, shelfEmoji, codingEmoji, reviewEmoji, fireEmoji);
+  // 旧人物はSVG Spriteの下に置き、取得成功時に個別に隠せるよう分離する。
+  mini.addChild(
+    gfx,
+    codingFallback,
+    reviewFallback,
+    codingAsset,
+    reviewAsset,
+    shelfEmoji,
+    codingEmoji,
+    reviewEmoji,
+    fireEmoji,
+  );
 
   const banner = new Container();
   const bannerBg = new Graphics();
@@ -142,6 +161,8 @@ function createTeamContainer(): Container {
   const parts: TeamParts = {
     mini,
     gfx,
+    codingFallback,
+    reviewFallback,
     shelfEmoji,
     codingEmoji,
     reviewEmoji,
@@ -172,6 +193,8 @@ function resetTeamContainer(group: Container): void {
   parts.mini.hitArea = null;
   parts.mini.scale.set(1);
   parts.gfx.clear();
+  parts.codingFallback.clear();
+  parts.reviewFallback.clear();
   parts.bannerBg.clear();
   parts.bannerTagBg.clear();
   parts.codingAsset.visible = false;
@@ -271,8 +294,11 @@ function layoutTeamMini(parts: TeamParts, plan: DeptTeamPlan, deptColor: string)
     if (lane.count > 0) drawPileDots(g, lane.x, lane.y - 22, lane.count, lane.hot);
   }
 
-  drawWorker(g, 64, 86);
-  drawWorker(g, 176, 78);
+  // 旧人物はSVG Spriteの読み込み中／失敗時だけ表示する。
+  drawWorker(parts.codingFallback, 64, 86);
+  drawWorker(parts.reviewFallback, 176, 78);
+  parts.codingFallback.visible = true;
+  parts.reviewFallback.visible = true;
   const codingFace = moodEmoji(mood);
   if (codingFace) {
     parts.codingEmoji.text = codingFace;
@@ -506,7 +532,11 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     this.drawTeams(scene, dept.def.color);
     this.drawStageLabels(scene.stageLabels);
 
-    this.opts.onRenderMetrics?.({ teams: scene.teams.length, flows: scene.flows.length });
+    this.opts.onRenderMetrics?.({
+      teams: scene.teams.length,
+      flows: scene.flows.length,
+      assets: [...this.assetTextures.values()].filter((texture) => texture !== null).length,
+    });
   }
 
   /** 直近 render に使った部門状態（resize 後の再描画用）。 */
@@ -614,13 +644,21 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     const reviewId = deptAssetForLane('review');
     const mood = gameAssetMoodStyle(plan.mood);
     const reviewMood = plan.lanes.find((lane) => lane.lane === 'review')?.hot ? 'panic' : plan.mood;
-    const entries: readonly [Sprite, GameAssetId | undefined, number, number, typeof mood][] = [
-      [parts.codingAsset, codingId, 64, 86, mood],
-      [parts.reviewAsset, reviewId, 176, 78, gameAssetMoodStyle(reviewMood)],
+    const entries: readonly [
+      Sprite,
+      Graphics,
+      GameAssetId | undefined,
+      number,
+      number,
+      typeof mood,
+    ][] = [
+      [parts.codingAsset, parts.codingFallback, codingId, 64, 86, mood],
+      [parts.reviewAsset, parts.reviewFallback, reviewId, 176, 78, gameAssetMoodStyle(reviewMood)],
     ];
-    for (const [sprite, assetId, x, y, style] of entries) {
+    for (const [sprite, fallback, assetId, x, y, style] of entries) {
       if (!assetId) {
         sprite.visible = false;
+        fallback.visible = true;
         continue;
       }
       const texture = this.assetTextures.get(assetId);
@@ -632,8 +670,10 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
       if (texture) {
         sprite.texture = texture;
         sprite.visible = true;
+        fallback.visible = false;
       } else {
         sprite.visible = false;
+        fallback.visible = true;
         this.requestAssetTexture(assetId);
       }
     }

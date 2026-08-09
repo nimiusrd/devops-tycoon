@@ -309,10 +309,14 @@ function layoutCard(parts: IslandParts, s: OrgSprite): IslandHitBounds & { w: nu
     layoutLabelLine(parts.fireText, labels.fire, innerW),
   ].filter((h) => h > 0);
 
+  const moodMarker = gameAssetMoodStyle(s.mood).marker;
+
   const contentH =
     lineHeights.reduce((sum, h) => sum + h, 0) +
     Math.max(0, lineHeights.length - 1) * CARD_LINE_GAP;
-  const avatarRowH = s.avatarAssetIds.length > 0 ? 23 : 0;
+  // 気分マーカーは健全度バッジと同じ右上に置かず、アバター行へ分離する。
+  // 人物がいないチームでも行を確保し、ラベルとの重なりを防ぐ。
+  const avatarRowH = s.avatarAssetIds.length > 0 || moodMarker !== null ? 23 : 0;
   const h = contentH + CARD_PAD_Y * 2 + avatarRowH;
   const topY = -h / 2 + CARD_PAD_Y;
 
@@ -331,10 +335,13 @@ function layoutCard(parts: IslandParts, s: OrgSprite): IslandHitBounds & { w: nu
 
   drawCardBg(parts.bg, CARD_W, h, s.deptColor, s.tint, s.isPlayer, s.fire);
 
-  const moodMarker = gameAssetMoodStyle(s.mood).marker;
   parts.moodText.text = moodMarker ?? '';
   parts.moodText.visible = moodMarker !== null;
-  parts.moodText.position.set(CARD_W / 2 - CARD_PAD_X - parts.moodText.width, topY);
+  // 健全度バッジ（右上）と離れたカード下端の状態印。アバターとは右側で分離する。
+  parts.moodText.position.set(
+    CARD_W / 2 - CARD_PAD_X - parts.moodText.width,
+    h / 2 - CARD_PAD_Y - parts.moodText.height,
+  );
 
   if (labels.showBadge) {
     parts.badge.clear();

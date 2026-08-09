@@ -598,7 +598,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         desk.eventMode = 'none';
         char.eventMode = 'none';
         status.eventMode = 'none';
-        this.stationsLayer.addChild(desk, char, status);
+        // DOM版と同じ画家順: 人物を先に描き、机とモニタで下半身を隠す。
+        this.stationsLayer.addChild(char, desk, status);
         this.actors.push({
           lane: s.lane,
           mood: s.mood,

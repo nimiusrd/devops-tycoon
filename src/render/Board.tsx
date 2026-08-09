@@ -39,6 +39,7 @@ import {
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS, TASK_DIAMETER } from './taskView';
 import { useContainFit } from '../ui/useContainFit';
+import { pct } from '../ui/pct';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
 const BoardPixiLayer = lazy(() =>
@@ -49,17 +50,6 @@ const VIEW_W = 1404;
 const VIEW_H = 573;
 const VIEW_RATIO = VIEW_W / VIEW_H;
 
-/** 設計px → 盤面内の % へ。 */
-function pct(value: number, total: number): string {
-  return `${(value / total) * 100}%`;
-}
-
-/**
- * 盤面を親スロットに「両軸 contain」で収める（比率 1404:573 を厳守）。
- * width = min(スロット幅, スロット高×比率) をインラインで与え、高さは aspect-ratio が導く。
- * CSS だけでは「狭いスロットでは幅基準・低いスロットでは高さ基準」を自動で選べないため、
- * ResizeObserver でスロット実寸から算出する（描画専用の純レイアウト。決定論に影響しない）。
- */
 function TaskDot({
   dot,
   draggable,

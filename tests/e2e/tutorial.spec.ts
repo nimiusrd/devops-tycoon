@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures';
 import type { MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
+import { seedMeta } from './seedMeta';
 
 type GameWindow = Window & {
   game?: {
@@ -96,9 +97,7 @@ test('?tutorial=1 で初回ガイドを進め、表示済みフラグが永続�
 });
 
 test('表示済みでも ?tutorial=force ならガイドを再表示できる', async ({ page }) => {
-  await page.addInitScript((meta) => {
-    localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
-  }, SEEN_META);
+  await seedMeta(page, SEEN_META);
 
   await page.goto('/?renderer=dom&seed=tutorial-force&tutorial=force');
   await expect(page.getByTestId('title')).toBeVisible();

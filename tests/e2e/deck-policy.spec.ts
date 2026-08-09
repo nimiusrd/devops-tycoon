@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures';
 import type { MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
+import { seedMeta } from './seedMeta';
 
 type GameWindow = Window & {
   game?: {
@@ -29,9 +30,7 @@ const BASE_META: MetaState = {
 };
 
 test('タイトルから研修方針を選び、再オープンで選択が維持される（RI-34⁗）', async ({ page }) => {
-  await page.addInitScript((meta) => {
-    localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
-  }, BASE_META);
+  await seedMeta(page, BASE_META);
 
   await page.goto('/?renderer=dom&seed=deck-policy-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
@@ -59,12 +58,7 @@ test('タイトルから研修方針を選び、再オープンで選択が維�
 });
 
 test('研修方針を選んでもラン開始時デッキは空のまま（RI-30 回帰）', async ({ page }) => {
-  await page.addInitScript(
-    (meta) => {
-      localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
-    },
-    { ...BASE_META, preferredCardIds: ['docs', 'copilot'] },
-  );
+  await seedMeta(page, { ...BASE_META, preferredCardIds: ['docs', 'copilot'] });
 
   await page.goto('/?renderer=dom&seed=deck-policy-empty');
   await expect(page.getByTestId('title')).toBeVisible();

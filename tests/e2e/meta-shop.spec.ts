@@ -2,6 +2,7 @@ import { expect, test } from './fixtures';
 import { defaultUnlockedCardIds } from '../../src/data/unlocks';
 import type { MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
+import { seedMeta } from './seedMeta';
 
 type GameWindow = Window & {
   game?: {
@@ -37,9 +38,7 @@ const DEFAULT_META: MetaState = {
 };
 
 test('メタショップ購入が次ランのドラフトプールへ反映される', async ({ page }) => {
-  await page.addInitScript((meta) => {
-    localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
-  }, DEFAULT_META);
+  await seedMeta(page, DEFAULT_META);
 
   await page.goto('/?renderer=dom&seed=meta-shop-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
@@ -92,9 +91,7 @@ test('メタショップ購入が次ランのドラフトプールへ反映さ�
 });
 
 test('タイトルからメタショップを開いて購入できる', async ({ page }) => {
-  await page.addInitScript((meta) => {
-    localStorage.setItem('devops-tycoon:meta:v1', JSON.stringify(meta));
-  }, DEFAULT_META);
+  await seedMeta(page, DEFAULT_META);
 
   await page.goto('/?renderer=dom&seed=meta-shop-ui');
 

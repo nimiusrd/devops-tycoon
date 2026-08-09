@@ -13,6 +13,7 @@ import {
   E2E_TERMINAL_SHUTDOWN,
   type TerminalQuarterSeed,
 } from '../../src/sim/run/quarterReviewSeeds';
+import { seedMeta } from './seedMeta';
 
 /** page.evaluate 内へ注入する「避けるべき選択肢」テーブル（採用即時 / 即敗北）。 */
 const AVOID_CHOICE_FLAGS: Record<string, boolean[]> = Object.fromEntries(
@@ -68,18 +69,15 @@ test.beforeEach(async ({ page }) => {
 test('トラック→ボスまで通しプレイすると勝敗が決まり、ラン決着画面が出る（DoD）', async ({
   page,
 }) => {
-  await page.addInitScript(({ key, meta }) => localStorage.setItem(key, JSON.stringify(meta)), {
-    key: 'devops-tycoon:meta:v1',
-    meta: {
-      points: 0,
-      unlockedDifficulties: ['easy', 'normal'],
-      defeatedBosses: [],
-      achievements: [],
-      bestScore: 0,
-      unlockedCards: [],
-      unlockedRelics: [],
-      dailyRuns: {},
-    },
+  await seedMeta(page, {
+    points: 0,
+    unlockedDifficulties: ['easy', 'normal'],
+    defeatedBosses: [],
+    achievements: [],
+    bestScore: 0,
+    unlockedCards: [],
+    unlockedRelics: [],
+    dailyRuns: {},
   });
 
   await page.goto('/?renderer=dom&seed=full-run');

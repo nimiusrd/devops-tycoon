@@ -3,7 +3,7 @@
 実装役向けの作業方針。Mutation の課題は対応後に参照する必要が薄いため、**実装単位の進捗は GitHub Issue で管理する**（完了したら close。計画 MD に状態を書き戻さない）。
 
 関連設定: [`stryker.config.json`](../stryker.config.json)、[`.github/workflows/mutation.yml`](../.github/workflows/mutation.yml)。  
-計画スキル: [`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
+計画スキル: [`.agents/skills/mutation-remediation-plan/SKILL.md`](../.agents/skills/mutation-remediation-plan/SKILL.md)。
 
 ## 1. 管理方針（Issue）
 

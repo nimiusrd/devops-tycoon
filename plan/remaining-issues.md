@@ -264,7 +264,7 @@ RI-24とRI-25は「追加実装しない」と決定して完了した項目を�
 ## 4. バックログ運用
 
 - IDは`RI-NN`の連番とし、欠番を再利用しない。
-- ミューテーション改善はエピック`RI-{N}`（再ベースラインごと）と実装単位`RI-{N}-{GROUP}{SEQ}`（1PR = 1 GitHub Issue）に分ける。採番・進捗の正本は GitHub Issue（本ファイルへ番号予約や状態台帳を置かない）。方針は[mutation-remediation.md](./mutation-remediation.md)。スキルは[`.cursor/skills/mutation-remediation-plan/SKILL.md`](../.cursor/skills/mutation-remediation-plan/SKILL.md)。
+- ミューテーション改善はエピック`RI-{N}`（再ベースラインごと）と実装単位`RI-{N}-{GROUP}{SEQ}`（1PR = 1 GitHub Issue）に分ける。採番・進捗の正本は GitHub Issue（本ファイルへ番号予約や状態台帳を置かない）。方針は[mutation-remediation.md](./mutation-remediation.md)。スキルは[`.agents/skills/mutation-remediation-plan/SKILL.md`](../.agents/skills/mutation-remediation-plan/SKILL.md)。
 - 状態は`未着手`、`進行中`、`保留（要判断）`、`完了`を使う。
 - 1項目は原則1PRで完了できる大きさに分割する。エピックは受入条件と分割順を記載する。
 - 完了時は詳細な実装日誌を追記せず、上の完了要約と[spec-mapping.md](./spec-mapping.md)を更新する。

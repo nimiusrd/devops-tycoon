@@ -253,7 +253,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | 箇所 | 決めた内容 | 影響 |
 | --- | --- | --- |
 | 介入の発動閾値 | `naive` は炎上2件以上／レビュー12件以上、`skilled` は炎上1件以上／レビュー6件以上／andon はレビュー10件以上 | 介入回数と勝率。閾値を変えれば方針の強さは変わる |
-| カードの `selective` 条件 | 集中力6割以上、レビュー6件未満、炎上0 のときだけ発動 | RI-78 の `skilledSelectiveCards`（9/40）の位置づけ |
+| カードの `selective` 条件 | 集中力6割以上、レビュー6件未満、炎上0 のときだけ発動 | RI-78 の `skilledSelectiveCards`（6/40）の位置づけ |
 | ビート `stateAware` の評価式 | 出荷 ×0.05、予算・シニアHP・士気・信頼は残量が少ないほど重く（`1+(100-現在値)/50` 倍。**信頼と組織値はクランプ後の実効差分で採点**）、負債 ×-0.4、品質 ×0.3、テスト網羅 ×0.25、AIリテラシー ×0.25×希少性、レリック +4（**実際に獲得できるときだけ**。重複・枠満杯では `grantRelic` が no-op）、カード +2。**適用後に敗北条件へ入る選択肢は除外する**（予算0・シニアHP1以下・士気1以下・負債90以上）。**信頼は除外条件に含めない**（`evaluateQuarterOutcome` はボス突破かつ全KPI達成なら `met`/`exceeded` を先に返すので、信頼10以下でも勝ち得る）。代わりに踏み込むぶんを減点し、危機域（15以下）へ入るなら -6、`shutdown` 域（10以下）へ入るならさらに -25 | RI-85 の decision 由来の敗北件数、`trustExhausted` の件数 |
 | 組織指標のクランプ | 加算は**クランプ後に実際に動く量**で採点する（`applyEventOutcome` は 0..100 に丸める）。士気100 で「士気+4・負債+2」を加点しないため | 上限に張り付いた指標への加点で選択が歪むのを防ぐ |
 | `nextSprint` の一時効果 | タスク量倍率は高負荷と同じ式で符号を反転（消耗しているほど減少に価値）。レビュー負荷 ×-0.3、手戻り率 ×-10、集中力上限 ×0.3 | `rest-offer` の選択。休息の発生数と F-4 の所要時間 |
@@ -288,8 +288,9 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 到達可能な水準（採用費を引いた残額が `RECRUIT_COST` 以上）へ下げた結果、**旧コホート**では
 40ラン中4ランで実際に採用が発生して経過が分かれ、そのうえで勝敗は 16/40 で
 `skilledNoHire` と同じだった（無差別採用は当時11勝）。
-**現行コホート**では選択的採用・見送りとも 7/40、無差別採用の `skilled` も 7/40 で、
-勝利数は一致しており採用の優劣は未検証とする（「採用が有利／不利」とは言えない）。
+**現行コホート**では選択的採用 `skilledSelectiveHire` が 4/40、見送り `skilledNoHire` が 5/40、
+無差別採用の `skilled` が 6/40 で、
+勝利数は近い範囲にあるため採用の優劣は未検証とする（「採用が有利／不利」とは言えない）。
 
 ## 結論の要約
 
@@ -331,7 +332,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   `playtest:report` が敗因別の発動可能集合を出力する。
   これは F-9 の「打てた手の差」比較用であり、F-8 が求める「敗北を遅延・回避できる
   **実質的な選択肢**が消えた時点」の反実仮想評価ではない（効果が無い介入も可と出る）。
-  上記 1,240 ラン時点の所見はまだ**進行速度と決着位置の差**までである。
+  上記 1,360 ラン時点の所見はまだ**進行速度と決着位置の差**までである。
 
 **成立していない基準**:
 
@@ -405,25 +406,25 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 | 難易度 | 種別 | n | p50 | p50 帯判定 | 下回り | 上回り | 絶対下限30秒未満 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| easy | 通常 | 95 | 77.2秒 | **帯内** | 27.4% | 7.4% | **0%** |
-| easy | 高負荷 | 7 | 91.3秒 | **帯内** | 0% | 0% | 0% |
-| easy | ボス | 5 | 113.9秒 | **帯内** | 0% | 0% | — |
-| normal | 通常 | 114 | 77.2秒 | **帯内** | 26.3% | 12.3% | **0%** |
-| normal | 高負荷 | 7 | 100.6秒 | **帯内** | 14.3% | 14.3% | 0% |
-| normal | ボス | 10 | 126.4秒 | **帯内** | 10% | 0% | — |
-| hard | 通常 | 116 | 75.7秒 | **帯内** | 29.3% | 18.1% | **0%** |
-| hard | 高負荷 | 6 | 101.4秒 | **帯内** | 0% | 0% | 0% |
-| hard | ボス | 10 | 110.8秒 | **帯内** | 40% | 0% | — |
-| nightmare | 通常 | 111 | 78.0秒 | **帯内** | 29.7% | 16.2% | **0%** |
-| nightmare | 高負荷 | 8 | 61.6秒 | **帯内** | 50% | 12.5% | 0% |
-| nightmare | ボス | 12 | 127.9秒 | **帯内** | 16.7% | 0% | — |
+| easy | 通常 | 212 | 61.6秒 | **帯内** | 46.2% | 0.9% | **0%** |
+| easy | 高負荷 | 14 | 80.3秒 | **帯内** | 21.4% | 7.1% | 0% |
+| easy | ボス | 37 | 90.5秒 | **帯内** | 0% | 0% | — |
+| normal | 通常 | 178 | 67.9秒 | **帯内** | 37.6% | 1.7% | **0%** |
+| normal | 高負荷 | 13 | 71.8秒 | **帯内** | 23.1% | 23.1% | 0% |
+| normal | ボス | 26 | 90.5秒 | **帯内** | 0% | 0% | — |
+| hard | 通常 | 109 | 78.0秒 | **帯内** | 29.4% | 11.9% | **0%** |
+| hard | 高負荷 | 8 | 92.8秒 | **帯内** | 12.5% | 25% | 0% |
+| hard | ボス | 7 | 105.3秒 | **帯内** | 0% | 0% | — |
+| nightmare | 通常 | 93 | 78.8秒 | **帯内** | 23.7% | 12.9% | **0%** |
+| nightmare | 高負荷 | 6 | 97.5秒 | **帯内** | 0% | 33.3% | 0% |
+| nightmare | ボス | 4 | 118.6秒 | **帯内** | 0% | 0% | — |
 
 回帰は `tests/unit/ui/sprintTempo.test.ts` の F-4 ハーネス検証（代表3方針 × `pt-1..10`）で固定。
 
 ### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）
 
-現行コホートは **1,360ラン中156勝（敗北1,204）**で、勝利種別の内訳は
-`management` 79 / `chaos` 31 / `happiness` 46。`healthy` / `noDamage` /
+現行コホートは **1,360ラン中128勝（敗北1,232）**で、勝利種別の内訳は
+`management` 72 / `chaos` 33 / `happiness` 23。`healthy` / `noDamage` /
 `aiSuccess` / `normal` は 0件だった。
 3種の勝利種別は出現したが、F-10 の受入条件である「複数ビルドで勝利種別が3種以上に
 有意に分かれる」ことは、方針別の勝数が少なく分布も混在するためまだ確認できない。
@@ -432,29 +433,29 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 | 方針 | 勝利種別 |
 | --- | --- |
-| `naive` | `management` 1 |
-| `skilled` | `chaos` 5 / `happiness` 2 |
-| `skilledNoHire` | `management` 5 / `happiness` 2 |
-| `skilledNoCards` | `happiness` 4 / `management` 2 |
-| `onlyAndon` | `management` 3 / `happiness` 1 / `chaos` 2 |
-| `onlyThrottle` | `management` 3 |
-| `noAi` | `management` 1 / `happiness` 1 / `chaos` 1 |
+| `skilled` | `chaos` 5 / `happiness` 1 |
+| `skilledNoHire` | `management` 4 / `happiness` 1 |
+| `skilledNoCards` | `management` 2 / `happiness` 1 |
+| `onlyAndon` | `management` 2 / `chaos` 2 |
+| `onlyAssign` | `management` 1 |
+| `onlyThrottle` | `management` 2 |
+| `noAi` | `chaos` 2 / `happiness` 1 |
 | `reviewHeavy` | `chaos` 4 / `management` 1 |
-| `noAiCtl` | `management` 2 / `happiness` 1 |
-| `skilledSelectiveCards` | `management` 6 / `happiness` 3 |
-| `adjCutScope` | `management` 5 / `happiness` 2 |
-| `adjExtendDeadline` | `happiness` 3 / `management` 2 / `chaos` 2 |
-| `adjQualityPivot` | `management` 10 / `happiness` 1 / `chaos` 1 |
-| `adjRequestBudget` | `management` 2 / `chaos` 3 / `happiness` 3 |
-| `adjPauseAiRollout` | `happiness` 5 / `management` 5 |
-| `adjReorgTeams` | `management` 5 / `happiness` 1 |
-| `adjStakeholderCare` | `chaos` 1 / `happiness` 3 / `management` 1 |
-| `skilledSelectiveHire` | `management` 5 / `happiness` 2 |
-| `skilledShopBuy` | `happiness` 3 / `chaos` 6 |
-| `skilledRestRepay` | `management` 5 / `happiness` 1 |
-| `skilledRestUpgrade` | `management` 4 / `happiness` 1 |
-| `probe` | `happiness` 4 / `chaos` 2 / `management` 4 |
-| `skilledStateEvolve` | `happiness` 3 / `chaos` 2 / `management` 2 |
+| `noAiCtl` | `management` 2 |
+| `skilledSelectiveCards` | `management` 5 / `happiness` 1 |
+| `adjCutScope` | `management` 4 / `happiness` 1 |
+| `adjExtendDeadline` | `management` 1 / `happiness` 4 / `chaos` 2 |
+| `adjQualityPivot` | `management` 8 / `happiness` 2 / `chaos` 1 |
+| `adjRequestBudget` | `chaos` 4 / `happiness` 1 |
+| `adjPauseAiRollout` | `management` 8 / `happiness` 2 |
+| `adjReorgTeams` | `management` 4 / `happiness` 1 |
+| `adjStakeholderCare` | `management` 2 / `happiness` 1 / `chaos` 1 |
+| `skilledSelectiveHire` | `management` 4 |
+| `skilledShopBuy` | `chaos` 6 / `happiness` 1 |
+| `skilledRestRepay` | `management` 5 |
+| `skilledRestUpgrade` | `management` 4 |
+| `probe` | `management` 3 / `happiness` 3 / `chaos` 2 |
+| `skilledStateEvolve` | `management` 5 / `happiness` 2 / `chaos` 2 |
 | `onlyFirefight` | `management` 2 |
 | `onlyInterrupt` | `management` 1 |
 | `onlySplit` | `management` 1 |
@@ -480,8 +481,8 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 | 方針 | 組織診断 |
 | --- | --- |
-| `aiFullBet` | `reviewHell` 8 / `seniorSacrifice` 32 |
-| `noAi` | `reviewHell` 2 / `seniorSacrifice` 31 / `documentationKingdom` 1 / `healthyAcceleration` 6 |
+| `aiFullBet` | `reviewHell` 7 / `seniorSacrifice` 33 |
+| `noAi` | `reviewHell` 3 / `seniorSacrifice` 31 / `healthyAcceleration` 6 |
 
 つまり**ビルドの違いは組織診断には出ているが、勝利種別への反映は現行の勝数では検証できない**。
 F-10 の未充足（ビルドが勝利種別に表れること）は、勝率帯が戻ったあとに再判定する。
@@ -495,10 +496,10 @@ F-10 の未充足（ビルドが勝利種別に表れること）は、勝率帯
 選択の入口は存在する（`SetupScreen`「編成 — スプリント開始前に配置とAIを決める」、
 `FormationScreen.tsx:172` の「🤖 AI配布中」ボタン）。課題は次の3点である。
 
-1. **既定が ON で、選び直す動機が薄い**。`aiFullBet` 2/40・`skilledNoHire` 7/40 で、
+1. **既定が ON で、選び直す動機が薄い**。`aiFullBet` 2/40・`skilledNoHire` 5/40 で、
    既定のまま進むことと全面ベットの勝率差は観測しにくい。
-2. **解除の勝率差は現行コホートでは単純な逆転になっていない**。AI 配布だけを外した統制条件 `noAiCtl` は 3/40 で、
-   比較対象の `skilledNoHire` 7/40 を**下回る**。ビルドごと品質寄りに揃えた `noAi` は 3/40、`aiFullBet` は 2/40。
+2. **解除の勝率差は現行コホートでは単純な逆転になっていない**。AI 配布だけを外した統制条件 `noAiCtl` は 2/40 で、
+   比較対象の `skilledNoHire` 5/40 を**下回る**。ビルドごと品質寄りに揃えた `noAi` は 3/40、`aiFullBet` は 2/40。
    「解除側の代償が一方的に大きい」という以前の結論は、このコホートでは成立しない。
 
    > **代償の中身についての当初の説明は取り下げる。** 以前ここには「`noAi` は
@@ -562,18 +563,18 @@ Nightmare では AI を切ると第1スプリント即死（RI-74）を回避で
 
 プレイテストの計測も、カード発動数、ショップ訪問・購入、休息選択、対象あり区間をログへ追加した。レポートは同一メタ・難易度・seed・スプリント位置の共通機会に限定して次スプリントKPIを比較する。
 
-現行RI-78絞り込みコホート（fresh、4難易度×10seed）:
+現行既定コホート（fresh、4難易度×34方針×10seed）から RI-78 の共通機会を抽出:
 
 | 比較 | 共通機会 / 共通ラン | 次スプリントの結果 |
 | --- | ---: | --- |
-| `skilledRestRepay` vs `skilledNoHire`（回復） | 11 | Rework 0.5 vs 0.7、Tech Debt 0 vs 5.6 |
-| `skilledRestUpgrade` vs `skilledNoHire`（回復） | 11 | 集中力上限 19.5 vs 18.1、出荷 687.6 vs 682.8、カード発動 3 vs 3 |
-| `skilledShopBuy` vs `skilledNoHire`（実購入） | 14 | 出荷・Rework・Reviewピーク・HPのいずれか改善 8/14（57.1%） |
-| `skilledSelectiveCards` vs `skilledNoCards` | 40ラン | 勝利 9 vs 6、生存スプリント平均 7.3 vs 9.9、発動カード平均 16.2 vs 0 |
+| `skilledRestRepay` vs `skilledNoHire`（回復） | 9 | Rework 0.3 vs 0.2、Tech Debt 0 vs 6.9 |
+| `skilledRestUpgrade` vs `skilledNoHire`（回復） | 9 | 集中力上限 19.7 vs 18.2、出荷 620.8 vs 625.4、カード発動 3 vs 3 |
+| `skilledShopBuy` vs `skilledNoHire`（実購入） | 13 | 出荷・Rework・Reviewピーク・HPのいずれか改善 7/13（53.8%） |
+| `skilledSelectiveCards` vs `skilledNoCards` | 40ラン | 勝利 6 vs 3、生存スプリント平均 7.1 vs 7.7、発動カード平均 15.5 vs 0 |
 
 カード方針は勝利が高い一方で生存スプリントは低く、勝利数・生存スプリントの両方を一方が全難易度で支配しない。返済・強化の効果タグと休息画面説明は実効果へ同期し、保存・hydrate・リプレイで次スプリント効果を保持する。
 
-対象あり区間は、`onlyAssign` の Coding枠あり完了スプリントで 200/200（100%）、Incident発生スプリントの `onlyFirefight` で 202/202（100%）だった。従来の `no-target` 率（assignTask約93〜95%、firefight約71〜88%）は毎tick試行の分母に依存するため参考値とし、対象あり区間を完了判定へ採用した。
+対象あり区間は、`onlyAssign` の Coding枠あり完了スプリントで 197/197（100%）、Incident発生スプリントの `onlyFirefight` で 192/192（100%）だった。完了スプリント全体では assignTask が100%、firefight が90.1%である。従来の `no-target` 率（assignTask約93〜95%、firefight約71〜88%）は毎tick試行の分母に依存するため参考値とし、対象あり区間を完了判定へ採用した。
 
 ### RI-79 敗因ラベルが3種類の原因を1つに潰す（優先度: 中 / F-6・F-8）
 
@@ -650,8 +651,8 @@ D 18（3.9%）**。特定ランクへの50%以上の偏りはない。
 
 `DraftScreen` の選択肢は「3枚から1枚選ぶ」か「スキップ」のみで、コストを払って引き直す手段が無い。
 カードプールは9枚（`src/data/cards.ts`）で、うち4枚はメタ解放が必要なため初見の初期プールは5枚。
-カード条件は `skilledSelectiveCards` と `skilledNoCards` の共通40ランで勝利9 vs 6となり、
-発動カード平均も16.2 vs 0で差が計測できた（生存スプリント平均は7.3 vs 9.9）。
+カード条件は `skilledSelectiveCards` と `skilledNoCards` の共通40ランで勝利6 vs 3となり、
+発動カード平均も15.5 vs 0で差が計測できた（生存スプリント平均は7.1 vs 7.7）。
 プールとドラフトの構造上はどの3枚を引くかに意味がある。
 マリガンはその「引きの事故」を緩和する手段として、単独で導入する価値がある。
 
@@ -691,7 +692,7 @@ E2E（`tests/e2e/interventions.spec.ts`）で固定。`playtest:report` の F-5 
 
 実装前コホートでは `noInterventionCtl` / `naive` / `skilledNoHire` がいずれも低勝率で、
 勝率でも第1スプリント出荷 CV でも介入の寄与が観測できなかった（経緯は第1回の撤回節と
-訂正履歴を参照）。現行コホートでは `skilledNoHire` 7/40。コホート全体の勝率差の再計測は
+訂正履歴を参照）。現行コホートでは `skilledNoHire` 5/40。コホート全体の勝率差の再計測は
 RI-73（F-1 残）と合わせて行う。
 
 ### RI-85 レビュー凍結は選択不能な判定イベントでしか確定しない（優先度: 高 / F-4） — 完了
@@ -700,14 +701,14 @@ RI-73（F-1 残）と合わせて行う。
 `reviewLoadAdd` は付けない）へ変更し、スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を
 追加した。予兆のピーク入力は通算ではなく進行中スプリントのピーク／現在キューを使う。
 
-再計測（1,360ラン、敗北 1,204）では `reviewFreeze`（110件）はすべて `sprint` で決着し、
+再計測（1,360ラン、敗北 1,232）では `reviewFreeze`（99件）はすべて `sprint` で決着し、
 即死イベント経路は消えた。ピーク経路（`REVIEW_FREEZE_PEAK`）とスプリント中の対処へ委ねる。
 
 | 敗因 | 決着フェーズ |
 | --- | --- |
-| **`reviewFreeze`**（110件） | `sprint` **100%** |
-| `seniorBurnout`（898件） | judgment / decision / sprint / quarterReview が混在 |
-| `techDebt`（56件） / `moraleCollapse`（20件） | `sprint` が大半 |
+| **`reviewFreeze`**（99件） | `sprint` **100%** |
+| `seniorBurnout`（937件） | judgment / decision / sprint / quarterReview が混在 |
+| `techDebt`（55件） / `moraleCollapse`（20件） | `sprint` が大半 |
 | `aiDependency`（106件） | `sprint` 100% |
 | `reorgRequired`（4件） | `quarterReview` 100% |
 

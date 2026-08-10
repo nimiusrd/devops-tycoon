@@ -35,6 +35,7 @@ interface LayoutContractOptions {
   relicCount?: number;
   armed?: boolean;
   assignee?: boolean;
+  hudExpanded?: boolean;
   resultOverlay?: boolean;
   skipBoardMinimumDimensionsAt?: ViewportName;
 }
@@ -121,6 +122,20 @@ async function assertLayoutContract(
   await expect(board).toBeVisible();
   await expect(deck).toBeVisible();
   await expect(actionBar).toBeVisible();
+
+  if (options.hudExpanded !== undefined) {
+    await expect(page.getByTestId('hud')).toHaveAttribute(
+      'data-compact',
+      options.hudExpanded ? 'false' : 'true',
+    );
+    const hudToggle = page.getByTestId('hud-toggle');
+    if ((await hudToggle.count()) > 0) {
+      await expect(hudToggle).toHaveAttribute(
+        'aria-expanded',
+        options.hudExpanded ? 'true' : 'false',
+      );
+    }
+  }
 
   // 直前の viewport での到達性検証によるスクロール位置を契約計測から切り離す。
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -229,7 +244,29 @@ async function assertLayoutContract(
     await expect(diagnosis.locator('.diagnosis-warning')).not.toBeEmpty();
   }
   if (options.relicCount !== undefined) {
-    await expect(page.getByTestId('relics').locator('.relic-chip')).toHaveCount(options.relicCount);
+    const relics = page.getByTestId('relics');
+    const chips = relics.locator('.relic-chip');
+    await expect(relics).toBeVisible();
+    await expect(chips).toHaveCount(options.relicCount);
+    for (let index = 0; index < options.relicCount; index += 1) {
+      await expect(chips.nth(index)).toBeVisible();
+    }
+    const relicsFit = await relics.evaluate((element) => {
+      const container = element.getBoundingClientRect();
+      return Array.from(element.querySelectorAll<HTMLElement>('.relic-chip')).every((chip) => {
+        const rect = chip.getBoundingClientRect();
+        return (
+          rect.left >= container.left - 1 &&
+          rect.right <= container.right + 1 &&
+          rect.top >= container.top - 1 &&
+          rect.bottom <= container.bottom + 1
+        );
+      });
+    });
+    expect(
+      relicsFit,
+      `レリックチップが表示領域からはみ出している（${viewport.width}x${viewport.height}）`,
+    ).toBe(true);
   }
   if (options.armed) {
     await expect(board).toHaveAttribute('data-armed', 'assignTask');
@@ -271,6 +308,27 @@ async function waitForLayoutFrame(page: Page): Promise<void> {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       }),
   );
+}
+
+/** 固定スクロール領域に隠れないよう、結果カード全体をテスト用の通常フローへ出す。 */
+async function exposeResultCardForScreenshot(page: Page): Promise<void> {
+  await page.addStyleTag({
+    content: `
+      .result-overlay {
+        position: absolute !important;
+        inset: 0 auto auto 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow: visible !important;
+        align-items: flex-start !important;
+      }
+      .result-overlay > * {
+        margin-block: 0 !important;
+      }
+    `,
+  });
+  await waitForLayoutFrame(page);
 }
 
 async function assertAcrossViewports(
@@ -381,7 +439,12 @@ test.describe('RI-94 レイアウト契約', () => {
     await page.getByTestId('assign-assignee-senior').click();
     await expect(page.getByTestId('assign-assignee-senior')).toHaveClass(/on/);
 
-    await assertAcrossViewports(page, { armed: true, assignee: true, effectTags: true });
+    await assertAcrossViewports(page, {
+      armed: true,
+      assignee: true,
+      effectTags: true,
+      hudExpanded: true,
+    });
   });
 
   test('最長診断警告 seniorSacrifice を5 viewportで表示する', async ({ page }) => {
@@ -423,7 +486,7 @@ test.describe('RI-94 レイアウト契約', () => {
     await page.getByTestId('hud-toggle').click();
     await expect(page.getByTestId('hud')).toHaveAttribute('data-compact', 'false');
     await advanceCurrentSprintToResult(page);
-    await assertAcrossViewports(page, { resultOverlay: true });
+    await assertAcrossViewports(page, { resultOverlay: true, hudExpanded: true });
   });
 
   test('1440x900通常スプリントのDOM合成を固定する', async ({ page }) => {
@@ -444,6 +507,16 @@ test.describe('RI-94 レイアウト契約', () => {
     await expect(page.getByTestId('sprint-result')).toBeVisible();
     await stabilizeDomForScreenshot(page);
     await expect(page.locator('.app')).toHaveScreenshot('sprint-layout-result-overlay.png', {
+      animations: 'disabled',
+      maxDiffPixelRatio: 0.02,
+    });
+
+    const resultCard = page.getByTestId('sprint-result').locator('.sprint-result-card');
+    const resultOverlay = page.getByTestId('sprint-result');
+    await assertReachableInViewport(page, page.getByTestId('result-continue'), 'result-continue');
+    await resultOverlay.evaluate((element) => element.scrollTo(0, 0));
+    await exposeResultCardForScreenshot(page);
+    await expect(resultCard).toHaveScreenshot('sprint-layout-result-overlay-card.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });

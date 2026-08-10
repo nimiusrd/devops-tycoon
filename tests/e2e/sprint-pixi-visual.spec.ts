@@ -82,6 +82,32 @@ async function freezePixiForScreenshot(page: import('@playwright/test').Page) {
   });
 }
 
+/** 固定スクロール領域に隠れないよう、結果カード全体をテスト用の通常フローへ出す。 */
+async function exposeResultCardForScreenshot(page: import('@playwright/test').Page) {
+  await page.addStyleTag({
+    content: `
+      .result-overlay {
+        position: absolute !important;
+        inset: 0 auto auto 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow: visible !important;
+        align-items: flex-start !important;
+      }
+      .result-overlay > * {
+        margin-block: 0 !important;
+      }
+    `,
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+}
+
 test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
   test.skip(!pixiE2e, 'PIXI_E2E=1 のときだけ実行（既定 CI では WebGL を回さない）');
 
@@ -135,6 +161,17 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await freezePixiForScreenshot(page);
 
     await expect(page.locator('.app')).toHaveScreenshot('sprint-pixi-layout-result-overlay.png', {
+      animations: 'disabled',
+      maxDiffPixelRatio: 0.02,
+    });
+
+    const resultCard = page.getByTestId('sprint-result').locator('.sprint-result-card');
+    const resultContinue = page.getByTestId('result-continue');
+    await resultContinue.scrollIntoViewIfNeeded();
+    await expect(resultContinue).toBeInViewport({ ratio: 1 });
+    await page.getByTestId('sprint-result').evaluate((element) => element.scrollTo(0, 0));
+    await exposeResultCardForScreenshot(page);
+    await expect(resultCard).toHaveScreenshot('sprint-pixi-layout-result-overlay-card.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });

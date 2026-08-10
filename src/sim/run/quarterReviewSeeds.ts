@@ -44,15 +44,15 @@ export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
 };
 
 /**
- * Q3 で missed_crisis。
+ * Q4 で missed_crisis。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
- * RI-88 のボス課金後は Q4 到達前に予算が尽きるため、到達四半期を Q3 に更新。
+ * RI-88（返金を computeInfraCost に揃えた後）でも到達四半期は Q4 のまま。
  */
 export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
   seed: 'ri75k-hard-343',
   difficulty: 'hard',
   outcome: 'missed_crisis',
-  quarterNumber: 3,
+  quarterNumber: 4,
 };
 
 /**

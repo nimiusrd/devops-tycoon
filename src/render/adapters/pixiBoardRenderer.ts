@@ -15,6 +15,7 @@
  *    から import できる（型検証のため）が、`init()` / `render()` はブラウザでのみ呼ぶこと。
  */
 import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import type { GameAssetId } from '../../data/assets';
 import type { Lane } from '../../sim/types';
 import {
   BOARD_VIEW,
@@ -35,11 +36,13 @@ import {
 import { containFitTransform } from '../deptPixiView';
 import { SpritePool } from '../iso';
 import { TASK_COLORS, TASK_DIAMETER } from '../taskView';
+import { gameAssetMoodStyle, stationAssetForLane } from '../gameAssetView';
+import { loadGameAssetTexture } from './gameAssetTextures';
 import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
 
 /** 破棄オプション（Pixi v8）。`pixiOrgRenderer` と同値。 */
-const DESTROY_OPTIONS = { children: true, texture: true, context: true } as const;
+const DESTROY_OPTIONS = { children: true, texture: false, context: true } as const;
 
 /** 粒 Container の同時描画上限（cap 合計 70 ＋ フロー粒の余裕）。 */
 export const BOARD_SPRITE_BUDGET = 96;
@@ -83,6 +86,8 @@ export interface BoardRenderMetrics {
   dots: number;
   actors: number;
   flows: number;
+  /** 取得処理が完了した人物SVGの種類数（失敗時のフォールバックも完了扱い）。 */
+  assets: number;
 }
 
 /** レンダラ入力（Board.tsx が plan と drag ハイライトをまとめて渡す）。 */
@@ -149,8 +154,13 @@ interface DotEntry {
 interface ActorEntry {
   lane: Lane;
   mood: StationMood;
+  assetId: GameAssetId;
+  assetTexture: Texture | null;
+  assetLoaded: boolean;
+  assetLoading: boolean;
   desk: Sprite;
   char: Sprite;
+  status: Text;
   baseX: number;
   baseY: number;
 }
@@ -441,11 +451,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.syncDots(scene.dots, input.draggableTaskIds ?? new Set(), input.dragTaskId ?? null);
     this.applyAnimations(this.elapsedMs);
 
-    this.opts.onRenderMetrics?.({
-      dots: this.dotEntries.length,
-      actors: this.actors.length,
-      flows: scene.flows.length,
-    });
+    this.emitRenderMetrics();
   }
 
   /** 直近 render の入力（resize 後の再描画用）。 */
@@ -580,12 +586,31 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         desk.anchor.set(0.5);
         const char = new Sprite();
         char.anchor.set(0.5);
+        const status = new Text({
+          text: '',
+          style: { fontFamily: FONT_FAMILY, fontSize: 13 },
+        });
+        status.anchor.set(0.5);
         desk.scale.set(ACTOR_SCALE);
         char.scale.set(ACTOR_SCALE);
         desk.eventMode = 'none';
         char.eventMode = 'none';
-        this.stationsLayer.addChild(desk, char);
-        this.actors.push({ lane: s.lane, mood: s.mood, desk, char, baseX: s.x, baseY: s.y });
+        status.eventMode = 'none';
+        // DOM版と同じ画家順: 人物を先に描き、机とモニタで下半身を隠す。
+        this.stationsLayer.addChild(char, desk, status);
+        this.actors.push({
+          lane: s.lane,
+          mood: s.mood,
+          assetId: stationAssetForLane(s.lane),
+          assetTexture: null,
+          assetLoaded: false,
+          assetLoading: false,
+          desk,
+          char,
+          status,
+          baseX: s.x,
+          baseY: s.y,
+        });
       }
     }
     for (const actor of this.actors) {
@@ -595,10 +620,52 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       actor.baseX = s.x;
       actor.baseY = s.y;
       actor.desk.texture = this.deskTexture(actor.lane);
-      actor.char.texture = this.charTexture(actor.lane, s.mood);
+      actor.assetId = stationAssetForLane(actor.lane);
+      if (!actor.assetLoading && !actor.assetLoaded) {
+        actor.assetLoading = true;
+        void loadGameAssetTexture(actor.assetId).then((texture) => {
+          if (this.disposed) return;
+          actor.assetTexture = texture;
+          actor.assetLoaded = true;
+          actor.assetLoading = false;
+          this.applyActorVisual(actor);
+          // 非同期取得がticker停止後に完了しても、新しいSpriteを確実にcanvasへ反映する。
+          this.app?.render();
+          this.emitRenderMetrics();
+        });
+      }
+      this.applyActorVisual(actor);
       actor.desk.position.set(s.x, s.y);
       actor.char.position.set(s.x, s.y);
+      actor.status.position.set(s.x + ACTOR_W * 0.36, s.y - ACTOR_H * 0.47);
     }
+  }
+
+  private emitRenderMetrics(): void {
+    this.opts.onRenderMetrics?.({
+      dots: this.dotEntries.length,
+      actors: this.actors.length,
+      flows: this.lastFlows.length,
+      assets: this.actors.filter((actor) => actor.assetLoaded).length,
+    });
+  }
+
+  /** SVGアセットと既存の生成人物フォールバックへ共通の気分演出を適用する。 */
+  private applyActorVisual(actor: ActorEntry): void {
+    const mood = gameAssetMoodStyle(actor.mood);
+    actor.char.texture = actor.assetTexture ?? this.charTexture(actor.lane, actor.mood);
+    const texture = actor.assetTexture;
+    if (texture && texture.width > 0 && texture.height > 0) {
+      const scale = Math.min(ACTOR_W / texture.width, ACTOR_H / texture.height) * mood.scale;
+      actor.char.scale.set(scale);
+    } else {
+      actor.char.scale.set(ACTOR_SCALE * mood.scale);
+    }
+    actor.char.tint = Number.parseInt(mood.tint.slice(1), 16);
+    actor.char.alpha = mood.alpha;
+    actor.status.text = mood.marker ?? '';
+    actor.status.visible = mood.marker !== null;
+    actor.status.alpha = mood.alpha;
   }
 
   /** タスク粒（Sprite＋輪郭リング＋炎 Text）を plan と同期する。 */
@@ -676,13 +743,15 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         const phase = ((elapsedMs % period) + period) % period;
         const wave = (1 - Math.cos((2 * Math.PI * phase) / period)) / 2;
         actor.char.position.set(actor.baseX, actor.baseY - 2 * wave);
-        actor.char.rotation = (-1.4 * wave * Math.PI) / 180;
+        actor.char.rotation =
+          gameAssetMoodStyle(actor.mood).rotation + (-1.4 * wave * Math.PI) / 180;
       } else {
         // CSS `.cbob`（bob 2.8s / coding は 1.2s）。
         const period = actor.lane === 'coding' ? 1200 : 2800;
         actor.char.position.set(actor.baseX, actor.baseY + bobOffsetY(elapsedMs, period, 3));
-        actor.char.rotation = 0;
+        actor.char.rotation = gameAssetMoodStyle(actor.mood).rotation;
       }
+      actor.status.position.set(actor.baseX + ACTOR_W * 0.36, actor.baseY - ACTOR_H * 0.47);
     }
 
     for (const entry of this.dotEntries) {

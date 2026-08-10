@@ -4,8 +4,11 @@
  * `boardScene` が導いた `mood` を受け取り、表情・アニメ（揺れ）を切り替える純表示。
  * 状態は持たずpropsを読んで描き、レーンごとの体色・髪・小物だけを変える。
  */
+import { useState } from 'react';
 import type { Lane } from '../sim/types';
 import type { StationMood } from '../render/boardScene';
+import { getGameAssetUrl } from '../data/assets';
+import { gameAssetMoodStyle, stationAssetForLane } from '../render/gameAssetView';
 
 /** 机（アイソメ）。ローカル座標で天板中心が (110,150) になるよう固定。 */
 function Desk({ tone = 'wood' }: { tone?: 'wood' | 'dark' }) {
@@ -222,6 +225,10 @@ export function StationActor({ lane, mood }: StationActorProps) {
   const s = STYLE[lane];
   const ink = '#33285c';
   const cheering = mood === 'cheer';
+  const assetId = stationAssetForLane(lane);
+  const moodStyle = gameAssetMoodStyle(mood);
+  const [assetState, setAssetState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const showLegacy = assetState !== 'ready';
   return (
     <svg
       className="station-actor"
@@ -230,6 +237,23 @@ export function StationActor({ lane, mood }: StationActorProps) {
       viewBox="0 0 220 200"
       aria-hidden="true"
     >
+      <g
+        className={assetState === 'ready' ? bobClass(lane, mood) : undefined}
+        opacity={assetState === 'ready' ? moodStyle.alpha : 0}
+      >
+        <image
+          className={`station-game-asset mood-${moodStyle.className}`}
+          data-asset-id={assetId}
+          href={getGameAssetUrl(assetId)}
+          x="20"
+          y="0"
+          width="180"
+          height="180"
+          preserveAspectRatio="xMidYMid meet"
+          onLoad={() => setAssetState('ready')}
+          onError={() => setAssetState('error')}
+        />
+      </g>
       <Desk tone={lane === 'coding' ? 'dark' : 'wood'} />
       {/* PC/モニタ（Coding/Review の机に） */}
       {(lane === 'coding' || lane === 'review') && (
@@ -243,7 +267,7 @@ export function StationActor({ lane, mood }: StationActorProps) {
        * （アンカー translate）と同じ <g> に置くと CSS が属性を上書きしてアンカーが
        * 外れる。アニメは外側 <g>、アンカー translate は内側 <g> に分けて両立させる。
        */}
-      <g className={bobClass(lane, mood)}>
+      <g className={bobClass(lane, mood)} opacity={showLegacy ? 1 : 0}>
         <g transform="translate(60,4)">
           {/* 胴体 */}
           {cheering ? (
@@ -289,6 +313,11 @@ export function StationActor({ lane, mood }: StationActorProps) {
           )}
         </g>
       </g>
+      {moodStyle.marker && assetState === 'ready' && (
+        <text className="station-game-asset-marker" x="178" y="28" fontSize="13">
+          {moodStyle.marker}
+        </text>
+      )}
     </svg>
   );
 }

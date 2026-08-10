@@ -10,7 +10,8 @@
  * ⚠ 実 WebGL は CI/Node で回さない方針（architecture §4.2）。本ファイルは Node
  *    から import できる（型検証のため）が、`init()` / `render()` はブラウザでのみ呼ぶこと。
  */
-import { Application, Container, Graphics, Rectangle, Text } from 'pixi.js';
+import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import type { GameAssetId } from '../../data/assets';
 import type { DepartmentState } from '../../sim/orgscale/types';
 import {
   DEPT_VIEW,
@@ -35,11 +36,13 @@ import {
   type ContainFitTransform,
 } from '../deptPixiView';
 import { SpritePool } from '../iso';
+import { deptAssetForLane, gameAssetMoodStyle } from '../gameAssetView';
+import { loadGameAssetTexture } from './gameAssetTextures';
 import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
 
 /** 破棄オプション（Pixi v8）。`pixiOrgRenderer` と同値。 */
-const DESTROY_OPTIONS = { children: true, texture: true, context: true } as const;
+const DESTROY_OPTIONS = { children: true, texture: false, context: true } as const;
 
 /** チームミニ Container の同時描画上限（部門は最大でも 8 チーム前後）。 */
 export const DEPT_SPRITE_BUDGET = 16;
@@ -64,6 +67,8 @@ const PLATE = {
 export interface DeptRenderMetrics {
   teams: number;
   flows: number;
+  /** 現在の部門で取得済みの人物SVG種類数（視覚回帰の安定化用）。 */
+  assets: number;
 }
 
 export interface PixiDeptRendererOptions {
@@ -91,6 +96,10 @@ interface TeamParts {
   mini: Container;
   /** ミニ盤面のベクタ形状（床・机・粒・キャラをまとめて描く）。 */
   gfx: Graphics;
+  /** SVG取得前／失敗時に表示するCodingの旧人物。 */
+  codingFallback: Graphics;
+  /** SVG取得前／失敗時に表示するReviewの旧人物。 */
+  reviewFallback: Graphics;
   shelfEmoji: Text;
   codingEmoji: Text;
   reviewEmoji: Text;
@@ -103,6 +112,8 @@ interface TeamParts {
   bannerTagBg: Graphics;
   bannerTag: Text;
   bannerChain: Text;
+  codingAsset: Sprite;
+  reviewAsset: Sprite;
 }
 
 function createTeamContainer(): Container {
@@ -110,11 +121,30 @@ function createTeamContainer(): Container {
   const mini = new Container();
   mini.pivot.set(190, 120);
   const gfx = new Graphics();
+  const codingFallback = new Graphics();
+  const reviewFallback = new Graphics();
   const shelfEmoji = makeText({ fontSize: 11, fill: COLOR_CREAM });
   const codingEmoji = makeText({ fontSize: 9, fill: COLOR_CREAM });
   const reviewEmoji = makeText({ fontSize: 9, fill: COLOR_CREAM });
   const fireEmoji = makeText({ fontSize: 16, fill: COLOR_CREAM });
-  mini.addChild(gfx, shelfEmoji, codingEmoji, reviewEmoji, fireEmoji);
+  const codingAsset = new Sprite();
+  codingAsset.anchor.set(0.5);
+  codingAsset.visible = false;
+  const reviewAsset = new Sprite();
+  reviewAsset.anchor.set(0.5);
+  reviewAsset.visible = false;
+  // 旧人物はSVG Spriteの下に置き、取得成功時に個別に隠せるよう分離する。
+  mini.addChild(
+    gfx,
+    codingFallback,
+    reviewFallback,
+    codingAsset,
+    reviewAsset,
+    shelfEmoji,
+    codingEmoji,
+    reviewEmoji,
+    fireEmoji,
+  );
 
   const banner = new Container();
   const bannerBg = new Graphics();
@@ -131,6 +161,8 @@ function createTeamContainer(): Container {
   const parts: TeamParts = {
     mini,
     gfx,
+    codingFallback,
+    reviewFallback,
     shelfEmoji,
     codingEmoji,
     reviewEmoji,
@@ -142,6 +174,8 @@ function createTeamContainer(): Container {
     bannerTagBg,
     bannerTag,
     bannerChain,
+    codingAsset,
+    reviewAsset,
   };
   (group as Container & { teamParts: TeamParts }).teamParts = parts;
   return group;
@@ -159,8 +193,12 @@ function resetTeamContainer(group: Container): void {
   parts.mini.hitArea = null;
   parts.mini.scale.set(1);
   parts.gfx.clear();
+  parts.codingFallback.clear();
+  parts.reviewFallback.clear();
   parts.bannerBg.clear();
   parts.bannerTagBg.clear();
+  parts.codingAsset.visible = false;
+  parts.reviewAsset.visible = false;
   for (const t of [
     parts.shelfEmoji,
     parts.codingEmoji,
@@ -256,8 +294,11 @@ function layoutTeamMini(parts: TeamParts, plan: DeptTeamPlan, deptColor: string)
     if (lane.count > 0) drawPileDots(g, lane.x, lane.y - 22, lane.count, lane.hot);
   }
 
-  drawWorker(g, 64, 86);
-  drawWorker(g, 176, 78);
+  // 旧人物はSVG Spriteの読み込み中／失敗時だけ表示する。
+  drawWorker(parts.codingFallback, 64, 86);
+  drawWorker(parts.reviewFallback, 176, 78);
+  parts.codingFallback.visible = true;
+  parts.reviewFallback.visible = true;
   const codingFace = moodEmoji(mood);
   if (codingFace) {
     parts.codingEmoji.text = codingFace;
@@ -343,6 +384,8 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
   private disposed = false;
   private readonly opts: PixiDeptRendererOptions;
   private lastDept: DepartmentState | null = null;
+  private readonly assetTextures = new Map<GameAssetId, Texture | null>();
+  private readonly assetLoads = new Set<GameAssetId>();
   /** 直近 resize の host 実寸（ズームトゥイーンの中心計算用）。 */
   private hostW = 0;
   private hostH = 0;
@@ -489,7 +532,11 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     this.drawTeams(scene, dept.def.color);
     this.drawStageLabels(scene.stageLabels);
 
-    this.opts.onRenderMetrics?.({ teams: scene.teams.length, flows: scene.flows.length });
+    this.opts.onRenderMetrics?.({
+      teams: scene.teams.length,
+      flows: scene.flows.length,
+      assets: [...this.assetTextures.values()].filter((texture) => texture !== null).length,
+    });
   }
 
   /** 直近 render に使った部門状態（resize 後の再描画用）。 */
@@ -576,6 +623,7 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
       parts.mini.position.set(plan.x, plan.y);
       parts.mini.scale.set(plan.scale);
       layoutTeamMini(parts, plan, deptColor);
+      this.syncTeamAvatars(parts, plan);
       layoutTeamBanner(parts, plan);
 
       if (onFocus) {
@@ -588,6 +636,58 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
 
       this.teamsLayer.addChild(group);
     }
+  }
+
+  /** Coding/Review人物を共通カタログから描き、失敗時はlayoutTeamMiniの旧人物を残す。 */
+  private syncTeamAvatars(parts: TeamParts, plan: DeptTeamPlan): void {
+    const codingId = deptAssetForLane('coding');
+    const reviewId = deptAssetForLane('review');
+    const mood = gameAssetMoodStyle(plan.mood);
+    const reviewMood = plan.lanes.find((lane) => lane.lane === 'review')?.hot ? 'panic' : plan.mood;
+    const entries: readonly [
+      Sprite,
+      Graphics,
+      GameAssetId | undefined,
+      number,
+      number,
+      typeof mood,
+    ][] = [
+      [parts.codingAsset, parts.codingFallback, codingId, 64, 86, mood],
+      [parts.reviewAsset, parts.reviewFallback, reviewId, 176, 78, gameAssetMoodStyle(reviewMood)],
+    ];
+    for (const [sprite, fallback, assetId, x, y, style] of entries) {
+      if (!assetId) {
+        sprite.visible = false;
+        fallback.visible = true;
+        continue;
+      }
+      const texture = this.assetTextures.get(assetId);
+      sprite.position.set(x, y - 12);
+      sprite.width = 30;
+      sprite.height = 34;
+      sprite.tint = Number.parseInt(style.tint.slice(1), 16);
+      sprite.alpha = style.alpha;
+      if (texture) {
+        sprite.texture = texture;
+        sprite.visible = true;
+        fallback.visible = false;
+      } else {
+        sprite.visible = false;
+        fallback.visible = true;
+        this.requestAssetTexture(assetId);
+      }
+    }
+  }
+
+  private requestAssetTexture(assetId: GameAssetId): void {
+    if (this.assetLoads.has(assetId) || this.assetTextures.has(assetId)) return;
+    this.assetLoads.add(assetId);
+    void loadGameAssetTexture(assetId).then((texture) => {
+      this.assetLoads.delete(assetId);
+      if (this.disposed) return;
+      this.assetTextures.set(assetId, texture);
+      if (this.lastDept) this.render(this.lastDept);
+    });
   }
 
   /** 工程ラベルのピル（DOM `.dept-stage-label` と同配色）を描く。 */

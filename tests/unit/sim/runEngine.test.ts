@@ -44,7 +44,8 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(trialState.org.aiDependency).toBe(normalState.org.aiDependency + 5);
     // 課金は全社平均依存度（選択中だけの依存×単価ではない）。
     const companyDep = companyOrgFromTeams(trialState.teams, trialState.org).aiDependency;
-    const expectedCost = computeInfraCost(companyDep, 0.26, 1);
+    // frontier の毎スプ課金は試練上乗せ 0.04 のみ（ベース 0.22 はボス時）。
+    const expectedCost = computeInfraCost(companyDep, 0.04, 1);
     expect(expectedCost).toBeGreaterThan(0);
     expect(trialState.budget).toBe(normalState.budget - expectedCost);
 
@@ -403,8 +404,8 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       budget: number;
       org: { aiDependency: number };
     };
-    // 全チーム 55 + 試練 +5 → 全社 56、ceil(56 * 0.26)=15 を差し引くと予算 0。
-    internals.budget = 15;
+    // 全チーム 55 + 試練 +5 → 全社 56、毎スプ上乗せ ceil(56 * 0.04)=3 で予算 0。
+    internals.budget = 3;
     internals.org.aiDependency = 55;
     for (const t of (engine as unknown as { teams: Array<{ aiDependency: number }> }).teams) {
       t.aiDependency = 55;

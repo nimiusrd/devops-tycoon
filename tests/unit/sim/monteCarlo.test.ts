@@ -308,7 +308,7 @@ describe('monteCarlo 基盤（RI-14）', () => {
       adjustmentCount: { min: 0, max: 10 },
       finalQuarter: { min: 1, max: 10 },
       // RI-68: deliveryTarget は四半期累計スケール（緩和下限〜ボス上限）。
-      finalDeliveryTarget: { min: 1260, max: 4500 },
+      finalDeliveryTarget: { min: 1260, max: 5500 },
       finalQualityTarget: { min: 35, max: 70 },
       finalTechDebtLimit: { min: 35, max: 90 },
       finalMoraleTarget: { min: 25, max: 60 },

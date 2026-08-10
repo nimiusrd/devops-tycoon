@@ -30,6 +30,9 @@ export function SetupScreen({
   const boss = getBoss(state.bossId);
   const total = state.sprintsPerQuarter;
   const nextIndex = state.sprintIndexInQuarter + 1;
+  // launchSprint と同様、最終枠はインデックスからボスを決める（pending は normal のまま）。
+  const bossPending = state.pendingSprintKind === 'boss' || nextIndex >= total;
+  const elitePending = !bossPending && state.pendingSprintKind === 'elite';
   return (
     <div className="run-setup" data-testid="setup" data-readonly={readOnly ? 'true' : undefined}>
       <div className="map-banner">
@@ -37,12 +40,12 @@ export function SetupScreen({
         <span className="pill">
           次: スプリント {nextIndex} / {total}
         </span>
-        {state.pendingSprintKind === 'elite' ? (
+        {elitePending ? (
           <span className="pill" data-testid="setup-elite-pending">
             高負荷案件
           </span>
         ) : null}
-        {state.pendingSprintKind === 'boss' ? (
+        {bossPending ? (
           <span className="pill" data-testid="setup-boss-pending">
             ボススプリント
           </span>
@@ -55,14 +58,18 @@ export function SetupScreen({
           <div>
             <p className="result-eyebrow">SETUP</p>
             <h2 className="draft-title">
-              {state.pendingSprintKind === 'elite'
-                ? '編成 — 高負荷スプリントの前に配置とAIを決める'
-                : '編成 — スプリント開始前に配置とAIを決める'}
+              {bossPending
+                ? '編成 — ボススプリントの前に配置とAIを決める'
+                : elitePending
+                  ? '編成 — 高負荷スプリントの前に配置とAIを決める'
+                  : '編成 — スプリント開始前に配置とAIを決める'}
             </h2>
             <p className="formation-setup-hint">
-              {state.pendingSprintKind === 'elite'
-                ? '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。'
-                : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。'}
+              {bossPending
+                ? '次はボス。四半期の締めくくりなので、AI 配布と配置をこのタイミングで見直そう。'
+                : elitePending
+                  ? '次は高負荷案件。出荷は大きいが渋滞・炎上リスクも高い。AI 配布と配置をこのタイミングで見直そう。'
+                  : 'AI は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。'}
             </p>
           </div>
           <button

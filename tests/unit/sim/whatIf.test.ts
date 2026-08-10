@@ -249,8 +249,8 @@ describe('RI-46 次スプリント what-if 試算', () => {
       org: { aiDependency: number; aiLiteracy: number };
       teams: Array<{ aiDependency: number }>;
     };
-    // 選択中 30・他チーム 25 → 全社平均 26、ceil(26 * 0.26)=7 で予算尽き。
-    internals.budget = 7;
+    // 選択中 30・他チーム 25 → 全社平均 ≈26、毎スプ上乗せ ceil(26 * 0.04)=2 で予算尽き。
+    internals.budget = 2;
     internals.org.aiDependency = 25;
     for (const t of internals.teams) t.aiDependency = 25;
     internals.org.aiLiteracy = 40;
@@ -286,7 +286,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
 
     expect(engine.whatIfPreview()?.draftCandidates.docs?.immediateLose).toBeUndefined();
 
-    internals.budget = 7;
+    internals.budget = 2;
     expect(engine.whatIfPreview()?.draftCandidates.docs?.immediateLose).toBe('budgetExhausted');
   });
 

@@ -513,6 +513,15 @@ flowchart TB
 稼働人数が0なら出荷は0になる。それ以外では次の近似を使う。
 
 ```text
+adoptionShare =
+  推定コーダー数 > 0 なら
+    estimateRivalAiAssigned(推定コーダー数, aiDependency) / 推定コーダー数
+  それ以外 0
+
+aiShare = 0.85 × clamp(adoptionShare, 0, 1)
+
+aiDeliveryMul = 1 + aiShare × 0.85 × aiLiteracy / 100
+
 shipGain =
   max(
     4,
@@ -523,11 +532,14 @@ shipGain =
         - techDebt × 0.02
       )
       × shipMul
+      × aiDeliveryMul
     )
   )
 ```
 
-出荷ポイントは、詳細モデルの通常タスク5ポイントを基準に完了件数へ換算する。AI支援完了数は、推定コーダー数、AI依存度から求めた配布割合、基礎AI利用率85%で按分する。
+`aiDeliveryMul` は詳細モデルの `aiDeliveryValueMul`（§4.1）に対応する粗粒度近似である。推定 AI 採用率に基礎利用率 0.85 を掛けた分だけ、リテラシー連動の出荷倍率（最大 1.85）を掛ける。
+
+出荷ポイントは、詳細モデルの通常タスク5ポイントを基準に完了件数へ換算する。AI支援完了数は完了件数 × `aiShare` で按分する。
 
 ### 6.2 Review行列
 

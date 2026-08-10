@@ -9,7 +9,7 @@ import type { RosterState } from '../member/types';
 import { evaluateLose } from '../outcome';
 import { createRng } from '../rng';
 import type { OrgState, SprintConfig } from '../types';
-import { foldRunEffects } from './effects';
+import { foldRunEffects, infraBillingRateForSprint } from './effects';
 import {
   applyTrialAiDependencyPressure,
   BETWEEN_SPRINT_RECOVERY,
@@ -179,26 +179,19 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
     difficulty: input.difficulty,
     trials: input.trials,
   };
-  const billInfraCost = kind === 'boss' || input.trials.includes('frontier-dependency');
+  const hasFrontier = input.trials.includes('frontier-dependency');
 
   /** ドリフトは選択中 org へ、課金は全社平均依存度で（engine と揃える）。 */
   const applyPressureBudget = (org: OrgState, budget: number): number => {
     applyTrialAiDependencyPressure(org, budget, pressureCtx, { billInfraCost: false });
-    if (!billInfraCost) return budget;
     const fold = foldRunEffects(pressureCtx);
+    const rate = infraBillingRateForSprint(kind, hasFrontier, fold.frontierModelCostPerDependency);
+    if (rate === null) return budget;
     const companyDep = companyAiDependencyAfterDrift(
       org.aiDependency,
       input.otherTeamAiDependencies,
     );
-    return Math.max(
-      0,
-      budget -
-        computeInfraCost(
-          companyDep,
-          fold.frontierModelCostPerDependency,
-          fold.effects.infraCostMul,
-        ),
-    );
+    return Math.max(0, budget - computeInfraCost(companyDep, rate, fold.effects.infraCostMul));
   };
 
   const previewFor = (

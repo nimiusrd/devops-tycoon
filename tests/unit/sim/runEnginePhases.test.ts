@@ -76,8 +76,8 @@ describe('RI-91-A2 RunEngine phase / trial / budget', () => {
     });
     lose.startRun();
     const loseI = asInternals(lose);
-    // 全チーム 55 + 試練 +5 → 全社 56、ceil(56 * 0.26)=15。
-    loseI.budget = 15;
+    // 全チーム 55 + 試練 +5 → 全社 56、毎スプ上乗せ ceil(56 * 0.04)=3。
+    loseI.budget = 3;
     loseI.org.aiDependency = 55;
     for (const t of loseI.teams) t.aiDependency = 55;
     lose.beginSetupSprint();
@@ -95,7 +95,7 @@ describe('RI-91-A2 RunEngine phase / trial / budget', () => {
     });
     survive.startRun();
     const surviveI = asInternals(survive);
-    surviveI.budget = 16;
+    surviveI.budget = 4;
     surviveI.org.aiDependency = 55;
     for (const t of surviveI.teams) t.aiDependency = 55;
     survive.beginSetupSprint();

@@ -48,8 +48,25 @@ export interface RunModifierInput {
  * 通常ランはボス開始時のみ課金。RI-77 の部分配布による長命化を
  * §3.1 の 15〜45 分帯へ戻すためベース単価を引き上げる。
  * 試練は `frontierModelCostPerDependency` を加算する（ベース 0.22 + 0.04）。
+ * frontier 試練の毎スプリント課金は上乗せ分だけ（ベースはボス時のみ）。
  */
 export const BASE_INFRA_COST_PER_DEPENDENCY = 0.22;
+
+/**
+ * スプリント種別に応じたインフラ課金単価（RI-77）。
+ * - ボス: ベース込みの折りたたみ単価
+ * - frontier 試練の通常/elite: 試練上乗せ分のみ（ベースを毎スプで請求しない）
+ * - それ以外: 課金なし（null）
+ */
+export function infraBillingRateForSprint(
+  kind: 'normal' | 'elite' | 'boss',
+  hasFrontierTrial: boolean,
+  foldedRate: number,
+): number | null {
+  if (kind === 'boss') return Math.max(0, foldedRate);
+  if (!hasFrontierTrial) return null;
+  return Math.max(0, foldedRate - BASE_INFRA_COST_PER_DEPENDENCY);
+}
 
 /**
  * このスプリントに掛かる乗算系係数と、集中力/実装枠の補正を畳み込む。

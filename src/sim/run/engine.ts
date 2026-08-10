@@ -114,7 +114,7 @@ import {
 } from './events';
 import { canUnlock, unlockNode } from './evolution';
 import { canTransition, RunPhaseError } from './phases';
-import { foldRunEffects } from './effects';
+import { foldRunEffects, infraBillingRateForSprint } from './effects';
 import {
   DRAFT_MULLIGAN_COST,
   EVO_POINTS_BASE,
@@ -532,13 +532,14 @@ export class RunEngine {
 
   /**
    * スプリント開始時の AI 依存圧力（ドリフト＋インフラコスト）を適用する（RI-88 / RI-77）。
-   * 通常ランはボス時のみ課金。インフラ試練（frontier-dependency）は毎スプリント。
-   * 無関係な試練だけでは課金しない（単価引き上げ後の誤爆を避ける）。
+   * 通常ランはボス時のみベース単価を課金。インフラ試練（frontier-dependency）の
+   * 毎スプリント課金は試練上乗せ分だけ（ベースはボス時のみ。P1）。
+   * 無関係な試練だけでは課金しない。
    * 課金の依存度は選択中チームではなく全社集約（`companyOrgFromTeams`）を使う。
    */
   private applyTrialAiDependencyPressure(org: OrgState, budget: number, kind: SprintKind): number {
     const before = budget;
-    const billInfraCost = kind === 'boss' || this.trials.includes('frontier-dependency');
+    const hasFrontier = this.trials.includes('frontier-dependency');
     const pressureCtx = {
       deck: this.deck,
       relics: this.relics,
@@ -551,21 +552,15 @@ export class RunEngine {
     this.syncActiveTeamFromOrg();
     const fold = foldRunEffects(pressureCtx);
     const companyDep = companyOrgFromTeams(this.teams, org).aiDependency;
-    const next = billInfraCost
-      ? Math.max(
-          0,
-          budget -
-            computeInfraCost(
-              companyDep,
-              fold.frontierModelCostPerDependency,
-              fold.effects.infraCostMul,
-            ),
-        )
-      : budget;
+    const rate = infraBillingRateForSprint(kind, hasFrontier, fold.frontierModelCostPerDependency);
+    const next =
+      rate === null
+        ? budget
+        : Math.max(0, budget - computeInfraCost(companyDep, rate, fold.effects.infraCostMul));
     this.chargedInfraCost = Math.max(0, before - next);
     // カード発動で依存度が変わっても、課金時点の dep×rate を正として再計算する。
     this.chargedInfraDependency = companyDep;
-    this.chargedInfraRate = fold.frontierModelCostPerDependency;
+    this.chargedInfraRate = rate ?? 0;
     return next;
   }
 

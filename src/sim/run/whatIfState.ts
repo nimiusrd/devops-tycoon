@@ -9,10 +9,12 @@ import type { RosterState } from '../member/types';
 import { evaluateLose } from '../outcome';
 import { createRng } from '../rng';
 import type { OrgState, SprintConfig } from '../types';
+import { foldRunEffects } from './effects';
 import {
   applyTrialAiDependencyPressure,
   BETWEEN_SPRINT_RECOVERY,
   buildSprintBaselineInput,
+  computeInfraCost,
   type SprintBaselineBuildContext,
 } from './sprintBaselineBuild';
 import { applyGoalCarryoverOrgTick } from './quarterReview';
@@ -59,6 +61,11 @@ export interface WhatIfComputeInput {
   teamReviewQueue?: number;
   /** 選択中チーム正本の炎上件数（本番 beginSprint と共有）。 */
   teamIncidents?: number;
+  /**
+   * 選択中以外のチームの AI 依存度（RI-88）。
+   * インフラ課金は本番と同じくドリフト後の全社平均で行う。
+   */
+  otherTeamAiDependencies?: number[];
 }
 
 function baselineContext(input: WhatIfComputeInput): SprintBaselineBuildContext {
@@ -124,9 +131,21 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     mod.focusMaxAdd ?? 0,
     input.teamReviewQueue ?? 0,
     input.teamIncidents ?? 0,
+    (input.otherTeamAiDependencies ?? []).join(','),
     input.goalCarryoverQuarter ?? input.pauseAiDebuffQuarter ?? '',
     input.goalCarryoverId ?? '',
   ].join('|');
+}
+
+/** ドリフト後の選択中依存度と他チームから、本番と同じ全社平均を求める。 */
+function companyAiDependencyAfterDrift(
+  activeAfterDrift: number,
+  otherTeamAiDependencies: number[] | undefined,
+): number {
+  const others = otherTeamAiDependencies ?? [];
+  if (others.length === 0) return activeAfterDrift;
+  const sum = others.reduce((a, d) => a + d, 0) + activeAfterDrift;
+  return Math.round(sum / (others.length + 1));
 }
 
 /** setup / draft における、次スプリントのリスク幅プレビューを生成する。 */
@@ -162,13 +181,34 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   };
   const billInfraCost = input.trials.length > 0 || kind === 'boss';
 
+  /** ドリフトは選択中 org へ、課金は全社平均依存度で（engine と揃える）。 */
+  const applyPressureBudget = (org: OrgState, budget: number): number => {
+    applyTrialAiDependencyPressure(org, budget, pressureCtx, { billInfraCost: false });
+    if (!billInfraCost) return budget;
+    const fold = foldRunEffects(pressureCtx);
+    const companyDep = companyAiDependencyAfterDrift(
+      org.aiDependency,
+      input.otherTeamAiDependencies,
+    );
+    return Math.max(
+      0,
+      budget -
+        computeInfraCost(
+          companyDep,
+          fold.frontierModelCostPerDependency,
+          fold.effects.infraCostMul,
+        ),
+    );
+  };
+
   const previewFor = (
     deck: { defId: string; level: number }[],
     org: OrgState,
     playedCards: { defId: string; level: number }[] = [],
   ): WhatIfPreview => {
     const previewOrg = applySprintStartOrg(org);
-    applyTrialAiDependencyPressure(previewOrg, input.budget, pressureCtx, { billInfraCost });
+    // スプリント試算は org ドリフトのみ必要（戻り予算は使わない）。
+    applyTrialAiDependencyPressure(previewOrg, input.budget, pressureCtx, { billInfraCost: false });
     for (const played of playedCards) {
       const playedDef = getCard(played.defId);
       if (!playedDef) continue;
@@ -196,9 +236,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   const current = previewFor(input.deck, input.org);
 
   const startOrg = applySprintStartOrg(input.org);
-  const budgetAfterPressure = applyTrialAiDependencyPressure(startOrg, input.budget, pressureCtx, {
-    billInfraCost,
-  });
+  const budgetAfterPressure = applyPressureBudget(startOrg, input.budget);
   const sprintStartLose = evaluateLose(startOrg, input.totals, budgetAfterPressure);
   if (sprintStartLose) {
     const immediate: WhatIfPreview = {
@@ -236,12 +274,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
       // 手札入りの発動仮定でも beginSprint と同じ org 開始処理を使う。
       // 回復だけだと quality_pivot 等の Tech Debt 持ち越しが抜け、生存候補を loseOnPlay と誤表示する。
       const playOrg = applySprintStartOrg(input.org);
-      const budgetAfterCardPressure = applyTrialAiDependencyPressure(
-        playOrg,
-        input.budget,
-        pressureCtx,
-        { billInfraCost },
-      );
+      const budgetAfterCardPressure = applyPressureBudget(playOrg, input.budget);
       applyDeckBaseline(playOrg, scaleEffects(card.base, 1));
       const loseOnPlay = evaluateLose(playOrg, input.totals, budgetAfterCardPressure);
       if (loseOnPlay) {

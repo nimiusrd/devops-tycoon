@@ -1920,6 +1920,8 @@ export class RunEngine {
    */
   whatIfComputeInput(): WhatIfComputeInput | null {
     if (this.phase !== 'setup' && this.phase !== 'draft') return null;
+    // 選択中 org をチームへ同期してから他チーム依存度を渡す（RI-88 全社課金）。
+    this.syncActiveTeamFromOrg();
     const activeTeam = this.teams.find((t) => t.id === this.activeTeamId);
     return {
       phase: this.phase,
@@ -1948,6 +1950,9 @@ export class RunEngine {
       // 入り込み先の滞留を試算でも本番 beginSprint と同じく載せる。
       teamReviewQueue: activeTeam?.reviewQueue ?? 0,
       teamIncidents: activeTeam?.incidents ?? 0,
+      otherTeamAiDependencies: this.teams
+        .filter((t) => t.id !== this.activeTeamId)
+        .map((t) => t.aiDependency),
     };
   }
 

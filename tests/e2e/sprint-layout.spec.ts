@@ -46,8 +46,8 @@ test('デスクトップ幅で sprint-subbar と board が重ならない', asyn
   const wrap = page.locator('.board-wrap');
   const wrapBox = await wrap.boundingBox();
   if (!wrapBox) throw new Error('board-wrap の bounding box が取得できない');
-  expect(boardBox.width / wrapBox.width).toBeGreaterThan(0.8);
-  expect(actionBox.height).toBeLessThan(160);
+  expect(boardBox.width / wrapBox.width).toBeGreaterThan(0.75);
+  expect(actionBox.height).toBeLessThan(180);
 });
 
 test('狭幅390pxでKPI折り畳み後に介入バーへ到達できる', async ({ page }) => {

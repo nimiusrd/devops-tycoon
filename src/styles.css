@@ -88,10 +88,6 @@ body {
 .app.app-sprint-layout .stat {
   padding: 5px 8px 5px;
 }
-/* 詳細文は title / 展開で足りる。行を削って盤面高へ回す */
-.app.app-sprint-layout .stat-detail {
-  display: none;
-}
 .app.app-sprint-layout .stat .v {
   font-size: 18px;
 }
@@ -99,17 +95,20 @@ body {
   margin-top: 4px;
   height: 5px;
 }
-.app.app-sprint-layout .stat-morale {
-  padding-bottom: 22px;
-}
-.app.app-sprint-layout .stat-seniorHp {
-  padding-bottom: 22px;
-}
-.app.app-sprint-layout .stat-aiDependency {
-  padding-bottom: 22px;
-}
+/*
+ * 警告/リスクチップ（absolute bottom）分の下余白。22px まで削るとバーと重なる。
+ * 詳細文の圧縮はデスクトップ幅のみ（狭幅の KPI 展開では detail を残す）。
+ */
+.app.app-sprint-layout .stat-morale,
+.app.app-sprint-layout .stat-seniorHp,
+.app.app-sprint-layout .stat-aiDependency,
 .app.app-sprint-layout .stat-reviewCapacity {
-  padding-bottom: 22px;
+  padding-bottom: 30px;
+}
+@media (min-width: 861px) {
+  .app.app-sprint-layout .stat-detail {
+    display: none;
+  }
 }
 .app.app-sprint-layout .runbar,
 .app.app-sprint-layout .subbar {
@@ -179,8 +178,7 @@ body {
   font-size: 18px;
 }
 /*
- * 効果タグが折り返して介入カードが縦に肥大すると、board-wrap の高さが削られ
- * 1404:573 の contain で盤面が細い帯になる。全文は title ツールチップで確認できる。
+ * 長いタグは省略表示。高さ上限で行の途中を切らない（枚数削減は JS 側で担保）。
  */
 .app.app-sprint-layout .action .effect-tags {
   display: flex;
@@ -188,8 +186,6 @@ body {
   justify-content: center;
   width: 100%;
   min-width: 0;
-  max-height: 2.4em;
-  overflow: hidden;
   gap: 2px;
 }
 .app.app-sprint-layout .action .effect-tag {

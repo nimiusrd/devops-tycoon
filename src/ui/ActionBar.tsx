@@ -277,6 +277,7 @@ export function ActionBar({
               ? '（盤面で対象へドラッグ）'
               : '（クリックで武装）'
             : '';
+          const tooltip = `${formatActionTooltip(a)}${dragHint}`;
           return (
             <button
               type="button"
@@ -287,7 +288,8 @@ export function ActionBar({
               data-armed={armed ? 'true' : undefined}
               disabled={!ready && !armed}
               onClick={() => handleAction(a.id)}
-              title={`${formatActionTooltip(a)}${dragHint}`}
+              title={tooltip}
+              aria-label={`${a.label}。${tooltip}`}
             >
               {availability.targetBadge && (
                 <span className="action-target-badge" data-testid={`action-badge-${a.id}`}>

@@ -653,10 +653,9 @@ function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
 }
 
 /**
- * 運用安定の内訳タグ（ツールチップ用）。
+ * 運用安定の詳細内訳（ツールチップ / aria-label 用）。
  *
- * アクションバーのカードへ全部出すと 8 列グリッドで折り返しが縦に伸び、
- * 盤面の contain スロットを潰す。カード上は要約1枚、詳細はホバーへ逃がす。
+ * カード上は要約1タグだけにし、倍率・条件つき効果はここに集約する。
  */
 export function formatStabilityDetailTags(): EffectTag[] {
   const tags: EffectTag[] = [];
@@ -680,8 +679,8 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
 
   if (def.stabilizesFlow) {
-    // 詳細内訳は formatStabilityDetailTags → ツールチップ側。カードは要約のみ。
-    pushTag(tags, `運用安定 ${STABILITY_TICKS}tick`, 'positive');
+    // 主要効果は1タグに要約（タッチでも見える）。長い内訳はツールチップ / aria-label 側。
+    pushTag(tags, `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, 'positive');
   }
 
   switch (def.id) {

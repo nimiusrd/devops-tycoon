@@ -112,11 +112,14 @@ const evoPointsForSprint = (s) =>
  * 実際には得ていないぶんを足してしまう（とくに第1スプリント敗北の多い nightmare）。
  */
 const q1EvoPoints = (r) => {
-  const sprints = r.sprints ?? [];
+  const sprints = (r.sprints ?? []).filter((s) => s.completed !== false);
   const lostAtSprintEnd = r.lostPhase === 'sprint' && r.lostSprintCompleted !== false;
   const earning = lostAtSprintEnd ? sprints.slice(0, -1) : sprints;
   return earning.filter((s) => s.quarter === 1).reduce((a, s) => a + evoPointsForSprint(s), 0);
 };
+/** 完走スプリントだけを使う既存 KPI 用。未完走終端スプリントの計測値は別途 RI-78 で残す。 */
+const isCompletedSprint = (s) => s.completed !== false;
+const completedSprintsOf = (run) => (run.sprints ?? []).filter(isCompletedSprint);
 const r1 = (n) => Math.round(n * 10) / 10;
 const pct = (n, d) => (d ? `${Math.round((n / d) * 1000) / 10}%` : '—');
 const quantile = (arr, p) => {
@@ -286,7 +289,7 @@ const SPRINT_BANDS = readSprintBands();
  */
 const F4_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'noInterventionCtl'];
 const pacingRows = (arr, kind) =>
-  arr.flatMap((r) => r.sprints.filter((s) => s.kind === kind)).map((s) => sec(s.ticks));
+  arr.flatMap((r) => completedSprintsOf(r).filter((s) => s.kind === kind)).map((s) => sec(s.ticks));
 const printPacing = (label, xs, kind) => {
   const band = SPRINT_BANDS[kind];
   const below = xs.filter((x) => x < band.min).length;
@@ -386,7 +389,7 @@ const sprintIdentity = (s) => `${s.quarter}|${s.index}`;
 const sprintAfterInvestment = (run, event) =>
   (run.sprints ?? []).find((s) => s.quarter === event.quarter && s.index === event.index) ?? null;
 const investmentOutcome = (run, sprint) => {
-  if (sprint) return '完走';
+  if (sprint && isCompletedSprint(sprint)) return '完走';
   if (run.status === 'lost') return `敗北(${run.loseReason ?? 'unknown'})`;
   return '未完走';
 };
@@ -401,7 +404,13 @@ const investmentOutcomeSummary = (rows, side) => {
   return [...counts.entries()].map(([outcome, count]) => `${outcome} ${count}`).join(' / ');
 };
 const completedInvestmentRows = (rows) =>
-  rows.filter((row) => row.treatmentSprint && row.controlSprint);
+  rows.filter(
+    (row) =>
+      row.treatmentSprint &&
+      row.controlSprint &&
+      isCompletedSprint(row.treatmentSprint) &&
+      isCompletedSprint(row.controlSprint),
+  );
 const pairedInvestmentRows = (policy, control, kind, predicate) => {
   const treatmentRuns = new Map(
     runs.filter((r) => r.policy === policy).map((r) => [runIdentity(r), r]),
@@ -502,17 +511,27 @@ const shopRows = pairedInvestmentRows(
 );
 if (shopRows.length) {
   const completedShopRows = completedInvestmentRows(shopRows);
+  // ショップ購入の純効用は「次スプリント出荷 − 実際に支払った購入費」とする。
+  // 4 KPI の OR ではなく、事前に固定した単一の主要 KPI として判定し、予算消費を含める。
+  const netDelivery = (sprint, event) =>
+    sprint.delivered - Math.max(0, Number(event.purchaseCost ?? 0));
   const improved = completedShopRows.filter(
-    ({ treatmentSprint: t, controlSprint: c }) =>
-      t.delivered > c.delivered ||
-      t.rework < c.rework ||
-      t.reviewQueueMax < c.reviewQueueMax ||
-      t.seniorHpAfter > c.seniorHpAfter,
+    ({ event, controlEvent, treatmentSprint: t, controlSprint: c }) =>
+      netDelivery(t, event) > netDelivery(c, controlEvent),
   ).length;
+  const treatmentNetDelivery = mean(
+    completedShopRows.map(({ event, treatmentSprint }) => netDelivery(treatmentSprint, event)),
+  );
+  const controlNetDelivery = mean(
+    completedShopRows.map(({ controlEvent, controlSprint }) =>
+      netDelivery(controlSprint, controlEvent),
+    ),
+  );
   console.log(
     `ショップ購入 vs 統制: 共通機会 n=${shopRows.length}（投資側: ${investmentOutcomeSummary(shopRows, 'treatment')}; ` +
       `統制: ${investmentOutcomeSummary(shopRows, 'control')}） | ` +
-      `共通機会のKPIいずれか改善=${improved}/${shopRows.length} (${pct(improved, shopRows.length)})、` +
+      `純出荷（出荷−購入費）改善=${improved}/${shopRows.length} (${pct(improved, shopRows.length)})、` +
+      `完走ペアの純出荷平均=${r1(treatmentNetDelivery)} vs ${r1(controlNetDelivery)}、` +
       `完走ペア=${completedShopRows.length}`,
   );
   printInvestmentPair('  ショップ購入詳細', shopRows, [
@@ -541,28 +560,37 @@ const cardsPair = (() => {
   return rows;
 })();
 if (cardsPair.length) {
-  const tWins = cardsPair.filter(({ t }) => t.status === 'won').length;
-  const cWins = cardsPair.filter(({ c }) => c.status === 'won').length;
-  const tPlayed = mean(
-    cardsPair.map(({ t }) => (t.sprints ?? []).reduce((n, s) => n + (s.cardsPlayed ?? 0), 0)),
-  );
-  const cPlayed = mean(
-    cardsPair.map(({ c }) => (c.sprints ?? []).reduce((n, s) => n + (s.cardsPlayed ?? 0), 0)),
-  );
-  const tSurvive = mean(cardsPair.map(({ t }) => t.sprintsPlayed));
-  const cSurvive = mean(cardsPair.map(({ c }) => c.sprintsPlayed));
-  console.log(
-    `選択カード vs 無カード: 共通ラン n=${cardsPair.length} | 勝利 ${tWins} vs ${cWins} | 生存スプリント平均 ${r1(tSurvive)} vs ${r1(cSurvive)} | 発動カード平均 ${r1(tPlayed)} vs ${r1(cPlayed)}`,
-  );
+  const cardPairLine = (rows) => {
+    const tWins = rows.filter(({ t }) => t.status === 'won').length;
+    const cWins = rows.filter(({ c }) => c.status === 'won').length;
+    // 未完走終端の cardsPlayed も保存済み計測値として含める。生存数は RunState の値を使う。
+    const tPlayed = mean(
+      rows.map(({ t }) => (t.sprints ?? []).reduce((n, s) => n + (s.cardsPlayed ?? 0), 0)),
+    );
+    const cPlayed = mean(
+      rows.map(({ c }) => (c.sprints ?? []).reduce((n, s) => n + (s.cardsPlayed ?? 0), 0)),
+    );
+    const tSurvive = mean(rows.map(({ t }) => t.sprintsPlayed));
+    const cSurvive = mean(rows.map(({ c }) => c.sprintsPlayed));
+    return `共通ラン n=${rows.length} | 勝利 ${tWins} vs ${cWins} | 生存スプリント平均 ${r1(tSurvive)} vs ${r1(cSurvive)} | 発動カード平均 ${r1(tPlayed)} vs ${r1(cPlayed)}`;
+  };
+  console.log(`選択カード vs 無カード（全体）: ${cardPairLine(cardsPair)}`);
+  for (const difficulty of [...new Set(cardsPair.map(({ t }) => t.difficulty))]) {
+    console.log(
+      `  ${difficulty}: ${cardPairLine(cardsPair.filter(({ t }) => t.difficulty === difficulty))}`,
+    );
+  }
 } else {
   console.log('選択カード vs 無カード: 共通ランなし（未計測）');
 }
 
 const opportunityPolicies = [
-  ['onlyAssign', 'assignTask'],
-  ['onlyFirefight', 'firefight'],
+  { policy: 'onlyAssign', action: 'assignTask' },
+  { policy: 'onlyFirefight', action: 'firefight' },
+  { policy: 'onlyInterrupt', action: 'interruptReview' },
+  { policy: 'onlySplit', action: 'splitPr' },
 ];
-for (const [policy, action] of opportunityPolicies) {
+for (const { policy, action } of opportunityPolicies) {
   const rows = runs.filter((r) => r.policy === policy).flatMap((r) => r.sprints ?? []);
   if (!rows.length) {
     console.log(`${action} 対象あり区間: 未計測（${policy} 未実行）`);
@@ -571,14 +599,17 @@ for (const [policy, action] of opportunityPolicies) {
   const relevant =
     action === 'assignTask'
       ? rows.filter((s) => s.codingSlotAvailable)
-      : rows.filter((s) => s.incidents > 0);
-  const withWindow = relevant.filter((s) =>
-    action === 'assignTask'
-      ? Boolean(s.initialOpportunity?.[action])
-      : (s.opportunityWindows?.[action] ?? 0) > 0,
+      : action === 'firefight'
+        ? rows.filter((s) => s.incidents > 0)
+        : rows;
+  const withWindow = relevant.filter((s) => (s.opportunityWindows?.[action] ?? 0) > 0).length;
+  const initial = relevant.filter((s) => Boolean(s.initialOpportunity?.[action])).length;
+  const completedRelevant = relevant.filter(isCompletedSprint);
+  const completedWithWindow = completedRelevant.filter(
+    (s) => (s.opportunityWindows?.[action] ?? 0) > 0,
   ).length;
   console.log(
-    `${action} 対象あり区間: 条件該当 ${withWindow}/${relevant.length} (${pct(withWindow, relevant.length)}) | 完了スプリント全体で区間あり=${pct(rows.filter((s) => (s.opportunityWindows?.[action] ?? 0) > 0).length, rows.length)}`,
+    `${action} 対象あり区間: 条件該当 ${withWindow}/${relevant.length} (${pct(withWindow, relevant.length)}) | 初回対象あり=${pct(initial, relevant.length)} | 完走分=${completedWithWindow}/${completedRelevant.length} (${pct(completedWithWindow, completedRelevant.length)})`,
   );
 }
 
@@ -614,7 +645,8 @@ if (sampleGuard('F-5 の統制ペア', CV_COMPARE_POLICIES)) {
             (x) => (x.meta ?? 'fresh') === meta && x.difficulty === d && x.policy === policy,
           );
           for (const r of pool) {
-            if (r.sprints.length >= n) m.set(r.seed, r.sprints[n - 1].delivered);
+            const sprints = completedSprintsOf(r);
+            if (sprints.length >= n) m.set(r.seed, sprints[n - 1].delivered);
           }
           return m;
         };
@@ -637,7 +669,10 @@ if (sampleGuard('F-5 の統制ペア', CV_COMPARE_POLICIES)) {
 console.log('\n参考: 方針別（各方針の到達ランで独立に集計。方針間の比較には使わない）:');
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   const cells = CV_SPRINT_INDEXES.map((n) => {
-    const xs = arr.filter((r) => r.sprints.length >= n).map((r) => r.sprints[n - 1].delivered);
+    const xs = arr
+      .map((r) => completedSprintsOf(r))
+      .filter((sprints) => sprints.length >= n)
+      .map((sprints) => sprints[n - 1].delivered);
     if (xs.length === 0) return `S${n}: 未到達`;
     const reach = xs.length === arr.length ? '' : `(到達 ${xs.length}/${arr.length})`;
     return `S${n}: 平均=${r1(mean(xs))} CV=${fmtCv(xs)}${reach}`;
@@ -721,7 +756,7 @@ const beatEventsOf = (arr) => {
 };
 
 const fmtGroup = (arr) => {
-  const sprintsToLose = arr.map((r) => r.sprints.length);
+  const sprintsToLose = arr.map((r) => r.sprintsPlayed);
   const prev = arr.map(prevStateOf).filter((x) => x !== undefined);
   const f = (xs, fn) => (xs.length ? r1(mean(xs.map(fn))) : '—');
   const phases = {};
@@ -832,7 +867,7 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
       .map(
         ([reason, arr]) =>
           `${reason} n=${arr.length} p50=${quantile(
-            arr.map((r) => r.sprints.length),
+            arr.map((r) => r.sprintsPlayed),
             0.5,
           )}`,
       );
@@ -1003,7 +1038,7 @@ const gradeStats = (sprints) => {
   if (!ranks.length) return null;
   return { dist, n: ranks.length, median: RANK_GRADE[quantile(ranks, 0.5)] };
 };
-const overall = gradeStats(runs.flatMap((r) => r.sprints));
+const overall = gradeStats(runs.flatMap((r) => completedSprintsOf(r)));
 if (overall) {
   console.log(
     `全体 n=${overall.n} 中央値=${overall.median}`,
@@ -1033,7 +1068,8 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
     const bySeed = (policy) => {
       const m = new Map();
       for (const r of runs.filter((x) => x.difficulty === d && x.policy === policy)) {
-        if (r.sprints.length >= n) m.set(`${r.meta ?? 'fresh'}|${r.seed}`, r.sprints[n - 1]);
+        const sprints = completedSprintsOf(r);
+        if (sprints.length >= n) m.set(`${r.meta ?? 'fresh'}|${r.seed}`, sprints[n - 1]);
       }
       return m;
     };
@@ -1298,8 +1334,8 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
     const bySeed = (policy) => {
       const m = new Map();
       for (const r of runs.filter((x) => x.difficulty === d && x.policy === policy)) {
-        if (r.sprints.length >= n)
-          m.set(`${r.meta ?? 'fresh'}|${r.seed}`, r.sprints[n - 1].delivered);
+        const sprints = completedSprintsOf(r);
+        if (sprints.length >= n) m.set(`${r.meta ?? 'fresh'}|${r.seed}`, sprints[n - 1].delivered);
       }
       return m;
     };
@@ -1316,7 +1352,7 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
 for (const policy of AI_CTL) {
   const arr = runs.filter((r) => r.policy === policy);
   if (!arr.length) continue;
-  const sp = arr.flatMap((r) => r.sprints);
+  const sp = arr.flatMap((r) => completedSprintsOf(r));
   console.log(
     `  ${policy}: 勝利=${arr.filter((r) => r.status === 'won').length}/${arr.length} ` +
       `AI利用率 平均=${r1(mean(sp.map((s) => s.aiPct)))} ` +
@@ -1329,7 +1365,7 @@ if (!runs.some((r) => r.policy === 'noAiCtl')) {
 
 console.log('\n参考: 難易度 × 方針の内訳:');
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
-  const sprints = arr.flatMap((r) => r.sprints);
+  const sprints = arr.flatMap((r) => completedSprintsOf(r));
   if (!sprints.length) continue;
   console.log(
     `${k}: 最終AI依存度 平均=${r1(mean(arr.map((r) => r.finalOrg.aiDependency)))} AI利用率 平均=${r1(mean(sprints.map((s) => s.aiPct)))}`,

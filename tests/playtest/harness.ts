@@ -29,6 +29,7 @@ import {
 import { foldPassives } from '../../src/sim/run/effects';
 import { measureGoalProgress } from '../../src/sim/run/quarterReview';
 import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
+import { summarizeSprint } from '../../src/sim/sprint';
 import type {
   DifficultyId,
   GoalAdjustmentId,
@@ -536,6 +537,8 @@ export interface SprintLog {
   index: number;
   kind: string;
   ticks: number;
+  /** 即時敗北で完走しなかった終端スプリントは false。計測値は破棄せず保持する。 */
+  completed: boolean;
   focusMax: number;
   /** 初回観測時点で Coding 枠に空きがあったか。 */
   codingSlotAvailable: boolean;
@@ -575,6 +578,10 @@ export interface InvestmentLog {
   choice?: 'heal' | 'repay' | 'upgrade' | 'recruit';
   shopCardsBought?: number;
   shopRelicBought?: boolean;
+  /** ショップ投資の純効用を計算するための購入前後予算。 */
+  budgetBefore?: number;
+  budgetAfter?: number;
+  purchaseCost?: number;
 }
 
 /** 四半期レビュー到達時のスナップショット（RI-79 の発火要因分解用）。 */
@@ -1223,7 +1230,7 @@ function observeOpportunityWindows(
 ): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
-  for (const id of ['assignTask', 'firefight'] as const) {
+  for (const id of ['assignTask', 'firefight', 'interruptReview', 'splitPr'] as const) {
     const available = hasTargetOpportunity(id, s.sprint, s.org, s.sprintTick);
     if (available && !open[id]) windows[id] = (windows[id] ?? 0) + 1;
     open[id] = available;
@@ -1640,6 +1647,13 @@ export function runOnce(
           ? {
               assignTask: hasTargetOpportunity('assignTask', s.sprint, s.org, s.sprintTick),
               firefight: hasTargetOpportunity('firefight', s.sprint, s.org, s.sprintTick),
+              interruptReview: hasTargetOpportunity(
+                'interruptReview',
+                s.sprint,
+                s.org,
+                s.sprintTick,
+              ),
+              splitPr: hasTargetOpportunity('splitPr', s.sprint, s.org, s.sprintTick),
             }
           : {};
         let interventions = 0;
@@ -1673,13 +1687,21 @@ export function runOnce(
           }
         }
         const after = e.snapshot();
-        if (after.sprintsPlayed > before) {
-          const r = after.lastResult;
+        const completed = after.sprintsPlayed > before;
+        // `playCard` やスプリント開始時の予算枯渇は、結果を確定せず phase=lost へ遷移する。
+        // その場合でも盤面に積み上がったカード発動・試行・対象あり区間と途中 KPI を保存し、
+        // 後段の共通機会集計から生存者だけが残らないようにする。
+        const partialResult =
+          !completed && after.sprint ? summarizeSprint(after.sprint, after.org) : null;
+        if (completed || partialResult) {
+          const r = completed ? after.lastResult : partialResult;
+          const metrics = after.sprint?.metrics;
           sprints.push({
             quarter,
             index,
             kind,
             ticks: after.sprintTick,
+            completed,
             focusMax,
             codingSlotAvailable,
             focusRemaining: r?.focusRemaining ?? 0,
@@ -1688,15 +1710,19 @@ export function runOnce(
             attempts,
             opportunityWindows,
             initialOpportunity,
-            delivered: r?.delivered ?? 0,
-            reviewQueueMax: r?.reviewQueueMax ?? 0,
-            incidents: r?.incidents ?? 0,
-            contained: r?.contained ?? 0,
-            spread: r?.spread ?? 0,
-            rework: r?.rework ?? 0,
+            delivered: r?.delivered ?? metrics?.delivered ?? 0,
+            reviewQueueMax: r?.reviewQueueMax ?? metrics?.reviewQueueMax ?? 0,
+            incidents: r?.incidents ?? metrics?.incidentCount ?? 0,
+            contained: r?.contained ?? metrics?.contained ?? 0,
+            spread: r?.spread ?? metrics?.spread ?? 0,
+            rework: r?.rework ?? metrics?.reworkCount ?? 0,
             aiPct: Math.round(r?.aiAssistedPct ?? 0),
             grade: r?.grade ?? '',
-            hpDelta: Math.round((r?.seniorHpDelta ?? 0) * 10) / 10,
+            hpDelta:
+              Math.round(
+                (r?.seniorHpDelta ?? (metrics ? after.org.seniorHp - metrics.seniorHpStart : 0)) *
+                  10,
+              ) / 10,
             seniorHpAfter: Math.round(after.org.seniorHp * 10) / 10,
             moraleAfter: Math.round(after.org.morale * 10) / 10,
             techDebtAfter: Math.round(after.org.techDebt * 10) / 10,
@@ -1791,6 +1817,7 @@ export function runOnce(
       }
       case 'shop': {
         const nextIndex = s.sprintIndexInQuarter + 1;
+        const budgetBeforeShop = s.budget;
         const beforeShop = s.shop;
         const beforeCards = new Set(
           (beforeShop?.cards ?? []).filter((card) => card.bought).map((card) => card.defId),
@@ -1803,7 +1830,8 @@ export function runOnce(
         }
         // カード・レリックはスプリント間投資（F-2）の一部。買う方針だけ買う。
         if (spec.shop === 'buy') buyShopItems(e, spec);
-        const afterShop = e.snapshot().shop;
+        const afterShopState = e.snapshot();
+        const afterShop = afterShopState.shop;
         investments.push({
           quarter: s.quarterNumber,
           index: nextIndex,
@@ -1812,6 +1840,9 @@ export function runOnce(
             (card) => card.bought && !beforeCards.has(card.defId),
           ).length,
           shopRelicBought: Boolean(afterShop?.relic?.bought && !beforeRelicBought),
+          budgetBefore: Math.round(budgetBeforeShop * 10) / 10,
+          budgetAfter: Math.round(afterShopState.budget * 10) / 10,
+          purchaseCost: Math.round(Math.max(0, budgetBeforeShop - afterShopState.budget) * 10) / 10,
         });
         e.leaveShop();
         break;

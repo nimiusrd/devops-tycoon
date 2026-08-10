@@ -4,25 +4,20 @@
  * PIXI_E2E=1 のときだけ実行する（既定 CI では WebGL を回さない。architecture §4.2）。
  * 実行: `npm run test:e2e:pixi`
  */
-import { expect, test } from './fixtures';
+import {
+  advanceCurrentSprintToResult,
+  beginPublicSprint,
+  expect,
+  type PublicGameWindow,
+  test,
+} from './fixtures';
 import { planBoardScene } from '../../src/render/boardScene';
 import { assignableTasks } from '../../src/sim/assignTask';
-import type { RunState } from '../../src/sim/run/types';
 import type { SprintState } from '../../src/sim/types';
 
 const PIXI_SEED = 'sprint-pixi-e2e';
 
-type GameWindow = Window & {
-  game?: {
-    pause(): void;
-    getState(): RunState;
-    startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
-    beginSetupSprint(): RunState;
-    step(ms: number): RunState;
-    zoomTo(level: string): RunState;
-    focusDept(id: string): RunState;
-    focusTeam(id: string): RunState;
-  };
+type PixiTestWindow = PublicGameWindow & {
   __boardPixiTest?: {
     freezeForScreenshot(): void;
   };
@@ -33,8 +28,8 @@ const pixiE2e = !!process.env.PIXI_E2E;
 
 /**
  * 固定 seed でスプリント盤面（Pixi）を開き、決定論の固定ステップで進める。
- * steps は目的別: 視覚回帰は 40（Review/Done の山＋フロー粒）、ドラッグは 5
- * （coding/backlog に差配候補が残っている序盤）。
+ * steps は目的別: 視覚回帰は 40（Review/Done の山＋フロー粒）、ドラッグは 0
+ * （coding/backlog に差配候補が残っている開始直後）。
  */
 async function openPixiSprintBoard(
   page: import('@playwright/test').Page,
@@ -44,9 +39,9 @@ async function openPixiSprintBoard(
   await page.goto(`/?renderer=pixi&seed=${seed}`);
   await page.evaluate(
     ({ s, n }) => {
-      const g = (window as GameWindow).game!;
-      g.pause();
+      const g = (window as PixiTestWindow).game!;
       g.startRun('normal', [], s);
+      g.pause();
       g.beginSetupSprint();
       for (let i = 0; i < n; i += 1) g.step(100);
     },
@@ -80,7 +75,7 @@ async function stabilizeForScreenshot(page: import('@playwright/test').Page) {
 /** Pixi ticker を止め、アニメ位相 0 の決定論フレームへ固定する。 */
 async function freezePixiForScreenshot(page: import('@playwright/test').Page) {
   await page.evaluate(() => {
-    const hook = (window as GameWindow).__boardPixiTest;
+    const hook = (window as PixiTestWindow).__boardPixiTest;
     if (!hook) throw new Error('__boardPixiTest hook missing (dev server + renderer=pixi が必要)');
     hook.freezeForScreenshot();
   });
@@ -93,9 +88,9 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     // 既定レンダラは Pixi（`?renderer=dom` が opt-out。selectRenderer）。
     await page.goto(`/?seed=${PIXI_SEED}`);
     await page.evaluate((s) => {
-      const g = (window as GameWindow).game!;
-      g.pause();
+      const g = (window as PixiTestWindow).game!;
       g.startRun('normal', [], s);
+      g.pause();
       g.beginSetupSprint();
       g.step(100);
     }, PIXI_SEED);
@@ -117,9 +112,35 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     });
   });
 
+  test('1440x900通常スプリントのPixi合成を固定する @pixi', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await beginPublicSprint(page, { seed: 'ri94-normal-0', renderer: 'pixi' });
+    await stabilizeForScreenshot(page);
+    await freezePixiForScreenshot(page);
+
+    await expect(page.locator('.app')).toHaveScreenshot('sprint-pixi-layout-normal.png', {
+      animations: 'disabled',
+      maxDiffPixelRatio: 0.02,
+    });
+  });
+
+  test('390x844 HUD展開後の結果オーバーレイPixi合成を固定する @pixi', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await beginPublicSprint(page, { seed: 'ri94-result-0', renderer: 'pixi' });
+    await page.getByTestId('hud-toggle').click();
+    await advanceCurrentSprintToResult(page);
+    await stabilizeForScreenshot(page);
+    await freezePixiForScreenshot(page);
+
+    await expect(page.locator('.app')).toHaveScreenshot('sprint-pixi-layout-result-overlay.png', {
+      animations: 'disabled',
+      maxDiffPixelRatio: 0.02,
+    });
+  });
+
   test('武装→canvas 上の粒ドラッグでタスク差配が確定する @pixi（RI-30）', async ({ page }) => {
     // 序盤（coding/backlog に差配候補が残っている状態）で武装する。
-    await openPixiSprintBoard(page, PIXI_SEED, 5);
+    await openPixiSprintBoard(page, PIXI_SEED, 0);
     await stabilizeForScreenshot(page);
 
     const assign = page.getByTestId('action-assignTask');
@@ -130,11 +151,11 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     // 掴む粒の設計座標は、ページの sprint 状態から Node 側で純関数により再計算する
     // （盤面計画は決定論なので、canvas に描かれた粒と同じ座標になる）。
     const sprint = (await page.evaluate(
-      () => (window as GameWindow).game!.getState().sprint,
+      () => (window as PixiTestWindow).game!.getState().sprint,
     )) as SprintState;
     const scene = planBoardScene(sprint.tasks);
     const candidateIds = new Set(assignableTasks(sprint).map((t) => t.id));
-    const candidates = scene.dots.filter((d) => candidateIds.has(d.id) && !d.motion);
+    const candidates = scene.dots.filter((d) => candidateIds.has(d.id));
     if (candidates.length === 0) throw new Error('draggable dot not found on board');
 
     const board = page.getByTestId('board');
@@ -165,7 +186,8 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     if (!from) throw new Error('all draggable dots are covered by overlays');
     const to = toPage(622, 251); // Coding ステーションのドロップゾーン中心。
     const before = await page.evaluate(
-      () => (window as GameWindow).game!.getState().sprint?.metrics.actionCounts.assignTask ?? 0,
+      () =>
+        (window as PixiTestWindow).game!.getState().sprint?.metrics.actionCounts.assignTask ?? 0,
     );
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
@@ -176,7 +198,8 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       .poll(async () =>
         page.evaluate(
           () =>
-            (window as GameWindow).game!.getState().sprint?.metrics.actionCounts.assignTask ?? 0,
+            (window as PixiTestWindow).game!.getState().sprint?.metrics.actionCounts.assignTask ??
+            0,
         ),
       )
       .toBe(before + 1);
@@ -191,13 +214,13 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await openPixiSprintBoard(page, PIXI_SEED);
     await stabilizeForScreenshot(page);
 
-    await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+    await page.evaluate(() => (window as PixiTestWindow).game!.zoomTo('company'));
     await expect(page.getByTestId('org-pixi-mount')).toBeVisible();
-    await page.evaluate(() => (window as GameWindow).game!.focusDept('product'));
+    await page.evaluate(() => (window as PixiTestWindow).game!.focusDept('product'));
     await expect(page.getByTestId('dept-pixi-mount')).toBeVisible();
-    await page.evaluate(() => (window as GameWindow).game!.focusTeam('product-t0'));
+    await page.evaluate(() => (window as PixiTestWindow).game!.focusTeam('product-t0'));
     await expect
-      .poll(async () => page.evaluate(() => (window as GameWindow).game!.getState().zoom.level))
+      .poll(async () => page.evaluate(() => (window as PixiTestWindow).game!.getState().zoom.level))
       .toBe('team');
     await page.evaluate(
       () =>

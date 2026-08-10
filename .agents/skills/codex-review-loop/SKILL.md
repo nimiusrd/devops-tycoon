@@ -1,7 +1,7 @@
 ---
 name: codex-review-loop
 license: MIT
-description: 実装完了後の PR で Codex 再レビューを依頼し、指摘をクローズする。コメントはユーザー本人名義で投稿する。「/autopilot」「Codex レビューを回して」「Codex 指摘を対応して」など、Codex（chatgpt-codex-connector）への再依頼や指摘クローズを依頼されたときに使用する。
+description: 実装完了後の PR で Codex 再レビューを依頼し、指摘をクローズする。コメントはユーザー本人名義で投稿する。「Codex レビューを回して」「Codex 指摘を対応して」など、Codex（chatgpt-codex-connector）への再依頼や指摘クローズを依頼されたときに使用する。
 ---
 
 # Codex 再レビュー依頼

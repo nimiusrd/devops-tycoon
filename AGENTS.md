@@ -18,9 +18,9 @@
 - Dev Container は Node 24 を使用し、`postCreateCommand` で npm 依存関係と Playwright Chromium をインストールする。Codex のセットアップは `.codex/environments/environment.toml` から `devcontainer up` を実行する。
 - Codex からプロジェクトのコマンドを実行するときは `devcontainer exec --workspace-folder . <command>` を使う。Git 操作はホスト側で行う。
 - Codex ではコンテナの並列負荷を避けるため、E2E を `devcontainer exec --workspace-folder . npm run test:e2e -- --workers=1` で実行する。ポートも変える場合は `--remote-env PLAYWRIGHT_PORT=<空きポート>` を `npm` より前に追加する。
+- E2E のホスト bind やポートが競合する場合は、`devcontainer exec --workspace-folder . --remote-env PLAYWRIGHT_HOST=127.0.0.1 --remote-env PLAYWRIGHT_PORT=<空きポート> npm run test:e2e -- --workers=1` で上書きする。
 - 画面の見た目を一括確認するには `devcontainer exec --workspace-folder . npm run gallery`（seed 固定で主要画面を撮影し `gallery/index.html` に一覧を生成。デザイン確認用でコミット対象外）。
 
 ## Cursor Cloud specific instructions
 
-- nvm に Node 24 を導入済みで default も 24 に設定済み。ログインシェル（`bash -l`）なら `node` は自動で v24 になる。
-- 注意（gotcha）: 非ログインの素のシェルでは PATH 先頭の `/exec-daemon/node`（v22）が優先されてしまう。その場合は `export PATH="$HOME/.nvm/versions/node/v24.18.0/bin:$PATH"` を先頭に付けるか、`bash -l` 経由でコマンドを実行すること。
+- `.nvmrc` により Node 24 を選択する。実行前に `node --version` が v24 以上であることを確認し、異なる場合は `nvm use 24` または `bash -l` 経由で実行する。

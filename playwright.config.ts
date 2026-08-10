@@ -1,14 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // 視覚回帰・相互作用 E2E は実ブラウザ（Chromium）で少数に絞る（SPEC 第22.5）。
+const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 5174;
+const HOST = process.env.PLAYWRIGHT_HOST ?? DEFAULT_HOST;
 const PORT = Number(process.env.PLAYWRIGHT_PORT ?? DEFAULT_PORT);
+
+if (!/^[a-zA-Z0-9.-]+$/.test(HOST)) {
+  throw new Error('PLAYWRIGHT_HOST にはホスト名または IPv4 アドレスを指定してください。');
+}
 
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65_535) {
   throw new Error('PLAYWRIGHT_PORT には 1〜65535 の整数を指定してください。');
 }
 
-const baseURL = `http://localhost:${PORT}`;
+const baseURL = `http://${HOST}:${PORT}`;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -26,7 +32,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npm run dev -- --port ${PORT} --strictPort`,
+    command: `npm run dev -- --host ${HOST} --port ${PORT} --strictPort`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

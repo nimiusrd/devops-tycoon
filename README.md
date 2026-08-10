@@ -124,6 +124,12 @@ npx playwright install chromium
 
 Chromiumの実行ファイルを明示する環境では、`PLAYWRIGHT_CHROMIUM`または`GALLERY_CHROMIUM`を指定できます。
 
+E2Eのポートが使用中の場合は、ホストとポートを上書きできます。
+
+```bash
+PLAYWRIGHT_HOST=127.0.0.1 PLAYWRIGHT_PORT=5175 npm run test:e2e
+```
+
 ## 技術構成
 
 | 領域 | 技術 |

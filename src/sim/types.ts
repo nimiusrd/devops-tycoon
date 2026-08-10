@@ -104,6 +104,11 @@ export interface CardEffects {
   qualityAdd: number;
   /** スプリント開始時に加えるテストカバレッジ。 */
   testCoverageAdd: number;
+  /**
+   * インフラ／モデル利用コスト倍率（1 で無効果、低いほど安い。RI-88）。
+   * AI依存度×単価に掛かり、予算の継続圧迫を抑える。
+   */
+  infraCostMul: number;
 }
 
 /**

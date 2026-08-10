@@ -40,7 +40,7 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     const normalState = normal.snapshot();
     const trialState = trial.snapshot();
     expect(trialState.org.aiDependency).toBe(normalState.org.aiDependency + 5);
-    // Normal の初期 AI依存度 35 に自然増加 5 を足し、ceil(40 × 0.05) の 2 を消費する。
+    // 通常: 初期依存 35×0.02=0.7 → 1未満は 0。試練: 40×0.05 → ceil 2。
     expect(trialState.budget).toBe(normalState.budget - 2);
 
     const replay = new RunEngine({
@@ -51,6 +51,33 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     replay.startRun();
     replay.beginSetupSprint();
     expect(replay.snapshot()).toEqual(trialState);
+  });
+
+  it('RI-88: 通常ランは非ボスでは課金せず、ボス開始時にインフラコストが予算を圧迫する', () => {
+    const engine = new RunEngine({ seed: 'ri88-base-cost', difficulty: 'normal' });
+    engine.startRun();
+    const before = engine.snapshot().budget;
+    const internals = engine as unknown as {
+      org: { aiDependency: number };
+      pendingSprintKind: string;
+      sprintIndexInQuarter: number;
+      sprintsPerQuarter: number;
+    };
+    internals.org.aiDependency = 100;
+    engine.beginSetupSprint();
+    // 通常スプリントは課金しない
+    expect(engine.snapshot().budget).toBe(before);
+
+    // ボス枠へ進めて課金を確認する
+    internals.sprintIndexInQuarter = internals.sprintsPerQuarter - 1;
+    internals.pendingSprintKind = 'boss';
+    internals.org.aiDependency = 100;
+    (engine as unknown as { phase: string }).phase = 'setup';
+    const beforeBoss = engine.snapshot().budget;
+    engine.beginSetupSprint();
+    // 100 × 0.01 = 1 → ceil 1
+    expect(engine.snapshot().budget).toBe(beforeBoss - 1);
+    expect(engine.snapshot().currentSprintKind).toBe('boss');
   });
 
   it('最後まで自動プレイすると勝利か敗北で必ず決着する', () => {

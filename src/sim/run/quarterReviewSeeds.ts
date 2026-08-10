@@ -14,6 +14,7 @@
  * RI-75（スプリント pacing / タスク量・床・minCompleteTick / abandonInFlight）後に再探索して更新。
  * RI-84（安定中の高価値上振れ抑制・Delivery目標再校正）後に再探索して更新。
  * RI-73（easy/normal の seniorHpCostMul）後に missed_adjustable seed を再探索して更新。
+ * RI-88（インフラコスト軸・ボス課金）後に missed_crisis の到達四半期を再確認して更新。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
@@ -43,14 +44,15 @@ export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
 };
 
 /**
- * Q4 で missed_crisis。
+ * Q3 で missed_crisis。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
+ * RI-88 のボス課金後は Q4 到達前に予算が尽きるため、到達四半期を Q3 に更新。
  */
 export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
   seed: 'ri75k-hard-343',
   difficulty: 'hard',
   outcome: 'missed_crisis',
-  quarterNumber: 4,
+  quarterNumber: 3,
 };
 
 /**

@@ -325,6 +325,12 @@ export class RunEngine {
   private sprintBaselineInput: SprintBaselineInput | null = null;
   /** スプリント開始時のパッシブ係数（カード発動時の合成ベース。RI-30）。 */
   private sprintPassiveEffects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
+  /**
+   * 今スプリント開始時に課したインフラコストと、再計算用の単価×依存度（RI-88）。
+   * コスト最適化カード発動時に差額を予算へ戻す。
+   */
+  private chargedInfraCost = 0;
+  private chargedInfraCostBase = 0;
   private lastResult: SprintResult | null = null;
   private draft: string[] | null = null;
   /** 今ドラフトでのマリガン使用済み（RI-81）。 */
@@ -519,17 +525,34 @@ export class RunEngine {
   }
 
   /**
-   * 試練「フロンティアモデル依存」のスプリント開始時コストを適用する。
-   * 依存度が高いほど高価なモデルへ安易に寄り、予算消費も増える。
+   * スプリント開始時の AI 依存圧力（ドリフト＋インフラコスト）を適用する（RI-88）。
+   * 通常ランはボス時のみ課金。試練は毎スプリント。
    */
-  private applyTrialAiDependencyPressure(org: OrgState, budget: number): number {
-    return applyTrialAiDependencyPressure(org, budget, {
+  private applyTrialAiDependencyPressure(org: OrgState, budget: number, kind: SprintKind): number {
+    const before = budget;
+    const billInfraCost = this.trials.length > 0 || kind === 'boss';
+    const next = applyTrialAiDependencyPressure(
+      org,
+      budget,
+      {
+        deck: this.deck,
+        relics: this.relics,
+        evolution: this.evolution,
+        difficulty: this.difficulty,
+        trials: this.trials,
+      },
+      { billInfraCost },
+    );
+    this.chargedInfraCost = Math.max(0, before - next);
+    const fold = foldRunEffects({
       deck: this.deck,
       relics: this.relics,
       evolution: this.evolution,
       difficulty: this.difficulty,
       trials: this.trials,
     });
+    this.chargedInfraCostBase = org.aiDependency * fold.frontierModelCostPerDependency;
+    return next;
   }
 
   // --- セットアップ → スプリント起動 ---
@@ -603,8 +626,8 @@ export class RunEngine {
       });
       this.syncActiveTeamFromOrg();
     }
-    this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget);
-    // 試練の開始時コストで予算が尽きた場合はスプリントへ進まず継続不能にする。
+    this.budget = this.applyTrialAiDependencyPressure(this.org, this.budget, kind);
+    // インフラコストで予算が尽きた場合はスプリントへ進まず継続不能にする。
     if (this.applyImmediateLose()) return;
     const baseline = this.buildSprintBaselineInput({
       deck: this.deck,
@@ -703,7 +726,19 @@ export class RunEngine {
       this.sprintPassiveEffects,
       this.activeTeamId,
     );
-    if (outcome.ok) this.applyImmediateLose();
+    if (outcome.ok) {
+      // RI-88: コスト最適化カードで infraCostMul が下がったら、開始時課金との差額を返す。
+      const mul = this.sprint.cardEffects.infraCostMul;
+      if (this.chargedInfraCost > 0 && this.chargedInfraCostBase > 0 && mul < 1) {
+        const revised = Math.ceil(this.chargedInfraCostBase * mul);
+        const refund = Math.max(0, this.chargedInfraCost - revised);
+        if (refund > 0) {
+          this.budget += refund;
+          this.chargedInfraCost = revised;
+        }
+      }
+      this.applyImmediateLose();
+    }
     return outcome;
   }
 

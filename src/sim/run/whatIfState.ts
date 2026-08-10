@@ -153,19 +153,22 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
     return next;
   };
 
+  const pressureCtx = {
+    deck: input.deck,
+    relics: input.relics,
+    evolution: input.evolution,
+    difficulty: input.difficulty,
+    trials: input.trials,
+  };
+  const billInfraCost = input.trials.length > 0 || kind === 'boss';
+
   const previewFor = (
     deck: { defId: string; level: number }[],
     org: OrgState,
     playedCards: { defId: string; level: number }[] = [],
   ): WhatIfPreview => {
     const previewOrg = applySprintStartOrg(org);
-    applyTrialAiDependencyPressure(previewOrg, input.budget, {
-      deck: input.deck,
-      relics: input.relics,
-      evolution: input.evolution,
-      difficulty: input.difficulty,
-      trials: input.trials,
-    });
+    applyTrialAiDependencyPressure(previewOrg, input.budget, pressureCtx, { billInfraCost });
     for (const played of playedCards) {
       const playedDef = getCard(played.defId);
       if (!playedDef) continue;
@@ -193,12 +196,8 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   const current = previewFor(input.deck, input.org);
 
   const startOrg = applySprintStartOrg(input.org);
-  const budgetAfterPressure = applyTrialAiDependencyPressure(startOrg, input.budget, {
-    deck: input.deck,
-    relics: input.relics,
-    evolution: input.evolution,
-    difficulty: input.difficulty,
-    trials: input.trials,
+  const budgetAfterPressure = applyTrialAiDependencyPressure(startOrg, input.budget, pressureCtx, {
+    billInfraCost,
   });
   const sprintStartLose = evaluateLose(startOrg, input.totals, budgetAfterPressure);
   if (sprintStartLose) {
@@ -237,13 +236,12 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
       // 手札入りの発動仮定でも beginSprint と同じ org 開始処理を使う。
       // 回復だけだと quality_pivot 等の Tech Debt 持ち越しが抜け、生存候補を loseOnPlay と誤表示する。
       const playOrg = applySprintStartOrg(input.org);
-      const budgetAfterCardPressure = applyTrialAiDependencyPressure(playOrg, input.budget, {
-        deck: input.deck,
-        relics: input.relics,
-        evolution: input.evolution,
-        difficulty: input.difficulty,
-        trials: input.trials,
-      });
+      const budgetAfterCardPressure = applyTrialAiDependencyPressure(
+        playOrg,
+        input.budget,
+        pressureCtx,
+        { billInfraCost },
+      );
       applyDeckBaseline(playOrg, scaleEffects(card.base, 1));
       const loseOnPlay = evaluateLose(playOrg, input.totals, budgetAfterCardPressure);
       if (loseOnPlay) {

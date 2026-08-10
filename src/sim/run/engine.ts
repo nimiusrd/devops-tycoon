@@ -1140,10 +1140,10 @@ export class RunEngine {
     }
     if (!def) {
       // 究極のフォールバック（定義が空のときのみ）。長さゼロのビートとして
-      // beat を経由し（遷移表の FINISH→ENTER_SPRINT 相当）、次スプリントへ直行する。
+      // beat を経由し（RI-77: 編成 setup へ戻す）、次スプリント前に配置を問い直す。
       // 同期処理内の2段遷移なのでスナップショットが中間状態を観測することはない。
       this.setPhase('beat');
-      this.launchSprint();
+      this.setPhase('setup');
       return;
     }
     this.beat = { eventId: def.id, kind: effectiveKind(def) };
@@ -1152,7 +1152,8 @@ export class RunEngine {
 
   /**
    * 提示中ビートを解決する。判定は引数なし（hidden choice[0] を自動適用）、
-   * 選択は choiceIndex。選択の `leadsTo` で sprint(通常/高負荷)/shop/rest/recruit へ分岐する。
+   * 選択は choiceIndex。選択の `leadsTo` で setup(通常/高負荷スプリント前)/shop/rest/recruit へ分岐する。
+   * sprint 系は RI-77 により必ず setup を経由する。
    */
   resolveBeat(choiceIndex?: number): void {
     if (this.phase !== 'beat' || !this.beat) return;
@@ -1240,7 +1241,9 @@ export class RunEngine {
     if (leadsTo === 'sprint-elite') {
       this.pendingSprintKind = 'elite';
     }
-    this.launchSprint();
+    // RI-77: スプリント直行せず編成へ戻し、AI 配布・配置を毎スプリント前に問い直す。
+    // 遷移表の `beat.RESOLVE → setup` に合わせる（shop/rest/recruit 後と同じ入口）。
+    this.setPhase('setup');
   }
 
   /** ステークホルダー信頼を増減する（安全側の代償等）。 */

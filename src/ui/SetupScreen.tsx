@@ -44,6 +44,10 @@ export function SetupScreen({
           <div>
             <p className="result-eyebrow">SETUP</p>
             <h2 className="draft-title">編成 — スプリント開始前に配置とAIを決める</h2>
+            <p className="formation-setup-hint">
+              AI
+              は配った相手の習熟で効き方が変わる。広げすぎると依存と手戻りが積み上がるので、誰に配るかこのタイミングで見直そう。
+            </p>
           </div>
           <button
             type="button"

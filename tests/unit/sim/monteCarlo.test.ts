@@ -235,11 +235,11 @@ describe('monteCarlo 基盤（RI-14）', () => {
      * RI-75 再計測（上記 seed 群）を基準に、極端な崩壊検知用へ余裕を持たせる。
      */
     const RI15_RANGES = {
-      /** 勝利ランの長寿化で delivered 上振れ。極端な無出荷・桁外れだけ弾く。 */
-      delivered: { min: 200, max: 25000 },
+      /** 勝利ランの長寿化と RI-77 の AI 出荷価値で delivered 上振れ。桁外れだけ弾く。 */
+      delivered: { min: 200, max: 28000 },
       rework: { min: 0, max: 80 },
-      // RI-73: normal の seniorHpCostMul で生存が伸び、累積障害の上限外れを拾う。
-      incidents: { min: 0, max: 80 },
+      // RI-73/RI-77: 生存延長で累積障害が上振れしうる。桁外れだけ弾く。
+      incidents: { min: 0, max: 140 },
       /** ドメイン上限 100。RI-73 の消耗緩和後は端数で 99 超もあり得る。 */
       seniorHp: { min: 0, max: 100 },
       /** REVIEW_FREEZE_PEAK 未満。境界到達 seed は代表群から除外。 */
@@ -301,10 +301,10 @@ describe('monteCarlo 基盤（RI-14）', () => {
      * 細かなバランス調整を縛らず、目標生成や代償が極端に崩れる変更を検知する。
      */
     const RI17_RANGES = {
-      // RI-75: タスク量増で四半期継続が伸び、レビュー/修正回数の上振れが出る。
-      reviewCount: { min: 0, max: 6 },
-      adjustmentCount: { min: 0, max: 5 },
-      finalQuarter: { min: 1, max: 6 },
+      // RI-75/RI-77: 継続延長でレビュー/修正回数が上振れしうる。極端値だけ弾く。
+      reviewCount: { min: 0, max: 10 },
+      adjustmentCount: { min: 0, max: 10 },
+      finalQuarter: { min: 1, max: 10 },
       // RI-68: deliveryTarget は四半期累計スケール（緩和下限〜ボス上限）。
       finalDeliveryTarget: { min: 1260, max: 4500 },
       finalQualityTarget: { min: 35, max: 70 },
@@ -523,7 +523,8 @@ describe('monteCarlo 基盤（RI-14）', () => {
       // 実出荷倍率は安定中に6段で頭打ちなので、生コンボの連続記録は +8 をわずかに
       // 超えうる。スコア支配は上の出荷差分レンジで抑え、連続達成の表示は +8.5 までに留める。
       expect(summary.maxComboDelta.mean).toBeGreaterThanOrEqual(1);
-      expect(summary.maxComboDelta.mean).toBeLessThanOrEqual(8.5);
+      // RI-77: AI 出荷価値の上振れで連続記録差がわずかに広がる。
+      expect(summary.maxComboDelta.mean).toBeLessThanOrEqual(9);
     });
   });
 

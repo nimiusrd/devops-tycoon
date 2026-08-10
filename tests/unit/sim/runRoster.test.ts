@@ -138,7 +138,7 @@ describe('ロスターのラン統合（第12章）', () => {
   it('コーダーにAIを配るとAIが使われる（対偶。レビュー#C）', () => {
     const e = new RunEngine({ seed: 'no-ai-adopt', difficulty: 'normal' });
     toFirstNode(e);
-    // 既定でコーダーは AI 配布つき。そのまま回すと AI が使われる。
+    // 既定は starter-ai-junior のみ AI 配布。そのまま回すと AI が使われる。
     const after = playFirstSprint(e);
     expect(after.lastResult!.aiAssistedPct).toBeGreaterThan(0);
   });

@@ -325,7 +325,8 @@ describe('RI-72-D5 RunEngine NoCoverage reachable branches', () => {
       const i = asInternals(engine);
       i.phase = 'evolution';
       engine.finishEvolution();
-      expect(engine.snapshot().phase).toBe('sprint');
+      // RI-77: ビート無しフォールバックも setup へ戻す。
+      expect(engine.snapshot().phase).toBe('setup');
     });
 
     const recruitFail: EventDef = {

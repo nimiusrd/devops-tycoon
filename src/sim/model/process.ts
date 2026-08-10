@@ -186,7 +186,9 @@ export function reworkProbability(
   const p =
     0.05 +
     0.32 * (org.aiDependency / 100) +
-    (task.aiAssisted ? 0.1 : 0) -
+    // RI-77: AI タスクの手戻り上乗せを抑え、Coding 加速が純出荷に届く余地を残す。
+    // Review 渋滞・Rework 増のコア因果（RI-41）は維持する。
+    (task.aiAssisted ? 0.05 : 0) -
     0.18 * (org.aiLiteracy / 100) -
     0.14 * (org.quality / 100) +
     effects.reworkRateAdd -
@@ -217,6 +219,16 @@ export function incidentProbability(
 export function taskValue(task: Task): number {
   const base = TASK_BASE_VALUE[task.kind];
   return task.highValue ? base * HIGH_VALUE_MULTIPLIER : base;
+}
+
+/**
+ * AI 支援タスクの出荷価値倍率（RI-77）。
+ * リテラシーが高いほど AI の実装が「そのまま使える」割合が増え、純出荷へ乗る。
+ * Review 渋滞・Rework 増のコア因果とは独立に、出荷の体感を正方向へ戻す。
+ */
+export function aiDeliveryValueMul(org: OrgState, task: Task): number {
+  if (!task.aiAssisted) return 1;
+  return 1 + 0.55 * (org.aiLiteracy / 100);
 }
 
 /**

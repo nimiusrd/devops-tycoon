@@ -50,21 +50,21 @@ export interface AiAdoptionComparisonSummary {
 }
 
 /**
- * 2026-07 計測ベースの許容レンジ（極端崩壊検知用。細かな調整の縛りではない）。
+ * 2026-08 RI-77 再計測ベースの許容レンジ（極端崩壊検知用。細かな調整の縛りではない）。
  *
- * 代表 12 seed 初回計測:
- * - reviewQueueΔ mean≈+9.7（min 6 / max 13）
- * - reworkΔ mean≈+6.1（min 3 / max 10）
- * - deliveredΔ mean≈-94（min -155 / max -23）※渋滞増に伴い出荷は低下側
- * - aiAssistedPct with mean≈87（min 82 / max 96）、without 常に 0
+ * 代表 12 seed（`aiDeliveryValueMul` + 手戻り緩和後）:
+ * - reviewQueueΔ mean≈+9.1（min 5 / max 13）
+ * - reworkΔ mean≈+4.0（min 1 / max 7）
+ * - deliveredΔ mean≈-13（min -60 / max 56）※旧≈-94 から改善。リテラシー連動の出荷価値
+ * - aiAssistedPct with mean≈87、without 常に 0
  */
 export const RI41_RANGES = {
   /** AI ありの reviewQueueMax − なし。 */
   reviewQueueDelta: { meanMin: 3, meanMax: 20, minFloor: 1, maxCeil: 30 },
   /** AI ありの rework − なし。 */
   reworkDelta: { meanMin: 1, meanMax: 20, minFloor: 0, maxCeil: 30 },
-  /** 出荷差は方向を強制せず、極端な片寄りだけ弾く。 */
-  deliveredDelta: { meanMin: -300, meanMax: 50, minFloor: -400, maxCeil: 100 },
+  /** 出荷差は平均が極端に負へ戻っていないことだけ見る（RI-77）。 */
+  deliveredDelta: { meanMin: -80, meanMax: 100, minFloor: -150, maxCeil: 150 },
   /** AI ありの利用率（%）。 */
   aiAssistedPctWith: { min: 50, max: 100 },
   /** AI なしは常に 0%。 */

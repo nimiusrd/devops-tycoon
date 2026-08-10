@@ -136,6 +136,9 @@ export function createMember(arch: MemberArchetype, name: string, id: string): M
   };
 }
 
+/** 初期ロスターで AI を既定配布するスターター（習熟が高いジュニアのみ。RI-77）。 */
+const STARTER_DEFAULT_AI_ARCHETYPE_ID = 'starter-ai-junior';
+
 /** 初期ロスター（バランス型コーダー2 + レビュアー1）を生成する。 */
 export function createInitialRoster(rng: Rng): RosterState {
   const used = new Set<string>();
@@ -149,7 +152,12 @@ export function createInitialRoster(rng: Rng): RosterState {
     }
     if (used.has(name)) name = `${name}${i + 1}`;
     used.add(name);
-    return createMember(arch, name, `m${i}`);
+    const member = createMember(arch, name, `m${i}`);
+    // RI-77: コーダー全員 ON だと既定のままが全面ベットになる。習熟が高い1人だけ配る。
+    if (arch.preferred === 'coding') {
+      member.aiAssigned = arch.id === STARTER_DEFAULT_AI_ARCHETYPE_ID;
+    }
+    return member;
   });
   return { members, nextId: members.length };
 }
@@ -270,7 +278,8 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
     if (!m.aiAssigned) continue;
     const masteryNorm = clamp(effectiveAiMastery(m) / 100, 0, 1.2);
     const traitMods = foldTraitModifiers(m.traits);
-    reworkRateAdd += 0.09 - 0.18 * masteryNorm + traitMods.aiReworkAdd;
+    // RI-77: 配布時の手戻り上乗せを弱め、習熟が高い相手への配布が報われやすくする。
+    reworkRateAdd += 0.05 - 0.14 * masteryNorm + traitMods.aiReworkAdd;
     incidentRateMul *= 1 + (0.05 - 0.1 * masteryNorm);
   }
 

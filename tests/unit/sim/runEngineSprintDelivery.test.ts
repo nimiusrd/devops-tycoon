@@ -413,6 +413,23 @@ describe('RI-91-A3 RunEngine sprint resolve / delivery', () => {
       expect(i.stakeholderTrust).toEqual({ management: 40, customers: 55, team: 66 });
     });
 
+    it('leadsTo sprint（既定）は setup へ戻り begin 後に通常スプリントへ進む（RI-77）', () => {
+      const engine = new RunEngine({ seed: 'ri-77-beat-to-setup', difficulty: 'easy' });
+      engine.startRun('easy', [], 'ri-77-beat-to-setup');
+      const i = asInternals(engine);
+      i.phase = 'beat';
+      i.beat = { eventId: 'urgent-demo', kind: 'decision' };
+      i.sprintIndexInQuarter = 1;
+      i.pendingSprintKind = 'normal';
+      i.budget = 100;
+
+      engine.resolveBeat(2); // trust only → leadsTo 既定 sprint
+      expect(engine.snapshot().phase).toBe('setup');
+      engine.beginSetupSprint();
+      expect(engine.snapshot().phase).toBe('sprint');
+      expect(i.currentSprintKind).toBe('normal');
+    });
+
     it('leadsTo sprint-elite は pending を elite にして currentSprintKind を elite にする', () => {
       const engine = new RunEngine({ seed: 'ri-91-a3-sprint-elite', difficulty: 'easy' });
       engine.startRun('easy', [], 'ri-91-a3-sprint-elite');
@@ -425,7 +442,10 @@ describe('RI-91-A3 RunEngine sprint resolve / delivery', () => {
 
       engine.resolveBeat(0);
 
-      // Block 空化だと pending が elite にならず current も normal のまま。
+      // RI-77: sprint 直行せず setup へ戻る。elite は pending に保持し begin で消費する。
+      expect(engine.snapshot().phase).toBe('setup');
+      expect(i.pendingSprintKind).toBe('elite');
+      engine.beginSetupSprint();
       expect(engine.snapshot().phase).toBe('sprint');
       expect(i.currentSprintKind).toBe('elite');
       expect(i.pendingSprintKind).toBe('normal');

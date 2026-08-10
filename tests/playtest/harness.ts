@@ -1472,15 +1472,12 @@ function ensureAtLeastOneCoder(e: RunEngine): void {
 /**
  * ベンチ配置に加えて、**方針固有の AI 配布・編成も適用する**。
  *
- * `applySetup` を `setup` フェーズだけで呼ぶと、復職者に方針が反映されない。
- * `resolveBeat()` は既定の `leadsTo === 'sprint'` で `launchSprint()` を直接呼んで
- * `setup` を通らないためである。方針どおりでない編成が F-10 のビルド比較や
- * RI-77 の AI 統制へ混ざるので、ベンチを戻すのと同じタイミングで方針も掛け直す。
+ * `applySetup` を `setup` フェーズだけで呼ぶと、復職タイミングとずれることがある。
+ * RI-77 以降 `resolveBeat()` の sprint 系は `setup` へ戻るが、予防としてベンチ復帰と
+ * 方針固有の編成・AI をスプリント以外の全フェーズで掛け直す。
  *
- * **この修正で動いた数値は無い**（現行1,240ランでは復職者に方針が掛かり直す経路が
- * 実際には踏まれていない）。経路の穴自体は実在するので予防として残す。
- * なお `noAiCtl` に AI 利用が残るのはこれが原因ではなく、`assignTask` 介入が
- * `defaultAssignee` 経由で個別タスクを AI へ回すためである（`org.aiEnabled` は true のまま）。
+ * なお `noAiCtl` に AI 利用が残るのは `assignTask` 介入が `defaultAssignee` 経由で
+ * 個別タスクを AI へ回すためである（`org.aiEnabled` は true のまま）。
  * `aiFullBet` が100%に届かないのも `AI_ADOPTION`（=0.85）の確率抽選のばらつきで、仕様どおり。
  *
  * 順序は「ベンチ配置 → 編成 → AI」。`reviewHeavy` は coding のメンバーを見て動かすため
@@ -1765,13 +1762,8 @@ export function runOnce(
     const beforeAction = orgSnapshot(s);
     const loggedBefore = sprints.length;
     // 採用・復職どちらのベンチ滞留も、方針に関係なく実働へ戻し、方針固有の編成も掛け直す。
-    //
-    // `setup` だけで適用すると、復職者がベンチのまま・方針の AI 配布や編成が未適用のまま
-    // 次スプリントを迎える経路が残る。`resolveBeat()` は既定の `leadsTo === 'sprint'` で
-    // `launchSprint()` を直接呼び、`setup` を通らないためである。復帰は `resolveSprint` の
-    // `recoverStamina` で起きるので、「スプリント終了 → ビート → 次スプリント」の間に
-    // 適用の機会が無い。`assignMember` は `sprint` フェーズでは何もしないので、
-    // それ以外の全フェーズで呼ぶ。
+    // RI-77 以降ビート後は setup を通るが、shop/rest 等の途中フェーズでも方針を維持する。
+    // `assignMember` は `sprint` フェーズでは何もしないので、それ以外の全フェーズで呼ぶ。
     if (s.phase !== 'sprint') applyRosterPolicy(e, spec);
     switch (s.phase) {
       case 'setup':

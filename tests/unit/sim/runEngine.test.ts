@@ -1019,10 +1019,11 @@ describe('RI-26 採用の入口拡張', () => {
     expect(after.roster.members.length).toBe(before.roster.members.length);
     expect(after.budget).toBe(RECRUIT_COST - 1);
     expect(after.stakeholderTrust.team).toBe(before.stakeholderTrust.team - 4);
-    expect(after.phase).toBe('sprint');
+    // RI-77: 採用失敗後も編成へ戻り、AI/配置を問い直す。
+    expect(after.phase).toBe('setup');
   });
 
-  it('recruit-offer 受諾で採用フェーズへ入り、見送りは士気低下してスプリントへ', () => {
+  it('recruit-offer 受諾で採用フェーズへ入り、見送りは士気低下して編成へ', () => {
     const accept = new RunEngine({ seed: 'ri26-offer-accept', difficulty: 'easy' });
     accept.startRun();
     const acceptInternals = accept as unknown as ShopRecruitInternals;
@@ -1039,7 +1040,7 @@ describe('RI-26 採用の入口拡張', () => {
     declineInternals.beat = { eventId: 'recruit-offer', kind: 'decision' };
     decline.resolveBeat(1);
     const declined = decline.snapshot();
-    expect(declined.phase).toBe('sprint');
+    expect(declined.phase).toBe('setup');
     expect(declined.org.morale).toBe(moraleBefore - 4);
   });
 });

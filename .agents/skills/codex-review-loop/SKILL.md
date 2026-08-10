@@ -1,7 +1,7 @@
 ---
 name: codex-review-loop
 license: MIT
-description: 実装完了後の PR で Codex 再レビューを依頼し、指摘をクローズする。「/autopilot」「Codex レビューを回して」「Codex 指摘を対応して」など、Codex（chatgpt-codex-connector）への再依頼や指摘クローズを依頼されたときに使用する。
+description: 実装完了後の PR で Codex 再レビューを依頼し、指摘をクローズする。コメントはユーザー本人名義で投稿する。「/autopilot」「Codex レビューを回して」「Codex 指摘を対応して」など、Codex（chatgpt-codex-connector）への再依頼や指摘クローズを依頼されたときに使用する。
 ---
 
 # Codex 再レビュー依頼
@@ -9,6 +9,8 @@ description: 実装完了後の PR で Codex 再レビューを依頼し、指�
 1. 初回以降の修正後に `@codex review` を投稿する
 2. 対応済みの指摘には返信し、スレッドを解決済みにする
 3. マージせず merge-ready で止める
+
+`@codex review` の投稿とスレッドへの返信は、いずれも **コメント者がユーザー本人** になるようにする。ボットやエージェント名義（例: `cursor`）では投稿しない。
 
 ## 1. 初回以降だけ `@codex review` を投稿する
 
@@ -28,6 +30,7 @@ PR 作成時の初回 Codex レビューは自動で走る。改めて依頼す�
 ## 2. 対応済み指摘は返信して resolve する
 
 指摘へ対応したら（修正でも dismiss でも）、そのスレッドに返信し、解決済みにする。
+返信もコメント者はユーザー本人とする。
 
 ## 3. ループの止め方
 

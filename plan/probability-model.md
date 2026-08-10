@@ -132,6 +132,19 @@ flowchart LR
 
 高価値判定はタスク種別と独立で、高価値タスクの出荷ポイントは通常の3倍になる。
 
+Done 時の出荷ポイントは、タスク種別の基礎点（高価値なら3倍）にコンボ倍率と AI 出荷価値倍率を掛ける。
+
+```text
+出荷ポイント =
+  round(タスク基礎点 × コンボ倍率 × AI出荷価値倍率)
+
+AI出荷価値倍率 =
+  AI支援なしなら 1
+  AI支援ありなら 1 + 0.85 × aiLiteracy / 100
+```
+
+AI 出荷価値倍率は Review 渋滞・Rework 増のコア因果とは独立に、部分配布でも純出荷が正側へ届く余地を残す（RI-77）。代表値（`aiLiteracy=45`）では AI 支援タスクが約 `1.38` 倍、`aiLiteracy=100` では `1.85` 倍になる。粗粒度チーム進行でも、推定 AI 採用率に同じ係数を掛けて選択中チームとの乖離を抑える。
+
 ### 4.2 AI利用とCoding
 
 AIを使う確率は次のとおり。
@@ -208,7 +221,7 @@ Incidentにならなかったタスクに対して、Reworkを判定する。
 pBase =
   0.05
   + 0.32 × aiDependency / 100
-  + AI利用時 0.10
+  + AI利用時 0.05
   - 0.18 × aiLiteracy / 100
   - 0.14 × quality / 100
   + Rework加算補正
@@ -223,7 +236,7 @@ pRework =
 | 変数 | 現行実装での意味 |
 | --- | --- |
 | `org.aiDependency` | 過去のAI支援タスクなどで蓄積した組織状態。対象タスクがAI支援を受けたかにかかわらず、すべてのタスクのRework確率へ加算する |
-| `task.aiAssisted` | 現在Reviewしている対象タスクがAI支援を受けたか。AI支援ありの場合だけ`0.10`を追加する |
+| `task.aiAssisted` | 現在Reviewしている対象タスクがAI支援を受けたか。AI支援ありの場合だけ`0.05`を追加する（RI-77） |
 
 AI支援タスクをCodingへ取り込んだときだけ、組織のAI依存度が`2.2`増える。対象タスクがAI支援なしの場合、そのタスクによってAI依存度が増えることはない。
 
@@ -250,7 +263,7 @@ P(Rework) =
 
 | 入力 | 対象タスク: AI支援あり | 対象タスク: AI支援なし |
 | --- | ---: | ---: |
-| AI依存度 0 → 100でのRework確率 | 2.0% → 30.5% | 2.0% → 20.5% |
+| AI依存度 0 → 100でのRework確率 | 2.0% → 25.5% | 2.0% → 20.5% |
 | Test Coverage 0 → 100でのIncident確率 | 14.75% → 4.75% | 12.0% → 2.0% |
 
 #### 4.5.1 AI依存度の意味と再設計課題
@@ -500,7 +513,16 @@ flowchart TB
 稼働人数が0なら出荷は0になる。それ以外では次の近似を使う。
 
 ```text
-shipGain =
+adoptionShare =
+  推定コーダー数 > 0 なら
+    estimateRivalAiAssigned(推定コーダー数, aiDependency) / 推定コーダー数
+  それ以外 0
+
+aiShare = 0.85 × clamp(adoptionShare, 0, 1)
+
+aiDeliveryMul = 1 + aiShare × 0.85 × aiLiteracy / 100
+
+baseShipGain =
   max(
     4,
     round(
@@ -512,9 +534,13 @@ shipGain =
       × shipMul
     )
   )
+
+shipGain = max(4, round(baseShipGain × aiDeliveryMul))
 ```
 
-出荷ポイントは、詳細モデルの通常タスク5ポイントを基準に完了件数へ換算する。AI支援完了数は、推定コーダー数、AI依存度から求めた配布割合、基礎AI利用率85%で按分する。
+`aiDeliveryMul` は詳細モデルの `aiDeliveryValueMul`（§4.1）に対応する粗粒度近似である。推定 AI 採用率に基礎利用率 0.85 を掛けた分だけ、リテラシー連動の出荷倍率（最大 1.85）を掛ける。倍率は `shipping` 増分だけに適用し、完了件数は `baseShipGain` から換算する（詳細モデルが件数を1のまま価値だけ倍にすることと揃える）。
+
+出荷ポイントは、詳細モデルの通常タスク5ポイントを基準に完了件数へ換算する。AI支援完了数は完了件数 × `aiShare` で按分する。
 
 ### 6.2 Review行列
 

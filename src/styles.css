@@ -4912,6 +4912,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 12px;
   margin-bottom: 8px;
 }
+.formation-head .draft-title {
+  margin-bottom: 0.35rem;
+}
+.formation-setup-hint {
+  margin: 0 0 0.75rem;
+  max-width: 36rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--muted, #9aa3b5);
+}
 .formation-close {
   flex: 0 0 auto;
   padding: 8px 16px;

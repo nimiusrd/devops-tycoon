@@ -42,9 +42,10 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     const normalState = normal.snapshot();
     const trialState = trial.snapshot();
     expect(trialState.org.aiDependency).toBe(normalState.org.aiDependency + 5);
-    // 課金は全社平均依存度（選択中だけの 40×0.05 ではない）。
+    // 課金は全社平均依存度（選択中だけの依存×単価ではない）。
     const companyDep = companyOrgFromTeams(trialState.teams, trialState.org).aiDependency;
-    const expectedCost = computeInfraCost(companyDep, 0.05, 1);
+    // frontier の毎スプ課金は試練上乗せ 0.04 のみ（ベース 0.22 はボス時）。
+    const expectedCost = computeInfraCost(companyDep, 0.04, 1);
     expect(expectedCost).toBeGreaterThan(0);
     expect(trialState.budget).toBe(normalState.budget - expectedCost);
 
@@ -85,8 +86,8 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     (engine as unknown as { phase: string }).phase = 'setup';
     const beforeBoss = engine.snapshot().budget;
     engine.beginSetupSprint();
-    // 全社 100 × 0.01 = 1 → ceil 1
-    expect(engine.snapshot().budget).toBe(beforeBoss - 1);
+    // 全社 100 × 0.22 = 22 → ceil 22
+    expect(engine.snapshot().budget).toBe(beforeBoss - 22);
     expect(engine.snapshot().currentSprintKind).toBe('boss');
   });
 
@@ -403,9 +404,12 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       budget: number;
       org: { aiDependency: number };
     };
-    // 依存度 55 + 試練 +5 → 60、ceil(60 * 0.05)=3 を差し引くと予算 0。
+    // 全チーム 55 + 試練 +5 → 全社 56、毎スプ上乗せ ceil(56 * 0.04)=3 で予算 0。
     internals.budget = 3;
     internals.org.aiDependency = 55;
+    for (const t of (engine as unknown as { teams: Array<{ aiDependency: number }> }).teams) {
+      t.aiDependency = 55;
+    }
     engine.beginSetupSprint();
     const after = engine.snapshot();
     expect(after.status).toBe('lost');
@@ -1019,10 +1023,11 @@ describe('RI-26 採用の入口拡張', () => {
     expect(after.roster.members.length).toBe(before.roster.members.length);
     expect(after.budget).toBe(RECRUIT_COST - 1);
     expect(after.stakeholderTrust.team).toBe(before.stakeholderTrust.team - 4);
-    expect(after.phase).toBe('sprint');
+    // RI-77: 採用失敗後も編成へ戻り、AI/配置を問い直す。
+    expect(after.phase).toBe('setup');
   });
 
-  it('recruit-offer 受諾で採用フェーズへ入り、見送りは士気低下してスプリントへ', () => {
+  it('recruit-offer 受諾で採用フェーズへ入り、見送りは士気低下して編成へ', () => {
     const accept = new RunEngine({ seed: 'ri26-offer-accept', difficulty: 'easy' });
     accept.startRun();
     const acceptInternals = accept as unknown as ShopRecruitInternals;
@@ -1039,7 +1044,7 @@ describe('RI-26 採用の入口拡張', () => {
     declineInternals.beat = { eventId: 'recruit-offer', kind: 'decision' };
     decline.resolveBeat(1);
     const declined = decline.snapshot();
-    expect(declined.phase).toBe('sprint');
+    expect(declined.phase).toBe('setup');
     expect(declined.org.morale).toBe(moraleBefore - 4);
   });
 });

@@ -133,6 +133,41 @@ describe('RI-91-B1 teamState survived mutants', () => {
     });
   });
 
+  describe('advanceCoarseTeams AI delivery mul (RI-77)', () => {
+    it('AI 配布推定があるチームは出荷が上がる', () => {
+      const lowAi = [makeTeam({ id: 'a', aiDependency: 0, aiLiteracy: 100, engineers: 8 })];
+      const highAi = [makeTeam({ id: 'a', aiDependency: 80, aiLiteracy: 100, engineers: 8 })];
+      const low = advanceCoarseTeams(lowAi, {
+        seed: 'ri77-coarse-del',
+        stepKey: 's1',
+        excludeId: 'none',
+      });
+      const high = advanceCoarseTeams(highAi, {
+        seed: 'ri77-coarse-del',
+        stepKey: 's1',
+        excludeId: 'none',
+      });
+      expect(high.teams[0]!.shipping).toBeGreaterThan(low.teams[0]!.shipping);
+    });
+
+    it('完了件数は倍率適用前の基礎出荷から換算し、出荷増分だけ倍率が掛かる', () => {
+      const lowAi = [makeTeam({ id: 'a', aiDependency: 0, aiLiteracy: 100, engineers: 8 })];
+      const highAi = [makeTeam({ id: 'a', aiDependency: 80, aiLiteracy: 100, engineers: 8 })];
+      const low = advanceCoarseTeams(lowAi, {
+        seed: 'ri77-coarse-completed',
+        stepKey: 's1',
+        excludeId: 'none',
+      });
+      const high = advanceCoarseTeams(highAi, {
+        seed: 'ri77-coarse-completed',
+        stepKey: 's1',
+        excludeId: 'none',
+      });
+      expect(high.teams[0]!.shipping).toBeGreaterThan(low.teams[0]!.shipping);
+      expect(high.completed).toBe(low.completed);
+    });
+  });
+
   describe('advanceCoarseTeams boundaries', () => {
     it('engineers<=0 なら出荷増分も completed も 0', () => {
       const teams = [

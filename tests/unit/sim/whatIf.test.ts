@@ -249,7 +249,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
       org: { aiDependency: number; aiLiteracy: number };
       teams: Array<{ aiDependency: number }>;
     };
-    // 全社 25 + 試練 +5 → 30、ceil(30 * 0.05)=2 を差し引くと予算 0（カード発動前）。
+    // 選択中 30・他チーム 25 → 全社平均 ≈26、毎スプ上乗せ ceil(26 * 0.04)=2 で予算尽き。
     internals.budget = 2;
     internals.org.aiDependency = 25;
     for (const t of internals.teams) t.aiDependency = 25;
@@ -317,7 +317,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
     const whatIf = engine.whatIfPreview();
     expect(whatIf?.current.immediateLose).toBe('budgetExhausted');
 
-    // 他チームも低依存なら同じ予算で継続可能（選択中ドリフト後 5×0.05 < 1 → 無料）。
+    // 他チームも低依存なら全社平均が下がり、同じ予算で継続可能。
     for (const t of internals.teams) t.aiDependency = 0;
     internals.org.aiDependency = 0;
     expect(engine.whatIfPreview()?.current.immediateLose).toBeUndefined();
@@ -541,12 +541,12 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
     const pressured = computeWhatIfState(directWhatIfInput())!;
 
     expect(pressured.current.trials).toBe(24);
-    // RI-73: seniorHpCostMul（詳細+粗粒度+鎮火閾値）後の golden（決定論）。
-    expect(pressured.current.delivered).toEqual({ mean: 665.5, min: 571, max: 784 });
+    // RI-77: 手戻り緩和後の golden（決定論）。
+    expect(pressured.current.delivered).toEqual({ mean: 797.25, min: 672, max: 948 });
     expect(pressured.current.spread).toEqual({
-      mean: 29.5,
+      mean: 26.083333333333332,
       min: 0,
-      max: 91,
+      max: 74,
     });
     expect(pressured.current.delivered).not.toEqual(plain.current.delivered);
   });

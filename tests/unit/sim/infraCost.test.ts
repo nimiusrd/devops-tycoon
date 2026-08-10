@@ -3,7 +3,11 @@ import { getCard } from '../../../src/data/cards';
 import { getRelic } from '../../../src/data/relics';
 import { combineEffects, scaleEffects } from '../../../src/sim/cards';
 import { IDENTITY_CARD_EFFECTS } from '../../../src/sim/model';
-import { BASE_INFRA_COST_PER_DEPENDENCY, foldRunEffects } from '../../../src/sim/run/effects';
+import {
+  BASE_INFRA_COST_PER_DEPENDENCY,
+  foldRunEffects,
+  infraBillingRateForSprint,
+} from '../../../src/sim/run/effects';
 import { RunEngine } from '../../../src/sim/run/engine';
 import {
   applyTrialAiDependencyPressure,
@@ -39,12 +43,21 @@ const ctx = {
 };
 
 describe('RI-88 インフラコスト軸', () => {
-  it('ベース単価があり、試練は上乗せして旧 0.05 を維持する', () => {
-    expect(BASE_INFRA_COST_PER_DEPENDENCY).toBe(0.01);
-    expect(foldRunEffects({ ...ctx }).frontierModelCostPerDependency).toBe(0.01);
+  it('ベース単価があり、試練は上乗せする（RI-77 でベース引き上げ）', () => {
+    expect(BASE_INFRA_COST_PER_DEPENDENCY).toBe(0.22);
+    expect(foldRunEffects({ ...ctx }).frontierModelCostPerDependency).toBe(0.22);
     expect(
       foldRunEffects({ ...ctx, trials: ['frontier-dependency'] }).frontierModelCostPerDependency,
-    ).toBe(0.05);
+    ).toBeCloseTo(0.26);
+  });
+
+  it('frontier の毎スプ課金は上乗せだけ、ボスはベース込み（RI-77）', () => {
+    const folded = 0.26;
+    expect(infraBillingRateForSprint('normal', true, folded)).toBeCloseTo(0.04);
+    expect(infraBillingRateForSprint('elite', true, folded)).toBeCloseTo(0.04);
+    expect(infraBillingRateForSprint('boss', true, folded)).toBeCloseTo(0.26);
+    expect(infraBillingRateForSprint('boss', false, 0.22)).toBeCloseTo(0.22);
+    expect(infraBillingRateForSprint('normal', false, 0.22)).toBeNull();
   });
 
   it('computeInfraCost は高依存で増え、1 未満は 0', () => {
@@ -64,7 +77,26 @@ describe('RI-88 インフラコスト軸', () => {
     expect(engine.snapshot().budget).toBe(before);
 
     expect(applyTrialAiDependencyPressure(org(100), 20, ctx, { billInfraCost: false })).toBe(20);
-    expect(applyTrialAiDependencyPressure(org(100), 20, ctx, { billInfraCost: true })).toBe(19);
+    // ceil(100 * 0.22) = 22
+    expect(applyTrialAiDependencyPressure(org(100), 20, ctx, { billInfraCost: true })).toBe(0);
+  });
+
+  it('インフラと無関係な試練だけでは毎スプリント課金しない（RI-77）', () => {
+    const engine = new RunEngine({
+      seed: 'ri77-non-infra-trial',
+      difficulty: 'normal',
+      trials: ['low-focus'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
+    };
+    for (const t of internals.teams) t.aiDependency = 100;
+    internals.org.aiDependency = 100;
+    const before = engine.snapshot().budget;
+    engine.beginSetupSprint();
+    expect(engine.snapshot().budget).toBe(before);
   });
 
   it('コスト最適化進化はボス課金を下げ、複数四半期で差が開く', () => {
@@ -73,10 +105,10 @@ describe('RI-88 インフラコスト軸', () => {
       ...ctx,
       evolution: { points: 0, unlocked: { 'ai-1': true, 'ai-2': true, 'ai-3': true } },
     });
-    expect(none.cost).toBe(1);
+    expect(none.cost).toBe(22); // ceil(100 * 0.22)
     expect(optimized.infraCostMul).toBeCloseTo(0.75 * 0.7);
-    expect(optimized.cost).toBe(0);
-    expect(none.cost * 4 - optimized.cost * 4).toBe(4);
+    expect(optimized.cost).toBe(12); // ceil(100 * 0.22 * 0.525)
+    expect(none.cost * 4 - optimized.cost * 4).toBe(40);
   });
 
   it('既存カード ai-guideline とレリック budget-discipline が infraCostMul を下げる', () => {
@@ -113,18 +145,17 @@ describe('RI-88 インフラコスト軸', () => {
 
     const before = engine.snapshot().budget;
     engine.beginSetupSprint();
-    // 試練ドリフト +5 後の選択中=5。他チームは 100 のまま。
+    // 試練ドリフト +5 後の選択中=5。他チームは 100 のまま。毎スプは上乗せ 0.04 のみ。
     const companyDep = Math.round((5 + 100 * (n - 1)) / n);
-    const expected = computeInfraCost(companyDep, 0.05, 1);
-    expect(computeInfraCost(5, 0.05, 1)).toBe(0);
+    const expected = computeInfraCost(companyDep, 0.04, 1);
+    expect(computeInfraCost(5, 0.04, 1)).toBe(0);
     expect(expected).toBeGreaterThan(0);
     expect(engine.snapshot().budget).toBe(before - expected);
     expect(engine.snapshot().org.aiDependency).toBe(5);
   });
 
   it('カード返金は computeInfraCost と同じ 1 未満無料ルールを使う', () => {
-    // Codex: 試練 dep30 × 0.05 × relic0.8 = 1.2 → 課金2。
-    // ai-guideline (0.75) 後は 0.9 → 本来 0。ceil だけの再計算だと 1 残りになる。
+    // 毎スプ上乗せ 0.04 × relic0.8。課金≥1 かつカード後 <1 になる依存帯を使う。
     const engine = new RunEngine({
       seed: 'ri88-refund-floor',
       difficulty: 'easy',
@@ -134,6 +165,7 @@ describe('RI-88 インフラコスト軸', () => {
     const internals = engine as unknown as {
       relics: string[];
       org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
       deck: Array<{ defId: string; level: number }>;
       sprint: {
         focus: number;
@@ -142,19 +174,26 @@ describe('RI-88 インフラコスト軸', () => {
       sprintPassiveEffects: { infraCostMul: number };
     };
     internals.relics = ['budget-discipline'];
-    // 試練ドリフト +5 後に 30 になるよう開始前は 25。
-    internals.org.aiDependency = 25;
+    // 全チーム 35 → ドリフト後選択中 40。全社平均はおおよそ 36〜38。
+    // ×0.04×0.8 ≥1 → 課金、×0.04×0.8×0.75 <1 → 返金で 0。
+    for (const t of internals.teams) t.aiDependency = 35;
+    internals.org.aiDependency = 35;
     const before = engine.snapshot().budget;
     engine.beginSetupSprint();
-    expect(engine.snapshot().org.aiDependency).toBe(30);
-    expect(engine.snapshot().budget).toBe(before - 2);
+    expect(engine.snapshot().org.aiDependency).toBe(40);
+    const n = internals.teams.length;
+    const companyDep = Math.round((40 + 35 * (n - 1)) / n);
+    const expected = computeInfraCost(companyDep, 0.04, 0.8);
+    expect(expected).toBeGreaterThan(0);
+    expect(computeInfraCost(companyDep, 0.04, 0.8 * 0.75)).toBe(0);
+    expect(engine.snapshot().budget).toBe(before - expected);
     expect(internals.sprintPassiveEffects.infraCostMul).toBe(0.8);
 
     internals.deck = [{ defId: 'ai-guideline', level: 1 }];
     internals.sprint!.cardPiles = { hand: [0], played: [], discard: [], drawOrder: [] };
     internals.sprint!.focus = 100;
     expect(engine.playCard(0).ok).toBe(true);
-    // 再計算 raw=0.9 → 0。課金分を全額返す。
+    // 再計算 raw<1 → 0。課金分を全額返す。
     expect(engine.snapshot().budget).toBe(before);
   });
 });

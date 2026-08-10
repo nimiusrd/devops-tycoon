@@ -134,7 +134,7 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     ).toBeNull();
   });
 
-  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して v5 として復元する', () => {
+  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して v6 として復元する', () => {
     const valid = makeRunSave('ri84-v4-goal-migration');
     const legacyDeliveryTarget = 1950;
     const parsed = parseRunSave({
@@ -152,8 +152,33 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     });
 
     expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+    // v4 normal 倍率 1.95 → 現行（RI-77）2.25 へスケールする。
     expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
-      Math.round((legacyDeliveryTarget * 1.8) / 1.95),
+      Math.round((legacyDeliveryTarget * 2.25) / 1.95),
+    );
+  });
+
+  it('RI-77: v5 の途中セーブは現行 Delivery 倍率へ移行して v6 として復元する', () => {
+    const valid = makeRunSave('ri77-v5-goal-migration');
+    const legacyDeliveryTarget = 3510;
+    const parsed = parseRunSave({
+      ...valid,
+      schemaVersion: 5,
+      state: {
+        ...valid.state,
+        difficulty: 'normal',
+        quarterGoal: {
+          ...valid.state.quarterGoal,
+          deliveryTarget: legacyDeliveryTarget,
+        },
+      },
+      summary: { ...valid.summary, difficulty: 'normal' },
+    });
+
+    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+    // v5 normal 倍率 1.8 → 現行 2.25。
+    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
+      Math.round((legacyDeliveryTarget * 2.25) / 1.8),
     );
   });
 
@@ -209,12 +234,13 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     });
 
     const review = parsed?.state.quarterReview;
-    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET);
-    expect(review?.goal.deliveryTarget).toBe(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET);
+    // 1260 × 2.25/1.95 → 1454（下限 MIN_ADJUSTED より上）。
+    const migratedDelivery = Math.round((1260 * 2.25) / 1.95);
+    expect(migratedDelivery).toBeGreaterThan(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET);
+    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(migratedDelivery);
+    expect(review?.goal.deliveryTarget).toBe(migratedDelivery);
     expect(review?.progress.length).toBeGreaterThan(0);
-    expect(review?.progress.find((item) => item.id === 'delivery')?.target).toBe(
-      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
-    );
+    expect(review?.progress.find((item) => item.id === 'delivery')?.target).toBe(migratedDelivery);
     expect(review?.progress.find((item) => item.id === 'quality')).toMatchObject({
       actual: 40,
       status: 'missed',

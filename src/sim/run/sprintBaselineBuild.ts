@@ -64,9 +64,10 @@ export function normalTaskFloor(difficulty: DifficultyId): number {
 /**
  * スプリント完了の最小 tick（RI-75）。
  * エンジンは完了後に sprintTick++ するため、表示 tick が絶対下限30秒以上になる値にする。
- * `MS_PER_TICK_1X=780` → 表示39 tick ≒ 30.4s になるよう 38。
+ * `MS_PER_TICK_1X=780` → §3.1 通常スプリント代表下限 60s になるよう 77（表示78 tick ≒ 60.8s）。
+ * 絶対最短 30s は `meetsSprintAbsoluteMin` 側の床として残す。
  */
-export const SPRINT_MIN_COMPLETE_TICK = 38;
+export const SPRINT_MIN_COMPLETE_TICK = 77;
 
 /**
  * ボス完了に必要な最小 tick。表示 tick は +1 されるため、116 tick で約90.5秒になる。
@@ -162,7 +163,7 @@ export function applyTrialAiDependencyPressure(
     trials: ctx.trials,
   });
   org.aiDependency = clamp(org.aiDependency + fold.aiDependencyDriftPerSprint, 0, 100);
-  const bill = options.billInfraCost ?? ctx.trials.length > 0;
+  const bill = options.billInfraCost ?? ctx.trials.includes('frontier-dependency');
   if (!bill) return budget;
   const modelCost = computeInfraCost(
     org.aiDependency,

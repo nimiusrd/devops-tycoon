@@ -419,7 +419,7 @@ describe('四半期レビュー（Phase 8）', () => {
         expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeGreaterThanOrEqual(
           MIN_QUARTER_DELIVERY_TARGET,
         );
-        expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeLessThanOrEqual(4500);
+        expect(g.deliveryTarget, `${boss.id}:${difficulty}:delivery`).toBeLessThanOrEqual(5500);
         expect(g.qualityTarget, `${boss.id}:${difficulty}:quality`).toBeGreaterThanOrEqual(40);
         expect(g.qualityTarget, `${boss.id}:${difficulty}:quality`).toBeLessThanOrEqual(55);
         expect(g.techDebtLimit, `${boss.id}:${difficulty}:techDebt`).toBeGreaterThanOrEqual(40);
@@ -852,9 +852,9 @@ describe('四半期レビュー（Phase 8）', () => {
     const major = buildQuarterGoal(getBoss('major-incident')!, 'normal', 1);
     // 旧式（ボス床×6）だと 2700/1200=2.25 倍。通常5+ボス1なら差は小さくなる。
     expect(big.deliveryTarget / major.deliveryTarget).toBeLessThan(1.3);
-    // RI-84: 安定中の高価値上振れ抑制後の目標再校正値。
-    expect(big.deliveryTarget).toBe(3510);
-    expect(major.deliveryTarget).toBe(3060);
+    // RI-77: AI 出荷価値倍率後の目標再校正値。
+    expect(big.deliveryTarget).toBe(4388);
+    expect(major.deliveryTarget).toBe(3825);
   });
 
   it('RI-68: cut_scope 後も Delivery 目標が四半期実績帯から大きく外れない', () => {
@@ -932,15 +932,16 @@ describe('四半期レビュー（Phase 8）', () => {
     const quarterGoal = buildQuarterGoal(boss, 'normal', 1);
     expect(quarterGoal.deliveryTarget).toBeGreaterThanOrEqual(MIN_QUARTER_DELIVERY_TARGET);
 
+    // RI-77: AI 出荷価値倍率後の四半期実績帯（約 3800〜4400）に合わせた代表値。
     const progress = measureGoalProgress({
       goal: quarterGoal,
       org: org({ quality: 50, morale: 50, techDebt: 30 }),
-      totals: totals({ delivered: 1693, incidents: 2, completed: 40, aiAssisted: 10 }),
+      totals: totals({ delivered: 4020, incidents: 2, completed: 40, aiAssisted: 10 }),
     });
     const delivery = progress.find((p) => p.id === 'delivery');
     expect(delivery?.label).toBe('Delivery（四半期累計）');
     expect(delivery?.target).toBe(quarterGoal.deliveryTarget);
-    expect(delivery?.actual).toBe(1693);
+    expect(delivery?.actual).toBe(4020);
     // sprint 床スケール（〜90）との比較ではない: 目標と実績は同桁。
     expect(delivery!.target / delivery!.actual).toBeGreaterThan(0.4);
     expect(delivery!.target / delivery!.actual).toBeLessThan(2.5);
@@ -986,14 +987,11 @@ describe('四半期レビュー（Phase 8）', () => {
   });
 
   it('RI-68: 難易度に応じて Delivery の達成・未達が分岐する', { timeout: 60_000 }, () => {
-    // RI-75: Delivery 目標再校正後に達成・未達の両方がある seed を難易度別に固定する。
+    // RI-77: AI 出荷価値倍率後の目標再校正でも、到達・達成・未達を含む固定 seed を使う。
     const seedsByDifficulty: Record<'easy' | 'normal' | 'hard', readonly number[]> = {
-      // RI-84: 安定化の再校正後も、到達・達成・未達を含む固定 seed を使う。
-      easy: [103, 14, 20, 39, 100, 380],
-      // RI-73: normal に seniorHpCostMul を入れた後も達成/未達が共存する probe。
-      normal: [3, 5, 6, 10, 14, 28],
-      // RI-84: 手戻り抑制0.4倍後も、到達・達成・未達が共存する固定 probe を使う。
-      hard: [20, 113, 74, 93, 97, 120],
+      easy: [0, 1, 2, 7, 18, 31],
+      normal: [0, 1, 2, 3, 6, 7],
+      hard: [0, 2, 9, 3, 14, 18],
     };
     const meanRatioByDifficulty: Record<'easy' | 'normal' | 'hard', number> = {
       easy: 0,
@@ -1022,6 +1020,9 @@ describe('四半期レビュー（Phase 8）', () => {
       expect(missed, `${difficulty}:missed`).toBeGreaterThan(0);
     }
     expect(meanRatioByDifficulty.hard, 'hard:meanRatio').toBeLessThan(meanRatioByDifficulty.easy);
+    expect(meanRatioByDifficulty.normal, 'normal:meanRatio').toBeLessThan(
+      meanRatioByDifficulty.easy,
+    );
     expect(meanRatioByDifficulty.hard, 'hard:meanRatio').toBeLessThanOrEqual(
       meanRatioByDifficulty.normal + 0.05,
     );

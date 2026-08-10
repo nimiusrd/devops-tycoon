@@ -92,6 +92,15 @@ describe('初期ロスター生成（第12章）', () => {
     }
   });
 
+  it('初期 AI 配布は starter-ai-junior のみ（RI-77 部分配布）', () => {
+    const r = createInitialRoster(createRng('roster-a'));
+    const [coder, aiJunior, reviewer] = r.members;
+    expect(coder.aiAssigned).toBe(false);
+    expect(aiJunior.aiAssigned).toBe(true);
+    expect(reviewer.aiAssigned).toBe(false);
+    expect(foldFormationEffects(r).aiAdoptionShare).toBeCloseTo(0.5);
+  });
+
   it('同一 seed なら完全再現する（決定論）', () => {
     const a = createInitialRoster(createRng('same'));
     const b = createInitialRoster(createRng('same'));
@@ -300,7 +309,7 @@ describe('AI配布が実採用率に反映される（第12.2 / レビュー#C�
         member({ id: 'a', assignment: 'coding', aiAssigned: true, stats: { aiMastery: 0 } }),
       ]),
     );
-    expect(riskyAi.effects.reworkRateAdd).toBe(0.09);
+    expect(riskyAi.effects.reworkRateAdd).toBe(0.05);
     expect(riskyAi.effects.incidentRateMul).toBe(1.05);
   });
 

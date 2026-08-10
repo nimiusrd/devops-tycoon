@@ -2,8 +2,8 @@
  * ランのフェーズ遷移表（単一の真実源。SPEC 第3章 / 第22.1 / RI-39）。
  *
  * **固定トラック（スプリント列）＋スプリント間ビート**の正当な遷移を純TSデータで定義する。
- * 編成（setup）→ スプリント → リザルト → ドラフト → 進化 → ビート（判定/選択）→ 次スプリント …
- * → ボススプリント → 四半期レビュー → 勝敗/継続。ショップ/休息/採用はビートの選択から到達する。
+ * 編成（setup）→ スプリント → リザルト → ドラフト → 進化 → ビート（判定/選択）→ 編成（setup）…
+ * → ボススプリント → 四半期レビュー → 勝敗/継続。ショップ/休息/採用もビート経由で setup に戻る（RI-77）。
  *
  * この表を `RunEngine.setPhase()`（実ランタイムの遷移検証）と
  * `src/state/runMachine.ts`（XState マシン生成。契約テスト/可視化用）の両方が参照することで、
@@ -74,7 +74,8 @@ export const RUN_PHASE_TRANSITIONS: Readonly<
   draft: { NEXT: 'evolution', LOST: 'lost' },
   evolution: { FINISH: 'beat', LOST: 'lost' },
   beat: {
-    ENTER_SPRINT: 'sprint',
+    // RI-77: スプリント直行は廃止。ENTER_SPRINT も編成（setup）へ戻す。
+    ENTER_SPRINT: 'setup',
     ENTER_SHOP: 'shop',
     ENTER_REST: 'rest',
     ENTER_RECRUIT: 'recruit',

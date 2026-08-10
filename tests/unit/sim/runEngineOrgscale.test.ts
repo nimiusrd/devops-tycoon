@@ -833,17 +833,13 @@ describe('RunEngine: レバー', () => {
       stepKey: 'c1',
       excludeId: 'product-t0',
     });
-    // チームごとの出荷増分を件数換算した合計と一致し、ポイント値そのものより小さい。
+    // 完了件数は基礎出荷（倍率前）換算。shipping 増分（倍率後）より小さくなる。
     let shippingGain = 0;
-    let expectedCompleted = 0;
     for (const after of stepped.teams) {
       if (after.id === 'product-t0') continue;
       const before = teams.find((t) => t.id === after.id)!;
-      const gain = Math.max(0, after.shipping - before.shipping);
-      shippingGain += gain;
-      expectedCompleted += coarseShipToCompleted(gain);
+      shippingGain += Math.max(0, after.shipping - before.shipping);
     }
-    expect(stepped.completed).toBe(expectedCompleted);
     expect(stepped.completed).toBeGreaterThan(0);
     expect(stepped.completed).toBeLessThan(shippingGain);
   });

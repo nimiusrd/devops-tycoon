@@ -35,7 +35,7 @@ type A2Internals = {
   sprintTick: number;
   status: RunState['status'];
   teamRosters: Record<string, RosterState>;
-  teams: { id: string; reviewQueue: number; incidents: number }[];
+  teams: { id: string; reviewQueue: number; incidents: number; aiDependency: number }[];
   totals: RunTotals;
   usedHeavyActions: boolean;
   applyGrowth(result: unknown): void;
@@ -76,9 +76,10 @@ describe('RI-91-A2 RunEngine phase / trial / budget', () => {
     });
     lose.startRun();
     const loseI = asInternals(lose);
-    // 依存度 55 + 試練 +5 → 60、ceil(60 * 0.05)=3。
+    // 全チーム 55 + 試練 +5 → 全社 56、毎スプ上乗せ ceil(56 * 0.04)=3。
     loseI.budget = 3;
     loseI.org.aiDependency = 55;
+    for (const t of loseI.teams) t.aiDependency = 55;
     lose.beginSetupSprint();
     expect(lose.snapshot()).toMatchObject({
       status: 'lost',
@@ -96,6 +97,7 @@ describe('RI-91-A2 RunEngine phase / trial / budget', () => {
     const surviveI = asInternals(survive);
     surviveI.budget = 4;
     surviveI.org.aiDependency = 55;
+    for (const t of surviveI.teams) t.aiDependency = 55;
     survive.beginSetupSprint();
     expect(survive.snapshot()).toMatchObject({
       status: 'playing',

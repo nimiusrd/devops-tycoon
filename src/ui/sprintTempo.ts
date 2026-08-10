@@ -53,9 +53,9 @@ export const BOSS_WALL_SEC = { min: 90, max: 180 } as const;
 
 /**
  * §3.1: スプリント間（リザルト→ドラフト→進化→ビート）の標準操作秒。
- * プレイヤー任意（目安 30〜60）のため、回帰検知では帯内の標準操作 35 秒を固定加算する。
+ * プレイヤー任意（目安 30〜60）のため、回帰検知では帯内の標準操作 30 秒を固定加算する。
  */
-export const BETWEEN_SPRINT_WALL_SEC = 35;
+export const BETWEEN_SPRINT_WALL_SEC = 30;
 
 /**
  * §3.1: 四半期レビューの標準操作秒（意思決定の目安。回帰検知用モデル）。

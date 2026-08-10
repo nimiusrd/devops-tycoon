@@ -490,8 +490,8 @@ F-10 の未充足（ビルドが勝利種別に表れること）は、勝率帯
 ### RI-77 AI 導入が既定 ON で、既定のまま進むのが有利（優先度: 高 / F-1・F-2・F-10）— 実装済・コホート再計測待ち
 
 機構を入れた（開始時は `starter-ai-junior` のみ AI、ビート後は必ず `setup`、
-レビューコスト緩和と出荷価値で既定部分配布の S1 出荷を正方向へ）。代表 seed の
-コア因果（Review/Rework 増）は `aiAdoptionSeeds` で維持。勝率帯と
+`aiDeliveryValueMul` とインフラ単価調整で既定部分配布の S1 出荷を正方向へ）。
+代表 seed のコア因果（Review/Rework 増）は `aiAdoptionSeeds` で維持。勝率帯と
 `skilledNoHire` vs `noAiCtl` のセル比較はコホート再計測で確定する。
 
 旧コホート（実装前）では AI を切ると1スプリント出荷が増える逆向きが観測されていた

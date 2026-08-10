@@ -435,10 +435,20 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
 
   it('緊急対応の鎮火効果をタグ化する', () => {
     const def = getAction('firefight')!;
-    expect(formatActionDefTags(def)).toContainEqual({
+    const tags = formatActionDefTags(def);
+    expect(tags).toContainEqual({
       label: '炎上1件鎮火',
       tone: 'positive',
     });
+    expect(tags.some((t) => t.label.includes('緊急時のみ運用安定'))).toBe(true);
+    expect(tags.some((t) => t.label.includes('連打で増加'))).toBe(true);
+  });
+
+  it('アンドンは渋滞条件付きの安定タグを含む', () => {
+    const def = getAction('andon')!;
+    const tags = formatActionDefTags(def);
+    expect(tags.some((t) => t.label.includes('運用安定'))).toBe(true);
+    expect(tags.some((t) => t.label.includes('士気'))).toBe(true);
   });
 
   it.each([

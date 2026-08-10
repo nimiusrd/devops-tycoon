@@ -12,10 +12,15 @@ import type { EvolutionNodeDef } from '../data/evolution';
 import type { RelicDef } from '../data/relics';
 import { getRelic } from '../data/relics';
 import {
+  ANDON_STABILITY_REVIEW_MIN,
+  ANDON_THIN_MORALE_COST,
   ANDON_TICKS,
   ASSIGN_MORALE_COST,
   ASSIGN_PROGRESS,
   FIREFIGHT_HP_COST,
+  FIREFIGHT_HP_COST_MAX,
+  FIREFIGHT_STABILITY_BURN_TICKS,
+  FIREFIGHT_STABILITY_MIN_BURNING,
   INTERRUPT_HP_COST,
   INTERRUPT_REVIEW_COUNT,
   OVERTIME_HP_COST,
@@ -694,7 +699,8 @@ export function formatStabilityDetailTags(): EffectTag[] {
 export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
 
-  if (def.stabilizesFlow) {
+  // RI-73 / F-1: 緊急対応・アンドンは状況依存のため汎用タグを出さない。
+  if (def.stabilizesFlow && def.id !== 'firefight' && def.id !== 'andon') {
     // 主要効果は1タグに要約（タッチでも持続時間と効果が見える）。長い倍率内訳はツールチップ側。
     pushTag(tags, `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, 'positive');
   }
@@ -710,7 +716,16 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       break;
     case 'firefight':
       pushTag(tags, '炎上1件鎮火', 'positive');
-      pushTag(tags, `シニアHP -${FIREFIGHT_HP_COST}`, 'negative');
+      pushTag(
+        tags,
+        `シニアHP -${FIREFIGHT_HP_COST}〜${FIREFIGHT_HP_COST_MAX}（連打で増加）`,
+        'negative',
+      );
+      pushTag(
+        tags,
+        `緊急時のみ運用安定（猶予≤${FIREFIGHT_STABILITY_BURN_TICKS} or 炎上≥${FIREFIGHT_STABILITY_MIN_BURNING}）`,
+        'positive',
+      );
       break;
     case 'assignTask':
       pushTag(tags, `Coding +${Math.round(ASSIGN_PROGRESS * 100)}%`, 'positive');
@@ -734,6 +749,11 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
     case 'andon':
       pushTag(tags, `流入停止 ${ANDON_TICKS}tick`, 'neutral');
       pushTag(tags, '出荷機会損失', 'negative');
+      pushTag(
+        tags,
+        `Review≥${ANDON_STABILITY_REVIEW_MIN}で運用安定 / 未満は士気 -${ANDON_THIN_MORALE_COST}`,
+        'neutral',
+      );
       break;
   }
 

@@ -28,6 +28,8 @@ export {
   assignMember,
   setAiAssigned,
   foldFormationEffects,
+  reviewHpCostMulForReviewers,
+  staminaDrainShareMul,
   applySprintGrowth,
   recoverStamina,
   memberExpression,

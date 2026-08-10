@@ -92,6 +92,12 @@ export interface CardEffects {
    * 難易度の globalEffects で easy/normal の消耗を抑える（RI-73 / F-7）。
    */
   seniorHpCostMul: number;
+  /**
+   * レビュー 1 件あたりのシニア体力消費倍率（1 で無効果）。
+   * レビュアー人数で薄め、採用を「燃えにくさ」へ寄せる（RI-73 / F-1）。
+   * 自動鎮火には掛けない。
+   */
+  reviewHpCostMul: number;
   /** Rework 率への加算（負で減少）。 */
   reworkRateAdd: number;
   /** Incident 率への乗算（1 で無効果）。 */

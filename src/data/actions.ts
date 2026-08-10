@@ -39,10 +39,11 @@ export const ACTION_DEFS: ActionDef[] = [
     // RI-75: 上記と同じく介入頻度を §3.1 帯へ戻す。
     cooldownTicks: 40,
     gauge: 0.34,
+    // RI-73 / F-1: 安定付与は猶予が短い／複数炎上のときだけ（actions.ts）。
     stabilizesFlow: true,
     tone: 'danger',
     description: '炎上タスクを延焼前に鎮火する',
-    sideEffect: 'シニアHPを少量消費',
+    sideEffect: 'シニアHPを消費（連打で増加）。緊急時のみ運用安定',
   },
   {
     id: 'assignTask',
@@ -96,10 +97,11 @@ export const ACTION_DEFS: ActionDef[] = [
     cost: 5,
     cooldownTicks: 250,
     gauge: 0.15,
+    // RI-73 / F-1: Review 渋滞時のみ安定。薄いキューでは士気ペナ（actions.ts）。
     stabilizesFlow: true,
     tone: 'heavy',
     description: 'タスク流入を止め、溜まったキューを捌き切る',
-    sideEffect: 'その間の出荷機会を失う',
+    sideEffect: '出荷機会を失う。渋滞が薄いと士気↓・安定なし',
   },
 ];
 

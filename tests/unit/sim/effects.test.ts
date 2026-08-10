@@ -82,6 +82,7 @@ describe('run effects fold', () => {
       reviewEfficiencyMul: 0.92 * 0.85 * 1.15 * 1.18,
       reviewCapacityMul: 1.2,
       seniorHpCostMul: 1,
+      reviewHpCostMul: 1,
       reworkRateAdd: 0.05 - 0.08 - 0.12 - 0.1 - 0.1,
       incidentRateMul: 1.3 * 0.9 * 0.85 * 0.82,
       aiLiteracyAdd: 18,

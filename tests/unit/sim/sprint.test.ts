@@ -407,6 +407,20 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(org.seniorHp).toBeCloseTo(hpBefore - REVIEW_HP_COST * 0.5, 5);
     });
 
+    it('RI-73 / F-1: reviewHpCostMul がレビュー時のシニア体力消費に掛かる', () => {
+      const rng = () => 0.99;
+      const org = createOrgState('default', false);
+      org.seniorHp = 80;
+      const task = makeTask(0, { lane: 'review' });
+      const sprint = makeSprint(org, [task]);
+      sprint.cardEffects = { ...IDENTITY_CARD_EFFECTS, reviewHpCostMul: 0.8 };
+      const hpBefore = org.seniorHp;
+
+      reviewOne(task, sprint, org, rng);
+
+      expect(org.seniorHp).toBeCloseTo(hpBefore - REVIEW_HP_COST * 0.8, 5);
+    });
+
     it('RI-80: grade しきい値ちょうどとペナルティで S/A/B/C/D を区別する', () => {
       const org = createOrgState('default', false);
       org.seniorHp = 100;

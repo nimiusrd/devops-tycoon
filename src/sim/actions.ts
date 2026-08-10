@@ -71,6 +71,20 @@ export const INTERRUPT_REVIEW_COUNT = 4;
 export const INTERRUPT_HP_COST = 3;
 /** 緊急対応の追加シニアHP消費（UI プレビューと共有）。 */
 export const FIREFIGHT_HP_COST = 2;
+/**
+ * 同一スプリントで緊急対応を重ねるたびに増える HP コスト（RI-73 / F-1）。
+ * 1 回目は `FIREFIGHT_HP_COST`、以降 +1（上限 `FIREFIGHT_HP_COST_MAX`）。
+ */
+export const FIREFIGHT_HP_ESCALATION = 1;
+/** 緊急対応の同一スプリント連打 HP 上限（残業号令と同帯）。 */
+export const FIREFIGHT_HP_COST_MAX = 6;
+/**
+ * この猶予 tick 以下の炎上を消したときだけ運用安定を付与する（RI-73 / F-1）。
+ * 軽い先消しは HP 節約・コンボ維持に効くが、安定ブランケットにはしない。
+ */
+export const FIREFIGHT_STABILITY_BURN_TICKS = 15;
+/** 炎上がこの件数以上なら緊急対応でも運用安定を付与する（RI-73 / F-1）。 */
+export const FIREFIGHT_STABILITY_MIN_BURNING = 2;
 /** ペアレビューで捌く PR 数（UI プレビューと共有）。 */
 export const PAIR_REVIEW_COUNT = 2;
 /** ペアレビューで上がる AI Literacy（UI プレビューと共有）。 */
@@ -86,6 +100,13 @@ export const OVERTIME_MORALE_COST = 8;
 export const OVERTIME_HP_COST = 6;
 /** アンドンの流入停止 tick。 */
 export const ANDON_TICKS = 30;
+/**
+ * アンドンが運用安定を付与する Review 件数の下限（熟練方針の使用条件に揃える。RI-73 / F-1）。
+ * 未満なら安定なし＋薄キュー罰。
+ */
+export const ANDON_STABILITY_REVIEW_MIN = 10;
+/** 薄キューでアンドンを打ったときの士気ペナルティ（機会損失の明示。RI-73 / F-1）。 */
+export const ANDON_THIN_MORALE_COST = 5;
 /** AIスロットルの持続 tick。 */
 export const THROTTLE_TICKS = 40;
 
@@ -117,6 +138,41 @@ export function mostUrgentIncident(sprint: SprintState): Task | undefined {
     }
   }
   return urgent;
+}
+
+/**
+ * 緊急対応が運用安定を付与すべき「緊急」盤面か（RI-73 / F-1）。
+ * 発動前の盤面で判定する（鎮火後は炎上が消えるため）。
+ */
+export function isFirefightUrgent(sprint: SprintState): boolean {
+  const fires = activeIncidents(sprint);
+  if (fires.length >= FIREFIGHT_STABILITY_MIN_BURNING) return true;
+  const urgent = mostUrgentIncident(sprint);
+  if (!urgent) return false;
+  return (urgent.burnTicksLeft ?? Infinity) <= FIREFIGHT_STABILITY_BURN_TICKS;
+}
+
+/** 同一スプリント内の緊急対応成功回数から HP コストを求める（RI-73 / F-1）。 */
+export function firefightHpCost(priorUses: number): number {
+  const n = Math.max(0, Math.floor(priorUses));
+  return Math.min(FIREFIGHT_HP_COST_MAX, FIREFIGHT_HP_COST + n * FIREFIGHT_HP_ESCALATION);
+}
+
+/** アンドンが運用安定を付与できるほど Review が詰まっているか（RI-73 / F-1）。 */
+export function isAndonReviewCongested(sprint: SprintState): boolean {
+  return tasksInLane(sprint, 'review').length >= ANDON_STABILITY_REVIEW_MIN;
+}
+
+/**
+ * 安全側介入が今回の盤面で運用安定を付与するか（RI-73 / F-1）。
+ * `stabilizesFlow` でも、緊急対応・アンドンは状況依存。
+ */
+export function grantsStabilityOnApply(id: ActionId, sprint: SprintState): boolean {
+  const def = getAction(id);
+  if (!def?.stabilizesFlow) return false;
+  if (id === 'firefight') return isFirefightUrgent(sprint);
+  if (id === 'andon') return isAndonReviewCongested(sprint);
+  return true;
 }
 
 type EffectPartial = Omit<
@@ -161,6 +217,7 @@ const EFFECTS: Record<
 
   // 緊急対応: 最も延焼が近い火を 1 件、タイマーが切れる前に鎮火して Review へ戻す。
   // 自動鎮火（HP 大量消費・コンボ喪失）より遥かに安く、コンボも守られる（第6.3）。
+  // RI-73 / F-1: 同一スプリント連打は HP が逓増し、軽い先消しだけでは運用安定を付けない。
   firefight(sprint, org, _rng, tick) {
     const fire = mostUrgentIncident(sprint);
     if (!fire) return false;
@@ -170,7 +227,8 @@ const EFFECTS: Record<
     fire.lane = 'review';
     fire.progress = 0;
     sprint.metrics.contained += 1;
-    const hp = spendStat(org.seniorHp, FIREFIGHT_HP_COST);
+    const priorUses = sprint.metrics.actionCounts.firefight ?? 0;
+    const hp = spendStat(org.seniorHp, firefightHpCost(priorUses));
     org.seniorHp = hp.next;
     appendSprintEvent(sprint, {
       tick,
@@ -219,9 +277,18 @@ const EFFECTS: Record<
   },
 
   // アンドン: 一定時間 Backlog からの流入を止め、キューを捌き切る。
-  andon(sprint, _org, _rng, tick) {
+  // RI-73 / F-1: Review が薄いのに打つと士気を削り、運用安定も付かない。
+  andon(sprint, org, _rng, tick) {
     const untilTick = tick + ANDON_TICKS;
     sprint.modifiers.andonUntilTick = untilTick;
+    if (!isAndonReviewCongested(sprint)) {
+      const morale = spendStat(org.morale, ANDON_THIN_MORALE_COST);
+      org.morale = morale.next;
+      return {
+        modifier: { kind: 'andon', untilTick },
+        moraleCost: morale.spent,
+      };
+    }
     return { modifier: { kind: 'andon', untilTick } };
   },
 };
@@ -310,8 +377,10 @@ export function applyAction(
 
   const def = getAction(id)!;
   const stabilityUntilTick = sprint.modifiers.stabilityUntilTick;
-  if (def.stabilizesFlow) {
-    // 割り込み／ペアレビューがこの場で reviewOne を呼んでも、安定化を適用する。
+  // 割り込み／ペアレビューがこの場で reviewOne を呼んでも安定化を適用する。
+  // 緊急対応・アンドンは盤面条件付き（RI-73 / F-1）。判定は効果適用前の盤面で行う。
+  const grantStability = grantsStabilityOnApply(id, sprint);
+  if (grantStability) {
     sprint.modifiers.stabilityUntilTick = tick + STABILITY_TICKS;
   }
   const partial = EFFECTS[id](sprint, org, rng, tick, target);

@@ -18,8 +18,10 @@ import {
   rankLabel,
   recoverStamina,
   recruitMember,
+  reviewHpCostMulForReviewers,
   rosterSummary,
   setAiAssigned,
+  staminaDrainShareMul,
   ROSTER_CAP,
   xpForLevel,
 } from '../../../src/sim/member';
@@ -423,6 +425,53 @@ describe('成長・昇格（第12.2）', () => {
       sequenceRng([0.99]),
     ).roster;
     expect(after.members.map((m) => m.stamina)).toEqual([61, 52, 43]);
+  });
+
+  it('RI-73 / F-1: 稼働人数が増えると個人スタミナ消費が薄まる', () => {
+    expect(staminaDrainShareMul(3)).toBe(1);
+    expect(staminaDrainShareMul(5)).toBeCloseTo(0.6, 5);
+    expect(staminaDrainShareMul(1)).toBe(1);
+
+    const three = applySprintGrowth(
+      roster([
+        member({ id: 'a', assignment: 'coding', stamina: 80 }),
+        member({ id: 'b', assignment: 'coding', stamina: 80 }),
+        member({ id: 'c', assignment: 'review', stamina: 80 }),
+      ]),
+      { delivered: 0, done: 0 },
+      sequenceRng([0.99, 0.99, 0.99]),
+    ).roster;
+    const five = applySprintGrowth(
+      roster([
+        member({ id: 'a', assignment: 'coding', stamina: 80 }),
+        member({ id: 'b', assignment: 'coding', stamina: 80 }),
+        member({ id: 'c', assignment: 'review', stamina: 80 }),
+        member({ id: 'd', assignment: 'coding', stamina: 80 }),
+        member({ id: 'e', assignment: 'review', stamina: 80 }),
+      ]),
+      { delivered: 0, done: 0 },
+      sequenceRng([0.99, 0.99, 0.99, 0.99, 0.99]),
+    ).roster;
+    // コーダー a の残スタミナが人数増で高く残る（消耗が薄い）。
+    expect(five.members[0].stamina).toBeGreaterThan(three.members[0].stamina);
+  });
+
+  it('RI-73 / F-1: レビュアー人数で reviewHpCostMul が下がる', () => {
+    expect(reviewHpCostMulForReviewers(1)).toBe(1);
+    expect(reviewHpCostMulForReviewers(2)).toBeCloseTo(1 / 1.1, 5);
+    expect(reviewHpCostMulForReviewers(5)).toBe(0.75);
+
+    const one = foldFormationEffects(roster([member({ id: 'r', assignment: 'review' })]));
+    const three = foldFormationEffects(
+      roster([
+        member({ id: 'r1', assignment: 'review' }),
+        member({ id: 'r2', assignment: 'review' }),
+        member({ id: 'r3', assignment: 'review' }),
+      ]),
+    );
+    expect(one.effects.reviewHpCostMul).toBe(1);
+    expect(three.effects.reviewHpCostMul!).toBeLessThan(1);
+    expect(three.effects.reviewHpCostMul).toBe(reviewHpCostMulForReviewers(3));
   });
 
   it('配置された稼働メンバーは経験値を得てレベルアップし、やがて昇格する', () => {

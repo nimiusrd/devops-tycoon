@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { ACTION_DEFS } from '../../../src/data/actions';
 import {
+  ANDON_THIN_MORALE_COST,
   ANDON_TICKS,
   applyAction,
   ASSIGN_MORALE_COST,
   canApplyAction,
   FIREFIGHT_HP_COST,
+  FIREFIGHT_STABILITY_BURN_TICKS,
+  firefightHpCost,
   INTERRUPT_HP_COST,
   OVERTIME_HP_COST,
   OVERTIME_MORALE_COST,
@@ -180,15 +183,18 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
     },
   },
   andon: {
+    // 薄キュー（Review 0）→ 安定なし＋士気ペナ（RI-73 / F-1）。
     tasks: [],
     expectedEffect: (def) => ({
       actionId: 'andon',
       modifier: { kind: 'andon', untilTick: TICK + ANDON_TICKS },
+      moraleCost: ANDON_THIN_MORALE_COST,
       focusCost: def.cost,
       gaugeGain: def.gauge,
     }),
-    assertEffect: ({ sprint }) => {
+    assertEffect: ({ sprint, org, before }) => {
       expect(sprint.modifiers.andonUntilTick).toBe(TICK + ANDON_TICKS);
+      expect(org.morale).toBe(before.org.morale - ANDON_THIN_MORALE_COST);
     },
   },
 };
@@ -228,10 +234,66 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(sprint.metrics.focusSpent).toBe(focusSpent0 + def.cost);
       expect(sprint.metrics.actionCounts[id]).toBe(actionCount0 + 1);
       expect(sprint.comboGauge).toBeCloseTo(gauge0 + def.gauge, 5);
-      expect(sprint.modifiers.stabilityUntilTick).toBe(
-        def.stabilizesFlow ? TICK + STABILITY_TICKS : 0,
-      );
+      // RI-73 / F-1: firefight（軽い炎上）と andon（薄キュー）は stabilizesFlow でも安定を付けない。
+      const expectStability =
+        def.stabilizesFlow && id !== 'firefight' && id !== 'andon' ? TICK + STABILITY_TICKS : 0;
+      expect(sprint.modifiers.stabilityUntilTick).toBe(expectStability);
       fixture.assertEffect({ sprint, org, before });
+    });
+  });
+
+  describe('RI-73 / F-1: 緊急対応・アンドンの状況依存', () => {
+    it('軽い炎上の緊急対応は運用安定を付けない', () => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, [burningTask(0)]);
+      const outcome = applyAction('firefight', sprint, org, rng, TICK);
+      expect(outcome.ok).toBe(true);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(0);
+      expect(outcome.effect?.hpCost).toBe(FIREFIGHT_HP_COST);
+    });
+
+    it('猶予が短い炎上の緊急対応は運用安定を付ける', () => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, [burningTask(0, FIREFIGHT_STABILITY_BURN_TICKS)]);
+      const outcome = applyAction('firefight', sprint, org, rng, TICK);
+      expect(outcome.ok).toBe(true);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+    });
+
+    it('炎上が複数ある緊急対応は運用安定を付ける', () => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, [burningTask(0), burningTask(1)]);
+      const outcome = applyAction('firefight', sprint, org, rng, TICK);
+      expect(outcome.ok).toBe(true);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+    });
+
+    it('同一スプリントの緊急対応連打は HP コストが逓増する', () => {
+      const org = createOrgState('default', true);
+      org.seniorHp = 80;
+      const sprint = makeSprint(org, [burningTask(0), burningTask(1), burningTask(2)]);
+      const first = applyAction('firefight', sprint, org, rng, TICK);
+      expect(first.ok).toBe(true);
+      expect(first.effect?.hpCost).toBe(firefightHpCost(0));
+      sprint.cooldowns.firefight = 0;
+      sprint.focus = sprint.config.focusMax;
+      const hpAfterFirst = org.seniorHp;
+      const second = applyAction('firefight', sprint, org, rng, TICK + 1);
+      expect(second.ok).toBe(true);
+      expect(second.effect?.hpCost).toBe(firefightHpCost(1));
+      expect(hpAfterFirst - org.seniorHp).toBe(firefightHpCost(1));
+    });
+
+    it('Review が詰まっているアンドンは運用安定を付け士気を削らない', () => {
+      const org = createOrgState('default', true);
+      const tasks = Array.from({ length: 10 }, (_, i) => makeTask(i));
+      const sprint = makeSprint(org, tasks);
+      const morale0 = org.morale;
+      const outcome = applyAction('andon', sprint, org, rng, TICK);
+      expect(outcome.ok).toBe(true);
+      expect(outcome.effect?.moraleCost).toBeUndefined();
+      expect(org.morale).toBe(morale0);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
     });
   });
 

@@ -265,7 +265,8 @@ export function reviewOne(
   tick?: number,
 ): void {
   const m = sprint.metrics;
-  const hpCostMul = sprint.cardEffects.seniorHpCostMul;
+  // RI-73 / F-1: 難易度の seniorHpCostMul に加え、レビュアー人数由来の reviewHpCostMul を掛ける。
+  const hpCostMul = sprint.cardEffects.seniorHpCostMul * sprint.cardEffects.reviewHpCostMul;
   org.seniorHp = clamp(org.seniorHp - REVIEW_HP_COST * hpCostMul, 0, 100);
 
   // 1) 障害（Incident）判定: 即決着ではなく点火し、猶予内の対応をプレイヤーに委ねる。

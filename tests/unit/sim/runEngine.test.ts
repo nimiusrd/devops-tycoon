@@ -42,9 +42,9 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     const normalState = normal.snapshot();
     const trialState = trial.snapshot();
     expect(trialState.org.aiDependency).toBe(normalState.org.aiDependency + 5);
-    // 課金は全社平均依存度（選択中だけの 40×0.05 ではない）。
+    // 課金は全社平均依存度（選択中だけの依存×単価ではない）。
     const companyDep = companyOrgFromTeams(trialState.teams, trialState.org).aiDependency;
-    const expectedCost = computeInfraCost(companyDep, 0.05, 1);
+    const expectedCost = computeInfraCost(companyDep, 0.22, 1);
     expect(expectedCost).toBeGreaterThan(0);
     expect(trialState.budget).toBe(normalState.budget - expectedCost);
 
@@ -85,8 +85,8 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     (engine as unknown as { phase: string }).phase = 'setup';
     const beforeBoss = engine.snapshot().budget;
     engine.beginSetupSprint();
-    // 全社 100 × 0.01 = 1 → ceil 1
-    expect(engine.snapshot().budget).toBe(beforeBoss - 1);
+    // 全社 100 × 0.18 = 18 → ceil 18
+    expect(engine.snapshot().budget).toBe(beforeBoss - 18);
     expect(engine.snapshot().currentSprintKind).toBe('boss');
   });
 
@@ -403,9 +403,12 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
       budget: number;
       org: { aiDependency: number };
     };
-    // 依存度 55 + 試練 +5 → 60、ceil(60 * 0.05)=3 を差し引くと予算 0。
-    internals.budget = 3;
+    // 全チーム 55 + 試練 +5 → 全社 56、ceil(56 * 0.22)=13 を差し引くと予算 0。
+    internals.budget = 13;
     internals.org.aiDependency = 55;
+    for (const t of (engine as unknown as { teams: Array<{ aiDependency: number }> }).teams) {
+      t.aiDependency = 55;
+    }
     engine.beginSetupSprint();
     const after = engine.snapshot();
     expect(after.status).toBe('lost');

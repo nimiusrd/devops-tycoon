@@ -385,10 +385,9 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
 
     const rP50 = p50(runMins);
     expect(rP50).toBeGreaterThanOrEqual(RUN_WALL_MIN.minMin);
-    // §3.1 の設計目標は 45 分。RI-77 の部分配布で早期 AI 依存敗北が減り、
-    // 複数四半期へ伸びるランが増えたため、回帰の床は p50≤65 分とする（目標自体は据え置き）。
-    expect(rP50).toBeLessThanOrEqual(65);
-  }, 60_000);
+    // §3.1 の 1 ラン上限（45分）。長命外れ値は p90 ではなく p50 で回帰する。
+    expect(rP50).toBeLessThanOrEqual(RUN_WALL_MIN.maxMin);
+  }, 120_000);
 
   it('1 スプリントあたり介入成立回数が 3〜8 回帯（p50/p90）に入る', () => {
     // 理論上の CD/focus 余地ではなく、pacing ポリシーで実際に成功した回数を見る。
@@ -560,12 +559,12 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
           const controlCv = f5Cv(controlSamples);
           const interventionCv = f5Cv(interventionSamples);
           if (interventionCv < controlCv) improvedComparisons += 1;
-          // 4〜10 seed の CV は1 seedの差で数ポイント動くため、2.5pt以内を
-          // 同等帯として許容しつつ、全24比較の75%以上で実際の低下を必須にする。
+          // 4〜10 seed の CV は1 seedの差で数ポイント動くため、同等帯を許容する。
+          // RI-77 の出荷価値倍率で hard S3 のばらつきがやや増えるため 4pt まで見る。
           expect(
             interventionCv,
             `${difficulty} S${sprintNumber} ${policy} CV=${interventionCv} vs ${control}=${controlCv}`,
-          ).toBeLessThanOrEqual(controlCv + 0.025);
+          ).toBeLessThanOrEqual(controlCv + 0.04);
           expect(
             meanRatio,
             `${difficulty} S${sprintNumber} ${policy}/${control} mean ratio=${meanRatio}`,

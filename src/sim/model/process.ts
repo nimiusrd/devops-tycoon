@@ -183,11 +183,11 @@ export function reworkProbability(
   task: Task,
   effects: CardEffects = IDENTITY_CARD_EFFECTS,
 ): number {
+  // RI-77: AI タスク固有の手戻り上乗せは小さく保ち、依存度・編成側の代償を主因にする。
+  // Review 渋滞・Rework 増のコア因果（RI-41）は維持する。
   const p =
     0.05 +
     0.32 * (org.aiDependency / 100) +
-    // RI-77: AI タスクの手戻り上乗せを抑え、Coding 加速が純出荷に届く余地を残す。
-    // Review 渋滞・Rework 増のコア因果（RI-41）は維持する。
     (task.aiAssisted ? 0.05 : 0) -
     0.18 * (org.aiLiteracy / 100) -
     0.14 * (org.quality / 100) +
@@ -219,6 +219,15 @@ export function incidentProbability(
 export function taskValue(task: Task): number {
   const base = TASK_BASE_VALUE[task.kind];
   return task.highValue ? base * HIGH_VALUE_MULTIPLIER : base;
+}
+
+/**
+ * AI 支援タスクの出荷価値倍率（RI-77）。
+ * リテラシーが高いほど「そのまま使える」割合が増え、既定の部分配布でも純出荷が正側へ届く。
+ */
+export function aiDeliveryValueMul(org: OrgState, task: Task): number {
+  if (!task.aiAssisted) return 1;
+  return 1 + 0.85 * (org.aiLiteracy / 100);
 }
 
 /**

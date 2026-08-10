@@ -249,8 +249,8 @@ describe('RI-46 次スプリント what-if 試算', () => {
       org: { aiDependency: number; aiLiteracy: number };
       teams: Array<{ aiDependency: number }>;
     };
-    // 全社 25 + 試練 +5 → 30、ceil(30 * 0.05)=2 を差し引くと予算 0（カード発動前）。
-    internals.budget = 2;
+    // 選択中 30・他チーム 25 → 全社平均 26、ceil(26 * 0.22)=6 で予算尽き。
+    internals.budget = 6;
     internals.org.aiDependency = 25;
     for (const t of internals.teams) t.aiDependency = 25;
     internals.org.aiLiteracy = 40;
@@ -286,7 +286,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
 
     expect(engine.whatIfPreview()?.draftCandidates.docs?.immediateLose).toBeUndefined();
 
-    internals.budget = 2;
+    internals.budget = 6;
     expect(engine.whatIfPreview()?.draftCandidates.docs?.immediateLose).toBe('budgetExhausted');
   });
 
@@ -317,7 +317,7 @@ describe('RI-46 次スプリント what-if 試算', () => {
     const whatIf = engine.whatIfPreview();
     expect(whatIf?.current.immediateLose).toBe('budgetExhausted');
 
-    // 他チームも低依存なら同じ予算で継続可能（選択中ドリフト後 5×0.05 < 1 → 無料）。
+    // 他チームも低依存なら全社平均が下がり、同じ予算で継続可能。
     for (const t of internals.teams) t.aiDependency = 0;
     internals.org.aiDependency = 0;
     expect(engine.whatIfPreview()?.current.immediateLose).toBeUndefined();
@@ -542,7 +542,7 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
 
     expect(pressured.current.trials).toBe(24);
     // RI-77: 手戻り緩和後の golden（決定論）。
-    expect(pressured.current.delivered).toEqual({ mean: 678.625, min: 580, max: 818 });
+    expect(pressured.current.delivered).toEqual({ mean: 797.25, min: 672, max: 948 });
     expect(pressured.current.spread).toEqual({
       mean: 26.083333333333332,
       min: 0,

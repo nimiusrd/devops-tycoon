@@ -16,7 +16,7 @@
  * RI-73（easy/normal の seniorHpCostMul）後に missed_adjustable seed を再探索して更新。
  * RI-78（休息投資・カード発動費分離）後に missed_adjustable seed を再探索して更新。
  * RI-88（インフラコスト軸・ボス課金）後に missed_crisis の到達四半期を再確認して更新。
- * RI-77（AI 部分配布・出荷価値・beat→setup）後に再探索して更新。
+ * RI-77（AI 部分配布・出荷価値・beat→setup・インフラ単価）後に再探索して更新。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
@@ -26,7 +26,7 @@ export const E2E_MISSED_ADJUSTABLE_SEED = 'ri77-ma-5';
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。
  * 種別固定が必要なら `E2E_TERMINAL_*` を使う。
  */
-export const E2E_SHUTDOWN_SEED = 'ri77-h-219';
+export const E2E_SHUTDOWN_SEED = 'ri77b-h-56';
 
 /** 継続不能 outcome ごとの固定 seed（RI-77 再探索 / hard）。 */
 export interface TerminalQuarterSeed {
@@ -39,7 +39,7 @@ export interface TerminalQuarterSeed {
 
 /** Q1 で shutdown。 */
 export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
-  seed: 'ri77-h-219',
+  seed: 'ri77b-h-56',
   difficulty: 'hard',
   outcome: 'shutdown',
   quarterNumber: 1,
@@ -50,7 +50,7 @@ export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
-  seed: 'ri77-h-38',
+  seed: 'ri77b-h-26',
   difficulty: 'hard',
   outcome: 'missed_crisis',
   quarterNumber: 3,
@@ -61,10 +61,10 @@ export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_REORG_REQUIRED: TerminalQuarterSeed = {
-  seed: 'ri77-h-24',
+  seed: 'ri77b-h-74',
   difficulty: 'hard',
   outcome: 'reorg_required',
-  quarterNumber: 4,
+  quarterNumber: 3,
 };
 
 export const E2E_TERMINAL_SEEDS: readonly TerminalQuarterSeed[] = [

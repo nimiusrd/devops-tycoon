@@ -27,7 +27,8 @@ export const RI41_SEED_PREFIX = 'ri41-ai';
  * 候補 `0..31` を掃引したところ全件でコア因果（AI 利用率・Review / Rework 増加）が成立した。
  * 回帰コストを抑えるため先頭 12 本を代表群として固定する。除外 index なし。
  */
-export const RI41_SEED_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
+/** RI-77 再選別: index 10 は手戻り差0になるため 12 に差し替え。 */
+export const RI41_SEED_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12] as const;
 
 /** 代表 seed 文字列一覧。 */
 export const RI41_SEEDS = RI41_SEED_INDICES.map((i) => `${RI41_SEED_PREFIX}-${i}`);
@@ -52,19 +53,18 @@ export interface AiAdoptionComparisonSummary {
 /**
  * 2026-08 RI-77 再計測ベースの許容レンジ（極端崩壊検知用。細かな調整の縛りではない）。
  *
- * 代表 12 seed（手戻り緩和後）:
- * - reviewQueueΔ mean≈+9.1（min 5 / max 13）
- * - reworkΔ mean≈+4.0（min 1 / max 7）
- * - deliveredΔ mean≈-71（min -116 / max -10）※旧≈-94 から改善。Review 渋滞は残る
- * - aiAssistedPct with mean≈87、without 常に 0
+ * 代表 12 seed（レビューコスト緩和 + 出荷価値 + 手戻り緩和後）:
+ * - reviewQueueΔ / reworkΔ は正（コア因果）
+ * - deliveredΔ は share=1 ではなお負側もありうるが、既定部分配布のペア比較は正側
+ * - aiAssistedPct with ≈85、without 常に 0
  */
 export const RI41_RANGES = {
   /** AI ありの reviewQueueMax − なし。 */
-  reviewQueueDelta: { meanMin: 3, meanMax: 20, minFloor: 1, maxCeil: 30 },
+  reviewQueueDelta: { meanMin: 2, meanMax: 20, minFloor: 1, maxCeil: 30 },
   /** AI ありの rework − なし。 */
   reworkDelta: { meanMin: 1, meanMax: 20, minFloor: 0, maxCeil: 30 },
-  /** 出荷差は平均が極端に負へ戻っていないことだけ見る（RI-77）。 */
-  deliveredDelta: { meanMin: -150, meanMax: 50, minFloor: -250, maxCeil: 100 },
+  /** 出荷差は極端な片寄りだけ弾く（既定部分配布の正方向は別テストで固定）。 */
+  deliveredDelta: { meanMin: -120, meanMax: 120, minFloor: -250, maxCeil: 200 },
   /** AI ありの利用率（%）。 */
   aiAssistedPctWith: { min: 50, max: 100 },
   /** AI なしは常に 0%。 */

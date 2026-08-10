@@ -74,7 +74,8 @@ export const RUN_PHASE_TRANSITIONS: Readonly<
   draft: { NEXT: 'evolution', LOST: 'lost' },
   evolution: { FINISH: 'beat', LOST: 'lost' },
   beat: {
-    ENTER_SPRINT: 'sprint',
+    // RI-77: スプリント直行は廃止。ENTER_SPRINT も編成（setup）へ戻す。
+    ENTER_SPRINT: 'setup',
     ENTER_SHOP: 'shop',
     ENTER_REST: 'rest',
     ENTER_RECRUIT: 'recruit',

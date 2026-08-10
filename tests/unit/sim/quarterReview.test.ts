@@ -1019,9 +1019,14 @@ describe('四半期レビュー（Phase 8）', () => {
       meanRatioByDifficulty[difficulty] = ratioSum / Math.max(1, reached);
       expect(reached, difficulty).toBeGreaterThanOrEqual(4);
       expect(achieved, `${difficulty}:achieved`).toBeGreaterThan(0);
-      expect(missed, `${difficulty}:missed`).toBeGreaterThan(0);
+      // RI-77: 出荷価値倍率後は熟練オートが Delivery を達成しやすく、missed 件数では
+      // 難易度差が現れにくい。達成率（actual/target）の高低で分岐を見る。
+      void missed;
     }
     expect(meanRatioByDifficulty.hard, 'hard:meanRatio').toBeLessThan(meanRatioByDifficulty.easy);
+    expect(meanRatioByDifficulty.normal, 'normal:meanRatio').toBeLessThan(
+      meanRatioByDifficulty.easy,
+    );
     expect(meanRatioByDifficulty.hard, 'hard:meanRatio').toBeLessThanOrEqual(
       meanRatioByDifficulty.normal + 0.05,
     );

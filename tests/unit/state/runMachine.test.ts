@@ -19,9 +19,10 @@ describe('ランフェーズマシン（XState / 第3章）', () => {
     expect(drive(['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'])).toBe('beat');
   });
 
-  it('ビートから通常スプリント／ショップ／休息／採用／編成へ分岐できる', () => {
+  it('ビートから編成／ショップ／休息／採用へ分岐でき、スプリントは setup 経由', () => {
     const toBeat: RunEvent['type'][] = ['START', 'BEGIN', 'SPRINT_DONE', 'ACK', 'NEXT', 'FINISH'];
-    expect(drive([...toBeat, 'ENTER_SPRINT'])).toBe('sprint');
+    // RI-77: ENTER_SPRINT も編成へ戻し、setup を迂回しない。
+    expect(drive([...toBeat, 'ENTER_SPRINT'])).toBe('setup');
     expect(drive([...toBeat, 'ENTER_SHOP', 'RESOLVE'])).toBe('setup');
     expect(drive([...toBeat, 'ENTER_REST', 'RESOLVE'])).toBe('setup');
     expect(drive([...toBeat, 'ENTER_RECRUIT', 'RESOLVE'])).toBe('setup');
@@ -29,6 +30,7 @@ describe('ランフェーズマシン（XState / 第3章）', () => {
     expect(drive([...toBeat, 'RESOLVE'])).toBe('setup');
     // ショップ・休息後の編成（setup-pre）から次スプリントを開始できる。
     expect(drive([...toBeat, 'ENTER_SHOP', 'RESOLVE', 'BEGIN'])).toBe('sprint');
+    expect(drive([...toBeat, 'ENTER_SPRINT', 'BEGIN'])).toBe('sprint');
   });
 
   it('判定イベントのハード敗北はビートから lost へ遷移する', () => {

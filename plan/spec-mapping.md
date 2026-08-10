@@ -13,7 +13,7 @@
 | SPEC | 内容 | 主な実装・テスト | 状態 |
 | --- | --- | --- | --- |
 | [1](../SPEC.md#1-企画概要) | 企画概要 | — | — |
-| [2](../SPEC.md#2-コンセプト) | AI導入と組織制約の因果 | [probability-model.md](./probability-model.md), `src/sim/sprint.ts`, `src/sim/model/process.ts`, `tests/unit/sim/process.test.ts`, `tests/unit/helpers/aiAdoptionSeeds.ts` | ✅ AI on/off は状態へ伝播し、部分配布・Setup 強制と手戻り緩和で既定有利／逆向き因果を是正（RI-77）。コホート勝率の最終確定は再計測待ち |
+| [2](../SPEC.md#2-コンセプト) | AI導入と組織制約の因果 | [probability-model.md](./probability-model.md), `src/sim/sprint.ts`, `src/sim/model/process.ts`, `tests/unit/sim/defaultAiDelivery.test.ts`, `tests/unit/helpers/aiAdoptionSeeds.ts` | ✅ AI on/off は状態へ伝播し、既定部分配布の出荷正方向と Review/Rework 増を固定（RI-77）。コホート勝率の最終確定は再計測待ち |
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観 | [architecture.md](./architecture.md) §7 | ✅ |
 | [3](../SPEC.md#3-ゲームの基本ループ) | 複数四半期ラン、固定トラック、ビート | `src/sim/run/engine.ts`, `phases.ts`, `events.ts`, `tests/unit/sim/runLoop.test.ts` | ✅ |
 | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | テンポと速度操作 | `src/ui/sprintTempo.ts`, `tests/unit/ui/sprintTempo.test.ts`, `tests/unit/helpers/pacingStats.ts` | ✅ |

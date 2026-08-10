@@ -187,7 +187,16 @@ async function assertLayoutContract(
 
 async function stabilizeDomForScreenshot(page: Page): Promise<void> {
   await page.addStyleTag({
-    content: '*, *::before, *::after { animation: none !important; transition: none !important; }',
+    content: `
+      /* CI と Dev Container の共通フォントで、フォールバックによる高さ差をなくす。 */
+      html, body, .app, .app * {
+        font-family: 'WenQuanYi Zen Hei', sans-serif !important;
+      }
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    `,
   });
   await page.evaluate(
     () =>

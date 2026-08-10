@@ -222,16 +222,6 @@ export function taskValue(task: Task): number {
 }
 
 /**
- * AI 支援タスクの出荷価値倍率（RI-77）。
- * リテラシーが高いほど AI の実装が「そのまま使える」割合が増え、純出荷へ乗る。
- * Review 渋滞・Rework 増のコア因果とは独立に、出荷の体感を正方向へ戻す。
- */
-export function aiDeliveryValueMul(org: OrgState, task: Task): number {
-  if (!task.aiAssisted) return 1;
-  return 1 + 0.55 * (org.aiLiteracy / 100);
-}
-
-/**
  * Coding に入る際、そのタスクが AI を使うか判定する（要乱数）。
  * AI 未導入なら常に false。`adoption` は編成（AIを配ったコーダーの割合）で
  * 変動する実採用率で、未指定なら従来どおり全社的な既定採用率を使う（後方互換）。

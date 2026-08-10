@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aiDeliveryValueMul,
   codingTicks,
   incidentProbability,
   reviewPerTick,
@@ -104,18 +103,5 @@ describe('reviewPerTick', () => {
 describe('taskValue', () => {
   it('高価値タスクは通常より大きいポイント', () => {
     expect(taskValue(task({ highValue: true }))).toBeGreaterThan(taskValue(task()));
-  });
-});
-
-describe('aiDeliveryValueMul（RI-77）', () => {
-  it('非 AI タスクは倍率1、AI タスクはリテラシーで上がる', () => {
-    expect(aiDeliveryValueMul(org({ aiLiteracy: 45 }), task({ aiAssisted: false }))).toBe(1);
-    expect(aiDeliveryValueMul(org({ aiLiteracy: 0 }), task({ aiAssisted: true }))).toBe(1);
-    expect(aiDeliveryValueMul(org({ aiLiteracy: 100 }), task({ aiAssisted: true }))).toBeCloseTo(
-      1.55,
-    );
-    expect(aiDeliveryValueMul(org({ aiLiteracy: 45 }), task({ aiAssisted: true }))).toBeGreaterThan(
-      1,
-    );
   });
 });

@@ -235,10 +235,11 @@ describe('monteCarlo 基盤（RI-14）', () => {
      * RI-75 再計測（上記 seed 群）を基準に、極端な崩壊検知用へ余裕を持たせる。
      */
     const RI15_RANGES = {
-      /** 勝利ランの長寿化と RI-77 の AI 出荷価値で delivered 上振れ。桁外れだけ弾く。 */
-      delivered: { min: 200, max: 28000 },
+      /** 勝利ランの長寿化で delivered 上振れ。極端な無出荷・桁外れだけ弾く。 */
+      delivered: { min: 200, max: 25000 },
       rework: { min: 0, max: 80 },
-      // RI-73/RI-77: 生存延長で累積障害が上振れしうる。桁外れだけ弾く。
+      // RI-73: normal の seniorHpCostMul で生存が伸び、累積障害の上限外れを拾う。
+      // RI-77: 部分配布で生存が延びる場合の上振れも許容する。
       incidents: { min: 0, max: 140 },
       /** ドメイン上限 100。RI-73 の消耗緩和後は端数で 99 超もあり得る。 */
       seniorHp: { min: 0, max: 100 },
@@ -523,7 +524,7 @@ describe('monteCarlo 基盤（RI-14）', () => {
       // 実出荷倍率は安定中に6段で頭打ちなので、生コンボの連続記録は +8 をわずかに
       // 超えうる。スコア支配は上の出荷差分レンジで抑え、連続達成の表示は +8.5 までに留める。
       expect(summary.maxComboDelta.mean).toBeGreaterThanOrEqual(1);
-      // RI-77: AI 出荷価値の上振れで連続記録差がわずかに広がる。
+      // RI-77: 手戻り緩和で連続記録差がわずかに広がる。
       expect(summary.maxComboDelta.mean).toBeLessThanOrEqual(9);
     });
   });

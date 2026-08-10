@@ -16,18 +16,19 @@
  * RI-73（easy/normal の seniorHpCostMul）後に missed_adjustable seed を再探索して更新。
  * RI-78（休息投資・カード発動費分離）後に missed_adjustable seed を再探索して更新。
  * RI-88（インフラコスト軸・ボス課金）後に missed_crisis の到達四半期を再確認して更新。
+ * RI-77（AI 部分配布・出荷価値・beat→setup）後に再探索して更新。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
-export const E2E_MISSED_ADJUSTABLE_SEED = 'ri78-ma-90';
+export const E2E_MISSED_ADJUSTABLE_SEED = 'ri77-ma-5';
 
 /**
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。
  * 種別固定が必要なら `E2E_TERMINAL_*` を使う。
  */
-export const E2E_SHUTDOWN_SEED = 'ri75h-hard-883';
+export const E2E_SHUTDOWN_SEED = 'ri77-h-219';
 
-/** 継続不能 outcome ごとの固定 seed（RI-75 再探索 / hard）。 */
+/** 継続不能 outcome ごとの固定 seed（RI-77 再探索 / hard）。 */
 export interface TerminalQuarterSeed {
   seed: string;
   difficulty: DifficultyId;
@@ -38,33 +39,32 @@ export interface TerminalQuarterSeed {
 
 /** Q1 で shutdown。 */
 export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
-  seed: 'ri75h-hard-883',
+  seed: 'ri77-h-219',
   difficulty: 'hard',
   outcome: 'shutdown',
   quarterNumber: 1,
 };
 
 /**
- * Q4 で missed_crisis。
+ * Q3 で missed_crisis。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
- * RI-88（返金を computeInfraCost に揃えた後）でも到達四半期は Q4 のまま。
  */
 export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
-  seed: 'ri75k-hard-343',
+  seed: 'ri77-h-38',
   difficulty: 'hard',
   outcome: 'missed_crisis',
-  quarterNumber: 4,
+  quarterNumber: 3,
 };
 
 /**
- * Q3 で reorg_required。
+ * Q4 で reorg_required。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_REORG_REQUIRED: TerminalQuarterSeed = {
-  seed: 'ri75f-hard-298',
+  seed: 'ri77-h-24',
   difficulty: 'hard',
   outcome: 'reorg_required',
-  quarterNumber: 3,
+  quarterNumber: 4,
 };
 
 export const E2E_TERMINAL_SEEDS: readonly TerminalQuarterSeed[] = [

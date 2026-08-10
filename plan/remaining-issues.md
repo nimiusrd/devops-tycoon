@@ -115,7 +115,7 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 
 ### RI-77 AI 導入が既定 ON で、既定のまま進むのが有利 — 実装済・コホート再計測待ち
 
-機構側は実装済み。開始時は `starter-ai-junior` のみ AI 配布（`createInitialRoster`）、ビート後の sprint 系は必ず `setup` を経由して配布を問い直す。コア因果は Review/Rework 増を維持したまま、`aiDeliveryValueMul` と手戻り緩和で出荷差の平均を旧≈-94 から改善（`aiAdoptionSeeds` / RI-41）。FormationScreen の再設計や開始時 AI 全面撤廃はしていない。
+機構側は実装済み。開始時は `starter-ai-junior` のみ AI 配布（`createInitialRoster`）、ビート後の sprint 系は必ず `setup` を経由して配布を問い直す。コア因果は Review/Rework 増を維持したまま、手戻り緩和で出荷差の平均を旧≈-94 から改善（`aiAdoptionSeeds` / RI-41）。FormationScreen の再設計や開始時 AI 全面撤廃はしていない。
 
 勝率帯・`skilledNoHire` vs `noAiCtl` のコホート差は `npm run playtest` の再計測で確定する。受入の最終判定はそこで行う。
 

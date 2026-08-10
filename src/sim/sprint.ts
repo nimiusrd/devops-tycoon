@@ -22,7 +22,6 @@ import {
   STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
   STABILITY_HIGH_VALUE_MUL,
   STABILITY_REWORK_MUL,
-  aiDeliveryValueMul,
   codingProgressPerTick,
   deliveryComboMultiplier,
   decideAiAssisted,
@@ -314,9 +313,7 @@ export function reviewOne(
         ? STABILITY_HIGH_VALUE_MUL
         : 1)
     : taskValue(task);
-  const value = Math.round(
-    stableValue * deliveryComboMultiplier(m.combo, stabilized) * aiDeliveryValueMul(org, task),
-  );
+  const value = Math.round(stableValue * deliveryComboMultiplier(m.combo, stabilized));
   m.delivered += value;
   org.deliveryScore += value;
   if (task.aiAssisted) m.aiAssistedCompleted += 1;
@@ -335,7 +332,7 @@ export function forceShipReviewTask(task: Task, sprint: SprintState, org: OrgSta
   delete task.burnTicksLeft;
   m.doneCount += 1;
   m.completedCount += 1;
-  const value = Math.round(taskValue(task) * aiDeliveryValueMul(org, task));
+  const value = Math.round(taskValue(task));
   m.delivered += value;
   org.deliveryScore += value;
   if (task.aiAssisted) m.aiAssistedCompleted += 1;

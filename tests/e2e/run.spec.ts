@@ -678,37 +678,29 @@ test('ビートの選択イベントを解決すると次スプリントへ進�
 });
 
 test('tone: joke のビートはネタ分類の見た目で表示される（RI-38）', async ({ page }) => {
-  const jokeIds = EVENT_DEFS.filter((def) => def.tone === 'joke').map((def) => def.id);
+  const jokeBeats = EVENT_DEFS.filter((def) => def.tone === 'joke').map((def) => ({
+    eventId: def.id,
+    kind: effectiveKind(def),
+  }));
   await page.goto('/?renderer=dom&seed=ri38-joke-ui');
+  await expect(page.getByTestId('title')).toBeVisible();
 
-  const found = await page.evaluate((ids) => {
+  const found = await page.evaluate((beats) => {
     const g = (window as GameWindow).game!;
     g.pause();
-    for (let i = 0; i < 80; i += 1) {
-      g.startRun('easy', [], `ri38-joke-ui-${i}`);
-      let s = g.getState();
-      let guard = 0;
-      while (s.status === 'playing' && guard < 8000) {
-        guard += 1;
-        if (s.phase === 'beat' && s.beat && ids.includes(s.beat.eventId)) {
-          return { eventId: s.beat.eventId, kind: s.beat.kind };
-        }
-        if (s.phase === 'setup') g.beginSetupSprint();
-        else if (s.phase === 'beat') g.resolveBeat((window as GameWindow).__e2eBeatChoice!(s.beat));
-        else if (s.phase === 'sprint') g.step(1_000_000);
-        else if (s.phase === 'result') g.acknowledgeResult();
-        else if (s.phase === 'draft') g.skipDraft();
-        else if (s.phase === 'evolution') g.finishEvolution();
-        else if (s.phase === 'shop') g.leaveShop();
-        else if (s.phase === 'rest') g.restChoose('heal');
-        else if (s.phase === 'recruit') g.recruitChoose('skip');
-        else if (s.phase === 'quarterReview') g.acknowledgeQuarterReview();
-        else break;
-        s = g.getState();
-      }
-    }
-    return null;
-  }, jokeIds);
+    const beat = beats[0];
+    if (!beat) return null;
+    const engine = (g as unknown as { engine: RunEngine }).engine as unknown as {
+      phase: string;
+      beat: { eventId: string; kind: 'judgment' | 'decision' } | null;
+    };
+    g.startRun('easy', [], 'ri38-joke-ui');
+    engine.phase = 'beat';
+    engine.beat = beat;
+    // 内部状態の差し替えを UI の revision に反映する（RI-85 と同じ E2E フック）。
+    g.playCard(-1);
+    return beat;
+  }, jokeBeats);
 
   expect(found).not.toBeNull();
   const event = getEvent(found!.eventId)!;

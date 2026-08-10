@@ -81,22 +81,34 @@ const RI66_SEEDS = [
   'q75b-145',
 ] as const;
 
-/**
- * RI-66: ラン壁時計用の固定コホート。
- * RI-79 延命後の現行モデルではアルファベット連続 seed が長命側へ偏るため、
- * RI-78 の現行条件で再探索した固定 seed 群へ更新する。
- */
+/** RI-66: ラン壁時計用の固定連続コホート（結果を見て選ばない）。 */
 const RI66_RUN_SEEDS = [
-  'ri78-run-1',
-  'ri78-run-2',
-  'ri78-run-8',
-  'ri78-run-9',
-  'ri78-run-14',
-  'ri78-run-24',
-  'ri78-run-26',
-  'ri78-run-35',
-  'ri78-run-37',
-  'ri78-run-39',
+  'a',
+  'b',
+  'c',
+  'd',
+  'e',
+  'f',
+  'g',
+  'h',
+  'i',
+  'j',
+  'k',
+  'l',
+  'm',
+  'n',
+  'o',
+  'p',
+  'q',
+  'r',
+  's',
+  't',
+  'u',
+  'v',
+  'w',
+  'x',
+  'y',
+  'z',
 ] as const;
 
 function collectSprintTicks(
@@ -334,9 +346,10 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   });
 
   it('skilled 自動操作の 1 ランが 15〜45 分帯（p50）に入る', () => {
-    // 早期敗北の短ランは体験目安の対象外。四半期レビューへ 1 回以上到達したランだけ集計する。
-    // コホートは RI-78 後に再探索した固定 seed 群。RI-79 の延命で複数四半期へ伸びた
-    // 長命ランにより p90 は §3.1 上限を超えうるため、回帰の主指標は p50 とする。
+    // コホートは固定の a–z（結果を見て選ばない）。少なくとも1本のスプリントを
+    // 実行した全ラン（早期敗北を含む）を母数にして、結果選択による生存者バイアスを避ける。
+    // RI-79 の延命で複数四半期へ伸びた長命ランにより p90 は §3.1 上限を超えうるため、
+    // 回帰の主指標は p50 とする。
     const runMins: number[] = [];
     for (const seed of RI66_RUN_SEEDS) {
       const e = new RunEngine({ seed, difficulty: 'normal' });
@@ -361,11 +374,12 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
           reviews += 1;
         }
       }
-      if (reviews >= 1) {
+      if (ticks.length > 0) {
         runMins.push(modelRunWallMinutes(ticks, reviews));
       }
     }
-    // RI-75: maxTicks 打ち切りを出荷なしにすると四半期到達が減る。到達分だけで帯を見る。
+    // RI-75: maxTicks 打ち切りを出荷なしにすると四半期到達が減るため、
+    // レビュー到達の有無にかかわらず実行できたランを集計する。
     expect(runMins.length).toBeGreaterThanOrEqual(2);
 
     const rP50 = p50(runMins);

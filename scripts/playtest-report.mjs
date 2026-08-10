@@ -385,6 +385,23 @@ const runIdentity = (r) => `${r.meta ?? 'fresh'}|${r.difficulty}|${r.seed}`;
 const sprintIdentity = (s) => `${s.quarter}|${s.index}`;
 const sprintAfterInvestment = (run, event) =>
   (run.sprints ?? []).find((s) => s.quarter === event.quarter && s.index === event.index) ?? null;
+const investmentOutcome = (run, sprint) => {
+  if (sprint) return '完走';
+  if (run.status === 'lost') return `敗北(${run.loseReason ?? 'unknown'})`;
+  return '未完走';
+};
+const investmentOutcomeSummary = (rows, side) => {
+  const counts = new Map();
+  for (const row of rows) {
+    const run = row[`${side}Run`];
+    const sprint = row[`${side}Sprint`];
+    const outcome = investmentOutcome(run, sprint);
+    counts.set(outcome, (counts.get(outcome) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([outcome, count]) => `${outcome} ${count}`).join(' / ');
+};
+const completedInvestmentRows = (rows) =>
+  rows.filter((row) => row.treatmentSprint && row.controlSprint);
 const pairedInvestmentRows = (policy, control, kind, predicate) => {
   const treatmentRuns = new Map(
     runs.filter((r) => r.policy === policy).map((r) => [runIdentity(r), r]),
@@ -409,8 +426,17 @@ const pairedInvestmentRows = (policy, control, kind, predicate) => {
       const controlEvent = controlEvents.get(sprintIdentity(event));
       const treatmentSprint = sprintAfterInvestment(treatment, event);
       const controlSprint = controlEvent ? sprintAfterInvestment(ctl, controlEvent) : null;
-      if (controlEvent && treatmentSprint && controlSprint) {
-        rows.push({ event, controlEvent, treatmentSprint, controlSprint });
+      if (controlEvent) {
+        // 次スプリントを完走できなかった側も共通投資機会の母数へ残す。
+        // ここで落とすと、投資が敗北を招いたケースほど KPI 比較から消える。
+        rows.push({
+          event,
+          controlEvent,
+          treatmentRun: treatment,
+          controlRun: ctl,
+          treatmentSprint,
+          controlSprint,
+        });
       }
     }
   }
@@ -422,14 +448,25 @@ const printInvestmentPair = (label, rows, fields) => {
     console.log(`${label}: 共通機会なし（未計測）`);
     return;
   }
+  const completed = completedInvestmentRows(rows);
+  const outcomes =
+    `共通機会 n=${rows.length}（投資側: ${investmentOutcomeSummary(rows, 'treatment')}; ` +
+    `統制: ${investmentOutcomeSummary(rows, 'control')}）`;
+  // KPI は次スプリントを完走した側にしか存在しないため平均値は完走ペアで比較する。
+  // 一方、完走できなかった機会は上の outcome 集計と共通機会 n に残し、生存者だけを
+  // 共通機会の母数として扱わない。
+  if (!completed.length) {
+    console.log(`${label}: ${outcomes} | KPI比較なし`);
+    return;
+  }
   const deltas = fields.map(({ label: fieldLabel, field, lowerIsBetter = false }) => {
-    const treatment = meanField(rows, 'treatmentSprint', field);
-    const control = meanField(rows, 'controlSprint', field);
+    const treatment = meanField(completed, 'treatmentSprint', field);
+    const control = meanField(completed, 'controlSprint', field);
     const delta = treatment - control;
     const better = lowerIsBetter ? delta < 0 : delta > 0;
     return `${fieldLabel} ${r1(treatment)} vs ${r1(control)} (${delta >= 0 ? '+' : ''}${r1(delta)})${better ? ' 改善' : ''}`;
   });
-  console.log(`${label}: n=${rows.length} | ${deltas.join(' / ')}`);
+  console.log(`${label}: ${outcomes}、完走ペア n=${completed.length} | ${deltas.join(' / ')}`);
 };
 
 const repayRows = pairedInvestmentRows(
@@ -464,7 +501,8 @@ const shopRows = pairedInvestmentRows(
     controlEvent !== undefined,
 );
 if (shopRows.length) {
-  const improved = shopRows.filter(
+  const completedShopRows = completedInvestmentRows(shopRows);
+  const improved = completedShopRows.filter(
     ({ treatmentSprint: t, controlSprint: c }) =>
       t.delivered > c.delivered ||
       t.rework < c.rework ||
@@ -472,7 +510,10 @@ if (shopRows.length) {
       t.seniorHpAfter > c.seniorHpAfter,
   ).length;
   console.log(
-    `ショップ購入 vs 統制: n=${shopRows.length} | KPIいずれか改善=${improved}/${shopRows.length} (${pct(improved, shopRows.length)})`,
+    `ショップ購入 vs 統制: 共通機会 n=${shopRows.length}（投資側: ${investmentOutcomeSummary(shopRows, 'treatment')}; ` +
+      `統制: ${investmentOutcomeSummary(shopRows, 'control')}） | ` +
+      `共通機会のKPIいずれか改善=${improved}/${shopRows.length} (${pct(improved, shopRows.length)})、` +
+      `完走ペア=${completedShopRows.length}`,
   );
   printInvestmentPair('  ショップ購入詳細', shopRows, [
     { label: '出荷', field: 'delivered' },

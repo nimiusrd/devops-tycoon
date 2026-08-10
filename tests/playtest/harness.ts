@@ -18,7 +18,14 @@ import { assignableTasks } from '../../src/sim/assignTask';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
-import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
+import {
+  RunEngine,
+  REST_HEAL,
+  REST_MORALE_HEAL,
+  REST_REPAY,
+  REST_REPAY_REWORK_RATE,
+  REST_UPGRADE_FOCUS_MAX,
+} from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
 import { measureGoalProgress } from '../../src/sim/run/quarterReview';
 import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
@@ -952,9 +959,13 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
       }
     } else if (choiceAtRest === 'repay') {
       score += Math.min(REST_REPAY, ctx.org.techDebt) * 0.4;
+      // `restChoose('repay')` は負債返済に加えて次スプリントの手戻り率を抑える。
+      // 休息ビートの outcome にはまだこの効果が載っていないため、ここで実効果を評価する。
+      score -= REST_REPAY_REWORK_RATE * 10;
     } else {
-      // カード強化。盤面の状態には依らない一定の投資価値として置く。
-      score += 2;
+      // カード強化。盤面の状態には依らない一定の投資価値に加え、次スプリントの
+      // 集中力上限増加を評価する。
+      score += 2 + REST_UPGRADE_FOCUS_MAX * 0.3;
     }
   }
   return score;

@@ -68,6 +68,15 @@ describe('resolve / canMove', () => {
     expect(resolveAssignTaskTarget(sprint)?.id).toBe(1);
   });
 
+  it('target 省略時は Coding を優先し、Backlog の complex は後回しにする', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [
+      makeTask(0, { lane: 'coding', kind: 'normal' }),
+      makeTask(1, { lane: 'backlog', kind: 'complex' }),
+    ]);
+    expect(resolveAssignTaskTarget(sprint)?.id).toBe(0);
+  });
+
   it('target 省略時は Coding が空なら空き枠の Backlog を自動対象にする', () => {
     const org = createOrgState('default', true);
     const sprint = makeSprint(org, [makeTask(0, { lane: 'backlog', kind: 'normal' })]);

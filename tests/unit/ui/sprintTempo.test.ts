@@ -254,6 +254,7 @@ describe('sprintTempo（RI-62）', () => {
         playUntil(e, 'quarterReview', {
           skilled: true,
           onSprintEnd: (m) => {
+            if (!m.completed) return;
             if (m.kind === 'normal') skilledSecs.push(wallSecondsAt1x(m.ticks));
             if (m.kind === 'boss') skilledBossSecs.push(wallSecondsAt1x(m.ticks));
           },
@@ -278,7 +279,7 @@ describe('sprintTempo（RI-62）', () => {
 });
 
 describe('sprintTempo ペーシング統計（RI-66）', () => {
-  /** 全 seed のスプリント完了メトリクス（ボス分布用。レビュー未到達も含む）。 */
+  /** 全 seed のスプリント終端メトリクス（ボス分布用。レビュー未到達も含む）。 */
   let quarterAttempts: { seed: string; ends: SprintEndMetrics[]; reachedReview: boolean }[];
   /** 四半期レビュー到達サンプル（四半期壁時計用）。 */
   let reviewedQuarters: { seed: string; ends: SprintEndMetrics[] }[];
@@ -313,10 +314,10 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   });
 
   it('代表 seed のボス壁時計が分布で 90〜180 秒帯に入る', () => {
-    // クリア／敗北を問わず完了したボスを集計する（レビュー到達で絞らない）。
+    // クリア／敗北を問わず完走したボスを集計する（レビュー到達で絞らない）。
     const bossSecs = quarterAttempts
       .flatMap((row) => row.ends)
-      .filter((m) => m.kind === 'boss')
+      .filter((m) => m.kind === 'boss' && m.completed)
       .map((m) => wallSecondsAt1x(m.ticks));
     // RI-75: タスク床引き上げ後はボス到達が減るため、到達分だけで帯を見る。
     expect(bossSecs.length).toBeGreaterThanOrEqual(2);
@@ -396,7 +397,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
       playUntil(e, 'quarterReview', {
         pacingInterventions: true,
         onSprintEnd: (m) => {
-          used.push(m.interventionsUsed);
+          if (m.completed) used.push(m.interventionsUsed);
         },
       });
     }

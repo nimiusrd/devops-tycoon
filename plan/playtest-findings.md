@@ -569,7 +569,7 @@ Nightmare では AI を切ると第1スプリント即死（RI-74）を回避で
 | --- | ---: | --- |
 | `skilledRestRepay` vs `skilledNoHire`（回復） | 10（完走ペア10） | Rework 0.3 vs 0.5（-0.2）、Tech Debt 0 vs 6.7（-6.7）でいずれも改善 |
 | `skilledRestUpgrade` vs `skilledNoHire`（回復） | 9（完走ペア9） | 集中力上限 19.7 vs 18.2（+1.4）、出荷 620.8 vs 622.4（-1.7）、カード発動 3 vs 3 |
-| `skilledShopBuy` vs `skilledNoHire`（実購入） | 13（完走ペア13） | 事前固定した純出荷（出荷−購入費）の改善 0/13（0%）。純出荷平均 503.9 vs 546.8 |
+| `skilledShopBuy` vs `skilledNoHire`（実購入） | 13（完走ペア13、比較不能0） | 完走ペアだけを分母にした純出荷（出荷−購入費）の改善 0/13（0%）。純出荷平均 503.9 vs 546.8 |
 | `skilledShopBuy` vs `skilledNoHire`（実購入・補助KPI） | 13（完走ペア13） | 出荷 535.3 vs 546.8、Rework 1.2 vs 0.8、Reviewピーク 21 vs 21.4、HP 24.9 vs 23.3 |
 | `skilledSelectiveCards` vs `skilledNoCards` | 40ラン | 勝利 7 vs 3、生存スプリント平均 7.0 vs 7.7、発動カード平均 15.2 vs 0 |
 

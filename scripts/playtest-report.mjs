@@ -511,28 +511,35 @@ const shopRows = pairedInvestmentRows(
 );
 if (shopRows.length) {
   const completedShopRows = completedInvestmentRows(shopRows);
+  const comparableShopCount = completedShopRows.length;
+  const incompleteShopCount = shopRows.length - comparableShopCount;
   // ショップ購入の純効用は「次スプリント出荷 − 実際に支払った購入費」とする。
   // 4 KPI の OR ではなく、事前に固定した単一の主要 KPI として判定し、予算消費を含める。
   const netDelivery = (sprint, event) =>
     sprint.delivered - Math.max(0, Number(event.purchaseCost ?? 0));
+  // 改善率も平均値と同じく、両側に次スプリント KPI がある完走ペアだけで比較する。
   const improved = completedShopRows.filter(
     ({ event, controlEvent, treatmentSprint: t, controlSprint: c }) =>
       netDelivery(t, event) > netDelivery(c, controlEvent),
   ).length;
-  const treatmentNetDelivery = mean(
-    completedShopRows.map(({ event, treatmentSprint }) => netDelivery(treatmentSprint, event)),
-  );
-  const controlNetDelivery = mean(
-    completedShopRows.map(({ controlEvent, controlSprint }) =>
-      netDelivery(controlSprint, controlEvent),
-    ),
-  );
+  const treatmentNetDelivery = comparableShopCount
+    ? mean(
+        completedShopRows.map(({ event, treatmentSprint }) => netDelivery(treatmentSprint, event)),
+      )
+    : null;
+  const controlNetDelivery = comparableShopCount
+    ? mean(
+        completedShopRows.map(({ controlEvent, controlSprint }) =>
+          netDelivery(controlSprint, controlEvent),
+        ),
+      )
+    : null;
   console.log(
     `ショップ購入 vs 統制: 共通機会 n=${shopRows.length}（投資側: ${investmentOutcomeSummary(shopRows, 'treatment')}; ` +
       `統制: ${investmentOutcomeSummary(shopRows, 'control')}） | ` +
-      `純出荷（出荷−購入費）改善=${improved}/${shopRows.length} (${pct(improved, shopRows.length)})、` +
-      `完走ペアの純出荷平均=${r1(treatmentNetDelivery)} vs ${r1(controlNetDelivery)}、` +
-      `完走ペア=${completedShopRows.length}`,
+      `純出荷（出荷−購入費）改善=${improved}/${comparableShopCount} (${pct(improved, comparableShopCount)})、` +
+      `完走ペアの純出荷平均=${treatmentNetDelivery === null ? '—' : r1(treatmentNetDelivery)} vs ${controlNetDelivery === null ? '—' : r1(controlNetDelivery)}、` +
+      `完走ペア=${comparableShopCount}、比較不能=${incompleteShopCount}`,
   );
   printInvestmentPair('  ショップ購入詳細', shopRows, [
     { label: '出荷', field: 'delivered' },

@@ -8,10 +8,12 @@ import { getEvent } from '../../../src/data/events';
 import type { RunEngine } from '../../../src/sim/run/engine';
 import type { RunState } from '../../../src/sim/run/types';
 
-/** スプリント完了時に渡す収集用メトリクス（RI-66）。 */
+/** スプリントフェーズを抜けた時点で渡す収集用メトリクス（RI-66 / RI-78）。 */
 export interface SprintEndMetrics {
   kind: NonNullable<RunState['currentSprintKind']>;
-  /** 完了時点の sprintTick（壁時計換算の元）。 */
+  /** スプリント処理を完走したか（途中敗北では false）。 */
+  completed: boolean;
+  /** 終端時点の sprintTick（壁時計換算の元）。途中敗北の経過時間も含む。 */
   ticks: number;
   /** スプリント開始時の focusMax（利用可能介入回数の見積もり用）。 */
   focusMax: number;
@@ -34,7 +36,7 @@ export interface PlayOptions {
   /** 休息の選択（既定 heal）。 */
   restOption?: 'heal' | 'repay' | 'upgrade' | 'recruit';
   /**
-   * スプリント完了直後に呼ばれる（phase が sprint から抜けた直後）。
+   * スプリントフェーズを抜けた直後に呼ばれる（完走・途中敗北を含む）。
    * RI-66 の壁時計・介入回数集計用。
    */
   onSprintEnd?: (metrics: SprintEndMetrics) => void;
@@ -131,19 +133,19 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
           e.step(1_000_000);
         }
       }
-      // resolveSprint 済み（sprintsPlayed 増加）のときだけ集計。
-      // カード即時敗北などの中断スプリントは ticks を混ぜない。
+      // 完走・途中敗北のどちらも、スプリントフェーズを抜けた時点で通知する。
+      // 途中敗北は sprintsPlayed が増えないため completed=false として扱うが、
+      // sprintTick は終端までの経過時間を保持しているので壁時計へ含められる。
       if (kind && e.snapshot().phase !== 'sprint') {
         const interventionsUsed = skilledInterventionAcc.get(e) ?? 0;
         skilledInterventionAcc.set(e, 0);
-        if (e.snapshot().sprintsPlayed > sprintsPlayedBefore) {
-          opts.onSprintEnd?.({
-            kind,
-            ticks: e.snapshot().sprintTick,
-            focusMax,
-            interventionsUsed,
-          });
-        }
+        opts.onSprintEnd?.({
+          kind,
+          completed: e.snapshot().sprintsPlayed > sprintsPlayedBefore,
+          ticks: e.snapshot().sprintTick,
+          focusMax,
+          interventionsUsed,
+        });
       }
       return true;
     }

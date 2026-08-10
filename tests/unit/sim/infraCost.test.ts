@@ -91,6 +91,37 @@ describe('RI-88 インフラコスト軸', () => {
     expect(played.infraCostMul).toBe(0.75);
   });
 
+  it('複数チームでは全社平均の依存度で課金する', () => {
+    const engine = new RunEngine({
+      seed: 'ri88-company-dep',
+      difficulty: 'easy',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      org: { aiDependency: number };
+      teams: Array<{ id: string; aiDependency: number }>;
+      activeTeamId: string;
+    };
+    // 選択中だけ低依存でも、他チーム高依存なら全社平均で課金される。
+    for (const t of internals.teams) {
+      t.aiDependency = t.id === internals.activeTeamId ? 0 : 100;
+    }
+    internals.org.aiDependency = 0;
+    const n = internals.teams.length;
+    expect(n).toBeGreaterThan(1);
+
+    const before = engine.snapshot().budget;
+    engine.beginSetupSprint();
+    // 試練ドリフト +5 後の選択中=5。他チームは 100 のまま。
+    const companyDep = Math.round((5 + 100 * (n - 1)) / n);
+    const expected = computeInfraCost(companyDep, 0.05, 1);
+    expect(computeInfraCost(5, 0.05, 1)).toBe(0);
+    expect(expected).toBeGreaterThan(0);
+    expect(engine.snapshot().budget).toBe(before - expected);
+    expect(engine.snapshot().org.aiDependency).toBe(5);
+  });
+
   it('カード返金は computeInfraCost と同じ 1 未満無料ルールを使う', () => {
     // Codex: 試練 dep30 × 0.05 × relic0.8 = 1.2 → 課金2。
     // ai-guideline (0.75) 後は 0.9 → 本来 0。ceil だけの再計算だと 1 残りになる。

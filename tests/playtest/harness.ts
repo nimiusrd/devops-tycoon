@@ -1497,19 +1497,30 @@ const SHOP_BUDGET_FLOOR = 10;
  * 危機条件の5には十分余裕がある）、「ショップへ投資する」条件が実際には
  * 多くの機会を見送る保守方針になってしまう。
  */
-function buyShopItems(e: RunEngine, spec: PolicySpec): void {
+/** ショップ購入方針の適用（単体テストからも呼ぶ）。 */
+export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
   const reserve = spec.recruit === 'skip' ? SHOP_BUDGET_FLOOR : RECRUIT_COST;
   const avoidCostOpt = spec.shop === 'buyAvoidCostOpt';
   const preferCostOpt = spec.shop === 'buyCostOpt';
-  const relic = e.snapshot().shop?.relic;
-  const relicOk =
-    relic &&
-    !relic.bought &&
-    e.snapshot().budget - relic.cost >= reserve &&
-    !(avoidCostOpt && relic.id === COST_OPT_RELIC_ID);
-  if (relicOk) {
+
+  const tryBuyRelic = (onlyCostOpt: boolean): void => {
+    const s = e.snapshot();
+    const relic = s.shop?.relic;
+    if (!relic || relic.bought) return;
+    if (s.budget - relic.cost < reserve) return;
+    if (avoidCostOpt && relic.id === COST_OPT_RELIC_ID) return;
+    if (onlyCostOpt && relic.id !== COST_OPT_RELIC_ID) return;
+    if (!onlyCostOpt && preferCostOpt && relic.id !== COST_OPT_RELIC_ID) return;
     e.buyShopRelic();
+  };
+
+  // preferCostOpt では無関係レリックをカードより先に買わない（最適化投資を潰さない）。
+  if (preferCostOpt) {
+    tryBuyRelic(true);
+  } else {
+    tryBuyRelic(false);
   }
+
   // 陳列は購入で `bought` が立つので、毎回取り直して安い順に買えるだけ買う。
   for (;;) {
     const s = e.snapshot();
@@ -1534,6 +1545,20 @@ function buyShopItems(e: RunEngine, spec: PolicySpec): void {
     e.buyShopCard(affordable[0].defId);
     // 予算不足などで `bought` が立たなければ無限ループになるため、変化が無ければ抜ける。
     if (!e.snapshot().shop?.cards.find((c) => c.defId === affordable[0].defId)?.bought) break;
+  }
+
+  // カード購入後の余りで無関係レリックを検討する（preferCostOpt 時）。
+  if (preferCostOpt) {
+    const s = e.snapshot();
+    const relic = s.shop?.relic;
+    if (
+      relic &&
+      !relic.bought &&
+      relic.id !== COST_OPT_RELIC_ID &&
+      s.budget - relic.cost >= reserve
+    ) {
+      e.buyShopRelic();
+    }
   }
 }
 

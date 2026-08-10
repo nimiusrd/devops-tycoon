@@ -529,32 +529,37 @@ export class RunEngine {
   /**
    * スプリント開始時の AI 依存圧力（ドリフト＋インフラコスト）を適用する（RI-88）。
    * 通常ランはボス時のみ課金。試練は毎スプリント。
+   * 課金の依存度は選択中チームではなく全社集約（`companyOrgFromTeams`）を使う。
    */
   private applyTrialAiDependencyPressure(org: OrgState, budget: number, kind: SprintKind): number {
     const before = budget;
     const billInfraCost = this.trials.length > 0 || kind === 'boss';
-    const next = applyTrialAiDependencyPressure(
-      org,
-      budget,
-      {
-        deck: this.deck,
-        relics: this.relics,
-        evolution: this.evolution,
-        difficulty: this.difficulty,
-        trials: this.trials,
-      },
-      { billInfraCost },
-    );
-    this.chargedInfraCost = Math.max(0, before - next);
-    const fold = foldRunEffects({
+    const pressureCtx = {
       deck: this.deck,
       relics: this.relics,
       evolution: this.evolution,
       difficulty: this.difficulty,
       trials: this.trials,
-    });
+    };
+    // ドリフトは選択中チームへ適用し、課金前に永続チームへ同期する。
+    applyTrialAiDependencyPressure(org, budget, pressureCtx, { billInfraCost: false });
+    this.syncActiveTeamFromOrg();
+    const fold = foldRunEffects(pressureCtx);
+    const companyDep = companyOrgFromTeams(this.teams, org).aiDependency;
+    const next = billInfraCost
+      ? Math.max(
+          0,
+          budget -
+            computeInfraCost(
+              companyDep,
+              fold.frontierModelCostPerDependency,
+              fold.effects.infraCostMul,
+            ),
+        )
+      : budget;
+    this.chargedInfraCost = Math.max(0, before - next);
     // カード発動で依存度が変わっても、課金時点の dep×rate を正として再計算する。
-    this.chargedInfraDependency = org.aiDependency;
+    this.chargedInfraDependency = companyDep;
     this.chargedInfraRate = fold.frontierModelCostPerDependency;
     return next;
   }

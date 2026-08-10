@@ -12,7 +12,7 @@ import {
   beginCurrentSetupSprint,
   beginPublicSprint,
 } from './fixtures';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { seedMeta } from './seedMeta';
 
@@ -25,6 +25,7 @@ const VIEWPORTS = [
   { name: 'desktop-short', width: 1024, height: 768 },
   { name: 'desktop', width: 1440, height: 900 },
 ] as const;
+type ViewportName = (typeof VIEWPORTS)[number]['name'];
 
 type Box = { x: number; y: number; width: number; height: number };
 
@@ -35,6 +36,7 @@ interface LayoutContractOptions {
   armed?: boolean;
   assignee?: boolean;
   resultOverlay?: boolean;
+  skipBoardMinimumDimensionsAt?: ViewportName;
 }
 
 function overlaps(a: Box, b: Box): boolean {
@@ -45,6 +47,36 @@ async function readBox(page: Page, testId: string): Promise<Box> {
   const box = await page.getByTestId(testId).boundingBox();
   if (!box) throw new Error(`${testId} の bounding box が取得できない`);
   return box;
+}
+
+/** viewport に収まる要素は全体、viewport より背の高い要素は上下端の到達性を検証する。 */
+async function assertReachableInViewport(
+  page: Page,
+  locator: Locator,
+  label: string,
+): Promise<void> {
+  await locator.scrollIntoViewIfNeeded();
+  const viewportHeight = await page.evaluate(() => window.innerHeight);
+  const box = await locator.boundingBox();
+  if (!box) throw new Error(`${label} の bounding box が取得できない`);
+
+  if (box.height <= viewportHeight + 1) {
+    await expect(locator, label).toBeInViewport({ ratio: 1 });
+    return;
+  }
+
+  await locator.evaluate((element) =>
+    element.scrollIntoView({ block: 'start', inline: 'nearest' }),
+  );
+  const topBox = await locator.boundingBox();
+  expect(topBox?.y, `${label} の上端へスクロールできない`).toBeGreaterThanOrEqual(-1);
+
+  await locator.evaluate((element) => element.scrollIntoView({ block: 'end', inline: 'nearest' }));
+  const bottomBox = await locator.boundingBox();
+  expect(
+    bottomBox && bottomBox.y + bottomBox.height,
+    `${label} の下端へスクロールできない`,
+  ).toBeLessThanOrEqual(viewportHeight + 1);
 }
 
 /** sticky actionbar の塗りつぶし位置ではなく、兄弟フロー上の配置を測る。 */
@@ -115,9 +147,13 @@ async function assertLayoutContract(
     }
   }
 
-  const noHorizontalOverflow = await page.evaluate(
-    () => document.documentElement.scrollWidth <= window.innerWidth + 1,
-  );
+  const noHorizontalOverflow = await page.evaluate(() => {
+    const app = document.querySelector<HTMLElement>('.app.app-sprint-layout');
+    return (
+      document.documentElement.scrollWidth <= window.innerWidth + 1 &&
+      (app === null || app.scrollWidth <= app.clientWidth + 1)
+    );
+  });
   expect(
     noHorizontalOverflow,
     `${viewport.width}x${viewport.height} で横スクロールが発生している`,
@@ -125,14 +161,16 @@ async function assertLayoutContract(
 
   const boardRatioError = Math.abs(boardBox.width / boardBox.height / BOARD_RATIO - 1);
   expect(boardRatioError, '盤面の 1404:573 比率が崩れている').toBeLessThanOrEqual(0.01);
-  expect(
-    boardBox.width,
-    `盤面の最低幅を満たしていない（${viewport.width}x${viewport.height}）`,
-  ).toBeGreaterThanOrEqual(240);
-  expect(
-    boardBox.height,
-    `盤面の最低高を満たしていない（${viewport.width}x${viewport.height}）`,
-  ).toBeGreaterThanOrEqual(96);
+  if (options.skipBoardMinimumDimensionsAt !== viewport.name) {
+    expect(
+      boardBox.width,
+      `盤面の最低幅を満たしていない（${viewport.width}x${viewport.height}）`,
+    ).toBeGreaterThanOrEqual(240);
+    expect(
+      boardBox.height,
+      `盤面の最低高を満たしていない（${viewport.width}x${viewport.height}）`,
+    ).toBeGreaterThanOrEqual(96);
+  }
 
   const boardWrap = page.locator('.board-wrap');
   const wrapBox = await boardWrap.boundingBox();
@@ -147,27 +185,47 @@ async function assertLayoutContract(
     Math.max(widthFill, heightFill),
     `盤面が board-wrap の contain スロットを十分に使用していない（${viewport.width}x${viewport.height}）`,
   ).toBeGreaterThan(0.75);
+  expect(boardBox.width, '盤面が contain スロットの幅を超えている').toBeLessThanOrEqual(
+    stageBox.width + 1,
+  );
+  expect(boardBox.height, '盤面が contain スロットの高さを超えている').toBeLessThanOrEqual(
+    stageBox.height + 1,
+  );
 
-  await actionBar.scrollIntoViewIfNeeded();
-  await expect(actionBar).toBeInViewport();
+  await assertReachableInViewport(page, actionBar, 'action-bar');
 
   if (options.assignee) {
     const assignee = page.getByTestId('assign-assignee');
     const senior = page.getByTestId('assign-assignee-senior');
-    await assignee.scrollIntoViewIfNeeded();
-    await senior.scrollIntoViewIfNeeded();
-    await expect(assignee).toBeInViewport();
-    await expect(senior).toBeInViewport();
+    await assertReachableInViewport(page, assignee, '担当選択領域');
+    await assertReachableInViewport(page, senior, 'senior担当ボタン');
   }
 
   if (options.effectTags) {
     const effectTags = page.locator('[data-testid^="action-tags-"]').first();
     await expect(effectTags).toBeVisible();
-    await expect(effectTags.locator('.effect-tag').first()).not.toBeEmpty();
+    const firstEffectTag = effectTags.locator('.effect-tag').first();
+    await expect(firstEffectTag).toBeVisible();
+    await expect(firstEffectTag).not.toBeEmpty();
+    if (viewport.width <= 860) {
+      const effectTagsFit = await effectTags
+        .locator('.effect-tag')
+        .evaluateAll((tags) =>
+          tags.every(
+            (tag) =>
+              tag.scrollWidth <= tag.clientWidth + 1 && tag.scrollHeight <= tag.clientHeight + 1,
+          ),
+        );
+      expect(
+        effectTagsFit,
+        `効果タグが表示領域から切り詰められている（${viewport.width}x${viewport.height}）`,
+      ).toBe(true);
+    }
   }
   if (options.diagnosis) {
     const diagnosis = page.getByTestId('runbar-diagnosis');
     await expect(diagnosis).toHaveAttribute('data-diagnosis', options.diagnosis);
+    await expect(diagnosis.locator('.diagnosis-warning')).toBeVisible();
     await expect(diagnosis.locator('.diagnosis-warning')).not.toBeEmpty();
   }
   if (options.relicCount !== undefined) {
@@ -224,6 +282,15 @@ async function assertAcrossViewports(
     await waitForLayoutFrame(page);
     await assertLayoutContract(page, viewport, options);
   }
+}
+
+async function openSixRelicSprint(page: Page): Promise<void> {
+  await seedMeta(page, { unlockedRelics: RELIC_DEFS.map((relic) => relic.id) });
+  await advancePublicRun(page, {
+    seed: 'ri94-relics-1',
+    target: { phase: 'setup', relicCount: 6 },
+  });
+  await beginCurrentSetupSprint(page);
 }
 
 test('デスクトップ幅で sprint-subbar と board が重ならない', async ({ page }) => {
@@ -327,17 +394,27 @@ test.describe('RI-94 レイアウト契約', () => {
   });
 
   test('全レリック解放メタから6個取得した状態を5 viewportで表示する', async ({ page }) => {
+    await openSixRelicSprint(page);
+    await assertAcrossViewports(page, {
+      relicCount: 6,
+      effectTags: true,
+      skipBoardMinimumDimensionsAt: 'desktop-short',
+    });
+  });
+
+  test('既知: 6レリック状態の1024x768盤面最低寸法契約', async ({ page }) => {
+    await openSixRelicSprint(page);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await waitForLayoutFrame(page);
+    const board = page.getByTestId('board');
+    await expect(board).toBeVisible();
+    const boardBox = await readBox(page, 'board');
     test.fail(
       true,
-      '現行UIは1024x768の6レリック状態で盤面最低幅240pxを満たさない（RI-95〜100で解消予定）',
+      '現行UIは1024x768の6レリック状態で盤面最低寸法240x96pxを満たさない（RI-95〜100で解消予定）',
     );
-    await seedMeta(page, { unlockedRelics: RELIC_DEFS.map((relic) => relic.id) });
-    await advancePublicRun(page, {
-      seed: 'ri94-relics-1',
-      target: { phase: 'setup', relicCount: 6 },
-    });
-    await beginCurrentSetupSprint(page);
-    await assertAcrossViewports(page, { relicCount: 6, effectTags: true });
+    expect(boardBox.width, '既知の6レリック盤面最低幅違反').toBeGreaterThanOrEqual(240);
+    expect(boardBox.height, '既知の6レリック盤面最低高違反').toBeGreaterThanOrEqual(96);
   });
 
   test('初期スプリントを公開stepで結果オーバーレイへ進める', async ({ page }) => {

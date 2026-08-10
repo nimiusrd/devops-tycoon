@@ -659,7 +659,6 @@ function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
  */
 export function formatStabilityDetailTags(): EffectTag[] {
   const tags: EffectTag[] = [];
-  pushTag(tags, `持続 ${STABILITY_TICKS}tick`, 'positive');
   pushTag(tags, `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, 'positive');
   pushTag(
     tags,
@@ -680,8 +679,8 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
 
   if (def.stabilizesFlow) {
-    // 主要効果は1タグに要約（タッチでも見える）。tick 数や倍率の内訳はツールチップ / aria-label 側。
-    pushTag(tags, '運用安定（手戻り↓・延焼停止）', 'positive');
+    // 主要効果は1タグに要約（タッチでも持続時間と効果が見える）。長い倍率内訳はツールチップ側。
+    pushTag(tags, `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, 'positive');
   }
 
   switch (def.id) {

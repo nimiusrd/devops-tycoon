@@ -285,6 +285,7 @@ export function ActionBar({
               ? `利用不可: ${availability.blockMessage}。`
               : '';
           const targetLabel = availability.targetBadge ? `対象 ${availability.targetBadge}。` : '';
+          const modLabel = modRing.active ? `効果残り ${modRing.remaining} tick。` : '';
           return (
             <button
               type="button"
@@ -296,7 +297,7 @@ export function ActionBar({
               disabled={!ready && !armed}
               onClick={() => handleAction(a.id)}
               title={tooltip}
-              aria-label={`${a.label}。コスト⚡${a.cost}。${targetLabel}${statusLabel}${tooltip}`}
+              aria-label={`${a.label}。コスト⚡${a.cost}。${targetLabel}${modLabel}${statusLabel}${tooltip}`}
             >
               {availability.targetBadge && (
                 <span className="action-target-badge" data-testid={`action-badge-${a.id}`}>

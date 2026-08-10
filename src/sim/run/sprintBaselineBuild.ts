@@ -48,7 +48,9 @@ export function eliteTaskMul(difficulty: DifficultyId): number {
 export function normalTaskFloor(difficulty: DifficultyId): number {
   switch (difficulty) {
     case 'easy':
-      return 55;
+      // RI-78: easy の標準スプリント p50 が 60 秒を僅かに下回るため、
+      // 実時間帯の下限へ寄せる。ボス床・他難易度の負荷は変更しない。
+      return 58;
     case 'normal':
       return 50;
     case 'hard':

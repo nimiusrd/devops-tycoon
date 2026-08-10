@@ -54,6 +54,42 @@ function asReplayFrame(state: RunPersistState, patch: Partial<RunState>): RunRep
 }
 
 describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
+  it('休息の次スプリント効果は保存・hydrate 後も保持される', () => {
+    const source = started('ri78-rest-persist');
+    const internals = source as unknown as {
+      deck: Array<{ defId: string; level: number }>;
+      pendingSprintModifiers: SprintModifierDelta;
+      phase: RunState['phase'];
+    };
+    internals.deck = [{ defId: 'docs', level: 1 }];
+    internals.pendingSprintModifiers = { taskCountMul: 0.7 };
+    internals.phase = 'rest';
+    source.restChoose('upgrade', 0);
+    const saved = source.exportPersistState();
+    expect(saved?.pendingSprintModifiers).toEqual({ taskCountMul: 0.7, focusMaxAdd: 2 });
+
+    const restored = started('ri78-rest-persist-restored');
+    restored.hydratePersistState(saved!);
+    expect(restored.snapshot().pendingSprintModifiers).toEqual({
+      taskCountMul: 0.7,
+      focusMaxAdd: 2,
+    });
+
+    const replay = started('ri78-rest-persist-replay');
+    replay.hydrateReplayFrame(source.exportReplayFrame()!);
+    expect(replay.snapshot().pendingSprintModifiers).toEqual({
+      taskCountMul: 0.7,
+      focusMaxAdd: 2,
+    });
+
+    source.beginSetupSprint();
+    restored.beginSetupSprint();
+    expect(restored.snapshot().sprint?.config.focusMax).toBe(
+      source.snapshot().sprint?.config.focusMax,
+    );
+    expect(restored.snapshot().pendingSprintModifiers).toEqual({});
+  });
+
   it('export は save/replay 可能 phase と playing status の境界を区別する', () => {
     const engine = new RunEngine({
       seed: 'ri72-d3-export-guard',

@@ -19,7 +19,7 @@ export interface CardViewProps {
   onPick?: () => void;
   /** 手札発動ボタンにする場合のハンドラ（RI-30）。 */
   onPlay?: () => void;
-  /** 手札発動の集中力コスト表示。 */
+  /** 発動時の集中力コスト。手札では主表示、選択画面ではショップ価格と併記する。 */
   playCost?: number;
   /** 発動不可（集中力不足等）。 */
   disabled?: boolean;
@@ -44,12 +44,17 @@ export function CardView({
 }: CardViewProps) {
   const stars = level > 1 ? '★'.repeat(level - 1) : '';
   const className = `card card-${def.rarity}${compact ? ' card-compact' : ''}${disabled ? ' card-disabled' : ''}${onPlay ? ' card-playable' : ''}`;
-  const costLabel = playCostValue !== undefined ? `⚡${playCostValue}` : String(def.cost);
+  const costLabel = onPlay && playCostValue !== undefined ? `⚡${playCostValue}` : String(def.cost);
   const inner = (
     <>
       <div className="card-head">
         <span className={`card-rarity rarity-${def.rarity}`}>{RARITY_LABEL[def.rarity]}</span>
-        <span className="card-cost">{costLabel}</span>
+        <span className="card-costs">
+          <span className="card-cost">{costLabel}</span>
+          {!onPlay && playCostValue !== undefined && (
+            <span className="card-focus-cost">発動 ⚡{playCostValue}</span>
+          )}
+        </span>
       </div>
       <div className="card-name">
         {def.name}

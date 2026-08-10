@@ -96,11 +96,11 @@ export function applyDeckBaseline(org: OrgState, effects: CardEffects): void {
 }
 
 /**
- * 手札発動の集中力コスト（ショップ用 `cost` からスケール。RI-30）。
- * 強化レベルごとに -1（下限 1）。
+ * 手札発動の集中力コスト（カード定義の `focusCost`。RI-78）。
+ * ショップ価格とは独立し、強化レベルごとに -1（下限 1）する。
  */
-export function playCost(defCost: number, level: number): number {
-  const base = Math.max(1, Math.round(defCost / 4));
+export function playCost(focusCost: number, level: number): number {
+  const base = Math.max(1, Math.round(focusCost));
   return Math.max(1, base - (level - 1));
 }
 
@@ -215,7 +215,7 @@ export function playCardFromHand(
   const def = getCard(inst.defId);
   if (!def) return { ok: false, reason: 'invalid' };
 
-  const cost = playCost(def.cost, inst.level);
+  const cost = playCost(def.focusCost, inst.level);
   if (sprint.focus < cost) return { ok: false, reason: 'no-focus' };
 
   sprint.focus -= cost;

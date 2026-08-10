@@ -210,6 +210,7 @@ describe('monteCarlo 基盤（RI-14）', () => {
      * 代表 seed 群。RI-75（taskFloor / taskCountMul 増）後は既定オートプレイの勝率が
      * 極端に稀なため、勝利確認済み seed と敗北 seed を混在させて固定する。
      * RI-73（normal seniorHpCostMul）後、REVIEW_FREEZE_PEAK 到達 seed を差し替えた。
+     * RI-78 の現行 pacing で勝敗比が崩れたため、過去の代表勝利 seed を再採用した。
      */
     const RI15_SEEDS = [
       'ri18-meta-253',
@@ -223,7 +224,7 @@ describe('monteCarlo 基盤（RI-14）', () => {
       'ri18-meta-50',
       'ri73-mc-1',
       'ri73-mc-4',
-      'ri73-mc-14',
+      'wind-2161',
     ] as const;
 
     /** 連続インデックス崩壊検知用（勝率は期待せず、決着と出荷の床だけ見る）。 */

@@ -56,12 +56,13 @@ describe('harness RI-88 方針', () => {
         cardPiles: { hand: number[]; played: number[]; discard: number[]; drawOrder: number[] };
       } | null;
     };
-    // hire-senior の集中力コストは 10、ai-guideline は 3。focus=12 なら順不同で1枚しか切れない。
+    // RI-78: 発動費はショップ価格から独立した focusCost（hire-senior=4、ai-guideline=3）。
+    // focus=6 なら順不同で1枚しか切れないため、コスト最適化カードの優先順を検証できる。
     internals.deck = [
       { defId: 'hire-senior', level: 1 },
       { defId: 'ai-guideline', level: 1 },
     ];
-    internals.sprint!.focus = 12;
+    internals.sprint!.focus = 6;
     internals.sprint!.cardPiles = { hand: [0, 1], played: [], discard: [], drawOrder: [] };
 
     playHand(engine, 'preferCostOpt');

@@ -81,11 +81,7 @@ const RI66_SEEDS = [
   'q75b-145',
 ] as const;
 
-/**
- * RI-66: ラン壁時計用の固定連続コホート（結果を見て選ばない）。
- * a–j だけだと RI-79 延命後に長命ラン偏りで p50 が帯外へ振れるため、
- * アルファベット連続へ広げて標本を安定させる。
- */
+/** RI-66: ラン壁時計用の固定連続コホート（結果を見て選ばない）。 */
 const RI66_RUN_SEEDS = [
   'a',
   'b',
@@ -258,6 +254,7 @@ describe('sprintTempo（RI-62）', () => {
         playUntil(e, 'quarterReview', {
           skilled: true,
           onSprintEnd: (m) => {
+            if (!m.completed) return;
             if (m.kind === 'normal') skilledSecs.push(wallSecondsAt1x(m.ticks));
             if (m.kind === 'boss') skilledBossSecs.push(wallSecondsAt1x(m.ticks));
           },
@@ -282,7 +279,7 @@ describe('sprintTempo（RI-62）', () => {
 });
 
 describe('sprintTempo ペーシング統計（RI-66）', () => {
-  /** 全 seed のスプリント完了メトリクス（ボス分布用。レビュー未到達も含む）。 */
+  /** 全 seed のスプリント終端メトリクス（ボス分布用。レビュー未到達も含む）。 */
   let quarterAttempts: { seed: string; ends: SprintEndMetrics[]; reachedReview: boolean }[];
   /** 四半期レビュー到達サンプル（四半期壁時計用）。 */
   let reviewedQuarters: { seed: string; ends: SprintEndMetrics[] }[];
@@ -317,10 +314,10 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   });
 
   it('代表 seed のボス壁時計が分布で 90〜180 秒帯に入る', () => {
-    // クリア／敗北を問わず完了したボスを集計する（レビュー到達で絞らない）。
+    // クリア／敗北を問わず完走したボスを集計する（レビュー到達で絞らない）。
     const bossSecs = quarterAttempts
       .flatMap((row) => row.ends)
-      .filter((m) => m.kind === 'boss')
+      .filter((m) => m.kind === 'boss' && m.completed)
       .map((m) => wallSecondsAt1x(m.ticks));
     // RI-75: タスク床引き上げ後はボス到達が減るため、到達分だけで帯を見る。
     expect(bossSecs.length).toBeGreaterThanOrEqual(2);
@@ -350,9 +347,10 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   });
 
   it('skilled 自動操作の 1 ランが 15〜45 分帯（p50）に入る', () => {
-    // 早期敗北の短ランは体験目安の対象外。四半期レビューへ 1 回以上到達したランだけ集計する。
-    // コホートは固定の a–j（結果を見て選ばない）。RI-79 の延命で複数四半期へ伸びた
-    // 長命ランにより p90 は §3.1 上限を超えうるため、回帰の主指標は p50 とする。
+    // コホートは固定の a–z（結果を見て選ばない）。少なくとも1本のスプリントを
+    // 実行した全ラン（早期敗北を含む）を母数にして、結果選択による生存者バイアスを避ける。
+    // RI-79 の延命で複数四半期へ伸びた長命ランにより p90 は §3.1 上限を超えうるため、
+    // 回帰の主指標は p50 とする。
     const runMins: number[] = [];
     for (const seed of RI66_RUN_SEEDS) {
       const e = new RunEngine({ seed, difficulty: 'normal' });
@@ -377,11 +375,12 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
           reviews += 1;
         }
       }
-      if (reviews >= 1) {
+      if (ticks.length > 0) {
         runMins.push(modelRunWallMinutes(ticks, reviews));
       }
     }
-    // RI-75: maxTicks 打ち切りを出荷なしにすると四半期到達が減る。到達分だけで帯を見る。
+    // RI-75: maxTicks 打ち切りを出荷なしにすると四半期到達が減るため、
+    // レビュー到達の有無にかかわらず実行できたランを集計する。
     expect(runMins.length).toBeGreaterThanOrEqual(2);
 
     const rP50 = p50(runMins);
@@ -398,7 +397,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
       playUntil(e, 'quarterReview', {
         pacingInterventions: true,
         onSprintEnd: (m) => {
-          used.push(m.interventionsUsed);
+          if (m.completed) used.push(m.interventionsUsed);
         },
       });
     }

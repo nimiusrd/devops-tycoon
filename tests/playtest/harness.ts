@@ -18,10 +18,18 @@ import { assignableTasks } from '../../src/sim/assignTask';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
-import { RunEngine, REST_HEAL, REST_MORALE_HEAL, REST_REPAY } from '../../src/sim/run/engine';
+import {
+  RunEngine,
+  REST_HEAL,
+  REST_MORALE_HEAL,
+  REST_REPAY,
+  REST_REPAY_REWORK_RATE,
+  REST_UPGRADE_FOCUS_MAX,
+} from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
 import { measureGoalProgress } from '../../src/sim/run/quarterReview';
 import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
+import { summarizeSprint } from '../../src/sim/sprint';
 import type {
   DifficultyId,
   GoalAdjustmentId,
@@ -130,12 +138,13 @@ export interface PolicySpec {
    * 休息フェーズで採用しないときの選択。`RestScreen` には heal / repay / upgrade がある。
    * - `heal`: 常に回復（既定。既存の統制条件を変えないため）
    * - `stateAware`: 負債が危険域なら `repay`、そうでなければ `heal`
+   * - `repay`: 休息到達時に常に返済（RI-78 の統制条件）
    * - `upgrade`: 常にカード強化
    *
    * 既定が `heal` 固定だと、負債返済とカード強化が一度も選ばれないまま
    * F-2 の「スプリント間投資が結果を変えない」の根拠に使われてしまう。
    */
-  rest?: 'heal' | 'stateAware' | 'upgrade';
+  rest?: 'heal' | 'repay' | 'stateAware' | 'upgrade';
   /**
    * ビート（スプリント間イベント）の選択肢の選び方。
    * - `firstChoice`: 提示順の先頭。初見相当
@@ -577,7 +586,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    * 休息の選択肢を回復以外にも振る（F-2 のスプリント間投資）。
    * 統制先は常に回復する `skilledNoHire`。
    */
-  skilledRestRepay: { ...skilledBase(), rest: 'stateAware' },
+  skilledRestRepay: { ...skilledBase(), rest: 'repay' },
   skilledRestUpgrade: { ...skilledBase(), rest: 'upgrade' },
   /**
    * 全介入を 1 tick ごとに試行する（RI-78）。
@@ -611,12 +620,26 @@ export interface SprintLog {
   index: number;
   kind: string;
   ticks: number;
+  /** 即時敗北で完走しなかった終端スプリントは false。計測値は破棄せず保持する。 */
+  completed: boolean;
   focusMax: number;
+  /** 初回観測時点で Coding 枠に空きがあったか。 */
+  codingSlotAvailable: boolean;
   focusRemaining: number;
   /** 方針が実際に成立させた介入回数。 */
   interventions: number;
+  /** スプリント中に実際に発動したカード枚数。 */
+  cardsPlayed: number;
+  /** スプリント中にカード発動で消費した集中力（強化レベル反映後）。 */
+  cardFocusSpent: number;
+  /** スプリント中に介入で消費した集中力。 */
+  interventionFocusSpent: number;
   /** 介入 ID ごとの試行結果内訳（probe 方針では発動可能性の上限測定になる）。 */
   attempts: Record<string, Partial<Record<DispatchReason, number>>>;
+  /** 集中力・クールダウンを除いた対象あり区間の開始回数。 */
+  opportunityWindows: Partial<Record<ActionId, number>>;
+  /** スプリント冒頭の初回判断で対象があったか。 */
+  initialOpportunity: Partial<Record<ActionId, boolean>>;
   delivered: number;
   reviewQueueMax: number;
   incidents: number;
@@ -631,6 +654,21 @@ export interface SprintLog {
   techDebtAfter: number;
   aiDepAfter: number;
   budgetAfter: number;
+}
+
+/** スプリント間投資の実績（同一 seed・位置で統制と対応付ける）。 */
+export interface InvestmentLog {
+  quarter: number;
+  index: number;
+  kind: 'shop' | 'rest';
+  /** 休息で実際に選んだ選択肢。ショップでは省略。 */
+  choice?: 'heal' | 'repay' | 'upgrade' | 'recruit';
+  shopCardsBought?: number;
+  shopRelicBought?: boolean;
+  /** ショップ投資の純効用を計算するための購入前後予算。 */
+  budgetBefore?: number;
+  budgetAfter?: number;
+  purchaseCost?: number;
 }
 
 /** 四半期レビュー到達時のスナップショット（RI-79 の発火要因分解用）。 */
@@ -675,7 +713,7 @@ export interface RunLog {
    * `lostPhase === 'sprint'` のとき、敗北したスプリントが結果を残したか。
    *
    * `true` なら `sprints` の末尾が敗北スプリントそのもの、
-   * `false` ならスプリント中に即時敗北してログが残っていない。
+   * `false` ならスプリント中に即時敗北した（終端計測を残した `completed=false` の行を含む）。
    *
    * 直前状態の参照先を決めるために入れたフィールドだが、その用途は `lostPrevState` が
    * 引き継いだ。現在は「敗北したスプリントが結果を残したか」の分類にだけ使う。
@@ -719,6 +757,8 @@ export interface RunLog {
   sprintsPlayed: number;
   diagnosis: string;
   sprints: SprintLog[];
+  /** ショップ訪問・購入と休息選択のログ。 */
+  investments: InvestmentLog[];
   quarters: QuarterLog[];
   finalOrg: Record<string, number | boolean>;
   totalDelivered: number;
@@ -1013,9 +1053,13 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
       }
     } else if (choiceAtRest === 'repay') {
       score += Math.min(REST_REPAY, ctx.org.techDebt) * 0.4;
+      // `restChoose('repay')` は負債返済に加えて次スプリントの手戻り率を抑える。
+      // 休息ビートの outcome にはまだこの効果が載っていないため、ここで実効果を評価する。
+      score -= REST_REPAY_REWORK_RATE * 10;
     } else {
-      // カード強化。盤面の状態には依らない一定の投資価値として置く。
-      score += 2;
+      // カード強化。盤面の状態には依らない一定の投資価値に加え、次スプリントの
+      // 集中力上限増加を評価する。
+      score += 2 + REST_UPGRADE_FOCUS_MAX * 0.3;
     }
   }
   return score;
@@ -1083,7 +1127,11 @@ function shouldPlaySelective(e: RunEngine): boolean {
 }
 
 /** 手札発動（単体テストからも呼ぶ）。 */
-export function playHand(e: RunEngine, mode: PolicySpec['cards'], onPlayed?: () => void): void {
+export function playHand(
+  e: RunEngine,
+  mode: PolicySpec['cards'],
+  onPlayed?: (focusSpent: number) => void,
+): void {
   if (mode === 'none') return;
   let guard = 0;
   while (guard < 24 && e.snapshot().phase === 'sprint') {
@@ -1102,10 +1150,12 @@ export function playHand(e: RunEngine, mode: PolicySpec['cards'], onPlayed?: () 
         : [...hand];
     let played = false;
     for (const deckIndex of order) {
+      const focusSpentBefore = e.snapshot().sprint?.metrics.focusSpent ?? 0;
       if (e.playCard(deckIndex).ok) {
         played = true;
         // カード間でも介入可能な局面を危険域サンプルへ残す（一括発動の欠測防止）。
-        onPlayed?.();
+        const focusSpentAfter = e.snapshot().sprint?.metrics.focusSpent ?? focusSpentBefore;
+        onPlayed?.(Math.max(0, focusSpentAfter - focusSpentBefore));
         break;
       }
     }
@@ -1256,6 +1306,38 @@ function canApplyAssignTaskWithExplicitTarget(
     if (canApplyAction('assignTask', sprint, org, tick, target).ok) return true;
   }
   return false;
+}
+
+/** 集中力・クールダウンを満たす前提で、対象が存在するかを観測する。 */
+function hasTargetOpportunity(
+  id: ActionId,
+  sprint: NonNullable<RunState['sprint']>,
+  org: RunState['org'],
+  tick: number,
+): boolean {
+  const probe = {
+    ...sprint,
+    focus: sprint.config.focusMax,
+    cooldowns: {},
+  };
+  const gate = canApplyAction(id, probe, org, tick);
+  if (gate.ok) return true;
+  return id === 'assignTask' && canApplyAssignTaskWithExplicitTarget(sprint, org, tick);
+}
+
+/** 対象あり区間の開始を記録する（同一状態の連続観測は1区間）。 */
+function observeOpportunityWindows(
+  e: RunEngine,
+  open: Record<string, boolean>,
+  windows: Partial<Record<ActionId, number>>,
+): void {
+  const s = e.snapshot();
+  if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
+  for (const id of ['assignTask', 'firefight', 'interruptReview', 'splitPr'] as const) {
+    const available = hasTargetOpportunity(id, s.sprint, s.org, s.sprintTick);
+    if (available && !open[id]) windows[id] = (windows[id] ?? 0) + 1;
+    open[id] = available;
+  }
 }
 
 /** アクティブな危険種別ごとの発動可能介入を和集合・最終サンプルへ追記する（盤面非破壊）。 */
@@ -1481,6 +1563,7 @@ function restChoiceFor(
   hasDeck = true,
 ): 'heal' | 'repay' | 'upgrade' {
   if (rest === 'upgrade') return hasDeck ? 'upgrade' : 'heal';
+  if (rest === 'repay') return 'repay';
   if (rest === 'stateAware' && techDebt >= REST_REPAY_DEBT_THRESHOLD) return 'repay';
   return 'heal';
 }
@@ -1650,6 +1733,7 @@ export function runOnce(
   e.startRun();
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
+  const investments: InvestmentLog[] = [];
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
   /** 危険種別ごとの発動可能介入トラック（RI-89）。キーがある＝その危険域を観測。 */
   const availableInDangerByReason = new Map<DangerLoseReason, DangerTrack>();
@@ -1699,12 +1783,41 @@ export function runOnce(
         const quarter = s.quarterNumber;
         const index = s.sprintIndexInQuarter;
         const focusMax = s.sprint?.config.focusMax ?? 0;
+        const codingSlotAvailable = s.sprint
+          ? s.sprint.tasks.filter((task) => task.lane === 'coding').length <
+            s.sprint.config.codingSlots
+          : false;
         const before = s.sprintsPlayed;
         const attempts: Record<string, Partial<Record<DispatchReason, number>>> = {};
+        const opportunityOpen: Record<string, boolean> = {};
+        const opportunityWindows: Partial<Record<ActionId, number>> = {};
+        const initialOpportunity: Partial<Record<ActionId, boolean>> = s.sprint
+          ? {
+              assignTask: hasTargetOpportunity('assignTask', s.sprint, s.org, s.sprintTick),
+              firefight: hasTargetOpportunity('firefight', s.sprint, s.org, s.sprintTick),
+              interruptReview: hasTargetOpportunity(
+                'interruptReview',
+                s.sprint,
+                s.org,
+                s.sprintTick,
+              ),
+              splitPr: hasTargetOpportunity('splitPr', s.sprint, s.org, s.sprintTick),
+            }
+          : {};
         let interventions = 0;
-        const sampleDanger = (): void => sampleAvailableInDanger(e, availableInDangerByReason);
+        let cardsPlayed = 0;
+        let cardFocusSpent = 0;
+        const sampleDanger = (): void => {
+          observeOpportunityWindows(e, opportunityOpen, opportunityWindows);
+          sampleAvailableInDanger(e, availableInDangerByReason);
+        };
+        const onCardPlayed = (focusSpent: number): void => {
+          cardsPlayed += 1;
+          cardFocusSpent += focusSpent;
+          sampleDanger();
+        };
         sampleDanger();
-        playHand(e, spec.cards, sampleDanger);
+        playHand(e, spec.cards, onCardPlayed);
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
@@ -1713,7 +1826,7 @@ export function runOnce(
           interventions += n;
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
-          if (spec.cards === 'selective') playHand(e, 'selective', sampleDanger);
+          if (spec.cards === 'selective') playHand(e, 'selective', onCardPlayed);
           if (e.snapshot().phase !== 'sprint') break;
           // stepMs を固定 tick に分割し、各 tick 後に危険域を観測（tick 間の一時的な手を拾う）。
           const ticks = Math.max(1, Math.floor(spec.stepMs / MS_PER_TICK));
@@ -1724,26 +1837,45 @@ export function runOnce(
           }
         }
         const after = e.snapshot();
-        if (after.sprintsPlayed > before) {
-          const r = after.lastResult;
+        const completed = after.sprintsPlayed > before;
+        // `playCard` やスプリント開始時の予算枯渇は、結果を確定せず phase=lost へ遷移する。
+        // その場合でも盤面に積み上がったカード発動・試行・対象あり区間と途中 KPI を保存し、
+        // 後段の共通機会集計から生存者だけが残らないようにする。
+        const partialResult =
+          !completed && after.sprint ? summarizeSprint(after.sprint, after.org) : null;
+        if (completed || partialResult) {
+          const r = completed ? after.lastResult : partialResult;
+          const metrics = after.sprint?.metrics;
+          const interventionFocusSpent = Math.max(0, (metrics?.focusSpent ?? 0) - cardFocusSpent);
           sprints.push({
             quarter,
             index,
             kind,
             ticks: after.sprintTick,
+            completed,
             focusMax,
+            codingSlotAvailable,
             focusRemaining: r?.focusRemaining ?? 0,
             interventions,
+            cardsPlayed,
+            cardFocusSpent,
+            interventionFocusSpent,
             attempts,
-            delivered: r?.delivered ?? 0,
-            reviewQueueMax: r?.reviewQueueMax ?? 0,
-            incidents: r?.incidents ?? 0,
-            contained: r?.contained ?? 0,
-            spread: r?.spread ?? 0,
-            rework: r?.rework ?? 0,
+            opportunityWindows,
+            initialOpportunity,
+            delivered: r?.delivered ?? metrics?.delivered ?? 0,
+            reviewQueueMax: r?.reviewQueueMax ?? metrics?.reviewQueueMax ?? 0,
+            incidents: r?.incidents ?? metrics?.incidentCount ?? 0,
+            contained: r?.contained ?? metrics?.contained ?? 0,
+            spread: r?.spread ?? metrics?.spread ?? 0,
+            rework: r?.rework ?? metrics?.reworkCount ?? 0,
             aiPct: Math.round(r?.aiAssistedPct ?? 0),
             grade: r?.grade ?? '',
-            hpDelta: Math.round((r?.seniorHpDelta ?? 0) * 10) / 10,
+            hpDelta:
+              Math.round(
+                (r?.seniorHpDelta ?? (metrics ? after.org.seniorHp - metrics.seniorHpStart : 0)) *
+                  10,
+              ) / 10,
             seniorHpAfter: Math.round(after.org.seniorHp * 10) / 10,
             moraleAfter: Math.round(after.org.morale * 10) / 10,
             techDebtAfter: Math.round(after.org.techDebt * 10) / 10,
@@ -1836,7 +1968,14 @@ export function runOnce(
         e.resolveBeat(choice);
         break;
       }
-      case 'shop':
+      case 'shop': {
+        const nextIndex = s.sprintIndexInQuarter + 1;
+        const budgetBeforeShop = s.budget;
+        const beforeShop = s.shop;
+        const beforeCards = new Set(
+          (beforeShop?.cards ?? []).filter((card) => card.bought).map((card) => card.defId),
+        );
+        const beforeRelicBought = beforeShop?.relic?.bought ?? false;
         // 採用方針は専用フェーズだけでなくショップの採用枠にも適用する。
         // 適用しないと「採用あり」群に採用機会を見送ったランが混ざる。
         if (s.shop?.recruit && !s.shop.recruit.bought && wantsRecruit(s, spec)) {
@@ -1846,13 +1985,32 @@ export function runOnce(
         if (spec.shop === 'buy' || spec.shop === 'buyCostOpt' || spec.shop === 'buyAvoidCostOpt') {
           buyShopItems(e, spec);
         }
+        const afterShopState = e.snapshot();
+        const afterShop = afterShopState.shop;
+        investments.push({
+          quarter: s.quarterNumber,
+          index: nextIndex,
+          kind: 'shop',
+          shopCardsBought: (afterShop?.cards ?? []).filter(
+            (card) => card.bought && !beforeCards.has(card.defId),
+          ).length,
+          shopRelicBought: Boolean(afterShop?.relic?.bought && !beforeRelicBought),
+          budgetBefore: Math.round(budgetBeforeShop * 10) / 10,
+          budgetAfter: Math.round(afterShopState.budget * 10) / 10,
+          purchaseCost: Math.round(Math.max(0, budgetBeforeShop - afterShopState.budget) * 10) / 10,
+        });
         e.leaveShop();
         break;
-      case 'rest':
+      }
+      case 'rest': {
+        const nextIndex = s.sprintIndexInQuarter + 1;
         // 採用方針は休息の選択肢にも適用する（RestScreen に採用がある）。
         // ただし満員・予算不足では実画面のボタンが無効なので、他の選択へフォールバックする。
-        e.restChoose(wantsRecruit(s, spec) ? 'recruit' : restChoice(s, spec), restUpgradeIndex(s));
+        const choice = wantsRecruit(s, spec) ? 'recruit' : restChoice(s, spec);
+        investments.push({ quarter: s.quarterNumber, index: nextIndex, kind: 'rest', choice });
+        e.restChoose(choice, restUpgradeIndex(s));
         break;
+      }
       case 'recruit':
         e.recruitChoose(wantsRecruit(s, spec) ? 'hire' : 'skip');
         break;
@@ -1907,8 +2065,11 @@ export function runOnce(
       lostPhase = s.phase;
       lostPrevState = beforeAction;
       if (s.phase === 'beat') lostBeat = lastBeat;
-      // 同じ反復でログが増えていれば、その末尾が敗北スプリントそのもの。
-      if (s.phase === 'sprint') lostSprintCompleted = sprints.length > loggedBefore;
+      // 終端計測を残すためにログが増えていても、`completed` が false なら
+      // スプリント完走とは数えない（カード発動などで途中敗北した行が該当する）。
+      if (s.phase === 'sprint') {
+        lostSprintCompleted = sprints.slice(loggedBefore).some((sprint) => sprint.completed);
+      }
     }
     s = next;
   }
@@ -1931,6 +2092,7 @@ export function runOnce(
     diagnosis: f.diagnosis,
     sprints,
     quarters,
+    investments,
     ...(f.loseReason && availableInDangerByReason.has(f.loseReason as DangerLoseReason)
       ? (() => {
           const track = availableInDangerByReason.get(f.loseReason as DangerLoseReason)!;

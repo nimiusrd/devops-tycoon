@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { getCard } from '../data/cards';
 import { canRecruit, RECRUIT_COST } from '../sim/member';
+import { playCost } from '../sim/cards';
 import { foldPassives } from '../sim/run/effects';
 import type { RunState } from '../sim/run/types';
 import { formatRestOptionTags } from '../render/eventOutcomeView';
@@ -46,7 +47,11 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
                   data-testid={`rest-upgrade-card-${card.defId}-${index}`}
                   onClick={() => onChoose('upgrade', index)}
                 >
-                  <CardView def={def} level={card.level} />
+                  <CardView
+                    def={def}
+                    level={card.level}
+                    playCost={playCost(def.focusCost, card.level + 1)}
+                  />
                   <span className="rest-upgrade-next">次: Lv.{card.level + 1}</span>
                 </button>
               );
@@ -95,7 +100,9 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
             <div className="rest-body">
               <span className="rest-name">技術的負債を返済</span>
               <EffectTagList tags={formatRestOptionTags('repay')} testId="rest-tags-repay" />
-              <span className="rest-desc">Tech Debt を一部返済する</span>
+              <span className="rest-desc">
+                Tech Debt を一部返済し、次スプリントの手戻りを抑える
+              </span>
             </div>
           </button>
           <button
@@ -110,7 +117,9 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
               <span className="rest-name">施策を強化</span>
               <EffectTagList tags={formatRestOptionTags('upgrade')} testId="rest-tags-upgrade" />
               <span className="rest-desc">
-                {canUpgrade ? 'デッキのカードを1段強化する' : 'デッキが空です'}
+                {canUpgrade
+                  ? '選択したカードを1段強化し、次スプリントの集中力上限を増やす'
+                  : 'デッキが空です'}
               </span>
             </div>
           </button>

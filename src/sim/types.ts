@@ -121,6 +121,8 @@ export interface CardDef {
   rarity: CardRarity;
   /** ショップで支払う予算コスト。 */
   cost: number;
+  /** スプリント中に発動する際の集中力コスト（レベル1）。 */
+  focusCost: number;
   /** 表示用の効果説明（行単位）。 */
   description: string[];
   /** レベル 1 の効果（IDENTITY からの差分。指定キーのみ上書き）。 */

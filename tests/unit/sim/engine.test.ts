@@ -97,8 +97,8 @@ describe('RI-91-C4 engine survived mutants', () => {
         fixedStepMs: 100,
       });
       const def = getCard('auto-test')!;
-      const cost = playCost(def.cost, 1);
-      expect(cost).toBe(5);
+      const cost = playCost(def.focusCost, 1);
+      expect(cost).toBe(3);
       expect(def.base.qualityAdd).toBe(10);
 
       const before = e.snapshot();

@@ -189,6 +189,10 @@ export const REST_HEAL = 40;
 export const REST_MORALE_HEAL = 10;
 /** 休息（repay）での技術的負債返済量（UI プレビューと共有）。 */
 export const REST_REPAY = 30;
+/** 休息（repay）で次スプリントへ持ち越す手戻り率の抑制（RI-78）。 */
+export const REST_REPAY_REWORK_RATE = -0.08;
+/** 休息（upgrade）で次スプリントへ持ち越す集中力上限の増加（RI-78）。 */
+export const REST_UPGRADE_FOCUS_MAX = 2;
 /** ショップのレリック価格（割引前）。 */
 const SHOP_RELIC_COST = 30;
 
@@ -1348,8 +1352,17 @@ export class RunEngine {
       this.roster = recoverStamina(this.roster, REST_STAMINA_RECOVER);
     } else if (option === 'repay') {
       this.org.techDebt = Math.max(0, this.org.techDebt - REST_REPAY);
+      this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, {
+        reworkRateAdd: REST_REPAY_REWORK_RATE,
+      });
     } else if (option === 'upgrade' && this.deck.length > 0) {
-      this.deck = upgradeCardAt(this.deck, deckIndex ?? 0);
+      const upgraded = upgradeCardAt(this.deck, deckIndex ?? 0);
+      if (upgraded !== this.deck) {
+        this.deck = upgraded;
+        this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, {
+          focusMaxAdd: REST_UPGRADE_FOCUS_MAX,
+        });
+      }
     } else if (option === 'recruit') {
       // 採用は予算を消費する（ラン経済。SPEC 第4.4）。空き枠と予算が揃ったときのみ。
       this.tryRecruit(`recruit:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`);

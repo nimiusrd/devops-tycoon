@@ -14,7 +14,10 @@ type GameWindow = Window & {
     step(ms: number): RunState;
     dispatch(id: string, target?: ActionTarget): InterventionOutcome;
     playCard(deckIndex: number): CardPlayOutcome;
-    engine: { deck: Array<{ defId: string; level: number }> };
+    engine: {
+      deck: Array<{ defId: string; level: number }>;
+      sprint: { focus: number } | null;
+    };
   };
 };
 
@@ -90,6 +93,24 @@ test('手札カードを発動すると focus と cardEffects が変わる（RI-
   expect(result.focusAfter).toBeLessThan(result.focusBefore);
   expect(result.speedAfter).toBeGreaterThan(result.speedBefore);
   expect(result.handAfter).toBe(0);
+});
+
+test('手札カードは明示した集中力費用を表示し、不足時だけ無効になる（RI-78）', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri78-hand-cost');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'ri78-hand-cost');
+    g.engine.deck.push({ defId: 'copilot', level: 1 });
+    g.beginSetupSprint();
+    g.engine.sprint!.focus = 1;
+    g.playCard(-1); // UI の再描画だけを起こす
+  });
+
+  const card = page.getByTestId('hand-card-copilot');
+  await expect(card).toContainText('⚡2');
+  await expect(card).toBeDisabled();
 });
 
 test('ActionBar でタスク差配を武装できる（RI-30）', async ({ page }) => {

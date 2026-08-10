@@ -2506,6 +2506,11 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+.card-costs {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
 .card-rarity {
   font-size: 9px;
   font-weight: 900;
@@ -2527,6 +2532,12 @@ body {
   font-size: 13px;
   font-weight: 900;
   color: var(--sun);
+}
+.card-focus-cost {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--sky);
+  white-space: nowrap;
 }
 .card-name {
   font-size: 14px;
@@ -4060,6 +4071,10 @@ button.card:active {
   font-weight: 800;
   color: var(--sun);
   align-self: flex-end;
+}
+.shop-card-focus-cost {
+  color: var(--sky);
+  white-space: nowrap;
 }
 .shop-relic {
   border-color: var(--lav);

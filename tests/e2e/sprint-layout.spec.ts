@@ -41,6 +41,13 @@ test('デスクトップ幅で sprint-subbar と board が重ならない', asyn
 
   expect(overlaps(boardBox, actionBox), 'board と action-bar が重なっている').toBe(false);
   expect(boardBox.y + boardBox.height).toBeLessThanOrEqual(actionBox.y);
+
+  // 介入カードのタグ肥大で盤面が細い帯にならないこと（幅の大半を使える）。
+  const wrap = page.locator('.board-wrap');
+  const wrapBox = await wrap.boundingBox();
+  if (!wrapBox) throw new Error('board-wrap の bounding box が取得できない');
+  expect(boardBox.width / wrapBox.width).toBeGreaterThan(0.75);
+  expect(actionBox.height).toBeLessThan(180);
 });
 
 test('狭幅390pxでKPI折り畳み後に介入バーへ到達できる', async ({ page }) => {

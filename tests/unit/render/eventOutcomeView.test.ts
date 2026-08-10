@@ -17,6 +17,7 @@ import {
 } from '../../../src/sim/model';
 import {
   formatActionDefTags,
+  formatActionTooltip,
   formatCardDefTags,
   formatCardEffectsTags,
   formatCardTagsAtLevel,
@@ -29,6 +30,7 @@ import {
   formatRelicDefTags,
   formatRelicTooltip,
   formatRestOptionTags,
+  formatStabilityDetailTags,
 } from '../../../src/render/eventOutcomeView';
 
 describe('formatEventOutcomeTags（イベント効果タグ）', () => {
@@ -369,8 +371,17 @@ describe('formatGoalAdjustmentTags（目標修正タグ / RI-45）', () => {
 describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
   it('割り込みレビューの効果量と副作用をタグ化する', () => {
     const def = getAction('interruptReview')!;
+    // 運用安定は要約1タグ。倍率などの内訳はツールチップ側。
     expect(formatActionDefTags(def)).toEqual([
-      { label: `運用安定 ${STABILITY_TICKS}tick`, tone: 'positive' },
+      { label: `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, tone: 'positive' },
+      { label: 'Review 最大4件処理', tone: 'positive' },
+      { label: 'シニアHP -3', tone: 'negative' },
+      { label: '連携 +34%', tone: 'positive' },
+    ]);
+  });
+
+  it('運用安定の詳細内訳は詳細タグとして分離される', () => {
+    expect(formatStabilityDetailTags()).toEqual([
       { label: `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, tone: 'positive' },
       {
         label: `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
@@ -381,10 +392,18 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
         label: `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
         tone: 'neutral',
       },
-      { label: 'Review 最大4件処理', tone: 'positive' },
-      { label: 'シニアHP -3', tone: 'negative' },
-      { label: '連携 +34%', tone: 'positive' },
     ]);
+  });
+
+  it('ツールチップには運用安定の詳細内訳も含める', () => {
+    const def = getAction('interruptReview')!;
+    const tip = formatActionTooltip(def);
+    expect(tip).toContain(`運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`);
+    expect(tip).toContain(`安定中 手戻り率 x${STABILITY_REWORK_MUL}`);
+    expect(tip).toContain('安定中 燃え尽き時の延焼を停止');
+    expect(tip).toContain(
+      `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
+    );
   });
 
   it('緊急対応の鎮火効果をタグ化する', () => {

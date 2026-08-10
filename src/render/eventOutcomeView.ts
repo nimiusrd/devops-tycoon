@@ -652,24 +652,35 @@ function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
   return tags;
 }
 
+/**
+ * 運用安定の詳細内訳（ツールチップ / aria-label 用）。
+ *
+ * カード上は要約1タグだけにし、倍率・条件つき効果はここに集約する。
+ */
+export function formatStabilityDetailTags(): EffectTag[] {
+  const tags: EffectTag[] = [];
+  pushTag(tags, `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, 'positive');
+  pushTag(
+    tags,
+    `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
+    'neutral',
+  );
+  pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
+  pushTag(
+    tags,
+    `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
+    'neutral',
+  );
+  return tags;
+}
+
 /** 介入アクション定義から効果タグ一覧を生成する（RI-45）。 */
 export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
 
   if (def.stabilizesFlow) {
-    pushTag(tags, `運用安定 ${STABILITY_TICKS}tick`, 'positive');
-    pushTag(tags, `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, 'positive');
-    pushTag(
-      tags,
-      `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
-      'neutral',
-    );
-    pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
-    pushTag(
-      tags,
-      `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
-      'neutral',
-    );
+    // 主要効果は1タグに要約（タッチでも持続時間と効果が見える）。長い倍率内訳はツールチップ側。
+    pushTag(tags, `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, 'positive');
   }
 
   switch (def.id) {
@@ -761,8 +772,9 @@ export function formatLeverTooltip(lever: LeverDef): string {
 
 /** 介入アクションの効果タグと説明文を合成したツールチップ文字列。 */
 export function formatActionTooltip(def: ActionDef): string {
-  return joinTooltip(
-    effectTagsToTooltip(formatActionDefTags(def)),
-    `${def.description}（副作用: ${def.sideEffect}）`,
-  );
+  const tags = [
+    ...formatActionDefTags(def),
+    ...(def.stabilizesFlow ? formatStabilityDetailTags() : []),
+  ];
+  return joinTooltip(effectTagsToTooltip(tags), `${def.description}（副作用: ${def.sideEffect}）`);
 }

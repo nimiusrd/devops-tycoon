@@ -51,6 +51,11 @@ async function stabilizeForScreenshot(page: import('@playwright/test').Page) {
   await expect
     .poll(async () => mount.getAttribute('data-dept-teams'), { timeout: 15_000 })
     .toMatch(/^[1-9]\d*$/);
+  // 人物SVGの遅延ロード完了後に固定フレームを撮り、フォールバック人物を
+  // ベースラインへ誤って保存しないようにする（Coding/Reviewの2種類）。
+  await expect
+    .poll(async () => mount.getAttribute('data-dept-assets'), { timeout: 15_000 })
+    .toBe('2');
   // 初回 render の rAF を 1 フレーム分待つ。
   await page.evaluate(
     () =>

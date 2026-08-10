@@ -72,6 +72,7 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
         if (!el) return;
         el.dataset.deptTeams = String(m.teams);
         el.dataset.deptFlows = String(m.flows);
+        el.dataset.deptAssets = String(m.assets);
       },
     });
     rendererRef.current = renderer;

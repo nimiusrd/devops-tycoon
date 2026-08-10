@@ -3,12 +3,15 @@
  * 旧モック org-screen（git 履歴）の team SVG / OfficeActors.tsx 縮小版。
  * アバター数は `Team.engineers`、AI ボットは `Team.aiAssignedCount` を映す（RI-27）。
  */
+import { useState } from 'react';
 import {
   islandAiBotCount,
   islandWorkerCount,
   type OrgIslandMood,
   type OrgIslandPlan,
 } from '../render/orgBoardScene';
+import { getGameAssetUrl } from '../data/assets';
+import { gameAssetMoodStyle, orgAssetForSlot } from '../render/gameAssetView';
 
 function IslandEyes({ mood }: { mood: OrgIslandMood }) {
   const ink = '#33285c';
@@ -75,6 +78,7 @@ function Worker({
   body,
   hair,
   mood,
+  assetId,
 }: {
   x: number;
   y: number;
@@ -82,16 +86,36 @@ function Worker({
   body: string;
   hair: string;
   mood: OrgIslandMood;
+  assetId: ReturnType<typeof orgAssetForSlot>;
 }) {
+  const moodStyle = gameAssetMoodStyle(mood);
+  const [assetState, setAssetState] = useState<'loading' | 'ready' | 'error'>('loading');
   return (
     <g transform={`translate(${x},${y}) scale(${scale})`}>
-      <path d="M-13 27 q0 -17 13 -17 q13 0 13 17 z" fill={body} />
-      <circle cx="0" cy="0" r="10.5" fill="#ffe0c4" />
-      <path d="M-11 -2 q1 -12 11 -12 q10 0 11 11 q-5 -5 -11 -5 q-6 0 -11 6z" fill={hair} />
-      <IslandEyes mood={mood} />
-      {(mood === 'tired' || mood === 'panic') && (
-        <text x="6" y="-5" fontSize="9">
-          {mood === 'panic' ? '💢' : '💦'}
+      <image
+        className={`org-game-asset mood-${moodStyle.className}`}
+        data-asset-id={assetId}
+        href={getGameAssetUrl(assetId)}
+        x="-16"
+        y="-17"
+        width="32"
+        height="40"
+        preserveAspectRatio="xMidYMid meet"
+        opacity={assetState === 'ready' ? moodStyle.alpha : 0}
+        onLoad={() => setAssetState('ready')}
+        onError={() => setAssetState('error')}
+      />
+      {assetState !== 'ready' && (
+        <>
+          <path d="M-13 27 q0 -17 13 -17 q13 0 13 17 z" fill={body} />
+          <circle cx="0" cy="0" r="10.5" fill="#ffe0c4" />
+          <path d="M-11 -2 q1 -12 11 -12 q10 0 11 11 q-5 -5 -11 -5 q-6 0 -11 6z" fill={hair} />
+          <IslandEyes mood={mood} />
+        </>
+      )}
+      {moodStyle.marker && assetState === 'ready' && (
+        <text x="8" y="-8" fontSize="9" className="org-game-asset-marker">
+          {moodStyle.marker}
         </text>
       )}
     </g>
@@ -203,6 +227,7 @@ export function OrgTeamActor({ island }: { island: OrgIslandPlan }) {
           scale={slot.scale}
           {...WORKER_PALETTE[i % WORKER_PALETTE.length]}
           mood={mood}
+          assetId={orgAssetForSlot(i)}
         />
       ))}
       {AI_BOT_SLOTS.slice(0, aiBots).map((slot, i) => (

@@ -2,7 +2,10 @@
  * 部署ビューのチームミニパイプライン（Coding▸Review▸Done）。
  * 旧モック dept-screen（git 履歴）の 380×220 チーム SVG を簡略化。
  */
+import { useState } from 'react';
 import type { DeptTeamPlan } from '../render/deptBoardScene';
+import { getGameAssetUrl } from '../data/assets';
+import { deptAssetForLane, gameAssetMoodStyle } from '../render/gameAssetView';
 
 function MiniDesk({ x, y, tone = 'wood' }: { x: number; y: number; tone?: 'wood' | 'dark' }) {
   const top = tone === 'dark' ? '#5a4a86' : '#caa06a';
@@ -49,18 +52,48 @@ function pileDots(cx: number, cy: number, count: number, hot: boolean) {
   ));
 }
 
-function stationWorker(x: number, y: number, mood: DeptTeamPlan['mood']) {
-  const emoji =
-    mood === 'panic' ? '💢' : mood === 'tired' ? '💦' : mood === 'sad' ? '😞' : undefined;
+function DeptWorker({
+  x,
+  y,
+  mood,
+  lane,
+}: {
+  x: number;
+  y: number;
+  mood: DeptTeamPlan['mood'];
+  lane: 'coding' | 'review';
+}) {
+  const assetId = deptAssetForLane(lane);
+  const moodStyle = gameAssetMoodStyle(mood);
+  const [assetState, setAssetState] = useState<'loading' | 'ready' | 'error'>('loading');
   return (
     <g transform={`translate(${x}, ${y})`}>
-      <ellipse cx={0} cy={14} rx={10} ry={12} fill="#7a6cc0" />
-      <circle cx={0} cy={0} r={8} fill="#ffe0c4" />
-      <circle cx={-3} cy={1} r={1.6} fill="#33285c" />
-      <circle cx={3} cy={1} r={1.6} fill="#33285c" />
-      {emoji && (
-        <text x={6} y={-6} fontSize="9">
-          {emoji}
+      {assetId && (
+        <image
+          className={`dept-game-asset mood-${moodStyle.className}`}
+          data-asset-id={assetId}
+          href={getGameAssetUrl(assetId)}
+          x="-16"
+          y="-18"
+          width="32"
+          height="42"
+          preserveAspectRatio="xMidYMid meet"
+          opacity={assetState === 'ready' ? moodStyle.alpha : 0}
+          onLoad={() => setAssetState('ready')}
+          onError={() => setAssetState('error')}
+        />
+      )}
+      {assetState !== 'ready' && (
+        <>
+          <ellipse cx={0} cy={14} rx={10} ry={12} fill="#7a6cc0" />
+          <circle cx={0} cy={0} r={8} fill="#ffe0c4" />
+          <circle cx={-3} cy={1} r={1.6} fill="#33285c" />
+          <circle cx={3} cy={1} r={1.6} fill="#33285c" />
+        </>
+      )}
+      {moodStyle.marker && (
+        <text x={6} y={-6} fontSize="9" className="dept-game-asset-marker">
+          {moodStyle.marker}
         </text>
       )}
     </g>
@@ -110,8 +143,10 @@ export function DeptTeamMini({ plan, deptColor }: { plan: DeptTeamPlan; deptColo
               tone={lane.lane === 'review' && lane.hot ? 'dark' : 'wood'}
             />
             {lane.count > 0 && pileDots(lane.x, lane.y - 22, lane.count, lane.hot)}
-            {lane.lane === 'coding' && stationWorker(64, 86, mood)}
-            {lane.lane === 'review' && stationWorker(176, 78, lane.hot ? 'panic' : mood)}
+            {lane.lane === 'coding' && <DeptWorker x={64} y={86} mood={mood} lane="coding" />}
+            {lane.lane === 'review' && (
+              <DeptWorker x={176} y={78} mood={lane.hot ? 'panic' : mood} lane="review" />
+            )}
           </g>
         );
       })}

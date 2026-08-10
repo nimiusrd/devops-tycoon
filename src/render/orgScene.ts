@@ -10,6 +10,7 @@
  * こちらはカメラ可視範囲＋スプライト予算で「実際に描く列」を絞り込む役割。
  */
 import type { Team, TeamHealth } from '../sim/orgscale/types';
+import type { GameAssetId } from '../data/assets';
 import { cullVisible, depthSort, isoProject, type CameraRect, type IsoOptions } from './iso';
 import {
   detailForZoom,
@@ -18,6 +19,8 @@ import {
   type TeamIslandLabels,
 } from './orgIslandView';
 import { HEALTH_COLOR } from './orgView';
+import { islandMood, islandWorkerCount } from './orgBoardScene';
+import { orgAssetForSlot } from './gameAssetView';
 
 /** シーン計画のパラメータ。 */
 export interface OrgSceneOptions {
@@ -60,6 +63,10 @@ export interface OrgSprite {
   incidents: number;
   /** 健全度。 */
   health: TeamHealth;
+  /** DOM版と同じチーム人数の人物アセット。card LODのみ描く。 */
+  avatarAssetIds: readonly GameAssetId[];
+  /** DOM版と同じチーム気分。Pixi側の状態演出に使う。 */
+  mood: ReturnType<typeof islandMood>;
   /** LOD 詳細度。 */
   detail: OrgIslandDetail;
   /** DOM 同等の表示ラベル。 */
@@ -121,6 +128,10 @@ export function planOrgScene(
       aiDependency: t.aiDependency,
       incidents: t.incidents,
       health: t.health,
+      avatarAssetIds: Array.from({ length: islandWorkerCount(t.engineers) }, (_, i) =>
+        orgAssetForSlot(i),
+      ),
+      mood: islandMood(t),
       detail,
       labels,
     };

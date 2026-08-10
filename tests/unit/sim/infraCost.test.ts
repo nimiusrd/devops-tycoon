@@ -90,4 +90,40 @@ describe('RI-88 インフラコスト軸', () => {
     );
     expect(played.infraCostMul).toBe(0.75);
   });
+
+  it('カード返金は computeInfraCost と同じ 1 未満無料ルールを使う', () => {
+    // Codex: 試練 dep30 × 0.05 × relic0.8 = 1.2 → 課金2。
+    // ai-guideline (0.75) 後は 0.9 → 本来 0。ceil だけの再計算だと 1 残りになる。
+    const engine = new RunEngine({
+      seed: 'ri88-refund-floor',
+      difficulty: 'easy',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      relics: string[];
+      org: { aiDependency: number };
+      deck: Array<{ defId: string; level: number }>;
+      sprint: {
+        focus: number;
+        cardPiles: { hand: number[]; played: number[]; discard: number[]; drawOrder: number[] };
+      } | null;
+      sprintPassiveEffects: { infraCostMul: number };
+    };
+    internals.relics = ['budget-discipline'];
+    // 試練ドリフト +5 後に 30 になるよう開始前は 25。
+    internals.org.aiDependency = 25;
+    const before = engine.snapshot().budget;
+    engine.beginSetupSprint();
+    expect(engine.snapshot().org.aiDependency).toBe(30);
+    expect(engine.snapshot().budget).toBe(before - 2);
+    expect(internals.sprintPassiveEffects.infraCostMul).toBe(0.8);
+
+    internals.deck = [{ defId: 'ai-guideline', level: 1 }];
+    internals.sprint!.cardPiles = { hand: [0], played: [], discard: [], drawOrder: [] };
+    internals.sprint!.focus = 100;
+    expect(engine.playCard(0).ok).toBe(true);
+    // 再計算 raw=0.9 → 0。課金分を全額返す。
+    expect(engine.snapshot().budget).toBe(before);
+  });
 });

@@ -148,6 +148,7 @@ import {
   applyTrialAiDependencyPressure,
   BETWEEN_SPRINT_RECOVERY,
   buildSprintBaselineInput,
+  computeInfraCost,
 } from './sprintBaselineBuild';
 import { computeWhatIfState, whatIfCacheKey, type WhatIfComputeInput } from './whatIfState';
 import type {
@@ -326,11 +327,12 @@ export class RunEngine {
   /** スプリント開始時のパッシブ係数（カード発動時の合成ベース。RI-30）。 */
   private sprintPassiveEffects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
   /**
-   * 今スプリント開始時に課したインフラコストと、再計算用の単価×依存度（RI-88）。
-   * コスト最適化カード発動時に差額を予算へ戻す。
+   * 今スプリント開始時に課したインフラコストと、課金時点の依存度・単価（RI-88）。
+   * コスト最適化カード発動時に差額を予算へ戻す（課金と同じ computeInfraCost で再計算）。
    */
   private chargedInfraCost = 0;
-  private chargedInfraCostBase = 0;
+  private chargedInfraDependency = 0;
+  private chargedInfraRate = 0;
   private lastResult: SprintResult | null = null;
   private draft: string[] | null = null;
   /** 今ドラフトでのマリガン使用済み（RI-81）。 */
@@ -551,7 +553,9 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
-    this.chargedInfraCostBase = org.aiDependency * fold.frontierModelCostPerDependency;
+    // カード発動で依存度が変わっても、課金時点の dep×rate を正として再計算する。
+    this.chargedInfraDependency = org.aiDependency;
+    this.chargedInfraRate = fold.frontierModelCostPerDependency;
     return next;
   }
 
@@ -729,8 +733,8 @@ export class RunEngine {
     if (outcome.ok) {
       // RI-88: コスト最適化カードで infraCostMul が下がったら、開始時課金との差額を返す。
       const mul = this.sprint.cardEffects.infraCostMul;
-      if (this.chargedInfraCost > 0 && this.chargedInfraCostBase > 0 && mul < 1) {
-        const revised = Math.ceil(this.chargedInfraCostBase * mul);
+      if (this.chargedInfraCost > 0 && this.chargedInfraRate > 0 && mul < 1) {
+        const revised = computeInfraCost(this.chargedInfraDependency, this.chargedInfraRate, mul);
         const refund = Math.max(0, this.chargedInfraCost - revised);
         if (refund > 0) {
           this.budget += refund;

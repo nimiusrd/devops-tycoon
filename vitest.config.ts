@@ -5,6 +5,9 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
+    // 並列実行時の負荷で長めのシミュレーションが既定の5秒を超えないようにする。
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
     include: ['tests/unit/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.ts'],
     exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
   },

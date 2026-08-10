@@ -134,7 +134,7 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     ).toBeNull();
   });
 
-  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して v5 として復元する', () => {
+  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して v6 として復元する', () => {
     const valid = makeRunSave('ri84-v4-goal-migration');
     const legacyDeliveryTarget = 1950;
     const parsed = parseRunSave({
@@ -155,6 +155,30 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     // v4 normal 倍率 1.95 → 現行（RI-77）2.25 へスケールする。
     expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
       Math.round((legacyDeliveryTarget * 2.25) / 1.95),
+    );
+  });
+
+  it('RI-77: v5 の途中セーブは現行 Delivery 倍率へ移行して v6 として復元する', () => {
+    const valid = makeRunSave('ri77-v5-goal-migration');
+    const legacyDeliveryTarget = 3510;
+    const parsed = parseRunSave({
+      ...valid,
+      schemaVersion: 5,
+      state: {
+        ...valid.state,
+        difficulty: 'normal',
+        quarterGoal: {
+          ...valid.state.quarterGoal,
+          deliveryTarget: legacyDeliveryTarget,
+        },
+      },
+      summary: { ...valid.summary, difficulty: 'normal' },
+    });
+
+    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+    // v5 normal 倍率 1.8 → 現行 2.25。
+    expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
+      Math.round((legacyDeliveryTarget * 2.25) / 1.8),
     );
   });
 

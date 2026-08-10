@@ -522,7 +522,7 @@ aiShare = 0.85 × clamp(adoptionShare, 0, 1)
 
 aiDeliveryMul = 1 + aiShare × 0.85 × aiLiteracy / 100
 
-shipGain =
+baseShipGain =
   max(
     4,
     round(
@@ -532,12 +532,13 @@ shipGain =
         - techDebt × 0.02
       )
       × shipMul
-      × aiDeliveryMul
     )
   )
+
+shipGain = max(4, round(baseShipGain × aiDeliveryMul))
 ```
 
-`aiDeliveryMul` は詳細モデルの `aiDeliveryValueMul`（§4.1）に対応する粗粒度近似である。推定 AI 採用率に基礎利用率 0.85 を掛けた分だけ、リテラシー連動の出荷倍率（最大 1.85）を掛ける。
+`aiDeliveryMul` は詳細モデルの `aiDeliveryValueMul`（§4.1）に対応する粗粒度近似である。推定 AI 採用率に基礎利用率 0.85 を掛けた分だけ、リテラシー連動の出荷倍率（最大 1.85）を掛ける。倍率は `shipping` 増分だけに適用し、完了件数は `baseShipGain` から換算する（詳細モデルが件数を1のまま価値だけ倍にすることと揃える）。
 
 出荷ポイントは、詳細モデルの通常タスク5ポイントを基準に完了件数へ換算する。AI支援完了数は完了件数 × `aiShare` で按分する。
 

@@ -24,17 +24,27 @@ export { isRunSavePhase } from '../sim/run/persist';
 /**
  * RI-68: Delivery 目標が四半期累計スケールになったため v1/v2 は非互換。
  * RI-75: タスク床／Delivery 目標倍率の再校正で進行中四半期の目標スケールが変わるため v3 も非互換。
- * RI-84: 安定化再校正で v4 の Delivery 目標を現行倍率へ移行する。
+ * RI-84: 安定化再校正で v4 の Delivery 目標を移行する。
+ * RI-77: AI 出荷価値倍率後の目標再校正で v5 の Delivery 目標を現行倍率へ移行する。
  */
-export const RUN_SAVE_SCHEMA_VERSION = 5 as const;
-const LEGACY_RUN_SAVE_SCHEMA_VERSION = 4 as const;
+export const RUN_SAVE_SCHEMA_VERSION = 6 as const;
+const LEGACY_V5_RUN_SAVE_SCHEMA_VERSION = 5 as const;
+const LEGACY_V4_RUN_SAVE_SCHEMA_VERSION = 4 as const;
 
-/** v4 が保存していた Delivery 目標倍率。v5 への復元時にだけ使う。 */
-const LEGACY_QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
+/** v4 が保存していた Delivery 目標倍率。 */
+const V4_QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
   easy: 2.15,
   normal: 1.95,
   hard: 1.5,
   nightmare: 1.65,
+};
+
+/** v5 が保存していた Delivery 目標倍率（RI-77 再校正前）。 */
+const V5_QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
+  easy: 2.0,
+  normal: 1.8,
+  hard: 1.4,
+  nightmare: 1.55,
 };
 
 /** タイトル「続きから」表示用の要約。 */
@@ -91,15 +101,15 @@ function isRunStatus(value: unknown): value is RunStatus {
   return value === 'playing' || value === 'won' || value === 'lost';
 }
 
-/** v4の途中セーブを現行の難易度別Delivery倍率へ移行する。 */
-function migrateV4DeliveryGoal(
+/** 旧スキーマの途中セーブを現行の難易度別 Delivery 倍率へ移行する。 */
+function migrateDeliveryGoal(
   state: Record<string, unknown>,
   difficulty: DifficultyId,
+  legacyScale: number,
 ): RunPersistState | null {
   if (!isRecord(state.quarterGoal)) return null;
   const deliveryTarget = state.quarterGoal.deliveryTarget;
   if (typeof deliveryTarget !== 'number' || !Number.isFinite(deliveryTarget)) return null;
-  const legacyScale = LEGACY_QUARTER_DELIVERY_GOAL_MUL[difficulty];
   const currentScale = QUARTER_DELIVERY_GOAL_MUL[difficulty];
   return {
     ...(state as unknown as RunPersistState),
@@ -171,7 +181,7 @@ function progressStatus(
 }
 
 /** 保存済み実績から、現行目標に対する KPI 進捗を再判定する。 */
-function migrateV4ReviewProgress(
+function migrateReviewProgress(
   state: RunPersistState,
   goal: RunPersistState['quarterGoal'],
 ): GoalKpiProgress[] | null {
@@ -197,15 +207,15 @@ function migrateV4ReviewProgress(
   return progress;
 }
 
-/** v4の四半期レビューを、保存済みの報酬前実績と現行目標から再構築する。 */
-function rebuildV4QuarterReview(state: RunPersistState): RunPersistState | null {
+/** 旧スキーマの四半期レビューを、保存済みの報酬前実績と現行目標から再構築する。 */
+function rebuildMigratedQuarterReview(state: RunPersistState): RunPersistState | null {
   if (state.phase !== 'quarterReview') return state;
   if (!state.quarterReview || typeof state.quarterReview.bossCleared !== 'boolean') return null;
 
   // ボス突破後の state.org / teams には、レビュー判定後に付与されたレリック効果が
   // 反映されている。現行 org から再計算すると Quality 等の KPI が変わるため、
   // 保存済み progress の実績値を正として Delivery 目標だけを現行値へ再判定する。
-  const progress = migrateV4ReviewProgress(state, state.quarterGoal);
+  const progress = migrateReviewProgress(state, state.quarterGoal);
   if (!progress) return null;
   const companyOrg = companyOrgFromTeams(state.extras.teams ?? [], state.org);
   const reviewOrg = { ...companyOrg };
@@ -268,9 +278,11 @@ function rebuildV4QuarterReview(state: RunPersistState): RunPersistState | null 
 /** 構造が壊れている／非互換なセーブは null（呼び出し側で clear）。 */
 export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRecord(raw)) return null;
-  // v1/v2 → v3（RI-68）、v3 は旧スケールのため破棄、v4 → v5（RI-84）は目標を移行する。
+  // v1/v2/v3 は破棄。v4（RI-84）・v5（RI-77 再校正前）は Delivery 目標を現行へ移行する。
   const schema = raw.schemaVersion;
-  if (schema !== RUN_SAVE_SCHEMA_VERSION && schema !== LEGACY_RUN_SAVE_SCHEMA_VERSION) return null;
+  const isLegacyV4 = schema === LEGACY_V4_RUN_SAVE_SCHEMA_VERSION;
+  const isLegacyV5 = schema === LEGACY_V5_RUN_SAVE_SCHEMA_VERSION;
+  if (schema !== RUN_SAVE_SCHEMA_VERSION && !isLegacyV4 && !isLegacyV5) return null;
   if (typeof raw.savedAt !== 'number' || !Number.isFinite(raw.savedAt)) return null;
   if (!isRecord(raw.summary) || !isRecord(raw.state)) return null;
 
@@ -300,13 +312,18 @@ export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRecord(state.extras.baseConfig)) return null;
   if (!isRecord(state.extras.orgAdjust)) return null;
 
+  const legacyScale = isLegacyV4
+    ? V4_QUARTER_DELIVERY_GOAL_MUL[summary.difficulty]
+    : isLegacyV5
+      ? V5_QUARTER_DELIVERY_GOAL_MUL[summary.difficulty]
+      : null;
   const migratedState =
-    schema === LEGACY_RUN_SAVE_SCHEMA_VERSION
-      ? migrateV4DeliveryGoal(state, summary.difficulty)
-      : (state as unknown as RunPersistState);
+    legacyScale === null
+      ? (state as unknown as RunPersistState)
+      : migrateDeliveryGoal(state, summary.difficulty, legacyScale);
   const stateWithCurrentReview =
-    schema === LEGACY_RUN_SAVE_SCHEMA_VERSION && migratedState
-      ? rebuildV4QuarterReview(migratedState)
+    legacyScale !== null && migratedState
+      ? rebuildMigratedQuarterReview(migratedState)
       : migratedState;
   if (!stateWithCurrentReview) return null;
 

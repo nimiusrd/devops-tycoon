@@ -531,7 +531,8 @@ export function advanceCoarseTeams(
     const aiShare = AI_ADOPTION * clamp(adoptionShare, 0, 1);
     const aiDeliveryMul = 1 + aiShare * 0.85 * (team.aiLiteracy / 100);
     // 稼働 0 なら出荷も 0（休職だらけのチームがベース出荷を出さない）。
-    const shipGain =
+    // 完了件数は倍率前の基礎出荷から換算し、倍率は shipping 増分だけに掛ける（詳細 sim と同じ）。
+    const baseShipGain =
       team.engineers <= 0
         ? 0
         : Math.max(
@@ -539,12 +540,11 @@ export function advanceCoarseTeams(
             Math.round(
               ((8 + team.engineers * 2.5 + team.aiLiteracy * 0.08) * (0.75 + rng() * 0.5) -
                 team.techDebt * 0.02) *
-                shipMul *
-                aiDeliveryMul,
+                shipMul,
             ),
           );
-    // 出荷ポイントをタスク件数相当へ換算してから count 系へ加算する（比率 KPI の歪み防止）。
-    const completedGain = coarseShipToCompleted(shipGain);
+    const shipGain = baseShipGain <= 0 ? 0 : Math.max(4, Math.round(baseShipGain * aiDeliveryMul));
+    const completedGain = coarseShipToCompleted(baseShipGain);
     completed += completedGain;
     aiAssisted += Math.round(completedGain * aiShare);
     const queuePressure = Math.max(

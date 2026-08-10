@@ -652,24 +652,36 @@ function formatNextQuarterEffectTags(def: GoalAdjustmentDef): EffectTag[] {
   return tags;
 }
 
+/**
+ * 運用安定の内訳タグ（ツールチップ用）。
+ *
+ * アクションバーのカードへ全部出すと 8 列グリッドで折り返しが縦に伸び、
+ * 盤面の contain スロットを潰す。カード上は要約1枚、詳細はホバーへ逃がす。
+ */
+export function formatStabilityDetailTags(): EffectTag[] {
+  const tags: EffectTag[] = [];
+  pushTag(tags, `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, 'positive');
+  pushTag(
+    tags,
+    `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
+    'neutral',
+  );
+  pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
+  pushTag(
+    tags,
+    `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
+    'neutral',
+  );
+  return tags;
+}
+
 /** 介入アクション定義から効果タグ一覧を生成する（RI-45）。 */
 export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
 
   if (def.stabilizesFlow) {
+    // 詳細内訳は formatStabilityDetailTags → ツールチップ側。カードは要約のみ。
     pushTag(tags, `運用安定 ${STABILITY_TICKS}tick`, 'positive');
-    pushTag(tags, `安定中 手戻り率 x${STABILITY_REWORK_MUL}`, 'positive');
-    pushTag(
-      tags,
-      `安定中 高価値(${STABILITY_HIGH_VALUE_COMBO_THRESHOLD + 1}段〜)出荷 x${STABILITY_HIGH_VALUE_MUL}`,
-      'neutral',
-    );
-    pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
-    pushTag(
-      tags,
-      `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
-      'neutral',
-    );
   }
 
   switch (def.id) {
@@ -761,8 +773,9 @@ export function formatLeverTooltip(lever: LeverDef): string {
 
 /** 介入アクションの効果タグと説明文を合成したツールチップ文字列。 */
 export function formatActionTooltip(def: ActionDef): string {
-  return joinTooltip(
-    effectTagsToTooltip(formatActionDefTags(def)),
-    `${def.description}（副作用: ${def.sideEffect}）`,
-  );
+  const tags = [
+    ...formatActionDefTags(def),
+    ...(def.stabilizesFlow ? formatStabilityDetailTags() : []),
+  ];
+  return joinTooltip(effectTagsToTooltip(tags), `${def.description}（副作用: ${def.sideEffect}）`);
 }

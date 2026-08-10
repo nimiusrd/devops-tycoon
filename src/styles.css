@@ -77,28 +77,39 @@ body {
 }
 .app.app-sprint-layout .hud {
   flex-shrink: 0;
-  gap: 6px;
+  gap: 4px;
 }
 .app.app-sprint-layout .hud-metrics {
-  gap: 6px;
+  gap: 5px;
 }
 .app.app-sprint-layout .hud.hud-compact {
   gap: 4px;
 }
 .app.app-sprint-layout .stat {
-  padding: 6px 9px 7px;
+  padding: 5px 8px 5px;
+}
+/* 詳細文は title / 展開で足りる。行を削って盤面高へ回す */
+.app.app-sprint-layout .stat-detail {
+  display: none;
+}
+.app.app-sprint-layout .stat .v {
+  font-size: 18px;
+}
+.app.app-sprint-layout .bar {
+  margin-top: 4px;
+  height: 5px;
 }
 .app.app-sprint-layout .stat-morale {
-  padding-bottom: 30px;
+  padding-bottom: 22px;
 }
 .app.app-sprint-layout .stat-seniorHp {
-  padding-bottom: 30px;
+  padding-bottom: 22px;
 }
 .app.app-sprint-layout .stat-aiDependency {
-  padding-bottom: 30px;
+  padding-bottom: 22px;
 }
 .app.app-sprint-layout .stat-reviewCapacity {
-  padding-bottom: 30px;
+  padding-bottom: 22px;
 }
 .app.app-sprint-layout .runbar,
 .app.app-sprint-layout .subbar {
@@ -166,6 +177,27 @@ body {
 }
 .app.app-sprint-layout .action .ico {
   font-size: 18px;
+}
+/*
+ * 効果タグが折り返して介入カードが縦に肥大すると、board-wrap の高さが削られ
+ * 1404:573 の contain で盤面が細い帯になる。全文は title ツールチップで確認できる。
+ */
+.app.app-sprint-layout .action .effect-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  max-height: 2.4em;
+  overflow: hidden;
+  gap: 2px;
+}
+.app.app-sprint-layout .action .effect-tag {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-height: 720px), (max-width: 860px) {
@@ -2545,24 +2577,6 @@ button.card:active {
   }
   .actions {
     grid-template-columns: repeat(4, 1fr);
-  }
-
-  /*
-   * 狭幅のアクションカードは4列に畳むため、長い効果タグを通常折返しすると
-   * 1タグだけでカードの高さが大きく伸びる。全文は action の title で確認できるため、
-   * カード内は1行の省略表示にして、盤面とアクションバーを viewport 内へ収める。
-   */
-  .app.app-sprint-layout .action .effect-tags {
-    width: 100%;
-    min-width: 0;
-  }
-  .app.app-sprint-layout .action .effect-tag {
-    display: block;
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 

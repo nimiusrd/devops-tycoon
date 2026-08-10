@@ -121,7 +121,13 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
             if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
               if (e.dispatch('interruptReview').ok) gained += 1;
             }
-            if (sp.tasks.some((t) => t.lane === 'rework' && t.incident)) {
+            // RI-73 / F-1: 高コストな余裕先消しを避け、複数炎上または延焼寸前だけ消す。
+            const fires = sp.tasks.filter((t) => t.lane === 'rework' && t.incident);
+            const minBurn = fires.reduce(
+              (m, t) => Math.min(m, t.burnTicksLeft ?? Number.POSITIVE_INFINITY),
+              Number.POSITIVE_INFINITY,
+            );
+            if (fires.length >= 2 || (fires.length >= 1 && minBurn <= 15)) {
               if (e.dispatch('firefight').ok) gained += 1;
             }
           }

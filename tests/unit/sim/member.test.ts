@@ -430,6 +430,7 @@ describe('成長・昇格（第12.2）', () => {
   it('RI-73 / F-1: 稼働人数が増えると個人スタミナ消費が薄まる', () => {
     expect(staminaDrainShareMul(3)).toBe(1);
     expect(staminaDrainShareMul(5)).toBeCloseTo(0.6, 5);
+    expect(staminaDrainShareMul(6)).toBe(0.5);
     expect(staminaDrainShareMul(1)).toBe(1);
 
     const three = applySprintGrowth(
@@ -458,8 +459,8 @@ describe('成長・昇格（第12.2）', () => {
 
   it('RI-73 / F-1: レビュアー人数で reviewHpCostMul が下がる', () => {
     expect(reviewHpCostMulForReviewers(1)).toBe(1);
-    expect(reviewHpCostMulForReviewers(2)).toBeCloseTo(1 / 1.1, 5);
-    expect(reviewHpCostMulForReviewers(5)).toBe(0.75);
+    expect(reviewHpCostMulForReviewers(2)).toBeCloseTo(1 / 1.15, 5);
+    expect(reviewHpCostMulForReviewers(6)).toBe(0.65);
 
     const one = foldFormationEffects(roster([member({ id: 'r', assignment: 'review' })]));
     const three = foldFormationEffects(
@@ -472,6 +473,27 @@ describe('成長・昇格（第12.2）', () => {
     expect(one.effects.reviewHpCostMul).toBe(1);
     expect(three.effects.reviewHpCostMul!).toBeLessThan(1);
     expect(three.effects.reviewHpCostMul).toBe(reviewHpCostMulForReviewers(3));
+  });
+
+  it('RI-73 / F-1: 稼働人数で seniorHpCostMul が下がる', () => {
+    const three = foldFormationEffects(
+      roster([
+        member({ id: 'a', assignment: 'coding' }),
+        member({ id: 'b', assignment: 'coding' }),
+        member({ id: 'c', assignment: 'review' }),
+      ]),
+    );
+    const five = foldFormationEffects(
+      roster([
+        member({ id: 'a', assignment: 'coding' }),
+        member({ id: 'b', assignment: 'coding' }),
+        member({ id: 'c', assignment: 'review' }),
+        member({ id: 'd', assignment: 'coding' }),
+        member({ id: 'e', assignment: 'review' }),
+      ]),
+    );
+    expect(three.effects.seniorHpCostMul).toBe(1);
+    expect(five.effects.seniorHpCostMul!).toBeLessThan(1);
   });
 
   it('配置された稼働メンバーは経験値を得てレベルアップし、やがて昇格する', () => {

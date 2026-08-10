@@ -38,22 +38,29 @@ describe('炎上タイマー: 点火（第6.3）', () => {
 });
 
 describe('炎上タイマー: 緊急対応による鎮火（第6.3）', () => {
-  it('タイマー内の緊急対応は安く鎮火でき、コンボも守られる', () => {
+  it('複数炎上の緊急対応は安く鎮火でき、コンボも守られる', () => {
+    const org = createOrgState('default', true);
+    org.seniorHp = 60;
+    const sprint = makeSprint(org, [burningTask(0), burningTask(1)]);
+    sprint.metrics.combo = 6;
+    const outcome = applyAction('firefight', sprint, org, () => 0.99, 0);
+    expect(outcome.ok).toBe(true);
+    expect(outcome.effect?.containedTaskId).toBeDefined();
+    expect(sprint.metrics.contained).toBe(1);
+    expect(sprint.metrics.combo).toBe(6);
+    // 自動鎮火（INCIDENT_HP_COST）より大幅に安い。
+    expect(60 - org.seniorHp).toBeLessThan(INCIDENT_HP_COST);
+  });
+
+  it('単発の先消しは高コストでコンボも切れる（RI-73 / F-1）', () => {
     const org = createOrgState('default', true);
     org.seniorHp = 60;
     const sprint = makeSprint(org, [burningTask(0)]);
     sprint.metrics.combo = 6;
     const outcome = applyAction('firefight', sprint, org, () => 0.99, 0);
     expect(outcome.ok).toBe(true);
-    expect(outcome.effect?.containedTaskId).toBe(0);
-    const t = sprint.tasks[0];
-    expect(t.incident).toBe(false);
-    expect(t.burnTicksLeft).toBeUndefined();
-    expect(t.lane).toBe('review');
-    expect(sprint.metrics.contained).toBe(1);
-    expect(sprint.metrics.combo).toBe(6);
-    // 自動鎮火（INCIDENT_HP_COST）より大幅に安い。
-    expect(60 - org.seniorHp).toBeLessThan(INCIDENT_HP_COST);
+    expect(sprint.metrics.combo).toBe(0);
+    expect(60 - org.seniorHp).toBeGreaterThanOrEqual(11);
   });
 
   it('緊急対応は最も延焼が近い火から消す', () => {

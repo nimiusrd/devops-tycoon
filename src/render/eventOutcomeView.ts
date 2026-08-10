@@ -12,6 +12,8 @@ import type { EvolutionNodeDef } from '../data/evolution';
 import type { RelicDef } from '../data/relics';
 import { getRelic } from '../data/relics';
 import {
+  ANDON_BASE_MORALE_COST,
+  ANDON_HP_COST,
   ANDON_STABILITY_REVIEW_MIN,
   ANDON_THIN_MORALE_COST,
   ANDON_TICKS,
@@ -19,6 +21,8 @@ import {
   ASSIGN_PROGRESS,
   FIREFIGHT_HP_COST,
   FIREFIGHT_HP_COST_MAX,
+  FIREFIGHT_LIGHT_HP_COST,
+  FIREFIGHT_LIGHT_MORALE_COST,
   FIREFIGHT_STABILITY_BURN_TICKS,
   FIREFIGHT_STABILITY_MIN_BURNING,
   INTERRUPT_HP_COST,
@@ -718,7 +722,12 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       pushTag(tags, '炎上1件鎮火', 'positive');
       pushTag(
         tags,
-        `シニアHP -${FIREFIGHT_HP_COST}〜${FIREFIGHT_HP_COST_MAX}（連打で増加）`,
+        `複数炎上時 シニアHP -${FIREFIGHT_HP_COST}〜${FIREFIGHT_HP_COST_MAX}（連打で増加）`,
+        'negative',
+      );
+      pushTag(
+        tags,
+        `単発先消し シニアHP -${FIREFIGHT_LIGHT_HP_COST}・士気 -${FIREFIGHT_LIGHT_MORALE_COST}・コンボ切断`,
         'negative',
       );
       pushTag(
@@ -749,10 +758,12 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
     case 'andon':
       pushTag(tags, `流入停止 ${ANDON_TICKS}tick`, 'neutral');
       pushTag(tags, '出荷機会損失', 'negative');
+      pushTag(tags, '運用安定なし', 'neutral');
+      pushTag(tags, `士気 -${ANDON_BASE_MORALE_COST}`, 'negative');
       pushTag(
         tags,
-        `Review≥${ANDON_STABILITY_REVIEW_MIN}で運用安定 / 未満は士気 -${ANDON_THIN_MORALE_COST}`,
-        'neutral',
+        `Review未渋滞(<${ANDON_STABILITY_REVIEW_MIN})は士気追加 -${ANDON_THIN_MORALE_COST}・シニアHP -${ANDON_HP_COST}`,
+        'negative',
       );
       break;
   }

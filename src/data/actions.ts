@@ -43,7 +43,7 @@ export const ACTION_DEFS: ActionDef[] = [
     stabilizesFlow: true,
     tone: 'danger',
     description: '炎上タスクを延焼前に鎮火する',
-    sideEffect: 'シニアHPを消費（連打で増加）。緊急時のみ運用安定',
+    sideEffect: '余裕のある先消しは高コスト。緊急時だけ安く安定も付く',
   },
   {
     id: 'assignTask',
@@ -101,7 +101,7 @@ export const ACTION_DEFS: ActionDef[] = [
     stabilizesFlow: true,
     tone: 'heavy',
     description: 'タスク流入を止め、溜まったキューを捌き切る',
-    sideEffect: '出荷機会を失う。渋滞が薄いと士気↓・安定なし',
+    sideEffect: '出荷機会を失う。シニアHP・士気を消費。運用安定なし',
   },
 ];
 

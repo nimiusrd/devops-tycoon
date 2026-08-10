@@ -402,7 +402,7 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
     expect(formatActionDefTags(def)).toEqual([
       { label: `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, tone: 'positive' },
       { label: 'Review 最大4件処理', tone: 'positive' },
-      { label: 'シニアHP -3', tone: 'negative' },
+      { label: 'シニアHP -2', tone: 'negative' },
       { label: '連携 +34%', tone: 'positive' },
     ]);
   });
@@ -442,12 +442,13 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
     });
     expect(tags.some((t) => t.label.includes('緊急時のみ運用安定'))).toBe(true);
     expect(tags.some((t) => t.label.includes('連打で増加'))).toBe(true);
+    expect(tags.some((t) => t.label.includes('単発先消し'))).toBe(true);
   });
 
-  it('アンドンは渋滞条件付きの安定タグを含む', () => {
+  it('アンドンは運用安定なしと薄キュー士気ペナを含む', () => {
     const def = getAction('andon')!;
     const tags = formatActionDefTags(def);
-    expect(tags.some((t) => t.label.includes('運用安定'))).toBe(true);
+    expect(tags.some((t) => t.label.includes('運用安定なし'))).toBe(true);
     expect(tags.some((t) => t.label.includes('士気'))).toBe(true);
   });
 

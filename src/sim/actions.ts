@@ -67,8 +67,11 @@ export interface ActionDef {
 
 /** 割り込みレビューで一度に捌く PR 数（UI プレビューと共有）。 */
 export const INTERRUPT_REVIEW_COUNT = 4;
-/** 割り込みレビューの追加シニアHP消費（UI プレビューと共有）。 */
-export const INTERRUPT_HP_COST = 3;
+/**
+ * 割り込みレビューの追加シニアHP消費（UI プレビューと共有）。
+ * RI-73 / F-1: 複合運用の割り込みを単一緊急対応より相対的に安くする。
+ */
+export const INTERRUPT_HP_COST = 2;
 /** 緊急対応の追加シニアHP消費（UI プレビューと共有）。 */
 export const FIREFIGHT_HP_COST = 2;
 /**
@@ -79,8 +82,17 @@ export const FIREFIGHT_HP_ESCALATION = 1;
 /** 緊急対応の同一スプリント連打 HP 上限（残業号令と同帯）。 */
 export const FIREFIGHT_HP_COST_MAX = 6;
 /**
- * この猶予 tick 以下の炎上を消したときだけ運用安定を付与する（RI-73 / F-1）。
- * 軽い先消しは HP 節約・コンボ維持に効くが、安定ブランケットにはしない。
+ * 単発の軽い炎上を消したときの士気コスト（打つべきでない盤面。RI-73 / F-1）。
+ * 複数炎上の制圧では払わない。
+ */
+export const FIREFIGHT_LIGHT_MORALE_COST = 5;
+/**
+ * 単発先消しのシニアHPコスト（自動鎮火に近い。RI-73 / F-1）。
+ * 複数炎上の緊急鎮火だけ `firefightHpCost` の安い帯を使う。
+ */
+export const FIREFIGHT_LIGHT_HP_COST = 11;
+/**
+ * 互換・表示用の猶予閾値（安定付与条件自体は複数炎上のみ）。
  */
 export const FIREFIGHT_STABILITY_BURN_TICKS = 15;
 /** 炎上がこの件数以上なら緊急対応でも運用安定を付与する（RI-73 / F-1）。 */
@@ -98,15 +110,19 @@ export const OVERTIME_TICKS = 30;
 export const OVERTIME_MORALE_COST = 8;
 /** 残業号令のシニアHP消費（UI プレビューと共有）。 */
 export const OVERTIME_HP_COST = 6;
-/** アンドンの流入停止 tick。 */
-export const ANDON_TICKS = 30;
+/** アンドンの流入停止 tick（RI-73 / F-1: 単体乱打が固定強手にならないよう短め）。 */
+export const ANDON_TICKS = 16;
 /**
- * アンドンが運用安定を付与する Review 件数の下限（熟練方針の使用条件に揃える。RI-73 / F-1）。
- * 未満なら安定なし＋薄キュー罰。
+ * アンドンが「渋滞対応」とみなす Review 件数の下限（熟練方針の使用条件に揃える。RI-73 / F-1）。
+ * 未満なら追加の薄キュー罰。
  */
 export const ANDON_STABILITY_REVIEW_MIN = 10;
-/** 薄キューでアンドンを打ったときの士気ペナルティ（機会損失の明示。RI-73 / F-1）。 */
-export const ANDON_THIN_MORALE_COST = 5;
+/** アンドンの基本士気コスト（ライン停止の現場負荷。RI-73 / F-1）。 */
+export const ANDON_BASE_MORALE_COST = 4;
+/** 薄キューでアンドンを打ったときの追加士気ペナルティ（RI-73 / F-1）。 */
+export const ANDON_THIN_MORALE_COST = 8;
+/** アンドンのシニアHPコスト（止めの判断にシニアが割かれる。RI-73 / F-1）。 */
+export const ANDON_HP_COST = 5;
 /** AIスロットルの持続 tick。 */
 export const THROTTLE_TICKS = 40;
 
@@ -141,8 +157,8 @@ export function mostUrgentIncident(sprint: SprintState): Task | undefined {
 }
 
 /**
- * 緊急対応が運用安定を付与すべき「緊急」盤面か（RI-73 / F-1）。
- * 発動前の盤面で判定する（鎮火後は炎上が消えるため）。
+ * 緊急対応が運用安定を付与し、軽い先消しペナを免除する「緊急」盤面か（RI-73 / F-1）。
+ * 猶予に余裕がある単発先消しは高コスト。複数炎上／延焼寸前だけ安く鎮火できる。
  */
 export function isFirefightUrgent(sprint: SprintState): boolean {
   const fires = activeIncidents(sprint);
@@ -165,13 +181,14 @@ export function isAndonReviewCongested(sprint: SprintState): boolean {
 
 /**
  * 安全側介入が今回の盤面で運用安定を付与するか（RI-73 / F-1）。
- * `stabilizesFlow` でも、緊急対応・アンドンは状況依存。
+ * - 緊急対応: 猶予が短い／複数炎上のときだけ（軽い先消しスパムを防ぐ）
+ * - アンドン: 付けない（単体乱打の固定強手化を防ぐ。複合は他介入で安定を得る）
  */
 export function grantsStabilityOnApply(id: ActionId, sprint: SprintState): boolean {
   const def = getAction(id);
   if (!def?.stabilizesFlow) return false;
   if (id === 'firefight') return isFirefightUrgent(sprint);
-  if (id === 'andon') return isAndonReviewCongested(sprint);
+  if (id === 'andon') return false;
   return true;
 }
 
@@ -217,10 +234,11 @@ const EFFECTS: Record<
 
   // 緊急対応: 最も延焼が近い火を 1 件、タイマーが切れる前に鎮火して Review へ戻す。
   // 自動鎮火（HP 大量消費・コンボ喪失）より遥かに安く、コンボも守られる（第6.3）。
-  // RI-73 / F-1: 同一スプリント連打は HP が逓増し、軽い先消しだけでは運用安定を付けない。
+  // RI-73 / F-1: 連打は HP 逓増。単発先消しは士気ペナ＋安定なし（打つべきでない盤面）。
   firefight(sprint, org, _rng, tick) {
     const fire = mostUrgentIncident(sprint);
     if (!fire) return false;
+    const lightTouch = !isFirefightUrgent(sprint);
     const containedTaskId = fire.id;
     fire.incident = false;
     delete fire.burnTicksLeft;
@@ -228,15 +246,28 @@ const EFFECTS: Record<
     fire.progress = 0;
     sprint.metrics.contained += 1;
     const priorUses = sprint.metrics.actionCounts.firefight ?? 0;
-    const hp = spendStat(org.seniorHp, firefightHpCost(priorUses));
+    const hpCost = lightTouch ? FIREFIGHT_LIGHT_HP_COST : firefightHpCost(priorUses);
+    const hp = spendStat(org.seniorHp, hpCost);
     org.seniorHp = hp.next;
+    let moraleSpent = 0;
+    if (lightTouch) {
+      // 余裕のある先消しは「毎回ヒーロー」になり、連続出荷の流れを切る（RI-73 / F-1）。
+      sprint.metrics.combo = 0;
+      const morale = spendStat(org.morale, FIREFIGHT_LIGHT_MORALE_COST);
+      org.morale = morale.next;
+      moraleSpent = morale.spent;
+    }
     appendSprintEvent(sprint, {
       tick,
       kind: 'contain',
       taskId: containedTaskId,
       combo: sprint.metrics.combo,
     });
-    return { containedTaskId, hpCost: hp.spent };
+    return {
+      containedTaskId,
+      hpCost: hp.spent,
+      ...(moraleSpent > 0 ? { moraleCost: moraleSpent } : {}),
+    };
   },
 
   // タスク差配: 対象指定 or 自動選択で前進（偏重で士気低下。RI-30）。
@@ -277,19 +308,29 @@ const EFFECTS: Record<
   },
 
   // アンドン: 一定時間 Backlog からの流入を止め、キューを捌き切る。
-  // RI-73 / F-1: Review が薄いのに打つと士気を削り、運用安定も付かない。
+  // RI-73 / F-1: 渋滞時は軽い士気コストのみ。薄いキューでは士気追加＋シニアHP。運用安定なし。
   andon(sprint, org, _rng, tick) {
     const untilTick = tick + ANDON_TICKS;
     sprint.modifiers.andonUntilTick = untilTick;
-    if (!isAndonReviewCongested(sprint)) {
-      const morale = spendStat(org.morale, ANDON_THIN_MORALE_COST);
-      org.morale = morale.next;
+    const congested = isAndonReviewCongested(sprint);
+    const moraleCost = congested
+      ? ANDON_BASE_MORALE_COST
+      : ANDON_BASE_MORALE_COST + ANDON_THIN_MORALE_COST;
+    const morale = spendStat(org.morale, moraleCost);
+    org.morale = morale.next;
+    if (!congested) {
+      const hp = spendStat(org.seniorHp, ANDON_HP_COST);
+      org.seniorHp = hp.next;
       return {
         modifier: { kind: 'andon', untilTick },
         moraleCost: morale.spent,
+        hpCost: hp.spent,
       };
     }
-    return { modifier: { kind: 'andon', untilTick } };
+    return {
+      modifier: { kind: 'andon', untilTick },
+      moraleCost: morale.spent,
+    };
   },
 };
 

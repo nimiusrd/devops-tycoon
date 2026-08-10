@@ -47,6 +47,7 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
     taskCountMul: 1.85,
     // RI-73/F-7: 手戻り抑制は RI-75 値を維持。seniorHpCostMul で消耗だけ下げて勝率帯を作る。
     // 平均HP上昇によるレビュー加速は eliteTaskMul（sprintBaselineBuild）側で相殺する。
+    // ※ RI-77 後の naive 勝率は F-1 調整と合わせて再計測する。
     globalEffects: {
       reworkRateAdd: -0.04,
       reviewEfficiencyMul: 1.05,

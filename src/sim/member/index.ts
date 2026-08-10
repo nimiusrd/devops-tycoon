@@ -29,6 +29,7 @@ export {
   setAiAssigned,
   foldFormationEffects,
   reviewHpCostMulForReviewers,
+  seniorHpShareMul,
   staminaDrainShareMul,
   applySprintGrowth,
   recoverStamina,

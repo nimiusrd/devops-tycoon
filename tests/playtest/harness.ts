@@ -48,6 +48,11 @@ export interface BoardCtx {
   reviewLen: number;
   /** 炎上中（Rework かつ incident）の件数。 */
   burning: number;
+  /**
+   * 炎上中タスクの最短猶予 tick（炎上が無いときは Infinity）。
+   * RI-73 / F-1: 熟練方針が延焼寸前だけを消すために使う。
+   */
+  minBurnTicksLeft: number;
   /** Coding レーンの件数。 */
   codingLen: number;
   /** Rework レーンの件数。 */
@@ -190,8 +195,9 @@ function unlockedFor(profile: MetaProfile): { cards: Set<string>; relics: Set<st
   return { cards: new Set(defaultUnlockedCardIds()), relics: new Set(defaultUnlockedRelicIds()) };
 }
 
+// RI-73 / F-1: 緊急対応は複数炎上、または延焼寸前だけ（高コストな単発先消しを避ける）。
 const SKILLED_ACTIONS: PolicySpec['actions'] = [
-  { id: 'firefight', when: (c) => c.burning >= 1 },
+  { id: 'firefight', when: (c) => c.burning >= 2 || (c.burning >= 1 && c.minBurnTicksLeft <= 15) },
   { id: 'interruptReview', when: (c) => c.reviewLen >= 6 },
   { id: 'andon', when: (c) => c.reviewLen >= 10 },
   { id: 'assignTask' },
@@ -1166,9 +1172,16 @@ export function playHand(
 function boardCtx(s: RunState): BoardCtx | null {
   const sp = s.sprint;
   if (!sp || sp.complete) return null;
+  const burningTasks = sp.tasks.filter((t) => t.lane === 'rework' && t.incident);
+  let minBurnTicksLeft = Number.POSITIVE_INFINITY;
+  for (const t of burningTasks) {
+    const left = t.burnTicksLeft ?? Number.POSITIVE_INFINITY;
+    if (left < minBurnTicksLeft) minBurnTicksLeft = left;
+  }
   return {
     reviewLen: sp.tasks.filter((t) => t.lane === 'review').length,
-    burning: sp.tasks.filter((t) => t.lane === 'rework' && t.incident).length,
+    burning: burningTasks.length,
+    minBurnTicksLeft,
     codingLen: sp.tasks.filter((t) => t.lane === 'coding').length,
     reworkLen: sp.tasks.filter((t) => t.lane === 'rework').length,
     tick: s.sprintTick,

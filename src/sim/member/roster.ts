@@ -50,14 +50,21 @@ const AI_DRAIN_RELIEF = 0.85;
  */
 const DRAIN_SHARE_BASELINE = 3;
 /** 人数増によるスタミナ分散の下限（緩和しすぎて採用が支配的にならない）。 */
-const DRAIN_SHARE_MIN = 0.55;
+const DRAIN_SHARE_MIN = 0.5;
 /**
  * レビュアー 1 人増ごとのレビューHP単価緩和（RI-73 / F-1）。
  * `1 / (1 + k * max(0, reviewers-1))`、下限 `REVIEW_HP_COST_MUL_MIN`。
  */
-const REVIEW_HP_COST_RELIEF_PER = 0.1;
+const REVIEW_HP_COST_RELIEF_PER = 0.15;
 /** レビューHP単価倍率の下限。 */
-const REVIEW_HP_COST_MUL_MIN = 0.75;
+const REVIEW_HP_COST_MUL_MIN = 0.65;
+/**
+ * 稼働人数 1 人増ごとのシニア消耗緩和（採用の燃えにくさ。RI-73 / F-1）。
+ * 難易度の `seniorHpCostMul` と乗算される。
+ */
+const SENIOR_HP_SHARE_RELIEF_PER = 0.08;
+/** 人数由来の seniorHpCostMul 下限。 */
+const SENIOR_HP_SHARE_MUL_MIN = 0.75;
 
 /** これ以下のスタミナで離脱（休職）判定が走る閾値。 */
 const LEAVE_THRESHOLD = 14;
@@ -80,6 +87,19 @@ export function reviewHpCostMulForReviewers(reviewerCount: number): number {
 export function staminaDrainShareMul(activeCount: number): number {
   const n = Math.max(1, Math.floor(activeCount));
   return clamp(DRAIN_SHARE_BASELINE / n, DRAIN_SHARE_MIN, 1);
+}
+
+/**
+ * 稼働人数からシニア体力消費倍率を求める（RI-73 / F-1）。
+ * 人数を増やして回すほど燃え尽きにくい。
+ */
+export function seniorHpShareMul(activeCount: number): number {
+  const n = Math.max(0, Math.floor(activeCount));
+  return clamp(
+    1 - SENIOR_HP_SHARE_RELIEF_PER * Math.max(0, n - DRAIN_SHARE_BASELINE),
+    SENIOR_HP_SHARE_MUL_MIN,
+    1,
+  );
 }
 /** 休職から復帰するスタミナ（上限に対する割合）。 */
 const RETURN_RATIO = 0.4;
@@ -303,6 +323,8 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
   const reviewCapacityMul = clamp(0.8 + reviewers.length * 0.18, 0.8, 1.6);
   // RI-73 / F-1: レビュアー増で PR あたりのシニア消耗を薄め、燃え尽きにくくする。
   const reviewHpCostMul = reviewHpCostMulForReviewers(reviewers.length);
+  const activeAssigned = coders.length + reviewers.length;
+  const seniorHpCostMul = seniorHpShareMul(activeAssigned);
 
   // AI 配布の効果（配った相手の AI習熟・トレイトで決まる）。AI を実際に使うのは
   // コーディング担当のタスクなので、効果対象もコーダーに揃える（採用率と一致させる）。
@@ -331,6 +353,7 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
       reviewEfficiencyMul,
       reviewCapacityMul,
       reviewHpCostMul,
+      seniorHpCostMul,
       reworkRateAdd: clamp(reworkRateAdd, -0.3, 0.3),
       incidentRateMul: clamp(incidentRateMul, 0.6, 1.6),
     },

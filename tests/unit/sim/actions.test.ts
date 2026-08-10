@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { ACTION_DEFS } from '../../../src/data/actions';
 import {
+  ANDON_BASE_MORALE_COST,
+  ANDON_HP_COST,
   ANDON_THIN_MORALE_COST,
   ANDON_TICKS,
   applyAction,
   ASSIGN_MORALE_COST,
   canApplyAction,
   FIREFIGHT_HP_COST,
+  FIREFIGHT_LIGHT_HP_COST,
+  FIREFIGHT_LIGHT_MORALE_COST,
   FIREFIGHT_STABILITY_BURN_TICKS,
   firefightHpCost,
   INTERRUPT_HP_COST,
@@ -105,20 +109,24 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
     },
   },
   firefight: {
+    // 単発炎上 → 高HP＋士気ペナ（RI-73 / F-1）。
     tasks: [burningTask(0), makeTask(1)],
     expectedEffect: (def) => ({
       actionId: 'firefight',
       containedTaskId: 0,
-      hpCost: FIREFIGHT_HP_COST,
+      hpCost: FIREFIGHT_LIGHT_HP_COST,
+      moraleCost: FIREFIGHT_LIGHT_MORALE_COST,
       focusCost: def.cost,
       gaugeGain: def.gauge,
     }),
-    assertEffect: ({ sprint }) => {
+    assertEffect: ({ sprint, org, before }) => {
       const t = sprint.tasks[0];
       expect(t.incident).toBe(false);
       expect(t.burnTicksLeft).toBeUndefined();
       expect(t.lane).toBe('review');
       expect(sprint.metrics.contained).toBe(1);
+      expect(org.morale).toBe(before.org.morale - FIREFIGHT_LIGHT_MORALE_COST);
+      expect(org.seniorHp).toBe(before.org.seniorHp - FIREFIGHT_LIGHT_HP_COST);
     },
   },
   assignTask: {
@@ -183,18 +191,22 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
     },
   },
   andon: {
-    // 薄キュー（Review 0）→ 安定なし＋士気ペナ（RI-73 / F-1）。
+    // 薄キュー（Review 0）→ 安定なし＋基本/薄キュー士気＋HP（RI-73 / F-1）。
     tasks: [],
     expectedEffect: (def) => ({
       actionId: 'andon',
       modifier: { kind: 'andon', untilTick: TICK + ANDON_TICKS },
-      moraleCost: ANDON_THIN_MORALE_COST,
+      moraleCost: ANDON_BASE_MORALE_COST + ANDON_THIN_MORALE_COST,
+      hpCost: ANDON_HP_COST,
       focusCost: def.cost,
       gaugeGain: def.gauge,
     }),
     assertEffect: ({ sprint, org, before }) => {
       expect(sprint.modifiers.andonUntilTick).toBe(TICK + ANDON_TICKS);
-      expect(org.morale).toBe(before.org.morale - ANDON_THIN_MORALE_COST);
+      expect(org.morale).toBe(
+        before.org.morale - (ANDON_BASE_MORALE_COST + ANDON_THIN_MORALE_COST),
+      );
+      expect(org.seniorHp).toBe(before.org.seniorHp - ANDON_HP_COST);
     },
   },
 };
@@ -243,29 +255,45 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
   });
 
   describe('RI-73 / F-1: 緊急対応・アンドンの状況依存', () => {
-    it('軽い炎上の緊急対応は運用安定を付けない', () => {
+    it('軽い炎上の緊急対応は高HP・士気ペナでコンボも切り、安定を付けない', () => {
       const org = createOrgState('default', true);
       const sprint = makeSprint(org, [burningTask(0)]);
+      sprint.metrics.combo = 6;
+      const morale0 = org.morale;
+      const hp0 = org.seniorHp;
       const outcome = applyAction('firefight', sprint, org, rng, TICK);
       expect(outcome.ok).toBe(true);
       expect(sprint.modifiers.stabilityUntilTick).toBe(0);
-      expect(outcome.effect?.hpCost).toBe(FIREFIGHT_HP_COST);
+      expect(outcome.effect?.hpCost).toBe(FIREFIGHT_LIGHT_HP_COST);
+      expect(outcome.effect?.moraleCost).toBe(FIREFIGHT_LIGHT_MORALE_COST);
+      expect(org.morale).toBe(morale0 - FIREFIGHT_LIGHT_MORALE_COST);
+      expect(org.seniorHp).toBe(hp0 - FIREFIGHT_LIGHT_HP_COST);
+      expect(sprint.metrics.combo).toBe(0);
     });
 
-    it('猶予が短い炎上の緊急対応は運用安定を付ける', () => {
+    it('単発でも猶予が短い緊急対応は安く鎮火でき運用安定も付く', () => {
       const org = createOrgState('default', true);
       const sprint = makeSprint(org, [burningTask(0, FIREFIGHT_STABILITY_BURN_TICKS)]);
+      const morale0 = org.morale;
+      const hp0 = org.seniorHp;
       const outcome = applyAction('firefight', sprint, org, rng, TICK);
       expect(outcome.ok).toBe(true);
       expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+      expect(outcome.effect?.moraleCost).toBeUndefined();
+      expect(outcome.effect?.hpCost).toBe(FIREFIGHT_HP_COST);
+      expect(org.morale).toBe(morale0);
+      expect(org.seniorHp).toBe(hp0 - FIREFIGHT_HP_COST);
     });
 
-    it('炎上が複数ある緊急対応は運用安定を付ける', () => {
+    it('炎上が複数ある緊急対応は運用安定を付け、軽い先消しペナを払わない', () => {
       const org = createOrgState('default', true);
       const sprint = makeSprint(org, [burningTask(0), burningTask(1)]);
+      const morale0 = org.morale;
       const outcome = applyAction('firefight', sprint, org, rng, TICK);
       expect(outcome.ok).toBe(true);
       expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+      expect(outcome.effect?.moraleCost).toBeUndefined();
+      expect(org.morale).toBe(morale0);
     });
 
     it('同一スプリントの緊急対応連打は HP コストが逓増する', () => {
@@ -284,16 +312,33 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(hpAfterFirst - org.seniorHp).toBe(firefightHpCost(1));
     });
 
-    it('Review が詰まっているアンドンは運用安定を付け士気を削らない', () => {
+    it('アンドンは渋滞時でも運用安定を付けず、基本の士気コストだけを払う', () => {
       const org = createOrgState('default', true);
       const tasks = Array.from({ length: 10 }, (_, i) => makeTask(i));
       const sprint = makeSprint(org, tasks);
       const morale0 = org.morale;
+      const hp0 = org.seniorHp;
       const outcome = applyAction('andon', sprint, org, rng, TICK);
       expect(outcome.ok).toBe(true);
-      expect(outcome.effect?.moraleCost).toBeUndefined();
-      expect(org.morale).toBe(morale0);
-      expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+      expect(outcome.effect?.moraleCost).toBe(ANDON_BASE_MORALE_COST);
+      expect(outcome.effect?.hpCost).toBeUndefined();
+      expect(org.morale).toBe(morale0 - ANDON_BASE_MORALE_COST);
+      expect(org.seniorHp).toBe(hp0);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(0);
+    });
+
+    it('薄キューのアンドンは士気追加とシニアHPを払い運用安定も付けない', () => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, []);
+      const morale0 = org.morale;
+      const hp0 = org.seniorHp;
+      const outcome = applyAction('andon', sprint, org, rng, TICK);
+      expect(outcome.ok).toBe(true);
+      expect(outcome.effect?.moraleCost).toBe(ANDON_BASE_MORALE_COST + ANDON_THIN_MORALE_COST);
+      expect(outcome.effect?.hpCost).toBe(ANDON_HP_COST);
+      expect(org.morale).toBe(morale0 - (ANDON_BASE_MORALE_COST + ANDON_THIN_MORALE_COST));
+      expect(org.seniorHp).toBe(hp0 - ANDON_HP_COST);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(0);
     });
   });
 

@@ -278,12 +278,13 @@ export function ActionBar({
               : '（クリックで武装）'
             : '';
           const tooltip = `${formatActionTooltip(a)}${dragHint}`;
-          // aria-label は子テキストを上書きするため、利用不可理由・武装状態もここに載せる。
+          // aria-label は子テキストを上書きするため、コスト・対象数・利用不可理由もここに載せる。
           const statusLabel = armed
             ? '武装中。'
             : !ready && availability.blockMessage
               ? `利用不可: ${availability.blockMessage}。`
               : '';
+          const targetLabel = availability.targetBadge ? `対象 ${availability.targetBadge}。` : '';
           return (
             <button
               type="button"
@@ -295,7 +296,7 @@ export function ActionBar({
               disabled={!ready && !armed}
               onClick={() => handleAction(a.id)}
               title={tooltip}
-              aria-label={`${a.label}。コスト⚡${a.cost}。${statusLabel}${tooltip}`}
+              aria-label={`${a.label}。コスト⚡${a.cost}。${targetLabel}${statusLabel}${tooltip}`}
             >
               {availability.targetBadge && (
                 <span className="action-target-badge" data-testid={`action-badge-${a.id}`}>

@@ -232,7 +232,8 @@ body {
   }
   /*
    * focus と 4 列カードを横並びのままにすると各カードが数十 px になり、
-   * 運用安定の要約が実質読めない。focus を上段へ逃がしてタグ幅を確保する。
+   * 運用安定の要約が実質読めない。focus（と武装時の担当選択）を上段へ逃がし、
+   * actions を全幅にしてタグ幅を確保する。担当選択は横並びで同段に収める。
    */
   .app.app-sprint-layout .actionbar {
     flex-wrap: wrap;
@@ -240,10 +241,21 @@ body {
   }
   .app.app-sprint-layout .focus {
     min-width: 0;
-    flex: 1 1 100%;
+    flex: 1 1 auto;
     border-right: none;
     border-bottom: 2px solid var(--line);
     padding: 2px 4px 6px;
+  }
+  .app.app-sprint-layout .assign-assignee {
+    flex: 0 1 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    border-right: none;
+    border-bottom: 2px solid var(--line);
+    padding: 2px 4px 6px 0;
   }
   .app.app-sprint-layout .actions {
     flex: 1 1 100%;

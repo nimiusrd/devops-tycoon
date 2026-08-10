@@ -18,7 +18,7 @@
 - Dev Container は Node 24 を使用し、`postCreateCommand` で npm 依存関係と Playwright Chromium をインストールする。Codex のセットアップは `.codex/environments/environment.toml` から `devcontainer up` を実行する。
 - Codex からプロジェクトのコマンドを実行するときは `devcontainer exec --workspace-folder . <command>` を使う。Git 操作はホスト側で行う。
 - Codex ではコンテナの並列負荷を避けるため、E2E を `devcontainer exec --workspace-folder . npm run test:e2e -- --workers=1` で実行する。ポートも変える場合は `--remote-env PLAYWRIGHT_PORT=<空きポート>` を `npm` より前に追加する。
-- E2E のホスト bind やポートが競合する場合は、`PLAYWRIGHT_HOST=127.0.0.1 PLAYWRIGHT_PORT=<空きポート> npm run test:e2e` で上書きする。
+- E2E のホスト bind やポートが競合する場合は、`devcontainer exec --workspace-folder . --remote-env PLAYWRIGHT_HOST=127.0.0.1 --remote-env PLAYWRIGHT_PORT=<空きポート> npm run test:e2e -- --workers=1` で上書きする。
 - 画面の見た目を一括確認するには `devcontainer exec --workspace-folder . npm run gallery`（seed 固定で主要画面を撮影し `gallery/index.html` に一覧を生成。デザイン確認用でコミット対象外）。
 
 ## Cursor Cloud specific instructions

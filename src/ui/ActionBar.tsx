@@ -295,7 +295,7 @@ export function ActionBar({
               disabled={!ready && !armed}
               onClick={() => handleAction(a.id)}
               title={tooltip}
-              aria-label={`${a.label}。${statusLabel}${tooltip}`}
+              aria-label={`${a.label}。コスト⚡${a.cost}。${statusLabel}${tooltip}`}
             >
               {availability.targetBadge && (
                 <span className="action-target-badge" data-testid={`action-badge-${a.id}`}>

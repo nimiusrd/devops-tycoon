@@ -87,7 +87,7 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 
 **完了（F-7 + F-1）。** F-7 は easy/normal の `seniorHpCostMul` と easy `eliteTaskMul` で導入帯を維持。F-1 は緊急対応の状況依存コスト（単発先消しは高HP・士気・コンボ切断、緊急時だけ安く安定付与）、アンドンの短縮＋薄キュー罰、採用のスタミナ／レビューHP／seniorHp 分散で充足。熟練ハーネスは緊急対応を複数炎上／延焼寸前に限定。
 
-部分再計測（easy+normal × `pt-1..10` × `PT_META=fresh`）: `naive` easy 3/10（30%）/ normal 0/10、`idle` 0、`onlyFirefight`/`onlyAndon`/`probe` は同一難易度で `skilledNoHire` を上回らない。採用は easy で `seniorBurnout` 4→7・最終シニアHP 34→16 と壊れにくさ方向（勝率は予算代償で下がりうる）。非回帰は `sprintTempo` / `aiDependencyPace` / actions・member ユニット。Delivery 目標倍率は未変更。既定フルコホートの方針別勝利数表更新は後続計測で追随する。
+既定フルコホート（4×36×10=1,440、`PT_META=fresh`）: `naive` easy 3/10（30%）/ normal 0/10 / hard 1/10 / nightmare 0/10、`idle` 全難易度 0/10。`onlyFirefight`/`onlyAndon`/`probe` は全難易度で `skilledNoHire` を上回らない。採用は easy で `seniorBurnout` 4/10 vs 7/10・最終シニアHP 34 vs 16（壊れにくさ。勝率は予算代償で下がりうる）。非回帰は `sprintTempo` / `aiDependencyPace` / actions・member ユニット。Delivery 目標倍率は未変更。
 
 受入条件:
 

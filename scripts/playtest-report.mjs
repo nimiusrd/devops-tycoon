@@ -577,9 +577,25 @@ if (cardsPair.length) {
     const cPlayed = mean(
       rows.map(({ c }) => (c.sprints ?? []).reduce((n, s) => n + (s.cardsPlayed ?? 0), 0)),
     );
+    const tCardFocus = mean(
+      rows.map(({ t }) => (t.sprints ?? []).reduce((n, s) => n + (s.cardFocusSpent ?? 0), 0)),
+    );
+    const cCardFocus = mean(
+      rows.map(({ c }) => (c.sprints ?? []).reduce((n, s) => n + (s.cardFocusSpent ?? 0), 0)),
+    );
+    const tInterventionFocus = mean(
+      rows.map(({ t }) =>
+        (t.sprints ?? []).reduce((n, s) => n + (s.interventionFocusSpent ?? 0), 0),
+      ),
+    );
+    const cInterventionFocus = mean(
+      rows.map(({ c }) =>
+        (c.sprints ?? []).reduce((n, s) => n + (s.interventionFocusSpent ?? 0), 0),
+      ),
+    );
     const tSurvive = mean(rows.map(({ t }) => t.sprintsPlayed));
     const cSurvive = mean(rows.map(({ c }) => c.sprintsPlayed));
-    return `共通ラン n=${rows.length} | 勝利 ${tWins} vs ${cWins} | 生存スプリント平均 ${r1(tSurvive)} vs ${r1(cSurvive)} | 発動カード平均 ${r1(tPlayed)} vs ${r1(cPlayed)}`;
+    return `共通ラン n=${rows.length} | 勝利 ${tWins} vs ${cWins} | 生存スプリント平均 ${r1(tSurvive)} vs ${r1(cSurvive)} | 発動カード平均 ${r1(tPlayed)} vs ${r1(cPlayed)} | 集中力消費（カード/介入） ${r1(tCardFocus)}/${r1(tInterventionFocus)} vs ${r1(cCardFocus)}/${r1(cInterventionFocus)}`;
   };
   console.log(`選択カード vs 無カード（全体）: ${cardPairLine(cardsPair)}`);
   for (const difficulty of [...new Set(cardsPair.map(({ t }) => t.difficulty))]) {

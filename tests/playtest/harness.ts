@@ -547,6 +547,10 @@ export interface SprintLog {
   interventions: number;
   /** スプリント中に実際に発動したカード枚数。 */
   cardsPlayed: number;
+  /** スプリント中にカード発動で消費した集中力（強化レベル反映後）。 */
+  cardFocusSpent: number;
+  /** スプリント中に介入で消費した集中力。 */
+  interventionFocusSpent: number;
   /** 介入 ID ごとの試行結果内訳（probe 方針では発動可能性の上限測定になる）。 */
   attempts: Record<string, Partial<Record<DispatchReason, number>>>;
   /** 集中力・クールダウンを除いた対象あり区間の開始回数。 */
@@ -1039,7 +1043,11 @@ function shouldPlaySelective(e: RunEngine): boolean {
   return focusRatio >= 0.6 && reviewLen < 6 && burning === 0;
 }
 
-function playHand(e: RunEngine, mode: PolicySpec['cards'], onPlayed?: () => void): void {
+function playHand(
+  e: RunEngine,
+  mode: PolicySpec['cards'],
+  onPlayed?: (focusSpent: number) => void,
+): void {
   if (mode === 'none') return;
   let guard = 0;
   while (guard < 24 && e.snapshot().phase === 'sprint') {
@@ -1049,10 +1057,12 @@ function playHand(e: RunEngine, mode: PolicySpec['cards'], onPlayed?: () => void
     if (hand.length === 0) break;
     let played = false;
     for (const deckIndex of [...hand]) {
+      const focusSpentBefore = e.snapshot().sprint?.metrics.focusSpent ?? 0;
       if (e.playCard(deckIndex).ok) {
         played = true;
         // カード間でも介入可能な局面を危険域サンプルへ残す（一括発動の欠測防止）。
-        onPlayed?.();
+        const focusSpentAfter = e.snapshot().sprint?.metrics.focusSpent ?? focusSpentBefore;
+        onPlayed?.(Math.max(0, focusSpentAfter - focusSpentBefore));
         break;
       }
     }
@@ -1658,12 +1668,14 @@ export function runOnce(
           : {};
         let interventions = 0;
         let cardsPlayed = 0;
+        let cardFocusSpent = 0;
         const sampleDanger = (): void => {
           observeOpportunityWindows(e, opportunityOpen, opportunityWindows);
           sampleAvailableInDanger(e, availableInDangerByReason);
         };
-        const onCardPlayed = (): void => {
+        const onCardPlayed = (focusSpent: number): void => {
           cardsPlayed += 1;
+          cardFocusSpent += focusSpent;
           sampleDanger();
         };
         sampleDanger();
@@ -1696,6 +1708,7 @@ export function runOnce(
         if (completed || partialResult) {
           const r = completed ? after.lastResult : partialResult;
           const metrics = after.sprint?.metrics;
+          const interventionFocusSpent = Math.max(0, (metrics?.focusSpent ?? 0) - cardFocusSpent);
           sprints.push({
             quarter,
             index,
@@ -1707,6 +1720,8 @@ export function runOnce(
             focusRemaining: r?.focusRemaining ?? 0,
             interventions,
             cardsPlayed,
+            cardFocusSpent,
+            interventionFocusSpent,
             attempts,
             opportunityWindows,
             initialOpportunity,

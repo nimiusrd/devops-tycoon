@@ -125,6 +125,12 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
         el.dataset.orgOverBudget = String(plan.overBudget);
         el.dataset.orgTotal = String(plan.total);
       },
+      onRenderMetrics: (metrics) => {
+        const el = mountRef.current;
+        if (!el) return;
+        el.dataset.orgAvatarAssetsLoaded = String(metrics.avatarAssetsLoaded);
+        el.dataset.orgAvatarAssetsRequired = String(metrics.avatarAssetsRequired);
+      },
     });
     rendererRef.current = renderer;
 

@@ -91,7 +91,7 @@ function DeptWorker({
           <circle cx={3} cy={1} r={1.6} fill="#33285c" />
         </>
       )}
-      {moodStyle.marker && assetState === 'ready' && (
+      {moodStyle.marker && (
         <text x={6} y={-6} fontSize="9" className="dept-game-asset-marker">
           {moodStyle.marker}
         </text>

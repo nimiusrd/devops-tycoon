@@ -237,19 +237,23 @@ export function StationActor({ lane, mood }: StationActorProps) {
       viewBox="0 0 220 200"
       aria-hidden="true"
     >
-      <image
-        className={`station-game-asset mood-${moodStyle.className}`}
-        data-asset-id={assetId}
-        href={getGameAssetUrl(assetId)}
-        x="20"
-        y="0"
-        width="180"
-        height="180"
-        preserveAspectRatio="xMidYMid meet"
+      <g
+        className={assetState === 'ready' ? bobClass(lane, mood) : undefined}
         opacity={assetState === 'ready' ? moodStyle.alpha : 0}
-        onLoad={() => setAssetState('ready')}
-        onError={() => setAssetState('error')}
-      />
+      >
+        <image
+          className={`station-game-asset mood-${moodStyle.className}`}
+          data-asset-id={assetId}
+          href={getGameAssetUrl(assetId)}
+          x="20"
+          y="0"
+          width="180"
+          height="180"
+          preserveAspectRatio="xMidYMid meet"
+          onLoad={() => setAssetState('ready')}
+          onError={() => setAssetState('error')}
+        />
+      </g>
       <Desk tone={lane === 'coding' ? 'dark' : 'wood'} />
       {/* PC/モニタ（Coding/Review の机に） */}
       {(lane === 'coding' || lane === 'review') && (

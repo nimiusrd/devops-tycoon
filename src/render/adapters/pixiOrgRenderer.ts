@@ -92,6 +92,13 @@ export interface PixiOrgRendererOptions {
   onFocusTeam?: (teamId: string) => void;
   /** dev-only: 直近のシーン計画メトリクス（ブラウザ計測用）。 */
   onPlanMetrics?: (plan: OrgScenePlan) => void;
+  /** dev-only: 人物SVGの取得完了数（視覚回帰の固定フレーム待機用）。 */
+  onRenderMetrics?: (metrics: OrgRenderMetrics) => void;
+}
+
+export interface OrgRenderMetrics {
+  avatarAssetsLoaded: number;
+  avatarAssetsRequired: number;
 }
 
 /** 1 島 Container の子パーツ（プール再利用用）。 */
@@ -435,6 +442,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   /** SVG人物テクスチャは複数のOrg rendererで共有し、個別disposeでは破棄しない。 */
   private readonly avatarTextures = new Map<GameAssetId, Texture | null>();
   private readonly avatarLoads = new Set<GameAssetId>();
+  private requiredAvatarAssets = new Set<GameAssetId>();
   private tickerBound = false;
   private fieldView: OrgFieldView = { scrollX: 0, scrollY: 0, width: 800, height: 600 };
   private scrollHost: HTMLElement | null = null;
@@ -835,6 +843,11 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     const halfH = sceneOpts.iso.tileH / 2;
     const plan = planOrgScene(input.teams, input.camera, sceneOpts);
     this.lastPlan = plan;
+    this.requiredAvatarAssets = new Set(
+      plan.sprites
+        .filter((sprite) => sprite.detail === 'card')
+        .flatMap((sprite) => sprite.avatarAssetIds),
+    );
     this.opts.onPlanMetrics?.(plan);
     const onFocus = this.opts.onFocusTeam;
 
@@ -877,6 +890,11 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
 
       this.layer.addChild(island);
     }
+    this.opts.onRenderMetrics?.({
+      avatarAssetsLoaded: [...this.requiredAvatarAssets].filter((id) => this.avatarTextures.has(id))
+        .length,
+      avatarAssetsRequired: this.requiredAvatarAssets.size,
+    });
   }
 
   /** card LODの1〜4人を共通ロスターで描く。未ロード/失敗時は色付きの簡易人物へ戻す。 */
@@ -948,5 +966,6 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.lastTeams = [];
     this.fittedLayout = null;
     this.lastPlan = null;
+    this.requiredAvatarAssets.clear();
   }
 }

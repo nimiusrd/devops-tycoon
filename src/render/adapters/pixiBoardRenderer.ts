@@ -86,6 +86,8 @@ export interface BoardRenderMetrics {
   dots: number;
   actors: number;
   flows: number;
+  /** 取得処理が完了した人物SVGの種類数（失敗時のフォールバックも完了扱い）。 */
+  assets: number;
 }
 
 /** レンダラ入力（Board.tsx が plan と drag ハイライトをまとめて渡す）。 */
@@ -449,11 +451,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.syncDots(scene.dots, input.draggableTaskIds ?? new Set(), input.dragTaskId ?? null);
     this.applyAnimations(this.elapsedMs);
 
-    this.opts.onRenderMetrics?.({
-      dots: this.dotEntries.length,
-      actors: this.actors.length,
-      flows: scene.flows.length,
-    });
+    this.emitRenderMetrics();
   }
 
   /** 直近 render の入力（resize 後の再描画用）。 */
@@ -631,6 +629,9 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
           actor.assetLoaded = true;
           actor.assetLoading = false;
           this.applyActorVisual(actor);
+          // 非同期取得がticker停止後に完了しても、新しいSpriteを確実にcanvasへ反映する。
+          this.app?.render();
+          this.emitRenderMetrics();
         });
       }
       this.applyActorVisual(actor);
@@ -638,6 +639,15 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       actor.char.position.set(s.x, s.y);
       actor.status.position.set(s.x + ACTOR_W * 0.36, s.y - ACTOR_H * 0.47);
     }
+  }
+
+  private emitRenderMetrics(): void {
+    this.opts.onRenderMetrics?.({
+      dots: this.dotEntries.length,
+      actors: this.actors.length,
+      flows: this.lastFlows.length,
+      assets: this.actors.filter((actor) => actor.assetLoaded).length,
+    });
   }
 
   /** SVGアセットと既存の生成人物フォールバックへ共通の気分演出を適用する。 */

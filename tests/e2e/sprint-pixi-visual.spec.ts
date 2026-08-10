@@ -65,6 +65,10 @@ async function stabilizeForScreenshot(page: import('@playwright/test').Page) {
   await expect
     .poll(async () => mount.getAttribute('data-board-dots'), { timeout: 15_000 })
     .toMatch(/^\d+$/);
+  // 人物SVGの取得完了後にtickerを止め、旧人物フレームをベースラインへ保存しない。
+  await expect
+    .poll(async () => mount.getAttribute('data-board-assets'), { timeout: 15_000 })
+    .toBe('5');
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {

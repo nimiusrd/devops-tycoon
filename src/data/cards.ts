@@ -76,8 +76,12 @@ export const CARD_DEFS: CardDef[] = [
     rarity: 'rare',
     cost: 12,
     focusCost: 3,
-    description: ['AI 利用のルールと教育を整備', '効率的な利用が定着し、依存と手戻りが減る'],
-    base: { aiLiteracyAdd: 20, aiDependencyAdd: -18, reworkRateAdd: -0.08 },
+    description: [
+      'AI 利用のルールと教育を整備',
+      '依存と手戻りを減らし、エージェント基盤の利用コストも抑える',
+    ],
+    // RI-88: 既存カードへコスト最適化を載せる（新規カードはドラフト池を壊すため避ける）。
+    base: { aiLiteracyAdd: 20, aiDependencyAdd: -18, reworkRateAdd: -0.08, infraCostMul: 0.75 },
   },
   {
     id: 'docs',

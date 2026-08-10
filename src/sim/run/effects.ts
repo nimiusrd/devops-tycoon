@@ -44,6 +44,13 @@ export interface RunModifierInput {
 }
 
 /**
+ * 通常ランの AI 依存度あたりのインフラ／モデル利用単価（RI-88）。
+ * 試練上乗せと合わせ試練時合計が旧 0.05。通常ランはボス開始時のみ課金。
+ * 0.02 は代表 seed / モンテカルロ勝率を崩すため 0.01 とする。
+ */
+export const BASE_INFRA_COST_PER_DEPENDENCY = 0.01;
+
+/**
  * このスプリントに掛かる乗算系係数と、集中力/実装枠の補正を畳み込む。
  * 難易度の全体係数・試練・レリック・進化を合成する（カードは含まない。RI-30）。
  */
@@ -52,7 +59,7 @@ export function foldRunEffects(input: RunModifierInput): RunEffects {
   let focusBonus = 0;
   let codingSlotBonus = 0;
   let aiDependencyDriftPerSprint = 0;
-  let frontierModelCostPerDependency = 0;
+  let frontierModelCostPerDependency = BASE_INFRA_COST_PER_DEPENDENCY;
 
   const diff = getDifficulty(input.difficulty);
   if (diff.globalEffects) effects = combineEffects(effects, toEffects(diff.globalEffects));

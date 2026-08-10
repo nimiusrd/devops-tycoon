@@ -1,7 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // 視覚回帰・相互作用 E2E は実ブラウザ（Chromium）で少数に絞る（SPEC 第22.5）。
-const PORT = 5174;
+const DEFAULT_PORT = 5174;
+const PORT = Number(process.env.PLAYWRIGHT_PORT ?? DEFAULT_PORT);
+
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65_535) {
+  throw new Error('PLAYWRIGHT_PORT には 1〜65535 の整数を指定してください。');
+}
+
 const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({

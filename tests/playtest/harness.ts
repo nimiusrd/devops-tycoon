@@ -75,24 +75,39 @@ export interface PolicySpec {
    * 手札の使い方。
    * - `none`: 使わない
    * - `always`: 手札を集中力が尽きるまで無差別に発動する
+   * - `preferCostOpt`: `always` と同じだがコスト最適化カードを先に発動する（RI-88）
    * - `selective`: 集中力に余裕があり、盤面が切迫していないときだけ発動する
    */
-  cards: 'none' | 'always' | 'selective';
+  cards: 'none' | 'always' | 'preferCostOpt' | 'selective';
+  /**
+   * ラン開始時の試練 ID（RI-88: ハーネス比較で継続課金を発生させる等）。
+   * 未指定は試練なし。
+   */
+  trials?: string[];
   /**
    * 進化ポイントの使い方（解放するブランチの優先順）。
    * - `none`: 使わない
    * - `asListed`: ツリーの定義順（UI 表示順）に上から取る。初見相当
    * - `reviewFirst`: レビュー容量 → 品質 → AI → 文化 → 開発速度
    * - `aiFirst`: AI → 開発速度 → 品質 → レビュー → 文化。AI ビルド
+   * - `aiBloated`: AI 成功率だけ先に取り、コスト最適化ノード（ai-2/ai-3）は後回し（RI-88）
    * - `qualityFirst`: 品質 → レビュー → 文化 → 開発速度 → AI。品質ビルド
    * - `stateAware`: 直前スプリントまでの組織状態を見てブランチ順を決める（RI-86 / F-11）
    */
-  evolve: 'none' | 'asListed' | 'reviewFirst' | 'aiFirst' | 'qualityFirst' | 'stateAware';
+  evolve:
+    | 'none'
+    | 'asListed'
+    | 'reviewFirst'
+    | 'aiFirst'
+    | 'aiBloated'
+    | 'qualityFirst'
+    | 'stateAware';
   /**
    * ドラフトの選び方。`first` は提示順の先頭。
    * それ以外は該当キーワードを含むカードを優先し、無ければ先頭を取る。
+   * `costOpt` / `aiBloated` は RI-88 のインフラコスト軸用。
    */
-  draft?: 'first' | 'ai' | 'quality';
+  draft?: 'first' | 'ai' | 'quality' | 'costOpt' | 'aiBloated';
   /** 編成フェーズで全員に AI を配る / 誰にも配らない。未指定は既定のまま。 */
   ai?: 'all' | 'none';
   /** 編成フェーズでレビューへ寄せる。 */
@@ -112,11 +127,13 @@ export interface PolicySpec {
    * ショップでのカード・レリック購入。採用枠は `recruit` 側で扱う。
    * - `skipBuy`: 買わない（既定。既存の統制条件を変えないため）
    * - `buy`: 予算に余裕がある範囲でレリック → カードの順に買う
+   * - `buyCostOpt`: コスト最適化レリック／カードを優先して買う（RI-88）
+   * - `buyAvoidCostOpt`: 買うがコスト最適化コンテンツは避ける（RI-88 肥大）
    *
    * F-2 のスプリント間投資にはショップも含まれるが、`skipBuy` だけでは
    * 「投資しない」条件しか測れない。
    */
-  shop?: 'skipBuy' | 'buy';
+  shop?: 'skipBuy' | 'buy' | 'buyCostOpt' | 'buyAvoidCostOpt';
   /**
    * 休息フェーズで採用しないときの選択。`RestScreen` には heal / repay / upgrade がある。
    * - `heal`: 常に回復（既定。既存の統制条件を変えないため）
@@ -213,6 +230,24 @@ const orderFromBranches = (branches: readonly string[]): readonly string[] =>
   branches.flatMap((b) => [1, 2, 3].map((n) => `${b}-${n}`));
 
 const EVOLUTION_ORDER_AI_FIRST = orderFromBranches(['ai', 'dev', 'quality', 'review', 'culture']);
+/** 肥大ハーネス: 速度側を先に伸ばし、infraCostMul 付きの ai-2/ai-3 は後回し（RI-88）。 */
+const EVOLUTION_ORDER_AI_BLOATED = [
+  'ai-1',
+  'dev-1',
+  'dev-2',
+  'dev-3',
+  'review-1',
+  'review-2',
+  'review-3',
+  'quality-1',
+  'quality-2',
+  'quality-3',
+  'culture-1',
+  'culture-2',
+  'culture-3',
+  'ai-2',
+  'ai-3',
+];
 const EVOLUTION_ORDER_QUALITY_FIRST = orderFromBranches([
   'quality',
   'review',
@@ -220,6 +255,10 @@ const EVOLUTION_ORDER_QUALITY_FIRST = orderFromBranches([
   'dev',
   'ai',
 ]);
+
+/** RI-88: コスト最適化を載せた既存カード／レリック（新規 ID はドラフト池を壊すため使わない）。 */
+const COST_OPT_CARD_ID = 'ai-guideline';
+const COST_OPT_RELIC_ID = 'budget-discipline';
 
 /** `stateAware` 進化が参照する盤面（解放フェーズ到達時点）。 */
 export interface EvolveBoardCtx {
@@ -330,6 +369,8 @@ function evolutionOrder(mode: PolicySpec['evolve'], ctx?: EvolveBoardCtx): reado
       return EVOLUTION_ORDER_REVIEW_FIRST;
     case 'aiFirst':
       return EVOLUTION_ORDER_AI_FIRST;
+    case 'aiBloated':
+      return EVOLUTION_ORDER_AI_BLOATED;
     case 'qualityFirst':
       return EVOLUTION_ORDER_QUALITY_FIRST;
     case 'stateAware':
@@ -342,13 +383,22 @@ function evolutionOrder(mode: PolicySpec['evolve'], ctx?: EvolveBoardCtx): reado
 }
 
 /** ドラフト選好に合うカード ID を選ぶ（無ければ先頭）。 */
-const DRAFT_PREFERENCE: Record<'ai' | 'quality', readonly string[]> = {
+const DRAFT_PREFERENCE: Record<'ai' | 'quality' | 'costOpt', readonly string[]> = {
   ai: ['copilot', 'claude-code', 'devin', 'ai-guideline'],
   quality: ['auto-test', 'pr-size-limit', 'docs', 'review-bot', 'hire-senior'],
+  costOpt: [COST_OPT_CARD_ID, 'ai-guideline', 'copilot', 'claude-code'],
 };
 
 function pickDraft(offer: readonly string[], mode: PolicySpec['draft']): string {
   if (!mode || mode === 'first') return offer[0];
+  if (mode === 'aiBloated') {
+    const prefer = DRAFT_PREFERENCE.ai;
+    return (
+      offer.find((id) => prefer.includes(id) && id !== COST_OPT_CARD_ID) ??
+      offer.find((id) => id !== COST_OPT_CARD_ID) ??
+      offer[0]
+    );
+  }
   const prefer = DRAFT_PREFERENCE[mode];
   return offer.find((id) => prefer.includes(id)) ?? offer[0];
 }
@@ -443,6 +493,39 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     ai: 'all',
     beat: 'stateAware',
     recruit: 'hire',
+  },
+  /**
+   * RI-88 / F-10: 自前エージェントハーネス（肥大）。
+   * AI を全面導入しつつ、コスト最適化ノード・カード・レリックを後回し／回避する。
+   */
+  harnessBloated: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'always',
+    evolve: 'aiBloated',
+    draft: 'aiBloated',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+    shop: 'buyAvoidCostOpt',
+    // 通常単価 0.01 では多くのランで課金 0 になるため、継続課金が効く試練で比較する。
+    trials: ['frontier-dependency'],
+  },
+  /**
+   * RI-88 / F-10: 自前エージェントハーネス（最適化）。
+   * 同じく AI 全面だが、進化で ai-2/ai-3 を早めに取り、ドラフト／ショップでコスト最適化へ投資する。
+   */
+  harnessOptimized: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'preferCostOpt',
+    evolve: 'aiFirst',
+    draft: 'costOpt',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+    shop: 'buyCostOpt',
+    trials: ['frontier-dependency'],
   },
   noAi: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
@@ -1043,7 +1126,8 @@ function shouldPlaySelective(e: RunEngine): boolean {
   return focusRatio >= 0.6 && reviewLen < 6 && burning === 0;
 }
 
-function playHand(
+/** 手札発動（単体テストからも呼ぶ）。 */
+export function playHand(
   e: RunEngine,
   mode: PolicySpec['cards'],
   onPlayed?: (focusSpent: number) => void,
@@ -1053,10 +1137,19 @@ function playHand(
   while (guard < 24 && e.snapshot().phase === 'sprint') {
     guard += 1;
     if (mode === 'selective' && !shouldPlaySelective(e)) break;
-    const hand = e.snapshot().sprint?.cardPiles.hand ?? [];
+    const s = e.snapshot();
+    const hand = s.sprint?.cardPiles.hand ?? [];
     if (hand.length === 0) break;
+    const order =
+      mode === 'preferCostOpt'
+        ? [...hand].sort((a, b) => {
+            const aOpt = s.deck[a]?.defId === COST_OPT_CARD_ID ? 0 : 1;
+            const bOpt = s.deck[b]?.defId === COST_OPT_CARD_ID ? 0 : 1;
+            return aOpt - bOpt;
+          })
+        : [...hand];
     let played = false;
-    for (const deckIndex of [...hand]) {
+    for (const deckIndex of order) {
       const focusSpentBefore = e.snapshot().sprint?.metrics.focusSpent ?? 0;
       if (e.playCard(deckIndex).ok) {
         played = true;
@@ -1506,24 +1599,68 @@ const SHOP_BUDGET_FLOOR = 10;
  * 危機条件の5には十分余裕がある）、「ショップへ投資する」条件が実際には
  * 多くの機会を見送る保守方針になってしまう。
  */
-function buyShopItems(e: RunEngine, spec: PolicySpec): void {
+/** ショップ購入方針の適用（単体テストからも呼ぶ）。 */
+export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
   const reserve = spec.recruit === 'skip' ? SHOP_BUDGET_FLOOR : RECRUIT_COST;
-  const relic = e.snapshot().shop?.relic;
-  if (relic && !relic.bought && e.snapshot().budget - relic.cost >= reserve) {
+  const avoidCostOpt = spec.shop === 'buyAvoidCostOpt';
+  const preferCostOpt = spec.shop === 'buyCostOpt';
+
+  const tryBuyRelic = (onlyCostOpt: boolean): void => {
+    const s = e.snapshot();
+    const relic = s.shop?.relic;
+    if (!relic || relic.bought) return;
+    if (s.budget - relic.cost < reserve) return;
+    if (avoidCostOpt && relic.id === COST_OPT_RELIC_ID) return;
+    if (onlyCostOpt && relic.id !== COST_OPT_RELIC_ID) return;
+    if (!onlyCostOpt && preferCostOpt && relic.id !== COST_OPT_RELIC_ID) return;
     e.buyShopRelic();
+  };
+
+  // preferCostOpt では無関係レリックをカードより先に買わない（最適化投資を潰さない）。
+  if (preferCostOpt) {
+    tryBuyRelic(true);
+  } else {
+    tryBuyRelic(false);
   }
+
   // 陳列は購入で `bought` が立つので、毎回取り直して安い順に買えるだけ買う。
   for (;;) {
     const s = e.snapshot();
     // カード購入は `applyImmediateLose` を呼ぶ。敗北したらフェーズが外れるので抜ける。
     if (s.phase !== 'shop') break;
     const affordable = (s.shop?.cards ?? [])
-      .filter((c) => !c.bought && s.budget - c.cost >= reserve)
-      .sort((a, b) => a.cost - b.cost);
+      .filter(
+        (c) =>
+          !c.bought &&
+          s.budget - c.cost >= reserve &&
+          !(avoidCostOpt && c.defId === COST_OPT_CARD_ID),
+      )
+      .sort((a, b) => {
+        if (preferCostOpt) {
+          const aOpt = a.defId === COST_OPT_CARD_ID ? 0 : 1;
+          const bOpt = b.defId === COST_OPT_CARD_ID ? 0 : 1;
+          if (aOpt !== bOpt) return aOpt - bOpt;
+        }
+        return a.cost - b.cost;
+      });
     if (affordable.length === 0) break;
     e.buyShopCard(affordable[0].defId);
     // 予算不足などで `bought` が立たなければ無限ループになるため、変化が無ければ抜ける。
     if (!e.snapshot().shop?.cards.find((c) => c.defId === affordable[0].defId)?.bought) break;
+  }
+
+  // カード購入後の余りで無関係レリックを検討する（preferCostOpt 時）。
+  if (preferCostOpt) {
+    const s = e.snapshot();
+    const relic = s.shop?.relic;
+    if (
+      relic &&
+      !relic.bought &&
+      relic.id !== COST_OPT_RELIC_ID &&
+      s.budget - relic.cost >= reserve
+    ) {
+      e.buyShopRelic();
+    }
   }
 }
 
@@ -1591,6 +1728,7 @@ export function runOnce(
     difficulty: difficulty as RunState['difficulty'],
     allowedCards: unlocked.cards,
     allowedRelics: unlocked.relics,
+    trials: spec.trials ?? [],
   });
   e.startRun();
   const sprints: SprintLog[] = [];
@@ -1844,7 +1982,9 @@ export function runOnce(
           e.buyShopRecruit();
         }
         // カード・レリックはスプリント間投資（F-2）の一部。買う方針だけ買う。
-        if (spec.shop === 'buy') buyShopItems(e, spec);
+        if (spec.shop === 'buy' || spec.shop === 'buyCostOpt' || spec.shop === 'buyAvoidCostOpt') {
+          buyShopItems(e, spec);
+        }
         const afterShopState = e.snapshot();
         const afterShop = afterShopState.shop;
         investments.push({

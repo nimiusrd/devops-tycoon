@@ -383,6 +383,10 @@ describe('RI-91-C2 whatIfCacheKey / whatIfClient survived mutants', () => {
         label: 'teamIncidents',
         input: directWhatIfInput({ teamIncidents: base.teamIncidents! + 1 }),
       },
+      {
+        label: 'otherTeamAiDependencies',
+        input: directWhatIfInput({ otherTeamAiDependencies: [80, 90] }),
+      },
     ] as const)('1つ変えるとキーが変わる: $label', ({ input }) => {
       expect(whatIfCacheKey(input)).not.toBe(baseKey);
     });

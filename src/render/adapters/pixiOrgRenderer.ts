@@ -10,7 +10,8 @@
  *    から import できる（型検証のため）が、`init()` / `render()` はブラウザ
  *    （DevContainer の dev サーバをホストブラウザで開く）でのみ呼ぶこと。
  */
-import { Application, Container, Graphics, Rectangle, Text } from 'pixi.js';
+import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import type { GameAssetId } from '../../data/assets';
 import { Viewport } from 'pixi-viewport';
 import type { Team } from '../../sim/orgscale/types';
 import { SpritePool, type CameraRect, type IsoOptions } from '../iso';
@@ -28,13 +29,15 @@ import { planOrgScene, type OrgSceneOptions, type OrgScenePlan, type OrgSprite }
 import { focusRingTone, truncateName } from '../orgIslandView';
 import { isoLayoutOrigin, layoutIso, orgLayoutFingerprint, ORG_PAD } from '../orgView';
 import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
+import { gameAssetMoodStyle } from '../gameAssetView';
+import { loadGameAssetTexture } from './gameAssetTextures';
 import type { RendererAdapter } from './index';
 
 /**
  * 破棄オプション（Pixi v8）。子・テクスチャに加え `context: true` で WebGL
  * コンテキストを解放し、画面の出入りでコンテキストが蓄積するのを防ぐ。
  */
-const DESTROY_OPTIONS = { children: true, texture: true, context: true } as const;
+const DESTROY_OPTIONS = { children: true, texture: false, context: true } as const;
 
 /** DOM `.team-island` と同寸（styles.css）。 */
 const CARD_W = 116;
@@ -89,6 +92,13 @@ export interface PixiOrgRendererOptions {
   onFocusTeam?: (teamId: string) => void;
   /** dev-only: 直近のシーン計画メトリクス（ブラウザ計測用）。 */
   onPlanMetrics?: (plan: OrgScenePlan) => void;
+  /** dev-only: 人物SVGの取得完了数（視覚回帰の固定フレーム待機用）。 */
+  onRenderMetrics?: (metrics: OrgRenderMetrics) => void;
+}
+
+export interface OrgRenderMetrics {
+  avatarAssetsLoaded: number;
+  avatarAssetsRequired: number;
 }
 
 /** 1 島 Container の子パーツ（プール再利用用）。 */
@@ -103,6 +113,9 @@ interface IslandParts {
   headcountText: Text;
   fireText: Text;
   badge: Graphics;
+  moodText: Text;
+  avatarSprites: Sprite[];
+  avatarFallbacks: Graphics[];
 }
 
 /** クリック判定用の矩形（島中心からの offset）。 */
@@ -149,6 +162,20 @@ function createIslandContainer(): Container {
     headcountText: makeText({ fontSize: 11, fill: COLOR_TEXT_DIM }),
     fireText: makeText({ fontSize: 11, fill: COLOR_FIRE }),
     badge: new Graphics(),
+    moodText: makeText({ fontSize: 10, fill: COLOR_TEXT_DIM }),
+    avatarSprites: Array.from({ length: 4 }, () => {
+      const sprite = new Sprite();
+      sprite.anchor.set(0.5);
+      sprite.visible = false;
+      sprite.eventMode = 'none';
+      return sprite;
+    }),
+    avatarFallbacks: Array.from({ length: 4 }, () => {
+      const fallback = new Graphics();
+      fallback.visible = false;
+      fallback.eventMode = 'none';
+      return fallback;
+    }),
   };
   container.addChild(
     parts.bg,
@@ -160,6 +187,9 @@ function createIslandContainer(): Container {
     parts.headcountText,
     parts.fireText,
     parts.badge,
+    parts.moodText,
+    ...parts.avatarFallbacks,
+    ...parts.avatarSprites,
   );
   for (const child of container.children) {
     child.eventMode = 'none';
@@ -182,6 +212,9 @@ function hideAllParts(parts: IslandParts): void {
   parts.headcountText.visible = false;
   parts.fireText.visible = false;
   parts.badge.visible = false;
+  parts.moodText.visible = false;
+  for (const avatar of parts.avatarSprites) avatar.visible = false;
+  for (const fallback of parts.avatarFallbacks) fallback.visible = false;
 }
 
 /** 幅に収まるまで省略し、描画後の高さを返す。 */
@@ -283,10 +316,15 @@ function layoutCard(parts: IslandParts, s: OrgSprite): IslandHitBounds & { w: nu
     layoutLabelLine(parts.fireText, labels.fire, innerW),
   ].filter((h) => h > 0);
 
+  const moodMarker = gameAssetMoodStyle(s.mood).marker;
+
   const contentH =
     lineHeights.reduce((sum, h) => sum + h, 0) +
     Math.max(0, lineHeights.length - 1) * CARD_LINE_GAP;
-  const h = contentH + CARD_PAD_Y * 2;
+  // 気分マーカーは健全度バッジと同じ右上に置かず、アバター行へ分離する。
+  // 人物がいないチームでも行を確保し、ラベルとの重なりを防ぐ。
+  const avatarRowH = s.avatarAssetIds.length > 0 || moodMarker !== null ? 23 : 0;
+  const h = contentH + CARD_PAD_Y * 2 + avatarRowH;
   const topY = -h / 2 + CARD_PAD_Y;
 
   let y = topY;
@@ -303,6 +341,14 @@ function layoutCard(parts: IslandParts, s: OrgSprite): IslandHitBounds & { w: nu
   }
 
   drawCardBg(parts.bg, CARD_W, h, s.deptColor, s.tint, s.isPlayer, s.fire);
+
+  parts.moodText.text = moodMarker ?? '';
+  parts.moodText.visible = moodMarker !== null;
+  // 健全度バッジ（右上）と離れたカード下端の状態印。アバターとは右側で分離する。
+  parts.moodText.position.set(
+    CARD_W / 2 - CARD_PAD_X - parts.moodText.width,
+    h / 2 - CARD_PAD_Y - parts.moodText.height,
+  );
 
   if (labels.showBadge) {
     parts.badge.clear();
@@ -393,6 +439,10 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
   private lastTeams: readonly Team[] = [];
   private fittedLayout: FittedLayout | null = null;
   private readonly firePulses: FirePulse[] = [];
+  /** SVG人物テクスチャは複数のOrg rendererで共有し、個別disposeでは破棄しない。 */
+  private readonly avatarTextures = new Map<GameAssetId, Texture | null>();
+  private readonly avatarLoads = new Set<GameAssetId>();
+  private requiredAvatarAssets = new Set<GameAssetId>();
   private tickerBound = false;
   private fieldView: OrgFieldView = { scrollX: 0, scrollY: 0, width: 800, height: 600 };
   private scrollHost: HTMLElement | null = null;
@@ -475,6 +525,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
         parts.aiText.text = '';
         parts.headcountText.text = '';
         parts.fireText.text = '';
+        parts.moodText.text = '';
         hideAllParts(parts);
       },
     });
@@ -792,6 +843,11 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     const halfH = sceneOpts.iso.tileH / 2;
     const plan = planOrgScene(input.teams, input.camera, sceneOpts);
     this.lastPlan = plan;
+    this.requiredAvatarAssets = new Set(
+      plan.sprites
+        .filter((sprite) => sprite.detail === 'card')
+        .flatMap((sprite) => sprite.avatarAssetIds),
+    );
     this.opts.onPlanMetrics?.(plan);
     const onFocus = this.opts.onFocusTeam;
 
@@ -805,6 +861,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
 
       if (s.detail === 'card') {
         const size = layoutCard(parts, s);
+        this.syncCardAvatars(parts, s, size.h);
         hit = { hitX: -size.w / 2, hitY: -size.h / 2, hitW: size.w, hitH: size.h };
       } else if (s.detail === 'badge') {
         hit = layoutBadge(parts, s, halfW, halfH);
@@ -833,6 +890,60 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
 
       this.layer.addChild(island);
     }
+    this.opts.onRenderMetrics?.({
+      avatarAssetsLoaded: [...this.requiredAvatarAssets].filter((id) => this.avatarTextures.has(id))
+        .length,
+      avatarAssetsRequired: this.requiredAvatarAssets.size,
+    });
+  }
+
+  /** card LODの1〜4人を共通ロスターで描く。未ロード/失敗時は色付きの簡易人物へ戻す。 */
+  private syncCardAvatars(parts: IslandParts, sprite: OrgSprite, cardHeight: number): void {
+    const mood = gameAssetMoodStyle(sprite.mood);
+    const count = Math.min(parts.avatarSprites.length, sprite.avatarAssetIds.length);
+    const gap = 15;
+    const startX = -((count - 1) * gap) / 2;
+    for (let i = 0; i < parts.avatarSprites.length; i += 1) {
+      const avatar = parts.avatarSprites[i];
+      const fallback = parts.avatarFallbacks[i];
+      if (!avatar || !fallback || i >= count) {
+        if (avatar) avatar.visible = false;
+        if (fallback) fallback.visible = false;
+        continue;
+      }
+      const x = startX + i * gap;
+      const y = cardHeight / 2 - 12;
+      const assetId = sprite.avatarAssetIds[i];
+      fallback.clear();
+      fallback.circle(x, y, 6).fill({ color: sprite.tint, alpha: mood.alpha });
+      fallback.circle(x, y - 2, 3).fill({ color: '#ffe0c4', alpha: mood.alpha });
+      fallback.visible = true;
+      avatar.position.set(x, y);
+      avatar.width = 15;
+      avatar.height = 15;
+      avatar.tint = Number.parseInt(mood.tint.slice(1), 16);
+      avatar.alpha = mood.alpha;
+      const texture = this.avatarTextures.get(assetId);
+      if (texture) {
+        avatar.texture = texture;
+        avatar.visible = true;
+        fallback.visible = false;
+      } else {
+        avatar.visible = false;
+        this.requestAvatarTexture(assetId);
+      }
+    }
+  }
+
+  private requestAvatarTexture(assetId: GameAssetId): void {
+    if (this.avatarLoads.has(assetId) || this.avatarTextures.has(assetId)) return;
+    this.avatarLoads.add(assetId);
+    void loadGameAssetTexture(assetId).then((texture) => {
+      this.avatarLoads.delete(assetId);
+      if (this.disposed) return;
+      this.avatarTextures.set(assetId, texture);
+      if (this.lastTeams.length > 0) this.renderTeams(this.lastTeams);
+    });
   }
 
   /** WebGL リソースを破棄する。init の解決前でも呼べる（disposed で中断させる）。 */
@@ -855,5 +966,6 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     this.lastTeams = [];
     this.fittedLayout = null;
     this.lastPlan = null;
+    this.requiredAvatarAssets.clear();
   }
 }

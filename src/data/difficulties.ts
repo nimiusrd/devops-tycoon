@@ -180,7 +180,8 @@ export const TRIAL_DEFS: TrialDef[] = [
     label: 'フロンティアモデル依存',
     description: 'AI依存度が自然増加し、利用コストが予算を圧迫する。',
     aiDependencyDriftPerSprint: 5,
-    frontierModelCostPerDependency: 0.05,
+    // ベース 0.01 との合計が旧試練単価 0.05 になるよう上乗せする（RI-88）。
+    frontierModelCostPerDependency: 0.04,
     scoreMul: 1.25,
   },
 ];

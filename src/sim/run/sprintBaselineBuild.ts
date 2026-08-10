@@ -135,9 +135,16 @@ export interface SprintBaselineBuildParams {
   playedCards?: { defId: string; level: number }[];
 }
 
+export interface AiDependencyPressureOptions {
+  /**
+   * インフラコストを課金するか（RI-88）。
+   * 試練中は毎スプリント、通常ランはボス開始時のみ。
+   */
+  billInfraCost?: boolean;
+}
+
 /**
- * 試練「フロンティアモデル依存」のスプリント開始時コストを適用する。
- * 依存度が高いほど高価なモデルへ安易に寄り、予算消費も増える。
+ * スプリント開始時の AI 依存圧力を適用する（RI-88）。
  */
 export function applyTrialAiDependencyPressure(
   org: OrgState,
@@ -145,17 +152,50 @@ export function applyTrialAiDependencyPressure(
   ctx: Pick<SprintBaselineBuildContext, 'relics' | 'evolution' | 'difficulty' | 'trials'> & {
     deck: { defId: string; level: number }[];
   },
+  options: AiDependencyPressureOptions = {},
 ): number {
-  const { aiDependencyDriftPerSprint, frontierModelCostPerDependency } = foldRunEffects({
+  const fold = foldRunEffects({
     deck: ctx.deck,
     relics: ctx.relics,
     evolution: ctx.evolution,
     difficulty: ctx.difficulty,
     trials: ctx.trials,
   });
-  org.aiDependency = clamp(org.aiDependency + aiDependencyDriftPerSprint, 0, 100);
-  const modelCost = Math.ceil(org.aiDependency * frontierModelCostPerDependency);
+  org.aiDependency = clamp(org.aiDependency + fold.aiDependencyDriftPerSprint, 0, 100);
+  const bill = options.billInfraCost ?? ctx.trials.length > 0;
+  if (!bill) return budget;
+  const modelCost = computeInfraCost(
+    org.aiDependency,
+    fold.frontierModelCostPerDependency,
+    fold.effects.infraCostMul,
+  );
   return Math.max(0, budget - modelCost);
+}
+
+/** インフラ／モデル利用コスト（RI-88）。1 未満は 0、以上は ceil。 */
+export function computeInfraCost(aiDependency: number, rate: number, infraCostMul: number): number {
+  const raw = clamp(aiDependency, 0, 100) * Math.max(0, rate) * Math.max(0, infraCostMul);
+  if (raw < 1) return 0;
+  return Math.ceil(raw);
+}
+
+/** インフラコストの内訳（テスト・UI 向け）。 */
+export function previewInfraCost(
+  aiDependency: number,
+  ctx: Pick<SprintBaselineBuildContext, 'relics' | 'evolution' | 'difficulty' | 'trials'> & {
+    deck: { defId: string; level: number }[];
+  },
+): { rate: number; infraCostMul: number; cost: number } {
+  const fold = foldRunEffects({
+    deck: ctx.deck,
+    relics: ctx.relics,
+    evolution: ctx.evolution,
+    difficulty: ctx.difficulty,
+    trials: ctx.trials,
+  });
+  const rate = fold.frontierModelCostPerDependency;
+  const infraCostMul = fold.effects.infraCostMul;
+  return { rate, infraCostMul, cost: computeInfraCost(aiDependency, rate, infraCostMul) };
 }
 
 /**

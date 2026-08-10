@@ -54,6 +54,7 @@ async function stabilizeForScreenshot(page: import('@playwright/test').Page) {
   await expect
     .poll(async () => mount.getAttribute('data-org-sprites'), { timeout: 15_000 })
     .toMatch(/^[1-9]\d*$/);
+  await waitForAvatarAssets(page);
   // fitToContent / 初回 render の rAF を 1 フレーム分待つ。
   await page.evaluate(
     () =>
@@ -61,6 +62,18 @@ async function stabilizeForScreenshot(page: import('@playwright/test').Page) {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       }),
   );
+}
+
+/** card LODで必要になる人物SVGを取得し終えてから固定フレームへ進む。 */
+async function waitForAvatarAssets(page: import('@playwright/test').Page) {
+  const mount = page.getByTestId('org-pixi-mount');
+  await expect
+    .poll(async () => mount.getAttribute('data-org-avatar-assets-required'), { timeout: 15_000 })
+    .toMatch(/^\d+$/);
+  const required = await mount.getAttribute('data-org-avatar-assets-required');
+  await expect
+    .poll(async () => mount.getAttribute('data-org-avatar-assets-loaded'), { timeout: 15_000 })
+    .toBe(required ?? '0');
 }
 
 /** 既知チームへカメラを寄せ、card LOD（scale >= 0.7）になるまで待つ。 */
@@ -75,6 +88,7 @@ async function focusTeamForCardLod(page: import('@playwright/test').Page, teamId
       page.evaluate(() => (window as GameWindow).__orgPixiTest?.getZoomScale() ?? 0),
     )
     .toBeGreaterThanOrEqual(LOD_BADGE_MAX);
+  await waitForAvatarAssets(page);
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {

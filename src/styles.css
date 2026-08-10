@@ -77,28 +77,38 @@ body {
 }
 .app.app-sprint-layout .hud {
   flex-shrink: 0;
-  gap: 6px;
+  gap: 4px;
 }
 .app.app-sprint-layout .hud-metrics {
-  gap: 6px;
+  gap: 5px;
 }
 .app.app-sprint-layout .hud.hud-compact {
   gap: 4px;
 }
 .app.app-sprint-layout .stat {
-  padding: 6px 9px 7px;
+  padding: 5px 8px 5px;
 }
-.app.app-sprint-layout .stat-morale {
-  padding-bottom: 30px;
+.app.app-sprint-layout .stat .v {
+  font-size: 18px;
 }
-.app.app-sprint-layout .stat-seniorHp {
-  padding-bottom: 30px;
+.app.app-sprint-layout .bar {
+  margin-top: 4px;
+  height: 5px;
 }
-.app.app-sprint-layout .stat-aiDependency {
-  padding-bottom: 30px;
-}
+/*
+ * 警告/リスクチップ（absolute bottom）分の下余白。22px まで削るとバーと重なる。
+ * 詳細文の圧縮はデスクトップ幅のみ（狭幅の KPI 展開では detail を残す）。
+ */
+.app.app-sprint-layout .stat-morale,
+.app.app-sprint-layout .stat-seniorHp,
+.app.app-sprint-layout .stat-aiDependency,
 .app.app-sprint-layout .stat-reviewCapacity {
   padding-bottom: 30px;
+}
+@media (min-width: 861px) {
+  .app.app-sprint-layout .stat-detail {
+    display: none;
+  }
 }
 .app.app-sprint-layout .runbar,
 .app.app-sprint-layout .subbar {
@@ -167,6 +177,29 @@ body {
 .app.app-sprint-layout .action .ico {
   font-size: 18px;
 }
+/*
+ * 長いタグの省略はデスクトップ幅のみ。狭幅では nowrap すると要約が「運用安定…」で消え、
+ * タッチでは title も使えないため折り返して主要効果を残す。
+ */
+.app.app-sprint-layout .action .effect-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  gap: 2px;
+}
+.app.app-sprint-layout .action .effect-tag {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (min-width: 861px) {
+  .app.app-sprint-layout .action .effect-tag {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
 
 @media (max-height: 720px), (max-width: 860px) {
   /* KPI 展開時のみページスクロールへ逃がす。折り畳み時（RI-70）は contain を維持する */
@@ -196,6 +229,42 @@ body {
     position: sticky;
     bottom: 0;
     z-index: 6;
+  }
+  /*
+   * focus と 4 列カードを横並びのままにすると各カードが数十 px になり、
+   * 運用安定の要約が実質読めない。focus（と武装時の担当選択）を上段へ逃がし、
+   * actions を全幅にしてタグ幅を確保する。担当選択は横並びで同段に収める。
+   */
+  .app.app-sprint-layout .actionbar {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  .app.app-sprint-layout .focus {
+    min-width: 0;
+    flex: 1 1 auto;
+    border-right: none;
+    border-bottom: 2px solid var(--line);
+    padding: 2px 4px 6px;
+  }
+  .app.app-sprint-layout .assign-assignee {
+    flex: 0 1 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    border-right: none;
+    border-bottom: 2px solid var(--line);
+    padding: 2px 4px 6px 0;
+  }
+  .app.app-sprint-layout .actions {
+    flex: 1 1 100%;
+  }
+  .app.app-sprint-layout .action .effect-tag {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    line-height: 1.2;
   }
 }
 
@@ -1074,6 +1143,47 @@ body {
   width: 100%;
   height: auto;
   filter: drop-shadow(0 6px 6px #0006);
+}
+.station-game-asset,
+.org-game-asset,
+.dept-game-asset {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    opacity 0.18s ease,
+    filter 0.18s ease,
+    transform 0.18s ease;
+}
+.station-game-asset.mood-happy,
+.station-game-asset.mood-cheer,
+.org-game-asset.mood-happy,
+.org-game-asset.mood-cheer,
+.dept-game-asset.mood-happy,
+.dept-game-asset.mood-cheer {
+  filter: saturate(1.15) brightness(1.08) drop-shadow(0 0 4px #ffd45c88);
+}
+.station-game-asset.mood-tired,
+.station-game-asset.mood-exhausted,
+.org-game-asset.mood-tired,
+.org-game-asset.mood-exhausted,
+.dept-game-asset.mood-tired,
+.dept-game-asset.mood-exhausted {
+  filter: saturate(0.58) brightness(0.86);
+}
+.station-game-asset.mood-panic,
+.org-game-asset.mood-panic,
+.dept-game-asset.mood-panic {
+  filter: saturate(1.35) hue-rotate(-12deg) drop-shadow(0 0 5px #ff5f5788);
+}
+.station-game-asset.mood-sad,
+.org-game-asset.mood-sad,
+.dept-game-asset.mood-sad {
+  filter: saturate(0.72) brightness(0.9) drop-shadow(0 0 3px #7b8bcf66);
+}
+.station-game-asset-marker {
+  paint-order: stroke;
+  stroke: #1b1438cc;
+  stroke-width: 3px;
 }
 .cbob {
   animation: bob 2.8s ease-in-out infinite;
@@ -2556,24 +2666,6 @@ button.card:active {
   }
   .actions {
     grid-template-columns: repeat(4, 1fr);
-  }
-
-  /*
-   * 狭幅のアクションカードは4列に畳むため、長い効果タグを通常折返しすると
-   * 1タグだけでカードの高さが大きく伸びる。全文は action の title で確認できるため、
-   * カード内は1行の省略表示にして、盤面とアクションバーを viewport 内へ収める。
-   */
-  .app.app-sprint-layout .action .effect-tags {
-    width: 100%;
-    min-width: 0;
-  }
-  .app.app-sprint-layout .action .effect-tag {
-    display: block;
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 
@@ -5434,6 +5526,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   height: auto;
   filter: drop-shadow(0 4px 6px #0006);
 }
+.org-game-asset {
+  paint-order: stroke;
+  stroke: #1b143855;
+  stroke-width: 1px;
+}
 .org-island-fire {
   position: absolute;
   top: -4px;
@@ -5729,6 +5826,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   width: 100%;
   height: auto;
   filter: drop-shadow(0 4px 6px #0006);
+}
+.dept-game-asset-marker {
+  paint-order: stroke;
+  stroke: #1b1438cc;
+  stroke-width: 2px;
 }
 /* RI-11: スプリント盤面の Pixi 描画領域（?renderer=pixi 時のみマウント）。
  * フロー(z2)より上・ステーション枠(z4)/ラベル(z7)/吹き出し(z8)/演出より下に置き、

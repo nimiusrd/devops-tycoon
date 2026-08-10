@@ -52,6 +52,7 @@ export function BoardPixiLayer({
         if (!el) return;
         el.dataset.boardDots = String(m.dots);
         el.dataset.boardActors = String(m.actors);
+        el.dataset.boardAssets = String(m.assets);
       },
     });
     rendererRef.current = renderer;

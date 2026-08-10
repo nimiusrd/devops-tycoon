@@ -11,8 +11,9 @@
 - `public/assets/game/*.svg`
 - `public/assets/audio/*.wav`
 
-`public/assets/game/asset-manifest.json`、`scripts/generate-audio-assets.mjs`、テストのスクリーンショット、
-および上記に含まれないリポジトリ内のファイルには、ルートのMIT Licenseを適用します。
+`scripts/generate-audio-assets.mjs`、テストのスクリーンショット、および上記に含まれない
+リポジトリ内のファイルには、ルートのMIT Licenseを適用します。ゲーム用SVGの正本メタデータは
+`src/data/assets.ts` に保持します。
 
 ## 制作方法
 

@@ -67,9 +67,15 @@ export interface PolicySpec {
    * 手札の使い方。
    * - `none`: 使わない
    * - `always`: 手札を集中力が尽きるまで無差別に発動する
+   * - `preferCostOpt`: `always` と同じだがコスト最適化カードを先に発動する（RI-88）
    * - `selective`: 集中力に余裕があり、盤面が切迫していないときだけ発動する
    */
-  cards: 'none' | 'always' | 'selective';
+  cards: 'none' | 'always' | 'preferCostOpt' | 'selective';
+  /**
+   * ラン開始時の試練 ID（RI-88: ハーネス比較で継続課金を発生させる等）。
+   * 未指定は試練なし。
+   */
+  trials?: string[];
   /**
    * 進化ポイントの使い方（解放するブランチの優先順）。
    * - `none`: 使わない
@@ -493,6 +499,8 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     beat: 'stateAware',
     recruit: 'hire',
     shop: 'buyAvoidCostOpt',
+    // 通常単価 0.01 では多くのランで課金 0 になるため、継続課金が効く試練で比較する。
+    trials: ['frontier-dependency'],
   },
   /**
    * RI-88 / F-10: 自前エージェントハーネス（最適化）。
@@ -501,13 +509,14 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   harnessOptimized: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
-    cards: 'always',
+    cards: 'preferCostOpt',
     evolve: 'aiFirst',
     draft: 'costOpt',
     ai: 'all',
     beat: 'stateAware',
     recruit: 'hire',
     shop: 'buyCostOpt',
+    trials: ['frontier-dependency'],
   },
   noAi: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
@@ -1073,16 +1082,26 @@ function shouldPlaySelective(e: RunEngine): boolean {
   return focusRatio >= 0.6 && reviewLen < 6 && burning === 0;
 }
 
-function playHand(e: RunEngine, mode: PolicySpec['cards'], onPlayed?: () => void): void {
+/** 手札発動（単体テストからも呼ぶ）。 */
+export function playHand(e: RunEngine, mode: PolicySpec['cards'], onPlayed?: () => void): void {
   if (mode === 'none') return;
   let guard = 0;
   while (guard < 24 && e.snapshot().phase === 'sprint') {
     guard += 1;
     if (mode === 'selective' && !shouldPlaySelective(e)) break;
-    const hand = e.snapshot().sprint?.cardPiles.hand ?? [];
+    const s = e.snapshot();
+    const hand = s.sprint?.cardPiles.hand ?? [];
     if (hand.length === 0) break;
+    const order =
+      mode === 'preferCostOpt'
+        ? [...hand].sort((a, b) => {
+            const aOpt = s.deck[a]?.defId === COST_OPT_CARD_ID ? 0 : 1;
+            const bOpt = s.deck[b]?.defId === COST_OPT_CARD_ID ? 0 : 1;
+            return aOpt - bOpt;
+          })
+        : [...hand];
     let played = false;
-    for (const deckIndex of [...hand]) {
+    for (const deckIndex of order) {
       if (e.playCard(deckIndex).ok) {
         played = true;
         // カード間でも介入可能な局面を危険域サンプルへ残す（一括発動の欠測防止）。
@@ -1626,6 +1645,7 @@ export function runOnce(
     difficulty: difficulty as RunState['difficulty'],
     allowedCards: unlocked.cards,
     allowedRelics: unlocked.relics,
+    trials: spec.trials ?? [],
   });
   e.startRun();
   const sprints: SprintLog[] = [];

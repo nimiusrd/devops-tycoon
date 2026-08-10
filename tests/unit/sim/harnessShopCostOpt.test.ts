@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { RECRUIT_COST } from '../../../src/sim/member/roster';
 import { RunEngine } from '../../../src/sim/run/engine';
-import { buyShopItems, POLICY_DEFS } from '../../playtest/harness';
+import { buyShopItems, playHand, POLICY_DEFS } from '../../playtest/harness';
 
-describe('harness buyCostOpt ショップ優先', () => {
+describe('harness RI-88 方針', () => {
   it('無関係レリックよりコスト最適化カードを先に買う', () => {
     const engine = new RunEngine({ seed: 'ri88-shop-costopt', difficulty: 'normal' });
     engine.startRun();
@@ -36,5 +36,36 @@ describe('harness buyCostOpt ショップ優先', () => {
     expect(s.relics).not.toContain('postmortem');
     expect(s.shop?.cards.find((c) => c.defId === 'ai-guideline')?.bought).toBe(true);
     expect(s.shop?.relic?.bought).toBe(false);
+  });
+
+  it('両ハーネスは frontier-dependency で継続課金し、最適化は手札でコスト最適化を優先する', () => {
+    expect(POLICY_DEFS.harnessBloated.trials).toEqual(['frontier-dependency']);
+    expect(POLICY_DEFS.harnessOptimized.trials).toEqual(['frontier-dependency']);
+    expect(POLICY_DEFS.harnessOptimized.cards).toBe('preferCostOpt');
+    expect(POLICY_DEFS.harnessBloated.cards).toBe('always');
+  });
+
+  it('preferCostOpt は高コストカードより ai-guideline を先に発動する', () => {
+    const engine = new RunEngine({ seed: 'ri88-hand-costopt', difficulty: 'normal' });
+    engine.startRun();
+    engine.beginSetupSprint();
+    const internals = engine as unknown as {
+      deck: Array<{ defId: string; level: number }>;
+      sprint: {
+        focus: number;
+        cardPiles: { hand: number[]; played: number[]; discard: number[]; drawOrder: number[] };
+      } | null;
+    };
+    // hire-senior の集中力コストは 10、ai-guideline は 3。focus=12 なら順不同で1枚しか切れない。
+    internals.deck = [
+      { defId: 'hire-senior', level: 1 },
+      { defId: 'ai-guideline', level: 1 },
+    ];
+    internals.sprint!.focus = 12;
+    internals.sprint!.cardPiles = { hand: [0, 1], played: [], discard: [], drawOrder: [] };
+
+    playHand(engine, 'preferCostOpt');
+    expect(internals.sprint!.cardPiles.played).toContain(1);
+    expect(internals.sprint!.cardPiles.played).not.toContain(0);
   });
 });

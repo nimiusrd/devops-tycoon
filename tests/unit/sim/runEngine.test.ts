@@ -6,8 +6,10 @@ import {
   AI_LITERACY_UNSAFE_CAP,
   evaluateWinType,
 } from '../../../src/sim/outcome';
+import { companyOrgFromTeams } from '../../../src/sim/orgscale';
 import { RunEngine, SPRINTS_PER_QUARTER, DRAFT_MULLIGAN_COST } from '../../../src/sim/run/engine';
 import { canAcknowledgeWin } from '../../../src/sim/run/quarterReview';
+import { computeInfraCost } from '../../../src/sim/run/sprintBaselineBuild';
 import type { BeatState, RunState } from '../../../src/sim/run/types';
 import { E2E_MISSED_ADJUSTABLE_SEED } from '../../../src/sim/run/quarterReviewSeeds';
 import { advance, playRun, playUntil } from '../helpers/runFlow';
@@ -40,8 +42,11 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     const normalState = normal.snapshot();
     const trialState = trial.snapshot();
     expect(trialState.org.aiDependency).toBe(normalState.org.aiDependency + 5);
-    // 通常: 初期依存 35×0.02=0.7 → 1未満は 0。試練: 40×0.05 → ceil 2。
-    expect(trialState.budget).toBe(normalState.budget - 2);
+    // 課金は全社平均依存度（選択中だけの 40×0.05 ではない）。
+    const companyDep = companyOrgFromTeams(trialState.teams, trialState.org).aiDependency;
+    const expectedCost = computeInfraCost(companyDep, 0.05, 1);
+    expect(expectedCost).toBeGreaterThan(0);
+    expect(trialState.budget).toBe(normalState.budget - expectedCost);
 
     const replay = new RunEngine({
       seed: 'frontier-dependency',
@@ -59,11 +64,16 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     const before = engine.snapshot().budget;
     const internals = engine as unknown as {
       org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
       pendingSprintKind: string;
       sprintIndexInQuarter: number;
       sprintsPerQuarter: number;
     };
-    internals.org.aiDependency = 100;
+    const setAllDeps = (dep: number) => {
+      internals.org.aiDependency = dep;
+      for (const t of internals.teams) t.aiDependency = dep;
+    };
+    setAllDeps(100);
     engine.beginSetupSprint();
     // 通常スプリントは課金しない
     expect(engine.snapshot().budget).toBe(before);
@@ -71,11 +81,11 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     // ボス枠へ進めて課金を確認する
     internals.sprintIndexInQuarter = internals.sprintsPerQuarter - 1;
     internals.pendingSprintKind = 'boss';
-    internals.org.aiDependency = 100;
+    setAllDeps(100);
     (engine as unknown as { phase: string }).phase = 'setup';
     const beforeBoss = engine.snapshot().budget;
     engine.beginSetupSprint();
-    // 100 × 0.01 = 1 → ceil 1
+    // 全社 100 × 0.01 = 1 → ceil 1
     expect(engine.snapshot().budget).toBe(beforeBoss - 1);
     expect(engine.snapshot().currentSprintKind).toBe('boss');
   });

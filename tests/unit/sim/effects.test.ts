@@ -28,7 +28,8 @@ describe('run effects fold', () => {
       focusBonus: 0,
       codingSlotBonus: 0,
       aiDependencyDriftPerSprint: 0,
-      frontierModelCostPerDependency: 0,
+      // RI-88: ベース単価。
+      frontierModelCostPerDependency: 0.01,
     });
   });
 
@@ -87,10 +88,13 @@ describe('run effects fold', () => {
       aiDependencyAdd: 0,
       qualityAdd: 6 + 8 + 10,
       testCoverageAdd: 8 + 12,
+      // RI-88: ai-2 (0.75) × ai-3 (0.7)
+      infraCostMul: 0.75 * 0.7,
     });
     expect(folded.focusBonus).toBe(-1 + 2 + 3);
     expect(folded.codingSlotBonus).toBe(0);
     expect(folded.aiDependencyDriftPerSprint).toBe(5);
+    // ベース 0.01 + 試練上乗せ 0.04
     expect(folded.frontierModelCostPerDependency).toBe(0.05);
   });
 

@@ -247,10 +247,12 @@ describe('RI-46 次スプリント what-if 試算', () => {
       draft: string[] | null;
       budget: number;
       org: { aiDependency: number; aiLiteracy: number };
+      teams: Array<{ aiDependency: number }>;
     };
-    // 依存度 25 + 試練 +5 → 30、ceil(30 * 0.05)=2 を差し引くと予算 0（カード発動前）。
+    // 全社 25 + 試練 +5 → 30、ceil(30 * 0.05)=2 を差し引くと予算 0（カード発動前）。
     internals.budget = 2;
     internals.org.aiDependency = 25;
+    for (const t of internals.teams) t.aiDependency = 25;
     internals.org.aiLiteracy = 40;
     internals.phase = 'draft';
     internals.draft = ['docs'];
@@ -273,8 +275,10 @@ describe('RI-46 次スプリント what-if 試算', () => {
       draft: string[] | null;
       budget: number;
       org: { aiDependency: number; aiLiteracy: number };
+      teams: Array<{ aiDependency: number }>;
     };
     internals.org.aiDependency = 25;
+    for (const t of internals.teams) t.aiDependency = 25;
     internals.org.aiLiteracy = 40;
     internals.phase = 'draft';
     internals.draft = ['docs'];
@@ -284,6 +288,39 @@ describe('RI-46 次スプリント what-if 試算', () => {
 
     internals.budget = 2;
     expect(engine.whatIfPreview()?.draftCandidates.docs?.immediateLose).toBe('budgetExhausted');
+  });
+
+  it('RI-88: what-if のインフラ課金は選択中ではなく全社平均依存度を使う', () => {
+    const engine = new RunEngine({
+      seed: 'what-if-company-infra',
+      difficulty: 'easy',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      phase: string;
+      draft: string[] | null;
+      budget: number;
+      org: { aiDependency: number };
+      teams: Array<{ id: string; aiDependency: number }>;
+      activeTeamId: string;
+    };
+    // 選択中だけ低依存でも、他チームが高依存なら全社課金で即死する。
+    internals.org.aiDependency = 0;
+    for (const t of internals.teams) {
+      t.aiDependency = t.id === internals.activeTeamId ? 0 : 100;
+    }
+    internals.budget = 2;
+    internals.phase = 'draft';
+    internals.draft = ['docs'];
+
+    const whatIf = engine.whatIfPreview();
+    expect(whatIf?.current.immediateLose).toBe('budgetExhausted');
+
+    // 他チームも低依存なら同じ予算で継続可能（選択中ドリフト後 5×0.05 < 1 → 無料）。
+    for (const t of internals.teams) t.aiDependency = 0;
+    internals.org.aiDependency = 0;
+    expect(engine.whatIfPreview()?.current.immediateLose).toBeUndefined();
   });
 
   it('手札に入らないドラフト候補は発動仮定（loseOnPlay）を付けない', () => {
@@ -384,6 +421,7 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
         2,
         '',
         '',
+        '',
       ].join('|'),
     );
 
@@ -422,6 +460,7 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
         0,
         0,
         0,
+        '',
         '',
         '',
       ].join('|'),

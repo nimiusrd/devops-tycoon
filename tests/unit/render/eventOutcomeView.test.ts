@@ -176,6 +176,18 @@ describe('formatCardEffectsTags（カード係数タグ）', () => {
   it('空効果は空配列を返す', () => {
     expect(formatCardEffectsTags({})).toEqual([]);
   });
+
+  it('infraCostMul は低倍率を positive のインフラコストタグにする（RI-88）', () => {
+    expect(formatCardEffectsTags({ infraCostMul: 0.75 })).toEqual([
+      { label: 'インフラコスト x0.75', tone: 'positive' },
+    ]);
+    expect(formatCardDefTags(getCard('ai-guideline')!)).toEqual(
+      expect.arrayContaining([{ label: 'インフラコスト x0.75', tone: 'positive' }]),
+    );
+    expect(formatEvolutionNodeTags(getEvolutionNode('ai-2')!)).toEqual(
+      expect.arrayContaining([{ label: 'インフラコスト x0.75', tone: 'positive' }]),
+    );
+  });
 });
 
 describe('formatRelicDefTags（レリックタグ）', () => {
@@ -186,9 +198,12 @@ describe('formatRelicDefTags（レリックタグ）', () => {
     ]);
   });
 
-  it('コスト意識のショップ割引を positive タグにする', () => {
+  it('コスト意識のショップ割引とインフラコスト倍率を positive タグにする', () => {
     const relic = getRelic('budget-discipline')!;
-    expect(formatRelicDefTags(relic)).toEqual([{ label: 'ショップ割引 20%', tone: 'positive' }]);
+    expect(formatRelicDefTags(relic)).toEqual([
+      { label: 'インフラコスト x0.80', tone: 'positive' },
+      { label: 'ショップ割引 20%', tone: 'positive' },
+    ]);
   });
 
   it('effects と passives を合成する', () => {

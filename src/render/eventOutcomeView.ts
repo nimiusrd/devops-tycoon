@@ -248,6 +248,8 @@ const CARD_MUL_EFFECTS = [
   { key: 'reviewCapacityMul' as const, label: 'レビュー容量' },
   { key: 'seniorHpCostMul' as const, label: 'シニア消耗', inverse: true },
   { key: 'incidentRateMul' as const, label: 'Incident率', inverse: true },
+  // RI-88: 低倍率ほどインフラ費用が下がる（逆効果扱い）。
+  { key: 'infraCostMul' as const, label: 'インフラコスト', inverse: true },
 ];
 
 /** 加算系カード効果の表示ラベル（0 で無効果）。 */

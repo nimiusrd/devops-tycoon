@@ -70,7 +70,9 @@ export const RELIC_DEFS: RelicDef[] = [
   {
     id: 'budget-discipline',
     name: 'コスト意識',
-    description: '調達コストを意識し、ショップで得をする',
+    description: '調達とエージェント利用のコストを意識し、ショップとインフラ費用で得をする',
+    // RI-88: 既存レリックへコスト最適化を載せる（新規はショップ抽選を壊すため避ける）。
+    effects: { infraCostMul: 0.8 },
     passives: { shopDiscount: 0.2 },
   },
   {

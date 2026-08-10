@@ -26,6 +26,7 @@ export const IDENTITY_CARD_EFFECTS: CardEffects = {
   aiDependencyAdd: 0,
   qualityAdd: 0,
   testCoverageAdd: 0,
+  infraCostMul: 1,
 };
 
 /** タスク規模ごとの所要倍率（複雑なほど時間がかかる）。 */

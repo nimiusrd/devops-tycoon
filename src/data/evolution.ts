@@ -138,19 +138,19 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     id: 'ai-2',
     branch: 'ai',
     name: 'AI Literacy 逓増',
-    description: 'チーム全体の AI リテラシーを底上げ',
+    description: 'リテラシーを底上げし、エージェント基盤の利用コストも抑える',
     cost: 8,
     requires: 'ai-1',
-    effects: { aiLiteracyAdd: 18 },
+    effects: { aiLiteracyAdd: 18, infraCostMul: 0.75 },
   },
   {
     id: 'ai-3',
     branch: 'ai',
     name: 'Devin 枠',
-    description: '自律型 AI の実装枠を組織に組み込む',
+    description: '自律エージェントを組み込み、基盤をさらにコスト最適化する',
     cost: 13,
     requires: 'ai-2',
-    effects: { codingSpeedMul: 1.2 },
+    effects: { codingSpeedMul: 1.2, infraCostMul: 0.7 },
   },
   // 文化
   {

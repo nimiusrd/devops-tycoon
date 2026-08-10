@@ -2,7 +2,9 @@
 
 `<owner>` / `<repo>` / `<PR>` は対象に置き換える。
 
-## `@codex review` を投稿する
+## `@codex review` を投稿する（初回以降の修正後のみ）
+
+PR 作成時の初回レビューは自動実行される。指摘対応を push したあとにだけ投稿する。
 
 ```bash
 gh pr comment <PR> --body '@codex review'

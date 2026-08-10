@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { getCard } from '../data/cards';
 import { canRecruit, RECRUIT_COST } from '../sim/member';
+import { playCost } from '../sim/cards';
 import { foldPassives } from '../sim/run/effects';
 import type { RunState } from '../sim/run/types';
 import { formatRestOptionTags } from '../render/eventOutcomeView';
@@ -46,7 +47,11 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
                   data-testid={`rest-upgrade-card-${card.defId}-${index}`}
                   onClick={() => onChoose('upgrade', index)}
                 >
-                  <CardView def={def} level={card.level} />
+                  <CardView
+                    def={def}
+                    level={card.level}
+                    playCost={playCost(def.focusCost, card.level + 1)}
+                  />
                   <span className="rest-upgrade-next">次: Lv.{card.level + 1}</span>
                 </button>
               );

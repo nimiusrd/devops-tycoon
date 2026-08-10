@@ -7,6 +7,7 @@
  */
 import { getCard } from '../data/cards';
 import { DRAFT_MULLIGAN_COST } from '../sim/run/constants';
+import { playCost } from '../sim/cards';
 import type { WhatIfPreview as WhatIfPreviewData } from '../sim/run/types';
 import { CardView } from './CardView';
 import { WhatIfPreview } from './WhatIfPreview';
@@ -57,6 +58,7 @@ export function DraftScreen({
               <CardView
                 key={id}
                 def={def}
+                playCost={playCost(def.focusCost, 1)}
                 onPick={() => onPick(id)}
                 whatIfPreview={previews[id]}
                 whatIfComputing={whatIfComputing}

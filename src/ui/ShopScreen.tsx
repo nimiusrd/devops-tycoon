@@ -6,6 +6,7 @@
 import { getCard, RARITY_LABEL } from '../data/cards';
 import { getRelic } from '../data/relics';
 import { canRecruit } from '../sim/member';
+import { playCost } from '../sim/cards';
 import {
   formatCardDefTags,
   formatRelicDefTags,
@@ -70,6 +71,10 @@ export function ShopScreen({
                 </ul>
                 <span className="shop-card-cost">
                   {offer.bought ? '購入済み' : `💰${offer.cost}`}
+                  <span className="shop-card-focus-cost">
+                    {' '}
+                    / 発動 ⚡{playCost(def.focusCost, 1)}
+                  </span>
                 </span>
               </button>
             );

@@ -626,7 +626,7 @@ export interface RunLog {
    * `lostPhase === 'sprint'` のとき、敗北したスプリントが結果を残したか。
    *
    * `true` なら `sprints` の末尾が敗北スプリントそのもの、
-   * `false` ならスプリント中に即時敗北してログが残っていない。
+   * `false` ならスプリント中に即時敗北した（終端計測を残した `completed=false` の行を含む）。
    *
    * 直前状態の参照先を決めるために入れたフィールドだが、その用途は `lostPrevState` が
    * 引き継いだ。現在は「敗北したスプリントが結果を残したか」の分類にだけ使う。
@@ -1910,8 +1910,11 @@ export function runOnce(
       lostPhase = s.phase;
       lostPrevState = beforeAction;
       if (s.phase === 'beat') lostBeat = lastBeat;
-      // 同じ反復でログが増えていれば、その末尾が敗北スプリントそのもの。
-      if (s.phase === 'sprint') lostSprintCompleted = sprints.length > loggedBefore;
+      // 終端計測を残すためにログが増えていても、`completed` が false なら
+      // スプリント完走とは数えない（カード発動などで途中敗北した行が該当する）。
+      if (s.phase === 'sprint') {
+        lostSprintCompleted = sprints.slice(loggedBefore).some((sprint) => sprint.completed);
+      }
     }
     s = next;
   }

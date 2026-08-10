@@ -347,6 +347,7 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
   await expect(page.getByTestId('rest')).toBeVisible({ timeout: 5000 });
   await page.getByTestId('rest-upgrade').click();
   await expect(page.getByTestId('rest-upgrade-cards')).toBeVisible();
+  await expect(page.getByTestId(`rest-upgrade-card-${target.defId}-0`)).toContainText('発動 ⚡1');
   await page.getByTestId(`rest-upgrade-card-${target.defId}-0`).click();
   await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
 
@@ -368,6 +369,40 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
   expect(nextSprint.pending.focusMaxAdd).toBe(2);
   expect(nextSprint.focusMax).toBeGreaterThan(0);
   await expect(page.getByTestId('focus')).toContainText('⚡');
+});
+
+test('RI-78: ドラフトとショップのカード選択前に発動コストを表示する', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri78-card-selection-cost');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'ri78-card-selection-cost');
+    const engine = (g as unknown as { engine: unknown }).engine as {
+      phase: string;
+      draft: string[] | null;
+      shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> } | null;
+    };
+    engine.phase = 'draft';
+    engine.draft = ['devin'];
+    g.playCard(-1); // revision bump でドラフト画面を反映
+  });
+
+  await expect(page.getByTestId('draft-card-devin')).toContainText('発動 ⚡4');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    const engine = (g as unknown as { engine: unknown }).engine as {
+      phase: string;
+      shop: { cards: Array<{ defId: string; cost: number; bought: boolean }> };
+    };
+    engine.phase = 'shop';
+    engine.shop = { cards: [{ defId: 'devin', cost: 35, bought: false }] };
+    g.playCard(-1); // revision bump でショップ画面を反映
+  });
+
+  await expect(page.getByTestId('shop-card-devin')).toContainText('💰35');
+  await expect(page.getByTestId('shop-card-devin')).toContainText('発動 ⚡4');
 });
 
 test('ボス未達→四半期レビュー→スコープ削減→次四半期へ継続', async ({ page }) => {

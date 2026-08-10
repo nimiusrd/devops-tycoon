@@ -279,9 +279,9 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
 
     i.advanceOtherTeams('mod');
 
-    // pause 無しなら delivered=22。modifiers/shipMul 無視変異を殺す。
-    expect(i.totals.delivered).toBe(19);
-    expect(i.quarterTotals.delivered).toBe(19);
+    // pause 無しなら delivered=25（RI-77 粗粒度 AI 出荷倍率後）。modifiers/shipMul 無視変異を殺す。
+    expect(i.totals.delivered).toBe(21);
+    expect(i.quarterTotals.delivered).toBe(21);
     expect(i.totals.completed).toBe(4);
   });
 

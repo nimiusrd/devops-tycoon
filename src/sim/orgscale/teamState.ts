@@ -524,6 +524,12 @@ export function advanceCoarseTeams(
     const moraleBias = teamAdj.moraleDelta === 0 ? 0 : Math.sign(teamAdj.moraleDelta) * 0.5;
     const reviewCap = team.reviewCapacity * reviewCapacityMul;
 
+    const coders = estimateRosterCoderCount(team.engineers);
+    const adoptionShare =
+      coders > 0 ? estimateRivalAiAssigned(coders, team.aiDependency) / coders : 0;
+    // 詳細 sim の aiDeliveryValueMul に対応: AI 採用分だけリテラシー連動の出荷倍率を掛ける。
+    const aiShare = AI_ADOPTION * clamp(adoptionShare, 0, 1);
+    const aiDeliveryMul = 1 + aiShare * 0.85 * (team.aiLiteracy / 100);
     // 稼働 0 なら出荷も 0（休職だらけのチームがベース出荷を出さない）。
     const shipGain =
       team.engineers <= 0
@@ -533,16 +539,14 @@ export function advanceCoarseTeams(
             Math.round(
               ((8 + team.engineers * 2.5 + team.aiLiteracy * 0.08) * (0.75 + rng() * 0.5) -
                 team.techDebt * 0.02) *
-                shipMul,
+                shipMul *
+                aiDeliveryMul,
             ),
           );
     // 出荷ポイントをタスク件数相当へ換算してから count 系へ加算する（比率 KPI の歪み防止）。
     const completedGain = coarseShipToCompleted(shipGain);
     completed += completedGain;
-    const coders = estimateRosterCoderCount(team.engineers);
-    const adoptionShare =
-      coders > 0 ? estimateRivalAiAssigned(coders, team.aiDependency) / coders : 0;
-    aiAssisted += Math.round(completedGain * AI_ADOPTION * clamp(adoptionShare, 0, 1));
+    aiAssisted += Math.round(completedGain * aiShare);
     const queuePressure = Math.max(
       0,
       Math.round(

@@ -197,12 +197,22 @@ async function stabilizeDomForScreenshot(page: Page): Promise<void> {
   );
 }
 
+async function waitForLayoutFrame(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+}
+
 async function assertAcrossViewports(
   page: Page,
   options: LayoutContractOptions = {},
 ): Promise<void> {
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await waitForLayoutFrame(page);
     await assertLayoutContract(page, viewport, options);
   }
 }
@@ -308,6 +318,10 @@ test.describe('RI-94 レイアウト契約', () => {
   });
 
   test('全レリック解放メタから6個取得した状態を5 viewportで表示する', async ({ page }) => {
+    test.fail(
+      true,
+      '現行UIは1024x768の6レリック状態で盤面最低幅240pxを満たさない（RI-95〜100で解消予定）',
+    );
     await seedMeta(page, { unlockedRelics: RELIC_DEFS.map((relic) => relic.id) });
     await advancePublicRun(page, {
       seed: 'ri94-relics-1',

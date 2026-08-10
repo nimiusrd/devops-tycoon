@@ -96,6 +96,8 @@ export async function beginPublicSprint(page: Page, options: PublicSprintOptions
     const game = (window as PublicGameWindow).game;
     if (!game) throw new Error('window.game が公開されていない');
     game.beginSetupSprint();
+    // 画面の lazy 読込や fallback の所有権に左右されず、開始フレームを固定する。
+    game.pause();
   });
   await expect(page.getByTestId('board')).toBeVisible();
 }
@@ -107,6 +109,7 @@ export async function beginCurrentSetupSprint(page: Page): Promise<void> {
     if (!game) throw new Error('window.game が公開されていない');
     if (game.getState().phase !== 'setup') throw new Error('ランが setup フェーズではない');
     game.beginSetupSprint();
+    game.pause();
   });
   await expect(page.getByTestId('board')).toBeVisible();
 }

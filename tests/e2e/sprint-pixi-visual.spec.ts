@@ -43,6 +43,7 @@ async function openPixiSprintBoard(
       g.startRun('normal', [], s);
       g.pause();
       g.beginSetupSprint();
+      g.pause();
       for (let i = 0; i < n; i += 1) g.step(100);
     },
     { s: seed, n: steps },
@@ -92,6 +93,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       g.startRun('normal', [], s);
       g.pause();
       g.beginSetupSprint();
+      g.pause();
       g.step(100);
     }, PIXI_SEED);
     await expect(page.getByTestId('board-pixi-mount')).toBeVisible();

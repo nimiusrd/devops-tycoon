@@ -65,15 +65,15 @@
     <text class="muted" x="455" y="402" font-size="12" text-anchor="middle">100</text>
     <text class="text" x="272.5" y="430" font-size="14" text-anchor="middle">組織の累積AI依存度</text>
 
-    <polyline class="ai" points="90,366.9 181.25,337.3 272.5,284.7 363.75,232.1 455,179.6" />
+    <polyline class="ai" points="90,366.9 181.25,366.9 272.5,317.6 363.75,265.0 455,212.4" />
     <polyline class="no-ai" points="90,366.9 181.25,366.9 272.5,350.4 363.75,297.9 455,245.3" />
 
     <g class="ai-dot">
       <circle cx="90" cy="366.9" r="5" />
-      <circle cx="181.25" cy="337.3" r="5" />
-      <circle cx="272.5" cy="284.7" r="5" />
-      <circle cx="363.75" cy="232.1" r="5" />
-      <circle cx="455" cy="179.6" r="5" />
+      <circle cx="181.25" cy="366.9" r="5" />
+      <circle cx="272.5" cy="317.6" r="5" />
+      <circle cx="363.75" cy="265.0" r="5" />
+      <circle cx="455" cy="212.4" r="5" />
     </g>
     <g class="no-ai-dot">
       <circle cx="90" cy="366.9" r="5" />

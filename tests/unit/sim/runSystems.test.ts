@@ -74,7 +74,7 @@ describe('効果の畳み込み（第7/8/11/16章）', () => {
       trials: ['frontier-dependency'],
     });
     expect(fold.aiDependencyDriftPerSprint).toBe(5);
-    expect(fold.frontierModelCostPerDependency).toBeCloseTo(0.22);
+    expect(fold.frontierModelCostPerDependency).toBeCloseTo(0.26);
   });
 
   it('レリックのパッシブ（心理的安全性）が Morale ダメージ倍率を下げる', () => {

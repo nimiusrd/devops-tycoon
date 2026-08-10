@@ -47,9 +47,9 @@ export interface RunModifierInput {
  * 通常ランの AI 依存度あたりのインフラ／モデル利用単価（RI-88 / RI-77）。
  * 通常ランはボス開始時のみ課金。RI-77 の部分配布による長命化を
  * §3.1 の 15〜45 分帯へ戻すためベース単価を引き上げる。
- * 試練は `frontierModelCostPerDependency` を加算する（ベース 0.18 + 0.04）。
+ * 試練は `frontierModelCostPerDependency` を加算する（ベース 0.22 + 0.04）。
  */
-export const BASE_INFRA_COST_PER_DEPENDENCY = 0.18;
+export const BASE_INFRA_COST_PER_DEPENDENCY = 0.22;
 
 /**
  * このスプリントに掛かる乗算系係数と、集中力/実装枠の補正を畳み込む。

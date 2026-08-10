@@ -306,7 +306,7 @@ describe('sprintTempo ペーシング統計（RI-66）', () => {
   }, 60_000);
 
   it('§3.1 モデル定数が規定どおり', () => {
-    expect(BETWEEN_SPRINT_WALL_SEC).toBe(35);
+    expect(BETWEEN_SPRINT_WALL_SEC).toBe(30);
     expect(QUARTER_REVIEW_WALL_SEC).toBe(45);
     expect(QUARTER_WALL_MIN).toEqual({ minMin: 10, maxMin: 15 });
     expect(RUN_WALL_MIN).toEqual({ minMin: 15, maxMin: 45 });
@@ -489,9 +489,8 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
       }
 
       const normalP50 = f4Quantile(normal, 0.5);
-      // RI-77: 手戻り緩和で通常スプリントの p50 が 60 秒を数秒下回ることがある。
       expect(normalP50, `${difficulty} normal p50=${normalP50}`).toBeGreaterThanOrEqual(
-        SPRINT_WALL_SEC.minTypical - 4,
+        SPRINT_WALL_SEC.minTypical,
       );
       expect(normalP50, `${difficulty} normal p50=${normalP50}`).toBeLessThanOrEqual(
         SPRINT_WALL_SEC.maxTypical,
@@ -501,7 +500,7 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
       expect(elite.length, `${difficulty} elite samples`).toBeGreaterThanOrEqual(4);
       const eliteP50 = f4Quantile(elite, 0.5);
       expect(eliteP50, `${difficulty} elite p50=${eliteP50}`).toBeGreaterThanOrEqual(
-        SPRINT_WALL_SEC.minTypical - 4,
+        SPRINT_WALL_SEC.minTypical,
       );
       expect(eliteP50, `${difficulty} elite p50=${eliteP50}`).toBeLessThanOrEqual(
         SPRINT_WALL_SEC.maxTypical,

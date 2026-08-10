@@ -26,7 +26,7 @@ export const E2E_MISSED_ADJUSTABLE_SEED = 'ri77-ma-5';
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。
  * 種別固定が必要なら `E2E_TERMINAL_*` を使う。
  */
-export const E2E_SHUTDOWN_SEED = 'ri77b-h-56';
+export const E2E_SHUTDOWN_SEED = 'ri77c-h-105';
 
 /** 継続不能 outcome ごとの固定 seed（RI-77 再探索 / hard）。 */
 export interface TerminalQuarterSeed {
@@ -39,7 +39,7 @@ export interface TerminalQuarterSeed {
 
 /** Q1 で shutdown。 */
 export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
-  seed: 'ri77b-h-56',
+  seed: 'ri77c-h-105',
   difficulty: 'hard',
   outcome: 'shutdown',
   quarterNumber: 1,
@@ -50,18 +50,18 @@ export const E2E_TERMINAL_SHUTDOWN: TerminalQuarterSeed = {
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_MISSED_CRISIS: TerminalQuarterSeed = {
-  seed: 'ri77b-h-26',
+  seed: 'ri77c-h-12',
   difficulty: 'hard',
   outcome: 'missed_crisis',
   quarterNumber: 3,
 };
 
 /**
- * Q4 で reorg_required。
+ * Q3 で reorg_required。
  * 途中の missed_adjustable は先頭の目標修正で継続した先。
  */
 export const E2E_TERMINAL_REORG_REQUIRED: TerminalQuarterSeed = {
-  seed: 'ri77b-h-74',
+  seed: 'ri77c-h-155',
   difficulty: 'hard',
   outcome: 'reorg_required',
   quarterNumber: 3,

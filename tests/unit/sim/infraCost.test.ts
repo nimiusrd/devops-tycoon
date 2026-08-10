@@ -40,11 +40,11 @@ const ctx = {
 
 describe('RI-88 インフラコスト軸', () => {
   it('ベース単価があり、試練は上乗せする（RI-77 でベース引き上げ）', () => {
-    expect(BASE_INFRA_COST_PER_DEPENDENCY).toBe(0.18);
-    expect(foldRunEffects({ ...ctx }).frontierModelCostPerDependency).toBe(0.18);
+    expect(BASE_INFRA_COST_PER_DEPENDENCY).toBe(0.22);
+    expect(foldRunEffects({ ...ctx }).frontierModelCostPerDependency).toBe(0.22);
     expect(
       foldRunEffects({ ...ctx, trials: ['frontier-dependency'] }).frontierModelCostPerDependency,
-    ).toBeCloseTo(0.22);
+    ).toBeCloseTo(0.26);
   });
 
   it('computeInfraCost は高依存で増え、1 未満は 0', () => {
@@ -64,8 +64,26 @@ describe('RI-88 インフラコスト軸', () => {
     expect(engine.snapshot().budget).toBe(before);
 
     expect(applyTrialAiDependencyPressure(org(100), 20, ctx, { billInfraCost: false })).toBe(20);
-    // ceil(100 * 0.18) = 18
-    expect(applyTrialAiDependencyPressure(org(100), 20, ctx, { billInfraCost: true })).toBe(2);
+    // ceil(100 * 0.22) = 22
+    expect(applyTrialAiDependencyPressure(org(100), 20, ctx, { billInfraCost: true })).toBe(0);
+  });
+
+  it('インフラと無関係な試練だけでは毎スプリント課金しない（RI-77）', () => {
+    const engine = new RunEngine({
+      seed: 'ri77-non-infra-trial',
+      difficulty: 'normal',
+      trials: ['low-focus'],
+    });
+    engine.startRun();
+    const internals = engine as unknown as {
+      org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
+    };
+    for (const t of internals.teams) t.aiDependency = 100;
+    internals.org.aiDependency = 100;
+    const before = engine.snapshot().budget;
+    engine.beginSetupSprint();
+    expect(engine.snapshot().budget).toBe(before);
   });
 
   it('コスト最適化進化はボス課金を下げ、複数四半期で差が開く', () => {
@@ -74,10 +92,10 @@ describe('RI-88 インフラコスト軸', () => {
       ...ctx,
       evolution: { points: 0, unlocked: { 'ai-1': true, 'ai-2': true, 'ai-3': true } },
     });
-    expect(none.cost).toBe(18); // ceil(100 * 0.18)
+    expect(none.cost).toBe(22); // ceil(100 * 0.22)
     expect(optimized.infraCostMul).toBeCloseTo(0.75 * 0.7);
-    expect(optimized.cost).toBe(10); // ceil(100 * 0.18 * 0.525)
-    expect(none.cost * 4 - optimized.cost * 4).toBe(32);
+    expect(optimized.cost).toBe(12); // ceil(100 * 0.22 * 0.525)
+    expect(none.cost * 4 - optimized.cost * 4).toBe(40);
   });
 
   it('既存カード ai-guideline とレリック budget-discipline が infraCostMul を下げる', () => {
@@ -116,16 +134,16 @@ describe('RI-88 インフラコスト軸', () => {
     engine.beginSetupSprint();
     // 試練ドリフト +5 後の選択中=5。他チームは 100 のまま。
     const companyDep = Math.round((5 + 100 * (n - 1)) / n);
-    const expected = computeInfraCost(companyDep, 0.22, 1);
-    expect(computeInfraCost(5, 0.22, 1)).toBe(2);
+    const expected = computeInfraCost(companyDep, 0.26, 1);
+    expect(computeInfraCost(5, 0.26, 1)).toBe(2);
     expect(expected).toBeGreaterThan(0);
     expect(engine.snapshot().budget).toBe(before - expected);
     expect(engine.snapshot().org.aiDependency).toBe(5);
   });
 
   it('カード返金は computeInfraCost と同じ 1 未満無料ルールを使う', () => {
-    // dep7 × 0.22 × relic0.8 = 1.232 → 課金2。
-    // ai-guideline (0.75) 後は 0.924 → 本来 0。ceil だけの再計算だと端数が残る。
+    // 全社平均6 × 0.26 × relic0.8 = 1.248 → 課金2。
+    // ai-guideline (0.75) 後は 0.936 → 本来 0。
     const engine = new RunEngine({
       seed: 'ri88-refund-floor',
       difficulty: 'easy',
@@ -145,7 +163,7 @@ describe('RI-88 インフラコスト軸', () => {
     };
     internals.relics = ['budget-discipline'];
     // 全チーム 5 → ドリフト後選択中 10、全社平均 6。
-    // 6×0.22×0.8=1.056→課金2。ai-guideline 後は 0.792→0。
+    // 6×0.26×0.8=1.248→課金2。ai-guideline 後は 0.936→0。
     for (const t of internals.teams) t.aiDependency = 5;
     internals.org.aiDependency = 5;
     const before = engine.snapshot().budget;
@@ -158,7 +176,7 @@ describe('RI-88 インフラコスト軸', () => {
     internals.sprint!.cardPiles = { hand: [0], played: [], discard: [], drawOrder: [] };
     internals.sprint!.focus = 100;
     expect(engine.playCard(0).ok).toBe(true);
-    // 再計算 raw=0.792 → 0。課金分を全額返す。
+    // 再計算 raw=0.936 → 0。課金分を全額返す。
     expect(engine.snapshot().budget).toBe(before);
   });
 });

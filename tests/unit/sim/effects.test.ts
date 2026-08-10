@@ -29,7 +29,7 @@ describe('run effects fold', () => {
       codingSlotBonus: 0,
       aiDependencyDriftPerSprint: 0,
       // RI-88: ベース単価。
-      frontierModelCostPerDependency: 0.18,
+      frontierModelCostPerDependency: 0.22,
     });
   });
 
@@ -94,8 +94,8 @@ describe('run effects fold', () => {
     expect(folded.focusBonus).toBe(-1 + 2 + 3);
     expect(folded.codingSlotBonus).toBe(0);
     expect(folded.aiDependencyDriftPerSprint).toBe(5);
-    // ベース 0.18 + 試練上乗せ 0.04
-    expect(folded.frontierModelCostPerDependency).toBeCloseTo(0.22);
+    // ベース 0.22 + 試練上乗せ 0.04
+    expect(folded.frontierModelCostPerDependency).toBeCloseTo(0.26);
   });
 
   it('deck は常時効果に含めない（難易度係数のみ残る）', () => {

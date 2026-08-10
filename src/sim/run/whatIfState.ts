@@ -179,7 +179,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
     difficulty: input.difficulty,
     trials: input.trials,
   };
-  const billInfraCost = input.trials.length > 0 || kind === 'boss';
+  const billInfraCost = kind === 'boss' || input.trials.includes('frontier-dependency');
 
   /** ドリフトは選択中 org へ、課金は全社平均依存度で（engine と揃える）。 */
   const applyPressureBudget = (org: OrgState, budget: number): number => {

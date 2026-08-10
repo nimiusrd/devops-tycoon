@@ -71,6 +71,7 @@ async function assertReachableInViewport(
   );
   const topBox = await locator.boundingBox();
   expect(topBox?.y, `${label} の上端へスクロールできない`).toBeGreaterThanOrEqual(-1);
+  expect(topBox?.y, `${label} の上端が viewport 境界に揃わない`).toBeLessThanOrEqual(1);
 
   await locator.evaluate((element) => element.scrollIntoView({ block: 'end', inline: 'nearest' }));
   const bottomBox = await locator.boundingBox();
@@ -78,6 +79,10 @@ async function assertReachableInViewport(
     bottomBox && bottomBox.y + bottomBox.height,
     `${label} の下端へスクロールできない`,
   ).toBeLessThanOrEqual(viewportHeight + 1);
+  expect(
+    bottomBox && bottomBox.y + bottomBox.height,
+    `${label} の下端が viewport 境界に揃わない`,
+  ).toBeGreaterThanOrEqual(viewportHeight - 1);
 }
 
 /** sticky actionbar の塗りつぶし位置ではなく、兄弟フロー上の配置を測る。 */
@@ -277,6 +282,7 @@ async function assertLayoutContract(
   }
   if (options.resultOverlay) {
     await expect(page.getByTestId('sprint-result')).toBeVisible();
+    await assertReachableInViewport(page, page.getByTestId('result-continue'), 'result-continue');
   }
 }
 

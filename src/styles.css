@@ -178,7 +178,8 @@ body {
   font-size: 18px;
 }
 /*
- * 長いタグは省略表示。高さ上限で行の途中を切らない（枚数削減は JS 側で担保）。
+ * 長いタグの省略はデスクトップ幅のみ。狭幅では nowrap すると要約が「運用安定…」で消え、
+ * タッチでは title も使えないため折り返して主要効果を残す。
  */
 .app.app-sprint-layout .action .effect-tags {
   display: flex;
@@ -191,9 +192,13 @@ body {
 .app.app-sprint-layout .action .effect-tag {
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+@media (min-width: 861px) {
+  .app.app-sprint-layout .action .effect-tag {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 @media (max-height: 720px), (max-width: 860px) {
@@ -224,6 +229,30 @@ body {
     position: sticky;
     bottom: 0;
     z-index: 6;
+  }
+  /*
+   * focus と 4 列カードを横並びのままにすると各カードが数十 px になり、
+   * 運用安定の要約が実質読めない。focus を上段へ逃がしてタグ幅を確保する。
+   */
+  .app.app-sprint-layout .actionbar {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  .app.app-sprint-layout .focus {
+    min-width: 0;
+    flex: 1 1 100%;
+    border-right: none;
+    border-bottom: 2px solid var(--line);
+    padding: 2px 4px 6px;
+  }
+  .app.app-sprint-layout .actions {
+    flex: 1 1 100%;
+  }
+  .app.app-sprint-layout .action .effect-tag {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    line-height: 1.2;
   }
 }
 

@@ -4,47 +4,35 @@ name = "DevOps Tycoon"
 
 [setup]
 script = """
-npm ci
-npx playwright install chromium
-"""
-
-[setup.darwin]
-script = """
-worktree_path="${CODEX_WORKTREE_PATH:-$PWD}"
-cd "$worktree_path"
-bash .codex/scripts/run-with-node24.sh npm ci
-bash .codex/scripts/run-with-node24.sh npx playwright install chromium
-"""
-
-[setup.linux]
-script = """
-worktree_path="${CODEX_WORKTREE_PATH:-$PWD}"
-cd "$worktree_path"
-bash .codex/scripts/run-with-node24.sh npm ci
-bash .codex/scripts/run-with-node24.sh npx playwright install chromium
+devcontainer up --workspace-folder "${CODEX_WORKTREE_PATH:-.}"
 """
 
 [[actions]]
 name = "開発サーバ"
 icon = "run"
-command = "bash .codex/scripts/run-with-node24.sh npm run dev"
+command = "devcontainer exec --workspace-folder . npm run dev -- --host 0.0.0.0"
 
 [[actions]]
 name = "ユニットテスト"
 icon = "test"
-command = "bash .codex/scripts/run-with-node24.sh npm test"
+command = "devcontainer exec --workspace-folder . npm test"
+
+[[actions]]
+name = "E2Eテスト"
+icon = "test"
+command = "devcontainer exec --workspace-folder . npm run test:e2e -- --workers=1"
 
 [[actions]]
 name = "Lint"
 icon = "tool"
-command = "bash .codex/scripts/run-with-node24.sh npm run lint"
+command = "devcontainer exec --workspace-folder . npm run lint"
 
 [[actions]]
 name = "フォーマット確認"
 icon = "tool"
-command = "bash .codex/scripts/run-with-node24.sh npm run format:check"
+command = "devcontainer exec --workspace-folder . npm run format:check"
 
 [[actions]]
 name = "ビルド"
 icon = "tool"
-command = "bash .codex/scripts/run-with-node24.sh npm run build"
+command = "devcontainer exec --workspace-folder . npm run build"

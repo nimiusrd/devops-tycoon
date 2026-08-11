@@ -44,11 +44,11 @@ function deriveTip(result: SprintResult, reviewedPr: number, firefightSaves: num
     result;
 
   if (autoContainCount >= 1) {
-    return `自動鎮火 ${autoContainCount} 件 → 緊急対応（⚡1）の方がシニアHP消費が小さい。炎上タイマー内に鎮火を。`;
+    return `自動鎮火 ${autoContainCount} 件 → 複数炎上や猶予が短いときの緊急対応ならシニアHP消費が小さくコンボも守れる。余裕のある先消しは高くつく。`;
   }
 
   if (spread >= 1) {
-    return `延焼 ${spread} 件 → 緊急対応で鎮火すればコンボと士気を守れる。集中力があれば早めに打とう。`;
+    return `延焼 ${spread} 件 → 複数炎上やタイマーが短いときに緊急対応すればコンボと士気を守れる。`;
   }
 
   if (!hasInterventions(result)) {

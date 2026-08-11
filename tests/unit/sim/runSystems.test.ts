@@ -250,7 +250,7 @@ describe('勝敗判定（第14/15章）', () => {
       aiLiteracy: 50,
     });
     const baseTotals = {
-      incidents: 8,
+      incidents: 20,
       completed: 40,
       aiAssisted: 5,
       rework: 20,

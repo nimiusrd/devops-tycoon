@@ -294,6 +294,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
       unlockedThisPhase: ['quality-1', 'quality-2'],
     });
     expect(order[0]).not.toBe('quality');
+    expect(order).not.toContain('quality');
   });
 
   it('前フェーズで2段買ったブランチは次スプリントで先端へ sticky する', () => {

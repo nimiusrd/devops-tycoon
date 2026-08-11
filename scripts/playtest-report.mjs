@@ -1440,7 +1440,9 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
     );
   }
   const fullRate = sample.length > 0 ? full / sample.length : 1;
+  // F-10 と同様、世代不一致（STALE）の旧 runs を合格根拠にしない。
   const scarcitySampleOk =
+    !STALE &&
     f11Missing.length === 0 &&
     Boolean(cohort && cohort.isDefault === true) &&
     sample.length === F11_DIRECTION_SAMPLE_SIZE * F11_SAMPLE_POLICIES.length;
@@ -1510,6 +1512,7 @@ const F11_DIRECTION_POLICY = 'skilledStateEvolve';
     );
     const actualSampleKeys = new Set(arr.map((run) => `${run.difficulty}|${run.seed}`));
     const sampleCompositionAccepted = Boolean(
+      !STALE &&
       cohort &&
       cohort.isDefault === true &&
       cohort.meta === F11_EXPECTED_META &&

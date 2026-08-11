@@ -406,6 +406,7 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   }
 
   // 同点時の安定したタイブレーク（レビュー → 品質 → …）。スコア差を上書きしない微小量。
+  // 先端予約済みブランチは順序から除外する（末尾へ残すと、他が買えないとき3段目が選ばれる）。
   const tie: Record<EvolutionBranch, number> = {
     review: 0.05,
     quality: 0.04,
@@ -413,9 +414,7 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
     culture: 0.02,
     dev: 0.01,
   };
-  return (Object.keys(scores) as EvolutionBranch[]).sort(
-    (a, b) => scores[b] + tie[b] - (scores[a] + tie[a]),
-  );
+  return activeScores.sort((a, b) => scores[b] + tie[b] - (scores[a] + tie[a]));
 }
 
 function evolutionOrder(mode: PolicySpec['evolve'], ctx?: EvolveBoardCtx): readonly string[] {
@@ -2068,6 +2067,11 @@ export function runOnce(
                 unlockedThisPhase,
               });
             for (const id of order) {
+              const branch = id.split('-')[0] ?? '';
+              // 先端予約の二段防衛: 返却順に残っていても今フェーズ2段済みは試さない。
+              if (unlockedThisPhase.filter((x) => x.startsWith(`${branch}-`)).length >= 2) {
+                continue;
+              }
               e.unlockEvolution(id);
               if (e.snapshot().evolution.points < before) break;
             }

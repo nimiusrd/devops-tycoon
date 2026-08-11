@@ -44,6 +44,7 @@ export {
   orgFromTeam,
   companyOrgFromTeams,
   createTeamRoster,
+  estimateActiveAssignedCount,
   appendTeamsToDept,
   advanceCoarseTeams,
   applyEffectToTeam,

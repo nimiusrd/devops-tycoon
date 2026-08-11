@@ -64,6 +64,20 @@ export function estimateRosterCoderCount(engineers: number): number {
   return coders;
 }
 
+/**
+ * `createTeamRoster` と同じ配置規則での coding/review 人数（ベンチ除外）。
+ * 未訪問チームの粗粒度シニア負荷分散を、詳細 sim の `activeAssignedCount` と揃える（RI-73）。
+ */
+export function estimateActiveAssignedCount(engineers: number): number {
+  if (engineers <= 0) return 0;
+  const count = Math.max(2, Math.min(6, Math.floor(engineers)));
+  let assigned = 0;
+  for (let i = 0; i < count; i += 1) {
+    if (i === 0 || i === 1 || i % 2 === 0) assigned += 1;
+  }
+  return assigned;
+}
+
 /** OrgAdjust を 1 チームの表示指標へ適用する。 */
 export function applyAdjustToRaw(
   raw: {
@@ -498,7 +512,7 @@ export function advanceCoarseTeams(
     modifiers?: CoarseRunModifiers;
     /**
      * チーム ID → coding/review 配置済み人数（詳細 sim の負荷分散母数）。
-     * 未指定時は `team.engineers` を使う。
+     * 未指定時は `estimateActiveAssignedCount(team.engineers)`（createTeamRoster と同じ配置規則）。
      */
     assignedByTeamId?: Readonly<Record<string, number>>;
   },
@@ -590,10 +604,9 @@ export function advanceCoarseTeams(
       Math.round(team.aiDependency * 0.03) - Math.round(team.aiLiteracy * 0.02) - debtRelief;
     const literacyGain = rng() < 0.4 ? 1 : 0;
     // RI-73 / F-1: 詳細 sim と同じく配置済み人数でシニア消耗を薄める（ベンチ除外）。
+    // 未訪問チームは createTeamRoster と同じ決定論的配置人数を使う（総席数で過大軽減しない）。
     const assigned =
-      args.assignedByTeamId?.[team.id] ??
-      // ロスター未保存のライバル等は粗粒度人数をそのまま使う。
-      team.engineers;
+      args.assignedByTeamId?.[team.id] ?? estimateActiveAssignedCount(team.engineers);
     const seniorDrain =
       (reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0) *
       seniorHpCostMul *

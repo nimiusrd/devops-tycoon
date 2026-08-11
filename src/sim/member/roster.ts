@@ -519,6 +519,14 @@ export function activeEngineerCount(roster: RosterState): number {
   return roster.members.reduce((n, m) => n + (isActive(m) ? 1 : 0), 0);
 }
 
+/** coding/review に配置済みの稼働人数（シニア負荷分散の母数。ベンチ除外。RI-73）。 */
+export function activeAssignedCount(roster: RosterState): number {
+  return roster.members.reduce(
+    (n, m) => n + (isActive(m) && (m.assignment === 'coding' || m.assignment === 'review') ? 1 : 0),
+    0,
+  );
+}
+
 /** 稼働かつ AI 配布中の人数（プレイヤーチーム島の AI ボット表示へ載せる）。 */
 export function aiAssignedCount(roster: RosterState): number {
   return roster.members.reduce((n, m) => n + (isActive(m) && m.aiAssigned ? 1 : 0), 0);

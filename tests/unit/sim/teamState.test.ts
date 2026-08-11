@@ -316,18 +316,8 @@ describe('RI-91-B1 teamState survived mutants', () => {
       expect(easedHp).toBeGreaterThan(plainHp);
     });
 
-    it('RI-73 / F-1: 粗粒度でも稼働人数でシニア消耗が薄まる', () => {
-      const small = [
-        makeTeam({ id: 'home' }),
-        makeTeam({
-          id: 'pressured',
-          engineers: 3,
-          headcount: 3,
-          reviewQueue: 10,
-          seniorHp: 50,
-        }),
-      ];
-      const large = [
+    it('RI-73 / F-1: 粗粒度でも配置済み人数でシニア消耗が薄まる', () => {
+      const teams = [
         makeTeam({ id: 'home' }),
         makeTeam({
           id: 'pressured',
@@ -337,19 +327,21 @@ describe('RI-91-B1 teamState survived mutants', () => {
           seniorHp: 50,
         }),
       ];
-      const smallStep = advanceCoarseTeams(small, {
+      const benchHeavy = advanceCoarseTeams(teams, {
         seed: 'ri73-coarse-share',
         stepKey: 's1',
         excludeId: 'home',
+        assignedByTeamId: { pressured: 3 },
       });
-      const largeStep = advanceCoarseTeams(large, {
+      const assignedHeavy = advanceCoarseTeams(teams, {
         seed: 'ri73-coarse-share',
         stepKey: 's1',
         excludeId: 'home',
+        assignedByTeamId: { pressured: 8 },
       });
-      const smallHp = smallStep.teams.find((t) => t.id === 'pressured')!.seniorHp;
-      const largeHp = largeStep.teams.find((t) => t.id === 'pressured')!.seniorHp;
-      expect(largeHp).toBeGreaterThan(smallHp);
+      const benchHp = benchHeavy.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      const assignedHp = assignedHeavy.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      expect(assignedHp).toBeGreaterThan(benchHp);
     });
 
     it('byTeam 調整は緩和に効き永続指標へ焼き込まない', () => {

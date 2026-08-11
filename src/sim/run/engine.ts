@@ -29,6 +29,7 @@ import {
 } from '../cards';
 import { diagnose } from '../diagnosis';
 import {
+  activeAssignedCount,
   activeEngineerCount,
   aiAssignedCount,
   applySprintGrowth,
@@ -1692,12 +1693,16 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
+    const assignedByTeamId = Object.fromEntries(
+      Object.entries(this.teamRosters).map(([id, roster]) => [id, activeAssignedCount(roster)]),
+    );
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey,
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
       modifiers: this.coarseModifiersFromFold(fold),
+      assignedByTeamId,
     });
     this.teams = stepped.teams;
     // 粗粒度チームの出荷・炎上・完了・AI 支援をラン／四半期集計へ反映する。

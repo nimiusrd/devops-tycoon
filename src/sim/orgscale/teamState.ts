@@ -496,6 +496,11 @@ export function advanceCoarseTeams(
     excludeId: string;
     adjust?: OrgAdjustState;
     modifiers?: CoarseRunModifiers;
+    /**
+     * チーム ID → coding/review 配置済み人数（詳細 sim の負荷分散母数）。
+     * 未指定時は `team.engineers` を使う。
+     */
+    assignedByTeamId?: Readonly<Record<string, number>>;
   },
 ): CoarseStepResult {
   const adjust = args.adjust ?? { company: emptyAdjust(), byDept: {} };
@@ -584,11 +589,15 @@ export function advanceCoarseTeams(
     const techDebtDelta =
       Math.round(team.aiDependency * 0.03) - Math.round(team.aiLiteracy * 0.02) - debtRelief;
     const literacyGain = rng() < 0.4 ? 1 : 0;
-    // RI-73 / F-1: 詳細 sim と同様、稼働人数でもシニア消耗を薄める。
+    // RI-73 / F-1: 詳細 sim と同じく配置済み人数でシニア消耗を薄める（ベンチ除外）。
+    const assigned =
+      args.assignedByTeamId?.[team.id] ??
+      // ロスター未保存のライバル等は粗粒度人数をそのまま使う。
+      team.engineers;
     const seniorDrain =
       (reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0) *
       seniorHpCostMul *
-      seniorHpShareMul(team.engineers);
+      seniorHpShareMul(assigned);
     const randomAiDrift = rng() < 0.3 * aiPressureMul ? 1 : 0;
     // 品質を先に確定し、派生の incidentBias と整合させる。
     const quality = clamp(team.quality + (rng() < 0.25 ? -1 : 0), 10, 100);

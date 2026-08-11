@@ -5,7 +5,11 @@
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
 import { getGoalAdjustment } from '../data/goalAdjustments';
-import { FIREFIGHT_STABILITY_BURN_TICKS, FIREFIGHT_STABILITY_MIN_BURNING } from '../sim/actions';
+import {
+  ANDON_STABILITY_REVIEW_MIN,
+  FIREFIGHT_STABILITY_BURN_TICKS,
+  FIREFIGHT_STABILITY_MIN_BURNING,
+} from '../sim/actions';
 import { REVIEW_FREEZE_PEAK } from '../sim/outcome';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { resolveNextQuarterEffects } from '../sim/run/quarterReview';
@@ -84,22 +88,21 @@ export const AI_DEPENDENCY_HELP =
 /** シニア体力の詳細・警告チップ文言（RI-67）。緊急の炎上だけ緊急対応へ誘導する（RI-73）。 */
 export function seniorHpHudCopy(
   seniorHpPct: number,
-  firefightUrgent: boolean,
+  opts: { firefightUrgent: boolean; reviewCongested: boolean },
 ): {
   detail: string;
   warningChip?: string;
 } {
+  const guard = opts.reviewCongested ? 'アンドンや休息で守る' : 'AIスロットルや休息で守る';
   if (seniorHpPct < 25) {
     return {
-      detail: firefightUrgent
-        ? '燃え尽き寸前・緊急対応で鎮火'
-        : '燃え尽き寸前・アンドンや休息で守る',
+      detail: opts.firefightUrgent ? '燃え尽き寸前・緊急対応で鎮火' : `燃え尽き寸前・${guard}`,
       warningChip: '燃え尽き危険',
     };
   }
   if (seniorHpPct < 50) {
     return {
-      detail: firefightUrgent ? '低下中・緊急の炎上は緊急対応で' : '低下中・アンドンや休息で守る',
+      detail: opts.firefightUrgent ? '低下中・緊急の炎上は緊急対応で' : `低下中・${guard}`,
       warningChip: '体力注意',
     };
   }
@@ -342,6 +345,7 @@ export function deriveHudMetrics(
   const firefightUrgent =
     burning.length >= FIREFIGHT_STABILITY_MIN_BURNING ||
     (burning.length >= 1 && minBurnTicksLeft <= FIREFIGHT_STABILITY_BURN_TICKS);
+  const reviewCongested = queue >= ANDON_STABILITY_REVIEW_MIN;
   const devSpeedDetail = org.aiEnabled ? 'AI支援で高速' : '通常速度';
 
   return [
@@ -402,7 +406,7 @@ export function deriveHudMetrics(
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
       tone: higherBetterTone(s.seniorHpPct, 50, 25),
-      ...seniorHpHudCopy(s.seniorHpPct, firefightUrgent),
+      ...seniorHpHudCopy(s.seniorHpPct, { firefightUrgent, reviewCongested }),
       help: SENIOR_HP_HELP,
       barPct: s.seniorHpPct,
       fillClass: 'fill-hp',

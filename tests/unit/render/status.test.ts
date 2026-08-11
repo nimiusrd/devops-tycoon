@@ -211,6 +211,19 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
         (m) => m.id === 'seniorHp',
       ),
     ).toMatchObject({
+      detail: '低下中・AIスロットルや休息で守る',
+      warningChip: '体力注意',
+    });
+
+    const congested = Array.from({ length: 10 }, (_, i) => ({
+      ...emptyTasks[0]!,
+      id: i,
+      lane: 'review' as const,
+      incident: false,
+    }));
+    expect(
+      deriveHudMetrics(withOrg({ seniorHp: 40 }).org, congested).find((m) => m.id === 'seniorHp'),
+    ).toMatchObject({
       detail: '低下中・アンドンや休息で守る',
       warningChip: '体力注意',
     });
@@ -218,7 +231,7 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     const dangerNoFire = deriveHudMetrics(withOrg({ seniorHp: 20 }).org, emptyTasks);
     expect(dangerNoFire.find((m) => m.id === 'seniorHp')).toMatchObject({
       tone: 'danger',
-      detail: '燃え尽き寸前・アンドンや休息で守る',
+      detail: '燃え尽き寸前・AIスロットルや休息で守る',
       warningChip: '燃え尽き危険',
     });
 

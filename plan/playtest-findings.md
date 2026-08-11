@@ -346,7 +346,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | F-7 | ~~初見相当の勝率が全難易度 0/10~~ → easy/normal で `naive` 1/10（10%）。`idle` は全難易度 0/10 | RI-73（F-7 完了） |
 | F-8 | Nightmare は330ラン全敗し、打つ機会が一度も無い。「何スプリント前から実質的な選択肢が消えたか」は未計測（RI-89 は機械的発動可否のみで、回避有効性の反実仮想は未実装） | RI-74 |
 | F-9 | 進行速度と決着位置は敗因ごとに違う。「打てた手」の観測手段は RI-89 で追加済み（差の再計測は playtest:report） | RI-89（完了） |
-| F-10 | ~~ビルドごとの勝ち筋が勝利種別に表れない~~ → F-10ビルド方針の modal が `chaos` / `happiness` / `healthy` の3種（minWins=2・共通seed分岐あり） | RI-76（完了） |
+| F-10 | ~~ビルドごとの勝ち筋が勝利種別に表れない~~ → F-10ビルド方針の modal が `chaos` / `happiness` / `healthy` の3種（一致≥2 / 混在share≥2/3・TVD≥0.5・試練込み共通seed分岐あり） | RI-76（完了） |
 | F-11 | 希少性・分岐多様化は実装済みだが、厳密な過半判定で方向確定は 5/40（12.5%）となり、受入閾値 20/40（50%）未達 | RI-86（進行中） |
 | F-12 | ~~ドラフトのマリガンが無い~~ → RI-81 でマリガンを実装済み | RI-81（完了） |
 
@@ -424,11 +424,13 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 `happiness` 47 / `chaos` 44 / `healthy` 22。`management` / `noDamage` /
 `aiSuccess` / `normal` は 0件だった。
 F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimized` / `noAi` /
-`reviewHeavy` / `skilledNoHire`）だけで判定し、最低勝利数2・同率 modal 除外・
-採用方針の共通 seed 分岐（modal 各種が別方針と同時勝利で分岐）・既定コホートを要求する。
+`reviewHeavy` / `skilledNoHire`）だけで判定し、一致≥2 / 混在首位≥3・share≥2/3・同率除外・
+異 modal 方針間 TVD≥0.5・試練プロファイル込みの共通 seed 分岐（双方が自身の modal を
+再現した組だけ）・既定コホートを要求する。
 現行の F-10 modal は `aiFullBet=chaos` / `noAi`・`skilledNoHire=happiness` /
 `reviewHeavy=healthy` の3種で PASS（共通 seed 例: easy/pt-9 で chaos vs happiness、
-easy/pt-7 で happiness vs healthy）。`noDamage` の量産もない。
+easy/pt-7 で happiness vs healthy）。`harness*` の frontier 試練は通常条件と混ぜない。
+`noDamage` の量産もない。
 
 勝利があった方針だけを列挙する。
 

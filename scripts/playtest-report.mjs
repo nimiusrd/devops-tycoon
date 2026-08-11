@@ -728,8 +728,30 @@ const F10_BUILD_POLICIES = new Set([
   'reviewHeavy',
   'skilledNoHire',
 ]);
-/** 方針別 modal に入れる最低勝利数（偶然の1勝で第3種を作らない）。 */
-const F10_MIN_WINS_FOR_MODAL = 2;
+/**
+ * 方針別 modal の事前定義標本・効果量規則。
+ * - 全勝一致なら n≥2 で採用（偶然の1勝は除外。効果量=1）
+ * - 混在なら n≥3・単独首位・首位比率≥2/3（同率・薄標本は除外）
+ * 固定下限だけでは足りないため、方針間の全変動距離（TVD）も後段で要求する。
+ */
+const F10_MIN_WINS_UNANIMOUS = 2;
+const F10_MIN_WINS_PLURALITY = 3;
+/** 混在時の modal 効果量（首位 / 全勝）。 */
+const F10_MIN_MODAL_SHARE = 2 / 3;
+/**
+ * 異 modal 方針ペアの勝利種別分布の最小全変動距離。
+ * TVD = 0.5 * Σ|p−q|。0.5 は「半分以上の確率質量が食い違う」効果量。
+ */
+const F10_MIN_POLICY_TVD = 0.5;
+/**
+ * 試練プロファイル（`tests/playtest/harness.ts` の trials）。
+ * 通常条件と frontier 試練を同一「共通 seed」に混ぜない。
+ */
+const F10_TRIAL_PROFILE = {
+  harnessBloated: 'frontier-dependency',
+  harnessOptimized: 'frontier-dependency',
+};
+const f10TrialProfile = (policy) => F10_TRIAL_PROFILE[policy] ?? 'none';
 
 // F-10 は「方針を変えると勝ち筋が変わるか」なので、方針別の分布を出す。
 console.log('\n方針別（勝利があった方針のみ。勝利種別 / 診断）:');
@@ -744,18 +766,43 @@ for (const [policy, arr] of group((r) => r.policy)) {
   console.log(`  ${policy}: ${JSON.stringify(wt)} / ${JSON.stringify(dg)}`);
 }
 
-/** 同率首位は modal にせず除外する（辞書順タイブレークを使わない）。 */
-function uniqueModalWinType(wt) {
+/**
+ * 有意な単独 modal を返す。同率・薄標本・効果量不足は null。
+ * 辞書順タイブレークは使わない。
+ */
+function significantModalWinType(wt) {
   const ranked = Object.entries(wt).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   if (ranked.length === 0) return null;
-  if (ranked.length > 1 && ranked[0][1] === ranked[1][1]) return null;
-  return ranked[0][0];
+  const wins = ranked.reduce((a, [, n]) => a + n, 0);
+  const top = ranked[0][1];
+  const second = ranked[1]?.[1] ?? 0;
+  if (top === second) return null;
+  const share = top / wins;
+  if (top === wins && wins >= F10_MIN_WINS_UNANIMOUS) return ranked[0][0];
+  if (wins >= F10_MIN_WINS_PLURALITY && top > second && share + 1e-12 >= F10_MIN_MODAL_SHARE) {
+    return ranked[0][0];
+  }
+  return null;
+}
+
+/** 2方針の勝利種別分布の全変動距離（0〜1）。 */
+function winTypeTotalVariation(wtA, wtB) {
+  const keys = new Set([...Object.keys(wtA), ...Object.keys(wtB)]);
+  const sumA = Object.values(wtA).reduce((a, b) => a + b, 0);
+  const sumB = Object.values(wtB).reduce((a, b) => a + b, 0);
+  if (sumA <= 0 || sumB <= 0) return 0;
+  let abs = 0;
+  for (const k of keys) {
+    abs += Math.abs((wtA[k] ?? 0) / sumA - (wtB[k] ?? 0) / sumB);
+  }
+  return abs / 2;
 }
 
 const f10ModalWinTypes = new Set();
-/** modal 集計に採用した方針（標本不足・同率は含めない）。 */
+/** modal 集計に採用した方針（標本不足・同率・薄標本・効果量不足は含めない）。 */
 const f10AdoptedPolicies = new Set();
 const f10ModalPolicies = [];
+const f10PolicyWinTypes = new Map();
 const f10TiePolicies = [];
 const f10SparsePolicies = [];
 for (const [policy, arr] of group((r) => r.policy)) {
@@ -766,29 +813,31 @@ for (const [policy, arr] of group((r) => r.policy)) {
   }
   const wins = Object.values(wt).reduce((a, b) => a + b, 0);
   if (wins === 0) continue;
-  if (wins < F10_MIN_WINS_FOR_MODAL) {
+  if (wins < F10_MIN_WINS_UNANIMOUS) {
     f10SparsePolicies.push(`${policy}(n=${wins})`);
     continue;
   }
-  const modal = uniqueModalWinType(wt);
+  const modal = significantModalWinType(wt);
   if (!modal) {
-    f10TiePolicies.push(policy);
+    // 同率、混在かつ n<3、または首位比率 < 2/3。
+    f10TiePolicies.push(`${policy}(n=${wins},${JSON.stringify(wt)})`);
     continue;
   }
   f10ModalWinTypes.add(modal);
   f10AdoptedPolicies.add(policy);
   f10ModalPolicies.push(`${policy}=${modal}`);
+  f10PolicyWinTypes.set(policy, wt);
 }
 
 /**
- * 同一 meta/難易度/seed での採用方針の勝利種別。
+ * 同一 meta/難易度/seed/試練プロファイル での採用方針の勝利種別。
  * 標本不足・同率除外の方針は見ない（疎な2方針だけの分岐で PASS にしない）。
  */
 const f10CommonSeedTypes = new Set();
 const f10WinsByCohort = new Map();
 for (const r of runs) {
   if (!f10AdoptedPolicies.has(r.policy) || !r.winType) continue;
-  const key = `${r.meta ?? 'fresh'}|${r.difficulty}|${r.seed}`;
+  const key = `${r.meta ?? 'fresh'}|${r.difficulty}|${r.seed}|${f10TrialProfile(r.policy)}`;
   if (!f10WinsByCohort.has(key)) f10WinsByCohort.set(key, new Map());
   f10WinsByCohort.get(key).set(r.policy, r.winType);
 }
@@ -829,15 +878,37 @@ const f10AllAdoptedPoliciesBacked = [...f10AdoptedPolicies].every((p) =>
 const f10AllModalsBacked = [...f10ModalWinTypes].every((t) => f10ModalsBackedByCommonSeed.has(t));
 const f10CommonSeedSupportsModals = f10AllAdoptedPoliciesBacked && f10AllModalsBacked;
 
+/** 異 modal の採用方針ペアすべてで、事前定義の分布差（TVD）を満たすか。 */
+const f10AdoptedList = [...f10AdoptedPolicies];
+const f10WeakTvdPairs = [];
+for (let i = 0; i < f10AdoptedList.length; i++) {
+  for (let j = i + 1; j < f10AdoptedList.length; j++) {
+    const a = f10AdoptedList[i];
+    const b = f10AdoptedList[j];
+    if (f10PolicyModal.get(a) === f10PolicyModal.get(b)) continue;
+    const tvd = winTypeTotalVariation(f10PolicyWinTypes.get(a), f10PolicyWinTypes.get(b));
+    if (tvd + 1e-12 < F10_MIN_POLICY_TVD) {
+      f10WeakTvdPairs.push(`${a}↔${b}(tvd=${tvd.toFixed(2)})`);
+    }
+  }
+}
+const f10PolicyDistributionsDiverge = f10WeakTvdPairs.length === 0 && f10ModalWinTypes.size >= 2;
+
 const overallWinTypeCount = Object.keys(winTypes).length;
 const f10ModalCount = f10ModalWinTypes.size;
 const f10Measurable = !STALE && cohort?.isDefault === true;
 const f10Pass =
-  f10Measurable && overallWinTypeCount >= 3 && f10ModalCount >= 3 && f10CommonSeedSupportsModals;
+  f10Measurable &&
+  overallWinTypeCount >= 3 &&
+  f10ModalCount >= 3 &&
+  f10CommonSeedSupportsModals &&
+  f10PolicyDistributionsDiverge;
 const f10Verdict = !f10Measurable ? '未計測' : f10Pass ? 'PASS' : 'FAIL';
 console.log(
   `\nF-10 受入（RI-76）: 全体勝利種別 ${overallWinTypeCount} 種 / ` +
-    `F-10ビルド modal ${f10ModalCount} 種（minWins=${F10_MIN_WINS_FOR_MODAL}・同率除外） / ` +
+    `F-10ビルド modal ${f10ModalCount} 種` +
+    `（一致≥${F10_MIN_WINS_UNANIMOUS} / 混在首位≥${F10_MIN_WINS_PLURALITY}・share≥2/3・同率除外） / ` +
+    `方針間TVD≥${F10_MIN_POLICY_TVD}=${f10PolicyDistributionsDiverge ? 'yes' : 'no'} / ` +
     `採用方針の共通seed分岐=${f10CommonSeedSupportsModals ? 'yes' : 'no'} → ${f10Verdict}`,
 );
 console.log(`  F-10 modal: ${JSON.stringify([...f10ModalWinTypes].sort())}`);
@@ -849,6 +920,7 @@ console.log(
 console.log(
   `  共通seedで裏付けた modal: ${JSON.stringify([...f10ModalsBackedByCommonSeed].sort())}`,
 );
+if (f10WeakTvdPairs.length > 0) console.log(`  TVD不足ペア: ${f10WeakTvdPairs.join(', ')}`);
 if (f10TiePolicies.length > 0) console.log(`  同率除外: ${f10TiePolicies.join(', ')}`);
 if (f10SparsePolicies.length > 0) console.log(`  標本不足: ${f10SparsePolicies.join(', ')}`);
 if (STALE) console.log('  理由: 世代不一致（STALE）。PASS/FAIL を出さない');

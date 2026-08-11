@@ -114,9 +114,9 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 カオスは累計障害20以上、経営は予算50以上、幸福は士気70・シニアHP45以上。
 ノーダメは高水準の健全指標＋健全系診断を要求し、受動プレイでは到達しない。
 ユニットで代表ビルド入力の分岐を固定し、現行 1,480ランでは 113勝（`happiness` 47 / `chaos` 44 / `healthy` 22）。
-F-10 受入はビルド方針（`aiFullBet` / `harness*` / `noAi` / `reviewHeavy`）だけで判定し、
-最低勝利数2・同率 modal 除外・共通 seed 分岐・既定コホート世代一致を要求する。
-現行では F-10 modal が `chaos` / `happiness` / `healthy` の3種（`aiFullBet` / `noAi` / `reviewHeavy`）で PASS。
+F-10 受入はビルド方針（`aiFullBet` / `harness*` / `noAi` / `reviewHeavy` / `skilledNoHire`）だけで判定し、
+最低勝利数2・同率 modal 除外・採用方針の共通 seed 分岐（modal 各種の裏付け）・既定コホート世代一致を要求する。
+現行では F-10 modal が `chaos` / `happiness` / `healthy` の3種で PASS。
 
 ### RI-77 AI 導入が既定 ON で、既定のまま進むのが有利 — 実装済・コホート再計測待ち
 

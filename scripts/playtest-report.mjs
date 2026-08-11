@@ -715,8 +715,10 @@ for (const run of runs) {
 console.log('全体 勝利種別:', JSON.stringify(winTypes));
 console.log('全体 組織診断:', JSON.stringify(diagnoses));
 /**
- * F-10 のビルド差分方針（`tests/playtest/harness.ts` の「ビルド差分（F-10）」節）。
- * 固定介入検出や目標修正比較の方針は、勝ち筋のビルド分岐判定に混ぜない。
+ * F-10 のビルド差分方針。
+ * - `aiFullBet` / `harness*` / `noAi` / `reviewHeavy`: harness の「ビルド差分（F-10）」節
+ * - `skilledNoHire`: SPEC 想定の部分 AI / 少数精鋭ベースライン（ビルド比較の対照）
+ * 固定介入検出や目標修正比較の方針は混ぜない。
  */
 const F10_BUILD_POLICIES = new Set([
   'aiFullBet',
@@ -724,6 +726,7 @@ const F10_BUILD_POLICIES = new Set([
   'harnessOptimized',
   'noAi',
   'reviewHeavy',
+  'skilledNoHire',
 ]);
 /** 方針別 modal に入れる最低勝利数（偶然の1勝で第3種を作らない）。 */
 const F10_MIN_WINS_FOR_MODAL = 2;
@@ -797,13 +800,24 @@ for (const [, byPolicy] of f10WinsByCohort) {
   for (const t of types) f10CommonSeedTypes.add(t);
 }
 /**
- * 共通 seed 上で観測した勝利種別が、採用 modal 集合の分岐を支えているか。
- * 疎方針を混ぜず、採用 modal 方針だけで2種以上が同一コホートに現れることを要求する。
+ * 採用 modal の各種別が、共通 seed 上で別の採用方針と分岐したか。
+ * 孤立した2勝だけで第3の modal を立てて PASS にしない。
  */
+const f10ModalsBackedByCommonSeed = new Set();
+for (const [, byPolicy] of f10WinsByCohort) {
+  if (byPolicy.size < 2) continue;
+  const types = new Set(byPolicy.values());
+  if (types.size < 2) continue;
+  for (const t of types) f10ModalsBackedByCommonSeed.add(t);
+}
+const f10AllModalsBackedByCommonSeed = [...f10ModalWinTypes].every((t) =>
+  f10ModalsBackedByCommonSeed.has(t),
+);
 const f10CommonSeedSupportsModals =
   f10CommonSeedDivergence &&
   f10CommonSeedTypes.size >= 2 &&
-  [...f10CommonSeedTypes].every((t) => f10ModalWinTypes.has(t));
+  [...f10CommonSeedTypes].every((t) => f10ModalWinTypes.has(t)) &&
+  f10AllModalsBackedByCommonSeed;
 
 const overallWinTypeCount = Object.keys(winTypes).length;
 const f10ModalCount = f10ModalWinTypes.size;
@@ -819,6 +833,9 @@ console.log(
 console.log(`  F-10 modal: ${JSON.stringify([...f10ModalWinTypes].sort())}`);
 console.log(`  採用方針: ${f10ModalPolicies.join(', ') || '（なし）'}`);
 console.log(`  共通seed種別（採用方針のみ）: ${JSON.stringify([...f10CommonSeedTypes].sort())}`);
+console.log(
+  `  共通seedで裏付けた modal: ${JSON.stringify([...f10ModalsBackedByCommonSeed].sort())}`,
+);
 if (f10TiePolicies.length > 0) console.log(`  同率除外: ${f10TiePolicies.join(', ')}`);
 if (f10SparsePolicies.length > 0) console.log(`  標本不足: ${f10SparsePolicies.join(', ')}`);
 if (STALE) console.log('  理由: 世代不一致（STALE）。PASS/FAIL を出さない');

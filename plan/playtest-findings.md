@@ -424,9 +424,11 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 `happiness` 47 / `chaos` 44 / `healthy` 22。`management` / `noDamage` /
 `aiSuccess` / `normal` は 0件だった。
 F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimized` / `noAi` /
-`reviewHeavy`）だけで判定し、最低勝利数2・同率 modal 除外・共通 seed 分岐・既定コホートを要求する。
-現行の F-10 modal は `aiFullBet=chaos` / `noAi=happiness` / `reviewHeavy=healthy` の3種で PASS。
-`noDamage` の量産もない。
+`reviewHeavy` / `skilledNoHire`）だけで判定し、最低勝利数2・同率 modal 除外・
+採用方針の共通 seed 分岐（modal 各種が別方針と同時勝利で分岐）・既定コホートを要求する。
+現行の F-10 modal は `aiFullBet=chaos` / `noAi`・`skilledNoHire=happiness` /
+`reviewHeavy=healthy` の3種で PASS（共通 seed 例: easy/pt-9 で chaos vs happiness、
+easy/pt-7 で happiness vs healthy）。`noDamage` の量産もない。
 
 勝利があった方針だけを列挙する。
 

@@ -109,6 +109,13 @@ export interface PolicySpec {
     | 'qualityFirst'
     | 'stateAware';
   /**
+   * 1進化フェーズで解放するノード数の上限。未指定はポイントを使い切る（従来契約）。
+   *
+   * F-11 の方向確定標本 `skilledStateEvolve` だけが設定する。希少性標本（代表4方針）は
+   * 使い切りのまま測り、方向確定はこの契約付き方針の結果として report で分離する。
+   */
+  maxEvolutionUnlocksPerPhase?: number;
+  /**
    * ドラフトの選び方。`first` は提示順の先頭。
    * それ以外は該当キーワードを含むカードを優先し、無ければ先頭を取る。
    * `costOpt` / `aiBloated` は RI-88 のインフラコスト軸用。
@@ -661,7 +668,15 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    * RI-86 / F-11 用。`skilledNoHire` と同じ介入・カードだが、進化ブランチを盤面で選ぶ。
    * 固定順方針では方向の確定時期を測れないため、この方針で commit 時期を観測する。
    */
-  skilledStateEvolve: { ...skilledBase(), evolve: 'stateAware' },
+  /**
+   * RI-86 / F-11 方向確定用。盤面依存ブランチ選択に加え、1フェーズ最大3解放
+   * （余り持ち越し）を契約とする。希少性は代表4方針の使い切り契約で別計測する。
+   */
+  skilledStateEvolve: {
+    ...skilledBase(),
+    evolve: 'stateAware',
+    maxEvolutionUnlocksPerPhase: 3,
+  },
 };
 
 /** 介入の試行結果内訳（RI-78 の「発動可能だった回数」測定用）。 */
@@ -2033,8 +2048,13 @@ export function runOnce(
                 });
           let spent = 0;
           const unlockedThisPhase: string[] = [];
-          // 他方針と同じくポイントを使い切る（F-11 方向確定も支出契約を揃える）。
-          while (e.snapshot().evolution.points > 0 && spent < 16) {
+          // 既定はポイント使い切り。`maxEvolutionUnlocksPerPhase` がある方針だけ上限で止める。
+          const maxUnlocksThisPhase = spec.maxEvolutionUnlocksPerPhase ?? 16;
+          while (
+            e.snapshot().evolution.points > 0 &&
+            spent < 16 &&
+            unlockedThisPhase.length < maxUnlocksThisPhase
+          ) {
             const beforeSnap = e.snapshot();
             const before = beforeSnap.evolution.points;
             const beforeIds = new Set(Object.keys(beforeSnap.evolution.unlocked));

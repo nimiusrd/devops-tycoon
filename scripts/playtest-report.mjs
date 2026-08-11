@@ -1544,8 +1544,9 @@ const F11_DIRECTION_POLICY = 'skilledStateEvolve';
         ` / 方向確定 ${sampleCompositionAccepted ? (directionAccepted ? 'OK' : 'NG') : '未計測'}）`,
     );
     console.log(
-      '  ※ 方向確定方針も他方針と同じく進化ポイントを使い切る（フェーズ解放上限の特例なし）。',
+      '  ※ 方向確定は `skilledStateEvolve` の契約（evolve=stateAware / maxEvolutionUnlocksPerPhase=3）で測る。',
     );
+    console.log('     希少性（全解放率）は代表4方針のポイント使い切り契約で別計測し、混同しない。');
     if (atSprint.length > 0) {
       console.log(
         `  確定スプリント（四半期内 index）: p10=${quantile(atSprint, 0.1)}` +

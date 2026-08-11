@@ -402,7 +402,13 @@ describe('evaluateWinType', () => {
 
   it('幸福・経営・カオス・健全はビルド指標で分岐する（RI-76）', () => {
     win('happiness', {
-      org: { morale: 70, seniorHp: 55, quality: 50, aiLiteracy: 50 },
+      org: { morale: 70, seniorHp: 45, quality: 50, aiLiteracy: 50 },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 10,
+    });
+    // シニアHPが幸福下限未満なら幸福にしない。
+    win('normal', {
+      org: { morale: 70, seniorHp: 44, quality: 50, aiLiteracy: 50 },
       totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
       budget: 10,
     });
@@ -463,7 +469,7 @@ describe('evaluateWinType', () => {
     });
     // 幸福条件を満たす場合はカオスより幸福を優先する。
     win('happiness', {
-      org: { morale: 70, seniorHp: 55, quality: 50, aiLiteracy: 50 },
+      org: { morale: 70, seniorHp: 45, quality: 50, aiLiteracy: 50 },
       totals: {
         completed: 20,
         done: 20,

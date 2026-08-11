@@ -714,10 +714,22 @@ for (const run of runs) {
 }
 console.log('全体 勝利種別:', JSON.stringify(winTypes));
 console.log('全体 組織診断:', JSON.stringify(diagnoses));
+/**
+ * F-10 のビルド差分方針（`tests/playtest/harness.ts` の「ビルド差分（F-10）」節）。
+ * 固定介入検出や目標修正比較の方針は、勝ち筋のビルド分岐判定に混ぜない。
+ */
+const F10_BUILD_POLICIES = new Set([
+  'aiFullBet',
+  'harnessBloated',
+  'harnessOptimized',
+  'noAi',
+  'reviewHeavy',
+]);
+/** 方針別 modal に入れる最低勝利数（偶然の1勝で第3種を作らない）。 */
+const F10_MIN_WINS_FOR_MODAL = 2;
+
 // F-10 は「方針を変えると勝ち筋が変わるか」なので、方針別の分布を出す。
 console.log('\n方針別（勝利があった方針のみ。勝利種別 / 診断）:');
-const modalWinTypes = new Set();
-let policiesWithWins = 0;
 for (const [policy, arr] of group((r) => r.policy)) {
   const wt = {};
   const dg = {};
@@ -726,20 +738,78 @@ for (const [policy, arr] of group((r) => r.policy)) {
     dg[r.diagnosis] = (dg[r.diagnosis] ?? 0) + 1;
   }
   if (Object.keys(wt).length === 0) continue;
-  policiesWithWins += 1;
-  const modal = Object.entries(wt).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
-  modalWinTypes.add(modal);
   console.log(`  ${policy}: ${JSON.stringify(wt)} / ${JSON.stringify(dg)}`);
 }
-// RI-76 受入: 全体の勝利種別が3種以上、かつ方針別最頻勝利種別（modal）も3種以上。
+
+/** 同率首位は modal にせず除外する（辞書順タイブレークを使わない）。 */
+function uniqueModalWinType(wt) {
+  const ranked = Object.entries(wt).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  if (ranked.length === 0) return null;
+  if (ranked.length > 1 && ranked[0][1] === ranked[1][1]) return null;
+  return ranked[0][0];
+}
+
+const f10ModalWinTypes = new Set();
+const f10ModalPolicies = [];
+const f10TiePolicies = [];
+const f10SparsePolicies = [];
+for (const [policy, arr] of group((r) => r.policy)) {
+  if (!F10_BUILD_POLICIES.has(policy)) continue;
+  const wt = {};
+  for (const r of arr) {
+    if (r.winType) wt[r.winType] = (wt[r.winType] ?? 0) + 1;
+  }
+  const wins = Object.values(wt).reduce((a, b) => a + b, 0);
+  if (wins === 0) continue;
+  if (wins < F10_MIN_WINS_FOR_MODAL) {
+    f10SparsePolicies.push(`${policy}(n=${wins})`);
+    continue;
+  }
+  const modal = uniqueModalWinType(wt);
+  if (!modal) {
+    f10TiePolicies.push(policy);
+    continue;
+  }
+  f10ModalWinTypes.add(modal);
+  f10ModalPolicies.push(`${policy}=${modal}`);
+}
+
+/** 同一 meta/難易度/seed で、F-10 ビルド方針どうしの勝利種別が分かれる組があるか。 */
+let f10CommonSeedDivergence = false;
+const f10WinsByCohort = new Map();
+for (const r of runs) {
+  if (!F10_BUILD_POLICIES.has(r.policy) || !r.winType) continue;
+  const key = `${r.meta ?? 'fresh'}|${r.difficulty}|${r.seed}`;
+  if (!f10WinsByCohort.has(key)) f10WinsByCohort.set(key, new Map());
+  f10WinsByCohort.get(key).set(r.policy, r.winType);
+}
+for (const [, byPolicy] of f10WinsByCohort) {
+  const types = new Set(byPolicy.values());
+  if (types.size >= 2) {
+    f10CommonSeedDivergence = true;
+    break;
+  }
+}
+
 const overallWinTypeCount = Object.keys(winTypes).length;
-const modalCount = modalWinTypes.size;
-const f10Pass = overallWinTypeCount >= 3 && modalCount >= 3;
+const f10ModalCount = f10ModalWinTypes.size;
+const f10Measurable = !STALE && cohort?.isDefault === true;
+const f10Pass =
+  f10Measurable && overallWinTypeCount >= 3 && f10ModalCount >= 3 && f10CommonSeedDivergence;
+const f10Verdict = !f10Measurable ? '未計測' : f10Pass ? 'PASS' : 'FAIL';
 console.log(
-  `\nF-10 受入（RI-76）: 全体勝利種別 ${overallWinTypeCount} 種 / 方針別 modal ${modalCount} 種` +
-    `（勝利方針 ${policiesWithWins}） → ${f10Pass ? 'PASS' : 'FAIL'}`,
+  `\nF-10 受入（RI-76）: 全体勝利種別 ${overallWinTypeCount} 種 / ` +
+    `F-10ビルド modal ${f10ModalCount} 種（minWins=${F10_MIN_WINS_FOR_MODAL}・同率除外） / ` +
+    `共通seed分岐=${f10CommonSeedDivergence ? 'yes' : 'no'} → ${f10Verdict}`,
 );
-console.log(`  modal 内訳: ${JSON.stringify([...modalWinTypes].sort())}`);
+console.log(`  F-10 modal: ${JSON.stringify([...f10ModalWinTypes].sort())}`);
+console.log(`  採用方針: ${f10ModalPolicies.join(', ') || '（なし）'}`);
+if (f10TiePolicies.length > 0) console.log(`  同率除外: ${f10TiePolicies.join(', ')}`);
+if (f10SparsePolicies.length > 0) console.log(`  標本不足: ${f10SparsePolicies.join(', ')}`);
+if (STALE) console.log('  理由: 世代不一致（STALE）。PASS/FAIL を出さない');
+if (cohort && cohort.isDefault !== true) {
+  console.log('  理由: 既定コホートではない。PASS/FAIL を出さない');
+}
 
 // --- F-9 敗因ごとの手触り（難易度で層別化） ---------------------------------
 console.log(`\n## F-9 敗因ごとの進行と予兆\n`);

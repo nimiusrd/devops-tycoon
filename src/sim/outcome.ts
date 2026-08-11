@@ -113,6 +113,10 @@ export const MANAGEMENT_BUDGET_MIN = 50;
 export const CHAOS_INCIDENTS_MIN = 20;
 /** カオス勝利に必要なラン累計出荷。 */
 export const CHAOS_DELIVERED_MIN = 250;
+/** 現場幸福勝利に必要な士気下限。 */
+export const HAPPINESS_MORALE_MIN = 70;
+/** 現場幸福勝利に必要なシニアHP下限。 */
+export const HAPPINESS_SENIOR_HP_MIN = 45;
 
 /**
  * ボス突破時に達成した最上位の勝利種別を返す（RI-76）。
@@ -160,7 +164,7 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   }
 
   // 人を守るビルド（障害多発より先に評価し、幸福勝ちをカオスへ吸わせない）。
-  if (org.morale >= 70 && org.seniorHp >= 55) {
+  if (org.morale >= HAPPINESS_MORALE_MIN && org.seniorHp >= HAPPINESS_SENIOR_HP_MIN) {
     return 'happiness';
   }
 

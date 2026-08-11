@@ -755,6 +755,37 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
     expect(after.sprint?.cardPiles.hand).toContain(3);
   });
 
+  it('shop intro support is granted once per visit even with multiple card buys (RI-78)', () => {
+    const engine = createEngine('ri78-shop-intro-once');
+    const i = asInternals(engine);
+    i.phase = 'shop';
+    i.budget = 50;
+    i.deck = [];
+    i.relics = [];
+    i.shop = {
+      cards: [
+        { defId: 'copilot', cost: 1, bought: false },
+        { defId: 'claude-code', cost: 4, bought: false },
+        { defId: 'feature-flags', cost: 1, bought: false },
+      ],
+      relic: null,
+      recruit: { cost: RECRUIT_COST, bought: false },
+    };
+
+    engine.buyShopCard('copilot');
+    engine.buyShopCard('claude-code');
+    engine.buyShopCard('feature-flags');
+
+    const state = engine.snapshot();
+    expect(state.shop?.introSupportGranted).toBe(true);
+    expect(state.pendingSprintModifiers).toEqual({
+      focusMaxAdd: 2,
+      taskCountMul: 1.1,
+    });
+    expect(state.pendingShopHandIndices).toEqual([0, 1, 2]);
+    expect(state.deck).toHaveLength(3);
+  });
+
   it('shop guards preserve state outside phase, without budget, or without roster slots', () => {
     const engine = createEngine('ri-72-d2');
     const i = asInternals(engine);

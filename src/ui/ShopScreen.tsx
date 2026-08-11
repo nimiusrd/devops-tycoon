@@ -74,7 +74,11 @@ export function ShopScreen({
                   <span className="shop-card-focus-cost">
                     {' '}
                     / 発動 ⚡{playCost(def.focusCost, 1)}
-                    {offer.bought ? '' : ' / 次スプ手札・導入支援'}
+                    {offer.bought
+                      ? ''
+                      : shop.introSupportGranted
+                        ? ' / 次スプ手札'
+                        : ' / 次スプ手札・導入支援'}
                   </span>
                 </span>
               </button>

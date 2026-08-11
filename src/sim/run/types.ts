@@ -199,6 +199,11 @@ export interface ShopOffer {
   relic?: { id: string; cost: number; bought: boolean };
   /** 採用枠（予算消費でメンバー+1。RI-26）。 */
   recruit?: { cost: number; bought: boolean };
+  /**
+   * このショップ訪問で導入支援（focusMaxAdd / taskCountMul）を付与済みか（RI-78）。
+   * 複数枚購入しても訪問あたり一度だけ。
+   */
+  introSupportGranted?: boolean;
 }
 
 /** 開始オプション（デイリーラン等）。 */

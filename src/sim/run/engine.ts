@@ -1317,11 +1317,14 @@ export class RunEngine {
     // RI-78: 購入カードは次スプリントの手札へ優先して配る（投資が次スプで効くように）。
     if (this.deck.length > beforeLen) {
       this.pendingShopHandIndices.push(this.deck.length - 1);
-      // 導入支援: 集中力上限と次スプの出荷機会を少し広げ、購入が純出荷へ届くようにする（RI-78）。
-      this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, {
-        focusMaxAdd: 2,
-        taskCountMul: 1.1,
-      });
+      // 導入支援はショップ訪問あたり一度だけ（買い漁りで累積させない。RI-78）。
+      if (!this.shop.introSupportGranted) {
+        this.shop.introSupportGranted = true;
+        this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, {
+          focusMaxAdd: 2,
+          taskCountMul: 1.1,
+        });
+      }
     }
     // RI-30: 効果は手札発動時。購入だけでは即時敗北しない。
     this.applyImmediateLose();
@@ -2086,6 +2089,7 @@ export class RunEngine {
             cards: this.shop.cards.map((c) => ({ ...c })),
             relic: this.shop.relic ? { ...this.shop.relic } : undefined,
             recruit: this.shop.recruit ? { ...this.shop.recruit } : undefined,
+            ...(this.shop.introSupportGranted ? { introSupportGranted: true } : {}),
           }
         : null,
       diagnosis: this.diagnosis,
@@ -2483,6 +2487,7 @@ export class RunEngine {
             cards: this.shop.cards.map((c) => ({ ...c })),
             relic: this.shop.relic ? { ...this.shop.relic } : undefined,
             recruit: this.shop.recruit ? { ...this.shop.recruit } : undefined,
+            ...(this.shop.introSupportGranted ? { introSupportGranted: true } : {}),
           }
         : null,
       diagnosis: this.diagnosis,

@@ -88,6 +88,13 @@ npm run dev
 http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
 ```
 
+## Codexで開発する
+
+Dockerを使うCodexタスクでは、リポジトリをCodexで開く前に
+[`.codex/README.md`](.codex/README.md) の手順を完了してください。ユーザー設定へ
+Dockerプロファイルを統合し、プロジェクトを信頼してからCodexを再起動すると、
+このプロジェクトだけでDocker権限が有効になります。
+
 ## 開発コマンド
 
 | コマンド | 内容 |

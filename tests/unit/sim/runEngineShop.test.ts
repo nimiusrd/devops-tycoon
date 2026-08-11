@@ -13,6 +13,7 @@ import {
   REST_REPAY_REWORK_RATE,
   REST_UPGRADE_FOCUS_MAX,
   RunEngine,
+  SHOP_RELIC_COST,
 } from '../../../src/sim/run/engine';
 import type { BeatState, RunState, ShopOffer } from '../../../src/sim/run/types';
 import type { OrgState } from '../../../src/sim/types';
@@ -342,16 +343,20 @@ describe('RI-91-A4 RunEngine shop / rest / hire', () => {
     expect(state.phase).toBe('shop');
     // shop RNG キー空文字 / sprintIndex ±1 は並びが変わる。
     expect(state.shop!.cards.map((c) => c.defId)).toEqual(['auto-test', 'pr-size-limit', 'docs']);
-    // auto-test 18*0.8=14.4→14 / docs 15*0.8=12 / pr-size-limit 8*0.8=6.4→6 / relic 30*0.8=24
+    // auto-test 18*0.8=14.4→14 / docs 15*0.8=12 / pr-size-limit 8*0.8=6.4→6 / relic 18*0.8=14.4→14
     expect(Object.fromEntries(state.shop!.cards.map((c) => [c.defId, c.cost]))).toEqual({
       'auto-test': 14,
       docs: 12,
       'pr-size-limit': 6,
     });
-    expect(state.shop?.relic).toEqual({ id: 'postmortem', cost: 24, bought: false });
+    expect(state.shop?.relic).toEqual({
+      id: 'postmortem',
+      cost: Math.round(SHOP_RELIC_COST * 0.8),
+      bought: false,
+    });
     expect(state.shop?.recruit).toEqual({ cost: RECRUIT_COST, bought: false });
-    // * → / だと 30/0.8=37.5→38 になる。
-    expect(state.shop?.relic?.cost).not.toBe(Math.round(30 / 0.8));
+    // * → / だと定価/0.8 になり割引後と一致しない。
+    expect(state.shop?.relic?.cost).not.toBe(Math.round(SHOP_RELIC_COST / 0.8));
   });
 
   it('offerRelic は枠満杯または解放プール空なら relic なし', () => {
@@ -641,7 +646,11 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
       docs: { cost: 12, bought: false },
       'pr-size-limit': { cost: 6, bought: false },
     });
-    expect(state.shop?.relic).toEqual({ id: 'postmortem', cost: 24, bought: false });
+    expect(state.shop?.relic).toEqual({
+      id: 'postmortem',
+      cost: Math.round(SHOP_RELIC_COST * 0.8),
+      bought: false,
+    });
     expect(state.shop?.recruit).toEqual({ cost: RECRUIT_COST, bought: false });
   });
 
@@ -681,7 +690,7 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
     i.relics = [];
     i.shop = {
       cards: [{ defId: 'docs', cost: 12, bought: false }],
-      relic: { id: 'postmortem', cost: 30, bought: false },
+      relic: { id: 'postmortem', cost: SHOP_RELIC_COST, bought: false },
       recruit: { cost: RECRUIT_COST, bought: false },
     };
     const initialRosterSize = i.roster.members.length;
@@ -694,14 +703,14 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
 
     engine.buyShopRelic();
     state = engine.snapshot();
-    expect(state.budget).toBe(38);
+    expect(state.budget).toBe(68 - SHOP_RELIC_COST);
     expect(state.relics).toEqual(['postmortem']);
-    expect(state.shop?.relic).toEqual({ id: 'postmortem', cost: 30, bought: true });
+    expect(state.shop?.relic).toEqual({ id: 'postmortem', cost: SHOP_RELIC_COST, bought: true });
 
     engine.buyShopRecruit();
     state = engine.snapshot();
     expect(state.phase).toBe('shop');
-    expect(state.budget).toBe(13);
+    expect(state.budget).toBe(68 - SHOP_RELIC_COST - RECRUIT_COST);
     expect(state.roster.members).toHaveLength(initialRosterSize + 1);
     expect(state.roster.members.at(-1)).toMatchObject({ assignment: 'bench', aiAssigned: false });
     expect(state.shop?.recruit).toEqual({ cost: RECRUIT_COST, bought: true });

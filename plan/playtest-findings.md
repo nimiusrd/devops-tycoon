@@ -263,7 +263,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | 方針固有の編成の再適用 | ベンチ配置と同じタイミング（`sprint` 以外の全フェーズ）で `spec.ai` / `spec.formation` を掛け直す | 復職者の AI 配布・編成。RI-77 の AI 統制と F-10 のビルド比較 |
 | 高負荷スプリントを受ける条件 | 負荷増分 `load = eliteTaskMul(difficulty) - 1`（難易度別。固定値ではない）を、`(min(シニアHP, 士気) - 45) × 0.15 - (技術的負債 / 100) × 4` に掛ける。低い方が45を上回るぶんが出荷機会、下回るぶんがリスクになる | `elite-offer` の選択。高負荷スプリントの発生数と F-4 の帯判定 |
 | 選択的採用の「欠員」 | 休職者がいる、または実働が2名以下。かつ**採用費を引いた残額**が `RECRUIT_COST`（=25）以上 | `skilledSelectiveHire` の結果 |
-| ショップ購入 | レリック優先、次に安いカードから。残す予算は**採用方針で変える**（採用する方針は次の採用機会のため `RECRUIT_COST`＝25、採用しない方針は四半期レビューの危機条件 `budget<=5` に対する余裕として10）。`skilledShopBuy` は `recruit: 'skip'` なので後者 | `skilledShopBuy` の結果 |
+| ショップ購入 | 次スプリント出荷寄与スコア（カードは `codingSpeedMul` 加速を主・手戻り抑制を副、レリックは加速／手戻り減／レビュー容量）が高い順。残す予算は**採用方針で変える**（採用する方針は次の採用機会のため `RECRUIT_COST`＝25、採用しない方針は四半期レビューの危機条件 `budget<=5` に対する余裕として10）。`skilledShopBuy` は `recruit: 'skip'` なので後者 | `skilledShopBuy` の結果 |
 | 休息の返済方針 | `skilledRestRepay` は休息到達時に必ず `repay`（`stateAware` は他方針との互換用に残す） | `skilledRestRepay` の結果 |
 | F-11 の標本 | 代表4方針（`naive` / `skilledNoHire` / `aiFullBet` / `noAi`）に固定 | RI-86 の分位点 |
 | F-4 の標本 | 代表3方針（`naive` / `skilledNoHire` / `noInterventionCtl`）に固定 | RI-75 の帯外率 |

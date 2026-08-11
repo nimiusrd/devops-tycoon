@@ -478,7 +478,10 @@ describe('RI-91-C3 cards NoCoverage / Survived mutants', () => {
         devin: 4,
         'hire-senior': 4,
       });
-      expect(CARD_DEFS.find((def) => def.id === 'copilot')?.cost).toBe(10);
+      // RI-78: 出荷正側カードの店頭価格を抑える。
+      expect(CARD_DEFS.find((def) => def.id === 'copilot')?.cost).toBe(8);
+      expect(CARD_DEFS.find((def) => def.id === 'claude-code')?.cost).toBe(16);
+      expect(CARD_DEFS.find((def) => def.id === 'feature-flags')?.cost).toBe(11);
     });
 
     it('scaleEffects はレベル係数 k=1+0.5*max(0,level-1) を exact で返す', () => {

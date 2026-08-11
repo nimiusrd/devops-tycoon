@@ -195,8 +195,8 @@ export const REST_REPAY = 30;
 export const REST_REPAY_REWORK_RATE = -0.08;
 /** 休息（upgrade）で次スプリントへ持ち越す集中力上限の増加（RI-78）。 */
 export const REST_UPGRADE_FOCUS_MAX = 2;
-/** ショップのレリック価格（割引前）。 */
-const SHOP_RELIC_COST = 30;
+/** ショップのレリック価格（割引前）。RI-78: 純出荷受入のため定価を抑える。 */
+export const SHOP_RELIC_COST = 18;
 
 export interface RunEngineInit {
   seed?: string;

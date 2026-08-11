@@ -10,8 +10,8 @@
  */
 import { getEvent } from '../../src/data/events';
 import { EVOLUTION_NODES } from '../../src/data/evolution';
-import { CARD_DEFS } from '../../src/data/cards';
-import { RELIC_DEFS } from '../../src/data/relics';
+import { CARD_DEFS, getCard } from '../../src/data/cards';
+import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
 import { assignableTasks } from '../../src/sim/assignTask';
@@ -1601,7 +1601,36 @@ function restUpgradeIndex(s: RunState): number {
 const SHOP_BUDGET_FLOOR = 10;
 
 /**
- * ショップでカード・レリックを買う。レリックを先にするのは枠が有限で買い逃しが効くため。
+ * ショップカードの次スプリント出荷寄与スコア（費用対効果）。
+ * `codingSpeedMul` の加速を主、手戻り抑制を副として cost で割る（RI-78）。
+ */
+export function shopCardDeliveryScore(defId: string, cost: number): number {
+  const base = getCard(defId)?.base ?? {};
+  const codingDelta = (base.codingSpeedMul ?? 1) - 1;
+  const reworkHelp = -(base.reworkRateAdd ?? 0);
+  return (codingDelta * 100 + reworkHelp * 10) / Math.max(1, cost);
+}
+
+/**
+ * ショップレリックの次スプリント出荷寄与スコア（費用対効果）。
+ * コーディング加速・手戻り減・レビュー容量を加点し、士気／事故専用は低得点になる（RI-78）。
+ */
+export function shopRelicDeliveryScore(id: string, cost: number): number {
+  const effects = getRelic(id)?.effects ?? {};
+  const codingDelta = (effects.codingSpeedMul ?? 1) - 1;
+  const reworkHelp = -(effects.reworkRateAdd ?? 0);
+  const reviewCap = (effects.reviewCapacityMul ?? 1) - 1;
+  const reviewEff = (effects.reviewEfficiencyMul ?? 1) - 1;
+  return (
+    (codingDelta * 100 + reworkHelp * 40 + reviewCap * 30 + reviewEff * 15) / Math.max(1, cost)
+  );
+}
+
+/**
+ * ショップでカード・レリックを買う。
+ *
+ * - `shop: 'buy'`（RI-78）: レリック優先／最安順ではなく、次スプリント出荷寄与スコアが高い順に買う。
+ * - `buyCostOpt` / `buyAvoidCostOpt`（RI-88）: コスト最適化の優先／回避を維持する。
  *
  * 残す予算は**採用方針で変える**。採用する方針は次の採用機会のために `RECRUIT_COST` を残すが、
  * 採用しない方針（`skilledShopBuy` は `recruit: 'skip'`）にその予約は要らない。
@@ -1614,6 +1643,7 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
   const reserve = spec.recruit === 'skip' ? SHOP_BUDGET_FLOOR : RECRUIT_COST;
   const avoidCostOpt = spec.shop === 'buyAvoidCostOpt';
   const preferCostOpt = spec.shop === 'buyCostOpt';
+  const deliveryValueBuy = spec.shop === 'buy';
 
   const tryBuyRelic = (onlyCostOpt: boolean): void => {
     const s = e.snapshot();
@@ -1625,6 +1655,41 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
     if (!onlyCostOpt && preferCostOpt && relic.id !== COST_OPT_RELIC_ID) return;
     e.buyShopRelic();
   };
+
+  // RI-78: 出荷価値順。カードとレリックを同じスコア空間で比較して買えるだけ買う。
+  if (deliveryValueBuy) {
+    for (;;) {
+      const s = e.snapshot();
+      if (s.phase !== 'shop') break;
+      type Candidate =
+        | { kind: 'card'; defId: string; score: number }
+        | { kind: 'relic'; score: number };
+      const candidates: Candidate[] = [];
+      for (const c of s.shop?.cards ?? []) {
+        if (c.bought || s.budget - c.cost < reserve) continue;
+        candidates.push({
+          kind: 'card',
+          defId: c.defId,
+          score: shopCardDeliveryScore(c.defId, c.cost),
+        });
+      }
+      const relic = s.shop?.relic;
+      if (relic && !relic.bought && s.budget - relic.cost >= reserve) {
+        candidates.push({ kind: 'relic', score: shopRelicDeliveryScore(relic.id, relic.cost) });
+      }
+      if (candidates.length === 0) break;
+      candidates.sort((a, b) => b.score - a.score);
+      const best = candidates[0];
+      if (best.kind === 'relic') {
+        e.buyShopRelic();
+        if (!e.snapshot().shop?.relic?.bought) break;
+      } else {
+        e.buyShopCard(best.defId);
+        if (!e.snapshot().shop?.cards.find((c) => c.defId === best.defId)?.bought) break;
+      }
+    }
+    return;
+  }
 
   // preferCostOpt では無関係レリックをカードより先に買わない（最適化投資を潰さない）。
   if (preferCostOpt) {

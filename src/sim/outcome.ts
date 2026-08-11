@@ -104,11 +104,14 @@ export interface WinEvalInput {
   diagnosis?: DiagnosisType;
 }
 
+/** 経営勝利に必要な予算下限。汎用キャッチオールにしないよう高めに置く（RI-76）。 */
+export const MANAGEMENT_BUDGET_MIN = 50;
+
 /**
  * ボス突破時に達成した最上位の勝利種別を返す（RI-76）。
  *
  * ノーダメはやり込み枠として高水準の健全指標と健全系診断を要求する。
- * ビルド差が出るよう AI / 幸福 / 経営 / カオスを健全の前に評価し、最後に通常勝利へ落とす。
+ * ビルド差が出るよう AI / カオス / 幸福 / 健全を経営（予算残り）より前に評価し、最後に通常勝利へ落とす。
  */
 export function evaluateWinType(input: WinEvalInput): WinType {
   const { org, totals, budget, usedHeavyActions } = input;
@@ -135,7 +138,8 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'noDamage';
   }
 
-  // AI ビルド: 利用率と検証能力の両立。reviewHell（ピーク16+）・aiOverproduction とは重ならない。
+  // AI ビルド: 利用率と検証能力の両立。失敗診断（渋滞・過生産・手戻り螺旋）とは重ならない。
+  // seniorSacrifice は除外しない（制御された部分 AI が取りやすい形にする）。
   if (
     aiPct >= 0.55 &&
     reworkRatio < 0.22 &&
@@ -143,9 +147,15 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     org.aiLiteracy >= 40 &&
     diagnosis !== 'reviewHell' &&
     diagnosis !== 'aiOverproduction' &&
-    diagnosis !== 'seniorSacrifice'
+    diagnosis !== 'reworkSpiral'
   ) {
     return 'aiSuccess';
+  }
+
+  // 出荷はラン累計（totals.delivered）。選択中チームの org.deliveryScore では他チーム分を取りこぼす。
+  // 予算残りより先に評価し、障害多発ビルドが経営へ吸われないようにする。
+  if (totals.incidents >= 6 && totals.delivered >= 250) {
+    return 'chaos';
   }
 
   // 人を守るビルド。
@@ -153,17 +163,8 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'happiness';
   }
 
-  // 経営余裕。
-  if (budget >= 35) {
-    return 'management';
-  }
-
-  // 出荷はラン累計（totals.delivered）。選択中チームの org.deliveryScore では他チーム分を取りこぼす。
-  if (totals.incidents >= 6 && totals.delivered >= 250) {
-    return 'chaos';
-  }
-
   // 品質・ドキュメント寄りの健全（診断が documentationKingdom なら閾値を緩める。士気下限は維持）。
+  // 経営（予算残り）より先に評価し、品質ビルドが予算だけで潰されないようにする。
   if (
     diagnosis === 'documentationKingdom' &&
     org.quality >= 55 &&
@@ -174,6 +175,11 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   }
   if (org.quality >= 65 && org.morale >= 65 && reworkRatio < 0.2) {
     return 'healthy';
+  }
+
+  // 経営余裕（残差）。閾値を高めにして汎用キャッチオールにしない。
+  if (budget >= MANAGEMENT_BUDGET_MIN) {
+    return 'management';
   }
 
   return 'normal';

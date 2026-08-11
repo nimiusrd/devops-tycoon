@@ -347,6 +347,19 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
+    // seniorSacrifice でもメトリクス充足なら aiSuccess（制御された部分 AI）。
+    win('aiSuccess', {
+      org: { quality: 50, morale: 50, seniorHp: 25, aiLiteracy: 40 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 12,
+        rework: 3,
+        reviewQueuePeak: 12,
+        spread: 1,
+      },
+      budget: 10,
+    });
     win('normal', {
       org: { quality: 50, morale: 50, seniorHp: 30, aiLiteracy: 39 },
       totals: {
@@ -396,7 +409,13 @@ describe('evaluateWinType', () => {
     win('management', {
       org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
       totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
-      budget: 35,
+      budget: 50,
+    });
+    // 旧閾値 35 では経営にせず、他シグネチャも無ければ通常へ落とす。
+    win('normal', {
+      org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 49,
     });
     win('chaos', {
       org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
@@ -412,6 +431,21 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
+    // 予算が高くてもカオス／健全のビルドシグネチャを経営が潰さない。
+    win('chaos', {
+      org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 0,
+        rework: 2,
+        reviewQueuePeak: 4,
+        spread: 1,
+        incidents: 6,
+        delivered: 250,
+      },
+      budget: 80,
+    });
     win('healthy', {
       org: {
         quality: 65,
@@ -423,6 +457,18 @@ describe('evaluateWinType', () => {
       },
       totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
       budget: 10,
+    });
+    win('healthy', {
+      org: {
+        quality: 65,
+        morale: 65,
+        seniorHp: 30,
+        aiLiteracy: 50,
+        testCoverage: 40,
+        documentation: 40,
+      },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 80,
     });
     win('healthy', {
       org: {

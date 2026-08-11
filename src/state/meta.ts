@@ -363,7 +363,7 @@ const WIN_TITLE_HINTS: Record<WinType, string> = {
   healthy: '出荷・品質・士気をすべて高く保ってボスを突破する',
   aiSuccess:
     'AI 利用率を高め、AI リテラシー 40 以上を維持しつつ、手戻りとレビュー渋滞を抑えてボスを突破する',
-  management: '予算に余裕を残してボスを突破する',
+  management: '予算を十分に残し、他の勝利種別の条件を満たさずにボスを突破する',
   happiness: 'Morale とシニア体力を高く保ってボスを突破する',
   chaos: '障害を乗り越えて高い出荷を達成し、ボスを突破する',
   noDamage:

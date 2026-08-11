@@ -5,7 +5,7 @@ description = "Workspace access with Docker Desktop"
 extends = ":workspace"
 
 [permissions.workspace-docker.network]
-enabled = true
+enabled = false
 
 [permissions.workspace-docker.network.unix_sockets]
-"/Users/nimius/.docker/run/docker.sock" = "allow"
+"/var/run/docker.sock" = "allow"

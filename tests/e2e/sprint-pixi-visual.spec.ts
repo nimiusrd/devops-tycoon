@@ -179,6 +179,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
 
   test('武装→canvas 上の粒ドラッグでタスク差配が確定する @pixi（RI-30）', async ({ page }) => {
     // 序盤（coding/backlog に差配候補が残っている状態）で武装する。
+    await page.setViewportSize({ width: 1440, height: 900 });
     await openPixiSprintBoard(page, PIXI_SEED, 0);
     await stabilizeForScreenshot(page);
 

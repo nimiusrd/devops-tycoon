@@ -2,7 +2,11 @@
  * 盤面ドラッグ計画のテスト（RI-30）。
  */
 import { describe, expect, it } from 'vitest';
-import { hitTestDropLane, planBoardDrag } from '../../../src/render/boardDragPlan';
+import {
+  clientToBoardPoint,
+  hitTestDropLane,
+  planBoardDrag,
+} from '../../../src/render/boardDragPlan';
 import { createOrgState } from '../../../src/sim/org';
 import { createSprint, resolveSprintConfig } from '../../../src/sim/sprint';
 import type { Task } from '../../../src/sim/types';
@@ -89,5 +93,13 @@ describe('hitTestDropLane', () => {
   it('coding ステーション近傍をヒットする', () => {
     expect(hitTestDropLane(622, 251, ['backlog', 'coding'])).toBe('coding');
     expect(hitTestDropLane(0, 0, ['backlog', 'coding'])).toBeNull();
+  });
+});
+
+describe('clientToBoardPoint', () => {
+  it('ゼロサイズの盤面では有限な原点を返す', () => {
+    const point = clientToBoardPoint(20, 30, { left: 0, top: 0, width: 0, height: 0 } as DOMRect);
+
+    expect(point).toEqual({ x: 0, y: 0 });
   });
 });

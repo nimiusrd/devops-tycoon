@@ -99,6 +99,14 @@ export function clientToBoardPoint(
   clientY: number,
   boardRect: DOMRect,
 ): { x: number; y: number } {
+  if (
+    !Number.isFinite(boardRect.width) ||
+    !Number.isFinite(boardRect.height) ||
+    boardRect.width <= 0 ||
+    boardRect.height <= 0
+  ) {
+    return { x: 0, y: 0 };
+  }
   const x = ((clientX - boardRect.left) / boardRect.width) * BOARD_VIEW.w;
   const y = ((clientY - boardRect.top) / boardRect.height) * BOARD_VIEW.h;
   return { x, y };

@@ -31,6 +31,7 @@ import { StationActor } from '../ui/OfficeActors';
 import { usePixiRenderer } from '../ui/usePixiRenderer';
 import { deriveMemberMoodOverrides } from './memberMood';
 import {
+  BOARD_VIEW,
   planBoardScene,
   type BoardDotPlan,
   type BoardFlow,
@@ -38,7 +39,6 @@ import {
 } from './boardScene';
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS, TASK_DIAMETER } from './taskView';
-import { useContainFit } from '../ui/useContainFit';
 import { pct } from '../ui/pct';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
@@ -46,9 +46,8 @@ const BoardPixiLayer = lazy(() =>
   import('../ui/BoardPixiLayer').then((m) => ({ default: m.BoardPixiLayer })),
 );
 
-const VIEW_W = 1404;
-const VIEW_H = 573;
-const VIEW_RATIO = VIEW_W / VIEW_H;
+const VIEW_W = BOARD_VIEW.w;
+const VIEW_H = BOARD_VIEW.h;
 
 function TaskDot({
   dot,
@@ -274,7 +273,6 @@ export function Board({
   const heat = scene.stations.reduce((m, s) => Math.max(m, s.heat), 0);
 
   const boardRef = useRef<HTMLDivElement>(null);
-  useContainFit(boardRef, VIEW_RATIO);
   const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
 
   const dragPlan =

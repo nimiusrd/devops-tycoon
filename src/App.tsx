@@ -128,6 +128,7 @@ export default function App({ game }: AppProps) {
   const [cardCollectionOpen, setCardCollectionOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [replayListOpen, setReplayListOpen] = useState(false);
+  const [hudExpanded, setHudExpanded] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
@@ -378,6 +379,8 @@ export default function App({ game }: AppProps) {
         snapshotScope={hudSnapshotScope}
         getInitialPreviousSnapshot={getLastHudSnapshot}
         onSnapshotCaptured={rememberHudSnapshot}
+        expanded={hudExpanded}
+        onExpandedChange={setHudExpanded}
       />
       <RunBar
         state={state}

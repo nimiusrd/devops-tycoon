@@ -222,6 +222,10 @@ export interface HudProps {
   getInitialPreviousSnapshot?: (scope: HudSnapshotScope) => HudMetricSnapshot | null;
   /** 親がHUD非表示期間をまたいで最後の表示値を保持するための通知。 */
   onSnapshotCaptured?: (snapshot: HudMetricSnapshot, scope: HudSnapshotScope) => void;
+  /** 狭幅時のKPI展開状態。未指定時はHUD内部で管理する。 */
+  expanded?: boolean;
+  /** 狭幅時のKPI展開状態が変わったときの通知。 */
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 function CompactChip({ metric }: { metric: StatusMetricView }) {
@@ -255,6 +259,8 @@ export function Hud({
   snapshotScope,
   getInitialPreviousSnapshot,
   onSnapshotCaptured,
+  expanded: expandedProp,
+  onExpandedChange,
 }: HudProps) {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const snapshot = useMemo(() => hudMetricSnapshot(s), [s]);
@@ -265,7 +271,8 @@ export function Hud({
   const feedbackTimers = useRef(new Set<ReturnType<typeof window.setTimeout>>());
   const [feedbacks, setFeedbacks] = useState<ActiveHudFeedback[]>([]);
   const narrow = useNarrowHud();
-  const [expanded, setExpanded] = useState(false);
+  const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
+  const expanded = expandedProp ?? uncontrolledExpanded;
   // 広幅では常にフル表示。expanded は狭幅のときだけ効く（リサイズ時にリセットしない）。
   const compact = narrow && !expanded;
   const compactMetrics = useMemo(() => pickCompactMetrics(metrics), [metrics]);
@@ -323,6 +330,11 @@ export function Hud({
 
   const feedbackByKey = new Map(feedbacks.map((feedback) => [feedback.key, feedback]));
   const hudClass = compact ? 'hud hud-compact' : 'hud';
+  const toggleExpanded = () => {
+    const nextExpanded = !expanded;
+    if (expandedProp === undefined) setUncontrolledExpanded(nextExpanded);
+    onExpandedChange?.(nextExpanded);
+  };
 
   return (
     <header className={hudClass} data-testid="hud" data-compact={compact ? 'true' : 'false'}>
@@ -333,7 +345,7 @@ export function Hud({
           data-testid="hud-toggle"
           aria-expanded={expanded}
           aria-controls="hud-metrics"
-          onClick={() => setExpanded((value) => !value)}
+          onClick={toggleExpanded}
         >
           {expanded ? 'KPIを畳む' : 'KPIを展開'}
         </button>

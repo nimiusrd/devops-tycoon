@@ -397,6 +397,25 @@ test('スプリント画面は5つの名前付きスロットへ領域を配置�
   await expect(layout.locator('[data-testid="sprint-result"]')).toHaveCount(0);
 });
 
+test('狭幅で展開したKPIをsetupからsprintへ維持する', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await advancePublicRun(page, {
+    seed: 'ri95-hud-expanded-0',
+    target: { phase: 'setup' },
+  });
+
+  const hud = page.getByTestId('hud');
+  const toggle = page.getByTestId('hud-toggle');
+  await expect(hud).toHaveAttribute('data-compact', 'true');
+  await toggle.click();
+  await expect(hud).toHaveAttribute('data-compact', 'false');
+
+  await beginCurrentSetupSprint(page);
+
+  await expect(page.getByTestId('hud')).toHaveAttribute('data-compact', 'false');
+  await expect(page.getByTestId('hud-toggle')).toHaveAttribute('aria-expanded', 'true');
+});
+
 test('デスクトップ幅で sprint-subbar と board が重ならない', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await beginPublicSprint(page, { seed: 'sprint-layout-ri69' });

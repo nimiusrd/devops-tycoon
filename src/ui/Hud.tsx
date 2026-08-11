@@ -24,10 +24,9 @@ import {
 import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
 import { formatSigned } from './formatSigned';
+import { useResponsiveMode } from './responsiveMode';
 
 const FEEDBACK_TTL_MS = 1000;
-/** 狭幅ブレークポイント（styles.css の 860px と同期）。 */
-const NARROW_HUD_QUERY = '(max-width: 860px)';
 /** 要約チップの上限。危険トーンを優先し、残りは主要指標で埋める。 */
 const COMPACT_CHIP_LIMIT = 5;
 const COMPACT_PRIORITY_IDS: StatusMetricId[] = [
@@ -45,22 +44,6 @@ const TONE_RANK: Record<StatusMetricTone, number> = {
   watch: 1,
   good: 2,
 };
-
-function useNarrowHud(): boolean {
-  const [narrow, setNarrow] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia(NARROW_HUD_QUERY).matches : false,
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia(NARROW_HUD_QUERY);
-    const onChange = () => setNarrow(mq.matches);
-    onChange();
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-
-  return narrow;
-}
 
 function pickCompactMetrics(metrics: StatusMetricView[]): StatusMetricView[] {
   const byId = new Map(metrics.map((metric) => [metric.id, metric]));
@@ -270,7 +253,8 @@ export function Hud({
   const nextFeedbackId = useRef(0);
   const feedbackTimers = useRef(new Set<ReturnType<typeof window.setTimeout>>());
   const [feedbacks, setFeedbacks] = useState<ActiveHudFeedback[]>([]);
-  const narrow = useNarrowHud();
+  const responsiveMode = useResponsiveMode();
+  const narrow = responsiveMode.width === 'narrow';
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
   const expanded = expandedProp ?? uncontrolledExpanded;
   // 広幅では常にフル表示。expanded は狭幅のときだけ効く（リサイズ時にリセットしない）。
@@ -337,7 +321,13 @@ export function Hud({
   };
 
   return (
-    <header className={hudClass} data-testid="hud" data-compact={compact ? 'true' : 'false'}>
+    <header
+      className={hudClass}
+      data-testid="hud"
+      data-compact={compact ? 'true' : 'false'}
+      data-responsive-width={responsiveMode.width}
+      data-responsive-height={responsiveMode.height}
+    >
       {narrow && (
         <button
           type="button"

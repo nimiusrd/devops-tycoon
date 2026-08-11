@@ -102,10 +102,8 @@
   padding-bottom: 30px;
 }
 
-@media (min-width: 861px) {
-  .root :global(.stat-detail) {
-    display: none;
-  }
+.root[data-responsive-width='wide'] :global(.stat-detail) {
+  display: none;
 }
 
 .root :global(.runbar),
@@ -201,109 +199,107 @@
   max-width: 100%;
 }
 
-@media (min-width: 861px) {
-  .root :global(.action .effect-tag) {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+.root[data-responsive-width='wide'] :global(.action .effect-tag) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-@media (max-height: 720px), (max-width: 860px) {
-  /* KPI 展開時は内容高を確保し、既存のページ内スクロール範囲を維持する。 */
-  :global(.app).appShell:not(:has(:global(.hud.hud-compact))) {
-    max-height: none;
-    overflow: visible;
-  }
-
-  .root:not(:has(:global(.hud.hud-compact))) {
-    flex: 1 1 auto;
-    max-height: none;
-    overflow: visible;
-  }
-
-  .root:not(:has(:global(.hud.hud-compact))) .stageSlot {
-    flex: 1 1 auto;
-    min-height: clamp(140px, 28vh, 320px);
-    overflow: hidden;
-  }
+/* KPI 展開時は内容高を確保し、既存のページ内スクロール範囲を維持する。 */
+:global(.app).appShell[data-responsive-height='short']:not(:has(:global(.hud.hud-compact))),
+:global(.app).appShell[data-responsive-width='narrow']:not(:has(:global(.hud.hud-compact))) {
+  max-height: none;
+  overflow: visible;
 }
 
-@media (max-width: 860px) {
-  .root:has(:global(.hud.hud-compact)) {
-    max-height: 100%;
-    overflow-y: auto;
-  }
+.root[data-responsive-height='short']:not(:has(:global(.hud.hud-compact))),
+.root[data-responsive-width='narrow']:not(:has(:global(.hud.hud-compact))) {
+  flex: 1 1 auto;
+  max-height: none;
+  overflow: visible;
+}
 
-  .root:has(:global(.hud.hud-compact)) .stageSlot {
-    flex: 1 1 0;
-    /* 0 だと短い画面で盤面だけ潰れ切る。親は overflow-y:auto なので超過分はスクロールへ */
-    min-height: clamp(96px, 18vh, 220px);
-    overflow: hidden;
-  }
+.root[data-responsive-height='short']:not(:has(:global(.hud.hud-compact))) .stageSlot,
+.root[data-responsive-width='narrow']:not(:has(:global(.hud.hud-compact))) .stageSlot {
+  flex: 1 1 auto;
+  min-height: clamp(140px, 28vh, 320px);
+  overflow: hidden;
+}
 
-  .root:has(:global(.hud.hud-compact)) .controlsSlot {
-    position: sticky;
-    bottom: 0;
-    z-index: 6;
-  }
+.root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) {
+  max-height: 100%;
+  overflow-y: auto;
+}
 
-  .root:has(:global(.hud.hud-compact)) :global(.actionbar) {
-    position: static;
-  }
+.root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) .stageSlot {
+  flex: 1 1 0;
+  /* 0 だと短い画面で盤面だけ潰れ切る。親は overflow-y:auto なので超過分はスクロールへ */
+  min-height: clamp(96px, 18vh, 220px);
+  overflow: hidden;
+}
 
-  /*
-   * focus と 4 列カードを横並びのままにすると各カードが数十 px になり、
-   * 運用安定の要約が実質読めない。focus（と武装時の担当選択）を上段へ逃がし、
-   * actions を全幅にしてタグ幅を確保する。担当選択は横並びで同段に収める。
-   */
-  .root :global(.actionbar) {
-    flex-wrap: wrap;
-    align-items: stretch;
-  }
+.root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) .controlsSlot {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+}
 
-  .root :global(.focus) {
-    min-width: 0;
-    flex: 1 1 auto;
-    border-right: none;
-    border-bottom: 2px solid var(--line);
-    padding: 2px 4px 6px;
-  }
+.root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) :global(.actionbar) {
+  position: static;
+}
 
-  .root :global(.assign-assignee) {
-    flex: 0 1 auto;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
-    min-width: 0;
-    border-right: none;
-    border-bottom: 2px solid var(--line);
-    padding: 2px 4px 6px 0;
-  }
+/*
+ * focus と 4 列カードを横並びのままにすると各カードが数十 px になり、
+ * 運用安定の要約が実質読めない。focus（と武装時の担当選択）を上段へ逃がし、
+ * actions を全幅にしてタグ幅を確保する。担当選択は横並びで同段に収める。
+ */
+.root[data-responsive-width='narrow'] :global(.actionbar) {
+  flex-wrap: wrap;
+  align-items: stretch;
+}
 
-  .root :global(.actions) {
-    flex: 1 1 100%;
-  }
+.root[data-responsive-width='narrow'] :global(.focus) {
+  min-width: 0;
+  flex: 1 1 auto;
+  border-right: none;
+  border-bottom: 2px solid var(--line);
+  padding: 2px 4px 6px;
+}
 
-  .root :global(.action .effect-tag) {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: unset;
-    line-height: 1.2;
-  }
+.root[data-responsive-width='narrow'] :global(.assign-assignee) {
+  flex: 0 1 auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  border-right: none;
+  border-bottom: 2px solid var(--line);
+  padding: 2px 4px 6px 0;
+}
+
+.root[data-responsive-width='narrow'] :global(.actions) {
+  flex: 1 1 100%;
+}
+
+.root[data-responsive-width='narrow'] :global(.action .effect-tag) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  line-height: 1.2;
 }
 
 /* 短い viewport（SE 縦や横向き）では contain を緩め、盤面最低高を優先する。 */
-@media (max-width: 860px) and (max-height: 720px) {
-  .root:has(:global(.hud.hud-compact)) {
-    max-height: none;
-    overflow-y: auto;
-  }
+.root[data-responsive-width='narrow'][data-responsive-height='short']:has(
+    :global(.hud.hud-compact)
+  ) {
+  max-height: none;
+  overflow-y: auto;
+}
 
-  .root:has(:global(.hud.hud-compact)) .stageSlot {
-    flex: 1 1 auto;
-    min-height: clamp(140px, 28vh, 320px);
-    overflow: hidden;
-  }
+.root[data-responsive-width='narrow'][data-responsive-height='short']:has(:global(.hud.hud-compact))
+  .stageSlot {
+  flex: 1 1 auto;
+  min-height: clamp(140px, 28vh, 320px);
+  overflow: hidden;
 }

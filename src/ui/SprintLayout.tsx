@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import styles from './SprintLayout.module.css';
+import { useResponsiveMode } from './responsiveMode';
 
 const SPRINT_LAYOUT_SLOTS = ['header', 'status', 'stage', 'deck', 'controls'] as const;
 
@@ -42,13 +43,19 @@ export function SprintLayout({
   controls,
   overlays,
 }: SprintLayoutProps) {
+  const responsiveMode = useResponsiveMode();
   const slots = { header, status, stage, deck, controls } satisfies Record<
     SprintLayoutSlot,
     ReactNode
   >;
 
   return (
-    <div className={`sprint-layout ${styles.root}`} data-testid="sprint-layout">
+    <div
+      className={`sprint-layout ${styles.root}`}
+      data-testid="sprint-layout"
+      data-responsive-width={responsiveMode.width}
+      data-responsive-height={responsiveMode.height}
+    >
       {SPRINT_LAYOUT_SLOTS.map((name) => (
         <SprintLayoutSlotView key={name} name={name}>
           {slots[name]}

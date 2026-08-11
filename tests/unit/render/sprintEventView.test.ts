@@ -36,6 +36,39 @@ describe('sprintEventView（RI-52）', () => {
     expect(view.text).toContain('シニアHP -3');
   });
 
+  it('余裕のある先消しの介入行は警告トーンにする', () => {
+    const urgent = formatSprintEvent({
+      tick: 4,
+      kind: 'intervention',
+      combo: 4,
+      effect: {
+        actionId: 'firefight',
+        focusCost: 2,
+        gaugeGain: 0.2,
+        containedTaskId: 1,
+        hpCost: 5,
+      },
+    });
+    expect(urgent.tone).toBe('good');
+
+    const light = formatSprintEvent({
+      tick: 5,
+      kind: 'intervention',
+      combo: 0,
+      effect: {
+        actionId: 'firefight',
+        focusCost: 2,
+        gaugeGain: 0.2,
+        containedTaskId: 1,
+        hpCost: 11,
+        moraleCost: 5,
+        brokeCombo: true,
+      },
+    });
+    expect(light.tone).toBe('warn');
+    expect(light.text).toContain('緊急対応');
+  });
+
   it('鎮火成功とコンボ途切れを文言化する', () => {
     expect(formatSprintEvent({ tick: 5, kind: 'contain', taskId: 1, combo: 4 }).text).toBe(
       '鎮火成功 → コンボ x4 継続',

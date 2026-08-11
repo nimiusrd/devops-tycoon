@@ -276,6 +276,7 @@ const EFFECTS: Record<
       containedTaskId,
       hpCost: hp.spent,
       ...(moraleSpent > 0 ? { moraleCost: moraleSpent } : {}),
+      ...(lightTouch ? { brokeCombo: true as const } : {}),
     };
   },
 

@@ -55,8 +55,14 @@ function formatIntervention(
   }
 
   const detail = parts.length > 0 ? `: ${parts.join(' / ')}` : '';
-  const tone: SprintEventView['tone'] =
-    effect.actionId === 'firefight' ? 'good' : effect.hpCost || effect.moraleCost ? 'warn' : 'info';
+  // 緊急鎮火のみ成功トーン。余裕のある先消しは contain / combo-break と同列の警告（RI-73）。
+  const tone: SprintEventView['tone'] = effect.brokeCombo
+    ? 'warn'
+    : effect.actionId === 'firefight'
+      ? 'good'
+      : effect.hpCost || effect.moraleCost
+        ? 'warn'
+        : 'info';
 
   return {
     key: interventionKey(event),

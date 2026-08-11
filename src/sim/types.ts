@@ -164,6 +164,11 @@ export interface InterventionEffect {
   reviewedCount?: number;
   /** 鎮火したタスク ID。 */
   containedTaskId?: number;
+  /**
+   * 余裕のある先消しでコンボを切ったとき true（RI-73 / F-1）。
+   * ティッカーの介入行を成功トーンにしないための印。
+   */
+  brokeCombo?: boolean;
   /** 消費したシニアHP（追加コスト分）。 */
   hpCost?: number;
   /** 消費した士気。 */

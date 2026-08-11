@@ -7,7 +7,7 @@
  *
  * RI-12: 非タイトル画面は動的 import（React.lazy）でチャンク分割する。
  */
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
@@ -88,7 +88,7 @@ const SprintScreen = lazy(() => loadSprintScreen().then((m) => ({ default: m.Spr
  * 既に E2E 等で pause 済みなら触らず、自分が止めた epoch のままなら resume する。
  * （読込中に外部が再 pause したら epoch が進むので誤 resume しない。）
  */
-function SprintSuspendFallback({ game }: { game: GameHandle }) {
+function SprintSuspendFallback({ game, header }: { game: GameHandle; header: ReactNode }) {
   useEffect(() => {
     if (game.isPaused()) return;
     game.pause();
@@ -97,7 +97,7 @@ function SprintSuspendFallback({ game }: { game: GameHandle }) {
       if (game.getPauseEpoch() === epoch) game.resume();
     };
   }, [game]);
-  return null;
+  return <div className="sprint-layout sprint-layout-fallback">{header}</div>;
 }
 
 /** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
@@ -128,6 +128,7 @@ export default function App({ game }: AppProps) {
   const [cardCollectionOpen, setCardCollectionOpen] = useState(false);
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [replayListOpen, setReplayListOpen] = useState(false);
+  const [hudExpanded, setHudExpanded] = useState(false);
   const [tutorialMode] = useState<TutorialQuery>(() => resolveTutorialFromLocation());
   const [helpOpen, setHelpOpen] = useState(() => resolveTutorialFromLocation() === 'help');
   /** ガイドを閉じたラン世代。`runEpoch` は startRun ごとに増える（sprintId 再利用に依存しない）。 */
@@ -362,14 +363,8 @@ export default function App({ game }: AppProps) {
 
   const sprintLayout = showSprint;
   const diagnosisTone = diagnosisTheme(state.diagnosis).toneClass;
-
-  return (
-    <div
-      className={`app ${diagnosisTone}${sprintLayout ? ' app-sprint-layout' : ''}`}
-      data-phase={phase}
-      data-diagnosis={state.diagnosis}
-    >
-      {replayBanner}
+  const sprintHeader = (
+    <>
       <Hud
         org={state.org}
         orgScale={state.orgScale}
@@ -384,6 +379,8 @@ export default function App({ game }: AppProps) {
         snapshotScope={hudSnapshotScope}
         getInitialPreviousSnapshot={getLastHudSnapshot}
         onSnapshotCaptured={rememberHudSnapshot}
+        expanded={hudExpanded}
+        onExpandedChange={setHudExpanded}
       />
       <RunBar
         state={state}
@@ -393,6 +390,17 @@ export default function App({ game }: AppProps) {
         getInitialPreviousSnapshot={getLastRunMetricSnapshot}
         onSnapshotCaptured={rememberRunMetricSnapshot}
       />
+    </>
+  );
+
+  return (
+    <div
+      className={`app ${diagnosisTone}${sprintLayout ? ' app-sprint-layout' : ''}`}
+      data-phase={phase}
+      data-diagnosis={state.diagnosis}
+    >
+      {replayBanner}
+      {!sprintLayout && sprintHeader}
 
       {/*
         各 lazy 画面を別 Suspense に分ける。
@@ -409,10 +417,11 @@ export default function App({ game }: AppProps) {
           />
         )}
       </Suspense>
-      <Suspense fallback={<SprintSuspendFallback game={game} />}>
+      <Suspense fallback={<SprintSuspendFallback game={game} header={sprintHeader} />}>
         {showSprint && (
           <SprintScreen
             state={state}
+            header={sprintHeader}
             onDispatch={run.dispatch}
             onPlayCard={run.playCard}
             getSprintSnapshot={run.getSprintSnapshot}

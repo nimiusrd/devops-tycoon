@@ -17,7 +17,7 @@
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観 | [architecture.md](./architecture.md) §7 | ✅ |
 | [3](../SPEC.md#3-ゲームの基本ループ) | 複数四半期ラン、固定トラック、ビート | `src/sim/run/engine.ts`, `phases.ts`, `events.ts`, `tests/unit/sim/runLoop.test.ts` | ✅ |
 | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | テンポと速度操作 | `src/ui/sprintTempo.ts`, `tests/unit/ui/sprintTempo.test.ts`, `tests/unit/helpers/pacingStats.ts` | ✅ |
-| [4.1〜4.6](../SPEC.md#4-ゲーム画面) | 現場、HUD、介入、ビート、進化、リザルト | `src/ui/*Screen.tsx`, `src/sim/actions.ts`, `src/render/boardScene.ts`, `tests/e2e/sprint-layout.spec.ts`, `tests/e2e/sprint-pixi-visual.spec.ts` | 🟡 主要機能とRI-69／RI-70の個別症状、およびRI-94の5 viewportレイアウト契約・代表DOM/Pixi合成回帰は固定済み。子コンテンツの変更で再崩壊する構造の解消はRI-93（実装単位RI-95〜100） |
+| [4.1〜4.6](../SPEC.md#4-ゲーム画面) | 現場、HUD、介入、ビート、進化、リザルト | `src/ui/*Screen.tsx`, `src/ui/SprintLayout.tsx`, `src/sim/actions.ts`, `src/render/boardScene.ts`, `tests/e2e/sprint-layout.spec.ts`, `tests/e2e/sprint-pixi-visual.spec.ts` | 🟡 主要機能、RI-69／RI-70の個別症状、RI-94の5 viewport契約、RI-95の名前付きスロット構造を固定済み。盤面サイズ計算の共通化とCSS／トークンの構造的解消はRI-96〜99 |
 | [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビューと継続 | `QuarterReviewScreen.tsx`, `quarterReview.ts`, `goalAdjustments.ts` | ✅ Delivery KPI は四半期累計スケールで整合（RI-68） |
 | [4.7〜4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 独立チーム、部署・全社・業界、ドリルダウン | `src/sim/orgscale/`, `OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx` | 🟡 機能は実装済み。盤面ごとに重複するサイズ計算と固定高の共通化はRI-100 |
 | [5](../SPEC.md#5-プレイヤーが操作するリソース) | 組織・集中力・予算・進化資源 | `src/sim/types.ts`, `src/sim/org.ts`, `src/sim/run/types.ts` | ✅ |
@@ -35,7 +35,7 @@
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-1・F-2・F-8・F-10・F-11 が未充足でRI-73〜87。F-7 は RI-73 で導入難易度側の≈20%帯を充足（F-1 は残）。F-4 は RI-75／RI-85、F-5 は RI-84、F-6 は RI-82、F-12 は RI-81 で実装済み。F-9 の「打てた手」観測は RI-89 で計測可能（差の再計測は playtest:report 参照）。F-3 は未検証 |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
-| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存は実装済み。公開 `GameHandle` による状態fixtureと5 viewport回帰はRI-94で固定し、UIレイアウト境界の構造的解消はRI-93（実装単位RI-95〜100） |
+| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、SprintLayoutの名前付きスロットを実装済み。盤面サイズ計算・CSS境界・共有トークンの構造的解消はRI-96〜99 |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ等は実装済み | 🟡 残候補はRI-34 |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
 

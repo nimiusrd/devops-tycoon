@@ -110,12 +110,13 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 ### RI-76 勝利種別が実質2種で、最も受動的なプレイが最上位勝利を取る — 完了
 
 `evaluateWinType` を診断・ビルド指標ベースへ再設計し、評価順を
-`noDamage → aiSuccess → happiness → chaos → healthy → management → normal` とした。
-カオスは累計障害20以上、経営は予算50以上とし、予算残りでカオス／健全が潰れないようにした。
+`noDamage → aiSuccess → documentationKingdom健全 → happiness → chaos → healthy → management → normal` とした。
+カオスは累計障害20以上、経営は予算50以上、幸福は士気70・シニアHP45以上。
 ノーダメは高水準の健全指標＋健全系診断を要求し、受動プレイでは到達しない。
-ユニットで代表ビルド入力の分岐を固定し、現行 1,480ランでは 113勝（`chaos` 64 / `healthy` 32 / `happiness` 17）。
-方針別最頻勝利種別（modal）は `chaos` / `healthy` / `happiness` の3種に分かれ、F-10 受入を充足した。
-`playtest:report` の F-10 節で全体種別数と modal 多様性を合否表示する。
+ユニットで代表ビルド入力の分岐を固定し、現行 1,480ランでは 113勝（`happiness` 47 / `chaos` 44 / `healthy` 22）。
+F-10 受入はビルド方針（`aiFullBet` / `harness*` / `noAi` / `reviewHeavy`）だけで判定し、
+最低勝利数2・同率 modal 除外・共通 seed 分岐・既定コホート世代一致を要求する。
+現行では F-10 modal が `chaos` / `happiness` / `healthy` の3種（`aiFullBet` / `noAi` / `reviewHeavy`）で PASS。
 
 ### RI-77 AI 導入が既定 ON で、既定のまま進むのが有利 — 実装済・コホート再計測待ち
 

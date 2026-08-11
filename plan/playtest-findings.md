@@ -346,7 +346,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | F-7 | ~~初見相当の勝率が全難易度 0/10~~ → easy/normal で `naive` 1/10（10%）。`idle` は全難易度 0/10 | RI-73（F-7 完了） |
 | F-8 | Nightmare は330ラン全敗し、打つ機会が一度も無い。「何スプリント前から実質的な選択肢が消えたか」は未計測（RI-89 は機械的発動可否のみで、回避有効性の反実仮想は未実装） | RI-74 |
 | F-9 | 進行速度と決着位置は敗因ごとに違う。「打てた手」の観測手段は RI-89 で追加済み（差の再計測は playtest:report） | RI-89（完了） |
-| F-10 | ~~ビルドごとの勝ち筋が勝利種別に表れない~~ → 現行 1,480ランで `chaos` / `healthy` / `happiness` が出現し、方針別 modal も3種に分岐 | RI-76（完了） |
+| F-10 | ~~ビルドごとの勝ち筋が勝利種別に表れない~~ → F-10ビルド方針の modal が `chaos` / `happiness` / `healthy` の3種（minWins=2・共通seed分岐あり） | RI-76（完了） |
 | F-11 | 希少性・分岐多様化は実装済みだが、厳密な過半判定で方向確定は 5/40（12.5%）となり、受入閾値 20/40（50%）未達 | RI-86（進行中） |
 | F-12 | ~~ドラフトのマリガンが無い~~ → RI-81 でマリガンを実装済み | RI-81（完了） |
 
@@ -421,47 +421,49 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 ### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）— 完了
 
 現行コホートは **1,480ラン中113勝（敗北1,367）**で、勝利種別の内訳は
-`chaos` 64 / `healthy` 32 / `happiness` 17。`management` / `noDamage` /
+`happiness` 47 / `chaos` 44 / `healthy` 22。`management` / `noDamage` /
 `aiSuccess` / `normal` は 0件だった。
-方針別最頻勝利種別（modal）は `chaos` / `healthy` / `happiness` の3種に分かれ、
-F-10 の受入（全体3種以上かつ方針別 modal 3種以上）を充足した。`noDamage` の量産もない。
+F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimized` / `noAi` /
+`reviewHeavy`）だけで判定し、最低勝利数2・同率 modal 除外・共通 seed 分岐・既定コホートを要求する。
+現行の F-10 modal は `aiFullBet=chaos` / `noAi=happiness` / `reviewHeavy=healthy` の3種で PASS。
+`noDamage` の量産もない。
 
 勝利があった方針だけを列挙する。
 
 | 方針 | 勝利種別 |
 | --- | --- |
-| `adjCutScope` | `happiness` 1 / `chaos` 3 |
-| `adjExtendDeadline` | `chaos` 3 / `healthy` 2 |
-| `adjPauseAiRollout` | `happiness` 2 / `chaos` 4 / `healthy` 4 |
+| `adjCutScope` | `happiness` 3 / `chaos` 1 |
+| `adjExtendDeadline` | `happiness` 2 / `chaos` 3 |
+| `adjPauseAiRollout` | `happiness` 6 / `chaos` 3 / `healthy` 1 |
 | `adjQualityPivot` | `happiness` 1 / `chaos` 5 / `healthy` 1 |
-| `adjReorgTeams` | `happiness` 1 / `chaos` 2 / `healthy` 3 |
-| `adjRequestBudget` | `chaos` 3 / `healthy` 1 |
-| `adjStakeholderCare` | `happiness` 1 / `chaos` 3 |
+| `adjReorgTeams` | `happiness` 3 / `chaos` 1 / `healthy` 2 |
+| `adjRequestBudget` | `happiness` 1 / `chaos` 2 / `healthy` 1 |
+| `adjStakeholderCare` | `happiness` 2 / `chaos` 2 |
 | `aiFullBet` | `chaos` 2 / `healthy` 1 |
-| `harnessBloated` | `healthy` 1 |
-| `harnessOptimized` | `healthy` 1 |
-| `naive` | `chaos` 3 / `healthy` 1 |
+| `harnessBloated` | `happiness` 1 |
+| `harnessOptimized` | `happiness` 1 |
+| `naive` | `happiness` 1 / `chaos` 2 / `healthy` 1 |
 | `naiveNoInterventionCtl` | `healthy` 1 |
-| `noAi` | `happiness` 1 / `chaos` 1 |
-| `noAiCtl` | `chaos` 1 / `healthy` 2 |
+| `noAi` | `happiness` 2 |
+| `noAiCtl` | `happiness` 1 / `chaos` 1 / `healthy` 1 |
 | `noInterventionCtl` | `happiness` 1 / `chaos` 3 |
-| `onlyAndon` | `happiness` 2 / `chaos` 1 |
-| `onlyAssign` | `chaos` 2 / `healthy` 1 |
+| `onlyAndon` | `happiness` 3 |
+| `onlyAssign` | `happiness` 3 |
 | `onlyFirefight` | `chaos` 1 / `healthy` 1 |
 | `onlyInterrupt` | `chaos` 1 / `healthy` 2 |
 | `onlyPair` | `chaos` 2 / `healthy` 2 |
-| `onlySplit` | `chaos` 2 |
+| `onlySplit` | `happiness` 1 / `chaos` 1 |
 | `onlyThrottle` | `chaos` 1 / `healthy` 2 |
 | `passive` | `chaos` 1 |
 | `reviewHeavy` | `healthy` 2 |
 | `skilled` | `happiness` 1 |
-| `skilledNoCards` | `happiness` 1 / `chaos` 2 / `healthy` 1 |
-| `skilledNoHire` | `happiness` 1 / `chaos` 3 |
-| `skilledSelectiveCards` | `happiness` 1 / `chaos` 3 |
-| `skilledSelectiveHire` | `chaos` 3 |
+| `skilledNoCards` | `happiness` 2 / `chaos` 1 / `healthy` 1 |
+| `skilledNoHire` | `happiness` 3 / `chaos` 1 |
+| `skilledSelectiveCards` | `happiness` 3 / `chaos` 1 |
+| `skilledSelectiveHire` | `happiness` 1 / `chaos` 2 |
 | `skilledShopBuy` | `happiness` 1 / `chaos` 3 / `healthy` 1 |
-| `skilledShopCtl` | `happiness` 1 / `chaos` 3 / `healthy` 2 |
-| `skilledStateEvolve` | `happiness` 1 / `chaos` 3 |
+| `skilledShopCtl` | `happiness` 2 / `chaos` 2 / `healthy` 2 |
+| `skilledStateEvolve` | `happiness` 2 / `chaos` 2 |
 
 `evaluateWinType`（`src/sim/outcome.ts`）の優先順位は次のとおり。
 
@@ -469,11 +471,12 @@ F-10 の受入（全体3種以上かつ方針別 modal 3種以上）を充足し
    健全系診断（`healthyAcceleration` / `documentationKingdom`）をすべて満たすとき
 2. **`aiSuccess`**: AI 利用率・手戻り・レビューピーク・リテラシーと診断の両立
    （`reviewHell` / `aiOverproduction` / `reworkSpiral` は除外。`seniorSacrifice` は除外しない）
-3. **`happiness`**: 士気≥70 かつシニアHP≥55
-4. **`chaos`**: インシデント≥20 かつ累計出荷≥250
-5. **`healthy`**: 品質・士気・手戻り（`documentationKingdom` 時は閾値緩和）
-6. **`management`**: 予算≥50（他シグネチャの残差）
-7. それ以外は **`normal`**
+3. **`healthy`（documentationKingdom）**: 診断が `documentationKingdom` かつ品質・士気・手戻り
+4. **`happiness`**: 士気≥70 かつシニアHP≥45
+5. **`chaos`**: インシデント≥20 かつ累計出荷≥250
+6. **`healthy`**: 品質・士気・手戻り
+7. **`management`**: 予算≥50（他シグネチャの残差）
+8. それ以外は **`normal`**
 
 したがって `noDamage` と `healthy` は、残業・アンドンの有無「だけ」で入れ替わる構造ではない。
 この総数・種別内訳・方針別表は、旧コホートの数値を混ぜず、同じ
@@ -761,7 +764,7 @@ RI-86 と F-11 は未完了として追跡する。
   （例外は3層。いずれも n=3〜4 の小標本で、再計測ごとに増減する）。
 - **ビルドの違いは組織診断と勝利種別の両方に出ている**。`noAi` は
   `healthyAcceleration` 5 と、`aiFullBet`（`reviewHell` 6 / `seniorSacrifice` 34）から
-  明確に分かれ、方針別の最頻勝利種別も `chaos` / `healthy` / `happiness` に分岐する（RI-76 完了）。
+  明確に分かれ、F-10 ビルド方針の modal も `chaos` / `happiness` / `healthy` に分岐する（RI-76 完了）。
 - **AI の on/off は状態へ正しく伝播している**。AI 配布を切ると AI 利用率 0%、最終 AI 依存度が
   100→47.0（`noAiCtl`）になる。ただし**出荷への効き方は実務感覚と逆向き**であり、
   そちらは RI-77 の未充足として扱う。

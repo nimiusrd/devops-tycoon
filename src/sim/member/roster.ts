@@ -44,11 +44,63 @@ const BASE_DRAIN = 22;
 const LANE_DRAIN_MUL: Record<'coding' | 'review', number> = { coding: 1, review: 1.25 };
 /** AI を配ったコーダーの消費軽減（AI が肩代わり）。 */
 const AI_DRAIN_RELIEF = 0.85;
+/**
+ * スタミナ分散の基準稼働人数（初期ロスター相当。RI-73 / F-1）。
+ * これより多いと個人ドレインが薄まり、休職リスクが下がる。
+ */
+const DRAIN_SHARE_BASELINE = 3;
+/** 人数増によるスタミナ分散の下限（緩和しすぎて採用が支配的にならない）。 */
+const DRAIN_SHARE_MIN = 0.5;
+/**
+ * レビュアー 1 人増ごとのレビューHP単価緩和（RI-73 / F-1）。
+ * `1 / (1 + k * max(0, reviewers-1))`、下限 `REVIEW_HP_COST_MUL_MIN`。
+ */
+const REVIEW_HP_COST_RELIEF_PER = 0.15;
+/** レビューHP単価倍率の下限。 */
+const REVIEW_HP_COST_MUL_MIN = 0.65;
+/**
+ * 稼働人数 1 人増ごとのシニア消耗緩和（採用の燃えにくさ。RI-73 / F-1）。
+ * 難易度の `seniorHpCostMul` と乗算される。
+ */
+const SENIOR_HP_SHARE_RELIEF_PER = 0.08;
+/** 人数由来の seniorHpCostMul 下限。 */
+const SENIOR_HP_SHARE_MUL_MIN = 0.75;
 
 /** これ以下のスタミナで離脱（休職）判定が走る閾値。 */
 const LEAVE_THRESHOLD = 14;
 /** 離脱の最大確率（スタミナ 0 のとき）。 */
 const LEAVE_MAX_P = 0.5;
+
+/**
+ * レビュアー人数からレビュー 1 件あたりのシニアHP消費倍率を求める（RI-73 / F-1）。
+ * 純関数。テストと編成畳み込みで共有する。
+ */
+export function reviewHpCostMulForReviewers(reviewerCount: number): number {
+  const n = Math.max(0, Math.floor(reviewerCount));
+  return clamp(1 / (1 + REVIEW_HP_COST_RELIEF_PER * Math.max(0, n - 1)), REVIEW_HP_COST_MUL_MIN, 1);
+}
+
+/**
+ * 稼働人数からスタミナ個人消費倍率を求める（RI-73 / F-1）。
+ * 基準人数未満では厳しくしない（上限 1）。
+ */
+export function staminaDrainShareMul(activeCount: number): number {
+  const n = Math.max(1, Math.floor(activeCount));
+  return clamp(DRAIN_SHARE_BASELINE / n, DRAIN_SHARE_MIN, 1);
+}
+
+/**
+ * 稼働人数からシニア体力消費倍率を求める（RI-73 / F-1）。
+ * 人数を増やして回すほど燃え尽きにくい。
+ */
+export function seniorHpShareMul(activeCount: number): number {
+  const n = Math.max(0, Math.floor(activeCount));
+  return clamp(
+    1 - SENIOR_HP_SHARE_RELIEF_PER * Math.max(0, n - DRAIN_SHARE_BASELINE),
+    SENIOR_HP_SHARE_MUL_MIN,
+    1,
+  );
+}
 /** 休職から復帰するスタミナ（上限に対する割合）。 */
 const RETURN_RATIO = 0.4;
 /** 休職中の回復ボーナス（離れて休む分だけ回復が速い）。 */
@@ -269,6 +321,10 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
   const codingSpeedMul = noCoder ? NO_CODER_CODING_SPEED : clamp(0.7 + codingPower / 230, 0.6, 1.8);
   const reviewEfficiencyMul = clamp((0.7 + reviewPower / 200) * reviewLoad, 0.55, 1.8);
   const reviewCapacityMul = clamp(0.8 + reviewers.length * 0.18, 0.8, 1.6);
+  // RI-73 / F-1: レビュアー増で PR あたりのシニア消耗を薄め、燃え尽きにくくする。
+  const reviewHpCostMul = reviewHpCostMulForReviewers(reviewers.length);
+  const activeAssigned = coders.length + reviewers.length;
+  const seniorHpCostMul = seniorHpShareMul(activeAssigned);
 
   // AI 配布の効果（配った相手の AI習熟・トレイトで決まる）。AI を実際に使うのは
   // コーディング担当のタスクなので、効果対象もコーダーに揃える（採用率と一致させる）。
@@ -296,6 +352,8 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
       codingSpeedMul,
       reviewEfficiencyMul,
       reviewCapacityMul,
+      reviewHpCostMul,
+      seniorHpCostMul,
       reworkRateAdd: clamp(reworkRateAdd, -0.3, 0.3),
       incidentRateMul: clamp(incidentRateMul, 0.6, 1.6),
     },
@@ -343,6 +401,10 @@ export function applySprintGrowth(
     docGain: 0,
   };
 
+  // RI-73 / F-1: 稼働人数でスタミナを分散し、採用を壊れにくさへ寄せる。
+  const activeWorkers = roster.members.filter((m) => !m.onLeave && m.assignment !== 'bench').length;
+  const drainShareMul = staminaDrainShareMul(activeWorkers);
+
   const members = roster.members.map((member) => {
     let m = member;
 
@@ -373,10 +435,12 @@ export function applySprintGrowth(
       outcome.promotions.push({ id: m.id, name: m.name, to: m.rank });
     }
 
-    // スタミナ消費。
+    // スタミナ消費（人数分散を掛ける。ベンチ放置は対象外のまま）。
     const laneMul = LANE_DRAIN_MUL[m.assignment as 'coding' | 'review'];
     const aiRelief = m.aiAssigned && m.assignment === 'coding' ? AI_DRAIN_RELIEF : 1;
-    const drain = Math.round(BASE_DRAIN * laneMul * traitMods.staminaDrainMul * aiRelief);
+    const drain = Math.round(
+      BASE_DRAIN * laneMul * traitMods.staminaDrainMul * aiRelief * drainShareMul,
+    );
     const stamina = Math.max(0, m.stamina - drain);
     m = { ...m, stamina };
 
@@ -453,6 +517,19 @@ export function rosterSummary(roster: RosterState): {
 /** 休職を除いた稼働エンジニア数（組織スケールの `Team.engineers` へ載せる）。 */
 export function activeEngineerCount(roster: RosterState): number {
   return roster.members.reduce((n, m) => n + (isActive(m) ? 1 : 0), 0);
+}
+
+/** coding/review に配置済みの稼働人数（シニア負荷分散の母数。ベンチ除外。RI-73）。 */
+export function activeAssignedCount(roster: RosterState): number {
+  return roster.members.reduce(
+    (n, m) => n + (isActive(m) && (m.assignment === 'coding' || m.assignment === 'review') ? 1 : 0),
+    0,
+  );
+}
+
+/** review に配置済みの稼働人数（レビュー単価のシニア負荷分散。RI-73）。 */
+export function activeReviewerCount(roster: RosterState): number {
+  return roster.members.reduce((n, m) => n + (isActive(m) && m.assignment === 'review' ? 1 : 0), 0);
 }
 
 /** 稼働かつ AI 配布中の人数（プレイヤーチーム島の AI ボット表示へ載せる）。 */

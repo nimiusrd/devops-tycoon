@@ -92,6 +92,12 @@ export interface CardEffects {
    * 難易度の globalEffects で easy/normal の消耗を抑える（RI-73 / F-7）。
    */
   seniorHpCostMul: number;
+  /**
+   * レビュー 1 件あたりのシニア体力消費倍率（1 で無効果）。
+   * レビュアー人数で薄め、採用を「燃えにくさ」へ寄せる（RI-73 / F-1）。
+   * 自動鎮火には掛けない。
+   */
+  reviewHpCostMul: number;
   /** Rework 率への加算（負で減少）。 */
   reworkRateAdd: number;
   /** Incident 率への乗算（1 で無効果）。 */
@@ -158,6 +164,11 @@ export interface InterventionEffect {
   reviewedCount?: number;
   /** 鎮火したタスク ID。 */
   containedTaskId?: number;
+  /**
+   * 余裕のある先消しでコンボを切ったとき true（RI-73 / F-1）。
+   * ティッカーの介入行を成功トーンにしないための印。
+   */
+  brokeCombo?: boolean;
   /** 消費したシニアHP（追加コスト分）。 */
   hpCost?: number;
   /** 消費した士気。 */
@@ -184,7 +195,7 @@ export interface InterventionOutcome {
 }
 
 /** コンボ途切れの理由。 */
-export type ComboBreakReason = 'rework' | 'auto-contain' | 'spread';
+export type ComboBreakReason = 'rework' | 'auto-contain' | 'spread' | 'light-firefight';
 
 /** 点火の原因（RI-34′。「なぜ燃えたか」区別用）。 */
 export type IgniteSource = 'review' | 'spread';
@@ -231,8 +242,13 @@ export type SprintEvent =
       tick: number;
       kind: 'contain';
       taskId: number;
-      /** 鎮火後も維持されたコンボ。 */
+      /** 鎮火後も維持されたコンボ（先消しで切断した場合は 0）。 */
       combo: number;
+      /**
+       * 余裕のある先消しでコンボを切ったか（RI-73）。
+       * true のときは「コンボ継続」ではなく不利な即応として扱う。
+       */
+      brokeCombo?: boolean;
     };
 
 /** 炎上因果ログ用イベント（RI-34′。ring buffer とは独立して全件保持）。 */
@@ -378,6 +394,11 @@ export interface SprintMetrics {
   focusSpent: number;
   /** アクション種別ごとの発動回数（リザルトの介入内訳・称号判定用。第4.6）。 */
   actionCounts: Partial<Record<ActionId, number>>;
+  /**
+   * 実際に運用安定を付与した介入回数（評価加点用。RI-73 / RI-80）。
+   * `actionCounts` は条件未成立の firefight/andon も含むため、加点母数とは分ける。
+   */
+  stabilizingGrants: number;
   /**
    * タスク差配の偏り（RI-30）。理想差配以外が続くと士気コストが増える。
    */

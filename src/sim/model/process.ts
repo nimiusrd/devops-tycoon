@@ -20,6 +20,7 @@ export const IDENTITY_CARD_EFFECTS: CardEffects = {
   reviewEfficiencyMul: 1,
   reviewCapacityMul: 1,
   seniorHpCostMul: 1,
+  reviewHpCostMul: 1,
   reworkRateAdd: 0,
   incidentRateMul: 1,
   aiLiteracyAdd: 0,

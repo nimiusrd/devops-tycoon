@@ -4,9 +4,13 @@
  */
 import { describe, expect, it } from 'vitest';
 import { TASK_BASE_VALUE } from '../../../src/sim/model/process';
+import { activeAssignedCount, activeReviewerCount } from '../../../src/sim/member';
 import {
   advanceCoarseTeams,
   coarseShipToCompleted,
+  createTeamRoster,
+  estimateActiveAssignedCount,
+  estimateRosterReviewerCount,
   stripMetricAdjustments,
 } from '../../../src/sim/orgscale/teamState';
 import { emptyAdjust, emptyAdjustState } from '../../../src/sim/orgscale/levers';
@@ -314,6 +318,111 @@ describe('RI-91-B1 teamState survived mutants', () => {
       const plainHp = plain.teams.find((t) => t.id === 'pressured')!.seniorHp;
       const easedHp = eased.teams.find((t) => t.id === 'pressured')!.seniorHp;
       expect(easedHp).toBeGreaterThan(plainHp);
+    });
+
+    it('RI-73 / F-1: 粗粒度でも配置済み人数でシニア消耗が薄まる', () => {
+      const teams = [
+        makeTeam({ id: 'home' }),
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          seniorHp: 50,
+        }),
+      ];
+      const benchHeavy = advanceCoarseTeams(teams, {
+        seed: 'ri73-coarse-share',
+        stepKey: 's1',
+        excludeId: 'home',
+        assignedByTeamId: { pressured: 3 },
+      });
+      const assignedHeavy = advanceCoarseTeams(teams, {
+        seed: 'ri73-coarse-share',
+        stepKey: 's1',
+        excludeId: 'home',
+        assignedByTeamId: { pressured: 8 },
+      });
+      const benchHp = benchHeavy.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      const assignedHp = assignedHeavy.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      expect(assignedHp).toBeGreaterThan(benchHp);
+    });
+
+    it('RI-73: estimateActiveAssignedCount は createTeamRoster の配置済み人数と一致する', () => {
+      expect(estimateActiveAssignedCount(0)).toBe(0);
+      expect(estimateRosterReviewerCount(0)).toBe(0);
+      for (const n of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        const roster = createTeamRoster('ri73-assigned-est', `t${n}`, n);
+        expect(estimateActiveAssignedCount(n)).toBe(activeAssignedCount(roster));
+        expect(estimateRosterReviewerCount(n)).toBe(activeReviewerCount(roster));
+      }
+    });
+
+    it('RI-73: 粗粒度でもレビュアー人数でシニア消耗が薄まる', () => {
+      const teams = [
+        makeTeam({ id: 'home' }),
+        makeTeam({
+          id: 'pressured',
+          engineers: 6,
+          headcount: 6,
+          reviewQueue: 10,
+          seniorHp: 50,
+        }),
+      ];
+      const oneReviewer = advanceCoarseTeams(teams, {
+        seed: 'ri73-coarse-reviewers',
+        stepKey: 's1',
+        excludeId: 'home',
+        assignedByTeamId: { pressured: 4 },
+        reviewersByTeamId: { pressured: 1 },
+      });
+      const threeReviewers = advanceCoarseTeams(teams, {
+        seed: 'ri73-coarse-reviewers',
+        stepKey: 's1',
+        excludeId: 'home',
+        assignedByTeamId: { pressured: 4 },
+        reviewersByTeamId: { pressured: 3 },
+      });
+      const oneHp = oneReviewer.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      const threeHp = threeReviewers.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      expect(threeHp).toBeGreaterThan(oneHp);
+    });
+
+    it('RI-73: 未訪問フォールバックも総席数ではなく配置済み人数でシニア消耗する', () => {
+      const teams = [
+        makeTeam({ id: 'home' }),
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          seniorHp: 50,
+        }),
+      ];
+      const estimated = estimateActiveAssignedCount(8);
+      expect(estimated).toBeLessThan(8);
+      const fallback = advanceCoarseTeams(teams, {
+        seed: 'ri73-unvisited-share',
+        stepKey: 's1',
+        excludeId: 'home',
+      });
+      const explicit = advanceCoarseTeams(teams, {
+        seed: 'ri73-unvisited-share',
+        stepKey: 's1',
+        excludeId: 'home',
+        assignedByTeamId: { pressured: estimated },
+      });
+      const inflated = advanceCoarseTeams(teams, {
+        seed: 'ri73-unvisited-share',
+        stepKey: 's1',
+        excludeId: 'home',
+        assignedByTeamId: { pressured: 8 },
+      });
+      const fallbackHp = fallback.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      const explicitHp = explicit.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      const inflatedHp = inflated.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      expect(fallbackHp).toBe(explicitHp);
+      expect(fallbackHp).toBeLessThan(inflatedHp);
     });
 
     it('byTeam 調整は緩和に効き永続指標へ焼き込まない', () => {

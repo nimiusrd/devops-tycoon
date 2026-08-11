@@ -29,6 +29,8 @@ import {
 } from '../cards';
 import { diagnose } from '../diagnosis';
 import {
+  activeAssignedCount,
+  activeReviewerCount,
   activeEngineerCount,
   aiAssignedCount,
   applySprintGrowth,
@@ -716,7 +718,11 @@ export class RunEngine {
     if (this.sprint && this.sprint.complete) this.resolveSprint();
   }
 
-  /** 介入アクションを発動する（sprint フェーズのみ。第6章）。 */
+  /**
+   * 介入アクションを発動する（sprint フェーズのみ。第6章）。
+   * 成功後も即時敗北は見ない（`playCard` と対照。`dispatchDefersLose` を参照）。
+   * 敗北は `resolveSprint` まで延期し、その間の自然回復で生存し得る。
+   */
   dispatch(id: ActionId, target?: ActionTarget): InterventionOutcome {
     if (this.phase !== 'sprint' || !this.sprint) return { ok: false, reason: 'complete' };
     const outcome = applyAction(id, this.sprint, this.org, this.sprintRng, this.sprintTick, target);
@@ -1679,6 +1685,20 @@ export class RunEngine {
     };
   }
 
+  /** 粗粒度シニア負荷分散用に、保存済みロスターから配置人数マップを作る（RI-73）。 */
+  private coarseRosterShareMaps(): {
+    assignedByTeamId: Record<string, number>;
+    reviewersByTeamId: Record<string, number>;
+  } {
+    const assignedByTeamId: Record<string, number> = {};
+    const reviewersByTeamId: Record<string, number> = {};
+    for (const [id, roster] of Object.entries(this.teamRosters)) {
+      assignedByTeamId[id] = activeAssignedCount(roster);
+      reviewersByTeamId[id] = activeReviewerCount(roster);
+    }
+    return { assignedByTeamId, reviewersByTeamId };
+  }
+
   private advanceOtherTeams(stepKey: string): void {
     const before = this.teams;
     const fold = foldRunEffects({
@@ -1688,12 +1708,15 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
+    const { assignedByTeamId, reviewersByTeamId } = this.coarseRosterShareMaps();
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey,
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
       modifiers: this.coarseModifiersFromFold(fold),
+      assignedByTeamId,
+      reviewersByTeamId,
     });
     this.teams = stepped.teams;
     // 粗粒度チームの出荷・炎上・完了・AI 支援をラン／四半期集計へ反映する。
@@ -2334,12 +2357,15 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
+    const { assignedByTeamId, reviewersByTeamId } = this.coarseRosterShareMaps();
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey: `sprint:${this.currentSprintId}`,
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
       modifiers: this.coarseModifiersFromFold(fold),
+      assignedByTeamId,
+      reviewersByTeamId,
     });
     const delta = normalizeCoarseTotalsDelta(
       before,

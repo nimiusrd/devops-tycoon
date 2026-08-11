@@ -11,7 +11,13 @@ import {
   STARTER_ARCHETYPES,
   type MemberArchetype,
 } from '../../data/members';
-import { activeEngineerCount, createMember, type RosterState } from '../member';
+import {
+  activeEngineerCount,
+  createMember,
+  reviewHpCostMulForReviewers,
+  seniorHpShareMul,
+  type RosterState,
+} from '../member';
 import { AI_ADOPTION, TASK_BASE_VALUE } from '../model/process';
 import { AI_LITERACY_UNSAFE_CAP } from '../outcome';
 import { createRng } from '../rng';
@@ -62,6 +68,30 @@ export function estimateRosterCoderCount(engineers: number): number {
     else if (i % 2 === 0) coders += 1;
   }
   return coders;
+}
+
+/**
+ * `createTeamRoster` と同じ配置規則での coding/review 人数（ベンチ除外）。
+ * 未訪問チームの粗粒度シニア負荷分散を、詳細 sim の `activeAssignedCount` と揃える（RI-73）。
+ */
+export function estimateActiveAssignedCount(engineers: number): number {
+  if (engineers <= 0) return 0;
+  const count = Math.max(2, Math.min(6, Math.floor(engineers)));
+  let assigned = 0;
+  for (let i = 0; i < count; i += 1) {
+    if (i === 0 || i === 1 || i % 2 === 0) assigned += 1;
+  }
+  return assigned;
+}
+
+/**
+ * `createTeamRoster` と同じ配置規則でのレビュアー人数。
+ * 未訪問チームの粗粒度に詳細 sim の `reviewHpCostMul` を引き継ぐ（RI-73）。
+ */
+export function estimateRosterReviewerCount(engineers: number): number {
+  if (engineers <= 0) return 0;
+  // createTeamRoster は index 1 を常に review にする（最低 2 席）。
+  return Math.max(2, Math.min(6, Math.floor(engineers))) >= 2 ? 1 : 0;
 }
 
 /** OrgAdjust を 1 チームの表示指標へ適用する。 */
@@ -496,6 +526,16 @@ export function advanceCoarseTeams(
     excludeId: string;
     adjust?: OrgAdjustState;
     modifiers?: CoarseRunModifiers;
+    /**
+     * チーム ID → coding/review 配置済み人数（詳細 sim の負荷分散母数）。
+     * 未指定時は `estimateActiveAssignedCount(team.engineers)`（createTeamRoster と同じ配置規則）。
+     */
+    assignedByTeamId?: Readonly<Record<string, number>>;
+    /**
+     * チーム ID → review 配置済み人数（詳細 sim の reviewHpCostMul 母数）。
+     * 未指定時は `estimateRosterReviewerCount(team.engineers)`。
+     */
+    reviewersByTeamId?: Readonly<Record<string, number>>;
   },
 ): CoarseStepResult {
   const adjust = args.adjust ?? { company: emptyAdjust(), byDept: {} };
@@ -584,7 +624,17 @@ export function advanceCoarseTeams(
     const techDebtDelta =
       Math.round(team.aiDependency * 0.03) - Math.round(team.aiLiteracy * 0.02) - debtRelief;
     const literacyGain = rng() < 0.4 ? 1 : 0;
-    const seniorDrain = (reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0) * seniorHpCostMul;
+    // RI-73 / F-1: 詳細 sim と同じく配置済み人数＋レビュアー人数でシニア消耗を薄める。
+    // 未訪問チームは createTeamRoster と同じ決定論的配置を使う（総席数で過大軽減しない）。
+    const assigned =
+      args.assignedByTeamId?.[team.id] ?? estimateActiveAssignedCount(team.engineers);
+    const reviewers =
+      args.reviewersByTeamId?.[team.id] ?? estimateRosterReviewerCount(team.engineers);
+    const seniorDrain =
+      (reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0) *
+      seniorHpCostMul *
+      seniorHpShareMul(assigned) *
+      reviewHpCostMulForReviewers(reviewers);
     const randomAiDrift = rng() < 0.3 * aiPressureMul ? 1 : 0;
     // 品質を先に確定し、派生の incidentBias と整合させる。
     const quality = clamp(team.quality + (rng() < 0.25 ? -1 : 0), 10, 100);

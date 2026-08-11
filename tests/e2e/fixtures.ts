@@ -167,7 +167,13 @@ export async function advancePublicRun(page: Page, options: PublicRunOptions): P
               if (sprint.tasks.filter((task) => task.lane === 'review').length >= 6) {
                 game.dispatch('interruptReview');
               }
-              if (sprint.tasks.some((task) => task.lane === 'rework' && task.incident)) {
+              // RI-73 / F-1: 余裕のある先消しは高コストなので、緊急時だけ鎮火する。
+              const burning = sprint.tasks.filter((task) => task.incident);
+              const minBurnTicksLeft = burning.reduce(
+                (min, task) => Math.min(min, task.burnTicksLeft ?? Number.POSITIVE_INFINITY),
+                Number.POSITIVE_INFINITY,
+              );
+              if (burning.length >= 2 || (burning.length >= 1 && minBurnTicksLeft <= 15)) {
                 game.dispatch('firefight');
               }
             }

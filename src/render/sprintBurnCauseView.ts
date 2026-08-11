@@ -71,19 +71,28 @@ function countByKind(events: readonly FireSprintEvent[]): {
 function deriveTip(
   counts: ReturnType<typeof countByKind>,
   entries: readonly BurnCauseEntry[],
+  lightContain: number,
 ): string | undefined {
   if (counts.ignite === 0) return undefined;
 
   if (counts.spread >= 1) {
-    return '延焼が発生した。炎上タイマー内に緊急対応すれば連鎖と士気低下を止められる。';
+    return '延焼が発生した。炎上タイマーが短いときや複数炎上のときに緊急対応すれば連鎖と士気低下を止められる。';
   }
   if (counts.autoContain >= 1 && counts.contain === 0) {
-    return '自動鎮火に頼った。緊急対応（⚡1）の方がシニアHP消費が小さく、コンボも守れる。';
+    return '自動鎮火に頼った。複数炎上や猶予が短いときの緊急対応の方がシニアHP消費が小さく、コンボも守れる。';
   }
-  if (counts.contain >= 1 && counts.spread === 0 && counts.autoContain === 0) {
+  const urgentContain = counts.contain - lightContain;
+  if (lightContain >= 1 && urgentContain === 0 && counts.spread === 0 && counts.autoContain === 0) {
+    return '余裕のある先消しは高コストでコンボも切れる。複数炎上や猶予が短いときだけ緊急対応しよう。';
+  }
+  if (urgentContain >= 1 && counts.spread === 0 && counts.autoContain === 0 && lightContain === 0) {
     return '点火した火をすべて緊急対応で鎮火した。炎上への即応が効いている。';
   }
-  if (entries.some((e) => e.tone === 'warn')) {
+  if (lightContain >= 1 && urgentContain >= 1 && counts.spread === 0 && counts.autoContain === 0) {
+    return '緊急鎮火と余裕のある先消しが混在した。先消しは高コストなので緊急時だけ打とう。';
+  }
+  // 先消し（warn）と未解決チェーン（open）を区別する。
+  if (entries.some((e) => e.key.includes(':open:'))) {
     return '燃え残った火がある。次はタイマー表示を見て鎮火優先度を上げよう。';
   }
   return '点火と鎮火のタイミングを振り返り、次スプリントの介入順に活かそう。';
@@ -91,8 +100,9 @@ function deriveTip(
 
 function toneForOutcome(
   kind: 'contain' | 'auto-contain' | 'spread' | 'open',
+  brokeCombo = false,
 ): BurnCauseEntry['tone'] {
-  if (kind === 'contain') return 'good';
+  if (kind === 'contain') return brokeCombo ? 'warn' : 'good';
   if (kind === 'open') return 'warn';
   return 'bad';
 }
@@ -109,6 +119,7 @@ function iconForOutcome(kind: 'contain' | 'auto-contain' | 'spread' | 'open'): s
 export function planBurnCauseLog(result: SprintResult): BurnCauseLogView {
   const events = result.fireEvents ?? [];
   const counts = countByKind(events);
+  const lightContain = events.filter((e) => e.kind === 'contain' && e.brokeCombo).length;
   const showSection = events.length > 0 || result.incidents > 0;
 
   if (!showSection) {
@@ -124,6 +135,7 @@ export function planBurnCauseLog(result: SprintResult): BurnCauseLogView {
     chain: OpenChain,
     outcome: 'contain' | 'auto-contain' | 'spread' | 'open',
     suffix: string,
+    brokeCombo = false,
   ): void => {
     if (entries.length >= ENTRY_LIMIT) return;
     const parts = suffix ? [...chain.parts, suffix] : [...chain.parts];
@@ -132,7 +144,7 @@ export function planBurnCauseLog(result: SprintResult): BurnCauseLogView {
       tick: chain.rootTick,
       icon: iconForOutcome(outcome),
       text: parts.join(' → '),
-      tone: toneForOutcome(outcome),
+      tone: toneForOutcome(outcome, brokeCombo),
     });
   };
 
@@ -165,7 +177,14 @@ export function planBurnCauseLog(result: SprintResult): BurnCauseLogView {
         const chain = openByTask.get(event.taskId);
         if (!chain) break;
         openByTask.delete(event.taskId);
-        pushEntry(chain, 'contain', `t${event.tick} 緊急対応で鎮火`);
+        pushEntry(
+          chain,
+          'contain',
+          event.brokeCombo
+            ? `t${event.tick} 余裕のある先消し（コンボ切断）`
+            : `t${event.tick} 緊急対応で鎮火`,
+          Boolean(event.brokeCombo),
+        );
         break;
       }
       case 'auto-contain': {
@@ -213,6 +232,6 @@ export function planBurnCauseLog(result: SprintResult): BurnCauseLogView {
     showSection: true,
     headline,
     entries,
-    tip: deriveTip(counts, entries),
+    tip: deriveTip(counts, entries, lightContain),
   };
 }

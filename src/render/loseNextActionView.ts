@@ -40,7 +40,7 @@ export interface LoseNextActionOptions {
 const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
   seniorBurnout: {
     nextAction:
-      '炎上は自動鎮火でシニアHPが大きく削られる前に緊急対応で消し、アンドンやAIスロットルで流入を抑えてから休息でHPを戻す。',
+      '炎上は複数炎上やタイマーが短いときだけ緊急対応で消し、余裕のある先消しは避ける。アンドンやAIスロットルで流入を抑えてから休息でHPを戻す。',
     insight: 'レビューを1人に依存させると、速度ではなくその1人が壊れる。',
   },
   techDebt: {
@@ -59,7 +59,8 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
     insight: '実装量だけ増やすと、ボトルネックは必ずレビュー側へ移る。',
   },
   incidentCascade: {
-    nextAction: '炎上タイマーが切れる前に緊急対応で鎮火し、連続する障害スプリントを途切れさせる。',
+    nextAction:
+      '複数炎上やタイマーが短いときに緊急対応で鎮火し、連続する障害スプリントを途切れさせる。余裕のある先消しは避ける。',
     insight: '障害は単発より、放置して連鎖させたときの方が組織を止める。',
   },
   aiDependency: {

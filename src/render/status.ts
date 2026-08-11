@@ -5,6 +5,11 @@
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
 import { getGoalAdjustment } from '../data/goalAdjustments';
+import {
+  ANDON_STABILITY_REVIEW_MIN,
+  FIREFIGHT_STABILITY_BURN_TICKS,
+  FIREFIGHT_STABILITY_MIN_BURNING,
+} from '../sim/actions';
 import { REVIEW_FREEZE_PEAK } from '../sim/outcome';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { resolveNextQuarterEffects } from '../sim/run/quarterReview';
@@ -74,29 +79,30 @@ export interface StatusMetricView {
 
 /** シニア体力 HUD の help（RI-67）。 */
 export const SENIOR_HP_HELP =
-  'メンバー個別のスタミナとは別の抽象値です。炎上があるときは自動鎮火の前に緊急対応で消すのが最大の守りです。アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルはAI由来の点火・手戻りを下げ、休息で戻します。';
+  'メンバー個別のスタミナとは別の抽象値です。炎上は複数炎上やタイマーが短いときだけ緊急対応で消し、余裕のある先消しは避けます。アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルはAI由来の点火・手戻りを下げ、休息で戻します。';
 
 /** AI依存度 HUD の help（RI-74）。 */
 export const AI_DEPENDENCY_HELP =
   'AI任せが強いほどレビュー負荷と手戻りリスクが上がります。リテラシーが30以下のまま依存度が95に達すると敗北します。ペアレビューでリテラシーを上げるか、AI利用ガイドライン（カード）や全社／部門／チームのAIレバーで依存度を下げてください。介入バーのAIスロットルは新規流入を抑えるだけで、既に上がった依存度は下げません。';
 
-/** シニア体力の詳細・警告チップ文言（RI-67）。炎上があるときだけ緊急対応へ誘導する。 */
+/** シニア体力の詳細・警告チップ文言（RI-67）。緊急の炎上だけ緊急対応へ誘導する（RI-73）。 */
 export function seniorHpHudCopy(
   seniorHpPct: number,
-  hasBurning: boolean,
+  opts: { firefightUrgent: boolean; reviewCongested: boolean },
 ): {
   detail: string;
   warningChip?: string;
 } {
+  const guard = opts.reviewCongested ? 'アンドンや休息で守る' : 'AIスロットルや休息で守る';
   if (seniorHpPct < 25) {
     return {
-      detail: hasBurning ? '燃え尽き寸前・緊急対応で鎮火' : '燃え尽き寸前・アンドンや休息で守る',
+      detail: opts.firefightUrgent ? '燃え尽き寸前・緊急対応で鎮火' : `燃え尽き寸前・${guard}`,
       warningChip: '燃え尽き危険',
     };
   }
   if (seniorHpPct < 50) {
     return {
-      detail: hasBurning ? '低下中・炎上は緊急対応で' : '低下中・アンドンや休息で守る',
+      detail: opts.firefightUrgent ? '低下中・緊急の炎上は緊急対応で' : `低下中・${guard}`,
       warningChip: '体力注意',
     };
   }
@@ -331,7 +337,15 @@ export function deriveHudMetrics(
   const queue = reviewQueueLength(tasks);
   const livePeak = Math.max(reviewQueuePeak, queue);
   const freezeCopy = reviewFreezeHudCopy(livePeak);
-  const hasBurning = tasks.some((task) => task.incident);
+  const burning = tasks.filter((task) => task.incident);
+  const minBurnTicksLeft = burning.reduce(
+    (min, task) => Math.min(min, task.burnTicksLeft ?? Number.POSITIVE_INFINITY),
+    Number.POSITIVE_INFINITY,
+  );
+  const firefightUrgent =
+    burning.length >= FIREFIGHT_STABILITY_MIN_BURNING ||
+    (burning.length >= 1 && minBurnTicksLeft <= FIREFIGHT_STABILITY_BURN_TICKS);
+  const reviewCongested = queue >= ANDON_STABILITY_REVIEW_MIN;
   const devSpeedDetail = org.aiEnabled ? 'AI支援で高速' : '通常速度';
 
   return [
@@ -392,7 +406,7 @@ export function deriveHudMetrics(
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
       tone: higherBetterTone(s.seniorHpPct, 50, 25),
-      ...seniorHpHudCopy(s.seniorHpPct, hasBurning),
+      ...seniorHpHudCopy(s.seniorHpPct, { firefightUrgent, reviewCongested }),
       help: SENIOR_HP_HELP,
       barPct: s.seniorHpPct,
       fillClass: 'fill-hp',

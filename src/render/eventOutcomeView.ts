@@ -12,10 +12,19 @@ import type { EvolutionNodeDef } from '../data/evolution';
 import type { RelicDef } from '../data/relics';
 import { getRelic } from '../data/relics';
 import {
+  ANDON_BASE_MORALE_COST,
+  ANDON_HP_COST,
+  ANDON_STABILITY_REVIEW_MIN,
+  ANDON_THIN_MORALE_COST,
   ANDON_TICKS,
   ASSIGN_MORALE_COST,
   ASSIGN_PROGRESS,
   FIREFIGHT_HP_COST,
+  FIREFIGHT_HP_COST_MAX,
+  FIREFIGHT_LIGHT_HP_COST,
+  FIREFIGHT_LIGHT_MORALE_COST,
+  FIREFIGHT_STABILITY_BURN_TICKS,
+  FIREFIGHT_STABILITY_MIN_BURNING,
   INTERRUPT_HP_COST,
   INTERRUPT_REVIEW_COUNT,
   OVERTIME_HP_COST,
@@ -694,7 +703,8 @@ export function formatStabilityDetailTags(): EffectTag[] {
 export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
 
-  if (def.stabilizesFlow) {
+  // RI-73 / F-1: 緊急対応・アンドンは状況依存のため汎用タグを出さない。
+  if (def.stabilizesFlow && def.id !== 'firefight' && def.id !== 'andon') {
     // 主要効果は1タグに要約（タッチでも持続時間と効果が見える）。長い倍率内訳はツールチップ側。
     pushTag(tags, `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, 'positive');
   }
@@ -709,8 +719,10 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       pushTag(tags, `進捗 -${Math.round(SPLIT_PROGRESS_PENALTY * 100)}%`, 'negative');
       break;
     case 'firefight':
+      // カード上は要約のみ。数値内訳はツールチップへ（RI-73: タグ肥大で盤面が潰れるのを防ぐ）。
       pushTag(tags, '炎上1件鎮火', 'positive');
-      pushTag(tags, `シニアHP -${FIREFIGHT_HP_COST}`, 'negative');
+      pushTag(tags, '緊急時のみ運用安定', 'positive');
+      pushTag(tags, '余裕時は高コスト', 'negative');
       break;
     case 'assignTask':
       pushTag(tags, `Coding +${Math.round(ASSIGN_PROGRESS * 100)}%`, 'positive');
@@ -732,7 +744,10 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       pushTag(tags, `シニアHP -${OVERTIME_HP_COST}`, 'negative');
       break;
     case 'andon':
+      // カード上は要約のみ。薄キュー数値はツールチップへ（RI-73）。
       pushTag(tags, `流入停止 ${ANDON_TICKS}tick`, 'neutral');
+      pushTag(tags, '運用安定なし', 'neutral');
+      pushTag(tags, `士気 -${ANDON_BASE_MORALE_COST}〜`, 'negative');
       pushTag(tags, '出荷機会損失', 'negative');
       break;
   }
@@ -792,11 +807,42 @@ export function formatLeverTooltip(lever: LeverDef): string {
   return joinTooltip(effectTagsToTooltip(formatLeverDefTags(lever)), lever.description);
 }
 
+/** カード要約に載せない、介入アクションの数値内訳タグ（ツールチップ用）。 */
+function formatActionTooltipExtraTags(def: ActionDef): EffectTag[] {
+  const tags: EffectTag[] = [];
+  switch (def.id) {
+    case 'firefight':
+      pushTag(
+        tags,
+        `緊急時（猶予≤${FIREFIGHT_STABILITY_BURN_TICKS} or 炎上≥${FIREFIGHT_STABILITY_MIN_BURNING}）シニアHP -${FIREFIGHT_HP_COST}〜${FIREFIGHT_HP_COST_MAX}（連打で増加）`,
+        'negative',
+      );
+      pushTag(
+        tags,
+        `単発先消し シニアHP -${FIREFIGHT_LIGHT_HP_COST}・士気 -${FIREFIGHT_LIGHT_MORALE_COST}・コンボ切断`,
+        'negative',
+      );
+      // 緊急時に付く運用安定の倍率内訳。
+      tags.push(...formatStabilityDetailTags());
+      break;
+    case 'andon':
+      pushTag(
+        tags,
+        `Review未渋滞(<${ANDON_STABILITY_REVIEW_MIN})は士気追加 -${ANDON_THIN_MORALE_COST}・シニアHP -${ANDON_HP_COST}`,
+        'negative',
+      );
+      break;
+    default:
+      if (def.stabilizesFlow) {
+        tags.push(...formatStabilityDetailTags());
+      }
+      break;
+  }
+  return tags;
+}
+
 /** 介入アクションの効果タグと説明文を合成したツールチップ文字列。 */
 export function formatActionTooltip(def: ActionDef): string {
-  const tags = [
-    ...formatActionDefTags(def),
-    ...(def.stabilizesFlow ? formatStabilityDetailTags() : []),
-  ];
+  const tags = [...formatActionDefTags(def), ...formatActionTooltipExtraTags(def)];
   return joinTooltip(effectTagsToTooltip(tags), `${def.description}（副作用: ${def.sideEffect}）`);
 }

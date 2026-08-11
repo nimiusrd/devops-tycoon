@@ -317,10 +317,15 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(computeTitleAndDiagnosis(sprint, org).title).not.toBe('Rework職人');
     });
 
-    it('火消しの達人は firefight/incident/spread の境界ちょうどで成立する', () => {
+    it('火消しの達人は緊急鎮火/incident/spread の境界ちょうどで成立する', () => {
       const org = createOrgState('default', true);
       org.seniorHp = 80;
       const sprint = makeSprint(org, []);
+      const urgentContains = [
+        { tick: 1, kind: 'contain' as const, taskId: 0, combo: 1 },
+        { tick: 2, kind: 'contain' as const, taskId: 1, combo: 2 },
+        { tick: 3, kind: 'contain' as const, taskId: 2, combo: 3 },
+      ];
       patchMetrics(sprint, {
         seniorHpStart: 80,
         completedCount: 20,
@@ -331,6 +336,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
         aiAssistedCompleted: 0,
         actionCounts: { firefight: 3 },
       });
+      sprint.fireEvents = urgentContains;
       expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
         title: '火消しの達人',
         diagnosis: '連続する炎上を、延焼する前にすべて自らの手で鎮火しました。見事な危機対応です。',
@@ -344,8 +350,13 @@ describe('RI-91-B3 sprint survived mutants', () => {
       patchMetrics(sprint, { incidentCount: 3, actionCounts: { firefight: 3 }, spread: 1 });
       expect(computeTitleAndDiagnosis(sprint, org).title).not.toBe('火消しの達人');
 
-      // firefight 不足
-      patchMetrics(sprint, { incidentCount: 3, actionCounts: { firefight: 2 }, spread: 0 });
+      // 緊急鎮火不足（先消しだけの firefight 回数は数えない）
+      patchMetrics(sprint, { incidentCount: 3, actionCounts: { firefight: 3 }, spread: 0 });
+      sprint.fireEvents = [
+        { tick: 1, kind: 'contain', taskId: 0, combo: 0, brokeCombo: true },
+        { tick: 2, kind: 'contain', taskId: 1, combo: 0, brokeCombo: true },
+        { tick: 3, kind: 'contain', taskId: 2, combo: 0, brokeCombo: true },
+      ];
       expect(computeTitleAndDiagnosis(sprint, org).title).not.toBe('火消しの達人');
     });
 
@@ -407,6 +418,20 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(org.seniorHp).toBeCloseTo(hpBefore - REVIEW_HP_COST * 0.5, 5);
     });
 
+    it('RI-73 / F-1: reviewHpCostMul がレビュー時のシニア体力消費に掛かる', () => {
+      const rng = () => 0.99;
+      const org = createOrgState('default', false);
+      org.seniorHp = 80;
+      const task = makeTask(0, { lane: 'review' });
+      const sprint = makeSprint(org, [task]);
+      sprint.cardEffects = { ...IDENTITY_CARD_EFFECTS, reviewHpCostMul: 0.8 };
+      const hpBefore = org.seniorHp;
+
+      reviewOne(task, sprint, org, rng);
+
+      expect(org.seniorHp).toBeCloseTo(hpBefore - REVIEW_HP_COST * 0.8, 5);
+    });
+
     it('RI-80: grade しきい値ちょうどとペナルティで S/A/B/C/D を区別する', () => {
       const org = createOrgState('default', false);
       org.seniorHp = 100;
@@ -455,7 +480,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(computeGrade(sprint, org)).toBe('D');
     });
 
-    it('RI-80: 成立した安定化介入は加点し、残業号令は加点しない', () => {
+    it('RI-80: 実際に安定を付与した介入は加点し、残業号令は加点しない', () => {
       const org = createOrgState('default', false);
       const sprint = makeSprint(org, []);
       patchMetrics(sprint, {
@@ -464,15 +489,20 @@ describe('RI-91-B3 sprint survived mutants', () => {
         incidentCount: 0,
         spread: 0,
         actionCounts: {},
+        stabilizingGrants: 0,
       });
 
       // outcomeRatio=0.95 は単独では S に届かない。
       expect(computeGrade(sprint, org)).toBe('A');
 
-      patchMetrics(sprint, { actionCounts: { firefight: 2 } });
+      // RI-73: actionCounts だけでは加点しない（条件未成立の firefight/andon を除外）。
+      patchMetrics(sprint, { actionCounts: { firefight: 2, andon: 2 } });
+      expect(computeGrade(sprint, org)).toBe('A');
+
+      patchMetrics(sprint, { stabilizingGrants: 2 });
       expect(computeGrade(sprint, org)).toBe('S');
 
-      patchMetrics(sprint, { actionCounts: { overtime: 2 } });
+      patchMetrics(sprint, { stabilizingGrants: 0, actionCounts: { overtime: 2 } });
       expect(computeGrade(sprint, org)).toBe('A');
     });
   });

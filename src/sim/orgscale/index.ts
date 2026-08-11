@@ -44,6 +44,7 @@ export {
   orgFromTeam,
   companyOrgFromTeams,
   createTeamRoster,
+  estimateActiveAssignedCount,
   appendTeamsToDept,
   advanceCoarseTeams,
   applyEffectToTeam,
@@ -58,6 +59,7 @@ export {
   retainNonMetricAdjust,
   stripMetricAdjustments,
   estimateRosterCoderCount,
+  estimateRosterReviewerCount,
   type CoarseRunModifiers,
   type CoarseStepResult,
 } from './teamState';

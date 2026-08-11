@@ -265,11 +265,12 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | 選択的採用の「欠員」 | 休職者がいる、または実働が2名以下。かつ**採用費を引いた残額**が `RECRUIT_COST`（=25）以上 | `skilledSelectiveHire` の結果 |
 | ショップ購入 | 出荷加速（`codingSpeedMul>1`）のカード／レリックだけを候補にし、次スプリント出荷寄与スコアが最良の1点だけ買う。購入カードは次スプリント手札へ優先配布し、導入支援として集中力上限 +2 とタスク量 ×1.1 を付与。カード発動は統制 `skilledShopCtl` と同じ `preferDelivery`。残す予算は**採用方針で変える**（採用する方針は次の採用機会のため `RECRUIT_COST`＝25、採用しない方針は四半期レビューの危機条件 `budget<=5` に対する余裕として10）。どちらも `recruit: 'skip'` | `skilledShopBuy` の結果 |
 | 休息の返済方針 | `skilledRestRepay` は休息到達時に必ず `repay`（`stateAware` は他方針との互換用に残す） | `skilledRestRepay` の結果 |
-| F-11 の標本 | 代表4方針（`naive` / `skilledNoHire` / `aiFullBet` / `noAi`）に固定 | RI-86 の分位点 |
+| F-11 の希少性標本 | 代表4方針（`naive` / `skilledNoHire` / `aiFullBet` / `noAi`、ポイント使い切り）に固定 | RI-86 の全解放率（上限20%） |
+| F-11 の方向確定標本 | `skilledStateEvolve`（`evolve: stateAware` / `maxEvolutionUnlocksPerPhase: 3`）に固定 | RI-86 の方向確定率・ブランチ多様 |
 | F-4 の標本 | 代表3方針（`naive` / `skilledNoHire` / `noInterventionCtl`）に固定 | RI-75 の帯外率 |
-| 進化の解放順 | 初見はツリー表示順、熟練はレビュー容量優先、AI ビルドは AI 優先、品質ビルドは品質優先 | ビルド差分と F-11 |
+| 進化の解放順 | 初見はツリー表示順、熟練はレビュー容量優先、AI ビルドは AI 優先、品質ビルドは品質優先。方向確定は盤面依存（`stateAware`） | ビルド差分と F-11 |
 | ドラフト選好 | AI ビルドは `copilot` / `claude-code` / `devin` / `ai-guideline`、品質ビルドは `auto-test` / `pr-size-limit` / `docs` / `review-bot` / `hire-senior` を優先 | ビルド差分 |
-| F-11 の主要指標 | **Q1 で解放できるノード数**（方針に依らないので、これは決めた閾値ではなく実測）。ブランチの偏りは方針の `evolve` が決めるため成立判定に使わない | RI-86 の成立可否 |
+| F-11 の主要指標 | **希少性**: 代表4方針の Q1 全解放率 ≤20%。**方向確定**: `skilledStateEvolve` で厳密過半＋ multiPhase の確定が ≥20/40、確定ブランチ ≥2 種。固定順方針のブランチ偏りは成立判定に使わない | RI-86 の成立可否 |
 | F-7 の判定方針 | 初見相当は `naive`（介入は炎上2件以上／レビュー12件以上、約4.1秒ごとに判断、進化はツリー表示順） | RI-73 の成立可否 |
 | `noAi` の位置づけ | **ビルド差分の方針であって AI の統制条件ではない。** `skilledNoHire` に対し AI 配布のほか andon の有無・進化ブランチ（`qualityFirst`）・ドラフト選好（`quality`）・採用（`hire`）まで違う | AI の因果は `noAiCtl`（AI だけを外す）で見る |
 | 反応間隔の換算 | `stepMs` は壁時計ではなくシミュレーション時間。`stepMs/100` tick、1 tick が 1x で 680ms（`MS_PER_TICK_1X`）。`skilled`=3 tick=約2.0秒、`naive`=6 tick=約4.1秒 | F-4 の「介入が間に合うか」の読み方 |

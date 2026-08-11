@@ -2067,10 +2067,12 @@ export function runOnce(
                 unlockedThisPhase,
               });
             for (const id of order) {
-              const branch = id.split('-')[0] ?? '';
-              // 先端予約の二段防衛: 返却順に残っていても今フェーズ2段済みは試さない。
-              if (unlockedThisPhase.filter((x) => x.startsWith(`${branch}-`)).length >= 2) {
-                continue;
+              // 先端予約ガードは stateAware のみ。固定順方針は従来どおり3段まで進める。
+              if (spec.evolve === 'stateAware') {
+                const branch = id.split('-')[0] ?? '';
+                if (unlockedThisPhase.filter((x) => x.startsWith(`${branch}-`)).length >= 2) {
+                  continue;
+                }
               }
               e.unlockEvolution(id);
               if (e.snapshot().evolution.points < before) break;

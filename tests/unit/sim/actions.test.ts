@@ -116,6 +116,7 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
       containedTaskId: 0,
       hpCost: FIREFIGHT_LIGHT_HP_COST,
       moraleCost: FIREFIGHT_LIGHT_MORALE_COST,
+      brokeCombo: true,
       focusCost: def.cost,
       gaugeGain: def.gauge,
     }),

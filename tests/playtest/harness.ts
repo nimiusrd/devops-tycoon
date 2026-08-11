@@ -342,21 +342,27 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   // 選んだブランチは同一フェーズで2ノードまで深化し、3ノード目は次スプリントへ残す。
   // 前スプリント持ち越しの1〜2ノードには sticky を足して横断継続する。
   // multiPhase が揃ったあとの n≥2 は横展開のため強く減点する。
+  //
+  // 今フェーズで2段取ったブランチは基礎スコアに依存せず候補外にする。
+  // quality 危機帯（基礎6）では -5 でも先頭に残って先端まで同フェーズ取得し得るため。
   const STICKY_BONUS = 2.5;
   /** 前フェーズ2段→今フェーズで先端を取るための上書き。危機帯信号 (+4〜5.5) を超える。 */
   const STICKY_TIP_BONUS = 6;
   const SAME_PHASE_DEEPEN_BONUS = 2.5;
+  const tipReserved = new Set<EvolutionBranch>();
   for (const b of Object.keys(scores) as EvolutionBranch[]) {
     const n = unlockedCount(b);
     const phaseN = phaseCount(b);
     const priorN = n - phaseN;
+    if (phaseN >= 2) {
+      tipReserved.add(b);
+      scores[b] = Number.NEGATIVE_INFINITY;
+      continue;
+    }
     if (n >= 3) {
       scores[b] -= 5;
     } else if (n >= 2) {
-      if (phaseN >= 2) {
-        // 今フェーズで既に2段 — 先端は次スプリントに残して multiPhase を作る。
-        scores[b] -= 5;
-      } else if (priorN >= 1 && phaseN >= 1) {
+      if (priorN >= 1 && phaseN >= 1) {
         // 既に複数スプリントにまたがる2ノード — 確定後の横展開。
         scores[b] -= 3;
       } else if (priorN >= 2 && phaseN === 0) {
@@ -373,7 +379,11 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   }
 
   // どれも閾値未達なら、相対的に弱い柱へ寄せる（常に review 固定になるのを防ぐ）。
-  if (Math.max(...Object.values(scores)) <= 0) {
+  // 先端予約済みブランチは候補に戻さない。
+  const activeScores = (Object.keys(scores) as EvolutionBranch[]).filter(
+    (b) => !tipReserved.has(b),
+  );
+  if (activeScores.length > 0 && Math.max(...activeScores.map((b) => scores[b])) <= 0) {
     const weakness: Record<EvolutionBranch, number> = {
       review: 100 - org.seniorHp,
       quality: org.techDebt + (100 - org.testCoverage) * 0.5,
@@ -381,8 +391,8 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
       culture: 100 - org.morale + (100 - org.quality) * 0.3,
       dev: Math.max(0, 120 - totals.delivered),
     };
-    let best: EvolutionBranch = 'review';
-    for (const b of Object.keys(weakness) as EvolutionBranch[]) {
+    let best = activeScores[0]!;
+    for (const b of activeScores) {
       if (weakness[b] > weakness[best]) best = b;
     }
     scores[best] += 1;
@@ -2023,15 +2033,8 @@ export function runOnce(
                 });
           let spent = 0;
           const unlockedThisPhase: string[] = [];
-          // stateAware は方向確定（厳密過半+multiPhase）を測るため、1フェーズで
-          // 全ブランチへ散らして過半を潰さないよう解放数に上限を置く。
-          // 余ったポイントは持ち越し、次スプリントの sticky 継続に使う。
-          const maxUnlocksThisPhase = spec.evolve === 'stateAware' ? 3 : 16;
-          while (
-            e.snapshot().evolution.points > 0 &&
-            spent < 16 &&
-            unlockedThisPhase.length < maxUnlocksThisPhase
-          ) {
+          // 他方針と同じくポイントを使い切る（F-11 方向確定も支出契約を揃える）。
+          while (e.snapshot().evolution.points > 0 && spent < 16) {
             const beforeSnap = e.snapshot();
             const before = beforeSnap.evolution.points;
             const beforeIds = new Set(Object.keys(beforeSnap.evolution.unlocked));

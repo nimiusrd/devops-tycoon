@@ -40,8 +40,8 @@ export const BRANCH_LABEL: Record<EvolutionBranch, string> = {
  *
  * RI-86 / F-11: 入手速度は据え置き。dev/review/quality の序盤は F-4・勝率を守るコスト、
  * culture/ai は中段から高くして横断ビルドを抑える。先端はラン後半で届く水準
- * （旧20〜24は勝率を壊したため引き下げ）。
- * ティア目安: ペーシング寄り 1-3-7 / quality 1-4-11 / culture・ai 4-8-11〜13。総コスト 86。
+ * （旧20〜24は勝率を壊したため避ける。Q1 全解放率の受入上限のため中〜先端を再配分）。
+ * ティア目安: ペーシング寄り 1-3-10 / quality 1-5-15 / culture・ai 4-10-15〜18。総コスト 112。
  */
 export const EVOLUTION_NODES: EvolutionNodeDef[] = [
   // 開発力
@@ -67,7 +67,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'dev',
     name: '定型処理の自動化',
     description: 'ルーティン作業を自動化し、定型タスクを速く回す',
-    cost: 7,
+    cost: 11,
     requires: 'dev-2',
     effects: { routineSpeedMul: 1.3 },
   },
@@ -94,7 +94,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'review',
     name: '割り込みレビュー強化',
     description: '割り込みレビュー体制をさらに強化する',
-    cost: 7,
+    cost: 11,
     requires: 'review-2',
     effects: { reviewCapacityMul: 1.2 },
   },
@@ -112,7 +112,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'quality',
     name: '防御バリア常設',
     description: 'インシデントを未然に弾く防御線を常設',
-    cost: 4,
+    cost: 5,
     requires: 'quality-1',
     effects: { incidentRateMul: 0.82 },
   },
@@ -121,7 +121,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'quality',
     name: 'Incident 耐性',
     description: '手戻り耐性と品質文化を底上げ',
-    cost: 11,
+    cost: 15,
     requires: 'quality-2',
     effects: { reworkRateAdd: -0.1, qualityAdd: 8 },
   },
@@ -139,7 +139,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'ai',
     name: 'AI Literacy 逓増',
     description: 'リテラシーを底上げし、エージェント基盤の利用コストも抑える',
-    cost: 8,
+    cost: 10,
     requires: 'ai-1',
     effects: { aiLiteracyAdd: 18, infraCostMul: 0.75 },
   },
@@ -148,7 +148,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'ai',
     name: 'Devin 枠',
     description: '自律エージェントを組み込み、基盤をさらにコスト最適化する',
-    cost: 13,
+    cost: 18,
     requires: 'ai-2',
     effects: { codingSpeedMul: 1.2, infraCostMul: 0.7 },
   },
@@ -166,7 +166,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'culture',
     name: '品質文化',
     description: '品質を重視する文化を根付かせる',
-    cost: 8,
+    cost: 10,
     requires: 'culture-1',
     effects: { qualityAdd: 10 },
   },
@@ -175,7 +175,7 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     branch: 'culture',
     name: '集中力上限 +3',
     description: '集中力の余裕をさらに確保する',
-    cost: 11,
+    cost: 15,
     requires: 'culture-2',
     focusBonus: 3,
   },

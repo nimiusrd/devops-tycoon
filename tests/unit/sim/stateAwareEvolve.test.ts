@@ -275,10 +275,30 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
     expect(order[0]).not.toBe('quality');
   });
 
+  it('危機帯の基礎スコアでも今フェーズ2段取得後は先端を候補外にする', () => {
+    const org = createOrgState('default', true);
+    // quality 基礎 6（debt55 + cov30）。-5 では先頭に残るため、候補外化が必要。
+    const order = stateAwareEvolveBranches({
+      org: {
+        ...org,
+        techDebt: 55,
+        testCoverage: 30,
+        seniorHp: 80,
+        morale: 75,
+        aiDependency: 10,
+        quality: 60,
+      },
+      totals: totals({ delivered: 200, completed: 20 }),
+      reviewQueuePeak: 2,
+      unlocked: ['quality-1', 'quality-2'],
+      unlockedThisPhase: ['quality-1', 'quality-2'],
+    });
+    expect(order[0]).not.toBe('quality');
+  });
+
   it('前フェーズで2段買ったブランチは次スプリントで先端へ sticky する', () => {
     const org = createOrgState('default', true);
-    // quality n=2 prior に sticky 2.5。review 危機 5.5 よりは弱いが、
-    // 中程度の競合（review 1.0）よりは継続する。
+    // quality n=2 prior に tip sticky 6。中程度の競合（review 1.0）より継続する。
     const order = stateAwareEvolveBranches({
       org: {
         ...org,

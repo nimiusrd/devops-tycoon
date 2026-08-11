@@ -163,7 +163,18 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'aiSuccess';
   }
 
+  // ドキュメント盤石ビルドは幸福より先に健全へ（reviewHeavy 等の勝ち筋を幸福へ吸わせない）。
+  if (
+    diagnosis === 'documentationKingdom' &&
+    org.quality >= 55 &&
+    org.morale >= 60 &&
+    reworkRatio < 0.22
+  ) {
+    return 'healthy';
+  }
+
   // 人を守るビルド（障害多発より先に評価し、幸福勝ちをカオスへ吸わせない）。
+  // documentationKingdom は上で健全へ分岐済み。
   if (org.morale >= HAPPINESS_MORALE_MIN && org.seniorHp >= HAPPINESS_SENIOR_HP_MIN) {
     return 'happiness';
   }
@@ -174,16 +185,7 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'chaos';
   }
 
-  // 品質・ドキュメント寄りの健全（診断が documentationKingdom なら閾値を緩める。士気下限は維持）。
-  // 経営（予算残り）より先に評価し、品質ビルドが予算だけで潰されないようにする。
-  if (
-    diagnosis === 'documentationKingdom' &&
-    org.quality >= 55 &&
-    org.morale >= 60 &&
-    reworkRatio < 0.22
-  ) {
-    return 'healthy';
-  }
+  // 品質寄りの健全。経営（予算残り）より先に評価し、品質ビルドが予算だけで潰されないようにする。
   if (org.quality >= 65 && org.morale >= 65 && reworkRatio < 0.2) {
     return 'healthy';
   }

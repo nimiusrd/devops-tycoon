@@ -518,6 +518,19 @@ describe('evaluateWinType', () => {
       totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
       budget: 10,
     });
+    // documentationKingdom は幸福条件を満たしても健全を優先する。
+    win('healthy', {
+      org: {
+        quality: 55,
+        morale: 70,
+        seniorHp: 55,
+        aiLiteracy: 50,
+        testCoverage: 70,
+        documentation: 60,
+      },
+      totals: { completed: 20, done: 20, aiAssisted: 0, rework: 2, reviewQueuePeak: 4, spread: 1 },
+      budget: 10,
+    });
     // documentationKingdom 経路でも士気下限未満なら健全にしない。
     win('normal', {
       org: {

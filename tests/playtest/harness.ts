@@ -336,28 +336,37 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   if (totals.completed >= 5 && totals.delivered < totals.completed * 5) scores.dev += 3;
   else if (totals.delivered < 50 && totals.completed >= 5) scores.dev += 2;
 
-  // 既取得ブランチの減点と、スプリント横断 sticky / 同一フェーズ深化の抑制。
-  // 同一進化フェーズでの連続取得は playtest-report の commitInQ1 が
-  // multiPhase（複数 sprintIndex）を要求するため確定扱いにしない。
-  // 1ノード目から -2 すると中強度の quality/ai/culture が2スプリント目で曲がり、
-  // 継続方向が review（強い危機信号）一択になるため、n≥1 は弱い減点に留める。
-  // 前スプリントから持ち越した n===1（今フェーズ未取得）かつ中強度信号には sticky を足し、
-  // 別スプリントでの継続を促す。今フェーズで取ったばかりなら同ブランチを強く減点し、
-  // 同一フェーズ2段買いで multiPhase を潰さない。危機帯 +4 以上には sticky を付けない。
-  // n≥2 以降は確定後の横展開を促すため従来どおり強く減点する。
-  const CRISIS_SIGNAL = 4;
-  const STICKY_BONUS = 1.5;
-  const SAME_PHASE_DEEPEN_PENALTY = 2.5;
+  // 既取得ブランチの減点と、方向確定（厳密過半 + multiPhase）向けの集中。
+  // commitInQ1 は同一フェーズの2段買いだけでは確定としない。ポイントを使い切る
+  // 前提では序盤に全ブランチへ1ノードずつ散ると過半が組めないため、
+  // 選んだブランチは同一フェーズで2ノードまで深化し、3ノード目は次スプリントへ残す。
+  // 前スプリント持ち越しの1〜2ノードには sticky を足して横断継続する。
+  // multiPhase が揃ったあとの n≥2 は横展開のため強く減点する。
+  const STICKY_BONUS = 2.5;
+  const SAME_PHASE_DEEPEN_BONUS = 2.5;
   for (const b of Object.keys(scores) as EvolutionBranch[]) {
     const n = unlockedCount(b);
     const phaseN = phaseCount(b);
-    const signal = scores[b];
-    if (n >= 3) scores[b] -= 5;
-    else if (n >= 2) scores[b] -= 3;
-    else if (n >= 1) {
+    const priorN = n - phaseN;
+    if (n >= 3) {
+      scores[b] -= 5;
+    } else if (n >= 2) {
+      if (phaseN >= 2) {
+        // 今フェーズで既に2段 — 先端は次スプリントに残して multiPhase を作る。
+        scores[b] -= 5;
+      } else if (priorN >= 1 && phaseN >= 1) {
+        // 既に複数スプリントにまたがる2ノード — 確定後の横展開。
+        scores[b] -= 3;
+      } else if (priorN >= 2 && phaseN === 0) {
+        // 前フェーズで2段まで買ったブランチを次スプリントで触り multiPhase を成立させる。
+        scores[b] += STICKY_BONUS;
+      } else {
+        scores[b] -= 0.5;
+      }
+    } else if (n >= 1) {
       scores[b] -= 0.5;
-      if (phaseN >= 1) scores[b] -= SAME_PHASE_DEEPEN_PENALTY;
-      else if (signal > 0 && signal < CRISIS_SIGNAL) scores[b] += STICKY_BONUS;
+      if (phaseN >= 1) scores[b] += SAME_PHASE_DEEPEN_BONUS;
+      else scores[b] += STICKY_BONUS;
     }
   }
 

@@ -827,11 +827,9 @@ for (const [, byPolicy] of f10WinsByCohort) {
 const f10AllAdoptedPoliciesBacked = [...f10AdoptedPolicies].every((p) =>
   f10PoliciesBackedByCommonSeed.has(p),
 );
-const f10CommonSeedSupportsModals =
-  f10CommonSeedDivergence &&
-  f10CommonSeedTypes.size >= 2 &&
-  [...f10CommonSeedTypes].every((t) => f10ModalWinTypes.has(t)) &&
-  f10AllAdoptedPoliciesBacked;
+/** 裾の非 modal 観測は見ず、modal 裏付け集合が全 modal を覆うかだけを見る。 */
+const f10AllModalsBacked = [...f10ModalWinTypes].every((t) => f10ModalsBackedByCommonSeed.has(t));
+const f10CommonSeedSupportsModals = f10AllAdoptedPoliciesBacked && f10AllModalsBacked;
 
 const overallWinTypeCount = Object.keys(winTypes).length;
 const f10ModalCount = f10ModalWinTypes.size;

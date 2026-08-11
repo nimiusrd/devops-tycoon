@@ -328,17 +328,26 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   if (totals.completed >= 5 && totals.delivered < totals.completed * 5) scores.dev += 3;
   else if (totals.delivered < 50 && totals.completed >= 5) scores.dev += 2;
 
-  // 既取得ブランチの減点。
+  // 既取得ブランチの減点と、中強度信号のスプリント横断 sticky。
   // 同一進化フェーズでの連続取得は playtest-report の commitInQ1 が
   // multiPhase（複数 sprintIndex）を要求するため確定扱いにしない。
   // 1ノード目から -2 すると中強度の quality/ai/culture が2スプリント目で曲がり、
   // 継続方向が review（強い危機信号）一択になるため、n≥1 は弱い減点に留める。
+  // さらに n===1 かつ正の中強度信号が残るブランチへ sticky を足し、
+  // 次スプリントでも同ブランチを続けやすくする（危機帯 +4 以上には付けないので、
+  // 強い競合があるときは従来どおり曲がれる）。
   // n≥2 以降は確定後の横展開を促すため従来どおり強く減点する。
+  const CRISIS_SIGNAL = 4;
+  const STICKY_BONUS = 1.5;
   for (const b of Object.keys(scores) as EvolutionBranch[]) {
     const n = unlockedCount(b);
+    const signal = scores[b];
     if (n >= 3) scores[b] -= 5;
     else if (n >= 2) scores[b] -= 3;
-    else if (n >= 1) scores[b] -= 0.5;
+    else if (n >= 1) {
+      scores[b] -= 0.5;
+      if (signal > 0 && signal < CRISIS_SIGNAL) scores[b] += STICKY_BONUS;
+    }
   }
 
   // どれも閾値未達なら、相対的に弱い柱へ寄せる（常に review 固定になるのを防ぐ）。

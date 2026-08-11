@@ -59,6 +59,7 @@ export {
   retainNonMetricAdjust,
   stripMetricAdjustments,
   estimateRosterCoderCount,
+  estimateRosterReviewerCount,
   type CoarseRunModifiers,
   type CoarseStepResult,
 } from './teamState';

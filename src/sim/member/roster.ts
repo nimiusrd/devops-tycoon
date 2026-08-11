@@ -527,6 +527,11 @@ export function activeAssignedCount(roster: RosterState): number {
   );
 }
 
+/** review に配置済みの稼働人数（レビュー単価のシニア負荷分散。RI-73）。 */
+export function activeReviewerCount(roster: RosterState): number {
+  return roster.members.reduce((n, m) => n + (isActive(m) && m.assignment === 'review' ? 1 : 0), 0);
+}
+
 /** 稼働かつ AI 配布中の人数（プレイヤーチーム島の AI ボット表示へ載せる）。 */
 export function aiAssignedCount(roster: RosterState): number {
   return roster.members.reduce((n, m) => n + (isActive(m) && m.aiAssigned ? 1 : 0), 0);

@@ -36,6 +36,7 @@ export {
   memberExpression,
   rosterSummary,
   activeAssignedCount,
+  activeReviewerCount,
   activeEngineerCount,
   aiAssignedCount,
   rankLabel,

@@ -30,6 +30,7 @@ import {
 import { diagnose } from '../diagnosis';
 import {
   activeAssignedCount,
+  activeReviewerCount,
   activeEngineerCount,
   aiAssignedCount,
   applySprintGrowth,
@@ -1684,6 +1685,20 @@ export class RunEngine {
     };
   }
 
+  /** 粗粒度シニア負荷分散用に、保存済みロスターから配置人数マップを作る（RI-73）。 */
+  private coarseRosterShareMaps(): {
+    assignedByTeamId: Record<string, number>;
+    reviewersByTeamId: Record<string, number>;
+  } {
+    const assignedByTeamId: Record<string, number> = {};
+    const reviewersByTeamId: Record<string, number> = {};
+    for (const [id, roster] of Object.entries(this.teamRosters)) {
+      assignedByTeamId[id] = activeAssignedCount(roster);
+      reviewersByTeamId[id] = activeReviewerCount(roster);
+    }
+    return { assignedByTeamId, reviewersByTeamId };
+  }
+
   private advanceOtherTeams(stepKey: string): void {
     const before = this.teams;
     const fold = foldRunEffects({
@@ -1693,9 +1708,7 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
-    const assignedByTeamId = Object.fromEntries(
-      Object.entries(this.teamRosters).map(([id, roster]) => [id, activeAssignedCount(roster)]),
-    );
+    const { assignedByTeamId, reviewersByTeamId } = this.coarseRosterShareMaps();
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey,
@@ -1703,6 +1716,7 @@ export class RunEngine {
       adjust: this.orgAdjust,
       modifiers: this.coarseModifiersFromFold(fold),
       assignedByTeamId,
+      reviewersByTeamId,
     });
     this.teams = stepped.teams;
     // 粗粒度チームの出荷・炎上・完了・AI 支援をラン／四半期集計へ反映する。
@@ -2343,12 +2357,15 @@ export class RunEngine {
       difficulty: this.difficulty,
       trials: this.trials,
     });
+    const { assignedByTeamId, reviewersByTeamId } = this.coarseRosterShareMaps();
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey: `sprint:${this.currentSprintId}`,
       excludeId: this.activeTeamId,
       adjust: this.orgAdjust,
       modifiers: this.coarseModifiersFromFold(fold),
+      assignedByTeamId,
+      reviewersByTeamId,
     });
     const delta = normalizeCoarseTotalsDelta(
       before,

@@ -1,7 +1,7 @@
 # User-level template: merge these settings into ~/.codex/config.toml.
-# This file intentionally does not set default_permissions, so other projects
-# keep their normal profile. The project-local .codex/config.toml selects this
-# profile only for this repository.
+# Keep the safe workspace profile as the user-level default. The project-local
+# .codex/config.toml selects the Docker profile only for this repository.
+default_permissions = ":workspace"
 
 [permissions.workspace-docker]
 description = "Workspace access with Docker Desktop"

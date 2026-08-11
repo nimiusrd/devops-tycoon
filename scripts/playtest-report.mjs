@@ -781,10 +781,9 @@ for (const [policy, arr] of group((r) => r.policy)) {
 }
 
 /**
- * 同一 meta/難易度/seed で、採用 modal 方針どうしの勝利種別が分かれるか。
+ * 同一 meta/難易度/seed での採用方針の勝利種別。
  * 標本不足・同率除外の方針は見ない（疎な2方針だけの分岐で PASS にしない）。
  */
-let f10CommonSeedDivergence = false;
 const f10CommonSeedTypes = new Set();
 const f10WinsByCohort = new Map();
 for (const r of runs) {
@@ -796,7 +795,6 @@ for (const r of runs) {
 for (const [, byPolicy] of f10WinsByCohort) {
   const types = new Set(byPolicy.values());
   if (types.size < 2) continue;
-  f10CommonSeedDivergence = true;
   for (const t of types) f10CommonSeedTypes.add(t);
 }
 /**

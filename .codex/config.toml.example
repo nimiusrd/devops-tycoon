@@ -1,0 +1,19 @@
+# User-level template: merge these settings into ~/.codex/config.toml.
+# Keep this file as config.toml.example. Custom permission profiles are not
+# available from project-local config layers in the supported Codex CLI.
+default_permissions = "workspace-docker"
+
+[permissions.workspace-docker]
+description = "Workspace access with Docker Desktop"
+extends = ":workspace"
+
+[permissions.workspace-docker.network]
+enabled = true
+
+[permissions.workspace-docker.network.domains]
+"ghcr.io" = "allow"
+"pkg-containers.githubusercontent.com" = "allow"
+"mcr.microsoft.com" = "allow"
+
+[permissions.workspace-docker.network.unix_sockets]
+"/var/run/docker.sock" = "allow"

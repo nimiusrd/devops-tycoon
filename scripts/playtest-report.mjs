@@ -750,6 +750,8 @@ function uniqueModalWinType(wt) {
 }
 
 const f10ModalWinTypes = new Set();
+/** modal 集計に採用した方針（標本不足・同率は含めない）。 */
+const f10AdoptedPolicies = new Set();
 const f10ModalPolicies = [];
 const f10TiePolicies = [];
 const f10SparsePolicies = [];
@@ -771,39 +773,52 @@ for (const [policy, arr] of group((r) => r.policy)) {
     continue;
   }
   f10ModalWinTypes.add(modal);
+  f10AdoptedPolicies.add(policy);
   f10ModalPolicies.push(`${policy}=${modal}`);
 }
 
-/** 同一 meta/難易度/seed で、F-10 ビルド方針どうしの勝利種別が分かれる組があるか。 */
+/**
+ * 同一 meta/難易度/seed で、採用 modal 方針どうしの勝利種別が分かれるか。
+ * 標本不足・同率除外の方針は見ない（疎な2方針だけの分岐で PASS にしない）。
+ */
 let f10CommonSeedDivergence = false;
+const f10CommonSeedTypes = new Set();
 const f10WinsByCohort = new Map();
 for (const r of runs) {
-  if (!F10_BUILD_POLICIES.has(r.policy) || !r.winType) continue;
+  if (!f10AdoptedPolicies.has(r.policy) || !r.winType) continue;
   const key = `${r.meta ?? 'fresh'}|${r.difficulty}|${r.seed}`;
   if (!f10WinsByCohort.has(key)) f10WinsByCohort.set(key, new Map());
   f10WinsByCohort.get(key).set(r.policy, r.winType);
 }
 for (const [, byPolicy] of f10WinsByCohort) {
   const types = new Set(byPolicy.values());
-  if (types.size >= 2) {
-    f10CommonSeedDivergence = true;
-    break;
-  }
+  if (types.size < 2) continue;
+  f10CommonSeedDivergence = true;
+  for (const t of types) f10CommonSeedTypes.add(t);
 }
+/**
+ * 共通 seed 上で観測した勝利種別が、採用 modal 集合の分岐を支えているか。
+ * 疎方針を混ぜず、採用 modal 方針だけで2種以上が同一コホートに現れることを要求する。
+ */
+const f10CommonSeedSupportsModals =
+  f10CommonSeedDivergence &&
+  f10CommonSeedTypes.size >= 2 &&
+  [...f10CommonSeedTypes].every((t) => f10ModalWinTypes.has(t));
 
 const overallWinTypeCount = Object.keys(winTypes).length;
 const f10ModalCount = f10ModalWinTypes.size;
 const f10Measurable = !STALE && cohort?.isDefault === true;
 const f10Pass =
-  f10Measurable && overallWinTypeCount >= 3 && f10ModalCount >= 3 && f10CommonSeedDivergence;
+  f10Measurable && overallWinTypeCount >= 3 && f10ModalCount >= 3 && f10CommonSeedSupportsModals;
 const f10Verdict = !f10Measurable ? '未計測' : f10Pass ? 'PASS' : 'FAIL';
 console.log(
   `\nF-10 受入（RI-76）: 全体勝利種別 ${overallWinTypeCount} 種 / ` +
     `F-10ビルド modal ${f10ModalCount} 種（minWins=${F10_MIN_WINS_FOR_MODAL}・同率除外） / ` +
-    `共通seed分岐=${f10CommonSeedDivergence ? 'yes' : 'no'} → ${f10Verdict}`,
+    `採用方針の共通seed分岐=${f10CommonSeedSupportsModals ? 'yes' : 'no'} → ${f10Verdict}`,
 );
 console.log(`  F-10 modal: ${JSON.stringify([...f10ModalWinTypes].sort())}`);
 console.log(`  採用方針: ${f10ModalPolicies.join(', ') || '（なし）'}`);
+console.log(`  共通seed種別（採用方針のみ）: ${JSON.stringify([...f10CommonSeedTypes].sort())}`);
 if (f10TiePolicies.length > 0) console.log(`  同率除外: ${f10TiePolicies.join(', ')}`);
 if (f10SparsePolicies.length > 0) console.log(`  標本不足: ${f10SparsePolicies.join(', ')}`);
 if (STALE) console.log('  理由: 世代不一致（STALE）。PASS/FAIL を出さない');

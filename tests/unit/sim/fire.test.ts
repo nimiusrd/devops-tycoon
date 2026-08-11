@@ -61,6 +61,12 @@ describe('炎上タイマー: 緊急対応による鎮火（第6.3）', () => {
     expect(outcome.ok).toBe(true);
     expect(sprint.metrics.combo).toBe(0);
     expect(60 - org.seniorHp).toBeGreaterThanOrEqual(11);
+    expect(
+      sprint.events.some((e) => e.kind === 'contain' && e.brokeCombo === true && e.combo === 0),
+    ).toBe(true);
+    expect(
+      sprint.events.some((e) => e.kind === 'combo-break' && e.reason === 'light-firefight'),
+    ).toBe(true);
   });
 
   it('緊急対応は最も延焼が近い火から消す', () => {

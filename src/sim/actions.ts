@@ -233,8 +233,8 @@ const EFFECTS: Record<
   },
 
   // 緊急対応: 最も延焼が近い火を 1 件、タイマーが切れる前に鎮火して Review へ戻す。
-  // 自動鎮火（HP 大量消費・コンボ喪失）より遥かに安く、コンボも守られる（第6.3）。
-  // RI-73 / F-1: 連打は HP 逓増。単発先消しは士気ペナ＋安定なし（打つべきでない盤面）。
+  // 緊急時は自動鎮火より安くコンボも守れる（第6.3）。
+  // RI-73 / F-1: 連打は HP 逓増。単発先消しは士気ペナ＋安定なし＋コンボ切断。
   firefight(sprint, org, _rng, tick) {
     const fire = mostUrgentIncident(sprint);
     if (!fire) return false;
@@ -262,7 +262,16 @@ const EFFECTS: Record<
       kind: 'contain',
       taskId: containedTaskId,
       combo: sprint.metrics.combo,
+      ...(lightTouch ? { brokeCombo: true as const } : {}),
     });
+    if (lightTouch) {
+      appendSprintEvent(sprint, {
+        tick,
+        kind: 'combo-break',
+        reason: 'light-firefight',
+        taskId: containedTaskId,
+      });
+    }
     return {
       containedTaskId,
       hpCost: hp.spent,

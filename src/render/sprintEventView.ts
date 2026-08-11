@@ -73,6 +73,14 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
       return formatIntervention(event);
 
     case 'contain':
+      if (event.brokeCombo) {
+        return {
+          key: `${event.tick}:contain:${event.taskId}`,
+          icon: '🚒',
+          text: '先消し鎮火 → コンボ切断',
+          tone: 'warn',
+        };
+      }
       return {
         key: `${event.tick}:contain:${event.taskId}`,
         icon: '🚒',
@@ -86,7 +94,9 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
           ? '手戻り発生'
           : event.reason === 'auto-contain'
             ? '自動鎮火'
-            : '延焼';
+            : event.reason === 'light-firefight'
+              ? '余裕のある先消し'
+              : '延焼';
       return {
         key: `${event.tick}:combo-break:${event.reason}:${event.taskId ?? ''}`,
         icon: '💔',

@@ -190,7 +190,7 @@ export interface InterventionOutcome {
 }
 
 /** コンボ途切れの理由。 */
-export type ComboBreakReason = 'rework' | 'auto-contain' | 'spread';
+export type ComboBreakReason = 'rework' | 'auto-contain' | 'spread' | 'light-firefight';
 
 /** 点火の原因（RI-34′。「なぜ燃えたか」区別用）。 */
 export type IgniteSource = 'review' | 'spread';
@@ -237,8 +237,13 @@ export type SprintEvent =
       tick: number;
       kind: 'contain';
       taskId: number;
-      /** 鎮火後も維持されたコンボ。 */
+      /** 鎮火後も維持されたコンボ（先消しで切断した場合は 0）。 */
       combo: number;
+      /**
+       * 余裕のある先消しでコンボを切ったか（RI-73）。
+       * true のときは「コンボ継続」ではなく不利な即応として扱う。
+       */
+      brokeCombo?: boolean;
     };
 
 /** 炎上因果ログ用イベント（RI-34′。ring buffer とは独立して全件保持）。 */

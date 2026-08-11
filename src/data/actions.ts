@@ -97,11 +97,11 @@ export const ACTION_DEFS: ActionDef[] = [
     cost: 5,
     cooldownTicks: 250,
     gauge: 0.15,
-    // RI-73 / F-1: Review 渋滞時のみ安定。薄いキューでは士気ペナ（actions.ts）。
+    // RI-73 / F-1: 運用安定は付けない。薄いキューでは士気追加＋シニアHP（actions.ts）。
     stabilizesFlow: true,
     tone: 'heavy',
     description: 'タスク流入を止め、溜まったキューを捌き切る',
-    sideEffect: '出荷機会を失う。シニアHP・士気を消費。運用安定なし',
+    sideEffect: '出荷機会を失う。士気を消費。薄いキューではシニアHPも消費。運用安定なし',
   },
 ];
 

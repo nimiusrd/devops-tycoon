@@ -41,8 +41,25 @@ describe('sprintEventView（RI-52）', () => {
       '鎮火成功 → コンボ x4 継続',
     );
     expect(
+      formatSprintEvent({
+        tick: 5,
+        kind: 'contain',
+        taskId: 1,
+        combo: 0,
+        brokeCombo: true,
+      }).text,
+    ).toBe('先消し鎮火 → コンボ切断');
+    expect(
       formatSprintEvent({ tick: 6, kind: 'combo-break', reason: 'rework', taskId: 2 }).text,
     ).toBe('コンボ途切れ: 手戻り発生');
+    expect(
+      formatSprintEvent({
+        tick: 6,
+        kind: 'combo-break',
+        reason: 'light-firefight',
+        taskId: 2,
+      }).text,
+    ).toBe('コンボ途切れ: 余裕のある先消し');
     expect(
       formatSprintEvent({
         tick: 7,

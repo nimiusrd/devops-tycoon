@@ -716,6 +716,8 @@ console.log('全体 勝利種別:', JSON.stringify(winTypes));
 console.log('全体 組織診断:', JSON.stringify(diagnoses));
 // F-10 は「方針を変えると勝ち筋が変わるか」なので、方針別の分布を出す。
 console.log('\n方針別（勝利があった方針のみ。勝利種別 / 診断）:');
+const modalWinTypes = new Set();
+let policiesWithWins = 0;
 for (const [policy, arr] of group((r) => r.policy)) {
   const wt = {};
   const dg = {};
@@ -724,8 +726,20 @@ for (const [policy, arr] of group((r) => r.policy)) {
     dg[r.diagnosis] = (dg[r.diagnosis] ?? 0) + 1;
   }
   if (Object.keys(wt).length === 0) continue;
+  policiesWithWins += 1;
+  const modal = Object.entries(wt).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
+  modalWinTypes.add(modal);
   console.log(`  ${policy}: ${JSON.stringify(wt)} / ${JSON.stringify(dg)}`);
 }
+// RI-76 受入: 全体の勝利種別が3種以上、かつ方針別最頻勝利種別（modal）も3種以上。
+const overallWinTypeCount = Object.keys(winTypes).length;
+const modalCount = modalWinTypes.size;
+const f10Pass = overallWinTypeCount >= 3 && modalCount >= 3;
+console.log(
+  `\nF-10 受入（RI-76）: 全体勝利種別 ${overallWinTypeCount} 種 / 方針別 modal ${modalCount} 種` +
+    `（勝利方針 ${policiesWithWins}） → ${f10Pass ? 'PASS' : 'FAIL'}`,
+);
+console.log(`  modal 内訳: ${JSON.stringify([...modalWinTypes].sort())}`);
 
 // --- F-9 敗因ごとの手触り（難易度で層別化） ---------------------------------
 console.log(`\n## F-9 敗因ごとの進行と予兆\n`);

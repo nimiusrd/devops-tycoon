@@ -800,8 +800,9 @@ for (const [, byPolicy] of f10WinsByCohort) {
   for (const t of types) f10CommonSeedTypes.add(t);
 }
 /**
- * 方針ごとの modal を、その方針自身が共通 seed 上で同じ種別を出したときだけ裏付ける。
- * 「種別の集合が揃った」だけでは、方針と modal の対応が崩れたまま PASS しうる。
+ * 方針ごとの modal を、共通 seed 上で「自身の modal を再現した方針」が
+ * 異種別で2つ以上そろった組だけから裏付ける。
+ * 片方だけが modal 一致でもう片方が別種別、という組では PASS にしない。
  */
 const f10PolicyModal = new Map(
   f10ModalPolicies.map((entry) => {
@@ -812,15 +813,15 @@ const f10PolicyModal = new Map(
 const f10PoliciesBackedByCommonSeed = new Set();
 const f10ModalsBackedByCommonSeed = new Set();
 for (const [, byPolicy] of f10WinsByCohort) {
-  if (byPolicy.size < 2) continue;
-  const types = new Set(byPolicy.values());
-  if (types.size < 2) continue;
-  for (const [policy, winType] of byPolicy) {
+  const matched = [...byPolicy.entries()].filter(([policy, winType]) => {
     const modal = f10PolicyModal.get(policy);
-    if (modal && modal === winType) {
-      f10PoliciesBackedByCommonSeed.add(policy);
-      f10ModalsBackedByCommonSeed.add(modal);
-    }
+    return modal !== undefined && modal === winType;
+  });
+  const matchedTypes = new Set(matched.map(([, winType]) => winType));
+  if (matched.length < 2 || matchedTypes.size < 2) continue;
+  for (const [policy, winType] of matched) {
+    f10PoliciesBackedByCommonSeed.add(policy);
+    f10ModalsBackedByCommonSeed.add(winType);
   }
 }
 const f10AllAdoptedPoliciesBacked = [...f10AdoptedPolicies].every((p) =>

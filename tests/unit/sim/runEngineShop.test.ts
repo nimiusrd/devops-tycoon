@@ -699,6 +699,7 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
     let state = engine.snapshot();
     expect(state.budget).toBe(68);
     expect(state.deck).toEqual([{ defId: 'docs', level: 1 }]);
+    expect(state.pendingShopHandIndices).toEqual([0]);
     expect(state.shop?.cards[0]).toEqual({ defId: 'docs', cost: 12, bought: true });
 
     engine.buyShopRelic();
@@ -719,6 +720,39 @@ describe('RI-72-D2 RunEngine shop / rest / recruit branches', () => {
     state = engine.snapshot();
     expect(state.phase).toBe('setup');
     expect(state.shop).toBeNull();
+  });
+
+  it('shop card is preferred into next sprint hand (RI-78)', () => {
+    const engine = createEngine('ri78-shop-prefer-hand');
+    const i = asInternals(engine);
+    i.phase = 'shop';
+    i.budget = 50;
+    i.deck = [
+      { defId: 'docs', level: 1 },
+      { defId: 'docs', level: 1 },
+      { defId: 'docs', level: 1 },
+    ];
+    i.relics = [];
+    i.shop = {
+      cards: [{ defId: 'copilot', cost: 1, bought: false }],
+      relic: null,
+      recruit: { cost: RECRUIT_COST, bought: false },
+    };
+
+    engine.buyShopCard('copilot');
+    expect(engine.snapshot().pendingShopHandIndices).toEqual([3]);
+    expect(engine.snapshot().pendingSprintModifiers).toMatchObject({
+      focusMaxAdd: 2,
+      taskCountMul: 1.1,
+    });
+    engine.leaveShop();
+    expect(engine.snapshot().phase).toBe('setup');
+    engine.beginSetupSprint();
+
+    const after = engine.snapshot();
+    expect(after.phase).toBe('sprint');
+    expect(after.pendingShopHandIndices).toEqual([]);
+    expect(after.sprint?.cardPiles.hand).toContain(3);
   });
 
   it('shop guards preserve state outside phase, without budget, or without roster slots', () => {

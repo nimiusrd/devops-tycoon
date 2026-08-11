@@ -196,7 +196,7 @@ export const REST_REPAY_REWORK_RATE = -0.08;
 /** 休息（upgrade）で次スプリントへ持ち越す集中力上限の増加（RI-78）。 */
 export const REST_UPGRADE_FOCUS_MAX = 2;
 /** ショップのレリック価格（割引前）。RI-78: 純出荷受入のため定価を抑える。 */
-export const SHOP_RELIC_COST = 18;
+export const SHOP_RELIC_COST = 12;
 
 export interface RunEngineInit {
   seed?: string;
@@ -321,6 +321,8 @@ export class RunEngine {
   private currentSprintKind: SprintKind = 'normal';
   /** 次スプリント限定の一時効果（beginSprint で消費）。 */
   private pendingSprintModifiers: SprintModifierDelta = {};
+  /** 次スプリント手札へ優先配布するデッキインデックス（RI-78。ショップ購入）。 */
+  private pendingShopHandIndices: number[] = [];
   /** 提示中のビート（beat フェーズのみ）。 */
   private beat: BeatState | null = null;
 
@@ -486,6 +488,7 @@ export class RunEngine {
     this.pendingSprintKind = 'normal';
     this.currentSprintKind = 'normal';
     this.pendingSprintModifiers = {};
+    this.pendingShopHandIndices = [];
     this.beat = null;
     this.currentSprintId = null;
     this.sprint = null;
@@ -662,7 +665,10 @@ export class RunEngine {
     // パッシブ（レリック等）のみを基準に保持し、手札を配布する（RI-30）。
     this.sprintPassiveEffects = { ...this.sprint.cardEffects };
     const dealRng = createRng(`${this.seed}:deal:${this.currentSprintId}`);
-    this.sprint.cardPiles = dealHand(this.deck.length, dealRng);
+    // RI-78: ショップで買ったカードは次スプリント手札へ優先配布する。
+    const prefer = this.pendingShopHandIndices;
+    this.pendingShopHandIndices = [];
+    this.sprint.cardPiles = dealHand(this.deck.length, dealRng, undefined, prefer);
     this.setPhase('sprint');
   }
 
@@ -1007,6 +1013,7 @@ export class RunEngine {
     this.pendingSprintKind = 'normal';
     this.currentSprintKind = 'normal';
     this.pendingSprintModifiers = {};
+    this.pendingShopHandIndices = [];
     this.beat = null;
     this.currentSprintId = null;
     this.sprint = null;
@@ -1305,7 +1312,17 @@ export class RunEngine {
     if (!offer || this.budget < offer.cost) return;
     this.budget -= offer.cost;
     offer.bought = true;
+    const beforeLen = this.deck.length;
     this.addCard(defId, 1);
+    // RI-78: 購入カードは次スプリントの手札へ優先して配る（投資が次スプで効くように）。
+    if (this.deck.length > beforeLen) {
+      this.pendingShopHandIndices.push(this.deck.length - 1);
+      // 導入支援: 集中力上限と次スプの出荷機会を少し広げ、購入が純出荷へ届くようにする（RI-78）。
+      this.pendingSprintModifiers = mergeModifiers(this.pendingSprintModifiers, {
+        focusMaxAdd: 2,
+        taskCountMul: 1.1,
+      });
+    }
     // RI-30: 効果は手札発動時。購入だけでは即時敗北しない。
     this.applyImmediateLose();
   }
@@ -2047,6 +2064,7 @@ export class RunEngine {
       pendingSprintKind: this.pendingSprintKind,
       currentSprintKind: this.currentSprintKind,
       pendingSprintModifiers: { ...this.pendingSprintModifiers },
+      pendingShopHandIndices: [...this.pendingShopHandIndices],
       org: structuredClone(this.org),
       deck: this.deck.map(cloneCardInstance),
       relics: [...this.relics],
@@ -2151,6 +2169,7 @@ export class RunEngine {
     this.pendingSprintKind = cloned.pendingSprintKind;
     this.currentSprintKind = cloned.currentSprintKind;
     this.pendingSprintModifiers = { ...cloned.pendingSprintModifiers };
+    this.pendingShopHandIndices = [...(cloned.pendingShopHandIndices ?? [])];
     this.org = cloned.org;
     this.deck = cloned.deck.map(cloneCardInstance);
     this.relics = [...cloned.relics];
@@ -2441,6 +2460,7 @@ export class RunEngine {
       pendingSprintKind: this.pendingSprintKind,
       currentSprintKind: this.currentSprintKind,
       pendingSprintModifiers: { ...this.pendingSprintModifiers },
+      pendingShopHandIndices: [...this.pendingShopHandIndices],
       org: structuredClone(this.org),
       deck: this.deck.map(cloneCardInstance),
       relics: [...this.relics],

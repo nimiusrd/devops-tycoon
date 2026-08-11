@@ -81,9 +81,10 @@ export interface PolicySpec {
    * - `none`: 使わない
    * - `always`: 手札を集中力が尽きるまで無差別に発動する
    * - `preferCostOpt`: `always` と同じだがコスト最適化カードを先に発動する（RI-88）
+   * - `preferDelivery`: 出荷加速（`codingSpeedMul>1`）カードだけを加速が大きい順に発動する（RI-78）
    * - `selective`: 集中力に余裕があり、盤面が切迫していないときだけ発動する
    */
-  cards: 'none' | 'always' | 'preferCostOpt' | 'selective';
+  cards: 'none' | 'always' | 'preferCostOpt' | 'preferDelivery' | 'selective';
   /**
    * ラン開始時の試練 ID（RI-88: ハーネス比較で継続課金を発生させる等）。
    * 未指定は試練なし。
@@ -584,10 +585,14 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    */
   skilledSelectiveHire: { ...skilledBase(), recruit: 'selective' },
   /**
-   * ショップでカード・レリックを買う方針（F-2 のスプリント間投資）。
-   * 統制先は同条件で買わない `skilledNoHire`。
+   * ショップ投資の統制（買わない）。カードは出荷加速だけ発動し、購入方針と揃える（RI-78）。
    */
-  skilledShopBuy: { ...skilledBase(), shop: 'buy' },
+  skilledShopCtl: { ...skilledBase(), cards: 'preferDelivery' },
+  /**
+   * ショップでカード・レリックを買う方針（F-2 のスプリント間投資）。
+   * 統制先は同条件で買わない `skilledShopCtl`（カード発動も揃える）。
+   */
+  skilledShopBuy: { ...skilledBase(), cards: 'preferDelivery', shop: 'buy' },
   /**
    * 休息の選択肢を回復以外にも振る（F-2 のスプリント間投資）。
    * 統制先は常に回復する `skilledNoHire`。
@@ -1153,7 +1158,16 @@ export function playHand(
             const bOpt = s.deck[b]?.defId === COST_OPT_CARD_ID ? 0 : 1;
             return aOpt - bOpt;
           })
-        : [...hand];
+        : mode === 'preferDelivery'
+          ? [...hand]
+              .filter((idx) => (getCard(s.deck[idx]?.defId ?? '')?.base?.codingSpeedMul ?? 1) > 1)
+              .sort((a, b) => {
+                const aMul = getCard(s.deck[a]?.defId ?? '')?.base?.codingSpeedMul ?? 1;
+                const bMul = getCard(s.deck[b]?.defId ?? '')?.base?.codingSpeedMul ?? 1;
+                return bMul - aMul;
+              })
+          : [...hand];
+    if (mode === 'preferDelivery' && order.length === 0) break;
     let played = false;
     for (const deckIndex of order) {
       const focusSpentBefore = e.snapshot().sprint?.metrics.focusSpent ?? 0;
@@ -1656,37 +1670,36 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
     e.buyShopRelic();
   };
 
-  // RI-78: 出荷価値順。カードとレリックを同じスコア空間で比較して買えるだけ買う。
+  // RI-78: 出荷加速カードだけを候補にし、正スコアの最良1点だけ買う。
+  // 購入カードは次スプ手札へ優先配布。買い漁りは購入費と集中力競合で純出荷を落とす。
   if (deliveryValueBuy) {
-    for (;;) {
-      const s = e.snapshot();
-      if (s.phase !== 'shop') break;
+    const s = e.snapshot();
+    if (s.phase === 'shop') {
       type Candidate =
         | { kind: 'card'; defId: string; score: number }
         | { kind: 'relic'; score: number };
       const candidates: Candidate[] = [];
       for (const c of s.shop?.cards ?? []) {
         if (c.bought || s.budget - c.cost < reserve) continue;
-        candidates.push({
-          kind: 'card',
-          defId: c.defId,
-          score: shopCardDeliveryScore(c.defId, c.cost),
-        });
+        if ((getCard(c.defId)?.base?.codingSpeedMul ?? 1) <= 1) continue;
+        const score = shopCardDeliveryScore(c.defId, c.cost);
+        if (score <= 0) continue;
+        candidates.push({ kind: 'card', defId: c.defId, score });
       }
       const relic = s.shop?.relic;
-      if (relic && !relic.bought && s.budget - relic.cost >= reserve) {
-        candidates.push({ kind: 'relic', score: shopRelicDeliveryScore(relic.id, relic.cost) });
+      if (
+        relic &&
+        !relic.bought &&
+        s.budget - relic.cost >= reserve &&
+        (getRelic(relic.id)?.effects?.codingSpeedMul ?? 1) > 1
+      ) {
+        const score = shopRelicDeliveryScore(relic.id, relic.cost);
+        if (score > 0) candidates.push({ kind: 'relic', score });
       }
-      if (candidates.length === 0) break;
       candidates.sort((a, b) => b.score - a.score);
       const best = candidates[0];
-      if (best.kind === 'relic') {
-        e.buyShopRelic();
-        if (!e.snapshot().shop?.relic?.bought) break;
-      } else {
-        e.buyShopCard(best.defId);
-        if (!e.snapshot().shop?.cards.find((c) => c.defId === best.defId)?.bought) break;
-      }
+      if (best?.kind === 'relic') e.buyShopRelic();
+      else if (best?.kind === 'card') e.buyShopCard(best.defId);
     }
     return;
   }

@@ -276,6 +276,11 @@ export interface RunState {
   currentSprintKind: SprintKind;
   /** 次スプリント限定の一時効果（beginSprint で消費）。 */
   pendingSprintModifiers: SprintModifierDelta;
+  /**
+   * 次スプリント手札へ優先配布するデッキインデックス（RI-78。ショップ購入カード）。
+   * beginSprint の dealHand で消費する。
+   */
+  pendingShopHandIndices: number[];
 
   org: OrgState;
   deck: CardInstance[];

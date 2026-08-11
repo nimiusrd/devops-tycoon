@@ -123,12 +123,28 @@ export function emptyCardPiles(): SprintCardPiles {
 
 /**
  * デッキから手札を配る。`drawOrder` をシャッフルし、先頭から `HAND_SIZE` 枚を hand へ。
+ *
+ * `preferIndices`（RI-78: ショップ購入カード）がある場合はシャッフル前に手札へ優先して入れ、
+ * 残りだけをシャッフルして山札にする。重複・範囲外は無視する。
  */
-export function dealHand(deckSize: number, rng: Rng, handSize = HAND_SIZE): SprintCardPiles {
-  const drawOrder = shuffleIndices(
-    Array.from({ length: deckSize }, (_, i) => i),
+export function dealHand(
+  deckSize: number,
+  rng: Rng,
+  handSize = HAND_SIZE,
+  preferIndices: readonly number[] = [],
+): SprintCardPiles {
+  const preferred: number[] = [];
+  const seen = new Set<number>();
+  for (const idx of preferIndices) {
+    if (!Number.isInteger(idx) || idx < 0 || idx >= deckSize || seen.has(idx)) continue;
+    seen.add(idx);
+    preferred.push(idx);
+  }
+  const rest = shuffleIndices(
+    Array.from({ length: deckSize }, (_, i) => i).filter((i) => !seen.has(i)),
     rng,
   );
+  const drawOrder = [...preferred, ...rest];
   const hand: number[] = [];
   while (hand.length < handSize && drawOrder.length > 0) {
     hand.push(drawOrder.shift()!);

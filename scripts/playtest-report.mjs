@@ -800,24 +800,37 @@ for (const [, byPolicy] of f10WinsByCohort) {
   for (const t of types) f10CommonSeedTypes.add(t);
 }
 /**
- * 採用 modal の各種別が、共通 seed 上で別の採用方針と分岐したか。
- * 孤立した2勝だけで第3の modal を立てて PASS にしない。
+ * 方針ごとの modal を、その方針自身が共通 seed 上で同じ種別を出したときだけ裏付ける。
+ * 「種別の集合が揃った」だけでは、方針と modal の対応が崩れたまま PASS しうる。
  */
+const f10PolicyModal = new Map(
+  f10ModalPolicies.map((entry) => {
+    const [policy, modal] = entry.split('=');
+    return [policy, modal];
+  }),
+);
+const f10PoliciesBackedByCommonSeed = new Set();
 const f10ModalsBackedByCommonSeed = new Set();
 for (const [, byPolicy] of f10WinsByCohort) {
   if (byPolicy.size < 2) continue;
   const types = new Set(byPolicy.values());
   if (types.size < 2) continue;
-  for (const t of types) f10ModalsBackedByCommonSeed.add(t);
+  for (const [policy, winType] of byPolicy) {
+    const modal = f10PolicyModal.get(policy);
+    if (modal && modal === winType) {
+      f10PoliciesBackedByCommonSeed.add(policy);
+      f10ModalsBackedByCommonSeed.add(modal);
+    }
+  }
 }
-const f10AllModalsBackedByCommonSeed = [...f10ModalWinTypes].every((t) =>
-  f10ModalsBackedByCommonSeed.has(t),
+const f10AllAdoptedPoliciesBacked = [...f10AdoptedPolicies].every((p) =>
+  f10PoliciesBackedByCommonSeed.has(p),
 );
 const f10CommonSeedSupportsModals =
   f10CommonSeedDivergence &&
   f10CommonSeedTypes.size >= 2 &&
   [...f10CommonSeedTypes].every((t) => f10ModalWinTypes.has(t)) &&
-  f10AllModalsBackedByCommonSeed;
+  f10AllAdoptedPoliciesBacked;
 
 const overallWinTypeCount = Object.keys(winTypes).length;
 const f10ModalCount = f10ModalWinTypes.size;
@@ -833,6 +846,9 @@ console.log(
 console.log(`  F-10 modal: ${JSON.stringify([...f10ModalWinTypes].sort())}`);
 console.log(`  採用方針: ${f10ModalPolicies.join(', ') || '（なし）'}`);
 console.log(`  共通seed種別（採用方針のみ）: ${JSON.stringify([...f10CommonSeedTypes].sort())}`);
+console.log(
+  `  共通seedで裏付けた方針: ${[...f10PoliciesBackedByCommonSeed].sort().join(', ') || '（なし）'}`,
+);
 console.log(
   `  共通seedで裏付けた modal: ${JSON.stringify([...f10ModalsBackedByCommonSeed].sort())}`,
 );

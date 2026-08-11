@@ -206,8 +206,44 @@ async function assertLayoutContract(
   const boardWrap = page.locator('.board-wrap');
   const wrapBox = await boardWrap.boundingBox();
   const stageBox = await page.locator('.board-stage').boundingBox();
-  if (!wrapBox || !stageBox)
-    throw new Error('board-wrap / board-stage の bounding box が取得できない');
+  const aspectStageBox = await page.getByTestId('aspect-stage-content').boundingBox();
+  if (!wrapBox || !stageBox || !aspectStageBox) {
+    throw new Error('board-wrap / board-stage / aspect-stage の bounding box が取得できない');
+  }
+  const aspectRatioError = Math.abs(aspectStageBox.width / aspectStageBox.height / BOARD_RATIO - 1);
+  expect(aspectRatioError, 'AspectStageの1404:573比率が崩れている').toBeLessThanOrEqual(0.01);
+  expect(
+    Math.abs(boardBox.x - aspectStageBox.x),
+    '盤面と実ステージのX座標がずれている',
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(boardBox.y - aspectStageBox.y),
+    '盤面と実ステージのY座標がずれている',
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(boardBox.width - aspectStageBox.width),
+    '盤面と実ステージの幅がずれている',
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(boardBox.height - aspectStageBox.height),
+    '盤面と実ステージの高さがずれている',
+  ).toBeLessThanOrEqual(1);
+  expect(
+    aspectStageBox.x,
+    '実ステージがcontainスロットの左側へはみ出している',
+  ).toBeGreaterThanOrEqual(stageBox.x - 1);
+  expect(
+    aspectStageBox.y,
+    '実ステージがcontainスロットの上側へはみ出している',
+  ).toBeGreaterThanOrEqual(stageBox.y - 1);
+  expect(
+    aspectStageBox.x + aspectStageBox.width,
+    '実ステージがcontainスロットの右側へはみ出している',
+  ).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
+  expect(
+    aspectStageBox.y + aspectStageBox.height,
+    '実ステージがcontainスロットの下側へはみ出している',
+  ).toBeLessThanOrEqual(stageBox.y + stageBox.height + 1);
   // board-stage が contain の実効スロット。横長盤面は幅、縦に制約される場合は高さを
   // 使い切るため、どちらかの軸で 75% 以上を占めることを契約にする。
   const widthFill = boardBox.width / stageBox.width;
@@ -395,6 +431,28 @@ test('スプリント画面は5つの名前付きスロットへ領域を配置�
 
   await expect(layout.getByTestId('sprint-slot-header').getByTestId('runbar')).toBeVisible();
   await expect(layout.locator('[data-testid="sprint-result"]')).toHaveCount(0);
+});
+
+test('AspectStageはゼロサイズから復帰し、連続resizeで例外を出さない', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await beginPublicSprint(page, { seed: 'ri96-aspect-stage-resize-0' });
+
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  const stage = page.getByTestId('board-stage');
+  await stage.evaluate((element) => {
+    element.style.display = 'none';
+  });
+  await waitForLayoutFrame(page);
+  await stage.evaluate((element) => {
+    element.style.display = '';
+  });
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await waitForLayoutFrame(page);
+
+  await expect(page.getByTestId('aspect-stage-content')).toBeVisible();
+  await expect(page.getByTestId('board')).toBeVisible();
+  expect(errors, 'AspectStageのゼロサイズ／再resizeでpage errorが発生している').toEqual([]);
 });
 
 test('狭幅で展開したKPIをsetupからsprintへ維持する', async ({ page }) => {

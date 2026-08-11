@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { getBoss } from '../data/bosses';
+import { BOARD_VIEW } from '../render/boardScene';
 import {
   ATTENTION_COOLDOWN_MS,
   ATTENTION_PAUSE_MS,
@@ -35,6 +36,7 @@ import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';
 import { EventTicker } from './EventTicker';
 import { PointPops } from './PointPops';
+import { AspectStage } from './AspectStage';
 import { SprintLayout } from './SprintLayout';
 import { AttentionOverlay, SlowMotionOverlay } from './JuicyEffects';
 import type { PlaybackSpeed } from './sprintTempo';
@@ -366,7 +368,11 @@ export function SprintScreen({
       }
       stage={
         <main className="board-wrap">
-          <div className="board-stage">
+          <AspectStage
+            ratio={BOARD_VIEW.w / BOARD_VIEW.h}
+            className="board-stage"
+            data-testid="board-stage"
+          >
             <PointPops deliveryScore={state.org.deliveryScore} teamId={state.activeTeamId} />
             <Board
               tasks={sprint.tasks}
@@ -389,7 +395,7 @@ export function SprintScreen({
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
             <EventTicker events={sprint.events} />
-          </div>
+          </AspectStage>
         </main>
       }
       deck={

@@ -54,7 +54,7 @@ body {
   /*
    * 盤面の「contain フィット」の基準枠。flex-basis 0 でスロット高さを盤面の中身から
    * 切り離し（循環防止）、余白は中央寄せでレターボックス/ピラーボックスする。
-   * 実寸の算出（min(幅, 高×比率)）は Board の ResizeObserver が行う（CSS だけでは
+   * 実寸の算出（min(幅, 高×比率)）は AspectStage の ResizeObserver が行う（CSS だけでは
    * 両軸 contain を確実に表現できないため）。
    */
   flex: 1 1 0;
@@ -871,6 +871,29 @@ body {
   min-width: 0;
 }
 
+/* 固定比率の描画・演出を同じ実ステージへ載せるレイアウトプリミティブ（RI-96）。 */
+.aspect-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.aspect-stage-content {
+  position: relative;
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
 /* 延焼・鎮火・点火演出（RI-06 / SPEC 第18.2） */
 .fire-effects {
   position: absolute;
@@ -1116,16 +1139,16 @@ body {
 /* ===== 俯瞰オフィス（アイソメ盤面・SPEC 第4.1 / 第18章 準拠） ===== */
 /*
  * ステーション/粒は設計空間（1404×573）の % で重ねるため、盤面の箱は必ずこの比率を
- * 保つ必要がある。幅は Board の ResizeObserver が min(スロット幅, スロット高×比率) で
- * インラインに与え（両軸 contain）、高さは aspect-ratio が導く。width:100% は JS 前/
- * 無効時のフォールバック。これで横長・縦長どちらのスロットでも 1404:573 が崩れない。
+ * 保つ必要がある。RI-96 の AspectStage が両軸 contain で実ステージの幅・高さを決め、
+ * 盤面はその実寸を100%満たす。これで横長・縦長どちらのスロットでも 1404:573 が崩れない。
  */
 .board.iso-office {
   --review-heat: 0;
   position: relative;
   width: 100%;
+  height: 100%;
   max-width: 100%;
-  aspect-ratio: 1404 / 573;
+  max-height: 100%;
   border-radius: 20px;
   overflow: hidden;
   border: 2px solid var(--line);

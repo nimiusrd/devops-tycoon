@@ -26,6 +26,7 @@ import {
   type TutorialQuery,
 } from './ui/tutorial';
 import { useRun } from './ui/useRun';
+import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 
 const AchievementCollectionScreen = lazy(() =>
@@ -97,7 +98,13 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
       if (game.getPauseEpoch() === epoch) game.resume();
     };
   }, [game]);
-  return <div className="sprint-layout sprint-layout-fallback">{header}</div>;
+  return (
+    <div
+      className={`sprint-layout sprint-layout-fallback ${sprintLayoutStyles.root} ${sprintLayoutStyles.fallback}`}
+    >
+      {header}
+    </div>
+  );
 }
 
 /** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
@@ -395,7 +402,7 @@ export default function App({ game }: AppProps) {
 
   return (
     <div
-      className={`app ${diagnosisTone}${sprintLayout ? ' app-sprint-layout' : ''}`}
+      className={`app ${diagnosisTone}${sprintLayout ? ` app-sprint-layout ${sprintLayoutStyles.appShell}` : ''}`}
       data-phase={phase}
       data-diagnosis={state.diagnosis}
     >

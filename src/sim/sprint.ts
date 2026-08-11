@@ -651,7 +651,11 @@ export function computeTitleAndDiagnosis(
       diagnosis: '手戻りが多すぎます。AIの使い方とレビュー品質を見直しましょう。',
     };
   }
-  if ((m.actionCounts.firefight ?? 0) >= 3 && m.incidentCount >= 3 && m.spread === 0) {
+  // RI-73: 余裕のある先消し（brokeCombo）は危機対応に数えない。
+  const urgentFirefights = sprint.fireEvents.filter(
+    (e) => e.kind === 'contain' && !e.brokeCombo,
+  ).length;
+  if (urgentFirefights >= 3 && m.incidentCount >= 3 && m.spread === 0) {
     return {
       title: '火消しの達人',
       diagnosis: '連続する炎上を、延焼する前にすべて自らの手で鎮火しました。見事な危機対応です。',

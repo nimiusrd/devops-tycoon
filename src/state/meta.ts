@@ -20,7 +20,7 @@ import type { DiagnosisType, DifficultyId, QuarterOutcome, WinType } from '../si
  * 現行チュートリアル内容の版（RI-67）。
  * `src/ui/tutorial.ts` のガイド内容と同期させる。
  */
-export const TUTORIAL_CONTENT_VERSION = 3;
+export const TUTORIAL_CONTENT_VERSION = 4;
 
 /** 旧 RI-60（3ステップ）完了セーブの版。 */
 export const LEGACY_TUTORIAL_VERSION = 1;

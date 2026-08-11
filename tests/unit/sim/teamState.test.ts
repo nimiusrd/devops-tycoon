@@ -316,6 +316,42 @@ describe('RI-91-B1 teamState survived mutants', () => {
       expect(easedHp).toBeGreaterThan(plainHp);
     });
 
+    it('RI-73 / F-1: 粗粒度でも稼働人数でシニア消耗が薄まる', () => {
+      const small = [
+        makeTeam({ id: 'home' }),
+        makeTeam({
+          id: 'pressured',
+          engineers: 3,
+          headcount: 3,
+          reviewQueue: 10,
+          seniorHp: 50,
+        }),
+      ];
+      const large = [
+        makeTeam({ id: 'home' }),
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          seniorHp: 50,
+        }),
+      ];
+      const smallStep = advanceCoarseTeams(small, {
+        seed: 'ri73-coarse-share',
+        stepKey: 's1',
+        excludeId: 'home',
+      });
+      const largeStep = advanceCoarseTeams(large, {
+        seed: 'ri73-coarse-share',
+        stepKey: 's1',
+        excludeId: 'home',
+      });
+      const smallHp = smallStep.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      const largeHp = largeStep.teams.find((t) => t.id === 'pressured')!.seniorHp;
+      expect(largeHp).toBeGreaterThan(smallHp);
+    });
+
     it('byTeam 調整は緩和に効き永続指標へ焼き込まない', () => {
       // 行列圧力と炎上バイアスを高め、byTeam 無視時に plain===relieved になる穴を塞ぐ。
       const teams = [

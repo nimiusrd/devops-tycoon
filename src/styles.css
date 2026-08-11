@@ -65,33 +65,76 @@ body {
 }
 
 /*
- * スプリント系フェーズ: HUD / RunBar / DeckBar / ActionBar が縦を取りすぎて
- * 中央盤面が細い帯になるのを防ぐ。盤面比率 1404:573 は Board 側で維持する。
+* スプリント画面シェル（RI-95）。App は背景とオーバーレイのホストに留め、
+ * スロット間の高さ配分と制約時のスクロールは SprintLayout が所有する。
  */
 .app.app-sprint-layout {
-  gap: 8px;
   min-height: 100dvh;
   max-height: 100dvh;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.sprint-layout {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
   overflow-y: auto;
   padding: 10px 14px 12px;
 }
-.app.app-sprint-layout .hud {
+.sprint-layout-slot {
+  min-width: 0;
+}
+.sprint-layout-slot-header {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 8px;
+}
+.sprint-layout-slot-status,
+.sprint-layout-slot-deck,
+.sprint-layout-slot-controls {
+  flex: 0 0 auto;
+}
+.sprint-layout-slot-stage {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.sprint-layout-slot-stage > .board-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* lazy読込中も、従来どおりHUD/RunBarの高さだけは表示する。 */
+.sprint-layout-fallback {
+  flex: 1 1 0;
+}
+
+/* スプリント系フェーズの圧縮スタイル。視覚スタイルはRI-97で分離する。 */
+.sprint-layout .hud {
   flex-shrink: 0;
   gap: 4px;
 }
-.app.app-sprint-layout .hud-metrics {
+.sprint-layout .hud-metrics {
   gap: 5px;
 }
-.app.app-sprint-layout .hud.hud-compact {
+.sprint-layout .hud.hud-compact {
   gap: 4px;
 }
-.app.app-sprint-layout .stat {
+.sprint-layout .stat {
   padding: 5px 8px 5px;
 }
-.app.app-sprint-layout .stat .v {
+.sprint-layout .stat .v {
   font-size: 18px;
 }
-.app.app-sprint-layout .bar {
+.sprint-layout .bar {
   margin-top: 4px;
   height: 5px;
 }
@@ -99,47 +142,47 @@ body {
  * 警告/リスクチップ（absolute bottom）分の下余白。22px まで削るとバーと重なる。
  * 詳細文の圧縮はデスクトップ幅のみ（狭幅の KPI 展開では detail を残す）。
  */
-.app.app-sprint-layout .stat-morale,
-.app.app-sprint-layout .stat-seniorHp,
-.app.app-sprint-layout .stat-aiDependency,
-.app.app-sprint-layout .stat-reviewCapacity {
+.sprint-layout .stat-morale,
+.sprint-layout .stat-seniorHp,
+.sprint-layout .stat-aiDependency,
+.sprint-layout .stat-reviewCapacity {
   padding-bottom: 30px;
 }
 @media (min-width: 861px) {
-  .app.app-sprint-layout .stat-detail {
+  .sprint-layout .stat-detail {
     display: none;
   }
 }
-.app.app-sprint-layout .runbar,
-.app.app-sprint-layout .subbar {
+.sprint-layout .runbar,
+.sprint-layout .subbar {
   flex-shrink: 0;
 }
-.app.app-sprint-layout .subbar {
+.sprint-layout .subbar {
   gap: 6px;
   padding: 4px 10px;
 }
-.app.app-sprint-layout .board-wrap {
+.sprint-layout .board-wrap {
   /* contain スロット: 盤面 intrinsic 高さを flex 計算から切り離し、はみ出しを遮断する */
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
 }
-.app.app-sprint-layout .meter {
+.sprint-layout .meter {
   width: 140px;
 }
-.app.app-sprint-layout .combo-badge {
+.sprint-layout .combo-badge {
   height: auto;
   max-height: 34px;
   overflow: hidden;
 }
-.app.app-sprint-layout .deckbar {
+.sprint-layout .deckbar {
   flex-shrink: 0;
   gap: 8px;
   padding: 6px 10px;
   min-height: 36px;
   overflow: hidden;
 }
-.app.app-sprint-layout .deckbar-cards {
+.sprint-layout .deckbar-cards {
   flex: 1;
   min-width: 0;
   flex-wrap: nowrap;
@@ -147,41 +190,41 @@ body {
   overflow-y: hidden;
   scrollbar-width: thin;
 }
-.app.app-sprint-layout .deckbar-cards > .card {
+.sprint-layout .deckbar-cards > .card {
   flex-shrink: 0;
 }
-.app.app-sprint-layout .actionbar {
+.sprint-layout .actionbar {
   flex-shrink: 0;
   gap: 8px;
   padding: 8px 10px;
 }
-.app.app-sprint-layout .focus {
+.sprint-layout .focus {
   min-width: 160px;
   padding: 0 10px 0 2px;
 }
-.app.app-sprint-layout .focus-icon {
+.sprint-layout .focus-icon {
   width: 44px;
   height: 49px;
 }
-.app.app-sprint-layout .focus-icon .mgr {
+.sprint-layout .focus-icon .mgr {
   width: 44px;
   height: 49px;
 }
-.app.app-sprint-layout .focus-energy {
+.sprint-layout .focus-energy {
   font-size: 20px;
 }
-.app.app-sprint-layout .action {
+.sprint-layout .action {
   padding: 6px 4px;
   gap: 2px;
 }
-.app.app-sprint-layout .action .ico {
+.sprint-layout .action .ico {
   font-size: 18px;
 }
 /*
  * 長いタグの省略はデスクトップ幅のみ。狭幅では nowrap すると要約が「運用安定…」で消え、
  * タッチでは title も使えないため折り返して主要効果を残す。
  */
-.app.app-sprint-layout .action .effect-tags {
+.sprint-layout .action .effect-tags {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -189,12 +232,12 @@ body {
   min-width: 0;
   gap: 2px;
 }
-.app.app-sprint-layout .action .effect-tag {
+.sprint-layout .action .effect-tag {
   min-width: 0;
   max-width: 100%;
 }
 @media (min-width: 861px) {
-  .app.app-sprint-layout .action .effect-tag {
+  .sprint-layout .action .effect-tag {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -202,12 +245,17 @@ body {
 }
 
 @media (max-height: 720px), (max-width: 860px) {
-  /* KPI 展開時のみページスクロールへ逃がす。折り畳み時（RI-70）は contain を維持する */
+  /* KPI 展開時は内容高を確保し、既存のページ内スクロール範囲を維持する。 */
   .app.app-sprint-layout:not(:has(.hud.hud-compact)) {
     max-height: none;
-    overflow-y: visible;
+    overflow: visible;
   }
-  .app.app-sprint-layout:not(:has(.hud.hud-compact)) .board-wrap {
+  .sprint-layout:not(:has(.hud.hud-compact)) {
+    flex: 1 1 auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .sprint-layout:not(:has(.hud.hud-compact)) .sprint-layout-slot-stage {
     flex: 1 1 auto;
     min-height: clamp(140px, 28vh, 320px);
     overflow: hidden;
@@ -215,38 +263,41 @@ body {
 }
 
 @media (max-width: 860px) {
-  .app.app-sprint-layout:has(.hud.hud-compact) {
-    max-height: 100dvh;
+  .sprint-layout:has(.hud.hud-compact) {
+    max-height: 100%;
     overflow-y: auto;
   }
-  .app.app-sprint-layout:has(.hud.hud-compact) .board-wrap {
+  .sprint-layout:has(.hud.hud-compact) .sprint-layout-slot-stage {
     flex: 1 1 0;
     /* 0 だと短い画面で盤面だけ潰れ切る。親は overflow-y:auto なので超過分はスクロールへ */
     min-height: clamp(96px, 18vh, 220px);
     overflow: hidden;
   }
-  .app.app-sprint-layout:has(.hud.hud-compact) .actionbar {
+  .sprint-layout:has(.hud.hud-compact) .sprint-layout-slot-controls {
     position: sticky;
     bottom: 0;
     z-index: 6;
+  }
+  .sprint-layout:has(.hud.hud-compact) .actionbar {
+    position: static;
   }
   /*
    * focus と 4 列カードを横並びのままにすると各カードが数十 px になり、
    * 運用安定の要約が実質読めない。focus（と武装時の担当選択）を上段へ逃がし、
    * actions を全幅にしてタグ幅を確保する。担当選択は横並びで同段に収める。
    */
-  .app.app-sprint-layout .actionbar {
+  .sprint-layout .actionbar {
     flex-wrap: wrap;
     align-items: stretch;
   }
-  .app.app-sprint-layout .focus {
+  .sprint-layout .focus {
     min-width: 0;
     flex: 1 1 auto;
     border-right: none;
     border-bottom: 2px solid var(--line);
     padding: 2px 4px 6px;
   }
-  .app.app-sprint-layout .assign-assignee {
+  .sprint-layout .assign-assignee {
     flex: 0 1 auto;
     flex-direction: row;
     flex-wrap: wrap;
@@ -257,10 +308,10 @@ body {
     border-bottom: 2px solid var(--line);
     padding: 2px 4px 6px 0;
   }
-  .app.app-sprint-layout .actions {
+  .sprint-layout .actions {
     flex: 1 1 100%;
   }
-  .app.app-sprint-layout .action .effect-tag {
+  .sprint-layout .action .effect-tag {
     white-space: normal;
     overflow: visible;
     text-overflow: unset;
@@ -270,11 +321,11 @@ body {
 
 /* 短い viewport（SE 縦や横向き）では contain を緩め、盤面最低高を優先する */
 @media (max-width: 860px) and (max-height: 720px) {
-  .app.app-sprint-layout:has(.hud.hud-compact) {
+  .sprint-layout:has(.hud.hud-compact) {
     max-height: none;
-    overflow-y: visible;
+    overflow-y: auto;
   }
-  .app.app-sprint-layout:has(.hud.hud-compact) .board-wrap {
+  .sprint-layout:has(.hud.hud-compact) .sprint-layout-slot-stage {
     flex: 1 1 auto;
     min-height: clamp(140px, 28vh, 320px);
     overflow: hidden;

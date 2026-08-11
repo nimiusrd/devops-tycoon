@@ -94,11 +94,18 @@ async function readFlowBoxes(page: Page, testIds: readonly string[]): Promise<Bo
       return element;
     });
     const actionBar = elements.find((element) => element.dataset.testid === 'action-bar');
+    const controlsSlot = actionBar?.closest<HTMLElement>('[data-sprint-slot="controls"]');
     const previousPosition = actionBar?.style.position;
     const previousBottom = actionBar?.style.bottom;
+    const previousControlsPosition = controlsSlot?.style.position;
+    const previousControlsBottom = controlsSlot?.style.bottom;
     if (actionBar && getComputedStyle(actionBar).position === 'sticky') {
       actionBar.style.position = 'static';
       actionBar.style.bottom = 'auto';
+    }
+    if (controlsSlot && getComputedStyle(controlsSlot).position === 'sticky') {
+      controlsSlot.style.position = 'static';
+      controlsSlot.style.bottom = 'auto';
     }
     const scrollY = window.scrollY;
     const boxes = elements.map((element) => {
@@ -108,6 +115,10 @@ async function readFlowBoxes(page: Page, testIds: readonly string[]): Promise<Bo
     if (actionBar) {
       actionBar.style.position = previousPosition ?? '';
       actionBar.style.bottom = previousBottom ?? '';
+    }
+    if (controlsSlot) {
+      controlsSlot.style.position = previousControlsPosition ?? '';
+      controlsSlot.style.bottom = previousControlsBottom ?? '';
     }
     return boxes;
   }, testIds);
@@ -356,6 +367,35 @@ async function openSixRelicSprint(page: Page): Promise<void> {
   });
   await beginCurrentSetupSprint(page);
 }
+
+test('スプリント画面は5つの名前付きスロットへ領域を配置する', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await beginPublicSprint(page, { seed: 'ri95-named-slots-0' });
+
+  const layout = page.getByTestId('sprint-layout');
+  await expect(layout).toBeVisible();
+
+  const slotOrder = await layout
+    .locator(':scope > [data-sprint-slot]')
+    .evaluateAll((elements) => elements.map((element) => element.getAttribute('data-sprint-slot')));
+  expect(slotOrder).toEqual(['header', 'status', 'stage', 'deck', 'controls']);
+
+  const slotContents: Record<string, string> = {
+    header: 'hud',
+    status: 'sprint-subbar',
+    stage: 'board',
+    deck: 'deck',
+    controls: 'action-bar',
+  };
+  for (const [slot, testId] of Object.entries(slotContents)) {
+    const slotLocator = layout.getByTestId(`sprint-slot-${slot}`);
+    await expect(slotLocator).toHaveCount(1);
+    await expect(slotLocator.getByTestId(testId)).toBeVisible();
+  }
+
+  await expect(layout.getByTestId('sprint-slot-header').getByTestId('runbar')).toBeVisible();
+  await expect(layout.locator('[data-testid="sprint-result"]')).toHaveCount(0);
+});
 
 test('デスクトップ幅で sprint-subbar と board が重ならない', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

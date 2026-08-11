@@ -23,6 +23,7 @@ export { TitleScreen } from './TitleScreen';
 export { SetupScreen } from './SetupScreen';
 export { BeatScreen } from './BeatScreen';
 export { SprintScreen } from './SprintScreen';
+export { SprintLayout } from './SprintLayout';
 export { EvolutionScreen } from './EvolutionScreen';
 export { ShopScreen } from './ShopScreen';
 export { RestScreen } from './RestScreen';

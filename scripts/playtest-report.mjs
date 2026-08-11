@@ -503,7 +503,8 @@ printInvestmentPair('強化 vs 回復', upgradeRows, [
 
 const shopRows = pairedInvestmentRows(
   'skilledShopBuy',
-  'skilledNoHire',
+  // RI-78: カード発動を preferDelivery で揃えた統制。旧 skilledNoHire 比較は発動方針差が混ざる。
+  'skilledShopCtl',
   'shop',
   (event, controlEvent) =>
     Boolean((event.shopCardsBought ?? 0) > 0 || event.shopRelicBought) &&

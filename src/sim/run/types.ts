@@ -199,6 +199,11 @@ export interface ShopOffer {
   relic?: { id: string; cost: number; bought: boolean };
   /** 採用枠（予算消費でメンバー+1。RI-26）。 */
   recruit?: { cost: number; bought: boolean };
+  /**
+   * このショップ訪問で導入支援（focusMaxAdd / taskCountMul）を付与済みか（RI-78）。
+   * 複数枚購入しても訪問あたり一度だけ。
+   */
+  introSupportGranted?: boolean;
 }
 
 /** 開始オプション（デイリーラン等）。 */
@@ -276,6 +281,11 @@ export interface RunState {
   currentSprintKind: SprintKind;
   /** 次スプリント限定の一時効果（beginSprint で消費）。 */
   pendingSprintModifiers: SprintModifierDelta;
+  /**
+   * 次スプリント手札へ優先配布するデッキインデックス（RI-78。ショップ購入カード）。
+   * beginSprint の dealHand で消費する。
+   */
+  pendingShopHandIndices: number[];
 
   org: OrgState;
   deck: CardInstance[];

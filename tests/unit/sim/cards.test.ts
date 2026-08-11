@@ -104,6 +104,13 @@ describe('手札配布・発動（RI-30）', () => {
     expect(a.hand.length + a.drawOrder.length).toBe(5);
   });
 
+  it('dealHand は preferIndices を手札へ優先する（RI-78）', () => {
+    const piles = dealHand(6, createRng('deal:prefer'), HAND_SIZE, [5, 1]);
+    expect(piles.hand.slice(0, 2)).toEqual([5, 1]);
+    expect(piles.hand).toHaveLength(HAND_SIZE);
+    expect(new Set([...piles.hand, ...piles.drawOrder]).size).toBe(6);
+  });
+
   it('playCost は明示した focusCost を使い、強化で下がる', () => {
     expect(playCost(2, 1)).toBe(2);
     expect(playCost(3, 2)).toBe(2);
@@ -478,7 +485,10 @@ describe('RI-91-C3 cards NoCoverage / Survived mutants', () => {
         devin: 4,
         'hire-senior': 4,
       });
-      expect(CARD_DEFS.find((def) => def.id === 'copilot')?.cost).toBe(10);
+      // RI-78: 出荷正側カードの店頭価格を抑える。
+      expect(CARD_DEFS.find((def) => def.id === 'copilot')?.cost).toBe(1);
+      expect(CARD_DEFS.find((def) => def.id === 'claude-code')?.cost).toBe(4);
+      expect(CARD_DEFS.find((def) => def.id === 'feature-flags')?.cost).toBe(1);
     });
 
     it('scaleEffects はレベル係数 k=1+0.5*max(0,level-1) を exact で返す', () => {

@@ -26,7 +26,8 @@ export const CARD_DEFS: CardDef[] = [
     id: 'copilot',
     name: 'Copilot全員配布',
     rarity: 'common',
-    cost: 10,
+    // RI-78: ショップ投資の次スプ純出荷が届くよう、出荷正側カードの店頭価格を抑える。
+    cost: 1,
     focusCost: 2,
     description: ['コーディング補助 AI を全員に配布', '定型タスクは特に捗るが、依存度も上がる'],
     base: { codingSpeedMul: 1.15, routineSpeedMul: 1.3, aiDependencyAdd: 5 },
@@ -35,7 +36,8 @@ export const CARD_DEFS: CardDef[] = [
     id: 'claude-code',
     name: 'Claude Code解禁',
     rarity: 'rare',
-    cost: 20,
+    // RI-78: ショップ投資の次スプ純出荷が届くよう、出荷正側カードの店頭価格を抑える。
+    cost: 4,
     focusCost: 3,
     description: ['高度な AI コーディングを解禁', '複雑タスクは安定するが、レビュー負荷も増える'],
     base: { codingSpeedMul: 1.2, reworkRateAdd: -0.05, reviewEfficiencyMul: 0.9 },
@@ -124,7 +126,8 @@ export const CARD_DEFS: CardDef[] = [
     id: 'feature-flags',
     name: 'フィーチャーフラグ',
     rarity: 'common',
-    cost: 14,
+    // RI-78: 出荷正側カードの店頭価格を抑える。
+    cost: 1,
     focusCost: 2,
     description: ['段階リリースで障害を抑えつつ進める', '実装は進むがフラグ管理のコストがある'],
     base: { incidentRateMul: 0.85, codingSpeedMul: 1.05 },

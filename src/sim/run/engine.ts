@@ -716,7 +716,11 @@ export class RunEngine {
     if (this.sprint && this.sprint.complete) this.resolveSprint();
   }
 
-  /** 介入アクションを発動する（sprint フェーズのみ。第6章）。 */
+  /**
+   * 介入アクションを発動する（sprint フェーズのみ。第6章）。
+   * 成功後も即時敗北は見ない（`playCard` と対照。`dispatchDefersLose` を参照）。
+   * 敗北は `resolveSprint` まで延期し、その間の自然回復で生存し得る。
+   */
   dispatch(id: ActionId, target?: ActionTarget): InterventionOutcome {
     if (this.phase !== 'sprint' || !this.sprint) return { ok: false, reason: 'complete' };
     const outcome = applyAction(id, this.sprint, this.org, this.sprintRng, this.sprintTick, target);

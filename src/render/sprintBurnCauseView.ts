@@ -88,7 +88,11 @@ function deriveTip(
   if (urgentContain >= 1 && counts.spread === 0 && counts.autoContain === 0 && lightContain === 0) {
     return '点火した火をすべて緊急対応で鎮火した。炎上への即応が効いている。';
   }
-  if (entries.some((e) => e.tone === 'warn')) {
+  if (lightContain >= 1 && urgentContain >= 1 && counts.spread === 0 && counts.autoContain === 0) {
+    return '緊急鎮火と余裕のある先消しが混在した。先消しは高コストなので緊急時だけ打とう。';
+  }
+  // 先消し（warn）と未解決チェーン（open）を区別する。
+  if (entries.some((e) => e.key.includes(':open:'))) {
     return '燃え残った火がある。次はタイマー表示を見て鎮火優先度を上げよう。';
   }
   return '点火と鎮火のタイミングを振り返り、次スプリントの介入順に活かそう。';

@@ -67,6 +67,18 @@ describe('sprintBurnCauseView（RI-34′）', () => {
     expect(view.tip).toContain('余裕のある先消し');
   });
 
+  it('先消しと緊急鎮火の混在は燃え残り Tip に落とさない', () => {
+    const fireEvents: FireSprintEvent[] = [
+      { tick: 12, kind: 'ignite', taskId: 3, source: 'review' },
+      { tick: 14, kind: 'contain', taskId: 3, combo: 0, brokeCombo: true },
+      { tick: 20, kind: 'ignite', taskId: 5, source: 'review' },
+      { tick: 22, kind: 'contain', taskId: 5, combo: 2 },
+    ];
+    const view = planBurnCauseLog(makeResult({ incidents: 2, contained: 2, fireEvents }));
+    expect(view.tip).toContain('混在');
+    expect(view.tip).not.toContain('燃え残った火');
+  });
+
   it('点火→自動鎮火のチェーンを作る', () => {
     const fireEvents: FireSprintEvent[] = [
       { tick: 5, kind: 'ignite', taskId: 1, source: 'review' },

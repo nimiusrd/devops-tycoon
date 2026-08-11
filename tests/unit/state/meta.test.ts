@@ -429,10 +429,10 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(game.getMeta().seenTutorialVersion).toBe(0);
     game.markTutorialSeen();
     expect(game.getMeta().seenTutorial).toBe(true);
-    expect(game.getMeta().seenTutorialVersion).toBe(4);
+    expect(game.getMeta().seenTutorialVersion).toBe(5);
     await Promise.resolve();
     expect(persisted?.seenTutorial).toBe(true);
-    expect(persisted?.seenTutorialVersion).toBe(4);
+    expect(persisted?.seenTutorialVersion).toBe(5);
   });
 
   it('旧 seenTutorial:true セーブは版1へ移行し、現行版未満として扱う（RI-67）', () => {

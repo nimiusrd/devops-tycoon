@@ -208,7 +208,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
     expect(order[0]).toBe('ai');
   });
 
-  it('中強度 sticky なら弱い競合があっても同ブランチを継続する', () => {
+  it('前スプリント持ち越しの中強度 sticky なら弱い競合でも同ブランチを継続する', () => {
     const org = createOrgState('default', true);
     // quality 中強度 (techDebt 30 → +2.5) + sticky 1.5 - 0.5 = 3.5
     // review 弱信号 (HP 30 → +0.5, queue 14 → +0.5) = 1.0
@@ -225,8 +225,31 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
       totals: totals({ delivered: 200, completed: 20 }),
       reviewQueuePeak: 14,
       unlocked: ['quality-1'],
+      unlockedThisPhase: [],
     });
     expect(order[0]).toBe('quality');
+  });
+
+  it('今フェーズで取ったばかりのブランチは同フェーズ深化せず他へ曲がる', () => {
+    const org = createOrgState('default', true);
+    // quality 中強度 2.5 - 0.5 - 2.5(same-phase) = -0.5
+    // review 弱信号 1.0 が先頭になる
+    const order = stateAwareEvolveBranches({
+      org: {
+        ...org,
+        techDebt: 30,
+        testCoverage: 50,
+        seniorHp: 30,
+        morale: 75,
+        aiDependency: 10,
+        quality: 60,
+      },
+      totals: totals({ delivered: 200, completed: 20 }),
+      reviewQueuePeak: 14,
+      unlocked: ['quality-1'],
+      unlockedThisPhase: ['quality-1'],
+    });
+    expect(order[0]).not.toBe('quality');
   });
 
   it('危機帯の既得ブランチには sticky を付けず強い競合へ曲がる', () => {
@@ -246,6 +269,7 @@ describe('stateAwareEvolveBranches (RI-86)', () => {
       totals: totals({ delivered: 200, completed: 20 }),
       reviewQueuePeak: 18,
       unlocked: ['review-1'],
+      unlockedThisPhase: [],
     });
     expect(order[0]).toBe('quality');
   });

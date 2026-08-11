@@ -279,6 +279,12 @@ export interface EvolveBoardCtx {
   reviewQueuePeak: number;
   /** 既に解放済みのノード ID（同一ブランチへ張り付くのを避けるために使う）。 */
   unlocked: readonly string[];
+  /**
+   * 今の進化フェーズで既に解放したノード ID。
+   * multiPhase 確定のため、同一フェーズでの同ブランチ深化を抑え、
+   * 前スプリントから持ち越した1ノードへの sticky 継続だけを促す。
+   */
+  unlockedThisPhase?: readonly string[];
 }
 
 /**
@@ -295,9 +301,11 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
     culture: 0,
     dev: 0,
   };
-  const { org, totals, reviewQueuePeak, unlocked } = ctx;
+  const { org, totals, reviewQueuePeak, unlocked, unlockedThisPhase = [] } = ctx;
   const unlockedCount = (branch: EvolutionBranch): number =>
     unlocked.filter((id) => id.startsWith(`${branch}-`)).length;
+  const phaseCount = (branch: EvolutionBranch): number =>
+    unlockedThisPhase.filter((id) => id.startsWith(`${branch}-`)).length;
 
   // キュー高止まりは実ランでほぼ共通なので、主信号はシニアHPの危機度。
   // 旧実装は peak>=10 で +4 かつ HP<40 で +3 と重なり、全コホートが review 固定になっていた。
@@ -328,25 +336,28 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   if (totals.completed >= 5 && totals.delivered < totals.completed * 5) scores.dev += 3;
   else if (totals.delivered < 50 && totals.completed >= 5) scores.dev += 2;
 
-  // 既取得ブランチの減点と、中強度信号のスプリント横断 sticky。
+  // 既取得ブランチの減点と、スプリント横断 sticky / 同一フェーズ深化の抑制。
   // 同一進化フェーズでの連続取得は playtest-report の commitInQ1 が
   // multiPhase（複数 sprintIndex）を要求するため確定扱いにしない。
   // 1ノード目から -2 すると中強度の quality/ai/culture が2スプリント目で曲がり、
   // 継続方向が review（強い危機信号）一択になるため、n≥1 は弱い減点に留める。
-  // さらに n===1 かつ正の中強度信号が残るブランチへ sticky を足し、
-  // 次スプリントでも同ブランチを続けやすくする（危機帯 +4 以上には付けないので、
-  // 強い競合があるときは従来どおり曲がれる）。
+  // 前スプリントから持ち越した n===1（今フェーズ未取得）かつ中強度信号には sticky を足し、
+  // 別スプリントでの継続を促す。今フェーズで取ったばかりなら同ブランチを強く減点し、
+  // 同一フェーズ2段買いで multiPhase を潰さない。危機帯 +4 以上には sticky を付けない。
   // n≥2 以降は確定後の横展開を促すため従来どおり強く減点する。
   const CRISIS_SIGNAL = 4;
   const STICKY_BONUS = 1.5;
+  const SAME_PHASE_DEEPEN_PENALTY = 2.5;
   for (const b of Object.keys(scores) as EvolutionBranch[]) {
     const n = unlockedCount(b);
+    const phaseN = phaseCount(b);
     const signal = scores[b];
     if (n >= 3) scores[b] -= 5;
     else if (n >= 2) scores[b] -= 3;
     else if (n >= 1) {
       scores[b] -= 0.5;
-      if (signal > 0 && signal < CRISIS_SIGNAL) scores[b] += STICKY_BONUS;
+      if (phaseN >= 1) scores[b] -= SAME_PHASE_DEEPEN_PENALTY;
+      else if (signal > 0 && signal < CRISIS_SIGNAL) scores[b] += STICKY_BONUS;
     }
   }
 
@@ -2000,6 +2011,7 @@ export function runOnce(
                   unlocked: Object.keys(snap.evolution.unlocked),
                 });
           let spent = 0;
+          const unlockedThisPhase: string[] = [];
           while (e.snapshot().evolution.points > 0 && spent < 16) {
             const beforeSnap = e.snapshot();
             const before = beforeSnap.evolution.points;
@@ -2011,6 +2023,7 @@ export function runOnce(
                 totals: beforeSnap.totals,
                 reviewQueuePeak: recentPeak,
                 unlocked: Object.keys(beforeSnap.evolution.unlocked),
+                unlockedThisPhase,
               });
             for (const id of order) {
               e.unlockEvolution(id);
@@ -2021,6 +2034,7 @@ export function runOnce(
             // どのノードをいつ解放したかを残す（F-11 はタイミングが判定対象）。
             for (const id of Object.keys(after.evolution.unlocked)) {
               if (beforeIds.has(id)) continue;
+              unlockedThisPhase.push(id);
               evolutionUnlocks.push({
                 id,
                 quarter: after.quarterNumber,

@@ -170,7 +170,9 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
   it('シニア体力と士気は低下すると危険域として表示する', () => {
     const state = withOrg({ seniorHp: 20, morale: 30 });
     const burning = state.sprint.tasks.map((task, index) =>
-      index === 0 ? { ...task, incident: true, lane: 'rework' as const } : task,
+      index === 0
+        ? { ...task, incident: true, lane: 'rework' as const, burnTicksLeft: 10 }
+        : task,
     );
     const metrics = deriveHudMetrics(state.org, burning);
 
@@ -192,13 +194,28 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
 
   it('RI-67: シニア体力の注意域では燃え尽き向け警告を出す', () => {
     const emptyTasks = withOrg({}).sprint.tasks;
-    const burning = emptyTasks.map((task, index) =>
-      index === 0 ? { ...task, incident: true, lane: 'rework' as const } : task,
+    const urgentBurning = emptyTasks.map((task, index) =>
+      index === 0
+        ? { ...task, incident: true, lane: 'rework' as const, burnTicksLeft: 10 }
+        : task,
     );
-    const watchBurning = deriveHudMetrics(withOrg({ seniorHp: 40 }).org, burning);
+    const watchBurning = deriveHudMetrics(withOrg({ seniorHp: 40 }).org, urgentBurning);
     expect(watchBurning.find((m) => m.id === 'seniorHp')).toMatchObject({
       tone: 'watch',
-      detail: '低下中・炎上は緊急対応で',
+      detail: '低下中・緊急の炎上は緊急対応で',
+      warningChip: '体力注意',
+    });
+
+    // 猶予のある単発炎上は緊急対応を勧めない（RI-73）。
+    const lightBurning = emptyTasks.map((task, index) =>
+      index === 0
+        ? { ...task, incident: true, lane: 'rework' as const, burnTicksLeft: 40 }
+        : task,
+    );
+    expect(
+      deriveHudMetrics(withOrg({ seniorHp: 40 }).org, lightBurning).find((m) => m.id === 'seniorHp'),
+    ).toMatchObject({
+      detail: '低下中・アンドンや休息で守る',
       warningChip: '体力注意',
     });
 

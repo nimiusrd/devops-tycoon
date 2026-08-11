@@ -343,6 +343,8 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   // 前スプリント持ち越しの1〜2ノードには sticky を足して横断継続する。
   // multiPhase が揃ったあとの n≥2 は横展開のため強く減点する。
   const STICKY_BONUS = 2.5;
+  /** 前フェーズ2段→今フェーズで先端を取るための上書き。危機帯信号 (+4〜5.5) を超える。 */
+  const STICKY_TIP_BONUS = 6;
   const SAME_PHASE_DEEPEN_BONUS = 2.5;
   for (const b of Object.keys(scores) as EvolutionBranch[]) {
     const n = unlockedCount(b);
@@ -359,7 +361,7 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
         scores[b] -= 3;
       } else if (priorN >= 2 && phaseN === 0) {
         // 前フェーズで2段まで買ったブランチを次スプリントで触り multiPhase を成立させる。
-        scores[b] += STICKY_BONUS;
+        scores[b] += STICKY_TIP_BONUS;
       } else {
         scores[b] -= 0.5;
       }
@@ -2021,7 +2023,15 @@ export function runOnce(
                 });
           let spent = 0;
           const unlockedThisPhase: string[] = [];
-          while (e.snapshot().evolution.points > 0 && spent < 16) {
+          // stateAware は方向確定（厳密過半+multiPhase）を測るため、1フェーズで
+          // 全ブランチへ散らして過半を潰さないよう解放数に上限を置く。
+          // 余ったポイントは持ち越し、次スプリントの sticky 継続に使う。
+          const maxUnlocksThisPhase = spec.evolve === 'stateAware' ? 3 : 16;
+          while (
+            e.snapshot().evolution.points > 0 &&
+            spent < 16 &&
+            unlockedThisPhase.length < maxUnlocksThisPhase
+          ) {
             const beforeSnap = e.snapshot();
             const before = beforeSnap.evolution.points;
             const beforeIds = new Set(Object.keys(beforeSnap.evolution.unlocked));

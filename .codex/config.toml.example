@@ -1,7 +1,7 @@
 # User-level template: merge these settings into ~/.codex/config.toml.
-# Keep this file as config.toml.example. Custom permission profiles are not
-# available from project-local config layers in the supported Codex CLI.
-default_permissions = "workspace-docker"
+# This file intentionally does not set default_permissions, so other projects
+# keep their normal profile. The project-local .codex/config.toml selects this
+# profile only for this repository.
 
 [permissions.workspace-docker]
 description = "Workspace access with Docker Desktop"

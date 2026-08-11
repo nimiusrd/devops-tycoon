@@ -1,0 +1,4 @@
+# Select the user-defined Docker profile for this project only.
+# The profile definition is kept in ~/.codex/config.toml because project-local
+# [permissions] entries are not active in the supported Codex CLI.
+default_permissions = "workspace-docker"

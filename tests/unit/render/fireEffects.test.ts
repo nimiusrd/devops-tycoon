@@ -26,6 +26,7 @@ const baseMetrics = (): SprintMetrics => ({
   interventionsUsed: 0,
   focusSpent: 0,
   actionCounts: {},
+  stabilizingGrants: 0,
 });
 
 const snapTask = (

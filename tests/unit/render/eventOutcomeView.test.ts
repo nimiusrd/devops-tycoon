@@ -440,16 +440,24 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
       label: '炎上1件鎮火',
       tone: 'positive',
     });
-    expect(tags.some((t) => t.label.includes('緊急時のみ運用安定'))).toBe(true);
-    expect(tags.some((t) => t.label.includes('連打で増加'))).toBe(true);
-    expect(tags.some((t) => t.label.includes('単発先消し'))).toBe(true);
+    expect(tags).toContainEqual({ label: '緊急時のみ運用安定', tone: 'positive' });
+    expect(tags).toContainEqual({ label: '余裕時は高コスト', tone: 'negative' });
+    // 数値内訳はカードを肥大させないようツールチップ側へ。
+    expect(tags.some((t) => t.label.includes('連打で増加'))).toBe(false);
+    expect(tags.some((t) => t.label.includes('単発先消し'))).toBe(false);
+    const tip = formatActionTooltip(def);
+    expect(tip).toContain('連打で増加');
+    expect(tip).toContain('単発先消し');
+    expect(tip).toContain(`安定中 手戻り率 x${STABILITY_REWORK_MUL}`);
   });
 
-  it('アンドンは運用安定なしと薄キュー士気ペナを含む', () => {
+  it('アンドンは運用安定なしをカードに出し、薄キュー数値はツールチップへ', () => {
     const def = getAction('andon')!;
     const tags = formatActionDefTags(def);
     expect(tags.some((t) => t.label.includes('運用安定なし'))).toBe(true);
     expect(tags.some((t) => t.label.includes('士気'))).toBe(true);
+    expect(tags.some((t) => t.label.includes('Review未渋滞'))).toBe(false);
+    expect(formatActionTooltip(def)).toContain('Review未渋滞');
   });
 
   it.each([

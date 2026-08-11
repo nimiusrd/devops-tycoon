@@ -250,6 +250,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const expectStability =
         def.stabilizesFlow && id !== 'firefight' && id !== 'andon' ? TICK + STABILITY_TICKS : 0;
       expect(sprint.modifiers.stabilityUntilTick).toBe(expectStability);
+      expect(sprint.metrics.stabilizingGrants).toBe(expectStability > 0 ? 1 : 0);
       fixture.assertEffect({ sprint, org, before });
     });
   });
@@ -264,6 +265,8 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const outcome = applyAction('firefight', sprint, org, rng, TICK);
       expect(outcome.ok).toBe(true);
       expect(sprint.modifiers.stabilityUntilTick).toBe(0);
+      expect(sprint.metrics.stabilizingGrants).toBe(0);
+      expect(sprint.metrics.actionCounts.firefight).toBe(1);
       expect(outcome.effect?.hpCost).toBe(FIREFIGHT_LIGHT_HP_COST);
       expect(outcome.effect?.moraleCost).toBe(FIREFIGHT_LIGHT_MORALE_COST);
       expect(org.morale).toBe(morale0 - FIREFIGHT_LIGHT_MORALE_COST);
@@ -279,6 +282,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const outcome = applyAction('firefight', sprint, org, rng, TICK);
       expect(outcome.ok).toBe(true);
       expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+      expect(sprint.metrics.stabilizingGrants).toBe(1);
       expect(outcome.effect?.moraleCost).toBeUndefined();
       expect(outcome.effect?.hpCost).toBe(FIREFIGHT_HP_COST);
       expect(org.morale).toBe(morale0);
@@ -292,6 +296,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const outcome = applyAction('firefight', sprint, org, rng, TICK);
       expect(outcome.ok).toBe(true);
       expect(sprint.modifiers.stabilityUntilTick).toBe(TICK + STABILITY_TICKS);
+      expect(sprint.metrics.stabilizingGrants).toBe(1);
       expect(outcome.effect?.moraleCost).toBeUndefined();
       expect(org.morale).toBe(morale0);
     });
@@ -325,6 +330,8 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(org.morale).toBe(morale0 - ANDON_BASE_MORALE_COST);
       expect(org.seniorHp).toBe(hp0);
       expect(sprint.modifiers.stabilityUntilTick).toBe(0);
+      expect(sprint.metrics.stabilizingGrants).toBe(0);
+      expect(sprint.metrics.actionCounts.andon).toBe(1);
     });
 
     it('薄キューのアンドンは士気追加とシニアHPを払い運用安定も付けない', () => {
@@ -339,6 +346,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(org.morale).toBe(morale0 - (ANDON_BASE_MORALE_COST + ANDON_THIN_MORALE_COST));
       expect(org.seniorHp).toBe(hp0 - ANDON_HP_COST);
       expect(sprint.modifiers.stabilityUntilTick).toBe(0);
+      expect(sprint.metrics.stabilizingGrants).toBe(0);
     });
   });
 

@@ -469,7 +469,7 @@ describe('RI-91-B3 sprint survived mutants', () => {
       expect(computeGrade(sprint, org)).toBe('D');
     });
 
-    it('RI-80: 成立した安定化介入は加点し、残業号令は加点しない', () => {
+    it('RI-80: 実際に安定を付与した介入は加点し、残業号令は加点しない', () => {
       const org = createOrgState('default', false);
       const sprint = makeSprint(org, []);
       patchMetrics(sprint, {
@@ -478,15 +478,20 @@ describe('RI-91-B3 sprint survived mutants', () => {
         incidentCount: 0,
         spread: 0,
         actionCounts: {},
+        stabilizingGrants: 0,
       });
 
       // outcomeRatio=0.95 は単独では S に届かない。
       expect(computeGrade(sprint, org)).toBe('A');
 
-      patchMetrics(sprint, { actionCounts: { firefight: 2 } });
+      // RI-73: actionCounts だけでは加点しない（条件未成立の firefight/andon を除外）。
+      patchMetrics(sprint, { actionCounts: { firefight: 2, andon: 2 } });
+      expect(computeGrade(sprint, org)).toBe('A');
+
+      patchMetrics(sprint, { stabilizingGrants: 2 });
       expect(computeGrade(sprint, org)).toBe('S');
 
-      patchMetrics(sprint, { actionCounts: { overtime: 2 } });
+      patchMetrics(sprint, { stabilizingGrants: 0, actionCounts: { overtime: 2 } });
       expect(computeGrade(sprint, org)).toBe('A');
     });
   });

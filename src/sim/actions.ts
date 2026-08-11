@@ -435,6 +435,10 @@ export function applyAction(
   sprint.metrics.interventionsUsed += 1;
   sprint.metrics.focusSpent += def.cost;
   sprint.metrics.actionCounts[id] = (sprint.metrics.actionCounts[id] ?? 0) + 1;
+  // 評価加点は「安定を実際に付与した回数」だけを数える（RI-73 / Codex P2）。
+  if (grantStability) {
+    sprint.metrics.stabilizingGrants += 1;
+  }
   const focusRefund = addComboGauge(sprint, def.gauge);
 
   const effect: InterventionEffect = {

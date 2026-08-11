@@ -385,6 +385,11 @@ export interface SprintMetrics {
   /** アクション種別ごとの発動回数（リザルトの介入内訳・称号判定用。第4.6）。 */
   actionCounts: Partial<Record<ActionId, number>>;
   /**
+   * 実際に運用安定を付与した介入回数（評価加点用。RI-73 / RI-80）。
+   * `actionCounts` は条件未成立の firefight/andon も含むため、加点母数とは分ける。
+   */
+  stabilizingGrants: number;
+  /**
    * タスク差配の偏り（RI-30）。理想差配以外が続くと士気コストが増える。
    */
   assignmentSkew?: {

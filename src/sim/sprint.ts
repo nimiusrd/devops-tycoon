@@ -132,6 +132,7 @@ export function createSprint(
       interventionsUsed: 0,
       focusSpent: 0,
       actionCounts: {},
+      stabilizingGrants: 0,
     },
     reviewAccumulator: 0,
     nextTaskId: config.taskCount,
@@ -581,18 +582,7 @@ const GRADE_THRESHOLDS = {
   C: 0.4,
 } as const;
 
-/** 評価へ反映する、工程を安定化する介入（RI-80）。 */
-const STABILIZING_ACTIONS: readonly ActionId[] = [
-  'interruptReview',
-  'splitPr',
-  'firefight',
-  'assignTask',
-  'aiThrottle',
-  'pairReview',
-  'andon',
-];
-
-/** 成立した安定化介入1回あたりの運用判断ボーナス。 */
+/** 実際に運用安定を付与した介入1回あたりの運用判断ボーナス（RI-80）。 */
 const STABILIZING_ACTION_BONUS = 0.0045;
 /** 介入の連打だけでSにならないための上限。 */
 const MAX_STABILIZING_ACTION_BONUS = 0.015;
@@ -609,15 +599,11 @@ export function computeGrade(sprint: SprintState, org: OrgState): string {
     m.reworkCount * 5 + m.incidentCount * 6 + m.spread * 10 + Math.max(0, hpLoss - 20) * 0.7;
   const base = Math.max(1, m.delivered);
   const outcomeRatio = (m.delivered - penalties) / base;
-  // 成立した安定化介入は「事故を起こさなかった」だけでは残りにくい運用判断として
-  // 少しだけ加点する。残業号令は速度優先の危険な手なので対象外とし、上限も設ける。
-  const stabilizingActions = STABILIZING_ACTIONS.reduce(
-    (total, id) => total + (m.actionCounts[id] ?? 0),
-    0,
-  );
+  // 実際に運用安定を付与した介入だけを加点する（条件未成立の firefight/andon は除外。RI-73）。
+  // 残業号令は速度優先の危険な手なので安定を付けず対象外。上限も設ける。
   const managementBonus = Math.min(
     MAX_STABILIZING_ACTION_BONUS,
-    stabilizingActions * STABILIZING_ACTION_BONUS,
+    m.stabilizingGrants * STABILIZING_ACTION_BONUS,
   );
   const ratio = outcomeRatio + managementBonus;
   if (ratio >= GRADE_THRESHOLDS.S) return 'S';

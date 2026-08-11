@@ -106,12 +106,19 @@ export interface WinEvalInput {
 
 /** 経営勝利に必要な予算下限。汎用キャッチオールにしないよう高めに置く（RI-76）。 */
 export const MANAGEMENT_BUDGET_MIN = 50;
+/**
+ * カオス勝利に必要な累計障害数。
+ * 完走ランは障害6件程度ではほぼ常に超えるため、連発のシグネチャとして高めに置く（RI-76）。
+ */
+export const CHAOS_INCIDENTS_MIN = 20;
+/** カオス勝利に必要なラン累計出荷。 */
+export const CHAOS_DELIVERED_MIN = 250;
 
 /**
  * ボス突破時に達成した最上位の勝利種別を返す（RI-76）。
  *
  * ノーダメはやり込み枠として高水準の健全指標と健全系診断を要求する。
- * ビルド差が出るよう AI / カオス / 幸福 / 健全を経営（予算残り）より前に評価し、最後に通常勝利へ落とす。
+ * ビルド差が出るよう AI / 幸福 / カオス / 健全を経営（予算残り）より前に評価し、最後に通常勝利へ落とす。
  */
 export function evaluateWinType(input: WinEvalInput): WinType {
   const { org, totals, budget, usedHeavyActions } = input;
@@ -152,15 +159,15 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'aiSuccess';
   }
 
-  // 出荷はラン累計（totals.delivered）。選択中チームの org.deliveryScore では他チーム分を取りこぼす。
-  // 予算残りより先に評価し、障害多発ビルドが経営へ吸われないようにする。
-  if (totals.incidents >= 6 && totals.delivered >= 250) {
-    return 'chaos';
-  }
-
-  // 人を守るビルド。
+  // 人を守るビルド（障害多発より先に評価し、幸福勝ちをカオスへ吸わせない）。
   if (org.morale >= 70 && org.seniorHp >= 55) {
     return 'happiness';
+  }
+
+  // 出荷はラン累計（totals.delivered）。選択中チームの org.deliveryScore では他チーム分を取りこぼす。
+  // 予算残りより先に評価し、障害連発ビルドが経営へ吸われないようにする。
+  if (totals.incidents >= CHAOS_INCIDENTS_MIN && totals.delivered >= CHAOS_DELIVERED_MIN) {
+    return 'chaos';
   }
 
   // 品質・ドキュメント寄りの健全（診断が documentationKingdom なら閾値を緩める。士気下限は維持）。

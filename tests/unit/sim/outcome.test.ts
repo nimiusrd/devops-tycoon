@@ -426,7 +426,22 @@ describe('evaluateWinType', () => {
         rework: 2,
         reviewQueuePeak: 4,
         spread: 1,
-        incidents: 6,
+        incidents: 20,
+        delivered: 250,
+      },
+      budget: 10,
+    });
+    // 障害が連発水準に届かない完走はカオスにしない。
+    win('normal', {
+      org: { morale: 50, seniorHp: 30, quality: 50, aiLiteracy: 50 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 0,
+        rework: 2,
+        reviewQueuePeak: 4,
+        spread: 1,
+        incidents: 19,
         delivered: 250,
       },
       budget: 10,
@@ -441,7 +456,22 @@ describe('evaluateWinType', () => {
         rework: 2,
         reviewQueuePeak: 4,
         spread: 1,
-        incidents: 6,
+        incidents: 20,
+        delivered: 250,
+      },
+      budget: 80,
+    });
+    // 幸福条件を満たす場合はカオスより幸福を優先する。
+    win('happiness', {
+      org: { morale: 70, seniorHp: 55, quality: 50, aiLiteracy: 50 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 0,
+        rework: 2,
+        reviewQueuePeak: 4,
+        spread: 1,
+        incidents: 20,
         delivered: 250,
       },
       budget: 80,
@@ -554,7 +584,7 @@ describe('evaluateWinType', () => {
           rework: 4,
           reviewQueuePeak: 8,
           spread: 2,
-          incidents: 8,
+          incidents: 20,
           delivered: 320,
         }),
         budget: 12,

@@ -18,7 +18,12 @@ import {
   seniorHpShareMul,
   type RosterState,
 } from '../member';
-import { AI_ADOPTION, TASK_BASE_VALUE, securityFragility } from '../model/process';
+import {
+  AI_ADOPTION,
+  TASK_BASE_VALUE,
+  securityCustomerTrustSpreadRaw,
+  securityFragility,
+} from '../model/process';
 import { AI_LITERACY_UNSAFE_CAP } from '../outcome';
 import { createRng } from '../rng';
 import type { DiagnosisType } from '../run/types';
@@ -527,6 +532,8 @@ export type CoarseStepResult = {
   teams: TeamRunState[];
   /** 非選択チームで新規発生した炎上件数（鎮火前。開数差分ではない）。 */
   ignited: number;
+  /** 発火チームの発生時点 securityLevel から積んだ顧客信頼 raw（RI-87）。 */
+  securityTrustSpreadRaw: number;
   /** 非選択チームの完了数合算（出荷増分を完了の近似とする）。 */
   completed: number;
   /** 非選択チームの AI 支援完了数合算（編成相当の採用率で按分）。 */
@@ -569,6 +576,7 @@ export function advanceCoarseTeams(
   const seniorHpCostMul = clamp(args.modifiers?.seniorHpCostMul ?? 1, 0.3, 3);
   const aiDependencyDrift = Math.max(0, Math.round(args.modifiers?.aiDependencyDrift ?? 0));
   let ignited = 0;
+  let securityTrustSpreadRaw = 0;
   let completed = 0;
   let aiAssisted = 0;
   const next = teams.map((team) => {
@@ -633,6 +641,7 @@ export function advanceCoarseTeams(
     if (fireRoll < fireChance) {
       incidents += 1;
       ignited += 1;
+      securityTrustSpreadRaw += securityCustomerTrustSpreadRaw(team.securityLevel ?? team.quality);
     }
     if (rng() < (0.35 + reviewCap * 0.004) * reviewMul) {
       incidents = Math.max(0, incidents - 1);
@@ -681,7 +690,7 @@ export function advanceCoarseTeams(
       }),
     };
   });
-  return { teams: next, ignited, completed, aiAssisted };
+  return { teams: next, ignited, securityTrustSpreadRaw, completed, aiAssisted };
 }
 
 /**

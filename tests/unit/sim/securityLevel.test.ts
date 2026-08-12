@@ -15,7 +15,11 @@ import {
   securitySpreadMul,
 } from '../../../src/sim/model';
 import { createOrgState } from '../../../src/sim/org';
-import { deriveTeamCapacities, projectOrgScale } from '../../../src/sim/orgscale/teamState';
+import {
+  deriveTeamCapacities,
+  projectOrgScale,
+  advanceCoarseTeams,
+} from '../../../src/sim/orgscale/teamState';
 import { emptyAdjustState } from '../../../src/sim/orgscale/levers';
 import type { TeamRunState } from '../../../src/sim/orgscale/types';
 import { RunEngine } from '../../../src/sim/run/engine';
@@ -258,5 +262,46 @@ describe('RI-87 セキュリティ軸', () => {
       ),
     );
     expect(atSpread).toBeLessThan(securityCustomerTrustDelta(90, 2, 1));
+  });
+
+  it('粗粒度発火の信頼 raw は発火チームの水準で積む', () => {
+    const pressured = (securityLevel: number): TeamRunState => ({
+      id: 'pressured',
+      deptId: 'platform',
+      name: '圧迫',
+      engineers: 8,
+      headcount: 8,
+      aiLiteracy: 40,
+      aiDependency: 40,
+      morale: 50,
+      techDebt: 20,
+      shipping: 50,
+      reviewQueue: 10,
+      incidents: 1,
+      reviewCapacity: 10,
+      incidentBias: 0.4,
+      seniorHp: 60,
+      aiEnabled: true,
+      testCoverage: 40,
+      documentation: 30,
+      quality: 50,
+      securityLevel,
+    });
+    const home: TeamRunState = { ...pressured(80), id: 'home', name: 'ホーム' };
+    const low = advanceCoarseTeams([home, pressured(0)], {
+      seed: 'ri91-b1-byteam',
+      stepKey: 'adj',
+      excludeId: 'home',
+    });
+    const high = advanceCoarseTeams([home, pressured(80)], {
+      seed: 'ri91-b1-byteam',
+      stepKey: 'adj',
+      excludeId: 'home',
+    });
+    expect(low.ignited).toBe(1);
+    expect(high.ignited).toBe(1);
+    expect(low.securityTrustSpreadRaw).toBeCloseTo(securityCustomerTrustSpreadRaw(0), 8);
+    expect(high.securityTrustSpreadRaw).toBeCloseTo(securityCustomerTrustSpreadRaw(80), 8);
+    expect(low.securityTrustSpreadRaw).toBeGreaterThan(high.securityTrustSpreadRaw);
   });
 });

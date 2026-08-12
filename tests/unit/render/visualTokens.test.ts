@@ -56,6 +56,8 @@ describe('visual tokens', () => {
     expect(values['--visual-space-department-w']).toBe('1404');
     expect(values['--visual-space-industry-h']).toBe('360');
     expect(values['--visual-sprint-station-width']).toBe('15%');
+    expect(values['--visual-sprint-flow-dash']).toBe('6');
+    expect(values['--visual-sprint-flow-gap']).toBe('9');
     expect(values['--visual-color-flow-hot']).toBe(VISUAL_TOKENS.colors.flow.hot);
     expect(values['--visual-color-task-glow-ai']).toBe(VISUAL_TOKENS.colors.taskGlow.ai);
     expect(values['--visual-dept-flow-dash']).toBe('6');
@@ -63,6 +65,9 @@ describe('visual tokens', () => {
     expect(values['--visual-color-banner-hell-text']).toBe(
       VISUAL_TOKENS.colors.bannerTone.hell.text,
     );
+    expect(values['--visual-color-banner-ok-bg-alpha']).toBe('93%');
+    expect(values['--visual-color-banner-warn-bg-alpha']).toBe('93%');
+    expect(values['--visual-color-banner-hell-bg-alpha']).toBe('93%');
 
     const applied = new Map<string, string>();
     const root = {

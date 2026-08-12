@@ -916,7 +916,7 @@ body {
   pointer-events: none;
 }
 .flowdash {
-  stroke-dasharray: var(--visual-dept-flow-dash) var(--visual-dept-flow-gap);
+  stroke-dasharray: var(--visual-sprint-flow-dash) var(--visual-sprint-flow-gap);
   animation: dash 1s linear infinite;
 }
 @keyframes dash {
@@ -5531,7 +5531,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-size: 10px;
   font-weight: 800;
   color: var(--cream);
-  background: color-mix(in srgb, var(--visual-color-banner-bg) 80%, transparent);
+  background: color-mix(in srgb, var(--visual-color-banner-ok-bg) 80%, transparent);
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 2px 8px;
@@ -5557,7 +5557,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .dept-team-banner {
   background: color-mix(
     in srgb,
-    var(--visual-color-banner-bg) var(--visual-color-banner-bg-alpha),
+    var(--visual-color-banner-ok-bg) var(--visual-color-banner-ok-bg-alpha),
     transparent
   );
   border: 2px solid var(--line);
@@ -5598,6 +5598,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 .dept-team-banner.tone-warn {
   border-color: var(--visual-color-banner-warn-border);
+  background: color-mix(
+    in srgb,
+    var(--visual-color-banner-warn-bg) var(--visual-color-banner-warn-bg-alpha),
+    transparent
+  );
 }
 .dept-team-banner.tone-warn .dept-team-tag {
   background: var(--visual-color-banner-warn-tag-bg);
@@ -5605,7 +5610,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 .dept-team-banner.tone-hell {
   border-color: var(--visual-color-banner-hell-border);
-  background: color-mix(in srgb, var(--visual-color-banner-hell-bg) 93%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--visual-color-banner-hell-bg) var(--visual-color-banner-hell-bg-alpha),
+    transparent
+  );
   color: var(--visual-color-banner-hell-text);
   animation: riskpulse 1.1s ease-in-out infinite;
 }

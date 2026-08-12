@@ -56,10 +56,11 @@ const FONT_FAMILY = 'system-ui, sans-serif';
  * SVG を置くため、設計空間では幅 1404×0.15=210.6px・ローカル倍率 min(W/220,H/200)。
  */
 const ACTOR_LOCAL = VISUAL_TOKENS.dimensions.sprint.actor.local;
-const ACTOR_W = BOARD_VIEW.w * VISUAL_TOKENS.dimensions.sprint.actor.widthRatio;
-const ACTOR_H =
-  (ACTOR_W * VISUAL_TOKENS.dimensions.sprint.actor.dom.h) /
-  VISUAL_TOKENS.dimensions.sprint.actor.dom.w;
+const ACTOR_DOM = VISUAL_TOKENS.dimensions.sprint.actor.dom;
+const ACTOR_STATUS_OFFSET = VISUAL_TOKENS.dimensions.sprint.actor.statusOffset;
+const ACTOR_WIDTH_RATIO = VISUAL_TOKENS.dimensions.sprint.stationWidthPercent / 100;
+const ACTOR_W = BOARD_VIEW.w * ACTOR_WIDTH_RATIO;
+const ACTOR_H = (ACTOR_W * ACTOR_DOM.h) / ACTOR_DOM.w;
 const ACTOR_SCALE = Math.min(ACTOR_W / ACTOR_LOCAL.w, ACTOR_H / ACTOR_LOCAL.h);
 
 /** レーンごとのキャラ見た目（OfficeActors の STYLE と同値）。 */
@@ -585,7 +586,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       const color = f.rework ? VISUAL_TOKENS.colors.flow.hot : VISUAL_TOKENS.colors.flow.normal;
       const width = f.rework ? 2.5 : 3.5;
       const alpha = f.rework ? 0.6 : 0.85;
-      for (const [a, b] of lineDashSegments(f.x1, f.y1, f.x2, f.y2, 6, 9, offset)) {
+      const { dash, gap } = VISUAL_TOKENS.dimensions.sprint.flowDash;
+      for (const [a, b] of lineDashSegments(f.x1, f.y1, f.x2, f.y2, dash, gap, offset)) {
         g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color, width, alpha });
       }
       // SVG marker（M0,0 L6,3 L0,6）相当の矢じり（線の終端向き）。
@@ -668,7 +670,10 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       this.applyActorVisual(actor);
       actor.desk.position.set(s.x, s.y);
       actor.char.position.set(s.x, s.y);
-      actor.status.position.set(s.x + ACTOR_W * 0.36, s.y - ACTOR_H * 0.47);
+      actor.status.position.set(
+        s.x + ACTOR_W * ACTOR_STATUS_OFFSET.xRatio,
+        s.y + ACTOR_H * ACTOR_STATUS_OFFSET.yRatio,
+      );
     }
   }
 
@@ -782,7 +787,10 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         actor.char.position.set(actor.baseX, actor.baseY + bobOffsetY(elapsedMs, period, 3));
         actor.char.rotation = gameAssetMoodStyle(actor.mood).rotation;
       }
-      actor.status.position.set(actor.baseX + ACTOR_W * 0.36, actor.baseY - ACTOR_H * 0.47);
+      actor.status.position.set(
+        actor.baseX + ACTOR_W * ACTOR_STATUS_OFFSET.xRatio,
+        actor.baseY + ACTOR_H * ACTOR_STATUS_OFFSET.yRatio,
+      );
     }
 
     for (const entry of this.dotEntries) {

@@ -138,7 +138,11 @@ function Station({
       style={{
         left: pct(s.x, VIEW_W),
         top: pct(s.y, VIEW_H),
-        ...(pixi ? { aspectRatio: '210 / 190' } : undefined),
+        ...(pixi
+          ? {
+              aspectRatio: `${VISUAL_TOKENS.dimensions.sprint.actor.dom.w} / ${VISUAL_TOKENS.dimensions.sprint.actor.dom.h}`,
+            }
+          : undefined),
       }}
     >
       {!pixi && <StationActor lane={s.lane} mood={s.mood} />}

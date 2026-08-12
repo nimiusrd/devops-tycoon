@@ -265,8 +265,8 @@ export function StationActor({ lane, mood }: StationActorProps) {
   return (
     <svg
       className="station-actor"
-      width="210"
-      height="190"
+      width={VISUAL_TOKENS.dimensions.sprint.actor.dom.w}
+      height={VISUAL_TOKENS.dimensions.sprint.actor.dom.h}
       viewBox={`0 0 ${VISUAL_TOKENS.dimensions.sprint.actor.local.w} ${VISUAL_TOKENS.dimensions.sprint.actor.local.h}`}
       aria-hidden="true"
     >

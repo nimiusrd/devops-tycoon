@@ -164,6 +164,7 @@ export interface BannerToneColors {
   border: string;
   borderAlpha: number;
   bg: string;
+  backgroundAlpha: number;
   text: string;
   tagBg: string;
   tagText: string;

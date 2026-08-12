@@ -380,7 +380,7 @@ function layoutTeamBanner(parts: TeamParts, plan: DeptTeamPlan): void {
 
   parts.bannerBg
     .roundRect(-w / 2, -h, w, h, radius)
-    .fill({ color: tone.bg, alpha: 0.93 })
+    .fill({ color: tone.bg, alpha: tone.backgroundAlpha })
     .stroke({ color: tone.border, width: 2, alpha: tone.borderAlpha });
 
   let y = -h + paddingTop;

@@ -11,6 +11,7 @@ import type { Lane } from '../sim/types';
 import type { BoardDotPlan, StationMood } from './boardScene';
 import type { TaskSize, TaskVariant } from './taskView';
 import { TASK_DIAMETER } from './taskView';
+import { VISUAL_TOKENS } from './visualTokens';
 
 /** 設計座標の点。 */
 export interface BoardPoint {
@@ -19,7 +20,7 @@ export interface BoardPoint {
 }
 
 /** ヒット判定の許容マージン（設計px。指先で小粒も掴めるように少し広げる）。 */
-export const DOT_HIT_MARGIN = 6;
+export const DOT_HIT_MARGIN = VISUAL_TOKENS.dimensions.sprint.dotHitMargin;
 
 /**
  * 設計座標の点から、掴めるタスク粒を特定する（RI-30 のドラッグ開始判定）。

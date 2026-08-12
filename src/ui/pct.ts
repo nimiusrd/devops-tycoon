@@ -7,6 +7,8 @@
  *
  * 上記4ファイルに同一実装のコピーが散らばっていたため集約した。
  */
+import { designPxToPercent } from '../render/visualTokens';
+
 export function pct(value: number, total: number): string {
-  return `${(value / total) * 100}%`;
+  return designPxToPercent(value, total);
 }

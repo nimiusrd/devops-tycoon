@@ -2,21 +2,23 @@
  * 部署ビューのチーム間依存フロー（等角パス + heat 色）。
  */
 import type { DeptFlowPlan } from '../render/deptBoardScene';
+import { DEPT_VIEW } from '../render/deptBoardScene';
+import { VISUAL_TOKENS } from '../render/visualTokens';
 
 export function DeptDependencyFlows({ flows }: { flows: readonly DeptFlowPlan[] }) {
   return (
     <svg
       className="dept-flows"
-      viewBox="0 0 1404 573"
+      viewBox={`0 0 ${DEPT_VIEW.w} ${DEPT_VIEW.h}`}
       preserveAspectRatio="none"
       aria-hidden="true"
     >
       <defs>
         <marker id="dept-ah" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill="#cdbff0" />
+          <path d="M0,0 L6,3 L0,6 Z" fill={VISUAL_TOKENS.colors.flow.normal} />
         </marker>
         <marker id="dept-ahr" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill="#ff9a93" />
+          <path d="M0,0 L6,3 L0,6 Z" fill={VISUAL_TOKENS.colors.flow.hot} />
         </marker>
       </defs>
       {flows.map((f) => (

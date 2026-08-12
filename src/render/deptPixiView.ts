@@ -7,6 +7,7 @@
  * - バナー/ラベルのトーン配色（styles.css の DOM 実装と同値）
  */
 import type { TeamHealth } from '../sim/orgscale/types';
+import { designToHostTransform, VISUAL_TOKENS, type VisualTone } from './visualTokens';
 
 /** 2 次ベジェ 1 本ぶんの制御点（`M sx,sy Q cx,cy ex,ey`）。 */
 export interface QuadPath {
@@ -115,13 +116,7 @@ export function containFitTransform(
   viewW: number,
   viewH: number,
 ): ContainFitTransform {
-  if (hostW <= 0 || hostH <= 0 || viewW <= 0 || viewH <= 0) return { scale: 1, x: 0, y: 0 };
-  const scale = Math.min(hostW / viewW, hostH / viewH);
-  return {
-    scale,
-    x: (hostW - viewW * scale) / 2,
-    y: (hostH - viewH * scale) / 2,
-  };
+  return designToHostTransform(hostW, hostH, { w: viewW, h: viewH });
 }
 
 /**
@@ -174,38 +169,13 @@ export interface BannerToneColors {
   tagText: string;
 }
 
-export const BANNER_TONE: Record<'ok' | 'warn' | 'hell', BannerToneColors> = {
-  ok: {
-    border: '#58e0b0',
-    borderAlpha: 0.6,
-    bg: '#1f1942',
-    text: '#ffefd6',
-    tagBg: '#16402f',
-    tagText: '#7df0bf',
-  },
-  warn: {
-    border: '#ffd45c',
-    borderAlpha: 1,
-    bg: '#1f1942',
-    text: '#ffefd6',
-    tagBg: '#4a3a14',
-    tagText: '#ffe08a',
-  },
-  hell: {
-    border: '#ff5f57',
-    borderAlpha: 1,
-    bg: '#3a1414',
-    text: '#ffd0cb',
-    tagBg: '#5a1410',
-    tagText: '#ffb0ac',
-  },
-};
+export const BANNER_TONE: Record<VisualTone, BannerToneColors> = VISUAL_TOKENS.colors.bannerTone;
 
 /** ミニ盤面の床色（DOM `DeptTeamMini` と同値）。 */
 export function teamFloorColor(health: TeamHealth): string {
-  if (health === 'reviewHell') return '#4a2b45';
-  if (health === 'congested') return '#3f3470';
-  return '#3a2f68';
+  if (health === 'reviewHell') return VISUAL_TOKENS.colors.department.floorHell;
+  if (health === 'congested') return VISUAL_TOKENS.colors.department.floorWarn;
+  return VISUAL_TOKENS.colors.department.floorHealthy;
 }
 
 /**
@@ -213,14 +183,15 @@ export function teamFloorColor(health: TeamHealth): string {
  * 返り値はアンカー中心からの相対座標と半径。
  */
 export function pileDotOffsets(count: number): { x: number; y: number; r: number }[] {
-  const cap = Math.min(count, 12);
-  const perRow = 4;
-  const r = count > 8 ? 5 : 6;
+  const { cap, perRow, dx, dy, largeThreshold, largeRadius, radius } =
+    VISUAL_TOKENS.dimensions.department.teamMini.pile;
+  const visible = Math.min(count, cap);
+  const r = count > largeThreshold ? largeRadius : radius;
   const out: { x: number; y: number; r: number }[] = [];
-  for (let i = 0; i < cap; i += 1) {
+  for (let i = 0; i < visible; i += 1) {
     const row = Math.floor(i / perRow);
     const col = i % perRow;
-    out.push({ x: (col - 1.5) * 10, y: -row * 9, r });
+    out.push({ x: (col - (perRow - 1) / 2) * dx, y: -row * dy, r });
   }
   return out;
 }

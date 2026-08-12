@@ -1,0 +1,86 @@
+import { describe, expect, it } from 'vitest';
+import {
+  applyVisualTokenCssVariables,
+  DESIGN_SPACES,
+  designPointToCss,
+  designPxToPercent,
+  designSpaceRatio,
+  designToHostTransform,
+  hexToPixiColor,
+  VISUAL_TOKENS,
+  visualTokenCssVariables,
+} from '../../../src/render/visualTokens';
+
+describe('visual tokens', () => {
+  it('主要画面の設計空間を一覧化する', () => {
+    expect(DESIGN_SPACES).toEqual({
+      sprint: { w: 1404, h: 573 },
+      organization: { w: 1404, h: 573 },
+      department: { w: 1404, h: 573 },
+      industry: { w: 740, h: 360 },
+    });
+    expect(designSpaceRatio(DESIGN_SPACES.sprint)).toBeCloseTo(1404 / 573);
+    expect(designSpaceRatio(DESIGN_SPACES.industry)).toBeCloseTo(740 / 360);
+  });
+
+  it('設計 px を CSS の相対座標へ変換する', () => {
+    expect(designPxToPercent(702, DESIGN_SPACES.sprint.w)).toBe('50%');
+    expect(designPointToCss({ x: 702, y: 286.5 }, DESIGN_SPACES.sprint)).toEqual({
+      left: '50%',
+      top: '50%',
+    });
+  });
+
+  it('設計空間を Pixi host へ contain 配置する', () => {
+    expect(designToHostTransform(2808, 573, DESIGN_SPACES.sprint)).toEqual({
+      scale: 1,
+      x: 702,
+      y: 0,
+    });
+    expect(designToHostTransform(702, 573, DESIGN_SPACES.sprint)).toEqual({
+      scale: 0.5,
+      x: 0,
+      y: 143.25,
+    });
+    expect(designToHostTransform(0, 573, DESIGN_SPACES.sprint)).toEqual({
+      scale: 1,
+      x: 0,
+      y: 0,
+    });
+  });
+
+  it('CSS custom property をトークンから生成して DOM へ反映する', () => {
+    const values = visualTokenCssVariables();
+    expect(values['--visual-space-sprint-w']).toBe('1404');
+    expect(values['--visual-space-industry-h']).toBe('360');
+    expect(values['--visual-sprint-station-width']).toBe('15%');
+    expect(values['--visual-color-flow-hot']).toBe(VISUAL_TOKENS.colors.flow.hot);
+    expect(values['--visual-color-task-glow-ai']).toBe(VISUAL_TOKENS.colors.taskGlow.ai);
+    expect(values['--visual-dept-flow-dash']).toBe('6');
+    expect(values['--visual-dept-banner-padding-x']).toBe('12px');
+    expect(values['--visual-color-banner-hell-text']).toBe(
+      VISUAL_TOKENS.colors.bannerTone.hell.text,
+    );
+
+    const applied = new Map<string, string>();
+    const root = {
+      style: {
+        setProperty(name: string, value: string) {
+          applied.set(name, value);
+        },
+      },
+    } as unknown as HTMLElement;
+    applyVisualTokenCssVariables(root);
+    expect(applied.get('--visual-color-panel')).toBe(VISUAL_TOKENS.colors.panel);
+    expect(applied.get('--visual-org-card-width')).toBe('116px');
+  });
+
+  it('CSS hex 色を Pixi の RGB 数値へ変換する', () => {
+    expect(hexToPixiColor('#58e0b0')).toBe(0x58e0b0);
+    expect(hexToPixiColor('#abc')).toBe(0xaabbcc);
+    expect(hexToPixiColor('  33285c  ')).toBe(0x33285c);
+    expect(() => hexToPixiColor('#1234')).toThrow('Invalid visual color');
+    expect(() => hexToPixiColor('#12345678')).toThrow('Invalid visual color');
+    expect(() => hexToPixiColor('not-a-color')).toThrow('Invalid visual color');
+  });
+});

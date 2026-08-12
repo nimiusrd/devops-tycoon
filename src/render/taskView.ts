@@ -5,6 +5,7 @@
  * 描画は状態を読むだけ（第22.2）なので、ここは GPU 不要で Vitest で検証できる（第22.5）。
  */
 import type { Task } from '../sim/types';
+import { VISUAL_TOKENS } from './visualTokens';
 
 /** 粒のサイズ（SPEC 第4.1: 小=定型 / 中=通常 / 大=複雑）。 */
 export type TaskSize = 'small' | 'medium' | 'large';
@@ -16,21 +17,10 @@ export type TaskSize = 'small' | 'medium' | 'large';
 export type TaskVariant = 'normal' | 'ai' | 'rework' | 'incident' | 'gold' | 'debt';
 
 /** 種別ごとの色（旧モック main-screen 由来）。 */
-export const TASK_COLORS: Record<TaskVariant, string> = {
-  normal: '#cdbff0',
-  ai: '#9a6bff',
-  rework: '#e04b40',
-  incident: '#ff5f1f',
-  gold: '#f5b400',
-  debt: '#14161f',
-};
+export const TASK_COLORS: Record<TaskVariant, string> = VISUAL_TOKENS.colors.task;
 
 /** 粒の直径（px）。 */
-export const TASK_DIAMETER: Record<TaskSize, number> = {
-  small: 16,
-  medium: 26,
-  large: 34,
-};
+export const TASK_DIAMETER: Record<TaskSize, number> = VISUAL_TOKENS.dimensions.sprint.taskDiameter;
 
 /** タスク規模から粒のサイズを決める。 */
 export function taskSize(task: Task): TaskSize {

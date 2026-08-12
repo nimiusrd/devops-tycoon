@@ -10,18 +10,19 @@ import type { DepartmentState, OrgScaleState, Team } from '../sim/orgscale/types
 import { HEALTH_COLOR, HEALTH_LABEL } from './orgView';
 import { displayName, fireLabel, islandTitle } from './orgIslandView';
 import { badgeTone, healthTag } from './teamHealthTheme';
+import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
 
 /** 設計座標空間（旧モック org-screen の viewBox 由来）。 */
-export const ORG_VIEW = { w: 1404, h: 573 } as const;
+export const ORG_VIEW = DESIGN_SPACES.organization;
 
 /** 島同士の最小間隔（設計px）。extraTeams 等でチームが増えても重ならないよう拡張する。 */
 export const MIN_ISLAND_SPACING_X = 120;
 export const MIN_ISLAND_SPACING_Y = 90;
 
 /** 島アクター＋バッジが盤面内に収まるよう中心座標に取る余白（設計px）。 */
-export const ISLAND_BADGE_ABOVE = 46;
-export const ISLAND_ACTOR_HALF_H = 65;
-export const ISLAND_MARGIN = 8;
+export const ISLAND_BADGE_ABOVE = VISUAL_TOKENS.dimensions.organization.island.badgeAbove;
+export const ISLAND_ACTOR_HALF_H = VISUAL_TOKENS.dimensions.organization.island.actorHalfHeight;
+export const ISLAND_MARGIN = VISUAL_TOKENS.dimensions.organization.island.margin;
 
 /** 部門ゾーンの静的レイアウト（縦ストライプ領域。旧モック由来）。 */
 interface ZoneLayout {
@@ -331,7 +332,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
       id: `flow-${i}`,
       d: f.d,
       hot,
-      stroke: hot ? '#ff9a93' : '#cdbff0',
+      stroke: hot ? VISUAL_TOKENS.colors.flow.hot : VISUAL_TOKENS.colors.flow.normal,
       strokeWidth: hot ? 3 : 2.5,
       opacity: hot ? 0.85 : 0.65,
     };

@@ -7,13 +7,10 @@
  */
 import type { TeamHealth } from '../sim/orgscale/types';
 import { depthSort, isoProject, type DepthItem, type IsoOptions } from './iso';
+import { VISUAL_TOKENS } from './visualTokens';
 
 /** 健全度ごとの色（緑/黄/赤。旧モック org-screen 由来）。 */
-export const HEALTH_COLOR: Record<TeamHealth, string> = {
-  healthy: '#58e0b0',
-  congested: '#ffd45c',
-  reviewHell: '#ff5f1f',
-};
+export const HEALTH_COLOR: Record<TeamHealth, string> = VISUAL_TOKENS.colors.health;
 
 /** 健全度の短いラベル。 */
 export const HEALTH_LABEL: Record<TeamHealth, string> = {
@@ -40,10 +37,10 @@ export interface Layout<T> {
  * 全社マップ DOM/Pixi 共通のアイソメ寸法・余白。
  * 116px カード（`.team-island`）が重ならないよう、格子 1 ステップ ≒ カード幅 + 余白に合わせる。
  */
-export const ORG_ISO = { tileW: 264, tileH: 176 } as const;
-export const ORG_PAD = 64;
+export const ORG_ISO = VISUAL_TOKENS.dimensions.organization.iso;
+export const ORG_PAD = VISUAL_TOKENS.dimensions.organization.padding;
 /** DOM `.team-island` / Pixi card の幅 px。 */
-export const ORG_CARD_W = 116;
+export const ORG_CARD_W = VISUAL_TOKENS.dimensions.organization.card.width;
 /** 同時描画スプライト上限（性能予算。第22.5）。
  * Vitestの大規模fixture（100/500/1000件）でカリングと表示予算を確認する。
  * 通常ラン（~10 チーム）は overBudget=0。1000 件全可視 stress では 500 件まで描画。 */

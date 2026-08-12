@@ -5,17 +5,18 @@
  * レンダラはこの計画を読むだけにして、ランキング種別タブの切替も同じ関数で検証する。
  */
 import type { IndustryState, LeaderboardEntry } from '../sim/orgscale/types';
+import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
 
 /** 旧モック industry-screen の HQ スカイライン SVG viewBox 由来。 */
-export const INDUSTRY_VIEW = { w: 740, h: 360 } as const;
+export const INDUSTRY_VIEW = DESIGN_SPACES.industry;
 
-export const INDUSTRY_SKYLINE_LIMIT = 8;
+export const INDUSTRY_SKYLINE_LIMIT = VISUAL_TOKENS.dimensions.industry.skylineLimit;
 
-const MIN_BUILDING_HEIGHT = 52;
-const MAX_BUILDING_HEIGHT = 190;
-const BUILDING_W = 54;
-const BUILDING_D = 28;
-const BASE_Y = 292;
+const MIN_BUILDING_HEIGHT = VISUAL_TOKENS.dimensions.industry.building.minHeight;
+const MAX_BUILDING_HEIGHT = VISUAL_TOKENS.dimensions.industry.building.maxHeight;
+const BUILDING_W = VISUAL_TOKENS.dimensions.industry.building.width;
+const BUILDING_D = VISUAL_TOKENS.dimensions.industry.building.depth;
+const BASE_Y = VISUAL_TOKENS.dimensions.industry.building.baseY;
 
 const BUILDING_LAYOUTS: readonly { x: number; y: number }[] = [
   { x: 84, y: BASE_Y + 12 },

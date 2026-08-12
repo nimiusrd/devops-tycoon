@@ -374,6 +374,8 @@ export class RunEngine {
   private teamRosters: Record<string, RosterState> = {};
   /** 粗粒度炎上の正規化端数（四半期内で繰り越し）。 */
   private coarseIncidentCarry = 0;
+  /** 粗粒度炎上の顧客信頼 raw（四半期内で繰り越し。RI-87）。 */
+  private coarseSecurityTrustRaw = 0;
 
   private quarterNumber = 1;
   private quarterGoal!: QuarterGoal;
@@ -522,6 +524,7 @@ export class RunEngine {
     });
     this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
     this.coarseIncidentCarry = 0;
+    this.coarseSecurityTrustRaw = 0;
     // ホームの永続指標を初期 org/roster と揃える。
     this.syncActiveTeamFromOrg();
     this.status = 'playing';
@@ -1033,6 +1036,7 @@ export class RunEngine {
 
     this.quarterTotals = emptyTotals();
     this.coarseIncidentCarry = 0;
+    this.coarseSecurityTrustRaw = 0;
 
     this.sprintIndexInQuarter = 0;
     this.pendingSprintKind = 'normal';
@@ -1695,9 +1699,20 @@ export class RunEngine {
   private flushCoarseIncidentCarry(): void {
     const credited = Math.floor(this.coarseIncidentCarry + 1e-9);
     this.coarseIncidentCarry = 0;
+    this.coarseSecurityTrustRaw = 0;
     if (credited <= 0) return;
     this.totals.incidents += credited;
     this.quarterTotals.incidents += credited;
+  }
+
+  /** 粗粒度炎上の顧客信頼 raw を四半期内で繰り越し、しきい値を跨いだ分だけ適用する。 */
+  private applyCoarseSecurityTrust(spreadRaw: number): void {
+    if (spreadRaw <= 0) return;
+    const prev = securityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
+    this.coarseSecurityTrustRaw += spreadRaw;
+    const next = securityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
+    const delta = next - prev;
+    if (delta !== 0) this.applyTrust({ customers: delta });
   }
 
   /** 粗粒度進行用に、キャリーオーバー込みの係数を畳み込む（RI-83）。 */
@@ -1775,12 +1790,8 @@ export class RunEngine {
       stepped.aiAssisted,
       this.coarseIncidentCarry,
     );
-    // RI-87: 非選択チームの炎上も、発火チームの発生時点水準で顧客信頼へ載せる。
-    if (stepped.ignited > 0) {
-      this.applyTrust({
-        customers: securityCustomerTrustFromRaw(stepped.securityTrustSpreadRaw),
-      });
-    }
+    // RI-87: 非選択チームの炎上 raw を四半期内で繰り越し、0.5 未満をステップ丸めで消さない。
+    this.applyCoarseSecurityTrust(stepped.securityTrustSpreadRaw);
     // 炎上は四半期末 flush まで raw 累積（ステップ丸めで 0 固定にしない）。
     this.coarseIncidentCarry = delta.incidents + delta.incidentCarry;
     this.totals.delivered += delta.delivered;
@@ -2161,6 +2172,7 @@ export class RunEngine {
         teamLockUntilSprint: this.teamLockUntilSprint,
         teamRosters: structuredClone(this.teamRosters),
         coarseIncidentCarry: this.coarseIncidentCarry,
+        coarseSecurityTrustRaw: this.coarseSecurityTrustRaw,
         draftMulliganUsed: this.draftMulliganUsed,
       },
     };
@@ -2295,6 +2307,7 @@ export class RunEngine {
         : { [this.activeTeamId]: structuredClone(this.roster) };
       // 四半期内の粗粒度炎上累積を復元（旧セーブ欠落時は 0）。
       this.coarseIncidentCarry = Math.max(0, cloned.extras.coarseIncidentCarry ?? 0);
+      this.coarseSecurityTrustRaw = Math.max(0, cloned.extras.coarseSecurityTrustRaw ?? 0);
     } else {
       // v1 セーブ: チーム配列が無いので初期化し、累積 orgAdjust を正本へ焼き込んでから strip。
       this.homeTeamId = HOME_TEAM_ID;
@@ -2312,6 +2325,7 @@ export class RunEngine {
       });
       // v1 には粗粒度累積が無い。
       this.coarseIncidentCarry = 0;
+      this.coarseSecurityTrustRaw = 0;
       // v1 の出荷正本は org.deliveryScore。totals.delivered へ写経し報酬分岐を防ぐ。
       this.totals.delivered = Math.max(0, Math.round(this.org.deliveryScore));
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };

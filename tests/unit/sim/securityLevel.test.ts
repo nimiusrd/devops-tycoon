@@ -304,4 +304,23 @@ describe('RI-87 セキュリティ軸', () => {
     expect(high.securityTrustSpreadRaw).toBeCloseTo(securityCustomerTrustSpreadRaw(80), 8);
     expect(low.securityTrustSpreadRaw).toBeGreaterThan(high.securityTrustSpreadRaw);
   });
+
+  it('粗粒度の信頼 raw はステップ間で繰り越してから確定する', () => {
+    const e = new RunEngine({ seed: 'ri87-trust-carry', difficulty: 'normal' });
+    e.startRun();
+    const before = e.snapshot().stakeholderTrust.customers;
+    const internals = e as unknown as {
+      applyCoarseSecurityTrust: (raw: number) => void;
+      coarseSecurityTrustRaw: number;
+    };
+    const piece = securityCustomerTrustSpreadRaw(40);
+    expect(piece).toBeCloseTo(0.4, 8);
+    internals.applyCoarseSecurityTrust(piece);
+    expect(e.snapshot().stakeholderTrust.customers).toBe(before);
+    expect(internals.coarseSecurityTrustRaw).toBeCloseTo(0.4, 8);
+    internals.applyCoarseSecurityTrust(piece);
+    expect(e.snapshot().stakeholderTrust.customers).toBe(
+      before + securityCustomerTrustFromRaw(0.8),
+    );
+  });
 });

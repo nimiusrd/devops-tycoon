@@ -5138,7 +5138,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   position: relative;
   width: 100%;
   max-width: 100%;
-  aspect-ratio: var(--visual-space-sprint-w) / var(--visual-space-sprint-h);
+  aspect-ratio: var(--visual-space-organization-w) / var(--visual-space-organization-h);
   border-radius: 16px;
   overflow: hidden;
   border: 2px solid var(--line);
@@ -5492,7 +5492,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   position: relative;
   width: 100%;
   max-width: 100%;
-  aspect-ratio: var(--visual-space-sprint-w) / var(--visual-space-sprint-h);
+  aspect-ratio: var(--visual-space-department-w) / var(--visual-space-department-h);
   border-radius: 16px;
   overflow: hidden;
   border: 2px solid var(--line);

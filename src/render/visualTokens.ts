@@ -296,6 +296,10 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
   return {
     '--visual-space-sprint-w': String(spaces.sprint.w),
     '--visual-space-sprint-h': String(spaces.sprint.h),
+    '--visual-space-organization-w': String(spaces.organization.w),
+    '--visual-space-organization-h': String(spaces.organization.h),
+    '--visual-space-department-w': String(spaces.department.w),
+    '--visual-space-department-h': String(spaces.department.h),
     '--visual-space-industry-w': String(spaces.industry.w),
     '--visual-space-industry-h': String(spaces.industry.h),
     '--visual-sprint-station-width': `${dimensions.sprint.stationWidthPercent}%`,

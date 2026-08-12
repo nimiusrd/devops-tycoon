@@ -13,7 +13,7 @@
 | SPEC | 内容 | 主な実装・テスト | 状態 |
 | --- | --- | --- | --- |
 | [1](../SPEC.md#1-企画概要) | 企画概要 | — | — |
-| [2](../SPEC.md#2-コンセプト) | AI導入と組織制約の因果 | [probability-model.md](./probability-model.md), `src/sim/sprint.ts`, `src/sim/model/process.ts`, `tests/unit/sim/defaultAiDelivery.test.ts`, `tests/unit/helpers/aiAdoptionSeeds.ts` | ✅ AI on/off は状態へ伝播し、既定部分配布の出荷正方向と Review/Rework 増を固定（RI-77）。コホート勝率の最終確定は再計測待ち |
+| [2](../SPEC.md#2-コンセプト) | AI導入と組織制約の因果 | [probability-model.md](./probability-model.md), `src/sim/sprint.ts`, `src/sim/model/process.ts`, `tests/unit/sim/defaultAiDelivery.test.ts`, `tests/unit/helpers/aiAdoptionSeeds.ts` | ✅ AI on/off は状態へ伝播し、既定部分配布の出荷正方向と Review/Rework 増を固定（RI-77）。コホートでも `skilledNoHire` が出荷・勝率で `noAiCtl` を上回る |
 | [2.1](../SPEC.md#21-世界観の制約現実の開発組織から大きく逸脱しない) | 世界観 | [architecture.md](./architecture.md) §7 | ✅ |
 | [3](../SPEC.md#3-ゲームの基本ループ) | 複数四半期ラン、固定トラック、ビート | `src/sim/run/engine.ts`, `phases.ts`, `events.ts`, `tests/unit/sim/runLoop.test.ts` | ✅ |
 | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | テンポと速度操作 | `src/ui/sprintTempo.ts`, `tests/unit/ui/sprintTempo.test.ts`, `tests/unit/helpers/pacingStats.ts` | ✅ |
@@ -50,7 +50,7 @@
 | Nightmare は AI 依存を意識しない方針で第1スプリント敗北が確定する | 第15〜16／第19.1 F-8・F-9 | [RI-74](./remaining-issues.md#ri-74-nightmare-は-ai-依存を意識しない方針で第1スプリント敗北が確定する) |
 | ~~スプリントが規定帯をほぼ全面的に下回る~~ | 第3.1／第19.1 F-4 | ~~[RI-75](./remaining-issues.md#ri-75-スプリントが規定帯をほぼ全面的に下回る)~~ 完了 |
 | ~~勝利種別が実質2種で、受動的なプレイが最上位勝利を取る~~ | 第14／第19.1 F-10 | ~~[RI-76](./remaining-issues.md#ri-76-勝利種別が実質2種で最も受動的なプレイが最上位勝利を取る)~~ 完了（F-10ビルド modal 3種） |
-| ~~AI 導入が既定 ON で、解除側の代償が一方的に大きく、AI の効き方が実務感覚と逆向き~~ | 第2／第19.1 F-1・F-2・F-10 | ~~[RI-77](./remaining-issues.md#ri-77-ai-導入が既定-on-で既定のまま進むのが有利)~~ 実装済・コホート再計測待ち |
+| ~~AI 導入が既定 ON で、解除側の代償が一方的に大きく、AI の効き方が実務感覚と逆向き~~ | 第2／第19.1 F-1・F-2・F-10 | ~~[RI-77](./remaining-issues.md#ri-77-ai-導入が既定-on-で既定のまま進むのが有利)~~ 完了 |
 | ~~スプリント間投資のうち、ショップと休息の選択が結果を変えない~~ | 第7／第19.1 F-2 | ~~[RI-78](./remaining-issues.md#ri-78-スプリント間投資のうちショップと休息の選択が結果を変えない)~~ 完了。ショップは `skilledShopCtl` 対照の純出荷改善 13/14 |
 | ~~予算枯渇・信頼枯渇が予兆なく終わり、敗因ラベルが実態と一致しない~~ | 第15／第19.1 F-8・F-9 | ~~[RI-79](./remaining-issues.md#ri-79-予算枯渇信頼枯渇が予兆なく終わり敗因ラベルが実態と一致しない)~~ 完了 |
 | ~~スプリント評価が S に偏り、無介入と熟練を区別しない~~ | 第4.6 | ~~[RI-80](./remaining-issues.md#ri-80-スプリント評価が-s-に偏る)~~ 完了 |

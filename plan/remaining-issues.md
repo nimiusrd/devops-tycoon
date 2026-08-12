@@ -18,7 +18,7 @@
 | RI-74 | Nightmare は AI 依存を意識しない方針で第1スプリント敗北が確定する | 高 | 完了 | 第19.1（F-8・F-9）/ 第15・16 |
 | RI-75 | スプリントが規定帯をほぼ全面的に下回る | 高 | 完了 | 第3.1 / 第19.1（F-4） |
 | RI-76 | 勝利種別が「重アクションを使ったか」でしか分岐しない | 高 | 完了 | 第14 / 第19.1（F-10） |
-| RI-77 | AI 導入が既定 ON で、既定のまま進むのが有利 | 高 | 実装済・コホート再計測待ち | 第2 / 第19.1（F-1・F-2・F-10） |
+| RI-77 | AI 導入が既定 ON で、既定のまま進むのが有利 | 高 | 完了 | 第2 / 第19.1（F-1・F-2・F-10） |
 | RI-78 | スプリント間投資のうち、ショップと休息の選択が結果を変えない | 中 | 完了 | 第7 / 第6 / 第19.1（F-2） |
 | RI-79 | 予算枯渇・信頼枯渇が予兆なく終わり、敗因ラベルが実態と一致しない | 中 | 完了 | 第15 / 第19.1（F-8・F-9） |
 | RI-80 | 評価が無介入と熟練を区別しない | 中 | 完了 | 第4.6 |
@@ -87,7 +87,7 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 
 **完了（F-7 + F-1）。** F-7 は easy/normal の `seniorHpCostMul` と easy `eliteTaskMul` で導入帯を維持。F-1 は緊急対応の状況依存コスト（単発先消しは高HP・士気・コンボ切断、緊急時だけ安く安定付与）、アンドンの短縮＋薄キュー罰、採用のスタミナ／レビューHP／seniorHp 分散で充足。熟練ハーネスは緊急対応を複数炎上／延焼寸前に限定。
 
-既定フルコホート（4×36×10=1,440、`PT_META=fresh`）: `naive` easy 3/10（30%）/ normal 0/10 / hard 1/10 / nightmare 0/10、`idle` 全難易度 0/10。`onlyFirefight`/`onlyAndon`/`probe` は全難易度で `skilledNoHire` を上回らない。採用は easy で `seniorBurnout` 4/10 vs 7/10・最終シニアHP 34 vs 16（壊れにくさ。勝率は予算代償で下がりうる）。非回帰は `sprintTempo` / `aiDependencyPace` / actions・member ユニット。Delivery 目標倍率は未変更。
+既定フルコホート（4×37×10=1,480、`PT_META=fresh`）: `naive` easy 4/10（40%）/ normal 0/10 / hard 0/10 / nightmare 0/10、`idle` 全難易度 0/10。`probe` は全難易度 0。`onlyAndon` は normal で `skilledNoHire` を上回る（2/10 vs 1/10）。採用は easy で `seniorBurnout` 6/10 vs 7/10・最終シニアHP 21 vs 12（壊れにくさ。勝率は予算代償で下がりうる）。非回帰は `sprintTempo` / `aiDependencyPace` / actions・member ユニット。Delivery 目標倍率は未変更。
 
 受入条件:
 
@@ -113,17 +113,17 @@ SPEC 第19.1「面白さの定義と判定基準」を定めたうえで、全�
 `noDamage → aiSuccess → documentationKingdom健全 → happiness → chaos → healthy → management → normal` とした。
 カオスは累計障害20以上、経営は予算50以上、幸福は士気70・シニアHP45以上。
 ノーダメは高水準の健全指標＋健全系診断を要求し、受動プレイでは到達しない。
-ユニットで代表ビルド入力の分岐を固定し、現行 1,480ランでは 113勝（`happiness` 47 / `chaos` 44 / `healthy` 22）。
+ユニットで代表ビルド入力の分岐を固定し、現行 1,480ランでは 108勝（`happiness` 42 / `chaos` 47 / `healthy` 19）。
 F-10 受入はビルド方針（`aiFullBet` / `harness*` / `noAi` / `reviewHeavy` / `skilledNoHire`）だけで判定し、
 一致≥2 / 混在首位≥3・share≥2/3・同率除外・異 modal 方針間 TVD≥0.5・
 試練プロファイル込みの共通 seed 分岐（modal 各種の裏付け）・既定コホート世代一致を要求する。
-現行では F-10 modal が `chaos` / `happiness` / `healthy` の3種で PASS。
+再計測後の F-10 modal は `chaos` / `happiness` の2種で FAIL（`skilledNoHire=chaos`、`reviewHeavy` 同率除外、共通 seed 分岐なし）。
 
-### RI-77 AI 導入が既定 ON で、既定のまま進むのが有利 — 実装済・コホート再計測待ち
+### RI-77 AI 導入が既定 ON で、既定のまま進むのが有利 — 完了
 
-機構側は実装済み。開始時は `starter-ai-junior` のみ AI 配布（`createInitialRoster`）、ビート後の sprint 系は必ず `setup` を経由して配布を問い直す。`aiDeliveryValueMul` とインフラ単価の再調整で既定の部分配布が出荷を正方向へ動きつつ 1 ラン壁時計帯も維持することを固定し、Review/Rework 増のコア因果は `aiAdoptionSeeds` で維持。FormationScreen の再設計や開始時 AI 全面撤廃はしていない。
+開始時は `starter-ai-junior` のみ AI 配布（`createInitialRoster`）、ビート後の sprint 系は必ず `setup` を経由して配布を問い直す。`aiDeliveryValueMul` とインフラ単価の再調整で既定の部分配布が出荷を正方向へ動きつつ 1 ラン壁時計帯も維持することを固定し、Review/Rework 増のコア因果は `aiAdoptionSeeds` で維持。FormationScreen の再設計や開始時 AI 全面撤廃はしていない。
 
-勝率帯・`skilledNoHire` vs `noAiCtl` のコホート差は `npm run playtest` の再計測で確定する。受入の最終判定はそこで行う。
+既定フルコホート再計測（`skilledNoHire` vs `noAiCtl`）では、同一 seed・同一スプリントの共通到達セル（S1–S3、比較できた12セルすべて）で `skilledNoHire` の平均出荷が上回り、勝率は 4/40 vs 2/40。AI 利用率平均 41.8% vs 0%、最終 AI 依存度平均 94.4 vs 36.7。受入の最終判定は充足。
 
 ### RI-78 スプリント間投資のうち、ショップと休息の選択が結果を変えない — 完了
 

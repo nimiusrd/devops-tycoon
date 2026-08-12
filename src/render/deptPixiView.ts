@@ -108,7 +108,7 @@ export interface ContainFitTransform {
 
 /**
  * 設計空間 viewW×viewH を host（canvas 実寸）へ「両軸 contain」で収める変換。
- * DOM 側の `useContainFit`（aspect-ratio + width 調整）と同じ見え方になる。
+ * DOM 側の `AspectStage` と同じ見え方になる。
  */
 export function containFitTransform(
   hostW: number,

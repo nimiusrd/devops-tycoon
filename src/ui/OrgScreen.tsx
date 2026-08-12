@@ -9,8 +9,10 @@ import { lazy, Suspense, useCallback, useMemo, useRef } from 'react';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
+import { ORG_VIEW } from '../render/orgBoardScene';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
+import { AspectStage } from './AspectStage';
 import { EffectTagList } from './EffectTagList';
 import { OrgBoard } from './OrgBoard';
 import { OrgInfraHubPill } from './OrgHub';
@@ -121,9 +123,9 @@ export function OrgScreen({
         ))}
       </div>
 
-      <div className="org-field" data-testid="org-field">
+      <AspectStage ratio={ORG_VIEW.w / ORG_VIEW.h} className="org-field" data-testid="org-field">
         {usePixi ? (
-          <div className="org-field-board org-field-pixi">
+          <>
             <OrgInfraHubPill
               ci={org.infra.ci}
               docs={org.infra.docs}
@@ -140,11 +142,11 @@ export function OrgScreen({
                 onWebglError={onWebglError}
               />
             </Suspense>
-          </div>
+          </>
         ) : (
           <OrgBoard org={org} onFocusTeam={onFocusTeam} />
         )}
-      </div>
+      </AspectStage>
 
       <div className="org-levers" data-testid="org-levers">
         <span className="org-levers-title">全社レバー</span>

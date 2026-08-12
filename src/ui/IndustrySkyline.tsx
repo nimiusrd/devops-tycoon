@@ -1,23 +1,21 @@
 /**
  * 業界ランキングの等角 HQ スカイライン（RI-03）。
  *
- * OrgBoard / DeptBoard と同様に、設計座標空間（740×360）の % 配置と
- * contain-fit で SVG と DOM ラベルの座標系を一致させる。
+ * OrgBoard / DeptBoard と同様に、設計座標空間（740×360）の % 配置を
+ * AspectStageへ載せ、SVG と DOM ラベルの座標系を一致させる。
  */
-import { useRef } from 'react';
 import type { IndustryState } from '../sim/orgscale/types';
 import {
   INDUSTRY_VIEW,
   planIndustryBoardScene,
   type IndustryBuildingPlan,
 } from '../render/industryBoardScene';
-import { useContainFit } from './useContainFit';
+import { AspectStage } from './AspectStage';
 import { pct } from './pct';
 import { VISUAL_TOKENS } from '../render/visualTokens';
 
 const VIEW_W = INDUSTRY_VIEW.w;
 const VIEW_H = INDUSTRY_VIEW.h;
-const VIEW_RATIO = VIEW_W / VIEW_H;
 
 function windowsFor(building: IndustryBuildingPlan) {
   const rows = Array.from({ length: building.windowRows }, (_, i) => i);
@@ -73,51 +71,58 @@ function IndustryBuilding({ building }: { building: IndustryBuildingPlan }) {
 export function IndustrySkyline({ industry }: { industry: IndustryState }) {
   const scene = planIndustryBoardScene(industry);
   const buildings = [...scene.buildings].sort((a, b) => a.zIndex - b.zIndex);
-  const boardRef = useRef<HTMLDivElement>(null);
-  useContainFit(boardRef, VIEW_RATIO);
 
   return (
     <div className="industry-skyline-slot" data-testid="industry-skyline" aria-hidden>
-      <div ref={boardRef} className="industry-skyline iso-industry">
-        <svg
-          className="industry-skyline-svg"
-          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-          preserveAspectRatio="xMidYMax meet"
-        >
-          <defs>
-            <linearGradient id="hq-front-rival" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.rivalGradientTop} />
-              <stop offset="100%" stopColor={VISUAL_TOKENS.colors.industry.rivalGradientBottom} />
-            </linearGradient>
-            <linearGradient id="hq-front-self" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.selfGradientTop} />
-              <stop offset="100%" stopColor={VISUAL_TOKENS.colors.industry.selfGradientBottom} />
-            </linearGradient>
-            <linearGradient id="hq-front-leader" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.leaderGradientTop} />
-              <stop offset="100%" stopColor={VISUAL_TOKENS.colors.industry.leaderGradientBottom} />
-            </linearGradient>
-          </defs>
-          <path className="industry-horizon" d="M34,304 C180,248 540,248 706,304" />
-          {buildings.map((building) => (
-            <IndustryBuilding key={building.id} building={building} />
-          ))}
-        </svg>
-
-        {scene.buildings.map((building) => (
-          <div
-            key={building.id}
-            className={`industry-hq-label tone-${building.tone}`}
-            style={{
-              left: pct(building.label.x, VIEW_W),
-              top: pct(building.label.y, VIEW_H),
-            }}
+      <AspectStage
+        ratio={INDUSTRY_VIEW.w / INDUSTRY_VIEW.h}
+        className="industry-skyline-stage"
+        data-testid="industry-skyline-stage"
+      >
+        <div className="industry-skyline iso-industry">
+          <svg
+            className="industry-skyline-svg"
+            viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+            preserveAspectRatio="xMidYMax meet"
           >
-            <strong>{building.label.title}</strong>
-            <small>{building.label.subtitle}</small>
-          </div>
-        ))}
-      </div>
+            <defs>
+              <linearGradient id="hq-front-rival" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.rivalGradientTop} />
+                <stop offset="100%" stopColor={VISUAL_TOKENS.colors.industry.rivalGradientBottom} />
+              </linearGradient>
+              <linearGradient id="hq-front-self" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.selfGradientTop} />
+                <stop offset="100%" stopColor={VISUAL_TOKENS.colors.industry.selfGradientBottom} />
+              </linearGradient>
+              <linearGradient id="hq-front-leader" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.leaderGradientTop} />
+                <stop
+                  offset="100%"
+                  stopColor={VISUAL_TOKENS.colors.industry.leaderGradientBottom}
+                />
+              </linearGradient>
+            </defs>
+            <path className="industry-horizon" d="M34,304 C180,248 540,248 706,304" />
+            {buildings.map((building) => (
+              <IndustryBuilding key={building.id} building={building} />
+            ))}
+          </svg>
+
+          {scene.buildings.map((building) => (
+            <div
+              key={building.id}
+              className={`industry-hq-label tone-${building.tone}`}
+              style={{
+                left: pct(building.label.x, VIEW_W),
+                top: pct(building.label.y, VIEW_H),
+              }}
+            >
+              <strong>{building.label.title}</strong>
+              <small>{building.label.subtitle}</small>
+            </div>
+          ))}
+        </div>
+      </AspectStage>
     </div>
   );
 }

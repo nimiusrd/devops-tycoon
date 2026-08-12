@@ -4,19 +4,16 @@
  * `orgBoardScene` が組み立てたシーン計画を読み、俯瞰オフィス（アイソメ）として描く。
  * 座標は設計空間（1404×573）の % で重ねる。Board.tsx と同型（第22.2）。
  */
-import { useRef } from 'react';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { ORG_VIEW, planOrgBoardScene, type OrgIslandPlan } from '../render/orgBoardScene';
 import { OrgFlowLanes } from './OrgFlowLanes';
 import { OrgHubLabel, OrgHubSvg } from './OrgHub';
 import { OrgPlate } from './OrgPlate';
 import { OrgIslandBadge, OrgTeamActor } from './OrgTeamActor';
-import { useContainFit } from './useContainFit';
 import { pct } from './pct';
 
 const VIEW_W = ORG_VIEW.w;
 const VIEW_H = ORG_VIEW.h;
-const VIEW_RATIO = VIEW_W / VIEW_H;
 
 function ZoneLabel({
   label,
@@ -72,15 +69,9 @@ export interface OrgBoardProps {
 export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
   const scene = planOrgBoardScene(org);
   const hot = org.onFire > 0 || org.departments.some((d) => d.health === 'reviewHell');
-  const boardRef = useRef<HTMLDivElement>(null);
-  useContainFit(boardRef, VIEW_RATIO);
 
   return (
-    <div
-      ref={boardRef}
-      className={`org-board iso-org${hot ? ' org-hell' : ''}`}
-      data-testid="org-board"
-    >
+    <div className={`org-board iso-org${hot ? ' org-hell' : ''}`} data-testid="org-board">
       <OrgPlate zones={scene.zones} />
       <OrgFlowLanes flows={scene.flows} />
 

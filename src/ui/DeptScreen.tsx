@@ -8,10 +8,12 @@
 import { lazy, Suspense } from 'react';
 import { DEPARTMENT_LEVERS, TEAM_LEVERS } from '../data/levers';
 import { ENTER_TEAM_FOCUS_PENALTY, ENTER_TEAM_LOCK_SPRINTS } from '../sim/orgscale';
+import { DEPT_VIEW } from '../render/deptBoardScene';
 import type { DepartmentState, Team } from '../sim/orgscale/types';
 import type { RunPhase } from '../sim/run/types';
 import { HEALTH_LABEL } from '../render/orgView';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
+import { AspectStage } from './AspectStage';
 import { DeptBoard } from './DeptBoard';
 import { EffectTagList } from './EffectTagList';
 import { usePixiRenderer } from './usePixiRenderer';
@@ -89,7 +91,11 @@ export function DeptScreen({
         />
       </dl>
 
-      <div className="dept-field" data-testid="dept-field">
+      <AspectStage
+        ratio={DEPT_VIEW.w / DEPT_VIEW.h}
+        className="dept-field"
+        data-testid="dept-field"
+      >
         {usePixi ? (
           <Suspense fallback={null}>
             <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} onWebglError={onWebglError} />
@@ -97,7 +103,7 @@ export function DeptScreen({
         ) : (
           <DeptBoard dept={dept} onFocusTeam={onFocusTeam} selectedTeamId={panelTeamId} />
         )}
-      </div>
+      </AspectStage>
 
       {selected && (
         <div className="dept-team-panel" data-testid="dept-team-panel">

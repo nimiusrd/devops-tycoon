@@ -5194,14 +5194,14 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   margin-top: 2px;
 }
 .org-zone-label.tone-ok {
-  border-color: #57e08f66;
+  border-color: color-mix(in srgb, var(--visual-color-health-healthy) 40%, transparent);
 }
 .org-zone-label.tone-warn {
-  border-color: #ffd45c88;
+  border-color: color-mix(in srgb, var(--visual-color-health-congested) 53%, transparent);
   background: #3a2a14e6;
 }
 .org-zone-label.tone-hell {
-  border-color: #ff5f5788;
+  border-color: color-mix(in srgb, var(--visual-color-health-review-hell) 53%, transparent);
   background: #3a1414e6;
   color: #ffd0cb;
 }
@@ -5269,13 +5269,13 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   box-shadow: 0 3px 0 #00000044;
 }
 .org-island-badge.tone-ok {
-  border-color: #57e08f66;
+  border-color: color-mix(in srgb, var(--visual-color-health-healthy) 40%, transparent);
 }
 .org-island-badge.tone-warn {
-  border-color: #ffd45c88;
+  border-color: color-mix(in srgb, var(--visual-color-health-congested) 53%, transparent);
 }
 .org-island-badge.tone-hell {
-  border-color: #ff5f5788;
+  border-color: color-mix(in srgb, var(--visual-color-health-review-hell) 53%, transparent);
   background: #3a1414e6;
 }
 .org-island-meta {
@@ -5288,17 +5288,17 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 999px;
-  background: #57e08f33;
-  color: var(--mint);
+  background: color-mix(in srgb, var(--visual-color-health-healthy) 20%, transparent);
+  color: var(--visual-color-health-healthy);
   align-self: flex-start;
 }
 .org-island-badge.tone-warn .org-island-tag {
-  background: #ffd45c33;
-  color: var(--sun);
+  background: color-mix(in srgb, var(--visual-color-health-congested) 20%, transparent);
+  color: var(--visual-color-health-congested);
 }
 .org-island-badge.tone-hell .org-island-tag {
-  background: #ff5f5733;
-  color: var(--coral);
+  background: color-mix(in srgb, var(--visual-color-health-review-hell) 20%, transparent);
+  color: var(--visual-color-health-review-hell);
 }
 .org-island {
   position: absolute;

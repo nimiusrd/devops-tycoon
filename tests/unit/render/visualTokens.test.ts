@@ -62,6 +62,11 @@ describe('visual tokens', () => {
     expect(values['--visual-sprint-flow-period']).toBe('15px');
     expect(values['--visual-color-flow-hot']).toBe(VISUAL_TOKENS.colors.flow.hot);
     expect(values['--visual-color-task-glow-ai']).toBe(VISUAL_TOKENS.colors.taskGlow.ai);
+    expect(values['--visual-color-health-healthy']).toBe(VISUAL_TOKENS.colors.health.healthy);
+    expect(values['--visual-color-health-congested']).toBe(VISUAL_TOKENS.colors.health.congested);
+    expect(values['--visual-color-health-review-hell']).toBe(
+      VISUAL_TOKENS.colors.health.reviewHell,
+    );
     expect(values['--visual-dept-flow-dash']).toBe('6');
     expect(values['--visual-dept-flow-period']).toBe('15px');
     expect(values['--visual-org-card-line-gap']).toBe('2px');

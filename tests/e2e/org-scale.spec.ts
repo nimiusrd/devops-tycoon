@@ -89,6 +89,15 @@ async function assertAspectStage(
   ).toBeLessThanOrEqual(stageBox.y + stageBox.height + 1);
 }
 
+async function assertDesktopStageUsesAvailableHeight(stage: Locator, label: string): Promise<void> {
+  await expect
+    .poll(
+      async () => (await stage.getByTestId('aspect-stage-content').boundingBox())?.height ?? 0,
+      `${label} のステージ高が最小値に留まっている`,
+    )
+    .toBeGreaterThan(300);
+}
+
 test('全社・部署・業界の盤面がAspectStageで設計比率とcontain範囲を維持する（RI-100）', async ({
   page,
 }) => {
@@ -108,6 +117,9 @@ test('全社・部署・業界の盤面がAspectStageで設計比率とcontain�
       DESIGN_SPACES.organization.w / DESIGN_SPACES.organization.h,
       `${viewport.name} 全社`,
     );
+    if (viewport.name === 'desktop') {
+      await assertDesktopStageUsesAvailableHeight(page.getByTestId('org-field'), 'desktop 全社');
+    }
 
     await page.getByTestId('crumb-industry').click();
     await assertAspectStage(
@@ -143,6 +155,9 @@ test('全社・部署・業界の盤面がAspectStageで設計比率とcontain�
       DESIGN_SPACES.department.w / DESIGN_SPACES.department.h,
       `${viewport.name} 部署`,
     );
+    if (viewport.name === 'desktop') {
+      await assertDesktopStageUsesAvailableHeight(page.getByTestId('dept-field'), 'desktop 部署');
+    }
   }
 });
 

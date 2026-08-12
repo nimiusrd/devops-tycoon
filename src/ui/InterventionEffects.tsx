@@ -12,6 +12,7 @@ import {
   planPositionedInterventionReactions,
   type PositionedInterventionReaction,
 } from '../render/interventionEffects';
+import { BOARD_VIEW } from '../render/boardScene';
 import type { InterventionEffect, Task } from '../sim/types';
 
 type ActiveEffect = PositionedInterventionReaction & { key: number };
@@ -166,15 +167,15 @@ function ReviewSweepParticle({
       className={`intervention-sweep-particle sweep-${effect.outcome}`}
       data-testid={`intervention-effect-sweep-${effect.outcome}`}
       style={{
-        left: interventionPct(effect.fromX, 1404),
-        top: interventionPct(effect.fromY, 573),
+        left: interventionPct(effect.fromX, BOARD_VIEW.w),
+        top: interventionPct(effect.fromY, BOARD_VIEW.h),
       }}
       initial={{ opacity: 0, scale: 0.6 }}
       animate={{
         opacity: [0, 1, 1, 0.7],
         scale: [0.6, 1.1, 1, 0.5],
-        left: interventionPct(effect.toX, 1404),
-        top: interventionPct(effect.toY, 573),
+        left: interventionPct(effect.toX, BOARD_VIEW.w),
+        top: interventionPct(effect.toY, BOARD_VIEW.h),
       }}
       exit={{ opacity: 0, scale: 0 }}
       transition={{ duration, delay, ease: 'easeInOut' }}
@@ -195,8 +196,8 @@ function SplitBurst({
         className="intervention-split-badge"
         data-testid="intervention-effect-split"
         style={{
-          left: interventionPct(effect.x, 1404),
-          top: interventionPct(effect.y, 573),
+          left: interventionPct(effect.x, BOARD_VIEW.w),
+          top: interventionPct(effect.y, BOARD_VIEW.h),
         }}
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.3, 1.1, 0.8] }}
@@ -210,8 +211,8 @@ function SplitBurst({
           key={offset}
           className="intervention-split-shard"
           style={{
-            left: interventionPct(effect.x, 1404),
-            top: interventionPct(effect.y, 573),
+            left: interventionPct(effect.x, BOARD_VIEW.w),
+            top: interventionPct(effect.y, BOARD_VIEW.h),
           }}
           initial={{ opacity: 0, x: 0, y: 0, scale: 0.5 }}
           animate={{
@@ -241,8 +242,8 @@ function FirefightBurst({
         className="intervention-firefight-ring"
         data-testid="intervention-effect-firefight"
         style={{
-          left: interventionPct(effect.x, 1404),
-          top: interventionPct(effect.y, 573),
+          left: interventionPct(effect.x, BOARD_VIEW.w),
+          top: interventionPct(effect.y, BOARD_VIEW.h),
         }}
         initial={{ opacity: 0, scale: 0.4 }}
         animate={{ opacity: [0, 0.95, 0.5, 0], scale: [0.4, 1.4, 1.8, 2.2] }}
@@ -252,8 +253,8 @@ function FirefightBurst({
       <motion.span
         className="intervention-firefight-burst"
         style={{
-          left: interventionPct(effect.x, 1404),
-          top: interventionPct(effect.y, 573),
+          left: interventionPct(effect.x, BOARD_VIEW.w),
+          top: interventionPct(effect.y, BOARD_VIEW.h),
         }}
         initial={{ opacity: 0, scale: 0.3 }}
         animate={{
@@ -279,8 +280,8 @@ function AssignDash({
       className="intervention-assign-dash"
       data-testid="intervention-effect-dash"
       style={{
-        left: interventionPct(effect.fromX, 1404),
-        top: interventionPct(effect.fromY, 573),
+        left: interventionPct(effect.fromX, BOARD_VIEW.w),
+        top: interventionPct(effect.fromY, BOARD_VIEW.h),
         transformOrigin: 'left center',
       }}
       initial={{ opacity: 0, scaleX: 0.2, rotate: effect.angleDeg }}
@@ -288,8 +289,8 @@ function AssignDash({
         opacity: [0, 1, 0.8, 0],
         scaleX: [0.2, 1.2, 1, 0.4],
         rotate: effect.angleDeg,
-        left: interventionPct(effect.toX, 1404),
-        top: interventionPct(effect.toY, 573),
+        left: interventionPct(effect.toX, BOARD_VIEW.w),
+        top: interventionPct(effect.toY, BOARD_VIEW.h),
       }}
       exit={{ opacity: 0 }}
       transition={{ duration, ease: 'easeOut' }}

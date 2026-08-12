@@ -6,6 +6,7 @@
  */
 import type { Team, TeamHealth } from '../sim/orgscale/types';
 import { HEALTH_LABEL } from './orgView';
+import { VISUAL_TOKENS } from './visualTokens';
 
 /** ズームに連動する詳細度（第22.5 LOD）。 */
 export type OrgIslandDetail = 'dot' | 'badge' | 'card';
@@ -22,10 +23,12 @@ export interface FocusRingTone {
 }
 
 export function focusRingTone(team: Pick<Team, 'incidents' | 'health'>): FocusRingTone {
-  if (team.incidents > 0) return { color: '#ff7a2f', strength: 1 };
-  if (team.health === 'reviewHell') return { color: '#ff5f57', strength: 0.85 };
-  if (team.health === 'congested') return { color: '#ffd45c', strength: 0.6 };
-  return { color: '#58e0b0', strength: 0.4 };
+  if (team.incidents > 0) return { color: VISUAL_TOKENS.colors.fire, strength: 1 };
+  if (team.health === 'reviewHell') {
+    return { color: VISUAL_TOKENS.colors.interaction.focusHell, strength: 0.85 };
+  }
+  if (team.health === 'congested') return { color: VISUAL_TOKENS.colors.sun, strength: 0.6 };
+  return { color: VISUAL_TOKENS.colors.mint, strength: 0.4 };
 }
 
 /** LOD 境界: scale < 0.35 → dot、< 0.7 → badge、それ以外 → card。

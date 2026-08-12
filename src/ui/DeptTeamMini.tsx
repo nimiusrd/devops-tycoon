@@ -6,11 +6,13 @@ import { useState } from 'react';
 import type { DeptTeamPlan } from '../render/deptBoardScene';
 import { getGameAssetUrl } from '../data/assets';
 import { deptAssetForLane, gameAssetMoodStyle } from '../render/gameAssetView';
+import { VISUAL_TOKENS } from '../render/visualTokens';
 
 function MiniDesk({ x, y, tone = 'wood' }: { x: number; y: number; tone?: 'wood' | 'dark' }) {
-  const top = tone === 'dark' ? '#5a4a86' : '#caa06a';
-  const left = tone === 'dark' ? '#3a2f66' : '#9a7440';
-  const right = tone === 'dark' ? '#2b2050' : '#75561f';
+  const desk = VISUAL_TOKENS.colors.actor.desk;
+  const top = tone === 'dark' ? desk.darkTop : desk.woodTop;
+  const left = tone === 'dark' ? desk.darkLeft : desk.woodLeft;
+  const right = tone === 'dark' ? desk.darkRight : desk.woodRight;
   return (
     <g transform={`translate(${x - 30}, ${y - 15})`}>
       <polygon points="0,15 30,0 60,15 30,30" fill={top} />
@@ -21,11 +23,12 @@ function MiniDesk({ x, y, tone = 'wood' }: { x: number; y: number; tone?: 'wood'
 }
 
 function DoneShelf({ x, y }: { x: number; y: number }) {
+  const desk = VISUAL_TOKENS.colors.actor.desk;
   return (
     <g transform={`translate(${x - 24}, ${y - 12})`}>
-      <polygon points="0,12 24,0 48,12 24,24" fill="#caa46a" />
-      <polygon points="0,12 24,24 24,36 0,24" fill="#9a7440" />
-      <polygon points="24,24 48,12 48,24 24,36" fill="#75561f" />
+      <polygon points="0,12 24,0 48,12 24,24" fill={desk.woodTop} />
+      <polygon points="0,12 24,24 24,36 0,24" fill={desk.woodLeft} />
+      <polygon points="24,24 48,12 48,24 24,36" fill={desk.woodRight} />
       <text x="10" y="18" fontSize="11">
         📦
       </text>
@@ -34,19 +37,20 @@ function DoneShelf({ x, y }: { x: number; y: number }) {
 }
 
 function pileDots(cx: number, cy: number, count: number, hot: boolean) {
-  const cap = Math.min(count, 12);
+  const { cap, perRow, dx, dy, largeThreshold, largeRadius, radius } =
+    VISUAL_TOKENS.dimensions.department.teamMini.pile;
+  const visible = Math.min(count, cap);
   const dots: { x: number; y: number; r: number }[] = [];
-  const perRow = 4;
-  for (let i = 0; i < cap; i++) {
+  for (let i = 0; i < visible; i++) {
     const row = Math.floor(i / perRow);
     const col = i % perRow;
     dots.push({
-      x: cx + (col - 1.5) * 10,
-      y: cy - row * 9,
-      r: count > 8 ? 5 : 6,
+      x: cx + (col - (perRow - 1) / 2) * dx,
+      y: cy - row * dy,
+      r: count > largeThreshold ? largeRadius : radius,
     });
   }
-  const fill = hot ? '#ff7a2f' : '#cdbff0';
+  const fill = hot ? VISUAL_TOKENS.colors.fire : VISUAL_TOKENS.colors.flow.normal;
   return dots.map((d, i) => (
     <circle key={i} cx={d.x} cy={d.y} r={d.r} fill={fill} opacity={0.92} />
   ));
@@ -85,10 +89,10 @@ function DeptWorker({
       )}
       {assetState !== 'ready' && (
         <>
-          <ellipse cx={0} cy={14} rx={10} ry={12} fill="#7a6cc0" />
-          <circle cx={0} cy={0} r={8} fill="#ffe0c4" />
-          <circle cx={-3} cy={1} r={1.6} fill="#33285c" />
-          <circle cx={3} cy={1} r={1.6} fill="#33285c" />
+          <ellipse cx={0} cy={14} rx={10} ry={12} fill={VISUAL_TOKENS.colors.actor.body.backlog} />
+          <circle cx={0} cy={0} r={8} fill={VISUAL_TOKENS.colors.actor.skin} />
+          <circle cx={-3} cy={1} r={1.6} fill={VISUAL_TOKENS.colors.ink} />
+          <circle cx={3} cy={1} r={1.6} fill={VISUAL_TOKENS.colors.ink} />
         </>
       )}
       {moodStyle.marker && (
@@ -103,10 +107,18 @@ function DeptWorker({
 export function DeptTeamMini({ plan, deptColor }: { plan: DeptTeamPlan; deptColor: string }) {
   const { team, lanes, mood } = plan;
   const floor =
-    team.health === 'reviewHell' ? '#4a2b45' : team.health === 'congested' ? '#3f3470' : '#3a2f68';
+    team.health === 'reviewHell'
+      ? VISUAL_TOKENS.colors.department.floorHell
+      : team.health === 'congested'
+        ? VISUAL_TOKENS.colors.department.floorWarn
+        : VISUAL_TOKENS.colors.department.floorHealthy;
 
   return (
-    <svg className="dept-team-mini-svg" viewBox="0 0 380 240" aria-hidden="true">
+    <svg
+      className="dept-team-mini-svg"
+      viewBox={`0 0 ${VISUAL_TOKENS.dimensions.department.teamMini.svgW} ${VISUAL_TOKENS.dimensions.department.teamMini.svgH}`}
+      aria-hidden="true"
+    >
       <ellipse cx={190} cy={178} rx={128} ry={22} fill="#0b0712" opacity={0.3} />
       <polygon
         points="42,150 190,76 338,150 190,224"
@@ -120,11 +132,21 @@ export function DeptTeamMini({ plan, deptColor }: { plan: DeptTeamPlan; deptColo
       <path
         d="M104,120 L150,138"
         fill="none"
-        stroke={lanes[1].hot ? '#ff9a93' : '#b388ff'}
+        stroke={
+          lanes[1].hot
+            ? VISUAL_TOKENS.colors.department.miniFlowHot
+            : VISUAL_TOKENS.colors.department.miniFlowNormal
+        }
         strokeWidth="2.5"
         opacity="0.9"
       />
-      <path d="M236,140 L286,120" fill="none" stroke="#ffd45c" strokeWidth="2.5" opacity="0.85" />
+      <path
+        d="M236,140 L286,120"
+        fill="none"
+        stroke={VISUAL_TOKENS.colors.department.miniFlowDone}
+        strokeWidth="2.5"
+        opacity="0.85"
+      />
 
       {lanes.map((lane) => {
         if (lane.lane === 'done') {

@@ -3,8 +3,10 @@
  * レイアウトは旧モック org-screen（git 履歴の mockups/）由来。
  */
 import type { OrgHubPlan } from '../render/orgBoardScene';
+import { VISUAL_TOKENS } from '../render/visualTokens';
 
 export function OrgHubSvg() {
+  const bot = VISUAL_TOKENS.colors.aiBot;
   return (
     <svg
       className="org-hub-actor"
@@ -33,35 +35,41 @@ export function OrgHubSvg() {
               cx={x - 6}
               cy={cy}
               r="1.6"
-              fill={i === 0 ? '#57e08f' : i === 1 ? '#7bdcff' : '#ffd45c'}
+              fill={
+                i === 0
+                  ? VISUAL_TOKENS.colors.department.glowHealthy
+                  : i === 1
+                    ? bot.eye
+                    : bot.indicator
+              }
             />
           ))}
         </g>
       ))}
       <g transform="translate(95,70) scale(1.15)">
-        <line x1="0" y1="-12" x2="0" y2="-18" stroke="#b39dff" strokeWidth="2" />
-        <circle cx="0" cy="-18" r="2.6" fill="#ffd45c" />
+        <line x1="0" y1="-12" x2="0" y2="-18" stroke={bot.antenna} strokeWidth="2" />
+        <circle cx="0" cy="-18" r="2.6" fill={bot.indicator} />
         <rect
           x="-13"
           y="-12"
           width="26"
           height="20"
           rx="7"
-          fill="#eef0ff"
-          stroke="#b9c4ff"
+          fill={bot.body}
+          stroke={bot.bodyStroke}
           strokeWidth="1.6"
         />
-        <rect x="-9" y="-8" width="18" height="13" rx="4" fill="#1b2350" />
+        <rect x="-9" y="-8" width="18" height="13" rx="4" fill={bot.screen} />
         <path
           d="M-6 -1 q2 -3 4 0"
-          stroke="#7bdcff"
+          stroke={bot.eye}
           strokeWidth="1.8"
           fill="none"
           strokeLinecap="round"
         />
         <path
           d="M2 -1 q2 -3 4 0"
-          stroke="#7bdcff"
+          stroke={bot.eye}
           strokeWidth="1.8"
           fill="none"
           strokeLinecap="round"

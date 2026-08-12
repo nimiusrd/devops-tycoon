@@ -9,11 +9,12 @@
  */
 import { BURN_TICKS } from '../sim/model';
 import type { Lane, Task } from '../sim/types';
+import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
 import type { TaskSize, TaskVariant } from './taskView';
 import { taskSize, taskVariant } from './taskView';
 
 /** 設計座標空間（旧モック main-screen の viewBox 由来）。 */
-export const BOARD_VIEW = { w: 1404, h: 573 } as const;
+export const BOARD_VIEW = DESIGN_SPACES.sprint;
 
 /** ステーションのキャラ表情（状態から導出）。exhausted はメンバー疲弊（RI-08）。 */
 export type StationMood = 'neutral' | 'happy' | 'tired' | 'panic' | 'sad' | 'cheer' | 'exhausted';
@@ -184,7 +185,7 @@ function splitLaneTasks(lane: Lane, tasks: Task[]): { stationary: Task[]; flowin
 }
 
 /** フロー上の粒を垂直方向に散らす間隔（設計px）。 */
-const FLOW_SPREAD_PX = 14;
+const FLOW_SPREAD_PX = VISUAL_TOKENS.dimensions.sprint.flowSpread;
 
 /** 同一 progress の粒が重ならないよう、フロー垂直方向へ index ベースで散らす。 */
 function flowSpreadOffsets(count: number, angleDeg: number): Point[] {
@@ -316,8 +317,8 @@ export function reviewHeat(count: number): number {
 }
 
 /** 粒クラスタの横間隔と段差（設計px）。 */
-const DOT_DX = 22;
-const DOT_DY = 16;
+const DOT_DX = VISUAL_TOKENS.dimensions.sprint.pile.dx;
+const DOT_DY = VISUAL_TOKENS.dimensions.sprint.pile.dy;
 
 /**
  * n 個の粒を、アンカー上に「下から積み上がる山」状のオフセットで配置する。

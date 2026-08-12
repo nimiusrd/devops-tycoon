@@ -30,6 +30,7 @@ import {
   quadDashPolylines,
   quadEndAngleDeg,
   quadPointAt,
+  teamMiniRenderScale,
   teamFloorColor,
   teamZoomTransform,
   zoomTransformAt,
@@ -37,6 +38,7 @@ import {
 } from '../deptPixiView';
 import { SpritePool } from '../iso';
 import { deptAssetForLane, gameAssetMoodStyle } from '../gameAssetView';
+import { VISUAL_TOKENS } from '../visualTokens';
 import { loadGameAssetTexture } from './gameAssetTextures';
 import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
@@ -48,19 +50,30 @@ const DESTROY_OPTIONS = { children: true, texture: false, context: true } as con
 export const DEPT_SPRITE_BUDGET = 16;
 
 const FONT_FAMILY = 'system-ui, sans-serif';
-const COLOR_LINE = '#4a3d7a';
-const COLOR_TEXT_DIM = '#b9add0';
-const COLOR_CREAM = '#ffefd6';
-const COLOR_FIRE = '#ff7a2f';
+const COLOR_LINE = VISUAL_TOKENS.colors.line;
+const COLOR_TEXT_DIM = VISUAL_TOKENS.colors.textDim;
+const COLOR_CREAM = VISUAL_TOKENS.colors.cream;
+const COLOR_FIRE = VISUAL_TOKENS.colors.fire;
+const MINI = VISUAL_TOKENS.dimensions.department.teamMini;
+const DESK = VISUAL_TOKENS.colors.actor.desk;
+const BANNER = VISUAL_TOKENS.dimensions.department.banner;
+const PLATE_FLOOR = VISUAL_TOKENS.dimensions.department.plate.floor;
+const PLATE_GRID = VISUAL_TOKENS.dimensions.department.plate.grid;
+const PLATE_GRID_ENDS = {
+  rightX: PLATE_FLOOR[2],
+  rightY: PLATE_FLOOR[3],
+  leftX: PLATE_FLOOR[6],
+  leftY: PLATE_FLOOR[7],
+};
 
 /** DeptPlate（DOM/SVG）と同じ床・側面・グリッドの座標と色。 */
 const PLATE = {
-  floor: [702, 104, 1262, 384, 702, 664, 142, 384],
-  edgeL: [142, 384, 702, 664, 702, 694, 142, 414],
-  edgeR: [702, 664, 1262, 384, 1262, 414, 702, 694],
-  floorFill: '#2f1b44',
-  edgeLFill: '#21112c',
-  edgeRFill: '#190c22',
+  floor: VISUAL_TOKENS.dimensions.department.plate.floor,
+  edgeL: VISUAL_TOKENS.dimensions.department.plate.edgeL,
+  edgeR: VISUAL_TOKENS.dimensions.department.plate.edgeR,
+  floorFill: VISUAL_TOKENS.colors.department.plateFloor,
+  edgeLFill: VISUAL_TOKENS.colors.department.plateEdgeLeft,
+  edgeRFill: VISUAL_TOKENS.colors.department.plateEdgeRight,
 } as const;
 
 /** 描画メトリクス（E2E 安定化・dev 計測用）。 */
@@ -119,7 +132,7 @@ interface TeamParts {
 function createTeamContainer(): Container {
   const group = new Container();
   const mini = new Container();
-  mini.pivot.set(190, 120);
+  mini.pivot.set(MINI.pivotX, MINI.pivotY);
   const gfx = new Graphics();
   const codingFallback = new Graphics();
   const reviewFallback = new Graphics();
@@ -216,9 +229,9 @@ function resetTeamContainer(group: Container): void {
 
 /** 等角の机（DOM `MiniDesk` と同値。(x,y) は天板中心相当）。 */
 function drawDesk(g: Graphics, x: number, y: number, tone: 'wood' | 'dark'): void {
-  const top = tone === 'dark' ? '#5a4a86' : '#caa06a';
-  const left = tone === 'dark' ? '#3a2f66' : '#9a7440';
-  const right = tone === 'dark' ? '#2b2050' : '#75561f';
+  const top = tone === 'dark' ? DESK.darkTop : DESK.woodTop;
+  const left = tone === 'dark' ? DESK.darkLeft : DESK.woodLeft;
+  const right = tone === 'dark' ? DESK.darkRight : DESK.woodRight;
   const ox = x - 30;
   const oy = y - 15;
   g.poly([ox, oy + 15, ox + 30, oy, ox + 60, oy + 15, ox + 30, oy + 30]).fill(top);
@@ -230,14 +243,16 @@ function drawDesk(g: Graphics, x: number, y: number, tone: 'wood' | 'dark'): voi
 function drawShelf(g: Graphics, x: number, y: number): void {
   const ox = x - 24;
   const oy = y - 12;
-  g.poly([ox, oy + 12, ox + 24, oy, ox + 48, oy + 12, ox + 24, oy + 24]).fill('#caa46a');
-  g.poly([ox, oy + 12, ox + 24, oy + 24, ox + 24, oy + 36, ox, oy + 24]).fill('#9a7440');
-  g.poly([ox + 24, oy + 24, ox + 48, oy + 12, ox + 48, oy + 24, ox + 24, oy + 36]).fill('#75561f');
+  g.poly([ox, oy + 12, ox + 24, oy, ox + 48, oy + 12, ox + 24, oy + 24]).fill(DESK.woodTop);
+  g.poly([ox, oy + 12, ox + 24, oy + 24, ox + 24, oy + 36, ox, oy + 24]).fill(DESK.woodLeft);
+  g.poly([ox + 24, oy + 24, ox + 48, oy + 12, ox + 48, oy + 24, ox + 24, oy + 36]).fill(
+    DESK.woodRight,
+  );
 }
 
 /** 工程の粒山（DOM `pileDots` と同値）。 */
 function drawPileDots(g: Graphics, cx: number, cy: number, count: number, hot: boolean): void {
-  const fill = hot ? '#ff7a2f' : '#cdbff0';
+  const fill = hot ? VISUAL_TOKENS.colors.fire : VISUAL_TOKENS.colors.flow.normal;
   for (const d of pileDotOffsets(count)) {
     g.circle(cx + d.x, cy + d.y, d.r).fill({ color: fill, alpha: 0.92 });
   }
@@ -245,10 +260,10 @@ function drawPileDots(g: Graphics, cx: number, cy: number, count: number, hot: b
 
 /** ステーションのキャラ（DOM `stationWorker` と同値。表情は Text で重ねる）。 */
 function drawWorker(g: Graphics, x: number, y: number): void {
-  g.ellipse(x, y + 14, 10, 12).fill('#7a6cc0');
-  g.circle(x, y, 8).fill('#ffe0c4');
-  g.circle(x - 3, y + 1, 1.6).fill('#33285c');
-  g.circle(x + 3, y + 1, 1.6).fill('#33285c');
+  g.ellipse(x, y + 14, 10, 12).fill(VISUAL_TOKENS.colors.actor.body.backlog);
+  g.circle(x, y, 8).fill(VISUAL_TOKENS.colors.actor.skin);
+  g.circle(x - 3, y + 1, 1.6).fill(VISUAL_TOKENS.colors.ink);
+  g.circle(x + 3, y + 1, 1.6).fill(VISUAL_TOKENS.colors.ink);
 }
 
 function moodEmoji(mood: DeptTeamPlan['mood']): string | null {
@@ -265,7 +280,7 @@ function layoutTeamMini(parts: TeamParts, plan: DeptTeamPlan, deptColor: string)
 
   // 連鎖炎上の DOM drop-shadow 相当（橙の淡い下敷き）。
   if (plan.chained) {
-    g.ellipse(190, 176, 150, 40).fill({ color: '#ff7a2f', alpha: 0.22 });
+    g.ellipse(190, 176, 150, 40).fill({ color: VISUAL_TOKENS.colors.fire, alpha: 0.22 });
   }
 
   g.ellipse(190, 178, 128, 22).fill({ color: '#0b0712', alpha: 0.3 });
@@ -278,8 +293,16 @@ function layoutTeamMini(parts: TeamParts, plan: DeptTeamPlan, deptColor: string)
   // 工程間ミニフロー（Coding→Review / Review→Done）。
   g.moveTo(104, 120)
     .lineTo(150, 138)
-    .stroke({ color: lanes[1].hot ? '#ff9a93' : '#b388ff', width: 2.5, alpha: 0.9 });
-  g.moveTo(236, 140).lineTo(286, 120).stroke({ color: '#ffd45c', width: 2.5, alpha: 0.85 });
+    .stroke({
+      color: lanes[1].hot
+        ? VISUAL_TOKENS.colors.department.miniFlowHot
+        : VISUAL_TOKENS.colors.department.miniFlowNormal,
+      width: 2.5,
+      alpha: 0.9,
+    });
+  g.moveTo(236, 140)
+    .lineTo(286, 120)
+    .stroke({ color: VISUAL_TOKENS.colors.department.miniFlowDone, width: 2.5, alpha: 0.85 });
 
   for (const lane of lanes) {
     if (lane.lane === 'done') {
@@ -322,8 +345,7 @@ function layoutTeamMini(parts: TeamParts, plan: DeptTeamPlan, deptColor: string)
 /** バナー（下端中央アンカー）をチーム計画から描く。 */
 function layoutTeamBanner(parts: TeamParts, plan: DeptTeamPlan): void {
   const tone = BANNER_TONE[plan.banner.tone];
-  const padX = 12;
-  const lineGap = 2;
+  const { paddingX: padX, paddingTop, paddingBottom, radius, lineGap } = BANNER;
 
   parts.bannerTitle.style.fill = tone.text;
   parts.bannerTitle.text = plan.banner.title;
@@ -338,8 +360,8 @@ function layoutTeamBanner(parts: TeamParts, plan: DeptTeamPlan): void {
     parts.bannerChain.visible = true;
   }
 
-  const tagW = parts.bannerTag.width + 16;
-  const tagH = parts.bannerTag.height + 2;
+  const tagW = parts.bannerTag.width + BANNER.tagPaddingX * 2;
+  const tagH = parts.bannerTag.height + BANNER.tagPaddingY * 2;
   const contentW = Math.max(
     parts.bannerTitle.width,
     parts.bannerSubtitle.width,
@@ -347,21 +369,28 @@ function layoutTeamBanner(parts: TeamParts, plan: DeptTeamPlan): void {
     plan.chained ? parts.bannerChain.width : 0,
   );
   const w = contentW + padX * 2;
-  let h = 5 + parts.bannerTitle.height + lineGap + parts.bannerSubtitle.height + 3 + tagH + 6;
+  let h =
+    paddingTop +
+    parts.bannerTitle.height +
+    lineGap +
+    parts.bannerSubtitle.height +
+    3 +
+    tagH +
+    paddingBottom;
   if (plan.chained) h += 4 + parts.bannerChain.height;
 
   parts.bannerBg
-    .roundRect(-w / 2, -h, w, h, 13)
-    .fill({ color: tone.bg, alpha: 0.93 })
+    .roundRect(-w / 2, -h, w, h, radius)
+    .fill({ color: tone.bg, alpha: tone.backgroundAlpha })
     .stroke({ color: tone.border, width: 2, alpha: tone.borderAlpha });
 
-  let y = -h + 5;
+  let y = -h + paddingTop;
   parts.bannerTitle.position.set(-parts.bannerTitle.width / 2, y);
   y += parts.bannerTitle.height + lineGap;
   parts.bannerSubtitle.position.set(-parts.bannerSubtitle.width / 2, y);
   y += parts.bannerSubtitle.height + 3;
   parts.bannerTagBg.roundRect(-tagW / 2, y, tagW, tagH, tagH / 2).fill(tone.tagBg);
-  parts.bannerTag.position.set(-parts.bannerTag.width / 2, y + 1);
+  parts.bannerTag.position.set(-parts.bannerTag.width / 2, y + BANNER.tagPaddingY);
   y += tagH;
   if (plan.chained) {
     parts.bannerChain.position.set(-parts.bannerChain.width / 2, y + 4);
@@ -553,11 +582,17 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
     g.poly([...PLATE.floor]).fill(PLATE.floorFill);
     g.poly([...PLATE.floor]).fill({ color: plate.color, alpha: 0.12 });
     if (plate.tone === 'hell') {
-      g.poly([...PLATE.floor]).fill({ color: '#ff5a45', alpha: 0.1 });
+      g.poly([...PLATE.floor]).fill({
+        color: VISUAL_TOKENS.colors.department.hellOverlay,
+        alpha: 0.1,
+      });
     }
     if (plate.glow) {
       // SVG の radialGradient を同心楕円 3 枚で近似する。
-      const color = plate.glow.kind === 'hell' ? '#ff3b30' : '#57e08f';
+      const color =
+        plate.glow.kind === 'hell'
+          ? VISUAL_TOKENS.colors.department.glowHell
+          : VISUAL_TOKENS.colors.department.glowHealthy;
       const alpha = plate.glow.kind === 'hell' ? 0.06 : 0.04;
       for (const k of [1, 0.66, 0.33]) {
         g.ellipse(plate.glow.x, plate.glow.y, plate.glow.rx * k, plate.glow.ry * k).fill({
@@ -567,11 +602,23 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
       }
     }
     // 床グリッド（DeptPlate の path と同じ 80×40 間隔の等角線）。
-    for (let i = 0; i <= 7; i += 1) {
-      g.moveTo(702 - i * 80, 104 + i * 40).lineTo(1262 - i * 80, 384 + i * 40);
-      g.moveTo(702 + i * 80, 104 + i * 40).lineTo(142 + i * 80, 384 + i * 40);
+    for (let i = 0; i <= PLATE_GRID.count; i += 1) {
+      g.moveTo(
+        PLATE_GRID.originX - i * PLATE_GRID.stepX,
+        PLATE_GRID.originY + i * PLATE_GRID.stepY,
+      ).lineTo(
+        PLATE_GRID_ENDS.rightX - i * PLATE_GRID.stepX,
+        PLATE_GRID_ENDS.rightY + i * PLATE_GRID.stepY,
+      );
+      g.moveTo(
+        PLATE_GRID.originX + i * PLATE_GRID.stepX,
+        PLATE_GRID.originY + i * PLATE_GRID.stepY,
+      ).lineTo(
+        PLATE_GRID_ENDS.leftX + i * PLATE_GRID.stepX,
+        PLATE_GRID_ENDS.leftY + i * PLATE_GRID.stepY,
+      );
     }
-    g.stroke({ color: '#ffffff', alpha: 0.07, width: 1.3 });
+    g.stroke({ color: VISUAL_TOKENS.colors.department.gridLine, alpha: 0.07, width: 1.3 });
   }
 
   /** チーム間依存フロー（破線ベジェ＋矢じり）を描く。 */
@@ -582,7 +629,8 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
       const path = parseQuadPath(flow.d);
       if (!path) continue;
       // CSS stroke-dasharray: 6 9 と同じ破線を静的に描く（決定論・スクショ安定）。
-      for (const line of quadDashPolylines(path, 6, 9)) {
+      const { dash, gap } = VISUAL_TOKENS.dimensions.department.flowDash;
+      for (const line of quadDashPolylines(path, dash, gap)) {
         g.moveTo(line[0].x, line[0].y);
         for (let i = 1; i < line.length; i += 1) g.lineTo(line[i].x, line[i].y);
         g.stroke({ color: flow.stroke, width: flow.strokeWidth, alpha: flow.opacity });
@@ -621,7 +669,7 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
       const parts = getParts(group);
 
       parts.mini.position.set(plan.x, plan.y);
-      parts.mini.scale.set(plan.scale);
+      parts.mini.scale.set(teamMiniRenderScale(plan.scale));
       layoutTeamMini(parts, plan, deptColor);
       this.syncTeamAvatars(parts, plan);
       layoutTeamBanner(parts, plan);
@@ -708,7 +756,7 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
         return;
       }
       entry.pill.visible = true;
-      entry.text.style.fill = label.hot ? '#ffd0cb' : COLOR_CREAM;
+      entry.text.style.fill = label.hot ? VISUAL_TOKENS.colors.bannerTone.hell.text : COLOR_CREAM;
       entry.text.text = label.label;
       const padX = 8;
       const padY = 2;
@@ -717,9 +765,14 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
       entry.bg
         .clear()
         .roundRect(-w / 2, -h / 2, w, h, h / 2)
-        .fill({ color: label.hot ? '#3a1414' : '#1f1942', alpha: 0.8 })
+        .fill({
+          color: label.hot
+            ? VISUAL_TOKENS.colors.bannerTone.hell.bg
+            : VISUAL_TOKENS.colors.bannerTone.ok.bg,
+          alpha: 0.8,
+        })
         .stroke({
-          color: label.hot ? '#ff5f57' : COLOR_LINE,
+          color: label.hot ? VISUAL_TOKENS.colors.bannerTone.hell.border : COLOR_LINE,
           width: 1,
           alpha: label.hot ? 0.53 : 1,
         });

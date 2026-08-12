@@ -5,11 +5,14 @@
  * viewBox は boardScene の設計空間（1404×573）と一致させ、`preserveAspectRatio="none"`
  * で盤面いっぱいに伸ばす。ステーション/粒は同じ設計座標の % で重ねる（Board.tsx）。
  */
+import { BOARD_VIEW } from '../render/boardScene';
+import { VISUAL_TOKENS } from '../render/visualTokens';
+
 export function OfficeRoom() {
   return (
     <svg
       className="office-room"
-      viewBox="0 0 1404 573"
+      viewBox={`0 0 ${BOARD_VIEW.w} ${BOARD_VIEW.h}`}
       preserveAspectRatio="none"
       aria-hidden="true"
     >
@@ -69,13 +72,13 @@ export function OfficeRoom() {
       <line x1="909.2" y1="153.3" x2="1133.2" y2="265.3" stroke="#1d1640" strokeWidth="5" />
       {/* 壁掛けの時計 */}
       <circle cx="769.2" cy="77.7" r="22" fill="#2a2150" stroke="#6a57ad" strokeWidth="4" />
-      <circle cx="769.2" cy="77.7" r="3" fill="#ffd45c" />
+      <circle cx="769.2" cy="77.7" r="3" fill={VISUAL_TOKENS.colors.sun} />
       <line
         x1="769.2"
         y1="77.7"
         x2="769.2"
         y2="63.7"
-        stroke="#ffd45c"
+        stroke={VISUAL_TOKENS.colors.sun}
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -84,7 +87,7 @@ export function OfficeRoom() {
         y1="77.7"
         x2="781.2"
         y2="82.7"
-        stroke="#ffd45c"
+        stroke={VISUAL_TOKENS.colors.sun}
         strokeWidth="3"
         strokeLinecap="round"
       />

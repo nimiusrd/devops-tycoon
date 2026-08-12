@@ -17,6 +17,7 @@ import {
   type PositionedFireEffect,
 } from '../render/fireEffects';
 import type { SprintMetrics, Task } from '../sim/types';
+import { BOARD_VIEW } from '../render/boardScene';
 
 type ActiveEffect = PositionedFireEffect & { key: number };
 
@@ -137,15 +138,15 @@ function SpreadParticle({
       className="fire-spread-particle"
       data-testid="fire-effect-spread"
       style={{
-        left: firePct(effect.fromX, 1404),
-        top: firePct(effect.fromY, 573),
+        left: firePct(effect.fromX, BOARD_VIEW.w),
+        top: firePct(effect.fromY, BOARD_VIEW.h),
       }}
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{
         opacity: [0, 1, 1, 0.8],
         scale: [0.5, 1.2, 1, 0.6],
-        left: firePct(effect.toX, 1404),
-        top: firePct(effect.toY, 573),
+        left: firePct(effect.toX, BOARD_VIEW.w),
+        top: firePct(effect.toY, BOARD_VIEW.h),
       }}
       exit={{ opacity: 0, scale: 0 }}
       transition={{ duration, ease: 'easeInOut' }}
@@ -166,8 +167,8 @@ function ExtinguishBurst({
       className={`fire-extinguish-burst${big ? ' firefight' : ''}`}
       data-testid="fire-effect-extinguish"
       style={{
-        left: firePct(effect.x, 1404),
-        top: firePct(effect.y, 573),
+        left: firePct(effect.x, BOARD_VIEW.w),
+        top: firePct(effect.y, BOARD_VIEW.h),
       }}
       initial={{ opacity: 0, scale: 0.3 }}
       animate={{
@@ -192,8 +193,8 @@ function IgniteFlash({
       className="fire-ignite-flash"
       data-testid="fire-effect-ignite"
       style={{
-        left: firePct(effect.x, 1404),
-        top: firePct(effect.y, 573),
+        left: firePct(effect.x, BOARD_VIEW.w),
+        top: firePct(effect.y, BOARD_VIEW.h),
       }}
       initial={{ opacity: 0, scale: 0.4 }}
       animate={{ opacity: [0, 1, 0.7, 0], scale: [0.4, 1.8, 1.2, 0.5] }}

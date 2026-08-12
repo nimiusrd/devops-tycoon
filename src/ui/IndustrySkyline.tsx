@@ -13,6 +13,7 @@ import {
 } from '../render/industryBoardScene';
 import { useContainFit } from './useContainFit';
 import { pct } from './pct';
+import { VISUAL_TOKENS } from '../render/visualTokens';
 
 const VIEW_W = INDUSTRY_VIEW.w;
 const VIEW_H = INDUSTRY_VIEW.h;
@@ -85,16 +86,16 @@ export function IndustrySkyline({ industry }: { industry: IndustryState }) {
         >
           <defs>
             <linearGradient id="hq-front-rival" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#75d0ff" />
-              <stop offset="100%" stopColor="#3364c8" />
+              <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.rivalGradientTop} />
+              <stop offset="100%" stopColor={VISUAL_TOKENS.colors.industry.rivalGradientBottom} />
             </linearGradient>
             <linearGradient id="hq-front-self" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#ffe27a" />
-              <stop offset="100%" stopColor="#ff9d45" />
+              <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.selfGradientTop} />
+              <stop offset="100%" stopColor={VISUAL_TOKENS.colors.industry.selfGradientBottom} />
             </linearGradient>
             <linearGradient id="hq-front-leader" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#8df4c2" />
-              <stop offset="100%" stopColor="#2aa578" />
+              <stop offset="0%" stopColor={VISUAL_TOKENS.colors.industry.leaderGradientTop} />
+              <stop offset="100%" stopColor={VISUAL_TOKENS.colors.industry.leaderGradientBottom} />
             </linearGradient>
           </defs>
           <path className="industry-horizon" d="M34,304 C180,248 540,248 706,304" />

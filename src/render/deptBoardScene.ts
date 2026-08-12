@@ -6,15 +6,16 @@
  */
 import type { DepartmentState, Team } from '../sim/orgscale/types';
 import { HEALTH_COLOR } from './orgView';
-import { islandDepth, islandMood, ORG_VIEW, zoneLabelTone } from './orgBoardScene';
+import { islandDepth, islandMood, zoneLabelTone } from './orgBoardScene';
 import { badgeTone, healthTag } from './teamHealthTheme';
+import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
 
 /** 設計座標空間（旧モック dept-screen の viewBox 由来）。 */
-export const DEPT_VIEW = ORG_VIEW;
+export const DEPT_VIEW = DESIGN_SPACES.department;
 
-const TEAM_MINI_W = 380;
-const TEAM_MINI_H = 220;
-const BANNER_ABOVE = 118;
+const TEAM_MINI_W = VISUAL_TOKENS.dimensions.department.teamMini.layoutW;
+const TEAM_MINI_H = VISUAL_TOKENS.dimensions.department.teamMini.layoutH;
+const BANNER_ABOVE = VISUAL_TOKENS.dimensions.department.bannerAbove;
 
 /** 旧モック由来の 3 チーム配置。 */
 const TEAM_LAYOUTS_3: readonly { x: number; y: number }[] = [
@@ -234,7 +235,7 @@ function planFlows(
       toTeamId: to.id,
       d,
       hot,
-      stroke: hot ? '#ff9a93' : '#cdbff0',
+      stroke: hot ? VISUAL_TOKENS.colors.flow.hot : VISUAL_TOKENS.colors.flow.normal,
       strokeWidth: hot ? 2.6 : 2.2,
       opacity: hot ? 0.85 : 0.65,
     });

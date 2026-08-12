@@ -11,6 +11,7 @@ import type { Lane } from '../sim/types';
 import type { BoardDotPlan, StationMood } from './boardScene';
 import type { TaskSize, TaskVariant } from './taskView';
 import { TASK_DIAMETER } from './taskView';
+import { VISUAL_TOKENS } from './visualTokens';
 
 /** 設計座標の点。 */
 export interface BoardPoint {
@@ -19,7 +20,7 @@ export interface BoardPoint {
 }
 
 /** ヒット判定の許容マージン（設計px。指先で小粒も掴めるように少し広げる）。 */
-export const DOT_HIT_MARGIN = 6;
+export const DOT_HIT_MARGIN = VISUAL_TOKENS.dimensions.sprint.dotHitMargin;
 
 /**
  * 設計座標の点から、掴めるタスク粒を特定する（RI-30 のドラッグ開始判定）。
@@ -112,7 +113,7 @@ export type DashSegment = readonly [BoardPoint, BoardPoint];
  * 直線を破線区間へ分割する（SVG stroke-dasharray + dashoffset の Pixi 代替）。
  *
  * `offset` は CSS `stroke-dashoffset` と同じ向き（負で進行方向へ流れる）。
- * CSS `dash` アニメ（1s で -15px）を ticker から offset 連続変化で再現し、
+ * CSS `dash` アニメ（1s で 1 周期ぶん移動）を ticker から offset 連続変化で再現し、
  * offset=0 は SVG の静止状態と一致する（freezeForScreenshot の決定論）。
  */
 export function lineDashSegments(

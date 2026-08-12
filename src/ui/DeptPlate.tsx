@@ -3,12 +3,44 @@
  * レイアウトは旧モック dept-screen（git 履歴の mockups/）由来。
  */
 import type { DeptPlatePlan } from '../render/deptBoardScene';
+import { DEPT_VIEW } from '../render/deptBoardScene';
+import { VISUAL_TOKENS } from '../render/visualTokens';
+
+const DEPT_PLATE = VISUAL_TOKENS.dimensions.department.plate;
+
+function polygonPoints(points: readonly number[]): string {
+  return points.join(' ');
+}
+
+function polygonPath(points: readonly number[]): string {
+  const [firstX, firstY, ...rest] = points;
+  const segments: string[] = [`M${firstX} ${firstY}`];
+  for (let i = 0; i < rest.length; i += 2) {
+    segments.push(`L${rest[i]} ${rest[i + 1]}`);
+  }
+  return `${segments.join(' ')} Z`;
+}
+
+const DEPT_FLOOR_PATH = polygonPath(DEPT_PLATE.floor);
+const DEPT_GRID_PATH = (() => {
+  const { floor, grid } = DEPT_PLATE;
+  const [originX, originY, rightX, rightY, , , leftX, leftY] = floor;
+  const { stepX, stepY, count } = grid;
+  const lines: string[] = [];
+  for (let i = 0; i <= count; i += 1) {
+    lines.push(
+      `M${originX - i * stepX} ${originY + i * stepY} L${rightX - i * stepX} ${rightY + i * stepY}`,
+      `M${originX + i * stepX} ${originY + i * stepY} L${leftX + i * stepX} ${leftY + i * stepY}`,
+    );
+  }
+  return lines.join(' ');
+})();
 
 export function DeptPlate({ plate }: { plate: DeptPlatePlan }) {
   return (
     <svg
       className="dept-plate"
-      viewBox="0 0 1404 573"
+      viewBox={`0 0 ${DEPT_VIEW.w} ${DEPT_VIEW.h}`}
       preserveAspectRatio="none"
       aria-hidden="true"
     >
@@ -26,26 +58,48 @@ export function DeptPlate({ plate }: { plate: DeptPlatePlan }) {
           <stop offset="1" stopColor="#120819" />
         </linearGradient>
         <radialGradient id="dept-okglow" cx="0.5" cy="0.42" r="0.7">
-          <stop offset="0" stopColor="#57e08f" stopOpacity=".12" />
-          <stop offset="1" stopColor="#57e08f" stopOpacity="0" />
+          <stop
+            offset="0"
+            stopColor={VISUAL_TOKENS.colors.department.glowHealthy}
+            stopOpacity=".12"
+          />
+          <stop
+            offset="1"
+            stopColor={VISUAL_TOKENS.colors.department.glowHealthy}
+            stopOpacity="0"
+          />
         </radialGradient>
         <radialGradient id="dept-hellglow" cx="0.5" cy="0.42" r="0.7">
-          <stop offset="0" stopColor="#ff3b30" stopOpacity=".18" />
-          <stop offset="1" stopColor="#ff3b30" stopOpacity="0" />
+          <stop offset="0" stopColor={VISUAL_TOKENS.colors.department.glowHell} stopOpacity=".18" />
+          <stop offset="1" stopColor={VISUAL_TOKENS.colors.department.glowHell} stopOpacity="0" />
         </radialGradient>
         <clipPath id="dept-floorclip">
-          <path d="M702 104 L1262 384 L702 664 L142 384 Z" />
+          <path d={DEPT_FLOOR_PATH} />
         </clipPath>
       </defs>
 
-      <polygon points="142.0,384.0 702.0,664.0 702.0,694.0 142.0,414.0" fill="url(#dept-edgeL)" />
-      <polygon points="702.0,664.0 1262.0,384.0 1262.0,414.0 702.0,694.0" fill="url(#dept-edgeR)" />
-      <path d="M702 104 L1262 384 L702 664 L142 384 Z" fill="url(#dept-plateTop)" />
+      <polygon points={polygonPoints(DEPT_PLATE.edgeL)} fill="url(#dept-edgeL)" />
+      <polygon points={polygonPoints(DEPT_PLATE.edgeR)} fill="url(#dept-edgeR)" />
+      <path d={DEPT_FLOOR_PATH} fill="url(#dept-plateTop)" />
 
       <g clipPath="url(#dept-floorclip)">
-        <rect x={0} y={0} width={1404} height={573} fill={plate.color} opacity={0.12} />
+        <rect
+          x={0}
+          y={0}
+          width={DEPT_VIEW.w}
+          height={DEPT_VIEW.h}
+          fill={plate.color}
+          opacity={0.12}
+        />
         {plate.tone === 'hell' && (
-          <rect x={0} y={0} width={1404} height={573} fill="#ff5a45" opacity={0.1} />
+          <rect
+            x={0}
+            y={0}
+            width={DEPT_VIEW.w}
+            height={DEPT_VIEW.h}
+            fill={VISUAL_TOKENS.colors.department.hellOverlay}
+            opacity={0.1}
+          />
         )}
         {plate.glow && (
           <ellipse
@@ -59,9 +113,10 @@ export function DeptPlate({ plate }: { plate: DeptPlatePlan }) {
       </g>
 
       <path
-        d="M702 104 L1262 384 M622 144 L1182 424 M542 184 L1102 464 M462 224 L1022 504 M382 264 L942 544 M302 304 L862 584 M222 344 L782 624 M142 384 L702 664 M702 104 L142 384 M782 144 L222 424 M862 184 L302 464 M942 224 L382 504 M1022 264 L462 544 M1102 304 L542 584 M1182 344 L622 624 M1262 384 L702 664"
+        d={DEPT_GRID_PATH}
         fill="none"
-        stroke="#ffffff12"
+        stroke={VISUAL_TOKENS.colors.department.gridLine}
+        strokeOpacity=".07"
         strokeWidth="1.3"
       />
     </svg>

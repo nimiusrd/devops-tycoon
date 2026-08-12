@@ -39,6 +39,7 @@ import {
 } from './boardScene';
 import type { RosterState } from '../sim/member/types';
 import { TASK_COLORS, TASK_DIAMETER } from './taskView';
+import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
@@ -137,7 +138,11 @@ function Station({
       style={{
         left: pct(s.x, VIEW_W),
         top: pct(s.y, VIEW_H),
-        ...(pixi ? { aspectRatio: '210 / 190' } : undefined),
+        ...(pixi
+          ? {
+              aspectRatio: `${VISUAL_TOKENS.dimensions.sprint.actor.dom.w} / ${VISUAL_TOKENS.dimensions.sprint.actor.dom.h}`,
+            }
+          : undefined),
       }}
     >
       {!pixi && <StationActor lane={s.lane} mood={s.mood} />}
@@ -182,16 +187,16 @@ function FlowArrows({ flows }: { flows: readonly BoardFlow[] }) {
   return (
     <svg
       className="office-flows"
-      viewBox="0 0 1404 573"
+      viewBox={`0 0 ${BOARD_VIEW.w} ${BOARD_VIEW.h}`}
       preserveAspectRatio="none"
       aria-hidden="true"
     >
       <defs>
         <marker id="bd-ah" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill="#cdbff0" />
+          <path d="M0,0 L6,3 L0,6 Z" fill={VISUAL_TOKENS.colors.flow.normal} />
         </marker>
         <marker id="bd-ahr" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill="#ff9a93" />
+          <path d="M0,0 L6,3 L0,6 Z" fill={VISUAL_TOKENS.colors.flow.hot} />
         </marker>
       </defs>
       {flows.map((f) => (
@@ -202,7 +207,7 @@ function FlowArrows({ flows }: { flows: readonly BoardFlow[] }) {
           y1={f.y1}
           x2={f.x2}
           y2={f.y2}
-          stroke={f.rework ? '#ff9a93' : '#cdbff0'}
+          stroke={f.rework ? VISUAL_TOKENS.colors.flow.hot : VISUAL_TOKENS.colors.flow.normal}
           strokeWidth={f.rework ? 2.5 : 3.5}
           opacity={f.rework ? 0.6 : 0.85}
           markerEnd={`url(#${f.rework ? 'bd-ahr' : 'bd-ah'})`}

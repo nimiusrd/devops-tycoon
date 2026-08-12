@@ -3,6 +3,8 @@
  * 旧モック org-screen（git 履歴）/ boardScene の OfficeRoom パターン準拠。
  */
 import type { OrgZonePlan } from '../render/orgBoardScene';
+import { ORG_VIEW } from '../render/orgBoardScene';
+import { VISUAL_TOKENS } from '../render/visualTokens';
 
 export interface OrgPlateProps {
   zones: readonly OrgZonePlan[];
@@ -10,7 +12,12 @@ export interface OrgPlateProps {
 
 export function OrgPlate({ zones }: OrgPlateProps) {
   return (
-    <svg className="org-plate" viewBox="0 0 1404 573" preserveAspectRatio="none" aria-hidden="true">
+    <svg
+      className="org-plate"
+      viewBox={`0 0 ${ORG_VIEW.w} ${ORG_VIEW.h}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id="org-plateTop" x1="0.5" y1="0" x2="0.5" y2="1">
           <stop offset="0" stopColor="#3b2f66" />
@@ -48,7 +55,7 @@ export function OrgPlate({ zones }: OrgPlateProps) {
             x={z.x}
             y={0}
             width={z.width}
-            height={573}
+            height={ORG_VIEW.h}
             fill={z.color}
             opacity={z.tone === 'hell' ? 0.14 : 0.11}
           />
@@ -61,7 +68,7 @@ export function OrgPlate({ zones }: OrgPlateProps) {
               x={z.x}
               y={0}
               width={z.width}
-              height={573}
+              height={ORG_VIEW.h}
               fill="#160a24"
               opacity={0.3}
             />
@@ -93,7 +100,7 @@ export function OrgPlate({ zones }: OrgPlateProps) {
           x1="582"
           y1="0"
           x2="582"
-          y2="573"
+          y2={ORG_VIEW.h}
           stroke="#ffffff22"
           strokeWidth="1.5"
           strokeDasharray="3 7"
@@ -102,8 +109,9 @@ export function OrgPlate({ zones }: OrgPlateProps) {
           x1="822"
           y1="0"
           x2="822"
-          y2="573"
-          stroke="#ff5f5733"
+          y2={ORG_VIEW.h}
+          stroke={VISUAL_TOKENS.colors.interaction.focusHell}
+          strokeOpacity=".2"
           strokeWidth="1.5"
           strokeDasharray="3 7"
         />

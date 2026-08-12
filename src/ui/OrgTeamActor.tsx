@@ -12,9 +12,10 @@ import {
 } from '../render/orgBoardScene';
 import { getGameAssetUrl } from '../data/assets';
 import { gameAssetMoodStyle, orgAssetForSlot } from '../render/gameAssetView';
+import { VISUAL_TOKENS } from '../render/visualTokens';
 
 function IslandEyes({ mood }: { mood: OrgIslandMood }) {
-  const ink = '#33285c';
+  const ink = VISUAL_TOKENS.colors.ink;
   if (mood === 'panic') {
     return (
       <>
@@ -108,7 +109,7 @@ function Worker({
       {assetState !== 'ready' && (
         <>
           <path d="M-13 27 q0 -17 13 -17 q13 0 13 17 z" fill={body} />
-          <circle cx="0" cy="0" r="10.5" fill="#ffe0c4" />
+          <circle cx="0" cy="0" r="10.5" fill={VISUAL_TOKENS.colors.actor.skin} />
           <path d="M-11 -2 q1 -12 11 -12 q10 0 11 11 q-5 -5 -11 -5 q-6 0 -11 6z" fill={hair} />
           <IslandEyes mood={mood} />
         </>
@@ -123,31 +124,32 @@ function Worker({
 }
 
 function AiBot({ x, y, scale }: { x: number; y: number; scale: number }) {
+  const bot = VISUAL_TOKENS.colors.aiBot;
   return (
     <g transform={`translate(${x},${y}) scale(${scale})`}>
-      <line x1="0" y1="-12" x2="0" y2="-18" stroke="#b39dff" strokeWidth="2" />
-      <circle cx="0" cy="-18" r="2.6" fill="#ffd45c" />
+      <line x1="0" y1="-12" x2="0" y2="-18" stroke={bot.antenna} strokeWidth="2" />
+      <circle cx="0" cy="-18" r="2.6" fill={bot.indicator} />
       <rect
         x="-13"
         y="-12"
         width="26"
         height="20"
         rx="7"
-        fill="#eef0ff"
-        stroke="#b9c4ff"
+        fill={bot.body}
+        stroke={bot.bodyStroke}
         strokeWidth="1.6"
       />
-      <rect x="-9" y="-8" width="18" height="13" rx="4" fill="#1b2350" />
+      <rect x="-9" y="-8" width="18" height="13" rx="4" fill={bot.screen} />
       <path
         d="M-6 -1 q2 -3 4 0"
-        stroke="#7bdcff"
+        stroke={bot.eye}
         strokeWidth="1.8"
         fill="none"
         strokeLinecap="round"
       />
       <path
         d="M2 -1 q2 -3 4 0"
-        stroke="#7bdcff"
+        stroke={bot.eye}
         strokeWidth="1.8"
         fill="none"
         strokeLinecap="round"
@@ -181,8 +183,8 @@ const AI_BOT_SLOTS: readonly { x: number; y: number; scale: number }[] = [
 ];
 
 function deskTone(health: OrgIslandPlan['team']['health']): string {
-  if (health === 'reviewHell') return '#4a2b45';
-  return '#3f3470';
+  if (health === 'reviewHell') return VISUAL_TOKENS.colors.department.floorHell;
+  return VISUAL_TOKENS.colors.department.floorWarn;
 }
 
 export function OrgTeamActor({ island }: { island: OrgIslandPlan }) {
@@ -191,6 +193,7 @@ export function OrgTeamActor({ island }: { island: OrgIslandPlan }) {
   const deskSide = team.health === 'reviewHell' ? '#30192e' : '#2b2050';
   const deskDark = team.health === 'reviewHell' ? '#221320' : '#1f1742';
   const screenColor = team.health === 'reviewHell' ? '#ff6a4a' : '#3fb6ff';
+  const deskColors = VISUAL_TOKENS.colors.actor.desk;
   const workers = islandWorkerCount(team.engineers);
   const aiBots = islandAiBotCount(team.aiAssignedCount);
   const showFire = team.incidents > 0;
@@ -207,7 +210,7 @@ export function OrgTeamActor({ island }: { island: OrgIslandPlan }) {
       <defs>
         <radialGradient id={`aip-${team.id}`} cx="0.35" cy="0.28" r="0.8">
           <stop offset="0" stopColor="#e6d6ff" />
-          <stop offset="1" stopColor="#9a6bff" />
+          <stop offset="1" stopColor={VISUAL_TOKENS.colors.task.ai} />
         </radialGradient>
       </defs>
       <ellipse cx="70" cy="104" rx="46" ry="14" fill="#0b0712" opacity=".30" />
@@ -233,18 +236,18 @@ export function OrgTeamActor({ island }: { island: OrgIslandPlan }) {
       {AI_BOT_SLOTS.slice(0, aiBots).map((slot, i) => (
         <AiBot key={`ai-${i}`} x={slot.x} y={slot.y} scale={slot.scale} />
       ))}
-      <polygon points="40,86 70,71 100,86 70,101" fill="#caa06a" />
-      <polygon points="40,86 70,101 70,112 40,97" fill="#9a7440" />
-      <polygon points="70,101 100,86 100,97 70,112" fill="#75561f" />
-      <rect x="38" y="86" width="2.6" height="15" fill="#5a3f18" />
-      <rect x="98" y="86" width="2.6" height="15" fill="#5a3f18" />
-      <rect x="68" y="101" width="2.6" height="15" fill="#5a3f18" />
+      <polygon points="40,86 70,71 100,86 70,101" fill={deskColors.woodTop} />
+      <polygon points="40,86 70,101 70,112 40,97" fill={deskColors.woodLeft} />
+      <polygon points="70,101 100,86 100,97 70,112" fill={deskColors.woodRight} />
+      <rect x="38" y="86" width="2.6" height="15" fill={deskColors.leg} />
+      <rect x="98" y="86" width="2.6" height="15" fill={deskColors.leg} />
+      <rect x="68" y="101" width="2.6" height="15" fill={deskColors.leg} />
       <polygon points="58,80 70,74 82,80 70,86" fill="#0e1430" />
       <polygon points="58,80 70,86 70,76 58,70" fill="#1b2350" />
       <polygon points="70,86 82,80 82,70 70,76" fill="#11183a" />
       <polygon points="61,79 70,75 70,82 61,86" fill={screenColor} opacity=".9" />
       {showAiPile && (
-        <g opacity=".5" fill="#cdbff0">
+        <g opacity=".5" fill={VISUAL_TOKENS.colors.flow.normal}>
           <circle cx="44" cy="44" r="6" />
           <circle cx="52" cy="35" r="8" />
           <circle cx="62" cy="29" r="5" />

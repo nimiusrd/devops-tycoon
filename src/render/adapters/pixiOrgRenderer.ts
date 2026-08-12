@@ -31,6 +31,7 @@ import { isoLayoutOrigin, layoutIso, orgLayoutFingerprint, ORG_PAD } from '../or
 import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import { gameAssetMoodStyle } from '../gameAssetView';
 import { loadGameAssetTexture } from './gameAssetTextures';
+import { VISUAL_TOKENS } from '../visualTokens';
 import type { RendererAdapter } from './index';
 
 /**
@@ -40,17 +41,18 @@ import type { RendererAdapter } from './index';
 const DESTROY_OPTIONS = { children: true, texture: false, context: true } as const;
 
 /** DOM `.team-island` と同寸（styles.css）。 */
-const CARD_W = 116;
-const CARD_PAD_X = 10;
-const CARD_PAD_Y = 8;
-const CARD_RADIUS = 12;
-const CARD_LINE_GAP = 2;
-const COLOR_BG = '#1b1438';
-const COLOR_TEXT = '#f0e8ff';
-const COLOR_TEXT_DIM = '#b9add0';
-const COLOR_SUN = '#ffd45c';
-const COLOR_FIRE = '#ff7a2f';
-const COLOR_FIRE_STROKE = '#ff5f1f';
+const CARD = VISUAL_TOKENS.dimensions.organization.card;
+const CARD_W = CARD.width;
+const CARD_PAD_X = CARD.paddingX;
+const CARD_PAD_Y = CARD.paddingY;
+const CARD_RADIUS = CARD.radius;
+const CARD_LINE_GAP = CARD.lineGap;
+const COLOR_BG = VISUAL_TOKENS.colors.organization.cardBackground;
+const COLOR_TEXT = VISUAL_TOKENS.colors.organization.cardText;
+const COLOR_TEXT_DIM = VISUAL_TOKENS.colors.textDim;
+const COLOR_SUN = VISUAL_TOKENS.colors.sun;
+const COLOR_FIRE = VISUAL_TOKENS.colors.fire;
+const COLOR_FIRE_STROKE = VISUAL_TOKENS.colors.organization.cardFireStroke;
 
 /** dot LOD の菱形半径（`ORG_PAD` 内に収める）。 */
 function dotLodHalfExtents(halfW: number, halfH: number): { halfW: number; halfH: number } {
@@ -916,7 +918,9 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
       const assetId = sprite.avatarAssetIds[i];
       fallback.clear();
       fallback.circle(x, y, 6).fill({ color: sprite.tint, alpha: mood.alpha });
-      fallback.circle(x, y - 2, 3).fill({ color: '#ffe0c4', alpha: mood.alpha });
+      fallback
+        .circle(x, y - 2, 3)
+        .fill({ color: VISUAL_TOKENS.colors.actor.skin, alpha: mood.alpha });
       fallback.visible = true;
       avatar.position.set(x, y);
       avatar.width = 15;

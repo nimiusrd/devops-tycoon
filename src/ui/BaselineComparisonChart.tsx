@@ -19,9 +19,10 @@ import {
   type BaselineComparisonView,
 } from '../render/sprintBaselineComparison';
 import type { SprintResult } from '../sim/types';
+import { VISUAL_TOKENS } from '../render/visualTokens';
 
 const BASELINE_FILL = '#8aa4c0';
-const ACTUAL_FILL = '#58e0b0';
+const ACTUAL_FILL = VISUAL_TOKENS.colors.mint;
 
 export interface BaselineComparisonChartProps {
   result: SprintResult;
@@ -81,12 +82,12 @@ export function BaselineComparisonChart({ result }: BaselineComparisonChartProps
             />
             <XAxis
               dataKey="name"
-              tick={{ fill: '#b9add0', fontSize: 12 }}
+              tick={{ fill: VISUAL_TOKENS.colors.textDim, fontSize: 12 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: '#b9add0', fontSize: 11 }}
+              tick={{ fill: VISUAL_TOKENS.colors.textDim, fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               width={32}
@@ -94,15 +95,15 @@ export function BaselineComparisonChart({ result }: BaselineComparisonChartProps
             />
             <Tooltip
               contentStyle={{
-                background: '#1b1438',
+                background: VISUAL_TOKENS.colors.organization.cardBackground,
                 border: '1px solid rgba(179, 157, 255, 0.35)',
                 borderRadius: 8,
-                color: '#fdf6ec',
+                color: VISUAL_TOKENS.colors.text,
                 fontSize: 12,
               }}
             />
             <Legend
-              wrapperStyle={{ fontSize: 12, color: '#b9add0' }}
+              wrapperStyle={{ fontSize: 12, color: VISUAL_TOKENS.colors.textDim }}
               formatter={(value) => (value === 'baseline' ? '介入なし' : '実績')}
             />
             <Bar dataKey="baseline" fill={BASELINE_FILL} radius={[4, 4, 0, 0]} maxBarSize={36} />

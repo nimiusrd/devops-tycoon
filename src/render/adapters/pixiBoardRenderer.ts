@@ -37,6 +37,7 @@ import { containFitTransform } from '../deptPixiView';
 import { SpritePool } from '../iso';
 import { TASK_COLORS, TASK_DIAMETER } from '../taskView';
 import { gameAssetMoodStyle, stationAssetForLane } from '../gameAssetView';
+import { flowDashPeriod, VISUAL_TOKENS } from '../visualTokens';
 import { loadGameAssetTexture } from './gameAssetTextures';
 import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
@@ -54,21 +55,48 @@ const FONT_FAMILY = 'system-ui, sans-serif';
  * DOM は `.station { width: 15% }` の中に width=210 height=190 viewBox=220×200 の
  * SVG を置くため、設計空間では幅 1404×0.15=210.6px・ローカル倍率 min(W/220,H/200)。
  */
-const ACTOR_LOCAL = { w: 220, h: 200 } as const;
-const ACTOR_W = BOARD_VIEW.w * 0.15;
-const ACTOR_H = (ACTOR_W * 190) / 210;
+const ACTOR_LOCAL = VISUAL_TOKENS.dimensions.sprint.actor.local;
+const ACTOR_DOM = VISUAL_TOKENS.dimensions.sprint.actor.dom;
+const ACTOR_STATUS_OFFSET = VISUAL_TOKENS.dimensions.sprint.actor.statusOffset;
+const ACTOR_WIDTH_RATIO = VISUAL_TOKENS.dimensions.sprint.stationWidthPercent / 100;
+const ACTOR_W = BOARD_VIEW.w * ACTOR_WIDTH_RATIO;
+const ACTOR_H = (ACTOR_W * ACTOR_DOM.h) / ACTOR_DOM.w;
 const ACTOR_SCALE = Math.min(ACTOR_W / ACTOR_LOCAL.w, ACTOR_H / ACTOR_LOCAL.h);
 
 /** レーンごとのキャラ見た目（OfficeActors の STYLE と同値）。 */
 const ACTOR_STYLE: Record<Lane, { body: string; hair: string; skin: string; emoji?: string }> = {
-  backlog: { body: '#7a6cc0', hair: '#4a3530', skin: '#ffe0c4' },
-  coding: { body: '#4fb3a0', hair: '#5a3a2a', skin: '#ffe0c4', emoji: '✨' },
-  review: { body: '#5b6b8c', hair: '#3a3340', skin: '#f4d2b3', emoji: '💧' },
-  rework: { body: '#c0728a', hair: '#3a2a40', skin: '#ffe0c4', emoji: '💦' },
-  done: { body: '#3fa86e', hair: '#4a3020', skin: '#ffe0c4', emoji: '🎉' },
+  backlog: {
+    body: VISUAL_TOKENS.colors.actor.body.backlog,
+    hair: VISUAL_TOKENS.colors.actor.hair.backlog,
+    skin: VISUAL_TOKENS.colors.actor.skin,
+  },
+  coding: {
+    body: VISUAL_TOKENS.colors.actor.body.coding,
+    hair: VISUAL_TOKENS.colors.actor.hair.coding,
+    skin: VISUAL_TOKENS.colors.actor.skin,
+    emoji: '✨',
+  },
+  review: {
+    body: VISUAL_TOKENS.colors.actor.body.review,
+    hair: VISUAL_TOKENS.colors.actor.hair.review,
+    skin: '#f4d2b3',
+    emoji: '💧',
+  },
+  rework: {
+    body: VISUAL_TOKENS.colors.actor.body.rework,
+    hair: VISUAL_TOKENS.colors.actor.hair.rework,
+    skin: VISUAL_TOKENS.colors.actor.skin,
+    emoji: '💦',
+  },
+  done: {
+    body: VISUAL_TOKENS.colors.actor.body.done,
+    hair: VISUAL_TOKENS.colors.actor.hair.done,
+    skin: VISUAL_TOKENS.colors.actor.skin,
+    emoji: '🎉',
+  },
 };
 
-const INK = '#33285c';
+const INK = VISUAL_TOKENS.colors.ink;
 
 /** DOM の z-index（station 4 / review 5 / done 6）と同じ画家順。 */
 const STATION_Z: Record<Lane, number> = { backlog: 4, coding: 4, rework: 4, review: 5, done: 6 };
@@ -168,9 +196,10 @@ interface ActorEntry {
 /** 机（OfficeActors の Desk と同値。ローカル 220×200 座標）。 */
 function drawDesk(g: Graphics, lane: Lane): void {
   const dark = lane === 'coding';
-  const top = dark ? '#5a4a86' : '#caa06a';
-  const left = dark ? '#3a2f66' : '#9a7440';
-  const right = dark ? '#2b2050' : '#75561f';
+  const desk = VISUAL_TOKENS.colors.actor.desk;
+  const top = dark ? desk.darkTop : desk.woodTop;
+  const left = dark ? desk.darkLeft : desk.woodLeft;
+  const right = dark ? desk.darkRight : desk.woodRight;
   g.poly([40, 150, 110, 115, 180, 150, 110, 185]).fill(top);
   g.poly([40, 150, 110, 185, 110, 215, 40, 180]).fill(left);
   g.poly([110, 185, 180, 150, 180, 180, 110, 215]).fill(right);
@@ -178,9 +207,9 @@ function drawDesk(g: Graphics, lane: Lane): void {
     .lineTo(110, 115)
     .lineTo(180, 150)
     .stroke({ color: '#ffffff', alpha: 0.13, width: 1.5 });
-  g.rect(38, 150, 3.2, 34).fill('#5a3f18');
-  g.rect(178, 150, 3.2, 34).fill('#5a3f18');
-  g.rect(108, 185, 3.2, 34).fill('#5a3f18');
+  g.rect(38, 150, 3.2, 34).fill(desk.leg);
+  g.rect(178, 150, 3.2, 34).fill(desk.leg);
+  g.rect(108, 185, 3.2, 34).fill(desk.leg);
   // PC/モニタ（Coding/Review の机に）。
   if (lane === 'coding' || lane === 'review') {
     g.poly([92, 138, 110, 130, 128, 138, 110, 146]).fill('#0e1430');
@@ -222,7 +251,10 @@ function drawEyes(g: Graphics, mood: StationMood): void {
     g.moveTo(ox + 54, oy + 48)
       .quadraticCurveTo(ox + 58, oy + 52, ox + 63, oy + 48)
       .stroke({ color: INK, width: 2.4, cap: 'round' });
-    g.ellipse(ox + 68, oy + 36, 2.5, 3.5).fill({ color: '#7bdcff', alpha: 0.85 });
+    g.ellipse(ox + 68, oy + 36, 2.5, 3.5).fill({
+      color: VISUAL_TOKENS.colors.aiBot.eye,
+      alpha: 0.85,
+    });
     return;
   }
   if (mood === 'panic') {
@@ -334,13 +366,13 @@ function drawCharacter(g: Graphics, lane: Lane, mood: StationMood): void {
 }
 
 /** 粒テクスチャの余白（グロー・影のはみ出しぶん）。 */
-const DOT_PAD = 20;
+const DOT_PAD = VISUAL_TOKENS.dimensions.sprint.dotTexturePadding;
 
 /** variant 別のグロー（CSS box-shadow の近似。色と強さ）。 */
 const DOT_GLOW: Partial<Record<BoardDotPlan['variant'], { color: string; alpha: number }>> = {
-  ai: { color: '#b388ff', alpha: 0.3 },
-  gold: { color: '#ffd45c', alpha: 0.32 },
-  incident: { color: '#ff7a2f', alpha: 0.38 },
+  ai: { color: VISUAL_TOKENS.colors.taskGlow.ai, alpha: 0.3 },
+  gold: { color: VISUAL_TOKENS.colors.taskGlow.gold, alpha: 0.32 },
+  incident: { color: VISUAL_TOKENS.colors.taskGlow.incident, alpha: 0.38 },
 };
 
 export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
@@ -548,13 +580,15 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private drawFlows(elapsedMs: number): void {
     const g = this.flowsGfx;
     g.clear();
-    // CSS `dash` keyframes: 1s で dashoffset 0 → -15px。
-    const offset = -((elapsedMs / 1000) * 15) % 15;
+    // CSS `dash` keyframes: 1s で dashoffset 0 → -period。
+    const { dash, gap } = VISUAL_TOKENS.dimensions.sprint.flowDash;
+    const period = flowDashPeriod({ dash, gap });
+    const offset = period > 0 ? -((elapsedMs / 1000) * period) % period : 0;
     for (const f of this.lastFlows) {
-      const color = f.rework ? '#ff9a93' : '#cdbff0';
+      const color = f.rework ? VISUAL_TOKENS.colors.flow.hot : VISUAL_TOKENS.colors.flow.normal;
       const width = f.rework ? 2.5 : 3.5;
       const alpha = f.rework ? 0.6 : 0.85;
-      for (const [a, b] of lineDashSegments(f.x1, f.y1, f.x2, f.y2, 6, 9, offset)) {
+      for (const [a, b] of lineDashSegments(f.x1, f.y1, f.x2, f.y2, dash, gap, offset)) {
         g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color, width, alpha });
       }
       // SVG marker（M0,0 L6,3 L0,6）相当の矢じり（線の終端向き）。
@@ -637,7 +671,10 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       this.applyActorVisual(actor);
       actor.desk.position.set(s.x, s.y);
       actor.char.position.set(s.x, s.y);
-      actor.status.position.set(s.x + ACTOR_W * 0.36, s.y - ACTOR_H * 0.47);
+      actor.status.position.set(
+        s.x + ACTOR_W * ACTOR_STATUS_OFFSET.xRatio,
+        s.y + ACTOR_H * ACTOR_STATUS_OFFSET.yRatio,
+      );
     }
   }
 
@@ -703,7 +740,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       if (draggable || dragging) {
         // CSS `.task-dot.draggable` の outline（2px シアン / ドラッグ中は金色）。
         parts.ring.circle(0, 0, d / 2 + 3).stroke({
-          color: dragging ? '#ffd45c' : '#7bdcff',
+          color: dragging ? VISUAL_TOKENS.colors.sun : VISUAL_TOKENS.colors.interaction.drag,
           width: 2,
           alpha: dragging ? 1 : 0.67,
         });
@@ -751,7 +788,10 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         actor.char.position.set(actor.baseX, actor.baseY + bobOffsetY(elapsedMs, period, 3));
         actor.char.rotation = gameAssetMoodStyle(actor.mood).rotation;
       }
-      actor.status.position.set(actor.baseX + ACTOR_W * 0.36, actor.baseY - ACTOR_H * 0.47);
+      actor.status.position.set(
+        actor.baseX + ACTOR_W * ACTOR_STATUS_OFFSET.xRatio,
+        actor.baseY + ACTOR_H * ACTOR_STATUS_OFFSET.yRatio,
+      );
     }
 
     for (const entry of this.dotEntries) {

@@ -1642,6 +1642,24 @@ if (!runs.some((r) => r.policy === 'noAiCtl')) {
   console.log('  ※ noAiCtl が標本に無いため、AI の因果は未計測');
 }
 
+console.log('\nセキュリティ方針の最終水準（RI-87）:');
+for (const policy of F10_SECURITY_PAIR) {
+  const arr = runs.filter((r) => r.policy === policy);
+  if (!arr.length) {
+    console.log(`  ${policy}: 標本なし`);
+    continue;
+  }
+  const levels = arr.map((r) => r.finalOrg?.securityLevel).filter((n) => typeof n === 'number');
+  if (!levels.length) {
+    console.log(`  ${policy}: 最終 securityLevel 未記録`);
+    continue;
+  }
+  console.log(
+    `  ${policy}: 勝利=${arr.filter((r) => r.status === 'won').length}/${arr.length} ` +
+      `最終セキュリティ 平均=${r1(mean(levels))}`,
+  );
+}
+
 console.log('\n参考: 難易度 × 方針の内訳:');
 for (const [k, arr] of group((r) => `${r.difficulty}/${r.policy}`)) {
   const sprints = arr.flatMap((r) => completedSprintsOf(r));

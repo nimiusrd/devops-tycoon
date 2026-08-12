@@ -2360,6 +2360,7 @@ export function runOnce(
       testCoverage: Math.round(f.org.testCoverage),
       documentation: Math.round(f.org.documentation),
       quality: Math.round(f.org.quality),
+      securityLevel: Math.round(f.org.securityLevel),
       morale: Math.round(f.org.morale),
       seniorHp: Math.round(f.org.seniorHp),
       techDebt: Math.round(f.org.techDebt),

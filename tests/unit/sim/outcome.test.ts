@@ -22,6 +22,7 @@ const org = (overrides: Partial<OrgState> = {}): OrgState => ({
   testCoverage: 50,
   documentation: 50,
   quality: 50,
+  securityLevel: 55,
   morale: 2,
   seniorHp: 2,
   techDebt: TECH_DEBT_CAP - 1,
@@ -301,6 +302,7 @@ describe('evaluateWinType', () => {
     win('noDamage', {
       org: {
         quality: 70,
+        securityLevel: 55,
         morale: 70,
         seniorHp: 60,
         testCoverage: 40,
@@ -322,6 +324,7 @@ describe('evaluateWinType', () => {
     win('happiness', {
       org: {
         quality: 70,
+        securityLevel: 55,
         morale: 70,
         seniorHp: 60,
         testCoverage: 40,
@@ -485,6 +488,7 @@ describe('evaluateWinType', () => {
     win('healthy', {
       org: {
         quality: 65,
+        securityLevel: 55,
         morale: 65,
         seniorHp: 30,
         aiLiteracy: 50,
@@ -497,6 +501,7 @@ describe('evaluateWinType', () => {
     win('healthy', {
       org: {
         quality: 65,
+        securityLevel: 55,
         morale: 65,
         seniorHp: 30,
         aiLiteracy: 50,
@@ -509,6 +514,7 @@ describe('evaluateWinType', () => {
     win('healthy', {
       org: {
         quality: 55,
+        securityLevel: 55,
         morale: 60,
         seniorHp: 40,
         aiLiteracy: 50,
@@ -522,6 +528,7 @@ describe('evaluateWinType', () => {
     win('healthy', {
       org: {
         quality: 55,
+        securityLevel: 55,
         morale: 70,
         seniorHp: 55,
         aiLiteracy: 50,
@@ -535,6 +542,7 @@ describe('evaluateWinType', () => {
     win('normal', {
       org: {
         quality: 55,
+        securityLevel: 55,
         morale: 59,
         seniorHp: 40,
         aiLiteracy: 50,
@@ -551,6 +559,7 @@ describe('evaluateWinType', () => {
       evaluateWinType({
         org: org({
           quality: 72,
+          securityLevel: 55,
           morale: 72,
           seniorHp: 65,
           aiLiteracy: 55,
@@ -612,6 +621,7 @@ describe('evaluateWinType', () => {
       evaluateWinType({
         org: org({
           quality: 66,
+          securityLevel: 55,
           morale: 66,
           seniorHp: 35,
           aiLiteracy: 50,

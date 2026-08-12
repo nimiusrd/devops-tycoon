@@ -159,6 +159,7 @@ describe('formatCardEffectsTags（カード係数タグ）', () => {
       { label: 'Coding速度 x1.15', tone: 'positive' },
       { label: '定型タスク速度 x1.30', tone: 'positive' },
       { label: 'AI依存度 +5', tone: 'negative' },
+      { label: 'セキュリティ -5', tone: 'negative' },
     ]);
   });
 
@@ -168,6 +169,7 @@ describe('formatCardEffectsTags（カード係数タグ）', () => {
       { label: 'Coding速度 x1.25', tone: 'positive' },
       { label: '手戻り率 +6%', tone: 'negative' },
       { label: 'AI依存度 +8', tone: 'negative' },
+      { label: 'セキュリティ -8', tone: 'negative' },
     ]);
   });
 
@@ -199,6 +201,15 @@ describe('formatCardEffectsTags（カード係数タグ）', () => {
     expect(formatEvolutionNodeTags(getEvolutionNode('ai-2')!)).toEqual(
       expect.arrayContaining([{ label: 'インフラコスト x0.75', tone: 'positive' }]),
     );
+  });
+
+  it('securityAdd は増減を正負タグにする（RI-87）', () => {
+    expect(formatCardEffectsTags({ securityAdd: 8 })).toEqual([
+      { label: 'セキュリティ +8', tone: 'positive' },
+    ]);
+    expect(formatCardEffectsTags({ securityAdd: -5 })).toEqual([
+      { label: 'セキュリティ -5', tone: 'negative' },
+    ]);
   });
 });
 
@@ -243,6 +254,7 @@ describe('formatEvolutionNodeTags（進化ノードタグ）', () => {
     expect(formatEvolutionNodeTags(node)).toEqual([
       { label: '手戻り率 -10%', tone: 'positive' },
       { label: '品質 +8', tone: 'positive' },
+      { label: 'セキュリティ +10', tone: 'positive' },
     ]);
   });
 });
@@ -251,7 +263,7 @@ describe('formatCardTooltip / formatRelicTooltip（ツールチップ）', () =>
   it('カードの効果タグとフレーバー文を合成する', () => {
     const def = getCard('devin')!;
     expect(formatCardTooltip(def)).toBe(
-      'Coding速度 x1.25 · 手戻り率 +6% · AI依存度 +8 — 自律型 AI エージェントを導入 / 並列実装は進むが、分割が下手だと迷走しやすい',
+      'Coding速度 x1.25 · 手戻り率 +6% · AI依存度 +8 · セキュリティ -8 — 自律型 AI エージェントを導入 / 並列実装は進むが、分割が下手だと迷走しやすい / 自律実行で検証が薄くなりセキュリティが下がる',
     );
   });
 
@@ -268,6 +280,7 @@ describe('formatCardTooltip / formatRelicTooltip（ツールチップ）', () =>
       { label: 'Coding速度 x1.22', tone: 'positive' },
       { label: '定型タスク速度 x1.45', tone: 'positive' },
       { label: 'AI依存度 +7.5', tone: 'negative' },
+      { label: 'セキュリティ -7.5', tone: 'negative' },
     ]);
     expect(formatCardTooltip(def, 2)).toContain('Coding速度 x1.22');
   });

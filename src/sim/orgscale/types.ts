@@ -82,6 +82,8 @@ export interface TeamRunState {
   documentation: number;
   /** 品質水準 0..100。 */
   quality: number;
+  /** セキュリティ水準 0..100（RI-87）。 */
+  securityLevel: number;
 }
 
 /**

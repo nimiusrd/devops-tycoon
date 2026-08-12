@@ -82,7 +82,13 @@ export class Engine {
   private buildOrg(
     carry?: Pick<
       OrgState,
-      'deliveryScore' | 'techDebt' | 'aiLiteracy' | 'aiDependency' | 'quality' | 'testCoverage'
+      | 'deliveryScore'
+      | 'techDebt'
+      | 'aiLiteracy'
+      | 'aiDependency'
+      | 'quality'
+      | 'testCoverage'
+      | 'securityLevel'
     >,
   ): OrgState {
     const org = createOrgState(this.scenario, this.aiEnabled);
@@ -93,6 +99,7 @@ export class Engine {
       org.aiDependency = carry.aiDependency;
       org.quality = carry.quality;
       org.testCoverage = carry.testCoverage;
+      org.securityLevel = carry.securityLevel;
     }
     return org;
   }
@@ -161,6 +168,7 @@ export class Engine {
       aiDependency: this.org.aiDependency,
       quality: this.org.quality,
       testCoverage: this.org.testCoverage,
+      securityLevel: this.org.securityLevel,
     });
     this.sprint = this.buildSprint();
   }

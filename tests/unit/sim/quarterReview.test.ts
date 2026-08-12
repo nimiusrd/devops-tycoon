@@ -70,6 +70,7 @@ const team = (t: Partial<TeamRunState> = {}): TeamRunState => ({
   testCoverage: 50,
   documentation: 50,
   quality: 60,
+  securityLevel: 55,
   ...t,
 });
 

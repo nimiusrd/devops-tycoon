@@ -27,6 +27,7 @@ export const IDENTITY_CARD_EFFECTS: CardEffects = {
   aiDependencyAdd: 0,
   qualityAdd: 0,
   testCoverageAdd: 0,
+  securityAdd: 0,
   infraCostMul: 1,
 };
 
@@ -200,8 +201,49 @@ export function reworkProbability(
 }
 
 /**
+ * セキュリティ水準の脆弱度 0..1（RI-87）。
+ * 50 以上は実質無効果にし、既存バランス帯を壊さず軽視ビルド側で効かせる。
+ */
+export function securityFragility(securityLevel: number): number {
+  return clamp((50 - clamp(securityLevel, 0, 100)) / 50, 0, 1);
+}
+
+/**
+ * セキュリティ水準が低いほど Incident 基礎率へ加わるボーナス（RI-87）。
+ * testCoverage 項と二重すぎないよう係数は控えめ。
+ */
+export function securityIncidentRateBonus(securityLevel: number): number {
+  return 0.05 * securityFragility(securityLevel);
+}
+
+/**
+ * 延焼コスト倍率（RI-87）。securityLevel 50+ で 1、0 で 1.6。
+ */
+export function securitySpreadMul(securityLevel: number): number {
+  return 1 + 0.6 * securityFragility(securityLevel);
+}
+
+/**
+ * 延焼に伴う顧客信頼の変化量（RI-87。負が低下）。
+ * 鎮火できた事故だけでは下げず、延焼（規模の顕在化）で下振れする。
+ * 水準が高いほど下振れを抑える。
+ */
+export function securityCustomerTrustDelta(
+  securityLevel: number,
+  incidents: number,
+  spread: number,
+): number {
+  if (spread <= 0) return 0;
+  const exposure = Math.max(0, spread) * 2 + Math.max(0, incidents) * 0.5;
+  const raw = exposure * securityFragility(securityLevel);
+  if (raw < 0.5) return 0;
+  return -Math.ceil(raw);
+}
+
+/**
  * Review 済みタスクが障害（Incident）になる確率。
  * テストカバレッジが低いほど増える。AI 利用かつ低リテラシーで上乗せ。
+ * セキュリティ水準が低いほど基礎率が増える（RI-87）。
  */
 export function incidentProbability(
   org: OrgState,
@@ -211,6 +253,7 @@ export function incidentProbability(
   const p =
     (0.02 +
       0.1 * (1 - org.testCoverage / 100) +
+      securityIncidentRateBonus(org.securityLevel) +
       (task.aiAssisted ? 0.05 * (1 - org.aiLiteracy / 100) : 0)) *
     effects.incidentRateMul;
   return clamp(p, 0.01, 0.4);

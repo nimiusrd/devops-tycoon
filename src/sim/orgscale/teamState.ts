@@ -160,6 +160,7 @@ function homeSeedRaw(
     testCoverage: Math.round(org.testCoverage),
     documentation: Math.round(org.documentation),
     quality: Math.round(org.quality),
+    securityLevel: Math.round(org.securityLevel),
   };
 }
 
@@ -196,6 +197,7 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
   const testCoverage = clamp(jitter(base.testCoverage, 15), 20, 100);
   const documentation = clamp(jitter(base.documentation, 15), 20, 100);
   const quality = clamp(jitter(base.quality, 15), 20, 100);
+  const securityLevel = clamp(jitter(base.securityLevel, 15), 20, 100);
   return {
     aiDependency,
     reviewQueue,
@@ -210,6 +212,7 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
     testCoverage,
     documentation,
     quality,
+    securityLevel,
   };
 }
 
@@ -242,6 +245,7 @@ function toTeamRunState(args: {
     testCoverage: raw.testCoverage,
     documentation: raw.documentation,
     quality: raw.quality,
+    securityLevel: raw.securityLevel,
   };
 }
 
@@ -330,6 +334,7 @@ export function syncTeamFromOrg(
     testCoverage: Math.round(org.testCoverage),
     documentation: Math.round(org.documentation),
     quality: Math.round(org.quality),
+    securityLevel: Math.round(org.securityLevel),
     reviewCapacity: clamp(55 + engineers * 4 - reviewQueue * 2, 10, 100),
     incidentBias: clamp(0.08 + incidents * 0.05 + (100 - org.quality) * 0.002, 0.02, 0.45),
   };
@@ -344,6 +349,7 @@ export function orgFromTeam(team: TeamRunState): OrgState {
     testCoverage: team.testCoverage,
     documentation: team.documentation,
     quality: team.quality,
+    securityLevel: team.securityLevel ?? team.quality,
     morale: team.morale,
     seniorHp: team.seniorHp,
     techDebt: team.techDebt,
@@ -372,6 +378,7 @@ export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: Or
     testCoverage: avg((t) => t.testCoverage),
     documentation: avg((t) => t.documentation),
     quality: avg((t) => t.quality),
+    securityLevel: avg((t) => t.securityLevel ?? t.quality),
     morale: fallback.morale,
     seniorHp: fallback.seniorHp,
     techDebt: avg((t) => t.techDebt),
@@ -463,6 +470,7 @@ export function appendTeamsToDept(
       testCoverage: args.template.testCoverage,
       documentation: args.template.documentation,
       quality: args.template.quality,
+      securityLevel: args.template.securityLevel ?? args.template.quality,
     });
     added.push(
       toTeamRunState({

@@ -69,7 +69,7 @@ import type {
   SprintResult,
   SprintState,
 } from '../types';
-import { IDENTITY_CARD_EFFECTS } from '../model';
+import { IDENTITY_CARD_EFFECTS, securityCustomerTrustDelta } from '../model';
 import {
   activeLiveFromOrg,
   advanceCoarseTeams,
@@ -274,6 +274,7 @@ function buildRunOrg(difficulty: DifficultyId): OrgState {
     testCoverage: org.testCoverage,
     documentation: org.documentation,
     quality: org.quality,
+    securityLevel: org.securityLevel,
     morale: org.morale,
     seniorHp: org.seniorHp,
     techDebt: 0,
@@ -773,6 +774,7 @@ export class RunEngine {
     this.lastResult = result;
     this.sprintsPlayed += 1;
     this.accumulateTotals(result);
+    this.applyIncidentTrustPenalty(result);
     this.applyGrowth(result);
     // スプリント終了時に個体スタミナを一部回復する（休職者は復帰しうる）。
     // ここで回復させることで、続くビート／編成ウィンドウで復帰メンバーをすぐ再配置できる。
@@ -841,6 +843,19 @@ export class RunEngine {
     const m = this.sprint.metrics;
     addSprintTotals(this.totals, result, m);
     addSprintTotals(this.quarterTotals, result, m);
+  }
+
+  /**
+   * 事故／延焼があったスプリントで顧客信頼を下げる（RI-87）。
+   * セキュリティ水準が高いほど下振れを抑える。
+   */
+  private applyIncidentTrustPenalty(result: SprintResult): void {
+    const delta = securityCustomerTrustDelta(
+      this.org.securityLevel,
+      result.incidents,
+      result.spread,
+    );
+    if (delta !== 0) this.applyTrust({ customers: delta });
   }
 
   /**
@@ -1501,6 +1516,7 @@ export class RunEngine {
         aiDependency: clamp(t.aiDependency + effects.aiDependencyAdd, 0, 100),
         quality: clamp(t.quality + effects.qualityAdd, 0, 100),
         testCoverage: clamp(t.testCoverage + effects.testCoverageAdd, 0, 100),
+        securityLevel: clamp((t.securityLevel ?? t.quality) + effects.securityAdd, 0, 100),
       };
       // 品質加算後すぐ障害傾向へ反映し、次の粗粒度ステップで取りこぼさない。
       return { ...next, ...deriveTeamCapacities(next) };
@@ -2175,6 +2191,10 @@ export class RunEngine {
     this.pendingSprintModifiers = { ...cloned.pendingSprintModifiers };
     this.pendingShopHandIndices = [...(cloned.pendingShopHandIndices ?? [])];
     this.org = cloned.org;
+    // RI-87: 旧セーブに securityLevel が無い場合は品質を近似値として補完する。
+    if (typeof this.org.securityLevel !== 'number') {
+      this.org.securityLevel = clamp(this.org.quality, 0, 100);
+    }
     this.deck = cloned.deck.map(cloneCardInstance);
     this.relics = [...cloned.relics];
     this.bossRelicReward = cloned.bossRelicReward;
@@ -2245,6 +2265,9 @@ export class RunEngine {
     // RI-64: チーム状態（旧セーブは seed から補完）。
     if (Array.isArray(cloned.extras.teams) && cloned.extras.teams.length > 0) {
       this.teams = structuredClone(cloned.extras.teams);
+      this.teams = this.teams.map((t) =>
+        typeof t.securityLevel === 'number' ? t : { ...t, securityLevel: clamp(t.quality, 0, 100) },
+      );
       this.activeTeamId = cloned.extras.activeTeamId ?? HOME_TEAM_ID;
       this.homeTeamId = cloned.extras.homeTeamId ?? HOME_TEAM_ID;
       this.teamLockUntilSprint = cloned.extras.teamLockUntilSprint ?? 0;
@@ -2411,6 +2434,7 @@ export class RunEngine {
             aiLiteracy: this.org.aiLiteracy,
             testCoverage: this.org.testCoverage,
             documentation: this.org.documentation,
+            securityLevel: this.org.securityLevel,
             morale: this.org.morale,
             seniorHp: this.org.seniorHp,
             aiEnabled: this.org.aiEnabled,

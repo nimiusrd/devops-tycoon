@@ -263,6 +263,7 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
     const i = asInternals(engine);
     const org = makeOrg({
       quality: 70,
+      securityLevel: 55,
       morale: 70,
       seniorHp: 65,
       aiLiteracy: 50,

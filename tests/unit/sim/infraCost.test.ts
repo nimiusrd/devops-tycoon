@@ -27,6 +27,7 @@ function org(aiDependency: number): OrgState {
     testCoverage: 40,
     documentation: 40,
     quality: 50,
+    securityLevel: 55,
     morale: 70,
     seniorHp: 80,
     techDebt: 0,

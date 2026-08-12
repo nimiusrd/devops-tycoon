@@ -13,6 +13,8 @@ export interface ScenarioOrg {
   testCoverage: number;
   documentation: number;
   quality: number;
+  /** セキュリティ水準の初期値（RI-87）。 */
+  securityLevel: number;
   morale: number;
   seniorHp: number;
 }
@@ -36,6 +38,7 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
       testCoverage: 55,
       documentation: 50,
       quality: 60,
+      securityLevel: 60,
       morale: 70,
       seniorHp: 100,
     },

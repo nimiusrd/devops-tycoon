@@ -111,6 +111,11 @@ export interface CardEffects {
   /** スプリント開始時に加えるテストカバレッジ。 */
   testCoverageAdd: number;
   /**
+   * スプリント開始時に加えるセキュリティ水準（RI-87）。
+   * 検証投資で上げ、速度偏重で下げる。
+   */
+  securityAdd: number;
+  /**
    * インフラ／モデル利用コスト倍率（1 で無効果、低いほど安い。RI-88）。
    * AI依存度×単価に掛かり、予算の継続圧迫を抑える。
    */
@@ -325,6 +330,11 @@ export interface OrgState {
   documentation: number;
   /** 品質水準 0..100。 */
   quality: number;
+  /**
+   * セキュリティ水準 0..100（RI-87）。
+   * 低いほど事故の規模と顧客信頼の下振れが大きくなる。
+   */
+  securityLevel: number;
   /** 士気 0..100。 */
   morale: number;
   /** シニアのレビュー余力 0..100。 */

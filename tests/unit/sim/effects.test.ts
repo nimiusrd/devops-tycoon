@@ -89,6 +89,8 @@ describe('run effects fold', () => {
       aiDependencyAdd: 0,
       qualityAdd: 6 + 8 + 10,
       testCoverageAdd: 8 + 12,
+      // RI-87: postmortem(+6) + no-friday(+4) + quality-1..3(+6+8+10) + dev-1(-4) + dev-3(-6) + ai-3(-6)
+      securityAdd: 18,
       // RI-88: ai-2 (0.75) × ai-3 (0.7)
       infraCostMul: 0.75 * 0.7,
     });

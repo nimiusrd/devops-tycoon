@@ -37,7 +37,7 @@ import { containFitTransform } from '../deptPixiView';
 import { SpritePool } from '../iso';
 import { TASK_COLORS, TASK_DIAMETER } from '../taskView';
 import { gameAssetMoodStyle, stationAssetForLane } from '../gameAssetView';
-import { VISUAL_TOKENS } from '../visualTokens';
+import { flowDashPeriod, VISUAL_TOKENS } from '../visualTokens';
 import { loadGameAssetTexture } from './gameAssetTextures';
 import { ensureTexturePoolGuard, releasePixiApp, retainPixiApp } from './pixiTexturePoolGuard';
 import type { RendererAdapter } from './index';
@@ -580,13 +580,14 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private drawFlows(elapsedMs: number): void {
     const g = this.flowsGfx;
     g.clear();
-    // CSS `dash` keyframes: 1s で dashoffset 0 → -15px。
-    const offset = -((elapsedMs / 1000) * 15) % 15;
+    // CSS `dash` keyframes: 1s で dashoffset 0 → -period。
+    const { dash, gap } = VISUAL_TOKENS.dimensions.sprint.flowDash;
+    const period = flowDashPeriod({ dash, gap });
+    const offset = period > 0 ? -((elapsedMs / 1000) * period) % period : 0;
     for (const f of this.lastFlows) {
       const color = f.rework ? VISUAL_TOKENS.colors.flow.hot : VISUAL_TOKENS.colors.flow.normal;
       const width = f.rework ? 2.5 : 3.5;
       const alpha = f.rework ? 0.6 : 0.85;
-      const { dash, gap } = VISUAL_TOKENS.dimensions.sprint.flowDash;
       for (const [a, b] of lineDashSegments(f.x1, f.y1, f.x2, f.y2, dash, gap, offset)) {
         g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color, width, alpha });
       }

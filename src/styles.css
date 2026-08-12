@@ -916,12 +916,13 @@ body {
   pointer-events: none;
 }
 .flowdash {
+  --visual-flow-period: var(--visual-sprint-flow-period);
   stroke-dasharray: var(--visual-sprint-flow-dash) var(--visual-sprint-flow-gap);
   animation: dash 1s linear infinite;
 }
 @keyframes dash {
   to {
-    stroke-dashoffset: -15;
+    stroke-dashoffset: calc(0px - var(--visual-flow-period, var(--visual-sprint-flow-period)));
   }
 }
 
@@ -5521,6 +5522,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   z-index: 2;
 }
 .dept-miniflow {
+  --visual-flow-period: var(--visual-dept-flow-period);
   stroke-dasharray: var(--visual-dept-flow-dash) var(--visual-dept-flow-gap);
   animation: dash 1s linear infinite;
 }

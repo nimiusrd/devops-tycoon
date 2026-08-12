@@ -113,7 +113,7 @@ export type DashSegment = readonly [BoardPoint, BoardPoint];
  * 直線を破線区間へ分割する（SVG stroke-dasharray + dashoffset の Pixi 代替）。
  *
  * `offset` は CSS `stroke-dashoffset` と同じ向き（負で進行方向へ流れる）。
- * CSS `dash` アニメ（1s で -15px）を ticker から offset 連続変化で再現し、
+ * CSS `dash` アニメ（1s で 1 周期ぶん移動）を ticker から offset 連続変化で再現し、
  * offset=0 は SVG の静止状態と一致する（freezeForScreenshot の決定論）。
  */
 export function lineDashSegments(

@@ -229,6 +229,11 @@ export function designSpaceRatio(space: DesignSpace): number {
   return space.h > 0 ? space.w / space.h : 0;
 }
 
+/** 破線アニメーションの 1 周期（dash + gap）。DOM と Pixi の位相を揃える。 */
+export function flowDashPeriod(flowDash: { readonly dash: number; readonly gap: number }): number {
+  return flowDash.dash + flowDash.gap;
+}
+
 /** 設計 px を DOM の相対配置へ写像する。 */
 export function designPxToPercent(value: number, total: number): string {
   return `${(value / total) * 100}%`;
@@ -305,6 +310,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-sprint-station-width': `${dimensions.sprint.stationWidthPercent}%`,
     '--visual-sprint-flow-dash': String(dimensions.sprint.flowDash.dash),
     '--visual-sprint-flow-gap': String(dimensions.sprint.flowDash.gap),
+    '--visual-sprint-flow-period': `${flowDashPeriod(dimensions.sprint.flowDash)}px`,
     '--visual-sprint-pile-dx': `${dimensions.sprint.pile.dx}px`,
     '--visual-sprint-pile-dy': `${dimensions.sprint.pile.dy}px`,
     '--visual-org-card-width': `${dimensions.organization.card.width}px`,
@@ -315,6 +321,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-dept-mini-width': `${dimensions.department.teamMini.layoutW}px`,
     '--visual-dept-flow-dash': String(dimensions.department.flowDash.dash),
     '--visual-dept-flow-gap': String(dimensions.department.flowDash.gap),
+    '--visual-dept-flow-period': `${flowDashPeriod(dimensions.department.flowDash)}px`,
     '--visual-dept-banner-padding-x': `${dimensions.department.banner.paddingX}px`,
     '--visual-dept-banner-padding-top': `${dimensions.department.banner.paddingTop}px`,
     '--visual-dept-banner-padding-bottom': `${dimensions.department.banner.paddingBottom}px`,

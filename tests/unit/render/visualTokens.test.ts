@@ -6,6 +6,7 @@ import {
   designPxToPercent,
   designSpaceRatio,
   designToHostTransform,
+  flowDashPeriod,
   hexToPixiColor,
   VISUAL_TOKENS,
   visualTokenCssVariables,
@@ -58,9 +59,11 @@ describe('visual tokens', () => {
     expect(values['--visual-sprint-station-width']).toBe('15%');
     expect(values['--visual-sprint-flow-dash']).toBe('6');
     expect(values['--visual-sprint-flow-gap']).toBe('9');
+    expect(values['--visual-sprint-flow-period']).toBe('15px');
     expect(values['--visual-color-flow-hot']).toBe(VISUAL_TOKENS.colors.flow.hot);
     expect(values['--visual-color-task-glow-ai']).toBe(VISUAL_TOKENS.colors.taskGlow.ai);
     expect(values['--visual-dept-flow-dash']).toBe('6');
+    expect(values['--visual-dept-flow-period']).toBe('15px');
     expect(values['--visual-org-card-line-gap']).toBe('2px');
     expect(values['--visual-dept-banner-padding-x']).toBe('12px');
     expect(values['--visual-color-banner-hell-text']).toBe(
@@ -86,6 +89,10 @@ describe('visual tokens', () => {
     applyVisualTokenCssVariables(root);
     expect(applied.get('--visual-color-panel')).toBe(VISUAL_TOKENS.colors.panel);
     expect(applied.get('--visual-org-card-width')).toBe('116px');
+  });
+
+  it('破線周期を dash と gap から導出する', () => {
+    expect(flowDashPeriod({ dash: 6, gap: 9 })).toBe(15);
   });
 
   it('CSS hex 色を Pixi の RGB 数値へ変換する', () => {

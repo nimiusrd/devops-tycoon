@@ -17,10 +17,13 @@ import type { SprintState } from '../../src/sim/types';
 
 const PIXI_SEED = 'sprint-pixi-e2e';
 
+type BoardPixiTestHook = {
+  freezeForScreenshot(): void;
+};
+
 type PixiTestWindow = PublicGameWindow & {
-  __boardPixiTest?: {
-    freezeForScreenshot(): void;
-  };
+  __boardPixiTest?: BoardPixiTestHook;
+  __ri98InitialBoardPixiTest?: BoardPixiTestHook;
 };
 
 /** Pixi 視覚回帰は opt-in のみ（CI 既定 job では WebGL を回さない）。 */
@@ -150,6 +153,49 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });
+  });
+
+  test('859/860/861pxのリサイズでPixiコンテキストを再生成しない @pixi', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await beginPublicSprint(page, { seed: 'ri98-responsive-pixi-0', renderer: 'pixi' });
+    const mount = page.getByTestId('board-pixi-mount');
+    await expect(mount).toBeVisible();
+    await expect
+      .poll(async () => mount.getAttribute('data-board-dots'), { timeout: 15_000 })
+      .toMatch(/^\d+$/);
+
+    await page.evaluate(() => {
+      const win = window as PixiTestWindow;
+      if (!win.__boardPixiTest) throw new Error('__boardPixiTest hook missing');
+      win.__ri98InitialBoardPixiTest = win.__boardPixiTest;
+    });
+
+    for (const [width, expected] of [
+      [859, 'narrow'],
+      [860, 'narrow'],
+      [861, 'wide'],
+    ] as const) {
+      await page.setViewportSize({ width, height: 844 });
+      await expect
+        .poll(async () => page.getByTestId('sprint-layout').getAttribute('data-responsive-width'), {
+          timeout: 5_000,
+        })
+        .toBe(expected);
+      await page.evaluate(
+        ({ expectedWidth }) => {
+          const win = window as PixiTestWindow;
+          const layout = document.querySelector('[data-testid="sprint-layout"]');
+          if (!layout) throw new Error('sprint-layout が見つからない');
+          if (layout.getAttribute('data-responsive-width') !== expectedWidth) {
+            throw new Error(`responsive width が ${expectedWidth} ではない`);
+          }
+          if (win.__ri98InitialBoardPixiTest !== win.__boardPixiTest) {
+            throw new Error('Pixiテストフックが再生成された');
+          }
+        },
+        { expectedWidth: expected },
+      );
+    }
   });
 
   test('390x844 HUD展開後の結果オーバーレイPixi合成を固定する @pixi', async ({ page }) => {

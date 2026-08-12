@@ -2452,13 +2452,11 @@ button.card:active {
   font-weight: 600;
 }
 
-@media (max-width: 860px) {
-  .hud-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .actions {
-    grid-template-columns: repeat(4, 1fr);
-  }
+:root[data-responsive-width='narrow'] .hud-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+:root[data-responsive-width='narrow'] .actions {
+  grid-template-columns: repeat(4, 1fr);
 }
 
 /* ===== Phase 3: 周回・育成・診断 ===== */
@@ -4005,10 +4003,8 @@ button.card:active {
 .result-review-hell-summary p {
   margin: 4px 0;
 }
-@media (max-width: 720px) {
-  .replay-list-body {
-    grid-template-columns: 1fr;
-  }
+:root[data-responsive-width='narrow'] .replay-list-body {
+  grid-template-columns: 1fr;
 }
 .meta-shop-panel {
   width: min(860px, 94vw);
@@ -4301,16 +4297,14 @@ button.card:active {
   color: var(--text-dim);
   font-size: 13px;
 }
-@media (max-width: 720px) {
-  .card-collection-layout {
-    grid-template-columns: 1fr;
-  }
-  .card-collection-list {
-    max-height: 42vh;
-  }
-  .card-collection-panel {
-    padding: 16px;
-  }
+:root[data-responsive-width='narrow'] .card-collection-layout {
+  grid-template-columns: 1fr;
+}
+:root[data-responsive-width='narrow'] .card-collection-list {
+  max-height: 42vh;
+}
+:root[data-responsive-width='narrow'] .card-collection-panel {
+  padding: 16px;
 }
 
 /* 遊び方ヘルプ / 初見ガイド（RI-60） */
@@ -4649,14 +4643,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 8px;
 }
 
-@media (max-width: 860px) {
-  .difficulty-grid,
-  .shop-grid {
-    grid-template-columns: 1fr;
-  }
-  .evolution-branches {
-    grid-template-columns: 1fr;
-  }
+:root[data-responsive-width='narrow'] .difficulty-grid,
+:root[data-responsive-width='narrow'] .shop-grid,
+:root[data-responsive-width='narrow'] .evolution-branches {
+  grid-template-columns: 1fr;
 }
 
 /* ===== Phase 4: キャラクター育成 / 編成 ===== */
@@ -4901,15 +4891,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--mint);
 }
 
-@media (max-width: 860px) {
-  .difficulty-grid,
-  .shop-grid {
-    grid-template-columns: 1fr;
-  }
-  .evolution-branches,
-  .formation-grid {
-    grid-template-columns: 1fr;
-  }
+:root[data-responsive-width='narrow'] .difficulty-grid,
+:root[data-responsive-width='narrow'] .shop-grid,
+:root[data-responsive-width='narrow'] .evolution-branches,
+:root[data-responsive-width='narrow'] .formation-grid {
+  grid-template-columns: 1fr;
 }
 
 /* ===== Phase 5: 組織スケール / ズーム階層（第4.7〜4.11） ===== */
@@ -6000,9 +5986,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 
 /* 集約HUD のモバイル段組（基底の 8/6 列より後に置いて確実に上書きする）。 */
-@media (max-width: 860px) {
-  .org-hud,
-  .dept-hud {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+:root[data-responsive-width='narrow'] .org-hud,
+:root[data-responsive-width='narrow'] .dept-hud {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }

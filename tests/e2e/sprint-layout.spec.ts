@@ -14,6 +14,7 @@ import {
 } from './fixtures';
 import type { Locator, Page } from '@playwright/test';
 import { RELIC_DEFS } from '../../src/data/relics';
+import { RESPONSIVE_BREAKPOINTS } from '../../src/ui/responsiveMode';
 import { seedMeta } from './seedMeta';
 
 const BOARD_RATIO = 1404 / 573;
@@ -274,7 +275,7 @@ async function assertLayoutContract(
     const firstEffectTag = effectTags.locator('.effect-tag').first();
     await expect(firstEffectTag).toBeVisible();
     await expect(firstEffectTag).not.toBeEmpty();
-    if (viewport.width <= 860) {
+    if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
       const effectTagsFit = await effectTags
         .locator('.effect-tag')
         .evaluateAll((tags) =>
@@ -542,6 +543,96 @@ test('狭幅390pxでKPI折り畳み後に介入バーへ到達できる', async 
   await expect(actionBar).toBeVisible();
   await actionBar.scrollIntoViewIfNeeded();
   await expect(actionBar).toBeInViewport();
+});
+
+test('レスポンシブ表示モードを859/860/861px境界で共有する', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 844 });
+  await beginPublicSprint(page, { seed: 'ri98-responsive-width-0' });
+
+  await page.evaluate(() => {
+    const board = document.querySelector('[data-testid="board"]');
+    if (!board) throw new Error('board が見つからない');
+    (window as Window & { __ri98InitialBoard?: Element }).__ri98InitialBoard = board;
+  });
+
+  for (const [width, expected] of [
+    [859, 'narrow'],
+    [860, 'narrow'],
+    [861, 'wide'],
+  ] as const) {
+    await page.setViewportSize({ width, height: 844 });
+    await waitForLayoutFrame(page);
+
+    for (const locator of [
+      page.locator(':root'),
+      page.locator('.app'),
+      page.getByTestId('sprint-layout'),
+      page.getByTestId('hud'),
+      page.getByTestId('action-bar'),
+    ]) {
+      await expect(locator).toHaveAttribute('data-responsive-width', expected);
+      await expect(locator).toHaveAttribute('data-responsive-height', 'normal');
+    }
+
+    await expect(page.getByTestId('hud')).toHaveAttribute(
+      'data-compact',
+      expected === 'narrow' ? 'true' : 'false',
+    );
+    const layoutStyle = await page.evaluate(() => {
+      const root = document.querySelector<HTMLElement>('[data-testid="sprint-layout"]');
+      const controls = document.querySelector<HTMLElement>('[data-sprint-slot="controls"]');
+      const actionBar = document.querySelector<HTMLElement>('[data-testid="action-bar"]');
+      if (!root || !controls || !actionBar) throw new Error('レスポンシブ要素が見つからない');
+      return {
+        controlsPosition: getComputedStyle(controls).position,
+        actionBarFlexWrap: getComputedStyle(actionBar).flexWrap,
+      };
+    });
+    if (expected === 'narrow') {
+      expect(layoutStyle.controlsPosition).toBe('sticky');
+      expect(layoutStyle.actionBarFlexWrap).toBe('wrap');
+    } else {
+      expect(layoutStyle.controlsPosition).toBe('static');
+      expect(layoutStyle.actionBarFlexWrap).toBe('nowrap');
+    }
+
+    const boardRemounted = await page.evaluate(() => {
+      const initial = (window as Window & { __ri98InitialBoard?: Element }).__ri98InitialBoard;
+      return initial !== document.querySelector('[data-testid="board"]');
+    });
+    expect(boardRemounted, `${width}px境界で盤面が再マウントされた`).toBe(false);
+  }
+});
+
+test('短いviewportの高さモードを自動切替する', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 721 });
+  await beginPublicSprint(page, { seed: 'ri98-responsive-height-0' });
+
+  for (const [height, expected, expectedOverflow] of [
+    [720, 'short', 'visible'],
+    [721, 'normal', 'auto'],
+  ] as const) {
+    await page.setViewportSize({ width: 1024, height });
+    await waitForLayoutFrame(page);
+
+    for (const locator of [
+      page.locator(':root'),
+      page.locator('.app'),
+      page.getByTestId('sprint-layout'),
+      page.getByTestId('hud'),
+      page.getByTestId('action-bar'),
+    ]) {
+      await expect(locator).toHaveAttribute('data-responsive-width', 'wide');
+      await expect(locator).toHaveAttribute('data-responsive-height', expected);
+    }
+
+    const rootOverflowY = await page
+      .getByTestId('sprint-layout')
+      .evaluate((element) => getComputedStyle(element).overflowY);
+    expect(rootOverflowY, `${height}pxでshortの高さレイアウトになっていない`).toBe(
+      expectedOverflow,
+    );
+  }
 });
 
 test.describe('RI-94 レイアウト契約', () => {

@@ -19,6 +19,7 @@ import {
 import { Breadcrumb } from './ui/Breadcrumb';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
 import { RunBar } from './ui/RunBar';
+import { ResponsiveModeProvider, useResponsiveMode } from './ui/responsiveMode';
 import { TitleScreen } from './ui/TitleScreen';
 import {
   resolveTutorialFromLocation,
@@ -90,6 +91,8 @@ const SprintScreen = lazy(() => loadSprintScreen().then((m) => ({ default: m.Spr
  * （読込中に外部が再 pause したら epoch が進むので誤 resume しない。）
  */
 function SprintSuspendFallback({ game, header }: { game: GameHandle; header: ReactNode }) {
+  const responsiveMode = useResponsiveMode();
+
   useEffect(() => {
     if (game.isPaused()) return;
     game.pause();
@@ -101,6 +104,8 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
   return (
     <div
       className={`sprint-layout sprint-layout-fallback ${sprintLayoutStyles.root} ${sprintLayoutStyles.fallback}`}
+      data-responsive-width={responsiveMode.width}
+      data-responsive-height={responsiveMode.height}
     >
       {header}
     </div>
@@ -124,10 +129,19 @@ export interface AppProps {
   game: GameHandle;
 }
 
-export default function App({ game }: AppProps) {
+export default function App(props: AppProps) {
+  return (
+    <ResponsiveModeProvider>
+      <AppContent {...props} />
+    </ResponsiveModeProvider>
+  );
+}
+
+function AppContent({ game }: AppProps) {
   const run = useRun(game);
   const { state, meta, lastRunReward, runSaveSummary } = run;
   const phase = state.phase;
+  const responsiveMode = useResponsiveMode();
   const audio = useAudio();
   const [formationOpen, setFormationOpen] = useState(false);
   const [metaShopOpen, setMetaShopOpen] = useState(false);
@@ -405,6 +419,8 @@ export default function App({ game }: AppProps) {
       className={`app ${diagnosisTone}${sprintLayout ? ` app-sprint-layout ${sprintLayoutStyles.appShell}` : ''}`}
       data-phase={phase}
       data-diagnosis={state.diagnosis}
+      data-responsive-width={responsiveMode.width}
+      data-responsive-height={responsiveMode.height}
     >
       {replayBanner}
       {!sprintLayout && sprintHeader}

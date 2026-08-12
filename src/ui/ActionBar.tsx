@@ -20,6 +20,7 @@ import { formatActionDefTags, formatActionTooltip } from '../render/eventOutcome
 import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
 import { EffectTagList } from './EffectTagList';
 import { ManagerPortrait } from './ManagerPortrait';
+import { useResponsiveMode } from './responsiveMode';
 
 const FEEDBACK_TTL_MS = 1000;
 
@@ -88,6 +89,7 @@ export function ActionBar({
   outcomeFeedback,
 }: ActionBarProps) {
   const { focus, config, cooldowns, comboGauge } = sprint;
+  const responsiveMode = useResponsiveMode();
   const stabilityRing = sprint.complete
     ? { active: false, remaining: 0, total: 0 }
     : deriveModifierRing(sprint, sprintTick, 'stability');
@@ -184,7 +186,12 @@ export function ActionBar({
   );
 
   return (
-    <footer className="actionbar" data-testid="action-bar">
+    <footer
+      className="actionbar"
+      data-testid="action-bar"
+      data-responsive-width={responsiveMode.width}
+      data-responsive-height={responsiveMode.height}
+    >
       <div className="focus">
         <div className="focus-icon">
           <ManagerPortrait />

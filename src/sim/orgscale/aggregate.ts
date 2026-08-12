@@ -98,7 +98,9 @@ export function companyScore(input: {
 /** 部門群を全社状態へ集約する（全社HUD。第4.8）。`base` は seed・予算・診断・基盤など。 */
 export function aggregateCompany(
   departments: DepartmentState[],
-  base: Pick<OrgScaleState, 'seed' | 'budget' | 'diagnosis' | 'infra'>,
+  base: Pick<OrgScaleState, 'seed' | 'budget' | 'diagnosis' | 'infra'> & {
+    securityLevel?: number;
+  },
 ): OrgScaleState {
   const teams = departments.flatMap((d) => d.teams);
   const shipping = departments.reduce((a, d) => a + d.shipping, 0);
@@ -117,6 +119,7 @@ export function aggregateCompany(
     aiDependency,
     techDebt,
     morale,
+    securityLevel: Math.round(base.securityLevel ?? 0),
     onFire,
     score: companyScore({ shipping, onFire, techDebt }),
     healthRank: healthRank({ morale, techDebt, aiDependency }),

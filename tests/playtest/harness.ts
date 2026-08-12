@@ -279,10 +279,17 @@ const COST_OPT_CARD_ID = 'ai-guideline';
 const COST_OPT_RELIC_ID = 'budget-discipline';
 
 /** RI-87: セキュリティ投資を載せた既存カード／レリック。 */
-const SECURITY_FOCUS_CARD_ID = 'auto-test';
-const SECURITY_FOCUS_RELIC_ID = 'postmortem';
 const SECURITY_FOCUS_CARD_IDS = ['auto-test', 'docs', 'static-analysis'] as const;
+const SECURITY_FOCUS_RELIC_IDS = ['postmortem', 'no-friday-deploy'] as const;
 const SECURITY_NEGLECT_CARD_IDS = ['copilot', 'claude-code', 'devin'] as const;
+
+function isSecurityFocusCard(id: string): boolean {
+  return (SECURITY_FOCUS_CARD_IDS as readonly string[]).includes(id);
+}
+
+function isSecurityFocusRelic(id: string): boolean {
+  return (SECURITY_FOCUS_RELIC_IDS as readonly string[]).includes(id);
+}
 
 /** `stateAware` 進化が参照する盤面（解放フェーズ到達時点）。 */
 export interface EvolveBoardCtx {
@@ -454,7 +461,7 @@ const DRAFT_PREFERENCE: Record<
   ai: ['copilot', 'claude-code', 'devin', 'ai-guideline'],
   quality: ['auto-test', 'pr-size-limit', 'docs', 'review-bot', 'hire-senior'],
   costOpt: [COST_OPT_CARD_ID, 'ai-guideline', 'copilot', 'claude-code'],
-  security: [...SECURITY_FOCUS_CARD_IDS, 'docs', 'static-analysis'],
+  security: SECURITY_FOCUS_CARD_IDS,
   securityNeglect: [...SECURITY_NEGLECT_CARD_IDS, 'feature-flags', 'copilot'],
 };
 
@@ -471,8 +478,8 @@ function pickDraft(offer: readonly string[], mode: PolicySpec['draft']): string 
   if (mode === 'securityNeglect') {
     const prefer = DRAFT_PREFERENCE.securityNeglect;
     return (
-      offer.find((id) => prefer.includes(id) && !SECURITY_FOCUS_CARD_IDS.includes(id as never)) ??
-      offer.find((id) => !SECURITY_FOCUS_CARD_IDS.includes(id as never)) ??
+      offer.find((id) => prefer.includes(id) && !isSecurityFocusCard(id)) ??
+      offer.find((id) => !isSecurityFocusCard(id)) ??
       offer[0]
     );
   }
@@ -1268,9 +1275,14 @@ export function playHand(
           })
         : mode === 'preferSecurity'
           ? [...hand].sort((a, b) => {
-              const aSec = s.deck[a]?.defId === SECURITY_FOCUS_CARD_ID ? 0 : 1;
-              const bSec = s.deck[b]?.defId === SECURITY_FOCUS_CARD_ID ? 0 : 1;
-              return aSec - bSec;
+              const aId = s.deck[a]?.defId ?? '';
+              const bId = s.deck[b]?.defId ?? '';
+              const aSec = isSecurityFocusCard(aId) ? 0 : 1;
+              const bSec = isSecurityFocusCard(bId) ? 0 : 1;
+              if (aSec !== bSec) return aSec - bSec;
+              const aAdd = getCard(aId)?.base?.securityAdd ?? 0;
+              const bAdd = getCard(bId)?.base?.securityAdd ?? 0;
+              return bAdd - aAdd;
             })
           : mode === 'preferDelivery'
             ? [...hand]
@@ -1782,14 +1794,14 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
     if (!relic || relic.bought) return;
     if (s.budget - relic.cost < reserve) return;
     if (avoidCostOpt && relic.id === COST_OPT_RELIC_ID) return;
-    if (avoidSecurity && relic.id === SECURITY_FOCUS_RELIC_ID) return;
+    if (avoidSecurity && isSecurityFocusRelic(relic.id)) return;
     if (preferCostOpt) {
       if (onlyPreferred && relic.id !== COST_OPT_RELIC_ID) return;
       if (!onlyPreferred && relic.id !== COST_OPT_RELIC_ID) return;
     }
     if (preferSecurity) {
-      if (onlyPreferred && relic.id !== SECURITY_FOCUS_RELIC_ID) return;
-      if (!onlyPreferred && relic.id !== SECURITY_FOCUS_RELIC_ID) return;
+      if (onlyPreferred && !isSecurityFocusRelic(relic.id)) return;
+      if (!onlyPreferred && !isSecurityFocusRelic(relic.id)) return;
     }
     e.buyShopRelic();
   };
@@ -1846,7 +1858,7 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
           !c.bought &&
           s.budget - c.cost >= reserve &&
           !(avoidCostOpt && c.defId === COST_OPT_CARD_ID) &&
-          !(avoidSecurity && SECURITY_FOCUS_CARD_IDS.includes(c.defId as never)),
+          !(avoidSecurity && isSecurityFocusCard(c.defId)),
       )
       .sort((a, b) => {
         if (preferCostOpt) {
@@ -1855,8 +1867,8 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
           if (aOpt !== bOpt) return aOpt - bOpt;
         }
         if (preferSecurity) {
-          const aSec = a.defId === SECURITY_FOCUS_CARD_ID ? 0 : 1;
-          const bSec = b.defId === SECURITY_FOCUS_CARD_ID ? 0 : 1;
+          const aSec = isSecurityFocusCard(a.defId) ? 0 : 1;
+          const bSec = isSecurityFocusCard(b.defId) ? 0 : 1;
           if (aSec !== bSec) return aSec - bSec;
         }
         return a.cost - b.cost;
@@ -1871,8 +1883,12 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
   if (preferCostOpt || preferSecurity) {
     const s = e.snapshot();
     const relic = s.shop?.relic;
-    const preferredId = preferCostOpt ? COST_OPT_RELIC_ID : SECURITY_FOCUS_RELIC_ID;
-    if (relic && !relic.bought && relic.id !== preferredId && s.budget - relic.cost >= reserve) {
+    const isPreferred = preferCostOpt
+      ? relic?.id === COST_OPT_RELIC_ID
+      : relic
+        ? isSecurityFocusRelic(relic.id)
+        : false;
+    if (relic && !relic.bought && !isPreferred && s.budget - relic.cost >= reserve) {
       e.buyShopRelic();
     }
   }

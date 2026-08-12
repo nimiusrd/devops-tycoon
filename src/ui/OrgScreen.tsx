@@ -93,6 +93,11 @@ export function OrgScreen({
         <Stat label="技術的負債" value={org.techDebt} />
         <Stat label="全社士気" value={org.morale} />
         <Stat
+          label="セキュリティ"
+          value={org.securityLevel}
+          tone={org.securityLevel < 50 ? 'warn' : undefined}
+        />
+        <Stat
           label="炎上中チーム"
           value={org.onFire}
           tone={org.onFire > 0 ? 'bad' : 'good'}

@@ -716,7 +716,7 @@ console.log('全体 勝利種別:', JSON.stringify(winTypes));
 console.log('全体 組織診断:', JSON.stringify(diagnoses));
 /**
  * F-10 のビルド差分方針。
- * - `aiFullBet` / `harness*` / `noAi` / `reviewHeavy`: harness の「ビルド差分（F-10）」節
+ * - `aiFullBet` / `harness*` / `noAi` / `reviewHeavy` / `security*`: harness の「ビルド差分（F-10）」節
  * - `skilledNoHire`: SPEC 想定の部分 AI / 少数精鋭ベースライン（ビルド比較の対照）
  * 固定介入検出や目標修正比較の方針は混ぜない。
  */
@@ -727,6 +727,8 @@ const F10_BUILD_POLICIES = new Set([
   'noAi',
   'reviewHeavy',
   'skilledNoHire',
+  'securityNeglect',
+  'securityFocus',
 ]);
 /**
  * 方針別 modal の事前定義標本・効果量規則。

@@ -12,6 +12,7 @@ import {
   securitySpreadMul,
 } from '../../../src/sim/model';
 import { createOrgState } from '../../../src/sim/org';
+import { deriveTeamCapacities } from '../../../src/sim/orgscale/teamState';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { OrgState, Task } from '../../../src/sim/types';
 import { POLICY_DEFS } from '../../playtest/harness';
@@ -145,5 +146,23 @@ describe('RI-87 セキュリティ軸', () => {
     expect(POLICY_DEFS.securityFocus.draft).toBe('security');
     expect(POLICY_DEFS.securityFocus.shop).toBe('buySecurity');
     expect(POLICY_DEFS.securityFocus.evolve).toBe('qualityFirst');
+  });
+
+  it('粗粒度の incidentBias はセキュリティが低いほど高い', () => {
+    const high = deriveTeamCapacities({
+      engineers: 4,
+      reviewQueue: 0,
+      incidents: 0,
+      quality: 50,
+      securityLevel: 80,
+    });
+    const low = deriveTeamCapacities({
+      engineers: 4,
+      reviewQueue: 0,
+      incidents: 0,
+      quality: 50,
+      securityLevel: 10,
+    });
+    expect(low.incidentBias).toBeGreaterThan(high.incidentBias);
   });
 });

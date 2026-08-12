@@ -1765,6 +1765,13 @@ export class RunEngine {
       stepped.aiAssisted,
       this.coarseIncidentCarry,
     );
+    // RI-87: 非選択チームの炎上も顧客信頼へ載せる（延焼相当として ignited を渡す）。
+    if (stepped.ignited > 0) {
+      const company = companyOrgFromTeams(this.teams, this.org);
+      this.applyTrust({
+        customers: securityCustomerTrustDelta(company.securityLevel, 0, stepped.ignited),
+      });
+    }
     // 炎上は四半期末 flush まで raw 累積（ステップ丸めで 0 固定にしない）。
     this.coarseIncidentCarry = delta.incidents + delta.incidentCarry;
     this.totals.delivered += delta.delivered;
@@ -1814,6 +1821,7 @@ export class RunEngine {
           reviewQueue: team.reviewQueue,
           incidents: team.incidents,
           quality: team.quality,
+          securityLevel: team.securityLevel,
         }),
       };
     }

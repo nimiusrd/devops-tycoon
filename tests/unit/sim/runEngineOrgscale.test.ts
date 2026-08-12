@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { RunEngine } from '../../../src/sim/run/engine';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
 import { diagnose } from '../../../src/sim/diagnosis';
+import { securityFragility } from '../../../src/sim/model';
 import {
   advanceCoarseTeams,
   assertDeptShippingInvariant,
@@ -334,7 +335,11 @@ describe('RunEngine: レバー', () => {
     const after = e.snapshot().teams.find((t) => t.id === 'platform-t1')!;
     expect(after.incidents).toBeLessThanOrEqual(before.incidents);
     expect(after.incidentBias).toBeLessThanOrEqual(
-      0.08 + after.incidents * 0.05 + (100 - after.quality) * 0.002 + 1e-9,
+      0.08 +
+        after.incidents * 0.05 +
+        (100 - after.quality) * 0.002 +
+        securityFragility(after.securityLevel) * 0.08 +
+        1e-9,
     );
     expect(after.reviewCapacity).toBe(
       Math.min(100, Math.max(10, 55 + after.engineers * 4 - after.reviewQueue * 2)),
@@ -458,7 +463,13 @@ describe('RunEngine: レバー', () => {
       if (team.id === 'product-t0') continue;
       const expected = Math.min(
         0.45,
-        Math.max(0.02, 0.08 + team.incidents * 0.05 + (100 - team.quality) * 0.002),
+        Math.max(
+          0.02,
+          0.08 +
+            team.incidents * 0.05 +
+            (100 - team.quality) * 0.002 +
+            securityFragility(team.securityLevel) * 0.08,
+        ),
       );
       expect(team.incidentBias).toBeCloseTo(expected, 8);
     }
@@ -577,6 +588,7 @@ describe('RunEngine: レバー', () => {
         aiDependencyAdd: number;
         qualityAdd: number;
         testCoverageAdd: number;
+        securityAdd: number;
       }) => void;
     };
     internals.applyCompanyBaseline({
@@ -584,12 +596,19 @@ describe('RunEngine: レバー', () => {
       aiDependencyAdd: 0,
       qualityAdd: 20,
       testCoverageAdd: 0,
+      securityAdd: 0,
     });
     const after = e.snapshot().teams.find((t) => t.id === 'platform-t0')!;
     expect(after.quality).toBe(Math.min(100, before.quality + 20));
     const expected = Math.min(
       0.45,
-      Math.max(0.02, 0.08 + after.incidents * 0.05 + (100 - after.quality) * 0.002),
+      Math.max(
+        0.02,
+        0.08 +
+          after.incidents * 0.05 +
+          (100 - after.quality) * 0.002 +
+          securityFragility(after.securityLevel) * 0.08,
+      ),
     );
     expect(after.incidentBias).toBeCloseTo(expected, 8);
   });

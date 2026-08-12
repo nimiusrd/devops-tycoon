@@ -73,6 +73,7 @@ function minimalCompany(overrides: Partial<OrgScaleState> = {}): OrgScaleState {
     budget: 100,
     score: 1000,
     healthRank: 'A',
+    securityLevel: 60,
   };
   return { ...base, ...overrides, infra: { ...base.infra, ...(overrides.infra ?? {}) } };
 }

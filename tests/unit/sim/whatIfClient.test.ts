@@ -344,6 +344,12 @@ describe('RI-91-C2 whatIfCacheKey / whatIfClient survived mutants', () => {
         }),
       },
       {
+        label: 'org.securityLevel',
+        input: directWhatIfInput({
+          org: { ...base.org, securityLevel: base.org.securityLevel + 1 },
+        }),
+      },
+      {
         label: 'org.aiEnabled',
         input: directWhatIfInput({ org: { ...base.org, aiEnabled: false } }),
       },

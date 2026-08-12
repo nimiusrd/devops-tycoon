@@ -30,6 +30,7 @@ export type StatusMetricId =
   | 'devSpeed'
   | 'reviewCapacity'
   | 'quality'
+  | 'security'
   | 'seniorHp'
   | 'aiDependency'
   | 'techDebt'
@@ -46,6 +47,8 @@ export interface StatusView {
   reviewCapacity: Grade;
   /** 品質。 */
   quality: Grade;
+  /** セキュリティ水準 0..100（RI-87）。 */
+  securityLevel: number;
   /** シニア体力（%）。 */
   seniorHpPct: number;
   /** AI依存度（%）。 */
@@ -153,7 +156,8 @@ export type HudMetricKey =
   | 'seniorHpPct'
   | 'aiDependencyPct'
   | 'techDebt'
-  | 'morale';
+  | 'morale'
+  | 'securityLevel';
 
 export type HudFeedbackTone = 'positive' | 'negative';
 
@@ -184,6 +188,7 @@ const HUD_METRIC_LABELS: Record<HudMetricKey, string> = {
   aiDependencyPct: 'AI依存度',
   techDebt: '技術的負債',
   morale: '士気',
+  securityLevel: 'セキュリティ',
 };
 
 /** 値が増えるほど悪化する HUD 指標。 */
@@ -229,6 +234,7 @@ export function deriveStatusParts(org: OrgState, tasks: Task[]): StatusView {
     devSpeed: org.aiEnabled ? 'S' : 'B',
     reviewCapacity: gradeOf(org.seniorHp),
     quality: gradeOf(org.quality),
+    securityLevel: Math.round(org.securityLevel),
     seniorHpPct: Math.round(org.seniorHp),
     aiDependencyPct: Math.round(org.aiDependency),
     techDebt: org.techDebt,
@@ -282,6 +288,7 @@ export function deriveHudStatusParts(
     aiDependencyPct: orgScale.aiDependency,
     techDebt: orgScale.techDebt,
     morale: orgScale.morale,
+    securityLevel: orgScale.securityLevel,
   };
 }
 
@@ -397,6 +404,28 @@ export function deriveHudMetrics(
       help: '品質が高いほど手戻りや障害が起きにくくなります。',
     },
     {
+      id: 'security',
+      feedbackKey: 'securityLevel',
+      label: 'セキュリティ',
+      icon: '🔐',
+      value: s.securityLevel,
+      unit: '',
+      direction: 'higher-better',
+      directionLabel: HIGHER_BETTER,
+      tone: higherBetterTone(s.securityLevel, 50, 25),
+      detail:
+        s.securityLevel < 50
+          ? '危険帯・事故規模と顧客信頼の下振れが増える'
+          : '無効果帯・検証投資で下振れを抑える',
+      warningChip:
+        s.securityLevel < 25
+          ? 'セキュリティ危険'
+          : s.securityLevel < 50
+            ? 'セキュリティ注意'
+            : undefined,
+      help: 'セキュリティ水準が50を下回ると事故率・延焼コスト・顧客信頼の下振れが増えます。自動テストや品質進化で上げ、速度偏重で下がります。',
+    },
+    {
       id: 'seniorHp',
       feedbackKey: 'seniorHpPct',
       label: 'シニア体力',
@@ -468,6 +497,7 @@ export function hudMetricSnapshot(status: StatusView): HudMetricSnapshot {
     aiDependencyPct: status.aiDependencyPct,
     techDebt: status.techDebt,
     morale: status.morale,
+    securityLevel: status.securityLevel,
   };
 }
 

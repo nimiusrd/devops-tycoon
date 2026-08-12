@@ -30,6 +30,7 @@ import {
   quadDashPolylines,
   quadEndAngleDeg,
   quadPointAt,
+  teamMiniRenderScale,
   teamFloorColor,
   teamZoomTransform,
   zoomTransformAt,
@@ -389,7 +390,7 @@ function layoutTeamBanner(parts: TeamParts, plan: DeptTeamPlan): void {
   parts.bannerSubtitle.position.set(-parts.bannerSubtitle.width / 2, y);
   y += parts.bannerSubtitle.height + 3;
   parts.bannerTagBg.roundRect(-tagW / 2, y, tagW, tagH, tagH / 2).fill(tone.tagBg);
-  parts.bannerTag.position.set(-parts.bannerTag.width / 2, y + 1);
+  parts.bannerTag.position.set(-parts.bannerTag.width / 2, y + BANNER.tagPaddingY);
   y += tagH;
   if (plan.chained) {
     parts.bannerChain.position.set(-parts.bannerChain.width / 2, y + 4);
@@ -668,7 +669,7 @@ export class PixiDeptRenderer implements RendererAdapter<DepartmentState> {
       const parts = getParts(group);
 
       parts.mini.position.set(plan.x, plan.y);
-      parts.mini.scale.set(plan.scale);
+      parts.mini.scale.set(teamMiniRenderScale(plan.scale));
       layoutTeamMini(parts, plan, deptColor);
       this.syncTeamAvatars(parts, plan);
       layoutTeamBanner(parts, plan);

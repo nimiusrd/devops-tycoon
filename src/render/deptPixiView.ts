@@ -179,6 +179,12 @@ export function teamFloorColor(health: TeamHealth): string {
   return VISUAL_TOKENS.colors.department.floorHealthy;
 }
 
+/** DOM の SVG 表示幅（layoutW）と Pixi の SVG ローカル幅（svgW）を揃える倍率。 */
+export function teamMiniRenderScale(planScale: number): number {
+  const { layoutW, svgW } = VISUAL_TOKENS.dimensions.department.teamMini;
+  return planScale * (svgW > 0 ? layoutW / svgW : 1);
+}
+
 /**
  * 粒の山オフセット（DOM `pileDots` と同値: 4 個/行・上限 12・9px 段積み）。
  * 返り値はアンカー中心からの相対座標と半径。

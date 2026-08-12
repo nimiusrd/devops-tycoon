@@ -61,13 +61,19 @@ describe('visual tokens', () => {
     expect(values['--visual-color-flow-hot']).toBe(VISUAL_TOKENS.colors.flow.hot);
     expect(values['--visual-color-task-glow-ai']).toBe(VISUAL_TOKENS.colors.taskGlow.ai);
     expect(values['--visual-dept-flow-dash']).toBe('6');
+    expect(values['--visual-org-card-line-gap']).toBe('2px');
     expect(values['--visual-dept-banner-padding-x']).toBe('12px');
     expect(values['--visual-color-banner-hell-text']).toBe(
       VISUAL_TOKENS.colors.bannerTone.hell.text,
     );
+    expect(values['--visual-color-banner-warn-border-alpha']).toBe('100%');
+    expect(values['--visual-color-banner-warn-text']).toBe(
+      VISUAL_TOKENS.colors.bannerTone.warn.text,
+    );
     expect(values['--visual-color-banner-ok-bg-alpha']).toBe('93%');
     expect(values['--visual-color-banner-warn-bg-alpha']).toBe('93%');
     expect(values['--visual-color-banner-hell-bg-alpha']).toBe('93%');
+    expect(values['--visual-color-interaction-drag']).toBe(VISUAL_TOKENS.colors.interaction.drag);
 
     const applied = new Map<string, string>();
     const root = {

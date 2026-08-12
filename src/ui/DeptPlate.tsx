@@ -58,12 +58,20 @@ export function DeptPlate({ plate }: { plate: DeptPlatePlan }) {
           <stop offset="1" stopColor="#120819" />
         </linearGradient>
         <radialGradient id="dept-okglow" cx="0.5" cy="0.42" r="0.7">
-          <stop offset="0" stopColor="#57e08f" stopOpacity=".12" />
-          <stop offset="1" stopColor="#57e08f" stopOpacity="0" />
+          <stop
+            offset="0"
+            stopColor={VISUAL_TOKENS.colors.department.glowHealthy}
+            stopOpacity=".12"
+          />
+          <stop
+            offset="1"
+            stopColor={VISUAL_TOKENS.colors.department.glowHealthy}
+            stopOpacity="0"
+          />
         </radialGradient>
         <radialGradient id="dept-hellglow" cx="0.5" cy="0.42" r="0.7">
-          <stop offset="0" stopColor="#ff3b30" stopOpacity=".18" />
-          <stop offset="1" stopColor="#ff3b30" stopOpacity="0" />
+          <stop offset="0" stopColor={VISUAL_TOKENS.colors.department.glowHell} stopOpacity=".18" />
+          <stop offset="1" stopColor={VISUAL_TOKENS.colors.department.glowHell} stopOpacity="0" />
         </radialGradient>
         <clipPath id="dept-floorclip">
           <path d={DEPT_FLOOR_PATH} />

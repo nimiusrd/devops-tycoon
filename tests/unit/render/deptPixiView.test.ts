@@ -14,11 +14,13 @@ import {
   quadDashPolylines,
   quadEndAngleDeg,
   quadPointAt,
+  teamMiniRenderScale,
   teamFloorColor,
   teamZoomTransform,
   zoomTransformAt,
 } from '../../../src/render/deptPixiView';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
+import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import { aggregateDepartment } from '../../../src/sim/orgscale/aggregate';
 import type { DepartmentState, Team } from '../../../src/sim/orgscale/types';
 
@@ -167,6 +169,16 @@ describe('teamFloorColor / pileDotOffsets', () => {
     const many = pileDotOffsets(20);
     expect(many.length).toBe(12);
     expect(many.every((d) => d.r === 5)).toBe(true);
+  });
+});
+
+describe('teamMiniRenderScale', () => {
+  it('DOM の layoutW と SVG viewBox 幅を Pixi の倍率へ反映する', () => {
+    expect(teamMiniRenderScale(0.72)).toBeCloseTo(
+      0.72 *
+        (VISUAL_TOKENS.dimensions.department.teamMini.layoutW /
+          VISUAL_TOKENS.dimensions.department.teamMini.svgW),
+    );
   });
 });
 

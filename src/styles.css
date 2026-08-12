@@ -2001,7 +2001,7 @@ body {
 }
 .task-dot.draggable {
   cursor: grab;
-  outline: 2px solid #7bdcffaa;
+  outline: 2px solid color-mix(in srgb, var(--visual-color-interaction-drag) 67%, transparent);
   z-index: 9;
 }
 .task-dot.dragging {
@@ -2010,7 +2010,7 @@ body {
   z-index: 12;
 }
 .station.drop-target {
-  outline: 2px dashed #7bdcff88;
+  outline: 2px dashed color-mix(in srgb, var(--visual-color-interaction-drag) 53%, transparent);
   outline-offset: 6px;
   border-radius: 12px;
 }
@@ -5390,7 +5390,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--visual-org-card-line-gap);
   padding: var(--visual-org-card-padding-y) var(--visual-org-card-padding-x);
   border-radius: var(--visual-org-card-radius);
   border: 2px solid var(--line);
@@ -5566,7 +5566,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
     var(--visual-dept-banner-padding-bottom);
   font-size: 13px;
   font-weight: 900;
-  color: var(--cream);
+  color: var(--visual-color-banner-ok-text);
   white-space: nowrap;
   text-align: center;
   box-shadow: 0 3px 0 #00000055;
@@ -5597,19 +5597,28 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--visual-color-banner-ok-tag-text);
 }
 .dept-team-banner.tone-warn {
-  border-color: var(--visual-color-banner-warn-border);
+  border-color: color-mix(
+    in srgb,
+    var(--visual-color-banner-warn-border) var(--visual-color-banner-warn-border-alpha),
+    transparent
+  );
   background: color-mix(
     in srgb,
     var(--visual-color-banner-warn-bg) var(--visual-color-banner-warn-bg-alpha),
     transparent
   );
+  color: var(--visual-color-banner-warn-text);
 }
 .dept-team-banner.tone-warn .dept-team-tag {
   background: var(--visual-color-banner-warn-tag-bg);
   color: var(--visual-color-banner-warn-tag-text);
 }
 .dept-team-banner.tone-hell {
-  border-color: var(--visual-color-banner-hell-border);
+  border-color: color-mix(
+    in srgb,
+    var(--visual-color-banner-hell-border) var(--visual-color-banner-hell-border-alpha),
+    transparent
+  );
   background: color-mix(
     in srgb,
     var(--visual-color-banner-hell-bg) var(--visual-color-banner-hell-bg-alpha),

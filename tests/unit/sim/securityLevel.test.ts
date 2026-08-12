@@ -8,13 +8,18 @@ import {
   IDENTITY_CARD_EFFECTS,
   incidentProbability,
   securityCustomerTrustDelta,
+  securityCustomerTrustFromRaw,
+  securityCustomerTrustSpreadRaw,
+  securityFragility,
   securityIncidentRateBonus,
   securitySpreadMul,
 } from '../../../src/sim/model';
 import { createOrgState } from '../../../src/sim/org';
-import { deriveTeamCapacities } from '../../../src/sim/orgscale/teamState';
+import { deriveTeamCapacities, projectOrgScale } from '../../../src/sim/orgscale/teamState';
+import { emptyAdjustState } from '../../../src/sim/orgscale/levers';
+import type { TeamRunState } from '../../../src/sim/orgscale/types';
 import { RunEngine } from '../../../src/sim/run/engine';
-import type { OrgState, Task } from '../../../src/sim/types';
+import type { OrgState, SprintMetrics, Task } from '../../../src/sim/types';
 import { POLICY_DEFS } from '../../playtest/harness';
 
 function org(securityLevel: number, overrides: Partial<OrgState> = {}): OrgState {
@@ -164,5 +169,94 @@ describe('RI-87 セキュリティ軸', () => {
       securityLevel: 10,
     });
     expect(low.incidentBias).toBeGreaterThan(high.incidentBias);
+  });
+
+  it('全社セキュリティ集約は選択中チームのライブ値を使う', () => {
+    const team = (id: string, securityLevel: number): TeamRunState => ({
+      id,
+      deptId: 'product',
+      name: id,
+      engineers: 4,
+      headcount: 4,
+      aiLiteracy: 50,
+      aiDependency: 30,
+      morale: 70,
+      techDebt: 10,
+      shipping: 0,
+      reviewQueue: 0,
+      incidents: 0,
+      reviewCapacity: 70,
+      incidentBias: 0.08,
+      seniorHp: 80,
+      aiEnabled: true,
+      testCoverage: 50,
+      documentation: 40,
+      quality: 60,
+      securityLevel,
+    });
+    const scale = projectOrgScale({
+      seed: 'ri87-live-sec',
+      teams: [team('product-t0', 80), team('product-t1', 80)],
+      homeTeamId: 'product-t0',
+      activeTeamId: 'product-t0',
+      activeLive: { securityLevel: 20 },
+      diagnosis: 'seniorSacrifice',
+      budget: 20,
+      infraBase: { ci: 50, docs: 40, aiGuideline: 50 },
+      adjust: emptyAdjustState(),
+    });
+    expect(scale.securityLevel).toBe(50);
+  });
+
+  it('旧セーブの securityLevel 補完後に incidentBias を再計算する', () => {
+    const e = new RunEngine({ seed: 'ri87-hydrate-bias', difficulty: 'normal' });
+    e.startRun();
+    const persist = e.exportPersistState()!;
+    const other = persist.extras.teams.find((t) => t.id !== persist.extras.activeTeamId)!;
+    delete (other as { securityLevel?: number }).securityLevel;
+    other.quality = 20;
+    other.incidents = 0;
+    other.incidentBias = 0.08 + (100 - 20) * 0.002;
+    const restored = new RunEngine({ seed: 'ri87-hydrate-bias', difficulty: 'normal' });
+    restored.hydratePersistState(persist);
+    const team = restored.snapshot().teams.find((t) => t.id === other.id)!;
+    expect(team.securityLevel).toBe(20);
+    expect(team.incidentBias).toBeCloseTo(
+      deriveTeamCapacities({
+        engineers: team.engineers,
+        reviewQueue: team.reviewQueue,
+        incidents: team.incidents,
+        quality: team.quality,
+        securityLevel: 20,
+      }).incidentBias,
+      8,
+    );
+  });
+
+  it('顧客信頼ペナルティは延焼発生時の水準で確定する', () => {
+    const e = new RunEngine({ seed: 'ri87-trust-at-spread', difficulty: 'nightmare' });
+    e.startRun();
+    const before = e.snapshot().stakeholderTrust.customers;
+    const internals = e as unknown as {
+      applyIncidentTrustPenalty: (r: { incidents: number; spread: number }) => void;
+      org: OrgState;
+      sprint: { metrics: Partial<SprintMetrics> } | null;
+    };
+    internals.org.securityLevel = 90;
+    internals.sprint = {
+      metrics: {
+        spread: 1,
+        securityTrustSpreadRaw: securityCustomerTrustSpreadRaw(10),
+        securityTrustIncidentFragility: securityFragility(10),
+      },
+    };
+    internals.applyIncidentTrustPenalty({ incidents: 2, spread: 1 });
+    const atSpread = e.snapshot().stakeholderTrust.customers - before;
+    expect(atSpread).toBe(
+      securityCustomerTrustFromRaw(
+        securityCustomerTrustSpreadRaw(10) + 2 * 0.5 * securityFragility(10),
+      ),
+    );
+    expect(atSpread).toBeLessThan(securityCustomerTrustDelta(90, 2, 1));
   });
 });

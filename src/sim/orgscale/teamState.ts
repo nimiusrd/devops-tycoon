@@ -788,7 +788,13 @@ export interface ProjectOrgScaleInput {
   activeLive?: Partial<
     Pick<
       TeamRunState,
-      'reviewQueue' | 'incidents' | 'shipping' | 'morale' | 'techDebt' | 'aiDependency'
+      | 'reviewQueue'
+      | 'incidents'
+      | 'shipping'
+      | 'morale'
+      | 'techDebt'
+      | 'aiDependency'
+      | 'securityLevel'
     >
   > & { engineers?: number; aiAssignedCount?: number };
   adjust?: OrgAdjustState;
@@ -859,7 +865,13 @@ export function projectOrgScale(input: ProjectOrgScaleInput): OrgScaleState {
     input.teams.length === 0
       ? 0
       : Math.round(
-          input.teams.reduce((a, t) => a + (t.securityLevel ?? t.quality), 0) / input.teams.length,
+          input.teams.reduce((a, t) => {
+            const live =
+              t.id === input.activeTeamId && typeof input.activeLive?.securityLevel === 'number'
+                ? input.activeLive.securityLevel
+                : (t.securityLevel ?? t.quality);
+            return a + live;
+          }, 0) / input.teams.length,
         );
 
   return aggregateCompany(departments, {
@@ -895,6 +907,7 @@ export function activeLiveFromOrg(args: {
     morale: Math.round(args.org.morale),
     techDebt: Math.round(args.org.techDebt),
     shipping: Math.round(args.org.deliveryScore),
+    securityLevel: Math.round(args.org.securityLevel),
     engineers: args.engineers,
     aiAssignedCount: args.aiAssignedCount,
   };

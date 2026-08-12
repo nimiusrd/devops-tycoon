@@ -228,6 +228,17 @@ export function securitySpreadMul(securityLevel: number): number {
  * 鎮火できた事故だけでは下げず、延焼（規模の顕在化）で下振れする。
  * 水準が高いほど下振れを抑える。
  */
+/** 延焼1件ぶんの顧客信頼 raw（発生時点の水準で積む。RI-87）。 */
+export function securityCustomerTrustSpreadRaw(securityLevel: number): number {
+  return 2 * securityFragility(securityLevel);
+}
+
+/** 蓄積 raw を顧客信頼デルタへ確定する（負が低下）。 */
+export function securityCustomerTrustFromRaw(raw: number): number {
+  if (raw < 0.5) return 0;
+  return -Math.ceil(raw);
+}
+
 export function securityCustomerTrustDelta(
   securityLevel: number,
   incidents: number,
@@ -235,9 +246,7 @@ export function securityCustomerTrustDelta(
 ): number {
   if (spread <= 0) return 0;
   const exposure = Math.max(0, spread) * 2 + Math.max(0, incidents) * 0.5;
-  const raw = exposure * securityFragility(securityLevel);
-  if (raw < 0.5) return 0;
-  return -Math.ceil(raw);
+  return securityCustomerTrustFromRaw(exposure * securityFragility(securityLevel));
 }
 
 /**

@@ -28,6 +28,8 @@ import {
   decideAiAssisted,
   incidentProbability,
   reviewPerTick,
+  securityCustomerTrustSpreadRaw,
+  securityFragility,
   securitySpreadMul,
   reworkProbability,
   reworkProgressPerTick,
@@ -412,6 +414,11 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
     // 延焼: 負債と士気に波及し、Review 待ちの先頭 PR へ燃え移る（延焼の連鎖。第18.2）。
     // RI-87: セキュリティ水準が低いほど延焼コストが増える。
     m.spread += 1;
+    m.securityTrustSpreadRaw =
+      (m.securityTrustSpreadRaw ?? 0) + securityCustomerTrustSpreadRaw(org.securityLevel);
+    if (m.securityTrustIncidentFragility === undefined) {
+      m.securityTrustIncidentFragility = securityFragility(org.securityLevel);
+    }
     task.debt = true;
     const spreadMul = securitySpreadMul(org.securityLevel);
     org.techDebt += Math.ceil(DEBT_PER_SPREAD * spreadMul);

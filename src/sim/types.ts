@@ -386,6 +386,13 @@ export interface SprintMetrics {
   autoContainCount: number;
   /** 延焼した障害数。 */
   spread: number;
+  /**
+   * 延焼発生時点のセキュリティ脆弱度を積んだ顧客信頼 raw（RI-87）。
+   * 終了時の水準で再評価せず、発生時のコストと揃える。
+   */
+  securityTrustSpreadRaw?: number;
+  /** 最初の延焼時点の脆弱度（事故項に使う。RI-87）。 */
+  securityTrustIncidentFragility?: number;
   /** AI 利用で Done に至ったタスク数。 */
   aiAssistedCompleted: number;
   /** Done に至ったタスク数（aiAssistedPct の母数）。 */

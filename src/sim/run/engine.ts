@@ -69,7 +69,12 @@ import type {
   SprintResult,
   SprintState,
 } from '../types';
-import { IDENTITY_CARD_EFFECTS, securityCustomerTrustDelta } from '../model';
+import {
+  IDENTITY_CARD_EFFECTS,
+  securityCustomerTrustDelta,
+  securityCustomerTrustFromRaw,
+  securityFragility,
+} from '../model';
 import {
   activeLiveFromOrg,
   advanceCoarseTeams,
@@ -850,11 +855,16 @@ export class RunEngine {
    * セキュリティ水準が高いほど下振れを抑える。
    */
   private applyIncidentTrustPenalty(result: SprintResult): void {
-    const delta = securityCustomerTrustDelta(
-      this.org.securityLevel,
-      result.incidents,
-      result.spread,
-    );
+    const m = this.sprint?.metrics;
+    const delta =
+      result.spread > 0 && m && typeof m.securityTrustSpreadRaw === 'number'
+        ? securityCustomerTrustFromRaw(
+            m.securityTrustSpreadRaw +
+              Math.max(0, result.incidents) *
+                0.5 *
+                (m.securityTrustIncidentFragility ?? securityFragility(this.org.securityLevel)),
+          )
+        : securityCustomerTrustDelta(this.org.securityLevel, result.incidents, result.spread);
     if (delta !== 0) this.applyTrust({ customers: delta });
   }
 
@@ -2273,9 +2283,11 @@ export class RunEngine {
     // RI-64: チーム状態（旧セーブは seed から補完）。
     if (Array.isArray(cloned.extras.teams) && cloned.extras.teams.length > 0) {
       this.teams = structuredClone(cloned.extras.teams);
-      this.teams = this.teams.map((t) =>
-        typeof t.securityLevel === 'number' ? t : { ...t, securityLevel: clamp(t.quality, 0, 100) },
-      );
+      this.teams = this.teams.map((t) => {
+        if (typeof t.securityLevel === 'number') return t;
+        const next = { ...t, securityLevel: clamp(t.quality, 0, 100) };
+        return { ...next, ...deriveTeamCapacities(next) };
+      });
       this.activeTeamId = cloned.extras.activeTeamId ?? HOME_TEAM_ID;
       this.homeTeamId = cloned.extras.homeTeamId ?? HOME_TEAM_ID;
       this.teamLockUntilSprint = cloned.extras.teamLockUntilSprint ?? 0;

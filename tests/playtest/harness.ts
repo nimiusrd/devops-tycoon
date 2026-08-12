@@ -109,6 +109,13 @@ export interface PolicySpec {
     | 'qualityFirst'
     | 'stateAware';
   /**
+   * 1進化フェーズで解放するノード数の上限。未指定はポイントを使い切る（従来契約）。
+   *
+   * F-11 の方向確定標本 `skilledStateEvolve` だけが設定する。希少性標本（代表4方針）は
+   * 使い切りのまま測り、方向確定はこの契約付き方針の結果として report で分離する。
+   */
+  maxEvolutionUnlocksPerPhase?: number;
+  /**
    * ドラフトの選び方。`first` は提示順の先頭。
    * それ以外は該当キーワードを含むカードを優先し、無ければ先頭を取る。
    * `costOpt` / `aiBloated` は RI-88 のインフラコスト軸用。
@@ -279,6 +286,12 @@ export interface EvolveBoardCtx {
   reviewQueuePeak: number;
   /** 既に解放済みのノード ID（同一ブランチへ張り付くのを避けるために使う）。 */
   unlocked: readonly string[];
+  /**
+   * 今の進化フェーズで既に解放したノード ID。
+   * multiPhase 確定のため、同一フェーズでの同ブランチ深化を抑え、
+   * 前スプリントから持ち越した1ノードへの sticky 継続だけを促す。
+   */
+  unlockedThisPhase?: readonly string[];
 }
 
 /**
@@ -295,9 +308,11 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
     culture: 0,
     dev: 0,
   };
-  const { org, totals, reviewQueuePeak, unlocked } = ctx;
+  const { org, totals, reviewQueuePeak, unlocked, unlockedThisPhase = [] } = ctx;
   const unlockedCount = (branch: EvolutionBranch): number =>
     unlocked.filter((id) => id.startsWith(`${branch}-`)).length;
+  const phaseCount = (branch: EvolutionBranch): number =>
+    unlockedThisPhase.filter((id) => id.startsWith(`${branch}-`)).length;
 
   // キュー高止まりは実ランでほぼ共通なので、主信号はシニアHPの危機度。
   // 旧実装は peak>=10 で +4 かつ HP<40 で +3 と重なり、全コホートが review 固定になっていた。
@@ -328,21 +343,54 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
   if (totals.completed >= 5 && totals.delivered < totals.completed * 5) scores.dev += 3;
   else if (totals.delivered < 50 && totals.completed >= 5) scores.dev += 2;
 
-  // 既取得ブランチの減点。
-  // 同一進化フェーズでの連続取得は playtest-report の commitInQ1 が
-  // multiPhase（複数 sprintIndex）を要求するため確定扱いにしない。
-  // 1ノード目から -2 すると中強度の quality/ai/culture が2スプリント目で曲がり、
-  // 継続方向が review（強い危機信号）一択になるため、n≥1 は弱い減点に留める。
-  // n≥2 以降は確定後の横展開を促すため従来どおり強く減点する。
+  // 既取得ブランチの減点と、方向確定（厳密過半 + multiPhase）向けの集中。
+  // commitInQ1 は同一フェーズの2段買いだけでは確定としない。ポイントを使い切る
+  // 前提では序盤に全ブランチへ1ノードずつ散ると過半が組めないため、
+  // 選んだブランチは同一フェーズで2ノードまで深化し、3ノード目は次スプリントへ残す。
+  // 前スプリント持ち越しの1〜2ノードには sticky を足して横断継続する。
+  // multiPhase が揃ったあとの n≥2 は横展開のため強く減点する。
+  //
+  // 今フェーズで2段取ったブランチは基礎スコアに依存せず候補外にする。
+  // quality 危機帯（基礎6）では -5 でも先頭に残って先端まで同フェーズ取得し得るため。
+  const STICKY_BONUS = 2.5;
+  /** 前フェーズ2段→今フェーズで先端を取るための上書き。危機帯信号 (+4〜5.5) を超える。 */
+  const STICKY_TIP_BONUS = 6;
+  const SAME_PHASE_DEEPEN_BONUS = 2.5;
+  const tipReserved = new Set<EvolutionBranch>();
   for (const b of Object.keys(scores) as EvolutionBranch[]) {
     const n = unlockedCount(b);
-    if (n >= 3) scores[b] -= 5;
-    else if (n >= 2) scores[b] -= 3;
-    else if (n >= 1) scores[b] -= 0.5;
+    const phaseN = phaseCount(b);
+    const priorN = n - phaseN;
+    if (phaseN >= 2) {
+      tipReserved.add(b);
+      scores[b] = Number.NEGATIVE_INFINITY;
+      continue;
+    }
+    if (n >= 3) {
+      scores[b] -= 5;
+    } else if (n >= 2) {
+      if (priorN >= 1 && phaseN >= 1) {
+        // 既に複数スプリントにまたがる2ノード — 確定後の横展開。
+        scores[b] -= 3;
+      } else if (priorN >= 2 && phaseN === 0) {
+        // 前フェーズで2段まで買ったブランチを次スプリントで触り multiPhase を成立させる。
+        scores[b] += STICKY_TIP_BONUS;
+      } else {
+        scores[b] -= 0.5;
+      }
+    } else if (n >= 1) {
+      scores[b] -= 0.5;
+      if (phaseN >= 1) scores[b] += SAME_PHASE_DEEPEN_BONUS;
+      else scores[b] += STICKY_BONUS;
+    }
   }
 
   // どれも閾値未達なら、相対的に弱い柱へ寄せる（常に review 固定になるのを防ぐ）。
-  if (Math.max(...Object.values(scores)) <= 0) {
+  // 先端予約済みブランチは候補に戻さない。
+  const activeScores = (Object.keys(scores) as EvolutionBranch[]).filter(
+    (b) => !tipReserved.has(b),
+  );
+  if (activeScores.length > 0 && Math.max(...activeScores.map((b) => scores[b])) <= 0) {
     const weakness: Record<EvolutionBranch, number> = {
       review: 100 - org.seniorHp,
       quality: org.techDebt + (100 - org.testCoverage) * 0.5,
@@ -350,14 +398,15 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
       culture: 100 - org.morale + (100 - org.quality) * 0.3,
       dev: Math.max(0, 120 - totals.delivered),
     };
-    let best: EvolutionBranch = 'review';
-    for (const b of Object.keys(weakness) as EvolutionBranch[]) {
+    let best = activeScores[0]!;
+    for (const b of activeScores) {
       if (weakness[b] > weakness[best]) best = b;
     }
     scores[best] += 1;
   }
 
   // 同点時の安定したタイブレーク（レビュー → 品質 → …）。スコア差を上書きしない微小量。
+  // 先端予約済みブランチは順序から除外する（末尾へ残すと、他が買えないとき3段目が選ばれる）。
   const tie: Record<EvolutionBranch, number> = {
     review: 0.05,
     quality: 0.04,
@@ -365,9 +414,7 @@ export function stateAwareEvolveBranches(ctx: EvolveBoardCtx): EvolutionBranch[]
     culture: 0.02,
     dev: 0.01,
   };
-  return (Object.keys(scores) as EvolutionBranch[]).sort(
-    (a, b) => scores[b] + tie[b] - (scores[a] + tie[a]),
-  );
+  return activeScores.sort((a, b) => scores[b] + tie[b] - (scores[a] + tie[a]));
 }
 
 function evolutionOrder(mode: PolicySpec['evolve'], ctx?: EvolveBoardCtx): readonly string[] {
@@ -620,7 +667,15 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    * RI-86 / F-11 用。`skilledNoHire` と同じ介入・カードだが、進化ブランチを盤面で選ぶ。
    * 固定順方針では方向の確定時期を測れないため、この方針で commit 時期を観測する。
    */
-  skilledStateEvolve: { ...skilledBase(), evolve: 'stateAware' },
+  /**
+   * RI-86 / F-11 方向確定用。盤面依存ブランチ選択に加え、1フェーズ最大3解放
+   * （余り持ち越し）を契約とする。希少性は代表4方針の使い切り契約で別計測する。
+   */
+  skilledStateEvolve: {
+    ...skilledBase(),
+    evolve: 'stateAware',
+    maxEvolutionUnlocksPerPhase: 3,
+  },
 };
 
 /** 介入の試行結果内訳（RI-78 の「発動可能だった回数」測定用）。 */
@@ -1991,7 +2046,14 @@ export function runOnce(
                   unlocked: Object.keys(snap.evolution.unlocked),
                 });
           let spent = 0;
-          while (e.snapshot().evolution.points > 0 && spent < 16) {
+          const unlockedThisPhase: string[] = [];
+          // 既定はポイント使い切り。`maxEvolutionUnlocksPerPhase` がある方針だけ上限で止める。
+          const maxUnlocksThisPhase = spec.maxEvolutionUnlocksPerPhase ?? 16;
+          while (
+            e.snapshot().evolution.points > 0 &&
+            spent < 16 &&
+            unlockedThisPhase.length < maxUnlocksThisPhase
+          ) {
             const beforeSnap = e.snapshot();
             const before = beforeSnap.evolution.points;
             const beforeIds = new Set(Object.keys(beforeSnap.evolution.unlocked));
@@ -2002,8 +2064,16 @@ export function runOnce(
                 totals: beforeSnap.totals,
                 reviewQueuePeak: recentPeak,
                 unlocked: Object.keys(beforeSnap.evolution.unlocked),
+                unlockedThisPhase,
               });
             for (const id of order) {
+              // 先端予約ガードは stateAware のみ。固定順方針は従来どおり3段まで進める。
+              if (spec.evolve === 'stateAware') {
+                const branch = id.split('-')[0] ?? '';
+                if (unlockedThisPhase.filter((x) => x.startsWith(`${branch}-`)).length >= 2) {
+                  continue;
+                }
+              }
               e.unlockEvolution(id);
               if (e.snapshot().evolution.points < before) break;
             }
@@ -2012,6 +2082,7 @@ export function runOnce(
             // どのノードをいつ解放したかを残す（F-11 はタイミングが判定対象）。
             for (const id of Object.keys(after.evolution.unlocked)) {
               if (beforeIds.has(id)) continue;
+              unlockedThisPhase.push(id);
               evolutionUnlocks.push({
                 id,
                 quarter: after.quarterNumber,

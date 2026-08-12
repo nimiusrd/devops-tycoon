@@ -1325,9 +1325,13 @@ const BRANCH_COMMIT_SHARE = 0.5; // かつ その時点までの解放の過半�
 const F11_DIRECTION_SAMPLE_SIZE = 40;
 const F11_DIRECTION_ACCEPTANCE_RATE = 0.5;
 const F11_DIRECTION_ACCEPTANCE_MIN_BRANCHES = 2;
+/** 代表4方針の Q1 全解放率上限。「低い」の定量線（超過なら希少性未達）。 */
+const F11_FULL_UNLOCK_MAX_RATE = 0.2;
 const F11_EXPECTED_META = 'fresh';
 const F11_EXPECTED_DIFFICULTIES = ['easy', 'normal', 'hard', 'nightmare'];
 const F11_EXPECTED_SEEDS = Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`);
+/** 希少性ブロックと方向確定ブロックで共有する受入結果。 */
+const f11Scarcity = { accepted: false, sampleOk: false };
 /**
  * Q1 中に「方向が確定した時点」があったかを判定する。
  *
@@ -1435,10 +1439,25 @@ const F11_SAMPLE_POLICIES = ['naive', 'skilledNoHire', 'aiFullBet', 'noAi'];
         `p50=${quantile(q1Counts, 0.5)} p90=${quantile(q1Counts, 0.9)}`,
     );
   }
+  const fullRate = sample.length > 0 ? full / sample.length : 1;
+  // F-10 と同様、世代不一致（STALE）の旧 runs を合格根拠にしない。
+  const scarcitySampleOk =
+    !STALE &&
+    f11Missing.length === 0 &&
+    Boolean(cohort && cohort.isDefault === true) &&
+    sample.length === F11_DIRECTION_SAMPLE_SIZE * F11_SAMPLE_POLICIES.length;
+  // 代表4方針 × 4難易度 × 10 seed = 160。方向標本サイズ定数×方針数で固定。
+  const scarcityAccepted = scarcitySampleOk && fullRate <= F11_FULL_UNLOCK_MAX_RATE;
   console.log(
-    `  Q1 中にツリーを取り切ったラン: ${full}/${sample.length} (${pct(full, sample.length)})`,
+    `  Q1 中にツリーを取り切ったラン: ${full}/${sample.length} (${pct(full, sample.length)})` +
+      `（受入上限 ${F11_FULL_UNLOCK_MAX_RATE * 100}%）`,
+  );
+  console.log(
+    `  希少性受入判定: ${scarcitySampleOk ? (scarcityAccepted ? '充足' : '未充足') : '未計測'}`,
   );
   console.log('  ※ Q1 で全ノードを取れるなら、どのブランチへ寄せるかという選択自体が発生しない。');
+  f11Scarcity.accepted = scarcityAccepted;
+  f11Scarcity.sampleOk = scarcitySampleOk;
 }
 console.log(
   `\n参考: Q1 の解放を順に見て、同一ブランチ ${BRANCH_COMMIT_MIN_NODES} ノード以上かつ` +
@@ -1493,6 +1512,7 @@ const F11_DIRECTION_POLICY = 'skilledStateEvolve';
     );
     const actualSampleKeys = new Set(arr.map((run) => `${run.difficulty}|${run.seed}`));
     const sampleCompositionAccepted = Boolean(
+      !STALE &&
       cohort &&
       cohort.isDefault === true &&
       cohort.meta === F11_EXPECTED_META &&
@@ -1515,11 +1535,21 @@ const F11_DIRECTION_POLICY = 'skilledStateEvolve';
       sampleSizeAccepted &&
       committed.length >= minCommitted &&
       branchDiversityAccepted;
+    const f11Accepted = directionAccepted && f11Scarcity.accepted;
     console.log(
-      `  受入判定: ${sampleCompositionAccepted ? (directionAccepted ? '充足' : '未充足') : '未計測'}（標本 n=${arr.length}/${F11_DIRECTION_SAMPLE_SIZE}` +
+      `  方向確定受入判定: ${sampleCompositionAccepted ? (directionAccepted ? '充足' : '未充足') : '未計測'}（標本 n=${arr.length}/${F11_DIRECTION_SAMPLE_SIZE}` +
         `、方向確定 ${committed.length}/${minCommitted} 以上` +
         `、確定ブランチ ${Object.keys(branches).length}/${F11_DIRECTION_ACCEPTANCE_MIN_BRANCHES} 以上）`,
     );
+    console.log(
+      `  F-11 総合受入判定: ${sampleCompositionAccepted && f11Scarcity.sampleOk ? (f11Accepted ? '充足' : '未充足') : '未計測'}` +
+        `（希少性 ${f11Scarcity.sampleOk ? (f11Scarcity.accepted ? 'OK' : 'NG') : '未計測'}` +
+        ` / 方向確定 ${sampleCompositionAccepted ? (directionAccepted ? 'OK' : 'NG') : '未計測'}）`,
+    );
+    console.log(
+      '  ※ 方向確定は `skilledStateEvolve` の契約（evolve=stateAware / maxEvolutionUnlocksPerPhase=3）で測る。',
+    );
+    console.log('     希少性（全解放率）は代表4方針のポイント使い切り契約で別計測し、混同しない。');
     if (atSprint.length > 0) {
       console.log(
         `  確定スプリント（四半期内 index）: p10=${quantile(atSprint, 0.1)}` +

@@ -33,7 +33,7 @@
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ |
 | [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
-| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-2・F-8・F-11 が未充足でRI-74〜87。F-1・F-7 は RI-73、F-10 は RI-76 で充足。F-4 は RI-75／RI-85、F-5 は RI-84、F-6 は RI-82、F-12 は RI-81 で実装済み。F-9 の「打てた手」観測は RI-89 で計測可能（差の再計測は playtest:report 参照）。F-3 は未検証 |
+| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-2・F-8 が未充足（RI-74 等）。F-1・F-7 は RI-73、F-10 は RI-76、F-11 は RI-86 で充足。F-4 は RI-75／RI-85、F-5 は RI-84、F-6 は RI-82、F-12 は RI-81 で実装済み。F-9 の「打てた手」観測は RI-89 で計測可能（差の再計測は playtest:report 参照）。F-3 は未検証 |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
 | [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、SprintLayoutの名前付きスロット、スプリント盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本を実装済み。共有ビジュアルトークンはRI-99 |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ等は実装済み | 🟡 残候補はRI-34 |
@@ -57,7 +57,7 @@
 | ~~目標修正の選択が結果を変えない~~ | 第4.6.1／第19.1 F-2 第4層 | ~~[RI-83](./remaining-issues.md#ri-83-目標修正の選択が結果を変えない)~~ 完了 |
 | ~~条件を揃えると介入の寄与がほぼ消える（F-5 の定義と実装のずれ）~~ | 第6／第19.1 F-5 | ~~[RI-84](./remaining-issues.md#ri-84-条件を揃えると介入の寄与がほぼ消える)~~ 完了 |
 | ~~レビュー凍結が選択不能な判定イベントでしか確定しない~~ | 第4／第19.1 F-4・F-8 | ~~[RI-85](./remaining-issues.md#ri-85-レビュー凍結が選択不能な判定イベントでしか確定しない)~~ 完了 |
-| Q1 で進化ツリーを取り切れ、ビルドの方向という概念が成立しない | 第11／第19.1 F-11 | [RI-86](./remaining-issues.md#ri-86-q1-で進化ツリーを取り切れてしまいビルドの方向という概念が成立しない) 進行中（希少性・分岐多様化は実装済み、方向確定率は閾値未達） |
+| ~~Q1 で進化ツリーを取り切れ、ビルドの方向という概念が成立しない~~ | 第11／第19.1 F-11 | ~~[RI-86](./remaining-issues.md#ri-86-q1-で進化ツリーを取り切れてしまいビルドの方向という概念が成立しない)~~ 完了 |
 | セキュリティ軸が存在しない | 第19.1 F-10 のビルド表 | [RI-87](./remaining-issues.md#ri-87-セキュリティ軸が存在しない) |
 | ~~インフラコスト軸が存在しない~~ | 第19.1 F-10 のビルド表 | ~~[RI-88](./remaining-issues.md#ri-88-インフラコスト軸が存在しない)~~ 完了 |
 | ~~敗因ごとに「打てた手」が違うかを測る手段が無い（F-9 が部分検証に留まる）~~ | 第19.1 F-9 | ~~[RI-89](./remaining-issues.md#ri-89-敗因ごとに打てた手が違うかを測る手段が無い)~~ 完了 |

@@ -730,6 +730,8 @@ const F10_BUILD_POLICIES = new Set([
   'securityNeglect',
   'securityFocus',
 ]);
+/** RI-87: セキュリティ軸の対になる方針。両方測定可能で分布差があることを F-10 合格に要求する。 */
+const F10_SECURITY_PAIR = ['securityNeglect', 'securityFocus'];
 /**
  * 方針別 modal の事前定義標本・効果量規則。
  * - 全勝一致なら n≥2 で採用（偶然の1勝は除外。効果量=1）
@@ -896,6 +898,16 @@ for (let i = 0; i < f10AdoptedList.length; i++) {
 }
 const f10PolicyDistributionsDiverge = f10WeakTvdPairs.length === 0 && f10ModalWinTypes.size >= 2;
 
+const f10SecurityPairAdopted = F10_SECURITY_PAIR.every((p) => f10AdoptedPolicies.has(p));
+const f10SecurityPairTvd = f10SecurityPairAdopted
+  ? winTypeTotalVariation(
+      f10PolicyWinTypes.get(F10_SECURITY_PAIR[0]),
+      f10PolicyWinTypes.get(F10_SECURITY_PAIR[1]),
+    )
+  : 0;
+const f10SecurityPairDiverges =
+  f10SecurityPairAdopted && f10SecurityPairTvd + 1e-12 >= F10_MIN_POLICY_TVD;
+
 const overallWinTypeCount = Object.keys(winTypes).length;
 const f10ModalCount = f10ModalWinTypes.size;
 const f10Measurable = !STALE && cohort?.isDefault === true;
@@ -904,13 +916,15 @@ const f10Pass =
   overallWinTypeCount >= 3 &&
   f10ModalCount >= 3 &&
   f10CommonSeedSupportsModals &&
-  f10PolicyDistributionsDiverge;
+  f10PolicyDistributionsDiverge &&
+  f10SecurityPairDiverges;
 const f10Verdict = !f10Measurable ? '未計測' : f10Pass ? 'PASS' : 'FAIL';
 console.log(
   `\nF-10 受入（RI-76）: 全体勝利種別 ${overallWinTypeCount} 種 / ` +
     `F-10ビルド modal ${f10ModalCount} 種` +
     `（一致≥${F10_MIN_WINS_UNANIMOUS} / 混在首位≥${F10_MIN_WINS_PLURALITY}・share≥2/3・同率除外） / ` +
     `方針間TVD≥${F10_MIN_POLICY_TVD}=${f10PolicyDistributionsDiverge ? 'yes' : 'no'} / ` +
+    `securityNeglect↔securityFocus TVD≥${F10_MIN_POLICY_TVD}=${f10SecurityPairDiverges ? 'yes' : 'no'} / ` +
     `採用方針の共通seed分岐=${f10CommonSeedSupportsModals ? 'yes' : 'no'} → ${f10Verdict}`,
 );
 console.log(`  F-10 modal: ${JSON.stringify([...f10ModalWinTypes].sort())}`);
@@ -923,6 +937,14 @@ console.log(
   `  共通seedで裏付けた modal: ${JSON.stringify([...f10ModalsBackedByCommonSeed].sort())}`,
 );
 if (f10WeakTvdPairs.length > 0) console.log(`  TVD不足ペア: ${f10WeakTvdPairs.join(', ')}`);
+if (!f10SecurityPairAdopted) {
+  const missing = F10_SECURITY_PAIR.filter((p) => !f10AdoptedPolicies.has(p));
+  console.log(`  セキュリティ方針が未採用: ${missing.join(', ')}`);
+} else if (!f10SecurityPairDiverges) {
+  console.log(
+    `  セキュリティ方針の分布差不足: ${F10_SECURITY_PAIR[0]}↔${F10_SECURITY_PAIR[1]}(tvd=${f10SecurityPairTvd.toFixed(2)})`,
+  );
+}
 if (f10TiePolicies.length > 0) console.log(`  同率除外: ${f10TiePolicies.join(', ')}`);
 if (f10SparsePolicies.length > 0) console.log(`  標本不足: ${f10SparsePolicies.join(', ')}`);
 if (STALE) console.log('  理由: 世代不一致（STALE）。PASS/FAIL を出さない');

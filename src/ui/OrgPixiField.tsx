@@ -134,19 +134,22 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
     });
     rendererRef.current = renderer;
 
-    const field = mount.closest<HTMLElement>('.org-field');
-    renderer.setScrollHost(field ?? null);
+    const scrollHost = mount.closest<HTMLElement>('.org-field');
+    renderer.setScrollHost(scrollHost ?? null);
 
     const syncLayout = (): void => {
       const el = mountRef.current;
       const r = rendererRef.current;
       if (!el || !r) return;
-      const scrollHost = field ?? el;
+      const host = scrollHost ?? el;
       r.setFieldView({
-        scrollX: scrollHost.scrollLeft,
-        scrollY: scrollHost.scrollTop,
-        width: scrollHost.clientWidth,
-        height: scrollHost.clientHeight,
+        scrollX: host.scrollLeft,
+        scrollY: host.scrollTop,
+        // AspectStage の contain 後に実際に canvas が占める可視窓を使う。
+        // 外側の .org-field はスロット全体なので、幅広/縦長 viewport では
+        // canvas より大きくなり、カリング範囲を過大にしてしまう。
+        width: el.clientWidth,
+        height: el.clientHeight,
       });
       r.resize(el.clientWidth, el.clientHeight);
       r.renderTeams(teamsRef.current);
@@ -179,16 +182,16 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
 
     const ro = new ResizeObserver(() => syncLayout());
     ro.observe(mount);
-    if (field) ro.observe(field);
+    if (scrollHost) ro.observe(scrollHost);
 
-    field?.addEventListener('scroll', syncLayout, { passive: true });
+    scrollHost?.addEventListener('scroll', syncLayout, { passive: true });
 
     return () => {
       cancelled = true;
       initDoneRef.current = false;
       layoutFingerprintRef.current = null;
       delete window.__orgPixiTest;
-      field?.removeEventListener('scroll', syncLayout);
+      scrollHost?.removeEventListener('scroll', syncLayout);
       ro.disconnect();
       renderer.dispose();
       rendererRef.current = null;
@@ -208,14 +211,13 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
     }
 
     const mount = mountRef.current;
-    const field = mount?.closest<HTMLElement>('.org-field');
-    const scrollHost = field ?? mount;
+    const scrollHost = mount?.closest<HTMLElement>('.org-field') ?? mount;
     if (scrollHost) {
       renderer.setFieldView({
         scrollX: scrollHost.scrollLeft,
         scrollY: scrollHost.scrollTop,
-        width: scrollHost.clientWidth,
-        height: scrollHost.clientHeight,
+        width: mount?.clientWidth ?? 0,
+        height: mount?.clientHeight ?? 0,
       });
     }
     if (mount) renderer.resize(mount.clientWidth, mount.clientHeight);

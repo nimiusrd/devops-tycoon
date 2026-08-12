@@ -64,7 +64,7 @@ function dotLodHalfExtents(halfW: number, halfH: number): { halfW: number; halfH
 const CAMERA_ANIM_MS = 480;
 const CAMERA_EASE = 'easeOutCubic';
 
-/** org-field スクロール窓（canvas 上の可視領域）。 */
+/** 実canvas上の可視領域。スクロール量は外側のスクロールホストから受け取る。 */
 export interface OrgFieldView {
   scrollX: number;
   scrollY: number;
@@ -545,7 +545,7 @@ export class PixiOrgRenderer implements RendererAdapter<PixiOrgInput> {
     retainPixiApp();
   }
 
-  /** org-field のスクロール窓を更新する（カリングの可視範囲）。 */
+  /** 実canvasの可視窓を更新する（カリングの可視範囲）。 */
   setFieldView(view: OrgFieldView): void {
     this.fieldView = view;
   }

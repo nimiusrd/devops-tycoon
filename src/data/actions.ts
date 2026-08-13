@@ -95,9 +95,10 @@ export const ACTION_DEFS: ActionDef[] = [
     label: 'アンドン',
     icon: '⏸️',
     cost: 5,
-    cooldownTicks: 250,
+    cooldownTicks: 400,
     gauge: 0.15,
     // RI-73 / F-1: 運用安定は付けない。薄いキューでは士気追加＋シニアHP（actions.ts）。
+    // CD 400 でスプリント毎の乱打を封じ、複合方針の割り込みと役割分担する。
     stabilizesFlow: true,
     tone: 'heavy',
     description: 'タスク流入を止め、溜まったキューを捌き切る',

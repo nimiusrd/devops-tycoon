@@ -163,14 +163,14 @@ describe('interventionEffects (RI-50)', () => {
       {
         throttleUntilTick: 70,
         overtimeUntilTick: 0,
-        andonUntilTick: 55,
+        andonUntilTick: 50,
         stabilityUntilTick: 132,
       },
       42,
     );
     expect(auras).toEqual([
       { kind: 'throttle', remainingTicks: 28, totalTicks: THROTTLE_TICKS },
-      { kind: 'andon', remainingTicks: 13, totalTicks: ANDON_TICKS },
+      { kind: 'andon', remainingTicks: 8, totalTicks: ANDON_TICKS },
       { kind: 'stability', remainingTicks: 90, totalTicks: STABILITY_TICKS },
     ]);
   });

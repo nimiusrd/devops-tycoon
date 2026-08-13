@@ -111,7 +111,7 @@ export const OVERTIME_MORALE_COST = 8;
 /** 残業号令のシニアHP消費（UI プレビューと共有）。 */
 export const OVERTIME_HP_COST = 6;
 /** アンドンの流入停止 tick（RI-73 / F-1: 単体乱打が固定強手にならないよう短め）。 */
-export const ANDON_TICKS = 16;
+export const ANDON_TICKS = 10;
 /**
  * アンドンが「渋滞対応」とみなす Review 件数の下限（熟練方針の使用条件に揃える。RI-73 / F-1）。
  * 未満なら追加の薄キュー罰。

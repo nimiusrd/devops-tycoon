@@ -282,12 +282,16 @@ for (const counts of winTypeByPolicy.values()) {
 const findingsRaw = readFileSync(DOCS[0], 'utf8');
 const findingsCut = findingsRaw.indexOf(AS_OF_SECTION);
 const findingsBody = findingsCut >= 0 ? findingsRaw.slice(0, findingsCut) : findingsRaw;
-const f10Start = findingsBody.indexOf('### RI-76 ');
-const f10End = f10Start >= 0 ? findingsBody.indexOf('\n### RI-77 ', f10Start) : -1;
-if (f10Start < 0 || f10End < 0) {
+const issueSection = (body, issueId) => {
+  const start = body.indexOf(`### ${issueId} `);
+  if (start < 0) return null;
+  const end = body.indexOf('\n### ', start + 1);
+  return body.slice(start, end < 0 ? body.length : end);
+};
+const f10Section = issueSection(findingsBody, 'RI-76');
+if (!f10Section) {
   problems.push(`${DOCS[0]}: RI-76 の F-10 集計節を見つけられない`);
 } else {
-  const f10Section = findingsBody.slice(f10Start, f10End);
   const table = new Map();
   const f10TableSection = f10Section.split('\n`evaluateWinType`')[0];
   for (const line of f10TableSection.split('\n')) {
@@ -346,13 +350,10 @@ if (f10Start < 0 || f10End < 0) {
 const remainingRaw = readFileSync(DOCS[1], 'utf8');
 const remainingCut = remainingRaw.indexOf(AS_OF_SECTION);
 const remainingBody = remainingCut >= 0 ? remainingRaw.slice(0, remainingCut) : remainingRaw;
-const remainingStart = remainingBody.indexOf('### RI-76 ');
-const remainingEnd =
-  remainingStart >= 0 ? remainingBody.indexOf('\n### RI-77 ', remainingStart) : -1;
-if (remainingStart < 0 || remainingEnd < 0) {
+const remainingSection = issueSection(remainingBody, 'RI-76');
+if (!remainingSection) {
   problems.push(`${DOCS[1]}: RI-76 の F-10 集計節を見つけられない`);
 } else {
-  const remainingSection = remainingBody.slice(remainingStart, remainingEnd);
   const summary = remainingSection.match(
     /現行\s+[\d,]+ランでは\s+\d+勝（((?:`\w+`\s*\d+\s*\/\s*)+`\w+`\s*\d+)/s,
   );

@@ -223,6 +223,8 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   前回の成功結果を最新値として集計してしまうのを防ぐ
 - **メタ進行は初見相当**（`PT_META=fresh`）。`game.startRun` と同じく既定解放分のみをドラフト候補にする
 - 壁時計換算は実装の `MS_PER_TICK_1X`（`src/ui/sprintTempo.ts`）から読む
+- 現行スナップショット（2026-08-13、generation `c8556b920f29e075`）は
+  **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。114勝 / 1,446敗で、以下の「現行」値はこの出力へ同期する
 
 ### 統制の考え方
 
@@ -295,65 +297,35 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 
 ## 結論の要約
 
-**成立している基準**:
+**成立している基準と検証上の限界**:
 
-- **F-9 のうち進行速度と決着位置は成立している**（**F-9 全体の成立ではない**。下記の限界を参照）。
-  難易度別の p50 は `aiDependency` 1 / `moraleCollapse` 2 / `seniorBurnout` 3 / `reviewFreeze` 8 /
-  `techDebt` 9 / `reorgRequired` 18 / `trustExhausted` 24 と明確に分かれ、
-  決着するフェーズも敗因ごとに違う（RI-85）。
-
-  同一難易度・同一方針内でも `reviewFreeze` はおおむね一貫する。easy / normal / hard の
-  `naive` / `skilledNoHire` / `onlyFirefight` / `noInterventionCtl` の11層のうち**8層で p50=8**。
-  ただし**例外が3つある**。
-
-  | 層 | n | p50 |
-  | --- | --- | --- |
-  | `normal` / `noInterventionCtl` | 4 | **15** |
-  | `hard` / `onlyFirefight` | 4 | **15** |
-  | `hard` / `noInterventionCtl` | 3 | **2** |
-
-  介入しない条件では他の敗因（`seniorBurnout`・`techDebt`）が先に来るため、
-  `reviewFreeze` へ至るランが偏る。hard では早期に凍結した3ランだけが残って p50 が短くなり、
-  normal では逆に長く粘ったランが残って伸びる。
-  いずれも n=3〜4 の小標本で断定はできないが、**「すべてで完全に一貫」とは言えない**。
-
-  > **この一貫性の判定は計測条件の変更で容易に動く。** 直近3回の再計測で例外は
-  > 2層 → 1層 → 3層と変わり、今回は `onlyFirefight`（介入する方針）にも例外が出て、
-  > 「介入しない条件だけがずれる」という前回までの整理も崩れた。層あたり n=1〜5 しかない。
-  > **層別化から言えるのは「完全には一貫しない」までで、ずれの向きや原因は特定できていない。**
-
-  一方 `seniorBurnout` は同じ層別化で p50 が 3〜22 とばらつく。こちらは層あたり n=1〜4 しかなく、
-  **方針差なのか標本の小ささなのかを区別できない**。
-  つまり層別化で確認できたのは `reviewFreeze` が**多くの層で p50=8 に寄る**ことまでで、
-  **「介入する方針では一貫し、介入しない条件だけがずれる」とは言えない**
-  （上記のとおり介入する `onlyFirefight` にも例外が出ている）。ずれの向きと原因は未特定である。
-
-  **観測手段（RI-89）**: 「その時点で機械的に**発動可能な介入**」は `canApplyAction` /
+- **F-9 のうち進行速度と決着位置は成立している**（**F-9 全体の成立ではない**）。
+  現行1,560ランの全体参考値では、敗北までのスプリント数 p50 は `aiDependency` 3 /
+  `moraleCollapse` 3 / `seniorBurnout` 4 / `reviewFreeze` 6 / `techDebt` 5 /
+  `kpiMissed` 12 / `reorgRequired` 24。決着フェーズも、`reviewFreeze` は全82件が `sprint`、
+  `kpiMissed` は全56件が `quarterReview`、`seniorBurnout` は複数フェーズに分かれる。
+- **観測手段（RI-89）**として、その時点で機械的に**発動可能な介入**は `canApplyAction` /
   `hasActionTarget`（盤面非破壊）とハーネスの `availableActionsInDanger` で記録できる。
-  `playtest:report` が敗因別の発動可能集合を出力する。
-  これは F-9 の「打てた手の差」比較用であり、F-8 が求める「敗北を遅延・回避できる
-  **実質的な選択肢**が消えた時点」の反実仮想評価ではない（効果が無い介入も可と出る）。
-  上記 1,360 ラン時点の所見はまだ**進行速度と決着位置の差**までである。
+  ただし代表方針では敗因が違っても発動可能集合がほぼ同じで、効果の無い介入も「打てる手」に含まれる。
+  F-8 の「敗北を遅延・回避できる実質的な選択肢」と、F-9 の「有効な手の違い」は反実仮想評価を
+  追加するまで未検証とする（RI-101）。
 
-**成立していない基準**:
+**未充足・未検証の基準**:
 
-| 基準 | 未充足の内容 | 対応 |
+| 基準 | 現況 | 対応 |
 | --- | --- | --- |
 | F-1 | 緊急対応の不利盤面・採用の壊れにくさは維持。再計測で `onlyAndon` が normal の複合を上回る | RI-73（再計測で未達） |
-| F-2 | RI-78 でカード発動費を分離し、休息の予防効果・ショップ購入を実装。同一seed・位置の共通機会で返済/強化/購入の次スプリントKPI差とカード発動数を計測。第4層（目標修正）は RI-83 で完了 | RI-78（完了） |
-| F-4 | ~~代表方針で easy の通常スプリントは 65.4% が絶対下限30秒を割る。ボスは全難易度が規定下限割れ~~ → RI-75 で規定帯へ再調整。凍結突然死は RI-85 で解消。RI-73 の `seniorHpCostMul` 後も `sprintTempo.test.ts` で非回帰 | RI-75／RI-85（完了） |
-| F-5 | ~~条件を揃えると介入の寄与が期待値・分散ともほぼ消える~~ → RI-84 で運用安定（手戻り抑制・延焼封じ・上振れ抑制）を実装済み。コホート勝率差の再計測は RI-73 後 | RI-84（完了） |
-| F-6 | ~~敗北時の教訓が敗因ではなく組織診断4種に紐づき、その敗因への次の一手にならない~~ → RI-82 で `LoseReason` ごとの次の一手を実装済み | RI-82（完了） |
+| F-3 | チェックリストへ観測を追加済み。戦略フェーズが入力を待ち続ける自動テスト契約は無い | RI-102（未着手） |
 | F-7 | `idle` は全難易度 0/10。再計測で `naive` easy 4/10（40%）が≈20%帯を外れる | RI-73（再計測で未達） |
-| F-8 | Nightmare は330ラン全敗し、打つ機会が一度も無い。「何スプリント前から実質的な選択肢が消えたか」は未計測（RI-89 は機械的発動可否のみで、回避有効性の反実仮想は未実装） | RI-74 |
-| F-9 | 進行速度と決着位置は敗因ごとに違う。「打てた手」の観測手段は RI-89 で追加済み（差の再計測は playtest:report） | RI-89（完了） |
+| F-8 | Nightmare は現行390ラン全敗。「何スプリント前から実質的な選択肢が消えたか」は未計測（RI-89 は機械的発動可否のみで、回避有効性の反実仮想は未実装） | RI-101（未着手） |
+| F-9 | 進行速度と決着位置は敗因ごとに違う。機械的な発動可否は計測可能だが、有効な手の差は未検証 | RI-89（観測完了）／RI-101（未着手） |
 | F-10 | 再計測後は modal `chaos` / `happiness` の2種で FAIL（共通seed分岐なし）。機構は維持 | RI-76（再計測で未達） |
-| F-11 | 方向確定 28/40（70%）、確定ブランチ `ai`/`review`/`quality`、代表4方針の Q1 全解放 32/160（20%≦20%） | RI-86（完了） |
-| F-12 | ~~ドラフトのマリガンが無い~~ → RI-81 でマリガンを実装済み | RI-81（完了） |
+
+充足済みの F-2 / F-4 / F-5 / F-6 / F-11 / F-12 は、実装・受入の詳細を各課題節とGit履歴に残す。
 
 ## 課題一覧
 
-### RI-73 難易度カーブと、常に正解／常に不正解な手がある構造（優先度: 高 / F-1・F-7）— 再計測で未達
+### RI-73 難易度カーブと、常に正解／常に不正解な手がある構造（優先度: 高 / F-1・F-7）— 進行中（再計測で未達）
 
 **機構は維持。コホート受入は再計測で未達。** 初見相当の方針（`naive`）の勝率で F-7 を判定する。
 全方針の平均は使わない。判定はメタ解放も初見相当（`PT_META=fresh`）に限る。
@@ -367,7 +339,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 
 `idle` は既定フルコホート（4難易度×10seed）で **全難易度 0/10**。F-7 の「放置で勝ち越し無し」は充足。easy の `naive` は帯上限を超え、F-7 の≈20%帯受入は未達。
 
-**F-1（既定フルコホート 1,480ラン / `PT_META=fresh` の該当方針）:**
+**F-1（2026-08-13の既定フルコホート 1,560ラン / `PT_META=fresh` の該当方針）:**
 
 | 方針 | easy | normal | hard | nightmare |
 | --- | --- | --- | --- | --- |
@@ -419,17 +391,18 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 回帰は `tests/unit/ui/sprintTempo.test.ts` の F-4 ハーネス検証（代表3方針 × `pt-1..10`）で固定。
 
-### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）— 再計測で未達
+### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）— 進行中（再計測で未達）
 
-現行コホートは **1,480ラン中108勝（敗北1,372）**で、勝利種別の内訳は
-`happiness` 42 / `chaos` 47 / `healthy` 19。`management` / `noDamage` /
+現行コホートは **1,560ラン中114勝（敗北1,446）**で、勝利種別の内訳は
+`happiness` 42 / `chaos` 52 / `healthy` 20。`management` / `noDamage` /
 `aiSuccess` / `normal` は 0件だった。
 F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimized` / `noAi` /
-`reviewHeavy` / `skilledNoHire`）だけで判定し、一致≥2 / 混在首位≥3・share≥2/3・同率除外・
+`reviewHeavy` / `skilledNoHire` / `securityNeglect` / `securityFocus`）だけで判定し、一致≥2 / 混在首位≥3・share≥2/3・同率除外・
 異 modal 方針間 TVD≥0.5・試練プロファイル込みの共通 seed 分岐（双方が自身の modal を
 再現した組だけ）・既定コホートを要求する。
-再計測後の F-10 modal は `aiFullBet=chaos` / `noAi=happiness` / `skilledNoHire=chaos` の
-2種で FAIL（`reviewHeavy` は同率除外、`harness*` は標本不足、共通 seed 分岐なし）。
+再計測後の F-10 modal は `aiFullBet=chaos` / `noAi=happiness` / `skilledNoHire=chaos` /
+`securityNeglect=chaos` / `securityFocus=chaos` の2種で FAIL（`reviewHeavy` は同率除外、
+`harness*` は標本不足、共通 seed 分岐なし、セキュリティ方針間のTVD=0.25）。
 勝利種別判定の機構自体は維持する。`harness*` の frontier 試練は通常条件と混ぜない。
 `noDamage` の量産もない。
 
@@ -461,6 +434,8 @@ F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimiz
 | `onlyThrottle` | `chaos` 2 / `healthy` 1 |
 | `passive` | `chaos` 1 |
 | `reviewHeavy` | `happiness` 1 / `healthy` 1 |
+| `securityFocus` | `chaos` 3 / `healthy` 1 |
+| `securityNeglect` | `chaos` 2 |
 | `skilledNoCards` | `happiness` 1 / `chaos` 2 |
 | `skilledNoHire` | `happiness` 1 / `chaos` 3 |
 | `skilledSelectiveCards` | `happiness` 2 / `chaos` 2 |
@@ -718,7 +693,7 @@ E2E（`tests/e2e/interventions.spec.ts`）で固定。`playtest:report` の F-5 
 実装前コホートでは `noInterventionCtl` / `naive` / `skilledNoHire` がいずれも低勝率で、
 勝率でも第1スプリント出荷 CV でも介入の寄与が観測できなかった（経緯は第1回の撤回節と
 訂正履歴を参照）。現行コホートでは `skilledNoHire` 4/40。コホート全体の勝率差の再計測は
-RI-73（F-1 完了）後の既定フルコホート再計測で追う。
+RI-73（F-1 受入）後の既定フルコホート再計測で追う。
 
 ### RI-85 レビュー凍結は選択不能な判定イベントでしか確定しない（優先度: 高 / F-4） — 完了
 
@@ -726,15 +701,17 @@ RI-73（F-1 完了）後の既定フルコホート再計測で追う。
 `reviewLoadAdd` は付けない）へ変更し、スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を
 追加した。予兆のピーク入力は通算ではなく進行中スプリントのピーク／現在キューを使う。
 
-再計測（1,480ラン、敗北 1,372）では `reviewFreeze`（69件）はすべて `sprint` で決着し、
+再計測（1,560ラン、敗北 1,446）では `reviewFreeze`（82件）はすべて `sprint` で決着し、
 即死イベント経路は消えた。ピーク経路（`REVIEW_FREEZE_PEAK`）とスプリント中の対処へ委ねる。
 
 | 敗因 | 決着フェーズ |
 | --- | --- |
-| **`reviewFreeze`**（69件） | `sprint` **100%** |
-| `seniorBurnout`（1138件） | judgment / decision / sprint / quarterReview が混在 |
+| **`reviewFreeze`**（82件） | `sprint` **100%** |
+| `seniorBurnout`（1183件） | judgment / decision / sprint / quarterReview が混在 |
+| `kpiMissed`（56件） | `quarterReview` 100% |
+| `budgetExhausted`（39件） | setup 38件 / decision 1件 |
 | `techDebt`（53件） / `moraleCollapse`（9件） | `sprint` が大半 |
-| `aiDependency`（16件） | `sprint` 100% |
+| `aiDependency`（23件） | sprint 18件 / setup 5件 |
 | `reorgRequired`（1件） | `quarterReview` 100% |
 
 回帰は `tests/unit/scenarios/reviewFreeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
@@ -779,12 +756,11 @@ Q1 で方向確定 **28/40（70%）**、確定ブランチは `ai` 21 / `review`
 
 ## 良かった点（回帰させないため記録）
 
-- **敗因ごとに進行速度と決着位置が違う**（F-9 のうち速度・位置の部分。「打てた手」の観測手段は RI-89 で追加済み）。
-  normal の敗北までのスプリント数 p50 は `seniorBurnout` 3 / `reviewFreeze` 8 /
-  `techDebt` 9 / `trustExhausted` 24 / `reorgRequired` 18。決着フェーズも `aiDependency` は sprint、
-  `reviewFreeze` は judgment ビート、`trustExhausted` は四半期レビューと分かれる。
-  `reviewFreeze` は同一難易度・同一方針内でも11層中8層で p50=8
-  （例外は3層。いずれも n=3〜4 の小標本で、再計測ごとに増減する）。
+- **敗因ごとに進行速度と決着位置が違う**（F-9 のうち速度・位置の部分）。
+  現行コホート全体の敗北までのスプリント数 p50 は `aiDependency` 3 / `seniorBurnout` 4 /
+  `reviewFreeze` 6 / `kpiMissed` 12 / `reorgRequired` 24。`reviewFreeze` は全件 sprint、
+  `kpiMissed` と `reorgRequired` は全件 quarterReview、`seniorBurnout` は複数フェーズに分かれる。
+  機械的な「打てた手」は RI-89 で観測できるが、有効な手の差は RI-101 の対象とする。
 - **ビルドの違いは組織診断と勝利種別の両方に出ている**。`noAi` は
   `healthyAcceleration` 3 と、`aiFullBet`（`reviewHell` 6 / `seniorSacrifice` 34）から
   明確に分かれる。F-10 ビルド modal のコホート受入は再計測で FAIL（RI-76 機構は維持）。

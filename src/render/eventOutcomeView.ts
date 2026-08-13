@@ -32,6 +32,8 @@ import {
   OVERTIME_TICKS,
   PAIR_LITERACY_GAIN,
   PAIR_REVIEW_COUNT,
+  SPLIT_HP_COST,
+  SPLIT_MORALE_COST,
   SPLIT_PROGRESS_PENALTY,
   STABILITY_TICKS,
   THROTTLE_TICKS,
@@ -705,8 +707,8 @@ export function formatStabilityDetailTags(): EffectTag[] {
 export function formatActionDefTags(def: ActionDef): EffectTag[] {
   const tags: EffectTag[] = [];
 
-  // RI-73 / F-1: 緊急対応・アンドンは状況依存のため汎用タグを出さない。
-  if (def.stabilizesFlow && def.id !== 'firefight' && def.id !== 'andon') {
+  // RI-73 / F-1: 緊急対応・アンドン・PR分割は状況依存／単体乱打対策のため汎用タグを出さない。
+  if (def.stabilizesFlow && def.id !== 'firefight' && def.id !== 'andon' && def.id !== 'splitPr') {
     // 主要効果は1タグに要約（タッチでも持続時間と効果が見える）。長い倍率内訳はツールチップ側。
     pushTag(tags, `運用安定 ${STABILITY_TICKS}tick（手戻り↓・延焼停止）`, 'positive');
   }
@@ -718,7 +720,10 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       break;
     case 'splitPr':
       pushTag(tags, '巨大PRを分割', 'positive');
+      pushTag(tags, '運用安定なし', 'neutral');
       pushTag(tags, `進捗 -${Math.round(SPLIT_PROGRESS_PENALTY * 100)}%`, 'negative');
+      pushTag(tags, `士気 -${SPLIT_MORALE_COST}`, 'negative');
+      pushTag(tags, `シニアHP -${SPLIT_HP_COST}`, 'negative');
       break;
     case 'firefight':
       // カード上は要約のみ。数値内訳はツールチップへ（RI-73: タグ肥大で盤面が潰れるのを防ぐ）。
@@ -835,7 +840,7 @@ function formatActionTooltipExtraTags(def: ActionDef): EffectTag[] {
       );
       break;
     default:
-      if (def.stabilizesFlow) {
+      if (def.stabilizesFlow && def.id !== 'splitPr') {
         tags.push(...formatStabilityDetailTags());
       }
       break;

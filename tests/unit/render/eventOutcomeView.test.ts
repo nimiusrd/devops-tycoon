@@ -6,6 +6,7 @@ import { getGoalAdjustment } from '../../../src/data/goalAdjustments';
 import { COMPANY_LEVERS } from '../../../src/data/levers';
 import { getRelic } from '../../../src/data/relics';
 import { getAction } from '../../../src/data/actions';
+import { SPLIT_HP_COST, SPLIT_MORALE_COST } from '../../../src/sim/actions';
 import {
   COMBO_BONUS_PER,
   STABILITY_COMBO_CAP,
@@ -462,6 +463,15 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
     expect(tip).toContain('連打で増加');
     expect(tip).toContain('単発先消し');
     expect(tip).toContain(`安定中 手戻り率 x${STABILITY_REWORK_MUL}`);
+  });
+
+  it('PR分割は運用安定なしと士気・シニアHPコストをカードに出す', () => {
+    const def = getAction('splitPr')!;
+    const tags = formatActionDefTags(def);
+    expect(tags.some((t) => t.label.includes('運用安定なし'))).toBe(true);
+    expect(tags).toContainEqual({ label: `士気 -${SPLIT_MORALE_COST}`, tone: 'negative' });
+    expect(tags).toContainEqual({ label: `シニアHP -${SPLIT_HP_COST}`, tone: 'negative' });
+    expect(tags.some((t) => t.label.includes('運用安定 ') && t.label.includes('tick'))).toBe(false);
   });
 
   it('アンドンは運用安定なしをカードに出し、薄キュー数値はツールチップへ', () => {

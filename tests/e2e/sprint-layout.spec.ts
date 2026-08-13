@@ -399,7 +399,7 @@ async function assertAcrossViewports(
 async function openSixRelicSprint(page: Page): Promise<void> {
   await seedMeta(page, { unlockedRelics: RELIC_DEFS.map((relic) => relic.id) });
   await advancePublicRun(page, {
-    seed: 'ri94-relics-1',
+    seed: 'ri94-relics-13',
     target: { phase: 'setup', relicCount: 6 },
   });
   await beginCurrentSetupSprint(page);
@@ -663,7 +663,7 @@ test.describe('RI-94 レイアウト契約', () => {
 
   test('最長診断警告 seniorSacrifice を5 viewportで表示する', async ({ page }) => {
     await advancePublicRun(page, {
-      seed: 'ri94-warning-0',
+      seed: 'ri94-warning-1',
       target: { phase: 'setup', diagnosis: 'seniorSacrifice' },
     });
     await beginCurrentSetupSprint(page);

@@ -120,9 +120,9 @@ export const ANDON_STABILITY_REVIEW_MIN = 10;
 /** アンドンの基本士気コスト（ライン停止の現場負荷。RI-73 / F-1）。 */
 export const ANDON_BASE_MORALE_COST = 4;
 /** 薄キューでアンドンを打ったときの追加士気ペナルティ（RI-73 / F-1）。 */
-export const ANDON_THIN_MORALE_COST = 8;
+export const ANDON_THIN_MORALE_COST = 12;
 /** アンドンのシニアHPコスト（止めの判断にシニアが割かれる。RI-73 / F-1）。 */
-export const ANDON_HP_COST = 5;
+export const ANDON_HP_COST = 8;
 /** AIスロットルの持続 tick。 */
 export const THROTTLE_TICKS = 40;
 

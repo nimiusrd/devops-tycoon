@@ -113,6 +113,13 @@ export const MANAGEMENT_BUDGET_MIN = 50;
 export const CHAOS_INCIDENTS_MIN = 20;
 /** カオス勝利に必要なラン累計出荷。 */
 export const CHAOS_DELIVERED_MIN = 250;
+/**
+ * セキュリティ軽視のカオス。フルベットの低障害完走（実測18件・security 55+）を吸わないよう
+ * 障害閾値は残差カオスより低く、セキュリティ上限は AI 成功の下限未満にする。
+ */
+export const CHAOS_NEGLECT_INCIDENTS_MIN = 16;
+/** セキュリティ軽視カオスに必要なラン累計出荷。 */
+export const CHAOS_NEGLECT_DELIVERED_MIN = 180;
 /** 現場幸福勝利に必要な士気下限。 */
 export const HAPPINESS_MORALE_MIN = 70;
 /** 現場幸福勝利に必要なシニアHP下限。 */
@@ -174,11 +181,11 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   }
 
   // 検証を省いた事故連発は AI 利用率が高くてもカオス（セキュリティ軽視のシグネチャ）。
-  // セキュリティ重視は上で健全へ分岐済み。フルベットの低障害完走（実測18件前後）は通さない。
+  // security < AI 成功下限に限り、フルベット（security 55+）をカオスへ吸わない。
   if (
-    totals.incidents >= CHAOS_INCIDENTS_MIN &&
-    totals.delivered >= CHAOS_DELIVERED_MIN &&
-    org.securityLevel < HEALTHY_SECURITY_MIN
+    totals.incidents >= CHAOS_NEGLECT_INCIDENTS_MIN &&
+    totals.delivered >= CHAOS_NEGLECT_DELIVERED_MIN &&
+    org.securityLevel < AI_SUCCESS_SECURITY_MIN
   ) {
     return 'chaos';
   }

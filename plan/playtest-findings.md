@@ -223,7 +223,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   前回の成功結果を最新値として集計してしまうのを防ぐ
 - **メタ進行は初見相当**（`PT_META=fresh`）。`game.startRun` と同じく既定解放分のみをドラフト候補にする
 - 壁時計換算は実装の `MS_PER_TICK_1X`（`src/ui/sprintTempo.ts`）から読む
-- 現行スナップショット（2026-08-13、generation `787d2753e831ee3c`）は
+- 現行スナップショット（2026-08-13、generation `3e71ac4811872fda`）は
   **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。72勝 / 1,488敗で、以下の「現行」値はこの出力へ同期する
 
 ### 統制の考え方
@@ -400,7 +400,7 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 ### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）— 完了
 
 現行コホートは **1,560ラン中72勝（敗北1,488）**で、勝利種別の内訳は
-`aiSuccess` 4 / `happiness` 6 / `chaos` 29 / `healthy` 33。`management` / `noDamage` /
+`aiSuccess` 2 / `happiness` 8 / `chaos` 28 / `healthy` 34。`management` / `noDamage` /
 `normal` は 0件だった。
 F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimized` / `noAi` /
 `reviewHeavy` / `skilledNoHire` / `securityNeglect` / `securityFocus`）だけで判定し、一致≥2 / 混在首位≥3・share≥2/3・同率除外・
@@ -422,9 +422,9 @@ F-10 modal は `aiSuccess` / `chaos` / `healthy` の3種で PASS（採用方針
 | `adjReorgTeams` | `chaos` 2 / `healthy` 1 |
 | `adjRequestBudget` | `healthy` 1 |
 | `adjStakeholderCare` | `healthy` 1 |
-| `aiFullBet` | `aiSuccess` 2 / `chaos` 1 |
-| `harnessBloated` | `aiSuccess` 1 |
-| `harnessOptimized` | `aiSuccess` 1 |
+| `aiFullBet` | `aiSuccess` 2 / `healthy` 1 |
+| `harnessBloated` | `happiness` 1 |
+| `harnessOptimized` | `happiness` 1 |
 | `naive` | `healthy` 2 |
 | `naiveNoInterventionCtl` | `healthy` 1 |
 | `noAi` | `happiness` 1 |
@@ -456,10 +456,10 @@ F-10 modal は `aiSuccess` / `chaos` / `healthy` の3種で PASS（採用方針
 
 1. **`noDamage`**: 重介入なし・延焼0に加え、品質≥70・士気≥70・シニアHP≥60・手戻り率0.15未満・
    健全系診断（`healthyAcceleration` / `documentationKingdom`）をすべて満たすとき
-2. **`healthy`（セキュリティ重視）**: セキュリティ≥85・品質≥65・AI利用率≥0.55・手戻り率0.22未満
-3. **`chaos`（セキュリティ軽視）**: インシデント≥20・累計出荷≥250・セキュリティ<85
+2. **`healthy`（セキュリティ重視）**: セキュリティ≥85・品質≥65・士気≥65・AI利用率≥0.55・手戻り率0.22未満
+3. **`chaos`（セキュリティ軽視）**: インシデント≥16・累計出荷≥180・セキュリティ<50
 4. **`aiSuccess`**: AI 利用率≥0.55・Literacy≥40・手戻り率0.22未満・セキュリティ≥50。
-   レビュー渋滞はフルベットの代償として必須にしない。`reworkSpiral` のみ除外
+   `reviewHell` / `aiOverproduction` / `reworkSpiral` は除外する（失敗診断と併記しない）
 5. **`healthy`（documentationKingdom）**: 診断が `documentationKingdom` かつ品質・士気・手戻り
 6. **`happiness`**: 士気≥70 かつシニアHP≥45
 7. **`chaos`**: インシデント≥20 かつ累計出荷≥250（高セキュリティで上の健全を外した残差）
@@ -711,17 +711,17 @@ RI-73（F-1 受入）後の既定フルコホートで行った。
 `reviewLoadAdd` は付けない）へ変更し、スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を
 追加した。予兆のピーク入力は通算ではなく進行中スプリントのピーク／現在キューを使う。
 
-再計測（1,560ラン、敗北 1,488）では `reviewFreeze`（58件）はすべて `sprint` で決着し、
+再計測（1,560ラン、敗北 1,488）では `reviewFreeze`（59件）はすべて `sprint` で決着し、
 即死イベント経路は消えた。ピーク経路（`REVIEW_FREEZE_PEAK`）とスプリント中の対処へ委ねる。
 
 | 敗因 | 決着フェーズ |
 | --- | --- |
-| **`reviewFreeze`**（58件） | `sprint` **100%** |
-| `seniorBurnout`（1243件） | beat / sprint / quarterReview が混在 |
+| **`reviewFreeze`**（59件） | `sprint` **100%** |
+| `seniorBurnout`（1245件） | beat / sprint / quarterReview が混在 |
 | `kpiMissed`（43件） | `quarterReview` 100% |
 | `budgetExhausted`（34件） | setup 33件 / beat 1件 |
 | `techDebt`（69件） / `moraleCollapse`（13件） | `sprint` が大半 |
-| `aiDependency`（27件） | sprint 22件 / setup 5件 |
+| `aiDependency`（24件） | sprint 19件 / setup 5件 |
 | `reorgRequired`（1件） | `quarterReview` 100% |
 
 回帰は `tests/unit/scenarios/reviewFreeze.test.ts` と E2E（凍結チップ + decision UI）で固定。

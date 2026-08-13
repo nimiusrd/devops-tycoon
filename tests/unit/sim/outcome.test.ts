@@ -480,11 +480,11 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
-    // 軽視の事故連発は AI 利用率が高くてもカオス。
+    // 軽視の事故連発は AI 利用率が高くてもカオス（セキュリティが AI 成功下限未満）。
     win('chaos', {
       org: {
         quality: 90,
-        securityLevel: 67,
+        securityLevel: 49,
         morale: 100,
         seniorHp: 34,
         aiLiteracy: 80,
@@ -494,9 +494,30 @@ describe('evaluateWinType', () => {
         done: 40,
         aiAssisted: 30,
         rework: 1,
-        reviewQueuePeak: 40,
+        reviewQueuePeak: 8,
         spread: 0,
-        incidents: 22,
+        incidents: 16,
+        delivered: 180,
+      },
+      budget: 10,
+    });
+    // セキュリティ 55 以上のフルベットは、障害が多くても先行カオスにしない。
+    win('aiSuccess', {
+      org: {
+        quality: 90,
+        securityLevel: 55,
+        morale: 100,
+        seniorHp: 34,
+        aiLiteracy: 80,
+      },
+      totals: {
+        completed: 40,
+        done: 40,
+        aiAssisted: 30,
+        rework: 1,
+        reviewQueuePeak: 8,
+        spread: 0,
+        incidents: 35,
         delivered: 400,
       },
       budget: 10,

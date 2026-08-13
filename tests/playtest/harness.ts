@@ -97,7 +97,7 @@ export interface PolicySpec {
    * - `asListed`: ツリーの定義順（UI 表示順）に上から取る。初見相当
    * - `reviewFirst`: レビュー容量 → 品質 → AI → 文化 → 開発速度
    * - `aiFirst`: AI → 開発速度 → 品質 → レビュー → 文化。AI ビルド
-   * - `neglectFirst`: AI → 開発速度 → 文化 → レビュー → 品質。品質（セキュリティ加算）を最後にする軽視専用（RI-76 / F-10）
+   * - `neglectFirst`: AI → 開発速度 → レビュー → 文化 → 品質。品質（セキュリティ加算）を最後にする軽視専用（RI-76）
    * - `aiBloated`: AI 成功率だけ先に取り、コスト最適化ノード（ai-2/ai-3）は後回し（RI-88）
    * - `qualityFirst`: 品質 → レビュー → 文化 → 開発速度 → AI。品質ビルド
    * - `stateAware`: 直前スプリントまでの組織状態を見てブランチ順を決める（RI-86 / F-11）
@@ -250,12 +250,12 @@ const orderFromBranches = (branches: readonly string[]): readonly string[] =>
   branches.flatMap((b) => [1, 2, 3].map((n) => `${b}-${n}`));
 
 const EVOLUTION_ORDER_AI_FIRST = orderFromBranches(['ai', 'dev', 'quality', 'review', 'culture']);
-/** セキュリティ軽視: 速度／AI を先に取り、品質（securityAdd / incidentRateMul）は最後。 */
+/** セキュリティ軽視: AI／速度を先に取り、品質（securityAdd）は最後。レビューは凍結回避のため速度の次。 */
 const EVOLUTION_ORDER_NEGLECT_FIRST = orderFromBranches([
   'ai',
   'dev',
-  'culture',
   'review',
+  'culture',
   'quality',
 ]);
 /** 肥大ハーネス: 速度側を先に伸ばし、infraCostMul 付きの ai-2/ai-3 は後回し（RI-88）。 */
@@ -626,7 +626,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   /**
    * RI-87 / F-10: セキュリティ軽視。
    * 速度／AI を優先し、検証・セキュリティ投資カード／レリックを後回し／回避する。
-   * 進化は品質（セキュリティ加算）を最後にし、検証投資を先行させない（RI-76）。
+   * 進化は AI／速度を先に取り、品質（セキュリティ加算）は最後にする（RI-76）。
    */
   securityNeglect: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),

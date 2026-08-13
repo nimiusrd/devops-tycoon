@@ -33,7 +33,7 @@
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ |
 | [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
-| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-1・F-7（RI-73）と F-10（RI-76）は再計測で未達。F-8とF-9の有効手は反実仮想評価が未実装（RI-101）、F-3は契約未検証（RI-102）。F-2はRI-77／78／83、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-11はRI-86、F-12はRI-81で充足または実装済み |
+| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-10（RI-76）は再計測で未達。F-8とF-9の有効手は反実仮想評価が未実装（RI-101）、F-3は契約未検証（RI-102）。F-1・F-7はRI-73、F-2はRI-77／78／83、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-11はRI-86、F-12はRI-81で充足または実装済み |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
 | [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。残る未充足は本表の他課題 |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ等は実装済み | 🟡 残候補はRI-34 |
@@ -45,7 +45,6 @@
 | --- | --- | --- |
 | ローカル拡張の一部が未着手 | 第23章 | [RI-34](./remaining-issues.md#ri-34-ローカル完結の将来拡張) |
 | 1024×768・6レリック状態で盤面最低寸法を下回る | 第4／第22.2／第22.5 | [RI-93](./remaining-issues.md#ri-93-子コンテンツの変更で再崩壊する画面レイアウト構造)（実装単位RI-94〜100は完了） |
-| 難易度カーブと固定強手の解消（F-1・F-7。再計測で未達） | 第16／第19.1 F-1・F-7 | [RI-73](./remaining-issues.md#ri-73-難易度カーブと常に正解常に不正解な手がある構造) |
 | 敗北直前の実質的な選択肢を反実仮想評価できない | 第19.1 F-8・F-9／第22.5 | [RI-101](./remaining-issues.md#ri-101-敗北直前の実質的な選択肢を反実仮想評価できない) |
 | スプリント間の戦略層がプレイヤーを急かさないことを検証できない | 第19.1 F-3／第22.5 | [RI-102](./remaining-issues.md#ri-102-スプリント間の戦略層がプレイヤーを急かさないことを検証できない) |
 | 勝利種別のビルド分岐（F-10。再計測で modal FAIL） | 第14／第19.1 F-10 | [RI-76](./remaining-issues.md#ri-76-勝利種別が実質2種で最も受動的なプレイが最上位勝利を取る) |

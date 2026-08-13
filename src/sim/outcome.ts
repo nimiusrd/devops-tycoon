@@ -119,6 +119,8 @@ export const HAPPINESS_MORALE_MIN = 70;
 export const HAPPINESS_SENIOR_HP_MIN = 45;
 /** セキュリティ重視ビルドを健全へ上げる下限（実測の Focus 勝ちは 86 以上、FullBet は 81 以下）。 */
 export const HEALTHY_SECURITY_MIN = 85;
+/** 健全勝利に必要な士気下限（SPEC §14 の Quality と Morale）。 */
+export const HEALTHY_MORALE_MIN = 65;
 /** AI 成功に必要な利用率。 */
 export const AI_SUCCESS_AI_PCT_MIN = 0.55;
 /** AI 成功に必要なリテラシー。 */
@@ -160,9 +162,11 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   }
 
   // セキュリティ重視 + 全面 AI: 品質進化と検証投資の勝ち筋。AI 成功より先に健全へ。
+  // 士気下限は通常の健全と同じ（SPEC §14: Quality と Morale）。
   if (
     org.securityLevel >= HEALTHY_SECURITY_MIN &&
     org.quality >= 65 &&
+    org.morale >= HEALTHY_MORALE_MIN &&
     aiPct >= AI_SUCCESS_AI_PCT_MIN &&
     reworkRatio < AI_SUCCESS_REWORK_MAX
   ) {
@@ -179,14 +183,17 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'chaos';
   }
 
-  // AI フルベット: 利用率と Literacy。レビュー渋滞はフルベットが引き受ける代償なので必須にしない。
-  // セキュリティ軽視（低 securityLevel）と手戻り螺旋だけは除外する。
+  // AI フルベット: 利用率と Literacy。ピーク上限 16 はフルベット勝ち（実測ピーク ~45）を
+  // 落とすので置かない。失敗診断の reviewHell / aiOverproduction / reworkSpiral は除外し、
+  // SPEC §14 の「Review 詰まりを抑えてクリア」とリザルトの併記を避ける。
   if (
     aiPct >= AI_SUCCESS_AI_PCT_MIN &&
     reworkRatio < AI_SUCCESS_REWORK_MAX &&
     org.aiLiteracy >= AI_SUCCESS_LITERACY_MIN &&
     org.securityLevel >= AI_SUCCESS_SECURITY_MIN &&
-    diagnosis !== 'reworkSpiral'
+    diagnosis !== 'reworkSpiral' &&
+    diagnosis !== 'reviewHell' &&
+    diagnosis !== 'aiOverproduction'
   ) {
     return 'aiSuccess';
   }
@@ -214,7 +221,7 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   }
 
   // 品質寄りの健全。経営（予算残り）より先に評価し、品質ビルドが予算だけで潰されないようにする。
-  if (org.quality >= 65 && org.morale >= 65 && reworkRatio < 0.2) {
+  if (org.quality >= 65 && org.morale >= HEALTHY_MORALE_MIN && reworkRatio < 0.2) {
     return 'healthy';
   }
 

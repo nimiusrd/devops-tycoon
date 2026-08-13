@@ -337,7 +337,7 @@ describe('evaluateWinType', () => {
     });
   });
 
-  it('AI導入成功は利用率と Literacy を核にし、レビュー渋滞があっても成立する（RI-76）', () => {
+  it('AI導入成功は利用率と Literacy を核にし、失敗診断のレビュー渋滞は除外する（RI-76）', () => {
     win('aiSuccess', {
       org: { quality: 80, morale: 80, seniorHp: 40, aiLiteracy: 40, securityLevel: 55 },
       totals: {
@@ -375,8 +375,8 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
-    // フルベットはレビュー渋滞を引き受ける。reviewHell でも利用率があれば aiSuccess。
-    win('aiSuccess', {
+    // reviewHell（ピーク≥16）は SPEC §14 の Review 詰まりなので AI 成功にしない。
+    win('normal', {
       org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 40, securityLevel: 55 },
       totals: {
         completed: 20,
@@ -388,8 +388,8 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
-    // aiOverproduction（高AI率かつキュー詰まり）もフルベットの代償として aiSuccess にする。
-    win('aiSuccess', {
+    // aiOverproduction（高AI率かつキュー詰まり）も AI 成功にしない。
+    win('normal', {
       org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 55, securityLevel: 55 },
       totals: {
         completed: 20,
@@ -423,6 +423,27 @@ describe('evaluateWinType', () => {
         quality: 90,
         securityLevel: 85,
         morale: 100,
+        seniorHp: 20,
+        aiLiteracy: 80,
+      },
+      totals: {
+        completed: 40,
+        done: 40,
+        aiAssisted: 30,
+        rework: 1,
+        reviewQueuePeak: 40,
+        spread: 0,
+        incidents: 42,
+        delivered: 400,
+      },
+      budget: 10,
+    });
+    // 士気が通常の健全下限未満なら、セキュリティが高くても健全にしない。
+    win('aiSuccess', {
+      org: {
+        quality: 90,
+        securityLevel: 85,
+        morale: 64,
         seniorHp: 20,
         aiLiteracy: 80,
       },

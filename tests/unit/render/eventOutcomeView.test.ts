@@ -464,11 +464,12 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
     expect(tip).toContain(`安定中 手戻り率 x${STABILITY_REWORK_MUL}`);
   });
 
-  it('アンドンは運用安定なしをカードに出し、薄キュー数値はツールチップへ', () => {
+  it('アンドンは運用安定なしとシニアHPをカードに出し、薄キュー士気はツールチップへ', () => {
     const def = getAction('andon')!;
     const tags = formatActionDefTags(def);
     expect(tags.some((t) => t.label.includes('運用安定なし'))).toBe(true);
     expect(tags.some((t) => t.label.includes('士気'))).toBe(true);
+    expect(tags.some((t) => t.label.includes('シニアHP'))).toBe(true);
     expect(tags.some((t) => t.label.includes('Review未渋滞'))).toBe(false);
     expect(formatActionTooltip(def)).toContain('Review未渋滞');
   });

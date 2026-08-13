@@ -14,6 +14,8 @@ import {
   FIREFIGHT_STABILITY_BURN_TICKS,
   firefightHpCost,
   INTERRUPT_HP_COST,
+  SPLIT_HP_COST,
+  SPLIT_MORALE_COST,
   OVERTIME_HP_COST,
   OVERTIME_MORALE_COST,
   OVERTIME_TICKS,
@@ -99,13 +101,17 @@ const ACTION_FIXTURES: Record<ActionId, ActionFixture> = {
     expectedEffect: (def) => ({
       actionId: 'splitPr',
       affectedTaskIds: [0],
+      hpCost: SPLIT_HP_COST,
+      moraleCost: SPLIT_MORALE_COST,
       focusCost: def.cost,
       gaugeGain: def.gauge,
     }),
-    assertEffect: ({ sprint, before }) => {
+    assertEffect: ({ sprint, org, before }) => {
       const target = sprint.tasks[0];
       expect(target.split).toBe(true);
       expect(target.progress).toBeLessThan(before.sprint.tasks[0].progress);
+      expect(org.morale).toBe(before.org.morale - SPLIT_MORALE_COST);
+      expect(org.seniorHp).toBe(before.org.seniorHp - SPLIT_HP_COST);
     },
   },
   firefight: {
@@ -247,9 +253,11 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(sprint.metrics.focusSpent).toBe(focusSpent0 + def.cost);
       expect(sprint.metrics.actionCounts[id]).toBe(actionCount0 + 1);
       expect(sprint.comboGauge).toBeCloseTo(gauge0 + def.gauge, 5);
-      // RI-73 / F-1: firefight（軽い炎上）と andon（薄キュー）は stabilizesFlow でも安定を付けない。
+      // RI-73 / F-1: firefight（軽い炎上）と andon / splitPr は stabilizesFlow でも安定を付けない。
       const expectStability =
-        def.stabilizesFlow && id !== 'firefight' && id !== 'andon' ? TICK + STABILITY_TICKS : 0;
+        def.stabilizesFlow && id !== 'firefight' && id !== 'andon' && id !== 'splitPr'
+          ? TICK + STABILITY_TICKS
+          : 0;
       expect(sprint.modifiers.stabilityUntilTick).toBe(expectStability);
       expect(sprint.metrics.stabilizingGrants).toBe(expectStability > 0 ? 1 : 0);
       fixture.assertEffect({ sprint, org, before });
@@ -333,6 +341,23 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(sprint.modifiers.stabilityUntilTick).toBe(0);
       expect(sprint.metrics.stabilizingGrants).toBe(0);
       expect(sprint.metrics.actionCounts.andon).toBe(1);
+    });
+
+    it('PR分割は士気とシニアHPを払い運用安定を付けない', () => {
+      const org = createOrgState('default', true);
+      const sprint = makeSprint(org, [
+        makeTask(0, { kind: 'complex', lane: 'coding', progress: 0.5 }),
+      ]);
+      const morale0 = org.morale;
+      const hp0 = org.seniorHp;
+      const outcome = applyAction('splitPr', sprint, org, rng, TICK);
+      expect(outcome.ok).toBe(true);
+      expect(outcome.effect?.moraleCost).toBe(SPLIT_MORALE_COST);
+      expect(outcome.effect?.hpCost).toBe(SPLIT_HP_COST);
+      expect(org.morale).toBe(morale0 - SPLIT_MORALE_COST);
+      expect(org.seniorHp).toBe(hp0 - SPLIT_HP_COST);
+      expect(sprint.modifiers.stabilityUntilTick).toBe(0);
+      expect(sprint.metrics.stabilizingGrants).toBe(0);
     });
 
     it('薄キューのアンドンは士気追加とシニアHPを払い運用安定も付けない', () => {

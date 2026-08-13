@@ -29,7 +29,7 @@ export const ACTION_DEFS: ActionDef[] = [
     gauge: 0.25,
     stabilizesFlow: true,
     description: '巨大PRをドラッグして割り、レビューしやすくする（手戻り率↓）',
-    sideEffect: '処理が一旦巻き戻る',
+    sideEffect: '処理が一旦巻き戻る。士気とシニアHPを消費。運用安定なし',
   },
   {
     id: 'firefight',

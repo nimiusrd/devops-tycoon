@@ -103,6 +103,10 @@ export const PAIR_REVIEW_COUNT = 2;
 export const PAIR_LITERACY_GAIN = 6;
 /** PR分割の進捗巻き戻し（UI プレビューと共有）。 */
 export const SPLIT_PROGRESS_PENALTY = 0.2;
+/** PR分割の士気コスト（単体乱打が固定強手にならないよう。RI-73 / F-1）。 */
+export const SPLIT_MORALE_COST = 4;
+/** PR分割のシニアHPコスト（分割作業にシニアが割かれる。RI-73 / F-1）。 */
+export const SPLIT_HP_COST = 4;
 
 /** 残業号令の持続 tick・副作用。スループット倍率は model 側（process.ts）に置く。 */
 export const OVERTIME_TICKS = 30;
@@ -182,13 +186,13 @@ export function isAndonReviewCongested(sprint: SprintState): boolean {
 /**
  * 安全側介入が今回の盤面で運用安定を付与するか（RI-73 / F-1）。
  * - 緊急対応: 猶予が短い／複数炎上のときだけ（軽い先消しスパムを防ぐ）
- * - アンドン: 付けない（単体乱打の固定強手化を防ぐ。複合は他介入で安定を得る）
+ * - アンドン / PR分割: 付けない（単体乱打の固定強手化を防ぐ。複合は他介入で安定を得る）
  */
 export function grantsStabilityOnApply(id: ActionId, sprint: SprintState): boolean {
   const def = getAction(id);
   if (!def?.stabilizesFlow) return false;
   if (id === 'firefight') return isFirefightUrgent(sprint);
-  if (id === 'andon') return false;
+  if (id === 'andon' || id === 'splitPr') return false;
   return true;
 }
 
@@ -224,12 +228,21 @@ const EFFECTS: Record<
 
   // PR分割: 巨大PRを割り、以降のレビューを通りやすくする（split 印）。
   // target 指定時はそのタスク、省略時は従来の自動選択（RI-30）。
-  splitPr(sprint, _org, _rng, _tick, target) {
+  // RI-73 / F-1: 士気・シニアHPを払い、運用安定は付けない（単体乱打の固定強手化を防ぐ）。
+  splitPr(sprint, org, _rng, _tick, target) {
     const task = resolveSplitPrTarget(sprint, target);
     if (!task) return false;
     task.split = true;
     task.progress = Math.max(0, task.progress - SPLIT_PROGRESS_PENALTY);
-    return { affectedTaskIds: [task.id] };
+    const morale = spendStat(org.morale, SPLIT_MORALE_COST);
+    const hp = spendStat(org.seniorHp, SPLIT_HP_COST);
+    org.morale = morale.next;
+    org.seniorHp = hp.next;
+    return {
+      affectedTaskIds: [task.id],
+      moraleCost: morale.spent,
+      hpCost: hp.spent,
+    };
   },
 
   // 緊急対応: 最も延焼が近い火を 1 件、タイマーが切れる前に鎮火して Review へ戻す。
@@ -429,7 +442,7 @@ export function applyAction(
   const def = getAction(id)!;
   const stabilityUntilTick = sprint.modifiers.stabilityUntilTick;
   // 割り込み／ペアレビューがこの場で reviewOne を呼んでも安定化を適用する。
-  // 緊急対応・アンドンは盤面条件付き（RI-73 / F-1）。判定は効果適用前の盤面で行う。
+  // 緊急対応・アンドン・PR分割は盤面条件付き（RI-73 / F-1）。判定は効果適用前の盤面で行う。
   const grantStability = grantsStabilityOnApply(id, sprint);
   if (grantStability) {
     sprint.modifiers.stabilityUntilTick = tick + STABILITY_TICKS;

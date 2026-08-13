@@ -388,6 +388,19 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
+    // seniorSacrifice が先に付いても、同じピークなら AI 成功へ改善しない。
+    win('normal', {
+      org: { quality: 50, morale: 50, seniorHp: 29, aiLiteracy: 40, securityLevel: 55 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 12,
+        rework: 3,
+        reviewQueuePeak: 18,
+        spread: 1,
+      },
+      budget: 10,
+    });
     // aiOverproduction（高AI率かつキュー詰まり）も AI 成功にしない。
     win('normal', {
       org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 55, securityLevel: 55 },
@@ -439,7 +452,8 @@ describe('evaluateWinType', () => {
       budget: 10,
     });
     // 士気が通常の健全下限未満なら、セキュリティが高くても健全にしない。
-    win('aiSuccess', {
+    // ピーク 40 は AI 成功にもせず、障害連発なら残差カオスへ。
+    win('chaos', {
       org: {
         quality: 90,
         securityLevel: 85,
@@ -459,8 +473,8 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
-    // 閾値未満のセキュリティは健全へ上げない（フルベット側）。
-    win('aiSuccess', {
+    // 閾値未満のセキュリティは健全へ上げない。渋滞ピークなら AI 成功にもしない。
+    win('normal', {
       org: {
         quality: 90,
         securityLevel: 84,

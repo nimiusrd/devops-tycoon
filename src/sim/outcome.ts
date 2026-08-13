@@ -136,6 +136,8 @@ export const AI_SUCCESS_LITERACY_MIN = 40;
 export const AI_SUCCESS_REWORK_MAX = 0.22;
 /** セキュリティ軽視を AI 成功から外す下限（軽視の勝ちは 33、フルベットの勝ちは 55 以上）。 */
 export const AI_SUCCESS_SECURITY_MIN = 50;
+/** `diagnose()` の reviewHell と同じピーク。seniorSacrifice が先に付いても渋滞を隠さない。 */
+export const AI_SUCCESS_REVIEW_QUEUE_PEAK_MAX = 16;
 
 /**
  * ボス突破時に達成した最上位の勝利種別を返す（RI-76）。
@@ -190,14 +192,14 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'chaos';
   }
 
-  // AI フルベット: 利用率と Literacy。ピーク上限 16 はフルベット勝ち（実測ピーク ~45）を
-  // 落とすので置かない。失敗診断の reviewHell / aiOverproduction / reworkSpiral は除外し、
-  // SPEC §14 の「Review 詰まりを抑えてクリア」とリザルトの併記を避ける。
+  // AI フルベット: 利用率と Literacy。レビュー渋滞は診断名ではなくピークで見る。
+  // seniorSacrifice が reviewHell より先に付くため、診断除外だけだと HP 低下で AI 成功へ改善する。
   if (
     aiPct >= AI_SUCCESS_AI_PCT_MIN &&
     reworkRatio < AI_SUCCESS_REWORK_MAX &&
     org.aiLiteracy >= AI_SUCCESS_LITERACY_MIN &&
     org.securityLevel >= AI_SUCCESS_SECURITY_MIN &&
+    totals.reviewQueuePeak < AI_SUCCESS_REVIEW_QUEUE_PEAK_MAX &&
     diagnosis !== 'reworkSpiral' &&
     diagnosis !== 'reviewHell' &&
     diagnosis !== 'aiOverproduction'
@@ -228,7 +230,13 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   }
 
   // 品質寄りの健全。経営（予算残り）より先に評価し、品質ビルドが予算だけで潰されないようにする。
-  if (org.quality >= 65 && org.morale >= HEALTHY_MORALE_MIN && reworkRatio < 0.2) {
+  // レビュー渋滞のフルベットは健全へ落とさず、SPEC の AI 成功条件を迂回しない。
+  if (
+    org.quality >= 65 &&
+    org.morale >= HEALTHY_MORALE_MIN &&
+    reworkRatio < 0.2 &&
+    totals.reviewQueuePeak < AI_SUCCESS_REVIEW_QUEUE_PEAK_MAX
+  ) {
     return 'healthy';
   }
 

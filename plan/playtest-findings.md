@@ -223,8 +223,8 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   前回の成功結果を最新値として集計してしまうのを防ぐ
 - **メタ進行は初見相当**（`PT_META=fresh`）。`game.startRun` と同じく既定解放分のみをドラフト候補にする
 - 壁時計換算は実装の `MS_PER_TICK_1X`（`src/ui/sprintTempo.ts`）から読む
-- 現行スナップショット（2026-08-13、generation `89529420ef7139e3`）は
-  **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。71勝 / 1,489敗で、以下の「現行」値はこの出力へ同期する
+- 現行スナップショット（2026-08-13、generation `787d2753e831ee3c`）は
+  **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。72勝 / 1,488敗で、以下の「現行」値はこの出力へ同期する
 
 ### 統制の考え方
 
@@ -319,7 +319,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | F-7 | `idle` は全難易度 0/10。`naive` easy 2/10（20%）が≈20%帯 | RI-73（完了） |
 | F-8 | Nightmare は現行390ラン全敗。「何スプリント前から実質的な選択肢が消えたか」は未計測（RI-89 は機械的発動可否のみで、回避有効性の反実仮想は未実装） | RI-101（未着手） |
 | F-9 | 進行速度と決着位置は敗因ごとに違う。機械的な発動可否は計測可能だが、有効な手の差は未検証 | RI-89（観測完了）／RI-101（未着手） |
-| F-10 | 再計測後は modal `chaos` / `healthy` の2種で FAIL（共通seed分岐なし）。機構は維持 | RI-76（再計測で未達） |
+| F-10 | ビルド方針の modal は `aiSuccess` / `chaos` / `healthy` の3種で PASS（TVD・セキュリティ対・共通 seed 裏付けを含む） | RI-76（完了） |
 
 充足済みの F-2 / F-4 / F-5 / F-6 / F-11 / F-12 は、実装・受入の詳細を各課題節とGit履歴に残す。
 
@@ -397,19 +397,19 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 回帰は `tests/unit/ui/sprintTempo.test.ts` の F-4 ハーネス検証（代表3方針 × `pt-1..10`）で固定。
 
-### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）— 進行中（再計測で未達）
+### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）— 完了
 
-現行コホートは **1,560ラン中71勝（敗北1,489）**で、勝利種別の内訳は
-`happiness` 8 / `chaos` 30 / `healthy` 33。`management` / `noDamage` /
-`aiSuccess` / `normal` は 0件だった。
+現行コホートは **1,560ラン中72勝（敗北1,488）**で、勝利種別の内訳は
+`aiSuccess` 4 / `happiness` 6 / `chaos` 29 / `healthy` 33。`management` / `noDamage` /
+`normal` は 0件だった。
 F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimized` / `noAi` /
 `reviewHeavy` / `skilledNoHire` / `securityNeglect` / `securityFocus`）だけで判定し、一致≥2 / 混在首位≥3・share≥2/3・同率除外・
 異 modal 方針間 TVD≥0.5・試練プロファイル込みの共通 seed 分岐（双方が自身の modal を
 再現した組だけ）・既定コホートを要求する。
-再計測後の F-10 modal は `chaos` / `healthy` の2種で FAIL（`harness*` は標本不足、
-共通 seed 分岐なし、セキュリティ方針間のTVD不足）。
-勝利種別判定の機構自体は維持する。`harness*` の frontier 試練は通常条件と混ぜない。
-`noDamage` の量産もない。
+F-10 modal は `aiSuccess` / `chaos` / `healthy` の3種で PASS（採用方針
+`aiFullBet=aiSuccess` / `securityNeglect=chaos` / `securityFocus=healthy`、
+異 modal TVD≥0.5、セキュリティ対 TVD=1.00、共通 seed 裏付けあり）。
+`harness*` は標本不足のまま frontier 試練を通常条件と混ぜない。`noDamage` の量産もない。
 
 勝利があった方針だけを列挙する。
 
@@ -422,9 +422,9 @@ F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimiz
 | `adjReorgTeams` | `chaos` 2 / `healthy` 1 |
 | `adjRequestBudget` | `healthy` 1 |
 | `adjStakeholderCare` | `healthy` 1 |
-| `aiFullBet` | `chaos` 1 / `healthy` 2 |
-| `harnessBloated` | `happiness` 1 |
-| `harnessOptimized` | `happiness` 1 |
+| `aiFullBet` | `aiSuccess` 2 / `chaos` 1 |
+| `harnessBloated` | `aiSuccess` 1 |
+| `harnessOptimized` | `aiSuccess` 1 |
 | `naive` | `healthy` 2 |
 | `naiveNoInterventionCtl` | `healthy` 1 |
 | `noAi` | `happiness` 1 |
@@ -439,8 +439,8 @@ F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimiz
 | `onlyThrottle` | `chaos` 1 / `healthy` 1 |
 | `passive` | `chaos` 1 |
 | `reviewHeavy` | `healthy` 1 |
-| `securityFocus` | `chaos` 2 / `healthy` 1 |
-| `securityNeglect` | `chaos` 1 |
+| `securityFocus` | `healthy` 3 |
+| `securityNeglect` | `chaos` 2 |
 | `skilled` | `healthy` 1 |
 | `skilledNoCards` | `chaos` 2 / `healthy` 1 |
 | `skilledNoHire` | `chaos` 1 / `healthy` 1 |
@@ -456,14 +456,16 @@ F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimiz
 
 1. **`noDamage`**: 重介入なし・延焼0に加え、品質≥70・士気≥70・シニアHP≥60・手戻り率0.15未満・
    健全系診断（`healthyAcceleration` / `documentationKingdom`）をすべて満たすとき
-2. **`aiSuccess`**: AI 利用率・手戻り・レビューピーク・リテラシーと診断の両立
-   （`reviewHell` / `aiOverproduction` / `reworkSpiral` は除外。`seniorSacrifice` は除外しない）
-3. **`healthy`（documentationKingdom）**: 診断が `documentationKingdom` かつ品質・士気・手戻り
-4. **`happiness`**: 士気≥70 かつシニアHP≥45
-5. **`chaos`**: インシデント≥20 かつ累計出荷≥250
-6. **`healthy`**: 品質・士気・手戻り
-7. **`management`**: 予算≥50（他シグネチャの残差）
-8. それ以外は **`normal`**
+2. **`healthy`（セキュリティ重視）**: セキュリティ≥85・品質≥65・AI利用率≥0.55・手戻り率0.22未満
+3. **`chaos`（セキュリティ軽視）**: インシデント≥20・累計出荷≥250・セキュリティ<85
+4. **`aiSuccess`**: AI 利用率≥0.55・Literacy≥40・手戻り率0.22未満・セキュリティ≥50。
+   レビュー渋滞はフルベットの代償として必須にしない。`reworkSpiral` のみ除外
+5. **`healthy`（documentationKingdom）**: 診断が `documentationKingdom` かつ品質・士気・手戻り
+6. **`happiness`**: 士気≥70 かつシニアHP≥45
+7. **`chaos`**: インシデント≥20 かつ累計出荷≥250（高セキュリティで上の健全を外した残差）
+8. **`healthy`**: 品質・士気・手戻り
+9. **`management`**: 予算≥50（他シグネチャの残差）
+10. それ以外は **`normal`**
 
 したがって `noDamage` と `healthy` は、残業・アンドンの有無「だけ」で入れ替わる構造ではない。
 この総数・種別内訳・方針別表は、旧コホートの数値を混ぜず、同じ
@@ -474,7 +476,7 @@ F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimiz
 | 方針 | 組織診断 |
 | --- | --- |
 | `aiFullBet` | `reviewHell` 3 / `seniorSacrifice` 37 |
-| `noAi` | `reviewHell` 4 / `seniorSacrifice` 32 / `healthyAcceleration` 3 / `documentationKingdom` 1 |
+| `noAi` | `reviewHell` 4 / `seniorSacrifice` 32 / `documentationKingdom` 1 / `healthyAcceleration` 3 |
 
 ### RI-77 AI 導入が既定 ON で、既定のまま進むのが有利（優先度: 高 / F-1・F-2・F-10）— 完了
 
@@ -709,17 +711,17 @@ RI-73（F-1 受入）後の既定フルコホートで行った。
 `reviewLoadAdd` は付けない）へ変更し、スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を
 追加した。予兆のピーク入力は通算ではなく進行中スプリントのピーク／現在キューを使う。
 
-再計測（1,560ラン、敗北 1,489）では `reviewFreeze`（59件）はすべて `sprint` で決着し、
+再計測（1,560ラン、敗北 1,488）では `reviewFreeze`（58件）はすべて `sprint` で決着し、
 即死イベント経路は消えた。ピーク経路（`REVIEW_FREEZE_PEAK`）とスプリント中の対処へ委ねる。
 
 | 敗因 | 決着フェーズ |
 | --- | --- |
-| **`reviewFreeze`**（59件） | `sprint` **100%** |
-| `seniorBurnout`（1245件） | beat / sprint / quarterReview が混在 |
-| `kpiMissed`（44件） | `quarterReview` 100% |
+| **`reviewFreeze`**（58件） | `sprint` **100%** |
+| `seniorBurnout`（1243件） | beat / sprint / quarterReview が混在 |
+| `kpiMissed`（43件） | `quarterReview` 100% |
 | `budgetExhausted`（34件） | setup 33件 / beat 1件 |
 | `techDebt`（69件） / `moraleCollapse`（13件） | `sprint` が大半 |
-| `aiDependency`（24件） | sprint 19件 / setup 5件 |
+| `aiDependency`（27件） | sprint 22件 / setup 5件 |
 | `reorgRequired`（1件） | `quarterReview` 100% |
 
 回帰は `tests/unit/scenarios/reviewFreeze.test.ts` と E2E（凍結チップ + decision UI）で固定。
@@ -771,7 +773,7 @@ Q1 で方向確定 **28/40（70%）**、確定ブランチは `ai` 21 / `review`
   機械的な「打てた手」は RI-89 で観測できるが、有効な手の差は RI-101 の対象とする。
 - **ビルドの違いは組織診断と勝利種別の両方に出ている**。`noAi` は
   `healthyAcceleration` 3 と、`aiFullBet`（`reviewHell` 3 / `seniorSacrifice` 37）から
-  明確に分かれる。F-10 ビルド modal のコホート受入は再計測で FAIL（RI-76 機構は維持）。
+  明確に分かれる。F-10 ビルド modal は `aiSuccess` / `chaos` / `healthy` の3種で PASS（RI-76 完了）。
 - **AI の on/off は状態へ正しく伝播し、出荷も正方向**。AI 配布を切ると AI 利用率 0%、
   最終 AI 依存度が 94.4→36.7（`noAiCtl`）になり、共通到達セルの出荷は既定部分配布側が多い（RI-77 完了）。
 - **カード条件は選択発動2 vs 無カード3**で、共通機会の次スプリントKPIと発動数も記録できる（RI-78完了）。

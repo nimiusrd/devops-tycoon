@@ -14,7 +14,7 @@
 
 ### RI-76 勝利種別が実質2種で、最も受動的なプレイが最上位勝利を取る
 
-`evaluateWinType` の診断・ビルド指標ベース判定と代表入力のユニットテストは実装済み。2026-08-13 の現行 1,560ランでは 73勝（`happiness` 9 / `chaos` 32 / `healthy` 32）だが、F-10のビルド別 modal は `chaos` / `healthy` の2種に留まり受入はFAILしている。
+`evaluateWinType` の診断・ビルド指標ベース判定と代表入力のユニットテストは実装済み。2026-08-13 の現行 1,560ランでは 71勝（`happiness` 8 / `chaos` 30 / `healthy` 33）だが、F-10のビルド別 modal は `chaos` / `healthy` の2種に留まり受入はFAILしている。
 
 残る受入条件:
 

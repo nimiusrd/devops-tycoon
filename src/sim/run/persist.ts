@@ -70,6 +70,11 @@ export interface RunPersistExtras {
    * 旧セーブでは欠落しうる（復元時は 0）。
    */
   coarseIncidentCarry?: number;
+  /**
+   * 粗粒度炎上の顧客信頼 raw 累積（RI-87）。
+   * ステップ丸めで 0.5 未満が消えないよう四半期内で繰り越す。旧セーブでは欠落しうる。
+   */
+  coarseSecurityTrustRaw?: number;
   /** 今ドラフトでのマリガン使用済み（RI-81。旧セーブでは欠落しうる）。 */
   draftMulliganUsed?: boolean;
 }

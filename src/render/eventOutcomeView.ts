@@ -282,6 +282,8 @@ const CARD_ADD_EFFECTS = [
   { key: 'aiDependencyAdd' as const, label: 'AI依存度', inverse: true },
   { key: 'qualityAdd' as const, label: '品質' },
   { key: 'testCoverageAdd' as const, label: 'Test Coverage' },
+  // RI-87: セキュリティ水準の増減。
+  { key: 'securityAdd' as const, label: 'セキュリティ' },
 ];
 
 function formatMulFactor(value: number): string {

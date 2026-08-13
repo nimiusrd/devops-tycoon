@@ -102,6 +102,8 @@ describe('炎上タイマー: 時間切れの解決（第6.3）', () => {
   it('シニアに余力がなければ延焼し、Review 待ちの隣の PR へ燃え移る（延焼の連鎖）', () => {
     const org = createOrgState('default', true);
     org.seniorHp = INCIDENT_CONTAIN_HP - 2;
+    // 延焼連鎖の検証なのでセキュリティ倍率は無効果にする（RI-87）。
+    org.securityLevel = 100;
     const debt0 = org.techDebt;
     const morale0 = org.morale;
     const neighbor = makeTask(1);

@@ -48,6 +48,7 @@ const makeTeam = (overrides: Partial<TeamRunState> = {}): TeamRunState => ({
   testCoverage: 40,
   documentation: 30,
   quality: 50,
+  securityLevel: 55,
   ...overrides,
 });
 

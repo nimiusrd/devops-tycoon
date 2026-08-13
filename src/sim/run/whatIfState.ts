@@ -123,6 +123,7 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     org.testCoverage,
     org.aiLiteracy,
     org.documentation,
+    org.securityLevel,
     org.aiEnabled ? 1 : 0,
     input.budget,
     mod.reviewLoadAdd ?? 0,

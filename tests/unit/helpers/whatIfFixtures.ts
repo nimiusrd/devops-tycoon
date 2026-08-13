@@ -85,6 +85,7 @@ export function directWhatIfInput(overrides: Partial<WhatIfComputeInput> = {}): 
       testCoverage: 45,
       documentation: 35,
       quality: 50,
+      securityLevel: 60,
       morale: 55,
       seniorHp: 40,
       techDebt: 6,

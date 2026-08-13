@@ -27,8 +27,9 @@ export const RELIC_DEFS: RelicDef[] = [
   {
     id: 'postmortem',
     name: 'ポストモーテム文化',
-    description: 'インシデントから学び、同じ轍を踏まない文化',
-    effects: { incidentRateMul: 0.9, testCoverageAdd: 8 },
+    description: 'インシデントから学び、同じ轍を踏まない文化。セキュリティ水準も底上げする',
+    // RI-87: 既存レリックへセキュリティ投資を載せる。
+    effects: { incidentRateMul: 0.9, testCoverageAdd: 8, securityAdd: 6 },
   },
   {
     id: 'doc-driven',
@@ -58,8 +59,9 @@ export const RELIC_DEFS: RelicDef[] = [
   {
     id: 'no-friday-deploy',
     name: '金曜デプロイ禁止',
-    description: '金曜のリリースを控え、週末前の事故を防ぐ',
-    effects: { incidentRateMul: 0.85 },
+    description: '金曜のリリースを控え、週末前の事故を防ぐ。セキュリティ水準も守る',
+    // RI-87: 既存レリックへセキュリティ投資を載せる。
+    effects: { incidentRateMul: 0.85, securityAdd: 4 },
   },
   {
     id: 'primary-source',

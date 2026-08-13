@@ -18,7 +18,12 @@ import {
   seniorHpShareMul,
   type RosterState,
 } from '../member';
-import { AI_ADOPTION, TASK_BASE_VALUE } from '../model/process';
+import {
+  AI_ADOPTION,
+  TASK_BASE_VALUE,
+  securityCustomerTrustSpreadRaw,
+  securityFragility,
+} from '../model/process';
 import { AI_LITERACY_UNSAFE_CAP } from '../outcome';
 import { createRng } from '../rng';
 import type { DiagnosisType } from '../run/types';
@@ -160,6 +165,7 @@ function homeSeedRaw(
     testCoverage: Math.round(org.testCoverage),
     documentation: Math.round(org.documentation),
     quality: Math.round(org.quality),
+    securityLevel: Math.round(org.securityLevel),
   };
 }
 
@@ -196,6 +202,7 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
   const testCoverage = clamp(jitter(base.testCoverage, 15), 20, 100);
   const documentation = clamp(jitter(base.documentation, 15), 20, 100);
   const quality = clamp(jitter(base.quality, 15), 20, 100);
+  const securityLevel = clamp(jitter(base.securityLevel, 15), 20, 100);
   return {
     aiDependency,
     reviewQueue,
@@ -210,6 +217,7 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
     testCoverage,
     documentation,
     quality,
+    securityLevel,
   };
 }
 
@@ -221,7 +229,14 @@ function toTeamRunState(args: {
 }): TeamRunState {
   const { raw } = args;
   const reviewCapacity = clamp(55 + raw.engineers * 4 - raw.reviewQueue * 2, 10, 100);
-  const incidentBias = clamp(0.08 + raw.incidents * 0.05 + (100 - raw.quality) * 0.002, 0.02, 0.45);
+  const incidentBias = clamp(
+    0.08 +
+      raw.incidents * 0.05 +
+      (100 - raw.quality) * 0.002 +
+      securityFragility(raw.securityLevel) * 0.08,
+    0.02,
+    0.45,
+  );
   return {
     id: args.id,
     deptId: args.deptId,
@@ -242,6 +257,7 @@ function toTeamRunState(args: {
     testCoverage: raw.testCoverage,
     documentation: raw.documentation,
     quality: raw.quality,
+    securityLevel: raw.securityLevel,
   };
 }
 
@@ -330,8 +346,16 @@ export function syncTeamFromOrg(
     testCoverage: Math.round(org.testCoverage),
     documentation: Math.round(org.documentation),
     quality: Math.round(org.quality),
+    securityLevel: Math.round(org.securityLevel),
     reviewCapacity: clamp(55 + engineers * 4 - reviewQueue * 2, 10, 100),
-    incidentBias: clamp(0.08 + incidents * 0.05 + (100 - org.quality) * 0.002, 0.02, 0.45),
+    incidentBias: clamp(
+      0.08 +
+        incidents * 0.05 +
+        (100 - org.quality) * 0.002 +
+        securityFragility(org.securityLevel) * 0.08,
+      0.02,
+      0.45,
+    ),
   };
 }
 
@@ -344,6 +368,7 @@ export function orgFromTeam(team: TeamRunState): OrgState {
     testCoverage: team.testCoverage,
     documentation: team.documentation,
     quality: team.quality,
+    securityLevel: team.securityLevel ?? team.quality,
     morale: team.morale,
     seniorHp: team.seniorHp,
     techDebt: team.techDebt,
@@ -372,6 +397,7 @@ export function companyOrgFromTeams(teams: readonly TeamRunState[], fallback: Or
     testCoverage: avg((t) => t.testCoverage),
     documentation: avg((t) => t.documentation),
     quality: avg((t) => t.quality),
+    securityLevel: avg((t) => t.securityLevel ?? t.quality),
     morale: fallback.morale,
     seniorHp: fallback.seniorHp,
     techDebt: avg((t) => t.techDebt),
@@ -463,6 +489,7 @@ export function appendTeamsToDept(
       testCoverage: args.template.testCoverage,
       documentation: args.template.documentation,
       quality: args.template.quality,
+      securityLevel: args.template.securityLevel ?? args.template.quality,
     });
     added.push(
       toTeamRunState({
@@ -505,6 +532,8 @@ export type CoarseStepResult = {
   teams: TeamRunState[];
   /** 非選択チームで新規発生した炎上件数（鎮火前。開数差分ではない）。 */
   ignited: number;
+  /** 発火チームの発生時点 securityLevel から積んだ顧客信頼 raw（RI-87）。 */
+  securityTrustSpreadRaw: number;
   /** 非選択チームの完了数合算（出荷増分を完了の近似とする）。 */
   completed: number;
   /** 非選択チームの AI 支援完了数合算（編成相当の採用率で按分）。 */
@@ -547,6 +576,7 @@ export function advanceCoarseTeams(
   const seniorHpCostMul = clamp(args.modifiers?.seniorHpCostMul ?? 1, 0.3, 3);
   const aiDependencyDrift = Math.max(0, Math.round(args.modifiers?.aiDependencyDrift ?? 0));
   let ignited = 0;
+  let securityTrustSpreadRaw = 0;
   let completed = 0;
   let aiAssisted = 0;
   const next = teams.map((team) => {
@@ -611,6 +641,7 @@ export function advanceCoarseTeams(
     if (fireRoll < fireChance) {
       incidents += 1;
       ignited += 1;
+      securityTrustSpreadRaw += securityCustomerTrustSpreadRaw(team.securityLevel ?? team.quality);
     }
     if (rng() < (0.35 + reviewCap * 0.004) * reviewMul) {
       incidents = Math.max(0, incidents - 1);
@@ -650,10 +681,16 @@ export function advanceCoarseTeams(
       aiLiteracy: clamp(team.aiLiteracy + literacyGain, 0, 100),
       seniorHp: clamp(team.seniorHp - seniorDrain + (100 - team.seniorHp) * 0.05, 1, 100),
       quality,
-      ...deriveTeamCapacities({ engineers: team.engineers, reviewQueue, incidents, quality }),
+      ...deriveTeamCapacities({
+        engineers: team.engineers,
+        reviewQueue,
+        incidents,
+        quality,
+        securityLevel: team.securityLevel,
+      }),
     };
   });
-  return { teams: next, ignited, completed, aiAssisted };
+  return { teams: next, ignited, securityTrustSpreadRaw, completed, aiAssisted };
 }
 
 /**
@@ -721,11 +758,21 @@ export function normalizeCoarseTotalsDelta(
 
 /** 行列・障害から派生する耐性・炎上バイアスを再計算する。 */
 export function deriveTeamCapacities(
-  team: Pick<TeamRunState, 'engineers' | 'reviewQueue' | 'incidents' | 'quality'>,
+  team: Pick<TeamRunState, 'engineers' | 'reviewQueue' | 'incidents' | 'quality'> & {
+    securityLevel?: number;
+  },
 ): Pick<TeamRunState, 'reviewCapacity' | 'incidentBias'> {
+  const securityLevel = team.securityLevel ?? team.quality;
   return {
     reviewCapacity: clamp(55 + team.engineers * 4 - team.reviewQueue * 2, 10, 100),
-    incidentBias: clamp(0.08 + team.incidents * 0.05 + (100 - team.quality) * 0.002, 0.02, 0.45),
+    incidentBias: clamp(
+      0.08 +
+        team.incidents * 0.05 +
+        (100 - team.quality) * 0.002 +
+        securityFragility(securityLevel) * 0.08,
+      0.02,
+      0.45,
+    ),
   };
 }
 
@@ -750,7 +797,13 @@ export interface ProjectOrgScaleInput {
   activeLive?: Partial<
     Pick<
       TeamRunState,
-      'reviewQueue' | 'incidents' | 'shipping' | 'morale' | 'techDebt' | 'aiDependency'
+      | 'reviewQueue'
+      | 'incidents'
+      | 'shipping'
+      | 'morale'
+      | 'techDebt'
+      | 'aiDependency'
+      | 'securityLevel'
     >
   > & { engineers?: number; aiAssignedCount?: number };
   adjust?: OrgAdjustState;
@@ -817,12 +870,25 @@ export function projectOrgScale(input: ProjectOrgScaleInput): OrgScaleState {
     docs: clamp(Math.round(input.infraBase.docs + infraBoost), 0, 100),
     aiGuideline: clamp(Math.round(input.infraBase.aiGuideline + infraBoost), 0, 100),
   };
+  const securityLevel =
+    input.teams.length === 0
+      ? 0
+      : Math.round(
+          input.teams.reduce((a, t) => {
+            const live =
+              t.id === input.activeTeamId && typeof input.activeLive?.securityLevel === 'number'
+                ? input.activeLive.securityLevel
+                : (t.securityLevel ?? t.quality);
+            return a + live;
+          }, 0) / input.teams.length,
+        );
 
   return aggregateCompany(departments, {
     seed: input.seed,
     budget: input.budget,
     diagnosis: input.diagnosis,
     infra,
+    securityLevel,
   });
 }
 
@@ -850,6 +916,7 @@ export function activeLiveFromOrg(args: {
     morale: Math.round(args.org.morale),
     techDebt: Math.round(args.org.techDebt),
     shipping: Math.round(args.org.deliveryScore),
+    securityLevel: Math.round(args.org.securityLevel),
     engineers: args.engineers,
     aiAssignedCount: args.aiAssignedCount,
   };

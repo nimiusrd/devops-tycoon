@@ -20,6 +20,7 @@ export function createOrgState(scenario: ScenarioId, aiEnabled: boolean): OrgSta
     testCoverage: org.testCoverage,
     documentation: org.documentation,
     quality: org.quality,
+    securityLevel: org.securityLevel,
     morale: org.morale,
     seniorHp: org.seniorHp,
     techDebt: 0,

@@ -81,10 +81,11 @@ export interface PolicySpec {
    * - `none`: 使わない
    * - `always`: 手札を集中力が尽きるまで無差別に発動する
    * - `preferCostOpt`: `always` と同じだがコスト最適化カードを先に発動する（RI-88）
+   * - `preferSecurity`: `always` と同じだがセキュリティ投資カードを先に発動する（RI-87）
    * - `preferDelivery`: 出荷加速（`codingSpeedMul>1`）カードだけを加速が大きい順に発動する（RI-78）
    * - `selective`: 集中力に余裕があり、盤面が切迫していないときだけ発動する
    */
-  cards: 'none' | 'always' | 'preferCostOpt' | 'preferDelivery' | 'selective';
+  cards: 'none' | 'always' | 'preferCostOpt' | 'preferSecurity' | 'preferDelivery' | 'selective';
   /**
    * ラン開始時の試練 ID（RI-88: ハーネス比較で継続課金を発生させる等）。
    * 未指定は試練なし。
@@ -119,8 +120,9 @@ export interface PolicySpec {
    * ドラフトの選び方。`first` は提示順の先頭。
    * それ以外は該当キーワードを含むカードを優先し、無ければ先頭を取る。
    * `costOpt` / `aiBloated` は RI-88 のインフラコスト軸用。
+   * `security` / `securityNeglect` は RI-87 のセキュリティ軸用。
    */
-  draft?: 'first' | 'ai' | 'quality' | 'costOpt' | 'aiBloated';
+  draft?: 'first' | 'ai' | 'quality' | 'costOpt' | 'aiBloated' | 'security' | 'securityNeglect';
   /** 編成フェーズで全員に AI を配る / 誰にも配らない。未指定は既定のまま。 */
   ai?: 'all' | 'none';
   /** 編成フェーズでレビューへ寄せる。 */
@@ -142,11 +144,13 @@ export interface PolicySpec {
    * - `buy`: 予算に余裕がある範囲でレリック → カードの順に買う
    * - `buyCostOpt`: コスト最適化レリック／カードを優先して買う（RI-88）
    * - `buyAvoidCostOpt`: 買うがコスト最適化コンテンツは避ける（RI-88 肥大）
+   * - `buySecurity`: セキュリティ投資レリック／カードを優先して買う（RI-87）
+   * - `buyAvoidSecurity`: 買うがセキュリティ投資コンテンツは避ける（RI-87 軽視）
    *
    * F-2 のスプリント間投資にはショップも含まれるが、`skipBuy` だけでは
    * 「投資しない」条件しか測れない。
    */
-  shop?: 'skipBuy' | 'buy' | 'buyCostOpt' | 'buyAvoidCostOpt';
+  shop?: 'skipBuy' | 'buy' | 'buyCostOpt' | 'buyAvoidCostOpt' | 'buySecurity' | 'buyAvoidSecurity';
   /**
    * 休息フェーズで採用しないときの選択。`RestScreen` には heal / repay / upgrade がある。
    * - `heal`: 常に回復（既定。既存の統制条件を変えないため）
@@ -273,6 +277,19 @@ const EVOLUTION_ORDER_QUALITY_FIRST = orderFromBranches([
 /** RI-88: コスト最適化を載せた既存カード／レリック（新規 ID はドラフト池を壊すため使わない）。 */
 const COST_OPT_CARD_ID = 'ai-guideline';
 const COST_OPT_RELIC_ID = 'budget-discipline';
+
+/** RI-87: セキュリティ投資を載せた既存カード／レリック。 */
+const SECURITY_FOCUS_CARD_IDS = ['auto-test', 'docs', 'static-analysis'] as const;
+const SECURITY_FOCUS_RELIC_IDS = ['postmortem', 'no-friday-deploy'] as const;
+const SECURITY_NEGLECT_CARD_IDS = ['copilot', 'claude-code', 'devin'] as const;
+
+function isSecurityFocusCard(id: string): boolean {
+  return (SECURITY_FOCUS_CARD_IDS as readonly string[]).includes(id);
+}
+
+function isSecurityFocusRelic(id: string): boolean {
+  return (SECURITY_FOCUS_RELIC_IDS as readonly string[]).includes(id);
+}
 
 /** `stateAware` 進化が参照する盤面（解放フェーズ到達時点）。 */
 export interface EvolveBoardCtx {
@@ -437,10 +454,15 @@ function evolutionOrder(mode: PolicySpec['evolve'], ctx?: EvolveBoardCtx): reado
 }
 
 /** ドラフト選好に合うカード ID を選ぶ（無ければ先頭）。 */
-const DRAFT_PREFERENCE: Record<'ai' | 'quality' | 'costOpt', readonly string[]> = {
+const DRAFT_PREFERENCE: Record<
+  'ai' | 'quality' | 'costOpt' | 'security' | 'securityNeglect',
+  readonly string[]
+> = {
   ai: ['copilot', 'claude-code', 'devin', 'ai-guideline'],
   quality: ['auto-test', 'pr-size-limit', 'docs', 'review-bot', 'hire-senior'],
   costOpt: [COST_OPT_CARD_ID, 'ai-guideline', 'copilot', 'claude-code'],
+  security: SECURITY_FOCUS_CARD_IDS,
+  securityNeglect: [...SECURITY_NEGLECT_CARD_IDS, 'feature-flags', 'copilot'],
 };
 
 function pickDraft(offer: readonly string[], mode: PolicySpec['draft']): string {
@@ -450,6 +472,14 @@ function pickDraft(offer: readonly string[], mode: PolicySpec['draft']): string 
     return (
       offer.find((id) => prefer.includes(id) && id !== COST_OPT_CARD_ID) ??
       offer.find((id) => id !== COST_OPT_CARD_ID) ??
+      offer[0]
+    );
+  }
+  if (mode === 'securityNeglect') {
+    const prefer = DRAFT_PREFERENCE.securityNeglect;
+    return (
+      offer.find((id) => prefer.includes(id) && !isSecurityFocusCard(id)) ??
+      offer.find((id) => !isSecurityFocusCard(id)) ??
       offer[0]
     );
   }
@@ -580,6 +610,36 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
     recruit: 'hire',
     shop: 'buyCostOpt',
     trials: ['frontier-dependency'],
+  },
+  /**
+   * RI-87 / F-10: セキュリティ軽視。
+   * 速度／AI を優先し、検証・セキュリティ投資カード／レリックを後回し／回避する。
+   */
+  securityNeglect: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'always',
+    evolve: 'aiFirst',
+    draft: 'securityNeglect',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+    shop: 'buyAvoidSecurity',
+  },
+  /**
+   * RI-87 / F-10: セキュリティ重視。
+   * 同じく AI ありだが、品質進化とセキュリティ投資カード／レリックへ寄せる。
+   */
+  securityFocus: {
+    actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
+    stepMs: 300,
+    cards: 'preferSecurity',
+    evolve: 'qualityFirst',
+    draft: 'security',
+    ai: 'all',
+    beat: 'stateAware',
+    recruit: 'hire',
+    shop: 'buySecurity',
   },
   noAi: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
@@ -1213,15 +1273,26 @@ export function playHand(
             const bOpt = s.deck[b]?.defId === COST_OPT_CARD_ID ? 0 : 1;
             return aOpt - bOpt;
           })
-        : mode === 'preferDelivery'
-          ? [...hand]
-              .filter((idx) => (getCard(s.deck[idx]?.defId ?? '')?.base?.codingSpeedMul ?? 1) > 1)
-              .sort((a, b) => {
-                const aMul = getCard(s.deck[a]?.defId ?? '')?.base?.codingSpeedMul ?? 1;
-                const bMul = getCard(s.deck[b]?.defId ?? '')?.base?.codingSpeedMul ?? 1;
-                return bMul - aMul;
-              })
-          : [...hand];
+        : mode === 'preferSecurity'
+          ? [...hand].sort((a, b) => {
+              const aId = s.deck[a]?.defId ?? '';
+              const bId = s.deck[b]?.defId ?? '';
+              const aSec = isSecurityFocusCard(aId) ? 0 : 1;
+              const bSec = isSecurityFocusCard(bId) ? 0 : 1;
+              if (aSec !== bSec) return aSec - bSec;
+              const aAdd = getCard(aId)?.base?.securityAdd ?? 0;
+              const bAdd = getCard(bId)?.base?.securityAdd ?? 0;
+              return bAdd - aAdd;
+            })
+          : mode === 'preferDelivery'
+            ? [...hand]
+                .filter((idx) => (getCard(s.deck[idx]?.defId ?? '')?.base?.codingSpeedMul ?? 1) > 1)
+                .sort((a, b) => {
+                  const aMul = getCard(s.deck[a]?.defId ?? '')?.base?.codingSpeedMul ?? 1;
+                  const bMul = getCard(s.deck[b]?.defId ?? '')?.base?.codingSpeedMul ?? 1;
+                  return bMul - aMul;
+                })
+            : [...hand];
     if (mode === 'preferDelivery' && order.length === 0) break;
     let played = false;
     for (const deckIndex of order) {
@@ -1700,6 +1771,7 @@ export function shopRelicDeliveryScore(id: string, cost: number): number {
  *
  * - `shop: 'buy'`（RI-78）: レリック優先／最安順ではなく、次スプリント出荷寄与スコアが高い順に買う。
  * - `buyCostOpt` / `buyAvoidCostOpt`（RI-88）: コスト最適化の優先／回避を維持する。
+ * - `buySecurity` / `buyAvoidSecurity`（RI-87）: セキュリティ投資の優先／回避を維持する。
  *
  * 残す予算は**採用方針で変える**。採用する方針は次の採用機会のために `RECRUIT_COST` を残すが、
  * 採用しない方針（`skilledShopBuy` は `recruit: 'skip'`）にその予約は要らない。
@@ -1712,16 +1784,25 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
   const reserve = spec.recruit === 'skip' ? SHOP_BUDGET_FLOOR : RECRUIT_COST;
   const avoidCostOpt = spec.shop === 'buyAvoidCostOpt';
   const preferCostOpt = spec.shop === 'buyCostOpt';
+  const avoidSecurity = spec.shop === 'buyAvoidSecurity';
+  const preferSecurity = spec.shop === 'buySecurity';
   const deliveryValueBuy = spec.shop === 'buy';
 
-  const tryBuyRelic = (onlyCostOpt: boolean): void => {
+  const tryBuyRelic = (onlyPreferred: boolean): void => {
     const s = e.snapshot();
     const relic = s.shop?.relic;
     if (!relic || relic.bought) return;
     if (s.budget - relic.cost < reserve) return;
     if (avoidCostOpt && relic.id === COST_OPT_RELIC_ID) return;
-    if (onlyCostOpt && relic.id !== COST_OPT_RELIC_ID) return;
-    if (!onlyCostOpt && preferCostOpt && relic.id !== COST_OPT_RELIC_ID) return;
+    if (avoidSecurity && isSecurityFocusRelic(relic.id)) return;
+    if (preferCostOpt) {
+      if (onlyPreferred && relic.id !== COST_OPT_RELIC_ID) return;
+      if (!onlyPreferred && relic.id !== COST_OPT_RELIC_ID) return;
+    }
+    if (preferSecurity) {
+      if (onlyPreferred && !isSecurityFocusRelic(relic.id)) return;
+      if (!onlyPreferred && !isSecurityFocusRelic(relic.id)) return;
+    }
     e.buyShopRelic();
   };
 
@@ -1759,8 +1840,8 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
     return;
   }
 
-  // preferCostOpt では無関係レリックをカードより先に買わない（最適化投資を潰さない）。
-  if (preferCostOpt) {
+  // preferCostOpt / preferSecurity では無関係レリックをカードより先に買わない。
+  if (preferCostOpt || preferSecurity) {
     tryBuyRelic(true);
   } else {
     tryBuyRelic(false);
@@ -1776,13 +1857,19 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
         (c) =>
           !c.bought &&
           s.budget - c.cost >= reserve &&
-          !(avoidCostOpt && c.defId === COST_OPT_CARD_ID),
+          !(avoidCostOpt && c.defId === COST_OPT_CARD_ID) &&
+          !(avoidSecurity && isSecurityFocusCard(c.defId)),
       )
       .sort((a, b) => {
         if (preferCostOpt) {
           const aOpt = a.defId === COST_OPT_CARD_ID ? 0 : 1;
           const bOpt = b.defId === COST_OPT_CARD_ID ? 0 : 1;
           if (aOpt !== bOpt) return aOpt - bOpt;
+        }
+        if (preferSecurity) {
+          const aSec = isSecurityFocusCard(a.defId) ? 0 : 1;
+          const bSec = isSecurityFocusCard(b.defId) ? 0 : 1;
+          if (aSec !== bSec) return aSec - bSec;
         }
         return a.cost - b.cost;
       });
@@ -1792,16 +1879,16 @@ export function buyShopItems(e: RunEngine, spec: PolicySpec): void {
     if (!e.snapshot().shop?.cards.find((c) => c.defId === affordable[0].defId)?.bought) break;
   }
 
-  // カード購入後の余りで無関係レリックを検討する（preferCostOpt 時）。
-  if (preferCostOpt) {
+  // カード購入後の余りで無関係レリックを検討する（prefer 時）。
+  if (preferCostOpt || preferSecurity) {
     const s = e.snapshot();
     const relic = s.shop?.relic;
-    if (
-      relic &&
-      !relic.bought &&
-      relic.id !== COST_OPT_RELIC_ID &&
-      s.budget - relic.cost >= reserve
-    ) {
+    const isPreferred = preferCostOpt
+      ? relic?.id === COST_OPT_RELIC_ID
+      : relic
+        ? isSecurityFocusRelic(relic.id)
+        : false;
+    if (relic && !relic.bought && !isPreferred && s.budget - relic.cost >= reserve) {
       e.buyShopRelic();
     }
   }
@@ -2136,7 +2223,13 @@ export function runOnce(
           e.buyShopRecruit();
         }
         // カード・レリックはスプリント間投資（F-2）の一部。買う方針だけ買う。
-        if (spec.shop === 'buy' || spec.shop === 'buyCostOpt' || spec.shop === 'buyAvoidCostOpt') {
+        if (
+          spec.shop === 'buy' ||
+          spec.shop === 'buyCostOpt' ||
+          spec.shop === 'buyAvoidCostOpt' ||
+          spec.shop === 'buySecurity' ||
+          spec.shop === 'buyAvoidSecurity'
+        ) {
           buyShopItems(e, spec);
         }
         const afterShopState = e.snapshot();
@@ -2267,6 +2360,7 @@ export function runOnce(
       testCoverage: Math.round(f.org.testCoverage),
       documentation: Math.round(f.org.documentation),
       quality: Math.round(f.org.quality),
+      securityLevel: Math.round(f.org.securityLevel),
       morale: Math.round(f.org.morale),
       seniorHp: Math.round(f.org.seniorHp),
       techDebt: Math.round(f.org.techDebt),

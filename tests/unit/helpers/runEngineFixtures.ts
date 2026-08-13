@@ -32,6 +32,7 @@ export const makeOrg = (overrides: Partial<OrgState> = {}): OrgState => ({
   testCoverage: 45,
   documentation: 30,
   quality: 50,
+  securityLevel: 55,
   morale: 45,
   seniorHp: 50,
   techDebt: 40,

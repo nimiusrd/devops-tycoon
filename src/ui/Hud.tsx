@@ -1,7 +1,7 @@
 /**
  * ステータス HUD（SPEC 第4.2 準拠）。
  *
- * 出荷ポイント・開発速度・レビュー耐性・品質・シニア体力・AI依存度・
+ * 出荷ポイント・開発速度・レビュー耐性・品質・セキュリティ・シニア体力・AI依存度・
  * 技術的負債・士気を表示し、炎上リスクをチップで示す。
  * ラン中は組織状態（持続）と進行中スプリントのタスクから導出する（第22.2）。
  *
@@ -36,6 +36,7 @@ const COMPACT_PRIORITY_IDS: StatusMetricId[] = [
   'aiDependency',
   'techDebt',
   'quality',
+  'security',
   'devSpeed',
   'reviewCapacity',
 ];

@@ -49,9 +49,9 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     id: 'dev-1',
     branch: 'dev',
     name: 'Coding 速度向上',
-    description: '実装スループットを底上げする基盤整備',
+    description: '実装スループットを底上げする基盤整備。検証が薄くなりセキュリティは下がる',
     cost: 1,
-    effects: { codingSpeedMul: 1.12 },
+    effects: { codingSpeedMul: 1.12, securityAdd: -4 },
   },
   {
     id: 'dev-2',
@@ -66,10 +66,10 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     id: 'dev-3',
     branch: 'dev',
     name: '定型処理の自動化',
-    description: 'ルーティン作業を自動化し、定型タスクを速く回す',
+    description: 'ルーティン作業を自動化し、定型タスクを速く回す。速度優先でセキュリティは下がる',
     cost: 10,
     requires: 'dev-2',
-    effects: { routineSpeedMul: 1.3 },
+    effects: { routineSpeedMul: 1.3, securityAdd: -6 },
   },
   // レビュー体制
   {
@@ -103,27 +103,27 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     id: 'quality-1',
     branch: 'quality',
     name: 'Test Coverage 効率',
-    description: 'テスト資産を増やし、安全性を底上げ',
+    description: 'テスト資産を増やし、安全性とセキュリティ水準を底上げ',
     cost: 1,
-    effects: { testCoverageAdd: 12 },
+    effects: { testCoverageAdd: 12, securityAdd: 6 },
   },
   {
     id: 'quality-2',
     branch: 'quality',
     name: '防御バリア常設',
-    description: 'インシデントを未然に弾く防御線を常設',
+    description: 'インシデントを未然に弾く防御線を常設し、セキュリティを固める',
     cost: 4,
     requires: 'quality-1',
-    effects: { incidentRateMul: 0.82 },
+    effects: { incidentRateMul: 0.82, securityAdd: 8 },
   },
   {
     id: 'quality-3',
     branch: 'quality',
     name: 'Incident 耐性',
-    description: '手戻り耐性と品質文化を底上げ',
+    description: '手戻り耐性と品質・セキュリティ文化を底上げ',
     cost: 14,
     requires: 'quality-2',
-    effects: { reworkRateAdd: -0.1, qualityAdd: 8 },
+    effects: { reworkRateAdd: -0.1, qualityAdd: 8, securityAdd: 10 },
   },
   // AI活用
   {
@@ -147,10 +147,11 @@ export const EVOLUTION_NODES: EvolutionNodeDef[] = [
     id: 'ai-3',
     branch: 'ai',
     name: 'Devin 枠',
-    description: '自律エージェントを組み込み、基盤をさらにコスト最適化する',
+    description:
+      '自律エージェントを組み込み、基盤をさらにコスト最適化する。速度優先でセキュリティは下がる',
     cost: 16,
     requires: 'ai-2',
-    effects: { codingSpeedMul: 1.2, infraCostMul: 0.7 },
+    effects: { codingSpeedMul: 1.2, infraCostMul: 0.7, securityAdd: -6 },
   },
   // 文化
   {

@@ -93,6 +93,7 @@ export function applyDeckBaseline(org: OrgState, effects: CardEffects): void {
   org.aiDependency = clamp(org.aiDependency + effects.aiDependencyAdd, 0, 100);
   org.quality = clamp(org.quality + effects.qualityAdd, 0, 100);
   org.testCoverage = clamp(org.testCoverage + effects.testCoverageAdd, 0, 100);
+  org.securityLevel = clamp(org.securityLevel + effects.securityAdd, 0, 100);
 }
 
 /**
@@ -251,6 +252,7 @@ export function playCardFromHand(
       aiDependencyAdd: next.aiDependencyAdd - prev.aiDependencyAdd,
       qualityAdd: next.qualityAdd - prev.qualityAdd,
       testCoverageAdd: next.testCoverageAdd - prev.testCoverageAdd,
+      securityAdd: next.securityAdd - prev.securityAdd,
     });
     if (teamId) {
       inst.baselineAppliedByTeam = {

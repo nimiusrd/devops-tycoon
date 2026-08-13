@@ -28,6 +28,7 @@ const input: SprintBaselineInput = {
     testCoverage: 45,
     documentation: 35,
     quality: 50,
+    securityLevel: 60,
     morale: 60,
     seniorHp: 80,
     techDebt: 10,
@@ -46,6 +47,7 @@ const input: SprintBaselineInput = {
     aiDependencyAdd: 0,
     qualityAdd: 0,
     testCoverageAdd: 0,
+    securityAdd: 0,
     infraCostMul: 1,
   },
   aiAdoptionShare: 0.5,
@@ -413,6 +415,7 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
         45,
         30,
         35,
+        60,
         1,
         30,
         2,
@@ -454,6 +457,7 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
         45,
         30,
         35,
+        60,
         1,
         30,
         0,
@@ -543,7 +547,7 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
     const pressured = computeWhatIfState(directWhatIfInput())!;
 
     expect(pressured.current.trials).toBe(24);
-    // RI-77: 手戻り緩和後の golden（決定論）。
+    // RI-77: 手戻り緩和後の golden（決定論）。securityLevel 60 で RI-87 は無効果帯。
     expect(pressured.current.delivered).toEqual({ mean: 797.25, min: 672, max: 948 });
     expect(pressured.current.spread).toEqual({
       mean: 26.083333333333332,

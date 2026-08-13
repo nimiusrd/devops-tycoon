@@ -21,6 +21,7 @@ function org(overrides: Partial<OrgState> = {}): OrgState {
     testCoverage: 60,
     documentation: 55,
     quality: 60,
+    securityLevel: 55,
     morale: 70,
     seniorHp: 80,
     techDebt: 40,
@@ -72,6 +73,7 @@ function minimalCompany(overrides: Partial<OrgScaleState> = {}): OrgScaleState {
     budget: 100,
     score: 1000,
     healthRank: 'A',
+    securityLevel: 60,
   };
   return { ...base, ...overrides, infra: { ...base.infra, ...(overrides.infra ?? {}) } };
 }

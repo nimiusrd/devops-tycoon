@@ -72,6 +72,7 @@ describe('deriveStatus（状態→ステータス表示）', () => {
       budget: 20,
       score: 160,
       healthRank: 'A',
+      securityLevel: 60,
     };
 
     expect(
@@ -82,6 +83,7 @@ describe('deriveStatus（状態→ステータス表示）', () => {
       aiDependencyPct: 44,
       techDebt: 12,
       morale: 91,
+      securityLevel: 60,
     });
   });
 });
@@ -96,16 +98,17 @@ describe('riskLevel（炎上リスク）', () => {
 });
 
 describe('deriveHudMetrics（HUD情報設計）', () => {
-  it('8指標それぞれにアイコン・方向・説明を付与する', () => {
+  it('9指標それぞれにアイコン・方向・説明を付与する', () => {
     const state = withOrg({ aiDependency: 20, techDebt: 10, morale: 80 });
     const metrics = deriveHudMetrics(state.org, state.sprint.tasks);
 
-    expect(metrics).toHaveLength(8);
+    expect(metrics).toHaveLength(9);
     expect(metrics.map((m) => m.id)).toEqual([
       'delivery',
       'devSpeed',
       'reviewCapacity',
       'quality',
+      'security',
       'seniorHp',
       'aiDependency',
       'techDebt',
@@ -116,6 +119,19 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       expect(metric.directionLabel.length).toBeGreaterThan(0);
       expect(metric.help.length).toBeGreaterThan(0);
     }
+  });
+
+  it('セキュリティ水準が50未満なら注意チップを出す（RI-87）', () => {
+    const metrics = deriveHudMetrics(withOrg({ securityLevel: 20 }).org, []);
+    expect(metrics.find((m) => m.id === 'security')).toMatchObject({
+      value: 20,
+      tone: 'danger',
+      warningChip: 'セキュリティ危険',
+    });
+    expect(
+      deriveHudMetrics(withOrg({ securityLevel: 70 }).org, []).find((m) => m.id === 'security')
+        ?.warningChip,
+    ).toBeUndefined();
   });
 
   it('低いほど安全な指標は高値で危険域になる', () => {
@@ -161,6 +177,7 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       budget: 20,
       score: 160,
       healthRank: 'A',
+      securityLevel: 60,
     };
     const scaled = deriveHudMetrics(state.org, state.sprint.tasks, orgScale);
     expect(scaled.find((m) => m.id === 'aiDependency')?.warningChip).toBeUndefined();
@@ -344,6 +361,7 @@ describe('HUD 指標差分', () => {
     aiDependencyPct: 30,
     techDebt: 10,
     morale: 60,
+    securityLevel: 60,
   };
 
   it('StatusView から差分検出用スナップショットを作る', () => {
@@ -354,6 +372,7 @@ describe('HUD 指標差分', () => {
       aiDependencyPct: 72,
       techDebt: 41,
       morale: 66,
+      securityLevel: status.securityLevel,
     });
   });
 

@@ -111,6 +111,11 @@ export interface CardEffects {
   /** スプリント開始時に加えるテストカバレッジ。 */
   testCoverageAdd: number;
   /**
+   * スプリント開始時に加えるセキュリティ水準（RI-87）。
+   * 検証投資で上げ、速度偏重で下げる。
+   */
+  securityAdd: number;
+  /**
    * インフラ／モデル利用コスト倍率（1 で無効果、低いほど安い。RI-88）。
    * AI依存度×単価に掛かり、予算の継続圧迫を抑える。
    */
@@ -325,6 +330,11 @@ export interface OrgState {
   documentation: number;
   /** 品質水準 0..100。 */
   quality: number;
+  /**
+   * セキュリティ水準 0..100（RI-87）。
+   * 低いほど事故の規模と顧客信頼の下振れが大きくなる。
+   */
+  securityLevel: number;
   /** 士気 0..100。 */
   morale: number;
   /** シニアのレビュー余力 0..100。 */
@@ -376,6 +386,13 @@ export interface SprintMetrics {
   autoContainCount: number;
   /** 延焼した障害数。 */
   spread: number;
+  /**
+   * 延焼発生時点のセキュリティ脆弱度を積んだ顧客信頼 raw（RI-87）。
+   * 終了時の水準で再評価せず、発生時のコストと揃える。
+   */
+  securityTrustSpreadRaw?: number;
+  /** 最初の延焼時点の脆弱度（事故項に使う。RI-87）。 */
+  securityTrustIncidentFragility?: number;
   /** AI 利用で Done に至ったタスク数。 */
   aiAssistedCompleted: number;
   /** Done に至ったタスク数（aiAssistedPct の母数）。 */

@@ -29,8 +29,12 @@ export const CARD_DEFS: CardDef[] = [
     // RI-78: ショップ投資の次スプ純出荷が届くよう、出荷正側カードの店頭価格を抑える。
     cost: 1,
     focusCost: 2,
-    description: ['コーディング補助 AI を全員に配布', '定型タスクは特に捗るが、依存度も上がる'],
-    base: { codingSpeedMul: 1.15, routineSpeedMul: 1.3, aiDependencyAdd: 5 },
+    description: [
+      'コーディング補助 AI を全員に配布',
+      '定型タスクは特に捗るが、依存度も上がる',
+      '検証を薄くするためセキュリティは下がる',
+    ],
+    base: { codingSpeedMul: 1.15, routineSpeedMul: 1.3, aiDependencyAdd: 5, securityAdd: -5 },
   },
   {
     id: 'claude-code',
@@ -39,8 +43,12 @@ export const CARD_DEFS: CardDef[] = [
     // RI-78: ショップ投資の次スプ純出荷が届くよう、出荷正側カードの店頭価格を抑える。
     cost: 4,
     focusCost: 3,
-    description: ['高度な AI コーディングを解禁', '複雑タスクは安定するが、レビュー負荷も増える'],
-    base: { codingSpeedMul: 1.2, reworkRateAdd: -0.05, reviewEfficiencyMul: 0.9 },
+    description: [
+      '高度な AI コーディングを解禁',
+      '複雑タスクは安定するが、レビュー負荷も増える',
+      '速度優先でセキュリティ水準が下がる',
+    ],
+    base: { codingSpeedMul: 1.2, reworkRateAdd: -0.05, reviewEfficiencyMul: 0.9, securityAdd: -4 },
   },
   {
     id: 'devin',
@@ -48,8 +56,12 @@ export const CARD_DEFS: CardDef[] = [
     rarity: 'legendary',
     cost: 35,
     focusCost: 4,
-    description: ['自律型 AI エージェントを導入', '並列実装は進むが、分割が下手だと迷走しやすい'],
-    base: { codingSpeedMul: 1.25, reworkRateAdd: 0.06, aiDependencyAdd: 8 },
+    description: [
+      '自律型 AI エージェントを導入',
+      '並列実装は進むが、分割が下手だと迷走しやすい',
+      '自律実行で検証が薄くなりセキュリティが下がる',
+    ],
+    base: { codingSpeedMul: 1.25, reworkRateAdd: 0.06, aiDependencyAdd: 8, securityAdd: -8 },
   },
   {
     id: 'auto-test',
@@ -60,8 +72,15 @@ export const CARD_DEFS: CardDef[] = [
     description: [
       'テスト基盤を強化して品質を底上げ',
       '短期の出荷は少し鈍るが、事故と手戻りを抑える',
+      'セキュリティ水準を押し上げる',
     ],
-    base: { reworkRateAdd: -0.15, incidentRateMul: 0.8, codingSpeedMul: 0.95, qualityAdd: 10 },
+    base: {
+      reworkRateAdd: -0.15,
+      incidentRateMul: 0.8,
+      codingSpeedMul: 0.95,
+      qualityAdd: 10,
+      securityAdd: 8,
+    },
   },
   {
     id: 'pr-size-limit',
@@ -91,8 +110,12 @@ export const CARD_DEFS: CardDef[] = [
     rarity: 'common',
     cost: 15,
     focusCost: 2,
-    description: ['設計・運用ドキュメントを整備', 'AI の精度は上がるが、短期の出荷は少し鈍る'],
-    base: { incidentRateMul: 0.9, qualityAdd: 5, codingSpeedMul: 0.92 },
+    description: [
+      '設計・運用ドキュメントを整備',
+      'AI の精度は上がるが、短期の出荷は少し鈍る',
+      'セキュリティ水準も底上げする',
+    ],
+    base: { incidentRateMul: 0.9, qualityAdd: 5, codingSpeedMul: 0.92, securityAdd: 5 },
   },
   {
     id: 'hire-senior',
@@ -119,8 +142,12 @@ export const CARD_DEFS: CardDef[] = [
     rarity: 'common',
     cost: 12,
     focusCost: 2,
-    description: ['CI で静的解析を回し手戻りを減らす', 'ルール整備のあいだ速度は少し落ちる'],
-    base: { reworkRateAdd: -0.08, qualityAdd: 6, codingSpeedMul: 0.97 },
+    description: [
+      'CI で静的解析を回し手戻りを減らす',
+      'ルール整備のあいだ速度は少し落ちる',
+      'セキュリティ水準を少し上げる',
+    ],
+    base: { reworkRateAdd: -0.08, qualityAdd: 6, codingSpeedMul: 0.97, securityAdd: 4 },
   },
   {
     id: 'feature-flags',

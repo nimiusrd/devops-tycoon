@@ -82,6 +82,8 @@ export interface TeamRunState {
   documentation: number;
   /** 品質水準 0..100。 */
   quality: number;
+  /** セキュリティ水準 0..100（RI-87）。 */
+  securityLevel: number;
 }
 
 /**
@@ -164,6 +166,8 @@ export interface OrgScaleState {
   techDebt: number;
   /** 全社士気（平均）。 */
   morale: number;
+  /** 全社セキュリティ水準（平均。RI-87）。 */
+  securityLevel: number;
   /** 炎上中チーム数。 */
   onFire: number;
   /** 組織タイプ診断（現場の診断を全社へ持ち上げる。第13章）。 */

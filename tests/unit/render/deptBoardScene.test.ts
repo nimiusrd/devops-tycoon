@@ -27,6 +27,7 @@ function orgScaleInput(seed: string, overrides: Partial<OrgScaleInput> = {}): Or
     testCoverage: 60,
     documentation: 55,
     quality: 60,
+    securityLevel: 55,
     morale: 70,
     seniorHp: 80,
     techDebt: 40,

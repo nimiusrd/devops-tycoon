@@ -221,6 +221,7 @@ describe('勝敗判定（第14/15章）', () => {
     const win = evaluateWinType({
       org: org({
         quality: 70,
+        securityLevel: 55,
         morale: 70,
         seniorHp: 60,
         aiLiteracy: 50,
@@ -245,6 +246,7 @@ describe('勝敗判定（第14/15章）', () => {
     const baseOrg = org({
       deliveryScore: 50,
       quality: 40,
+      securityLevel: 55,
       morale: 40,
       seniorHp: 40,
       aiLiteracy: 50,

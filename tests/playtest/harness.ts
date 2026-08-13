@@ -614,12 +614,13 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   /**
    * RI-87 / F-10: セキュリティ軽視。
    * 速度／AI を優先し、検証・セキュリティ投資カード／レリックを後回し／回避する。
+   * 進化はレビュー容量を先に取り、セキュリティ投資なしでもカオス勝ちの標本を確保する（RI-76）。
    */
   securityNeglect: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
     cards: 'always',
-    evolve: 'aiFirst',
+    evolve: 'reviewFirst',
     draft: 'securityNeglect',
     ai: 'all',
     beat: 'stateAware',
@@ -888,6 +889,21 @@ export interface RunLog {
   quarters: QuarterLog[];
   finalOrg: Record<string, number | boolean>;
   totalDelivered: number;
+  /**
+   * 勝利種別判定の入力になるラン累計（RI-76）。
+   * スプリント行から復元すると `aiAssisted` / `completed` / `reviewQueuePeak` が落ちる。
+   */
+  totals: {
+    delivered: number;
+    done: number;
+    rework: number;
+    incidents: number;
+    contained: number;
+    spread: number;
+    aiAssisted: number;
+    completed: number;
+    reviewQueuePeak: number;
+  };
   budget: number;
   relics: number;
   deckSize: number;
@@ -2366,6 +2382,17 @@ export function runOnce(
       techDebt: Math.round(f.org.techDebt),
     },
     totalDelivered: Math.round(f.totals.delivered ?? 0),
+    totals: {
+      delivered: Math.round(f.totals.delivered ?? 0),
+      done: Math.round(f.totals.done ?? 0),
+      rework: Math.round(f.totals.rework ?? 0),
+      incidents: Math.round(f.totals.incidents ?? 0),
+      contained: Math.round(f.totals.contained ?? 0),
+      spread: Math.round(f.totals.spread ?? 0),
+      aiAssisted: Math.round(f.totals.aiAssisted ?? 0),
+      completed: Math.round(f.totals.completed ?? 0),
+      reviewQueuePeak: Math.round(f.totals.reviewQueuePeak ?? 0),
+    },
     budget: Math.round(f.budget),
     relics: f.relics.length,
     deckSize: f.deck.length,

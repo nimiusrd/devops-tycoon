@@ -337,9 +337,9 @@ describe('evaluateWinType', () => {
     });
   });
 
-  it('AI導入成功は利用率・検証・Literacy で成立し、健全より先に評価される（RI-76）', () => {
+  it('AI導入成功は利用率と Literacy を核にし、レビュー渋滞があっても成立する（RI-76）', () => {
     win('aiSuccess', {
-      org: { quality: 80, morale: 80, seniorHp: 40, aiLiteracy: 40 },
+      org: { quality: 80, morale: 80, seniorHp: 40, aiLiteracy: 40, securityLevel: 55 },
       totals: {
         completed: 20,
         done: 20,
@@ -352,7 +352,7 @@ describe('evaluateWinType', () => {
     });
     // seniorSacrifice でもメトリクス充足なら aiSuccess（制御された部分 AI）。
     win('aiSuccess', {
-      org: { quality: 50, morale: 50, seniorHp: 25, aiLiteracy: 40 },
+      org: { quality: 50, morale: 50, seniorHp: 25, aiLiteracy: 40, securityLevel: 55 },
       totals: {
         completed: 20,
         done: 20,
@@ -364,7 +364,7 @@ describe('evaluateWinType', () => {
       budget: 10,
     });
     win('normal', {
-      org: { quality: 50, morale: 50, seniorHp: 30, aiLiteracy: 39 },
+      org: { quality: 50, morale: 50, seniorHp: 30, aiLiteracy: 39, securityLevel: 55 },
       totals: {
         completed: 20,
         done: 20,
@@ -375,9 +375,9 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
-    // reviewHell（ピーク16〜19）と重なる場合は aiSuccess にしない。
-    win('normal', {
-      org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 40 },
+    // フルベットはレビュー渋滞を引き受ける。reviewHell でも利用率があれば aiSuccess。
+    win('aiSuccess', {
+      org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 40, securityLevel: 55 },
       totals: {
         completed: 20,
         done: 20,
@@ -388,9 +388,9 @@ describe('evaluateWinType', () => {
       },
       budget: 10,
     });
-    // aiOverproduction（高AI率かつキュー詰まり）と重なる場合も aiSuccess にしない。
-    win('normal', {
-      org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 55 },
+    // aiOverproduction（高AI率かつキュー詰まり）もフルベットの代償として aiSuccess にする。
+    win('aiSuccess', {
+      org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 55, securityLevel: 55 },
       totals: {
         completed: 20,
         done: 20,
@@ -398,6 +398,106 @@ describe('evaluateWinType', () => {
         rework: 3,
         reviewQueuePeak: 12,
         spread: 1,
+      },
+      budget: 10,
+    });
+    // 手戻り螺旋だけは AI 成功にしない。
+    win('normal', {
+      org: { quality: 50, morale: 50, seniorHp: 40, aiLiteracy: 55, securityLevel: 55 },
+      totals: {
+        completed: 20,
+        done: 20,
+        aiAssisted: 12,
+        rework: 8,
+        reviewQueuePeak: 10,
+        spread: 1,
+      },
+      budget: 10,
+    });
+  });
+
+  it('セキュリティ重視は健全、軽視の事故連発はカオス、フルベットは AI 成功（RI-76）', () => {
+    // 高セキュリティ + 全面 AI は、障害が多くても健全（Focus がカオスへ吸われない）。
+    win('healthy', {
+      org: {
+        quality: 90,
+        securityLevel: 85,
+        morale: 100,
+        seniorHp: 20,
+        aiLiteracy: 80,
+      },
+      totals: {
+        completed: 40,
+        done: 40,
+        aiAssisted: 30,
+        rework: 1,
+        reviewQueuePeak: 40,
+        spread: 0,
+        incidents: 42,
+        delivered: 400,
+      },
+      budget: 10,
+    });
+    // 閾値未満のセキュリティは健全へ上げない（フルベット側）。
+    win('aiSuccess', {
+      org: {
+        quality: 90,
+        securityLevel: 84,
+        morale: 100,
+        seniorHp: 20,
+        aiLiteracy: 80,
+      },
+      totals: {
+        completed: 40,
+        done: 40,
+        aiAssisted: 30,
+        rework: 1,
+        reviewQueuePeak: 40,
+        spread: 0,
+        incidents: 18,
+        delivered: 400,
+      },
+      budget: 10,
+    });
+    // 軽視の事故連発は AI 利用率が高くてもカオス。
+    win('chaos', {
+      org: {
+        quality: 90,
+        securityLevel: 67,
+        morale: 100,
+        seniorHp: 34,
+        aiLiteracy: 80,
+      },
+      totals: {
+        completed: 40,
+        done: 40,
+        aiAssisted: 30,
+        rework: 1,
+        reviewQueuePeak: 40,
+        spread: 0,
+        incidents: 22,
+        delivered: 400,
+      },
+      budget: 10,
+    });
+    // セキュリティが低すぎると AI 成功にもしない。
+    win('normal', {
+      org: {
+        quality: 50,
+        securityLevel: 49,
+        morale: 50,
+        seniorHp: 30,
+        aiLiteracy: 80,
+      },
+      totals: {
+        completed: 40,
+        done: 40,
+        aiAssisted: 30,
+        rework: 1,
+        reviewQueuePeak: 10,
+        spread: 1,
+        incidents: 10,
+        delivered: 100,
       },
       budget: 10,
     });
@@ -472,7 +572,7 @@ describe('evaluateWinType', () => {
     });
     // 幸福条件を満たす場合はカオスより幸福を優先する。
     win('happiness', {
-      org: { morale: 70, seniorHp: 45, quality: 50, aiLiteracy: 50 },
+      org: { morale: 70, seniorHp: 45, quality: 50, aiLiteracy: 50, securityLevel: 85 },
       totals: {
         completed: 20,
         done: 20,
@@ -620,21 +720,21 @@ describe('evaluateWinType', () => {
       }),
       evaluateWinType({
         org: org({
-          quality: 66,
-          securityLevel: 55,
-          morale: 66,
-          seniorHp: 35,
-          aiLiteracy: 50,
-          testCoverage: 40,
-          documentation: 40,
+          quality: 90,
+          securityLevel: 90,
+          morale: 100,
+          seniorHp: 20,
+          aiLiteracy: 90,
         }),
         totals: runTotals({
           completed: 40,
           done: 40,
-          aiAssisted: 5,
-          rework: 4,
-          reviewQueuePeak: 8,
-          spread: 1,
+          aiAssisted: 30,
+          rework: 1,
+          reviewQueuePeak: 40,
+          spread: 0,
+          incidents: 42,
+          delivered: 400,
         }),
         budget: 12,
         usedHeavyActions: true,
@@ -644,5 +744,6 @@ describe('evaluateWinType', () => {
     expect(types.has('noDamage')).toBe(true);
     expect(types.has('aiSuccess')).toBe(true);
     expect(types.has('happiness')).toBe(true);
+    expect(types.has('healthy')).toBe(true);
   });
 });

@@ -117,12 +117,22 @@ export const CHAOS_DELIVERED_MIN = 250;
 export const HAPPINESS_MORALE_MIN = 70;
 /** 現場幸福勝利に必要なシニアHP下限。 */
 export const HAPPINESS_SENIOR_HP_MIN = 45;
+/** セキュリティ重視ビルドを健全へ上げる下限（実測の Focus 勝ちは 86 以上、FullBet は 81 以下）。 */
+export const HEALTHY_SECURITY_MIN = 85;
+/** AI 成功に必要な利用率。 */
+export const AI_SUCCESS_AI_PCT_MIN = 0.55;
+/** AI 成功に必要なリテラシー。 */
+export const AI_SUCCESS_LITERACY_MIN = 40;
+/** AI 成功の手戻り率上限。 */
+export const AI_SUCCESS_REWORK_MAX = 0.22;
+/** セキュリティ軽視を AI 成功から外す下限（軽視の勝ちは 33、フルベットの勝ちは 55 以上）。 */
+export const AI_SUCCESS_SECURITY_MIN = 50;
 
 /**
  * ボス突破時に達成した最上位の勝利種別を返す（RI-76）。
  *
  * ノーダメはやり込み枠として高水準の健全指標と健全系診断を要求する。
- * ビルド差が出るよう AI / 幸福 / カオス / 健全を経営（予算残り）より前に評価し、最後に通常勝利へ落とす。
+ * ビルド差が出るよう、セキュリティ健全 → 低セキュリティカオス → AI → 幸福 → カオス → 品質健全を経営より前に評価する。
  */
 export function evaluateWinType(input: WinEvalInput): WinType {
   const { org, totals, budget, usedHeavyActions } = input;
@@ -149,15 +159,33 @@ export function evaluateWinType(input: WinEvalInput): WinType {
     return 'noDamage';
   }
 
-  // AI ビルド: 利用率と検証能力の両立。失敗診断（渋滞・過生産・手戻り螺旋）とは重ならない。
-  // seniorSacrifice は除外しない（制御された部分 AI が取りやすい形にする）。
+  // セキュリティ重視 + 全面 AI: 品質進化と検証投資の勝ち筋。AI 成功より先に健全へ。
   if (
-    aiPct >= 0.55 &&
-    reworkRatio < 0.22 &&
-    totals.reviewQueuePeak < 16 &&
-    org.aiLiteracy >= 40 &&
-    diagnosis !== 'reviewHell' &&
-    diagnosis !== 'aiOverproduction' &&
+    org.securityLevel >= HEALTHY_SECURITY_MIN &&
+    org.quality >= 65 &&
+    aiPct >= AI_SUCCESS_AI_PCT_MIN &&
+    reworkRatio < AI_SUCCESS_REWORK_MAX
+  ) {
+    return 'healthy';
+  }
+
+  // 検証を省いた事故連発は AI 利用率が高くてもカオス（セキュリティ軽視のシグネチャ）。
+  // セキュリティ重視は上で健全へ分岐済み。フルベットの低障害完走（実測18件前後）は通さない。
+  if (
+    totals.incidents >= CHAOS_INCIDENTS_MIN &&
+    totals.delivered >= CHAOS_DELIVERED_MIN &&
+    org.securityLevel < HEALTHY_SECURITY_MIN
+  ) {
+    return 'chaos';
+  }
+
+  // AI フルベット: 利用率と Literacy。レビュー渋滞はフルベットが引き受ける代償なので必須にしない。
+  // セキュリティ軽視（低 securityLevel）と手戻り螺旋だけは除外する。
+  if (
+    aiPct >= AI_SUCCESS_AI_PCT_MIN &&
+    reworkRatio < AI_SUCCESS_REWORK_MAX &&
+    org.aiLiteracy >= AI_SUCCESS_LITERACY_MIN &&
+    org.securityLevel >= AI_SUCCESS_SECURITY_MIN &&
     diagnosis !== 'reworkSpiral'
   ) {
     return 'aiSuccess';

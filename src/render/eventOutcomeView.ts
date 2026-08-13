@@ -746,11 +746,10 @@ export function formatActionDefTags(def: ActionDef): EffectTag[] {
       pushTag(tags, `シニアHP -${OVERTIME_HP_COST}`, 'negative');
       break;
     case 'andon':
-      // カード上は要約のみ。薄キューの士気追加はツールチップへ（RI-73）。
+      // カード上は要約のみ。薄キュー数値はツールチップへ（RI-73）。
       pushTag(tags, `流入停止 ${ANDON_TICKS}tick`, 'neutral');
       pushTag(tags, '運用安定なし', 'neutral');
       pushTag(tags, `士気 -${ANDON_BASE_MORALE_COST}〜`, 'negative');
-      pushTag(tags, `シニアHP -${ANDON_HP_COST}`, 'negative');
       pushTag(tags, '出荷機会損失', 'negative');
       break;
   }
@@ -831,7 +830,7 @@ function formatActionTooltipExtraTags(def: ActionDef): EffectTag[] {
     case 'andon':
       pushTag(
         tags,
-        `Review未渋滞(<${ANDON_STABILITY_REVIEW_MIN})は士気追加 -${ANDON_THIN_MORALE_COST}`,
+        `Review未渋滞(<${ANDON_STABILITY_REVIEW_MIN})は士気追加 -${ANDON_THIN_MORALE_COST}・シニアHP -${ANDON_HP_COST}`,
         'negative',
       );
       break;

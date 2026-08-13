@@ -97,12 +97,12 @@ export const ACTION_DEFS: ActionDef[] = [
     cost: 5,
     cooldownTicks: 250,
     gauge: 0.15,
-    // RI-73 / F-1: 運用安定は付けない。薄いキューでは士気追加（actions.ts）。
-    // シニアHPは渋滞時も含め常に消費し、毎スプリント停止が固定強手にならないようにする。
+    // RI-73 / F-1: 運用安定は付けない。薄いキューでは士気追加＋シニアHP（actions.ts）。
+    // 渋滞時は士気のみ。毎スプリント先止めは薄キュー罰で高くつく。
     stabilizesFlow: true,
     tone: 'heavy',
     description: 'タスク流入を止め、溜まったキューを捌き切る',
-    sideEffect: '出荷機会を失う。士気とシニアHPを消費。薄いキューでは士気追加。運用安定なし',
+    sideEffect: '出荷機会を失う。士気を消費。薄いキューではシニアHPも消費。運用安定なし',
   },
 ];
 

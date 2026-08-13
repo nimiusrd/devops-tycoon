@@ -121,8 +121,8 @@ export const ANDON_STABILITY_REVIEW_MIN = 10;
 export const ANDON_BASE_MORALE_COST = 4;
 /** 薄キューでアンドンを打ったときの追加士気ペナルティ（RI-73 / F-1）。 */
 export const ANDON_THIN_MORALE_COST = 12;
-/** アンドンのシニアHPコスト（止めの判断にシニアが割かれる。渋滞時も含む。RI-73 / F-1）。 */
-export const ANDON_HP_COST = 8;
+/** アンドンのシニアHPコスト（薄キューの先止めにシニアが割かれる。RI-73 / F-1）。 */
+export const ANDON_HP_COST = 14;
 /** AIスロットルの持続 tick。 */
 export const THROTTLE_TICKS = 40;
 
@@ -318,7 +318,7 @@ const EFFECTS: Record<
   },
 
   // アンドン: 一定時間 Backlog からの流入を止め、キューを捌き切る。
-  // RI-73 / F-1: 渋滞時もシニアHPを払い、薄いキューでは士気追加。運用安定なし。
+  // RI-73 / F-1: 渋滞時は軽い士気コストのみ。薄いキューでは士気追加＋シニアHP。運用安定なし。
   andon(sprint, org, _rng, tick) {
     const untilTick = tick + ANDON_TICKS;
     sprint.modifiers.andonUntilTick = untilTick;
@@ -327,13 +327,19 @@ const EFFECTS: Record<
       ? ANDON_BASE_MORALE_COST
       : ANDON_BASE_MORALE_COST + ANDON_THIN_MORALE_COST;
     const morale = spendStat(org.morale, moraleCost);
-    const hp = spendStat(org.seniorHp, ANDON_HP_COST);
     org.morale = morale.next;
-    org.seniorHp = hp.next;
+    if (!congested) {
+      const hp = spendStat(org.seniorHp, ANDON_HP_COST);
+      org.seniorHp = hp.next;
+      return {
+        modifier: { kind: 'andon', untilTick },
+        moraleCost: morale.spent,
+        hpCost: hp.spent,
+      };
+    }
     return {
       modifier: { kind: 'andon', untilTick },
       moraleCost: morale.spent,
-      hpCost: hp.spent,
     };
   },
 };

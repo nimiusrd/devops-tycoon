@@ -318,7 +318,7 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       expect(hpAfterFirst - org.seniorHp).toBe(firefightHpCost(1));
     });
 
-    it('アンドンは渋滞時でも運用安定を付けず、基本の士気とシニアHPを払う', () => {
+    it('アンドンは渋滞時でも運用安定を付けず、基本の士気コストだけを払う', () => {
       const org = createOrgState('default', true);
       const tasks = Array.from({ length: 10 }, (_, i) => makeTask(i));
       const sprint = makeSprint(org, tasks);
@@ -327,9 +327,9 @@ describe('介入アクション: テーブル駆動（RI-35 / 第6.1）', () => 
       const outcome = applyAction('andon', sprint, org, rng, TICK);
       expect(outcome.ok).toBe(true);
       expect(outcome.effect?.moraleCost).toBe(ANDON_BASE_MORALE_COST);
-      expect(outcome.effect?.hpCost).toBe(ANDON_HP_COST);
+      expect(outcome.effect?.hpCost).toBeUndefined();
       expect(org.morale).toBe(morale0 - ANDON_BASE_MORALE_COST);
-      expect(org.seniorHp).toBe(hp0 - ANDON_HP_COST);
+      expect(org.seniorHp).toBe(hp0);
       expect(sprint.modifiers.stabilityUntilTick).toBe(0);
       expect(sprint.metrics.stabilizingGrants).toBe(0);
       expect(sprint.metrics.actionCounts.andon).toBe(1);

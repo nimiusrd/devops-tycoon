@@ -7,9 +7,7 @@
  */
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { DepartmentState } from '../sim/orgscale/types';
-import { DEPT_VIEW } from '../render/deptBoardScene';
 import { PixiDeptRenderer } from '../render/adapters/pixiDeptRenderer';
-import { useContainFit } from './useContainFit';
 
 /** Playwright Pixi 視覚回帰向け（dev のみ）。 */
 declare global {
@@ -20,9 +18,6 @@ declare global {
   }
 }
 
-const VIEW_RATIO = DEPT_VIEW.w / DEPT_VIEW.h;
-
-/** 盤面を親スロットに「両軸 contain」で収める（DeptBoard の useContainFit と同じ）。 */
 export interface DeptPixiBoardProps {
   dept: DepartmentState;
   onFocusTeam: (id: string) => void;
@@ -31,13 +26,11 @@ export interface DeptPixiBoardProps {
 }
 
 export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoardProps) {
-  const boardRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiDeptRenderer | null>(null);
   const deptRef = useRef(dept);
   const onFocusTeamRef = useRef(onFocusTeam);
   const onWebglErrorRef = useRef(onWebglError);
-  useContainFit(boardRef, VIEW_RATIO);
 
   useLayoutEffect(() => {
     onFocusTeamRef.current = onFocusTeam;
@@ -128,11 +121,7 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
   const hot = dept.onFire > 0 || dept.health === 'reviewHell';
 
   return (
-    <div
-      ref={boardRef}
-      className={`dept-board iso-dept${hot ? ' dept-hell' : ''}`}
-      data-testid="dept-board"
-    >
+    <div className={`dept-board iso-dept${hot ? ' dept-hell' : ''}`} data-testid="dept-board">
       <div
         ref={mountRef}
         className="dept-pixi-mount"

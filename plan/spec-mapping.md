@@ -19,7 +19,7 @@
 | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | テンポと速度操作 | `src/ui/sprintTempo.ts`, `tests/unit/ui/sprintTempo.test.ts`, `tests/unit/helpers/pacingStats.ts` | ✅ |
 | [4.1〜4.6](../SPEC.md#4-ゲーム画面) | 現場、HUD、介入、ビート、進化、リザルト | `src/ui/*Screen.tsx`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `src/sim/actions.ts`, `src/render/boardScene.ts`, `tests/e2e/sprint-layout.spec.ts`, `tests/e2e/sprint-pixi-visual.spec.ts` | 🟡 主要機能、RI-69／RI-70の個別症状、RI-94の5 viewport契約、RI-95の名前付きスロット、RI-96のスプリント盤面共通AspectStage、RI-97のCSS境界、RI-98のレスポンシブ表示モード正本を固定済み。共有トークンはRI-99 |
 | [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビューと継続 | `QuarterReviewScreen.tsx`, `quarterReview.ts`, `goalAdjustments.ts` | ✅ Delivery KPI は四半期累計スケールで整合（RI-68） |
-| [4.7〜4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 独立チーム、部署・全社・業界、ドリルダウン | `src/sim/orgscale/`, `OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx` | 🟡 機能は実装済み。盤面ごとに重複するサイズ計算と固定高の共通化はRI-100 |
+| [4.7〜4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 独立チーム、部署・全社・業界、ドリルダウン | `src/sim/orgscale/`, `OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx`, `src/ui/AspectStage.tsx`, `tests/e2e/org-scale.spec.ts` | ✅ 全社・部署・業界の設計比率、DOM/Pixi共有AspectStage、全社カメラ、部署ドリルダウン、ズームオーバーレイスクロールを固定（RI-100） |
 | [5](../SPEC.md#5-プレイヤーが操作するリソース) | 組織・集中力・予算・進化資源 | `src/sim/types.ts`, `src/sim/org.ts`, `src/sim/run/types.ts` | ✅ |
 | [6](../SPEC.md#6-スプリント中の能動操作) | 介入、集中力、コンボ、対象指定 | `src/sim/actions.ts`, `ActionBar.tsx`, `boardDragPlan.ts` | ✅ |
 | [7](../SPEC.md#7-ai導入施策カードデッキ) | デッキ、手札、ドラフト、強化、コレクション | `src/data/cards.ts`, `src/sim/cards.ts`, `CardView.tsx`, `DeckPolicyScreen.tsx`, `CardCollectionScreen.tsx` | ✅ |
@@ -35,7 +35,7 @@
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 定義済み。F-1・F-7（RI-73）と F-10（RI-76）は再計測で未達。F-2・F-8 も未充足（RI-74 等）。F-11 は RI-86 で充足。F-4 は RI-75／RI-85、F-5 は RI-84、F-6 は RI-82、F-12 は RI-81 で実装済み。F-9 の「打てた手」観測は RI-89 で計測可能（差の再計測は playtest:report 参照）。F-3 は未検証 |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
-| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、SprintLayoutの名前付きスロット、スプリント盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本を実装済み。共有ビジュアルトークンはRI-99 |
+| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。残る未充足は本表の他課題 |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ等は実装済み | 🟡 残候補はRI-34 |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
 

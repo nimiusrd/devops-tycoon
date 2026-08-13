@@ -1,4 +1,6 @@
 import { expect, test } from './fixtures';
+import type { Locator } from '@playwright/test';
+import { DESIGN_SPACES } from '../../src/render/visualTokens';
 import type { RunState } from '../../src/sim/run/types';
 import { seedMeta } from './seedMeta';
 
@@ -25,6 +27,139 @@ async function startRun(page: import('@playwright/test').Page, seed: string) {
     g.startRun('normal', [], s);
   }, seed);
 }
+
+type Box = { x: number; y: number; width: number; height: number };
+
+async function readBox(locator: Locator, label: string): Promise<Box> {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error(`${label} の bounding box が取得できない`);
+  return box;
+}
+
+async function assertAspectStage(
+  stage: Locator,
+  board: Locator,
+  ratio: number,
+  label: string,
+): Promise<void> {
+  const content = stage.getByTestId('aspect-stage-content');
+  await expect(board, `${label} の盤面が表示されない`).toBeVisible();
+  await expect
+    .poll(async () => (await content.boundingBox())?.height ?? 0, `${label} のステージが未計算`)
+    .toBeGreaterThan(0);
+
+  const [stageBox, contentBox, boardBox] = await Promise.all([
+    readBox(stage, `${label} スロット`),
+    readBox(content, `${label} 実ステージ`),
+    readBox(board, `${label} 盤面`),
+  ]);
+  const ratioError = Math.abs(contentBox.width / contentBox.height / ratio - 1);
+  expect(ratioError, `${label} の設計比率が崩れている`).toBeLessThanOrEqual(0.01);
+
+  expect(
+    Math.abs(boardBox.x - contentBox.x),
+    `${label} の盤面X位置がずれている`,
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(boardBox.y - contentBox.y),
+    `${label} の盤面Y位置がずれている`,
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(boardBox.width - contentBox.width),
+    `${label} の盤面幅がステージと一致しない`,
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(boardBox.height - contentBox.height),
+    `${label} の盤面高がステージと一致しない`,
+  ).toBeLessThanOrEqual(1);
+
+  expect(contentBox.x, `${label} がスロット左外へはみ出している`).toBeGreaterThanOrEqual(
+    stageBox.x - 1,
+  );
+  expect(contentBox.y, `${label} がスロット上外へはみ出している`).toBeGreaterThanOrEqual(
+    stageBox.y - 1,
+  );
+  expect(
+    contentBox.x + contentBox.width,
+    `${label} がスロット右外へはみ出している`,
+  ).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
+  expect(
+    contentBox.y + contentBox.height,
+    `${label} がスロット下外へはみ出している`,
+  ).toBeLessThanOrEqual(stageBox.y + stageBox.height + 1);
+}
+
+async function assertDesktopStageUsesAvailableHeight(stage: Locator, label: string): Promise<void> {
+  await expect
+    .poll(
+      async () => (await stage.getByTestId('aspect-stage-content').boundingBox())?.height ?? 0,
+      `${label} のステージ高が最小値に留まっている`,
+    )
+    .toBeGreaterThan(300);
+}
+
+test('全社・部署・業界の盤面がAspectStageで設計比率とcontain範囲を維持する（RI-100）', async ({
+  page,
+}) => {
+  const viewports = [
+    { name: 'phone', width: 390, height: 844 },
+    { name: 'desktop', width: 1440, height: 900 },
+  ] as const;
+
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await startRun(page, `ri100-aspect-stage-${viewport.name}`);
+
+    await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+    await assertAspectStage(
+      page.getByTestId('org-field'),
+      page.getByTestId('org-board'),
+      DESIGN_SPACES.organization.w / DESIGN_SPACES.organization.h,
+      `${viewport.name} 全社`,
+    );
+    if (viewport.name === 'desktop') {
+      await assertDesktopStageUsesAvailableHeight(page.getByTestId('org-field'), 'desktop 全社');
+    }
+
+    await page.getByTestId('crumb-industry').click();
+    await assertAspectStage(
+      page.getByTestId('industry-skyline-stage'),
+      page.locator('.industry-skyline.iso-industry'),
+      DESIGN_SPACES.industry.w / DESIGN_SPACES.industry.h,
+      `${viewport.name} 業界`,
+    );
+
+    if (viewport.name === 'phone') {
+      const overlay = page.getByTestId('zoom-overlay');
+      const scrollMetrics = await overlay.evaluate((element) => {
+        const scrollable = element as HTMLElement;
+        return { scrollHeight: scrollable.scrollHeight, clientHeight: scrollable.clientHeight };
+      });
+      expect(
+        scrollMetrics.scrollHeight,
+        '業界画面のオーバーレイがスクロール可能でない',
+      ).toBeGreaterThan(scrollMetrics.clientHeight);
+      await overlay.evaluate((element) => {
+        const scrollable = element as HTMLElement;
+        scrollable.scrollTop = scrollable.scrollHeight;
+      });
+      await expect
+        .poll(async () => overlay.evaluate((element) => (element as HTMLElement).scrollTop))
+        .toBeGreaterThan(0);
+    }
+
+    await page.getByTestId('crumb-department').click();
+    await assertAspectStage(
+      page.getByTestId('dept-field'),
+      page.getByTestId('dept-board'),
+      DESIGN_SPACES.department.w / DESIGN_SPACES.department.h,
+      `${viewport.name} 部署`,
+    );
+    if (viewport.name === 'desktop') {
+      await assertDesktopStageUsesAvailableHeight(page.getByTestId('dept-field'), 'desktop 部署');
+    }
+  }
+});
 
 test('現場→全社→部署→業界をパンくずで地続きにズームできる（DoD）', async ({ page }) => {
   await startRun(page, 'zoom-e2e');

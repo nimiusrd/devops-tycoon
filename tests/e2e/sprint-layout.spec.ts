@@ -61,7 +61,9 @@ async function assertReachableInViewport(
   if (!box) throw new Error(`${label} の bounding box が取得できない`);
 
   if (box.height <= viewportHeight + 1) {
-    await expect(locator, label).toBeInViewport({ ratio: 1 });
+    // 盤面床で 1px 未満はみ出すケースを、下端判定と同じ 1px 公差で許す。
+    const minRatio = Math.max(0, 1 - 1 / Math.max(box.height, 1));
+    await expect(locator, label).toBeInViewport({ ratio: minRatio });
     return;
   }
 

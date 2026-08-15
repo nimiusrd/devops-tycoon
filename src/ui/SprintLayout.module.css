@@ -45,7 +45,8 @@
 .stageSlot {
   display: flex;
   flex: 1 1 0;
-  min-height: 0;
+  /* 240px幅 × 573/1404。子内容が増えても盤面最低寸法を守る */
+  min-height: 98px;
   overflow: hidden;
 }
 

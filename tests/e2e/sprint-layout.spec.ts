@@ -26,7 +26,6 @@ const VIEWPORTS = [
   { name: 'desktop-short', width: 1024, height: 768 },
   { name: 'desktop', width: 1440, height: 900 },
 ] as const;
-type ViewportName = (typeof VIEWPORTS)[number]['name'];
 
 type Box = { x: number; y: number; width: number; height: number };
 
@@ -38,7 +37,6 @@ interface LayoutContractOptions {
   assignee?: boolean;
   hudExpanded?: boolean;
   resultOverlay?: boolean;
-  skipBoardMinimumDimensionsAt?: ViewportName;
 }
 
 function overlaps(a: Box, b: Box): boolean {
@@ -193,16 +191,14 @@ async function assertLayoutContract(
 
   const boardRatioError = Math.abs(boardBox.width / boardBox.height / BOARD_RATIO - 1);
   expect(boardRatioError, '盤面の 1404:573 比率が崩れている').toBeLessThanOrEqual(0.01);
-  if (options.skipBoardMinimumDimensionsAt !== viewport.name) {
-    expect(
-      boardBox.width,
-      `盤面の最低幅を満たしていない（${viewport.width}x${viewport.height}）`,
-    ).toBeGreaterThanOrEqual(240);
-    expect(
-      boardBox.height,
-      `盤面の最低高を満たしていない（${viewport.width}x${viewport.height}）`,
-    ).toBeGreaterThanOrEqual(96);
-  }
+  expect(
+    boardBox.width,
+    `盤面の最低幅を満たしていない（${viewport.width}x${viewport.height}）`,
+  ).toBeGreaterThanOrEqual(240);
+  expect(
+    boardBox.height,
+    `盤面の最低高を満たしていない（${viewport.width}x${viewport.height}）`,
+  ).toBeGreaterThanOrEqual(96);
 
   const boardWrap = page.locator('.board-wrap');
   const wrapBox = await boardWrap.boundingBox();
@@ -675,23 +671,18 @@ test.describe('RI-94 レイアウト契約', () => {
     await assertAcrossViewports(page, {
       relicCount: 6,
       effectTags: true,
-      skipBoardMinimumDimensionsAt: 'desktop-short',
     });
   });
 
-  test('既知: 6レリック状態の1024x768盤面最低寸法契約', async ({ page }) => {
+  test('6レリック状態の1024x768盤面最低寸法契約', async ({ page }) => {
     await openSixRelicSprint(page);
     await page.setViewportSize({ width: 1024, height: 768 });
     await waitForLayoutFrame(page);
     const board = page.getByTestId('board');
     await expect(board).toBeVisible();
     const boardBox = await readBox(page, 'board');
-    test.fail(
-      true,
-      '現行UIは1024x768の6レリック状態で盤面最低寸法240x96pxを満たさない（RI-95〜100で解消予定）',
-    );
-    expect(boardBox.width, '既知の6レリック盤面最低幅違反').toBeGreaterThanOrEqual(240);
-    expect(boardBox.height, '既知の6レリック盤面最低高違反').toBeGreaterThanOrEqual(96);
+    expect(boardBox.width, '6レリック盤面の最低幅を満たしていない').toBeGreaterThanOrEqual(240);
+    expect(boardBox.height, '6レリック盤面の最低高を満たしていない').toBeGreaterThanOrEqual(96);
   });
 
   test('初期スプリントを公開stepで結果オーバーレイへ進める', async ({ page }) => {

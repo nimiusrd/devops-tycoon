@@ -56,14 +56,22 @@ async function assertReachableInViewport(
   label: string,
 ): Promise<void> {
   await locator.scrollIntoViewIfNeeded();
-  const viewportHeight = await page.evaluate(() => window.innerHeight);
+  const viewport = await page.evaluate(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
   const box = await locator.boundingBox();
   if (!box) throw new Error(`${label} の bounding box が取得できない`);
 
-  if (box.height <= viewportHeight + 1) {
-    // 盤面床で 1px 未満はみ出すケースを、下端判定と同じ 1px 公差で許す。
-    const minRatio = Math.max(0, 1 - 1 / Math.max(box.height, 1));
-    await expect(locator, label).toBeInViewport({ ratio: minRatio });
+  if (box.height <= viewport.height + 1) {
+    expect(box.x, `${label} の左端が viewport 外`).toBeGreaterThanOrEqual(-1);
+    expect(box.y, `${label} の上端が viewport 外`).toBeGreaterThanOrEqual(-1);
+    expect(box.x + box.width, `${label} の右端が viewport 外`).toBeLessThanOrEqual(
+      viewport.width + 1,
+    );
+    expect(box.y + box.height, `${label} の下端が viewport 外`).toBeLessThanOrEqual(
+      viewport.height + 1,
+    );
     return;
   }
 
@@ -79,11 +87,11 @@ async function assertReachableInViewport(
   expect(
     bottomBox && bottomBox.y + bottomBox.height,
     `${label} の下端へスクロールできない`,
-  ).toBeLessThanOrEqual(viewportHeight + 1);
+  ).toBeLessThanOrEqual(viewport.height + 1);
   expect(
     bottomBox && bottomBox.y + bottomBox.height,
     `${label} の下端が viewport 境界に揃わない`,
-  ).toBeGreaterThanOrEqual(viewportHeight - 1);
+  ).toBeGreaterThanOrEqual(viewport.height - 1);
 }
 
 /** sticky actionbar の塗りつぶし位置ではなく、兄弟フロー上の配置を測る。 */

@@ -228,6 +228,36 @@ describe('危険域判定（RI-101）', () => {
     expect(activeDangerReasons(engine)).toContain('kpiMissed');
   });
 
+  it('四半期前半でも未達≥4なら kpiMissed を含む', () => {
+    const engine = startedSprint('ri-101-kpi-early');
+    engine.step(200);
+    const internals = engine as unknown as {
+      sprintIndexInQuarter: number;
+      budget: number;
+      stakeholderTrust: { management: number; customers: number; team: number };
+      org: { quality: number; techDebt: number; morale: number; seniorHp: number };
+      teams: Array<{ quality: number; techDebt: number; morale: number }>;
+      totals: { delivered: number; incidents: number; completed: number; aiAssisted: number };
+    };
+    internals.sprintIndexInQuarter = 0;
+    internals.budget = 40;
+    internals.stakeholderTrust = { management: 40, customers: 40, team: 40 };
+    internals.org.quality = 0;
+    internals.org.techDebt = 100;
+    internals.org.morale = 0;
+    internals.org.seniorHp = 80;
+    for (const team of internals.teams) {
+      team.quality = 0;
+      team.techDebt = 100;
+      team.morale = 0;
+    }
+    internals.totals.delivered = 0;
+    internals.totals.incidents = 99;
+    internals.totals.completed = 10;
+    internals.totals.aiAssisted = 0;
+    expect(activeDangerReasons(engine)).toContain('kpiMissed');
+  });
+
   it('次スプリントの必須インフラ課金で尽きる予算も危険域にする', () => {
     const engine = startedSprint('ri-101-infra-budget');
     engine.step(200);

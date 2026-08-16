@@ -1170,7 +1170,12 @@ if (cfRuns.length > 0) {
           const effective = Array.isArray(r.effectiveActionsInDanger)
             ? r.effectiveActionsInDanger
             : [];
-          if (typeof r.sprintsPlayed === 'number' && r.lastEffectiveActionsAt) {
+          if (
+            typeof r.sprintsPlayed === 'number' &&
+            r.lastEffectiveActionsAt &&
+            Array.isArray(r.lastEffectiveActionsAt.actions) &&
+            r.lastEffectiveActionsAt.actions.length > 0
+          ) {
             const midSprintInstantLose =
               r.lostPhase === 'sprint' && r.lostSprintCompleted === false;
             let loseSprints = r.sprintsPlayed;

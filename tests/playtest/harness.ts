@@ -2397,7 +2397,7 @@ export function runOnce(
                   counterfactualSkipped: skipped,
                 }
               : {}),
-            ...(effective.length > 0 || baselineRecovered
+            ...(effective.length > 0
               ? {
                   lastEffectiveActionsAt: {
                     sprintsPlayed: evaluation.origin.sprintsPlayed,

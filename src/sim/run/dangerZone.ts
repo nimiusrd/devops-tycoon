@@ -83,7 +83,6 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
   const nextBudget = budgetAfterNextInfraCharge(s);
   if (s.budget <= 15 || nextBudget <= 15) out.push('budgetExhausted');
-  const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
   const kpiOrg = liveKpi?.org ?? s.org;
   const kpiTotals = liveKpi?.totals ?? s.quarterTotals;
   const kpiMissCount = measureGoalProgress({
@@ -92,7 +91,7 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
     totals: kpiTotals,
   }).filter((p) => p.status === 'missed').length;
   if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
-  if (lateInQuarter && kpiMissCount >= 4) out.push('kpiMissed');
+  if (kpiMissCount >= 4) out.push('kpiMissed');
   else if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
   const currentReviewQueue = s.sprint?.tasks.filter((task) => task.lane === 'review').length ?? 0;
   const otherReviewQueues = s.teams

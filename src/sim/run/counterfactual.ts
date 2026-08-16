@@ -456,6 +456,7 @@ function idlePinnedId(snapshot: RunState): string | null {
   }
   if (snapshot.phase === 'draft' && (snapshot.draft?.length ?? 0) > 0) return 'draft:skip';
   if (snapshot.phase === 'evolution') return 'evo:skip';
+  if (snapshot.phase === 'shop' && snapshot.shop) return 'shop:skip';
   if (snapshot.phase === 'rest') return 'rest:repay';
   if (snapshot.phase === 'quarterReview') {
     const review = snapshot.quarterReview;
@@ -874,7 +875,17 @@ function collectStrategicAt(
   if (snapshot.phase === 'shop' && snapshot.shop) {
     const nth = beginVisit(seen, 'shop', snapshot);
     if (nth == null) return [];
-    return withVisit(listShopChoices(snapshot), nth);
+    return withVisit(
+      [
+        {
+          id: 'shop:skip',
+          kind: 'shop' as const,
+          override: { kind: 'shop' as const, steps: [] },
+        },
+        ...listShopChoices(snapshot),
+      ],
+      nth,
+    );
   }
   if (snapshot.phase === 'recruit') {
     const nth = beginVisit(seen, 'recruit', snapshot);
@@ -1077,7 +1088,7 @@ function drive(
         continue;
       }
     }
-    if (pinnedIds) {
+    if (pinnedIds && !leftDanger) {
       const pinned = idlePinnedId(s);
       if (pinned) {
         const kind = pinned.slice(0, pinned.indexOf(':'));

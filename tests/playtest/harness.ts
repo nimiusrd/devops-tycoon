@@ -978,6 +978,9 @@ export interface RunLog {
     status: string;
     truncated: boolean;
   };
+  /** 分岐上限で未評価の候補が残った（RI-101。不完全な「有効手なし」を集計から除外する）。 */
+  counterfactualIncomplete?: boolean;
+  counterfactualSkipped?: string[];
 }
 
 /**
@@ -1464,6 +1467,9 @@ function counterfactualEnabled(): boolean {
   return process.env.PT_COUNTERFACTUAL === '1';
 }
 
+/** 同一スプリント位置で保持する反実仮想フレーム数（先頭＋新しい側）。 */
+const COUNTERFACTUAL_FRAMES_PER_SPRINT = 8;
+
 /** アクティブな危険種別ごとの発動可能介入を和集合・最終サンプルへ追記する（盤面非破壊）。 */
 function rememberCounterfactualFrame(
   framesByReason: Map<DangerLoseReason, CounterfactualFrameSample[]>,
@@ -1479,10 +1485,16 @@ function rememberCounterfactualFrame(
     last.quarter === sample.quarter &&
     last.index === sample.index
   ) {
-    last.frame = frame;
+    const frames = last.frames ?? [last.frame];
+    frames.push(frame);
+    const first = frames[0];
+    last.frames =
+      first === undefined || frames.length <= COUNTERFACTUAL_FRAMES_PER_SPRINT
+        ? frames
+        : [first, ...frames.slice(-(COUNTERFACTUAL_FRAMES_PER_SPRINT - 1))];
     return;
   }
-  list.push({ ...sample, frame });
+  list.push({ ...sample, frame, frames: [frame] });
   framesByReason.set(reason, list);
 }
 
@@ -1516,12 +1528,10 @@ function sampleAvailableInDanger(
     }
     for (const id of available) track.actions.add(id);
     track.lastSample = sample;
-    if (available.length > 0) {
-      track.lastNonEmpty = sample;
-      if (framesByReason && counterfactualEnabled()) {
-        const frame = e.exportCounterfactualFrame();
-        if (frame) rememberCounterfactualFrame(framesByReason, reason, sample, frame);
-      }
+    if (available.length > 0) track.lastNonEmpty = sample;
+    if (framesByReason && counterfactualEnabled()) {
+      const frame = e.exportCounterfactualFrame();
+      if (frame) rememberCounterfactualFrame(framesByReason, reason, sample, frame);
     }
   }
 }
@@ -2351,12 +2361,23 @@ export function runOnce(
       ? (() => {
           const selected = evaluateLatestEffectiveFrame(
             counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!,
-            { focusReason: f.loseReason as DangerLoseReason },
+            {
+              focusReason: f.loseReason as DangerLoseReason,
+              maxActionBranches: 48,
+              maxStrategicBranches: 48,
+            },
           );
           if (!selected) return {};
           const { evaluation, effective } = selected;
+          const skipped = [...evaluation.skippedActions, ...evaluation.skippedStrategic];
           return {
             effectiveActionsInDanger: effective,
+            ...(skipped.length > 0
+              ? {
+                  counterfactualIncomplete: true,
+                  counterfactualSkipped: skipped,
+                }
+              : {}),
             ...(effective.length > 0
               ? {
                   lastEffectiveActionsAt: {

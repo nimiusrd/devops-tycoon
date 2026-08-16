@@ -7,8 +7,8 @@
  */
 import { getEvent } from '../../data/events';
 import { canApplyAction } from '../actions';
-import { assignableTasks } from '../assignTask';
-import type { ActionId } from '../types';
+import { assignableTasks, splitPrCandidates } from '../assignTask';
+import type { ActionId, ActionTarget } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
 import { RunEngine } from './engine';
 import { unlockableNodes } from './evolution';
@@ -50,7 +50,7 @@ export interface CounterfactualEvaluation {
   origin: CounterfactualOrigin;
   originDangers: DangerLoseReason[];
   applicableActions: ActionId[];
-  skippedActions: ActionId[];
+  skippedActions: string[];
   skippedStrategic: string[];
   baseline: CounterfactualBranchResult;
   branches: CounterfactualBranchResult[];
@@ -75,7 +75,16 @@ export interface CounterfactualFrameSample {
   sprintsPlayed: number;
   quarter: number;
   index: number;
+  /** その位置で最初に取ったフレーム。 */
   frame: CounterfactualFrame;
+  /** 同一スプリント位置の追加フレーム（新しい順ではなく時系列）。 */
+  frames?: CounterfactualFrame[];
+}
+
+interface SprintChoice {
+  id: string;
+  actionId: ActionId;
+  target?: ActionTarget;
 }
 
 type StrategicOverride =
@@ -102,9 +111,13 @@ export function restoreCounterfactualEngine(frame: CounterfactualFrame): RunEngi
   return engine;
 }
 
-function applyChoice(engine: RunEngine, id: ActionId): void {
+function applyChoice(engine: RunEngine, id: ActionId, target?: ActionTarget): void {
   const s = engine.snapshot();
   if (s.phase !== 'sprint' || !s.sprint) return;
+  if (target) {
+    engine.dispatch(id, target);
+    return;
+  }
   if (id === 'assignTask' && !canApplyAction('assignTask', s.sprint, s.org, s.sprintTick).ok) {
     const task = assignableTasks(s.sprint)[0];
     if (task) {
@@ -113,6 +126,40 @@ function applyChoice(engine: RunEngine, id: ActionId): void {
     return;
   }
   engine.dispatch(id);
+}
+
+function listSprintChoices(engine: RunEngine): SprintChoice[] {
+  const s = engine.snapshot();
+  if (s.phase !== 'sprint' || !s.sprint) return [];
+  const sprint = s.sprint;
+  const out: SprintChoice[] = [];
+  for (const id of listApplicableActions(engine)) {
+    if (id === 'assignTask') {
+      for (const task of assignableTasks(sprint)) {
+        const lane = task.lane === 'backlog' ? ('coding' as const) : undefined;
+        for (const assignee of ['ai', 'senior'] as const) {
+          const target: ActionTarget = lane
+            ? { taskId: task.id, lane, assignee }
+            : { taskId: task.id, assignee };
+          if (canApplyAction('assignTask', sprint, s.org, s.sprintTick, target).ok) {
+            out.push({ id: `assignTask:${task.id}:${assignee}`, actionId: 'assignTask', target });
+          }
+        }
+      }
+      if (out.some((choice) => choice.actionId === 'assignTask')) continue;
+    }
+    if (id === 'splitPr') {
+      for (const task of splitPrCandidates(sprint)) {
+        const target: ActionTarget = { taskId: task.id };
+        if (canApplyAction('splitPr', sprint, s.org, s.sprintTick, target).ok) {
+          out.push({ id: `splitPr:${task.id}`, actionId: 'splitPr', target });
+        }
+      }
+      if (out.some((choice) => choice.actionId === 'splitPr')) continue;
+    }
+    out.push({ id, actionId: id });
+  }
+  return out;
 }
 
 /** 起源の危険理由が現在の危険域から消えたか。focus があればその敗因だけを見る。 */
@@ -236,11 +283,12 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
   }
   if (snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision' && !seen.has('beat')) {
     seen.add('beat');
-    const n = getEvent(snapshot.beat.eventId)?.choices.length ?? 0;
+    const eventId = snapshot.beat.eventId;
+    const n = getEvent(eventId)?.choices.length ?? 0;
     const out: StrategicChoice[] = [];
     for (let index = 1; index < n; index += 1) {
       out.push({
-        id: `beat:${index}`,
+        id: `beat:${eventId}:${index}`,
         kind: 'beat',
         override: { kind: 'beat', index },
       });
@@ -351,14 +399,14 @@ function drive(
 
 function runActionBranch(
   frame: CounterfactualFrame,
-  actionId: ActionId | null,
+  choice: SprintChoice | { id: string | null; actionId: ActionId | null; target?: ActionTarget },
   originDangers: ReadonlySet<DangerLoseReason>,
   maxSprints: number,
   focusReason?: DangerLoseReason,
 ): CounterfactualBranchResult {
   const engine = restoreCounterfactualEngine(frame);
-  if (actionId) applyChoice(engine, actionId);
-  return { actionId, ...drive(engine, originDangers, maxSprints, focusReason) };
+  if (choice.actionId) applyChoice(engine, choice.actionId, choice.target);
+  return { actionId: choice.id, ...drive(engine, originDangers, maxSprints, focusReason) };
 }
 
 function runStrategicBranch(
@@ -393,11 +441,20 @@ export function evaluateCounterfactual(
   const dangers = activeDangerReasons(probe);
   const originDangers = new Set(dangers);
   const applicable = [...(options.actions ?? listApplicableActions(probe))];
-  const toEval = applicable.slice(0, maxActionBranches);
-  const skippedActions = applicable.slice(maxActionBranches);
-  const baseline = runActionBranch(frame, null, originDangers, maxSprints, options.focusReason);
-  const branches = toEval.map((id) =>
-    runActionBranch(frame, id, originDangers, maxSprints, options.focusReason),
+  const sprintChoices: SprintChoice[] = options.actions
+    ? options.actions.map((id) => ({ id, actionId: id }))
+    : listSprintChoices(probe);
+  const toEval = sprintChoices.slice(0, maxActionBranches);
+  const skippedActions = sprintChoices.slice(maxActionBranches).map((choice) => choice.id);
+  const baseline = runActionBranch(
+    frame,
+    { id: null, actionId: null },
+    originDangers,
+    maxSprints,
+    options.focusReason,
+  );
+  const branches = toEval.map((choice) =>
+    runActionBranch(frame, choice, originDangers, maxSprints, options.focusReason),
   );
   let skippedStrategic: string[] = [];
   if (includeStrategic) {
@@ -460,6 +517,10 @@ export interface LatestEffectiveFrame {
  * 新しいフレームから遡り、有効手がある最初の評価を返す。
  * どれも無効なら最新フレームの評価と空の有効手を返す。
  */
+function framesOf(sample: CounterfactualFrameSample): CounterfactualFrame[] {
+  return sample.frames && sample.frames.length > 0 ? sample.frames : [sample.frame];
+}
+
 export function evaluateLatestEffectiveFrame(
   samples: readonly CounterfactualFrameSample[],
   options: CounterfactualEvaluateOptions = {},
@@ -467,11 +528,14 @@ export function evaluateLatestEffectiveFrame(
   if (samples.length === 0) return null;
   let newest: LatestEffectiveFrame | null = null;
   for (let i = samples.length - 1; i >= 0; i -= 1) {
-    const evaluation = evaluateCounterfactual(samples[i]!.frame, options);
-    const effective = effectiveActionsOf(evaluation);
-    const found = { evaluation, effective };
-    if (!newest) newest = found;
-    if (effective.length > 0) return found;
+    const seq = framesOf(samples[i]!);
+    for (let j = seq.length - 1; j >= 0; j -= 1) {
+      const evaluation = evaluateCounterfactual(seq[j]!, options);
+      const effective = effectiveActionsOf(evaluation);
+      const found = { evaluation, effective };
+      if (!newest) newest = found;
+      if (effective.length > 0) return found;
+    }
   }
   return newest;
 }

@@ -1126,13 +1126,19 @@ if (cfRuns.length > 0) {
         const freq = new Map();
         const gaps = [];
         let emptyEffective = 0;
+        let incomplete = 0;
         for (const r of arr) {
           const effective = Array.isArray(r.effectiveActionsInDanger)
             ? r.effectiveActionsInDanger
             : [];
-          if (effective.length === 0) emptyEffective += 1;
+          if (r.counterfactualIncomplete) incomplete += 1;
+          else if (effective.length === 0) emptyEffective += 1;
           for (const id of effective) freq.set(id, (freq.get(id) ?? 0) + 1);
-          if (typeof r.sprintsPlayed === 'number' && r.lastEffectiveActionsAt) {
+          if (
+            !r.counterfactualIncomplete &&
+            typeof r.sprintsPlayed === 'number' &&
+            r.lastEffectiveActionsAt
+          ) {
             const midSprintInstantLose =
               r.lostPhase === 'sprint' && r.lostSprintCompleted === false;
             let loseSprints = r.sprintsPlayed;
@@ -1148,8 +1154,9 @@ if (cfRuns.length > 0) {
           gaps.length > 0
             ? ` | 回復余地ギャップ p50=${quantile(gaps, 0.5)} (n=${gaps.length})`
             : '';
+        const incompleteNote = incomplete > 0 ? ` | 未評価あり ${incomplete}` : '';
         console.log(
-          `    ${reason}: n=${arr.length} 有効手なし ${emptyEffective} | 集合 {${ranked.join(', ') || '—'}}${gapNote}`,
+          `    ${reason}: n=${arr.length} 有効手なし ${emptyEffective} | 集合 {${ranked.join(', ') || '—'}}${gapNote}${incompleteNote}`,
         );
       }
       console.log(`    敗因間で有効手集合が違う種類数: ${new Set(sets).size}。F-9 の有効手比較。`);

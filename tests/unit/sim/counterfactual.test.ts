@@ -155,6 +155,11 @@ describe('RI-101 分岐評価と上限', () => {
     expect(
       strategic.every((choice) => /^(draft:|evo:|beat:|rest:|recruit:|goal:)/.test(choice.id)),
     ).toBe(true);
+    expect(
+      strategic
+        .filter((choice) => choice.id.startsWith('beat:'))
+        .every((choice) => /^beat:[^:]+:\d+$/.test(choice.id)),
+    ).toBe(true);
     const evaluation = evaluateCounterfactual(frame, {
       actions: [],
       includeStrategic: true,
@@ -168,6 +173,27 @@ describe('RI-101 分岐評価と上限', () => {
         (branch) => branch.actionId === 'andon',
       ),
     ).toBe(true);
+  });
+
+  it('assignTask / splitPr は対象ごとに分岐する', () => {
+    const engine = startedSprint('ri-101-targets');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, {
+      includeStrategic: false,
+      maxSprints: 1,
+      maxActionBranches: 48,
+    });
+    if (evaluation.applicableActions.includes('assignTask')) {
+      expect(
+        evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('assignTask:')),
+      ).toBe(true);
+    }
+    if (evaluation.applicableActions.includes('splitPr')) {
+      expect(
+        evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('splitPr:')),
+      ).toBe(true);
+    }
   });
 });
 

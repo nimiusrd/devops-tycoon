@@ -110,7 +110,7 @@ interface SprintChoice {
 type StrategicOverride =
   | { kind: 'draft'; cardId: string; mulligan?: boolean }
   | { kind: 'evolution'; nodeIds: string[] }
-  | { kind: 'beat'; index: number }
+  | { kind: 'beat'; index: number; assignment?: LaneAssignment }
   | { kind: 'rest'; option: RestChoice; deckIndex?: number; assignment?: LaneAssignment }
   | { kind: 'shop'; mode: 'card'; defId: string }
   | { kind: 'shop'; mode: 'relic' }
@@ -123,6 +123,8 @@ export interface StrategicChoice {
   id: string;
   kind: StrategicOverride['kind'];
   override: StrategicOverride;
+  /** 無介入ドライブ上でこの種別のフェーズが何回目か（0始まり）。 */
+  visit?: number;
 }
 
 export function restoreCounterfactualEngine(frame: CounterfactualFrame): RunEngine {
@@ -310,6 +312,34 @@ function assignHiredMember(
   if (hired) engine.assignMember(hired.id, assignment);
 }
 
+function visitKey(kind: string, snapshot: RunState): string {
+  return `visit:${kind}:${snapshot.sprintsPlayed}:${snapshot.quarterNumber}:${snapshot.sprintIndexInQuarter}`;
+}
+
+function beginVisit(seen: Set<string>, kind: string, snapshot: RunState): number | null {
+  const key = visitKey(kind, snapshot);
+  if (seen.has(key)) return null;
+  const nth = [...seen].filter((item) => item.startsWith(`visit:${kind}:`)).length;
+  seen.add(key);
+  return nth;
+}
+
+function withVisit(choices: StrategicChoice[], nth: number): StrategicChoice[] {
+  return choices.map((choice) => ({
+    ...choice,
+    id: nth === 0 ? choice.id : `${choice.id}@${nth}`,
+    visit: nth,
+  }));
+}
+
+function phaseMatchesOverride(snapshot: RunState, override: StrategicOverride): boolean {
+  if (override.kind === 'beat') {
+    return snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision';
+  }
+  if (override.kind === 'goal') return snapshot.phase === 'quarterReview';
+  return snapshot.phase === override.kind;
+}
+
 function applyIdleStep(
   engine: RunEngine,
   snapshot: RunState,
@@ -381,7 +411,11 @@ function applyStrategicOverride(
       return true;
     case 'beat':
       if (snapshot.phase !== 'beat' || snapshot.beat?.kind !== 'decision') return false;
-      engine.resolveBeat(override.index);
+      {
+        const beforeIds = memberIdsOf(snapshot);
+        engine.resolveBeat(override.index);
+        if (override.assignment) assignHiredMember(engine, beforeIds, override.assignment);
+      }
       return true;
     case 'rest':
       if (snapshot.phase !== 'rest') return false;
@@ -497,39 +531,52 @@ function listEvolutionChoices(evolution: RunState['evolution']): StrategicChoice
 }
 
 function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicChoice[] {
-  if (
-    snapshot.phase === 'draft' &&
-    !seen.has('draft') &&
-    snapshot.draft &&
-    snapshot.draft.length > 0
-  ) {
-    seen.add('draft');
-    return snapshot.draft.map((cardId) => ({
-      id: `draft:${cardId}`,
-      kind: 'draft' as const,
-      override: { kind: 'draft' as const, cardId },
-    }));
+  if (snapshot.phase === 'draft' && snapshot.draft && snapshot.draft.length > 0) {
+    const nth = beginVisit(seen, 'draft', snapshot);
+    if (nth == null) return [];
+    return withVisit(
+      snapshot.draft.map((cardId) => ({
+        id: `draft:${cardId}`,
+        kind: 'draft' as const,
+        override: { kind: 'draft' as const, cardId },
+      })),
+      nth,
+    );
   }
-  if (snapshot.phase === 'evolution' && !seen.has('evolution')) {
-    seen.add('evolution');
-    return listEvolutionChoices(snapshot.evolution);
+  if (snapshot.phase === 'evolution') {
+    const nth = beginVisit(seen, 'evolution', snapshot);
+    if (nth == null) return [];
+    return withVisit(listEvolutionChoices(snapshot.evolution), nth);
   }
-  if (snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision' && !seen.has('beat')) {
-    seen.add('beat');
+  if (snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision') {
+    const nth = beginVisit(seen, 'beat', snapshot);
+    if (nth == null) return [];
     const eventId = snapshot.beat.eventId;
-    const n = getEvent(eventId)?.choices.length ?? 0;
+    const event = getEvent(eventId);
+    const n = event?.choices.length ?? 0;
     const out: StrategicChoice[] = [];
     for (let index = 0; index < n; index += 1) {
-      out.push({
-        id: `beat:${eventId}:${index}`,
-        kind: 'beat',
-        override: { kind: 'beat', index },
-      });
+      if (event?.choices[index]?.outcome.grantRecruit) {
+        for (const assignment of RECRUIT_LANES) {
+          out.push({
+            id: `beat:${eventId}:${index}:${assignment}`,
+            kind: 'beat',
+            override: { kind: 'beat', index, assignment },
+          });
+        }
+      } else {
+        out.push({
+          id: `beat:${eventId}:${index}`,
+          kind: 'beat',
+          override: { kind: 'beat', index },
+        });
+      }
     }
-    return out;
+    return withVisit(out, nth);
   }
-  if (snapshot.phase === 'rest' && !seen.has('rest')) {
-    seen.add('rest');
+  if (snapshot.phase === 'rest') {
+    const nth = beginVisit(seen, 'rest', snapshot);
+    if (nth == null) return [];
     const out: StrategicChoice[] = REST_ALTERNATIVES.map((option) => ({
       id: `rest:${option}`,
       kind: 'rest' as const,
@@ -551,10 +598,11 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
         override: { kind: 'rest', option: 'upgrade', deckIndex },
       });
     }
-    return out;
+    return withVisit(out, nth);
   }
-  if (snapshot.phase === 'shop' && !seen.has('shop') && snapshot.shop) {
-    seen.add('shop');
+  if (snapshot.phase === 'shop' && snapshot.shop) {
+    const nth = beginVisit(seen, 'shop', snapshot);
+    if (nth == null) return [];
     const shop = snapshot.shop;
     const out: StrategicChoice[] = [];
     for (const card of shop.cards) {
@@ -586,36 +634,45 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
         });
       }
     }
-    return out;
+    return withVisit(out, nth);
   }
-  if (snapshot.phase === 'recruit' && !seen.has('recruit')) {
-    seen.add('recruit');
-    return RECRUIT_LANES.map((assignment) => ({
-      id: `recruit:hire:${assignment}`,
-      kind: 'recruit' as const,
-      override: { kind: 'recruit' as const, assignment },
-    }));
+  if (snapshot.phase === 'recruit') {
+    const nth = beginVisit(seen, 'recruit', snapshot);
+    if (nth == null) return [];
+    return withVisit(
+      RECRUIT_LANES.map((assignment) => ({
+        id: `recruit:hire:${assignment}`,
+        kind: 'recruit' as const,
+        override: { kind: 'recruit' as const, assignment },
+      })),
+      nth,
+    );
   }
-  if (snapshot.phase === 'quarterReview' && !seen.has('goal')) {
-    seen.add('goal');
+  if (snapshot.phase === 'quarterReview') {
+    const nth = beginVisit(seen, 'goal', snapshot);
+    if (nth == null) return [];
     const review = snapshot.quarterReview;
     if (review?.outcome !== 'missed_adjustable') return [];
-    return review.availableAdjustments.map((id) => ({
-      id: `goal:${id}`,
-      kind: 'goal' as const,
-      override: { kind: 'goal' as const, id },
-    }));
+    return withVisit(
+      review.availableAdjustments.map((id) => ({
+        id: `goal:${id}`,
+        kind: 'goal' as const,
+        override: { kind: 'goal' as const, id },
+      })),
+      nth,
+    );
   }
-  if (snapshot.phase === 'setup' && !seen.has('setup')) {
-    seen.add('setup');
-    return listSetupChoices(snapshot);
+  if (snapshot.phase === 'setup') {
+    const nth = beginVisit(seen, 'setup', snapshot);
+    if (nth == null) return [];
+    return withVisit(listSetupChoices(snapshot), nth);
   }
   return [];
 }
 
 /**
- * 無介入ドライブ上で最初に出会う各戦略フェーズの代替肢。
- * ネストした全組合せは作らず、フェーズ種別ごとに 1 回だけ列挙する。
+ * 無介入ドライブ上で出会う各戦略フェーズの代替肢。
+ * ネストした全組合せは作らず、同一種別でも出現位置ごとに独立分岐する。
  */
 export function listStrategicChoices(
   frame: CounterfactualFrame,
@@ -631,9 +688,9 @@ export function listStrategicChoices(
     const snapshot = engine.snapshot();
     if (snapshot.phase === 'setup' && snapshot.sprintsPlayed - startPlayed >= maxSprints) break;
     found.push(...collectStrategicAt(snapshot, seen));
-    if (snapshot.phase === 'draft' && !seen.has('draft-mulligan') && canMulliganDraft(snapshot)) {
-      seen.add('draft-mulligan');
-      found.push(...collectDraftMulligan(engine));
+    if (snapshot.phase === 'draft' && canMulliganDraft(snapshot)) {
+      const nth = beginVisit(seen, 'draft-mulligan', snapshot);
+      if (nth != null) found.push(...withVisit(collectDraftMulligan(engine), nth));
     }
     if (!applyIdleStep(engine, snapshot)) break;
   }
@@ -649,11 +706,13 @@ function drive(
   maxSprints: number,
   focusReason?: DangerLoseReason,
   override?: StrategicOverride,
+  overrideVisit = 0,
 ): Omit<CounterfactualBranchResult, 'actionId'> {
   const startPlayed = engine.snapshot().sprintsPlayed;
   let leftDanger = originDangersLeft(originDangers, engine, focusReason);
   let applied = override == null;
   let playAcquiredCard: number | null = null;
+  let kindHits = 0;
   let guard = 0;
   while (engine.snapshot().status === 'playing' && guard < 4_000) {
     guard += 1;
@@ -671,24 +730,27 @@ function drive(
       };
     }
     if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
-    if (!applied && override && applyStrategicOverride(engine, s, override)) {
-      applied = true;
-      const deckAfter = engine.snapshot().deck.length;
-      if (
-        (override.kind === 'draft' ||
-          override.kind === 'beat' ||
-          (override.kind === 'shop' && override.mode === 'card')) &&
-        deckAfter > s.deck.length
-      ) {
-        playAcquiredCard = deckAfter - 1;
-      } else if (
-        override.kind === 'rest' &&
-        override.option === 'upgrade' &&
-        override.deckIndex != null
-      ) {
-        playAcquiredCard = override.deckIndex;
+    if (!applied && override && phaseMatchesOverride(s, override)) {
+      if (kindHits === overrideVisit && applyStrategicOverride(engine, s, override)) {
+        applied = true;
+        const deckAfter = engine.snapshot().deck.length;
+        if (
+          (override.kind === 'draft' ||
+            override.kind === 'beat' ||
+            (override.kind === 'shop' && override.mode === 'card')) &&
+          deckAfter > s.deck.length
+        ) {
+          playAcquiredCard = deckAfter - 1;
+        } else if (
+          override.kind === 'rest' &&
+          override.option === 'upgrade' &&
+          override.deckIndex != null
+        ) {
+          playAcquiredCard = override.deckIndex;
+        }
+        continue;
       }
-      continue;
+      kindHits += 1;
     }
     if (!applyIdleStep(engine, s, playAcquiredCard)) {
       return {
@@ -743,7 +805,7 @@ function runStrategicBranch(
   const engine = restoreCounterfactualEngine(frame);
   return {
     actionId: choice.id,
-    ...drive(engine, originDangers, maxSprints, focusReason, choice.override),
+    ...drive(engine, originDangers, maxSprints, focusReason, choice.override, choice.visit ?? 0),
   };
 }
 

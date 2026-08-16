@@ -173,7 +173,7 @@ describe('RI-101 分岐評価と上限', () => {
     expect(
       strategic
         .filter((choice) => choice.id.startsWith('beat:'))
-        .every((choice) => /^beat:[^:]+:\d+$/.test(choice.id)),
+        .every((choice) => /^beat:[^:]+:\d+(:(?:coding|review))?(?:@\d+)?$/.test(choice.id)),
     ).toBe(true);
     const evaluation = evaluateCounterfactual(frame, {
       actions: [],
@@ -387,6 +387,57 @@ describe('RI-101 分岐評価と上限', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it('即時採用ビートは新メンバーの配置まで分岐する', () => {
+    const engine = startedSprint('ri-101-urgent-hire');
+    const internals = engine as unknown as {
+      phase: string;
+      beat: { eventId: string; kind: 'decision' };
+    };
+    internals.phase = 'beat';
+    internals.beat = { eventId: 'urgent-hire', kind: 'decision' };
+    const beforeIds = new Set(engine.snapshot().roster.members.map((member) => member.id));
+    const frame = engine.exportCounterfactualFrame()!;
+    const hire = listStrategicChoices(frame, 1).filter((choice) =>
+      choice.id.startsWith('beat:urgent-hire:0:'),
+    );
+    expect(hire.map((choice) => choice.id).sort()).toEqual([
+      'beat:urgent-hire:0:coding',
+      'beat:urgent-hire:0:review',
+    ]);
+    const spy = vi.spyOn(RunEngine.prototype, 'assignMember');
+    try {
+      evaluateCounterfactual(frame, {
+        actions: [],
+        includeStrategic: true,
+        maxSprints: 1,
+        maxStrategicBranches: 8,
+      });
+      expect(
+        spy.mock.calls.some(
+          ([id, assignment]) =>
+            !beforeIds.has(id) && (assignment === 'coding' || assignment === 'review'),
+        ),
+      ).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('後続スプリントの同種戦略フェーズも独立分岐する', () => {
+    const engine = startedSprint('ri-101-later-phase');
+    const internals = engine as unknown as {
+      phase: string;
+      evolution: { points: number; unlocked: Record<string, boolean> };
+    };
+    internals.phase = 'evolution';
+    internals.evolution = { points: 0, unlocked: {} };
+    const frame = engine.exportCounterfactualFrame()!;
+    const laterEvo = listStrategicChoices(frame, 4).filter((choice) =>
+      /^evo:.*@\d+$/.test(choice.id),
+    );
+    expect(laterEvo.length).toBeGreaterThan(0);
   });
 });
 

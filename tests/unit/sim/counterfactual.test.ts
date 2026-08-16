@@ -307,6 +307,21 @@ describe('RI-101 集計規則', () => {
     ).toBe(false);
     expect(
       isEffectiveChoice(
+        branch({
+          actionId: null,
+          sprintsToLose: null,
+          loseReason: null,
+          status: 'playing',
+        }),
+        branch({
+          actionId: 'interruptReview',
+          leftDanger: true,
+          sprintsToLose: 1,
+        }),
+      ),
+    ).toBe(false);
+    expect(
+      isEffectiveChoice(
         baseline,
         branch({ actionId: 'interruptReview', loseReason: 'reviewFreeze' }),
       ),

@@ -223,33 +223,24 @@ function originDangersLeft(
   return isDangerLeft(origin, activeDangerReasons(engine), focusReason);
 }
 
-function playPlayableHand(engine: RunEngine): void {
-  let snap = engine.snapshot();
-  while (snap.phase === 'sprint' && snap.sprint && snap.status === 'playing') {
-    const playable = snap.sprint.cardPiles.hand.find((deckIndex) =>
-      canPlayHandCard(snap.sprint!, snap.deck, deckIndex),
-    );
-    if (playable == null) break;
-    if (!engine.playCard(playable).ok) break;
-    snap = engine.snapshot();
-  }
+function playTargetCardIfAble(engine: RunEngine, deckIndex: number): void {
+  const snap = engine.snapshot();
+  if (snap.phase !== 'sprint' || !snap.sprint || snap.status !== 'playing') return;
+  if (!canPlayHandCard(snap.sprint, snap.deck, deckIndex)) return;
+  engine.playCard(deckIndex);
 }
 
-function enablesAcquiredHandPlay(override: StrategicOverride): boolean {
-  return (
-    override.kind === 'draft' ||
-    (override.kind === 'shop' && override.mode === 'card') ||
-    (override.kind === 'rest' && override.option === 'upgrade')
-  );
-}
-
-function applyIdleStep(engine: RunEngine, snapshot: RunState, playAcquiredHand = false): boolean {
+function applyIdleStep(
+  engine: RunEngine,
+  snapshot: RunState,
+  playAcquiredCard: number | null = null,
+): boolean {
   switch (snapshot.phase) {
     case 'setup':
       engine.beginSetupSprint();
       return true;
     case 'sprint': {
-      if (playAcquiredHand) playPlayableHand(engine);
+      if (playAcquiredCard != null) playTargetCardIfAble(engine, playAcquiredCard);
       const snap = engine.snapshot();
       if (snap.phase === 'sprint' && snap.status === 'playing') {
         engine.step(1_000_000);
@@ -504,7 +495,7 @@ function drive(
   const startPlayed = engine.snapshot().sprintsPlayed;
   let leftDanger = originDangersLeft(originDangers, engine, focusReason);
   let applied = override == null;
-  let playAcquiredHand = false;
+  let playAcquiredCard: number | null = null;
   let guard = 0;
   while (engine.snapshot().status === 'playing' && guard < 4_000) {
     guard += 1;
@@ -523,10 +514,22 @@ function drive(
     if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
     if (!applied && override && applyStrategicOverride(engine, s, override)) {
       applied = true;
-      if (enablesAcquiredHandPlay(override)) playAcquiredHand = true;
+      const deckAfter = engine.snapshot().deck.length;
+      if (
+        (override.kind === 'draft' || (override.kind === 'shop' && override.mode === 'card')) &&
+        deckAfter > s.deck.length
+      ) {
+        playAcquiredCard = deckAfter - 1;
+      } else if (
+        override.kind === 'rest' &&
+        override.option === 'upgrade' &&
+        override.deckIndex != null
+      ) {
+        playAcquiredCard = override.deckIndex;
+      }
       continue;
     }
-    if (!applyIdleStep(engine, s, playAcquiredHand)) {
+    if (!applyIdleStep(engine, s, playAcquiredCard)) {
       return {
         sprintsToLose: null,
         leftDanger,
@@ -636,11 +639,9 @@ function loseNotEarlier(
   baseline: CounterfactualBranchResult,
   branch: CounterfactualBranchResult,
 ): boolean {
-  return (
-    branch.sprintsToLose == null ||
-    baseline.sprintsToLose == null ||
-    branch.sprintsToLose >= baseline.sprintsToLose
-  );
+  if (branch.sprintsToLose == null) return true;
+  if (baseline.sprintsToLose == null) return false;
+  return branch.sprintsToLose >= baseline.sprintsToLose;
 }
 
 /** ベースラインに対して介入が有効か（F-8 / F-9 共通の集計規則）。 */

@@ -95,7 +95,13 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
     .filter((team) => team.id !== s.activeTeamId)
     .map((team) => team.reviewQueue);
   const reviewQueueLive = Math.max(currentReviewQueue, ...otherReviewQueues, 0);
-  if (reviewQueueLive >= Math.round(REVIEW_FREEZE_PEAK * 0.75)) out.push('reviewFreeze');
+  const sprintReviewPeak = s.sprint?.metrics.reviewQueueMax ?? 0;
+  if (
+    reviewQueueLive >= Math.round(REVIEW_FREEZE_PEAK * 0.75) ||
+    sprintReviewPeak >= REVIEW_FREEZE_PEAK
+  ) {
+    out.push('reviewFreeze');
+  }
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
     out.push('incidentCascade');
   if (s.currentSprintKind === 'boss') out.push('bossFailed');

@@ -451,6 +451,32 @@ describe('RI-101 分岐評価と上限', () => {
     }
   });
 
+  it('休息のカード強化は未強化カードの自動発動と分離する', () => {
+    const engine = startedSprint('ri-101-rest-upgrade-no-autoplay');
+    const internals = engine as unknown as {
+      phase: string;
+      deck: { defId: string; level: number }[];
+    };
+    internals.phase = 'rest';
+    internals.deck = [{ defId: 'copilot', level: 1 }];
+    const frame = engine.exportCounterfactualFrame()!;
+    expect(listStrategicChoices(frame, 1).some((choice) => choice.id === 'rest:upgrade:0')).toBe(
+      true,
+    );
+    const spy = vi.spyOn(RunEngine.prototype, 'playCard');
+    try {
+      evaluateCounterfactual(frame, {
+        actions: [],
+        includeStrategic: true,
+        maxSprints: 1,
+        maxStrategicBranches: 4,
+      });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('即時採用ビートは新メンバーの配置まで分岐する', () => {
     const engine = startedSprint('ri-101-urgent-hire');
     const internals = engine as unknown as {
@@ -485,6 +511,22 @@ describe('RI-101 分岐評価と上限', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it('即時採用が失敗する盤面では配置接尾辞のない単一分岐にする', () => {
+    const engine = startedSprint('ri-101-urgent-hire-fail');
+    const internals = engine as unknown as {
+      phase: string;
+      beat: { eventId: string; kind: 'decision' };
+      budget: number;
+    };
+    internals.phase = 'beat';
+    internals.beat = { eventId: 'urgent-hire', kind: 'decision' };
+    internals.budget = 0;
+    const hire = listStrategicChoices(engine.exportCounterfactualFrame()!, 1).filter((choice) =>
+      choice.id.startsWith('beat:urgent-hire:0'),
+    );
+    expect(hire.map((choice) => choice.id)).toEqual(['beat:urgent-hire:0']);
   });
 
   it('後続スプリントの同種戦略フェーズも独立分岐する', () => {

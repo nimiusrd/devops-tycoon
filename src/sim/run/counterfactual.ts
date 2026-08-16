@@ -467,12 +467,6 @@ function recordAcquiredCards(
     deckAfter > before.deck.length
   ) {
     for (let i = before.deck.length; i < deckAfter; i += 1) playAcquiredCards.push(i);
-  } else if (
-    override.kind === 'rest' &&
-    override.option === 'upgrade' &&
-    override.deckIndex != null
-  ) {
-    playAcquiredCards.push(override.deckIndex);
   }
 }
 
@@ -747,11 +741,19 @@ function collectStrategicAt(
     const out: StrategicChoice[] = [];
     for (let index = 0; index < n; index += 1) {
       if (event?.choices[index]?.outcome.grantRecruit) {
-        for (const assignment of RECRUIT_LANES) {
+        if (canRecruit(snapshot.roster) && snapshot.budget >= RECRUIT_COST) {
+          for (const assignment of RECRUIT_LANES) {
+            out.push({
+              id: `beat:${eventId}:${index}:${assignment}`,
+              kind: 'beat',
+              override: { kind: 'beat', index, assignment },
+            });
+          }
+        } else {
           out.push({
-            id: `beat:${eventId}:${index}:${assignment}`,
+            id: `beat:${eventId}:${index}`,
             kind: 'beat',
-            override: { kind: 'beat', index, assignment },
+            override: { kind: 'beat', index },
           });
         }
       } else {

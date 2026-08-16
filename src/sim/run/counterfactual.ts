@@ -225,9 +225,21 @@ function applyIdleStep(engine: RunEngine, snapshot: RunState): boolean {
     case 'setup':
       engine.beginSetupSprint();
       return true;
-    case 'sprint':
-      engine.step(1_000_000);
+    case 'sprint': {
+      let snap = engine.snapshot();
+      while (snap.phase === 'sprint' && snap.sprint && snap.status === 'playing') {
+        const playable = snap.sprint.cardPiles.hand.find((deckIndex) =>
+          canPlayHandCard(snap.sprint!, snap.deck, deckIndex),
+        );
+        if (playable == null) break;
+        if (!engine.playCard(playable).ok) break;
+        snap = engine.snapshot();
+      }
+      if (snap.phase === 'sprint' && snap.status === 'playing') {
+        engine.step(1_000_000);
+      }
       return true;
+    }
     case 'result':
       engine.acknowledgeResult();
       return true;

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   effectiveActionsOf,
   evaluateCounterfactual,
@@ -184,6 +184,37 @@ describe('RI-101 分岐評価と上限', () => {
         (branch) => branch.actionId === 'andon',
       ),
     ).toBe(true);
+  });
+
+  it('無介入ドライブはスプリント中に手札を発動してから進める', () => {
+    const engine = new RunEngine({ seed: 'ri-101-play-hand', difficulty: 'normal' });
+    engine.startRun();
+    const internals = engine as unknown as { phase: string; draft: string[] | null };
+    internals.phase = 'draft';
+    internals.draft = ['copilot'];
+    engine.chooseCard('copilot');
+    internals.phase = 'setup';
+    engine.beginSetupSprint();
+    const snap = engine.snapshot();
+    expect(snap.phase).toBe('sprint');
+    const copilotIndex = snap.sprint?.cardPiles.hand.find(
+      (idx) => snap.deck[idx]?.defId === 'copilot',
+    );
+    expect(copilotIndex).toBeDefined();
+    const frame = engine.exportCounterfactualFrame()!;
+    const spy = vi.spyOn(RunEngine.prototype, 'playCard');
+    try {
+      const evaluation = evaluateCounterfactual(frame, {
+        actions: [],
+        includeStrategic: false,
+        maxSprints: 1,
+      });
+      expect(evaluation.baseline.actionId).toBeNull();
+      expect(['playing', 'lost', 'won']).toContain(evaluation.baseline.status);
+      expect(spy).toHaveBeenCalledWith(copilotIndex);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('assignTask / splitPr は対象ごとに分岐する', () => {

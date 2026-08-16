@@ -56,10 +56,10 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 | メンバーと採用 | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts)、`src/sim/orgscale/teamState.ts`の人数推定、`src/sim/run/engine.ts`の再編離脱、`tests/playtest/harness.ts`の復職係数 | 能力、スタミナ、成長、休職・復職、採用費、人数上限、最低稼働人数を`balance/member.ts`へ移し、複製参照を統合する | RI-109 |
 | 介入と差配 | [`src/data/actions.ts`](../src/data/actions.ts)、[`src/sim/actions.ts`](../src/sim/actions.ts)、[`src/sim/assignTask.ts`](../src/sim/assignTask.ts) | コスト、クールダウン、ゲージ、効果、副作用、状況閾値、持続tick、差配境界を`balance/actions.ts`へ移す。ID・ラベル・説明は既存定義に残す | RI-110 |
 | ラン進行と経済 | [`src/sim/run/constants.ts`](../src/sim/run/constants.ts)、`src/sim/run/effects.ts`、`src/sim/run/engine.ts`、`src/sim/run/events.ts`、`src/sim/run/sprintBaselineBuild.ts`の課金式、`scripts/playtest-report.mjs`の進化ポイント直接読取 | 四半期構成、イベント率、結果適用時の生存境界、休息、ショップ、進化報酬、インフラ費用を`balance/run.ts`へ移し、スクリプトを正規参照へ変える | RI-111 |
-| KPI・勝敗・診断 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts)、[`src/sim/diagnosis.ts`](../src/sim/diagnosis.ts)、`src/render/loseNextActionView.ts`、`src/render/status.ts`、`tests/playtest/harness.ts` | 目標、評価、即時敗北、勝利種別、診断、再編回復値、危機表示・方針側の同値参照を`balance/run.ts`または`balance/outcome.ts`へ移す | RI-112 |
+| KPI・勝敗・診断 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts)、[`src/sim/diagnosis.ts`](../src/sim/diagnosis.ts)、`src/state/runPersistence.ts`の旧セーブKPI再判定、`src/render/loseNextActionView.ts`、`src/render/status.ts`、`tests/playtest/harness.ts` | 目標、評価、即時敗北、勝利種別、診断、再編回復値、永続化・表示・方針側の同値参照を`balance/run.ts`または`balance/outcome.ts`へ移す | RI-112 |
 | 粗粒度チームと業界 | [`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts)、[`src/sim/orgscale/aggregate.ts`](../src/sim/orgscale/aggregate.ts)、[`src/sim/orgscale/industry.ts`](../src/sim/orgscale/industry.ts) | 初期分布、出荷、行列、Incident、状態ドリフト、評価、競合生成、ランキング得点・リーグ境界を`balance/coarse-team.ts`へ移す | RI-113 |
 | ペーシング | [`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts)、[`src/sim/engine.ts`](../src/sim/engine.ts)、`src/sim/run/engine.ts`、[`src/ui/sprintTempo.ts`](../src/ui/sprintTempo.ts)、[`src/ui/useRun.ts`](../src/ui/useRun.ts)、[`scripts/playtest-report.mjs`](../scripts/playtest-report.mjs) | タスク床、tick境界、回復率、共通固定ステップ、`MS_PER_TICK_1X`、体験目標帯を`balance/pacing.ts`へ移し、正規表現読取を廃止する | RI-114 |
-| 既存コンテンツカタログ | `src/data/cards.ts`、`events.ts`、`difficulties.ts`、`bosses.ts`、`relics.ts`、`traits.ts`、`evolution.ts`、`goalAdjustments.ts`、`levers.ts`、`members.ts`、`unlocks.ts`、`src/sim/scenarios.ts`、`src/state/meta.ts`の実績ID | 既存定義を正本のまま生成表と指紋へ集約する。イベント発火分類などプレイテスト側の複製は正本から導出する | RI-115 |
+| 既存コンテンツカタログ | `src/data/cards.ts`、`events.ts`、`difficulties.ts`、`bosses.ts`、`relics.ts`、`traits.ts`、`evolution.ts`、`goalAdjustments.ts`、`levers.ts`、`members.ts`、`unlocks.ts`、`departments.ts`、`src/sim/scenarios.ts`、`src/state/meta.ts`の実績ID | 既存定義を正本のまま生成表と指紋へ集約する。部門ID・定義順・`teamCount`は結果へ影響する実行値として含め、部門名・色は表示メタデータとして除外する。イベント発火分類などプレイテスト側の複製は正本から導出する | RI-115 |
 | タスク分布とスプリント評価 | [`src/sim/sprint.ts`](../src/sim/sprint.ts)、`src/sim/run/engine.ts`の粗粒度補正 | 種別重み、高価値率、完了時変化、評価ペナルティ、評価・称号・診断境界を`balance/sprint.ts`へ移す | RI-120 |
 | カード共通実行ルール | [`src/sim/cards.ts`](../src/sim/cards.ts)、`src/sim/run/engine.ts`のドラフト・引き直し・ショップ | 手札・候補数、強化倍率、集中力下限、優先重み、効果境界、再試行上限を`balance/cards.ts`へ移す。カード固有値は既存定義に残す | RI-122 |
 | メタ進行とデイリー | [`src/state/meta.ts`](../src/state/meta.ts)、`src/data/unlocks.ts` | デイリー難易度・試練、優先カード上限、ラン報酬係数など共通ルールを`balance/meta.ts`へ移す。アンロック固有のID・費用・前提は既存コンテンツ正本として集約する | RI-124 |
@@ -72,7 +72,7 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 | 表示・実行安全 | `FRAME_MS`、`MAX_TICKS_PER_FRAME`、タブ復帰時アキュムレータ上限、描画寸法、色、余白、アニメーション時間 | 描画負荷や入力不能時間から実行を守る値であり、同じ入力列に対するsim結果を定義しない |
 | 計算・保存上限 | `SPRINT_EVENT_LIMIT`、`WHAT_IF_TRIALS`、`REPLAY_MAX_COUNT`などの暴走防止・計算量・保存件数の上限 | バランスを表す値ではなく、安全性・性能・保存容量の契約として所有元に残す |
 | テスト・測定プロファイル | `src/sim/run/quarterReviewSeeds.ts`のE2E seed、fixture、許容誤差、`PT_SEEDS`、方針固有の採点値、統計サンプル数・合否率 | 本番ゲームが参照しない。ゲーム閾値の複製だけは対応RIで正本参照へ変え、それ以外は再現条件としてレポートへ記録する |
-| 開発ツール・アセット | `scripts/gallery.mjs`のseed・port・viewport、`scripts/generate-audio-assets.mjs`の音声生成値、`src/data/assets.ts`、`src/data/departments.ts`、実績・勝利称号のラベルやヒント | ゲーム結果のルールセットではなく、開発用出力または表示コンテンツである。実績IDと解除条件はコンテンツ／メタ進行側で扱う |
+| 開発ツール・アセット | `scripts/gallery.mjs`のseed・port・viewport、`scripts/generate-audio-assets.mjs`の音声生成値、`src/data/assets.ts`、部門名・色、実績・勝利称号のラベルやヒント | ゲーム結果のルールセットではなく、開発用出力または表示コンテンツである。部門ID・定義順・`teamCount`、実績IDと解除条件はコンテンツ／メタ進行側で扱う |
 | 構造的リテラル | 配列index、ループ増分、百分率の`100`、単位変換の`1000`など | 式の構造・単位変換であり独立調整しない。挙動を調整する係数、分岐境界、`clamp`上下限はこの分類へ逃がさない |
 
 移動だけのPRでは値、評価順、丸め位置、配列順、乱数消費順を変更しない。プレイテストの方針固有値はゲームルールと混ぜず、ルールセット版・指紋・seed集合・サンプル数とともに測定条件として記録する。
@@ -215,7 +215,7 @@ SSoT化後の決定論は、次の条件で保証する。
 | --- | --- |
 | ラン途中セーブ | 保存時の版・指紋が現行と一致する場合だけ再開できる。不一致またはルールセット情報のない旧セーブは「不明な旧ルール／異なるルール」として再開不可にし、タイトルで理由と明示的な破棄導線を出す。検出時に自動削除せず、破棄操作までは要約を保持する |
 | メタ進行 | 途中セーブの不一致によって無効化・初期化しない。完了済みデイリー記録、解放、実績、ポイントを保持する |
-| リプレイ | 新規リプレイへ版・指紋を記録する。旧リプレイや現行と異なるリプレイもread-onlyキーフレームとして読める状態を保ち、「ルールセット不明」または記録時ルールを表示する。現行ルールでの再計算結果と同一視しない |
+| リプレイ | 新規リプレイへ版・指紋と、表示に必要なカード・レリックなど参照コンテンツの最小スナップショットを記録する。リプレイUIはスナップショットを優先し、現行定義へ引き直さない。スナップショットのない旧リプレイは現行の互換ID定義へ解決し、見つからないIDも不明コンテンツのプレースホルダーとして状態から落とさない。「ルールセット不明」または記録時ルールを表示し、現行ルールでの再計算結果と同一視しない |
 | デイリー | 識別子を「UTC日付、版、指紋」の組にする。seed、スコア、報酬受領状態をこの組ごとに分離し、同じUTC日付でもルールセットが異なれば各ルールセットで報酬を取得できる。旧日付キーの記録は不明ルールの記録として保持する |
 | 不具合報告 | seed、版、指紋を組で取得し、コピー可能な診断情報にする |
 

@@ -1136,6 +1136,44 @@ function runStrategicBranch(
   };
 }
 
+/** override 適用後に新たに開く戦略肢。未評価の後続列があるかの検出用。 */
+function laterAfterOverride(
+  frame: CounterfactualFrame,
+  choice: StrategicChoice,
+  maxSprints: number,
+): StrategicChoice[] {
+  const engine = restoreCounterfactualEngine(frame);
+  const startPlayed = engine.snapshot().sprintsPlayed;
+  let kindHits = 0;
+  let applied = false;
+  let followApplied = choice.followup == null;
+  let guard = 0;
+  while (engine.snapshot().status === 'playing' && guard < 4_000) {
+    guard += 1;
+    const s = engine.snapshot();
+    if (s.phase === 'setup' && s.sprintsPlayed - startPlayed >= maxSprints) break;
+    if (!applied && phaseMatchesOverride(s, choice.override)) {
+      if (kindHits === (choice.visit ?? 0) && applyStrategicOverride(engine, s, choice.override)) {
+        applied = true;
+        continue;
+      }
+      kindHits += 1;
+    }
+    if (applied && !followApplied && choice.followup && phaseMatchesOverride(s, choice.followup)) {
+      if (applyStrategicOverride(engine, s, choice.followup)) {
+        followApplied = true;
+        continue;
+      }
+    }
+    if (applied && followApplied) {
+      const after = engine.exportCounterfactualFrame();
+      return after ? listStrategicChoices(after, maxSprints) : [];
+    }
+    if (!applyIdleStep(engine, s)) break;
+  }
+  return [];
+}
+
 function isSkippedComboId(id: string): boolean {
   return id.startsWith('setup:combo') || id.startsWith('evo:combo');
 }
@@ -1216,6 +1254,15 @@ export function evaluateCounterfactual(
       );
     }
     if (hasUnevaluatedStrategicSequence(runnable)) skippedStrategic.push('strategicSequence');
+    else {
+      for (const choice of toStrategic) {
+        const later = laterAfterOverride(frame, choice, maxSprints);
+        if (later.some((item) => !isSkippedComboId(item.id))) {
+          skippedStrategic.push('strategicSequence');
+          break;
+        }
+      }
+    }
     if (options.actions === undefined && toEval.length > 0) {
       let crossBudget = maxComboBranches;
       let crossSkipped = false;
@@ -1343,22 +1390,17 @@ function framesOf(sample: CounterfactualFrameSample): CounterfactualFrame[] {
 }
 
 function withScanSkipped(
-  newest: LatestEffectiveFrame,
   selected: LatestEffectiveFrame,
+  skippedActions: ReadonlySet<string>,
+  skippedStrategic: ReadonlySet<string>,
 ): LatestEffectiveFrame {
-  if (newest.evaluation === selected.evaluation) return selected;
   return {
     ...selected,
     evaluation: {
       ...selected.evaluation,
-      skippedActions: [
-        ...new Set([...newest.evaluation.skippedActions, ...selected.evaluation.skippedActions]),
-      ],
+      skippedActions: [...new Set([...selected.evaluation.skippedActions, ...skippedActions])],
       skippedStrategic: [
-        ...new Set([
-          ...newest.evaluation.skippedStrategic,
-          ...selected.evaluation.skippedStrategic,
-        ]),
+        ...new Set([...selected.evaluation.skippedStrategic, ...skippedStrategic]),
       ],
     },
   };
@@ -1370,19 +1412,23 @@ export function evaluateLatestEffectiveFrame(
 ): LatestEffectiveFrame | null {
   if (samples.length === 0) return null;
   let newest: LatestEffectiveFrame | null = null;
+  const skippedActions = new Set<string>();
+  const skippedStrategic = new Set<string>();
   for (let i = samples.length - 1; i >= 0; i -= 1) {
     const seq = framesOf(samples[i]!);
     for (let j = seq.length - 1; j >= 0; j -= 1) {
       const evaluation = evaluateCounterfactual(seq[j]!, options);
+      for (const id of evaluation.skippedActions) skippedActions.add(id);
+      for (const id of evaluation.skippedStrategic) skippedStrategic.add(id);
       const effective = effectiveActionsOf(evaluation);
       const baselineRecovered = isBaselineRecovered(evaluation);
       const found = { evaluation, effective, baselineRecovered };
       if (!newest) newest = found;
-      if (effective.length > 0) return withScanSkipped(newest, found);
-      if (baselineRecovered) return withScanSkipped(newest, found);
+      if (effective.length > 0) return withScanSkipped(found, skippedActions, skippedStrategic);
+      if (baselineRecovered) return withScanSkipped(found, skippedActions, skippedStrategic);
     }
   }
-  return newest;
+  return newest ? withScanSkipped(newest, skippedActions, skippedStrategic) : null;
 }
 
 function splitVisitSuffix(actionId: string): { base: string; suffix: string } {

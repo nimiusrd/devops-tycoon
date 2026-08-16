@@ -641,6 +641,29 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.skippedStrategic).toContain('strategicSequence');
   });
 
+  it('戦略肢が新たに開く後続フェーズは strategicSequence として残す', () => {
+    const engine = startedSprint('ri-101-heal-opens-setup');
+    const internals = engine as unknown as {
+      phase: string;
+      roster: { members: Array<{ onLeave: boolean; assignment: string; stamina: number }> };
+    };
+    internals.phase = 'rest';
+    for (const member of internals.roster.members) {
+      member.onLeave = true;
+      member.assignment = 'bench';
+      member.stamina = 90;
+    }
+    const frame = engine.exportCounterfactualFrame()!;
+    expect(listStrategicChoices(frame, 2).some((choice) => choice.id === 'rest:heal')).toBe(true);
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: [],
+      includeStrategic: true,
+      maxSprints: 1,
+      maxStrategicBranches: 32,
+    });
+    expect(evaluation.skippedStrategic).toContain('strategicSequence');
+  });
+
   it('無介入ビートは末尾選択なので先頭肢を有効手として識別できる', () => {
     const engine = startedSprint('ri-101-beat-first');
     const internals = engine as unknown as {

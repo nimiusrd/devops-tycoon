@@ -8,7 +8,7 @@ import { combineEffects, deckEffects } from '../cards';
 import { clamp } from '../clamp';
 import { foldFormationEffects } from '../member';
 import type { RosterState } from '../member/types';
-import type { OrgState, SprintConfig } from '../types';
+import type { OrgState, ScenarioId, SprintConfig } from '../types';
 import { foldRunEffects, toEffects, withBossEffects } from './effects';
 import { applyGoalCarryoverToEffects } from './quarterReview';
 import type { SprintBaselineInput } from './sprintBaseline';
@@ -111,6 +111,8 @@ export interface SprintBaselineBuildContext {
   evolution: EvolutionState;
   difficulty: DifficultyId;
   trials: string[];
+  /** ツール別シナリオ（RI-103。未指定は default）。 */
+  scenario?: ScenarioId;
   bossId: string;
   /**
    * @deprecated RI-83: `goalCarryoverQuarter` / `goalCarryoverId` を使う。
@@ -150,7 +152,10 @@ export interface AiDependencyPressureOptions {
 export function applyTrialAiDependencyPressure(
   org: OrgState,
   budget: number,
-  ctx: Pick<SprintBaselineBuildContext, 'relics' | 'evolution' | 'difficulty' | 'trials'> & {
+  ctx: Pick<
+    SprintBaselineBuildContext,
+    'relics' | 'evolution' | 'difficulty' | 'trials' | 'scenario'
+  > & {
     deck: { defId: string; level: number }[];
   },
   options: AiDependencyPressureOptions = {},
@@ -161,6 +166,7 @@ export function applyTrialAiDependencyPressure(
     evolution: ctx.evolution,
     difficulty: ctx.difficulty,
     trials: ctx.trials,
+    scenario: ctx.scenario,
   });
   org.aiDependency = clamp(org.aiDependency + fold.aiDependencyDriftPerSprint, 0, 100);
   const bill = options.billInfraCost ?? ctx.trials.includes('frontier-dependency');
@@ -183,7 +189,10 @@ export function computeInfraCost(aiDependency: number, rate: number, infraCostMu
 /** インフラコストの内訳（テスト・UI 向け）。 */
 export function previewInfraCost(
   aiDependency: number,
-  ctx: Pick<SprintBaselineBuildContext, 'relics' | 'evolution' | 'difficulty' | 'trials'> & {
+  ctx: Pick<
+    SprintBaselineBuildContext,
+    'relics' | 'evolution' | 'difficulty' | 'trials' | 'scenario'
+  > & {
     deck: { defId: string; level: number }[];
   },
 ): { rate: number; infraCostMul: number; cost: number } {
@@ -193,6 +202,7 @@ export function previewInfraCost(
     evolution: ctx.evolution,
     difficulty: ctx.difficulty,
     trials: ctx.trials,
+    scenario: ctx.scenario,
   });
   const rate = fold.frontierModelCostPerDependency;
   const infraCostMul = fold.effects.infraCostMul;
@@ -215,6 +225,7 @@ export function buildSprintBaselineInput(
     evolution: ctx.evolution,
     difficulty: ctx.difficulty,
     trials: ctx.trials,
+    scenario: ctx.scenario,
   });
   const formation = foldFormationEffects(roster);
   let effects = combineEffects(fold.effects, toEffects(formation.effects));

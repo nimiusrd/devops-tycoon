@@ -12,6 +12,8 @@ import { getEvolutionNode } from '../../data/evolution';
 import { getRelic } from '../../data/relics';
 import { combineEffects } from '../cards';
 import { IDENTITY_CARD_EFFECTS } from '../model';
+import { DEFAULT_SCENARIO, getScenario } from '../scenarios';
+import type { ScenarioId } from '../types';
 import type {
   CardEffects,
   CardInstance,
@@ -41,6 +43,8 @@ export interface RunModifierInput {
   evolution: EvolutionState;
   difficulty: DifficultyId;
   trials: string[];
+  /** ツール別シナリオ（RI-103。未指定は default）。 */
+  scenario?: ScenarioId;
 }
 
 /**
@@ -70,7 +74,7 @@ export function infraBillingRateForSprint(
 
 /**
  * このスプリントに掛かる乗算系係数と、集中力/実装枠の補正を畳み込む。
- * 難易度の全体係数・試練・レリック・進化を合成する（カードは含まない。RI-30）。
+ * 難易度の全体係数・シナリオ・試練・レリック・進化を合成する（カードは含まない。RI-30）。
  */
 export function foldRunEffects(input: RunModifierInput): RunEffects {
   let effects: CardEffects = { ...IDENTITY_CARD_EFFECTS };
@@ -81,6 +85,9 @@ export function foldRunEffects(input: RunModifierInput): RunEffects {
 
   const diff = getDifficulty(input.difficulty);
   if (diff.globalEffects) effects = combineEffects(effects, toEffects(diff.globalEffects));
+
+  const scenario = getScenario(input.scenario ?? DEFAULT_SCENARIO);
+  if (scenario.globalEffects) effects = combineEffects(effects, toEffects(scenario.globalEffects));
 
   for (const trialId of input.trials) {
     const trial = getTrial(trialId);

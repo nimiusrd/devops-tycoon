@@ -355,6 +355,7 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
         'orgAdjust',
         'pauseAiDebuffQuarter',
         'preferredCardIds',
+        'scenario',
         'teamLockUntilSprint',
         'teamRosters',
         'teams',
@@ -364,6 +365,8 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
     expect(frame!.extras.allowedCards.sort()).toEqual(['auto-test', 'docs']);
     expect(frame!.extras.allowedRelics).toEqual(['postmortem']);
     expect(frame!.extras.preferredCardIds).toEqual(['docs', 'auto-test']);
+    expect(frame!.scenario).toBe('default');
+    expect(frame!.extras.scenario).toBe('default');
 
     // snapshot 側も非空 ObjectLiteral を exact 断言（frame だけの検査だと Survived になる）。
     const snapBeforeMutate = engine.snapshot();

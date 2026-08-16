@@ -19,6 +19,7 @@ import type {
   SprintState,
 } from '../sim/types';
 import type { DiagnosisType, DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
+import type { ScenarioId } from '../sim/types';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
 import {
@@ -46,7 +47,7 @@ export interface UseRun {
    */
   playbackSpeed: PlaybackSpeed;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
-  startRun: (difficulty: DifficultyId, trials: string[]) => void;
+  startRun: (difficulty: DifficultyId, trials: string[], scenario?: ScenarioId) => void;
   startDailyRun: (dateStr?: string) => void;
   resumeRun: () => void;
   beginSetupSprint: () => void;
@@ -181,7 +182,8 @@ export function useRun(game: GameHandle): UseRun {
   // ハンドラはエンジンを操作するだけ。UI への反映は上のポーリングが担う
   // （内部進行と window.game 経由の外部操作を同一経路で扱うため）。
   const startRun = useCallback(
-    (difficulty: DifficultyId, trials: string[]) => void game.startRun(difficulty, trials),
+    (difficulty: DifficultyId, trials: string[], scenario?: ScenarioId) =>
+      void game.startRun(difficulty, trials, undefined, scenario),
     [game],
   );
   const startDailyRun = useCallback((dateStr?: string) => void game.startDailyRun(dateStr), [game]);

@@ -10,6 +10,8 @@ import { DIFFICULTY_DEFS, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import type { RunSaveSummary } from '../state/runPersistence';
 import type { DifficultyId } from '../sim/run/types';
+import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
+import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
 
 const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
@@ -35,7 +37,7 @@ const PHASE_LABEL: Record<RunSaveSummary['phase'], string> = {
 export interface TitleScreenProps {
   seed: string;
   meta: MetaState;
-  onStart: (difficulty: DifficultyId, trials: string[]) => void;
+  onStart: (difficulty: DifficultyId, trials: string[], scenario: ScenarioId) => void;
   onStartDaily?: () => void;
   onResume?: () => void;
   resumableSummary?: RunSaveSummary | null;
@@ -69,6 +71,8 @@ export function TitleScreen({
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
   const [trials, setTrials] = useState<string[]>([]);
+  const [scenario, setScenario] = useState<ScenarioId>(DEFAULT_SCENARIO);
+  const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
   const dailyRecord = getDailyRecord(meta, today);
   const selectedDifficulty = DIFFICULTY_DEFS[difficulty];
@@ -231,6 +235,35 @@ export function TitleScreen({
             </div>
           </section>
 
+          <section className="title-section title-scenario-section">
+            <div className="title-section-copy">
+              <span className="title-step">03</span>
+              <p>
+                <b>導入ツール（シナリオ）</b>
+                <small>
+                  任意。開始時の組織値と、ラン中の速度・レビュー・手戻り係数を変える。初期デッキには入らない
+                </small>
+              </p>
+            </div>
+            <div className="trial-row" data-testid="scenario-row">
+              {SCENARIO_ORDER.map((id) => {
+                const def = getScenario(id);
+                return (
+                  <button
+                    type="button"
+                    key={id}
+                    className={`trial-chip${scenario === id ? ' on' : ''}`}
+                    data-testid={`scenario-${id}`}
+                    onClick={() => setScenario(id)}
+                    title={def.description}
+                  >
+                    {def.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           {resumableSummary && onResume ? (
             <section className="title-resume" data-testid="resume-run-section">
               <div className="title-resume-copy">
@@ -273,6 +306,7 @@ export function TitleScreen({
                 <small>今回の設定</small>
                 <b>
                   {DIFFICULTY_TAG[difficulty]} / 試練 {trials.length}
+                  {scenario !== DEFAULT_SCENARIO ? ` / ${selectedScenario.label}` : ''}
                 </b>
                 <span>
                   最終倍率 <strong>×{scoreMultiplier.toFixed(2)}</strong>
@@ -282,7 +316,7 @@ export function TitleScreen({
                 type="button"
                 className="title-launch"
                 data-testid="start-run"
-                onClick={() => onStart(difficulty, trials)}
+                onClick={() => onStart(difficulty, trials, scenario)}
               >
                 <span>
                   <small>ラン開始</small>
@@ -297,7 +331,7 @@ export function TitleScreen({
                 type="button"
                 className="btn btn-primary btn-lg"
                 data-testid="start-run"
-                onClick={() => onStart(difficulty, trials)}
+                onClick={() => onStart(difficulty, trials, scenario)}
               >
                 四半期を始める →
               </button>

@@ -111,12 +111,13 @@ SPEC F-3のプレイテスト観測項目は追加済みだが、戦略フェー
 
 ### RI-109 メンバー・採用パラメータの移行
 
-`src/sim/member/roster.ts`の能力倍率、スタミナ、成長、休職、復帰、負荷分散、採用費・人数上限を`balance/member.ts`へ移す。`src/sim/orgscale/teamState.ts`の人数推定と`createTeamRoster()`に複製された人数上限も同じ安定IDへ置き換える。スターター編成や名前などのコンテンツ定義は移動しない。
+`src/sim/member/roster.ts`の能力倍率、スタミナ、成長、休職、復帰、負荷分散、採用費・人数上限を`balance/member.ts`へ移す。`src/sim/orgscale/teamState.ts`の人数推定と`createTeamRoster()`に複製された人数上限、`tests/playtest/harness.ts`に複製された復職率・休職回復倍率も同じ安定IDへ置き換える。スターター編成や名前などのコンテンツ定義は移動しない。
 
 受入条件:
 
 - メンバー領域の調整値を安定IDから参照し、既存exportが必要な箇所は互換別名を残す。
 - プレイヤー編成、未訪問チームの粗粒度推定、入り込み時のロスター生成が同じ人数上限を参照する。
+- ゲーム実装とプレイテストの休息価値判定が同じ復職率・休職回復倍率を参照する。
 - 編成、AI配布、シニア負荷分散、成長、休職、復帰、採用の既存ユニットテストと代表seed結果が移行前後で一致する。
 
 ### RI-110 介入パラメータの移行
@@ -161,11 +162,12 @@ SPEC F-3のプレイテスト観測項目は追加済みだが、戦略フェー
 
 ### RI-114 スプリント負荷・ペーシングパラメータの移行
 
-`src/sim/run/sprintBaselineBuild.ts`の難易度別タスク床、elite倍率、通常／ボスの最小・最大tick、スプリント間の体力回復率と、RI-105で調整対象と決めた`src/ui/sprintTempo.ts`の壁時計換算・体験目標帯を`balance/pacing.ts`へ移す。フレーム処理やタブ復帰上限など表示・実行安全専用の値は分離したままにする。
+`src/sim/run/sprintBaselineBuild.ts`の難易度別タスク床、elite倍率、通常／ボスの最小・最大tick、スプリント間の体力回復率と、RI-105で調整対象と決めた`src/ui/sprintTempo.ts`の壁時計換算・体験目標帯を`balance/pacing.ts`へ移す。`src/ui/useRun.ts`の`SIM_STEP_MS`と`src/sim/run/engine.ts`の`FIXED_STEP_MS`も同じ固定ステップの安定IDへ統合する。フレーム処理やタブ復帰上限など表示・実行安全専用の値は分離したままにする。
 
 受入条件:
 
 - 難易度別タスク床、通常／ボスのtick境界、スプリント間回復率、`MS_PER_TICK_1X`、通常／ボス／四半期／ランの目標時間帯、介入回数帯を単位付きで参照する。
+- UIが`game.step()`へ渡す間隔とsimの固定ステップ閾値が同じ安定IDを参照し、1回のUI tickでsimがちょうど1 tick進むことを検証する。
 - tick駆動のsim決定論を変更せず、体力回復の境界、既存ペーシング統計、what-ifと実ラン、UI速度テストが一致する。
 - `scripts/playtest-report.mjs`の`src/ui/sprintTempo.ts`正規表現読取を、レジストリまたは生成データから正規に読む方式へ更新し、`npm run playtest:report`のスモークテストを通す。
 

@@ -156,12 +156,12 @@ SPEC F-3のプレイテスト観測項目は追加済みだが、戦略フェー
 
 ### RI-113 粗粒度チームモデルのパラメータ移行
 
-`src/sim/orgscale/teamState.ts`の初期分布、出荷、行列、Incident、状態ドリフト、入り込みコスト、`src/sim/orgscale/aggregate.ts`のチーム健全度・部門評価・全社スコア、`src/sim/orgscale/industry.ts`のランキング得点・リーグ境界を`balance/coarse-team.ts`へ移す。重複しているReview容量・Incident bias計算を純関数へ寄せ、値を変えずに投影と進行で共有する。
+`src/sim/orgscale/teamState.ts`の初期分布、出荷、行列、Incident、状態ドリフト、入り込みコスト、`src/sim/orgscale/aggregate.ts`のチーム健全度・部門評価・全社スコア、`src/sim/orgscale/industry.ts`の競合数・競合生成分布・ランキング得点・リーグ境界を`balance/coarse-team.ts`へ移す。重複しているReview容量・Incident bias計算を純関数へ寄せ、値を変えずに投影と進行で共有する。
 
 受入条件:
 
 - 粗粒度モデルの基本値と境界を安定IDから参照し、同じ式・係数の重複保持を除く。
-- チーム健全度、部門・全社評価、ランキング得点、リーグ境界の境界テストと代表組織の順位が移行前後で一致する。
+- チーム健全度、部門・全社評価、競合数、Shipping・士気・技術的負債などの競合生成範囲、ランキング得点、リーグ境界のテストと代表seedの競合値・自社順位が移行前後で一致する。
 - 固定seed結果を維持し、詳細モデルと粗粒度モデルでAI、Review、品質、Incidentの因果方向が一致するテストを追加する。
 - 式の共通化によって評価順や丸め位置を変えない。
 

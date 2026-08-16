@@ -1301,13 +1301,85 @@ export function evaluateLatestEffectiveFrame(
   return newest;
 }
 
-function isMinimalEffectiveAction(actionId: string, effectiveIds: Set<string>): boolean {
-  const parts = actionId.split('+');
-  if (parts.length < 2) return true;
-  for (let i = 1; i < parts.length; i += 1) {
-    if (effectiveIds.has(parts.slice(0, i).join('+'))) return false;
+function splitVisitSuffix(actionId: string): { base: string; suffix: string } {
+  const match = /^(.+)(@\d+)$/.exec(actionId);
+  return match ? { base: match[1]!, suffix: match[2]! } : { base: actionId, suffix: '' };
+}
+
+function isShopStepPart(part: string): boolean {
+  return (
+    part.startsWith('card:') ||
+    part === 'relic' ||
+    part.startsWith('relic:') ||
+    part === 'recruit:coding' ||
+    part === 'recruit:review' ||
+    part === 'recruit:bench'
+  );
+}
+
+type SeqAtom = { ns: 'shop' | 'evo' | ''; step: string };
+
+function tokenizeActionId(base: string): SeqAtom[] {
+  const raw = base.split('+');
+  const atoms: SeqAtom[] = [];
+  let i = 0;
+  while (i < raw.length) {
+    const part = raw[i]!;
+    if (part.startsWith('shop:')) {
+      atoms.push({ ns: 'shop', step: part.slice('shop:'.length) });
+      i += 1;
+      while (i < raw.length && isShopStepPart(raw[i]!)) {
+        atoms.push({ ns: 'shop', step: raw[i]! });
+        i += 1;
+      }
+      continue;
+    }
+    if (part.startsWith('evo:')) {
+      atoms.push({ ns: 'evo', step: part.slice('evo:'.length) });
+      i += 1;
+      while (i < raw.length && !raw[i]!.includes(':')) {
+        atoms.push({ ns: 'evo', step: raw[i]! });
+        i += 1;
+      }
+      continue;
+    }
+    atoms.push({ ns: '', step: part });
+    i += 1;
   }
-  return !parts.some((part) => effectiveIds.has(part));
+  return atoms;
+}
+
+function joinAtoms(atoms: readonly SeqAtom[]): string {
+  const chunks: string[] = [];
+  let i = 0;
+  while (i < atoms.length) {
+    const ns = atoms[i]!.ns;
+    if (ns === 'shop' || ns === 'evo') {
+      const steps = [atoms[i]!.step];
+      i += 1;
+      while (i < atoms.length && atoms[i]!.ns === ns) {
+        steps.push(atoms[i]!.step);
+        i += 1;
+      }
+      chunks.push(`${ns}:${steps.join('+')}`);
+      continue;
+    }
+    chunks.push(atoms[i]!.step);
+    i += 1;
+  }
+  return chunks.join('+');
+}
+
+function isMinimalEffectiveAction(actionId: string, effectiveIds: Set<string>): boolean {
+  const { base, suffix } = splitVisitSuffix(actionId);
+  const atoms = tokenizeActionId(base);
+  if (atoms.length < 2) return true;
+  const limit = (1 << atoms.length) - 1;
+  for (let mask = 1; mask < limit; mask += 1) {
+    const sub = atoms.filter((_, index) => (mask & (1 << index)) !== 0);
+    if (effectiveIds.has(`${joinAtoms(sub)}${suffix}`)) return false;
+  }
+  return true;
 }
 
 export function effectiveActionsOf(evaluation: CounterfactualEvaluation): string[] {

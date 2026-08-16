@@ -890,6 +890,35 @@ describe('RI-101 合成危険状態', () => {
     expect(effectiveActionsOf(synthetic)).toEqual(['overtime', 'interruptReview+aiThrottle']);
   });
 
+  it('ショップ列は部分購入を shop: 付き ID として最小列比較する', () => {
+    const engine = startedSprint('ri-101-shop-minimal');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const delayed = branch({
+      actionId: 'shop:card:ai-guideline',
+      sprintsToLose: 4,
+      loseReason: 'moraleCollapse',
+    });
+    const synthetic = {
+      ...evaluateCounterfactual(frame, { actions: [], maxSprints: 1 }),
+      baseline: branch({ actionId: null, sprintsToLose: 2, loseReason: 'moraleCollapse' }),
+      branches: [
+        delayed,
+        branch({ actionId: 'shop:card:copilot', sprintsToLose: 2, loseReason: 'moraleCollapse' }),
+        { ...delayed, actionId: 'shop:card:copilot+card:ai-guideline' },
+        branch({
+          actionId: 'shop:card:copilot+card:pair-review',
+          sprintsToLose: 4,
+          loseReason: 'moraleCollapse',
+        }),
+      ],
+    };
+    expect(effectiveActionsOf(synthetic)).toEqual([
+      'shop:card:ai-guideline',
+      'shop:card:copilot+card:pair-review',
+    ]);
+  });
+
   it('ベースライン回復時は採用見送りも有効手に残す', () => {
     const engine = startedSprint('ri-101-recruit-skip-effective');
     engine.step(200);

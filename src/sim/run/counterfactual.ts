@@ -570,7 +570,7 @@ function listShopChoices(snapshot: RunState): StrategicChoice[] {
     path: ShopStep[];
   };
   const out: StrategicChoice[] = [];
-  const seenSets = new Set<string>();
+  const seenSeqs = new Set<string>();
   const queue: Node[] = [
     {
       budget: snapshot.budget,
@@ -604,18 +604,14 @@ function listShopChoices(snapshot: RunState): StrategicChoice[] {
     }
     for (const step of options) {
       const path = [...cur.path, step];
-      const setKey = path
-        .map((item) => shopStepId(item, shop.relic?.id))
-        .sort()
-        .join('+');
-      if (!seenSets.has(setKey)) {
-        seenSets.add(setKey);
-        out.push({
-          id: `shop:${path.map((item) => shopStepId(item, shop.relic?.id)).join('+')}`,
-          kind: 'shop',
-          override: { kind: 'shop', steps: path },
-        });
-      }
+      const seqKey = path.map((item) => shopStepId(item, shop.relic?.id)).join('+');
+      if (seenSeqs.has(seqKey)) continue;
+      seenSeqs.add(seqKey);
+      out.push({
+        id: `shop:${seqKey}`,
+        kind: 'shop',
+        override: { kind: 'shop', steps: path },
+      });
       const next: Node = {
         budget: cur.budget,
         bought: new Set(cur.bought),

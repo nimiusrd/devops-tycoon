@@ -1168,10 +1168,8 @@ if (cfRuns.length > 0) {
           if (effective.length === 0) {
             if (!r.counterfactualBaselineRecovered) emptyEffective += 1;
           }
-          for (const id of effective) {
-            const key = stableEffectiveActionId(id);
-            freq.set(key, (freq.get(key) ?? 0) + 1);
-          }
+          const keys = new Set(effective.map((id) => stableEffectiveActionId(id)));
+          for (const key of keys) freq.set(key, (freq.get(key) ?? 0) + 1);
           if (typeof r.sprintsPlayed === 'number' && r.lastEffectiveActionsAt) {
             const midSprintInstantLose =
               r.lostPhase === 'sprint' && r.lostSprintCompleted === false;

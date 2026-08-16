@@ -594,11 +594,8 @@ describe('RI-101 分岐評価と上限', () => {
     const frame = engine.exportCounterfactualFrame()!;
     const shop = listStrategicChoices(frame, 1).filter((choice) => choice.id.startsWith('shop:'));
     expect(shop.some((choice) => choice.id === 'shop:card:copilot')).toBe(true);
-    expect(
-      shop.some(
-        (choice) => choice.id.includes('card:copilot') && choice.id.includes('card:ai-guideline'),
-      ),
-    ).toBe(true);
+    expect(shop.some((choice) => choice.id === 'shop:card:copilot+card:ai-guideline')).toBe(true);
+    expect(shop.some((choice) => choice.id === 'shop:card:ai-guideline+card:copilot')).toBe(true);
   });
 });
 

@@ -7,6 +7,11 @@ import { ALL_ACTION_IDS, canApplyAction } from '../actions';
 import { assignableTasks } from '../assignTask';
 import { clamp } from '../clamp';
 import { canRecruit, RECRUIT_COST } from '../member';
+import {
+  securityCustomerTrustDelta,
+  securityCustomerTrustFromRaw,
+  securityFragility,
+} from '../model';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import { companyOrgFromTeams } from '../orgscale';
 import type { ActionId } from '../types';
@@ -73,7 +78,7 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   const s = engine.snapshot();
   const minTrust = Math.min(
     s.stakeholderTrust.management,
-    s.stakeholderTrust.customers,
+    s.stakeholderTrust.customers + pendingCustomerTrustDelta(s),
     s.stakeholderTrust.team,
   );
   const liveKpi = engine.previewLiveQuarterKpi();
@@ -94,7 +99,7 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
     org: kpiOrg,
     totals: kpiTotals,
   }).filter((p) => p.status === 'missed').length;
-  if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
+  if (minTrust <= 25) out.push('trustExhausted');
   if (kpiMissCount >= 4) out.push('kpiMissed');
   else if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
   const currentReviewQueue = s.sprint?.tasks.filter((task) => task.lane === 'review').length ?? 0;
@@ -122,19 +127,51 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   return out;
 }
 
-/** 採用・ショップなど、今開いている／直後に来る戦略支出で残高が 0 になるか。 */
+/** 今選択でき、支払い後残高が 0 になる戦略支出があるか。 */
 function strategicSpendExhaustsBudget(s: RunState): boolean {
   if (s.budget <= 0) return false;
   const costs: number[] = [];
-  if (canRecruit(s.roster)) costs.push(RECRUIT_COST);
-  if (s.shop) {
+  if (s.phase === 'shop' && s.shop) {
     for (const card of s.shop.cards) {
-      if (!card.bought) costs.push(card.cost);
+      if (!card.bought && s.budget >= card.cost) costs.push(card.cost);
     }
-    if (s.shop.relic && !s.shop.relic.bought) costs.push(s.shop.relic.cost);
-    if (s.shop.recruit && !s.shop.recruit.bought) costs.push(s.shop.recruit.cost);
+    if (s.shop.relic && !s.shop.relic.bought && s.budget >= s.shop.relic.cost) {
+      costs.push(s.shop.relic.cost);
+    }
+    if (
+      s.shop.recruit &&
+      !s.shop.recruit.bought &&
+      canRecruit(s.roster) &&
+      s.budget >= s.shop.recruit.cost
+    ) {
+      costs.push(s.shop.recruit.cost);
+    }
   }
-  return costs.some((cost) => cost > 0 && s.budget <= cost);
+  if (
+    (s.phase === 'recruit' || s.phase === 'rest') &&
+    canRecruit(s.roster) &&
+    s.budget >= RECRUIT_COST
+  ) {
+    costs.push(RECRUIT_COST);
+  }
+  return costs.some((cost) => cost > 0 && s.budget === cost);
+}
+
+/** resolveSprint と同じ確定済み障害による顧客信頼デルタ。 */
+function pendingCustomerTrustDelta(s: RunState): number {
+  if (s.phase !== 'sprint' || !s.sprint) return 0;
+  const metrics = s.sprint.metrics;
+  const spread = metrics.spread ?? 0;
+  const incidents = metrics.incidentCount ?? 0;
+  if (spread > 0 && typeof metrics.securityTrustSpreadRaw === 'number') {
+    return securityCustomerTrustFromRaw(
+      metrics.securityTrustSpreadRaw +
+        Math.max(0, incidents) *
+          0.5 *
+          (metrics.securityTrustIncidentFragility ?? securityFragility(s.org.securityLevel)),
+    );
+  }
+  return securityCustomerTrustDelta(s.org.securityLevel, incidents, spread);
 }
 
 function nextSprintKind(s: RunState): SprintKind {

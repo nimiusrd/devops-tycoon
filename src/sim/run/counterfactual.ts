@@ -954,19 +954,22 @@ function collectStrategicAtCore(
   if (snapshot.phase === 'recruit') {
     const nth = beginVisit(seen, 'recruit', snapshot);
     if (nth == null) return [];
-    const hires = canPlaceAfterHire(engine, (fork) => fork.recruitChoose('hire'))
-      ? RECRUIT_LANES.map((assignment) => ({
-          id: `recruit:hire:${assignment}`,
-          kind: 'recruit' as const,
-          override: { kind: 'recruit' as const, assignment },
-        }))
-      : [
-          {
-            id: 'recruit:hire',
+    const canHire = canRecruit(snapshot.roster) && snapshot.budget >= RECRUIT_COST;
+    const hires = !canHire
+      ? []
+      : canPlaceAfterHire(engine, (fork) => fork.recruitChoose('hire'))
+        ? RECRUIT_LANES.map((assignment) => ({
+            id: `recruit:hire:${assignment}`,
             kind: 'recruit' as const,
-            override: { kind: 'recruit' as const },
-          },
-        ];
+            override: { kind: 'recruit' as const, assignment },
+          }))
+        : [
+            {
+              id: 'recruit:hire',
+              kind: 'recruit' as const,
+              override: { kind: 'recruit' as const },
+            },
+          ];
     const out: StrategicChoice[] = [
       {
         id: 'recruit:skip',
@@ -1369,7 +1372,8 @@ function laterAfterOverride(
     }
     if (applied && followApplied) {
       const after = engine.exportCounterfactualFrame();
-      return after ? listStrategicChoices(after, maxSprints, playAcquiredCards) : [];
+      const remaining = Math.max(0, maxSprints - (engine.snapshot().sprintsPlayed - startPlayed));
+      return after ? listStrategicChoices(after, remaining, playAcquiredCards) : [];
     }
     if (!applyIdleStep(engine, s, playAcquiredCards)) break;
   }

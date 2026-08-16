@@ -563,6 +563,17 @@ describe('RI-101 分岐評価と上限', () => {
     expect(hire.map((choice) => choice.id)).toEqual(['recruit:hire']);
   });
 
+  it('採用不能な採用フェーズは見送りだけを分岐する', () => {
+    const engine = startedSprint('ri-101-recruit-cannot-hire');
+    const internals = engine as unknown as { phase: string; budget: number };
+    internals.phase = 'recruit';
+    internals.budget = 0;
+    const recruit = listStrategicChoices(engine.exportCounterfactualFrame()!, 1).filter((choice) =>
+      choice.id.startsWith('recruit:'),
+    );
+    expect(recruit.map((choice) => choice.id)).toEqual(['recruit:skip']);
+  });
+
   it('即時敗北するショップ採用は配置別に分岐しない', () => {
     const engine = startedSprint('ri-101-shop-recruit-lose');
     const internals = engine as unknown as {
@@ -829,6 +840,7 @@ describe('RI-101 分岐評価と上限', () => {
     expect(restChoices.some((choice) => choice.id === 'beat:rest-offer:0+rest:heal')).toBe(true);
 
     internals.beat = { eventId: 'recruit-offer', kind: 'decision' };
+    internals.budget = 40;
     const recruitChoices = listStrategicChoices(engine.exportCounterfactualFrame()!, 1);
     expect(
       recruitChoices.some((choice) => choice.id === 'beat:recruit-offer:0+recruit:hire:coding'),

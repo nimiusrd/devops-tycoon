@@ -380,8 +380,8 @@ describe('危険域判定（RI-101）', () => {
     expect(activeDangerReasons(engine)).toContain('moraleCollapse');
   });
 
-  it('採用費ちょうどで尽きる予算も危険域にする', () => {
-    const engine = startedSprint('ri-101-recruit-budget');
+  it('支払えない採用費では予算危険域にしない', () => {
+    const engine = startedSprint('ri-101-recruit-unaffordable');
     engine.step(200);
     const internals = engine as unknown as {
       budget: number;
@@ -389,11 +389,59 @@ describe('危険域判定（RI-101）', () => {
       org: { aiDependency: number };
       teams: Array<{ aiDependency: number }>;
     };
+    internals.budget = 20;
+    internals.sprintIndexInQuarter = 0;
+    internals.org.aiDependency = 0;
+    for (const team of internals.teams) team.aiDependency = 0;
+    expect(activeDangerReasons(engine)).not.toContain('budgetExhausted');
+  });
+
+  it('採用フェーズで採用費ちょうどなら予算危険域にする', () => {
+    const engine = startedSprint('ri-101-recruit-budget');
+    engine.step(200);
+    const internals = engine as unknown as {
+      phase: string;
+      budget: number;
+      sprintIndexInQuarter: number;
+      org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
+    };
+    internals.phase = 'recruit';
     internals.budget = 25;
     internals.sprintIndexInQuarter = 0;
     internals.org.aiDependency = 0;
     for (const team of internals.teams) team.aiDependency = 0;
     expect(activeDangerReasons(engine)).toContain('budgetExhausted');
+  });
+
+  it('信頼枯渇は信頼閾値だけで判定する', () => {
+    const engine = startedSprint('ri-101-trust-only');
+    engine.step(200);
+    const internals = engine as unknown as {
+      budget: number;
+      org: { seniorHp: number };
+      stakeholderTrust: { management: number; customers: number; team: number };
+    };
+    internals.budget = 5;
+    internals.org.seniorHp = 5;
+    internals.stakeholderTrust = { management: 40, customers: 40, team: 40 };
+    expect(activeDangerReasons(engine)).not.toContain('trustExhausted');
+  });
+
+  it('確定済みの延焼による顧客信頼低下も危険域にする', () => {
+    const engine = startedSprint('ri-101-pending-trust');
+    engine.step(200);
+    const internals = engine as unknown as {
+      stakeholderTrust: { management: number; customers: number; team: number };
+      sprint: {
+        metrics: { spread: number; incidentCount: number; securityTrustSpreadRaw: number };
+      };
+    };
+    internals.stakeholderTrust = { management: 40, customers: 26, team: 40 };
+    internals.sprint.metrics.spread = 2;
+    internals.sprint.metrics.incidentCount = 2;
+    internals.sprint.metrics.securityTrustSpreadRaw = 4;
+    expect(activeDangerReasons(engine)).toContain('trustExhausted');
   });
 
   it('スプリント外でも全社 Tech Debt で危険域を維持する', () => {

@@ -4,9 +4,17 @@ import type { BalanceDefinition } from './types';
 /** Markdown の表セルとして安全に表示できる文字列へ整形する。 */
 function escapeTableCell(value: string): string {
   return value
-    .replaceAll('\\', '\\\\')
-    .replaceAll('|', '\\|')
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
     .replace(/\r?\n|\r/g, '<br>');
+}
+
+function codePointOf(character: string): number {
+  const codePoint = character.codePointAt(0);
+  if (codePoint === undefined) {
+    throw new Error('空文字列のコードポイントは比較できません。');
+  }
+  return codePoint;
 }
 
 /** ID のコードポイント順を使い、実行環境のロケール設定に依存させない。 */
@@ -16,8 +24,8 @@ function compareBalanceIds(left: string, right: string): number {
   const length = Math.min(leftCodePoints.length, rightCodePoints.length);
 
   for (let index = 0; index < length; index += 1) {
-    const leftCodePoint = leftCodePoints[index].codePointAt(0);
-    const rightCodePoint = rightCodePoints[index].codePointAt(0);
+    const leftCodePoint = codePointOf(leftCodePoints[index]);
+    const rightCodePoint = codePointOf(rightCodePoints[index]);
     if (leftCodePoint === rightCodePoint) continue;
     return leftCodePoint < rightCodePoint ? -1 : 1;
   }

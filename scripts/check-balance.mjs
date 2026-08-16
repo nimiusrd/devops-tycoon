@@ -8,6 +8,7 @@ function run(command, args) {
 
 try {
   run(process.execPath, ['scripts/generate-balance-docs.mjs']);
+  run('git', ['ls-files', '--error-unmatch', '--', GENERATED_FILE]);
   run('git', ['diff', '--exit-code', '--', GENERATED_FILE]);
 } catch {
   console.error(

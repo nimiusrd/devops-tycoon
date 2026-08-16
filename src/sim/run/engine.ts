@@ -2130,6 +2130,8 @@ export class RunEngine {
       chargedInfraCost: this.chargedInfraCost,
       chargedInfraDependency: this.chargedInfraDependency,
       chargedInfraRate: this.chargedInfraRate,
+      allowedCards: this.allowedCards ? [...this.allowedCards] : null,
+      allowedRelics: this.allowedRelics ? [...this.allowedRelics] : null,
     };
   }
 
@@ -2147,6 +2149,8 @@ export class RunEngine {
     this.chargedInfraCost = frame.chargedInfraCost;
     this.chargedInfraDependency = frame.chargedInfraDependency;
     this.chargedInfraRate = frame.chargedInfraRate;
+    this.allowedCards = frame.allowedCards == null ? null : new Set(frame.allowedCards);
+    this.allowedRelics = frame.allowedRelics == null ? null : new Set(frame.allowedRelics);
     this.whatIfCache = null;
   }
 

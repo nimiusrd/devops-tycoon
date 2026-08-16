@@ -43,11 +43,15 @@ describe('RI-101 反実仮想フレーム', () => {
     source.dispatch('overtime');
     const frame = source.exportCounterfactualFrame();
     expect(frame).not.toBeNull();
+    expect(frame!.allowedCards).toBeNull();
+    expect(frame!.allowedRelics).toBeNull();
     expect(source.exportPersistState()).toBeNull();
 
     const a = restoreCounterfactualEngine(frame!);
     const b = restoreCounterfactualEngine(frame!);
     expect(a.snapshot()).toEqual(b.snapshot());
+    expect(a.exportCounterfactualFrame()?.allowedCards).toBeNull();
+    expect(a.exportCounterfactualFrame()?.allowedRelics).toBeNull();
 
     a.step(400);
     b.step(400);
@@ -157,6 +161,11 @@ describe('RI-101 分岐評価と上限', () => {
     ).toBe(true);
     expect(
       strategic
+        .filter((choice) => choice.id.startsWith('rest:upgrade'))
+        .every((choice) => /^rest:upgrade:\d+$/.test(choice.id)),
+    ).toBe(true);
+    expect(
+      strategic
         .filter((choice) => choice.id.startsWith('beat:'))
         .every((choice) => /^beat:[^:]+:\d+$/.test(choice.id)),
     ).toBe(true);
@@ -192,6 +201,12 @@ describe('RI-101 分岐評価と上限', () => {
     if (evaluation.applicableActions.includes('splitPr')) {
       expect(
         evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('splitPr:')),
+      ).toBe(true);
+    }
+    const hand = engine.snapshot().sprint?.cardPiles.hand ?? [];
+    if (hand.length > 0) {
+      expect(
+        evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('card:')),
       ).toBe(true);
     }
   });

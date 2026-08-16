@@ -5,10 +5,13 @@
  * 戦略フェーズの代替肢を分岐し、敗北遅延・回避・危険域離脱・敗因変化だけを
  * 有効手として集計する。what-if の同 seed 再実行とは別系統。
  */
+import { getCard } from '../../data/cards';
 import { getEvent } from '../../data/events';
 import { canApplyAction } from '../actions';
 import { assignableTasks, splitPrCandidates } from '../assignTask';
-import type { ActionId, ActionTarget } from '../types';
+import { playCost } from '../cards';
+import { isAwaitingMinCompleteTick } from '../sprint';
+import type { ActionId, ActionTarget, SprintState } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
 import { RunEngine } from './engine';
 import { unlockableNodes } from './evolution';
@@ -24,7 +27,7 @@ export const DEFAULT_MAX_STRATEGIC_BRANCHES = 8;
 /** フォーク後に進める追加スプリント数の既定。 */
 export const DEFAULT_MAX_SPRINTS = 4;
 
-const REST_ALTERNATIVES: readonly RestChoice[] = ['repay', 'upgrade', 'recruit'];
+const REST_ALTERNATIVES: readonly RestChoice[] = ['repay', 'recruit'];
 const STRATEGIC_KIND_ORDER = ['beat', 'rest', 'draft', 'evolution', 'goal', 'recruit'] as const;
 
 export interface CounterfactualOrigin {
@@ -83,15 +86,16 @@ export interface CounterfactualFrameSample {
 
 interface SprintChoice {
   id: string;
-  actionId: ActionId;
+  actionId: ActionId | null;
   target?: ActionTarget;
+  cardIndex?: number;
 }
 
 type StrategicOverride =
   | { kind: 'draft'; cardId: string }
   | { kind: 'evolution'; nodeId: string }
   | { kind: 'beat'; index: number }
-  | { kind: 'rest'; option: RestChoice }
+  | { kind: 'rest'; option: RestChoice; deckIndex?: number }
   | { kind: 'recruit' }
   | { kind: 'goal'; id: GoalAdjustmentId };
 
@@ -128,6 +132,24 @@ function applyChoice(engine: RunEngine, id: ActionId, target?: ActionTarget): vo
   engine.dispatch(id);
 }
 
+function canPlayHandCard(sprint: SprintState, deck: RunState['deck'], deckIndex: number): boolean {
+  if (sprint.complete || isAwaitingMinCompleteTick(sprint)) return false;
+  if (!sprint.cardPiles.hand.includes(deckIndex)) return false;
+  const inst = deck[deckIndex];
+  if (!inst) return false;
+  const def = getCard(inst.defId);
+  if (!def) return false;
+  return sprint.focus >= playCost(def.focusCost, inst.level);
+}
+
+function applySprintChoice(engine: RunEngine, choice: SprintChoice): void {
+  if (choice.cardIndex != null) {
+    engine.playCard(choice.cardIndex);
+    return;
+  }
+  if (choice.actionId) applyChoice(engine, choice.actionId, choice.target);
+}
+
 function listSprintChoices(engine: RunEngine): SprintChoice[] {
   const s = engine.snapshot();
   if (s.phase !== 'sprint' || !s.sprint) return [];
@@ -158,6 +180,11 @@ function listSprintChoices(engine: RunEngine): SprintChoice[] {
       if (out.some((choice) => choice.actionId === 'splitPr')) continue;
     }
     out.push({ id, actionId: id });
+  }
+  for (const deckIndex of sprint.cardPiles.hand) {
+    if (!canPlayHandCard(sprint, s.deck, deckIndex)) continue;
+    const defId = s.deck[deckIndex]?.defId ?? String(deckIndex);
+    out.push({ id: `card:${defId}:${deckIndex}`, actionId: null, cardIndex: deckIndex });
   }
   return out;
 }
@@ -246,7 +273,7 @@ function applyStrategicOverride(
       return true;
     case 'rest':
       if (snapshot.phase !== 'rest') return false;
-      engine.restChoose(override.option);
+      engine.restChoose(override.option, override.deckIndex);
       return true;
     case 'recruit':
       if (snapshot.phase !== 'recruit') return false;
@@ -297,11 +324,19 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
   }
   if (snapshot.phase === 'rest' && !seen.has('rest')) {
     seen.add('rest');
-    return REST_ALTERNATIVES.map((option) => ({
+    const out: StrategicChoice[] = REST_ALTERNATIVES.map((option) => ({
       id: `rest:${option}`,
       kind: 'rest' as const,
       override: { kind: 'rest' as const, option },
     }));
+    for (let deckIndex = 0; deckIndex < snapshot.deck.length; deckIndex += 1) {
+      out.push({
+        id: `rest:upgrade:${deckIndex}`,
+        kind: 'rest',
+        override: { kind: 'rest', option: 'upgrade', deckIndex },
+      });
+    }
+    return out;
   }
   if (snapshot.phase === 'recruit' && !seen.has('recruit')) {
     seen.add('recruit');
@@ -405,7 +440,7 @@ function runActionBranch(
   focusReason?: DangerLoseReason,
 ): CounterfactualBranchResult {
   const engine = restoreCounterfactualEngine(frame);
-  if (choice.actionId) applyChoice(engine, choice.actionId, choice.target);
+  applySprintChoice(engine, choice);
   return { actionId: choice.id, ...drive(engine, originDangers, maxSprints, focusReason) };
 }
 

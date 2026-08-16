@@ -142,4 +142,10 @@ export interface CounterfactualFrame {
   chargedInfraCost: number;
   chargedInfraDependency: number;
   chargedInfraRate: number;
+  /**
+   * 解放プール。`null` は無制限。空配列は1枚も使えない。
+   * persist extras の空配列とは区別する（プレイヤーセーブ契約は変えない）。
+   */
+  allowedCards: string[] | null;
+  allowedRelics: string[] | null;
 }

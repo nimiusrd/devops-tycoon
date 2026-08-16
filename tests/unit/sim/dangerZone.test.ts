@@ -66,6 +66,21 @@ describe('危険域判定（RI-101）', () => {
     expect(activeDangerReasons(engine)).toContain('reviewFreeze');
   });
 
+  it('reviewFreeze はラン累計の Review ピークも維持する', () => {
+    const engine = startedSprint('ri-101-review-run-peak');
+    engine.step(200);
+    const internals = engine as unknown as {
+      sprint: { tasks: Task[]; metrics: { reviewQueueMax: number } } | null;
+      quarterTotals: { reviewQueuePeak: number };
+      totals: { reviewQueuePeak: number };
+    };
+    internals.sprint!.tasks = [];
+    internals.sprint!.metrics.reviewQueueMax = 0;
+    internals.quarterTotals.reviewQueuePeak = 0;
+    internals.totals.reviewQueuePeak = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+    expect(activeDangerReasons(engine)).toContain('reviewFreeze');
+  });
+
   it('reviewFreeze は投影された他チームの Review ピークも見る', () => {
     const engine = startedSprint('ri-101-review-projected-peak');
     engine.step(200);

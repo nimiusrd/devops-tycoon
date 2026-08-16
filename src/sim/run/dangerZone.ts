@@ -97,11 +97,13 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   const reviewQueueLive = Math.max(currentReviewQueue, ...otherReviewQueues, 0);
   const sprintReviewPeak = s.sprint?.metrics.reviewQueueMax ?? 0;
   const projectedReviewPeak = liveKpi?.totals.reviewQueuePeak ?? 0;
+  const runReviewPeak = s.totals.reviewQueuePeak ?? 0;
   const reviewWatch = Math.round(REVIEW_FREEZE_PEAK * 0.75);
   if (
     reviewQueueLive >= reviewWatch ||
     sprintReviewPeak >= reviewWatch ||
-    projectedReviewPeak >= reviewWatch
+    projectedReviewPeak >= reviewWatch ||
+    runReviewPeak >= reviewWatch
   ) {
     out.push('reviewFreeze');
   }

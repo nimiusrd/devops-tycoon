@@ -2,7 +2,7 @@
 
 ゲームバランスの調整値を、ゲーム実装とドキュメントの双方が参照できるSingle Source of Truth（SSoT）へ段階的に移行するための設計案をまとめる。
 
-本書は実装前の計画である。現時点では[`probability-model.md`](./probability-model.md)に記載した値と、`src/sim/`および`src/data/`の実装を照合して調整する。並行中の大規模実装が完了し、最新の`main`を再調査してから本計画の実装へ着手する。
+本書は実装前の計画である。現時点では[`probability-model.md`](./probability-model.md)に記載した値と、`src/sim/`および`src/data/`の実装を照合して調整する。実装の親エピックと1PR単位のバックログは[RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)で追跡し、最新の`main`を再調査してから着手する。
 
 ## 1. 目的
 
@@ -50,22 +50,25 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 | 領域 | 現在の主な配置 |
 | --- | --- |
 | カードとレアリティ | [`src/data/cards.ts`](../src/data/cards.ts) |
-| イベントと重み | [`src/data/events.ts`](../src/data/events.ts) |
+| イベントと重み | [`src/data/events.ts`](../src/data/events.ts)、[`tests/playtest/harness.ts`](../tests/playtest/harness.ts)の発火要因分類 |
 | 難易度と試練 | [`src/data/difficulties.ts`](../src/data/difficulties.ts) |
 | ボス、レリック、特性、進化 | `src/data/bosses.ts`、`src/data/relics.ts`、`src/data/traits.ts`、`src/data/evolution.ts` |
+| 目標修正、レバー、メンバー、開始シナリオ | `src/data/goalAdjustments.ts`、`src/data/levers.ts`、`src/data/members.ts`、`src/sim/scenarios.ts` |
 
 一方、数式の係数と閾値は用途別の実装へ分散している。
 
 | 領域 | 現在の主な配置 | 主な調整対象 |
 | --- | --- | --- |
-| 詳細モデル | [`src/sim/model/process.ts`](../src/sim/model/process.ts) | Coding、Review、Incident、Rework、炎上、コンボ |
-| タスク生成 | [`src/sim/sprint.ts`](../src/sim/sprint.ts) | タスク種別重み、高価値率 |
-| メンバー | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts) | 能力倍率、スタミナ、休職、採用 |
-| 介入 | [`src/data/actions.ts`](../src/data/actions.ts)、[`src/sim/actions.ts`](../src/sim/actions.ts) | 集中力コスト、クールダウン、ゲージ量、効果量、副作用、持続tick |
-| ラン進行 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) | スプリント数、イベント率、休息、ショップ |
-| KPIと敗北 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts) | 目標、評価閾値、即時敗北条件 |
-| 粗粒度モデル | [`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts) | 出荷、行列、Incident、状態ドリフト |
-| ペーシング | [`src/ui/sprintTempo.ts`](../src/ui/sprintTempo.ts) | tick換算、目標プレイ時間 |
+| 詳細モデルと初期組織状態 | [`src/sim/model/process.ts`](../src/sim/model/process.ts)、[`src/sim/org.ts`](../src/sim/org.ts)、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)のIncident信頼反映 | Coding、Review、Incident、Rework、炎上、コンボ、AI無効時の初期依存度 |
+| タスク生成 | [`src/sim/sprint.ts`](../src/sim/sprint.ts)、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)の粗粒度補正 | タスク種別重み、高価値率、粗粒度側の定型タスク比 |
+| カード実行ルール | [`src/sim/cards.ts`](../src/sim/cards.ts)、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)のドラフト呼び出し | 手札枚数、強化倍率、集中力下限、候補数、優先ドラフト重み、効果境界 |
+| メンバー | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts)、[`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts)のロスター生成、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)の再編離脱、[`tests/playtest/harness.ts`](../tests/playtest/harness.ts) | 能力倍率、スタミナ、休職・復職、採用、共有人数上限、最低稼働人数、プレイテスト方針 |
+| 介入 | [`src/data/actions.ts`](../src/data/actions.ts)、[`src/sim/actions.ts`](../src/sim/actions.ts)、[`src/sim/assignTask.ts`](../src/sim/assignTask.ts) | 集中力コスト、クールダウン、ゲージ量、効果量、副作用、持続tick、差配進捗・士気・偏重上限 |
+| ラン進行 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts)、[`src/sim/run/events.ts`](../src/sim/run/events.ts)、[`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts)のインフラ課金 | スプリント数、イベント率、結果適用時の生存境界、休息、ショップ、インフラ費用・最低課金額 |
+| KPI・勝敗・診断 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts)、[`src/sim/diagnosis.ts`](../src/sim/diagnosis.ts)、`src/render/`の結果説明・HUD、[`tests/playtest/harness.ts`](../tests/playtest/harness.ts) | 目標、評価閾値、即時敗北条件、勝利種別へ影響する診断閾値、表示・方針側の同値参照 |
+| 粗粒度モデル | [`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts)、[`src/sim/orgscale/aggregate.ts`](../src/sim/orgscale/aggregate.ts)、[`src/sim/orgscale/industry.ts`](../src/sim/orgscale/industry.ts) | 出荷、行列、Incident、状態ドリフト、チーム・部門・全社評価、競合生成、業界順位 |
+| ペーシング | [`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts)、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)、[`src/ui/sprintTempo.ts`](../src/ui/sprintTempo.ts)、[`src/ui/useRun.ts`](../src/ui/useRun.ts)、[`scripts/playtest-report.mjs`](../scripts/playtest-report.mjs) | タスク床、tick境界、スプリント間回復率、UI・sim共通固定ステップ、tick換算、目標プレイ時間、レポート入力 |
+| メタ進行とデイリー | [`src/state/meta.ts`](../src/state/meta.ts) | デイリー難易度・試練、優先カード上限、ラン報酬係数 |
 
 SSoT導入時には、export済み定数だけでなく、数式内の係数と`clamp`境界も棚卸しする。移動だけのPRでは値と乱数消費順を変更しない。
 
@@ -81,13 +84,18 @@ src/data/balance/
 ├── define.ts
 ├── process.ts
 ├── sprint.ts
+├── cards.ts
 ├── member.ts
 ├── actions.ts
 ├── run.ts
+├── outcome.ts
+├── meta.ts
 ├── coarse-team.ts
 ├── pacing.ts
 └── index.ts
 ```
+
+`balance/cards.ts`はカード共通実行ルールとして下図の型付きレジストリ経路へ入り、カードID・価格・効果値を持つ既存`src/data/cards.ts`はコンテンツ経路の正本として維持する。
 
 各エントリーは少なくとも次の情報を持つ。
 
@@ -110,7 +118,8 @@ flowchart LR
     registry["型付きバランス定義"] --> game["ゲームロジック"]
     registry --> validate["不変条件・範囲検証"]
     registry --> generator["ドキュメント生成"]
-    registry --> fingerprint["ルールセット指紋"]
+    registry --> runtimeProjection["安定IDと実行値への射影"]
+    runtimeProjection --> fingerprint["ルールセット指紋"]
     content["既存のsrc/data定義"] --> game
     content --> generator
     content --> fingerprint
@@ -181,7 +190,7 @@ SSoT化後の決定論は、次の条件で保証する。
   → 同じ結果
 ```
 
-係数を変えれば、同じseedでも結果が変わる場合がある。この違いを不具合と仕様変更に切り分けるため、手動管理する`BALANCE_RULESET_VERSION`と、定義から算出する指紋を持つ。指紋の入力には新しいバランスレジストリだけでなく、カード、イベント、レリック、難易度など既存の`src/data`定義のうち、ゲーム結果へ影響するID、値、重みも含める。対象を安定した順序で正規化してから算出し、コンテンツ変更でもルールセットの違いを自動検出できるようにする。
+係数を変えれば、同じseedでも結果が変わる場合がある。この違いを不具合と仕様変更に切り分けるため、手動管理する`BALANCE_RULESET_VERSION`と、定義から算出する指紋を持つ。レジストリは安定IDとゲームが参照する実行値へ射影して指紋化し、`label`、`description`、`unit`、`allowedRange`、`tags`、`derived`など表示・検証専用メタデータは入力から除外する。指紋の入力には新しいバランスレジストリだけでなく、カード、イベント、レリック、難易度、目標修正、レバー、メンバー、開始シナリオなど既存定義のうち、ゲーム結果へ影響するID、値、重み、配列順も含める。オブジェクトキーなどゲーム上の意味を持たない順序だけを安定化し、抽選・評価順に使う配列は定義順を保って算出することで、コンテンツと順序の変更をルールセットの違いとして自動検出できるようにする。
 
 | 保存対象 | 推奨方針 |
 | --- | --- |
@@ -238,7 +247,7 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 
 ### Phase 1: 基盤だけを導入
 
-- 最新の`main`でパラメータ配置を再度棚卸しする。
+- 最新の`main`で`src/sim/`、`src/data/`、`src/state/meta.ts`、ペーシング、補助スクリプトのパラメータ配置を再度棚卸しする。
 - 型、定義ヘルパー、IDと単位の検証を追加する。
 - ドキュメント生成と`balance:check`を追加する。
 - 代表値を少数だけ移し、生成経路を検証する。
@@ -250,17 +259,17 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 - `process.ts`と`sprint.ts`の基本値、係数、上下限を移す。
 - 既存exportは互換用の別名として維持する。
 - 固定seed、単調性、統計レンジが移行前と一致することを確認する。
-- 手書きの確率グラフを生成物へ置き換える。
 
-完了条件: 詳細スプリントの代表式をSSoTから調整でき、移動だけでは結果が変わらない。
+完了条件: 詳細スプリントの代表式をSSoTから調整でき、移動だけでは結果が変わらない。代表確率曲線の置換はRI-123で行い、本フェーズの移行PRには含めない。
 
 ### Phase 3: 周辺領域を移行
 
-- メンバー、介入、ラン進行、KPI、敗北条件、ペーシングを領域ごとに移す。
+- メンバー、介入、ラン進行、KPI、勝敗・診断条件、ペーシング、メタ進行・デイリー条件を領域ごとに移す。
 - 既存の`src/data/`定義をパラメータ一覧へ集約する。
 - 粗粒度モデルの係数を移し、詳細モデルとの方向性を検証する。
+- RI-123で移行済みの値と純粋な計算関数から代表確率曲線を生成し、手書きグラフを置き換える。
 
-完了条件: 調整対象として分類した値に安定ID、単位、説明が付いている。
+完了条件: 調整対象として分類した値に安定ID、単位、説明が付き、代表確率曲線が同じ定義から生成されている。
 
 ### Phase 4: ルールセットを永続化
 

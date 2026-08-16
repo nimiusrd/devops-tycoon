@@ -1742,12 +1742,16 @@ export class RunEngine {
     );
     // Rework はこれまで粗粒度未適用だったため、カード等のベース分は足さず
     // 目標修正キャリーオーバー差分だけを載せる（既存 seed / 勝率を壊さない）。
-    // RI-103: シナリオの手戻りだけは選択チームと揃え、非選択チームへも渡す。
-    const scenarioRework = getScenario(this.scenario).globalEffects?.reworkRateAdd ?? 0;
+    // RI-103: シナリオの手戻りと定型速度だけは選択チームと揃え、非選択チームへも渡す。
+    const scenarioFx = getScenario(this.scenario).globalEffects;
+    const scenarioRework = scenarioFx?.reworkRateAdd ?? 0;
     const reworkRateAdd = effects.reworkRateAdd - fold.effects.reworkRateAdd + scenarioRework;
+    // 粗粒度はタスク種別を持たないので、定型出現比 0.3（`sprint.ts` KIND_WEIGHTS）で混ぜる。
+    const scenarioRoutine = scenarioFx?.routineSpeedMul ?? 1;
+    const shipMul = effects.codingSpeedMul * (1 + (scenarioRoutine - 1) * 0.3);
     return {
       incidentRateMul: effects.incidentRateMul,
-      shipMul: effects.codingSpeedMul,
+      shipMul,
       reviewMul: effects.reviewEfficiencyMul,
       reviewCapacityMul: effects.reviewCapacityMul,
       reworkRateAdd,

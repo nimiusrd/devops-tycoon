@@ -113,7 +113,12 @@ describe('tool scenario run wiring (RI-103)', () => {
     type CoarseInternals = {
       teams: { id: string; reviewQueue: number; engineers: number; reviewCapacity: number }[];
       activeTeamId: string;
-      coarseModifiersFromFold(fold: ReturnType<typeof foldRunEffects>): { reworkRateAdd: number };
+      totals: { delivered: number };
+      quarterTotals: { delivered: number };
+      coarseModifiersFromFold(fold: ReturnType<typeof foldRunEffects>): {
+        reworkRateAdd: number;
+        shipMul: number;
+      };
       advanceOtherTeams(stepKey: string): void;
     };
     const started = (scenario?: 'default' | 'devin' | 'claude-code') => {
@@ -133,6 +138,16 @@ describe('tool scenario run wiring (RI-103)', () => {
     expect(devinMods.reworkRateAdd).toBeCloseTo(0.03, 8);
     expect(claudeMods.reworkRateAdd).toBeCloseTo(-0.02, 8);
 
+    const defaultFold = foldRunEffects(foldInput());
+    const copilotFold = foldRunEffects(foldInput({ scenario: 'copilot' }));
+    const copilotMods = started('copilot').coarseModifiersFromFold(copilotFold);
+    expect(defaultMods.shipMul).toBeCloseTo(defaultFold.effects.codingSpeedMul, 8);
+    expect(copilotMods.shipMul).toBeCloseTo(
+      copilotFold.effects.codingSpeedMul * (1 + 0.12 * 0.3),
+      8,
+    );
+    expect(copilotMods.shipMul).toBeGreaterThan(defaultMods.shipMul);
+
     const base = started('default');
     const devin = started('devin');
     for (const i of [base, devin]) {
@@ -150,5 +165,15 @@ describe('tool scenario run wiring (RI-103)', () => {
       .map((t) => t.reviewQueue);
     expect(devinQueues.every((q, idx) => q >= baseQueues[idx]!)).toBe(true);
     expect(devinQueues.some((q, idx) => q > baseQueues[idx]!)).toBe(true);
+
+    const defaultShip = started('default');
+    const copilotShip = started('copilot');
+    for (const i of [defaultShip, copilotShip]) {
+      i.totals.delivered = 0;
+      i.quarterTotals.delivered = 0;
+    }
+    defaultShip.advanceOtherTeams('ri-103-coarse-ship');
+    copilotShip.advanceOtherTeams('ri-103-coarse-ship');
+    expect(copilotShip.totals.delivered).toBeGreaterThan(defaultShip.totals.delivered);
   });
 });

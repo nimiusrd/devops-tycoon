@@ -14,7 +14,7 @@ import { canRecruit, RECRUIT_COST, type LaneAssignment } from '../member';
 import { isAwaitingMinCompleteTick } from '../sprint';
 import type { ActionId, ActionTarget, SprintState } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
-import { RunEngine } from './engine';
+import { RunEngine, DRAFT_MULLIGAN_COST } from './engine';
 import { unlockableNodes } from './evolution';
 import type { CounterfactualFrame } from './persist';
 import type { GoalAdjustmentId, LoseReason, RunStatus, RunState } from './types';
@@ -28,7 +28,7 @@ export const DEFAULT_MAX_STRATEGIC_BRANCHES = 8;
 /** フォーク後に進める追加スプリント数の既定。 */
 export const DEFAULT_MAX_SPRINTS = 4;
 
-const REST_ALTERNATIVES: readonly RestChoice[] = ['repay', 'recruit'];
+const REST_ALTERNATIVES: readonly RestChoice[] = ['heal', 'repay', 'recruit'];
 const STRATEGIC_KIND_ORDER = [
   'beat',
   'rest',
@@ -103,7 +103,7 @@ interface SprintChoice {
 }
 
 type StrategicOverride =
-  | { kind: 'draft'; cardId: string }
+  | { kind: 'draft'; cardId: string; mulligan?: boolean }
   | { kind: 'evolution'; nodeId: string }
   | { kind: 'beat'; index: number }
   | { kind: 'rest'; option: RestChoice; deckIndex?: number }
@@ -263,7 +263,7 @@ function applyIdleStep(
       engine.leaveShop();
       return true;
     case 'rest':
-      engine.restChoose('heal');
+      engine.restChoose('repay');
       return true;
     case 'recruit':
       engine.recruitChoose('skip');
@@ -291,6 +291,7 @@ function applyStrategicOverride(
   switch (override.kind) {
     case 'draft':
       if (snapshot.phase !== 'draft') return false;
+      if (override.mulligan) engine.mulliganDraft();
       engine.chooseCard(override.cardId);
       return true;
     case 'evolution':
@@ -352,6 +353,30 @@ function listSetupChoices(snapshot: RunState): StrategicChoice[] {
     }
   }
   return out;
+}
+
+function canMulliganDraft(snapshot: RunState): boolean {
+  return (
+    snapshot.phase === 'draft' &&
+    !snapshot.draftMulliganUsed &&
+    snapshot.budget > DRAFT_MULLIGAN_COST &&
+    (snapshot.draft?.length ?? 0) > 0
+  );
+}
+
+function collectDraftMulligan(engine: RunEngine): StrategicChoice[] {
+  const snapshot = engine.snapshot();
+  if (!canMulliganDraft(snapshot)) return [];
+  const frame = engine.exportCounterfactualFrame();
+  if (!frame) return [];
+  const fork = restoreCounterfactualEngine(frame);
+  fork.mulliganDraft();
+  const next = fork.snapshot().draft ?? [];
+  return next.map((cardId) => ({
+    id: `draft:mulligan:${cardId}`,
+    kind: 'draft' as const,
+    override: { kind: 'draft' as const, cardId, mulligan: true },
+  }));
 }
 
 function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicChoice[] {
@@ -477,6 +502,10 @@ export function listStrategicChoices(
     const snapshot = engine.snapshot();
     if (snapshot.phase === 'setup' && snapshot.sprintsPlayed - startPlayed >= maxSprints) break;
     found.push(...collectStrategicAt(snapshot, seen));
+    if (snapshot.phase === 'draft' && !seen.has('draft-mulligan') && canMulliganDraft(snapshot)) {
+      seen.add('draft-mulligan');
+      found.push(...collectDraftMulligan(engine));
+    }
     if (!applyIdleStep(engine, snapshot)) break;
   }
   const rank = new Map(STRATEGIC_KIND_ORDER.map((kind, i) => [kind, i]));
@@ -503,6 +532,7 @@ function drive(
     // 追加スプリントを始める直前だけ打ち切る。最後に許可したスプリントの
     // result / beat / quarterReview など終端遷移は処理する。
     if (s.phase === 'setup' && s.sprintsPlayed - startPlayed >= maxSprints) {
+      if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
       return {
         sprintsToLose: null,
         leftDanger,

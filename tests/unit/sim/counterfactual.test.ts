@@ -161,11 +161,15 @@ describe('RI-101 分岐評価と上限', () => {
         /^(draft:|evo:|beat:|rest:|shop:|recruit:|goal:|setup:)/.test(choice.id),
       ),
     ).toBe(true);
-    expect(
-      strategic
-        .filter((choice) => choice.id.startsWith('rest:upgrade'))
-        .every((choice) => /^rest:upgrade:\d+$/.test(choice.id)),
-    ).toBe(true);
+    const restIds = strategic.filter((choice) => choice.id.startsWith('rest:'));
+    if (restIds.length > 0) {
+      expect(restIds.some((choice) => choice.id === 'rest:heal')).toBe(true);
+      expect(
+        restIds
+          .filter((choice) => choice.id.startsWith('rest:upgrade'))
+          .every((choice) => /^rest:upgrade:\d+$/.test(choice.id)),
+      ).toBe(true);
+    }
     expect(
       strategic
         .filter((choice) => choice.id.startsWith('beat:'))

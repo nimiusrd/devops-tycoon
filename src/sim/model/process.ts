@@ -9,6 +9,7 @@
 import type { CardEffects, OrgState, Task, TaskKind } from '../types';
 import type { Rng } from '../rng';
 import { clamp } from '../clamp';
+import { PROCESS_BALANCE } from '../../data/balance';
 
 /**
  * 無効果のカード効果。すべての確率モデル関数はこれを既定値に取り、
@@ -49,12 +50,12 @@ export const TASK_BASE_VALUE: Record<TaskKind, number> = {
 export const HIGH_VALUE_MULTIPLIER = 3;
 
 /** Coding の基礎所要 tick（標準規模・AIなし）。 */
-export const CODING_BASE_TICKS = 7;
+export const CODING_BASE_TICKS = PROCESS_BALANCE.codingBaseTicks.value;
 /** AI 利用時の Coding 高速化倍率（コア因果: AI で実装が速くなる）。 */
-export const AI_CODING_SPEEDUP = 2.6;
+export const AI_CODING_SPEEDUP = PROCESS_BALANCE.aiCodingSpeedup.value;
 
 /** AI 導入時、各タスクが AI を使う確率。 */
-export const AI_ADOPTION = 0.85;
+export const AI_ADOPTION = PROCESS_BALANCE.aiAdoption.value;
 /** AI タスク 1 件ごとに上がる AI依存度。 */
 export const AI_DEP_PER_TASK = 2.2;
 

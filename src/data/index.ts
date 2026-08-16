@@ -15,3 +15,4 @@ export { DIFFICULTY_DEFS, getDifficulty, TRIAL_DEFS, getTrial } from './difficul
 export { TRAIT_DEFS, getTrait, foldTraitModifiers } from './traits';
 export { MEMBER_NAMES, STARTER_ARCHETYPES, RECRUIT_ARCHETYPES } from './members';
 export * from './assets';
+export * from './balance';

@@ -97,6 +97,7 @@ export interface PolicySpec {
    * - `asListed`: ツリーの定義順（UI 表示順）に上から取る。初見相当
    * - `reviewFirst`: レビュー容量 → 品質 → AI → 文化 → 開発速度
    * - `aiFirst`: AI → 開発速度 → 品質 → レビュー → 文化。AI ビルド
+   * - `neglectFirst`: AI → 開発速度 → レビュー → 文化 → 品質。品質（セキュリティ加算）を最後にする軽視専用（RI-76）
    * - `aiBloated`: AI 成功率だけ先に取り、コスト最適化ノード（ai-2/ai-3）は後回し（RI-88）
    * - `qualityFirst`: 品質 → レビュー → 文化 → 開発速度 → AI。品質ビルド
    * - `stateAware`: 直前スプリントまでの組織状態を見てブランチ順を決める（RI-86 / F-11）
@@ -106,6 +107,7 @@ export interface PolicySpec {
     | 'asListed'
     | 'reviewFirst'
     | 'aiFirst'
+    | 'neglectFirst'
     | 'aiBloated'
     | 'qualityFirst'
     | 'stateAware';
@@ -248,6 +250,14 @@ const orderFromBranches = (branches: readonly string[]): readonly string[] =>
   branches.flatMap((b) => [1, 2, 3].map((n) => `${b}-${n}`));
 
 const EVOLUTION_ORDER_AI_FIRST = orderFromBranches(['ai', 'dev', 'quality', 'review', 'culture']);
+/** セキュリティ軽視: AI／速度を先に取り、品質（securityAdd）は最後。レビューは凍結回避のため速度の次。 */
+const EVOLUTION_ORDER_NEGLECT_FIRST = orderFromBranches([
+  'ai',
+  'dev',
+  'review',
+  'culture',
+  'quality',
+]);
 /** 肥大ハーネス: 速度側を先に伸ばし、infraCostMul 付きの ai-2/ai-3 は後回し（RI-88）。 */
 const EVOLUTION_ORDER_AI_BLOATED = [
   'ai-1',
@@ -440,6 +450,8 @@ function evolutionOrder(mode: PolicySpec['evolve'], ctx?: EvolveBoardCtx): reado
       return EVOLUTION_ORDER_REVIEW_FIRST;
     case 'aiFirst':
       return EVOLUTION_ORDER_AI_FIRST;
+    case 'neglectFirst':
+      return EVOLUTION_ORDER_NEGLECT_FIRST;
     case 'aiBloated':
       return EVOLUTION_ORDER_AI_BLOATED;
     case 'qualityFirst':
@@ -614,12 +626,13 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   /**
    * RI-87 / F-10: セキュリティ軽視。
    * 速度／AI を優先し、検証・セキュリティ投資カード／レリックを後回し／回避する。
+   * 進化は AI／速度を先に取り、品質（セキュリティ加算）は最後にする（RI-76）。
    */
   securityNeglect: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
     cards: 'always',
-    evolve: 'aiFirst',
+    evolve: 'neglectFirst',
     draft: 'securityNeglect',
     ai: 'all',
     beat: 'stateAware',
@@ -888,6 +901,21 @@ export interface RunLog {
   quarters: QuarterLog[];
   finalOrg: Record<string, number | boolean>;
   totalDelivered: number;
+  /**
+   * 勝利種別判定の入力になるラン累計（RI-76）。
+   * スプリント行から復元すると `aiAssisted` / `completed` / `reviewQueuePeak` が落ちる。
+   */
+  totals: {
+    delivered: number;
+    done: number;
+    rework: number;
+    incidents: number;
+    contained: number;
+    spread: number;
+    aiAssisted: number;
+    completed: number;
+    reviewQueuePeak: number;
+  };
   budget: number;
   relics: number;
   deckSize: number;
@@ -2366,6 +2394,17 @@ export function runOnce(
       techDebt: Math.round(f.org.techDebt),
     },
     totalDelivered: Math.round(f.totals.delivered ?? 0),
+    totals: {
+      delivered: Math.round(f.totals.delivered ?? 0),
+      done: Math.round(f.totals.done ?? 0),
+      rework: Math.round(f.totals.rework ?? 0),
+      incidents: Math.round(f.totals.incidents ?? 0),
+      contained: Math.round(f.totals.contained ?? 0),
+      spread: Math.round(f.totals.spread ?? 0),
+      aiAssisted: Math.round(f.totals.aiAssisted ?? 0),
+      completed: Math.round(f.totals.completed ?? 0),
+      reviewQueuePeak: Math.round(f.totals.reviewQueuePeak ?? 0),
+    },
     budget: Math.round(f.budget),
     relics: f.relics.length,
     deckSize: f.deck.length,

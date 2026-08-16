@@ -347,13 +347,12 @@ if (!f10Section) {
 }
 
 // `remaining-issues.md` にも同じ現行コホートの総内訳があるため、概要だけでなくこちらも検査する。
+// 完了後は個別節を削除するので、節が無いときは findings 側だけを正本にする。
 const remainingRaw = readFileSync(DOCS[1], 'utf8');
 const remainingCut = remainingRaw.indexOf(AS_OF_SECTION);
 const remainingBody = remainingCut >= 0 ? remainingRaw.slice(0, remainingCut) : remainingRaw;
 const remainingSection = issueSection(remainingBody, 'RI-76');
-if (!remainingSection) {
-  problems.push(`${DOCS[1]}: RI-76 の F-10 集計節を見つけられない`);
-} else {
+if (remainingSection) {
   const summary = remainingSection.match(
     /現行\s+[\d,]+ランでは\s+\d+勝（((?:`\w+`\s*\d+\s*\/\s*)+`\w+`\s*\d+)/s,
   );

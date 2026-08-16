@@ -2,7 +2,7 @@
 
 ゲームバランスの調整値を、ゲーム実装とドキュメントの双方が参照できるSingle Source of Truth（SSoT）へ段階的に移行するための設計案をまとめる。
 
-本書は実装前の計画である。現時点では[`probability-model.md`](./probability-model.md)に記載した値と、`src/sim/`および`src/data/`の実装を照合して調整する。実装の親エピックと1PR単位のバックログは[RI-103](./remaining-issues.md#ri-103-バランスパラメータssotの導入)で追跡し、最新の`main`を再調査してから着手する。
+本書は実装前の計画である。現時点では[`probability-model.md`](./probability-model.md)に記載した値と、`src/sim/`および`src/data/`の実装を照合して調整する。実装の親エピックと1PR単位のバックログは[RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)で追跡し、最新の`main`を再調査してから着手する。
 
 ## 1. 目的
 

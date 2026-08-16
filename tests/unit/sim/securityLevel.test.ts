@@ -151,6 +151,7 @@ describe('RI-87 セキュリティ軸', () => {
   it('playtest に securityNeglect / securityFocus 方針がある', () => {
     expect(POLICY_DEFS.securityNeglect.draft).toBe('securityNeglect');
     expect(POLICY_DEFS.securityNeglect.shop).toBe('buyAvoidSecurity');
+    expect(POLICY_DEFS.securityNeglect.evolve).toBe('neglectFirst');
     expect(POLICY_DEFS.securityFocus.cards).toBe('preferSecurity');
     expect(POLICY_DEFS.securityFocus.draft).toBe('security');
     expect(POLICY_DEFS.securityFocus.shop).toBe('buySecurity');

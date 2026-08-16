@@ -21,11 +21,11 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 - Vite + React 19 + TypeScript + PixiJSのフロントエンド単体ゲーム。
 - `RunEngine`をラン状態の正本とし、seed付き決定論でシミュレーションする。
 - 確率モデルの構造と変更規律は[probability-model.md](./probability-model.md)を正とする。
-- バランスパラメータSSoTは未実装であり、設計は[balance-ssot-plan.md](./balance-ssot-plan.md)、1PR単位の実装バックログは[RI-103](./remaining-issues.md#ri-103-バランスパラメータssotの導入)で追跡する。
+- バランスパラメータSSoTは未実装であり、設計は[balance-ssot-plan.md](./balance-ssot-plan.md)、1PR単位の実装バックログは[RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)で追跡する。
 - 既定描画はPixiJS。`?renderer=dom`とWebGL不可時はDOM/SVGへフォールバックする。
 - IndexedDBにメタ進行、ラン途中セーブ、リプレイを保存する。
 - Vitestでロジック、Playwrightで操作・視覚回帰を検証する。
-- コアループは実装済み。スプリント時間帯（RI-75）、Nightmare 序盤の AI 依存即死（RI-74）、レビュー凍結の即死 judgment（RI-85）は完了。難易度カーブと固定強手（RI-73 / F-1・F-7）、勝利種別分岐（RI-76 / F-10）、レイアウトの既知残差（RI-93）は進行中。F-8・F-9の反実仮想評価（RI-101）とF-3の検証契約（RI-102）は未着手。ミューテーション改善の直近エピック [RI-91](https://github.com/nimiusrd/devops-tycoon/issues/187)（run 30698016740）は完了。次のフルシャード成功 run が出るまで新エピックは採番しない。採番・進捗の正本は GitHub Issue（本ディレクトリに番号予約しない）。一般バックログの全容は[remaining-issues.md](./remaining-issues.md)を参照。
+- コアループは実装済み。スプリント時間帯（RI-75）、Nightmare 序盤の AI 依存即死（RI-74）、レビュー凍結の即死 judgment（RI-85）、難易度カーブと固定強手（RI-73 / F-1・F-7）、勝利種別分岐（RI-76 / F-10）は完了。レイアウト基盤（RI-93〜100）は完了。F-8・F-9の反実仮想評価（RI-101）とF-3の検証契約（RI-102）は未着手。ミューテーション改善の直近エピック [RI-91](https://github.com/nimiusrd/devops-tycoon/issues/187)（run 30698016740）は完了。次のフルシャード成功 run が出るまで新エピックは採番しない。採番・進捗の正本は GitHub Issue（本ディレクトリに番号予約しない）。一般バックログの全容は[remaining-issues.md](./remaining-issues.md)を参照。
 
 ## 確定した設計判断
 

@@ -29,7 +29,7 @@ export const ACTION_DEFS: ActionDef[] = [
     gauge: 0.25,
     stabilizesFlow: true,
     description: '巨大PRをドラッグして割り、レビューしやすくする（手戻り率↓）',
-    sideEffect: '処理が一旦巻き戻る',
+    sideEffect: '処理が一旦巻き戻る。士気とシニアHPを消費。運用安定なし',
   },
   {
     id: 'firefight',
@@ -98,6 +98,7 @@ export const ACTION_DEFS: ActionDef[] = [
     cooldownTicks: 250,
     gauge: 0.15,
     // RI-73 / F-1: 運用安定は付けない。薄いキューでは士気追加＋シニアHP（actions.ts）。
+    // 渋滞時は士気のみ。毎スプリント先止めは薄キュー罰で高くつく。
     stabilizesFlow: true,
     tone: 'heavy',
     description: 'タスク流入を止め、溜まったキューを捌き切る',

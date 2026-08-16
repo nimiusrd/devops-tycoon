@@ -90,12 +90,8 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
   if (lateInQuarter && kpiMissCount >= 4) out.push('kpiMissed');
   if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
-  const liveReviewPeak = Math.max(
-    s.totals.reviewQueuePeak,
-    s.sprint?.metrics.reviewQueueMax ?? 0,
-    liveKpi?.totals.reviewQueuePeak ?? 0,
-  );
-  const reviewQueueDanger = liveReviewPeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
+  const currentReviewQueue = s.sprint?.tasks.filter((task) => task.lane === 'review').length ?? 0;
+  const reviewQueueDanger = currentReviewQueue >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
   const reviewFreezeEventRisk = s.org.seniorHp <= 45;
   if (reviewQueueDanger || reviewFreezeEventRisk) out.push('reviewFreeze');
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)

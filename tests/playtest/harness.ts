@@ -1467,10 +1467,6 @@ function counterfactualEnabled(): boolean {
   return process.env.PT_COUNTERFACTUAL === '1';
 }
 
-/** 同一スプリント位置で保持する反実仮想フレーム数（先頭＋新しい側）。 */
-const COUNTERFACTUAL_FRAMES_PER_SPRINT = 8;
-
-/** アクティブな危険種別ごとの発動可能介入を和集合・最終サンプルへ追記する（盤面非破壊）。 */
 function rememberCounterfactualFrame(
   framesByReason: Map<DangerLoseReason, CounterfactualFrameSample[]>,
   reason: DangerLoseReason,
@@ -1487,11 +1483,7 @@ function rememberCounterfactualFrame(
   ) {
     const frames = last.frames ?? [last.frame];
     frames.push(frame);
-    const first = frames[0];
-    last.frames =
-      first === undefined || frames.length <= COUNTERFACTUAL_FRAMES_PER_SPRINT
-        ? frames
-        : [first, ...frames.slice(-(COUNTERFACTUAL_FRAMES_PER_SPRINT - 1))];
+    last.frames = frames;
     return;
   }
   list.push({ ...sample, frame, frames: [frame] });

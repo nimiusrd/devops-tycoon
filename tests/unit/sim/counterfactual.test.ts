@@ -157,7 +157,9 @@ describe('RI-101 分岐評価と上限', () => {
     const strategic = listStrategicChoices(frame, 4);
     expect(strategic.length).toBeGreaterThan(0);
     expect(
-      strategic.every((choice) => /^(draft:|evo:|beat:|rest:|recruit:|goal:)/.test(choice.id)),
+      strategic.every((choice) =>
+        /^(draft:|evo:|beat:|rest:|shop:|recruit:|goal:)/.test(choice.id),
+      ),
     ).toBe(true);
     expect(
       strategic

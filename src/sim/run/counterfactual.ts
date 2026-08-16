@@ -10,6 +10,7 @@ import { getEvent } from '../../data/events';
 import { canApplyAction } from '../actions';
 import { assignableTasks, splitPrCandidates } from '../assignTask';
 import { playCost } from '../cards';
+import { canRecruit, RECRUIT_COST } from '../member';
 import { isAwaitingMinCompleteTick } from '../sprint';
 import type { ActionId, ActionTarget, SprintState } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
@@ -28,7 +29,15 @@ export const DEFAULT_MAX_STRATEGIC_BRANCHES = 8;
 export const DEFAULT_MAX_SPRINTS = 4;
 
 const REST_ALTERNATIVES: readonly RestChoice[] = ['repay', 'recruit'];
-const STRATEGIC_KIND_ORDER = ['beat', 'rest', 'draft', 'evolution', 'goal', 'recruit'] as const;
+const STRATEGIC_KIND_ORDER = [
+  'beat',
+  'rest',
+  'shop',
+  'draft',
+  'evolution',
+  'goal',
+  'recruit',
+] as const;
 
 export interface CounterfactualOrigin {
   sprintsPlayed: number;
@@ -96,6 +105,9 @@ type StrategicOverride =
   | { kind: 'evolution'; nodeId: string }
   | { kind: 'beat'; index: number }
   | { kind: 'rest'; option: RestChoice; deckIndex?: number }
+  | { kind: 'shop'; mode: 'card'; defId: string }
+  | { kind: 'shop'; mode: 'relic' }
+  | { kind: 'shop'; mode: 'recruit' }
   | { kind: 'recruit' }
   | { kind: 'goal'; id: GoalAdjustmentId };
 
@@ -275,6 +287,13 @@ function applyStrategicOverride(
       if (snapshot.phase !== 'rest') return false;
       engine.restChoose(override.option, override.deckIndex);
       return true;
+    case 'shop':
+      if (snapshot.phase !== 'shop') return false;
+      if (override.mode === 'card') engine.buyShopCard(override.defId);
+      else if (override.mode === 'relic') engine.buyShopRelic();
+      else engine.buyShopRecruit();
+      engine.leaveShop();
+      return true;
     case 'recruit':
       if (snapshot.phase !== 'recruit') return false;
       engine.recruitChoose('hire');
@@ -324,7 +343,10 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
   }
   if (snapshot.phase === 'rest' && !seen.has('rest')) {
     seen.add('rest');
-    const out: StrategicChoice[] = REST_ALTERNATIVES.map((option) => ({
+    const out: StrategicChoice[] = REST_ALTERNATIVES.filter((option) => {
+      if (option !== 'recruit') return true;
+      return canRecruit(snapshot.roster) && snapshot.budget >= RECRUIT_COST;
+    }).map((option) => ({
       id: `rest:${option}`,
       kind: 'rest' as const,
       override: { kind: 'rest' as const, option },
@@ -335,6 +357,35 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
         kind: 'rest',
         override: { kind: 'rest', option: 'upgrade', deckIndex },
       });
+    }
+    return out;
+  }
+  if (snapshot.phase === 'shop' && !seen.has('shop') && snapshot.shop) {
+    seen.add('shop');
+    const shop = snapshot.shop;
+    const out: StrategicChoice[] = [];
+    for (const card of shop.cards) {
+      if (card.bought || snapshot.budget < card.cost) continue;
+      out.push({
+        id: `shop:card:${card.defId}`,
+        kind: 'shop',
+        override: { kind: 'shop', mode: 'card', defId: card.defId },
+      });
+    }
+    if (shop.relic && !shop.relic.bought && snapshot.budget >= shop.relic.cost) {
+      out.push({
+        id: `shop:relic:${shop.relic.id}`,
+        kind: 'shop',
+        override: { kind: 'shop', mode: 'relic' },
+      });
+    }
+    if (
+      shop.recruit &&
+      !shop.recruit.bought &&
+      snapshot.budget >= shop.recruit.cost &&
+      canRecruit(snapshot.roster)
+    ) {
+      out.push({ id: 'shop:recruit', kind: 'shop', override: { kind: 'shop', mode: 'recruit' } });
     }
     return out;
   }
@@ -432,9 +483,19 @@ function drive(
   };
 }
 
+function runIdleBranch(
+  frame: CounterfactualFrame,
+  originDangers: ReadonlySet<DangerLoseReason>,
+  maxSprints: number,
+  focusReason?: DangerLoseReason,
+): CounterfactualBranchResult {
+  const engine = restoreCounterfactualEngine(frame);
+  return { actionId: null, ...drive(engine, originDangers, maxSprints, focusReason) };
+}
+
 function runActionBranch(
   frame: CounterfactualFrame,
-  choice: SprintChoice | { id: string | null; actionId: ActionId | null; target?: ActionTarget },
+  choice: SprintChoice,
   originDangers: ReadonlySet<DangerLoseReason>,
   maxSprints: number,
   focusReason?: DangerLoseReason,
@@ -481,13 +542,7 @@ export function evaluateCounterfactual(
     : listSprintChoices(probe);
   const toEval = sprintChoices.slice(0, maxActionBranches);
   const skippedActions = sprintChoices.slice(maxActionBranches).map((choice) => choice.id);
-  const baseline = runActionBranch(
-    frame,
-    { id: null, actionId: null },
-    originDangers,
-    maxSprints,
-    options.focusReason,
-  );
+  const baseline = runIdleBranch(frame, originDangers, maxSprints, options.focusReason);
   const branches = toEval.map((choice) =>
     runActionBranch(frame, choice, originDangers, maxSprints, options.focusReason),
   );
@@ -570,6 +625,9 @@ export function evaluateLatestEffectiveFrame(
       const found = { evaluation, effective };
       if (!newest) newest = found;
       if (effective.length > 0) return found;
+      const incomplete =
+        evaluation.skippedActions.length > 0 || evaluation.skippedStrategic.length > 0;
+      if (incomplete) return found;
     }
   }
   return newest;

@@ -66,6 +66,7 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 | KPIと敗北 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts) | 目標、評価閾値、即時敗北条件 |
 | 粗粒度モデル | [`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts) | 出荷、行列、Incident、状態ドリフト |
 | ペーシング | [`src/ui/sprintTempo.ts`](../src/ui/sprintTempo.ts) | tick換算、目標プレイ時間 |
+| メタ進行とデイリー | [`src/state/meta.ts`](../src/state/meta.ts) | デイリー難易度・試練、優先カード上限、ラン報酬係数 |
 
 SSoT導入時には、export済み定数だけでなく、数式内の係数と`clamp`境界も棚卸しする。移動だけのPRでは値と乱数消費順を変更しない。
 
@@ -84,6 +85,7 @@ src/data/balance/
 ├── member.ts
 ├── actions.ts
 ├── run.ts
+├── meta.ts
 ├── coarse-team.ts
 ├── pacing.ts
 └── index.ts
@@ -110,7 +112,8 @@ flowchart LR
     registry["型付きバランス定義"] --> game["ゲームロジック"]
     registry --> validate["不変条件・範囲検証"]
     registry --> generator["ドキュメント生成"]
-    registry --> fingerprint["ルールセット指紋"]
+    registry --> runtimeProjection["安定IDと実行値への射影"]
+    runtimeProjection --> fingerprint["ルールセット指紋"]
     content["既存のsrc/data定義"] --> game
     content --> generator
     content --> fingerprint
@@ -181,7 +184,7 @@ SSoT化後の決定論は、次の条件で保証する。
   → 同じ結果
 ```
 
-係数を変えれば、同じseedでも結果が変わる場合がある。この違いを不具合と仕様変更に切り分けるため、手動管理する`BALANCE_RULESET_VERSION`と、定義から算出する指紋を持つ。指紋の入力には新しいバランスレジストリだけでなく、カード、イベント、レリック、難易度など既存の`src/data`定義のうち、ゲーム結果へ影響するID、値、重み、配列順も含める。オブジェクトキーなどゲーム上の意味を持たない順序だけを安定化し、抽選・評価順に使う配列は定義順を保って算出することで、コンテンツと順序の変更をルールセットの違いとして自動検出できるようにする。
+係数を変えれば、同じseedでも結果が変わる場合がある。この違いを不具合と仕様変更に切り分けるため、手動管理する`BALANCE_RULESET_VERSION`と、定義から算出する指紋を持つ。レジストリは安定IDとゲームが参照する実行値へ射影して指紋化し、`label`、`description`、`unit`、`allowedRange`、`tags`、`derived`など表示・検証専用メタデータは入力から除外する。指紋の入力には新しいバランスレジストリだけでなく、カード、イベント、レリック、難易度など既存の`src/data`定義のうち、ゲーム結果へ影響するID、値、重み、配列順も含める。オブジェクトキーなどゲーム上の意味を持たない順序だけを安定化し、抽選・評価順に使う配列は定義順を保って算出することで、コンテンツと順序の変更をルールセットの違いとして自動検出できるようにする。
 
 | 保存対象 | 推奨方針 |
 | --- | --- |
@@ -238,7 +241,7 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 
 ### Phase 1: 基盤だけを導入
 
-- 最新の`main`でパラメータ配置を再度棚卸しする。
+- 最新の`main`で`src/sim/`、`src/data/`、`src/state/meta.ts`、ペーシング、補助スクリプトのパラメータ配置を再度棚卸しする。
 - 型、定義ヘルパー、IDと単位の検証を追加する。
 - ドキュメント生成と`balance:check`を追加する。
 - 代表値を少数だけ移し、生成経路を検証する。
@@ -256,7 +259,7 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 
 ### Phase 3: 周辺領域を移行
 
-- メンバー、介入、ラン進行、KPI、敗北条件、ペーシングを領域ごとに移す。
+- メンバー、介入、ラン進行、KPI、敗北条件、ペーシング、メタ進行・デイリー条件を領域ごとに移す。
 - 既存の`src/data/`定義をパラメータ一覧へ集約する。
 - 粗粒度モデルの係数を移し、詳細モデルとの方向性を検証する。
 

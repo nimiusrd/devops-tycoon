@@ -867,7 +867,7 @@ function collectSetupSequences(
     const fork = restoreCounterfactualEngine(frame);
     applySetupChanges(fork, setupChangeOf(first.override));
     if (fork.snapshot().phase !== 'setup') continue;
-    const seconds = listSetupChoices(fork.snapshot());
+    const seconds = withVisit(listSetupChoices(fork.snapshot()), nth);
     for (const second of seconds) {
       if (extra >= SETUP_SEQUENCE_CAP) {
         truncated = true;

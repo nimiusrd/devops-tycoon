@@ -268,6 +268,22 @@ describe('RI-101 分岐評価と上限', () => {
     );
   });
 
+  it('2回目以降の setup 列は全ステップに同じ訪問番号を付ける', () => {
+    const engine = startedSprint('ri-101-setup-visit-suffix');
+    engine.step(200);
+    const laterCombos = listStrategicChoices(engine.exportCounterfactualFrame()!, 4).filter(
+      (choice) => /^setup:.+@.+\+setup:/.test(choice.id),
+    );
+    expect(laterCombos.length).toBeGreaterThan(0);
+    expect(
+      laterCombos.every((choice) => {
+        const parts = choice.id.split('+');
+        const visit = /(@\d+)$/.exec(parts[0] ?? '');
+        return !!visit && parts.every((part) => part.endsWith(visit[1]!));
+      }),
+    ).toBe(true);
+  });
+
   it('assignTask / splitPr は対象ごとに分岐する', () => {
     const engine = startedSprint('ri-101-targets');
     engine.step(200);
@@ -1049,6 +1065,23 @@ describe('RI-101 合成危険状態', () => {
       ],
     };
     expect(effectiveActionsOf(synthetic)).toEqual(['interruptReview', 'overtime+rest:heal@1']);
+  });
+
+  it('setup 列の訪問番号は全構成手へ付けて最小列比較する', () => {
+    const engine = startedSprint('ri-101-setup-minimal-visit');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const delayed = branch({
+      actionId: 'setup:ai:m2:on@1',
+      sprintsToLose: 4,
+      loseReason: 'moraleCollapse',
+    });
+    const synthetic = {
+      ...evaluateCounterfactual(frame, { actions: [], maxSprints: 1 }),
+      baseline: branch({ actionId: null, sprintsToLose: 2, loseReason: 'moraleCollapse' }),
+      branches: [delayed, { ...delayed, actionId: 'setup:assign:m1:review@1+setup:ai:m2:on@1' }],
+    };
+    expect(effectiveActionsOf(synthetic)).toEqual(['setup:ai:m2:on@1']);
   });
 
   it('ベースライン回復時は採用見送りも有効手に残す', () => {

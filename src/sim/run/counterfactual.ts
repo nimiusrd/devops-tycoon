@@ -1060,7 +1060,9 @@ function listSameTickFollowups(frame: CounterfactualFrame, first: SprintChoice):
   applySprintChoice(engine, first);
   const s = engine.snapshot();
   if (s.phase !== 'sprint' || s.status !== 'playing' || !s.sprint || s.sprint.complete) return [];
-  return listSprintChoices(engine).filter((choice) => choice.id !== first.id);
+  return listSprintChoices(engine).filter(
+    (choice) => choice.leverId != null || choice.id !== first.id,
+  );
 }
 
 function runStrategicBranch(
@@ -1136,13 +1138,21 @@ export function evaluateCounterfactual(
   let skippedStrategic: string[] = [];
   if (includeStrategic) {
     const strategic = listStrategicChoices(frame, maxSprints);
-    const toStrategic = strategic.slice(0, maxStrategicBranches);
-    skippedStrategic = strategic.slice(maxStrategicBranches).map((choice) => choice.id);
+    const runnable = strategic.filter((choice) => !choice.id.startsWith('setup:combo'));
+    const toStrategic = runnable.slice(0, maxStrategicBranches);
+    skippedStrategic = [
+      ...runnable.slice(maxStrategicBranches).map((choice) => choice.id),
+      ...strategic
+        .filter((choice) => choice.id.startsWith('setup:combo'))
+        .map((choice) => choice.id),
+    ];
     for (const choice of toStrategic) {
       branches.push(
         runStrategicBranch(frame, choice, originDangers, maxSprints, options.focusReason),
       );
     }
+    const kinds = new Set(runnable.map((choice) => choice.kind));
+    if (kinds.size >= 2) skippedStrategic.push('strategicSequence');
     if (options.actions === undefined && toEval.length > 0 && strategic.length > 0) {
       let crossBudget = maxComboBranches;
       let crossSkipped = false;

@@ -183,8 +183,13 @@ describe('RI-101 分岐評価と上限', () => {
       maxSprints: 4,
       maxStrategicBranches: 8,
     });
+    const runnable = strategic.filter((choice) => !choice.id.startsWith('setup:combo'));
     const ids = evaluation.branches.map((branch) => branch.actionId);
-    expect(ids).toEqual(strategic.slice(0, 8).map((choice) => choice.id));
+    expect(ids).toEqual(runnable.slice(0, 8).map((choice) => choice.id));
+    const kinds = new Set(runnable.map((choice) => choice.kind));
+    if (kinds.size >= 2) {
+      expect(evaluation.skippedStrategic).toContain('strategicSequence');
+    }
     expect(
       evaluateCounterfactual(frame, { actions: ['andon'], maxSprints: 1 }).branches.every(
         (branch) => branch.actionId === 'andon',

@@ -963,7 +963,7 @@ export interface RunLog {
    * `PT_COUNTERFACTUAL=1` のときだけ付く。空配列は「評価したが有効手なし」。
    */
   effectiveActionsInDanger?: string[];
-  /** 有効手が残っていた最後の危険域サンプル位置（RI-101。有効手があるときだけ）。 */
+  /** 有効手が残っていた最後の危険域サンプル位置（RI-101。有効手または無介入回復があるとき）。 */
   lastEffectiveActionsAt?: {
     sprintsPlayed: number;
     quarter: number;
@@ -981,6 +981,8 @@ export interface RunLog {
   /** 分岐上限で未評価の候補が残った（RI-101。不完全な「有効手なし」を集計から除外する）。 */
   counterfactualIncomplete?: boolean;
   counterfactualSkipped?: string[];
+  /** 無介入ベースラインが評価期間を生存または危険域離脱した（RI-101。有効手なしとは区別する）。 */
+  counterfactualBaselineRecovered?: boolean;
 }
 
 /**
@@ -2360,7 +2362,7 @@ export function runOnce(
             },
           );
           if (!selected) return {};
-          const { evaluation, effective } = selected;
+          const { evaluation, effective, baselineRecovered } = selected;
           const skipped = [...evaluation.skippedActions, ...evaluation.skippedStrategic];
           return {
             effectiveActionsInDanger: effective,
@@ -2370,7 +2372,7 @@ export function runOnce(
                   counterfactualSkipped: skipped,
                 }
               : {}),
-            ...(effective.length > 0
+            ...(effective.length > 0 || baselineRecovered
               ? {
                   lastEffectiveActionsAt: {
                     sprintsPlayed: evaluation.origin.sprintsPlayed,
@@ -2379,6 +2381,9 @@ export function runOnce(
                     actions: effective,
                   },
                 }
+              : {}),
+            ...(baselineRecovered && effective.length === 0
+              ? { counterfactualBaselineRecovered: true }
               : {}),
             counterfactualBaseline: {
               sprintsToLose: evaluation.baseline.sprintsToLose,

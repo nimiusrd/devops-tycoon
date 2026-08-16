@@ -5,6 +5,7 @@
  * 戦略フェーズの代替肢を分岐し、敗北遅延・回避・危険域離脱・敗因変化だけを
  * 有効手として集計する。what-if の同 seed 再実行とは別系統。
  */
+import { LEVER_DEFS } from '../../data/levers';
 import { getCard } from '../../data/cards';
 import { getEvent } from '../../data/events';
 import { canApplyAction } from '../actions';
@@ -100,6 +101,9 @@ interface SprintChoice {
   actionId: ActionId | null;
   target?: ActionTarget;
   cardIndex?: number;
+  leverId?: string;
+  deptId?: string;
+  teamId?: string;
 }
 
 type StrategicOverride =
@@ -158,6 +162,10 @@ function canPlayHandCard(sprint: SprintState, deck: RunState['deck'], deckIndex:
 }
 
 function applySprintChoice(engine: RunEngine, choice: SprintChoice): void {
+  if (choice.leverId) {
+    engine.applyOrgLever(choice.leverId, choice.deptId, choice.teamId);
+    return;
+  }
   if (choice.cardIndex != null) {
     engine.playCard(choice.cardIndex);
     return;
@@ -170,6 +178,7 @@ function listSprintChoices(engine: RunEngine): SprintChoice[] {
   if (s.phase !== 'sprint' || !s.sprint) return [];
   const sprint = s.sprint;
   const out: SprintChoice[] = [];
+  const targeted: SprintChoice[] = [];
   for (const id of listApplicableActions(engine)) {
     if (id === 'assignTask') {
       for (const task of assignableTasks(sprint)) {
@@ -179,20 +188,24 @@ function listSprintChoices(engine: RunEngine): SprintChoice[] {
             ? { taskId: task.id, lane, assignee }
             : { taskId: task.id, assignee };
           if (canApplyAction('assignTask', sprint, s.org, s.sprintTick, target).ok) {
-            out.push({ id: `assignTask:${task.id}:${assignee}`, actionId: 'assignTask', target });
+            targeted.push({
+              id: `assignTask:${task.id}:${assignee}`,
+              actionId: 'assignTask',
+              target,
+            });
           }
         }
       }
-      if (out.some((choice) => choice.actionId === 'assignTask')) continue;
+      if (targeted.some((choice) => choice.actionId === 'assignTask')) continue;
     }
     if (id === 'splitPr') {
       for (const task of splitPrCandidates(sprint)) {
         const target: ActionTarget = { taskId: task.id };
         if (canApplyAction('splitPr', sprint, s.org, s.sprintTick, target).ok) {
-          out.push({ id: `splitPr:${task.id}`, actionId: 'splitPr', target });
+          targeted.push({ id: `splitPr:${task.id}`, actionId: 'splitPr', target });
         }
       }
-      if (out.some((choice) => choice.actionId === 'splitPr')) continue;
+      if (targeted.some((choice) => choice.actionId === 'splitPr')) continue;
     }
     out.push({ id, actionId: id });
   }
@@ -200,6 +213,43 @@ function listSprintChoices(engine: RunEngine): SprintChoice[] {
     if (!canPlayHandCard(sprint, s.deck, deckIndex)) continue;
     const defId = s.deck[deckIndex]?.defId ?? String(deckIndex);
     out.push({ id: `card:${defId}:${deckIndex}`, actionId: null, cardIndex: deckIndex });
+  }
+  out.push(...listOrgLeverChoices(engine));
+  out.push(...targeted);
+  return out;
+}
+
+function listOrgLeverChoices(engine: RunEngine): SprintChoice[] {
+  const s = engine.snapshot();
+  if (s.phase !== 'sprint' || !s.sprint || isAwaitingMinCompleteTick(s.sprint)) return [];
+  const out: SprintChoice[] = [];
+  const depts = [...new Set(s.teams.map((team) => team.deptId).filter(Boolean))];
+  for (const def of LEVER_DEFS) {
+    if (s.budget < def.cost) continue;
+    if (def.scope === 'company') {
+      out.push({ id: `lever:${def.id}`, actionId: null, leverId: def.id });
+      continue;
+    }
+    if (def.scope === 'department') {
+      for (const deptId of depts) {
+        out.push({
+          id: `lever:${def.id}:${deptId}`,
+          actionId: null,
+          leverId: def.id,
+          deptId,
+        });
+      }
+      continue;
+    }
+    for (const team of s.teams) {
+      if (team.id !== s.activeTeamId) continue;
+      out.push({
+        id: `lever:${def.id}:${team.id}`,
+        actionId: null,
+        leverId: def.id,
+        teamId: team.id,
+      });
+    }
   }
   return out;
 }
@@ -406,7 +456,7 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
     const eventId = snapshot.beat.eventId;
     const n = getEvent(eventId)?.choices.length ?? 0;
     const out: StrategicChoice[] = [];
-    for (let index = 1; index < n; index += 1) {
+    for (let index = 0; index < n; index += 1) {
       out.push({
         id: `beat:${eventId}:${index}`,
         kind: 'beat',
@@ -471,7 +521,7 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
     seen.add('goal');
     const review = snapshot.quarterReview;
     if (review?.outcome !== 'missed_adjustable') return [];
-    return review.availableAdjustments.slice(1).map((id) => ({
+    return review.availableAdjustments.map((id) => ({
       id: `goal:${id}`,
       kind: 'goal' as const,
       override: { kind: 'goal' as const, id },
@@ -696,10 +746,17 @@ export function isEffectiveChoice(
 export interface LatestEffectiveFrame {
   evaluation: CounterfactualEvaluation;
   effective: string[];
+  baselineRecovered: boolean;
+}
+
+function isBaselineRecovered(evaluation: CounterfactualEvaluation): boolean {
+  const baseline = evaluation.baseline;
+  return baseline.leftDanger || baseline.status !== 'lost';
 }
 
 /**
  * 新しいフレームから遡り、有効手がある最初の評価を返す。
+ * 無介入で生存・危険域離脱できる最新フレームでは遡らない。
  * どれも無効なら最新フレームの評価と空の有効手を返す。
  */
 function framesOf(sample: CounterfactualFrameSample): CounterfactualFrame[] {
@@ -717,12 +774,13 @@ export function evaluateLatestEffectiveFrame(
     for (let j = seq.length - 1; j >= 0; j -= 1) {
       const evaluation = evaluateCounterfactual(seq[j]!, options);
       const effective = effectiveActionsOf(evaluation);
-      const found = { evaluation, effective };
+      const baselineRecovered = isBaselineRecovered(evaluation);
+      const found = { evaluation, effective, baselineRecovered };
       if (!newest) newest = found;
       if (effective.length > 0) return found;
       const incomplete =
         evaluation.skippedActions.length > 0 || evaluation.skippedStrategic.length > 0;
-      if (incomplete) return found;
+      if (incomplete || baselineRecovered) return found;
     }
   }
   return newest;

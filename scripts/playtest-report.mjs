@@ -1137,7 +1137,9 @@ if (cfRuns.length > 0) {
           const effective = Array.isArray(r.effectiveActionsInDanger)
             ? r.effectiveActionsInDanger
             : [];
-          if (effective.length === 0) emptyEffective += 1;
+          if (effective.length === 0) {
+            if (!r.counterfactualBaselineRecovered) emptyEffective += 1;
+          }
           for (const id of effective) freq.set(id, (freq.get(id) ?? 0) + 1);
           if (typeof r.sprintsPlayed === 'number' && r.lastEffectiveActionsAt) {
             const midSprintInstantLose =

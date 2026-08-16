@@ -44,6 +44,25 @@ describe('危険域判定（RI-101）', () => {
     expect(activeDangerReasons(engine)).toContain('reviewFreeze');
   });
 
+  it('reviewFreeze は非選択チームの現在キューも見る', () => {
+    const engine = startedSprint('ri-101-review-other-team');
+    engine.step(200);
+    const internals = engine as unknown as {
+      org: { seniorHp: number };
+      sprint: { tasks: Task[] } | null;
+      activeTeamId: string;
+      teams: Array<{ id: string; reviewQueue: number }>;
+    };
+    internals.org.seniorHp = 80;
+    internals.sprint!.tasks = [];
+    expect(activeDangerReasons(engine)).not.toContain('reviewFreeze');
+    const other = internals.teams.find((team) => team.id !== internals.activeTeamId);
+    if (!other) return;
+    const threshold = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+    other.reviewQueue = threshold;
+    expect(activeDangerReasons(engine)).toContain('reviewFreeze');
+  });
+
   it('kpiMissed は同時条件でも一度だけ追加する', () => {
     const engine = startedSprint('ri-101-kpi-dup');
     engine.step(200);

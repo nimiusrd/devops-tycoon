@@ -283,6 +283,9 @@ describe('RI-101 分岐評価と上限', () => {
         evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('card:')),
       ).toBe(true);
     }
+    expect(evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('lever:'))).toBe(
+      true,
+    );
   });
 });
 

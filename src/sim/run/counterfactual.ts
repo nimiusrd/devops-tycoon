@@ -1207,7 +1207,11 @@ export function evaluateCounterfactual(
         const after = engine.exportCounterfactualFrame();
         if (!after || engine.snapshot().status !== 'playing') continue;
         const later = listStrategicChoices(after, maxSprints);
+        if (later.some((choice) => choice.id.startsWith('setup:combo'))) {
+          crossSkipped = true;
+        }
         for (const choice of later) {
+          if (choice.id.startsWith('setup:combo')) continue;
           if (crossBudget <= 0) {
             crossSkipped = true;
             break;

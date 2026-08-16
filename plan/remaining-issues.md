@@ -134,32 +134,34 @@ SPEC F-3のプレイテスト観測項目は追加済みだが、戦略フェー
 
 ### RI-111 ラン進行・経済パラメータの移行
 
-`src/sim/run/constants.ts`、`effects.ts`、`engine.ts`にある四半期構成、イベント率、休息、ショップ、進化報酬、インフラ費用などを`balance/run.ts`へ移す。`src/sim/run/sprintBaselineBuild.ts`の`computeInfraCost()`にある無料／切り上げの最低課金額境界も同じ領域へ移す。フェーズ一覧、保存可能フェーズ、イベントIDはプロトコル／コンテンツ定義として移動しない。
+`src/sim/run/constants.ts`、`effects.ts`、`engine.ts`にある四半期構成、イベント率、休息、ショップ、進化報酬、インフラ費用などを`balance/run.ts`へ移す。`src/sim/run/events.ts`のsoft結果適用時に直後の敗北を避ける生存判定・復帰値と、`src/sim/run/sprintBaselineBuild.ts`の`computeInfraCost()`にある無料／切り上げの最低課金額境界も同じ領域へ移す。フェーズ一覧、保存可能フェーズ、イベントIDはプロトコル／コンテンツ定義として移動しない。
 
 受入条件:
 
 - ラン進行と経済の基本値を安定IDで参照する。
-- ランループ、イベント選択、休息、ショップ、進化、インフラ費用の現行1未満／1以上の無料・課金境界、切り上げ、返金を含む既存テストと代表seed結果が一致する。
+- ランループ、イベント選択、soft結果の生存境界と復帰値、休息、ショップ、進化、インフラ費用の現行1未満／1以上の無料・課金境界、切り上げ、返金を含む既存テストと代表seed結果が一致する。
 - `scripts/playtest-report.mjs`の定数直接読取を壊さず、レジストリを正規に参照する方式へ更新する。
 
 ### RI-112 四半期KPI・勝敗閾値の移行
 
-`src/sim/run/quarterReview.ts`、`src/sim/outcome.ts`、`src/sim/diagnosis.ts`の目標倍率、下限、評価閾値、継続不能条件、勝利種別閾値、Reviewキュー・Rework比率・AI利用率などの診断閾値を`balance/run.ts`または専用の`balance/outcome.ts`へ移す。`src/render/loseNextActionView.ts`、`src/render/status.ts`、`tests/playtest/harness.ts`に複製された危機・敗北境界も同じ安定IDへ置き換える。結果ラベル、敗因ID、診断ID、表示優先順は移動しない。
+`src/sim/run/quarterReview.ts`、`src/sim/outcome.ts`、`src/sim/diagnosis.ts`の目標倍率、下限、評価閾値、継続不能条件、勝利種別閾値、Reviewキュー・Rework比率・AI利用率などの診断閾値を`balance/run.ts`または専用の`balance/outcome.ts`へ移す。`quarterReview.ts`内で再編の候補安全性判定と実適用に重複するシニアHP・技術的負債の即時回復値、および`src/render/loseNextActionView.ts`、`src/render/status.ts`、`tests/playtest/harness.ts`に複製された危機・敗北境界も同じ安定IDへ置き換える。結果ラベル、敗因ID、診断ID、表示優先順は移動しない。
 
 受入条件:
 
 - KPIと勝敗の閾値を安定IDから参照し、派生目標は基本値から計算する。
+- `orgAfterAdjustment()`、実際の再編適用、チームへの再編適用が同じシニアHP・技術的負債回復値を参照し、候補提示と適用後判定の境界が一致する。
 - 実際の勝敗判定、リザルトの原因説明、HUD警告、state-aware方針、発火要因レポートが同じ危機・敗北境界を参照する。
 - 四半期レビュー、目標修正、敗北、組織診断、診断結果を使う勝利種別の境界テストと代表seed結果が一致する。
 - RI-73／RI-76で確定した値と判定境界を変更せず、値調整を同じPRに含めない。
 
 ### RI-113 粗粒度チームモデルのパラメータ移行
 
-`src/sim/orgscale/teamState.ts`の初期分布、出荷、行列、Incident、状態ドリフト、入り込みコストを`balance/coarse-team.ts`へ移す。重複しているReview容量・Incident bias計算を純関数へ寄せ、値を変えずに投影と進行で共有する。
+`src/sim/orgscale/teamState.ts`の初期分布、出荷、行列、Incident、状態ドリフト、入り込みコスト、`src/sim/orgscale/aggregate.ts`のチーム健全度・部門評価・全社スコア、`src/sim/orgscale/industry.ts`のランキング得点・リーグ境界を`balance/coarse-team.ts`へ移す。重複しているReview容量・Incident bias計算を純関数へ寄せ、値を変えずに投影と進行で共有する。
 
 受入条件:
 
 - 粗粒度モデルの基本値と境界を安定IDから参照し、同じ式・係数の重複保持を除く。
+- チーム健全度、部門・全社評価、ランキング得点、リーグ境界の境界テストと代表組織の順位が移行前後で一致する。
 - 固定seed結果を維持し、詳細モデルと粗粒度モデルでAI、Review、品質、Incidentの因果方向が一致するテストを追加する。
 - 式の共通化によって評価順や丸め位置を変えない。
 
@@ -247,12 +249,13 @@ RI-116完了後、同一seedペアでパラメータ変更前後を比較し、�
 
 ### RI-122 カード実行ルールのパラメータ移行
 
-`src/sim/cards.ts`の手札枚数、ドラフト候補数、強化倍率、集中力下限、優先ドラフト重み、効果`clamp`境界など、カード定義そのものではない共通実行ルールを`balance/cards.ts`へ移す。`src/sim/run/engine.ts`の通常ドラフト、引き直し、ショップに直書きされた候補数も同じ安定IDへ置き換える。
+`src/sim/cards.ts`の手札枚数、ドラフト候補数、強化倍率、集中力下限、優先ドラフト重み、効果`clamp`境界など、カード定義そのものではない共通実行ルールを`balance/cards.ts`へ移す。`src/sim/run/engine.ts`の通常ドラフト、引き直し、ショップに直書きされた候補数と、引き直しの最大再試行回数も同じ領域の安定IDへ置き換える。
 
 受入条件:
 
 - カードID、価格、効果値は既存`src/data/cards.ts`を正本のまま維持し、実行ルールだけを安定ID化する。
 - `drawDraft`の既定値と通常ドラフト・引き直し・ショップの全呼び出しが同じ候補数を参照する。
+- 引き直しの最大再試行回数を安定IDから参照し、元候補と同じ集合が連続する固定fixtureで派生seedと最終候補を回帰する。
 - 候補列と乱数消費順を変えず、ドロー、強化、発動コスト、効果合成、優先ドラフトの境界テストと代表seed結果が一致する。
 
 ### RI-123 代表確率曲線のSSoT生成

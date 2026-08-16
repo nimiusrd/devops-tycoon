@@ -1046,13 +1046,20 @@ function policiesIn(runs, required = F9_POLICIES) {
 function stableEffectiveActionId(id) {
   return String(id)
     .split('+')
-    .map((part) => {
-      const card = /^card:([^:]+)(?::\d+)?(@\d+)?$/.exec(part);
-      if (card) return `card:${card[1]}${card[2] ?? ''}`;
-      const assign = /^assignTask:[^:]+:(ai|senior)(@\d+)?$/.exec(part);
-      if (assign) return `assignTask:${assign[1]}${assign[2] ?? ''}`;
-      const split = /^splitPr:[^:@]+(@\d+)?$/.exec(part);
-      if (split) return `splitPr${split[1] ?? ''}`;
+    .map((raw) => {
+      const part = raw.replace(/@\d+$/, '');
+      const card = /^card:([^:]+)(?::\d+)?$/.exec(part);
+      if (card) return `card:${card[1]}`;
+      const assign = /^assignTask:[^:]+:(ai|senior)$/.exec(part);
+      if (assign) return `assignTask:${assign[1]}`;
+      const split = /^splitPr:[^:]+$/.exec(part);
+      if (split) return 'splitPr';
+      const restUp = /^rest:upgrade:(?:([^:]+):)?\d+$/.exec(part);
+      if (restUp) return restUp[1] ? `rest:upgrade:${restUp[1]}` : 'rest:upgrade';
+      const setupAssign = /^setup:assign:[^:]+:([^:]+)$/.exec(part);
+      if (setupAssign) return `setup:assign:${setupAssign[1]}`;
+      const setupAi = /^setup:ai:[^:]+:(on|off)$/.exec(part);
+      if (setupAi) return `setup:ai:${setupAi[1]}`;
       return part;
     })
     .join('+');

@@ -167,7 +167,7 @@ describe('RI-101 分岐評価と上限', () => {
       expect(
         restIds
           .filter((choice) => choice.id.startsWith('rest:upgrade'))
-          .every((choice) => /^rest:upgrade:\d+$/.test(choice.id)),
+          .every((choice) => /^rest:upgrade:[^:]+:\d+$/.test(choice.id)),
       ).toBe(true);
     }
     expect(
@@ -478,9 +478,9 @@ describe('RI-101 分岐評価と上限', () => {
     internals.phase = 'rest';
     internals.deck = [{ defId: 'copilot', level: 1 }];
     const frame = engine.exportCounterfactualFrame()!;
-    expect(listStrategicChoices(frame, 1).some((choice) => choice.id === 'rest:upgrade:0')).toBe(
-      true,
-    );
+    expect(
+      listStrategicChoices(frame, 1).some((choice) => choice.id === 'rest:upgrade:copilot:0'),
+    ).toBe(true);
     const spy = vi.spyOn(RunEngine.prototype, 'playCard');
     try {
       evaluateCounterfactual(frame, {
@@ -844,6 +844,25 @@ describe('RI-101 集計規則', () => {
     expect(judgment.byReason.aiDependency).toEqual(['assignTask:ai', 'card:ai-guideline']);
     expect(judgment.byReason.reviewFreeze).toEqual(['splitPr']);
     expect(judgment.distinctEffectiveSetCount).toBe(2);
+  });
+
+  it('F-9 は戦略肢の位置・連番・訪問番号を落として集合を数える', () => {
+    const judgment = judgeF9EffectiveSets([
+      {
+        loseReason: 'seniorBurnout',
+        effectiveActions: ['rest:upgrade:copilot:0', 'setup:assign:m3:coding', 'rest:heal@1'],
+      },
+      {
+        loseReason: 'seniorBurnout',
+        effectiveActions: ['rest:upgrade:copilot:2', 'setup:assign:m9:coding', 'rest:heal'],
+      },
+    ]);
+    expect(judgment.byReason.seniorBurnout).toEqual([
+      'rest:heal',
+      'rest:upgrade:copilot',
+      'setup:assign:coding',
+    ]);
+    expect(judgment.distinctEffectiveSetCount).toBe(1);
   });
 });
 

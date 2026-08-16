@@ -330,6 +330,24 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.skippedActions).toContain('sameTickCombo');
   });
 
+  it('2手列の先に戦略肢がある場合は actionStrategicCombo を skipped に残す', () => {
+    const engine = startedSprint('ri-101-combo-then-strategic');
+    engine.step(200);
+    const internals = engine as unknown as { budget: number };
+    internals.budget = 30;
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, {
+      includeStrategic: true,
+      maxSprints: 2,
+      maxActionBranches: 4,
+      maxComboBranches: 2,
+      maxStrategicBranches: 8,
+    });
+    if (evaluation.branches.some((branch) => (branch.actionId ?? '').includes('+'))) {
+      expect(evaluation.skippedActions).toContain('actionStrategicCombo');
+    }
+  });
+
   it('入り込み拘束中でなければ非アクティブチームのレバーも分岐する', () => {
     const engine = startedSprint('ri-101-other-team-lever');
     engine.step(200);
@@ -959,6 +977,31 @@ describe('RI-101 合成危険状態', () => {
       'shop:card:ai-guideline',
       'shop:card:copilot+card:pair-review',
     ]);
+  });
+
+  it('訪問サフィックスは戦略 atom にだけ付けて最小列比較する', () => {
+    const engine = startedSprint('ri-101-visit-suffix');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const delayed = branch({
+      actionId: 'interruptReview',
+      sprintsToLose: 4,
+      loseReason: 'moraleCollapse',
+    });
+    const synthetic = {
+      ...evaluateCounterfactual(frame, { actions: [], maxSprints: 1 }),
+      baseline: branch({ actionId: null, sprintsToLose: 2, loseReason: 'moraleCollapse' }),
+      branches: [
+        delayed,
+        { ...delayed, actionId: 'interruptReview+rest:heal@1' },
+        branch({
+          actionId: 'overtime+rest:heal@1',
+          sprintsToLose: 4,
+          loseReason: 'moraleCollapse',
+        }),
+      ],
+    };
+    expect(effectiveActionsOf(synthetic)).toEqual(['interruptReview', 'overtime+rest:heal@1']);
   });
 
   it('ベースライン回復時は採用見送りも有効手に残す', () => {

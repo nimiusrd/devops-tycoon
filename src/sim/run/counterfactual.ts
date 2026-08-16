@@ -1136,6 +1136,7 @@ export function evaluateCounterfactual(
   const branches = toEval.map((choice) =>
     runActionBranch(frame, choice, originDangers, maxSprints, options.focusReason),
   );
+  const sameTickCombos: SprintChoice[][] = [];
   if (options.actions === undefined) {
     let comboBudget = maxComboBranches;
     let comboSkipped = false;
@@ -1148,6 +1149,7 @@ export function evaluateCounterfactual(
           break;
         }
         comboBudget -= 1;
+        sameTickCombos.push([first, second]);
         branches.push(
           runActionSequence(frame, [first, second], originDangers, maxSprints, options.focusReason),
         );
@@ -1218,6 +1220,20 @@ export function evaluateCounterfactual(
         if (crossSkipped) break;
       }
       if (crossSkipped) skippedActions.push('actionStrategicCombo');
+    }
+    if (
+      options.actions === undefined &&
+      sameTickCombos.length > 0 &&
+      !skippedActions.includes('actionStrategicCombo')
+    ) {
+      const comboOpensStrategic = sameTickCombos.some((combo) => {
+        const engine = restoreCounterfactualEngine(frame);
+        for (const choice of combo) applySprintChoice(engine, choice);
+        const after = engine.exportCounterfactualFrame();
+        if (!after || engine.snapshot().status !== 'playing') return false;
+        return listStrategicChoices(after, maxSprints).length > 0;
+      });
+      if (comboOpensStrategic) skippedActions.push('actionStrategicCombo');
     }
   }
   return {
@@ -1319,33 +1335,43 @@ function isShopStepPart(part: string): boolean {
   );
 }
 
-type SeqAtom = { ns: 'shop' | 'evo' | ''; step: string };
+type SeqAtom = { ns: 'shop' | 'evo' | ''; step: string; suffix: string };
 
-function tokenizeActionId(base: string): SeqAtom[] {
-  const raw = base.split('+');
+function tokenizeActionId(actionId: string): SeqAtom[] {
+  const raw = actionId.split('+');
   const atoms: SeqAtom[] = [];
   let i = 0;
   while (i < raw.length) {
-    const part = raw[i]!;
-    if (part.startsWith('shop:')) {
-      atoms.push({ ns: 'shop', step: part.slice('shop:'.length) });
+    const { base, suffix } = splitVisitSuffix(raw[i]!);
+    if (base.startsWith('shop:')) {
+      const group: SeqAtom[] = [{ ns: 'shop', step: base.slice('shop:'.length), suffix }];
       i += 1;
-      while (i < raw.length && isShopStepPart(raw[i]!)) {
-        atoms.push({ ns: 'shop', step: raw[i]! });
+      while (i < raw.length) {
+        const next = splitVisitSuffix(raw[i]!);
+        if (!isShopStepPart(next.base)) break;
+        group.push({ ns: 'shop', step: next.base, suffix: next.suffix });
         i += 1;
       }
+      const groupSuffix = group.reduce((acc, atom) => atom.suffix || acc, '');
+      for (const atom of group) atom.suffix = groupSuffix;
+      atoms.push(...group);
       continue;
     }
-    if (part.startsWith('evo:')) {
-      atoms.push({ ns: 'evo', step: part.slice('evo:'.length) });
+    if (base.startsWith('evo:')) {
+      const group: SeqAtom[] = [{ ns: 'evo', step: base.slice('evo:'.length), suffix }];
       i += 1;
-      while (i < raw.length && !raw[i]!.includes(':')) {
-        atoms.push({ ns: 'evo', step: raw[i]! });
+      while (i < raw.length) {
+        const next = splitVisitSuffix(raw[i]!);
+        if (next.base.includes(':')) break;
+        group.push({ ns: 'evo', step: next.base, suffix: next.suffix });
         i += 1;
       }
+      const groupSuffix = group.reduce((acc, atom) => atom.suffix || acc, '');
+      for (const atom of group) atom.suffix = groupSuffix;
+      atoms.push(...group);
       continue;
     }
-    atoms.push({ ns: '', step: part });
+    atoms.push({ ns: '', step: base, suffix });
     i += 1;
   }
   return atoms;
@@ -1358,28 +1384,29 @@ function joinAtoms(atoms: readonly SeqAtom[]): string {
     const ns = atoms[i]!.ns;
     if (ns === 'shop' || ns === 'evo') {
       const steps = [atoms[i]!.step];
+      let suffix = atoms[i]!.suffix;
       i += 1;
       while (i < atoms.length && atoms[i]!.ns === ns) {
         steps.push(atoms[i]!.step);
+        suffix = atoms[i]!.suffix || suffix;
         i += 1;
       }
-      chunks.push(`${ns}:${steps.join('+')}`);
+      chunks.push(`${ns}:${steps.join('+')}${suffix}`);
       continue;
     }
-    chunks.push(atoms[i]!.step);
+    chunks.push(`${atoms[i]!.step}${atoms[i]!.suffix}`);
     i += 1;
   }
   return chunks.join('+');
 }
 
 function isMinimalEffectiveAction(actionId: string, effectiveIds: Set<string>): boolean {
-  const { base, suffix } = splitVisitSuffix(actionId);
-  const atoms = tokenizeActionId(base);
+  const atoms = tokenizeActionId(actionId);
   if (atoms.length < 2) return true;
   const limit = (1 << atoms.length) - 1;
   for (let mask = 1; mask < limit; mask += 1) {
     const sub = atoms.filter((_, index) => (mask & (1 << index)) !== 0);
-    if (effectiveIds.has(`${joinAtoms(sub)}${suffix}`)) return false;
+    if (effectiveIds.has(joinAtoms(sub))) return false;
   }
   return true;
 }

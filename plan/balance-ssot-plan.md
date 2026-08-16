@@ -61,9 +61,9 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 | 詳細モデルと初期組織状態 | [`src/sim/model/process.ts`](../src/sim/model/process.ts)、[`src/sim/org.ts`](../src/sim/org.ts)、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)のIncident信頼反映 | Coding、Review、Incident、Rework、炎上、コンボ、AI無効時の初期依存度 |
 | タスク生成 | [`src/sim/sprint.ts`](../src/sim/sprint.ts)、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)の粗粒度補正 | タスク種別重み、高価値率、粗粒度側の定型タスク比 |
 | カード実行ルール | [`src/sim/cards.ts`](../src/sim/cards.ts)、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)のドラフト呼び出し | 手札枚数、強化倍率、集中力下限、候補数、優先ドラフト重み、効果境界 |
-| メンバー | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts)、[`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts)のロスター生成、[`tests/playtest/harness.ts`](../tests/playtest/harness.ts) | 能力倍率、スタミナ、休職・復職、採用、共有人数上限、プレイテスト方針 |
+| メンバー | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts)、[`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts)のロスター生成、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)の再編離脱、[`tests/playtest/harness.ts`](../tests/playtest/harness.ts) | 能力倍率、スタミナ、休職・復職、採用、共有人数上限、最低稼働人数、プレイテスト方針 |
 | 介入 | [`src/data/actions.ts`](../src/data/actions.ts)、[`src/sim/actions.ts`](../src/sim/actions.ts) | 集中力コスト、クールダウン、ゲージ量、効果量、副作用、持続tick |
-| ラン進行 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) | スプリント数、イベント率、休息、ショップ |
+| ラン進行 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts)、[`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts)のインフラ課金 | スプリント数、イベント率、休息、ショップ、インフラ費用・最低課金額 |
 | KPI・勝敗・診断 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts)、[`src/sim/diagnosis.ts`](../src/sim/diagnosis.ts)、`src/render/`の結果説明・HUD、[`tests/playtest/harness.ts`](../tests/playtest/harness.ts) | 目標、評価閾値、即時敗北条件、勝利種別へ影響する診断閾値、表示・方針側の同値参照 |
 | 粗粒度モデル | [`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts) | 出荷、行列、Incident、状態ドリフト |
 | ペーシング | [`src/sim/run/sprintBaselineBuild.ts`](../src/sim/run/sprintBaselineBuild.ts)、[`src/sim/run/engine.ts`](../src/sim/run/engine.ts)、[`src/ui/sprintTempo.ts`](../src/ui/sprintTempo.ts)、[`src/ui/useRun.ts`](../src/ui/useRun.ts)、[`scripts/playtest-report.mjs`](../scripts/playtest-report.mjs) | タスク床、tick境界、スプリント間回復率、UI・sim共通固定ステップ、tick換算、目標プレイ時間、レポート入力 |

@@ -291,4 +291,69 @@ describe('危険域判定（RI-101）', () => {
     for (const team of internals.teams) team.aiDependency = 0;
     expect(activeDangerReasons(engine)).toContain('budgetExhausted');
   });
+
+  it('次回インフラ課金は開始時の依存度ドリフト後で見積もる', () => {
+    const engine = new RunEngine({
+      seed: 'ri-101-infra-drift',
+      difficulty: 'normal',
+      trials: ['frontier-dependency'],
+    });
+    engine.startRun('normal', ['frontier-dependency'], 'ri-101-infra-drift');
+    engine.beginSetupSprint();
+    engine.step(200);
+    const internals = engine as unknown as {
+      budget: number;
+      sprintIndexInQuarter: number;
+      sprintsPerQuarter: number;
+      org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
+    };
+    internals.budget = 31;
+    internals.sprintIndexInQuarter = internals.sprintsPerQuarter - 1;
+    internals.org.aiDependency = 57;
+    for (const team of internals.teams) team.aiDependency = 57;
+    expect(activeDangerReasons(engine)).toContain('budgetExhausted');
+  });
+
+  it('スプリント外のKPIは選択中ではなく全社組織値で判定する', () => {
+    const engine = startedSprint('ri-101-kpi-company-org');
+    engine.step(200);
+    const internals = engine as unknown as {
+      phase: string;
+      activeTeamId: string;
+      budget: number;
+      stakeholderTrust: { management: number; customers: number; team: number };
+      org: { quality: number; techDebt: number; morale: number; seniorHp: number };
+      teams: Array<{ id: string; quality: number; techDebt: number }>;
+      quarterTotals: {
+        delivered: number;
+        incidents: number;
+        completed: number;
+        aiAssisted: number;
+      };
+    };
+    internals.budget = 40;
+    internals.stakeholderTrust = { management: 40, customers: 40, team: 40 };
+    internals.org.quality = 80;
+    internals.org.techDebt = 20;
+    internals.org.morale = 80;
+    internals.org.seniorHp = 80;
+    const others = internals.teams.filter((team) => team.id !== internals.activeTeamId);
+    expect(others.length).toBeGreaterThan(0);
+    for (const team of internals.teams) {
+      if (team.id === internals.activeTeamId) {
+        team.quality = 80;
+        team.techDebt = 20;
+        continue;
+      }
+      team.quality = 0;
+      team.techDebt = 100;
+    }
+    internals.quarterTotals.delivered = 0;
+    internals.quarterTotals.incidents = 99;
+    internals.quarterTotals.completed = 10;
+    internals.quarterTotals.aiAssisted = 0;
+    internals.phase = 'draft';
+    expect(activeDangerReasons(engine)).toContain('kpiMissed');
+  });
 });

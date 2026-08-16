@@ -5,6 +5,7 @@
  */
 import { ALL_ACTION_IDS, canApplyAction } from '../actions';
 import { assignableTasks } from '../assignTask';
+import { clamp } from '../clamp';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import { companyOrgFromTeams } from '../orgscale';
 import type { ActionId } from '../types';
@@ -83,7 +84,7 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
   const nextBudget = budgetAfterNextInfraCharge(s);
   if (s.budget <= 15 || nextBudget <= 15) out.push('budgetExhausted');
-  const kpiOrg = liveKpi?.org ?? s.org;
+  const kpiOrg = liveKpi?.org ?? companyOrgFromTeams(s.teams, s.org);
   const kpiTotals = liveKpi?.totals ?? s.quarterTotals;
   const kpiMissCount = measureGoalProgress({
     goal: s.quarterGoal,
@@ -141,9 +142,13 @@ function budgetAfterNextInfraCharge(s: RunState): number {
     fold.frontierModelCostPerDependency,
   );
   if (rate === null) return s.budget;
+  const driftedActive = clamp(s.org.aiDependency + fold.aiDependencyDriftPerSprint, 0, 100);
   const teamsForBilling = s.teams.map((team) =>
-    team.id === s.activeTeamId ? { ...team, aiDependency: s.org.aiDependency } : team,
+    team.id === s.activeTeamId ? { ...team, aiDependency: driftedActive } : team,
   );
-  const companyDep = companyOrgFromTeams(teamsForBilling, s.org).aiDependency;
+  const companyDep = companyOrgFromTeams(teamsForBilling, {
+    ...s.org,
+    aiDependency: driftedActive,
+  }).aiDependency;
   return Math.max(0, s.budget - computeInfraCost(companyDep, rate, fold.effects.infraCostMul));
 }

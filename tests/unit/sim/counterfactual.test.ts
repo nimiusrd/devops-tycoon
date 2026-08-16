@@ -563,6 +563,49 @@ describe('RI-101 分岐評価と上限', () => {
     expect(hire.map((choice) => choice.id)).toEqual(['recruit:hire']);
   });
 
+  it('即時敗北するショップ採用は配置別に分岐しない', () => {
+    const engine = startedSprint('ri-101-shop-recruit-lose');
+    const internals = engine as unknown as {
+      phase: string;
+      budget: number;
+      shop: {
+        cards: { defId: string; cost: number; bought: boolean }[];
+        recruit?: { cost: number; bought: boolean };
+      };
+    };
+    internals.phase = 'shop';
+    internals.budget = 25;
+    internals.shop = {
+      cards: [{ defId: 'copilot', cost: 5, bought: false }],
+      recruit: { cost: 25, bought: false },
+    };
+    const shop = listStrategicChoices(engine.exportCounterfactualFrame()!, 1).filter((choice) =>
+      choice.id.startsWith('shop:'),
+    );
+    expect(shop.some((choice) => choice.id === 'shop:recruit')).toBe(true);
+    expect(shop.some((choice) => choice.id.startsWith('shop:recruit:'))).toBe(false);
+    expect(shop.some((choice) => choice.id.includes('recruit+'))).toBe(false);
+  });
+
+  it('即時敗北する介入の敗北時刻は適用前の進行を使う', () => {
+    const engine = startedSprint('ri-101-lever-lose-tick');
+    engine.step(200);
+    const internals = engine as unknown as { budget: number };
+    internals.budget = 5;
+    const snap = engine.snapshot();
+    const expected = snap.sprintsPlayed * 1_000_000 + 1 * 10_000 + snap.sprintTick;
+    const evaluation = evaluateCounterfactual(engine.exportCounterfactualFrame()!, {
+      includeStrategic: false,
+      maxSprints: 1,
+      maxActionBranches: 96,
+    });
+    const lost = evaluation.branches.filter(
+      (item) => item.status === 'lost' && item.loseReason === 'budgetExhausted',
+    );
+    expect(lost.length).toBeGreaterThan(0);
+    expect(lost.every((item) => item.loseTick === expected)).toBe(true);
+  });
+
   it('ビートで付与されたカードは後続スプリントで発動する', () => {
     const engine = startedSprint('ri-101-beat-grant');
     const internals = engine as unknown as {
@@ -863,6 +906,40 @@ describe('RI-101 分岐評価と上限', () => {
       maxStrategicBranches: 192,
     });
     expect(evaluation.idlePinnedIds).toContain('shop:skip');
+  });
+
+  it('ショップで買ったカードは後続探索でも次スプリントで発動する', () => {
+    const engine = startedSprint('ri-101-shop-play-later');
+    const internals = engine as unknown as {
+      phase: string;
+      budget: number;
+      deck: { defId: string; level: number }[];
+      shop: {
+        cards: { defId: string; cost: number; bought: boolean }[];
+      };
+    };
+    internals.deck = [];
+    internals.phase = 'shop';
+    internals.budget = 20;
+    internals.shop = {
+      cards: [{ defId: 'copilot', cost: 5, bought: false }],
+    };
+    const frame = engine.exportCounterfactualFrame()!;
+    expect(listStrategicChoices(frame, 2).some((choice) => choice.id === 'shop:card:copilot')).toBe(
+      true,
+    );
+    const spy = vi.spyOn(RunEngine.prototype, 'playCard');
+    try {
+      evaluateCounterfactual(frame, {
+        actions: [],
+        includeStrategic: true,
+        maxSprints: 2,
+        maxStrategicBranches: 8,
+      });
+      expect(spy).toHaveBeenCalledWith(0);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 

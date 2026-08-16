@@ -12,6 +12,7 @@ import { canApplyAction } from '../actions';
 import { assignableTasks, splitPrCandidates } from '../assignTask';
 import { playCost } from '../cards';
 import { canRecruit, RECRUIT_COST, type LaneAssignment } from '../member';
+import { evaluateLose } from '../outcome';
 import { isAwaitingMinCompleteTick } from '../sprint';
 import type { ActionId, ActionTarget, SprintState } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
@@ -119,7 +120,7 @@ interface SprintChoice {
 type ShopStep =
   | { mode: 'card'; defId: string }
   | { mode: 'relic' }
-  | { mode: 'recruit'; assignment: LaneAssignment };
+  | { mode: 'recruit'; assignment?: LaneAssignment };
 
 type StrategicOverride =
   | { kind: 'draft'; cardId?: string; mulligan?: boolean; skip?: boolean }
@@ -535,7 +536,7 @@ function applyStrategicOverride(
           else if (step.mode === 'relic') engine.buyShopRelic();
           else {
             engine.buyShopRecruit();
-            assignHiredMember(engine, beforeIds, step.assignment);
+            if (step.assignment) assignHiredMember(engine, beforeIds, step.assignment);
           }
         }
       }
@@ -613,7 +614,7 @@ function canMulliganDraft(snapshot: RunState): boolean {
 function shopStepId(step: ShopStep, relicId?: string): string {
   if (step.mode === 'card') return `card:${step.defId}`;
   if (step.mode === 'relic') return relicId ? `relic:${relicId}` : 'relic';
-  return `recruit:${step.assignment}`;
+  return step.assignment ? `recruit:${step.assignment}` : 'recruit';
 }
 
 function listShopChoices(snapshot: RunState): StrategicChoice[] {
@@ -658,8 +659,13 @@ function listShopChoices(snapshot: RunState): StrategicChoice[] {
       canHire &&
       cur.budget >= shop.recruit.cost
     ) {
-      for (const assignment of RECRUIT_LANES) {
-        options.push({ mode: 'recruit', assignment });
+      const afterHireBudget = cur.budget - shop.recruit.cost;
+      if (evaluateLose(snapshot.org, snapshot.totals, afterHireBudget)) {
+        options.push({ mode: 'recruit' });
+      } else {
+        for (const assignment of RECRUIT_LANES) {
+          options.push({ mode: 'recruit', assignment });
+        }
       }
     }
     for (const step of options) {
@@ -690,6 +696,7 @@ function listShopChoices(snapshot: RunState): StrategicChoice[] {
       } else if (step.mode === 'recruit' && shop.recruit) {
         next.budget -= shop.recruit.cost;
         next.recruitBought = true;
+        if (evaluateLose(snapshot.org, snapshot.totals, next.budget)) continue;
       }
       queue.push(next);
     }
@@ -1019,6 +1026,7 @@ function collectFollowupChoices(
 export function listStrategicChoices(
   frame: CounterfactualFrame,
   maxSprints: number,
+  playAcquiredCards: readonly number[] = [],
 ): StrategicChoice[] {
   const engine = restoreCounterfactualEngine(frame);
   const startPlayed = engine.snapshot().sprintsPlayed;
@@ -1030,7 +1038,7 @@ export function listStrategicChoices(
     const snapshot = engine.snapshot();
     if (snapshot.phase === 'setup' && snapshot.sprintsPlayed - startPlayed >= maxSprints) break;
     found.push(...collectStrategicAt(engine, snapshot, seen));
-    if (!applyIdleStep(engine, snapshot)) break;
+    if (!applyIdleStep(engine, snapshot, playAcquiredCards)) break;
   }
   const rank = new Map(STRATEGIC_KIND_ORDER.map((kind, i) => [kind, i]));
   return found.sort(
@@ -1189,7 +1197,21 @@ function runActionSequence(
   focusReason?: DangerLoseReason,
 ): CounterfactualBranchResult {
   const engine = restoreCounterfactualEngine(frame);
+  const startPlayed = engine.snapshot().sprintsPlayed;
+  const progressBefore = loseProgress(engine.snapshot());
   for (const choice of choices) applySprintChoice(engine, choice);
+  const after = engine.snapshot();
+  if (after.status === 'lost') {
+    return {
+      actionId: choices.map((choice) => choice.id).join('+'),
+      sprintsToLose: after.sprintsPlayed - startPlayed,
+      loseTick: progressBefore,
+      leftDanger: originDangersLeft(originDangers, engine, focusReason),
+      loseReason: after.loseReason ?? null,
+      status: after.status,
+      truncated: false,
+    };
+  }
   return {
     actionId: choices.map((choice) => choice.id).join('+'),
     ...drive(engine, originDangers, maxSprints, focusReason),
@@ -1243,6 +1265,7 @@ function laterAfterOverride(
 ): StrategicChoice[] {
   const engine = restoreCounterfactualEngine(frame);
   const startPlayed = engine.snapshot().sprintsPlayed;
+  const playAcquiredCards: number[] = [];
   let kindHits = 0;
   let applied = false;
   let followApplied = choice.followup == null;
@@ -1254,6 +1277,7 @@ function laterAfterOverride(
     if (!applied && phaseMatchesOverride(s, choice.override)) {
       if (kindHits === (choice.visit ?? 0) && applyStrategicOverride(engine, s, choice.override)) {
         applied = true;
+        recordAcquiredCards(engine, s, choice.override, playAcquiredCards);
         continue;
       }
       kindHits += 1;
@@ -1261,14 +1285,15 @@ function laterAfterOverride(
     if (applied && !followApplied && choice.followup && phaseMatchesOverride(s, choice.followup)) {
       if (applyStrategicOverride(engine, s, choice.followup)) {
         followApplied = true;
+        recordAcquiredCards(engine, s, choice.followup, playAcquiredCards);
         continue;
       }
     }
     if (applied && followApplied) {
       const after = engine.exportCounterfactualFrame();
-      return after ? listStrategicChoices(after, maxSprints) : [];
+      return after ? listStrategicChoices(after, maxSprints, playAcquiredCards) : [];
     }
-    if (!applyIdleStep(engine, s)) break;
+    if (!applyIdleStep(engine, s, playAcquiredCards)) break;
   }
   return [];
 }

@@ -265,7 +265,7 @@ describe('RI-101 分岐評価と上限', () => {
     const evaluation = evaluateCounterfactual(frame, {
       includeStrategic: false,
       maxSprints: 1,
-      maxActionBranches: 48,
+      maxActionBranches: 96,
     });
     if (evaluation.applicableActions.includes('assignTask')) {
       expect(
@@ -286,6 +286,47 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('lever:'))).toBe(
       true,
     );
+  });
+
+  it('入り込み拘束中でなければ非アクティブチームのレバーも分岐する', () => {
+    const engine = startedSprint('ri-101-other-team-lever');
+    engine.step(200);
+    const snap = engine.snapshot();
+    expect(snap.sprintsPlayed >= snap.teamLockUntilSprint).toBe(true);
+    const other = snap.teams.find((team) => team.id !== snap.activeTeamId);
+    expect(other).toBeDefined();
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, {
+      includeStrategic: false,
+      maxSprints: 1,
+      maxActionBranches: 96,
+    });
+    expect(
+      evaluation.branches.some(
+        (branch) => (branch.actionId ?? '') === `lever:teamReviewHelp:${other!.id}`,
+      ),
+    ).toBe(true);
+  });
+
+  it('進化フェーズは依存ノードの連続解放列も分岐する', () => {
+    const engine = startedSprint('ri-101-evo-chain');
+    const internals = engine as unknown as {
+      phase: string;
+      evolution: { points: number; unlocked: Record<string, boolean> };
+    };
+    internals.phase = 'evolution';
+    internals.evolution = { points: 4, unlocked: {} };
+    const frame = engine.exportCounterfactualFrame()!;
+    const evo = listStrategicChoices(frame, 1).filter((choice) => choice.id.startsWith('evo:'));
+    expect(evo.some((choice) => choice.id === 'evo:dev-1')).toBe(true);
+    expect(evo.some((choice) => choice.id === 'evo:dev-1+dev-2')).toBe(true);
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: [],
+      includeStrategic: true,
+      maxSprints: 1,
+      maxStrategicBranches: 48,
+    });
+    expect(evaluation.branches.some((branch) => branch.actionId === 'evo:dev-1+dev-2')).toBe(true);
   });
 });
 

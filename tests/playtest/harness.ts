@@ -2357,8 +2357,8 @@ export function runOnce(
             counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!,
             {
               focusReason: f.loseReason as DangerLoseReason,
-              maxActionBranches: 48,
-              maxStrategicBranches: 48,
+              maxActionBranches: 96,
+              maxStrategicBranches: 96,
             },
           );
           if (!selected) return {};

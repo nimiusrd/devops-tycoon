@@ -16,7 +16,7 @@ import { isAwaitingMinCompleteTick } from '../sprint';
 import type { ActionId, ActionTarget, SprintState } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
 import { RunEngine, DRAFT_MULLIGAN_COST } from './engine';
-import { unlockableNodes } from './evolution';
+import { unlockableNodes, unlockNode } from './evolution';
 import type { CounterfactualFrame } from './persist';
 import type { GoalAdjustmentId, LoseReason, RunStatus, RunState } from './types';
 
@@ -108,7 +108,7 @@ interface SprintChoice {
 
 type StrategicOverride =
   | { kind: 'draft'; cardId: string; mulligan?: boolean }
-  | { kind: 'evolution'; nodeId: string }
+  | { kind: 'evolution'; nodeIds: string[] }
   | { kind: 'beat'; index: number }
   | { kind: 'rest'; option: RestChoice; deckIndex?: number }
   | { kind: 'shop'; mode: 'card'; defId: string }
@@ -219,11 +219,28 @@ function listSprintChoices(engine: RunEngine): SprintChoice[] {
   return out;
 }
 
+function operableTeamsForLevers(s: RunState): RunState['teams'] {
+  const locked = s.sprintsPlayed < s.teamLockUntilSprint;
+  const preferred = [s.activeTeamId, s.zoom.teamId].filter((id): id is string => !!id);
+  return s.teams
+    .filter((team) => !locked || team.id === s.activeTeamId)
+    .slice()
+    .sort((a, b) => {
+      const ap = preferred.indexOf(a.id);
+      const bp = preferred.indexOf(b.id);
+      const aRank = ap === -1 ? preferred.length : ap;
+      const bRank = bp === -1 ? preferred.length : bp;
+      if (aRank !== bRank) return aRank - bRank;
+      return b.reviewQueue - a.reviewQueue || a.id.localeCompare(b.id);
+    });
+}
+
 function listOrgLeverChoices(engine: RunEngine): SprintChoice[] {
   const s = engine.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || isAwaitingMinCompleteTick(s.sprint)) return [];
   const out: SprintChoice[] = [];
   const depts = [...new Set(s.teams.map((team) => team.deptId).filter(Boolean))];
+  const teams = operableTeamsForLevers(s);
   for (const def of LEVER_DEFS) {
     if (s.budget < def.cost) continue;
     if (def.scope === 'company') {
@@ -241,8 +258,7 @@ function listOrgLeverChoices(engine: RunEngine): SprintChoice[] {
       }
       continue;
     }
-    for (const team of s.teams) {
-      if (team.id !== s.activeTeamId) continue;
+    for (const team of teams) {
       out.push({
         id: `lever:${def.id}:${team.id}`,
         actionId: null,
@@ -346,7 +362,7 @@ function applyStrategicOverride(
       return true;
     case 'evolution':
       if (snapshot.phase !== 'evolution') return false;
-      engine.unlockEvolution(override.nodeId);
+      for (const nodeId of override.nodeIds) engine.unlockEvolution(nodeId);
       engine.finishEvolution();
       return true;
     case 'beat':
@@ -429,6 +445,29 @@ function collectDraftMulligan(engine: RunEngine): StrategicChoice[] {
   }));
 }
 
+/** 同一進化フェーズで連続解放できる到達集合。順序は解放可能なトポロジ順。 */
+function listEvolutionChoices(evolution: RunState['evolution']): StrategicChoice[] {
+  const out: StrategicChoice[] = [];
+  const seenSets = new Set<string>();
+  const queue: { evo: RunState['evolution']; path: string[] }[] = [{ evo: evolution, path: [] }];
+  while (queue.length > 0) {
+    const { evo, path } = queue.shift()!;
+    for (const id of unlockableNodes(evo)) {
+      const nextPath = [...path, id];
+      const setKey = [...nextPath].sort().join('\0');
+      if (seenSets.has(setKey)) continue;
+      seenSets.add(setKey);
+      out.push({
+        id: `evo:${nextPath.join('+')}`,
+        kind: 'evolution',
+        override: { kind: 'evolution', nodeIds: nextPath },
+      });
+      queue.push({ evo: unlockNode(evo, id), path: nextPath });
+    }
+  }
+  return out;
+}
+
 function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicChoice[] {
   if (
     snapshot.phase === 'draft' &&
@@ -445,11 +484,7 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
   }
   if (snapshot.phase === 'evolution' && !seen.has('evolution')) {
     seen.add('evolution');
-    return unlockableNodes(snapshot.evolution).map((nodeId) => ({
-      id: `evo:${nodeId}`,
-      kind: 'evolution' as const,
-      override: { kind: 'evolution' as const, nodeId },
-    }));
+    return listEvolutionChoices(snapshot.evolution);
   }
   if (snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision' && !seen.has('beat')) {
     seen.add('beat');

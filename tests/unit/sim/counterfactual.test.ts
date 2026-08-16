@@ -28,6 +28,7 @@ function branch(
 ): CounterfactualBranchResult {
   return {
     sprintsToLose: 3,
+    loseTick: 0,
     leftDanger: false,
     loseReason: 'seniorBurnout',
     status: 'lost',
@@ -511,6 +512,34 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.branches.some((branch) => branch.actionId === 'recruit:skip')).toBe(true);
   });
 
+  it('ドラフト見送りも強制選択として分岐し idlePinnedIds に残す', () => {
+    const engine = startedSprint('ri-101-draft-skip');
+    const internals = engine as unknown as { phase: string; draft: string[] | null };
+    internals.phase = 'draft';
+    internals.draft = ['copilot', 'pair-review'];
+    const frame = engine.exportCounterfactualFrame()!;
+    expect(listStrategicChoices(frame, 1).some((choice) => choice.id === 'draft:skip')).toBe(true);
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: [],
+      includeStrategic: true,
+      maxSprints: 1,
+      maxStrategicBranches: 192,
+    });
+    expect(evaluation.idlePinnedIds).toContain('draft:skip');
+    expect(evaluation.branches.some((branch) => branch.actionId === 'draft:skip')).toBe(true);
+  });
+
+  it('採用で即時敗北する盤面では配置接尾辞のない単一分岐にする', () => {
+    const engine = startedSprint('ri-101-recruit-hire-lose');
+    const internals = engine as unknown as { phase: string; budget: number };
+    internals.phase = 'recruit';
+    internals.budget = 25;
+    const hire = listStrategicChoices(engine.exportCounterfactualFrame()!, 1).filter((choice) =>
+      choice.id.startsWith('recruit:hire'),
+    );
+    expect(hire.map((choice) => choice.id)).toEqual(['recruit:hire']);
+  });
+
   it('ビートで付与されたカードは後続スプリントで発動する', () => {
     const engine = startedSprint('ri-101-beat-grant');
     const internals = engine as unknown as {
@@ -684,6 +713,7 @@ describe('RI-101 分岐評価と上限', () => {
     const frame = engine.exportCounterfactualFrame()!;
     const recovered = {
       sprintsToLose: null as number | null,
+      loseTick: null as number | null,
       leftDanger: true,
       loseReason: null as null,
       status: 'playing' as const,
@@ -701,6 +731,7 @@ describe('RI-101 分岐評価と上限', () => {
         {
           actionId: 'beat:shop-offer:0',
           sprintsToLose: 1,
+          loseTick: 0,
           leftDanger: false,
           loseReason: 'seniorBurnout' as const,
           status: 'lost' as const,
@@ -866,6 +897,37 @@ describe('RI-101 集計規則', () => {
     ).toBe(false);
   });
 
+  it('同一スプリント内で tick が早い敗北は敗因変化でも無効', () => {
+    const sameSprint = branch({
+      actionId: null,
+      sprintsToLose: 0,
+      loseTick: 8,
+      loseReason: 'reviewFreeze',
+    });
+    expect(
+      isEffectiveChoice(
+        sameSprint,
+        branch({
+          actionId: 'overtime',
+          sprintsToLose: 0,
+          loseTick: 1,
+          loseReason: 'budgetExhausted',
+        }),
+      ),
+    ).toBe(false);
+    expect(
+      isEffectiveChoice(
+        sameSprint,
+        branch({
+          actionId: 'andon',
+          sprintsToLose: 0,
+          loseTick: 8,
+          loseReason: 'budgetExhausted',
+        }),
+      ),
+    ).toBe(true);
+  });
+
   it('F-8 は有効手が残る最後の時点だけを見る', () => {
     const judgment = judgeF8Recovery(
       [
@@ -944,14 +1006,20 @@ describe('RI-101 集計規則', () => {
     expect(
       selected!.evaluation.skippedActions.length + selected!.evaluation.skippedStrategic.length,
     ).toBeGreaterThan(0);
-    if (selected!.effective.length > 0) {
-      expect(selected!.evaluation.origin).toEqual(
-        evaluateCounterfactual(older, {
-          maxActionBranches: 0,
-          includeStrategic: true,
-          maxSprints: 1,
-        }).origin,
-      );
+    const olderOrigin = evaluateCounterfactual(older, {
+      maxActionBranches: 0,
+      includeStrategic: true,
+      maxSprints: 1,
+    }).origin;
+    const newerOrigin = evaluateCounterfactual(newer, {
+      maxActionBranches: 0,
+      includeStrategic: true,
+      maxSprints: 1,
+    }).origin;
+    if (selected!.baselineRecovered) {
+      expect(selected!.evaluation.origin).toEqual(newerOrigin);
+    } else if (selected!.effective.length > 0) {
+      expect(selected!.evaluation.origin).toEqual(olderOrigin);
     }
   });
 
@@ -1185,6 +1253,7 @@ describe('RI-101 合成危険状態', () => {
     const frame = engine.exportCounterfactualFrame()!;
     const recovered = {
       sprintsToLose: null as number | null,
+      loseTick: null as number | null,
       leftDanger: true,
       loseReason: null as null,
       status: 'playing' as const,
@@ -1199,6 +1268,7 @@ describe('RI-101 合成危険状態', () => {
         {
           actionId: 'recruit:hire:coding',
           sprintsToLose: 1,
+          loseTick: 0,
           leftDanger: false,
           loseReason: 'budgetExhausted' as const,
           status: 'lost' as const,

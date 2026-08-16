@@ -111,7 +111,7 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
     out.push('incidentCascade');
   if (s.currentSprintKind === 'boss') out.push('bossFailed');
   if (
-    (minTrust <= 20 && s.quarterNumber >= 2) ||
+    (minTrust <= 20 && kpiMissCount >= 2) ||
     (s.quarterNumber >= 2 && lateInQuarter && kpiMissCount >= 3)
   )
     out.push('reorgRequired');

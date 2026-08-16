@@ -59,6 +59,8 @@ export interface CounterfactualBranchResult {
    */
   actionId: string | null;
   sprintsToLose: number | null;
+  /** 同一スプリント内の敗北順序。早い敗北は有効手にしない。 */
+  loseTick: number | null;
   leftDanger: boolean;
   loseReason: LoseReason | null;
   status: RunStatus;
@@ -120,7 +122,7 @@ type ShopStep =
   | { mode: 'recruit'; assignment: LaneAssignment };
 
 type StrategicOverride =
-  | { kind: 'draft'; cardId: string; mulligan?: boolean }
+  | { kind: 'draft'; cardId?: string; mulligan?: boolean; skip?: boolean }
   | { kind: 'evolution'; nodeIds: string[] }
   | { kind: 'beat'; index: number; assignment?: LaneAssignment }
   | { kind: 'rest'; option: RestChoice; deckIndex?: number; assignment?: LaneAssignment }
@@ -334,8 +336,17 @@ function assignHiredMember(
   beforeIds: ReadonlySet<string>,
   assignment: LaneAssignment,
 ): void {
+  if (engine.snapshot().status !== 'playing') return;
   const hired = engine.snapshot().roster.members.find((member) => !beforeIds.has(member.id));
   if (hired) engine.assignMember(hired.id, assignment);
+}
+
+function canPlaceAfterHire(engine: RunEngine, hire: (fork: RunEngine) => void): boolean {
+  const frame = engine.exportCounterfactualFrame();
+  if (!frame) return false;
+  const fork = restoreCounterfactualEngine(frame);
+  hire(fork);
+  return fork.snapshot().status === 'playing';
 }
 
 function visitKey(kind: string, snapshot: RunState): string {
@@ -443,6 +454,7 @@ function idlePinnedId(snapshot: RunState): string | null {
     const n = getEvent(snapshot.beat.eventId)?.choices.length ?? 1;
     return `beat:${snapshot.beat.eventId}:${Math.max(0, n - 1)}`;
   }
+  if (snapshot.phase === 'draft' && (snapshot.draft?.length ?? 0) > 0) return 'draft:skip';
   if (snapshot.phase === 'rest') return 'rest:repay';
   if (snapshot.phase === 'quarterReview') {
     const review = snapshot.quarterReview;
@@ -479,6 +491,11 @@ function applyStrategicOverride(
   switch (override.kind) {
     case 'draft':
       if (snapshot.phase !== 'draft') return false;
+      if (override.skip) {
+        engine.skipDraft();
+        return true;
+      }
+      if (!override.cardId) return false;
       if (override.mulligan) engine.mulliganDraft();
       engine.chooseCard(override.cardId);
       return true;
@@ -526,11 +543,10 @@ function applyStrategicOverride(
         engine.recruitChoose('skip');
         return true;
       }
-      if (!override.assignment) return false;
       {
         const beforeIds = memberIdsOf(snapshot);
         engine.recruitChoose('hire');
-        assignHiredMember(engine, beforeIds, override.assignment);
+        if (override.assignment) assignHiredMember(engine, beforeIds, override.assignment);
       }
       return true;
     case 'goal':
@@ -743,6 +759,11 @@ function collectStrategicAt(
       kind: 'draft' as const,
       override: { kind: 'draft' as const, cardId },
     }));
+    out.push({
+      id: 'draft:skip',
+      kind: 'draft',
+      override: { kind: 'draft', skip: true },
+    });
     if (canMulliganDraft(snapshot)) out.push(...collectDraftMulligan(engine));
     return withVisit(out, nth);
   }
@@ -761,11 +782,20 @@ function collectStrategicAt(
     for (let index = 0; index < n; index += 1) {
       if (event?.choices[index]?.outcome.grantRecruit) {
         if (canRecruit(snapshot.roster) && snapshot.budget >= RECRUIT_COST) {
-          for (const assignment of RECRUIT_LANES) {
+          const canPlace = canPlaceAfterHire(engine, (fork) => fork.resolveBeat(index));
+          if (canPlace) {
+            for (const assignment of RECRUIT_LANES) {
+              out.push({
+                id: `beat:${eventId}:${index}:${assignment}`,
+                kind: 'beat',
+                override: { kind: 'beat', index, assignment },
+              });
+            }
+          } else {
             out.push({
-              id: `beat:${eventId}:${index}:${assignment}`,
+              id: `beat:${eventId}:${index}`,
               kind: 'beat',
-              override: { kind: 'beat', index, assignment },
+              override: { kind: 'beat', index },
             });
           }
         } else {
@@ -802,11 +832,19 @@ function collectStrategicAt(
       override: { kind: 'rest' as const, option },
     }));
     if (canRecruit(snapshot.roster) && snapshot.budget >= RECRUIT_COST) {
-      for (const assignment of RECRUIT_LANES) {
+      if (canPlaceAfterHire(engine, (fork) => fork.restChoose('recruit'))) {
+        for (const assignment of RECRUIT_LANES) {
+          out.push({
+            id: `rest:recruit:${assignment}`,
+            kind: 'rest',
+            override: { kind: 'rest', option: 'recruit', assignment },
+          });
+        }
+      } else {
         out.push({
-          id: `rest:recruit:${assignment}`,
+          id: 'rest:recruit',
           kind: 'rest',
-          override: { kind: 'rest', option: 'recruit', assignment },
+          override: { kind: 'rest', option: 'recruit' },
         });
       }
     }
@@ -828,17 +866,26 @@ function collectStrategicAt(
   if (snapshot.phase === 'recruit') {
     const nth = beginVisit(seen, 'recruit', snapshot);
     if (nth == null) return [];
+    const hires = canPlaceAfterHire(engine, (fork) => fork.recruitChoose('hire'))
+      ? RECRUIT_LANES.map((assignment) => ({
+          id: `recruit:hire:${assignment}`,
+          kind: 'recruit' as const,
+          override: { kind: 'recruit' as const, assignment },
+        }))
+      : [
+          {
+            id: 'recruit:hire',
+            kind: 'recruit' as const,
+            override: { kind: 'recruit' as const },
+          },
+        ];
     const out: StrategicChoice[] = [
       {
         id: 'recruit:skip',
         kind: 'recruit',
         override: { kind: 'recruit', skip: true },
       },
-      ...RECRUIT_LANES.map((assignment) => ({
-        id: `recruit:hire:${assignment}`,
-        kind: 'recruit' as const,
-        override: { kind: 'recruit' as const, assignment },
-      })),
+      ...hires,
     ];
     return withVisit(out, nth);
   }
@@ -994,6 +1041,7 @@ function drive(
       if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
       return {
         sprintsToLose: null,
+        loseTick: null,
         leftDanger,
         loseReason: null,
         status: s.status,
@@ -1028,6 +1076,7 @@ function drive(
     if (!applyIdleStep(engine, s, playAcquiredCards)) {
       return {
         sprintsToLose: null,
+        loseTick: null,
         leftDanger,
         loseReason: engine.snapshot().loseReason ?? null,
         status: engine.snapshot().status,
@@ -1039,6 +1088,7 @@ function drive(
   if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
   return {
     sprintsToLose: end.status === 'lost' ? end.sprintsPlayed - startPlayed : null,
+    loseTick: end.status === 'lost' ? (end.sprintTick ?? 0) : null,
     leftDanger,
     loseReason: end.loseReason ?? null,
     status: end.status,
@@ -1346,7 +1396,10 @@ function loseNotEarlier(
 ): boolean {
   if (branch.sprintsToLose == null) return true;
   if (baseline.sprintsToLose == null) return false;
-  return branch.sprintsToLose >= baseline.sprintsToLose;
+  if (branch.sprintsToLose !== baseline.sprintsToLose) {
+    return branch.sprintsToLose >= baseline.sprintsToLose;
+  }
+  return (branch.loseTick ?? 0) >= (baseline.loseTick ?? 0);
 }
 
 /** ベースラインに対して介入が有効か（F-8 / F-9 共通の集計規則）。 */

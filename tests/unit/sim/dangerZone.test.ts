@@ -137,4 +137,30 @@ describe('危険域判定（RI-101）', () => {
     const reasons = activeDangerReasons(engine).filter((reason) => reason === 'kpiMissed');
     expect(reasons).toHaveLength(1);
   });
+
+  it('第1四半期でも信頼≤20かつ未達≥2なら reorgRequired を含む', () => {
+    const engine = startedSprint('ri-101-q1-reorg');
+    engine.step(200);
+    const internals = engine as unknown as {
+      quarterNumber: number;
+      sprintIndexInQuarter: number;
+      budget: number;
+      stakeholderTrust: { management: number; customers: number; team: number };
+      org: { quality: number; techDebt: number; morale: number; seniorHp: number };
+      totals: { delivered: number; incidents: number; completed: number; aiAssisted: number };
+    };
+    internals.quarterNumber = 1;
+    internals.sprintIndexInQuarter = 0;
+    internals.budget = 40;
+    internals.stakeholderTrust = { management: 20, customers: 40, team: 40 };
+    internals.org.quality = 0;
+    internals.org.techDebt = 100;
+    internals.org.morale = 0;
+    internals.org.seniorHp = 80;
+    internals.totals.delivered = 0;
+    internals.totals.incidents = 99;
+    internals.totals.completed = 10;
+    internals.totals.aiAssisted = 0;
+    expect(activeDangerReasons(engine)).toContain('reorgRequired');
+  });
 });

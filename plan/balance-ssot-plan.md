@@ -60,6 +60,7 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 | --- | --- | --- |
 | 詳細モデル | [`src/sim/model/process.ts`](../src/sim/model/process.ts) | Coding、Review、Incident、Rework、炎上、コンボ |
 | タスク生成 | [`src/sim/sprint.ts`](../src/sim/sprint.ts) | タスク種別重み、高価値率 |
+| カード実行ルール | [`src/sim/cards.ts`](../src/sim/cards.ts) | 手札枚数、強化倍率、集中力下限、優先ドラフト重み、効果境界 |
 | メンバー | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts) | 能力倍率、スタミナ、休職、採用 |
 | 介入 | [`src/data/actions.ts`](../src/data/actions.ts)、[`src/sim/actions.ts`](../src/sim/actions.ts) | 集中力コスト、クールダウン、ゲージ量、効果量、副作用、持続tick |
 | ラン進行 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) | スプリント数、イベント率、休息、ショップ |
@@ -82,6 +83,7 @@ src/data/balance/
 ├── define.ts
 ├── process.ts
 ├── sprint.ts
+├── cards.ts
 ├── member.ts
 ├── actions.ts
 ├── run.ts
@@ -91,6 +93,8 @@ src/data/balance/
 ├── pacing.ts
 └── index.ts
 ```
+
+`balance/cards.ts`はカード共通実行ルールとして下図の型付きレジストリ経路へ入り、カードID・価格・効果値を持つ既存`src/data/cards.ts`はコンテンツ経路の正本として維持する。
 
 各エントリーは少なくとも次の情報を持つ。
 
@@ -254,17 +258,17 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 - `process.ts`と`sprint.ts`の基本値、係数、上下限を移す。
 - 既存exportは互換用の別名として維持する。
 - 固定seed、単調性、統計レンジが移行前と一致することを確認する。
-- 手書きの確率グラフを生成物へ置き換える。
 
-完了条件: 詳細スプリントの代表式をSSoTから調整でき、移動だけでは結果が変わらない。
+完了条件: 詳細スプリントの代表式をSSoTから調整でき、移動だけでは結果が変わらない。代表確率曲線の置換はRI-123で行い、本フェーズの移行PRには含めない。
 
 ### Phase 3: 周辺領域を移行
 
 - メンバー、介入、ラン進行、KPI、勝敗・診断条件、ペーシング、メタ進行・デイリー条件を領域ごとに移す。
 - 既存の`src/data/`定義をパラメータ一覧へ集約する。
 - 粗粒度モデルの係数を移し、詳細モデルとの方向性を検証する。
+- RI-123で移行済みの値と純粋な計算関数から代表確率曲線を生成し、手書きグラフを置き換える。
 
-完了条件: 調整対象として分類した値に安定ID、単位、説明が付いている。
+完了条件: 調整対象として分類した値に安定ID、単位、説明が付き、代表確率曲線が同じ定義から生成されている。
 
 ### Phase 4: ルールセットを永続化
 

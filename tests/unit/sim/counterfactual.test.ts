@@ -158,7 +158,7 @@ describe('RI-101 分岐評価と上限', () => {
     expect(strategic.length).toBeGreaterThan(0);
     expect(
       strategic.every((choice) =>
-        /^(draft:|evo:|beat:|rest:|shop:|recruit:|goal:)/.test(choice.id),
+        /^(draft:|evo:|beat:|rest:|shop:|recruit:|goal:|setup:)/.test(choice.id),
       ),
     ).toBe(true);
     expect(
@@ -186,7 +186,7 @@ describe('RI-101 分岐評価と上限', () => {
     ).toBe(true);
   });
 
-  it('無介入ドライブはスプリント中に手札を発動してから進める', () => {
+  it('無介入ベースラインは現在の手札を自動発動しない', () => {
     const engine = new RunEngine({ seed: 'ri-101-play-hand', difficulty: 'normal' });
     engine.startRun();
     const internals = engine as unknown as { phase: string; draft: string[] | null };
@@ -211,10 +211,47 @@ describe('RI-101 分岐評価と上限', () => {
       });
       expect(evaluation.baseline.actionId).toBeNull();
       expect(['playing', 'lost', 'won']).toContain(evaluation.baseline.status);
-      expect(spy).toHaveBeenCalledWith(copilotIndex);
+      expect(spy).not.toHaveBeenCalled();
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it('ドラフト取得後の後続スプリントでは手札を発動する', () => {
+    const engine = startedSprint('ri-101-strategy-fork');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const draft = listStrategicChoices(frame, 4).filter((choice) => choice.id.startsWith('draft:'));
+    expect(draft.length).toBeGreaterThan(0);
+    const spy = vi.spyOn(RunEngine.prototype, 'playCard');
+    try {
+      evaluateCounterfactual(frame, {
+        actions: [],
+        includeStrategic: true,
+        maxSprints: 4,
+        maxStrategicBranches: 48,
+      });
+      expect(spy).toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('setup の編成変更を戦略分岐する', () => {
+    const engine = startedSprint('ri-101-setup-fork');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const setup = listStrategicChoices(frame, 4).filter((choice) => choice.id.startsWith('setup:'));
+    expect(setup.some((choice) => choice.id.startsWith('setup:assign:'))).toBe(true);
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: [],
+      includeStrategic: true,
+      maxSprints: 4,
+      maxStrategicBranches: 48,
+    });
+    expect(evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('setup:'))).toBe(
+      true,
+    );
   });
 
   it('assignTask / splitPr は対象ごとに分岐する', () => {
@@ -262,6 +299,12 @@ describe('RI-101 集計規則', () => {
     expect(isEffectiveChoice(baseline, branch({ actionId: 'firefight', leftDanger: true }))).toBe(
       true,
     );
+    expect(
+      isEffectiveChoice(
+        baseline,
+        branch({ actionId: 'interruptReview', leftDanger: true, sprintsToLose: 1 }),
+      ),
+    ).toBe(false);
     expect(
       isEffectiveChoice(
         baseline,

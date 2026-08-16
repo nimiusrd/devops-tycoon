@@ -1127,18 +1127,19 @@ if (cfRuns.length > 0) {
         const gaps = [];
         let emptyEffective = 0;
         let incomplete = 0;
+        let complete = 0;
         for (const r of arr) {
+          if (r.counterfactualIncomplete) {
+            incomplete += 1;
+            continue;
+          }
+          complete += 1;
           const effective = Array.isArray(r.effectiveActionsInDanger)
             ? r.effectiveActionsInDanger
             : [];
-          if (r.counterfactualIncomplete) incomplete += 1;
-          else if (effective.length === 0) emptyEffective += 1;
+          if (effective.length === 0) emptyEffective += 1;
           for (const id of effective) freq.set(id, (freq.get(id) ?? 0) + 1);
-          if (
-            !r.counterfactualIncomplete &&
-            typeof r.sprintsPlayed === 'number' &&
-            r.lastEffectiveActionsAt
-          ) {
+          if (typeof r.sprintsPlayed === 'number' && r.lastEffectiveActionsAt) {
             const midSprintInstantLose =
               r.lostPhase === 'sprint' && r.lostSprintCompleted === false;
             let loseSprints = r.sprintsPlayed;
@@ -1149,7 +1150,7 @@ if (cfRuns.length > 0) {
         const ranked = [...freq.entries()]
           .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
           .map(([id, n]) => `${id}:${n}`);
-        sets.push([...freq.keys()].sort().join(','));
+        if (complete > 0) sets.push([...freq.keys()].sort().join(','));
         const gapNote =
           gaps.length > 0
             ? ` | 回復余地ギャップ p50=${quantile(gaps, 0.5)} (n=${gaps.length})`

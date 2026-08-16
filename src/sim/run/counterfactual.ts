@@ -10,7 +10,7 @@ import { getEvent } from '../../data/events';
 import { canApplyAction } from '../actions';
 import { assignableTasks, splitPrCandidates } from '../assignTask';
 import { playCost } from '../cards';
-import { canRecruit, RECRUIT_COST } from '../member';
+import { canRecruit, RECRUIT_COST, type LaneAssignment } from '../member';
 import { isAwaitingMinCompleteTick } from '../sprint';
 import type { ActionId, ActionTarget, SprintState } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
@@ -34,10 +34,12 @@ const STRATEGIC_KIND_ORDER = [
   'rest',
   'shop',
   'draft',
+  'setup',
   'evolution',
   'goal',
   'recruit',
 ] as const;
+const SETUP_LANES: readonly LaneAssignment[] = ['coding', 'review', 'bench'];
 
 export interface CounterfactualOrigin {
   sprintsPlayed: number;
@@ -109,7 +111,8 @@ type StrategicOverride =
   | { kind: 'shop'; mode: 'relic' }
   | { kind: 'shop'; mode: 'recruit' }
   | { kind: 'recruit' }
-  | { kind: 'goal'; id: GoalAdjustmentId };
+  | { kind: 'goal'; id: GoalAdjustmentId }
+  | { kind: 'setup'; memberId: string; assignment?: LaneAssignment; aiAssigned?: boolean };
 
 export interface StrategicChoice {
   id: string;
@@ -220,21 +223,34 @@ function originDangersLeft(
   return isDangerLeft(origin, activeDangerReasons(engine), focusReason);
 }
 
-function applyIdleStep(engine: RunEngine, snapshot: RunState): boolean {
+function playPlayableHand(engine: RunEngine): void {
+  let snap = engine.snapshot();
+  while (snap.phase === 'sprint' && snap.sprint && snap.status === 'playing') {
+    const playable = snap.sprint.cardPiles.hand.find((deckIndex) =>
+      canPlayHandCard(snap.sprint!, snap.deck, deckIndex),
+    );
+    if (playable == null) break;
+    if (!engine.playCard(playable).ok) break;
+    snap = engine.snapshot();
+  }
+}
+
+function enablesAcquiredHandPlay(override: StrategicOverride): boolean {
+  return (
+    override.kind === 'draft' ||
+    (override.kind === 'shop' && override.mode === 'card') ||
+    (override.kind === 'rest' && override.option === 'upgrade')
+  );
+}
+
+function applyIdleStep(engine: RunEngine, snapshot: RunState, playAcquiredHand = false): boolean {
   switch (snapshot.phase) {
     case 'setup':
       engine.beginSetupSprint();
       return true;
     case 'sprint': {
-      let snap = engine.snapshot();
-      while (snap.phase === 'sprint' && snap.sprint && snap.status === 'playing') {
-        const playable = snap.sprint.cardPiles.hand.find((deckIndex) =>
-          canPlayHandCard(snap.sprint!, snap.deck, deckIndex),
-        );
-        if (playable == null) break;
-        if (!engine.playCard(playable).ok) break;
-        snap = engine.snapshot();
-      }
+      if (playAcquiredHand) playPlayableHand(engine);
+      const snap = engine.snapshot();
       if (snap.phase === 'sprint' && snap.status === 'playing') {
         engine.step(1_000_000);
       }
@@ -314,7 +330,37 @@ function applyStrategicOverride(
       if (snapshot.phase !== 'quarterReview') return false;
       engine.chooseGoalAdjustment(override.id);
       return true;
+    case 'setup':
+      if (snapshot.phase !== 'setup') return false;
+      if (override.assignment) engine.assignMember(override.memberId, override.assignment);
+      if (override.aiAssigned !== undefined)
+        engine.setMemberAi(override.memberId, override.aiAssigned);
+      engine.beginSetupSprint();
+      return true;
   }
+}
+
+function listSetupChoices(snapshot: RunState): StrategicChoice[] {
+  const out: StrategicChoice[] = [];
+  for (const member of snapshot.roster.members) {
+    if (member.onLeave) continue;
+    for (const assignment of SETUP_LANES) {
+      if (assignment === member.assignment) continue;
+      out.push({
+        id: `setup:assign:${member.id}:${assignment}`,
+        kind: 'setup',
+        override: { kind: 'setup', memberId: member.id, assignment },
+      });
+    }
+    if (member.assignment === 'coding') {
+      out.push({
+        id: `setup:ai:${member.id}:${member.aiAssigned ? 'off' : 'on'}`,
+        kind: 'setup',
+        override: { kind: 'setup', memberId: member.id, aiAssigned: !member.aiAssigned },
+      });
+    }
+  }
+  return out;
 }
 
 function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicChoice[] {
@@ -415,6 +461,10 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
       override: { kind: 'goal' as const, id },
     }));
   }
+  if (snapshot.phase === 'setup' && !seen.has('setup')) {
+    seen.add('setup');
+    return listSetupChoices(snapshot);
+  }
   return [];
 }
 
@@ -454,6 +504,7 @@ function drive(
   const startPlayed = engine.snapshot().sprintsPlayed;
   let leftDanger = originDangersLeft(originDangers, engine, focusReason);
   let applied = override == null;
+  let playAcquiredHand = false;
   let guard = 0;
   while (engine.snapshot().status === 'playing' && guard < 4_000) {
     guard += 1;
@@ -472,9 +523,10 @@ function drive(
     if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
     if (!applied && override && applyStrategicOverride(engine, s, override)) {
       applied = true;
+      if (enablesAcquiredHandPlay(override)) playAcquiredHand = true;
       continue;
     }
-    if (!applyIdleStep(engine, s)) {
+    if (!applyIdleStep(engine, s, playAcquiredHand)) {
       return {
         sprintsToLose: null,
         leftDanger,
@@ -601,7 +653,7 @@ export function isEffectiveChoice(
     baseline.sprintsToLose != null &&
     branch.sprintsToLose > baseline.sprintsToLose;
   const avoided = baseline.status === 'lost' && branch.status !== 'lost';
-  const leftDanger = branch.leftDanger && !baseline.leftDanger;
+  const leftDanger = branch.leftDanger && !baseline.leftDanger && loseNotEarlier(baseline, branch);
   const reasonChanged =
     baseline.loseReason != null &&
     branch.loseReason != null &&

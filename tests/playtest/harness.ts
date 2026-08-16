@@ -1523,9 +1523,13 @@ function sampleAvailableInDanger(
     for (const id of available) track.actions.add(id);
     track.lastSample = sample;
     if (available.length > 0) track.lastNonEmpty = sample;
-    if (framesByReason && counterfactualEnabled()) {
-      const frame = e.exportCounterfactualFrame();
-      if (frame) rememberCounterfactualFrame(framesByReason, reason, sample, frame);
+  }
+  if (framesByReason && counterfactualEnabled() && dangers.length > 0) {
+    const frame = e.exportCounterfactualFrame();
+    if (frame) {
+      for (const reason of dangers) {
+        rememberCounterfactualFrame(framesByReason, reason, sample, frame);
+      }
     }
   }
 }
@@ -2358,6 +2362,7 @@ export function runOnce(
             {
               focusReason: f.loseReason as DangerLoseReason,
               maxActionBranches: 96,
+              maxComboBranches: 32,
               maxStrategicBranches: 192,
             },
           );

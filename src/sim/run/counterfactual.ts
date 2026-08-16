@@ -24,6 +24,8 @@ type RestChoice = 'heal' | 'repay' | 'upgrade' | 'recruit';
 
 /** 無介入 1 + スプリント介入ブランチの上限。超過分は評価せず skipped に残す。 */
 export const DEFAULT_MAX_ACTION_BRANCHES = 8;
+/** 同一 tick の 2 手組合せブランチ上限。超過分は sameTickCombo として skipped に残す。 */
+export const DEFAULT_MAX_COMBO_BRANCHES = 8;
 /** 戦略フェーズの代替肢ブランチ上限。スプリント介入とは別に数える。 */
 export const DEFAULT_MAX_STRATEGIC_BRANCHES = 8;
 /** フォーク後に進める追加スプリント数の既定。 */
@@ -75,6 +77,8 @@ export interface CounterfactualEvaluation {
 export interface CounterfactualEvaluateOptions {
   maxSprints?: number;
   maxActionBranches?: number;
+  /** 同一 tick で 2 手を続けて打つ組合せの上限。省略時は DEFAULT_MAX_COMBO_BRANCHES。 */
+  maxComboBranches?: number;
   maxStrategicBranches?: number;
   /** 省略時はフレーム復元時点の機械的発動可能手。 */
   actions?: readonly ActionId[];
@@ -927,9 +931,30 @@ function runActionBranch(
   maxSprints: number,
   focusReason?: DangerLoseReason,
 ): CounterfactualBranchResult {
+  return runActionSequence(frame, [choice], originDangers, maxSprints, focusReason);
+}
+
+function runActionSequence(
+  frame: CounterfactualFrame,
+  choices: readonly SprintChoice[],
+  originDangers: ReadonlySet<DangerLoseReason>,
+  maxSprints: number,
+  focusReason?: DangerLoseReason,
+): CounterfactualBranchResult {
   const engine = restoreCounterfactualEngine(frame);
-  applySprintChoice(engine, choice);
-  return { actionId: choice.id, ...drive(engine, originDangers, maxSprints, focusReason) };
+  for (const choice of choices) applySprintChoice(engine, choice);
+  return {
+    actionId: choices.map((choice) => choice.id).join('+'),
+    ...drive(engine, originDangers, maxSprints, focusReason),
+  };
+}
+
+function listSameTickFollowups(frame: CounterfactualFrame, first: SprintChoice): SprintChoice[] {
+  const engine = restoreCounterfactualEngine(frame);
+  applySprintChoice(engine, first);
+  const s = engine.snapshot();
+  if (s.phase !== 'sprint' || s.status !== 'playing' || !s.sprint || s.sprint.complete) return [];
+  return listSprintChoices(engine).filter((choice) => choice.id !== first.id);
 }
 
 function runStrategicBranch(
@@ -960,6 +985,7 @@ export function evaluateCounterfactual(
 ): CounterfactualEvaluation {
   const maxSprints = options.maxSprints ?? DEFAULT_MAX_SPRINTS;
   const maxActionBranches = options.maxActionBranches ?? DEFAULT_MAX_ACTION_BRANCHES;
+  const maxComboBranches = options.maxComboBranches ?? DEFAULT_MAX_COMBO_BRANCHES;
   const maxStrategicBranches = options.maxStrategicBranches ?? DEFAULT_MAX_STRATEGIC_BRANCHES;
   const includeStrategic = options.includeStrategic ?? options.actions === undefined;
   const probe = restoreCounterfactualEngine(frame);
@@ -981,6 +1007,25 @@ export function evaluateCounterfactual(
   const branches = toEval.map((choice) =>
     runActionBranch(frame, choice, originDangers, maxSprints, options.focusReason),
   );
+  if (options.actions === undefined) {
+    let comboBudget = maxComboBranches;
+    let comboSkipped = false;
+    for (const first of toEval) {
+      const followups = listSameTickFollowups(frame, first);
+      for (const second of followups) {
+        if (comboBudget <= 0) {
+          comboSkipped = true;
+          break;
+        }
+        comboBudget -= 1;
+        branches.push(
+          runActionSequence(frame, [first, second], originDangers, maxSprints, options.focusReason),
+        );
+      }
+      if (comboSkipped) break;
+    }
+    if (comboSkipped) skippedActions.push('sameTickCombo');
+  }
   let skippedStrategic: string[] = [];
   if (includeStrategic) {
     const strategic = listStrategicChoices(frame, maxSprints);
@@ -1133,6 +1178,25 @@ export interface F9EffectiveSetJudgment {
   distinctEffectiveSetCount: number;
 }
 
+/**
+ * F-9 集計用の安定キー。デッキ位置やスプリント内 task ID を落とし、
+ * カード定義・介入種別・担当など意味的な属性だけを残す。
+ */
+export function stableEffectiveActionId(id: string): string {
+  return id
+    .split('+')
+    .map((part) => {
+      const card = /^card:([^:]+)(?::\d+)?(@\d+)?$/.exec(part);
+      if (card) return `card:${card[1]}${card[2] ?? ''}`;
+      const assign = /^assignTask:[^:]+:(ai|senior)(@\d+)?$/.exec(part);
+      if (assign) return `assignTask:${assign[1]}${assign[2] ?? ''}`;
+      const split = /^splitPr:[^:@]+(@\d+)?$/.exec(part);
+      if (split) return `splitPr${split[1] ?? ''}`;
+      return part;
+    })
+    .join('+');
+}
+
 /** F-9: 敗因ごとの有効手集合。機械的発動可能集合とは別に数える。 */
 export function judgeF9EffectiveSets(
   runs: readonly { loseReason: LoseReason; effectiveActions: readonly string[] }[],
@@ -1144,7 +1208,7 @@ export function judgeF9EffectiveSets(
       set = new Set();
       union.set(run.loseReason, set);
     }
-    for (const id of run.effectiveActions) set.add(id);
+    for (const id of run.effectiveActions) set.add(stableEffectiveActionId(id));
   }
   const byReason: Record<string, string[]> = {};
   const keys: string[] = [];

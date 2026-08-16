@@ -290,6 +290,25 @@ describe('RI-101 分岐評価と上限', () => {
     );
   });
 
+  it('同一 tick の 2 手組合せも分岐し、未評価列は skipped に残す', () => {
+    const engine = startedSprint('ri-101-same-tick-combo');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, {
+      includeStrategic: false,
+      maxSprints: 1,
+      maxActionBranches: 8,
+      maxComboBranches: 2,
+    });
+    expect(evaluation.branches.some((branch) => (branch.actionId ?? '').includes('+'))).toBe(true);
+    const singles = evaluation.branches.filter(
+      (branch) => branch.actionId && !branch.actionId.includes('+'),
+    );
+    if (singles.length >= 2) {
+      expect(evaluation.skippedActions).toContain('sameTickCombo');
+    }
+  });
+
   it('入り込み拘束中でなければ非アクティブチームのレバーも分岐する', () => {
     const engine = startedSprint('ri-101-other-team-lever');
     engine.step(200);
@@ -708,6 +727,23 @@ describe('RI-101 集計規則', () => {
     expect(judgment.byReason.reviewFreeze).toEqual(['interruptReview']);
     expect(judgment.byReason.aiDependency).toEqual([]);
     expect(judgment.distinctEffectiveSetCount).toBe(3);
+  });
+
+  it('F-9 はデッキ位置や task ID を落とした安定キーで集合を数える', () => {
+    const judgment = judgeF9EffectiveSets([
+      {
+        loseReason: 'aiDependency',
+        effectiveActions: ['card:ai-guideline:0', 'assignTask:t0:ai'],
+      },
+      {
+        loseReason: 'aiDependency',
+        effectiveActions: ['card:ai-guideline:2', 'assignTask:t9:ai'],
+      },
+      { loseReason: 'reviewFreeze', effectiveActions: ['splitPr:t3', 'splitPr:t8'] },
+    ]);
+    expect(judgment.byReason.aiDependency).toEqual(['assignTask:ai', 'card:ai-guideline']);
+    expect(judgment.byReason.reviewFreeze).toEqual(['splitPr']);
+    expect(judgment.distinctEffectiveSetCount).toBe(2);
   });
 });
 

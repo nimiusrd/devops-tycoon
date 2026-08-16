@@ -1042,6 +1042,22 @@ function policiesIn(runs, required = F9_POLICIES) {
   return [...required, ...extra];
 }
 
+/** F-9 集計用。デッキ位置や task ID を落とした安定キー。 */
+function stableEffectiveActionId(id) {
+  return String(id)
+    .split('+')
+    .map((part) => {
+      const card = /^card:([^:]+)(?::\d+)?(@\d+)?$/.exec(part);
+      if (card) return `card:${card[1]}${card[2] ?? ''}`;
+      const assign = /^assignTask:[^:]+:(ai|senior)(@\d+)?$/.exec(part);
+      if (assign) return `assignTask:${assign[1]}${assign[2] ?? ''}`;
+      const split = /^splitPr:[^:@]+(@\d+)?$/.exec(part);
+      if (split) return `splitPr${split[1] ?? ''}`;
+      return part;
+    })
+    .join('+');
+}
+
 // RI-89: 同一難易度・同一方針内で敗因別の「危険域で打てた介入集合」を出す。
 // 発動可能集合は方針の集中力消費・クールダウンに依存するため、層別化しないと比較が汚染される。
 console.log(`\n### 敗因別・危険域で打てた介入（RI-89・同一難易度/方針）\n`);
@@ -1152,7 +1168,10 @@ if (cfRuns.length > 0) {
           if (effective.length === 0) {
             if (!r.counterfactualBaselineRecovered) emptyEffective += 1;
           }
-          for (const id of effective) freq.set(id, (freq.get(id) ?? 0) + 1);
+          for (const id of effective) {
+            const key = stableEffectiveActionId(id);
+            freq.set(key, (freq.get(key) ?? 0) + 1);
+          }
           if (typeof r.sprintsPlayed === 'number' && r.lastEffectiveActionsAt) {
             const midSprintInstantLose =
               r.lostPhase === 'sprint' && r.lostSprintCompleted === false;

@@ -692,18 +692,25 @@ function collectDraftMulligan(engine: RunEngine): StrategicChoice[] {
   }));
 }
 
-/** 同一進化フェーズで連続解放できる到達集合。順序は解放可能なトポロジ順。 */
+/** 同一進化フェーズで連続解放できる到達列。効果適用は順序依存なので順列を残す。 */
+const EVO_SEQUENCE_CAP = 32;
+
 function listEvolutionChoices(evolution: RunState['evolution']): StrategicChoice[] {
   const out: StrategicChoice[] = [];
-  const seenSets = new Set<string>();
+  const seenPaths = new Set<string>();
   const queue: { evo: RunState['evolution']; path: string[] }[] = [{ evo: evolution, path: [] }];
+  let truncated = false;
   while (queue.length > 0) {
     const { evo, path } = queue.shift()!;
     for (const id of unlockableNodes(evo)) {
       const nextPath = [...path, id];
-      const setKey = [...nextPath].sort().join('\0');
-      if (seenSets.has(setKey)) continue;
-      seenSets.add(setKey);
+      const pathKey = nextPath.join('\0');
+      if (seenPaths.has(pathKey)) continue;
+      if (out.length >= EVO_SEQUENCE_CAP) {
+        truncated = true;
+        break;
+      }
+      seenPaths.add(pathKey);
       out.push({
         id: `evo:${nextPath.join('+')}`,
         kind: 'evolution',
@@ -711,6 +718,14 @@ function listEvolutionChoices(evolution: RunState['evolution']): StrategicChoice
       });
       queue.push({ evo: unlockNode(evo, id), path: nextPath });
     }
+    if (truncated) break;
+  }
+  if (truncated) {
+    out.push({
+      id: 'evo:combo',
+      kind: 'evolution',
+      override: { kind: 'evolution', nodeIds: [] },
+    });
   }
   return out;
 }
@@ -1121,9 +1136,13 @@ function runStrategicBranch(
   };
 }
 
+function isSkippedComboId(id: string): boolean {
+  return id.startsWith('setup:combo') || id.startsWith('evo:combo');
+}
+
 /** 複数 kind や同種の複数 visit は組合せを評価しないので未評価印の対象。 */
 function hasUnevaluatedStrategicSequence(choices: readonly StrategicChoice[]): boolean {
-  const runnable = choices.filter((choice) => !choice.id.startsWith('setup:combo'));
+  const runnable = choices.filter((choice) => !isSkippedComboId(choice.id));
   const kinds = new Set(runnable.map((choice) => choice.kind));
   return kinds.size >= 2 || runnable.some((choice) => (choice.visit ?? 0) >= 1);
 }
@@ -1185,13 +1204,11 @@ export function evaluateCounterfactual(
   let skippedStrategic: string[] = [];
   if (includeStrategic) {
     const strategic = listStrategicChoices(frame, maxSprints);
-    const runnable = strategic.filter((choice) => !choice.id.startsWith('setup:combo'));
+    const runnable = strategic.filter((choice) => !isSkippedComboId(choice.id));
     const toStrategic = runnable.slice(0, maxStrategicBranches);
     skippedStrategic = [
       ...runnable.slice(maxStrategicBranches).map((choice) => choice.id),
-      ...strategic
-        .filter((choice) => choice.id.startsWith('setup:combo'))
-        .map((choice) => choice.id),
+      ...strategic.filter((choice) => isSkippedComboId(choice.id)).map((choice) => choice.id),
     ];
     for (const choice of toStrategic) {
       branches.push(
@@ -1199,7 +1216,7 @@ export function evaluateCounterfactual(
       );
     }
     if (hasUnevaluatedStrategicSequence(runnable)) skippedStrategic.push('strategicSequence');
-    if (options.actions === undefined && toEval.length > 0 && strategic.length > 0) {
+    if (options.actions === undefined && toEval.length > 0) {
       let crossBudget = maxComboBranches;
       let crossSkipped = false;
       let laterSequenceUnevaluated = false;
@@ -1213,14 +1230,14 @@ export function evaluateCounterfactual(
         const after = engine.exportCounterfactualFrame();
         if (!after || engine.snapshot().status !== 'playing') continue;
         const later = listStrategicChoices(after, maxSprints);
-        if (later.some((choice) => choice.id.startsWith('setup:combo'))) {
+        if (later.some((choice) => isSkippedComboId(choice.id))) {
           crossSkipped = true;
         }
         if (hasUnevaluatedStrategicSequence(later)) {
           laterSequenceUnevaluated = true;
         }
         for (const choice of later) {
-          if (choice.id.startsWith('setup:combo')) continue;
+          if (isSkippedComboId(choice.id)) continue;
           if (crossBudget <= 0) {
             crossSkipped = true;
             break;

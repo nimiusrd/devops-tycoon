@@ -363,6 +363,26 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.skippedActions).toContain('actionStrategicCombo');
   });
 
+  it('無介入経路に戦略肢がなくても介入後 later を探索する', () => {
+    const engine = startedSprint('ri-101-idle-no-strategic');
+    engine.step(200);
+    const internals = engine as unknown as { org: { seniorHp: number } };
+    internals.org.seniorHp = 1;
+    const frame = engine.exportCounterfactualFrame()!;
+    expect(listStrategicChoices(frame, 4)).toEqual([]);
+    const evaluation = evaluateCounterfactual(frame, {
+      includeStrategic: true,
+      maxSprints: 4,
+      maxActionBranches: 4,
+      maxComboBranches: 16,
+      maxStrategicBranches: 16,
+    });
+    expect(
+      evaluation.branches.some((branch) => (branch.actionId ?? '').includes('+')) ||
+        evaluation.skippedActions.includes('actionStrategicCombo'),
+    ).toBe(true);
+  });
+
   it('2手列の先に戦略肢がある場合は actionStrategicCombo を skipped に残す', () => {
     const engine = startedSprint('ri-101-combo-then-strategic');
     engine.step(200);
@@ -420,6 +440,21 @@ describe('RI-101 分岐評価と上限', () => {
       maxStrategicBranches: 192,
     });
     expect(evaluation.branches.some((branch) => branch.actionId === 'evo:dev-1+dev-2')).toBe(true);
+  });
+
+  it('進化ノードの連続解放は順序違いを別分岐にする', () => {
+    const engine = startedSprint('ri-101-evo-order');
+    const internals = engine as unknown as {
+      phase: string;
+      evolution: { points: number; unlocked: Record<string, boolean> };
+    };
+    internals.phase = 'evolution';
+    internals.evolution = { points: 2, unlocked: {} };
+    const evo = listStrategicChoices(engine.exportCounterfactualFrame()!, 1).filter((choice) =>
+      choice.id.startsWith('evo:'),
+    );
+    expect(evo.some((choice) => choice.id === 'evo:dev-1+quality-1')).toBe(true);
+    expect(evo.some((choice) => choice.id === 'evo:quality-1+dev-1')).toBe(true);
   });
 
   it('採用後は新メンバーの配置まで分岐する', () => {

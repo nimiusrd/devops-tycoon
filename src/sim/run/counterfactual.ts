@@ -47,6 +47,15 @@ export interface CounterfactualEvaluateOptions {
   maxActionBranches?: number;
   /** 省略時はフレーム復元時点の機械的発動可能手。 */
   actions?: readonly ActionId[];
+  /** 危険域離脱の判定対象。省略時は起源の危険理由のいずれかが消えたら離脱。 */
+  focusReason?: DangerLoseReason;
+}
+
+export interface CounterfactualFrameSample {
+  sprintsPlayed: number;
+  quarter: number;
+  index: number;
+  frame: CounterfactualFrame;
 }
 
 export function restoreCounterfactualEngine(frame: CounterfactualFrame): RunEngine {
@@ -72,23 +81,40 @@ function applyChoice(engine: RunEngine, id: ActionId): void {
   engine.dispatch(id);
 }
 
-function originDangersLeft(origin: ReadonlySet<DangerLoseReason>, engine: RunEngine): boolean {
+/** 起源の危険理由が現在の危険域から消えたか。focus があればその敗因だけを見る。 */
+export function isDangerLeft(
+  origin: ReadonlySet<DangerLoseReason>,
+  current: readonly DangerLoseReason[],
+  focusReason?: DangerLoseReason,
+): boolean {
   if (origin.size === 0) return false;
-  return activeDangerReasons(engine).every((reason) => !origin.has(reason));
+  if (focusReason) return origin.has(focusReason) && !current.includes(focusReason);
+  return [...origin].some((reason) => !current.includes(reason));
+}
+
+function originDangersLeft(
+  origin: ReadonlySet<DangerLoseReason>,
+  engine: RunEngine,
+  focusReason?: DangerLoseReason,
+): boolean {
+  return isDangerLeft(origin, activeDangerReasons(engine), focusReason);
 }
 
 function driveIdle(
   engine: RunEngine,
   originDangers: ReadonlySet<DangerLoseReason>,
   maxSprints: number,
+  focusReason?: DangerLoseReason,
 ): Omit<CounterfactualBranchResult, 'actionId'> {
   const startPlayed = engine.snapshot().sprintsPlayed;
-  let leftDanger = originDangersLeft(originDangers, engine);
+  let leftDanger = originDangersLeft(originDangers, engine, focusReason);
   let guard = 0;
   while (engine.snapshot().status === 'playing' && guard < 4_000) {
     guard += 1;
     const s = engine.snapshot();
-    if (s.sprintsPlayed - startPlayed >= maxSprints && s.phase !== 'sprint') {
+    // 追加スプリントを始める直前だけ打ち切る。最後に許可したスプリントの
+    // result / beat / quarterReview など終端遷移は処理する。
+    if (s.phase === 'setup' && s.sprintsPlayed - startPlayed >= maxSprints) {
       return {
         sprintsToLose: null,
         leftDanger,
@@ -97,7 +123,7 @@ function driveIdle(
         truncated: true,
       };
     }
-    if (originDangersLeft(originDangers, engine)) leftDanger = true;
+    if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
     switch (s.phase) {
       case 'setup':
         engine.beginSetupSprint();
@@ -147,9 +173,9 @@ function driveIdle(
     }
   }
   const end = engine.snapshot();
-  if (originDangersLeft(originDangers, engine)) leftDanger = true;
+  if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
   return {
-    sprintsToLose: end.status === 'lost' ? end.sprintsPlayed : null,
+    sprintsToLose: end.status === 'lost' ? end.sprintsPlayed - startPlayed : null,
     leftDanger,
     loseReason: end.loseReason ?? null,
     status: end.status,
@@ -162,10 +188,11 @@ function runBranch(
   actionId: ActionId | null,
   originDangers: ReadonlySet<DangerLoseReason>,
   maxSprints: number,
+  focusReason?: DangerLoseReason,
 ): CounterfactualBranchResult {
   const engine = restoreCounterfactualEngine(frame);
   if (actionId) applyChoice(engine, actionId);
-  return { actionId, ...driveIdle(engine, originDangers, maxSprints) };
+  return { actionId, ...driveIdle(engine, originDangers, maxSprints, focusReason) };
 }
 
 export function evaluateCounterfactual(
@@ -186,8 +213,10 @@ export function evaluateCounterfactual(
   const applicable = [...(options.actions ?? listApplicableActions(probe))];
   const toEval = applicable.slice(0, maxActionBranches);
   const skippedActions = applicable.slice(maxActionBranches);
-  const baseline = runBranch(frame, null, originDangers, maxSprints);
-  const branches = toEval.map((id) => runBranch(frame, id, originDangers, maxSprints));
+  const baseline = runBranch(frame, null, originDangers, maxSprints, options.focusReason);
+  const branches = toEval.map((id) =>
+    runBranch(frame, id, originDangers, maxSprints, options.focusReason),
+  );
   return {
     origin,
     originDangers: dangers,
@@ -214,6 +243,31 @@ export function isEffectiveChoice(
     branch.loseReason != null &&
     branch.loseReason !== baseline.loseReason;
   return delayed || avoided || leftDanger || reasonChanged;
+}
+
+export interface LatestEffectiveFrame {
+  evaluation: CounterfactualEvaluation;
+  effective: ActionId[];
+}
+
+/**
+ * 新しいフレームから遡り、有効手がある最初の評価を返す。
+ * どれも無効なら最新フレームの評価と空の有効手を返す。
+ */
+export function evaluateLatestEffectiveFrame(
+  samples: readonly CounterfactualFrameSample[],
+  options: CounterfactualEvaluateOptions = {},
+): LatestEffectiveFrame | null {
+  if (samples.length === 0) return null;
+  let newest: LatestEffectiveFrame | null = null;
+  for (let i = samples.length - 1; i >= 0; i -= 1) {
+    const evaluation = evaluateCounterfactual(samples[i]!.frame, options);
+    const effective = effectiveActionsOf(evaluation);
+    const found = { evaluation, effective };
+    if (!newest) newest = found;
+    if (effective.length > 0) return found;
+  }
+  return newest;
 }
 
 export function effectiveActionsOf(evaluation: CounterfactualEvaluation): ActionId[] {

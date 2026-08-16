@@ -25,14 +25,16 @@ import {
   REST_UPGRADE_FOCUS_MAX,
 } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
-import { effectiveActionsOf, evaluateCounterfactual } from '../../src/sim/run/counterfactual';
+import {
+  evaluateLatestEffectiveFrame,
+  type CounterfactualFrameSample,
+} from '../../src/sim/run/counterfactual';
 import {
   activeDangerReasons,
   canApplyAssignTaskWithExplicitTarget,
   listApplicableActions,
   type DangerLoseReason,
 } from '../../src/sim/run/dangerZone';
-import type { CounterfactualFrame } from '../../src/sim/run/persist';
 import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
 import { summarizeSprint } from '../../src/sim/sprint';
 import type {
@@ -961,7 +963,7 @@ export interface RunLog {
    * `PT_COUNTERFACTUAL=1` のときだけ付く。空配列は「評価したが有効手なし」。
    */
   effectiveActionsInDanger?: string[];
-  /** 有効手が残っていた最後の危険域サンプル位置（RI-101）。 */
+  /** 有効手が残っていた最後の危険域サンプル位置（RI-101。有効手があるときだけ）。 */
   lastEffectiveActionsAt?: {
     sprintsPlayed: number;
     quarter: number;
@@ -1463,10 +1465,31 @@ function counterfactualEnabled(): boolean {
 }
 
 /** アクティブな危険種別ごとの発動可能介入を和集合・最終サンプルへ追記する（盤面非破壊）。 */
+function rememberCounterfactualFrame(
+  framesByReason: Map<DangerLoseReason, CounterfactualFrameSample[]>,
+  reason: DangerLoseReason,
+  sample: { sprintsPlayed: number; quarter: number; index: number },
+  frame: CounterfactualFrameSample['frame'],
+): void {
+  const list = framesByReason.get(reason) ?? [];
+  const last = list[list.length - 1];
+  if (
+    last &&
+    last.sprintsPlayed === sample.sprintsPlayed &&
+    last.quarter === sample.quarter &&
+    last.index === sample.index
+  ) {
+    last.frame = frame;
+    return;
+  }
+  list.push({ ...sample, frame });
+  framesByReason.set(reason, list);
+}
+
 function sampleAvailableInDanger(
   e: RunEngine,
   byReason: Map<DangerLoseReason, DangerTrack>,
-  framesByReason?: Map<DangerLoseReason, CounterfactualFrame>,
+  framesByReason?: Map<DangerLoseReason, CounterfactualFrameSample[]>,
 ): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
@@ -1497,7 +1520,7 @@ function sampleAvailableInDanger(
       track.lastNonEmpty = sample;
       if (framesByReason && counterfactualEnabled()) {
         const frame = e.exportCounterfactualFrame();
-        if (frame) framesByReason.set(reason, frame);
+        if (frame) rememberCounterfactualFrame(framesByReason, reason, sample, frame);
       }
     }
   }
@@ -1933,8 +1956,8 @@ export function runOnce(
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
   /** 危険種別ごとの発動可能介入トラック（RI-89）。キーがある＝その危険域を観測。 */
   const availableInDangerByReason = new Map<DangerLoseReason, DangerTrack>();
-  /** 危険種別ごとの last-non-empty 反実仮想フレーム（RI-101。オプトイン時のみ更新）。 */
-  const counterfactualFramesByReason = new Map<DangerLoseReason, CounterfactualFrame>();
+  /** 危険種別ごとの last-non-empty 反実仮想フレーム列（RI-101。オプトイン時のみ更新）。 */
+  const counterfactualFramesByReason = new Map<DangerLoseReason, CounterfactualFrameSample[]>();
   /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
   let lostPhase: string | undefined;
   /**
@@ -2326,18 +2349,24 @@ export function runOnce(
     counterfactualEnabled() &&
     counterfactualFramesByReason.has(f.loseReason as DangerLoseReason)
       ? (() => {
-          const evaluation = evaluateCounterfactual(
+          const selected = evaluateLatestEffectiveFrame(
             counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!,
+            { focusReason: f.loseReason as DangerLoseReason },
           );
-          const effective = effectiveActionsOf(evaluation);
+          if (!selected) return {};
+          const { evaluation, effective } = selected;
           return {
             effectiveActionsInDanger: effective,
-            lastEffectiveActionsAt: {
-              sprintsPlayed: evaluation.origin.sprintsPlayed,
-              quarter: evaluation.origin.quarter,
-              index: evaluation.origin.index,
-              actions: effective,
-            },
+            ...(effective.length > 0
+              ? {
+                  lastEffectiveActionsAt: {
+                    sprintsPlayed: evaluation.origin.sprintsPlayed,
+                    quarter: evaluation.origin.quarter,
+                    index: evaluation.origin.index,
+                    actions: effective,
+                  },
+                }
+              : {}),
             counterfactualBaseline: {
               sprintsToLose: evaluation.baseline.sprintsToLose,
               leftDanger: evaluation.baseline.leftDanger,

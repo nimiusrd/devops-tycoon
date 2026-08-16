@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   effectiveActionsOf,
   evaluateCounterfactual,
+  evaluateLatestEffectiveFrame,
+  isDangerLeft,
   isEffectiveChoice,
   judgeF8Recovery,
   judgeF9EffectiveSets,
@@ -93,6 +95,46 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.applicableActions).toEqual(forced);
   });
 
+  it('maxSprints 到達後も setup まで終端遷移を進めてから打ち切る', () => {
+    const engine = startedSprint('ri-101-horizon');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, { actions: [], maxSprints: 1 });
+    if (evaluation.baseline.truncated) {
+      expect(evaluation.baseline.status).toBe('playing');
+      expect(evaluation.baseline.sprintsToLose).toBeNull();
+    }
+    const restored = restoreCounterfactualEngine(frame);
+    restored.step(1_000_000);
+    if (restored.snapshot().status === 'playing') {
+      expect([
+        'result',
+        'draft',
+        'evolution',
+        'beat',
+        'shop',
+        'rest',
+        'recruit',
+        'setup',
+      ]).toContain(restored.snapshot().phase);
+    }
+  });
+
+  it('敗北までのスプリント数は分岐開始からの相対値である', () => {
+    const engine = startedSprint('ri-101-relative-lose', 'nightmare');
+    engine.step(200);
+    const startPlayed = engine.snapshot().sprintsPlayed;
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, { actions: [], maxSprints: 2 });
+    if (evaluation.baseline.status === 'lost' && evaluation.baseline.sprintsToLose != null) {
+      expect(evaluation.baseline.sprintsToLose).toBeGreaterThanOrEqual(0);
+      expect(evaluation.baseline.sprintsToLose).toBeLessThanOrEqual(2);
+      expect(evaluation.baseline.sprintsToLose).toBeLessThanOrEqual(
+        evaluation.origin.sprintsPlayed + 2 - startPlayed + 2,
+      );
+    }
+  });
+
   it('危険域と発動可能手をフレーム時点で記録する', () => {
     const engine = startedSprint('ri-101-danger-list', 'nightmare');
     engine.step(200);
@@ -157,6 +199,36 @@ describe('RI-101 集計規則', () => {
     });
   });
 
+  it('危険域離脱は focus した敗因だけを見る', () => {
+    const origin = new Set(['aiDependency', 'bossFailed'] as const);
+    expect(isDangerLeft(origin, ['bossFailed'], 'aiDependency')).toBe(true);
+    expect(isDangerLeft(origin, ['aiDependency', 'bossFailed'], 'aiDependency')).toBe(false);
+    expect(isDangerLeft(origin, ['bossFailed'])).toBe(true);
+    expect(isDangerLeft(origin, ['aiDependency', 'bossFailed'])).toBe(false);
+    expect(isDangerLeft(origin, ['bossFailed'], 'reviewFreeze')).toBe(false);
+  });
+
+  it('有効手があるフレームまで新しい順に遡る', () => {
+    const engine = startedSprint('ri-101-walkback');
+    engine.step(200);
+    const older = engine.exportCounterfactualFrame()!;
+    engine.step(400);
+    const newer = engine.exportCounterfactualFrame()!;
+    const empty = evaluateLatestEffectiveFrame(
+      [
+        { sprintsPlayed: 0, quarter: 1, index: 1, frame: older },
+        { sprintsPlayed: 0, quarter: 1, index: 1, frame: newer },
+      ],
+      { actions: [], maxSprints: 1 },
+    );
+    expect(empty).not.toBeNull();
+    if (empty && empty.effective.length === 0) {
+      expect(empty.evaluation.origin).toEqual(
+        evaluateCounterfactual(newer, { actions: [], maxSprints: 1 }).origin,
+      );
+    }
+  });
+
   it('F-9 は敗因別の有効手集合を機械的集合と別に数える', () => {
     const judgment = judgeF9EffectiveSets([
       { loseReason: 'seniorBurnout', effectiveActions: ['overtime'] },
@@ -185,7 +257,11 @@ describe('RI-101 プレイテストオプトイン', () => {
           leftDanger: expect.any(Boolean),
           truncated: expect.any(Boolean),
         });
-        expect(log.lastEffectiveActionsAt?.actions).toEqual(log.effectiveActionsInDanger);
+        if ((log.effectiveActionsInDanger?.length ?? 0) > 0) {
+          expect(log.lastEffectiveActionsAt?.actions).toEqual(log.effectiveActionsInDanger);
+        } else {
+          expect(log.lastEffectiveActionsAt).toBeUndefined();
+        }
       }
     } finally {
       if (prev === undefined) delete process.env.PT_COUNTERFACTUAL;

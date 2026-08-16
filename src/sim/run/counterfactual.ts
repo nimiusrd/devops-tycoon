@@ -1,21 +1,31 @@
 /**
  * 危険状態の反実仮想評価（RI-101 / SPEC 第19.1 F-8・F-9）。
  *
- * 同一乱数状態から無介入と適用可能介入を分岐し、敗北遅延・回避・危険域離脱・
- * 敗因変化だけを有効手として集計する。what-if の同 seed 再実行とは別系統。
+ * 同一乱数状態から無介入と適用可能介入、および無介入ドライブ上で出会う
+ * 戦略フェーズの代替肢を分岐し、敗北遅延・回避・危険域離脱・敗因変化だけを
+ * 有効手として集計する。what-if の同 seed 再実行とは別系統。
  */
+import { getEvent } from '../../data/events';
 import { canApplyAction } from '../actions';
 import { assignableTasks } from '../assignTask';
 import type { ActionId } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
 import { RunEngine } from './engine';
+import { unlockableNodes } from './evolution';
 import type { CounterfactualFrame } from './persist';
-import type { LoseReason, RunStatus } from './types';
+import type { GoalAdjustmentId, LoseReason, RunStatus, RunState } from './types';
 
-/** 無介入 1 + 介入ブランチの上限。超過分は評価せず skipped に残す。 */
+type RestChoice = 'heal' | 'repay' | 'upgrade' | 'recruit';
+
+/** 無介入 1 + スプリント介入ブランチの上限。超過分は評価せず skipped に残す。 */
 export const DEFAULT_MAX_ACTION_BRANCHES = 8;
+/** 戦略フェーズの代替肢ブランチ上限。スプリント介入とは別に数える。 */
+export const DEFAULT_MAX_STRATEGIC_BRANCHES = 8;
 /** フォーク後に進める追加スプリント数の既定。 */
 export const DEFAULT_MAX_SPRINTS = 4;
+
+const REST_ALTERNATIVES: readonly RestChoice[] = ['repay', 'upgrade', 'recruit'];
+const STRATEGIC_KIND_ORDER = ['beat', 'rest', 'draft', 'evolution', 'goal', 'recruit'] as const;
 
 export interface CounterfactualOrigin {
   sprintsPlayed: number;
@@ -24,8 +34,11 @@ export interface CounterfactualOrigin {
 }
 
 export interface CounterfactualBranchResult {
-  /** `null` は無介入ベースライン。 */
-  actionId: ActionId | null;
+  /**
+   * `null` は無介入ベースライン。
+   * スプリント介入は ActionId、戦略肢は `beat:1` / `rest:repay` / `draft:copilot` など。
+   */
+  actionId: string | null;
   sprintsToLose: number | null;
   leftDanger: boolean;
   loseReason: LoseReason | null;
@@ -38,6 +51,7 @@ export interface CounterfactualEvaluation {
   originDangers: DangerLoseReason[];
   applicableActions: ActionId[];
   skippedActions: ActionId[];
+  skippedStrategic: string[];
   baseline: CounterfactualBranchResult;
   branches: CounterfactualBranchResult[];
 }
@@ -45,8 +59,14 @@ export interface CounterfactualEvaluation {
 export interface CounterfactualEvaluateOptions {
   maxSprints?: number;
   maxActionBranches?: number;
+  maxStrategicBranches?: number;
   /** 省略時はフレーム復元時点の機械的発動可能手。 */
   actions?: readonly ActionId[];
+  /**
+   * 戦略フェーズの代替肢を分岐するか。
+   * `actions` を明示したときは既定 false、省略時は true。
+   */
+  includeStrategic?: boolean;
   /** 危険域離脱の判定対象。省略時は起源の危険理由のいずれかが消えたら離脱。 */
   focusReason?: DangerLoseReason;
 }
@@ -56,6 +76,20 @@ export interface CounterfactualFrameSample {
   quarter: number;
   index: number;
   frame: CounterfactualFrame;
+}
+
+type StrategicOverride =
+  | { kind: 'draft'; cardId: string }
+  | { kind: 'evolution'; nodeId: string }
+  | { kind: 'beat'; index: number }
+  | { kind: 'rest'; option: RestChoice }
+  | { kind: 'recruit' }
+  | { kind: 'goal'; id: GoalAdjustmentId };
+
+export interface StrategicChoice {
+  id: string;
+  kind: StrategicOverride['kind'];
+  override: StrategicOverride;
 }
 
 export function restoreCounterfactualEngine(frame: CounterfactualFrame): RunEngine {
@@ -100,14 +134,180 @@ function originDangersLeft(
   return isDangerLeft(origin, activeDangerReasons(engine), focusReason);
 }
 
-function driveIdle(
+function applyIdleStep(engine: RunEngine, snapshot: RunState): boolean {
+  switch (snapshot.phase) {
+    case 'setup':
+      engine.beginSetupSprint();
+      return true;
+    case 'sprint':
+      engine.step(1_000_000);
+      return true;
+    case 'result':
+      engine.acknowledgeResult();
+      return true;
+    case 'draft':
+      engine.skipDraft();
+      return true;
+    case 'evolution':
+      engine.finishEvolution();
+      return true;
+    case 'beat':
+      engine.resolveBeat(0);
+      return true;
+    case 'shop':
+      engine.leaveShop();
+      return true;
+    case 'rest':
+      engine.restChoose('heal');
+      return true;
+    case 'recruit':
+      engine.recruitChoose('skip');
+      return true;
+    case 'quarterReview': {
+      const review = snapshot.quarterReview;
+      if (review?.outcome === 'missed_adjustable') {
+        const pick = review.availableAdjustments[0] ?? 'cut_scope';
+        engine.chooseGoalAdjustment(pick);
+      } else {
+        engine.acknowledgeQuarterReview();
+      }
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
+function applyStrategicOverride(
+  engine: RunEngine,
+  snapshot: RunState,
+  override: StrategicOverride,
+): boolean {
+  switch (override.kind) {
+    case 'draft':
+      if (snapshot.phase !== 'draft') return false;
+      engine.chooseCard(override.cardId);
+      return true;
+    case 'evolution':
+      if (snapshot.phase !== 'evolution') return false;
+      engine.unlockEvolution(override.nodeId);
+      engine.finishEvolution();
+      return true;
+    case 'beat':
+      if (snapshot.phase !== 'beat' || snapshot.beat?.kind !== 'decision') return false;
+      engine.resolveBeat(override.index);
+      return true;
+    case 'rest':
+      if (snapshot.phase !== 'rest') return false;
+      engine.restChoose(override.option);
+      return true;
+    case 'recruit':
+      if (snapshot.phase !== 'recruit') return false;
+      engine.recruitChoose('hire');
+      return true;
+    case 'goal':
+      if (snapshot.phase !== 'quarterReview') return false;
+      engine.chooseGoalAdjustment(override.id);
+      return true;
+  }
+}
+
+function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicChoice[] {
+  if (
+    snapshot.phase === 'draft' &&
+    !seen.has('draft') &&
+    snapshot.draft &&
+    snapshot.draft.length > 0
+  ) {
+    seen.add('draft');
+    return snapshot.draft.map((cardId) => ({
+      id: `draft:${cardId}`,
+      kind: 'draft' as const,
+      override: { kind: 'draft' as const, cardId },
+    }));
+  }
+  if (snapshot.phase === 'evolution' && !seen.has('evolution')) {
+    seen.add('evolution');
+    return unlockableNodes(snapshot.evolution).map((nodeId) => ({
+      id: `evo:${nodeId}`,
+      kind: 'evolution' as const,
+      override: { kind: 'evolution' as const, nodeId },
+    }));
+  }
+  if (snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision' && !seen.has('beat')) {
+    seen.add('beat');
+    const n = getEvent(snapshot.beat.eventId)?.choices.length ?? 0;
+    const out: StrategicChoice[] = [];
+    for (let index = 1; index < n; index += 1) {
+      out.push({
+        id: `beat:${index}`,
+        kind: 'beat',
+        override: { kind: 'beat', index },
+      });
+    }
+    return out;
+  }
+  if (snapshot.phase === 'rest' && !seen.has('rest')) {
+    seen.add('rest');
+    return REST_ALTERNATIVES.map((option) => ({
+      id: `rest:${option}`,
+      kind: 'rest' as const,
+      override: { kind: 'rest' as const, option },
+    }));
+  }
+  if (snapshot.phase === 'recruit' && !seen.has('recruit')) {
+    seen.add('recruit');
+    return [{ id: 'recruit:hire', kind: 'recruit', override: { kind: 'recruit' } }];
+  }
+  if (snapshot.phase === 'quarterReview' && !seen.has('goal')) {
+    seen.add('goal');
+    const review = snapshot.quarterReview;
+    if (review?.outcome !== 'missed_adjustable') return [];
+    return review.availableAdjustments.slice(1).map((id) => ({
+      id: `goal:${id}`,
+      kind: 'goal' as const,
+      override: { kind: 'goal' as const, id },
+    }));
+  }
+  return [];
+}
+
+/**
+ * 無介入ドライブ上で最初に出会う各戦略フェーズの代替肢。
+ * ネストした全組合せは作らず、フェーズ種別ごとに 1 回だけ列挙する。
+ */
+export function listStrategicChoices(
+  frame: CounterfactualFrame,
+  maxSprints: number,
+): StrategicChoice[] {
+  const engine = restoreCounterfactualEngine(frame);
+  const startPlayed = engine.snapshot().sprintsPlayed;
+  const seen = new Set<string>();
+  const found: StrategicChoice[] = [];
+  let guard = 0;
+  while (engine.snapshot().status === 'playing' && guard < 4_000) {
+    guard += 1;
+    const snapshot = engine.snapshot();
+    if (snapshot.phase === 'setup' && snapshot.sprintsPlayed - startPlayed >= maxSprints) break;
+    found.push(...collectStrategicAt(snapshot, seen));
+    if (!applyIdleStep(engine, snapshot)) break;
+  }
+  const rank = new Map(STRATEGIC_KIND_ORDER.map((kind, i) => [kind, i]));
+  return found.sort(
+    (a, b) => (rank.get(a.kind) ?? 99) - (rank.get(b.kind) ?? 99) || a.id.localeCompare(b.id),
+  );
+}
+
+function drive(
   engine: RunEngine,
   originDangers: ReadonlySet<DangerLoseReason>,
   maxSprints: number,
   focusReason?: DangerLoseReason,
+  override?: StrategicOverride,
 ): Omit<CounterfactualBranchResult, 'actionId'> {
   const startPlayed = engine.snapshot().sprintsPlayed;
   let leftDanger = originDangersLeft(originDangers, engine, focusReason);
+  let applied = override == null;
   let guard = 0;
   while (engine.snapshot().status === 'playing' && guard < 4_000) {
     guard += 1;
@@ -124,52 +324,18 @@ function driveIdle(
       };
     }
     if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
-    switch (s.phase) {
-      case 'setup':
-        engine.beginSetupSprint();
-        break;
-      case 'sprint':
-        engine.step(1_000_000);
-        break;
-      case 'result':
-        engine.acknowledgeResult();
-        break;
-      case 'draft':
-        engine.skipDraft();
-        break;
-      case 'evolution':
-        engine.finishEvolution();
-        break;
-      case 'beat':
-        engine.resolveBeat(0);
-        break;
-      case 'shop':
-        engine.leaveShop();
-        break;
-      case 'rest':
-        engine.restChoose('heal');
-        break;
-      case 'recruit':
-        engine.recruitChoose('skip');
-        break;
-      case 'quarterReview': {
-        const review = s.quarterReview;
-        if (review?.outcome === 'missed_adjustable') {
-          const pick = review.availableAdjustments[0] ?? 'cut_scope';
-          engine.chooseGoalAdjustment(pick);
-        } else {
-          engine.acknowledgeQuarterReview();
-        }
-        break;
-      }
-      default:
-        return {
-          sprintsToLose: null,
-          leftDanger,
-          loseReason: engine.snapshot().loseReason ?? null,
-          status: engine.snapshot().status,
-          truncated: true,
-        };
+    if (!applied && override && applyStrategicOverride(engine, s, override)) {
+      applied = true;
+      continue;
+    }
+    if (!applyIdleStep(engine, s)) {
+      return {
+        sprintsToLose: null,
+        leftDanger,
+        loseReason: engine.snapshot().loseReason ?? null,
+        status: engine.snapshot().status,
+        truncated: true,
+      };
     }
   }
   const end = engine.snapshot();
@@ -183,7 +349,7 @@ function driveIdle(
   };
 }
 
-function runBranch(
+function runActionBranch(
   frame: CounterfactualFrame,
   actionId: ActionId | null,
   originDangers: ReadonlySet<DangerLoseReason>,
@@ -192,7 +358,21 @@ function runBranch(
 ): CounterfactualBranchResult {
   const engine = restoreCounterfactualEngine(frame);
   if (actionId) applyChoice(engine, actionId);
-  return { actionId, ...driveIdle(engine, originDangers, maxSprints, focusReason) };
+  return { actionId, ...drive(engine, originDangers, maxSprints, focusReason) };
+}
+
+function runStrategicBranch(
+  frame: CounterfactualFrame,
+  choice: StrategicChoice,
+  originDangers: ReadonlySet<DangerLoseReason>,
+  maxSprints: number,
+  focusReason?: DangerLoseReason,
+): CounterfactualBranchResult {
+  const engine = restoreCounterfactualEngine(frame);
+  return {
+    actionId: choice.id,
+    ...drive(engine, originDangers, maxSprints, focusReason, choice.override),
+  };
 }
 
 export function evaluateCounterfactual(
@@ -201,6 +381,8 @@ export function evaluateCounterfactual(
 ): CounterfactualEvaluation {
   const maxSprints = options.maxSprints ?? DEFAULT_MAX_SPRINTS;
   const maxActionBranches = options.maxActionBranches ?? DEFAULT_MAX_ACTION_BRANCHES;
+  const maxStrategicBranches = options.maxStrategicBranches ?? DEFAULT_MAX_STRATEGIC_BRANCHES;
+  const includeStrategic = options.includeStrategic ?? options.actions === undefined;
   const probe = restoreCounterfactualEngine(frame);
   const snap = probe.snapshot();
   const origin: CounterfactualOrigin = {
@@ -213,18 +395,41 @@ export function evaluateCounterfactual(
   const applicable = [...(options.actions ?? listApplicableActions(probe))];
   const toEval = applicable.slice(0, maxActionBranches);
   const skippedActions = applicable.slice(maxActionBranches);
-  const baseline = runBranch(frame, null, originDangers, maxSprints, options.focusReason);
+  const baseline = runActionBranch(frame, null, originDangers, maxSprints, options.focusReason);
   const branches = toEval.map((id) =>
-    runBranch(frame, id, originDangers, maxSprints, options.focusReason),
+    runActionBranch(frame, id, originDangers, maxSprints, options.focusReason),
   );
+  let skippedStrategic: string[] = [];
+  if (includeStrategic) {
+    const strategic = listStrategicChoices(frame, maxSprints);
+    const toStrategic = strategic.slice(0, maxStrategicBranches);
+    skippedStrategic = strategic.slice(maxStrategicBranches).map((choice) => choice.id);
+    for (const choice of toStrategic) {
+      branches.push(
+        runStrategicBranch(frame, choice, originDangers, maxSprints, options.focusReason),
+      );
+    }
+  }
   return {
     origin,
     originDangers: dangers,
     applicableActions: applicable,
     skippedActions,
+    skippedStrategic,
     baseline,
     branches,
   };
+}
+
+function loseNotEarlier(
+  baseline: CounterfactualBranchResult,
+  branch: CounterfactualBranchResult,
+): boolean {
+  return (
+    branch.sprintsToLose == null ||
+    baseline.sprintsToLose == null ||
+    branch.sprintsToLose >= baseline.sprintsToLose
+  );
 }
 
 /** ベースラインに対して介入が有効か（F-8 / F-9 共通の集計規則）。 */
@@ -241,13 +446,14 @@ export function isEffectiveChoice(
   const reasonChanged =
     baseline.loseReason != null &&
     branch.loseReason != null &&
-    branch.loseReason !== baseline.loseReason;
+    branch.loseReason !== baseline.loseReason &&
+    loseNotEarlier(baseline, branch);
   return delayed || avoided || leftDanger || reasonChanged;
 }
 
 export interface LatestEffectiveFrame {
   evaluation: CounterfactualEvaluation;
-  effective: ActionId[];
+  effective: string[];
 }
 
 /**
@@ -270,10 +476,10 @@ export function evaluateLatestEffectiveFrame(
   return newest;
 }
 
-export function effectiveActionsOf(evaluation: CounterfactualEvaluation): ActionId[] {
+export function effectiveActionsOf(evaluation: CounterfactualEvaluation): string[] {
   return evaluation.branches
     .filter((branch) => branch.actionId && isEffectiveChoice(evaluation.baseline, branch))
-    .map((branch) => branch.actionId as ActionId);
+    .map((branch) => branch.actionId as string);
 }
 
 export interface F8RecoveryJudgment {

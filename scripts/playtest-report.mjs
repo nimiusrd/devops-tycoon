@@ -1120,11 +1120,11 @@ if (cfRuns.length > 0) {
       }
       console.log(`  ${d}/${policy}:`);
       const sets = [];
-      const gaps = [];
       for (const [reason, arr] of [...byReason.entries()].sort(
         (a, b) => b[1].length - a[1].length,
       )) {
         const freq = new Map();
+        const gaps = [];
         let emptyEffective = 0;
         for (const r of arr) {
           const effective = Array.isArray(r.effectiveActionsInDanger)
@@ -1144,15 +1144,15 @@ if (cfRuns.length > 0) {
           .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
           .map(([id, n]) => `${id}:${n}`);
         sets.push([...freq.keys()].sort().join(','));
+        const gapNote =
+          gaps.length > 0
+            ? ` | 回復余地ギャップ p50=${quantile(gaps, 0.5)} (n=${gaps.length})`
+            : '';
         console.log(
-          `    ${reason}: n=${arr.length} 有効手なし ${emptyEffective} | 集合 {${ranked.join(', ') || '—'}}`,
+          `    ${reason}: n=${arr.length} 有効手なし ${emptyEffective} | 集合 {${ranked.join(', ') || '—'}}${gapNote}`,
         );
       }
-      const gapNote =
-        gaps.length > 0 ? ` 回復余地ギャップ p50=${quantile(gaps, 0.5)} (n=${gaps.length})` : '';
-      console.log(
-        `    敗因間で有効手集合が違う種類数: ${new Set(sets).size}。F-9 の有効手比較。${gapNote}`,
-      );
+      console.log(`    敗因間で有効手集合が違う種類数: ${new Set(sets).size}。F-9 の有効手比較。`);
     }
   }
 }

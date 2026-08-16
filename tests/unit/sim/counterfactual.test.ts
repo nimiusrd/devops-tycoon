@@ -7,6 +7,7 @@ import {
   isEffectiveChoice,
   judgeF8Recovery,
   judgeF9EffectiveSets,
+  listStrategicChoices,
   restoreCounterfactualEngine,
   type CounterfactualBranchResult,
 } from '../../../src/sim/run/counterfactual';
@@ -144,6 +145,30 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.originDangers).toEqual(activeDangerReasons(engine));
     expect(evaluation.applicableActions).toEqual(listApplicableActions(engine));
   });
+
+  it('無介入ドライブ上の戦略フェーズ代替肢をスプリント介入と別に分岐する', () => {
+    const engine = startedSprint('ri-101-strategy-fork');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const strategic = listStrategicChoices(frame, 4);
+    expect(strategic.length).toBeGreaterThan(0);
+    expect(
+      strategic.every((choice) => /^(draft:|evo:|beat:|rest:|recruit:|goal:)/.test(choice.id)),
+    ).toBe(true);
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: [],
+      includeStrategic: true,
+      maxSprints: 4,
+      maxStrategicBranches: 8,
+    });
+    const ids = evaluation.branches.map((branch) => branch.actionId);
+    expect(ids).toEqual(strategic.slice(0, 8).map((choice) => choice.id));
+    expect(
+      evaluateCounterfactual(frame, { actions: ['andon'], maxSprints: 1 }).branches.every(
+        (branch) => branch.actionId === 'andon',
+      ),
+    ).toBe(true);
+  });
 });
 
 describe('RI-101 集計規則', () => {
@@ -169,6 +194,16 @@ describe('RI-101 集計規則', () => {
         branch({ actionId: 'interruptReview', loseReason: 'reviewFreeze' }),
       ),
     ).toBe(true);
+    expect(
+      isEffectiveChoice(
+        baseline,
+        branch({
+          actionId: 'overtime',
+          sprintsToLose: 1,
+          loseReason: 'moraleCollapse',
+        }),
+      ),
+    ).toBe(false);
     expect(
       isEffectiveChoice(
         { ...baseline, leftDanger: true },

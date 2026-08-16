@@ -44,6 +44,7 @@ const STRATEGIC_KIND_ORDER = [
   'evolution',
   'goal',
   'recruit',
+  'lever',
 ] as const;
 const SETUP_LANES: readonly LaneAssignment[] = ['coding', 'review', 'bench'];
 
@@ -130,6 +131,13 @@ type StrategicOverride =
   | { kind: 'shop'; steps: ShopStep[] }
   | { kind: 'recruit'; assignment?: LaneAssignment; skip?: boolean }
   | { kind: 'goal'; id: GoalAdjustmentId }
+  | {
+      kind: 'lever';
+      phase: RunState['phase'];
+      leverId: string;
+      deptId?: string;
+      teamId?: string;
+    }
   | {
       kind: 'setup';
       memberId?: string;
@@ -269,7 +277,9 @@ function operableTeamsForLevers(s: RunState): RunState['teams'] {
 
 function listOrgLeverChoices(engine: RunEngine): SprintChoice[] {
   const s = engine.snapshot();
-  if (s.phase !== 'sprint' || !s.sprint || isAwaitingMinCompleteTick(s.sprint)) return [];
+  if (s.status !== 'playing') return [];
+  if (s.phase === 'title' || s.phase === 'won' || s.phase === 'lost') return [];
+  if (s.phase === 'sprint' && (!s.sprint || isAwaitingMinCompleteTick(s.sprint))) return [];
   const out: SprintChoice[] = [];
   const depts = [...new Set(s.teams.map((team) => team.deptId).filter(Boolean))];
   const teams = operableTeamsForLevers(s);
@@ -375,13 +385,14 @@ function phaseMatchesOverride(snapshot: RunState, override: StrategicOverride): 
     return snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision';
   }
   if (override.kind === 'goal') return snapshot.phase === 'quarterReview';
+  if (override.kind === 'lever') return snapshot.phase === override.phase;
   return snapshot.phase === override.kind;
 }
 
 function applyIdleStep(
   engine: RunEngine,
   snapshot: RunState,
-  playAcquiredCards: readonly number[] = [],
+  playAcquiredCards: number[] = [],
 ): boolean {
   switch (snapshot.phase) {
     case 'setup':
@@ -389,6 +400,7 @@ function applyIdleStep(
       return true;
     case 'sprint': {
       for (const deckIndex of playAcquiredCards) playTargetCardIfAble(engine, deckIndex);
+      playAcquiredCards.length = 0;
       const snap = engine.snapshot();
       if (snap.phase === 'sprint' && snap.status === 'playing') {
         engine.step(1_000_000);
@@ -466,6 +478,7 @@ function idlePinnedId(snapshot: RunState): string | null {
     return `goal:${pick}`;
   }
   if (snapshot.phase === 'recruit') return 'recruit:skip';
+  if (snapshot.phase === 'setup') return 'setup:skip';
   return null;
 }
 
@@ -558,6 +571,9 @@ function applyStrategicOverride(
       if (snapshot.phase !== 'quarterReview') return false;
       engine.chooseGoalAdjustment(override.id);
       return true;
+    case 'lever':
+      if (snapshot.phase !== override.phase) return false;
+      return engine.applyOrgLever(override.leverId, override.deptId, override.teamId);
     case 'setup':
       if (snapshot.phase !== 'setup') return false;
       {
@@ -757,7 +773,48 @@ function listEvolutionChoices(evolution: RunState['evolution']): StrategicChoice
   return out;
 }
 
+function leverOverrideOf(
+  snapshot: RunState,
+  choice: SprintChoice,
+): Extract<StrategicOverride, { kind: 'lever' }> {
+  return {
+    kind: 'lever',
+    phase: snapshot.phase,
+    leverId: choice.leverId!,
+    deptId: choice.deptId,
+    teamId: choice.teamId,
+  };
+}
+
+function listLeverStrategicChoices(engine: RunEngine, snapshot: RunState): StrategicChoice[] {
+  return listOrgLeverChoices(engine).map((choice) => ({
+    id: choice.id,
+    kind: 'lever' as const,
+    override: leverOverrideOf(snapshot, choice),
+  }));
+}
+
+function withPhaseLevers(
+  engine: RunEngine,
+  snapshot: RunState,
+  seen: Set<string>,
+  choices: StrategicChoice[],
+): StrategicChoice[] {
+  if (snapshot.phase === 'sprint' || snapshot.phase === 'title') return choices;
+  const nth = beginVisit(seen, `lever:${snapshot.phase}`, snapshot);
+  const levers = nth == null ? [] : withVisit(listLeverStrategicChoices(engine, snapshot), nth);
+  return [...choices, ...levers];
+}
+
 function collectStrategicAt(
+  engine: RunEngine,
+  snapshot: RunState,
+  seen: Set<string>,
+): StrategicChoice[] {
+  return withPhaseLevers(engine, snapshot, seen, collectStrategicAtCore(engine, snapshot, seen));
+}
+
+function collectStrategicAtCore(
   engine: RunEngine,
   snapshot: RunState,
   seen: Set<string>,
@@ -937,7 +994,19 @@ function collectStrategicAt(
   if (snapshot.phase === 'setup') {
     const nth = beginVisit(seen, 'setup', snapshot);
     if (nth == null) return [];
-    return collectSetupSequences(engine, snapshot, nth);
+    return [
+      ...withVisit(
+        [
+          {
+            id: 'setup:skip',
+            kind: 'setup' as const,
+            override: { kind: 'setup' as const },
+          },
+        ],
+        nth,
+      ),
+      ...collectSetupSequences(engine, snapshot, nth),
+    ];
   }
   return [];
 }
@@ -1010,13 +1079,17 @@ function collectFollowupChoices(
   const next = fork.snapshot();
   if (next.status !== 'playing') return [];
   if (next.phase === snapshot.phase) return [];
-  return collectStrategicAt(fork, next, new Set()).map((follow) => ({
-    id: `${primary.id}+${follow.id}`,
-    kind: primary.kind,
-    override: primary.override,
-    visit: primary.visit,
-    followup: follow.override,
-  }));
+  return collectStrategicAtCore(fork, next, new Set())
+    .filter(
+      (follow) => follow.kind === 'shop' || follow.kind === 'rest' || follow.kind === 'recruit',
+    )
+    .map((follow) => ({
+      id: `${primary.id}+${follow.id}`,
+      kind: primary.kind,
+      override: primary.override,
+      visit: primary.visit,
+      followup: follow.override,
+    }));
 }
 
 /**
@@ -1026,7 +1099,7 @@ function collectFollowupChoices(
 export function listStrategicChoices(
   frame: CounterfactualFrame,
   maxSprints: number,
-  playAcquiredCards: readonly number[] = [],
+  playAcquiredCards: number[] = [],
 ): StrategicChoice[] {
   const engine = restoreCounterfactualEngine(frame);
   const startPlayed = engine.snapshot().sprintsPlayed;
@@ -1140,6 +1213,11 @@ function drive(
         truncated: true,
       };
     }
+    const after = engine.snapshot();
+    lastProgress = loseProgress({
+      ...after,
+      phase: after.phase === 'lost' ? s.phase : after.phase,
+    });
   }
   const end = engine.snapshot();
   if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
@@ -1508,7 +1586,7 @@ export interface LatestEffectiveFrame {
 
 function isBaselineRecovered(evaluation: CounterfactualEvaluation): boolean {
   const baseline = evaluation.baseline;
-  return baseline.leftDanger || baseline.status !== 'lost';
+  return baseline.leftDanger || baseline.status === 'won';
 }
 
 /**
@@ -1573,6 +1651,7 @@ function isShopStepPart(part: string): boolean {
     part.startsWith('card:') ||
     part === 'relic' ||
     part.startsWith('relic:') ||
+    part === 'recruit' ||
     part === 'recruit:coding' ||
     part === 'recruit:review' ||
     part === 'recruit:bench'

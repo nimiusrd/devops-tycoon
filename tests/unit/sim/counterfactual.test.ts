@@ -159,7 +159,7 @@ describe('RI-101 分岐評価と上限', () => {
     expect(strategic.length).toBeGreaterThan(0);
     expect(
       strategic.every((choice) =>
-        /^(draft:|evo:|beat:|rest:|shop:|recruit:|goal:|setup:)/.test(choice.id),
+        /^(draft:|evo:|beat:|rest:|shop:|recruit:|goal:|setup:|lever:)/.test(choice.id),
       ),
     ).toBe(true);
     const restIds = strategic.filter((choice) => choice.id.startsWith('rest:'));
@@ -859,16 +859,18 @@ describe('RI-101 分岐評価と上限', () => {
     expect(other).toBeDefined();
     const frame = engine.exportCounterfactualFrame()!;
     const setup = listStrategicChoices(frame, 1).filter((choice) => choice.id.startsWith('setup:'));
+    expect(setup.some((choice) => choice.id === 'setup:skip')).toBe(true);
     expect(setup.some((choice) => choice.id === `setup:enter:${other!.id}`)).toBe(true);
     expect(setup.some((choice) => choice.id.includes('+setup:'))).toBe(true);
     const spy = vi.spyOn(RunEngine.prototype, 'enterTeam');
     try {
-      evaluateCounterfactual(frame, {
+      const evaluation = evaluateCounterfactual(frame, {
         actions: [],
         includeStrategic: true,
         maxSprints: 1,
         maxStrategicBranches: 192,
       });
+      expect(evaluation.idlePinnedIds).toContain('setup:skip');
       expect(spy.mock.calls.some(([id]) => id === other!.id)).toBe(true);
     } finally {
       spy.mockRestore();
@@ -937,9 +939,54 @@ describe('RI-101 分岐評価と上限', () => {
         maxStrategicBranches: 8,
       });
       expect(spy).toHaveBeenCalledWith(0);
+      expect(spy.mock.calls.filter((call) => call[0] === 0).length).toBeLessThanOrEqual(2);
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it('打ち切られた playing ベースラインの既定選択は有効手にしない', () => {
+    const evaluation = {
+      origin: { sprintsPlayed: 0, quarter: 1, index: 1 },
+      originDangers: ['seniorBurnout'] as const,
+      applicableActions: [],
+      skippedActions: [],
+      skippedStrategic: [],
+      idlePinnedIds: ['setup:skip'],
+      baseline: branch({
+        actionId: null,
+        status: 'playing',
+        truncated: true,
+        leftDanger: false,
+        sprintsToLose: null,
+        loseReason: null,
+      }),
+      branches: [
+        branch({
+          actionId: 'setup:skip',
+          status: 'playing',
+          truncated: true,
+          leftDanger: false,
+          sprintsToLose: null,
+          loseReason: null,
+        }),
+      ],
+    };
+    expect(effectiveActionsOf(evaluation)).toEqual([]);
+  });
+
+  it('戦略フェーズ後に開く組織レバーも分岐する', () => {
+    const engine = startedSprint('ri-101-beat-lever');
+    const internals = engine as unknown as {
+      phase: string;
+      beat: { eventId: string; kind: 'decision' };
+      budget: number;
+    };
+    internals.phase = 'beat';
+    internals.beat = { eventId: 'postmortem-culture', kind: 'decision' };
+    internals.budget = 0;
+    const choices = listStrategicChoices(engine.exportCounterfactualFrame()!, 1);
+    expect(choices.some((choice) => choice.id.includes('lever:'))).toBe(true);
   });
 });
 

@@ -76,15 +76,16 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
     s.stakeholderTrust.team,
   );
   const liveKpi = engine.previewLiveQuarterKpi();
+  const kpiOrg = liveKpi?.org ?? companyOrgFromTeams(s.teams, s.org);
+  const vitals = companyVitals(s, kpiOrg);
   const out: DangerLoseReason[] = [];
-  if (s.org.seniorHp < 50) out.push('seniorBurnout');
-  if (s.org.morale < 40) out.push('moraleCollapse');
+  if (vitals.seniorHp < 50) out.push('seniorBurnout');
+  if (vitals.morale < 40) out.push('moraleCollapse');
   const liveTechDebt = liveKpi?.org.techDebt ?? s.org.techDebt;
   if (s.org.techDebt >= 60 || liveTechDebt >= 60) out.push('techDebt');
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
   const nextBudget = budgetAfterNextInfraCharge(s);
   if (s.budget <= 15 || nextBudget <= 15) out.push('budgetExhausted');
-  const kpiOrg = liveKpi?.org ?? companyOrgFromTeams(s.teams, s.org);
   const kpiTotals = liveKpi?.totals ?? s.quarterTotals;
   const kpiMissCount = measureGoalProgress({
     goal: s.quarterGoal,
@@ -117,6 +118,27 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   if ((minTrust <= 20 && kpiMissCount >= 2) || (s.quarterNumber >= 2 && kpiMissCount >= 3))
     out.push('reorgRequired');
   return out;
+}
+
+/** 四半期敗北分類と同じ全社視点。選択中はライブ org、他チームは正本を平均する。 */
+function companyVitals(
+  s: RunState,
+  liveOrg: RunState['org'],
+): { seniorHp: number; morale: number } {
+  if (s.teams.length === 0) return { seniorHp: liveOrg.seniorHp, morale: liveOrg.morale };
+  let seniorHp = 0;
+  let morale = 0;
+  for (const team of s.teams) {
+    if (team.id === s.activeTeamId) {
+      seniorHp += liveOrg.seniorHp;
+      morale += liveOrg.morale;
+    } else {
+      seniorHp += team.seniorHp;
+      morale += team.morale;
+    }
+  }
+  const n = s.teams.length;
+  return { seniorHp: Math.round(seniorHp / n), morale: Math.round(morale / n) };
 }
 
 function nextSprintKind(s: RunState): SprintKind {

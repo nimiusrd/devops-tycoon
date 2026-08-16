@@ -357,28 +357,67 @@ describe('危険域判定（RI-101）', () => {
     expect(activeDangerReasons(engine)).toContain('kpiMissed');
   });
 
-  it('全社平均のシニアHPと士気で危険域を判定する', () => {
-    const engine = startedSprint('ri-101-company-vitals');
+  it('シニアHPと士気は選択中チームの値で判定する', () => {
+    const engine = startedSprint('ri-101-active-vitals');
     engine.step(200);
     const internals = engine as unknown as {
       activeTeamId: string;
       org: { seniorHp: number; morale: number };
       teams: Array<{ id: string; seniorHp: number; morale: number }>;
     };
+    internals.org.seniorHp = 20;
+    internals.org.morale = 20;
+    for (const team of internals.teams) {
+      if (team.id === internals.activeTeamId) {
+        team.seniorHp = 20;
+        team.morale = 20;
+        continue;
+      }
+      team.seniorHp = 90;
+      team.morale = 90;
+    }
+    expect(activeDangerReasons(engine)).toContain('seniorBurnout');
+    expect(activeDangerReasons(engine)).toContain('moraleCollapse');
+  });
+
+  it('採用費ちょうどで尽きる予算も危険域にする', () => {
+    const engine = startedSprint('ri-101-recruit-budget');
+    engine.step(200);
+    const internals = engine as unknown as {
+      budget: number;
+      sprintIndexInQuarter: number;
+      org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
+    };
+    internals.budget = 25;
+    internals.sprintIndexInQuarter = 0;
+    internals.org.aiDependency = 0;
+    for (const team of internals.teams) team.aiDependency = 0;
+    expect(activeDangerReasons(engine)).toContain('budgetExhausted');
+  });
+
+  it('スプリント外でも全社 Tech Debt で危険域を維持する', () => {
+    const engine = startedSprint('ri-101-company-debt');
+    engine.step(200);
+    const internals = engine as unknown as {
+      phase: string;
+      activeTeamId: string;
+      org: { techDebt: number; seniorHp: number; morale: number };
+      teams: Array<{ id: string; techDebt: number }>;
+    };
+    internals.org.techDebt = 50;
     internals.org.seniorHp = 80;
     internals.org.morale = 80;
     const others = internals.teams.filter((team) => team.id !== internals.activeTeamId);
     expect(others.length).toBeGreaterThan(0);
     for (const team of internals.teams) {
       if (team.id === internals.activeTeamId) {
-        team.seniorHp = 80;
-        team.morale = 80;
+        team.techDebt = 50;
         continue;
       }
-      team.seniorHp = 10;
-      team.morale = 10;
+      team.techDebt = 100;
     }
-    expect(activeDangerReasons(engine)).toContain('seniorBurnout');
-    expect(activeDangerReasons(engine)).toContain('moraleCollapse');
+    internals.phase = 'result';
+    expect(activeDangerReasons(engine)).toContain('techDebt');
   });
 });

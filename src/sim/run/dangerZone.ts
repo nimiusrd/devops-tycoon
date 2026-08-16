@@ -6,6 +6,7 @@
 import { ALL_ACTION_IDS, canApplyAction } from '../actions';
 import { assignableTasks } from '../assignTask';
 import { clamp } from '../clamp';
+import { canRecruit, RECRUIT_COST } from '../member';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import { companyOrgFromTeams } from '../orgscale';
 import type { ActionId } from '../types';
@@ -77,15 +78,16 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   );
   const liveKpi = engine.previewLiveQuarterKpi();
   const kpiOrg = liveKpi?.org ?? companyOrgFromTeams(s.teams, s.org);
-  const vitals = companyVitals(s, kpiOrg);
   const out: DangerLoseReason[] = [];
-  if (vitals.seniorHp < 50) out.push('seniorBurnout');
-  if (vitals.morale < 40) out.push('moraleCollapse');
-  const liveTechDebt = liveKpi?.org.techDebt ?? s.org.techDebt;
+  if (kpiOrg.seniorHp < 50) out.push('seniorBurnout');
+  if (kpiOrg.morale < 40) out.push('moraleCollapse');
+  const liveTechDebt = liveKpi?.org.techDebt ?? kpiOrg.techDebt;
   if (s.org.techDebt >= 60 || liveTechDebt >= 60) out.push('techDebt');
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
   const nextBudget = budgetAfterNextInfraCharge(s);
-  if (s.budget <= 15 || nextBudget <= 15) out.push('budgetExhausted');
+  if (s.budget <= 15 || nextBudget <= 15 || strategicSpendExhaustsBudget(s)) {
+    out.push('budgetExhausted');
+  }
   const kpiTotals = liveKpi?.totals ?? s.quarterTotals;
   const kpiMissCount = measureGoalProgress({
     goal: s.quarterGoal,
@@ -120,25 +122,19 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   return out;
 }
 
-/** 四半期敗北分類と同じ全社視点。選択中はライブ org、他チームは正本を平均する。 */
-function companyVitals(
-  s: RunState,
-  liveOrg: RunState['org'],
-): { seniorHp: number; morale: number } {
-  if (s.teams.length === 0) return { seniorHp: liveOrg.seniorHp, morale: liveOrg.morale };
-  let seniorHp = 0;
-  let morale = 0;
-  for (const team of s.teams) {
-    if (team.id === s.activeTeamId) {
-      seniorHp += liveOrg.seniorHp;
-      morale += liveOrg.morale;
-    } else {
-      seniorHp += team.seniorHp;
-      morale += team.morale;
+/** 採用・ショップなど、今開いている／直後に来る戦略支出で残高が 0 になるか。 */
+function strategicSpendExhaustsBudget(s: RunState): boolean {
+  if (s.budget <= 0) return false;
+  const costs: number[] = [];
+  if (canRecruit(s.roster)) costs.push(RECRUIT_COST);
+  if (s.shop) {
+    for (const card of s.shop.cards) {
+      if (!card.bought) costs.push(card.cost);
     }
+    if (s.shop.relic && !s.shop.relic.bought) costs.push(s.shop.relic.cost);
+    if (s.shop.recruit && !s.shop.recruit.bought) costs.push(s.shop.recruit.cost);
   }
-  const n = s.teams.length;
-  return { seniorHp: Math.round(seniorHp / n), morale: Math.round(morale / n) };
+  return costs.some((cost) => cost > 0 && s.budget <= cost);
 }
 
 function nextSprintKind(s: RunState): SprintKind {

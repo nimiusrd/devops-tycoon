@@ -314,6 +314,22 @@ describe('RI-101 分岐評価と上限', () => {
     }
   });
 
+  it('2手列が上限内でも3手目が残るなら sameTickCombo を skipped に残す', () => {
+    const engine = startedSprint('ri-101-same-tick-combo-3');
+    engine.step(200);
+    const internals = engine as unknown as { budget: number };
+    internals.budget = 30;
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, {
+      includeStrategic: false,
+      maxSprints: 1,
+      maxActionBranches: 8,
+      maxComboBranches: 64,
+    });
+    expect(evaluation.branches.some((branch) => (branch.actionId ?? '').includes('+'))).toBe(true);
+    expect(evaluation.skippedActions).toContain('sameTickCombo');
+  });
+
   it('入り込み拘束中でなければ非アクティブチームのレバーも分岐する', () => {
     const engine = startedSprint('ri-101-other-team-lever');
     engine.step(200);
@@ -385,6 +401,26 @@ describe('RI-101 分岐評価と上限', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it('採用見送りも強制選択として分岐し idlePinnedIds に残す', () => {
+    const engine = startedSprint('ri-101-recruit-skip');
+    const internals = engine as unknown as { phase: string };
+    internals.phase = 'recruit';
+    const frame = engine.exportCounterfactualFrame()!;
+    const recruit = listStrategicChoices(frame, 1).filter((choice) =>
+      choice.id.startsWith('recruit:'),
+    );
+    expect(recruit.some((choice) => choice.id === 'recruit:skip')).toBe(true);
+    expect(recruit.some((choice) => choice.id === 'recruit:hire:coding')).toBe(true);
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: [],
+      includeStrategic: true,
+      maxSprints: 1,
+      maxStrategicBranches: 192,
+    });
+    expect(evaluation.idlePinnedIds).toContain('recruit:skip');
+    expect(evaluation.branches.some((branch) => branch.actionId === 'recruit:skip')).toBe(true);
   });
 
   it('ビートで付与されたカードは後続スプリントで発動する', () => {
@@ -822,5 +858,65 @@ describe('RI-101 合成危険状態', () => {
         { loseReason: 'reviewFreeze', effectiveActions: ['interruptReview'] },
       ]).distinctEffectiveSetCount,
     ).toBe(2);
+  });
+
+  it('有効な真部分列がある組合せは最小列だけ残す', () => {
+    const engine = startedSprint('ri-101-minimal-combo');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: ['overtime', 'andon'],
+      maxSprints: 2,
+    });
+    const delayed = branch({
+      actionId: 'overtime',
+      sprintsToLose: 4,
+      loseReason: 'moraleCollapse',
+    });
+    const synthetic = {
+      ...evaluation,
+      baseline: branch({ actionId: null, sprintsToLose: 2, loseReason: 'moraleCollapse' }),
+      branches: [
+        delayed,
+        branch({ actionId: 'andon', sprintsToLose: 2, loseReason: 'moraleCollapse' }),
+        { ...delayed, actionId: 'overtime+andon' },
+        branch({
+          actionId: 'interruptReview+aiThrottle',
+          sprintsToLose: 4,
+          loseReason: 'moraleCollapse',
+        }),
+      ],
+    };
+    expect(effectiveActionsOf(synthetic)).toEqual(['overtime', 'interruptReview+aiThrottle']);
+  });
+
+  it('ベースライン回復時は採用見送りも有効手に残す', () => {
+    const engine = startedSprint('ri-101-recruit-skip-effective');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const recovered = {
+      sprintsToLose: null as number | null,
+      leftDanger: true,
+      loseReason: null as null,
+      status: 'playing' as const,
+      truncated: true,
+    };
+    const synthetic = {
+      ...evaluateCounterfactual(frame, { actions: [], maxSprints: 1 }),
+      baseline: { actionId: null, ...recovered },
+      idlePinnedIds: ['recruit:skip'],
+      branches: [
+        { actionId: 'recruit:skip', ...recovered },
+        {
+          actionId: 'recruit:hire:coding',
+          sprintsToLose: 1,
+          leftDanger: false,
+          loseReason: 'budgetExhausted' as const,
+          status: 'lost' as const,
+          truncated: false,
+        },
+      ],
+    };
+    expect(effectiveActionsOf(synthetic)).toEqual(['recruit:skip']);
   });
 });

@@ -24,7 +24,7 @@ type RestChoice = 'heal' | 'repay' | 'upgrade' | 'recruit';
 
 /** 無介入 1 + スプリント介入ブランチの上限。超過分は評価せず skipped に残す。 */
 export const DEFAULT_MAX_ACTION_BRANCHES = 8;
-/** 同一 tick の 2 手組合せブランチ上限。超過分は sameTickCombo として skipped に残す。 */
+/** 同一 tick の 2 手組合せブランチ上限。超過分および 3 手以上は sameTickCombo として skipped に残す。 */
 export const DEFAULT_MAX_COMBO_BRANCHES = 8;
 /** 戦略フェーズの代替肢ブランチ上限。スプリント介入とは別に数える。 */
 export const DEFAULT_MAX_STRATEGIC_BRANCHES = 8;
@@ -124,7 +124,7 @@ type StrategicOverride =
   | { kind: 'beat'; index: number; assignment?: LaneAssignment }
   | { kind: 'rest'; option: RestChoice; deckIndex?: number; assignment?: LaneAssignment }
   | { kind: 'shop'; steps: ShopStep[] }
-  | { kind: 'recruit'; assignment: LaneAssignment }
+  | { kind: 'recruit'; assignment?: LaneAssignment; skip?: boolean }
   | { kind: 'goal'; id: GoalAdjustmentId }
   | {
       kind: 'setup';
@@ -449,6 +449,7 @@ function idlePinnedId(snapshot: RunState): string | null {
     const pick = review.availableAdjustments[review.availableAdjustments.length - 1] ?? 'cut_scope';
     return `goal:${pick}`;
   }
+  if (snapshot.phase === 'recruit') return 'recruit:skip';
   return null;
 }
 
@@ -526,6 +527,11 @@ function applyStrategicOverride(
       return true;
     case 'recruit':
       if (snapshot.phase !== 'recruit') return false;
+      if (override.skip) {
+        engine.recruitChoose('skip');
+        return true;
+      }
+      if (!override.assignment) return false;
       {
         const beforeIds = memberIdsOf(snapshot);
         engine.recruitChoose('hire');
@@ -800,14 +806,19 @@ function collectStrategicAt(
   if (snapshot.phase === 'recruit') {
     const nth = beginVisit(seen, 'recruit', snapshot);
     if (nth == null) return [];
-    return withVisit(
-      RECRUIT_LANES.map((assignment) => ({
+    const out: StrategicChoice[] = [
+      {
+        id: 'recruit:skip',
+        kind: 'recruit',
+        override: { kind: 'recruit', skip: true },
+      },
+      ...RECRUIT_LANES.map((assignment) => ({
         id: `recruit:hire:${assignment}`,
         kind: 'recruit' as const,
         override: { kind: 'recruit' as const, assignment },
       })),
-      nth,
-    );
+    ];
+    return withVisit(out, nth);
   }
   if (snapshot.phase === 'quarterReview') {
     const nth = beginVisit(seen, 'goal', snapshot);
@@ -1055,12 +1066,19 @@ function runActionSequence(
   };
 }
 
-function listSameTickFollowups(frame: CounterfactualFrame, first: SprintChoice): SprintChoice[] {
+function remainingSprintChoicesAfter(
+  frame: CounterfactualFrame,
+  applied: readonly SprintChoice[],
+): SprintChoice[] {
   const engine = restoreCounterfactualEngine(frame);
-  applySprintChoice(engine, first);
+  for (const choice of applied) applySprintChoice(engine, choice);
   const s = engine.snapshot();
   if (s.phase !== 'sprint' || s.status !== 'playing' || !s.sprint || s.sprint.complete) return [];
-  return listSprintChoices(engine).filter(
+  return listSprintChoices(engine);
+}
+
+function listSameTickFollowups(frame: CounterfactualFrame, first: SprintChoice): SprintChoice[] {
+  return remainingSprintChoicesAfter(frame, [first]).filter(
     (choice) => choice.leverId != null || choice.id !== first.id,
   );
 }
@@ -1119,6 +1137,7 @@ export function evaluateCounterfactual(
   if (options.actions === undefined) {
     let comboBudget = maxComboBranches;
     let comboSkipped = false;
+    let longerComboRemains = false;
     for (const first of toEval) {
       const followups = listSameTickFollowups(frame, first);
       for (const second of followups) {
@@ -1130,10 +1149,13 @@ export function evaluateCounterfactual(
         branches.push(
           runActionSequence(frame, [first, second], originDangers, maxSprints, options.focusReason),
         );
+        if (!longerComboRemains && remainingSprintChoicesAfter(frame, [first, second]).length > 0) {
+          longerComboRemains = true;
+        }
       }
       if (comboSkipped) break;
     }
-    if (comboSkipped) skippedActions.push('sameTickCombo');
+    if (comboSkipped || longerComboRemains) skippedActions.push('sameTickCombo');
   }
   let skippedStrategic: string[] = [];
   if (includeStrategic) {
@@ -1279,17 +1301,28 @@ export function evaluateLatestEffectiveFrame(
   return newest;
 }
 
+function isMinimalEffectiveAction(actionId: string, effectiveIds: Set<string>): boolean {
+  const parts = actionId.split('+');
+  if (parts.length < 2) return true;
+  for (let i = 1; i < parts.length; i += 1) {
+    if (effectiveIds.has(parts.slice(0, i).join('+'))) return false;
+  }
+  return !parts.some((part) => effectiveIds.has(part));
+}
+
 export function effectiveActionsOf(evaluation: CounterfactualEvaluation): string[] {
   const recovered = isBaselineRecovered(evaluation);
-  return evaluation.branches
+  const effective = evaluation.branches
     .filter((branch) => {
       if (!branch.actionId) return false;
       if (isEffectiveChoice(evaluation.baseline, branch)) return true;
-      // エンジンは decision / rest / 目標修正をスキップできない。無介入が選んだ
+      // エンジンは decision / rest / 目標修正 / 採用をスキップできない。無介入が選んだ
       // 実選択肢と同一軌跡の分岐は、ベースライン回復時も F-9 の有効手として残す。
       return recovered && !!evaluation.idlePinnedIds?.includes(branch.actionId);
     })
     .map((branch) => branch.actionId as string);
+  const effectiveIds = new Set(effective);
+  return effective.filter((id) => isMinimalEffectiveAction(id, effectiveIds));
 }
 
 export interface F8RecoveryJudgment {

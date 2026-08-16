@@ -328,6 +328,66 @@ describe('RI-101 分岐評価と上限', () => {
     });
     expect(evaluation.branches.some((branch) => branch.actionId === 'evo:dev-1+dev-2')).toBe(true);
   });
+
+  it('採用後は新メンバーの配置まで分岐する', () => {
+    const engine = startedSprint('ri-101-recruit-lane');
+    const internals = engine as unknown as { phase: string };
+    internals.phase = 'rest';
+    const beforeIds = new Set(engine.snapshot().roster.members.map((member) => member.id));
+    const frame = engine.exportCounterfactualFrame()!;
+    const restRecruit = listStrategicChoices(frame, 1).filter((choice) =>
+      choice.id.startsWith('rest:recruit:'),
+    );
+    expect(restRecruit.map((choice) => choice.id).sort()).toEqual([
+      'rest:recruit:coding',
+      'rest:recruit:review',
+    ]);
+    const spy = vi.spyOn(RunEngine.prototype, 'assignMember');
+    try {
+      evaluateCounterfactual(frame, {
+        actions: [],
+        includeStrategic: true,
+        maxSprints: 1,
+        maxStrategicBranches: 16,
+      });
+      expect(
+        spy.mock.calls.some(
+          ([id, assignment]) =>
+            !beforeIds.has(id) && (assignment === 'coding' || assignment === 'review'),
+        ),
+      ).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('ビートで付与されたカードは後続スプリントで発動する', () => {
+    const engine = startedSprint('ri-101-beat-grant');
+    const internals = engine as unknown as {
+      phase: string;
+      beat: { eventId: string; kind: 'decision' };
+      deck: { defId: string; level: number }[];
+    };
+    internals.deck = [];
+    internals.phase = 'beat';
+    internals.beat = { eventId: 'junior-awaken', kind: 'decision' };
+    const frame = engine.exportCounterfactualFrame()!;
+    expect(
+      listStrategicChoices(frame, 2).some((choice) => choice.id === 'beat:junior-awaken:1'),
+    ).toBe(true);
+    const spy = vi.spyOn(RunEngine.prototype, 'playCard');
+    try {
+      evaluateCounterfactual(frame, {
+        actions: [],
+        includeStrategic: true,
+        maxSprints: 2,
+        maxStrategicBranches: 8,
+      });
+      expect(spy).toHaveBeenCalledWith(0);
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe('RI-101 集計規則', () => {

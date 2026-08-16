@@ -29,7 +29,8 @@ export const DEFAULT_MAX_STRATEGIC_BRANCHES = 8;
 /** フォーク後に進める追加スプリント数の既定。 */
 export const DEFAULT_MAX_SPRINTS = 4;
 
-const REST_ALTERNATIVES: readonly RestChoice[] = ['heal', 'repay', 'recruit'];
+const REST_ALTERNATIVES: readonly RestChoice[] = ['heal', 'repay'];
+const RECRUIT_LANES: readonly LaneAssignment[] = ['coding', 'review'];
 const STRATEGIC_KIND_ORDER = [
   'beat',
   'rest',
@@ -110,11 +111,11 @@ type StrategicOverride =
   | { kind: 'draft'; cardId: string; mulligan?: boolean }
   | { kind: 'evolution'; nodeIds: string[] }
   | { kind: 'beat'; index: number }
-  | { kind: 'rest'; option: RestChoice; deckIndex?: number }
+  | { kind: 'rest'; option: RestChoice; deckIndex?: number; assignment?: LaneAssignment }
   | { kind: 'shop'; mode: 'card'; defId: string }
   | { kind: 'shop'; mode: 'relic' }
-  | { kind: 'shop'; mode: 'recruit' }
-  | { kind: 'recruit' }
+  | { kind: 'shop'; mode: 'recruit'; assignment: LaneAssignment }
+  | { kind: 'recruit'; assignment: LaneAssignment }
   | { kind: 'goal'; id: GoalAdjustmentId }
   | { kind: 'setup'; memberId: string; assignment?: LaneAssignment; aiAssigned?: boolean };
 
@@ -296,6 +297,19 @@ function playTargetCardIfAble(engine: RunEngine, deckIndex: number): void {
   engine.playCard(deckIndex);
 }
 
+function memberIdsOf(snapshot: RunState): Set<string> {
+  return new Set(snapshot.roster.members.map((member) => member.id));
+}
+
+function assignHiredMember(
+  engine: RunEngine,
+  beforeIds: ReadonlySet<string>,
+  assignment: LaneAssignment,
+): void {
+  const hired = engine.snapshot().roster.members.find((member) => !beforeIds.has(member.id));
+  if (hired) engine.assignMember(hired.id, assignment);
+}
+
 function applyIdleStep(
   engine: RunEngine,
   snapshot: RunState,
@@ -371,18 +385,32 @@ function applyStrategicOverride(
       return true;
     case 'rest':
       if (snapshot.phase !== 'rest') return false;
-      engine.restChoose(override.option, override.deckIndex);
+      {
+        const beforeIds = memberIdsOf(snapshot);
+        engine.restChoose(override.option, override.deckIndex);
+        if (override.option === 'recruit' && override.assignment) {
+          assignHiredMember(engine, beforeIds, override.assignment);
+        }
+      }
       return true;
     case 'shop':
       if (snapshot.phase !== 'shop') return false;
       if (override.mode === 'card') engine.buyShopCard(override.defId);
       else if (override.mode === 'relic') engine.buyShopRelic();
-      else engine.buyShopRecruit();
+      else {
+        const beforeIds = memberIdsOf(snapshot);
+        engine.buyShopRecruit();
+        assignHiredMember(engine, beforeIds, override.assignment);
+      }
       engine.leaveShop();
       return true;
     case 'recruit':
       if (snapshot.phase !== 'recruit') return false;
-      engine.recruitChoose('hire');
+      {
+        const beforeIds = memberIdsOf(snapshot);
+        engine.recruitChoose('hire');
+        assignHiredMember(engine, beforeIds, override.assignment);
+      }
       return true;
     case 'goal':
       if (snapshot.phase !== 'quarterReview') return false;
@@ -502,14 +530,20 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
   }
   if (snapshot.phase === 'rest' && !seen.has('rest')) {
     seen.add('rest');
-    const out: StrategicChoice[] = REST_ALTERNATIVES.filter((option) => {
-      if (option !== 'recruit') return true;
-      return canRecruit(snapshot.roster) && snapshot.budget >= RECRUIT_COST;
-    }).map((option) => ({
+    const out: StrategicChoice[] = REST_ALTERNATIVES.map((option) => ({
       id: `rest:${option}`,
       kind: 'rest' as const,
       override: { kind: 'rest' as const, option },
     }));
+    if (canRecruit(snapshot.roster) && snapshot.budget >= RECRUIT_COST) {
+      for (const assignment of RECRUIT_LANES) {
+        out.push({
+          id: `rest:recruit:${assignment}`,
+          kind: 'rest',
+          override: { kind: 'rest', option: 'recruit', assignment },
+        });
+      }
+    }
     for (let deckIndex = 0; deckIndex < snapshot.deck.length; deckIndex += 1) {
       out.push({
         id: `rest:upgrade:${deckIndex}`,
@@ -544,13 +578,23 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
       snapshot.budget >= shop.recruit.cost &&
       canRecruit(snapshot.roster)
     ) {
-      out.push({ id: 'shop:recruit', kind: 'shop', override: { kind: 'shop', mode: 'recruit' } });
+      for (const assignment of RECRUIT_LANES) {
+        out.push({
+          id: `shop:recruit:${assignment}`,
+          kind: 'shop',
+          override: { kind: 'shop', mode: 'recruit', assignment },
+        });
+      }
     }
     return out;
   }
   if (snapshot.phase === 'recruit' && !seen.has('recruit')) {
     seen.add('recruit');
-    return [{ id: 'recruit:hire', kind: 'recruit', override: { kind: 'recruit' } }];
+    return RECRUIT_LANES.map((assignment) => ({
+      id: `recruit:hire:${assignment}`,
+      kind: 'recruit' as const,
+      override: { kind: 'recruit' as const, assignment },
+    }));
   }
   if (snapshot.phase === 'quarterReview' && !seen.has('goal')) {
     seen.add('goal');
@@ -631,7 +675,9 @@ function drive(
       applied = true;
       const deckAfter = engine.snapshot().deck.length;
       if (
-        (override.kind === 'draft' || (override.kind === 'shop' && override.mode === 'card')) &&
+        (override.kind === 'draft' ||
+          override.kind === 'beat' ||
+          (override.kind === 'shop' && override.mode === 'card')) &&
         deckAfter > s.deck.length
       ) {
         playAcquiredCard = deckAfter - 1;

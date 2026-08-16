@@ -240,7 +240,9 @@ export function TitleScreen({
               <span className="title-step">03</span>
               <p>
                 <b>導入ツール（シナリオ）</b>
-                <small>任意。開始時点の組織差分だけを変える。初期デッキには入らない</small>
+                <small>
+                  任意。開始時の組織値と、ラン中の速度・レビュー・手戻り係数を変える。初期デッキには入らない
+                </small>
               </p>
             </div>
             <div className="trial-row" data-testid="scenario-row">

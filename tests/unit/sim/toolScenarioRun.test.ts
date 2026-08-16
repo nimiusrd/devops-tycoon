@@ -108,4 +108,47 @@ describe('tool scenario run wiring (RI-103)', () => {
     restored.hydratePersistState(legacy);
     expect(restored.snapshot().scenario).toBe('default');
   });
+
+  it('passes scenario rework to coarse non-active teams', () => {
+    type CoarseInternals = {
+      teams: { id: string; reviewQueue: number; engineers: number; reviewCapacity: number }[];
+      activeTeamId: string;
+      coarseModifiersFromFold(fold: ReturnType<typeof foldRunEffects>): { reworkRateAdd: number };
+      advanceOtherTeams(stepKey: string): void;
+    };
+    const started = (scenario?: 'default' | 'devin' | 'claude-code') => {
+      const engine = new RunEngine({ seed: SEED, difficulty: 'normal' });
+      engine.startRun('normal', [], SEED, { kind: 'normal', scenario });
+      return engine as unknown as CoarseInternals;
+    };
+
+    const defaultMods = started('default').coarseModifiersFromFold(foldRunEffects(foldInput()));
+    const devinMods = started('devin').coarseModifiersFromFold(
+      foldRunEffects(foldInput({ scenario: 'devin' })),
+    );
+    const claudeMods = started('claude-code').coarseModifiersFromFold(
+      foldRunEffects(foldInput({ scenario: 'claude-code' })),
+    );
+    expect(defaultMods.reworkRateAdd).toBe(0);
+    expect(devinMods.reworkRateAdd).toBeCloseTo(0.03, 8);
+    expect(claudeMods.reworkRateAdd).toBeCloseTo(-0.02, 8);
+
+    const base = started('default');
+    const devin = started('devin');
+    for (const i of [base, devin]) {
+      i.teams = i.teams.map((t) =>
+        t.id === i.activeTeamId ? t : { ...t, reviewQueue: 12, engineers: 8, reviewCapacity: 10 },
+      );
+    }
+    base.advanceOtherTeams('ri-103-coarse-rework');
+    devin.advanceOtherTeams('ri-103-coarse-rework');
+    const baseQueues = base.teams
+      .filter((t) => t.id !== base.activeTeamId)
+      .map((t) => t.reviewQueue);
+    const devinQueues = devin.teams
+      .filter((t) => t.id !== devin.activeTeamId)
+      .map((t) => t.reviewQueue);
+    expect(devinQueues.every((q, idx) => q >= baseQueues[idx]!)).toBe(true);
+    expect(devinQueues.some((q, idx) => q > baseQueues[idx]!)).toBe(true);
+  });
 });

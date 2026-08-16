@@ -1742,7 +1742,9 @@ export class RunEngine {
     );
     // Rework はこれまで粗粒度未適用だったため、カード等のベース分は足さず
     // 目標修正キャリーオーバー差分だけを載せる（既存 seed / 勝率を壊さない）。
-    const reworkRateAdd = effects.reworkRateAdd - fold.effects.reworkRateAdd;
+    // RI-103: シナリオの手戻りだけは選択チームと揃え、非選択チームへも渡す。
+    const scenarioRework = getScenario(this.scenario).globalEffects?.reworkRateAdd ?? 0;
+    const reworkRateAdd = effects.reworkRateAdd - fold.effects.reworkRateAdd + scenarioRework;
     return {
       incidentRateMul: effects.incidentRateMul,
       shipMul: effects.codingSpeedMul,

@@ -345,7 +345,7 @@ describe('RI-101 分岐評価と上限', () => {
       actions: [],
       includeStrategic: true,
       maxSprints: 1,
-      maxStrategicBranches: 48,
+      maxStrategicBranches: 192,
     });
     expect(evaluation.branches.some((branch) => branch.actionId === 'evo:dev-1+dev-2')).toBe(true);
   });
@@ -489,6 +489,7 @@ describe('RI-101 分岐評価と上限', () => {
     const synthetic = {
       ...evaluateCounterfactual(frame, { actions: [], maxSprints: 1 }),
       baseline: { actionId: null, ...recovered },
+      idlePinnedIds: ['beat:shop-offer:1'],
       branches: [
         {
           actionId: 'beat:shop-offer:1',
@@ -559,6 +560,7 @@ describe('RI-101 分岐評価と上限', () => {
     const frame = engine.exportCounterfactualFrame()!;
     const setup = listStrategicChoices(frame, 1).filter((choice) => choice.id.startsWith('setup:'));
     expect(setup.some((choice) => choice.id === `setup:enter:${other!.id}`)).toBe(true);
+    expect(setup.some((choice) => choice.id.includes('+setup:'))).toBe(true);
     const spy = vi.spyOn(RunEngine.prototype, 'enterTeam');
     try {
       evaluateCounterfactual(frame, {

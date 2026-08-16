@@ -72,6 +72,8 @@ export interface CounterfactualEvaluation {
   skippedStrategic: string[];
   baseline: CounterfactualBranchResult;
   branches: CounterfactualBranchResult[];
+  /** 無介入ドライブが強制選択フェーズで実際に選んだ肢。 */
+  idlePinnedIds?: string[];
 }
 
 export interface CounterfactualEvaluateOptions {
@@ -130,7 +132,15 @@ type StrategicOverride =
       assignment?: LaneAssignment;
       aiAssigned?: boolean;
       enterTeamId?: string;
+      steps?: SetupChange[];
     };
+
+type SetupChange = {
+  memberId?: string;
+  assignment?: LaneAssignment;
+  aiAssigned?: boolean;
+  enterTeamId?: string;
+};
 
 export interface StrategicChoice {
   id: string;
@@ -414,6 +424,34 @@ function applyIdleStep(
   }
 }
 
+function setupChangeOf(override: StrategicOverride): SetupChange {
+  if (override.kind !== 'setup') return {};
+  return override;
+}
+
+function applySetupChanges(engine: RunEngine, change: SetupChange): void {
+  if (change.enterTeamId) engine.enterTeam(change.enterTeamId);
+  if (change.memberId) {
+    if (change.assignment) engine.assignMember(change.memberId, change.assignment);
+    if (change.aiAssigned !== undefined) engine.setMemberAi(change.memberId, change.aiAssigned);
+  }
+}
+
+function idlePinnedId(snapshot: RunState): string | null {
+  if (snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision') {
+    const n = getEvent(snapshot.beat.eventId)?.choices.length ?? 1;
+    return `beat:${snapshot.beat.eventId}:${Math.max(0, n - 1)}`;
+  }
+  if (snapshot.phase === 'rest') return 'rest:repay';
+  if (snapshot.phase === 'quarterReview') {
+    const review = snapshot.quarterReview;
+    if (review?.outcome !== 'missed_adjustable') return null;
+    const pick = review.availableAdjustments[review.availableAdjustments.length - 1] ?? 'cut_scope';
+    return `goal:${pick}`;
+  }
+  return null;
+}
+
 function recordAcquiredCards(
   engine: RunEngine,
   before: RunState,
@@ -500,11 +538,9 @@ function applyStrategicOverride(
       return true;
     case 'setup':
       if (snapshot.phase !== 'setup') return false;
-      if (override.enterTeamId) engine.enterTeam(override.enterTeamId);
-      if (override.memberId) {
-        if (override.assignment) engine.assignMember(override.memberId, override.assignment);
-        if (override.aiAssigned !== undefined)
-          engine.setMemberAi(override.memberId, override.aiAssigned);
+      {
+        const changes = override.steps ?? [override];
+        for (const change of changes) applySetupChanges(engine, change);
       }
       engine.beginSetupSprint();
       return true;
@@ -790,9 +826,56 @@ function collectStrategicAt(
   if (snapshot.phase === 'setup') {
     const nth = beginVisit(seen, 'setup', snapshot);
     if (nth == null) return [];
-    return withVisit(listSetupChoices(snapshot), nth);
+    return collectSetupSequences(engine, snapshot, nth);
   }
   return [];
+}
+
+const SETUP_SEQUENCE_CAP = 16;
+
+function collectSetupSequences(
+  engine: RunEngine,
+  snapshot: RunState,
+  nth: number,
+): StrategicChoice[] {
+  const firsts = withVisit(listSetupChoices(snapshot), nth);
+  const out: StrategicChoice[] = [...firsts];
+  let extra = 0;
+  let truncated = false;
+  for (const first of firsts) {
+    const frame = engine.exportCounterfactualFrame();
+    if (!frame) continue;
+    const fork = restoreCounterfactualEngine(frame);
+    applySetupChanges(fork, setupChangeOf(first.override));
+    if (fork.snapshot().phase !== 'setup') continue;
+    const seconds = listSetupChoices(fork.snapshot());
+    for (const second of seconds) {
+      if (extra >= SETUP_SEQUENCE_CAP) {
+        truncated = true;
+        break;
+      }
+      extra += 1;
+      out.push({
+        id: `${first.id}+${second.id}`,
+        kind: 'setup',
+        override: {
+          kind: 'setup',
+          steps: [setupChangeOf(first.override), setupChangeOf(second.override)],
+        },
+        visit: first.visit,
+      });
+    }
+    if (truncated) break;
+  }
+  if (truncated) {
+    out.push({
+      id: nth === 0 ? 'setup:combo' : `setup:combo@${nth}`,
+      kind: 'setup',
+      override: { kind: 'setup' },
+      visit: nth,
+    });
+  }
+  return out;
 }
 
 function collectFollowupChoices(
@@ -850,6 +933,7 @@ function drive(
   override?: StrategicOverride,
   overrideVisit = 0,
   followup?: StrategicOverride,
+  pinnedIds?: string[],
 ): Omit<CounterfactualBranchResult, 'actionId'> {
   const startPlayed = engine.snapshot().sprintsPlayed;
   let leftDanger = originDangersLeft(originDangers, engine, focusReason);
@@ -857,6 +941,7 @@ function drive(
   let followApplied = followup == null;
   const playAcquiredCards: number[] = [];
   let kindHits = 0;
+  const pinnedVisits = new Map<string, number>();
   let guard = 0;
   while (engine.snapshot().status === 'playing' && guard < 4_000) {
     guard += 1;
@@ -889,6 +974,15 @@ function drive(
         continue;
       }
     }
+    if (pinnedIds) {
+      const pinned = idlePinnedId(s);
+      if (pinned) {
+        const kind = pinned.slice(0, pinned.indexOf(':'));
+        const n = pinnedVisits.get(kind) ?? 0;
+        pinnedVisits.set(kind, n + 1);
+        pinnedIds.push(n === 0 ? pinned : `${pinned}@${n}`);
+      }
+    }
     if (!applyIdleStep(engine, s, playAcquiredCards)) {
       return {
         sprintsToLose: null,
@@ -915,9 +1009,25 @@ function runIdleBranch(
   originDangers: ReadonlySet<DangerLoseReason>,
   maxSprints: number,
   focusReason?: DangerLoseReason,
-): CounterfactualBranchResult {
+): { branch: CounterfactualBranchResult; idlePinnedIds: string[] } {
   const engine = restoreCounterfactualEngine(frame);
-  return { actionId: null, ...drive(engine, originDangers, maxSprints, focusReason) };
+  const idlePinnedIds: string[] = [];
+  return {
+    branch: {
+      actionId: null,
+      ...drive(
+        engine,
+        originDangers,
+        maxSprints,
+        focusReason,
+        undefined,
+        0,
+        undefined,
+        idlePinnedIds,
+      ),
+    },
+    idlePinnedIds,
+  };
 }
 
 function runActionBranch(
@@ -999,7 +1109,8 @@ export function evaluateCounterfactual(
     : listSprintChoices(probe);
   const toEval = sprintChoices.slice(0, maxActionBranches);
   const skippedActions = sprintChoices.slice(maxActionBranches).map((choice) => choice.id);
-  const baseline = runIdleBranch(frame, originDangers, maxSprints, options.focusReason);
+  const idle = runIdleBranch(frame, originDangers, maxSprints, options.focusReason);
+  const baseline = idle.branch;
   const branches = toEval.map((choice) =>
     runActionBranch(frame, choice, originDangers, maxSprints, options.focusReason),
   );
@@ -1032,6 +1143,48 @@ export function evaluateCounterfactual(
         runStrategicBranch(frame, choice, originDangers, maxSprints, options.focusReason),
       );
     }
+    if (options.actions === undefined && toEval.length > 0 && strategic.length > 0) {
+      let crossBudget = maxComboBranches;
+      let crossSkipped = false;
+      for (const first of toEval) {
+        if (crossBudget <= 0) {
+          crossSkipped = true;
+          break;
+        }
+        const engine = restoreCounterfactualEngine(frame);
+        applySprintChoice(engine, first);
+        const after = engine.exportCounterfactualFrame();
+        if (!after || engine.snapshot().status !== 'playing') continue;
+        const later = listStrategicChoices(after, maxSprints);
+        for (const choice of later) {
+          if (crossBudget <= 0) {
+            crossSkipped = true;
+            break;
+          }
+          crossBudget -= 1;
+          const combined: StrategicChoice = {
+            ...choice,
+            id: `${first.id}+${choice.id}`,
+          };
+          const crossEngine = restoreCounterfactualEngine(frame);
+          applySprintChoice(crossEngine, first);
+          branches.push({
+            actionId: combined.id,
+            ...drive(
+              crossEngine,
+              originDangers,
+              maxSprints,
+              options.focusReason,
+              choice.override,
+              choice.visit ?? 0,
+              choice.followup,
+            ),
+          });
+        }
+        if (crossSkipped) break;
+      }
+      if (crossSkipped) skippedActions.push('actionStrategicCombo');
+    }
   }
   return {
     origin,
@@ -1041,6 +1194,7 @@ export function evaluateCounterfactual(
     skippedStrategic,
     baseline,
     branches,
+    idlePinnedIds: idle.idlePinnedIds,
   };
 }
 
@@ -1083,21 +1237,6 @@ function isBaselineRecovered(evaluation: CounterfactualEvaluation): boolean {
   return baseline.leftDanger || baseline.status !== 'lost';
 }
 
-function sameBranchOutcome(a: CounterfactualBranchResult, b: CounterfactualBranchResult): boolean {
-  return (
-    a.sprintsToLose === b.sprintsToLose &&
-    a.leftDanger === b.leftDanger &&
-    a.loseReason === b.loseReason &&
-    a.status === b.status &&
-    a.truncated === b.truncated
-  );
-}
-
-/** 無介入ドライブが合法解決のため選ぶ強制選択フェーズの肢。 */
-function isForcedChoiceActionId(id: string): boolean {
-  return id.startsWith('beat:') || id.startsWith('rest:') || id.startsWith('goal:');
-}
-
 /**
  * 新しいフレームから遡り、有効手がある最初の評価を返す。
  * 無介入で生存・危険域離脱できる最新フレームでは遡らない。
@@ -1138,11 +1277,7 @@ export function effectiveActionsOf(evaluation: CounterfactualEvaluation): string
       if (isEffectiveChoice(evaluation.baseline, branch)) return true;
       // エンジンは decision / rest / 目標修正をスキップできない。無介入が選んだ
       // 実選択肢と同一軌跡の分岐は、ベースライン回復時も F-9 の有効手として残す。
-      return (
-        recovered &&
-        isForcedChoiceActionId(branch.actionId) &&
-        sameBranchOutcome(evaluation.baseline, branch)
-      );
+      return recovered && !!evaluation.idlePinnedIds?.includes(branch.actionId);
     })
     .map((branch) => branch.actionId as string);
 }

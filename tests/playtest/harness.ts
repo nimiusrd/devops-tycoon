@@ -1472,23 +1472,34 @@ function counterfactualEnabled(): boolean {
 function rememberCounterfactualFrame(
   framesByReason: Map<DangerLoseReason, CounterfactualFrameSample[]>,
   reason: DangerLoseReason,
-  sample: { sprintsPlayed: number; quarter: number; index: number },
+  sample: { sprintsPlayed: number; quarter: number; index: number; sig?: string },
   frame: CounterfactualFrameSample['frame'],
 ): void {
   const list = framesByReason.get(reason) ?? [];
-  const last = list[list.length - 1];
+  const last = list[list.length - 1] as
+    | (CounterfactualFrameSample & { lastSig?: string })
+    | undefined;
   if (
     last &&
     last.sprintsPlayed === sample.sprintsPlayed &&
     last.quarter === sample.quarter &&
     last.index === sample.index
   ) {
+    if (sample.sig && last.lastSig === sample.sig) return;
     const frames = last.frames ?? [last.frame];
     frames.push(frame);
     last.frames = frames;
+    last.lastSig = sample.sig;
     return;
   }
-  list.push({ ...sample, frame, frames: [frame] });
+  list.push({
+    ...sample,
+    frame,
+    frames: [frame],
+    lastSig: sample.sig,
+  } as CounterfactualFrameSample & {
+    lastSig?: string;
+  });
   framesByReason.set(reason, list);
 }
 
@@ -1507,6 +1518,15 @@ function sampleAvailableInDanger(
     quarter: s.quarterNumber,
     index: s.sprintIndexInQuarter,
     actions: [...available].sort(),
+    sig: [
+      s.sprintTick,
+      s.sprint.focus,
+      s.org.seniorHp,
+      s.org.morale,
+      s.budget,
+      s.sprint.tasks.filter((task) => task.lane === 'review').length,
+      available.join(','),
+    ].join('|'),
   };
   for (const reason of dangers) {
     let track = byReason.get(reason);

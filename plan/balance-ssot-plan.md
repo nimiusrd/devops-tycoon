@@ -63,7 +63,7 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 | メンバー | [`src/sim/member/roster.ts`](../src/sim/member/roster.ts) | 能力倍率、スタミナ、休職、採用 |
 | 介入 | [`src/data/actions.ts`](../src/data/actions.ts)、[`src/sim/actions.ts`](../src/sim/actions.ts) | 集中力コスト、クールダウン、ゲージ量、効果量、副作用、持続tick |
 | ラン進行 | [`src/sim/run/engine.ts`](../src/sim/run/engine.ts) | スプリント数、イベント率、休息、ショップ |
-| KPIと敗北 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts) | 目標、評価閾値、即時敗北条件 |
+| KPI・勝敗・診断 | [`src/sim/run/quarterReview.ts`](../src/sim/run/quarterReview.ts)、[`src/sim/outcome.ts`](../src/sim/outcome.ts)、[`src/sim/diagnosis.ts`](../src/sim/diagnosis.ts) | 目標、評価閾値、即時敗北条件、勝利種別へ影響する診断閾値 |
 | 粗粒度モデル | [`src/sim/orgscale/teamState.ts`](../src/sim/orgscale/teamState.ts) | 出荷、行列、Incident、状態ドリフト |
 | ペーシング | [`src/ui/sprintTempo.ts`](../src/ui/sprintTempo.ts) | tick換算、目標プレイ時間 |
 | メタ進行とデイリー | [`src/state/meta.ts`](../src/state/meta.ts) | デイリー難易度・試練、優先カード上限、ラン報酬係数 |
@@ -85,6 +85,7 @@ src/data/balance/
 ├── member.ts
 ├── actions.ts
 ├── run.ts
+├── outcome.ts
 ├── meta.ts
 ├── coarse-team.ts
 ├── pacing.ts
@@ -259,7 +260,7 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 
 ### Phase 3: 周辺領域を移行
 
-- メンバー、介入、ラン進行、KPI、敗北条件、ペーシング、メタ進行・デイリー条件を領域ごとに移す。
+- メンバー、介入、ラン進行、KPI、勝敗・診断条件、ペーシング、メタ進行・デイリー条件を領域ごとに移す。
 - 既存の`src/data/`定義をパラメータ一覧へ集約する。
 - 粗粒度モデルの係数を移し、詳細モデルとの方向性を検証する。
 

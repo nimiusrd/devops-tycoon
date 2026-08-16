@@ -140,12 +140,12 @@ SPEC F-3のプレイテスト観測項目は追加済みだが、戦略フェー
 
 ### RI-112 四半期KPI・勝敗閾値の移行
 
-`src/sim/run/quarterReview.ts`と`src/sim/outcome.ts`の目標倍率、下限、評価閾値、継続不能条件、勝利種別閾値を`balance/run.ts`または専用の`balance/outcome.ts`へ移す。結果ラベルや敗因IDは移動しない。
+`src/sim/run/quarterReview.ts`、`src/sim/outcome.ts`、`src/sim/diagnosis.ts`の目標倍率、下限、評価閾値、継続不能条件、勝利種別閾値、Reviewキュー・Rework比率・AI利用率などの診断閾値を`balance/run.ts`または専用の`balance/outcome.ts`へ移す。結果ラベル、敗因ID、診断IDは移動しない。
 
 受入条件:
 
 - KPIと勝敗の閾値を安定IDから参照し、派生目標は基本値から計算する。
-- 四半期レビュー、目標修正、敗北、勝利種別の境界テストと代表seed結果が一致する。
+- 四半期レビュー、目標修正、敗北、組織診断、診断結果を使う勝利種別の境界テストと代表seed結果が一致する。
 - RI-73／RI-76で確定した値と判定境界を変更せず、値調整を同じPRに含めない。
 
 ### RI-113 粗粒度チームモデルのパラメータ移行

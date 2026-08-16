@@ -50,6 +50,7 @@ import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng } from '../rng';
 import { DEFAULT_SEED } from '../seed';
+import { applyScenarioOrg, DEFAULT_SCENARIO, getScenario, resolveScenarioId } from '../scenarios';
 import {
   forceShipReviewTask,
   isAwaitingMinCompleteTick,
@@ -65,6 +66,7 @@ import type {
   CardPlayOutcome,
   InterventionOutcome,
   OrgState,
+  ScenarioId,
   SprintConfig,
   SprintResult,
   SprintState,
@@ -269,19 +271,20 @@ function addSprintTotals(
   t.consecutiveIncidentSprints = result.spread > 0 ? (t.consecutiveIncidentSprints ?? 0) + 1 : 0;
 }
 
-/** 難易度の組織プリセットから初期 `OrgState` を作る（AI 導入済みの組織を前提）。 */
-function buildRunOrg(difficulty: DifficultyId): OrgState {
+/** 難易度の組織プリセットにシナリオ差分を足して初期 `OrgState` を作る（AI 導入済みの組織を前提）。 */
+function buildRunOrg(difficulty: DifficultyId, scenarioId: ScenarioId): OrgState {
   const { org } = getDifficulty(difficulty);
+  const scenarioOrg = applyScenarioOrg(org, getScenario(scenarioId));
   return {
     aiEnabled: true,
-    aiDependency: org.aiDependencyBase,
-    aiLiteracy: org.aiLiteracy,
-    testCoverage: org.testCoverage,
-    documentation: org.documentation,
-    quality: org.quality,
-    securityLevel: org.securityLevel,
-    morale: org.morale,
-    seniorHp: org.seniorHp,
+    aiDependency: scenarioOrg.aiDependencyBase,
+    aiLiteracy: scenarioOrg.aiLiteracy,
+    testCoverage: scenarioOrg.testCoverage,
+    documentation: scenarioOrg.documentation,
+    quality: scenarioOrg.quality,
+    securityLevel: scenarioOrg.securityLevel,
+    morale: scenarioOrg.morale,
+    seniorHp: scenarioOrg.seniorHp,
     techDebt: 0,
     deliveryScore: 0,
   };
@@ -291,6 +294,8 @@ export class RunEngine {
   private seed: string;
   private difficulty: DifficultyId;
   private trials: string[];
+  /** ラン開始時に固定したツール別シナリオ（RI-103）。 */
+  private scenario: ScenarioId = DEFAULT_SCENARIO;
   private allowedCards: ReadonlySet<string> | null = null;
   private allowedRelics: ReadonlySet<string> | null = null;
   /** ラン開始時に固定した研修方針（優先施策。RI-34⁗）。 */
@@ -439,6 +444,8 @@ export class RunEngine {
     if (seed !== undefined) this.seed = seed;
     this.difficulty = difficulty;
     this.trials = trials;
+    this.scenario =
+      options?.kind === 'daily' ? DEFAULT_SCENARIO : resolveScenarioId(options?.scenario);
     this.initRun();
     this.runKind = options?.kind ?? 'normal';
     this.dailyDate = options?.dailyDate;
@@ -465,7 +472,7 @@ export class RunEngine {
         ? { aiDependencyPerTask: diff.aiDependencyPerTask }
         : {}),
     };
-    this.org = buildRunOrg(this.difficulty);
+    this.org = buildRunOrg(this.difficulty, this.scenario);
     this.deck = [];
     this.relics = [];
     this.bossRelicReward = undefined;
@@ -560,6 +567,7 @@ export class RunEngine {
       evolution: this.evolution,
       difficulty: this.difficulty,
       trials: this.trials,
+      scenario: this.scenario,
     };
     // ドリフトは選択中チームへ適用し、課金前に永続チームへ同期する。
     applyTrialAiDependencyPressure(org, budget, pressureCtx, { billInfraCost: false });
@@ -709,6 +717,7 @@ export class RunEngine {
         evolution: this.evolution,
         difficulty: this.difficulty,
         trials: this.trials,
+        scenario: this.scenario,
         bossId: this.bossId,
         goalCarryoverQuarter: this.goalCarryoverQuarter,
         goalCarryoverId: this.goalCarryoverId,
@@ -1768,6 +1777,7 @@ export class RunEngine {
       evolution: this.evolution,
       difficulty: this.difficulty,
       trials: this.trials,
+      scenario: this.scenario,
     });
     const { assignedByTeamId, reviewersByTeamId } = this.coarseRosterShareMaps();
     const stepped = advanceCoarseTeams(this.teams, {
@@ -2040,6 +2050,7 @@ export class RunEngine {
       evolution: { points: this.evolution.points, unlocked: { ...this.evolution.unlocked } },
       difficulty: this.difficulty,
       trials: [...this.trials],
+      scenario: this.scenario,
       bossId: this.bossId,
       goalCarryoverQuarter: this.goalCarryoverQuarter,
       goalCarryoverId: this.goalCarryoverId,
@@ -2098,6 +2109,7 @@ export class RunEngine {
       seed: this.seed,
       difficulty: this.difficulty,
       trials: [...this.trials],
+      scenario: this.scenario,
       runKind: this.runKind,
       dailyDate: this.dailyDate,
       phase: this.phase as RunReplayFrame['phase'],
@@ -2166,6 +2178,7 @@ export class RunEngine {
         allowedCards: this.allowedCards ? [...this.allowedCards] : [],
         allowedRelics: this.allowedRelics ? [...this.allowedRelics] : [],
         preferredCardIds: [...this.preferredCards],
+        scenario: this.scenario,
         teams: structuredClone(this.teams),
         activeTeamId: this.activeTeamId,
         homeTeamId: this.homeTeamId,
@@ -2205,6 +2218,7 @@ export class RunEngine {
     this.seed = cloned.seed;
     this.difficulty = cloned.difficulty;
     this.trials = [...cloned.trials];
+    this.scenario = resolveScenarioId(cloned.extras.scenario ?? cloned.scenario);
     this.runKind = cloned.runKind;
     this.dailyDate = cloned.dailyDate;
     this.phase = cloned.phase;
@@ -2435,6 +2449,7 @@ export class RunEngine {
       evolution: this.evolution,
       difficulty: this.difficulty,
       trials: this.trials,
+      scenario: this.scenario,
     });
     const { assignedByTeamId, reviewersByTeamId } = this.coarseRosterShareMaps();
     const stepped = advanceCoarseTeams(this.teams, {
@@ -2508,6 +2523,7 @@ export class RunEngine {
       seed: this.seed,
       difficulty: this.difficulty,
       trials: [...this.trials],
+      scenario: this.scenario,
       runKind: this.runKind,
       dailyDate: this.dailyDate,
       phase: this.phase,

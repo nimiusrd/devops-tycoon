@@ -5,7 +5,14 @@
  * 入れ子——四半期 → スプリント → リザルト → ドラフト → 進化 ——を載せる。
  * すべて描画非依存の純データで、seed付き決定論で更新される（第22.3）。
  */
-import type { CardEffects, CardInstance, OrgState, SprintResult, SprintState } from '../types';
+import type {
+  CardEffects,
+  CardInstance,
+  OrgState,
+  ScenarioId,
+  SprintResult,
+  SprintState,
+} from '../types';
 import type { GrowthOutcome, RosterState } from '../member/types';
 import type {
   IndustryState,
@@ -210,6 +217,8 @@ export interface ShopOffer {
 export interface StartRunOptions {
   kind?: RunKind;
   dailyDate?: string;
+  /** ツール別シナリオ（RI-103）。デイリーは無視して default。 */
+  scenario?: ScenarioId;
 }
 
 /** what-if 試算で表示する 1 指標の期待値と seed 掃引の観測レンジ。 */
@@ -257,6 +266,8 @@ export interface RunState {
   difficulty: DifficultyId;
   /** 適用中の試練（ランモディファイア。第16章）。 */
   trials: string[];
+  /** ラン開始時に固定したツール別シナリオ（RI-103）。デイリーは default。 */
+  scenario: ScenarioId;
   /** 通常ランかデイリーランか（第23章）。 */
   runKind: RunKind;
   /** デイリーランの UTC 日付（runKind=daily のときのみ）。 */

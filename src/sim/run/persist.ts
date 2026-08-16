@@ -2,7 +2,7 @@
  * ラン途中セーブ用の永続スナップショット型（RI-58）。
  * sim 層に置き、state 永続化と engine の双方から参照する。
  */
-import type { OrgState, SprintConfig } from '../types';
+import type { OrgState, ScenarioId, SprintConfig } from '../types';
 import type { OrgAdjustState, TeamRunState } from '../orgscale/types';
 import type { RosterState } from '../member/types';
 import type { GoalAdjustmentId, RunPhase, RunState } from './types';
@@ -58,6 +58,11 @@ export interface RunPersistExtras {
    * 旧セーブでは欠落しうる（復元時は空配列扱い。RI-34⁗）。
    */
   preferredCardIds?: string[];
+  /**
+   * ラン開始時に固定したツール別シナリオ（RI-103）。
+   * 旧セーブでは欠落しうる（復元時は default）。
+   */
+  scenario?: ScenarioId;
   /** 全チームの永続状態（RI-64。旧セーブでは欠落しうる）。 */
   teams?: TeamRunState[];
   activeTeamId?: string;

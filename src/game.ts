@@ -9,7 +9,13 @@
 import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
 import { resolveSeedFromLocation } from './sim/seed';
-import type { ActionId, ActionTarget, CardPlayOutcome, InterventionOutcome } from './sim/types';
+import type {
+  ActionId,
+  ActionTarget,
+  CardPlayOutcome,
+  InterventionOutcome,
+  ScenarioId,
+} from './sim/types';
 import type {
   DiagnosisType,
   DifficultyId,
@@ -70,7 +76,12 @@ export interface GameHandle {
   /** 現在のラン状態のスナップショット。 */
   getState(): RunState;
   /** タイトルで選んだ難易度・試練でランを開始する。 */
-  startRun(difficulty?: DifficultyId, trials?: string[], seed?: string): RunState;
+  startRun(
+    difficulty?: DifficultyId,
+    trials?: string[],
+    seed?: string,
+    scenario?: ScenarioId,
+  ): RunState;
   /** 本日（または指定 UTC 日）のデイリーランを開始する（第23章）。 */
   startDailyRun(dateStr?: string): RunState;
   /**
@@ -467,7 +478,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       // オートプレイやモンテカルロは snapshot を直接使うため、UI 経路だけで試算する。
       return { ...state, ...resolveWhatIf() };
     },
-    startRun(difficulty, trials, runSeed) {
+    startRun(difficulty, trials, runSeed, scenario) {
       if (replayMode) return engine.snapshot();
       recorded = false;
       lastRunReward = null;
@@ -477,7 +488,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearWhatIfCache();
       applyUnlockedToEngine();
       runEpoch += 1;
-      engine.startRun(difficulty, trials, runSeed, { kind: 'normal' });
+      engine.startRun(difficulty, trials, runSeed, { kind: 'normal', scenario });
       bump();
       return after();
     },

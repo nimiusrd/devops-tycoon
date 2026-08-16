@@ -120,7 +120,13 @@ type StrategicOverride =
   | { kind: 'shop'; steps: ShopStep[] }
   | { kind: 'recruit'; assignment: LaneAssignment }
   | { kind: 'goal'; id: GoalAdjustmentId }
-  | { kind: 'setup'; memberId: string; assignment?: LaneAssignment; aiAssigned?: boolean };
+  | {
+      kind: 'setup';
+      memberId?: string;
+      assignment?: LaneAssignment;
+      aiAssigned?: boolean;
+      enterTeamId?: string;
+    };
 
 export interface StrategicChoice {
   id: string;
@@ -128,6 +134,8 @@ export interface StrategicChoice {
   override: StrategicOverride;
   /** 無介入ドライブ上でこの種別のフェーズが何回目か（0始まり）。 */
   visit?: number;
+  /** ビート選択が開く直後の shop / rest / recruit への後続 override。 */
+  followup?: StrategicOverride;
 }
 
 export function restoreCounterfactualEngine(frame: CounterfactualFrame): RunEngine {
@@ -402,6 +410,29 @@ function applyIdleStep(
   }
 }
 
+function recordAcquiredCards(
+  engine: RunEngine,
+  before: RunState,
+  override: StrategicOverride,
+  playAcquiredCards: number[],
+): void {
+  const deckAfter = engine.snapshot().deck.length;
+  if (
+    (override.kind === 'draft' ||
+      override.kind === 'beat' ||
+      (override.kind === 'shop' && override.steps.some((step) => step.mode === 'card'))) &&
+    deckAfter > before.deck.length
+  ) {
+    for (let i = before.deck.length; i < deckAfter; i += 1) playAcquiredCards.push(i);
+  } else if (
+    override.kind === 'rest' &&
+    override.option === 'upgrade' &&
+    override.deckIndex != null
+  ) {
+    playAcquiredCards.push(override.deckIndex);
+  }
+}
+
 function applyStrategicOverride(
   engine: RunEngine,
   snapshot: RunState,
@@ -465,9 +496,12 @@ function applyStrategicOverride(
       return true;
     case 'setup':
       if (snapshot.phase !== 'setup') return false;
-      if (override.assignment) engine.assignMember(override.memberId, override.assignment);
-      if (override.aiAssigned !== undefined)
-        engine.setMemberAi(override.memberId, override.aiAssigned);
+      if (override.enterTeamId) engine.enterTeam(override.enterTeamId);
+      if (override.memberId) {
+        if (override.assignment) engine.assignMember(override.memberId, override.assignment);
+        if (override.aiAssigned !== undefined)
+          engine.setMemberAi(override.memberId, override.aiAssigned);
+      }
       engine.beginSetupSprint();
       return true;
   }
@@ -490,6 +524,16 @@ function listSetupChoices(snapshot: RunState): StrategicChoice[] {
         id: `setup:ai:${member.id}:${member.aiAssigned ? 'off' : 'on'}`,
         kind: 'setup',
         override: { kind: 'setup', memberId: member.id, aiAssigned: !member.aiAssigned },
+      });
+    }
+  }
+  if (snapshot.sprintsPlayed >= snapshot.teamLockUntilSprint) {
+    for (const team of operableTeamsForLevers(snapshot)) {
+      if (team.id === snapshot.activeTeamId) continue;
+      out.push({
+        id: `setup:enter:${team.id}`,
+        kind: 'setup',
+        override: { kind: 'setup', enterTeamId: team.id },
       });
     }
   }
@@ -676,7 +720,15 @@ function collectStrategicAt(
         });
       }
     }
-    return withVisit(out, nth);
+    const visited = withVisit(out, nth);
+    const combined: StrategicChoice[] = [];
+    for (const choice of visited) {
+      if (choice.override.kind !== 'beat') continue;
+      const leadsTo = event?.choices[choice.override.index]?.leadsTo;
+      if (leadsTo !== 'shop' && leadsTo !== 'rest' && leadsTo !== 'recruit') continue;
+      combined.push(...collectFollowupChoices(engine, snapshot, choice));
+    }
+    return [...visited, ...combined];
   }
   if (snapshot.phase === 'rest') {
     const nth = beginVisit(seen, 'rest', snapshot);
@@ -743,6 +795,27 @@ function collectStrategicAt(
   return [];
 }
 
+function collectFollowupChoices(
+  engine: RunEngine,
+  snapshot: RunState,
+  primary: StrategicChoice,
+): StrategicChoice[] {
+  const frame = engine.exportCounterfactualFrame();
+  if (!frame) return [];
+  const fork = restoreCounterfactualEngine(frame);
+  if (!applyStrategicOverride(fork, snapshot, primary.override)) return [];
+  const next = fork.snapshot();
+  if (next.status !== 'playing') return [];
+  if (next.phase === snapshot.phase) return [];
+  return collectStrategicAt(fork, next, new Set()).map((follow) => ({
+    id: `${primary.id}+${follow.id}`,
+    kind: primary.kind,
+    override: primary.override,
+    visit: primary.visit,
+    followup: follow.override,
+  }));
+}
+
 /**
  * 無介入ドライブ上で出会う各戦略フェーズの代替肢。
  * ネストした全組合せは作らず、同一種別でも出現位置ごとに独立分岐する。
@@ -776,10 +849,12 @@ function drive(
   focusReason?: DangerLoseReason,
   override?: StrategicOverride,
   overrideVisit = 0,
+  followup?: StrategicOverride,
 ): Omit<CounterfactualBranchResult, 'actionId'> {
   const startPlayed = engine.snapshot().sprintsPlayed;
   let leftDanger = originDangersLeft(originDangers, engine, focusReason);
   let applied = override == null;
+  let followApplied = followup == null;
   const playAcquiredCards: number[] = [];
   let kindHits = 0;
   let guard = 0;
@@ -802,24 +877,17 @@ function drive(
     if (!applied && override && phaseMatchesOverride(s, override)) {
       if (kindHits === overrideVisit && applyStrategicOverride(engine, s, override)) {
         applied = true;
-        const deckAfter = engine.snapshot().deck.length;
-        if (
-          (override.kind === 'draft' ||
-            override.kind === 'beat' ||
-            (override.kind === 'shop' && override.steps.some((step) => step.mode === 'card'))) &&
-          deckAfter > s.deck.length
-        ) {
-          for (let i = s.deck.length; i < deckAfter; i += 1) playAcquiredCards.push(i);
-        } else if (
-          override.kind === 'rest' &&
-          override.option === 'upgrade' &&
-          override.deckIndex != null
-        ) {
-          playAcquiredCards.push(override.deckIndex);
-        }
+        recordAcquiredCards(engine, s, override, playAcquiredCards);
         continue;
       }
       kindHits += 1;
+    }
+    if (applied && !followApplied && followup && phaseMatchesOverride(s, followup)) {
+      if (applyStrategicOverride(engine, s, followup)) {
+        followApplied = true;
+        recordAcquiredCards(engine, s, followup, playAcquiredCards);
+        continue;
+      }
     }
     if (!applyIdleStep(engine, s, playAcquiredCards)) {
       return {
@@ -874,7 +942,15 @@ function runStrategicBranch(
   const engine = restoreCounterfactualEngine(frame);
   return {
     actionId: choice.id,
-    ...drive(engine, originDangers, maxSprints, focusReason, choice.override, choice.visit ?? 0),
+    ...drive(
+      engine,
+      originDangers,
+      maxSprints,
+      focusReason,
+      choice.override,
+      choice.visit ?? 0,
+      choice.followup,
+    ),
   };
 }
 
@@ -966,6 +1042,21 @@ function isBaselineRecovered(evaluation: CounterfactualEvaluation): boolean {
   return baseline.leftDanger || baseline.status !== 'lost';
 }
 
+function sameBranchOutcome(a: CounterfactualBranchResult, b: CounterfactualBranchResult): boolean {
+  return (
+    a.sprintsToLose === b.sprintsToLose &&
+    a.leftDanger === b.leftDanger &&
+    a.loseReason === b.loseReason &&
+    a.status === b.status &&
+    a.truncated === b.truncated
+  );
+}
+
+/** 無介入ドライブが合法解決のため選ぶ強制選択フェーズの肢。 */
+function isForcedChoiceActionId(id: string): boolean {
+  return id.startsWith('beat:') || id.startsWith('rest:') || id.startsWith('goal:');
+}
+
 /**
  * 新しいフレームから遡り、有効手がある最初の評価を返す。
  * 無介入で生存・危険域離脱できる最新フレームでは遡らない。
@@ -999,8 +1090,19 @@ export function evaluateLatestEffectiveFrame(
 }
 
 export function effectiveActionsOf(evaluation: CounterfactualEvaluation): string[] {
+  const recovered = isBaselineRecovered(evaluation);
   return evaluation.branches
-    .filter((branch) => branch.actionId && isEffectiveChoice(evaluation.baseline, branch))
+    .filter((branch) => {
+      if (!branch.actionId) return false;
+      if (isEffectiveChoice(evaluation.baseline, branch)) return true;
+      // エンジンは decision / rest / 目標修正をスキップできない。無介入が選んだ
+      // 実選択肢と同一軌跡の分岐は、ベースライン回復時も F-9 の有効手として残す。
+      return (
+        recovered &&
+        isForcedChoiceActionId(branch.actionId) &&
+        sameBranchOutcome(evaluation.baseline, branch)
+      );
+    })
     .map((branch) => branch.actionId as string);
 }
 

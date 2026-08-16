@@ -2358,7 +2358,7 @@ export function runOnce(
             {
               focusReason: f.loseReason as DangerLoseReason,
               maxActionBranches: 96,
-              maxStrategicBranches: 96,
+              maxStrategicBranches: 192,
             },
           );
           if (!selected) return {};

@@ -173,7 +173,9 @@ describe('RI-101 分岐評価と上限', () => {
     expect(
       strategic
         .filter((choice) => choice.id.startsWith('beat:'))
-        .every((choice) => /^beat:[^:]+:\d+(:(?:coding|review))?(?:@\d+)?$/.test(choice.id)),
+        .every((choice) =>
+          /^beat:[^:]+:\d+(:(?:coding|review))?(?:@\d+)?(?:\+.+)?$/.test(choice.id),
+        ),
     ).toBe(true);
     const evaluation = evaluateCounterfactual(frame, {
       actions: [],
@@ -251,7 +253,7 @@ describe('RI-101 分岐評価と上限', () => {
       actions: [],
       includeStrategic: true,
       maxSprints: 4,
-      maxStrategicBranches: 48,
+      maxStrategicBranches: 192,
     });
     expect(evaluation.branches.some((branch) => (branch.actionId ?? '').startsWith('setup:'))).toBe(
       true,
@@ -452,6 +454,104 @@ describe('RI-101 分岐評価と上限', () => {
     expect(
       listStrategicChoices(frame, 1).some((choice) => choice.id === 'beat:junior-awaken:0'),
     ).toBe(true);
+  });
+
+  it('ベースラインと同一軌跡の強制選択も回復時は有効手に残す', () => {
+    const engine = startedSprint('ri-101-forced-choice-id');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const recovered = {
+      sprintsToLose: null as number | null,
+      leftDanger: true,
+      loseReason: null as null,
+      status: 'playing' as const,
+      truncated: true,
+    };
+    const synthetic = {
+      ...evaluateCounterfactual(frame, { actions: [], maxSprints: 1 }),
+      baseline: { actionId: null, ...recovered },
+      branches: [
+        {
+          actionId: 'beat:shop-offer:1',
+          ...recovered,
+        },
+        {
+          actionId: 'beat:shop-offer:0',
+          sprintsToLose: 1,
+          leftDanger: false,
+          loseReason: 'seniorBurnout' as const,
+          status: 'lost' as const,
+          truncated: false,
+        },
+      ],
+    };
+    expect(effectiveActionsOf(synthetic)).toEqual(['beat:shop-offer:1']);
+  });
+
+  it('イベントが開くショップ・休息・採用の後続選択も分岐する', () => {
+    const engine = startedSprint('ri-101-beat-followup');
+    const internals = engine as unknown as {
+      phase: string;
+      beat: { eventId: string; kind: 'decision' };
+      budget: number;
+    };
+    internals.phase = 'beat';
+    internals.beat = { eventId: 'shop-offer', kind: 'decision' };
+    internals.budget = 20;
+    const shopChoices = listStrategicChoices(engine.exportCounterfactualFrame()!, 1);
+    expect(shopChoices.some((choice) => choice.id === 'beat:shop-offer:0')).toBe(true);
+    expect(shopChoices.some((choice) => choice.id.startsWith('beat:shop-offer:0+shop:'))).toBe(
+      true,
+    );
+
+    internals.beat = { eventId: 'rest-offer', kind: 'decision' };
+    const restChoices = listStrategicChoices(engine.exportCounterfactualFrame()!, 1);
+    expect(restChoices.some((choice) => choice.id === 'beat:rest-offer:0+rest:heal')).toBe(true);
+
+    internals.beat = { eventId: 'recruit-offer', kind: 'decision' };
+    const recruitChoices = listStrategicChoices(engine.exportCounterfactualFrame()!, 1);
+    expect(
+      recruitChoices.some((choice) => choice.id === 'beat:recruit-offer:0+recruit:hire:coding'),
+    ).toBe(true);
+
+    internals.beat = { eventId: 'shop-offer', kind: 'decision' };
+    const spy = vi.spyOn(RunEngine.prototype, 'buyShopCard');
+    try {
+      evaluateCounterfactual(engine.exportCounterfactualFrame()!, {
+        actions: [],
+        includeStrategic: true,
+        maxSprints: 1,
+        maxStrategicBranches: 48,
+      });
+      expect(spy).toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('setup では操作可能な他チームへの入り込みも分岐する', () => {
+    const engine = startedSprint('ri-101-setup-enter');
+    const snap = engine.snapshot();
+    const internals = engine as unknown as { phase: string };
+    internals.phase = 'setup';
+    expect(snap.sprintsPlayed >= snap.teamLockUntilSprint).toBe(true);
+    const other = snap.teams.find((team) => team.id !== snap.activeTeamId);
+    expect(other).toBeDefined();
+    const frame = engine.exportCounterfactualFrame()!;
+    const setup = listStrategicChoices(frame, 1).filter((choice) => choice.id.startsWith('setup:'));
+    expect(setup.some((choice) => choice.id === `setup:enter:${other!.id}`)).toBe(true);
+    const spy = vi.spyOn(RunEngine.prototype, 'enterTeam');
+    try {
+      evaluateCounterfactual(frame, {
+        actions: [],
+        includeStrategic: true,
+        maxSprints: 1,
+        maxStrategicBranches: 192,
+      });
+      expect(spy.mock.calls.some(([id]) => id === other!.id)).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('ショップは残予算で実行可能な連続購入列も分岐する', () => {

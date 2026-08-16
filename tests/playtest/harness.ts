@@ -14,9 +14,7 @@ import { CARD_DEFS, getCard } from '../../src/data/cards';
 import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
-import { assignableTasks } from '../../src/sim/assignTask';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
-import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import {
   RunEngine,
@@ -27,13 +25,19 @@ import {
   REST_UPGRADE_FOCUS_MAX,
 } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
-import { measureGoalProgress } from '../../src/sim/run/quarterReview';
+import { effectiveActionsOf, evaluateCounterfactual } from '../../src/sim/run/counterfactual';
+import {
+  activeDangerReasons,
+  canApplyAssignTaskWithExplicitTarget,
+  listApplicableActions,
+  type DangerLoseReason,
+} from '../../src/sim/run/dangerZone';
+import type { CounterfactualFrame } from '../../src/sim/run/persist';
 import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
 import { summarizeSprint } from '../../src/sim/sprint';
 import type {
   DifficultyId,
   GoalAdjustmentId,
-  LoseReason,
   RunState,
   RunTotals,
   StakeholderTrust,
@@ -952,6 +956,26 @@ export interface RunLog {
     index: number;
     actions: string[];
   };
+  /**
+   * 最終敗因の last-non-empty フレームを反実仮想評価した有効手（RI-101）。
+   * `PT_COUNTERFACTUAL=1` のときだけ付く。空配列は「評価したが有効手なし」。
+   */
+  effectiveActionsInDanger?: string[];
+  /** 有効手が残っていた最後の危険域サンプル位置（RI-101）。 */
+  lastEffectiveActionsAt?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+    actions: string[];
+  };
+  /** 同じフレームから無介入で進めたベースライン（RI-101）。 */
+  counterfactualBaseline?: {
+    sprintsToLose: number | null;
+    leftDanger: boolean;
+    loseReason: string | null;
+    status: string;
+    truncated: boolean;
+  };
 }
 
 /**
@@ -1379,25 +1403,6 @@ function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
   };
 }
 
-/**
- * F-9 / RI-89: 敗因予兆の危険域（HUD・四半期閾値の手前）。
- * 指標ごとに対応する敗因へ紐づけ、最終敗因の窓だけを報告できるようにする。
- */
-type DangerLoseReason = Extract<
-  LoseReason,
-  | 'seniorBurnout'
-  | 'moraleCollapse'
-  | 'techDebt'
-  | 'aiDependency'
-  | 'budgetExhausted'
-  | 'trustExhausted'
-  | 'kpiMissed'
-  | 'reviewFreeze'
-  | 'incidentCascade'
-  | 'bossFailed'
-  | 'reorgRequired'
->;
-
 /** 敗因ごとの危険域観測トラック（和集合＋時系列）。 */
 type DangerTrack = {
   actions: Set<string>;
@@ -1420,74 +1425,6 @@ type DangerTrack = {
     actions: string[];
   } | null;
 };
-
-function activeDangerReasons(e: RunEngine): DangerLoseReason[] {
-  const s = e.snapshot();
-  const minTrust = Math.min(
-    s.stakeholderTrust.management,
-    s.stakeholderTrust.customers,
-    s.stakeholderTrust.team,
-  );
-  // 完了時と同じく、選択中 live＋非選択の粗粒度進行を合成した KPI。
-  const liveKpi = e.previewLiveQuarterKpi();
-  const out: DangerLoseReason[] = [];
-  if (s.org.seniorHp < 50) out.push('seniorBurnout');
-  if (s.org.morale < 40) out.push('moraleCollapse');
-  // techDebt: 四半期ハード敗北は全社平均負債を見るため、投影 org も危険域へ含める。
-  const liveTechDebt = liveKpi?.org.techDebt ?? s.org.techDebt;
-  if (s.org.techDebt >= 60 || liveTechDebt >= 60) out.push('techDebt');
-  if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
-  if (s.budget <= 15) out.push('budgetExhausted');
-  // trustExhausted: trust / budget / HP 経路（missed_crisis・shutdown 前兆）。
-  // KPI 未達だけの missed_crisis は loseReasonForOutcome が kpiMissed を返すため分離する。
-  const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
-  const kpiMissCount = liveKpi
-    ? measureGoalProgress({
-        goal: s.quarterGoal,
-        org: liveKpi.org,
-        totals: liveKpi.totals,
-      }).filter((p) => p.status === 'missed').length
-    : 0;
-  if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
-  // kpiMissed: 未達4件以上に加え、missed_crisis フォールバック（trust/budget 枯渇・ハード非該当）の前兆。
-  // 例: 予算1〜5・信頼はまだ閾値超・未達が少なくても loseReasonForOutcome は kpiMissed を返しうる。
-  if (lateInQuarter && kpiMissCount >= 4) out.push('kpiMissed');
-  if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
-  // reviewFreeze: ラン累計・選択中スプリント・投影した非選択ピークの最大を見る。
-  // イベント抽選は seniorHpLow >= 0.55（seniorHp <= 45）のみで、Review 件数条件は無い。
-  const liveReviewPeak = Math.max(
-    s.totals.reviewQueuePeak,
-    s.sprint?.metrics.reviewQueueMax ?? 0,
-    liveKpi?.totals.reviewQueuePeak ?? 0,
-  );
-  const reviewQueueDanger = liveReviewPeak >= Math.round(REVIEW_FREEZE_PEAK * 0.75);
-  const reviewFreezeEventRisk = s.org.seniorHp <= 45;
-  if (reviewQueueDanger || reviewFreezeEventRisk) out.push('reviewFreeze');
-  if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
-    out.push('incidentCascade');
-  if (s.currentSprintKind === 'boss') out.push('bossFailed');
-  // reorgRequired: trust+quarter 条件に加え、Q2 以降の遅延中スプリントで多 KPI 未達リスクが高い場合。
-  // missedCount >= 3 の代替プロキシ: lateInQuarter かつ kpiMissCount（出荷含む複数 KPI）が 3 以上。
-  if (
-    (minTrust <= 20 && s.quarterNumber >= 2) ||
-    (s.quarterNumber >= 2 && lateInQuarter && kpiMissCount >= 3)
-  )
-    out.push('reorgRequired');
-  return out;
-}
-
-/** 対象省略で不可でも、明示 target（Backlog→Coding ドラッグ）なら差配できるか。 */
-function canApplyAssignTaskWithExplicitTarget(
-  sprint: NonNullable<RunState['sprint']>,
-  org: RunState['org'],
-  tick: number,
-): boolean {
-  for (const task of assignableTasks(sprint)) {
-    const target = { taskId: task.id, lane: 'coding' as const };
-    if (canApplyAction('assignTask', sprint, org, tick, target).ok) return true;
-  }
-  return false;
-}
 
 /** 集中力・クールダウンを満たす前提で、対象が存在するかを観測する。 */
 function hasTargetOpportunity(
@@ -1521,26 +1458,21 @@ function observeOpportunityWindows(
   }
 }
 
+function counterfactualEnabled(): boolean {
+  return process.env.PT_COUNTERFACTUAL === '1';
+}
+
 /** アクティブな危険種別ごとの発動可能介入を和集合・最終サンプルへ追記する（盤面非破壊）。 */
-function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, DangerTrack>): void {
+function sampleAvailableInDanger(
+  e: RunEngine,
+  byReason: Map<DangerLoseReason, DangerTrack>,
+  framesByReason?: Map<DangerLoseReason, CounterfactualFrame>,
+): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
   const dangers = activeDangerReasons(e);
   if (dangers.length === 0) return;
-  const available: string[] = [];
-  for (const id of ALL_ACTION_IDS) {
-    if (canApplyAction(id, s.sprint, s.org, s.sprintTick).ok) {
-      available.push(id);
-      continue;
-    }
-    // UI は Coding 空でも Backlog ドラッグ可なら assignTask を武装するため、明示 target も試す。
-    if (
-      id === 'assignTask' &&
-      canApplyAssignTaskWithExplicitTarget(s.sprint, s.org, s.sprintTick)
-    ) {
-      available.push(id);
-    }
-  }
+  const available = listApplicableActions(e);
   const sample = {
     sprintsPlayed: s.sprintsPlayed,
     quarter: s.quarterNumber,
@@ -1561,7 +1493,13 @@ function sampleAvailableInDanger(e: RunEngine, byReason: Map<DangerLoseReason, D
     }
     for (const id of available) track.actions.add(id);
     track.lastSample = sample;
-    if (available.length > 0) track.lastNonEmpty = sample;
+    if (available.length > 0) {
+      track.lastNonEmpty = sample;
+      if (framesByReason && counterfactualEnabled()) {
+        const frame = e.exportCounterfactualFrame();
+        if (frame) framesByReason.set(reason, frame);
+      }
+    }
   }
 }
 
@@ -1995,6 +1933,8 @@ export function runOnce(
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
   /** 危険種別ごとの発動可能介入トラック（RI-89）。キーがある＝その危険域を観測。 */
   const availableInDangerByReason = new Map<DangerLoseReason, DangerTrack>();
+  /** 危険種別ごとの last-non-empty 反実仮想フレーム（RI-101。オプトイン時のみ更新）。 */
+  const counterfactualFramesByReason = new Map<DangerLoseReason, CounterfactualFrame>();
   /** 敗北を検知した時点のフェーズ（直前状態をどこから取るかの判定に使う）。 */
   let lostPhase: string | undefined;
   /**
@@ -2062,7 +2002,7 @@ export function runOnce(
         let cardFocusSpent = 0;
         const sampleDanger = (): void => {
           observeOpportunityWindows(e, opportunityOpen, opportunityWindows);
-          sampleAvailableInDanger(e, availableInDangerByReason);
+          sampleAvailableInDanger(e, availableInDangerByReason, counterfactualFramesByReason);
         };
         const onCardPlayed = (focusSpent: number): void => {
           cardsPlayed += 1;
@@ -2378,6 +2318,33 @@ export function runOnce(
             ...(track.lastNonEmpty
               ? { availableActionsInDangerLastNonEmpty: track.lastNonEmpty }
               : {}),
+          };
+        })()
+      : {}),
+    ...(f.status === 'lost' &&
+    f.loseReason &&
+    counterfactualEnabled() &&
+    counterfactualFramesByReason.has(f.loseReason as DangerLoseReason)
+      ? (() => {
+          const evaluation = evaluateCounterfactual(
+            counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!,
+          );
+          const effective = effectiveActionsOf(evaluation);
+          return {
+            effectiveActionsInDanger: effective,
+            lastEffectiveActionsAt: {
+              sprintsPlayed: evaluation.origin.sprintsPlayed,
+              quarter: evaluation.origin.quarter,
+              index: evaluation.origin.index,
+              actions: effective,
+            },
+            counterfactualBaseline: {
+              sprintsToLose: evaluation.baseline.sprintsToLose,
+              leftDanger: evaluation.baseline.leftDanger,
+              loseReason: evaluation.baseline.loseReason,
+              status: evaluation.baseline.status,
+              truncated: evaluation.baseline.truncated,
+            },
           };
         })()
       : {}),

@@ -48,7 +48,7 @@ import {
 import type { GrowthOutcome, LaneAssignment, RosterState } from '../member/types';
 import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
-import { createRng } from '../rng';
+import { createRng, createRngFromState, getRngState } from '../rng';
 import { DEFAULT_SEED } from '../seed';
 import { applyScenarioOrg, DEFAULT_SCENARIO, getScenario, resolveScenarioId } from '../scenarios';
 import {
@@ -184,6 +184,7 @@ import type {
 import {
   isReplayFramePhase,
   isRunSavePhase,
+  type CounterfactualFrame,
   type RunPersistState,
   type RunReplayFrame,
 } from './persist';
@@ -2108,6 +2109,45 @@ export class RunEngine {
   exportReplayFrame(): RunReplayFrame | null {
     if (!isReplayFramePhase(this.phase)) return null;
     return this.buildPersistFrame();
+  }
+
+  /**
+   * 反実仮想用の中間スナップショット（RI-101）。
+   * sprint フェーズと RNG 消費位置を含める。プレイヤーセーブには使わない。
+   */
+  exportCounterfactualFrame(): CounterfactualFrame | null {
+    if (this.status !== 'playing') return null;
+    return {
+      persist: this.buildPersistFrame() as CounterfactualFrame['persist'],
+      sprint: this.sprint ? structuredClone(this.sprint) : null,
+      sprintTick: this.sprintTick,
+      accumulatorMs: this.accumulatorMs,
+      sprintRngState: getRngState(this.sprintRng),
+      sprintBaselineInput: this.sprintBaselineInput
+        ? structuredClone(this.sprintBaselineInput)
+        : null,
+      sprintPassiveEffects: { ...this.sprintPassiveEffects },
+      chargedInfraCost: this.chargedInfraCost,
+      chargedInfraDependency: this.chargedInfraDependency,
+      chargedInfraRate: this.chargedInfraRate,
+    };
+  }
+
+  /** 反実仮想フレームから同一乱数状態を復元する（RI-101）。 */
+  hydrateCounterfactualFrame(frame: CounterfactualFrame): void {
+    this.applyPersistFrame(frame.persist as RunReplayFrame, { migrateLegacyAiDependency: false });
+    this.sprint = frame.sprint ? structuredClone(frame.sprint) : null;
+    this.sprintTick = frame.sprintTick;
+    this.accumulatorMs = frame.accumulatorMs;
+    this.sprintBaselineInput = frame.sprintBaselineInput
+      ? structuredClone(frame.sprintBaselineInput)
+      : null;
+    this.sprintPassiveEffects = { ...frame.sprintPassiveEffects };
+    this.sprintRng = createRngFromState(frame.sprintRngState);
+    this.chargedInfraCost = frame.chargedInfraCost;
+    this.chargedInfraDependency = frame.chargedInfraDependency;
+    this.chargedInfraRate = frame.chargedInfraRate;
+    this.whatIfCache = null;
   }
 
   private buildPersistFrame(): RunReplayFrame {

@@ -959,6 +959,29 @@ describe('RI-101 集計規則', () => {
     ).toBe(true);
   });
 
+  it('同一完了スプリントでも戦略フェーズが早い敗北は敗因変化でも無効', () => {
+    const played = 1;
+    const beatLose = played * 1_000_000 + 5 * 10_000;
+    const setupLose = played * 1_000_000 + 10 * 10_000;
+    const later = branch({
+      actionId: null,
+      sprintsToLose: 0,
+      loseTick: setupLose,
+      loseReason: 'budgetExhausted',
+    });
+    expect(
+      isEffectiveChoice(
+        later,
+        branch({
+          actionId: 'beat:urgent-hire:0',
+          sprintsToLose: 0,
+          loseTick: beatLose,
+          loseReason: 'moraleCollapse',
+        }),
+      ),
+    ).toBe(false);
+  });
+
   it('F-8 は有効手が残る最後の時点だけを見る', () => {
     const judgment = judgeF8Recovery(
       [

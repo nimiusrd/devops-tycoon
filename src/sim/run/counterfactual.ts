@@ -59,7 +59,7 @@ export interface CounterfactualBranchResult {
    */
   actionId: string | null;
   sprintsToLose: number | null;
-  /** 同一スプリント内の敗北順序。早い敗北は有効手にしない。 */
+  /** 同一スプリント内の敗北順序（完了スプリント・戦略フェーズ・tick）。早い敗北は有効手にしない。 */
   loseTick: number | null;
   leftDanger: boolean;
   loseReason: LoseReason | null;
@@ -1038,6 +1038,29 @@ export function listStrategicChoices(
   );
 }
 
+const LOSE_PHASE_RANK: Record<RunState['phase'], number> = {
+  title: 0,
+  sprint: 1,
+  result: 2,
+  draft: 3,
+  evolution: 4,
+  beat: 5,
+  shop: 6,
+  rest: 7,
+  recruit: 8,
+  quarterReview: 9,
+  setup: 10,
+  won: 11,
+  lost: 11,
+};
+
+/** 完了スプリント・戦略フェーズ・sprintTick を単調な敗北時刻へ畳む。 */
+function loseProgress(s: RunState): number {
+  return (
+    s.sprintsPlayed * 1_000_000 + (LOSE_PHASE_RANK[s.phase] ?? 0) * 10_000 + (s.sprintTick ?? 0)
+  );
+}
+
 function drive(
   engine: RunEngine,
   originDangers: ReadonlySet<DangerLoseReason>,
@@ -1055,10 +1078,12 @@ function drive(
   const playAcquiredCards: number[] = [];
   let kindHits = 0;
   const pinnedVisits = new Map<string, number>();
+  let lastProgress = loseProgress(engine.snapshot());
   let guard = 0;
   while (engine.snapshot().status === 'playing' && guard < 4_000) {
     guard += 1;
     const s = engine.snapshot();
+    lastProgress = loseProgress(s);
     // 追加スプリントを始める直前だけ打ち切る。最後に許可したスプリントの
     // result / beat / quarterReview など終端遷移は処理する。
     if (s.phase === 'setup' && s.sprintsPlayed - startPlayed >= maxSprints) {
@@ -1112,7 +1137,7 @@ function drive(
   if (originDangersLeft(originDangers, engine, focusReason)) leftDanger = true;
   return {
     sprintsToLose: end.status === 'lost' ? end.sprintsPlayed - startPlayed : null,
-    loseTick: end.status === 'lost' ? (end.sprintTick ?? 0) : null,
+    loseTick: end.status === 'lost' ? lastProgress : null,
     leftDanger,
     loseReason: end.loseReason ?? null,
     status: end.status,

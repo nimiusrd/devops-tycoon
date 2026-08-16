@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { getDifficulty } from '../data/difficulties';
 import { getRelic } from '../data/relics';
 import { diagnosisTheme } from '../render/diagnosisTheme';
+import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
 import {
   budgetHudCopy,
@@ -159,6 +160,11 @@ export function RunBar({
       <span className="pill" data-testid="difficulty">
         {diff.label.split(':')[0]}
       </span>
+      {state.scenario !== DEFAULT_SCENARIO && (
+        <span className="pill" data-testid="scenario">
+          {getScenario(state.scenario).label}
+        </span>
+      )}
       <span className="pill" data-testid="sprint-no" title="当四半期のトラック進行（最終がボス）">
         スプリント{' '}
         <b>

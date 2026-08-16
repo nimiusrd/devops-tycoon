@@ -8,7 +8,7 @@ import { applyDeckBaseline, dealHand, scaleEffects } from '../cards';
 import type { RosterState } from '../member/types';
 import { evaluateLose } from '../outcome';
 import { createRng } from '../rng';
-import type { OrgState, SprintConfig } from '../types';
+import type { OrgState, ScenarioId, SprintConfig } from '../types';
 import { foldRunEffects, infraBillingRateForSprint } from './effects';
 import {
   applyTrialAiDependencyPressure,
@@ -51,6 +51,8 @@ export interface WhatIfComputeInput {
   evolution: EvolutionState;
   difficulty: DifficultyId;
   trials: string[];
+  /** ツール別シナリオ（RI-103。未指定は default）。 */
+  scenario?: ScenarioId;
   bossId: string;
   /** @deprecated RI-83: goalCarryover* を優先。 */
   pauseAiDebuffQuarter?: number | null;
@@ -74,6 +76,7 @@ function baselineContext(input: WhatIfComputeInput): SprintBaselineBuildContext 
     evolution: input.evolution,
     difficulty: input.difficulty,
     trials: input.trials,
+    scenario: input.scenario,
     bossId: input.bossId,
     goalCarryoverQuarter: input.goalCarryoverQuarter ?? null,
     goalCarryoverId: input.goalCarryoverId ?? null,
@@ -135,6 +138,7 @@ export function whatIfCacheKey(input: WhatIfComputeInput): string {
     (input.otherTeamAiDependencies ?? []).join(','),
     input.goalCarryoverQuarter ?? input.pauseAiDebuffQuarter ?? '',
     input.goalCarryoverId ?? '',
+    input.scenario ?? '',
   ].join('|');
 }
 
@@ -179,6 +183,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
     evolution: input.evolution,
     difficulty: input.difficulty,
     trials: input.trials,
+    scenario: input.scenario,
   };
   const hasFrontier = input.trials.includes('frontier-dependency');
 

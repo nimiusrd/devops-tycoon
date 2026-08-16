@@ -2984,7 +2984,8 @@ button.card:active {
   font-weight: 650;
   letter-spacing: 0.02em;
 }
-.title-trial-section {
+.title-trial-section,
+.title-scenario-section {
   display: grid !important;
   grid-template-columns: minmax(220px, 280px) 1fr;
   align-items: center;
@@ -3272,7 +3273,8 @@ button.card:active {
   .title-command .difficulty-grid {
     grid-template-columns: 1fr 1fr;
   }
-  .title-trial-section {
+  .title-trial-section,
+  .title-scenario-section {
     grid-template-columns: 1fr;
     gap: 13px;
   }
@@ -3324,7 +3326,8 @@ button.card:active {
   .title-ready {
     display: none;
   }
-  .title-trial-section {
+  .title-trial-section,
+  .title-scenario-section {
     padding: 16px !important;
   }
   .title-command .trial-chip {

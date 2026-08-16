@@ -218,11 +218,15 @@ function AppContent({ game }: AppProps) {
     setHelpOpen(false);
     setReplayListOpen(false);
   };
-  const startRun = (difficulty: Parameters<typeof run.startRun>[0], trials: string[]) => {
+  const startRun = (
+    difficulty: Parameters<typeof run.startRun>[0],
+    trials: string[],
+    scenario?: Parameters<typeof run.startRun>[2],
+  ) => {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
-    run.startRun(difficulty, trials);
+    run.startRun(difficulty, trials, scenario);
   };
   const startDailyRun = () => {
     audio.unlock();

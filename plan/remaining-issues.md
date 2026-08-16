@@ -101,11 +101,12 @@ SPEC F-3のプレイテスト観測項目は追加済みだが、戦略フェー
 
 ### RI-108 詳細工程モデルのパラメータ移行
 
-`src/sim/model/process.ts`のCoding、Review、Rework、Incident、Security、炎上、コンボの基本値、式内係数、`clamp`境界と、`src/sim/org.ts`のAI無効時の初期依存度を`balance/process.ts`へ移す。既存exportと評価順を維持し、値の移動だけでモデルの意味を変えない。
+`src/sim/model/process.ts`のCoding、Review、Rework、Incident、Security、炎上、コンボの基本値、式内係数、`clamp`境界と、`src/sim/org.ts`のAI無効時の初期依存度を`balance/process.ts`へ移す。`src/sim/run/engine.ts`の延焼時顧客信頼ペナルティに複製されたIncident係数も同じ安定IDへ置き換える。既存exportと評価順を維持し、値の移動だけでモデルの意味を変えない。
 
 受入条件:
 
 - Coding、Review、Rework、Incident、Security、炎上、コンボを安定IDで調整できる。
+- `securityCustomerTrustDelta()`と`RunEngine.applyIncidentTrustPenalty()`が同じIncident信頼係数を参照し、直接Incidentと延焼分岐の境界回帰が一致する。
 - 移行前後で固定seed結果、単調性、既存統計レンジが一致し、AI有効・無効それぞれの初期組織状態と工程結果を回帰できる。
 - AI依存モデル再設計、値調整、確率曲線生成、タスク分布の移行を同じPRへ含めない。
 
@@ -142,11 +143,12 @@ SPEC F-3のプレイテスト観測項目は追加済みだが、戦略フェー
 
 ### RI-112 四半期KPI・勝敗閾値の移行
 
-`src/sim/run/quarterReview.ts`、`src/sim/outcome.ts`、`src/sim/diagnosis.ts`の目標倍率、下限、評価閾値、継続不能条件、勝利種別閾値、Reviewキュー・Rework比率・AI利用率などの診断閾値を`balance/run.ts`または専用の`balance/outcome.ts`へ移す。結果ラベル、敗因ID、診断IDは移動しない。
+`src/sim/run/quarterReview.ts`、`src/sim/outcome.ts`、`src/sim/diagnosis.ts`の目標倍率、下限、評価閾値、継続不能条件、勝利種別閾値、Reviewキュー・Rework比率・AI利用率などの診断閾値を`balance/run.ts`または専用の`balance/outcome.ts`へ移す。`src/render/loseNextActionView.ts`、`src/render/status.ts`、`tests/playtest/harness.ts`に複製された危機・敗北境界も同じ安定IDへ置き換える。結果ラベル、敗因ID、診断ID、表示優先順は移動しない。
 
 受入条件:
 
 - KPIと勝敗の閾値を安定IDから参照し、派生目標は基本値から計算する。
+- 実際の勝敗判定、リザルトの原因説明、HUD警告、state-aware方針、発火要因レポートが同じ危機・敗北境界を参照する。
 - 四半期レビュー、目標修正、敗北、組織診断、診断結果を使う勝利種別の境界テストと代表seed結果が一致する。
 - RI-73／RI-76で確定した値と判定境界を変更せず、値調整を同じPRに含めない。
 

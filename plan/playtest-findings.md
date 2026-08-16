@@ -304,11 +304,11 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   `moraleCollapse` 3 / `seniorBurnout` 4 / `reviewFreeze` 6 / `techDebt` 6 /
   `kpiMissed` 12 / `reorgRequired` 24。決着フェーズも、`reviewFreeze` は全59件が `sprint`、
   `kpiMissed` は全44件が `quarterReview`、`seniorBurnout` は複数フェーズに分かれる。
-- **観測手段（RI-89）**として、その時点で機械的に**発動可能な介入**は `canApplyAction` /
+- **観測手段（RI-89 / RI-101）**として、その時点で機械的に**発動可能な介入**は `canApplyAction` /
   `hasActionTarget`（盤面非破壊）とハーネスの `availableActionsInDanger` で記録できる。
-  ただし代表方針では敗因が違っても発動可能集合がほぼ同じで、効果の無い介入も「打てる手」に含まれる。
-  F-8 の「敗北を遅延・回避できる実質的な選択肢」と、F-9 の「有効な手の違い」は反実仮想評価を
-  追加するまで未検証とする（RI-101）。
+  有効手は同一乱数状態からの反実仮想（無介入 vs 適用可能介入）で、敗北遅延・回避・危険域離脱・
+  敗因変化だけを数える。`PT_COUNTERFACTUAL=1` で last-non-empty フレームを評価する。
+  既定コホートの F-8 / F-9 合否は未再走とする。
 
 **未充足・未検証の基準**:
 
@@ -317,8 +317,8 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | F-1 | 緊急対応の不利盤面・採用の壊れにくさは維持。単一介入（`onlyAndon` / `onlyFirefight` / `onlySplit` を含む）は複合を上回らない | RI-73（完了） |
 | F-3 | 9戦略フェーズで `step` してもフェーズ・選択・資源が変わらず、judgment も明示操作まで解決しない | RI-102（完了） |
 | F-7 | `idle` は全難易度 0/10。`naive` easy 2/10（20%）が≈20%帯 | RI-73（完了） |
-| F-8 | Nightmare は現行390ラン全敗。「何スプリント前から実質的な選択肢が消えたか」は未計測（RI-89 は機械的発動可否のみで、回避有効性の反実仮想は未実装） | RI-101（未着手） |
-| F-9 | 進行速度と決着位置は敗因ごとに違う。機械的な発動可否は計測可能だが、有効な手の差は未検証 | RI-89（観測完了）／RI-101（未着手） |
+| F-8 | 反実仮想で「有効手が残る最後の時点」を測れる。既定コホートのギャップ数値と合否は未再走 | RI-101（計測手段完了） |
+| F-9 | 進行速度と決着位置は敗因ごとに違う。有効手集合は反実仮想で敗因別に出せる。既定コホートの差は未再走 | RI-89／RI-101（計測手段完了） |
 | F-10 | ビルド方針の modal は `chaos` / `healthy` / `normal` の3種で PASS（TVD・セキュリティ対・共通 seed 裏付けを含む） | RI-76（完了） |
 
 充足済みの F-2 / F-3 / F-4 / F-5 / F-6 / F-11 / F-12 は、実装・受入の詳細を各課題節とGit履歴に残す。
@@ -770,7 +770,8 @@ Q1 で方向確定 **28/40（70%）**、確定ブランチは `ai` 21 / `review`
   現行コホート全体の敗北までのスプリント数 p50 は `aiDependency` 3 / `seniorBurnout` 4 /
   `reviewFreeze` 6 / `techDebt` 6 / `kpiMissed` 12 / `reorgRequired` 24。`reviewFreeze` は全件 sprint、
   `kpiMissed` と `reorgRequired` は全件 quarterReview、`seniorBurnout` は複数フェーズに分かれる。
-  機械的な「打てた手」は RI-89 で観測できるが、有効な手の差は RI-101 の対象とする。
+  機械的な「打てた手」は RI-89 で観測でき、有効な手は RI-101 の反実仮想で判定できる。
+  既定コホートでの有効手差の再集計は未実施。
 - **ビルドの違いは組織診断と勝利種別の両方に出ている**。`noAi` は
   `healthyAcceleration` 3 と、`aiFullBet`（`reviewHell` 3 / `seniorSacrifice` 37）から
   明確に分かれる。F-10 ビルド modal は `chaos` / `healthy` / `normal` の3種で PASS（RI-76 完了）。

@@ -141,6 +141,9 @@ function budgetAfterNextInfraCharge(s: RunState): number {
     fold.frontierModelCostPerDependency,
   );
   if (rate === null) return s.budget;
-  const companyDep = companyOrgFromTeams(s.teams, s.org).aiDependency;
+  const teamsForBilling = s.teams.map((team) =>
+    team.id === s.activeTeamId ? { ...team, aiDependency: s.org.aiDependency } : team,
+  );
+  const companyDep = companyOrgFromTeams(teamsForBilling, s.org).aiDependency;
   return Math.max(0, s.budget - computeInfraCost(companyDep, rate, fold.effects.infraCostMul));
 }

@@ -274,4 +274,21 @@ describe('危険域判定（RI-101）', () => {
     for (const team of internals.teams) team.aiDependency = 100;
     expect(activeDangerReasons(engine)).toContain('budgetExhausted');
   });
+
+  it('次回インフラ課金は選択中チームのライブ依存度を使う', () => {
+    const engine = startedSprint('ri-101-infra-live-dep');
+    engine.step(200);
+    const internals = engine as unknown as {
+      budget: number;
+      sprintIndexInQuarter: number;
+      sprintsPerQuarter: number;
+      org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
+    };
+    internals.budget = 16;
+    internals.sprintIndexInQuarter = internals.sprintsPerQuarter - 1;
+    internals.org.aiDependency = 100;
+    for (const team of internals.teams) team.aiDependency = 0;
+    expect(activeDangerReasons(engine)).toContain('budgetExhausted');
+  });
 });

@@ -1382,6 +1382,11 @@ export function evaluateCounterfactual(
               choice.followup,
             ),
           });
+          if (
+            laterAfterOverride(after, choice, maxSprints).some((item) => !isSkippedComboId(item.id))
+          ) {
+            laterSequenceUnevaluated = true;
+          }
         }
         if (crossSkipped) break;
       }

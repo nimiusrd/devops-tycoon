@@ -15,6 +15,7 @@ import { canRecruit, RECRUIT_COST, type LaneAssignment } from '../member';
 import { isAwaitingMinCompleteTick } from '../sprint';
 import type { ActionId, ActionTarget, SprintState } from '../types';
 import { activeDangerReasons, listApplicableActions, type DangerLoseReason } from './dangerZone';
+import { foldPassives } from './effects';
 import { RunEngine, DRAFT_MULLIGAN_COST } from './engine';
 import { unlockableNodes, unlockNode } from './evolution';
 import type { CounterfactualFrame } from './persist';
@@ -32,7 +33,7 @@ export const DEFAULT_MAX_STRATEGIC_BRANCHES = 8;
 export const DEFAULT_MAX_SPRINTS = 4;
 
 const REST_ALTERNATIVES: readonly RestChoice[] = ['heal', 'repay'];
-const RECRUIT_LANES: readonly LaneAssignment[] = ['coding', 'review'];
+const RECRUIT_LANES: readonly LaneAssignment[] = ['coding', 'review', 'bench'];
 const STRATEGIC_KIND_ORDER = [
   'beat',
   'rest',
@@ -625,7 +626,10 @@ function listShopChoices(snapshot: RunState): StrategicChoice[] {
       options.push({ mode: 'card', defId: card.defId });
     }
     if (shop.relic && !shop.relic.bought && !cur.relicBought && cur.budget >= shop.relic.cost) {
-      options.push({ mode: 'relic' });
+      const slots = foldPassives(snapshot.relics).relicSlots;
+      if (!snapshot.relics.includes(shop.relic.id) && snapshot.relics.length < slots) {
+        options.push({ mode: 'relic' });
+      }
     }
     if (
       shop.recruit &&
@@ -856,6 +860,7 @@ function collectSetupSequences(
   const out: StrategicChoice[] = [...firsts];
   let extra = 0;
   let truncated = false;
+  let longerRemains = false;
   for (const first of firsts) {
     const frame = engine.exportCounterfactualFrame();
     if (!frame) continue;
@@ -878,10 +883,18 @@ function collectSetupSequences(
         },
         visit: first.visit,
       });
+      if (!longerRemains) {
+        const probe = restoreCounterfactualEngine(frame);
+        applySetupChanges(probe, setupChangeOf(first.override));
+        applySetupChanges(probe, setupChangeOf(second.override));
+        if (probe.snapshot().phase === 'setup' && listSetupChoices(probe.snapshot()).length > 0) {
+          longerRemains = true;
+        }
+      }
     }
     if (truncated) break;
   }
-  if (truncated) {
+  if (truncated || longerRemains) {
     out.push({
       id: nth === 0 ? 'setup:combo' : `setup:combo@${nth}`,
       kind: 'setup',
@@ -1179,7 +1192,8 @@ export function evaluateCounterfactual(
       );
     }
     const kinds = new Set(runnable.map((choice) => choice.kind));
-    if (kinds.size >= 2) skippedStrategic.push('strategicSequence');
+    const repeatVisit = runnable.some((choice) => (choice.visit ?? 0) >= 1);
+    if (kinds.size >= 2 || repeatVisit) skippedStrategic.push('strategicSequence');
     if (options.actions === undefined && toEval.length > 0 && strategic.length > 0) {
       let crossBudget = maxComboBranches;
       let crossSkipped = false;

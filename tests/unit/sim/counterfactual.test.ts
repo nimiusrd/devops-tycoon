@@ -174,7 +174,7 @@ describe('RI-101 分岐評価と上限', () => {
       strategic
         .filter((choice) => choice.id.startsWith('beat:'))
         .every((choice) =>
-          /^beat:[^:]+:\d+(:(?:coding|review))?(?:@\d+)?(?:\+.+)?$/.test(choice.id),
+          /^beat:[^:]+:\d+(:(?:coding|review|bench))?(?:@\d+)?(?:\+.+)?$/.test(choice.id),
         ),
     ).toBe(true);
     const evaluation = evaluateCounterfactual(frame, {
@@ -254,6 +254,9 @@ describe('RI-101 分岐評価と上限', () => {
     const frame = engine.exportCounterfactualFrame()!;
     const setup = listStrategicChoices(frame, 4).filter((choice) => choice.id.startsWith('setup:'));
     expect(setup.some((choice) => choice.id.startsWith('setup:assign:'))).toBe(true);
+    expect(
+      setup.some((choice) => choice.id === 'setup:combo' || choice.id.startsWith('setup:combo@')),
+    ).toBe(true);
     const evaluation = evaluateCounterfactual(frame, {
       actions: [],
       includeStrategic: true,
@@ -399,6 +402,7 @@ describe('RI-101 分岐評価と上限', () => {
       choice.id.startsWith('rest:recruit:'),
     );
     expect(restRecruit.map((choice) => choice.id).sort()).toEqual([
+      'rest:recruit:bench',
       'rest:recruit:coding',
       'rest:recruit:review',
     ]);
@@ -413,7 +417,8 @@ describe('RI-101 分岐評価と上限', () => {
       expect(
         spy.mock.calls.some(
           ([id, assignment]) =>
-            !beforeIds.has(id) && (assignment === 'coding' || assignment === 'review'),
+            !beforeIds.has(id) &&
+            (assignment === 'coding' || assignment === 'review' || assignment === 'bench'),
         ),
       ).toBe(true);
     } finally {
@@ -509,6 +514,7 @@ describe('RI-101 分岐評価と上限', () => {
       choice.id.startsWith('beat:urgent-hire:0:'),
     );
     expect(hire.map((choice) => choice.id).sort()).toEqual([
+      'beat:urgent-hire:0:bench',
       'beat:urgent-hire:0:coding',
       'beat:urgent-hire:0:review',
     ]);
@@ -523,7 +529,8 @@ describe('RI-101 分岐評価と上限', () => {
       expect(
         spy.mock.calls.some(
           ([id, assignment]) =>
-            !beforeIds.has(id) && (assignment === 'coding' || assignment === 'review'),
+            !beforeIds.has(id) &&
+            (assignment === 'coding' || assignment === 'review' || assignment === 'bench'),
         ),
       ).toBe(true);
     } finally {
@@ -560,6 +567,13 @@ describe('RI-101 分岐評価と上限', () => {
       /^evo:.*@\d+$/.test(choice.id),
     );
     expect(laterEvo.length).toBeGreaterThan(0);
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: [],
+      includeStrategic: true,
+      maxSprints: 4,
+      maxStrategicBranches: 8,
+    });
+    expect(evaluation.skippedStrategic).toContain('strategicSequence');
   });
 
   it('無介入ビートは末尾選択なので先頭肢を有効手として識別できる', () => {

@@ -1,0 +1,135 @@
+import type {
+  BalanceDefinition,
+  BalanceEntry,
+  BalanceValidationError,
+  ProbabilityDistribution,
+} from './types';
+
+/** 浮動小数点の確率分布合計を比較する許容誤差。 */
+const PROBABILITY_TOTAL_EPSILON = 1e-9;
+
+/** 定義時にリテラル型を保つスカラー値ヘルパー。 */
+export function defineBalanceEntry<const Entry extends BalanceEntry>(entry: Entry): Entry {
+  return entry;
+}
+
+/** 定義時にリテラル型を保つ確率分布ヘルパー。 */
+export function defineProbabilityDistribution<const Distribution extends ProbabilityDistribution>(
+  distribution: Distribution,
+): Distribution {
+  return distribution;
+}
+
+/** 分布内の値を含め、ゲームが参照するスカラーエントリーへ平坦化する。 */
+export function flattenBalanceEntries(
+  definitions: readonly BalanceDefinition[],
+): readonly BalanceEntry[] {
+  const entries: BalanceEntry[] = [];
+  for (const definition of definitions) {
+    if ('entries' in definition) {
+      entries.push(...definition.entries);
+    } else {
+      entries.push(definition);
+    }
+  }
+  return entries;
+}
+
+function validationError(
+  code: BalanceValidationError['code'],
+  id: string,
+  message: string,
+): BalanceValidationError {
+  return { code, id, message };
+}
+
+function validateRange(
+  id: string,
+  range: { readonly min: number; readonly max: number },
+): BalanceValidationError[] {
+  if (!Number.isFinite(range.min) || !Number.isFinite(range.max)) {
+    return [validationError('non-finite-range', id, '許容範囲は有限値でなければなりません。')];
+  }
+  if (range.min > range.max) {
+    return [validationError('range-inverted', id, '許容範囲の最小値が最大値を超えています。')];
+  }
+  return [];
+}
+
+function validateEntry(entry: BalanceEntry): BalanceValidationError[] {
+  const errors = validateRange(entry.id, entry.allowedRange);
+  if (!Number.isFinite(entry.value)) {
+    errors.push(validationError('non-finite-value', entry.id, '値は有限値でなければなりません。'));
+    return errors;
+  }
+  if (entry.value < entry.allowedRange.min || entry.value > entry.allowedRange.max) {
+    errors.push(validationError('value-out-of-range', entry.id, '値が許容範囲外です。'));
+  }
+  if (entry.unit === 'probability' && (entry.value < 0 || entry.value > 1)) {
+    errors.push(
+      validationError(
+        'probability-out-of-range',
+        entry.id,
+        '確率は 0 以上 1 以下でなければなりません。',
+      ),
+    );
+  }
+  return errors;
+}
+
+/**
+ * レジストリの不変条件を検証する。
+ *
+ * 外部I/Oやグローバル状態を使わず、テストと将来の検証コマンドで共用できる。
+ */
+export function validateBalanceRegistry(
+  definitions: readonly BalanceDefinition[],
+): readonly BalanceValidationError[] {
+  const errors: BalanceValidationError[] = [];
+  const seenIds = new Set<string>();
+  const registerId = (id: string): void => {
+    if (seenIds.has(id)) {
+      errors.push(validationError('duplicate-id', id, 'バランスIDが重複しています。'));
+      return;
+    }
+    seenIds.add(id);
+  };
+
+  for (const definition of definitions) {
+    registerId(definition.id);
+
+    if (!('entries' in definition)) {
+      errors.push(...validateEntry(definition));
+      continue;
+    }
+
+    errors.push(...validateRange(definition.id, definition.allowedRange));
+    let total = 0;
+    for (const entry of definition.entries) {
+      registerId(entry.id);
+      errors.push(...validateEntry(entry));
+      if (!Number.isFinite(entry.value) || entry.value <= 0) {
+        errors.push(
+          validationError(
+            'distribution-weight-not-positive',
+            entry.id,
+            '確率分布の重みは有限の正数でなければなりません。',
+          ),
+        );
+      } else {
+        total += entry.value;
+      }
+    }
+    if (Math.abs(total - 1) > PROBABILITY_TOTAL_EPSILON) {
+      errors.push(
+        validationError(
+          'distribution-total-invalid',
+          definition.id,
+          '確率分布の重みの合計は 1 でなければなりません。',
+        ),
+      );
+    }
+  }
+
+  return errors;
+}

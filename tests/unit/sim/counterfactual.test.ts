@@ -895,6 +895,43 @@ describe('RI-101 集計規則', () => {
     }
   });
 
+  it('不完全な最新フレームでも過去の確認済み有効手まで遡る', () => {
+    const engine = startedSprint('ri-101-walkback-incomplete');
+    const internals = engine as unknown as {
+      phase: string;
+      evolution: { points: number; unlocked: Record<string, boolean> };
+      org: { seniorHp: number };
+    };
+    internals.phase = 'evolution';
+    internals.evolution = { points: 2, unlocked: {} };
+    const older = engine.exportCounterfactualFrame()!;
+    internals.phase = 'setup';
+    engine.beginSetupSprint();
+    engine.step(200);
+    internals.org.seniorHp = 1;
+    const newer = engine.exportCounterfactualFrame()!;
+    const selected = evaluateLatestEffectiveFrame(
+      [
+        { sprintsPlayed: 0, quarter: 1, index: 0, frame: older },
+        { sprintsPlayed: 1, quarter: 1, index: 1, frame: newer },
+      ],
+      { maxActionBranches: 0, includeStrategic: true, maxSprints: 1 },
+    );
+    expect(selected).not.toBeNull();
+    expect(
+      selected!.evaluation.skippedActions.length + selected!.evaluation.skippedStrategic.length,
+    ).toBeGreaterThan(0);
+    if (selected!.effective.length > 0) {
+      expect(selected!.evaluation.origin).toEqual(
+        evaluateCounterfactual(older, {
+          maxActionBranches: 0,
+          includeStrategic: true,
+          maxSprints: 1,
+        }).origin,
+      );
+    }
+  });
+
   it('F-9 は敗因別の有効手集合を機械的集合と別に数える', () => {
     const judgment = judgeF9EffectiveSets([
       { loseReason: 'seniorBurnout', effectiveActions: ['overtime'] },

@@ -1335,10 +1335,33 @@ function isBaselineRecovered(evaluation: CounterfactualEvaluation): boolean {
 /**
  * 新しいフレームから遡り、有効手がある最初の評価を返す。
  * 無介入で生存・危険域離脱できる最新フレームでは遡らない。
+ * 最新が分岐上限超過で有効手なしなら、不完全印を残したまま過去の有効手まで走査する。
  * どれも無効なら最新フレームの評価と空の有効手を返す。
  */
 function framesOf(sample: CounterfactualFrameSample): CounterfactualFrame[] {
   return sample.frames && sample.frames.length > 0 ? sample.frames : [sample.frame];
+}
+
+function withScanSkipped(
+  newest: LatestEffectiveFrame,
+  selected: LatestEffectiveFrame,
+): LatestEffectiveFrame {
+  if (newest.evaluation === selected.evaluation) return selected;
+  return {
+    ...selected,
+    evaluation: {
+      ...selected.evaluation,
+      skippedActions: [
+        ...new Set([...newest.evaluation.skippedActions, ...selected.evaluation.skippedActions]),
+      ],
+      skippedStrategic: [
+        ...new Set([
+          ...newest.evaluation.skippedStrategic,
+          ...selected.evaluation.skippedStrategic,
+        ]),
+      ],
+    },
+  };
 }
 
 export function evaluateLatestEffectiveFrame(
@@ -1355,10 +1378,8 @@ export function evaluateLatestEffectiveFrame(
       const baselineRecovered = isBaselineRecovered(evaluation);
       const found = { evaluation, effective, baselineRecovered };
       if (!newest) newest = found;
-      if (effective.length > 0) return found;
-      const incomplete =
-        evaluation.skippedActions.length > 0 || evaluation.skippedStrategic.length > 0;
-      if (incomplete || baselineRecovered) return found;
+      if (effective.length > 0) return withScanSkipped(newest, found);
+      if (baselineRecovered) return withScanSkipped(newest, found);
     }
   }
   return newest;

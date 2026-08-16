@@ -978,7 +978,7 @@ export interface RunLog {
     status: string;
     truncated: boolean;
   };
-  /** 分岐上限で未評価の候補が残った（RI-101。不完全な「有効手なし」を集計から除外する）。 */
+  /** 分岐上限で未評価の候補が残った（RI-101。不完全な「有効手なし」と F-9 集合から除外する）。 */
   counterfactualIncomplete?: boolean;
   counterfactualSkipped?: string[];
   /** 無介入ベースラインが評価期間を生存または危険域離脱した（RI-101。有効手なしとは区別する）。 */

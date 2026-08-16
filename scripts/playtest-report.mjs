@@ -1164,19 +1164,12 @@ if (cfRuns.length > 0) {
         let incomplete = 0;
         let complete = 0;
         for (const r of arr) {
-          if (r.counterfactualIncomplete) {
-            incomplete += 1;
-            continue;
-          }
-          complete += 1;
+          const incompleteRun = !!r.counterfactualIncomplete;
+          if (incompleteRun) incomplete += 1;
+          else complete += 1;
           const effective = Array.isArray(r.effectiveActionsInDanger)
             ? r.effectiveActionsInDanger
             : [];
-          if (effective.length === 0) {
-            if (!r.counterfactualBaselineRecovered) emptyEffective += 1;
-          }
-          const keys = new Set(effective.map((id) => stableEffectiveActionId(id)));
-          for (const key of keys) freq.set(key, (freq.get(key) ?? 0) + 1);
           if (typeof r.sprintsPlayed === 'number' && r.lastEffectiveActionsAt) {
             const midSprintInstantLose =
               r.lostPhase === 'sprint' && r.lostSprintCompleted === false;
@@ -1184,6 +1177,12 @@ if (cfRuns.length > 0) {
             if (!midSprintInstantLose) loseSprints = Math.max(0, r.sprintsPlayed - 1);
             gaps.push(Math.max(0, loseSprints - r.lastEffectiveActionsAt.sprintsPlayed));
           }
+          if (incompleteRun) continue;
+          if (effective.length === 0) {
+            if (!r.counterfactualBaselineRecovered) emptyEffective += 1;
+          }
+          const keys = new Set(effective.map((id) => stableEffectiveActionId(id)));
+          for (const key of keys) freq.set(key, (freq.get(key) ?? 0) + 1);
         }
         const ranked = [...freq.entries()]
           .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))

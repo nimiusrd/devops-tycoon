@@ -107,14 +107,17 @@ interface SprintChoice {
   teamId?: string;
 }
 
+type ShopStep =
+  | { mode: 'card'; defId: string }
+  | { mode: 'relic' }
+  | { mode: 'recruit'; assignment: LaneAssignment };
+
 type StrategicOverride =
   | { kind: 'draft'; cardId: string; mulligan?: boolean }
   | { kind: 'evolution'; nodeIds: string[] }
   | { kind: 'beat'; index: number; assignment?: LaneAssignment }
   | { kind: 'rest'; option: RestChoice; deckIndex?: number; assignment?: LaneAssignment }
-  | { kind: 'shop'; mode: 'card'; defId: string }
-  | { kind: 'shop'; mode: 'relic' }
-  | { kind: 'shop'; mode: 'recruit'; assignment: LaneAssignment }
+  | { kind: 'shop'; steps: ShopStep[] }
   | { kind: 'recruit'; assignment: LaneAssignment }
   | { kind: 'goal'; id: GoalAdjustmentId }
   | { kind: 'setup'; memberId: string; assignment?: LaneAssignment; aiAssigned?: boolean };
@@ -343,14 +346,14 @@ function phaseMatchesOverride(snapshot: RunState, override: StrategicOverride): 
 function applyIdleStep(
   engine: RunEngine,
   snapshot: RunState,
-  playAcquiredCard: number | null = null,
+  playAcquiredCards: readonly number[] = [],
 ): boolean {
   switch (snapshot.phase) {
     case 'setup':
       engine.beginSetupSprint();
       return true;
     case 'sprint': {
-      if (playAcquiredCard != null) playTargetCardIfAble(engine, playAcquiredCard);
+      for (const deckIndex of playAcquiredCards) playTargetCardIfAble(engine, deckIndex);
       const snap = engine.snapshot();
       if (snap.phase === 'sprint' && snap.status === 'playing') {
         engine.step(1_000_000);
@@ -367,7 +370,12 @@ function applyIdleStep(
       engine.finishEvolution();
       return true;
     case 'beat':
-      engine.resolveBeat(0);
+      if (snapshot.beat?.kind === 'decision') {
+        const n = getEvent(snapshot.beat.eventId)?.choices.length ?? 1;
+        engine.resolveBeat(Math.max(0, n - 1));
+      } else {
+        engine.resolveBeat(0);
+      }
       return true;
     case 'shop':
       engine.leaveShop();
@@ -381,7 +389,8 @@ function applyIdleStep(
     case 'quarterReview': {
       const review = snapshot.quarterReview;
       if (review?.outcome === 'missed_adjustable') {
-        const pick = review.availableAdjustments[0] ?? 'cut_scope';
+        const pick =
+          review.availableAdjustments[review.availableAdjustments.length - 1] ?? 'cut_scope';
         engine.chooseGoalAdjustment(pick);
       } else {
         engine.acknowledgeQuarterReview();
@@ -429,12 +438,16 @@ function applyStrategicOverride(
       return true;
     case 'shop':
       if (snapshot.phase !== 'shop') return false;
-      if (override.mode === 'card') engine.buyShopCard(override.defId);
-      else if (override.mode === 'relic') engine.buyShopRelic();
-      else {
+      {
         const beforeIds = memberIdsOf(snapshot);
-        engine.buyShopRecruit();
-        assignHiredMember(engine, beforeIds, override.assignment);
+        for (const step of override.steps) {
+          if (step.mode === 'card') engine.buyShopCard(step.defId);
+          else if (step.mode === 'relic') engine.buyShopRelic();
+          else {
+            engine.buyShopRecruit();
+            assignHiredMember(engine, beforeIds, step.assignment);
+          }
+        }
       }
       engine.leaveShop();
       return true;
@@ -492,6 +505,94 @@ function canMulliganDraft(snapshot: RunState): boolean {
   );
 }
 
+function shopStepId(step: ShopStep, relicId?: string): string {
+  if (step.mode === 'card') return `card:${step.defId}`;
+  if (step.mode === 'relic') return relicId ? `relic:${relicId}` : 'relic';
+  return `recruit:${step.assignment}`;
+}
+
+function listShopChoices(snapshot: RunState): StrategicChoice[] {
+  const shop = snapshot.shop;
+  if (!shop) return [];
+  type Node = {
+    budget: number;
+    bought: Set<string>;
+    relicBought: boolean;
+    recruitBought: boolean;
+    path: ShopStep[];
+  };
+  const out: StrategicChoice[] = [];
+  const seenSets = new Set<string>();
+  const queue: Node[] = [
+    {
+      budget: snapshot.budget,
+      bought: new Set(),
+      relicBought: false,
+      recruitBought: false,
+      path: [],
+    },
+  ];
+  const canHire = canRecruit(snapshot.roster);
+  while (queue.length > 0) {
+    const cur = queue.shift()!;
+    const options: ShopStep[] = [];
+    for (const card of shop.cards) {
+      if (card.bought || cur.bought.has(card.defId) || cur.budget < card.cost) continue;
+      options.push({ mode: 'card', defId: card.defId });
+    }
+    if (shop.relic && !shop.relic.bought && !cur.relicBought && cur.budget >= shop.relic.cost) {
+      options.push({ mode: 'relic' });
+    }
+    if (
+      shop.recruit &&
+      !shop.recruit.bought &&
+      !cur.recruitBought &&
+      canHire &&
+      cur.budget >= shop.recruit.cost
+    ) {
+      for (const assignment of RECRUIT_LANES) {
+        options.push({ mode: 'recruit', assignment });
+      }
+    }
+    for (const step of options) {
+      const path = [...cur.path, step];
+      const setKey = path
+        .map((item) => shopStepId(item, shop.relic?.id))
+        .sort()
+        .join('+');
+      if (!seenSets.has(setKey)) {
+        seenSets.add(setKey);
+        out.push({
+          id: `shop:${path.map((item) => shopStepId(item, shop.relic?.id)).join('+')}`,
+          kind: 'shop',
+          override: { kind: 'shop', steps: path },
+        });
+      }
+      const next: Node = {
+        budget: cur.budget,
+        bought: new Set(cur.bought),
+        relicBought: cur.relicBought,
+        recruitBought: cur.recruitBought,
+        path,
+      };
+      if (step.mode === 'card') {
+        const card = shop.cards.find((item) => item.defId === step.defId);
+        if (!card) continue;
+        next.budget -= card.cost;
+        next.bought.add(step.defId);
+      } else if (step.mode === 'relic' && shop.relic) {
+        next.budget -= shop.relic.cost;
+        next.relicBought = true;
+      } else if (step.mode === 'recruit' && shop.recruit) {
+        next.budget -= shop.recruit.cost;
+        next.recruitBought = true;
+      }
+      queue.push(next);
+    }
+  }
+  return out;
+}
+
 function collectDraftMulligan(engine: RunEngine): StrategicChoice[] {
   const snapshot = engine.snapshot();
   if (!canMulliganDraft(snapshot)) return [];
@@ -530,18 +631,21 @@ function listEvolutionChoices(evolution: RunState['evolution']): StrategicChoice
   return out;
 }
 
-function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicChoice[] {
+function collectStrategicAt(
+  engine: RunEngine,
+  snapshot: RunState,
+  seen: Set<string>,
+): StrategicChoice[] {
   if (snapshot.phase === 'draft' && snapshot.draft && snapshot.draft.length > 0) {
     const nth = beginVisit(seen, 'draft', snapshot);
     if (nth == null) return [];
-    return withVisit(
-      snapshot.draft.map((cardId) => ({
-        id: `draft:${cardId}`,
-        kind: 'draft' as const,
-        override: { kind: 'draft' as const, cardId },
-      })),
-      nth,
-    );
+    const out: StrategicChoice[] = snapshot.draft.map((cardId) => ({
+      id: `draft:${cardId}`,
+      kind: 'draft' as const,
+      override: { kind: 'draft' as const, cardId },
+    }));
+    if (canMulliganDraft(snapshot)) out.push(...collectDraftMulligan(engine));
+    return withVisit(out, nth);
   }
   if (snapshot.phase === 'evolution') {
     const nth = beginVisit(seen, 'evolution', snapshot);
@@ -603,38 +707,7 @@ function collectStrategicAt(snapshot: RunState, seen: Set<string>): StrategicCho
   if (snapshot.phase === 'shop' && snapshot.shop) {
     const nth = beginVisit(seen, 'shop', snapshot);
     if (nth == null) return [];
-    const shop = snapshot.shop;
-    const out: StrategicChoice[] = [];
-    for (const card of shop.cards) {
-      if (card.bought || snapshot.budget < card.cost) continue;
-      out.push({
-        id: `shop:card:${card.defId}`,
-        kind: 'shop',
-        override: { kind: 'shop', mode: 'card', defId: card.defId },
-      });
-    }
-    if (shop.relic && !shop.relic.bought && snapshot.budget >= shop.relic.cost) {
-      out.push({
-        id: `shop:relic:${shop.relic.id}`,
-        kind: 'shop',
-        override: { kind: 'shop', mode: 'relic' },
-      });
-    }
-    if (
-      shop.recruit &&
-      !shop.recruit.bought &&
-      snapshot.budget >= shop.recruit.cost &&
-      canRecruit(snapshot.roster)
-    ) {
-      for (const assignment of RECRUIT_LANES) {
-        out.push({
-          id: `shop:recruit:${assignment}`,
-          kind: 'shop',
-          override: { kind: 'shop', mode: 'recruit', assignment },
-        });
-      }
-    }
-    return withVisit(out, nth);
+    return withVisit(listShopChoices(snapshot), nth);
   }
   if (snapshot.phase === 'recruit') {
     const nth = beginVisit(seen, 'recruit', snapshot);
@@ -687,11 +760,7 @@ export function listStrategicChoices(
     guard += 1;
     const snapshot = engine.snapshot();
     if (snapshot.phase === 'setup' && snapshot.sprintsPlayed - startPlayed >= maxSprints) break;
-    found.push(...collectStrategicAt(snapshot, seen));
-    if (snapshot.phase === 'draft' && canMulliganDraft(snapshot)) {
-      const nth = beginVisit(seen, 'draft-mulligan', snapshot);
-      if (nth != null) found.push(...withVisit(collectDraftMulligan(engine), nth));
-    }
+    found.push(...collectStrategicAt(engine, snapshot, seen));
     if (!applyIdleStep(engine, snapshot)) break;
   }
   const rank = new Map(STRATEGIC_KIND_ORDER.map((kind, i) => [kind, i]));
@@ -711,7 +780,7 @@ function drive(
   const startPlayed = engine.snapshot().sprintsPlayed;
   let leftDanger = originDangersLeft(originDangers, engine, focusReason);
   let applied = override == null;
-  let playAcquiredCard: number | null = null;
+  const playAcquiredCards: number[] = [];
   let kindHits = 0;
   let guard = 0;
   while (engine.snapshot().status === 'playing' && guard < 4_000) {
@@ -737,22 +806,22 @@ function drive(
         if (
           (override.kind === 'draft' ||
             override.kind === 'beat' ||
-            (override.kind === 'shop' && override.mode === 'card')) &&
+            (override.kind === 'shop' && override.steps.some((step) => step.mode === 'card'))) &&
           deckAfter > s.deck.length
         ) {
-          playAcquiredCard = deckAfter - 1;
+          for (let i = s.deck.length; i < deckAfter; i += 1) playAcquiredCards.push(i);
         } else if (
           override.kind === 'rest' &&
           override.option === 'upgrade' &&
           override.deckIndex != null
         ) {
-          playAcquiredCard = override.deckIndex;
+          playAcquiredCards.push(override.deckIndex);
         }
         continue;
       }
       kindHits += 1;
     }
-    if (!applyIdleStep(engine, s, playAcquiredCard)) {
+    if (!applyIdleStep(engine, s, playAcquiredCards)) {
       return {
         sprintsToLose: null,
         leftDanger,

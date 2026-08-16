@@ -439,6 +439,48 @@ describe('RI-101 分岐評価と上限', () => {
     );
     expect(laterEvo.length).toBeGreaterThan(0);
   });
+
+  it('無介入ビートは末尾選択なので先頭肢を有効手として識別できる', () => {
+    const engine = startedSprint('ri-101-beat-first');
+    const internals = engine as unknown as {
+      phase: string;
+      beat: { eventId: string; kind: 'decision' };
+    };
+    internals.phase = 'beat';
+    internals.beat = { eventId: 'junior-awaken', kind: 'decision' };
+    const frame = engine.exportCounterfactualFrame()!;
+    expect(
+      listStrategicChoices(frame, 1).some((choice) => choice.id === 'beat:junior-awaken:0'),
+    ).toBe(true);
+  });
+
+  it('ショップは残予算で実行可能な連続購入列も分岐する', () => {
+    const engine = startedSprint('ri-101-shop-combo');
+    const internals = engine as unknown as {
+      phase: string;
+      budget: number;
+      shop: {
+        cards: { defId: string; cost: number; bought: boolean }[];
+        relic?: { id: string; cost: number; bought: boolean };
+      };
+    };
+    internals.phase = 'shop';
+    internals.budget = 20;
+    internals.shop = {
+      cards: [
+        { defId: 'copilot', cost: 5, bought: false },
+        { defId: 'ai-guideline', cost: 5, bought: false },
+      ],
+    };
+    const frame = engine.exportCounterfactualFrame()!;
+    const shop = listStrategicChoices(frame, 1).filter((choice) => choice.id.startsWith('shop:'));
+    expect(shop.some((choice) => choice.id === 'shop:card:copilot')).toBe(true);
+    expect(
+      shop.some(
+        (choice) => choice.id.includes('card:copilot') && choice.id.includes('card:ai-guideline'),
+      ),
+    ).toBe(true);
+  });
 });
 
 describe('RI-101 集計規則', () => {

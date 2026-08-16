@@ -1121,6 +1121,13 @@ function runStrategicBranch(
   };
 }
 
+/** 複数 kind や同種の複数 visit は組合せを評価しないので未評価印の対象。 */
+function hasUnevaluatedStrategicSequence(choices: readonly StrategicChoice[]): boolean {
+  const runnable = choices.filter((choice) => !choice.id.startsWith('setup:combo'));
+  const kinds = new Set(runnable.map((choice) => choice.kind));
+  return kinds.size >= 2 || runnable.some((choice) => (choice.visit ?? 0) >= 1);
+}
+
 export function evaluateCounterfactual(
   frame: CounterfactualFrame,
   options: CounterfactualEvaluateOptions = {},
@@ -1191,12 +1198,11 @@ export function evaluateCounterfactual(
         runStrategicBranch(frame, choice, originDangers, maxSprints, options.focusReason),
       );
     }
-    const kinds = new Set(runnable.map((choice) => choice.kind));
-    const repeatVisit = runnable.some((choice) => (choice.visit ?? 0) >= 1);
-    if (kinds.size >= 2 || repeatVisit) skippedStrategic.push('strategicSequence');
+    if (hasUnevaluatedStrategicSequence(runnable)) skippedStrategic.push('strategicSequence');
     if (options.actions === undefined && toEval.length > 0 && strategic.length > 0) {
       let crossBudget = maxComboBranches;
       let crossSkipped = false;
+      let laterSequenceUnevaluated = false;
       for (const first of toEval) {
         if (crossBudget <= 0) {
           crossSkipped = true;
@@ -1209,6 +1215,9 @@ export function evaluateCounterfactual(
         const later = listStrategicChoices(after, maxSprints);
         if (later.some((choice) => choice.id.startsWith('setup:combo'))) {
           crossSkipped = true;
+        }
+        if (hasUnevaluatedStrategicSequence(later)) {
+          laterSequenceUnevaluated = true;
         }
         for (const choice of later) {
           if (choice.id.startsWith('setup:combo')) continue;
@@ -1238,7 +1247,7 @@ export function evaluateCounterfactual(
         }
         if (crossSkipped) break;
       }
-      if (crossSkipped) skippedActions.push('actionStrategicCombo');
+      if (crossSkipped || laterSequenceUnevaluated) skippedActions.push('actionStrategicCombo');
     }
     if (
       options.actions === undefined &&

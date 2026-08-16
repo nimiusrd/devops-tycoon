@@ -333,6 +333,20 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.skippedActions).toContain('sameTickCombo');
   });
 
+  it('介入後の later に複数戦略訪問がある場合は actionStrategicCombo を skipped に残す', () => {
+    const engine = startedSprint('ri-101-action-later-seq');
+    engine.step(200);
+    const frame = engine.exportCounterfactualFrame()!;
+    const evaluation = evaluateCounterfactual(frame, {
+      includeStrategic: true,
+      maxSprints: 4,
+      maxActionBranches: 1,
+      maxComboBranches: 32,
+      maxStrategicBranches: 32,
+    });
+    expect(evaluation.skippedActions).toContain('actionStrategicCombo');
+  });
+
   it('2手列の先に戦略肢がある場合は actionStrategicCombo を skipped に残す', () => {
     const engine = startedSprint('ri-101-combo-then-strategic');
     engine.step(200);

@@ -3,13 +3,17 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - 'mockups/**'
+    paths:
+      - '**'
+      - '!**/*.md'
+      - 'plan/generated/balance-parameters.md'
+      - '!mockups/**'
   pull_request:
-    paths-ignore:
-      - '**/*.md'
-      - 'mockups/**'
+    paths:
+      - '**'
+      - '!**/*.md'
+      - 'plan/generated/balance-parameters.md'
+      - '!mockups/**'
 
 jobs:
   test:
@@ -25,6 +29,7 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run build
+      - run: npm run balance:check
       - run: npm test
 
   e2e:

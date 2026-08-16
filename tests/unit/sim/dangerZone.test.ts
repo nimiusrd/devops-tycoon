@@ -163,4 +163,85 @@ describe('危険域判定（RI-101）', () => {
     internals.totals.aiAssisted = 0;
     expect(activeDangerReasons(engine)).toContain('reorgRequired');
   });
+
+  it('第2四半期の前半でも未達≥3なら reorgRequired を含む', () => {
+    const engine = startedSprint('ri-101-q2-early-reorg');
+    engine.step(200);
+    const internals = engine as unknown as {
+      quarterNumber: number;
+      sprintIndexInQuarter: number;
+      budget: number;
+      stakeholderTrust: { management: number; customers: number; team: number };
+      org: { quality: number; techDebt: number; morale: number; seniorHp: number };
+      teams: Array<{ quality: number; techDebt: number; morale: number }>;
+      totals: { delivered: number; incidents: number; completed: number; aiAssisted: number };
+    };
+    internals.quarterNumber = 2;
+    internals.sprintIndexInQuarter = 0;
+    internals.budget = 40;
+    internals.stakeholderTrust = { management: 40, customers: 40, team: 40 };
+    internals.org.quality = 0;
+    internals.org.techDebt = 100;
+    internals.org.morale = 0;
+    internals.org.seniorHp = 80;
+    for (const team of internals.teams) {
+      team.quality = 0;
+      team.techDebt = 100;
+      team.morale = 0;
+    }
+    internals.totals.delivered = 0;
+    internals.totals.incidents = 99;
+    internals.totals.completed = 10;
+    internals.totals.aiAssisted = 0;
+    expect(activeDangerReasons(engine)).toContain('reorgRequired');
+  });
+
+  it('スプリント外でも確定済み四半期KPIから kpiMissed を維持する', () => {
+    const engine = startedSprint('ri-101-kpi-off-sprint');
+    engine.step(200);
+    const internals = engine as unknown as {
+      phase: string;
+      sprintIndexInQuarter: number;
+      sprintsPerQuarter: number;
+      budget: number;
+      stakeholderTrust: { management: number; customers: number; team: number };
+      org: { quality: number; techDebt: number; morale: number; seniorHp: number };
+      quarterTotals: {
+        delivered: number;
+        incidents: number;
+        completed: number;
+        aiAssisted: number;
+      };
+    };
+    internals.sprintIndexInQuarter = internals.sprintsPerQuarter;
+    internals.budget = 40;
+    internals.stakeholderTrust = { management: 40, customers: 40, team: 40 };
+    internals.org.quality = 0;
+    internals.org.techDebt = 100;
+    internals.org.morale = 0;
+    internals.org.seniorHp = 80;
+    internals.quarterTotals.delivered = 0;
+    internals.quarterTotals.incidents = 99;
+    internals.quarterTotals.completed = 10;
+    internals.quarterTotals.aiAssisted = 0;
+    internals.phase = 'draft';
+    expect(activeDangerReasons(engine)).toContain('kpiMissed');
+  });
+
+  it('次スプリントの必須インフラ課金で尽きる予算も危険域にする', () => {
+    const engine = startedSprint('ri-101-infra-budget');
+    engine.step(200);
+    const internals = engine as unknown as {
+      budget: number;
+      sprintIndexInQuarter: number;
+      sprintsPerQuarter: number;
+      org: { aiDependency: number };
+      teams: Array<{ aiDependency: number }>;
+    };
+    internals.budget = 20;
+    internals.sprintIndexInQuarter = internals.sprintsPerQuarter - 1;
+    internals.org.aiDependency = 100;
+    for (const team of internals.teams) team.aiDependency = 100;
+    expect(activeDangerReasons(engine)).toContain('budgetExhausted');
+  });
 });

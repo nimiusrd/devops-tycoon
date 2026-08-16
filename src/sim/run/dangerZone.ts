@@ -6,10 +6,13 @@
 import { ALL_ACTION_IDS, canApplyAction } from '../actions';
 import { assignableTasks } from '../assignTask';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
+import { companyOrgFromTeams } from '../orgscale';
 import type { ActionId } from '../types';
+import { foldRunEffects, infraBillingRateForSprint } from './effects';
 import { measureGoalProgress } from './quarterReview';
+import { computeInfraCost } from './sprintBaselineBuild';
 import type { RunEngine } from './engine';
-import type { LoseReason, RunState } from './types';
+import type { LoseReason, RunState, SprintKind } from './types';
 
 /** HUD・四半期閾値の手前として観測する敗因。 */
 export type DangerLoseReason = Extract<
@@ -78,15 +81,16 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   const liveTechDebt = liveKpi?.org.techDebt ?? s.org.techDebt;
   if (s.org.techDebt >= 60 || liveTechDebt >= 60) out.push('techDebt');
   if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
-  if (s.budget <= 15) out.push('budgetExhausted');
+  const nextBudget = budgetAfterNextInfraCharge(s);
+  if (s.budget <= 15 || nextBudget <= 15) out.push('budgetExhausted');
   const lateInQuarter = s.sprintIndexInQuarter >= Math.ceil(s.sprintsPerQuarter / 2);
-  const kpiMissCount = liveKpi
-    ? measureGoalProgress({
-        goal: s.quarterGoal,
-        org: liveKpi.org,
-        totals: liveKpi.totals,
-      }).filter((p) => p.status === 'missed').length
-    : 0;
+  const kpiOrg = liveKpi?.org ?? s.org;
+  const kpiTotals = liveKpi?.totals ?? s.quarterTotals;
+  const kpiMissCount = measureGoalProgress({
+    goal: s.quarterGoal,
+    org: kpiOrg,
+    totals: kpiTotals,
+  }).filter((p) => p.status === 'missed').length;
   if (minTrust <= 25 || s.budget <= 5 || s.org.seniorHp <= 10) out.push('trustExhausted');
   if (lateInQuarter && kpiMissCount >= 4) out.push('kpiMissed');
   else if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
@@ -110,10 +114,34 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
     out.push('incidentCascade');
   if (s.currentSprintKind === 'boss') out.push('bossFailed');
-  if (
-    (minTrust <= 20 && kpiMissCount >= 2) ||
-    (s.quarterNumber >= 2 && lateInQuarter && kpiMissCount >= 3)
-  )
+  if ((minTrust <= 20 && kpiMissCount >= 2) || (s.quarterNumber >= 2 && kpiMissCount >= 3))
     out.push('reorgRequired');
   return out;
+}
+
+function nextSprintKind(s: RunState): SprintKind {
+  const nextIndex = s.sprintIndexInQuarter + 1;
+  if (nextIndex > s.sprintsPerQuarter) return 'normal';
+  if (nextIndex >= s.sprintsPerQuarter) return 'boss';
+  return s.pendingSprintKind;
+}
+
+/** 次スプリント開始時に確定するインフラ課金後の残高。 */
+function budgetAfterNextInfraCharge(s: RunState): number {
+  const fold = foldRunEffects({
+    deck: s.deck,
+    relics: s.relics,
+    evolution: s.evolution,
+    difficulty: s.difficulty,
+    trials: s.trials,
+    scenario: s.scenario,
+  });
+  const rate = infraBillingRateForSprint(
+    nextSprintKind(s),
+    s.trials.includes('frontier-dependency'),
+    fold.frontierModelCostPerDependency,
+  );
+  if (rate === null) return s.budget;
+  const companyDep = companyOrgFromTeams(s.teams, s.org).aiDependency;
+  return Math.max(0, s.budget - computeInfraCost(companyDep, rate, fold.effects.infraCostMul));
 }

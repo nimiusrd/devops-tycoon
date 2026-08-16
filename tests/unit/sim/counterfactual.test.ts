@@ -529,6 +529,29 @@ describe('RI-101 分岐評価と上限', () => {
     expect(evaluation.branches.some((branch) => branch.actionId === 'draft:skip')).toBe(true);
   });
 
+  it('進化の解放見送りも強制選択として分岐し idlePinnedIds に残す', () => {
+    const engine = startedSprint('ri-101-evo-skip');
+    const internals = engine as unknown as {
+      phase: string;
+      evolution: { points: number; unlocked: Record<string, boolean> };
+    };
+    internals.phase = 'evolution';
+    internals.evolution = { points: 2, unlocked: {} };
+    const frame = engine.exportCounterfactualFrame()!;
+    expect(listStrategicChoices(frame, 1).some((choice) => choice.id === 'evo:skip')).toBe(true);
+    const evaluation = evaluateCounterfactual(frame, {
+      actions: [],
+      includeStrategic: true,
+      maxSprints: 1,
+      maxStrategicBranches: 192,
+    });
+    expect(evaluation.idlePinnedIds).toContain('evo:skip');
+    expect(
+      evaluation.branches.some((branch) => branch.actionId === 'evo:skip') ||
+        evaluation.skippedStrategic.includes('evo:skip'),
+    ).toBe(true);
+  });
+
   it('採用で即時敗北する盤面では配置接尾辞のない単一分岐にする', () => {
     const engine = startedSprint('ri-101-recruit-hire-lose');
     const internals = engine as unknown as { phase: string; budget: number };

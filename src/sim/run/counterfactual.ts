@@ -123,7 +123,7 @@ type ShopStep =
 
 type StrategicOverride =
   | { kind: 'draft'; cardId?: string; mulligan?: boolean; skip?: boolean }
-  | { kind: 'evolution'; nodeIds: string[] }
+  | { kind: 'evolution'; nodeIds: string[]; skip?: boolean }
   | { kind: 'beat'; index: number; assignment?: LaneAssignment }
   | { kind: 'rest'; option: RestChoice; deckIndex?: number; assignment?: LaneAssignment }
   | { kind: 'shop'; steps: ShopStep[] }
@@ -455,6 +455,7 @@ function idlePinnedId(snapshot: RunState): string | null {
     return `beat:${snapshot.beat.eventId}:${Math.max(0, n - 1)}`;
   }
   if (snapshot.phase === 'draft' && (snapshot.draft?.length ?? 0) > 0) return 'draft:skip';
+  if (snapshot.phase === 'evolution') return 'evo:skip';
   if (snapshot.phase === 'rest') return 'rest:repay';
   if (snapshot.phase === 'quarterReview') {
     const review = snapshot.quarterReview;
@@ -501,7 +502,9 @@ function applyStrategicOverride(
       return true;
     case 'evolution':
       if (snapshot.phase !== 'evolution') return false;
-      for (const nodeId of override.nodeIds) engine.unlockEvolution(nodeId);
+      if (!override.skip) {
+        for (const nodeId of override.nodeIds) engine.unlockEvolution(nodeId);
+      }
       engine.finishEvolution();
       return true;
     case 'beat':
@@ -770,7 +773,17 @@ function collectStrategicAt(
   if (snapshot.phase === 'evolution') {
     const nth = beginVisit(seen, 'evolution', snapshot);
     if (nth == null) return [];
-    return withVisit(listEvolutionChoices(snapshot.evolution), nth);
+    return withVisit(
+      [
+        {
+          id: 'evo:skip',
+          kind: 'evolution' as const,
+          override: { kind: 'evolution' as const, nodeIds: [], skip: true },
+        },
+        ...listEvolutionChoices(snapshot.evolution),
+      ],
+      nth,
+    );
   }
   if (snapshot.phase === 'beat' && snapshot.beat?.kind === 'decision') {
     const nth = beginVisit(seen, 'beat', snapshot);

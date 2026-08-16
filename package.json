@@ -22,6 +22,8 @@
     "test:e2e:pixi": "PIXI_E2E=1 playwright test --grep @pixi",
     "gallery": "node scripts/gallery.mjs",
     "audio:generate": "node scripts/generate-audio-assets.mjs",
+    "balance:docs": "node scripts/generate-balance-docs.mjs",
+    "balance:check": "node scripts/check-balance.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

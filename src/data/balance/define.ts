@@ -8,6 +8,14 @@ import type {
 /** 浮動小数点の確率分布合計を比較する許容誤差。 */
 const PROBABILITY_TOTAL_EPSILON = 1e-9;
 
+/** 同時に clamp 境界として使う値の順序関係。 */
+const ORDERED_BOUND_PAIRS = [
+  ['process.rework.minimum', 'process.rework.maximum'],
+  ['process.incident.minimum', 'process.incident.maximum'],
+  ['process.security.level.minimum', 'process.security.level.maximum'],
+  ['process.security.fragility.minimum', 'process.security.fragility.maximum'],
+] as const;
+
 /** 定義時にリテラル型を保つスカラー値ヘルパー。 */
 export function defineBalanceEntry<const Entry extends BalanceEntry>(entry: Entry): Entry {
   return entry;
@@ -129,6 +137,20 @@ export function validateBalanceRegistry(
         ),
       );
     }
+  }
+
+  const entriesById = new Map(flattenBalanceEntries(definitions).map((entry) => [entry.id, entry]));
+  for (const [minimumId, maximumId] of ORDERED_BOUND_PAIRS) {
+    const minimum = entriesById.get(minimumId);
+    const maximum = entriesById.get(maximumId);
+    if (!minimum || !maximum || minimum.value <= maximum.value) continue;
+    errors.push(
+      validationError(
+        'related-range-inverted',
+        minimumId,
+        `${minimumId} は ${maximumId} 以下でなければなりません。`,
+      ),
+    );
   }
 
   return errors;

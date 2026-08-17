@@ -71,6 +71,7 @@ export type BalanceValidationErrorCode =
   | 'non-finite-value'
   | 'non-finite-range'
   | 'range-inverted'
+  | 'related-range-inverted'
   | 'value-out-of-range'
   | 'probability-out-of-range'
   | 'distribution-weight-not-positive'

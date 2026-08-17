@@ -64,7 +64,6 @@ const PROCESS_BALANCE_IDS = [
   'process.incident.burnTicks',
   'process.incident.burning.regenMultiplier',
   'process.incident.burning.reviewSlowdown',
-  'process.incident.containHp',
   'process.incident.customerTrust.minimumCount',
   'process.incident.customerTrust.perIncidentRaw',
   'process.incident.customerTrust.perSpreadRaw',
@@ -136,7 +135,7 @@ describe('型付きバランスレジストリ', () => {
     expect(MAX_REWORK).toBe(PROCESS_BALANCE.reworkMaxAttempts.value);
     expect(SPLIT_REWORK_REDUCTION).toBe(PROCESS_BALANCE.reworkSplitReduction.value);
     expect(INCIDENT_HP_COST).toBe(PROCESS_BALANCE.incidentHpCost.value);
-    expect(INCIDENT_CONTAIN_HP).toBe(PROCESS_BALANCE.incidentContainHp.value);
+    expect(INCIDENT_CONTAIN_HP).toBe(PROCESS_BALANCE.incidentHpCost.value);
     expect(DEBT_PER_SPREAD).toBe(PROCESS_BALANCE.spreadDebt.value);
     expect(BURN_TICKS).toBe(PROCESS_BALANCE.burnTicks.value);
     expect(SPREAD_MORALE_COST).toBe(PROCESS_BALANCE.spreadMoraleCost.value);
@@ -159,6 +158,47 @@ describe('型付きバランスレジストリ', () => {
   it('Security 脆弱度の分母となる閾値は正数に制限する', () => {
     expect(PROCESS_BALANCE.securityFragilityThreshold.allowedRange.min).toBeGreaterThan(0);
   });
+
+  it('粗粒度の完了件数換算に使う通常タスク価値は正数に制限する', () => {
+    expect(PROCESS_BALANCE.taskValueNormal.allowedRange.min).toBeGreaterThan(0);
+  });
+
+  it.each([
+    {
+      minimum: PROCESS_BALANCE.reworkMinimum,
+      maximum: PROCESS_BALANCE.reworkMaximum,
+      invertedMinimum: 0.8,
+      invertedMaximum: 0.7,
+    },
+    {
+      minimum: PROCESS_BALANCE.incidentMinimum,
+      maximum: PROCESS_BALANCE.incidentMaximum,
+      invertedMinimum: 0.5,
+      invertedMaximum: 0.4,
+    },
+    {
+      minimum: PROCESS_BALANCE.securityLevelMinimum,
+      maximum: PROCESS_BALANCE.securityLevelMaximum,
+      invertedMinimum: 100,
+      invertedMaximum: 99,
+    },
+    {
+      minimum: PROCESS_BALANCE.securityFragilityMinimum,
+      maximum: PROCESS_BALANCE.securityFragilityMaximum,
+      invertedMinimum: 1,
+      invertedMaximum: 0.9,
+    },
+  ])(
+    '$minimum.id と $maximum.id が逆転した場合は検証で拒否する',
+    ({ minimum, maximum, invertedMinimum, invertedMaximum }) => {
+      const invalidMinimum = defineBalanceEntry({ ...minimum, value: invertedMinimum });
+      const invalidMaximum = defineBalanceEntry({ ...maximum, value: invertedMaximum });
+
+      expect(validateBalanceRegistry([invalidMinimum, invalidMaximum])).toContainEqual(
+        expect.objectContaining({ code: 'related-range-inverted', id: minimum.id }),
+      );
+    },
+  );
 
   it('重複した安定IDを検出する', () => {
     const duplicate = defineBalanceEntry({

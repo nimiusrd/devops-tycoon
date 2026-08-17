@@ -74,8 +74,13 @@ export const REVIEW_HP_REGEN = PROCESS_BALANCE.reviewHpRegen.value;
  * 緊急対応（⚡1 + HP2）で先手を打つより大幅に高くつく＝放置の代償（第6.3）。
  */
 export const INCIDENT_HP_COST = PROCESS_BALANCE.incidentHpCost.value;
-/** これ未満の体力でタイマーが切れると鎮火できず延焼する閾値。 */
-export const INCIDENT_CONTAIN_HP = PROCESS_BALANCE.incidentContainHp.value;
+/**
+ * これ未満の体力でタイマーが切れると鎮火できず延焼する閾値。
+ *
+ * 互換 export として残すが、独立した調整値にはしない。実際の判定は
+ * カード補正を掛けた `INCIDENT_HP_COST` を使う。
+ */
+export const INCIDENT_CONTAIN_HP = PROCESS_BALANCE.incidentHpCost.value;
 /** 延焼 1 件で増える技術的負債。 */
 export const DEBT_PER_SPREAD = PROCESS_BALANCE.spreadDebt.value;
 /**

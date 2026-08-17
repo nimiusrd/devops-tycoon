@@ -19,7 +19,7 @@
 | `process.combo.minimumCount` | コンボ段数の下限 | `0` | `count` | `0〜100` | コンボ出荷倍率の計算に使うコンボ段数の下限。 | process, combo, boundary | いいえ |
 | `process.delivery.highValueMultiplier` | 高価値タスクの出荷倍率 | `3` | `multiplier` | `0〜10` | 高価値タスクの基礎出荷ポイントへ掛ける倍率。 | process, delivery, task | いいえ |
 | `process.delivery.taskValue.complex` | 複雑タスクの基礎出荷ポイント | `8` | `points` | `0〜100` | 複雑タスクを完了したときの基礎出荷ポイント。 | process, delivery, task | いいえ |
-| `process.delivery.taskValue.normal` | 通常タスクの基礎出荷ポイント | `5` | `points` | `0〜100` | 通常タスクを完了したときの基礎出荷ポイント。 | process, delivery, task | いいえ |
+| `process.delivery.taskValue.normal` | 通常タスクの基礎出荷ポイント | `5` | `points` | `1〜100` | 通常タスクを完了したときの基礎出荷ポイント。 | process, delivery, task | いいえ |
 | `process.delivery.taskValue.routine` | 定型タスクの基礎出荷ポイント | `3` | `points` | `0〜100` | 定型タスクを完了したときの基礎出荷ポイント。 | process, delivery, task | いいえ |
 | `process.incident.aiLowLiteracyWeight` | AI 低リテラシー Incident 係数 | `0.05` | `multiplier` | `0〜1` | AI 支援タスクで AI リテラシー不足が Incident 確率へ加える係数。 | process, incident, ai | いいえ |
 | `process.incident.autoContainHpCost` | Incident 自動鎮火 HP コスト | `12` | `points` | `0〜100` | 時間切れの Incident を自動鎮火するシニア HP コスト。 | process, incident, burning, senior-hp | いいえ |
@@ -27,7 +27,6 @@
 | `process.incident.burnTicks` | Incident 炎上猶予 tick | `35` | `ticks` | `1〜300` | 点火から自動鎮火または延焼までの猶予 tick。 | process, incident, burning | いいえ |
 | `process.incident.burning.regenMultiplier` | 炎上中シニア HP 回復倍率 | `0.5` | `multiplier` | `0〜1` | Incident が燃えている間に掛けるシニア HP 自然回復の倍率。 | process, incident, burning, senior-hp | いいえ |
 | `process.incident.burning.reviewSlowdown` | 炎上中 Review 処理量倍率 | `0.65` | `multiplier` | `0〜1` | Incident が燃えている間に掛ける Review 処理量の倍率。 | process, incident, burning, review | いいえ |
-| `process.incident.containHp` | Incident 鎮火 HP 閾値 | `12` | `points` | `0〜100` | Incident を鎮火できるシニア HP の表示・判定用閾値。 | process, incident, burning, senior-hp | いいえ |
 | `process.incident.customerTrust.minimumCount` | 顧客信頼計算の最小 Incident 数 | `0` | `count` | `0〜100` | Incident 数と延焼数を顧客信頼計算へ入れる際の下限。 | process, incident, customer-trust, boundary | いいえ |
 | `process.incident.customerTrust.perIncidentRaw` | Incident ごとの顧客信頼 raw | `0.5` | `points` | `0〜20` | 延焼発生時に Incident 1 件ごとに積む顧客信頼 raw。 | process, incident, security, customer-trust | いいえ |
 | `process.incident.customerTrust.perSpreadRaw` | 延焼ごとの顧客信頼 raw | `2` | `points` | `0〜20` | Security 脆弱度が最大のとき延焼 1 件で積む顧客信頼 raw。 | process, incident, security, customer-trust | いいえ |

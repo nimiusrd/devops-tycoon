@@ -5123,6 +5123,72 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-size: 12px;
 }
 
+.org-dept-compare-section {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.org-dept-compare-section h3 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.org-dept-compare-scroll {
+  overflow-x: auto;
+}
+.org-dept-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.org-dept-compare th,
+.org-dept-compare td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.org-dept-compare thead th {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+}
+.org-dept-compare tbody th {
+  font-weight: 600;
+  padding-left: 0;
+}
+.org-dept-compare-name {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  background: #1f1942;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+.org-dept-compare-name:hover {
+  background: #2a2350;
+}
+.org-dept-compare td.tone-good {
+  color: var(--mint);
+}
+.org-dept-compare td.tone-warn {
+  color: var(--sun);
+}
+.org-dept-compare td.tone-bad {
+  color: var(--coral);
+}
+.org-dept-compare td[data-health='reviewHell'] {
+  font-weight: 700;
+}
+
 /* 全社マップのアイソメ盤面 */
 .org-field {
   position: relative;

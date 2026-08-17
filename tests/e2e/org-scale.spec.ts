@@ -30,6 +30,12 @@ async function startRun(page: import('@playwright/test').Page, seed: string) {
 
 type Box = { x: number; y: number; width: number; height: number };
 
+const HEALTH_LABEL = {
+  healthy: '健全',
+  congested: '渋滞',
+  reviewHell: '炎上',
+} as const;
+
 async function readBox(locator: Locator, label: string): Promise<Box> {
   const box = await locator.boundingBox();
   if (!box) throw new Error(`${label} の bounding box が取得できない`);
@@ -169,6 +175,8 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
   await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
   await expect(page.getByTestId('org-screen')).toBeVisible();
   await expect(page.getByTestId('org-hud')).toBeVisible();
+  await expect(page.getByTestId('org-depts')).toBeVisible();
+  await expect(page.getByTestId('org-dept-compare')).toBeVisible();
   await expect(page.getByTestId('org-board')).toBeVisible();
   await expect(page.getByTestId('org-infra-hub')).toBeVisible();
 
@@ -215,6 +223,52 @@ test('業界画面で保存済みデイリー記録を順位付きで表示す�
   await expect(page.getByTestId('daily-record-2026-07-11')).toContainText('1,200 pt');
   await expect(page.getByTestId('daily-record-2026-07-10')).toContainText('#2');
   await expect(page.getByTestId('daily-record-2026-07-09')).toContainText('#3');
+});
+
+test('全社マップで部門のAI依存・負債・士気・健全度を横並び比較できる（RI-125）', async ({
+  page,
+}) => {
+  await startRun(page, 'ri125-dept-compare');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+
+  await expect(page.getByTestId('org-depts')).toBeVisible();
+  await expect(page.getByTestId('dept-chip-product')).toContainText('出荷');
+  await expect(page.getByTestId('org-dept-compare')).toBeVisible();
+  await expect(page.getByTestId('org-dept-compare')).not.toContainText('出荷');
+  await expect(page.getByTestId('org-dept-compare')).not.toContainText('耐性');
+
+  const departments = await page.evaluate(() => {
+    const org = (window as GameWindow).game!.getState().orgScale;
+    if (!org) throw new Error('orgScale が無い');
+    return org.departments.map((d) => ({
+      id: d.def.id,
+      name: d.def.name,
+      aiDependency: d.aiDependency,
+      techDebt: d.techDebt,
+      morale: d.morale,
+      health: d.health,
+    }));
+  });
+  expect(departments.length).toBeGreaterThanOrEqual(3);
+
+  for (const dept of departments) {
+    await expect(page.getByTestId(`dept-chip-${dept.id}`)).toBeVisible();
+    await expect(page.getByTestId(`org-dept-row-${dept.id}`)).toContainText(dept.name);
+    await expect(page.getByTestId(`org-dept-${dept.id}-aiDependency`)).toHaveText(
+      String(dept.aiDependency),
+    );
+    await expect(page.getByTestId(`org-dept-${dept.id}-techDebt`)).toHaveText(
+      String(dept.techDebt),
+    );
+    await expect(page.getByTestId(`org-dept-${dept.id}-morale`)).toHaveText(String(dept.morale));
+    await expect(page.getByTestId(`org-dept-${dept.id}-health`)).toHaveText(
+      HEALTH_LABEL[dept.health],
+    );
+  }
+
+  await page.getByTestId('org-dept-focus-product').click();
+  await expect(page.getByTestId('dept-screen')).toBeVisible();
+  await expect(page.getByTestId('dept-board')).toBeVisible();
 });
 
 test('ホームチーム島をタップすると現場へドリルダウンしてオーバーレイが閉じる（第4.11）', async ({

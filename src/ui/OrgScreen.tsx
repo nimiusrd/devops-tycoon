@@ -1,8 +1,8 @@
 /**
  * 全社マップ（全社俯瞰モード。SPEC 第4.8）。
  *
- * 部門ゾーン・チーム島（健全度で色分け）・共通基盤ハブ・全社HUD・全社レバーを表示する。
- * チーム島をタップすると現場へドリルダウンし、部門ヘッダから部署ビューへ寄る。
+ * 部門ゾーン・チーム島（健全度で色分け）・共通基盤ハブ・全社HUD・部門チップ／比較表・全社レバーを表示する。
+ * チーム島をタップすると現場へドリルダウンし、部門チップと比較表の部門名から部署ビューへ寄る。
  * 状態は読むだけ（第22.2）。盤面は `orgBoardScene` + `OrgBoard` で等角描画する。
  */
 import { lazy, Suspense, useCallback, useMemo, useRef } from 'react';
@@ -15,6 +15,7 @@ import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeVi
 import { AspectStage } from './AspectStage';
 import { EffectTagList } from './EffectTagList';
 import { OrgBoard } from './OrgBoard';
+import { OrgDeptComparison } from './OrgDeptComparison';
 import { OrgInfraHubPill } from './OrgHub';
 import type { OrgPixiFieldHandle } from './OrgPixiField';
 import { usePixiRenderer } from './usePixiRenderer';
@@ -127,6 +128,8 @@ export function OrgScreen({
           </button>
         ))}
       </div>
+
+      <OrgDeptComparison departments={org.departments} onFocusDept={handleFocusDept} />
 
       <AspectStage ratio={ORG_VIEW.w / ORG_VIEW.h} className="org-field" data-testid="org-field">
         {usePixi ? (

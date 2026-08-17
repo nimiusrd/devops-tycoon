@@ -304,6 +304,38 @@ describe('RI-87 セキュリティ軸', () => {
     expect(applyPenalty(rawMetrics, 1)).toBe(expected);
   });
 
+  it('顧客信頼の最小件数は直接経路と延焼 raw 経路で同じように働く', () => {
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
+    const defaultValue = minimumCount.value;
+    minimumCount.value = 1;
+    try {
+      const applyPenalty = (metrics: Partial<SprintMetrics> | undefined): number => {
+        const engine = new RunEngine({ seed: `ri108-minimum-count-${metrics ? 'raw' : 'direct'}` });
+        engine.startRun();
+        const before = engine.snapshot().stakeholderTrust.customers;
+        const internals = engine as unknown as {
+          applyIncidentTrustPenalty: (r: { incidents: number; spread: number }) => void;
+          org: OrgState;
+          sprint: { metrics: Partial<SprintMetrics> } | null;
+        };
+        internals.org.securityLevel = 40;
+        internals.sprint = metrics ? { metrics } : null;
+        internals.applyIncidentTrustPenalty({ incidents: 1, spread: 1 });
+        return engine.snapshot().stakeholderTrust.customers - before;
+      };
+
+      const rawMetrics = {
+        securityTrustSpreadRaw: securityCustomerTrustSpreadRaw(40),
+        securityTrustIncidentFragility: securityFragility(40),
+      };
+      expect(securityCustomerTrustDelta(40, 1, 1)).toBe(0);
+      expect(applyPenalty(undefined)).toBe(0);
+      expect(applyPenalty(rawMetrics)).toBe(0);
+    } finally {
+      minimumCount.value = defaultValue;
+    }
+  });
+
   it('粗粒度発火の信頼 raw は発火チームの水準で積む', () => {
     const pressured = (securityLevel: number): TeamRunState => ({
       id: 'pressured',

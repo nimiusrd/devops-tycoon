@@ -870,11 +870,12 @@ export class RunEngine {
    */
   private applyIncidentTrustPenalty(result: SprintResult): void {
     const m = this.sprint?.metrics;
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;
     const delta =
-      result.spread > 0 && m && typeof m.securityTrustSpreadRaw === 'number'
+      result.spread > minimumCount && m && typeof m.securityTrustSpreadRaw === 'number'
         ? securityCustomerTrustFromRaw(
             m.securityTrustSpreadRaw +
-              Math.max(0, result.incidents) *
+              Math.max(minimumCount, result.incidents) *
                 PROCESS_BALANCE.incidentTrustPerIncidentRaw.value *
                 (m.securityTrustIncidentFragility ?? securityFragility(this.org.securityLevel)),
           )

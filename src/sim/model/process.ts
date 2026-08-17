@@ -34,20 +34,20 @@ export const IDENTITY_CARD_EFFECTS: CardEffects = {
 
 /** タスク規模ごとの所要倍率（複雑なほど時間がかかる）。 */
 export const SIZE_FACTOR: Record<TaskKind, number> = {
-  routine: 0.7,
-  normal: 1,
-  complex: 1.7,
+  routine: PROCESS_BALANCE.codingSizeRoutineFactor.value,
+  normal: PROCESS_BALANCE.codingSizeNormalFactor.value,
+  complex: PROCESS_BALANCE.codingSizeComplexFactor.value,
 };
 
 /** タスク規模ごとの基礎出荷ポイント。 */
 export const TASK_BASE_VALUE: Record<TaskKind, number> = {
-  routine: 3,
-  normal: 5,
-  complex: 8,
+  routine: PROCESS_BALANCE.taskValueRoutine.value,
+  normal: PROCESS_BALANCE.taskValueNormal.value,
+  complex: PROCESS_BALANCE.taskValueComplex.value,
 };
 
 /** 高価値タスクの出荷ポイント倍率。 */
-export const HIGH_VALUE_MULTIPLIER = 3;
+export const HIGH_VALUE_MULTIPLIER = PROCESS_BALANCE.highValueMultiplier.value;
 
 /** Coding の基礎所要 tick（標準規模・AIなし）。 */
 export const CODING_BASE_TICKS = PROCESS_BALANCE.codingBaseTicks.value;
@@ -57,67 +57,71 @@ export const AI_CODING_SPEEDUP = PROCESS_BALANCE.aiCodingSpeedup.value;
 /** AI 導入時、各タスクが AI を使う確率。 */
 export const AI_ADOPTION = PROCESS_BALANCE.aiAdoption.value;
 /** AI タスク 1 件ごとに上がる AI依存度。 */
-export const AI_DEP_PER_TASK = 2.2;
+export const AI_DEP_PER_TASK = PROCESS_BALANCE.aiDependencyPerTask.value;
+/** AI 支援タスクの出荷価値へ AI リテラシーが加える係数。 */
+export const AI_DELIVERY_VALUE_LITERACY_WEIGHT =
+  PROCESS_BALANCE.aiDeliveryValueLiteracyWeight.value;
 
 /** Review の満HP時スループット（PR/tick）。 */
-export const REVIEW_BASE_PER_TICK = 0.9;
+export const REVIEW_BASE_PER_TICK = PROCESS_BALANCE.reviewBasePerTick.value;
 /** Review 1 件で消費するシニア体力。 */
-export const REVIEW_HP_COST = 1.6;
+export const REVIEW_HP_COST = PROCESS_BALANCE.reviewHpCost.value;
 /** 1 tick あたりのシニア体力回復。 */
-export const REVIEW_HP_REGEN = 0.7;
+export const REVIEW_HP_REGEN = PROCESS_BALANCE.reviewHpRegen.value;
 
 /**
  * 障害 1 件の自動鎮火（タイマー切れをシニアが総出で消す）に要するシニア体力。
  * 緊急対応（⚡1 + HP2）で先手を打つより大幅に高くつく＝放置の代償（第6.3）。
  */
-export const INCIDENT_HP_COST = 12;
+export const INCIDENT_HP_COST = PROCESS_BALANCE.incidentHpCost.value;
 /** これ未満の体力でタイマーが切れると鎮火できず延焼する閾値。 */
-export const INCIDENT_CONTAIN_HP = 12;
+export const INCIDENT_CONTAIN_HP = PROCESS_BALANCE.incidentContainHp.value;
 /** 延焼 1 件で増える技術的負債。 */
-export const DEBT_PER_SPREAD = 6;
+export const DEBT_PER_SPREAD = PROCESS_BALANCE.spreadDebt.value;
 /**
  * 炎上タイマー: 点火から自動鎮火/延焼までの猶予 tick（第6.3）。
  * この間に緊急対応（firefight）で鎮火すれば、安く済みコンボも守られる。
  */
-export const BURN_TICKS = 35;
+export const BURN_TICKS = PROCESS_BALANCE.burnTicks.value;
 /** 延焼時の士気低下。 */
-export const SPREAD_MORALE_COST = 5;
+export const SPREAD_MORALE_COST = PROCESS_BALANCE.spreadMoraleCost.value;
 /**
  * 火が燃えている間の Review スループット倍率（シニアが火事対応に気を取られる）。
  * 放置すると渋滞が育つため、「今すぐ消すか、レビューを止めるか」の即時判断を生む。
  */
-export const BURNING_REVIEW_SLOWDOWN = 0.65;
+export const BURNING_REVIEW_SLOWDOWN = PROCESS_BALANCE.burningReviewSlowdown.value;
 /** 火が燃えている間のシニア体力自然回復の倍率（気が休まらない）。 */
-export const BURNING_REGEN_MUL = 0.5;
+export const BURNING_REGEN_MUL = PROCESS_BALANCE.burningRegenMultiplier.value;
 
 /** 安全側の介入で工程が落ち着く期間（RI-84 / F-5）。 */
-export const STABILITY_TICKS = 180;
+export const STABILITY_TICKS = PROCESS_BALANCE.stabilityTicks.value;
 /** 安定した運用中に掛ける手戻り率倍率（RI-84 / F-5）。 */
-export const STABILITY_REWORK_MUL = 0.4;
+export const STABILITY_REWORK_MUL = PROCESS_BALANCE.stabilityReworkMultiplier.value;
 /** 安定中に許す連続出荷ボーナスの最大段数（RI-84 / F-5）。 */
-export const STABILITY_COMBO_CAP = 8;
+export const STABILITY_COMBO_CAP = PROCESS_BALANCE.stabilityComboCap.value;
 /** 安定中に上限を超えたコンボ上振れを残す割合（急な平均落ち込みを避ける）。 */
-export const STABILITY_COMBO_TAIL_MUL = 0.5;
+export const STABILITY_COMBO_TAIL_MUL = PROCESS_BALANCE.stabilityComboTailMultiplier.value;
 /** 安定中に高価値タスクの上振れを抑え始めるコンボ閾値（RI-84 / F-5）。 */
-export const STABILITY_HIGH_VALUE_COMBO_THRESHOLD = 8;
+export const STABILITY_HIGH_VALUE_COMBO_THRESHOLD =
+  PROCESS_BALANCE.stabilityHighValueComboThreshold.value;
 /** 閾値超過時の高価値タスク倍率。安定運用では通常タスクを優先して分散を抑える。 */
-export const STABILITY_HIGH_VALUE_MUL = 0.7;
+export const STABILITY_HIGH_VALUE_MUL = PROCESS_BALANCE.stabilityHighValueMultiplier.value;
 /** Rework の所要 tick。 */
-export const REWORK_TICKS = 4;
+export const REWORK_TICKS = PROCESS_BALANCE.reworkTicks.value;
 /** タスク 1 件あたりの手戻り上限（これを超えると強制的に通す）。 */
-export const MAX_REWORK = 3;
+export const MAX_REWORK = PROCESS_BALANCE.reworkMaxAttempts.value;
 
 /** PR分割/タスク差配で「捌きやすく」した際の手戻り率の低下量（第6.1）。 */
-export const SPLIT_REWORK_REDUCTION = 0.16;
+export const SPLIT_REWORK_REDUCTION = PROCESS_BALANCE.reworkSplitReduction.value;
 
 /** 残業号令の発動中に掛かる Coding / Review のスループット倍率（第6.1）。 */
-export const OVERTIME_CODING_MUL = 1.4;
-export const OVERTIME_REVIEW_MUL = 1.6;
+export const OVERTIME_CODING_MUL = PROCESS_BALANCE.overtimeCodingMultiplier.value;
+export const OVERTIME_REVIEW_MUL = PROCESS_BALANCE.overtimeReviewMultiplier.value;
 
 /** コンボ 1 段ごとの出荷倍率の伸び（第6.2 / 第18.2 の COMBO 演出）。 */
-export const COMBO_BONUS_PER = 0.1;
+export const COMBO_BONUS_PER = PROCESS_BALANCE.comboBonusPer.value;
 /** コンボ倍率の上乗せ上限（最大 1 + これ 倍）。 */
-export const COMBO_BONUS_CAP = 1.5;
+export const COMBO_BONUS_CAP = PROCESS_BALANCE.comboBonusCap.value;
 
 /**
  * コンボ（連続 Done 数）に応じた出荷ポイント倍率（第6.2）。
@@ -125,7 +129,13 @@ export const COMBO_BONUS_CAP = 1.5;
  * 「攻めて出荷を伸ばす」インセンティブを与える純関数。
  */
 export function comboMultiplier(combo: number): number {
-  return 1 + Math.min(COMBO_BONUS_CAP, Math.max(0, combo) * COMBO_BONUS_PER);
+  return (
+    1 +
+    Math.min(
+      COMBO_BONUS_CAP,
+      Math.max(PROCESS_BALANCE.comboMinimumCount.value, combo) * COMBO_BONUS_PER,
+    )
+  );
 }
 
 /**
@@ -170,7 +180,9 @@ export function reworkProgressPerTick(): number {
  * 体力 0 でも完全停止はせず、最低限のスループットを残す。
  */
 export function reviewPerTick(org: OrgState, effects: CardEffects = IDENTITY_CARD_EFFECTS): number {
-  const efficiency = 0.3 + 0.7 * (org.seniorHp / 100);
+  const efficiency =
+    PROCESS_BALANCE.reviewHpEfficiencyFloor.value +
+    PROCESS_BALANCE.reviewHpEfficiencyRange.value * (org.seniorHp / 100);
   return (
     REVIEW_BASE_PER_TICK * efficiency * effects.reviewEfficiencyMul * effects.reviewCapacityMul
   );
@@ -189,16 +201,16 @@ export function reworkProbability(
   // RI-77: AI タスク固有の手戻り上乗せは小さく保ち、依存度・編成側の代償を主因にする。
   // Review 渋滞・Rework 増のコア因果（RI-41）は維持する。
   const p =
-    0.05 +
-    0.32 * (org.aiDependency / 100) +
-    (task.aiAssisted ? 0.05 : 0) -
-    0.18 * (org.aiLiteracy / 100) -
-    0.14 * (org.quality / 100) +
+    PROCESS_BALANCE.reworkBaseProbability.value +
+    PROCESS_BALANCE.reworkAiDependencyWeight.value * (org.aiDependency / 100) +
+    (task.aiAssisted ? PROCESS_BALANCE.reworkAiAssistedAdd.value : 0) -
+    PROCESS_BALANCE.reworkAiLiteracyWeight.value * (org.aiLiteracy / 100) -
+    PROCESS_BALANCE.reworkQualityWeight.value * (org.quality / 100) +
     effects.reworkRateAdd -
     (task.split ? SPLIT_REWORK_REDUCTION : 0);
   // 再修正済みのタスクは通りやすくする（収束保証）。
-  const damped = p * Math.pow(0.5, task.reworkAttempts);
-  return clamp(damped, 0.02, 0.75);
+  const damped = p * Math.pow(PROCESS_BALANCE.reworkAttemptDecay.value, task.reworkAttempts);
+  return clamp(damped, PROCESS_BALANCE.reworkMinimum.value, PROCESS_BALANCE.reworkMaximum.value);
 }
 
 /**
@@ -206,7 +218,17 @@ export function reworkProbability(
  * 50 以上は実質無効果にし、既存バランス帯を壊さず軽視ビルド側で効かせる。
  */
 export function securityFragility(securityLevel: number): number {
-  return clamp((50 - clamp(securityLevel, 0, 100)) / 50, 0, 1);
+  return clamp(
+    (PROCESS_BALANCE.securityFragilityThreshold.value -
+      clamp(
+        securityLevel,
+        PROCESS_BALANCE.securityLevelMinimum.value,
+        PROCESS_BALANCE.securityLevelMaximum.value,
+      )) /
+      PROCESS_BALANCE.securityFragilityThreshold.value,
+    PROCESS_BALANCE.securityFragilityMinimum.value,
+    PROCESS_BALANCE.securityFragilityMaximum.value,
+  );
 }
 
 /**
@@ -214,14 +236,14 @@ export function securityFragility(securityLevel: number): number {
  * testCoverage 項と二重すぎないよう係数は控えめ。
  */
 export function securityIncidentRateBonus(securityLevel: number): number {
-  return 0.05 * securityFragility(securityLevel);
+  return PROCESS_BALANCE.securityIncidentRateBonus.value * securityFragility(securityLevel);
 }
 
 /**
  * 延焼コスト倍率（RI-87）。securityLevel 50+ で 1、0 で 1.6。
  */
 export function securitySpreadMul(securityLevel: number): number {
-  return 1 + 0.6 * securityFragility(securityLevel);
+  return 1 + PROCESS_BALANCE.securitySpreadMultiplierAdd.value * securityFragility(securityLevel);
 }
 
 /**
@@ -231,12 +253,12 @@ export function securitySpreadMul(securityLevel: number): number {
  */
 /** 延焼1件ぶんの顧客信頼 raw（発生時点の水準で積む。RI-87）。 */
 export function securityCustomerTrustSpreadRaw(securityLevel: number): number {
-  return 2 * securityFragility(securityLevel);
+  return PROCESS_BALANCE.incidentTrustSpreadRaw.value * securityFragility(securityLevel);
 }
 
 /** 蓄積 raw を顧客信頼デルタへ確定する（負が低下）。 */
 export function securityCustomerTrustFromRaw(raw: number): number {
-  if (raw < 0.5) return 0;
+  if (raw < PROCESS_BALANCE.incidentTrustRawThreshold.value) return 0;
   return -Math.ceil(raw);
 }
 
@@ -245,8 +267,11 @@ export function securityCustomerTrustDelta(
   incidents: number,
   spread: number,
 ): number {
-  if (spread <= 0) return 0;
-  const exposure = Math.max(0, spread) * 2 + Math.max(0, incidents) * 0.5;
+  const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;
+  if (spread <= minimumCount) return 0;
+  const exposure =
+    Math.max(minimumCount, spread) * PROCESS_BALANCE.incidentTrustSpreadRaw.value +
+    Math.max(minimumCount, incidents) * PROCESS_BALANCE.incidentTrustPerIncidentRaw.value;
   return securityCustomerTrustFromRaw(exposure * securityFragility(securityLevel));
 }
 
@@ -261,12 +286,14 @@ export function incidentProbability(
   effects: CardEffects = IDENTITY_CARD_EFFECTS,
 ): number {
   const p =
-    (0.02 +
-      0.1 * (1 - org.testCoverage / 100) +
+    (PROCESS_BALANCE.incidentBaseProbability.value +
+      PROCESS_BALANCE.incidentTestCoverageWeight.value * (1 - org.testCoverage / 100) +
       securityIncidentRateBonus(org.securityLevel) +
-      (task.aiAssisted ? 0.05 * (1 - org.aiLiteracy / 100) : 0)) *
+      (task.aiAssisted
+        ? PROCESS_BALANCE.incidentAiLowLiteracyWeight.value * (1 - org.aiLiteracy / 100)
+        : 0)) *
     effects.incidentRateMul;
-  return clamp(p, 0.01, 0.4);
+  return clamp(p, PROCESS_BALANCE.incidentMinimum.value, PROCESS_BALANCE.incidentMaximum.value);
 }
 
 /** タスクの出荷ポイント。 */
@@ -281,7 +308,7 @@ export function taskValue(task: Task): number {
  */
 export function aiDeliveryValueMul(org: OrgState, task: Task): number {
   if (!task.aiAssisted) return 1;
-  return 1 + 0.85 * (org.aiLiteracy / 100);
+  return 1 + AI_DELIVERY_VALUE_LITERACY_WEIGHT * (org.aiLiteracy / 100);
 }
 
 /**

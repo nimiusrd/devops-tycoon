@@ -3,9 +3,10 @@
  */
 import { getScenario } from './scenarios';
 import type { OrgState, ScenarioId } from './types';
+import { PROCESS_BALANCE } from '../data/balance';
 
 /** AI 未導入時の AI依存度の初期値（わずかに残る程度）。 */
-const AI_DEPENDENCY_WHEN_DISABLED = 3;
+const AI_DEPENDENCY_WHEN_DISABLED = PROCESS_BALANCE.aiDependencyWhenDisabled.value;
 
 /**
  * シナリオと AI 導入フラグから初期 `OrgState` を作る。

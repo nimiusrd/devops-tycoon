@@ -20,6 +20,7 @@ import {
 } from '../member';
 import {
   AI_ADOPTION,
+  AI_DELIVERY_VALUE_LITERACY_WEIGHT,
   TASK_BASE_VALUE,
   securityCustomerTrustSpreadRaw,
   securityFragility,
@@ -599,7 +600,7 @@ export function advanceCoarseTeams(
       coders > 0 ? estimateRivalAiAssigned(coders, team.aiDependency) / coders : 0;
     // 詳細 sim の aiDeliveryValueMul に対応: AI 採用分だけリテラシー連動の出荷倍率を掛ける。
     const aiShare = AI_ADOPTION * clamp(adoptionShare, 0, 1);
-    const aiDeliveryMul = 1 + aiShare * 0.85 * (team.aiLiteracy / 100);
+    const aiDeliveryMul = 1 + aiShare * AI_DELIVERY_VALUE_LITERACY_WEIGHT * (team.aiLiteracy / 100);
     // 稼働 0 なら出荷も 0（休職だらけのチームがベース出荷を出さない）。
     // 完了件数は倍率前の基礎出荷から換算し、倍率は shipping 増分だけに掛ける（詳細 sim と同じ）。
     const baseShipGain =

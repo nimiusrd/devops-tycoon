@@ -7,6 +7,7 @@ import {
   reworkProbability,
   taskValue,
 } from '../../../src/sim/model';
+import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { createOrgState } from '../../../src/sim/org';
 import type { OrgState, Task } from '../../../src/sim/types';
 
@@ -63,6 +64,16 @@ describe('reworkProbability（第22.5 の代表的不変条件）', () => {
     );
     expect(min).toBeGreaterThanOrEqual(0.02);
     expect(max).toBeLessThanOrEqual(0.75);
+  });
+});
+
+describe('初期組織の AI 依存度', () => {
+  it('AI 無効時は工程バランスの初期依存度を使い、AI 有効時はシナリオ値を保つ', () => {
+    const disabled = createOrgState('default', false);
+    const enabled = createOrgState('default', true);
+
+    expect(disabled.aiDependency).toBe(PROCESS_BALANCE.aiDependencyWhenDisabled.value);
+    expect(enabled.aiDependency).not.toBe(disabled.aiDependency);
   });
 });
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getCard } from '../../../src/data/cards';
+import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { getDifficulty } from '../../../src/data/difficulties';
 import { getEvolutionNode } from '../../../src/data/evolution';
 import { getRelic } from '../../../src/data/relics';
@@ -263,6 +264,43 @@ describe('RI-87 セキュリティ軸', () => {
       ),
     );
     expect(atSpread).toBeLessThan(securityCustomerTrustDelta(90, 2, 1));
+  });
+
+  it('直接 Incident と延焼 raw 経路は共通係数で顧客信頼の閾値をまたぐ', () => {
+    const applyPenalty = (
+      metrics: Partial<SprintMetrics> | undefined,
+      incidents: number,
+    ): number => {
+      const engine = new RunEngine({
+        seed: `ri108-trust-${metrics ? 'raw' : 'direct'}-${incidents}`,
+      });
+      engine.startRun();
+      const before = engine.snapshot().stakeholderTrust.customers;
+      const internals = engine as unknown as {
+        applyIncidentTrustPenalty: (r: { incidents: number; spread: number }) => void;
+        org: OrgState;
+        sprint: { metrics: Partial<SprintMetrics> } | null;
+      };
+      internals.org.securityLevel = 40;
+      internals.sprint = metrics ? { metrics } : null;
+      internals.applyIncidentTrustPenalty({ incidents, spread: 1 });
+      return engine.snapshot().stakeholderTrust.customers - before;
+    };
+
+    const fragility = securityFragility(40);
+    const rawMetrics = {
+      securityTrustSpreadRaw: securityCustomerTrustSpreadRaw(40),
+      securityTrustIncidentFragility: fragility,
+    };
+    expect(PROCESS_BALANCE.incidentTrustPerIncidentRaw.value).toBe(0.5);
+
+    expect(applyPenalty(undefined, 0)).toBe(0);
+    expect(applyPenalty(rawMetrics, 0)).toBe(0);
+
+    const expected = securityCustomerTrustDelta(40, 1, 1);
+    expect(expected).toBe(-1);
+    expect(applyPenalty(undefined, 1)).toBe(expected);
+    expect(applyPenalty(rawMetrics, 1)).toBe(expected);
   });
 
   it('粗粒度発火の信頼 raw は発火チームの水準で積む', () => {

@@ -9,6 +9,7 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { BOSS_DEFS, getBoss } from '../../data/bosses';
+import { PROCESS_BALANCE } from '../../data/balance';
 import { getCard } from '../../data/cards';
 import { getGoalAdjustment } from '../../data/goalAdjustments';
 import { getLever } from '../../data/levers';
@@ -874,7 +875,7 @@ export class RunEngine {
         ? securityCustomerTrustFromRaw(
             m.securityTrustSpreadRaw +
               Math.max(0, result.incidents) *
-                0.5 *
+                PROCESS_BALANCE.incidentTrustPerIncidentRaw.value *
                 (m.securityTrustIncidentFragility ?? securityFragility(this.org.securityLevel)),
           )
         : securityCustomerTrustDelta(this.org.securityLevel, result.incidents, result.spread);

@@ -5146,7 +5146,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 .org-dept-compare th,
 .org-dept-compare td {
-  text-align: left;
+  text-align: right;
   padding: 6px 10px;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
@@ -5156,9 +5156,13 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-size: 12px;
   font-weight: 600;
 }
+.org-dept-compare th:first-child,
+.org-dept-compare td:first-child,
+.org-dept-compare tbody th {
+  text-align: left;
+}
 .org-dept-compare tbody th {
   font-weight: 600;
-  padding-left: 0;
 }
 .org-dept-compare-name {
   display: inline-flex;

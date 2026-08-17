@@ -70,6 +70,9 @@ function validateEntry(entry: BalanceEntry): BalanceValidationError[] {
     errors.push(validationError('non-finite-value', entry.id, '値は有限値でなければなりません。'));
     return errors;
   }
+  if (entry.integer && !Number.isInteger(entry.value)) {
+    errors.push(validationError('non-integer-value', entry.id, '値は整数でなければなりません。'));
+  }
   if (entry.value < entry.allowedRange.min || entry.value > entry.allowedRange.max) {
     errors.push(validationError('value-out-of-range', entry.id, '値が許容範囲外です。'));
   }

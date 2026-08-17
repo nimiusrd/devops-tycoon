@@ -2,6 +2,7 @@
  * 組織状態（OrgState）の生成（SPEC 第5章 / 第4.2）。
  */
 import { getScenario } from './scenarios';
+import { clamp } from './clamp';
 import type { OrgState, ScenarioId } from './types';
 import { PROCESS_BALANCE } from '../data/balance';
 
@@ -21,7 +22,11 @@ export function createOrgState(scenario: ScenarioId, aiEnabled: boolean): OrgSta
     testCoverage: org.testCoverage,
     documentation: org.documentation,
     quality: org.quality,
-    securityLevel: org.securityLevel,
+    securityLevel: clamp(
+      org.securityLevel,
+      PROCESS_BALANCE.securityLevelMinimum.value,
+      PROCESS_BALANCE.securityLevelMaximum.value,
+    ),
     morale: org.morale,
     seniorHp: org.seniorHp,
     techDebt: 0,

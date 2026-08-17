@@ -166,6 +166,7 @@ export const PROCESS_BALANCE = {
     description: '通常の Rework 判定を行うタスクごとの最大回数。',
     tags: ['process', 'rework'],
     derived: false,
+    integer: true,
   }),
   reworkBaseProbability: defineBalanceEntry({
     id: 'process.rework.baseProbability',
@@ -401,7 +402,7 @@ export const PROCESS_BALANCE = {
     id: 'process.security.fragility.minimum',
     value: 0,
     unit: 'multiplier',
-    allowedRange: { min: 0, max: 1 },
+    allowedRange: { min: 0, max: 0 },
     label: 'Security 脆弱度の下限',
     description: 'Security 脆弱度を clamp する下限。',
     tags: ['process', 'security', 'boundary'],

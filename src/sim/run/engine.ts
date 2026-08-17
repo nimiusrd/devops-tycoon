@@ -284,7 +284,11 @@ function buildRunOrg(difficulty: DifficultyId, scenarioId: ScenarioId): OrgState
     testCoverage: scenarioOrg.testCoverage,
     documentation: scenarioOrg.documentation,
     quality: scenarioOrg.quality,
-    securityLevel: scenarioOrg.securityLevel,
+    securityLevel: clamp(
+      scenarioOrg.securityLevel,
+      PROCESS_BALANCE.securityLevelMinimum.value,
+      PROCESS_BALANCE.securityLevelMaximum.value,
+    ),
     morale: scenarioOrg.morale,
     seniorHp: scenarioOrg.seniorHp,
     techDebt: 0,

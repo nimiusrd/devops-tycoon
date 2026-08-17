@@ -5,6 +5,7 @@
  * 乱数は seed 派生のみ（第22.3）。
  */
 import { DEPARTMENT_DEFS } from '../../data/departments';
+import { PROCESS_BALANCE } from '../../data/balance';
 import {
   MEMBER_NAMES,
   RECRUIT_ARCHETYPES,
@@ -203,7 +204,11 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
   const testCoverage = clamp(jitter(base.testCoverage, 15), 20, 100);
   const documentation = clamp(jitter(base.documentation, 15), 20, 100);
   const quality = clamp(jitter(base.quality, 15), 20, 100);
-  const securityLevel = clamp(jitter(base.securityLevel, 15), 20, 100);
+  const securityLevel = clamp(
+    jitter(base.securityLevel, 15),
+    PROCESS_BALANCE.securityLevelMinimum.value,
+    PROCESS_BALANCE.securityLevelMaximum.value,
+  );
   return {
     aiDependency,
     reviewQueue,

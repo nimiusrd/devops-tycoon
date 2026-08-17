@@ -2295,9 +2295,11 @@ export class RunEngine {
     this.pendingShopHandIndices = [...(cloned.pendingShopHandIndices ?? [])];
     this.org = cloned.org;
     // RI-87: 旧セーブに securityLevel が無い場合は品質を近似値として補完する。
-    if (typeof this.org.securityLevel !== 'number') {
-      this.org.securityLevel = clamp(this.org.quality, 0, 100);
-    }
+    this.org.securityLevel = clamp(
+      typeof this.org.securityLevel === 'number' ? this.org.securityLevel : this.org.quality,
+      PROCESS_BALANCE.securityLevelMinimum.value,
+      PROCESS_BALANCE.securityLevelMaximum.value,
+    );
     this.deck = cloned.deck.map(cloneCardInstance);
     this.relics = [...cloned.relics];
     this.bossRelicReward = cloned.bossRelicReward;
@@ -2369,8 +2371,14 @@ export class RunEngine {
     if (Array.isArray(cloned.extras.teams) && cloned.extras.teams.length > 0) {
       this.teams = structuredClone(cloned.extras.teams);
       this.teams = this.teams.map((t) => {
-        if (typeof t.securityLevel === 'number') return t;
-        const next = { ...t, securityLevel: clamp(t.quality, 0, 100) };
+        const next = {
+          ...t,
+          securityLevel: clamp(
+            typeof t.securityLevel === 'number' ? t.securityLevel : t.quality,
+            PROCESS_BALANCE.securityLevelMinimum.value,
+            PROCESS_BALANCE.securityLevelMaximum.value,
+          ),
+        };
         return { ...next, ...deriveTeamCapacities(next) };
       });
       this.activeTeamId = cloned.extras.activeTeamId ?? HOME_TEAM_ID;

@@ -43,7 +43,7 @@ export function renderBalanceParametersMarkdown(definitions: readonly BalanceDef
     compareBalanceIds(left.id, right.id),
   );
   const rows = entries.map((entry) => {
-    const range = `${entry.allowedRange.min}〜${entry.allowedRange.max}`;
+    const range = `${entry.allowedRange.min}〜${entry.allowedRange.max}${entry.integer ? '（整数）' : ''}`;
     const tags = entry.tags.join(', ');
     const derived = entry.derived ? 'はい' : 'いいえ';
 

@@ -48,7 +48,7 @@
 | `process.rework.aiLiteracyWeight` | Rework の AI リテラシー低減係数 | `0.18` | `multiplier` | `0〜1` | AI リテラシーが Rework 確率を低減する係数。 | process, rework, ai | いいえ |
 | `process.rework.attemptDecay` | Rework 試行ごとの減衰倍率 | `0.5` | `multiplier` | `0〜1` | 再修正回数ごとに Rework 確率へ掛ける減衰倍率。 | process, rework | いいえ |
 | `process.rework.baseProbability` | Rework 基礎確率 | `0.05` | `probability` | `0〜1` | 組織状態やタスク補正を加える前の Rework 確率。 | process, rework | いいえ |
-| `process.rework.maxAttempts` | Rework 最大回数 | `3` | `count` | `0〜20` | 通常の Rework 判定を行うタスクごとの最大回数。 | process, rework | いいえ |
+| `process.rework.maxAttempts` | Rework 最大回数 | `3` | `count` | `0〜20（整数）` | 通常の Rework 判定を行うタスクごとの最大回数。 | process, rework | いいえ |
 | `process.rework.maximum` | Rework 確率の上限 | `0.75` | `probability` | `0〜1` | Rework 確率を clamp する上限。 | process, rework, boundary | いいえ |
 | `process.rework.minimum` | Rework 確率の下限 | `0.02` | `probability` | `0〜1` | Rework 確率を clamp する下限。 | process, rework, boundary | いいえ |
 | `process.rework.qualityWeight` | Rework の品質低減係数 | `0.14` | `multiplier` | `0〜1` | 品質が Rework 確率を低減する係数。 | process, rework, quality | いいえ |

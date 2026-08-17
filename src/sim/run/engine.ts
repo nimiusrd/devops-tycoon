@@ -1542,7 +1542,11 @@ export class RunEngine {
         aiDependency: clamp(t.aiDependency + effects.aiDependencyAdd, 0, 100),
         quality: clamp(t.quality + effects.qualityAdd, 0, 100),
         testCoverage: clamp(t.testCoverage + effects.testCoverageAdd, 0, 100),
-        securityLevel: clamp((t.securityLevel ?? t.quality) + effects.securityAdd, 0, 100),
+        securityLevel: clamp(
+          (t.securityLevel ?? t.quality) + effects.securityAdd,
+          PROCESS_BALANCE.securityLevelMinimum.value,
+          PROCESS_BALANCE.securityLevelMaximum.value,
+        ),
       };
       // 品質加算後すぐ障害傾向へ反映し、次の粗粒度ステップで取りこぼさない。
       return { ...next, ...deriveTeamCapacities(next) };

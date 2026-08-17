@@ -7,6 +7,7 @@ import { ALL_ACTION_IDS, canApplyAction } from '../actions';
 import { assignableTasks } from '../assignTask';
 import { clamp } from '../clamp';
 import { canRecruit, RECRUIT_COST } from '../member';
+import { PROCESS_BALANCE } from '../../data/balance';
 import {
   securityCustomerTrustDelta,
   securityCustomerTrustFromRaw,
@@ -167,7 +168,7 @@ function pendingCustomerTrustDelta(s: RunState): number {
     return securityCustomerTrustFromRaw(
       metrics.securityTrustSpreadRaw +
         Math.max(0, incidents) *
-          0.5 *
+          PROCESS_BALANCE.incidentTrustPerIncidentRaw.value *
           (metrics.securityTrustIncidentFragility ?? securityFragility(s.org.securityLevel)),
     );
   }

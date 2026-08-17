@@ -156,6 +156,10 @@ describe('型付きバランスレジストリ', () => {
     expect(COMBO_BONUS_CAP).toBe(PROCESS_BALANCE.comboBonusCap.value);
   });
 
+  it('Security 脆弱度の分母となる閾値は正数に制限する', () => {
+    expect(PROCESS_BALANCE.securityFragilityThreshold.allowedRange.min).toBeGreaterThan(0);
+  });
+
   it('重複した安定IDを検出する', () => {
     const duplicate = defineBalanceEntry({
       ...PROCESS_BALANCE.codingBaseTicks,

@@ -6,6 +6,7 @@
  * 状態は読むだけ（第22.2）。盤面は `orgBoardScene` + `OrgBoard` で等角描画する。
  */
 import { lazy, Suspense, useCallback, useMemo, useRef } from 'react';
+import { PROCESS_BALANCE } from '../data/balance';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
@@ -97,7 +98,11 @@ export function OrgScreen({
         <Stat
           label="セキュリティ"
           value={org.securityLevel}
-          tone={org.securityLevel < 50 ? 'warn' : undefined}
+          tone={
+            org.securityLevel < PROCESS_BALANCE.securityFragilityThreshold.value
+              ? 'warn'
+              : undefined
+          }
         />
         <Stat
           label="炎上中チーム"

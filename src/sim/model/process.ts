@@ -215,7 +215,7 @@ export function reworkProbability(
 
 /**
  * セキュリティ水準の脆弱度 0..1（RI-87）。
- * 50 以上は実質無効果にし、既存バランス帯を壊さず軽視ビルド側で効かせる。
+ * 脆弱度閾値以上は実質無効果にし、既存バランス帯を壊さず軽視ビルド側で効かせる。
  */
 export function securityFragility(securityLevel: number): number {
   return clamp(
@@ -240,7 +240,7 @@ export function securityIncidentRateBonus(securityLevel: number): number {
 }
 
 /**
- * 延焼コスト倍率（RI-87）。securityLevel 50+ で 1、0 で 1.6。
+ * 延焼コスト倍率（RI-87）。脆弱度閾値以上で 1、0 で 1.6。
  */
 export function securitySpreadMul(securityLevel: number): number {
   return 1 + PROCESS_BALANCE.securitySpreadMultiplierAdd.value * securityFragility(securityLevel);

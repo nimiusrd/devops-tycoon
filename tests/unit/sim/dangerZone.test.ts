@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { REVIEW_FREEZE_PEAK } from '../../../src/sim/outcome';
+import { securityCustomerTrustFromRaw, securityFragility } from '../../../src/sim/model';
 import { activeDangerReasons } from '../../../src/sim/run/dangerZone';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { Task } from '../../../src/sim/types';
@@ -442,6 +444,44 @@ describe('危険域判定（RI-101）', () => {
     internals.sprint.metrics.incidentCount = 2;
     internals.sprint.metrics.securityTrustSpreadRaw = 4;
     expect(activeDangerReasons(engine)).toContain('trustExhausted');
+  });
+
+  it('確定済み Incident の信頼予測は engine と同じ raw 係数を使う', () => {
+    const perIncidentRaw = PROCESS_BALANCE.incidentTrustPerIncidentRaw as { value: number };
+    const defaultValue = perIncidentRaw.value;
+    perIncidentRaw.value = 0.49;
+    try {
+      const engine = startedSprint('ri-108-pending-incident-trust');
+      engine.step(200);
+      const internals = engine as unknown as {
+        stakeholderTrust: { management: number; customers: number; team: number };
+        org: { securityLevel: number };
+        sprint: {
+          metrics: {
+            spread: number;
+            incidentCount: number;
+            securityTrustSpreadRaw: number;
+            securityTrustIncidentFragility: number;
+          };
+        };
+      };
+      const incidents = 1;
+      const fragility = securityFragility(0);
+      const expectedDelta = securityCustomerTrustFromRaw(
+        incidents * perIncidentRaw.value * fragility,
+      );
+      internals.stakeholderTrust = { management: 40, customers: 26, team: 40 };
+      internals.org.securityLevel = 90;
+      internals.sprint.metrics.spread = 1;
+      internals.sprint.metrics.incidentCount = incidents;
+      internals.sprint.metrics.securityTrustSpreadRaw = 0;
+      internals.sprint.metrics.securityTrustIncidentFragility = fragility;
+
+      expect(expectedDelta).toBe(0);
+      expect(activeDangerReasons(engine)).not.toContain('trustExhausted');
+    } finally {
+      perIncidentRaw.value = defaultValue;
+    }
   });
 
   it('スプリント外でも全社 Tech Debt で危険域を維持する', () => {

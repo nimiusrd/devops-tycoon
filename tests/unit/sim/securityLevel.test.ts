@@ -260,7 +260,8 @@ describe('RI-87 セキュリティ軸', () => {
     const atSpread = e.snapshot().stakeholderTrust.customers - before;
     expect(atSpread).toBe(
       securityCustomerTrustFromRaw(
-        securityCustomerTrustSpreadRaw(10) + 2 * 0.5 * securityFragility(10),
+        securityCustomerTrustSpreadRaw(10) +
+          2 * PROCESS_BALANCE.incidentTrustPerIncidentRaw.value * securityFragility(10),
       ),
     );
     expect(atSpread).toBeLessThan(securityCustomerTrustDelta(90, 2, 1));

@@ -57,7 +57,7 @@
 | `process.rework.ticks` | Rework 所要 tick | `4` | `ticks` | `1〜30` | 手戻りタスクを修正して Review へ戻すまでに要する tick。 | process, rework | いいえ |
 | `process.security.fragility.maximum` | Security 脆弱度の上限 | `1` | `multiplier` | `0〜1` | Security 脆弱度を clamp する上限。 | process, security, boundary | いいえ |
 | `process.security.fragility.minimum` | Security 脆弱度の下限 | `0` | `multiplier` | `0〜1` | Security 脆弱度を clamp する下限。 | process, security, boundary | いいえ |
-| `process.security.fragility.threshold` | Security 脆弱度の無効化水準 | `50` | `percent` | `0〜100` | この Security 水準以上では脆弱度を 0 とする境界。 | process, security, boundary | いいえ |
+| `process.security.fragility.threshold` | Security 脆弱度の無効化水準 | `50` | `percent` | `1〜100` | この Security 水準以上では脆弱度を 0 とする境界。 | process, security, boundary | いいえ |
 | `process.security.incidentRateBonus` | Security 脆弱度の Incident 加算 | `0.05` | `probability` | `0〜1` | Security 脆弱度が最大のとき Incident 基礎率へ加える量。 | process, security, incident | いいえ |
 | `process.security.level.maximum` | Security 水準の上限 | `100` | `percent` | `0〜100` | Security 水準を clamp する上限。 | process, security, boundary | いいえ |
 | `process.security.level.minimum` | Security 水準の下限 | `0` | `percent` | `0〜100` | Security 水準を clamp する下限。 | process, security, boundary | いいえ |

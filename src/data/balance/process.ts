@@ -401,7 +401,7 @@ export const PROCESS_BALANCE = {
     id: 'process.security.fragility.threshold',
     value: 50,
     unit: 'percent',
-    allowedRange: { min: 0, max: 100 },
+    allowedRange: { min: 1, max: 100 },
     label: 'Security 脆弱度の無効化水準',
     description: 'この Security 水準以上では脆弱度を 0 とする境界。',
     tags: ['process', 'security', 'boundary'],

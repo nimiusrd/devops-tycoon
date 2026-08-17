@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createRng, hashSeed, mulberry32, randInt, randRange } from '../../../src/sim/rng';
+import {
+  cloneRng,
+  createRng,
+  createRngFromState,
+  getRngState,
+  hashSeed,
+  mulberry32,
+  randInt,
+  randRange,
+} from '../../../src/sim/rng';
 
 describe('mulberry32', () => {
   it('同一 seed からは同一の数列を返す（決定論）', () => {
@@ -41,6 +50,45 @@ describe('hashSeed', () => {
     const a = createRng('daily-2026-06-20');
     const b = createRng('daily-2026-06-20');
     expect(Array.from({ length: 8 }, () => a())).toEqual(Array.from({ length: 8 }, () => b()));
+  });
+});
+
+describe('getRngState / createRngFromState / cloneRng', () => {
+  it('消費後の状態から復元すると次の値が元と同じになる', () => {
+    const source = mulberry32(12345);
+    source();
+    source();
+    const restored = createRngFromState(getRngState(source));
+    const expected = Array.from({ length: 8 }, () => source());
+    expect(Array.from({ length: 8 }, () => restored())).toEqual(expected);
+  });
+
+  it('cloneRng は元と独立に同じ続きを返す', () => {
+    const source = createRng('ri-101-rng');
+    source();
+    const cloned = cloneRng(source);
+    const fromClone = [cloned(), cloned(), cloned()];
+    source();
+    source();
+    source();
+    source();
+    source();
+    const control = createRng('ri-101-rng');
+    control();
+    expect(fromClone).toEqual([control(), control(), control()]);
+    expect([cloned(), cloned()]).toEqual([control(), control()]);
+  });
+
+  it('未消費の状態復元は同じ seed の新規 PRNG と一致する', () => {
+    const fresh = mulberry32(99);
+    const restored = createRngFromState(getRngState(mulberry32(99)));
+    expect(Array.from({ length: 8 }, () => restored())).toEqual(
+      Array.from({ length: 8 }, () => fresh()),
+    );
+  });
+
+  it('状態を持たない関数は getRngState を拒否する', () => {
+    expect(() => getRngState(() => 0.5)).toThrow('stateful mulberry32');
   });
 });
 

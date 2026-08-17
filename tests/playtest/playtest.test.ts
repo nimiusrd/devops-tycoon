@@ -8,6 +8,7 @@
  * - `PT_SEEDS`   seed（既定 `pt-1`..`pt-10`）
  * - `PT_META`    メタ進行の解放状態（`fresh`=初見相当・既定 / `full`=全解放）
  * - `PT_OUT`     出力先 JSON（既定 `playtest-out/runs.json`）
+ * - `PT_COUNTERFACTUAL=1`  危険域 last-non-empty の反実仮想評価を記録（RI-101。既定オフ）
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';

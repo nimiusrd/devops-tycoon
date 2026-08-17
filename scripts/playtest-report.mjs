@@ -1035,6 +1035,36 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
 // 敗北の多い代表方針の中でも比較して、敗因固有の進行速度が方針に依らないことを確認する。
 const F9_POLICIES = ['naive', 'skilledNoHire', 'onlyFirefight', 'noInterventionCtl'];
 
+/** 代表方針に、実行ログへ実在する方針（例: PT_POLICIES=idle）を足す。 */
+function policiesIn(runs, required = F9_POLICIES) {
+  const present = [...new Set(runs.map((r) => r.policy).filter(Boolean))];
+  const extra = present.filter((p) => !required.includes(p)).sort();
+  return [...required, ...extra];
+}
+
+/** F-9 集計用。デッキ位置や task ID を落とした安定キー。 */
+function stableEffectiveActionId(id) {
+  return String(id)
+    .split('+')
+    .map((raw) => {
+      const part = raw.replace(/@\d+$/, '');
+      const card = /^card:([^:]+)(?::\d+)?$/.exec(part);
+      if (card) return `card:${card[1]}`;
+      const assign = /^assignTask:[^:]+:(ai|senior)$/.exec(part);
+      if (assign) return `assignTask:${assign[1]}`;
+      const split = /^splitPr:[^:]+$/.exec(part);
+      if (split) return 'splitPr';
+      const restUp = /^rest:upgrade:(?:([^:]+):)?\d+$/.exec(part);
+      if (restUp) return restUp[1] ? `rest:upgrade:${restUp[1]}` : 'rest:upgrade';
+      const setupAssign = /^setup:assign:[^:]+:([^:]+)$/.exec(part);
+      if (setupAssign) return `setup:assign:${setupAssign[1]}`;
+      const setupAi = /^setup:ai:[^:]+:(on|off)$/.exec(part);
+      if (setupAi) return `setup:ai:${setupAi[1]}`;
+      return part;
+    })
+    .join('+');
+}
+
 // RI-89: 同一難易度・同一方針内で敗因別の「危険域で打てた介入集合」を出す。
 // 発動可能集合は方針の集中力消費・クールダウンに依存するため、層別化しないと比較が汚染される。
 console.log(`\n### 敗因別・危険域で打てた介入（RI-89・同一難易度/方針）\n`);
@@ -1098,6 +1128,82 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
     }
     const distinct = new Set(sets);
     console.log(`    敗因間で集合が違う種類数: ${distinct.size}。F-9 の「打てた手」比較用。`);
+  }
+}
+
+const cfRuns = runs.filter((r) =>
+  Object.prototype.hasOwnProperty.call(r, 'effectiveActionsInDanger'),
+);
+if (cfRuns.length > 0) {
+  console.log(`\n### 敗因別・危険域の有効手（RI-101 反実仮想）\n`);
+  console.log(
+    `  評価済み ${cfRuns.length}/${runs.filter((r) => r.loseReason).length} 敗北ラン。機械的発動可否ではなく、無介入比で遅延・回避・危険域離脱・敗因変化した手だけを数える。`,
+  );
+  const cfPolicies = policiesIn(cfRuns);
+  const missingCfPolicies = F9_POLICIES.filter((p) => !cfRuns.some((r) => r.policy === p));
+  if (missingCfPolicies.length > 0) {
+    console.log(`  代表方針のうち未出現（対象外）: ${missingCfPolicies.join(', ')}`);
+  }
+  for (const d of [...new Set(cfRuns.map((r) => r.difficulty))]) {
+    for (const policy of cfPolicies) {
+      const lost = cfRuns.filter((r) => r.difficulty === d && r.policy === policy && r.loseReason);
+      if (lost.length === 0) continue;
+      const byReason = new Map();
+      for (const r of lost) {
+        if (!byReason.has(r.loseReason)) byReason.set(r.loseReason, []);
+        byReason.get(r.loseReason).push(r);
+      }
+      console.log(`  ${d}/${policy}:`);
+      const sets = [];
+      for (const [reason, arr] of [...byReason.entries()].sort(
+        (a, b) => b[1].length - a[1].length,
+      )) {
+        const freq = new Map();
+        const gaps = [];
+        let emptyEffective = 0;
+        let incomplete = 0;
+        let complete = 0;
+        for (const r of arr) {
+          const incompleteRun = !!r.counterfactualIncomplete;
+          if (incompleteRun) incomplete += 1;
+          else complete += 1;
+          const effective = Array.isArray(r.effectiveActionsInDanger)
+            ? r.effectiveActionsInDanger
+            : [];
+          if (
+            typeof r.sprintsPlayed === 'number' &&
+            r.lastEffectiveActionsAt &&
+            Array.isArray(r.lastEffectiveActionsAt.actions) &&
+            r.lastEffectiveActionsAt.actions.length > 0
+          ) {
+            const midSprintInstantLose =
+              r.lostPhase === 'sprint' && r.lostSprintCompleted === false;
+            let loseSprints = r.sprintsPlayed;
+            if (!midSprintInstantLose) loseSprints = Math.max(0, r.sprintsPlayed - 1);
+            gaps.push(Math.max(0, loseSprints - r.lastEffectiveActionsAt.sprintsPlayed));
+          }
+          if (incompleteRun) continue;
+          if (effective.length === 0) {
+            if (!r.counterfactualBaselineRecovered) emptyEffective += 1;
+          }
+          const keys = new Set(effective.map((id) => stableEffectiveActionId(id)));
+          for (const key of keys) freq.set(key, (freq.get(key) ?? 0) + 1);
+        }
+        const ranked = [...freq.entries()]
+          .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+          .map(([id, n]) => `${id}:${n}`);
+        if (complete > 0) sets.push([...freq.keys()].sort().join(','));
+        const gapNote =
+          gaps.length > 0
+            ? ` | 回復余地ギャップ p50=${quantile(gaps, 0.5)} (n=${gaps.length})`
+            : '';
+        const incompleteNote = incomplete > 0 ? ` | 未評価あり ${incomplete}` : '';
+        console.log(
+          `    ${reason}: n=${arr.length} 有効手なし ${emptyEffective} | 集合 {${ranked.join(', ') || '—'}}${gapNote}${incompleteNote}`,
+        );
+      }
+      console.log(`    敗因間で有効手集合が違う種類数: ${new Set(sets).size}。F-9 の有効手比較。`);
+    }
   }
 }
 

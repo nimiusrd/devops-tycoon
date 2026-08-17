@@ -2,10 +2,11 @@
  * ラン途中セーブ用の永続スナップショット型（RI-58）。
  * sim 層に置き、state 永続化と engine の双方から参照する。
  */
-import type { OrgState, ScenarioId, SprintConfig } from '../types';
+import type { CardEffects, OrgState, ScenarioId, SprintConfig, SprintState } from '../types';
 import type { OrgAdjustState, TeamRunState } from '../orgscale/types';
 import type { RosterState } from '../member/types';
 import type { GoalAdjustmentId, RunPhase, RunState } from './types';
+import type { SprintBaselineInput } from './sprintBaseline';
 
 /** セーブ可能な離散フェーズ（sprint / title / won / lost は除外）。 */
 export type RunSavePhase = Exclude<RunPhase, 'title' | 'sprint' | 'won' | 'lost'>;
@@ -120,3 +121,31 @@ export type RunPersistState = Omit<
 export type RunReplayFrame = Omit<RunPersistState, 'phase'> & {
   phase: ReplayFramePhase;
 };
+
+/**
+ * 反実仮想用の永続スライス。セーブ不可の sprint フェーズも許容する（RI-101）。
+ * プレイヤーセーブ契約（`exportPersistState`）とは別物。
+ */
+export type CounterfactualPersist = Omit<RunReplayFrame, 'phase'> & {
+  phase: RunPhase;
+};
+
+/** 同一乱数状態から分岐するために必要な中間スプリント状態（RI-101）。 */
+export interface CounterfactualFrame {
+  persist: CounterfactualPersist;
+  sprint: SprintState | null;
+  sprintTick: number;
+  accumulatorMs: number;
+  sprintRngState: number;
+  sprintBaselineInput: SprintBaselineInput | null;
+  sprintPassiveEffects: CardEffects;
+  chargedInfraCost: number;
+  chargedInfraDependency: number;
+  chargedInfraRate: number;
+  /**
+   * 解放プール。`null` は無制限。空配列は1枚も使えない。
+   * persist extras の空配列とは区別する（プレイヤーセーブ契約は変えない）。
+   */
+  allowedCards: string[] | null;
+  allowedRelics: string[] | null;
+}

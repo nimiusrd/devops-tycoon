@@ -36,14 +36,13 @@
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-8とF-9の有効手は反実仮想評価の計測手段あり（RI-101。既定コホートの合否は未再走）。F-1・F-7はRI-73、F-2はRI-77／78／83、F-3はRI-102、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-10はRI-76、F-11はRI-86、F-12はRI-81で充足または実装済み |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
 | [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), [balance-ssot-plan.md](./balance-ssot-plan.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。バランスパラメータの型付きSSoTとルールセット識別は未実装（RI-104）。残る未充足は本表の他課題 |
-| [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ、ツール別シナリオ、部門比較、レビュー履歴等は実装済み | 🟡 残候補はRI-127〜131（RI-34から切り出し） |
+| [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ、ツール別シナリオ、部門比較、レビュー履歴、開始レシピ等は実装済み | 🟡 残候補はRI-128〜131（RI-34から切り出し） |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
 
 ## 2. 未充足一覧
 
 | 課題 | 影響 | 追跡先 |
 | --- | --- | --- |
-| 組織シナリオの開始レシピを共有できない | 第23章 | [RI-127](./remaining-issues.md#ri-127-組織シナリオの開始レシピ共有) |
 | 診断・KPIの時系列トレンドが無い | 第23章 | [RI-128](./remaining-issues.md#ri-128-診断kpiの時系列トレンド) |
 | 四半期レビューのOKRテンプレートが無い | 第23章 | [RI-129](./remaining-issues.md#ri-129-四半期レビューのokrテンプレート) |
 | ステークホルダー別交渉が無い | 第23章 | [RI-130](./remaining-issues.md#ri-130-ステークホルダー別交渉) |

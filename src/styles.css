@@ -2985,13 +2985,65 @@ button.card:active {
   letter-spacing: 0.02em;
 }
 .title-trial-section,
-.title-scenario-section {
+.title-scenario-section,
+.title-recipe-section {
   display: grid !important;
   grid-template-columns: minmax(220px, 280px) 1fr;
   align-items: center;
   min-height: 86px;
   padding: 14px 20px !important;
   border-top: 1px solid var(--tc-line);
+}
+.title-recipe-section {
+  align-items: start;
+}
+.title-recipe-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.title-recipe-text {
+  width: 100%;
+  min-height: 112px;
+  padding: 10px 12px;
+  border: 1px solid var(--tc-line);
+  border-radius: 10px;
+  background: rgba(10, 16, 32, 0.72);
+  color: #d7e3f4;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  resize: vertical;
+}
+.title-recipe-text:focus {
+  outline: 1px solid #7edfff88;
+}
+.title-recipe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.title-recipe-actions button {
+  padding: 7px 10px;
+  border: 1px solid var(--tc-line);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(16, 23, 43, 0.94), rgba(17, 38, 70, 0.78));
+  color: #ced8e9;
+  font-size: 12px;
+  cursor: pointer;
+}
+.title-recipe-actions button:hover {
+  border-color: #7edfff;
+  background: #142944;
+}
+.title-recipe-status {
+  margin: 0;
+  color: #9fb0ca;
+  font-size: 12px;
+}
+.title-recipe-status.error {
+  color: #f3b27a;
 }
 .title-command .trial-row {
   display: flex;
@@ -3274,7 +3326,8 @@ button.card:active {
     grid-template-columns: 1fr 1fr;
   }
   .title-trial-section,
-  .title-scenario-section {
+  .title-scenario-section,
+  .title-recipe-section {
     grid-template-columns: 1fr;
     gap: 13px;
   }
@@ -3327,7 +3380,8 @@ button.card:active {
     display: none;
   }
   .title-trial-section,
-  .title-scenario-section {
+  .title-scenario-section,
+  .title-recipe-section {
     padding: 16px !important;
   }
   .title-command .trial-chip {

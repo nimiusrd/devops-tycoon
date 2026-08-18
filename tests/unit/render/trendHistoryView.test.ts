@@ -59,6 +59,7 @@ describe('planTrendHistory (RI-128)', () => {
     ]);
     for (const series of view.series) {
       expect(series.d).toMatch(/^M /);
+      expect(series.d).toMatch(/ L /);
       expect(series.last).toBeGreaterThanOrEqual(0);
     }
     expect(view.departments).toHaveLength(1);

@@ -77,12 +77,17 @@ function polyline(values: readonly number[], width: number, height: number): str
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min;
-  const xSpan = Math.max(1, values.length - 1);
+  const yOf = (value: number): number =>
+    span === 0 ? PAD.top + innerH / 2 : PAD.top + innerH - ((value - min) / span) * innerH;
+  if (values.length === 1) {
+    const y = yOf(values[0]!);
+    const x = PAD.left + innerW / 2;
+    return `M ${(x - 4).toFixed(2)},${y.toFixed(2)} L ${(x + 4).toFixed(2)},${y.toFixed(2)}`;
+  }
+  const xSpan = values.length - 1;
   const points = values.map((value, index) => {
     const x = PAD.left + (index / xSpan) * innerW;
-    const y =
-      span === 0 ? PAD.top + innerH / 2 : PAD.top + innerH - ((value - min) / span) * innerH;
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
+    return `${x.toFixed(2)},${yOf(value).toFixed(2)}`;
   });
   return `M ${points.join(' L ')}`;
 }

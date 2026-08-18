@@ -25,6 +25,7 @@ const ORDERED_BOUND_PAIRS = [
   ['action.task.progress.minimum', 'action.task.progress.maximum'],
   ['action.organizationStat.minimum', 'action.organizationStat.maximum'],
   ['action.firefight.seniorHpCost', 'action.firefight.seniorHpCostMaximum'],
+  ['action.firefight.seniorHpCostMaximum', 'action.firefight.lightSeniorHpCost'],
   ['action.assignTask.idealMoraleMinimum', 'action.assignTask.moraleCost'],
 ] as const;
 

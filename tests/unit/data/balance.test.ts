@@ -295,11 +295,13 @@ describe('型付きバランスレジストリ', () => {
       expect.objectContaining({ code: 'ratio-out-of-range', id: invalidRatio.id }),
     );
     expect(ACTION_BALANCE.taskProgressMinimum.value).toBeGreaterThanOrEqual(0);
+    expect(ACTION_BALANCE.taskProgressMinimum.allowedRange).toEqual({ min: 0, max: 0 });
     expect(ACTION_BALANCE.taskProgressMaximum.value).toBeLessThanOrEqual(1);
     expect(ACTION_BALANCE.taskProgressMaximum.allowedRange.min).toBeGreaterThanOrEqual(0.999);
     expect(ACTION_BALANCE.organizationStatMinimum.value).toBeGreaterThanOrEqual(0);
     expect(ACTION_BALANCE.organizationStatMinimum.allowedRange).toEqual({ min: 0, max: 0 });
     expect(ACTION_BALANCE.organizationStatMaximum.value).toBeLessThanOrEqual(100);
+    expect(ACTION_BALANCE.organizationStatMaximum.allowedRange).toEqual({ min: 100, max: 100 });
     expect(ACTION_BALANCE.interruptReviewCount.allowedRange.min).toBe(1);
     expect(ACTION_BALANCE.pairReviewCount.allowedRange.min).toBe(1);
   });
@@ -471,6 +473,12 @@ describe('型付きバランスレジストリ', () => {
       maximum: ACTION_BALANCE.firefightHpCostMaximum,
       invertedMinimum: 7,
       invertedMaximum: 6,
+    },
+    {
+      minimum: ACTION_BALANCE.firefightHpCostMaximum,
+      maximum: ACTION_BALANCE.firefightLightHpCost,
+      invertedMinimum: 12,
+      invertedMaximum: 11,
     },
     {
       minimum: ACTION_BALANCE.assignTaskIdealMoraleMinimum,

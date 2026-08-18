@@ -29,9 +29,9 @@
 | `action.firefight.focusCost` | 緊急対応集中力コスト | `1` | `points` | `0〜20（整数）` | — | 緊急対応を1回発動するために消費する集中力。 | action, firefight, focus | いいえ |
 | `action.firefight.gaugeGain` | 緊急対応連携ゲージ | `0.34` | `ratio` | `0〜1` | — | 緊急対応成功時に増える連携ゲージの割合。 | action, firefight, gauge | いいえ |
 | `action.firefight.lightMoraleCost` | 緊急対応単発先消し士気コスト | `5` | `points` | `0〜100（整数）` | — | 余裕のある単発先消しで消費する士気。 | action, firefight, morale, side-effect | いいえ |
-| `action.firefight.lightSeniorHpCost` | 緊急対応単発先消しシニアHPコスト | `11` | `points` | `0〜100（整数）` | — | 余裕のある単発先消しで消費するシニアHP。 | action, firefight, senior-hp, side-effect | いいえ |
+| `action.firefight.lightSeniorHpCost` | 緊急対応単発先消しシニアHPコスト | `11` | `points` | `0〜100（整数）` | `action.firefight.seniorHpCostMaximum` ≤ `action.firefight.lightSeniorHpCost` | 余裕のある単発先消しで消費するシニアHP。 | action, firefight, senior-hp, side-effect | いいえ |
 | `action.firefight.seniorHpCost` | 緊急対応シニアHPコスト | `2` | `points` | `0〜100（整数）` | `action.firefight.seniorHpCost` ≤ `action.firefight.seniorHpCostMaximum` | 緊急時の緊急対応で消費する基礎シニアHP。 | action, firefight, senior-hp, side-effect | いいえ |
-| `action.firefight.seniorHpCostMaximum` | 緊急対応連打HP上限 | `6` | `points` | `0〜100（整数）` | `action.firefight.seniorHpCost` ≤ `action.firefight.seniorHpCostMaximum` | 緊急対応の連打で増えるシニアHPコストの上限。 | action, firefight, senior-hp, boundary | いいえ |
+| `action.firefight.seniorHpCostMaximum` | 緊急対応連打HP上限 | `6` | `points` | `0〜100（整数）` | `action.firefight.seniorHpCost` ≤ `action.firefight.seniorHpCostMaximum`<br>`action.firefight.seniorHpCostMaximum` ≤ `action.firefight.lightSeniorHpCost` | 緊急対応の連打で増えるシニアHPコストの上限。 | action, firefight, senior-hp, boundary | いいえ |
 | `action.firefight.seniorHpEscalation` | 緊急対応連打HP増分 | `1` | `points` | `0〜100（整数）` | — | 同一スプリントで緊急対応を重ねるたびに増えるシニアHPコスト。 | action, firefight, senior-hp, escalation | いいえ |
 | `action.firefight.stabilityBurnTicks` | 緊急対応猶予閾値 | `15` | `ticks` | `0〜1000（整数）` | — | このtick以下の猶予なら緊急対応を緊急盤面とみなす。 | action, firefight, threshold | いいえ |
 | `action.firefight.stabilityMinimumBurning` | 緊急対応複数炎上閾値 | `2` | `count` | `0〜100（整数）` | — | この件数以上の炎上を緊急対応すると緊急盤面とみなす。 | action, firefight, threshold | いいえ |
@@ -40,7 +40,7 @@
 | `action.interruptReview.gaugeGain` | 割り込みレビュー連携ゲージ | `0.34` | `ratio` | `0〜1` | — | 割り込みレビュー成功時に増える連携ゲージの割合。 | action, interruptReview, gauge | いいえ |
 | `action.interruptReview.reviewCount` | 割り込みレビュー処理件数 | `4` | `count` | `1〜100（整数）` | — | 割り込みレビューで一度に処理するReview件数の上限。 | action, interruptReview, effect | いいえ |
 | `action.interruptReview.seniorHpCost` | 割り込みレビューシニアHPコスト | `2` | `points` | `0〜100（整数）` | — | 割り込みレビューで消費するシニアHP。 | action, interruptReview, senior-hp, side-effect | いいえ |
-| `action.organizationStat.maximum` | 組織指標上限 | `100` | `points` | `0〜100（整数）` | `action.organizationStat.minimum` ≤ `action.organizationStat.maximum` | 介入・差配が増減する組織指標のclamp上限。 | action, organization, boundary | いいえ |
+| `action.organizationStat.maximum` | 組織指標上限 | `100` | `points` | `100〜100（整数）` | `action.organizationStat.minimum` ≤ `action.organizationStat.maximum` | 介入・差配が増減する組織指標のclamp上限。 | action, organization, boundary | いいえ |
 | `action.organizationStat.minimum` | 組織指標下限 | `0` | `points` | `0〜0（整数）` | `action.organizationStat.minimum` ≤ `action.organizationStat.maximum` | 介入・差配が増減する組織指標のclamp下限（0に固定）。 | action, organization, boundary | いいえ |
 | `action.overtime.cooldownTicks` | 残業号令クールダウン | `200` | `ticks` | `0〜1000（整数）` | — | 残業号令の発動後に待つtick数。 | action, overtime, cooldown | いいえ |
 | `action.overtime.durationTicks` | 残業号令持続tick | `30` | `ticks` | `0〜1000（整数）` | — | 残業号令のスループットブーストが続くtick数。 | action, overtime, duration | いいえ |
@@ -60,7 +60,7 @@
 | `action.splitPr.progressPenalty` | PR分割進捗ペナルティ | `0.2` | `ratio` | `0〜1` | — | PR分割時に巻き戻すタスク進捗の割合。 | action, splitPr, progress, side-effect | いいえ |
 | `action.splitPr.seniorHpCost` | PR分割シニアHPコスト | `4` | `points` | `0〜100（整数）` | — | PR分割で消費するシニアHP。 | action, splitPr, senior-hp, side-effect | いいえ |
 | `action.task.progress.maximum` | タスク進捗上限 | `0.999` | `ratio` | `0.999〜1` | `action.task.progress.minimum` ≤ `action.task.progress.maximum` | 介入によるタスク進捗のclamp上限。通常のCoding進行より低くしない。 | action, task, progress, boundary | いいえ |
-| `action.task.progress.minimum` | タスク進捗下限 | `0` | `ratio` | `0〜1` | `action.task.progress.minimum` ≤ `action.task.progress.maximum` | 介入によるタスク進捗のclamp下限。 | action, task, progress, boundary | いいえ |
+| `action.task.progress.minimum` | タスク進捗下限 | `0` | `ratio` | `0〜0` | `action.task.progress.minimum` ≤ `action.task.progress.maximum` | 介入によるタスク進捗のclamp下限。 | action, task, progress, boundary | いいえ |
 | `member.formation.ai.incidentBase` | AI配布時Incident基礎加算 | `0.05` | `multiplier` | `0〜1` | — | AIを配布したコーダーへ加えるIncident倍率の基礎加算。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.incidentMasteryWeight` | AI習熟のIncident低減係数 | `0.1` | `multiplier` | `0〜1` | — | AI習熟がAI配布時のIncident倍率を低減する係数。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.masteryMaximum` | AI習熟正規化倍率の上限 | `1.2` | `multiplier` | `0〜3` | — | AI習熟を正規化した値の上限。 | member, formation, ai, boundary | いいえ |

@@ -3,6 +3,7 @@ import { BOSS_DEFS, getBoss, type BossDef } from '../../../src/data/bosses';
 import { getDifficulty } from '../../../src/data/difficulties';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../../src/data/goalAdjustments';
 import { RunEngine } from '../../../src/sim/run/engine';
+import { pickQuarterBossId } from '../../../src/sim/run/quarterBoss';
 import {
   OUTCOME_LABELS,
   BASELINE_SPRINT_DELIVERY_FLOOR,
@@ -16,6 +17,7 @@ import {
   applyGoalAdjustment,
   applyGoalCarryoverOrgTick,
   applyGoalCarryoverToEffects,
+  applyGoalEffectsToGoal,
   applyGoalOrgEffectsToTeam,
   availableAdjustments,
   canAcknowledgeWin,
@@ -23,6 +25,7 @@ import {
   buildInitialTrust,
   buildQuarterGoal,
   buildQuarterReview,
+  decayGoalFromPrior,
   diagnoseMissedReasons,
   evaluateQuarterOutcome,
   hasGoalCarryoverOrgDelta,
@@ -31,6 +34,9 @@ import {
   loseReasonForOutcome,
   measureGoalProgress,
   PAUSE_AI_DEBUFF_MUL,
+  previewNextQuarterDeliveryTarget,
+  PRIOR_GOAL_DELIVERY_DECAY,
+  projectForwardGoals,
   resolveNextQuarterEffects,
   REORG_RESET_SENIOR_HP,
   REORG_RESET_TECH_DEBT,
@@ -1577,6 +1583,88 @@ describe('RI-91-B2: quarterReview survived mutants', () => {
           totals(),
         ),
       ).not.toContain('reorg_teams');
+    });
+  });
+
+  describe('projectForwardGoals (RI-131)', () => {
+    const current: QuarterGoal = {
+      deliveryTarget: 60 * QUARTER_DELIVERY_SCALE,
+      qualityTarget: 45,
+      techDebtLimit: 55,
+      moraleTarget: 40,
+      incidentLimit: 6,
+      aiAdoptionTarget: 40,
+    };
+    const applyInput = {
+      goal: current,
+      trust: buildInitialTrust('normal'),
+      org: org(),
+      budget: 40,
+      goalAdjustmentsTaken: [] as const,
+      nextBudgetCap: null as number | null,
+    };
+    const boss = getBoss('big-release')!;
+
+    it('修正なしは prior 減衰のみで Q+2 は再減衰する', () => {
+      const { next, following } = projectForwardGoals(current);
+      expect(next).toEqual(decayGoalFromPrior(current));
+      expect(following).toEqual(decayGoalFromPrior(next));
+      expect(next.deliveryTarget).toBe(
+        Math.max(
+          MIN_PRIOR_QUARTER_DELIVERY_TARGET,
+          Math.round(current.deliveryTarget * PRIOR_GOAL_DELIVERY_DECAY),
+        ),
+      );
+      expect(following.qualityTarget).toBe(current.qualityTarget);
+    });
+
+    it('7種の goalEffects 後の Q+1 は applyGoalAdjustment → buildQuarterGoal(prior) と一致する', () => {
+      for (const id of allGoalAdjustmentIds()) {
+        const def = getGoalAdjustment(id)!;
+        const applied = applyGoalAdjustment(applyInput, id);
+        const viaPrior = buildQuarterGoal(boss, 'normal', 1, applied.goal);
+        const { next, following } = projectForwardGoals(current, def);
+
+        expect(applied.goal, id).toEqual(applyGoalEffectsToGoal(current, def));
+        expect(next, id).toEqual(decayGoalFromPrior(applied.goal));
+        expect(next.deliveryTarget, id).toBe(viaPrior.deliveryTarget);
+        expect(next.qualityTarget, id).toBe(viaPrior.qualityTarget);
+        expect(next.techDebtLimit, id).toBe(viaPrior.techDebtLimit);
+        expect(next.moraleTarget, id).toBe(viaPrior.moraleTarget);
+        expect(next.incidentLimit, id).toBe(viaPrior.incidentLimit);
+        expect(next.aiAdoptionTarget, id).toBe(viaPrior.aiAdoptionTarget);
+        expect(next.deliveryTarget, id).toBe(
+          previewNextQuarterDeliveryTarget(current.deliveryTarget, def),
+        );
+        expect(following, id).toEqual(decayGoalFromPrior(next));
+        expect(following.deliveryTarget, id).not.toBe(next.deliveryTarget);
+      }
+    });
+
+    it('次ボスが exec-review なら prior に無い AI Adoption 目標を見通しへ載せる', () => {
+      const withoutAi: QuarterGoal = {
+        deliveryTarget: 60 * QUARTER_DELIVERY_SCALE,
+        qualityTarget: 45,
+        techDebtLimit: 55,
+        moraleTarget: 40,
+        incidentLimit: 6,
+      };
+      let seed = '';
+      for (let i = 0; i < 8000; i += 1) {
+        const candidate = `ri131-exec-${i}`;
+        if (pickQuarterBossId(candidate, 2) === 'exec-review') {
+          seed = candidate;
+          break;
+        }
+      }
+      expect(seed).not.toBe('');
+      const ctx = { seed, difficulty: 'normal' as const, fromQuarter: 1 };
+      const nextBoss = getBoss(pickQuarterBossId(seed, 2))!;
+      const followingBoss = getBoss(pickQuarterBossId(seed, 3))!;
+      const { next, following } = projectForwardGoals(withoutAi, undefined, ctx);
+      expect(next).toEqual(buildQuarterGoal(nextBoss, 'normal', 1, withoutAi));
+      expect(next.aiAdoptionTarget).toBe(40);
+      expect(following).toEqual(buildQuarterGoal(followingBoss, 'normal', 1, next));
     });
   });
 });

@@ -8,7 +8,7 @@
  * 挟まり、組織状態で重み付けした判定/選択イベントを seed付き決定論で引く（第22.3）。
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
-import { BOSS_DEFS, getBoss } from '../../data/bosses';
+import { getBoss } from '../../data/bosses';
 import { MEMBER_BALANCE, PROCESS_BALANCE } from '../../data/balance';
 import { getCard } from '../../data/cards';
 import { getGoalAdjustment } from '../../data/goalAdjustments';
@@ -148,6 +148,7 @@ import {
   loseReasonForOutcome,
   MIN_QUARTER_DELIVERY_TARGET,
 } from './quarterReview';
+import { pickQuarterBossId } from './quarterBoss';
 import {
   createSprintFromBaselineInput,
   runNoInterventionBaseline,
@@ -573,9 +574,7 @@ export class RunEngine {
   }
 
   private pickBoss(quarterNumber: number): string {
-    const rng = createRng(`${this.seed}:boss:q${quarterNumber}`);
-    const ids = BOSS_DEFS.map((b) => b.id);
-    return ids[Math.floor(rng() * ids.length)];
+    return pickQuarterBossId(this.seed, quarterNumber);
   }
 
   private trialBudgetMul(): number {

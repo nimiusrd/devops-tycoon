@@ -3,12 +3,14 @@
  *
  * 勝敗画面ではなくレビュー会議として、OKR・目標達成度・信頼・未達理由・修正選択肢を表示する。
  */
+import { useState, type ReactNode } from 'react';
+import { getGoalAdjustment } from '../data/goalAdjustments';
 import { getRelic } from '../data/relics';
 import { OUTCOME_LABELS } from '../sim/run/quarterReview';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
-import type { ReactNode } from 'react';
-import { RewardCeremony } from './JuicyEffects';
 import { QuarterOkr } from './QuarterOkr';
+import { QuarterRoadmap } from './QuarterRoadmap';
+import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
 import { StakeholderNegotiationList } from './StakeholderNegotiationList';
 
@@ -35,6 +37,7 @@ export function QuarterReviewScreen({
   onAcknowledge,
   onChooseAdjustment,
 }: QuarterReviewScreenProps) {
+  const [previewAdjustmentId, setPreviewAdjustmentId] = useState<GoalAdjustmentId | null>(null);
   const review = state.quarterReview;
   if (!review) return null;
 
@@ -44,6 +47,8 @@ export function QuarterReviewScreen({
   const isTerminal =
     outcome === 'shutdown' || outcome === 'reorg_required' || outcome === 'missed_crisis';
   const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
+  const previewAdjustment =
+    canAdjust && previewAdjustmentId ? getGoalAdjustment(previewAdjustmentId) : undefined;
 
   return (
     <div
@@ -60,6 +65,16 @@ export function QuarterReviewScreen({
         </h2>
 
         <ReviewHistoryList reviewHistory={state.reviewHistory} quarterReview={review} />
+
+        {canAdjust ? (
+          <QuarterRoadmap
+            quarterNumber={state.quarterNumber}
+            goal={review.goal}
+            seed={state.seed}
+            difficulty={state.difficulty}
+            adjustment={previewAdjustment}
+          />
+        ) : null}
 
         <QuarterOkr variant="review" bossId={state.bossId} goal={review.goal} progress={progress} />
 
@@ -100,7 +115,9 @@ export function QuarterReviewScreen({
             trust={trust}
             hasAiAdoptionTarget={review.goal.aiAdoptionTarget !== undefined}
             currentDeliveryTarget={review.goal.deliveryTarget}
+            previewedAdjustmentId={previewAdjustmentId}
             onChooseAdjustment={onChooseAdjustment}
+            onPreviewAdjustment={setPreviewAdjustmentId}
           />
         )}
 

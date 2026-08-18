@@ -4652,6 +4652,58 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 4px;
   flex-basis: 100%;
 }
+.quarter-roadmap {
+  margin: 0 0 1rem;
+}
+.quarter-roadmap-note,
+.quarter-roadmap-preview {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+.quarter-roadmap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.quarter-roadmap-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
+}
+.quarter-roadmap-row.preview {
+  background: rgba(100, 180, 255, 0.12);
+}
+.quarter-roadmap-quarter {
+  font-weight: 800;
+  min-width: 2rem;
+}
+.quarter-roadmap-role {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+.quarter-roadmap-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  flex: 1 1 auto;
+  font-size: 0.8rem;
+}
+.quarter-roadmap-constraints {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
 .quarter-okr {
   margin-bottom: 1rem;
 }
@@ -4843,6 +4895,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 8px;
   margin-top: 8px;
 }
+.quarter-adjustment-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .quarter-adjustment-card {
   display: flex;
   flex-direction: column;
@@ -4856,7 +4913,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: inherit;
   font-size: 0.8rem;
 }
-.quarter-adjustment-card:hover {
+.quarter-adjustment-card:hover,
+.quarter-adjustment-card.is-previewing {
   border-color: var(--sun);
 }
 .quarter-adjustment-card strong {
@@ -4865,6 +4923,17 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .quarter-adjustment-card .effect-tags {
   margin-top: 0;
   margin-bottom: 0;
+}
+.quarter-roadmap-preview-btn {
+  align-self: flex-start;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  cursor: pointer;
 }
 .quarter-review-actions {
   margin-top: 1rem;

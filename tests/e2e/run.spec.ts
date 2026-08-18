@@ -245,6 +245,14 @@ test('RI-32: ボス突破報酬レリックを四半期レビューに表示す�
   await expect(page.getByTestId('quarter-kpi')).toBeVisible();
   await expect(page.getByTestId('review-history')).toBeVisible();
   await expect(page.getByTestId('review-history-row')).toHaveCount(1);
+  const reviewOutcome = await page.evaluate(
+    () => (window as GameWindow).game!.getState().quarterReview?.outcome,
+  );
+  if (reviewOutcome === 'missed_adjustable') {
+    await expect(page.getByTestId('quarter-roadmap')).toBeVisible();
+  } else {
+    await expect(page.getByTestId('quarter-roadmap')).toHaveCount(0);
+  }
   await expect(page.getByTestId('boss-relic-reward')).toBeVisible();
   await expect(page.getByTestId('reward-ceremony-relic')).toBeVisible();
 });
@@ -476,6 +484,21 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
   ).toBeVisible();
   await expect(page.locator('[data-adjustment="cut_scope"]')).toBeVisible();
   await expect(page.getByTestId('negotiation-terms-cut_scope')).toContainText('次期目標');
+  await expect(page.getByTestId('quarter-roadmap')).toBeVisible();
+  await expect(page.getByTestId('quarter-roadmap-row')).toHaveCount(2);
+  const baselineDelivery = await page.locator('[data-horizon="1"]').getAttribute('data-delivery');
+  await page.getByTestId('roadmap-preview-cut_scope').click();
+  await expect(page.getByTestId('quarter-roadmap')).toHaveAttribute('data-preview', 'cut_scope');
+  await expect(page.getByTestId('quarter-review')).toBeVisible();
+  await expect(page.getByTestId('quarter-roadmap-preview')).toContainText('スコープ削減');
+  const previewDelivery = await page.locator('[data-horizon="1"]').getAttribute('data-delivery');
+  expect(previewDelivery).toBeTruthy();
+  expect(previewDelivery).not.toBe(baselineDelivery);
+  await page.locator('[data-adjustment="cut_scope"]').hover();
+  await expect(page.getByTestId('quarter-roadmap')).toHaveAttribute('data-preview', 'cut_scope');
+  await expect(
+    page.locator('[data-horizon="2"] [data-testid="quarter-roadmap-constraints"]'),
+  ).toHaveText('物理キャリーなし');
   await page.locator('[data-adjustment="cut_scope"]').click();
   await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId('setup-okr')).toBeVisible();

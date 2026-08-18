@@ -2457,7 +2457,7 @@ export class RunEngine {
       this.coarseSecurityTrustCount = Math.max(0, cloned.extras.coarseSecurityTrustCount ?? 0);
       this.coarseSecurityTrustAppliedRaw = Math.min(
         this.coarseSecurityTrustRaw,
-        Math.max(0, cloned.extras.coarseSecurityTrustAppliedRaw ?? 0),
+        Math.max(0, cloned.extras.coarseSecurityTrustAppliedRaw ?? this.coarseSecurityTrustRaw),
       );
       if (options.reconcileCoarseSecurityTrust) this.reconcileCoarseSecurityTrust();
     } else {

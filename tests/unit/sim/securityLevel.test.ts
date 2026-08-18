@@ -473,6 +473,36 @@ describe('RI-87 セキュリティ軸', () => {
     }
   });
 
+  it('適用済み raw を持たない旧セーブでは信頼低下を二重に適用しない', () => {
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
+    const defaultValue = minimumCount.value;
+    const raw = 2;
+    minimumCount.value = 0;
+    try {
+      const source = new RunEngine({ seed: 'ri108-legacy-applied-raw', difficulty: 'normal' });
+      source.startRun();
+      const before = source.snapshot().stakeholderTrust.customers;
+      const sourceInternals = source as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      sourceInternals.applyCoarseSecurityTrust(raw, 1);
+      const legacy = source.exportPersistState()!;
+      delete (legacy.extras as { coarseSecurityTrustAppliedRaw?: unknown })
+        .coarseSecurityTrustAppliedRaw;
+
+      const restored = new RunEngine({
+        seed: 'ri108-legacy-applied-raw-restored',
+        difficulty: 'normal',
+      });
+      restored.startRun();
+      restored.hydratePersistState(legacy);
+
+      expect(restored.snapshot().stakeholderTrust.customers).toBe(before - raw);
+    } finally {
+      minimumCount.value = defaultValue;
+    }
+  });
+
   it('最小件数を増やした後の復元でも既適用 raw を二重に反映しない', () => {
     const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
     const defaultValue = minimumCount.value;

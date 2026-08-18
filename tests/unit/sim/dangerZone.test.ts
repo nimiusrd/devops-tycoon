@@ -484,6 +484,38 @@ describe('危険域判定（RI-101）', () => {
     }
   });
 
+  it('延焼数が最小件数ちょうどでも発生時の信頼 raw を使う', () => {
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
+    const defaultValue = minimumCount.value;
+    minimumCount.value = 1;
+    try {
+      const engine = startedSprint('ri-108-pending-minimum-count');
+      engine.step(200);
+      const internals = engine as unknown as {
+        stakeholderTrust: { management: number; customers: number; team: number };
+        org: { securityLevel: number };
+        sprint: {
+          metrics: {
+            spread: number;
+            incidentCount: number;
+            securityTrustSpreadRaw: number;
+            securityTrustIncidentFragility: number;
+          };
+        };
+      };
+      internals.stakeholderTrust = { management: 40, customers: 27, team: 40 };
+      internals.org.securityLevel = 90;
+      internals.sprint.metrics.spread = 1;
+      internals.sprint.metrics.incidentCount = 1;
+      internals.sprint.metrics.securityTrustSpreadRaw = 2;
+      internals.sprint.metrics.securityTrustIncidentFragility = 1;
+
+      expect(activeDangerReasons(engine)).toContain('trustExhausted');
+    } finally {
+      minimumCount.value = defaultValue;
+    }
+  });
+
   it('スプリント外でも全社 Tech Debt で危険域を維持する', () => {
     const engine = startedSprint('ri-101-company-debt');
     engine.step(200);

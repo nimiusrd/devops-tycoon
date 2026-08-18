@@ -165,7 +165,7 @@ function pendingCustomerTrustDelta(s: RunState): number {
   const spread = metrics.spread ?? 0;
   const incidents = metrics.incidentCount ?? 0;
   const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;
-  if (spread > minimumCount && typeof metrics.securityTrustSpreadRaw === 'number') {
+  if (spread > 0 && spread >= minimumCount && typeof metrics.securityTrustSpreadRaw === 'number') {
     return securityCustomerTrustFromRaw(
       metrics.securityTrustSpreadRaw +
         Math.max(minimumCount, incidents) *

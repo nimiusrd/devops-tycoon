@@ -512,6 +512,7 @@ export const PROCESS_BALANCE = {
     description: '運用安定中に通常の連続出荷ボーナスを保つ最大コンボ段数。',
     tags: ['process', 'stability', 'combo'],
     derived: false,
+    integer: true,
   }),
   stabilityComboTailMultiplier: defineBalanceEntry({
     id: 'process.stability.comboTailMultiplier',
@@ -532,6 +533,7 @@ export const PROCESS_BALANCE = {
     description: '運用安定中に高価値タスクの出荷を抑え始めるコンボ段数。',
     tags: ['process', 'stability', 'combo', 'delivery'],
     derived: false,
+    integer: true,
   }),
   stabilityHighValueMultiplier: defineBalanceEntry({
     id: 'process.stability.highValueMultiplier',
@@ -592,6 +594,7 @@ export const PROCESS_BALANCE = {
     description: 'コンボ出荷倍率の計算に使うコンボ段数の下限。',
     tags: ['process', 'combo', 'boundary'],
     derived: false,
+    integer: true,
   }),
   taskValueRoutine: defineBalanceEntry({
     id: 'process.delivery.taskValue.routine',

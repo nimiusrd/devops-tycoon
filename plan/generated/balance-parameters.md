@@ -16,7 +16,7 @@
 | `process.coding.sizeFactor.routine` | 定型タスクの Coding 所要倍率 | `0.7` | `multiplier` | `0.1〜3` | 定型タスクへ掛ける Coding 基礎所要 tick の倍率。 | process, coding, task | いいえ |
 | `process.combo.bonusCap` | コンボ出荷ボーナスの上限 | `1.5` | `multiplier` | `0〜10` | コンボ出荷倍率へ上乗せできる最大量。 | process, combo, delivery | いいえ |
 | `process.combo.bonusPer` | コンボ 1 段ごとの出荷ボーナス | `0.1` | `multiplier` | `0〜1` | コンボ 1 段ごとに出荷倍率へ加える量。 | process, combo, delivery | いいえ |
-| `process.combo.minimumCount` | コンボ段数の下限 | `0` | `count` | `0〜100` | コンボ出荷倍率の計算に使うコンボ段数の下限。 | process, combo, boundary | いいえ |
+| `process.combo.minimumCount` | コンボ段数の下限 | `0` | `count` | `0〜100（整数）` | コンボ出荷倍率の計算に使うコンボ段数の下限。 | process, combo, boundary | いいえ |
 | `process.delivery.highValueMultiplier` | 高価値タスクの出荷倍率 | `3` | `multiplier` | `0〜10` | 高価値タスクの基礎出荷ポイントへ掛ける倍率。 | process, delivery, task | いいえ |
 | `process.delivery.taskValue.complex` | 複雑タスクの基礎出荷ポイント | `8` | `points` | `0〜100` | 複雑タスクを完了したときの基礎出荷ポイント。 | process, delivery, task | いいえ |
 | `process.delivery.taskValue.normal` | 通常タスクの基礎出荷ポイント | `5` | `points` | `1〜100` | 通常タスクを完了したときの基礎出荷ポイント。 | process, delivery, task | いいえ |
@@ -61,9 +61,9 @@
 | `process.security.level.maximum` | Security 水準の上限 | `100` | `percent` | `0〜100` | Security 水準を clamp する上限。 | process, security, boundary | いいえ |
 | `process.security.level.minimum` | Security 水準の下限 | `0` | `percent` | `0〜100` | Security 水準を clamp する下限。 | process, security, boundary | いいえ |
 | `process.security.spreadMultiplierAdd` | Security 脆弱度の延焼コスト倍率加算 | `0.6` | `multiplier` | `0〜5` | Security 脆弱度が最大のとき延焼コスト倍率へ加える量。 | process, security, incident, burning | いいえ |
-| `process.stability.comboCap` | 運用安定中のコンボ基準段数 | `8` | `count` | `0〜100` | 運用安定中に通常の連続出荷ボーナスを保つ最大コンボ段数。 | process, stability, combo | いいえ |
+| `process.stability.comboCap` | 運用安定中のコンボ基準段数 | `8` | `count` | `0〜100（整数）` | 運用安定中に通常の連続出荷ボーナスを保つ最大コンボ段数。 | process, stability, combo | いいえ |
 | `process.stability.comboTailMultiplier` | 運用安定中のコンボ超過倍率 | `0.5` | `multiplier` | `0〜1` | 運用安定中に基準を超えたコンボ上振れへ掛ける倍率。 | process, stability, combo | いいえ |
-| `process.stability.highValueComboThreshold` | 運用安定中の高価値抑制コンボ閾値 | `8` | `count` | `0〜100` | 運用安定中に高価値タスクの出荷を抑え始めるコンボ段数。 | process, stability, combo, delivery | いいえ |
+| `process.stability.highValueComboThreshold` | 運用安定中の高価値抑制コンボ閾値 | `8` | `count` | `0〜100（整数）` | 運用安定中に高価値タスクの出荷を抑え始めるコンボ段数。 | process, stability, combo, delivery | いいえ |
 | `process.stability.highValueMultiplier` | 運用安定中の高価値出荷倍率 | `0.7` | `multiplier` | `0〜1` | 高価値抑制コンボ閾値を超えたときの出荷価値倍率。 | process, stability, combo, delivery | いいえ |
 | `process.stability.reworkMultiplier` | 運用安定中の Rework 倍率 | `0.4` | `multiplier` | `0〜1` | 運用安定中に Rework 確率へ掛ける倍率。 | process, stability, rework | いいえ |
 | `process.stability.ticks` | 運用安定の持続 tick | `180` | `ticks` | `0〜1000（整数）` | 安全側の介入後に工程が安定する期間。 | process, stability, intervention | いいえ |

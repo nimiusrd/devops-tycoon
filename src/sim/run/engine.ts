@@ -1735,7 +1735,7 @@ export class RunEngine {
 
   /** 粗粒度炎上の顧客信頼 raw を四半期内で繰り越し、しきい値を跨いだ分だけ適用する。 */
   private applyCoarseSecurityTrust(spreadRaw: number, spreadCount = 1): void {
-    if (spreadRaw <= 0 || spreadCount <= 0) return;
+    if (spreadCount <= 0) return;
     const previousCount = this.coarseSecurityTrustCount;
     this.coarseSecurityTrustCount += spreadCount;
     const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;

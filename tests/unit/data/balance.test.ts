@@ -169,6 +169,9 @@ describe('型付きバランスレジストリ', () => {
     PROCESS_BALANCE.burnTicks,
     PROCESS_BALANCE.stabilityTicks,
     PROCESS_BALANCE.incidentTrustMinimumCount,
+    PROCESS_BALANCE.comboMinimumCount,
+    PROCESS_BALANCE.stabilityComboCap,
+    PROCESS_BALANCE.stabilityHighValueComboThreshold,
   ])('$id は非整数の離散値を検証で拒否する', (entry) => {
     expect(entry.integer).toBe(true);
     const invalid = defineBalanceEntry({ ...entry, value: entry.value + 0.5 });

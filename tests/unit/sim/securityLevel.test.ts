@@ -435,4 +435,28 @@ describe('RI-87 セキュリティ軸', () => {
       minimumCount.value = defaultValue;
     }
   });
+
+  it('粗粒度の発火件数は Security 脆弱度がゼロでも最小件数へ加算する', () => {
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
+    const defaultValue = minimumCount.value;
+    minimumCount.value = 2;
+    try {
+      const engine = new RunEngine({ seed: 'ri108-coarse-zero-raw-count', difficulty: 'normal' });
+      engine.startRun();
+      const before = engine.snapshot().stakeholderTrust.customers;
+      const internals = engine as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      internals.applyCoarseSecurityTrust(securityCustomerTrustSpreadRaw(100), 1);
+      expect(engine.snapshot().stakeholderTrust.customers).toBe(before);
+
+      const lowSecurityRaw = securityCustomerTrustSpreadRaw(0);
+      internals.applyCoarseSecurityTrust(lowSecurityRaw, 1);
+      expect(engine.snapshot().stakeholderTrust.customers).toBe(
+        before + securityCustomerTrustFromRaw(lowSecurityRaw),
+      );
+    } finally {
+      minimumCount.value = defaultValue;
+    }
+  });
 });

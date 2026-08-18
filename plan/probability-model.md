@@ -2,7 +2,7 @@
 
 DevOps Tycoonの確率モデルについて、現行実装の構造、数式、seed設計、検証方法をまとめる。
 体験要件は[`SPEC.md`](../SPEC.md)、個々の係数とデータは`src/sim/`と`src/data/`の実装を正とする。
-係数をゲームとドキュメントで共有するSSoTは未実装であり、設計と段階的な導入手順は[balance-ssot-plan.md](./balance-ssot-plan.md)にまとめる。
+係数のSSoTは型付きレジストリと生成パラメータ表まで導入済みで、工程モデルとメンバー領域は同じ定義を参照する。残る領域と代表曲線は[balance-ssot-plan.md](./balance-ssot-plan.md)と[RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)で追跡する。
 
 ## 1. モデルの位置づけ
 

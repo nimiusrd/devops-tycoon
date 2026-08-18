@@ -35,7 +35,7 @@
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-8とF-9の有効手は反実仮想評価の計測手段あり（RI-101。既定コホートの合否は未再走）。F-1・F-7はRI-73、F-2はRI-77／78／83、F-3はRI-102、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-10はRI-76、F-11はRI-86、F-12はRI-81で充足または実装済み |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
-| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), [balance-ssot-plan.md](./balance-ssot-plan.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。バランスパラメータの型付きSSoTとルールセット識別は未実装（RI-104）。残る未充足は本表の他課題 |
+| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), [balance-ssot-plan.md](./balance-ssot-plan.md), `src/game.ts`, `src/state/`, `src/data/balance/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。型付きバランスレジストリ、生成パラメータ表、工程モデル、メンバー・採用は移行済み（RI-106〜109）。残る領域移行、コンテンツカタログ、代表曲線、ルールセット識別は RI-104 |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ、ツール別シナリオ、部門比較、レビュー履歴、開始レシピ、診断・KPI時系列、OKRテンプレート、ステークホルダー別交渉等は実装済み | 🟡 残候補はRI-131（RI-34から切り出し） |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
 
@@ -44,4 +44,4 @@
 | 課題 | 影響 | 追跡先 |
 | --- | --- | --- |
 | 複数四半期ロードマップが無い | 第23章 | [RI-131](./remaining-issues.md#ri-131-複数四半期ロードマップ) |
-| バランスパラメータの型付きSSoT、生成文書、ルールセット識別が未実装 | 第21／第22.3／第22.5 | [RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入) |
+| バランスパラメータSSoTの残領域移行、コンテンツカタログ、代表曲線、ルールセット識別 | 第21／第22.3／第22.5 | [RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入) |

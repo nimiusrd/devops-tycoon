@@ -3,6 +3,7 @@ import { BOSS_DEFS, getBoss, type BossDef } from '../../../src/data/bosses';
 import { getDifficulty } from '../../../src/data/difficulties';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../../src/data/goalAdjustments';
 import { RunEngine } from '../../../src/sim/run/engine';
+import { pickQuarterBossId } from '../../../src/sim/run/quarterBoss';
 import {
   OUTCOME_LABELS,
   BASELINE_SPRINT_DELIVERY_FLOOR,
@@ -1638,6 +1639,32 @@ describe('RI-91-B2: quarterReview survived mutants', () => {
         expect(following, id).toEqual(decayGoalFromPrior(next));
         expect(following.deliveryTarget, id).not.toBe(next.deliveryTarget);
       }
+    });
+
+    it('次ボスが exec-review なら prior に無い AI Adoption 目標を見通しへ載せる', () => {
+      const withoutAi: QuarterGoal = {
+        deliveryTarget: 60 * QUARTER_DELIVERY_SCALE,
+        qualityTarget: 45,
+        techDebtLimit: 55,
+        moraleTarget: 40,
+        incidentLimit: 6,
+      };
+      let seed = '';
+      for (let i = 0; i < 8000; i += 1) {
+        const candidate = `ri131-exec-${i}`;
+        if (pickQuarterBossId(candidate, 2) === 'exec-review') {
+          seed = candidate;
+          break;
+        }
+      }
+      expect(seed).not.toBe('');
+      const ctx = { seed, difficulty: 'normal' as const, fromQuarter: 1 };
+      const nextBoss = getBoss(pickQuarterBossId(seed, 2))!;
+      const followingBoss = getBoss(pickQuarterBossId(seed, 3))!;
+      const { next, following } = projectForwardGoals(withoutAi, undefined, ctx);
+      expect(next).toEqual(buildQuarterGoal(nextBoss, 'normal', 1, withoutAi));
+      expect(next.aiAdoptionTarget).toBe(40);
+      expect(following).toEqual(buildQuarterGoal(followingBoss, 'normal', 1, next));
     });
   });
 });

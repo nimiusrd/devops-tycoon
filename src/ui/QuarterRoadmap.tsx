@@ -6,18 +6,26 @@
 import { useMemo } from 'react';
 import type { GoalAdjustmentDef } from '../data/goalAdjustments';
 import { quarterRoadmapView } from '../render/quarterRoadmapView';
-import type { QuarterGoal } from '../sim/run/types';
+import type { DifficultyId, QuarterGoal } from '../sim/run/types';
 
 export interface QuarterRoadmapProps {
   quarterNumber: number;
   goal: QuarterGoal;
+  seed: string;
+  difficulty: DifficultyId;
   adjustment?: GoalAdjustmentDef;
 }
 
-export function QuarterRoadmap({ quarterNumber, goal, adjustment }: QuarterRoadmapProps) {
+export function QuarterRoadmap({
+  quarterNumber,
+  goal,
+  seed,
+  difficulty,
+  adjustment,
+}: QuarterRoadmapProps) {
   const rows = useMemo(
-    () => quarterRoadmapView({ quarterNumber, goal, adjustment }),
-    [quarterNumber, goal, adjustment],
+    () => quarterRoadmapView({ quarterNumber, goal, seed, difficulty, adjustment }),
+    [quarterNumber, goal, seed, difficulty, adjustment],
   );
 
   return (

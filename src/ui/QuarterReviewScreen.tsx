@@ -70,6 +70,8 @@ export function QuarterReviewScreen({
           <QuarterRoadmap
             quarterNumber={state.quarterNumber}
             goal={review.goal}
+            seed={state.seed}
+            difficulty={state.difficulty}
             adjustment={previewAdjustment}
           />
         ) : null}
@@ -113,6 +115,7 @@ export function QuarterReviewScreen({
             trust={trust}
             hasAiAdoptionTarget={review.goal.aiAdoptionTarget !== undefined}
             currentDeliveryTarget={review.goal.deliveryTarget}
+            previewedAdjustmentId={previewAdjustmentId}
             onChooseAdjustment={onChooseAdjustment}
             onPreviewAdjustment={setPreviewAdjustmentId}
           />

@@ -487,12 +487,15 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
   await expect(page.getByTestId('quarter-roadmap')).toBeVisible();
   await expect(page.getByTestId('quarter-roadmap-row')).toHaveCount(2);
   const baselineDelivery = await page.locator('[data-horizon="1"]').getAttribute('data-delivery');
-  await page.locator('[data-adjustment="cut_scope"]').hover();
+  await page.getByTestId('roadmap-preview-cut_scope').click();
   await expect(page.getByTestId('quarter-roadmap')).toHaveAttribute('data-preview', 'cut_scope');
+  await expect(page.getByTestId('quarter-review')).toBeVisible();
   await expect(page.getByTestId('quarter-roadmap-preview')).toContainText('スコープ削減');
   const previewDelivery = await page.locator('[data-horizon="1"]').getAttribute('data-delivery');
   expect(previewDelivery).toBeTruthy();
   expect(previewDelivery).not.toBe(baselineDelivery);
+  await page.locator('[data-adjustment="cut_scope"]').hover();
+  await expect(page.getByTestId('quarter-roadmap')).toHaveAttribute('data-preview', 'cut_scope');
   await expect(
     page.locator('[data-horizon="2"] [data-testid="quarter-roadmap-constraints"]'),
   ).toHaveText('物理キャリーなし');

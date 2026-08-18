@@ -4895,6 +4895,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 8px;
   margin-top: 8px;
 }
+.quarter-adjustment-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .quarter-adjustment-card {
   display: flex;
   flex-direction: column;
@@ -4908,7 +4913,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: inherit;
   font-size: 0.8rem;
 }
-.quarter-adjustment-card:hover {
+.quarter-adjustment-card:hover,
+.quarter-adjustment-card.is-previewing {
   border-color: var(--sun);
 }
 .quarter-adjustment-card strong {
@@ -4917,6 +4923,17 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .quarter-adjustment-card .effect-tags {
   margin-top: 0;
   margin-bottom: 0;
+}
+.quarter-roadmap-preview-btn {
+  align-self: flex-start;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  cursor: pointer;
 }
 .quarter-review-actions {
   margin-top: 1rem;

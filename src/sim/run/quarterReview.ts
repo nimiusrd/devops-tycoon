@@ -4,7 +4,7 @@
  * ボス突破可否・KPI 達成度・信頼・継続リソースから outcome を決定論で算出し、
  * 目標修正の効果・代償を純関数で適用する。
  */
-import type { BossDef } from '../../data/bosses';
+import { getBoss, type BossDef } from '../../data/bosses';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
 import type { GoalAdjustmentDef, GoalNextQuarterEffects } from '../../data/goalAdjustments';
 import { deriveTeamCapacities } from '../orgscale/teamState';
@@ -12,6 +12,7 @@ import type { TeamRunState } from '../orgscale/types';
 import { TECH_DEBT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import type { CardEffects, OrgState } from '../types';
 import { SPRINTS_PER_QUARTER } from './constants';
+import { pickQuarterBossId } from './quarterBoss';
 import type {
   DifficultyId,
   GoalAdjustmentId,
@@ -497,14 +498,37 @@ export interface ForwardGoals {
   following: QuarterGoal;
 }
 
+export interface ForwardGoalContext {
+  seed: string;
+  difficulty: DifficultyId;
+  /** 今四半期番号（1 起点）。Q+1 / Q+2 のボス抽選に使う。 */
+  fromQuarter: number;
+}
+
 /**
  * 今四半期より先の目標見通し（RI-131）。
- * `def` があるときはその goalEffects を載せてから減衰する。拘束力は持たない。
+ * `def` があるときはその goalEffects を載せる。拘束力は持たない。
+ * `ctx` があるときは次ボス抽選＋ `buildQuarterGoal(..., prior)` と同じ導出。
  */
-export function projectForwardGoals(current: QuarterGoal, def?: GoalAdjustmentDef): ForwardGoals {
+export function projectForwardGoals(
+  current: QuarterGoal,
+  def?: GoalAdjustmentDef,
+  ctx?: ForwardGoalContext,
+): ForwardGoals {
   const adjusted = def ? applyGoalEffectsToGoal(current, def) : current;
-  const next = decayGoalFromPrior(adjusted);
-  const following = decayGoalFromPrior(next);
+  if (!ctx) {
+    const next = decayGoalFromPrior(adjusted);
+    const following = decayGoalFromPrior(next);
+    return { next, following };
+  }
+  const nextBoss = getBoss(pickQuarterBossId(ctx.seed, ctx.fromQuarter + 1));
+  const followingBoss = getBoss(pickQuarterBossId(ctx.seed, ctx.fromQuarter + 2));
+  const next = nextBoss
+    ? buildQuarterGoal(nextBoss, ctx.difficulty, 1, adjusted)
+    : decayGoalFromPrior(adjusted);
+  const following = followingBoss
+    ? buildQuarterGoal(followingBoss, ctx.difficulty, 1, next)
+    : decayGoalFromPrior(next);
   return { next, following };
 }
 

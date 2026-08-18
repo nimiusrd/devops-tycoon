@@ -5,7 +5,7 @@
  */
 import type { GoalAdjustmentDef } from '../data/goalAdjustments';
 import { hasNextQuarterCarryover, projectForwardGoals } from '../sim/run/quarterReview';
-import type { QuarterGoal } from '../sim/run/types';
+import type { DifficultyId, GoalAdjustmentId, QuarterGoal } from '../sim/run/types';
 
 export const ROADMAP_ROLE_LABELS = {
   1: '次期',
@@ -33,6 +33,18 @@ export interface QuarterRoadmapViewInput {
   quarterNumber: number;
   goal: QuarterGoal;
   adjustment?: GoalAdjustmentDef;
+  seed?: string;
+  difficulty?: DifficultyId;
+}
+
+/** ホバーできない環境では、同じカードの2回目で確定する（RI-131）。 */
+export function shouldConfirmGoalAdjustment(input: {
+  hoverCapable: boolean;
+  previewedId: GoalAdjustmentId | null;
+  clickedId: GoalAdjustmentId;
+}): boolean {
+  if (input.hoverCapable) return true;
+  return input.previewedId === input.clickedId;
 }
 
 function goalKpis(goal: QuarterGoal): QuarterRoadmapKpi[] {
@@ -68,7 +80,13 @@ function constraintsFor(def: GoalAdjustmentDef | undefined, horizon: 1 | 2): str
 /** Q+1 / Q+2 の見通し行を作る。`adjustment` があるときだけその goalEffects を載せる。 */
 export function quarterRoadmapView(input: QuarterRoadmapViewInput): QuarterRoadmapRow[] {
   const preview = input.adjustment !== undefined;
-  const { next, following } = projectForwardGoals(input.goal, input.adjustment);
+  const { next, following } = projectForwardGoals(
+    input.goal,
+    input.adjustment,
+    input.seed !== undefined && input.difficulty !== undefined
+      ? { seed: input.seed, difficulty: input.difficulty, fromQuarter: input.quarterNumber }
+      : undefined,
+  );
   return [
     {
       quarterNumber: input.quarterNumber + 1,

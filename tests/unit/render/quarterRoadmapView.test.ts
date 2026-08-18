@@ -7,7 +7,9 @@ import {
   NO_CARRYOVER_CONSTRAINT,
   ROADMAP_ROLE_LABELS,
   quarterRoadmapView,
+  shouldConfirmGoalAdjustment,
 } from '../../../src/render/quarterRoadmapView';
+import { pickQuarterBossId } from '../../../src/sim/run/quarterBoss';
 import {
   previewNextQuarterDeliveryTarget,
   projectForwardGoals,
@@ -84,5 +86,56 @@ describe('quarterRoadmapView (RI-131)', () => {
     const { aiAdoptionTarget: _, ...withoutAi } = goal;
     const rows = quarterRoadmapView({ quarterNumber: 1, goal: withoutAi });
     expect(rows[0].kpis.some((kpi) => kpi.id === 'aiAdoption')).toBe(false);
+  });
+
+  it('次ボスが exec-review なら見通しに AI Adoption を出す', () => {
+    const { aiAdoptionTarget: _, ...withoutAi } = goal;
+    let seed = '';
+    for (let i = 0; i < 8000; i += 1) {
+      const candidate = `ri131-exec-${i}`;
+      if (pickQuarterBossId(candidate, 2) === 'exec-review') {
+        seed = candidate;
+        break;
+      }
+    }
+    expect(seed).not.toBe('');
+    const rows = quarterRoadmapView({
+      quarterNumber: 1,
+      goal: withoutAi,
+      seed,
+      difficulty: 'normal',
+    });
+    expect(rows[0].kpis.find((kpi) => kpi.id === 'aiAdoption')?.target).toBe(40);
+  });
+
+  it('ホバー不可なら同じカードの2回目で確定する', () => {
+    expect(
+      shouldConfirmGoalAdjustment({
+        hoverCapable: true,
+        previewedId: null,
+        clickedId: 'cut_scope',
+      }),
+    ).toBe(true);
+    expect(
+      shouldConfirmGoalAdjustment({
+        hoverCapable: false,
+        previewedId: null,
+        clickedId: 'cut_scope',
+      }),
+    ).toBe(false);
+    expect(
+      shouldConfirmGoalAdjustment({
+        hoverCapable: false,
+        previewedId: 'extend_deadline',
+        clickedId: 'cut_scope',
+      }),
+    ).toBe(false);
+    expect(
+      shouldConfirmGoalAdjustment({
+        hoverCapable: false,
+        previewedId: 'cut_scope',
+        clickedId: 'cut_scope',
+      }),
+    ).toBe(true);
   });
 });

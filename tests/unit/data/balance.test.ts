@@ -164,6 +164,21 @@ describe('型付きバランスレジストリ', () => {
   });
 
   it.each([
+    PROCESS_BALANCE.codingBaseTicks,
+    PROCESS_BALANCE.reworkTicks,
+    PROCESS_BALANCE.burnTicks,
+    PROCESS_BALANCE.stabilityTicks,
+    PROCESS_BALANCE.incidentTrustMinimumCount,
+  ])('$id は非整数の離散値を検証で拒否する', (entry) => {
+    expect(entry.integer).toBe(true);
+    const invalid = defineBalanceEntry({ ...entry, value: entry.value + 0.5 });
+
+    expect(validateBalanceRegistry([invalid])).toContainEqual(
+      expect.objectContaining({ code: 'non-integer-value', id: entry.id }),
+    );
+  });
+
+  it.each([
     {
       minimum: PROCESS_BALANCE.reworkMinimum,
       maximum: PROCESS_BALANCE.reworkMaximum,

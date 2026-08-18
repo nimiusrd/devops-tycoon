@@ -16,6 +16,7 @@ export const PROCESS_BALANCE = {
     description: '標準規模かつ AI 支援なしのタスクを実装する基礎所要 tick。',
     tags: ['process', 'coding'],
     derived: false,
+    integer: true,
   }),
   aiCodingSpeedup: defineBalanceEntry({
     id: 'process.coding.aiSpeedup',
@@ -156,6 +157,7 @@ export const PROCESS_BALANCE = {
     description: '手戻りタスクを修正して Review へ戻すまでに要する tick。',
     tags: ['process', 'rework'],
     derived: false,
+    integer: true,
   }),
   reworkMaxAttempts: defineBalanceEntry({
     id: 'process.rework.maxAttempts',
@@ -327,6 +329,7 @@ export const PROCESS_BALANCE = {
     description: '点火から自動鎮火または延焼までの猶予 tick。',
     tags: ['process', 'incident', 'burning'],
     derived: false,
+    integer: true,
   }),
   spreadDebt: defineBalanceEntry({
     id: 'process.incident.spread.debt',
@@ -477,6 +480,7 @@ export const PROCESS_BALANCE = {
     description: 'Incident 数と延焼数を顧客信頼計算へ入れる際の下限。',
     tags: ['process', 'incident', 'customer-trust', 'boundary'],
     derived: false,
+    integer: true,
   }),
   stabilityTicks: defineBalanceEntry({
     id: 'process.stability.ticks',
@@ -487,6 +491,7 @@ export const PROCESS_BALANCE = {
     description: '安全側の介入後に工程が安定する期間。',
     tags: ['process', 'stability', 'intervention'],
     derived: false,
+    integer: true,
   }),
   stabilityReworkMultiplier: defineBalanceEntry({
     id: 'process.stability.reworkMultiplier',

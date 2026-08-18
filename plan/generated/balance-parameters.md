@@ -10,7 +10,7 @@
 | `process.ai.dependency.perTask` | AI 支援タスクごとの依存度増分 | `2.2` | `percent` | `0〜20` | AI 支援を割り当てたタスク 1 件ごとに増える AI 依存度。 | process, ai, dependency | いいえ |
 | `process.ai.dependency.whenDisabled` | AI 無効時の初期依存度 | `3` | `percent` | `0〜100` | AI を導入しない組織に残る初期 AI 依存度。 | process, ai, dependency, organization | いいえ |
 | `process.coding.aiSpeedup` | AI Coding 高速化倍率 | `2.6` | `multiplier` | `1〜5` | AI 支援タスクの Coding 所要 tick を短縮する倍率。 | process, coding, ai | いいえ |
-| `process.coding.baseTicks` | Coding 基礎所要 tick | `7` | `ticks` | `1〜30` | 標準規模かつ AI 支援なしのタスクを実装する基礎所要 tick。 | process, coding | いいえ |
+| `process.coding.baseTicks` | Coding 基礎所要 tick | `7` | `ticks` | `1〜30（整数）` | 標準規模かつ AI 支援なしのタスクを実装する基礎所要 tick。 | process, coding | いいえ |
 | `process.coding.sizeFactor.complex` | 複雑タスクの Coding 所要倍率 | `1.7` | `multiplier` | `0.1〜3` | 複雑タスクへ掛ける Coding 基礎所要 tick の倍率。 | process, coding, task | いいえ |
 | `process.coding.sizeFactor.normal` | 通常タスクの Coding 所要倍率 | `1` | `multiplier` | `0.1〜3` | 通常タスクへ掛ける Coding 基礎所要 tick の倍率。 | process, coding, task | いいえ |
 | `process.coding.sizeFactor.routine` | 定型タスクの Coding 所要倍率 | `0.7` | `multiplier` | `0.1〜3` | 定型タスクへ掛ける Coding 基礎所要 tick の倍率。 | process, coding, task | いいえ |
@@ -24,10 +24,10 @@
 | `process.incident.aiLowLiteracyWeight` | AI 低リテラシー Incident 係数 | `0.05` | `multiplier` | `0〜1` | AI 支援タスクで AI リテラシー不足が Incident 確率へ加える係数。 | process, incident, ai | いいえ |
 | `process.incident.autoContainHpCost` | Incident 自動鎮火 HP コスト | `12` | `points` | `0〜100` | 時間切れの Incident を自動鎮火するシニア HP コスト。 | process, incident, burning, senior-hp | いいえ |
 | `process.incident.baseProbability` | Incident 基礎確率 | `0.02` | `probability` | `0〜1` | テストカバレッジや AI 補正を加える前の Incident 確率。 | process, incident | いいえ |
-| `process.incident.burnTicks` | Incident 炎上猶予 tick | `35` | `ticks` | `1〜300` | 点火から自動鎮火または延焼までの猶予 tick。 | process, incident, burning | いいえ |
+| `process.incident.burnTicks` | Incident 炎上猶予 tick | `35` | `ticks` | `1〜300（整数）` | 点火から自動鎮火または延焼までの猶予 tick。 | process, incident, burning | いいえ |
 | `process.incident.burning.regenMultiplier` | 炎上中シニア HP 回復倍率 | `0.5` | `multiplier` | `0〜1` | Incident が燃えている間に掛けるシニア HP 自然回復の倍率。 | process, incident, burning, senior-hp | いいえ |
 | `process.incident.burning.reviewSlowdown` | 炎上中 Review 処理量倍率 | `0.65` | `multiplier` | `0〜1` | Incident が燃えている間に掛ける Review 処理量の倍率。 | process, incident, burning, review | いいえ |
-| `process.incident.customerTrust.minimumCount` | 顧客信頼計算の最小 Incident 数 | `0` | `count` | `0〜100` | Incident 数と延焼数を顧客信頼計算へ入れる際の下限。 | process, incident, customer-trust, boundary | いいえ |
+| `process.incident.customerTrust.minimumCount` | 顧客信頼計算の最小 Incident 数 | `0` | `count` | `0〜100（整数）` | Incident 数と延焼数を顧客信頼計算へ入れる際の下限。 | process, incident, customer-trust, boundary | いいえ |
 | `process.incident.customerTrust.perIncidentRaw` | Incident ごとの顧客信頼 raw | `0.5` | `points` | `0〜20` | 延焼発生時に Incident 1 件ごとに積む顧客信頼 raw。 | process, incident, security, customer-trust | いいえ |
 | `process.incident.customerTrust.perSpreadRaw` | 延焼ごとの顧客信頼 raw | `2` | `points` | `0〜20` | Security 脆弱度が最大のとき延焼 1 件で積む顧客信頼 raw。 | process, incident, security, customer-trust | いいえ |
 | `process.incident.customerTrust.rawThreshold` | 顧客信頼 raw の反映閾値 | `0.5` | `points` | `0〜20` | 蓄積した顧客信頼 raw がこの値未満なら信頼を変化させない。 | process, incident, security, customer-trust, boundary | いいえ |
@@ -53,7 +53,7 @@
 | `process.rework.minimum` | Rework 確率の下限 | `0.02` | `probability` | `0〜1` | Rework 確率を clamp する下限。 | process, rework, boundary | いいえ |
 | `process.rework.qualityWeight` | Rework の品質低減係数 | `0.14` | `multiplier` | `0〜1` | 品質が Rework 確率を低減する係数。 | process, rework, quality | いいえ |
 | `process.rework.splitReduction` | PR 分割時の Rework 低下量 | `0.16` | `probability` | `0〜1` | 分割したタスクの Rework 確率から引く量。 | process, rework, assignment | いいえ |
-| `process.rework.ticks` | Rework 所要 tick | `4` | `ticks` | `1〜30` | 手戻りタスクを修正して Review へ戻すまでに要する tick。 | process, rework | いいえ |
+| `process.rework.ticks` | Rework 所要 tick | `4` | `ticks` | `1〜30（整数）` | 手戻りタスクを修正して Review へ戻すまでに要する tick。 | process, rework | いいえ |
 | `process.security.fragility.maximum` | Security 脆弱度の上限 | `1` | `multiplier` | `0〜1` | Security 脆弱度を clamp する上限。 | process, security, boundary | いいえ |
 | `process.security.fragility.minimum` | Security 脆弱度の下限 | `0` | `multiplier` | `0〜0` | Security 脆弱度を clamp する下限。 | process, security, boundary | いいえ |
 | `process.security.fragility.threshold` | Security 脆弱度の無効化水準 | `50` | `percent` | `1〜100` | この Security 水準以上では脆弱度を 0 とする境界。 | process, security, boundary | いいえ |
@@ -66,4 +66,4 @@
 | `process.stability.highValueComboThreshold` | 運用安定中の高価値抑制コンボ閾値 | `8` | `count` | `0〜100` | 運用安定中に高価値タスクの出荷を抑え始めるコンボ段数。 | process, stability, combo, delivery | いいえ |
 | `process.stability.highValueMultiplier` | 運用安定中の高価値出荷倍率 | `0.7` | `multiplier` | `0〜1` | 高価値抑制コンボ閾値を超えたときの出荷価値倍率。 | process, stability, combo, delivery | いいえ |
 | `process.stability.reworkMultiplier` | 運用安定中の Rework 倍率 | `0.4` | `multiplier` | `0〜1` | 運用安定中に Rework 確率へ掛ける倍率。 | process, stability, rework | いいえ |
-| `process.stability.ticks` | 運用安定の持続 tick | `180` | `ticks` | `0〜1000` | 安全側の介入後に工程が安定する期間。 | process, stability, intervention | いいえ |
+| `process.stability.ticks` | 運用安定の持続 tick | `180` | `ticks` | `0〜1000（整数）` | 安全側の介入後に工程が安定する期間。 | process, stability, intervention | いいえ |

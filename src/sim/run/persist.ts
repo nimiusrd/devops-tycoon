@@ -81,6 +81,11 @@ export interface RunPersistExtras {
    * ステップ丸めで 0.5 未満が消えないよう四半期内で繰り越す。旧セーブでは欠落しうる。
    */
   coarseSecurityTrustRaw?: number;
+  /**
+   * 粗粒度炎上の顧客信頼 raw に含まれる発火件数（RI-108）。
+   * 最小件数に達するまで raw の適用を保留するため、四半期内で繰り越す。
+   */
+  coarseSecurityTrustCount?: number;
   /** 今ドラフトでのマリガン使用済み（RI-81。旧セーブでは欠落しうる）。 */
   draftMulliganUsed?: boolean;
 }

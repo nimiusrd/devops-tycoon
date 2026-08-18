@@ -396,4 +396,43 @@ describe('RI-87 セキュリティ軸', () => {
       before + securityCustomerTrustFromRaw(0.8),
     );
   });
+
+  it('粗粒度の信頼 raw は最小件数に達するまで保留し、セーブ後も件数を維持する', () => {
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
+    const defaultValue = minimumCount.value;
+    minimumCount.value = 2;
+    try {
+      const source = new RunEngine({ seed: 'ri108-coarse-minimum-count', difficulty: 'normal' });
+      source.startRun();
+      const before = source.snapshot().stakeholderTrust.customers;
+      const sourceInternals = source as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      const raw = securityCustomerTrustSpreadRaw(0);
+      sourceInternals.applyCoarseSecurityTrust(raw, 1);
+      expect(source.snapshot().stakeholderTrust.customers).toBe(before);
+
+      const persisted = source.exportPersistState();
+      expect(persisted?.extras).toMatchObject({
+        coarseSecurityTrustRaw: raw,
+        coarseSecurityTrustCount: 1,
+      });
+      const restored = new RunEngine({
+        seed: 'ri108-coarse-minimum-count-restored',
+        difficulty: 'normal',
+      });
+      restored.startRun();
+      restored.hydratePersistState(persisted!);
+      const restoredInternals = restored as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      restoredInternals.applyCoarseSecurityTrust(raw, 1);
+
+      expect(restored.snapshot().stakeholderTrust.customers).toBe(
+        before + securityCustomerTrustFromRaw(raw * 2),
+      );
+    } finally {
+      minimumCount.value = defaultValue;
+    }
+  });
 });

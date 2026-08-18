@@ -387,6 +387,8 @@ export class RunEngine {
   private coarseIncidentCarry = 0;
   /** 粗粒度炎上の顧客信頼 raw（四半期内で繰り越し。RI-87）。 */
   private coarseSecurityTrustRaw = 0;
+  /** 粗粒度炎上の顧客信頼 raw に含まれる発火件数（RI-108）。 */
+  private coarseSecurityTrustCount = 0;
 
   private quarterNumber = 1;
   private quarterGoal!: QuarterGoal;
@@ -538,6 +540,7 @@ export class RunEngine {
     this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
+    this.coarseSecurityTrustCount = 0;
     // ホームの永続指標を初期 org/roster と揃える。
     this.syncActiveTeamFromOrg();
     this.status = 'playing';
@@ -1056,6 +1059,7 @@ export class RunEngine {
     this.quarterTotals = emptyTotals();
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
+    this.coarseSecurityTrustCount = 0;
 
     this.sprintIndexInQuarter = 0;
     this.pendingSprintKind = 'normal';
@@ -1723,15 +1727,25 @@ export class RunEngine {
     const credited = Math.floor(this.coarseIncidentCarry + 1e-9);
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
+    this.coarseSecurityTrustCount = 0;
     if (credited <= 0) return;
     this.totals.incidents += credited;
     this.quarterTotals.incidents += credited;
   }
 
   /** 粗粒度炎上の顧客信頼 raw を四半期内で繰り越し、しきい値を跨いだ分だけ適用する。 */
-  private applyCoarseSecurityTrust(spreadRaw: number): void {
-    if (spreadRaw <= 0) return;
-    const prev = securityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
+  private applyCoarseSecurityTrust(spreadRaw: number, spreadCount = 1): void {
+    if (spreadRaw <= 0 || spreadCount <= 0) return;
+    const previousCount = this.coarseSecurityTrustCount;
+    this.coarseSecurityTrustCount += spreadCount;
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;
+    if (this.coarseSecurityTrustCount < minimumCount) {
+      this.coarseSecurityTrustRaw += spreadRaw;
+      return;
+    }
+    const prev = securityCustomerTrustFromRaw(
+      previousCount < minimumCount ? 0 : this.coarseSecurityTrustRaw,
+    );
     this.coarseSecurityTrustRaw += spreadRaw;
     const next = securityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
     const delta = next - prev;
@@ -1821,7 +1835,7 @@ export class RunEngine {
       this.coarseIncidentCarry,
     );
     // RI-87: 非選択チームの炎上 raw を四半期内で繰り越し、0.5 未満をステップ丸めで消さない。
-    this.applyCoarseSecurityTrust(stepped.securityTrustSpreadRaw);
+    this.applyCoarseSecurityTrust(stepped.securityTrustSpreadRaw, stepped.ignited);
     // 炎上は四半期末 flush まで raw 累積（ステップ丸めで 0 固定にしない）。
     this.coarseIncidentCarry = delta.incidents + delta.incidentCarry;
     this.totals.delivered += delta.delivered;
@@ -2253,6 +2267,7 @@ export class RunEngine {
         teamRosters: structuredClone(this.teamRosters),
         coarseIncidentCarry: this.coarseIncidentCarry,
         coarseSecurityTrustRaw: this.coarseSecurityTrustRaw,
+        coarseSecurityTrustCount: this.coarseSecurityTrustCount,
         draftMulliganUsed: this.draftMulliganUsed,
       },
     };
@@ -2386,13 +2401,17 @@ export class RunEngine {
     }
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
     if (this.winEvalOrg) {
-      this.winEvalOrg.securityLevel = clamp(
-        typeof this.winEvalOrg.securityLevel === 'number'
+      this.winEvalOrg.securityLevel = options.normalizeSecurityLevel
+        ? clamp(
+            typeof this.winEvalOrg.securityLevel === 'number'
+              ? this.winEvalOrg.securityLevel
+              : this.winEvalOrg.quality,
+            PROCESS_BALANCE.securityLevelMinimum.value,
+            PROCESS_BALANCE.securityLevelMaximum.value,
+          )
+        : typeof this.winEvalOrg.securityLevel === 'number'
           ? this.winEvalOrg.securityLevel
-          : this.winEvalOrg.quality,
-        PROCESS_BALANCE.securityLevelMinimum.value,
-        PROCESS_BALANCE.securityLevelMaximum.value,
-      );
+          : this.winEvalOrg.quality;
     }
     this.allowedCards = new Set(cloned.extras.allowedCards);
     this.allowedRelics = new Set(cloned.extras.allowedRelics);
@@ -2426,6 +2445,11 @@ export class RunEngine {
       // 四半期内の粗粒度炎上累積を復元（旧セーブ欠落時は 0）。
       this.coarseIncidentCarry = Math.max(0, cloned.extras.coarseIncidentCarry ?? 0);
       this.coarseSecurityTrustRaw = Math.max(0, cloned.extras.coarseSecurityTrustRaw ?? 0);
+      this.coarseSecurityTrustCount = Math.max(
+        0,
+        cloned.extras.coarseSecurityTrustCount ??
+          (this.coarseSecurityTrustRaw > 0 ? PROCESS_BALANCE.incidentTrustMinimumCount.value : 0),
+      );
     } else {
       // v1 セーブ: チーム配列が無いので初期化し、累積 orgAdjust を正本へ焼き込んでから strip。
       this.homeTeamId = HOME_TEAM_ID;
@@ -2444,6 +2468,7 @@ export class RunEngine {
       // v1 には粗粒度累積が無い。
       this.coarseIncidentCarry = 0;
       this.coarseSecurityTrustRaw = 0;
+      this.coarseSecurityTrustCount = 0;
       // v1 の出荷正本は org.deliveryScore。totals.delivered へ写経し報酬分岐を防ぐ。
       this.totals.delivered = Math.max(0, Math.round(this.org.deliveryScore));
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };

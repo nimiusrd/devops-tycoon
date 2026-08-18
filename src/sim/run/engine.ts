@@ -2445,11 +2445,7 @@ export class RunEngine {
       // 四半期内の粗粒度炎上累積を復元（旧セーブ欠落時は 0）。
       this.coarseIncidentCarry = Math.max(0, cloned.extras.coarseIncidentCarry ?? 0);
       this.coarseSecurityTrustRaw = Math.max(0, cloned.extras.coarseSecurityTrustRaw ?? 0);
-      this.coarseSecurityTrustCount = Math.max(
-        0,
-        cloned.extras.coarseSecurityTrustCount ??
-          (this.coarseSecurityTrustRaw > 0 ? PROCESS_BALANCE.incidentTrustMinimumCount.value : 0),
-      );
+      this.coarseSecurityTrustCount = Math.max(0, cloned.extras.coarseSecurityTrustCount ?? 0);
     } else {
       // v1 セーブ: チーム配列が無いので初期化し、累積 orgAdjust を正本へ焼き込んでから strip。
       this.homeTeamId = HOME_TEAM_ID;

@@ -436,6 +436,40 @@ describe('RI-87 セキュリティ軸', () => {
     }
   });
 
+  it('発火件数を持たない旧セーブは粗粒度の信頼 raw を閾値到達済みとして扱わない', () => {
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
+    const defaultValue = minimumCount.value;
+    minimumCount.value = 3;
+    try {
+      const source = new RunEngine({ seed: 'ri108-legacy-coarse-count', difficulty: 'normal' });
+      source.startRun();
+      const before = source.snapshot().stakeholderTrust.customers;
+      const raw = securityCustomerTrustSpreadRaw(0);
+      const sourceInternals = source as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      sourceInternals.applyCoarseSecurityTrust(raw, 1);
+      const legacy = source.exportPersistState()!;
+      delete (legacy.extras as { coarseSecurityTrustCount?: unknown }).coarseSecurityTrustCount;
+
+      const restored = new RunEngine({
+        seed: 'ri108-legacy-coarse-count-restored',
+        difficulty: 'normal',
+      });
+      restored.startRun();
+      restored.hydratePersistState(legacy);
+      const restoredInternals = restored as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      restoredInternals.applyCoarseSecurityTrust(raw, 1);
+
+      expect(restored.snapshot().stakeholderTrust.customers).toBe(before);
+      expect(restored.exportPersistState()?.extras.coarseSecurityTrustCount).toBe(1);
+    } finally {
+      minimumCount.value = defaultValue;
+    }
+  });
+
   it('粗粒度の発火件数は Security 脆弱度がゼロでも最小件数へ加算する', () => {
     const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
     const defaultValue = minimumCount.value;

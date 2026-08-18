@@ -241,6 +241,8 @@ test('RI-32: ボス突破報酬レリックを四半期レビューに表示す�
 
   expect(reached.ok).toBe(true);
   await expect(page.getByTestId('quarter-review')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('quarter-okr')).toBeVisible();
+  await expect(page.getByTestId('quarter-kpi')).toBeVisible();
   await expect(page.getByTestId('review-history')).toBeVisible();
   await expect(page.getByTestId('review-history-row')).toHaveCount(1);
   await expect(page.getByTestId('boss-relic-reward')).toBeVisible();
@@ -464,10 +466,13 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
 
   test.skip(!atReview.ok, `seed が missed_adjustable にならない: ${JSON.stringify(atReview)}`);
   await expect(page.getByTestId('quarter-review')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('quarter-okr')).toBeVisible();
+  await expect(page.getByTestId('quarter-kpi')).toBeVisible();
   await expect(page.getByTestId('review-history')).toBeVisible();
   await expect(page.getByTestId('review-history-row')).toHaveCount(1);
   await page.locator('[data-adjustment="cut_scope"]').click();
   await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('setup-okr')).toBeVisible();
   const quarterNumber = await page.evaluate(
     () => (window as GameWindow).game!.getState().quarterNumber,
   );

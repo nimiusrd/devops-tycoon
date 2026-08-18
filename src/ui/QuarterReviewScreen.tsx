@@ -1,7 +1,7 @@
 /**
  * 四半期レビュー / 目標修正画面（SPEC 第4.6.1）。
  *
- * 勝敗画面ではなくレビュー会議として、目標達成度・信頼・未達理由・修正選択肢を表示する。
+ * 勝敗画面ではなくレビュー会議として、OKR・目標達成度・信頼・未達理由・修正選択肢を表示する。
  */
 import { getGoalAdjustment } from '../data/goalAdjustments';
 import { getRelic } from '../data/relics';
@@ -11,6 +11,7 @@ import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { ReactNode } from 'react';
 import { EffectTagList } from './EffectTagList';
 import { RewardCeremony } from './JuicyEffects';
+import { QuarterOkr } from './QuarterOkr';
 import { ReviewHistoryList } from './ReviewHistoryList';
 
 export interface QuarterReviewScreenProps {
@@ -62,24 +63,7 @@ export function QuarterReviewScreen({
 
         <ReviewHistoryList reviewHistory={state.reviewHistory} quarterReview={review} />
 
-        <div className="quarter-kpi-table" data-testid="quarter-kpi">
-          <div className="quarter-kpi-header">
-            <span>KPI</span>
-            <span>目標</span>
-            <span>実績</span>
-            <span>判定</span>
-          </div>
-          {progress.map((kpi) => (
-            <div className="quarter-kpi-row" key={kpi.id} data-kpi={kpi.id}>
-              <span>{kpi.label}</span>
-              <span>{kpi.target}</span>
-              <span>{kpi.actual}</span>
-              <span className={`kpi-badge kpi-${kpi.status}`}>
-                {kpi.status === 'exceeded' ? '超過' : kpi.status === 'met' ? '達成' : '未達'}
-              </span>
-            </div>
-          ))}
-        </div>
+        <QuarterOkr variant="review" bossId={state.bossId} goal={review.goal} progress={progress} />
 
         <div className="quarter-trust" data-testid="quarter-trust">
           <p className="result-section-label">ステークホルダー信頼</p>

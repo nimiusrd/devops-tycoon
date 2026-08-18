@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BALANCE_REGISTRY,
+  MEMBER_BALANCE,
   PROCESS_BALANCE,
   defineBalanceEntry,
   defineProbabilityDistribution,
@@ -107,10 +108,15 @@ const PROCESS_BALANCE_IDS = [
   'process.stability.ticks',
 ] as const;
 
+const BALANCE_IDS = [
+  ...PROCESS_BALANCE_IDS,
+  ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
+].sort();
+
 describe('型付きバランスレジストリ', () => {
-  it('集約済みの工程値が検証を通り、全安定 ID と既存 export を維持する', () => {
+  it('集約済みの工程・メンバー値が検証を通り、全安定 ID と既存 export を維持する', () => {
     expect(validateBalanceRegistry(BALANCE_REGISTRY)).toEqual([]);
-    expect([...BALANCE_REGISTRY].map((entry) => entry.id).sort()).toEqual(PROCESS_BALANCE_IDS);
+    expect([...BALANCE_REGISTRY].map((entry) => entry.id).sort()).toEqual(BALANCE_IDS);
     expect(CODING_BASE_TICKS).toBe(PROCESS_BALANCE.codingBaseTicks.value);
     expect(AI_CODING_SPEEDUP).toBe(PROCESS_BALANCE.aiCodingSpeedup.value);
     expect(AI_ADOPTION).toBe(PROCESS_BALANCE.aiAdoption.value);

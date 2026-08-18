@@ -5,6 +5,73 @@
 
 | ID | ラベル | 現在値 | 単位 | 許容範囲 | 関連制約 | 説明 | タグ | 派生値 |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
+| `member.formation.ai.incidentBase` | AI配布時Incident基礎加算 | `0.05` | `multiplier` | `0〜1` | — | AIを配布したコーダーへ加えるIncident倍率の基礎加算。 | member, formation, ai, incident | いいえ |
+| `member.formation.ai.incidentMasteryWeight` | AI習熟のIncident低減係数 | `0.1` | `multiplier` | `0〜1` | — | AI習熟がAI配布時のIncident倍率を低減する係数。 | member, formation, ai, incident | いいえ |
+| `member.formation.ai.masteryMaximum` | AI習熟正規化倍率の上限 | `1.2` | `multiplier` | `0〜3` | — | AI習熟を正規化した値の上限。 | member, formation, ai, boundary | いいえ |
+| `member.formation.ai.masteryNormalization` | AI習熟正規化基準 | `100` | `points` | `1〜200（整数）` | — | 有効AI習熟をAI配布効果へ換算する基準値。 | member, formation, ai | いいえ |
+| `member.formation.ai.reworkBase` | AI配布時Rework基礎加算 | `0.05` | `multiplier` | `0〜1` | — | AIを配布したコーダーへ加えるRework率の基礎加算。 | member, formation, ai, rework | いいえ |
+| `member.formation.ai.reworkMasteryWeight` | AI習熟のRework低減係数 | `0.14` | `multiplier` | `0〜1` | — | AI習熟がAI配布時のRework率を低減する係数。 | member, formation, ai, rework | いいえ |
+| `member.formation.coding.powerDivisor` | Coding実装力換算除数 | `230` | `count` | `1〜1000（整数）` | — | 実装力をCoding速度倍率へ換算する除数。 | member, formation, coding | いいえ |
+| `member.formation.coding.speedBase` | Coding速度基礎倍率 | `0.7` | `multiplier` | `0〜3` | — | コーダーの実装力を加算する前のCoding速度倍率。 | member, formation, coding | いいえ |
+| `member.formation.coding.speedMaximum` | Coding速度倍率の上限 | `1.8` | `multiplier` | `0〜3` | `member.formation.coding.speedMinimum` ≤ `member.formation.coding.speedMaximum` | Coding速度倍率の上限。 | member, formation, coding, boundary | いいえ |
+| `member.formation.coding.speedMinimum` | Coding速度倍率の下限 | `0.6` | `multiplier` | `0〜3` | `member.formation.coding.speedMinimum` ≤ `member.formation.coding.speedMaximum` | コーダーがいるときのCoding速度倍率の下限。 | member, formation, coding, boundary | いいえ |
+| `member.formation.codingSlotBonus.maximum` | Coding並列枠ボーナスの上限 | `3` | `count` | `0〜20（整数）` | `member.formation.codingSlotBonus.minimum` ≤ `member.formation.codingSlotBonus.maximum` | コーダー人数から得るCoding並列枠ボーナスの上限。 | member, formation, coding, boundary | いいえ |
+| `member.formation.codingSlotBonus.minimum` | Coding並列枠ボーナスの下限 | `0` | `count` | `0〜20（整数）` | `member.formation.codingSlotBonus.minimum` ≤ `member.formation.codingSlotBonus.maximum` | コーダー人数から得るCoding並列枠ボーナスの下限。 | member, formation, coding, boundary | いいえ |
+| `member.formation.focusBonus.maximum` | シニアFocusボーナスの上限 | `2` | `count` | `0〜20（整数）` | — | 稼働シニア人数から得るFocusボーナスの上限。 | member, formation, focus, boundary | いいえ |
+| `member.formation.incidentRate.maximum` | 編成Incident倍率の上限 | `1.6` | `multiplier` | `0〜3` | `member.formation.incidentRate.minimum` ≤ `member.formation.incidentRate.maximum` | 編成から得るIncident倍率をclampする上限。 | member, formation, incident, boundary | いいえ |
+| `member.formation.incidentRate.minimum` | 編成Incident倍率の下限 | `0.6` | `multiplier` | `0〜3` | `member.formation.incidentRate.minimum` ≤ `member.formation.incidentRate.maximum` | 編成から得るIncident倍率をclampする下限。 | member, formation, incident, boundary | いいえ |
+| `member.formation.noCoder.codingSpeed` | コーダー不在時Coding倍率 | `0.15` | `multiplier` | `0〜1` | — | 稼働コーダーがいないときのCoding速度倍率。 | member, formation, coding, boundary | いいえ |
+| `member.formation.noCoder.slotPenalty` | コーダー不在時並列枠ペナルティ | `-99` | `count` | `-200〜0（整数）` | — | コーダー不在時にCoding並列枠へ加えるペナルティ。 | member, formation, coding, boundary | いいえ |
+| `member.formation.review.efficiencyBase` | Review効率基礎倍率 | `0.7` | `multiplier` | `0〜3` | — | レビュアーのレビュー力を加算する前のReview効率倍率。 | member, formation, review | いいえ |
+| `member.formation.review.efficiencyMaximum` | Review効率倍率の上限 | `1.8` | `multiplier` | `0〜3` | `member.formation.review.efficiencyMinimum` ≤ `member.formation.review.efficiencyMaximum` | Review効率倍率の上限。 | member, formation, review, boundary | いいえ |
+| `member.formation.review.efficiencyMinimum` | Review効率倍率の下限 | `0.55` | `multiplier` | `0〜3` | `member.formation.review.efficiencyMinimum` ≤ `member.formation.review.efficiencyMaximum` | Review効率倍率の下限。 | member, formation, review, boundary | いいえ |
+| `member.formation.review.powerDivisor` | Review力換算除数 | `200` | `count` | `1〜1000（整数）` | — | レビュー力をReview効率倍率へ換算する除数。 | member, formation, review | いいえ |
+| `member.formation.reviewCapacity.base` | Review容量基礎倍率 | `0.8` | `multiplier` | `0〜3` | — | レビュアー人数を加算する前のReview容量倍率。 | member, formation, review | いいえ |
+| `member.formation.reviewCapacity.maximum` | Review容量倍率の上限 | `1.6` | `multiplier` | `0〜3` | `member.formation.reviewCapacity.minimum` ≤ `member.formation.reviewCapacity.maximum` | Review容量倍率の上限。 | member, formation, review, boundary | いいえ |
+| `member.formation.reviewCapacity.minimum` | Review容量倍率の下限 | `0.8` | `multiplier` | `0〜3` | `member.formation.reviewCapacity.minimum` ≤ `member.formation.reviewCapacity.maximum` | Review容量倍率の下限。 | member, formation, review, boundary | いいえ |
+| `member.formation.reviewCapacity.perReviewer` | レビュアーごとのReview容量 | `0.18` | `multiplier` | `0〜1` | — | レビュアー1人ごとに加えるReview容量倍率。 | member, formation, review | いいえ |
+| `member.formation.reworkRate.maximum` | 編成Rework率補正の上限 | `0.3` | `multiplier` | `-1〜1` | `member.formation.reworkRate.minimum` ≤ `member.formation.reworkRate.maximum` | 編成から得るRework率補正をclampする上限。 | member, formation, rework, boundary | いいえ |
+| `member.formation.reworkRate.minimum` | 編成Rework率補正の下限 | `-0.3` | `multiplier` | `-1〜1` | `member.formation.reworkRate.minimum` ≤ `member.formation.reworkRate.maximum` | 編成から得るRework率補正をclampする下限。 | member, formation, rework, boundary | いいえ |
+| `member.growth.learning.junior` | ジュニア学習倍率 | `1.3` | `multiplier` | `0〜3` | — | ジュニアがスプリントで得る経験値へ掛ける学習倍率。 | member, growth | いいえ |
+| `member.growth.learning.middle` | ミドル学習倍率 | `1` | `multiplier` | `0〜3` | — | ミドルがスプリントで得る経験値へ掛ける学習倍率。 | member, growth | いいえ |
+| `member.growth.learning.senior` | シニア学習倍率 | `0.7` | `multiplier` | `0〜3` | — | シニアがスプリントで得る経験値へ掛ける学習倍率。 | member, growth | いいえ |
+| `member.growth.levelUp.aiMastery` | レベルアップAI習熟増分 | `2` | `points` | `0〜20（整数）` | — | レベルアップ1回で増えるAI習熟。 | member, growth, ability, ai | いいえ |
+| `member.growth.levelUp.implementation` | レベルアップ実装力増分 | `3` | `points` | `0〜20（整数）` | — | レベルアップ1回で増える実装力。 | member, growth, ability | いいえ |
+| `member.growth.levelUp.review` | レベルアップレビュー力増分 | `3` | `points` | `0〜20（整数）` | — | レベルアップ1回で増えるレビュー力。 | member, growth, ability | いいえ |
+| `member.growth.promotion.middleLevel` | ミドル昇格レベル | `4` | `count` | `1〜100（整数）` | `member.growth.promotion.middleLevel` ≤ `member.growth.promotion.seniorLevel` | ジュニアからミドルへ昇格できるレベル。 | member, growth, promotion | いいえ |
+| `member.growth.promotion.seniorLevel` | シニア昇格レベル | `8` | `count` | `1〜100（整数）` | `member.growth.promotion.middleLevel` ≤ `member.growth.promotion.seniorLevel` | ミドルからシニアへ昇格できるレベル。 | member, growth, promotion | いいえ |
+| `member.growth.staminaMaxPerLevel` | レベルごとのスタミナ上限増分 | `2` | `points` | `0〜20（整数）` | — | レベル1からのレベル差1ごとに加えるスタミナ上限。 | member, growth, stamina | いいえ |
+| `member.growth.xp.gainBase` | スプリントXP基礎値 | `18` | `points` | `0〜100` | — | 完了件数による加算前のスプリントXP。 | member, growth, xp | いいえ |
+| `member.growth.xp.gainMaximum` | スプリントXP上限 | `70` | `points` | `0〜200` | `member.growth.xp.gainMinimum` ≤ `member.growth.xp.gainMaximum` | スプリントXPをclampする上限。 | member, growth, xp, boundary | いいえ |
+| `member.growth.xp.gainMinimum` | スプリントXP下限 | `18` | `points` | `0〜100` | `member.growth.xp.gainMinimum` ≤ `member.growth.xp.gainMaximum` | スプリントXPをclampする下限。 | member, growth, xp, boundary | いいえ |
+| `member.growth.xp.gainPerDone` | 完了件数ごとのXP | `1.2` | `points` | `0〜10` | — | スプリント完了件数1件ごとに加えるXP。 | member, growth, xp | いいえ |
+| `member.growth.xp.levelBase` | レベル1の必要XP | `80` | `points` | `0〜1000（整数）` | — | レベル1から次のレベルへ進むために必要な基礎XP。 | member, growth, xp | いいえ |
+| `member.growth.xp.levelStep` | レベルごとの必要XP増分 | `30` | `points` | `0〜500（整数）` | — | 必要XPをレベルごとに増やす固定XP。 | member, growth, xp | いいえ |
+| `member.leave.maximumProbability` | 休職最大確率 | `0.5` | `probability` | `0〜1` | — | スタミナ0のときの休職確率。 | member, leave | いいえ |
+| `member.leave.threshold` | 休職判定スタミナ閾値 | `14` | `points` | `0〜100（整数）` | — | このスタミナ以下のメンバーに休職判定を行う。 | member, leave, stamina, boundary | いいえ |
+| `member.load.reviewHp.minimum` | Review HP負荷倍率の下限 | `0.65` | `multiplier` | `0〜1` | — | レビュアー人数によるReview HP負荷倍率の下限。 | member, load, review, senior-hp, boundary | いいえ |
+| `member.load.reviewHp.reliefPerReviewer` | レビュアーごとのHP負荷緩和 | `0.15` | `multiplier` | `0〜1` | — | レビュアー1人増加ごとのReview HP単価の緩和係数。 | member, load, review, senior-hp | いいえ |
+| `member.load.seniorHp.minimum` | シニアHP負荷倍率の下限 | `0.75` | `multiplier` | `0〜1` | — | 稼働人数によるシニアHP負荷倍率の下限。 | member, load, senior-hp, boundary | いいえ |
+| `member.load.seniorHp.reliefPerMember` | 稼働人数ごとのシニアHP負荷緩和 | `0.08` | `multiplier` | `0〜1` | — | 基準人数を超えた稼働人数1人ごとのシニアHP負荷緩和係数。 | member, load, senior-hp | いいえ |
+| `member.load.staminaShare.baseline` | スタミナ分散の基準人数 | `3` | `count` | `1〜20（整数）` | — | 人数によるスタミナ消費分散の基準稼働人数。 | member, load, stamina | いいえ |
+| `member.load.staminaShare.minimum` | スタミナ分散倍率の下限 | `0.5` | `multiplier` | `0〜1` | — | 人数増加によるスタミナ消費緩和倍率の下限。 | member, load, stamina, boundary | いいえ |
+| `member.rank.multiplier.junior` | ジュニア能力寄与倍率 | `0.82` | `multiplier` | `0〜3` | — | ジュニアの実装力・レビュー力・AI習熟へ掛けるランク倍率。 | member, rank, ability | いいえ |
+| `member.rank.multiplier.middle` | ミドル能力寄与倍率 | `1` | `multiplier` | `0〜3` | — | ミドルの実装力・レビュー力・AI習熟へ掛けるランク倍率。 | member, rank, ability | いいえ |
+| `member.rank.multiplier.senior` | シニア能力寄与倍率 | `1.25` | `multiplier` | `0〜3` | — | シニアの実装力・レビュー力・AI習熟へ掛けるランク倍率。 | member, rank, ability | いいえ |
+| `member.recovery.betweenSprints` | スプリント間スタミナ回復 | `16` | `points` | `0〜100（整数）` | — | スプリント完了後に回復する基礎スタミナ。 | member, recovery, stamina | いいえ |
+| `member.recovery.rest` | 休息時スタミナ回復 | `45` | `points` | `0〜200（整数）` | — | 休息のheal選択で回復する基礎スタミナ。 | member, recovery, stamina, rest | いいえ |
+| `member.recruit.cost` | 採用費 | `25` | `currency` | `0〜1000（整数）` | — | メンバー1人を採用するための予算コスト。 | member, recruit, economy | いいえ |
+| `member.recruit.rosterCapacity` | ロスター人数上限 | `6` | `count` | `1〜20（整数）` | — | 個体ロスターへ在籍できるメンバー人数の上限。 | member, recruit, roster, boundary | いいえ |
+| `member.reorg.minimumActive` | 再編後の最低稼働人数 | `2` | `count` | `0〜20（整数）` | — | 組織再編でメンバーを離脱させずに維持する最低稼働人数。 | member, reorg, boundary | いいえ |
+| `member.return.leaveRecoveryMultiplier` | 休職中スタミナ回復倍率 | `1.25` | `multiplier` | `1〜3` | — | 休職中のメンバーへ掛けるスタミナ回復倍率。 | member, return, stamina | いいえ |
+| `member.return.ratio` | 復職スタミナ割合 | `0.4` | `probability` | `0〜1` | — | 休職者が復職するために必要なスタミナ上限に対する割合。 | member, return, stamina, boundary | いいえ |
+| `member.stamina.drain.aiRelief` | AI配布時スタミナ消費倍率 | `0.85` | `multiplier` | `0〜1` | — | AIを配布したCoding担当へ掛けるスタミナ消費倍率。 | member, stamina, ai | いいえ |
+| `member.stamina.drain.base` | スプリント基礎スタミナ消費 | `22` | `points` | `0〜100（整数）` | — | スプリント1回あたりの基礎スタミナ消費。 | member, stamina | いいえ |
+| `member.stamina.drain.coding` | Codingスタミナ消費倍率 | `1` | `multiplier` | `0〜3` | — | Coding担当へ掛けるスタミナ消費倍率。 | member, stamina, coding | いいえ |
+| `member.stamina.drain.review` | Reviewスタミナ消費倍率 | `1.25` | `multiplier` | `0〜3` | — | Review担当へ掛けるスタミナ消費倍率。 | member, stamina, review | いいえ |
+| `member.stamina.max.junior` | ジュニア基礎スタミナ上限 | `70` | `points` | `1〜200（整数）` | — | レベル1ジュニアの基礎スタミナ上限。 | member, stamina | いいえ |
+| `member.stamina.max.middle` | ミドル基礎スタミナ上限 | `85` | `points` | `1〜200（整数）` | — | レベル1ミドルの基礎スタミナ上限。 | member, stamina | いいえ |
+| `member.stamina.max.senior` | シニア基礎スタミナ上限 | `95` | `points` | `1〜200（整数）` | — | レベル1シニアの基礎スタミナ上限。 | member, stamina | いいえ |
 | `process.ai.adoption` | AI 導入時の既定採用率 | `0.85` | `probability` | `0〜1` | — | AI 導入済みの組織で、各タスクが AI 支援を使う既定確率。 | process, ai | いいえ |
 | `process.ai.deliveryValue.literacyWeight` | AI 出荷価値のリテラシー係数 | `0.85` | `multiplier` | `0〜2` | — | AI 支援タスクの出荷価値へ AI リテラシーに応じて加える係数。 | process, ai, delivery | いいえ |
 | `process.ai.dependency.perTask` | AI 支援タスクごとの依存度増分 | `2.2` | `percent` | `0〜20` | — | AI 支援を割り当てたタスク 1 件ごとに増える AI 依存度。 | process, ai, dependency | いいえ |

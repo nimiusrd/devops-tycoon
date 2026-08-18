@@ -13,6 +13,7 @@ import { EVOLUTION_NODES } from '../../src/data/evolution';
 import { CARD_DEFS, getCard } from '../../src/data/cards';
 import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
+import { MEMBER_BALANCE } from '../../src/data/balance';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
@@ -1064,14 +1065,6 @@ const ELITE_HEADROOM_WEIGHT = 0.15;
 /** 技術的負債（0〜100 を 0〜1 に正規化）1あたりの重み。負債が高いほど手戻りへ回る。 */
 const ELITE_DEBT_WEIGHT = 4;
 
-/**
- * `recoverStamina`（`src/sim/member/roster.ts`）の非公開定数の写し。
- * 休職者は回復量が `LEAVE_RECOVERY_MUL` 倍になり、`staminaMax * RETURN_RATIO` を超えると復帰する。
- * export されていないため複製している。ロスター側を変えたらここも合わせること。
- */
-const RETURN_RATIO = 0.4;
-const LEAVE_RECOVERY_MUL = 1.25;
-
 /** 選択肢のうち評価に必要な部分。`leadsTo` を見るため `outcome` だけでは足りない。 */
 interface ScorableChoice {
   outcome: Record<string, unknown>;
@@ -1228,13 +1221,15 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
       score += applied(ctx.org.seniorHp, REST_HEAL + ctx.restHealBonus) * 0.5;
       score += applied(ctx.org.morale, REST_MORALE_HEAL) * 0.3;
       // **個体スタミナの回復と復職も採点する。** `recoverStamina` は休職者に
-      // `LEAVE_RECOVERY_MUL` 倍を与え、`staminaMax * RETURN_RATIO` を超えたら復帰させる。
+      // 休職者にはレジストリの復職回復倍率を与え、復職割合を超えたら復帰させる。
       for (const m of ctx.roster.members) {
-        const gain = Math.round(REST_STAMINA_RECOVER * (m.onLeave ? LEAVE_RECOVERY_MUL : 1));
+        const gain = Math.round(
+          REST_STAMINA_RECOVER * (m.onLeave ? MEMBER_BALANCE.leaveRecoveryMultiplier.value : 1),
+        );
         const after = Math.min(m.staminaMax, m.stamina + gain);
         score += (after - m.stamina) * 0.02;
         // 復職は戦力が1人戻るので、スタミナ量とは別枠で重く見る。
-        if (m.onLeave && after >= m.staminaMax * RETURN_RATIO) score += 5;
+        if (m.onLeave && after >= m.staminaMax * MEMBER_BALANCE.returnRatio.value) score += 5;
       }
     } else if (choiceAtRest === 'repay') {
       score += Math.min(REST_REPAY, ctx.org.techDebt) * 0.4;
@@ -1466,7 +1461,12 @@ function observeOpportunityWindows(
 }
 
 function counterfactualEnabled(): boolean {
-  return process.env.PT_COUNTERFACTUAL === '1';
+  const processLike = (
+    globalThis as typeof globalThis & {
+      process?: { env?: Record<string, string | undefined> };
+    }
+  ).process;
+  return processLike?.env?.PT_COUNTERFACTUAL === '1';
 }
 
 function rememberCounterfactualFrame(

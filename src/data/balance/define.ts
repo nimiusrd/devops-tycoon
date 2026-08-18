@@ -15,6 +15,14 @@ const ORDERED_BOUND_PAIRS = [
   ['process.security.level.minimum', 'process.security.level.maximum'],
   ['process.security.rivalLevel.minimum', 'process.security.level.maximum'],
   ['process.security.fragility.minimum', 'process.security.fragility.maximum'],
+  ['member.growth.promotion.middleLevel', 'member.growth.promotion.seniorLevel'],
+  ['member.growth.xp.gainMinimum', 'member.growth.xp.gainMaximum'],
+  ['member.formation.coding.speedMinimum', 'member.formation.coding.speedMaximum'],
+  ['member.formation.review.efficiencyMinimum', 'member.formation.review.efficiencyMaximum'],
+  ['member.formation.reviewCapacity.minimum', 'member.formation.reviewCapacity.maximum'],
+  ['member.formation.reworkRate.minimum', 'member.formation.reworkRate.maximum'],
+  ['member.formation.incidentRate.minimum', 'member.formation.incidentRate.maximum'],
+  ['member.formation.codingSlotBonus.minimum', 'member.formation.codingSlotBonus.maximum'],
 ] as const;
 
 /** 合計が固定される係数の組み合わせ。 */

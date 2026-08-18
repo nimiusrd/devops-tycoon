@@ -3,6 +3,7 @@
  * ミューテーションテストの Survived / 境界 mutation を exact 断言で潰す（旧 RI-91-B1）。
  */
 import { describe, expect, it } from 'vitest';
+import { MEMBER_BALANCE } from '../../../src/data/balance';
 import { TASK_BASE_VALUE } from '../../../src/sim/model/process';
 import { activeAssignedCount, activeReviewerCount } from '../../../src/sim/member';
 import {
@@ -10,6 +11,7 @@ import {
   coarseShipToCompleted,
   createTeamRoster,
   estimateActiveAssignedCount,
+  estimateRosterCoderCount,
   estimateRosterReviewerCount,
   stripMetricAdjustments,
 } from '../../../src/sim/orgscale/teamState';
@@ -357,6 +359,17 @@ describe('RI-91-B1 teamState survived mutants', () => {
         expect(estimateActiveAssignedCount(n)).toBe(activeAssignedCount(roster));
         expect(estimateRosterReviewerCount(n)).toBe(activeReviewerCount(roster));
       }
+    });
+
+    it('RI-109: ロスター上限は粗粒度推定とチーム入り込みの生成で一致する', () => {
+      const engineers = MEMBER_BALANCE.rosterCapacity.value + 4;
+      const roster = createTeamRoster('ri109-roster-cap', 'team', engineers, 100);
+      const coders = roster.members.filter((m) => m.assignment === 'coding').length;
+
+      expect(roster.members).toHaveLength(MEMBER_BALANCE.rosterCapacity.value);
+      expect(coders).toBe(estimateRosterCoderCount(engineers));
+      expect(activeAssignedCount(roster)).toBe(estimateActiveAssignedCount(engineers));
+      expect(activeReviewerCount(roster)).toBe(estimateRosterReviewerCount(engineers));
     });
 
     it('RI-73: 粗粒度でもレビュアー人数でシニア消耗が薄まる', () => {

@@ -17,7 +17,7 @@ describe('バランスパラメータ表のMarkdown生成', () => {
     expect(markdown).toContain(
       '| ID | ラベル | 現在値 | 単位 | 許容範囲 | 関連制約 | 説明 | タグ | 派生値 |',
     );
-    expect(markdown.match(/^\| `process\./gm)).toHaveLength(entries.length);
+    expect(markdown.match(/^\| `[^`]+` \|/gm)).toHaveLength(entries.length);
     expect(markdown).toContain(
       '`process.review.hpEfficiency.floor` + `process.review.hpEfficiency.range` = 1',
     );

@@ -122,8 +122,17 @@ describe('planStakeholderNegotiation (RI-130)', () => {
       trust: { management: 80, customers: 40, team: 70 },
     });
 
-    expect(offerIds(hardline)).toEqual(available);
-    expect(offerIds(cooperative)).toEqual(available);
+    expect(new Set(offerIds(hardline))).toEqual(new Set(available));
+    expect(offerIds(hardline)).toEqual(offerIds(cooperative));
+    expect(offerIds(hardline)).toEqual([
+      'extend_deadline',
+      'request_budget',
+      'pause_ai_rollout',
+      'cut_scope',
+      'quality_pivot',
+      'reorg_teams',
+      'stakeholder_care',
+    ]);
     expect(hardline.map((panel) => panel.negotiator)).toEqual([...NEGOTIATION_PANEL_ORDER]);
     expect(hardline.find((panel) => panel.negotiator === 'management')?.stance).toBe('hardline');
     expect(cooperative.find((panel) => panel.negotiator === 'management')?.stance).toBe(

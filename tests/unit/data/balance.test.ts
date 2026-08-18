@@ -296,8 +296,12 @@ describe('型付きバランスレジストリ', () => {
     );
     expect(ACTION_BALANCE.taskProgressMinimum.value).toBeGreaterThanOrEqual(0);
     expect(ACTION_BALANCE.taskProgressMaximum.value).toBeLessThanOrEqual(1);
+    expect(ACTION_BALANCE.taskProgressMaximum.allowedRange.min).toBeGreaterThanOrEqual(0.999);
     expect(ACTION_BALANCE.organizationStatMinimum.value).toBeGreaterThanOrEqual(0);
+    expect(ACTION_BALANCE.organizationStatMinimum.allowedRange).toEqual({ min: 0, max: 0 });
     expect(ACTION_BALANCE.organizationStatMaximum.value).toBeLessThanOrEqual(100);
+    expect(ACTION_BALANCE.interruptReviewCount.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.pairReviewCount.allowedRange.min).toBe(1);
   });
 
   it('Security 脆弱度の分母となる閾値は正数に制限する', () => {
@@ -467,6 +471,12 @@ describe('型付きバランスレジストリ', () => {
       maximum: ACTION_BALANCE.firefightHpCostMaximum,
       invertedMinimum: 7,
       invertedMaximum: 6,
+    },
+    {
+      minimum: ACTION_BALANCE.assignTaskIdealMoraleMinimum,
+      maximum: ACTION_BALANCE.assignTaskMoraleCost,
+      invertedMinimum: 4,
+      invertedMaximum: 3,
     },
   ])(
     '$minimum.id と $maximum.id が逆転した場合は検証で拒否する',

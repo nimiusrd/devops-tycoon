@@ -25,6 +25,7 @@ const ORDERED_BOUND_PAIRS = [
   ['action.task.progress.minimum', 'action.task.progress.maximum'],
   ['action.organizationStat.minimum', 'action.organizationStat.maximum'],
   ['action.firefight.seniorHpCost', 'action.firefight.seniorHpCostMaximum'],
+  ['action.assignTask.idealMoraleMinimum', 'action.assignTask.moraleCost'],
 ] as const;
 
 /** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */

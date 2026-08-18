@@ -464,6 +464,8 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
 
   test.skip(!atReview.ok, `seed が missed_adjustable にならない: ${JSON.stringify(atReview)}`);
   await expect(page.getByTestId('quarter-review')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId('review-history')).toBeVisible();
+  await expect(page.getByTestId('review-history-row')).toHaveCount(1);
   await page.locator('[data-adjustment="cut_scope"]').click();
   await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
   const quarterNumber = await page.evaluate(
@@ -532,6 +534,9 @@ test('継続リソース枯渇→四半期レビュー→ラン終了', async ({
   await expect(runResult).toBeVisible({ timeout: 5000 });
   await expect(runResult).toHaveAttribute('data-quarter-outcome', expectedOutcome);
   await expect(page.getByTestId('run-end-status')).toBeVisible();
+  await expect(page.getByTestId('review-history')).toBeVisible();
+  await expect(page.getByTestId('review-history-row')).toHaveCount(1);
+  await expect(page.getByTestId('review-history-kpis')).toBeVisible();
 });
 
 const RI22_TERMINAL_SEEDS: readonly TerminalQuarterSeed[] = [
@@ -618,6 +623,9 @@ for (const entry of RI22_TERMINAL_SEEDS) {
     );
 
     test.skip(!atReview.ok, `seed が ${expectedOutcome} にならない: ${JSON.stringify(atReview)}`);
+    await expect(page.getByTestId('review-history')).toBeVisible();
+    await expect(page.getByTestId('review-history-row')).toHaveCount(atReview.quarterNumber);
+    await expect(page.getByTestId('review-history-kpis')).toBeVisible();
 
     const theme = quarterFailureTheme(expectedOutcome)!;
     const runResult = page.getByTestId('run-result');

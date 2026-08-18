@@ -4,7 +4,10 @@
  * 効果・代償・表示文言をデータで持ち、シミュレーションは純関数で適用する（architecture §4.3）。
  */
 import type { CardEffects } from '../sim/types';
-import type { GoalAdjustmentId } from '../sim/run/types';
+import type { GoalAdjustmentId, StakeholderId } from '../sim/run/types';
+
+/** 目標修正の交渉相手。`all` は三者協議（RI-130）。 */
+export type AdjustmentNegotiator = StakeholderId | 'all';
 
 /** 次四半期だけ効く物理キャリーオーバー（RI-83）。 */
 export type GoalNextQuarterEffects = Partial<
@@ -29,6 +32,11 @@ export interface GoalAdjustmentDef {
   id: GoalAdjustmentId;
   label: string;
   description: string;
+  /**
+   * 交渉相手（RI-130）。信頼差の主軸とは別に、提示条件の相手を固定する。
+   * `all` は三者協議（stakeholder_care）。
+   */
+  negotiator: AdjustmentNegotiator;
   /** 即時の信頼変化。 */
   trustDelta: { management?: number; customers?: number; team?: number };
   /** 即時の予算変化。 */
@@ -72,6 +80,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     id: 'cut_scope',
     label: 'スコープ削減',
     description: 'Delivery 目標を下げ、次期へ継続しやすくする。顧客の期待値を調整する。',
+    negotiator: 'customers',
     trustDelta: { customers: -15 },
     budgetDelta: 0,
     // RI-68: 絶対減算は累計スケールで目標を潰すため、緩和は乗算のみにする。
@@ -83,6 +92,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     id: 'extend_deadline',
     label: '期限延長',
     description: '品質と士気を守って再挑戦する。経営の patience を消費し、予算も使う。',
+    negotiator: 'management',
     trustDelta: { management: -12 },
     budgetDelta: -10,
     goalEffects: { qualityAdd: 5, moraleAdd: 5, deliveryMul: 0.9 },
@@ -98,6 +108,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     id: 'quality_pivot',
     label: '品質改善ピボット',
     description: 'Tech Debt / Incident を下げる。短期の出荷評価は下がる。',
+    negotiator: 'customers',
     trustDelta: { customers: -5 },
     budgetDelta: 0,
     goalEffects: { techDebtLimitAdd: 15, incidentLimitAdd: 3, deliveryMul: 0.85 },
@@ -114,6 +125,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     id: 'request_budget',
     label: '追加予算申請',
     description: '採用・AIツール・外部支援を得る。次期の予算制約が厳しくなる。',
+    negotiator: 'management',
     // RI-79: 注意帯（21〜25）でも選べ、申請後も危機閾値（15）より上に残す。
     trustDelta: { management: -5 },
     budgetDelta: 20,
@@ -130,6 +142,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     id: 'pause_ai_rollout',
     label: 'AI 導入一時停止',
     description: 'Review / Rework を安定化する。AI Adoption 評価と短期速度が下がる。',
+    negotiator: 'management',
     trustDelta: { management: -8 },
     budgetDelta: 0,
     goalEffects: { aiAdoptionAdd: -15, deliveryMul: 0.92 },
@@ -141,6 +154,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     id: 'reorg_teams',
     label: '組織再編',
     description: '属人化やレビュー停止をリセットする。士気とチーム信頼が下がる。',
+    negotiator: 'team',
     trustDelta: { team: -20 },
     budgetDelta: -5,
     goalEffects: { moraleAdd: -5 },
@@ -158,6 +172,7 @@ export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
     label: 'ステークホルダーケア',
     description:
       '説明責任と期待調整で信頼を戻す。予算と次期 Delivery 目標の上積みを払う（RI-79）。',
+    negotiator: 'all',
     trustDelta: { management: 12, customers: 10, team: 8 },
     budgetDelta: -12,
     // deliveryAdd のみ（乗算緩和は付けない）。次期目標を上げて代償にする。

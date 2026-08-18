@@ -22,6 +22,18 @@ const FIXED_TOTAL_PAIRS = [
   ['process.review.hpEfficiency.floor', 'process.review.hpEfficiency.range', 1],
 ] as const;
 
+/** 指定したエントリーに適用される関係制約を、パラメータ表向けに返す。 */
+export function balanceEntryConstraintLabels(entryId: string): readonly string[] {
+  const ordered = ORDERED_BOUND_PAIRS.filter(
+    ([minimumId, maximumId]) => minimumId === entryId || maximumId === entryId,
+  ).map(([minimumId, maximumId]) => `\`${minimumId}\` ≤ \`${maximumId}\``);
+  const fixedTotals = FIXED_TOTAL_PAIRS.filter(
+    ([firstId, secondId]) => firstId === entryId || secondId === entryId,
+  ).map(([firstId, secondId, total]) => `\`${firstId}\` + \`${secondId}\` = ${total}`);
+
+  return [...ordered, ...fixedTotals];
+}
+
 /** 定義時にリテラル型を保つスカラー値ヘルパー。 */
 export function defineBalanceEntry<const Entry extends BalanceEntry>(entry: Entry): Entry {
   return entry;

@@ -416,6 +416,7 @@ describe('RI-87 セキュリティ軸', () => {
       expect(persisted?.extras).toMatchObject({
         coarseSecurityTrustRaw: raw,
         coarseSecurityTrustCount: 1,
+        coarseSecurityTrustAppliedRaw: 0,
       });
       const restored = new RunEngine({
         seed: 'ri108-coarse-minimum-count-restored',
@@ -451,6 +452,8 @@ describe('RI-87 セキュリティ軸', () => {
       sourceInternals.applyCoarseSecurityTrust(raw, 1);
       const legacy = source.exportPersistState()!;
       delete (legacy.extras as { coarseSecurityTrustCount?: unknown }).coarseSecurityTrustCount;
+      delete (legacy.extras as { coarseSecurityTrustAppliedRaw?: unknown })
+        .coarseSecurityTrustAppliedRaw;
 
       const restored = new RunEngine({
         seed: 'ri108-legacy-coarse-count-restored',
@@ -465,6 +468,73 @@ describe('RI-87 セキュリティ軸', () => {
 
       expect(restored.snapshot().stakeholderTrust.customers).toBe(before);
       expect(restored.exportPersistState()?.extras.coarseSecurityTrustCount).toBe(1);
+    } finally {
+      minimumCount.value = defaultValue;
+    }
+  });
+
+  it('最小件数を増やした後の復元でも既適用 raw を二重に反映しない', () => {
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
+    const defaultValue = minimumCount.value;
+    const raw = 2;
+    try {
+      minimumCount.value = 1;
+      const source = new RunEngine({ seed: 'ri108-trust-applied-raw', difficulty: 'normal' });
+      source.startRun();
+      const before = source.snapshot().stakeholderTrust.customers;
+      const sourceInternals = source as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      sourceInternals.applyCoarseSecurityTrust(raw, 1);
+      const persisted = source.exportPersistState()!;
+
+      minimumCount.value = 3;
+      const restored = new RunEngine({
+        seed: 'ri108-trust-applied-raw-restored',
+        difficulty: 'normal',
+      });
+      restored.startRun();
+      restored.hydratePersistState(persisted);
+      const restoredInternals = restored as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      restoredInternals.applyCoarseSecurityTrust(raw, 1);
+      expect(restored.snapshot().stakeholderTrust.customers).toBe(before - raw);
+      restoredInternals.applyCoarseSecurityTrust(raw, 1);
+      expect(restored.snapshot().stakeholderTrust.customers).toBe(
+        before + securityCustomerTrustFromRaw(raw * 3),
+      );
+    } finally {
+      minimumCount.value = defaultValue;
+    }
+  });
+
+  it('最小件数を下げた後の復元では保留 raw をただちに反映する', () => {
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
+    const defaultValue = minimumCount.value;
+    const raw = 2;
+    try {
+      minimumCount.value = 3;
+      const source = new RunEngine({ seed: 'ri108-trust-lower-threshold', difficulty: 'normal' });
+      source.startRun();
+      const before = source.snapshot().stakeholderTrust.customers;
+      const sourceInternals = source as unknown as {
+        applyCoarseSecurityTrust: (raw: number, count: number) => void;
+      };
+      sourceInternals.applyCoarseSecurityTrust(raw, 2);
+      const persisted = source.exportPersistState()!;
+
+      minimumCount.value = 1;
+      const restored = new RunEngine({
+        seed: 'ri108-trust-lower-threshold-restored',
+        difficulty: 'normal',
+      });
+      restored.startRun();
+      restored.hydratePersistState(persisted);
+
+      expect(restored.snapshot().stakeholderTrust.customers).toBe(
+        before + securityCustomerTrustFromRaw(raw),
+      );
     } finally {
       minimumCount.value = defaultValue;
     }

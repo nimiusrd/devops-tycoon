@@ -86,6 +86,11 @@ export interface RunPersistExtras {
    * 最小件数に達するまで raw の適用を保留するため、四半期内で繰り越す。
    */
   coarseSecurityTrustCount?: number;
+  /**
+   * `coarseSecurityTrustRaw` のうち顧客信頼へ反映済みの範囲（RI-108）。
+   * 再開時に最小件数の調整値が変わっても、既適用分を二重計上しない。
+   */
+  coarseSecurityTrustAppliedRaw?: number;
   /** 今ドラフトでのマリガン使用済み（RI-81。旧セーブでは欠落しうる）。 */
   draftMulliganUsed?: boolean;
 }

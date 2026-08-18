@@ -304,6 +304,11 @@ describe('型付きバランスレジストリ', () => {
     expect(ACTION_BALANCE.organizationStatMaximum.allowedRange).toEqual({ min: 100, max: 100 });
     expect(ACTION_BALANCE.interruptReviewCount.allowedRange.min).toBe(1);
     expect(ACTION_BALANCE.pairReviewCount.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.overtimeTicks.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.andonTicks.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.aiThrottleTicks.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.firefightStabilityMinimumBurning.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.andonStabilityReviewMinimum.allowedRange.min).toBe(1);
   });
 
   it('Security 脆弱度の分母となる閾値は正数に制限する', () => {

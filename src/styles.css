@@ -5290,6 +5290,111 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font-weight: 700;
 }
 
+.org-trend-section {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.org-trend-section h3 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.org-trend-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.org-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.org-trend-diagnosis {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.org-trend-diag {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #1f1942;
+}
+.org-trend-q {
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.org-trend-series,
+.org-trend-depts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.org-trend-metric,
+.org-trend-depts > li {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(80px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.org-trend-depts > li {
+  grid-template-columns: 8rem minmax(80px, 1fr);
+}
+.org-trend-label,
+.org-trend-dept-name {
+  color: var(--text-dim);
+}
+.org-trend-last {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.org-trend-dept-series {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+.org-trend-svg {
+  width: 100%;
+  height: 28px;
+  display: block;
+}
+.org-trend-svg-mini {
+  flex: 1 1 0;
+  min-width: 40px;
+}
+.trend-series {
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.trend-series.series-ship {
+  stroke: #7ec8ff;
+}
+.trend-series.series-ai {
+  stroke: var(--sun, #e8c35a);
+}
+.trend-series.series-debt {
+  stroke: var(--coral, #e07a6a);
+}
+.trend-series.series-morale {
+  stroke: var(--mint, #57e08f);
+}
+
 /* 全社マップのアイソメ盤面 */
 .org-field {
   position: relative;

@@ -17,6 +17,7 @@ import {
 } from '../sim/run/quarterReview';
 import { GAME_DB_NAME, openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from './gameDb';
 import { normalizeReplayKeyframes, type ReplayKeyframe } from './replay';
+import { cloneTrendHistory } from '../sim/run/trendHistory';
 
 export type { RunPersistState, RunPersistExtras, RunSavePhase } from '../sim/run/persist';
 export { isRunSavePhase } from '../sim/run/persist';
@@ -26,8 +27,10 @@ export { isRunSavePhase } from '../sim/run/persist';
  * RI-75: タスク床／Delivery 目標倍率の再校正で進行中四半期の目標スケールが変わるため v3 も非互換。
  * RI-84: 安定化再校正で v4 の Delivery 目標を移行する。
  * RI-77: AI 出荷価値倍率後の目標再校正で v5 の Delivery 目標を現行倍率へ移行する。
+ * RI-128: v6 は trendHistory 欠落を空配列へ補完する。
  */
-export const RUN_SAVE_SCHEMA_VERSION = 6 as const;
+export const RUN_SAVE_SCHEMA_VERSION = 7 as const;
+const LEGACY_V6_RUN_SAVE_SCHEMA_VERSION = 6 as const;
 const LEGACY_V5_RUN_SAVE_SCHEMA_VERSION = 5 as const;
 const LEGACY_V4_RUN_SAVE_SCHEMA_VERSION = 4 as const;
 
@@ -279,10 +282,12 @@ function rebuildMigratedQuarterReview(state: RunPersistState): RunPersistState |
 export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRecord(raw)) return null;
   // v1/v2/v3 は破棄。v4（RI-84）・v5（RI-77 再校正前）は Delivery 目標を現行へ移行する。
+  // v6 は trendHistory 欠落を空配列へ補完する（RI-128）。
   const schema = raw.schemaVersion;
   const isLegacyV4 = schema === LEGACY_V4_RUN_SAVE_SCHEMA_VERSION;
   const isLegacyV5 = schema === LEGACY_V5_RUN_SAVE_SCHEMA_VERSION;
-  if (schema !== RUN_SAVE_SCHEMA_VERSION && !isLegacyV4 && !isLegacyV5) return null;
+  const isLegacyV6 = schema === LEGACY_V6_RUN_SAVE_SCHEMA_VERSION;
+  if (schema !== RUN_SAVE_SCHEMA_VERSION && !isLegacyV4 && !isLegacyV5 && !isLegacyV6) return null;
   if (typeof raw.savedAt !== 'number' || !Number.isFinite(raw.savedAt)) return null;
   if (!isRecord(raw.summary) || !isRecord(raw.state)) return null;
 
@@ -343,7 +348,10 @@ export function parseRunSave(raw: unknown): RunSave | null {
       sprintsPlayed: summary.sprintsPlayed,
       status: 'playing',
     },
-    state: stateWithCurrentReview,
+    state: {
+      ...stateWithCurrentReview,
+      trendHistory: cloneTrendHistory(stateWithCurrentReview.trendHistory),
+    },
     replayKeyframes: normalizeReplayKeyframes(raw.replayKeyframes),
   };
 }

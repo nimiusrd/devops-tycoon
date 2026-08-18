@@ -565,6 +565,7 @@ function AppContent({ game }: AppProps) {
                   org={state.orgScale}
                   budget={state.budget}
                   zoom={zoom}
+                  trendHistory={state.trendHistory}
                   onFocusDept={run.focusDept}
                   onFocusTeam={run.focusTeam}
                   onApplyLever={run.applyOrgLever}

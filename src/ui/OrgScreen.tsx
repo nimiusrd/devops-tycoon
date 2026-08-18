@@ -12,11 +12,13 @@ import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
 import { ORG_VIEW } from '../render/orgBoardScene';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
+import type { QuarterTrendSnapshot } from '../sim/run/types';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { AspectStage } from './AspectStage';
 import { EffectTagList } from './EffectTagList';
 import { OrgBoard } from './OrgBoard';
 import { OrgDeptComparison } from './OrgDeptComparison';
+import { OrgTrendHistory } from './OrgTrendHistory';
 import { OrgInfraHubPill } from './OrgHub';
 import type { OrgPixiFieldHandle } from './OrgPixiField';
 import { usePixiRenderer } from './usePixiRenderer';
@@ -31,6 +33,7 @@ export interface OrgScreenProps {
   org: OrgScaleState;
   budget: number;
   zoom: ZoomState;
+  trendHistory: readonly QuarterTrendSnapshot[];
   onFocusDept: (id: string) => void;
   onFocusTeam: (id: string) => void;
   onApplyLever: (leverId: string) => void;
@@ -40,6 +43,7 @@ export function OrgScreen({
   org,
   budget,
   zoom,
+  trendHistory,
   onFocusDept,
   onFocusTeam,
   onApplyLever,
@@ -54,6 +58,10 @@ export function OrgScreen({
   const deptColor = useCallback((id: string) => deptColorMap[id] ?? '#6b4a9e', [deptColorMap]);
   const diagnosis = diagnosisView(org.diagnosis);
   const theme = diagnosisTheme(org.diagnosis);
+  const departmentNames = useMemo(
+    () => Object.fromEntries(org.departments.map((d) => [d.def.id, d.def.name])),
+    [org.departments],
+  );
 
   const handleFocusDept = useCallback(
     (deptId: string) => {
@@ -113,6 +121,8 @@ export function OrgScreen({
         />
         <Stat label="四半期予算" value={budget} tone="budget" />
       </dl>
+
+      <OrgTrendHistory history={trendHistory} departmentNames={departmentNames} />
 
       <div className="org-depts" data-testid="org-depts">
         {org.departments.map((d) => (

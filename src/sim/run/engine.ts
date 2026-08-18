@@ -2362,6 +2362,13 @@ export class RunEngine {
       this.goalCarryoverId = null;
     }
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
+    if (this.winEvalOrg) {
+      this.winEvalOrg.securityLevel = clamp(
+        this.winEvalOrg.securityLevel,
+        PROCESS_BALANCE.securityLevelMinimum.value,
+        PROCESS_BALANCE.securityLevelMaximum.value,
+      );
+    }
     this.allowedCards = new Set(cloned.extras.allowedCards);
     this.allowedRelics = new Set(cloned.extras.allowedRelics);
     this.preferredCards = Array.isArray(cloned.extras.preferredCardIds)

@@ -2147,7 +2147,10 @@ export class RunEngine {
 
   /** 反実仮想フレームから同一乱数状態を復元する（RI-101）。 */
   hydrateCounterfactualFrame(frame: CounterfactualFrame): void {
-    this.applyPersistFrame(frame.persist as RunReplayFrame, { migrateLegacyAiDependency: false });
+    this.applyPersistFrame(frame.persist as RunReplayFrame, {
+      migrateLegacyAiDependency: false,
+      normalizeSecurityLevel: true,
+    });
     this.sprint = frame.sprint ? structuredClone(frame.sprint) : null;
     this.sprintTick = frame.sprintTick;
     this.accumulatorMs = frame.accumulatorMs;
@@ -2256,7 +2259,10 @@ export class RunEngine {
     if (!isRunSavePhase(state.phase) || state.status !== 'playing') {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
-    this.applyPersistFrame(state, { migrateLegacyAiDependency: true });
+    this.applyPersistFrame(state, {
+      migrateLegacyAiDependency: true,
+      normalizeSecurityLevel: true,
+    });
     // 現行スキーマでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
     this.diagnosis = diagnose(this.org, this.totals);
   }
@@ -2267,12 +2273,15 @@ export class RunEngine {
       throw new Error(`cannot hydrate replay frame in phase=${frame.phase}`);
     }
     // リプレイは記録値の read-only 表示。旧セーブ移行は再開用 hydrate に限定する。
-    this.applyPersistFrame(frame, { migrateLegacyAiDependency: false });
+    this.applyPersistFrame(frame, {
+      migrateLegacyAiDependency: false,
+      normalizeSecurityLevel: false,
+    });
   }
 
   private applyPersistFrame(
     state: RunReplayFrame,
-    options: { migrateLegacyAiDependency: boolean },
+    options: { migrateLegacyAiDependency: boolean; normalizeSecurityLevel: boolean },
   ): void {
     const cloned = structuredClone(state);
     this.seed = cloned.seed;
@@ -2295,11 +2304,15 @@ export class RunEngine {
     this.pendingShopHandIndices = [...(cloned.pendingShopHandIndices ?? [])];
     this.org = cloned.org;
     // RI-87: 旧セーブに securityLevel が無い場合は品質を近似値として補完する。
-    this.org.securityLevel = clamp(
-      typeof this.org.securityLevel === 'number' ? this.org.securityLevel : this.org.quality,
-      PROCESS_BALANCE.securityLevelMinimum.value,
-      PROCESS_BALANCE.securityLevelMaximum.value,
-    );
+    this.org.securityLevel = options.normalizeSecurityLevel
+      ? clamp(
+          typeof this.org.securityLevel === 'number' ? this.org.securityLevel : this.org.quality,
+          PROCESS_BALANCE.securityLevelMinimum.value,
+          PROCESS_BALANCE.securityLevelMaximum.value,
+        )
+      : typeof this.org.securityLevel === 'number'
+        ? this.org.securityLevel
+        : this.org.quality;
     this.deck = cloned.deck.map(cloneCardInstance);
     this.relics = [...cloned.relics];
     this.bossRelicReward = cloned.bossRelicReward;
@@ -2380,11 +2393,15 @@ export class RunEngine {
       this.teams = this.teams.map((t) => {
         const next = {
           ...t,
-          securityLevel: clamp(
-            typeof t.securityLevel === 'number' ? t.securityLevel : t.quality,
-            PROCESS_BALANCE.securityLevelMinimum.value,
-            PROCESS_BALANCE.securityLevelMaximum.value,
-          ),
+          securityLevel: options.normalizeSecurityLevel
+            ? clamp(
+                typeof t.securityLevel === 'number' ? t.securityLevel : t.quality,
+                PROCESS_BALANCE.securityLevelMinimum.value,
+                PROCESS_BALANCE.securityLevelMaximum.value,
+              )
+            : typeof t.securityLevel === 'number'
+              ? t.securityLevel
+              : t.quality,
         };
         return { ...next, ...deriveTeamCapacities(next) };
       });

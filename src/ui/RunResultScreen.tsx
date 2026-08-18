@@ -18,6 +18,7 @@ import {
 } from '../state/meta';
 import type { LoseReason, RunState } from '../sim/run/types';
 import { RewardCeremony } from './JuicyEffects';
+import { ReviewHistoryList } from './ReviewHistoryList';
 
 const REVIEW_BONUS_LABEL: Record<NonNullable<RunRewardBreakdown['reviewBonusKind']>, string> = {
   exceeded: '超過達成',
@@ -165,6 +166,12 @@ export function RunResultScreen({
             </p>
           </div>
         )}
+
+        <ReviewHistoryList
+          reviewHistory={state.reviewHistory}
+          quarterReview={state.quarterReview}
+          showKpis
+        />
 
         <dl className="result-rows">
           <div className="result-row">

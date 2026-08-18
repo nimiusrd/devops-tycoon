@@ -11,6 +11,7 @@ import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { ReactNode } from 'react';
 import { EffectTagList } from './EffectTagList';
 import { RewardCeremony } from './JuicyEffects';
+import { ReviewHistoryList } from './ReviewHistoryList';
 
 export interface QuarterReviewScreenProps {
   state: RunState;
@@ -58,6 +59,8 @@ export function QuarterReviewScreen({
         <h2 className="quarter-review-title">
           Q{state.quarterNumber} 四半期レビュー — {OUTCOME_LABELS[outcome]}
         </h2>
+
+        <ReviewHistoryList reviewHistory={state.reviewHistory} quarterReview={review} />
 
         <div className="quarter-kpi-table" data-testid="quarter-kpi">
           <div className="quarter-kpi-header">

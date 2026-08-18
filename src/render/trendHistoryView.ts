@@ -154,18 +154,21 @@ export function planTrendHistory(
     label: diagnosisView(entry.diagnosis).label,
   }));
 
-  const last = history[history.length - 1]!;
-  const series = COMPANY_KPI_SERIES.filter(
-    (def) => def.key !== 'aiAdoption' || history.some((entry) => kpiOf(entry, 'aiAdoption')),
-  ).map((def) =>
-    seriesFrom(
-      history.map((entry) => kpiOf(entry, def.key)?.actual ?? 0),
-      { key: def.key, label: def.fallbackLabel, tone: def.tone },
-      width,
-      height,
-      kpiOf(last, def.key),
-    ),
-  );
+  const series = COMPANY_KPI_SERIES.flatMap((def) => {
+    const recorded = history
+      .map((entry) => kpiOf(entry, def.key))
+      .filter((kpi): kpi is GoalKpiProgress => kpi !== undefined);
+    if (recorded.length === 0) return [];
+    return [
+      seriesFrom(
+        recorded.map((kpi) => kpi.actual),
+        { key: def.key, label: def.fallbackLabel, tone: def.tone },
+        width,
+        height,
+        recorded[recorded.length - 1],
+      ),
+    ];
+  });
 
   const deptIds: string[] = [];
   const seen = new Set<string>();

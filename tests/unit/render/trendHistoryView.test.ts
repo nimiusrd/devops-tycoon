@@ -163,4 +163,20 @@ describe('planTrendHistory (RI-128)', () => {
     expect(series.last).toBe(55);
     expect(series.lastStatus).toBe('exceeded');
   });
+
+  it('途中から現れた AI Adoption を欠落四半期の 0 で埋めない', () => {
+    const view = planTrendHistory([
+      snap(1),
+      snap(2, {
+        kpis: [
+          ...kpis(2),
+          { id: 'aiAdoption', label: 'AI導入', target: 40, actual: 55, status: 'exceeded' },
+        ],
+      }),
+    ]);
+    const series = view.series.find((s) => s.key === 'aiAdoption')!;
+    expect(series.last).toBe(55);
+    const ys = [...series.d.matchAll(/,([\d.]+)/g)].map((match) => match[1]);
+    expect(new Set(ys).size).toBe(1);
+  });
 });

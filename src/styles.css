@@ -5365,8 +5365,21 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 .org-trend-dept-series {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
+}
+.org-trend-dept-metric {
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(40px, 1fr);
+  gap: 4px;
+  align-items: center;
+}
+.org-trend-dept-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 .org-trend-svg {
   width: 100%;

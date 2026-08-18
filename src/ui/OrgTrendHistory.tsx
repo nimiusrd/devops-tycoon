@@ -71,20 +71,22 @@ export function OrgTrendHistory({ history, departmentNames }: OrgTrendHistoryPro
                 <span className="org-trend-dept-name">{dept.name}</span>
                 <span className="org-trend-dept-series">
                   {dept.series.map((series) => (
-                    <svg
-                      key={series.key}
-                      className="org-trend-svg org-trend-svg-mini"
-                      viewBox={`0 0 ${view.width} ${view.height}`}
-                      role="img"
-                      aria-label={`${dept.name} ${series.label} ${series.last}`}
-                      data-testid={`org-trend-dept-${dept.deptId}-${series.key}`}
-                    >
-                      <path
-                        className={`trend-series series-${series.tone}`}
-                        d={series.d}
-                        fill="none"
-                      />
-                    </svg>
+                    <span key={series.key} className={`org-trend-dept-metric tone-${series.tone}`}>
+                      <span className="org-trend-dept-label">{series.label}</span>
+                      <svg
+                        className="org-trend-svg org-trend-svg-mini"
+                        viewBox={`0 0 ${view.width} ${view.height}`}
+                        role="img"
+                        aria-label={`${dept.name} ${series.label} ${series.last}`}
+                        data-testid={`org-trend-dept-${dept.deptId}-${series.key}`}
+                      >
+                        <path
+                          className={`trend-series series-${series.tone}`}
+                          d={series.d}
+                          fill="none"
+                        />
+                      </svg>
+                    </span>
                   ))}
                 </span>
               </li>

@@ -2,7 +2,13 @@
  * タスク差配の純関数テスト（RI-30）。
  */
 import { describe, expect, it } from 'vitest';
-import { applyAction, ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from '../../../src/sim/actions';
+import {
+  applyAction,
+  ASSIGN_MISMATCH_STREAK_MAX,
+  ASSIGN_MORALE_COST,
+  ASSIGN_PROGRESS,
+  TASK_PROGRESS_MAX,
+} from '../../../src/sim/actions';
 import {
   applyAssignTaskEffect,
   assignableTasks,
@@ -55,6 +61,9 @@ describe('ideal / 偏重', () => {
     );
     expect(computeAssignMoraleCost('complex', 'ai', 0)).toBe(ASSIGN_MORALE_COST);
     expect(computeAssignMoraleCost('complex', 'ai', 2)).toBe(ASSIGN_MORALE_COST + 2);
+    expect(computeAssignMoraleCost('complex', 'ai', ASSIGN_MISMATCH_STREAK_MAX + 1)).toBe(
+      ASSIGN_MORALE_COST + ASSIGN_MISMATCH_STREAK_MAX,
+    );
   });
 });
 
@@ -305,6 +314,14 @@ describe('applyAssignTaskEffect / applyAction', () => {
     expect(applyAssignTaskEffect(sprint, org, { taskId: 1, assignee: 'senior' })).not.toBe(false);
     expect(org.aiDependency).toBe(40);
     expect(sprint.tasks[1]!.aiAssisted).toBe(false);
+  });
+
+  it('タスク進捗はレジストリの上限 0.999 で止まる', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [makeTask(0, { lane: 'coding', progress: TASK_PROGRESS_MAX })]);
+
+    expect(applyAssignTaskEffect(sprint, org, { taskId: 0, assignee: 'senior' })).not.toBe(false);
+    expect(sprint.tasks[0]!.progress).toBe(TASK_PROGRESS_MAX);
   });
 
   it('AI 無効時は既定担当が senior になり、ミスマッチ streak は増減する', () => {

@@ -6,12 +6,14 @@
  * からのみ消費する（決定論。第22.3）。入力はイベント経由で受け取る。
  */
 import { getAction } from '../data/actions';
+import { ACTION_BALANCE } from '../data/balance';
 import { STABILITY_TICKS } from './model';
 import {
   applyAssignTaskEffect,
   canApplyAssignTaskTarget,
   resolveAssignTaskTarget,
   resolveSplitPrTarget,
+  TASK_PROGRESS_MIN,
 } from './assignTask';
 import type { Rng } from './rng';
 import { isAwaitingMinCompleteTick, reviewOne } from './sprint';
@@ -25,10 +27,17 @@ import type {
   OrgState,
   Task,
 } from './types';
-import { spendStat } from './orgStat';
+import { ORG_STAT_MAX, ORG_STAT_MIN, spendStat } from './orgStat';
 import { clamp } from './clamp';
 
-export { ASSIGN_MORALE_COST, ASSIGN_PROGRESS } from './assignTask';
+export {
+  ASSIGN_IDEAL_MORALE_MIN,
+  ASSIGN_MISMATCH_STREAK_MAX,
+  ASSIGN_MORALE_COST,
+  ASSIGN_PROGRESS,
+  TASK_PROGRESS_MAX,
+  TASK_PROGRESS_MIN,
+} from './assignTask';
 export { STABILITY_TICKS } from './model';
 
 /** `canApplyAction` / `applyAction` が共有する失敗理由。 */
@@ -66,76 +75,77 @@ export interface ActionDef {
 }
 
 /** 割り込みレビューで一度に捌く PR 数（UI プレビューと共有）。 */
-export const INTERRUPT_REVIEW_COUNT = 4;
+export const INTERRUPT_REVIEW_COUNT = ACTION_BALANCE.interruptReviewCount.value;
 /**
  * 割り込みレビューの追加シニアHP消費（UI プレビューと共有）。
  * RI-73 / F-1: 複合運用の割り込みを単一緊急対応より相対的に安くする。
  */
-export const INTERRUPT_HP_COST = 2;
+export const INTERRUPT_HP_COST = ACTION_BALANCE.interruptReviewHpCost.value;
 /** 緊急対応の追加シニアHP消費（UI プレビューと共有）。 */
-export const FIREFIGHT_HP_COST = 2;
+export const FIREFIGHT_HP_COST = ACTION_BALANCE.firefightHpCost.value;
 /**
  * 同一スプリントで緊急対応を重ねるたびに増える HP コスト（RI-73 / F-1）。
  * 1 回目は `FIREFIGHT_HP_COST`、以降 +1（上限 `FIREFIGHT_HP_COST_MAX`）。
  */
-export const FIREFIGHT_HP_ESCALATION = 1;
+export const FIREFIGHT_HP_ESCALATION = ACTION_BALANCE.firefightHpEscalation.value;
 /** 緊急対応の同一スプリント連打 HP 上限（残業号令と同帯）。 */
-export const FIREFIGHT_HP_COST_MAX = 6;
+export const FIREFIGHT_HP_COST_MAX = ACTION_BALANCE.firefightHpCostMaximum.value;
 /**
  * 単発の軽い炎上を消したときの士気コスト（打つべきでない盤面。RI-73 / F-1）。
  * 複数炎上の制圧では払わない。
  */
-export const FIREFIGHT_LIGHT_MORALE_COST = 5;
+export const FIREFIGHT_LIGHT_MORALE_COST = ACTION_BALANCE.firefightLightMoraleCost.value;
 /**
  * 単発先消しのシニアHPコスト（自動鎮火に近い。RI-73 / F-1）。
  * 複数炎上の緊急鎮火だけ `firefightHpCost` の安い帯を使う。
  */
-export const FIREFIGHT_LIGHT_HP_COST = 11;
+export const FIREFIGHT_LIGHT_HP_COST = ACTION_BALANCE.firefightLightHpCost.value;
 /**
  * 互換・表示用の猶予閾値（安定付与条件自体は複数炎上のみ）。
  */
-export const FIREFIGHT_STABILITY_BURN_TICKS = 15;
+export const FIREFIGHT_STABILITY_BURN_TICKS = ACTION_BALANCE.firefightStabilityBurnTicks.value;
 /** 炎上がこの件数以上なら緊急対応でも運用安定を付与する（RI-73 / F-1）。 */
-export const FIREFIGHT_STABILITY_MIN_BURNING = 2;
+export const FIREFIGHT_STABILITY_MIN_BURNING =
+  ACTION_BALANCE.firefightStabilityMinimumBurning.value;
 /** ペアレビューで捌く PR 数（UI プレビューと共有）。 */
-export const PAIR_REVIEW_COUNT = 2;
+export const PAIR_REVIEW_COUNT = ACTION_BALANCE.pairReviewCount.value;
 /** ペアレビューで上がる AI Literacy（UI プレビューと共有）。 */
-export const PAIR_LITERACY_GAIN = 6;
+export const PAIR_LITERACY_GAIN = ACTION_BALANCE.pairReviewLiteracyGain.value;
 /** PR分割の進捗巻き戻し（UI プレビューと共有）。 */
-export const SPLIT_PROGRESS_PENALTY = 0.2;
+export const SPLIT_PROGRESS_PENALTY = ACTION_BALANCE.splitPrProgressPenalty.value;
 /** PR分割の士気コスト（単体乱打が固定強手にならないよう。RI-73 / F-1）。 */
-export const SPLIT_MORALE_COST = 4;
+export const SPLIT_MORALE_COST = ACTION_BALANCE.splitPrMoraleCost.value;
 /** PR分割のシニアHPコスト（分割作業にシニアが割かれる。RI-73 / F-1）。 */
-export const SPLIT_HP_COST = 4;
+export const SPLIT_HP_COST = ACTION_BALANCE.splitPrHpCost.value;
 
 /** 残業号令の持続 tick・副作用。スループット倍率は model 側（process.ts）に置く。 */
-export const OVERTIME_TICKS = 30;
+export const OVERTIME_TICKS = ACTION_BALANCE.overtimeTicks.value;
 /** 残業号令の Morale 消費（UI プレビューと共有）。 */
-export const OVERTIME_MORALE_COST = 8;
+export const OVERTIME_MORALE_COST = ACTION_BALANCE.overtimeMoraleCost.value;
 /** 残業号令のシニアHP消費（UI プレビューと共有）。 */
-export const OVERTIME_HP_COST = 6;
+export const OVERTIME_HP_COST = ACTION_BALANCE.overtimeHpCost.value;
 /** アンドンの流入停止 tick（RI-73 / F-1: 単体乱打が固定強手にならないよう短め）。 */
-export const ANDON_TICKS = 12;
+export const ANDON_TICKS = ACTION_BALANCE.andonTicks.value;
 /**
  * アンドンが「渋滞対応」とみなす Review 件数の下限（熟練方針の使用条件に揃える。RI-73 / F-1）。
  * 未満なら追加の薄キュー罰。
  */
-export const ANDON_STABILITY_REVIEW_MIN = 10;
+export const ANDON_STABILITY_REVIEW_MIN = ACTION_BALANCE.andonStabilityReviewMinimum.value;
 /** アンドンの基本士気コスト（ライン停止の現場負荷。RI-73 / F-1）。 */
-export const ANDON_BASE_MORALE_COST = 4;
+export const ANDON_BASE_MORALE_COST = ACTION_BALANCE.andonBaseMoraleCost.value;
 /** 薄キューでアンドンを打ったときの追加士気ペナルティ（RI-73 / F-1）。 */
-export const ANDON_THIN_MORALE_COST = 12;
+export const ANDON_THIN_MORALE_COST = ACTION_BALANCE.andonThinMoraleCost.value;
 /** アンドンのシニアHPコスト（薄キューの先止めにシニアが割かれる。RI-73 / F-1）。 */
-export const ANDON_HP_COST = 14;
+export const ANDON_HP_COST = ACTION_BALANCE.andonHpCost.value;
 /** AIスロットルの持続 tick。 */
-export const THROTTLE_TICKS = 40;
+export const THROTTLE_TICKS = ACTION_BALANCE.aiThrottleTicks.value;
 
 /** 連携ゲージが満タンになったとき回復する集中力。 */
-export const GAUGE_FOCUS_REFUND = 3;
+export const GAUGE_FOCUS_REFUND = ACTION_BALANCE.comboGaugeFocusRefund.value;
 
 /** clamp 適用後の実際の増加量（0..100 境界）。 */
 function gainStat(current: number, amount: number): { next: number; gained: number } {
-  const next = clamp(current + amount, 0, 100);
+  const next = clamp(current + amount, ORG_STAT_MIN, ORG_STAT_MAX);
   return { next, gained: next - current };
 }
 
@@ -233,7 +243,7 @@ const EFFECTS: Record<
     const task = resolveSplitPrTarget(sprint, target);
     if (!task) return false;
     task.split = true;
-    task.progress = Math.max(0, task.progress - SPLIT_PROGRESS_PENALTY);
+    task.progress = Math.max(TASK_PROGRESS_MIN, task.progress - SPLIT_PROGRESS_PENALTY);
     const morale = spendStat(org.morale, SPLIT_MORALE_COST);
     const hp = spendStat(org.seniorHp, SPLIT_HP_COST);
     org.morale = morale.next;

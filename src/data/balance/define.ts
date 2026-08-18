@@ -22,6 +22,9 @@ const ORDERED_BOUND_PAIRS = [
   ['member.formation.reworkRate.minimum', 'member.formation.reworkRate.maximum'],
   ['member.formation.incidentRate.minimum', 'member.formation.incidentRate.maximum'],
   ['member.formation.codingSlotBonus.minimum', 'member.formation.codingSlotBonus.maximum'],
+  ['action.task.progress.minimum', 'action.task.progress.maximum'],
+  ['action.organizationStat.minimum', 'action.organizationStat.maximum'],
+  ['action.firefight.seniorHpCost', 'action.firefight.seniorHpCostMaximum'],
 ] as const;
 
 /** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */
@@ -109,12 +112,17 @@ function validateEntry(entry: BalanceEntry): BalanceValidationError[] {
   if (entry.value < entry.allowedRange.min || entry.value > entry.allowedRange.max) {
     errors.push(validationError('value-out-of-range', entry.id, '値が許容範囲外です。'));
   }
-  if (entry.unit === 'probability' && (entry.value < 0 || entry.value > 1)) {
+  if (
+    (entry.unit === 'probability' || entry.unit === 'ratio') &&
+    (entry.value < 0 || entry.value > 1)
+  ) {
     errors.push(
       validationError(
-        'probability-out-of-range',
+        entry.unit === 'ratio' ? 'ratio-out-of-range' : 'probability-out-of-range',
         entry.id,
-        '確率は 0 以上 1 以下でなければなりません。',
+        entry.unit === 'ratio'
+          ? '割合は 0 以上 1 以下でなければなりません。'
+          : '確率は 0 以上 1 以下でなければなりません。',
       ),
     );
   }

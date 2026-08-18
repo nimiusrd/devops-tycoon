@@ -6,6 +6,7 @@
  */
 export type BalanceUnit =
   | 'probability'
+  | 'ratio'
   | 'multiplier'
   | 'ticks'
   | 'points'
@@ -78,6 +79,7 @@ export type BalanceValidationErrorCode =
   | 'related-total-invalid'
   | 'value-out-of-range'
   | 'probability-out-of-range'
+  | 'ratio-out-of-range'
   | 'distribution-weight-not-positive'
   | 'distribution-total-invalid';
 

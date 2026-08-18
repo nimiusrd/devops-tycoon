@@ -5,14 +5,22 @@
  * `target` 省略時の後方互換自動選択の両方から使う。
  */
 import type { ActionTarget, Lane, OrgState, SprintState, Task, TaskKind } from './types';
+import { ACTION_BALANCE } from '../data/balance';
 import { AI_DEP_PER_TASK } from './model';
-import { spendStat } from './orgStat';
+import { ORG_STAT_MAX, ORG_STAT_MIN, spendStat } from './orgStat';
 import { clamp } from './clamp';
 
 /** タスク差配で進める Coding 進捗量（UI プレビューと共有）。 */
-export const ASSIGN_PROGRESS = 0.5;
+export const ASSIGN_PROGRESS = ACTION_BALANCE.assignTaskProgress.value;
 /** タスク差配の士気低下（UI プレビューと共有）。 */
-export const ASSIGN_MORALE_COST = 3;
+export const ASSIGN_MORALE_COST = ACTION_BALANCE.assignTaskMoraleCost.value;
+/** ミスマッチ差配へ加える streak ペナルティの上限。 */
+export const ASSIGN_MISMATCH_STREAK_MAX = ACTION_BALANCE.assignTaskMismatchStreakMaximum.value;
+/** 理想差配時の士気コスト下限。 */
+export const ASSIGN_IDEAL_MORALE_MIN = ACTION_BALANCE.assignTaskIdealMoraleMinimum.value;
+/** タスク進捗の共通 clamp 境界。 */
+export const TASK_PROGRESS_MIN = ACTION_BALANCE.taskProgressMinimum.value;
+export const TASK_PROGRESS_MAX = ACTION_BALANCE.taskProgressMaximum.value;
 
 /** 差配可能なタスク（Coding、および Coding へ上げられる Backlog）。 */
 export function assignableTasks(sprint: SprintState): Task[] {
@@ -112,9 +120,9 @@ export function computeAssignMoraleCost(
   mismatchStreak: number,
 ): number {
   if (isIdealAssignment(kind, assignee)) {
-    return Math.max(1, Math.floor(ASSIGN_MORALE_COST / 2));
+    return Math.max(ASSIGN_IDEAL_MORALE_MIN, Math.floor(ASSIGN_MORALE_COST / 2));
   }
-  return ASSIGN_MORALE_COST + Math.min(3, mismatchStreak);
+  return ASSIGN_MORALE_COST + Math.min(ASSIGN_MISMATCH_STREAK_MAX, mismatchStreak);
 }
 
 /**
@@ -170,11 +178,11 @@ export function applyAssignTaskEffect(
   if (wantAi && !task.aiAssisted) {
     // intake() と同様、AI 割当への切替で依存度を上げる。
     const gain = sprint.config.aiDependencyPerTask ?? AI_DEP_PER_TASK;
-    org.aiDependency = clamp(org.aiDependency + gain, 0, 100);
+    org.aiDependency = clamp(org.aiDependency + gain, ORG_STAT_MIN, ORG_STAT_MAX);
   }
   task.aiAssisted = wantAi;
 
-  task.progress = clamp(task.progress + ASSIGN_PROGRESS, 0, 0.999);
+  task.progress = clamp(task.progress + ASSIGN_PROGRESS, TASK_PROGRESS_MIN, TASK_PROGRESS_MAX);
   task.split = true;
 
   const skew = sprint.metrics.assignmentSkew ?? { mismatchStreak: 0 };

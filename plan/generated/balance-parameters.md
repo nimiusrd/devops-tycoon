@@ -5,6 +5,62 @@
 
 | ID | ラベル | 現在値 | 単位 | 許容範囲 | 関連制約 | 説明 | タグ | 派生値 |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |
+| `action.aiThrottle.cooldownTicks` | AIスロットルクールダウン | `80` | `ticks` | `0〜1000（整数）` | — | AIスロットルの発動後に待つtick数。 | action, aiThrottle, cooldown | いいえ |
+| `action.aiThrottle.durationTicks` | AIスロットル持続tick | `40` | `ticks` | `0〜1000（整数）` | — | AIスロットルによるAI流入抑制が続くtick数。 | action, aiThrottle, duration | いいえ |
+| `action.aiThrottle.focusCost` | AIスロットル集中力コスト | `2` | `points` | `0〜20（整数）` | — | AIスロットルを1回発動するために消費する集中力。 | action, aiThrottle, focus | いいえ |
+| `action.aiThrottle.gaugeGain` | AIスロットル連携ゲージ | `0.2` | `ratio` | `0〜1` | — | AIスロットル成功時に増える連携ゲージの割合。 | action, aiThrottle, gauge | いいえ |
+| `action.andon.baseMoraleCost` | アンドン基本士気コスト | `4` | `points` | `0〜100（整数）` | — | アンドンの発動で常に消費する士気。 | action, andon, morale, side-effect | いいえ |
+| `action.andon.cooldownTicks` | アンドンクールダウン | `250` | `ticks` | `0〜1000（整数）` | — | アンドンの発動後に待つtick数。 | action, andon, cooldown | いいえ |
+| `action.andon.durationTicks` | アンドン持続tick | `12` | `ticks` | `0〜1000（整数）` | — | アンドンによるタスク流入停止が続くtick数。 | action, andon, duration | いいえ |
+| `action.andon.focusCost` | アンドン集中力コスト | `5` | `points` | `0〜20（整数）` | — | アンドンを1回発動するために消費する集中力。 | action, andon, focus | いいえ |
+| `action.andon.gaugeGain` | アンドン連携ゲージ | `0.15` | `ratio` | `0〜1` | — | アンドン成功時に増える連携ゲージの割合。 | action, andon, gauge | いいえ |
+| `action.andon.seniorHpCost` | アンドン薄キューシニアHPコスト | `14` | `points` | `0〜100（整数）` | — | Reviewが薄い盤面でアンドンを発動したときのシニアHPコスト。 | action, andon, senior-hp, side-effect | いいえ |
+| `action.andon.stabilityReviewMinimum` | アンドン渋滞判定Review件数 | `10` | `count` | `0〜100（整数）` | — | このReview件数以上ならアンドンを渋滞対応とみなす。 | action, andon, threshold | いいえ |
+| `action.andon.thinMoraleCost` | アンドン薄キュー追加士気コスト | `12` | `points` | `0〜100（整数）` | — | Reviewが薄い盤面でアンドンを発動したときの追加士気コスト。 | action, andon, morale, side-effect | いいえ |
+| `action.assignTask.cooldownTicks` | タスク差配クールダウン | `50` | `ticks` | `0〜1000（整数）` | — | タスク差配の発動後に待つtick数。 | action, assignTask, cooldown | いいえ |
+| `action.assignTask.focusCost` | タスク差配集中力コスト | `1` | `points` | `0〜20（整数）` | — | タスク差配を1回発動するために消費する集中力。 | action, assignTask, focus | いいえ |
+| `action.assignTask.gaugeGain` | タスク差配連携ゲージ | `0.2` | `ratio` | `0〜1` | — | タスク差配成功時に増える連携ゲージの割合。 | action, assignTask, gauge | いいえ |
+| `action.assignTask.idealMoraleMinimum` | タスク差配理想士気コスト下限 | `1` | `points` | `0〜100（整数）` | — | 理想差配を基本士気コストの半分にしたときの下限。 | action, assignTask, morale, boundary | いいえ |
+| `action.assignTask.mismatchStreakMaximum` | タスク差配偏重ペナルティ上限 | `3` | `count` | `0〜100（整数）` | — | ミスマッチ差配に加えるstreakペナルティの上限。 | action, assignTask, morale, boundary | いいえ |
+| `action.assignTask.moraleCost` | タスク差配基本士気コスト | `3` | `points` | `0〜100（整数）` | — | ミスマッチ差配で消費する基本士気。 | action, assignTask, morale, side-effect | いいえ |
+| `action.assignTask.progress` | タスク差配進捗増分 | `0.5` | `ratio` | `0〜1` | — | タスク差配1回で進めるCoding進捗の割合。 | action, assignTask, progress | いいえ |
+| `action.combo.gaugeFocusRefund` | 連携ゲージ満タン時集中力回復 | `3` | `points` | `0〜20（整数）` | — | 連携ゲージが満タンになったときに回復する集中力。 | action, combo, focus | いいえ |
+| `action.firefight.cooldownTicks` | 緊急対応クールダウン | `40` | `ticks` | `0〜1000（整数）` | — | 緊急対応の発動後に待つtick数。 | action, firefight, cooldown | いいえ |
+| `action.firefight.focusCost` | 緊急対応集中力コスト | `1` | `points` | `0〜20（整数）` | — | 緊急対応を1回発動するために消費する集中力。 | action, firefight, focus | いいえ |
+| `action.firefight.gaugeGain` | 緊急対応連携ゲージ | `0.34` | `ratio` | `0〜1` | — | 緊急対応成功時に増える連携ゲージの割合。 | action, firefight, gauge | いいえ |
+| `action.firefight.lightMoraleCost` | 緊急対応単発先消し士気コスト | `5` | `points` | `0〜100（整数）` | — | 余裕のある単発先消しで消費する士気。 | action, firefight, morale, side-effect | いいえ |
+| `action.firefight.lightSeniorHpCost` | 緊急対応単発先消しシニアHPコスト | `11` | `points` | `0〜100（整数）` | — | 余裕のある単発先消しで消費するシニアHP。 | action, firefight, senior-hp, side-effect | いいえ |
+| `action.firefight.seniorHpCost` | 緊急対応シニアHPコスト | `2` | `points` | `0〜100（整数）` | `action.firefight.seniorHpCost` ≤ `action.firefight.seniorHpCostMaximum` | 緊急時の緊急対応で消費する基礎シニアHP。 | action, firefight, senior-hp, side-effect | いいえ |
+| `action.firefight.seniorHpCostMaximum` | 緊急対応連打HP上限 | `6` | `points` | `0〜100（整数）` | `action.firefight.seniorHpCost` ≤ `action.firefight.seniorHpCostMaximum` | 緊急対応の連打で増えるシニアHPコストの上限。 | action, firefight, senior-hp, boundary | いいえ |
+| `action.firefight.seniorHpEscalation` | 緊急対応連打HP増分 | `1` | `points` | `0〜100（整数）` | — | 同一スプリントで緊急対応を重ねるたびに増えるシニアHPコスト。 | action, firefight, senior-hp, escalation | いいえ |
+| `action.firefight.stabilityBurnTicks` | 緊急対応猶予閾値 | `15` | `ticks` | `0〜1000（整数）` | — | このtick以下の猶予なら緊急対応を緊急盤面とみなす。 | action, firefight, threshold | いいえ |
+| `action.firefight.stabilityMinimumBurning` | 緊急対応複数炎上閾値 | `2` | `count` | `0〜100（整数）` | — | この件数以上の炎上を緊急対応すると緊急盤面とみなす。 | action, firefight, threshold | いいえ |
+| `action.interruptReview.cooldownTicks` | 割り込みレビュークールダウン | `70` | `ticks` | `0〜1000（整数）` | — | 割り込みレビューの発動後に待つtick数。 | action, interruptReview, cooldown | いいえ |
+| `action.interruptReview.focusCost` | 割り込みレビュー集中力コスト | `3` | `points` | `0〜20（整数）` | — | 割り込みレビューを1回発動するために消費する集中力。 | action, interruptReview, focus | いいえ |
+| `action.interruptReview.gaugeGain` | 割り込みレビュー連携ゲージ | `0.34` | `ratio` | `0〜1` | — | 割り込みレビュー成功時に増える連携ゲージの割合。 | action, interruptReview, gauge | いいえ |
+| `action.interruptReview.reviewCount` | 割り込みレビュー処理件数 | `4` | `count` | `0〜100（整数）` | — | 割り込みレビューで一度に処理するReview件数の上限。 | action, interruptReview, effect | いいえ |
+| `action.interruptReview.seniorHpCost` | 割り込みレビューシニアHPコスト | `2` | `points` | `0〜100（整数）` | — | 割り込みレビューで消費するシニアHP。 | action, interruptReview, senior-hp, side-effect | いいえ |
+| `action.organizationStat.maximum` | 組織指標上限 | `100` | `points` | `0〜100（整数）` | `action.organizationStat.minimum` ≤ `action.organizationStat.maximum` | 介入・差配が増減する組織指標のclamp上限。 | action, organization, boundary | いいえ |
+| `action.organizationStat.minimum` | 組織指標下限 | `0` | `points` | `0〜100（整数）` | `action.organizationStat.minimum` ≤ `action.organizationStat.maximum` | 介入・差配が増減する組織指標のclamp下限。 | action, organization, boundary | いいえ |
+| `action.overtime.cooldownTicks` | 残業号令クールダウン | `200` | `ticks` | `0〜1000（整数）` | — | 残業号令の発動後に待つtick数。 | action, overtime, cooldown | いいえ |
+| `action.overtime.durationTicks` | 残業号令持続tick | `30` | `ticks` | `0〜1000（整数）` | — | 残業号令のスループットブーストが続くtick数。 | action, overtime, duration | いいえ |
+| `action.overtime.focusCost` | 残業号令集中力コスト | `4` | `points` | `0〜20（整数）` | — | 残業号令を1回発動するために消費する集中力。 | action, overtime, focus | いいえ |
+| `action.overtime.gaugeGain` | 残業号令連携ゲージ | `0.15` | `ratio` | `0〜1` | — | 残業号令成功時に増える連携ゲージの割合。 | action, overtime, gauge | いいえ |
+| `action.overtime.moraleCost` | 残業号令士気コスト | `8` | `points` | `0〜100（整数）` | — | 残業号令で消費する士気。 | action, overtime, morale, side-effect | いいえ |
+| `action.overtime.seniorHpCost` | 残業号令シニアHPコスト | `6` | `points` | `0〜100（整数）` | — | 残業号令で消費するシニアHP。 | action, overtime, senior-hp, side-effect | いいえ |
+| `action.pairReview.aiLiteracyGain` | ペアレビューAI Literacy増加 | `6` | `points` | `0〜100（整数）` | — | ペアレビュー成功時に増えるAI Literacy。 | action, pairReview, ai-literacy | いいえ |
+| `action.pairReview.cooldownTicks` | ペアレビュークールダウン | `60` | `ticks` | `0〜1000（整数）` | — | ペアレビューの発動後に待つtick数。 | action, pairReview, cooldown | いいえ |
+| `action.pairReview.focusCost` | ペアレビュー集中力コスト | `2` | `points` | `0〜20（整数）` | — | ペアレビューを1回発動するために消費する集中力。 | action, pairReview, focus | いいえ |
+| `action.pairReview.gaugeGain` | ペアレビュー連携ゲージ | `0.3` | `ratio` | `0〜1` | — | ペアレビュー成功時に増える連携ゲージの割合。 | action, pairReview, gauge | いいえ |
+| `action.pairReview.reviewCount` | ペアレビュー処理件数 | `2` | `count` | `0〜100（整数）` | — | ペアレビューで一度に処理するReview件数の上限。 | action, pairReview, effect | いいえ |
+| `action.splitPr.cooldownTicks` | PR分割クールダウン | `50` | `ticks` | `0〜1000（整数）` | — | PR分割の発動後に待つtick数。 | action, splitPr, cooldown | いいえ |
+| `action.splitPr.focusCost` | PR分割集中力コスト | `2` | `points` | `0〜20（整数）` | — | PR分割を1回発動するために消費する集中力。 | action, splitPr, focus | いいえ |
+| `action.splitPr.gaugeGain` | PR分割連携ゲージ | `0.25` | `ratio` | `0〜1` | — | PR分割成功時に増える連携ゲージの割合。 | action, splitPr, gauge | いいえ |
+| `action.splitPr.moraleCost` | PR分割士気コスト | `4` | `points` | `0〜100（整数）` | — | PR分割で消費する士気。 | action, splitPr, morale, side-effect | いいえ |
+| `action.splitPr.progressPenalty` | PR分割進捗ペナルティ | `0.2` | `ratio` | `0〜1` | — | PR分割時に巻き戻すタスク進捗の割合。 | action, splitPr, progress, side-effect | いいえ |
+| `action.splitPr.seniorHpCost` | PR分割シニアHPコスト | `4` | `points` | `0〜100（整数）` | — | PR分割で消費するシニアHP。 | action, splitPr, senior-hp, side-effect | いいえ |
+| `action.task.progress.maximum` | タスク進捗上限 | `0.999` | `ratio` | `0〜1` | `action.task.progress.minimum` ≤ `action.task.progress.maximum` | 介入によるタスク進捗のclamp上限。 | action, task, progress, boundary | いいえ |
+| `action.task.progress.minimum` | タスク進捗下限 | `0` | `ratio` | `0〜1` | `action.task.progress.minimum` ≤ `action.task.progress.maximum` | 介入によるタスク進捗のclamp下限。 | action, task, progress, boundary | いいえ |
 | `member.formation.ai.incidentBase` | AI配布時Incident基礎加算 | `0.05` | `multiplier` | `0〜1` | — | AIを配布したコーダーへ加えるIncident倍率の基礎加算。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.incidentMasteryWeight` | AI習熟のIncident低減係数 | `0.1` | `multiplier` | `0〜1` | — | AI習熟がAI配布時のIncident倍率を低減する係数。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.masteryMaximum` | AI習熟正規化倍率の上限 | `1.2` | `multiplier` | `0〜3` | — | AI習熟を正規化した値の上限。 | member, formation, ai, boundary | いいえ |

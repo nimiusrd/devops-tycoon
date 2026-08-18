@@ -47,7 +47,12 @@ export interface UseRun {
    */
   playbackSpeed: PlaybackSpeed;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
-  startRun: (difficulty: DifficultyId, trials: string[], scenario?: ScenarioId) => void;
+  startRun: (
+    difficulty: DifficultyId,
+    trials: string[],
+    scenario?: ScenarioId,
+    seed?: string,
+  ) => void;
   startDailyRun: (dateStr?: string) => void;
   resumeRun: () => void;
   beginSetupSprint: () => void;
@@ -182,8 +187,8 @@ export function useRun(game: GameHandle): UseRun {
   // ハンドラはエンジンを操作するだけ。UI への反映は上のポーリングが担う
   // （内部進行と window.game 経由の外部操作を同一経路で扱うため）。
   const startRun = useCallback(
-    (difficulty: DifficultyId, trials: string[], scenario?: ScenarioId) =>
-      void game.startRun(difficulty, trials, undefined, scenario),
+    (difficulty: DifficultyId, trials: string[], scenario?: ScenarioId, seed?: string) =>
+      void game.startRun(difficulty, trials, seed, scenario),
     [game],
   );
   const startDailyRun = useCallback((dateStr?: string) => void game.startDailyRun(dateStr), [game]);

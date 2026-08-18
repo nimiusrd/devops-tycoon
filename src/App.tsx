@@ -222,11 +222,12 @@ function AppContent({ game }: AppProps) {
     difficulty: Parameters<typeof run.startRun>[0],
     trials: string[],
     scenario?: Parameters<typeof run.startRun>[2],
+    seed?: Parameters<typeof run.startRun>[3],
   ) => {
     audio.unlock();
     closeTitleModals();
     clearHudSnapshot();
-    run.startRun(difficulty, trials, scenario);
+    run.startRun(difficulty, trials, scenario, seed);
   };
   const startDailyRun = () => {
     audio.unlock();
@@ -285,6 +286,7 @@ function AppContent({ game }: AppProps) {
             run.setSoundMuted(!meta.soundMuted);
           }}
           onOpenHelp={() => setHelpOpen(true)}
+          onApplyPreferred={run.setPreferredCardIds}
         />
         <Suspense fallback={<TitleModalLoadingFallback />}>
           {helpOpen && <HowToPlayScreen onClose={() => setHelpOpen(false)} />}

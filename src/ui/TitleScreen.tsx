@@ -5,9 +5,10 @@
  * 実績）も表示する。世界観の制約（第2.1）に沿った現実的なトーン。
  * レイアウトは司令室 UI の構図を使い、文言は SPEC の用語に揃える。
  */
-import { useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { DIFFICULTY_DEFS, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
+import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
 import type { RunSaveSummary } from '../state/runPersistence';
 import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
@@ -37,7 +38,12 @@ const PHASE_LABEL: Record<RunSaveSummary['phase'], string> = {
 export interface TitleScreenProps {
   seed: string;
   meta: MetaState;
-  onStart: (difficulty: DifficultyId, trials: string[], scenario: ScenarioId) => void;
+  onStart: (
+    difficulty: DifficultyId,
+    trials: string[],
+    scenario: ScenarioId,
+    seed?: string,
+  ) => void;
   onStartDaily?: () => void;
   onResume?: () => void;
   resumableSummary?: RunSaveSummary | null;
@@ -51,10 +57,12 @@ export interface TitleScreenProps {
   /** サウンドミュート切替（RI-59）。 */
   onToggleSoundMuted?: () => void;
   onOpenHelp?: () => void;
+  /** 開始レシピ読み込み成功時に研修方針を復元する（RI-127）。 */
+  onApplyPreferred?: (preferredCardIds: readonly string[]) => void;
 }
 
 export function TitleScreen({
-  seed,
+  seed: propsSeed,
   meta,
   onStart,
   onStartDaily,
@@ -67,11 +75,20 @@ export function TitleScreen({
   onOpenAchievements,
   onToggleSoundMuted,
   onOpenHelp,
+  onApplyPreferred,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
   const [trials, setTrials] = useState<string[]>([]);
   const [scenario, setScenario] = useState<ScenarioId>(DEFAULT_SCENARIO);
+  const [recipeSeed, setRecipeSeed] = useState<string | null>(null);
+  const [recipeText, setRecipeText] = useState('');
+  const [recipeStatus, setRecipeStatus] = useState<{
+    kind: 'idle' | 'ok' | 'error';
+    message: string;
+  }>({ kind: 'idle', message: '' });
+  const recipeFileRef = useRef<HTMLInputElement>(null);
+  const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
   const dailyRecord = getDailyRecord(meta, today);
@@ -80,6 +97,58 @@ export function TitleScreen({
 
   const toggleTrial = (id: string) =>
     setTrials((cur) => (cur.includes(id) ? cur.filter((t) => t !== id) : [...cur, id]));
+
+  const currentRecipeText = () =>
+    serializeStartRecipe({
+      seed,
+      difficulty,
+      trials,
+      scenario,
+      preferredCardIds: meta.preferredCardIds,
+    });
+
+  const exportRecipe = (): string => {
+    const text = currentRecipeText();
+    setRecipeText(text);
+    setRecipeStatus({ kind: 'ok', message: '現在の開始条件を書き出しました。' });
+    return text;
+  };
+
+  const downloadRecipe = () => {
+    const text = exportRecipe();
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'devops-tycoon-start-recipe.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const applyRecipeText = (raw: string) => {
+    const loaded = loadStartRecipe(raw, meta);
+    if (!loaded.ok) {
+      setRecipeStatus({ kind: 'error', message: loaded.message });
+      return;
+    }
+    setDifficulty(loaded.recipe.difficulty);
+    setTrials([...loaded.recipe.trials]);
+    setScenario(loaded.recipe.scenario);
+    setRecipeSeed(loaded.recipe.seed);
+    setRecipeText(raw);
+    onApplyPreferred?.(loaded.recipe.preferredCardIds);
+    setRecipeStatus({ kind: 'ok', message: '開始条件を読み込みました。' });
+  };
+
+  const onRecipeFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    void file.text().then((raw) => {
+      setRecipeText(raw);
+      applyRecipeText(raw);
+    });
+  };
 
   const dailyStatus = dailyRecord
     ? `今日のベスト ${dailyRecord.bestScore} pt${dailyRecord.rewardClaimed ? ' / 報酬受領済み' : ' / 報酬未受領'}`
@@ -264,6 +333,69 @@ export function TitleScreen({
             </div>
           </section>
 
+          <section className="title-section title-recipe-section" data-testid="start-recipe">
+            <div className="title-section-copy">
+              <span className="title-step">04</span>
+              <p>
+                <b>開始レシピ（共有）</b>
+                <small>難易度・試練・シナリオ・研修方針・seed をローカルで受け渡す</small>
+              </p>
+            </div>
+            <div className="title-recipe-body">
+              <textarea
+                className="title-recipe-text"
+                data-testid="start-recipe-text"
+                value={recipeText}
+                onChange={(event) => setRecipeText(event.target.value)}
+                placeholder="書き出した JSON を貼り付けるか、ファイルから読み込む"
+                spellCheck={false}
+                rows={6}
+              />
+              <div className="title-recipe-actions">
+                <button
+                  type="button"
+                  data-testid="start-recipe-export"
+                  onClick={() => exportRecipe()}
+                >
+                  書き出す
+                </button>
+                <button type="button" data-testid="start-recipe-download" onClick={downloadRecipe}>
+                  ファイルで保存
+                </button>
+                <button
+                  type="button"
+                  data-testid="start-recipe-apply"
+                  onClick={() => applyRecipeText(recipeText)}
+                >
+                  読み込む
+                </button>
+                <button
+                  type="button"
+                  data-testid="start-recipe-file-button"
+                  onClick={() => recipeFileRef.current?.click()}
+                >
+                  ファイルを開く
+                </button>
+                <input
+                  ref={recipeFileRef}
+                  type="file"
+                  accept="application/json,.json"
+                  hidden
+                  data-testid="start-recipe-file"
+                  onChange={onRecipeFile}
+                />
+              </div>
+              {recipeStatus.message ? (
+                <p
+                  className={`title-recipe-status${recipeStatus.kind === 'error' ? ' error' : ''}`}
+                  data-testid="start-recipe-status"
+                >
+                  {recipeStatus.message}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
           {resumableSummary && onResume ? (
             <section className="title-resume" data-testid="resume-run-section">
               <div className="title-resume-copy">
@@ -316,7 +448,7 @@ export function TitleScreen({
                 type="button"
                 className="title-launch"
                 data-testid="start-run"
-                onClick={() => onStart(difficulty, trials, scenario)}
+                onClick={() => onStart(difficulty, trials, scenario, seed)}
               >
                 <span>
                   <small>ラン開始</small>
@@ -331,7 +463,7 @@ export function TitleScreen({
                 type="button"
                 className="btn btn-primary btn-lg"
                 data-testid="start-run"
-                onClick={() => onStart(difficulty, trials, scenario)}
+                onClick={() => onStart(difficulty, trials, scenario, seed)}
               >
                 四半期を始める →
               </button>

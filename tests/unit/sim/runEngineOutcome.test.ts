@@ -347,7 +347,7 @@ describe('RI-91-A6 victory / defeat persist & snapshot fields', () => {
         'baseConfig',
         'coarseIncidentCarry',
         'coarseSecurityTrustCount',
-        'coarseSecurityTrustAppliedRaw',
+        'coarseSecurityTrustAppliedDelta',
         'coarseSecurityTrustRaw',
         'draftMulliganUsed',
         'goalCarryoverId',

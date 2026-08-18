@@ -207,6 +207,9 @@ export const REST_UPGRADE_FOCUS_MAX = 2;
 /** ショップのレリック価格（割引前）。RI-78: 純出荷受入のため定価を抑える。 */
 export const SHOP_RELIC_COST = 12;
 
+/** RI-108 より前のセーブを復元するときに使う、当時の raw 反映閾値。 */
+const LEGACY_INCIDENT_TRUST_RAW_THRESHOLD = 0.5;
+
 export interface RunEngineInit {
   seed?: string;
   difficulty?: DifficultyId;
@@ -229,6 +232,14 @@ function emptyTotals(): RunTotals {
     maxCombo: 0,
     consecutiveIncidentSprints: 0,
   };
+}
+
+/**
+ * RI-108 より前の粗粒度炎上 raw を、当時の規則で顧客信頼デルタへ変換する。
+ * 現在の調整値を使うと、過去に確定済みのペナルティが復元時に変わってしまう。
+ */
+function legacySecurityCustomerTrustFromRaw(raw: number): number {
+  return raw < LEGACY_INCIDENT_TRUST_RAW_THRESHOLD ? 0 : -Math.ceil(raw);
 }
 
 /** 次スプリント限定の一時効果を合成する（taskCountMul は乗算、加算系は加算）。 */
@@ -389,8 +400,8 @@ export class RunEngine {
   private coarseSecurityTrustRaw = 0;
   /** 粗粒度炎上の顧客信頼 raw に含まれる発火件数（RI-108）。 */
   private coarseSecurityTrustCount = 0;
-  /** 粗粒度炎上の顧客信頼 raw のうち、すでに信頼へ反映済みの範囲（RI-108）。 */
-  private coarseSecurityTrustAppliedRaw = 0;
+  /** 粗粒度炎上で、すでに顧客信頼へ反映済みの累積デルタ（RI-108）。 */
+  private coarseSecurityTrustAppliedDelta = 0;
 
   private quarterNumber = 1;
   private quarterGoal!: QuarterGoal;
@@ -543,7 +554,7 @@ export class RunEngine {
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
     this.coarseSecurityTrustCount = 0;
-    this.coarseSecurityTrustAppliedRaw = 0;
+    this.coarseSecurityTrustAppliedDelta = 0;
     // ホームの永続指標を初期 org/roster と揃える。
     this.syncActiveTeamFromOrg();
     this.status = 'playing';
@@ -1063,7 +1074,7 @@ export class RunEngine {
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
     this.coarseSecurityTrustCount = 0;
-    this.coarseSecurityTrustAppliedRaw = 0;
+    this.coarseSecurityTrustAppliedDelta = 0;
 
     this.sprintIndexInQuarter = 0;
     this.pendingSprintKind = 'normal';
@@ -1732,7 +1743,7 @@ export class RunEngine {
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
     this.coarseSecurityTrustCount = 0;
-    this.coarseSecurityTrustAppliedRaw = 0;
+    this.coarseSecurityTrustAppliedDelta = 0;
     if (credited <= 0) return;
     this.totals.incidents += credited;
     this.quarterTotals.incidents += credited;
@@ -1746,14 +1757,14 @@ export class RunEngine {
     this.reconcileCoarseSecurityTrust();
   }
 
-  /** 現在の最小件数を満たす未適用 raw だけを顧客信頼へ反映する。 */
+  /** 現在の最小件数を満たす未適用の信頼低下だけを顧客信頼へ反映する。 */
   private reconcileCoarseSecurityTrust(): void {
     if (this.coarseSecurityTrustCount < PROCESS_BALANCE.incidentTrustMinimumCount.value) return;
-    const prev = securityCustomerTrustFromRaw(this.coarseSecurityTrustAppliedRaw);
     const next = securityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
-    const delta = next - prev;
+    // バランス更新で raw 閾値を上げても、すでに起きた信頼低下は戻さない。
+    const delta = Math.min(0, next - this.coarseSecurityTrustAppliedDelta);
     if (delta !== 0) this.applyTrust({ customers: delta });
-    this.coarseSecurityTrustAppliedRaw = this.coarseSecurityTrustRaw;
+    this.coarseSecurityTrustAppliedDelta = Math.min(this.coarseSecurityTrustAppliedDelta, next);
   }
 
   /** 粗粒度進行用に、キャリーオーバー込みの係数を畳み込む（RI-83）。 */
@@ -2273,7 +2284,7 @@ export class RunEngine {
         coarseIncidentCarry: this.coarseIncidentCarry,
         coarseSecurityTrustRaw: this.coarseSecurityTrustRaw,
         coarseSecurityTrustCount: this.coarseSecurityTrustCount,
-        coarseSecurityTrustAppliedRaw: this.coarseSecurityTrustAppliedRaw,
+        coarseSecurityTrustAppliedDelta: this.coarseSecurityTrustAppliedDelta,
         draftMulliganUsed: this.draftMulliganUsed,
       },
     };
@@ -2455,10 +2466,17 @@ export class RunEngine {
       this.coarseIncidentCarry = Math.max(0, cloned.extras.coarseIncidentCarry ?? 0);
       this.coarseSecurityTrustRaw = Math.max(0, cloned.extras.coarseSecurityTrustRaw ?? 0);
       this.coarseSecurityTrustCount = Math.max(0, cloned.extras.coarseSecurityTrustCount ?? 0);
-      this.coarseSecurityTrustAppliedRaw = Math.min(
-        this.coarseSecurityTrustRaw,
-        Math.max(0, cloned.extras.coarseSecurityTrustAppliedRaw ?? this.coarseSecurityTrustRaw),
-      );
+      this.coarseSecurityTrustAppliedDelta =
+        typeof cloned.extras.coarseSecurityTrustAppliedDelta === 'number'
+          ? Math.min(0, cloned.extras.coarseSecurityTrustAppliedDelta)
+          : typeof cloned.extras.coarseSecurityTrustAppliedRaw === 'number'
+            ? legacySecurityCustomerTrustFromRaw(
+                Math.min(
+                  this.coarseSecurityTrustRaw,
+                  Math.max(0, cloned.extras.coarseSecurityTrustAppliedRaw),
+                ),
+              )
+            : legacySecurityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
       if (options.reconcileCoarseSecurityTrust) this.reconcileCoarseSecurityTrust();
     } else {
       // v1 セーブ: チーム配列が無いので初期化し、累積 orgAdjust を正本へ焼き込んでから strip。
@@ -2479,7 +2497,7 @@ export class RunEngine {
       this.coarseIncidentCarry = 0;
       this.coarseSecurityTrustRaw = 0;
       this.coarseSecurityTrustCount = 0;
-      this.coarseSecurityTrustAppliedRaw = 0;
+      this.coarseSecurityTrustAppliedDelta = 0;
       // v1 の出荷正本は org.deliveryScore。totals.delivered へ写経し報酬分岐を防ぐ。
       this.totals.delivered = Math.max(0, Math.round(this.org.deliveryScore));
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };

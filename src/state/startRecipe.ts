@@ -80,11 +80,11 @@ function fail(reason: StartRecipeReason): StartRecipeErr {
 }
 
 function isDifficultyId(value: string): value is DifficultyId {
-  return Object.hasOwn(DIFFICULTY_DEFS, value);
+  return Object.prototype.hasOwnProperty.call(DIFFICULTY_DEFS, value);
 }
 
 function isKnownScenario(value: string): value is ScenarioId {
-  return Object.hasOwn(SCENARIOS, value);
+  return Object.prototype.hasOwnProperty.call(SCENARIOS, value);
 }
 
 function preferredCardIdsFrom(value: unknown): string[] | null {

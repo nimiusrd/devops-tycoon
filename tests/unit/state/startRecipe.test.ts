@@ -66,6 +66,26 @@ describe('開始レシピ共有（RI-127）', () => {
     if (loaded.ok) expect(loaded.recipe.preferredCardIds).toEqual([]);
   });
 
+  it.each([
+    ['null', null],
+    ['文字列', 'docs'],
+    ['オブジェクト', { id: 'docs' }],
+  ])('preferredCardIds が%sなら破損として拒否する', (_label, preferredCardIds) => {
+    const raw = JSON.stringify({
+      schemaVersion: START_RECIPE_SCHEMA_VERSION,
+      seed: 'x',
+      difficulty: 'easy',
+      trials: [],
+      scenario: 'default',
+      preferredCardIds,
+    });
+    expect(loadStartRecipe(raw, defaultMeta())).toEqual({
+      ok: false,
+      reason: 'corrupt',
+      message: START_RECIPE_REASON_MESSAGE.corrupt,
+    });
+  });
+
   it('受信側方針が異なる場合もレシピ側を採用する', () => {
     const receiver = { ...defaultMeta(), preferredCardIds: ['copilot'] };
     const loaded = loadStartRecipe(serializeStartRecipe(SAMPLE), receiver);

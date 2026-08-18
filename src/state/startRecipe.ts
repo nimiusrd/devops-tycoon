@@ -89,7 +89,7 @@ function isKnownScenario(value: string): value is ScenarioId {
 
 function preferredCardIdsFrom(value: unknown): string[] | null {
   if (value === undefined) return [];
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) return null;
   if (!value.every((id) => typeof id === 'string')) return null;
   return [...value];
 }

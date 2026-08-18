@@ -5385,14 +5385,25 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .trend-series.series-ship {
   stroke: #7ec8ff;
 }
-.trend-series.series-ai {
-  stroke: var(--sun, #e8c35a);
+.trend-series.series-quality {
+  stroke: #b48cff;
 }
 .trend-series.series-debt {
   stroke: var(--coral, #e07a6a);
 }
 .trend-series.series-morale {
   stroke: var(--mint, #57e08f);
+}
+.trend-series.series-fire {
+  stroke: #ff8a65;
+}
+.trend-series.series-ai {
+  stroke: var(--sun, #e8c35a);
+}
+.org-trend-status {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 /* 全社マップのアイソメ盤面 */

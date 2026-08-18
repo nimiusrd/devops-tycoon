@@ -3,20 +3,31 @@
  *
  * `trendHistory` を読むだけの純関数。Recharts は使わない（第22.2）。
  * レビュー結果履歴（RI-126）と部門現在値比較（RI-125）は扱わない。
+ * 全社系列の正本は保存した `kpis`（四半期レビュー実績）である。
  */
 import { DEPARTMENT_DEFS } from '../data/departments';
+import { KPI_STATUS_LABELS } from './reviewHistoryView';
 import { diagnosisView } from '../sim/diagnosis';
-import type { DiagnosisType, QuarterTrendSnapshot } from '../sim/run/types';
+import type { DiagnosisType, GoalKpiProgress, QuarterTrendSnapshot } from '../sim/run/types';
 
-export type TrendSeriesKey = 'shipping' | 'aiDependency' | 'techDebt' | 'morale';
-export type DeptTrendSeriesKey = Exclude<TrendSeriesKey, 'shipping'>;
+export type CompanyTrendSeriesKey =
+  | 'delivery'
+  | 'quality'
+  | 'techDebt'
+  | 'morale'
+  | 'incident'
+  | 'aiAdoption';
+export type DeptTrendSeriesKey = 'aiDependency' | 'techDebt' | 'morale';
+export type TrendSeriesKey = CompanyTrendSeriesKey | DeptTrendSeriesKey;
 
 export interface TrendSeriesPath {
   key: TrendSeriesKey;
   label: string;
   d: string;
-  tone: 'ship' | 'ai' | 'debt' | 'morale';
+  tone: 'ship' | 'quality' | 'debt' | 'morale' | 'fire' | 'ai';
   last: number;
+  lastStatus?: GoalKpiProgress['status'];
+  lastStatusLabel?: string;
 }
 
 export interface TrendDiagnosisCell {
@@ -40,15 +51,17 @@ export interface TrendHistoryView {
   departments: TrendDeptSeries[];
 }
 
-const COMPANY_SERIES: readonly {
-  key: TrendSeriesKey;
-  label: string;
+const COMPANY_KPI_SERIES: readonly {
+  key: CompanyTrendSeriesKey;
+  fallbackLabel: string;
   tone: TrendSeriesPath['tone'];
 }[] = [
-  { key: 'shipping', label: '出荷', tone: 'ship' },
-  { key: 'aiDependency', label: 'AI依存', tone: 'ai' },
-  { key: 'techDebt', label: '負債', tone: 'debt' },
-  { key: 'morale', label: '士気', tone: 'morale' },
+  { key: 'delivery', fallbackLabel: '出荷', tone: 'ship' },
+  { key: 'quality', fallbackLabel: '品質', tone: 'quality' },
+  { key: 'techDebt', fallbackLabel: '負債', tone: 'debt' },
+  { key: 'morale', fallbackLabel: '士気', tone: 'morale' },
+  { key: 'incident', fallbackLabel: '炎上', tone: 'fire' },
+  { key: 'aiAdoption', fallbackLabel: 'AI導入', tone: 'ai' },
 ];
 
 const DEPT_SERIES: readonly {
@@ -97,14 +110,25 @@ function seriesFrom(
   def: { key: TrendSeriesKey; label: string; tone: TrendSeriesPath['tone'] },
   width: number,
   height: number,
+  lastKpi?: GoalKpiProgress,
 ): TrendSeriesPath {
   return {
     key: def.key,
-    label: def.label,
+    label: lastKpi?.label ?? def.label,
     d: polyline(values, width, height),
     tone: def.tone,
     last: values[values.length - 1] ?? 0,
+    ...(lastKpi
+      ? { lastStatus: lastKpi.status, lastStatusLabel: KPI_STATUS_LABELS[lastKpi.status] }
+      : {}),
   };
+}
+
+function kpiOf(
+  entry: QuarterTrendSnapshot,
+  id: CompanyTrendSeriesKey,
+): GoalKpiProgress | undefined {
+  return entry.kpis.find((kpi) => kpi.id === id);
 }
 
 export interface PlanTrendHistoryOptions {
@@ -130,12 +154,16 @@ export function planTrendHistory(
     label: diagnosisView(entry.diagnosis).label,
   }));
 
-  const series = COMPANY_SERIES.map((def) =>
+  const last = history[history.length - 1]!;
+  const series = COMPANY_KPI_SERIES.filter(
+    (def) => def.key !== 'aiAdoption' || history.some((entry) => kpiOf(entry, 'aiAdoption')),
+  ).map((def) =>
     seriesFrom(
-      history.map((entry) => entry.company[def.key]),
-      def,
+      history.map((entry) => kpiOf(entry, def.key)?.actual ?? 0),
+      { key: def.key, label: def.fallbackLabel, tone: def.tone },
       width,
       height,
+      kpiOf(last, def.key),
     ),
   );
 

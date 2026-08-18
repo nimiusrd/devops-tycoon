@@ -223,6 +223,11 @@ describe('generateIndustry', () => {
     const worsened = generateIndustry(c, 'overall', current.selfRank - 2);
     expect(worsened.entries.find((e) => e.org.isSelf)?.org.trend).toBe(-1);
 
+    const healthy = generateIndustry(c, 'healthy');
+    const healthyImproved = generateIndustry(c, 'healthy', healthy.selfRank + 2);
+    expect(healthyImproved.entries.find((e) => e.org.isSelf)?.org.trend).toBe(1);
+    expect(healthyImproved.kind).toBe('healthy');
+
     const rivalTrends = current.entries.filter((e) => !e.org.isSelf).map((e) => e.org.trend);
     expect(improved.entries.filter((e) => !e.org.isSelf).map((e) => e.org.trend)).toEqual(
       rivalTrends,

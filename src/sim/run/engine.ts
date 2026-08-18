@@ -191,7 +191,11 @@ import {
   type RunReplayFrame,
 } from './persist';
 import { clamp } from '../clamp';
-import { buildQuarterTrendSnapshot, cloneTrendHistory } from './trendHistory';
+import {
+  buildQuarterTrendSnapshot,
+  cloneTrendHistory,
+  previousSelfRankForKind,
+} from './trendHistory';
 
 export { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER };
 /** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */
@@ -2072,8 +2076,11 @@ export class RunEngine {
   private industryForSnapshot(org: OrgScaleState | null): IndustryState | null {
     if (this.zoom.level !== 'industry') return null;
     const scale = org ?? this.buildOrgScale();
-    const previous = this.trendHistory[this.trendHistory.length - 1];
-    const previousSelfRank = previous?.company.selfRank;
+    const previousSelfRank = previousSelfRankForKind(
+      this.trendHistory,
+      this.quarterNumber,
+      this.rankingKind,
+    );
     return generateIndustry(scale, this.rankingKind, previousSelfRank);
   }
 

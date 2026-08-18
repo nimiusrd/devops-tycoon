@@ -186,7 +186,10 @@ export interface QuarterTrendSnapshot {
     morale: number;
     onFire: number;
     healthRank: string;
+    /** 総合出荷の自社順位（selfRanks.overall と同じ）。 */
     selfRank: number;
+    /** ランキング種別ごとの自社順位。旧セーブでは欠落しうる。 */
+    selfRanks?: Record<RankingKind, number>;
   };
   departments: QuarterTrendDeptSnapshot[];
 }

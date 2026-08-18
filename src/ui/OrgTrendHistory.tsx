@@ -54,7 +54,14 @@ export function OrgTrendHistory({ history, departmentNames }: OrgTrendHistoryPro
                 >
                   <path className={`trend-series series-${series.tone}`} d={series.d} fill="none" />
                 </svg>
-                <span className="org-trend-last">{series.last}</span>
+                <span className="org-trend-last">
+                  {series.last}
+                  {series.lastStatusLabel ? (
+                    <span className={`org-trend-status kpi-${series.lastStatus}`}>
+                      {series.lastStatusLabel}
+                    </span>
+                  ) : null}
+                </span>
               </li>
             ))}
           </ul>

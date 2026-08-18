@@ -3,16 +3,14 @@
  *
  * 勝敗画面ではなくレビュー会議として、OKR・目標達成度・信頼・未達理由・修正選択肢を表示する。
  */
-import { getGoalAdjustment } from '../data/goalAdjustments';
 import { getRelic } from '../data/relics';
 import { OUTCOME_LABELS } from '../sim/run/quarterReview';
-import { formatGoalAdjustmentTags } from '../render/eventOutcomeView';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { ReactNode } from 'react';
-import { EffectTagList } from './EffectTagList';
 import { RewardCeremony } from './JuicyEffects';
 import { QuarterOkr } from './QuarterOkr';
 import { ReviewHistoryList } from './ReviewHistoryList';
+import { StakeholderNegotiationList } from './StakeholderNegotiationList';
 
 export interface QuarterReviewScreenProps {
   state: RunState;
@@ -97,34 +95,13 @@ export function QuarterReviewScreen({
         )}
 
         {canAdjust && (
-          <div className="quarter-adjustments" data-testid="quarter-adjustments">
-            <p className="result-section-label">目標修正 — 次四半期へ継続</p>
-            <div className="quarter-adjustment-grid">
-              {availableAdjustments.map((id) => {
-                const def = getGoalAdjustment(id);
-                if (!def) return null;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    className="quarter-adjustment-card"
-                    data-adjustment={id}
-                    onClick={() => onChooseAdjustment(id)}
-                  >
-                    <strong>{def.label}</strong>
-                    <EffectTagList
-                      tags={formatGoalAdjustmentTags(def, {
-                        hasAiAdoptionTarget: review.goal.aiAdoptionTarget !== undefined,
-                        currentDeliveryTarget: review.goal.deliveryTarget,
-                      })}
-                      testId={`adjustment-tags-${id}`}
-                    />
-                    <span>{def.description}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <StakeholderNegotiationList
+            availableAdjustments={availableAdjustments}
+            trust={trust}
+            hasAiAdoptionTarget={review.goal.aiAdoptionTarget !== undefined}
+            currentDeliveryTarget={review.goal.deliveryTarget}
+            onChooseAdjustment={onChooseAdjustment}
+          />
         )}
 
         <div className="quarter-review-actions">

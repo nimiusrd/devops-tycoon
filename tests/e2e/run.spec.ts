@@ -470,6 +470,12 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
   await expect(page.getByTestId('quarter-kpi')).toBeVisible();
   await expect(page.getByTestId('review-history')).toBeVisible();
   await expect(page.getByTestId('review-history-row')).toHaveCount(1);
+  await expect(page.getByTestId('quarter-negotiation')).toBeVisible();
+  await expect(
+    page.locator('[data-testid="quarter-negotiation-panel"][data-negotiator="customers"]'),
+  ).toBeVisible();
+  await expect(page.locator('[data-adjustment="cut_scope"]')).toBeVisible();
+  await expect(page.getByTestId('negotiation-terms-cut_scope')).toContainText('次期目標');
   await page.locator('[data-adjustment="cut_scope"]').click();
   await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId('setup-okr')).toBeVisible();

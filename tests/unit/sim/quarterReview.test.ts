@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BOSS_DEFS, getBoss, type BossDef } from '../../../src/data/bosses';
 import { getDifficulty } from '../../../src/data/difficulties';
-import { getGoalAdjustment } from '../../../src/data/goalAdjustments';
+import { allGoalAdjustmentIds, getGoalAdjustment } from '../../../src/data/goalAdjustments';
 import { RunEngine } from '../../../src/sim/run/engine';
 import {
   OUTCOME_LABELS,
@@ -1090,6 +1090,12 @@ describe('四半期レビュー（Phase 8）', () => {
     expect(
       availableAdjustments('missed_adjustable', trust, 30, org({ morale: 1 }), totals()),
     ).toEqual([]);
+  });
+
+  it('RI-130: 健全状態の missed_adjustable は既存7種を定義順で提示する', () => {
+    expect(
+      availableAdjustments('missed_adjustable', buildInitialTrust('normal'), 30, org(), totals()),
+    ).toEqual(allGoalAdjustmentIds());
   });
 
   it('RI-72-C1: 未知の目標修正 ID は入力を変えずに返す', () => {

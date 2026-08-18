@@ -4696,6 +4696,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   text-transform: uppercase;
   opacity: 0.7;
 }
+.setup-okr-objective {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .setup-okr-title {
   margin: 0;
   font-size: 0.95rem;

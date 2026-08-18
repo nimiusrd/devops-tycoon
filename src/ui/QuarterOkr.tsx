@@ -60,7 +60,6 @@ function ReviewOkr({ view }: { view: OkrView }): ReactNode {
 }
 
 function SetupOkr({ view }: { view: OkrView }): ReactNode {
-  const focus = view.objectives[0];
   return (
     <section
       className="setup-okr"
@@ -69,16 +68,18 @@ function SetupOkr({ view }: { view: OkrView }): ReactNode {
       aria-label="今四半期の OKR"
     >
       <p className="setup-okr-kicker">今四半期の OKR</p>
-      {focus ? <p className="setup-okr-title">{focus.title}</p> : null}
-      <div className="setup-okr-chips">
-        {view.objectives.flatMap((objective) =>
-          objective.keyResults.map((kr) => (
-            <span key={kr.id} className="pill" data-okr-kr={kr.id}>
-              {kr.label}
-            </span>
-          )),
-        )}
-      </div>
+      {view.objectives.map((objective) => (
+        <div key={objective.id} className="setup-okr-objective" data-objective={objective.id}>
+          <p className="setup-okr-title">{objective.title}</p>
+          <div className="setup-okr-chips">
+            {objective.keyResults.map((kr) => (
+              <span key={kr.id} className="pill" data-okr-kr={kr.id}>
+                {kr.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
     </section>
   );
 }

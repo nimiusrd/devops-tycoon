@@ -31,7 +31,13 @@ export {
 } from './aggregate';
 export { generateOrgScale, estimateRivalAiAssigned, type OrgScaleInput } from './generate';
 export { emptyAdjust, emptyAdjustState, mergeAdjust, applyLever, type LeverResult } from './levers';
-export { generateIndustry, computeScores, RANKING_KINDS, RANKING_LABEL } from './industry';
+export {
+  generateIndustry,
+  computeScores,
+  selfRankTrend,
+  RANKING_KINDS,
+  RANKING_LABEL,
+} from './industry';
 export {
   HOME_TEAM_ID,
   ENTER_TEAM_FOCUS_PENALTY,

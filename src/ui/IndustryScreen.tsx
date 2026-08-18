@@ -79,7 +79,12 @@ export function IndustryScreen({ industry, meta, onSetKind }: IndustryScreenProp
               <td className="type">{e.org.orgType}</td>
               <td className="score">{e.org.scores[kind]}</td>
               <td className="health">{e.org.healthRank}</td>
-              <td className={`trend trend-${e.org.trend}`}>{TREND_ICON[e.org.trend]}</td>
+              <td
+                className={`trend trend-${e.org.trend}`}
+                data-testid={e.org.isSelf ? 'industry-self-trend' : undefined}
+              >
+                {TREND_ICON[e.org.trend]}
+              </td>
             </tr>
           ))}
         </tbody>

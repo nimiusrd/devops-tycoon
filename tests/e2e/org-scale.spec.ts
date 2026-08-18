@@ -177,6 +177,8 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
   await expect(page.getByTestId('org-hud')).toBeVisible();
   await expect(page.getByTestId('org-depts')).toBeVisible();
   await expect(page.getByTestId('org-dept-compare')).toBeVisible();
+  await expect(page.getByTestId('org-trend-history')).toBeVisible();
+  await expect(page.getByTestId('org-trend-history')).toContainText('記録なし');
   await expect(page.getByTestId('org-board')).toBeVisible();
   await expect(page.getByTestId('org-infra-hub')).toBeVisible();
 
@@ -223,6 +225,19 @@ test('業界画面で保存済みデイリー記録を順位付きで表示す�
   await expect(page.getByTestId('daily-record-2026-07-11')).toContainText('1,200 pt');
   await expect(page.getByTestId('daily-record-2026-07-10')).toContainText('#2');
   await expect(page.getByTestId('daily-record-2026-07-09')).toContainText('#3');
+});
+
+test('全社マップに診断・KPIトレンド領域を出し開始直後は記録なしとする（RI-128）', async ({
+  page,
+}) => {
+  await startRun(page, 'ri128-trend-empty');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+
+  await expect(page.getByTestId('org-trend-history')).toBeVisible();
+  await expect(page.getByTestId('org-trend-history')).toHaveText('記録なし');
+
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('industry'));
+  await expect(page.getByTestId('industry-self-trend')).toHaveText('→');
 });
 
 test('全社マップで部門のAI依存・負債・士気・健全度を横並び比較できる（RI-125）', async ({

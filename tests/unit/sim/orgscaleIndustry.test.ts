@@ -7,6 +7,7 @@ import {
   generateIndustry,
   generateOrgScale,
   RANKING_KINDS,
+  selfRankTrend,
   type OrgScaleInput,
   type OrgScaleState,
 } from '../../../src/sim/orgscale';
@@ -206,6 +207,31 @@ describe('generateIndustry', () => {
     const c = company();
     expect(generateIndustry(c)).toEqual(generateIndustry(c, 'overall'));
     expect(generateIndustry(c).kind).toBe('overall');
+  });
+
+  it('履歴なしの自社趨勢は横ばい、順位差があれば実履歴化する', () => {
+    const c = minimalCompany({ shipping: 1590 });
+    const current = generateIndustry(c, 'overall');
+    expect(current.entries.find((e) => e.org.isSelf)?.org.trend).toBe(0);
+    expect(selfRankTrend(undefined, current.selfRank)).toBe(0);
+    expect(selfRankTrend(current.selfRank + 1, current.selfRank)).toBe(1);
+    expect(selfRankTrend(current.selfRank - 1, current.selfRank)).toBe(-1);
+    expect(selfRankTrend(current.selfRank, current.selfRank)).toBe(0);
+
+    const improved = generateIndustry(c, 'overall', current.selfRank + 2);
+    expect(improved.entries.find((e) => e.org.isSelf)?.org.trend).toBe(1);
+    const worsened = generateIndustry(c, 'overall', current.selfRank - 2);
+    expect(worsened.entries.find((e) => e.org.isSelf)?.org.trend).toBe(-1);
+
+    const healthy = generateIndustry(c, 'healthy');
+    const healthyImproved = generateIndustry(c, 'healthy', healthy.selfRank + 2);
+    expect(healthyImproved.entries.find((e) => e.org.isSelf)?.org.trend).toBe(1);
+    expect(healthyImproved.kind).toBe('healthy');
+
+    const rivalTrends = current.entries.filter((e) => !e.org.isSelf).map((e) => e.org.trend);
+    expect(improved.entries.filter((e) => !e.org.isSelf).map((e) => e.org.trend)).toEqual(
+      rivalTrends,
+    );
   });
 
   it('同じ会社・種別からは同一ランキングを生成する（決定論）', () => {

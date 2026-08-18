@@ -18,6 +18,7 @@ import type {
   IndustryState,
   OrgScaleState,
   RankingKind,
+  TeamHealth,
   TeamRunState,
   ZoomState,
 } from '../orgscale/types';
@@ -160,6 +161,37 @@ export interface GoalKpiProgress {
   actual: number;
   /** exceeded=超過達成, met=達成, missed=未達。 */
   status: 'exceeded' | 'met' | 'missed';
+}
+
+/** 部門の四半期トレンド1件（RI-128）。比較表の現在値とは別契約。 */
+export interface QuarterTrendDeptSnapshot {
+  deptId: string;
+  aiDependency: number;
+  techDebt: number;
+  morale: number;
+  health: TeamHealth;
+}
+
+/** 完了四半期の診断・KPIスナップショット（RI-128）。 */
+export interface QuarterTrendSnapshot {
+  quarterNumber: number;
+  /** 記録時点の診断。再開時の現在値再計算では塗り替えない。 */
+  diagnosis: DiagnosisType;
+  /** `quarterReview.progress` のコピー。 */
+  kpis: GoalKpiProgress[];
+  company: {
+    shipping: number;
+    aiDependency: number;
+    techDebt: number;
+    morale: number;
+    onFire: number;
+    healthRank: string;
+    /** 総合出荷の自社順位（selfRanks.overall と同じ）。 */
+    selfRank: number;
+    /** ランキング種別ごとの自社順位。旧セーブでは欠落しうる。 */
+    selfRanks?: Record<RankingKind, number>;
+  };
+  departments: QuarterTrendDeptSnapshot[];
 }
 
 /** 四半期レビューのスナップショット。 */
@@ -361,6 +393,8 @@ export interface RunState {
   goalCarryoverId: GoalAdjustmentId | null;
   /** 四半期レビュー履歴（メタ進行報酬用）。 */
   reviewHistory: QuarterOutcome[];
+  /** 完了四半期の診断・KPI時系列（RI-128）。 */
+  trendHistory: QuarterTrendSnapshot[];
 
   /** ズーム階層の現在地（業界 ▸ 全社 ▸ 部署 ▸ 現場。第4.7）。 */
   zoom: ZoomState;

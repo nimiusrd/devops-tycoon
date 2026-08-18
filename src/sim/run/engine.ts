@@ -170,6 +170,7 @@ import type {
   QuarterGoal,
   QuarterOutcome,
   QuarterReview,
+  QuarterTrendSnapshot,
   RunState,
   RunStatus,
   RunTotals,
@@ -190,6 +191,11 @@ import {
   type RunReplayFrame,
 } from './persist';
 import { clamp } from '../clamp';
+import {
+  buildQuarterTrendSnapshot,
+  cloneTrendHistory,
+  previousSelfRankForKind,
+} from './trendHistory';
 
 export { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER };
 /** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */
@@ -409,6 +415,7 @@ export class RunEngine {
   private quarterReview: QuarterReview | null = null;
   private goalAdjustmentsTaken: GoalAdjustmentId[] = [];
   private reviewHistory: QuarterOutcome[] = [];
+  private trendHistory: QuarterTrendSnapshot[] = [];
   private nextBudgetCap: number | null = null;
   /** 目標修正の次四半期物理キャリーオーバーが有効な四半期（RI-83）。 */
   private goalCarryoverQuarter: number | null = null;
@@ -516,6 +523,7 @@ export class RunEngine {
     this.quarterReview = null;
     this.goalAdjustmentsTaken = [];
     this.reviewHistory = [];
+    this.trendHistory = [];
     this.nextBudgetCap = null;
     this.goalCarryoverQuarter = null;
     this.goalCarryoverId = null;
@@ -852,12 +860,23 @@ export class RunEngine {
         quarterNumber: this.quarterNumber,
         bossSprintCleared: bossCleared,
       });
+      // KPI・診断と同じ報酬前の全社集約を履歴へ残す（即時レリックが四半期実績を書き換えないように）。
+      const orgScaleForTrend = this.buildOrgScale();
       if (bossCleared) {
         // 勝利種別は選択中チームの報酬前状態で判定する。
         this.winEvalOrg = structuredClone(this.org);
         this.bossRelicReward = this.grantBossRelic();
       }
       this.reviewHistory = [...this.reviewHistory, this.quarterReview.outcome];
+      this.trendHistory = [
+        ...this.trendHistory,
+        buildQuarterTrendSnapshot({
+          quarterNumber: this.quarterNumber,
+          diagnosis: this.diagnosis,
+          kpis: this.quarterReview.progress,
+          orgScale: orgScaleForTrend,
+        }),
+      ];
       this.setPhase('quarterReview');
       return;
     }
@@ -2059,7 +2078,12 @@ export class RunEngine {
   private industryForSnapshot(org: OrgScaleState | null): IndustryState | null {
     if (this.zoom.level !== 'industry') return null;
     const scale = org ?? this.buildOrgScale();
-    return generateIndustry(scale, this.rankingKind);
+    const previousSelfRank = previousSelfRankForKind(
+      this.trendHistory,
+      this.quarterNumber,
+      this.rankingKind,
+    );
+    return generateIndustry(scale, this.rankingKind, previousSelfRank);
   }
 
   /** 現在のフェーズ（スナップショットを作らない軽量アクセサ）。 */
@@ -2258,6 +2282,7 @@ export class RunEngine {
       goalCarryoverQuarter: this.goalCarryoverQuarter,
       goalCarryoverId: this.goalCarryoverId,
       reviewHistory: [...this.reviewHistory],
+      trendHistory: cloneTrendHistory(this.trendHistory),
       zoom: { ...this.zoom },
       rankingKind: this.rankingKind,
       orgScale: null,
@@ -2391,6 +2416,7 @@ export class RunEngine {
     this.quarterReview = cloned.quarterReview;
     this.goalAdjustmentsTaken = [...cloned.goalAdjustmentsTaken];
     this.reviewHistory = [...cloned.reviewHistory];
+    this.trendHistory = cloneTrendHistory(cloned.trendHistory);
     this.zoom = { ...cloned.zoom };
     this.rankingKind = cloned.rankingKind;
     this.orgAdjust = structuredClone(cloned.extras.orgAdjust);
@@ -2734,6 +2760,7 @@ export class RunEngine {
       goalCarryoverQuarter: this.goalCarryoverQuarter,
       goalCarryoverId: this.goalCarryoverId,
       reviewHistory: [...this.reviewHistory],
+      trendHistory: cloneTrendHistory(this.trendHistory),
       zoom: { ...this.zoom },
       rankingKind: this.rankingKind,
       orgScale,

@@ -86,7 +86,18 @@ function seasonFor(seed: string): number {
   return (h % 4) + 1;
 }
 
-/** 自社を `RivalOrg` 形へ写し取る。 */
+/** 直近四半期の自社順位と現在順位から趨勢を決める（RI-128）。履歴なしは横ばい。 */
+export function selfRankTrend(
+  previousSelfRank: number | undefined,
+  currentRank: number,
+): -1 | 0 | 1 {
+  if (previousSelfRank === undefined) return 0;
+  if (currentRank < previousSelfRank) return 1;
+  if (currentRank > previousSelfRank) return -1;
+  return 0;
+}
+
+/** 自社を `RivalOrg` 形へ写し取る。趨勢は順位確定後に上書きする。 */
 function selfRival(company: OrgScaleState): RivalOrg {
   const m: ScoreInput = {
     shipping: company.shipping,
@@ -102,7 +113,7 @@ function selfRival(company: OrgScaleState): RivalOrg {
     orgType: diagnosisView(company.diagnosis).label,
     scores: computeScores(m),
     healthRank: company.healthRank,
-    trend: 1,
+    trend: 0,
     isSelf: true,
   };
 }
@@ -154,6 +165,7 @@ function leagueFor(selfRank: number, total: number): string {
 export function generateIndustry(
   company: OrgScaleState,
   kind: RankingKind = 'overall',
+  previousSelfRank?: number,
 ): IndustryState {
   const self = selfRival(company);
   const rivals = Array.from({ length: RIVAL_COUNT }, (_, i) => makeRival(company.seed, i));
@@ -166,6 +178,7 @@ export function generateIndustry(
   });
   const entries: LeaderboardEntry[] = all.map((org, i) => ({ rank: i + 1, org }));
   const selfRank = entries.find((e) => e.org.isSelf)?.rank ?? all.length;
+  self.trend = selfRankTrend(previousSelfRank, selfRank);
   return {
     kind,
     season: seasonFor(company.seed),

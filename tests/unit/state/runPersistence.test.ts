@@ -134,7 +134,7 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     ).toBeNull();
   });
 
-  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して v6 として復元する', () => {
+  it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して現行スキーマとして復元する', () => {
     const valid = makeRunSave('ri84-v4-goal-migration');
     const legacyDeliveryTarget = 1950;
     const parsed = parseRunSave({
@@ -158,7 +158,7 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     );
   });
 
-  it('RI-77: v5 の途中セーブは現行 Delivery 倍率へ移行して v6 として復元する', () => {
+  it('RI-77: v5 の途中セーブは現行 Delivery 倍率へ移行して現行スキーマとして復元する', () => {
     const valid = makeRunSave('ri77-v5-goal-migration');
     const legacyDeliveryTarget = 3510;
     const parsed = parseRunSave({
@@ -180,6 +180,60 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(parsed?.state.quarterGoal.deliveryTarget).toBe(
       Math.round((legacyDeliveryTarget * 2.25) / 1.8),
     );
+  });
+
+  it('RI-128: v6 の途中セーブは欠落した trendHistory を空配列へ補完する', () => {
+    const valid = makeRunSave('ri128-v6-trend-backfill');
+    const { trendHistory: _omitted, ...stateWithoutTrend } = valid.state;
+    const parsed = parseRunSave({
+      ...valid,
+      schemaVersion: 6,
+      state: stateWithoutTrend,
+    });
+
+    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+    expect(parsed?.state.trendHistory).toEqual([]);
+  });
+
+  it('RI-128: v7 の trendHistory は往復で同一内容を保つ', () => {
+    const valid = makeRunSave('ri128-v7-trend-roundtrip');
+    const history = [
+      {
+        quarterNumber: 1,
+        diagnosis: 'reviewHell' as const,
+        kpis: [
+          { id: 'delivery', label: '出荷', target: 90, actual: 80, status: 'missed' as const },
+        ],
+        company: {
+          shipping: 80,
+          aiDependency: 55,
+          techDebt: 30,
+          morale: 60,
+          onFire: 1,
+          healthRank: 'B',
+          selfRank: 4,
+        },
+        departments: [
+          {
+            deptId: 'product',
+            aiDependency: 50,
+            techDebt: 20,
+            morale: 65,
+            health: 'congested' as const,
+          },
+        ],
+      },
+    ];
+    const parsed = parseRunSave({
+      ...valid,
+      state: { ...valid.state, trendHistory: history },
+    });
+
+    expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
+    expect(parsed?.state.trendHistory).toEqual(history);
+    expect(parsed?.state.trendHistory).not.toBe(history);
+    parsed!.state.trendHistory[0]!.company.shipping = 0;
+    expect(history[0]!.company.shipping).toBe(80);
   });
 
   it('RI-84: v4 の quarterReview は移行後の目標から再構築する', () => {

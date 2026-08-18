@@ -5,7 +5,7 @@
  * 乱数は seed 派生のみ（第22.3）。
  */
 import { DEPARTMENT_DEFS } from '../../data/departments';
-import { PROCESS_BALANCE } from '../../data/balance';
+import { MEMBER_BALANCE, PROCESS_BALANCE } from '../../data/balance';
 import {
   MEMBER_NAMES,
   RECRUIT_ARCHETYPES,
@@ -67,7 +67,7 @@ export function estimateRivalAiAssigned(engineers: number, aiDependency: number)
  */
 export function estimateRosterCoderCount(engineers: number): number {
   if (engineers <= 0) return 0;
-  const count = Math.max(2, Math.min(6, Math.floor(engineers)));
+  const count = Math.max(2, Math.min(MEMBER_BALANCE.rosterCapacity.value, Math.floor(engineers)));
   let coders = 0;
   for (let i = 0; i < count; i += 1) {
     if (i === 0) coders += 1;
@@ -83,7 +83,7 @@ export function estimateRosterCoderCount(engineers: number): number {
  */
 export function estimateActiveAssignedCount(engineers: number): number {
   if (engineers <= 0) return 0;
-  const count = Math.max(2, Math.min(6, Math.floor(engineers)));
+  const count = Math.max(2, Math.min(MEMBER_BALANCE.rosterCapacity.value, Math.floor(engineers)));
   let assigned = 0;
   for (let i = 0; i < count; i += 1) {
     if (i === 0 || i === 1 || i % 2 === 0) assigned += 1;
@@ -98,7 +98,9 @@ export function estimateActiveAssignedCount(engineers: number): number {
 export function estimateRosterReviewerCount(engineers: number): number {
   if (engineers <= 0) return 0;
   // createTeamRoster は index 1 を常に review にする（最低 2 席）。
-  return Math.max(2, Math.min(6, Math.floor(engineers))) >= 2 ? 1 : 0;
+  return Math.max(2, Math.min(MEMBER_BALANCE.rosterCapacity.value, Math.floor(engineers))) >= 2
+    ? 1
+    : 0;
 }
 
 /** OrgAdjust を 1 チームの表示指標へ適用する。 */
@@ -427,7 +429,7 @@ export function createTeamRoster(
   aiDependency?: number,
 ): RosterState {
   const rng = createRng(`${seed}:roster:${teamId}`);
-  const count = Math.max(2, Math.min(6, engineers));
+  const count = Math.max(2, Math.min(MEMBER_BALANCE.rosterCapacity.value, engineers));
   const used = new Set<string>();
   const members = [];
   for (let i = 0; i < count; i += 1) {

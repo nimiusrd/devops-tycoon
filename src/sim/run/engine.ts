@@ -9,7 +9,7 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { BOSS_DEFS, getBoss } from '../../data/bosses';
-import { PROCESS_BALANCE } from '../../data/balance';
+import { MEMBER_BALANCE, PROCESS_BALANCE } from '../../data/balance';
 import { getCard } from '../../data/cards';
 import { getGoalAdjustment } from '../../data/goalAdjustments';
 import { getLever } from '../../data/levers';
@@ -1057,7 +1057,7 @@ export class RunEngine {
   private applyReorgDeparture(): void {
     const rng = createRng(`${this.seed}:reorg:q${this.quarterNumber}`);
     const active = this.roster.members.filter((m) => !m.onLeave);
-    if (active.length <= 2) return;
+    if (active.length <= MEMBER_BALANCE.reorgMinimumActive.value) return;
     const idx = Math.floor(rng() * active.length);
     const victim = active[idx];
     this.roster = {

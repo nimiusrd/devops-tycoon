@@ -4,6 +4,7 @@
  * snapshot を通じて決定論で確認する。
  */
 import { describe, expect, it } from 'vitest';
+import { MEMBER_BALANCE } from '../../../src/data/balance';
 import { RunEngine } from '../../../src/sim/run/engine';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
 import { diagnose } from '../../../src/sim/diagnosis';
@@ -996,6 +997,38 @@ describe('RunEngine: レバー', () => {
     const cached = e.exportPersistState()!.extras.teamRosters?.[e.snapshot().activeTeamId];
     expect(cached?.members.filter((m) => m.onLeave)).toHaveLength(1);
   });
+
+  it.each([
+    { activeCount: MEMBER_BALANCE.reorgMinimumActive.value, expectedLeaveCount: 0 },
+    { activeCount: MEMBER_BALANCE.reorgMinimumActive.value + 1, expectedLeaveCount: 1 },
+  ])(
+    'RI-109: 再編は稼働人数 $activeCount の境界を維持する',
+    ({ activeCount, expectedLeaveCount }) => {
+      const e = started(`ri109-reorg-boundary-${activeCount}`);
+      const internals = e as unknown as {
+        phase: string;
+        quarterReview: { outcome: string; availableAdjustments: string[] } | null;
+        startNextQuarter: () => void;
+        roster: { members: Array<{ onLeave: boolean }> };
+      };
+      expect(internals.roster.members.length).toBeGreaterThanOrEqual(activeCount);
+      internals.roster.members = internals.roster.members
+        .slice(0, activeCount)
+        .map((member) => ({ ...member, onLeave: false }));
+      internals.phase = 'quarterReview';
+      internals.quarterReview = {
+        outcome: 'missed_adjustable',
+        availableAdjustments: ['reorg_teams'],
+      };
+      internals.startNextQuarter = () => undefined;
+
+      e.chooseGoalAdjustment('reorg_teams');
+
+      expect(internals.roster.members.filter((member) => member.onLeave)).toHaveLength(
+        expectedLeaveCount,
+      );
+    },
+  );
 
   it('四半期目標修正の org 効果は全チームへ焼き込まれる', () => {
     const e = started('goal-adj-all-teams');

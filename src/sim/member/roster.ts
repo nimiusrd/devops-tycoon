@@ -12,6 +12,7 @@ import {
   STARTER_ARCHETYPES,
   type MemberArchetype,
 } from '../../data/members';
+import { MEMBER_BALANCE } from '../../data/balance';
 import { foldTraitModifiers } from '../../data/traits';
 import type { Rng } from '../rng';
 import type {
@@ -28,48 +29,63 @@ import { clamp } from '../clamp';
 // --- 育成・編成のパラメータ（バランス調整の集約点）---
 
 /** ランクごとの寄与倍率（昇格を編成価値に反映する）。 */
-const RANK_MUL: Record<MemberRank, number> = { junior: 0.82, middle: 1, senior: 1.25 };
+const RANK_MUL: Record<MemberRank, number> = {
+  junior: MEMBER_BALANCE.rankMultiplierJunior.value,
+  middle: MEMBER_BALANCE.rankMultiplierMiddle.value,
+  senior: MEMBER_BALANCE.rankMultiplierSenior.value,
+};
 /** ランクごとの基礎スタミナ上限。 */
-const RANK_STAMINA: Record<MemberRank, number> = { junior: 70, middle: 85, senior: 95 };
+const RANK_STAMINA: Record<MemberRank, number> = {
+  junior: MEMBER_BALANCE.staminaMaxJunior.value,
+  middle: MEMBER_BALANCE.staminaMaxMiddle.value,
+  senior: MEMBER_BALANCE.staminaMaxSenior.value,
+};
 /** ランクごとの学習速度（ジュニアほど伸びる）。 */
-const RANK_LEARN: Record<MemberRank, number> = { junior: 1.3, middle: 1, senior: 0.7 };
+const RANK_LEARN: Record<MemberRank, number> = {
+  junior: MEMBER_BALANCE.learningMultiplierJunior.value,
+  middle: MEMBER_BALANCE.learningMultiplierMiddle.value,
+  senior: MEMBER_BALANCE.learningMultiplierSenior.value,
+};
 
 /** ミドル／シニアへ昇格するレベル閾値。 */
-const MIDDLE_LEVEL = 4;
-const SENIOR_LEVEL = 8;
+const MIDDLE_LEVEL = MEMBER_BALANCE.promotionMiddleLevel.value;
+const SENIOR_LEVEL = MEMBER_BALANCE.promotionSeniorLevel.value;
 
 /** スプリント 1 回の基礎スタミナ消費。 */
-const BASE_DRAIN = 22;
+const BASE_DRAIN = MEMBER_BALANCE.staminaDrainBase.value;
 /** レーン別の消費倍率（レビューは消耗が大きい）。 */
-const LANE_DRAIN_MUL: Record<'coding' | 'review', number> = { coding: 1, review: 1.25 };
+const LANE_DRAIN_MUL: Record<'coding' | 'review', number> = {
+  coding: MEMBER_BALANCE.staminaDrainCoding.value,
+  review: MEMBER_BALANCE.staminaDrainReview.value,
+};
 /** AI を配ったコーダーの消費軽減（AI が肩代わり）。 */
-const AI_DRAIN_RELIEF = 0.85;
+const AI_DRAIN_RELIEF = MEMBER_BALANCE.staminaDrainAiRelief.value;
 /**
  * スタミナ分散の基準稼働人数（初期ロスター相当。RI-73 / F-1）。
  * これより多いと個人ドレインが薄まり、休職リスクが下がる。
  */
-const DRAIN_SHARE_BASELINE = 3;
+const DRAIN_SHARE_BASELINE = MEMBER_BALANCE.staminaShareBaseline.value;
 /** 人数増によるスタミナ分散の下限（緩和しすぎて採用が支配的にならない）。 */
-const DRAIN_SHARE_MIN = 0.5;
+const DRAIN_SHARE_MIN = MEMBER_BALANCE.staminaShareMinimum.value;
 /**
  * レビュアー 1 人増ごとのレビューHP単価緩和（RI-73 / F-1）。
  * `1 / (1 + k * max(0, reviewers-1))`、下限 `REVIEW_HP_COST_MUL_MIN`。
  */
-const REVIEW_HP_COST_RELIEF_PER = 0.15;
+const REVIEW_HP_COST_RELIEF_PER = MEMBER_BALANCE.reviewHpReliefPerReviewer.value;
 /** レビューHP単価倍率の下限。 */
-const REVIEW_HP_COST_MUL_MIN = 0.65;
+const REVIEW_HP_COST_MUL_MIN = MEMBER_BALANCE.reviewHpCostMinimum.value;
 /**
  * 稼働人数 1 人増ごとのシニア消耗緩和（採用の燃えにくさ。RI-73 / F-1）。
  * 難易度の `seniorHpCostMul` と乗算される。
  */
-const SENIOR_HP_SHARE_RELIEF_PER = 0.08;
+const SENIOR_HP_SHARE_RELIEF_PER = MEMBER_BALANCE.seniorHpReliefPerMember.value;
 /** 人数由来の seniorHpCostMul 下限。 */
-const SENIOR_HP_SHARE_MUL_MIN = 0.75;
+const SENIOR_HP_SHARE_MUL_MIN = MEMBER_BALANCE.seniorHpCostMinimum.value;
 
 /** これ以下のスタミナで離脱（休職）判定が走る閾値。 */
-const LEAVE_THRESHOLD = 14;
+const LEAVE_THRESHOLD = MEMBER_BALANCE.leaveThreshold.value;
 /** 離脱の最大確率（スタミナ 0 のとき）。 */
-const LEAVE_MAX_P = 0.5;
+const LEAVE_MAX_P = MEMBER_BALANCE.leaveMaximumProbability.value;
 
 /**
  * レビュアー人数からレビュー 1 件あたりのシニアHP消費倍率を求める（RI-73 / F-1）。
@@ -102,19 +118,58 @@ export function seniorHpShareMul(activeCount: number): number {
   );
 }
 /** 休職から復帰するスタミナ（上限に対する割合）。 */
-const RETURN_RATIO = 0.4;
+const RETURN_RATIO = MEMBER_BALANCE.returnRatio.value;
 /** 休職中の回復ボーナス（離れて休む分だけ回復が速い）。 */
-const LEAVE_RECOVERY_MUL = 1.25;
+const LEAVE_RECOVERY_MUL = MEMBER_BALANCE.leaveRecoveryMultiplier.value;
 
 /** スプリント間の自然なスタミナ回復。 */
-export const STAMINA_RECOVER_BETWEEN = 16;
+export const STAMINA_RECOVER_BETWEEN = MEMBER_BALANCE.recoveryBetweenSprints.value;
 /** 休息ノード（heal）でのスタミナ回復。 */
-export const REST_STAMINA_RECOVER = 45;
+export const REST_STAMINA_RECOVER = MEMBER_BALANCE.recoveryRest.value;
 
 /** コーダー不在時の Coding 速度倍率（実装はほぼ止まる）。 */
-const NO_CODER_CODING_SPEED = 0.15;
+const NO_CODER_CODING_SPEED = MEMBER_BALANCE.noCoderCodingSpeed.value;
 /** コーダー不在時の並列枠ペナルティ（beginSprint の下限まで枠を削る大きな負値）。 */
-const NO_CODER_SLOT_PENALTY = -99;
+const NO_CODER_SLOT_PENALTY = MEMBER_BALANCE.noCoderSlotPenalty.value;
+
+/** 編成効果の係数と境界。 */
+const CODING_SPEED_BASE = MEMBER_BALANCE.codingSpeedBase.value;
+const CODING_POWER_DIVISOR = MEMBER_BALANCE.codingPowerDivisor.value;
+const CODING_SPEED_MIN = MEMBER_BALANCE.codingSpeedMinimum.value;
+const CODING_SPEED_MAX = MEMBER_BALANCE.codingSpeedMaximum.value;
+const REVIEW_EFFICIENCY_BASE = MEMBER_BALANCE.reviewEfficiencyBase.value;
+const REVIEW_POWER_DIVISOR = MEMBER_BALANCE.reviewPowerDivisor.value;
+const REVIEW_EFFICIENCY_MIN = MEMBER_BALANCE.reviewEfficiencyMinimum.value;
+const REVIEW_EFFICIENCY_MAX = MEMBER_BALANCE.reviewEfficiencyMaximum.value;
+const REVIEW_CAPACITY_BASE = MEMBER_BALANCE.reviewCapacityBase.value;
+const REVIEW_CAPACITY_PER_REVIEWER = MEMBER_BALANCE.reviewCapacityPerReviewer.value;
+const REVIEW_CAPACITY_MIN = MEMBER_BALANCE.reviewCapacityMinimum.value;
+const REVIEW_CAPACITY_MAX = MEMBER_BALANCE.reviewCapacityMaximum.value;
+const AI_MASTERY_NORMALIZATION = MEMBER_BALANCE.aiMasteryNormalization.value;
+const AI_MASTERY_MAX = MEMBER_BALANCE.aiMasteryMaximum.value;
+const AI_REWORK_BASE = MEMBER_BALANCE.aiReworkBase.value;
+const AI_REWORK_MASTERY_WEIGHT = MEMBER_BALANCE.aiReworkMasteryWeight.value;
+const AI_INCIDENT_BASE = MEMBER_BALANCE.aiIncidentBase.value;
+const AI_INCIDENT_MASTERY_WEIGHT = MEMBER_BALANCE.aiIncidentMasteryWeight.value;
+const REWORK_RATE_MIN = MEMBER_BALANCE.reworkRateMinimum.value;
+const REWORK_RATE_MAX = MEMBER_BALANCE.reworkRateMaximum.value;
+const INCIDENT_RATE_MIN = MEMBER_BALANCE.incidentRateMinimum.value;
+const INCIDENT_RATE_MAX = MEMBER_BALANCE.incidentRateMaximum.value;
+const CODING_SLOT_BONUS_MIN = MEMBER_BALANCE.codingSlotBonusMinimum.value;
+const CODING_SLOT_BONUS_MAX = MEMBER_BALANCE.codingSlotBonusMaximum.value;
+const FOCUS_BONUS_MAX = MEMBER_BALANCE.focusBonusMaximum.value;
+
+/** 成長式の係数。 */
+const XP_LEVEL_BASE = MEMBER_BALANCE.xpLevelBase.value;
+const XP_LEVEL_STEP = MEMBER_BALANCE.xpLevelStep.value;
+const XP_GAIN_BASE = MEMBER_BALANCE.xpGainBase.value;
+const XP_GAIN_PER_DONE = MEMBER_BALANCE.xpGainPerDone.value;
+const XP_GAIN_MIN = MEMBER_BALANCE.xpGainMinimum.value;
+const XP_GAIN_MAX = MEMBER_BALANCE.xpGainMaximum.value;
+const LEVEL_UP_IMPLEMENTATION = MEMBER_BALANCE.levelUpImplementation.value;
+const LEVEL_UP_REVIEW = MEMBER_BALANCE.levelUpReview.value;
+const LEVEL_UP_AI_MASTERY = MEMBER_BALANCE.levelUpAiMastery.value;
+const STAMINA_MAX_PER_LEVEL = MEMBER_BALANCE.staminaMaxPerLevel.value;
 
 // --- ランク・スタミナ・経験値の純関数 ---
 
@@ -137,7 +192,7 @@ function higherRank(a: MemberRank, b: MemberRank): MemberRank {
 
 /** 次レベルまでに必要な経験値。 */
 export function xpForLevel(level: number): number {
-  return 80 + (level - 1) * 30;
+  return XP_LEVEL_BASE + (level - 1) * XP_LEVEL_STEP;
 }
 
 /** ランク・レベル・トレイトからスタミナ上限を導く（純関数）。 */
@@ -146,7 +201,7 @@ export function computeStaminaMax(
   level: number,
   traits: Member['traits'],
 ): number {
-  const base = RANK_STAMINA[rank] + (level - 1) * 2;
+  const base = RANK_STAMINA[rank] + (level - 1) * STAMINA_MAX_PER_LEVEL;
   return Math.round(base * foldTraitModifiers(traits).staminaMaxMul);
 }
 
@@ -215,9 +270,9 @@ export function createInitialRoster(rng: Rng): RosterState {
 }
 
 /** ロスターに空きがあるかどうか（採用の上限）。 */
-export const ROSTER_CAP = 6;
+export const ROSTER_CAP = MEMBER_BALANCE.rosterCapacity.value;
 /** 採用 1 人にかかる予算コスト（ラン経済。SPEC 第4.4: 予算は採用・施策に使う）。 */
-export const RECRUIT_COST = 25;
+export const RECRUIT_COST = MEMBER_BALANCE.recruitCost.value;
 export function canRecruit(roster: RosterState): boolean {
   return roster.members.length < ROSTER_CAP;
 }
@@ -318,9 +373,23 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
   const reviewLoad = coders.reduce((p, m) => p * foldTraitModifiers(m.traits).reviewLoadMul, 1);
 
   // コーダー不在なら実装能力をほぼ無くす（最低枠の保険分も速度で潰す）。
-  const codingSpeedMul = noCoder ? NO_CODER_CODING_SPEED : clamp(0.7 + codingPower / 230, 0.6, 1.8);
-  const reviewEfficiencyMul = clamp((0.7 + reviewPower / 200) * reviewLoad, 0.55, 1.8);
-  const reviewCapacityMul = clamp(0.8 + reviewers.length * 0.18, 0.8, 1.6);
+  const codingSpeedMul = noCoder
+    ? NO_CODER_CODING_SPEED
+    : clamp(
+        CODING_SPEED_BASE + codingPower / CODING_POWER_DIVISOR,
+        CODING_SPEED_MIN,
+        CODING_SPEED_MAX,
+      );
+  const reviewEfficiencyMul = clamp(
+    (REVIEW_EFFICIENCY_BASE + reviewPower / REVIEW_POWER_DIVISOR) * reviewLoad,
+    REVIEW_EFFICIENCY_MIN,
+    REVIEW_EFFICIENCY_MAX,
+  );
+  const reviewCapacityMul = clamp(
+    REVIEW_CAPACITY_BASE + reviewers.length * REVIEW_CAPACITY_PER_REVIEWER,
+    REVIEW_CAPACITY_MIN,
+    REVIEW_CAPACITY_MAX,
+  );
   // RI-73 / F-1: レビュアー増で PR あたりのシニア消耗を薄め、燃え尽きにくくする。
   const reviewHpCostMul = reviewHpCostMulForReviewers(reviewers.length);
   const activeAssigned = coders.length + reviewers.length;
@@ -332,11 +401,12 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
   let incidentRateMul = 1;
   for (const m of coders) {
     if (!m.aiAssigned) continue;
-    const masteryNorm = clamp(effectiveAiMastery(m) / 100, 0, 1.2);
+    const masteryNorm = clamp(effectiveAiMastery(m) / AI_MASTERY_NORMALIZATION, 0, AI_MASTERY_MAX);
     const traitMods = foldTraitModifiers(m.traits);
     // RI-77: 配布時の手戻り上乗せを弱め、習熟が高い相手への配布が報われやすくする。
-    reworkRateAdd += 0.05 - 0.14 * masteryNorm + traitMods.aiReworkAdd;
-    incidentRateMul *= 1 + (0.05 - 0.1 * masteryNorm);
+    reworkRateAdd +=
+      AI_REWORK_BASE - AI_REWORK_MASTERY_WEIGHT * masteryNorm + traitMods.aiReworkAdd;
+    incidentRateMul *= 1 + (AI_INCIDENT_BASE - AI_INCIDENT_MASTERY_WEIGHT * masteryNorm);
   }
 
   // 実 AI 採用率の倍率: AIを配った稼働コーダーの割合（コーダー不在なら 0）。
@@ -354,11 +424,13 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
       reviewCapacityMul,
       reviewHpCostMul,
       seniorHpCostMul,
-      reworkRateAdd: clamp(reworkRateAdd, -0.3, 0.3),
-      incidentRateMul: clamp(incidentRateMul, 0.6, 1.6),
+      reworkRateAdd: clamp(reworkRateAdd, REWORK_RATE_MIN, REWORK_RATE_MAX),
+      incidentRateMul: clamp(incidentRateMul, INCIDENT_RATE_MIN, INCIDENT_RATE_MAX),
     },
-    codingSlotBonus: noCoder ? NO_CODER_SLOT_PENALTY : clamp(coders.length - 1, 0, 3),
-    focusBonus: Math.min(2, seniors),
+    codingSlotBonus: noCoder
+      ? NO_CODER_SLOT_PENALTY
+      : clamp(coders.length - 1, CODING_SLOT_BONUS_MIN, CODING_SLOT_BONUS_MAX),
+    focusBonus: Math.min(FOCUS_BONUS_MAX, seniors),
     aiAdoptionShare,
   };
 }
@@ -369,9 +441,9 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
 function levelUpOnce(m: Member): Member {
   const level = m.level + 1;
   const stats = {
-    implementation: clamp(m.stats.implementation + 3, 0, 100),
-    review: clamp(m.stats.review + 3, 0, 100),
-    aiMastery: clamp(m.stats.aiMastery + 2, 0, 100),
+    implementation: clamp(m.stats.implementation + LEVEL_UP_IMPLEMENTATION, 0, 100),
+    review: clamp(m.stats.review + LEVEL_UP_REVIEW, 0, 100),
+    aiMastery: clamp(m.stats.aiMastery + LEVEL_UP_AI_MASTERY, 0, 100),
   };
   const rank = higherRank(m.rank, rankFromLevel(level));
   const staminaMax = computeStaminaMax(rank, level, m.traits);
@@ -419,7 +491,7 @@ export function applySprintGrowth(
     const traitMods = foldTraitModifiers(m.traits);
 
     // 経験値と昇格。
-    const baseXp = clamp(18 + ctx.done * 1.2, 18, 70);
+    const baseXp = clamp(XP_GAIN_BASE + ctx.done * XP_GAIN_PER_DONE, XP_GAIN_MIN, XP_GAIN_MAX);
     const gained = Math.round(baseXp * traitMods.xpMul * RANK_LEARN[m.rank]);
     let xp = m.xp + gained;
     const startRank = m.rank;

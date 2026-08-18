@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BALANCE_REGISTRY,
+  MEMBER_BALANCE,
   PROCESS_BALANCE,
   defineBalanceEntry,
   defineProbabilityDistribution,
@@ -107,10 +108,15 @@ const PROCESS_BALANCE_IDS = [
   'process.stability.ticks',
 ] as const;
 
+const BALANCE_IDS = [
+  ...PROCESS_BALANCE_IDS,
+  ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
+].sort();
+
 describe('型付きバランスレジストリ', () => {
-  it('集約済みの工程値が検証を通り、全安定 ID と既存 export を維持する', () => {
+  it('集約済みの工程・メンバー値が検証を通り、全安定 ID と既存 export を維持する', () => {
     expect(validateBalanceRegistry(BALANCE_REGISTRY)).toEqual([]);
-    expect([...BALANCE_REGISTRY].map((entry) => entry.id).sort()).toEqual(PROCESS_BALANCE_IDS);
+    expect([...BALANCE_REGISTRY].map((entry) => entry.id).sort()).toEqual(BALANCE_IDS);
     expect(CODING_BASE_TICKS).toBe(PROCESS_BALANCE.codingBaseTicks.value);
     expect(AI_CODING_SPEEDUP).toBe(PROCESS_BALANCE.aiCodingSpeedup.value);
     expect(AI_ADOPTION).toBe(PROCESS_BALANCE.aiAdoption.value);
@@ -158,6 +164,30 @@ describe('型付きバランスレジストリ', () => {
 
   it('Security 脆弱度の分母となる閾値は正数に制限する', () => {
     expect(PROCESS_BALANCE.securityFragilityThreshold.allowedRange.min).toBeGreaterThan(0);
+  });
+
+  it('メンバーの分母・生成前提となる下限を正しく制限する', () => {
+    expect(MEMBER_BALANCE.xpLevelBase.allowedRange.min).toBeGreaterThan(0);
+    expect(MEMBER_BALANCE.leaveThreshold.allowedRange.min).toBeGreaterThan(0);
+    expect(MEMBER_BALANCE.rosterCapacity.allowedRange.min).toBeGreaterThanOrEqual(3);
+  });
+
+  it('昇格閾値は同値を許可せず、順番を維持する', () => {
+    const middle = defineBalanceEntry({
+      ...MEMBER_BALANCE.promotionMiddleLevel,
+      value: MEMBER_BALANCE.promotionSeniorLevel.value,
+    });
+    const senior = defineBalanceEntry({
+      ...MEMBER_BALANCE.promotionSeniorLevel,
+      value: MEMBER_BALANCE.promotionSeniorLevel.value,
+    });
+
+    expect(validateBalanceRegistry([middle, senior])).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: MEMBER_BALANCE.promotionMiddleLevel.id,
+      }),
+    );
   });
 
   it('Review の HP 効率下限は正数に制限する', () => {

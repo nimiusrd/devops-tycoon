@@ -273,7 +273,7 @@ export function securityCustomerTrustDelta(
   spread: number,
 ): number {
   const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;
-  if (spread <= minimumCount) return 0;
+  if (spread === 0 || spread < minimumCount) return 0;
   const exposure =
     Math.max(minimumCount, spread) * PROCESS_BALANCE.incidentTrustSpreadRaw.value +
     Math.max(minimumCount, incidents) * PROCESS_BALANCE.incidentTrustPerIncidentRaw.value;

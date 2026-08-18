@@ -876,7 +876,10 @@ export class RunEngine {
     const m = this.sprint?.metrics;
     const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;
     const delta =
-      result.spread > minimumCount && m && typeof m.securityTrustSpreadRaw === 'number'
+      result.spread > 0 &&
+      result.spread >= minimumCount &&
+      m &&
+      typeof m.securityTrustSpreadRaw === 'number'
         ? securityCustomerTrustFromRaw(
             m.securityTrustSpreadRaw +
               Math.max(minimumCount, result.incidents) *

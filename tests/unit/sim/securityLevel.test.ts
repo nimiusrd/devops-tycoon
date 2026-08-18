@@ -304,7 +304,7 @@ describe('RI-87 セキュリティ軸', () => {
     expect(applyPenalty(rawMetrics, 1)).toBe(expected);
   });
 
-  it('顧客信頼の最小件数は直接経路と延焼 raw 経路で同じように働く', () => {
+  it('顧客信頼の最小件数ちょうどは直接経路と延焼 raw 経路で同じように働く', () => {
     const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount as { value: number };
     const defaultValue = minimumCount.value;
     minimumCount.value = 1;
@@ -328,9 +328,10 @@ describe('RI-87 セキュリティ軸', () => {
         securityTrustSpreadRaw: securityCustomerTrustSpreadRaw(40),
         securityTrustIncidentFragility: securityFragility(40),
       };
-      expect(securityCustomerTrustDelta(40, 1, 1)).toBe(0);
-      expect(applyPenalty(undefined)).toBe(0);
-      expect(applyPenalty(rawMetrics)).toBe(0);
+      const expected = securityCustomerTrustDelta(40, 1, 1);
+      expect(expected).toBe(-1);
+      expect(applyPenalty(undefined)).toBe(expected);
+      expect(applyPenalty(rawMetrics)).toBe(expected);
     } finally {
       minimumCount.value = defaultValue;
     }

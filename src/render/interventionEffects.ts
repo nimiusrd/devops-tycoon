@@ -6,6 +6,7 @@
  * 設計空間 1404×573 を使う。
  */
 import { ANDON_TICKS, OVERTIME_TICKS, STABILITY_TICKS, THROTTLE_TICKS } from '../sim/actions';
+import { TASK_PROGRESS_MAX } from '../sim/assignTask';
 import type {
   InterventionEffect,
   InterventionModifierKind,
@@ -193,7 +194,7 @@ export function positionInterventionReactions(
           fromProgress > 0
             ? flowPointAt(flow, fromT)
             : (dotPosition(prevTasks, reaction.taskId) ?? flowPointAt(flow, 0));
-        const to = flowPointAt(flow, Math.min(toT, 0.999));
+        const to = flowPointAt(flow, Math.min(toT, TASK_PROGRESS_MAX));
         return [
           {
             kind: 'assignDash',

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { ACTION_DEFS } from '../../../src/data/actions';
 import {
+  ACTION_BALANCE,
+  ACTION_BALANCE_BY_ID,
   BALANCE_REGISTRY,
   MEMBER_BALANCE,
   PROCESS_BALANCE,
@@ -8,6 +11,7 @@ import {
   flattenBalanceEntries,
   validateBalanceRegistry,
 } from '../../../src/data/balance';
+import * as actionSimulation from '../../../src/sim/actions';
 import {
   AI_ADOPTION,
   AI_CODING_SPEEDUP,
@@ -41,6 +45,7 @@ import {
   STABILITY_TICKS,
   TASK_BASE_VALUE,
 } from '../../../src/sim/model/process';
+import { ORG_STAT_MAX, ORG_STAT_MIN } from '../../../src/sim/orgStat';
 
 const PROCESS_BALANCE_IDS = [
   'process.ai.adoption',
@@ -108,8 +113,68 @@ const PROCESS_BALANCE_IDS = [
   'process.stability.ticks',
 ] as const;
 
+const ACTION_BALANCE_IDS = [
+  'action.interruptReview.focusCost',
+  'action.interruptReview.cooldownTicks',
+  'action.interruptReview.gaugeGain',
+  'action.splitPr.focusCost',
+  'action.splitPr.cooldownTicks',
+  'action.splitPr.gaugeGain',
+  'action.firefight.focusCost',
+  'action.firefight.cooldownTicks',
+  'action.firefight.gaugeGain',
+  'action.assignTask.focusCost',
+  'action.assignTask.cooldownTicks',
+  'action.assignTask.gaugeGain',
+  'action.aiThrottle.focusCost',
+  'action.aiThrottle.cooldownTicks',
+  'action.aiThrottle.gaugeGain',
+  'action.pairReview.focusCost',
+  'action.pairReview.cooldownTicks',
+  'action.pairReview.gaugeGain',
+  'action.overtime.focusCost',
+  'action.overtime.cooldownTicks',
+  'action.overtime.gaugeGain',
+  'action.andon.focusCost',
+  'action.andon.cooldownTicks',
+  'action.andon.gaugeGain',
+  'action.interruptReview.reviewCount',
+  'action.interruptReview.seniorHpCost',
+  'action.firefight.seniorHpCost',
+  'action.firefight.seniorHpEscalation',
+  'action.firefight.seniorHpCostMaximum',
+  'action.firefight.lightMoraleCost',
+  'action.firefight.lightSeniorHpCost',
+  'action.firefight.stabilityBurnTicks',
+  'action.firefight.stabilityMinimumBurning',
+  'action.pairReview.reviewCount',
+  'action.pairReview.aiLiteracyGain',
+  'action.splitPr.progressPenalty',
+  'action.splitPr.moraleCost',
+  'action.splitPr.seniorHpCost',
+  'action.overtime.durationTicks',
+  'action.overtime.moraleCost',
+  'action.overtime.seniorHpCost',
+  'action.andon.durationTicks',
+  'action.andon.stabilityReviewMinimum',
+  'action.andon.baseMoraleCost',
+  'action.andon.thinMoraleCost',
+  'action.andon.seniorHpCost',
+  'action.aiThrottle.durationTicks',
+  'action.combo.gaugeFocusRefund',
+  'action.assignTask.progress',
+  'action.assignTask.moraleCost',
+  'action.assignTask.mismatchStreakMaximum',
+  'action.assignTask.idealMoraleMinimum',
+  'action.task.progress.minimum',
+  'action.task.progress.maximum',
+  'action.organizationStat.minimum',
+  'action.organizationStat.maximum',
+] as const;
+
 const BALANCE_IDS = [
   ...PROCESS_BALANCE_IDS,
+  ...ACTION_BALANCE_IDS,
   ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
 ].sort();
 
@@ -160,6 +225,90 @@ describe('型付きバランスレジストリ', () => {
     expect(OVERTIME_REVIEW_MUL).toBe(PROCESS_BALANCE.overtimeReviewMultiplier.value);
     expect(COMBO_BONUS_PER).toBe(PROCESS_BALANCE.comboBonusPer.value);
     expect(COMBO_BONUS_CAP).toBe(PROCESS_BALANCE.comboBonusCap.value);
+  });
+
+  it('介入の実行定義と互換aliasがアクションレジストリを参照する', () => {
+    expect([...Object.values(ACTION_BALANCE).map((entry) => entry.id)].sort()).toEqual(
+      [...ACTION_BALANCE_IDS].sort(),
+    );
+    expect(ACTION_DEFS.map((definition) => definition.id)).toEqual(
+      Object.keys(ACTION_BALANCE_BY_ID),
+    );
+
+    for (const definition of ACTION_DEFS) {
+      const balance = ACTION_BALANCE_BY_ID[definition.id];
+      expect(definition.cost).toBe(balance.focusCost.value);
+      expect(definition.cooldownTicks).toBe(balance.cooldownTicks.value);
+      expect(definition.gauge).toBe(balance.gauge.value);
+    }
+
+    const aliases = [
+      [actionSimulation.INTERRUPT_REVIEW_COUNT, ACTION_BALANCE.interruptReviewCount],
+      [actionSimulation.INTERRUPT_HP_COST, ACTION_BALANCE.interruptReviewHpCost],
+      [actionSimulation.FIREFIGHT_HP_COST, ACTION_BALANCE.firefightHpCost],
+      [actionSimulation.FIREFIGHT_HP_ESCALATION, ACTION_BALANCE.firefightHpEscalation],
+      [actionSimulation.FIREFIGHT_HP_COST_MAX, ACTION_BALANCE.firefightHpCostMaximum],
+      [actionSimulation.FIREFIGHT_LIGHT_MORALE_COST, ACTION_BALANCE.firefightLightMoraleCost],
+      [actionSimulation.FIREFIGHT_LIGHT_HP_COST, ACTION_BALANCE.firefightLightHpCost],
+      [actionSimulation.FIREFIGHT_STABILITY_BURN_TICKS, ACTION_BALANCE.firefightStabilityBurnTicks],
+      [
+        actionSimulation.FIREFIGHT_STABILITY_MIN_BURNING,
+        ACTION_BALANCE.firefightStabilityMinimumBurning,
+      ],
+      [actionSimulation.PAIR_REVIEW_COUNT, ACTION_BALANCE.pairReviewCount],
+      [actionSimulation.PAIR_LITERACY_GAIN, ACTION_BALANCE.pairReviewLiteracyGain],
+      [actionSimulation.SPLIT_PROGRESS_PENALTY, ACTION_BALANCE.splitPrProgressPenalty],
+      [actionSimulation.SPLIT_MORALE_COST, ACTION_BALANCE.splitPrMoraleCost],
+      [actionSimulation.SPLIT_HP_COST, ACTION_BALANCE.splitPrHpCost],
+      [actionSimulation.OVERTIME_TICKS, ACTION_BALANCE.overtimeTicks],
+      [actionSimulation.OVERTIME_MORALE_COST, ACTION_BALANCE.overtimeMoraleCost],
+      [actionSimulation.OVERTIME_HP_COST, ACTION_BALANCE.overtimeHpCost],
+      [actionSimulation.ANDON_TICKS, ACTION_BALANCE.andonTicks],
+      [actionSimulation.ANDON_STABILITY_REVIEW_MIN, ACTION_BALANCE.andonStabilityReviewMinimum],
+      [actionSimulation.ANDON_BASE_MORALE_COST, ACTION_BALANCE.andonBaseMoraleCost],
+      [actionSimulation.ANDON_THIN_MORALE_COST, ACTION_BALANCE.andonThinMoraleCost],
+      [actionSimulation.ANDON_HP_COST, ACTION_BALANCE.andonHpCost],
+      [actionSimulation.THROTTLE_TICKS, ACTION_BALANCE.aiThrottleTicks],
+      [actionSimulation.GAUGE_FOCUS_REFUND, ACTION_BALANCE.comboGaugeFocusRefund],
+      [actionSimulation.ASSIGN_PROGRESS, ACTION_BALANCE.assignTaskProgress],
+      [actionSimulation.ASSIGN_MORALE_COST, ACTION_BALANCE.assignTaskMoraleCost],
+      [actionSimulation.ASSIGN_MISMATCH_STREAK_MAX, ACTION_BALANCE.assignTaskMismatchStreakMaximum],
+      [actionSimulation.ASSIGN_IDEAL_MORALE_MIN, ACTION_BALANCE.assignTaskIdealMoraleMinimum],
+      [actionSimulation.TASK_PROGRESS_MIN, ACTION_BALANCE.taskProgressMinimum],
+      [actionSimulation.TASK_PROGRESS_MAX, ACTION_BALANCE.taskProgressMaximum],
+    ] as const;
+
+    for (const [actual, entry] of aliases) expect(actual).toBe(entry.value);
+    expect(ORG_STAT_MIN).toBe(ACTION_BALANCE.organizationStatMinimum.value);
+    expect(ORG_STAT_MAX).toBe(ACTION_BALANCE.organizationStatMaximum.value);
+  });
+
+  it('介入の割合・進捗・組織指標の範囲を検証する', () => {
+    const invalidRatio = defineBalanceEntry({
+      ...ACTION_BALANCE.assignTaskProgress,
+      id: 'test.action-ratio-out-of-range',
+      value: 1.1,
+      allowedRange: { min: 0, max: 2 },
+    });
+
+    expect(validateBalanceRegistry([invalidRatio])).toContainEqual(
+      expect.objectContaining({ code: 'ratio-out-of-range', id: invalidRatio.id }),
+    );
+    expect(ACTION_BALANCE.taskProgressMinimum.value).toBeGreaterThanOrEqual(0);
+    expect(ACTION_BALANCE.taskProgressMinimum.allowedRange).toEqual({ min: 0, max: 0 });
+    expect(ACTION_BALANCE.taskProgressMaximum.value).toBeLessThanOrEqual(1);
+    expect(ACTION_BALANCE.taskProgressMaximum.allowedRange.min).toBeGreaterThanOrEqual(0.999);
+    expect(ACTION_BALANCE.organizationStatMinimum.value).toBeGreaterThanOrEqual(0);
+    expect(ACTION_BALANCE.organizationStatMinimum.allowedRange).toEqual({ min: 0, max: 0 });
+    expect(ACTION_BALANCE.organizationStatMaximum.value).toBeLessThanOrEqual(100);
+    expect(ACTION_BALANCE.organizationStatMaximum.allowedRange).toEqual({ min: 100, max: 100 });
+    expect(ACTION_BALANCE.interruptReviewCount.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.pairReviewCount.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.overtimeTicks.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.andonTicks.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.aiThrottleTicks.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.firefightStabilityMinimumBurning.allowedRange.min).toBe(1);
+    expect(ACTION_BALANCE.andonStabilityReviewMinimum.allowedRange.min).toBe(1);
   });
 
   it('Security 脆弱度の分母となる閾値は正数に制限する', () => {
@@ -228,6 +377,50 @@ describe('型付きバランスレジストリ', () => {
     PROCESS_BALANCE.securityLevelMinimum,
     PROCESS_BALANCE.securityLevelMaximum,
     PROCESS_BALANCE.securityRivalLevelMinimum,
+    ACTION_BALANCE.interruptReviewFocusCost,
+    ACTION_BALANCE.interruptReviewCooldownTicks,
+    ACTION_BALANCE.splitPrFocusCost,
+    ACTION_BALANCE.splitPrCooldownTicks,
+    ACTION_BALANCE.firefightFocusCost,
+    ACTION_BALANCE.firefightCooldownTicks,
+    ACTION_BALANCE.assignTaskFocusCost,
+    ACTION_BALANCE.assignTaskCooldownTicks,
+    ACTION_BALANCE.aiThrottleFocusCost,
+    ACTION_BALANCE.aiThrottleCooldownTicks,
+    ACTION_BALANCE.pairReviewFocusCost,
+    ACTION_BALANCE.pairReviewCooldownTicks,
+    ACTION_BALANCE.overtimeFocusCost,
+    ACTION_BALANCE.overtimeCooldownTicks,
+    ACTION_BALANCE.andonFocusCost,
+    ACTION_BALANCE.andonCooldownTicks,
+    ACTION_BALANCE.interruptReviewCount,
+    ACTION_BALANCE.interruptReviewHpCost,
+    ACTION_BALANCE.firefightHpCost,
+    ACTION_BALANCE.firefightHpEscalation,
+    ACTION_BALANCE.firefightHpCostMaximum,
+    ACTION_BALANCE.firefightLightMoraleCost,
+    ACTION_BALANCE.firefightLightHpCost,
+    ACTION_BALANCE.firefightStabilityBurnTicks,
+    ACTION_BALANCE.firefightStabilityMinimumBurning,
+    ACTION_BALANCE.pairReviewCount,
+    ACTION_BALANCE.pairReviewLiteracyGain,
+    ACTION_BALANCE.splitPrMoraleCost,
+    ACTION_BALANCE.splitPrHpCost,
+    ACTION_BALANCE.overtimeTicks,
+    ACTION_BALANCE.overtimeMoraleCost,
+    ACTION_BALANCE.overtimeHpCost,
+    ACTION_BALANCE.andonTicks,
+    ACTION_BALANCE.andonStabilityReviewMinimum,
+    ACTION_BALANCE.andonBaseMoraleCost,
+    ACTION_BALANCE.andonThinMoraleCost,
+    ACTION_BALANCE.andonHpCost,
+    ACTION_BALANCE.aiThrottleTicks,
+    ACTION_BALANCE.comboGaugeFocusRefund,
+    ACTION_BALANCE.assignTaskMoraleCost,
+    ACTION_BALANCE.assignTaskMismatchStreakMaximum,
+    ACTION_BALANCE.assignTaskIdealMoraleMinimum,
+    ACTION_BALANCE.organizationStatMinimum,
+    ACTION_BALANCE.organizationStatMaximum,
   ])('$id は非整数の離散値を検証で拒否する', (entry) => {
     expect(entry.integer).toBe(true);
     const invalid = defineBalanceEntry({ ...entry, value: entry.value + 0.5 });
@@ -267,6 +460,36 @@ describe('型付きバランスレジストリ', () => {
       maximum: PROCESS_BALANCE.securityFragilityMaximum,
       invertedMinimum: 1,
       invertedMaximum: 0.9,
+    },
+    {
+      minimum: ACTION_BALANCE.taskProgressMinimum,
+      maximum: ACTION_BALANCE.taskProgressMaximum,
+      invertedMinimum: 0.8,
+      invertedMaximum: 0.7,
+    },
+    {
+      minimum: ACTION_BALANCE.organizationStatMinimum,
+      maximum: ACTION_BALANCE.organizationStatMaximum,
+      invertedMinimum: 100,
+      invertedMaximum: 99,
+    },
+    {
+      minimum: ACTION_BALANCE.firefightHpCost,
+      maximum: ACTION_BALANCE.firefightHpCostMaximum,
+      invertedMinimum: 7,
+      invertedMaximum: 6,
+    },
+    {
+      minimum: ACTION_BALANCE.firefightHpCostMaximum,
+      maximum: ACTION_BALANCE.firefightLightHpCost,
+      invertedMinimum: 12,
+      invertedMaximum: 11,
+    },
+    {
+      minimum: ACTION_BALANCE.assignTaskIdealMoraleMinimum,
+      maximum: ACTION_BALANCE.assignTaskMoraleCost,
+      invertedMinimum: 4,
+      invertedMaximum: 3,
     },
   ])(
     '$minimum.id と $maximum.id が逆転した場合は検証で拒否する',

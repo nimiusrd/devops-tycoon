@@ -18,7 +18,7 @@
 | [3](../SPEC.md#3-ゲームの基本ループ) | 複数四半期ラン、固定トラック、ビート | `src/sim/run/engine.ts`, `phases.ts`, `events.ts`, `tests/unit/sim/runLoop.test.ts` | ✅ |
 | [3.1](../SPEC.md#31-時間の目安ペーシング規定) | テンポと速度操作 | `src/ui/sprintTempo.ts`, `tests/unit/ui/sprintTempo.test.ts`, `tests/unit/helpers/pacingStats.ts` | ✅ |
 | [4.1〜4.6](../SPEC.md#4-ゲーム画面) | 現場、HUD、介入、ビート、進化、リザルト | `src/ui/*Screen.tsx`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `src/sim/actions.ts`, `src/render/boardScene.ts`, `tests/e2e/sprint-layout.spec.ts`, `tests/e2e/sprint-pixi-visual.spec.ts` | ✅ 主要機能、5 viewport契約、名前付きスロット、共通AspectStage、CSS境界、レスポンシブ表示モード、DOM/Pixi共有トークン、1024×768・6レリックの盤面最低寸法（RI-69／70、RI-93〜100） |
-| [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビューと継続 | `QuarterReviewScreen.tsx`, `quarterReview.ts`, `goalAdjustments.ts`, `reviewHistoryView.ts` | ✅ 本体のレビューと目標修正は実装済み（RI-68）。完了済み四半期の履歴表示は RI-126。第23章のOKR・交渉・ロードマップは RI-129〜131 |
+| [4.6.1](../SPEC.md#461-四半期レビュー--目標修正画面) | 四半期レビューと継続 | `QuarterReviewScreen.tsx`, `quarterReview.ts`, `goalAdjustments.ts`, `reviewHistoryView.ts`, `okrTemplates.ts`, `okrView.ts` | ✅ 本体のレビューと目標修正は実装済み（RI-68）。完了済み四半期の履歴表示は RI-126。OKRテンプレートは RI-129。第23章の交渉・ロードマップは RI-130〜131 |
 | [4.7〜4.11](../SPEC.md#47-組織スケールとズーム階層巨大組織対応) | 独立チーム、部署・全社・業界、ドリルダウン | `src/sim/orgscale/`, `OrgScreen.tsx`, `DeptScreen.tsx`, `IndustryScreen.tsx`, `src/ui/AspectStage.tsx`, `src/render/orgDeptComparison.ts`, `src/render/trendHistoryView.ts`, `tests/e2e/org-scale.spec.ts` | ✅ 全社・部署・業界の設計比率、DOM/Pixi共有AspectStage、全社カメラ、部署ドリルダウン、ズームオーバーレイスクロールを固定（RI-100）。部門現在値比較は RI-125。診断・KPI時系列は RI-128 |
 | [5](../SPEC.md#5-プレイヤーが操作するリソース) | 組織・集中力・予算・進化資源 | `src/sim/types.ts`, `src/sim/org.ts`, `src/sim/run/types.ts` | ✅ |
 | [6](../SPEC.md#6-スプリント中の能動操作) | 介入、集中力、コンボ、対象指定 | `src/sim/actions.ts`, `ActionBar.tsx`, `boardDragPlan.ts` | ✅ |
@@ -36,14 +36,13 @@
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-8とF-9の有効手は反実仮想評価の計測手段あり（RI-101。既定コホートの合否は未再走）。F-1・F-7はRI-73、F-2はRI-77／78／83、F-3はRI-102、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-10はRI-76、F-11はRI-86、F-12はRI-81で充足または実装済み |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
 | [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), [balance-ssot-plan.md](./balance-ssot-plan.md), `src/game.ts`, `src/state/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。バランスパラメータの型付きSSoTとルールセット識別は未実装（RI-104）。残る未充足は本表の他課題 |
-| [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ、ツール別シナリオ、部門比較、レビュー履歴、開始レシピ、診断・KPI時系列等は実装済み | 🟡 残候補はRI-129〜131（RI-34から切り出し） |
+| [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ、ツール別シナリオ、部門比較、レビュー履歴、開始レシピ、診断・KPI時系列、OKRテンプレート等は実装済み | 🟡 残候補はRI-130〜131（RI-34から切り出し） |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
 
 ## 2. 未充足一覧
 
 | 課題 | 影響 | 追跡先 |
 | --- | --- | --- |
-| 四半期レビューのOKRテンプレートが無い | 第23章 | [RI-129](./remaining-issues.md#ri-129-四半期レビューのokrテンプレート) |
 | ステークホルダー別交渉が無い | 第23章 | [RI-130](./remaining-issues.md#ri-130-ステークホルダー別交渉) |
 | 複数四半期ロードマップが無い | 第23章 | [RI-131](./remaining-issues.md#ri-131-複数四半期ロードマップ) |
 | バランスパラメータの型付きSSoT、生成文書、ルールセット識別が未実装 | 第21／第22.3／第22.5 | [RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入) |

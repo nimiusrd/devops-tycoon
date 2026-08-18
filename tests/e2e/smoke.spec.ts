@@ -18,6 +18,7 @@ test('タイトル画面が表示され、難易度を選んでランを開始�
   await page.getByTestId('start-run').click();
   // ラン開始直後は編成（Setup）。スプリント開始ボタンが出る。
   await expect(page.getByTestId('setup')).toBeVisible();
+  await expect(page.getByTestId('setup-okr')).toBeVisible();
   await expect(page.getByTestId('begin-sprint')).toBeVisible();
 });
 

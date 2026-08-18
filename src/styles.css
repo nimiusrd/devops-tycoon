@@ -4652,6 +4652,63 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 4px;
   flex-basis: 100%;
 }
+.quarter-okr {
+  margin-bottom: 1rem;
+}
+.quarter-okr-objective {
+  display: grid;
+  gap: 4px;
+  margin-top: 0.65rem;
+}
+.quarter-okr-kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.quarter-okr-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+.quarter-okr-desc {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.setup-okr {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+}
+.setup-okr-kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.setup-okr-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+.setup-okr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.quarter-okr .quarter-kpi-table {
+  margin-bottom: 0;
+}
 .quarter-kpi-table {
   display: grid;
   gap: 4px;

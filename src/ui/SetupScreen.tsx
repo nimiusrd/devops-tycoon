@@ -4,12 +4,14 @@
  * 第1スプリント前、各スプリント間、ショップ/休息後・次四半期開始時の編成ウィンドウ。
  * いきなり盤面を走らせず、メンバー配置・AI 配布を確定してからスプリントを開始する。
  * 高負荷（elite）予定はバナーで明示する（RI-77）。
+ * 今四半期の OKR はコンパクト表示する（RI-129）。詳細な目標値は四半期レビューが正。
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
 import { getBoss } from '../data/bosses';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { FormationGrid } from './FormationScreen';
+import { QuarterOkr } from './QuarterOkr';
 
 export interface SetupScreenProps {
   state: RunState;
@@ -53,6 +55,7 @@ export function SetupScreen({
         <b className="boss-name">★ {boss?.name ?? 'ボス'}</b>
         <span className="boss-desc">{boss?.description}</span>
       </div>
+      <QuarterOkr variant="setup" bossId={state.bossId} goal={state.quarterGoal} />
       <div className="formation-panel">
         <div className="formation-head">
           <div>

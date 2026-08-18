@@ -17,6 +17,8 @@ export interface StakeholderNegotiationListProps {
   hasAiAdoptionTarget: boolean;
   currentDeliveryTarget: number;
   onChooseAdjustment: (id: GoalAdjustmentId) => void;
+  /** 見通しプレビュー用。ホバー/フォーカスで ID、離脱で null（RI-131）。 */
+  onPreviewAdjustment?: (id: GoalAdjustmentId | null) => void;
 }
 
 export function StakeholderNegotiationList({
@@ -25,6 +27,7 @@ export function StakeholderNegotiationList({
   hasAiAdoptionTarget,
   currentDeliveryTarget,
   onChooseAdjustment,
+  onPreviewAdjustment,
 }: StakeholderNegotiationListProps) {
   const panels = useMemo(
     () => planStakeholderNegotiation({ availableAdjustments, trust }),
@@ -65,6 +68,10 @@ export function StakeholderNegotiationList({
                     data-adjustment={offer.id}
                     data-negotiator={offer.negotiator}
                     onClick={() => onChooseAdjustment(offer.id)}
+                    onMouseEnter={() => onPreviewAdjustment?.(offer.id)}
+                    onMouseLeave={() => onPreviewAdjustment?.(null)}
+                    onFocus={() => onPreviewAdjustment?.(offer.id)}
+                    onBlur={() => onPreviewAdjustment?.(null)}
                   >
                     <strong>{def.label}</strong>
                     <span

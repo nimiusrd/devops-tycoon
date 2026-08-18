@@ -158,6 +158,9 @@ export const MIN_PRIOR_QUARTER_DELIVERY_TARGET = Math.round(
   BASELINE_SPRINT_DELIVERY_FLOOR * SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL * 0.7,
 );
 
+/** priorGoal 引き継ぎ時の Delivery 減衰（`buildQuarterGoal` と同じ）。 */
+export const PRIOR_GOAL_DELIVERY_DECAY = 0.95;
+
 /**
  * 目標修正適用後の Delivery 下限。
  * prior 下限と同じにして「緩和 → 次期開始で戻る」の見かけ差をなくす。
@@ -217,7 +220,7 @@ export function buildQuarterGoal(
   if (priorGoal) {
     goal.deliveryTarget = Math.max(
       MIN_PRIOR_QUARTER_DELIVERY_TARGET,
-      Math.round(priorGoal.deliveryTarget * 0.95),
+      Math.round(priorGoal.deliveryTarget * PRIOR_GOAL_DELIVERY_DECAY),
     );
     goal.qualityTarget = priorGoal.qualityTarget;
     goal.techDebtLimit = priorGoal.techDebtLimit;
@@ -431,6 +434,80 @@ export function availableAdjustments(
   });
 }
 
+/** 目標修正の Delivery 効果だけを適用する（下限付き）。 */
+export function applyDeliveryGoalEffects(
+  currentDeliveryTarget: number,
+  goalEffects: GoalAdjustmentDef['goalEffects'],
+): number {
+  let next = currentDeliveryTarget;
+  if (goalEffects.deliveryMul !== undefined) {
+    next = Math.max(
+      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+      Math.round(next * goalEffects.deliveryMul),
+    );
+  }
+  if (goalEffects.deliveryAdd !== undefined) {
+    next = Math.max(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET, next + goalEffects.deliveryAdd);
+  }
+  return next;
+}
+
+/**
+ * 目標修正の goalEffects を四半期目標へ適用する（RI-131）。
+ * org / 信頼 / 予算は触らず、`applyGoalAdjustment` と見通し投影が同じ式を使う。
+ */
+export function applyGoalEffectsToGoal(goal: QuarterGoal, def: GoalAdjustmentDef): QuarterGoal {
+  const ge = def.goalEffects;
+  const next: QuarterGoal = {
+    ...goal,
+    deliveryTarget: applyDeliveryGoalEffects(goal.deliveryTarget, ge),
+  };
+  if (ge.qualityAdd !== undefined) next.qualityTarget = goal.qualityTarget + ge.qualityAdd;
+  if (ge.moraleAdd !== undefined) next.moraleTarget = goal.moraleTarget + ge.moraleAdd;
+  if (ge.techDebtLimitAdd !== undefined)
+    next.techDebtLimit = goal.techDebtLimit + ge.techDebtLimitAdd;
+  if (ge.incidentLimitAdd !== undefined)
+    next.incidentLimit = goal.incidentLimit + ge.incidentLimitAdd;
+  if (ge.aiAdoptionAdd !== undefined && goal.aiAdoptionTarget !== undefined) {
+    next.aiAdoptionTarget = Math.max(0, goal.aiAdoptionTarget + ge.aiAdoptionAdd);
+  }
+  return next;
+}
+
+/**
+ * 次四半期開始時の priorGoal 減衰（RI-131）。
+ * Delivery だけ減衰し、他 KPI はコピーする。次ボスからの再生成はしない。
+ */
+export function decayGoalFromPrior(prior: QuarterGoal): QuarterGoal {
+  const next: QuarterGoal = {
+    ...prior,
+    deliveryTarget: Math.max(
+      MIN_PRIOR_QUARTER_DELIVERY_TARGET,
+      Math.round(prior.deliveryTarget * PRIOR_GOAL_DELIVERY_DECAY),
+    ),
+  };
+  if (prior.aiAdoptionTarget === undefined) delete next.aiAdoptionTarget;
+  return next;
+}
+
+export interface ForwardGoals {
+  /** 次四半期（Q+1）の見通し目標。 */
+  next: QuarterGoal;
+  /** その次（Q+2）の見通し目標。再減衰のみで物理キャリーは載せない。 */
+  following: QuarterGoal;
+}
+
+/**
+ * 今四半期より先の目標見通し（RI-131）。
+ * `def` があるときはその goalEffects を載せてから減衰する。拘束力は持たない。
+ */
+export function projectForwardGoals(current: QuarterGoal, def?: GoalAdjustmentDef): ForwardGoals {
+  const adjusted = def ? applyGoalEffectsToGoal(current, def) : current;
+  const next = decayGoalFromPrior(adjusted);
+  const following = decayGoalFromPrior(next);
+  return { next, following };
+}
+
 /**
  * 目標修正選択後に次四半期へ持ち越される Delivery 目標のプレビュー（RI-68）。
  * 適用時下限と prior 減衰下限の両方を反映する。
@@ -439,15 +516,13 @@ export function previewNextQuarterDeliveryTarget(
   currentDeliveryTarget: number,
   def: GoalAdjustmentDef,
 ): number {
-  let next = currentDeliveryTarget;
-  const ge = def.goalEffects;
-  if (ge.deliveryMul !== undefined) {
-    next = Math.max(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET, Math.round(next * ge.deliveryMul));
-  }
-  if (ge.deliveryAdd !== undefined) {
-    next = Math.max(MIN_ADJUSTED_QUARTER_DELIVERY_TARGET, next + ge.deliveryAdd);
-  }
-  return Math.max(MIN_PRIOR_QUARTER_DELIVERY_TARGET, Math.round(next * 0.95));
+  return decayGoalFromPrior({
+    deliveryTarget: applyDeliveryGoalEffects(currentDeliveryTarget, def.goalEffects),
+    qualityTarget: 0,
+    techDebtLimit: 0,
+    moraleTarget: 0,
+    incidentLimit: 0,
+  }).deliveryTarget;
 }
 
 export interface BuildReviewInput {
@@ -542,27 +617,7 @@ export function applyGoalAdjustment(
     team: clamp(input.trust.team + (def.trustDelta.team ?? 0), 0, 100),
   };
 
-  const goal: QuarterGoal = { ...input.goal };
-  const ge = def.goalEffects;
-  if (ge.deliveryMul !== undefined) {
-    goal.deliveryTarget = Math.max(
-      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
-      Math.round(goal.deliveryTarget * ge.deliveryMul),
-    );
-  }
-  if (ge.deliveryAdd !== undefined) {
-    goal.deliveryTarget = Math.max(
-      MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
-      goal.deliveryTarget + ge.deliveryAdd,
-    );
-  }
-  if (ge.qualityAdd !== undefined) goal.qualityTarget += ge.qualityAdd;
-  if (ge.moraleAdd !== undefined) goal.moraleTarget += ge.moraleAdd;
-  if (ge.techDebtLimitAdd !== undefined) goal.techDebtLimit += ge.techDebtLimitAdd;
-  if (ge.incidentLimitAdd !== undefined) goal.incidentLimit += ge.incidentLimitAdd;
-  if (ge.aiAdoptionAdd !== undefined && goal.aiAdoptionTarget !== undefined) {
-    goal.aiAdoptionTarget = Math.max(0, goal.aiAdoptionTarget + ge.aiAdoptionAdd);
-  }
+  const goal = applyGoalEffectsToGoal(input.goal, def);
 
   const org = { ...input.org };
   if (def.orgEffects?.deliveryScoreMul !== undefined) {

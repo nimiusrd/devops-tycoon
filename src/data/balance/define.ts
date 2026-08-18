@@ -15,7 +15,6 @@ const ORDERED_BOUND_PAIRS = [
   ['process.security.level.minimum', 'process.security.level.maximum'],
   ['process.security.rivalLevel.minimum', 'process.security.level.maximum'],
   ['process.security.fragility.minimum', 'process.security.fragility.maximum'],
-  ['member.growth.promotion.middleLevel', 'member.growth.promotion.seniorLevel'],
   ['member.growth.xp.gainMinimum', 'member.growth.xp.gainMaximum'],
   ['member.formation.coding.speedMinimum', 'member.formation.coding.speedMaximum'],
   ['member.formation.review.efficiencyMinimum', 'member.formation.review.efficiencyMaximum'],
@@ -23,6 +22,11 @@ const ORDERED_BOUND_PAIRS = [
   ['member.formation.reworkRate.minimum', 'member.formation.reworkRate.maximum'],
   ['member.formation.incidentRate.minimum', 'member.formation.incidentRate.maximum'],
   ['member.formation.codingSlotBonus.minimum', 'member.formation.codingSlotBonus.maximum'],
+] as const;
+
+/** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */
+const STRICTLY_ORDERED_BOUND_PAIRS = [
+  ['member.growth.promotion.middleLevel', 'member.growth.promotion.seniorLevel'],
 ] as const;
 
 /** 合計が固定される係数の組み合わせ。 */
@@ -35,11 +39,14 @@ export function balanceEntryConstraintLabels(entryId: string): readonly string[]
   const ordered = ORDERED_BOUND_PAIRS.filter(
     ([minimumId, maximumId]) => minimumId === entryId || maximumId === entryId,
   ).map(([minimumId, maximumId]) => `\`${minimumId}\` ≤ \`${maximumId}\``);
+  const strictlyOrdered = STRICTLY_ORDERED_BOUND_PAIRS.filter(
+    ([minimumId, maximumId]) => minimumId === entryId || maximumId === entryId,
+  ).map(([minimumId, maximumId]) => `\`${minimumId}\` < \`${maximumId}\``);
   const fixedTotals = FIXED_TOTAL_PAIRS.filter(
     ([firstId, secondId]) => firstId === entryId || secondId === entryId,
   ).map(([firstId, secondId, total]) => `\`${firstId}\` + \`${secondId}\` = ${total}`);
 
-  return [...ordered, ...fixedTotals];
+  return [...ordered, ...strictlyOrdered, ...fixedTotals];
 }
 
 /** 定義時にリテラル型を保つスカラー値ヘルパー。 */
@@ -178,6 +185,19 @@ export function validateBalanceRegistry(
         'related-range-inverted',
         minimumId,
         `${minimumId} は ${maximumId} 以下でなければなりません。`,
+      ),
+    );
+  }
+
+  for (const [minimumId, maximumId] of STRICTLY_ORDERED_BOUND_PAIRS) {
+    const minimum = entriesById.get(minimumId);
+    const maximum = entriesById.get(maximumId);
+    if (!minimum || !maximum || minimum.value < maximum.value) continue;
+    errors.push(
+      validationError(
+        'related-range-inverted',
+        minimumId,
+        `${minimumId} は ${maximumId} 未満でなければなりません。`,
       ),
     );
   }

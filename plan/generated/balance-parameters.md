@@ -38,17 +38,17 @@
 | `member.growth.levelUp.aiMastery` | レベルアップAI習熟増分 | `2` | `points` | `0〜20（整数）` | — | レベルアップ1回で増えるAI習熟。 | member, growth, ability, ai | いいえ |
 | `member.growth.levelUp.implementation` | レベルアップ実装力増分 | `3` | `points` | `0〜20（整数）` | — | レベルアップ1回で増える実装力。 | member, growth, ability | いいえ |
 | `member.growth.levelUp.review` | レベルアップレビュー力増分 | `3` | `points` | `0〜20（整数）` | — | レベルアップ1回で増えるレビュー力。 | member, growth, ability | いいえ |
-| `member.growth.promotion.middleLevel` | ミドル昇格レベル | `4` | `count` | `1〜100（整数）` | `member.growth.promotion.middleLevel` ≤ `member.growth.promotion.seniorLevel` | ジュニアからミドルへ昇格できるレベル。 | member, growth, promotion | いいえ |
-| `member.growth.promotion.seniorLevel` | シニア昇格レベル | `8` | `count` | `1〜100（整数）` | `member.growth.promotion.middleLevel` ≤ `member.growth.promotion.seniorLevel` | ミドルからシニアへ昇格できるレベル。 | member, growth, promotion | いいえ |
+| `member.growth.promotion.middleLevel` | ミドル昇格レベル | `4` | `count` | `1〜100（整数）` | `member.growth.promotion.middleLevel` < `member.growth.promotion.seniorLevel` | ジュニアからミドルへ昇格できるレベル。 | member, growth, promotion | いいえ |
+| `member.growth.promotion.seniorLevel` | シニア昇格レベル | `8` | `count` | `1〜100（整数）` | `member.growth.promotion.middleLevel` < `member.growth.promotion.seniorLevel` | ミドルからシニアへ昇格できるレベル。 | member, growth, promotion | いいえ |
 | `member.growth.staminaMaxPerLevel` | レベルごとのスタミナ上限増分 | `2` | `points` | `0〜20（整数）` | — | レベル1からのレベル差1ごとに加えるスタミナ上限。 | member, growth, stamina | いいえ |
 | `member.growth.xp.gainBase` | スプリントXP基礎値 | `18` | `points` | `0〜100` | — | 完了件数による加算前のスプリントXP。 | member, growth, xp | いいえ |
 | `member.growth.xp.gainMaximum` | スプリントXP上限 | `70` | `points` | `0〜200` | `member.growth.xp.gainMinimum` ≤ `member.growth.xp.gainMaximum` | スプリントXPをclampする上限。 | member, growth, xp, boundary | いいえ |
 | `member.growth.xp.gainMinimum` | スプリントXP下限 | `18` | `points` | `0〜100` | `member.growth.xp.gainMinimum` ≤ `member.growth.xp.gainMaximum` | スプリントXPをclampする下限。 | member, growth, xp, boundary | いいえ |
 | `member.growth.xp.gainPerDone` | 完了件数ごとのXP | `1.2` | `points` | `0〜10` | — | スプリント完了件数1件ごとに加えるXP。 | member, growth, xp | いいえ |
-| `member.growth.xp.levelBase` | レベル1の必要XP | `80` | `points` | `0〜1000（整数）` | — | レベル1から次のレベルへ進むために必要な基礎XP。 | member, growth, xp | いいえ |
+| `member.growth.xp.levelBase` | レベル1の必要XP | `80` | `points` | `1〜1000（整数）` | — | レベル1から次のレベルへ進むために必要な基礎XP。 | member, growth, xp | いいえ |
 | `member.growth.xp.levelStep` | レベルごとの必要XP増分 | `30` | `points` | `0〜500（整数）` | — | 必要XPをレベルごとに増やす固定XP。 | member, growth, xp | いいえ |
 | `member.leave.maximumProbability` | 休職最大確率 | `0.5` | `probability` | `0〜1` | — | スタミナ0のときの休職確率。 | member, leave | いいえ |
-| `member.leave.threshold` | 休職判定スタミナ閾値 | `14` | `points` | `0〜100（整数）` | — | このスタミナ以下のメンバーに休職判定を行う。 | member, leave, stamina, boundary | いいえ |
+| `member.leave.threshold` | 休職判定スタミナ閾値 | `14` | `points` | `1〜100（整数）` | — | このスタミナ以下のメンバーに休職判定を行う。 | member, leave, stamina, boundary | いいえ |
 | `member.load.reviewHp.minimum` | Review HP負荷倍率の下限 | `0.65` | `multiplier` | `0〜1` | — | レビュアー人数によるReview HP負荷倍率の下限。 | member, load, review, senior-hp, boundary | いいえ |
 | `member.load.reviewHp.reliefPerReviewer` | レビュアーごとのHP負荷緩和 | `0.15` | `multiplier` | `0〜1` | — | レビュアー1人増加ごとのReview HP単価の緩和係数。 | member, load, review, senior-hp | いいえ |
 | `member.load.seniorHp.minimum` | シニアHP負荷倍率の下限 | `0.75` | `multiplier` | `0〜1` | — | 稼働人数によるシニアHP負荷倍率の下限。 | member, load, senior-hp, boundary | いいえ |
@@ -61,7 +61,7 @@
 | `member.recovery.betweenSprints` | スプリント間スタミナ回復 | `16` | `points` | `0〜100（整数）` | — | スプリント完了後に回復する基礎スタミナ。 | member, recovery, stamina | いいえ |
 | `member.recovery.rest` | 休息時スタミナ回復 | `45` | `points` | `0〜200（整数）` | — | 休息のheal選択で回復する基礎スタミナ。 | member, recovery, stamina, rest | いいえ |
 | `member.recruit.cost` | 採用費 | `25` | `currency` | `0〜1000（整数）` | — | メンバー1人を採用するための予算コスト。 | member, recruit, economy | いいえ |
-| `member.recruit.rosterCapacity` | ロスター人数上限 | `6` | `count` | `1〜20（整数）` | — | 個体ロスターへ在籍できるメンバー人数の上限。 | member, recruit, roster, boundary | いいえ |
+| `member.recruit.rosterCapacity` | ロスター人数上限 | `6` | `count` | `3〜20（整数）` | — | 個体ロスターへ在籍できるメンバー人数の上限。 | member, recruit, roster, boundary | いいえ |
 | `member.reorg.minimumActive` | 再編後の最低稼働人数 | `2` | `count` | `0〜20（整数）` | — | 組織再編でメンバーを離脱させずに維持する最低稼働人数。 | member, reorg, boundary | いいえ |
 | `member.return.leaveRecoveryMultiplier` | 休職中スタミナ回復倍率 | `1.25` | `multiplier` | `1〜3` | — | 休職中のメンバーへ掛けるスタミナ回復倍率。 | member, return, stamina | いいえ |
 | `member.return.ratio` | 復職スタミナ割合 | `0.4` | `probability` | `0〜1` | — | 休職者が復職するために必要なスタミナ上限に対する割合。 | member, return, stamina, boundary | いいえ |

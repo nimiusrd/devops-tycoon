@@ -166,6 +166,30 @@ describe('型付きバランスレジストリ', () => {
     expect(PROCESS_BALANCE.securityFragilityThreshold.allowedRange.min).toBeGreaterThan(0);
   });
 
+  it('メンバーの分母・生成前提となる下限を正しく制限する', () => {
+    expect(MEMBER_BALANCE.xpLevelBase.allowedRange.min).toBeGreaterThan(0);
+    expect(MEMBER_BALANCE.leaveThreshold.allowedRange.min).toBeGreaterThan(0);
+    expect(MEMBER_BALANCE.rosterCapacity.allowedRange.min).toBeGreaterThanOrEqual(3);
+  });
+
+  it('昇格閾値は同値を許可せず、順番を維持する', () => {
+    const middle = defineBalanceEntry({
+      ...MEMBER_BALANCE.promotionMiddleLevel,
+      value: MEMBER_BALANCE.promotionSeniorLevel.value,
+    });
+    const senior = defineBalanceEntry({
+      ...MEMBER_BALANCE.promotionSeniorLevel,
+      value: MEMBER_BALANCE.promotionSeniorLevel.value,
+    });
+
+    expect(validateBalanceRegistry([middle, senior])).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: MEMBER_BALANCE.promotionMiddleLevel.id,
+      }),
+    );
+  });
+
   it('Review の HP 効率下限は正数に制限する', () => {
     expect(PROCESS_BALANCE.reviewHpEfficiencyFloor.allowedRange.min).toBeGreaterThan(0);
   });

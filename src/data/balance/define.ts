@@ -13,7 +13,13 @@ const ORDERED_BOUND_PAIRS = [
   ['process.rework.minimum', 'process.rework.maximum'],
   ['process.incident.minimum', 'process.incident.maximum'],
   ['process.security.level.minimum', 'process.security.level.maximum'],
+  ['process.security.rivalLevel.minimum', 'process.security.level.maximum'],
   ['process.security.fragility.minimum', 'process.security.fragility.maximum'],
+] as const;
+
+/** 合計が固定される係数の組み合わせ。 */
+const FIXED_TOTAL_PAIRS = [
+  ['process.review.hpEfficiency.floor', 'process.review.hpEfficiency.range', 1],
 ] as const;
 
 /** 定義時にリテラル型を保つスカラー値ヘルパー。 */
@@ -152,6 +158,25 @@ export function validateBalanceRegistry(
         'related-range-inverted',
         minimumId,
         `${minimumId} は ${maximumId} 以下でなければなりません。`,
+      ),
+    );
+  }
+
+  for (const [firstId, secondId, total] of FIXED_TOTAL_PAIRS) {
+    const first = entriesById.get(firstId);
+    const second = entriesById.get(secondId);
+    if (
+      !first ||
+      !second ||
+      Math.abs(first.value + second.value - total) <= PROBABILITY_TOTAL_EPSILON
+    ) {
+      continue;
+    }
+    errors.push(
+      validationError(
+        'related-total-invalid',
+        firstId,
+        `${firstId} と ${secondId} の合計は ${total} でなければなりません。`,
       ),
     );
   }

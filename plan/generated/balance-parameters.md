@@ -60,6 +60,7 @@
 | `process.security.incidentRateBonus` | Security 脆弱度の Incident 加算 | `0.05` | `probability` | `0〜1` | Security 脆弱度が最大のとき Incident 基礎率へ加える量。 | process, security, incident | いいえ |
 | `process.security.level.maximum` | Security 水準の上限 | `100` | `percent` | `0〜100（整数）` | Security 水準を clamp する上限。 | process, security, boundary | いいえ |
 | `process.security.level.minimum` | Security 水準の下限 | `0` | `percent` | `0〜100（整数）` | Security 水準を clamp する下限。 | process, security, boundary | いいえ |
+| `process.security.rivalLevel.minimum` | 追加チーム Security 水準の下限 | `20` | `percent` | `0〜100（整数）` | 採用・組織再編で追加するチームの Security 水準に保つ従来の下限。 | process, security, team, boundary | いいえ |
 | `process.security.spreadMultiplierAdd` | Security 脆弱度の延焼コスト倍率加算 | `0.6` | `multiplier` | `0〜5` | Security 脆弱度が最大のとき延焼コスト倍率へ加える量。 | process, security, incident, burning | いいえ |
 | `process.stability.comboCap` | 運用安定中のコンボ基準段数 | `8` | `count` | `0〜100（整数）` | 運用安定中に通常の連続出荷ボーナスを保つ最大コンボ段数。 | process, stability, combo | いいえ |
 | `process.stability.comboTailMultiplier` | 運用安定中のコンボ超過倍率 | `0.5` | `multiplier` | `0〜1` | 運用安定中に基準を超えたコンボ上振れへ掛ける倍率。 | process, stability, combo | いいえ |

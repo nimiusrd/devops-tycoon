@@ -393,6 +393,17 @@ export const PROCESS_BALANCE = {
     derived: false,
     integer: true,
   }),
+  securityRivalLevelMinimum: defineBalanceEntry({
+    id: 'process.security.rivalLevel.minimum',
+    value: 20,
+    unit: 'percent',
+    allowedRange: { min: 0, max: 100 },
+    label: '追加チーム Security 水準の下限',
+    description: '採用・組織再編で追加するチームの Security 水準に保つ従来の下限。',
+    tags: ['process', 'security', 'team', 'boundary'],
+    derived: false,
+    integer: true,
+  }),
   securityFragilityThreshold: defineBalanceEntry({
     id: 'process.security.fragility.threshold',
     value: 50,

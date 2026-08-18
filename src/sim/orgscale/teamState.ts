@@ -206,7 +206,10 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
   const quality = clamp(jitter(base.quality, 15), 20, 100);
   const securityLevel = clamp(
     jitter(base.securityLevel, 15),
-    PROCESS_BALANCE.securityLevelMinimum.value,
+    Math.max(
+      PROCESS_BALANCE.securityLevelMinimum.value,
+      PROCESS_BALANCE.securityRivalLevelMinimum.value,
+    ),
     PROCESS_BALANCE.securityLevelMaximum.value,
   );
   return {

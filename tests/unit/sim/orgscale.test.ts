@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
+import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { COMPANY_LEVERS, DEPARTMENT_LEVERS, LEVER_DEFS } from '../../../src/data/levers';
 import {
   aggregateDepartment,
@@ -317,6 +318,22 @@ describe('generateOrgScale', () => {
       shipping: expectedAdded.shipping,
       engineers: expectedAdded.engineers,
     });
+  });
+
+  it('追加チームは低下済みテンプレートでも従来の Security 下限を保つ', () => {
+    const [template] = initTeamRunStates({
+      seed: 'ri108-rival-security-floor',
+      org: org({ securityLevel: 0 }),
+      homeEngineers: 5,
+    });
+    const [added] = appendTeamsToDept([], {
+      seed: 'ri108-rival-security-floor',
+      deptId: 'product',
+      count: 1,
+      template: { ...template, securityLevel: 0 },
+    });
+
+    expect(added.securityLevel).toBe(PROCESS_BALANCE.securityRivalLevelMinimum.value);
   });
 
   it('teams 指定時は homeTeamId を既定のアクティブチームとして投影する', () => {

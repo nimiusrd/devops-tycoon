@@ -97,6 +97,7 @@ const PROCESS_BALANCE_IDS = [
   'process.security.incidentRateBonus',
   'process.security.level.maximum',
   'process.security.level.minimum',
+  'process.security.rivalLevel.minimum',
   'process.security.spreadMultiplierAdd',
   'process.stability.comboCap',
   'process.stability.comboTailMultiplier',
@@ -163,6 +164,24 @@ describe('型付きバランスレジストリ', () => {
     expect(PROCESS_BALANCE.reviewHpEfficiencyFloor.allowedRange.min).toBeGreaterThan(0);
   });
 
+  it('Review の HP 効率係数は合計 1 に制限する', () => {
+    const invalidFloor = defineBalanceEntry({
+      ...PROCESS_BALANCE.reviewHpEfficiencyFloor,
+      value: 0.5,
+    });
+    const invalidRange = defineBalanceEntry({
+      ...PROCESS_BALANCE.reviewHpEfficiencyRange,
+      value: 0.7,
+    });
+
+    expect(validateBalanceRegistry([invalidFloor, invalidRange])).toContainEqual(
+      expect.objectContaining({
+        code: 'related-total-invalid',
+        id: PROCESS_BALANCE.reviewHpEfficiencyFloor.id,
+      }),
+    );
+  });
+
   it('粗粒度の完了件数換算に使う通常タスク価値は正数に制限する', () => {
     expect(PROCESS_BALANCE.taskValueNormal.allowedRange.min).toBeGreaterThan(0);
   });
@@ -178,6 +197,7 @@ describe('型付きバランスレジストリ', () => {
     PROCESS_BALANCE.stabilityHighValueComboThreshold,
     PROCESS_BALANCE.securityLevelMinimum,
     PROCESS_BALANCE.securityLevelMaximum,
+    PROCESS_BALANCE.securityRivalLevelMinimum,
   ])('$id は非整数の離散値を検証で拒否する', (entry) => {
     expect(entry.integer).toBe(true);
     const invalid = defineBalanceEntry({ ...entry, value: entry.value + 0.5 });
@@ -202,6 +222,12 @@ describe('型付きバランスレジストリ', () => {
     },
     {
       minimum: PROCESS_BALANCE.securityLevelMinimum,
+      maximum: PROCESS_BALANCE.securityLevelMaximum,
+      invertedMinimum: 100,
+      invertedMaximum: 99,
+    },
+    {
+      minimum: PROCESS_BALANCE.securityRivalLevelMinimum,
       maximum: PROCESS_BALANCE.securityLevelMaximum,
       invertedMinimum: 100,
       invertedMaximum: 99,

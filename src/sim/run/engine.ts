@@ -2377,7 +2377,9 @@ export class RunEngine {
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
     if (this.winEvalOrg) {
       this.winEvalOrg.securityLevel = clamp(
-        this.winEvalOrg.securityLevel,
+        typeof this.winEvalOrg.securityLevel === 'number'
+          ? this.winEvalOrg.securityLevel
+          : this.winEvalOrg.quality,
         PROCESS_BALANCE.securityLevelMinimum.value,
         PROCESS_BALANCE.securityLevelMaximum.value,
       );

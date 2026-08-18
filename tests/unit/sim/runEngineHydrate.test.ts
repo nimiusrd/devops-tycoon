@@ -325,6 +325,25 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
       loseReason: 'budgetExhausted',
     });
   });
+
+  it('hydrateReplayFrame は記録済みの派生チーム値を再計算しない', () => {
+    const source = started('ri108-replay-derived-team-values');
+    const frame = source.exportReplayFrame();
+    if (!frame?.extras.teams) throw new Error('replay frame must contain teams');
+    frame.extras.teams[0] = {
+      ...frame.extras.teams[0],
+      reviewCapacity: 17,
+      incidentBias: 0.73,
+    };
+
+    const replay = started('ri108-replay-derived-team-values-target');
+    replay.hydrateReplayFrame(frame);
+
+    expect(replay.snapshot().teams[0]).toMatchObject({
+      reviewCapacity: 17,
+      incidentBias: 0.73,
+    });
+  });
 });
 type A1Internals = {
   beat: BeatState | null;

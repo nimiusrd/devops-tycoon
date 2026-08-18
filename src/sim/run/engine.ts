@@ -2150,6 +2150,7 @@ export class RunEngine {
     this.applyPersistFrame(frame.persist as RunReplayFrame, {
       migrateLegacyAiDependency: false,
       normalizeSecurityLevel: true,
+      recomputeTeamCapacities: true,
     });
     this.sprint = frame.sprint ? structuredClone(frame.sprint) : null;
     this.sprintTick = frame.sprintTick;
@@ -2262,6 +2263,7 @@ export class RunEngine {
     this.applyPersistFrame(state, {
       migrateLegacyAiDependency: true,
       normalizeSecurityLevel: true,
+      recomputeTeamCapacities: true,
     });
     // 現行スキーマでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
     this.diagnosis = diagnose(this.org, this.totals);
@@ -2276,12 +2278,17 @@ export class RunEngine {
     this.applyPersistFrame(frame, {
       migrateLegacyAiDependency: false,
       normalizeSecurityLevel: false,
+      recomputeTeamCapacities: false,
     });
   }
 
   private applyPersistFrame(
     state: RunReplayFrame,
-    options: { migrateLegacyAiDependency: boolean; normalizeSecurityLevel: boolean },
+    options: {
+      migrateLegacyAiDependency: boolean;
+      normalizeSecurityLevel: boolean;
+      recomputeTeamCapacities: boolean;
+    },
   ): void {
     const cloned = structuredClone(state);
     this.seed = cloned.seed;
@@ -2405,7 +2412,7 @@ export class RunEngine {
               ? t.securityLevel
               : t.quality,
         };
-        return { ...next, ...deriveTeamCapacities(next) };
+        return options.recomputeTeamCapacities ? { ...next, ...deriveTeamCapacities(next) } : next;
       });
       this.activeTeamId = cloned.extras.activeTeamId ?? HOME_TEAM_ID;
       this.homeTeamId = cloned.extras.homeTeamId ?? HOME_TEAM_ID;

@@ -37,6 +37,8 @@ export interface BalanceEntry<
   readonly tags: readonly string[];
   /** 他の基本値から導出された値かどうか。 */
   readonly derived: boolean;
+  /** 離散的な回数・tick など、整数値のみを許可する。 */
+  readonly integer?: boolean;
 }
 
 /** 確率分布を構成する、個別の確率エントリー。 */
@@ -69,8 +71,11 @@ export type BalanceDefinition = BalanceEntry | ProbabilityDistribution;
 export type BalanceValidationErrorCode =
   | 'duplicate-id'
   | 'non-finite-value'
+  | 'non-integer-value'
   | 'non-finite-range'
   | 'range-inverted'
+  | 'related-range-inverted'
+  | 'related-total-invalid'
   | 'value-out-of-range'
   | 'probability-out-of-range'
   | 'distribution-weight-not-positive'

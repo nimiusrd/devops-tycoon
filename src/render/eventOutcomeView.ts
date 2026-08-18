@@ -40,7 +40,7 @@ import {
   type ActionDef,
 } from '../sim/actions';
 import {
-  COMBO_BONUS_PER,
+  comboMultiplier,
   OVERTIME_CODING_MUL,
   OVERTIME_REVIEW_MUL,
   STABILITY_COMBO_CAP,
@@ -697,7 +697,7 @@ export function formatStabilityDetailTags(): EffectTag[] {
   pushTag(tags, '安定中 燃え尽き時の延焼を停止', 'positive');
   pushTag(
     tags,
-    `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
+    `安定中 コンボ基準 +${Math.round((comboMultiplier(STABILITY_COMBO_CAP) - 1) * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
     'neutral',
   );
   return tags;

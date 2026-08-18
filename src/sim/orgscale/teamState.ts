@@ -5,6 +5,7 @@
  * 乱数は seed 派生のみ（第22.3）。
  */
 import { DEPARTMENT_DEFS } from '../../data/departments';
+import { PROCESS_BALANCE } from '../../data/balance';
 import {
   MEMBER_NAMES,
   RECRUIT_ARCHETYPES,
@@ -20,6 +21,7 @@ import {
 } from '../member';
 import {
   AI_ADOPTION,
+  AI_DELIVERY_VALUE_LITERACY_WEIGHT,
   TASK_BASE_VALUE,
   securityCustomerTrustSpreadRaw,
   securityFragility,
@@ -202,7 +204,14 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
   const testCoverage = clamp(jitter(base.testCoverage, 15), 20, 100);
   const documentation = clamp(jitter(base.documentation, 15), 20, 100);
   const quality = clamp(jitter(base.quality, 15), 20, 100);
-  const securityLevel = clamp(jitter(base.securityLevel, 15), 20, 100);
+  const securityLevel = clamp(
+    jitter(base.securityLevel, 15),
+    Math.max(
+      PROCESS_BALANCE.securityLevelMinimum.value,
+      PROCESS_BALANCE.securityRivalLevelMinimum.value,
+    ),
+    PROCESS_BALANCE.securityLevelMaximum.value,
+  );
   return {
     aiDependency,
     reviewQueue,
@@ -599,7 +608,7 @@ export function advanceCoarseTeams(
       coders > 0 ? estimateRivalAiAssigned(coders, team.aiDependency) / coders : 0;
     // 詳細 sim の aiDeliveryValueMul に対応: AI 採用分だけリテラシー連動の出荷倍率を掛ける。
     const aiShare = AI_ADOPTION * clamp(adoptionShare, 0, 1);
-    const aiDeliveryMul = 1 + aiShare * 0.85 * (team.aiLiteracy / 100);
+    const aiDeliveryMul = 1 + aiShare * AI_DELIVERY_VALUE_LITERACY_WEIGHT * (team.aiLiteracy / 100);
     // 稼働 0 なら出荷も 0（休職だらけのチームがベース出荷を出さない）。
     // 完了件数は倍率前の基礎出荷から換算し、倍率は shipping 増分だけに掛ける（詳細 sim と同じ）。
     const baseShipGain =

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createEngine } from '../../../src/sim/engine';
 
-function projectSeededEngine() {
+function projectSeededEngine(aiEnabled: boolean) {
   const engine = createEngine({
     seed: 'ri-106-balance-registry',
-    aiEnabled: true,
+    aiEnabled,
     fixedStepMs: 100,
   });
   engine.step(5_000);
@@ -45,8 +45,8 @@ function projectSeededEngine() {
 }
 
 describe('RI-106: バランスレジストリ移行の固定 seed 回帰', () => {
-  it('工程モデルの代表値をレジストリへ移しても同じ状態へ到達する', () => {
-    expect(projectSeededEngine()).toEqual({
+  it('AI 有効時に工程モデルをレジストリへ移しても同じ状態へ到達する', () => {
+    expect(projectSeededEngine(true)).toEqual({
       tick: 50,
       elapsedMs: 5_000,
       org: {
@@ -74,6 +74,49 @@ describe('RI-106: バランスレジストリ移行の固定 seed 回帰', () =>
             kind: 'complex',
             lane: 'rework',
             reworkAttempts: 1,
+          },
+        ],
+      },
+    });
+  });
+
+  it('AI 無効時に工程モデルをレジストリへ移しても同じ状態へ到達する', () => {
+    expect(projectSeededEngine(false)).toEqual({
+      tick: 50,
+      elapsedMs: 5_000,
+      org: {
+        aiDependency: 3,
+        deliveryScore: 268,
+        morale: 83,
+        seniorHp: 75.50000000000001,
+      },
+      sprint: {
+        aiAdoption: 0.85,
+        metrics: {
+          aiAssistedCompleted: 0,
+          completedCount: 26,
+          delivered: 268,
+          incidentCount: 1,
+          reworkCount: 1,
+        },
+        reviewAccumulator: 0.07127150000001148,
+        activeTasks: [
+          {
+            aiAssisted: false,
+            burnTicksLeft: 3,
+            id: 11,
+            incident: true,
+            kind: 'routine',
+            lane: 'rework',
+            reworkAttempts: 1,
+          },
+          {
+            aiAssisted: false,
+            id: 27,
+            incident: false,
+            kind: 'normal',
+            lane: 'review',
+            reworkAttempts: 0,
           },
         ],
       },

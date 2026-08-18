@@ -17,12 +17,10 @@ export type {
   ProbabilityDistributionEntry,
 } from './types';
 
-import type { BalanceDefinition } from './types';
 import { PROCESS_BALANCE } from './process';
+import type { BalanceDefinition } from './types';
 
 /** 現時点でゲームが参照する全バランス定義。 */
-export const BALANCE_REGISTRY = [
-  PROCESS_BALANCE.codingBaseTicks,
-  PROCESS_BALANCE.aiCodingSpeedup,
-  PROCESS_BALANCE.aiAdoption,
-] as const satisfies readonly BalanceDefinition[];
+export const BALANCE_REGISTRY = Object.values(
+  PROCESS_BALANCE,
+) satisfies readonly BalanceDefinition[];

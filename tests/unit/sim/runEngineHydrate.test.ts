@@ -3,6 +3,7 @@
  * Stryker の Survived / NoCoverage mutation を exact 断言で潰す（旧 RI-72-D3 / RI-91-A1）。
  */
 import { afterEach, describe, expect, it } from 'vitest';
+import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { BOSS_DEFS } from '../../../src/data/bosses';
 import { getDifficulty } from '../../../src/data/difficulties';
 import { createInitialRoster } from '../../../src/sim/member';
@@ -324,6 +325,43 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
       status: 'lost',
       loseReason: 'budgetExhausted',
     });
+  });
+
+  it('hydrateReplayFrame は記録済みの派生チーム値を再計算しない', () => {
+    const source = started('ri108-replay-derived-team-values');
+    const frame = source.exportReplayFrame();
+    if (!frame?.extras.teams) throw new Error('replay frame must contain teams');
+    frame.extras.teams[0] = {
+      ...frame.extras.teams[0],
+      reviewCapacity: 17,
+      incidentBias: 0.73,
+    };
+
+    const replay = started('ri108-replay-derived-team-values-target');
+    replay.hydrateReplayFrame(frame);
+
+    expect(replay.snapshot().teams[0]).toMatchObject({
+      reviewCapacity: 17,
+      incidentBias: 0.73,
+    });
+  });
+
+  it('hydrateReplayFrame は記録済み winEvalOrg の Security 水準を正規化しない', () => {
+    const source = started('ri108-replay-win-eval-security');
+    const frame = source.exportReplayFrame();
+    if (!frame) throw new Error('replay frame must be exportable');
+    frame.extras.winEvalOrg = { ...frame.org, securityLevel: 60 };
+    const securityMaximum = PROCESS_BALANCE.securityLevelMaximum as { value: number };
+    const defaultMaximum = securityMaximum.value;
+    securityMaximum.value = 40;
+    try {
+      const replay = started('ri108-replay-win-eval-security-target');
+      replay.hydrateReplayFrame(frame);
+
+      expect(replay.exportReplayFrame()?.extras.winEvalOrg?.securityLevel).toBe(60);
+    } finally {
+      securityMaximum.value = defaultMaximum;
+    }
   });
 });
 type A1Internals = {

@@ -7,6 +7,7 @@ import { ALL_ACTION_IDS, canApplyAction } from '../actions';
 import { assignableTasks } from '../assignTask';
 import { clamp } from '../clamp';
 import { canRecruit, RECRUIT_COST } from '../member';
+import { PROCESS_BALANCE } from '../../data/balance';
 import {
   securityCustomerTrustDelta,
   securityCustomerTrustFromRaw,
@@ -163,11 +164,12 @@ function pendingCustomerTrustDelta(s: RunState): number {
   const metrics = s.sprint.metrics;
   const spread = metrics.spread ?? 0;
   const incidents = metrics.incidentCount ?? 0;
-  if (spread > 0 && typeof metrics.securityTrustSpreadRaw === 'number') {
+  const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;
+  if (spread > 0 && spread >= minimumCount && typeof metrics.securityTrustSpreadRaw === 'number') {
     return securityCustomerTrustFromRaw(
       metrics.securityTrustSpreadRaw +
-        Math.max(0, incidents) *
-          0.5 *
+        Math.max(minimumCount, incidents) *
+          PROCESS_BALANCE.incidentTrustPerIncidentRaw.value *
           (metrics.securityTrustIncidentFragility ?? securityFragility(s.org.securityLevel)),
     );
   }

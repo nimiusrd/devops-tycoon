@@ -9,6 +9,7 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { BOSS_DEFS, getBoss } from '../../data/bosses';
+import { PROCESS_BALANCE } from '../../data/balance';
 import { getCard } from '../../data/cards';
 import { getGoalAdjustment } from '../../data/goalAdjustments';
 import { getLever } from '../../data/levers';
@@ -206,6 +207,9 @@ export const REST_UPGRADE_FOCUS_MAX = 2;
 /** ショップのレリック価格（割引前）。RI-78: 純出荷受入のため定価を抑える。 */
 export const SHOP_RELIC_COST = 12;
 
+/** RI-108 より前のセーブを復元するときに使う、当時の raw 反映閾値。 */
+const LEGACY_INCIDENT_TRUST_RAW_THRESHOLD = 0.5;
+
 export interface RunEngineInit {
   seed?: string;
   difficulty?: DifficultyId;
@@ -228,6 +232,14 @@ function emptyTotals(): RunTotals {
     maxCombo: 0,
     consecutiveIncidentSprints: 0,
   };
+}
+
+/**
+ * RI-108 より前の粗粒度炎上 raw を、当時の規則で顧客信頼デルタへ変換する。
+ * 現在の調整値を使うと、過去に確定済みのペナルティが復元時に変わってしまう。
+ */
+function legacySecurityCustomerTrustFromRaw(raw: number): number {
+  return raw < LEGACY_INCIDENT_TRUST_RAW_THRESHOLD ? 0 : -Math.ceil(raw);
 }
 
 /** 次スプリント限定の一時効果を合成する（taskCountMul は乗算、加算系は加算）。 */
@@ -283,7 +295,11 @@ function buildRunOrg(difficulty: DifficultyId, scenarioId: ScenarioId): OrgState
     testCoverage: scenarioOrg.testCoverage,
     documentation: scenarioOrg.documentation,
     quality: scenarioOrg.quality,
-    securityLevel: scenarioOrg.securityLevel,
+    securityLevel: clamp(
+      scenarioOrg.securityLevel,
+      PROCESS_BALANCE.securityLevelMinimum.value,
+      PROCESS_BALANCE.securityLevelMaximum.value,
+    ),
     morale: scenarioOrg.morale,
     seniorHp: scenarioOrg.seniorHp,
     techDebt: 0,
@@ -382,6 +398,10 @@ export class RunEngine {
   private coarseIncidentCarry = 0;
   /** 粗粒度炎上の顧客信頼 raw（四半期内で繰り越し。RI-87）。 */
   private coarseSecurityTrustRaw = 0;
+  /** 粗粒度炎上の顧客信頼 raw に含まれる発火件数（RI-108）。 */
+  private coarseSecurityTrustCount = 0;
+  /** 粗粒度炎上で、すでに顧客信頼へ反映済みの累積デルタ（RI-108）。 */
+  private coarseSecurityTrustAppliedDelta = 0;
 
   private quarterNumber = 1;
   private quarterGoal!: QuarterGoal;
@@ -533,6 +553,8 @@ export class RunEngine {
     this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
+    this.coarseSecurityTrustCount = 0;
+    this.coarseSecurityTrustAppliedDelta = 0;
     // ホームの永続指標を初期 org/roster と揃える。
     this.syncActiveTeamFromOrg();
     this.status = 'playing';
@@ -869,12 +891,16 @@ export class RunEngine {
    */
   private applyIncidentTrustPenalty(result: SprintResult): void {
     const m = this.sprint?.metrics;
+    const minimumCount = PROCESS_BALANCE.incidentTrustMinimumCount.value;
     const delta =
-      result.spread > 0 && m && typeof m.securityTrustSpreadRaw === 'number'
+      result.spread > 0 &&
+      result.spread >= minimumCount &&
+      m &&
+      typeof m.securityTrustSpreadRaw === 'number'
         ? securityCustomerTrustFromRaw(
             m.securityTrustSpreadRaw +
-              Math.max(0, result.incidents) *
-                0.5 *
+              Math.max(minimumCount, result.incidents) *
+                PROCESS_BALANCE.incidentTrustPerIncidentRaw.value *
                 (m.securityTrustIncidentFragility ?? securityFragility(this.org.securityLevel)),
           )
         : securityCustomerTrustDelta(this.org.securityLevel, result.incidents, result.spread);
@@ -1047,6 +1073,8 @@ export class RunEngine {
     this.quarterTotals = emptyTotals();
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
+    this.coarseSecurityTrustCount = 0;
+    this.coarseSecurityTrustAppliedDelta = 0;
 
     this.sprintIndexInQuarter = 0;
     this.pendingSprintKind = 'normal';
@@ -1540,7 +1568,11 @@ export class RunEngine {
         aiDependency: clamp(t.aiDependency + effects.aiDependencyAdd, 0, 100),
         quality: clamp(t.quality + effects.qualityAdd, 0, 100),
         testCoverage: clamp(t.testCoverage + effects.testCoverageAdd, 0, 100),
-        securityLevel: clamp((t.securityLevel ?? t.quality) + effects.securityAdd, 0, 100),
+        securityLevel: clamp(
+          (t.securityLevel ?? t.quality) + effects.securityAdd,
+          PROCESS_BALANCE.securityLevelMinimum.value,
+          PROCESS_BALANCE.securityLevelMaximum.value,
+        ),
       };
       // 品質加算後すぐ障害傾向へ反映し、次の粗粒度ステップで取りこぼさない。
       return { ...next, ...deriveTeamCapacities(next) };
@@ -1710,19 +1742,29 @@ export class RunEngine {
     const credited = Math.floor(this.coarseIncidentCarry + 1e-9);
     this.coarseIncidentCarry = 0;
     this.coarseSecurityTrustRaw = 0;
+    this.coarseSecurityTrustCount = 0;
+    this.coarseSecurityTrustAppliedDelta = 0;
     if (credited <= 0) return;
     this.totals.incidents += credited;
     this.quarterTotals.incidents += credited;
   }
 
   /** 粗粒度炎上の顧客信頼 raw を四半期内で繰り越し、しきい値を跨いだ分だけ適用する。 */
-  private applyCoarseSecurityTrust(spreadRaw: number): void {
-    if (spreadRaw <= 0) return;
-    const prev = securityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
+  private applyCoarseSecurityTrust(spreadRaw: number, spreadCount = 1): void {
+    if (spreadCount <= 0) return;
+    this.coarseSecurityTrustCount += spreadCount;
     this.coarseSecurityTrustRaw += spreadRaw;
+    this.reconcileCoarseSecurityTrust();
+  }
+
+  /** 現在の最小件数を満たす未適用の信頼低下だけを顧客信頼へ反映する。 */
+  private reconcileCoarseSecurityTrust(): void {
+    if (this.coarseSecurityTrustCount < PROCESS_BALANCE.incidentTrustMinimumCount.value) return;
     const next = securityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
-    const delta = next - prev;
+    // バランス更新で raw 閾値を上げても、すでに起きた信頼低下は戻さない。
+    const delta = Math.min(0, next - this.coarseSecurityTrustAppliedDelta);
     if (delta !== 0) this.applyTrust({ customers: delta });
+    this.coarseSecurityTrustAppliedDelta = Math.min(this.coarseSecurityTrustAppliedDelta, next);
   }
 
   /** 粗粒度進行用に、キャリーオーバー込みの係数を畳み込む（RI-83）。 */
@@ -1808,7 +1850,7 @@ export class RunEngine {
       this.coarseIncidentCarry,
     );
     // RI-87: 非選択チームの炎上 raw を四半期内で繰り越し、0.5 未満をステップ丸めで消さない。
-    this.applyCoarseSecurityTrust(stepped.securityTrustSpreadRaw);
+    this.applyCoarseSecurityTrust(stepped.securityTrustSpreadRaw, stepped.ignited);
     // 炎上は四半期末 flush まで raw 累積（ステップ丸めで 0 固定にしない）。
     this.coarseIncidentCarry = delta.incidents + delta.incidentCarry;
     this.totals.delivered += delta.delivered;
@@ -2137,7 +2179,12 @@ export class RunEngine {
 
   /** 反実仮想フレームから同一乱数状態を復元する（RI-101）。 */
   hydrateCounterfactualFrame(frame: CounterfactualFrame): void {
-    this.applyPersistFrame(frame.persist as RunReplayFrame, { migrateLegacyAiDependency: false });
+    this.applyPersistFrame(frame.persist as RunReplayFrame, {
+      migrateLegacyAiDependency: false,
+      normalizeSecurityLevel: true,
+      recomputeTeamCapacities: true,
+      reconcileCoarseSecurityTrust: false,
+    });
     this.sprint = frame.sprint ? structuredClone(frame.sprint) : null;
     this.sprintTick = frame.sprintTick;
     this.accumulatorMs = frame.accumulatorMs;
@@ -2236,6 +2283,8 @@ export class RunEngine {
         teamRosters: structuredClone(this.teamRosters),
         coarseIncidentCarry: this.coarseIncidentCarry,
         coarseSecurityTrustRaw: this.coarseSecurityTrustRaw,
+        coarseSecurityTrustCount: this.coarseSecurityTrustCount,
+        coarseSecurityTrustAppliedDelta: this.coarseSecurityTrustAppliedDelta,
         draftMulliganUsed: this.draftMulliganUsed,
       },
     };
@@ -2246,7 +2295,12 @@ export class RunEngine {
     if (!isRunSavePhase(state.phase) || state.status !== 'playing') {
       throw new Error(`cannot hydrate run save in phase=${state.phase} status=${state.status}`);
     }
-    this.applyPersistFrame(state, { migrateLegacyAiDependency: true });
+    this.applyPersistFrame(state, {
+      migrateLegacyAiDependency: true,
+      normalizeSecurityLevel: true,
+      recomputeTeamCapacities: true,
+      reconcileCoarseSecurityTrust: true,
+    });
     // 現行スキーマでも診断式は変わりうる。保存済み diagnosis を現行ロジックで塗り替える。
     this.diagnosis = diagnose(this.org, this.totals);
   }
@@ -2257,12 +2311,22 @@ export class RunEngine {
       throw new Error(`cannot hydrate replay frame in phase=${frame.phase}`);
     }
     // リプレイは記録値の read-only 表示。旧セーブ移行は再開用 hydrate に限定する。
-    this.applyPersistFrame(frame, { migrateLegacyAiDependency: false });
+    this.applyPersistFrame(frame, {
+      migrateLegacyAiDependency: false,
+      normalizeSecurityLevel: false,
+      recomputeTeamCapacities: false,
+      reconcileCoarseSecurityTrust: false,
+    });
   }
 
   private applyPersistFrame(
     state: RunReplayFrame,
-    options: { migrateLegacyAiDependency: boolean },
+    options: {
+      migrateLegacyAiDependency: boolean;
+      normalizeSecurityLevel: boolean;
+      recomputeTeamCapacities: boolean;
+      reconcileCoarseSecurityTrust: boolean;
+    },
   ): void {
     const cloned = structuredClone(state);
     this.seed = cloned.seed;
@@ -2285,9 +2349,15 @@ export class RunEngine {
     this.pendingShopHandIndices = [...(cloned.pendingShopHandIndices ?? [])];
     this.org = cloned.org;
     // RI-87: 旧セーブに securityLevel が無い場合は品質を近似値として補完する。
-    if (typeof this.org.securityLevel !== 'number') {
-      this.org.securityLevel = clamp(this.org.quality, 0, 100);
-    }
+    this.org.securityLevel = options.normalizeSecurityLevel
+      ? clamp(
+          typeof this.org.securityLevel === 'number' ? this.org.securityLevel : this.org.quality,
+          PROCESS_BALANCE.securityLevelMinimum.value,
+          PROCESS_BALANCE.securityLevelMaximum.value,
+        )
+      : typeof this.org.securityLevel === 'number'
+        ? this.org.securityLevel
+        : this.org.quality;
     this.deck = cloned.deck.map(cloneCardInstance);
     this.relics = [...cloned.relics];
     this.bossRelicReward = cloned.bossRelicReward;
@@ -2350,6 +2420,19 @@ export class RunEngine {
       this.goalCarryoverId = null;
     }
     this.winEvalOrg = cloned.extras.winEvalOrg ? structuredClone(cloned.extras.winEvalOrg) : null;
+    if (this.winEvalOrg) {
+      this.winEvalOrg.securityLevel = options.normalizeSecurityLevel
+        ? clamp(
+            typeof this.winEvalOrg.securityLevel === 'number'
+              ? this.winEvalOrg.securityLevel
+              : this.winEvalOrg.quality,
+            PROCESS_BALANCE.securityLevelMinimum.value,
+            PROCESS_BALANCE.securityLevelMaximum.value,
+          )
+        : typeof this.winEvalOrg.securityLevel === 'number'
+          ? this.winEvalOrg.securityLevel
+          : this.winEvalOrg.quality;
+    }
     this.allowedCards = new Set(cloned.extras.allowedCards);
     this.allowedRelics = new Set(cloned.extras.allowedRelics);
     this.preferredCards = Array.isArray(cloned.extras.preferredCardIds)
@@ -2359,9 +2442,19 @@ export class RunEngine {
     if (Array.isArray(cloned.extras.teams) && cloned.extras.teams.length > 0) {
       this.teams = structuredClone(cloned.extras.teams);
       this.teams = this.teams.map((t) => {
-        if (typeof t.securityLevel === 'number') return t;
-        const next = { ...t, securityLevel: clamp(t.quality, 0, 100) };
-        return { ...next, ...deriveTeamCapacities(next) };
+        const next = {
+          ...t,
+          securityLevel: options.normalizeSecurityLevel
+            ? clamp(
+                typeof t.securityLevel === 'number' ? t.securityLevel : t.quality,
+                PROCESS_BALANCE.securityLevelMinimum.value,
+                PROCESS_BALANCE.securityLevelMaximum.value,
+              )
+            : typeof t.securityLevel === 'number'
+              ? t.securityLevel
+              : t.quality,
+        };
+        return options.recomputeTeamCapacities ? { ...next, ...deriveTeamCapacities(next) } : next;
       });
       this.activeTeamId = cloned.extras.activeTeamId ?? HOME_TEAM_ID;
       this.homeTeamId = cloned.extras.homeTeamId ?? HOME_TEAM_ID;
@@ -2372,6 +2465,19 @@ export class RunEngine {
       // 四半期内の粗粒度炎上累積を復元（旧セーブ欠落時は 0）。
       this.coarseIncidentCarry = Math.max(0, cloned.extras.coarseIncidentCarry ?? 0);
       this.coarseSecurityTrustRaw = Math.max(0, cloned.extras.coarseSecurityTrustRaw ?? 0);
+      this.coarseSecurityTrustCount = Math.max(0, cloned.extras.coarseSecurityTrustCount ?? 0);
+      this.coarseSecurityTrustAppliedDelta =
+        typeof cloned.extras.coarseSecurityTrustAppliedDelta === 'number'
+          ? Math.min(0, cloned.extras.coarseSecurityTrustAppliedDelta)
+          : typeof cloned.extras.coarseSecurityTrustAppliedRaw === 'number'
+            ? legacySecurityCustomerTrustFromRaw(
+                Math.min(
+                  this.coarseSecurityTrustRaw,
+                  Math.max(0, cloned.extras.coarseSecurityTrustAppliedRaw),
+                ),
+              )
+            : legacySecurityCustomerTrustFromRaw(this.coarseSecurityTrustRaw);
+      if (options.reconcileCoarseSecurityTrust) this.reconcileCoarseSecurityTrust();
     } else {
       // v1 セーブ: チーム配列が無いので初期化し、累積 orgAdjust を正本へ焼き込んでから strip。
       this.homeTeamId = HOME_TEAM_ID;
@@ -2390,6 +2496,8 @@ export class RunEngine {
       // v1 には粗粒度累積が無い。
       this.coarseIncidentCarry = 0;
       this.coarseSecurityTrustRaw = 0;
+      this.coarseSecurityTrustCount = 0;
+      this.coarseSecurityTrustAppliedDelta = 0;
       // v1 の出荷正本は org.deliveryScore。totals.delivered へ写経し報酬分岐を防ぐ。
       this.totals.delivered = Math.max(0, Math.round(this.org.deliveryScore));
       this.teamRosters = { [this.homeTeamId]: structuredClone(this.roster) };

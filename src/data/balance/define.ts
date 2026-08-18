@@ -8,6 +8,32 @@ import type {
 /** 浮動小数点の確率分布合計を比較する許容誤差。 */
 const PROBABILITY_TOTAL_EPSILON = 1e-9;
 
+/** 同時に clamp 境界として使う値の順序関係。 */
+const ORDERED_BOUND_PAIRS = [
+  ['process.rework.minimum', 'process.rework.maximum'],
+  ['process.incident.minimum', 'process.incident.maximum'],
+  ['process.security.level.minimum', 'process.security.level.maximum'],
+  ['process.security.rivalLevel.minimum', 'process.security.level.maximum'],
+  ['process.security.fragility.minimum', 'process.security.fragility.maximum'],
+] as const;
+
+/** 合計が固定される係数の組み合わせ。 */
+const FIXED_TOTAL_PAIRS = [
+  ['process.review.hpEfficiency.floor', 'process.review.hpEfficiency.range', 1],
+] as const;
+
+/** 指定したエントリーに適用される関係制約を、パラメータ表向けに返す。 */
+export function balanceEntryConstraintLabels(entryId: string): readonly string[] {
+  const ordered = ORDERED_BOUND_PAIRS.filter(
+    ([minimumId, maximumId]) => minimumId === entryId || maximumId === entryId,
+  ).map(([minimumId, maximumId]) => `\`${minimumId}\` ≤ \`${maximumId}\``);
+  const fixedTotals = FIXED_TOTAL_PAIRS.filter(
+    ([firstId, secondId]) => firstId === entryId || secondId === entryId,
+  ).map(([firstId, secondId, total]) => `\`${firstId}\` + \`${secondId}\` = ${total}`);
+
+  return [...ordered, ...fixedTotals];
+}
+
 /** 定義時にリテラル型を保つスカラー値ヘルパー。 */
 export function defineBalanceEntry<const Entry extends BalanceEntry>(entry: Entry): Entry {
   return entry;
@@ -61,6 +87,9 @@ function validateEntry(entry: BalanceEntry): BalanceValidationError[] {
   if (!Number.isFinite(entry.value)) {
     errors.push(validationError('non-finite-value', entry.id, '値は有限値でなければなりません。'));
     return errors;
+  }
+  if (entry.integer && !Number.isInteger(entry.value)) {
+    errors.push(validationError('non-integer-value', entry.id, '値は整数でなければなりません。'));
   }
   if (entry.value < entry.allowedRange.min || entry.value > entry.allowedRange.max) {
     errors.push(validationError('value-out-of-range', entry.id, '値が許容範囲外です。'));
@@ -129,6 +158,39 @@ export function validateBalanceRegistry(
         ),
       );
     }
+  }
+
+  const entriesById = new Map(flattenBalanceEntries(definitions).map((entry) => [entry.id, entry]));
+  for (const [minimumId, maximumId] of ORDERED_BOUND_PAIRS) {
+    const minimum = entriesById.get(minimumId);
+    const maximum = entriesById.get(maximumId);
+    if (!minimum || !maximum || minimum.value <= maximum.value) continue;
+    errors.push(
+      validationError(
+        'related-range-inverted',
+        minimumId,
+        `${minimumId} は ${maximumId} 以下でなければなりません。`,
+      ),
+    );
+  }
+
+  for (const [firstId, secondId, total] of FIXED_TOTAL_PAIRS) {
+    const first = entriesById.get(firstId);
+    const second = entriesById.get(secondId);
+    if (
+      !first ||
+      !second ||
+      Math.abs(first.value + second.value - total) <= PROBABILITY_TOTAL_EPSILON
+    ) {
+      continue;
+    }
+    errors.push(
+      validationError(
+        'related-total-invalid',
+        firstId,
+        `${firstId} と ${secondId} の合計は ${total} でなければなりません。`,
+      ),
+    );
   }
 
   return errors;

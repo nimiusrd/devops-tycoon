@@ -2,10 +2,12 @@
  * 組織状態（OrgState）の生成（SPEC 第5章 / 第4.2）。
  */
 import { getScenario } from './scenarios';
+import { clamp } from './clamp';
 import type { OrgState, ScenarioId } from './types';
+import { PROCESS_BALANCE } from '../data/balance';
 
 /** AI 未導入時の AI依存度の初期値（わずかに残る程度）。 */
-const AI_DEPENDENCY_WHEN_DISABLED = 3;
+const AI_DEPENDENCY_WHEN_DISABLED = PROCESS_BALANCE.aiDependencyWhenDisabled.value;
 
 /**
  * シナリオと AI 導入フラグから初期 `OrgState` を作る。
@@ -20,7 +22,11 @@ export function createOrgState(scenario: ScenarioId, aiEnabled: boolean): OrgSta
     testCoverage: org.testCoverage,
     documentation: org.documentation,
     quality: org.quality,
-    securityLevel: org.securityLevel,
+    securityLevel: clamp(
+      org.securityLevel,
+      PROCESS_BALANCE.securityLevelMinimum.value,
+      PROCESS_BALANCE.securityLevelMaximum.value,
+    ),
     morale: org.morale,
     seniorHp: org.seniorHp,
     techDebt: 0,

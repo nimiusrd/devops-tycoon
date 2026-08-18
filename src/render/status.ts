@@ -5,6 +5,7 @@
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
 import { getGoalAdjustment } from '../data/goalAdjustments';
+import { PROCESS_BALANCE } from '../data/balance';
 import {
   ANDON_STABILITY_REVIEW_MIN,
   FIREFIGHT_STABILITY_BURN_TICKS,
@@ -22,6 +23,9 @@ export const REVIEW_FREEZE_EVENT_HP = 45;
 export const REVIEW_FREEZE_WATCH_PEAK = Math.round(REVIEW_FREEZE_PEAK * 0.75);
 /** HUD「PR凍結危険」のキューピーク閾値。 */
 export const REVIEW_FREEZE_DANGER_PEAK = REVIEW_FREEZE_PEAK - 4;
+
+const SECURITY_FRAGILITY_THRESHOLD = PROCESS_BALANCE.securityFragilityThreshold.value;
+const SECURITY_DANGER_THRESHOLD = SECURITY_FRAGILITY_THRESHOLD / 2;
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E';
 export type RiskLevel = 'LOW' | 'MED' | 'HIGH';
@@ -412,18 +416,22 @@ export function deriveHudMetrics(
       unit: '',
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
-      tone: higherBetterTone(s.securityLevel, 50, 25),
+      tone: higherBetterTone(
+        s.securityLevel,
+        SECURITY_FRAGILITY_THRESHOLD,
+        SECURITY_DANGER_THRESHOLD,
+      ),
       detail:
-        s.securityLevel < 50
+        s.securityLevel < SECURITY_FRAGILITY_THRESHOLD
           ? '危険帯・事故規模と顧客信頼の下振れが増える'
           : '無効果帯・検証投資で下振れを抑える',
       warningChip:
-        s.securityLevel < 25
+        s.securityLevel < SECURITY_DANGER_THRESHOLD
           ? 'セキュリティ危険'
-          : s.securityLevel < 50
+          : s.securityLevel < SECURITY_FRAGILITY_THRESHOLD
             ? 'セキュリティ注意'
             : undefined,
-      help: 'セキュリティ水準が50を下回ると事故率・延焼コスト・顧客信頼の下振れが増えます。自動テストや品質進化で上げ、速度偏重で下がります。',
+      help: `セキュリティ水準が${SECURITY_FRAGILITY_THRESHOLD}を下回ると事故率・延焼コスト・顧客信頼の下振れが増えます。自動テストや品質進化で上げ、速度偏重で下がります。`,
     },
     {
       id: 'seniorHp',

@@ -19,6 +19,7 @@ import type {
   SprintState,
 } from './types';
 import { clamp } from './clamp';
+import { PROCESS_BALANCE } from '../data/balance';
 
 /** スプリント開始時に配る手札枚数（SPEC 第7.1）。 */
 export const HAND_SIZE = 3;
@@ -93,7 +94,11 @@ export function applyDeckBaseline(org: OrgState, effects: CardEffects): void {
   org.aiDependency = clamp(org.aiDependency + effects.aiDependencyAdd, 0, 100);
   org.quality = clamp(org.quality + effects.qualityAdd, 0, 100);
   org.testCoverage = clamp(org.testCoverage + effects.testCoverageAdd, 0, 100);
-  org.securityLevel = clamp(org.securityLevel + effects.securityAdd, 0, 100);
+  org.securityLevel = clamp(
+    org.securityLevel + effects.securityAdd,
+    PROCESS_BALANCE.securityLevelMinimum.value,
+    PROCESS_BALANCE.securityLevelMaximum.value,
+  );
 }
 
 /**

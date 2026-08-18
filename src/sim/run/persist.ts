@@ -81,6 +81,21 @@ export interface RunPersistExtras {
    * ステップ丸めで 0.5 未満が消えないよう四半期内で繰り越す。旧セーブでは欠落しうる。
    */
   coarseSecurityTrustRaw?: number;
+  /**
+   * 粗粒度炎上の顧客信頼 raw に含まれる発火件数（RI-108）。
+   * 最小件数に達するまで raw の適用を保留するため、四半期内で繰り越す。
+   */
+  coarseSecurityTrustCount?: number;
+  /**
+   * 顧客信頼へ実際に反映済みの累積デルタ（RI-108）。
+   * 再開時に raw 閾値の調整値が変わっても、未適用の低下だけを反映する。
+   */
+  coarseSecurityTrustAppliedDelta?: number;
+  /**
+   * RI-108 の旧実装が保存していた適用済み raw。後方互換の復元時だけ使用する。
+   * @deprecated `coarseSecurityTrustAppliedDelta` を使用する。
+   */
+  coarseSecurityTrustAppliedRaw?: number;
   /** 今ドラフトでのマリガン使用済み（RI-81。旧セーブでは欠落しうる）。 */
   draftMulliganUsed?: boolean;
 }

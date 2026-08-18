@@ -3,23 +3,30 @@ import {
   BALANCE_REGISTRY,
   defineBalanceEntry,
   defineProbabilityDistribution,
+  flattenBalanceEntries,
 } from '../../../src/data/balance';
 import { renderBalanceParametersMarkdown } from '../../../src/data/balance/documentation';
 
 describe('バランスパラメータ表のMarkdown生成', () => {
   it('再生成方法と全列を含む、現在のレジストリの決定論的な表を生成する', () => {
-    expect(renderBalanceParametersMarkdown(BALANCE_REGISTRY)).toBe(`\
-# バランスパラメータ一覧
+    const markdown = renderBalanceParametersMarkdown(BALANCE_REGISTRY);
+    const entries = flattenBalanceEntries(BALANCE_REGISTRY);
 
-> **このファイルは自動生成です。直接編集しないでください。**
-> 更新するには \`npm run balance:docs\` を実行してください。
-
-| ID | ラベル | 現在値 | 単位 | 許容範囲 | 説明 | タグ | 派生値 |
-| --- | --- | ---: | --- | --- | --- | --- | --- |
-| \`process.ai.adoption\` | AI 導入時の既定採用率 | \`0.85\` | \`probability\` | \`0〜1\` | AI 導入済みの組織で、各タスクが AI 支援を使う既定確率。 | process, ai | いいえ |
-| \`process.coding.aiSpeedup\` | AI Coding 高速化倍率 | \`2.6\` | \`multiplier\` | \`1〜5\` | AI 支援タスクの Coding 所要 tick を短縮する倍率。 | process, coding, ai | いいえ |
-| \`process.coding.baseTicks\` | Coding 基礎所要 tick | \`7\` | \`ticks\` | \`1〜30\` | 標準規模かつ AI 支援なしのタスクを実装する基礎所要 tick。 | process, coding | いいえ |
-`);
+    expect(markdown).toContain('# バランスパラメータ一覧');
+    expect(markdown).toContain('> 更新するには `npm run balance:docs` を実行してください。');
+    expect(markdown).toContain(
+      '| ID | ラベル | 現在値 | 単位 | 許容範囲 | 関連制約 | 説明 | タグ | 派生値 |',
+    );
+    expect(markdown.match(/^\| `process\./gm)).toHaveLength(entries.length);
+    expect(markdown).toContain(
+      '`process.review.hpEfficiency.floor` + `process.review.hpEfficiency.range` = 1',
+    );
+    expect(markdown).toContain(
+      '`process.security.level.minimum` ≤ `process.security.level.maximum`',
+    );
+    for (const entry of entries) {
+      expect(markdown).toContain(`| \`${entry.id}\` | ${entry.label} | \`${entry.value}\` |`);
+    }
   });
 
   it('入力順にかかわらずID順にし、分布内エントリーと表セルを安全に表示する', () => {

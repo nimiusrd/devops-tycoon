@@ -1,4 +1,4 @@
-import { flattenBalanceEntries } from './define';
+import { balanceEntryConstraintLabels, flattenBalanceEntries } from './define';
 import type { BalanceDefinition } from './types';
 
 /** Markdown の表セルとして安全に表示できる文字列へ整形する。 */
@@ -43,7 +43,8 @@ export function renderBalanceParametersMarkdown(definitions: readonly BalanceDef
     compareBalanceIds(left.id, right.id),
   );
   const rows = entries.map((entry) => {
-    const range = `${entry.allowedRange.min}〜${entry.allowedRange.max}`;
+    const range = `${entry.allowedRange.min}〜${entry.allowedRange.max}${entry.integer ? '（整数）' : ''}`;
+    const constraints = balanceEntryConstraintLabels(entry.id).join('<br>') || '—';
     const tags = entry.tags.join(', ');
     const derived = entry.derived ? 'はい' : 'いいえ';
 
@@ -53,6 +54,7 @@ export function renderBalanceParametersMarkdown(definitions: readonly BalanceDef
       `\`${entry.value}\``,
       `\`${entry.unit}\``,
       `\`${range}\``,
+      escapeTableCell(constraints),
       escapeTableCell(entry.description),
       escapeTableCell(tags),
       derived,
@@ -65,8 +67,8 @@ export function renderBalanceParametersMarkdown(definitions: readonly BalanceDef
     '> **このファイルは自動生成です。直接編集しないでください。**',
     '> 更新するには `npm run balance:docs` を実行してください。',
     '',
-    '| ID | ラベル | 現在値 | 単位 | 許容範囲 | 説明 | タグ | 派生値 |',
-    '| --- | --- | ---: | --- | --- | --- | --- | --- |',
+    '| ID | ラベル | 現在値 | 単位 | 許容範囲 | 関連制約 | 説明 | タグ | 派生値 |',
+    '| --- | --- | ---: | --- | --- | --- | --- | --- | --- |',
     ...rows.map((row) => `| ${row} |`),
     '',
   ].join('\n');

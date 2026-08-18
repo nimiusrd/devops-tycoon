@@ -8,7 +8,7 @@ import { getRelic } from '../../../src/data/relics';
 import { getAction } from '../../../src/data/actions';
 import { SPLIT_HP_COST, SPLIT_MORALE_COST } from '../../../src/sim/actions';
 import {
-  COMBO_BONUS_PER,
+  comboMultiplier,
   STABILITY_COMBO_CAP,
   STABILITY_COMBO_TAIL_MUL,
   STABILITY_HIGH_VALUE_COMBO_THRESHOLD,
@@ -430,7 +430,7 @@ describe('formatActionDefTags（介入アクションタグ / RI-45）', () => {
       },
       { label: '安定中 燃え尽き時の延焼を停止', tone: 'positive' },
       {
-        label: `安定中 コンボ基準 +${Math.round(STABILITY_COMBO_CAP * COMBO_BONUS_PER * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
+        label: `安定中 コンボ基準 +${Math.round((comboMultiplier(STABILITY_COMBO_CAP) - 1) * 100)}%・上振れ x${STABILITY_COMBO_TAIL_MUL}`,
         tone: 'neutral',
       },
     ]);

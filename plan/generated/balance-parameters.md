@@ -40,7 +40,7 @@
 | `process.overtime.reviewMultiplier` | 残業号令中の Review 倍率 | `1.6` | `multiplier` | `0〜5` | 残業号令の発動中に Review 処理量へ掛ける倍率。 | process, overtime, review, intervention | いいえ |
 | `process.review.basePerTick` | Review 基礎処理量 | `0.9` | `count` | `0〜5` | 満 HP のシニアが 1 tick に処理する基礎 PR 数。 | process, review | いいえ |
 | `process.review.hpCost` | Review ごとのシニア HP 消費 | `1.6` | `points` | `0〜20` | Review を 1 件処理したときに消費するシニア HP。 | process, review, senior-hp | いいえ |
-| `process.review.hpEfficiency.floor` | Review HP 効率の下限 | `0.3` | `multiplier` | `0〜1` | シニア HP が 0 のときも残る Review 処理量の倍率。 | process, review, senior-hp | いいえ |
+| `process.review.hpEfficiency.floor` | Review HP 効率の下限 | `0.3` | `multiplier` | `0.01〜1` | シニア HP が 0 のときも残る Review 処理量の倍率。 | process, review, senior-hp | いいえ |
 | `process.review.hpEfficiency.range` | Review HP 効率の変動幅 | `0.7` | `multiplier` | `0〜1` | シニア HP に応じて Review 処理量へ加わる倍率の幅。 | process, review, senior-hp | いいえ |
 | `process.review.hpRegen` | シニア HP 自然回復量 | `0.7` | `points` | `0〜20` | 炎上していない tick ごとに回復するシニア HP。 | process, review, senior-hp | いいえ |
 | `process.rework.aiAssistedAdd` | AI 支援タスクの Rework 加算 | `0.05` | `probability` | `0〜1` | AI 支援タスクだけに加える Rework 確率。 | process, rework, ai | いいえ |
@@ -58,8 +58,8 @@
 | `process.security.fragility.minimum` | Security 脆弱度の下限 | `0` | `multiplier` | `0〜0` | Security 脆弱度を clamp する下限。 | process, security, boundary | いいえ |
 | `process.security.fragility.threshold` | Security 脆弱度の無効化水準 | `50` | `percent` | `1〜100` | この Security 水準以上では脆弱度を 0 とする境界。 | process, security, boundary | いいえ |
 | `process.security.incidentRateBonus` | Security 脆弱度の Incident 加算 | `0.05` | `probability` | `0〜1` | Security 脆弱度が最大のとき Incident 基礎率へ加える量。 | process, security, incident | いいえ |
-| `process.security.level.maximum` | Security 水準の上限 | `100` | `percent` | `0〜100` | Security 水準を clamp する上限。 | process, security, boundary | いいえ |
-| `process.security.level.minimum` | Security 水準の下限 | `0` | `percent` | `0〜100` | Security 水準を clamp する下限。 | process, security, boundary | いいえ |
+| `process.security.level.maximum` | Security 水準の上限 | `100` | `percent` | `0〜100（整数）` | Security 水準を clamp する上限。 | process, security, boundary | いいえ |
+| `process.security.level.minimum` | Security 水準の下限 | `0` | `percent` | `0〜100（整数）` | Security 水準を clamp する下限。 | process, security, boundary | いいえ |
 | `process.security.spreadMultiplierAdd` | Security 脆弱度の延焼コスト倍率加算 | `0.6` | `multiplier` | `0〜5` | Security 脆弱度が最大のとき延焼コスト倍率へ加える量。 | process, security, incident, burning | いいえ |
 | `process.stability.comboCap` | 運用安定中のコンボ基準段数 | `8` | `count` | `0〜100（整数）` | 運用安定中に通常の連続出荷ボーナスを保つ最大コンボ段数。 | process, stability, combo | いいえ |
 | `process.stability.comboTailMultiplier` | 運用安定中のコンボ超過倍率 | `0.5` | `multiplier` | `0〜1` | 運用安定中に基準を超えたコンボ上振れへ掛ける倍率。 | process, stability, combo | いいえ |

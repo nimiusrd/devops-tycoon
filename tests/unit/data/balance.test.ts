@@ -159,6 +159,10 @@ describe('型付きバランスレジストリ', () => {
     expect(PROCESS_BALANCE.securityFragilityThreshold.allowedRange.min).toBeGreaterThan(0);
   });
 
+  it('Review の HP 効率下限は正数に制限する', () => {
+    expect(PROCESS_BALANCE.reviewHpEfficiencyFloor.allowedRange.min).toBeGreaterThan(0);
+  });
+
   it('粗粒度の完了件数換算に使う通常タスク価値は正数に制限する', () => {
     expect(PROCESS_BALANCE.taskValueNormal.allowedRange.min).toBeGreaterThan(0);
   });
@@ -172,6 +176,8 @@ describe('型付きバランスレジストリ', () => {
     PROCESS_BALANCE.comboMinimumCount,
     PROCESS_BALANCE.stabilityComboCap,
     PROCESS_BALANCE.stabilityHighValueComboThreshold,
+    PROCESS_BALANCE.securityLevelMinimum,
+    PROCESS_BALANCE.securityLevelMaximum,
   ])('$id は非整数の離散値を検証で拒否する', (entry) => {
     expect(entry.integer).toBe(true);
     const invalid = defineBalanceEntry({ ...entry, value: entry.value + 0.5 });

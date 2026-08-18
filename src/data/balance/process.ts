@@ -132,7 +132,7 @@ export const PROCESS_BALANCE = {
     id: 'process.review.hpEfficiency.floor',
     value: 0.3,
     unit: 'multiplier',
-    allowedRange: { min: 0, max: 1 },
+    allowedRange: { min: 0.01, max: 1 },
     label: 'Review HP 効率の下限',
     description: 'シニア HP が 0 のときも残る Review 処理量の倍率。',
     tags: ['process', 'review', 'senior-hp'],
@@ -380,6 +380,7 @@ export const PROCESS_BALANCE = {
     description: 'Security 水準を clamp する下限。',
     tags: ['process', 'security', 'boundary'],
     derived: false,
+    integer: true,
   }),
   securityLevelMaximum: defineBalanceEntry({
     id: 'process.security.level.maximum',
@@ -390,6 +391,7 @@ export const PROCESS_BALANCE = {
     description: 'Security 水準を clamp する上限。',
     tags: ['process', 'security', 'boundary'],
     derived: false,
+    integer: true,
   }),
   securityFragilityThreshold: defineBalanceEntry({
     id: 'process.security.fragility.threshold',

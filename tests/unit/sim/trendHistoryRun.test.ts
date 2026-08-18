@@ -30,6 +30,50 @@ describe('trendHistory エンジン記録 (RI-128)', () => {
     expect(snap.departments.length).toBeGreaterThan(0);
   });
 
+  it('履歴の組織集約はボス報酬適用前の値を残す', () => {
+    const candidates = [
+      'ri32-boss-reward-13',
+      'ri32b-38',
+      'ri32b-79',
+      'ri32b-140',
+      ...Array.from({ length: 30 }, (_, i) => `ri32-boss-reward-${i}`),
+    ];
+    let verified = false;
+    for (const seed of candidates) {
+      const e = new RunEngine({ seed, difficulty: 'easy' });
+      e.startRun();
+      const internals = e as unknown as {
+        grantBossRelic(): string | undefined;
+        buildOrgScale(): { aiDependency: number };
+        teams: Array<{ aiDependency: number }>;
+        org: { aiDependency: number };
+      };
+      const originalGrant = internals.grantBossRelic.bind(e);
+      let beforeAi: number | undefined;
+      internals.grantBossRelic = () => {
+        beforeAi = internals.buildOrgScale().aiDependency;
+        internals.teams = internals.teams.map((team) => ({
+          ...team,
+          aiDependency: Math.min(100, team.aiDependency + 25),
+        }));
+        internals.org = {
+          ...internals.org,
+          aiDependency: Math.min(100, internals.org.aiDependency + 25),
+        };
+        return originalGrant();
+      };
+
+      const s = playUntil(e, 'quarterReview', { skilled: true });
+      if (!s.quarterReview?.bossCleared || beforeAi === undefined) continue;
+
+      expect(s.trendHistory[0]!.company.aiDependency).toBe(beforeAi);
+      expect(internals.buildOrgScale().aiDependency).not.toBe(beforeAi);
+      verified = true;
+      break;
+    }
+    expect(verified).toBe(true);
+  });
+
   it('途中セーブ再開後も保存前と同じ履歴を復元する', () => {
     const e = new RunEngine({ seed: E2E_MISSED_ADJUSTABLE_SEED, difficulty: 'easy' });
     e.startRun();

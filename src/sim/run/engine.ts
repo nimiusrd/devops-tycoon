@@ -860,6 +860,8 @@ export class RunEngine {
         quarterNumber: this.quarterNumber,
         bossSprintCleared: bossCleared,
       });
+      // KPI・診断と同じ報酬前の全社集約を履歴へ残す（即時レリックが四半期実績を書き換えないように）。
+      const orgScaleForTrend = this.buildOrgScale();
       if (bossCleared) {
         // 勝利種別は選択中チームの報酬前状態で判定する。
         this.winEvalOrg = structuredClone(this.org);
@@ -872,7 +874,7 @@ export class RunEngine {
           quarterNumber: this.quarterNumber,
           diagnosis: this.diagnosis,
           kpis: this.quarterReview.progress,
-          orgScale: this.buildOrgScale(),
+          orgScale: orgScaleForTrend,
         }),
       ];
       this.setPhase('quarterReview');

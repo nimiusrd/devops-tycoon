@@ -44,7 +44,7 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 - 人間がAIなしで実装する能力
 - AI出力を評価・修正する能力
 
-値の移動だけを行うPRでは現行式を変えない。`manualCapability`を含む状態分離はSSoT移行エピックの対象外とし、移行完了後に[probability-model.md §4.5.1](./probability-model.md#451-ai依存度の意味と再設計課題)を入力とする別課題で扱う。
+値の移動だけを行うPRでは現行式を変えない。`manualCapability`を含む状態分離はSSoT移行エピックの対象外とし、移行完了後に[probability-model.md §4.5.1](./probability-model.md#451-ai依存度の意味と再設計課題)を入力とする[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)で扱う。
 
 ## 3. 対象棚卸し
 
@@ -301,7 +301,7 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 
 完了条件: バランス変更前後の結果をルールセット単位で識別できる。
 
-### 将来の別課題: AI依存モデルを再設計
+### 将来の別課題: AI依存モデルを再設計（RI-134）
 
 - 共有リスク、AI依存、手作業能力、AI習熟の意味を分離する。
 - `manualCapability`をチーム状態として持つか、既存値から導出するかを決める。
@@ -357,4 +357,4 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 | 生成Markdown・SVG | 決定論的に生成してGit管理し、通常CIで差分検査する |
 | 多数seedレポート | 手動＋週次main。通常PR CI外、artifact 30日保持 |
 | 旧リプレイ・デイリー | リプレイはルール不明表示で保持。デイリー記録・報酬は日付＋ルールセット単位で保持する |
-| `manualCapability` | SSoT移行外の別課題へ延期する |
+| `manualCapability` | SSoT移行外の[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)へ延期する |

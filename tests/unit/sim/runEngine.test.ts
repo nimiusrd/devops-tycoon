@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { CARD_BALANCE } from '../../../src/data/balance';
 import { getRelic, RELIC_DEFS } from '../../../src/data/relics';
+import { drawDraft } from '../../../src/sim/cards';
 import { canRecruit, RECRUIT_COST, ROSTER_CAP } from '../../../src/sim/member';
+import { createRng } from '../../../src/sim/rng';
 import {
   AI_DEPENDENCY_CAP,
   AI_LITERACY_UNSAFE_CAP,
@@ -547,6 +550,46 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect(after.budget).toBe(DRAFT_MULLIGAN_COST);
     expect(after.draftMulliganUsed).toBe(false);
     expect(after.draft).toEqual(before);
+  });
+
+  it('RI-122: 同一候補集合が連続する引き直しは最大再試行の派生seedと最終候補を使う', () => {
+    const allowed = new Set(['copilot', 'auto-test', 'docs']);
+    const e = new RunEngine({
+      seed: 'ri122-mulligan-same-set',
+      difficulty: 'easy',
+      allowedCards: allowed,
+    });
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    const before = e.snapshot();
+    expect(before.phase).toBe('draft');
+    const previous = [...(before.draft ?? [])];
+    expect(previous).toHaveLength(CARD_BALANCE.draftCandidateCount.value);
+    const previousKey = [...previous].sort().join('\0');
+    expect(previousKey.split('\0').sort()).toEqual([...allowed].sort());
+
+    const attempts = Array.from(
+      { length: CARD_BALANCE.draftMulliganMaxAttempts.value },
+      (_, attempt) =>
+        drawDraft(
+          createRng(`${before.seed}:draft:${before.sprintsPlayed}:m1:${attempt}`),
+          CARD_BALANCE.draftCandidateCount.value,
+          allowed,
+        ),
+    );
+    expect(attempts.every((candidate) => [...candidate].sort().join('\0') === previousKey)).toBe(
+      true,
+    );
+
+    const beforeBudget = before.budget;
+    e.mulliganDraft();
+    const after = e.snapshot();
+    expect(after.draftMulliganUsed).toBe(true);
+    expect(after.budget).toBe(beforeBudget - DRAFT_MULLIGAN_COST);
+    expect(after.draft).toEqual(attempts[attempts.length - 1]);
+    expect([...after.draft!].sort().join('\0')).toBe(previousKey);
   });
 
   it('RI-55: 無介入スプリントの実績は同条件ベースラインと一致する', () => {

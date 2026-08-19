@@ -27,6 +27,9 @@ describe('バランスパラメータ表のMarkdown生成', () => {
     expect(markdown).toContain(
       '`member.growth.promotion.middleLevel` < `member.growth.promotion.seniorLevel`',
     );
+    expect(markdown).toContain(
+      '`card.effect.multiplier.minimum` ≤ `card.effect.multiplier.maximum`',
+    );
     for (const entry of entries) {
       expect(markdown).toContain(`| \`${entry.id}\` | ${entry.label} | \`${entry.value}\` |`);
     }

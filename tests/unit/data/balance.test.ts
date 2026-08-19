@@ -286,6 +286,7 @@ describe('型付きバランスレジストリ', () => {
     expect(RUN_BALANCE.decisionBeatChance.value).toBe(0.55);
     expect(RUN_BALANCE.softOutcomeLoseThreshold.value).toBe(1);
     expect(RUN_BALANCE.softOutcomeSurvivalFloor.value).toBe(2);
+    expect(RUN_BALANCE.softOutcomeLoseThreshold.allowedRange.min).toBe(1);
     expect(RUN_BALANCE.shopDiscountMaximum.value).toBe(0.8);
     expect(RUN_BALANCE.infraMinimumBillableRaw.value).toBe(1);
     expect(RUN_BALANCE.softOutcomeLoseThreshold.value).toBeLessThan(

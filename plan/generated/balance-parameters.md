@@ -205,7 +205,7 @@
 | `process.stability.ticks` | 運用安定の持続 tick | `180` | `ticks` | `0〜1000（整数）` | — | 安全側の介入後に工程が安定する期間。 | process, stability, intervention | いいえ |
 | `run.draft.mulliganCost` | ドラフト引き直し費用 | `8` | `currency` | `0〜1000（整数）` | — | ドラフト候補を一度だけ引き直すために消費する予算。 | run, draft, shop, currency | いいえ |
 | `run.event.decisionBeatChance` | decision ビート率 | `0.55` | `probability` | `0〜1` | — | 各ビートで decision イベントを先に抽選する確率。 | run, event, probability | いいえ |
-| `run.event.softOutcome.loseThreshold` | soft 結果の敗北閾値 | `1` | `points` | `0〜100（整数）` | `run.event.softOutcome.loseThreshold` < `run.event.softOutcome.survivalFloor` | soft 結果適用後に直後の敗北判定を避けるために使う、HP・士気の敗北閾値。 | run, event, soft-outcome, threshold | いいえ |
+| `run.event.softOutcome.loseThreshold` | soft 結果の敗北閾値 | `1` | `points` | `1〜100（整数）` | `run.event.softOutcome.loseThreshold` < `run.event.softOutcome.survivalFloor` | soft 結果適用後に直後の敗北判定を避けるために使う、HP・士気の敗北閾値。 | run, event, soft-outcome, threshold | いいえ |
 | `run.event.softOutcome.survivalFloor` | soft 結果の生存床 | `2` | `points` | `0〜100（整数）` | `run.event.softOutcome.loseThreshold` < `run.event.softOutcome.survivalFloor` | soft 結果適用後に HP・士気を戻す最小値。敗北閾値より大きくする。 | run, event, soft-outcome, threshold | いいえ |
 | `run.evolution.points.base` | 進化ポイント基礎値 | `1` | `points` | `0〜100（整数）` | — | 通常スプリント完了時に付与する進化ポイントの基礎値。 | run, evolution, points | いいえ |
 | `run.evolution.points.deliveredDivisor` | 進化ポイントの出荷除数 | `40` | `points` | `1〜1000（整数）` | — | 出荷量を整数除算して進化ポイントへ加算する際の除数。 | run, evolution, points, delivery | いいえ |

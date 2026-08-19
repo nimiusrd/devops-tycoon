@@ -85,7 +85,14 @@ async function readEvoPointsFormula() {
     const base = RUN_BALANCE.evolutionPointsBase.value;
     const divisor = RUN_BALANCE.evolutionPointsDeliveredDivisor.value;
     const elite = RUN_BALANCE.evolutionPointsEliteBonus.value;
-    if (![base, divisor, elite].every((n) => Number.isFinite(n) && n > 0)) {
+    if (
+      !Number.isFinite(base) ||
+      !Number.isFinite(divisor) ||
+      !Number.isFinite(elite) ||
+      base < 0 ||
+      divisor <= 0 ||
+      elite < 0
+    ) {
       throw new Error('RUN_BALANCE から進化ポイント定数を読み取れない');
     }
     return { base, divisor, elite };

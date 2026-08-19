@@ -32,7 +32,7 @@ export const RUN_BALANCE = {
     id: 'run.event.softOutcome.loseThreshold',
     value: 1,
     unit: 'points',
-    allowedRange: { min: 0, max: 100 },
+    allowedRange: { min: 1, max: 100 },
     label: 'soft 結果の敗北閾値',
     description: 'soft 結果適用後に直後の敗北判定を避けるために使う、HP・士気の敗北閾値。',
     tags: ['run', 'event', 'soft-outcome', 'threshold'],

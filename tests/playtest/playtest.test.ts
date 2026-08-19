@@ -191,8 +191,8 @@ describe('playtest matrix', () => {
     }
 
     for (const d of DIFFS) {
-      let wrote = false;
       for (const p of POLICIES) {
+        let wrote = false;
         for (const seed of SEEDS) {
           const key = runKey({ difficulty: d, policy: p, seed, meta: META });
           if (done.has(key)) continue;
@@ -200,14 +200,14 @@ describe('playtest matrix', () => {
           done.add(key);
           wrote = true;
         }
-      }
-      if (wrote) {
-        expect(
-          currentGeneration(),
-          '実行中に src/ または tests/playtest/ が変更された。測定結果と世代が対応しないため書き出さない',
-        ).toBe(generationBefore);
-        writePayload(runs, generationBefore, runs.length < expected);
-        console.log(`checkpoint ${runs.length}/${expected} (${d}) -> ${OUT}`);
+        if (wrote) {
+          expect(
+            currentGeneration(),
+            '実行中に src/ または tests/playtest/ が変更された。測定結果と世代が対応しないため書き出さない',
+          ).toBe(generationBefore);
+          writePayload(runs, generationBefore, runs.length < expected);
+          console.log(`checkpoint ${runs.length}/${expected} (${d}/${p}) -> ${OUT}`);
+        }
       }
     }
 

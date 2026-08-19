@@ -9,7 +9,7 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { getBoss } from '../../data/bosses';
-import { MEMBER_BALANCE, PROCESS_BALANCE } from '../../data/balance';
+import { CARD_BALANCE, MEMBER_BALANCE, PROCESS_BALANCE } from '../../data/balance';
 import { getCard } from '../../data/cards';
 import { getGoalAdjustment } from '../../data/goalAdjustments';
 import { getLever } from '../../data/levers';
@@ -1118,7 +1118,7 @@ export class RunEngine {
     this.draftMulliganUsed = false;
     this.draft = drawDraft(
       createRng(`${this.seed}:draft:${this.sprintsPlayed}`),
-      3,
+      CARD_BALANCE.draftCandidateCount.value,
       this.allowedCards ?? undefined,
       this.preferredCards,
     );
@@ -1155,10 +1155,10 @@ export class RunEngine {
     if (this.budget <= DRAFT_MULLIGAN_COST) return;
     const previousKey = [...this.draft].sort().join('\0');
     let next = this.draft;
-    for (let attempt = 0; attempt < 16; attempt += 1) {
+    for (let attempt = 0; attempt < CARD_BALANCE.draftMulliganMaxAttempts.value; attempt += 1) {
       const candidate = drawDraft(
         createRng(`${this.seed}:draft:${this.sprintsPlayed}:m1:${attempt}`),
-        3,
+        CARD_BALANCE.draftCandidateCount.value,
         this.allowedCards ?? undefined,
         this.preferredCards,
       );
@@ -1354,7 +1354,12 @@ export class RunEngine {
     const key = `${this.seed}:shop:q${this.quarterNumber}:s${this.sprintIndexInQuarter + 1}`;
     const rng = createRng(key);
     const discount = foldPassives(this.relics).shopDiscount;
-    const cardIds = drawDraft(rng, 3, this.allowedCards ?? undefined, this.preferredCards);
+    const cardIds = drawDraft(
+      rng,
+      CARD_BALANCE.draftCandidateCount.value,
+      this.allowedCards ?? undefined,
+      this.preferredCards,
+    );
     const cards = cardIds.map((defId) => ({
       defId,
       cost: Math.max(1, Math.round((getCard(defId)?.cost ?? 12) * (1 - discount))),

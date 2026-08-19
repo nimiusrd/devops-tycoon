@@ -27,6 +27,9 @@ const ORDERED_BOUND_PAIRS = [
   ['action.firefight.seniorHpCost', 'action.firefight.seniorHpCostMaximum'],
   ['action.firefight.seniorHpCostMaximum', 'action.firefight.lightSeniorHpCost'],
   ['action.assignTask.idealMoraleMinimum', 'action.assignTask.moraleCost'],
+  ['card.effect.multiplier.minimum', 'card.effect.multiplier.maximum'],
+  ['card.effect.reworkRateAdd.minimum', 'card.effect.reworkRateAdd.maximum'],
+  ['card.effect.additive.minimum', 'card.effect.additive.maximum'],
 ] as const;
 
 /** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */

@@ -19,10 +19,10 @@ import type {
   SprintState,
 } from './types';
 import { clamp } from './clamp';
-import { PROCESS_BALANCE } from '../data/balance';
+import { CARD_BALANCE, PROCESS_BALANCE } from '../data/balance';
 
 /** スプリント開始時に配る手札枚数（SPEC 第7.1）。 */
-export const HAND_SIZE = 3;
+export const HAND_SIZE = CARD_BALANCE.handSize.value;
 
 const EFFECT_KEYS = Object.keys(IDENTITY_CARD_EFFECTS) as (keyof CardEffects)[];
 
@@ -33,9 +33,25 @@ function isMul(key: keyof CardEffects): boolean {
 
 /** 効果フィールドを健全な範囲へ収める（暴走・逆転防止）。 */
 function clampEffect(key: keyof CardEffects, value: number): number {
-  if (isMul(key)) return clamp(value, 0.3, 3);
-  if (key === 'reworkRateAdd') return clamp(value, -0.5, 0.5);
-  return clamp(value, -50, 50);
+  if (isMul(key)) {
+    return clamp(
+      value,
+      CARD_BALANCE.effectMultiplierMinimum.value,
+      CARD_BALANCE.effectMultiplierMaximum.value,
+    );
+  }
+  if (key === 'reworkRateAdd') {
+    return clamp(
+      value,
+      CARD_BALANCE.effectReworkRateAddMinimum.value,
+      CARD_BALANCE.effectReworkRateAddMaximum.value,
+    );
+  }
+  return clamp(
+    value,
+    CARD_BALANCE.effectAdditiveMinimum.value,
+    CARD_BALANCE.effectAdditiveMaximum.value,
+  );
 }
 
 /**
@@ -43,7 +59,7 @@ function clampEffect(key: keyof CardEffects, value: number): number {
  * 乗算フィールドは 1 からの乖離を、加算フィールドは大きさをレベルで増やす。
  */
 export function scaleEffects(base: Partial<CardEffects>, level: number): CardEffects {
-  const k = 1 + 0.5 * Math.max(0, level - 1);
+  const k = 1 + CARD_BALANCE.upgradeLevelMultiplier.value * Math.max(0, level - 1);
   const out: CardEffects = { ...IDENTITY_CARD_EFFECTS };
   for (const key of EFFECT_KEYS) {
     const b = base[key];
@@ -106,8 +122,9 @@ export function applyDeckBaseline(org: OrgState, effects: CardEffects): void {
  * ショップ価格とは独立し、強化レベルごとに -1（下限 1）する。
  */
 export function playCost(focusCost: number, level: number): number {
-  const base = Math.max(1, Math.round(focusCost));
-  return Math.max(1, base - (level - 1));
+  const minimum = CARD_BALANCE.playFocusCostMinimum.value;
+  const base = Math.max(minimum, Math.round(focusCost));
+  return Math.max(minimum, base - (level - 1));
 }
 
 /** Fisher–Yates でインデックス配列をシャッフル（決定論）。 */
@@ -303,7 +320,7 @@ export function upgradeCardAt(deck: CardInstance[], index: number): CardInstance
  * 研修方針の優先施策にかかるレアリティ重み倍率（RI-34⁗）。
  * 無料でデッキに入らず、ドラフト／ショップで出やすくするだけ。
  */
-export const PREFERRED_DRAFT_WEIGHT_MUL = 3;
+export const PREFERRED_DRAFT_WEIGHT_MUL = CARD_BALANCE.draftPreferredWeightMultiplier.value;
 
 /**
  * ドラフト候補をレアリティ重み付きで `count` 枚、重複なく抽選する（第7.1）。
@@ -312,7 +329,7 @@ export const PREFERRED_DRAFT_WEIGHT_MUL = 3;
  */
 export function drawDraft(
   rng: Rng,
-  count = 3,
+  count = CARD_BALANCE.draftCandidateCount.value,
   allowed?: ReadonlySet<string>,
   preferred?: ReadonlySet<string>,
 ): string[] {

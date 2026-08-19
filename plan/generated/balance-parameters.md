@@ -61,6 +61,18 @@
 | `action.splitPr.seniorHpCost` | PR分割シニアHPコスト | `4` | `points` | `0〜100（整数）` | — | PR分割で消費するシニアHP。 | action, splitPr, senior-hp, side-effect | いいえ |
 | `action.task.progress.maximum` | タスク進捗上限 | `0.999` | `ratio` | `0.999〜1` | `action.task.progress.minimum` ≤ `action.task.progress.maximum` | 介入によるタスク進捗のclamp上限。通常のCoding進行より低くしない。 | action, task, progress, boundary | いいえ |
 | `action.task.progress.minimum` | タスク進捗下限 | `0` | `ratio` | `0〜0` | `action.task.progress.minimum` ≤ `action.task.progress.maximum` | 介入によるタスク進捗のclamp下限。 | action, task, progress, boundary | いいえ |
+| `card.draft.candidateCount` | ドラフト候補数 | `3` | `count` | `1〜10（整数）` | — | 通常ドラフト・引き直し・ショップが提示するカード候補の枚数。 | card, draft, shop | いいえ |
+| `card.draft.mulliganMaxAttempts` | ドラフト引き直しの最大再試行回数 | `16` | `count` | `1〜64（整数）` | — | 元候補と同じ集合を避けて引き直すときの最大試行回数。 | card, draft, mulligan | いいえ |
+| `card.draft.preferredWeightMultiplier` | 優先施策のドラフト重み倍率 | `3` | `multiplier` | `1〜10` | — | 研修方針で優先したカードのレアリティ重みへ掛ける倍率。 | card, draft, training-policy | いいえ |
+| `card.effect.additive.maximum` | 加算系カード効果の上限 | `50` | `points` | `0〜200` | `card.effect.additive.minimum` ≤ `card.effect.additive.maximum` | 品質・リテラシーなど加算フィールドをclampする上限。 | card, effect, boundary | いいえ |
+| `card.effect.additive.minimum` | 加算系カード効果の下限 | `-50` | `points` | `-200〜0` | `card.effect.additive.minimum` ≤ `card.effect.additive.maximum` | 品質・リテラシーなど加算フィールドをclampする下限。 | card, effect, boundary | いいえ |
+| `card.effect.multiplier.maximum` | 乗算系カード効果の上限 | `3` | `multiplier` | `1〜10` | `card.effect.multiplier.minimum` ≤ `card.effect.multiplier.maximum` | 速度・効率など乗算フィールドをclampする上限。 | card, effect, boundary | いいえ |
+| `card.effect.multiplier.minimum` | 乗算系カード効果の下限 | `0.3` | `multiplier` | `0.1〜1` | `card.effect.multiplier.minimum` ≤ `card.effect.multiplier.maximum` | 速度・効率など乗算フィールドをclampする下限。 | card, effect, boundary | いいえ |
+| `card.effect.reworkRateAdd.maximum` | Rework率加算の上限 | `0.5` | `multiplier` | `0〜1` | `card.effect.reworkRateAdd.minimum` ≤ `card.effect.reworkRateAdd.maximum` | カード効果の Rework 率加算をclampする上限。 | card, effect, rework, boundary | いいえ |
+| `card.effect.reworkRateAdd.minimum` | Rework率加算の下限 | `-0.5` | `multiplier` | `-1〜0` | `card.effect.reworkRateAdd.minimum` ≤ `card.effect.reworkRateAdd.maximum` | カード効果の Rework 率加算をclampする下限。 | card, effect, rework, boundary | いいえ |
+| `card.hand.size` | スプリント開始時の手札枚数 | `3` | `count` | `1〜10（整数）` | — | スプリント開始時にデッキから配る手札の枚数。 | card, hand | いいえ |
+| `card.play.focusCostMinimum` | 手札発動の集中力コスト下限 | `1` | `points` | `1〜10（整数）` | — | 丸め後および強化による減少後の、手札発動コストの下限。 | card, play, focus | いいえ |
+| `card.upgrade.levelMultiplier` | 強化レベルごとの効果増分 | `0.5` | `multiplier` | `0〜2` | — | 強化レベルが1を超えるごとに効果へ加える係数。k = 1 + この値 × max(0, level - 1)。 | card, upgrade | いいえ |
 | `member.formation.ai.incidentBase` | AI配布時Incident基礎加算 | `0.05` | `multiplier` | `0〜1` | — | AIを配布したコーダーへ加えるIncident倍率の基礎加算。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.incidentMasteryWeight` | AI習熟のIncident低減係数 | `0.1` | `multiplier` | `0〜1` | — | AI習熟がAI配布時のIncident倍率を低減する係数。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.masteryMaximum` | AI習熟正規化倍率の上限 | `1.2` | `multiplier` | `0〜3` | — | AI習熟を正規化した値の上限。 | member, formation, ai, boundary | いいえ |

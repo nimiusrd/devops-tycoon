@@ -36,6 +36,7 @@ const ORDERED_BOUND_PAIRS = [
 /** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */
 const STRICTLY_ORDERED_BOUND_PAIRS = [
   ['member.growth.promotion.middleLevel', 'member.growth.promotion.seniorLevel'],
+  ['run.event.softOutcome.loseThreshold', 'run.event.softOutcome.survivalFloor'],
   ['sprint.grade.threshold.C', 'sprint.grade.threshold.B'],
   ['sprint.grade.threshold.B', 'sprint.grade.threshold.A'],
   ['sprint.grade.threshold.A', 'sprint.grade.threshold.S'],

@@ -4,6 +4,7 @@
  * Backlog → Coding → Review → Rework → Done をタスク粒が流れる固定タイムステップの
  * 状態機械。描画を一切知らず、乱数は引数の seed付きPRNG からのみ消費する（第22.3）。
  */
+import { SPRINT_BALANCE, SPRINT_TASK_KIND_WEIGHTS } from '../data/balance';
 import {
   AI_ADOPTION,
   AI_DEP_PER_TASK,
@@ -55,15 +56,15 @@ import type {
 } from './types';
 import { clamp } from './clamp';
 
-/** タスク規模の出現分布（合計 1）。 */
+/** タスク規模の出現分布（合計 1）。抽選の累積判定順は routine → normal → complex。 */
 const KIND_WEIGHTS: { kind: TaskKind; weight: number }[] = [
-  { kind: 'routine', weight: 0.3 },
-  { kind: 'normal', weight: 0.45 },
-  { kind: 'complex', weight: 0.25 },
+  { kind: 'routine', weight: SPRINT_TASK_KIND_WEIGHTS.routine.value },
+  { kind: 'normal', weight: SPRINT_TASK_KIND_WEIGHTS.normal.value },
+  { kind: 'complex', weight: SPRINT_TASK_KIND_WEIGHTS.complex.value },
 ];
 
 /** 高価値タスクの出現率。 */
-const HIGH_VALUE_RATE = 0.12;
+const HIGH_VALUE_RATE = SPRINT_BALANCE.highValueRate.value;
 
 function rollKind(rng: Rng): TaskKind {
   const r = rng();
@@ -325,7 +326,7 @@ export function reviewOne(
   m.delivered += value;
   org.deliveryScore += value;
   if (task.aiAssisted) m.aiAssistedCompleted += 1;
-  org.morale = clamp(org.morale + 0.5, 0, 100);
+  org.morale = clamp(org.morale + SPRINT_BALANCE.completionMoraleGain.value, 0, 100);
 }
 
 /**
@@ -586,16 +587,16 @@ export function aiAssistedPct(metrics: SprintMetrics): number {
 
 /** 健全比から評価ランクへ変換する境界（RI-80）。 */
 const GRADE_THRESHOLDS = {
-  S: 0.955,
-  A: 0.8,
-  B: 0.62,
-  C: 0.4,
+  S: SPRINT_BALANCE.gradeThresholdS.value,
+  A: SPRINT_BALANCE.gradeThresholdA.value,
+  B: SPRINT_BALANCE.gradeThresholdB.value,
+  C: SPRINT_BALANCE.gradeThresholdC.value,
 } as const;
 
 /** 実際に運用安定を付与した介入1回あたりの運用判断ボーナス（RI-80）。 */
-const STABILIZING_ACTION_BONUS = 0.0045;
+const STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusPerGrant.value;
 /** 介入の連打だけでSにならないための上限。 */
-const MAX_STABILIZING_ACTION_BONUS = 0.015;
+const MAX_STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusCap.value;
 
 /**
  * 評価（S/A/B/C/D）。出荷量を母数に、手戻り・障害・延焼・シニア消耗の
@@ -606,7 +607,11 @@ export function computeGrade(sprint: SprintState, org: OrgState): string {
   const m = sprint.metrics;
   const hpLoss = m.seniorHpStart - org.seniorHp;
   const penalties =
-    m.reworkCount * 5 + m.incidentCount * 6 + m.spread * 10 + Math.max(0, hpLoss - 20) * 0.7;
+    m.reworkCount * SPRINT_BALANCE.gradePenaltyRework.value +
+    m.incidentCount * SPRINT_BALANCE.gradePenaltyIncident.value +
+    m.spread * SPRINT_BALANCE.gradePenaltySpread.value +
+    Math.max(0, hpLoss - SPRINT_BALANCE.gradePenaltyHpLossFree.value) *
+      SPRINT_BALANCE.gradePenaltyHpLossMultiplier.value;
   const base = Math.max(1, m.delivered);
   const outcomeRatio = (m.delivered - penalties) / base;
   // 実際に運用安定を付与した介入だけを加点する（条件未成立の firefight/andon は除外。RI-73）。
@@ -637,25 +642,28 @@ export function computeTitleAndDiagnosis(
   const aiUsed = org.aiEnabled && pct > 0;
 
   // 重い崩壊から順に判定する。
-  if (m.spread >= 2) {
+  if (m.spread >= SPRINT_BALANCE.titleSpreadMinimum.value) {
     return {
       title: '静かな崩壊',
       diagnosis: '障害が鎮火しきれず延焼し、技術的負債として積み上がっています。',
     };
   }
-  if (hpLoss >= 55) {
+  if (hpLoss >= SPRINT_BALANCE.titleSeniorBurnoutHpLoss.value) {
     return {
       title: 'シニア過労メーカー',
       diagnosis: 'レビュー負荷がシニアに集中しています。体力が尽きる前に分散を。',
     };
   }
-  if (m.reviewQueueMax >= 12 && pct >= 50) {
+  if (
+    m.reviewQueueMax >= SPRINT_BALANCE.titleReviewHellQueueMax.value &&
+    pct >= SPRINT_BALANCE.titleReviewHellAiPct.value
+  ) {
     return {
       title: 'PRを増やす者',
       diagnosis: 'AIによって実装量は増えましたが、レビュー工程が限界を超えています。',
     };
   }
-  if (reworkRatio >= 0.35) {
+  if (reworkRatio >= SPRINT_BALANCE.titleReworkArtisanRatio.value) {
     return {
       title: 'Rework職人',
       diagnosis: '手戻りが多すぎます。AIの使い方とレビュー品質を見直しましょう。',
@@ -665,31 +673,47 @@ export function computeTitleAndDiagnosis(
   const urgentFirefights = sprint.fireEvents.filter(
     (e) => e.kind === 'contain' && !e.brokeCombo,
   ).length;
-  if (urgentFirefights >= 3 && m.incidentCount >= 3 && m.spread === 0) {
+  if (
+    urgentFirefights >= SPRINT_BALANCE.titleFirefighterContains.value &&
+    m.incidentCount >= SPRINT_BALANCE.titleFirefighterIncidents.value &&
+    m.spread === 0
+  ) {
     return {
       title: '火消しの達人',
       diagnosis: '連続する炎上を、延焼する前にすべて自らの手で鎮火しました。見事な危機対応です。',
     };
   }
-  if (aiUsed && m.incidentCount >= 3) {
+  if (aiUsed && m.incidentCount >= SPRINT_BALANCE.titleUnstableIncidents.value) {
     return {
       title: '爆速だが不安定',
       diagnosis: '実装は進みましたが、テストが追いつかず障害が頻発しています。',
     };
   }
-  if (aiUsed && m.reworkCount <= 2 && m.incidentCount <= 1) {
+  if (
+    aiUsed &&
+    m.reworkCount <= SPRINT_BALANCE.titleHealthyReworkMax.value &&
+    m.incidentCount <= SPRINT_BALANCE.titleHealthyIncidentMax.value
+  ) {
     return {
       title: '健全な加速者',
       diagnosis: 'AIの加速を、レビューと品質が受け止められています。理想的な導入です。',
     };
   }
-  if (m.maxCombo >= 15 && reworkRatio < 0.15) {
+  if (
+    m.maxCombo >= SPRINT_BALANCE.titleComboMasterMin.value &&
+    reworkRatio < SPRINT_BALANCE.titleComboMasterReworkMax.value
+  ) {
     return {
       title: 'コンボ職人',
       diagnosis: '途切れない出荷でコンボを積み上げました。流れを支配しています。',
     };
   }
-  if (!aiUsed && hpLoss < 35 && reworkRatio < 0.2 && m.incidentCount <= 2) {
+  if (
+    !aiUsed &&
+    hpLoss < SPRINT_BALANCE.titleNoOvertimeHpLossMax.value &&
+    reworkRatio < SPRINT_BALANCE.titleNoOvertimeReworkMax.value &&
+    m.incidentCount <= SPRINT_BALANCE.titleNoOvertimeIncidentMax.value
+  ) {
     return {
       title: 'ノー残業の勇者',
       diagnosis: '無理のないペースで安定して出荷できています。',

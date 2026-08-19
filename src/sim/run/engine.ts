@@ -9,7 +9,12 @@
  * `org` はラン中を通じて持続し、各スプリントの消耗が次へ引き継がれる。
  */
 import { getBoss } from '../../data/bosses';
-import { CARD_BALANCE, MEMBER_BALANCE, PROCESS_BALANCE } from '../../data/balance';
+import {
+  CARD_BALANCE,
+  MEMBER_BALANCE,
+  PROCESS_BALANCE,
+  SPRINT_TASK_KIND_WEIGHTS,
+} from '../../data/balance';
 import { getCard } from '../../data/cards';
 import { getGoalAdjustment } from '../../data/goalAdjustments';
 import { getLever } from '../../data/levers';
@@ -1814,9 +1819,10 @@ export class RunEngine {
     const scenarioFx = getScenario(this.scenario).globalEffects;
     const scenarioRework = scenarioFx?.reworkRateAdd ?? 0;
     const reworkRateAdd = effects.reworkRateAdd - fold.effects.reworkRateAdd + scenarioRework;
-    // 粗粒度はタスク種別を持たないので、定型出現比 0.3（`sprint.ts` KIND_WEIGHTS）で混ぜる。
+    // 粗粒度はタスク種別を持たないので、定型出現比（詳細抽選と同じ安定ID）で混ぜる。
     const scenarioRoutine = scenarioFx?.routineSpeedMul ?? 1;
-    const shipMul = effects.codingSpeedMul * (1 + (scenarioRoutine - 1) * 0.3);
+    const shipMul =
+      effects.codingSpeedMul * (1 + (scenarioRoutine - 1) * SPRINT_TASK_KIND_WEIGHTS.routine.value);
     return {
       incidentRateMul: effects.incidentRateMul,
       shipMul,

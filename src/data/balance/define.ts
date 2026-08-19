@@ -30,12 +30,16 @@ const ORDERED_BOUND_PAIRS = [
   ['card.effect.multiplier.minimum', 'card.effect.multiplier.maximum'],
   ['card.effect.reworkRateAdd.minimum', 'card.effect.reworkRateAdd.maximum'],
   ['card.effect.additive.minimum', 'card.effect.additive.maximum'],
+  ['sprint.grade.stabilizingBonusPerGrant', 'sprint.grade.stabilizingBonusCap'],
 ] as const;
 
 /** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */
 const STRICTLY_ORDERED_BOUND_PAIRS = [
   ['member.growth.promotion.middleLevel', 'member.growth.promotion.seniorLevel'],
   ['run.event.softOutcome.loseThreshold', 'run.event.softOutcome.survivalFloor'],
+  ['sprint.grade.threshold.C', 'sprint.grade.threshold.B'],
+  ['sprint.grade.threshold.B', 'sprint.grade.threshold.A'],
+  ['sprint.grade.threshold.A', 'sprint.grade.threshold.S'],
 ] as const;
 
 /** 合計が固定される係数の組み合わせ。 */

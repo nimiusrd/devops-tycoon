@@ -124,6 +124,7 @@ import {
 } from './events';
 import { canUnlock, unlockNode } from './evolution';
 import { canTransition, RunPhaseError } from './phases';
+import { RUN_BALANCE } from '../../data/balance/run';
 import { foldRunEffects, infraBillingRateForSprint } from './effects';
 import {
   DRAFT_MULLIGAN_COST,
@@ -200,19 +201,20 @@ import {
 
 export { DRAFT_MULLIGAN_COST, SPRINTS_PER_QUARTER };
 /** 各ビートで選択イベント（decision）を引く確率。残りは判定イベント（judgment）。 */
-export const DECISION_BEAT_CHANCE = 0.55;
+export const DECISION_BEAT_CHANCE = RUN_BALANCE.decisionBeatChance.value;
 /** 休息（heal）でのシニア体力回復量（UI プレビューと共有）。 */
-export const REST_HEAL = 40;
+export const REST_HEAL = RUN_BALANCE.restSeniorHpHeal.value;
 /** 休息（heal）での士気回復量。 */
-export const REST_MORALE_HEAL = 10;
+export const REST_MORALE_HEAL = RUN_BALANCE.restMoraleHeal.value;
 /** 休息（repay）での技術的負債返済量（UI プレビューと共有）。 */
-export const REST_REPAY = 30;
+export const REST_REPAY = RUN_BALANCE.restTechDebtRepay.value;
 /** 休息（repay）で次スプリントへ持ち越す手戻り率の抑制（RI-78）。 */
-export const REST_REPAY_REWORK_RATE = -0.08;
+export const REST_REPAY_REWORK_RATE = -RUN_BALANCE.restReworkReduction.value;
 /** 休息（upgrade）で次スプリントへ持ち越す集中力上限の増加（RI-78）。 */
-export const REST_UPGRADE_FOCUS_MAX = 2;
+export const REST_UPGRADE_FOCUS_MAX = RUN_BALANCE.restFocusMaxAdd.value;
 /** ショップのレリック価格（割引前）。RI-78: 純出荷受入のため定価を抑える。 */
-export const SHOP_RELIC_COST = 12;
+export const SHOP_RELIC_COST = RUN_BALANCE.shopRelicCost.value;
+const SHOP_MINIMUM_PRICE = RUN_BALANCE.shopMinimumPrice.value;
 
 /** RI-108 より前のセーブを復元するときに使う、当時の raw 反映閾値。 */
 const LEGACY_INCIDENT_TRUST_RAW_THRESHOLD = 0.5;
@@ -1362,14 +1364,14 @@ export class RunEngine {
     );
     const cards = cardIds.map((defId) => ({
       defId,
-      cost: Math.max(1, Math.round((getCard(defId)?.cost ?? 12) * (1 - discount))),
+      cost: Math.max(SHOP_MINIMUM_PRICE, Math.round((getCard(defId)?.cost ?? 12) * (1 - discount))),
       bought: false,
     }));
     const relicId = this.offerRelic(rng);
     const relic = relicId
       ? {
           id: relicId,
-          cost: Math.max(1, Math.round(SHOP_RELIC_COST * (1 - discount))),
+          cost: Math.max(SHOP_MINIMUM_PRICE, Math.round(SHOP_RELIC_COST * (1 - discount))),
           bought: false,
         }
       : undefined;

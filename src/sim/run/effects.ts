@@ -7,6 +7,7 @@
  * 加算系（aiLiteracyAdd 等）は取得/発動時に組織へ反映する想定（engine 側で適用）。
  */
 import { getBoss } from '../../data/bosses';
+import { RUN_BALANCE } from '../../data/balance/run';
 import { getDifficulty, getTrial } from '../../data/difficulties';
 import { getEvolutionNode } from '../../data/evolution';
 import { getRelic } from '../../data/relics';
@@ -33,7 +34,7 @@ export const IDENTITY_PASSIVES: RunPassives = {
   moraleDamageMul: 1,
   restHealBonus: 0,
   shopDiscount: 0,
-  relicSlots: 6,
+  relicSlots: RUN_BALANCE.shopRelicSlots.value,
 };
 
 export interface RunModifierInput {
@@ -54,7 +55,7 @@ export interface RunModifierInput {
  * 試練は `frontierModelCostPerDependency` を加算する（ベース 0.22 + 0.04）。
  * frontier 試練の毎スプリント課金は上乗せ分だけ（ベースはボス時のみ）。
  */
-export const BASE_INFRA_COST_PER_DEPENDENCY = 0.22;
+export const BASE_INFRA_COST_PER_DEPENDENCY = RUN_BALANCE.infraBaseCostPerDependency.value;
 
 /**
  * スプリント種別に応じたインフラ課金単価（RI-77）。
@@ -133,7 +134,10 @@ export function foldPassives(relics: string[]): RunPassives {
     if (p.moraleDamageMul !== undefined) out.moraleDamageMul *= p.moraleDamageMul;
     if (p.restHealBonus !== undefined) out.restHealBonus += p.restHealBonus;
     if (p.shopDiscount !== undefined)
-      out.shopDiscount = Math.min(0.8, out.shopDiscount + p.shopDiscount);
+      out.shopDiscount = Math.min(
+        RUN_BALANCE.shopDiscountMaximum.value,
+        out.shopDiscount + p.shopDiscount,
+      );
     if (p.relicSlots !== undefined) out.relicSlots = p.relicSlots;
   }
   return out;

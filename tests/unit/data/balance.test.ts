@@ -10,6 +10,7 @@ import {
   defineBalanceEntry,
   defineProbabilityDistribution,
   flattenBalanceEntries,
+  RUN_BALANCE,
   validateBalanceRegistry,
 } from '../../../src/data/balance';
 import * as actionSimulation from '../../../src/sim/actions';
@@ -48,6 +49,17 @@ import {
   TASK_BASE_VALUE,
 } from '../../../src/sim/model/process';
 import { ORG_STAT_MAX, ORG_STAT_MIN } from '../../../src/sim/orgStat';
+import * as runConstants from '../../../src/sim/run/constants';
+import {
+  DECISION_BEAT_CHANCE,
+  REST_HEAL,
+  REST_MORALE_HEAL,
+  REST_REPAY,
+  REST_REPAY_REWORK_RATE,
+  REST_UPGRADE_FOCUS_MAX,
+  SHOP_RELIC_COST,
+} from '../../../src/sim/run/engine';
+import { BASE_INFRA_COST_PER_DEPENDENCY } from '../../../src/sim/run/effects';
 
 const PROCESS_BALANCE_IDS = [
   'process.ai.adoption',
@@ -174,9 +186,32 @@ const ACTION_BALANCE_IDS = [
   'action.organizationStat.maximum',
 ] as const;
 
+const RUN_BALANCE_IDS = [
+  'run.draft.mulliganCost',
+  'run.event.decisionBeatChance',
+  'run.event.softOutcome.loseThreshold',
+  'run.event.softOutcome.survivalFloor',
+  'run.evolution.points.base',
+  'run.evolution.points.deliveredDivisor',
+  'run.evolution.points.eliteBonus',
+  'run.infrastructure.baseCostPerDependency',
+  'run.infrastructure.minimumBillableRaw',
+  'run.quarter.sprintsPerQuarter',
+  'run.rest.focusMaxAdd',
+  'run.rest.moraleHeal',
+  'run.rest.reworkReduction',
+  'run.rest.seniorHpHeal',
+  'run.rest.techDebtRepay',
+  'run.shop.discountMaximum',
+  'run.shop.minimumPrice',
+  'run.shop.relicCost',
+  'run.shop.relicSlots',
+] as const;
+
 const BALANCE_IDS = [
   ...PROCESS_BALANCE_IDS,
   ...ACTION_BALANCE_IDS,
+  ...RUN_BALANCE_IDS,
   ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
   ...Object.values(CARD_BALANCE).map((entry) => entry.id),
 ].sort();
@@ -228,8 +263,48 @@ describe('型付きバランスレジストリ', () => {
     expect(OVERTIME_REVIEW_MUL).toBe(PROCESS_BALANCE.overtimeReviewMultiplier.value);
     expect(COMBO_BONUS_PER).toBe(PROCESS_BALANCE.comboBonusPer.value);
     expect(COMBO_BONUS_CAP).toBe(PROCESS_BALANCE.comboBonusCap.value);
+    expect(runConstants.SPRINTS_PER_QUARTER).toBe(RUN_BALANCE.sprintsPerQuarter.value);
+    expect(runConstants.EVO_POINTS_BASE).toBe(RUN_BALANCE.evolutionPointsBase.value);
+    expect(runConstants.EVO_POINTS_DELIVERED_DIVISOR).toBe(
+      RUN_BALANCE.evolutionPointsDeliveredDivisor.value,
+    );
+    expect(runConstants.EVO_POINTS_ELITE_BONUS).toBe(RUN_BALANCE.evolutionPointsEliteBonus.value);
+    expect(runConstants.DRAFT_MULLIGAN_COST).toBe(RUN_BALANCE.draftMulliganCost.value);
+    expect(DECISION_BEAT_CHANCE).toBe(RUN_BALANCE.decisionBeatChance.value);
+    expect(REST_HEAL).toBe(RUN_BALANCE.restSeniorHpHeal.value);
+    expect(REST_MORALE_HEAL).toBe(RUN_BALANCE.restMoraleHeal.value);
+    expect(REST_REPAY).toBe(RUN_BALANCE.restTechDebtRepay.value);
+    expect(REST_REPAY_REWORK_RATE).toBe(-RUN_BALANCE.restReworkReduction.value);
+    expect(REST_UPGRADE_FOCUS_MAX).toBe(RUN_BALANCE.restFocusMaxAdd.value);
+    expect(SHOP_RELIC_COST).toBe(RUN_BALANCE.shopRelicCost.value);
+    expect(BASE_INFRA_COST_PER_DEPENDENCY).toBe(RUN_BALANCE.infraBaseCostPerDependency.value);
     expect(HAND_SIZE).toBe(CARD_BALANCE.handSize.value);
     expect(PREFERRED_DRAFT_WEIGHT_MUL).toBe(CARD_BALANCE.draftPreferredWeightMultiplier.value);
+  });
+
+  it('ラン進行・経済の値と関係制約を検証する', () => {
+    expect(RUN_BALANCE.decisionBeatChance.value).toBe(0.55);
+    expect(RUN_BALANCE.softOutcomeLoseThreshold.value).toBe(1);
+    expect(RUN_BALANCE.softOutcomeSurvivalFloor.value).toBe(2);
+    expect(RUN_BALANCE.softOutcomeLoseThreshold.allowedRange).toEqual({ min: 1, max: 1 });
+    expect(RUN_BALANCE.shopDiscountMaximum.value).toBe(0.8);
+    expect(RUN_BALANCE.infraMinimumBillableRaw.value).toBe(1);
+    expect(RUN_BALANCE.softOutcomeLoseThreshold.value).toBeLessThan(
+      RUN_BALANCE.softOutcomeSurvivalFloor.value,
+    );
+
+    const invalidLoseThreshold = defineBalanceEntry({
+      ...RUN_BALANCE.softOutcomeLoseThreshold,
+      value: RUN_BALANCE.softOutcomeSurvivalFloor.value,
+    });
+    expect(
+      validateBalanceRegistry([invalidLoseThreshold, RUN_BALANCE.softOutcomeSurvivalFloor]),
+    ).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: RUN_BALANCE.softOutcomeLoseThreshold.id,
+      }),
+    );
   });
 
   it('介入の実行定義と互換aliasがアクションレジストリを参照する', () => {

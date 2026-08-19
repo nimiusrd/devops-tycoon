@@ -7,6 +7,7 @@
  * 反映する差分として返す。組織状態による重み付けは `weightedEventPool`（純関数）。
  */
 import type { EventDef, EventOutcome } from '../../data/events';
+import { RUN_BALANCE } from '../../data/balance/run';
 import { effectiveKind } from '../../data/events';
 import { TECH_DEBT_CAP } from '../outcome';
 import type { OrgState } from '../types';
@@ -65,8 +66,12 @@ export function applyEventOutcome(
   if (outcome.techDebt) org.techDebt = Math.max(0, org.techDebt + outcome.techDebt);
   // soft judgment: resolveBeat 直後の evaluateLose（seniorHp/morale <= 1）を回避する。
   if (outcome.preserveAboveLose) {
-    if (org.seniorHp <= 1) org.seniorHp = 2;
-    if (org.morale <= 1) org.morale = 2;
+    if (org.seniorHp <= RUN_BALANCE.softOutcomeLoseThreshold.value) {
+      org.seniorHp = RUN_BALANCE.softOutcomeSurvivalFloor.value;
+    }
+    if (org.morale <= RUN_BALANCE.softOutcomeLoseThreshold.value) {
+      org.morale = RUN_BALANCE.softOutcomeSurvivalFloor.value;
+    }
   }
 
   return {

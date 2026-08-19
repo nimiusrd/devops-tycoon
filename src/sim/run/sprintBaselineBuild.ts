@@ -4,6 +4,7 @@
  * RunEngine インスタンスに依存しない純関数なので、Web Worker からも呼べる。
  */
 import { getBoss } from '../../data/bosses';
+import { RUN_BALANCE } from '../../data/balance/run';
 import { combineEffects, deckEffects } from '../cards';
 import { clamp } from '../clamp';
 import { foldFormationEffects } from '../member';
@@ -182,7 +183,7 @@ export function applyTrialAiDependencyPressure(
 /** インフラ／モデル利用コスト（RI-88）。1 未満は 0、以上は ceil。 */
 export function computeInfraCost(aiDependency: number, rate: number, infraCostMul: number): number {
   const raw = clamp(aiDependency, 0, 100) * Math.max(0, rate) * Math.max(0, infraCostMul);
-  if (raw < 1) return 0;
+  if (raw < RUN_BALANCE.infraMinimumBillableRaw.value) return 0;
   return Math.ceil(raw);
 }
 

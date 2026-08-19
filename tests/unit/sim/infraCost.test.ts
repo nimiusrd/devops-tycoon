@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getCard } from '../../../src/data/cards';
 import { getRelic } from '../../../src/data/relics';
+import { RUN_BALANCE } from '../../../src/data/balance';
 import { combineEffects, scaleEffects } from '../../../src/sim/cards';
 import { IDENTITY_CARD_EFFECTS } from '../../../src/sim/model';
 import {
@@ -62,6 +63,7 @@ describe('RI-88 インフラコスト軸', () => {
   });
 
   it('computeInfraCost は高依存で増え、1 未満は 0', () => {
+    expect(RUN_BALANCE.infraMinimumBillableRaw.value).toBe(1);
     expect(computeInfraCost(80, 0.01, 1)).toBe(0);
     expect(computeInfraCost(100, 0.01, 1)).toBe(1);
     expect(computeInfraCost(100, 0.01, 0.525)).toBe(0);

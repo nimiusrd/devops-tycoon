@@ -191,3 +191,22 @@
 | `process.stability.highValueMultiplier` | 運用安定中の高価値出荷倍率 | `0.7` | `multiplier` | `0〜1` | — | 高価値抑制コンボ閾値を超えたときの出荷価値倍率。 | process, stability, combo, delivery | いいえ |
 | `process.stability.reworkMultiplier` | 運用安定中の Rework 倍率 | `0.4` | `multiplier` | `0〜1` | — | 運用安定中に Rework 確率へ掛ける倍率。 | process, stability, rework | いいえ |
 | `process.stability.ticks` | 運用安定の持続 tick | `180` | `ticks` | `0〜1000（整数）` | — | 安全側の介入後に工程が安定する期間。 | process, stability, intervention | いいえ |
+| `run.draft.mulliganCost` | ドラフト引き直し費用 | `8` | `currency` | `0〜1000（整数）` | — | ドラフト候補を一度だけ引き直すために消費する予算。 | run, draft, shop, currency | いいえ |
+| `run.event.decisionBeatChance` | decision ビート率 | `0.55` | `probability` | `0〜1` | — | 各ビートで decision イベントを先に抽選する確率。 | run, event, probability | いいえ |
+| `run.event.softOutcome.loseThreshold` | soft 結果の敗北閾値 | `1` | `points` | `0〜100（整数）` | `run.event.softOutcome.loseThreshold` < `run.event.softOutcome.survivalFloor` | soft 結果適用後に直後の敗北判定を避けるために使う、HP・士気の敗北閾値。 | run, event, soft-outcome, threshold | いいえ |
+| `run.event.softOutcome.survivalFloor` | soft 結果の生存床 | `2` | `points` | `0〜100（整数）` | `run.event.softOutcome.loseThreshold` < `run.event.softOutcome.survivalFloor` | soft 結果適用後に HP・士気を戻す最小値。敗北閾値より大きくする。 | run, event, soft-outcome, threshold | いいえ |
+| `run.evolution.points.base` | 進化ポイント基礎値 | `1` | `points` | `0〜100（整数）` | — | 通常スプリント完了時に付与する進化ポイントの基礎値。 | run, evolution, points | いいえ |
+| `run.evolution.points.deliveredDivisor` | 進化ポイントの出荷除数 | `40` | `points` | `1〜1000（整数）` | — | 出荷量を整数除算して進化ポイントへ加算する際の除数。 | run, evolution, points, delivery | いいえ |
+| `run.evolution.points.eliteBonus` | elite 進化ポイント加算 | `1` | `points` | `0〜100（整数）` | — | elite スプリント完了時に基礎値へ加える進化ポイント。 | run, evolution, points, elite | いいえ |
+| `run.infrastructure.baseCostPerDependency` | インフラ基本単価 | `0.22` | `currency` | `0〜10` | — | AI 依存度 1 単位あたりのインフラ／モデル利用基本単価。 | run, infrastructure, currency | いいえ |
+| `run.infrastructure.minimumBillableRaw` | インフラ最低課金 raw 閾値 | `1` | `currency` | `0〜100` | — | raw コストがこの値未満なら無料、それ以外は切り上げて課金する境界。 | run, infrastructure, currency, threshold | いいえ |
+| `run.quarter.sprintsPerQuarter` | 四半期スプリント数 | `6` | `count` | `1〜20（整数）` | — | 1 四半期に配置するスプリント数。最終スプリントはボスになる。 | run, quarter, progression | いいえ |
+| `run.rest.focusMaxAdd` | 休息の集中力上限加算 | `2` | `points` | `0〜100（整数）` | — | 休息でカードを upgrade したときに次スプリントへ加える集中力上限。 | run, rest, focus | いいえ |
+| `run.rest.moraleHeal` | 休息の士気回復量 | `10` | `points` | `0〜100（整数）` | — | 休息で heal を選んだときに回復する組織士気。 | run, rest, morale | いいえ |
+| `run.rest.reworkReduction` | 休息の手戻り削減量 | `0.08` | `ratio` | `0〜1` | — | 休息で repay を選んだときに次スプリントへ加える手戻り率の削減量。 | run, rest, rework | いいえ |
+| `run.rest.seniorHpHeal` | 休息のシニア HP 回復量 | `40` | `points` | `0〜100（整数）` | — | 休息で heal を選んだときに回復するシニア HP の基礎値。 | run, rest, senior-hp | いいえ |
+| `run.rest.techDebtRepay` | 休息の技術的負債返済量 | `30` | `points` | `0〜1000（整数）` | — | 休息で repay を選んだときに減らす技術的負債。 | run, rest, tech-debt | いいえ |
+| `run.shop.discountMaximum` | ショップ割引上限 | `0.8` | `ratio` | `0〜1` | — | レリックのパッシブを合算したショップ割引率の上限。 | run, shop, discount | いいえ |
+| `run.shop.minimumPrice` | ショップ最低価格 | `1` | `currency` | `1〜100（整数）` | — | 割引後のカード・レリック価格に適用する下限。 | run, shop, currency, threshold | いいえ |
+| `run.shop.relicCost` | レリック価格 | `12` | `currency` | `0〜1000（整数）` | — | ショップで提示するレリックの割引前価格。 | run, shop, relic, currency | いいえ |
+| `run.shop.relicSlots` | レリック枠 | `6` | `count` | `0〜20（整数）` | — | レリックを保持できる既定の枠数。 | run, shop, relic | いいえ |

@@ -13,6 +13,7 @@
  *   それぞれの発火条件へ分解する。
  */
 import { readFileSync } from 'node:fs';
+import { createServer } from 'vite';
 import { generationMismatch } from './playtest-generation.mjs';
 
 /**
@@ -74,20 +75,25 @@ function readEvolutionTree() {
 const EVOLUTION_TREE = readEvolutionTree();
 
 /**
- * 進化ポイント式の定数。`src/sim/run/constants.ts` と同期する（パース失敗時はここで落とす）。
+ * 進化ポイント式の定数。Vite SSR で実行時のレジストリを読み込む。
  * RI-86: 分母 100 / ツリー総コスト 46 で Q1 全解放を防ぐ。
  */
-function readEvoPointsFormula() {
-  const src = readFileSync('src/sim/run/constants.ts', 'utf8');
-  const base = Number(src.match(/EVO_POINTS_BASE = (\d+)/)?.[1]);
-  const divisor = Number(src.match(/EVO_POINTS_DELIVERED_DIVISOR = (\d+)/)?.[1]);
-  const elite = Number(src.match(/EVO_POINTS_ELITE_BONUS = (\d+)/)?.[1]);
-  if (![base, divisor, elite].every((n) => Number.isFinite(n) && n > 0)) {
-    throw new Error('src/sim/run/constants.ts から進化ポイント定数を読み取れない');
+async function readEvoPointsFormula() {
+  const server = await createServer({ appType: 'custom' });
+  try {
+    const { RUN_BALANCE } = await server.ssrLoadModule('/src/data/balance/index.ts');
+    const base = RUN_BALANCE.evolutionPointsBase.value;
+    const divisor = RUN_BALANCE.evolutionPointsDeliveredDivisor.value;
+    const elite = RUN_BALANCE.evolutionPointsEliteBonus.value;
+    if (![base, divisor, elite].every((n) => Number.isFinite(n) && n > 0)) {
+      throw new Error('RUN_BALANCE から進化ポイント定数を読み取れない');
+    }
+    return { base, divisor, elite };
+  } finally {
+    await server.close();
   }
-  return { base, divisor, elite };
 }
-const EVO_POINTS = readEvoPointsFormula();
+const EVO_POINTS = await readEvoPointsFormula();
 
 /**
  * 1スプリントで得る進化ポイント。`RunEngine.evoPointsFor` と同じ式。

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { EventDef } from '../../../src/data/events';
 import { TECH_DEBT_CAP } from '../../../src/sim/outcome';
+import { RUN_BALANCE } from '../../../src/data/balance';
 import {
   applyEventOutcome,
   effectiveEventWeight,
@@ -68,10 +69,21 @@ describe('applyEventOutcome の条件枝', () => {
   });
 
   it('preserveAboveLose は適用後の HP / 士気を敗北閾値より上にフロアする', () => {
-    const base = org({ seniorHp: 8, morale: 3 });
+    const base = org({
+      seniorHp: RUN_BALANCE.softOutcomeLoseThreshold.value + 7,
+      morale: RUN_BALANCE.softOutcomeLoseThreshold.value + 2,
+    });
     applyEventOutcome({ seniorHp: -10, morale: -3, preserveAboveLose: true }, base, passives(1));
-    expect(base.seniorHp).toBe(2);
-    expect(base.morale).toBe(2);
+    expect(base.seniorHp).toBe(RUN_BALANCE.softOutcomeSurvivalFloor.value);
+    expect(base.morale).toBe(RUN_BALANCE.softOutcomeSurvivalFloor.value);
+
+    const exactThreshold = org({
+      seniorHp: RUN_BALANCE.softOutcomeLoseThreshold.value,
+      morale: RUN_BALANCE.softOutcomeLoseThreshold.value,
+    });
+    applyEventOutcome({ preserveAboveLose: true }, exactThreshold, passives(1));
+    expect(exactThreshold.seniorHp).toBe(RUN_BALANCE.softOutcomeSurvivalFloor.value);
+    expect(exactThreshold.morale).toBe(RUN_BALANCE.softOutcomeSurvivalFloor.value);
   });
 
   it('指定された outcome だけを加算し、正の Morale はダメージ軽減しない', () => {

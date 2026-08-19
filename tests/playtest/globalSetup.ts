@@ -9,9 +9,11 @@
  *
  * npm スクリプト経路は `scripts/invalidate-playtest-out.mjs` が型検査より前に消しているが、
  * `vitest run --config vitest.playtest.config.ts` を直接叩く経路はここが唯一の防波堤になる。
+ *
+ * 同じ世代の `partial` チェックポイントは消さない（RI-132 の長時間再走の再開用）。
  */
-import { rmSync } from 'node:fs';
+import { invalidatePlaytestOut } from '../../scripts/playtest-out.mjs';
 
 export default function setup(): void {
-  rmSync(process.env.PT_OUT ?? 'playtest-out/runs.json', { force: true });
+  invalidatePlaytestOut();
 }

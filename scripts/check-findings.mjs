@@ -9,12 +9,16 @@
  *
  * 一致しなければ終了コード1と差分を出す。
  *
- * **検査するのは「方針別の40ラン中の勝利数」だけ**である。敗因件数や分位点まで機械的に
+ * **検査の中心は「方針別の40ラン中の勝利数」**である。敗因件数や分位点まで機械的に
  * 追おうとすると、同じ数字が別の意味で出てくる箇所（F-9 の層別 n / p50 など）を
  * 誤検出して役に立たなくなる。ここは取りこぼしが最も多く、かつ曖昧さなく判定できる一点に絞る。
+ *
+ * RI-132 の F-8 / F-9 合否は例外で、反実仮想済みの既定コホートのときだけ
+ * `scripts/playtest-f8f9.mjs` の判定と所見の固定行を突き合わせる。PASS は強制しない。
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { generationMismatch } from './playtest-generation.mjs';
+import { evaluateF8F9, findingsF8F9Problems } from './playtest-f8f9.mjs';
 
 /**
  * 検査対象。`PT_OUT` と第1引数で差し替えられる。
@@ -64,6 +68,12 @@ const cohort = Array.isArray(loaded) ? null : loaded.cohort;
 const stale = generationMismatch(loaded);
 if (stale) {
   console.error(`検査できない: ${stale}`);
+  process.exit(1);
+}
+if (!Array.isArray(loaded) && loaded.partial === true) {
+  console.error(
+    '検査できない: 測定が完了していない（partial）。`npm run playtest` を最後まで実行すること。',
+  );
   process.exit(1);
 }
 
@@ -460,12 +470,23 @@ for (const file of DOCS) {
   });
 }
 
+const f8f9 = evaluateF8F9(loaded, { stale: false });
+if (f8f9.f8.verdict !== '未計測' || f8f9.f9.verdict !== '未計測') {
+  for (const p of findingsF8F9Problems(findingsBody, f8f9)) {
+    problems.push(`${DOCS[0]}: ${p}`);
+  }
+}
+
 if (problems.length > 0) {
   console.error(`方針別勝利数がドキュメントと実測でずれている（${problems.length}件）:`);
   for (const p of problems) console.error(`  ${p}`);
   process.exit(1);
 }
 
+const f8f9Note =
+  f8f9.f8.verdict === '未計測' && f8f9.f9.verdict === '未計測'
+    ? ' / F-8・F-9 は未計測'
+    : ` / F-8 ${f8f9.f8.verdict} / F-9 ${f8f9.f9.verdict}`;
 console.log(
-  `方針別勝利数はドキュメントと実測で一致している（${wins.size}方針 / ${runs.length}ラン）`,
+  `方針別勝利数はドキュメントと実測で一致している（${wins.size}方針 / ${runs.length}ラン）${f8f9Note}`,
 );

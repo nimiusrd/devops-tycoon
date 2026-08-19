@@ -7,6 +7,8 @@ import {
   CARD_BALANCE,
   MEMBER_BALANCE,
   PROCESS_BALANCE,
+  SPRINT_BALANCE,
+  SPRINT_TASK_KIND_WEIGHTS,
   defineBalanceEntry,
   defineProbabilityDistribution,
   flattenBalanceEntries,
@@ -179,6 +181,7 @@ const BALANCE_IDS = [
   ...ACTION_BALANCE_IDS,
   ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
   ...Object.values(CARD_BALANCE).map((entry) => entry.id),
+  ...Object.values(SPRINT_BALANCE).map((entry) => entry.id),
 ].sort();
 
 describe('型付きバランスレジストリ', () => {
@@ -230,6 +233,14 @@ describe('型付きバランスレジストリ', () => {
     expect(COMBO_BONUS_CAP).toBe(PROCESS_BALANCE.comboBonusCap.value);
     expect(HAND_SIZE).toBe(CARD_BALANCE.handSize.value);
     expect(PREFERRED_DRAFT_WEIGHT_MUL).toBe(CARD_BALANCE.draftPreferredWeightMultiplier.value);
+    expect(SPRINT_TASK_KIND_WEIGHTS.routine).toBe(SPRINT_BALANCE.taskKindDistribution.entries[0]);
+    expect(SPRINT_TASK_KIND_WEIGHTS.normal).toBe(SPRINT_BALANCE.taskKindDistribution.entries[1]);
+    expect(SPRINT_TASK_KIND_WEIGHTS.complex).toBe(SPRINT_BALANCE.taskKindDistribution.entries[2]);
+    expect(SPRINT_BALANCE.taskKindDistribution.entries.map((entry) => entry.id)).toEqual([
+      'sprint.task.kindWeight.routine',
+      'sprint.task.kindWeight.normal',
+      'sprint.task.kindWeight.complex',
+    ]);
   });
 
   it('介入の実行定義と互換aliasがアクションレジストリを参照する', () => {
@@ -344,6 +355,24 @@ describe('型付きバランスレジストリ', () => {
     );
   });
 
+  it('スプリント評価境界は同値を許可せず、順番を維持する', () => {
+    const thresholdC = defineBalanceEntry({
+      ...SPRINT_BALANCE.gradeThresholdC,
+      value: SPRINT_BALANCE.gradeThresholdB.value,
+    });
+    const thresholdB = defineBalanceEntry({
+      ...SPRINT_BALANCE.gradeThresholdB,
+      value: SPRINT_BALANCE.gradeThresholdB.value,
+    });
+
+    expect(validateBalanceRegistry([thresholdC, thresholdB])).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: SPRINT_BALANCE.gradeThresholdC.id,
+      }),
+    );
+  });
+
   it('Review の HP 効率下限は正数に制限する', () => {
     expect(PROCESS_BALANCE.reviewHpEfficiencyFloor.allowedRange.min).toBeGreaterThan(0);
   });
@@ -430,6 +459,22 @@ describe('型付きバランスレジストリ', () => {
     CARD_BALANCE.draftCandidateCount,
     CARD_BALANCE.draftMulliganMaxAttempts,
     CARD_BALANCE.playFocusCostMinimum,
+    SPRINT_BALANCE.gradePenaltyRework,
+    SPRINT_BALANCE.gradePenaltyIncident,
+    SPRINT_BALANCE.gradePenaltySpread,
+    SPRINT_BALANCE.gradePenaltyHpLossFree,
+    SPRINT_BALANCE.titleSpreadMinimum,
+    SPRINT_BALANCE.titleSeniorBurnoutHpLoss,
+    SPRINT_BALANCE.titleReviewHellQueueMax,
+    SPRINT_BALANCE.titleReviewHellAiPct,
+    SPRINT_BALANCE.titleFirefighterContains,
+    SPRINT_BALANCE.titleFirefighterIncidents,
+    SPRINT_BALANCE.titleUnstableIncidents,
+    SPRINT_BALANCE.titleHealthyReworkMax,
+    SPRINT_BALANCE.titleHealthyIncidentMax,
+    SPRINT_BALANCE.titleComboMasterMin,
+    SPRINT_BALANCE.titleNoOvertimeHpLossMax,
+    SPRINT_BALANCE.titleNoOvertimeIncidentMax,
   ])('$id は非整数の離散値を検証で拒否する', (entry) => {
     expect(entry.integer).toBe(true);
     const invalid = defineBalanceEntry({ ...entry, value: entry.value + 0.5 });
@@ -517,6 +562,12 @@ describe('型付きバランスレジストリ', () => {
       maximum: CARD_BALANCE.effectAdditiveMaximum,
       invertedMinimum: 10,
       invertedMaximum: 9,
+    },
+    {
+      minimum: SPRINT_BALANCE.stabilizingBonusPerGrant,
+      maximum: SPRINT_BALANCE.stabilizingBonusCap,
+      invertedMinimum: 0.02,
+      invertedMaximum: 0.01,
     },
   ])(
     '$minimum.id と $maximum.id が逆転した場合は検証で拒否する',

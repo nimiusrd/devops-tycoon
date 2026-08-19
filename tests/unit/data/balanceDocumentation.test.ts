@@ -30,6 +30,10 @@ describe('バランスパラメータ表のMarkdown生成', () => {
     expect(markdown).toContain(
       '`card.effect.multiplier.minimum` ≤ `card.effect.multiplier.maximum`',
     );
+    expect(markdown).toContain('`sprint.grade.threshold.C` < `sprint.grade.threshold.B`');
+    expect(markdown).toContain(
+      '`sprint.grade.stabilizingBonusPerGrant` ≤ `sprint.grade.stabilizingBonusCap`',
+    );
     for (const entry of entries) {
       expect(markdown).toContain(`| \`${entry.id}\` | ${entry.label} | \`${entry.value}\` |`);
     }

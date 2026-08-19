@@ -7,7 +7,7 @@ import { ALL_ACTION_IDS, canApplyAction } from '../actions';
 import { assignableTasks } from '../assignTask';
 import { clamp } from '../clamp';
 import { canRecruit, RECRUIT_COST } from '../member';
-import { PROCESS_BALANCE } from '../../data/balance';
+import { OUTCOME_BALANCE, PROCESS_BALANCE } from '../../data/balance';
 import {
   securityCustomerTrustDelta,
   securityCustomerTrustFromRaw,
@@ -89,7 +89,12 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   if (kpiOrg.morale < 40) out.push('moraleCollapse');
   const liveTechDebt = liveKpi?.org.techDebt ?? kpiOrg.techDebt;
   if (s.org.techDebt >= 60 || liveTechDebt >= 60) out.push('techDebt');
-  if (s.org.aiDependency >= 50 && s.org.aiLiteracy <= 30) out.push('aiDependency');
+  if (
+    s.org.aiDependency >= 50 &&
+    s.org.aiLiteracy <= OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value
+  ) {
+    out.push('aiDependency');
+  }
   const nextBudget = budgetAfterNextInfraCharge(s);
   if (s.budget <= 15 || nextBudget <= 15 || strategicSpendExhaustsBudget(s)) {
     out.push('budgetExhausted');
@@ -101,8 +106,14 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
     totals: kpiTotals,
   }).filter((p) => p.status === 'missed').length;
   if (minTrust <= 25) out.push('trustExhausted');
-  if (kpiMissCount >= 4) out.push('kpiMissed');
-  else if (s.budget > 0 && s.budget <= 5 && minTrust > 15) out.push('kpiMissed');
+  if (kpiMissCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value) out.push('kpiMissed');
+  else if (
+    s.budget > OUTCOME_BALANCE.quarterShutdownBudgetMax.value &&
+    s.budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value &&
+    minTrust > OUTCOME_BALANCE.quarterCrisisTrustMax.value
+  ) {
+    out.push('kpiMissed');
+  }
   const currentReviewQueue = s.sprint?.tasks.filter((task) => task.lane === 'review').length ?? 0;
   const otherReviewQueues = s.teams
     .filter((team) => team.id !== s.activeTeamId)
@@ -111,7 +122,7 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   const sprintReviewPeak = s.sprint?.metrics.reviewQueueMax ?? 0;
   const projectedReviewPeak = liveKpi?.totals.reviewQueuePeak ?? 0;
   const runReviewPeak = s.totals.reviewQueuePeak ?? 0;
-  const reviewWatch = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+  const reviewWatch = Math.round(REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value);
   if (
     reviewQueueLive >= reviewWatch ||
     sprintReviewPeak >= reviewWatch ||
@@ -123,7 +134,12 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   if ((s.totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2)
     out.push('incidentCascade');
   if (s.currentSprintKind === 'boss') out.push('bossFailed');
-  if ((minTrust <= 20 && kpiMissCount >= 2) || (s.quarterNumber >= 2 && kpiMissCount >= 3))
+  if (
+    (minTrust <= OUTCOME_BALANCE.quarterReorgTrustMax.value &&
+      kpiMissCount >= OUTCOME_BALANCE.quarterReorgTrustMissedKpiMin.value) ||
+    (s.quarterNumber >= OUTCOME_BALANCE.quarterReorgMinQuarter.value &&
+      kpiMissCount >= OUTCOME_BALANCE.quarterReorgMissedKpiMin.value)
+  )
     out.push('reorgRequired');
   return out;
 }

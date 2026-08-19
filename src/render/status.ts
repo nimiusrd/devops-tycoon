@@ -5,13 +5,13 @@
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
 import { getGoalAdjustment } from '../data/goalAdjustments';
-import { PROCESS_BALANCE } from '../data/balance';
+import { OUTCOME_BALANCE, PROCESS_BALANCE } from '../data/balance';
 import {
   ANDON_STABILITY_REVIEW_MIN,
   FIREFIGHT_STABILITY_BURN_TICKS,
   FIREFIGHT_STABILITY_MIN_BURNING,
 } from '../sim/actions';
-import { REVIEW_FREEZE_PEAK } from '../sim/outcome';
+import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, REVIEW_FREEZE_PEAK } from '../sim/outcome';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { resolveNextQuarterEffects } from '../sim/run/quarterReview';
 import type { GoalAdjustmentId, StakeholderTrust } from '../sim/run/types';
@@ -20,9 +20,12 @@ import type { OrgState, SimState, Task } from '../sim/types';
 /** `review-freeze` イベント抽選の資格帯（seniorHpLow >= 0.55 ⇔ HP <= 45）。 */
 export const REVIEW_FREEZE_EVENT_HP = 45;
 /** HUD「凍結注意」のキューピーク閾値（敗北ピークの 75%・playtest 危険域と揃える）。 */
-export const REVIEW_FREEZE_WATCH_PEAK = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+export const REVIEW_FREEZE_WATCH_PEAK = Math.round(
+  REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value,
+);
 /** HUD「PR凍結危険」のキューピーク閾値。 */
-export const REVIEW_FREEZE_DANGER_PEAK = REVIEW_FREEZE_PEAK - 4;
+export const REVIEW_FREEZE_DANGER_PEAK =
+  REVIEW_FREEZE_PEAK - OUTCOME_BALANCE.reviewFreezeDangerOffset.value;
 
 const SECURITY_FRAGILITY_THRESHOLD = PROCESS_BALANCE.securityFragilityThreshold.value;
 const SECURITY_DANGER_THRESHOLD = SECURITY_FRAGILITY_THRESHOLD / 2;
@@ -89,8 +92,7 @@ export const SENIOR_HP_HELP =
   'メンバー個別のスタミナとは別の抽象値です。炎上は複数炎上やタイマーが短いときだけ緊急対応で消し、余裕のある先消しは避けます。アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルはAI由来の点火・手戻りを下げ、休息で戻します。';
 
 /** AI依存度 HUD の help（RI-74）。 */
-export const AI_DEPENDENCY_HELP =
-  'AI任せが強いほどレビュー負荷と手戻りリスクが上がります。リテラシーが30以下のまま依存度が95に達すると敗北します。ペアレビューでリテラシーを上げるか、AI利用ガイドライン（カード）や全社／部門／チームのAIレバーで依存度を下げてください。介入バーのAIスロットルは新規流入を抑えるだけで、既に上がった依存度は下げません。';
+export const AI_DEPENDENCY_HELP = `AI任せが強いほどレビュー負荷と手戻りリスクが上がります。リテラシーが${AI_LITERACY_UNSAFE_CAP}以下のまま依存度が${AI_DEPENDENCY_CAP}に達すると敗北します。ペアレビューでリテラシーを上げるか、AI利用ガイドライン（カード）や全社／部門／チームのAIレバーで依存度を下げてください。介入バーのAIスロットルは新規流入を抑えるだけで、既に上がった依存度は下げません。`;
 
 /** シニア体力の詳細・警告チップ文言（RI-67）。緊急の炎上だけ緊急対応へ誘導する（RI-73）。 */
 export function seniorHpHudCopy(
@@ -142,8 +144,8 @@ export function aiDependencyHudCopy(
     return { detail: '75%以上は過信域' };
   }
   const literacy = Math.round(aiLiteracy);
-  const detail = `Literacy ${literacy}・95%かつLiteracy≤30で敗北`;
-  if (literacy <= 30 && aiDependencyPct >= 50) {
+  const detail = `Literacy ${literacy}・${AI_DEPENDENCY_CAP}%かつLiteracy≤${AI_LITERACY_UNSAFE_CAP}で敗北`;
+  if (literacy <= AI_LITERACY_UNSAFE_CAP && aiDependencyPct >= 50) {
     return {
       detail,
       warningChip: '依存危険・ペアかガイド',
@@ -541,7 +543,7 @@ export function budgetHudCopy(budget: number): {
   detail: string;
   warningChip?: string;
 } {
-  if (budget <= 5) {
+  if (budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value) {
     return {
       tone: 'danger',
       detail: '予算危機・支出抑制で残高を守る',
@@ -569,7 +571,7 @@ export function trustHudCopy(trust: StakeholderTrust): {
   minTrust: number;
 } {
   const minTrust = Math.min(trust.management, trust.customers, trust.team);
-  if (minTrust <= 15) {
+  if (minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value) {
     return {
       tone: 'danger',
       detail: '信頼危機・ケアや未達回避で延命',

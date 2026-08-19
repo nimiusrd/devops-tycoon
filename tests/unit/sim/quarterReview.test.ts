@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BOSS_DEFS, getBoss, type BossDef } from '../../../src/data/bosses';
 import { getDifficulty } from '../../../src/data/difficulties';
+import { OUTCOME_BALANCE } from '../../../src/data/balance';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../../src/data/goalAdjustments';
 import { RunEngine } from '../../../src/sim/run/engine';
 import { pickQuarterBossId } from '../../../src/sim/run/quarterBoss';
@@ -28,6 +29,7 @@ import {
   decayGoalFromPrior,
   diagnoseMissedReasons,
   evaluateQuarterOutcome,
+  goalProgressStatus,
   hasGoalCarryoverOrgDelta,
   hasNextQuarterCarryover,
   isTerminalFailure,
@@ -1277,6 +1279,18 @@ const statusById = (input: {
 
 describe('RI-91-B2: quarterReview survived mutants', () => {
   describe('measureGoalProgress boundaries', () => {
+    it('現行レビューとセーブ再判定で共有する KPI 境界を固定する', () => {
+      const higher = OUTCOME_BALANCE.kpiHigherExceededMultiplier.value;
+      const lower = OUTCOME_BALANCE.kpiLowerExceededMultiplier.value;
+      expect(goalProgressStatus(99, 100, true)).toBe('missed');
+      expect(goalProgressStatus(100, 100, true)).toBe('met');
+      expect(goalProgressStatus(100 * higher - 0.01, 100, true)).toBe('met');
+      expect(goalProgressStatus(100 * higher, 100, true)).toBe('exceeded');
+      expect(goalProgressStatus(100 * lower + 0.01, 100, false)).toBe('met');
+      expect(goalProgressStatus(100 * lower, 100, false)).toBe('exceeded');
+      expect(goalProgressStatus(101, 100, false)).toBe('missed');
+    });
+
     it('quality / morale の met・missed・exceeded 境界を固定する', () => {
       // compareHigher: actual >= target / >= target*1.15
       expect(statusById({ quality: 79 }).quality).toBe('missed');

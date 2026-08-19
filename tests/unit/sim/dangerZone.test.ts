@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PROCESS_BALANCE } from '../../../src/data/balance';
+import { OUTCOME_BALANCE, PROCESS_BALANCE } from '../../../src/data/balance';
 import { REVIEW_FREEZE_PEAK } from '../../../src/sim/outcome';
 import { securityCustomerTrustFromRaw, securityFragility } from '../../../src/sim/model';
 import { activeDangerReasons } from '../../../src/sim/run/dangerZone';
@@ -40,7 +40,7 @@ describe('危険域判定（RI-101）', () => {
     internals.sprint!.tasks = [];
     expect(activeDangerReasons(engine)).not.toContain('reviewFreeze');
 
-    const threshold = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+    const threshold = Math.round(REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value);
     internals.org.seniorHp = 80;
     internals.sprint!.tasks = Array.from({ length: threshold }, (_, i) => reviewTask(i));
     expect(activeDangerReasons(engine)).toContain('reviewFreeze');
@@ -64,7 +64,9 @@ describe('危険域判定（RI-101）', () => {
       sprint: { tasks: Task[]; metrics: { reviewQueueMax: number } } | null;
     };
     internals.sprint!.tasks = [];
-    internals.sprint!.metrics.reviewQueueMax = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+    internals.sprint!.metrics.reviewQueueMax = Math.round(
+      REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value,
+    );
     expect(activeDangerReasons(engine)).toContain('reviewFreeze');
   });
 
@@ -79,7 +81,9 @@ describe('危険域判定（RI-101）', () => {
     internals.sprint!.tasks = [];
     internals.sprint!.metrics.reviewQueueMax = 0;
     internals.quarterTotals.reviewQueuePeak = 0;
-    internals.totals.reviewQueuePeak = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+    internals.totals.reviewQueuePeak = Math.round(
+      REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value,
+    );
     expect(activeDangerReasons(engine)).toContain('reviewFreeze');
   });
 
@@ -110,7 +114,7 @@ describe('危険域判定（RI-101）', () => {
     expect(activeDangerReasons(engine)).not.toContain('reviewFreeze');
     const other = internals.teams.find((team) => team.id !== internals.activeTeamId);
     if (!other) return;
-    const threshold = Math.round(REVIEW_FREEZE_PEAK * 0.75);
+    const threshold = Math.round(REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value);
     other.reviewQueue = threshold;
     expect(activeDangerReasons(engine)).toContain('reviewFreeze');
   });

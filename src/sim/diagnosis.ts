@@ -5,6 +5,7 @@
  * いずれかを判定する純TS。「数字は出ているが内実は…」を可視化する。
  */
 import type { OrgState } from './types';
+import { OUTCOME_BALANCE } from '../data/balance';
 import type { DiagnosisType, RunTotals } from './run/types';
 
 export interface DiagnosisView {
@@ -111,11 +112,33 @@ export function diagnose(org: OrgState, totals: RunTotals): DiagnosisType {
   const aiPct = totals.aiAssisted / completed;
   const queuePeak = totals.reviewQueuePeak;
 
-  if (org.seniorHp < 30 && queuePeak >= 12) return 'seniorSacrifice';
-  if (queuePeak >= 16 && reworkRatio < 0.3) return 'reviewHell';
-  if (reworkRatio >= 0.32) return 'reworkSpiral';
-  if (aiPct >= 0.5 && (queuePeak >= 12 || reworkRatio >= 0.2)) return 'aiOverproduction';
-  if (org.testCoverage >= 65 && org.documentation >= 55 && reworkRatio < 0.18) {
+  if (
+    org.seniorHp < OUTCOME_BALANCE.diagnosisSeniorHpMax.value &&
+    queuePeak >= OUTCOME_BALANCE.diagnosisReviewQueueMin.value
+  ) {
+    return 'seniorSacrifice';
+  }
+  if (
+    queuePeak >= OUTCOME_BALANCE.winReviewQueuePeakMax.value &&
+    reworkRatio < OUTCOME_BALANCE.diagnosisReviewHellReworkRatioMax.value
+  ) {
+    return 'reviewHell';
+  }
+  if (reworkRatio >= OUTCOME_BALANCE.diagnosisReworkSpiralReworkRatioMin.value) {
+    return 'reworkSpiral';
+  }
+  if (
+    aiPct >= OUTCOME_BALANCE.diagnosisAiOverproductionAiPctMin.value &&
+    (queuePeak >= OUTCOME_BALANCE.diagnosisReviewQueueMin.value ||
+      reworkRatio >= OUTCOME_BALANCE.diagnosisAiOverproductionReworkRatioMin.value)
+  ) {
+    return 'aiOverproduction';
+  }
+  if (
+    org.testCoverage >= OUTCOME_BALANCE.diagnosisDocumentationTestCoverageMin.value &&
+    org.documentation >= OUTCOME_BALANCE.diagnosisDocumentationMin.value &&
+    reworkRatio < OUTCOME_BALANCE.diagnosisDocumentationReworkRatioMax.value
+  ) {
     return 'documentationKingdom';
   }
   return 'healthyAcceleration';

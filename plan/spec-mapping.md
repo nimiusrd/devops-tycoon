@@ -28,14 +28,14 @@
 | [10](../SPEC.md#10-ランとボススプリント) | 四半期末ボス | `src/data/bosses.ts`, `src/data/balance/run.ts`, `src/sim/run/engine.ts` | ✅ 四半期スプリント数とショップ・課金のラン値をレジストリへ移行済み（RI-111） |
 | [11](../SPEC.md#11-組織進化ツリー) | ラン内ビルド | `src/data/evolution.ts`, `src/data/balance/run.ts`, `src/sim/run/evolution.ts` | ✅ 進化ポイント報酬の基本値をランレジストリへ移行済み（RI-111） |
 | [12](../SPEC.md#12-キャラクター育成) | 個体、成長、編成、スタミナ | `src/sim/member/`, `FormationScreen.tsx`, `tests/unit/sim/member.test.ts` | ✅ |
-| [13](../SPEC.md#13-組織タイプ診断) | 診断と演出 | `src/sim/diagnosis.ts`, `src/render/diagnosisTheme.ts`, `src/render/trendHistoryView.ts` | ✅ スナップショット診断は実装済み。第23章の時系列トレンドは RI-128 |
-| [14〜16](../SPEC.md#14-勝利条件) | 勝利、継続不能、難易度・試練 | `src/sim/outcome.ts`, `src/data/difficulties.ts`, `quarterReview.ts` | ✅ 判定は実装済み。Easy 序盤の燃え尽き導線は RI-67 でチュートリアル／HUD を補強 |
+| [13](../SPEC.md#13-組織タイプ診断) | 診断と演出 | `src/sim/diagnosis.ts`, `src/data/balance/outcome.ts`, `src/render/diagnosisTheme.ts`, `src/render/trendHistoryView.ts` | ✅ 診断境界は `OUTCOME_BALANCE` へ移行済み。第23章の時系列トレンドは RI-128 |
+| [14〜16](../SPEC.md#14-勝利条件) | 勝利、継続不能、難易度・試練 | `src/sim/outcome.ts`, `src/data/balance/outcome.ts`, `src/data/difficulties.ts`, `quarterReview.ts` | ✅ KPI・勝敗・継続不能・勝利種別の境界を `OUTCOME_BALANCE` へ移行済み（RI-112）。Easy 序盤の燃え尽き導線は RI-67 でチュートリアル／HUD を補強 |
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ |
 | [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-8とF-9の有効手は反実仮想評価の計測手段あり（RI-101。既定コホートの合否は未再走）。F-1・F-7はRI-73、F-2はRI-77／78／83、F-3はRI-102、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-10はRI-76、F-11はRI-86、F-12はRI-81で充足または実装済み |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
-| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), [balance-ssot-plan.md](./balance-ssot-plan.md), `src/game.ts`, `src/state/`, `src/data/balance/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。型付きバランスレジストリ、生成パラメータ表、工程モデル、メンバー・採用、介入・差配、ラン進行・経済、カード実行ルールは移行済み（RI-106〜111、RI-122）。残る領域移行、コンテンツカタログ、代表曲線、ルールセット識別は RI-104 |
+| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), [balance-ssot-plan.md](./balance-ssot-plan.md), `src/game.ts`, `src/state/`, `src/data/balance/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。型付きバランスレジストリ、生成パラメータ表、工程モデル、メンバー・採用、介入・差配、ラン進行・経済、KPI・勝敗・診断、カード実行ルールは移行済み（RI-106〜112、RI-122）。残る領域移行、コンテンツカタログ、代表曲線、ルールセット識別は RI-104 |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ、ツール別シナリオ、部門比較、レビュー履歴、開始レシピ、診断・KPI時系列、OKRテンプレート、ステークホルダー別交渉、複数四半期ロードマップ（表示専用）等は実装済み | ✅ 第23章の切り出し候補は充足。外部API・共有バックエンド、社内LT／経営プレゼンモードは対象外 |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
 

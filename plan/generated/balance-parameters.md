@@ -140,6 +140,89 @@
 | `member.stamina.max.junior` | ジュニア基礎スタミナ上限 | `70` | `points` | `1〜200（整数）` | — | レベル1ジュニアの基礎スタミナ上限。 | member, stamina | いいえ |
 | `member.stamina.max.middle` | ミドル基礎スタミナ上限 | `85` | `points` | `1〜200（整数）` | — | レベル1ミドルの基礎スタミナ上限。 | member, stamina | いいえ |
 | `member.stamina.max.senior` | シニア基礎スタミナ上限 | `95` | `points` | `1〜200（整数）` | — | レベル1シニアの基礎スタミナ上限。 | member, stamina | いいえ |
+| `outcome.diagnosis.aiOverproduction.aiPctMin` | AI Overproduction の AI 利用率下限 | `0.5` | `ratio` | `0〜1` | — | AI Overproduction 診断に必要な AI 利用率の下限。 | outcome, diagnosis, ai, threshold | いいえ |
+| `outcome.diagnosis.aiOverproduction.reworkRatioMin` | AI Overproduction の手戻り率下限 | `0.2` | `ratio` | `0〜1` | — | AI Overproduction 診断に必要な手戻り率の下限。 | outcome, diagnosis, ai, threshold | いいえ |
+| `outcome.diagnosis.documentation.documentationMin` | Documentation Kingdom の文書化下限 | `55` | `points` | `0〜100（整数）` | — | Documentation Kingdom 診断に必要な文書化の下限。 | outcome, diagnosis, documentation, threshold | いいえ |
+| `outcome.diagnosis.documentation.reworkRatioMax` | Documentation Kingdom の手戻り率上限 | `0.18` | `ratio` | `0〜1` | — | Documentation Kingdom 診断に許容する手戻り率の上限（未満）。 | outcome, diagnosis, documentation, threshold | いいえ |
+| `outcome.diagnosis.documentation.testCoverageMin` | Documentation Kingdom のテストカバレッジ下限 | `65` | `points` | `0〜100（整数）` | — | Documentation Kingdom 診断に必要なテストカバレッジの下限。 | outcome, diagnosis, documentation, threshold | いいえ |
+| `outcome.diagnosis.quarter.aiDependencyMin` | 四半期 AI 過信診断の依存度下限 | `60` | `points` | `0〜100（整数）` | — | 四半期未達理由へ AI 過信を追加する AI 依存度の下限。 | outcome, diagnosis, quarter, ai, threshold | いいえ |
+| `outcome.diagnosis.quarter.aiReworkRatioMin` | 四半期 AI 過信診断の手戻り率下限 | `0.3` | `ratio` | `0〜1` | — | 四半期未達理由へ AI 過信を追加する手戻り率の下限（超過判定）。 | outcome, diagnosis, quarter, ai, threshold | いいえ |
+| `outcome.diagnosis.quarter.reviewQueueMin` | 四半期レビュー詰まり診断の Review ピーク下限 | `32` | `count` | `0〜200（整数）` | — | 四半期未達理由へレビュー詰まりを追加する Review ピークの下限。 | outcome, diagnosis, quarter, review, threshold | いいえ |
+| `outcome.diagnosis.reviewHell.reworkRatioMax` | Review Hell の手戻り率上限 | `0.3` | `ratio` | `0〜1` | — | Review Hell 診断に許容する手戻り率の上限（未満）。 | outcome, diagnosis, review, threshold | いいえ |
+| `outcome.diagnosis.reviewQueueMin` | 診断の Review ピーク下限 | `12` | `count` | `0〜200（整数）` | — | Senior Sacrifice と AI Overproduction の Review ピーク下限。 | outcome, diagnosis, review, threshold | いいえ |
+| `outcome.diagnosis.reworkSpiral.reworkRatioMin` | Rework Spiral の手戻り率下限 | `0.32` | `ratio` | `0〜1` | — | Rework Spiral 診断に必要な手戻り率の下限。 | outcome, diagnosis, rework, threshold | いいえ |
+| `outcome.diagnosis.seniorSacrifice.seniorHpMax` | Senior Sacrifice のシニア HP 上限 | `30` | `points` | `0〜100（整数）` | — | Senior Sacrifice 診断に必要なシニア HP の上限（未満）。 | outcome, diagnosis, senior, threshold | いいえ |
+| `outcome.kpi.exceededHigherMultiplier` | 上限側 KPI exceeded 倍率 | `1.15` | `multiplier` | `1〜3` | `outcome.kpi.exceededLowerMultiplier` ≤ `outcome.kpi.exceededHigherMultiplier` | 高いほど良い KPI が exceeded になる目標倍率。 | outcome, kpi, threshold | いいえ |
+| `outcome.kpi.exceededLowerMultiplier` | 下限側 KPI exceeded 倍率 | `0.75` | `multiplier` | `0〜1` | `outcome.kpi.exceededLowerMultiplier` ≤ `outcome.kpi.exceededHigherMultiplier` | 低いほど良い KPI が exceeded になる目標倍率。 | outcome, kpi, threshold | いいえ |
+| `outcome.lose.aiDependencyCap` | AI 依存敗北上限 | `95` | `points` | `0〜100（整数）` | — | AI 依存度がこの値以上で AI リテラシー条件を満たすと敗北。 | outcome, lose, ai, threshold | いいえ |
+| `outcome.lose.aiLiteracyUnsafeMax` | AI リテラシー危険上限 | `30` | `points` | `0〜100（整数）` | — | AI 依存敗北を成立させる AI リテラシー上限。 | outcome, lose, ai, threshold | いいえ |
+| `outcome.lose.budgetMax` | 予算敗北上限 | `0` | `currency` | `0〜1000（整数）` | — | 予算がこの値以下なら即時敗北。 | outcome, lose, threshold | いいえ |
+| `outcome.lose.consecutiveIncidentSprintCap` | 連続 Incident スプリント敗北上限 | `6` | `count` | `0〜100（整数）` | — | 延焼を伴う Incident の連続スプリント数がこの値以上なら敗北。 | outcome, lose, incident, threshold | いいえ |
+| `outcome.lose.moraleMax` | 士気敗北上限 | `1` | `points` | `0〜100（整数）` | — | 士気がこの値以下なら即時敗北。 | outcome, lose, threshold | いいえ |
+| `outcome.lose.reviewFreezePeak` | Review freeze 敗北ピーク | `48` | `count` | `0〜200（整数）` | — | Review 待ち行列ピークがこの値以上なら即時敗北。 | outcome, lose, review, threshold | いいえ |
+| `outcome.lose.seniorHpMax` | シニア HP 敗北上限 | `1` | `points` | `0〜100（整数）` | — | シニア HP がこの値以下なら即時敗北。 | outcome, lose, threshold | いいえ |
+| `outcome.lose.techDebtCap` | Tech Debt 敗北上限 | `90` | `points` | `0〜100（整数）` | — | Tech Debt がこの値以上なら即時敗北。 | outcome, lose, threshold | いいえ |
+| `outcome.quarter.adjustment.minimumTrust` | 目標修正後の信頼下限 | `5` | `points` | `0〜100（整数）` | — | 目標修正後に各ステークホルダーへ許容する最低信頼。 | outcome, quarter, adjustment, threshold | いいえ |
+| `outcome.quarter.crisis.budgetMax` | 四半期危機の予算上限 | `5` | `currency` | `0〜1000（整数）` | — | 予算がこの値以下なら missed_crisis。 | outcome, quarter, crisis, threshold | いいえ |
+| `outcome.quarter.crisis.missedKpiMin` | 四半期危機の未達 KPI 数下限 | `4` | `count` | `0〜20（整数）` | — | 未達 KPI 数がこの値以上なら missed_crisis。 | outcome, quarter, crisis, threshold | いいえ |
+| `outcome.quarter.crisis.trustMax` | 四半期危機の信頼上限 | `15` | `points` | `0〜100（整数）` | `outcome.quarter.shutdown.trustMax` < `outcome.quarter.crisis.trustMax`<br>`outcome.quarter.crisis.trustMax` < `outcome.quarter.reorg.trustMax` | 最小信頼がこの値以下なら missed_crisis。 | outcome, quarter, crisis, threshold | いいえ |
+| `outcome.quarter.delivery.baselineSprintFloor` | 通常スプリント Delivery 床 | `60` | `points` | `0〜1000（整数）` | — | ボス種別によらない通常スプリントの Delivery 基準値。 | outcome, quarter, delivery | いいえ |
+| `outcome.quarter.delivery.minimumTargetScale` | 四半期 Delivery 目標下限係数 | `30` | `multiplier` | `0〜100（整数）` | — | 新規四半期 Delivery 目標の最低値へ適用する四半期スケール係数。 | outcome, quarter, delivery, threshold | いいえ |
+| `outcome.quarter.delivery.priorDecay` | prior Delivery 減衰率 | `0.95` | `ratio` | `0〜1` | — | priorGoal を次四半期へ引き継ぐときの Delivery 減衰率。 | outcome, quarter, delivery | いいえ |
+| `outcome.quarter.delivery.priorMinimumFloorFactor` | prior Delivery 下限係数 | `0.7` | `ratio` | `0〜1` | — | priorGoal 引き継ぎ時の Delivery 下限へ適用する係数。 | outcome, quarter, delivery, threshold | いいえ |
+| `outcome.quarter.delivery.throughputMultiplier` | 四半期 Delivery スループット倍率 | `5` | `multiplier` | `0〜20` | — | 1 スプリントの Delivery 床を四半期目標へ換算する倍率。 | outcome, quarter, delivery | いいえ |
+| `outcome.quarter.goal.defaultIncidentLimit` | 四半期 Incident 既定上限 | `6` | `count` | `0〜100（整数）` | — | ボス定義に Incident 条件がない場合の四半期目標。 | outcome, quarter, kpi | いいえ |
+| `outcome.quarter.goal.defaultMorale` | 四半期 Morale 既定目標 | `40` | `points` | `0〜100（整数）` | — | ボス定義に Morale 条件がない場合の四半期目標。 | outcome, quarter, kpi | いいえ |
+| `outcome.quarter.goal.defaultQuality` | 四半期 Quality 既定目標 | `45` | `points` | `0〜100（整数）` | — | ボス定義に Quality 条件がない場合の四半期目標。 | outcome, quarter, kpi | いいえ |
+| `outcome.quarter.goal.defaultTechDebtLimit` | 四半期 Tech Debt 既定上限 | `55` | `points` | `0〜100（整数）` | — | ボス定義に Tech Debt 条件がない場合の四半期目標。 | outcome, quarter, kpi | いいえ |
+| `outcome.quarter.goal.incidentHeadroom` | 四半期 Incident 目標余裕 | `3` | `count` | `0〜100（整数）` | — | ボス定義の最大延焼値へ加える四半期目標の余裕。 | outcome, quarter, kpi | いいえ |
+| `outcome.quarter.goal.multiplier.easy` | Easy 四半期 Delivery 目標倍率 | `2.7` | `multiplier` | `0〜10` | — | Easy の四半期 Delivery 目標倍率。 | outcome, quarter, difficulty, delivery | いいえ |
+| `outcome.quarter.goal.multiplier.hard` | Hard 四半期 Delivery 目標倍率 | `1.75` | `multiplier` | `0〜10` | — | Hard の四半期 Delivery 目標倍率。 | outcome, quarter, difficulty, delivery | いいえ |
+| `outcome.quarter.goal.multiplier.nightmare` | Nightmare 四半期 Delivery 目標倍率 | `1.55` | `multiplier` | `0〜10` | — | Nightmare の四半期 Delivery 目標倍率。 | outcome, quarter, difficulty, delivery | いいえ |
+| `outcome.quarter.goal.multiplier.normal` | Normal 四半期 Delivery 目標倍率 | `2.25` | `multiplier` | `0〜10` | — | Normal の四半期 Delivery 目標倍率。 | outcome, quarter, difficulty, delivery | いいえ |
+| `outcome.quarter.initialTrust.easy` | Easy 初期信頼 | `70` | `points` | `0〜100（整数）` | — | Easy の経営・顧客・チーム信頼の基礎値。 | outcome, quarter, trust, difficulty | いいえ |
+| `outcome.quarter.initialTrust.hard` | Hard 初期信頼 | `50` | `points` | `0〜100（整数）` | — | Hard の経営・顧客・チーム信頼の基礎値。 | outcome, quarter, trust, difficulty | いいえ |
+| `outcome.quarter.initialTrust.nightmare` | Nightmare 初期信頼 | `45` | `points` | `0〜100（整数）` | — | Nightmare の経営・顧客・チーム信頼の基礎値。 | outcome, quarter, trust, difficulty | いいえ |
+| `outcome.quarter.initialTrust.normal` | Normal 初期信頼 | `60` | `points` | `0〜100（整数）` | — | Normal の経営・顧客・チーム信頼の基礎値。 | outcome, quarter, trust, difficulty | いいえ |
+| `outcome.quarter.initialTrust.teamBonus` | 初期チーム信頼加算 | `5` | `points` | `0〜100（整数）` | — | 初期チーム信頼へ加える基礎値からの加算。 | outcome, quarter, trust | いいえ |
+| `outcome.quarter.reorg.minQuarter` | 再編判定の最小四半期 | `2` | `count` | `1〜20（整数）` | — | 未達 KPI 数だけで再編判定を行う最小四半期番号。 | outcome, quarter, reorg, threshold | いいえ |
+| `outcome.quarter.reorg.missedKpiMin` | 再編判定の未達 KPI 数下限 | `3` | `count` | `0〜20（整数）` | — | 四半期番号条件と組み合わせる未達 KPI 数の下限。 | outcome, quarter, reorg, threshold | いいえ |
+| `outcome.quarter.reorg.seniorHpRecovery` | 再編時シニア HP 回復量 | `20` | `points` | `0〜100（整数）` | — | 再編リセットで回復するシニア HP。 | outcome, quarter, reorg, recovery | いいえ |
+| `outcome.quarter.reorg.techDebtRecovery` | 再編時 Tech Debt 回復量 | `8` | `points` | `0〜100（整数）` | — | 再編リセットで減少する Tech Debt の正の回復量。 | outcome, quarter, reorg, recovery | いいえ |
+| `outcome.quarter.reorg.trustMax` | 再編判定の信頼上限 | `20` | `points` | `0〜100（整数）` | `outcome.quarter.crisis.trustMax` < `outcome.quarter.reorg.trustMax` | 未達 KPI 数と組み合わせる最小信頼の上限。 | outcome, quarter, reorg, threshold | いいえ |
+| `outcome.quarter.reorg.trustMissedKpiMin` | 信頼再編の未達 KPI 数下限 | `2` | `count` | `0〜20（整数）` | — | 信頼条件と組み合わせる未達 KPI 数の下限。 | outcome, quarter, reorg, threshold | いいえ |
+| `outcome.quarter.shutdown.budgetMax` | 四半期 shutdown 予算上限 | `0` | `currency` | `0〜1000（整数）` | — | 士気条件と組み合わせる shutdown 予算上限。 | outcome, quarter, shutdown, threshold | いいえ |
+| `outcome.quarter.shutdown.budgetMoraleMax` | 予算枯渇時 shutdown 士気上限 | `15` | `points` | `0〜100（整数）` | — | 予算枯渇と組み合わせる shutdown 士気上限。 | outcome, quarter, shutdown, threshold | いいえ |
+| `outcome.quarter.shutdown.missedKpiMin` | shutdown 未達 KPI 数下限 | `2` | `count` | `0〜20（整数）` | — | シニア HP 条件と組み合わせる未達 KPI 数の下限。 | outcome, quarter, shutdown, threshold | いいえ |
+| `outcome.quarter.shutdown.seniorHpMax` | 未達時 shutdown シニア HP 上限 | `5` | `points` | `0〜100（整数）` | — | 未達 KPI 数と組み合わせる shutdown シニア HP 上限。 | outcome, quarter, shutdown, threshold | いいえ |
+| `outcome.quarter.shutdown.trustMax` | 四半期 shutdown 信頼上限 | `10` | `points` | `0〜100（整数）` | `outcome.quarter.shutdown.trustMax` < `outcome.quarter.crisis.trustMax` | 最小信頼がこの値以下なら shutdown。 | outcome, quarter, shutdown, threshold | いいえ |
+| `outcome.warning.reviewFreeze.dangerOffset` | Review freeze 危険オフセット | `4` | `count` | `0〜100（整数）` | — | Review freeze 敗北ピークから HUD 危険帯を前倒しする値。 | outcome, warning, review, threshold | いいえ |
+| `outcome.warning.reviewFreeze.watchRatio` | Review freeze 警告比率 | `0.75` | `ratio` | `0〜1` | — | Review freeze 敗北ピークに対する HUD・danger report 警告比率。 | outcome, warning, review, threshold | いいえ |
+| `outcome.win.aiSuccess.aiPctMin` | AI 成功勝利の AI 利用率下限 | `0.55` | `ratio` | `0〜1` | — | AI 成功勝利に必要な AI 利用率の下限。 | outcome, win, ai, threshold | いいえ |
+| `outcome.win.aiSuccess.literacyMin` | AI 成功勝利の Literacy 下限 | `40` | `points` | `0〜100（整数）` | — | AI 成功勝利に必要な AI Literacy の下限。 | outcome, win, ai, threshold | いいえ |
+| `outcome.win.aiSuccess.reworkMax` | AI 成功勝利の手戻り率上限 | `0.22` | `ratio` | `0〜1` | — | AI 成功勝利に許容する手戻り率の上限（未満）。 | outcome, win, ai, threshold | いいえ |
+| `outcome.win.aiSuccess.securityMin` | AI 成功勝利の Security 下限 | `50` | `points` | `0〜100（整数）` | — | AI 成功勝利に必要な Security の下限。 | outcome, win, ai, threshold | いいえ |
+| `outcome.win.chaos.deliveredMin` | カオス勝利の Delivery 下限 | `250` | `points` | `0〜10000（整数）` | — | 残差カオス勝利に必要な累計 Delivery。 | outcome, win, chaos, threshold | いいえ |
+| `outcome.win.chaos.incidentsMin` | カオス勝利の Incident 下限 | `20` | `count` | `0〜200（整数）` | — | 残差カオス勝利に必要な累計 Incident 数。 | outcome, win, chaos, threshold | いいえ |
+| `outcome.win.chaosNeglect.deliveredMin` | セキュリティ軽視カオスの Delivery 下限 | `180` | `points` | `0〜10000（整数）` | — | セキュリティ軽視カオス勝利に必要な累計 Delivery。 | outcome, win, chaos, threshold | いいえ |
+| `outcome.win.chaosNeglect.incidentsMin` | セキュリティ軽視カオスの Incident 下限 | `16` | `count` | `0〜200（整数）` | — | セキュリティ軽視カオス勝利に必要な累計 Incident 数。 | outcome, win, chaos, threshold | いいえ |
+| `outcome.win.chaosNeglect.securityMax` | セキュリティ軽視カオスの Security 上限 | `50` | `points` | `0〜100（整数）` | — | セキュリティ軽視カオス勝利に必要な Security の上限（未満）。 | outcome, win, chaos, threshold | いいえ |
+| `outcome.win.documentation.moraleMin` | Documentation Kingdom の Morale 下限 | `60` | `points` | `0〜100（整数）` | — | Documentation Kingdom を健全勝利へ分類する Morale の下限。 | outcome, win, documentation, threshold | いいえ |
+| `outcome.win.documentation.qualityMin` | Documentation Kingdom の Quality 下限 | `55` | `points` | `0〜100（整数）` | — | Documentation Kingdom を健全勝利へ分類する Quality の下限。 | outcome, win, documentation, threshold | いいえ |
+| `outcome.win.documentation.reworkMax` | Documentation Kingdom の手戻り率上限 | `0.22` | `ratio` | `0〜1` | — | Documentation Kingdom を健全勝利へ分類する手戻り率の上限（未満）。 | outcome, win, documentation, threshold | いいえ |
+| `outcome.win.happiness.moraleMin` | 幸福勝利の Morale 下限 | `70` | `points` | `0〜100（整数）` | — | 幸福勝利に必要な Morale の下限。 | outcome, win, happiness, threshold | いいえ |
+| `outcome.win.happiness.seniorHpMin` | 幸福勝利のシニア HP 下限 | `45` | `points` | `0〜100（整数）` | — | 幸福勝利に必要なシニア HP の下限。 | outcome, win, happiness, threshold | いいえ |
+| `outcome.win.healthy.moraleMin` | 健全勝利の Morale 下限 | `65` | `points` | `0〜100（整数）` | — | 健全勝利に必要な Morale の下限。 | outcome, win, healthy, threshold | いいえ |
+| `outcome.win.healthy.qualityMin` | 健全勝利の Quality 下限 | `65` | `points` | `0〜100（整数）` | — | 健全勝利に必要な Quality の下限。 | outcome, win, healthy, threshold | いいえ |
+| `outcome.win.healthy.securityMin` | 健全勝利の Security 下限 | `85` | `points` | `0〜100（整数）` | — | Security 重視の健全勝利に必要な Security の下限。 | outcome, win, healthy, threshold | いいえ |
+| `outcome.win.healthyFallback.reworkMax` | 品質系健全勝利の手戻り率上限 | `0.2` | `ratio` | `0〜1` | — | 品質系の健全勝利へ分類する手戻り率の上限（未満）。 | outcome, win, healthy, threshold | いいえ |
+| `outcome.win.management.budgetMin` | 経営勝利の予算下限 | `50` | `currency` | `0〜1000（整数）` | — | 経営勝利に必要な残予算の下限。 | outcome, win, management, threshold | いいえ |
+| `outcome.win.noDamage.moraleMin` | ノーダメージ勝利の Morale 下限 | `70` | `points` | `0〜100（整数）` | — | ノーダメージ勝利に必要な Morale の下限。 | outcome, win, no-damage, threshold | いいえ |
+| `outcome.win.noDamage.qualityMin` | ノーダメージ勝利の Quality 下限 | `70` | `points` | `0〜100（整数）` | — | ノーダメージ勝利に必要な Quality の下限。 | outcome, win, no-damage, threshold | いいえ |
+| `outcome.win.noDamage.reworkMax` | ノーダメージ勝利の手戻り率上限 | `0.15` | `ratio` | `0〜1` | — | ノーダメージ勝利に許容する手戻り率の上限（未満）。 | outcome, win, no-damage, threshold | いいえ |
+| `outcome.win.noDamage.seniorHpMin` | ノーダメージ勝利のシニア HP 下限 | `60` | `points` | `0〜100（整数）` | — | ノーダメージ勝利に必要なシニア HP の下限。 | outcome, win, no-damage, threshold | いいえ |
+| `outcome.win.noDamage.spreadMax` | ノーダメージ勝利の延焼上限 | `0` | `count` | `0〜200（整数）` | — | ノーダメージ勝利に許容する延焼数の上限。 | outcome, win, no-damage, threshold | いいえ |
+| `outcome.win.reviewQueuePeakMax` | 健全系勝利の Review ピーク上限 | `16` | `count` | `0〜200（整数）` | — | AI 成功・品質系健全勝利に許容する Review ピークの上限（未満）。 | outcome, win, review, threshold | いいえ |
 | `process.ai.adoption` | AI 導入時の既定採用率 | `0.85` | `probability` | `0〜1` | — | AI 導入済みの組織で、各タスクが AI 支援を使う既定確率。 | process, ai | いいえ |
 | `process.ai.deliveryValue.literacyWeight` | AI 出荷価値のリテラシー係数 | `0.85` | `multiplier` | `0〜2` | — | AI 支援タスクの出荷価値へ AI リテラシーに応じて加える係数。 | process, ai, delivery | いいえ |
 | `process.ai.dependency.perTask` | AI 支援タスクごとの依存度増分 | `2.2` | `percent` | `0〜20` | — | AI 支援を割り当てたタスク 1 件ごとに増える AI 依存度。 | process, ai, dependency | いいえ |

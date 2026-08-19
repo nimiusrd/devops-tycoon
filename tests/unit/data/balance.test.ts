@@ -10,6 +10,7 @@ import {
   defineBalanceEntry,
   defineProbabilityDistribution,
   flattenBalanceEntries,
+  OUTCOME_BALANCE,
   RUN_BALANCE,
   validateBalanceRegistry,
 } from '../../../src/data/balance';
@@ -208,10 +209,97 @@ const RUN_BALANCE_IDS = [
   'run.shop.relicSlots',
 ] as const;
 
+const OUTCOME_BALANCE_IDS = [
+  'outcome.quarter.delivery.throughputMultiplier',
+  'outcome.quarter.delivery.minimumTargetScale',
+  'outcome.quarter.delivery.baselineSprintFloor',
+  'outcome.quarter.delivery.priorMinimumFloorFactor',
+  'outcome.quarter.delivery.priorDecay',
+  'outcome.quarter.goal.defaultQuality',
+  'outcome.quarter.goal.defaultTechDebtLimit',
+  'outcome.quarter.goal.defaultMorale',
+  'outcome.quarter.goal.defaultIncidentLimit',
+  'outcome.quarter.goal.incidentHeadroom',
+  'outcome.quarter.goal.multiplier.easy',
+  'outcome.quarter.goal.multiplier.normal',
+  'outcome.quarter.goal.multiplier.hard',
+  'outcome.quarter.goal.multiplier.nightmare',
+  'outcome.quarter.initialTrust.easy',
+  'outcome.quarter.initialTrust.normal',
+  'outcome.quarter.initialTrust.hard',
+  'outcome.quarter.initialTrust.nightmare',
+  'outcome.quarter.initialTrust.teamBonus',
+  'outcome.kpi.exceededHigherMultiplier',
+  'outcome.kpi.exceededLowerMultiplier',
+  'outcome.quarter.shutdown.trustMax',
+  'outcome.quarter.shutdown.budgetMax',
+  'outcome.quarter.shutdown.budgetMoraleMax',
+  'outcome.quarter.shutdown.seniorHpMax',
+  'outcome.quarter.shutdown.missedKpiMin',
+  'outcome.quarter.reorg.minQuarter',
+  'outcome.quarter.reorg.missedKpiMin',
+  'outcome.quarter.reorg.trustMax',
+  'outcome.quarter.reorg.trustMissedKpiMin',
+  'outcome.quarter.crisis.trustMax',
+  'outcome.quarter.crisis.budgetMax',
+  'outcome.quarter.crisis.missedKpiMin',
+  'outcome.quarter.adjustment.minimumTrust',
+  'outcome.quarter.reorg.seniorHpRecovery',
+  'outcome.quarter.reorg.techDebtRecovery',
+  'outcome.lose.seniorHpMax',
+  'outcome.lose.moraleMax',
+  'outcome.lose.techDebtCap',
+  'outcome.lose.reviewFreezePeak',
+  'outcome.lose.consecutiveIncidentSprintCap',
+  'outcome.lose.aiDependencyCap',
+  'outcome.lose.aiLiteracyUnsafeMax',
+  'outcome.lose.budgetMax',
+  'outcome.win.management.budgetMin',
+  'outcome.win.chaos.incidentsMin',
+  'outcome.win.chaos.deliveredMin',
+  'outcome.win.chaosNeglect.incidentsMin',
+  'outcome.win.chaosNeglect.deliveredMin',
+  'outcome.win.chaosNeglect.securityMax',
+  'outcome.win.happiness.moraleMin',
+  'outcome.win.happiness.seniorHpMin',
+  'outcome.win.healthy.securityMin',
+  'outcome.win.healthy.qualityMin',
+  'outcome.win.healthy.moraleMin',
+  'outcome.win.aiSuccess.aiPctMin',
+  'outcome.win.aiSuccess.literacyMin',
+  'outcome.win.aiSuccess.reworkMax',
+  'outcome.win.aiSuccess.securityMin',
+  'outcome.win.reviewQueuePeakMax',
+  'outcome.win.noDamage.qualityMin',
+  'outcome.win.noDamage.moraleMin',
+  'outcome.win.noDamage.seniorHpMin',
+  'outcome.win.noDamage.reworkMax',
+  'outcome.win.noDamage.spreadMax',
+  'outcome.win.documentation.qualityMin',
+  'outcome.win.documentation.moraleMin',
+  'outcome.win.documentation.reworkMax',
+  'outcome.win.healthyFallback.reworkMax',
+  'outcome.diagnosis.quarter.reviewQueueMin',
+  'outcome.diagnosis.quarter.aiDependencyMin',
+  'outcome.diagnosis.quarter.aiReworkRatioMin',
+  'outcome.diagnosis.seniorSacrifice.seniorHpMax',
+  'outcome.diagnosis.reviewQueueMin',
+  'outcome.diagnosis.reviewHell.reworkRatioMax',
+  'outcome.diagnosis.reworkSpiral.reworkRatioMin',
+  'outcome.diagnosis.aiOverproduction.aiPctMin',
+  'outcome.diagnosis.aiOverproduction.reworkRatioMin',
+  'outcome.diagnosis.documentation.testCoverageMin',
+  'outcome.diagnosis.documentation.documentationMin',
+  'outcome.diagnosis.documentation.reworkRatioMax',
+  'outcome.warning.reviewFreeze.watchRatio',
+  'outcome.warning.reviewFreeze.dangerOffset',
+] as const;
+
 const BALANCE_IDS = [
   ...PROCESS_BALANCE_IDS,
   ...ACTION_BALANCE_IDS,
   ...RUN_BALANCE_IDS,
+  ...OUTCOME_BALANCE_IDS,
   ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
   ...Object.values(CARD_BALANCE).map((entry) => entry.id),
 ].sort();
@@ -280,6 +368,14 @@ describe('型付きバランスレジストリ', () => {
     expect(BASE_INFRA_COST_PER_DEPENDENCY).toBe(RUN_BALANCE.infraBaseCostPerDependency.value);
     expect(HAND_SIZE).toBe(CARD_BALANCE.handSize.value);
     expect(PREFERRED_DRAFT_WEIGHT_MUL).toBe(CARD_BALANCE.draftPreferredWeightMultiplier.value);
+    expect(OUTCOME_BALANCE.kpiHigherExceededMultiplier.value).toBe(1.15);
+    expect(OUTCOME_BALANCE.kpiLowerExceededMultiplier.value).toBe(0.75);
+    expect(OUTCOME_BALANCE.loseReviewFreezePeak.value).toBe(48);
+    expect(OUTCOME_BALANCE.quarterCrisisTrustMax.value).toBe(15);
+    expect(OUTCOME_BALANCE.quarterReorgTrustMax.value).toBe(20);
+    expect(OUTCOME_BALANCE.quarterShutdownTrustMax.value).toBe(10);
+    expect(OUTCOME_BALANCE.reorgSeniorHpRecovery.value).toBe(20);
+    expect(OUTCOME_BALANCE.reorgTechDebtRecovery.value).toBe(8);
   });
 
   it('ラン進行・経済の値と関係制約を検証する', () => {

@@ -7,6 +7,7 @@
  * 四半期レビュー由来の敗北は RI-79 で原因別 loseReason へ分解済み。
  * 助言は `quarterOutcome` と終了時スナップショットでもさらに細分化する。
  */
+import { OUTCOME_BALANCE } from '../data/balance';
 import type { LoseReason, QuarterOutcome, StakeholderId, StakeholderTrust } from '../sim/run/types';
 
 export interface LoseNextActionView {
@@ -185,20 +186,22 @@ export type ShutdownCause = 'trust' | 'budgetMorale' | 'seniorHpMissed' | 'unkno
 
 export function classifyShutdownCause(snapshot: LoseNextActionSnapshot = {}): ShutdownCause {
   const minTrust = minTrustOf(snapshot);
-  if (minTrust !== undefined && minTrust <= 10) return 'trust';
+  if (minTrust !== undefined && minTrust <= OUTCOME_BALANCE.quarterShutdownTrustMax.value) {
+    return 'trust';
+  }
   if (
     snapshot.budget !== undefined &&
     snapshot.morale !== undefined &&
-    snapshot.budget <= 0 &&
-    snapshot.morale <= 15
+    snapshot.budget <= OUTCOME_BALANCE.quarterShutdownBudgetMax.value &&
+    snapshot.morale <= OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value
   ) {
     return 'budgetMorale';
   }
   if (
     snapshot.seniorHp !== undefined &&
     snapshot.missedKpiCount !== undefined &&
-    snapshot.seniorHp <= 5 &&
-    snapshot.missedKpiCount >= 2
+    snapshot.seniorHp <= OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value &&
+    snapshot.missedKpiCount >= OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value
   ) {
     return 'seniorHpMissed';
   }
@@ -212,9 +215,21 @@ export function classifyMissedCrisisCause(
   snapshot: LoseNextActionSnapshot = {},
 ): MissedCrisisCause {
   const minTrust = minTrustOf(snapshot);
-  if (minTrust !== undefined && minTrust <= 15) return 'trust';
-  if (snapshot.budget !== undefined && snapshot.budget <= 5) return 'budget';
-  if (snapshot.missedKpiCount !== undefined && snapshot.missedKpiCount >= 4) return 'kpiMissed';
+  if (minTrust !== undefined && minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value) {
+    return 'trust';
+  }
+  if (
+    snapshot.budget !== undefined &&
+    snapshot.budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value
+  ) {
+    return 'budget';
+  }
+  if (
+    snapshot.missedKpiCount !== undefined &&
+    snapshot.missedKpiCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value
+  ) {
+    return 'kpiMissed';
+  }
   return 'unknown';
 }
 
@@ -226,13 +241,18 @@ export function classifyReorgCause(snapshot: LoseNextActionSnapshot = {}): Reorg
   const missed = snapshot.missedKpiCount;
   if (
     snapshot.quarterNumber !== undefined &&
-    snapshot.quarterNumber >= 2 &&
+    snapshot.quarterNumber >= OUTCOME_BALANCE.quarterReorgMinQuarter.value &&
     missed !== undefined &&
-    missed >= 3
+    missed >= OUTCOME_BALANCE.quarterReorgMissedKpiMin.value
   ) {
     return 'kpiMissed';
   }
-  if (minTrust !== undefined && minTrust <= 20 && missed !== undefined && missed >= 2) {
+  if (
+    minTrust !== undefined &&
+    minTrust <= OUTCOME_BALANCE.quarterReorgTrustMax.value &&
+    missed !== undefined &&
+    missed >= OUTCOME_BALANCE.quarterReorgTrustMissedKpiMin.value
+  ) {
     return 'trust';
   }
   return 'unknown';
@@ -274,7 +294,7 @@ function shutdownAction(snapshot: LoseNextActionSnapshot): LoseNextActionView {
   const cause = classifyShutdownCause(snapshot);
   if (cause === 'trust') {
     return trustStakeholderAction(
-      classifyExhaustedStakeholder(snapshot.trust, 10),
+      classifyExhaustedStakeholder(snapshot.trust, OUTCOME_BALANCE.quarterShutdownTrustMax.value),
       '信頼だけが底をついてもプロジェクトは止まり、その局面で信頼をさらに削る選択は逆効果になる。',
     );
   }
@@ -285,7 +305,7 @@ function missedCrisisAction(snapshot: LoseNextActionSnapshot): LoseNextActionVie
   const cause = classifyMissedCrisisCause(snapshot);
   if (cause === 'trust') {
     return trustStakeholderAction(
-      classifyExhaustedStakeholder(snapshot.trust, 15),
+      classifyExhaustedStakeholder(snapshot.trust, OUTCOME_BALANCE.quarterCrisisTrustMax.value),
       '信頼が先に枯れる深刻な未達では、さらに信頼を削る目標修正は危機を深めるだけになる。',
     );
   }
@@ -319,7 +339,7 @@ function reorgRequiredAction(snapshot: LoseNextActionSnapshot): LoseNextActionVi
   }
   if (cause === 'trust') {
     return trustStakeholderAction(
-      classifyExhaustedStakeholder(snapshot.trust, 20),
+      classifyExhaustedStakeholder(snapshot.trust, OUTCOME_BALANCE.quarterReorgTrustMax.value),
       '信頼が低いときの目標修正は、同じ未達数でも再編条件へ押し込みやすい。',
     );
   }

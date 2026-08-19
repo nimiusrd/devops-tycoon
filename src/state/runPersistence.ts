@@ -12,6 +12,7 @@ import {
   availableAdjustments,
   diagnoseMissedReasons,
   evaluateQuarterOutcome,
+  goalProgressStatus,
   MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
   QUARTER_DELIVERY_GOAL_MUL,
 } from '../sim/run/quarterReview';
@@ -168,21 +169,6 @@ function progressTarget(
   }
 }
 
-function progressStatus(
-  actual: number,
-  target: number,
-  higherIsBetter: boolean,
-): GoalKpiProgress['status'] {
-  if (higherIsBetter) {
-    if (actual >= target * 1.15) return 'exceeded';
-    if (actual >= target) return 'met';
-    return 'missed';
-  }
-  if (actual <= target * 0.75) return 'exceeded';
-  if (actual <= target) return 'met';
-  return 'missed';
-}
-
 /** 保存済み実績から、現行目標に対する KPI 進捗を再判定する。 */
 function migrateReviewProgress(
   state: RunPersistState,
@@ -203,7 +189,7 @@ function migrateReviewProgress(
     progress.push({
       ...item,
       target: target.target,
-      status: progressStatus(item.actual, target.target, target.higherIsBetter),
+      status: goalProgressStatus(item.actual, target.target, target.higherIsBetter),
     });
   }
   if (seen.size !== requiredIds.size || [...requiredIds].some((id) => !seen.has(id))) return null;

@@ -13,7 +13,7 @@ import { EVOLUTION_NODES } from '../../src/data/evolution';
 import { CARD_DEFS, getCard } from '../../src/data/cards';
 import { getRelic, RELIC_DEFS } from '../../src/data/relics';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/unlocks';
-import { MEMBER_BALANCE } from '../../src/data/balance';
+import { MEMBER_BALANCE, OUTCOME_BALANCE } from '../../src/data/balance';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
@@ -38,6 +38,12 @@ import {
 } from '../../src/sim/run/dangerZone';
 import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
 import { summarizeSprint } from '../../src/sim/sprint';
+import {
+  BUDGET_EXHAUSTED_CAP,
+  MORALE_LOSE_MAX,
+  SENIOR_HP_LOSE_MAX,
+  TECH_DEBT_CAP,
+} from '../../src/sim/outcome';
 import type {
   DifficultyId,
   GoalAdjustmentId,
@@ -1052,9 +1058,9 @@ const INSTANT_LOSS = -1e6;
  * 四半期レビューで `shutdown`（＝敗北）が確定する信頼の下限。
  * `outcomeFor` の `minTrust <= 10`（`src/sim/run/quarterReview.ts`）に対応する。
  */
-const TRUST_SHUTDOWN = 10;
+const TRUST_SHUTDOWN = OUTCOME_BALANCE.quarterShutdownTrustMax.value;
 /** `missed_crisis` になる信頼の下限。ここを割ると立て直しが難しくなる。 */
-const TRUST_CRISIS = 15;
+const TRUST_CRISIS = OUTCOME_BALANCE.quarterCrisisTrustMax.value;
 /**
  * 高負荷スプリントを受けてよい最低体力（シニアHPと士気の低い方）。
  * これを上回るぶんは出荷機会、下回るぶんは渋滞・炎上のリスクとして評価する。
@@ -1109,10 +1115,10 @@ function scoreChoice(choice: ScorableChoice, ctx: BeatCtx): number {
   // 危険域はリスクとして重く減点するにとどめる（下の `TRUST_SHUTDOWN` の項）。
   if (
     outcome.forceLose ||
-    ctx.budget + num(outcome.budget) <= 0 ||
-    ctx.org.seniorHp + num(outcome.seniorHp) <= 1 ||
-    ctx.org.morale + moraleEff <= 1 ||
-    ctx.org.techDebt + num(outcome.techDebt) >= 90
+    ctx.budget + num(outcome.budget) <= BUDGET_EXHAUSTED_CAP ||
+    ctx.org.seniorHp + num(outcome.seniorHp) <= SENIOR_HP_LOSE_MAX ||
+    ctx.org.morale + moraleEff <= MORALE_LOSE_MAX ||
+    ctx.org.techDebt + num(outcome.techDebt) >= TECH_DEBT_CAP
   ) {
     return INSTANT_LOSS;
   }
@@ -1925,9 +1931,9 @@ function applySetup(e: RunEngine, spec: PolicySpec): void {
  */
 function crisisTriggers(minTrust: number, budget: number, missedCount: number): string[] {
   const hit: string[] = [];
-  if (minTrust <= 15) hit.push('trust<=15');
-  if (budget <= 5) hit.push('budget<=5');
-  if (missedCount >= 4) hit.push('missed>=4');
+  if (minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value) hit.push('trust<=15');
+  if (budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value) hit.push('budget<=5');
+  if (missedCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value) hit.push('missed>=4');
   return hit;
 }
 
@@ -1954,9 +1960,19 @@ function shutdownTriggers(
   missedCount: number,
 ): string[] {
   const hit: string[] = [];
-  if (minTrust <= 10) hit.push('trust<=10');
-  if (budget <= 0 && morale <= 15) hit.push('budget<=0&morale<=15');
-  if (seniorHp <= 5 && missedCount >= 2) hit.push('seniorHp<=5&missed>=2');
+  if (minTrust <= OUTCOME_BALANCE.quarterShutdownTrustMax.value) hit.push('trust<=10');
+  if (
+    budget <= OUTCOME_BALANCE.quarterShutdownBudgetMax.value &&
+    morale <= OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value
+  ) {
+    hit.push('budget<=0&morale<=15');
+  }
+  if (
+    seniorHp <= OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value &&
+    missedCount >= OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value
+  ) {
+    hit.push('seniorHp<=5&missed>=2');
+  }
   return hit;
 }
 

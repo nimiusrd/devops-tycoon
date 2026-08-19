@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { BossDef } from '../../../src/data/bosses';
+import { OUTCOME_BALANCE } from '../../../src/data/balance';
 import {
   AI_DEPENDENCY_CAP,
   AI_LITERACY_UNSAFE_CAP,
   BUDGET_EXHAUSTED_CAP,
   CONSECUTIVE_INCIDENT_SPRINT_CAP,
+  MORALE_LOSE_MAX,
   REVIEW_FREEZE_PEAK,
+  SENIOR_HP_LOSE_MAX,
   TECH_DEBT_CAP,
   evaluateBoss,
   evaluateLose,
@@ -71,6 +74,35 @@ const sprintResult = (overrides: Partial<SprintResult> = {}): SprintResult => ({
 
 describe('evaluateLose', () => {
   it('全敗北条件の直前値はラン継続として扱う', () => {
+    expect({
+      seniorHp: OUTCOME_BALANCE.loseSeniorHpMax.value,
+      morale: OUTCOME_BALANCE.loseMoraleMax.value,
+      techDebt: TECH_DEBT_CAP,
+      reviewQueuePeak: REVIEW_FREEZE_PEAK,
+      incidents: CONSECUTIVE_INCIDENT_SPRINT_CAP,
+      aiDependency: AI_DEPENDENCY_CAP,
+      aiLiteracy: AI_LITERACY_UNSAFE_CAP,
+      budget: BUDGET_EXHAUSTED_CAP,
+    }).toEqual({
+      seniorHp: 1,
+      morale: 1,
+      techDebt: 90,
+      reviewQueuePeak: 48,
+      incidents: 6,
+      aiDependency: 95,
+      aiLiteracy: 30,
+      budget: 0,
+    });
+    expect(SENIOR_HP_LOSE_MAX).toBe(OUTCOME_BALANCE.loseSeniorHpMax.value);
+    expect(MORALE_LOSE_MAX).toBe(OUTCOME_BALANCE.loseMoraleMax.value);
+    expect(TECH_DEBT_CAP).toBe(OUTCOME_BALANCE.loseTechDebtCap.value);
+    expect(REVIEW_FREEZE_PEAK).toBe(OUTCOME_BALANCE.loseReviewFreezePeak.value);
+    expect(CONSECUTIVE_INCIDENT_SPRINT_CAP).toBe(
+      OUTCOME_BALANCE.loseConsecutiveIncidentSprintCap.value,
+    );
+    expect(AI_DEPENDENCY_CAP).toBe(OUTCOME_BALANCE.loseAiDependencyCap.value);
+    expect(AI_LITERACY_UNSAFE_CAP).toBe(OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value);
+    expect(BUDGET_EXHAUSTED_CAP).toBe(OUTCOME_BALANCE.loseBudgetMax.value);
     expect(evaluateLose(org(), totals(), BUDGET_EXHAUSTED_CAP + 1)).toBeNull();
     expect(
       evaluateLose(

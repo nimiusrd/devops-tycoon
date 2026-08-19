@@ -305,3 +305,34 @@
 | `run.shop.minimumPrice` | ショップ最低価格 | `1` | `currency` | `1〜100（整数）` | — | 割引後のカード・レリック価格に適用する下限。 | run, shop, currency, threshold | いいえ |
 | `run.shop.relicCost` | レリック価格 | `12` | `currency` | `0〜1000（整数）` | — | ショップで提示するレリックの割引前価格。 | run, shop, relic, currency | いいえ |
 | `run.shop.relicSlots` | レリック枠 | `6` | `count` | `0〜20（整数）` | — | レリックを保持できる既定の枠数。 | run, shop, relic | いいえ |
+| `sprint.completion.moraleGain` | 出荷完了時の士気増分 | `0.5` | `points` | `0〜10` | — | Review から通常出荷したときに増える士気。強制出荷では適用しない。 | sprint, completion, morale | いいえ |
+| `sprint.grade.penalty.hpLossFree` | 評価のシニアHP損失無視幅 | `20` | `points` | `0〜100（整数）` | — | この値までのシニアHP損失は評価ペナルティに含めない。 | sprint, grade, senior | いいえ |
+| `sprint.grade.penalty.hpLossMultiplier` | 評価のシニアHP超過ペナルティ係数 | `0.7` | `multiplier` | `0〜5` | — | 無視幅を超えたシニアHP損失へ掛ける評価ペナルティ係数。 | sprint, grade, senior | いいえ |
+| `sprint.grade.penalty.incident` | 評価の Incident ペナルティ | `6` | `points` | `0〜50（整数）` | — | スプリント評価の健全比から差し引く、Incident 1 件あたりのペナルティ。 | sprint, grade, incident | いいえ |
+| `sprint.grade.penalty.rework` | 評価の Rework ペナルティ | `5` | `points` | `0〜50（整数）` | — | スプリント評価の健全比から差し引く、Rework 1 件あたりのペナルティ。 | sprint, grade, rework | いいえ |
+| `sprint.grade.penalty.spread` | 評価の延焼ペナルティ | `10` | `points` | `0〜50（整数）` | — | スプリント評価の健全比から差し引く、延焼 1 回あたりのペナルティ。 | sprint, grade, incident | いいえ |
+| `sprint.grade.stabilizingBonusCap` | 安定介入ボーナスの上限 | `0.015` | `ratio` | `0〜1` | `sprint.grade.stabilizingBonusPerGrant` ≤ `sprint.grade.stabilizingBonusCap` | 介入連打だけで評価 S へ届かないよう、安定ボーナスをこの値で上限する。 | sprint, grade, action | いいえ |
+| `sprint.grade.stabilizingBonusPerGrant` | 安定介入1回あたりの評価ボーナス | `0.0045` | `ratio` | `0〜1` | `sprint.grade.stabilizingBonusPerGrant` ≤ `sprint.grade.stabilizingBonusCap` | 実際に運用安定を付与した介入1回あたり、健全比へ加えるボーナス。 | sprint, grade, action | いいえ |
+| `sprint.grade.threshold.A` | 評価 A の健全比境界 | `0.8` | `ratio` | `0〜1` | `sprint.grade.threshold.B` < `sprint.grade.threshold.A`<br>`sprint.grade.threshold.A` < `sprint.grade.threshold.S` | 健全比がこの値以上、S 未満なら評価 A。 | sprint, grade | いいえ |
+| `sprint.grade.threshold.B` | 評価 B の健全比境界 | `0.62` | `ratio` | `0〜1` | `sprint.grade.threshold.C` < `sprint.grade.threshold.B`<br>`sprint.grade.threshold.B` < `sprint.grade.threshold.A` | 健全比がこの値以上、A 未満なら評価 B。 | sprint, grade | いいえ |
+| `sprint.grade.threshold.C` | 評価 C の健全比境界 | `0.4` | `ratio` | `0〜1` | `sprint.grade.threshold.C` < `sprint.grade.threshold.B` | 健全比がこの値以上、B 未満なら評価 C。未満は D。 | sprint, grade | いいえ |
+| `sprint.grade.threshold.S` | 評価 S の健全比境界 | `0.955` | `ratio` | `0〜1` | `sprint.grade.threshold.A` < `sprint.grade.threshold.S` | 健全比がこの値以上なら評価 S。 | sprint, grade | いいえ |
+| `sprint.task.highValueRate` | 高価値タスクの出現率 | `0.12` | `probability` | `0〜1` | — | 新規タスクが高価値になる確率。出荷倍率そのものは工程モデル側の値を使う。 | sprint, task, delivery | いいえ |
+| `sprint.task.kindWeight.complex` | 複雑タスクの出現比 | `0.25` | `probability` | `0〜1` | — | スプリント開始時に複雑タスクを抽選する重み。 | sprint, task, distribution | いいえ |
+| `sprint.task.kindWeight.normal` | 通常タスクの出現比 | `0.45` | `probability` | `0〜1` | — | スプリント開始時に通常タスクを抽選する重み。 | sprint, task, distribution | いいえ |
+| `sprint.task.kindWeight.routine` | 定型タスクの出現比 | `0.3` | `probability` | `0〜1` | — | スプリント開始時に定型タスクを抽選する重み。粗粒度の定型速度補正にも使う。 | sprint, task, distribution, coarse | いいえ |
+| `sprint.title.comboMasterMin` | コンボ職人の最大コンボ | `15` | `count` | `1〜50（整数）` | — | 最大コンボがこの値以上、かつ Rework 比が対応上限未満なら称号「コンボ職人」。 | sprint, title, combo | いいえ |
+| `sprint.title.comboMasterReworkMax` | コンボ職人のRework比上限 | `0.15` | `ratio` | `0〜1` | — | Rework 比がこの値未満、かつ最大コンボが対応閾値以上なら称号「コンボ職人」。 | sprint, title, combo, rework | いいえ |
+| `sprint.title.firefighterContains` | 火消しの達人の鎮火回数 | `3` | `count` | `1〜20（整数）` | — | コンボを壊さない鎮火回数がこの値以上なら称号「火消しの達人」の候補。 | sprint, title, incident | いいえ |
+| `sprint.title.firefighterIncidents` | 火消しの達人のIncident件数 | `3` | `count` | `1〜20（整数）` | — | Incident 件数がこの値以上、かつ延焼なしなら称号「火消しの達人」。 | sprint, title, incident | いいえ |
+| `sprint.title.healthyIncidentMax` | 健全な加速者のIncident上限 | `1` | `count` | `0〜20（整数）` | — | AI 利用ありで Incident 件数がこの値以下、かつ Rework が対応上限以下なら称号「健全な加速者」。 | sprint, title, incident, ai | いいえ |
+| `sprint.title.healthyReworkMax` | 健全な加速者のRework上限 | `2` | `count` | `0〜20（整数）` | — | AI 利用ありで Rework 件数がこの値以下、かつ Incident が対応上限以下なら称号「健全な加速者」。 | sprint, title, rework, ai | いいえ |
+| `sprint.title.noOvertimeHpLossMax` | ノー残業の勇者のHP損失上限 | `35` | `points` | `0〜100（整数）` | — | AI 未使用でシニアHP損失がこの値未満なら称号「ノー残業の勇者」の候補。 | sprint, title, senior | いいえ |
+| `sprint.title.noOvertimeIncidentMax` | ノー残業の勇者のIncident上限 | `2` | `count` | `0〜20（整数）` | — | AI 未使用で Incident 件数がこの値以下なら称号「ノー残業の勇者」の候補。 | sprint, title, incident | いいえ |
+| `sprint.title.noOvertimeReworkMax` | ノー残業の勇者のRework比上限 | `0.2` | `ratio` | `0〜1` | — | AI 未使用で Rework 比がこの値未満なら称号「ノー残業の勇者」の候補。 | sprint, title, rework | いいえ |
+| `sprint.title.reviewHellAiPct` | PRを増やす者のAI利用率 | `50` | `percent` | `0〜100（整数）` | — | AI 利用率がこの値以上、かつ Review 待ち最大件数が対応閾値以上なら称号「PRを増やす者」。 | sprint, title, review, ai | いいえ |
+| `sprint.title.reviewHellQueueMax` | PRを増やす者のReview滞留 | `12` | `count` | `1〜50（整数）` | — | Review 待ち最大件数がこの値以上、かつ AI 利用率が対応閾値以上なら称号「PRを増やす者」。 | sprint, title, review, ai | いいえ |
+| `sprint.title.reworkArtisanRatio` | Rework職人の手戻り比 | `0.35` | `ratio` | `0〜1` | — | 完了件数に対する Rework 比がこの値以上なら称号「Rework職人」。 | sprint, title, rework | いいえ |
+| `sprint.title.seniorBurnoutHpLoss` | シニア過労メーカーのHP損失 | `55` | `points` | `1〜100（整数）` | — | シニアHP損失がこの値以上なら称号「シニア過労メーカー」。 | sprint, title, senior | いいえ |
+| `sprint.title.spreadMinimum` | 静かな崩壊の延焼回数 | `2` | `count` | `1〜20（整数）` | — | 延焼回数がこの値以上なら称号「静かな崩壊」。 | sprint, title, incident | いいえ |
+| `sprint.title.unstableIncidents` | 爆速だが不安定のIncident件数 | `3` | `count` | `1〜20（整数）` | — | AI 利用ありで Incident 件数がこの値以上なら称号「爆速だが不安定」。 | sprint, title, incident, ai | いいえ |

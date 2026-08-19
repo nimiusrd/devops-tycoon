@@ -7,6 +7,7 @@ import { foldRunEffects, type RunModifierInput } from '../../../src/sim/run/effe
 import type { RunPersistState } from '../../../src/sim/run/persist';
 import type { OrgState } from '../../../src/sim/types';
 import { DAILY_RUN_DIFFICULTY } from '../../../src/state/meta';
+import { SPRINT_TASK_KIND_WEIGHTS } from '../../../src/data/balance';
 
 const SEED = 'ri-103-tool-scenario';
 
@@ -143,7 +144,7 @@ describe('tool scenario run wiring (RI-103)', () => {
     const copilotMods = started('copilot').coarseModifiersFromFold(copilotFold);
     expect(defaultMods.shipMul).toBeCloseTo(defaultFold.effects.codingSpeedMul, 8);
     expect(copilotMods.shipMul).toBeCloseTo(
-      copilotFold.effects.codingSpeedMul * (1 + 0.12 * 0.3),
+      copilotFold.effects.codingSpeedMul * (1 + 0.12 * SPRINT_TASK_KIND_WEIGHTS.routine.value),
       8,
     );
     expect(copilotMods.shipMul).toBeGreaterThan(defaultMods.shipMul);

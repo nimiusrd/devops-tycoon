@@ -418,7 +418,7 @@ C_next =
 
 個人ステータスにはすでに`implementation`、`review`、`aiMastery`があるが、手作業能力の低下と回復を表す状態はない。また、現在のタスクは担当メンバーを保持しない。最初の導入候補はチーム単位の`manualCapability`とし、個人単位へ拡張する場合は、タスクと担当者の対応、成長・消耗、保存スキーマまで同時に設計する。
 
-この再設計は未実装である。§4.5の[`probability-curves.svg`](./assets/probability-curves.svg)は現行式の記録、§4.5.2の[`proposed-ai-dependency-curves.svg`](./assets/proposed-ai-dependency-curves.svg)は候補式の形状確認用である。SSoT移行時に現行値として照合するのは前者であり、後者を現行ゲームの挙動として扱わない。
+この再設計は未実装であり、追跡先は[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)である。§4.5の[`probability-curves.svg`](./assets/probability-curves.svg)は現行式の記録、§4.5.2の[`proposed-ai-dependency-curves.svg`](./assets/proposed-ai-dependency-curves.svg)は候補式の形状確認用である。SSoT移行時に現行値として照合するのは前者であり、後者を現行ゲームの挙動として扱わない。
 
 ### 4.6 編成と施策の合成
 

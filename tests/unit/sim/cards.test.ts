@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { CARD_DEFS } from '../../../src/data/cards';
+import { CARD_BALANCE } from '../../../src/data/balance';
 import {
   applyDeckBaseline,
   baselineAppliedLevelFor,
+  clampCardEffects,
   dealHand,
   deckEffects,
   drawDraft,
@@ -17,7 +19,7 @@ import {
   inheritBaselineAppliedForTeams,
   playCardFromHand,
 } from '../../../src/sim/cards';
-import { reworkProbability } from '../../../src/sim/model';
+import { IDENTITY_CARD_EFFECTS, reworkProbability } from '../../../src/sim/model';
 import { createOrgState } from '../../../src/sim/org';
 import { createRng } from '../../../src/sim/rng';
 import { createEngine, type Engine } from '../../../src/sim/engine';
@@ -498,6 +500,38 @@ describe('RI-91-C3 cards NoCoverage / Survived mutants', () => {
       expect(scaleEffects({ codingSpeedMul: 1.15 }, 2).codingSpeedMul).toBe(1 + (1.15 - 1) * 1.5);
       expect(scaleEffects({ qualityAdd: 10 }, 2).qualityAdd).toBe(15);
       expect(scaleEffects({ qualityAdd: 10 }, 1).qualityAdd).toBe(10);
+    });
+
+    it('clampCardEffects は乗算・Rework加算・その他加算をレジストリ境界へ収める', () => {
+      const over = clampCardEffects({
+        ...IDENTITY_CARD_EFFECTS,
+        codingSpeedMul: 10,
+        reviewEfficiencyMul: 0.01,
+        reworkRateAdd: 1,
+        qualityAdd: 200,
+        aiLiteracyAdd: -200,
+      });
+      expect(over.codingSpeedMul).toBe(CARD_BALANCE.effectMultiplierMaximum.value);
+      expect(over.reviewEfficiencyMul).toBe(CARD_BALANCE.effectMultiplierMinimum.value);
+      expect(over.reworkRateAdd).toBe(CARD_BALANCE.effectReworkRateAddMaximum.value);
+      expect(over.qualityAdd).toBe(CARD_BALANCE.effectAdditiveMaximum.value);
+      expect(over.aiLiteracyAdd).toBe(CARD_BALANCE.effectAdditiveMinimum.value);
+
+      const underRework = clampCardEffects({
+        ...IDENTITY_CARD_EFFECTS,
+        reworkRateAdd: -1,
+      });
+      expect(underRework.reworkRateAdd).toBe(CARD_BALANCE.effectReworkRateAddMinimum.value);
+
+      const mid = clampCardEffects({
+        ...IDENTITY_CARD_EFFECTS,
+        codingSpeedMul: 1.2,
+        reworkRateAdd: 0.1,
+        qualityAdd: 10,
+      });
+      expect(mid.codingSpeedMul).toBe(1.2);
+      expect(mid.reworkRateAdd).toBe(0.1);
+      expect(mid.qualityAdd).toBe(10);
     });
   });
 });

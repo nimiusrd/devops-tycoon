@@ -4,6 +4,7 @@ import {
   ACTION_BALANCE,
   ACTION_BALANCE_BY_ID,
   BALANCE_REGISTRY,
+  CARD_BALANCE,
   MEMBER_BALANCE,
   PROCESS_BALANCE,
   defineBalanceEntry,
@@ -12,6 +13,7 @@ import {
   validateBalanceRegistry,
 } from '../../../src/data/balance';
 import * as actionSimulation from '../../../src/sim/actions';
+import { HAND_SIZE, PREFERRED_DRAFT_WEIGHT_MUL } from '../../../src/sim/cards';
 import {
   AI_ADOPTION,
   AI_CODING_SPEEDUP,
@@ -176,6 +178,7 @@ const BALANCE_IDS = [
   ...PROCESS_BALANCE_IDS,
   ...ACTION_BALANCE_IDS,
   ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
+  ...Object.values(CARD_BALANCE).map((entry) => entry.id),
 ].sort();
 
 describe('型付きバランスレジストリ', () => {
@@ -225,6 +228,8 @@ describe('型付きバランスレジストリ', () => {
     expect(OVERTIME_REVIEW_MUL).toBe(PROCESS_BALANCE.overtimeReviewMultiplier.value);
     expect(COMBO_BONUS_PER).toBe(PROCESS_BALANCE.comboBonusPer.value);
     expect(COMBO_BONUS_CAP).toBe(PROCESS_BALANCE.comboBonusCap.value);
+    expect(HAND_SIZE).toBe(CARD_BALANCE.handSize.value);
+    expect(PREFERRED_DRAFT_WEIGHT_MUL).toBe(CARD_BALANCE.draftPreferredWeightMultiplier.value);
   });
 
   it('介入の実行定義と互換aliasがアクションレジストリを参照する', () => {
@@ -421,6 +426,10 @@ describe('型付きバランスレジストリ', () => {
     ACTION_BALANCE.assignTaskIdealMoraleMinimum,
     ACTION_BALANCE.organizationStatMinimum,
     ACTION_BALANCE.organizationStatMaximum,
+    CARD_BALANCE.handSize,
+    CARD_BALANCE.draftCandidateCount,
+    CARD_BALANCE.draftMulliganMaxAttempts,
+    CARD_BALANCE.playFocusCostMinimum,
   ])('$id は非整数の離散値を検証で拒否する', (entry) => {
     expect(entry.integer).toBe(true);
     const invalid = defineBalanceEntry({ ...entry, value: entry.value + 0.5 });
@@ -490,6 +499,24 @@ describe('型付きバランスレジストリ', () => {
       maximum: ACTION_BALANCE.assignTaskMoraleCost,
       invertedMinimum: 4,
       invertedMaximum: 3,
+    },
+    {
+      minimum: CARD_BALANCE.effectMultiplierMinimum,
+      maximum: CARD_BALANCE.effectMultiplierMaximum,
+      invertedMinimum: 0.8,
+      invertedMaximum: 0.7,
+    },
+    {
+      minimum: CARD_BALANCE.effectReworkRateAddMinimum,
+      maximum: CARD_BALANCE.effectReworkRateAddMaximum,
+      invertedMinimum: 0.1,
+      invertedMaximum: 0,
+    },
+    {
+      minimum: CARD_BALANCE.effectAdditiveMinimum,
+      maximum: CARD_BALANCE.effectAdditiveMaximum,
+      invertedMinimum: 10,
+      invertedMaximum: 9,
     },
   ])(
     '$minimum.id と $maximum.id が逆転した場合は検証で拒否する',

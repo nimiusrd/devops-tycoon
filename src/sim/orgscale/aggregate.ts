@@ -5,6 +5,7 @@
  * 落とす純関数群。描画も乱数も知らない（第22.2 / 22.3）。
  */
 import type { DepartmentState, OrgScaleState, Team, TeamHealth } from './types';
+import { COARSE_TEAM_BALANCE } from '../../data/balance';
 import { clamp } from '../clamp';
 
 const avg = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -13,8 +14,16 @@ const avg = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0)
 export function teamHealth(
   team: Pick<Team, 'reviewQueue' | 'incidents' | 'aiDependency'>,
 ): TeamHealth {
-  if (team.incidents >= 2 || team.reviewQueue >= 12) return 'reviewHell';
-  if (team.reviewQueue >= 6 || team.aiDependency >= 70) return 'congested';
+  if (
+    team.incidents >= COARSE_TEAM_BALANCE.healthReviewHellIncidentMinimum.value ||
+    team.reviewQueue >= COARSE_TEAM_BALANCE.healthReviewHellQueueMinimum.value
+  )
+    return 'reviewHell';
+  if (
+    team.reviewQueue >= COARSE_TEAM_BALANCE.healthCongestedQueueMinimum.value ||
+    team.aiDependency >= COARSE_TEAM_BALANCE.healthCongestedAiDependencyMinimum.value
+  )
+    return 'congested';
   return 'healthy';
 }
 
@@ -36,7 +45,7 @@ export function aggregateHealth(teams: Pick<Team, 'health'>[]): TeamHealth {
   if (teams.length === 0) return 'healthy';
   const worst = teams.reduce((m, t) => Math.max(m, HEALTH_RANK[t.health]), 0);
   const fireRatio = teams.filter((t) => t.health === 'reviewHell').length / teams.length;
-  if (fireRatio >= 1 / 3) return 'reviewHell';
+  if (fireRatio >= COARSE_TEAM_BALANCE.aggregateReviewHellRatioMinimum.value) return 'reviewHell';
   if (worst >= 2) return 'congested';
   return (['healthy', 'congested', 'reviewHell'] as TeamHealth[])[worst];
 }
@@ -50,7 +59,14 @@ export function aggregateDepartment(def: DepartmentState['def'], teams: Team[]):
   const onFire = teams.filter(isOnFire).length;
   // レビュー耐性: 行列が短いほど高い（0..100）。
   const queue = avg(teams.map((t) => t.reviewQueue));
-  const reviewResilience = clamp(Math.round(100 - queue * 6), 0, 100);
+  const reviewResilience = clamp(
+    Math.round(
+      COARSE_TEAM_BALANCE.reviewResilienceBase.value -
+        queue * COARSE_TEAM_BALANCE.reviewResilienceQueuePenalty.value,
+    ),
+    COARSE_TEAM_BALANCE.reviewResilienceMinimum.value,
+    COARSE_TEAM_BALANCE.reviewResilienceMaximum.value,
+  );
   return {
     def,
     teams,
@@ -72,13 +88,15 @@ export function healthRank(input: {
 }): string {
   // 士気が高く、負債とAI過依存が低いほど健全。
   const index =
-    input.morale * 0.6 -
-    Math.min(100, input.techDebt) * 0.25 -
-    Math.max(0, input.aiDependency - 50) * 0.5;
-  if (index >= 55) return 'S';
-  if (index >= 40) return 'A';
-  if (index >= 25) return 'B';
-  if (index >= 10) return 'C';
+    input.morale * COARSE_TEAM_BALANCE.healthRankMoraleWeight.value -
+    Math.min(COARSE_TEAM_BALANCE.healthRankTechDebtCap.value, input.techDebt) *
+      COARSE_TEAM_BALANCE.healthRankTechDebtWeight.value -
+    Math.max(0, input.aiDependency - COARSE_TEAM_BALANCE.healthRankAiDependencyThreshold.value) *
+      COARSE_TEAM_BALANCE.healthRankAiDependencyWeight.value;
+  if (index >= COARSE_TEAM_BALANCE.healthRankSThreshold.value) return 'S';
+  if (index >= COARSE_TEAM_BALANCE.healthRankAThreshold.value) return 'A';
+  if (index >= COARSE_TEAM_BALANCE.healthRankBThreshold.value) return 'B';
+  if (index >= COARSE_TEAM_BALANCE.healthRankCThreshold.value) return 'C';
   return 'D';
 }
 
@@ -90,8 +108,13 @@ export function companyScore(input: {
 }): number {
   // 出荷を主軸に、炎上・負債でペナルティ。
   return Math.max(
-    0,
-    Math.round(input.shipping - input.onFire * 40 - Math.min(300, input.techDebt) * 0.5),
+    COARSE_TEAM_BALANCE.scoreMinimum.value,
+    Math.round(
+      input.shipping -
+        input.onFire * COARSE_TEAM_BALANCE.scoreOnFirePenalty.value -
+        Math.min(COARSE_TEAM_BALANCE.scoreTechDebtCap.value, input.techDebt) *
+          COARSE_TEAM_BALANCE.scoreTechDebtWeight.value,
+    ),
   );
 }
 

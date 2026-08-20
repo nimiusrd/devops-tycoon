@@ -7,6 +7,7 @@
  */
 import type { DiagnosisType, RunTotals } from '../run/types';
 import type { OrgState } from '../types';
+import { COARSE_TEAM_BALANCE } from '../../data/balance';
 import { emptyAdjustState } from './levers';
 import {
   activeLiveFromOrg,
@@ -54,7 +55,7 @@ export interface OrgScaleInput {
  * `adjust.company.extraTeams` 分を先頭部門へ append してから投影する（テスト互換）。
  */
 export function generateOrgScale(input: OrgScaleInput): OrgScaleState {
-  const engineers = input.playerEngineers ?? 5;
+  const engineers = input.playerEngineers ?? COARSE_TEAM_BALANCE.defaultHomeEngineers.value;
   const adjust = input.adjust ?? emptyAdjustState();
   let teams =
     input.teams ??

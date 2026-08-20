@@ -5,7 +5,7 @@
  * 乱数は seed 派生のみ（第22.3）。
  */
 import { DEPARTMENT_DEFS } from '../../data/departments';
-import { MEMBER_BALANCE, PROCESS_BALANCE } from '../../data/balance';
+import { COARSE_TEAM_BALANCE, MEMBER_BALANCE, PROCESS_BALANCE } from '../../data/balance';
 import {
   MEMBER_NAMES,
   RECRUIT_ARCHETYPES,
@@ -46,10 +46,35 @@ import { clamp } from '../clamp';
 export const HOME_TEAM_ID = 'product-t0';
 
 /** チームへ入り込むときの次スプリント集中力ペナルティ（RI-64）。 */
-export const ENTER_TEAM_FOCUS_PENALTY = -2;
+export const ENTER_TEAM_FOCUS_PENALTY = COARSE_TEAM_BALANCE.enterTeamFocusPenalty.value;
 
 /** 入り込み後、他チームへ切り替えできないスプリント数。 */
-export const ENTER_TEAM_LOCK_SPRINTS = 1;
+export const ENTER_TEAM_LOCK_SPRINTS = COARSE_TEAM_BALANCE.enterTeamLockSprints.value;
+
+/** 粗粒度チームの Review 容量を算出する（初期化・同期・進行で共有）。 */
+export function reviewCapacityFor(engineers: number, reviewQueue: number): number {
+  return clamp(
+    COARSE_TEAM_BALANCE.reviewCapacityBase.value +
+      engineers * COARSE_TEAM_BALANCE.reviewCapacityPerEngineer.value -
+      reviewQueue * COARSE_TEAM_BALANCE.reviewCapacityPerQueue.value,
+    COARSE_TEAM_BALANCE.reviewCapacityMinimum.value,
+    COARSE_TEAM_BALANCE.reviewCapacityMaximum.value,
+  );
+}
+
+/** 粗粒度チームの Incident bias を算出する（初期化・同期・進行で共有）。 */
+export function incidentBiasFor(incidents: number, quality: number, securityLevel: number): number {
+  return clamp(
+    COARSE_TEAM_BALANCE.incidentBiasBase.value +
+      incidents * COARSE_TEAM_BALANCE.incidentBiasPerIncident.value +
+      (COARSE_TEAM_BALANCE.qualityMaximum.value - quality) *
+        COARSE_TEAM_BALANCE.incidentBiasQualityGapWeight.value +
+      securityFragility(securityLevel) *
+        COARSE_TEAM_BALANCE.incidentBiasSecurityFragilityWeight.value,
+    COARSE_TEAM_BALANCE.incidentBiasMinimum.value,
+    COARSE_TEAM_BALANCE.incidentBiasMaximum.value,
+  );
+}
 
 /** チーム名（A,B,C... 26 を超えたら番号）。 */
 export function teamName(index: number): string {
@@ -174,12 +199,13 @@ function homeSeedRaw(
 }
 
 /** 通常の rival AI依存度振れ幅。 */
-export const RIVAL_AI_DEPENDENCY_SPREAD = 25;
+export const RIVAL_AI_DEPENDENCY_SPREAD = COARSE_TEAM_BALANCE.rivalAiDependencySpread.value;
 /**
  * 低リテラシー組織の rival AI依存度振れ幅（RI-74）。
  * 旧セーブ移行時のクランプ上限としても使う。
  */
-export const RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY = 10;
+export const RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY =
+  COARSE_TEAM_BALANCE.rivalAiDependencySpreadLowLiteracy.value;
 
 /** 他チームの素の指標を派生 seed から作る（ホームをベースに分散。初期化専用）。 */
 function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
@@ -192,22 +218,72 @@ function rivalTeamRaw(rng: () => number, base: ReturnType<typeof homeSeedRaw>) {
       ? RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY
       : RIVAL_AI_DEPENDENCY_SPREAD;
   const aiDependency = clamp(jitter(base.aiDependency, depSpread), 0, 100);
-  const reviewQueue = Math.max(0, jitter(Math.max(2, base.reviewQueue), 4));
-  const incidents = Math.max(0, Math.round(rng() * 2.4 - 0.6));
-  const morale = clamp(jitter(base.morale, 20), 10, 100);
-  const techDebt = Math.max(0, jitter(Math.max(20, base.techDebt), 40));
+  const reviewQueue = Math.max(
+    0,
+    jitter(
+      Math.max(COARSE_TEAM_BALANCE.rivalReviewQueueMinimum.value, base.reviewQueue),
+      COARSE_TEAM_BALANCE.rivalReviewQueueJitter.value,
+    ),
+  );
+  const incidents = Math.max(
+    0,
+    Math.round(
+      rng() * COARSE_TEAM_BALANCE.rivalIncidentRollMultiplier.value -
+        COARSE_TEAM_BALANCE.rivalIncidentRollOffset.value,
+    ),
+  );
+  const morale = clamp(
+    jitter(base.morale, COARSE_TEAM_BALANCE.rivalMoraleJitter.value),
+    COARSE_TEAM_BALANCE.rivalMoraleMinimum.value,
+    COARSE_TEAM_BALANCE.rivalMoraleMaximum.value,
+  );
+  const techDebt = Math.max(
+    0,
+    jitter(
+      Math.max(COARSE_TEAM_BALANCE.rivalTechDebtMinimum.value, base.techDebt),
+      COARSE_TEAM_BALANCE.rivalTechDebtJitter.value,
+    ),
+  );
   const shipping = Math.max(
     0,
-    jitter(Math.max(40, base.shipping), Math.max(40, base.shipping * 0.6)),
+    jitter(
+      Math.max(COARSE_TEAM_BALANCE.rivalShippingMinimum.value, base.shipping),
+      Math.max(
+        COARSE_TEAM_BALANCE.rivalShippingMinimum.value,
+        base.shipping * COARSE_TEAM_BALANCE.rivalShippingJitterMultiplier.value,
+      ),
+    ),
   );
-  const engineers = 3 + Math.floor(rng() * 6);
-  const aiLiteracy = clamp(jitter(base.aiLiteracy, 20), 10, 100);
-  const seniorHp = clamp(jitter(base.seniorHp, 15), 40, 100);
-  const testCoverage = clamp(jitter(base.testCoverage, 15), 20, 100);
-  const documentation = clamp(jitter(base.documentation, 15), 20, 100);
-  const quality = clamp(jitter(base.quality, 15), 20, 100);
+  const engineers =
+    COARSE_TEAM_BALANCE.rivalEngineerMinimum.value +
+    Math.floor(rng() * COARSE_TEAM_BALANCE.rivalEngineerRollRange.value);
+  const aiLiteracy = clamp(
+    jitter(base.aiLiteracy, COARSE_TEAM_BALANCE.rivalAiLiteracyJitter.value),
+    COARSE_TEAM_BALANCE.rivalAiLiteracyMinimum.value,
+    COARSE_TEAM_BALANCE.rivalAiLiteracyMaximum.value,
+  );
+  const seniorHp = clamp(
+    jitter(base.seniorHp, COARSE_TEAM_BALANCE.rivalSeniorHpJitter.value),
+    COARSE_TEAM_BALANCE.rivalSeniorHpMinimum.value,
+    COARSE_TEAM_BALANCE.rivalSeniorHpMaximum.value,
+  );
+  const testCoverage = clamp(
+    jitter(base.testCoverage, COARSE_TEAM_BALANCE.rivalTestCoverageJitter.value),
+    COARSE_TEAM_BALANCE.rivalTestCoverageMinimum.value,
+    COARSE_TEAM_BALANCE.rivalTestCoverageMaximum.value,
+  );
+  const documentation = clamp(
+    jitter(base.documentation, COARSE_TEAM_BALANCE.rivalDocumentationJitter.value),
+    COARSE_TEAM_BALANCE.rivalDocumentationMinimum.value,
+    COARSE_TEAM_BALANCE.rivalDocumentationMaximum.value,
+  );
+  const quality = clamp(
+    jitter(base.quality, COARSE_TEAM_BALANCE.rivalQualityJitter.value),
+    COARSE_TEAM_BALANCE.rivalQualityMinimum.value,
+    COARSE_TEAM_BALANCE.rivalQualityMaximum.value,
+  );
   const securityLevel = clamp(
-    jitter(base.securityLevel, 15),
+    jitter(base.securityLevel, COARSE_TEAM_BALANCE.rivalSecurityJitter.value),
     Math.max(
       PROCESS_BALANCE.securityLevelMinimum.value,
       PROCESS_BALANCE.securityRivalLevelMinimum.value,
@@ -239,15 +315,8 @@ function toTeamRunState(args: {
   raw: ReturnType<typeof rivalTeamRaw> | ReturnType<typeof homeSeedRaw>;
 }): TeamRunState {
   const { raw } = args;
-  const reviewCapacity = clamp(55 + raw.engineers * 4 - raw.reviewQueue * 2, 10, 100);
-  const incidentBias = clamp(
-    0.08 +
-      raw.incidents * 0.05 +
-      (100 - raw.quality) * 0.002 +
-      securityFragility(raw.securityLevel) * 0.08,
-    0.02,
-    0.45,
-  );
+  const reviewCapacity = reviewCapacityFor(raw.engineers, raw.reviewQueue);
+  const incidentBias = incidentBiasFor(raw.incidents, raw.quality, raw.securityLevel);
   return {
     id: args.id,
     deptId: args.deptId,
@@ -358,15 +427,8 @@ export function syncTeamFromOrg(
     documentation: Math.round(org.documentation),
     quality: Math.round(org.quality),
     securityLevel: Math.round(org.securityLevel),
-    reviewCapacity: clamp(55 + engineers * 4 - reviewQueue * 2, 10, 100),
-    incidentBias: clamp(
-      0.08 +
-        incidents * 0.05 +
-        (100 - org.quality) * 0.002 +
-        securityFragility(org.securityLevel) * 0.08,
-      0.02,
-      0.45,
-    ),
+    reviewCapacity: reviewCapacityFor(engineers, reviewQueue),
+    incidentBias: incidentBiasFor(incidents, org.quality, org.securityLevel),
   };
 }
 
@@ -488,11 +550,17 @@ export function appendTeamsToDept(
     const rng = createRng(`${args.seed}:team:${args.deptId}:${idx}:extra`);
     const raw = rivalTeamRaw(rng, {
       aiDependency: args.template.aiDependency,
-      reviewQueue: Math.max(2, args.template.reviewQueue),
+      reviewQueue: Math.max(
+        COARSE_TEAM_BALANCE.rivalReviewQueueMinimum.value,
+        args.template.reviewQueue,
+      ),
       incidents: 0,
       morale: args.template.morale,
       techDebt: args.template.techDebt,
-      shipping: Math.max(40, Math.round(args.template.shipping * 0.4)),
+      shipping: Math.max(
+        COARSE_TEAM_BALANCE.rivalShippingMinimum.value,
+        Math.round(args.template.shipping * COARSE_TEAM_BALANCE.extraTeamShippingMultiplier.value),
+      ),
       engineers: args.template.headcount ?? args.template.engineers,
       aiLiteracy: args.template.aiLiteracy,
       seniorHp: args.template.seniorHp,
@@ -579,12 +647,34 @@ export function advanceCoarseTeams(
   },
 ): CoarseStepResult {
   const adjust = args.adjust ?? { company: emptyAdjust(), byDept: {} };
-  const incidentRateMul = Math.max(0.2, args.modifiers?.incidentRateMul ?? 1);
-  const shipMul = Math.max(0.2, args.modifiers?.shipMul ?? 1);
-  const reviewMul = clamp(args.modifiers?.reviewMul ?? 1, 0.4, 1.8);
-  const reviewCapacityMul = clamp(args.modifiers?.reviewCapacityMul ?? 1, 0.5, 2);
-  const reworkRateAdd = clamp(args.modifiers?.reworkRateAdd ?? 0, -0.5, 0.5);
-  const seniorHpCostMul = clamp(args.modifiers?.seniorHpCostMul ?? 1, 0.3, 3);
+  const incidentRateMul = Math.max(
+    COARSE_TEAM_BALANCE.stepIncidentRateMinimum.value,
+    args.modifiers?.incidentRateMul ?? 1,
+  );
+  const shipMul = Math.max(
+    COARSE_TEAM_BALANCE.stepShipMultiplierMinimum.value,
+    args.modifiers?.shipMul ?? 1,
+  );
+  const reviewMul = clamp(
+    args.modifiers?.reviewMul ?? 1,
+    COARSE_TEAM_BALANCE.stepReviewMultiplierMinimum.value,
+    COARSE_TEAM_BALANCE.stepReviewMultiplierMaximum.value,
+  );
+  const reviewCapacityMul = clamp(
+    args.modifiers?.reviewCapacityMul ?? 1,
+    COARSE_TEAM_BALANCE.stepReviewCapacityMultiplierMinimum.value,
+    COARSE_TEAM_BALANCE.stepReviewCapacityMultiplierMaximum.value,
+  );
+  const reworkRateAdd = clamp(
+    args.modifiers?.reworkRateAdd ?? 0,
+    COARSE_TEAM_BALANCE.stepReworkRateAddMinimum.value,
+    COARSE_TEAM_BALANCE.stepReworkRateAddMaximum.value,
+  );
+  const seniorHpCostMul = clamp(
+    args.modifiers?.seniorHpCostMul ?? 1,
+    COARSE_TEAM_BALANCE.stepSeniorHpCostMultiplierMinimum.value,
+    COARSE_TEAM_BALANCE.stepSeniorHpCostMultiplierMaximum.value,
+  );
   const aiDependencyDrift = Math.max(0, Math.round(args.modifiers?.aiDependencyDrift ?? 0));
   let ignited = 0;
   let securityTrustSpreadRaw = 0;
@@ -596,13 +686,28 @@ export function advanceCoarseTeams(
     const deptAdj = mergeAdjust(adjust.company, adjust.byDept[team.deptId] ?? emptyAdjust());
     const teamAdj = mergeAdjust(deptAdj, adjust.byTeam?.[team.id] ?? emptyAdjust());
     // 負のデルタほど圧力を緩める（永続値への再加算はしない）。
-    const queueRelief = Math.max(0, -teamAdj.reviewQueueDelta) * 0.2;
+    const queueRelief =
+      Math.max(0, -teamAdj.reviewQueueDelta) * COARSE_TEAM_BALANCE.queueReliefPerAdjustment.value;
     // Rework 低下は戻りレビュー減として行列圧力を緩める（上昇は圧力増）。
-    const reworkRelief = -reworkRateAdd * 20;
-    const fireMul = clamp(1 + teamAdj.incidentDelta * 0.12, 0.35, 1.2);
-    const debtRelief = Math.max(0, -teamAdj.techDebtDelta) * 0.05;
-    const aiPressureMul = clamp(1 + teamAdj.aiDependencyDelta * 0.02, 0.4, 1.2);
-    const moraleBias = teamAdj.moraleDelta === 0 ? 0 : Math.sign(teamAdj.moraleDelta) * 0.5;
+    const reworkRelief = -reworkRateAdd * COARSE_TEAM_BALANCE.reworkReliefPerRate.value;
+    const fireMul = clamp(
+      COARSE_TEAM_BALANCE.fireMultiplierBase.value +
+        teamAdj.incidentDelta * COARSE_TEAM_BALANCE.incidentAdjustmentMultiplier.value,
+      COARSE_TEAM_BALANCE.fireMultiplierMinimum.value,
+      COARSE_TEAM_BALANCE.fireMultiplierMaximum.value,
+    );
+    const debtRelief =
+      Math.max(0, -teamAdj.techDebtDelta) * COARSE_TEAM_BALANCE.techDebtReliefMultiplier.value;
+    const aiPressureMul = clamp(
+      COARSE_TEAM_BALANCE.aiPressureBase.value +
+        teamAdj.aiDependencyDelta * COARSE_TEAM_BALANCE.aiPressurePerDependencyDelta.value,
+      COARSE_TEAM_BALANCE.aiPressureMinimum.value,
+      COARSE_TEAM_BALANCE.aiPressureMaximum.value,
+    );
+    const moraleBias =
+      teamAdj.moraleDelta === 0
+        ? 0
+        : Math.sign(teamAdj.moraleDelta) * COARSE_TEAM_BALANCE.moraleAdjustmentBias.value;
     const reviewCap = team.reviewCapacity * reviewCapacityMul;
 
     const coders = estimateRosterCoderCount(team.engineers);
@@ -617,36 +722,58 @@ export function advanceCoarseTeams(
       team.engineers <= 0
         ? 0
         : Math.max(
-            4,
+            COARSE_TEAM_BALANCE.shippingMinimum.value,
             Math.round(
-              ((8 + team.engineers * 2.5 + team.aiLiteracy * 0.08) * (0.75 + rng() * 0.5) -
-                team.techDebt * 0.02) *
+              ((COARSE_TEAM_BALANCE.shippingBase.value +
+                team.engineers * COARSE_TEAM_BALANCE.shippingPerEngineer.value +
+                team.aiLiteracy * COARSE_TEAM_BALANCE.shippingPerAiLiteracy.value) *
+                (COARSE_TEAM_BALANCE.shippingRandomBase.value +
+                  rng() * COARSE_TEAM_BALANCE.shippingRandomRange.value) -
+                team.techDebt * COARSE_TEAM_BALANCE.shippingTechDebtPenalty.value) *
                 shipMul,
             ),
           );
-    const shipGain = baseShipGain <= 0 ? 0 : Math.max(4, Math.round(baseShipGain * aiDeliveryMul));
+    const shipGain =
+      baseShipGain <= 0
+        ? 0
+        : Math.max(
+            COARSE_TEAM_BALANCE.shippingMinimum.value,
+            Math.round(baseShipGain * aiDeliveryMul),
+          );
     const completedGain = coarseShipToCompleted(baseShipGain);
     completed += completedGain;
     aiAssisted += Math.round(completedGain * aiShare);
     const queuePressure = Math.max(
       0,
       Math.round(
-        team.engineers * 0.35 +
-          team.aiDependency * 0.04 -
-          reviewCap * 0.05 -
+        team.engineers * COARSE_TEAM_BALANCE.queuePressurePerEngineer.value +
+          team.aiDependency * COARSE_TEAM_BALANCE.queuePressurePerAiDependency.value -
+          reviewCap * COARSE_TEAM_BALANCE.queuePressurePerReviewCapacity.value -
           queueRelief -
           reworkRelief,
       ),
     );
-    const queueDelta = Math.round((rng() * 2 - 0.7) * 2) + queuePressure;
+    const queueDelta =
+      Math.round(
+        (rng() * COARSE_TEAM_BALANCE.queueRandomRange.value -
+          COARSE_TEAM_BALANCE.queueRandomOffset.value) *
+          COARSE_TEAM_BALANCE.queueRandomMultiplier.value,
+      ) + queuePressure;
     let reviewQueue = Math.max(0, team.reviewQueue + queueDelta);
-    reviewQueue = Math.max(0, reviewQueue - Math.floor((reviewCap / 25) * reviewMul));
+    reviewQueue = Math.max(
+      0,
+      reviewQueue -
+        Math.floor((reviewCap / COARSE_TEAM_BALANCE.queueDrainCapacityDivisor.value) * reviewMul),
+    );
 
     const fireRoll = rng();
     const fireChance = clamp(
-      (team.incidentBias + team.aiDependency * 0.0015) * fireMul * incidentRateMul,
-      0.02,
-      0.5,
+      (team.incidentBias +
+        team.aiDependency * COARSE_TEAM_BALANCE.fireChancePerAiDependency.value) *
+        fireMul *
+        incidentRateMul,
+      COARSE_TEAM_BALANCE.fireChanceMinimum.value,
+      COARSE_TEAM_BALANCE.fireChanceMaximum.value,
     );
     let incidents = team.incidents;
     if (fireRoll < fireChance) {
@@ -654,18 +781,35 @@ export function advanceCoarseTeams(
       ignited += 1;
       securityTrustSpreadRaw += securityCustomerTrustSpreadRaw(team.securityLevel ?? team.quality);
     }
-    if (rng() < (0.35 + reviewCap * 0.004) * reviewMul) {
+    if (
+      rng() <
+      (COARSE_TEAM_BALANCE.containChanceBase.value +
+        reviewCap * COARSE_TEAM_BALANCE.containChancePerReviewCapacity.value) *
+        reviewMul
+    ) {
       incidents = Math.max(0, incidents - 1);
     }
 
     const moraleDelta =
-      (reviewQueue > 8 ? -3 : reviewQueue > 4 ? -1 : 1) +
-      (incidents > 0 ? -2 : 1) +
+      (reviewQueue > COARSE_TEAM_BALANCE.moraleHighQueueMinimum.value
+        ? COARSE_TEAM_BALANCE.moraleHighQueueDelta.value
+        : reviewQueue > COARSE_TEAM_BALANCE.moraleMidQueueMinimum.value
+          ? COARSE_TEAM_BALANCE.moraleMidQueueDelta.value
+          : COARSE_TEAM_BALANCE.moraleLowQueueDelta.value) +
+      (incidents > 0
+        ? COARSE_TEAM_BALANCE.moraleIncidentDelta.value
+        : COARSE_TEAM_BALANCE.moraleNoIncidentDelta.value) +
       moraleBias +
-      Math.round((rng() * 2 - 1) * 2);
+      Math.round(
+        (rng() * COARSE_TEAM_BALANCE.moraleRandomRange.value -
+          COARSE_TEAM_BALANCE.moraleRandomOffset.value) *
+          COARSE_TEAM_BALANCE.moraleRandomMultiplier.value,
+      );
     const techDebtDelta =
-      Math.round(team.aiDependency * 0.03) - Math.round(team.aiLiteracy * 0.02) - debtRelief;
-    const literacyGain = rng() < 0.4 ? 1 : 0;
+      Math.round(team.aiDependency * COARSE_TEAM_BALANCE.techDebtAiDependencyWeight.value) -
+      Math.round(team.aiLiteracy * COARSE_TEAM_BALANCE.techDebtAiLiteracyWeight.value) -
+      debtRelief;
+    const literacyGain = rng() < COARSE_TEAM_BALANCE.literacyGainChance.value ? 1 : 0;
     // RI-73 / F-1: 詳細 sim と同じく配置済み人数＋レビュアー人数でシニア消耗を薄める。
     // 未訪問チームは createTeamRoster と同じ決定論的配置を使う（総席数で過大軽減しない）。
     const assigned =
@@ -673,24 +817,44 @@ export function advanceCoarseTeams(
     const reviewers =
       args.reviewersByTeamId?.[team.id] ?? estimateRosterReviewerCount(team.engineers);
     const seniorDrain =
-      (reviewQueue > 6 ? 2 : reviewQueue > 3 ? 1 : 0) *
+      (reviewQueue > COARSE_TEAM_BALANCE.seniorHpHighQueueMinimum.value
+        ? COARSE_TEAM_BALANCE.seniorHpHighQueueDrain.value
+        : reviewQueue > COARSE_TEAM_BALANCE.seniorHpMidQueueMinimum.value
+          ? COARSE_TEAM_BALANCE.seniorHpMidQueueDrain.value
+          : 0) *
       seniorHpCostMul *
       seniorHpShareMul(assigned) *
       reviewHpCostMulForReviewers(reviewers);
-    const randomAiDrift = rng() < 0.3 * aiPressureMul ? 1 : 0;
+    const randomAiDrift =
+      rng() < COARSE_TEAM_BALANCE.randomAiDriftChance.value * aiPressureMul ? 1 : 0;
     // 品質を先に確定し、派生の incidentBias と整合させる。
-    const quality = clamp(team.quality + (rng() < 0.25 ? -1 : 0), 10, 100);
+    const quality = clamp(
+      team.quality + (rng() < COARSE_TEAM_BALANCE.qualityLossChance.value ? -1 : 0),
+      COARSE_TEAM_BALANCE.qualityMinimum.value,
+      COARSE_TEAM_BALANCE.qualityMaximum.value,
+    );
 
     return {
       ...team,
       shipping: Math.max(0, team.shipping + shipGain),
       reviewQueue,
       incidents,
-      morale: clamp(team.morale + moraleDelta, 5, 100),
+      morale: clamp(
+        team.morale + moraleDelta,
+        COARSE_TEAM_BALANCE.moraleMinimum.value,
+        COARSE_TEAM_BALANCE.moraleMaximum.value,
+      ),
       techDebt: Math.max(0, team.techDebt + techDebtDelta),
       aiDependency: clamp(team.aiDependency + aiDependencyDrift + randomAiDrift, 0, 100),
       aiLiteracy: clamp(team.aiLiteracy + literacyGain, 0, 100),
-      seniorHp: clamp(team.seniorHp - seniorDrain + (100 - team.seniorHp) * 0.05, 1, 100),
+      seniorHp: clamp(
+        team.seniorHp -
+          seniorDrain +
+          (COARSE_TEAM_BALANCE.seniorHpMaximum.value - team.seniorHp) *
+            COARSE_TEAM_BALANCE.seniorHpRecoveryRate.value,
+        COARSE_TEAM_BALANCE.seniorHpMinimum.value,
+        COARSE_TEAM_BALANCE.seniorHpMaximum.value,
+      ),
       quality,
       ...deriveTeamCapacities({
         engineers: team.engineers,
@@ -755,7 +919,9 @@ export function normalizeCoarseTotalsDelta(
   const aiAssisted = Math.max(0, Math.round(Math.max(0, aiAssistedGain) / otherCount));
   // 端数繰り越し: 他チーム平均の 1/2 を四半期中に積み、ステップ丸めで消さない。
   // （フル平均だと Incident KPI / 勝率が崩壊するため、寄与を半分に抑える。）
-  const rawIncidents = Math.max(0, ignited) / (otherCount * 2) + Math.max(0, incidentCarry);
+  const rawIncidents =
+    Math.max(0, ignited) / (otherCount * COARSE_TEAM_BALANCE.normalizeIncidentDivisor.value) +
+    Math.max(0, incidentCarry);
   const incidents = Math.floor(rawIncidents + 1e-9);
   return {
     delivered: deliveredGain > 0 ? Math.max(1, Math.round(deliveredGain / otherCount)) : 0,
@@ -775,15 +941,8 @@ export function deriveTeamCapacities(
 ): Pick<TeamRunState, 'reviewCapacity' | 'incidentBias'> {
   const securityLevel = team.securityLevel ?? team.quality;
   return {
-    reviewCapacity: clamp(55 + team.engineers * 4 - team.reviewQueue * 2, 10, 100),
-    incidentBias: clamp(
-      0.08 +
-        team.incidents * 0.05 +
-        (100 - team.quality) * 0.002 +
-        securityFragility(securityLevel) * 0.08,
-      0.02,
-      0.45,
-    ),
+    reviewCapacity: reviewCapacityFor(team.engineers, team.reviewQueue),
+    incidentBias: incidentBiasFor(team.incidents, team.quality, securityLevel),
   };
 }
 

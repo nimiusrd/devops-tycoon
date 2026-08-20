@@ -6,7 +6,7 @@
  * レイアウトは司令室 UI の構図を使い、文言は SPEC の用語に揃える。
  */
 import { useRef, useState, type ChangeEvent } from 'react';
-import { DIFFICULTY_DEFS, TRIAL_DEFS, getTrial } from '../data/difficulties';
+import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
 import type { RunSaveSummary } from '../state/runPersistence';
@@ -15,7 +15,6 @@ import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios'
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
 
-const DIFFICULTY_ORDER: readonly DifficultyId[] = Object.keys(DIFFICULTY_DEFS) as DifficultyId[];
 const DIFFICULTY_TAG: Record<DifficultyId, string> = {
   easy: 'Easy',
   normal: 'Normal',

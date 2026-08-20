@@ -10,6 +10,7 @@ import {
   MEMBER_NAMES,
   RECRUIT_ARCHETYPES,
   STARTER_ARCHETYPES,
+  STARTER_DEFAULT_AI_ARCHETYPE_ID,
   type MemberArchetype,
 } from '../../data/members';
 import { MEMBER_BALANCE } from '../../data/balance';
@@ -242,9 +243,6 @@ export function createMember(arch: MemberArchetype, name: string, id: string): M
     onLeave: false,
   };
 }
-
-/** 初期ロスターで AI を既定配布するスターター（習熟が高いジュニアのみ。RI-77）。 */
-const STARTER_DEFAULT_AI_ARCHETYPE_ID = 'starter-ai-junior';
 
 /** 初期ロスター（バランス型コーダー2 + レビュアー1）を生成する。 */
 export function createInitialRoster(rng: Rng): RosterState {

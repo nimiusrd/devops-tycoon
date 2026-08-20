@@ -91,6 +91,9 @@ export const ACTION_CONTENT_DEFS = [
   },
 ] as const satisfies readonly ActionContentDef[];
 
+/** `grantsStabilityOnApply` がフラグを無視して常に false にする ID（RI-73）。 */
+export const STABILITY_FLAG_IGNORED_ACTION_IDS: ReadonlySet<string> = new Set(['splitPr', 'andon']);
+
 /** 表示用コンテンツへバランスレジストリの実行値を合成する。 */
 export const ACTION_DEFS: ActionDef[] = ACTION_CONTENT_DEFS.map((content) => {
   const balance = ACTION_BALANCE_BY_ID[content.id as keyof typeof ACTION_BALANCE_BY_ID];

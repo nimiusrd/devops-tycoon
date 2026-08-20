@@ -75,6 +75,9 @@ export interface GoalAdjustmentDef {
   nextQuarterEffects?: GoalNextQuarterEffects;
 }
 
+/** pauseAiDebuff 適用時の出荷速度倍率（次四半期）。 */
+export const PAUSE_AI_DEBUFF_MUL = 0.85;
+
 export const GOAL_ADJUSTMENT_DEFS: GoalAdjustmentDef[] = [
   {
     id: 'cut_scope',

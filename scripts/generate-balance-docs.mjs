@@ -23,7 +23,12 @@ async function main() {
       return;
     }
 
-    const markdown = documentation.renderBalanceParametersMarkdown(balance.BALANCE_REGISTRY);
+    const markdown = documentation.renderBalanceParametersMarkdown(balance.BALANCE_REGISTRY, {
+      version: balance.BALANCE_RULESET_VERSION,
+      fingerprint: balance.BALANCE_RULESET_FINGERPRINT,
+      fingerprintScheme: balance.BALANCE_RULESET_FINGERPRINT_SCHEME,
+      policy: balance.BALANCE_RULESET_VERSION_POLICY,
+    });
     const catalog = await server.ssrLoadModule('/src/data/contentCatalog.ts');
     const catalogDocumentation = await server.ssrLoadModule(
       '/src/data/contentCatalogDocumentation.ts',

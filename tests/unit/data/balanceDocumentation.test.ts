@@ -1,19 +1,44 @@
 import { describe, expect, it } from 'vitest';
 import {
   BALANCE_REGISTRY,
+  BALANCE_RULESET_FINGERPRINT,
+  BALANCE_RULESET_FINGERPRINT_SCHEME,
+  BALANCE_RULESET_VERSION,
+  BALANCE_RULESET_VERSION_POLICY,
   defineBalanceEntry,
   defineProbabilityDistribution,
   flattenBalanceEntries,
 } from '../../../src/data/balance';
 import { renderBalanceParametersMarkdown } from '../../../src/data/balance/documentation';
 
+const CURRENT_RULESET = {
+  version: BALANCE_RULESET_VERSION,
+  fingerprint: BALANCE_RULESET_FINGERPRINT,
+  fingerprintScheme: BALANCE_RULESET_FINGERPRINT_SCHEME,
+  policy: BALANCE_RULESET_VERSION_POLICY,
+};
+
 describe('バランスパラメータ表のMarkdown生成', () => {
   it('再生成方法と全列を含む、現在のレジストリの決定論的な表を生成する', () => {
-    const markdown = renderBalanceParametersMarkdown(BALANCE_REGISTRY);
+    const markdown = renderBalanceParametersMarkdown(BALANCE_REGISTRY, CURRENT_RULESET);
     const entries = flattenBalanceEntries(BALANCE_REGISTRY);
 
     expect(markdown).toContain('# バランスパラメータ一覧');
     expect(markdown).toContain('> 更新するには `npm run balance:docs` を実行してください。');
+    expect(markdown).toContain('## ルールセット');
+    expect(markdown).toContain(`- 版: \`${BALANCE_RULESET_VERSION}\``);
+    expect(markdown).toContain(`- 指紋: \`${BALANCE_RULESET_FINGERPRINT}\``);
+    expect(markdown).toContain('### 版を増やす条件');
+    expect(markdown).toContain('### 版を増やさない条件');
+    expect(markdown).toContain('### 指紋対象');
+    expect(markdown).toContain('### 指紋対象外');
+    for (const line of BALANCE_RULESET_VERSION_POLICY.bump) {
+      expect(markdown).toContain(`- ${line}`);
+    }
+    for (const line of BALANCE_RULESET_VERSION_POLICY.noBump) {
+      expect(markdown).toContain(`- ${line}`);
+    }
+    expect(markdown).toContain('seed と入力列');
     expect(markdown).toContain(
       '| ID | ラベル | 現在値 | 単位 | 許容範囲 | 関連制約 | 説明 | タグ | 派生値 |',
     );
@@ -74,7 +99,7 @@ describe('バランスパラメータ表のMarkdown生成', () => {
       entries: [later],
     });
 
-    const markdown = renderBalanceParametersMarkdown([distribution, earlier]);
+    const markdown = renderBalanceParametersMarkdown([distribution, earlier], CURRENT_RULESET);
 
     expect(markdown.indexOf('`test.alpha`')).toBeLessThan(markdown.indexOf('`test.zeta`'));
     expect(markdown).toContain('後\\|段');

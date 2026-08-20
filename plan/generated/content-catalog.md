@@ -73,20 +73,20 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | easy | {"aiDependencyPerTask":null,"bossTargetMul":0.85,"globalEffects":{"reviewEfficiencyMul":1.05,"reworkRateAdd":-0.04,"seniorHpCostMul":0.76},"org":{"aiDependencyBase":25,"aiLiteracy":60,"documentation":65,"morale":75,"quality":70,"securityLevel":70,"seniorHp":100,"testCoverage":70},"startBudget":60,"taskCountMul":1.85} |
-| 1 | normal | {"aiDependencyPerTask":null,"bossTargetMul":1,"globalEffects":{"seniorHpCostMul":0.8},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":52,"morale":70,"quality":62,"securityLevel":60,"seniorHp":100,"testCoverage":58},"startBudget":45,"taskCountMul":1.65} |
-| 2 | hard | {"aiDependencyPerTask":null,"bossTargetMul":1.15,"globalEffects":{"reviewEfficiencyMul":0.92,"reworkRateAdd":0.05},"org":{"aiDependencyBase":45,"aiLiteracy":35,"documentation":30,"morale":60,"quality":45,"securityLevel":60,"seniorHp":90,"testCoverage":35},"startBudget":35,"taskCountMul":1.4} |
-| 3 | nightmare | {"aiDependencyPerTask":0.8,"bossTargetMul":1.3,"globalEffects":{"incidentRateMul":1.25,"reviewEfficiencyMul":0.85,"reworkRateAdd":0.1},"org":{"aiDependencyBase":42,"aiLiteracy":25,"documentation":15,"morale":55,"quality":35,"securityLevel":55,"seniorHp":80,"testCoverage":20},"startBudget":25,"taskCountMul":1} |
+| 0 | easy | {"aiDependencyPerTask":2.2,"bossTargetMul":0.85,"globalEffects":{"reviewEfficiencyMul":1.05,"reworkRateAdd":-0.04,"seniorHpCostMul":0.76},"org":{"aiDependencyBase":25,"aiLiteracy":60,"documentation":65,"morale":75,"quality":70,"securityLevel":70,"seniorHp":100,"testCoverage":70},"startBudget":60,"taskCountMul":1.85} |
+| 1 | hard | {"aiDependencyPerTask":2.2,"bossTargetMul":1.15,"globalEffects":{"reviewEfficiencyMul":0.92,"reworkRateAdd":0.05},"org":{"aiDependencyBase":45,"aiLiteracy":35,"documentation":30,"morale":60,"quality":45,"securityLevel":60,"seniorHp":90,"testCoverage":35},"startBudget":35,"taskCountMul":1.4} |
+| 2 | nightmare | {"aiDependencyPerTask":0.8,"bossTargetMul":1.3,"globalEffects":{"incidentRateMul":1.25,"reviewEfficiencyMul":0.85,"reworkRateAdd":0.1},"org":{"aiDependencyBase":42,"aiLiteracy":25,"documentation":15,"morale":55,"quality":35,"securityLevel":55,"seniorHp":80,"testCoverage":20},"startBudget":25,"taskCountMul":1} |
+| 3 | normal | {"aiDependencyPerTask":2.2,"bossTargetMul":1,"globalEffects":{"seniorHpCostMul":0.8},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":52,"morale":70,"quality":62,"securityLevel":60,"seniorHp":100,"testCoverage":58},"startBudget":45,"taskCountMul":1.65} |
 
 ## trials
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | low-focus | {"aiDependencyDriftPerSprint":null,"budgetMul":null,"effects":{},"focusDelta":-1,"frontierModelCostPerDependency":null,"scoreMul":1.15} |
-| 1 | half-budget | {"aiDependencyDriftPerSprint":null,"budgetMul":0.5,"effects":{},"focusDelta":null,"frontierModelCostPerDependency":null,"scoreMul":1.15} |
-| 2 | flammable | {"aiDependencyDriftPerSprint":null,"budgetMul":null,"effects":{"incidentRateMul":1.3},"focusDelta":null,"frontierModelCostPerDependency":null,"scoreMul":1.2} |
-| 3 | review-cap | {"aiDependencyDriftPerSprint":null,"budgetMul":null,"effects":{"reviewEfficiencyMul":0.85},"focusDelta":null,"frontierModelCostPerDependency":null,"scoreMul":1.2} |
-| 4 | frontier-dependency | {"aiDependencyDriftPerSprint":5,"budgetMul":null,"effects":{},"focusDelta":null,"frontierModelCostPerDependency":0.04,"scoreMul":1.25} |
+| 0 | flammable | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{"incidentRateMul":1.3},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.2} |
+| 1 | frontier-dependency | {"aiDependencyDriftPerSprint":5,"budgetMul":1,"effects":{},"focusDelta":0,"frontierModelCostPerDependency":0.04,"scoreMul":1.25} |
+| 2 | half-budget | {"aiDependencyDriftPerSprint":0,"budgetMul":0.5,"effects":{},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.15} |
+| 3 | low-focus | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{},"focusDelta":-1,"frontierModelCostPerDependency":0,"scoreMul":1.15} |
+| 4 | review-cap | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{"reviewEfficiencyMul":0.85},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.2} |
 
 ## bosses
 
@@ -117,43 +117,43 @@
 | Order | ID | Execution |
 | ---: | --- | --- |
 | 0 | aiArtisan | {"modifiers":{"aiReworkAdd":-0.06}} |
-| 1 | megaPrMaker | {"modifiers":{"implMul":1.25,"reviewLoadMul":0.9}} |
-| 2 | reviewDemon | {"modifiers":{"reviewMul":1.3,"staminaDrainMul":1.35}} |
-| 3 | docMaster | {"modifiers":{"docPerSprint":3}} |
-| 4 | juniorStar | {"modifiers":{"xpMul":1.6}} |
-| 5 | burnoutProne | {"modifiers":{"staminaMaxMul":0.72}} |
+| 1 | burnoutProne | {"modifiers":{"staminaMaxMul":0.72}} |
+| 2 | docMaster | {"modifiers":{"docPerSprint":3}} |
+| 3 | juniorStar | {"modifiers":{"xpMul":1.6}} |
+| 4 | megaPrMaker | {"modifiers":{"implMul":1.25,"reviewLoadMul":0.9}} |
+| 5 | reviewDemon | {"modifiers":{"reviewMul":1.3,"staminaDrainMul":1.35}} |
 
 ## evolution
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | dev-1 | {"branch":"dev","codingSlotBonus":null,"cost":1,"effects":{"codingSpeedMul":1.12,"securityAdd":-4},"focusBonus":null,"requires":null} |
-| 1 | dev-2 | {"branch":"dev","codingSlotBonus":1,"cost":3,"effects":{},"focusBonus":null,"requires":"dev-1"} |
-| 2 | dev-3 | {"branch":"dev","codingSlotBonus":null,"cost":10,"effects":{"routineSpeedMul":1.3,"securityAdd":-6},"focusBonus":null,"requires":"dev-2"} |
-| 3 | review-1 | {"branch":"review","codingSlotBonus":null,"cost":1,"effects":{"reviewCapacityMul":1.2},"focusBonus":null,"requires":null} |
-| 4 | review-2 | {"branch":"review","codingSlotBonus":null,"cost":3,"effects":{"reviewEfficiencyMul":1.18},"focusBonus":null,"requires":"review-1"} |
-| 5 | review-3 | {"branch":"review","codingSlotBonus":null,"cost":10,"effects":{"reviewCapacityMul":1.2},"focusBonus":null,"requires":"review-2"} |
-| 6 | quality-1 | {"branch":"quality","codingSlotBonus":null,"cost":1,"effects":{"securityAdd":6,"testCoverageAdd":12},"focusBonus":null,"requires":null} |
-| 7 | quality-2 | {"branch":"quality","codingSlotBonus":null,"cost":4,"effects":{"incidentRateMul":0.82,"securityAdd":8},"focusBonus":null,"requires":"quality-1"} |
-| 8 | quality-3 | {"branch":"quality","codingSlotBonus":null,"cost":14,"effects":{"qualityAdd":8,"reworkRateAdd":-0.1,"securityAdd":10},"focusBonus":null,"requires":"quality-2"} |
-| 9 | ai-1 | {"branch":"ai","codingSlotBonus":null,"cost":4,"effects":{"reworkRateAdd":-0.1},"focusBonus":null,"requires":null} |
-| 10 | ai-2 | {"branch":"ai","codingSlotBonus":null,"cost":9,"effects":{"aiLiteracyAdd":18,"infraCostMul":0.75},"focusBonus":null,"requires":"ai-1"} |
-| 11 | ai-3 | {"branch":"ai","codingSlotBonus":null,"cost":16,"effects":{"codingSpeedMul":1.2,"infraCostMul":0.7,"securityAdd":-6},"focusBonus":null,"requires":"ai-2"} |
-| 12 | culture-1 | {"branch":"culture","codingSlotBonus":null,"cost":4,"effects":{},"focusBonus":2,"requires":null} |
-| 13 | culture-2 | {"branch":"culture","codingSlotBonus":null,"cost":9,"effects":{"qualityAdd":10},"focusBonus":null,"requires":"culture-1"} |
-| 14 | culture-3 | {"branch":"culture","codingSlotBonus":null,"cost":14,"effects":{},"focusBonus":3,"requires":"culture-2"} |
+| 0 | ai-1 | {"codingSlotBonus":0,"cost":4,"effects":{"reworkRateAdd":-0.1},"focusBonus":0,"requires":null} |
+| 1 | ai-2 | {"codingSlotBonus":0,"cost":9,"effects":{"aiLiteracyAdd":18,"infraCostMul":0.75},"focusBonus":0,"requires":"ai-1"} |
+| 2 | ai-3 | {"codingSlotBonus":0,"cost":16,"effects":{"codingSpeedMul":1.2,"infraCostMul":0.7,"securityAdd":-6},"focusBonus":0,"requires":"ai-2"} |
+| 3 | culture-1 | {"codingSlotBonus":0,"cost":4,"effects":{},"focusBonus":2,"requires":null} |
+| 4 | culture-2 | {"codingSlotBonus":0,"cost":9,"effects":{"qualityAdd":10},"focusBonus":0,"requires":"culture-1"} |
+| 5 | culture-3 | {"codingSlotBonus":0,"cost":14,"effects":{},"focusBonus":3,"requires":"culture-2"} |
+| 6 | dev-1 | {"codingSlotBonus":0,"cost":1,"effects":{"codingSpeedMul":1.12,"securityAdd":-4},"focusBonus":0,"requires":null} |
+| 7 | dev-2 | {"codingSlotBonus":1,"cost":3,"effects":{},"focusBonus":0,"requires":"dev-1"} |
+| 8 | dev-3 | {"codingSlotBonus":0,"cost":10,"effects":{"routineSpeedMul":1.3,"securityAdd":-6},"focusBonus":0,"requires":"dev-2"} |
+| 9 | quality-1 | {"codingSlotBonus":0,"cost":1,"effects":{"securityAdd":6,"testCoverageAdd":12},"focusBonus":0,"requires":null} |
+| 10 | quality-2 | {"codingSlotBonus":0,"cost":4,"effects":{"incidentRateMul":0.82,"securityAdd":8},"focusBonus":0,"requires":"quality-1"} |
+| 11 | quality-3 | {"codingSlotBonus":0,"cost":14,"effects":{"qualityAdd":8,"reworkRateAdd":-0.1,"securityAdd":10},"focusBonus":0,"requires":"quality-2"} |
+| 12 | review-1 | {"codingSlotBonus":0,"cost":1,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":null} |
+| 13 | review-2 | {"codingSlotBonus":0,"cost":3,"effects":{"reviewEfficiencyMul":1.18},"focusBonus":0,"requires":"review-1"} |
+| 14 | review-3 | {"codingSlotBonus":0,"cost":10,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":"review-2"} |
 
 ## goalAdjustments
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | cut_scope | {"budgetDelta":0,"goalEffects":{"deliveryMul":0.8},"negotiator":"customers","nextBudgetCapDelta":null,"nextQuarterEffects":{},"orgEffects":{},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-15}} |
-| 1 | extend_deadline | {"budgetDelta":-10,"goalEffects":{"deliveryMul":0.9,"moraleAdd":5,"qualityAdd":5},"negotiator":"management","nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.1,"reworkRateAdd":-0.08,"seniorHpDelta":5},"orgEffects":{},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-12}} |
-| 2 | quality_pivot | {"budgetDelta":0,"goalEffects":{"deliveryMul":0.85,"incidentLimitAdd":3,"techDebtLimitAdd":15},"negotiator":"customers","nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.92,"incidentRateMul":0.75,"qualityAdd":4,"techDebtDelta":-4},"orgEffects":{"deliveryScoreMul":0.9,"techDebtDelta":-8},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-5}} |
-| 3 | request_budget | {"budgetDelta":20,"goalEffects":{"deliveryAdd":300},"negotiator":"management","nextBudgetCapDelta":-15,"nextQuarterEffects":{"codingSpeedMul":1.08,"reviewCapacityMul":1.15},"orgEffects":{},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-5}} |
-| 4 | pause_ai_rollout | {"budgetDelta":0,"goalEffects":{"aiAdoptionAdd":-15,"deliveryMul":0.92},"negotiator":"management","nextBudgetCapDelta":null,"nextQuarterEffects":{"incidentRateMul":0.7,"reworkRateAdd":-0.1,"seniorHpDelta":3},"orgEffects":{},"pauseAiDebuff":true,"reorgReset":false,"trustDelta":{"management":-8}} |
-| 5 | reorg_teams | {"budgetDelta":-5,"goalEffects":{"moraleAdd":-5},"negotiator":"team","nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.2,"seniorHpDelta":3,"techDebtDelta":-2},"orgEffects":{"moraleDelta":-10,"seniorHpDelta":25,"techDebtDelta":-5},"pauseAiDebuff":false,"reorgReset":true,"trustDelta":{"team":-20}} |
-| 6 | stakeholder_care | {"budgetDelta":-12,"goalEffects":{"deliveryAdd":80},"negotiator":"all","nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.97},"orgEffects":{},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":10,"management":12,"team":8}} |
+| 0 | cut_scope | {"goalEffects":{"deliveryMul":0.8},"nextBudgetCapDelta":null,"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-15}} |
+| 1 | extend_deadline | {"budgetDelta":-10,"goalEffects":{"deliveryMul":0.9,"moraleAdd":5,"qualityAdd":5},"nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.1,"reworkRateAdd":-0.08,"seniorHpDelta":5},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-12}} |
+| 2 | quality_pivot | {"goalEffects":{"deliveryMul":0.85,"incidentLimitAdd":3,"techDebtLimitAdd":15},"nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.92,"incidentRateMul":0.75,"qualityAdd":4,"techDebtDelta":-4},"orgEffects":{"deliveryScoreMul":0.9,"techDebtDelta":-8},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-5}} |
+| 3 | request_budget | {"budgetDelta":20,"goalEffects":{"deliveryAdd":300},"nextBudgetCapDelta":-15,"nextQuarterEffects":{"codingSpeedMul":1.08,"reviewCapacityMul":1.15},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-5}} |
+| 4 | pause_ai_rollout | {"goalEffects":{"aiAdoptionAdd":-15,"deliveryMul":0.92},"nextBudgetCapDelta":null,"nextQuarterEffects":{"incidentRateMul":0.7,"reworkRateAdd":-0.1,"seniorHpDelta":3},"pauseAiDebuff":true,"pauseAiDebuffMul":0.85,"reorgReset":false,"trustDelta":{"management":-8}} |
+| 5 | reorg_teams | {"budgetDelta":-5,"goalEffects":{"moraleAdd":-5},"nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.2,"seniorHpDelta":3,"techDebtDelta":-2},"orgEffects":{"moraleDelta":-10,"seniorHpDelta":25,"techDebtDelta":-5},"pauseAiDebuff":false,"reorgReset":true,"trustDelta":{"team":-20}} |
+| 6 | stakeholder_care | {"budgetDelta":-12,"goalEffects":{"deliveryAdd":80},"nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.97},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":10,"management":12,"team":8}} |
 
 ## levers
 
@@ -183,6 +183,12 @@
 ["アオイ","ハルキ","ミナ","ソウタ","リン","カエデ","ユウ","ナギ","ツバサ","ヒナタ","レン","サキ"]
 ```
 
+### defaultAiArchetypeId
+
+```json
+"starter-ai-junior"
+```
+
 ### starter
 
 | Order | ID | Execution |
@@ -195,25 +201,25 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | recruit-ai-prodigy | {"preferred":"coding","rank":"junior","stats":{"aiMastery":66,"implementation":42,"review":30},"traits":["aiArtisan","juniorStar"]} |
-| 1 | recruit-doc | {"preferred":"review","rank":"junior","stats":{"aiMastery":40,"implementation":40,"review":44},"traits":["docMaster"]} |
-| 2 | recruit-mega | {"preferred":"coding","rank":"middle","stats":{"aiMastery":44,"implementation":60,"review":28},"traits":["megaPrMaker"]} |
-| 3 | recruit-rookie | {"preferred":"coding","rank":"junior","stats":{"aiMastery":46,"implementation":38,"review":38},"traits":["juniorStar","burnoutProne"]} |
+| 0 | recruit-ai-prodigy | {"rank":"junior","stats":{"aiMastery":66,"implementation":42,"review":30},"traits":["aiArtisan","juniorStar"]} |
+| 1 | recruit-doc | {"rank":"junior","stats":{"aiMastery":40,"implementation":40,"review":44},"traits":["docMaster"]} |
+| 2 | recruit-mega | {"rank":"middle","stats":{"aiMastery":44,"implementation":60,"review":28},"traits":["megaPrMaker"]} |
+| 3 | recruit-rookie | {"rank":"junior","stats":{"aiMastery":46,"implementation":38,"review":38},"traits":["juniorStar","burnoutProne"]} |
 
 ## unlocks
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | unlock-claude-code | {"contentId":"claude-code","cost":25,"kind":"card","requires":null} |
-| 1 | unlock-devin | {"contentId":"devin","cost":50,"kind":"card","requires":"review-exceeded"} |
-| 2 | unlock-hire-senior | {"contentId":"hire-senior","cost":40,"kind":"card","requires":"review-survivor"} |
-| 3 | unlock-review-bot | {"contentId":"review-bot","cost":30,"kind":"card","requires":null} |
-| 4 | unlock-psych-safety | {"contentId":"psych-safety","cost":35,"kind":"relic","requires":null} |
-| 5 | unlock-doc-driven | {"contentId":"doc-driven","cost":30,"kind":"relic","requires":null} |
-| 6 | unlock-strong-ci | {"contentId":"strong-ci","cost":35,"kind":"relic","requires":null} |
-| 7 | unlock-flow-first | {"contentId":"flow-first","cost":30,"kind":"relic","requires":null} |
-| 8 | unlock-no-friday-deploy | {"contentId":"no-friday-deploy","cost":25,"kind":"relic","requires":null} |
-| 9 | unlock-budget-discipline | {"contentId":"budget-discipline","cost":30,"kind":"relic","requires":null} |
+| 0 | unlock-budget-discipline | {"contentId":"budget-discipline","cost":30,"kind":"relic","requires":null} |
+| 1 | unlock-claude-code | {"contentId":"claude-code","cost":25,"kind":"card","requires":null} |
+| 2 | unlock-devin | {"contentId":"devin","cost":50,"kind":"card","requires":"review-exceeded"} |
+| 3 | unlock-doc-driven | {"contentId":"doc-driven","cost":30,"kind":"relic","requires":null} |
+| 4 | unlock-flow-first | {"contentId":"flow-first","cost":30,"kind":"relic","requires":null} |
+| 5 | unlock-hire-senior | {"contentId":"hire-senior","cost":40,"kind":"card","requires":"review-survivor"} |
+| 6 | unlock-no-friday-deploy | {"contentId":"no-friday-deploy","cost":25,"kind":"relic","requires":null} |
+| 7 | unlock-psych-safety | {"contentId":"psych-safety","cost":35,"kind":"relic","requires":null} |
+| 8 | unlock-review-bot | {"contentId":"review-bot","cost":30,"kind":"card","requires":null} |
+| 9 | unlock-strong-ci | {"contentId":"strong-ci","cost":35,"kind":"relic","requires":null} |
 
 ## departments
 
@@ -228,31 +234,56 @@
 | Order | ID | Execution |
 | ---: | --- | --- |
 | 0 | interruptReview | {"stabilizesFlow":true} |
-| 1 | splitPr | {"stabilizesFlow":true} |
+| 1 | splitPr | {"stabilizesFlow":false} |
 | 2 | firefight | {"stabilizesFlow":true} |
 | 3 | assignTask | {"stabilizesFlow":true} |
 | 4 | aiThrottle | {"stabilizesFlow":true} |
 | 5 | pairReview | {"stabilizesFlow":true} |
 | 6 | overtime | {"stabilizesFlow":false} |
-| 7 | andon | {"stabilizesFlow":true} |
+| 7 | andon | {"stabilizesFlow":false} |
 
 ## startingScenarios
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | default | {"globalEffects":{},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 1 | copilot | {"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 2 | claude-code | {"globalEffects":{"codingSpeedMul":1.08,"reviewEfficiencyMul":0.94,"reworkRateAdd":-0.02},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiLiteracy":8,"quality":5,"securityLevel":-3},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 3 | devin | {"globalEffects":{"codingSpeedMul":1.1,"reworkRateAdd":0.03},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiDependencyBase":10,"documentation":-8,"securityLevel":-6},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 0 | claude-code | {"globalEffects":{"codingSpeedMul":1.08,"reviewEfficiencyMul":0.94,"reworkRateAdd":-0.02},"orgDelta":{"aiLiteracy":8,"quality":5,"securityLevel":-3},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 1 | copilot | {"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 2 | default | {"globalEffects":{},"orgDelta":{},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 3 | devin | {"globalEffects":{"codingSpeedMul":1.1,"reworkRateAdd":0.03},"orgDelta":{"aiDependencyBase":10,"documentation":-8,"securityLevel":-6},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 
 ## achievements
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | first-clear | {} |
-| 1 | no-damage | {} |
-| 2 | combo-master | {} |
-| 3 | all-bosses | {} |
-| 4 | nightmare-clear | {} |
-| 5 | review-exceeded | {} |
-| 6 | review-survivor | {} |
+| 0 | all-bosses | {"conditionKey":"allBosses"} |
+| 1 | combo-master | {"conditionKey":"comboMaster"} |
+| 2 | first-clear | {"conditionKey":"firstClear"} |
+| 3 | nightmare-clear | {"conditionKey":"nightmareClear"} |
+| 4 | no-damage | {"conditionKey":"noDamage"} |
+| 5 | review-exceeded | {"conditionKey":"reviewExceeded"} |
+| 6 | review-survivor | {"conditionKey":"reviewSurvivor"} |
+
+## difficultyOrder
+
+```json
+["easy","normal","hard","nightmare"]
+```
+
+## defaultScenarioId
+
+```json
+"default"
+```
+
+## daily
+
+### difficulty
+
+```json
+"normal"
+```
+
+### trials
+
+| Order | ID | Execution |
+| ---: | --- | --- |

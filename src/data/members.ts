@@ -34,6 +34,9 @@ export const MEMBER_NAMES: string[] = [
   'サキ',
 ];
 
+/** 初期ロスターで AI を配布する既定アーキタイプ。 */
+export const STARTER_DEFAULT_AI_ARCHETYPE_ID = 'starter-ai-junior';
+
 /**
  * 初期ロスターのアーキタイプ（バランス型コーダー2 + レビュアー1）。
  * 既定編成で破綻しない、やや上振れ程度の手触りにする。

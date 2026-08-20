@@ -119,10 +119,38 @@ const OUTCOME_IDENTITY: Record<string, unknown> = {
   preserveAboveLose: false,
 };
 
+const TRUST_IDENTITY: Record<string, unknown> = {
+  management: 0,
+  customers: 0,
+  team: 0,
+};
+
+const NEXT_SPRINT_IDENTITY: Record<string, unknown> = {
+  reviewLoadAdd: 0,
+  reworkRateAdd: 0,
+  taskCountMul: 1,
+  focusMaxAdd: 0,
+};
+
+function omitEmpty(value: Record<string, unknown>): Record<string, unknown> | undefined {
+  return Object.keys(value).length === 0 ? undefined : value;
+}
+
 function projectOutcome(outcome: EventOutcome): Record<string, unknown> {
   const projected = omitIdentity(outcome, OUTCOME_IDENTITY);
+  delete projected.trust;
+  delete projected.nextSprint;
+  delete projected.onRecruitFail;
+
+  const trust = omitEmpty(omitIdentity(outcome.trust, TRUST_IDENTITY));
+  if (trust) projected.trust = trust;
+
+  const nextSprint = omitEmpty(omitIdentity(outcome.nextSprint, NEXT_SPRINT_IDENTITY));
+  if (nextSprint) projected.nextSprint = nextSprint;
+
   if (outcome.onRecruitFail) {
-    projected.onRecruitFail = projectOutcome(outcome.onRecruitFail);
+    const nested = projectOutcome(outcome.onRecruitFail);
+    if (Object.keys(nested).length > 0) projected.onRecruitFail = nested;
   }
   return projected;
 }
@@ -250,7 +278,6 @@ export const CONTENT_CATALOG: ContentCatalog = {
       rank: definition.rank,
       stats: definedObject(definition.stats),
       traits: [...definition.traits],
-      preferred: definition.preferred,
     })),
   },
   unlocks: ordered(UNLOCK_DEFS, (definition) => ({
@@ -270,7 +297,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
       globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
     }),
   ),
-  achievements: ordered(ACHIEVEMENT_DEFS, () => ({})),
+  achievements: orderedById(ACHIEVEMENT_DEFS, () => ({})),
   difficultyOrder: [...DIFFICULTY_ORDER],
   defaultScenarioId: DEFAULT_SCENARIO,
   daily: {
@@ -396,6 +423,20 @@ export function validateContentCatalog(
   const trialIds = new Set(TRIAL_DEFS.map((definition) => definition.id));
   for (const trialId of catalog.daily.trials) {
     ensureReference(errors, 'daily.trials', trialId, trialIds);
+  }
+
+  const starterById = new Map(catalog.members.starter.map((entry) => [entry.id, entry]));
+  const defaultAi = starterById.get(catalog.members.defaultAiArchetypeId);
+  if (!defaultAi) {
+    errors.push({
+      category: 'members.defaultAiArchetypeId',
+      message: `未知の参照: ${catalog.members.defaultAiArchetypeId}`,
+    });
+  } else if ((defaultAi.execution as { preferred?: unknown }).preferred !== 'coding') {
+    errors.push({
+      category: 'members.defaultAiArchetypeId',
+      message: 'coding アーキタイプではありません',
+    });
   }
 
   return errors;

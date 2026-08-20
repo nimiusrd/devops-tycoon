@@ -201,10 +201,10 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | recruit-ai-prodigy | {"preferred":"coding","rank":"junior","stats":{"aiMastery":66,"implementation":42,"review":30},"traits":["aiArtisan","juniorStar"]} |
-| 1 | recruit-doc | {"preferred":"review","rank":"junior","stats":{"aiMastery":40,"implementation":40,"review":44},"traits":["docMaster"]} |
-| 2 | recruit-mega | {"preferred":"coding","rank":"middle","stats":{"aiMastery":44,"implementation":60,"review":28},"traits":["megaPrMaker"]} |
-| 3 | recruit-rookie | {"preferred":"coding","rank":"junior","stats":{"aiMastery":46,"implementation":38,"review":38},"traits":["juniorStar","burnoutProne"]} |
+| 0 | recruit-ai-prodigy | {"rank":"junior","stats":{"aiMastery":66,"implementation":42,"review":30},"traits":["aiArtisan","juniorStar"]} |
+| 1 | recruit-doc | {"rank":"junior","stats":{"aiMastery":40,"implementation":40,"review":44},"traits":["docMaster"]} |
+| 2 | recruit-mega | {"rank":"middle","stats":{"aiMastery":44,"implementation":60,"review":28},"traits":["megaPrMaker"]} |
+| 3 | recruit-rookie | {"rank":"junior","stats":{"aiMastery":46,"implementation":38,"review":38},"traits":["juniorStar","burnoutProne"]} |
 
 ## unlocks
 
@@ -255,11 +255,11 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | first-clear | {} |
-| 1 | no-damage | {} |
-| 2 | combo-master | {} |
-| 3 | all-bosses | {} |
-| 4 | nightmare-clear | {} |
+| 0 | all-bosses | {} |
+| 1 | combo-master | {} |
+| 2 | first-clear | {} |
+| 3 | nightmare-clear | {} |
+| 4 | no-damage | {} |
 | 5 | review-exceeded | {} |
 | 6 | review-survivor | {} |
 

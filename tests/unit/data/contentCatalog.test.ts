@@ -72,7 +72,10 @@ describe('CONTENT_CATALOG', () => {
     expectCatalogCategory(CONTENT_CATALOG.departments, ids(DEPARTMENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.actions, ids(ACTION_CONTENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.startingScenarios, [...SCENARIO_ORDER]);
-    expectCatalogCategory(CONTENT_CATALOG.achievements, ids(ACHIEVEMENT_DEFS));
+    expectCatalogCategory(
+      CONTENT_CATALOG.achievements,
+      [...ids(ACHIEVEMENT_DEFS)].sort(compareCanonicalStrings),
+    );
   });
 
   it('クロスリファレンスと定義間の整合性を検証できる', () => {
@@ -141,6 +144,9 @@ describe('CONTENT_CATALOG', () => {
             morale: 0,
             grantRecruit: false,
             preserveAboveLose: false,
+            trust: { management: 0, customers: 0, team: 0 },
+            nextSprint: { taskCountMul: 1, reviewLoadAdd: 0 },
+            onRecruitFail: {},
             ...choice.outcome,
           },
         })),
@@ -196,10 +202,16 @@ describe('CONTENT_CATALOG', () => {
     expect(CONTENT_CATALOG.difficultyOrder).toEqual(Object.keys(DIFFICULTY_DEFS));
   });
 
-  it('トレイトは定義配列順ではなく ID 順へ正規化する', () => {
+  it('トレイトと実績は定義配列順ではなく ID 順へ正規化する', () => {
     const traitIdsByCanonicalOrder = [...ids(TRAIT_DEFS)].sort(compareCanonicalStrings);
     expect(ids(TRAIT_DEFS)).not.toEqual(traitIdsByCanonicalOrder);
     expect(CONTENT_CATALOG.traits.map((entry) => entry.id)).toEqual(traitIdsByCanonicalOrder);
+
+    const achievementIdsByCanonicalOrder = [...ids(ACHIEVEMENT_DEFS)].sort(compareCanonicalStrings);
+    expect(ids(ACHIEVEMENT_DEFS)).not.toEqual(achievementIdsByCanonicalOrder);
+    expect(CONTENT_CATALOG.achievements.map((entry) => entry.id)).toEqual(
+      achievementIdsByCanonicalOrder,
+    );
   });
 
   it('進化の表示ブランチを除外し、デイリー参照 ID を検証する', () => {
@@ -223,6 +235,34 @@ describe('CONTENT_CATALOG', () => {
       category: 'daily.difficulty',
       message: '未知の参照: unknown-difficulty',
     });
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        members: { ...CONTENT_CATALOG.members, defaultAiArchetypeId: 'unknown-starter' },
+      }),
+    ).toContainEqual({
+      category: 'members.defaultAiArchetypeId',
+      message: '未知の参照: unknown-starter',
+    });
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        members: { ...CONTENT_CATALOG.members, defaultAiArchetypeId: 'starter-reviewer' },
+      }),
+    ).toContainEqual({
+      category: 'members.defaultAiArchetypeId',
+      message: 'coding アーキタイプではありません',
+    });
+    expect(
+      CONTENT_CATALOG.members.recruit.every(
+        (entry) => !Object.prototype.hasOwnProperty.call(entry.execution, 'preferred'),
+      ),
+    ).toBe(true);
+    expect(
+      CONTENT_CATALOG.members.starter.every((entry) =>
+        Object.prototype.hasOwnProperty.call(entry.execution, 'preferred'),
+      ),
+    ).toBe(true);
   });
 
   it('レリック枠の上書きは identity 値でも射影に残す', () => {

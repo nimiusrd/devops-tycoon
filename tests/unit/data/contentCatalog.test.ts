@@ -18,7 +18,7 @@ import { EVOLUTION_NODES } from '../../../src/data/evolution';
 import { EVENT_DEFS, getEvent } from '../../../src/data/events';
 import { GOAL_ADJUSTMENT_DEFS } from '../../../src/data/goalAdjustments';
 import { LEVER_DEFS } from '../../../src/data/levers';
-import { RECRUIT_ARCHETYPES, STARTER_ARCHETYPES } from '../../../src/data/members';
+import { MEMBER_NAMES, RECRUIT_ARCHETYPES, STARTER_ARCHETYPES } from '../../../src/data/members';
 import { RELIC_DEFS } from '../../../src/data/relics';
 import { SCENARIO_ORDER, SCENARIOS } from '../../../src/sim/scenarios';
 import { ALL_ACTION_IDS } from '../../../src/sim/actions';
@@ -52,6 +52,8 @@ describe('CONTENT_CATALOG', () => {
     expectCatalogCategory(CONTENT_CATALOG.evolution, ids(EVOLUTION_NODES));
     expectCatalogCategory(CONTENT_CATALOG.goalAdjustments, ids(GOAL_ADJUSTMENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.levers, ids(LEVER_DEFS));
+    expect(CONTENT_CATALOG.members.namePool).toEqual(MEMBER_NAMES);
+    expect(new Set(CONTENT_CATALOG.members.namePool).size).toBe(MEMBER_NAMES.length);
     expectCatalogCategory(CONTENT_CATALOG.members.starter, ids(STARTER_ARCHETYPES));
     expectCatalogCategory(CONTENT_CATALOG.members.recruit, ids(RECRUIT_ARCHETYPES));
     expectCatalogCategory(CONTENT_CATALOG.unlocks, ids(UNLOCK_DEFS));

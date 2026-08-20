@@ -9,13 +9,13 @@ import { ACTION_BALANCE_BY_ID } from './balance/actions';
 import type { ActionDef } from '../sim/actions';
 
 export interface ActionContentDef {
-  id: string;
-  label: string;
-  icon: string;
-  stabilizesFlow?: boolean;
-  description: string;
-  sideEffect: string;
-  tone?: 'danger' | 'heavy';
+  readonly id: string;
+  readonly label: string;
+  readonly icon: string;
+  readonly stabilizesFlow?: boolean;
+  readonly description: string;
+  readonly sideEffect: string;
+  readonly tone?: 'danger' | 'heavy';
 }
 
 /** アクションバーに並べる順（旧モック main-screen 由来）。 */
@@ -89,7 +89,7 @@ export const ACTION_CONTENT_DEFS = [
     description: 'タスク流入を止め、溜まったキューを捌き切る',
     sideEffect: '出荷機会を失う。士気を消費。薄いキューではシニアHPも消費。運用安定なし',
   },
-] satisfies readonly ActionContentDef[];
+] as const satisfies readonly ActionContentDef[];
 
 /** 表示用コンテンツへバランスレジストリの実行値を合成する。 */
 export const ACTION_DEFS: ActionDef[] = ACTION_CONTENT_DEFS.map((content) => {

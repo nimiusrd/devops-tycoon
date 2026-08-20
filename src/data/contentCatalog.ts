@@ -15,7 +15,7 @@ import { EVOLUTION_NODES } from './evolution';
 import { EVENT_DEFS, effectiveKind, type EventDef } from './events';
 import { GOAL_ADJUSTMENT_DEFS } from './goalAdjustments';
 import { LEVER_DEFS } from './levers';
-import { RECRUIT_ARCHETYPES, STARTER_ARCHETYPES } from './members';
+import { MEMBER_NAMES, RECRUIT_ARCHETYPES, STARTER_ARCHETYPES } from './members';
 import { RELIC_DEFS } from './relics';
 import { SCENARIO_ORDER, SCENARIOS } from '../sim/scenarios';
 import { TRAIT_DEFS } from './traits';
@@ -42,6 +42,8 @@ export interface ContentCatalog {
   goalAdjustments: readonly ContentCatalogEntry[];
   levers: readonly ContentCatalogEntry[];
   members: {
+    /** 表示名ではなく、createTeamRoster の抽選・重複回避に使う実行入力。 */
+    namePool: readonly string[];
     starter: readonly ContentCatalogEntry[];
     recruit: readonly ContentCatalogEntry[];
   };
@@ -159,6 +161,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     effect: definedObject(definition.effect),
   })),
   members: {
+    namePool: [...MEMBER_NAMES],
     starter: ordered(STARTER_ARCHETYPES, (definition) => ({
       rank: definition.rank,
       stats: definedObject(definition.stats),

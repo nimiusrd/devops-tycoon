@@ -471,7 +471,7 @@ for (const file of DOCS) {
 }
 
 const f8f9 = evaluateF8F9(loaded, { stale: false });
-if (f8f9.f8.verdict !== '未計測' || f8f9.f9.verdict !== '未計測') {
+if (f8f9.measurable) {
   for (const p of findingsF8F9Problems(findingsBody, f8f9)) {
     problems.push(`${DOCS[0]}: ${p}`);
   }

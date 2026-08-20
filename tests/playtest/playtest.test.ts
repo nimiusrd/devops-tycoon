@@ -206,7 +206,8 @@ describe('playtest matrix', () => {
             currentGeneration(),
             '実行中に src/ または tests/playtest/ が変更された。測定結果と世代が対応しないため書き出さない',
           ).toBe(generationBefore);
-          writePayload(runs, generationBefore, runs.length < expected);
+          // 件数だけ揃っても終端検証前は完了扱いにしない。完了は最後の writePayload(..., false) だけ。
+          writePayload(runs, generationBefore, true);
           console.log(`checkpoint ${runs.length}/${expected} (${d}/${p}) -> ${OUT}`);
         }
       }

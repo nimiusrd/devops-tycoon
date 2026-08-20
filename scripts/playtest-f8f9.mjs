@@ -7,7 +7,8 @@
  *
  * 計測可能（それ以外は未計測）:
  * - 既定コホートかつ世代一致
- * - 対象方針の敗北ランに反実仮想フィールド（`effectiveActionsInDanger`）がある
+ * - 対象方針の敗北ラン**すべて**に反実仮想フィールド（`effectiveActionsInDanger`）がある
+ * - F-8 のギャップ標本は、不完全かつ有効手なしと自然回復を除いた残りのラン
  */
 import { generationMismatch } from './playtest-generation.mjs';
 
@@ -68,16 +69,21 @@ export function loseSprintsOf(run) {
   return midSprintInstantLose ? run.sprintsPlayed : Math.max(0, run.sprintsPlayed - 1);
 }
 
+function hasLastEffectiveActions(run) {
+  const last = run.lastEffectiveActionsAt;
+  return !!(last && Array.isArray(last.actions) && last.actions.length > 0);
+}
+
 /**
- * F-8 の回復余地ギャップ。有効手が一度も無いランは Infinity（詰み確定）。
+ * F-8 の回復余地ギャップ。完全評価で有効手が一度も無いランは Infinity（詰み確定）。
  * 不完全評価でも `lastEffectiveActionsAt` があれば数値ギャップにする。
+ * 集計では不完全かつ有効手なし、および自然回復を標本から除外する。
  */
 export function recoveryGapOf(run) {
   const loseSprints = loseSprintsOf(run);
   if (loseSprints == null) return Number.POSITIVE_INFINITY;
-  const last = run.lastEffectiveActionsAt;
-  if (last && Array.isArray(last.actions) && last.actions.length > 0) {
-    return Math.max(0, loseSprints - last.sprintsPlayed);
+  if (hasLastEffectiveActions(run)) {
+    return Math.max(0, loseSprints - run.lastEffectiveActionsAt.sprintsPlayed);
   }
   return Number.POSITIVE_INFINITY;
 }
@@ -121,78 +127,28 @@ export function formatF9AcceptanceLine(result) {
   );
 }
 
-const F8_LINE_RE =
-  /^F-8 受入（RI-132）: 対象方針 .+ \/ p50≤(\d+)（実測 p50=(\S+) n=(\d+)） → (PASS|FAIL)$/;
-const F8_UNMEASURED_RE = /^F-8 受入（RI-132）: 未計測 — /;
-const F9_LINE_RE =
-  /^F-9 受入（RI-132）: 対象方針 .+ \/ 最低種類数≥(\d+) \/ 敗因n≥(\d+)（実測 種類数=(\d+) 資格敗因=(\S+)） → (PASS|FAIL)$/;
-const F9_UNMEASURED_RE = /^F-9 受入（RI-132）: 未計測 — /;
-
 /**
- * 所見本文の F-8 / F-9 合否行が実測と一致するか。計測時だけ呼び、未計測では使わない。
+ * 所見本文の F-8 / F-9 合否行が実測と一致するか。
+ * 判定可能な既定コホートでは、未計測側も固定行（閾値定数を含む）を照合する。
  */
 export function findingsF8F9Problems(body, result) {
   const problems = [];
-  const lines = body.split('\n').map((line) => line.trim());
+  const lines = body.split('\n').map((line) => line.replace(/^\s*[-*]\s+/, '').trim());
 
-  if (result.f8.verdict !== '未計測') {
-    const line = lines.find((l) => l.startsWith('F-8 受入（RI-132）:'));
+  const check = (label, expected) => {
+    const prefix = `${label} 受入（RI-132）:`;
+    const line = lines.find((l) => l.startsWith(prefix));
     if (!line) {
-      problems.push('F-8 受入（RI-132）の合否行が無い');
-    } else if (F8_UNMEASURED_RE.test(line)) {
-      problems.push(`F-8 受入（RI-132）が未計測と書かれているが実測は ${result.f8.verdict}`);
-    } else {
-      const m = line.match(F8_LINE_RE);
-      if (!m) {
-        problems.push(`F-8 受入（RI-132）の合否行が読めない: ${line}`);
-      } else {
-        const writtenP50 = m[2];
-        const writtenN = Number(m[3]);
-        const writtenVerdict = m[4];
-        const actualP50 = formatGap(result.f8.p50);
-        if (writtenP50 !== actualP50) {
-          problems.push(`F-8 p50 が ${writtenP50} と書かれているが実測は ${actualP50}`);
-        }
-        if (writtenN !== result.f8.n) {
-          problems.push(`F-8 n が ${writtenN} と書かれているが実測は ${result.f8.n}`);
-        }
-        if (writtenVerdict !== result.f8.verdict) {
-          problems.push(`F-8 合否が ${writtenVerdict} と書かれているが実測は ${result.f8.verdict}`);
-        }
-      }
+      problems.push(`${label} 受入（RI-132）の合否行が無い`);
+      return;
     }
-  }
-
-  if (result.f9.verdict !== '未計測') {
-    const line = lines.find((l) => l.startsWith('F-9 受入（RI-132）:'));
-    if (!line) {
-      problems.push('F-9 受入（RI-132）の合否行が無い');
-    } else if (F9_UNMEASURED_RE.test(line)) {
-      problems.push(`F-9 受入（RI-132）が未計測と書かれているが実測は ${result.f9.verdict}`);
-    } else {
-      const m = line.match(F9_LINE_RE);
-      if (!m) {
-        problems.push(`F-9 受入（RI-132）の合否行が読めない: ${line}`);
-      } else {
-        const writtenCount = Number(m[3]);
-        const writtenReasons = m[4];
-        const writtenVerdict = m[5];
-        const actualReasons = result.f9.qualifyingReasons.join(',') || '—';
-        if (writtenCount !== result.f9.distinctEffectiveSetCount) {
-          problems.push(
-            `F-9 種類数が ${writtenCount} と書かれているが実測は ${result.f9.distinctEffectiveSetCount}`,
-          );
-        }
-        if (writtenReasons !== actualReasons) {
-          problems.push(`F-9 資格敗因が ${writtenReasons} と書かれているが実測は ${actualReasons}`);
-        }
-        if (writtenVerdict !== result.f9.verdict) {
-          problems.push(`F-9 合否が ${writtenVerdict} と書かれているが実測は ${result.f9.verdict}`);
-        }
-      }
+    if (line !== expected) {
+      problems.push(`${label} 受入行が実測と違う: 文書「${line}」 / 期待「${expected}」`);
     }
-  }
+  };
 
+  check('F-8', formatF8AcceptanceLine(result));
+  check('F-9', formatF9AcceptanceLine(result));
   return problems;
 }
 
@@ -240,16 +196,45 @@ export function evaluateF8F9(loaded, options = {}) {
   if (cfLost.length === 0) {
     return unmeasured('反実仮想評価が無い');
   }
+  if (cfLost.length !== targetLost.length) {
+    return unmeasured(
+      `反実仮想評価が対象敗北の一部にしか無い（${cfLost.length}/${targetLost.length}）`,
+    );
+  }
 
-  const gaps = cfLost.map(recoveryGapOf);
-  const p50 = quantile(gaps, F8_GAP_QUANTILE);
-  const f8Pass = Number.isFinite(p50) && p50 <= F8_MAX_GAP_P50;
-  const f8 = {
-    verdict: f8Pass ? 'PASS' : 'FAIL',
-    reason: null,
-    p50,
-    n: gaps.length,
-  };
+  const gaps = [];
+  let recoveredOnly = 0;
+  let incompleteEmpty = 0;
+  for (const r of cfLost) {
+    if (r.counterfactualBaselineRecovered) {
+      recoveredOnly += 1;
+      continue;
+    }
+    if (r.counterfactualIncomplete && !hasLastEffectiveActions(r)) {
+      incompleteEmpty += 1;
+      continue;
+    }
+    gaps.push(recoveryGapOf(r));
+  }
+
+  let f8;
+  if (gaps.length === 0) {
+    let reason = '不完全評価の空結果と自然回復を除くとギャップ標本が無い';
+    if (incompleteEmpty === cfLost.length) {
+      reason = '不完全評価で有効手を確認できない';
+    } else if (recoveredOnly === cfLost.length) {
+      reason = '自然回復のみで詰み標本が無い';
+    }
+    f8 = { verdict: '未計測', reason, p50: null, n: 0 };
+  } else {
+    const p50 = quantile(gaps, F8_GAP_QUANTILE);
+    f8 = {
+      verdict: Number.isFinite(p50) && p50 <= F8_MAX_GAP_P50 ? 'PASS' : 'FAIL',
+      reason: null,
+      p50,
+      n: gaps.length,
+    };
+  }
 
   const complete = cfLost.filter((r) => !r.counterfactualIncomplete);
   const byReason = new Map();

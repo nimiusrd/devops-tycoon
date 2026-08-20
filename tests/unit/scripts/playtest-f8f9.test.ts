@@ -137,6 +137,88 @@ describe('playtest-f8f9', () => {
     expect(fail.f8.p50).toBe(Number.POSITIVE_INFINITY);
   });
 
+  it('対象敗北の一部だけ CF があるときは未計測', () => {
+    const withCf = lostRun();
+    const withoutCf = { ...lostRun({ seed: 'pt-2', policy: 'skilledNoHire' }) };
+    delete (withoutCf as { effectiveActionsInDanger?: unknown }).effectiveActionsInDanger;
+    delete (withoutCf as { lastEffectiveActionsAt?: unknown }).lastEffectiveActionsAt;
+    const result = evaluateF8F9(loaded([withCf, withoutCf]), { stale: false });
+    expect(result.measurable).toBe(false);
+    expect(result.f8.verdict).toBe('未計測');
+    expect(result.f8.reason).toContain('一部にしか無い');
+  });
+
+  it('不完全かつ有効手なしは F-8 の Infinity に入れない', () => {
+    const result = evaluateF8F9(
+      loaded([
+        lostRun({
+          counterfactualIncomplete: true,
+          lastEffectiveActionsAt: { sprintsPlayed: 3, actions: ['andon'] },
+          effectiveActionsInDanger: [],
+        }),
+        lostRun({
+          policy: 'skilledNoHire',
+          seed: 'pt-2',
+          loseReason: 'moraleCollapse',
+          counterfactualIncomplete: true,
+          lastEffectiveActionsAt: undefined,
+          effectiveActionsInDanger: [],
+        }),
+      ]),
+      { stale: false },
+    );
+    expect(result.f8.verdict).toBe('PASS');
+    expect(result.f8.n).toBe(1);
+    expect(result.f8.p50).toBe(0);
+  });
+
+  it('自然回復は F-8 の Infinity に入れない', () => {
+    const mixed = evaluateF8F9(
+      loaded([
+        lostRun(),
+        lostRun({
+          policy: 'skilledNoHire',
+          seed: 'pt-2',
+          lastEffectiveActionsAt: undefined,
+          effectiveActionsInDanger: [],
+          counterfactualBaselineRecovered: true,
+        }),
+      ]),
+      { stale: false },
+    );
+    expect(mixed.f8.verdict).toBe('PASS');
+    expect(mixed.f8.n).toBe(1);
+
+    const onlyRecovered = evaluateF8F9(
+      loaded([
+        lostRun({
+          lastEffectiveActionsAt: undefined,
+          effectiveActionsInDanger: [],
+          counterfactualBaselineRecovered: true,
+        }),
+      ]),
+      { stale: false },
+    );
+    expect(onlyRecovered.f8.verdict).toBe('未計測');
+    expect(onlyRecovered.f8.reason).toContain('自然回復');
+  });
+
+  it('不完全評価の空結果だけなら F-8 は未計測', () => {
+    const result = evaluateF8F9(
+      loaded([
+        lostRun({
+          counterfactualIncomplete: true,
+          lastEffectiveActionsAt: undefined,
+          effectiveActionsInDanger: [],
+        }),
+      ]),
+      { stale: false },
+    );
+    expect(result.f8.verdict).toBe('未計測');
+    expect(result.f8.reason).toContain('不完全評価');
+    expect(result.f9.verdict).toBe('未計測');
+  });
+
   it('F-9 は資格敗因の集合差が最低種類数以上なら PASS', () => {
     const passRuns = [
       ...many(F9_MIN_REASON_N, 'seniorBurnout', ['firefight'], 'naive', 0),
@@ -197,12 +279,37 @@ describe('playtest-f8f9', () => {
       findingsF8F9Problems(
         'F-8 受入（RI-132）: 未計測 — 反実仮想評価が無い\nF-9 受入（RI-132）: 未計測 — 反実仮想評価が無い\n',
         result,
-      ),
-    ).toEqual([
-      `F-8 受入（RI-132）が未計測と書かれているが実測は ${result.f8.verdict}`,
-      `F-9 受入（RI-132）が未計測と書かれているが実測は ${result.f9.verdict}`,
-    ]);
+      ).join('\n'),
+    ).toMatch(/実測と違う/);
     expect(findingsF8F9Problems('', result)[0]).toMatch(/F-8 受入/);
+    expect(
+      findingsF8F9Problems(
+        `${formatF8AcceptanceLine(result).replace(`p50≤${F8_MAX_GAP_P50}`, 'p50≤99')}\n${formatF9AcceptanceLine(result)}\n`,
+        result,
+      ).join('\n'),
+    ).toContain(`p50≤${F8_MAX_GAP_P50}`);
+  });
+
+  it('F-9 が未計測でも所見の固定行を照合する', () => {
+    const runs = many(F9_MIN_REASON_N, 'seniorBurnout', ['firefight']);
+    const result = evaluateF8F9(loaded(runs), { stale: false });
+    expect(result.f8.verdict).toBe('PASS');
+    expect(result.f9.verdict).toBe('未計測');
+    expect(findingsF8F9Problems(formatF8AcceptanceLine(result), result)).toEqual([
+      'F-9 受入（RI-132）の合否行が無い',
+    ]);
+    expect(
+      findingsF8F9Problems(
+        `${formatF8AcceptanceLine(result)}\n${formatF9AcceptanceLine(result)}\n`,
+        result,
+      ),
+    ).toEqual([]);
+    expect(
+      findingsF8F9Problems(
+        `${formatF8AcceptanceLine(result)}\nF-9 受入（RI-132）: 対象方針 naive / skilledNoHire / onlyFirefight / noInterventionCtl / 最低種類数≥${F9_MIN_DISTINCT_SETS} / 敗因n≥${F9_MIN_REASON_N}（実測 種類数=2 資格敗因=seniorBurnout,moraleCollapse） → PASS\n`,
+        result,
+      ).join('\n'),
+    ).toMatch(/実測と違う/);
   });
 });
 

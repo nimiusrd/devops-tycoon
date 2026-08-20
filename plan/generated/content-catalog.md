@@ -151,7 +151,7 @@
 | 1 | extend_deadline | {"budgetDelta":-10,"goalEffects":{"deliveryMul":0.9,"moraleAdd":5,"qualityAdd":5},"nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.1,"reworkRateAdd":-0.08,"seniorHpDelta":5},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-12}} |
 | 2 | quality_pivot | {"goalEffects":{"deliveryMul":0.85,"incidentLimitAdd":3,"techDebtLimitAdd":15},"nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.92,"incidentRateMul":0.75,"qualityAdd":4,"techDebtDelta":-4},"orgEffects":{"deliveryScoreMul":0.9,"techDebtDelta":-8},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-5}} |
 | 3 | request_budget | {"budgetDelta":20,"goalEffects":{"deliveryAdd":300},"nextBudgetCapDelta":-15,"nextQuarterEffects":{"codingSpeedMul":1.08,"reviewCapacityMul":1.15},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-5}} |
-| 4 | pause_ai_rollout | {"goalEffects":{"aiAdoptionAdd":-15,"deliveryMul":0.92},"nextBudgetCapDelta":null,"nextQuarterEffects":{"incidentRateMul":0.7,"reworkRateAdd":-0.1,"seniorHpDelta":3},"pauseAiDebuff":true,"reorgReset":false,"trustDelta":{"management":-8}} |
+| 4 | pause_ai_rollout | {"goalEffects":{"aiAdoptionAdd":-15,"deliveryMul":0.92},"nextBudgetCapDelta":null,"nextQuarterEffects":{"incidentRateMul":0.7,"reworkRateAdd":-0.1,"seniorHpDelta":3},"pauseAiDebuff":true,"pauseAiDebuffMul":0.85,"reorgReset":false,"trustDelta":{"management":-8}} |
 | 5 | reorg_teams | {"budgetDelta":-5,"goalEffects":{"moraleAdd":-5},"nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.2,"seniorHpDelta":3,"techDebtDelta":-2},"orgEffects":{"moraleDelta":-10,"seniorHpDelta":25,"techDebtDelta":-5},"pauseAiDebuff":false,"reorgReset":true,"trustDelta":{"team":-20}} |
 | 6 | stakeholder_care | {"budgetDelta":-12,"goalEffects":{"deliveryAdd":80},"nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.97},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":10,"management":12,"team":8}} |
 
@@ -246,10 +246,10 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | claude-code | {"globalEffects":{"codingSpeedMul":1.08,"reviewEfficiencyMul":0.94,"reworkRateAdd":-0.02},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiLiteracy":8,"quality":5,"securityLevel":-3},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 1 | copilot | {"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 2 | default | {"globalEffects":{},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 3 | devin | {"globalEffects":{"codingSpeedMul":1.1,"reworkRateAdd":0.03},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiDependencyBase":10,"documentation":-8,"securityLevel":-6},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 0 | claude-code | {"globalEffects":{"codingSpeedMul":1.08,"reviewEfficiencyMul":0.94,"reworkRateAdd":-0.02},"orgDelta":{"aiLiteracy":8,"quality":5,"securityLevel":-3},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 1 | copilot | {"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 2 | default | {"globalEffects":{},"orgDelta":{},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 3 | devin | {"globalEffects":{"codingSpeedMul":1.1,"reworkRateAdd":0.03},"orgDelta":{"aiDependencyBase":10,"documentation":-8,"securityLevel":-6},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 
 ## achievements
 

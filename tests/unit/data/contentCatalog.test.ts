@@ -21,7 +21,7 @@ import { DEPARTMENT_DEFS } from '../../../src/data/departments';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS } from '../../../src/data/difficulties';
 import { EVOLUTION_NODES } from '../../../src/data/evolution';
 import { EVENT_DEFS, getEvent } from '../../../src/data/events';
-import { GOAL_ADJUSTMENT_DEFS } from '../../../src/data/goalAdjustments';
+import { GOAL_ADJUSTMENT_DEFS, PAUSE_AI_DEBUFF_MUL } from '../../../src/data/goalAdjustments';
 import { LEVER_DEFS } from '../../../src/data/levers';
 import {
   MEMBER_NAMES,
@@ -361,6 +361,66 @@ describe('CONTENT_CATALOG', () => {
         budgetDelta: adjustment.budgetDelta,
       }),
     ).toEqual(projectGoalAdjustment(adjustment));
+    expect(
+      projectGoalAdjustment({
+        ...adjustment,
+        pauseAiDebuff: true,
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        pauseAiDebuff: true,
+        pauseAiDebuffMul: PAUSE_AI_DEBUFF_MUL,
+      }),
+    );
+    expect(
+      projectGoalAdjustment({
+        ...adjustment,
+        pauseAiDebuff: false,
+      }),
+    ).not.toHaveProperty('pauseAiDebuffMul');
+  });
+
+  it('開始シナリオの未使用 org を除外し、難易度順を完全順列として検証する', () => {
+    expect(
+      CONTENT_CATALOG.startingScenarios.every(
+        (entry) => !Object.prototype.hasOwnProperty.call(entry.execution, 'org'),
+      ),
+    ).toBe(true);
+    expect(
+      CONTENT_CATALOG.goalAdjustments.find((entry) => entry.id === 'pause_ai_rollout')?.execution,
+    ).toEqual(
+      expect.objectContaining({
+        pauseAiDebuff: true,
+        pauseAiDebuffMul: PAUSE_AI_DEBUFF_MUL,
+      }),
+    );
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        difficultyOrder: CONTENT_CATALOG.difficultyOrder.slice(1),
+      }),
+    ).toContainEqual({
+      category: 'difficultyOrder',
+      message: '難易度 ID の完全な順列ではありません',
+    });
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        difficultyOrder: [...CONTENT_CATALOG.difficultyOrder, CONTENT_CATALOG.difficultyOrder[0]!],
+      }),
+    ).toContainEqual({
+      category: 'difficultyOrder',
+      message: '難易度 ID の完全な順列ではありません',
+    });
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        difficultyOrder: ['unknown-difficulty', ...CONTENT_CATALOG.difficultyOrder.slice(1)],
+      }),
+    ).toContainEqual({
+      category: 'difficultyOrder',
+      message: '難易度 ID の完全な順列ではありません',
+    });
   });
 
   it('レバー・シナリオ差分・ボス下限のゼロは未指定と同じ射影になる', () => {

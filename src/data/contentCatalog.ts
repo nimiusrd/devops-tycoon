@@ -21,7 +21,11 @@ import {
 } from './difficulties';
 import { EVOLUTION_NODES } from './evolution';
 import { EVENT_DEFS, effectiveKind, type EventDef, type EventOutcome } from './events';
-import { GOAL_ADJUSTMENT_DEFS, type GoalAdjustmentDef } from './goalAdjustments';
+import {
+  GOAL_ADJUSTMENT_DEFS,
+  PAUSE_AI_DEBUFF_MUL,
+  type GoalAdjustmentDef,
+} from './goalAdjustments';
 import { LEVER_DEFS } from './levers';
 import {
   MEMBER_NAMES,
@@ -249,10 +253,15 @@ function assignProjected(
 
 export function projectGoalAdjustment(definition: GoalAdjustmentDef): unknown {
   const projected: Record<string, unknown> = {
-    pauseAiDebuff: definition.pauseAiDebuff ?? false,
     reorgReset: definition.reorgReset ?? false,
     nextBudgetCapDelta: definition.nextBudgetCapDelta ?? null,
   };
+  if (definition.pauseAiDebuff) {
+    projected.pauseAiDebuff = true;
+    projected.pauseAiDebuffMul = PAUSE_AI_DEBUFF_MUL;
+  } else {
+    projected.pauseAiDebuff = false;
+  }
   if (definition.budgetDelta !== 0) projected.budgetDelta = definition.budgetDelta;
   assignProjected(
     projected,
@@ -401,7 +410,6 @@ export const CONTENT_CATALOG: ContentCatalog = {
   departments: ordered(DEPARTMENT_DEFS, projectDepartment),
   actions: ordered(ACTION_CONTENT_DEFS, projectAction),
   startingScenarios: orderedById(Object.values(SCENARIOS), (definition) => ({
-    org: definedObject(definition.org),
     sprint: definedObject(definition.sprint),
     orgDelta: projectScenarioOrgDelta(definition.orgDelta),
     globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
@@ -539,6 +547,16 @@ export function validateContentCatalog(
   }
 
   const difficultyIdSet = new Set(difficultyKeys);
+  if (
+    catalog.difficultyOrder.length !== difficultyKeys.length ||
+    new Set(catalog.difficultyOrder).size !== difficultyKeys.length ||
+    catalog.difficultyOrder.some((id) => !difficultyIdSet.has(id))
+  ) {
+    errors.push({
+      category: 'difficultyOrder',
+      message: '難易度 ID の完全な順列ではありません',
+    });
+  }
   if (!difficultyIdSet.has(catalog.daily.difficulty)) {
     errors.push({
       category: 'daily.difficulty',

@@ -6,7 +6,11 @@
  */
 import { getBoss, type BossDef } from '../../data/bosses';
 import { OUTCOME_BALANCE } from '../../data/balance';
-import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
+import {
+  allGoalAdjustmentIds,
+  getGoalAdjustment,
+  PAUSE_AI_DEBUFF_MUL,
+} from '../../data/goalAdjustments';
 import type { GoalAdjustmentDef, GoalNextQuarterEffects } from '../../data/goalAdjustments';
 import { deriveTeamCapacities } from '../orgscale/teamState';
 import type { TeamRunState } from '../orgscale/types';
@@ -30,8 +34,7 @@ import { clamp } from '../clamp';
 export const REORG_RESET_SENIOR_HP = OUTCOME_BALANCE.reorgSeniorHpRecovery.value;
 export const REORG_RESET_TECH_DEBT = -OUTCOME_BALANCE.reorgTechDebtRecovery.value;
 
-/** pauseAiDebuff 適用時の出荷速度倍率（次四半期）。 */
-export const PAUSE_AI_DEBUFF_MUL = 0.85;
+export { PAUSE_AI_DEBUFF_MUL };
 
 /**
  * 次四半期に適用する物理効果を解決する（RI-83）。

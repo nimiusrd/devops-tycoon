@@ -5,18 +5,22 @@
  * 1x 基準でスプリント 60〜120 秒帯（最短 30 秒以上）を狙う。
  * 四半期・ラン・介入回数の帯定数もここに置き、統計テストと共有する。
  */
+import { PACING_BALANCE } from '../data/balance/pacing';
+
+const millisecondsToSeconds = (milliseconds: number): number => milliseconds / 1000;
+const millisecondsToMinutes = (milliseconds: number): number => milliseconds / 60_000;
 
 /** 自動進行のポーリング間隔（ms）。UI 同期とアキュムレータ更新に使う。 */
 export const FRAME_MS = 50;
 
 /** 1 tick に対応するシミュレーション時間（ms）。`FIXED_STEP_MS` と一致させる。 */
-export const SIM_STEP_MS = 100;
+export const SIM_STEP_MS = PACING_BALANCE.fixedStepMs.value;
 
 /**
  * 1x 再生時の実時間/tick（ms）。
  * RI-75: 難易度別タスク量と組み合わせ、F-4 代表方針の p50 を §3.1 帯へ寄せる。
  */
-export const MS_PER_TICK_1X = 780;
+export const MS_PER_TICK_1X = PACING_BALANCE.msPerTick1x.value;
 
 /** プレイヤー向け再生速度。0=一時停止、1=1x、2=2x。 */
 export type PlaybackSpeed = 0 | 1 | 2;
@@ -46,30 +50,50 @@ export function accumulateWallTime(
 }
 
 /** §3.1: 通常スプリントの 1x 実時間レンジ（秒）。 */
-export const SPRINT_WALL_SEC = { minTypical: 60, maxTypical: 120, absoluteMin: 30 } as const;
+export const SPRINT_WALL_SEC = {
+  minTypical: millisecondsToSeconds(PACING_BALANCE.sprintWallMinTypicalMs.value),
+  maxTypical: millisecondsToSeconds(PACING_BALANCE.sprintWallMaxTypicalMs.value),
+  absoluteMin: millisecondsToSeconds(PACING_BALANCE.sprintWallAbsoluteMinMs.value),
+} as const;
 
 /** §3.1: ボススプリントの 1x 実時間レンジ（秒）。 */
-export const BOSS_WALL_SEC = { min: 90, max: 180 } as const;
+export const BOSS_WALL_SEC = {
+  min: millisecondsToSeconds(PACING_BALANCE.bossWallMinMs.value),
+  max: millisecondsToSeconds(PACING_BALANCE.bossWallMaxMs.value),
+} as const;
 
 /**
  * §3.1: スプリント間（リザルト→ドラフト→進化→ビート）の標準操作秒。
  * プレイヤー任意（目安 30〜60）のため、回帰検知では帯内の標準操作 30 秒を固定加算する。
  */
-export const BETWEEN_SPRINT_WALL_SEC = 30;
+export const BETWEEN_SPRINT_WALL_SEC = millisecondsToSeconds(
+  PACING_BALANCE.betweenSprintWallMs.value,
+);
 
 /**
  * §3.1: 四半期レビューの標準操作秒（意思決定の目安。回帰検知用モデル）。
  */
-export const QUARTER_REVIEW_WALL_SEC = 45;
+export const QUARTER_REVIEW_WALL_SEC = millisecondsToSeconds(
+  PACING_BALANCE.quarterReviewWallMs.value,
+);
 
 /** §3.1: 1 四半期（スプリント 6 本＋レビュー）の 1x 実時間レンジ（分）。 */
-export const QUARTER_WALL_MIN = { minMin: 10, maxMin: 15 } as const;
+export const QUARTER_WALL_MIN = {
+  minMin: millisecondsToMinutes(PACING_BALANCE.quarterWallMinMs.value),
+  maxMin: millisecondsToMinutes(PACING_BALANCE.quarterWallMaxMs.value),
+} as const;
 
 /** §3.1: 1 ラン（1〜複数四半期）の 1x 実時間レンジ（分）。 */
-export const RUN_WALL_MIN = { minMin: 15, maxMin: 45 } as const;
+export const RUN_WALL_MIN = {
+  minMin: millisecondsToMinutes(PACING_BALANCE.runWallMinMs.value),
+  maxMin: millisecondsToMinutes(PACING_BALANCE.runWallMaxMs.value),
+} as const;
 
 /** §3.1: 1 スプリントあたり介入回数の期待レンジ。 */
-export const INTERVENTION_PER_SPRINT = { min: 3, max: 8 } as const;
+export const INTERVENTION_PER_SPRINT = {
+  min: PACING_BALANCE.interventionPerSprintMin.value,
+  max: PACING_BALANCE.interventionPerSprintMax.value,
+} as const;
 
 /**
  * 指定再生速度での実時間/tick（ms）。

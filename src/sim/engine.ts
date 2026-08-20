@@ -5,6 +5,7 @@
  * 同一 seed・同一の step / dispatch 列なら常に同一状態へ収束する。
  * スプリント駆動、介入、カードのドラフトとデッキ更新を担う。
  */
+import { PACING_BALANCE } from '../data/balance/pacing';
 import { applyAction } from './actions';
 import { dealHand, drawDraft, playCardFromHand } from './cards';
 import { IDENTITY_CARD_EFFECTS } from './model';
@@ -28,7 +29,7 @@ import type {
 } from './types';
 
 /** 固定タイムステップ（ms）。描画フレームレートから独立。 */
-export const FIXED_STEP_MS = 100;
+export const FIXED_STEP_MS = PACING_BALANCE.fixedStepMs.value;
 
 export interface EngineInit {
   seed?: string;

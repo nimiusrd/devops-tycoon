@@ -35,23 +35,38 @@ const cohort = Array.isArray(loaded) ? null : loaded.cohort;
 /**
  * 測定後にコードが変わっていたら**先頭で警告する**。
  *
- * このレポートは `src/ui/sprintTempo.ts` や `src/data/evolution.ts` の定数を実行時に読み直すので、
+ * このレポートは `src/data/balance/pacing.ts` や `src/data/evolution.ts` の定数を実行時に読み直すので、
  * 旧ランと新定数を混ぜた集計になりうる。`playtest:check` と違って集計自体は続ける
  *（過去の出力を読み直す用途があるため）が、値をそのまま所見へ写さないよう明示する。
  */
 const STALE = generationMismatch(loaded);
 
 /**
- * テンポ換算は実装（`src/ui/sprintTempo.ts`）の定数から読む。
+ * テンポ換算は Vite SSR で実行時の `PACING_BALANCE` から読む。
  * 複製するとゲーム側のテンポ調整に追随できず、秒換算と 30/60秒 判定だけが旧値のまま残る。
  */
-function readMsPerTick1x() {
-  const src = readFileSync('src/ui/sprintTempo.ts', 'utf8');
-  const m = src.match(/export const MS_PER_TICK_1X\s*=\s*(\d+)/);
-  if (!m) throw new Error('src/ui/sprintTempo.ts から MS_PER_TICK_1X を読み取れない');
-  return Number(m[1]);
+async function readPacingBalance() {
+  const server = await createServer({ appType: 'custom' });
+  try {
+    const { PACING_BALANCE } = await server.ssrLoadModule('/src/data/balance/index.ts');
+    const values = {
+      msPerTick1x: PACING_BALANCE.msPerTick1x.value,
+      sprintWallAbsoluteMinMs: PACING_BALANCE.sprintWallAbsoluteMinMs.value,
+      sprintWallMinTypicalMs: PACING_BALANCE.sprintWallMinTypicalMs.value,
+      sprintWallMaxTypicalMs: PACING_BALANCE.sprintWallMaxTypicalMs.value,
+      bossWallMinMs: PACING_BALANCE.bossWallMinMs.value,
+      bossWallMaxMs: PACING_BALANCE.bossWallMaxMs.value,
+    };
+    if (Object.values(values).some((value) => !Number.isFinite(value) || value < 0)) {
+      throw new Error('PACING_BALANCE からペーシング定数を読み取れない');
+    }
+    return values;
+  } finally {
+    await server.close();
+  }
 }
-const MS_PER_TICK_1X = readMsPerTick1x();
+const PACING = await readPacingBalance();
+const MS_PER_TICK_1X = PACING.msPerTick1x;
 const sec = (ticks) => (ticks * MS_PER_TICK_1X) / 1000;
 
 /**
@@ -264,32 +279,25 @@ console.log(`\n## F-4 スプリント長（1x 換算・秒）\n`);
 // SPEC 第3.1: 通常 60〜120秒（絶対下限30秒）、ボス 90〜180秒。
 // elite（高負荷）は「スプリント1本」の目標が同じく必要なので通常帯で判定する。
 /**
- * 規定帯は実装（`src/ui/sprintTempo.ts`）の `SPRINT_WALL_SEC` / `BOSS_WALL_SEC` から読む。
+ * 規定帯は実行時の `PACING_BALANCE` から milliseconds で読み、ここで秒へ派生する。
  * ここで複製すると、テンポ調整で共有定数を変えたとき秒換算だけが追随して帯判定が
  * 旧値のまま残り、正常を違反・違反を正常として報告してしまう。
  */
-function readSprintBands() {
-  const src = readFileSync('src/ui/sprintTempo.ts', 'utf8');
-  const num = (constName, field) => {
-    const m = src.match(
-      new RegExp(`export const ${constName}\\s*=\\s*\\{[^}]*?\\b${field}:\\s*(\\d+)`, 's'),
-    );
-    if (!m) throw new Error(`src/ui/sprintTempo.ts から ${constName}.${field} を読み取れない`);
-    return Number(m[1]);
-  };
-  const typical = {
-    min: num('SPRINT_WALL_SEC', 'minTypical'),
-    max: num('SPRINT_WALL_SEC', 'maxTypical'),
-    absoluteMin: num('SPRINT_WALL_SEC', 'absoluteMin'),
-  };
-  return {
-    normal: typical,
-    // elite（高負荷）も「スプリント1本」の目標が同じく必要なので通常帯で判定する。
-    elite: typical,
-    boss: { min: num('BOSS_WALL_SEC', 'min'), max: num('BOSS_WALL_SEC', 'max') },
-  };
-}
-const SPRINT_BANDS = readSprintBands();
+const seconds = (milliseconds) => milliseconds / 1000;
+const typicalSprintBand = {
+  min: seconds(PACING.sprintWallMinTypicalMs),
+  max: seconds(PACING.sprintWallMaxTypicalMs),
+  absoluteMin: seconds(PACING.sprintWallAbsoluteMinMs),
+};
+const SPRINT_BANDS = {
+  normal: typicalSprintBand,
+  // elite（高負荷）も「スプリント1本」の目標が同じく必要なので通常帯で判定する。
+  elite: typicalSprintBand,
+  boss: {
+    min: seconds(PACING.bossWallMinMs),
+    max: seconds(PACING.bossWallMaxMs),
+  },
+};
 /**
  * F-4 の成立判定に使う代表方針（固定）。
  *

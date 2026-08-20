@@ -6,7 +6,7 @@
  * 旧コードの結果が現行の結果として受理される。旧出力の削除（`globalSetup`）は
  * 「実行が途中で落ちた」場合しか守らないので、この経路には効かない。
  *
- * とくにレポートは `src/ui/sprintTempo.ts` や `src/data/evolution.ts` の定数を
+ * とくにレポートは `src/data/balance/pacing.ts` や `src/data/evolution.ts` の定数を
  * **実行時に読み直す**ため、旧ランと新定数を混ぜて集計してしまう。
  *
  * 結果に影響しうる入力（`src/` と `tests/playtest/`）の内容ハッシュを世代とし、

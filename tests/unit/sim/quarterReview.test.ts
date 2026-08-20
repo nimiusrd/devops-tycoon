@@ -118,6 +118,15 @@ function evaluateBoundary(input: {
 }
 
 describe('四半期レビュー（Phase 8）', () => {
+  it('初期チーム信頼は StakeholderTrust の上限を超えない', () => {
+    for (const difficulty of ['easy', 'normal', 'hard', 'nightmare'] as const) {
+      const trust = buildInitialTrust(difficulty);
+      expect(trust.team).toBeLessThanOrEqual(100);
+      expect(trust.management).toBeLessThanOrEqual(100);
+      expect(trust.customers).toBeLessThanOrEqual(100);
+    }
+  });
+
   it('目標達成時は met または exceeded になる', () => {
     const progress = measureGoalProgress({
       goal,

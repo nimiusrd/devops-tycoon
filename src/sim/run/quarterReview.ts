@@ -201,7 +201,7 @@ export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
   return {
     management: base,
     customers: base,
-    team: base + OUTCOME_BALANCE.quarterInitialTeamTrustBonus.value,
+    team: Math.min(100, base + OUTCOME_BALANCE.quarterInitialTeamTrustBonus.value),
   };
 }
 
@@ -848,7 +848,7 @@ export function loseReasonForOutcome(
   // missed_crisis（空候補からの降格を含む）: ハード敗北条件を信頼フォールバックより先に見る。
   if (hard) return hard;
   if (minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value) return 'trustExhausted';
-  if (input.budget <= OUTCOME_BALANCE.quarterShutdownBudgetMax.value) return 'budgetExhausted';
+  if (input.budget <= OUTCOME_BALANCE.loseBudgetMax.value) return 'budgetExhausted';
   if (missedCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value) return 'kpiMissed';
   // 空候補降格などで上記条件が全て非該当の場合も trustExhausted より kpiMissed が実態に近い。
   return 'kpiMissed';

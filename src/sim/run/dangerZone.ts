@@ -108,7 +108,7 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
   if (minTrust <= 25) out.push('trustExhausted');
   if (kpiMissCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value) out.push('kpiMissed');
   else if (
-    s.budget > OUTCOME_BALANCE.quarterShutdownBudgetMax.value &&
+    s.budget > OUTCOME_BALANCE.loseBudgetMax.value &&
     s.budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value &&
     minTrust > OUTCOME_BALANCE.quarterCrisisTrustMax.value
   ) {

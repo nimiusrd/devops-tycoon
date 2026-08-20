@@ -159,7 +159,7 @@
 | `outcome.lose.budgetMax` | 予算敗北上限 | `0` | `currency` | `0〜1000（整数）` | — | 予算がこの値以下なら即時敗北。 | outcome, lose, threshold | いいえ |
 | `outcome.lose.consecutiveIncidentSprintCap` | 連続 Incident スプリント敗北上限 | `6` | `count` | `0〜100（整数）` | — | 延焼を伴う Incident の連続スプリント数がこの値以上なら敗北。 | outcome, lose, incident, threshold | いいえ |
 | `outcome.lose.moraleMax` | 士気敗北上限 | `1` | `points` | `0〜100（整数）` | — | 士気がこの値以下なら即時敗北。 | outcome, lose, threshold | いいえ |
-| `outcome.lose.reviewFreezePeak` | Review freeze 敗北ピーク | `48` | `count` | `0〜200（整数）` | — | Review 待ち行列ピークがこの値以上なら即時敗北。 | outcome, lose, review, threshold | いいえ |
+| `outcome.lose.reviewFreezePeak` | Review freeze 敗北ピーク | `48` | `count` | `0〜200（整数）` | Math.round(`outcome.lose.reviewFreezePeak` × `outcome.warning.reviewFreeze.watchRatio`) < `outcome.lose.reviewFreezePeak` - `outcome.warning.reviewFreeze.dangerOffset` < `outcome.lose.reviewFreezePeak` | Review 待ち行列ピークがこの値以上なら即時敗北。 | outcome, lose, review, threshold | いいえ |
 | `outcome.lose.seniorHpMax` | シニア HP 敗北上限 | `1` | `points` | `0〜100（整数）` | — | シニア HP がこの値以下なら即時敗北。 | outcome, lose, threshold | いいえ |
 | `outcome.lose.techDebtCap` | Tech Debt 敗北上限 | `90` | `points` | `0〜100（整数）` | — | Tech Debt がこの値以上なら即時敗北。 | outcome, lose, threshold | いいえ |
 | `outcome.quarter.adjustment.minimumTrust` | 目標修正後の信頼下限 | `5` | `points` | `0〜100（整数）` | — | 目標修正後に各ステークホルダーへ許容する最低信頼。 | outcome, quarter, adjustment, threshold | いいえ |
@@ -196,8 +196,8 @@
 | `outcome.quarter.shutdown.missedKpiMin` | shutdown 未達 KPI 数下限 | `2` | `count` | `0〜20（整数）` | — | シニア HP 条件と組み合わせる未達 KPI 数の下限。 | outcome, quarter, shutdown, threshold | いいえ |
 | `outcome.quarter.shutdown.seniorHpMax` | 未達時 shutdown シニア HP 上限 | `5` | `points` | `0〜100（整数）` | — | 未達 KPI 数と組み合わせる shutdown シニア HP 上限。 | outcome, quarter, shutdown, threshold | いいえ |
 | `outcome.quarter.shutdown.trustMax` | 四半期 shutdown 信頼上限 | `10` | `points` | `0〜100（整数）` | `outcome.quarter.shutdown.trustMax` < `outcome.quarter.crisis.trustMax` | 最小信頼がこの値以下なら shutdown。 | outcome, quarter, shutdown, threshold | いいえ |
-| `outcome.warning.reviewFreeze.dangerOffset` | Review freeze 危険オフセット | `4` | `count` | `0〜100（整数）` | — | Review freeze 敗北ピークから HUD 危険帯を前倒しする値。 | outcome, warning, review, threshold | いいえ |
-| `outcome.warning.reviewFreeze.watchRatio` | Review freeze 警告比率 | `0.75` | `ratio` | `0〜1` | — | Review freeze 敗北ピークに対する HUD・danger report 警告比率。 | outcome, warning, review, threshold | いいえ |
+| `outcome.warning.reviewFreeze.dangerOffset` | Review freeze 危険オフセット | `4` | `count` | `0〜100（整数）` | Math.round(`outcome.lose.reviewFreezePeak` × `outcome.warning.reviewFreeze.watchRatio`) < `outcome.lose.reviewFreezePeak` - `outcome.warning.reviewFreeze.dangerOffset` < `outcome.lose.reviewFreezePeak` | Review freeze 敗北ピークから HUD 危険帯を前倒しする値。 | outcome, warning, review, threshold | いいえ |
+| `outcome.warning.reviewFreeze.watchRatio` | Review freeze 警告比率 | `0.75` | `ratio` | `0〜1` | Math.round(`outcome.lose.reviewFreezePeak` × `outcome.warning.reviewFreeze.watchRatio`) < `outcome.lose.reviewFreezePeak` - `outcome.warning.reviewFreeze.dangerOffset` < `outcome.lose.reviewFreezePeak` | Review freeze 敗北ピークに対する HUD・danger report 警告比率。 | outcome, warning, review, threshold | いいえ |
 | `outcome.win.aiSuccess.aiPctMin` | AI 成功勝利の AI 利用率下限 | `0.55` | `ratio` | `0〜1` | — | AI 成功勝利に必要な AI 利用率の下限。 | outcome, win, ai, threshold | いいえ |
 | `outcome.win.aiSuccess.literacyMin` | AI 成功勝利の Literacy 下限 | `40` | `points` | `0〜100（整数）` | — | AI 成功勝利に必要な AI Literacy の下限。 | outcome, win, ai, threshold | いいえ |
 | `outcome.win.aiSuccess.reworkMax` | AI 成功勝利の手戻り率上限 | `0.22` | `ratio` | `0〜1` | — | AI 成功勝利に許容する手戻り率の上限（未満）。 | outcome, win, ai, threshold | いいえ |

@@ -544,6 +544,28 @@ describe('型付きバランスレジストリ', () => {
     );
   });
 
+  it('Review freeze 警告帯は watch < danger < lose の順序を維持する', () => {
+    const peak = defineBalanceEntry({
+      ...OUTCOME_BALANCE.loseReviewFreezePeak,
+      value: 48,
+    });
+    const watchRatio = defineBalanceEntry({
+      ...OUTCOME_BALANCE.reviewFreezeWatchRatio,
+      value: 0.95,
+    });
+    const dangerOffset = defineBalanceEntry({
+      ...OUTCOME_BALANCE.reviewFreezeDangerOffset,
+      value: 4,
+    });
+
+    expect(validateBalanceRegistry([peak, watchRatio, dangerOffset])).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: OUTCOME_BALANCE.reviewFreezeWatchRatio.id,
+      }),
+    );
+  });
+
   it('Review の HP 効率下限は正数に制限する', () => {
     expect(PROCESS_BALANCE.reviewHpEfficiencyFloor.allowedRange.min).toBeGreaterThan(0);
   });

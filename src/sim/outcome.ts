@@ -188,7 +188,7 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   // やり込み枠: 重介入なし・延焼0に加え、受動放置では届きにくい高水準を要求する。
   if (
     !usedHeavyActions &&
-    totals.spread === NO_DAMAGE_SPREAD_MAX &&
+    totals.spread <= NO_DAMAGE_SPREAD_MAX &&
     org.quality >= NO_DAMAGE_QUALITY_MIN &&
     org.morale >= NO_DAMAGE_MORALE_MIN &&
     org.seniorHp >= NO_DAMAGE_SENIOR_HP_MIN &&

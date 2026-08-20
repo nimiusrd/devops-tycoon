@@ -19,6 +19,7 @@ import {
   type HudMetricSnapshot,
   type RunMetricSnapshot,
 } from '../../../src/render/status';
+import { REVIEW_FREEZE_PEAK } from '../../../src/sim/outcome';
 import type { OrgScaleState } from '../../../src/sim/orgscale/types';
 import type { OrgState, SimState } from '../../../src/sim/types';
 
@@ -328,6 +329,8 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
   });
 
   it('レビュー凍結の危険域で予兆チップを出す（RI-85）', () => {
+    expect(REVIEW_FREEZE_WATCH_PEAK).toBeLessThan(REVIEW_FREEZE_DANGER_PEAK);
+    expect(REVIEW_FREEZE_DANGER_PEAK).toBeLessThan(REVIEW_FREEZE_PEAK);
     expect(reviewFreezeHudCopy(0).warningChip).toBeUndefined();
     expect(reviewFreezeHudCopy(REVIEW_FREEZE_WATCH_PEAK)).toMatchObject({
       tone: 'watch',

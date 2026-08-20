@@ -6,6 +6,7 @@ import {
   classifyShutdownCause,
   loseNextActionView,
 } from '../../../src/render/loseNextActionView';
+import { OUTCOME_BALANCE } from '../../../src/data/balance';
 import type { LoseReason } from '../../../src/sim/run/types';
 
 const ALL_LOSE_REASONS: readonly LoseReason[] = [
@@ -34,6 +35,7 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
   it('aiDependency はペアレビューまたは依存度を下げるレバーを示す', () => {
     const view = loseNextActionView('aiDependency');
     expect(view.nextAction).toMatch(/ペアレビュー/);
+    expect(view.nextAction).toMatch(/30/);
     expect(view.nextAction).toMatch(/95/);
     expect(view.nextAction).toMatch(/AIガイドライン|レバー|ガイドライン/);
     expect(view.nextAction).not.toMatch(/AIガイドライン／AIスロットル/);
@@ -190,8 +192,8 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     const kpi = loseNextActionView('reorgRequired', {
       quarterOutcome: 'reorg_required',
       snapshot: {
-        quarterNumber: 2,
-        missedKpiCount: 3,
+        quarterNumber: OUTCOME_BALANCE.quarterReorgMinQuarter.value,
+        missedKpiCount: OUTCOME_BALANCE.quarterReorgMissedKpiMin.value,
         missedKpiIds: ['delivery', 'techDebt', 'aiAdoption'],
         trust: { management: 50, customers: 50, team: 50 },
       },
@@ -204,21 +206,23 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
       }),
     ).toBe('kpiMissed');
     expect(kpi.nextAction).toMatch(/Delivery|Tech Debt|AI Adoption/);
+    expect(kpi.nextAction).toContain(`Q${OUTCOME_BALANCE.quarterReorgMinQuarter.value}`);
+    expect(kpi.nextAction).toContain(`${OUTCOME_BALANCE.quarterReorgMissedKpiMin.value}件以上`);
     expect(kpi.nextAction).not.toContain('品質・士気・障害');
     expect(kpi.nextAction).not.toContain('目標修正');
 
     const trust = loseNextActionView('reorgRequired', {
       quarterOutcome: 'reorg_required',
       snapshot: {
-        quarterNumber: 1,
-        missedKpiCount: 2,
+        quarterNumber: OUTCOME_BALANCE.quarterReorgMinQuarter.value - 1,
+        missedKpiCount: OUTCOME_BALANCE.quarterReorgTrustMissedKpiMin.value,
         trust: { management: 18, customers: 40, team: 40 },
       },
     });
     expect(
       classifyReorgCause({
-        quarterNumber: 1,
-        missedKpiCount: 2,
+        quarterNumber: OUTCOME_BALANCE.quarterReorgMinQuarter.value - 1,
+        missedKpiCount: OUTCOME_BALANCE.quarterReorgTrustMissedKpiMin.value,
         trust: { management: 18, customers: 40, team: 40 },
       }),
     ).toBe('trust');

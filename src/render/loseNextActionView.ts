@@ -65,8 +65,7 @@ const LOSE_NEXT_ACTIONS: Record<LoseReason, LoseNextActionView> = {
     insight: '障害は単発より、放置して連鎖させたときの方が組織を止める。',
   },
   aiDependency: {
-    nextAction:
-      'AIリテラシーが30以下のまま依存度が95に達すると敗北する。ペアレビューでリテラシーを上げて条件を外すか、AI利用ガイドライン（カード）や全社AIガイドライン・部門／チームのAIスロットル（レバー）で依存度を下げる。',
+    nextAction: `AIリテラシーが${OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value}以下のまま依存度が${OUTCOME_BALANCE.loseAiDependencyCap.value}に達すると敗北する。ペアレビューでリテラシーを上げて条件を外すか、AI利用ガイドライン（カード）や全社AIガイドライン・部門／チームのAIスロットル（レバー）で依存度を下げる。`,
     insight: 'AIに任せきりだと、仕様を説明・検証できる人がいなくなり判断が止まる。',
   },
   budgetExhausted: {
@@ -327,13 +326,15 @@ function missedCrisisAction(snapshot: LoseNextActionSnapshot): LoseNextActionVie
 function reorgRequiredAction(snapshot: LoseNextActionSnapshot): LoseNextActionView {
   const cause = classifyReorgCause(snapshot);
   if (cause === 'kpiMissed') {
+    const minQuarter = OUTCOME_BALANCE.quarterReorgMinQuarter.value;
+    const missedKpiMin = OUTCOME_BALANCE.quarterReorgMissedKpiMin.value;
     return missedKpiAction(
       snapshot,
       {
-        nextAction: 'Q2 以降に未達KPIが3件以上重ならないよう、四半期中に未達軸を立て直す。',
+        nextAction: `Q${minQuarter} 以降に未達KPIが${missedKpiMin}件以上重ならないよう、四半期中に未達軸を立て直す。`,
         insight: '未達が積み上がると、組織再編という外からの決着になる。',
       },
-      'Q2 以降に未達が3件以上重ならないよう、四半期中に',
+      `Q${minQuarter} 以降に未達が${missedKpiMin}件以上重ならないよう、四半期中に`,
       '未達が積み上がると、組織再編という外からの決着になる。',
     );
   }

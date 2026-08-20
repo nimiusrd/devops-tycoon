@@ -1931,9 +1931,15 @@ function applySetup(e: RunEngine, spec: PolicySpec): void {
  */
 function crisisTriggers(minTrust: number, budget: number, missedCount: number): string[] {
   const hit: string[] = [];
-  if (minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value) hit.push('trust<=15');
-  if (budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value) hit.push('budget<=5');
-  if (missedCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value) hit.push('missed>=4');
+  if (minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value) {
+    hit.push(`trust<=${OUTCOME_BALANCE.quarterCrisisTrustMax.value}`);
+  }
+  if (budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value) {
+    hit.push(`budget<=${OUTCOME_BALANCE.quarterCrisisBudgetMax.value}`);
+  }
+  if (missedCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value) {
+    hit.push(`missed>=${OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value}`);
+  }
   return hit;
 }
 
@@ -1960,18 +1966,24 @@ function shutdownTriggers(
   missedCount: number,
 ): string[] {
   const hit: string[] = [];
-  if (minTrust <= OUTCOME_BALANCE.quarterShutdownTrustMax.value) hit.push('trust<=10');
+  if (minTrust <= OUTCOME_BALANCE.quarterShutdownTrustMax.value) {
+    hit.push(`trust<=${OUTCOME_BALANCE.quarterShutdownTrustMax.value}`);
+  }
   if (
     budget <= OUTCOME_BALANCE.quarterShutdownBudgetMax.value &&
     morale <= OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value
   ) {
-    hit.push('budget<=0&morale<=15');
+    hit.push(
+      `budget<=${OUTCOME_BALANCE.quarterShutdownBudgetMax.value}&morale<=${OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value}`,
+    );
   }
   if (
     seniorHp <= OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value &&
     missedCount >= OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value
   ) {
-    hit.push('seniorHp<=5&missed>=2');
+    hit.push(
+      `seniorHp<=${OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value}&missed>=${OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value}`,
+    );
   }
   return hit;
 }

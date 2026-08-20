@@ -8,7 +8,7 @@
 import { ACHIEVEMENT_DEFS, ACHIEVEMENT_IDS } from './achievements';
 import { ACTION_CONTENT_DEFS, type ActionContentDef } from './actions';
 import { CARD_DEFS, RARITY_WEIGHT } from './cards';
-import { BOSS_DEFS } from './bosses';
+import { BOSS_DEFS, type BossDef } from './bosses';
 import { DEPARTMENT_DEFS } from './departments';
 import { compareCanonicalStrings } from './balance/canonical';
 import { PROCESS_BALANCE } from './balance/process';
@@ -22,7 +22,7 @@ import {
 import { EVOLUTION_NODES } from './evolution';
 import { EVENT_DEFS, effectiveKind, type EventDef, type EventOutcome } from './events';
 import { GOAL_ADJUSTMENT_DEFS, type GoalAdjustmentDef } from './goalAdjustments';
-import { LEVER_DEFS } from './levers';
+import { LEVER_DEFS, type LeverDef } from './levers';
 import {
   MEMBER_NAMES,
   RECRUIT_ARCHETYPES,
@@ -278,6 +278,54 @@ function achievementConditionKey(id: string): string {
   return found[0];
 }
 
+const ORG_ADJUST_IDENTITY: Record<string, unknown> = {
+  aiDependencyDelta: 0,
+  reviewQueueDelta: 0,
+  incidentDelta: 0,
+  moraleDelta: 0,
+  techDebtDelta: 0,
+  extraTeams: 0,
+  infraBoost: 0,
+};
+
+const SCENARIO_ORG_DELTA_IDENTITY: Record<string, unknown> = {
+  aiDependencyBase: 0,
+  aiLiteracy: 0,
+  testCoverage: 0,
+  documentation: 0,
+  quality: 0,
+  securityLevel: 0,
+  morale: 0,
+  seniorHp: 0,
+};
+
+const BOSS_CLEAR_MIN_IDENTITY: Record<string, unknown> = {
+  minSprintDelivered: 0,
+  minAiPct: 0,
+  minMorale: 0,
+  minQuality: 0,
+};
+
+export function projectLever(definition: LeverDef): unknown {
+  return {
+    scope: definition.scope,
+    cost: definition.cost,
+    effect: omitIdentity(definition.effect, ORG_ADJUST_IDENTITY),
+  };
+}
+
+export function projectBoss(definition: BossDef): unknown {
+  return {
+    taskCountMul: definition.taskCountMul,
+    incidentMul: definition.incidentMul,
+    clear: omitIdentity(definition.clear, BOSS_CLEAR_MIN_IDENTITY),
+  };
+}
+
+export function projectScenarioOrgDelta(delta: object | undefined): Record<string, unknown> {
+  return omitIdentity(delta, SCENARIO_ORG_DELTA_IDENTITY);
+}
+
 const difficultyDefinitions = Object.values(DIFFICULTY_DEFS);
 
 export const CONTENT_CATALOG: ContentCatalog = {
@@ -298,7 +346,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     aiDependencyPerTask:
       definition.aiDependencyPerTask ?? PROCESS_BALANCE.aiDependencyPerTask.value,
   })),
-  trials: ordered(TRIAL_DEFS, (definition) => ({
+  trials: orderedById(TRIAL_DEFS, (definition) => ({
     focusDelta: definition.focusDelta ?? 0,
     budgetMul: definition.budgetMul ?? 1,
     effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
@@ -306,11 +354,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     frontierModelCostPerDependency: definition.frontierModelCostPerDependency ?? 0,
     scoreMul: definition.scoreMul,
   })),
-  bosses: ordered(BOSS_DEFS, (definition) => ({
-    taskCountMul: definition.taskCountMul,
-    incidentMul: definition.incidentMul,
-    clear: definedObject(definition.clear),
-  })),
+  bosses: ordered(BOSS_DEFS, projectBoss),
   relics: ordered(RELIC_DEFS, projectRelic),
   traits: orderedById(TRAIT_DEFS, (definition) => ({
     modifiers: omitIdentity(definition.modifiers, IDENTITY_TRAIT_MODIFIERS),
@@ -323,11 +367,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     codingSlotBonus: definition.codingSlotBonus ?? 0,
   })),
   goalAdjustments: ordered(GOAL_ADJUSTMENT_DEFS, projectGoalAdjustment),
-  levers: ordered(LEVER_DEFS, (definition) => ({
-    scope: definition.scope,
-    cost: definition.cost,
-    effect: definedObject(definition.effect),
-  })),
+  levers: ordered(LEVER_DEFS, projectLever),
   members: {
     namePool: [...MEMBER_NAMES],
     defaultAiArchetypeId: STARTER_DEFAULT_AI_ARCHETYPE_ID,
@@ -356,7 +396,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     (definition) => ({
       org: definedObject(definition.org),
       sprint: definedObject(definition.sprint),
-      orgDelta: definedObject(definition.orgDelta),
+      orgDelta: projectScenarioOrgDelta(definition.orgDelta),
       globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
     }),
   ),
@@ -476,6 +516,12 @@ export function validateContentCatalog(
   const catalogScenarioIds = catalog.startingScenarios.map((entry) => entry.id);
   if (JSON.stringify(scenarioIds) !== JSON.stringify(catalogScenarioIds)) {
     errors.push({ category: 'startingScenarios', message: '開始シナリオ順が正本と一致しません' });
+  }
+  if (!new Set(catalogScenarioIds).has(catalog.defaultScenarioId)) {
+    errors.push({
+      category: 'defaultScenarioId',
+      message: `未知の参照: ${catalog.defaultScenarioId}`,
+    });
   }
 
   const difficultyIdSet = new Set(difficultyKeys);

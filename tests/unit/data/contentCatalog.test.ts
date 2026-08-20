@@ -11,6 +11,9 @@ import {
   projectEvent,
   projectRelic,
   projectGoalAdjustment,
+  projectLever,
+  projectBoss,
+  projectScenarioOrgDelta,
   validateContentCatalog,
 } from '../../../src/data/contentCatalog';
 import { renderContentCatalogMarkdown } from '../../../src/data/contentCatalogDocumentation';
@@ -54,7 +57,10 @@ describe('CONTENT_CATALOG', () => {
     expectCatalogCategory(CONTENT_CATALOG.cards, ids(CARD_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.events, ids(EVENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.difficulties, Object.keys(DIFFICULTY_DEFS));
-    expectCatalogCategory(CONTENT_CATALOG.trials, ids(TRIAL_DEFS));
+    expectCatalogCategory(
+      CONTENT_CATALOG.trials,
+      [...ids(TRIAL_DEFS)].sort(compareCanonicalStrings),
+    );
     expectCatalogCategory(CONTENT_CATALOG.bosses, ids(BOSS_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.relics, ids(RELIC_DEFS));
     expectCatalogCategory(
@@ -231,6 +237,10 @@ describe('CONTENT_CATALOG', () => {
     const unlockIdsByCanonicalOrder = [...ids(UNLOCK_DEFS)].sort(compareCanonicalStrings);
     expect(ids(UNLOCK_DEFS)).not.toEqual(unlockIdsByCanonicalOrder);
     expect(CONTENT_CATALOG.unlocks.map((entry) => entry.id)).toEqual(unlockIdsByCanonicalOrder);
+
+    const trialIdsByCanonicalOrder = [...ids(TRIAL_DEFS)].sort(compareCanonicalStrings);
+    expect(ids(TRIAL_DEFS)).not.toEqual(trialIdsByCanonicalOrder);
+    expect(CONTENT_CATALOG.trials.map((entry) => entry.id)).toEqual(trialIdsByCanonicalOrder);
   });
 
   it('進化の表示ブランチを除外し、デイリー参照 ID を検証する', () => {
@@ -253,6 +263,15 @@ describe('CONTENT_CATALOG', () => {
     ).toContainEqual({
       category: 'daily.difficulty',
       message: '未知の参照: unknown-difficulty',
+    });
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        defaultScenarioId: 'unknown-scenario',
+      }),
+    ).toContainEqual({
+      category: 'defaultScenarioId',
+      message: '未知の参照: unknown-scenario',
     });
     expect(
       validateContentCatalog({
@@ -313,6 +332,24 @@ describe('CONTENT_CATALOG', () => {
         budgetDelta: adjustment.budgetDelta,
       }),
     ).toEqual(projectGoalAdjustment(adjustment));
+  });
+
+  it('レバー・シナリオ差分・ボス下限のゼロは未指定と同じ射影になる', () => {
+    const lever = LEVER_DEFS[0]!;
+    expect(
+      projectLever({
+        ...lever,
+        effect: { ...lever.effect, reviewQueueDelta: 0, infraBoost: 0 },
+      }),
+    ).toEqual(projectLever(lever));
+    expect(projectScenarioOrgDelta({ morale: 0, quality: 0 })).toEqual(projectScenarioOrgDelta({}));
+    const boss = BOSS_DEFS[0]!;
+    expect(
+      projectBoss({
+        ...boss,
+        clear: { ...boss.clear, minAiPct: 0, minMorale: 0, minQuality: 0 },
+      }),
+    ).toEqual(projectBoss(boss));
   });
 
   it('生成 Markdown は同じカタログから決定論的に作られる', () => {

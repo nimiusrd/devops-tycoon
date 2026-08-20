@@ -82,11 +82,11 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | low-focus | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{},"focusDelta":-1,"frontierModelCostPerDependency":0,"scoreMul":1.15} |
-| 1 | half-budget | {"aiDependencyDriftPerSprint":0,"budgetMul":0.5,"effects":{},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.15} |
-| 2 | flammable | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{"incidentRateMul":1.3},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.2} |
-| 3 | review-cap | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{"reviewEfficiencyMul":0.85},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.2} |
-| 4 | frontier-dependency | {"aiDependencyDriftPerSprint":5,"budgetMul":1,"effects":{},"focusDelta":0,"frontierModelCostPerDependency":0.04,"scoreMul":1.25} |
+| 0 | flammable | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{"incidentRateMul":1.3},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.2} |
+| 1 | frontier-dependency | {"aiDependencyDriftPerSprint":5,"budgetMul":1,"effects":{},"focusDelta":0,"frontierModelCostPerDependency":0.04,"scoreMul":1.25} |
+| 2 | half-budget | {"aiDependencyDriftPerSprint":0,"budgetMul":0.5,"effects":{},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.15} |
+| 3 | low-focus | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{},"focusDelta":-1,"frontierModelCostPerDependency":0,"scoreMul":1.15} |
+| 4 | review-cap | {"aiDependencyDriftPerSprint":0,"budgetMul":1,"effects":{"reviewEfficiencyMul":0.85},"focusDelta":0,"frontierModelCostPerDependency":0,"scoreMul":1.2} |
 
 ## bosses
 

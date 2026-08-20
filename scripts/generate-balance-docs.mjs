@@ -20,7 +20,12 @@ async function main() {
       return;
     }
 
-    const markdown = documentation.renderBalanceParametersMarkdown(balance.BALANCE_REGISTRY);
+    const markdown = documentation.renderBalanceParametersMarkdown(balance.BALANCE_REGISTRY, {
+      version: balance.BALANCE_RULESET_VERSION,
+      fingerprint: balance.BALANCE_RULESET_FINGERPRINT,
+      fingerprintScheme: balance.BALANCE_RULESET_FINGERPRINT_SCHEME,
+      policy: balance.BALANCE_RULESET_VERSION_POLICY,
+    });
     mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
     writeFileSync(OUTPUT_PATH, markdown, 'utf8');
     console.log(`バランスパラメータ表を生成しました: ${relative(process.cwd(), OUTPUT_PATH)}`);

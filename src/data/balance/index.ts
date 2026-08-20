@@ -5,6 +5,17 @@ export {
   flattenBalanceEntries,
   validateBalanceRegistry,
 } from './define';
+export { canonicalizeJson, compareCanonicalStrings, sha256Hex } from './canonical';
+export {
+  BALANCE_RULESET_FINGERPRINT_EXCLUDED_TAGS,
+  BALANCE_RULESET_FINGERPRINT_SCHEME,
+  BALANCE_RULESET_VERSION,
+  BALANCE_RULESET_VERSION_POLICY,
+  createBalanceRulesetPayload,
+  fingerprintBalanceRuleset,
+  projectBalanceRegistry,
+} from './ruleset';
+export type { BalanceRegistryProjection, BalanceRulesetPayload } from './ruleset';
 export { MEMBER_BALANCE } from './member';
 export { PROCESS_BALANCE } from './process';
 export { ACTION_BALANCE, ACTION_BALANCE_BY_ID } from './actions';
@@ -35,6 +46,8 @@ import { CARD_BALANCE } from './cards';
 import { SPRINT_BALANCE } from './sprint';
 import { COARSE_TEAM_BALANCE } from './coarse-team';
 import { PACING_BALANCE } from './pacing';
+import { projectContentCatalog } from '../contentCatalog';
+import { createBalanceRulesetPayload, fingerprintBalanceRuleset } from './ruleset';
 import type { BalanceDefinition } from './types';
 
 /** 現時点でゲームが参照する全バランス定義。 */
@@ -49,3 +62,14 @@ export const BALANCE_REGISTRY = [
   ...Object.values(COARSE_TEAM_BALANCE),
   ...Object.values(PACING_BALANCE),
 ] satisfies readonly BalanceDefinition[];
+
+/** 現行ルールセットの指紋入力。版と seed は含めない。 */
+export const BALANCE_RULESET_PAYLOAD = createBalanceRulesetPayload(
+  BALANCE_REGISTRY,
+  projectContentCatalog(),
+);
+
+/** 現行ルールセットの決定論的指紋（SHA-256 hex）。 */
+export const BALANCE_RULESET_FINGERPRINT = fingerprintBalanceRuleset(BALANCE_RULESET_PAYLOAD);
+
+export { projectContentCatalog };

@@ -8,10 +8,10 @@
 import { ACTION_BALANCE_BY_ID } from './balance/actions';
 import type { ActionDef } from '../sim/actions';
 
-type ActionContentDef = Omit<ActionDef, 'cost' | 'cooldownTicks' | 'gauge'>;
+export type ActionContentDef = Omit<ActionDef, 'cost' | 'cooldownTicks' | 'gauge'>;
 
 /** アクションバーに並べる順（旧モック main-screen 由来）。 */
-const ACTION_CONTENT_DEFS: ActionContentDef[] = [
+export const ACTION_CONTENT_DEFS: ActionContentDef[] = [
   {
     id: 'interruptReview',
     label: '割り込みレビュー',

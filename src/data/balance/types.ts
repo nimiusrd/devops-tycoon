@@ -27,7 +27,7 @@ export interface BalanceEntry<
   Unit extends BalanceUnit = BalanceUnit,
   Value extends number = number,
 > {
-  /** ドキュメント・差分・将来のルールセット指紋で使う安定ID。 */
+  /** ドキュメント・差分・ルールセット指紋で使う安定ID。 */
   readonly id: Id;
   /** ゲームが参照する実行値。 */
   readonly value: Value;

@@ -142,11 +142,13 @@ flowchart LR
 ```text
 plan/probability-model.md
 plan/generated/balance-parameters.md
+plan/generated/content-catalog.md
 plan/generated/balance-curves.svg
 ```
 
 - `probability-model.md`: 因果、式の意味、設計判断、読み方を人が記述する。
 - `balance-parameters.md`: ID、現在値、単位、範囲、説明をレジストリから生成する。
+- `content-catalog.md`: 実行結果に影響するコンテンツ定義の射影を正本から生成する。
 - `balance-curves.svg`: 同じ値と純粋な計算関数から代表曲線を生成する。
 
 生成ファイルには直接編集しない旨を記載し、MarkdownとSVGをGit管理する。生成時刻、絶対パス、実行環境依存の順序など非決定的な情報は含めない。生成コマンドと差分チェックを`package.json`へ追加し、`balance:check`が生成後のGit差分を検出した場合はCIを失敗させる。

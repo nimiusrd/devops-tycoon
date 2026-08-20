@@ -36,9 +36,6 @@ export interface Scenario {
 
 export const DEFAULT_SCENARIO: ScenarioId = 'default';
 
-/** タイトルで選べるシナリオの表示順（RI-103）。 */
-export const SCENARIO_ORDER: readonly ScenarioId[] = ['default', 'copilot', 'claude-code', 'devin'];
-
 const DEFAULT_ORG: ScenarioOrg = {
   aiDependencyBase: 35,
   aiLiteracy: 45,
@@ -94,6 +91,9 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
     globalEffects: { codingSpeedMul: 1.1, reworkRateAdd: 0.03 },
   },
 };
+
+/** タイトルで選べるシナリオの表示順（定義オブジェクトの順序を正本とする）。 */
+export const SCENARIO_ORDER: readonly ScenarioId[] = Object.keys(SCENARIOS) as ScenarioId[];
 
 /** シナリオ定義を取得する（未知の id は標準にフォールバック）。 */
 export function getScenario(id: ScenarioId): Scenario {

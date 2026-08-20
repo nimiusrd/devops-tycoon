@@ -1,4 +1,4 @@
-import type { ActionId } from '../../sim/types';
+import type { ActionId } from '../actionIds';
 import { defineBalanceEntry } from './define';
 import type { BalanceEntry } from './types';
 

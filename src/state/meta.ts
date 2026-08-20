@@ -6,6 +6,8 @@
  */
 import type { BOSS_DEFS } from '../data/bosses';
 import { BOSS_DEFS as ALL_BOSSES } from '../data/bosses';
+import { DIFFICULTY_DEFS } from '../data/difficulties';
+import { ACHIEVEMENT_DEFS, ACHIEVEMENT_IDS } from '../data/achievements';
 import {
   defaultUnlockedCardIds,
   defaultUnlockedRelicIds,
@@ -222,7 +224,7 @@ export function dailyLeaderboardEntries(meta: MetaState): DailyLeaderboardEntry[
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
-const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
+const DIFFICULTY_ORDER: DifficultyId[] = Object.keys(DIFFICULTY_DEFS) as DifficultyId[];
 
 /** 指定難易度の「次」を解放する（最後尾なら変化なし）。 */
 function nextDifficulty(id: DifficultyId): DifficultyId | null {
@@ -304,51 +306,8 @@ export function computeRunRewardBreakdown(input: RunRewardInput): RunRewardBreak
 
 const uniq = (xs: string[]): string[] => Array.from(new Set(xs));
 
-/** 実績の宣言的定義（コレクション表示・獲得条件ヒント。第17章）。 */
-export interface AchievementDef {
-  id: string;
-  label: string;
-  /** 未取得時に表示する獲得条件のヒント。 */
-  hint: string;
-}
-
-export const ACHIEVEMENT_DEFS: readonly AchievementDef[] = [
-  {
-    id: 'first-clear',
-    label: '初クリア',
-    hint: 'いずれかの難易度で四半期（ボス）を突破する',
-  },
-  {
-    id: 'no-damage',
-    label: 'ノーダメージ突破',
-    hint: '残業・アンドン未使用・延焼ゼロ・手戻り率15%未満に加え、品質・士気・シニア体力を高水準で保ち健全系診断でボスを突破する（ノーダメージ勝利）',
-  },
-  {
-    id: 'combo-master',
-    label: 'コンボ x20 達成',
-    hint: '1 ラン中にコンボ x20 以上を達成してからボスを突破する',
-  },
-  {
-    id: 'all-bosses',
-    label: '全ボス撃破',
-    hint: 'すべてのボスを少なくとも 1 回ずつ撃破する',
-  },
-  {
-    id: 'nightmare-clear',
-    label: 'Nightmare 制覇',
-    hint: 'Nightmare 難易度で四半期を突破する',
-  },
-  {
-    id: 'review-exceeded',
-    label: '超過達成クリア',
-    hint: '四半期レビューで超過達成（exceeded）を出してランを勝利する',
-  },
-  {
-    id: 'review-survivor',
-    label: '目標修正からの生還',
-    hint: '四半期レビューで目標修正（missed_adjustable）を経験したうえでランを勝利する',
-  },
-];
+export type { AchievementDef } from '../data/achievements';
+export { ACHIEVEMENT_DEFS } from '../data/achievements';
 
 /** 勝利称号の宣言的定義（コレクション表示・獲得条件ヒント）。 */
 export interface WinTitleDef {
@@ -420,16 +379,16 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     if (unlock && !next.unlockedDifficulties.includes(unlock)) {
       next.unlockedDifficulties.push(unlock);
     }
-    const earned: string[] = ['first-clear'];
+    const earned: string[] = [ACHIEVEMENT_IDS.firstClear];
     if (input.winType)
       next.collectedWinTypes = uniq([...next.collectedWinTypes, input.winType]) as WinType[];
-    if (input.winType === 'noDamage') earned.push('no-damage');
-    if (input.maxCombo >= 20) earned.push('combo-master');
-    if (input.difficulty === 'nightmare') earned.push('nightmare-clear');
-    if (allBossesDefeated(next.defeatedBosses, ALL_BOSSES)) earned.push('all-bosses');
+    if (input.winType === 'noDamage') earned.push(ACHIEVEMENT_IDS.noDamage);
+    if (input.maxCombo >= 20) earned.push(ACHIEVEMENT_IDS.comboMaster);
+    if (input.difficulty === 'nightmare') earned.push(ACHIEVEMENT_IDS.nightmareClear);
+    if (allBossesDefeated(next.defeatedBosses, ALL_BOSSES)) earned.push(ACHIEVEMENT_IDS.allBosses);
     const reviews = input.quarterReviews ?? [];
-    if (reviews.includes('exceeded')) earned.push('review-exceeded');
-    if (reviews.includes('missed_adjustable')) earned.push('review-survivor');
+    if (reviews.includes('exceeded')) earned.push(ACHIEVEMENT_IDS.reviewExceeded);
+    if (reviews.includes('missed_adjustable')) earned.push(ACHIEVEMENT_IDS.reviewSurvivor);
     next.achievements = uniq([...next.achievements, ...earned]);
   }
 

@@ -5,6 +5,7 @@ import {
   ACTION_BALANCE_BY_ID,
   BALANCE_REGISTRY,
   CARD_BALANCE,
+  COARSE_TEAM_BALANCE,
   MEMBER_BALANCE,
   PROCESS_BALANCE,
   SPRINT_BALANCE,
@@ -17,6 +18,7 @@ import {
   validateBalanceRegistry,
 } from '../../../src/data/balance';
 import * as actionSimulation from '../../../src/sim/actions';
+import * as teamState from '../../../src/sim/orgscale/teamState';
 import { HAND_SIZE, PREFERRED_DRAFT_WEIGHT_MUL } from '../../../src/sim/cards';
 import {
   AI_ADOPTION,
@@ -302,6 +304,7 @@ const BALANCE_IDS = [
   ...ACTION_BALANCE_IDS,
   ...RUN_BALANCE_IDS,
   ...OUTCOME_BALANCE_IDS,
+  ...Object.values(COARSE_TEAM_BALANCE).map((entry) => entry.id),
   ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
   ...Object.values(CARD_BALANCE).map((entry) => entry.id),
   ...Object.values(SPRINT_BALANCE).map((entry) => entry.id),
@@ -387,6 +390,40 @@ describe('型付きバランスレジストリ', () => {
       'sprint.task.kindWeight.normal',
       'sprint.task.kindWeight.complex',
     ]);
+  });
+
+  it('粗粒度チームの値・境界・互換aliasをレジストリへ集約する', () => {
+    expect(
+      Object.values(COARSE_TEAM_BALANCE).every((entry) => entry.id.startsWith('coarse.team.')),
+    ).toBe(true);
+    expect(COARSE_TEAM_BALANCE.defaultHomeEngineers.value).toBe(5);
+    expect(COARSE_TEAM_BALANCE.shippingMinimum.value).toBe(4);
+    expect(COARSE_TEAM_BALANCE.healthReviewHellQueueMinimum.value).toBe(12);
+    expect(COARSE_TEAM_BALANCE.leaguePlatinumMaximum.value).toBe(0.2);
+    expect(teamState.ENTER_TEAM_FOCUS_PENALTY).toBe(
+      COARSE_TEAM_BALANCE.enterTeamFocusPenalty.value,
+    );
+    expect(teamState.ENTER_TEAM_LOCK_SPRINTS).toBe(COARSE_TEAM_BALANCE.enterTeamLockSprints.value);
+    expect(teamState.RIVAL_AI_DEPENDENCY_SPREAD).toBe(
+      COARSE_TEAM_BALANCE.rivalAiDependencySpread.value,
+    );
+    expect(teamState.RIVAL_AI_DEPENDENCY_SPREAD_LOW_LITERACY).toBe(
+      COARSE_TEAM_BALANCE.rivalAiDependencySpreadLowLiteracy.value,
+    );
+
+    const invalidQueueBounds = [
+      {
+        ...COARSE_TEAM_BALANCE.healthCongestedQueueMinimum,
+        value: COARSE_TEAM_BALANCE.healthReviewHellQueueMinimum.value,
+      },
+      COARSE_TEAM_BALANCE.healthReviewHellQueueMinimum,
+    ];
+    expect(validateBalanceRegistry(invalidQueueBounds)).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: COARSE_TEAM_BALANCE.healthCongestedQueueMinimum.id,
+      }),
+    );
   });
 
   it('ラン進行・経済の値と関係制約を検証する', () => {

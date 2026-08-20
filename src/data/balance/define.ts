@@ -32,6 +32,37 @@ const ORDERED_BOUND_PAIRS = [
   ['card.effect.additive.minimum', 'card.effect.additive.maximum'],
   ['outcome.kpi.exceededLowerMultiplier', 'outcome.kpi.exceededHigherMultiplier'],
   ['sprint.grade.stabilizingBonusPerGrant', 'sprint.grade.stabilizingBonusCap'],
+  ['coarse.team.rival.moraleMinimum', 'coarse.team.rival.moraleMaximum'],
+  ['coarse.team.rival.aiLiteracyMinimum', 'coarse.team.rival.aiLiteracyMaximum'],
+  ['coarse.team.rival.seniorHpMinimum', 'coarse.team.rival.seniorHpMaximum'],
+  ['coarse.team.rival.testCoverageMinimum', 'coarse.team.rival.testCoverageMaximum'],
+  ['coarse.team.rival.documentationMinimum', 'coarse.team.rival.documentationMaximum'],
+  ['coarse.team.rival.qualityMinimum', 'coarse.team.rival.qualityMaximum'],
+  ['coarse.team.capacity.review.minimum', 'coarse.team.capacity.review.maximum'],
+  ['coarse.team.capacity.incident.minimum', 'coarse.team.capacity.incident.maximum'],
+  ['coarse.team.step.review.multiplierMinimum', 'coarse.team.step.review.multiplierMaximum'],
+  [
+    'coarse.team.step.reviewCapacity.multiplierMinimum',
+    'coarse.team.step.reviewCapacity.multiplierMaximum',
+  ],
+  ['coarse.team.step.reworkRateAdd.minimum', 'coarse.team.step.reworkRateAdd.maximum'],
+  ['coarse.team.step.morale.minimum', 'coarse.team.step.morale.maximum'],
+  [
+    'coarse.team.step.seniorHpCost.multiplierMinimum',
+    'coarse.team.step.seniorHpCost.multiplierMaximum',
+  ],
+  ['coarse.team.step.fire.multiplierMinimum', 'coarse.team.step.fire.multiplierMaximum'],
+  ['coarse.team.step.fire.chanceMinimum', 'coarse.team.step.fire.chanceMaximum'],
+  [
+    'coarse.team.step.aiDependency.pressureMinimum',
+    'coarse.team.step.aiDependency.pressureMaximum',
+  ],
+  ['coarse.team.step.quality.minimum', 'coarse.team.step.quality.maximum'],
+  ['coarse.team.step.seniorHp.minimum', 'coarse.team.step.seniorHp.maximum'],
+  [
+    'coarse.team.aggregate.reviewResilience.minimum',
+    'coarse.team.aggregate.reviewResilience.maximum',
+  ],
 ] as const;
 
 /** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */
@@ -43,6 +74,12 @@ const STRICTLY_ORDERED_BOUND_PAIRS = [
   ['sprint.grade.threshold.C', 'sprint.grade.threshold.B'],
   ['sprint.grade.threshold.B', 'sprint.grade.threshold.A'],
   ['sprint.grade.threshold.A', 'sprint.grade.threshold.S'],
+  ['coarse.team.health.congested.queueMinimum', 'coarse.team.health.reviewHell.queueMinimum'],
+  ['coarse.team.aggregate.healthRank.threshold.A', 'coarse.team.aggregate.healthRank.threshold.S'],
+  ['coarse.team.aggregate.healthRank.threshold.B', 'coarse.team.aggregate.healthRank.threshold.A'],
+  ['coarse.team.aggregate.healthRank.threshold.C', 'coarse.team.aggregate.healthRank.threshold.B'],
+  ['coarse.team.industry.league.platinumMaximum', 'coarse.team.industry.league.goldMaximum'],
+  ['coarse.team.industry.league.goldMaximum', 'coarse.team.industry.league.silverMaximum'],
 ] as const;
 
 /** 合計が固定される係数の組み合わせ。 */

@@ -3,20 +3,28 @@
  * ミューテーションテストの Survived / 境界 mutation を exact 断言で潰す（旧 RI-91-B1）。
  */
 import { describe, expect, it } from 'vitest';
-import { MEMBER_BALANCE } from '../../../src/data/balance';
+import { COARSE_TEAM_BALANCE, MEMBER_BALANCE } from '../../../src/data/balance';
 import { TASK_BASE_VALUE } from '../../../src/sim/model/process';
 import { activeAssignedCount, activeReviewerCount } from '../../../src/sim/member';
 import {
   advanceCoarseTeams,
   coarseShipToCompleted,
   createTeamRoster,
+  deriveTeamCapacities,
+  ENTER_TEAM_FOCUS_PENALTY,
+  ENTER_TEAM_LOCK_SPRINTS,
   estimateActiveAssignedCount,
   estimateRosterCoderCount,
   estimateRosterReviewerCount,
+  incidentBiasFor,
+  initTeamRunStates,
+  reviewCapacityFor,
+  syncTeamFromOrg,
   stripMetricAdjustments,
 } from '../../../src/sim/orgscale/teamState';
 import { emptyAdjust, emptyAdjustState } from '../../../src/sim/orgscale/levers';
 import type { OrgAdjust, TeamRunState } from '../../../src/sim/orgscale/types';
+import type { OrgState } from '../../../src/sim/types';
 
 const metricHeavy = (overrides: Partial<OrgAdjust> = {}): OrgAdjust => ({
   ...emptyAdjust(),
@@ -54,7 +62,88 @@ const makeTeam = (overrides: Partial<TeamRunState> = {}): TeamRunState => ({
   ...overrides,
 });
 
+const makeOrg = (overrides: Partial<OrgState> = {}): OrgState => ({
+  aiEnabled: true,
+  aiDependency: 40,
+  aiLiteracy: 60,
+  testCoverage: 70,
+  documentation: 55,
+  quality: 65,
+  securityLevel: 50,
+  morale: 70,
+  seniorHp: 80,
+  techDebt: 30,
+  deliveryScore: 500,
+  ...overrides,
+});
+
 describe('RI-91-B1 teamState survived mutants', () => {
+  describe('COARSE_TEAM_BALANCE の派生値', () => {
+    it('Review容量とIncident biasの式を初期化・同期・再計算で共有する', () => {
+      const org = makeOrg();
+      const teams = initTeamRunStates({
+        seed: 'ri113-derived-capacities',
+        org,
+        homeEngineers: 6,
+        homeReviewQueue: 4,
+        homeIncidents: 2,
+      });
+      const home = teams.find((team) => team.id === 'product-t0')!;
+      const expectedCapacity = reviewCapacityFor(6, 4);
+      const expectedBias = incidentBiasFor(2, 65, 50);
+
+      expect(home.reviewCapacity).toBe(expectedCapacity);
+      expect(home.incidentBias).toBe(expectedBias);
+      expect(deriveTeamCapacities(home)).toEqual({
+        reviewCapacity: expectedCapacity,
+        incidentBias: expectedBias,
+      });
+
+      const synced = syncTeamFromOrg(home, makeOrg({ quality: 45, securityLevel: 30 }), {
+        engineers: 3,
+        headcount: 6,
+        reviewQueue: 9,
+        incidents: 1,
+      });
+      expect(synced.reviewCapacity).toBe(reviewCapacityFor(3, 9));
+      expect(synced.incidentBias).toBe(incidentBiasFor(1, 45, 30));
+    });
+
+    it('Review容量・Incident biasの上下限と既存aliasを固定する', () => {
+      expect(reviewCapacityFor(-100, 1000)).toBe(COARSE_TEAM_BALANCE.reviewCapacityMinimum.value);
+      expect(reviewCapacityFor(1000, 0)).toBe(COARSE_TEAM_BALANCE.reviewCapacityMaximum.value);
+      expect(incidentBiasFor(1000, 0, 0)).toBe(COARSE_TEAM_BALANCE.incidentBiasMaximum.value);
+      expect(incidentBiasFor(0, 100, 100)).toBeGreaterThanOrEqual(
+        COARSE_TEAM_BALANCE.incidentBiasMinimum.value,
+      );
+      expect(ENTER_TEAM_FOCUS_PENALTY).toBe(COARSE_TEAM_BALANCE.enterTeamFocusPenalty.value);
+      expect(ENTER_TEAM_LOCK_SPRINTS).toBe(COARSE_TEAM_BALANCE.enterTeamLockSprints.value);
+    });
+
+    it('AI・Review・品質・Incidentの因果方向を保つ', () => {
+      const healthy = makeTeam({ reviewQueue: 0, incidents: 0, quality: 100, securityLevel: 100 });
+      const pressured = makeTeam({ reviewQueue: 10, incidents: 2, quality: 40, securityLevel: 20 });
+      expect(deriveTeamCapacities(healthy).reviewCapacity).toBeGreaterThan(
+        deriveTeamCapacities(pressured).reviewCapacity,
+      );
+      expect(deriveTeamCapacities(healthy).incidentBias).toBeLessThan(
+        deriveTeamCapacities(pressured).incidentBias,
+      );
+
+      const lowAi = advanceCoarseTeams([makeTeam({ id: 'team', aiDependency: 0 })], {
+        seed: 'ri113-causality-ai',
+        stepKey: 's1',
+        excludeId: 'none',
+      });
+      const highAi = advanceCoarseTeams([makeTeam({ id: 'team', aiDependency: 80 })], {
+        seed: 'ri113-causality-ai',
+        stepKey: 's1',
+        excludeId: 'none',
+      });
+      expect(highAi.teams[0]!.shipping).toBeGreaterThan(lowAi.teams[0]!.shipping);
+    });
+  });
+
   describe('stripMetricAdjustments', () => {
     it('指標差分を落とし infraBoost/extraTeams と byTeam を残す', () => {
       const byTeamAdj = metricHeavy({ infraBoost: 3, extraTeams: 1, moraleDelta: 9 });

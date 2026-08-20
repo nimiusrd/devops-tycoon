@@ -12,6 +12,7 @@ export { RUN_BALANCE } from './run';
 export { OUTCOME_BALANCE } from './outcome';
 export { CARD_BALANCE } from './cards';
 export { SPRINT_BALANCE, SPRINT_TASK_KIND_WEIGHTS } from './sprint';
+export { COARSE_TEAM_BALANCE } from './coarse-team';
 export type { ActionRuntimeBalance } from './actions';
 export type {
   BalanceAllowedRange,
@@ -31,6 +32,7 @@ import { RUN_BALANCE } from './run';
 import { OUTCOME_BALANCE } from './outcome';
 import { CARD_BALANCE } from './cards';
 import { SPRINT_BALANCE } from './sprint';
+import { COARSE_TEAM_BALANCE } from './coarse-team';
 import type { BalanceDefinition } from './types';
 
 /** 現時点でゲームが参照する全バランス定義。 */
@@ -42,4 +44,5 @@ export const BALANCE_REGISTRY = [
   ...Object.values(OUTCOME_BALANCE),
   ...Object.values(CARD_BALANCE),
   ...Object.values(SPRINT_BALANCE),
+  ...Object.values(COARSE_TEAM_BALANCE),
 ] satisfies readonly BalanceDefinition[];

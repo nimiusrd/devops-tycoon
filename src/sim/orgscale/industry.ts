@@ -8,7 +8,8 @@
 import { diagnosisView } from '../diagnosis';
 import { createRng } from '../rng';
 import type { DiagnosisType } from '../run/types';
-import { healthRank } from './aggregate';
+import { COARSE_TEAM_BALANCE } from '../../data/balance';
+import { companyScore, healthRank } from './aggregate';
 import type {
   IndustryState,
   LeaderboardEntry,
@@ -17,9 +18,6 @@ import type {
   RivalOrg,
 } from './types';
 import { clamp } from '../clamp';
-
-/** 他組織の数（自社を加えて total = RIVAL_COUNT + 1）。 */
-const RIVAL_COUNT = 11;
 
 /** 他組織の社名候補（現実の比喩。実在企業を避けた一般名）。 */
 const RIVAL_NAMES = [
@@ -61,21 +59,36 @@ interface ScoreInput {
 
 /** 共通の評価軸でランキング種別ごとのスコアを計算する。 */
 export function computeScores(m: ScoreInput): Record<RankingKind, number> {
-  const overall = Math.max(
-    0,
-    Math.round(m.shipping - m.onFire * 40 - Math.min(300, m.techDebt) * 0.5),
-  );
+  const overall = companyScore({ shipping: m.shipping, onFire: m.onFire, techDebt: m.techDebt });
   const healthy = Math.max(
-    0,
+    COARSE_TEAM_BALANCE.scoreMinimum.value,
     Math.round(
-      m.morale * 5 - Math.min(200, m.techDebt) * 0.3 - Math.max(0, m.aiDependency - 50) * 2,
+      m.morale * COARSE_TEAM_BALANCE.rankingHealthyMoraleWeight.value -
+        Math.min(COARSE_TEAM_BALANCE.rankingHealthyTechDebtCap.value, m.techDebt) *
+          COARSE_TEAM_BALANCE.rankingHealthyTechDebtWeight.value -
+        Math.max(
+          0,
+          m.aiDependency - COARSE_TEAM_BALANCE.rankingHealthyAiDependencyThreshold.value,
+        ) *
+          COARSE_TEAM_BALANCE.rankingHealthyAiDependencyWeight.value,
     ),
   );
   const ai = Math.max(
-    0,
-    Math.round(m.shipping * 0.5 + m.aiGuideline * 3 - Math.max(0, m.aiDependency - 60) * 3),
+    COARSE_TEAM_BALANCE.scoreMinimum.value,
+    Math.round(
+      m.shipping * COARSE_TEAM_BALANCE.rankingAiShippingWeight.value +
+        m.aiGuideline * COARSE_TEAM_BALANCE.rankingAiGuidelineWeight.value -
+        Math.max(0, m.aiDependency - COARSE_TEAM_BALANCE.rankingAiDependencyThreshold.value) *
+          COARSE_TEAM_BALANCE.rankingAiDependencyWeight.value,
+    ),
   );
-  const growth = Math.max(0, Math.round(m.shipping * 0.4 + m.morale * 2));
+  const growth = Math.max(
+    COARSE_TEAM_BALANCE.scoreMinimum.value,
+    Math.round(
+      m.shipping * COARSE_TEAM_BALANCE.rankingGrowthShippingWeight.value +
+        m.morale * COARSE_TEAM_BALANCE.rankingGrowthMoraleWeight.value,
+    ),
+  );
   return { overall, healthy, ai, growth };
 }
 
@@ -83,7 +96,7 @@ export function computeScores(m: ScoreInput): Record<RankingKind, number> {
 function seasonFor(seed: string): number {
   let h = 0;
   for (let i = 0; i < seed.length; i += 1) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return (h % 4) + 1;
+  return (h % COARSE_TEAM_BALANCE.industrySeasonCount.value) + 1;
 }
 
 /** 直近四半期の自社順位と現在順位から趨勢を決める（RI-128）。履歴なしは横ばい。 */
@@ -130,12 +143,27 @@ const DIAGNOSIS_POOL: DiagnosisType[] = [
 /** 1 他組織を派生 seed から生成する。 */
 function makeRival(seed: string, i: number): RivalOrg {
   const rng = createRng(`${seed}:rival:${i}`);
-  const shipping = 200 + Math.round(rng() * 1600);
-  const morale = clamp(30 + Math.round(rng() * 60), 0, 100);
-  const techDebt = Math.round(rng() * 260);
-  const aiDependency = clamp(Math.round(rng() * 100), 0, 100);
-  const aiGuideline = clamp(Math.round(rng() * 100), 0, 100);
-  const onFire = Math.floor(rng() * 4);
+  const shipping =
+    COARSE_TEAM_BALANCE.industryRivalShippingBase.value +
+    Math.round(rng() * COARSE_TEAM_BALANCE.industryRivalShippingRange.value);
+  const morale = clamp(
+    COARSE_TEAM_BALANCE.industryRivalMoraleBase.value +
+      Math.round(rng() * COARSE_TEAM_BALANCE.industryRivalMoraleRange.value),
+    0,
+    100,
+  );
+  const techDebt = Math.round(rng() * COARSE_TEAM_BALANCE.industryRivalTechDebtRange.value);
+  const aiDependency = clamp(
+    Math.round(rng() * COARSE_TEAM_BALANCE.industryRivalAiDependencyRange.value),
+    0,
+    100,
+  );
+  const aiGuideline = clamp(
+    Math.round(rng() * COARSE_TEAM_BALANCE.industryRivalAiGuidelineRange.value),
+    0,
+    100,
+  );
+  const onFire = Math.floor(rng() * COARSE_TEAM_BALANCE.industryRivalOnFireRange.value);
   const diagnosis = DIAGNOSIS_POOL[Math.floor(rng() * DIAGNOSIS_POOL.length)];
   const trend = (Math.floor(rng() * 3) - 1) as -1 | 0 | 1;
   return {
@@ -152,9 +180,9 @@ function makeRival(seed: string, i: number): RivalOrg {
 /** 順位（selfRank=1 起点の百分位）からリーグ名を決める。 */
 function leagueFor(selfRank: number, total: number): string {
   const pct = selfRank / total;
-  if (pct <= 0.2) return 'プラチナリーグ';
-  if (pct <= 0.45) return 'ゴールドリーグ';
-  if (pct <= 0.75) return 'シルバーリーグ';
+  if (pct <= COARSE_TEAM_BALANCE.leaguePlatinumMaximum.value) return 'プラチナリーグ';
+  if (pct <= COARSE_TEAM_BALANCE.leagueGoldMaximum.value) return 'ゴールドリーグ';
+  if (pct <= COARSE_TEAM_BALANCE.leagueSilverMaximum.value) return 'シルバーリーグ';
   return 'ブロンズリーグ';
 }
 
@@ -168,7 +196,9 @@ export function generateIndustry(
   previousSelfRank?: number,
 ): IndustryState {
   const self = selfRival(company);
-  const rivals = Array.from({ length: RIVAL_COUNT }, (_, i) => makeRival(company.seed, i));
+  const rivals = Array.from({ length: COARSE_TEAM_BALANCE.industryRivalCount.value }, (_, i) =>
+    makeRival(company.seed, i),
+  );
   const all = [self, ...rivals];
   all.sort((a, b) => {
     const d = b.scores[kind] - a.scores[kind];

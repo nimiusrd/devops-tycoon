@@ -55,6 +55,8 @@ export {
   advanceCoarseTeams,
   applyEffectToTeam,
   deriveTeamCapacities,
+  reviewCapacityFor,
+  incidentBiasFor,
   normalizeCoarseTotalsDelta,
   coarseShipToCompleted,
   projectOrgScale,

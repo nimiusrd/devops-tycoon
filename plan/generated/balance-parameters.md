@@ -73,6 +73,166 @@
 | `card.hand.size` | スプリント開始時の手札枚数 | `3` | `count` | `1〜10（整数）` | — | スプリント開始時にデッキから配る手札の枚数。 | card, hand | いいえ |
 | `card.play.focusCostMinimum` | 手札発動の集中力コスト下限 | `1` | `points` | `1〜10（整数）` | — | 丸め後および強化による減少後の、手札発動コストの下限。 | card, play, focus | いいえ |
 | `card.upgrade.levelMultiplier` | 強化レベルごとの効果増分 | `0.5` | `multiplier` | `0〜2` | — | 強化レベルが1を超えるごとに効果へ加える係数。k = 1 + この値 × max(0, level - 1)。 | card, upgrade | いいえ |
+| `coarse.team.aggregate.healthRank.aiDependencyThreshold` | 健康ランクの AI 依存度境界 | `50` | `percent` | `0〜100（整数）` | — | 健康ランクの AI 依存度ペナルティが始まる境界。 | coarse-team, aggregate, health-rank, ai | いいえ |
+| `coarse.team.aggregate.healthRank.aiDependencyWeight` | 健康ランクの AI 依存度係数 | `0.5` | `multiplier` | `0〜2` | — | 健康ランクの指数へ掛ける AI 依存度係数。 | coarse-team, aggregate, health-rank, ai | いいえ |
+| `coarse.team.aggregate.healthRank.moraleWeight` | 健康ランクの士気係数 | `0.6` | `multiplier` | `0〜2` | — | 健康ランクの指数へ掛ける士気係数。 | coarse-team, aggregate, health-rank | いいえ |
+| `coarse.team.aggregate.healthRank.techDebtCap` | 健康ランクの負債評価上限 | `100` | `points` | `0〜1000（整数）` | — | 健康ランクの指数で負債評価を頭打ちにする上限。 | coarse-team, aggregate, health-rank, tech-debt | いいえ |
+| `coarse.team.aggregate.healthRank.techDebtWeight` | 健康ランクの負債係数 | `0.25` | `multiplier` | `0〜2` | — | 健康ランクの指数へ掛ける負債係数。 | coarse-team, aggregate, health-rank, tech-debt | いいえ |
+| `coarse.team.aggregate.healthRank.threshold.A` | 健康ランク A 閾値 | `40` | `points` | `-100〜200` | `coarse.team.aggregate.healthRank.threshold.A` < `coarse.team.aggregate.healthRank.threshold.S`<br>`coarse.team.aggregate.healthRank.threshold.B` < `coarse.team.aggregate.healthRank.threshold.A` | 健康ランクの A 判定閾値。 | coarse-team, aggregate, health-rank, boundary | いいえ |
+| `coarse.team.aggregate.healthRank.threshold.B` | 健康ランク B 閾値 | `25` | `points` | `-100〜200` | `coarse.team.aggregate.healthRank.threshold.B` < `coarse.team.aggregate.healthRank.threshold.A`<br>`coarse.team.aggregate.healthRank.threshold.C` < `coarse.team.aggregate.healthRank.threshold.B` | 健康ランクの B 判定閾値。 | coarse-team, aggregate, health-rank, boundary | いいえ |
+| `coarse.team.aggregate.healthRank.threshold.C` | 健康ランク C 閾値 | `10` | `points` | `-100〜200` | `coarse.team.aggregate.healthRank.threshold.C` < `coarse.team.aggregate.healthRank.threshold.B` | 健康ランクの C 判定閾値。 | coarse-team, aggregate, health-rank, boundary | いいえ |
+| `coarse.team.aggregate.healthRank.threshold.S` | 健康ランク S 閾値 | `55` | `points` | `-100〜200` | `coarse.team.aggregate.healthRank.threshold.A` < `coarse.team.aggregate.healthRank.threshold.S` | 健康ランクの S 判定閾値。 | coarse-team, aggregate, health-rank, boundary | いいえ |
+| `coarse.team.aggregate.reviewHellRatioMinimum` | 部門 Review Hell 比率境界 | `0.3333333333333333` | `ratio` | `0〜1` | — | 部門を Review Hell と見せる Review Hell チーム比率の下限。 | coarse-team, aggregate, health, boundary | いいえ |
+| `coarse.team.aggregate.reviewResilience.base` | 部門 Review 耐性の基礎値 | `100` | `points` | `0〜100（整数）` | — | 部門 Review 耐性の行列補正前の基礎値。 | coarse-team, aggregate, review | いいえ |
+| `coarse.team.aggregate.reviewResilience.maximum` | 部門 Review 耐性の上限 | `100` | `points` | `0〜100（整数）` | `coarse.team.aggregate.reviewResilience.minimum` ≤ `coarse.team.aggregate.reviewResilience.maximum` | 部門 Review 耐性へ適用する上限。 | coarse-team, aggregate, review, boundary | いいえ |
+| `coarse.team.aggregate.reviewResilience.minimum` | 部門 Review 耐性の下限 | `0` | `points` | `0〜100（整数）` | `coarse.team.aggregate.reviewResilience.minimum` ≤ `coarse.team.aggregate.reviewResilience.maximum` | 部門 Review 耐性へ適用する下限。 | coarse-team, aggregate, review, boundary | いいえ |
+| `coarse.team.aggregate.reviewResilience.queuePenalty` | 部門 Review 耐性の行列係数 | `6` | `points` | `0〜100` | — | 平均 Review 行列 1 件あたりの部門 Review 耐性減算。 | coarse-team, aggregate, review | いいえ |
+| `coarse.team.aggregate.score.minimum` | 全社スコアの下限 | `0` | `points` | `0〜100000（整数）` | — | 全社・ランキング各スコアへ適用する下限。 | coarse-team, aggregate, score, industry, boundary | いいえ |
+| `coarse.team.aggregate.score.onFirePenalty` | 全社スコアの炎上ペナルティ | `40` | `points` | `0〜1000（整数）` | — | 炎上チーム 1 件あたりの全社・総合スコア減算。 | coarse-team, aggregate, score, industry | いいえ |
+| `coarse.team.aggregate.score.techDebtCap` | 全社スコアの負債評価上限 | `300` | `points` | `0〜2000（整数）` | — | 全社・総合スコアで負債評価を頭打ちにする上限。 | coarse-team, aggregate, score, tech-debt | いいえ |
+| `coarse.team.aggregate.score.techDebtWeight` | 全社スコアの負債係数 | `0.5` | `multiplier` | `0〜2` | — | 全社・総合スコアへ掛ける負債係数。 | coarse-team, aggregate, score, tech-debt, industry | いいえ |
+| `coarse.team.capacity.incident.base` | 粗粒度 Incident bias の基礎値 | `0.08` | `probability` | `0〜1` | — | 粗粒度 Incident 発生 bias の基礎確率。 | coarse-team, incident, capacity | いいえ |
+| `coarse.team.capacity.incident.maximum` | 粗粒度 Incident bias の上限 | `0.45` | `probability` | `0〜1` | `coarse.team.capacity.incident.minimum` ≤ `coarse.team.capacity.incident.maximum` | 粗粒度 Incident bias へ適用する上限。 | coarse-team, incident, capacity, boundary | いいえ |
+| `coarse.team.capacity.incident.minimum` | 粗粒度 Incident bias の下限 | `0.02` | `probability` | `0〜1` | `coarse.team.capacity.incident.minimum` ≤ `coarse.team.capacity.incident.maximum` | 粗粒度 Incident bias へ適用する下限。 | coarse-team, incident, capacity, boundary | いいえ |
+| `coarse.team.capacity.incident.perIncident` | 粗粒度 Incident bias の保有件数係数 | `0.05` | `probability` | `0〜1` | — | 未鎮火 Incident 1 件あたりの Incident bias 加算。 | coarse-team, incident, capacity | いいえ |
+| `coarse.team.capacity.incident.qualityGapWeight` | 粗粒度 Incident bias の品質不足係数 | `0.002` | `multiplier` | `0〜1` | — | 品質不足 1 ポイントあたりの Incident bias 加算。 | coarse-team, incident, capacity, quality | いいえ |
+| `coarse.team.capacity.incident.securityFragilityWeight` | 粗粒度 Incident bias の Security 脆弱度係数 | `0.08` | `probability` | `0〜1` | — | Security 脆弱度へ掛ける Incident bias 係数。 | coarse-team, incident, capacity, security | いいえ |
+| `coarse.team.capacity.review.base` | 粗粒度 Review 容量の基礎値 | `55` | `points` | `0〜200` | — | チーム Review 容量の基礎値。 | coarse-team, review, capacity | いいえ |
+| `coarse.team.capacity.review.maximum` | 粗粒度 Review 容量の上限 | `100` | `points` | `0〜100` | `coarse.team.capacity.review.minimum` ≤ `coarse.team.capacity.review.maximum` | 粗粒度 Review 容量へ適用する上限。 | coarse-team, review, capacity, boundary | いいえ |
+| `coarse.team.capacity.review.minimum` | 粗粒度 Review 容量の下限 | `10` | `points` | `0〜100` | `coarse.team.capacity.review.minimum` ≤ `coarse.team.capacity.review.maximum` | 粗粒度 Review 容量へ適用する下限。 | coarse-team, review, capacity, boundary | いいえ |
+| `coarse.team.capacity.review.perEngineer` | 粗粒度 Review 容量の人数係数 | `4` | `points` | `0〜50` | — | エンジニア 1 人あたりの Review 容量加算。 | coarse-team, review, capacity | いいえ |
+| `coarse.team.capacity.review.perQueue` | 粗粒度 Review 容量の行列係数 | `2` | `points` | `0〜50` | — | Review 行列 1 件あたりの Review 容量減算。 | coarse-team, review, capacity | いいえ |
+| `coarse.team.enter.focusPenalty` | チーム入り込み集中力ペナルティ | `-2` | `points` | `-100〜0（整数）` | — | 別チームへ入り込んだ次スプリントの集中力上限へ加える値。 | coarse-team, enter-team, focus | いいえ |
+| `coarse.team.enter.lockSprints` | チーム入り込み拘束スプリント数 | `1` | `count` | `0〜20（整数）` | — | チーム入り込み後に別チームへ切り替えられないスプリント数。 | coarse-team, enter-team | いいえ |
+| `coarse.team.health.congested.aiDependencyMinimum` | Congested の AI 依存度境界 | `70` | `percent` | `0〜100（整数）` | — | チームを Congested と判定する AI 依存度の下限。 | coarse-team, aggregate, health, ai, boundary | いいえ |
+| `coarse.team.health.congested.queueMinimum` | Congested の行列境界 | `6` | `count` | `0〜100（整数）` | `coarse.team.health.congested.queueMinimum` < `coarse.team.health.reviewHell.queueMinimum` | チームを Congested と判定する Review 行列の下限。 | coarse-team, aggregate, health, review, boundary | いいえ |
+| `coarse.team.health.reviewHell.incidentMinimum` | Review Hell の Incident 境界 | `2` | `count` | `0〜100（整数）` | — | チームを Review Hell と判定する未鎮火 Incident 数の下限。 | coarse-team, aggregate, health, incident, boundary | いいえ |
+| `coarse.team.health.reviewHell.queueMinimum` | Review Hell の行列境界 | `12` | `count` | `0〜100（整数）` | `coarse.team.health.congested.queueMinimum` < `coarse.team.health.reviewHell.queueMinimum` | チームを Review Hell と判定する Review 行列の下限。 | coarse-team, aggregate, health, review, boundary | いいえ |
+| `coarse.team.industry.league.goldMaximum` | ゴールドリーグ順位比率上限 | `0.45` | `ratio` | `0〜1` | `coarse.team.industry.league.platinumMaximum` < `coarse.team.industry.league.goldMaximum`<br>`coarse.team.industry.league.goldMaximum` < `coarse.team.industry.league.silverMaximum` | 自社順位比率がこの値以下ならゴールドリーグとする。 | coarse-team, industry, league, boundary | いいえ |
+| `coarse.team.industry.league.platinumMaximum` | プラチナリーグ順位比率上限 | `0.2` | `ratio` | `0〜1` | `coarse.team.industry.league.platinumMaximum` < `coarse.team.industry.league.goldMaximum` | 自社順位比率がこの値以下ならプラチナリーグとする。 | coarse-team, industry, league, boundary | いいえ |
+| `coarse.team.industry.league.silverMaximum` | シルバーリーグ順位比率上限 | `0.75` | `ratio` | `0〜1` | `coarse.team.industry.league.goldMaximum` < `coarse.team.industry.league.silverMaximum` | 自社順位比率がこの値以下ならシルバーリーグとする。 | coarse-team, industry, league, boundary | いいえ |
+| `coarse.team.industry.ranking.ai.shippingWeight` | AI 活用ランキングの出荷係数 | `0.5` | `multiplier` | `0〜2` | — | AI 活用ランキングへ掛ける出荷係数。 | coarse-team, industry, ranking, ai | いいえ |
+| `coarse.team.industry.ranking.aiDependencyThreshold` | AI 活用ランキングの AI 依存度境界 | `60` | `percent` | `0〜100（整数）` | — | AI 活用ランキングの AI 依存度ペナルティが始まる境界。 | coarse-team, industry, ranking, ai | いいえ |
+| `coarse.team.industry.ranking.aiDependencyWeight` | AI 活用ランキングの AI 依存度係数 | `3` | `multiplier` | `0〜10` | — | AI 活用ランキングへ掛ける AI 依存度係数。 | coarse-team, industry, ranking, ai | いいえ |
+| `coarse.team.industry.ranking.aiGuidelineWeight` | AI 活用ランキングのガイドライン係数 | `3` | `multiplier` | `0〜10` | — | AI 活用ランキングへ掛ける AI ガイドライン係数。 | coarse-team, industry, ranking, ai | いいえ |
+| `coarse.team.industry.ranking.growth.moraleWeight` | 急成長ランキングの士気係数 | `2` | `multiplier` | `0〜10` | — | 急成長ランキングへ掛ける士気係数。 | coarse-team, industry, ranking, growth | いいえ |
+| `coarse.team.industry.ranking.growth.shippingWeight` | 急成長ランキングの出荷係数 | `0.4` | `multiplier` | `0〜2` | — | 急成長ランキングへ掛ける出荷係数。 | coarse-team, industry, ranking, growth | いいえ |
+| `coarse.team.industry.ranking.healthy.aiDependencyThreshold` | 健全経営ランキングの AI 依存度境界 | `50` | `percent` | `0〜100（整数）` | — | 健全経営ランキングの AI 依存度ペナルティが始まる境界。 | coarse-team, industry, ranking, healthy, ai | いいえ |
+| `coarse.team.industry.ranking.healthy.aiDependencyWeight` | 健全経営ランキングの AI 依存度係数 | `2` | `multiplier` | `0〜10` | — | 健全経営ランキングへ掛ける AI 依存度係数。 | coarse-team, industry, ranking, healthy, ai | いいえ |
+| `coarse.team.industry.ranking.healthy.moraleWeight` | 健全経営ランキングの士気係数 | `5` | `multiplier` | `0〜20` | — | 健全経営ランキングへ掛ける士気係数。 | coarse-team, industry, ranking, healthy | いいえ |
+| `coarse.team.industry.ranking.healthy.techDebtCap` | 健全経営ランキングの負債評価上限 | `200` | `points` | `0〜2000（整数）` | — | 健全経営ランキングで負債評価を頭打ちにする上限。 | coarse-team, industry, ranking, healthy, tech-debt | いいえ |
+| `coarse.team.industry.ranking.healthy.techDebtWeight` | 健全経営ランキングの負債係数 | `0.3` | `multiplier` | `0〜2` | — | 健全経営ランキングへ掛ける負債係数。 | coarse-team, industry, ranking, healthy, tech-debt | いいえ |
+| `coarse.team.industry.rival.aiDependencyRange` | 業界ライバル AI 依存度の抽選範囲 | `100` | `percent` | `0〜100（整数）` | — | 業界ライバル生成時の AI 依存度乱数範囲。 | coarse-team, industry, rival, ai | いいえ |
+| `coarse.team.industry.rival.aiGuidelineRange` | 業界ライバル AI ガイドラインの抽選範囲 | `100` | `percent` | `0〜100（整数）` | — | 業界ライバル生成時の AI ガイドライン乱数範囲。 | coarse-team, industry, rival, ai | いいえ |
+| `coarse.team.industry.rival.moraleBase` | 業界ライバル士気の基礎値 | `30` | `percent` | `0〜100（整数）` | — | 業界ライバル生成時の士気基礎値。 | coarse-team, industry, rival, morale | いいえ |
+| `coarse.team.industry.rival.moraleRange` | 業界ライバル士気の抽選範囲 | `60` | `percent` | `0〜100（整数）` | — | 業界ライバル生成時の士気乱数範囲。 | coarse-team, industry, rival, morale | いいえ |
+| `coarse.team.industry.rival.onFireRange` | 業界ライバル炎上数の抽選範囲 | `4` | `count` | `1〜20（整数）` | — | 業界ライバル生成時の炎上チーム数乱数範囲。 | coarse-team, industry, rival, incident | いいえ |
+| `coarse.team.industry.rival.shippingBase` | 業界ライバル出荷の基礎値 | `200` | `points` | `0〜10000（整数）` | — | 業界ライバル生成時の出荷基礎値。 | coarse-team, industry, rival, shipping | いいえ |
+| `coarse.team.industry.rival.shippingRange` | 業界ライバル出荷の抽選範囲 | `1600` | `points` | `0〜10000（整数）` | — | 業界ライバル生成時の出荷乱数範囲。 | coarse-team, industry, rival, shipping | いいえ |
+| `coarse.team.industry.rival.techDebtRange` | 業界ライバル負債の抽選範囲 | `260` | `points` | `0〜2000（整数）` | — | 業界ライバル生成時の技術的負債乱数範囲。 | coarse-team, industry, rival, tech-debt | いいえ |
+| `coarse.team.industry.rivalCount` | 業界ランキングのライバル数 | `11` | `count` | `1〜100（整数）` | — | 自社を除く業界ランキング参加組織数。 | coarse-team, industry, rival | いいえ |
+| `coarse.team.industry.seasonCount` | 業界シーズン数 | `4` | `count` | `1〜20（整数）` | — | seed から派生する業界シーズン番号の範囲。 | coarse-team, industry, season | いいえ |
+| `coarse.team.initial.homeEngineersDefault` | ホームチーム人数の既定値 | `5` | `count` | `0〜100（整数）` | — | 単発の組織スケール生成でプレイヤー人数を省略したときの既定値。 | coarse-team, initial, headcount | いいえ |
+| `coarse.team.rival.aiDependencySpread` | ライバル AI 依存度の振れ幅 | `25` | `percent` | `0〜100（整数）` | — | 通常のライバルチームへ加える AI 依存度の一様な振れ幅。 | coarse-team, rival, initial, ai | いいえ |
+| `coarse.team.rival.aiDependencySpreadLowLiteracy` | 低リテラシー時ライバル AI 依存度の振れ幅 | `10` | `percent` | `0〜100（整数）` | — | AI リテラシーが危険域の組織でライバルへ加える依存度振れ幅。 | coarse-team, rival, initial, ai, boundary | いいえ |
+| `coarse.team.rival.aiLiteracyJitter` | ライバル AI リテラシーの振れ幅 | `20` | `percent` | `0〜100（整数）` | — | ホームチームの AI リテラシーを中心にした振れ幅。 | coarse-team, rival, initial, ai | いいえ |
+| `coarse.team.rival.aiLiteracyMaximum` | ライバル AI リテラシーの上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.rival.aiLiteracyMinimum` ≤ `coarse.team.rival.aiLiteracyMaximum` | ライバル初期 AI リテラシーへ適用する上限。 | coarse-team, rival, initial, ai, boundary | いいえ |
+| `coarse.team.rival.aiLiteracyMinimum` | ライバル AI リテラシーの下限 | `10` | `percent` | `0〜100（整数）` | `coarse.team.rival.aiLiteracyMinimum` ≤ `coarse.team.rival.aiLiteracyMaximum` | ライバル初期 AI リテラシーへ適用する下限。 | coarse-team, rival, initial, ai, boundary | いいえ |
+| `coarse.team.rival.documentationJitter` | ライバルドキュメント水準の振れ幅 | `15` | `percent` | `0〜100（整数）` | — | ホームチームのドキュメント水準を中心にした振れ幅。 | coarse-team, rival, initial, documentation | いいえ |
+| `coarse.team.rival.documentationMaximum` | ライバルドキュメント水準の上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.rival.documentationMinimum` ≤ `coarse.team.rival.documentationMaximum` | ライバル初期ドキュメント水準へ適用する上限。 | coarse-team, rival, initial, documentation, boundary | いいえ |
+| `coarse.team.rival.documentationMinimum` | ライバルドキュメント水準の下限 | `20` | `percent` | `0〜100（整数）` | `coarse.team.rival.documentationMinimum` ≤ `coarse.team.rival.documentationMaximum` | ライバル初期ドキュメント水準へ適用する下限。 | coarse-team, rival, initial, documentation, boundary | いいえ |
+| `coarse.team.rival.engineerMinimum` | ライバル人数の下限 | `3` | `count` | `0〜100（整数）` | — | ライバル初期人数の乱数へ加える基礎人数。 | coarse-team, rival, initial, headcount | いいえ |
+| `coarse.team.rival.engineerRollRange` | ライバル人数の抽選範囲 | `6` | `count` | `1〜100（整数）` | — | ライバル初期人数へ加える整数乱数の範囲。 | coarse-team, rival, initial, headcount | いいえ |
+| `coarse.team.rival.extraShippingMultiplier` | 追加チーム初期出荷倍率 | `0.4` | `multiplier` | `0〜2` | — | 採用ドラフトで追加するチームのテンプレート出荷へ掛ける倍率。 | coarse-team, rival, initial, shipping, extra-team | いいえ |
+| `coarse.team.rival.incidentRollMultiplier` | ライバル初期 Incident 抽選倍率 | `2.4` | `multiplier` | `0〜10` | — | ライバル初期 Incident 件数の乱数へ掛ける倍率。 | coarse-team, rival, initial, incident | いいえ |
+| `coarse.team.rival.incidentRollOffset` | ライバル初期 Incident 抽選オフセット | `0.6` | `count` | `0〜10` | — | ライバル初期 Incident 件数の乱数から引くオフセット。 | coarse-team, rival, initial, incident | いいえ |
+| `coarse.team.rival.moraleJitter` | ライバル士気の振れ幅 | `20` | `points` | `0〜100（整数）` | — | ホームチームの士気を中心にしたライバル士気の振れ幅。 | coarse-team, rival, initial, morale | いいえ |
+| `coarse.team.rival.moraleMaximum` | ライバル士気の上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.rival.moraleMinimum` ≤ `coarse.team.rival.moraleMaximum` | ライバル初期士気へ適用する上限。 | coarse-team, rival, initial, morale, boundary | いいえ |
+| `coarse.team.rival.moraleMinimum` | ライバル士気の下限 | `10` | `percent` | `0〜100（整数）` | `coarse.team.rival.moraleMinimum` ≤ `coarse.team.rival.moraleMaximum` | ライバル初期士気へ適用する下限。 | coarse-team, rival, initial, morale, boundary | いいえ |
+| `coarse.team.rival.qualityJitter` | ライバル品質の振れ幅 | `15` | `percent` | `0〜100（整数）` | — | ホームチームの品質を中心にした振れ幅。 | coarse-team, rival, initial, quality | いいえ |
+| `coarse.team.rival.qualityMaximum` | ライバル品質の上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.rival.qualityMinimum` ≤ `coarse.team.rival.qualityMaximum` | ライバル初期品質へ適用する上限。 | coarse-team, rival, initial, quality, boundary | いいえ |
+| `coarse.team.rival.qualityMinimum` | ライバル品質の下限 | `20` | `percent` | `0〜100（整数）` | `coarse.team.rival.qualityMinimum` ≤ `coarse.team.rival.qualityMaximum` | ライバル初期品質へ適用する下限。 | coarse-team, rival, initial, quality, boundary | いいえ |
+| `coarse.team.rival.reviewQueueJitter` | ライバル Review 行列の振れ幅 | `4` | `count` | `0〜100（整数）` | — | ホームチームの行列を中心にしたライバル行列の振れ幅。 | coarse-team, rival, initial, review | いいえ |
+| `coarse.team.rival.reviewQueueMinimum` | ライバル初期 Review 行列の下限 | `2` | `count` | `0〜100（整数）` | — | ライバル初期行列と追加チームの行列へ適用する下限。 | coarse-team, rival, initial, review, boundary | いいえ |
+| `coarse.team.rival.securityJitter` | ライバル Security の振れ幅 | `15` | `percent` | `0〜100（整数）` | — | ホームチームの Security を中心にした振れ幅。 | coarse-team, rival, initial, security | いいえ |
+| `coarse.team.rival.seniorHpJitter` | ライバルシニア HP の振れ幅 | `15` | `points` | `0〜100（整数）` | — | ホームチームのシニア HP を中心にした振れ幅。 | coarse-team, rival, initial, senior-hp | いいえ |
+| `coarse.team.rival.seniorHpMaximum` | ライバルシニア HP の上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.rival.seniorHpMinimum` ≤ `coarse.team.rival.seniorHpMaximum` | ライバル初期シニア HP へ適用する上限。 | coarse-team, rival, initial, senior-hp, boundary | いいえ |
+| `coarse.team.rival.seniorHpMinimum` | ライバルシニア HP の下限 | `40` | `percent` | `0〜100（整数）` | `coarse.team.rival.seniorHpMinimum` ≤ `coarse.team.rival.seniorHpMaximum` | ライバル初期シニア HP へ適用する下限。 | coarse-team, rival, initial, senior-hp, boundary | いいえ |
+| `coarse.team.rival.shippingJitterMultiplier` | ライバル初期出荷の相対振れ幅 | `0.6` | `multiplier` | `0〜2` | — | ホーム出荷に対するライバル出荷振れ幅の倍率。 | coarse-team, rival, initial, shipping | いいえ |
+| `coarse.team.rival.shippingMinimum` | ライバル初期出荷の下限 | `40` | `points` | `0〜10000（整数）` | — | ライバル初期出荷と追加チームのテンプレート出荷へ適用する下限。 | coarse-team, rival, initial, shipping, boundary | いいえ |
+| `coarse.team.rival.techDebtJitter` | ライバル技術的負債の振れ幅 | `40` | `points` | `0〜1000（整数）` | — | ホームチームの負債を中心にしたライバル負債の振れ幅。 | coarse-team, rival, initial, tech-debt | いいえ |
+| `coarse.team.rival.techDebtMinimum` | ライバル技術的負債の下限 | `20` | `points` | `0〜1000（整数）` | — | ライバル初期負債をホーム値から派生するときの下限。 | coarse-team, rival, initial, tech-debt, boundary | いいえ |
+| `coarse.team.rival.testCoverageJitter` | ライバルテストカバレッジの振れ幅 | `15` | `percent` | `0〜100（整数）` | — | ホームチームのテストカバレッジを中心にした振れ幅。 | coarse-team, rival, initial, quality | いいえ |
+| `coarse.team.rival.testCoverageMaximum` | ライバルテストカバレッジの上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.rival.testCoverageMinimum` ≤ `coarse.team.rival.testCoverageMaximum` | ライバル初期テストカバレッジへ適用する上限。 | coarse-team, rival, initial, quality, boundary | いいえ |
+| `coarse.team.rival.testCoverageMinimum` | ライバルテストカバレッジの下限 | `20` | `percent` | `0〜100（整数）` | `coarse.team.rival.testCoverageMinimum` ≤ `coarse.team.rival.testCoverageMaximum` | ライバル初期テストカバレッジへ適用する下限。 | coarse-team, rival, initial, quality, boundary | いいえ |
+| `coarse.team.step.aiDependency.pressureBase` | AI 圧力倍率の基礎値 | `1` | `multiplier` | `0〜5` | — | AI 依存度差分を反映する前の粗粒度圧力倍率。 | coarse-team, step, ai | いいえ |
+| `coarse.team.step.aiDependency.pressureMaximum` | AI 圧力倍率の上限 | `1.2` | `multiplier` | `0〜5` | `coarse.team.step.aiDependency.pressureMinimum` ≤ `coarse.team.step.aiDependency.pressureMaximum` | AI 依存度差分を反映した粗粒度圧力倍率の上限。 | coarse-team, step, ai, boundary | いいえ |
+| `coarse.team.step.aiDependency.pressureMinimum` | AI 圧力倍率の下限 | `0.4` | `multiplier` | `0〜5` | `coarse.team.step.aiDependency.pressureMinimum` ≤ `coarse.team.step.aiDependency.pressureMaximum` | AI 依存度差分を反映した粗粒度圧力倍率の下限。 | coarse-team, step, ai, boundary | いいえ |
+| `coarse.team.step.aiDependency.pressurePerDelta` | AI 依存度差分による圧力係数 | `0.02` | `multiplier` | `0〜1` | — | AI 依存度差分を粗粒度のランダムドリフト圧力へ変換する係数。 | coarse-team, step, ai, adjustment | いいえ |
+| `coarse.team.step.aiDependency.randomDriftChance` | 粗粒度 AI 依存度ランダムドリフト確率 | `0.3` | `probability` | `0〜1` | — | AI 圧力に応じて AI 依存度が 1 上がる基礎確率。 | coarse-team, step, ai | いいえ |
+| `coarse.team.step.aiLiteracy.gainChance` | 粗粒度 AI リテラシー成長確率 | `0.4` | `probability` | `0〜1` | — | 粗粒度ステップで AI リテラシーが 1 上がる確率。 | coarse-team, step, ai | いいえ |
+| `coarse.team.step.fire.chanceMaximum` | 粗粒度 Incident 発生確率の上限 | `0.5` | `probability` | `0〜1` | `coarse.team.step.fire.chanceMinimum` ≤ `coarse.team.step.fire.chanceMaximum` | 粗粒度 Incident 発生確率へ適用する上限。 | coarse-team, step, incident, boundary | いいえ |
+| `coarse.team.step.fire.chanceMinimum` | 粗粒度 Incident 発生確率の下限 | `0.02` | `probability` | `0〜1` | `coarse.team.step.fire.chanceMinimum` ≤ `coarse.team.step.fire.chanceMaximum` | 粗粒度 Incident 発生確率へ適用する下限。 | coarse-team, step, incident, boundary | いいえ |
+| `coarse.team.step.fire.chancePerAiDependency` | 粗粒度 Incident 発生の AI 依存度係数 | `0.0015` | `multiplier` | `0〜1` | — | AI 依存度を Incident 発生確率へ変換する係数。 | coarse-team, step, incident, ai | いいえ |
+| `coarse.team.step.fire.multiplierBase` | 粗粒度 Incident 発生倍率の基礎値 | `1` | `multiplier` | `0〜5` | — | Incident 差分補正前の発生倍率。 | coarse-team, step, incident | いいえ |
+| `coarse.team.step.fire.multiplierMaximum` | 粗粒度 Incident 発生倍率の上限 | `1.2` | `multiplier` | `0〜5` | `coarse.team.step.fire.multiplierMinimum` ≤ `coarse.team.step.fire.multiplierMaximum` | Incident 発生倍率へ適用する上限。 | coarse-team, step, incident, boundary | いいえ |
+| `coarse.team.step.fire.multiplierMinimum` | 粗粒度 Incident 発生倍率の下限 | `0.35` | `multiplier` | `0〜5` | `coarse.team.step.fire.multiplierMinimum` ≤ `coarse.team.step.fire.multiplierMaximum` | Incident 発生倍率へ適用する下限。 | coarse-team, step, incident, boundary | いいえ |
+| `coarse.team.step.incident.adjustmentMultiplier` | Incident 差分による発生倍率係数 | `0.12` | `multiplier` | `0〜2` | — | Incident 差分を発生倍率へ変換する係数。 | coarse-team, step, incident, adjustment | いいえ |
+| `coarse.team.step.incident.containChanceBase` | 粗粒度 Incident 鎮火確率の基礎値 | `0.35` | `probability` | `0〜1` | — | Review 容量補正前の粗粒度 Incident 鎮火確率。 | coarse-team, step, incident | いいえ |
+| `coarse.team.step.incident.containChancePerReviewCapacity` | 粗粒度 Incident 鎮火の Review 容量係数 | `0.004` | `multiplier` | `0〜1` | — | Review 容量を粗粒度 Incident 鎮火確率へ変換する係数。 | coarse-team, step, incident, review | いいえ |
+| `coarse.team.step.incidentRate.minimum` | 粗粒度 Incident 率倍率の下限 | `0.2` | `multiplier` | `0〜5` | — | 実行モディファイアの Incident 率倍率へ適用する下限。 | coarse-team, step, incident, boundary | いいえ |
+| `coarse.team.step.morale.adjustmentBias` | 士気差分バイアス | `0.5` | `points` | `0〜10` | — | 士気レバー差分を粗粒度士気増減へ変換するバイアス。 | coarse-team, step, morale, adjustment | いいえ |
+| `coarse.team.step.morale.highQueueDelta` | 高行列時の士気変化 | `-3` | `points` | `-20〜20（整数）` | — | 高行列帯で適用する粗粒度士気変化。 | coarse-team, step, morale | いいえ |
+| `coarse.team.step.morale.highQueueMinimum` | 士気の高行列境界 | `8` | `count` | `0〜100（整数）` | — | この行列を超えると粗粒度士気の高行列減少を適用する。 | coarse-team, step, morale, review, boundary | いいえ |
+| `coarse.team.step.morale.incidentDelta` | Incident 保有時の士気変化 | `-2` | `points` | `-20〜20（整数）` | — | 未鎮火 Incident 保有時に適用する粗粒度士気変化。 | coarse-team, step, morale, incident | いいえ |
+| `coarse.team.step.morale.lowQueueDelta` | 低行列時の士気変化 | `1` | `points` | `-20〜20（整数）` | — | 低行列帯で適用する粗粒度士気変化。 | coarse-team, step, morale | いいえ |
+| `coarse.team.step.morale.maximum` | 粗粒度士気の上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.step.morale.minimum` ≤ `coarse.team.step.morale.maximum` | 粗粒度進行後の士気へ適用する上限。 | coarse-team, step, morale, boundary | いいえ |
+| `coarse.team.step.morale.midQueueDelta` | 中行列時の士気変化 | `-1` | `points` | `-20〜20（整数）` | — | 中行列帯で適用する粗粒度士気変化。 | coarse-team, step, morale | いいえ |
+| `coarse.team.step.morale.midQueueMinimum` | 士気の中行列境界 | `4` | `count` | `0〜100（整数）` | — | この行列を超えると粗粒度士気の中行列減少を適用する。 | coarse-team, step, morale, review, boundary | いいえ |
+| `coarse.team.step.morale.minimum` | 粗粒度士気の下限 | `5` | `percent` | `0〜100（整数）` | `coarse.team.step.morale.minimum` ≤ `coarse.team.step.morale.maximum` | 粗粒度進行後の士気へ適用する下限。 | coarse-team, step, morale, boundary | いいえ |
+| `coarse.team.step.morale.noIncidentDelta` | Incident なし時の士気変化 | `1` | `points` | `-20〜20（整数）` | — | 未鎮火 Incident がないときに適用する粗粒度士気変化。 | coarse-team, step, morale, incident | いいえ |
+| `coarse.team.step.morale.randomMultiplier` | 粗粒度士気乱数の倍率 | `2` | `multiplier` | `0〜20` | — | 粗粒度士気ランダム項へ掛ける倍率。 | coarse-team, step, morale, random | いいえ |
+| `coarse.team.step.morale.randomOffset` | 粗粒度士気乱数のオフセット | `1` | `count` | `0〜20` | — | 粗粒度士気ランダム項から引くオフセット。 | coarse-team, step, morale, random | いいえ |
+| `coarse.team.step.morale.randomRange` | 粗粒度士気乱数の入力幅 | `2` | `count` | `0〜20` | — | 粗粒度士気ランダム項へ掛ける乱数幅。 | coarse-team, step, morale, random | いいえ |
+| `coarse.team.step.normalize.incidentDivisor` | 粗粒度 Incident 正規化除数 | `2` | `count` | `1〜20（整数）` | — | 非選択チームの Incident 発生件数を平均値へ正規化する除数。 | coarse-team, step, incident, normalization | いいえ |
+| `coarse.team.step.quality.lossChance` | 粗粒度品質低下確率 | `0.25` | `probability` | `0〜1` | — | 粗粒度ステップで品質が 1 下がる確率。 | coarse-team, step, quality | いいえ |
+| `coarse.team.step.quality.maximum` | 粗粒度品質の上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.step.quality.minimum` ≤ `coarse.team.step.quality.maximum` | 粗粒度進行後の品質へ適用する上限。 | coarse-team, step, quality, boundary | いいえ |
+| `coarse.team.step.quality.minimum` | 粗粒度品質の下限 | `10` | `percent` | `0〜100（整数）` | `coarse.team.step.quality.minimum` ≤ `coarse.team.step.quality.maximum` | 粗粒度進行後の品質へ適用する下限。 | coarse-team, step, quality, boundary | いいえ |
+| `coarse.team.step.queue.drainCapacityDivisor` | 粗粒度行列消化の容量除数 | `25` | `points` | `1〜100（整数）` | — | Review 容量を行列消化量へ変換する除数。 | coarse-team, step, review | いいえ |
+| `coarse.team.step.queue.randomMultiplier` | 粗粒度行列乱数の倍率 | `2` | `multiplier` | `0〜20` | — | 粗粒度行列ランダム項へ掛ける倍率。 | coarse-team, step, review, random | いいえ |
+| `coarse.team.step.queue.randomOffset` | 粗粒度行列乱数のオフセット | `0.7` | `count` | `0〜20` | — | 粗粒度行列ランダム項から引くオフセット。 | coarse-team, step, review, random | いいえ |
+| `coarse.team.step.queue.randomRange` | 粗粒度行列乱数の入力幅 | `2` | `count` | `0〜20` | — | 粗粒度行列ランダム項へ掛ける乱数幅。 | coarse-team, step, review, random | いいえ |
+| `coarse.team.step.queuePressure.perAiDependency` | 粗粒度行列圧力の AI 依存度係数 | `0.04` | `multiplier` | `0〜1` | — | AI 依存度を行列圧力へ変換する係数。 | coarse-team, step, review, ai | いいえ |
+| `coarse.team.step.queuePressure.perEngineer` | 粗粒度行列圧力の人数係数 | `0.35` | `multiplier` | `0〜2` | — | エンジニア人数を行列圧力へ変換する係数。 | coarse-team, step, review | いいえ |
+| `coarse.team.step.queuePressure.perReviewCapacity` | 粗粒度行列圧力の Review 容量係数 | `0.05` | `multiplier` | `0〜1` | — | Review 容量を行列圧力から減算する係数。 | coarse-team, step, review | いいえ |
+| `coarse.team.step.queueRelief.perAdjustment` | レバーによる行列緩和係数 | `0.2` | `multiplier` | `0〜5` | — | 負の行列差分を粗粒度行列圧力へ反映する係数。 | coarse-team, step, review, adjustment | いいえ |
+| `coarse.team.step.review.multiplierMaximum` | 粗粒度 Review 倍率の上限 | `1.8` | `multiplier` | `0〜5` | `coarse.team.step.review.multiplierMinimum` ≤ `coarse.team.step.review.multiplierMaximum` | 実行モディファイアの Review 倍率へ適用する上限。 | coarse-team, step, review, boundary | いいえ |
+| `coarse.team.step.review.multiplierMinimum` | 粗粒度 Review 倍率の下限 | `0.4` | `multiplier` | `0〜5` | `coarse.team.step.review.multiplierMinimum` ≤ `coarse.team.step.review.multiplierMaximum` | 実行モディファイアの Review 倍率へ適用する下限。 | coarse-team, step, review, boundary | いいえ |
+| `coarse.team.step.reviewCapacity.multiplierMaximum` | 粗粒度 Review 容量倍率の上限 | `2` | `multiplier` | `0〜5` | `coarse.team.step.reviewCapacity.multiplierMinimum` ≤ `coarse.team.step.reviewCapacity.multiplierMaximum` | 実行モディファイアの Review 容量倍率へ適用する上限。 | coarse-team, step, review, capacity, boundary | いいえ |
+| `coarse.team.step.reviewCapacity.multiplierMinimum` | 粗粒度 Review 容量倍率の下限 | `0.5` | `multiplier` | `0〜5` | `coarse.team.step.reviewCapacity.multiplierMinimum` ≤ `coarse.team.step.reviewCapacity.multiplierMaximum` | 実行モディファイアの Review 容量倍率へ適用する下限。 | coarse-team, step, review, capacity, boundary | いいえ |
+| `coarse.team.step.reworkRateAdd.maximum` | 粗粒度 Rework 率加算の上限 | `0.5` | `multiplier` | `-0.5〜0.5` | `coarse.team.step.reworkRateAdd.minimum` ≤ `coarse.team.step.reworkRateAdd.maximum` | 実行モディファイアの Rework 率加算へ適用する上限。 | coarse-team, step, rework, boundary | いいえ |
+| `coarse.team.step.reworkRateAdd.minimum` | 粗粒度 Rework 率加算の下限 | `-0.5` | `multiplier` | `-0.5〜0.5` | `coarse.team.step.reworkRateAdd.minimum` ≤ `coarse.team.step.reworkRateAdd.maximum` | 実行モディファイアの Rework 率加算へ適用する下限。 | coarse-team, step, rework, boundary | いいえ |
+| `coarse.team.step.reworkRelief.perRate` | Rework 率による行列緩和係数 | `20` | `multiplier` | `0〜100` | — | Rework 率加算を行列圧力へ変換する係数。 | coarse-team, step, review, rework | いいえ |
+| `coarse.team.step.seniorHp.highQueueDrain` | 高行列時の粗粒度シニア HP 消費 | `2` | `points` | `0〜100（整数）` | — | 高行列帯で適用する基礎シニア HP 消費。 | coarse-team, step, senior-hp | いいえ |
+| `coarse.team.step.seniorHp.highQueueMinimum` | 粗粒度シニア HP 消耗の高行列境界 | `6` | `count` | `0〜100（整数）` | — | この行列を超えるとシニア HP 消費を高くする。 | coarse-team, step, senior-hp, review, boundary | いいえ |
+| `coarse.team.step.seniorHp.maximum` | 粗粒度シニア HP の上限 | `100` | `percent` | `0〜100（整数）` | `coarse.team.step.seniorHp.minimum` ≤ `coarse.team.step.seniorHp.maximum` | 粗粒度進行後のシニア HP へ適用する上限。 | coarse-team, step, senior-hp, boundary | いいえ |
+| `coarse.team.step.seniorHp.midQueueDrain` | 中行列時の粗粒度シニア HP 消費 | `1` | `points` | `0〜100（整数）` | — | 中行列帯で適用する基礎シニア HP 消費。 | coarse-team, step, senior-hp | いいえ |
+| `coarse.team.step.seniorHp.midQueueMinimum` | 粗粒度シニア HP 消耗の中行列境界 | `3` | `count` | `0〜100（整数）` | — | この行列を超えるとシニア HP 消費を適用する。 | coarse-team, step, senior-hp, review, boundary | いいえ |
+| `coarse.team.step.seniorHp.minimum` | 粗粒度シニア HP の下限 | `1` | `percent` | `0〜100（整数）` | `coarse.team.step.seniorHp.minimum` ≤ `coarse.team.step.seniorHp.maximum` | 粗粒度進行後のシニア HP へ適用する下限。 | coarse-team, step, senior-hp, boundary | いいえ |
+| `coarse.team.step.seniorHp.recoveryRate` | 粗粒度シニア HP 回復率 | `0.05` | `ratio` | `0〜1` | — | 粗粒度ステップで不足 HP へ掛ける回復率。 | coarse-team, step, senior-hp | いいえ |
+| `coarse.team.step.seniorHpCost.multiplierMaximum` | 粗粒度シニア HP 消費倍率の上限 | `3` | `multiplier` | `0〜5` | `coarse.team.step.seniorHpCost.multiplierMinimum` ≤ `coarse.team.step.seniorHpCost.multiplierMaximum` | 実行モディファイアのシニア HP 消費倍率へ適用する上限。 | coarse-team, step, senior-hp, boundary | いいえ |
+| `coarse.team.step.seniorHpCost.multiplierMinimum` | 粗粒度シニア HP 消費倍率の下限 | `0.3` | `multiplier` | `0〜5` | `coarse.team.step.seniorHpCost.multiplierMinimum` ≤ `coarse.team.step.seniorHpCost.multiplierMaximum` | 実行モディファイアのシニア HP 消費倍率へ適用する下限。 | coarse-team, step, senior-hp, boundary | いいえ |
+| `coarse.team.step.shipping.base` | 粗粒度出荷の基礎値 | `8` | `points` | `0〜100` | — | チーム粗粒度出荷の基礎値。 | coarse-team, step, shipping | いいえ |
+| `coarse.team.step.shipping.minimum` | 粗粒度出荷増分の下限 | `4` | `points` | `0〜100` | — | 稼働チームの粗粒度出荷増分へ適用する下限。 | coarse-team, step, shipping, boundary | いいえ |
+| `coarse.team.step.shipping.multiplierMinimum` | 粗粒度出荷倍率の下限 | `0.2` | `multiplier` | `0〜5` | — | 実行モディファイアの出荷倍率へ適用する下限。 | coarse-team, step, shipping, boundary | いいえ |
+| `coarse.team.step.shipping.perAiLiteracy` | 粗粒度出荷の AI リテラシー係数 | `0.08` | `multiplier` | `0〜2` | — | AI リテラシー 1 ポイントあたりの粗粒度出荷加算。 | coarse-team, step, shipping, ai | いいえ |
+| `coarse.team.step.shipping.perEngineer` | 粗粒度出荷の人数係数 | `2.5` | `points` | `0〜50` | — | エンジニア 1 人あたりの粗粒度出荷加算。 | coarse-team, step, shipping | いいえ |
+| `coarse.team.step.shipping.randomBase` | 粗粒度出荷の乱数基礎倍率 | `0.75` | `multiplier` | `0〜2` | — | 粗粒度出荷の一様乱数倍率の基礎値。 | coarse-team, step, shipping, random | いいえ |
+| `coarse.team.step.shipping.randomRange` | 粗粒度出荷の乱数倍率幅 | `0.5` | `multiplier` | `0〜2` | — | 粗粒度出荷の一様乱数倍率の幅。 | coarse-team, step, shipping, random | いいえ |
+| `coarse.team.step.shipping.techDebtPenalty` | 粗粒度出荷の負債係数 | `0.02` | `multiplier` | `0〜1` | — | 技術的負債 1 ポイントあたりの粗粒度出荷減算。 | coarse-team, step, shipping, tech-debt | いいえ |
+| `coarse.team.step.techDebt.aiDependencyWeight` | 粗粒度負債の AI 依存度係数 | `0.03` | `multiplier` | `0〜1` | — | AI 依存度を粗粒度技術的負債増分へ変換する係数。 | coarse-team, step, tech-debt, ai | いいえ |
+| `coarse.team.step.techDebt.aiLiteracyWeight` | 粗粒度負債の AI リテラシー係数 | `0.02` | `multiplier` | `0〜1` | — | AI リテラシーを粗粒度技術的負債減少へ変換する係数。 | coarse-team, step, tech-debt, ai | いいえ |
+| `coarse.team.step.techDebt.reliefMultiplier` | 負債差分による技術的負債緩和係数 | `0.05` | `multiplier` | `0〜2` | — | 負の負債差分を粗粒度負債増分から減算する係数。 | coarse-team, step, tech-debt, adjustment | いいえ |
 | `member.formation.ai.incidentBase` | AI配布時Incident基礎加算 | `0.05` | `multiplier` | `0〜1` | — | AIを配布したコーダーへ加えるIncident倍率の基礎加算。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.incidentMasteryWeight` | AI習熟のIncident低減係数 | `0.1` | `multiplier` | `0〜1` | — | AI習熟がAI配布時のIncident倍率を低減する係数。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.masteryMaximum` | AI習熟正規化倍率の上限 | `1.2` | `multiplier` | `0〜3` | — | AI習熟を正規化した値の上限。 | member, formation, ai, boundary | いいえ |

@@ -8,10 +8,18 @@
 import { ACTION_BALANCE_BY_ID } from './balance/actions';
 import type { ActionDef } from '../sim/actions';
 
-export type ActionContentDef = Omit<ActionDef, 'cost' | 'cooldownTicks' | 'gauge'>;
+export interface ActionContentDef {
+  readonly id: string;
+  readonly label: string;
+  readonly icon: string;
+  readonly stabilizesFlow?: boolean;
+  readonly description: string;
+  readonly sideEffect: string;
+  readonly tone?: 'danger' | 'heavy';
+}
 
 /** アクションバーに並べる順（旧モック main-screen 由来）。 */
-export const ACTION_CONTENT_DEFS: ActionContentDef[] = [
+export const ACTION_CONTENT_DEFS = [
   {
     id: 'interruptReview',
     label: '割り込みレビュー',
@@ -81,13 +89,14 @@ export const ACTION_CONTENT_DEFS: ActionContentDef[] = [
     description: 'タスク流入を止め、溜まったキューを捌き切る',
     sideEffect: '出荷機会を失う。士気を消費。薄いキューではシニアHPも消費。運用安定なし',
   },
-];
+] as const satisfies readonly ActionContentDef[];
 
 /** 表示用コンテンツへバランスレジストリの実行値を合成する。 */
 export const ACTION_DEFS: ActionDef[] = ACTION_CONTENT_DEFS.map((content) => {
-  const balance = ACTION_BALANCE_BY_ID[content.id];
+  const balance = ACTION_BALANCE_BY_ID[content.id as keyof typeof ACTION_BALANCE_BY_ID];
   return {
     ...content,
+    id: content.id as ActionDef['id'],
     cost: balance.focusCost.value,
     cooldownTicks: balance.cooldownTicks.value,
     gauge: balance.gauge.value,

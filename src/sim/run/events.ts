@@ -104,6 +104,38 @@ export function eventSignals(org: OrgState): Record<EventSignal, number> {
   };
 }
 
+export interface EventMinSignalFactor {
+  signal: EventSignal;
+  threshold: number;
+  actual: number;
+  satisfied: boolean;
+}
+
+/**
+ * `minSignal` の資格判定と playtest の発火要因分類で共有する下限要因。
+ * 定義に書かれた順序を保ち、同じ信号値を両方の利用者へ渡す。
+ */
+export function eventMinSignalFactors(
+  def: EventDef,
+  signals: Record<EventSignal, number>,
+): EventMinSignalFactor[] {
+  return Object.entries(def.minSignal ?? {}).map(([signal, threshold]) => {
+    const typedSignal = signal as EventSignal;
+    const actual = signals[typedSignal];
+    return {
+      signal: typedSignal,
+      threshold,
+      actual,
+      satisfied: actual >= threshold,
+    };
+  });
+}
+
+/** 定義から指定信号の `minSignal` 閾値を取得する。 */
+export function eventMinSignalThreshold(def: EventDef, signal: EventSignal): number | undefined {
+  return def.minSignal?.[signal];
+}
+
 /** イベント 1 件の有効重み（ベース × Π(1 + trigger × 信号強度)）。 */
 export function effectiveEventWeight(def: EventDef, signals: Record<EventSignal, number>): number {
   const base = def.weight ?? 1;
@@ -155,11 +187,7 @@ export function eventsOfKind(pool: EventDef[], kind: 'judgment' | 'decision'): E
  * ハード敗北など、健全な組織では起きてはならない事象をプールから除外するために使う。
  */
 export function eventEligible(def: EventDef, signals: Record<EventSignal, number>): boolean {
-  if (def.minSignal) {
-    for (const [sig, min] of Object.entries(def.minSignal) as [EventSignal, number][]) {
-      if (signals[sig] < min) return false;
-    }
-  }
+  if (eventMinSignalFactors(def, signals).some((factor) => !factor.satisfied)) return false;
   if (def.maxSignal) {
     for (const [sig, max] of Object.entries(def.maxSignal) as [EventSignal, number][]) {
       if (signals[sig] > max) return false;

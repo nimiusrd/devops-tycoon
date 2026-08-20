@@ -6,6 +6,7 @@
  * からのみ消費する（決定論。第22.3）。入力はイベント経由で受け取る。
  */
 import { getAction } from '../data/actions';
+import { ACTION_IDS } from '../data/actionIds';
 import { ACTION_BALANCE } from '../data/balance';
 import { STABILITY_TICKS } from './model';
 import {
@@ -44,16 +45,7 @@ export { STABILITY_TICKS } from './model';
 export type ActionGateReason = 'complete' | 'cooldown' | 'no-focus' | 'no-target';
 
 /** 介入バー／playtest 観測で列挙する全 ActionId（表示順）。 */
-export const ALL_ACTION_IDS: readonly ActionId[] = [
-  'interruptReview',
-  'splitPr',
-  'firefight',
-  'assignTask',
-  'aiThrottle',
-  'pairReview',
-  'overtime',
-  'andon',
-] as const;
+export const ALL_ACTION_IDS: readonly ActionId[] = [...ACTION_IDS];
 
 /** アクション定義（データは `src/data/actions.ts`）。 */
 export interface ActionDef {

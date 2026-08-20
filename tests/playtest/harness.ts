@@ -30,6 +30,7 @@ import {
   evaluateLatestEffectiveFrame,
   type CounterfactualFrameSample,
 } from '../../src/sim/run/counterfactual';
+import { eventMinSignalFactors, eventSignals } from '../../src/sim/run/events';
 import {
   activeDangerReasons,
   canApplyAssignTaskWithExplicitTarget,
@@ -47,6 +48,7 @@ import {
 import type {
   DifficultyId,
   GoalAdjustmentId,
+  EventSignal,
   RunState,
   RunTotals,
   StakeholderTrust,
@@ -861,6 +863,12 @@ export interface RunLog {
    * 「操作の余地がない画面で敗北」かどうかを判定できない。
    */
   lostBeat?: { eventId: string; kind: string; choiceIndex?: number };
+  /** ビート発火時の `minSignal` 由来要因（RI-115）。 */
+  beatTriggers: {
+    eventId: string;
+    kind: string;
+    minSignalFactors: { signal: EventSignal; threshold: number; actual: number }[];
+  }[];
   /**
    * `lostPhase === 'sprint'` のとき、敗北したスプリントが結果を残したか。
    *
@@ -2031,6 +2039,7 @@ export function runOnce(
   e.startRun();
   const sprints: SprintLog[] = [];
   const quarters: QuarterLog[] = [];
+  const beatTriggers: RunLog['beatTriggers'] = [];
   const investments: InvestmentLog[] = [];
   const evolutionUnlocks: RunLog['evolutionUnlocks'] = [];
   /** 危険種別ごとの発動可能介入トラック（RI-89）。キーがある＝その危険域を観測。 */
@@ -2262,6 +2271,17 @@ export function runOnce(
           guard = 60_000;
           break;
         }
+        const event = getEvent(s.beat.eventId);
+        if (event) {
+          const signals = eventSignals(s.org);
+          beatTriggers.push({
+            eventId: s.beat.eventId,
+            kind: s.beat.kind,
+            minSignalFactors: eventMinSignalFactors(event, signals).map(
+              ({ signal, threshold, actual }) => ({ signal, threshold, actual }),
+            ),
+          });
+        }
         const choice = autoplayBeatChoiceIndex(
           s.beat.eventId,
           s.beat.kind,
@@ -2402,6 +2422,7 @@ export function runOnce(
     policy,
     meta,
     evolutionUnlocks,
+    beatTriggers,
     ...(f.status === 'lost' ? { lostPhase } : {}),
     ...(f.status === 'lost' && lostBeat ? { lostBeat } : {}),
     ...(f.status === 'lost' && lostSprintCompleted !== undefined ? { lostSprintCompleted } : {}),

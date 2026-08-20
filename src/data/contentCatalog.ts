@@ -1,302 +1,380 @@
 /**
- * 既存コンテンツ正本から、ルールセット指紋へ入れるゲーム影響フィールドだけを射影する。
+ * 実行結果に影響するコンテンツ定義の生成カタログ（RI-115）。
  *
- * 値は `src/data/` と開始シナリオの定義を正本のまま読む。表示専用フィールドは落とす。
- * 配列は定義順を保持する。
+ * ここでは既存の定義を複製せず、実行系が読む項目だけを射影する。表示名・説明・
+ * 色・アイコンなどの表示メタデータは含めない。バランスレジストリも別の入力であり、
+ * このカタログへ数値を再コピーしない。
  */
-import { compareCanonicalStrings } from './balance/canonical';
-import { PROCESS_BALANCE } from './balance/process';
-import { ACHIEVEMENT_DEFS, type AchievementDef } from './achievements';
+import { ACHIEVEMENT_DEFS } from './achievements';
 import { ACTION_CONTENT_DEFS, type ActionContentDef } from './actions';
-import { BOSS_DEFS, type BossDef } from './bosses';
 import { CARD_DEFS, RARITY_WEIGHT } from './cards';
+import { BOSS_DEFS } from './bosses';
 import { DEPARTMENT_DEFS } from './departments';
+import { PROCESS_BALANCE } from './balance/process';
 import {
   DAILY_RUN_DIFFICULTY,
   DAILY_RUN_TRIALS,
   DIFFICULTY_DEFS,
   DIFFICULTY_ORDER,
   TRIAL_DEFS,
-  type DifficultyDef,
-  type TrialDef,
 } from './difficulties';
-import { EVENT_DEFS, RECRUIT_SKIP_MORALE, effectiveKind, type EventDef } from './events';
-import { EVOLUTION_NODES, type EvolutionNodeDef } from './evolution';
-import { GOAL_ADJUSTMENT_DEFS, type GoalAdjustmentDef } from './goalAdjustments';
+import { EVOLUTION_NODES } from './evolution';
+import { EVENT_DEFS, effectiveKind, type EventDef, type EventOutcome } from './events';
+import { GOAL_ADJUSTMENT_DEFS } from './goalAdjustments';
 import { LEVER_DEFS } from './levers';
 import {
   MEMBER_NAMES,
   RECRUIT_ARCHETYPES,
   STARTER_ARCHETYPES,
-  type MemberArchetype,
+  STARTER_DEFAULT_AI_ARCHETYPE_ID,
 } from './members';
-import { RELIC_DEFS, type RelicDef } from './relics';
-import { TRAIT_DEFS, type TraitDef } from './traits';
-import { UNLOCK_DEFS, type UnlockDef } from './unlocks';
-import { DEFAULT_SCENARIO, SCENARIOS, SCENARIO_ORDER, type Scenario } from '../sim/scenarios';
+import { RELIC_DEFS } from './relics';
+import { DEFAULT_SCENARIO, SCENARIO_ORDER, SCENARIOS } from '../sim/scenarios';
+import { IDENTITY_TRAIT_MODIFIERS, TRAIT_DEFS } from './traits';
+import { UNLOCK_DEFS } from './unlocks';
 import { IDENTITY_CARD_EFFECTS } from '../sim/model';
-import type { CardDef, CardEffects } from '../sim/types';
-import type { DepartmentDef, LeverDef } from '../sim/orgscale/types';
-import type { DifficultyId } from '../sim/run/types';
+import { IDENTITY_PASSIVES } from '../sim/run/effects';
+import type { DepartmentDef } from '../sim/orgscale/types';
 
-const CARD_EFFECT_KEYS = Object.keys(IDENTITY_CARD_EFFECTS) as (keyof CardEffects)[];
-
-/** 無効果（IDENTITY）と同じキーを落とし、未指定と明示的な 1/0 を同一にする。 */
-function projectEffects(partial?: Partial<CardEffects>): Partial<CardEffects> | undefined {
-  if (!partial) return undefined;
-  const out: Partial<CardEffects> = {};
-  for (const key of CARD_EFFECT_KEYS) {
-    const value = partial[key];
-    if (value === undefined || value === IDENTITY_CARD_EFFECTS[key]) continue;
-    out[key] = value;
-  }
-  return Object.keys(out).length === 0 ? undefined : out;
+/** カタログの 1 行。`execution` は表示メタデータを含まない射影。 */
+export interface ContentCatalogEntry {
+  id: string;
+  order: number;
+  execution: unknown;
 }
 
-/** 係数が identity の信号キーを落とす（未指定と同じ）。 */
-function projectSignalFactors(
-  factors: Partial<Record<string, number>> | undefined,
-  identity: number,
-): Record<string, number> | undefined {
-  if (!factors) return undefined;
-  const out: Record<string, number> = {};
-  for (const [key, value] of Object.entries(factors)) {
-    if (value === undefined || value === identity) continue;
-    out[key] = value;
-  }
-  return Object.keys(out).length === 0 ? undefined : out;
+export interface ContentCatalog {
+  rarityWeights: Readonly<Record<string, number>>;
+  cards: readonly ContentCatalogEntry[];
+  events: readonly ContentCatalogEntry[];
+  difficulties: readonly ContentCatalogEntry[];
+  trials: readonly ContentCatalogEntry[];
+  bosses: readonly ContentCatalogEntry[];
+  relics: readonly ContentCatalogEntry[];
+  traits: readonly ContentCatalogEntry[];
+  evolution: readonly ContentCatalogEntry[];
+  goalAdjustments: readonly ContentCatalogEntry[];
+  levers: readonly ContentCatalogEntry[];
+  members: {
+    /** 表示名ではなく、createTeamRoster の抽選・重複回避に使う実行入力。 */
+    namePool: readonly string[];
+    /** 初期ロスターで AI 配布対象にするスターターアーキタイプ ID。 */
+    defaultAiArchetypeId: string;
+    starter: readonly ContentCatalogEntry[];
+    recruit: readonly ContentCatalogEntry[];
+  };
+  unlocks: readonly ContentCatalogEntry[];
+  departments: readonly ContentCatalogEntry[];
+  actions: readonly ContentCatalogEntry[];
+  startingScenarios: readonly ContentCatalogEntry[];
+  achievements: readonly ContentCatalogEntry[];
+  difficultyOrder: readonly string[];
+  defaultScenarioId: string;
+  daily: {
+    readonly difficulty: string;
+    readonly trials: readonly string[];
+  };
 }
 
-export function projectCards(defs: readonly CardDef[] = CARD_DEFS) {
-  return defs.map(({ id, rarity, cost, focusCost, base }) => ({
-    id,
-    rarity,
-    cost,
-    focusCost,
-    base: projectEffects(base),
+export interface ContentCatalogValidationError {
+  category: string;
+  message: string;
+}
+
+function definedObject(value: object | undefined): Record<string, unknown> {
+  if (!value) return {};
+  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
+}
+
+function omitIdentity(value: object | undefined, identity: object): Record<string, unknown> {
+  const identityRecord = identity as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(definedObject(value)).filter(([key, item]) => identityRecord[key] !== item),
+  );
+}
+
+function omitSignalFactors(value: object | undefined, identity: number): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(definedObject(value)).filter(([, item]) => item !== identity),
+  );
+}
+
+const OUTCOME_IDENTITY: Record<string, unknown> = {
+  delivered: 0,
+  morale: 0,
+  seniorHp: 0,
+  techDebt: 0,
+  budget: 0,
+  quality: 0,
+  testCoverage: 0,
+  aiLiteracy: 0,
+  aiDependency: 0,
+  grantRecruit: false,
+  preserveAboveLose: false,
+};
+
+function projectOutcome(outcome: EventOutcome): Record<string, unknown> {
+  const projected = omitIdentity(outcome, OUTCOME_IDENTITY);
+  if (outcome.onRecruitFail) {
+    projected.onRecruitFail = projectOutcome(outcome.onRecruitFail);
+  }
+  return projected;
+}
+
+function ordered<T extends { id: string }>(
+  definitions: readonly T[],
+  project: (definition: T) => unknown,
+): readonly ContentCatalogEntry[] {
+  return definitions.map((definition, order) => ({
+    id: definition.id,
+    order,
+    execution: project(definition),
   }));
 }
 
-export function projectEvents(defs: readonly EventDef[] = EVENT_DEFS) {
-  return defs.map((def) => ({
-    id: def.id,
-    kind: effectiveKind(def),
-    weight: def.weight ?? 1,
-    triggers: projectSignalFactors(def.triggers, 0),
-    minSignal: projectSignalFactors(def.minSignal, 0),
-    maxSignal: projectSignalFactors(def.maxSignal, 1),
-    choices: def.choices.map((choice) => ({
-      outcome: choice.outcome,
-      // resolveBeat と同じ既定。未指定と 'sprint' を同一の実効値にする。
+export function projectEvent(definition: EventDef): unknown {
+  return {
+    kind: effectiveKind(definition),
+    weight: definition.weight ?? 1,
+    triggers: omitSignalFactors(definition.triggers, 0),
+    minSignal: omitSignalFactors(definition.minSignal, 0),
+    maxSignal: omitSignalFactors(definition.maxSignal, 1),
+    choices: definition.choices.map((choice) => ({
+      outcome: projectOutcome(choice.outcome),
       leadsTo: choice.leadsTo ?? 'sprint',
     })),
-  }));
-}
-
-export function projectDifficulties(
-  defs: Readonly<Record<string, DifficultyDef>> = DIFFICULTY_DEFS,
-  order: readonly DifficultyId[] = DIFFICULTY_ORDER,
-) {
-  return {
-    order: [...order],
-    entries: Object.entries(defs)
-      .map(([key, def]) => ({
-        key,
-        id: def.id,
-        org: def.org,
-        taskCountMul: def.taskCountMul,
-        globalEffects: projectEffects(def.globalEffects),
-        startBudget: def.startBudget,
-        bossTargetMul: def.bossTargetMul,
-        aiDependencyPerTask: def.aiDependencyPerTask ?? PROCESS_BALANCE.aiDependencyPerTask.value,
-      }))
-      .sort((left, right) => compareCanonicalStrings(left.key, right.key)),
   };
 }
 
-export function projectTrials(defs: readonly TrialDef[] = TRIAL_DEFS) {
-  return defs.map(
-    ({
-      id,
-      focusDelta,
-      budgetMul,
-      effects,
-      aiDependencyDriftPerSprint,
-      frontierModelCostPerDependency,
-      scoreMul,
-    }) => ({
-      id,
-      focusDelta: focusDelta ?? 0,
-      budgetMul: budgetMul ?? 1,
-      effects: projectEffects(effects),
-      aiDependencyDriftPerSprint: aiDependencyDriftPerSprint ?? 0,
-      frontierModelCostPerDependency: frontierModelCostPerDependency ?? 0,
-      scoreMul,
+export function projectDepartment(definition: DepartmentDef): unknown {
+  return { teamCount: definition.teamCount };
+}
+
+export function projectAction(definition: ActionContentDef): unknown {
+  return { stabilizesFlow: definition.stabilizesFlow ?? false };
+}
+
+const difficultyDefinitions = Object.values(DIFFICULTY_DEFS);
+
+export const CONTENT_CATALOG: ContentCatalog = {
+  rarityWeights: { ...RARITY_WEIGHT },
+  cards: ordered(CARD_DEFS, (definition) => ({
+    rarity: definition.rarity,
+    cost: definition.cost,
+    focusCost: definition.focusCost,
+    base: omitIdentity(definition.base, IDENTITY_CARD_EFFECTS),
+  })),
+  events: ordered(EVENT_DEFS, projectEvent),
+  difficulties: ordered(difficultyDefinitions, (definition) => ({
+    org: definedObject(definition.org),
+    taskCountMul: definition.taskCountMul,
+    globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
+    startBudget: definition.startBudget,
+    bossTargetMul: definition.bossTargetMul,
+    aiDependencyPerTask:
+      definition.aiDependencyPerTask ?? PROCESS_BALANCE.aiDependencyPerTask.value,
+  })),
+  trials: ordered(TRIAL_DEFS, (definition) => ({
+    focusDelta: definition.focusDelta ?? 0,
+    budgetMul: definition.budgetMul ?? 1,
+    effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
+    aiDependencyDriftPerSprint: definition.aiDependencyDriftPerSprint ?? 0,
+    frontierModelCostPerDependency: definition.frontierModelCostPerDependency ?? 0,
+    scoreMul: definition.scoreMul,
+  })),
+  bosses: ordered(BOSS_DEFS, (definition) => ({
+    taskCountMul: definition.taskCountMul,
+    incidentMul: definition.incidentMul,
+    clear: definedObject(definition.clear),
+  })),
+  relics: ordered(RELIC_DEFS, (definition) => ({
+    effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
+    passives: omitIdentity(definition.passives, IDENTITY_PASSIVES),
+  })),
+  traits: ordered(TRAIT_DEFS, (definition) => ({
+    modifiers: omitIdentity(definition.modifiers, IDENTITY_TRAIT_MODIFIERS),
+  })),
+  evolution: ordered(EVOLUTION_NODES, (definition) => ({
+    branch: definition.branch,
+    cost: definition.cost,
+    requires: definition.requires ?? null,
+    effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
+    focusBonus: definition.focusBonus ?? 0,
+    codingSlotBonus: definition.codingSlotBonus ?? 0,
+  })),
+  goalAdjustments: ordered(GOAL_ADJUSTMENT_DEFS, (definition) => ({
+    negotiator: definition.negotiator,
+    trustDelta: definedObject(definition.trustDelta),
+    budgetDelta: definition.budgetDelta,
+    goalEffects: definedObject(definition.goalEffects),
+    orgEffects: definedObject(definition.orgEffects),
+    nextBudgetCapDelta: definition.nextBudgetCapDelta ?? null,
+    pauseAiDebuff: definition.pauseAiDebuff ?? false,
+    reorgReset: definition.reorgReset ?? false,
+    nextQuarterEffects: definedObject(definition.nextQuarterEffects),
+  })),
+  levers: ordered(LEVER_DEFS, (definition) => ({
+    scope: definition.scope,
+    cost: definition.cost,
+    effect: definedObject(definition.effect),
+  })),
+  members: {
+    namePool: [...MEMBER_NAMES],
+    defaultAiArchetypeId: STARTER_DEFAULT_AI_ARCHETYPE_ID,
+    starter: ordered(STARTER_ARCHETYPES, (definition) => ({
+      rank: definition.rank,
+      stats: definedObject(definition.stats),
+      traits: [...definition.traits],
+      preferred: definition.preferred,
+    })),
+    recruit: ordered(RECRUIT_ARCHETYPES, (definition) => ({
+      rank: definition.rank,
+      stats: definedObject(definition.stats),
+      traits: [...definition.traits],
+      preferred: definition.preferred,
+    })),
+  },
+  unlocks: ordered(UNLOCK_DEFS, (definition) => ({
+    kind: definition.kind,
+    contentId: definition.contentId,
+    cost: definition.cost,
+    requires: definition.requires ?? null,
+  })),
+  departments: ordered(DEPARTMENT_DEFS, projectDepartment),
+  actions: ordered(ACTION_CONTENT_DEFS, projectAction),
+  startingScenarios: ordered(
+    SCENARIO_ORDER.map((id) => SCENARIOS[id]),
+    (definition) => ({
+      org: definedObject(definition.org),
+      sprint: definedObject(definition.sprint),
+      orgDelta: definedObject(definition.orgDelta),
+      globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
     }),
-  );
-}
+  ),
+  achievements: ordered(ACHIEVEMENT_DEFS, () => ({})),
+  difficultyOrder: [...DIFFICULTY_ORDER],
+  defaultScenarioId: DEFAULT_SCENARIO,
+  daily: {
+    difficulty: DAILY_RUN_DIFFICULTY,
+    trials: [...DAILY_RUN_TRIALS],
+  },
+};
 
-export function projectBosses(defs: readonly BossDef[] = BOSS_DEFS) {
-  return defs.map(({ id, taskCountMul, incidentMul, clear }) => ({
-    id,
-    taskCountMul,
-    incidentMul,
-    clear,
-  }));
-}
-
-export function projectRelics(defs: readonly RelicDef[] = RELIC_DEFS) {
-  return defs.map(({ id, effects, passives }) => ({
-    id,
-    effects: projectEffects(effects),
-    passives,
-  }));
-}
-
-export function projectTraits(defs: readonly TraitDef[] = TRAIT_DEFS) {
-  return defs.map(({ id, modifiers }) => ({ id, modifiers }));
-}
-
-export function projectEvolution(defs: readonly EvolutionNodeDef[] = EVOLUTION_NODES) {
-  return defs.map(({ id, branch, cost, requires, effects, focusBonus, codingSlotBonus }) => ({
-    id,
-    branch,
-    cost,
-    requires,
-    effects: projectEffects(effects),
-    focusBonus: focusBonus ?? 0,
-    codingSlotBonus: codingSlotBonus ?? 0,
-  }));
-}
-
-export function projectGoalAdjustments(defs: readonly GoalAdjustmentDef[] = GOAL_ADJUSTMENT_DEFS) {
-  return defs.map(
-    ({
-      id,
-      negotiator,
-      trustDelta,
-      budgetDelta,
-      goalEffects,
-      orgEffects,
-      nextBudgetCapDelta,
-      pauseAiDebuff,
-      reorgReset,
-      nextQuarterEffects,
-    }) => ({
-      id,
-      negotiator,
-      trustDelta,
-      budgetDelta,
-      goalEffects,
-      orgEffects,
-      nextBudgetCapDelta,
-      pauseAiDebuff,
-      reorgReset,
-      nextQuarterEffects,
-    }),
-  );
-}
-
-export function projectLevers(defs: readonly LeverDef[] = LEVER_DEFS) {
-  return defs.map(({ id, scope, cost, effect }) => ({ id, scope, cost, effect }));
-}
-
-export function projectMembers(
-  starters: readonly MemberArchetype[] = STARTER_ARCHETYPES,
-  recruits: readonly MemberArchetype[] = RECRUIT_ARCHETYPES,
-  names: readonly string[] = MEMBER_NAMES,
-) {
-  const projectArchetype = ({ id, rank, stats, traits, preferred }: MemberArchetype) => ({
-    id,
-    rank,
-    stats,
-    traits,
-    preferred,
+function validateEntryList(
+  category: string,
+  entries: readonly ContentCatalogEntry[],
+  errors: ContentCatalogValidationError[],
+): void {
+  const seen = new Set<string>();
+  entries.forEach((entry, index) => {
+    if (seen.has(entry.id)) errors.push({ category, message: `重複した ID: ${entry.id}` });
+    seen.add(entry.id);
+    if (entry.order !== index) {
+      errors.push({
+        category,
+        message: `定義順が不連続: ${entry.id} (${entry.order} != ${index})`,
+      });
+    }
   });
-  return {
-    names: [...names],
-    starters: starters.map(projectArchetype),
-    recruits: recruits.map(projectArchetype),
-  };
 }
 
-export function projectUnlocks(defs: readonly UnlockDef[] = UNLOCK_DEFS) {
-  return defs.map(({ id, kind, contentId, cost, requires }) => ({
-    id,
-    kind,
-    contentId,
-    cost,
-    requires,
-  }));
+function ensureReference(
+  errors: ContentCatalogValidationError[],
+  category: string,
+  reference: string,
+  ids: ReadonlySet<string>,
+): void {
+  if (!ids.has(reference)) errors.push({ category, message: `未知の参照: ${reference}` });
 }
 
-export function projectDepartments(defs: readonly DepartmentDef[] = DEPARTMENT_DEFS) {
-  return defs.map(({ id, teamCount }) => ({ id, teamCount }));
+/** カタログの重複・順序・定義間参照を検証する。 */
+export function validateContentCatalog(
+  catalog: ContentCatalog,
+): readonly ContentCatalogValidationError[] {
+  const errors: ContentCatalogValidationError[] = [];
+  const lists: ReadonlyArray<readonly [string, readonly ContentCatalogEntry[]]> = [
+    ['cards', catalog.cards],
+    ['events', catalog.events],
+    ['difficulties', catalog.difficulties],
+    ['trials', catalog.trials],
+    ['bosses', catalog.bosses],
+    ['relics', catalog.relics],
+    ['traits', catalog.traits],
+    ['evolution', catalog.evolution],
+    ['goalAdjustments', catalog.goalAdjustments],
+    ['levers', catalog.levers],
+    ['members.starter', catalog.members.starter],
+    ['members.recruit', catalog.members.recruit],
+    ['unlocks', catalog.unlocks],
+    ['departments', catalog.departments],
+    ['actions', catalog.actions],
+    ['startingScenarios', catalog.startingScenarios],
+    ['achievements', catalog.achievements],
+  ];
+  for (const [category, entries] of lists) validateEntryList(category, entries, errors);
+
+  const cardIds = new Set(CARD_DEFS.map((definition) => definition.id));
+  const relicIds = new Set(RELIC_DEFS.map((definition) => definition.id));
+  const traitIds = new Set(TRAIT_DEFS.map((definition) => definition.id));
+  const achievementIds = new Set(ACHIEVEMENT_DEFS.map((definition) => definition.id));
+  const evolutionIds = new Set(EVOLUTION_NODES.map((definition) => definition.id));
+
+  for (const definition of EVENT_DEFS) {
+    for (const choice of definition.choices) {
+      if (choice.outcome.grantCard) {
+        ensureReference(errors, `events.${definition.id}`, choice.outcome.grantCard, cardIds);
+      }
+      if (choice.outcome.grantRelic) {
+        ensureReference(errors, `events.${definition.id}`, choice.outcome.grantRelic, relicIds);
+      }
+    }
+  }
+  for (const definition of UNLOCK_DEFS) {
+    ensureReference(
+      errors,
+      `unlocks.${definition.id}`,
+      definition.contentId,
+      definition.kind === 'card' ? cardIds : relicIds,
+    );
+    if (definition.requires) {
+      ensureReference(errors, `unlocks.${definition.id}`, definition.requires, achievementIds);
+    }
+  }
+  for (const definition of STARTER_ARCHETYPES) {
+    for (const trait of definition.traits)
+      ensureReference(errors, `members.${definition.id}`, trait, traitIds);
+  }
+  for (const definition of RECRUIT_ARCHETYPES) {
+    for (const trait of definition.traits)
+      ensureReference(errors, `members.${definition.id}`, trait, traitIds);
+  }
+  for (const definition of EVOLUTION_NODES) {
+    if (definition.requires)
+      ensureReference(errors, `evolution.${definition.id}`, definition.requires, evolutionIds);
+  }
+
+  const difficultyKeys = Object.keys(DIFFICULTY_DEFS);
+  const difficultyIds = catalog.difficulties.map((entry) => entry.id);
+  if (JSON.stringify(difficultyKeys) !== JSON.stringify(difficultyIds)) {
+    errors.push({
+      category: 'difficulties',
+      message: '定義オブジェクトのキー順とカタログ順が一致しません',
+    });
+  }
+  const scenarioIds = SCENARIO_ORDER;
+  const catalogScenarioIds = catalog.startingScenarios.map((entry) => entry.id);
+  if (JSON.stringify(scenarioIds) !== JSON.stringify(catalogScenarioIds)) {
+    errors.push({ category: 'startingScenarios', message: '開始シナリオ順が正本と一致しません' });
+  }
+
+  return errors;
 }
 
-export function projectActions(defs: readonly ActionContentDef[] = ACTION_CONTENT_DEFS) {
-  return defs.map((def) => ({
-    id: def.id,
-    stabilizesFlow: def.stabilizesFlow === true,
-  }));
-}
-
-export function projectScenarios(
-  scenarios: Readonly<Record<string, Scenario>> = SCENARIOS,
-  order: readonly string[] = SCENARIO_ORDER,
-  defaultId: string = DEFAULT_SCENARIO,
-) {
-  return {
-    defaultId,
-    order: [...order],
-    entries: Object.entries(scenarios)
-      .map(([key, scenario]) => ({
-        key,
-        id: scenario.id,
-        org: scenario.org,
-        sprint: scenario.sprint,
-        orgDelta: scenario.orgDelta,
-        globalEffects: projectEffects(scenario.globalEffects),
-      }))
-      .sort((left, right) => compareCanonicalStrings(left.key, right.key)),
-  };
-}
-
-export function projectAchievements(defs: readonly AchievementDef[] = ACHIEVEMENT_DEFS) {
-  return defs.map(({ id }) => ({ id }));
-}
-
-export function projectDailyRun(
-  difficulty: DifficultyId = DAILY_RUN_DIFFICULTY,
-  trials: readonly string[] = DAILY_RUN_TRIALS,
-) {
-  return {
-    difficulty,
-    trials: [...trials],
-  };
-}
-
-/** 指紋入力用のコンテンツカタログ。seed や表示専用値は含めない。 */
-export function projectContentCatalog() {
-  return {
-    cards: projectCards(),
-    rarityWeight: RARITY_WEIGHT,
-    events: projectEvents(),
-    recruitSkipMorale: RECRUIT_SKIP_MORALE,
-    difficulties: projectDifficulties(),
-    trials: projectTrials(),
-    bosses: projectBosses(),
-    relics: projectRelics(),
-    traits: projectTraits(),
-    evolution: projectEvolution(),
-    goalAdjustments: projectGoalAdjustments(),
-    levers: projectLevers(),
-    members: projectMembers(),
-    unlocks: projectUnlocks(),
-    departments: projectDepartments(),
-    actions: projectActions(),
-    scenarios: projectScenarios(),
-    daily: projectDailyRun(),
-    achievements: projectAchievements(),
-  };
+const initialValidationErrors = validateContentCatalog(CONTENT_CATALOG);
+if (initialValidationErrors.length > 0) {
+  throw new Error(
+    `CONTENT_CATALOG validation failed: ${initialValidationErrors
+      .map((error) => `${error.category}: ${error.message}`)
+      .join('; ')}`,
+  );
 }

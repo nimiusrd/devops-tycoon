@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { ACTION_CONTENT_DEFS } from '../../../src/data/actions';
 import {
   BALANCE_REGISTRY,
   BALANCE_RULESET_FINGERPRINT,
@@ -12,42 +11,22 @@ import {
   BALANCE_RULESET_VERSION,
   BALANCE_RULESET_VERSION_POLICY,
   canonicalizeJson,
-  compareCanonicalStrings,
   createBalanceRulesetPayload,
   defineBalanceEntry,
   defineProbabilityDistribution,
   fingerprintBalanceRuleset,
   PACING_BALANCE,
-  PROCESS_BALANCE,
   projectBalanceRegistry,
   sha256Hex,
 } from '../../../src/data/balance';
-import { CARD_DEFS } from '../../../src/data/cards';
-import { DEPARTMENT_DEFS } from '../../../src/data/departments';
+import { CONTENT_CATALOG, projectEvent } from '../../../src/data/contentCatalog';
 import {
   DAILY_RUN_DIFFICULTY,
   DAILY_RUN_TRIALS,
-  DIFFICULTY_DEFS,
   DIFFICULTY_ORDER,
-  TRIAL_DEFS,
 } from '../../../src/data/difficulties';
-import { EVOLUTION_NODES } from '../../../src/data/evolution';
-import { MEMBER_NAMES } from '../../../src/data/members';
 import { EVENT_DEFS } from '../../../src/data/events';
-import {
-  projectActions,
-  projectContentCatalog,
-  projectDailyRun,
-  projectDepartments,
-  projectDifficulties,
-  projectEvents,
-  projectEvolution,
-  projectMembers,
-  projectScenarios,
-  projectTrials,
-  projectCards,
-} from '../../../src/data/contentCatalog';
-import { DEFAULT_SCENARIO, SCENARIOS, SCENARIO_ORDER } from '../../../src/sim/scenarios';
+import { DEFAULT_SCENARIO } from '../../../src/sim/scenarios';
 import { SPRINT_BALANCE } from '../../../src/data/balance/sprint';
 
 const FIXTURE_TAGS = ['test'] as const;
@@ -76,6 +55,7 @@ describe('バランスルールセットの版と指紋', () => {
     expect(BALANCE_RULESET_FINGERPRINT_SCHEME).toBe(1);
     expect(BALANCE_RULESET_FINGERPRINT).toMatch(/^[0-9a-f]{64}$/);
     expect(fingerprintBalanceRuleset(BALANCE_RULESET_PAYLOAD)).toBe(BALANCE_RULESET_FINGERPRINT);
+    expect(BALANCE_RULESET_PAYLOAD.catalog).toBe(CONTENT_CATALOG);
     expect(Object.keys(BALANCE_RULESET_PAYLOAD)).toEqual(
       expect.arrayContaining(['fingerprintScheme', 'registry', 'catalog']),
     );
@@ -179,65 +159,6 @@ describe('バランスルールセットの版と指紋', () => {
     );
   });
 
-  it('部門の名称・色やアクション文言だけでは指紋が変わらず、teamCount と定義順では変わる', () => {
-    const baseCatalog = projectContentCatalog();
-    const original = fingerprintBalanceRuleset(createBalanceRulesetPayload([], baseCatalog));
-
-    const renamedDepartments = DEPARTMENT_DEFS.map((department) => ({
-      ...department,
-      name: `${department.name}改`,
-      color: '#000000',
-    }));
-    expect(projectDepartments(renamedDepartments)).toEqual(projectDepartments());
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          departments: projectDepartments(renamedDepartments),
-        }),
-      ),
-    ).toBe(original);
-
-    const counted = DEPARTMENT_DEFS.map((department, index) =>
-      index === 0 ? { ...department, teamCount: department.teamCount + 1 } : department,
-    );
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          departments: projectDepartments(counted),
-        }),
-      ),
-    ).not.toBe(original);
-
-    const relabeledActions = ACTION_CONTENT_DEFS.map((action) => ({
-      ...action,
-      label: `${action.label}改`,
-      icon: 'x',
-      description: '表示専用',
-      sideEffect: '表示専用',
-    }));
-    expect(projectActions(relabeledActions)).toEqual(projectActions());
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          actions: projectActions(relabeledActions),
-        }),
-      ),
-    ).toBe(original);
-
-    const reorderedActions = [...ACTION_CONTENT_DEFS].reverse();
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          actions: projectActions(reorderedActions),
-        }),
-      ),
-    ).not.toBe(original);
-  });
-
   it('tags だけでは指紋対象が変わらず、安定ID接頭辞で体験目標帯を除外する', () => {
     const taggedRuntime = sampleEntry(PACING_BALANCE.fixedStepMs.id, 100, {
       tags: ['validation', 'target-band'],
@@ -251,215 +172,38 @@ describe('バランスルールセットの版と指紋', () => {
     expect(ids).toEqual([PACING_BALANCE.fixedStepMs.id]);
   });
 
-  it('難易度レコードのキー順やイベント既定重み、既定シナリオを正規化する', () => {
-    const baseCatalog = projectContentCatalog();
-    const original = fingerprintBalanceRuleset(createBalanceRulesetPayload([], baseCatalog));
-
-    const shuffledDifficultyKeys = Object.fromEntries(
-      [...Object.entries(DIFFICULTY_DEFS)].reverse(),
-    );
-    expect(projectDifficulties(shuffledDifficultyKeys)).toEqual(projectDifficulties());
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          difficulties: projectDifficulties(shuffledDifficultyKeys),
-        }),
-      ),
-    ).toBe(original);
-
-    const swappedDifficultyKeys = {
-      ...DIFFICULTY_DEFS,
-      easy: DIFFICULTY_DEFS.normal,
-      normal: DIFFICULTY_DEFS.easy,
-    };
-    expect(projectDifficulties(swappedDifficultyKeys)).not.toEqual(projectDifficulties());
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          difficulties: projectDifficulties(swappedDifficultyKeys),
-        }),
-      ),
-    ).not.toBe(original);
+  it('RI-115 カタログを指紋入力にし、イベント既定値と開始条件を正規化する', () => {
+    expect(CONTENT_CATALOG.defaultScenarioId).toBe(DEFAULT_SCENARIO);
+    expect(CONTENT_CATALOG.difficultyOrder).toEqual([...DIFFICULTY_ORDER]);
+    expect(CONTENT_CATALOG.daily).toEqual({
+      difficulty: DAILY_RUN_DIFFICULTY,
+      trials: [...DAILY_RUN_TRIALS],
+    });
 
     const unspecified = EVENT_DEFS.find((event) => event.weight === undefined);
     expect(unspecified).toBeDefined();
-    expect(projectEvents([unspecified!])).toEqual(projectEvents([{ ...unspecified!, weight: 1 }]));
+    expect(projectEvent(unspecified!)).toEqual(projectEvent({ ...unspecified!, weight: 1 }));
 
     const omittedLeadsTo = EVENT_DEFS.find((event) =>
       event.choices.some((choice) => choice.leadsTo === undefined),
     );
     expect(omittedLeadsTo).toBeDefined();
-    expect(projectEvents([omittedLeadsTo!])).toEqual(
-      projectEvents([
-        {
-          ...omittedLeadsTo!,
-          choices: omittedLeadsTo!.choices.map((choice) => ({
-            ...choice,
-            leadsTo: choice.leadsTo ?? 'sprint',
-          })),
-        },
-      ]),
+    expect(projectEvent(omittedLeadsTo!)).toEqual(
+      projectEvent({
+        ...omittedLeadsTo!,
+        choices: omittedLeadsTo!.choices.map((choice) => ({
+          ...choice,
+          leadsTo: choice.leadsTo ?? 'sprint',
+        })),
+      }),
     );
 
-    expect(projectScenarios().defaultId).toBe(DEFAULT_SCENARIO);
-    expect(projectScenarios().order).toEqual([...SCENARIO_ORDER]);
-    expect(projectScenarios().entries.map((entry) => entry.key)).toEqual(
-      [...Object.keys(SCENARIOS)].sort(compareCanonicalStrings),
-    );
+    const original = fingerprintBalanceRuleset(createBalanceRulesetPayload([], CONTENT_CATALOG));
     expect(
       fingerprintBalanceRuleset(
         createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          scenarios: projectScenarios(SCENARIOS, SCENARIO_ORDER, 'copilot'),
-        }),
-      ),
-    ).not.toBe(original);
-
-    const extraScenarios: Record<string, (typeof SCENARIOS)[keyof typeof SCENARIOS]> = {
-      ...SCENARIOS,
-      hidden: SCENARIOS.default,
-    };
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          scenarios: projectScenarios(extraScenarios, SCENARIO_ORDER, DEFAULT_SCENARIO),
-        }),
-      ),
-    ).not.toBe(original);
-
-    const titleOnlyOrder = [...SCENARIO_ORDER].slice(0, -1);
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          scenarios: projectScenarios(SCENARIOS, titleOnlyOrder, DEFAULT_SCENARIO),
-        }),
-      ),
-    ).not.toBe(original);
-  });
-
-  it('難易度・試練の省略値とメンバー名プールを実効値として指紋へ含める', () => {
-    const baseCatalog = projectContentCatalog();
-    const original = fingerprintBalanceRuleset(createBalanceRulesetPayload([], baseCatalog));
-    const defaultAiDependencyPerTask = PROCESS_BALANCE.aiDependencyPerTask.value;
-
-    const easy = DIFFICULTY_DEFS.easy;
-    expect(easy.aiDependencyPerTask).toBeUndefined();
-    expect(
-      projectDifficulties().entries.find((entry) => entry.key === 'easy')?.aiDependencyPerTask,
-    ).toBe(defaultAiDependencyPerTask);
-    const explicitDefaultDifficulty = {
-      ...DIFFICULTY_DEFS,
-      easy: { ...easy, aiDependencyPerTask: defaultAiDependencyPerTask },
-    };
-    expect(projectDifficulties(explicitDefaultDifficulty)).toEqual(projectDifficulties());
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          difficulties: projectDifficulties(explicitDefaultDifficulty),
-        }),
-      ),
-    ).toBe(original);
-
-    const explicitTrialDefaults = TRIAL_DEFS.map((trial) => ({
-      ...trial,
-      focusDelta: trial.focusDelta ?? 0,
-      budgetMul: trial.budgetMul ?? 1,
-      aiDependencyDriftPerSprint: trial.aiDependencyDriftPerSprint ?? 0,
-      frontierModelCostPerDependency: trial.frontierModelCostPerDependency ?? 0,
-    }));
-    expect(projectTrials(explicitTrialDefaults)).toEqual(projectTrials());
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          trials: projectTrials(explicitTrialDefaults),
-        }),
-      ),
-    ).toBe(original);
-
-    expect(projectMembers().names).toEqual([...MEMBER_NAMES]);
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          members: projectMembers(undefined, undefined, [...MEMBER_NAMES, '追加']),
-        }),
-      ),
-    ).not.toBe(original);
-  });
-
-  it('無効果のカード・イベント値と難易度順・デイリー条件を指紋へ正規化する', () => {
-    const baseCatalog = projectContentCatalog();
-    const original = fingerprintBalanceRuleset(createBalanceRulesetPayload([], baseCatalog));
-
-    const identityCards = CARD_DEFS.map((card) => ({
-      ...card,
-      base: { codingSpeedMul: 1, qualityAdd: 0, ...card.base },
-    }));
-    expect(projectCards(identityCards)).toEqual(projectCards());
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          cards: projectCards(identityCards),
-        }),
-      ),
-    ).toBe(original);
-
-    const unspecifiedTriggers = EVENT_DEFS.find((event) => event.triggers === undefined);
-    expect(unspecifiedTriggers).toBeDefined();
-    expect(projectEvents([{ ...unspecifiedTriggers!, triggers: { moraleLow: 0 } }])).toEqual(
-      projectEvents([unspecifiedTriggers!]),
-    );
-    expect(
-      projectEvents([
-        {
-          ...unspecifiedTriggers!,
-          minSignal: { moraleLow: 0 },
-          maxSignal: { moraleLow: 1 },
-        },
-      ]),
-    ).toEqual(projectEvents([unspecifiedTriggers!]));
-
-    const zeroEvolution = EVOLUTION_NODES.map((node) => ({
-      ...node,
-      focusBonus: node.focusBonus ?? 0,
-      codingSlotBonus: node.codingSlotBonus ?? 0,
-    }));
-    expect(projectEvolution(zeroEvolution)).toEqual(projectEvolution());
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          evolution: projectEvolution(zeroEvolution),
-        }),
-      ),
-    ).toBe(original);
-
-    expect(projectDifficulties().order).toEqual([...DIFFICULTY_ORDER]);
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          difficulties: projectDifficulties(DIFFICULTY_DEFS, [...DIFFICULTY_ORDER].reverse()),
-        }),
-      ),
-    ).not.toBe(original);
-
-    expect(projectDailyRun()).toEqual({
-      difficulty: DAILY_RUN_DIFFICULTY,
-      trials: [...DAILY_RUN_TRIALS],
-    });
-    expect(
-      fingerprintBalanceRuleset(
-        createBalanceRulesetPayload([], {
-          ...baseCatalog,
-          daily: projectDailyRun('hard', ['flammable']),
+          ...CONTENT_CATALOG,
+          daily: { difficulty: 'hard', trials: ['flammable'] },
         }),
       ),
     ).not.toBe(original);

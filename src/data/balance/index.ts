@@ -46,7 +46,7 @@ import { CARD_BALANCE } from './cards';
 import { SPRINT_BALANCE } from './sprint';
 import { COARSE_TEAM_BALANCE } from './coarse-team';
 import { PACING_BALANCE } from './pacing';
-import { projectContentCatalog } from '../contentCatalog';
+import { CONTENT_CATALOG } from '../contentCatalog';
 import { createBalanceRulesetPayload, fingerprintBalanceRuleset } from './ruleset';
 import type { BalanceDefinition } from './types';
 
@@ -66,10 +66,10 @@ export const BALANCE_REGISTRY = [
 /** 現行ルールセットの指紋入力。版と seed は含めない。 */
 export const BALANCE_RULESET_PAYLOAD = createBalanceRulesetPayload(
   BALANCE_REGISTRY,
-  projectContentCatalog(),
+  CONTENT_CATALOG,
 );
 
 /** 現行ルールセットの決定論的指紋（SHA-256 hex）。 */
 export const BALANCE_RULESET_FINGERPRINT = fingerprintBalanceRuleset(BALANCE_RULESET_PAYLOAD);
 
-export { projectContentCatalog };
+export { CONTENT_CATALOG };

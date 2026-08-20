@@ -4,7 +4,7 @@
  * ランをまたいで蓄積する進行。ボス撃破でメタ進行ポイント・難易度解放・実績を
  * 得る。ロジックは純関数に保ち、永続化は metaPersistence.ts に分離する。
  */
-import { ACHIEVEMENT_DEFS, type AchievementDef } from '../data/achievements';
+import { ACHIEVEMENT_DEFS, ACHIEVEMENT_IDS } from '../data/achievements';
 import { DIFFICULTY_ORDER } from '../data/difficulties';
 import type { BOSS_DEFS } from '../data/bosses';
 import { BOSS_DEFS as ALL_BOSSES } from '../data/bosses';
@@ -302,7 +302,8 @@ export function computeRunRewardBreakdown(input: RunRewardInput): RunRewardBreak
 
 const uniq = (xs: string[]): string[] => Array.from(new Set(xs));
 
-export { ACHIEVEMENT_DEFS, type AchievementDef };
+export type { AchievementDef } from '../data/achievements';
+export { ACHIEVEMENT_DEFS } from '../data/achievements';
 
 /** 勝利称号の宣言的定義（コレクション表示・獲得条件ヒント）。 */
 export interface WinTitleDef {
@@ -374,16 +375,16 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     if (unlock && !next.unlockedDifficulties.includes(unlock)) {
       next.unlockedDifficulties.push(unlock);
     }
-    const earned: string[] = ['first-clear'];
+    const earned: string[] = [ACHIEVEMENT_IDS.firstClear];
     if (input.winType)
       next.collectedWinTypes = uniq([...next.collectedWinTypes, input.winType]) as WinType[];
-    if (input.winType === 'noDamage') earned.push('no-damage');
-    if (input.maxCombo >= 20) earned.push('combo-master');
-    if (input.difficulty === 'nightmare') earned.push('nightmare-clear');
-    if (allBossesDefeated(next.defeatedBosses, ALL_BOSSES)) earned.push('all-bosses');
+    if (input.winType === 'noDamage') earned.push(ACHIEVEMENT_IDS.noDamage);
+    if (input.maxCombo >= 20) earned.push(ACHIEVEMENT_IDS.comboMaster);
+    if (input.difficulty === 'nightmare') earned.push(ACHIEVEMENT_IDS.nightmareClear);
+    if (allBossesDefeated(next.defeatedBosses, ALL_BOSSES)) earned.push(ACHIEVEMENT_IDS.allBosses);
     const reviews = input.quarterReviews ?? [];
-    if (reviews.includes('exceeded')) earned.push('review-exceeded');
-    if (reviews.includes('missed_adjustable')) earned.push('review-survivor');
+    if (reviews.includes('exceeded')) earned.push(ACHIEVEMENT_IDS.reviewExceeded);
+    if (reviews.includes('missed_adjustable')) earned.push(ACHIEVEMENT_IDS.reviewSurvivor);
     next.achievements = uniq([...next.achievements, ...earned]);
   }
 

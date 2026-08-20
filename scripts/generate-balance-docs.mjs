@@ -2,7 +2,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 
-const OUTPUT_PATH = resolve('plan/generated/balance-parameters.md');
+const OUTPUT_PATHS = [
+  resolve('plan/generated/balance-parameters.md'),
+  resolve('plan/generated/content-catalog.md'),
+];
 
 async function main() {
   const server = await createServer({ appType: 'custom' });
@@ -26,9 +29,29 @@ async function main() {
       fingerprintScheme: balance.BALANCE_RULESET_FINGERPRINT_SCHEME,
       policy: balance.BALANCE_RULESET_VERSION_POLICY,
     });
-    mkdirSync(dirname(OUTPUT_PATH), { recursive: true });
-    writeFileSync(OUTPUT_PATH, markdown, 'utf8');
-    console.log(`バランスパラメータ表を生成しました: ${relative(process.cwd(), OUTPUT_PATH)}`);
+    const catalog = await server.ssrLoadModule('/src/data/contentCatalog.ts');
+    const catalogDocumentation = await server.ssrLoadModule(
+      '/src/data/contentCatalogDocumentation.ts',
+    );
+    const catalogErrors = catalog.validateContentCatalog(catalog.CONTENT_CATALOG);
+    if (catalogErrors.length > 0) {
+      console.error(catalogErrors.map((error) => `${error.category}: ${error.message}`).join('\n'));
+      process.exitCode = 1;
+      return;
+    }
+    const catalogMarkdown = catalogDocumentation.renderContentCatalogMarkdown(
+      catalog.CONTENT_CATALOG,
+    );
+    for (const [outputPath, output] of [
+      [OUTPUT_PATHS[0], markdown],
+      [OUTPUT_PATHS[1], catalogMarkdown],
+    ]) {
+      mkdirSync(dirname(outputPath), { recursive: true });
+      writeFileSync(outputPath, output, 'utf8');
+    }
+    console.log(
+      `バランス生成物を生成しました: ${OUTPUT_PATHS.map((path) => relative(process.cwd(), path)).join(', ')}`,
+    );
   } finally {
     await server.close();
   }

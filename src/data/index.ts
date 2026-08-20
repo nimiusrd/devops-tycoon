@@ -6,6 +6,10 @@
  */
 export { CARD_DEFS, getCard, RARITY_LABEL, RARITY_WEIGHT } from './cards';
 export { ACTION_DEFS, getAction } from './actions';
+export { ACTION_CONTENT_DEFS } from './actions';
+export { ACTION_IDS } from './actionIds';
+export { ACHIEVEMENT_DEFS, ACHIEVEMENT_IDS } from './achievements';
+export type { AchievementDef } from './achievements';
 export { RELIC_DEFS, getRelic } from './relics';
 export { EVENT_DEFS, getEvent, effectiveKind } from './events';
 export type { EventDef, EventChoice, EventOutcome } from './events';
@@ -22,6 +26,17 @@ export {
   getTrial,
 } from './difficulties';
 export { TRAIT_DEFS, getTrait, foldTraitModifiers } from './traits';
-export { MEMBER_NAMES, STARTER_ARCHETYPES, RECRUIT_ARCHETYPES } from './members';
+export {
+  MEMBER_NAMES,
+  STARTER_ARCHETYPES,
+  STARTER_DEFAULT_AI_ARCHETYPE_ID,
+  RECRUIT_ARCHETYPES,
+} from './members';
+export { CONTENT_CATALOG, validateContentCatalog } from './contentCatalog';
+export type {
+  ContentCatalog,
+  ContentCatalogEntry,
+  ContentCatalogValidationError,
+} from './contentCatalog';
 export * from './assets';
 export * from './balance';

@@ -1466,13 +1466,35 @@ function observeOpportunityWindows(
   }
 }
 
-function counterfactualEnabled(): boolean {
+/** `PT_CF_POLICIES` を検証して返す。未指定は全方針（`null`）。 */
+export function parseCfPolicies(raw: string | undefined): string[] | null {
+  if (raw == null || raw.trim() === '') return null;
+  const list = raw
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+  if (list.length === 0) throw new Error('PT_CF_POLICIES が空');
+  const unknown = list.filter((p) => !POLICY_DEFS[p]);
+  if (unknown.length > 0) {
+    throw new Error(`PT_CF_POLICIES に未知の方針: ${unknown.join(', ')}`);
+  }
+  const dup = list.filter((x, i) => list.indexOf(x) !== i);
+  if (dup.length > 0) {
+    throw new Error(`PT_CF_POLICIES に重複: ${[...new Set(dup)].join(', ')}`);
+  }
+  return list;
+}
+
+function counterfactualEnabled(policy?: string): boolean {
   const processLike = (
     globalThis as typeof globalThis & {
       process?: { env?: Record<string, string | undefined> };
     }
   ).process;
-  return processLike?.env?.PT_COUNTERFACTUAL === '1';
+  if (processLike?.env?.PT_COUNTERFACTUAL !== '1') return false;
+  const allow = parseCfPolicies(processLike.env.PT_CF_POLICIES);
+  if (allow == null) return true;
+  return policy != null && allow.includes(policy);
 }
 
 function rememberCounterfactualFrame(
@@ -1513,6 +1535,7 @@ function sampleAvailableInDanger(
   e: RunEngine,
   byReason: Map<DangerLoseReason, DangerTrack>,
   framesByReason?: Map<DangerLoseReason, CounterfactualFrameSample[]>,
+  policy?: string,
 ): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
@@ -1550,7 +1573,7 @@ function sampleAvailableInDanger(
     track.lastSample = sample;
     if (available.length > 0) track.lastNonEmpty = sample;
   }
-  if (framesByReason && counterfactualEnabled() && dangers.length > 0) {
+  if (framesByReason && counterfactualEnabled(policy) && dangers.length > 0) {
     const frame = e.exportCounterfactualFrame();
     if (frame) {
       for (const reason of dangers) {
@@ -2081,7 +2104,12 @@ export function runOnce(
         let cardFocusSpent = 0;
         const sampleDanger = (): void => {
           observeOpportunityWindows(e, opportunityOpen, opportunityWindows);
-          sampleAvailableInDanger(e, availableInDangerByReason, counterfactualFramesByReason);
+          sampleAvailableInDanger(
+            e,
+            availableInDangerByReason,
+            counterfactualFramesByReason,
+            policy,
+          );
         };
         const onCardPlayed = (focusSpent: number): void => {
           cardsPlayed += 1;
@@ -2402,7 +2430,7 @@ export function runOnce(
       : {}),
     ...(f.status === 'lost' &&
     f.loseReason &&
-    counterfactualEnabled() &&
+    counterfactualEnabled(policy) &&
     counterfactualFramesByReason.has(f.loseReason as DangerLoseReason)
       ? (() => {
           const selected = evaluateLatestEffectiveFrame(

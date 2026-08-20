@@ -2,7 +2,8 @@ import { defineConfig } from 'vitest/config';
 
 // プレイテスト用オートプレイ（`npm run playtest`）。
 // 通常のユニットテスト（`vitest.config.ts`）とは別 config にして、
-// `npm test` / CI では回さない。実行に数分かかるため。
+// `npm test` / CI では回さない。既定（反実仮想オフ）でも数分、
+// `PT_COUNTERFACTUAL=1` の既定コホートは数時間かかりうる。
 export default defineConfig({
   test: {
     environment: 'node',

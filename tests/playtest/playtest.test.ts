@@ -9,13 +9,18 @@
  * - `PT_META`    メタ進行の解放状態（`fresh`=初見相当・既定 / `full`=全解放）
  * - `PT_OUT`     出力先 JSON（既定 `playtest-out/runs.json`）
  * - `PT_COUNTERFACTUAL=1`  危険域 last-non-empty の反実仮想評価を記録（RI-101。既定オフ）
+ * - `PT_CF_POLICIES`  カンマ区切り。指定時はそれらの方針だけ反実仮想する（RI-132。省略時は全方針）
+ *
+ * `PT_COUNTERFACTUAL=1` の既定コホートは数時間かかりうる（RI-132）。
+ * 難易度ごとにチェックポイントし、同じ世代の `partial` 出力から再開する。
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTY_DEFS } from '../../src/data/difficulties';
-import { POLICY_DEFS, runMatrix, type MetaProfile } from './harness';
+import { POLICY_DEFS, parseCfPolicies, runOnce, type MetaProfile, type RunLog } from './harness';
 import { currentGeneration } from '../../scripts/playtest-generation.mjs';
+import { readPlaytestOut } from '../../scripts/playtest-out.mjs';
 
 const VALID_DIFFS = new Set(Object.keys(DIFFICULTY_DEFS));
 const VALID_META = new Set<MetaProfile>(['fresh', 'full']);
@@ -87,10 +92,21 @@ const SEEDS = parseSeeds(
   process.env.PT_SEEDS ?? Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`).join(','),
 );
 const META = parseMeta(process.env.PT_META ?? 'fresh');
+const CF_POLICIES = parseCfPolicies(process.env.PT_CF_POLICIES);
+if (CF_POLICIES) {
+  const outside = CF_POLICIES.filter((p) => !POLICIES.includes(p));
+  if (outside.length > 0) {
+    throw new Error(
+      `PT_CF_POLICIES が実行対象外: ${outside.join(', ')}（PT_POLICIES に含まれない）`,
+    );
+  }
+}
 
 /** 既定コホート（所見ドキュメントが前提にしている条件）。 */
 const DEFAULT_DIFFS = ['easy', 'normal', 'hard', 'nightmare'];
 const DEFAULT_SEEDS = Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`);
+/** `PT_COUNTERFACTUAL=1` の既定コホートが数時間〜半日を超えるため。 */
+const PLAYTEST_TIMEOUT_MS = 86_400_000;
 
 /** 2つの文字列リストが集合として一致するか（重複や欠落を件数で誤魔化させない）。 */
 function sameSet(a: readonly string[], b: readonly string[]): boolean {
@@ -99,16 +115,114 @@ function sameSet(a: readonly string[], b: readonly string[]): boolean {
   return sa.size === sb.size && sa.size === a.length && [...sa].every((x) => sb.has(x));
 }
 
+function runKey(run: { difficulty: string; policy: string; seed: string; meta?: string }): string {
+  return `${run.meta ?? 'fresh'}|${run.difficulty}|${run.policy}|${run.seed}`;
+}
+
+function isDefaultCohort(): boolean {
+  return (
+    sameSet(DIFFS, DEFAULT_DIFFS) &&
+    sameSet(SEEDS, DEFAULT_SEEDS) &&
+    sameSet(POLICIES, Object.keys(POLICY_DEFS)) &&
+    META === 'fresh'
+  );
+}
+
+function writePayload(runs: RunLog[], generation: string, partial: boolean): void {
+  mkdirSync(dirname(OUT), { recursive: true });
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    /**
+     * 測定に使ったソースの世代（`src/` と `tests/playtest/` の内容ハッシュ）。
+     *
+     * 時刻とコホートだけでは、**測定に成功した後でコードを変えて再計測せずに
+     * `playtest:report` / `playtest:check` だけを流す**経路を検出できない。
+     * 旧出力の削除（`globalSetup`）は実行が落ちた場合しか守らないので別物である。
+     */
+    generation,
+    partial: partial ? true : undefined,
+    cohort: {
+      difficulties: DIFFS,
+      policies: POLICIES,
+      seeds: SEEDS,
+      meta: META,
+      /**
+       * 所見ドキュメントが前提にしている既定コホートか。
+       *
+       * **件数ではなく集合の一致で見る。** 件数だけだと、1方針を落として別の方針を
+       * 重複指定した入力が既定として通ってしまう（`parsePolicies` でも重複を弾いているが、
+       * 判定側でも取りこぼさないようにする）。
+       */
+      isDefault: isDefaultCohort(),
+    },
+    runs,
+  };
+  writeFileSync(OUT, JSON.stringify(payload), 'utf8');
+}
+
+function resumableRuns(generation: string): RunLog[] {
+  const existing = readPlaytestOut(OUT) as {
+    generation?: string;
+    partial?: boolean;
+    cohort?: {
+      difficulties: string[];
+      policies: string[];
+      seeds: string[];
+      meta: string;
+    };
+    runs?: RunLog[];
+  } | null;
+  if (!existing?.partial || existing.generation !== generation) return [];
+  const cohort = existing.cohort;
+  if (
+    !cohort ||
+    !sameSet(cohort.difficulties, DIFFS) ||
+    !sameSet(cohort.policies, POLICIES) ||
+    !sameSet(cohort.seeds, SEEDS) ||
+    cohort.meta !== META
+  ) {
+    return [];
+  }
+  return Array.isArray(existing.runs) ? existing.runs : [];
+}
+
 describe('playtest matrix', () => {
-  it('難易度 × 方針 × seed を回して結果を書き出す', { timeout: 3_600_000 }, () => {
+  it('難易度 × 方針 × seed を回して結果を書き出す', { timeout: PLAYTEST_TIMEOUT_MS }, () => {
     // **実行前の世代を控える。** 下で書き出す世代を完了後にだけ計算すると、
     // 実行中に `src/` や `tests/playtest/` を編集した場合、ランは既に読み込まれた
     // 変更前のモジュールで進むのに、出力へは変更後の世代が付く。その出力は
     // `playtest:report` / `playtest:check` を世代一致として通ってしまう。
     const generationBefore = currentGeneration();
+    const expected = DIFFS.length * POLICIES.length * SEEDS.length;
+    const runs = [...resumableRuns(generationBefore)];
+    const done = new Set(runs.map(runKey));
+    if (runs.length > 0) {
+      console.log(`resume ${runs.length}/${expected} from ${OUT}`);
+    }
 
-    const runs = runMatrix(DIFFS, POLICIES, SEEDS, META);
-    expect(runs.length).toBe(DIFFS.length * POLICIES.length * SEEDS.length);
+    for (const d of DIFFS) {
+      for (const p of POLICIES) {
+        let wrote = false;
+        for (const seed of SEEDS) {
+          const key = runKey({ difficulty: d, policy: p, seed, meta: META });
+          if (done.has(key)) continue;
+          runs.push(runOnce(seed, d, p, META));
+          done.add(key);
+          wrote = true;
+        }
+        if (wrote) {
+          expect(
+            currentGeneration(),
+            '実行中に src/ または tests/playtest/ が変更された。測定結果と世代が対応しないため書き出さない',
+          ).toBe(generationBefore);
+          // 件数だけ揃っても終端検証前は完了扱いにしない。完了は最後の writePayload(..., false) だけ。
+          writePayload(runs, generationBefore, true);
+          console.log(`checkpoint ${runs.length}/${expected} (${d}/${p}) -> ${OUT}`);
+        }
+      }
+    }
+
+    expect(runs.length).toBe(expected);
 
     // ガード上限や未対応フェーズで止まったランは status が playing のまま残る。
     // レポートはこれを「勝っていない＝敗北」として数えてしまうため、書き出す前に弾く。
@@ -124,41 +238,7 @@ describe('playtest matrix', () => {
       '実行中に src/ または tests/playtest/ が変更された。測定結果と世代が対応しないため書き出さない',
     ).toBe(generationBefore);
 
-    mkdirSync(dirname(OUT), { recursive: true });
-    // **どのコホートを回したかを一緒に書き出す。** 絞り込み実行（`PT_DIFFS=easy` など）の
-    // 出力を、全難易度×全 seed を前提にした所見の数値と突き合わせると偽陽性が出る。
-    // 読む側（`playtest:check`）が条件を確認できるようにしておく。
-    const payload = {
-      generatedAt: new Date().toISOString(),
-      /**
-       * 測定に使ったソースの世代（`src/` と `tests/playtest/` の内容ハッシュ）。
-       *
-       * 時刻とコホートだけでは、**測定に成功した後でコードを変えて再計測せずに
-       * `playtest:report` / `playtest:check` だけを流す**経路を検出できない。
-       * 旧出力の削除（`globalSetup`）は実行が落ちた場合しか守らないので別物である。
-       */
-      generation: generationBefore,
-      cohort: {
-        difficulties: DIFFS,
-        policies: POLICIES,
-        seeds: SEEDS,
-        meta: META,
-        /**
-         * 所見ドキュメントが前提にしている既定コホートか。
-         *
-         * **件数ではなく集合の一致で見る。** 件数だけだと、1方針を落として別の方針を
-         * 重複指定した入力が既定として通ってしまう（`parsePolicies` でも重複を弾いているが、
-         * 判定側でも取りこぼさないようにする）。
-         */
-        isDefault:
-          sameSet(DIFFS, DEFAULT_DIFFS) &&
-          sameSet(SEEDS, DEFAULT_SEEDS) &&
-          sameSet(POLICIES, Object.keys(POLICY_DEFS)) &&
-          META === 'fresh',
-      },
-      runs,
-    };
-    writeFileSync(OUT, JSON.stringify(payload), 'utf8');
-    console.log(`runs=${runs.length} meta=${META} default=${payload.cohort.isDefault} -> ${OUT}`);
+    writePayload(runs, generationBefore, false);
+    console.log(`runs=${runs.length} meta=${META} default=${isDefaultCohort()} -> ${OUT}`);
   });
 });

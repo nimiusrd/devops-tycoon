@@ -8,8 +8,9 @@
  *
  * バランス変更に型エラーがあるときこそ「古い結果が残っている」ことに気付きにくいので、
  * 型検査より前で消す。Vitest 側の削除も、`vitest` を直接叩く経路のために残してある。
+ *
+ * 同じ世代の `partial` チェックポイントは消さない（RI-132 の長時間再走の再開用）。
  */
-import { rmSync } from 'node:fs';
+import { invalidatePlaytestOut } from './playtest-out.mjs';
 
-const out = process.env.PT_OUT ?? 'playtest-out/runs.json';
-rmSync(out, { force: true });
+invalidatePlaytestOut();

@@ -19,7 +19,7 @@ export const F9_POLICIES = ['naive', 'skilledNoHire', 'onlyFirefight', 'noInterv
 export const F8_GAP_QUANTILE = 0.5;
 /** F-8 PASS: 回復余地ギャップの p50 がこのスプリント数以下。 */
 export const F8_MAX_GAP_P50 = 1;
-/** F-9: 同一難易度・同一方針の層で、敗因ごとに必要な complete CF 件数。 */
+/** F-9: 同一方針（難易度はプール）で、敗因ごとに必要な complete CF 件数。 */
 export const F9_MIN_REASON_N = 10;
 /** F-9 PASS: 資格敗因の有効手集合が何種類以上違うか。 */
 export const F9_MIN_DISTINCT_SETS = 2;
@@ -92,7 +92,11 @@ function hasCfField(run) {
   return Object.prototype.hasOwnProperty.call(run, 'effectiveActionsInDanger');
 }
 
-/** 同一難易度・同一方針内の完全評価から F-9 の集合差を判定する。 */
+/** 同一方針内（難易度はプール）の完全評価から F-9 の集合差を判定する。
+ * 既定コホートは難易度×方針セルが 10 seed なので、難易度まで層別すると
+ * 敗因 n≥10 を同一セルで2種そろえられない。方針を跨ぐと介入セットが違うため、
+ * 方針層は分けたまま難易度だけプールする。
+ */
 function judgeF9Sets(complete) {
   const byReason = new Map();
   for (const r of complete) {
@@ -242,6 +246,10 @@ export function evaluateF8F9(loaded, options = {}) {
       incompleteEmpty += 1;
       continue;
     }
+    if (r.counterfactualBaseline?.truncated && !hasLastEffectiveActions(r)) {
+      incompleteEmpty += 1;
+      continue;
+    }
     gaps.push(recoveryGapOf(r));
   }
 
@@ -267,15 +275,9 @@ export function evaluateF8F9(loaded, options = {}) {
   const complete = cfLost.filter((r) => !r.counterfactualIncomplete);
   const strata = [];
   for (const policy of F9_POLICIES) {
-    const diffs = [
-      ...new Set(complete.filter((r) => r.policy === policy).map((r) => r.difficulty)),
-    ].sort();
-    for (const difficulty of diffs) {
-      const cell = complete.filter((r) => r.policy === policy && r.difficulty === difficulty);
-      const judged = judgeF9Sets(cell);
-      if (judged.qualifyingReasons.length >= 2) {
-        strata.push({ policy, difficulty, ...judged });
-      }
+    const judged = judgeF9Sets(complete.filter((r) => r.policy === policy));
+    if (judged.qualifyingReasons.length >= 2) {
+      strata.push({ policy, ...judged });
     }
   }
 
@@ -285,7 +287,7 @@ export function evaluateF8F9(loaded, options = {}) {
       f8,
       f9: {
         verdict: '未計測',
-        reason: `層別（難易度×方針）の資格敗因が0セル（必要≥2、敗因n≥${F9_MIN_REASON_N}）`,
+        reason: `層別（方針）の資格敗因が0方針（必要≥2、敗因n≥${F9_MIN_REASON_N}）`,
         distinctEffectiveSetCount: null,
         qualifyingReasons: [],
         byReason: {},
@@ -299,7 +301,7 @@ export function evaluateF8F9(loaded, options = {}) {
   const byReason = {};
   for (const s of strata) {
     for (const [reason, actions] of Object.entries(s.byReason)) {
-      byReason[`${s.difficulty}/${s.policy}/${reason}`] = actions;
+      byReason[`${s.policy}/${reason}`] = actions;
     }
   }
 

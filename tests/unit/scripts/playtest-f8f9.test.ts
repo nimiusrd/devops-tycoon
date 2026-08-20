@@ -203,6 +203,37 @@ describe('playtest-f8f9', () => {
     expect(onlyRecovered.f8.reason).toContain('自然回復');
   });
 
+  it('ベースライン打ち切りの空結果は F-8 の Infinity に入れない', () => {
+    const result = evaluateF8F9(
+      loaded([
+        lostRun(),
+        lostRun({
+          policy: 'skilledNoHire',
+          seed: 'pt-2',
+          lastEffectiveActionsAt: undefined,
+          effectiveActionsInDanger: [],
+          counterfactualBaseline: { truncated: true },
+        }),
+      ]),
+      { stale: false },
+    );
+    expect(result.f8.verdict).toBe('PASS');
+    expect(result.f8.n).toBe(1);
+
+    const onlyTruncated = evaluateF8F9(
+      loaded([
+        lostRun({
+          lastEffectiveActionsAt: undefined,
+          effectiveActionsInDanger: [],
+          counterfactualBaseline: { truncated: true },
+        }),
+      ]),
+      { stale: false },
+    );
+    expect(onlyTruncated.f8.verdict).toBe('未計測');
+    expect(onlyTruncated.f8.reason).toContain('不完全評価');
+  });
+
   it('不完全評価の空結果だけなら F-8 は未計測', () => {
     const result = evaluateF8F9(
       loaded([
@@ -244,7 +275,25 @@ describe('playtest-f8f9', () => {
     ];
     const result = evaluateF8F9(loaded(runs), { stale: false });
     expect(result.f9.verdict).toBe('未計測');
-    expect(result.f9.reason).toContain('層別');
+    expect(result.f9.reason).toContain('層別（方針）');
+  });
+
+  it('F-9 は同一方針なら難易度をプールして判定する', () => {
+    const runs = [
+      ...many(F9_MIN_REASON_N, 'seniorBurnout', ['firefight'], 'naive', 0).map((r, i) => ({
+        ...r,
+        difficulty: 'easy',
+        seed: `pt-e-${i + 1}`,
+      })),
+      ...many(F9_MIN_REASON_N, 'moraleCollapse', ['overtime'], 'naive', 0).map((r, i) => ({
+        ...r,
+        difficulty: 'normal',
+        seed: `pt-n-${i + 1}`,
+      })),
+    ];
+    const result = evaluateF8F9(loaded(runs), { stale: false });
+    expect(result.f9.verdict).toBe('PASS');
+    expect(result.f9.distinctEffectiveSetCount).toBe(2);
   });
 
   it('F-9 は資格敗因が2未満なら未計測（F-8 は判定する）', () => {

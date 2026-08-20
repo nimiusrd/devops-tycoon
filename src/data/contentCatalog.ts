@@ -43,35 +43,27 @@ export function projectEvents(defs: readonly EventDef[] = EVENT_DEFS) {
     maxSignal: def.maxSignal,
     choices: def.choices.map((choice) => ({
       outcome: choice.outcome,
-      leadsTo: choice.leadsTo,
+      // resolveBeat と同じ既定。未指定と 'sprint' を同一の実効値にする。
+      leadsTo: choice.leadsTo ?? 'sprint',
     })),
   }));
 }
 
 export function projectDifficulties(
-  defs: readonly DifficultyDef[] = Object.values(DIFFICULTY_DEFS),
+  defs: Readonly<Record<string, DifficultyDef>> = DIFFICULTY_DEFS,
 ) {
-  return defs
-    .map(
-      ({
-        id,
-        org,
-        taskCountMul,
-        globalEffects,
-        startBudget,
-        bossTargetMul,
-        aiDependencyPerTask,
-      }) => ({
-        id,
-        org,
-        taskCountMul,
-        globalEffects,
-        startBudget,
-        bossTargetMul,
-        aiDependencyPerTask,
-      }),
-    )
-    .sort((left, right) => compareCanonicalStrings(left.id, right.id));
+  return Object.entries(defs)
+    .map(([key, def]) => ({
+      key,
+      id: def.id,
+      org: def.org,
+      taskCountMul: def.taskCountMul,
+      globalEffects: def.globalEffects,
+      startBudget: def.startBudget,
+      bossTargetMul: def.bossTargetMul,
+      aiDependencyPerTask: def.aiDependencyPerTask,
+    }))
+    .sort((left, right) => compareCanonicalStrings(left.key, right.key));
 }
 
 export function projectTrials(defs: readonly TrialDef[] = TRIAL_DEFS) {
@@ -196,22 +188,23 @@ export function projectActions(defs: readonly ActionContentDef[] = ACTION_CONTEN
 }
 
 export function projectScenarios(
-  order: readonly Scenario['id'][] = SCENARIO_ORDER,
-  scenarios: Readonly<Record<Scenario['id'], Scenario>> = SCENARIOS,
-  defaultId: Scenario['id'] = DEFAULT_SCENARIO,
+  scenarios: Readonly<Record<string, Scenario>> = SCENARIOS,
+  order: readonly string[] = SCENARIO_ORDER,
+  defaultId: string = DEFAULT_SCENARIO,
 ) {
   return {
     defaultId,
-    entries: order.map((id) => {
-      const scenario = scenarios[id];
-      return {
+    order: [...order],
+    entries: Object.entries(scenarios)
+      .map(([key, scenario]) => ({
+        key,
         id: scenario.id,
         org: scenario.org,
         sprint: scenario.sprint,
         orgDelta: scenario.orgDelta,
         globalEffects: scenario.globalEffects,
-      };
-    }),
+      }))
+      .sort((left, right) => compareCanonicalStrings(left.key, right.key)),
   };
 }
 

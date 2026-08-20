@@ -139,7 +139,7 @@ export default function App(props: AppProps) {
 
 function AppContent({ game }: AppProps) {
   const run = useRun(game);
-  const { state, meta, lastRunReward, runSaveSummary } = run;
+  const { state, meta, lastRunReward, runSaveSummary, runSaveIssue } = run;
   const phase = state.phase;
   const responsiveMode = useResponsiveMode();
   const audio = useAudio();
@@ -241,6 +241,10 @@ function AppContent({ game }: AppProps) {
     clearHudSnapshot();
     run.resumeRun();
   };
+  const discardRunSave = () => {
+    closeTitleModals();
+    run.clearRunSave();
+  };
   const openReplay = (id: string, keyframeIndex: number) => {
     audio.unlock();
     closeTitleModals();
@@ -276,6 +280,8 @@ function AppContent({ game }: AppProps) {
           onStartDaily={startDailyRun}
           onResume={resumeRun}
           resumableSummary={runSaveSummary}
+          runSaveIssue={runSaveIssue}
+          onDiscardRunSave={discardRunSave}
           onOpenReplays={() => setReplayListOpen(true)}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenDeckPolicy={() => setDeckPolicyOpen(true)}

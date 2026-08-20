@@ -55,8 +55,10 @@ import {
 } from './state/replay';
 import type { ReplayStorage } from './state/replayPersistence';
 import {
+  getRunSaveCompatibilityIssue,
   toRunSave,
   type RunSave,
+  type RunSaveCompatibilityIssue,
   type RunSaveSummary,
   type RunStorage,
 } from './state/runPersistence';
@@ -163,13 +165,19 @@ export interface GameHandle {
   /** 起動時の非同期永続化を接続し、メタ更新を解禁する。 */
   attachMetaPersistence(meta: MetaState, storage: MetaStorage): void;
   /** 起動時のランセーブ永続化を接続する（まだ hydrate しない）。 */
-  attachRunPersistence(storage: RunStorage, save: RunSave | null): void;
+  attachRunPersistence(
+    storage: RunStorage,
+    save: RunSave | null,
+    issue?: RunSaveCompatibilityIssue | null,
+  ): void;
   /** タイトルから途中セーブを再開する（RI-58）。 */
   resumeRun(): RunState | null;
   /** 再開可能なランセーブがあるか。 */
   hasResumableRun(): boolean;
   /** タイトル「続きから」用の要約（無い場合は null）。 */
   getRunSaveSummary(): RunSaveSummary | null;
+  /** ルールセット不一致・情報欠落で再開できないセーブの理由。 */
+  getRunSaveIssue(): RunSaveCompatibilityIssue | null;
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
   /** リプレイ永続化を接続し、一覧をキャッシュする（RI-61）。 */
@@ -232,7 +240,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let metaStorage = options.metaStorage ?? null;
   let metaReady = options.metaReady ?? true;
   let runStorage: RunStorage | null = options.runStorage ?? null;
-  let resumableSave: RunSave | null = options.initialRunSave ?? null;
+  const initialRunSaveIssue = options.initialRunSave
+    ? getRunSaveCompatibilityIssue(options.initialRunSave)
+    : null;
+  let resumableSave: RunSave | null = initialRunSaveIssue ? null : (options.initialRunSave ?? null);
+  let runSaveIssue: RunSaveCompatibilityIssue | null = initialRunSaveIssue;
   let replayStorage: ReplayStorage | null = null;
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
@@ -262,6 +274,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
 
   const clearRunSaveInternal = (): void => {
     resumableSave = null;
+    runSaveIssue = null;
     if (!runStorage) return;
     void runStorage.clear().catch(() => undefined);
   };
@@ -334,6 +347,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     // 再開後も完走リプレイが前半を保持できるよう、収集済みキーフレームを同梱する。
     const save = toRunSave(exported, Date.now(), keyframes);
     resumableSave = save;
+    runSaveIssue = null;
     void runStorage.save(save).catch(() => undefined);
   };
 
@@ -749,13 +763,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       recordIfFinished();
       bump();
     },
-    attachRunPersistence(storage, save) {
+    attachRunPersistence(storage, save, issue = null) {
       runStorage = storage;
-      resumableSave = save;
+      const derivedIssue = save ? getRunSaveCompatibilityIssue(save) : null;
+      const nextIssue = save ? derivedIssue : issue;
+      runSaveIssue = nextIssue ? structuredClone(nextIssue) : null;
+      resumableSave = runSaveIssue ? null : save;
       bump();
     },
     resumeRun() {
-      if (replayMode || !resumableSave) return null;
+      if (replayMode || runSaveIssue || !resumableSave) return null;
       recorded = false;
       lastRunReward = null;
       clearWhatIfCache();
@@ -779,7 +796,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       return resumableSave !== null;
     },
     getRunSaveSummary() {
-      return resumableSave ? structuredClone(resumableSave.summary) : null;
+      if (resumableSave) return structuredClone(resumableSave.summary);
+      return runSaveIssue ? structuredClone(runSaveIssue.summary) : null;
+    },
+    getRunSaveIssue() {
+      return runSaveIssue ? structuredClone(runSaveIssue) : null;
     },
     clearRunSave() {
       clearRunSaveInternal();

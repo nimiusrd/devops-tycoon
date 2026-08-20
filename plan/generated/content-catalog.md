@@ -117,11 +117,11 @@
 | Order | ID | Execution |
 | ---: | --- | --- |
 | 0 | aiArtisan | {"modifiers":{"aiReworkAdd":-0.06}} |
-| 1 | megaPrMaker | {"modifiers":{"implMul":1.25,"reviewLoadMul":0.9}} |
-| 2 | reviewDemon | {"modifiers":{"reviewMul":1.3,"staminaDrainMul":1.35}} |
-| 3 | docMaster | {"modifiers":{"docPerSprint":3}} |
-| 4 | juniorStar | {"modifiers":{"xpMul":1.6}} |
-| 5 | burnoutProne | {"modifiers":{"staminaMaxMul":0.72}} |
+| 1 | burnoutProne | {"modifiers":{"staminaMaxMul":0.72}} |
+| 2 | docMaster | {"modifiers":{"docPerSprint":3}} |
+| 3 | juniorStar | {"modifiers":{"xpMul":1.6}} |
+| 4 | megaPrMaker | {"modifiers":{"implMul":1.25,"reviewLoadMul":0.9}} |
+| 5 | reviewDemon | {"modifiers":{"reviewMul":1.3,"staminaDrainMul":1.35}} |
 
 ## evolution
 

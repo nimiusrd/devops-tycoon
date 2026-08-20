@@ -10,6 +10,7 @@ import { ACTION_CONTENT_DEFS, type ActionContentDef } from './actions';
 import { CARD_DEFS, RARITY_WEIGHT } from './cards';
 import { BOSS_DEFS } from './bosses';
 import { DEPARTMENT_DEFS } from './departments';
+import { compareCanonicalStrings } from './balance/canonical';
 import { PROCESS_BALANCE } from './balance/process';
 import {
   DAILY_RUN_DIFFICULTY,
@@ -137,6 +138,16 @@ function ordered<T extends { id: string }>(
   }));
 }
 
+function orderedById<T extends { id: string }>(
+  definitions: readonly T[],
+  project: (definition: T) => unknown,
+): readonly ContentCatalogEntry[] {
+  return ordered(
+    [...definitions].sort((left, right) => compareCanonicalStrings(left.id, right.id)),
+    project,
+  );
+}
+
 export function projectEvent(definition: EventDef): unknown {
   return {
     kind: effectiveKind(definition),
@@ -200,7 +211,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     clear: definedObject(definition.clear),
   })),
   relics: ordered(RELIC_DEFS, projectRelic),
-  traits: ordered(TRAIT_DEFS, (definition) => ({
+  traits: orderedById(TRAIT_DEFS, (definition) => ({
     modifiers: omitIdentity(definition.modifiers, IDENTITY_TRAIT_MODIFIERS),
   })),
   evolution: ordered(EVOLUTION_NODES, (definition) => ({

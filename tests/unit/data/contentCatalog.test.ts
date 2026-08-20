@@ -25,6 +25,7 @@ import {
   STARTER_ARCHETYPES,
   STARTER_DEFAULT_AI_ARCHETYPE_ID,
 } from '../../../src/data/members';
+import { compareCanonicalStrings } from '../../../src/data/balance/canonical';
 import { RUN_BALANCE } from '../../../src/data/balance/run';
 import { RELIC_DEFS } from '../../../src/data/relics';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, SCENARIOS } from '../../../src/sim/scenarios';
@@ -55,7 +56,10 @@ describe('CONTENT_CATALOG', () => {
     expectCatalogCategory(CONTENT_CATALOG.trials, ids(TRIAL_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.bosses, ids(BOSS_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.relics, ids(RELIC_DEFS));
-    expectCatalogCategory(CONTENT_CATALOG.traits, ids(TRAIT_DEFS));
+    expectCatalogCategory(
+      CONTENT_CATALOG.traits,
+      [...ids(TRAIT_DEFS)].sort(compareCanonicalStrings),
+    );
     expectCatalogCategory(CONTENT_CATALOG.evolution, ids(EVOLUTION_NODES));
     expectCatalogCategory(CONTENT_CATALOG.goalAdjustments, ids(GOAL_ADJUSTMENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.levers, ids(LEVER_DEFS));
@@ -190,6 +194,12 @@ describe('CONTENT_CATALOG', () => {
     );
     expect(CONTENT_CATALOG.defaultScenarioId).toBe(DEFAULT_SCENARIO);
     expect(CONTENT_CATALOG.difficultyOrder).toEqual(Object.keys(DIFFICULTY_DEFS));
+  });
+
+  it('トレイトは定義配列順ではなく ID 順へ正規化する', () => {
+    const traitIdsByCanonicalOrder = [...ids(TRAIT_DEFS)].sort(compareCanonicalStrings);
+    expect(ids(TRAIT_DEFS)).not.toEqual(traitIdsByCanonicalOrder);
+    expect(CONTENT_CATALOG.traits.map((entry) => entry.id)).toEqual(traitIdsByCanonicalOrder);
   });
 
   it('進化の表示ブランチを除外し、デイリー参照 ID を検証する', () => {

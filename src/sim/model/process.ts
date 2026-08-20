@@ -9,7 +9,7 @@
 import type { CardEffects, OrgState, Task, TaskKind } from '../types';
 import type { Rng } from '../rng';
 import { clamp } from '../clamp';
-import { PROCESS_BALANCE } from '../../data/balance';
+import { PROCESS_BALANCE } from '../../data/balance/process';
 
 /**
  * 無効果のカード効果。すべての確率モデル関数はこれを既定値に取り、

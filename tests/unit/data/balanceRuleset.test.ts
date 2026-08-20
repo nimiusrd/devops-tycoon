@@ -22,19 +22,30 @@ import {
   projectBalanceRegistry,
   sha256Hex,
 } from '../../../src/data/balance';
+import { CARD_DEFS } from '../../../src/data/cards';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
-import { DIFFICULTY_DEFS, TRIAL_DEFS } from '../../../src/data/difficulties';
+import {
+  DAILY_RUN_DIFFICULTY,
+  DAILY_RUN_TRIALS,
+  DIFFICULTY_DEFS,
+  DIFFICULTY_ORDER,
+  TRIAL_DEFS,
+} from '../../../src/data/difficulties';
+import { EVOLUTION_NODES } from '../../../src/data/evolution';
 import { MEMBER_NAMES } from '../../../src/data/members';
 import { EVENT_DEFS } from '../../../src/data/events';
 import {
   projectActions,
   projectContentCatalog,
+  projectDailyRun,
   projectDepartments,
   projectDifficulties,
   projectEvents,
+  projectEvolution,
   projectMembers,
   projectScenarios,
   projectTrials,
+  projectCards,
 } from '../../../src/data/contentCatalog';
 import { DEFAULT_SCENARIO, SCENARIOS, SCENARIO_ORDER } from '../../../src/sim/scenarios';
 import { SPRINT_BALANCE } from '../../../src/data/balance/sprint';
@@ -337,9 +348,9 @@ describe('バランスルールセットの版と指紋', () => {
 
     const easy = DIFFICULTY_DEFS.easy;
     expect(easy.aiDependencyPerTask).toBeUndefined();
-    expect(projectDifficulties().find((entry) => entry.key === 'easy')?.aiDependencyPerTask).toBe(
-      defaultAiDependencyPerTask,
-    );
+    expect(
+      projectDifficulties().entries.find((entry) => entry.key === 'easy')?.aiDependencyPerTask,
+    ).toBe(defaultAiDependencyPerTask);
     const explicitDefaultDifficulty = {
       ...DIFFICULTY_DEFS,
       easy: { ...easy, aiDependencyPerTask: defaultAiDependencyPerTask },
@@ -377,6 +388,78 @@ describe('バランスルールセットの版と指紋', () => {
         createBalanceRulesetPayload([], {
           ...baseCatalog,
           members: projectMembers(undefined, undefined, [...MEMBER_NAMES, '追加']),
+        }),
+      ),
+    ).not.toBe(original);
+  });
+
+  it('無効果のカード・イベント値と難易度順・デイリー条件を指紋へ正規化する', () => {
+    const baseCatalog = projectContentCatalog();
+    const original = fingerprintBalanceRuleset(createBalanceRulesetPayload([], baseCatalog));
+
+    const identityCards = CARD_DEFS.map((card) => ({
+      ...card,
+      base: { codingSpeedMul: 1, qualityAdd: 0, ...card.base },
+    }));
+    expect(projectCards(identityCards)).toEqual(projectCards());
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          cards: projectCards(identityCards),
+        }),
+      ),
+    ).toBe(original);
+
+    const unspecifiedTriggers = EVENT_DEFS.find((event) => event.triggers === undefined);
+    expect(unspecifiedTriggers).toBeDefined();
+    expect(projectEvents([{ ...unspecifiedTriggers!, triggers: { moraleLow: 0 } }])).toEqual(
+      projectEvents([unspecifiedTriggers!]),
+    );
+    expect(
+      projectEvents([
+        {
+          ...unspecifiedTriggers!,
+          minSignal: { moraleLow: 0 },
+          maxSignal: { moraleLow: 1 },
+        },
+      ]),
+    ).toEqual(projectEvents([unspecifiedTriggers!]));
+
+    const zeroEvolution = EVOLUTION_NODES.map((node) => ({
+      ...node,
+      focusBonus: node.focusBonus ?? 0,
+      codingSlotBonus: node.codingSlotBonus ?? 0,
+    }));
+    expect(projectEvolution(zeroEvolution)).toEqual(projectEvolution());
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          evolution: projectEvolution(zeroEvolution),
+        }),
+      ),
+    ).toBe(original);
+
+    expect(projectDifficulties().order).toEqual([...DIFFICULTY_ORDER]);
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          difficulties: projectDifficulties(DIFFICULTY_DEFS, [...DIFFICULTY_ORDER].reverse()),
+        }),
+      ),
+    ).not.toBe(original);
+
+    expect(projectDailyRun()).toEqual({
+      difficulty: DAILY_RUN_DIFFICULTY,
+      trials: [...DAILY_RUN_TRIALS],
+    });
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          daily: projectDailyRun('hard', ['flammable']),
         }),
       ),
     ).not.toBe(original);

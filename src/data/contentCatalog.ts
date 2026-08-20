@@ -5,13 +5,21 @@
  * 配列は定義順を保持する。
  */
 import { compareCanonicalStrings } from './balance/canonical';
+import { PROCESS_BALANCE } from './balance/process';
 import { ACHIEVEMENT_DEFS, type AchievementDef } from './achievements';
 import { ACTION_CONTENT_DEFS, type ActionContentDef } from './actions';
 import { BOSS_DEFS, type BossDef } from './bosses';
 import { CARD_DEFS, RARITY_WEIGHT } from './cards';
 import { DEPARTMENT_DEFS } from './departments';
-import { PROCESS_BALANCE } from './balance/process';
-import { DIFFICULTY_DEFS, TRIAL_DEFS, type DifficultyDef, type TrialDef } from './difficulties';
+import {
+  DAILY_RUN_DIFFICULTY,
+  DAILY_RUN_TRIALS,
+  DIFFICULTY_DEFS,
+  DIFFICULTY_ORDER,
+  TRIAL_DEFS,
+  type DifficultyDef,
+  type TrialDef,
+} from './difficulties';
 import { EVENT_DEFS, RECRUIT_SKIP_MORALE, effectiveKind, type EventDef } from './events';
 import { EVOLUTION_NODES, type EvolutionNodeDef } from './evolution';
 import { GOAL_ADJUSTMENT_DEFS, type GoalAdjustmentDef } from './goalAdjustments';
@@ -26,8 +34,38 @@ import { RELIC_DEFS, type RelicDef } from './relics';
 import { TRAIT_DEFS, type TraitDef } from './traits';
 import { UNLOCK_DEFS, type UnlockDef } from './unlocks';
 import { DEFAULT_SCENARIO, SCENARIOS, SCENARIO_ORDER, type Scenario } from '../sim/scenarios';
-import type { CardDef } from '../sim/types';
+import { IDENTITY_CARD_EFFECTS } from '../sim/model';
+import type { CardDef, CardEffects } from '../sim/types';
 import type { DepartmentDef, LeverDef } from '../sim/orgscale/types';
+import type { DifficultyId } from '../sim/run/types';
+
+const CARD_EFFECT_KEYS = Object.keys(IDENTITY_CARD_EFFECTS) as (keyof CardEffects)[];
+
+/** 無効果（IDENTITY）と同じキーを落とし、未指定と明示的な 1/0 を同一にする。 */
+function projectEffects(partial?: Partial<CardEffects>): Partial<CardEffects> | undefined {
+  if (!partial) return undefined;
+  const out: Partial<CardEffects> = {};
+  for (const key of CARD_EFFECT_KEYS) {
+    const value = partial[key];
+    if (value === undefined || value === IDENTITY_CARD_EFFECTS[key]) continue;
+    out[key] = value;
+  }
+  return Object.keys(out).length === 0 ? undefined : out;
+}
+
+/** 係数が identity の信号キーを落とす（未指定と同じ）。 */
+function projectSignalFactors(
+  factors: Partial<Record<string, number>> | undefined,
+  identity: number,
+): Record<string, number> | undefined {
+  if (!factors) return undefined;
+  const out: Record<string, number> = {};
+  for (const [key, value] of Object.entries(factors)) {
+    if (value === undefined || value === identity) continue;
+    out[key] = value;
+  }
+  return Object.keys(out).length === 0 ? undefined : out;
+}
 
 export function projectCards(defs: readonly CardDef[] = CARD_DEFS) {
   return defs.map(({ id, rarity, cost, focusCost, base }) => ({
@@ -35,7 +73,7 @@ export function projectCards(defs: readonly CardDef[] = CARD_DEFS) {
     rarity,
     cost,
     focusCost,
-    base,
+    base: projectEffects(base),
   }));
 }
 
@@ -44,9 +82,9 @@ export function projectEvents(defs: readonly EventDef[] = EVENT_DEFS) {
     id: def.id,
     kind: effectiveKind(def),
     weight: def.weight ?? 1,
-    triggers: def.triggers,
-    minSignal: def.minSignal,
-    maxSignal: def.maxSignal,
+    triggers: projectSignalFactors(def.triggers, 0),
+    minSignal: projectSignalFactors(def.minSignal, 0),
+    maxSignal: projectSignalFactors(def.maxSignal, 1),
     choices: def.choices.map((choice) => ({
       outcome: choice.outcome,
       // resolveBeat と同じ既定。未指定と 'sprint' を同一の実効値にする。
@@ -57,19 +95,23 @@ export function projectEvents(defs: readonly EventDef[] = EVENT_DEFS) {
 
 export function projectDifficulties(
   defs: Readonly<Record<string, DifficultyDef>> = DIFFICULTY_DEFS,
+  order: readonly DifficultyId[] = DIFFICULTY_ORDER,
 ) {
-  return Object.entries(defs)
-    .map(([key, def]) => ({
-      key,
-      id: def.id,
-      org: def.org,
-      taskCountMul: def.taskCountMul,
-      globalEffects: def.globalEffects,
-      startBudget: def.startBudget,
-      bossTargetMul: def.bossTargetMul,
-      aiDependencyPerTask: def.aiDependencyPerTask ?? PROCESS_BALANCE.aiDependencyPerTask.value,
-    }))
-    .sort((left, right) => compareCanonicalStrings(left.key, right.key));
+  return {
+    order: [...order],
+    entries: Object.entries(defs)
+      .map(([key, def]) => ({
+        key,
+        id: def.id,
+        org: def.org,
+        taskCountMul: def.taskCountMul,
+        globalEffects: projectEffects(def.globalEffects),
+        startBudget: def.startBudget,
+        bossTargetMul: def.bossTargetMul,
+        aiDependencyPerTask: def.aiDependencyPerTask ?? PROCESS_BALANCE.aiDependencyPerTask.value,
+      }))
+      .sort((left, right) => compareCanonicalStrings(left.key, right.key)),
+  };
 }
 
 export function projectTrials(defs: readonly TrialDef[] = TRIAL_DEFS) {
@@ -86,7 +128,7 @@ export function projectTrials(defs: readonly TrialDef[] = TRIAL_DEFS) {
       id,
       focusDelta: focusDelta ?? 0,
       budgetMul: budgetMul ?? 1,
-      effects,
+      effects: projectEffects(effects),
       aiDependencyDriftPerSprint: aiDependencyDriftPerSprint ?? 0,
       frontierModelCostPerDependency: frontierModelCostPerDependency ?? 0,
       scoreMul,
@@ -104,7 +146,11 @@ export function projectBosses(defs: readonly BossDef[] = BOSS_DEFS) {
 }
 
 export function projectRelics(defs: readonly RelicDef[] = RELIC_DEFS) {
-  return defs.map(({ id, effects, passives }) => ({ id, effects, passives }));
+  return defs.map(({ id, effects, passives }) => ({
+    id,
+    effects: projectEffects(effects),
+    passives,
+  }));
 }
 
 export function projectTraits(defs: readonly TraitDef[] = TRAIT_DEFS) {
@@ -117,9 +163,9 @@ export function projectEvolution(defs: readonly EvolutionNodeDef[] = EVOLUTION_N
     branch,
     cost,
     requires,
-    effects,
-    focusBonus,
-    codingSlotBonus,
+    effects: projectEffects(effects),
+    focusBonus: focusBonus ?? 0,
+    codingSlotBonus: codingSlotBonus ?? 0,
   }));
 }
 
@@ -210,7 +256,7 @@ export function projectScenarios(
         org: scenario.org,
         sprint: scenario.sprint,
         orgDelta: scenario.orgDelta,
-        globalEffects: scenario.globalEffects,
+        globalEffects: projectEffects(scenario.globalEffects),
       }))
       .sort((left, right) => compareCanonicalStrings(left.key, right.key)),
   };
@@ -218,6 +264,16 @@ export function projectScenarios(
 
 export function projectAchievements(defs: readonly AchievementDef[] = ACHIEVEMENT_DEFS) {
   return defs.map(({ id }) => ({ id }));
+}
+
+export function projectDailyRun(
+  difficulty: DifficultyId = DAILY_RUN_DIFFICULTY,
+  trials: readonly string[] = DAILY_RUN_TRIALS,
+) {
+  return {
+    difficulty,
+    trials: [...trials],
+  };
 }
 
 /** 指紋入力用のコンテンツカタログ。seed や表示専用値は含めない。 */
@@ -240,6 +296,7 @@ export function projectContentCatalog() {
     departments: projectDepartments(),
     actions: projectActions(),
     scenarios: projectScenarios(),
+    daily: projectDailyRun(),
     achievements: projectAchievements(),
   };
 }

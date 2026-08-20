@@ -12,7 +12,15 @@ export type { EventDef, EventChoice, EventOutcome } from './events';
 export { BOSS_DEFS, getBoss } from './bosses';
 export { FALLBACK_OKR_TEMPLATE_ID, getOkrTemplateByBossId, OKR_TEMPLATES } from './okrTemplates';
 export { EVOLUTION_NODES, getEvolutionNode, BRANCH_LABEL } from './evolution';
-export { DIFFICULTY_DEFS, getDifficulty, TRIAL_DEFS, getTrial } from './difficulties';
+export {
+  DAILY_RUN_DIFFICULTY,
+  DAILY_RUN_TRIALS,
+  DIFFICULTY_DEFS,
+  DIFFICULTY_ORDER,
+  getDifficulty,
+  TRIAL_DEFS,
+  getTrial,
+} from './difficulties';
 export { TRAIT_DEFS, getTrait, foldTraitModifiers } from './traits';
 export { MEMBER_NAMES, STARTER_ARCHETYPES, RECRUIT_ARCHETYPES } from './members';
 export * from './assets';

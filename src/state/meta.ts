@@ -5,6 +5,7 @@
  * 得る。ロジックは純関数に保ち、永続化は metaPersistence.ts に分離する。
  */
 import { ACHIEVEMENT_DEFS, type AchievementDef } from '../data/achievements';
+import { DIFFICULTY_ORDER } from '../data/difficulties';
 import type { BOSS_DEFS } from '../data/bosses';
 import { BOSS_DEFS as ALL_BOSSES } from '../data/bosses';
 import {
@@ -193,9 +194,7 @@ export function parseLegacyMeta(raw: string): MetaState | null {
   }
 }
 
-/** デイリーランの固定難易度・試練（全員同一条件）。 */
-export const DAILY_RUN_DIFFICULTY: DifficultyId = 'normal';
-export const DAILY_RUN_TRIALS: readonly string[] = [];
+export { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS } from '../data/difficulties';
 
 /** UTC 日付文字列（YYYY-MM-DD）。 */
 export function utcDateStr(date: Date = new Date()): string {
@@ -222,8 +221,6 @@ export function dailyLeaderboardEntries(meta: MetaState): DailyLeaderboardEntry[
     .sort((a, b) => b.bestScore - a.bestScore || b.dateStr.localeCompare(a.dateStr))
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
-
-const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
 
 /** 指定難易度の「次」を解放する（最後尾なら変化なし）。 */
 function nextDifficulty(id: DifficultyId): DifficultyId | null {

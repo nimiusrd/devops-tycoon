@@ -29,6 +29,14 @@ export interface DifficultyDef {
   aiDependencyPerTask?: number;
 }
 
+/** タイトル表示と勝利時の次難易度解放に使う順。 */
+export const DIFFICULTY_ORDER: readonly DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
+
+/** デイリーランの固定難易度（全員同一条件）。 */
+export const DAILY_RUN_DIFFICULTY: DifficultyId = 'normal';
+/** デイリーランの固定試練 ID 列（全員同一条件）。 */
+export const DAILY_RUN_TRIALS: readonly string[] = [];
+
 export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
   easy: {
     id: 'easy',

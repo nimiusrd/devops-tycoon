@@ -30,6 +30,7 @@ const ORDERED_BOUND_PAIRS = [
   ['card.effect.multiplier.minimum', 'card.effect.multiplier.maximum'],
   ['card.effect.reworkRateAdd.minimum', 'card.effect.reworkRateAdd.maximum'],
   ['card.effect.additive.minimum', 'card.effect.additive.maximum'],
+  ['outcome.kpi.exceededLowerMultiplier', 'outcome.kpi.exceededHigherMultiplier'],
   ['sprint.grade.stabilizingBonusPerGrant', 'sprint.grade.stabilizingBonusCap'],
 ] as const;
 
@@ -37,6 +38,8 @@ const ORDERED_BOUND_PAIRS = [
 const STRICTLY_ORDERED_BOUND_PAIRS = [
   ['member.growth.promotion.middleLevel', 'member.growth.promotion.seniorLevel'],
   ['run.event.softOutcome.loseThreshold', 'run.event.softOutcome.survivalFloor'],
+  ['outcome.quarter.shutdown.trustMax', 'outcome.quarter.crisis.trustMax'],
+  ['outcome.quarter.crisis.trustMax', 'outcome.quarter.reorg.trustMax'],
   ['sprint.grade.threshold.C', 'sprint.grade.threshold.B'],
   ['sprint.grade.threshold.B', 'sprint.grade.threshold.A'],
   ['sprint.grade.threshold.A', 'sprint.grade.threshold.S'],
@@ -46,6 +49,15 @@ const STRICTLY_ORDERED_BOUND_PAIRS = [
 const FIXED_TOTAL_PAIRS = [
   ['process.review.hpEfficiency.floor', 'process.review.hpEfficiency.range', 1],
 ] as const;
+
+const REVIEW_FREEZE_WARNING_IDS = [
+  'outcome.lose.reviewFreezePeak',
+  'outcome.warning.reviewFreeze.watchRatio',
+  'outcome.warning.reviewFreeze.dangerOffset',
+] as const;
+
+const REVIEW_FREEZE_WARNING_CONSTRAINT =
+  'Math.round(`outcome.lose.reviewFreezePeak` × `outcome.warning.reviewFreeze.watchRatio`) < `outcome.lose.reviewFreezePeak` - `outcome.warning.reviewFreeze.dangerOffset` < `outcome.lose.reviewFreezePeak`';
 
 /** 指定したエントリーに適用される関係制約を、パラメータ表向けに返す。 */
 export function balanceEntryConstraintLabels(entryId: string): readonly string[] {
@@ -59,7 +71,11 @@ export function balanceEntryConstraintLabels(entryId: string): readonly string[]
     ([firstId, secondId]) => firstId === entryId || secondId === entryId,
   ).map(([firstId, secondId, total]) => `\`${firstId}\` + \`${secondId}\` = ${total}`);
 
-  return [...ordered, ...strictlyOrdered, ...fixedTotals];
+  const reviewFreezeWarning = REVIEW_FREEZE_WARNING_IDS.some((id) => id === entryId)
+    ? [REVIEW_FREEZE_WARNING_CONSTRAINT]
+    : [];
+
+  return [...ordered, ...strictlyOrdered, ...fixedTotals, ...reviewFreezeWarning];
 }
 
 /** 定義時にリテラル型を保つスカラー値ヘルパー。 */
@@ -137,6 +153,27 @@ function validateEntry(entry: BalanceEntry): BalanceValidationError[] {
     );
   }
   return errors;
+}
+
+function validateReviewFreezeWarningOrder(
+  entriesById: ReadonlyMap<string, BalanceEntry>,
+): BalanceValidationError[] {
+  const peak = entriesById.get('outcome.lose.reviewFreezePeak');
+  const watchRatio = entriesById.get('outcome.warning.reviewFreeze.watchRatio');
+  const dangerOffset = entriesById.get('outcome.warning.reviewFreeze.dangerOffset');
+  if (!peak || !watchRatio || !dangerOffset) return [];
+
+  const watchPeak = Math.round(peak.value * watchRatio.value);
+  const dangerPeak = peak.value - dangerOffset.value;
+  if (0 <= watchPeak && watchPeak < dangerPeak && dangerPeak < peak.value) return [];
+
+  return [
+    validationError(
+      'related-range-inverted',
+      watchRatio.id,
+      `${REVIEW_FREEZE_WARNING_CONSTRAINT} を満たさなければなりません。`,
+    ),
+  ];
 }
 
 /**
@@ -238,6 +275,8 @@ export function validateBalanceRegistry(
       ),
     );
   }
+
+  errors.push(...validateReviewFreezeWarningOrder(entriesById));
 
   return errors;
 }

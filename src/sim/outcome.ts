@@ -7,26 +7,32 @@
  * RI-76: 勝利種別ラダーは診断・ビルド指標を反映し、受動プレイのノーダメ到達を防ぐ。
  */
 import type { BossDef } from '../data/bosses';
+import { OUTCOME_BALANCE } from '../data/balance';
 import { diagnose } from './diagnosis';
 import type { OrgState, SprintResult } from './types';
 import type { DiagnosisType, LoseReason, RunTotals, WinType } from './run/types';
 
+/** シニア HP がこの値以下になると燃え尽き＝敗北。 */
+export const SENIOR_HP_LOSE_MAX = OUTCOME_BALANCE.loseSeniorHpMax.value;
+/** 士気がこの値以下になると組織崩壊＝敗北。 */
+export const MORALE_LOSE_MAX = OUTCOME_BALANCE.loseMoraleMax.value;
 /** 技術的負債がこの値を超えると開発停止＝敗北。 */
-export const TECH_DEBT_CAP = 90;
+export const TECH_DEBT_CAP = OUTCOME_BALANCE.loseTechDebtCap.value;
 /** Review 待ち行列がこのピークに達すると PR 凍結＝敗北。 */
-export const REVIEW_FREEZE_PEAK = 48;
+export const REVIEW_FREEZE_PEAK = OUTCOME_BALANCE.loseReviewFreezePeak.value;
 /** 延焼を伴う Incident がこの連続スプリント数に達するとリリース停止＝敗北。 */
-export const CONSECUTIVE_INCIDENT_SPRINT_CAP = 6;
+export const CONSECUTIVE_INCIDENT_SPRINT_CAP =
+  OUTCOME_BALANCE.loseConsecutiveIncidentSprintCap.value;
 /** AI 依存度がこの値に達すると仕様説明不能＝敗北。 */
-export const AI_DEPENDENCY_CAP = 95;
+export const AI_DEPENDENCY_CAP = OUTCOME_BALANCE.loseAiDependencyCap.value;
 /** 予算が尽きると AI ツールを維持できず、ランを継続できない。 */
-export const BUDGET_EXHAUSTED_CAP = 0;
+export const BUDGET_EXHAUSTED_CAP = OUTCOME_BALANCE.loseBudgetMax.value;
 /**
  * AI 依存を安全に検証できないとみなす AI リテラシー上限。
  * Nightmare の初期値（25）では到達可能、Hard 以上の初期値（35+）では
  * リテラシーを下げない限り対象外になる。
  */
-export const AI_LITERACY_UNSAFE_CAP = 30;
+export const AI_LITERACY_UNSAFE_CAP = OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value;
 
 export interface WinView {
   type: WinType;
@@ -58,8 +64,8 @@ export function winView(type: WinType): WinView {
 
 /** 敗北条件を評価する（該当なしは null）。状態が変化するごとに呼ぶ。 */
 export function evaluateLose(org: OrgState, totals: RunTotals, budget: number): LoseReason | null {
-  if (org.seniorHp <= 1) return 'seniorBurnout';
-  if (org.morale <= 1) return 'moraleCollapse';
+  if (org.seniorHp <= SENIOR_HP_LOSE_MAX) return 'seniorBurnout';
+  if (org.morale <= MORALE_LOSE_MAX) return 'moraleCollapse';
   if (org.techDebt >= TECH_DEBT_CAP) return 'techDebt';
   if (totals.reviewQueuePeak >= REVIEW_FREEZE_PEAK) return 'reviewFreeze';
   if ((totals.consecutiveIncidentSprints ?? 0) >= CONSECUTIVE_INCIDENT_SPRINT_CAP)
@@ -105,39 +111,61 @@ export interface WinEvalInput {
 }
 
 /** 経営勝利に必要な予算下限。汎用キャッチオールにしないよう高めに置く（RI-76）。 */
-export const MANAGEMENT_BUDGET_MIN = 50;
+export const MANAGEMENT_BUDGET_MIN = OUTCOME_BALANCE.winManagementBudgetMin.value;
 /**
  * カオス勝利に必要な累計障害数。
  * 完走ランは障害6件程度ではほぼ常に超えるため、連発のシグネチャとして高めに置く（RI-76）。
  */
-export const CHAOS_INCIDENTS_MIN = 20;
+export const CHAOS_INCIDENTS_MIN = OUTCOME_BALANCE.winChaosIncidentsMin.value;
 /** カオス勝利に必要なラン累計出荷。 */
-export const CHAOS_DELIVERED_MIN = 250;
+export const CHAOS_DELIVERED_MIN = OUTCOME_BALANCE.winChaosDeliveredMin.value;
 /**
  * セキュリティ軽視のカオス。フルベットの低障害完走（実測18件・security 55+）を吸わないよう
  * 障害閾値は残差カオスより低く、セキュリティ上限は AI 成功の下限未満にする。
  */
-export const CHAOS_NEGLECT_INCIDENTS_MIN = 16;
+export const CHAOS_NEGLECT_INCIDENTS_MIN = OUTCOME_BALANCE.winChaosNeglectIncidentsMin.value;
 /** セキュリティ軽視カオスに必要なラン累計出荷。 */
-export const CHAOS_NEGLECT_DELIVERED_MIN = 180;
+export const CHAOS_NEGLECT_DELIVERED_MIN = OUTCOME_BALANCE.winChaosNeglectDeliveredMin.value;
+/** セキュリティ軽視カオスに必要な Security の上限（未満）。 */
+export const CHAOS_NEGLECT_SECURITY_MAX = OUTCOME_BALANCE.winChaosNeglectSecurityMax.value;
 /** 現場幸福勝利に必要な士気下限。 */
-export const HAPPINESS_MORALE_MIN = 70;
+export const HAPPINESS_MORALE_MIN = OUTCOME_BALANCE.winHappinessMoraleMin.value;
 /** 現場幸福勝利に必要なシニアHP下限。 */
-export const HAPPINESS_SENIOR_HP_MIN = 45;
+export const HAPPINESS_SENIOR_HP_MIN = OUTCOME_BALANCE.winHappinessSeniorHpMin.value;
 /** セキュリティ重視ビルドを健全へ上げる下限（実測の Focus 勝ちは 86 以上、FullBet は 81 以下）。 */
-export const HEALTHY_SECURITY_MIN = 85;
+export const HEALTHY_SECURITY_MIN = OUTCOME_BALANCE.winHealthySecurityMin.value;
+/** 健全勝利に必要な Quality 下限。 */
+export const HEALTHY_QUALITY_MIN = OUTCOME_BALANCE.winHealthyQualityMin.value;
 /** 健全勝利に必要な士気下限（SPEC §14 の Quality と Morale）。 */
-export const HEALTHY_MORALE_MIN = 65;
+export const HEALTHY_MORALE_MIN = OUTCOME_BALANCE.winHealthyMoraleMin.value;
 /** AI 成功に必要な利用率。 */
-export const AI_SUCCESS_AI_PCT_MIN = 0.55;
+export const AI_SUCCESS_AI_PCT_MIN = OUTCOME_BALANCE.winAiSuccessAiPctMin.value;
 /** AI 成功に必要なリテラシー。 */
-export const AI_SUCCESS_LITERACY_MIN = 40;
+export const AI_SUCCESS_LITERACY_MIN = OUTCOME_BALANCE.winAiSuccessLiteracyMin.value;
 /** AI 成功の手戻り率上限。 */
-export const AI_SUCCESS_REWORK_MAX = 0.22;
+export const AI_SUCCESS_REWORK_MAX = OUTCOME_BALANCE.winAiSuccessReworkMax.value;
 /** セキュリティ軽視を AI 成功から外す下限（軽視の勝ちは 33、フルベットの勝ちは 55 以上）。 */
-export const AI_SUCCESS_SECURITY_MIN = 50;
+export const AI_SUCCESS_SECURITY_MIN = OUTCOME_BALANCE.winAiSuccessSecurityMin.value;
 /** `diagnose()` の reviewHell と同じピーク。seniorSacrifice が先に付いても渋滞を隠さない。 */
-export const AI_SUCCESS_REVIEW_QUEUE_PEAK_MAX = 16;
+export const AI_SUCCESS_REVIEW_QUEUE_PEAK_MAX = OUTCOME_BALANCE.winReviewQueuePeakMax.value;
+/** ノーダメージ勝利に必要な Quality 下限。 */
+export const NO_DAMAGE_QUALITY_MIN = OUTCOME_BALANCE.winNoDamageQualityMin.value;
+/** ノーダメージ勝利に必要な Morale 下限。 */
+export const NO_DAMAGE_MORALE_MIN = OUTCOME_BALANCE.winNoDamageMoraleMin.value;
+/** ノーダメージ勝利に必要なシニア HP 下限。 */
+export const NO_DAMAGE_SENIOR_HP_MIN = OUTCOME_BALANCE.winNoDamageSeniorHpMin.value;
+/** ノーダメージ勝利の手戻り率上限。 */
+export const NO_DAMAGE_REWORK_MAX = OUTCOME_BALANCE.winNoDamageReworkMax.value;
+/** ノーダメージ勝利の延焼上限。 */
+export const NO_DAMAGE_SPREAD_MAX = OUTCOME_BALANCE.winNoDamageSpreadMax.value;
+/** Documentation Kingdom を健全勝利へ分類する Quality 下限。 */
+export const DOCUMENTATION_QUALITY_MIN = OUTCOME_BALANCE.winDocumentationQualityMin.value;
+/** Documentation Kingdom を健全勝利へ分類する Morale 下限。 */
+export const DOCUMENTATION_MORALE_MIN = OUTCOME_BALANCE.winDocumentationMoraleMin.value;
+/** Documentation Kingdom を健全勝利へ分類する手戻り率上限。 */
+export const DOCUMENTATION_REWORK_MAX = OUTCOME_BALANCE.winDocumentationReworkMax.value;
+/** 品質系健全勝利の手戻り率上限。 */
+export const HEALTHY_FALLBACK_REWORK_MAX = OUTCOME_BALANCE.winHealthyFallbackReworkMax.value;
 
 /**
  * ボス突破時に達成した最上位の勝利種別を返す（RI-76）。
@@ -160,11 +188,11 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   // やり込み枠: 重介入なし・延焼0に加え、受動放置では届きにくい高水準を要求する。
   if (
     !usedHeavyActions &&
-    totals.spread === 0 &&
-    org.quality >= 70 &&
-    org.morale >= 70 &&
-    org.seniorHp >= 60 &&
-    reworkRatio < 0.15 &&
+    totals.spread <= NO_DAMAGE_SPREAD_MAX &&
+    org.quality >= NO_DAMAGE_QUALITY_MIN &&
+    org.morale >= NO_DAMAGE_MORALE_MIN &&
+    org.seniorHp >= NO_DAMAGE_SENIOR_HP_MIN &&
+    reworkRatio < NO_DAMAGE_REWORK_MAX &&
     healthyDiagnosis
   ) {
     return 'noDamage';
@@ -174,7 +202,7 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   // 士気下限は通常の健全と同じ（SPEC §14: Quality と Morale）。
   if (
     org.securityLevel >= HEALTHY_SECURITY_MIN &&
-    org.quality >= 65 &&
+    org.quality >= HEALTHY_QUALITY_MIN &&
     org.morale >= HEALTHY_MORALE_MIN &&
     aiPct >= AI_SUCCESS_AI_PCT_MIN &&
     reworkRatio < AI_SUCCESS_REWORK_MAX
@@ -187,7 +215,7 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   if (
     totals.incidents >= CHAOS_NEGLECT_INCIDENTS_MIN &&
     totals.delivered >= CHAOS_NEGLECT_DELIVERED_MIN &&
-    org.securityLevel < AI_SUCCESS_SECURITY_MIN
+    org.securityLevel < CHAOS_NEGLECT_SECURITY_MAX
   ) {
     return 'chaos';
   }
@@ -210,9 +238,9 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   // ドキュメント盤石ビルドは幸福より先に健全へ（reviewHeavy 等の勝ち筋を幸福へ吸わせない）。
   if (
     diagnosis === 'documentationKingdom' &&
-    org.quality >= 55 &&
-    org.morale >= 60 &&
-    reworkRatio < 0.22
+    org.quality >= DOCUMENTATION_QUALITY_MIN &&
+    org.morale >= DOCUMENTATION_MORALE_MIN &&
+    reworkRatio < DOCUMENTATION_REWORK_MAX
   ) {
     return 'healthy';
   }
@@ -232,9 +260,9 @@ export function evaluateWinType(input: WinEvalInput): WinType {
   // 品質寄りの健全。経営（予算残り）より先に評価し、品質ビルドが予算だけで潰されないようにする。
   // レビュー渋滞のフルベットは健全へ落とさず、SPEC の AI 成功条件を迂回しない。
   if (
-    org.quality >= 65 &&
+    org.quality >= HEALTHY_QUALITY_MIN &&
     org.morale >= HEALTHY_MORALE_MIN &&
-    reworkRatio < 0.2 &&
+    reworkRatio < HEALTHY_FALLBACK_REWORK_MAX &&
     totals.reviewQueuePeak < AI_SUCCESS_REVIEW_QUEUE_PEAK_MAX
   ) {
     return 'healthy';

@@ -5,11 +5,11 @@
  * 目標修正の効果・代償を純関数で適用する。
  */
 import { getBoss, type BossDef } from '../../data/bosses';
+import { OUTCOME_BALANCE } from '../../data/balance';
 import { allGoalAdjustmentIds, getGoalAdjustment } from '../../data/goalAdjustments';
 import type { GoalAdjustmentDef, GoalNextQuarterEffects } from '../../data/goalAdjustments';
 import { deriveTeamCapacities } from '../orgscale/teamState';
 import type { TeamRunState } from '../orgscale/types';
-import { TECH_DEBT_CAP, REVIEW_FREEZE_PEAK } from '../outcome';
 import type { CardEffects, OrgState } from '../types';
 import { SPRINTS_PER_QUARTER } from './constants';
 import { pickQuarterBossId } from './quarterBoss';
@@ -27,8 +27,8 @@ import type {
 import { clamp } from '../clamp';
 
 /** 組織再編（reorgReset）時の即時 org 効果加算。 */
-export const REORG_RESET_SENIOR_HP = 20;
-export const REORG_RESET_TECH_DEBT = -8;
+export const REORG_RESET_SENIOR_HP = OUTCOME_BALANCE.reorgSeniorHpRecovery.value;
+export const REORG_RESET_TECH_DEBT = -OUTCOME_BALANCE.reorgTechDebtRecovery.value;
 
 /** pauseAiDebuff 適用時の出荷速度倍率（次四半期）。 */
 export const PAUSE_AI_DEBUFF_MUL = 0.85;
@@ -137,7 +137,8 @@ export function applyGoalCarryoverOrgTick(
  * ボス突破床（1スプリント）に対する通常スループット比（RI-68）。
  * playtest 実測の 1スプリント出荷（約250〜400）と minSprintDelivered（約40〜90）から設定。
  */
-export const QUARTER_DELIVERY_THROUGHPUT_MUL = 5;
+export const QUARTER_DELIVERY_THROUGHPUT_MUL =
+  OUTCOME_BALANCE.quarterDeliveryThroughputMultiplier.value;
 
 /** 1スプリント床 → 四半期累計目標への換算係数（下限・目標修正の基準）。 */
 export const QUARTER_DELIVERY_SCALE = SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL;
@@ -146,21 +147,26 @@ export const QUARTER_DELIVERY_SCALE = SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THR
 export const NORMAL_SPRINTS_PER_QUARTER = SPRINTS_PER_QUARTER - 1;
 
 /** 通常スプリントの Delivery 床（ボス種別によらない基準）。 */
-export const BASELINE_SPRINT_DELIVERY_FLOOR = 60;
+export const BASELINE_SPRINT_DELIVERY_FLOOR =
+  OUTCOME_BALANCE.quarterDeliveryBaselineSprintFloor.value;
 
 /** 新規四半期目標の Delivery 下限（旧 30 を四半期累計スケールへ）。 */
-export const MIN_QUARTER_DELIVERY_TARGET = 30 * QUARTER_DELIVERY_SCALE;
+export const MIN_QUARTER_DELIVERY_TARGET =
+  OUTCOME_BALANCE.quarterDeliveryMinimumTargetScale.value * QUARTER_DELIVERY_SCALE;
 
 /**
  * priorGoal 減衰時の Delivery 下限。
  * 緩和の積み重ねでも代表的な四半期実績帯（約2000〜2500）の半分付近を下回らないようにする。
  */
 export const MIN_PRIOR_QUARTER_DELIVERY_TARGET = Math.round(
-  BASELINE_SPRINT_DELIVERY_FLOOR * SPRINTS_PER_QUARTER * QUARTER_DELIVERY_THROUGHPUT_MUL * 0.7,
+  BASELINE_SPRINT_DELIVERY_FLOOR *
+    SPRINTS_PER_QUARTER *
+    QUARTER_DELIVERY_THROUGHPUT_MUL *
+    OUTCOME_BALANCE.quarterDeliveryPriorMinimumFloorFactor.value,
 );
 
 /** priorGoal 引き継ぎ時の Delivery 減衰（`buildQuarterGoal` と同じ）。 */
-export const PRIOR_GOAL_DELIVERY_DECAY = 0.95;
+export const PRIOR_GOAL_DELIVERY_DECAY = OUTCOME_BALANCE.quarterDeliveryPriorDecay.value;
 
 /**
  * 目標修正適用後の Delivery 下限。
@@ -178,17 +184,25 @@ export const QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
   // RI-75/RI-84/RI-77: AI 出荷価値倍率後の skilled 実績に合わせ再校正。
   // 難易度ごとに達成と未達が両立する帯を保つ。
   // RI-73/F-7 は Delivery 倍率ではなく seniorHpCostMul で勝率帯を作る（目標分岐を壊さない）。
-  easy: 2.7,
-  normal: 2.25,
-  hard: 1.75,
-  nightmare: 1.55,
+  easy: OUTCOME_BALANCE.quarterGoalMultiplierEasy.value,
+  normal: OUTCOME_BALANCE.quarterGoalMultiplierNormal.value,
+  hard: OUTCOME_BALANCE.quarterGoalMultiplierHard.value,
+  nightmare: OUTCOME_BALANCE.quarterGoalMultiplierNightmare.value,
 };
 
 /** 難易度に応じた初期信頼。 */
 export function buildInitialTrust(difficulty: DifficultyId): StakeholderTrust {
-  const base =
-    difficulty === 'easy' ? 70 : difficulty === 'normal' ? 60 : difficulty === 'hard' ? 50 : 45;
-  return { management: base, customers: base, team: base + 5 };
+  const base = {
+    easy: OUTCOME_BALANCE.quarterInitialTrustEasy.value,
+    normal: OUTCOME_BALANCE.quarterInitialTrustNormal.value,
+    hard: OUTCOME_BALANCE.quarterInitialTrustHard.value,
+    nightmare: OUTCOME_BALANCE.quarterInitialTrustNightmare.value,
+  }[difficulty];
+  return {
+    management: base,
+    customers: base,
+    team: Math.min(100, base + OUTCOME_BALANCE.quarterInitialTeamTrustBonus.value),
+  };
 }
 
 /** ボス定義と難易度から四半期目標を生成する。 */
@@ -211,10 +225,13 @@ export function buildQuarterGoal(
       MIN_QUARTER_DELIVERY_TARGET,
       Math.round(quarterFloor * QUARTER_DELIVERY_THROUGHPUT_MUL),
     ),
-    qualityTarget: c.minQuality ?? 45,
-    techDebtLimit: c.maxTechDebt ?? 55,
-    moraleTarget: c.minMorale ?? 40,
-    incidentLimit: c.maxSpread !== undefined ? c.maxSpread + 3 : 6,
+    qualityTarget: c.minQuality ?? OUTCOME_BALANCE.quarterGoalDefaultQuality.value,
+    techDebtLimit: c.maxTechDebt ?? OUTCOME_BALANCE.quarterGoalDefaultTechDebtLimit.value,
+    moraleTarget: c.minMorale ?? OUTCOME_BALANCE.quarterGoalDefaultMorale.value,
+    incidentLimit:
+      c.maxSpread !== undefined
+        ? c.maxSpread + OUTCOME_BALANCE.quarterGoalIncidentHeadroom.value
+        : OUTCOME_BALANCE.quarterGoalDefaultIncidentLimit.value,
   };
   if (c.minAiPct !== undefined) goal.aiAdoptionTarget = c.minAiPct;
 
@@ -252,35 +269,35 @@ export function measureGoalProgress(input: MeasureInput): GoalKpiProgress[] {
       label: 'Delivery（四半期累計）',
       target: goal.deliveryTarget,
       actual: totals.delivered,
-      status: compareHigher(totals.delivered, goal.deliveryTarget),
+      status: goalProgressStatus(totals.delivered, goal.deliveryTarget, true),
     },
     {
       id: 'quality',
       label: 'Quality',
       target: goal.qualityTarget,
       actual: org.quality,
-      status: compareHigher(org.quality, goal.qualityTarget),
+      status: goalProgressStatus(org.quality, goal.qualityTarget, true),
     },
     {
       id: 'techDebt',
       label: 'Tech Debt',
       target: goal.techDebtLimit,
       actual: org.techDebt,
-      status: compareLower(org.techDebt, goal.techDebtLimit),
+      status: goalProgressStatus(org.techDebt, goal.techDebtLimit, false),
     },
     {
       id: 'morale',
       label: 'Morale',
       target: goal.moraleTarget,
       actual: org.morale,
-      status: compareHigher(org.morale, goal.moraleTarget),
+      status: goalProgressStatus(org.morale, goal.moraleTarget, true),
     },
     {
       id: 'incident',
       label: 'Incident',
       target: goal.incidentLimit,
       actual: totals.incidents,
-      status: compareLower(totals.incidents, goal.incidentLimit),
+      status: goalProgressStatus(totals.incidents, goal.incidentLimit, false),
     },
   ];
 
@@ -290,20 +307,24 @@ export function measureGoalProgress(input: MeasureInput): GoalKpiProgress[] {
       label: 'AI Adoption',
       target: goal.aiAdoptionTarget,
       actual: aiPct,
-      status: compareHigher(aiPct, goal.aiAdoptionTarget),
+      status: goalProgressStatus(aiPct, goal.aiAdoptionTarget, true),
     });
   }
   return kpis;
 }
 
-function compareHigher(actual: number, target: number): GoalKpiProgress['status'] {
-  if (actual >= target * 1.15) return 'exceeded';
-  if (actual >= target) return 'met';
-  return 'missed';
-}
-
-function compareLower(actual: number, target: number): GoalKpiProgress['status'] {
-  if (actual <= target * 0.75) return 'exceeded';
+/** 現行レビューとレガシーセーブ再判定で共有する KPI 境界判定。 */
+export function goalProgressStatus(
+  actual: number,
+  target: number,
+  higherIsBetter: boolean,
+): GoalKpiProgress['status'] {
+  if (higherIsBetter) {
+    if (actual >= target * OUTCOME_BALANCE.kpiHigherExceededMultiplier.value) return 'exceeded';
+    if (actual >= target) return 'met';
+    return 'missed';
+  }
+  if (actual <= target * OUTCOME_BALANCE.kpiLowerExceededMultiplier.value) return 'exceeded';
   if (actual <= target) return 'met';
   return 'missed';
 }
@@ -341,8 +362,14 @@ export function diagnoseMissedReasons(input: DiagnoseInput): string[] {
       if (kpi.id === 'aiAdoption') reasons.push(REASON_LABELS.aiAdoptionShortfall);
     }
   }
-  if (totals.reviewQueuePeak >= 32) reasons.push(REASON_LABELS.reviewJam);
-  if (org.aiDependency >= 60 && totals.rework / Math.max(1, totals.completed) > 0.3) {
+  if (totals.reviewQueuePeak >= OUTCOME_BALANCE.quarterMissedReasonReviewQueueMin.value) {
+    reasons.push(REASON_LABELS.reviewJam);
+  }
+  if (
+    org.aiDependency >= OUTCOME_BALANCE.quarterMissedReasonAiDependencyMin.value &&
+    totals.rework / Math.max(1, totals.completed) >
+      OUTCOME_BALANCE.quarterMissedReasonAiReworkRatioMin.value
+  ) {
     reasons.push(REASON_LABELS.aiOverconfidence);
   }
   return Array.from(new Set(reasons));
@@ -371,15 +398,33 @@ export function evaluateQuarterOutcome(input: OutcomeInput): QuarterOutcome {
   }
 
   if (
-    minTrust <= 10 ||
-    (budget <= 0 && org.morale <= 15) ||
-    (org.seniorHp <= 5 && missedCount >= 2)
+    minTrust <= OUTCOME_BALANCE.quarterShutdownTrustMax.value ||
+    (budget <= OUTCOME_BALANCE.quarterShutdownBudgetMax.value &&
+      org.morale <= OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value) ||
+    (org.seniorHp <= OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value &&
+      missedCount >= OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value)
   ) {
     return 'shutdown';
   }
-  if (quarterNumber >= 2 && missedCount >= 3) return 'reorg_required';
-  if (minTrust <= 20 && missedCount >= 2) return 'reorg_required';
-  if (minTrust <= 15 || budget <= 5 || missedCount >= 4) return 'missed_crisis';
+  if (
+    quarterNumber >= OUTCOME_BALANCE.quarterReorgMinQuarter.value &&
+    missedCount >= OUTCOME_BALANCE.quarterReorgMissedKpiMin.value
+  ) {
+    return 'reorg_required';
+  }
+  if (
+    minTrust <= OUTCOME_BALANCE.quarterReorgTrustMax.value &&
+    missedCount >= OUTCOME_BALANCE.quarterReorgTrustMissedKpiMin.value
+  ) {
+    return 'reorg_required';
+  }
+  if (
+    minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value ||
+    budget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value ||
+    missedCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value
+  ) {
+    return 'missed_crisis';
+  }
   return 'missed_adjustable';
 }
 
@@ -396,17 +441,17 @@ function orgAfterAdjustment(org: OrgState, def: GoalAdjustmentDef): OrgState {
     next.techDebt = Math.max(0, next.techDebt + def.orgEffects.techDebtDelta);
   }
   if (def.reorgReset) {
-    next.seniorHp = clamp(next.seniorHp + 20, 0, 100);
-    next.techDebt = Math.max(0, next.techDebt - 8);
+    next.seniorHp = clamp(next.seniorHp + REORG_RESET_SENIOR_HP, 0, 100);
+    next.techDebt = Math.max(0, next.techDebt + REORG_RESET_TECH_DEBT);
   }
   return next;
 }
 
 function wouldHardLose(org: OrgState, totals: RunTotals): boolean {
-  if (org.seniorHp <= 1) return true;
-  if (org.morale <= 1) return true;
-  if (org.techDebt >= TECH_DEBT_CAP) return true;
-  if (totals.reviewQueuePeak >= REVIEW_FREEZE_PEAK) return true;
+  if (org.seniorHp <= OUTCOME_BALANCE.loseSeniorHpMax.value) return true;
+  if (org.morale <= OUTCOME_BALANCE.loseMoraleMax.value) return true;
+  if (org.techDebt >= OUTCOME_BALANCE.loseTechDebtCap.value) return true;
+  if (totals.reviewQueuePeak >= OUTCOME_BALANCE.loseReviewFreezePeak.value) return true;
   return false;
 }
 
@@ -426,10 +471,21 @@ export function availableAdjustments(
     const nextCustomers = clamp(trust.customers + (def.trustDelta.customers ?? 0), 0, 100);
     const nextTeam = clamp(trust.team + (def.trustDelta.team ?? 0), 0, 100);
     const nextBudget = budget + def.budgetDelta;
-    if (nextCustomers < 5 || nextManagement < 5 || nextTeam < 5) return false;
+    if (
+      nextCustomers < OUTCOME_BALANCE.quarterAdjustmentMinimumTrust.value ||
+      nextManagement < OUTCOME_BALANCE.quarterAdjustmentMinimumTrust.value ||
+      nextTeam < OUTCOME_BALANCE.quarterAdjustmentMinimumTrust.value
+    ) {
+      return false;
+    }
     // 危機閾値（evaluateQuarterOutcome の minTrust<=15）と揃える。
-    if (Math.min(nextManagement, nextCustomers, nextTeam) <= 15) return false;
-    if (nextBudget <= 5) return false;
+    if (
+      Math.min(nextManagement, nextCustomers, nextTeam) <=
+      OUTCOME_BALANCE.quarterCrisisTrustMax.value
+    ) {
+      return false;
+    }
+    if (nextBudget <= OUTCOME_BALANCE.quarterCrisisBudgetMax.value) return false;
     if (wouldHardLose(orgAfterAdjustment(org, def), totals)) return false;
     return true;
   });
@@ -661,7 +717,7 @@ export function applyGoalAdjustment(
   }
   if (def.reorgReset) {
     org.seniorHp = clamp(org.seniorHp + REORG_RESET_SENIOR_HP, 0, 100);
-    org.techDebt = Math.max(0, org.techDebt - Math.abs(REORG_RESET_TECH_DEBT));
+    org.techDebt = Math.max(0, org.techDebt + REORG_RESET_TECH_DEBT);
   }
 
   let nextBudgetCap = input.nextBudgetCap;
@@ -712,7 +768,7 @@ export function applyGoalOrgEffectsToTeam(
     next = {
       ...next,
       seniorHp: clamp(next.seniorHp + REORG_RESET_SENIOR_HP, 0, 100),
-      techDebt: Math.max(0, next.techDebt - Math.abs(REORG_RESET_TECH_DEBT)),
+      techDebt: Math.max(0, next.techDebt + REORG_RESET_TECH_DEBT),
     };
   }
   return { ...next, ...deriveTeamCapacities(next) };
@@ -747,10 +803,12 @@ function hardLoseReasonFromOrg(
   org: OrgState,
   totals?: Pick<RunTotals, 'reviewQueuePeak'>,
 ): LoseReason | null {
-  if (org.seniorHp <= 1) return 'seniorBurnout';
-  if (org.morale <= 1) return 'moraleCollapse';
-  if (org.techDebt >= TECH_DEBT_CAP) return 'techDebt';
-  if ((totals?.reviewQueuePeak ?? 0) >= REVIEW_FREEZE_PEAK) return 'reviewFreeze';
+  if (org.seniorHp <= OUTCOME_BALANCE.loseSeniorHpMax.value) return 'seniorBurnout';
+  if (org.morale <= OUTCOME_BALANCE.loseMoraleMax.value) return 'moraleCollapse';
+  if (org.techDebt >= OUTCOME_BALANCE.loseTechDebtCap.value) return 'techDebt';
+  if ((totals?.reviewQueuePeak ?? 0) >= OUTCOME_BALANCE.loseReviewFreezePeak.value) {
+    return 'reviewFreeze';
+  }
   return null;
 }
 
@@ -771,17 +829,27 @@ export function loseReasonForOutcome(
   const hard = hardLoseReasonFromOrg(input.org, input.totals);
 
   if (outcome === 'shutdown') {
-    if (minTrust <= 10) return 'trustExhausted';
-    if (input.budget <= 0 && input.org.morale <= 15) return 'budgetExhausted';
-    if (input.org.seniorHp <= 5 && missedCount >= 2) return 'seniorBurnout';
+    if (minTrust <= OUTCOME_BALANCE.quarterShutdownTrustMax.value) return 'trustExhausted';
+    if (
+      input.budget <= OUTCOME_BALANCE.quarterShutdownBudgetMax.value &&
+      input.org.morale <= OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value
+    ) {
+      return 'budgetExhausted';
+    }
+    if (
+      input.org.seniorHp <= OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value &&
+      missedCount >= OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value
+    ) {
+      return 'seniorBurnout';
+    }
     return hard ?? 'trustExhausted';
   }
 
   // missed_crisis（空候補からの降格を含む）: ハード敗北条件を信頼フォールバックより先に見る。
   if (hard) return hard;
-  if (minTrust <= 15) return 'trustExhausted';
-  if (input.budget <= 0) return 'budgetExhausted';
-  if (missedCount >= 4) return 'kpiMissed';
+  if (minTrust <= OUTCOME_BALANCE.quarterCrisisTrustMax.value) return 'trustExhausted';
+  if (input.budget <= OUTCOME_BALANCE.loseBudgetMax.value) return 'budgetExhausted';
+  if (missedCount >= OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value) return 'kpiMissed';
   // 空候補降格などで上記条件が全て非該当の場合も trustExhausted より kpiMissed が実態に近い。
   return 'kpiMissed';
 }

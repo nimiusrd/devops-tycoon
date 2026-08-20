@@ -2,7 +2,10 @@ import { deleteDB } from 'idb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../../src/game';
 import { createRunEngine } from '../../../src/sim/run/engine';
-import { MIN_ADJUSTED_QUARTER_DELIVERY_TARGET } from '../../../src/sim/run/quarterReview';
+import {
+  goalProgressStatus,
+  MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
+} from '../../../src/sim/run/quarterReview';
 import { openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from '../../../src/state/gameDb';
 import {
   IndexedDbRunStorage,
@@ -299,6 +302,9 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
       actual: 40,
       status: 'missed',
     });
+    expect(review?.progress.find((item) => item.id === 'quality')?.status).toBe(
+      goalProgressStatus(40, 45, true),
+    );
     expect(review?.missedReasons).not.toContain(
       'AI 過信: AI 利用率は高いが手戻り・品質が追いついていない。',
     );

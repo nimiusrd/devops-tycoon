@@ -15,6 +15,13 @@
 import { readFileSync } from 'node:fs';
 import { createServer } from 'vite';
 import { generationMismatch } from './playtest-generation.mjs';
+import {
+  evaluateF8F9,
+  F9_POLICIES,
+  formatF8AcceptanceLine,
+  formatF9AcceptanceLine,
+  stableEffectiveActionId,
+} from './playtest-f8f9.mjs';
 
 /**
  * 集計対象。`PT_OUT` と第1引数で差し替えられる（`scripts/check-findings.mjs` と同じ規則）。
@@ -31,6 +38,12 @@ const loaded = JSON.parse(readFileSync(file, 'utf8'));
  */
 const raw = Array.isArray(loaded) ? loaded : loaded.runs;
 const cohort = Array.isArray(loaded) ? null : loaded.cohort;
+if (!Array.isArray(loaded) && (loaded.partial === true || cohort?.partial === true)) {
+  console.error(
+    '未計測: 測定が完了していない（partial）。`npm run playtest` を最後まで実行すること。',
+  );
+  process.exit(1);
+}
 
 /**
  * 測定後にコードが変わっていたら**先頭で警告する**。
@@ -1054,36 +1067,13 @@ for (const d of [...new Set(runs.map((r) => r.difficulty))]) {
 
 // 難易度だけでは方針差が残る（例: onlyFirefight と idle では生存長が違う）。
 // 敗北の多い代表方針の中でも比較して、敗因固有の進行速度が方針に依らないことを確認する。
-const F9_POLICIES = ['naive', 'skilledNoHire', 'onlyFirefight', 'noInterventionCtl'];
+// 対象方針の正本は `scripts/playtest-f8f9.mjs` の F9_POLICIES。
 
 /** 代表方針に、実行ログへ実在する方針（例: PT_POLICIES=idle）を足す。 */
 function policiesIn(runs, required = F9_POLICIES) {
   const present = [...new Set(runs.map((r) => r.policy).filter(Boolean))];
   const extra = present.filter((p) => !required.includes(p)).sort();
   return [...required, ...extra];
-}
-
-/** F-9 集計用。デッキ位置や task ID を落とした安定キー。 */
-function stableEffectiveActionId(id) {
-  return String(id)
-    .split('+')
-    .map((raw) => {
-      const part = raw.replace(/@\d+$/, '');
-      const card = /^card:([^:]+)(?::\d+)?$/.exec(part);
-      if (card) return `card:${card[1]}`;
-      const assign = /^assignTask:[^:]+:(ai|senior)$/.exec(part);
-      if (assign) return `assignTask:${assign[1]}`;
-      const split = /^splitPr:[^:]+$/.exec(part);
-      if (split) return 'splitPr';
-      const restUp = /^rest:upgrade:(?:([^:]+):)?\d+$/.exec(part);
-      if (restUp) return restUp[1] ? `rest:upgrade:${restUp[1]}` : 'rest:upgrade';
-      const setupAssign = /^setup:assign:[^:]+:([^:]+)$/.exec(part);
-      if (setupAssign) return `setup:assign:${setupAssign[1]}`;
-      const setupAi = /^setup:ai:[^:]+:(on|off)$/.exec(part);
-      if (setupAi) return `setup:ai:${setupAi[1]}`;
-      return part;
-    })
-    .join('+');
 }
 
 // RI-89: 同一難易度・同一方針内で敗因別の「危険域で打てた介入集合」を出す。
@@ -1226,6 +1216,13 @@ if (cfRuns.length > 0) {
       console.log(`    敗因間で有効手集合が違う種類数: ${new Set(sets).size}。F-9 の有効手比較。`);
     }
   }
+}
+
+const f8f9 = evaluateF8F9(loaded, { stale: STALE });
+console.log(`\n${formatF8AcceptanceLine(f8f9)}`);
+console.log(formatF9AcceptanceLine(f8f9));
+if (f8f9.f8.verdict === 'FAIL' || f8f9.f9.verdict === 'FAIL') {
+  console.log('  ※ FAIL でも本レポートは値調整しない。立て直し余地のゲーム変更は別 RI（RI-132）。');
 }
 
 console.log('\n### 同一難易度・同一方針内（代表方針・進行速度）');

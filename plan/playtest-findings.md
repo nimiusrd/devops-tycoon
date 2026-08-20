@@ -223,8 +223,10 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   前回の成功結果を最新値として集計してしまうのを防ぐ
 - **メタ進行は初見相当**（`PT_META=fresh`）。`game.startRun` と同じく既定解放分のみをドラフト候補にする
 - 壁時計換算は `PACING_BALANCE`（`src/data/balance/pacing.ts`）から読む。UIの秒形式は派生値。
-- 現行スナップショット（2026-08-13、generation `cbd4b17739e964fc`）は
-  **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。72勝 / 1,488敗で、以下の「現行」値はこの出力へ同期する
+- 現行スナップショット（2026-08-20、generation `9d7b82b9c06fa18d`）は
+  **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。72勝 / 1,488敗。以下の「現行」値はこの出力へ同期する。
+  F-8 / F-9 は `PT_COUNTERFACTUAL=1` かつ `PT_CF_POLICIES=naive,skilledNoHire,onlyFirefight,noInterventionCtl`
+  で対象方針だけ反実仮想した同一コホートから判定する
 
 ### 統制の考え方
 
@@ -308,7 +310,8 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   `hasActionTarget`（盤面非破壊）とハーネスの `availableActionsInDanger` で記録できる。
   有効手は同一乱数状態からの反実仮想（無介入 vs 適用可能介入）で、敗北遅延・回避・危険域離脱・
   敗因変化だけを数える。`PT_COUNTERFACTUAL=1` で last-non-empty フレームを評価する。
-  既定コホートの F-8 / F-9 合否は未再走とする。
+  F-8 の回復余地ギャップ p50 は対象方針 152 敗北で 0（PASS）。F-9 の有効手集合は
+  完全評価が 0 件のため未計測（RI-132）。
 
 **未充足・未検証の基準**:
 
@@ -317,8 +320,8 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
 | F-1 | 緊急対応の不利盤面・採用の壊れにくさは維持。単一介入（`onlyAndon` / `onlyFirefight` / `onlySplit` を含む）は複合を上回らない | RI-73（完了） |
 | F-3 | 9戦略フェーズで `step` してもフェーズ・選択・資源が変わらず、judgment も明示操作まで解決しない | RI-102（完了） |
 | F-7 | `idle` は全難易度 0/10。`naive` easy 2/10（20%）が≈20%帯 | RI-73（完了） |
-| F-8 | 反実仮想で「有効手が残る最後の時点」を測れる。既定コホートのギャップ数値と合否は未再走 | RI-101（計測手段完了）／[RI-132](./remaining-issues.md#ri-132-f-8--f-9-既定コホートの合否再走) |
-| F-9 | 進行速度と決着位置は敗因ごとに違う。有効手集合は反実仮想で敗因別に出せる。既定コホートの差は未再走 | RI-89／RI-101（計測手段完了）／[RI-132](./remaining-issues.md#ri-132-f-8--f-9-既定コホートの合否再走) |
+| F-8 | 対象方針の回復余地ギャップ p50=0（n=152）で PASS。合否定数は p50≤1 | RI-132（完了） |
+| F-9 | 進行速度と決着位置は敗因ごとに違う。有効手集合は完全評価 n≥10 の資格敗因が 0 のため未計測 | RI-89／RI-101／RI-132（ゲート実装済み） |
 | F-10 | ビルド方針の modal は `chaos` / `healthy` / `normal` の3種で PASS（TVD・セキュリティ対・共通 seed 裏付けを含む） | RI-76（完了） |
 
 充足済みの F-2 / F-3 / F-4 / F-5 / F-6 / F-11 / F-12 は、実装・受入の詳細を各課題節とGit履歴に残す。
@@ -764,6 +767,26 @@ Q1 で方向確定 **28/40（70%）**、確定ブランチは `ai` 21 / `review`
 同一進化フェーズの連続取得だけでは確定とせず、複数スプリントにまたがる継続選択を要求する。
 固定順方針のブランチ偏りは成立判定に使わない。
 
+### RI-132 F-8 / F-9 既定コホートの合否再走 — 完了
+
+合否定数（`scripts/playtest-f8f9.mjs`）:
+
+- 対象方針: `naive` / `skilledNoHire` / `onlyFirefight` / `noInterventionCtl`
+- F-8: 回復余地ギャップの **p50 ≤ 1**（有効手なしは Inf）
+- F-9: 同一方針（難易度はプール）の層別で、敗因 n≥10 が2種以上かつ **distinctEffectiveSetCount ≥ 2**
+
+既定コホート（generation `9d7b82b9c06fa18d`、1,560ラン）を `PT_COUNTERFACTUAL=1` で再走した。
+反実仮想は対象4方針に限り、他方針は勝敗集計のみ。値調整はしていない。
+
+F-8 受入（RI-132）: 対象方針 naive / skilledNoHire / onlyFirefight / noInterventionCtl / p50≤1（実測 p50=0 n=152） → PASS
+F-9 受入（RI-132）: 未計測 — 層別（方針）の資格敗因が0方針（必要≥2、敗因n≥10）
+
+F-9 は 152 件すべてが分岐上限（action 96 / combo 32 / strategic 192）で不完全評価のため、
+完全評価の資格敗因が 0 種で未計測。不完全評価の集合は参考値として、`seniorBurnout`（138）が
+レバー・setup 中心、`techDebt`（9）が andon / dependencyCleanup、`reviewFreeze`（4）が
+interruptReview / pairReview、`aiDependency`（1）が pairReview / aiThrottle と分かれる。
+ゲーム側の立て直し余地追加は対象外。
+
 ## 良かった点（回帰させないため記録）
 
 - **敗因ごとに進行速度と決着位置が違う**（F-9 のうち速度・位置の部分）。
@@ -771,7 +794,7 @@ Q1 で方向確定 **28/40（70%）**、確定ブランチは `ai` 21 / `review`
   `reviewFreeze` 6 / `techDebt` 6 / `kpiMissed` 12 / `reorgRequired` 24。`reviewFreeze` は全件 sprint、
   `kpiMissed` と `reorgRequired` は全件 quarterReview、`seniorBurnout` は複数フェーズに分かれる。
   機械的な「打てた手」は RI-89 で観測でき、有効な手は RI-101 の反実仮想で判定できる。
-  既定コホートでの有効手差の再集計は未実施。
+  F-8 の回復余地ギャップは既定コホートで p50=0（PASS）。F-9 の有効手集合差は完全評価不足で未計測（RI-132）。
 - **ビルドの違いは組織診断と勝利種別の両方に出ている**。`noAi` は
   `healthyAcceleration` 3 と、`aiFullBet`（`reviewHell` 3 / `seniorSacrifice` 37）から
   明確に分かれる。F-10 ビルド modal は `chaos` / `healthy` / `normal` の3種で PASS（RI-76 完了）。

@@ -234,13 +234,13 @@
 | Order | ID | Execution |
 | ---: | --- | --- |
 | 0 | interruptReview | {"stabilizesFlow":true} |
-| 1 | splitPr | {"stabilizesFlow":true} |
+| 1 | splitPr | {"stabilizesFlow":false} |
 | 2 | firefight | {"stabilizesFlow":true} |
 | 3 | assignTask | {"stabilizesFlow":true} |
 | 4 | aiThrottle | {"stabilizesFlow":true} |
 | 5 | pairReview | {"stabilizesFlow":true} |
 | 6 | overtime | {"stabilizesFlow":false} |
-| 7 | andon | {"stabilizesFlow":true} |
+| 7 | andon | {"stabilizesFlow":false} |
 
 ## startingScenarios
 

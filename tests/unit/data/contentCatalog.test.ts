@@ -423,6 +423,52 @@ describe('CONTENT_CATALOG', () => {
     });
   });
 
+  it('採用失敗結果は grantRecruit があるときだけ射影し、無視される安定化フラグは false にする', () => {
+    const event = EVENT_DEFS[0]!;
+    expect(
+      projectEvent({
+        ...event,
+        choices: event.choices.map((choice) => ({
+          ...choice,
+          outcome: { ...choice.outcome, onRecruitFail: { morale: -4 } },
+        })),
+      }),
+    ).toEqual(projectEvent(event));
+
+    const recruit = getEvent('urgent-hire')!;
+    expect(JSON.stringify(projectEvent(recruit))).toContain('onRecruitFail');
+    expect(
+      projectEvent({
+        ...recruit,
+        choices: recruit.choices.map((choice) => ({
+          ...choice,
+          outcome: { ...choice.outcome, grantRecruit: false },
+        })),
+      }),
+    ).toEqual(
+      projectEvent({
+        ...recruit,
+        choices: recruit.choices.map((choice) => ({
+          ...choice,
+          outcome: { ...choice.outcome, grantRecruit: false, onRecruitFail: undefined },
+        })),
+      }),
+    );
+
+    const splitPr = ACTION_CONTENT_DEFS.find((definition) => definition.id === 'splitPr')!;
+    const andon = ACTION_CONTENT_DEFS.find((definition) => definition.id === 'andon')!;
+    const interrupt = ACTION_CONTENT_DEFS.find(
+      (definition) => definition.id === 'interruptReview',
+    )!;
+    expect(projectAction({ ...splitPr, stabilizesFlow: false })).toEqual(projectAction(splitPr));
+    expect(projectAction({ ...andon, stabilizesFlow: false })).toEqual(projectAction(andon));
+    expect(projectAction(splitPr)).toEqual({ stabilizesFlow: false });
+    expect(projectAction(andon)).toEqual({ stabilizesFlow: false });
+    expect(projectAction({ ...interrupt, stabilizesFlow: false })).not.toEqual(
+      projectAction(interrupt),
+    );
+  });
+
   it('レバー・シナリオ差分・ボス下限のゼロは未指定と同じ射影になる', () => {
     const lever = LEVER_DEFS[0]!;
     expect(

@@ -5,7 +5,7 @@
  * 効果を `sprint`/`org` に破壊的に適用する純TS。乱数は引数の seed付きPRNG
  * からのみ消費する（決定論。第22.3）。入力はイベント経由で受け取る。
  */
-import { getAction } from '../data/actions';
+import { getAction, STABILITY_FLAG_IGNORED_ACTION_IDS } from '../data/actions';
 import { ACTION_IDS } from '../data/actionIds';
 import { ACTION_BALANCE } from '../data/balance';
 import { STABILITY_TICKS } from './model';
@@ -194,7 +194,7 @@ export function grantsStabilityOnApply(id: ActionId, sprint: SprintState): boole
   const def = getAction(id);
   if (!def?.stabilizesFlow) return false;
   if (id === 'firefight') return isFirefightUrgent(sprint);
-  if (id === 'andon' || id === 'splitPr') return false;
+  if (STABILITY_FLAG_IGNORED_ACTION_IDS.has(id)) return false;
   return true;
 }
 

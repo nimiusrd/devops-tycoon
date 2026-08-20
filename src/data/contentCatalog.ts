@@ -6,7 +6,11 @@
  * このカタログへ数値を再コピーしない。
  */
 import { ACHIEVEMENT_DEFS, ACHIEVEMENT_IDS } from './achievements';
-import { ACTION_CONTENT_DEFS, type ActionContentDef } from './actions';
+import {
+  ACTION_CONTENT_DEFS,
+  STABILITY_FLAG_IGNORED_ACTION_IDS,
+  type ActionContentDef,
+} from './actions';
 import { CARD_DEFS, RARITY_WEIGHT } from './cards';
 import { BOSS_DEFS, type BossDef } from './bosses';
 import { DEPARTMENT_DEFS } from './departments';
@@ -152,7 +156,7 @@ function projectOutcome(outcome: EventOutcome): Record<string, unknown> {
   const nextSprint = omitEmpty(omitIdentity(outcome.nextSprint, NEXT_SPRINT_IDENTITY));
   if (nextSprint) projected.nextSprint = nextSprint;
 
-  if (outcome.onRecruitFail) {
+  if (outcome.grantRecruit && outcome.onRecruitFail) {
     const nested = projectRecruitFailOutcome(outcome.onRecruitFail);
     if (Object.keys(nested).length > 0) projected.onRecruitFail = nested;
   }
@@ -209,7 +213,11 @@ export function projectDepartment(definition: DepartmentDef): unknown {
 }
 
 export function projectAction(definition: ActionContentDef): unknown {
-  return { stabilizesFlow: definition.stabilizesFlow ?? false };
+  return {
+    stabilizesFlow: STABILITY_FLAG_IGNORED_ACTION_IDS.has(definition.id)
+      ? false
+      : (definition.stabilizesFlow ?? false),
+  };
 }
 
 export function projectRelic(definition: RelicDef): unknown {

@@ -11,7 +11,6 @@ import { CARD_DEFS, RARITY_WEIGHT } from './cards';
 import { BOSS_DEFS } from './bosses';
 import { DEPARTMENT_DEFS } from './departments';
 import { PROCESS_BALANCE } from './balance/process';
-import { RUN_BALANCE } from './balance/run';
 import {
   DAILY_RUN_DIFFICULTY,
   DAILY_RUN_TRIALS,
@@ -29,7 +28,7 @@ import {
   STARTER_ARCHETYPES,
   STARTER_DEFAULT_AI_ARCHETYPE_ID,
 } from './members';
-import { RELIC_DEFS } from './relics';
+import { RELIC_DEFS, type RelicDef } from './relics';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, SCENARIOS } from '../sim/scenarios';
 import { IDENTITY_TRAIT_MODIFIERS, TRAIT_DEFS } from './traits';
 import { UNLOCK_DEFS } from './unlocks';
@@ -99,11 +98,10 @@ function omitSignalFactors(value: object | undefined, identity: number): Record<
   );
 }
 
-const PASSIVE_IDENTITY = {
+const ADDITIVE_PASSIVE_IDENTITY = {
   moraleDamageMul: 1,
   restHealBonus: 0,
   shopDiscount: 0,
-  relicSlots: RUN_BALANCE.shopRelicSlots.value,
 } as const;
 
 const OUTCOME_IDENTITY: Record<string, unknown> = {
@@ -161,6 +159,13 @@ export function projectAction(definition: ActionContentDef): unknown {
   return { stabilizesFlow: definition.stabilizesFlow ?? false };
 }
 
+export function projectRelic(definition: RelicDef): unknown {
+  return {
+    effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
+    passives: omitIdentity(definition.passives, ADDITIVE_PASSIVE_IDENTITY),
+  };
+}
+
 const difficultyDefinitions = Object.values(DIFFICULTY_DEFS);
 
 export const CONTENT_CATALOG: ContentCatalog = {
@@ -194,15 +199,11 @@ export const CONTENT_CATALOG: ContentCatalog = {
     incidentMul: definition.incidentMul,
     clear: definedObject(definition.clear),
   })),
-  relics: ordered(RELIC_DEFS, (definition) => ({
-    effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
-    passives: omitIdentity(definition.passives, PASSIVE_IDENTITY),
-  })),
+  relics: ordered(RELIC_DEFS, projectRelic),
   traits: ordered(TRAIT_DEFS, (definition) => ({
     modifiers: omitIdentity(definition.modifiers, IDENTITY_TRAIT_MODIFIERS),
   })),
   evolution: ordered(EVOLUTION_NODES, (definition) => ({
-    branch: definition.branch,
     cost: definition.cost,
     requires: definition.requires ?? null,
     effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
@@ -372,6 +373,18 @@ export function validateContentCatalog(
   const catalogScenarioIds = catalog.startingScenarios.map((entry) => entry.id);
   if (JSON.stringify(scenarioIds) !== JSON.stringify(catalogScenarioIds)) {
     errors.push({ category: 'startingScenarios', message: '開始シナリオ順が正本と一致しません' });
+  }
+
+  const difficultyIdSet = new Set(difficultyKeys);
+  if (!difficultyIdSet.has(catalog.daily.difficulty)) {
+    errors.push({
+      category: 'daily.difficulty',
+      message: `未知の参照: ${catalog.daily.difficulty}`,
+    });
+  }
+  const trialIds = new Set(TRIAL_DEFS.map((definition) => definition.id));
+  for (const trialId of catalog.daily.trials) {
+    ensureReference(errors, 'daily.trials', trialId, trialIds);
   }
 
   return errors;

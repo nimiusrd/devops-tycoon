@@ -127,21 +127,21 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | dev-1 | {"branch":"dev","codingSlotBonus":0,"cost":1,"effects":{"codingSpeedMul":1.12,"securityAdd":-4},"focusBonus":0,"requires":null} |
-| 1 | dev-2 | {"branch":"dev","codingSlotBonus":1,"cost":3,"effects":{},"focusBonus":0,"requires":"dev-1"} |
-| 2 | dev-3 | {"branch":"dev","codingSlotBonus":0,"cost":10,"effects":{"routineSpeedMul":1.3,"securityAdd":-6},"focusBonus":0,"requires":"dev-2"} |
-| 3 | review-1 | {"branch":"review","codingSlotBonus":0,"cost":1,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":null} |
-| 4 | review-2 | {"branch":"review","codingSlotBonus":0,"cost":3,"effects":{"reviewEfficiencyMul":1.18},"focusBonus":0,"requires":"review-1"} |
-| 5 | review-3 | {"branch":"review","codingSlotBonus":0,"cost":10,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":"review-2"} |
-| 6 | quality-1 | {"branch":"quality","codingSlotBonus":0,"cost":1,"effects":{"securityAdd":6,"testCoverageAdd":12},"focusBonus":0,"requires":null} |
-| 7 | quality-2 | {"branch":"quality","codingSlotBonus":0,"cost":4,"effects":{"incidentRateMul":0.82,"securityAdd":8},"focusBonus":0,"requires":"quality-1"} |
-| 8 | quality-3 | {"branch":"quality","codingSlotBonus":0,"cost":14,"effects":{"qualityAdd":8,"reworkRateAdd":-0.1,"securityAdd":10},"focusBonus":0,"requires":"quality-2"} |
-| 9 | ai-1 | {"branch":"ai","codingSlotBonus":0,"cost":4,"effects":{"reworkRateAdd":-0.1},"focusBonus":0,"requires":null} |
-| 10 | ai-2 | {"branch":"ai","codingSlotBonus":0,"cost":9,"effects":{"aiLiteracyAdd":18,"infraCostMul":0.75},"focusBonus":0,"requires":"ai-1"} |
-| 11 | ai-3 | {"branch":"ai","codingSlotBonus":0,"cost":16,"effects":{"codingSpeedMul":1.2,"infraCostMul":0.7,"securityAdd":-6},"focusBonus":0,"requires":"ai-2"} |
-| 12 | culture-1 | {"branch":"culture","codingSlotBonus":0,"cost":4,"effects":{},"focusBonus":2,"requires":null} |
-| 13 | culture-2 | {"branch":"culture","codingSlotBonus":0,"cost":9,"effects":{"qualityAdd":10},"focusBonus":0,"requires":"culture-1"} |
-| 14 | culture-3 | {"branch":"culture","codingSlotBonus":0,"cost":14,"effects":{},"focusBonus":3,"requires":"culture-2"} |
+| 0 | dev-1 | {"codingSlotBonus":0,"cost":1,"effects":{"codingSpeedMul":1.12,"securityAdd":-4},"focusBonus":0,"requires":null} |
+| 1 | dev-2 | {"codingSlotBonus":1,"cost":3,"effects":{},"focusBonus":0,"requires":"dev-1"} |
+| 2 | dev-3 | {"codingSlotBonus":0,"cost":10,"effects":{"routineSpeedMul":1.3,"securityAdd":-6},"focusBonus":0,"requires":"dev-2"} |
+| 3 | review-1 | {"codingSlotBonus":0,"cost":1,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":null} |
+| 4 | review-2 | {"codingSlotBonus":0,"cost":3,"effects":{"reviewEfficiencyMul":1.18},"focusBonus":0,"requires":"review-1"} |
+| 5 | review-3 | {"codingSlotBonus":0,"cost":10,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":"review-2"} |
+| 6 | quality-1 | {"codingSlotBonus":0,"cost":1,"effects":{"securityAdd":6,"testCoverageAdd":12},"focusBonus":0,"requires":null} |
+| 7 | quality-2 | {"codingSlotBonus":0,"cost":4,"effects":{"incidentRateMul":0.82,"securityAdd":8},"focusBonus":0,"requires":"quality-1"} |
+| 8 | quality-3 | {"codingSlotBonus":0,"cost":14,"effects":{"qualityAdd":8,"reworkRateAdd":-0.1,"securityAdd":10},"focusBonus":0,"requires":"quality-2"} |
+| 9 | ai-1 | {"codingSlotBonus":0,"cost":4,"effects":{"reworkRateAdd":-0.1},"focusBonus":0,"requires":null} |
+| 10 | ai-2 | {"codingSlotBonus":0,"cost":9,"effects":{"aiLiteracyAdd":18,"infraCostMul":0.75},"focusBonus":0,"requires":"ai-1"} |
+| 11 | ai-3 | {"codingSlotBonus":0,"cost":16,"effects":{"codingSpeedMul":1.2,"infraCostMul":0.7,"securityAdd":-6},"focusBonus":0,"requires":"ai-2"} |
+| 12 | culture-1 | {"codingSlotBonus":0,"cost":4,"effects":{},"focusBonus":2,"requires":null} |
+| 13 | culture-2 | {"codingSlotBonus":0,"cost":9,"effects":{"qualityAdd":10},"focusBonus":0,"requires":"culture-1"} |
+| 14 | culture-3 | {"codingSlotBonus":0,"cost":14,"effects":{},"focusBonus":3,"requires":"culture-2"} |
 
 ## goalAdjustments
 

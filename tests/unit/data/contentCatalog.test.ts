@@ -9,6 +9,7 @@ import {
   projectAction,
   projectDepartment,
   projectEvent,
+  projectRelic,
   validateContentCatalog,
 } from '../../../src/data/contentCatalog';
 import { renderContentCatalogMarkdown } from '../../../src/data/contentCatalogDocumentation';
@@ -24,6 +25,7 @@ import {
   STARTER_ARCHETYPES,
   STARTER_DEFAULT_AI_ARCHETYPE_ID,
 } from '../../../src/data/members';
+import { RUN_BALANCE } from '../../../src/data/balance/run';
 import { RELIC_DEFS } from '../../../src/data/relics';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, SCENARIOS } from '../../../src/sim/scenarios';
 import { ALL_ACTION_IDS } from '../../../src/sim/actions';
@@ -188,6 +190,42 @@ describe('CONTENT_CATALOG', () => {
     );
     expect(CONTENT_CATALOG.defaultScenarioId).toBe(DEFAULT_SCENARIO);
     expect(CONTENT_CATALOG.difficultyOrder).toEqual(Object.keys(DIFFICULTY_DEFS));
+  });
+
+  it('進化の表示ブランチを除外し、デイリー参照 ID を検証する', () => {
+    expect(
+      CONTENT_CATALOG.evolution.every(
+        (entry) => !Object.prototype.hasOwnProperty.call(entry.execution, 'branch'),
+      ),
+    ).toBe(true);
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        daily: { difficulty: CONTENT_CATALOG.daily.difficulty, trials: ['unknown-trial'] },
+      }),
+    ).toContainEqual({ category: 'daily.trials', message: '未知の参照: unknown-trial' });
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        daily: { difficulty: 'unknown-difficulty', trials: CONTENT_CATALOG.daily.trials },
+      }),
+    ).toContainEqual({
+      category: 'daily.difficulty',
+      message: '未知の参照: unknown-difficulty',
+    });
+  });
+
+  it('レリック枠の上書きは identity 値でも射影に残す', () => {
+    const relic = RELIC_DEFS.find((definition) => definition.id === 'postmortem')!;
+    expect(projectRelic({ ...relic, passives: { moraleDamageMul: 1 } })).toEqual(
+      projectRelic(relic),
+    );
+    expect(
+      projectRelic({
+        ...relic,
+        passives: { relicSlots: RUN_BALANCE.shopRelicSlots.value },
+      }),
+    ).not.toEqual(projectRelic(relic));
   });
 
   it('生成 Markdown は同じカタログから決定論的に作られる', () => {

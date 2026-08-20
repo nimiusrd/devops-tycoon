@@ -10,12 +10,18 @@ import { ACTION_CONTENT_DEFS, type ActionContentDef } from './actions';
 import { BOSS_DEFS, type BossDef } from './bosses';
 import { CARD_DEFS, RARITY_WEIGHT } from './cards';
 import { DEPARTMENT_DEFS } from './departments';
+import { PROCESS_BALANCE } from './balance/process';
 import { DIFFICULTY_DEFS, TRIAL_DEFS, type DifficultyDef, type TrialDef } from './difficulties';
 import { EVENT_DEFS, RECRUIT_SKIP_MORALE, effectiveKind, type EventDef } from './events';
 import { EVOLUTION_NODES, type EvolutionNodeDef } from './evolution';
 import { GOAL_ADJUSTMENT_DEFS, type GoalAdjustmentDef } from './goalAdjustments';
 import { LEVER_DEFS } from './levers';
-import { RECRUIT_ARCHETYPES, STARTER_ARCHETYPES, type MemberArchetype } from './members';
+import {
+  MEMBER_NAMES,
+  RECRUIT_ARCHETYPES,
+  STARTER_ARCHETYPES,
+  type MemberArchetype,
+} from './members';
 import { RELIC_DEFS, type RelicDef } from './relics';
 import { TRAIT_DEFS, type TraitDef } from './traits';
 import { UNLOCK_DEFS, type UnlockDef } from './unlocks';
@@ -61,7 +67,7 @@ export function projectDifficulties(
       globalEffects: def.globalEffects,
       startBudget: def.startBudget,
       bossTargetMul: def.bossTargetMul,
-      aiDependencyPerTask: def.aiDependencyPerTask,
+      aiDependencyPerTask: def.aiDependencyPerTask ?? PROCESS_BALANCE.aiDependencyPerTask.value,
     }))
     .sort((left, right) => compareCanonicalStrings(left.key, right.key));
 }
@@ -78,11 +84,11 @@ export function projectTrials(defs: readonly TrialDef[] = TRIAL_DEFS) {
       scoreMul,
     }) => ({
       id,
-      focusDelta,
-      budgetMul,
+      focusDelta: focusDelta ?? 0,
+      budgetMul: budgetMul ?? 1,
       effects,
-      aiDependencyDriftPerSprint,
-      frontierModelCostPerDependency,
+      aiDependencyDriftPerSprint: aiDependencyDriftPerSprint ?? 0,
+      frontierModelCostPerDependency: frontierModelCostPerDependency ?? 0,
       scoreMul,
     }),
   );
@@ -152,6 +158,7 @@ export function projectLevers(defs: readonly LeverDef[] = LEVER_DEFS) {
 export function projectMembers(
   starters: readonly MemberArchetype[] = STARTER_ARCHETYPES,
   recruits: readonly MemberArchetype[] = RECRUIT_ARCHETYPES,
+  names: readonly string[] = MEMBER_NAMES,
 ) {
   const projectArchetype = ({ id, rank, stats, traits, preferred }: MemberArchetype) => ({
     id,
@@ -161,6 +168,7 @@ export function projectMembers(
     preferred,
   });
   return {
+    names: [...names],
     starters: starters.map(projectArchetype),
     recruits: recruits.map(projectArchetype),
   };

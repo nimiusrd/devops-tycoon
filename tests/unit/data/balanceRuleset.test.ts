@@ -18,11 +18,13 @@ import {
   defineProbabilityDistribution,
   fingerprintBalanceRuleset,
   PACING_BALANCE,
+  PROCESS_BALANCE,
   projectBalanceRegistry,
   sha256Hex,
 } from '../../../src/data/balance';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
-import { DIFFICULTY_DEFS } from '../../../src/data/difficulties';
+import { DIFFICULTY_DEFS, TRIAL_DEFS } from '../../../src/data/difficulties';
+import { MEMBER_NAMES } from '../../../src/data/members';
 import { EVENT_DEFS } from '../../../src/data/events';
 import {
   projectActions,
@@ -30,7 +32,9 @@ import {
   projectDepartments,
   projectDifficulties,
   projectEvents,
+  projectMembers,
   projectScenarios,
+  projectTrials,
 } from '../../../src/data/contentCatalog';
 import { DEFAULT_SCENARIO, SCENARIOS, SCENARIO_ORDER } from '../../../src/sim/scenarios';
 import { SPRINT_BALANCE } from '../../../src/data/balance/sprint';
@@ -321,6 +325,58 @@ describe('バランスルールセットの版と指紋', () => {
         createBalanceRulesetPayload([], {
           ...baseCatalog,
           scenarios: projectScenarios(SCENARIOS, titleOnlyOrder, DEFAULT_SCENARIO),
+        }),
+      ),
+    ).not.toBe(original);
+  });
+
+  it('難易度・試練の省略値とメンバー名プールを実効値として指紋へ含める', () => {
+    const baseCatalog = projectContentCatalog();
+    const original = fingerprintBalanceRuleset(createBalanceRulesetPayload([], baseCatalog));
+    const defaultAiDependencyPerTask = PROCESS_BALANCE.aiDependencyPerTask.value;
+
+    const easy = DIFFICULTY_DEFS.easy;
+    expect(easy.aiDependencyPerTask).toBeUndefined();
+    expect(projectDifficulties().find((entry) => entry.key === 'easy')?.aiDependencyPerTask).toBe(
+      defaultAiDependencyPerTask,
+    );
+    const explicitDefaultDifficulty = {
+      ...DIFFICULTY_DEFS,
+      easy: { ...easy, aiDependencyPerTask: defaultAiDependencyPerTask },
+    };
+    expect(projectDifficulties(explicitDefaultDifficulty)).toEqual(projectDifficulties());
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          difficulties: projectDifficulties(explicitDefaultDifficulty),
+        }),
+      ),
+    ).toBe(original);
+
+    const explicitTrialDefaults = TRIAL_DEFS.map((trial) => ({
+      ...trial,
+      focusDelta: trial.focusDelta ?? 0,
+      budgetMul: trial.budgetMul ?? 1,
+      aiDependencyDriftPerSprint: trial.aiDependencyDriftPerSprint ?? 0,
+      frontierModelCostPerDependency: trial.frontierModelCostPerDependency ?? 0,
+    }));
+    expect(projectTrials(explicitTrialDefaults)).toEqual(projectTrials());
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          trials: projectTrials(explicitTrialDefaults),
+        }),
+      ),
+    ).toBe(original);
+
+    expect(projectMembers().names).toEqual([...MEMBER_NAMES]);
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          members: projectMembers(undefined, undefined, [...MEMBER_NAMES, '追加']),
         }),
       ),
     ).not.toBe(original);

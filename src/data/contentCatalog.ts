@@ -11,6 +11,7 @@ import { CARD_DEFS, RARITY_WEIGHT } from './cards';
 import { BOSS_DEFS } from './bosses';
 import { DEPARTMENT_DEFS } from './departments';
 import { PROCESS_BALANCE } from './balance/process';
+import { RUN_BALANCE } from './balance/run';
 import {
   DAILY_RUN_DIFFICULTY,
   DAILY_RUN_TRIALS,
@@ -33,7 +34,6 @@ import { DEFAULT_SCENARIO, SCENARIO_ORDER, SCENARIOS } from '../sim/scenarios';
 import { IDENTITY_TRAIT_MODIFIERS, TRAIT_DEFS } from './traits';
 import { UNLOCK_DEFS } from './unlocks';
 import { IDENTITY_CARD_EFFECTS } from '../sim/model';
-import { IDENTITY_PASSIVES } from '../sim/run/effects';
 import type { DepartmentDef } from '../sim/orgscale/types';
 
 /** カタログの 1 行。`execution` は表示メタデータを含まない射影。 */
@@ -98,6 +98,13 @@ function omitSignalFactors(value: object | undefined, identity: number): Record<
     Object.entries(definedObject(value)).filter(([, item]) => item !== identity),
   );
 }
+
+const PASSIVE_IDENTITY = {
+  moraleDamageMul: 1,
+  restHealBonus: 0,
+  shopDiscount: 0,
+  relicSlots: RUN_BALANCE.shopRelicSlots.value,
+} as const;
 
 const OUTCOME_IDENTITY: Record<string, unknown> = {
   delivered: 0,
@@ -189,7 +196,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
   })),
   relics: ordered(RELIC_DEFS, (definition) => ({
     effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
-    passives: omitIdentity(definition.passives, IDENTITY_PASSIVES),
+    passives: omitIdentity(definition.passives, PASSIVE_IDENTITY),
   })),
   traits: ordered(TRAIT_DEFS, (definition) => ({
     modifiers: omitIdentity(definition.modifiers, IDENTITY_TRAIT_MODIFIERS),

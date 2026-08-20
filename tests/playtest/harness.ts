@@ -1460,13 +1460,22 @@ function observeOpportunityWindows(
   }
 }
 
-function counterfactualEnabled(): boolean {
+function counterfactualEnabled(policy?: string): boolean {
   const processLike = (
     globalThis as typeof globalThis & {
       process?: { env?: Record<string, string | undefined> };
     }
   ).process;
-  return processLike?.env?.PT_COUNTERFACTUAL === '1';
+  if (processLike?.env?.PT_COUNTERFACTUAL !== '1') return false;
+  const raw = processLike.env.PT_CF_POLICIES;
+  if (!raw) return true;
+  const allow = new Set(
+    raw
+      .split(',')
+      .map((x) => x.trim())
+      .filter((x) => x.length > 0),
+  );
+  return policy != null && allow.has(policy);
 }
 
 function rememberCounterfactualFrame(
@@ -1507,6 +1516,7 @@ function sampleAvailableInDanger(
   e: RunEngine,
   byReason: Map<DangerLoseReason, DangerTrack>,
   framesByReason?: Map<DangerLoseReason, CounterfactualFrameSample[]>,
+  policy?: string,
 ): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
@@ -1544,7 +1554,7 @@ function sampleAvailableInDanger(
     track.lastSample = sample;
     if (available.length > 0) track.lastNonEmpty = sample;
   }
-  if (framesByReason && counterfactualEnabled() && dangers.length > 0) {
+  if (framesByReason && counterfactualEnabled(policy) && dangers.length > 0) {
     const frame = e.exportCounterfactualFrame();
     if (frame) {
       for (const reason of dangers) {
@@ -2053,7 +2063,12 @@ export function runOnce(
         let cardFocusSpent = 0;
         const sampleDanger = (): void => {
           observeOpportunityWindows(e, opportunityOpen, opportunityWindows);
-          sampleAvailableInDanger(e, availableInDangerByReason, counterfactualFramesByReason);
+          sampleAvailableInDanger(
+            e,
+            availableInDangerByReason,
+            counterfactualFramesByReason,
+            policy,
+          );
         };
         const onCardPlayed = (focusSpent: number): void => {
           cardsPlayed += 1;
@@ -2374,7 +2389,7 @@ export function runOnce(
       : {}),
     ...(f.status === 'lost' &&
     f.loseReason &&
-    counterfactualEnabled() &&
+    counterfactualEnabled(policy) &&
     counterfactualFramesByReason.has(f.loseReason as DangerLoseReason)
       ? (() => {
           const selected = evaluateLatestEffectiveFrame(

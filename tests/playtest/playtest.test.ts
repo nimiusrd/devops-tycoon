@@ -9,6 +9,7 @@
  * - `PT_META`    メタ進行の解放状態（`fresh`=初見相当・既定 / `full`=全解放）
  * - `PT_OUT`     出力先 JSON（既定 `playtest-out/runs.json`）
  * - `PT_COUNTERFACTUAL=1`  危険域 last-non-empty の反実仮想評価を記録（RI-101。既定オフ）
+ * - `PT_CF_POLICIES`  カンマ区切り。指定時はそれらの方針だけ反実仮想する（RI-132。省略時は全方針）
  *
  * `PT_COUNTERFACTUAL=1` の既定コホートは数時間かかりうる（RI-132）。
  * 難易度ごとにチェックポイントし、同じ世代の `partial` 出力から再開する。

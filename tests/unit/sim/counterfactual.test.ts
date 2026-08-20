@@ -1302,6 +1302,24 @@ describe('RI-101 プレイテストオプトイン', () => {
       else process.env.PT_COUNTERFACTUAL = prev;
     }
   });
+
+  it('PT_CF_POLICIES に含まれない方針は反実仮想しない', () => {
+    const prevCf = process.env.PT_COUNTERFACTUAL;
+    const prevAllow = process.env.PT_CF_POLICIES;
+    process.env.PT_COUNTERFACTUAL = '1';
+    process.env.PT_CF_POLICIES = 'naive';
+    try {
+      const log = runOnce('pt-1', 'nightmare', 'idle');
+      expect(log.status).toBe('lost');
+      expect(log.effectiveActionsInDanger).toBeUndefined();
+      expect(log.counterfactualBaseline).toBeUndefined();
+    } finally {
+      if (prevCf === undefined) delete process.env.PT_COUNTERFACTUAL;
+      else process.env.PT_COUNTERFACTUAL = prevCf;
+      if (prevAllow === undefined) delete process.env.PT_CF_POLICIES;
+      else process.env.PT_CF_POLICIES = prevAllow;
+    }
+  });
 });
 
 describe('RI-101 合成危険状態', () => {

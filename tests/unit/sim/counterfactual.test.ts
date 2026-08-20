@@ -14,7 +14,7 @@ import {
 import { activeDangerReasons, listApplicableActions } from '../../../src/sim/run/dangerZone';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { ActionId } from '../../../src/sim/types';
-import { runOnce } from '../../playtest/harness';
+import { parseCfPolicies, runOnce } from '../../playtest/harness';
 
 function startedSprint(seed: string, difficulty: 'easy' | 'normal' | 'nightmare' = 'normal') {
   const engine = new RunEngine({ seed, difficulty });
@@ -1313,6 +1313,26 @@ describe('RI-101 プレイテストオプトイン', () => {
       expect(log.status).toBe('lost');
       expect(log.effectiveActionsInDanger).toBeUndefined();
       expect(log.counterfactualBaseline).toBeUndefined();
+    } finally {
+      if (prevCf === undefined) delete process.env.PT_COUNTERFACTUAL;
+      else process.env.PT_COUNTERFACTUAL = prevCf;
+      if (prevAllow === undefined) delete process.env.PT_CF_POLICIES;
+      else process.env.PT_CF_POLICIES = prevAllow;
+    }
+  });
+
+  it('未知の PT_CF_POLICIES は開始時に拒否する', () => {
+    expect(() => parseCfPolicies('naive,skilledNoHrie')).toThrow(/未知の方針/);
+    expect(() => parseCfPolicies('naive,naive')).toThrow(/重複/);
+    expect(parseCfPolicies(undefined)).toBeNull();
+    expect(parseCfPolicies('naive, idle')).toEqual(['naive', 'idle']);
+
+    const prevCf = process.env.PT_COUNTERFACTUAL;
+    const prevAllow = process.env.PT_CF_POLICIES;
+    process.env.PT_COUNTERFACTUAL = '1';
+    process.env.PT_CF_POLICIES = 'naive,skilledNoHrie';
+    try {
+      expect(() => runOnce('pt-1', 'nightmare', 'idle')).toThrow(/未知の方針/);
     } finally {
       if (prevCf === undefined) delete process.env.PT_COUNTERFACTUAL;
       else process.env.PT_COUNTERFACTUAL = prevCf;

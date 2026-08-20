@@ -773,13 +773,13 @@ Q1 で方向確定 **28/40（70%）**、確定ブランチは `ai` 21 / `review`
 
 - 対象方針: `naive` / `skilledNoHire` / `onlyFirefight` / `noInterventionCtl`
 - F-8: 回復余地ギャップの **p50 ≤ 1**（有効手なしは Inf）
-- F-9: 難易度横断の完全評価で敗因 n≥10 かつ **distinctEffectiveSetCount ≥ 2**
+- F-9: 同一難易度・同一方針の層別で、敗因 n≥10 が2種以上かつ **distinctEffectiveSetCount ≥ 2**
 
 既定コホート（generation `51b228a8dbc675a3`、1,560ラン）を `PT_COUNTERFACTUAL=1` で再走した。
 反実仮想は対象4方針に限り、他方針は勝敗集計のみ。値調整はしていない。
 
 F-8 受入（RI-132）: 対象方針 naive / skilledNoHire / onlyFirefight / noInterventionCtl / p50≤1（実測 p50=0 n=152） → PASS
-F-9 受入（RI-132）: 未計測 — 資格敗因が0種（必要≥2、敗因n≥10）
+F-9 受入（RI-132）: 未計測 — 層別（難易度×方針）の資格敗因が0セル（必要≥2、敗因n≥10）
 
 F-9 は 152 件すべてが分岐上限（action 96 / combo 32 / strategic 192）で不完全評価のため、
 完全評価の資格敗因が 0 種で未計測。不完全評価の集合は参考値として、`seniorBurnout`（138）が

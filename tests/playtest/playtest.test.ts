@@ -18,7 +18,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTY_DEFS } from '../../src/data/difficulties';
-import { POLICY_DEFS, runOnce, type MetaProfile, type RunLog } from './harness';
+import { POLICY_DEFS, parseCfPolicies, runOnce, type MetaProfile, type RunLog } from './harness';
 import { currentGeneration } from '../../scripts/playtest-generation.mjs';
 import { readPlaytestOut } from '../../scripts/playtest-out.mjs';
 
@@ -92,6 +92,15 @@ const SEEDS = parseSeeds(
   process.env.PT_SEEDS ?? Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`).join(','),
 );
 const META = parseMeta(process.env.PT_META ?? 'fresh');
+const CF_POLICIES = parseCfPolicies(process.env.PT_CF_POLICIES);
+if (CF_POLICIES) {
+  const outside = CF_POLICIES.filter((p) => !POLICIES.includes(p));
+  if (outside.length > 0) {
+    throw new Error(
+      `PT_CF_POLICIES が実行対象外: ${outside.join(', ')}（PT_POLICIES に含まれない）`,
+    );
+  }
+}
 
 /** 既定コホート（所見ドキュメントが前提にしている条件）。 */
 const DEFAULT_DIFFS = ['easy', 'normal', 'hard', 'nightmare'];

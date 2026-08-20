@@ -1460,6 +1460,25 @@ function observeOpportunityWindows(
   }
 }
 
+/** `PT_CF_POLICIES` を検証して返す。未指定は全方針（`null`）。 */
+export function parseCfPolicies(raw: string | undefined): string[] | null {
+  if (raw == null || raw.trim() === '') return null;
+  const list = raw
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+  if (list.length === 0) throw new Error('PT_CF_POLICIES が空');
+  const unknown = list.filter((p) => !POLICY_DEFS[p]);
+  if (unknown.length > 0) {
+    throw new Error(`PT_CF_POLICIES に未知の方針: ${unknown.join(', ')}`);
+  }
+  const dup = list.filter((x, i) => list.indexOf(x) !== i);
+  if (dup.length > 0) {
+    throw new Error(`PT_CF_POLICIES に重複: ${[...new Set(dup)].join(', ')}`);
+  }
+  return list;
+}
+
 function counterfactualEnabled(policy?: string): boolean {
   const processLike = (
     globalThis as typeof globalThis & {
@@ -1467,15 +1486,9 @@ function counterfactualEnabled(policy?: string): boolean {
     }
   ).process;
   if (processLike?.env?.PT_COUNTERFACTUAL !== '1') return false;
-  const raw = processLike.env.PT_CF_POLICIES;
-  if (!raw) return true;
-  const allow = new Set(
-    raw
-      .split(',')
-      .map((x) => x.trim())
-      .filter((x) => x.length > 0),
-  );
-  return policy != null && allow.has(policy);
+  const allow = parseCfPolicies(processLike.env.PT_CF_POLICIES);
+  if (allow == null) return true;
+  return policy != null && allow.includes(policy);
 }
 
 function rememberCounterfactualFrame(

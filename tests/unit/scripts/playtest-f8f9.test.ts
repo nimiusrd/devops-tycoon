@@ -219,10 +219,10 @@ describe('playtest-f8f9', () => {
     expect(result.f9.verdict).toBe('未計測');
   });
 
-  it('F-9 は資格敗因の集合差が最低種類数以上なら PASS', () => {
+  it('F-9 は同一層の資格敗因の集合差が最低種類数以上なら PASS', () => {
     const passRuns = [
       ...many(F9_MIN_REASON_N, 'seniorBurnout', ['firefight'], 'naive', 0),
-      ...many(F9_MIN_REASON_N, 'moraleCollapse', ['overtime'], 'skilledNoHire', 20),
+      ...many(F9_MIN_REASON_N, 'moraleCollapse', ['overtime'], 'naive', 20),
     ];
     const pass = evaluateF8F9(loaded(passRuns), { stale: false });
     expect(pass.f9.verdict).toBe('PASS');
@@ -230,11 +230,21 @@ describe('playtest-f8f9', () => {
 
     const sameSet = [
       ...many(F9_MIN_REASON_N, 'seniorBurnout', ['firefight'], 'naive', 0),
-      ...many(F9_MIN_REASON_N, 'moraleCollapse', ['firefight'], 'skilledNoHire', 20),
+      ...many(F9_MIN_REASON_N, 'moraleCollapse', ['firefight'], 'naive', 20),
     ];
     const fail = evaluateF8F9(loaded(sameSet), { stale: false });
     expect(fail.f9.verdict).toBe('FAIL');
     expect(fail.f9.distinctEffectiveSetCount).toBe(1);
+  });
+
+  it('F-9 は方針を跨いだ集合差では PASS にしない', () => {
+    const runs = [
+      ...many(F9_MIN_REASON_N, 'seniorBurnout', ['firefight'], 'naive', 0),
+      ...many(F9_MIN_REASON_N, 'moraleCollapse', ['overtime'], 'skilledNoHire', 20),
+    ];
+    const result = evaluateF8F9(loaded(runs), { stale: false });
+    expect(result.f9.verdict).toBe('未計測');
+    expect(result.f9.reason).toContain('層別');
   });
 
   it('F-9 は資格敗因が2未満なら未計測（F-8 は判定する）', () => {
@@ -270,7 +280,7 @@ describe('playtest-f8f9', () => {
   it('所見の固定行と実測を突き合わせる', () => {
     const runs = [
       ...many(F9_MIN_REASON_N, 'seniorBurnout', ['firefight'], 'naive', 0),
-      ...many(F9_MIN_REASON_N, 'moraleCollapse', ['overtime'], 'skilledNoHire', 20),
+      ...many(F9_MIN_REASON_N, 'moraleCollapse', ['overtime'], 'naive', 20),
     ];
     const result = evaluateF8F9(loaded(runs), { stale: false });
     const body = `${formatF8AcceptanceLine(result)}\n${formatF9AcceptanceLine(result)}\n`;

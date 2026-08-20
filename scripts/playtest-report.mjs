@@ -38,6 +38,12 @@ const loaded = JSON.parse(readFileSync(file, 'utf8'));
  */
 const raw = Array.isArray(loaded) ? loaded : loaded.runs;
 const cohort = Array.isArray(loaded) ? null : loaded.cohort;
+if (!Array.isArray(loaded) && (loaded.partial === true || cohort?.partial === true)) {
+  console.error(
+    '未計測: 測定が完了していない（partial）。`npm run playtest` を最後まで実行すること。',
+  );
+  process.exit(1);
+}
 
 /**
  * 測定後にコードが変わっていたら**先頭で警告する**。

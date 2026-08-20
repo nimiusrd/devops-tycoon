@@ -22,7 +22,7 @@ import {
 import { EVOLUTION_NODES } from './evolution';
 import { EVENT_DEFS, effectiveKind, type EventDef, type EventOutcome } from './events';
 import { GOAL_ADJUSTMENT_DEFS, type GoalAdjustmentDef } from './goalAdjustments';
-import { LEVER_DEFS, type LeverDef } from './levers';
+import { LEVER_DEFS } from './levers';
 import {
   MEMBER_NAMES,
   RECRUIT_ARCHETYPES,
@@ -34,7 +34,7 @@ import { DEFAULT_SCENARIO, SCENARIO_ORDER, SCENARIOS } from '../sim/scenarios';
 import { IDENTITY_TRAIT_MODIFIERS, TRAIT_DEFS } from './traits';
 import { UNLOCK_DEFS } from './unlocks';
 import { IDENTITY_CARD_EFFECTS } from '../sim/model';
-import type { DepartmentDef } from '../sim/orgscale/types';
+import type { DepartmentDef, LeverDef } from '../sim/orgscale/types';
 
 /** カタログの 1 行。`execution` は表示メタデータを含まない射影。 */
 export interface ContentCatalogEntry {

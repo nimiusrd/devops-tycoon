@@ -5,6 +5,7 @@
  * グレード（開発速度・レビュー耐性・品質）と炎上リスクを導出する純関数。
  */
 import { getGoalAdjustment } from '../data/goalAdjustments';
+import { getEvent } from '../data/events';
 import { OUTCOME_BALANCE, PROCESS_BALANCE } from '../data/balance';
 import {
   ANDON_STABILITY_REVIEW_MIN,
@@ -14,11 +15,19 @@ import {
 import { AI_DEPENDENCY_CAP, AI_LITERACY_UNSAFE_CAP, REVIEW_FREEZE_PEAK } from '../sim/outcome';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { resolveNextQuarterEffects } from '../sim/run/quarterReview';
+import { eventMinSignalThreshold } from '../sim/run/events';
 import type { GoalAdjustmentId, StakeholderTrust } from '../sim/run/types';
 import type { OrgState, SimState, Task } from '../sim/types';
 
-/** `review-freeze` イベント抽選の資格帯（seniorHpLow >= 0.55 ⇔ HP <= 45）。 */
-export const REVIEW_FREEZE_EVENT_HP = 45;
+/** `review-freeze` イベント抽選の資格帯を定義から導出する。 */
+const REVIEW_FREEZE_EVENT = getEvent('review-freeze');
+const REVIEW_FREEZE_MIN_SENIOR_HP_LOW = REVIEW_FREEZE_EVENT
+  ? eventMinSignalThreshold(REVIEW_FREEZE_EVENT, 'seniorHpLow')
+  : undefined;
+export const REVIEW_FREEZE_EVENT_HP =
+  REVIEW_FREEZE_MIN_SENIOR_HP_LOW === undefined
+    ? 0
+    : Math.round(100 * (1 - REVIEW_FREEZE_MIN_SENIOR_HP_LOW));
 /** HUD「凍結注意」のキューピーク閾値（敗北ピークの 75%・playtest 危険域と揃える）。 */
 export const REVIEW_FREEZE_WATCH_PEAK = Math.round(
   REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value,

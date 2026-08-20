@@ -15,7 +15,7 @@ import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios'
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
 
-const DIFFICULTY_ORDER: DifficultyId[] = ['easy', 'normal', 'hard', 'nightmare'];
+const DIFFICULTY_ORDER: readonly DifficultyId[] = Object.keys(DIFFICULTY_DEFS) as DifficultyId[];
 const DIFFICULTY_TAG: Record<DifficultyId, string> = {
   easy: 'Easy',
   normal: 'Normal',

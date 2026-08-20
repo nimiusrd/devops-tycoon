@@ -6,6 +6,7 @@ import {
   applyEventOutcome,
   effectiveEventWeight,
   eventEligible,
+  eventMinSignalFactors,
   eventSignals,
   pickWeighted,
 } from '../../../src/sim/run/events';
@@ -282,6 +283,22 @@ describe('effectiveEventWeight / pickWeighted の境界', () => {
 });
 
 describe('eventEligible の minSignal / maxSignal 条件', () => {
+  it('資格判定と発火要因分類が同じ minSignal 境界を使う', () => {
+    const definition = event({ minSignal: { seniorHpLow: 0.55, moraleLow: 0.25 } });
+    const atBoundary = signals({ seniorHpLow: 0.55, moraleLow: 0.25 });
+    const factors = eventMinSignalFactors(definition, atBoundary);
+
+    expect(factors).toEqual([
+      { signal: 'seniorHpLow', threshold: 0.55, actual: 0.55, satisfied: true },
+      { signal: 'moraleLow', threshold: 0.25, actual: 0.25, satisfied: true },
+    ]);
+    expect(eventEligible(definition, atBoundary)).toBe(true);
+
+    const belowBoundary = signals({ seniorHpLow: 0.54, moraleLow: 0.25 });
+    expect(eventMinSignalFactors(definition, belowBoundary)[0]?.satisfied).toBe(false);
+    expect(eventEligible(definition, belowBoundary)).toBe(false);
+  });
+
   it('minSignal 未指定は対象になり、指定時は全条件を下限以上で満たす必要がある', () => {
     expect(eventEligible(event({}), signals({}))).toBe(true);
     expect(

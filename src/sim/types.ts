@@ -4,6 +4,7 @@
  * 工程モデル（Task / Lane / OrgState）とスプリント状態・リザルトを定義する。
  * すべて描画非依存の純データで、seed付き決定論で更新される（第22.3）。
  */
+import type { ActionId as CanonicalActionId } from '../data/actionIds';
 
 /** 難易度・シナリオの識別子（SPEC 第16章）。 */
 export type ScenarioId = string;
@@ -15,15 +16,7 @@ export type Lane = 'backlog' | 'coding' | 'review' | 'rework' | 'done';
 export type TaskKind = 'routine' | 'normal' | 'complex';
 
 /** 介入アクションの識別子（SPEC 第6.1 の表）。 */
-export type ActionId =
-  | 'interruptReview'
-  | 'splitPr'
-  | 'firefight'
-  | 'assignTask'
-  | 'aiThrottle'
-  | 'overtime'
-  | 'andon'
-  | 'pairReview';
+export type ActionId = CanonicalActionId;
 
 /** カードのレアリティ（SPEC 第7.1）。 */
 export type CardRarity = 'common' | 'rare' | 'legendary';

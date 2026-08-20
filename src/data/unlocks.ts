@@ -8,6 +8,7 @@
 import { CARD_DEFS } from './cards';
 import { EVENT_DEFS } from './events';
 import { RELIC_DEFS } from './relics';
+import { ACHIEVEMENT_IDS } from './achievements';
 
 export type UnlockKind = 'card' | 'relic';
 
@@ -39,7 +40,7 @@ export const UNLOCK_DEFS: UnlockDef[] = [
     kind: 'card',
     contentId: 'devin',
     cost: 50,
-    requires: 'review-exceeded',
+    requires: ACHIEVEMENT_IDS.reviewExceeded,
     label: 'Devin パイロット',
     description: '自律エージェント Devin の導入枠を確保する。',
   },
@@ -48,7 +49,7 @@ export const UNLOCK_DEFS: UnlockDef[] = [
     kind: 'card',
     contentId: 'hire-senior',
     cost: 40,
-    requires: 'review-survivor',
+    requires: ACHIEVEMENT_IDS.reviewSurvivor,
     label: 'シニア採用枠',
     description: '次ランからシニア採用カードがドラフト／ショップに登場する。',
   },

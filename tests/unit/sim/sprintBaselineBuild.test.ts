@@ -2,9 +2,15 @@ import { describe, expect, it } from 'vitest';
 import type { Member, RosterState } from '../../../src/sim/member/types';
 import { createOrgState } from '../../../src/sim/org';
 import {
+  BETWEEN_SPRINT_RECOVERY,
   BOSS_MAX_TICKS,
   BOSS_MIN_COMPLETE_TICK,
+  bossTaskFloor,
   buildSprintBaselineInput,
+  eliteTaskMul,
+  normalTaskFloor,
+  recoverSeniorHpBetweenSprints,
+  SPRINT_MIN_COMPLETE_TICK,
   type SprintBaselineBuildContext,
 } from '../../../src/sim/run/sprintBaselineBuild';
 import type { SprintModifierDelta } from '../../../src/sim/run/types';
@@ -86,6 +92,32 @@ function build(
 }
 
 describe('buildSprintBaselineInput（RI-72-E3）', () => {
+  it.each([
+    ['easy', 58, 1.24, 68],
+    ['normal', 50, 1.12, 58],
+    ['hard', 42, 1.09, 52],
+    ['nightmare', 32, 1.15, 56],
+  ] as const)(
+    '%s の負荷値はレジストリ由来の現行値を維持する',
+    (difficulty, normal, elite, boss) => {
+      expect(normalTaskFloor(difficulty)).toBe(normal);
+      expect(eliteTaskMul(difficulty)).toBe(elite);
+      expect(bossTaskFloor(difficulty)).toBe(boss);
+    },
+  );
+
+  it('スプリント間シニアHP回復は共通純関数で境界をclampする', () => {
+    expect(BETWEEN_SPRINT_RECOVERY).toBe(0.5);
+    expect(SPRINT_MIN_COMPLETE_TICK).toBe(77);
+    expect(BOSS_MIN_COMPLETE_TICK).toBe(115);
+    expect(BOSS_MAX_TICKS).toBe(229);
+    expect(recoverSeniorHpBetweenSprints(0)).toBe(50);
+    expect(recoverSeniorHpBetweenSprints(40)).toBe(70);
+    expect(recoverSeniorHpBetweenSprints(100)).toBe(100);
+    expect(recoverSeniorHpBetweenSprints(-120)).toBe(0);
+    expect(recoverSeniorHpBetweenSprints(120)).toBe(100);
+  });
+
   it('スプリント種別の差分でタスク量とボス効果が変わる', () => {
     const normal = build({ kind: 'normal' });
     const elite = build({ kind: 'elite' });

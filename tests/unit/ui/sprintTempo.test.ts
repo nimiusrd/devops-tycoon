@@ -5,6 +5,7 @@ import {
   SPRINT_MIN_COMPLETE_TICK,
 } from '../../../src/sim/run/sprintBaselineBuild';
 import { RunEngine } from '../../../src/sim/run/engine';
+import { FIXED_STEP_MS } from '../../../src/sim/engine';
 import type { DifficultyId } from '../../../src/sim/run/types';
 import {
   accumulateWallTime,
@@ -20,6 +21,7 @@ import {
   QUARTER_REVIEW_WALL_SEC,
   QUARTER_WALL_MIN,
   RUN_WALL_MIN,
+  SIM_STEP_MS,
   SPRINT_WALL_SEC,
   ticksDueFromAccumulator,
   wallSecondsAt1x,
@@ -180,6 +182,17 @@ function collectSprintTicks(
 }
 
 describe('sprintTempo（RI-62）', () => {
+  it('UIの1 tick間隔はsimの固定ステップと一致し、正確に1 tick進む', () => {
+    expect(SIM_STEP_MS).toBe(FIXED_STEP_MS);
+
+    const engine = new RunEngine({ seed: 'ri-114-one-tick', difficulty: 'normal' });
+    engine.startRun();
+    engine.beginSetupSprint();
+    expect(engine.snapshot().sprintTick).toBe(0);
+    engine.step(SIM_STEP_MS);
+    expect(engine.snapshot().sprintTick).toBe(1);
+  });
+
   it('1x は MS_PER_TICK_1X、2x は半分、pause は進めない', () => {
     expect(MS_PER_TICK_1X).toBe(780);
     expect(msPerTick(1)).toBe(780);

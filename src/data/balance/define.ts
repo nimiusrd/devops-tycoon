@@ -63,6 +63,12 @@ const ORDERED_BOUND_PAIRS = [
     'coarse.team.aggregate.reviewResilience.minimum',
     'coarse.team.aggregate.reviewResilience.maximum',
   ],
+  ['pacing.target.sprintWall.absoluteMinMs', 'pacing.target.sprintWall.minTypicalMs'],
+  ['pacing.target.sprintWall.minTypicalMs', 'pacing.target.sprintWall.maxTypicalMs'],
+  ['pacing.target.bossWall.minMs', 'pacing.target.bossWall.maxMs'],
+  ['pacing.target.quarterWall.minMs', 'pacing.target.quarterWall.maxMs'],
+  ['pacing.target.runWall.minMs', 'pacing.target.runWall.maxMs'],
+  ['pacing.target.interventionPerSprint.min', 'pacing.target.interventionPerSprint.max'],
 ] as const;
 
 /** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */
@@ -80,6 +86,8 @@ const STRICTLY_ORDERED_BOUND_PAIRS = [
   ['coarse.team.aggregate.healthRank.threshold.C', 'coarse.team.aggregate.healthRank.threshold.B'],
   ['coarse.team.industry.league.platinumMaximum', 'coarse.team.industry.league.goldMaximum'],
   ['coarse.team.industry.league.goldMaximum', 'coarse.team.industry.league.silverMaximum'],
+  ['pacing.tick.sprint.minComplete', 'pacing.tick.boss.minComplete'],
+  ['pacing.tick.boss.minComplete', 'pacing.tick.boss.maximum'],
 ] as const;
 
 /** 合計が固定される係数の組み合わせ。 */

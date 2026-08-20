@@ -14,6 +14,7 @@ import {
   defineProbabilityDistribution,
   flattenBalanceEntries,
   OUTCOME_BALANCE,
+  PACING_BALANCE,
   RUN_BALANCE,
   validateBalanceRegistry,
 } from '../../../src/data/balance';
@@ -299,6 +300,40 @@ const OUTCOME_BALANCE_IDS = [
   'outcome.warning.reviewFreeze.dangerOffset',
 ] as const;
 
+const PACING_BALANCE_IDS = [
+  'pacing.simulation.fixedStepMs',
+  'pacing.wallClock.msPerTick1x',
+  'pacing.task.normalFloor.easy',
+  'pacing.task.normalFloor.normal',
+  'pacing.task.normalFloor.hard',
+  'pacing.task.normalFloor.nightmare',
+  'pacing.task.eliteMultiplier.easy',
+  'pacing.task.eliteMultiplier.normal',
+  'pacing.task.eliteMultiplier.hard',
+  'pacing.task.eliteMultiplier.nightmare',
+  'pacing.task.bossFloor.easy',
+  'pacing.task.bossFloor.normal',
+  'pacing.task.bossFloor.hard',
+  'pacing.task.bossFloor.nightmare',
+  'pacing.tick.sprint.minComplete',
+  'pacing.tick.boss.minComplete',
+  'pacing.tick.boss.maximum',
+  'pacing.recovery.betweenSprint',
+  'pacing.target.sprintWall.absoluteMinMs',
+  'pacing.target.sprintWall.minTypicalMs',
+  'pacing.target.sprintWall.maxTypicalMs',
+  'pacing.target.bossWall.minMs',
+  'pacing.target.bossWall.maxMs',
+  'pacing.target.betweenSprintWallMs',
+  'pacing.target.quarterReviewWallMs',
+  'pacing.target.quarterWall.minMs',
+  'pacing.target.quarterWall.maxMs',
+  'pacing.target.runWall.minMs',
+  'pacing.target.runWall.maxMs',
+  'pacing.target.interventionPerSprint.min',
+  'pacing.target.interventionPerSprint.max',
+] as const;
+
 const BALANCE_IDS = [
   ...PROCESS_BALANCE_IDS,
   ...ACTION_BALANCE_IDS,
@@ -308,6 +343,7 @@ const BALANCE_IDS = [
   ...Object.values(MEMBER_BALANCE).map((entry) => entry.id),
   ...Object.values(CARD_BALANCE).map((entry) => entry.id),
   ...Object.values(SPRINT_BALANCE).map((entry) => entry.id),
+  ...PACING_BALANCE_IDS,
 ].sort();
 
 describe('型付きバランスレジストリ', () => {
@@ -390,6 +426,125 @@ describe('型付きバランスレジストリ', () => {
       'sprint.task.kindWeight.normal',
       'sprint.task.kindWeight.complex',
     ]);
+  });
+
+  it('ペーシングの全ID・単位・範囲・順序制約を検証する', () => {
+    const entries = Object.values(PACING_BALANCE);
+    expect(entries.map((entry) => entry.id).sort()).toEqual([...PACING_BALANCE_IDS].sort());
+    for (const entry of entries) {
+      expect(Number.isFinite(entry.value)).toBe(true);
+      expect(Number.isFinite(entry.allowedRange.min)).toBe(true);
+      expect(Number.isFinite(entry.allowedRange.max)).toBe(true);
+      expect(entry.allowedRange.min).toBeLessThanOrEqual(entry.value);
+      expect(entry.value).toBeLessThanOrEqual(entry.allowedRange.max);
+    }
+    for (const key of [
+      'fixedStepMs',
+      'msPerTick1x',
+      'sprintWallAbsoluteMinMs',
+      'sprintWallMinTypicalMs',
+      'sprintWallMaxTypicalMs',
+      'bossWallMinMs',
+      'bossWallMaxMs',
+      'betweenSprintWallMs',
+      'quarterReviewWallMs',
+      'quarterWallMinMs',
+      'quarterWallMaxMs',
+      'runWallMinMs',
+      'runWallMaxMs',
+    ] as const) {
+      expect(PACING_BALANCE[key].unit).toBe('milliseconds');
+    }
+    for (const key of [
+      'normalTaskFloorEasy',
+      'normalTaskFloorNormal',
+      'normalTaskFloorHard',
+      'normalTaskFloorNightmare',
+      'bossTaskFloorEasy',
+      'bossTaskFloorNormal',
+      'bossTaskFloorHard',
+      'bossTaskFloorNightmare',
+      'interventionPerSprintMin',
+      'interventionPerSprintMax',
+    ] as const) {
+      expect(PACING_BALANCE[key].unit).toBe('count');
+      expect(PACING_BALANCE[key].integer).toBe(true);
+    }
+    for (const key of ['sprintMinCompleteTick', 'bossMinCompleteTick', 'bossMaxTicks'] as const) {
+      expect(PACING_BALANCE[key].unit).toBe('ticks');
+      expect(PACING_BALANCE[key].integer).toBe(true);
+    }
+    expect(PACING_BALANCE.betweenSprintRecovery.unit).toBe('ratio');
+    expect(PACING_BALANCE.eliteTaskMultiplierEasy.unit).toBe('multiplier');
+    expect(PACING_BALANCE.fixedStepMs.value).toBe(100);
+    expect(PACING_BALANCE.msPerTick1x.value).toBe(780);
+    expect(PACING_BALANCE.normalTaskFloorEasy.value).toBe(58);
+    expect(PACING_BALANCE.normalTaskFloorNormal.value).toBe(50);
+    expect(PACING_BALANCE.normalTaskFloorHard.value).toBe(42);
+    expect(PACING_BALANCE.normalTaskFloorNightmare.value).toBe(32);
+    expect(PACING_BALANCE.eliteTaskMultiplierEasy.value).toBe(1.24);
+    expect(PACING_BALANCE.eliteTaskMultiplierNormal.value).toBe(1.12);
+    expect(PACING_BALANCE.eliteTaskMultiplierHard.value).toBe(1.09);
+    expect(PACING_BALANCE.eliteTaskMultiplierNightmare.value).toBe(1.15);
+    expect(PACING_BALANCE.bossTaskFloorEasy.value).toBe(68);
+    expect(PACING_BALANCE.bossTaskFloorNormal.value).toBe(58);
+    expect(PACING_BALANCE.bossTaskFloorHard.value).toBe(52);
+    expect(PACING_BALANCE.bossTaskFloorNightmare.value).toBe(56);
+    expect(PACING_BALANCE.sprintMinCompleteTick.value).toBe(77);
+    expect(PACING_BALANCE.bossMinCompleteTick.value).toBe(115);
+    expect(PACING_BALANCE.bossMaxTicks.value).toBe(229);
+    expect(PACING_BALANCE.betweenSprintRecovery.value).toBe(0.5);
+    expect(PACING_BALANCE.sprintWallAbsoluteMinMs.value).toBe(30_000);
+    expect(PACING_BALANCE.sprintWallMinTypicalMs.value).toBe(60_000);
+    expect(PACING_BALANCE.sprintWallMaxTypicalMs.value).toBe(120_000);
+    expect(PACING_BALANCE.bossWallMinMs.value).toBe(90_000);
+    expect(PACING_BALANCE.bossWallMaxMs.value).toBe(180_000);
+    expect(PACING_BALANCE.betweenSprintWallMs.value).toBe(30_000);
+    expect(PACING_BALANCE.quarterReviewWallMs.value).toBe(45_000);
+    expect(PACING_BALANCE.quarterWallMinMs.value).toBe(600_000);
+    expect(PACING_BALANCE.quarterWallMaxMs.value).toBe(900_000);
+    expect(PACING_BALANCE.runWallMinMs.value).toBe(900_000);
+    expect(PACING_BALANCE.runWallMaxMs.value).toBe(2_700_000);
+    expect(PACING_BALANCE.interventionPerSprintMin.value).toBe(3);
+    expect(PACING_BALANCE.interventionPerSprintMax.value).toBe(8);
+    expect(validateBalanceRegistry(BALANCE_REGISTRY)).toEqual([]);
+
+    const invalidBand = defineBalanceEntry({
+      ...PACING_BALANCE.sprintWallMinTypicalMs,
+      value: PACING_BALANCE.sprintWallMaxTypicalMs.value + 1,
+    });
+    expect(
+      validateBalanceRegistry([invalidBand, PACING_BALANCE.sprintWallMaxTypicalMs]),
+    ).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: PACING_BALANCE.sprintWallMinTypicalMs.id,
+      }),
+    );
+    const invalidBossMinimum = defineBalanceEntry({
+      ...PACING_BALANCE.bossMinCompleteTick,
+      value: PACING_BALANCE.bossMaxTicks.value,
+    });
+    expect(
+      validateBalanceRegistry([invalidBossMinimum, PACING_BALANCE.bossMaxTicks]),
+    ).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: PACING_BALANCE.bossMinCompleteTick.id,
+      }),
+    );
+    const invalidSprintMinimum = defineBalanceEntry({
+      ...PACING_BALANCE.sprintMinCompleteTick,
+      value: PACING_BALANCE.bossMinCompleteTick.value,
+    });
+    expect(
+      validateBalanceRegistry([invalidSprintMinimum, PACING_BALANCE.bossMinCompleteTick]),
+    ).toContainEqual(
+      expect.objectContaining({
+        code: 'related-range-inverted',
+        id: PACING_BALANCE.sprintMinCompleteTick.id,
+      }),
+    );
   });
 
   it('粗粒度チームの値・境界・互換aliasをレジストリへ集約する', () => {

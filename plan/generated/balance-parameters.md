@@ -383,6 +383,37 @@
 | `outcome.win.noDamage.seniorHpMin` | ノーダメージ勝利のシニア HP 下限 | `60` | `points` | `0〜100（整数）` | — | ノーダメージ勝利に必要なシニア HP の下限。 | outcome, win, no-damage, threshold | いいえ |
 | `outcome.win.noDamage.spreadMax` | ノーダメージ勝利の延焼上限 | `0` | `count` | `0〜200（整数）` | — | ノーダメージ勝利に許容する延焼数の上限。 | outcome, win, no-damage, threshold | いいえ |
 | `outcome.win.reviewQueuePeakMax` | 健全系勝利の Review ピーク上限 | `16` | `count` | `0〜200（整数）` | — | AI 成功・品質系健全勝利に許容する Review ピークの上限（未満）。 | outcome, win, review, threshold | いいえ |
+| `pacing.recovery.betweenSprint` | スプリント間シニアHP回復率 | `0.5` | `ratio` | `0〜1` | — | スプリント間にシニアHPの満タンまでの差分へ掛ける回復率。 | pacing, execution, recovery | いいえ |
+| `pacing.simulation.fixedStepMs` | シミュレーション固定ステップ | `100` | `milliseconds` | `1〜1000（整数）` | — | シミュレーションが1 tick進む固定時間。UIの1 tick入力と共有する。 | pacing, execution, simulation | いいえ |
+| `pacing.target.betweenSprintWallMs` | スプリント間標準操作時間 | `30000` | `milliseconds` | `0〜3600000（整数）` | — | スプリント間の標準操作時間として回帰検知へ加算する値。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.target.bossWall.maxMs` | ボス壁時計代表上限 | `180000` | `milliseconds` | `0〜3600000（整数）` | `pacing.target.bossWall.minMs` ≤ `pacing.target.bossWall.maxMs` | ボススプリントの1x壁時計代表帯の上限。 | pacing, validation, target-band, boss, wall-clock | いいえ |
+| `pacing.target.bossWall.minMs` | ボス壁時計代表下限 | `90000` | `milliseconds` | `0〜3600000（整数）` | `pacing.target.bossWall.minMs` ≤ `pacing.target.bossWall.maxMs` | ボススプリントの1x壁時計代表帯の下限。 | pacing, validation, target-band, boss, wall-clock | いいえ |
+| `pacing.target.interventionPerSprint.max` | 1スプリント介入回数上限 | `8` | `count` | `0〜100（整数）` | `pacing.target.interventionPerSprint.min` ≤ `pacing.target.interventionPerSprint.max` | 1スプリントあたりの介入回数期待帯の上限。 | pacing, validation, target-band, intervention | いいえ |
+| `pacing.target.interventionPerSprint.min` | 1スプリント介入回数下限 | `3` | `count` | `0〜100（整数）` | `pacing.target.interventionPerSprint.min` ≤ `pacing.target.interventionPerSprint.max` | 1スプリントあたりの介入回数期待帯の下限。 | pacing, validation, target-band, intervention | いいえ |
+| `pacing.target.quarterReviewWallMs` | 四半期レビュー標準操作時間 | `45000` | `milliseconds` | `0〜3600000（整数）` | — | 四半期レビューの標準操作時間として回帰検知へ加算する値。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.target.quarterWall.maxMs` | 四半期壁時計代表上限 | `900000` | `milliseconds` | `0〜3600000（整数）` | `pacing.target.quarterWall.minMs` ≤ `pacing.target.quarterWall.maxMs` | 1四半期の1x壁時計代表帯の上限。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.target.quarterWall.minMs` | 四半期壁時計代表下限 | `600000` | `milliseconds` | `0〜3600000（整数）` | `pacing.target.quarterWall.minMs` ≤ `pacing.target.quarterWall.maxMs` | 1四半期の1x壁時計代表帯の下限。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.target.runWall.maxMs` | ラン壁時計代表上限 | `2700000` | `milliseconds` | `0〜7200000（整数）` | `pacing.target.runWall.minMs` ≤ `pacing.target.runWall.maxMs` | 1ランの1x壁時計代表帯の上限。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.target.runWall.minMs` | ラン壁時計代表下限 | `900000` | `milliseconds` | `0〜7200000（整数）` | `pacing.target.runWall.minMs` ≤ `pacing.target.runWall.maxMs` | 1ランの1x壁時計代表帯の下限。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.target.sprintWall.absoluteMinMs` | 通常スプリント壁時計絶対下限 | `30000` | `milliseconds` | `0〜3600000（整数）` | `pacing.target.sprintWall.absoluteMinMs` ≤ `pacing.target.sprintWall.minTypicalMs` | 通常スプリントの1x壁時計換算に対する検証用の絶対下限。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.target.sprintWall.maxTypicalMs` | 通常スプリント壁時計代表上限 | `120000` | `milliseconds` | `0〜3600000（整数）` | `pacing.target.sprintWall.minTypicalMs` ≤ `pacing.target.sprintWall.maxTypicalMs` | 通常・eliteスプリントの1x壁時計代表帯の上限。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.target.sprintWall.minTypicalMs` | 通常スプリント壁時計代表下限 | `60000` | `milliseconds` | `0〜3600000（整数）` | `pacing.target.sprintWall.absoluteMinMs` ≤ `pacing.target.sprintWall.minTypicalMs`<br>`pacing.target.sprintWall.minTypicalMs` ≤ `pacing.target.sprintWall.maxTypicalMs` | 通常・eliteスプリントの1x壁時計代表帯の下限。 | pacing, validation, target-band, wall-clock | いいえ |
+| `pacing.task.bossFloor.easy` | Easyボスタスク床 | `68` | `count` | `1〜1000（整数）` | — | Easyのボススプリントへ適用するタスク数の床。 | pacing, execution, boss, task-floor, difficulty-easy | いいえ |
+| `pacing.task.bossFloor.hard` | Hardボスタスク床 | `52` | `count` | `1〜1000（整数）` | — | Hardのボススプリントへ適用するタスク数の床。 | pacing, execution, boss, task-floor, difficulty-hard | いいえ |
+| `pacing.task.bossFloor.nightmare` | Nightmareボスタスク床 | `56` | `count` | `1〜1000（整数）` | — | Nightmareのボススプリントへ適用するタスク数の床。 | pacing, execution, boss, task-floor, difficulty-nightmare | いいえ |
+| `pacing.task.bossFloor.normal` | Normalボスタスク床 | `58` | `count` | `1〜1000（整数）` | — | Normalのボススプリントへ適用するタスク数の床。 | pacing, execution, boss, task-floor, difficulty-normal | いいえ |
+| `pacing.task.eliteMultiplier.easy` | Easy eliteタスク倍率 | `1.24` | `multiplier` | `0〜5` | — | Easyのeliteスプリントへ通常タスク床の後に掛ける倍率。 | pacing, execution, elite, difficulty-easy | いいえ |
+| `pacing.task.eliteMultiplier.hard` | Hard eliteタスク倍率 | `1.09` | `multiplier` | `0〜5` | — | Hardのeliteスプリントへ通常タスク床の後に掛ける倍率。 | pacing, execution, elite, difficulty-hard | いいえ |
+| `pacing.task.eliteMultiplier.nightmare` | Nightmare eliteタスク倍率 | `1.15` | `multiplier` | `0〜5` | — | Nightmareのeliteスプリントへ通常タスク床の後に掛ける倍率。 | pacing, execution, elite, difficulty-nightmare | いいえ |
+| `pacing.task.eliteMultiplier.normal` | Normal eliteタスク倍率 | `1.12` | `multiplier` | `0〜5` | — | Normalのeliteスプリントへ通常タスク床の後に掛ける倍率。 | pacing, execution, elite, difficulty-normal | いいえ |
+| `pacing.task.normalFloor.easy` | Easy通常タスク床 | `58` | `count` | `1〜1000（整数）` | — | Easyの通常・eliteスプリントへ適用する通常タスク数の床。 | pacing, execution, task-floor, difficulty-easy | いいえ |
+| `pacing.task.normalFloor.hard` | Hard通常タスク床 | `42` | `count` | `1〜1000（整数）` | — | Hardの通常・eliteスプリントへ適用する通常タスク数の床。 | pacing, execution, task-floor, difficulty-hard | いいえ |
+| `pacing.task.normalFloor.nightmare` | Nightmare通常タスク床 | `32` | `count` | `1〜1000（整数）` | — | Nightmareの通常・eliteスプリントへ適用する通常タスク数の床。 | pacing, execution, task-floor, difficulty-nightmare | いいえ |
+| `pacing.task.normalFloor.normal` | Normal通常タスク床 | `50` | `count` | `1〜1000（整数）` | — | Normalの通常・eliteスプリントへ適用する通常タスク数の床。 | pacing, execution, task-floor, difficulty-normal | いいえ |
+| `pacing.tick.boss.maximum` | ボス最大tick | `229` | `ticks` | `1〜10000（整数）` | `pacing.tick.boss.minComplete` < `pacing.tick.boss.maximum` | ボススプリントに適用する最大tick。 | pacing, execution, tick-boundary, boss | いいえ |
+| `pacing.tick.boss.minComplete` | ボス最小完了tick | `115` | `ticks` | `0〜10000（整数）` | `pacing.tick.sprint.minComplete` < `pacing.tick.boss.minComplete`<br>`pacing.tick.boss.minComplete` < `pacing.tick.boss.maximum` | ボススプリントに適用する完了tickの下限。 | pacing, execution, tick-boundary, boss | いいえ |
+| `pacing.tick.sprint.minComplete` | 通常スプリント最小完了tick | `77` | `ticks` | `0〜10000（整数）` | `pacing.tick.sprint.minComplete` < `pacing.tick.boss.minComplete` | 通常・eliteスプリントに適用する完了tickの下限。 | pacing, execution, tick-boundary, sprint | いいえ |
+| `pacing.wallClock.msPerTick1x` | 1x tick壁時計時間 | `780` | `milliseconds` | `1〜60000（整数）` | — | 1x再生時に1 tickへ対応する壁時計時間。 | pacing, execution, wall-clock | いいえ |
 | `process.ai.adoption` | AI 導入時の既定採用率 | `0.85` | `probability` | `0〜1` | — | AI 導入済みの組織で、各タスクが AI 支援を使う既定確率。 | process, ai | いいえ |
 | `process.ai.deliveryValue.literacyWeight` | AI 出荷価値のリテラシー係数 | `0.85` | `multiplier` | `0〜2` | — | AI 支援タスクの出荷価値へ AI リテラシーに応じて加える係数。 | process, ai, delivery | いいえ |
 | `process.ai.dependency.perTask` | AI 支援タスクごとの依存度増分 | `2.2` | `percent` | `0〜20` | — | AI 支援を割り当てたタスク 1 件ごとに増える AI 依存度。 | process, ai, dependency | いいえ |

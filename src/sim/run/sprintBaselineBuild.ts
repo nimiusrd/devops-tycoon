@@ -4,6 +4,7 @@
  * RunEngine インスタンスに依存しない純関数なので、Web Worker からも呼べる。
  */
 import { getBoss } from '../../data/bosses';
+import { PACING_BALANCE } from '../../data/balance/pacing';
 import { RUN_BALANCE } from '../../data/balance/run';
 import { combineEffects, deckEffects } from '../cards';
 import { clamp } from '../clamp';
@@ -21,24 +22,33 @@ import type {
   SprintModifierDelta,
 } from './types';
 
+const ELITE_TASK_MULTIPLIERS = {
+  easy: PACING_BALANCE.eliteTaskMultiplierEasy.value,
+  normal: PACING_BALANCE.eliteTaskMultiplierNormal.value,
+  hard: PACING_BALANCE.eliteTaskMultiplierHard.value,
+  nightmare: PACING_BALANCE.eliteTaskMultiplierNightmare.value,
+} satisfies Record<DifficultyId, number>;
+
+const NORMAL_TASK_FLOORS = {
+  easy: PACING_BALANCE.normalTaskFloorEasy.value,
+  normal: PACING_BALANCE.normalTaskFloorNormal.value,
+  hard: PACING_BALANCE.normalTaskFloorHard.value,
+  nightmare: PACING_BALANCE.normalTaskFloorNightmare.value,
+} satisfies Record<DifficultyId, number>;
+
+const BOSS_TASK_FLOORS = {
+  easy: PACING_BALANCE.bossTaskFloorEasy.value,
+  normal: PACING_BALANCE.bossTaskFloorNormal.value,
+  hard: PACING_BALANCE.bossTaskFloorHard.value,
+  nightmare: PACING_BALANCE.bossTaskFloorNightmare.value,
+} satisfies Record<DifficultyId, number>;
+
 /**
  * 難易度別の elite タスク倍率（RI-75）。
  * hard/nightmare は非効率で長尾になりやすいので倍率を抑え、easy は帯下限を確保する。
  */
 export function eliteTaskMul(difficulty: DifficultyId): number {
-  switch (difficulty) {
-    case 'easy':
-      // RI-73: seniorHpCostMul 緩和で平均シニアHPが上がり elite が短縮したため、
-      // F-4 の elite p50 帯（60〜120s）へ戻す（1.10→1.24）。
-      return 1.24;
-    case 'normal':
-      return 1.12;
-    case 'hard':
-      // 安定化の平均再校正後も elite p50 を120秒帯へ収める。
-      return 1.09;
-    case 'nightmare':
-      return 1.15;
-  }
+  return ELITE_TASK_MULTIPLIERS[difficulty];
 }
 
 /**
@@ -47,19 +57,7 @@ export function eliteTaskMul(difficulty: DifficultyId): number {
  * 絶対下限30秒は `minCompleteTick` 側で担保する。
  */
 export function normalTaskFloor(difficulty: DifficultyId): number {
-  switch (difficulty) {
-    case 'easy':
-      // RI-78: easy の標準スプリント p50 が 60 秒を僅かに下回るため、
-      // 実時間帯の下限へ寄せる。ボス床・他難易度の負荷は変更しない。
-      return 58;
-    case 'normal':
-      return 50;
-    case 'hard':
-      return 42;
-    case 'nightmare':
-      // 非効率で長い。絶対下限は minCompleteTick 側で担保する。
-      return 32;
-  }
+  return NORMAL_TASK_FLOORS[difficulty];
 }
 
 /**
@@ -68,29 +66,20 @@ export function normalTaskFloor(difficulty: DifficultyId): number {
  * `MS_PER_TICK_1X=780` → §3.1 通常スプリント代表下限 60s になるよう 77（表示78 tick ≒ 60.8s）。
  * 絶対最短 30s は `meetsSprintAbsoluteMin` 側の床として残す。
  */
-export const SPRINT_MIN_COMPLETE_TICK = 77;
+export const SPRINT_MIN_COMPLETE_TICK = PACING_BALANCE.sprintMinCompleteTick.value;
 
 /**
  * ボス完了に必要な最小 tick。表示 tick は +1 されるため、116 tick で約90.5秒になる。
  * 安定化による結果再校正後も §3.1 のボス最短90秒を守り、タスク量・出荷には介入しない。
  */
-export const BOSS_MIN_COMPLETE_TICK = 115;
+export const BOSS_MIN_COMPLETE_TICK = PACING_BALANCE.bossMinCompleteTick.value;
 
 /**
  * ボススプリントのタスク数下限（RI-75）。
  * easy/normal は通常より長く、hard/nightmare は終盤消耗の長尾を抑える。
  */
 export function bossTaskFloor(difficulty: DifficultyId): number {
-  switch (difficulty) {
-    case 'easy':
-      return 68;
-    case 'normal':
-      return 58;
-    case 'hard':
-      return 52;
-    case 'nightmare':
-      return 56;
-  }
+  return BOSS_TASK_FLOORS[difficulty];
 }
 
 /**
@@ -99,13 +88,18 @@ export function bossTaskFloor(difficulty: DifficultyId): number {
  * `MS_PER_TICK_1X=780` で完了時壁時計が180秒以内になるよう 229 とする（229→表示230 tick≒179.4s）。
  * テンポ定数を変えたら `sprintTempo` 側の対応テストと同期すること。
  */
-export const BOSS_MAX_TICKS = 229;
+export const BOSS_MAX_TICKS = PACING_BALANCE.bossMaxTicks.value;
 
 /**
  * スプリント間のギャップでシニア体力が回復する割合（満タンまでの差分に対して）。
  * 1 回の過負荷は尾を引くが、持続的な過負荷だけが燃え尽きへ至るようにする緩衝。
  */
-export const BETWEEN_SPRINT_RECOVERY = 0.5;
+export const BETWEEN_SPRINT_RECOVERY = PACING_BALANCE.betweenSprintRecovery.value;
+
+/** 実ランと what-if が共有する、スプリント間のシニアHP回復式。 */
+export function recoverSeniorHpBetweenSprints(seniorHp: number): number {
+  return clamp(seniorHp + (100 - seniorHp) * BETWEEN_SPRINT_RECOVERY, 0, 100);
+}
 
 export interface SprintBaselineBuildContext {
   relics: string[];

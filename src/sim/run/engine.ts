@@ -163,9 +163,9 @@ import {
 import type { SprintBaselineInput } from './sprintBaseline';
 import {
   applyTrialAiDependencyPressure,
-  BETWEEN_SPRINT_RECOVERY,
   buildSprintBaselineInput,
   computeInfraCost,
+  recoverSeniorHpBetweenSprints,
 } from './sprintBaselineBuild';
 import { computeWhatIfState, whatIfCacheKey, type WhatIfComputeInput } from './whatIfState';
 import type {
@@ -653,11 +653,7 @@ export class RunEngine {
 
   private beginSprint(kind: SprintKind, modifiers: SprintModifierDelta): void {
     // スプリント間のギャップでシニア体力が一部回復する（持続的な過負荷のみ燃え尽きへ）。
-    this.org.seniorHp = clamp(
-      this.org.seniorHp + (100 - this.org.seniorHp) * BETWEEN_SPRINT_RECOVERY,
-      0,
-      100,
-    );
+    this.org.seniorHp = recoverSeniorHpBetweenSprints(this.org.seniorHp);
     // RI-83: 目標修正の次四半期 org 継続差分（Tech Debt / シニア HP / 品質）。
     // 定義に org 差分が無い選択ではチーム再計算を走らせない（deriveTeamCapacities の毎スプリント
     // 実行は既定オートプレイ経路の勝率を壊す）。アクティブ側が上限・下限で実値が変わらなくても、

@@ -12,9 +12,9 @@ import type { OrgState, ScenarioId, SprintConfig } from '../types';
 import { foldRunEffects, infraBillingRateForSprint } from './effects';
 import {
   applyTrialAiDependencyPressure,
-  BETWEEN_SPRINT_RECOVERY,
   buildSprintBaselineInput,
   computeInfraCost,
+  recoverSeniorHpBetweenSprints,
   type SprintBaselineBuildContext,
 } from './sprintBaselineBuild';
 import { applyGoalCarryoverOrgTick } from './quarterReview';
@@ -30,7 +30,6 @@ import type {
   WhatIfPreview,
   WhatIfState,
 } from './types';
-import { clamp } from '../clamp';
 
 /** Worker / メインスレッドで共有するシリアライズ可能な what-if 入力。 */
 export interface WhatIfComputeInput {
@@ -167,7 +166,7 @@ export function computeWhatIfState(input: WhatIfComputeInput): WhatIfState | nul
   const applySprintStartOrg = (org: OrgState): OrgState => {
     // 本番 beginSprint と同じ順: 回復 → 目標修正キャリーオーバー → 試練圧力。
     let next = structuredClone(org);
-    next.seniorHp = clamp(next.seniorHp + (100 - next.seniorHp) * BETWEEN_SPRINT_RECOVERY, 0, 100);
+    next.seniorHp = recoverSeniorHpBetweenSprints(next.seniorHp);
     next = applyGoalCarryoverOrgTick(
       next,
       input.goalCarryoverId ?? null,

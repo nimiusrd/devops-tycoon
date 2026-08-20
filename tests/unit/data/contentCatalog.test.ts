@@ -18,7 +18,7 @@ import {
 } from '../../../src/data/contentCatalog';
 import { renderContentCatalogMarkdown } from '../../../src/data/contentCatalogDocumentation';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
-import { DIFFICULTY_DEFS, TRIAL_DEFS } from '../../../src/data/difficulties';
+import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS } from '../../../src/data/difficulties';
 import { EVOLUTION_NODES } from '../../../src/data/evolution';
 import { EVENT_DEFS, getEvent } from '../../../src/data/events';
 import { GOAL_ADJUSTMENT_DEFS } from '../../../src/data/goalAdjustments';
@@ -56,7 +56,10 @@ describe('CONTENT_CATALOG', () => {
   it('全カテゴリの件数・ID・定義順・重複なしを正本と一致させる', () => {
     expectCatalogCategory(CONTENT_CATALOG.cards, ids(CARD_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.events, ids(EVENT_DEFS));
-    expectCatalogCategory(CONTENT_CATALOG.difficulties, Object.keys(DIFFICULTY_DEFS));
+    expectCatalogCategory(
+      CONTENT_CATALOG.difficulties,
+      Object.keys(DIFFICULTY_DEFS).sort(compareCanonicalStrings),
+    );
     expectCatalogCategory(
       CONTENT_CATALOG.trials,
       [...ids(TRIAL_DEFS)].sort(compareCanonicalStrings),
@@ -67,7 +70,10 @@ describe('CONTENT_CATALOG', () => {
       CONTENT_CATALOG.traits,
       [...ids(TRAIT_DEFS)].sort(compareCanonicalStrings),
     );
-    expectCatalogCategory(CONTENT_CATALOG.evolution, ids(EVOLUTION_NODES));
+    expectCatalogCategory(
+      CONTENT_CATALOG.evolution,
+      [...ids(EVOLUTION_NODES)].sort(compareCanonicalStrings),
+    );
     expectCatalogCategory(CONTENT_CATALOG.goalAdjustments, ids(GOAL_ADJUSTMENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.levers, ids(LEVER_DEFS));
     expect(CONTENT_CATALOG.members.namePool).toEqual(MEMBER_NAMES);
@@ -81,7 +87,10 @@ describe('CONTENT_CATALOG', () => {
     );
     expectCatalogCategory(CONTENT_CATALOG.departments, ids(DEPARTMENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.actions, ids(ACTION_CONTENT_DEFS));
-    expectCatalogCategory(CONTENT_CATALOG.startingScenarios, [...SCENARIO_ORDER]);
+    expectCatalogCategory(
+      CONTENT_CATALOG.startingScenarios,
+      [...SCENARIO_ORDER].sort(compareCanonicalStrings),
+    );
     expectCatalogCategory(
       CONTENT_CATALOG.achievements,
       [...ids(ACHIEVEMENT_DEFS)].sort(compareCanonicalStrings),
@@ -151,17 +160,24 @@ describe('CONTENT_CATALOG', () => {
         choices: event.choices.map((choice) => ({
           ...choice,
           outcome: {
-            morale: 0,
-            grantRecruit: false,
-            preserveAboveLose: false,
-            trust: { management: 0, customers: 0, team: 0 },
-            nextSprint: { taskCountMul: 1, reviewLoadAdd: 0 },
-            onRecruitFail: {},
             ...choice.outcome,
+            onRecruitFail: {
+              morale: -4,
+              grantCard: 'hire-senior',
+              nextSprint: { taskCountMul: 2 },
+            },
           },
         })),
       }),
-    ).toEqual(projectEvent(event));
+    ).toEqual(
+      projectEvent({
+        ...event,
+        choices: event.choices.map((choice) => ({
+          ...choice,
+          outcome: { ...choice.outcome, onRecruitFail: { morale: -4 } },
+        })),
+      }),
+    );
 
     const catalogJson = JSON.stringify(CONTENT_CATALOG);
     expect(catalogJson).not.toContain('プロダクト事業部');
@@ -202,14 +218,16 @@ describe('CONTENT_CATALOG', () => {
     expect({ ...firstDepartment, order: firstDepartment.order + 1 }).not.toEqual(firstDepartment);
   });
 
-  it('開始シナリオ順と難易度順を定義から導出する', () => {
+  it('開始シナリオ集合と難易度解放順を定義から導出する', () => {
     expect(SCENARIO_ORDER).toEqual(Object.keys(SCENARIOS));
-    expect(CONTENT_CATALOG.startingScenarios.map((entry) => entry.id)).toEqual(SCENARIO_ORDER);
+    expect(CONTENT_CATALOG.startingScenarios.map((entry) => entry.id)).toEqual(
+      [...SCENARIO_ORDER].sort(compareCanonicalStrings),
+    );
     expect(CONTENT_CATALOG.difficulties.map((entry) => entry.id)).toEqual(
-      Object.keys(DIFFICULTY_DEFS),
+      Object.keys(DIFFICULTY_DEFS).sort(compareCanonicalStrings),
     );
     expect(CONTENT_CATALOG.defaultScenarioId).toBe(DEFAULT_SCENARIO);
-    expect(CONTENT_CATALOG.difficultyOrder).toEqual(Object.keys(DIFFICULTY_DEFS));
+    expect(CONTENT_CATALOG.difficultyOrder).toEqual([...DIFFICULTY_ORDER]);
   });
 
   it('トレイト・実績・アンロックは定義配列順ではなく ID 順へ正規化する', () => {
@@ -241,6 +259,12 @@ describe('CONTENT_CATALOG', () => {
     const trialIdsByCanonicalOrder = [...ids(TRIAL_DEFS)].sort(compareCanonicalStrings);
     expect(ids(TRIAL_DEFS)).not.toEqual(trialIdsByCanonicalOrder);
     expect(CONTENT_CATALOG.trials.map((entry) => entry.id)).toEqual(trialIdsByCanonicalOrder);
+
+    const evolutionIdsByCanonicalOrder = [...ids(EVOLUTION_NODES)].sort(compareCanonicalStrings);
+    expect(ids(EVOLUTION_NODES)).not.toEqual(evolutionIdsByCanonicalOrder);
+    expect(CONTENT_CATALOG.evolution.map((entry) => entry.id)).toEqual(
+      evolutionIdsByCanonicalOrder,
+    );
   });
 
   it('進化の表示ブランチを除外し、デイリー参照 ID を検証する', () => {
@@ -299,6 +323,11 @@ describe('CONTENT_CATALOG', () => {
     expect(
       CONTENT_CATALOG.members.starter.every((entry) =>
         Object.prototype.hasOwnProperty.call(entry.execution, 'preferred'),
+      ),
+    ).toBe(true);
+    expect(
+      CONTENT_CATALOG.goalAdjustments.every(
+        (entry) => !Object.prototype.hasOwnProperty.call(entry.execution, 'negotiator'),
       ),
     ).toBe(true);
   });

@@ -74,9 +74,9 @@
 | Order | ID | Execution |
 | ---: | --- | --- |
 | 0 | easy | {"aiDependencyPerTask":2.2,"bossTargetMul":0.85,"globalEffects":{"reviewEfficiencyMul":1.05,"reworkRateAdd":-0.04,"seniorHpCostMul":0.76},"org":{"aiDependencyBase":25,"aiLiteracy":60,"documentation":65,"morale":75,"quality":70,"securityLevel":70,"seniorHp":100,"testCoverage":70},"startBudget":60,"taskCountMul":1.85} |
-| 1 | normal | {"aiDependencyPerTask":2.2,"bossTargetMul":1,"globalEffects":{"seniorHpCostMul":0.8},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":52,"morale":70,"quality":62,"securityLevel":60,"seniorHp":100,"testCoverage":58},"startBudget":45,"taskCountMul":1.65} |
-| 2 | hard | {"aiDependencyPerTask":2.2,"bossTargetMul":1.15,"globalEffects":{"reviewEfficiencyMul":0.92,"reworkRateAdd":0.05},"org":{"aiDependencyBase":45,"aiLiteracy":35,"documentation":30,"morale":60,"quality":45,"securityLevel":60,"seniorHp":90,"testCoverage":35},"startBudget":35,"taskCountMul":1.4} |
-| 3 | nightmare | {"aiDependencyPerTask":0.8,"bossTargetMul":1.3,"globalEffects":{"incidentRateMul":1.25,"reviewEfficiencyMul":0.85,"reworkRateAdd":0.1},"org":{"aiDependencyBase":42,"aiLiteracy":25,"documentation":15,"morale":55,"quality":35,"securityLevel":55,"seniorHp":80,"testCoverage":20},"startBudget":25,"taskCountMul":1} |
+| 1 | hard | {"aiDependencyPerTask":2.2,"bossTargetMul":1.15,"globalEffects":{"reviewEfficiencyMul":0.92,"reworkRateAdd":0.05},"org":{"aiDependencyBase":45,"aiLiteracy":35,"documentation":30,"morale":60,"quality":45,"securityLevel":60,"seniorHp":90,"testCoverage":35},"startBudget":35,"taskCountMul":1.4} |
+| 2 | nightmare | {"aiDependencyPerTask":0.8,"bossTargetMul":1.3,"globalEffects":{"incidentRateMul":1.25,"reviewEfficiencyMul":0.85,"reworkRateAdd":0.1},"org":{"aiDependencyBase":42,"aiLiteracy":25,"documentation":15,"morale":55,"quality":35,"securityLevel":55,"seniorHp":80,"testCoverage":20},"startBudget":25,"taskCountMul":1} |
+| 3 | normal | {"aiDependencyPerTask":2.2,"bossTargetMul":1,"globalEffects":{"seniorHpCostMul":0.8},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":52,"morale":70,"quality":62,"securityLevel":60,"seniorHp":100,"testCoverage":58},"startBudget":45,"taskCountMul":1.65} |
 
 ## trials
 
@@ -127,33 +127,33 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | dev-1 | {"codingSlotBonus":0,"cost":1,"effects":{"codingSpeedMul":1.12,"securityAdd":-4},"focusBonus":0,"requires":null} |
-| 1 | dev-2 | {"codingSlotBonus":1,"cost":3,"effects":{},"focusBonus":0,"requires":"dev-1"} |
-| 2 | dev-3 | {"codingSlotBonus":0,"cost":10,"effects":{"routineSpeedMul":1.3,"securityAdd":-6},"focusBonus":0,"requires":"dev-2"} |
-| 3 | review-1 | {"codingSlotBonus":0,"cost":1,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":null} |
-| 4 | review-2 | {"codingSlotBonus":0,"cost":3,"effects":{"reviewEfficiencyMul":1.18},"focusBonus":0,"requires":"review-1"} |
-| 5 | review-3 | {"codingSlotBonus":0,"cost":10,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":"review-2"} |
-| 6 | quality-1 | {"codingSlotBonus":0,"cost":1,"effects":{"securityAdd":6,"testCoverageAdd":12},"focusBonus":0,"requires":null} |
-| 7 | quality-2 | {"codingSlotBonus":0,"cost":4,"effects":{"incidentRateMul":0.82,"securityAdd":8},"focusBonus":0,"requires":"quality-1"} |
-| 8 | quality-3 | {"codingSlotBonus":0,"cost":14,"effects":{"qualityAdd":8,"reworkRateAdd":-0.1,"securityAdd":10},"focusBonus":0,"requires":"quality-2"} |
-| 9 | ai-1 | {"codingSlotBonus":0,"cost":4,"effects":{"reworkRateAdd":-0.1},"focusBonus":0,"requires":null} |
-| 10 | ai-2 | {"codingSlotBonus":0,"cost":9,"effects":{"aiLiteracyAdd":18,"infraCostMul":0.75},"focusBonus":0,"requires":"ai-1"} |
-| 11 | ai-3 | {"codingSlotBonus":0,"cost":16,"effects":{"codingSpeedMul":1.2,"infraCostMul":0.7,"securityAdd":-6},"focusBonus":0,"requires":"ai-2"} |
-| 12 | culture-1 | {"codingSlotBonus":0,"cost":4,"effects":{},"focusBonus":2,"requires":null} |
-| 13 | culture-2 | {"codingSlotBonus":0,"cost":9,"effects":{"qualityAdd":10},"focusBonus":0,"requires":"culture-1"} |
-| 14 | culture-3 | {"codingSlotBonus":0,"cost":14,"effects":{},"focusBonus":3,"requires":"culture-2"} |
+| 0 | ai-1 | {"codingSlotBonus":0,"cost":4,"effects":{"reworkRateAdd":-0.1},"focusBonus":0,"requires":null} |
+| 1 | ai-2 | {"codingSlotBonus":0,"cost":9,"effects":{"aiLiteracyAdd":18,"infraCostMul":0.75},"focusBonus":0,"requires":"ai-1"} |
+| 2 | ai-3 | {"codingSlotBonus":0,"cost":16,"effects":{"codingSpeedMul":1.2,"infraCostMul":0.7,"securityAdd":-6},"focusBonus":0,"requires":"ai-2"} |
+| 3 | culture-1 | {"codingSlotBonus":0,"cost":4,"effects":{},"focusBonus":2,"requires":null} |
+| 4 | culture-2 | {"codingSlotBonus":0,"cost":9,"effects":{"qualityAdd":10},"focusBonus":0,"requires":"culture-1"} |
+| 5 | culture-3 | {"codingSlotBonus":0,"cost":14,"effects":{},"focusBonus":3,"requires":"culture-2"} |
+| 6 | dev-1 | {"codingSlotBonus":0,"cost":1,"effects":{"codingSpeedMul":1.12,"securityAdd":-4},"focusBonus":0,"requires":null} |
+| 7 | dev-2 | {"codingSlotBonus":1,"cost":3,"effects":{},"focusBonus":0,"requires":"dev-1"} |
+| 8 | dev-3 | {"codingSlotBonus":0,"cost":10,"effects":{"routineSpeedMul":1.3,"securityAdd":-6},"focusBonus":0,"requires":"dev-2"} |
+| 9 | quality-1 | {"codingSlotBonus":0,"cost":1,"effects":{"securityAdd":6,"testCoverageAdd":12},"focusBonus":0,"requires":null} |
+| 10 | quality-2 | {"codingSlotBonus":0,"cost":4,"effects":{"incidentRateMul":0.82,"securityAdd":8},"focusBonus":0,"requires":"quality-1"} |
+| 11 | quality-3 | {"codingSlotBonus":0,"cost":14,"effects":{"qualityAdd":8,"reworkRateAdd":-0.1,"securityAdd":10},"focusBonus":0,"requires":"quality-2"} |
+| 12 | review-1 | {"codingSlotBonus":0,"cost":1,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":null} |
+| 13 | review-2 | {"codingSlotBonus":0,"cost":3,"effects":{"reviewEfficiencyMul":1.18},"focusBonus":0,"requires":"review-1"} |
+| 14 | review-3 | {"codingSlotBonus":0,"cost":10,"effects":{"reviewCapacityMul":1.2},"focusBonus":0,"requires":"review-2"} |
 
 ## goalAdjustments
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | cut_scope | {"goalEffects":{"deliveryMul":0.8},"negotiator":"customers","nextBudgetCapDelta":null,"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-15}} |
-| 1 | extend_deadline | {"budgetDelta":-10,"goalEffects":{"deliveryMul":0.9,"moraleAdd":5,"qualityAdd":5},"negotiator":"management","nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.1,"reworkRateAdd":-0.08,"seniorHpDelta":5},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-12}} |
-| 2 | quality_pivot | {"goalEffects":{"deliveryMul":0.85,"incidentLimitAdd":3,"techDebtLimitAdd":15},"negotiator":"customers","nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.92,"incidentRateMul":0.75,"qualityAdd":4,"techDebtDelta":-4},"orgEffects":{"deliveryScoreMul":0.9,"techDebtDelta":-8},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-5}} |
-| 3 | request_budget | {"budgetDelta":20,"goalEffects":{"deliveryAdd":300},"negotiator":"management","nextBudgetCapDelta":-15,"nextQuarterEffects":{"codingSpeedMul":1.08,"reviewCapacityMul":1.15},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-5}} |
-| 4 | pause_ai_rollout | {"goalEffects":{"aiAdoptionAdd":-15,"deliveryMul":0.92},"negotiator":"management","nextBudgetCapDelta":null,"nextQuarterEffects":{"incidentRateMul":0.7,"reworkRateAdd":-0.1,"seniorHpDelta":3},"pauseAiDebuff":true,"reorgReset":false,"trustDelta":{"management":-8}} |
-| 5 | reorg_teams | {"budgetDelta":-5,"goalEffects":{"moraleAdd":-5},"negotiator":"team","nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.2,"seniorHpDelta":3,"techDebtDelta":-2},"orgEffects":{"moraleDelta":-10,"seniorHpDelta":25,"techDebtDelta":-5},"pauseAiDebuff":false,"reorgReset":true,"trustDelta":{"team":-20}} |
-| 6 | stakeholder_care | {"budgetDelta":-12,"goalEffects":{"deliveryAdd":80},"negotiator":"all","nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.97},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":10,"management":12,"team":8}} |
+| 0 | cut_scope | {"goalEffects":{"deliveryMul":0.8},"nextBudgetCapDelta":null,"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-15}} |
+| 1 | extend_deadline | {"budgetDelta":-10,"goalEffects":{"deliveryMul":0.9,"moraleAdd":5,"qualityAdd":5},"nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.1,"reworkRateAdd":-0.08,"seniorHpDelta":5},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-12}} |
+| 2 | quality_pivot | {"goalEffects":{"deliveryMul":0.85,"incidentLimitAdd":3,"techDebtLimitAdd":15},"nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.92,"incidentRateMul":0.75,"qualityAdd":4,"techDebtDelta":-4},"orgEffects":{"deliveryScoreMul":0.9,"techDebtDelta":-8},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-5}} |
+| 3 | request_budget | {"budgetDelta":20,"goalEffects":{"deliveryAdd":300},"nextBudgetCapDelta":-15,"nextQuarterEffects":{"codingSpeedMul":1.08,"reviewCapacityMul":1.15},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-5}} |
+| 4 | pause_ai_rollout | {"goalEffects":{"aiAdoptionAdd":-15,"deliveryMul":0.92},"nextBudgetCapDelta":null,"nextQuarterEffects":{"incidentRateMul":0.7,"reworkRateAdd":-0.1,"seniorHpDelta":3},"pauseAiDebuff":true,"reorgReset":false,"trustDelta":{"management":-8}} |
+| 5 | reorg_teams | {"budgetDelta":-5,"goalEffects":{"moraleAdd":-5},"nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.2,"seniorHpDelta":3,"techDebtDelta":-2},"orgEffects":{"moraleDelta":-10,"seniorHpDelta":25,"techDebtDelta":-5},"pauseAiDebuff":false,"reorgReset":true,"trustDelta":{"team":-20}} |
+| 6 | stakeholder_care | {"budgetDelta":-12,"goalEffects":{"deliveryAdd":80},"nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.97},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":10,"management":12,"team":8}} |
 
 ## levers
 
@@ -246,9 +246,9 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | default | {"globalEffects":{},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 0 | claude-code | {"globalEffects":{"codingSpeedMul":1.08,"reviewEfficiencyMul":0.94,"reworkRateAdd":-0.02},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiLiteracy":8,"quality":5,"securityLevel":-3},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 | 1 | copilot | {"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 2 | claude-code | {"globalEffects":{"codingSpeedMul":1.08,"reviewEfficiencyMul":0.94,"reworkRateAdd":-0.02},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiLiteracy":8,"quality":5,"securityLevel":-3},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 2 | default | {"globalEffects":{},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 | 3 | devin | {"globalEffects":{"codingSpeedMul":1.1,"reworkRateAdd":0.03},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":50,"morale":70,"quality":60,"securityLevel":60,"seniorHp":100,"testCoverage":55},"orgDelta":{"aiDependencyBase":10,"documentation":-8,"securityLevel":-6},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 
 ## achievements

@@ -30,7 +30,7 @@ import {
   STARTER_DEFAULT_AI_ARCHETYPE_ID,
 } from './members';
 import { RELIC_DEFS, type RelicDef } from './relics';
-import { DEFAULT_SCENARIO, SCENARIO_ORDER, SCENARIOS } from '../sim/scenarios';
+import { DEFAULT_SCENARIO, SCENARIOS } from '../sim/scenarios';
 import { IDENTITY_TRAIT_MODIFIERS, TRAIT_DEFS } from './traits';
 import { UNLOCK_DEFS } from './unlocks';
 import { IDENTITY_CARD_EFFECTS } from '../sim/model';
@@ -149,9 +149,19 @@ function projectOutcome(outcome: EventOutcome): Record<string, unknown> {
   if (nextSprint) projected.nextSprint = nextSprint;
 
   if (outcome.onRecruitFail) {
-    const nested = projectOutcome(outcome.onRecruitFail);
+    const nested = projectRecruitFailOutcome(outcome.onRecruitFail);
     if (Object.keys(nested).length > 0) projected.onRecruitFail = nested;
   }
+  return projected;
+}
+
+function projectRecruitFailOutcome(outcome: EventOutcome): Record<string, unknown> {
+  const projected = projectOutcome(outcome);
+  delete projected.grantCard;
+  delete projected.grantRelic;
+  delete projected.nextSprint;
+  delete projected.grantRecruit;
+  delete projected.onRecruitFail;
   return projected;
 }
 
@@ -239,7 +249,6 @@ function assignProjected(
 
 export function projectGoalAdjustment(definition: GoalAdjustmentDef): unknown {
   const projected: Record<string, unknown> = {
-    negotiator: definition.negotiator,
     pauseAiDebuff: definition.pauseAiDebuff ?? false,
     reorgReset: definition.reorgReset ?? false,
     nextBudgetCapDelta: definition.nextBudgetCapDelta ?? null,
@@ -337,7 +346,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     base: omitIdentity(definition.base, IDENTITY_CARD_EFFECTS),
   })),
   events: ordered(EVENT_DEFS, projectEvent),
-  difficulties: ordered(difficultyDefinitions, (definition) => ({
+  difficulties: orderedById(difficultyDefinitions, (definition) => ({
     org: definedObject(definition.org),
     taskCountMul: definition.taskCountMul,
     globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
@@ -359,7 +368,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
   traits: orderedById(TRAIT_DEFS, (definition) => ({
     modifiers: omitIdentity(definition.modifiers, IDENTITY_TRAIT_MODIFIERS),
   })),
-  evolution: ordered(EVOLUTION_NODES, (definition) => ({
+  evolution: orderedById(EVOLUTION_NODES, (definition) => ({
     cost: definition.cost,
     requires: definition.requires ?? null,
     effects: omitIdentity(definition.effects, IDENTITY_CARD_EFFECTS),
@@ -391,15 +400,12 @@ export const CONTENT_CATALOG: ContentCatalog = {
   })),
   departments: ordered(DEPARTMENT_DEFS, projectDepartment),
   actions: ordered(ACTION_CONTENT_DEFS, projectAction),
-  startingScenarios: ordered(
-    SCENARIO_ORDER.map((id) => SCENARIOS[id]),
-    (definition) => ({
-      org: definedObject(definition.org),
-      sprint: definedObject(definition.sprint),
-      orgDelta: projectScenarioOrgDelta(definition.orgDelta),
-      globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
-    }),
-  ),
+  startingScenarios: orderedById(Object.values(SCENARIOS), (definition) => ({
+    org: definedObject(definition.org),
+    sprint: definedObject(definition.sprint),
+    orgDelta: projectScenarioOrgDelta(definition.orgDelta),
+    globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
+  })),
   achievements: orderedById(ACHIEVEMENT_DEFS, (definition) => ({
     conditionKey: achievementConditionKey(definition.id),
   })),
@@ -506,16 +512,24 @@ export function validateContentCatalog(
 
   const difficultyKeys = Object.keys(DIFFICULTY_DEFS);
   const difficultyIds = catalog.difficulties.map((entry) => entry.id);
-  if (JSON.stringify(difficultyKeys) !== JSON.stringify(difficultyIds)) {
+  if (
+    JSON.stringify([...difficultyKeys].sort(compareCanonicalStrings)) !==
+    JSON.stringify(difficultyIds)
+  ) {
     errors.push({
       category: 'difficulties',
-      message: '定義オブジェクトのキー順とカタログ順が一致しません',
+      message: '難易度 ID 集合または ID 順が正本と一致しません',
     });
   }
-  const scenarioIds = SCENARIO_ORDER;
   const catalogScenarioIds = catalog.startingScenarios.map((entry) => entry.id);
-  if (JSON.stringify(scenarioIds) !== JSON.stringify(catalogScenarioIds)) {
-    errors.push({ category: 'startingScenarios', message: '開始シナリオ順が正本と一致しません' });
+  if (
+    JSON.stringify([...Object.keys(SCENARIOS)].sort(compareCanonicalStrings)) !==
+    JSON.stringify(catalogScenarioIds)
+  ) {
+    errors.push({
+      category: 'startingScenarios',
+      message: '開始シナリオ ID 集合または ID 順が正本と一致しません',
+    });
   }
   if (!new Set(catalogScenarioIds).has(catalog.defaultScenarioId)) {
     errors.push({

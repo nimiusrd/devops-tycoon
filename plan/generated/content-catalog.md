@@ -147,13 +147,13 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | cut_scope | {"budgetDelta":0,"goalEffects":{"deliveryMul":0.8},"negotiator":"customers","nextBudgetCapDelta":null,"nextQuarterEffects":{},"orgEffects":{},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-15}} |
-| 1 | extend_deadline | {"budgetDelta":-10,"goalEffects":{"deliveryMul":0.9,"moraleAdd":5,"qualityAdd":5},"negotiator":"management","nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.1,"reworkRateAdd":-0.08,"seniorHpDelta":5},"orgEffects":{},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-12}} |
-| 2 | quality_pivot | {"budgetDelta":0,"goalEffects":{"deliveryMul":0.85,"incidentLimitAdd":3,"techDebtLimitAdd":15},"negotiator":"customers","nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.92,"incidentRateMul":0.75,"qualityAdd":4,"techDebtDelta":-4},"orgEffects":{"deliveryScoreMul":0.9,"techDebtDelta":-8},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-5}} |
-| 3 | request_budget | {"budgetDelta":20,"goalEffects":{"deliveryAdd":300},"negotiator":"management","nextBudgetCapDelta":-15,"nextQuarterEffects":{"codingSpeedMul":1.08,"reviewCapacityMul":1.15},"orgEffects":{},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-5}} |
-| 4 | pause_ai_rollout | {"budgetDelta":0,"goalEffects":{"aiAdoptionAdd":-15,"deliveryMul":0.92},"negotiator":"management","nextBudgetCapDelta":null,"nextQuarterEffects":{"incidentRateMul":0.7,"reworkRateAdd":-0.1,"seniorHpDelta":3},"orgEffects":{},"pauseAiDebuff":true,"reorgReset":false,"trustDelta":{"management":-8}} |
+| 0 | cut_scope | {"goalEffects":{"deliveryMul":0.8},"negotiator":"customers","nextBudgetCapDelta":null,"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-15}} |
+| 1 | extend_deadline | {"budgetDelta":-10,"goalEffects":{"deliveryMul":0.9,"moraleAdd":5,"qualityAdd":5},"negotiator":"management","nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.1,"reworkRateAdd":-0.08,"seniorHpDelta":5},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-12}} |
+| 2 | quality_pivot | {"goalEffects":{"deliveryMul":0.85,"incidentLimitAdd":3,"techDebtLimitAdd":15},"negotiator":"customers","nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.92,"incidentRateMul":0.75,"qualityAdd":4,"techDebtDelta":-4},"orgEffects":{"deliveryScoreMul":0.9,"techDebtDelta":-8},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":-5}} |
+| 3 | request_budget | {"budgetDelta":20,"goalEffects":{"deliveryAdd":300},"negotiator":"management","nextBudgetCapDelta":-15,"nextQuarterEffects":{"codingSpeedMul":1.08,"reviewCapacityMul":1.15},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"management":-5}} |
+| 4 | pause_ai_rollout | {"goalEffects":{"aiAdoptionAdd":-15,"deliveryMul":0.92},"negotiator":"management","nextBudgetCapDelta":null,"nextQuarterEffects":{"incidentRateMul":0.7,"reworkRateAdd":-0.1,"seniorHpDelta":3},"pauseAiDebuff":true,"reorgReset":false,"trustDelta":{"management":-8}} |
 | 5 | reorg_teams | {"budgetDelta":-5,"goalEffects":{"moraleAdd":-5},"negotiator":"team","nextBudgetCapDelta":null,"nextQuarterEffects":{"reviewEfficiencyMul":1.2,"seniorHpDelta":3,"techDebtDelta":-2},"orgEffects":{"moraleDelta":-10,"seniorHpDelta":25,"techDebtDelta":-5},"pauseAiDebuff":false,"reorgReset":true,"trustDelta":{"team":-20}} |
-| 6 | stakeholder_care | {"budgetDelta":-12,"goalEffects":{"deliveryAdd":80},"negotiator":"all","nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.97},"orgEffects":{},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":10,"management":12,"team":8}} |
+| 6 | stakeholder_care | {"budgetDelta":-12,"goalEffects":{"deliveryAdd":80},"negotiator":"all","nextBudgetCapDelta":null,"nextQuarterEffects":{"codingSpeedMul":0.97},"pauseAiDebuff":false,"reorgReset":false,"trustDelta":{"customers":10,"management":12,"team":8}} |
 
 ## levers
 
@@ -210,16 +210,16 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | unlock-claude-code | {"contentId":"claude-code","cost":25,"kind":"card","requires":null} |
-| 1 | unlock-devin | {"contentId":"devin","cost":50,"kind":"card","requires":"review-exceeded"} |
-| 2 | unlock-hire-senior | {"contentId":"hire-senior","cost":40,"kind":"card","requires":"review-survivor"} |
-| 3 | unlock-review-bot | {"contentId":"review-bot","cost":30,"kind":"card","requires":null} |
-| 4 | unlock-psych-safety | {"contentId":"psych-safety","cost":35,"kind":"relic","requires":null} |
-| 5 | unlock-doc-driven | {"contentId":"doc-driven","cost":30,"kind":"relic","requires":null} |
-| 6 | unlock-strong-ci | {"contentId":"strong-ci","cost":35,"kind":"relic","requires":null} |
-| 7 | unlock-flow-first | {"contentId":"flow-first","cost":30,"kind":"relic","requires":null} |
-| 8 | unlock-no-friday-deploy | {"contentId":"no-friday-deploy","cost":25,"kind":"relic","requires":null} |
-| 9 | unlock-budget-discipline | {"contentId":"budget-discipline","cost":30,"kind":"relic","requires":null} |
+| 0 | unlock-budget-discipline | {"contentId":"budget-discipline","cost":30,"kind":"relic","requires":null} |
+| 1 | unlock-claude-code | {"contentId":"claude-code","cost":25,"kind":"card","requires":null} |
+| 2 | unlock-devin | {"contentId":"devin","cost":50,"kind":"card","requires":"review-exceeded"} |
+| 3 | unlock-doc-driven | {"contentId":"doc-driven","cost":30,"kind":"relic","requires":null} |
+| 4 | unlock-flow-first | {"contentId":"flow-first","cost":30,"kind":"relic","requires":null} |
+| 5 | unlock-hire-senior | {"contentId":"hire-senior","cost":40,"kind":"card","requires":"review-survivor"} |
+| 6 | unlock-no-friday-deploy | {"contentId":"no-friday-deploy","cost":25,"kind":"relic","requires":null} |
+| 7 | unlock-psych-safety | {"contentId":"psych-safety","cost":35,"kind":"relic","requires":null} |
+| 8 | unlock-review-bot | {"contentId":"review-bot","cost":30,"kind":"card","requires":null} |
+| 9 | unlock-strong-ci | {"contentId":"strong-ci","cost":35,"kind":"relic","requires":null} |
 
 ## departments
 
@@ -255,13 +255,13 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | all-bosses | {} |
-| 1 | combo-master | {} |
-| 2 | first-clear | {} |
-| 3 | nightmare-clear | {} |
-| 4 | no-damage | {} |
-| 5 | review-exceeded | {} |
-| 6 | review-survivor | {} |
+| 0 | all-bosses | {"conditionKey":"allBosses"} |
+| 1 | combo-master | {"conditionKey":"comboMaster"} |
+| 2 | first-clear | {"conditionKey":"firstClear"} |
+| 3 | nightmare-clear | {"conditionKey":"nightmareClear"} |
+| 4 | no-damage | {"conditionKey":"noDamage"} |
+| 5 | review-exceeded | {"conditionKey":"reviewExceeded"} |
+| 6 | review-survivor | {"conditionKey":"reviewSurvivor"} |
 
 ## difficultyOrder
 

@@ -56,12 +56,19 @@ import type {
 } from './types';
 import { clamp } from './clamp';
 
-/** タスク規模の出現分布（合計 1）。抽選の累積判定順は routine → normal → complex。 */
-const KIND_WEIGHTS: { kind: TaskKind; weight: number }[] = [
-  { kind: 'routine', weight: SPRINT_TASK_KIND_WEIGHTS.routine.value },
-  { kind: 'normal', weight: SPRINT_TASK_KIND_WEIGHTS.normal.value },
-  { kind: 'complex', weight: SPRINT_TASK_KIND_WEIGHTS.complex.value },
-];
+/** タスク規模の出現分布。抽選の累積判定順は `taskKindDistribution.entries` と同じ。 */
+function taskKindForWeightId(id: string): TaskKind {
+  if (id === SPRINT_TASK_KIND_WEIGHTS.routine.id) return 'routine';
+  if (id === SPRINT_TASK_KIND_WEIGHTS.normal.id) return 'normal';
+  if (id === SPRINT_TASK_KIND_WEIGHTS.complex.id) return 'complex';
+  throw new Error(`未知のタスク種別重み ID: ${id}`);
+}
+
+const KIND_WEIGHTS: { kind: TaskKind; weight: number }[] =
+  SPRINT_BALANCE.taskKindDistribution.entries.map((entry) => ({
+    kind: taskKindForWeightId(entry.id),
+    weight: entry.value,
+  }));
 
 /** 高価値タスクの出現率。 */
 const HIGH_VALUE_RATE = SPRINT_BALANCE.highValueRate.value;

@@ -10,6 +10,7 @@ import {
   projectDepartment,
   projectEvent,
   projectRelic,
+  projectGoalAdjustment,
   validateContentCatalog,
 } from '../../../src/data/contentCatalog';
 import { renderContentCatalogMarkdown } from '../../../src/data/contentCatalogDocumentation';
@@ -68,7 +69,10 @@ describe('CONTENT_CATALOG', () => {
     expect(new Set(CONTENT_CATALOG.members.namePool).size).toBe(MEMBER_NAMES.length);
     expectCatalogCategory(CONTENT_CATALOG.members.starter, ids(STARTER_ARCHETYPES));
     expectCatalogCategory(CONTENT_CATALOG.members.recruit, ids(RECRUIT_ARCHETYPES));
-    expectCatalogCategory(CONTENT_CATALOG.unlocks, ids(UNLOCK_DEFS));
+    expectCatalogCategory(
+      CONTENT_CATALOG.unlocks,
+      [...ids(UNLOCK_DEFS)].sort(compareCanonicalStrings),
+    );
     expectCatalogCategory(CONTENT_CATALOG.departments, ids(DEPARTMENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.actions, ids(ACTION_CONTENT_DEFS));
     expectCatalogCategory(CONTENT_CATALOG.startingScenarios, [...SCENARIO_ORDER]);
@@ -202,7 +206,7 @@ describe('CONTENT_CATALOG', () => {
     expect(CONTENT_CATALOG.difficultyOrder).toEqual(Object.keys(DIFFICULTY_DEFS));
   });
 
-  it('トレイトと実績は定義配列順ではなく ID 順へ正規化する', () => {
+  it('トレイト・実績・アンロックは定義配列順ではなく ID 順へ正規化する', () => {
     const traitIdsByCanonicalOrder = [...ids(TRAIT_DEFS)].sort(compareCanonicalStrings);
     expect(ids(TRAIT_DEFS)).not.toEqual(traitIdsByCanonicalOrder);
     expect(CONTENT_CATALOG.traits.map((entry) => entry.id)).toEqual(traitIdsByCanonicalOrder);
@@ -212,6 +216,21 @@ describe('CONTENT_CATALOG', () => {
     expect(CONTENT_CATALOG.achievements.map((entry) => entry.id)).toEqual(
       achievementIdsByCanonicalOrder,
     );
+    expect(
+      CONTENT_CATALOG.achievements.map((entry) => [
+        entry.id,
+        (entry.execution as { conditionKey: string }).conditionKey,
+      ]),
+    ).toEqual(
+      achievementIdsByCanonicalOrder.map((id) => [
+        id,
+        Object.entries(ACHIEVEMENT_IDS).find(([, value]) => value === id)?.[0],
+      ]),
+    );
+
+    const unlockIdsByCanonicalOrder = [...ids(UNLOCK_DEFS)].sort(compareCanonicalStrings);
+    expect(ids(UNLOCK_DEFS)).not.toEqual(unlockIdsByCanonicalOrder);
+    expect(CONTENT_CATALOG.unlocks.map((entry) => entry.id)).toEqual(unlockIdsByCanonicalOrder);
   });
 
   it('進化の表示ブランチを除外し、デイリー参照 ID を検証する', () => {
@@ -276,6 +295,24 @@ describe('CONTENT_CATALOG', () => {
         passives: { relicSlots: RUN_BALANCE.shopRelicSlots.value },
       }),
     ).not.toEqual(projectRelic(relic));
+  });
+
+  it('目標修正の無効果値は未指定と同じ射影になる', () => {
+    const adjustment = GOAL_ADJUSTMENT_DEFS[0]!;
+    expect(
+      projectGoalAdjustment({
+        ...adjustment,
+        trustDelta: { management: 0, ...adjustment.trustDelta },
+        goalEffects: { deliveryMul: 1, qualityAdd: 0, ...adjustment.goalEffects },
+        orgEffects: { deliveryScoreMul: 1, techDebtDelta: 0, ...adjustment.orgEffects },
+        nextQuarterEffects: {
+          codingSpeedMul: 1,
+          techDebtDelta: 0,
+          ...adjustment.nextQuarterEffects,
+        },
+        budgetDelta: adjustment.budgetDelta,
+      }),
+    ).toEqual(projectGoalAdjustment(adjustment));
   });
 
   it('生成 Markdown は同じカタログから決定論的に作られる', () => {

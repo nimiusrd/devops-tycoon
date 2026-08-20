@@ -5,7 +5,7 @@
  * 色・アイコンなどの表示メタデータは含めない。バランスレジストリも別の入力であり、
  * このカタログへ数値を再コピーしない。
  */
-import { ACHIEVEMENT_DEFS } from './achievements';
+import { ACHIEVEMENT_DEFS, ACHIEVEMENT_IDS } from './achievements';
 import { ACTION_CONTENT_DEFS, type ActionContentDef } from './actions';
 import { CARD_DEFS, RARITY_WEIGHT } from './cards';
 import { BOSS_DEFS } from './bosses';
@@ -21,7 +21,7 @@ import {
 } from './difficulties';
 import { EVOLUTION_NODES } from './evolution';
 import { EVENT_DEFS, effectiveKind, type EventDef, type EventOutcome } from './events';
-import { GOAL_ADJUSTMENT_DEFS } from './goalAdjustments';
+import { GOAL_ADJUSTMENT_DEFS, type GoalAdjustmentDef } from './goalAdjustments';
 import { LEVER_DEFS } from './levers';
 import {
   MEMBER_NAMES,
@@ -205,6 +205,79 @@ export function projectRelic(definition: RelicDef): unknown {
   };
 }
 
+const GOAL_EFFECTS_IDENTITY: Record<string, unknown> = {
+  deliveryMul: 1,
+  deliveryAdd: 0,
+  qualityAdd: 0,
+  moraleAdd: 0,
+  techDebtLimitAdd: 0,
+  incidentLimitAdd: 0,
+  aiAdoptionAdd: 0,
+};
+
+const ORG_EFFECTS_IDENTITY: Record<string, unknown> = {
+  deliveryScoreMul: 1,
+  techDebtDelta: 0,
+  moraleDelta: 0,
+  seniorHpDelta: 0,
+  qualityDelta: 0,
+};
+
+const NEXT_QUARTER_IDENTITY: Record<string, unknown> = {
+  ...IDENTITY_CARD_EFFECTS,
+  techDebtDelta: 0,
+  seniorHpDelta: 0,
+};
+
+function assignProjected(
+  target: Record<string, unknown>,
+  key: string,
+  value: Record<string, unknown> | undefined,
+): void {
+  if (value) target[key] = value;
+}
+
+export function projectGoalAdjustment(definition: GoalAdjustmentDef): unknown {
+  const projected: Record<string, unknown> = {
+    negotiator: definition.negotiator,
+    pauseAiDebuff: definition.pauseAiDebuff ?? false,
+    reorgReset: definition.reorgReset ?? false,
+    nextBudgetCapDelta: definition.nextBudgetCapDelta ?? null,
+  };
+  if (definition.budgetDelta !== 0) projected.budgetDelta = definition.budgetDelta;
+  assignProjected(
+    projected,
+    'trustDelta',
+    omitEmpty(omitIdentity(definition.trustDelta, TRUST_IDENTITY)),
+  );
+  assignProjected(
+    projected,
+    'goalEffects',
+    omitEmpty(omitIdentity(definition.goalEffects, GOAL_EFFECTS_IDENTITY)),
+  );
+  assignProjected(
+    projected,
+    'orgEffects',
+    omitEmpty(omitIdentity(definition.orgEffects, ORG_EFFECTS_IDENTITY)),
+  );
+  assignProjected(
+    projected,
+    'nextQuarterEffects',
+    omitEmpty(omitIdentity(definition.nextQuarterEffects, NEXT_QUARTER_IDENTITY)),
+  );
+  return projected;
+}
+
+function achievementConditionKey(id: string): string {
+  const found = (Object.entries(ACHIEVEMENT_IDS) as [string, string][]).find(
+    ([, value]) => value === id,
+  );
+  if (!found) {
+    throw new Error(`実績 ID に対応する条件キーがありません: ${id}`);
+  }
+  return found[0];
+}
+
 const difficultyDefinitions = Object.values(DIFFICULTY_DEFS);
 
 export const CONTENT_CATALOG: ContentCatalog = {
@@ -249,17 +322,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     focusBonus: definition.focusBonus ?? 0,
     codingSlotBonus: definition.codingSlotBonus ?? 0,
   })),
-  goalAdjustments: ordered(GOAL_ADJUSTMENT_DEFS, (definition) => ({
-    negotiator: definition.negotiator,
-    trustDelta: definedObject(definition.trustDelta),
-    budgetDelta: definition.budgetDelta,
-    goalEffects: definedObject(definition.goalEffects),
-    orgEffects: definedObject(definition.orgEffects),
-    nextBudgetCapDelta: definition.nextBudgetCapDelta ?? null,
-    pauseAiDebuff: definition.pauseAiDebuff ?? false,
-    reorgReset: definition.reorgReset ?? false,
-    nextQuarterEffects: definedObject(definition.nextQuarterEffects),
-  })),
+  goalAdjustments: ordered(GOAL_ADJUSTMENT_DEFS, projectGoalAdjustment),
   levers: ordered(LEVER_DEFS, (definition) => ({
     scope: definition.scope,
     cost: definition.cost,
@@ -280,7 +343,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
       traits: [...definition.traits],
     })),
   },
-  unlocks: ordered(UNLOCK_DEFS, (definition) => ({
+  unlocks: orderedById(UNLOCK_DEFS, (definition) => ({
     kind: definition.kind,
     contentId: definition.contentId,
     cost: definition.cost,
@@ -297,7 +360,9 @@ export const CONTENT_CATALOG: ContentCatalog = {
       globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
     }),
   ),
-  achievements: orderedById(ACHIEVEMENT_DEFS, () => ({})),
+  achievements: orderedById(ACHIEVEMENT_DEFS, (definition) => ({
+    conditionKey: achievementConditionKey(definition.id),
+  })),
   difficultyOrder: [...DIFFICULTY_ORDER],
   defaultScenarioId: DEFAULT_SCENARIO,
   daily: {

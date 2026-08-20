@@ -223,7 +223,7 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   前回の成功結果を最新値として集計してしまうのを防ぐ
 - **メタ進行は初見相当**（`PT_META=fresh`）。`game.startRun` と同じく既定解放分のみをドラフト候補にする
 - 壁時計換算は実装の `MS_PER_TICK_1X`（`src/ui/sprintTempo.ts`）から読む
-- 現行スナップショット（2026-08-20、generation `51b228a8dbc675a3`）は
+- 現行スナップショット（2026-08-20、generation `9d7b82b9c06fa18d`）は
   **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。72勝 / 1,488敗。
   F-8 / F-9 は `PT_COUNTERFACTUAL=1` かつ `PT_CF_POLICIES=naive,skilledNoHire,onlyFirefight,noInterventionCtl`
   で対象方針だけ反実仮想した同一コホートから判定する
@@ -775,7 +775,7 @@ Q1 で方向確定 **28/40（70%）**、確定ブランチは `ai` 21 / `review`
 - F-8: 回復余地ギャップの **p50 ≤ 1**（有効手なしは Inf）
 - F-9: 同一方針（難易度はプール）の層別で、敗因 n≥10 が2種以上かつ **distinctEffectiveSetCount ≥ 2**
 
-既定コホート（generation `51b228a8dbc675a3`、1,560ラン）を `PT_COUNTERFACTUAL=1` で再走した。
+既定コホート（generation `9d7b82b9c06fa18d`、1,560ラン）を `PT_COUNTERFACTUAL=1` で再走した。
 反実仮想は対象4方針に限り、他方針は勝敗集計のみ。値調整はしていない。
 
 F-8 受入（RI-132）: 対象方針 naive / skilledNoHire / onlyFirefight / noInterventionCtl / p50≤1（実測 p50=0 n=152） → PASS

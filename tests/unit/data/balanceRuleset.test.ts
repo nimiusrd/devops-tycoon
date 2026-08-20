@@ -21,11 +21,17 @@ import {
   sha256Hex,
 } from '../../../src/data/balance';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
+import { DIFFICULTY_DEFS } from '../../../src/data/difficulties';
+import { EVENT_DEFS } from '../../../src/data/events';
 import {
   projectActions,
   projectContentCatalog,
   projectDepartments,
+  projectDifficulties,
+  projectEvents,
+  projectScenarios,
 } from '../../../src/data/contentCatalog';
+import { DEFAULT_SCENARIO, SCENARIOS, SCENARIO_ORDER } from '../../../src/sim/scenarios';
 import { SPRINT_BALANCE } from '../../../src/data/balance/sprint';
 
 const FIXTURE_TAGS = ['test'] as const;
@@ -211,6 +217,49 @@ describe('バランスルールセットの版と指紋', () => {
         createBalanceRulesetPayload([], {
           ...baseCatalog,
           actions: projectActions(reorderedActions),
+        }),
+      ),
+    ).not.toBe(original);
+  });
+
+  it('tags だけでは指紋対象が変わらず、安定ID接頭辞で体験目標帯を除外する', () => {
+    const taggedRuntime = sampleEntry(PACING_BALANCE.fixedStepMs.id, 100, {
+      tags: ['validation', 'target-band'],
+    });
+    const untaggedTarget = sampleEntry(PACING_BALANCE.sprintWallMinTypicalMs.id, 60_000, {
+      tags: ['execution'],
+    });
+    const ids = projectBalanceRegistry([taggedRuntime, untaggedTarget]).values.map(
+      (entry) => entry.id,
+    );
+    expect(ids).toEqual([PACING_BALANCE.fixedStepMs.id]);
+  });
+
+  it('難易度レコードのキー順やイベント既定重み、既定シナリオを正規化する', () => {
+    const baseCatalog = projectContentCatalog();
+    const original = fingerprintBalanceRuleset(createBalanceRulesetPayload([], baseCatalog));
+
+    const shuffledDifficulties = [...Object.values(DIFFICULTY_DEFS)].reverse();
+    expect(projectDifficulties(shuffledDifficulties)).toEqual(projectDifficulties());
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          difficulties: projectDifficulties(shuffledDifficulties),
+        }),
+      ),
+    ).toBe(original);
+
+    const unspecified = EVENT_DEFS.find((event) => event.weight === undefined);
+    expect(unspecified).toBeDefined();
+    expect(projectEvents([unspecified!])).toEqual(projectEvents([{ ...unspecified!, weight: 1 }]));
+
+    expect(projectScenarios().defaultId).toBe(DEFAULT_SCENARIO);
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...baseCatalog,
+          scenarios: projectScenarios(SCENARIO_ORDER, SCENARIOS, 'copilot'),
         }),
       ),
     ).not.toBe(original);

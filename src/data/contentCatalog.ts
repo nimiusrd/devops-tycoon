@@ -4,6 +4,7 @@
  * 値は `src/data/` と開始シナリオの定義を正本のまま読む。表示専用フィールドは落とす。
  * 配列は定義順を保持する。
  */
+import { compareCanonicalStrings } from './balance/canonical';
 import { ACHIEVEMENT_DEFS, type AchievementDef } from './achievements';
 import { ACTION_CONTENT_DEFS, type ActionContentDef } from './actions';
 import { BOSS_DEFS, type BossDef } from './bosses';
@@ -18,7 +19,7 @@ import { RECRUIT_ARCHETYPES, STARTER_ARCHETYPES, type MemberArchetype } from './
 import { RELIC_DEFS, type RelicDef } from './relics';
 import { TRAIT_DEFS, type TraitDef } from './traits';
 import { UNLOCK_DEFS, type UnlockDef } from './unlocks';
-import { SCENARIOS, SCENARIO_ORDER, type Scenario } from '../sim/scenarios';
+import { DEFAULT_SCENARIO, SCENARIOS, SCENARIO_ORDER, type Scenario } from '../sim/scenarios';
 import type { CardDef } from '../sim/types';
 import type { DepartmentDef, LeverDef } from '../sim/orgscale/types';
 
@@ -36,7 +37,7 @@ export function projectEvents(defs: readonly EventDef[] = EVENT_DEFS) {
   return defs.map((def) => ({
     id: def.id,
     kind: effectiveKind(def),
-    weight: def.weight,
+    weight: def.weight ?? 1,
     triggers: def.triggers,
     minSignal: def.minSignal,
     maxSignal: def.maxSignal,
@@ -50,25 +51,27 @@ export function projectEvents(defs: readonly EventDef[] = EVENT_DEFS) {
 export function projectDifficulties(
   defs: readonly DifficultyDef[] = Object.values(DIFFICULTY_DEFS),
 ) {
-  return defs.map(
-    ({
-      id,
-      org,
-      taskCountMul,
-      globalEffects,
-      startBudget,
-      bossTargetMul,
-      aiDependencyPerTask,
-    }) => ({
-      id,
-      org,
-      taskCountMul,
-      globalEffects,
-      startBudget,
-      bossTargetMul,
-      aiDependencyPerTask,
-    }),
-  );
+  return defs
+    .map(
+      ({
+        id,
+        org,
+        taskCountMul,
+        globalEffects,
+        startBudget,
+        bossTargetMul,
+        aiDependencyPerTask,
+      }) => ({
+        id,
+        org,
+        taskCountMul,
+        globalEffects,
+        startBudget,
+        bossTargetMul,
+        aiDependencyPerTask,
+      }),
+    )
+    .sort((left, right) => compareCanonicalStrings(left.id, right.id));
 }
 
 export function projectTrials(defs: readonly TrialDef[] = TRIAL_DEFS) {
@@ -195,17 +198,21 @@ export function projectActions(defs: readonly ActionContentDef[] = ACTION_CONTEN
 export function projectScenarios(
   order: readonly Scenario['id'][] = SCENARIO_ORDER,
   scenarios: Readonly<Record<Scenario['id'], Scenario>> = SCENARIOS,
+  defaultId: Scenario['id'] = DEFAULT_SCENARIO,
 ) {
-  return order.map((id) => {
-    const scenario = scenarios[id];
-    return {
-      id: scenario.id,
-      org: scenario.org,
-      sprint: scenario.sprint,
-      orgDelta: scenario.orgDelta,
-      globalEffects: scenario.globalEffects,
-    };
-  });
+  return {
+    defaultId,
+    entries: order.map((id) => {
+      const scenario = scenarios[id];
+      return {
+        id: scenario.id,
+        org: scenario.org,
+        sprint: scenario.sprint,
+        orgDelta: scenario.orgDelta,
+        globalEffects: scenario.globalEffects,
+      };
+    }),
+  };
 }
 
 export function projectAchievements(defs: readonly AchievementDef[] = ACHIEVEMENT_DEFS) {

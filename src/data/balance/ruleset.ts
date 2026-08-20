@@ -14,10 +14,10 @@ export const BALANCE_RULESET_VERSION = 1;
 export const BALANCE_RULESET_FINGERPRINT_SCHEME = 1;
 
 /**
- * 指紋から除外するタグ。体験目標帯など、ゲーム実行値ではない検証メタデータに付ける。
- * RI-114 のペーシング実行値は `execution`、目標帯は `validation` / `target-band`。
+ * 指紋から除外する安定ID接頭辞。体験目標帯など、ゲームが参照しない検証メタデータ。
+ * `tags` は表示・分類用であり、指紋対象の判定には使わない。
  */
-export const BALANCE_RULESET_FINGERPRINT_EXCLUDED_TAGS = ['validation', 'target-band'] as const;
+export const BALANCE_RULESET_FINGERPRINT_EXCLUDED_ID_PREFIXES = ['pacing.target.'] as const;
 
 /** 版の更新規則と指紋対象。生成文書とテストで共有する。 */
 export const BALANCE_RULESET_VERSION_POLICY = {
@@ -62,9 +62,9 @@ function isProbabilityDistribution(
   return 'entries' in definition;
 }
 
-function isFingerprintRuntimeEntry(entry: Pick<BalanceEntry, 'tags'>): boolean {
-  return !entry.tags.some((tag) =>
-    (BALANCE_RULESET_FINGERPRINT_EXCLUDED_TAGS as readonly string[]).includes(tag),
+function isFingerprintRuntimeEntry(entry: Pick<BalanceEntry, 'id'>): boolean {
+  return !BALANCE_RULESET_FINGERPRINT_EXCLUDED_ID_PREFIXES.some((prefix) =>
+    entry.id.startsWith(prefix),
   );
 }
 

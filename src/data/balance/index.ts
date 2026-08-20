@@ -7,7 +7,7 @@ export {
 } from './define';
 export { canonicalizeJson, compareCanonicalStrings, sha256Hex } from './canonical';
 export {
-  BALANCE_RULESET_FINGERPRINT_EXCLUDED_TAGS,
+  BALANCE_RULESET_FINGERPRINT_EXCLUDED_ID_PREFIXES,
   BALANCE_RULESET_FINGERPRINT_SCHEME,
   BALANCE_RULESET_VERSION,
   BALANCE_RULESET_VERSION_POLICY,

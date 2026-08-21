@@ -5,8 +5,8 @@
 
 ## ルールセット
 
-- 版: `1`
-- 指紋: `78c37e010ad5ec3abc391537aa6a83aaa4432a11538411cbf102e7afa45116e7`
+- 版: `2`
+- 指紋: `ab8a7e891276e81033d941472a3cf6d5533506087808e940288ff97009c3e96b`
 - 指紋方式: `1`
 
 版は手動更新する単調増加整数である。結果へ影響する変更では直前の版から 1 増やす。
@@ -331,6 +331,16 @@
 | `member.stamina.max.junior` | ジュニア基礎スタミナ上限 | `70` | `points` | `1〜200（整数）` | — | レベル1ジュニアの基礎スタミナ上限。 | member, stamina | いいえ |
 | `member.stamina.max.middle` | ミドル基礎スタミナ上限 | `85` | `points` | `1〜200（整数）` | — | レベル1ミドルの基礎スタミナ上限。 | member, stamina | いいえ |
 | `member.stamina.max.senior` | シニア基礎スタミナ上限 | `95` | `points` | `1〜200（整数）` | — | レベル1シニアの基礎スタミナ上限。 | member, stamina | いいえ |
+| `meta.achievement.comboMasterMinCombo` | コンボマスター解除の最小コンボ | `20` | `count` | `1〜100（整数）` | — | 勝利時に combo-master 実績を解除する最大コンボの下限。 | meta, achievement, combo | いいえ |
+| `meta.preferred.maxCards` | 研修方針の優先施策上限 | `2` | `count` | `0〜10（整数）` | — | 研修方針で選べる優先カードの最大枚数。 | meta, preferred, training-policy | いいえ |
+| `meta.reward.learningBase` | 学習ボーナス起点 | `2` | `points` | `0〜20（整数）` | `meta.reward.learningBase` ≤ `meta.reward.learningCap` | 敗北かつ修正可能な未達レビューがあるときの学習ボーナス起点。 | meta, reward, learning | いいえ |
+| `meta.reward.learningCap` | 学習ボーナス上限 | `5` | `points` | `0〜20（整数）` | `meta.reward.learningBase` ≤ `meta.reward.learningCap` | 敗北時学習ボーナスの上限。起点以上になる。 | meta, reward, learning | いいえ |
+| `meta.reward.learningPerReview` | 学習ボーナスのレビュー加算 | `1` | `points` | `0〜10（整数）` | — | 修正可能な未達レビュー 1 件あたり学習ボーナスへ加える値。 | meta, reward, learning | いいえ |
+| `meta.reward.lossBase` | 敗北時メタ進行ポイント基礎 | `5` | `points` | `0〜100（整数）` | — | ラン敗北時のメタ進行ポイント基礎値。試練倍率を掛けた後に丸める。 | meta, reward | いいえ |
+| `meta.reward.reviewExceeded` | 超過達成レビューボーナス | `3` | `points` | `0〜20（整数）` | — | 勝利かつ超過達成レビューがあるときのメタ進行ポイント加算。 | meta, reward, review | いいえ |
+| `meta.reward.reviewMet` | 達成レビューボーナス | `1` | `points` | `0〜20（整数）` | — | 勝利かつ達成レビューがあるときのメタ進行ポイント加算。超過達成より優先しない。 | meta, reward, review | いいえ |
+| `meta.reward.scoreMulFloor` | ラン報酬の試練倍率下限 | `1` | `multiplier` | `1〜10` | — | メタ進行ポイント計算で使う試練スコア倍率の下限。 | meta, reward, trial | いいえ |
+| `meta.reward.winBase` | 勝利時メタ進行ポイント基礎 | `20` | `points` | `0〜100（整数）` | — | ラン勝利時のメタ進行ポイント基礎値。試練倍率を掛けた後に丸める。 | meta, reward | いいえ |
 | `outcome.diagnosis.aiOverproduction.aiPctMin` | AI Overproduction の AI 利用率下限 | `0.5` | `ratio` | `0〜1` | — | AI Overproduction 診断に必要な AI 利用率の下限。 | outcome, diagnosis, ai, threshold | いいえ |
 | `outcome.diagnosis.aiOverproduction.reworkRatioMin` | AI Overproduction の手戻り率下限 | `0.2` | `ratio` | `0〜1` | — | AI Overproduction 診断に必要な手戻り率の下限。 | outcome, diagnosis, ai, threshold | いいえ |
 | `outcome.diagnosis.documentation.documentationMin` | Documentation Kingdom の文書化下限 | `55` | `points` | `0〜100（整数）` | — | Documentation Kingdom 診断に必要な文書化の下限。 | outcome, diagnosis, documentation, threshold | いいえ |

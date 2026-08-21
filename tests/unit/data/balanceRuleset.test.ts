@@ -15,6 +15,8 @@ import {
   defineBalanceEntry,
   defineProbabilityDistribution,
   fingerprintBalanceRuleset,
+  INITIAL_UNLOCKED_DIFFICULTIES,
+  META_BALANCE,
   PACING_BALANCE,
   projectBalanceRegistry,
   sha256Hex,
@@ -50,8 +52,8 @@ function sampleEntry(
 }
 
 describe('バランスルールセットの版と指紋', () => {
-  it('現行ルールセットの版は 1、指紋は 64 桁 hex で再計算と一致する', () => {
-    expect(BALANCE_RULESET_VERSION).toBe(1);
+  it('現行ルールセットの版は 2、指紋は 64 桁 hex で再計算と一致する', () => {
+    expect(BALANCE_RULESET_VERSION).toBe(2);
     expect(BALANCE_RULESET_FINGERPRINT_SCHEME).toBe(1);
     expect(BALANCE_RULESET_FINGERPRINT).toMatch(/^[0-9a-f]{64}$/);
     expect(fingerprintBalanceRuleset(BALANCE_RULESET_PAYLOAD)).toBe(BALANCE_RULESET_FINGERPRINT);
@@ -159,6 +161,22 @@ describe('バランスルールセットの版と指紋', () => {
     );
   });
 
+  it('メタ進行の実行値は指紋へ含め、デイリー条件はカタログ経路のままにする', () => {
+    const ids = new Set(projectBalanceRegistry(BALANCE_REGISTRY).values.map((entry) => entry.id));
+    expect(ids.has(META_BALANCE.preferredMaxCards.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardWinBase.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardLossBase.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardScoreMulFloor.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardLearningBase.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardLearningPerReview.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardLearningCap.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardReviewExceeded.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardReviewMet.id)).toBe(true);
+    expect(ids.has(META_BALANCE.achievementComboMasterMinCombo.id)).toBe(true);
+    expect(ids.has('meta.daily.difficulty')).toBe(false);
+    expect(ids.has('meta.daily.trials')).toBe(false);
+  });
+
   it('tags だけでは指紋対象が変わらず、安定ID接頭辞で体験目標帯を除外する', () => {
     const taggedRuntime = sampleEntry(PACING_BALANCE.fixedStepMs.id, 100, {
       tags: ['validation', 'target-band'],
@@ -179,6 +197,7 @@ describe('バランスルールセットの版と指紋', () => {
       difficulty: DAILY_RUN_DIFFICULTY,
       trials: [...DAILY_RUN_TRIALS],
     });
+    expect(CONTENT_CATALOG.initialUnlockedDifficulties).toEqual([...INITIAL_UNLOCKED_DIFFICULTIES]);
 
     const unspecified = EVENT_DEFS.find((event) => event.weight === undefined);
     expect(unspecified).toBeDefined();
@@ -204,6 +223,14 @@ describe('バランスルールセットの版と指紋', () => {
         createBalanceRulesetPayload([], {
           ...CONTENT_CATALOG,
           daily: { difficulty: 'hard', trials: ['flammable'] },
+        }),
+      ),
+    ).not.toBe(original);
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...CONTENT_CATALOG,
+          initialUnlockedDifficulties: ['easy'],
         }),
       ),
     ).not.toBe(original);

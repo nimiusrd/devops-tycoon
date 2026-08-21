@@ -25,6 +25,12 @@ export { CARD_BALANCE } from './cards';
 export { SPRINT_BALANCE, SPRINT_TASK_KIND_WEIGHTS } from './sprint';
 export { COARSE_TEAM_BALANCE } from './coarse-team';
 export { PACING_BALANCE } from './pacing';
+export {
+  DAILY_RUN_DIFFICULTY,
+  DAILY_RUN_TRIALS,
+  INITIAL_UNLOCKED_DIFFICULTIES,
+  META_BALANCE,
+} from './meta';
 export type { ActionRuntimeBalance } from './actions';
 export type {
   BalanceAllowedRange,
@@ -46,6 +52,7 @@ import { CARD_BALANCE } from './cards';
 import { SPRINT_BALANCE } from './sprint';
 import { COARSE_TEAM_BALANCE } from './coarse-team';
 import { PACING_BALANCE } from './pacing';
+import { META_BALANCE } from './meta';
 import { CONTENT_CATALOG } from '../contentCatalog';
 import { createBalanceRulesetPayload, fingerprintBalanceRuleset } from './ruleset';
 import type { BalanceDefinition } from './types';
@@ -61,6 +68,7 @@ export const BALANCE_REGISTRY = [
   ...Object.values(SPRINT_BALANCE),
   ...Object.values(COARSE_TEAM_BALANCE),
   ...Object.values(PACING_BALANCE),
+  ...Object.values(META_BALANCE),
 ] satisfies readonly BalanceDefinition[];
 
 /** 現行ルールセットの指紋入力。版と seed は含めない。 */

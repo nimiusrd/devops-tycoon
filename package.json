@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "playtest": "node scripts/invalidate-playtest-out.mjs && tsc --noEmit -p tsconfig.playtest.json && vitest run --config vitest.playtest.config.ts",
     "playtest:report": "node scripts/playtest-report.mjs",
+    "balance:report": "node scripts/balance-report.mjs",
     "playtest:check": "node scripts/check-findings.mjs",
     "test:mutation": "stryker run",
     "test:mutation:force": "stryker run --force",

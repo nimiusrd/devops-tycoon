@@ -22,6 +22,7 @@ import {
   formatF9AcceptanceLine,
   stableEffectiveActionId,
 } from './playtest-f8f9.mjs';
+import { mean, quantile } from './playtest-statistics.mjs';
 
 /**
  * 集計対象。`PT_OUT` と第1引数で差し替えられる（`scripts/check-findings.mjs` と同じ規則）。
@@ -163,12 +164,6 @@ const isCompletedSprint = (s) => s.completed !== false;
 const completedSprintsOf = (run) => (run.sprints ?? []).filter(isCompletedSprint);
 const r1 = (n) => Math.round(n * 10) / 10;
 const pct = (n, d) => (d ? `${Math.round((n / d) * 1000) / 10}%` : '—');
-const quantile = (arr, p) => {
-  if (!arr.length) return NaN;
-  const b = [...arr].sort((x, y) => x - y);
-  return b[Math.round((b.length - 1) * p)];
-};
-const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 /** 標本が2件未満なら分散を推定できない。0 を返すと「完全に安定」と誤読されるため NaN。 */
 const cv = (a) => {
   if (a.length < 2) return NaN;

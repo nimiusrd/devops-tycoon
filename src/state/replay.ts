@@ -5,6 +5,9 @@
  * RunEngine.hydrateReplayFrame で read-only 表示する。純入力ログ再生は非スコープ。
  */
 import { isReplayFramePhase, type RunReplayFrame, type ReplayFramePhase } from '../sim/run/persist';
+import { getCard } from '../data/cards';
+import { getRelic, type RelicDef } from '../data/relics';
+import type { CardDef } from '../sim/types';
 import type {
   DiagnosisType,
   DifficultyId,
@@ -14,8 +17,9 @@ import type {
   WinType,
 } from '../sim/run/types';
 
-/** リプレイスキーマ版。非互換時は破棄する。 */
-export const REPLAY_SCHEMA_VERSION = 1;
+/** リプレイスキーマ版。v1 は読み込み時に v2 の形へ正規化する。 */
+export const REPLAY_SCHEMA_VERSION = 2;
+const LEGACY_REPLAY_SCHEMA_VERSION = 1;
 
 /** 保持するリプレイ件数の上限（古いものから削除）。 */
 export const REPLAY_MAX_COUNT = 10;
@@ -34,6 +38,18 @@ export interface ReplayKeyframe {
   frame: RunReplayFrame;
 }
 
+/** リプレイ記録時に適用されていたルールセットの識別子。 */
+export interface ReplayRulesetIdentity {
+  readonly version: number;
+  readonly fingerprint: string;
+}
+
+/** リプレイ表示で参照するカード／レリック定義の最小スナップショット。 */
+export interface ReplayContentSnapshot {
+  cards: CardDef[];
+  relics: RelicDef[];
+}
+
 /** IndexedDB に保存するリプレイ本体。 */
 export interface ReplayBlob {
   schemaVersion: typeof REPLAY_SCHEMA_VERSION;
@@ -44,10 +60,86 @@ export interface ReplayBlob {
   finishedAt: number;
   outcome: ReplayOutcome;
   keyframes: ReplayKeyframe[];
+  /** 旧 v1 リプレイでは null。 */
+  ruleset: ReplayRulesetIdentity | null;
+  /** 旧 v1 リプレイでは null。 */
+  contentSnapshot: ReplayContentSnapshot | null;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isCardRarity(value: unknown): value is CardDef['rarity'] {
+  return value === 'common' || value === 'rare' || value === 'legendary';
+}
+
+function isCardDef(value: unknown): value is CardDef {
+  return (
+    isObject(value) &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    isCardRarity(value.rarity) &&
+    typeof value.cost === 'number' &&
+    Number.isFinite(value.cost) &&
+    typeof value.focusCost === 'number' &&
+    Number.isFinite(value.focusCost) &&
+    Array.isArray(value.description) &&
+    value.description.every((line) => typeof line === 'string') &&
+    isObject(value.base)
+  );
+}
+
+function isRelicDef(value: unknown): value is RelicDef {
+  return (
+    isObject(value) &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.description === 'string' &&
+    (value.effects === undefined || isObject(value.effects)) &&
+    (value.passives === undefined || isObject(value.passives))
+  );
+}
+
+const INVALID_REPLAY_VALUE = Symbol('invalid-replay-value');
+
+function parseReplayRuleset(
+  value: unknown,
+): ReplayRulesetIdentity | null | typeof INVALID_REPLAY_VALUE {
+  if (!isObject(value)) return INVALID_REPLAY_VALUE;
+  if (
+    typeof value.version !== 'number' ||
+    !Number.isSafeInteger(value.version) ||
+    value.version < 1 ||
+    typeof value.fingerprint !== 'string' ||
+    value.fingerprint.length === 0
+  ) {
+    return INVALID_REPLAY_VALUE;
+  }
+  return {
+    version: value.version,
+    fingerprint: value.fingerprint,
+  };
+}
+
+function parseReplayContentSnapshot(
+  value: unknown,
+): ReplayContentSnapshot | typeof INVALID_REPLAY_VALUE {
+  if (!isObject(value) || !Array.isArray(value.cards) || !Array.isArray(value.relics)) {
+    return INVALID_REPLAY_VALUE;
+  }
+  if (
+    !value.cards.every(isCardDef) ||
+    !value.relics.every(isRelicDef) ||
+    new Set(value.cards.map((card) => card.id)).size !== value.cards.length ||
+    new Set(value.relics.map((relic) => relic.id)).size !== value.relics.length
+  ) {
+    return INVALID_REPLAY_VALUE;
+  }
+  return {
+    cards: structuredClone(value.cards),
+    relics: structuredClone(value.relics),
+  };
 }
 
 function isReplayFrame(value: unknown): value is RunReplayFrame {
@@ -60,6 +152,60 @@ function isReplayFrame(value: unknown): value is RunReplayFrame {
     return false;
   }
   return true;
+}
+
+function addCardId(ids: Set<string>, value: unknown): void {
+  if (typeof value === 'string') ids.add(value);
+}
+
+function addRelicId(ids: Set<string>, value: unknown): void {
+  if (typeof value === 'string') ids.add(value);
+}
+
+/**
+ * キーフレームの表示に実際に登場するカード／レリックだけを収集する。
+ * allowedCards / allowedRelics はラン開始時のプールであり、表示参照では
+ * ないためスナップショットへは含めない。
+ */
+export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): ReplayContentSnapshot {
+  const cardIds = new Set<string>();
+  const relicIds = new Set<string>();
+
+  for (const keyframe of keyframes) {
+    const frame = keyframe.frame;
+    if (Array.isArray(frame.deck)) {
+      for (const card of frame.deck) {
+        if (isObject(card)) addCardId(cardIds, card.defId);
+      }
+    }
+    if (Array.isArray(frame.draft)) {
+      for (const cardId of frame.draft) addCardId(cardIds, cardId);
+    }
+    if (frame.shop && isObject(frame.shop)) {
+      if (Array.isArray(frame.shop.cards)) {
+        for (const offer of frame.shop.cards) {
+          if (isObject(offer)) addCardId(cardIds, offer.defId);
+        }
+      }
+      if (isObject(frame.shop.relic)) addRelicId(relicIds, frame.shop.relic.id);
+    }
+
+    if (Array.isArray(frame.relics)) {
+      for (const relicId of frame.relics) addRelicId(relicIds, relicId);
+    }
+    addRelicId(relicIds, frame.bossRelicReward);
+  }
+
+  return {
+    cards: [...cardIds]
+      .map((id) => getCard(id))
+      .filter((card): card is CardDef => card !== undefined)
+      .map((card) => structuredClone(card)),
+    relics: [...relicIds]
+      .map((id) => getRelic(id))
+      .filter((relic): relic is RelicDef => relic !== undefined)
+      .map((relic) => structuredClone(relic)),
+  };
 }
 
 /**
@@ -85,7 +231,14 @@ export function normalizeReplayKeyframes(value: unknown): ReplayKeyframe[] {
 /** 壊れた／非互換リプレイは null。 */
 export function normalizeReplay(value: unknown): ReplayBlob | null {
   if (!isObject(value)) return null;
-  if (value.schemaVersion !== REPLAY_SCHEMA_VERSION) return null;
+  const isLegacy = value.schemaVersion === LEGACY_REPLAY_SCHEMA_VERSION;
+  const isNormalizedLegacy =
+    value.schemaVersion === REPLAY_SCHEMA_VERSION &&
+    value.ruleset === null &&
+    value.contentSnapshot === null;
+  if (!isLegacy && !isNormalizedLegacy && value.schemaVersion !== REPLAY_SCHEMA_VERSION) {
+    return null;
+  }
   if (typeof value.id !== 'string' || typeof value.seed !== 'string') return null;
   if (typeof value.difficulty !== 'string') return null;
   if (!Array.isArray(value.trials) || !value.trials.every((t) => typeof t === 'string')) {
@@ -103,6 +256,18 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   const keyframes = normalizeReplayKeyframes(value.keyframes);
   if (keyframes.length !== value.keyframes.length || keyframes.length === 0) return null;
 
+  const isLegacyShape = isLegacy || isNormalizedLegacy;
+  const parsedRuleset = isLegacyShape ? null : parseReplayRuleset(value.ruleset);
+  if (!isLegacyShape && parsedRuleset === INVALID_REPLAY_VALUE) return null;
+  const ruleset = parsedRuleset === INVALID_REPLAY_VALUE ? null : parsedRuleset;
+
+  const parsedContentSnapshot = isLegacyShape
+    ? null
+    : parseReplayContentSnapshot(value.contentSnapshot);
+  if (!isLegacyShape && parsedContentSnapshot === INVALID_REPLAY_VALUE) return null;
+  const contentSnapshot =
+    parsedContentSnapshot === INVALID_REPLAY_VALUE ? null : parsedContentSnapshot;
+
   return {
     schemaVersion: REPLAY_SCHEMA_VERSION,
     id: value.id,
@@ -118,6 +283,8 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
       score: value.outcome.score,
     },
     keyframes,
+    ruleset,
+    contentSnapshot,
   };
 }
 

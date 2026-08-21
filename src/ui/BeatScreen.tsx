@@ -10,6 +10,7 @@ import { getEvent } from '../data/events';
 import { formatEventChoiceTags, formatEventOutcomeTags } from '../render/eventOutcomeView';
 import type { RunState } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
+import { useReplayContent } from './replayContent';
 
 export interface BeatScreenProps {
   state: RunState;
@@ -17,6 +18,8 @@ export interface BeatScreenProps {
 }
 
 export function BeatScreen({ state, onResolve }: BeatScreenProps) {
+  const { resolveCard, resolveRelic } = useReplayContent();
+  const contentResolver = { getCard: resolveCard, getRelic: resolveRelic };
   const beat = state.beat;
   const ev = beat ? getEvent(beat.eventId) : undefined;
   if (!beat || !ev) return null;
@@ -31,7 +34,7 @@ export function BeatScreen({ state, onResolve }: BeatScreenProps) {
           <p className="event-prompt">{ev.prompt}</p>
           {outcome && (
             <>
-              <EffectTagList tags={formatEventOutcomeTags(outcome.outcome)} />
+              <EffectTagList tags={formatEventOutcomeTags(outcome.outcome, contentResolver)} />
               {outcome.description && <p className="event-choice-desc">{outcome.description}</p>}
             </>
           )}
@@ -66,7 +69,7 @@ export function BeatScreen({ state, onResolve }: BeatScreenProps) {
               onClick={() => onResolve(i)}
             >
               <span className="event-choice-label">{choice.label}</span>
-              <EffectTagList tags={formatEventChoiceTags(choice)} />
+              <EffectTagList tags={formatEventChoiceTags(choice, contentResolver)} />
               {choice.description && (
                 <span className="event-choice-desc">{choice.description}</span>
               )}

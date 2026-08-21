@@ -79,6 +79,8 @@ function makeHellBlob(keyframes: ReplayKeyframe[]): ReplayBlob {
       score: 12,
     },
     keyframes,
+    ruleset: { version: 1, fingerprint: 'review-hell-ruleset' },
+    contentSnapshot: { cards: [], relics: [] },
   };
 }
 

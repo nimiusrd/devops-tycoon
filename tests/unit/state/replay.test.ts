@@ -9,6 +9,7 @@ import {
   normalizeReplay,
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
+  snapshotReplayContent,
   type ReplayBlob,
   normalizeReplayKeyframes,
   type ReplayKeyframe,
@@ -19,7 +20,7 @@ import {
   MemoryReplayStorage,
   type ReplayStorage,
 } from '../../../src/state/replayPersistence';
-import { MemoryRunStorage } from '../../../src/state/runPersistence';
+import { CURRENT_RUN_RULESET, MemoryRunStorage } from '../../../src/state/runPersistence';
 
 import 'fake-indexeddb/auto';
 
@@ -54,13 +55,19 @@ function makeBlob(partial: Partial<ReplayBlob> & Pick<ReplayBlob, 'id' | 'seed'>
       ...partial.outcome,
     },
     keyframes: partial.keyframes ?? [{ phase: 'setup', frame }],
+    ruleset: partial.ruleset ?? { version: 1, fingerprint: 'test-ruleset' },
+    contentSnapshot: partial.contentSnapshot ?? { cards: [], relics: [] },
   };
 }
 
 describe('リプレイ正規化（RI-61）', () => {
   it('正常 blob を往復できる', () => {
     const blob = makeBlob({ id: 'a', seed: 'r1' });
-    expect(normalizeReplay(blob)?.id).toBe('a');
+    const normalized = normalizeReplay(blob);
+    expect(normalized?.id).toBe('a');
+    expect(normalized?.ruleset).toEqual(blob.ruleset);
+    expect(normalized?.contentSnapshot).toEqual(blob.contentSnapshot);
+    expect(normalized?.contentSnapshot).not.toBe(blob.contentSnapshot);
   });
 
   it('壊れた／非互換は null', () => {
@@ -68,6 +75,70 @@ describe('リプレイ正規化（RI-61）', () => {
     expect(normalizeReplay({ schemaVersion: 99 })).toBeNull();
     const blob = makeBlob({ id: 'b', seed: 'r2' });
     expect(normalizeReplay({ ...blob, keyframes: [] })).toBeNull();
+    expect(normalizeReplay({ ...blob, ruleset: null })).toBeNull();
+    expect(normalizeReplay({ ...blob, ruleset: { version: 0, fingerprint: 'bad' } })).toBeNull();
+    expect(
+      normalizeReplay({
+        ...blob,
+        contentSnapshot: { cards: [{ id: 'bad' }], relics: [] },
+      }),
+    ).toBeNull();
+  });
+
+  it('v1 はキーフレームを保持したままルールセット不明へ正規化する', () => {
+    const {
+      ruleset: _ruleset,
+      contentSnapshot: _contentSnapshot,
+      ...v1
+    } = makeBlob({
+      id: 'legacy',
+      seed: 'legacy',
+    });
+    const normalized = normalizeReplay({ ...v1, schemaVersion: 1 });
+
+    expect(normalized?.schemaVersion).toBe(REPLAY_SCHEMA_VERSION);
+    expect(normalized?.ruleset).toBeNull();
+    expect(normalized?.contentSnapshot).toBeNull();
+    expect(normalized?.keyframes).toHaveLength(1);
+  });
+
+  it('v2 のスナップショットはキーフレーム参照IDだけを収集し、deep cloneする', () => {
+    const frame = makeNormalizeFrame('snapshot');
+    frame.deck = [{ defId: 'copilot', level: 1 }];
+    frame.relics = ['psych-safety'];
+    frame.bossRelicReward = 'postmortem';
+    frame.draft = ['auto-test'];
+    frame.shop = {
+      cards: [{ defId: 'docs', cost: 1, bought: false }],
+      relic: { id: 'flow-first', cost: 1, bought: false },
+    };
+    frame.extras.allowedCards = ['feature-flags'];
+    frame.extras.allowedRelics = ['primary-source'];
+
+    const snapshot = snapshotReplayContent([{ phase: 'setup', frame }]);
+    expect(snapshot.cards.map((card) => card.id)).toEqual(['copilot', 'auto-test', 'docs']);
+    expect(snapshot.relics.map((relic) => relic.id)).toEqual([
+      'flow-first',
+      'psych-safety',
+      'postmortem',
+    ]);
+
+    const blob = makeBlob({
+      id: 'snapshot',
+      seed: 'snapshot',
+      ruleset: CURRENT_RUN_RULESET,
+      contentSnapshot: snapshot,
+      keyframes: [{ phase: 'setup', frame }],
+    });
+    const normalized = normalizeReplay(blob);
+    expect(normalized?.contentSnapshot).toEqual(snapshot);
+    expect(normalized?.contentSnapshot).not.toBe(snapshot);
+    expect(normalized?.contentSnapshot?.cards[0]).not.toBe(snapshot.cards[0]);
+
+    snapshot.cards[0]!.name = '入力変更';
+    snapshot.relics[0]!.name = '入力変更';
+    expect(normalized?.contentSnapshot?.cards[0]?.name).toBe('Copilot全員配布');
+    expect(normalized?.contentSnapshot?.relics[0]?.name).toBe('フロー重視');
   });
 
   it('buildReplayId は seed と時刻を含む', () => {
@@ -128,6 +199,25 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
 
     expect(await storage.list()).toEqual([]);
     expect(await storage.get('clear-a')).toBeNull();
+  });
+
+  it('IndexedDB の旧v1リプレイを list/get で保持する', async () => {
+    const name = nextReplayDbName('replay-legacy');
+    const storage = new IndexedDbReplayStorage(name);
+    const base = makeBlob({ id: 'legacy-idb', seed: 'legacy-idb', finishedAt: 2000 });
+    const { ruleset: _ruleset, contentSnapshot: _contentSnapshot, ...legacy } = base;
+    const raw = { ...legacy, schemaVersion: 1 };
+
+    const db = await openGameDb(name);
+    try {
+      await db.put(REPLAYS_STORE_NAME, raw, raw.id);
+    } finally {
+      db.close();
+    }
+
+    expect((await storage.list()).map((replay) => replay.id)).toContain('legacy-idb');
+    expect((await storage.get('legacy-idb'))?.ruleset).toBeNull();
+    expect((await storage.get('legacy-idb'))?.contentSnapshot).toBeNull();
   });
 
   it('IndexedDB save 失敗後も次の書き込みと読み取りが継続できる', async () => {
@@ -243,6 +333,10 @@ describe('GameHandle リプレイ（RI-61）', () => {
     const opened = game.openReplay(blob.id, 0);
     expect(opened).not.toBeNull();
     expect(game.isReplayMode()).toBe(true);
+    expect(game.getActiveReplayInfo()).toEqual({
+      ruleset: { version: 1, fingerprint: 'test-ruleset' },
+      contentSnapshot: { cards: [], relics: [] },
+    });
     expect(game.isPaused()).toBe(true);
     expect(game.dispatch('pairReview')).toEqual({ ok: false, reason: 'complete' });
     expect(game.beginSetupSprint().phase).toBe(opened!.phase);
@@ -251,6 +345,54 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(game.isReplayMode()).toBe(false);
     expect(game.isPaused()).toBe(false);
     expect(game.phase()).toBe('title');
+  });
+
+  it('ルールセット不一致でも閲覧でき、what-if を再計算しない', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'mismatch-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({
+      id: 'mismatch',
+      seed: 'mismatch-replay',
+      ruleset: { version: 999, fingerprint: 'recorded-before-current' },
+    });
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 0)).not.toBeNull();
+    expect(game.getActiveReplayInfo()?.ruleset).toEqual({
+      version: 999,
+      fingerprint: 'recorded-before-current',
+    });
+    expect(game.getState().whatIf).toBeNull();
+    game.exitReplay();
+    expect(game.getActiveReplayInfo()).toBeNull();
+  });
+
+  it('旧v1を取り込み、未知IDを含むキーフレームも保持して開ける', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'legacy-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const base = makeBlob({ id: 'legacy-open', seed: 'legacy-replay' });
+    const frame = structuredClone(base.keyframes[0]!.frame);
+    frame.deck = [{ defId: 'removed-card', level: 1 }];
+    frame.relics = ['removed-relic'];
+    const { ruleset: _ruleset, contentSnapshot: _contentSnapshot, ...legacy } = base;
+    const raw = {
+      ...legacy,
+      schemaVersion: 1,
+      keyframes: [{ phase: 'setup', frame }],
+    } as unknown as ReplayBlob;
+
+    expect(await game.importReplay(raw)).toBe(true);
+    const listed = game.listReplays().find((replay) => replay.id === raw.id);
+    expect(listed?.ruleset).toBeNull();
+    expect(listed?.contentSnapshot).toBeNull();
+    expect(game.openReplay(raw.id, 0)?.deck[0]?.defId).toBe('removed-card');
+    expect(game.getActiveReplayInfo()).toEqual({ ruleset: null, contentSnapshot: null });
+    game.exitReplay();
   });
 
   it('beginSetupSprint 直前の編成変更が setup キーフレームへ反映される', async () => {
@@ -421,6 +563,8 @@ describe('GameHandle リプレイ（RI-61）', () => {
     }
     expect(game.listReplays().length).toBeGreaterThan(0);
     expect(game.listReplays()[0]?.keyframes.length).toBeGreaterThan(0);
+    expect(game.listReplays()[0]?.ruleset).toEqual(CURRENT_RUN_RULESET);
+    expect(game.listReplays()[0]?.contentSnapshot).toEqual({ cards: [], relics: [] });
   });
 
   it('キーフレームに label が付く（RI-34‴）', async () => {
@@ -541,6 +685,8 @@ function makeNormalizeBlob(overrides: Partial<ReplayBlob> = {}): ReplayBlob {
       score: 42,
     },
     keyframes: [{ phase: 'setup', label: '編成', frame: makeNormalizeFrame('normalize-seed') }],
+    ruleset: { version: 1, fingerprint: 'normalize-ruleset' },
+    contentSnapshot: { cards: [], relics: [] },
   };
 
   return {

@@ -50,11 +50,15 @@ import {
   buildReplayId,
   normalizeReplay,
   REPLAY_SCHEMA_VERSION,
+  snapshotReplayContent,
   type ReplayBlob,
+  type ReplayContentSnapshot,
   type ReplayKeyframe,
+  type ReplayRulesetIdentity,
 } from './state/replay';
 import type { ReplayStorage } from './state/replayPersistence';
 import {
+  CURRENT_RUN_RULESET,
   getRunSaveCompatibilityIssue,
   toRunSave,
   type RunSave,
@@ -62,6 +66,11 @@ import {
   type RunSaveSummary,
   type RunStorage,
 } from './state/runPersistence';
+
+export interface ActiveReplayInfo {
+  ruleset: ReplayRulesetIdentity | null;
+  contentSnapshot: ReplayContentSnapshot | null;
+}
 
 export interface GameHandle {
   /** 自動進行を止める。 */
@@ -195,11 +204,13 @@ export interface GameHandle {
    * キーフレーム時点の `state.diagnosis` とは別に保持する（RI-34‴）。
    */
   getActiveReplayDiagnosis(): DiagnosisType | null;
+  /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
+  getActiveReplayInfo(): ActiveReplayInfo | null;
   /**
    * リプレイを永続化層へ取り込みキャッシュを更新する（E2E / デバッグ用。RI-34‴）。
    * 正規化に失敗した場合は false。
    */
-  importReplay(blob: ReplayBlob): Promise<boolean>;
+  importReplay(blob: unknown): Promise<boolean>;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
@@ -251,6 +262,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let replayMode = false;
   /** 閲覧中リプレイの終端診断（キーフレーム時点の diagnosis と独立。RI-34‴）。 */
   let activeReplayDiagnosis: DiagnosisType | null = null;
+  /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
+  let activeReplayInfo: ActiveReplayInfo | null = null;
   let recorded = false;
   let lastRunReward: RunRewardBreakdown | null = null;
   let revision = 0;
@@ -331,6 +344,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         score: s.totals.delivered,
       },
       keyframes: structuredClone(keyframes),
+      ruleset: structuredClone(CURRENT_RUN_RULESET),
+      contentSnapshot: snapshotReplayContent(keyframes),
     };
     keyframes = [];
     void replayStorage
@@ -489,6 +504,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     getState() {
       const state = engine.snapshot();
+      if (replayMode) return state;
       // オートプレイやモンテカルロは snapshot を直接使うため、UI 経路だけで試算する。
       return { ...state, ...resolveWhatIf() };
     },
@@ -497,6 +513,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
+      activeReplayInfo = null;
       keyframes = [];
       paused = false;
       clearWhatIfCache();
@@ -510,6 +527,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (replayMode) return engine.snapshot();
       recorded = false;
       lastRunReward = null;
+      activeReplayInfo = null;
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
       keyframes = [];
@@ -704,6 +722,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     newRun(runSeed) {
       replayMode = false;
+      activeReplayDiagnosis = null;
+      activeReplayInfo = null;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
@@ -829,6 +849,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       replayMode = true;
       activeReplayDiagnosis = replay.outcome.diagnosis;
+      activeReplayInfo = {
+        ruleset: replay.ruleset ? structuredClone(replay.ruleset) : null,
+        contentSnapshot: replay.contentSnapshot ? structuredClone(replay.contentSnapshot) : null,
+      };
       activeDailyDate = frame.frame.dailyDate ?? null;
       recorded = true;
       lastRunReward = null;
@@ -840,6 +864,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     exitReplay() {
       replayMode = false;
       activeReplayDiagnosis = null;
+      activeReplayInfo = null;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
@@ -856,6 +881,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     getActiveReplayDiagnosis() {
       return activeReplayDiagnosis;
+    },
+    getActiveReplayInfo() {
+      return activeReplayInfo ? structuredClone(activeReplayInfo) : null;
     },
     async importReplay(blob) {
       if (!replayStorage) return false;

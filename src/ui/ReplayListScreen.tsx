@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { diagnosisView } from '../sim/diagnosis';
 import { planReviewHellReplay } from '../render/reviewHellReplayView';
+import { formatReplayRuleset } from './replayRuleset';
 import type { ReplayBlob } from '../state/replay';
 
 export interface ReplayListScreenProps {
@@ -76,6 +77,13 @@ export function ReplayListScreen({ replays, onOpen, onClose }: ReplayListScreenP
                             レビュー地獄
                           </em>
                         ) : null}
+                      </span>
+                      <span
+                        className="replay-item-ruleset"
+                        data-testid="replay-ruleset"
+                        data-ruleset-known={replay.ruleset ? 'true' : 'false'}
+                      >
+                        記録時ルールセット: {formatReplayRuleset(replay.ruleset)}
                       </span>
                       <small>{formatFinishedAt(replay.finishedAt)}</small>
                     </button>

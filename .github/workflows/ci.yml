@@ -8,6 +8,7 @@ on:
       - '!**/*.md'
       - 'plan/generated/balance-parameters.md'
       - 'plan/generated/content-catalog.md'
+      - 'plan/generated/balance-curves.svg'
       - '!mockups/**'
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - '!**/*.md'
       - 'plan/generated/balance-parameters.md'
       - 'plan/generated/content-catalog.md'
+      - 'plan/generated/balance-curves.svg'
       - '!mockups/**'
 
 jobs:

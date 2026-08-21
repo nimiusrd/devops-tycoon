@@ -5,6 +5,7 @@ import { createServer } from 'vite';
 const OUTPUT_PATHS = [
   resolve('plan/generated/balance-parameters.md'),
   resolve('plan/generated/content-catalog.md'),
+  resolve('plan/generated/balance-curves.svg'),
 ];
 
 async function main() {
@@ -42,9 +43,12 @@ async function main() {
     const catalogMarkdown = catalogDocumentation.renderContentCatalogMarkdown(
       catalog.CONTENT_CATALOG,
     );
+    const curves = await server.ssrLoadModule('/src/data/balance/curves.ts');
+    const curveSvg = curves.renderBalanceCurvesSvg();
     for (const [outputPath, output] of [
       [OUTPUT_PATHS[0], markdown],
       [OUTPUT_PATHS[1], catalogMarkdown],
+      [OUTPUT_PATHS[2], curveSvg],
     ]) {
       mkdirSync(dirname(outputPath), { recursive: true });
       writeFileSync(outputPath, output, 'utf8');

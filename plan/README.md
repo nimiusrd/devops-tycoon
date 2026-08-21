@@ -21,7 +21,7 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 - Vite + React 19 + TypeScript + PixiJSのフロントエンド単体ゲーム。
 - `RunEngine`をラン状態の正本とし、seed付き決定論でシミュレーションする。
 - 確率モデルの構造と変更規律は[probability-model.md](./probability-model.md)を正とする。
-- バランスパラメータSSoTは型付きレジストリ、生成パラメータ表、工程モデル、メンバー・採用まで移行済み（RI-105〜109）。残る領域移行、コンテンツカタログ、代表曲線、ルールセット識別は[RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)で追跡する。設計正本は[balance-ssot-plan.md](./balance-ssot-plan.md)。
+- バランスパラメータSSoTは型付きレジストリ、生成パラメータ表、工程モデルから代表確率曲線まで移行済み（RI-105〜123、RI-124）。残るデイリーへのルールセット伝播は[RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)／[RI-121](./remaining-issues.md#ri-121-デイリー診断情報へのルールセット伝播)で追跡する。設計正本は[balance-ssot-plan.md](./balance-ssot-plan.md)。
 - 既定描画はPixiJS。`?renderer=dom`とWebGL不可時はDOM/SVGへフォールバックする。
 - IndexedDBにメタ進行、ラン途中セーブ、リプレイを保存する。
 - Vitestでロジック、Playwrightで操作・視覚回帰を検証する。

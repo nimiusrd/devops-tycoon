@@ -98,29 +98,73 @@ export function sampleRepresentativeCurves(): readonly RepresentativeCurvePoint[
   }));
 }
 
-interface PlotBox {
+interface PlotFrame {
   readonly left: number;
   readonly right: number;
   readonly top: number;
   readonly bottom: number;
+}
+
+interface PlotBox extends PlotFrame {
   readonly maxProbability: number;
 }
 
-const REWORK_PLOT: PlotBox = {
+const REWORK_FRAME: PlotFrame = {
   left: 90,
   right: 455,
   top: 150,
   bottom: 380,
-  maxProbability: 0.35,
 };
 
-const INCIDENT_PLOT: PlotBox = {
+const INCIDENT_FRAME: PlotFrame = {
   left: 575,
   right: 940,
   top: 150,
   bottom: 380,
-  maxProbability: 0.16,
 };
+
+const REWORK_PREFERRED_TICKS = [0, 0.05, 0.15, 0.25, 0.35] as const;
+const INCIDENT_PREFERRED_TICKS = [0, 0.04, 0.08, 0.12, 0.16] as const;
+
+/** 代表点が既定上限を超えたときに使う、目盛りの取りやすい確率上限。 */
+const NICE_PROBABILITY_MAXIMA = [
+  0.08, 0.1, 0.12, 0.16, 0.2, 0.24, 0.25, 0.3, 0.32, 0.35, 0.4, 0.5, 0.6, 0.75, 1,
+] as const;
+
+export interface ProbabilityAxis {
+  readonly max: number;
+  readonly ticks: readonly number[];
+}
+
+/**
+ * サンプル最大値に合わせて Y 軸上限と目盛りを決める。
+ * 現行値では既定目盛りを保ち、超えたときだけ上限を広げる。
+ */
+export function chooseProbabilityAxis(
+  sampleMax: number,
+  preferredTicks: readonly number[],
+): ProbabilityAxis {
+  const preferredMax = preferredTicks[preferredTicks.length - 1];
+  if (preferredMax === undefined || preferredTicks.length < 2) {
+    throw new Error('Y軸の既定目盛りが不足しています。');
+  }
+  if (sampleMax <= preferredMax) {
+    return { max: preferredMax, ticks: preferredTicks };
+  }
+  const max = NICE_PROBABILITY_MAXIMA.find((value) => value >= sampleMax) ?? 1;
+  const lastIndex = preferredTicks.length - 1;
+  const ticks = preferredTicks.map((_, index) => (max * index) / lastIndex);
+  return { max, ticks };
+}
+
+function percentTickLabel(probability: number): string {
+  const pct = Math.round(probability * 10000) / 100;
+  return `${pct}%`;
+}
+
+function plotFromAxis(frame: PlotFrame, axis: ProbabilityAxis): PlotBox {
+  return { ...frame, maxProbability: axis.max };
+}
 
 /** SVG 座標を固定小数へ丸め、生成を冪等にする。 */
 export function formatCurveCoord(value: number): string {
@@ -203,6 +247,24 @@ export function renderBalanceCurvesSvg(): string {
   const incidentAi = (point: RepresentativeCurvePoint) => point.incidentAi;
   const incidentNoAi = (point: RepresentativeCurvePoint) => point.incidentNoAi;
   const inputTicks = [...BALANCE_CURVE_MARKER_INPUTS];
+  const reworkSampleMax = Math.max(
+    ...points.map((point) => Math.max(point.reworkAi, point.reworkNoAi)),
+  );
+  const incidentSampleMax = Math.max(
+    ...points.map((point) => Math.max(point.incidentAi, point.incidentNoAi)),
+  );
+  const reworkAxis = chooseProbabilityAxis(reworkSampleMax, REWORK_PREFERRED_TICKS);
+  const incidentAxis = chooseProbabilityAxis(incidentSampleMax, INCIDENT_PREFERRED_TICKS);
+  const reworkPlot = plotFromAxis(REWORK_FRAME, reworkAxis);
+  const incidentPlot = plotFromAxis(INCIDENT_FRAME, incidentAxis);
+  const reworkTickLabels = reworkAxis.ticks.map((probability) => ({
+    probability,
+    label: percentTickLabel(probability),
+  }));
+  const incidentTickLabels = incidentAxis.ticks.map((probability) => ({
+    probability,
+    label: percentTickLabel(probability),
+  }));
 
   return [
     '<!-- このファイルは `npm run balance:docs` で生成されます。手動編集しないでください。 -->',
@@ -252,29 +314,23 @@ export function renderBalanceCurvesSvg(): string {
     '    <text class="text" x="257.5" y="91" font-size="20" font-weight="600" text-anchor="middle">AI依存度とRework確率</text>',
     `    <text class="muted" x="257.5" y="116" font-size="13" text-anchor="middle">AI Literacy ${aiLiteracy} / Quality ${quality} / 初回Review / 補正なし</text>`,
     '',
-    yGrid(REWORK_PLOT, [0.35, 0.25, 0.15, 0.05, 0]),
-    `    <line class="axis" x1="${formatCurveCoord(REWORK_PLOT.left)}" y1="${formatCurveCoord(REWORK_PLOT.top)}" x2="${formatCurveCoord(REWORK_PLOT.left)}" y2="${formatCurveCoord(REWORK_PLOT.bottom)}" />`,
-    `    <line class="axis" x1="${formatCurveCoord(REWORK_PLOT.left)}" y1="${formatCurveCoord(REWORK_PLOT.bottom)}" x2="${formatCurveCoord(REWORK_PLOT.right)}" y2="${formatCurveCoord(REWORK_PLOT.bottom)}" />`,
+    yGrid(reworkPlot, [...reworkAxis.ticks].reverse()),
+    `    <line class="axis" x1="${formatCurveCoord(reworkPlot.left)}" y1="${formatCurveCoord(reworkPlot.top)}" x2="${formatCurveCoord(reworkPlot.left)}" y2="${formatCurveCoord(reworkPlot.bottom)}" />`,
+    `    <line class="axis" x1="${formatCurveCoord(reworkPlot.left)}" y1="${formatCurveCoord(reworkPlot.bottom)}" x2="${formatCurveCoord(reworkPlot.right)}" y2="${formatCurveCoord(reworkPlot.bottom)}" />`,
     '',
-    yLabels(REWORK_PLOT, [
-      { probability: 0, label: '0%' },
-      { probability: 0.05, label: '5%' },
-      { probability: 0.15, label: '15%' },
-      { probability: 0.25, label: '25%' },
-      { probability: 0.35, label: '35%' },
-    ]),
+    yLabels(reworkPlot, reworkTickLabels),
     '',
-    xLabels(REWORK_PLOT, inputTicks),
+    xLabels(reworkPlot, inputTicks),
     '    <text class="text" x="272.5" y="430" font-size="14" text-anchor="middle">組織の累積AI依存度</text>',
     '',
-    `    <polyline class="ai" points="${polylinePoints(REWORK_PLOT, points, reworkAi)}" />`,
-    `    <polyline class="no-ai" points="${polylinePoints(REWORK_PLOT, points, reworkNoAi)}" />`,
+    `    <polyline class="ai" points="${polylinePoints(reworkPlot, points, reworkAi)}" />`,
+    `    <polyline class="no-ai" points="${polylinePoints(reworkPlot, points, reworkNoAi)}" />`,
     '',
     '    <g class="ai-dot">',
-    markerCircles(REWORK_PLOT, points, reworkAi),
+    markerCircles(reworkPlot, points, reworkAi),
     '    </g>',
     '    <g class="no-ai-dot">',
-    markerCircles(REWORK_PLOT, points, reworkNoAi),
+    markerCircles(reworkPlot, points, reworkNoAi),
     '    </g>',
     '  </g>',
     '',
@@ -283,29 +339,23 @@ export function renderBalanceCurvesSvg(): string {
     '    <text class="text" x="742.5" y="91" font-size="20" font-weight="600" text-anchor="middle">Test CoverageとIncident確率</text>',
     `    <text class="muted" x="742.5" y="116" font-size="13" text-anchor="middle">AI Literacy ${aiLiteracy} / Incident倍率 1.0</text>`,
     '',
-    yGrid(INCIDENT_PLOT, [0.16, 0.12, 0.08, 0.04, 0]),
-    `    <line class="axis" x1="${formatCurveCoord(INCIDENT_PLOT.left)}" y1="${formatCurveCoord(INCIDENT_PLOT.top)}" x2="${formatCurveCoord(INCIDENT_PLOT.left)}" y2="${formatCurveCoord(INCIDENT_PLOT.bottom)}" />`,
-    `    <line class="axis" x1="${formatCurveCoord(INCIDENT_PLOT.left)}" y1="${formatCurveCoord(INCIDENT_PLOT.bottom)}" x2="${formatCurveCoord(INCIDENT_PLOT.right)}" y2="${formatCurveCoord(INCIDENT_PLOT.bottom)}" />`,
+    yGrid(incidentPlot, [...incidentAxis.ticks].reverse()),
+    `    <line class="axis" x1="${formatCurveCoord(incidentPlot.left)}" y1="${formatCurveCoord(incidentPlot.top)}" x2="${formatCurveCoord(incidentPlot.left)}" y2="${formatCurveCoord(incidentPlot.bottom)}" />`,
+    `    <line class="axis" x1="${formatCurveCoord(incidentPlot.left)}" y1="${formatCurveCoord(incidentPlot.bottom)}" x2="${formatCurveCoord(incidentPlot.right)}" y2="${formatCurveCoord(incidentPlot.bottom)}" />`,
     '',
-    yLabels(INCIDENT_PLOT, [
-      { probability: 0, label: '0%' },
-      { probability: 0.04, label: '4%' },
-      { probability: 0.08, label: '8%' },
-      { probability: 0.12, label: '12%' },
-      { probability: 0.16, label: '16%' },
-    ]),
+    yLabels(incidentPlot, incidentTickLabels),
     '',
-    xLabels(INCIDENT_PLOT, inputTicks),
+    xLabels(incidentPlot, inputTicks),
     '    <text class="text" x="757.5" y="430" font-size="14" text-anchor="middle">Test Coverage</text>',
     '',
-    `    <polyline class="ai" points="${polylinePoints(INCIDENT_PLOT, points, incidentAi)}" />`,
-    `    <polyline class="no-ai" points="${polylinePoints(INCIDENT_PLOT, points, incidentNoAi)}" />`,
+    `    <polyline class="ai" points="${polylinePoints(incidentPlot, points, incidentAi)}" />`,
+    `    <polyline class="no-ai" points="${polylinePoints(incidentPlot, points, incidentNoAi)}" />`,
     '',
     '    <g class="ai-dot">',
-    markerCircles(INCIDENT_PLOT, points, incidentAi),
+    markerCircles(incidentPlot, points, incidentAi),
     '    </g>',
     '    <g class="no-ai-dot">',
-    markerCircles(INCIDENT_PLOT, points, incidentNoAi),
+    markerCircles(incidentPlot, points, incidentNoAi),
     '    </g>',
     '  </g>',
     '',

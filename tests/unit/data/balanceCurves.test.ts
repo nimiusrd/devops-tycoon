@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BALANCE_CURVE_MARKER_INPUTS,
   BALANCE_CURVE_REPRESENTATIVE,
+  chooseProbabilityAxis,
   representativeIncidentProbability,
   representativeReworkProbability,
   renderBalanceCurvesSvg,
@@ -92,8 +93,23 @@ describe('代表確率曲線の生成', () => {
     expect(svg).not.toContain('候補');
     expect(svg).not.toContain('交差');
     expect(svg).not.toContain('manualCapability');
+    expect(svg).toContain('35%');
+    expect(svg).toContain('16%');
     expect(svg.match(/<polyline class="ai"/g)).toHaveLength(2);
     expect(svg.match(/<polyline class="no-ai"/g)).toHaveLength(2);
     expect(BALANCE_CURVE_MARKER_INPUTS).toEqual([0, 25, 50, 75, 100]);
+  });
+
+  it('現行値では既定のY軸上限を保ち、超過時は目盛りを広げる', () => {
+    const preferredIncident = [0, 0.04, 0.08, 0.12, 0.16];
+    const current = chooseProbabilityAxis(0.1475, preferredIncident);
+    expect(current.max).toBe(0.16);
+    expect(current.ticks).toEqual(preferredIncident);
+
+    const overflow = chooseProbabilityAxis(0.2275, preferredIncident);
+    expect(overflow.max).toBeGreaterThanOrEqual(0.2275);
+    expect(overflow.max).toBeGreaterThan(0.16);
+    expect(overflow.ticks[0]).toBe(0);
+    expect(overflow.ticks[overflow.ticks.length - 1]).toBe(overflow.max);
   });
 });

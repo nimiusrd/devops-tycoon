@@ -7,7 +7,12 @@
  * 描画は状態を読むだけ（第22.2）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { pauseBriefly as pauseGameBriefly, type GameHandle, type PauseBrieflyClear } from '../game';
+import {
+  pauseBriefly as pauseGameBriefly,
+  type ActiveReplayInfo,
+  type GameHandle,
+  type PauseBrieflyClear,
+} from '../game';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
 import type { ReplayBlob } from '../state/replay';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
@@ -96,6 +101,8 @@ export interface UseRun {
   isReplayMode: boolean;
   /** 閲覧中リプレイの終端診断（RI-34‴）。非リプレイ時は null。 */
   activeReplayDiagnosis: DiagnosisType | null;
+  /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
+  activeReplayInfo: ActiveReplayInfo | null;
   openReplay: (id: string, keyframeIndex?: number) => void;
   exitReplay: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
@@ -124,6 +131,9 @@ export function useRun(game: GameHandle): UseRun {
   const [isReplayMode, setIsReplayMode] = useState(() => game.isReplayMode());
   const [activeReplayDiagnosis, setActiveReplayDiagnosis] = useState<DiagnosisType | null>(() =>
     game.getActiveReplayDiagnosis(),
+  );
+  const [activeReplayInfo, setActiveReplayInfo] = useState<ActiveReplayInfo | null>(() =>
+    game.getActiveReplayInfo(),
   );
   const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
   const playbackSpeedRef = useRef<PlaybackSpeed>(1);
@@ -187,6 +197,7 @@ export function useRun(game: GameHandle): UseRun {
       setReplays(game.listReplays());
       setIsReplayMode(game.isReplayMode());
       setActiveReplayDiagnosis(game.getActiveReplayDiagnosis());
+      setActiveReplayInfo(game.getActiveReplayInfo());
     }, FRAME_MS);
     return () => window.clearInterval(id);
   }, [game]);
@@ -282,6 +293,7 @@ export function useRun(game: GameHandle): UseRun {
     replays,
     isReplayMode,
     activeReplayDiagnosis,
+    activeReplayInfo,
     playbackSpeed,
     setPlaybackSpeed,
     startRun,

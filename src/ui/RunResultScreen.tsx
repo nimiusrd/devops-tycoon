@@ -4,7 +4,6 @@
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
 import { getBoss } from '../data/bosses';
-import { getRelic } from '../data/relics';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { loseNextActionView } from '../render/loseNextActionView';
 import { quarterFailureTheme } from '../render/quarterFailureTheme';
@@ -19,6 +18,7 @@ import {
 import type { LoseReason, RunState } from '../sim/run/types';
 import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
+import { useReplayContent } from './replayContent';
 
 const REVIEW_BONUS_LABEL: Record<NonNullable<RunRewardBreakdown['reviewBonusKind']>, string> = {
   exceeded: '超過達成',
@@ -74,6 +74,7 @@ export function RunResultScreen({
   lastRunReward = null,
   onNewRun,
 }: RunResultScreenProps) {
+  const { resolveRelic } = useReplayContent();
   const won = state.status === 'won';
   const boss = getBoss(state.bossId);
   const diag = diagnosisView(state.diagnosis);
@@ -111,7 +112,7 @@ export function RunResultScreen({
           },
         })
       : null;
-  const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
+  const bossRelic = state.bossRelicReward ? resolveRelic(state.bossRelicReward) : undefined;
   const t = state.totals;
   const isDaily = state.runKind === 'daily';
   const dailyRecord =

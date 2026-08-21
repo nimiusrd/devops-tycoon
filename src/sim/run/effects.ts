@@ -10,7 +10,7 @@ import { getBoss } from '../../data/bosses';
 import { RUN_BALANCE } from '../../data/balance/run';
 import { getDifficulty, getTrial } from '../../data/difficulties';
 import { getEvolutionNode } from '../../data/evolution';
-import { getRelic } from '../../data/relics';
+import { getRelic, type RelicDef } from '../../data/relics';
 import { combineEffects } from '../cards';
 import { IDENTITY_CARD_EFFECTS } from '../model';
 import { DEFAULT_SCENARIO, getScenario } from '../scenarios';
@@ -125,10 +125,13 @@ export function foldRunEffects(input: RunModifierInput): RunEffects {
 }
 
 /** ラン全体の数値パッシブ（レリックの合算）を求める。 */
-export function foldPassives(relics: string[]): RunPassives {
+export function foldPassives(
+  relics: string[],
+  resolveRelic: (id: string) => RelicDef | undefined = getRelic,
+): RunPassives {
   const out: RunPassives = { ...IDENTITY_PASSIVES };
   for (const relicId of relics) {
-    const relic = getRelic(relicId);
+    const relic = resolveRelic(relicId);
     if (!relic?.passives) continue;
     const p = relic.passives;
     if (p.moraleDamageMul !== undefined) out.moraleDamageMul *= p.moraleDamageMul;

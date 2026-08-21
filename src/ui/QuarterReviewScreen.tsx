@@ -5,7 +5,6 @@
  */
 import { useState, type ReactNode } from 'react';
 import { getGoalAdjustment } from '../data/goalAdjustments';
-import { getRelic } from '../data/relics';
 import { OUTCOME_LABELS } from '../sim/run/quarterReview';
 import type { GoalAdjustmentId, RunState } from '../sim/run/types';
 import { QuarterOkr } from './QuarterOkr';
@@ -13,6 +12,7 @@ import { QuarterRoadmap } from './QuarterRoadmap';
 import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
 import { StakeholderNegotiationList } from './StakeholderNegotiationList';
+import { useReplayContent } from './replayContent';
 
 export interface QuarterReviewScreenProps {
   state: RunState;
@@ -38,6 +38,7 @@ export function QuarterReviewScreen({
   onChooseAdjustment,
 }: QuarterReviewScreenProps) {
   const [previewAdjustmentId, setPreviewAdjustmentId] = useState<GoalAdjustmentId | null>(null);
+  const { resolveRelic } = useReplayContent();
   const review = state.quarterReview;
   if (!review) return null;
 
@@ -46,7 +47,7 @@ export function QuarterReviewScreen({
   const canAdjust = outcome === 'missed_adjustable';
   const isTerminal =
     outcome === 'shutdown' || outcome === 'reorg_required' || outcome === 'missed_crisis';
-  const bossRelic = state.bossRelicReward ? getRelic(state.bossRelicReward) : undefined;
+  const bossRelic = state.bossRelicReward ? resolveRelic(state.bossRelicReward) : undefined;
   const previewAdjustment =
     canAdjust && previewAdjustmentId ? getGoalAdjustment(previewAdjustmentId) : undefined;
 

@@ -2,7 +2,7 @@
 
 DevOps Tycoonの確率モデルについて、現行実装の構造、数式、seed設計、検証方法をまとめる。
 体験要件は[`SPEC.md`](../SPEC.md)、個々の係数とデータは`src/sim/`と`src/data/`の実装を正とする。
-係数のSSoTは型付きレジストリと生成パラメータ表まで導入済みで、工程モデルとメンバー領域は同じ定義を参照する。残る領域と代表曲線は[balance-ssot-plan.md](./balance-ssot-plan.md)と[RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)で追跡する。
+係数のSSoTは型付きレジストリ、生成パラメータ表、代表確率曲線まで導入済みで、工程モデルは同じ定義と計算関数を参照する。残る領域は[balance-ssot-plan.md](./balance-ssot-plan.md)と[RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)で追跡する。
 
 ## 1. モデルの位置づけ
 
@@ -256,15 +256,17 @@ P(Rework) =
 
 代表的な初期条件で変数を一つずつ動かすと、確率は次のように変化する。
 
-![組織の累積AI依存度と対象タスクのRework確率、Test CoverageとIncident確率の代表曲線](./assets/probability-curves.svg)
+![組織の累積AI依存度と対象タスクのRework確率、Test CoverageとIncident確率の代表曲線](./generated/balance-curves.svg)
 
 グラフは式から直接算出した条件付き確率で、Monte Carloの観測値ではない。読み取り値は次のとおり。
-現時点のSVGは実装値をもとに作成したスナップショットである。SSoT導入後は、同じ定義と計算関数から自動生成する。
+SVGは `npm run balance:docs` が現行のレジストリ値と `reworkProbability` / `incidentProbability` から生成する。候補式の曲線は含めない。
 
+<!-- balance-curve-endpoints:begin -->
 | 入力 | 対象タスク: AI支援あり | 対象タスク: AI支援なし |
 | --- | ---: | ---: |
 | AI依存度 0 → 100でのRework確率 | 2.0% → 25.5% | 2.0% → 20.5% |
 | Test Coverage 0 → 100でのIncident確率 | 14.75% → 4.75% | 12.0% → 2.0% |
+<!-- balance-curve-endpoints:end -->
 
 #### 4.5.1 AI依存度の意味と再設計課題
 
@@ -418,7 +420,7 @@ C_next =
 
 個人ステータスにはすでに`implementation`、`review`、`aiMastery`があるが、手作業能力の低下と回復を表す状態はない。また、現在のタスクは担当メンバーを保持しない。最初の導入候補はチーム単位の`manualCapability`とし、個人単位へ拡張する場合は、タスクと担当者の対応、成長・消耗、保存スキーマまで同時に設計する。
 
-この再設計は未実装であり、追跡先は[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)である。§4.5の[`probability-curves.svg`](./assets/probability-curves.svg)は現行式の記録、§4.5.2の[`proposed-ai-dependency-curves.svg`](./assets/proposed-ai-dependency-curves.svg)は候補式の形状確認用である。SSoT移行時に現行値として照合するのは前者であり、後者を現行ゲームの挙動として扱わない。
+この再設計は未実装であり、追跡先は[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)である。§4.5の[`balance-curves.svg`](./generated/balance-curves.svg)は現行式の記録、§4.5.2の[`proposed-ai-dependency-curves.svg`](./assets/proposed-ai-dependency-curves.svg)は候補式の形状確認用である。SSoTが現行値として照合するのは前者であり、後者を現行ゲームの挙動として扱わない。
 
 ### 4.6 編成と施策の合成
 

@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process';
 const GENERATED_FILES = [
   'plan/generated/balance-parameters.md',
   'plan/generated/content-catalog.md',
+  'plan/generated/balance-curves.svg',
+  'plan/probability-model.md',
 ];
 
 function run(command, args) {

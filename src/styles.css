@@ -4052,6 +4052,11 @@ button.card:active {
   cursor: pointer;
   font-weight: 700;
 }
+.replay-mode-banner-ruleset {
+  min-width: 0;
+  flex: 1 1 18rem;
+  overflow-wrap: anywhere;
+}
 .replay-item-diagnosis {
   display: flex;
   flex-wrap: wrap;

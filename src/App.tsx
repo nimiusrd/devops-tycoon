@@ -356,7 +356,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           : 'リプレイ閲覧中（操作は無効）'}
       </span>
       <span data-testid="replay-seed">seed: {state.seed}</span>
-      <span data-testid="replay-recorded-ruleset">
+      <span className="replay-mode-banner-ruleset" data-testid="replay-recorded-ruleset">
         記録時ルールセット: {formatReplayRuleset(run.activeReplayInfo?.ruleset ?? null)}
       </span>
       <button type="button" data-testid="exit-replay" onClick={exitReplay}>

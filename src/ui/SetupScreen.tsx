@@ -10,6 +10,7 @@
 import { getBoss } from '../data/bosses';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
+import { DeckBar } from './DeckBar';
 import { FormationGrid } from './FormationScreen';
 import { QuarterOkr } from './QuarterOkr';
 
@@ -91,6 +92,7 @@ export function SetupScreen({
           onToggleAi={onToggleAi}
           readOnly={readOnly}
         />
+        {readOnly ? <DeckBar deck={state.deck} /> : null}
       </div>
     </div>
   );

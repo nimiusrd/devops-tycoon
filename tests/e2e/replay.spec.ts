@@ -207,6 +207,7 @@ test('記録時のレリック定義とルールセットを優先して表示�
     game.startRun('easy', [], 'replay-snapshot-e2e');
     const frame = game.engine.exportReplayFrame();
     if (!frame) return false;
+    frame.deck = [{ defId: 'copilot', level: 1 }];
     frame.relics = ['psych-safety'];
 
     const blob: ReplayBlob = {
@@ -224,7 +225,17 @@ test('記録時のレリック定義とルールセットを優先して表示�
       keyframes: [{ phase: 'setup', frame, label: '記録時定義' }],
       ruleset: { version: 99, fingerprint: 'recorded-before-current' },
       contentSnapshot: {
-        cards: [],
+        cards: [
+          {
+            id: 'copilot',
+            name: '記録時のCopilot',
+            rarity: 'common',
+            cost: 1,
+            focusCost: 2,
+            description: ['保存されたカード定義'],
+            base: { codingSpeedMul: 1.01 },
+          },
+        ],
         relics: [
           {
             id: 'psych-safety',
@@ -251,6 +262,7 @@ test('記録時のレリック定義とルールセットを優先して表示�
   await expect(page.getByTestId('replay-recorded-ruleset')).toContainText(
     'v99 / recorded-before-current',
   );
+  await expect(page.getByTestId('deck-card-copilot')).toContainText('記録時のCopilot');
   await expect(page.getByTestId('relics')).toContainText('記録時の安全性');
   expect(
     await page.evaluate(() => (window as ReplayGameWindow).game?.getState().whatIf),

@@ -121,16 +121,20 @@ export function defaultMeta(): MetaState {
  * 優先施策 ID を正規化する（未知・未解放を落とし、重複除去、上限で切り詰め）。
  * `allowed` 未指定時は ID の形式だけ整える（解放チェックは呼び出し側）。
  */
-export function sanitizePreferredCardIds(ids: unknown, allowed?: ReadonlySet<string>): string[] {
+export function sanitizePreferredCardIds(
+  ids: unknown,
+  allowed?: ReadonlySet<string>,
+  maxCards: number = MAX_PREFERRED_CARDS,
+): string[] {
   if (!Array.isArray(ids)) return [];
   const out: string[] = [];
   const seen = new Set<string>();
   for (const raw of ids) {
     if (typeof raw !== 'string' || !raw || seen.has(raw)) continue;
     if (allowed && !allowed.has(raw)) continue;
+    if (out.length >= maxCards) break;
     seen.add(raw);
     out.push(raw);
-    if (out.length >= MAX_PREFERRED_CARDS) break;
   }
   return out;
 }

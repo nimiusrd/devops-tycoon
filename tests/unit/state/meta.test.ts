@@ -1075,6 +1075,8 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(
       sanitizePreferredCardIds([123, undefined, '', 'copilot', 'copilot', 'docs', 'auto-test']),
     ).toEqual(['copilot', 'docs']);
+    expect(sanitizePreferredCardIds(['copilot', 'docs'], undefined, 0)).toEqual([]);
+    expect(sanitizePreferredCardIds(['copilot', 'docs'], undefined, 1)).toEqual(['copilot']);
     expect(normalizeMeta({ seenTutorial: true, soundMuted: false })).toMatchObject({
       seenTutorial: true,
       seenTutorialVersion: 1,

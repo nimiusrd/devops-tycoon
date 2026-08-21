@@ -288,6 +288,25 @@ describe('CONTENT_CATALOG', () => {
       category: 'daily.difficulty',
       message: '未知の参照: unknown-difficulty',
     });
+    expect(CONTENT_CATALOG.initialUnlockedDifficulties).toEqual(['easy', 'normal']);
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        initialUnlockedDifficulties: ['unknown-difficulty'],
+      }),
+    ).toContainEqual({
+      category: 'initialUnlockedDifficulties',
+      message: '未知の参照: unknown-difficulty',
+    });
+    expect(
+      validateContentCatalog({
+        ...CONTENT_CATALOG,
+        initialUnlockedDifficulties: [],
+      }),
+    ).toContainEqual({
+      category: 'initialUnlockedDifficulties',
+      message: '初期解放難易度が空です',
+    });
     expect(
       validateContentCatalog({
         ...CONTENT_CATALOG,

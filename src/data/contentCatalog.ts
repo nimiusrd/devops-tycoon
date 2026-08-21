@@ -15,6 +15,7 @@ import { CARD_DEFS, RARITY_WEIGHT } from './cards';
 import { BOSS_DEFS, type BossDef } from './bosses';
 import { DEPARTMENT_DEFS } from './departments';
 import { compareCanonicalStrings } from './balance/canonical';
+import { INITIAL_UNLOCKED_DIFFICULTIES } from './balance/meta';
 import { PROCESS_BALANCE } from './balance/process';
 import {
   DAILY_RUN_DIFFICULTY,
@@ -82,6 +83,8 @@ export interface ContentCatalog {
     readonly difficulty: string;
     readonly trials: readonly string[];
   };
+  /** 新規メタ進行で最初から解放する難易度。 */
+  initialUnlockedDifficulties: readonly string[];
 }
 
 export interface ContentCatalogValidationError {
@@ -431,6 +434,7 @@ export const CONTENT_CATALOG: ContentCatalog = {
     difficulty: DAILY_RUN_DIFFICULTY,
     trials: [...DAILY_RUN_TRIALS],
   },
+  initialUnlockedDifficulties: [...INITIAL_UNLOCKED_DIFFICULTIES],
 };
 
 function validateEntryList(
@@ -574,6 +578,15 @@ export function validateContentCatalog(
   const trialIds = new Set(TRIAL_DEFS.map((definition) => definition.id));
   for (const trialId of catalog.daily.trials) {
     ensureReference(errors, 'daily.trials', trialId, trialIds);
+  }
+  if (catalog.initialUnlockedDifficulties.length === 0) {
+    errors.push({
+      category: 'initialUnlockedDifficulties',
+      message: '初期解放難易度が空です',
+    });
+  }
+  for (const difficultyId of catalog.initialUnlockedDifficulties) {
+    ensureReference(errors, 'initialUnlockedDifficulties', difficultyId, difficultyIdSet);
   }
 
   const starterById = new Map(catalog.members.starter.map((entry) => [entry.id, entry]));

@@ -15,6 +15,7 @@ import {
   defineBalanceEntry,
   defineProbabilityDistribution,
   fingerprintBalanceRuleset,
+  INITIAL_UNLOCKED_DIFFICULTIES,
   META_BALANCE,
   PACING_BALANCE,
   projectBalanceRegistry,
@@ -196,6 +197,7 @@ describe('バランスルールセットの版と指紋', () => {
       difficulty: DAILY_RUN_DIFFICULTY,
       trials: [...DAILY_RUN_TRIALS],
     });
+    expect(CONTENT_CATALOG.initialUnlockedDifficulties).toEqual([...INITIAL_UNLOCKED_DIFFICULTIES]);
 
     const unspecified = EVENT_DEFS.find((event) => event.weight === undefined);
     expect(unspecified).toBeDefined();
@@ -221,6 +223,14 @@ describe('バランスルールセットの版と指紋', () => {
         createBalanceRulesetPayload([], {
           ...CONTENT_CATALOG,
           daily: { difficulty: 'hard', trials: ['flammable'] },
+        }),
+      ),
+    ).not.toBe(original);
+    expect(
+      fingerprintBalanceRuleset(
+        createBalanceRulesetPayload([], {
+          ...CONTENT_CATALOG,
+          initialUnlockedDifficulties: ['easy'],
         }),
       ),
     ).not.toBe(original);

@@ -287,3 +287,9 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
+
+## initialUnlockedDifficulties
+
+```json
+["easy","normal"]
+```

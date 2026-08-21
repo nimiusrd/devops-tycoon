@@ -110,6 +110,7 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 | `npm run gallery` | 主要画面を撮影して`gallery/index.html`を生成 |
 | `npm run playtest` | 全難易度×方針でランを自動プレイし結果を`playtest-out/`へ出力 |
 | `npm run playtest:report` | プレイテスト結果をSPEC第19.1の判定基準ごとに集計 |
+| `npm run balance:report` | 変更前後のplaytest JSONを同一seedで比較しJSON/Markdownレポートを生成 |
 | `npm run lint` | ESLintを実行 |
 | `npm run format:check` | Prettier差分を確認 |
 | `npm run format` | Prettierで整形 |
@@ -118,6 +119,17 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 `test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
 
 GitHub Actions では [Mutation](.github/workflows/mutation.yml) ワークフローを **手動（workflow_dispatch）または週次スケジュール** で実行できます。PR / push の必須 CI には含めていません。
+
+多数seedのバランス比較は [Balance report](.github/workflows/balance-report.yml) を手動または毎週月曜00:00 UTCに実行できます。既定では`main`の親commitと現在のcommitを同一コホートで測定し、ルールセット・設定値・勝率・Delivery／Incident／Reworkの分布差分を30日保持のartifactへ保存します。ローカルで保存済み出力を比較する場合は次の形式です。
+
+```bash
+npm run balance:report -- \
+  --before /tmp/before/runs.json \
+  --after /tmp/after/runs.json \
+  --before-root /tmp/before \
+  --after-root /tmp/after \
+  --out-dir /tmp/balance-report
+```
 
 コア全体は約 6,700 mutant・単一ジョブだと数時間かかるため、既定はディレクトリ単位の **並列シャード** で実行します。手動実行で `mutate` を指定すると、そのパターンだけを単一ジョブで回せます。`force` で incremental キャッシュを無視できます。レポートはシャードごとの artifact、incremental JSON はシャード単位の Actions cache に残ります。
 

@@ -1,0 +1,174 @@
+name: Balance report
+
+on:
+  schedule:
+    # 毎週月曜 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      before_ref:
+        description: '変更前ref（空ならafter refの親）'
+        required: false
+        type: string
+        default: ''
+      after_ref:
+        description: '変更後ref（空ならworkflowのSHA）'
+        required: false
+        type: string
+        default: ''
+      diffs:
+        description: '難易度のカンマ区切り（空なら既定値）'
+        required: false
+        type: string
+        default: ''
+      policies:
+        description: '方針のカンマ区切り（空なら既定値）'
+        required: false
+        type: string
+        default: ''
+      seeds:
+        description: 'seedのカンマ区切り（空なら既定値）'
+        required: false
+        type: string
+        default: ''
+      meta:
+        description: 'メタ進行プロファイル（空ならfresh）'
+        required: false
+        type: choice
+        options:
+          - fresh
+          - full
+        default: fresh
+      counterfactual:
+        description: '反実仮想評価を有効にする'
+        required: false
+        type: boolean
+        default: false
+      cf_policies:
+        description: '反実仮想対象方針のカンマ区切り（空なら全方針）'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    name: Compare balance across refs
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.after_ref || github.sha }}
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install after dependencies
+        run: npm ci
+
+      - name: Resolve comparison refs
+        id: refs
+        env:
+          BEFORE_REF_INPUT: ${{ inputs.before_ref }}
+          AFTER_REF_INPUT: ${{ inputs.after_ref }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${AFTER_REF_INPUT}" ]]; then
+            after_ref="$(git rev-parse "${AFTER_REF_INPUT}^{commit}")"
+          else
+            after_ref="$(git rev-parse HEAD)"
+          fi
+          if [[ -n "${BEFORE_REF_INPUT}" ]]; then
+            before_ref="$(git rev-parse "${BEFORE_REF_INPUT}^{commit}")"
+          else
+            before_ref="$(git rev-parse "${after_ref}^")"
+          fi
+          echo "before=${before_ref}" >> "${GITHUB_OUTPUT}"
+          echo "after=${after_ref}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create before worktree
+        env:
+          BEFORE_REF: ${{ steps.refs.outputs.before }}
+        run: git worktree add --detach "${RUNNER_TEMP}/balance-before" "${BEFORE_REF}"
+
+      - name: Install before dependencies
+        working-directory: ${{ runner.temp }}/balance-before
+        run: npm ci
+
+      - name: Measure before ref
+        working-directory: ${{ runner.temp }}/balance-before
+        env:
+          BALANCE_DIFFS: ${{ inputs.diffs }}
+          BALANCE_POLICIES: ${{ inputs.policies }}
+          BALANCE_SEEDS: ${{ inputs.seeds }}
+          BALANCE_META: ${{ inputs.meta }}
+          BALANCE_COUNTERFACTUAL: ${{ inputs.counterfactual }}
+          BALANCE_CF_POLICIES: ${{ inputs.cf_policies }}
+          PT_OUT: ${{ runner.temp }}/balance-artifact/before/runs.json
+        run: |
+          set -euo pipefail
+          if [[ -n "${BALANCE_DIFFS}" ]]; then export PT_DIFFS="${BALANCE_DIFFS}"; fi
+          if [[ -n "${BALANCE_POLICIES}" ]]; then export PT_POLICIES="${BALANCE_POLICIES}"; fi
+          if [[ -n "${BALANCE_SEEDS}" ]]; then export PT_SEEDS="${BALANCE_SEEDS}"; fi
+          if [[ -n "${BALANCE_META}" ]]; then export PT_META="${BALANCE_META}"; fi
+          if [[ "${BALANCE_COUNTERFACTUAL}" == 'true' ]]; then export PT_COUNTERFACTUAL=1; fi
+          if [[ -n "${BALANCE_CF_POLICIES}" ]]; then export PT_CF_POLICIES="${BALANCE_CF_POLICIES}"; fi
+          npm run playtest
+
+      - name: Measure after ref
+        env:
+          BALANCE_DIFFS: ${{ inputs.diffs }}
+          BALANCE_POLICIES: ${{ inputs.policies }}
+          BALANCE_SEEDS: ${{ inputs.seeds }}
+          BALANCE_META: ${{ inputs.meta }}
+          BALANCE_COUNTERFACTUAL: ${{ inputs.counterfactual }}
+          BALANCE_CF_POLICIES: ${{ inputs.cf_policies }}
+          PT_OUT: ${{ runner.temp }}/balance-artifact/after/runs.json
+        run: |
+          set -euo pipefail
+          if [[ -n "${BALANCE_DIFFS}" ]]; then export PT_DIFFS="${BALANCE_DIFFS}"; fi
+          if [[ -n "${BALANCE_POLICIES}" ]]; then export PT_POLICIES="${BALANCE_POLICIES}"; fi
+          if [[ -n "${BALANCE_SEEDS}" ]]; then export PT_SEEDS="${BALANCE_SEEDS}"; fi
+          if [[ -n "${BALANCE_META}" ]]; then export PT_META="${BALANCE_META}"; fi
+          if [[ "${BALANCE_COUNTERFACTUAL}" == 'true' ]]; then export PT_COUNTERFACTUAL=1; fi
+          if [[ -n "${BALANCE_CF_POLICIES}" ]]; then export PT_CF_POLICIES="${BALANCE_CF_POLICIES}"; fi
+          npm run playtest
+
+      - name: Generate comparison report
+        if: ${{ always() }}
+        env:
+          BEFORE_REF: ${{ steps.refs.outputs.before }}
+          AFTER_REF: ${{ steps.refs.outputs.after }}
+        run: |
+          set +e
+          mkdir -p "${RUNNER_TEMP}/balance-artifact/metadata"
+          {
+            echo "before=${BEFORE_REF}"
+            echo "after=${AFTER_REF}"
+          } > "${RUNNER_TEMP}/balance-artifact/metadata/refs.txt"
+          node scripts/balance-report.mjs \
+            --before "${RUNNER_TEMP}/balance-artifact/before/runs.json" \
+            --after "${RUNNER_TEMP}/balance-artifact/after/runs.json" \
+            --before-root "${RUNNER_TEMP}/balance-before" \
+            --after-root "${GITHUB_WORKSPACE}" \
+            --out-dir "${RUNNER_TEMP}/balance-artifact/report"
+          status=$?
+          exit "${status}"
+
+      - name: Remove before worktree
+        if: ${{ always() }}
+        run: git worktree remove --force "${RUNNER_TEMP}/balance-before" || true
+
+      - name: Upload balance report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: balance-report-${{ github.run_id }}
+          path: ${{ runner.temp }}/balance-artifact/
+          if-no-files-found: warn
+          retention-days: 30

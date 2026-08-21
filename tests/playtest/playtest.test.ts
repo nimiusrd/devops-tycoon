@@ -17,6 +17,14 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+  BALANCE_REGISTRY,
+  BALANCE_RULESET_FINGERPRINT,
+  BALANCE_RULESET_FINGERPRINT_SCHEME,
+  BALANCE_RULESET_VERSION,
+  flattenBalanceEntries,
+  projectBalanceRegistry,
+} from '../../src/data/balance';
 import { DIFFICULTY_DEFS } from '../../src/data/difficulties';
 import { POLICY_DEFS, parseCfPolicies, runOnce, type MetaProfile, type RunLog } from './harness';
 import { currentGeneration } from '../../scripts/playtest-generation.mjs';
@@ -93,6 +101,10 @@ const SEEDS = parseSeeds(
 );
 const META = parseMeta(process.env.PT_META ?? 'fresh');
 const CF_POLICIES = parseCfPolicies(process.env.PT_CF_POLICIES);
+const COUNTERFACTUAL_ENABLED = process.env.PT_COUNTERFACTUAL === '1';
+const COUNTERFACTUAL_POLICIES = COUNTERFACTUAL_ENABLED
+  ? (CF_POLICIES ?? Object.keys(POLICY_DEFS))
+  : [];
 if (CF_POLICIES) {
   const outside = CF_POLICIES.filter((p) => !POLICIES.includes(p));
   if (outside.length > 0) {
@@ -107,6 +119,25 @@ const DEFAULT_DIFFS = ['easy', 'normal', 'hard', 'nightmare'];
 const DEFAULT_SEEDS = Array.from({ length: 10 }, (_, i) => `pt-${i + 1}`);
 /** `PT_COUNTERFACTUAL=1` の既定コホートが数時間〜半日を超えるため。 */
 const PLAYTEST_TIMEOUT_MS = 86_400_000;
+
+const BALANCE_REGISTRY_PROJECTION = projectBalanceRegistry(BALANCE_REGISTRY);
+const BALANCE_RUNTIME_IDS = new Set(BALANCE_REGISTRY_PROJECTION.values.map((entry) => entry.id));
+const BALANCE_PARAMETERS = flattenBalanceEntries(BALANCE_REGISTRY)
+  .filter((entry) => BALANCE_RUNTIME_IDS.has(entry.id))
+  .map((entry) => ({
+    id: entry.id,
+    value: entry.value,
+    unit: entry.unit,
+    tags: [...entry.tags],
+  }));
+
+const RULESET_SNAPSHOT = {
+  version: BALANCE_RULESET_VERSION,
+  fingerprint: BALANCE_RULESET_FINGERPRINT,
+  fingerprintScheme: BALANCE_RULESET_FINGERPRINT_SCHEME,
+  registry: BALANCE_REGISTRY_PROJECTION,
+  parameters: BALANCE_PARAMETERS,
+};
 
 /** 2つの文字列リストが集合として一致するか（重複や欠落を件数で誤魔化させない）。 */
 function sameSet(a: readonly string[], b: readonly string[]): boolean {
@@ -146,6 +177,8 @@ function writePayload(runs: RunLog[], generation: string, partial: boolean): voi
       policies: POLICIES,
       seeds: SEEDS,
       meta: META,
+      counterfactual: COUNTERFACTUAL_ENABLED,
+      counterfactualPolicies: COUNTERFACTUAL_POLICIES,
       /**
        * 所見ドキュメントが前提にしている既定コホートか。
        *
@@ -155,6 +188,7 @@ function writePayload(runs: RunLog[], generation: string, partial: boolean): voi
        */
       isDefault: isDefaultCohort(),
     },
+    ruleset: RULESET_SNAPSHOT,
     runs,
   };
   writeFileSync(OUT, JSON.stringify(payload), 'utf8');
@@ -169,6 +203,8 @@ function resumableRuns(generation: string): RunLog[] {
       policies: string[];
       seeds: string[];
       meta: string;
+      counterfactual?: boolean;
+      counterfactualPolicies?: string[];
     };
     runs?: RunLog[];
   } | null;
@@ -179,7 +215,9 @@ function resumableRuns(generation: string): RunLog[] {
     !sameSet(cohort.difficulties, DIFFS) ||
     !sameSet(cohort.policies, POLICIES) ||
     !sameSet(cohort.seeds, SEEDS) ||
-    cohort.meta !== META
+    cohort.meta !== META ||
+    (cohort.counterfactual ?? false) !== COUNTERFACTUAL_ENABLED ||
+    !sameSet(cohort.counterfactualPolicies ?? [], COUNTERFACTUAL_POLICIES)
   ) {
     return [];
   }

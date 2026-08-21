@@ -194,6 +194,20 @@ function normalizeParameters(parameters, label) {
   return normalized;
 }
 
+function normalizeCatalog(catalog, label) {
+  if (!isObject(catalog)) {
+    throw new BalanceReportError(`${label}.catalogが不正`);
+  }
+  try {
+    const serialized = JSON.stringify(catalog);
+    if (serialized === undefined) throw new Error('JSON化できない');
+    return JSON.parse(serialized);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new BalanceReportError(`${label}.catalogがJSON化できない: ${reason}`);
+  }
+}
+
 function validateRuleset(ruleset, label) {
   if (!isObject(ruleset)) throw new BalanceReportError(`${label}.rulesetがない`);
   if (!Number.isInteger(ruleset.version) || ruleset.version < 1) {
@@ -205,12 +219,20 @@ function validateRuleset(ruleset, label) {
   if (!Number.isInteger(ruleset.fingerprintScheme) || ruleset.fingerprintScheme < 1) {
     throw new BalanceReportError(`${label}.ruleset.fingerprintSchemeが不正`);
   }
+  if (
+    typeof ruleset.catalogFingerprint !== 'string' ||
+    !/^[0-9a-f]{64}$/i.test(ruleset.catalogFingerprint)
+  ) {
+    throw new BalanceReportError(`${label}.ruleset.catalogFingerprintが不正`);
+  }
   return {
     version: ruleset.version,
     fingerprint: ruleset.fingerprint,
     fingerprintScheme: ruleset.fingerprintScheme,
     registry: normalizeRegistry(ruleset.registry, `${label}.ruleset`),
     parameters: normalizeParameters(ruleset.parameters, `${label}.ruleset`),
+    catalog: normalizeCatalog(ruleset.catalog, `${label}.ruleset`),
+    catalogFingerprint: ruleset.catalogFingerprint,
   };
 }
 
@@ -230,6 +252,7 @@ async function rulesetFromRoot(root, label) {
         unit: entry.unit,
         tags: [...entry.tags],
       }));
+    const catalog = balance.CONTENT_CATALOG;
     return validateRuleset(
       {
         version: balance.BALANCE_RULESET_VERSION,
@@ -237,6 +260,8 @@ async function rulesetFromRoot(root, label) {
         fingerprintScheme: balance.BALANCE_RULESET_FINGERPRINT_SCHEME,
         registry,
         parameters,
+        catalog,
+        catalogFingerprint: balance.sha256Hex(balance.canonicalizeJson(catalog)),
       },
       `${label} root`,
     );
@@ -251,7 +276,7 @@ async function rulesetFromRoot(root, label) {
 
 function mergeRuleset(recorded, fallback, label) {
   if (recorded && fallback) {
-    for (const field of ['version', 'fingerprint', 'fingerprintScheme']) {
+    for (const field of ['version', 'fingerprint', 'fingerprintScheme', 'catalogFingerprint']) {
       if (recorded[field] !== undefined && recorded[field] !== fallback[field]) {
         throw new BalanceReportError(`${label}の記録ルールセットとrootのルールセットが不一致`);
       }
@@ -263,6 +288,8 @@ function mergeRuleset(recorded, fallback, label) {
       ...(recorded ?? {}),
       registry: recorded?.registry ?? fallback?.registry,
       parameters: recorded?.parameters ?? fallback?.parameters,
+      catalog: recorded?.catalog ?? fallback?.catalog,
+      catalogFingerprint: recorded?.catalogFingerprint ?? fallback?.catalogFingerprint,
     },
     label,
   );
@@ -377,22 +404,42 @@ function diffRulesets(before, after) {
     });
   }
 
+  const catalogChanged = before.catalogFingerprint !== after.catalogFingerprint;
+  const catalogChanges = catalogChanged
+    ? [
+        {
+          kind: 'catalog',
+          id: 'contentCatalog',
+          unit: 'projection-sha256',
+          tags: ['content', 'fingerprint-input'],
+          before: before.catalogFingerprint,
+          after: after.catalogFingerprint,
+          delta: null,
+          relativeDelta: null,
+        },
+      ]
+    : [];
+
   return {
     before: {
       version: before.version,
       fingerprint: before.fingerprint,
       fingerprintScheme: before.fingerprintScheme,
+      catalogFingerprint: before.catalogFingerprint,
     },
     after: {
       version: after.version,
       fingerprint: after.fingerprint,
       fingerprintScheme: after.fingerprintScheme,
+      catalogFingerprint: after.catalogFingerprint,
     },
     fingerprintChanged: before.fingerprint !== after.fingerprint,
     versionChanged: before.version !== after.version,
+    catalogChanged,
+    catalogChanges,
     sequenceChanges,
     valueChanges,
-    changes: [...valueChanges, ...sequenceChanges],
+    changes: [...valueChanges, ...sequenceChanges, ...catalogChanges],
   };
 }
 
@@ -685,7 +732,7 @@ export function writeReport(report, outDir) {
 }
 
 export function parseArgs(argv) {
-  const options = { outDir: DEFAULT_BALANCE_REPORT_DIR, help: false };
+  const options = { out_dir: DEFAULT_BALANCE_REPORT_DIR, help: false };
   const valueOptions = new Set(['before', 'after', 'before-root', 'after-root', 'out-dir']);
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];

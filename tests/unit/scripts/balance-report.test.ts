@@ -6,6 +6,7 @@ import {
   BalanceReportError,
   compareMeasurements,
   loadMeasurement,
+  parseArgs,
   renderMarkdown,
   summarizeRuns,
 } from '../../../scripts/balance-report.mjs';
@@ -33,6 +34,8 @@ function ruleset(parameterValue: number, sequence: string[] = ['a', 'b']) {
       sequences: { 'balance.test.distribution': sequence },
     },
     parameters: [{ id: 'balance.test', value: parameterValue, unit: 'ratio', tags: ['test'] }],
+    catalog: { cards: [{ id: 'card.test', order: 0, execution: { value: 'fixed' } }] },
+    catalogFingerprint: 'c'.repeat(64),
   };
 }
 
@@ -104,6 +107,12 @@ describe('playtest-statistics', () => {
 });
 
 describe('balance-report', () => {
+  it('既定のレポート出力先を保持する', () => {
+    expect(parseArgs(['--before', 'before.json', '--after', 'after.json']).out_dir).toBe(
+      'playtest-out/balance-report',
+    );
+  });
+
   const beforeRuns = [
     run('s-1', 'won', { delivery: 10, incident: 2, rework: 4 }),
     run('s-2', 'lost', { delivery: 20, incident: 3, rework: 2 }),
@@ -148,6 +157,7 @@ describe('balance-report', () => {
       before: ['a', 'b'],
       after: ['b', 'a'],
     });
+    expect(report.configuration.catalogChanges).toEqual([]);
     expect(report.sensitivity.changes).toHaveLength(2);
     expect(report.sensitivity.interpretation).toContain('複数');
   });
@@ -211,6 +221,31 @@ describe('balance-report', () => {
     });
   });
 
+  it('カタログだけの変更も設定差分として記録する', async () => {
+    const before = await measurement(payload({ runs: beforeRuns }), 'catalog-before');
+    const after = await measurement(
+      payload({
+        runs: afterRuns,
+        currentRuleset: {
+          ...ruleset(1),
+          catalog: { cards: [{ id: 'card.test', order: 0, execution: { value: 'changed' } }] },
+          catalogFingerprint: 'd'.repeat(64),
+        },
+      }),
+      'catalog-after',
+    );
+    const report = compareMeasurements(before, after);
+
+    expect(report.configuration.catalogChanged).toBe(true);
+    expect(report.configuration.catalogChanges[0]).toMatchObject({
+      kind: 'catalog',
+      id: 'contentCatalog',
+      before: 'c'.repeat(64),
+      after: 'd'.repeat(64),
+    });
+    expect(report.configuration.changes).toHaveLength(1);
+  });
+
   it('コホート不一致を拒否する', async () => {
     const before = await measurement(payload({ runs: beforeRuns }), 'before');
     const after = await measurement(
@@ -247,6 +282,7 @@ describe('balance-report', () => {
     expect(loaded.ruleset.version).toBeGreaterThan(0);
     expect(loaded.ruleset.fingerprint).toMatch(/^[0-9a-f]{64}$/);
     expect(loaded.ruleset.parameters.length).toBeGreaterThan(0);
+    expect(loaded.ruleset.catalogFingerprint).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('Markdownに設定値・結果分布・欠損を含める', async () => {

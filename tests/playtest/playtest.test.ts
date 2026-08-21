@@ -22,8 +22,11 @@ import {
   BALANCE_RULESET_FINGERPRINT,
   BALANCE_RULESET_FINGERPRINT_SCHEME,
   BALANCE_RULESET_VERSION,
+  CONTENT_CATALOG,
   flattenBalanceEntries,
+  canonicalizeJson,
   projectBalanceRegistry,
+  sha256Hex,
 } from '../../src/data/balance';
 import { DIFFICULTY_DEFS } from '../../src/data/difficulties';
 import { POLICY_DEFS, parseCfPolicies, runOnce, type MetaProfile, type RunLog } from './harness';
@@ -102,9 +105,7 @@ const SEEDS = parseSeeds(
 const META = parseMeta(process.env.PT_META ?? 'fresh');
 const CF_POLICIES = parseCfPolicies(process.env.PT_CF_POLICIES);
 const COUNTERFACTUAL_ENABLED = process.env.PT_COUNTERFACTUAL === '1';
-const COUNTERFACTUAL_POLICIES = COUNTERFACTUAL_ENABLED
-  ? (CF_POLICIES ?? Object.keys(POLICY_DEFS))
-  : [];
+const COUNTERFACTUAL_POLICIES = COUNTERFACTUAL_ENABLED ? (CF_POLICIES ?? POLICIES) : [];
 if (CF_POLICIES) {
   const outside = CF_POLICIES.filter((p) => !POLICIES.includes(p));
   if (outside.length > 0) {
@@ -130,6 +131,7 @@ const BALANCE_PARAMETERS = flattenBalanceEntries(BALANCE_REGISTRY)
     unit: entry.unit,
     tags: [...entry.tags],
   }));
+const CONTENT_CATALOG_FINGERPRINT = sha256Hex(canonicalizeJson(CONTENT_CATALOG));
 
 const RULESET_SNAPSHOT = {
   version: BALANCE_RULESET_VERSION,
@@ -137,6 +139,8 @@ const RULESET_SNAPSHOT = {
   fingerprintScheme: BALANCE_RULESET_FINGERPRINT_SCHEME,
   registry: BALANCE_REGISTRY_PROJECTION,
   parameters: BALANCE_PARAMETERS,
+  catalog: CONTENT_CATALOG,
+  catalogFingerprint: CONTENT_CATALOG_FINGERPRINT,
 };
 
 /** 2つの文字列リストが集合として一致するか（重複や欠落を件数で誤魔化させない）。 */

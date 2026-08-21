@@ -62,6 +62,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.after_ref || github.sha }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -90,6 +91,34 @@ jobs:
           fi
           echo "before=${before_ref}" >> "${GITHUB_OUTPUT}"
           echo "after=${after_ref}" >> "${GITHUB_OUTPUT}"
+
+      - name: Validate counterfactual cohort
+        if: ${{ inputs.counterfactual == true }}
+        env:
+          BALANCE_DIFFS: ${{ inputs.diffs }}
+          BALANCE_POLICIES: ${{ inputs.policies }}
+          BALANCE_SEEDS: ${{ inputs.seeds }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${BALANCE_DIFFS}" || -z "${BALANCE_POLICIES}" || -z "${BALANCE_SEEDS}" ]]; then
+            echo "::error::counterfactual=true requires explicit diffs, policies, and seeds so the job stays within its time limit."
+            exit 1
+          fi
+          count_list() {
+            local raw="$1"
+            local count=0
+            IFS=',' read -ra entries <<< "${raw}"
+            for entry in "${entries[@]}"; do
+              entry="${entry//[[:space:]]/}"
+              if [[ -n "${entry}" ]]; then count=$((count + 1)); fi
+            done
+            echo "${count}"
+          }
+          run_count=$(( $(count_list "${BALANCE_DIFFS}") * $(count_list "${BALANCE_POLICIES}") * $(count_list "${BALANCE_SEEDS}") ))
+          if (( run_count > 32 )); then
+            echo "::error::counterfactual cohort has ${run_count} runs; reduce diffs, policies, or seeds to at most 32 runs."
+            exit 1
+          fi
 
       - name: Create before worktree
         env:

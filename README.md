@@ -122,6 +122,8 @@ GitHub Actions では [Mutation](.github/workflows/mutation.yml) ワークフロ
 
 多数seedのバランス比較は [Balance report](.github/workflows/balance-report.yml) を手動または毎週月曜00:00 UTCに実行できます。既定では`main`の親commitと現在のcommitを同一コホートで測定し、ルールセット・設定値・勝率・Delivery／Incident／Reworkの分布差分を30日保持のartifactへ保存します。ローカルで保存済み出力を比較する場合は次の形式です。
 
+反実仮想評価を手動で有効にする場合は、実行時間を制限するため`diffs`・`policies`・`seeds`を明示し、組み合わせを32ラン以下にしてください。
+
 ```bash
 npm run balance:report -- \
   --before /tmp/before/runs.json \

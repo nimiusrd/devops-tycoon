@@ -76,6 +76,12 @@ export interface EffectTag {
   tone: EffectTagTone;
 }
 
+/** リプレイ表示時に保存済みカード／レリック定義を注入するための参照口。 */
+export interface EventContentResolver {
+  getCard?: (id: string) => CardDef | undefined;
+  getRelic?: (id: string) => RelicDef | undefined;
+}
+
 const NUMERIC_OUTCOME_KEYS = [
   'delivered',
   'morale',
@@ -183,7 +189,10 @@ function formatSprintModifierTags(mod: SprintModifierDelta): EffectTag[] {
 }
 
 /** `EventOutcome` から効果タグ一覧を生成する。 */
-export function formatEventOutcomeTags(outcome: EventOutcome): EffectTag[] {
+export function formatEventOutcomeTags(
+  outcome: EventOutcome,
+  resolver: EventContentResolver = {},
+): EffectTag[] {
   const tags: EffectTag[] = [];
 
   for (const key of NUMERIC_OUTCOME_KEYS) {
@@ -207,13 +216,13 @@ export function formatEventOutcomeTags(outcome: EventOutcome): EffectTag[] {
   }
 
   if (outcome.grantRelic) {
-    const relic = getRelic(outcome.grantRelic);
+    const relic = (resolver.getRelic ?? getRelic)(outcome.grantRelic);
     const name = relic?.name ?? outcome.grantRelic;
     pushTag(tags, `レリック獲得: ${name}`, 'positive');
   }
 
   if (outcome.grantCard) {
-    const card = getCard(outcome.grantCard);
+    const card = (resolver.getCard ?? getCard)(outcome.grantCard);
     const name = card?.name ?? outcome.grantCard;
     pushTag(tags, `カード獲得: ${name}`, 'positive');
   }
@@ -223,7 +232,7 @@ export function formatEventOutcomeTags(outcome: EventOutcome): EffectTag[] {
     pushTag(tags, 'メンバー +1', 'positive');
     pushTag(tags, '編成へ', 'neutral');
     if (outcome.onRecruitFail) {
-      const failTags = formatEventOutcomeTags(outcome.onRecruitFail);
+      const failTags = formatEventOutcomeTags(outcome.onRecruitFail, resolver);
       for (const tag of failTags) {
         pushTag(tags, `失敗時 ${tag.label}`, tag.tone);
       }
@@ -242,8 +251,11 @@ export function formatEventOutcomeTags(outcome: EventOutcome): EffectTag[] {
 }
 
 /** 選択肢の outcome と画面遷移（`leadsTo`）を含めた効果タグ一覧。 */
-export function formatEventChoiceTags(choice: EventChoice): EffectTag[] {
-  const tags = formatEventOutcomeTags(choice.outcome);
+export function formatEventChoiceTags(
+  choice: EventChoice,
+  resolver: EventContentResolver = {},
+): EffectTag[] {
+  const tags = formatEventOutcomeTags(choice.outcome, resolver);
 
   if (choice.leadsTo && choice.leadsTo !== 'sprint') {
     switch (choice.leadsTo) {

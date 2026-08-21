@@ -26,7 +26,9 @@ import {
   shouldShowTutorialGuide,
   type TutorialQuery,
 } from './ui/tutorial';
-import { useRun } from './ui/useRun';
+import { ReplayContentProvider } from './ui/replayContent';
+import { formatReplayRuleset } from './ui/replayRuleset';
+import { useRun, type UseRun } from './ui/useRun';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 
@@ -139,6 +141,14 @@ export default function App(props: AppProps) {
 
 function AppContent({ game }: AppProps) {
   const run = useRun(game);
+  return (
+    <ReplayContentProvider contentSnapshot={run.activeReplayInfo?.contentSnapshot ?? null}>
+      <AppContentView game={game} run={run} />
+    </ReplayContentProvider>
+  );
+}
+
+function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const { state, meta, lastRunReward, runSaveSummary, runSaveIssue } = run;
   const phase = state.phase;
   const responsiveMode = useResponsiveMode();
@@ -344,6 +354,10 @@ function AppContent({ game }: AppProps) {
         {reviewHellReplay
           ? 'レビュー地獄リプレイ閲覧中（操作は無効）'
           : 'リプレイ閲覧中（操作は無効）'}
+      </span>
+      <span data-testid="replay-seed">seed: {state.seed}</span>
+      <span data-testid="replay-recorded-ruleset">
+        記録時ルールセット: {formatReplayRuleset(run.activeReplayInfo?.ruleset ?? null)}
       </span>
       <button type="button" data-testid="exit-replay" onClick={exitReplay}>
         タイトルへ戻る

@@ -4,10 +4,10 @@
  * スプリント中は手札を操作可能カードとして並べ、クリックで発動する。
  * セットアップ等ではデッキコレクションを閲覧表示する。
  */
-import { getCard } from '../data/cards';
 import { playCost } from '../sim/cards';
 import type { CardInstance, CardPlayOutcome } from '../sim/types';
 import { CardView } from './CardView';
+import { useReplayContent } from './replayContent';
 
 export interface DeckBarProps {
   deck: CardInstance[];
@@ -20,6 +20,7 @@ export interface DeckBarProps {
 }
 
 export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: DeckBarProps) {
+  const { resolveCard } = useReplayContent();
   const isHandMode = hand !== undefined && playable && onPlay;
 
   if (isHandMode) {
@@ -33,8 +34,7 @@ export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: Dec
             {hand.map((deckIndex) => {
               const inst = deck[deckIndex];
               if (!inst) return null;
-              const def = getCard(inst.defId);
-              if (!def) return null;
+              const def = resolveCard(inst.defId);
               const cost = playCost(def.focusCost, inst.level);
               const canPlay = focus >= cost;
               return (
@@ -68,8 +68,7 @@ export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: Dec
       ) : (
         <div className="deckbar-cards">
           {deck.map((inst, i) => {
-            const def = getCard(inst.defId);
-            if (!def) return null;
+            const def = resolveCard(inst.defId);
             return <CardView key={`${inst.defId}-${i}`} def={def} level={inst.level} compact />;
           })}
         </div>

@@ -77,9 +77,11 @@ test('ラン完了後にリプレイ一覧からキーフレームを read-only 
   await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
   await page.getByTestId('open-replays').click();
   await expect(page.getByTestId('replay-list')).toBeVisible();
+  await expect(page.getByTestId('replay-ruleset').first()).toContainText('v');
   await page.getByTestId('replay-keyframe-0').click();
 
   await expect(page.getByTestId('replay-mode-banner')).toBeVisible();
+  await expect(page.getByTestId('replay-recorded-ruleset')).toContainText('v');
   await expect
     .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.isReplayMode()))
     .toBe(true);
@@ -166,6 +168,8 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
         { phase: 'result', frame: resultFrame, label: 'Review peak 21' },
         { phase: 'lost', frame: lostFrame, label: 'Review Hell 型' },
       ],
+      ruleset: { version: 1, fingerprint: 'review-hell-e2e-ruleset' },
+      contentSnapshot: { cards: [], relics: [] },
     };
     return game.importReplay(blob);
   }, REPLAY_SCHEMA_VERSION);
@@ -191,4 +195,107 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
   await expect(page.getByTestId('replay-mode-banner')).toContainText('レビュー地獄リプレイ');
   await expect(page.getByTestId('result-review-hell-summary')).toBeVisible();
   await expect(page.getByTestId('result-review-hell-peak')).toContainText('21');
+});
+
+test('記録時のレリック定義とルールセットを優先して表示する', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=replay-snapshot-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const imported = await page.evaluate(async (schemaVersion) => {
+    const game = (window as ReplayGameWindow).game;
+    if (!game) return false;
+    game.startRun('easy', [], 'replay-snapshot-e2e');
+    const frame = game.engine.exportReplayFrame();
+    if (!frame) return false;
+    frame.relics = ['psych-safety'];
+
+    const blob: ReplayBlob = {
+      schemaVersion: schemaVersion as typeof REPLAY_SCHEMA_VERSION,
+      id: 'replay-snapshot-e2e:1',
+      seed: 'replay-snapshot-e2e',
+      difficulty: 'easy',
+      trials: [],
+      finishedAt: 3_000_001,
+      outcome: {
+        status: 'won',
+        diagnosis: 'healthyAcceleration',
+        score: 20,
+      },
+      keyframes: [{ phase: 'setup', frame, label: '記録時定義' }],
+      ruleset: { version: 99, fingerprint: 'recorded-before-current' },
+      contentSnapshot: {
+        cards: [],
+        relics: [
+          {
+            id: 'psych-safety',
+            name: '記録時の安全性',
+            description: '保存されたレリック定義',
+          },
+        ],
+      },
+    };
+    return game.importReplay(blob);
+  }, REPLAY_SCHEMA_VERSION);
+
+  expect(imported).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBeGreaterThan(0);
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await expect(page.getByTestId('replay-ruleset')).toContainText('v99 / recorded-before-current');
+  await page.getByTestId('replay-keyframe-0').click();
+
+  await expect(page.getByTestId('replay-recorded-ruleset')).toContainText(
+    'v99 / recorded-before-current',
+  );
+  await expect(page.getByTestId('relics')).toContainText('記録時の安全性');
+  expect(
+    await page.evaluate(() => (window as ReplayGameWindow).game?.getState().whatIf),
+  ).toBeNull();
+});
+
+test('旧v1リプレイはルールセット不明と未知コンテンツのまま開ける', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=legacy-replay-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const imported = await page.evaluate(async () => {
+    const game = (window as ReplayGameWindow).game;
+    if (!game) return false;
+    game.startRun('easy', [], 'legacy-replay-e2e');
+    const frame = game.engine.exportReplayFrame();
+    if (!frame) return false;
+    frame.relics = ['removed-relic'];
+    const legacy = {
+      schemaVersion: 1,
+      id: 'legacy-replay-e2e:1',
+      seed: 'legacy-replay-e2e',
+      difficulty: 'easy',
+      trials: [],
+      finishedAt: 3_000_002,
+      outcome: {
+        status: 'won' as const,
+        diagnosis: 'healthyAcceleration' as const,
+        score: 20,
+      },
+      keyframes: [{ phase: 'setup' as const, frame }],
+    } as unknown as ReplayBlob;
+    return game.importReplay(legacy);
+  });
+
+  expect(imported).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBeGreaterThan(0);
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await expect(page.getByTestId('replay-ruleset')).toContainText('ルールセット不明');
+  await page.getByTestId('replay-keyframe-0').click();
+
+  await expect(page.getByTestId('replay-recorded-ruleset')).toContainText('ルールセット不明');
+  await expect(page.getByTestId('relics')).toContainText('不明なレリック（removed-relic）');
 });

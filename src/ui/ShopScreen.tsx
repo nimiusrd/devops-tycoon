@@ -3,8 +3,7 @@
  *
  * 予算でカード購入・レリック購入・採用を行う。予算は四半期の有限資源（第4.7）。
  */
-import { getCard, RARITY_LABEL } from '../data/cards';
-import { getRelic } from '../data/relics';
+import { RARITY_LABEL } from '../data/cards';
 import { canRecruit } from '../sim/member';
 import { playCost } from '../sim/cards';
 import {
@@ -14,6 +13,7 @@ import {
 } from '../render/eventOutcomeView';
 import type { RunState } from '../sim/run/types';
 import { EffectTagList } from './EffectTagList';
+import { useReplayContent } from './replayContent';
 
 export interface ShopScreenProps {
   state: RunState;
@@ -30,9 +30,10 @@ export function ShopScreen({
   onBuyRecruit,
   onLeave,
 }: ShopScreenProps) {
+  const { resolveCard, resolveRelic } = useReplayContent();
   const shop = state.shop;
   if (!shop) return null;
-  const relic = shop.relic ? getRelic(shop.relic.id) : undefined;
+  const relic = shop.relic ? resolveRelic(shop.relic.id) : undefined;
   const recruit = shop.recruit;
   const rosterHasRoom = canRecruit(state.roster);
   const canAffordRecruit = recruit ? state.budget >= recruit.cost : false;
@@ -46,8 +47,7 @@ export function ShopScreen({
         </h2>
         <div className="shop-grid">
           {shop.cards.map((offer) => {
-            const def = getCard(offer.defId);
-            if (!def) return null;
+            const def = resolveCard(offer.defId);
             const affordable = !offer.bought && state.budget >= offer.cost;
             return (
               <button

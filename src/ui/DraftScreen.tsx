@@ -5,11 +5,11 @@
  * 同じデッキでも捌き方で結果が変わり、ドラフトでデッキが育っていく（第7章）。
  * RI-81: 予算コストで引き直すマリガンを提供する（F-12）。
  */
-import { getCard } from '../data/cards';
 import { DRAFT_MULLIGAN_COST } from '../sim/run/constants';
 import { playCost } from '../sim/cards';
 import type { WhatIfPreview as WhatIfPreviewData } from '../sim/run/types';
 import { CardView } from './CardView';
+import { useReplayContent } from './replayContent';
 import { WhatIfPreview } from './WhatIfPreview';
 
 export interface DraftScreenProps {
@@ -44,6 +44,7 @@ export function DraftScreen({
   onMulligan,
 }: DraftScreenProps) {
   const canMulligan = !mulliganUsed && budget > DRAFT_MULLIGAN_COST;
+  const { resolveCard } = useReplayContent();
 
   return (
     <div className="result-overlay" data-testid="draft" role="dialog" aria-label="Card Draft">
@@ -52,8 +53,7 @@ export function DraftScreen({
         <h2 className="draft-title">スプリント{sprintNumber} に向けて、施策を1枚選ぶ</h2>
         <div className="draft-options">
           {options.map((id) => {
-            const def = getCard(id);
-            if (!def) return null;
+            const def = resolveCard(id);
             return (
               <CardView
                 key={id}

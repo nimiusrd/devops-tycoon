@@ -7,7 +7,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getDifficulty } from '../data/difficulties';
-import { getRelic } from '../data/relics';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
@@ -25,6 +24,7 @@ import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { formatSigned } from './formatSigned';
+import { useReplayContent } from './replayContent';
 
 const FEEDBACK_TTL_MS = 1600;
 
@@ -88,6 +88,7 @@ export function RunBar({
   onSnapshotCaptured,
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
+  const { resolveRelic } = useReplayContent();
   const diag = diagnosisView(state.diagnosis);
   const theme = diagnosisTheme(state.diagnosis);
   const roster = rosterSummary(state.roster);
@@ -230,10 +231,10 @@ export function RunBar({
           <span className="relic-empty">レリックなし</span>
         ) : (
           state.relics.map((id) => {
-            const relic = getRelic(id);
+            const relic = resolveRelic(id);
             return (
-              <span key={id} className="relic-chip" title={relic ? formatRelicTooltip(relic) : id}>
-                🏛 {relic?.name}
+              <span key={id} className="relic-chip" title={formatRelicTooltip(relic)}>
+                🏛 {relic.name}
               </span>
             );
           })

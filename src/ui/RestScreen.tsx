@@ -4,7 +4,6 @@
  * シニアHP+個体スタミナ回復 / 技術的負債返済 / カード強化 / 採用 のいずれかを選ぶ。
  */
 import { useState } from 'react';
-import { getCard } from '../data/cards';
 import { canRecruit, RECRUIT_COST } from '../sim/member';
 import { playCost } from '../sim/cards';
 import { foldPassives } from '../sim/run/effects';
@@ -12,6 +11,7 @@ import type { RunState } from '../sim/run/types';
 import { formatRestOptionTags } from '../render/eventOutcomeView';
 import { CardView } from './CardView';
 import { EffectTagList } from './EffectTagList';
+import { useReplayContent } from './replayContent';
 
 export interface RestScreenProps {
   state: RunState;
@@ -20,11 +20,12 @@ export interface RestScreenProps {
 
 export function RestScreen({ state, onChoose }: RestScreenProps) {
   const [choosingUpgrade, setChoosingUpgrade] = useState(false);
+  const { resolveCard, resolveRelic } = useReplayContent();
   const canUpgrade = state.deck.length > 0;
   const rosterHasRoom = canRecruit(state.roster);
   const canAfford = state.budget >= RECRUIT_COST;
   const canHire = rosterHasRoom && canAfford;
-  const restHealBonus = foldPassives(state.relics).restHealBonus;
+  const restHealBonus = foldPassives(state.relics, resolveRelic).restHealBonus;
   const healTags = formatRestOptionTags('heal', { restHealBonus });
   if (choosingUpgrade) {
     return (
@@ -37,8 +38,7 @@ export function RestScreen({ state, onChoose }: RestScreenProps) {
           </p>
           <div className="rest-upgrade-grid" data-testid="rest-upgrade-cards">
             {state.deck.map((card, index) => {
-              const def = getCard(card.defId);
-              if (!def) return null;
+              const def = resolveCard(card.defId);
               return (
                 <button
                   type="button"

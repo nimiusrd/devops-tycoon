@@ -69,6 +69,7 @@ const ORDERED_BOUND_PAIRS = [
   ['pacing.target.quarterWall.minMs', 'pacing.target.quarterWall.maxMs'],
   ['pacing.target.runWall.minMs', 'pacing.target.runWall.maxMs'],
   ['pacing.target.interventionPerSprint.min', 'pacing.target.interventionPerSprint.max'],
+  ['meta.reward.learningBase', 'meta.reward.learningCap'],
 ] as const;
 
 /** 各段階を飛ばさないため、最小値が最大値より厳密に小さくなければならない関係。 */

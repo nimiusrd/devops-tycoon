@@ -7,6 +7,8 @@ import {
   CARD_BALANCE,
   COARSE_TEAM_BALANCE,
   MEMBER_BALANCE,
+  META_BALANCE,
+  INITIAL_UNLOCKED_DIFFICULTIES,
   PROCESS_BALANCE,
   SPRINT_BALANCE,
   SPRINT_TASK_KIND_WEIGHTS,
@@ -66,6 +68,12 @@ import {
   SHOP_RELIC_COST,
 } from '../../../src/sim/run/engine';
 import { BASE_INFRA_COST_PER_DEPENDENCY } from '../../../src/sim/run/effects';
+import {
+  DAILY_RUN_DIFFICULTY,
+  DAILY_RUN_TRIALS,
+  MAX_PREFERRED_CARDS,
+  defaultMeta,
+} from '../../../src/state/meta';
 
 const PROCESS_BALANCE_IDS = [
   'process.ai.adoption',
@@ -344,6 +352,7 @@ const BALANCE_IDS = [
   ...Object.values(CARD_BALANCE).map((entry) => entry.id),
   ...Object.values(SPRINT_BALANCE).map((entry) => entry.id),
   ...PACING_BALANCE_IDS,
+  ...Object.values(META_BALANCE).map((entry) => entry.id),
 ].sort();
 
 describe('型付きバランスレジストリ', () => {
@@ -410,6 +419,7 @@ describe('型付きバランスレジストリ', () => {
     expect(BASE_INFRA_COST_PER_DEPENDENCY).toBe(RUN_BALANCE.infraBaseCostPerDependency.value);
     expect(HAND_SIZE).toBe(CARD_BALANCE.handSize.value);
     expect(PREFERRED_DRAFT_WEIGHT_MUL).toBe(CARD_BALANCE.draftPreferredWeightMultiplier.value);
+    expect(MAX_PREFERRED_CARDS).toBe(META_BALANCE.preferredMaxCards.value);
     expect(OUTCOME_BALANCE.kpiHigherExceededMultiplier.value).toBe(1.15);
     expect(OUTCOME_BALANCE.kpiLowerExceededMultiplier.value).toBe(0.75);
     expect(OUTCOME_BALANCE.loseReviewFreezePeak.value).toBe(48);
@@ -544,6 +554,47 @@ describe('型付きバランスレジストリ', () => {
         code: 'related-range-inverted',
         id: PACING_BALANCE.sprintMinCompleteTick.id,
       }),
+    );
+  });
+
+  it('メタ進行の全ID・単位・互換aliasと学習ボーナス順序を検証する', () => {
+    const entries = Object.values(META_BALANCE);
+    for (const entry of entries) {
+      expect(entry.id.startsWith('meta.')).toBe(true);
+      expect(Number.isFinite(entry.value)).toBe(true);
+      expect(entry.allowedRange.min).toBeLessThanOrEqual(entry.value);
+      expect(entry.value).toBeLessThanOrEqual(entry.allowedRange.max);
+    }
+    expect(MAX_PREFERRED_CARDS).toBe(2);
+    expect(MAX_PREFERRED_CARDS).toBe(META_BALANCE.preferredMaxCards.value);
+    expect(META_BALANCE.rewardWinBase.value).toBe(20);
+    expect(META_BALANCE.rewardLossBase.value).toBe(5);
+    expect(META_BALANCE.rewardScoreMulFloor.value).toBe(1);
+    expect(META_BALANCE.rewardLearningBase.value).toBe(2);
+    expect(META_BALANCE.rewardLearningPerReview.value).toBe(1);
+    expect(META_BALANCE.rewardLearningCap.value).toBe(5);
+    expect(META_BALANCE.rewardReviewExceeded.value).toBe(3);
+    expect(META_BALANCE.rewardReviewMet.value).toBe(1);
+    expect(META_BALANCE.achievementComboMasterMinCombo.value).toBe(20);
+    expect(DAILY_RUN_DIFFICULTY).toBe('normal');
+    expect(DAILY_RUN_TRIALS).toEqual([]);
+    expect(defaultMeta().unlockedDifficulties).toEqual([...INITIAL_UNLOCKED_DIFFICULTIES]);
+    expect(META_BALANCE.preferredMaxCards.unit).toBe('count');
+    expect(META_BALANCE.rewardWinBase.unit).toBe('points');
+    expect(META_BALANCE.rewardScoreMulFloor.unit).toBe('multiplier');
+    expect(META_BALANCE.achievementComboMasterMinCombo.integer).toBe(true);
+
+    const invalidLearning = {
+      ...META_BALANCE.rewardLearningBase,
+      value: META_BALANCE.rewardLearningCap.value + 1,
+    };
+    expect(validateBalanceRegistry([invalidLearning, META_BALANCE.rewardLearningCap])).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'related-range-inverted',
+          id: META_BALANCE.rewardLearningBase.id,
+        }),
+      ]),
     );
   });
 

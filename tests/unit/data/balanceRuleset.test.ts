@@ -15,6 +15,7 @@ import {
   defineBalanceEntry,
   defineProbabilityDistribution,
   fingerprintBalanceRuleset,
+  META_BALANCE,
   PACING_BALANCE,
   projectBalanceRegistry,
   sha256Hex,
@@ -50,8 +51,8 @@ function sampleEntry(
 }
 
 describe('バランスルールセットの版と指紋', () => {
-  it('現行ルールセットの版は 1、指紋は 64 桁 hex で再計算と一致する', () => {
-    expect(BALANCE_RULESET_VERSION).toBe(1);
+  it('現行ルールセットの版は 2、指紋は 64 桁 hex で再計算と一致する', () => {
+    expect(BALANCE_RULESET_VERSION).toBe(2);
     expect(BALANCE_RULESET_FINGERPRINT_SCHEME).toBe(1);
     expect(BALANCE_RULESET_FINGERPRINT).toMatch(/^[0-9a-f]{64}$/);
     expect(fingerprintBalanceRuleset(BALANCE_RULESET_PAYLOAD)).toBe(BALANCE_RULESET_FINGERPRINT);
@@ -157,6 +158,22 @@ describe('バランスルールセットの版と指紋', () => {
     expect(sequences[SPRINT_BALANCE.taskKindDistribution.id]).toEqual(
       SPRINT_BALANCE.taskKindDistribution.entries.map((entry) => entry.id),
     );
+  });
+
+  it('メタ進行の実行値は指紋へ含め、デイリー条件はカタログ経路のままにする', () => {
+    const ids = new Set(projectBalanceRegistry(BALANCE_REGISTRY).values.map((entry) => entry.id));
+    expect(ids.has(META_BALANCE.preferredMaxCards.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardWinBase.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardLossBase.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardScoreMulFloor.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardLearningBase.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardLearningPerReview.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardLearningCap.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardReviewExceeded.id)).toBe(true);
+    expect(ids.has(META_BALANCE.rewardReviewMet.id)).toBe(true);
+    expect(ids.has(META_BALANCE.achievementComboMasterMinCombo.id)).toBe(true);
+    expect(ids.has('meta.daily.difficulty')).toBe(false);
+    expect(ids.has('meta.daily.trials')).toBe(false);
   });
 
   it('tags だけでは指紋対象が変わらず、安定ID接頭辞で体験目標帯を除外する', () => {

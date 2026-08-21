@@ -5,6 +5,7 @@
  * 得る。ロジックは純関数に保ち、永続化は metaPersistence.ts に分離する。
  */
 import { ACHIEVEMENT_DEFS, ACHIEVEMENT_IDS } from '../data/achievements';
+import { INITIAL_UNLOCKED_DIFFICULTIES, META_BALANCE } from '../data/balance/meta';
 import { DIFFICULTY_ORDER } from '../data/difficulties';
 import type { BOSS_DEFS } from '../data/bosses';
 import { BOSS_DEFS as ALL_BOSSES } from '../data/bosses';
@@ -66,8 +67,8 @@ export interface MetaState {
   seenTutorialVersion: number;
 }
 
-/** 研修方針で選べる優先施策の上限（RI-34⁗）。 */
-export const MAX_PREFERRED_CARDS = 2;
+/** 研修方針で選べる優先施策の上限（RI-34⁗）。正本は `META_BALANCE`。 */
+export const MAX_PREFERRED_CARDS = META_BALANCE.preferredMaxCards.value;
 
 /** 1 日分のデイリーラン記録（第23章）。 */
 export interface DailyRunRecord {
@@ -100,7 +101,7 @@ export interface PurchaseUnlockResult {
 export function defaultMeta(): MetaState {
   return {
     points: 0,
-    unlockedDifficulties: ['easy', 'normal'],
+    unlockedDifficulties: [...INITIAL_UNLOCKED_DIFFICULTIES],
     defeatedBosses: [],
     achievements: [],
     collectedWinTypes: [],
@@ -276,18 +277,26 @@ export interface RunRewardBreakdown {
  */
 export function computeRunRewardBreakdown(input: RunRewardInput): RunRewardBreakdown {
   const reviews = input.quarterReviews ?? [];
-  const base = Math.round((input.won ? 20 : 5) * Math.max(1, input.scoreMul));
+  const base = Math.round(
+    (input.won ? META_BALANCE.rewardWinBase.value : META_BALANCE.rewardLossBase.value) *
+      Math.max(META_BALANCE.rewardScoreMulFloor.value, input.scoreMul),
+  );
   const learningBonus =
     !input.won && reviews.some((r) => r === 'missed_adjustable')
-      ? Math.min(5, 2 + reviews.filter((r) => r === 'missed_adjustable').length)
+      ? Math.min(
+          META_BALANCE.rewardLearningCap.value,
+          META_BALANCE.rewardLearningBase.value +
+            META_BALANCE.rewardLearningPerReview.value *
+              reviews.filter((r) => r === 'missed_adjustable').length,
+        )
       : 0;
   let reviewBonus = 0;
   let reviewBonusKind: RunRewardBreakdown['reviewBonusKind'] = null;
   if (input.won && reviews.some((r) => r === 'exceeded')) {
-    reviewBonus = 3;
+    reviewBonus = META_BALANCE.rewardReviewExceeded.value;
     reviewBonusKind = 'exceeded';
   } else if (input.won && reviews.includes('met')) {
-    reviewBonus = 1;
+    reviewBonus = META_BALANCE.rewardReviewMet.value;
     reviewBonusKind = 'met';
   }
   return {
@@ -379,7 +388,8 @@ export function applyRunReward(meta: MetaState, input: RunRewardInput): MetaStat
     if (input.winType)
       next.collectedWinTypes = uniq([...next.collectedWinTypes, input.winType]) as WinType[];
     if (input.winType === 'noDamage') earned.push(ACHIEVEMENT_IDS.noDamage);
-    if (input.maxCombo >= 20) earned.push(ACHIEVEMENT_IDS.comboMaster);
+    if (input.maxCombo >= META_BALANCE.achievementComboMasterMinCombo.value)
+      earned.push(ACHIEVEMENT_IDS.comboMaster);
     if (input.difficulty === 'nightmare') earned.push(ACHIEVEMENT_IDS.nightmareClear);
     if (allBossesDefeated(next.defeatedBosses, ALL_BOSSES)) earned.push(ACHIEVEMENT_IDS.allBosses);
     const reviews = input.quarterReviews ?? [];

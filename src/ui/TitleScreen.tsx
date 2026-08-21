@@ -9,7 +9,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
-import type { RunSaveSummary } from '../state/runPersistence';
+import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
 import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
@@ -34,6 +34,12 @@ const PHASE_LABEL: Record<RunSaveSummary['phase'], string> = {
   quarterReview: '四半期レビュー',
 };
 
+function formatRuleset(ruleset: { version: number; fingerprint: string }): string {
+  const fingerprint =
+    ruleset.fingerprint.length > 12 ? `${ruleset.fingerprint.slice(0, 12)}…` : ruleset.fingerprint;
+  return `v${ruleset.version} / ${fingerprint}`;
+}
+
 export interface TitleScreenProps {
   seed: string;
   meta: MetaState;
@@ -46,6 +52,8 @@ export interface TitleScreenProps {
   onStartDaily?: () => void;
   onResume?: () => void;
   resumableSummary?: RunSaveSummary | null;
+  runSaveIssue?: RunSaveCompatibilityIssue | null;
+  onDiscardRunSave?: () => void;
   onOpenReplays?: () => void;
   onOpenMetaShop?: () => void;
   /** 研修方針（デッキカスタム。RI-34⁗）。 */
@@ -67,6 +75,8 @@ export function TitleScreen({
   onStartDaily,
   onResume,
   resumableSummary = null,
+  runSaveIssue = null,
+  onDiscardRunSave,
   onOpenReplays,
   onOpenMetaShop,
   onOpenDeckPolicy,
@@ -395,7 +405,58 @@ export function TitleScreen({
             </div>
           </section>
 
-          {resumableSummary && onResume ? (
+          {runSaveIssue && resumableSummary && onDiscardRunSave ? (
+            <section
+              className="title-resume title-resume-incompatible"
+              data-testid="incompatible-run-save"
+            >
+              <div className="title-resume-copy">
+                <span>再開できないセーブ</span>
+                <b>
+                  {DIFFICULTY_TAG[resumableSummary.difficulty]} / Q{resumableSummary.quarterNumber}{' '}
+                  {PHASE_LABEL[resumableSummary.phase]}
+                </b>
+                <small>
+                  seed: {resumableSummary.seed} · スプリント {resumableSummary.sprintsPlayed} 完了
+                  {resumableSummary.runKind === 'daily' && resumableSummary.dailyDate
+                    ? ` · デイリー ${resumableSummary.dailyDate}`
+                    : ''}
+                </small>
+                <p className="title-resume-issue" data-testid="run-save-issue">
+                  {runSaveIssue.kind === 'ruleset-unknown'
+                    ? 'ルールセット情報がない旧セーブのため、現在のゲームでは再開できません。'
+                    : '保存時と現在のルールセットが一致しないため、このセーブは再開できません。'}
+                </p>
+                <div className="title-resume-rulesets">
+                  <small
+                    title={
+                      runSaveIssue.savedRuleset
+                        ? `保存時: v${runSaveIssue.savedRuleset.version} / ${runSaveIssue.savedRuleset.fingerprint}`
+                        : '保存時のルールセット情報なし'
+                    }
+                  >
+                    保存時:{' '}
+                    {runSaveIssue.savedRuleset ? formatRuleset(runSaveIssue.savedRuleset) : '不明'}
+                  </small>
+                  <small
+                    title={`現在: v${runSaveIssue.currentRuleset.version} / ${runSaveIssue.currentRuleset.fingerprint}`}
+                  >
+                    現在: {formatRuleset(runSaveIssue.currentRuleset)}
+                  </small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="title-resume-btn title-resume-discard"
+                data-testid="discard-run-save"
+                onClick={onDiscardRunSave}
+              >
+                このセーブを破棄
+              </button>
+            </section>
+          ) : null}
+
+          {!runSaveIssue && resumableSummary && onResume ? (
             <section className="title-resume" data-testid="resume-run-section">
               <div className="title-resume-copy">
                 <span>中断中のラン</span>

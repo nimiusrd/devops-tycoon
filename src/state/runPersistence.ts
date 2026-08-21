@@ -8,6 +8,7 @@
 import { isRunSavePhase, type RunPersistState, type RunSavePhase } from '../sim/run/persist';
 import type { DifficultyId, GoalKpiProgress, RunKind, RunPhase, RunStatus } from '../sim/run/types';
 import { companyOrgFromTeams } from '../sim/orgscale';
+import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
 import {
   availableAdjustments,
   diagnoseMissedReasons,
@@ -29,8 +30,11 @@ export { isRunSavePhase } from '../sim/run/persist';
  * RI-84: 安定化再校正で v4 の Delivery 目標を移行する。
  * RI-77: AI 出荷価値倍率後の目標再校正で v5 の Delivery 目標を現行倍率へ移行する。
  * RI-128: v6 は trendHistory 欠落を空配列へ補完する。
+ * RI-117: v8 から保存時のバランスルールセットを記録する。v4〜v7 は
+ * ルールセット情報を持たない旧セーブとして保持するが、再開は許可しない。
  */
-export const RUN_SAVE_SCHEMA_VERSION = 7 as const;
+export const RUN_SAVE_SCHEMA_VERSION = 8 as const;
+const LEGACY_V7_RUN_SAVE_SCHEMA_VERSION = 7 as const;
 const LEGACY_V6_RUN_SAVE_SCHEMA_VERSION = 6 as const;
 const LEGACY_V5_RUN_SAVE_SCHEMA_VERSION = 5 as const;
 const LEGACY_V4_RUN_SAVE_SCHEMA_VERSION = 4 as const;
@@ -51,6 +55,18 @@ const V5_QUARTER_DELIVERY_GOAL_MUL: Record<DifficultyId, number> = {
   nightmare: 1.55,
 };
 
+/** セーブと一緒に保存する、結果へ影響するルールセット識別子。 */
+export interface RunRulesetIdentity {
+  readonly version: number;
+  readonly fingerprint: string;
+}
+
+/** 現行バランスルールセット。セーブの互換判定と新規保存で共有する。 */
+export const CURRENT_RUN_RULESET: RunRulesetIdentity = {
+  version: BALANCE_RULESET_VERSION,
+  fingerprint: BALANCE_RULESET_FINGERPRINT,
+};
+
 /** タイトル「続きから」表示用の要約。 */
 export interface RunSaveSummary {
   seed: string;
@@ -65,10 +81,20 @@ export interface RunSaveSummary {
   status: RunStatus;
 }
 
+/** ルールセット不一致または情報欠落で再開できないセーブの理由。 */
+export interface RunSaveCompatibilityIssue {
+  readonly kind: 'ruleset-unknown' | 'ruleset-mismatch';
+  readonly summary: RunSaveSummary;
+  readonly savedRuleset: RunRulesetIdentity | null;
+  readonly currentRuleset: RunRulesetIdentity;
+}
+
 /** IndexedDB に載せるレコード。 */
 export interface RunSave {
   schemaVersion: typeof RUN_SAVE_SCHEMA_VERSION;
   savedAt: number;
+  /** 旧セーブを表示用に保持する場合は null。新規セーブでは必ず設定する。 */
+  ruleset: RunRulesetIdentity | null;
   summary: RunSaveSummary;
   state: RunPersistState;
   /**
@@ -86,7 +112,30 @@ export interface RunStorage {
 
 export interface RunPersistenceBootstrap {
   save: RunSave | null;
+  issue: RunSaveCompatibilityIssue | null;
   storage: RunStorage;
+}
+
+const INVALID_RULESET = Symbol('invalid-ruleset');
+
+function parseRunRuleset(value: unknown): RunRulesetIdentity | null | typeof INVALID_RULESET {
+  if (value === undefined || value === null) return null;
+  if (!isRecord(value)) return INVALID_RULESET;
+  const version = value.version;
+  const fingerprint = value.fingerprint;
+  if (
+    typeof version !== 'number' ||
+    !Number.isSafeInteger(version) ||
+    version < 1 ||
+    typeof fingerprint !== 'string' ||
+    fingerprint.length === 0
+  ) {
+    return INVALID_RULESET;
+  }
+  return {
+    version,
+    fingerprint,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -264,18 +313,26 @@ function rebuildMigratedQuarterReview(state: RunPersistState): RunPersistState |
   return { ...state, quarterReview, reviewHistory };
 }
 
-/** 構造が壊れている／非互換なセーブは null（呼び出し側で clear）。 */
+/** 構造が壊れている／未対応スキーマのセーブは null（呼び出し側で clear）。 */
 export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRecord(raw)) return null;
   // v1/v2/v3 は破棄。v4（RI-84）・v5（RI-77 再校正前）は Delivery 目標を現行へ移行する。
   // v6 は trendHistory 欠落を空配列へ補完する（RI-128）。
   const schema = raw.schemaVersion;
+  const isLegacyV7 = schema === LEGACY_V7_RUN_SAVE_SCHEMA_VERSION;
   const isLegacyV4 = schema === LEGACY_V4_RUN_SAVE_SCHEMA_VERSION;
   const isLegacyV5 = schema === LEGACY_V5_RUN_SAVE_SCHEMA_VERSION;
   const isLegacyV6 = schema === LEGACY_V6_RUN_SAVE_SCHEMA_VERSION;
-  if (schema !== RUN_SAVE_SCHEMA_VERSION && !isLegacyV4 && !isLegacyV5 && !isLegacyV6) return null;
+  const isLegacySchema = isLegacyV4 || isLegacyV5 || isLegacyV6 || isLegacyV7;
+  if (schema !== RUN_SAVE_SCHEMA_VERSION && !isLegacySchema) return null;
   if (typeof raw.savedAt !== 'number' || !Number.isFinite(raw.savedAt)) return null;
   if (!isRecord(raw.summary) || !isRecord(raw.state)) return null;
+
+  // RI-117導入前のスキーマは、たとえテスト用に同名フィールドが混ざっていても
+  // ルールセット不明として扱う。現行スキーマのフィールドが壊れている場合だけ
+  // 構造破損として拒否する。
+  const parsedRuleset = isLegacySchema ? null : parseRunRuleset(raw.ruleset);
+  if (parsedRuleset === INVALID_RULESET) return null;
 
   const summary = raw.summary;
   const state = raw.state;
@@ -322,6 +379,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
   return {
     schemaVersion: RUN_SAVE_SCHEMA_VERSION,
     savedAt: raw.savedAt,
+    ruleset: parsedRuleset,
     summary: {
       seed: summary.seed,
       difficulty: summary.difficulty,
@@ -342,6 +400,33 @@ export function parseRunSave(raw: unknown): RunSave | null {
   };
 }
 
+/** セーブが現行ルールセットで再開可能かを判定する。 */
+export function getRunSaveCompatibilityIssue(
+  save: Pick<RunSave, 'summary' | 'ruleset'>,
+): RunSaveCompatibilityIssue | null {
+  const currentRuleset = { ...CURRENT_RUN_RULESET };
+  if (save.ruleset === null || save.ruleset === undefined) {
+    return {
+      kind: 'ruleset-unknown',
+      summary: structuredClone(save.summary),
+      savedRuleset: null,
+      currentRuleset,
+    };
+  }
+  if (
+    save.ruleset.version !== currentRuleset.version ||
+    save.ruleset.fingerprint !== currentRuleset.fingerprint
+  ) {
+    return {
+      kind: 'ruleset-mismatch',
+      summary: structuredClone(save.summary),
+      savedRuleset: { ...save.ruleset },
+      currentRuleset,
+    };
+  }
+  return null;
+}
+
 /** PersistState から IndexedDB レコードを組み立てる。 */
 export function toRunSave(
   state: RunPersistState,
@@ -351,6 +436,7 @@ export function toRunSave(
   return {
     schemaVersion: RUN_SAVE_SCHEMA_VERSION,
     savedAt,
+    ruleset: { ...CURRENT_RUN_RULESET },
     summary: {
       seed: state.seed,
       difficulty: state.difficulty,
@@ -437,7 +523,7 @@ export class MemoryRunStorage implements RunStorage {
 }
 
 /**
- * ランセーブを読み込む。非互換・破損時は破棄して null。
+ * ランセーブを読み込む。構造破損・未対応スキーマは破棄し、ルールセット非互換は issue として保持する。
  * IndexedDB が使えない場合は空の MemoryRunStorage で続行する。
  */
 export async function initializeRunPersistence(
@@ -445,8 +531,9 @@ export async function initializeRunPersistence(
 ): Promise<RunPersistenceBootstrap> {
   try {
     const save = await storage.load();
-    return { save, storage };
+    const issue = save ? getRunSaveCompatibilityIssue(save) : null;
+    return { save: issue ? null : save, issue, storage };
   } catch {
-    return { save: null, storage: new MemoryRunStorage() };
+    return { save: null, issue: null, storage: new MemoryRunStorage() };
   }
 }

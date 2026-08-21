@@ -14,14 +14,17 @@ applyVisualTokenCssVariables(document.documentElement);
 
 // E2E / デバッグ用の決定論フックは従来どおり同期的に公開する。
 const game = installGame({ metaReady: false });
-const [{ meta, storage }, { save: runSave, storage: runStorage }, { storage: replayStorage }] =
-  await Promise.all([
-    initializeMetaPersistence(),
-    initializeRunPersistence(),
-    initializeReplayPersistence(),
-  ]);
+const [
+  { meta, storage },
+  { save: runSave, issue: runSaveIssue, storage: runStorage },
+  { storage: replayStorage },
+] = await Promise.all([
+  initializeMetaPersistence(),
+  initializeRunPersistence(),
+  initializeReplayPersistence(),
+]);
 game.attachMetaPersistence(meta, storage);
-game.attachRunPersistence(runStorage, runSave);
+game.attachRunPersistence(runStorage, runSave, runSaveIssue);
 await game.attachReplay(replayStorage);
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

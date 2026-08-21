@@ -8,6 +8,8 @@ import {
 } from '../../../src/sim/run/quarterReview';
 import { openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from '../../../src/state/gameDb';
 import {
+  CURRENT_RUN_RULESET,
+  getRunSaveCompatibilityIssue,
   IndexedDbRunStorage,
   MemoryRunStorage,
   initializeRunPersistence,
@@ -72,6 +74,51 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(snap.roster).toEqual(exported!.roster);
   });
 
+  it('RI-117: 新規セーブは現行ルールセットを記録し、一致時だけ互換になる', () => {
+    const valid = makeRunSave('ri117-ruleset-match');
+    expect(valid.ruleset).toEqual(CURRENT_RUN_RULESET);
+    expect(getRunSaveCompatibilityIssue(valid)).toBeNull();
+
+    const unknown = parseRunSave({
+      ...valid,
+      ruleset: undefined,
+    });
+    expect(unknown?.ruleset).toBeNull();
+    expect(getRunSaveCompatibilityIssue(unknown!)).toMatchObject({
+      kind: 'ruleset-unknown',
+      savedRuleset: null,
+    });
+
+    const mismatched = parseRunSave({
+      ...valid,
+      ruleset: { version: CURRENT_RUN_RULESET.version, fingerprint: 'different-ruleset' },
+    });
+    expect(getRunSaveCompatibilityIssue(mismatched!)).toMatchObject({
+      kind: 'ruleset-mismatch',
+      savedRuleset: { fingerprint: 'different-ruleset' },
+    });
+  });
+
+  it('RI-117: 互換不可セーブは自動削除せず、明示 clear まで保持する', async () => {
+    const storage = indexedDbStorage();
+    const save = { ...makeRunSave('ri117-unknown-save'), ruleset: null };
+    await storage.save(save);
+
+    const loaded = await storage.load();
+    expect(loaded).toMatchObject({ ruleset: null, summary: save.summary });
+
+    const boot = await initializeRunPersistence(storage);
+    expect(boot.save).toBeNull();
+    expect(boot.issue).toMatchObject({
+      kind: 'ruleset-unknown',
+      summary: save.summary,
+    });
+    expect(await storage.load()).not.toBeNull();
+
+    await storage.clear();
+    expect(await storage.load()).toBeNull();
+  });
+
   it('保存を直列化し、最後の状態を往復できる', async () => {
     const storage = indexedDbStorage();
     const engine = createRunEngine({ seed: 'ri58-serial' });
@@ -113,7 +160,7 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(await badStorage.load()).toBeNull();
   });
 
-  it('RI-68/RI-75: 旧スキーマのセーブは Delivery スケール非互換のため破棄する', () => {
+  it('RI-68/RI-75: 旧スキーマ v1〜v3 は Delivery スケール非互換のため破棄する', () => {
     const valid = makeRunSave('ri68-old-schema');
     expect(
       parseRunSave({
@@ -135,6 +182,15 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         schemaVersion: 3,
       }),
     ).toBeNull();
+
+    const legacyV7 = parseRunSave({
+      ...valid,
+      schemaVersion: 7,
+    });
+    expect(legacyV7?.ruleset).toBeNull();
+    expect(getRunSaveCompatibilityIssue(legacyV7!)).toMatchObject({
+      kind: 'ruleset-unknown',
+    });
   });
 
   it('RI-84: v4 の途中セーブは現行 Delivery 倍率へ移行して現行スキーマとして復元する', () => {
@@ -553,6 +609,30 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(state?.sprintsPlayed).toBe(1);
   });
 
+  it('RI-117: 互換不可セーブは GameHandle から再開できず、clear はラン保存だけを消す', async () => {
+    const storage = new MemoryRunStorage();
+    const incompatible = { ...makeRunSave('ri117-game-guard'), ruleset: null };
+    const game = createGame({
+      seed: 'fresh',
+      runStorage: storage,
+      initialRunSave: incompatible,
+      metaReady: true,
+    });
+
+    expect(game.hasResumableRun()).toBe(false);
+    expect(game.getRunSaveIssue()).toMatchObject({ kind: 'ruleset-unknown' });
+    expect(game.getRunSaveSummary()).toEqual(incompatible.summary);
+    expect(game.resumeRun()).toBeNull();
+
+    const metaBefore = game.getMeta();
+    game.clearRunSave();
+    await flushSave(storage);
+    expect(await storage.load()).toBeNull();
+    expect(game.getRunSaveIssue()).toBeNull();
+    expect(game.getRunSaveSummary()).toBeNull();
+    expect(game.getMeta()).toEqual(metaBefore);
+  });
+
   it('won/lost/title ではセーブを破棄する', async () => {
     const storage = new MemoryRunStorage();
     const game = createGame({ seed: 'ri58-clear', runStorage: storage, metaReady: true });
@@ -787,7 +867,7 @@ describe('RI-91-B4 runPersistence survived mutants', () => {
       const boot = await initializeRunPersistence(storage);
       expect(boot.storage).toBe(storage);
       expect(boot.save).toEqual(save);
-      expect(boot).toEqual({ save, storage });
+      expect(boot).toEqual({ save, issue: null, storage });
     });
   });
 });

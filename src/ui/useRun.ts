@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { pauseBriefly as pauseGameBriefly, type GameHandle, type PauseBrieflyClear } from '../game';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
 import type { ReplayBlob } from '../state/replay';
-import type { RunSaveSummary } from '../state/runPersistence';
+import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
 import type {
   ActionId,
   ActionTarget,
@@ -39,6 +39,8 @@ export interface UseRun {
   lastRunReward: RunRewardBreakdown | null;
   /** 再開可能なランセーブの要約（無い場合は null）。 */
   runSaveSummary: RunSaveSummary | null;
+  /** ルールセット不一致・情報欠落で再開できないランセーブの理由。 */
+  runSaveIssue: RunSaveCompatibilityIssue | null;
   /** ラン開始世代（RI-60）。`window.game.startRun` でも増える。 */
   runEpoch: number;
   /**
@@ -89,6 +91,7 @@ export interface UseRun {
   acknowledgeQuarterReview: () => void;
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
+  clearRunSave: () => void;
   replays: ReplayBlob[];
   isReplayMode: boolean;
   /** 閲覧中リプレイの終端診断（RI-34‴）。非リプレイ時は null。 */
@@ -112,6 +115,9 @@ export function useRun(game: GameHandle): UseRun {
   );
   const [runSaveSummary, setRunSaveSummary] = useState<RunSaveSummary | null>(() =>
     game.getRunSaveSummary(),
+  );
+  const [runSaveIssue, setRunSaveIssue] = useState<RunSaveCompatibilityIssue | null>(() =>
+    game.getRunSaveIssue(),
   );
   const [runEpoch, setRunEpoch] = useState(() => game.getRunEpoch());
   const [replays, setReplays] = useState<ReplayBlob[]>(() => game.listReplays());
@@ -176,6 +182,7 @@ export function useRun(game: GameHandle): UseRun {
       setMeta(game.getMeta());
       setLastRunReward(game.getLastRunReward());
       setRunSaveSummary(game.getRunSaveSummary());
+      setRunSaveIssue(game.getRunSaveIssue());
       setRunEpoch(game.getRunEpoch());
       setReplays(game.listReplays());
       setIsReplayMode(game.isReplayMode());
@@ -248,6 +255,7 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const newRun = useCallback(() => void game.newRun(), [game]);
+  const clearRunSave = useCallback(() => void game.clearRunSave(), [game]);
   const openReplay = useCallback(
     (id: string, keyframeIndex?: number) => void game.openReplay(id, keyframeIndex),
     [game],
@@ -269,6 +277,7 @@ export function useRun(game: GameHandle): UseRun {
     meta,
     lastRunReward,
     runSaveSummary,
+    runSaveIssue,
     runEpoch,
     replays,
     isReplayMode,
@@ -309,6 +318,7 @@ export function useRun(game: GameHandle): UseRun {
     acknowledgeQuarterReview,
     chooseGoalAdjustment,
     newRun,
+    clearRunSave,
     purchaseMetaUnlock,
     setSoundMuted,
     setPreferredCardIds,

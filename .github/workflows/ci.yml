@@ -9,6 +9,7 @@ on:
       - 'plan/generated/balance-parameters.md'
       - 'plan/generated/content-catalog.md'
       - 'plan/generated/balance-curves.svg'
+      - 'plan/probability-model.md'
       - '!mockups/**'
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - 'plan/generated/balance-parameters.md'
       - 'plan/generated/content-catalog.md'
       - 'plan/generated/balance-curves.svg'
+      - 'plan/probability-model.md'
       - '!mockups/**'
 
 jobs:

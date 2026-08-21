@@ -98,6 +98,49 @@ export function sampleRepresentativeCurves(): readonly RepresentativeCurvePoint[
   }));
 }
 
+export const BALANCE_CURVE_ENDPOINTS_BEGIN = '<!-- balance-curve-endpoints:begin -->';
+export const BALANCE_CURVE_ENDPOINTS_END = '<!-- balance-curve-endpoints:end -->';
+
+/** 端点表用のパーセント表記。1 桁以上の小数を保ち、末尾 0 は落とす。 */
+export function formatEndpointPercent(probability: number): string {
+  const pct = Math.round(probability * 10000) / 100;
+  const body = pct.toFixed(2).replace(/0+$/, '').replace(/\.$/, '.0');
+  return `${body}%`;
+}
+
+/** probability-model.md の読み取り値表。曲線と同じ純関数から作る。 */
+export function renderBalanceCurveEndpointTable(): string {
+  const span = (start: number, end: number): string =>
+    `${formatEndpointPercent(start)} → ${formatEndpointPercent(end)}`;
+
+  return [
+    '| 入力 | 対象タスク: AI支援あり | 対象タスク: AI支援なし |',
+    '| --- | ---: | ---: |',
+    `| AI依存度 0 → 100でのRework確率 | ${span(representativeReworkProbability(true, 0), representativeReworkProbability(true, 100))} | ${span(representativeReworkProbability(false, 0), representativeReworkProbability(false, 100))} |`,
+    `| Test Coverage 0 → 100でのIncident確率 | ${span(representativeIncidentProbability(true, 0), representativeIncidentProbability(true, 100))} | ${span(representativeIncidentProbability(false, 0), representativeIncidentProbability(false, 100))} |`,
+  ].join('\n');
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** 人手の説明文はそのままに、端点表だけを生成内容で置き換える。 */
+export function applyBalanceCurveEndpointsToMarkdown(markdown: string): string {
+  const block = [
+    BALANCE_CURVE_ENDPOINTS_BEGIN,
+    renderBalanceCurveEndpointTable(),
+    BALANCE_CURVE_ENDPOINTS_END,
+  ].join('\n');
+  const pattern = new RegExp(
+    `${escapeRegExp(BALANCE_CURVE_ENDPOINTS_BEGIN)}[\\s\\S]*?${escapeRegExp(BALANCE_CURVE_ENDPOINTS_END)}`,
+  );
+  if (!pattern.test(markdown)) {
+    throw new Error('probability-model.md に端点表の生成マーカーがありません。');
+  }
+  return markdown.replace(pattern, () => block);
+}
+
 interface PlotFrame {
   readonly left: number;
   readonly right: number;

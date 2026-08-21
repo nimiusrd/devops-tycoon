@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 
@@ -45,16 +45,23 @@ async function main() {
     );
     const curves = await server.ssrLoadModule('/src/data/balance/curves.ts');
     const curveSvg = curves.renderBalanceCurvesSvg();
+    const modelPath = resolve('plan/probability-model.md');
+    const modelMarkdown = curves.applyBalanceCurveEndpointsToMarkdown(
+      readFileSync(modelPath, 'utf8'),
+    );
     for (const [outputPath, output] of [
       [OUTPUT_PATHS[0], markdown],
       [OUTPUT_PATHS[1], catalogMarkdown],
       [OUTPUT_PATHS[2], curveSvg],
+      [modelPath, modelMarkdown],
     ]) {
       mkdirSync(dirname(outputPath), { recursive: true });
       writeFileSync(outputPath, output, 'utf8');
     }
     console.log(
-      `バランス生成物を生成しました: ${OUTPUT_PATHS.map((path) => relative(process.cwd(), path)).join(', ')}`,
+      `バランス生成物を生成しました: ${[...OUTPUT_PATHS, modelPath]
+        .map((path) => relative(process.cwd(), path))
+        .join(', ')}`,
     );
   } finally {
     await server.close();

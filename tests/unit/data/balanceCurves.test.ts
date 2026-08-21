@@ -1,10 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  applyBalanceCurveEndpointsToMarkdown,
+  BALANCE_CURVE_ENDPOINTS_BEGIN,
+  BALANCE_CURVE_ENDPOINTS_END,
   BALANCE_CURVE_MARKER_INPUTS,
   BALANCE_CURVE_REPRESENTATIVE,
   chooseProbabilityAxis,
+  formatEndpointPercent,
   representativeIncidentProbability,
   representativeReworkProbability,
+  renderBalanceCurveEndpointTable,
   renderBalanceCurvesSvg,
   sampleRepresentativeCurves,
 } from '../../../src/data/balance/curves';
@@ -66,15 +73,29 @@ describe('代表確率曲線の生成', () => {
     }
   });
 
-  it('probability-model.md の現行端点表と一致する', () => {
-    expect(representativeReworkProbability(true, 0) * 100).toBeCloseTo(2.0, 10);
-    expect(representativeReworkProbability(true, 100) * 100).toBeCloseTo(25.5, 10);
-    expect(representativeReworkProbability(false, 0) * 100).toBeCloseTo(2.0, 10);
-    expect(representativeReworkProbability(false, 100) * 100).toBeCloseTo(20.5, 10);
-    expect(representativeIncidentProbability(true, 0) * 100).toBeCloseTo(14.75, 10);
-    expect(representativeIncidentProbability(true, 100) * 100).toBeCloseTo(4.75, 10);
-    expect(representativeIncidentProbability(false, 0) * 100).toBeCloseTo(12.0, 10);
-    expect(representativeIncidentProbability(false, 100) * 100).toBeCloseTo(2.0, 10);
+  it('probability-model.md の端点表は曲線と同じ純関数から生成する', () => {
+    const table = renderBalanceCurveEndpointTable();
+    const reworkAi = `${formatEndpointPercent(representativeReworkProbability(true, 0))} → ${formatEndpointPercent(representativeReworkProbability(true, 100))}`;
+    const reworkNoAi = `${formatEndpointPercent(representativeReworkProbability(false, 0))} → ${formatEndpointPercent(representativeReworkProbability(false, 100))}`;
+    const incidentAi = `${formatEndpointPercent(representativeIncidentProbability(true, 0))} → ${formatEndpointPercent(representativeIncidentProbability(true, 100))}`;
+    const incidentNoAi = `${formatEndpointPercent(representativeIncidentProbability(false, 0))} → ${formatEndpointPercent(representativeIncidentProbability(false, 100))}`;
+
+    expect(table).toContain(`| AI依存度 0 → 100でのRework確率 | ${reworkAi} | ${reworkNoAi} |`);
+    expect(table).toContain(
+      `| Test Coverage 0 → 100でのIncident確率 | ${incidentAi} | ${incidentNoAi} |`,
+    );
+    expect(table).toContain('2.0% → 25.5%');
+    expect(table).toContain('2.0% → 20.5%');
+    expect(table).toContain('14.75% → 4.75%');
+    expect(table).toContain('12.0% → 2.0%');
+
+    const markdown = readFileSync(resolve('plan/probability-model.md'), 'utf8');
+    expect(markdown).toContain(renderBalanceCurveEndpointTable());
+    expect(
+      applyBalanceCurveEndpointsToMarkdown(
+        `${BALANCE_CURVE_ENDPOINTS_BEGIN}\nstale\n${BALANCE_CURVE_ENDPOINTS_END}`,
+      ),
+    ).toContain(table);
   });
 
   it('生成 SVG は現行モデルの注記を含み、候補曲線の文言を混ぜない', () => {

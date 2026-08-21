@@ -261,10 +261,12 @@ P(Rework) =
 グラフは式から直接算出した条件付き確率で、Monte Carloの観測値ではない。読み取り値は次のとおり。
 SVGは `npm run balance:docs` が現行のレジストリ値と `reworkProbability` / `incidentProbability` から生成する。候補式の曲線は含めない。
 
+<!-- balance-curve-endpoints:begin -->
 | 入力 | 対象タスク: AI支援あり | 対象タスク: AI支援なし |
 | --- | ---: | ---: |
 | AI依存度 0 → 100でのRework確率 | 2.0% → 25.5% | 2.0% → 20.5% |
 | Test Coverage 0 → 100でのIncident確率 | 14.75% → 4.75% | 12.0% → 2.0% |
+<!-- balance-curve-endpoints:end -->
 
 #### 4.5.1 AI依存度の意味と再設計課題
 

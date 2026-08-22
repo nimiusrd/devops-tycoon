@@ -249,6 +249,7 @@ export function normalizeReplayKeyframes(value: unknown): ReplayKeyframe[] {
     if (!isObject(raw) || typeof raw.phase !== 'string') continue;
     if (!isReplayFramePhase(raw.phase as RunPhase)) continue;
     if (!isReplayFrame(raw.frame)) continue;
+    if (raw.phase !== raw.frame.phase) continue;
     keyframes.push({
       phase: raw.phase as ReplayFramePhase,
       label: typeof raw.label === 'string' ? raw.label : undefined,

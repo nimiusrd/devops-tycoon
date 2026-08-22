@@ -16,6 +16,7 @@ export function canHydratePersistState(state: RunPersistState): boolean {
       trials: state.trials,
     });
     engine.hydratePersistState(state);
+    engine.snapshot();
     return true;
   } catch {
     return false;
@@ -30,6 +31,7 @@ export function canHydrateReplayFrame(frame: RunReplayFrame): boolean {
       trials: frame.trials,
     });
     engine.hydrateReplayFrame(frame);
+    engine.snapshot();
     return true;
   } catch {
     return false;

@@ -885,7 +885,7 @@ describe('RI-133 セーブファイル共有', () => {
   });
 
   it('破損・未対応スキーマ・ルールセット不一致を理由付きで拒否する', () => {
-    const save = makeRunSaveWith('ri133-save-reject');
+    const save = makeRunSave('ri133-save-reject');
 
     expect(parseRunSaveFile('{')).toMatchObject({ ok: false, reason: 'invalid-json' });
     expect(parseRunSaveFile(JSON.stringify({ ...save, schemaVersion: 999 }))).toMatchObject({
@@ -901,6 +901,35 @@ describe('RI-133 セーブファイル共有', () => {
         JSON.stringify({
           ...save,
           state: { ...save.state, deck: null },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          state: { ...save.state, shop: {} },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          summary: { ...save.summary, runKind: 'normal', dailyDate: undefined },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          replayKeyframes: [
+            {
+              ...save.replayKeyframes[0],
+              frame: { ...save.replayKeyframes[0].frame, deck: null },
+            },
+          ],
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });

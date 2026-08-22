@@ -6,7 +6,7 @@
  * フェーズ遷移時のみ保存し、スプリント tick 中は更新しない。
  */
 import { isRunSavePhase, type RunPersistState, type RunSavePhase } from '../sim/run/persist';
-import { canHydratePersistState } from '../sim/run/persistValidation';
+import { canHydratePersistState, canHydrateReplayFrame } from '../sim/run/persistValidation';
 import type { DifficultyId, GoalKpiProgress, RunKind, RunPhase, RunStatus } from '../sim/run/types';
 import { companyOrgFromTeams } from '../sim/orgscale';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
@@ -378,6 +378,9 @@ export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRunStatus(state.status) || state.status !== 'playing') return null;
   if (typeof state.seed !== 'string' || state.seed !== summary.seed) return null;
   if (!isDifficulty(state.difficulty) || state.difficulty !== summary.difficulty) return null;
+  if (!isRunKind(state.runKind) || state.runKind !== summary.runKind) return null;
+  if (state.dailyDate !== undefined && typeof state.dailyDate !== 'string') return null;
+  if (state.dailyDate !== summary.dailyDate) return null;
   if (!isRecord(state.extras)) return null;
   if (!Array.isArray(state.extras.allowedCards)) return null;
   if (!Array.isArray(state.extras.allowedRelics)) return null;
@@ -478,6 +481,13 @@ export function parseRunSaveFile(raw: string): RunSaveFileImportResult {
       ok: false,
       reason: 'invalid-data',
       message: '途中セーブの状態全体を復元できないため、読み込めません。',
+    };
+  }
+  if (!save.replayKeyframes.every(({ frame }) => canHydrateReplayFrame(frame))) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: '途中セーブに含まれるリプレイを復元できないため、読み込めません。',
     };
   }
 

@@ -381,6 +381,17 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   const terminalFrame = keyframes[keyframes.length - 1]?.frame;
   const terminalPhase = terminalFrame?.phase;
   if (!isLegacy && !isNormalizedLegacy) {
+    if (terminalPhase === 'won' || terminalPhase === 'lost') {
+      const terminalTotals = terminalFrame?.totals;
+      if (
+        !isObject(terminalTotals) ||
+        typeof terminalTotals.delivered !== 'number' ||
+        !Number.isFinite(terminalTotals.delivered) ||
+        terminalTotals.delivered !== value.outcome.score
+      ) {
+        return null;
+      }
+    }
     if (
       !keyframes.every(({ frame }) =>
         frame.phase === 'won' || frame.phase === 'lost'

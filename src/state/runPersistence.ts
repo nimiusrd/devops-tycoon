@@ -435,6 +435,14 @@ export function parseRunSave(raw: unknown): RunSave | null {
   ) {
     return null;
   }
+  if (
+    schema === RUN_SAVE_SCHEMA_VERSION &&
+    (summary.quarterNumber !== state.quarterNumber ||
+      summary.sprintIndexInQuarter !== state.sprintIndexInQuarter ||
+      summary.sprintsPlayed !== state.sprintsPlayed)
+  ) {
+    return null;
+  }
   if (!isDiagnosisType(state.diagnosis)) return null;
   if (!isRecord(state.extras)) return null;
   if (!Array.isArray(state.extras.allowedCards)) return null;

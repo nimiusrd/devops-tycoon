@@ -48,6 +48,84 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
+function hasValidCardInstance(value: unknown): boolean {
+  if (
+    !isObject(value) ||
+    typeof value.defId !== 'string' ||
+    getCard(value.defId) === undefined ||
+    !isSafeInteger(value.level) ||
+    value.level < 1
+  ) {
+    return false;
+  }
+  const level = value.level;
+  if (
+    value.baselineAppliedLevel !== undefined &&
+    (!isSafeInteger(value.baselineAppliedLevel) ||
+      value.baselineAppliedLevel < 0 ||
+      value.baselineAppliedLevel > level)
+  ) {
+    return false;
+  }
+  if (value.baselineAppliedByTeam !== undefined) {
+    if (
+      !isObject(value.baselineAppliedByTeam) ||
+      !Object.values(value.baselineAppliedByTeam).every(
+        (appliedLevel) => isSafeInteger(appliedLevel) && appliedLevel >= 0 && appliedLevel <= level,
+      )
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function hasKnownUniqueRelics(value: unknown): value is string[] {
+  if (!isStringArray(value)) return false;
+  const seen = new Set<string>();
+  return value.every((id) => {
+    if (seen.has(id) || getRelic(id) === undefined) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
+/** セーブから復元する baseConfig は、シミュレーションを暴走させない範囲に限定する。 */
+function hasValidPersistBaseConfig(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (
+    !isSafeInteger(value.taskCount) ||
+    value.taskCount < 1 ||
+    value.taskCount > 1_000 ||
+    !isSafeInteger(value.codingSlots) ||
+    value.codingSlots < 1 ||
+    value.codingSlots > 100 ||
+    !isSafeInteger(value.maxTicks) ||
+    value.maxTicks < 1 ||
+    value.maxTicks > 100_000 ||
+    !isSafeInteger(value.focusMax) ||
+    value.focusMax < 1 ||
+    value.focusMax > 100
+  ) {
+    return false;
+  }
+  if (
+    value.minCompleteTick !== undefined &&
+    (!isSafeInteger(value.minCompleteTick) ||
+      value.minCompleteTick < 0 ||
+      value.minCompleteTick > value.maxTicks)
+  ) {
+    return false;
+  }
+  return (
+    value.aiDependencyPerTask === undefined ||
+    (typeof value.aiDependencyPerTask === 'number' &&
+      Number.isFinite(value.aiDependencyPerTask) &&
+      value.aiDependencyPerTask >= 0 &&
+      value.aiDependencyPerTask <= 100)
+  );
+}
+
 function isFiniteNumberArray(value: unknown): value is number[] {
   return (
     Array.isArray(value) && value.every((item) => typeof item === 'number' && Number.isFinite(item))
@@ -297,6 +375,29 @@ function hasValidQuarterReview(value: unknown): boolean {
   return value.progress.every(hasValidKpiProgress);
 }
 
+/** 旧リプレイは未知のコンテンツ ID を許容しつつ、表示に必要な形だけ確認する。 */
+function hasValidLegacyQuarterReview(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (
+    typeof value.outcome !== 'string' ||
+    !hasFiniteNumberFields(
+      value.goal,
+      ['deliveryTarget', 'qualityTarget', 'techDebtLimit', 'moraleTarget', 'incidentLimit'],
+      ['aiAdoptionTarget'],
+    ) ||
+    !hasFiniteNumberFields(value.trust, ['management', 'customers', 'team']) ||
+    typeof value.bossCleared !== 'boolean' ||
+    !Array.isArray(value.missedReasons) ||
+    !value.missedReasons.every((reason) => typeof reason === 'string') ||
+    !isStringArray(value.availableAdjustments) ||
+    !Array.isArray(value.progress) ||
+    !value.progress.every(hasValidKpiProgress)
+  ) {
+    return false;
+  }
+  return QUARTER_OUTCOMES.has(value.outcome);
+}
+
 function hasValidBeat(value: unknown): boolean {
   if (!isObject(value) || typeof value.eventId !== 'string') return false;
   if (value.kind !== 'judgment' && value.kind !== 'decision') return false;
@@ -496,8 +597,8 @@ function hasValidPersistStructures(value: unknown): boolean {
   if (value.quarterReview !== null && !hasValidQuarterReview(value.quarterReview)) return false;
   if (value.beat !== null && !hasValidBeat(value.beat)) return false;
   if (value.shop !== null && !hasValidShopOffer(value.shop)) return false;
-  if (!Array.isArray(value.deck) || !value.deck.every((card) => isObject(card))) return false;
-  if (!isStringArray(value.relics)) return false;
+  if (!Array.isArray(value.deck) || !value.deck.every(hasValidCardInstance)) return false;
+  if (!hasKnownUniqueRelics(value.relics)) return false;
   if (value.draft !== null && !isStringArray(value.draft)) return false;
   if (!isFiniteNumberArray(value.pendingShopHandIndices)) return false;
   if (
@@ -512,6 +613,7 @@ function hasValidPersistStructures(value: unknown): boolean {
   if (!isStringArray(value.extras.allowedCards) || !isStringArray(value.extras.allowedRelics)) {
     return false;
   }
+  if (!hasValidPersistBaseConfig(value.extras.baseConfig)) return false;
   if (value.extras.teamRosters !== undefined) {
     if (
       !isObject(value.extras.teamRosters) ||
@@ -534,6 +636,9 @@ export function canReadLegacyReplayFrame(frame: RunReplayFrame): boolean {
       return false;
     }
     if (frame.trendHistory !== undefined && !hasValidTrendHistory(frame.trendHistory)) {
+      return false;
+    }
+    if (frame.phase === 'quarterReview' && !hasValidLegacyQuarterReview(frame.quarterReview)) {
       return false;
     }
     return true;

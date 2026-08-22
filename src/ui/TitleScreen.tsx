@@ -110,6 +110,7 @@ export function TitleScreen({
   }>({ kind: 'idle', message: '' });
   const recipeFileRef = useRef<HTMLInputElement>(null);
   const runSaveFileRef = useRef<HTMLInputElement>(null);
+  const runSaveFileSelectionRef = useRef(0);
   const [runSaveFileStatus, setRunSaveFileStatus] = useState<{
     kind: 'idle' | 'ok' | 'error';
     message: string;
@@ -187,15 +188,21 @@ export function TitleScreen({
     event.target.value = '';
     if (!file || !onImportRunSave) return;
     const importEpoch = runEpoch;
+    const selectionId = ++runSaveFileSelectionRef.current;
     void readTextFile(file)
-      .then((raw) => onImportRunSave(raw, importEpoch))
-      .then((result: RunSaveFileImportResult) => {
+      .then((raw) => {
+        if (selectionId !== runSaveFileSelectionRef.current) return null;
+        return onImportRunSave(raw, importEpoch);
+      })
+      .then((result: RunSaveFileImportResult | null) => {
+        if (!result || selectionId !== runSaveFileSelectionRef.current) return;
         setRunSaveFileStatus({
           kind: result.ok ? 'ok' : 'error',
           message: result.message,
         });
       })
       .catch(() => {
+        if (selectionId !== runSaveFileSelectionRef.current) return;
         setRunSaveFileStatus({
           kind: 'error',
           message: '途中セーブファイルを読み込めませんでした。',

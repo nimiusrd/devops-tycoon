@@ -262,7 +262,7 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
     lostFrame.status = 'lost';
     lostFrame.loseReason = 'reviewFreeze';
     lostFrame.diagnosis = 'reviewHell';
-    lostFrame.totals = { ...lostFrame.totals, reviewQueuePeak: 21 };
+    lostFrame.totals = { ...lostFrame.totals, delivered: 7, reviewQueuePeak: 21 };
     lostFrame.lastResult = resultFrame.lastResult;
 
     const blob: ReplayBlob = {

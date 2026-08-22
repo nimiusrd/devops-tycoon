@@ -759,6 +759,31 @@ describe('リプレイ正規化（RI-72-B3）', () => {
     });
   });
 
+  it('現行リプレイの結果スコアを終端フレームの出荷点と照合する', () => {
+    const valid = makeNormalizeBlob({
+      outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 42, winType: 'normal' },
+    });
+    const terminalFrame = {
+      ...valid.keyframes[0]!.frame,
+      phase: 'won' as const,
+      status: 'won' as const,
+      winType: 'normal' as const,
+      totals: { ...valid.keyframes[0]!.frame.totals, delivered: 42 },
+    };
+    const terminal = {
+      ...valid,
+      keyframes: [{ phase: 'won' as const, frame: terminalFrame }],
+    };
+
+    expect(normalizeReplay(terminal)).not.toBeNull();
+    expect(
+      normalizeReplay({
+        ...terminal,
+        outcome: { ...terminal.outcome, score: 41 },
+      }),
+    ).toBeNull();
+  });
+
   it('normalizeReplayKeyframes は壊れた要素だけ捨て、label の有無を正規化する', () => {
     const frame = makeNormalizeFrame('keyframes-valid');
     const resultFrame = structuredClone(frame);
@@ -888,6 +913,30 @@ describe('RI-133 リプレイファイル共有', () => {
             {
               ...blob.keyframes[0],
               frame: { ...blob.keyframes[0].frame, roster: {} },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    const {
+      ruleset: _legacyReviewRuleset,
+      contentSnapshot: _legacyReviewSnapshot,
+      ...legacyQuarterReviewBlob
+    } = blob;
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...legacyQuarterReviewBlob,
+          schemaVersion: 1,
+          keyframes: [
+            {
+              ...blob.keyframes[0],
+              phase: 'quarterReview',
+              frame: {
+                ...blob.keyframes[0].frame,
+                phase: 'quarterReview',
+                quarterReview: {} as never,
+              },
             },
           ],
         }),

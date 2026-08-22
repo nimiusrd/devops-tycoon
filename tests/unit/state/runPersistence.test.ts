@@ -998,6 +998,55 @@ describe('RI-133 セーブファイル共有', () => {
     ).toMatchObject({ ok: false, reason: 'invalid-data' });
     expect(
       parseRunSaveFile(
+        serializeRunSave({
+          ...save,
+          state: { ...save.state, deck: [{ defId: 'missing-card', level: 1 }] },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...save,
+          state: {
+            ...save.state,
+            deck: [{ defId: 'copilot', level: 1, baselineAppliedByTeam: { 'product-t0': 2 } }],
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...save,
+          state: { ...save.state, relics: ['psych-safety', 'psych-safety'] },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...save,
+          state: {
+            ...save.state,
+            extras: {
+              ...save.state.extras,
+              baseConfig: { ...save.state.extras.baseConfig, taskCount: NaN },
+            },
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...save,
+          summary: { ...save.summary, sprintsPlayed: save.summary.sprintsPlayed + 1 },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
         JSON.stringify({
           ...dailySave,
           summary: { ...dailySave.summary, dailyDate: undefined },

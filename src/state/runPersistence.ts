@@ -111,6 +111,7 @@ export type RunSaveFileImportReason =
   | 'invalid-data'
   | 'ruleset-unknown'
   | 'ruleset-mismatch'
+  | 'stale'
   | 'storage';
 
 export interface RunSaveFileImportSuccess {

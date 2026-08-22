@@ -876,6 +876,63 @@ describe('RI-133 リプレイファイル共有', () => {
       parseReplayFile(
         serializeReplay({
           ...blob,
+          contentSnapshot: {
+            cards: [
+              {
+                id: 'card-with-invalid-effect',
+                name: 'カード',
+                rarity: 'common',
+                cost: 1,
+                focusCost: 1,
+                description: [],
+                base: { codingSpeedMul: 'bad' },
+              } as never,
+            ],
+            relics: [],
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          contentSnapshot: {
+            cards: [],
+            relics: [
+              {
+                id: 'relic-with-invalid-effect',
+                name: 'レリック',
+                description: '',
+                effects: { incidentRateMul: 'bad' },
+              } as never,
+            ],
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          contentSnapshot: {
+            cards: [],
+            relics: [
+              {
+                id: 'relic-with-invalid-passive',
+                name: 'レリック',
+                description: '',
+                passives: { moraleDamageMul: 'bad' },
+              } as never,
+            ],
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
           keyframes: [
             {
               ...blob.keyframes[0],

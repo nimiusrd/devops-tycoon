@@ -66,6 +66,7 @@ import {
   toRunSave,
   type RunSave,
   type RunSaveCompatibilityIssue,
+  type RunSaveFileImportFailure,
   type RunSaveFileImportResult,
   type RunSaveSummary,
   type RunRulesetIdentity,
@@ -865,6 +866,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
     },
     async importRunSave(raw) {
+      const importEpoch = runEpoch;
+      const staleImport = (): RunSaveFileImportFailure => ({
+        ok: false,
+        reason: 'stale',
+        message:
+          'タイトル画面を離れたため、途中セーブの読み込みを中止しました。現在のランは変更していません。',
+      });
+      if (engine.currentPhase() !== 'title') return staleImport();
       const parsed = parseRunSaveFile(raw);
       if (!parsed.ok) return parsed;
       if (!runStorage) {
@@ -883,6 +892,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           message: '途中セーブを保存できませんでした。既存のセーブは変更していません。',
         };
       }
+      if (runEpoch !== importEpoch || engine.currentPhase() !== 'title') return staleImport();
       resumableSave = structuredClone(parsed.save);
       runSaveIssue = null;
       runSaveRevision += 1;

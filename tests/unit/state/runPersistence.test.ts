@@ -967,4 +967,19 @@ describe('RI-133 セーブファイル共有', () => {
     expect(rejected).toMatchObject({ ok: false, reason: 'unsupported-schema' });
     expect(await storage.load()).toEqual(beforeRejectedImport);
   });
+
+  it('タイトルを離れた後に完了したセーブ取込は現在のランを上書きしない', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({ runStorage: storage });
+    const importedSave = makeRunSaveWith('ri133-stale-import');
+
+    game.startRun('easy', [], 'ri133-current-run');
+    const currentSave = await storage.load();
+
+    const result = await game.importRunSave(serializeRunSave(importedSave));
+
+    expect(result).toMatchObject({ ok: false, reason: 'stale' });
+    expect(await storage.load()).toEqual(currentSave);
+    expect(game.getRunSave()?.state.seed).toBe('ri133-current-run');
+  });
 });

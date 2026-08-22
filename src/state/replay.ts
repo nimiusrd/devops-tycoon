@@ -104,6 +104,37 @@ function isCardRarity(value: unknown): value is CardDef['rarity'] {
   return value === 'common' || value === 'rare' || value === 'legendary';
 }
 
+const CARD_EFFECT_KEYS = [
+  'codingSpeedMul',
+  'routineSpeedMul',
+  'reviewEfficiencyMul',
+  'reviewCapacityMul',
+  'seniorHpCostMul',
+  'reviewHpCostMul',
+  'reworkRateAdd',
+  'incidentRateMul',
+  'aiLiteracyAdd',
+  'aiDependencyAdd',
+  'qualityAdd',
+  'testCoverageAdd',
+  'securityAdd',
+  'infraCostMul',
+] as const;
+
+const RELIC_PASSIVE_KEYS = [
+  'moraleDamageMul',
+  'restHealBonus',
+  'shopDiscount',
+  'relicSlots',
+] as const;
+
+function hasFiniteNumericFields(value: Record<string, unknown>, keys: readonly string[]): boolean {
+  return keys.every((key) => {
+    const field = value[key];
+    return field === undefined || (typeof field === 'number' && Number.isFinite(field));
+  });
+}
+
 function isCardDef(value: unknown): value is CardDef {
   return (
     isObject(value) &&
@@ -116,7 +147,8 @@ function isCardDef(value: unknown): value is CardDef {
     Number.isFinite(value.focusCost) &&
     Array.isArray(value.description) &&
     value.description.every((line) => typeof line === 'string') &&
-    isObject(value.base)
+    isObject(value.base) &&
+    hasFiniteNumericFields(value.base, CARD_EFFECT_KEYS)
   );
 }
 
@@ -126,8 +158,10 @@ function isRelicDef(value: unknown): value is RelicDef {
     typeof value.id === 'string' &&
     typeof value.name === 'string' &&
     typeof value.description === 'string' &&
-    (value.effects === undefined || isObject(value.effects)) &&
-    (value.passives === undefined || isObject(value.passives))
+    (value.effects === undefined ||
+      (isObject(value.effects) && hasFiniteNumericFields(value.effects, CARD_EFFECT_KEYS))) &&
+    (value.passives === undefined ||
+      (isObject(value.passives) && hasFiniteNumericFields(value.passives, RELIC_PASSIVE_KEYS)))
   );
 }
 

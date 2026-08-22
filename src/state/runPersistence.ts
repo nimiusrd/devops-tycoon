@@ -180,6 +180,12 @@ function isRunStatus(value: unknown): value is RunStatus {
   return value === 'playing' || value === 'won' || value === 'lost';
 }
 
+function isDailyDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 /** 旧スキーマの途中セーブを現行の難易度別 Delivery 倍率へ移行する。 */
 function migrateDeliveryGoal(
   state: Record<string, unknown>,
@@ -369,6 +375,11 @@ export function parseRunSave(raw: unknown): RunSave | null {
   }
   if (!isRunKind(summary.runKind)) return null;
   if (summary.dailyDate !== undefined && typeof summary.dailyDate !== 'string') return null;
+  if (
+    summary.runKind === 'daily' ? !isDailyDate(summary.dailyDate) : summary.dailyDate !== undefined
+  ) {
+    return null;
+  }
   if (typeof summary.phase !== 'string' || !isRunSavePhase(summary.phase as RunPhase)) return null;
   if (typeof summary.quarterNumber !== 'number') return null;
   if (typeof summary.sprintIndexInQuarter !== 'number') return null;

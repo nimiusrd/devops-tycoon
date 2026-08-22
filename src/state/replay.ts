@@ -323,6 +323,13 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
 
   const keyframes = normalizeReplayKeyframes(value.keyframes);
   if (keyframes.length !== value.keyframes.length || keyframes.length === 0) return null;
+  const terminalPhase = keyframes[keyframes.length - 1]?.frame.phase;
+  if (
+    (terminalPhase === 'won' || terminalPhase === 'lost') &&
+    terminalPhase !== value.outcome.status
+  ) {
+    return null;
+  }
 
   const isLegacyShape = isLegacy || isNormalizedLegacy;
   const parsedRuleset = isLegacyShape ? null : parseReplayRuleset(value.ruleset);

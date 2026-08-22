@@ -972,6 +972,33 @@ describe('RI-133 セーブファイル共有', () => {
       parseRunSaveFile(
         JSON.stringify({
           ...save,
+          summary: { ...save.summary, dailyDate: undefined },
+          state: { ...save.state, dailyDate: undefined },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          summary: { ...save.summary, dailyDate: '2026-02-29' },
+          state: { ...save.state, dailyDate: '2026-02-29' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          summary: { ...save.summary, runKind: 'normal', dailyDate: '2026-07-27' },
+          state: { ...save.state, runKind: 'normal', dailyDate: '2026-07-27' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
           summary: { ...save.summary, runKind: 'normal', dailyDate: undefined },
         }),
       ),
@@ -1001,6 +1028,37 @@ describe('RI-133 セーブファイル共有', () => {
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'ruleset-mismatch' });
+  });
+
+  it('フェーズごとの必須状態が欠けたセーブを拒否する', () => {
+    const engine = createRunEngine({ seed: 'ri133-phase-required' });
+    engine.startRun('easy', [], 'ri133-phase-required');
+    engine.beginSetupSprint();
+    let guard = 0;
+    while (engine.sprintRunning() && guard++ < 20_000) engine.step(100);
+    const resultState = engine.exportPersistState();
+    if (!resultState || resultState.phase !== 'result') throw new Error('result fixture missing');
+
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: { ...resultState, lastResult: null },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+
+    engine.acknowledgeResult();
+    const draftState = engine.exportPersistState();
+    if (!draftState || draftState.phase !== 'draft') throw new Error('draft fixture missing');
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(draftState),
+          state: { ...draftState, draft: null },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
   });
 
   it('GameHandleは検証成功後だけセーブを置き換え、メタ進行を変更しない', async () => {
@@ -1072,5 +1130,22 @@ describe('RI-133 セーブファイル共有', () => {
     expect(await importPromise).toMatchObject({ ok: false, reason: 'stale' });
     expect(await controlled.storage.load()).toEqual(existingSave);
     expect(game.getRunSave()).toEqual(existingSave);
+  });
+
+  it('重なったセーブ取込を直列化し、メモリと永続層を同じ結果にする', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({ runStorage: storage });
+    const firstSave = makeRunSaveWith('ri133-queued-first');
+    const secondSave = makeRunSaveWith('ri133-queued-second');
+
+    const [first, second] = await Promise.all([
+      game.importRunSave(serializeRunSave(firstSave)),
+      game.importRunSave(serializeRunSave(secondSave)),
+    ]);
+
+    expect(first).toMatchObject({ ok: true });
+    expect(second).toMatchObject({ ok: true });
+    expect(game.getRunSave()).toEqual(secondSave);
+    expect(await storage.load()).toEqual(secondSave);
   });
 });

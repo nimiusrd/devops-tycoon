@@ -8,8 +8,36 @@
 import { createRunEngine } from './engine';
 import type { RunPersistState, RunReplayFrame } from './persist';
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** フェーズ画面が要求する保存済みデータの存在を検証する。 */
+export function hasRequiredPersistPhaseState(
+  state: Pick<
+    RunPersistState | RunReplayFrame,
+    'phase' | 'lastResult' | 'draft' | 'beat' | 'shop' | 'quarterReview'
+  >,
+): boolean {
+  switch (state.phase) {
+    case 'result':
+      return isObject(state.lastResult);
+    case 'draft':
+      return Array.isArray(state.draft);
+    case 'beat':
+      return isObject(state.beat);
+    case 'shop':
+      return isObject(state.shop);
+    case 'quarterReview':
+      return isObject(state.quarterReview);
+    default:
+      return true;
+  }
+}
+
 export function canHydratePersistState(state: RunPersistState): boolean {
   try {
+    if (!hasRequiredPersistPhaseState(state)) return false;
     const engine = createRunEngine({
       seed: state.seed,
       difficulty: state.difficulty,
@@ -25,6 +53,7 @@ export function canHydratePersistState(state: RunPersistState): boolean {
 
 export function canHydrateReplayFrame(frame: RunReplayFrame): boolean {
   try {
+    if (!hasRequiredPersistPhaseState(frame)) return false;
     const engine = createRunEngine({
       seed: frame.seed,
       difficulty: frame.difficulty,

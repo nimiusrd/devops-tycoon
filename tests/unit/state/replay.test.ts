@@ -879,7 +879,41 @@ describe('RI-133 リプレイファイル共有', () => {
           keyframes: [
             {
               ...blob.keyframes[0],
+              phase: 'result',
+              frame: { ...blob.keyframes[0].frame, phase: 'result', lastResult: null },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          keyframes: [
+            {
+              ...blob.keyframes[0],
               frame: { ...blob.keyframes[0].frame, diagnosis: 'unknown-diagnosis' },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          outcome: { ...blob.outcome, status: 'won' },
+          keyframes: [
+            {
+              ...blob.keyframes[0],
+              phase: 'lost',
+              frame: {
+                ...blob.keyframes[0].frame,
+                phase: 'lost',
+                status: 'lost',
+                loseReason: 'reviewFreeze',
+              },
             },
           ],
         }),
@@ -1054,6 +1088,65 @@ describe('RI-133 リプレイファイル共有', () => {
 
     expect(rejected).toMatchObject({ ok: false, reason: 'duplicate' });
     expect(await replayStorage.get(existing.id)).toEqual(existing);
+  });
+
+  it('重なった同一IDの取込を直列化し、後続をduplicateとして拒否する', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const first = makeBlob({
+      id: 'ri133-queued-duplicate',
+      seed: 'ri133-queued-first',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+    const second = makeBlob({
+      id: first.id,
+      seed: 'ri133-queued-second',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+
+    const [firstResult, secondResult] = await Promise.all([
+      game.importReplayFile(serializeReplay(first)),
+      game.importReplayFile(serializeReplay(second)),
+    ]);
+
+    expect(firstResult).toMatchObject({ ok: true });
+    expect(secondResult).toMatchObject({ ok: false, reason: 'duplicate' });
+    expect(await replayStorage.get(first.id)).toEqual(first);
+  });
+
+  it('リプレイ保存後の一覧更新失敗はevictedではなくstorageを返し、既存キャッシュを保持する', async () => {
+    const inner = new MemoryReplayStorage();
+    const existing = makeBlob({
+      id: 'ri133-list-failure-existing',
+      seed: 'ri133-list-failure-existing',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+    await inner.save(existing);
+    let failList = false;
+    const replayStorage: ReplayStorage = {
+      list: async () => {
+        if (failList) throw new Error('list failed');
+        return inner.list();
+      },
+      get: (id) => inner.get(id),
+      save: (blob) => inner.save(blob),
+      clear: () => inner.clear(),
+    };
+    const game = createGame({ initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    failList = true;
+
+    const imported = makeBlob({
+      id: 'ri133-list-failure-imported',
+      seed: 'ri133-list-failure-imported',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+    const result = await game.importReplayFile(serializeReplay(imported));
+
+    expect(result).toMatchObject({ ok: false, reason: 'storage' });
+    expect(await inner.get(imported.id)).toEqual(imported);
+    expect(game.listReplays().map((replay) => replay.id)).toEqual([existing.id]);
   });
 
   it('上限適用で取込対象自身が削除された場合は成功にしない', async () => {

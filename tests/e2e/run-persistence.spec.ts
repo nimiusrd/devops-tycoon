@@ -47,6 +47,9 @@ async function updateStoredRun(
   page: import('@playwright/test').Page,
   mode: 'missing-ruleset' | 'mismatched-ruleset',
 ): Promise<void> {
+  // GameHandle の IDB 書き込みは fire-and-forget なので、直前の結果セーブを
+  // 仕込む前に完了させる。そうしないと、手動変更が後続の保存で上書きされる。
+  await page.waitForTimeout(100);
   await page.evaluate(async (updateMode) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('devops-tycoon');
@@ -69,12 +72,11 @@ async function updateStoredRun(
       updated.ruleset = { version: 999, fingerprint: 'different-ruleset' };
     }
     await new Promise<void>((resolve, reject) => {
-      const request = db
-        .transaction('runSave', 'readwrite')
-        .objectStore('runSave')
-        .put(updated, 'current');
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      const transaction = db.transaction('runSave', 'readwrite');
+      const request = transaction.objectStore('runSave').put(updated, 'current');
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? request.error);
+      transaction.onabort = () => reject(transaction.error ?? request.error);
     });
     db.close();
   }, mode);

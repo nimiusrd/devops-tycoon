@@ -107,7 +107,7 @@ export interface UseRun {
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
   clearRunSave: () => void;
-  importRunSave: (raw: string) => Promise<RunSaveFileImportResult>;
+  importRunSave: (raw: string, importEpoch?: number) => Promise<RunSaveFileImportResult>;
   replays: ReplayBlob[];
   isReplayMode: boolean;
   /** 閲覧中リプレイの終端診断（RI-34‴）。非リプレイ時は null。 */
@@ -290,7 +290,10 @@ export function useRun(game: GameHandle): UseRun {
   );
   const newRun = useCallback(() => void game.newRun(), [game]);
   const clearRunSave = useCallback(() => void game.clearRunSave(), [game]);
-  const importRunSave = useCallback((raw: string) => game.importRunSave(raw), [game]);
+  const importRunSave = useCallback(
+    (raw: string, importEpoch?: number) => game.importRunSave(raw, importEpoch),
+    [game],
+  );
   const openReplay = useCallback(
     (id: string, keyframeIndex?: number) => void game.openReplay(id, keyframeIndex),
     [game],

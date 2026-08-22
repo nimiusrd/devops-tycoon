@@ -56,11 +56,13 @@ export interface TitleScreenProps {
   ) => void;
   onStartDaily?: () => void;
   onResume?: () => void;
+  /** ファイル選択時点のラン世代。非同期読込完了後の遷移を検出する。 */
+  runEpoch: number;
   resumableSummary?: RunSaveSummary | null;
   runSaveIssue?: RunSaveCompatibilityIssue | null;
   onDiscardRunSave?: () => void;
   onExportRunSave?: () => void;
-  onImportRunSave?: (raw: string) => Promise<RunSaveFileImportResult>;
+  onImportRunSave?: (raw: string, importEpoch: number) => Promise<RunSaveFileImportResult>;
   onOpenReplays?: () => void;
   onOpenMetaShop?: () => void;
   /** 研修方針（デッキカスタム。RI-34⁗）。 */
@@ -81,6 +83,7 @@ export function TitleScreen({
   onStart,
   onStartDaily,
   onResume,
+  runEpoch,
   resumableSummary = null,
   runSaveIssue = null,
   onDiscardRunSave,
@@ -183,8 +186,9 @@ export function TitleScreen({
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file || !onImportRunSave) return;
+    const importEpoch = runEpoch;
     void readTextFile(file)
-      .then((raw) => onImportRunSave(raw))
+      .then((raw) => onImportRunSave(raw, importEpoch))
       .then((result: RunSaveFileImportResult) => {
         setRunSaveFileStatus({
           kind: result.ok ? 'ok' : 'error',

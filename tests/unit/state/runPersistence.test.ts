@@ -1186,6 +1186,22 @@ describe('RI-133 セーブファイル共有', () => {
       parseRunSaveFile(
         serializeRunSave({
           ...toRunSave(resultState),
+          state: { ...resultState, trendHistory: [null] as never },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: { ...resultState, bossId: 'missing-boss' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
           state: {
             ...resultState,
             shop: { cards: [{ defId: 'copilot', cost: 'bad', bought: false }] },
@@ -1262,6 +1278,21 @@ describe('RI-133 セーブファイル共有', () => {
     expect(result).toMatchObject({ ok: false, reason: 'stale' });
     expect(await storage.load()).toEqual(currentSave);
     expect(game.getRunSave()?.state.seed).toBe('ri133-current-run');
+  });
+
+  it('ファイル選択時のラン世代を渡すと、読込完了後の遷移を stale として拒否する', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({ runStorage: storage });
+    const importedSave = makeRunSaveWith('ri133-selected-epoch');
+    const selectedEpoch = game.getRunEpoch();
+
+    game.startRun('easy', [], 'ri133-after-file-selection');
+    const currentSave = await storage.load();
+
+    const result = await game.importRunSave(serializeRunSave(importedSave), selectedEpoch);
+
+    expect(result).toMatchObject({ ok: false, reason: 'stale' });
+    expect(await storage.load()).toEqual(currentSave);
   });
 
   it('リプレイ閲覧への遷移と競合したセーブ取込は既存セーブを復元する', async () => {

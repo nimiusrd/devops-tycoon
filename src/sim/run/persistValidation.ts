@@ -7,11 +7,13 @@
  */
 import { createRunEngine } from './engine';
 import { ACTION_IDS } from '../../data/actionIds';
+import { getBoss } from '../../data/bosses';
 import { effectiveKind, getEvent } from '../../data/events';
 import { allGoalAdjustmentIds } from '../../data/goalAdjustments';
 import { getCard } from '../../data/cards';
 import { getRelic } from '../../data/relics';
 import { getTrait, type TraitId } from '../../data/traits';
+import { isDiagnosisType } from '../diagnosis';
 import type { RunPersistState, RunReplayFrame } from './persist';
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -168,6 +170,62 @@ const QUARTER_OUTCOMES = new Set<unknown>([
   'shutdown',
 ]);
 const GOAL_ADJUSTMENT_IDS = new Set<unknown>(allGoalAdjustmentIds());
+const RANKING_KINDS = new Set<unknown>(['overall', 'healthy', 'ai', 'growth']);
+const TEAM_HEALTHES = new Set<unknown>(['healthy', 'congested', 'reviewHell']);
+
+function hasValidKpiProgress(value: unknown): boolean {
+  return (
+    isObject(value) &&
+    typeof value.id === 'string' &&
+    typeof value.label === 'string' &&
+    hasFiniteNumberFields(value, ['target', 'actual']) &&
+    (value.status === 'exceeded' || value.status === 'met' || value.status === 'missed')
+  );
+}
+
+function hasValidTrendHistory(value: unknown): boolean {
+  if (!Array.isArray(value)) return false;
+  return value.every((entry) => {
+    if (
+      !isObject(entry) ||
+      !isSafeInteger(entry.quarterNumber) ||
+      entry.quarterNumber < 1 ||
+      !isDiagnosisType(entry.diagnosis) ||
+      !Array.isArray(entry.kpis) ||
+      !entry.kpis.every(hasValidKpiProgress) ||
+      !isObject(entry.company) ||
+      !hasFiniteNumberFields(entry.company, [
+        'shipping',
+        'aiDependency',
+        'techDebt',
+        'morale',
+        'onFire',
+        'selfRank',
+      ]) ||
+      typeof entry.company.healthRank !== 'string' ||
+      !Array.isArray(entry.departments)
+    ) {
+      return false;
+    }
+    if (
+      entry.company.selfRanks !== undefined &&
+      (!isObject(entry.company.selfRanks) ||
+        !Object.entries(entry.company.selfRanks).every(
+          ([kind, rank]) =>
+            RANKING_KINDS.has(kind) && typeof rank === 'number' && Number.isFinite(rank),
+        ))
+    ) {
+      return false;
+    }
+    return entry.departments.every(
+      (department) =>
+        isObject(department) &&
+        typeof department.deptId === 'string' &&
+        hasFiniteNumberFields(department, ['aiDependency', 'techDebt', 'morale']) &&
+        TEAM_HEALTHES.has(department.health),
+    );
+  });
+}
 
 function hasValidRoster(value: unknown): boolean {
   if (!isObject(value) || !Array.isArray(value.members) || !isSafeInteger(value.nextId)) {
@@ -200,6 +258,23 @@ function hasValidRoster(value: unknown): boolean {
   });
 }
 
+function hasValidLegacyRoster(value: unknown): boolean {
+  if (!isObject(value) || !Array.isArray(value.members)) return false;
+  const ids = new Set<string>();
+  return value.members.every((member) => {
+    if (!isObject(member) || typeof member.id !== 'string' || ids.has(member.id)) return false;
+    ids.add(member.id);
+    return (
+      typeof member.name === 'string' &&
+      (member.assignment === 'coding' ||
+        member.assignment === 'review' ||
+        member.assignment === 'bench') &&
+      typeof member.onLeave === 'boolean' &&
+      hasFiniteNumberFields(member, ['stamina', 'staminaMax'])
+    );
+  });
+}
+
 function hasValidQuarterReview(value: unknown): boolean {
   if (!isObject(value)) return false;
   if (!QUARTER_OUTCOMES.has(value.outcome)) return false;
@@ -219,14 +294,7 @@ function hasValidQuarterReview(value: unknown): boolean {
   ) {
     return false;
   }
-  return value.progress.every(
-    (progress) =>
-      isObject(progress) &&
-      typeof progress.id === 'string' &&
-      typeof progress.label === 'string' &&
-      hasFiniteNumberFields(progress, ['target', 'actual']) &&
-      (progress.status === 'exceeded' || progress.status === 'met' || progress.status === 'missed'),
-  );
+  return value.progress.every(hasValidKpiProgress);
 }
 
 function hasValidBeat(value: unknown): boolean {
@@ -420,6 +488,8 @@ function hasRequiredPersistResult(value: unknown): boolean {
 
 function hasValidPersistStructures(value: unknown): boolean {
   if (!isObject(value)) return false;
+  if (typeof value.bossId !== 'string' || getBoss(value.bossId) === undefined) return false;
+  if (!hasValidTrendHistory(value.trendHistory)) return false;
   if (!hasValidRoster(value.roster)) return false;
   if (value.lastGrowth !== null && !hasValidGrowth(value.lastGrowth)) return false;
   if (value.lastResult !== null && !hasRequiredPersistResult(value.lastResult)) return false;
@@ -451,6 +521,25 @@ function hasValidPersistStructures(value: unknown): boolean {
     }
   }
   return true;
+}
+
+/** 旧リプレイのread-only互換性を保ちながら、表示に必要な形だけを検証する。 */
+export function canReadLegacyReplayFrame(frame: RunReplayFrame): boolean {
+  try {
+    if (!isObject(frame) || !hasValidLegacyRoster(frame.roster)) return false;
+    if (
+      frame.bossId !== undefined &&
+      (typeof frame.bossId !== 'string' || getBoss(frame.bossId) === undefined)
+    ) {
+      return false;
+    }
+    if (frame.trendHistory !== undefined && !hasValidTrendHistory(frame.trendHistory)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** フェーズ画面が要求する保存済みデータの存在を検証する。 */

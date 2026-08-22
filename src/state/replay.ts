@@ -5,7 +5,7 @@
  * RunEngine.hydrateReplayFrame で read-only 表示する。純入力ログ再生は非スコープ。
  */
 import { isReplayFramePhase, type RunReplayFrame, type ReplayFramePhase } from '../sim/run/persist';
-import { canHydrateReplayFrame } from '../sim/run/persistValidation';
+import { canHydrateReplayFrame, canReadLegacyReplayFrame } from '../sim/run/persistValidation';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
 import { getCard } from '../data/cards';
 import { getRelic, type RelicDef } from '../data/relics';
@@ -521,7 +521,10 @@ export function parseReplayFile(
     (value.schemaVersion === REPLAY_SCHEMA_VERSION &&
       value.ruleset === null &&
       value.contentSnapshot === null);
-  if (!isLegacyFile && !replay.keyframes.every(({ frame }) => canHydrateReplayFrame(frame))) {
+  const framesAreReadable = replay.keyframes.every(({ frame }) =>
+    isLegacyFile ? canReadLegacyReplayFrame(frame) : canHydrateReplayFrame(frame),
+  );
+  if (!framesAreReadable) {
     return {
       ok: false,
       reason: 'invalid-data',

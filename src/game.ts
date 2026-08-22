@@ -205,7 +205,7 @@ export interface GameHandle {
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
   /** JSONファイルの内容を検証し、再開候補として保存する。 */
-  importRunSave(raw: string): Promise<RunSaveFileImportResult>;
+  importRunSave(raw: string, importEpoch?: number): Promise<RunSaveFileImportResult>;
   /** リプレイ永続化を接続し、一覧をキャッシュする（RI-61）。 */
   attachReplay(storage: ReplayStorage): Promise<void>;
   /** 保存済みリプレイ一覧（新しい順）。 */
@@ -1028,8 +1028,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearRunSaveInternal();
       bump();
     },
-    importRunSave(raw) {
-      const importEpoch = runEpoch;
+    importRunSave(raw, importEpoch = runEpoch) {
       const importExternalRevision = runSaveExternalRevision;
       const operation = runSaveImportQueue.then(() =>
         importRunSaveInternal(raw, importEpoch, importExternalRevision),

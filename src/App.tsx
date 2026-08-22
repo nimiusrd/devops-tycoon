@@ -292,6 +292,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           onStart={startRun}
           onStartDaily={startDailyRun}
           onResume={resumeRun}
+          runEpoch={run.runEpoch}
           resumableSummary={runSaveSummary}
           runSaveIssue={runSaveIssue}
           onDiscardRunSave={discardRunSave}

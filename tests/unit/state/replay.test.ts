@@ -878,6 +878,36 @@ describe('RI-133 リプレイファイル共有', () => {
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    const { ruleset: _ruleset, contentSnapshot: _contentSnapshot, ...legacyBlob } = blob;
+    expect(
+      parseReplayFile(
+        JSON.stringify({
+          ...legacyBlob,
+          schemaVersion: 1,
+          keyframes: [
+            {
+              ...blob.keyframes[0],
+              frame: { ...blob.keyframes[0].frame, roster: {} },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          ruleset: null,
+          contentSnapshot: null,
+          keyframes: [
+            {
+              ...blob.keyframes[0],
+              frame: { ...blob.keyframes[0].frame, roster: {} },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
     expect(
       parseReplayFile(
         serializeReplay({

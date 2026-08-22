@@ -386,6 +386,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
 
   const summary = raw.summary;
   const state = raw.state;
+  if (schema === RUN_SAVE_SCHEMA_VERSION && !Array.isArray(state.trendHistory)) return null;
   if (typeof summary.seed !== 'string') return null;
   if (!isDifficulty(summary.difficulty)) return null;
   if (!Array.isArray(summary.trials) || !summary.trials.every((t) => typeof t === 'string')) {

@@ -4,6 +4,7 @@
  * hydrate は必須オブジェクトを代入するだけなので、roster や member.stats を null にしても例外にならない。
  * 画面が members / stats / traits 等を参照する前に、外部 JSON の形を拒否する。
  */
+import { getCard } from '../data/cards';
 import { effectiveKind, getEvent } from '../data/events';
 import { isDiagnosisType } from '../sim/diagnosis';
 
@@ -19,25 +20,30 @@ function isStringArray(value: unknown): value is string[] {
 export function isPersistFrameShape(value: unknown): boolean {
   if (!isObject(value)) return false;
   if (!Array.isArray(value.trials)) return false;
-  if (!Array.isArray(value.deck)) return false;
+  if (!Array.isArray(value.deck) || !value.deck.every(isCardInstanceShape)) return false;
   if (!Array.isArray(value.relics)) return false;
   if (!Array.isArray(value.goalAdjustmentsTaken)) return false;
   if (!Array.isArray(value.reviewHistory)) return false;
-  if (!isObject(value.org)) return false;
+  if (!isOrgStateShape(value.org)) return false;
   if (!isObject(value.evolution) || typeof value.evolution.points !== 'number') return false;
   if (!isObject(value.evolution.unlocked)) return false;
   if (!isRosterShape(value.roster)) return false;
   if (!isObject(value.pendingSprintModifiers)) return false;
   if (!isRunTotalsShape(value.totals)) return false;
   if (!isRunTotalsShape(value.quarterTotals)) return false;
-  if (!isObject(value.quarterGoal)) return false;
+  if (!isQuarterGoalShape(value.quarterGoal)) return false;
   if (!isObject(value.stakeholderTrust)) return false;
   if (!isObject(value.zoom)) return false;
   if (!isObject(value.extras)) return false;
   if (!Array.isArray(value.extras.allowedCards)) return false;
   if (!Array.isArray(value.extras.allowedRelics)) return false;
-  if (!isObject(value.extras.baseConfig)) return false;
+  if (!isSprintConfigShape(value.extras.baseConfig)) return false;
   if (!isObject(value.extras.orgAdjust)) return false;
+  if (value.extras.teams !== undefined) {
+    if (!Array.isArray(value.extras.teams) || !value.extras.teams.every(isTeamRunStateShape)) {
+      return false;
+    }
+  }
   if (value.extras.teamRosters !== undefined) {
     if (!isObject(value.extras.teamRosters)) return false;
     if (!Object.values(value.extras.teamRosters).every(isRosterShape)) return false;
@@ -398,4 +404,75 @@ function isQuarterTrendSnapshotShape(value: unknown): boolean {
   if (!Array.isArray(value.kpis) || !value.kpis.every(isGoalKpiProgressShape)) return false;
   if (!isQuarterTrendCompanyShape(value.company)) return false;
   return Array.isArray(value.departments) && value.departments.every(isQuarterTrendDeptShape);
+}
+
+function isOrgStateShape(value: unknown): boolean {
+  if (!isObject(value) || typeof value.aiEnabled !== 'boolean') return false;
+  return (
+    typeof value.aiDependency === 'number' &&
+    typeof value.aiLiteracy === 'number' &&
+    typeof value.testCoverage === 'number' &&
+    typeof value.documentation === 'number' &&
+    typeof value.quality === 'number' &&
+    typeof value.securityLevel === 'number' &&
+    typeof value.morale === 'number' &&
+    typeof value.seniorHp === 'number' &&
+    typeof value.techDebt === 'number' &&
+    typeof value.deliveryScore === 'number'
+  );
+}
+
+function isSprintConfigShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (
+    typeof value.taskCount !== 'number' ||
+    typeof value.codingSlots !== 'number' ||
+    typeof value.maxTicks !== 'number' ||
+    typeof value.focusMax !== 'number'
+  ) {
+    return false;
+  }
+  if (value.minCompleteTick !== undefined && typeof value.minCompleteTick !== 'number') {
+    return false;
+  }
+  return value.aiDependencyPerTask === undefined || typeof value.aiDependencyPerTask === 'number';
+}
+
+function isNumberRecord(value: unknown): boolean {
+  return isObject(value) && Object.values(value).every((item) => typeof item === 'number');
+}
+
+function isCardInstanceShape(value: unknown): boolean {
+  if (!isObject(value) || typeof value.defId !== 'string' || typeof value.level !== 'number') {
+    return false;
+  }
+  if (!getCard(value.defId)) return false;
+  if (value.baselineAppliedLevel !== undefined && typeof value.baselineAppliedLevel !== 'number') {
+    return false;
+  }
+  return value.baselineAppliedByTeam === undefined || isNumberRecord(value.baselineAppliedByTeam);
+}
+
+function isTeamRunStateShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (typeof value.id !== 'string' || typeof value.deptId !== 'string') return false;
+  if (typeof value.name !== 'string' || typeof value.aiEnabled !== 'boolean') return false;
+  if (value.headcount !== undefined && typeof value.headcount !== 'number') return false;
+  return (
+    typeof value.engineers === 'number' &&
+    typeof value.aiLiteracy === 'number' &&
+    typeof value.aiDependency === 'number' &&
+    typeof value.morale === 'number' &&
+    typeof value.techDebt === 'number' &&
+    typeof value.shipping === 'number' &&
+    typeof value.reviewQueue === 'number' &&
+    typeof value.incidents === 'number' &&
+    typeof value.reviewCapacity === 'number' &&
+    typeof value.incidentBias === 'number' &&
+    typeof value.seniorHp === 'number' &&
+    typeof value.testCoverage === 'number' &&
+    typeof value.documentation === 'number' &&
+    typeof value.quality === 'number' &&
+    typeof value.securityLevel === 'number'
+  );
 }

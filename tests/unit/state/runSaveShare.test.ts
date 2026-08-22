@@ -394,6 +394,132 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     },
   );
 
+  it('state.org が空オブジェクトなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-org');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-org-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-empty-org');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: { org?: unknown } };
+    raw.state.org = {};
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-org');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-org');
+  });
+
+  it('extras.teams の要素が空オブジェクトなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-teams');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-teams-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-empty-teams');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { extras: { teams?: unknown } };
+    };
+    raw.state.extras.teams = [{}];
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-teams');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-teams');
+  });
+
+  it('deck の level が数値でなければ拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-deck');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-deck-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-bad-deck');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { deck: Array<{ defId?: string; level?: unknown }> };
+    };
+    raw.state.deck = [{ defId: 'docs', level: 'bad' }];
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-deck');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-deck');
+  });
+
+  it('quarterGoal が空オブジェクトなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-goal');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-goal-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-empty-goal');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: { quarterGoal?: unknown } };
+    raw.state.quarterGoal = {};
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-goal');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-goal');
+  });
+
+  it('extras.baseConfig が空オブジェクトなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-config');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-config-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-empty-config');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { extras: { baseConfig?: unknown } };
+    };
+    raw.state.extras.baseConfig = {};
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-config');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-config');
+  });
+
   it('state.totals.delivered が欠けると拒否し、既存セーブは残す', async () => {
     const existing = makeRunSave('ri133-keep-totals');
     const runStorage = new MemoryRunStorage();

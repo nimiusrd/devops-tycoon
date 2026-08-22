@@ -346,6 +346,80 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect(await runStorage.load()).toBeNull();
   });
 
+  it.each([
+    [
+      'fireEvents',
+      (result: { fireEvents?: unknown }) => {
+        result.fireEvents = [null];
+      },
+    ],
+    [
+      'timeline',
+      (result: { timeline?: unknown }) => {
+        result.timeline = [null];
+      },
+    ],
+    [
+      'events',
+      (result: { events?: unknown }) => {
+        result.events = [null];
+      },
+    ],
+  ] as const)(
+    'result の lastResult.%s 要素が null なら拒否し、既存セーブは残す',
+    async (field, mutate) => {
+      const existing = makeRunSave(`ri133-keep-result-${field}`);
+      const runStorage = new MemoryRunStorage();
+      await runStorage.save(existing);
+      const game = createGame({
+        seed: `ri133-keep-result-${field}-game`,
+        initialMeta: defaultMeta(),
+        runStorage,
+        initialRunSave: existing,
+      });
+
+      const incoming = makeResultRunSave(`ri133-null-${field}`);
+      const raw = JSON.parse(serializeRunSave(incoming)) as {
+        state: { lastResult: { fireEvents?: unknown; timeline?: unknown; events?: unknown } };
+      };
+      mutate(raw.state.lastResult);
+      const rejected = await game.importRunSaveText(JSON.stringify(raw));
+      expect(rejected).toMatchObject({
+        ok: false,
+        reason: 'corrupt',
+        message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+      });
+      expect(game.getRunSaveSummary()?.seed).toBe(`ri133-keep-result-${field}`);
+      expect((await runStorage.load())?.summary.seed).toBe(`ri133-keep-result-${field}`);
+    },
+  );
+
+  it('state.totals.delivered が欠けると拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-totals');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-totals-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-missing-delivered');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { totals: Record<string, unknown> };
+    };
+    delete raw.state.totals.delivered;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-totals');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-totals');
+  });
+
   it('result フェーズで lastResult が空オブジェクトなら拒否し、既存セーブは残す', async () => {
     const existing = makeRunSave('ri133-keep-result');
     const runStorage = new MemoryRunStorage();

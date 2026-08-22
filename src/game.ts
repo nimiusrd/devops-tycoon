@@ -934,7 +934,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         };
       }
       try {
-        await replayStorage.save(loaded.replay);
+        await replayStorage.save(loaded.replay, { pin: true });
         const listed = await refreshReplayCache();
         if (!listed) {
           cachedReplays = selectReplaysWithinMax(

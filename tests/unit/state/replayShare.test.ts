@@ -408,6 +408,48 @@ describe('リプレイのファイル共有（RI-133）', () => {
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-member']);
   });
 
+  it('キーフレームの lastResult.fireEvents 要素が null なら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-null-fire-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-fire', seed: 'keep-fire' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'null-fire', seed: 'null-fire' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: { lastResult?: unknown } }>;
+    };
+    raw.keyframes[0]!.frame.lastResult = {
+      done: 1,
+      delivered: 1,
+      maxCombo: 0,
+      aiAssistedPct: 0,
+      reviewQueueMax: 0,
+      rework: 0,
+      incidents: 0,
+      contained: 0,
+      spread: 0,
+      seniorHpDelta: 0,
+      actionCounts: {},
+      grade: 'C',
+      title: '記録',
+      diagnosis: '記録',
+      timeline: [],
+      events: [],
+      fireEvents: [null],
+      focusRemaining: 0,
+      focusMax: 10,
+      autoContainCount: 0,
+    };
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-fire']);
+  });
+
   it('キーフレームの lastGrowth が空オブジェクトなら拒否し、既存リプレイは残す', async () => {
     const replayStorage = new MemoryReplayStorage();
     const game = createGame({ seed: 'ri133-empty-growth-replay', initialMeta: defaultMeta() });
@@ -504,7 +546,7 @@ describe('リプレイのファイル共有（RI-133）', () => {
         return inner.list();
       },
       get: (id) => inner.get(id),
-      save: (blob) => inner.save(blob),
+      save: (blob, options) => inner.save(blob, options),
       clear: () => inner.clear(),
     };
     const game = createGame({ seed: 'ri133-list-fail', initialMeta: defaultMeta() });
@@ -536,7 +578,7 @@ describe('リプレイのファイル共有（RI-133）', () => {
         return inner.list();
       },
       get: (id) => inner.get(id),
-      save: (blob) => inner.save(blob),
+      save: (blob, options) => inner.save(blob, options),
       clear: () => inner.clear(),
     };
     const game = createGame({ seed: 'ri133-same-id-list-fail', initialMeta: defaultMeta() });

@@ -301,6 +301,55 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
     expect(await storage.list()).toEqual([]);
   });
 
+  it('通常保存では古い finishedAt の新規完走を上限で落とす', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `keep-${i}`,
+          seed: `keep-${i}`,
+          finishedAt: 2000 + i,
+        }),
+      );
+    }
+    await storage.save(
+      makeBlob({
+        id: 'clock-skew',
+        seed: 'clock-skew',
+        finishedAt: 1,
+      }),
+    );
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.some((item) => item.id === 'clock-skew')).toBe(false);
+    expect(listed.some((item) => item.id === 'keep-0')).toBe(true);
+  });
+
+  it('pin 指定の保存では古い finishedAt でもその件を残す', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `filled-${i}`,
+          seed: `filled-${i}`,
+          finishedAt: 2000 + i,
+        }),
+      );
+    }
+    await storage.save(
+      makeBlob({
+        id: 'pinned-old',
+        seed: 'pinned-old',
+        finishedAt: 1,
+      }),
+      { pin: true },
+    );
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.some((item) => item.id === 'pinned-old')).toBe(true);
+    expect(listed.some((item) => item.id === 'filled-0')).toBe(false);
+  });
+
   it('initializeReplayPersistence は一覧取得成功時に渡した storage を使う', async () => {
     const storage: ReplayStorage = {
       list: vi.fn(async () => []),

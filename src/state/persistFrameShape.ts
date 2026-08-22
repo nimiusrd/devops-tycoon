@@ -28,8 +28,8 @@ export function isPersistFrameShape(value: unknown): boolean {
   if (!isObject(value.evolution.unlocked)) return false;
   if (!isRosterShape(value.roster)) return false;
   if (!isObject(value.pendingSprintModifiers)) return false;
-  if (!isObject(value.totals)) return false;
-  if (!isObject(value.quarterTotals)) return false;
+  if (!isRunTotalsShape(value.totals)) return false;
+  if (!isRunTotalsShape(value.quarterTotals)) return false;
   if (!isObject(value.quarterGoal)) return false;
   if (!isObject(value.stakeholderTrust)) return false;
   if (!isObject(value.zoom)) return false;
@@ -171,10 +171,92 @@ function isShopRecruitShape(value: unknown): boolean {
   return typeof value.cost === 'number' && typeof value.bought === 'boolean';
 }
 
+const RUN_TOTAL_KEYS = [
+  'delivered',
+  'done',
+  'rework',
+  'incidents',
+  'contained',
+  'spread',
+  'aiAssisted',
+  'completed',
+  'reviewQueuePeak',
+  'maxCombo',
+] as const;
+
+function isRunTotalsShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (!RUN_TOTAL_KEYS.every((key) => typeof value[key] === 'number')) return false;
+  return (
+    value.consecutiveIncidentSprints === undefined ||
+    typeof value.consecutiveIncidentSprints === 'number'
+  );
+}
+
+function isTimelineSampleShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.tick === 'number' &&
+    typeof value.reviewQueue === 'number' &&
+    typeof value.burningCount === 'number' &&
+    typeof value.combo === 'number' &&
+    typeof value.seniorHp === 'number'
+  );
+}
+
+function isInterventionEffectShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.actionId === 'string' &&
+    typeof value.focusCost === 'number' &&
+    typeof value.gaugeGain === 'number'
+  );
+}
+
+function isSprintEventShape(value: unknown): boolean {
+  if (!isObject(value) || typeof value.tick !== 'number') return false;
+  switch (value.kind) {
+    case 'intervention':
+      return typeof value.combo === 'number' && isInterventionEffectShape(value.effect);
+    case 'combo-break':
+      return (
+        value.reason === 'rework' ||
+        value.reason === 'auto-contain' ||
+        value.reason === 'spread' ||
+        value.reason === 'light-firefight'
+      );
+    case 'ignite':
+      return (
+        typeof value.taskId === 'number' && (value.source === 'review' || value.source === 'spread')
+      );
+    case 'auto-contain':
+      return typeof value.taskId === 'number' && typeof value.hpCost === 'number';
+    case 'spread':
+      return typeof value.taskId === 'number';
+    case 'contain':
+      return typeof value.taskId === 'number' && typeof value.combo === 'number';
+    default:
+      return false;
+  }
+}
+
+function isFireSprintEventShape(value: unknown): boolean {
+  if (!isSprintEventShape(value) || !isObject(value)) return false;
+  return (
+    value.kind === 'ignite' ||
+    value.kind === 'contain' ||
+    value.kind === 'auto-contain' ||
+    value.kind === 'spread'
+  );
+}
+
 function isSprintResultShape(value: unknown): boolean {
   if (!isObject(value) || !isObject(value.actionCounts)) return false;
-  if (!Array.isArray(value.timeline) || !Array.isArray(value.events)) return false;
-  if (!Array.isArray(value.fireEvents)) return false;
+  if (!Array.isArray(value.timeline) || !value.timeline.every(isTimelineSampleShape)) return false;
+  if (!Array.isArray(value.events) || !value.events.every(isSprintEventShape)) return false;
+  if (!Array.isArray(value.fireEvents) || !value.fireEvents.every(isFireSprintEventShape)) {
+    return false;
+  }
   if (typeof value.grade !== 'string' || typeof value.title !== 'string') return false;
   if (typeof value.diagnosis !== 'string') return false;
   return (

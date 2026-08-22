@@ -303,6 +303,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           }}
           onOpenHelp={() => setHelpOpen(true)}
           onApplyPreferred={run.setPreferredCardIds}
+          onExportRunSave={run.exportRunSaveText}
+          onImportRunSave={async (raw) => {
+            const result = await run.importRunSaveText(raw);
+            return { ok: result.ok, message: result.ok ? '' : result.message };
+          }}
         />
         <Suspense fallback={<TitleModalLoadingFallback />}>
           {helpOpen && <HowToPlayScreen onClose={() => setHelpOpen(false)} />}
@@ -335,6 +340,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               replays={run.replays}
               onOpen={openReplay}
               onClose={() => setReplayListOpen(false)}
+              onExportReplay={run.exportReplayText}
+              onImportReplay={async (raw) => {
+                const result = await run.importReplayText(raw);
+                return { ok: result.ok, message: result.ok ? '' : result.message };
+              }}
             />
           )}
         </Suspense>

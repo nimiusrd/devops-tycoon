@@ -7,6 +7,7 @@
  */
 import { RANKING_KINDS, RANKING_LABEL } from '../sim/orgscale/industry';
 import type { IndustryState, RankingKind } from '../sim/orgscale/types';
+import { formatRunRuleset } from '../state/diagnosticInfo';
 import { dailyLeaderboardEntries, type MetaState } from '../state/meta';
 import { IndustrySkyline } from './IndustrySkyline';
 
@@ -96,14 +97,23 @@ export function IndustryScreen({ industry, meta, onSetKind }: IndustryScreenProp
             <h3 id="daily-leaderboard-heading">⚔️ デイリーランキング</h3>
             <p>同一 seed のデイリーランで記録した自分のベスト</p>
           </div>
-          <span className="daily-leaderboard-count">{dailyEntries.length} 日分</span>
+          <span className="daily-leaderboard-count">{dailyEntries.length} 件</span>
         </div>
         {dailyEntries.length > 0 ? (
           <ol className="daily-leaderboard-list" data-testid="daily-leaderboard">
             {dailyEntries.map((entry) => (
-              <li key={entry.dateStr} data-testid={`daily-record-${entry.dateStr}`}>
+              <li key={entry.entryKey} data-testid={`daily-record-${entry.entryKey}`}>
                 <span className="daily-rank">#{entry.rank}</span>
-                <time dateTime={entry.dateStr}>{entry.dateStr}</time>
+                <span className="daily-date">
+                  <time dateTime={entry.dateStr}>{entry.dateStr}</time>
+                  <small
+                    className="daily-record-ruleset"
+                    data-testid="daily-record-ruleset"
+                    data-ruleset-known={entry.ruleset ? 'true' : 'false'}
+                  >
+                    {formatRunRuleset(entry.ruleset)}
+                  </small>
+                </span>
                 <strong>{entry.bestScore.toLocaleString()} pt</strong>
                 <span className="daily-reward">
                   {entry.rewardClaimed ? '報酬受領済み' : '報酬未受領'}

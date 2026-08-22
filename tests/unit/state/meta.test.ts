@@ -8,11 +8,13 @@ import {
   applyDailyRunReward,
   applyRunReward,
   computeRunRewardBreakdown,
+  dailyRunKey,
   dailyLeaderboardEntries,
   dailySeed,
   defaultMeta,
   MAX_PREFERRED_CARDS,
   normalizeMeta,
+  parseDailyRunKey,
   purchaseUnlock,
   sanitizePreferredCardIds,
   unlockedContent,
@@ -24,6 +26,7 @@ import {
   type RunRewardInput,
 } from '../../../src/state/meta';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../../src/data/unlocks';
+import { CURRENT_RUN_RULESET } from '../../../src/state/runPersistence';
 
 describe('メタ進行とアンロック（第17章）', () => {
   it('初期状態では easy/normal だけ解放されている', () => {
@@ -450,17 +453,25 @@ describe('メタ進行とアンロック（第17章）', () => {
     const entries = dailyLeaderboardEntries({
       ...defaultMeta(),
       dailyRuns: {
-        '2026-07-09': { bestScore: 800, rewardClaimed: true },
-        '2026-07-10': { bestScore: 1200, rewardClaimed: true },
-        '2026-07-11': { bestScore: 1200, rewardClaimed: false },
+        [dailyRunKey('2026-07-09')]: { bestScore: 800, rewardClaimed: true },
+        [dailyRunKey('2026-07-10')]: { bestScore: 1200, rewardClaimed: true },
+        [dailyRunKey('2026-07-11')]: { bestScore: 1200, rewardClaimed: false },
       },
     });
 
-    expect(entries).toEqual([
+    expect(
+      entries.map(({ dateStr, bestScore, rewardClaimed, rank }) => ({
+        dateStr,
+        bestScore,
+        rewardClaimed,
+        rank,
+      })),
+    ).toEqual([
       { dateStr: '2026-07-11', bestScore: 1200, rewardClaimed: false, rank: 1 },
       { dateStr: '2026-07-10', bestScore: 1200, rewardClaimed: true, rank: 2 },
       { dateStr: '2026-07-09', bestScore: 800, rewardClaimed: true, rank: 3 },
     ]);
+    expect(entries.every((entry) => entry.ruleset !== null)).toBe(true);
   });
 
   it('デイリー記録がなければ空の順位表にする', () => {
@@ -643,8 +654,20 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(utcDateStr(new Date('2026-06-20T15:30:00.000Z'))).toBe('2026-06-20');
   });
 
+  it('デイリーキーは日付・版・指紋を含み、旧日付キーは不明ルールになる', () => {
+    const dateStr = '2026-06-20';
+    const key = dailyRunKey(dateStr);
+    expect(key).toBe(
+      `daily:${dateStr}:v${CURRENT_RUN_RULESET.version}:${CURRENT_RUN_RULESET.fingerprint}`,
+    );
+    expect(parseDailyRunKey(key)).toEqual({ dateStr, ruleset: CURRENT_RUN_RULESET });
+    expect(parseDailyRunKey(dateStr)).toEqual({ dateStr, ruleset: null });
+    expect(parseDailyRunKey('daily:not-a-date:v1:fingerprint')).toBeNull();
+  });
+
   it('applyDailyRunReward は初回のみ points を付与する', () => {
     const dateStr = '2026-06-20';
+    const entryKey = dailyRunKey(dateStr);
     const base = defaultMeta();
     const first = applyDailyRunReward(base, {
       won: false,
@@ -658,8 +681,8 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(first.pointsGained).toBeGreaterThan(0);
     expect(first.breakdown.granted).toBe(true);
     expect(first.breakdown.total).toBe(first.pointsGained);
-    expect(first.meta.dailyRuns[dateStr]?.rewardClaimed).toBe(true);
-    expect(first.meta.dailyRuns[dateStr]?.bestScore).toBe(120);
+    expect(first.meta.dailyRuns[entryKey]?.rewardClaimed).toBe(true);
+    expect(first.meta.dailyRuns[entryKey]?.bestScore).toBe(120);
 
     const second = applyDailyRunReward(first.meta, {
       won: true,
@@ -681,9 +704,67 @@ describe('メタ進行とアンロック（第17章）', () => {
       granted: false,
     });
     expect(second.meta.points).toBe(first.meta.points);
-    expect(second.meta.dailyRuns[dateStr]?.bestScore).toBe(200);
+    expect(second.meta.dailyRuns[entryKey]?.bestScore).toBe(200);
     expect(second.dailyBestUpdated).toBe(true);
     expect(second.meta.collectedWinTypes).toEqual(['healthy']);
+  });
+
+  it('同日でも異なるルールセットはスコアと報酬を分離する', () => {
+    const dateStr = '2026-06-20';
+    const alternateRuleset = {
+      version: CURRENT_RUN_RULESET.version + 1,
+      fingerprint: 'a'.repeat(64),
+    };
+    const current = applyDailyRunReward(defaultMeta(), {
+      won: false,
+      difficulty: 'normal',
+      score: 120,
+      scoreMul: 1,
+      maxCombo: 3,
+      dateStr,
+    });
+    const alternate = applyDailyRunReward(current.meta, {
+      won: true,
+      difficulty: 'normal',
+      score: 240,
+      scoreMul: 1,
+      maxCombo: 8,
+      dateStr,
+      ruleset: alternateRuleset,
+    });
+
+    expect(alternate.rewardGranted).toBe(true);
+    expect(alternate.pointsGained).toBeGreaterThan(0);
+    expect(alternate.meta.dailyRuns[dailyRunKey(dateStr)]?.bestScore).toBe(120);
+    expect(alternate.meta.dailyRuns[dailyRunKey(dateStr, alternateRuleset)]?.bestScore).toBe(240);
+  });
+
+  it('旧日付キーを保持し、現行ルールセットの記録とは別に扱う', () => {
+    const dateStr = '2026-06-20';
+    const legacy = { bestScore: 80, rewardClaimed: true };
+    const result = applyDailyRunReward(
+      { ...defaultMeta(), dailyRuns: { [dateStr]: legacy } },
+      {
+        won: false,
+        difficulty: 'normal',
+        score: 120,
+        scoreMul: 1,
+        maxCombo: 3,
+        dateStr,
+      },
+    );
+
+    expect(result.meta.dailyRuns[dateStr]).toEqual(legacy);
+    expect(result.meta.dailyRuns[dailyRunKey(dateStr)]?.rewardClaimed).toBe(true);
+    expect(
+      dailyLeaderboardEntries(result.meta).map((entry) => ({
+        dateStr: entry.dateStr,
+        ruleset: entry.ruleset,
+      })),
+    ).toEqual([
+      { dateStr, ruleset: CURRENT_RUN_RULESET },
+      { dateStr, ruleset: null },
+    ]);
   });
 
   it('デイリー再走の勝利でも points なしで称号だけ収集する', () => {
@@ -741,6 +822,7 @@ describe('メタ進行とアンロック（第17章）', () => {
 
   it('applyDailyRunReward の再走はベスト未更新時も points を付与しない', () => {
     const dateStr = '2026-06-21';
+    const entryKey = dailyRunKey(dateStr);
     const afterFirst = applyDailyRunReward(defaultMeta(), {
       won: false,
       difficulty: 'normal',
@@ -759,7 +841,7 @@ describe('メタ進行とアンロック（第17章）', () => {
     });
     expect(rerun.pointsGained).toBe(0);
     expect(rerun.dailyBestUpdated).toBe(false);
-    expect(rerun.meta.dailyRuns[dateStr]?.bestScore).toBe(150);
+    expect(rerun.meta.dailyRuns[entryKey]?.bestScore).toBe(150);
   });
 
   it('旧セーブに dailyRuns が欠けていても既定値で補完される', () => {
@@ -1347,7 +1429,7 @@ describe('RI-91-B5 meta survived mutants', () => {
       const meta: MetaState = {
         ...defaultMeta(),
         dailyRuns: {
-          '2026-08-01': { bestScore: 420, rewardClaimed: true },
+          [dailyRunKey('2026-08-01')]: { bestScore: 420, rewardClaimed: true },
         },
       };
       expect(getDailyRecord(meta, '2026-08-01')).toEqual({
@@ -1355,6 +1437,19 @@ describe('RI-91-B5 meta survived mutants', () => {
         rewardClaimed: true,
       });
       expect(getDailyRecord(meta, '2026-08-02')).toBeUndefined();
+    });
+
+    it('旧日付キーは現行記録として解決せず、順位表では不明ルールとして残る', () => {
+      const meta: MetaState = {
+        ...defaultMeta(),
+        dailyRuns: {
+          '2026-08-01': { bestScore: 420, rewardClaimed: true },
+        },
+      };
+      expect(getDailyRecord(meta, '2026-08-01')).toBeUndefined();
+      expect(dailyLeaderboardEntries(meta)).toMatchObject([
+        { dateStr: '2026-08-01', ruleset: null, bestScore: 420 },
+      ]);
     });
   });
 
@@ -1377,7 +1472,7 @@ describe('RI-91-B5 meta survived mutants', () => {
       const withPrior: MetaState = {
         ...defaultMeta(),
         dailyRuns: {
-          '2026-08-01': { bestScore: 200, rewardClaimed: false },
+          [dailyRunKey('2026-08-01')]: { bestScore: 200, rewardClaimed: false },
         },
       };
       const tie = applyDailyRunReward(withPrior, {
@@ -1385,14 +1480,14 @@ describe('RI-91-B5 meta survived mutants', () => {
         dateStr: '2026-08-01',
       });
       expect(tie.dailyBestUpdated).toBe(false);
-      expect(tie.meta.dailyRuns['2026-08-01']?.bestScore).toBe(200);
+      expect(tie.meta.dailyRuns[dailyRunKey('2026-08-01')]?.bestScore).toBe(200);
 
       const bump = applyDailyRunReward(withPrior, {
         ...baseInput({ won: false, score: 201 }),
         dateStr: '2026-08-01',
       });
       expect(bump.dailyBestUpdated).toBe(true);
-      expect(bump.meta.dailyRuns['2026-08-01']?.bestScore).toBe(201);
+      expect(bump.meta.dailyRuns[dailyRunKey('2026-08-01')]?.bestScore).toBe(201);
     });
 
     it('再走で同点は dailyBestUpdated false、+1 は true', () => {
@@ -1400,7 +1495,7 @@ describe('RI-91-B5 meta survived mutants', () => {
         ...defaultMeta(),
         bestScore: 300,
         dailyRuns: {
-          '2026-08-01': { bestScore: 250, rewardClaimed: true },
+          [dailyRunKey('2026-08-01')]: { bestScore: 250, rewardClaimed: true },
         },
       };
       const tie = applyDailyRunReward(claimed, {
@@ -1416,7 +1511,7 @@ describe('RI-91-B5 meta survived mutants', () => {
         dateStr: '2026-08-01',
       });
       expect(bump.dailyBestUpdated).toBe(true);
-      expect(bump.meta.dailyRuns['2026-08-01']?.bestScore).toBe(251);
+      expect(bump.meta.dailyRuns[dailyRunKey('2026-08-01')]?.bestScore).toBe(251);
     });
 
     it('再走で勝利だが winType なしなら称号配列は不変', () => {
@@ -1424,7 +1519,7 @@ describe('RI-91-B5 meta survived mutants', () => {
         ...defaultMeta(),
         collectedWinTypes: ['normal'],
         dailyRuns: {
-          '2026-08-01': { bestScore: 100, rewardClaimed: true },
+          [dailyRunKey('2026-08-01')]: { bestScore: 100, rewardClaimed: true },
         },
       };
       const result = applyDailyRunReward(claimed, {
@@ -1440,7 +1535,7 @@ describe('RI-91-B5 meta survived mutants', () => {
         ...defaultMeta(),
         bestScore: 500,
         dailyRuns: {
-          '2026-08-01': { bestScore: 400, rewardClaimed: true },
+          [dailyRunKey('2026-08-01')]: { bestScore: 400, rewardClaimed: true },
         },
       };
       const result = applyDailyRunReward(claimed, {
@@ -1448,7 +1543,7 @@ describe('RI-91-B5 meta survived mutants', () => {
         dateStr: '2026-08-01',
       });
       expect(result.meta.bestScore).toBe(500);
-      expect(result.meta.dailyRuns['2026-08-01']?.bestScore).toBe(400);
+      expect(result.meta.dailyRuns[dailyRunKey('2026-08-01')]?.bestScore).toBe(400);
     });
 
     it('nextDifficulty: easy→normal、nightmare / 未知難易度で配列不変', () => {

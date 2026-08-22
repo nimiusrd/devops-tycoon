@@ -3,6 +3,7 @@ import { createGame } from '../../../src/game';
 import {
   DAILY_RUN_DIFFICULTY,
   DAILY_RUN_TRIALS,
+  dailyRunKey,
   dailySeed,
   defaultMeta,
 } from '../../../src/state/meta';
@@ -116,6 +117,6 @@ describe('デイリーラン（spec-mapping §2 M7）', () => {
 
     const pointsAfterSecond = finishOnce();
     expect(pointsAfterSecond).toBe(pointsAfterFirst);
-    expect(game.getMeta().dailyRuns[dateStr]?.rewardClaimed).toBe(true);
+    expect(game.getMeta().dailyRuns[dailyRunKey(dateStr)]?.rewardClaimed).toBe(true);
   });
 });

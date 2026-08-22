@@ -64,27 +64,49 @@ describe('リプレイのファイル共有（RI-133）', () => {
     });
   });
 
-  it('ルールセット不明と不一致、開始レシピ混入を拒否する', () => {
+  it('不一致ルールセットのリプレイを読み取り専用で取り込める', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-mismatch-import', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const replay = makeReplay({
+      id: 'mismatch-share',
+      seed: 'mismatch-share',
+      ruleset: { version: 999, fingerprint: 'recorded-before-current' },
+    });
+    const result = await game.importReplayText(serializeReplay(replay));
+    expect(result.ok).toBe(true);
+    expect(game.openReplay('mismatch-share', 0)).not.toBeNull();
+    expect(game.getActiveReplayInfo()?.ruleset).toEqual({
+      version: 999,
+      fingerprint: 'recorded-before-current',
+    });
+  });
+
+  it('ルールセット不明と不一致は読み取り専用で取り込み、開始レシピ混入は拒否する', () => {
     const replay = makeReplay({ id: 'share-b', seed: 'ri133-replay-b' });
-    expect(
-      parseReplayShare(JSON.stringify({ ...replay, schemaVersion: 1, ruleset: null })),
-    ).toEqual({
-      ok: false,
-      reason: 'ruleset_unknown',
-      message: REPLAY_SHARE_REASON_MESSAGE.ruleset_unknown,
-    });
-    expect(
-      parseReplayShare(
-        JSON.stringify({
-          ...replay,
-          ruleset: { version: CURRENT_RUN_RULESET.version, fingerprint: 'other-ruleset' },
-        }),
-      ),
-    ).toEqual({
-      ok: false,
-      reason: 'ruleset_mismatch',
-      message: REPLAY_SHARE_REASON_MESSAGE.ruleset_mismatch,
-    });
+    const unknown = parseReplayShare(
+      JSON.stringify({ ...replay, schemaVersion: 1, ruleset: null }),
+    );
+    expect(unknown.ok).toBe(true);
+    if (unknown.ok) {
+      expect(unknown.replay.ruleset).toBeNull();
+      expect(unknown.replay.id).toBe('share-b');
+    }
+
+    const mismatched = parseReplayShare(
+      JSON.stringify({
+        ...replay,
+        ruleset: { version: CURRENT_RUN_RULESET.version, fingerprint: 'other-ruleset' },
+      }),
+    );
+    expect(mismatched.ok).toBe(true);
+    if (mismatched.ok) {
+      expect(mismatched.replay.ruleset).toEqual({
+        version: CURRENT_RUN_RULESET.version,
+        fingerprint: 'other-ruleset',
+      });
+    }
+
     expect(
       parseReplayShare(
         JSON.stringify({
@@ -154,5 +176,53 @@ describe('リプレイのファイル共有（RI-133）', () => {
       message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
     });
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep']);
+  });
+
+  it('上限いっぱいでも古い共有ファイルの取り込みを残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-pin-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      const extra = makeReplay({
+        id: `filled-${i}`,
+        seed: `filled-${i}`,
+        finishedAt: 20_000 + i,
+      });
+      expect((await game.importReplayText(serializeReplay(extra))).ok).toBe(true);
+    }
+    expect(game.listReplays()).toHaveLength(REPLAY_MAX_COUNT);
+
+    const older = makeReplay({
+      id: 'older-import',
+      seed: 'older-import',
+      finishedAt: 1,
+    });
+    const imported = await game.importReplayText(serializeReplay(older));
+    expect(imported.ok).toBe(true);
+    expect(game.listReplays()).toHaveLength(REPLAY_MAX_COUNT);
+    expect(game.listReplays().some((item) => item.id === 'older-import')).toBe(true);
+    expect(game.openReplay('older-import', 0)).not.toBeNull();
+  });
+
+  it('キーフレームの必須状態が欠けると拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-broken-frame', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-frame', seed: 'keep-frame' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'broken-frame', seed: 'broken-frame' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: Record<string, unknown> }>;
+    };
+    delete raw.keyframes[0]!.frame.trials;
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-frame']);
   });
 });

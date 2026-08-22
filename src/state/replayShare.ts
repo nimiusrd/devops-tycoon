@@ -2,24 +2,19 @@
  * 完走リプレイのローカルファイル共有（SPEC 第23章 / RI-133）。
  *
  * IndexedDB の `ReplayBlob` を版付き JSON で受け渡す。開始レシピや途中セーブは含めない。
- * 破損・未対応スキーマ・ルールセット不一致は理由付きで拒否し、自動削除しない。
+ * 破損・未対応スキーマは理由付きで拒否する。ルールセット不一致の旧リプレイは
+ * IndexedDB と同様に読み取り専用で取り込む。
  */
-import { CURRENT_RUN_RULESET } from './runPersistence';
+import { createRunEngine } from '../sim/run/engine';
 import { normalizeReplay, REPLAY_SCHEMA_VERSION, type ReplayBlob } from './replay';
 
 const ACCEPTED_REPLAY_SCHEMA_VERSIONS = new Set([1, REPLAY_SCHEMA_VERSION]);
 
-export type ReplayShareReason =
-  | 'corrupt'
-  | 'unsupported_version'
-  | 'ruleset_unknown'
-  | 'ruleset_mismatch';
+export type ReplayShareReason = 'corrupt' | 'unsupported_version';
 
 export const REPLAY_SHARE_REASON_MESSAGE: Record<ReplayShareReason, string> = {
   corrupt: 'リプレイが壊れているか、読み取れません。',
   unsupported_version: '未対応のリプレイ版です。',
-  ruleset_unknown: 'ルールセット情報がない旧リプレイのため、読み込めません。',
-  ruleset_mismatch: '記録時と現在のルールセットが一致しないため、このリプレイは読み込めません。',
 };
 
 export interface ReplayShareOk {
@@ -49,7 +44,7 @@ export function serializeReplay(replay: ReplayBlob): string {
 }
 
 /**
- * JSON を構造検査し、現行ルールセットのリプレイだけを返す。
+ * JSON を構造検査し、閲覧復元できるリプレイを返す。
  * 既存の IndexedDB レコードはここでは触らない。上限適用は保存側の責務。
  */
 export function parseReplayShare(raw: string): ReplayShareResult {
@@ -68,14 +63,20 @@ export function parseReplayShare(raw: string): ReplayShareResult {
   }
 
   const replay = normalizeReplay(parsed);
-  if (!replay) return fail('corrupt');
-  if (replay.ruleset === null) return fail('ruleset_unknown');
-  if (
-    replay.ruleset.version !== CURRENT_RUN_RULESET.version ||
-    replay.ruleset.fingerprint !== CURRENT_RUN_RULESET.fingerprint
-  ) {
-    return fail('ruleset_mismatch');
-  }
+  if (!replay || !canHydrateReplay(replay)) return fail('corrupt');
 
   return { ok: true, replay };
+}
+
+/** 全キーフレームを hydrate できて初めて受け入れる。 */
+export function canHydrateReplay(replay: ReplayBlob): boolean {
+  try {
+    const engine = createRunEngine({ seed: replay.seed, difficulty: replay.difficulty });
+    for (const keyframe of replay.keyframes) {
+      engine.hydrateReplayFrame(structuredClone(keyframe.frame));
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }

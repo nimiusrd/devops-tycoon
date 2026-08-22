@@ -138,4 +138,28 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect((await runStorage.load())?.summary.seed).toBe('ri133-keep');
     expect(game.exportRunSaveText()).toContain('ri133-keep');
   });
+
+  it('state.trials が欠けると拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-trials');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-trials-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-broken-trials');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: Record<string, unknown> };
+    delete raw.state.trials;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-trials');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-trials');
+  });
 });

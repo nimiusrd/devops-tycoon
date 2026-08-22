@@ -2,7 +2,7 @@
  * リプレイの IndexedDB 永続化（RI-61）。
  */
 import { GAME_DB_NAME, openGameDb, REPLAYS_STORE_NAME } from './gameDb';
-import { normalizeReplay, REPLAY_MAX_COUNT, type ReplayBlob } from './replay';
+import { normalizeReplay, selectReplaysWithinMax, type ReplayBlob } from './replay';
 
 /** リプレイ一覧の非同期永続化インターフェース。 */
 export interface ReplayStorage {
@@ -52,11 +52,12 @@ export class IndexedDbReplayStorage implements ReplayStorage {
         const all = await db.getAll(REPLAYS_STORE_NAME);
         const normalized = all
           .map((raw) => normalizeReplay(raw))
-          .filter((item): item is ReplayBlob => item !== null)
-          .sort((a, b) => b.finishedAt - a.finishedAt);
-        if (normalized.length > REPLAY_MAX_COUNT) {
-          for (const stale of normalized.slice(REPLAY_MAX_COUNT)) {
-            await db.delete(REPLAYS_STORE_NAME, stale.id);
+          .filter((item): item is ReplayBlob => item !== null);
+        const keep = selectReplaysWithinMax(normalized, snapshot.id);
+        const keepIds = new Set(keep.map((item) => item.id));
+        for (const item of normalized) {
+          if (!keepIds.has(item.id)) {
+            await db.delete(REPLAYS_STORE_NAME, item.id);
           }
         }
       } finally {
@@ -98,9 +99,10 @@ export class MemoryReplayStorage implements ReplayStorage {
 
   async save(blob: ReplayBlob): Promise<void> {
     this.items.set(blob.id, structuredClone(blob));
-    const ordered = [...this.items.values()].sort((a, b) => b.finishedAt - a.finishedAt);
-    for (const stale of ordered.slice(REPLAY_MAX_COUNT)) {
-      this.items.delete(stale.id);
+    const keep = selectReplaysWithinMax([...this.items.values()], blob.id);
+    const keepIds = new Set(keep.map((item) => item.id));
+    for (const id of [...this.items.keys()]) {
+      if (!keepIds.has(id)) this.items.delete(id);
     }
   }
 

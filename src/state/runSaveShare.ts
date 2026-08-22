@@ -4,6 +4,7 @@
  * IndexedDB の `RunSave` を版付き JSON で受け渡す。開始レシピやリプレイは含めない。
  * 破損・未対応スキーマ・ルールセット不一致は理由付きで拒否し、自動削除しない。
  */
+import { createRunEngine } from '../sim/run/engine';
 import {
   getRunSaveCompatibilityIssue,
   parseRunSave,
@@ -78,6 +79,23 @@ export function parseRunSaveShare(raw: string): RunSaveShareResult {
   const issue = getRunSaveCompatibilityIssue(save);
   if (issue?.kind === 'ruleset-unknown') return fail('ruleset_unknown');
   if (issue?.kind === 'ruleset-mismatch') return fail('ruleset_mismatch');
+  if (!canHydrateRunSave(save)) return fail('corrupt');
 
   return { ok: true, save };
+}
+
+/** 再開時の hydrate が例外なく通る構造だけを受け入れる。 */
+export function canHydrateRunSave(save: RunSave): boolean {
+  try {
+    const trials = Array.isArray(save.state.trials) ? save.state.trials : [];
+    const engine = createRunEngine({
+      seed: save.state.seed,
+      difficulty: save.state.difficulty,
+      trials,
+    });
+    engine.hydratePersistState(structuredClone(save.state));
+    return true;
+  } catch {
+    return false;
+  }
 }

@@ -24,6 +24,23 @@ const LEGACY_REPLAY_SCHEMA_VERSION = 1;
 /** 保持するリプレイ件数の上限（古いものから削除）。 */
 export const REPLAY_MAX_COUNT = 10;
 
+/**
+ * 上限内に収める。`pinnedId` があるときはその件を残し、他の古いものから外す。
+ * 明示取り込みで finishedAt が古いリプレイが即削除されないようにする（RI-133）。
+ */
+export function selectReplaysWithinMax(
+  items: readonly ReplayBlob[],
+  pinnedId?: string,
+  max: number = REPLAY_MAX_COUNT,
+): ReplayBlob[] {
+  const ordered = [...items].sort((a, b) => b.finishedAt - a.finishedAt);
+  if (ordered.length <= max) return ordered;
+  const pinned = pinnedId ? ordered.find((item) => item.id === pinnedId) : undefined;
+  if (!pinned) return ordered.slice(0, max);
+  const others = ordered.filter((item) => item.id !== pinnedId).slice(0, max - 1);
+  return [pinned, ...others].sort((a, b) => b.finishedAt - a.finishedAt);
+}
+
 export interface ReplayOutcome {
   status: Extract<RunStatus, 'won' | 'lost'>;
   winType?: WinType;

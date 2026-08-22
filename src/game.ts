@@ -913,6 +913,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       try {
         await replayStorage.save(loaded.replay);
         await refreshReplayCache();
+        if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {
+          return {
+            ok: false,
+            reason: 'corrupt',
+            message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+          };
+        }
         return loaded;
       } catch {
         return {

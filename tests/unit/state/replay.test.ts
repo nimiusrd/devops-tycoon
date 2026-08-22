@@ -9,6 +9,7 @@ import {
   normalizeReplay,
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
+  selectReplaysWithinMax,
   snapshotReplayContent,
   type ReplayBlob,
   normalizeReplayKeyframes,
@@ -143,6 +144,21 @@ describe('リプレイ正規化（RI-61）', () => {
 
   it('buildReplayId は seed と時刻を含む', () => {
     expect(buildReplayId('seed-x', 42)).toBe('seed-x:42');
+  });
+
+  it('上限超過時は pinnedId を残し他の古いものから外す', () => {
+    const items = Array.from({ length: REPLAY_MAX_COUNT + 1 }, (_, i) =>
+      makeBlob({
+        id: `id-${i}`,
+        seed: `seed-${i}`,
+        finishedAt: 1000 + i,
+      }),
+    );
+    const selected = selectReplaysWithinMax(items, 'id-0');
+    expect(selected).toHaveLength(REPLAY_MAX_COUNT);
+    expect(selected.some((item) => item.id === 'id-0')).toBe(true);
+    expect(selected.some((item) => item.id === 'id-1')).toBe(false);
+    expect(selected[0]?.id).toBe(`id-${REPLAY_MAX_COUNT}`);
   });
 });
 

@@ -309,7 +309,11 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   }
   if (typeof value.id !== 'string' || typeof value.seed !== 'string') return null;
   if (typeof value.difficulty !== 'string') return null;
-  if (!Array.isArray(value.trials) || !value.trials.every((t) => typeof t === 'string')) {
+  const replayTrials = value.trials;
+  if (
+    !Array.isArray(replayTrials) ||
+    !replayTrials.every((t): t is string => typeof t === 'string')
+  ) {
     return null;
   }
   if (typeof value.finishedAt !== 'number' || !Number.isFinite(value.finishedAt)) return null;
@@ -323,6 +327,16 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
 
   const keyframes = normalizeReplayKeyframes(value.keyframes);
   if (keyframes.length !== value.keyframes.length || keyframes.length === 0) return null;
+  if (
+    !keyframes.every(
+      ({ frame }) =>
+        frame.seed === value.seed &&
+        frame.difficulty === value.difficulty &&
+        sameStringArray(frame.trials, replayTrials),
+    )
+  ) {
+    return null;
+  }
   const terminalPhase = keyframes[keyframes.length - 1]?.frame.phase;
   if (
     (terminalPhase === 'won' || terminalPhase === 'lost') &&
@@ -348,7 +362,7 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
     id: value.id,
     seed: value.seed,
     difficulty: value.difficulty as DifficultyId,
-    trials: [...value.trials],
+    trials: [...replayTrials],
     finishedAt: value.finishedAt,
     outcome: {
       status: value.outcome.status,
@@ -365,6 +379,10 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
 
 function isSupportedReplaySchema(value: unknown): value is 1 | 2 {
   return value === LEGACY_REPLAY_SCHEMA_VERSION || value === REPLAY_SCHEMA_VERSION;
+}
+
+function sameStringArray(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function formatReplayRuleset(ruleset: ReplayRulesetIdentity): string {

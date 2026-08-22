@@ -674,19 +674,21 @@ function makeNormalizeFrame(seed = 'normalize-frame'): ReplayKeyframe['frame'] {
 }
 
 function makeNormalizeBlob(overrides: Partial<ReplayBlob> = {}): ReplayBlob {
+  const trials = overrides.trials ?? [];
+  const frame = makeNormalizeFrame('normalize-seed');
   const base: ReplayBlob = {
     schemaVersion: REPLAY_SCHEMA_VERSION,
     id: 'replay-normalize',
     seed: 'normalize-seed',
     difficulty: 'easy',
-    trials: [],
+    trials: [...trials],
     finishedAt: 1234,
     outcome: {
       status: 'won',
       diagnosis: 'healthyAcceleration',
       score: 42,
     },
-    keyframes: [{ phase: 'setup', label: '編成', frame: makeNormalizeFrame('normalize-seed') }],
+    keyframes: [{ phase: 'setup', label: '編成', frame: { ...frame, trials: [...trials] } }],
     ruleset: { version: 1, fingerprint: 'normalize-ruleset' },
     contentSnapshot: { cards: [], relics: [] },
   };
@@ -699,7 +701,7 @@ function makeNormalizeBlob(overrides: Partial<ReplayBlob> = {}): ReplayBlob {
       ...overrides.outcome,
     },
     keyframes: overrides.keyframes ?? base.keyframes,
-    trials: overrides.trials ?? base.trials,
+    trials: [...base.trials],
   };
 }
 
@@ -798,7 +800,7 @@ describe('リプレイ正規化（RI-72-B3）', () => {
   });
 
   it('完全な ReplayBlob では部分的に壊れた keyframes と全破棄 keyframes を拒否する', () => {
-    const frame = makeNormalizeFrame('blob-keyframes');
+    const frame = makeNormalizeFrame('normalize-seed');
     const validKeyframe: ReplayKeyframe = { phase: 'setup', label: '編成', frame };
 
     expect(normalizeReplay({ ...makeNormalizeBlob(), keyframes: 'setup' })).toBeNull();
@@ -859,6 +861,35 @@ describe('RI-133 リプレイファイル共有', () => {
       ok: false,
       reason: 'invalid-data',
     });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          keyframes: [
+            {
+              ...blob.keyframes[0],
+              frame: { ...blob.keyframes[0].frame, seed: 'different-seed' },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          difficulty: 'normal',
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          trials: ['half-budget'],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
     expect(
       parseReplayFile(
         serializeReplay({
@@ -1081,7 +1112,6 @@ describe('RI-133 リプレイファイル共有', () => {
     const rejected = await game.importReplayFile(
       serializeReplay({
         ...existing,
-        seed: 'ri133-replacement',
         outcome: { ...existing.outcome, score: 999 },
       }),
     );
@@ -1146,6 +1176,37 @@ describe('RI-133 リプレイファイル共有', () => {
 
     expect(result).toMatchObject({ ok: false, reason: 'storage' });
     expect(await inner.get(imported.id)).toEqual(imported);
+    expect(game.listReplays().map((replay) => replay.id)).toEqual([existing.id]);
+  });
+
+  it('同一内容の冪等再取込でも一覧キャッシュを更新する', async () => {
+    const inner = new MemoryReplayStorage();
+    const existing = makeBlob({
+      id: 'ri133-idempotent-cache',
+      seed: 'ri133-idempotent-cache',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+    await inner.save(existing);
+    let failList = true;
+    const replayStorage: ReplayStorage = {
+      list: async () => {
+        if (failList) throw new Error('list failed');
+        return inner.list();
+      },
+      get: (id) => inner.get(id),
+      save: (blob) => inner.save(blob),
+      clear: () => inner.clear(),
+    };
+    const game = createGame({ initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+
+    const failed = await game.importReplayFile(serializeReplay(existing));
+    expect(failed).toMatchObject({ ok: false, reason: 'storage' });
+    expect(game.listReplays()).toEqual([]);
+
+    failList = false;
+    const retried = await game.importReplayFile(serializeReplay(existing));
+    expect(retried).toMatchObject({ ok: true });
     expect(game.listReplays().map((replay) => replay.id)).toEqual([existing.id]);
   });
 

@@ -6,6 +6,7 @@ import {
   goalProgressStatus,
   MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
 } from '../../../src/sim/run/quarterReview';
+import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS } from '../../../src/data/difficulties';
 import { openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from '../../../src/state/gameDb';
 import { defaultMeta } from '../../../src/state/meta';
 import {
@@ -35,11 +36,23 @@ function indexedDbStorage(): IndexedDbRunStorage {
 
 function makeRunSave(seed = 'ri72-run-save'): RunSave {
   const engine = createRunEngine({ seed });
-  engine.startRun('easy', [], seed, { kind: 'daily', dailyDate: '2026-07-27' });
+  engine.startRun('easy', [], seed);
   const state = engine.exportPersistState();
   const frame = engine.exportReplayFrame();
   if (!state || !frame) throw new Error('failed to export run save fixture');
   return toRunSave(state, 1234, [{ phase: 'setup', label: '編成', frame }]);
+}
+
+function makeDailyRunSave(date = '2026-07-27'): RunSave {
+  const seed = `daily-${date}`;
+  const engine = createRunEngine({ seed });
+  engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], seed, {
+    kind: 'daily',
+    dailyDate: date,
+  });
+  const state = engine.exportPersistState();
+  if (!state) throw new Error('failed to export daily run save fixture');
+  return toRunSave(state, 1234);
 }
 
 function makeBlockingRunStorage(initial: RunSave) {
@@ -431,8 +444,8 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
       savedAt: 1234,
       summary: {
         seed: 'ri68-current-schema',
-        runKind: 'daily',
-        dailyDate: '2026-07-27',
+        runKind: 'normal',
+        dailyDate: undefined,
         status: 'playing',
       },
     });
@@ -800,7 +813,7 @@ function makeRunSaveWith(
   const difficulty = options.difficulty ?? 'easy';
   const trials = options.trials ?? [];
   const engine = createRunEngine({ seed });
-  engine.startRun(difficulty, trials, seed, { kind: 'daily', dailyDate: '2026-08-01' });
+  engine.startRun(difficulty, trials, seed);
   const state = engine.exportPersistState();
   if (!state) throw new Error('failed to export run save fixture');
   return toRunSave(state, 5678);
@@ -934,6 +947,7 @@ describe('RI-133 セーブファイル共有', () => {
 
   it('破損・未対応スキーマ・ルールセット不一致を理由付きで拒否する', () => {
     const save = makeRunSave('ri133-save-reject');
+    const dailySave = makeDailyRunSave();
 
     expect(parseRunSaveFile('{')).toMatchObject({ ok: false, reason: 'invalid-json' });
     expect(parseRunSaveFile(JSON.stringify({ ...save, schemaVersion: 999 }))).toMatchObject({
@@ -971,9 +985,35 @@ describe('RI-133 セーブファイル共有', () => {
     expect(
       parseRunSaveFile(
         JSON.stringify({
-          ...save,
-          summary: { ...save.summary, dailyDate: undefined },
-          state: { ...save.state, dailyDate: undefined },
+          ...dailySave,
+          summary: { ...dailySave.summary, dailyDate: undefined },
+          state: { ...dailySave.state, dailyDate: undefined },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...dailySave,
+          summary: { ...dailySave.summary, dailyDate: '2026-02-29' },
+          state: { ...dailySave.state, dailyDate: '2026-02-29' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...dailySave,
+          summary: { ...dailySave.summary, runKind: 'normal', dailyDate: '2026-07-27' },
+          state: { ...dailySave.state, runKind: 'normal', dailyDate: '2026-07-27' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...dailySave,
+          summary: { ...dailySave.summary, runKind: 'normal', dailyDate: undefined },
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });
@@ -981,25 +1021,37 @@ describe('RI-133 セーブファイル共有', () => {
       parseRunSaveFile(
         JSON.stringify({
           ...save,
-          summary: { ...save.summary, dailyDate: '2026-02-29' },
-          state: { ...save.state, dailyDate: '2026-02-29' },
+          summary: {
+            ...save.summary,
+            runKind: 'daily',
+            dailyDate: '2026-07-27',
+            seed: 'not-daily-seed',
+          },
+          state: {
+            ...save.state,
+            runKind: 'daily',
+            dailyDate: '2026-07-27',
+            seed: 'not-daily-seed',
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...dailySave,
+          summary: { ...dailySave.summary, difficulty: 'easy' },
+          state: { ...dailySave.state, difficulty: 'easy' },
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });
     expect(
       parseRunSaveFile(
-        JSON.stringify({
-          ...save,
-          summary: { ...save.summary, runKind: 'normal', dailyDate: '2026-07-27' },
-          state: { ...save.state, runKind: 'normal', dailyDate: '2026-07-27' },
-        }),
-      ),
-    ).toMatchObject({ ok: false, reason: 'invalid-data' });
-    expect(
-      parseRunSaveFile(
-        JSON.stringify({
-          ...save,
-          summary: { ...save.summary, runKind: 'normal', dailyDate: undefined },
+        serializeRunSave({
+          ...dailySave,
+          summary: { ...dailySave.summary, trials: ['half-budget'] },
+          state: { ...dailySave.state, trials: ['half-budget'] },
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });
@@ -1125,6 +1177,7 @@ describe('RI-133 セーブファイル共有', () => {
     );
     await controlled.saveStarted();
     expect(game.openReplay('ri133-replay-stale', 0)).not.toBeNull();
+    game.exitReplay();
     controlled.releaseSave();
 
     expect(await importPromise).toMatchObject({ ok: false, reason: 'stale' });

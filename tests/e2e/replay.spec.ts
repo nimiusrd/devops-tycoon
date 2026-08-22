@@ -164,14 +164,19 @@ test('リプレイをJSONファイルで往復し、不正・不一致を拒否�
   const filePayloads = await page.evaluate(() => {
     const replay = (window as ReplayGameWindow).game?.listReplays()[0];
     if (!replay) throw new Error('replay missing');
-    return Array.from({ length: 11 }, (_, index) =>
-      JSON.stringify({
+    return Array.from({ length: 11 }, (_, index) => {
+      const seed = `ri133-replay-file-${index}`;
+      return JSON.stringify({
         ...replay,
-        id: `ri133-replay-file-${index}`,
-        seed: `ri133-replay-file-${index}`,
+        id: seed,
+        seed,
         finishedAt: replay.finishedAt + 10_000 + index,
-      }),
-    );
+        keyframes: replay.keyframes.map((keyframe) => ({
+          ...keyframe,
+          frame: { ...keyframe.frame, seed },
+        })),
+      });
+    });
   });
 
   for (const [index, payload] of filePayloads.entries()) {

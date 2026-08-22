@@ -64,6 +64,7 @@ import {
   CURRENT_RUN_RULESET,
   getRunSaveCompatibilityIssue,
   parseRunSaveFile,
+  serializeRunSave,
   toRunSave,
   type RunSave,
   type RunSaveCompatibilityIssue,
@@ -571,7 +572,17 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       runSaveRevision !== importSaveRevision ||
       engine.currentPhase() !== 'title'
     ) {
-      if (runEpoch === importEpoch && runSaveRevision === importSaveRevision) {
+      let currentSave: RunSave | null;
+      try {
+        currentSave = await runStorage.load();
+      } catch {
+        return {
+          ok: false,
+          reason: 'storage',
+          message: '読み込みが競合し、現在のセーブを確認できませんでした。',
+        };
+      }
+      if (currentSave && serializeRunSave(currentSave) === serializeRunSave(parsed.save)) {
         try {
           if (previousSave) await runStorage.save(previousSave);
           else await runStorage.clear();
@@ -613,7 +624,16 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       };
     }
     if (existing) {
-      if (serializeReplay(existing) === serializeReplay(parsed.replay)) return parsed;
+      if (serializeReplay(existing) === serializeReplay(parsed.replay)) {
+        if (!(await refreshReplayCache())) {
+          return {
+            ok: false,
+            reason: 'storage',
+            message: 'リプレイは既に保存されていますが、一覧を更新できませんでした。',
+          };
+        }
+        return parsed;
+      }
       return {
         ok: false,
         reason: 'duplicate',
@@ -1029,6 +1049,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         return null;
       }
       replayMode = true;
+      runEpoch += 1;
       activeReplayDiagnosis = replay.outcome.diagnosis;
       activeReplayInfo = {
         ruleset: replay.ruleset ? structuredClone(replay.ruleset) : null,
@@ -1045,6 +1066,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     exitReplay() {
       replayMode = false;
+      runEpoch += 1;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
       recorded = false;

@@ -11,6 +11,7 @@ import type { DifficultyId, GoalKpiProgress, RunKind, RunPhase, RunStatus } from
 import { isDiagnosisType } from '../sim/diagnosis';
 import { companyOrgFromTeams } from '../sim/orgscale';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
+import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS } from '../data/difficulties';
 import {
   availableAdjustments,
   diagnoseMissedReasons,
@@ -184,6 +185,10 @@ function isDailyDate(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function sameStringArray(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 /** 旧スキーマの途中セーブを現行の難易度別 Delivery 倍率へ移行する。 */
@@ -377,6 +382,14 @@ export function parseRunSave(raw: unknown): RunSave | null {
   if (summary.dailyDate !== undefined && typeof summary.dailyDate !== 'string') return null;
   if (
     summary.runKind === 'daily' ? !isDailyDate(summary.dailyDate) : summary.dailyDate !== undefined
+  ) {
+    return null;
+  }
+  if (
+    summary.runKind === 'daily' &&
+    (summary.seed !== `daily-${summary.dailyDate}` ||
+      summary.difficulty !== DAILY_RUN_DIFFICULTY ||
+      !sameStringArray(summary.trials, DAILY_RUN_TRIALS))
   ) {
     return null;
   }

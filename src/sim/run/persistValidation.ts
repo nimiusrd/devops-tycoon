@@ -118,6 +118,51 @@ function hasValidPersistNumbers(value: unknown): boolean {
   return hasFiniteNumberFields(value.stakeholderTrust, ['management', 'customers', 'team']);
 }
 
+function hasRequiredPersistResult(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (
+    !hasFiniteNumberFields(value, [
+      'done',
+      'delivered',
+      'maxCombo',
+      'aiAssistedPct',
+      'reviewQueueMax',
+      'rework',
+      'incidents',
+      'contained',
+      'spread',
+      'seniorHpDelta',
+      'focusRemaining',
+      'focusMax',
+      'autoContainCount',
+    ])
+  ) {
+    return false;
+  }
+  if (
+    typeof value.grade !== 'string' ||
+    typeof value.title !== 'string' ||
+    typeof value.diagnosis !== 'string' ||
+    !isObject(value.actionCounts) ||
+    !Object.values(value.actionCounts).every(
+      (count) => typeof count === 'number' && Number.isFinite(count),
+    ) ||
+    !Array.isArray(value.timeline) ||
+    !Array.isArray(value.events) ||
+    !Array.isArray(value.fireEvents)
+  ) {
+    return false;
+  }
+  if (value.timedOut !== undefined && typeof value.timedOut !== 'boolean') return false;
+  if (
+    value.baseline !== undefined &&
+    !hasFiniteNumberFields(value.baseline, ['delivered', 'spread', 'maxCombo'])
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /** フェーズ画面が要求する保存済みデータの存在を検証する。 */
 export function hasRequiredPersistPhaseState(
   state: Pick<
@@ -127,7 +172,7 @@ export function hasRequiredPersistPhaseState(
 ): boolean {
   switch (state.phase) {
     case 'result':
-      return isObject(state.lastResult);
+      return hasRequiredPersistResult(state.lastResult);
     case 'draft':
       return Array.isArray(state.draft);
     case 'beat':

@@ -276,6 +276,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let resumableSave: RunSave | null = initialRunSaveIssue ? null : (options.initialRunSave ?? null);
   let runSaveIssue: RunSaveCompatibilityIssue | null = initialRunSaveIssue;
   let runSaveRevision = 0;
+  /** ファイル取込キュー外からセーブが変更された世代。キュー内の取込成功では進めない。 */
+  let runSaveExternalRevision = 0;
   let replayStorage: ReplayStorage | null = null;
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
@@ -314,7 +316,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const hadRunSave = resumableSave !== null || runSaveIssue !== null;
     resumableSave = null;
     runSaveIssue = null;
-    if (hadRunSave || runStorage) runSaveRevision += 1;
+    if (hadRunSave || runStorage) {
+      runSaveRevision += 1;
+      runSaveExternalRevision += 1;
+    }
     if (runStorage) void runStorage.clear().catch(() => undefined);
   };
 
@@ -393,6 +398,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     resumableSave = save;
     runSaveIssue = null;
     runSaveRevision += 1;
+    runSaveExternalRevision += 1;
     void runStorage.save(save).catch(() => undefined);
   };
 
@@ -522,9 +528,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return engine.snapshot();
   };
 
-  const importRunSaveInternal = async (raw: string): Promise<RunSaveFileImportResult> => {
-    const importEpoch = runEpoch;
-    const importSaveRevision = runSaveRevision;
+  const importRunSaveInternal = async (
+    raw: string,
+    importEpoch: number,
+    importExternalRevision: number,
+  ): Promise<RunSaveFileImportResult> => {
     const staleImport = (): RunSaveFileImportFailure => ({
       ok: false,
       reason: 'stale',
@@ -553,7 +561,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     if (
       runEpoch !== importEpoch ||
-      runSaveRevision !== importSaveRevision ||
+      runSaveExternalRevision !== importExternalRevision ||
       engine.currentPhase() !== 'title'
     ) {
       return staleImport();
@@ -569,7 +577,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     }
     if (
       runEpoch !== importEpoch ||
-      runSaveRevision !== importSaveRevision ||
+      runSaveExternalRevision !== importExternalRevision ||
       engine.currentPhase() !== 'title'
     ) {
       let currentSave: RunSave | null;
@@ -974,6 +982,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       runSaveIssue = nextIssue ? structuredClone(nextIssue) : null;
       resumableSave = runSaveIssue ? null : save;
       runSaveRevision += 1;
+      runSaveExternalRevision += 1;
       bump();
     },
     resumeRun() {
@@ -1020,7 +1029,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       bump();
     },
     importRunSave(raw) {
-      const operation = runSaveImportQueue.then(() => importRunSaveInternal(raw));
+      const importEpoch = runEpoch;
+      const importExternalRevision = runSaveExternalRevision;
+      const operation = runSaveImportQueue.then(() =>
+        importRunSaveInternal(raw, importEpoch, importExternalRevision),
+      );
       runSaveImportQueue = operation.then(
         () => undefined,
         () => undefined,

@@ -1126,6 +1126,14 @@ describe('RI-133 セーブファイル共有', () => {
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: { ...resultState, lastResult: {} as never },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
 
     engine.acknowledgeResult();
     const draftState = engine.exportPersistState();
@@ -1203,11 +1211,15 @@ describe('RI-133 セーブファイル共有', () => {
       serializeRunSave(makeRunSaveWith('ri133-replay-stale-import')),
     );
     await controlled.saveStarted();
+    const queuedImportPromise = game.importRunSave(
+      serializeRunSave(makeRunSaveWith('ri133-queued-stale-import')),
+    );
     expect(game.openReplay('ri133-replay-stale', 0)).not.toBeNull();
     game.exitReplay();
     controlled.releaseSave();
 
     expect(await importPromise).toMatchObject({ ok: false, reason: 'stale' });
+    expect(await queuedImportPromise).toMatchObject({ ok: false, reason: 'stale' });
     expect(await controlled.storage.load()).toEqual(existingSave);
     expect(game.getRunSave()).toEqual(existingSave);
   });

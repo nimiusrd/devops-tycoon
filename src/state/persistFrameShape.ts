@@ -47,8 +47,76 @@ export function isPersistFrameShape(value: unknown): boolean {
   if (value.shop !== undefined && value.shop !== null && !isShopShape(value.shop)) return false;
   if (value.phase === 'shop' && !isShopShape(value.shop)) return false;
   if (value.beat !== undefined && !isNullableObject(value.beat)) return false;
-  if (value.quarterReview !== undefined && !isNullableObject(value.quarterReview)) return false;
+  if (
+    value.quarterReview !== undefined &&
+    value.quarterReview !== null &&
+    !isQuarterReviewShape(value.quarterReview)
+  ) {
+    return false;
+  }
+  if (value.phase === 'quarterReview' && !isQuarterReviewShape(value.quarterReview)) return false;
   return true;
+}
+
+const QUARTER_OUTCOMES = new Set([
+  'exceeded',
+  'met',
+  'missed_adjustable',
+  'missed_crisis',
+  'reorg_required',
+  'shutdown',
+]);
+
+function isQuarterGoalShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.deliveryTarget === 'number' &&
+    typeof value.qualityTarget === 'number' &&
+    typeof value.techDebtLimit === 'number' &&
+    typeof value.moraleTarget === 'number' &&
+    typeof value.incidentLimit === 'number'
+  );
+}
+
+function isStakeholderTrustShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.management === 'number' &&
+    typeof value.customers === 'number' &&
+    typeof value.team === 'number'
+  );
+}
+
+function isGoalKpiProgressShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.label === 'string' &&
+    typeof value.target === 'number' &&
+    typeof value.actual === 'number' &&
+    (value.status === 'exceeded' || value.status === 'met' || value.status === 'missed')
+  );
+}
+
+/** QuarterReviewScreen が outcome / goal / progress を参照する前に拒否する。 */
+function isQuarterReviewShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (!QUARTER_OUTCOMES.has(String(value.outcome))) return false;
+  if (!isQuarterGoalShape(value.goal) || !isStakeholderTrustShape(value.trust)) return false;
+  if (!Array.isArray(value.progress) || !value.progress.every(isGoalKpiProgressShape)) return false;
+  if (
+    !Array.isArray(value.missedReasons) ||
+    !value.missedReasons.every((r) => typeof r === 'string')
+  ) {
+    return false;
+  }
+  if (
+    !Array.isArray(value.availableAdjustments) ||
+    !value.availableAdjustments.every((id) => typeof id === 'string')
+  ) {
+    return false;
+  }
+  return typeof value.bossCleared === 'boolean';
 }
 
 function isShopCardOfferShape(value: unknown): boolean {

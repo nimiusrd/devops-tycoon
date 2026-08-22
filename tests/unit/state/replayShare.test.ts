@@ -5,6 +5,7 @@ import { defaultMeta } from '../../../src/state/meta';
 import {
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
+  snapshotReplayContent,
   type ReplayBlob,
 } from '../../../src/state/replay';
 import { MemoryReplayStorage, type ReplayStorage } from '../../../src/state/replayPersistence';
@@ -54,7 +55,9 @@ function makeReplay(partial: Partial<ReplayBlob> & Pick<ReplayBlob, 'id' | 'seed
     },
     keyframes: partial.keyframes ?? [{ phase: 'setup', frame }],
     ruleset: partial.ruleset ?? { ...CURRENT_RUN_RULESET },
-    contentSnapshot: partial.contentSnapshot ?? { cards: [], relics: [] },
+    contentSnapshot:
+      partial.contentSnapshot ??
+      snapshotReplayContent(partial.keyframes ?? [{ phase: 'setup', frame }]),
   };
 }
 
@@ -260,6 +263,51 @@ describe('リプレイのファイル共有（RI-133）', () => {
       message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
     });
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-diagnosis']);
+  });
+
+  it('フレームの seed がトップレベルと食い違うなら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-seed-mismatch', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-seed', seed: 'keep-seed' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'other-seed', seed: 'other-seed' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: { seed?: string } }>;
+    };
+    raw.keyframes[0]!.frame.seed = 'not-the-replay-seed';
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-seed']);
+  });
+
+  it('contentSnapshot から参照カードを欠かすと拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-snap-gap', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-snap', seed: 'keep-snap' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'gap-snap', seed: 'gap-snap' });
+    replay.keyframes[0]!.frame.deck = [{ defId: 'docs', level: 1 }];
+    replay.contentSnapshot = snapshotReplayContent(replay.keyframes);
+    expect(replay.contentSnapshot.cards.some((card) => card.id === 'docs')).toBe(true);
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      contentSnapshot: { cards: Array<{ id: string }> };
+    };
+    raw.contentSnapshot.cards = raw.contentSnapshot.cards.filter((card) => card.id !== 'docs');
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-snap']);
   });
 
   it('終端キーフレームの status が outcome と食い違うなら拒否し、既存リプレイは残す', async () => {

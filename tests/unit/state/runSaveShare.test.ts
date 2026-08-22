@@ -25,6 +25,22 @@ function makeRunSave(seed = 'ri133-run-save'): RunSave {
   return toRunSave(state, 1234, [{ phase: 'setup', label: '編成', frame }]);
 }
 
+function makeQuarterReviewRunSave(seed: string): RunSave {
+  const save = makeRunSave(seed);
+  save.state.phase = 'quarterReview';
+  save.summary.phase = 'quarterReview';
+  save.state.quarterReview = {
+    goal: { ...save.state.quarterGoal },
+    outcome: 'met',
+    trust: { ...save.state.stakeholderTrust },
+    progress: [],
+    missedReasons: [],
+    availableAdjustments: [],
+    bossCleared: true,
+  };
+  return save;
+}
+
 function makeShopRunSave(seed: string): RunSave {
   const save = makeRunSave(seed);
   save.state.phase = 'shop';
@@ -283,6 +299,32 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect(game.getRunSaveSummary()).toBeNull();
     expect(game.getRunSaveIssue()).toBeNull();
     expect(await runStorage.load()).toBeNull();
+  });
+
+  it('quarterReview フェーズで本体が null なら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-review');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-review-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeQuarterReviewRunSave('ri133-null-review');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { quarterReview?: unknown };
+    };
+    raw.state.quarterReview = null;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-review');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-review');
   });
 
   it('ショップフェーズで shop が空オブジェクトなら拒否し、既存セーブは残す', async () => {

@@ -9,7 +9,12 @@ import { isDiagnosisType } from '../sim/diagnosis';
 import { createRunEngine } from '../sim/run/engine';
 import type { DifficultyId, LoseReason, RunKind, RunStatus, WinType } from '../sim/run/types';
 import { isPersistFrameShape } from './persistFrameShape';
-import { normalizeReplay, REPLAY_SCHEMA_VERSION, type ReplayBlob } from './replay';
+import {
+  normalizeReplay,
+  replayContentSnapshotCovers,
+  REPLAY_SCHEMA_VERSION,
+  type ReplayBlob,
+} from './replay';
 
 const ACCEPTED_REPLAY_SCHEMA_VERSIONS = new Set([1, REPLAY_SCHEMA_VERSION]);
 
@@ -69,8 +74,10 @@ export function parseReplayShare(raw: string): ReplayShareResult {
   if (
     !replay ||
     !hasValidReplayDomainEnums(replay) ||
-    !replayTerminalsConsistent(replay) ||
     !replay.keyframes.every((keyframe) => isPersistFrameShape(keyframe.frame)) ||
+    !replayTerminalsConsistent(replay) ||
+    !replayIdentityConsistent(replay) ||
+    !replayContentSnapshotCovers(replay.contentSnapshot, replay.keyframes) ||
     !canHydrateReplay(replay)
   ) {
     return fail('corrupt');
@@ -119,6 +126,24 @@ export function replayTerminalsConsistent(replay: ReplayBlob): boolean {
   const last = replay.keyframes[replay.keyframes.length - 1];
   if (!last || (last.phase !== 'won' && last.phase !== 'lost')) return true;
   return replay.outcome.status === last.phase;
+}
+
+function sameStringList(left: readonly string[], right: readonly string[]): boolean {
+  if (left.length !== right.length) return false;
+  return left.every((item, index) => item === right[index]);
+}
+
+/** 各フレームの seed / difficulty / trials がトップレベルと一致するか。 */
+export function replayIdentityConsistent(replay: ReplayBlob): boolean {
+  for (const keyframe of replay.keyframes) {
+    const frame = keyframe.frame;
+    if (frame.seed !== replay.seed) return false;
+    if (frame.difficulty !== replay.difficulty) return false;
+    if (!Array.isArray(frame.trials) || !sameStringList(replay.trials, frame.trials)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** hydrate では落ちない未知の列挙値を、画面参照前に拒否する。 */

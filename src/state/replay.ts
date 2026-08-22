@@ -5,6 +5,7 @@
  * RunEngine.hydrateReplayFrame で read-only 表示する。純入力ログ再生は非スコープ。
  */
 import { isReplayFramePhase, type RunReplayFrame, type ReplayFramePhase } from '../sim/run/persist';
+import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
 import { getCard } from '../data/cards';
 import { getRelic, type RelicDef } from '../data/relics';
 import type { CardDef } from '../sim/types';
@@ -65,6 +66,33 @@ export interface ReplayBlob {
   /** 旧 v1 リプレイでは null。 */
   contentSnapshot: ReplayContentSnapshot | null;
 }
+
+export type ReplayFileImportReason =
+  | 'invalid-json'
+  | 'unsupported-schema'
+  | 'invalid-data'
+  | 'ruleset-mismatch'
+  | 'storage';
+
+export interface ReplayFileCompatibilityIssue {
+  readonly savedRuleset: ReplayRulesetIdentity;
+  readonly currentRuleset: ReplayRulesetIdentity;
+}
+
+export interface ReplayFileImportSuccess {
+  readonly ok: true;
+  readonly replay: ReplayBlob;
+  readonly message: string;
+}
+
+export interface ReplayFileImportFailure {
+  readonly ok: false;
+  readonly reason: ReplayFileImportReason;
+  readonly message: string;
+  readonly issue?: ReplayFileCompatibilityIssue;
+}
+
+export type ReplayFileImportResult = ReplayFileImportSuccess | ReplayFileImportFailure;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -285,6 +313,86 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
     keyframes,
     ruleset,
     contentSnapshot,
+  };
+}
+
+function isSupportedReplaySchema(value: unknown): value is 1 | 2 {
+  return value === LEGACY_REPLAY_SCHEMA_VERSION || value === REPLAY_SCHEMA_VERSION;
+}
+
+function formatReplayRuleset(ruleset: ReplayRulesetIdentity): string {
+  return `v${ruleset.version} / ${ruleset.fingerprint}`;
+}
+
+/** リプレイをファイル共有用のJSONへ変換する。 */
+export function serializeReplay(blob: ReplayBlob): string {
+  return `${JSON.stringify(blob, null, 2)}\n`;
+}
+
+/** リプレイファイルをJSON解析・正規化し、ファイル取込時の互換性を検証する。 */
+export function parseReplayFile(
+  raw: string,
+  currentRuleset: ReplayRulesetIdentity = {
+    version: BALANCE_RULESET_VERSION,
+    fingerprint: BALANCE_RULESET_FINGERPRINT,
+  },
+): ReplayFileImportResult {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return {
+      ok: false,
+      reason: 'invalid-json',
+      message: 'JSONを解析できないため、リプレイを読み込めません。',
+    };
+  }
+
+  if (!isObject(value)) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: 'リプレイのJSON構造が正しくありません。',
+    };
+  }
+  if (!isSupportedReplaySchema(value.schemaVersion)) {
+    return {
+      ok: false,
+      reason: 'unsupported-schema',
+      message: `未対応のリプレイスキーマです（schemaVersion: ${String(value.schemaVersion)}）。`,
+    };
+  }
+
+  const replay = normalizeReplay(value);
+  if (!replay) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: 'リプレイの必須データが欠落しているか、壊れています。',
+    };
+  }
+
+  if (
+    replay.ruleset &&
+    (replay.ruleset.version !== currentRuleset.version ||
+      replay.ruleset.fingerprint !== currentRuleset.fingerprint)
+  ) {
+    const issue = {
+      savedRuleset: structuredClone(replay.ruleset),
+      currentRuleset: structuredClone(currentRuleset),
+    };
+    return {
+      ok: false,
+      reason: 'ruleset-mismatch',
+      message: `記録時と現在のルールセットが一致しないため、このリプレイはファイルから取り込めません（記録時: ${formatReplayRuleset(issue.savedRuleset)} / 現在: ${formatReplayRuleset(issue.currentRuleset)}）。`,
+      issue,
+    };
+  }
+
+  return {
+    ok: true,
+    replay,
+    message: 'リプレイを読み込みました。',
   };
 }
 

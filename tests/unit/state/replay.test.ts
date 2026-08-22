@@ -7,8 +7,10 @@ import { defaultMeta } from '../../../src/state/meta';
 import {
   buildReplayId,
   normalizeReplay,
+  parseReplayFile,
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
+  serializeReplay,
   snapshotReplayContent,
   type ReplayBlob,
   normalizeReplayKeyframes,
@@ -817,5 +819,102 @@ describe('リプレイ正規化（RI-72-B3）', () => {
     const normalized = normalizeReplay(makeNormalizeBlob({ keyframes: [validKeyframe] }));
     expect(normalized?.keyframes).toHaveLength(1);
     expect(normalized?.keyframes[0]?.frame).not.toBe(frame);
+  });
+});
+
+describe('RI-133 リプレイファイル共有', () => {
+  it('現行リプレイをJSONへ変換し、v1レガシーを含めて正規化できる', () => {
+    const blob = makeBlob({
+      id: 'ri133-roundtrip',
+      seed: 'ri133-roundtrip',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+    const result = parseReplayFile(serializeReplay(blob));
+
+    expect(result).toMatchObject({ ok: true });
+    if (result.ok) expect(result.replay).toEqual(blob);
+
+    const { ruleset: _ruleset, contentSnapshot: _contentSnapshot, ...legacy } = blob;
+    const legacyResult = parseReplayFile(JSON.stringify({ ...legacy, schemaVersion: 1 }));
+    expect(legacyResult).toMatchObject({ ok: true });
+    if (legacyResult.ok) {
+      expect(legacyResult.replay.ruleset).toBeNull();
+      expect(legacyResult.replay.contentSnapshot).toBeNull();
+    }
+  });
+
+  it('破損・未対応スキーマ・ルールセット不一致を理由付きで拒否する', () => {
+    const blob = makeBlob({
+      id: 'ri133-reject',
+      seed: 'ri133-reject',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+
+    expect(parseReplayFile('{')).toMatchObject({ ok: false, reason: 'invalid-json' });
+    expect(parseReplayFile(JSON.stringify({ ...blob, schemaVersion: 999 }))).toMatchObject({
+      ok: false,
+      reason: 'unsupported-schema',
+    });
+    expect(parseReplayFile(JSON.stringify({ ...blob, keyframes: [] }))).toMatchObject({
+      ok: false,
+      reason: 'invalid-data',
+    });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
+          ruleset: { version: CURRENT_RUN_RULESET.version, fingerprint: 'different-ruleset' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'ruleset-mismatch' });
+  });
+
+  it('GameHandleのファイル取込は上限を守り、セーブとメタ進行へ書き込まない', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const runStorage = new MemoryRunStorage();
+    const meta = defaultMeta();
+    const game = createGame({ initialMeta: meta, runStorage });
+    await game.attachReplay(replayStorage);
+
+    for (let index = 0; index < REPLAY_MAX_COUNT + 1; index += 1) {
+      const result = await game.importReplayFile(
+        serializeReplay(
+          makeBlob({
+            id: `ri133-import-${index}`,
+            seed: `ri133-import-${index}`,
+            finishedAt: 1_000 + index,
+            ruleset: CURRENT_RUN_RULESET,
+          }),
+        ),
+      );
+      expect(result).toMatchObject({ ok: true });
+    }
+
+    expect(game.listReplays()).toHaveLength(REPLAY_MAX_COUNT);
+    expect(game.listReplays().some((replay) => replay.id === 'ri133-import-0')).toBe(false);
+    expect(await runStorage.load()).toBeNull();
+    expect(game.getMeta()).toEqual(meta);
+  });
+
+  it('不一致ファイルの取込失敗で既存リプレイを変更しない', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ initialMeta: defaultMeta() });
+    const existing = makeBlob({
+      id: 'ri133-existing',
+      seed: 'ri133-existing',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+    await replayStorage.save(existing);
+    await game.attachReplay(replayStorage);
+
+    const rejected = await game.importReplayFile(
+      serializeReplay({
+        ...existing,
+        id: 'ri133-mismatch',
+        ruleset: { version: CURRENT_RUN_RULESET.version, fingerprint: 'different-ruleset' },
+      }),
+    );
+    expect(rejected).toMatchObject({ ok: false, reason: 'ruleset-mismatch' });
+    expect(game.listReplays().map((replay) => replay.id)).toEqual(['ri133-existing']);
   });
 });

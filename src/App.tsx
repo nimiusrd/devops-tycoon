@@ -28,6 +28,9 @@ import {
 } from './ui/tutorial';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
+import { serializeReplay } from './state/replay';
+import { serializeRunSave } from './state/runPersistence';
+import { downloadTextFile } from './ui/jsonFile';
 import { useRun, type UseRun } from './ui/useRun';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
@@ -149,7 +152,7 @@ function AppContent({ game }: AppProps) {
 }
 
 function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
-  const { state, meta, diagnosticInfo, lastRunReward, runSaveSummary, runSaveIssue } = run;
+  const { state, meta, diagnosticInfo, lastRunReward, runSave, runSaveSummary, runSaveIssue } = run;
   const phase = state.phase;
   const responsiveMode = useResponsiveMode();
   const audio = useAudio();
@@ -292,6 +295,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           resumableSummary={runSaveSummary}
           runSaveIssue={runSaveIssue}
           onDiscardRunSave={discardRunSave}
+          onExportRunSave={() => {
+            if (runSave) {
+              downloadTextFile('devops-tycoon-run-save.json', serializeRunSave(runSave));
+            }
+          }}
+          onImportRunSave={run.importRunSave}
           onOpenReplays={() => setReplayListOpen(true)}
           onOpenMetaShop={() => setMetaShopOpen(true)}
           onOpenDeckPolicy={() => setDeckPolicyOpen(true)}
@@ -334,6 +343,10 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             <ReplayListScreen
               replays={run.replays}
               onOpen={openReplay}
+              onExport={(replay) =>
+                downloadTextFile('devops-tycoon-replay.json', serializeReplay(replay))
+              }
+              onImport={run.importReplayFile}
               onClose={() => setReplayListOpen(false)}
             />
           )}

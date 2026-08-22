@@ -7,6 +7,7 @@ import {
   MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
 } from '../../../src/sim/run/quarterReview';
 import { openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from '../../../src/state/gameDb';
+import { defaultMeta } from '../../../src/state/meta';
 import {
   CURRENT_RUN_RULESET,
   getRunSaveCompatibilityIssue,
@@ -14,6 +15,8 @@ import {
   MemoryRunStorage,
   initializeRunPersistence,
   parseRunSave,
+  parseRunSaveFile,
+  serializeRunSave,
   toRunSave,
   RUN_SAVE_SCHEMA_VERSION,
   type RunSave,
@@ -869,5 +872,59 @@ describe('RI-91-B4 runPersistence survived mutants', () => {
       expect(boot.save).toEqual(save);
       expect(boot).toEqual({ save, issue: null, storage });
     });
+  });
+});
+
+describe('RI-133 セーブファイル共有', () => {
+  it('現行セーブをJSONへ変換し、同じ内容へ往復できる', () => {
+    const save = makeRunSaveWith('ri133-save-roundtrip');
+    const result = parseRunSaveFile(serializeRunSave(save));
+
+    expect(result).toMatchObject({ ok: true });
+    if (result.ok) expect(result.save).toEqual(save);
+  });
+
+  it('破損・未対応スキーマ・ルールセット不一致を理由付きで拒否する', () => {
+    const save = makeRunSaveWith('ri133-save-reject');
+
+    expect(parseRunSaveFile('{')).toMatchObject({ ok: false, reason: 'invalid-json' });
+    expect(parseRunSaveFile(JSON.stringify({ ...save, schemaVersion: 999 }))).toMatchObject({
+      ok: false,
+      reason: 'unsupported-schema',
+    });
+    expect(parseRunSaveFile(JSON.stringify({ ...save, summary: null }))).toMatchObject({
+      ok: false,
+      reason: 'invalid-data',
+    });
+    expect(parseRunSaveFile(JSON.stringify({ ...save, ruleset: null }))).toMatchObject({
+      ok: false,
+      reason: 'ruleset-unknown',
+    });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          ruleset: { version: CURRENT_RUN_RULESET.version, fingerprint: 'different-ruleset' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'ruleset-mismatch' });
+  });
+
+  it('GameHandleは検証成功後だけセーブを置き換え、メタ進行を変更しない', async () => {
+    const storage = new MemoryRunStorage();
+    const meta = defaultMeta();
+    const game = createGame({ initialMeta: meta, runStorage: storage });
+    const save = makeRunSaveWith('ri133-game-import');
+
+    const imported = await game.importRunSave(serializeRunSave(save));
+    expect(imported).toMatchObject({ ok: true });
+    expect(await storage.load()).toEqual(save);
+    expect(game.getRunSave()).toEqual(save);
+    expect(game.getMeta()).toEqual(meta);
+
+    const beforeRejectedImport = await storage.load();
+    const rejected = await game.importRunSave(JSON.stringify({ ...save, schemaVersion: 999 }));
+    expect(rejected).toMatchObject({ ok: false, reason: 'unsupported-schema' });
+    expect(await storage.load()).toEqual(beforeRejectedImport);
   });
 });

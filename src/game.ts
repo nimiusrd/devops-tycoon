@@ -49,10 +49,12 @@ import { labelForReplayKeyframe } from './render/reviewHellReplayView';
 import {
   buildReplayId,
   normalizeReplay,
+  parseReplayFile,
   REPLAY_SCHEMA_VERSION,
   snapshotReplayContent,
   type ReplayBlob,
   type ReplayContentSnapshot,
+  type ReplayFileImportResult,
   type ReplayKeyframe,
   type ReplayRulesetIdentity,
 } from './state/replay';
@@ -60,9 +62,11 @@ import type { ReplayStorage } from './state/replayPersistence';
 import {
   CURRENT_RUN_RULESET,
   getRunSaveCompatibilityIssue,
+  parseRunSaveFile,
   toRunSave,
   type RunSave,
   type RunSaveCompatibilityIssue,
+  type RunSaveFileImportResult,
   type RunSaveSummary,
   type RunRulesetIdentity,
   type RunStorage,
@@ -189,10 +193,14 @@ export interface GameHandle {
   hasResumableRun(): boolean;
   /** タイトル「続きから」用の要約（無い場合は null）。 */
   getRunSaveSummary(): RunSaveSummary | null;
+  /** ファイル共有へ書き出す現行の再開可能セーブ（無い場合は null）。 */
+  getRunSave(): RunSave | null;
   /** ルールセット不一致・情報欠落で再開できないセーブの理由。 */
   getRunSaveIssue(): RunSaveCompatibilityIssue | null;
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
+  /** JSONファイルの内容を検証し、再開候補として保存する。 */
+  importRunSave(raw: string): Promise<RunSaveFileImportResult>;
   /** リプレイ永続化を接続し、一覧をキャッシュする（RI-61）。 */
   attachReplay(storage: ReplayStorage): Promise<void>;
   /** 保存済みリプレイ一覧（新しい順）。 */
@@ -215,6 +223,8 @@ export interface GameHandle {
    * 正規化に失敗した場合は false。
    */
   importReplay(blob: unknown): Promise<boolean>;
+  /** JSONファイルの内容を検証し、リプレイ保存先へ取り込む。 */
+  importReplayFile(raw: string): Promise<ReplayFileImportResult>;
   /** 現在のフェーズ（軽量アクセサ。スナップショットを作らない）。 */
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
@@ -834,12 +844,39 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (resumableSave) return structuredClone(resumableSave.summary);
       return runSaveIssue ? structuredClone(runSaveIssue.summary) : null;
     },
+    getRunSave() {
+      return resumableSave ? structuredClone(resumableSave) : null;
+    },
     getRunSaveIssue() {
       return runSaveIssue ? structuredClone(runSaveIssue) : null;
     },
     clearRunSave() {
       clearRunSaveInternal();
       bump();
+    },
+    async importRunSave(raw) {
+      const parsed = parseRunSaveFile(raw);
+      if (!parsed.ok) return parsed;
+      if (!runStorage) {
+        return {
+          ok: false,
+          reason: 'storage',
+          message: '途中セーブの保存先を利用できないため、読み込みを完了できません。',
+        };
+      }
+      try {
+        await runStorage.save(parsed.save);
+      } catch {
+        return {
+          ok: false,
+          reason: 'storage',
+          message: '途中セーブを保存できませんでした。既存のセーブは変更していません。',
+        };
+      }
+      resumableSave = structuredClone(parsed.save);
+      runSaveIssue = null;
+      bump();
+      return parsed;
     },
     async attachReplay(storage) {
       replayStorage = storage;
@@ -921,6 +958,29 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       } catch {
         return false;
       }
+    },
+    async importReplayFile(raw) {
+      const parsed = parseReplayFile(raw, CURRENT_RUN_RULESET);
+      if (!parsed.ok) return parsed;
+      if (!replayStorage) {
+        return {
+          ok: false,
+          reason: 'storage',
+          message: 'リプレイの保存先を利用できないため、読み込みを完了できません。',
+        };
+      }
+      try {
+        await replayStorage.save(parsed.replay);
+        await refreshReplayCache();
+      } catch {
+        return {
+          ok: false,
+          reason: 'storage',
+          message: 'リプレイを保存できませんでした。既存のリプレイは変更していません。',
+        };
+      }
+      bump();
+      return parsed;
     },
     phase() {
       return engine.currentPhase();

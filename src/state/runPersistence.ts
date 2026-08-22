@@ -104,6 +104,29 @@ export interface RunSave {
   replayKeyframes: ReplayKeyframe[];
 }
 
+export type RunSaveFileImportReason =
+  | 'invalid-json'
+  | 'unsupported-schema'
+  | 'invalid-data'
+  | 'ruleset-unknown'
+  | 'ruleset-mismatch'
+  | 'storage';
+
+export interface RunSaveFileImportSuccess {
+  readonly ok: true;
+  readonly save: RunSave;
+  readonly message: string;
+}
+
+export interface RunSaveFileImportFailure {
+  readonly ok: false;
+  readonly reason: RunSaveFileImportReason;
+  readonly message: string;
+  readonly issue?: RunSaveCompatibilityIssue;
+}
+
+export type RunSaveFileImportResult = RunSaveFileImportSuccess | RunSaveFileImportFailure;
+
 export interface RunStorage {
   load(): Promise<RunSave | null>;
   save(save: RunSave): Promise<void>;
@@ -397,6 +420,76 @@ export function parseRunSave(raw: unknown): RunSave | null {
       trendHistory: cloneTrendHistory(stateWithCurrentReview.trendHistory),
     },
     replayKeyframes: normalizeReplayKeyframes(raw.replayKeyframes),
+  };
+}
+
+function isSupportedRunSaveSchema(value: unknown): value is 4 | 5 | 6 | 7 | 8 {
+  return value === 4 || value === 5 || value === 6 || value === 7 || value === 8;
+}
+
+function formatRunRuleset(ruleset: RunRulesetIdentity): string {
+  return `v${ruleset.version} / ${ruleset.fingerprint}`;
+}
+
+/** 現行セーブをファイル共有用のJSONへ変換する。 */
+export function serializeRunSave(save: RunSave): string {
+  return `${JSON.stringify(save, null, 2)}\n`;
+}
+
+/** セーブファイルをJSON解析・正規化し、再開可否まで検証する。 */
+export function parseRunSaveFile(raw: string): RunSaveFileImportResult {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return {
+      ok: false,
+      reason: 'invalid-json',
+      message: 'JSONを解析できないため、途中セーブを読み込めません。',
+    };
+  }
+
+  if (!isRecord(value)) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: '途中セーブのJSON構造が正しくありません。',
+    };
+  }
+  if (!isSupportedRunSaveSchema(value.schemaVersion)) {
+    return {
+      ok: false,
+      reason: 'unsupported-schema',
+      message: `未対応の途中セーブスキーマです（schemaVersion: ${String(value.schemaVersion)}）。`,
+    };
+  }
+
+  const save = parseRunSave(value);
+  if (!save) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: '途中セーブの必須データが欠落しているか、壊れています。',
+    };
+  }
+
+  const issue = getRunSaveCompatibilityIssue(save);
+  if (issue) {
+    return {
+      ok: false,
+      reason: issue.kind,
+      message:
+        issue.kind === 'ruleset-unknown'
+          ? 'ルールセット情報がないため、この途中セーブは再開できません。'
+          : `保存時と現在のルールセットが一致しないため、この途中セーブは再開できません（保存時: ${formatRunRuleset(issue.savedRuleset!)} / 現在: ${formatRunRuleset(issue.currentRuleset)}）。`,
+      issue,
+    };
+  }
+
+  return {
+    ok: true,
+    save,
+    message: '途中セーブを読み込みました。「続きから」で再開できます。',
   };
 }
 

@@ -896,6 +896,14 @@ describe('RI-133 セーブファイル共有', () => {
       ok: false,
       reason: 'invalid-data',
     });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          state: { ...save.state, deck: null },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
     expect(parseRunSaveFile(JSON.stringify({ ...save, ruleset: null }))).toMatchObject({
       ok: false,
       reason: 'ruleset-unknown',

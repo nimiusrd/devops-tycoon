@@ -863,6 +863,19 @@ describe('RI-133 リプレイファイル共有', () => {
       parseReplayFile(
         serializeReplay({
           ...blob,
+          keyframes: [
+            {
+              ...blob.keyframes[0],
+              frame: { ...blob.keyframes[0].frame, deck: null },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
           ruleset: { version: CURRENT_RUN_RULESET.version, fingerprint: 'different-ruleset' },
         }),
       ),

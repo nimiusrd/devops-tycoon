@@ -6,6 +6,7 @@
  * フェーズ遷移時のみ保存し、スプリント tick 中は更新しない。
  */
 import { isRunSavePhase, type RunPersistState, type RunSavePhase } from '../sim/run/persist';
+import { canHydratePersistState } from '../sim/run/persistValidation';
 import type { DifficultyId, GoalKpiProgress, RunKind, RunPhase, RunStatus } from '../sim/run/types';
 import { companyOrgFromTeams } from '../sim/orgscale';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
@@ -470,6 +471,13 @@ export function parseRunSaveFile(raw: string): RunSaveFileImportResult {
       ok: false,
       reason: 'invalid-data',
       message: '途中セーブの必須データが欠落しているか、壊れています。',
+    };
+  }
+  if (!canHydratePersistState(save.state)) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: '途中セーブの状態全体を復元できないため、読み込めません。',
     };
   }
 

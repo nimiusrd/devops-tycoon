@@ -1,8 +1,8 @@
 /**
  * 途中セーブ／リプレイ共有用の入れ子構造検査。
  *
- * hydrate は必須オブジェクトを代入するだけなので、roster などを null にしても例外にならない。
- * 画面が members 等を参照する前に、外部 JSON の形を拒否する。
+ * hydrate は必須オブジェクトを代入するだけなので、roster や member.stats を null にしても例外にならない。
+ * 画面が members / stats / traits 等を参照する前に、外部 JSON の形を拒否する。
  */
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -57,11 +57,29 @@ function isRosterShape(value: unknown): boolean {
   return value.members.every(isMemberShape);
 }
 
+function isMemberStatsShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.implementation === 'number' &&
+    typeof value.review === 'number' &&
+    typeof value.aiMastery === 'number'
+  );
+}
+
 function isMemberShape(value: unknown): boolean {
   if (!isObject(value)) return false;
   if (typeof value.id !== 'string' || typeof value.name !== 'string') return false;
+  if (value.rank !== 'junior' && value.rank !== 'middle' && value.rank !== 'senior') return false;
+  if (typeof value.level !== 'number' || typeof value.xp !== 'number') return false;
+  if (typeof value.stamina !== 'number' || typeof value.staminaMax !== 'number') return false;
   if (typeof value.onLeave !== 'boolean' || typeof value.aiAssigned !== 'boolean') return false;
-  return (
-    value.assignment === 'coding' || value.assignment === 'review' || value.assignment === 'bench'
-  );
+  if (
+    value.assignment !== 'coding' &&
+    value.assignment !== 'review' &&
+    value.assignment !== 'bench'
+  ) {
+    return false;
+  }
+  if (!isMemberStatsShape(value.stats)) return false;
+  return Array.isArray(value.traits) && value.traits.every((trait) => typeof trait === 'string');
 }

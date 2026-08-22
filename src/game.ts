@@ -321,6 +321,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   const clearRunSaveInternal = (): void => {
+    latestImportedSave = null;
     resumableSave = null;
     runSaveIssue = null;
     if (!runStorage) return;
@@ -890,6 +891,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         if (latestImportedSave !== intended) {
           if (runStorage && resumableSave && resumableSave !== intended) {
             await runStorage.save(resumableSave);
+          } else if (runStorage && !resumableSave) {
+            await runStorage.clear();
           }
           return;
         }

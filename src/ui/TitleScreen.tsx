@@ -564,6 +564,7 @@ export function TitleScreen({
                 type="button"
                 className="title-resume-btn title-resume-discard"
                 data-testid="discard-run-save"
+                disabled={runSaveImporting}
                 onClick={onDiscardRunSave}
               >
                 このセーブを破棄

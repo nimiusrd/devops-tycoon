@@ -174,6 +174,105 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-daily');
   });
 
+  it('roster.members の stats が null なら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-stats');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-stats-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-null-stats');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { roster: { members: Array<{ stats?: unknown; traits?: unknown }> } };
+    };
+    raw.state.roster.members[0]!.stats = null;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-stats');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-stats');
+  });
+
+  it('roster.members の traits が配列でなければ拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-traits');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-traits-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-bad-traits');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { roster: { members: Array<{ traits?: unknown }> } };
+    };
+    raw.state.roster.members[0]!.traits = null;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-traits');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-traits');
+  });
+
+  it('取り込み中の破棄は保留中の途中セーブを復活させない', async () => {
+    let current: RunSave | null = makeRunSave('ri133-incompat-keep');
+    current.ruleset = { version: CURRENT_RUN_RULESET.version, fingerprint: 'other-ruleset' };
+    let finishSave: (() => void) | undefined;
+    let saveStarted!: () => void;
+    const whenSaveStarted = new Promise<void>((resolve) => {
+      saveStarted = resolve;
+    });
+    const runStorage = {
+      async load() {
+        return current;
+      },
+      async save(save: RunSave) {
+        if (save.summary.seed === 'ri133-late-after-discard') {
+          saveStarted();
+          await new Promise<void>((resolve) => {
+            finishSave = resolve;
+          });
+        }
+        current = save;
+      },
+      async clear() {
+        current = null;
+      },
+    };
+    const game = createGame({
+      seed: 'ri133-discard-import',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: current,
+    });
+    expect(game.getRunSaveIssue()?.kind).toBe('ruleset-mismatch');
+    expect(game.hasResumableRun()).toBe(false);
+
+    const importing = game.importRunSaveText(
+      serializeRunSave(makeRunSave('ri133-late-after-discard')),
+    );
+    await whenSaveStarted;
+    game.clearRunSave();
+    finishSave?.();
+    await importing;
+    expect(game.hasResumableRun()).toBe(false);
+    expect(game.getRunSaveSummary()).toBeNull();
+    expect(game.getRunSaveIssue()).toBeNull();
+    expect(await runStorage.load()).toBeNull();
+  });
+
   it('roster.members の要素が null なら拒否し、既存セーブは残す', async () => {
     const existing = makeRunSave('ri133-keep-member');
     const runStorage = new MemoryRunStorage();

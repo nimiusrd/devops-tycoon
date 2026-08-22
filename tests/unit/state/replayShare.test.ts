@@ -247,6 +247,50 @@ describe('リプレイのファイル共有（RI-133）', () => {
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-diagnosis']);
   });
 
+  it('キーフレームの member.stats が null なら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-null-stats-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-stats', seed: 'keep-stats' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'null-stats', seed: 'null-stats' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{
+        frame: { roster: { members: Array<{ stats?: unknown; traits?: unknown }> } };
+      }>;
+    };
+    raw.keyframes[0]!.frame.roster.members[0]!.stats = null;
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-stats']);
+  });
+
+  it('キーフレームの member.traits が配列でなければ拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-bad-traits-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-traits', seed: 'keep-traits' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'bad-traits', seed: 'bad-traits' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: { roster: { members: Array<{ traits?: unknown }> } } }>;
+    };
+    raw.keyframes[0]!.frame.roster.members[0]!.traits = { focus: true };
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-traits']);
+  });
+
   it('キーフレームの member が null なら拒否し、既存リプレイは残す', async () => {
     const replayStorage = new MemoryReplayStorage();
     const game = createGame({ seed: 'ri133-null-member-replay', initialMeta: defaultMeta() });

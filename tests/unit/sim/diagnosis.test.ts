@@ -5,6 +5,7 @@ import {
   FAILURE_ENCYCLOPEDIA_DEFS,
   diagnosisView,
   diagnose,
+  isDiagnosisType,
   isFailureDiagnosis,
 } from '../../../src/sim/diagnosis';
 import type { DiagnosisType } from '../../../src/sim/run/types';
@@ -29,10 +30,12 @@ describe('AI導入失敗図鑑（RI-34″）', () => {
     ]);
     expect(FAILURE_ENCYCLOPEDIA_DEFS).toHaveLength(4);
     for (const type of ALL_TYPES) {
+      expect(isDiagnosisType(type)).toBe(true);
       expect(isFailureDiagnosis(type)).toBe(
         (FAILURE_DIAGNOSIS_TYPES as readonly DiagnosisType[]).includes(type),
       );
     }
+    expect(isDiagnosisType('unknownDiagnosis')).toBe(false);
   });
 
   it('図鑑エントリは診断表示と教訓・ヒントを持つ', () => {

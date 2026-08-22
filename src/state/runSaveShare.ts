@@ -79,9 +79,21 @@ export function parseRunSaveShare(raw: string): RunSaveShareResult {
   const issue = getRunSaveCompatibilityIssue(save);
   if (issue?.kind === 'ruleset-unknown') return fail('ruleset_unknown');
   if (issue?.kind === 'ruleset-mismatch') return fail('ruleset_mismatch');
-  if (!canHydrateRunSave(save)) return fail('corrupt');
+  if (!summaryMatchesPersistState(save) || !canHydrateRunSave(save)) return fail('corrupt');
 
   return { ok: true, save };
+}
+
+/** 再開時に使う要約派生値が state と食い違っていないか。 */
+export function summaryMatchesPersistState(save: RunSave): boolean {
+  const { summary, state } = save;
+  if (summary.runKind !== state.runKind) return false;
+  if ((summary.dailyDate ?? undefined) !== (state.dailyDate ?? undefined)) return false;
+  if (summary.quarterNumber !== state.quarterNumber) return false;
+  if (summary.sprintIndexInQuarter !== state.sprintIndexInQuarter) return false;
+  if (summary.sprintsPlayed !== state.sprintsPlayed) return false;
+  if (!Array.isArray(state.trials) || summary.trials.length !== state.trials.length) return false;
+  return summary.trials.every((trial, index) => trial === state.trials[index]);
 }
 
 /** 再開時の hydrate が例外なく通る構造だけを受け入れる。 */

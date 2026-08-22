@@ -139,6 +139,41 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect(game.exportRunSaveText()).toContain('ri133-keep');
   });
 
+  it('要約の dailyDate が state と食い違うと拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-daily');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-daily-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incomingEngine = createRunEngine({ seed: 'ri133-daily-share' });
+    incomingEngine.startRun('normal', [], 'ri133-daily-share', {
+      kind: 'daily',
+      dailyDate: '2026-08-22',
+    });
+    const persist = incomingEngine.exportPersistState();
+    const frame = incomingEngine.exportReplayFrame();
+    if (!persist || !frame) throw new Error('daily persist missing');
+    const incoming = toRunSave(persist, 2000, [{ phase: 'setup', label: '編成', frame }]);
+    expect(incoming.summary.runKind).toBe('daily');
+    expect(incoming.summary.dailyDate).toBe('2026-08-22');
+
+    const raw = JSON.parse(serializeRunSave(incoming)) as { summary: Record<string, unknown> };
+    delete raw.summary.dailyDate;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-daily');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-daily');
+  });
+
   it('state.trials が欠けると拒否し、既存セーブは残す', async () => {
     const existing = makeRunSave('ri133-keep-trials');
     const runStorage = new MemoryRunStorage();

@@ -7,7 +7,7 @@ import {
   REPLAY_SCHEMA_VERSION,
   type ReplayBlob,
 } from '../../../src/state/replay';
-import { MemoryReplayStorage } from '../../../src/state/replayPersistence';
+import { MemoryReplayStorage, type ReplayStorage } from '../../../src/state/replayPersistence';
 import {
   CURRENT_RUN_RULESET,
   MemoryRunStorage,
@@ -224,5 +224,58 @@ describe('リプレイのファイル共有（RI-133）', () => {
       message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
     });
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-frame']);
+  });
+
+  it('未知の診断種別は拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-unknown-diagnosis', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-diagnosis', seed: 'keep-diagnosis' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'bad-diagnosis', seed: 'bad-diagnosis' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: Record<string, unknown> }>;
+    };
+    raw.keyframes[0]!.frame.diagnosis = 'unknownDiagnosis';
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-diagnosis']);
+  });
+
+  it('保存後の一覧取得失敗では取り込み成功と既存キャッシュを残す', async () => {
+    const inner = new MemoryReplayStorage();
+    let failNextList = false;
+    const replayStorage: ReplayStorage = {
+      list: async () => {
+        if (failNextList) {
+          failNextList = false;
+          throw new Error('forced list failure');
+        }
+        return inner.list();
+      },
+      get: (id) => inner.get(id),
+      save: (blob) => inner.save(blob),
+      clear: () => inner.clear(),
+    };
+    const game = createGame({ seed: 'ri133-list-fail', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-listed', seed: 'keep-listed', finishedAt: 1000 });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    failNextList = true;
+    const incoming = makeReplay({
+      id: 'after-list-fail',
+      seed: 'after-list-fail',
+      finishedAt: 2000,
+    });
+    const imported = await game.importReplayText(serializeReplay(incoming));
+    expect(imported.ok).toBe(true);
+    expect(game.listReplays().map((item) => item.id)).toEqual(['after-list-fail', 'keep-listed']);
+    expect((await inner.list()).map((item) => item.id)).toEqual(['after-list-fail', 'keep-listed']);
   });
 });

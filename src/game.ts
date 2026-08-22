@@ -51,6 +51,7 @@ import {
   normalizeReplay,
   REPLAY_SCHEMA_VERSION,
   snapshotReplayContent,
+  selectReplaysWithinMax,
   type ReplayBlob,
   type ReplayContentSnapshot,
   type ReplayKeyframe,
@@ -343,17 +344,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     keyframes.push(entry);
   };
 
-  const refreshReplayCache = async (): Promise<void> => {
+  const refreshReplayCache = async (): Promise<boolean> => {
     if (!replayStorage) {
       cachedReplays = [];
-      return;
+      bump();
+      return true;
     }
     try {
       cachedReplays = await replayStorage.list();
+      bump();
+      return true;
     } catch {
-      cachedReplays = [];
+      bump();
+      return false;
     }
-    bump();
   };
 
   const commitReplayIfFinished = (): void => {
@@ -912,7 +916,17 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       try {
         await replayStorage.save(loaded.replay);
-        await refreshReplayCache();
+        const listed = await refreshReplayCache();
+        if (!listed) {
+          if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {
+            cachedReplays = selectReplaysWithinMax(
+              [...cachedReplays, structuredClone(loaded.replay)],
+              loaded.replay.id,
+            );
+            bump();
+          }
+          return loaded;
+        }
         if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {
           return {
             ok: false,

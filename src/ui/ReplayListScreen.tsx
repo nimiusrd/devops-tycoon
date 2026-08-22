@@ -4,7 +4,7 @@
  * 保存済みリプレイからキーフレームを選び、read-only で盤面を開く。
  * reviewHell 診断時は「レビュー地獄リプレイ」専用パネルを重ねる。
  */
-import { useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { diagnosisView } from '../sim/diagnosis';
 import { planReviewHellReplay } from '../render/reviewHellReplayView';
 import { formatReplayRuleset } from './replayRuleset';
@@ -14,6 +14,10 @@ export interface ReplayListScreenProps {
   replays: ReplayBlob[];
   onOpen: (id: string, keyframeIndex: number) => void;
   onClose: () => void;
+  /** 選択中リプレイを JSON にする（無い場合は null。RI-133）。 */
+  onExportReplay?: (id: string) => string | null;
+  /** JSON からリプレイを読み込む。 */
+  onImportReplay?: (raw: string) => Promise<{ ok: boolean; message: string }>;
 }
 
 function formatFinishedAt(ms: number): string {
@@ -31,10 +35,60 @@ function outcomeLabel(replay: ReplayBlob): string {
   return `敗北${replay.outcome.loseReason ? ` (${replay.outcome.loseReason})` : ''}`;
 }
 
-export function ReplayListScreen({ replays, onOpen, onClose }: ReplayListScreenProps) {
+export function ReplayListScreen({
+  replays,
+  onOpen,
+  onClose,
+  onExportReplay,
+  onImportReplay,
+}: ReplayListScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
-  const selected = replays.find((r) => r.id === selectedId) ?? null;
+  const selected = replays.find((r) => r.id === selectedId) ?? replays[0] ?? null;
   const hellView = selected ? planReviewHellReplay(selected) : null;
+  const replayFileRef = useRef<HTMLInputElement>(null);
+  const [shareStatus, setShareStatus] = useState<{
+    kind: 'idle' | 'ok' | 'error';
+    message: string;
+  }>({ kind: 'idle', message: '' });
+
+  const downloadSelected = () => {
+    if (!onExportReplay || !selected) {
+      setShareStatus({ kind: 'error', message: '書き出せるリプレイがありません。' });
+      return;
+    }
+    const text = onExportReplay(selected.id);
+    if (!text) {
+      setShareStatus({ kind: 'error', message: '書き出せるリプレイがありません。' });
+      return;
+    }
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'devops-tycoon-replay.json';
+    link.click();
+    URL.revokeObjectURL(url);
+    setShareStatus({ kind: 'ok', message: 'リプレイをファイルに保存しました。' });
+  };
+
+  const applyReplayText = (raw: string) => {
+    if (!onImportReplay) return;
+    void onImportReplay(raw).then((result) => {
+      setShareStatus({
+        kind: result.ok ? 'ok' : 'error',
+        message: result.ok ? 'リプレイを読み込みました。' : result.message,
+      });
+    });
+  };
+
+  const onReplayFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    void file.text().then((raw) => {
+      applyReplayText(raw);
+    });
+  };
 
   return (
     <div className="result-overlay" data-testid="replay-list" role="dialog" aria-label="Replays">
@@ -146,6 +200,52 @@ export function ReplayListScreen({ replays, onOpen, onClose }: ReplayListScreenP
             </div>
           </div>
         )}
+
+        {onExportReplay || onImportReplay ? (
+          <div className="replay-share" data-testid="replay-share">
+            <div className="replay-share-actions">
+              {onExportReplay ? (
+                <button
+                  type="button"
+                  className="btn"
+                  data-testid="replay-download"
+                  disabled={!selected}
+                  onClick={downloadSelected}
+                >
+                  ファイルで保存
+                </button>
+              ) : null}
+              {onImportReplay ? (
+                <>
+                  <button
+                    type="button"
+                    className="btn"
+                    data-testid="replay-file-button"
+                    onClick={() => replayFileRef.current?.click()}
+                  >
+                    ファイルを開く
+                  </button>
+                  <input
+                    ref={replayFileRef}
+                    type="file"
+                    accept="application/json,.json"
+                    hidden
+                    data-testid="replay-file"
+                    onChange={onReplayFile}
+                  />
+                </>
+              ) : null}
+            </div>
+            {shareStatus.message ? (
+              <p
+                className={`replay-share-status${shareStatus.kind === 'error' ? ' error' : ''}`}
+                data-testid="replay-share-status"
+              >
+                {shareStatus.message}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <button type="button" className="btn" data-testid="replay-list-close" onClick={onClose}>
           閉じる

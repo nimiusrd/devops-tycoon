@@ -67,6 +67,18 @@ import {
   type RunRulesetIdentity,
   type RunStorage,
 } from './state/runPersistence';
+import {
+  parseReplayShare,
+  REPLAY_SHARE_REASON_MESSAGE,
+  serializeReplay,
+  type ReplayShareResult,
+} from './state/replayShare';
+import {
+  parseRunSaveShare,
+  RUN_SAVE_SHARE_REASON_MESSAGE,
+  serializeRunSave,
+  type RunSaveShareResult,
+} from './state/runSaveShare';
 import { createRunDiagnosticInfo, type RunDiagnosticInfo } from './state/diagnosticInfo';
 
 export interface ActiveReplayInfo {
@@ -193,10 +205,24 @@ export interface GameHandle {
   getRunSaveIssue(): RunSaveCompatibilityIssue | null;
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
+  /** 現行の途中セーブを JSON 文字列にする（無い場合は null。RI-133）。 */
+  exportRunSaveText(): string | null;
+  /**
+   * JSON から途中セーブを読み込む。成功時だけラン保存を置き換える。
+   * 失敗時は既存セーブ・メタ進行・リプレイを触らない。
+   */
+  importRunSaveText(raw: string): Promise<RunSaveShareResult>;
   /** リプレイ永続化を接続し、一覧をキャッシュする（RI-61）。 */
   attachReplay(storage: ReplayStorage): Promise<void>;
   /** 保存済みリプレイ一覧（新しい順）。 */
   listReplays(): ReplayBlob[];
+  /** 指定リプレイを JSON 文字列にする（無い場合は null。RI-133）。 */
+  exportReplayText(id: string): string | null;
+  /**
+   * JSON からリプレイを読み込む。成功時だけ既存上限に従って保持する。
+   * 失敗時は既存リプレイ・メタ進行・途中セーブを触らない。
+   */
+  importReplayText(raw: string): Promise<ReplayShareResult>;
   /** リプレイのキーフレームを read-only で開く（失敗時 null）。 */
   openReplay(id: string, keyframeIndex?: number): RunState | null;
   /** リプレイ閲覧を終了してタイトルへ戻る。 */
@@ -841,12 +867,60 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearRunSaveInternal();
       bump();
     },
+    exportRunSaveText() {
+      return resumableSave ? serializeRunSave(resumableSave) : null;
+    },
+    async importRunSaveText(raw) {
+      const loaded = parseRunSaveShare(raw);
+      if (!loaded.ok) return loaded;
+      if (runStorage) {
+        try {
+          await runStorage.save(loaded.save);
+        } catch {
+          return {
+            ok: false,
+            reason: 'corrupt',
+            message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+          };
+        }
+      }
+      resumableSave = structuredClone(loaded.save);
+      runSaveIssue = null;
+      bump();
+      return loaded;
+    },
     async attachReplay(storage) {
       replayStorage = storage;
       await refreshReplayCache();
     },
     listReplays() {
       return cachedReplays.map((r) => structuredClone(r));
+    },
+    exportReplayText(id) {
+      const replay = cachedReplays.find((item) => item.id === id);
+      return replay ? serializeReplay(replay) : null;
+    },
+    async importReplayText(raw) {
+      const loaded = parseReplayShare(raw);
+      if (!loaded.ok) return loaded;
+      if (!replayStorage) {
+        return {
+          ok: false,
+          reason: 'corrupt',
+          message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+        };
+      }
+      try {
+        await replayStorage.save(loaded.replay);
+        await refreshReplayCache();
+        return loaded;
+      } catch {
+        return {
+          ok: false,
+          reason: 'corrupt',
+          message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+        };
+      }
     },
     openReplay(id, keyframeIndex = -1) {
       const replay = cachedReplays.find((r) => r.id === id);

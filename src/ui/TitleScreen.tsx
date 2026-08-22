@@ -66,6 +66,10 @@ export interface TitleScreenProps {
   onOpenHelp?: () => void;
   /** 開始レシピ読み込み成功時に研修方針を復元する（RI-127）。 */
   onApplyPreferred?: (preferredCardIds: readonly string[]) => void;
+  /** 現行の途中セーブを JSON にする（無い場合は null。RI-133）。 */
+  onExportRunSave?: () => string | null;
+  /** JSON から途中セーブを読み込む。 */
+  onImportRunSave?: (raw: string) => Promise<{ ok: boolean; message: string }>;
 }
 
 export function TitleScreen({
@@ -85,6 +89,8 @@ export function TitleScreen({
   onToggleSoundMuted,
   onOpenHelp,
   onApplyPreferred,
+  onExportRunSave,
+  onImportRunSave,
 }: TitleScreenProps) {
   const firstUnlocked = DIFFICULTY_ORDER.find((d) => meta.unlockedDifficulties.includes(d));
   const [difficulty, setDifficulty] = useState<DifficultyId>(firstUnlocked ?? 'normal');
@@ -97,6 +103,11 @@ export function TitleScreen({
     message: string;
   }>({ kind: 'idle', message: '' });
   const recipeFileRef = useRef<HTMLInputElement>(null);
+  const runSaveFileRef = useRef<HTMLInputElement>(null);
+  const [runSaveShareStatus, setRunSaveShareStatus] = useState<{
+    kind: 'idle' | 'ok' | 'error';
+    message: string;
+  }>({ kind: 'idle', message: '' });
   const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
@@ -156,6 +167,42 @@ export function TitleScreen({
     void file.text().then((raw) => {
       setRecipeText(raw);
       applyRecipeText(raw);
+    });
+  };
+
+  const downloadRunSave = () => {
+    if (!onExportRunSave) return;
+    const text = onExportRunSave();
+    if (!text) {
+      setRunSaveShareStatus({ kind: 'error', message: '書き出せる途中セーブがありません。' });
+      return;
+    }
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'devops-tycoon-run-save.json';
+    link.click();
+    URL.revokeObjectURL(url);
+    setRunSaveShareStatus({ kind: 'ok', message: '途中セーブをファイルに保存しました。' });
+  };
+
+  const applyRunSaveText = (raw: string) => {
+    if (!onImportRunSave) return;
+    void onImportRunSave(raw).then((result) => {
+      setRunSaveShareStatus({
+        kind: result.ok ? 'ok' : 'error',
+        message: result.ok ? '途中セーブを読み込みました。再開できます。' : result.message,
+      });
+    });
+  };
+
+  const onRunSaveFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    void file.text().then((raw) => {
+      applyRunSaveText(raw);
     });
   };
 
@@ -404,6 +451,59 @@ export function TitleScreen({
               ) : null}
             </div>
           </section>
+
+          {onExportRunSave || onImportRunSave ? (
+            <section className="title-section title-recipe-section" data-testid="run-save-share">
+              <div className="title-section-copy">
+                <span className="title-step">05</span>
+                <p>
+                  <b>途中セーブ（共有）</b>
+                  <small>中断中のランだけをローカル JSON で受け渡す。メタ進行は含まない</small>
+                </p>
+              </div>
+              <div className="title-recipe-body">
+                <div className="title-recipe-actions">
+                  {onExportRunSave ? (
+                    <button
+                      type="button"
+                      data-testid="run-save-download"
+                      disabled={!resumableSummary || !!runSaveIssue}
+                      onClick={downloadRunSave}
+                    >
+                      ファイルで保存
+                    </button>
+                  ) : null}
+                  {onImportRunSave ? (
+                    <>
+                      <button
+                        type="button"
+                        data-testid="run-save-file-button"
+                        onClick={() => runSaveFileRef.current?.click()}
+                      >
+                        ファイルを開く
+                      </button>
+                      <input
+                        ref={runSaveFileRef}
+                        type="file"
+                        accept="application/json,.json"
+                        hidden
+                        data-testid="run-save-file"
+                        onChange={onRunSaveFile}
+                      />
+                    </>
+                  ) : null}
+                </div>
+                {runSaveShareStatus.message ? (
+                  <p
+                    className={`title-recipe-status${runSaveShareStatus.kind === 'error' ? ' error' : ''}`}
+                    data-testid="run-save-share-status"
+                  >
+                    {runSaveShareStatus.message}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
 
           {runSaveIssue && resumableSummary && onDiscardRunSave ? (
             <section

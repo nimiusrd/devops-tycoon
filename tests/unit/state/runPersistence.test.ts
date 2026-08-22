@@ -1134,6 +1134,65 @@ describe('RI-133 セーブファイル共有', () => {
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    for (const field of ['timeline', 'events', 'fireEvents'] as const) {
+      expect(
+        parseRunSaveFile(
+          serializeRunSave({
+            ...toRunSave(resultState),
+            state: {
+              ...resultState,
+              lastResult: { ...resultState.lastResult!, [field]: [null] },
+            },
+          }),
+        ),
+      ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    }
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: { ...resultState, lastGrowth: {} as never },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: { ...resultState, quarterReview: {} as never },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: { ...resultState, roster: {} as never },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: {
+            ...resultState,
+            beat: { eventId: 'missing-event', kind: 'judgment' },
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: {
+            ...resultState,
+            shop: { cards: [{ defId: 'copilot', cost: 'bad', bought: false }] },
+          } as never,
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
 
     engine.acknowledgeResult();
     const draftState = engine.exportPersistState();
@@ -1143,6 +1202,27 @@ describe('RI-133 セーブファイル共有', () => {
         serializeRunSave({
           ...toRunSave(draftState),
           state: { ...draftState, draft: null },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+  });
+
+  it('ファイル取込では既知かつ一意な試練と完全なキーフレーム配列を要求する', () => {
+    const save = makeRunSaveWith('ri133-file-structure-guards');
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...save,
+          summary: { ...save.summary, trials: ['half-budget', 'half-budget'] },
+          state: { ...save.state, trials: ['half-budget', 'half-budget'] },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          replayKeyframes: [...save.replayKeyframes, null],
         }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });

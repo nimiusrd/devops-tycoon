@@ -113,6 +113,34 @@ function isDifficulty(value: unknown): value is DifficultyId {
   return value === 'easy' || value === 'normal' || value === 'hard' || value === 'nightmare';
 }
 
+function isWinType(value: unknown): value is WinType {
+  return (
+    value === 'normal' ||
+    value === 'healthy' ||
+    value === 'aiSuccess' ||
+    value === 'management' ||
+    value === 'happiness' ||
+    value === 'chaos' ||
+    value === 'noDamage'
+  );
+}
+
+function isLoseReason(value: unknown): value is LoseReason {
+  return (
+    value === 'seniorBurnout' ||
+    value === 'techDebt' ||
+    value === 'moraleCollapse' ||
+    value === 'reviewFreeze' ||
+    value === 'incidentCascade' ||
+    value === 'aiDependency' ||
+    value === 'budgetExhausted' ||
+    value === 'bossFailed' ||
+    value === 'trustExhausted' ||
+    value === 'reorgRequired' ||
+    value === 'kpiMissed'
+  );
+}
+
 const CARD_EFFECT_KEYS = [
   'codingSpeedMul',
   'routineSpeedMul',
@@ -330,6 +358,12 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   if (typeof value.outcome.score !== 'number' || !Number.isFinite(value.outcome.score)) {
     return null;
   }
+  if (
+    (value.outcome.winType !== undefined && !isWinType(value.outcome.winType)) ||
+    (value.outcome.loseReason !== undefined && !isLoseReason(value.outcome.loseReason))
+  ) {
+    return null;
+  }
   if (!Array.isArray(value.keyframes) || value.keyframes.length === 0) return null;
 
   const keyframes = normalizeReplayKeyframes(value.keyframes);
@@ -346,20 +380,38 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   }
   const terminalFrame = keyframes[keyframes.length - 1]?.frame;
   const terminalPhase = terminalFrame?.phase;
-  if (
-    !keyframes.every(({ frame }) =>
-      frame.phase === 'won' || frame.phase === 'lost'
-        ? frame.status === frame.phase
-        : frame.status === 'playing',
-    )
-  ) {
-    return null;
-  }
-  if (
-    (terminalPhase === 'won' || terminalPhase === 'lost') &&
-    terminalPhase !== value.outcome.status
-  ) {
-    return null;
+  if (!isLegacy && !isNormalizedLegacy) {
+    if (
+      !keyframes.every(({ frame }) =>
+        frame.phase === 'won' || frame.phase === 'lost'
+          ? frame.status === frame.phase
+          : frame.status === 'playing',
+      )
+    ) {
+      return null;
+    }
+    if (
+      (terminalPhase === 'won' || terminalPhase === 'lost') &&
+      terminalPhase !== value.outcome.status
+    ) {
+      return null;
+    }
+    if (
+      terminalPhase === 'lost' &&
+      (!isLoseReason(terminalFrame?.loseReason) ||
+        !isLoseReason(value.outcome.loseReason) ||
+        terminalFrame.loseReason !== value.outcome.loseReason)
+    ) {
+      return null;
+    }
+    if (
+      terminalPhase === 'won' &&
+      (!isWinType(terminalFrame?.winType) ||
+        !isWinType(value.outcome.winType) ||
+        terminalFrame.winType !== value.outcome.winType)
+    ) {
+      return null;
+    }
   }
 
   const isLegacyShape = isLegacy || isNormalizedLegacy;
@@ -464,7 +516,12 @@ export function parseReplayFile(
       message: 'リプレイの完了日時が不正または未来すぎるため、読み込めません。',
     };
   }
-  if (!replay.keyframes.every(({ frame }) => canHydrateReplayFrame(frame))) {
+  const isLegacyFile =
+    value.schemaVersion === LEGACY_REPLAY_SCHEMA_VERSION ||
+    (value.schemaVersion === REPLAY_SCHEMA_VERSION &&
+      value.ruleset === null &&
+      value.contentSnapshot === null);
+  if (!isLegacyFile && !replay.keyframes.every(({ frame }) => canHydrateReplayFrame(frame))) {
     return {
       ok: false,
       reason: 'invalid-data',

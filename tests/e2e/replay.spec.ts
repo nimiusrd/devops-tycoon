@@ -260,6 +260,7 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
     const lostFrame = structuredClone(setupFrame);
     lostFrame.phase = 'lost';
     lostFrame.status = 'lost';
+    lostFrame.loseReason = 'reviewFreeze';
     lostFrame.diagnosis = 'reviewHell';
     lostFrame.totals = { ...lostFrame.totals, reviewQueuePeak: 21 };
     lostFrame.lastResult = resultFrame.lastResult;

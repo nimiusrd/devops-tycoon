@@ -970,6 +970,26 @@ describe('RI-133 リプレイファイル共有', () => {
     ).toMatchObject({ ok: false, reason: 'invalid-data' });
     expect(
       parseReplayFile(
+        serializeReplay({
+          ...blob,
+          outcome: { ...blob.outcome, status: 'lost', loseReason: 'reviewFreeze' },
+          keyframes: [
+            {
+              ...blob.keyframes[0],
+              phase: 'lost',
+              frame: {
+                ...blob.keyframes[0].frame,
+                phase: 'lost',
+                status: 'lost',
+                loseReason: 'techDebt',
+              },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
         serializeReplay({ ...blob, outcome: { ...blob.outcome, diagnosis: 'unknown-diagnosis' } }),
       ),
     ).toMatchObject({ ok: false, reason: 'invalid-data' });

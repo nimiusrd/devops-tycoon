@@ -11,7 +11,7 @@ import type { DifficultyId, GoalKpiProgress, RunKind, RunPhase, RunStatus } from
 import { isDiagnosisType } from '../sim/diagnosis';
 import { companyOrgFromTeams } from '../sim/orgscale';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
-import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS } from '../data/difficulties';
+import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS, getTrial } from '../data/difficulties';
 import {
   availableAdjustments,
   diagnoseMissedReasons,
@@ -189,6 +189,15 @@ function isDailyDate(value: unknown): value is string {
 
 function sameStringArray(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function hasKnownUniqueTrials(value: readonly string[]): boolean {
+  const seen = new Set<string>();
+  return value.every((id) => {
+    if (seen.has(id) || getTrial(id) === undefined) return false;
+    seen.add(id);
+    return true;
+  });
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -382,6 +391,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
   if (!Array.isArray(summary.trials) || !summary.trials.every((t) => typeof t === 'string')) {
     return null;
   }
+  if (!hasKnownUniqueTrials(summary.trials)) return null;
   if (!isRunKind(summary.runKind)) return null;
   if (summary.dailyDate !== undefined && typeof summary.dailyDate !== 'string') return null;
   if (
@@ -522,6 +532,24 @@ export function parseRunSaveFile(raw: string): RunSaveFileImportResult {
       reason: 'unsupported-schema',
       message: `未対応の途中セーブスキーマです（schemaVersion: ${String(value.schemaVersion)}）。`,
     };
+  }
+
+  if (value.schemaVersion === RUN_SAVE_SCHEMA_VERSION) {
+    if (!Array.isArray(value.replayKeyframes)) {
+      return {
+        ok: false,
+        reason: 'invalid-data',
+        message: '途中セーブのリプレイキーフレームが正しくありません。',
+      };
+    }
+    const normalizedKeyframes = normalizeReplayKeyframes(value.replayKeyframes);
+    if (normalizedKeyframes.length !== value.replayKeyframes.length) {
+      return {
+        ok: false,
+        reason: 'invalid-data',
+        message: '途中セーブに不正なリプレイキーフレームが含まれています。',
+      };
+    }
   }
 
   const save = parseRunSave(value);

@@ -15,8 +15,13 @@ import {
 } from '../game';
 import type { RunDiagnosticInfo } from '../state/diagnosticInfo';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
-import type { ReplayBlob } from '../state/replay';
-import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
+import type { ReplayBlob, ReplayFileImportResult } from '../state/replay';
+import type {
+  RunSave,
+  RunSaveCompatibilityIssue,
+  RunSaveFileImportResult,
+  RunSaveSummary,
+} from '../state/runPersistence';
 import type {
   ActionId,
   ActionTarget,
@@ -47,6 +52,8 @@ export interface UseRun {
   lastRunReward: RunRewardBreakdown | null;
   /** 再開可能なランセーブの要約（無い場合は null）。 */
   runSaveSummary: RunSaveSummary | null;
+  /** ファイル共有へ書き出せる現行ランセーブ（無い場合は null）。 */
+  runSave: RunSave | null;
   /** ルールセット不一致・情報欠落で再開できないランセーブの理由。 */
   runSaveIssue: RunSaveCompatibilityIssue | null;
   /** ラン開始世代（RI-60）。`window.game.startRun` でも増える。 */
@@ -100,6 +107,7 @@ export interface UseRun {
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
   clearRunSave: () => void;
+  importRunSave: (raw: string) => Promise<RunSaveFileImportResult>;
   replays: ReplayBlob[];
   isReplayMode: boolean;
   /** 閲覧中リプレイの終端診断（RI-34‴）。非リプレイ時は null。 */
@@ -107,6 +115,7 @@ export interface UseRun {
   /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
   activeReplayInfo: ActiveReplayInfo | null;
   openReplay: (id: string, keyframeIndex?: number) => void;
+  importReplayFile: (raw: string) => Promise<ReplayFileImportResult>;
   exitReplay: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
@@ -129,6 +138,7 @@ export function useRun(game: GameHandle): UseRun {
   const [runSaveSummary, setRunSaveSummary] = useState<RunSaveSummary | null>(() =>
     game.getRunSaveSummary(),
   );
+  const [runSave, setRunSave] = useState<RunSave | null>(() => game.getRunSave());
   const [runSaveIssue, setRunSaveIssue] = useState<RunSaveCompatibilityIssue | null>(() =>
     game.getRunSaveIssue(),
   );
@@ -162,6 +172,7 @@ export function useRun(game: GameHandle): UseRun {
   useEffect(() => {
     // 初回も必ず同期する。React の描画〜effect開始の間に window.game が操作されても取りこぼさない。
     let lastRev = -1;
+    let lastRunSaveRevision = -1;
     let accumulatedMs = 0;
     let lastWallMs = performance.now();
     const id = window.setInterval(() => {
@@ -198,8 +209,13 @@ export function useRun(game: GameHandle): UseRun {
       setMeta(game.getMeta());
       setDiagnosticInfo(game.getDiagnosticInfo());
       setLastRunReward(game.getLastRunReward());
-      setRunSaveSummary(game.getRunSaveSummary());
-      setRunSaveIssue(game.getRunSaveIssue());
+      const nextRunSaveRevision = game.getRunSaveRevision();
+      if (nextRunSaveRevision !== lastRunSaveRevision) {
+        lastRunSaveRevision = nextRunSaveRevision;
+        setRunSaveSummary(game.getRunSaveSummary());
+        setRunSave(game.getRunSave());
+        setRunSaveIssue(game.getRunSaveIssue());
+      }
       setRunEpoch(game.getRunEpoch());
       setReplays(game.listReplays());
       setIsReplayMode(game.isReplayMode());
@@ -274,10 +290,12 @@ export function useRun(game: GameHandle): UseRun {
   );
   const newRun = useCallback(() => void game.newRun(), [game]);
   const clearRunSave = useCallback(() => void game.clearRunSave(), [game]);
+  const importRunSave = useCallback((raw: string) => game.importRunSave(raw), [game]);
   const openReplay = useCallback(
     (id: string, keyframeIndex?: number) => void game.openReplay(id, keyframeIndex),
     [game],
   );
+  const importReplayFile = useCallback((raw: string) => game.importReplayFile(raw), [game]);
   const exitReplay = useCallback(() => void game.exitReplay(), [game]);
   const purchaseMetaUnlock = useCallback(
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
@@ -296,6 +314,7 @@ export function useRun(game: GameHandle): UseRun {
     diagnosticInfo,
     lastRunReward,
     runSaveSummary,
+    runSave,
     runSaveIssue,
     runEpoch,
     replays,
@@ -339,6 +358,8 @@ export function useRun(game: GameHandle): UseRun {
     chooseGoalAdjustment,
     newRun,
     clearRunSave,
+    importRunSave,
+    importReplayFile,
     purchaseMetaUnlock,
     setSoundMuted,
     setPreferredCardIds,

@@ -6,7 +6,9 @@ import {
   goalProgressStatus,
   MIN_ADJUSTED_QUARTER_DELIVERY_TARGET,
 } from '../../../src/sim/run/quarterReview';
+import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS } from '../../../src/data/difficulties';
 import { openGameDb, RUN_RECORD_KEY, RUN_STORE_NAME } from '../../../src/state/gameDb';
+import { defaultMeta } from '../../../src/state/meta';
 import {
   CURRENT_RUN_RULESET,
   getRunSaveCompatibilityIssue,
@@ -14,10 +16,13 @@ import {
   MemoryRunStorage,
   initializeRunPersistence,
   parseRunSave,
+  parseRunSaveFile,
+  serializeRunSave,
   toRunSave,
   RUN_SAVE_SCHEMA_VERSION,
   type RunSave,
 } from '../../../src/state/runPersistence';
+import { MemoryReplayStorage } from '../../../src/state/replayPersistence';
 
 import 'fake-indexeddb/auto';
 
@@ -31,11 +36,70 @@ function indexedDbStorage(): IndexedDbRunStorage {
 
 function makeRunSave(seed = 'ri72-run-save'): RunSave {
   const engine = createRunEngine({ seed });
-  engine.startRun('easy', [], seed, { kind: 'daily', dailyDate: '2026-07-27' });
+  engine.startRun('easy', [], seed);
   const state = engine.exportPersistState();
   const frame = engine.exportReplayFrame();
   if (!state || !frame) throw new Error('failed to export run save fixture');
   return toRunSave(state, 1234, [{ phase: 'setup', label: '編成', frame }]);
+}
+
+function makeDailyRunSave(date = '2026-07-27'): RunSave {
+  const seed = `daily-${date}`;
+  const engine = createRunEngine({ seed });
+  engine.startRun(DAILY_RUN_DIFFICULTY, [...DAILY_RUN_TRIALS], seed, {
+    kind: 'daily',
+    dailyDate: date,
+  });
+  const state = engine.exportPersistState();
+  if (!state) throw new Error('failed to export daily run save fixture');
+  return toRunSave(state, 1234);
+}
+
+function makeBlockingRunStorage(initial: RunSave) {
+  let saveState: RunSave | null = structuredClone(initial);
+  let blockNextSave = false;
+  let saveStarted = Promise.resolve();
+  let resolveSaveStarted: (() => void) | null = null;
+  let releasePendingSave: (() => void) | null = null;
+
+  const storage = {
+    async load(): Promise<RunSave | null> {
+      return saveState ? structuredClone(saveState) : null;
+    },
+    save(save: RunSave): Promise<void> {
+      const snapshot = structuredClone(save);
+      if (!blockNextSave) {
+        saveState = snapshot;
+        return Promise.resolve();
+      }
+      blockNextSave = false;
+      resolveSaveStarted?.();
+      return new Promise<void>((resolve) => {
+        releasePendingSave = () => {
+          saveState = snapshot;
+          releasePendingSave = null;
+          resolve();
+        };
+      });
+    },
+    async clear(): Promise<void> {
+      saveState = null;
+    },
+  };
+
+  return {
+    storage,
+    blockNextSave() {
+      blockNextSave = true;
+      saveStarted = new Promise<void>((resolve) => {
+        resolveSaveStarted = resolve;
+      });
+    },
+    saveStarted: () => saveStarted,
+    releaseSave() {
+      releasePendingSave?.();
+    },
+  };
 }
 
 /** fire-and-forget の IndexedDB 書き込みが完了するまで待つ。 */
@@ -208,6 +272,10 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         },
       },
       summary: { ...valid.summary, difficulty: 'normal' },
+      replayKeyframes: valid.replayKeyframes.map((keyframe) => ({
+        ...keyframe,
+        frame: { ...keyframe.frame, difficulty: 'normal' },
+      })),
     });
 
     expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
@@ -232,6 +300,10 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         },
       },
       summary: { ...valid.summary, difficulty: 'normal' },
+      replayKeyframes: valid.replayKeyframes.map((keyframe) => ({
+        ...keyframe,
+        frame: { ...keyframe.frame, difficulty: 'normal' },
+      })),
     });
 
     expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
@@ -344,6 +416,10 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
           bossCleared: true,
         },
       },
+      replayKeyframes: valid.replayKeyframes.map((keyframe) => ({
+        ...keyframe,
+        frame: { ...keyframe.frame, difficulty: 'normal' },
+      })),
     });
 
     const review = parsed?.state.quarterReview;
@@ -380,8 +456,8 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
       savedAt: 1234,
       summary: {
         seed: 'ri68-current-schema',
-        runKind: 'daily',
-        dailyDate: '2026-07-27',
+        runKind: 'normal',
+        dailyDate: undefined,
         status: 'playing',
       },
     });
@@ -448,6 +524,8 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(parseRunSave(withState({ phase: 'result' }))).toBeNull();
     expect(parseRunSave(withState({ status: 'lost' }))).toBeNull();
     expect(parseRunSave(withState({ seed: 'other-seed' }))).toBeNull();
+    expect(parseRunSave(withState({ trials: ['half-budget'] }))).toBeNull();
+    expect(parseRunSave(withState({ budget: 'bad' }))).toBeNull();
     expect(parseRunSave(withState({ extras: null }))).toBeNull();
     expect(parseRunSave(withState({ extras: [] }))).toBeNull();
     expect(parseRunSave(withExtras({ allowedCards: 'copilot' }))).toBeNull();
@@ -749,7 +827,7 @@ function makeRunSaveWith(
   const difficulty = options.difficulty ?? 'easy';
   const trials = options.trials ?? [];
   const engine = createRunEngine({ seed });
-  engine.startRun(difficulty, trials, seed, { kind: 'daily', dailyDate: '2026-08-01' });
+  engine.startRun(difficulty, trials, seed);
   const state = engine.exportPersistState();
   if (!state) throw new Error('failed to export run save fixture');
   return toRunSave(state, 5678);
@@ -869,5 +947,297 @@ describe('RI-91-B4 runPersistence survived mutants', () => {
       expect(boot.save).toEqual(save);
       expect(boot).toEqual({ save, issue: null, storage });
     });
+  });
+});
+
+describe('RI-133 セーブファイル共有', () => {
+  it('現行セーブをJSONへ変換し、同じ内容へ往復できる', () => {
+    const save = makeRunSaveWith('ri133-save-roundtrip');
+    const result = parseRunSaveFile(serializeRunSave(save));
+
+    expect(result).toMatchObject({ ok: true });
+    if (result.ok) expect(result.save).toEqual(save);
+  });
+
+  it('破損・未対応スキーマ・ルールセット不一致を理由付きで拒否する', () => {
+    const save = makeRunSave('ri133-save-reject');
+    const dailySave = makeDailyRunSave();
+
+    expect(parseRunSaveFile('{')).toMatchObject({ ok: false, reason: 'invalid-json' });
+    expect(parseRunSaveFile(JSON.stringify({ ...save, schemaVersion: 999 }))).toMatchObject({
+      ok: false,
+      reason: 'unsupported-schema',
+    });
+    expect(parseRunSaveFile(JSON.stringify({ ...save, summary: null }))).toMatchObject({
+      ok: false,
+      reason: 'invalid-data',
+    });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          state: { ...save.state, deck: null },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          state: { ...save.state, shop: {} },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          state: { ...save.state, diagnosis: 'unknown-diagnosis' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...dailySave,
+          summary: { ...dailySave.summary, dailyDate: undefined },
+          state: { ...dailySave.state, dailyDate: undefined },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...dailySave,
+          summary: { ...dailySave.summary, dailyDate: '2026-02-29' },
+          state: { ...dailySave.state, dailyDate: '2026-02-29' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...dailySave,
+          summary: { ...dailySave.summary, runKind: 'normal', dailyDate: '2026-07-27' },
+          state: { ...dailySave.state, runKind: 'normal', dailyDate: '2026-07-27' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...dailySave,
+          summary: { ...dailySave.summary, runKind: 'normal', dailyDate: undefined },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          summary: {
+            ...save.summary,
+            runKind: 'daily',
+            dailyDate: '2026-07-27',
+            seed: 'not-daily-seed',
+          },
+          state: {
+            ...save.state,
+            runKind: 'daily',
+            dailyDate: '2026-07-27',
+            seed: 'not-daily-seed',
+          },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...dailySave,
+          summary: { ...dailySave.summary, difficulty: 'easy' },
+          state: { ...dailySave.state, difficulty: 'easy' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...dailySave,
+          summary: { ...dailySave.summary, trials: ['half-budget'] },
+          state: { ...dailySave.state, trials: ['half-budget'] },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          replayKeyframes: [
+            {
+              ...save.replayKeyframes[0],
+              frame: { ...save.replayKeyframes[0].frame, deck: null },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...save,
+          replayKeyframes: [
+            {
+              ...save.replayKeyframes[0],
+              frame: { ...save.replayKeyframes[0].frame, trials: ['half-budget'] },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(parseRunSaveFile(JSON.stringify({ ...save, ruleset: null }))).toMatchObject({
+      ok: false,
+      reason: 'ruleset-unknown',
+    });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
+          ruleset: { version: CURRENT_RUN_RULESET.version, fingerprint: 'different-ruleset' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'ruleset-mismatch' });
+  });
+
+  it('フェーズごとの必須状態が欠けたセーブを拒否する', () => {
+    const engine = createRunEngine({ seed: 'ri133-phase-required' });
+    engine.startRun('easy', [], 'ri133-phase-required');
+    engine.beginSetupSprint();
+    let guard = 0;
+    while (engine.sprintRunning() && guard++ < 20_000) engine.step(100);
+    const resultState = engine.exportPersistState();
+    if (!resultState || resultState.phase !== 'result') throw new Error('result fixture missing');
+
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: { ...resultState, lastResult: null },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(resultState),
+          state: { ...resultState, lastResult: {} as never },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+
+    engine.acknowledgeResult();
+    const draftState = engine.exportPersistState();
+    if (!draftState || draftState.phase !== 'draft') throw new Error('draft fixture missing');
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...toRunSave(draftState),
+          state: { ...draftState, draft: null },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+  });
+
+  it('GameHandleは検証成功後だけセーブを置き換え、メタ進行を変更しない', async () => {
+    const storage = new MemoryRunStorage();
+    const meta = defaultMeta();
+    const game = createGame({ initialMeta: meta, runStorage: storage });
+    const save = makeRunSaveWith('ri133-game-import');
+
+    const imported = await game.importRunSave(serializeRunSave(save));
+    expect(imported).toMatchObject({ ok: true });
+    expect(await storage.load()).toEqual(save);
+    expect(game.getRunSave()).toEqual(save);
+    expect(game.getMeta()).toEqual(meta);
+    const importedRevision = game.getRunSaveRevision();
+    expect(importedRevision).toBeGreaterThan(0);
+    expect(game.getRunSaveRevision()).toBe(importedRevision);
+
+    const beforeRejectedImport = await storage.load();
+    const rejected = await game.importRunSave(JSON.stringify({ ...save, schemaVersion: 999 }));
+    expect(rejected).toMatchObject({ ok: false, reason: 'unsupported-schema' });
+    expect(await storage.load()).toEqual(beforeRejectedImport);
+  });
+
+  it('タイトルを離れた後に完了したセーブ取込は現在のランを上書きしない', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({ runStorage: storage });
+    const importedSave = makeRunSaveWith('ri133-stale-import');
+
+    game.startRun('easy', [], 'ri133-current-run');
+    const currentSave = await storage.load();
+
+    const result = await game.importRunSave(serializeRunSave(importedSave));
+
+    expect(result).toMatchObject({ ok: false, reason: 'stale' });
+    expect(await storage.load()).toEqual(currentSave);
+    expect(game.getRunSave()?.state.seed).toBe('ri133-current-run');
+  });
+
+  it('リプレイ閲覧への遷移と競合したセーブ取込は既存セーブを復元する', async () => {
+    const existingSave = makeRunSaveWith('ri133-existing-save');
+    const controlled = makeBlockingRunStorage(existingSave);
+    const replayStorage = new MemoryReplayStorage();
+    const replay = makeRunSave('ri133-replay-stale-import').replayKeyframes[0];
+    if (!replay) throw new Error('replay fixture missing');
+    await replayStorage.save({
+      schemaVersion: 2,
+      id: 'ri133-replay-stale',
+      seed: replay.frame.seed,
+      difficulty: replay.frame.difficulty,
+      trials: replay.frame.trials,
+      finishedAt: 1234,
+      outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 1 },
+      keyframes: [replay],
+      ruleset: CURRENT_RUN_RULESET,
+      contentSnapshot: { cards: [], relics: [] },
+    });
+    const game = createGame({ runStorage: controlled.storage });
+    game.attachRunPersistence(controlled.storage, existingSave);
+    await game.attachReplay(replayStorage);
+
+    controlled.blockNextSave();
+    const importPromise = game.importRunSave(
+      serializeRunSave(makeRunSaveWith('ri133-replay-stale-import')),
+    );
+    await controlled.saveStarted();
+    const queuedImportPromise = game.importRunSave(
+      serializeRunSave(makeRunSaveWith('ri133-queued-stale-import')),
+    );
+    expect(game.openReplay('ri133-replay-stale', 0)).not.toBeNull();
+    game.exitReplay();
+    controlled.releaseSave();
+
+    expect(await importPromise).toMatchObject({ ok: false, reason: 'stale' });
+    expect(await queuedImportPromise).toMatchObject({ ok: false, reason: 'stale' });
+    expect(await controlled.storage.load()).toEqual(existingSave);
+    expect(game.getRunSave()).toEqual(existingSave);
+  });
+
+  it('重なったセーブ取込を直列化し、メモリと永続層を同じ結果にする', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({ runStorage: storage });
+    const firstSave = makeRunSaveWith('ri133-queued-first');
+    const secondSave = makeRunSaveWith('ri133-queued-second');
+
+    const [first, second] = await Promise.all([
+      game.importRunSave(serializeRunSave(firstSave)),
+      game.importRunSave(serializeRunSave(secondSave)),
+    ]);
+
+    expect(first).toMatchObject({ ok: true });
+    expect(second).toMatchObject({ ok: true });
+    expect(game.getRunSave()).toEqual(secondSave);
+    expect(await storage.load()).toEqual(secondSave);
   });
 });

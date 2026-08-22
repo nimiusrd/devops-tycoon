@@ -9,10 +9,15 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
-import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
+import type {
+  RunSaveCompatibilityIssue,
+  RunSaveFileImportResult,
+  RunSaveSummary,
+} from '../state/runPersistence';
 import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
+import { readTextFile } from './jsonFile';
 import { publicUrl } from '../utils/publicUrl';
 
 const DIFFICULTY_TAG: Record<DifficultyId, string> = {
@@ -54,6 +59,8 @@ export interface TitleScreenProps {
   resumableSummary?: RunSaveSummary | null;
   runSaveIssue?: RunSaveCompatibilityIssue | null;
   onDiscardRunSave?: () => void;
+  onExportRunSave?: () => void;
+  onImportRunSave?: (raw: string) => Promise<RunSaveFileImportResult>;
   onOpenReplays?: () => void;
   onOpenMetaShop?: () => void;
   /** 研修方針（デッキカスタム。RI-34⁗）。 */
@@ -77,6 +84,8 @@ export function TitleScreen({
   resumableSummary = null,
   runSaveIssue = null,
   onDiscardRunSave,
+  onExportRunSave,
+  onImportRunSave,
   onOpenReplays,
   onOpenMetaShop,
   onOpenDeckPolicy,
@@ -97,6 +106,11 @@ export function TitleScreen({
     message: string;
   }>({ kind: 'idle', message: '' });
   const recipeFileRef = useRef<HTMLInputElement>(null);
+  const runSaveFileRef = useRef<HTMLInputElement>(null);
+  const [runSaveFileStatus, setRunSaveFileStatus] = useState<{
+    kind: 'idle' | 'ok' | 'error';
+    message: string;
+  }>({ kind: 'idle', message: '' });
   const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
@@ -157,6 +171,32 @@ export function TitleScreen({
       setRecipeText(raw);
       applyRecipeText(raw);
     });
+  };
+
+  const downloadRunSave = () => {
+    if (!onExportRunSave || !resumableSummary || runSaveIssue) return;
+    onExportRunSave();
+    setRunSaveFileStatus({ kind: 'ok', message: '途中セーブを書き出しました。' });
+  };
+
+  const onRunSaveFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !onImportRunSave) return;
+    void readTextFile(file)
+      .then((raw) => onImportRunSave(raw))
+      .then((result: RunSaveFileImportResult) => {
+        setRunSaveFileStatus({
+          kind: result.ok ? 'ok' : 'error',
+          message: result.message,
+        });
+      })
+      .catch(() => {
+        setRunSaveFileStatus({
+          kind: 'error',
+          message: '途中セーブファイルを読み込めませんでした。',
+        });
+      });
   };
 
   const dailyStatus = dailyRecord
@@ -479,6 +519,53 @@ export function TitleScreen({
               >
                 続きから再開 →
               </button>
+            </section>
+          ) : null}
+
+          {onImportRunSave ? (
+            <section className="title-section title-file-share" data-testid="run-save-share">
+              <div className="title-section-copy">
+                <span className="title-step">05</span>
+                <p>
+                  <b>途中セーブ（ファイル共有）</b>
+                  <small>現在の再開候補をJSONで保存し、別の環境から読み込む</small>
+                </p>
+              </div>
+              <div className="title-recipe-body">
+                <div className="title-recipe-actions">
+                  <button
+                    type="button"
+                    data-testid="run-save-download"
+                    onClick={downloadRunSave}
+                    disabled={!resumableSummary || !!runSaveIssue || !onExportRunSave}
+                  >
+                    ファイルで保存
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="run-save-file-button"
+                    onClick={() => runSaveFileRef.current?.click()}
+                  >
+                    ファイルを開く
+                  </button>
+                  <input
+                    ref={runSaveFileRef}
+                    type="file"
+                    accept="application/json,.json"
+                    hidden
+                    data-testid="run-save-file"
+                    onChange={onRunSaveFile}
+                  />
+                </div>
+                {runSaveFileStatus.message ? (
+                  <p
+                    className={`title-recipe-status${runSaveFileStatus.kind === 'error' ? ' error' : ''}`}
+                    data-testid="run-save-file-status"
+                  >
+                    {runSaveFileStatus.message}
+                  </p>
+                ) : null}
+              </div>
             </section>
           ) : null}
 

@@ -4,15 +4,18 @@
  * 保存済みリプレイからキーフレームを選び、read-only で盤面を開く。
  * reviewHell 診断時は「レビュー地獄リプレイ」専用パネルを重ねる。
  */
-import { useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { diagnosisView } from '../sim/diagnosis';
 import { planReviewHellReplay } from '../render/reviewHellReplayView';
 import { formatReplayRuleset } from './replayRuleset';
-import type { ReplayBlob } from '../state/replay';
+import { readTextFile } from './jsonFile';
+import type { ReplayBlob, ReplayFileImportResult } from '../state/replay';
 
 export interface ReplayListScreenProps {
   replays: ReplayBlob[];
   onOpen: (id: string, keyframeIndex: number) => void;
+  onExport: (replay: ReplayBlob) => void;
+  onImport: (raw: string) => Promise<ReplayFileImportResult>;
   onClose: () => void;
 }
 
@@ -31,10 +34,39 @@ function outcomeLabel(replay: ReplayBlob): string {
   return `敗北${replay.outcome.loseReason ? ` (${replay.outcome.loseReason})` : ''}`;
 }
 
-export function ReplayListScreen({ replays, onOpen, onClose }: ReplayListScreenProps) {
+export function ReplayListScreen({
+  replays,
+  onOpen,
+  onExport,
+  onImport,
+  onClose,
+}: ReplayListScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
+  const replayFileRef = useRef<HTMLInputElement>(null);
+  const [fileStatus, setFileStatus] = useState<{
+    kind: 'ok' | 'error';
+    message: string;
+  } | null>(null);
   const selected = replays.find((r) => r.id === selectedId) ?? null;
   const hellView = selected ? planReviewHellReplay(selected) : null;
+
+  const onReplayFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    void readTextFile(file)
+      .then((raw) => onImport(raw))
+      .then((result: ReplayFileImportResult) => {
+        if (result.ok) setSelectedId(result.replay.id);
+        setFileStatus({
+          kind: result.ok ? 'ok' : 'error',
+          message: result.message,
+        });
+      })
+      .catch(() => {
+        setFileStatus({ kind: 'error', message: 'リプレイファイルを読み込めませんでした。' });
+      });
+  };
 
   return (
     <div className="result-overlay" data-testid="replay-list" role="dialog" aria-label="Replays">
@@ -44,6 +76,43 @@ export function ReplayListScreen({ replays, onOpen, onClose }: ReplayListScreenP
         <p className="meta-shop-lead">
           キーフレームを選んで、当時の盤面を読み取り専用で確認します。
         </p>
+        <div className="replay-file-actions" data-testid="replay-file-share">
+          <button
+            type="button"
+            className="btn"
+            data-testid="replay-download"
+            disabled={!selected}
+            onClick={() => {
+              if (selected) onExport(selected);
+            }}
+          >
+            選択中をファイルで保存
+          </button>
+          <button
+            type="button"
+            className="btn"
+            data-testid="replay-file-button"
+            onClick={() => replayFileRef.current?.click()}
+          >
+            ファイルを開く
+          </button>
+          <input
+            ref={replayFileRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            data-testid="replay-file"
+            onChange={onReplayFile}
+          />
+          {fileStatus ? (
+            <p
+              className={`replay-file-status${fileStatus.kind === 'error' ? ' error' : ''}`}
+              data-testid="replay-file-status"
+            >
+              {fileStatus.message}
+            </p>
+          ) : null}
+        </div>
 
         {replays.length === 0 ? (
           <p className="replay-list-empty" data-testid="replay-list-empty">

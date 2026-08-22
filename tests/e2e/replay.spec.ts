@@ -105,6 +105,117 @@ test('ラン完了後にリプレイ一覧からキーフレームを read-only 
     .toBe(false);
 });
 
+test('リプレイをJSONファイルで往復し、不正・不一致を拒否して上限を守る', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri133-replay-file-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+  await playUntilFinished(page);
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBeGreaterThan(0);
+
+  await page.getByTestId('new-run').click();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByTestId('replay-download').click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error('replay download path missing');
+
+  await page.getByTestId('replay-file').setInputFiles(downloadPath);
+  await expect(page.getByTestId('replay-file-status')).toHaveText('リプレイを読み込みました。');
+
+  const baseReplay = await page.evaluate(() => {
+    const replay = (window as ReplayGameWindow).game?.listReplays()[0];
+    if (!replay) throw new Error('replay missing');
+    return replay;
+  });
+  const mismatchReplay = JSON.stringify({
+    ...baseReplay,
+    id: 'ri133-replay-mismatch',
+    ruleset: {
+      version: baseReplay.ruleset?.version ?? 1,
+      fingerprint: 'different-ruleset',
+    },
+  });
+  const countBeforeReject = await page.evaluate(
+    () => (window as ReplayGameWindow).game?.listReplays().length ?? 0,
+  );
+
+  await page.getByTestId('replay-file').setInputFiles({
+    name: 'broken-replay.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{'),
+  });
+  await expect(page.getByTestId('replay-file-status')).toContainText('JSONを解析できない');
+
+  await page.getByTestId('replay-file').setInputFiles({
+    name: 'mismatched-replay.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(mismatchReplay),
+  });
+  await expect(page.getByTestId('replay-file-status')).toContainText('ルールセットが一致しない');
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBe(countBeforeReject);
+
+  const filePayloads = await page.evaluate(() => {
+    const replay = (window as ReplayGameWindow).game?.listReplays()[0];
+    if (!replay) throw new Error('replay missing');
+    return Array.from({ length: 11 }, (_, index) => {
+      const seed = `ri133-replay-file-${index}`;
+      return JSON.stringify({
+        ...replay,
+        id: seed,
+        seed,
+        finishedAt: replay.finishedAt + 10_000 + index,
+        keyframes: replay.keyframes.map((keyframe) => ({
+          ...keyframe,
+          frame: { ...keyframe.frame, seed },
+        })),
+      });
+    });
+  });
+
+  for (const [index, payload] of filePayloads.entries()) {
+    await page.getByTestId('replay-file').setInputFiles({
+      name: `replay-${index}.json`,
+      mimeType: 'application/json',
+      buffer: Buffer.from(payload),
+    });
+    await expect(page.getByTestId('replay-file-status')).toHaveText('リプレイを読み込みました。');
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (replayId) =>
+            (window as ReplayGameWindow).game
+              ?.listReplays()
+              .some((replay) => replay.id === replayId),
+          `ri133-replay-file-${index}`,
+        ),
+      )
+      .toBe(true);
+  }
+
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBe(10);
+  expect(
+    await page.evaluate(() =>
+      (window as ReplayGameWindow).game
+        ?.listReplays()
+        .some((replay) => replay.id === 'ri133-replay-file-0'),
+    ),
+  ).toBe(false);
+
+  await page.getByTestId('replay-keyframe-0').click();
+  await expect(page.getByTestId('replay-mode-banner')).toBeVisible();
+  await page.getByTestId('exit-replay').click();
+  await expect(page.getByTestId('title')).toBeVisible();
+});
+
 test('レビュー地獄リプレイは専用パネルとバナーで開ける（RI-34‴）', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=review-hell-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
@@ -148,6 +259,7 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
 
     const lostFrame = structuredClone(setupFrame);
     lostFrame.phase = 'lost';
+    lostFrame.status = 'lost';
     lostFrame.diagnosis = 'reviewHell';
     lostFrame.totals = { ...lostFrame.totals, reviewQueuePeak: 21 };
     lostFrame.lastResult = resultFrame.lastResult;

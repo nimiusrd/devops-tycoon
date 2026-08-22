@@ -2986,7 +2986,8 @@ button.card:active {
 }
 .title-trial-section,
 .title-scenario-section,
-.title-recipe-section {
+.title-recipe-section,
+.title-file-share {
   display: grid !important;
   grid-template-columns: minmax(220px, 280px) 1fr;
   align-items: center;
@@ -2996,6 +2997,9 @@ button.card:active {
 }
 .title-recipe-section {
   align-items: start;
+}
+.title-file-share {
+  align-items: center;
 }
 .title-recipe-body {
   display: flex;
@@ -3358,7 +3362,8 @@ button.card:active {
   }
   .title-trial-section,
   .title-scenario-section,
-  .title-recipe-section {
+  .title-recipe-section,
+  .title-file-share {
     grid-template-columns: 1fr;
     gap: 13px;
   }
@@ -3412,7 +3417,8 @@ button.card:active {
   }
   .title-trial-section,
   .title-scenario-section,
-  .title-recipe-section {
+  .title-recipe-section,
+  .title-file-share {
     padding: 16px !important;
   }
   .title-command .trial-chip {
@@ -3977,6 +3983,23 @@ button.card:active {
 /* メタショップ（第17章） */
 .replay-list-panel {
   max-width: 720px;
+}
+.replay-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+.replay-file-status {
+  flex: 1 1 100%;
+  margin: 0;
+  color: #9fb0ca;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.replay-file-status.error {
+  color: #f3b27a;
 }
 .replay-list-empty {
   margin: 16px 0 24px;

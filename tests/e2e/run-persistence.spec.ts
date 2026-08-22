@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { RunState } from '../../src/sim/run/types';
-import type { RunSaveSummary } from '../../src/state/runPersistence';
+import type { RunSave, RunSaveSummary } from '../../src/state/runPersistence';
 
 type RunGameWindow = Window & {
   game?: {
@@ -10,6 +10,7 @@ type RunGameWindow = Window & {
     phase(): string;
     isSprintRunning(): boolean;
     getState(): RunState;
+    getRunSave(): RunSave | null;
     resumeRun(): RunState | null;
     hasResumableRun(): boolean;
     getRunSaveSummary(): RunSaveSummary | null;
@@ -46,6 +47,9 @@ async function updateStoredRun(
   page: import('@playwright/test').Page,
   mode: 'missing-ruleset' | 'mismatched-ruleset',
 ): Promise<void> {
+  // GameHandle の IDB 書き込みは fire-and-forget なので、直前の結果セーブを
+  // 仕込む前に完了させる。そうしないと、手動変更が後続の保存で上書きされる。
+  await page.waitForTimeout(100);
   await page.evaluate(async (updateMode) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('devops-tycoon');
@@ -68,12 +72,11 @@ async function updateStoredRun(
       updated.ruleset = { version: 999, fingerprint: 'different-ruleset' };
     }
     await new Promise<void>((resolve, reject) => {
-      const request = db
-        .transaction('runSave', 'readwrite')
-        .objectStore('runSave')
-        .put(updated, 'current');
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      const transaction = db.transaction('runSave', 'readwrite');
+      const request = transaction.objectStore('runSave').put(updated, 'current');
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? request.error);
+      transaction.onabort = () => reject(transaction.error ?? request.error);
     });
     db.close();
   }, mode);
@@ -127,6 +130,63 @@ test('ラン途中セーブをリロード後に続きから復元できる', as
       phase: 'result',
       sprintsPlayed: 1,
     });
+});
+
+test('途中セーブをJSONファイルへ書き出し、既存の他データを変えずに取り込める', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri133-save-file-e2e');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await advanceToResult(page);
+  await expect.poll(() => storedRunSummary(page)).toMatchObject({ seed: 'ri58-e2e' });
+
+  const mismatchJson = await page.evaluate(() => {
+    const game = (window as RunGameWindow).game;
+    const save = game?.getRunSave();
+    if (!save) throw new Error('run save missing');
+    return JSON.stringify({
+      ...save,
+      ruleset: { version: save.ruleset?.version ?? 1, fingerprint: 'different-ruleset' },
+    });
+  });
+
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(page.getByTestId('resume-run')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByTestId('run-save-download').click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  if (!downloadPath) throw new Error('run save download path missing');
+
+  await page.evaluate(() => {
+    (window as RunGameWindow).game?.newRun('ri133-save-file-cleared');
+  });
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect.poll(() => storedRunSummary(page)).toBeNull();
+
+  await page.getByTestId('run-save-file').setInputFiles(downloadPath);
+  await expect(page.getByTestId('run-save-file-status')).toHaveText(
+    '途中セーブを読み込みました。「続きから」で再開できます。',
+  );
+  await expect(page.getByTestId('resume-run')).toBeVisible();
+  await expect.poll(() => storedRunSummary(page)).toMatchObject({ seed: 'ri58-e2e' });
+
+  await page.getByTestId('run-save-file').setInputFiles({
+    name: 'broken-save.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{'),
+  });
+  await expect(page.getByTestId('run-save-file-status')).toContainText('JSONを解析できない');
+  await expect.poll(() => storedRunSummary(page)).toMatchObject({ seed: 'ri58-e2e' });
+
+  await page.getByTestId('run-save-file').setInputFiles({
+    name: 'mismatched-save.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(mismatchJson),
+  });
+  await expect(page.getByTestId('run-save-file-status')).toContainText('ルールセットが一致しない');
+  await expect.poll(() => storedRunSummary(page)).toMatchObject({ seed: 'ri58-e2e' });
 });
 
 test('ルールセット情報のない旧セーブは理由を表示し、明示破棄まで保持する', async ({ page }) => {

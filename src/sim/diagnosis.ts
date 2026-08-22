@@ -62,6 +62,11 @@ const META: Record<DiagnosisType, { label: string; description: string }> = {
   },
 };
 
+/** 診断種別の外部入力を検証する。 */
+export function isDiagnosisType(value: unknown): value is DiagnosisType {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(META, value);
+}
+
 const FAILURE_LESSONS: Record<FailureDiagnosisType, { lesson: string; hint: string }> = {
   reviewHell: {
     lesson: 'レビュー枠を先に確保し、割り込みレビューやレビュアー増強で渋滞を解消する。',

@@ -6,9 +6,12 @@
  * フェーズ遷移時のみ保存し、スプリント tick 中は更新しない。
  */
 import { isRunSavePhase, type RunPersistState, type RunSavePhase } from '../sim/run/persist';
+import { canHydratePersistState, canHydrateReplayFrame } from '../sim/run/persistValidation';
 import type { DifficultyId, GoalKpiProgress, RunKind, RunPhase, RunStatus } from '../sim/run/types';
+import { isDiagnosisType } from '../sim/diagnosis';
 import { companyOrgFromTeams } from '../sim/orgscale';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
+import { DAILY_RUN_DIFFICULTY, DAILY_RUN_TRIALS } from '../data/difficulties';
 import {
   availableAdjustments,
   diagnoseMissedReasons,
@@ -104,6 +107,30 @@ export interface RunSave {
   replayKeyframes: ReplayKeyframe[];
 }
 
+export type RunSaveFileImportReason =
+  | 'invalid-json'
+  | 'unsupported-schema'
+  | 'invalid-data'
+  | 'ruleset-unknown'
+  | 'ruleset-mismatch'
+  | 'stale'
+  | 'storage';
+
+export interface RunSaveFileImportSuccess {
+  readonly ok: true;
+  readonly save: RunSave;
+  readonly message: string;
+}
+
+export interface RunSaveFileImportFailure {
+  readonly ok: false;
+  readonly reason: RunSaveFileImportReason;
+  readonly message: string;
+  readonly issue?: RunSaveCompatibilityIssue;
+}
+
+export type RunSaveFileImportResult = RunSaveFileImportSuccess | RunSaveFileImportFailure;
+
 export interface RunStorage {
   load(): Promise<RunSave | null>;
   save(save: RunSave): Promise<void>;
@@ -152,6 +179,20 @@ function isRunKind(value: unknown): value is RunKind {
 
 function isRunStatus(value: unknown): value is RunStatus {
   return value === 'playing' || value === 'won' || value === 'lost';
+}
+
+function isDailyDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function sameStringArray(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
 /** 旧スキーマの途中セーブを現行の難易度別 Delivery 倍率へ移行する。 */
@@ -343,6 +384,19 @@ export function parseRunSave(raw: unknown): RunSave | null {
   }
   if (!isRunKind(summary.runKind)) return null;
   if (summary.dailyDate !== undefined && typeof summary.dailyDate !== 'string') return null;
+  if (
+    summary.runKind === 'daily' ? !isDailyDate(summary.dailyDate) : summary.dailyDate !== undefined
+  ) {
+    return null;
+  }
+  if (
+    summary.runKind === 'daily' &&
+    (summary.seed !== `daily-${summary.dailyDate}` ||
+      summary.difficulty !== DAILY_RUN_DIFFICULTY ||
+      !sameStringArray(summary.trials, DAILY_RUN_TRIALS))
+  ) {
+    return null;
+  }
   if (typeof summary.phase !== 'string' || !isRunSavePhase(summary.phase as RunPhase)) return null;
   if (typeof summary.quarterNumber !== 'number') return null;
   if (typeof summary.sprintIndexInQuarter !== 'number') return null;
@@ -354,6 +408,23 @@ export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRunStatus(state.status) || state.status !== 'playing') return null;
   if (typeof state.seed !== 'string' || state.seed !== summary.seed) return null;
   if (!isDifficulty(state.difficulty) || state.difficulty !== summary.difficulty) return null;
+  const stateTrials = state.trials;
+  if (!Array.isArray(stateTrials)) return null;
+  if (!stateTrials.every((trial): trial is string => typeof trial === 'string')) return null;
+  if (!sameStringArray(stateTrials, summary.trials)) return null;
+  if (!isRunKind(state.runKind) || state.runKind !== summary.runKind) return null;
+  if (state.dailyDate !== undefined && typeof state.dailyDate !== 'string') return null;
+  if (state.dailyDate !== summary.dailyDate) return null;
+  if (
+    !isFiniteNumber(state.sprintsPerQuarter) ||
+    !isFiniteNumber(state.sprintIndexInQuarter) ||
+    !isFiniteNumber(state.sprintsPlayed) ||
+    !isFiniteNumber(state.quarterNumber) ||
+    !isFiniteNumber(state.budget)
+  ) {
+    return null;
+  }
+  if (!isDiagnosisType(state.diagnosis)) return null;
   if (!isRecord(state.extras)) return null;
   if (!Array.isArray(state.extras.allowedCards)) return null;
   if (!Array.isArray(state.extras.allowedRelics)) return null;
@@ -374,6 +445,18 @@ export function parseRunSave(raw: unknown): RunSave | null {
       ? rebuildMigratedQuarterReview(migratedState)
       : migratedState;
   if (!stateWithCurrentReview) return null;
+
+  const replayKeyframes = normalizeReplayKeyframes(raw.replayKeyframes);
+  if (
+    !replayKeyframes.every(
+      ({ frame }) =>
+        frame.seed === state.seed &&
+        frame.difficulty === state.difficulty &&
+        sameStringArray(frame.trials, stateTrials),
+    )
+  ) {
+    return null;
+  }
 
   // セーブ時は sprint を落とす契約。残っていても復元側で無視する。
   return {
@@ -396,7 +479,91 @@ export function parseRunSave(raw: unknown): RunSave | null {
       ...stateWithCurrentReview,
       trendHistory: cloneTrendHistory(stateWithCurrentReview.trendHistory),
     },
-    replayKeyframes: normalizeReplayKeyframes(raw.replayKeyframes),
+    replayKeyframes,
+  };
+}
+
+function isSupportedRunSaveSchema(value: unknown): value is 4 | 5 | 6 | 7 | 8 {
+  return value === 4 || value === 5 || value === 6 || value === 7 || value === 8;
+}
+
+function formatRunRuleset(ruleset: RunRulesetIdentity): string {
+  return `v${ruleset.version} / ${ruleset.fingerprint}`;
+}
+
+/** 現行セーブをファイル共有用のJSONへ変換する。 */
+export function serializeRunSave(save: RunSave): string {
+  return `${JSON.stringify(save, null, 2)}\n`;
+}
+
+/** セーブファイルをJSON解析・正規化し、再開可否まで検証する。 */
+export function parseRunSaveFile(raw: string): RunSaveFileImportResult {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return {
+      ok: false,
+      reason: 'invalid-json',
+      message: 'JSONを解析できないため、途中セーブを読み込めません。',
+    };
+  }
+
+  if (!isRecord(value)) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: '途中セーブのJSON構造が正しくありません。',
+    };
+  }
+  if (!isSupportedRunSaveSchema(value.schemaVersion)) {
+    return {
+      ok: false,
+      reason: 'unsupported-schema',
+      message: `未対応の途中セーブスキーマです（schemaVersion: ${String(value.schemaVersion)}）。`,
+    };
+  }
+
+  const save = parseRunSave(value);
+  if (!save) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: '途中セーブの必須データが欠落しているか、壊れています。',
+    };
+  }
+  if (!canHydratePersistState(save.state)) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: '途中セーブの状態全体を復元できないため、読み込めません。',
+    };
+  }
+  if (!save.replayKeyframes.every(({ frame }) => canHydrateReplayFrame(frame))) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: '途中セーブに含まれるリプレイを復元できないため、読み込めません。',
+    };
+  }
+
+  const issue = getRunSaveCompatibilityIssue(save);
+  if (issue) {
+    return {
+      ok: false,
+      reason: issue.kind,
+      message:
+        issue.kind === 'ruleset-unknown'
+          ? 'ルールセット情報がないため、この途中セーブは再開できません。'
+          : `保存時と現在のルールセットが一致しないため、この途中セーブは再開できません（保存時: ${formatRunRuleset(issue.savedRuleset!)} / 現在: ${formatRunRuleset(issue.currentRuleset)}）。`,
+      issue,
+    };
+  }
+
+  return {
+    ok: true,
+    save,
+    message: '途中セーブを読み込みました。「続きから」で再開できます。',
   };
 }
 

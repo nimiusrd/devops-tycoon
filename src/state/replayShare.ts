@@ -8,6 +8,7 @@
 import { isDiagnosisType } from '../sim/diagnosis';
 import { createRunEngine } from '../sim/run/engine';
 import type { DifficultyId, LoseReason, RunKind, RunStatus, WinType } from '../sim/run/types';
+import { isPersistFrameShape } from './persistFrameShape';
 import { normalizeReplay, REPLAY_SCHEMA_VERSION, type ReplayBlob } from './replay';
 
 const ACCEPTED_REPLAY_SCHEMA_VERSIONS = new Set([1, REPLAY_SCHEMA_VERSION]);
@@ -65,7 +66,12 @@ export function parseReplayShare(raw: string): ReplayShareResult {
   }
 
   const replay = normalizeReplay(parsed);
-  if (!replay || !hasValidReplayDomainEnums(replay) || !canHydrateReplay(replay)) {
+  if (
+    !replay ||
+    !hasValidReplayDomainEnums(replay) ||
+    !replay.keyframes.every((keyframe) => isPersistFrameShape(keyframe.frame)) ||
+    !canHydrateReplay(replay)
+  ) {
     return fail('corrupt');
   }
 

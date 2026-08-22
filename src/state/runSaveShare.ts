@@ -5,6 +5,7 @@
  * 破損・未対応スキーマ・ルールセット不一致は理由付きで拒否し、自動削除しない。
  */
 import { createRunEngine } from '../sim/run/engine';
+import { isPersistFrameShape } from './persistFrameShape';
 import {
   getRunSaveCompatibilityIssue,
   parseRunSave,
@@ -79,7 +80,13 @@ export function parseRunSaveShare(raw: string): RunSaveShareResult {
   const issue = getRunSaveCompatibilityIssue(save);
   if (issue?.kind === 'ruleset-unknown') return fail('ruleset_unknown');
   if (issue?.kind === 'ruleset-mismatch') return fail('ruleset_mismatch');
-  if (!summaryMatchesPersistState(save) || !canHydrateRunSave(save)) return fail('corrupt');
+  if (
+    !summaryMatchesPersistState(save) ||
+    !isPersistFrameShape(save.state) ||
+    !canHydrateRunSave(save)
+  ) {
+    return fail('corrupt');
+  }
 
   return { ok: true, save };
 }

@@ -247,6 +247,27 @@ describe('リプレイのファイル共有（RI-133）', () => {
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-diagnosis']);
   });
 
+  it('キーフレームの roster が null なら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-null-roster-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-roster', seed: 'keep-roster' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'null-roster', seed: 'null-roster' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: Record<string, unknown> }>;
+    };
+    raw.keyframes[0]!.frame.roster = null;
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-roster']);
+  });
+
   it('保存後の一覧取得失敗では取り込み成功と既存キャッシュを残す', async () => {
     const inner = new MemoryReplayStorage();
     let failNextList = false;
@@ -277,5 +298,46 @@ describe('リプレイのファイル共有（RI-133）', () => {
     expect(imported.ok).toBe(true);
     expect(game.listReplays().map((item) => item.id)).toEqual(['after-list-fail', 'keep-listed']);
     expect((await inner.list()).map((item) => item.id)).toEqual(['after-list-fail', 'keep-listed']);
+  });
+
+  it('一覧再取得失敗時は同一 ID のキャッシュも取り込んだ内容へ置き換える', async () => {
+    const inner = new MemoryReplayStorage();
+    let failNextList = false;
+    const replayStorage: ReplayStorage = {
+      list: async () => {
+        if (failNextList) {
+          failNextList = false;
+          throw new Error('forced list failure');
+        }
+        return inner.list();
+      },
+      get: (id) => inner.get(id),
+      save: (blob) => inner.save(blob),
+      clear: () => inner.clear(),
+    };
+    const game = createGame({ seed: 'ri133-same-id-list-fail', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({
+      id: 'same-id',
+      seed: 'old-seed',
+      finishedAt: 1000,
+      outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 1 },
+    });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    failNextList = true;
+    const incoming = makeReplay({
+      id: 'same-id',
+      seed: 'new-seed',
+      finishedAt: 2000,
+      outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 99 },
+    });
+    const imported = await game.importReplayText(serializeReplay(incoming));
+    expect(imported.ok).toBe(true);
+    expect(game.listReplays()).toHaveLength(1);
+    expect(game.listReplays()[0]?.seed).toBe('new-seed');
+    expect(game.listReplays()[0]?.outcome.score).toBe(99);
+    expect(game.exportReplayText('same-id')).toContain('"score": 99');
+    expect((await inner.get('same-id'))?.outcome.score).toBe(99);
   });
 });

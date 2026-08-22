@@ -174,6 +174,62 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-daily');
   });
 
+  it('state.roster が null なら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-roster');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-roster-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-null-roster');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: Record<string, unknown> };
+    raw.state.roster = null;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-roster');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-roster');
+  });
+
+  it('後から始めた取り込みが先に完了しても最後の選択だけを残す', async () => {
+    let current: RunSave | null = null;
+    const runStorage = {
+      async load() {
+        return current;
+      },
+      async save(save: RunSave) {
+        await new Promise((resolve) => {
+          setTimeout(resolve, save.summary.seed === 'ri133-slow-a' ? 40 : 0);
+        });
+        current = save;
+      },
+      async clear() {
+        current = null;
+      },
+    };
+    const existing = makeRunSave('ri133-keep-serial');
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-serial-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const first = game.importRunSaveText(serializeRunSave(makeRunSave('ri133-slow-a')));
+    const second = game.importRunSaveText(serializeRunSave(makeRunSave('ri133-fast-b')));
+    await Promise.all([first, second]);
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-fast-b');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-fast-b');
+  });
+
   it('state.trials が欠けると拒否し、既存セーブは残す', async () => {
     const existing = makeRunSave('ri133-keep-trials');
     const runStorage = new MemoryRunStorage();

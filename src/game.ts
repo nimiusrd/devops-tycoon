@@ -287,6 +287,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     : null;
   let resumableSave: RunSave | null = initialRunSaveIssue ? null : (options.initialRunSave ?? null);
   let runSaveIssue: RunSaveCompatibilityIssue | null = initialRunSaveIssue;
+  let latestImportedSave: RunSave | null = null;
+  let runSaveImportWrites: Promise<void> = Promise.resolve();
   let replayStorage: ReplayStorage | null = null;
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
@@ -877,20 +879,26 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     async importRunSaveText(raw) {
       const loaded = parseRunSaveShare(raw);
       if (!loaded.ok) return loaded;
-      if (runStorage) {
-        try {
-          await runStorage.save(loaded.save);
-        } catch {
-          return {
-            ok: false,
-            reason: 'corrupt',
-            message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
-          };
-        }
+      const intended = loaded.save;
+      latestImportedSave = intended;
+      const write = runSaveImportWrites.then(async () => {
+        if (latestImportedSave !== intended) return;
+        if (runStorage) await runStorage.save(intended);
+        if (latestImportedSave !== intended) return;
+        resumableSave = structuredClone(intended);
+        runSaveIssue = null;
+        bump();
+      });
+      runSaveImportWrites = write.catch(() => undefined);
+      try {
+        await write;
+      } catch {
+        return {
+          ok: false,
+          reason: 'corrupt',
+          message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+        };
       }
-      resumableSave = structuredClone(loaded.save);
-      runSaveIssue = null;
-      bump();
       return loaded;
     },
     async attachReplay(storage) {
@@ -918,13 +926,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         await replayStorage.save(loaded.replay);
         const listed = await refreshReplayCache();
         if (!listed) {
-          if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {
-            cachedReplays = selectReplaysWithinMax(
-              [...cachedReplays, structuredClone(loaded.replay)],
-              loaded.replay.id,
-            );
-            bump();
-          }
+          cachedReplays = selectReplaysWithinMax(
+            [
+              ...cachedReplays.filter((item) => item.id !== loaded.replay.id),
+              structuredClone(loaded.replay),
+            ],
+            loaded.replay.id,
+          );
+          bump();
           return loaded;
         }
         if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {

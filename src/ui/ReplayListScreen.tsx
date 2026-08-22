@@ -46,6 +46,8 @@ export function ReplayListScreen({
   const selected = replays.find((r) => r.id === selectedId) ?? replays[0] ?? null;
   const hellView = selected ? planReviewHellReplay(selected) : null;
   const replayFileRef = useRef<HTMLInputElement>(null);
+  const replayImportGen = useRef(0);
+  const [replayImporting, setReplayImporting] = useState(false);
   const [shareStatus, setShareStatus] = useState<{
     kind: 'idle' | 'ok' | 'error';
     message: string;
@@ -71,22 +73,21 @@ export function ReplayListScreen({
     setShareStatus({ kind: 'ok', message: 'リプレイをファイルに保存しました。' });
   };
 
-  const applyReplayText = (raw: string) => {
-    if (!onImportReplay) return;
-    void onImportReplay(raw).then((result) => {
+  const onReplayFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !onImportReplay) return;
+    const requestId = ++replayImportGen.current;
+    setReplayImporting(true);
+    void file.text().then(async (raw) => {
+      if (requestId !== replayImportGen.current) return;
+      const result = await onImportReplay(raw);
+      if (requestId !== replayImportGen.current) return;
       setShareStatus({
         kind: result.ok ? 'ok' : 'error',
         message: result.ok ? 'リプレイを読み込みました。' : result.message,
       });
-    });
-  };
-
-  const onReplayFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    void file.text().then((raw) => {
-      applyReplayText(raw);
+      setReplayImporting(false);
     });
   };
 
@@ -221,6 +222,7 @@ export function ReplayListScreen({
                     type="button"
                     className="btn"
                     data-testid="replay-file-button"
+                    disabled={replayImporting}
                     onClick={() => replayFileRef.current?.click()}
                   >
                     ファイルを開く
@@ -231,6 +233,7 @@ export function ReplayListScreen({
                     accept="application/json,.json"
                     hidden
                     data-testid="replay-file"
+                    disabled={replayImporting}
                     onChange={onReplayFile}
                   />
                 </>

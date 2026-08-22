@@ -104,6 +104,8 @@ export function TitleScreen({
   }>({ kind: 'idle', message: '' });
   const recipeFileRef = useRef<HTMLInputElement>(null);
   const runSaveFileRef = useRef<HTMLInputElement>(null);
+  const runSaveImportGen = useRef(0);
+  const [runSaveImporting, setRunSaveImporting] = useState(false);
   const [runSaveShareStatus, setRunSaveShareStatus] = useState<{
     kind: 'idle' | 'ok' | 'error';
     message: string;
@@ -187,22 +189,21 @@ export function TitleScreen({
     setRunSaveShareStatus({ kind: 'ok', message: '途中セーブをファイルに保存しました。' });
   };
 
-  const applyRunSaveText = (raw: string) => {
-    if (!onImportRunSave) return;
-    void onImportRunSave(raw).then((result) => {
+  const onRunSaveFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !onImportRunSave) return;
+    const requestId = ++runSaveImportGen.current;
+    setRunSaveImporting(true);
+    void file.text().then(async (raw) => {
+      if (requestId !== runSaveImportGen.current) return;
+      const result = await onImportRunSave(raw);
+      if (requestId !== runSaveImportGen.current) return;
       setRunSaveShareStatus({
         kind: result.ok ? 'ok' : 'error',
         message: result.ok ? '途中セーブを読み込みました。再開できます。' : result.message,
       });
-    });
-  };
-
-  const onRunSaveFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    void file.text().then((raw) => {
-      applyRunSaveText(raw);
+      setRunSaveImporting(false);
     });
   };
 
@@ -478,6 +479,7 @@ export function TitleScreen({
                       <button
                         type="button"
                         data-testid="run-save-file-button"
+                        disabled={runSaveImporting}
                         onClick={() => runSaveFileRef.current?.click()}
                       >
                         ファイルを開く
@@ -488,6 +490,7 @@ export function TitleScreen({
                         accept="application/json,.json"
                         hidden
                         data-testid="run-save-file"
+                        disabled={runSaveImporting}
                         onChange={onRunSaveFile}
                       />
                     </>
@@ -575,6 +578,7 @@ export function TitleScreen({
                 type="button"
                 className="title-resume-btn"
                 data-testid="resume-run"
+                disabled={runSaveImporting}
                 onClick={onResume}
               >
                 続きから再開 →

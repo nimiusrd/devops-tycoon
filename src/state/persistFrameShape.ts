@@ -43,7 +43,14 @@ export function isPersistFrameShape(value: unknown): boolean {
     return false;
   }
   if (value.lastGrowth !== undefined && !isNullableObject(value.lastGrowth)) return false;
-  if (value.lastResult !== undefined && !isNullableObject(value.lastResult)) return false;
+  if (
+    value.lastResult !== undefined &&
+    value.lastResult !== null &&
+    !isSprintResultShape(value.lastResult)
+  ) {
+    return false;
+  }
+  if (value.phase === 'result' && !isSprintResultShape(value.lastResult)) return false;
   if (value.shop !== undefined && value.shop !== null && !isShopShape(value.shop)) return false;
   if (value.phase === 'shop' && !isShopShape(value.shop)) return false;
   if (value.beat !== undefined && !isNullableObject(value.beat)) return false;
@@ -140,6 +147,29 @@ function isShopRelicShape(value: unknown): boolean {
 function isShopRecruitShape(value: unknown): boolean {
   if (!isObject(value)) return false;
   return typeof value.cost === 'number' && typeof value.bought === 'boolean';
+}
+
+function isSprintResultShape(value: unknown): boolean {
+  if (!isObject(value) || !isObject(value.actionCounts)) return false;
+  if (!Array.isArray(value.timeline) || !Array.isArray(value.events)) return false;
+  if (!Array.isArray(value.fireEvents)) return false;
+  if (typeof value.grade !== 'string' || typeof value.title !== 'string') return false;
+  if (typeof value.diagnosis !== 'string') return false;
+  return (
+    typeof value.done === 'number' &&
+    typeof value.delivered === 'number' &&
+    typeof value.maxCombo === 'number' &&
+    typeof value.aiAssistedPct === 'number' &&
+    typeof value.reviewQueueMax === 'number' &&
+    typeof value.rework === 'number' &&
+    typeof value.incidents === 'number' &&
+    typeof value.contained === 'number' &&
+    typeof value.spread === 'number' &&
+    typeof value.seniorHpDelta === 'number' &&
+    typeof value.focusRemaining === 'number' &&
+    typeof value.focusMax === 'number' &&
+    typeof value.autoContainCount === 'number'
+  );
 }
 
 /** ShopScreen が cards.map する前に、陳列の形を拒否する。 */

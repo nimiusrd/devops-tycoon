@@ -100,7 +100,17 @@ export function bundledReplayKeyframesIntact(
   if (parsed.replayKeyframes === undefined) return true;
   if (!Array.isArray(parsed.replayKeyframes)) return false;
   if (parsed.replayKeyframes.length !== save.replayKeyframes.length) return false;
-  return save.replayKeyframes.every((keyframe) => isPersistFrameShape(keyframe.frame));
+  return save.replayKeyframes.every((keyframe) => {
+    const frame = keyframe.frame;
+    if (!isPersistFrameShape(frame)) return false;
+    if (frame.phase !== keyframe.phase) return false;
+    if (frame.seed !== save.state.seed || frame.difficulty !== save.state.difficulty) return false;
+    return (
+      Array.isArray(frame.trials) &&
+      frame.trials.length === save.state.trials.length &&
+      frame.trials.every((trial, index) => trial === save.state.trials[index])
+    );
+  });
 }
 
 /** 再開時に使う要約派生値が state と食い違っていないか。 */

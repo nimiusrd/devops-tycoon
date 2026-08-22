@@ -25,6 +25,35 @@ function makeRunSave(seed = 'ri133-run-save'): RunSave {
   return toRunSave(state, 1234, [{ phase: 'setup', label: '編成', frame }]);
 }
 
+function makeResultRunSave(seed: string): RunSave {
+  const save = makeRunSave(seed);
+  save.state.phase = 'result';
+  save.summary.phase = 'result';
+  save.state.lastResult = {
+    done: 3,
+    delivered: 4,
+    maxCombo: 2,
+    aiAssistedPct: 10,
+    reviewQueueMax: 1,
+    rework: 0,
+    incidents: 0,
+    contained: 0,
+    spread: 0,
+    seniorHpDelta: 0,
+    actionCounts: {},
+    grade: 'B',
+    title: '安定運用',
+    diagnosis: '順調',
+    timeline: [],
+    events: [],
+    fireEvents: [],
+    focusRemaining: 8,
+    focusMax: 10,
+    autoContainCount: 0,
+  };
+  return save;
+}
+
 function makeQuarterReviewRunSave(seed: string): RunSave {
   const save = makeRunSave(seed);
   save.state.phase = 'quarterReview';
@@ -299,6 +328,56 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect(game.getRunSaveSummary()).toBeNull();
     expect(game.getRunSaveIssue()).toBeNull();
     expect(await runStorage.load()).toBeNull();
+  });
+
+  it('result フェーズで lastResult が空オブジェクトなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-result');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-result-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeResultRunSave('ri133-empty-result');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: { lastResult?: unknown } };
+    raw.state.lastResult = {};
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-result');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-result');
+  });
+
+  it('同梱キーフレームの seed が本体と食い違うなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-kf-seed');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-kf-seed-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-kf-seed');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      replayKeyframes: Array<{ frame: { seed?: string } }>;
+    };
+    raw.replayKeyframes[0]!.frame.seed = 'not-the-save-seed';
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-kf-seed');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-kf-seed');
   });
 
   it('quarterReview フェーズで本体が null なら拒否し、既存セーブは残す', async () => {

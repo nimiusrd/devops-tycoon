@@ -3,12 +3,18 @@
  *
  * 勝利種別または敗北理由、組織タイプ診断、ランの累計成果、メタ進行を表示する。
  */
+import { useState } from 'react';
 import { getBoss } from '../data/bosses';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { loseNextActionView } from '../render/loseNextActionView';
 import { quarterFailureTheme } from '../render/quarterFailureTheme';
 import { FAILURE_ENCYCLOPEDIA_DEFS, diagnosisView, isFailureDiagnosis } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
+import {
+  formatRunRuleset,
+  serializeRunDiagnosticInfo,
+  type RunDiagnosticInfo,
+} from '../state/diagnosticInfo';
 import {
   getDailyRecord,
   WIN_TITLE_DEFS,
@@ -18,6 +24,7 @@ import {
 import type { LoseReason, RunState } from '../sim/run/types';
 import { RewardCeremony } from './JuicyEffects';
 import { ReviewHistoryList } from './ReviewHistoryList';
+import { copyToClipboard } from './copyToClipboard';
 import { useReplayContent } from './replayContent';
 
 const REVIEW_BONUS_LABEL: Record<NonNullable<RunRewardBreakdown['reviewBonusKind']>, string> = {
@@ -63,6 +70,7 @@ const LOSE_LABEL: Record<LoseReason, { label: string; desc: string }> = {
 export interface RunResultScreenProps {
   state: RunState;
   meta: MetaState;
+  diagnosticInfo: RunDiagnosticInfo;
   /** 今回ランで付与したメタ進行ポイント内訳。 */
   lastRunReward?: RunRewardBreakdown | null;
   onNewRun: () => void;
@@ -71,9 +79,11 @@ export interface RunResultScreenProps {
 export function RunResultScreen({
   state,
   meta,
+  diagnosticInfo,
   lastRunReward = null,
   onNewRun,
 }: RunResultScreenProps) {
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const { resolveRelic } = useReplayContent();
   const won = state.status === 'won';
   const boss = getBoss(state.bossId);
@@ -116,7 +126,14 @@ export function RunResultScreen({
   const t = state.totals;
   const isDaily = state.runKind === 'daily';
   const dailyRecord =
-    isDaily && state.dailyDate ? getDailyRecord(meta, state.dailyDate) : undefined;
+    isDaily && state.dailyDate && diagnosticInfo.ruleset
+      ? getDailyRecord(meta, state.dailyDate, diagnosticInfo.ruleset)
+      : undefined;
+  const diagnosticJson = serializeRunDiagnosticInfo(diagnosticInfo);
+
+  const handleCopyDiagnostic = async () => {
+    setCopyStatus((await copyToClipboard(diagnosticJson)) ? 'copied' : 'error');
+  };
 
   return (
     <div
@@ -217,6 +234,54 @@ export function RunResultScreen({
             </p>
           )}
         </div>
+
+        <section className="result-diagnostic" data-testid="run-diagnostic-info">
+          <p className="result-section-label">不具合再現情報</p>
+          <dl className="result-rows">
+            <div className="result-row">
+              <dt>seed</dt>
+              <dd data-testid="diagnostic-seed">{diagnosticInfo.seed}</dd>
+            </div>
+            <div className="result-row">
+              <dt>ルールセット</dt>
+              <dd
+                data-testid="diagnostic-ruleset"
+                data-ruleset-known={diagnosticInfo.ruleset ? 'true' : 'false'}
+              >
+                {formatRunRuleset(diagnosticInfo.ruleset)}
+              </dd>
+            </div>
+          </dl>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            data-testid="copy-diagnostic-info"
+            onClick={() => void handleCopyDiagnostic()}
+          >
+            再現情報をコピー
+          </button>
+          <p
+            className="result-diagnostic-status"
+            data-testid="diagnostic-copy-status"
+            aria-live="polite"
+          >
+            {copyStatus === 'copied'
+              ? '再現情報をコピーしました。'
+              : copyStatus === 'error'
+                ? '自動コピーできませんでした。下のJSONを選択してコピーしてください。'
+                : null}
+          </p>
+          <details className="result-diagnostic-json" open={copyStatus === 'error'}>
+            <summary>JSONを表示</summary>
+            <textarea
+              data-testid="diagnostic-json"
+              value={diagnosticJson}
+              readOnly
+              rows={8}
+              aria-label="不具合再現情報JSON"
+            />
+          </details>
+        </section>
 
         {bossRelic && (
           <div className="result-diagnosis" data-testid="boss-relic-reward">

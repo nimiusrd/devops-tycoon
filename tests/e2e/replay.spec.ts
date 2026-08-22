@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
+import type { RunDiagnosticInfo } from '../../src/state/diagnosticInfo';
 import type { ReplayBlob } from '../../src/state/replay';
 import { REPLAY_SCHEMA_VERSION } from '../../src/state/replay';
 
@@ -19,6 +20,7 @@ type ReplayGameWindow = Window & {
     acknowledgeQuarterReview(): RunState;
     chooseGoalAdjustment(id: GoalAdjustmentId): RunState;
     getState(): RunState;
+    getDiagnosticInfo(): RunDiagnosticInfo;
     phase(): string;
     listReplays(): ReplayBlob[];
     isReplayMode(): boolean;
@@ -262,6 +264,9 @@ test('記録時のレリック定義とルールセットを優先して表示�
   await expect(page.getByTestId('replay-recorded-ruleset')).toContainText(
     'v99 / recorded-before-current',
   );
+  expect(
+    await page.evaluate(() => (window as ReplayGameWindow).game?.getDiagnosticInfo().ruleset),
+  ).toEqual({ version: 99, fingerprint: 'recorded-before-current' });
   await expect(page.getByTestId('deck-card-copilot')).toContainText('記録時のCopilot');
   await expect(page.getByTestId('relics')).toContainText('記録時の安全性');
   expect(
@@ -309,5 +314,8 @@ test('旧v1リプレイはルールセット不明と未知コンテンツのま
   await page.getByTestId('replay-keyframe-0').click();
 
   await expect(page.getByTestId('replay-recorded-ruleset')).toContainText('ルールセット不明');
+  expect(
+    await page.evaluate(() => (window as ReplayGameWindow).game?.getDiagnosticInfo().ruleset),
+  ).toBeNull();
   await expect(page.getByTestId('relics')).toContainText('不明なレリック（removed-relic）');
 });

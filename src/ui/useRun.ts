@@ -13,6 +13,7 @@ import {
   type GameHandle,
   type PauseBrieflyClear,
 } from '../game';
+import type { RunDiagnosticInfo } from '../state/diagnosticInfo';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
 import type { ReplayBlob } from '../state/replay';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
@@ -40,6 +41,8 @@ export type { PlaybackSpeed } from './sprintTempo';
 export interface UseRun {
   state: RunState;
   meta: MetaState;
+  /** 不具合再現用のseed・ルールセット・開始条件。 */
+  diagnosticInfo: RunDiagnosticInfo;
   /** 直近ランのメタ進行ポイント内訳（未決着時は null）。 */
   lastRunReward: RunRewardBreakdown | null;
   /** 再開可能なランセーブの要約（無い場合は null）。 */
@@ -117,6 +120,9 @@ export interface UseRun {
 export function useRun(game: GameHandle): UseRun {
   const [state, setState] = useState<RunState>(() => game.getState());
   const [meta, setMeta] = useState<MetaState>(() => game.getMeta());
+  const [diagnosticInfo, setDiagnosticInfo] = useState<RunDiagnosticInfo>(() =>
+    game.getDiagnosticInfo(),
+  );
   const [lastRunReward, setLastRunReward] = useState<RunRewardBreakdown | null>(() =>
     game.getLastRunReward(),
   );
@@ -190,6 +196,7 @@ export function useRun(game: GameHandle): UseRun {
       const next = game.getState();
       setState(next);
       setMeta(game.getMeta());
+      setDiagnosticInfo(game.getDiagnosticInfo());
       setLastRunReward(game.getLastRunReward());
       setRunSaveSummary(game.getRunSaveSummary());
       setRunSaveIssue(game.getRunSaveIssue());
@@ -286,6 +293,7 @@ export function useRun(game: GameHandle): UseRun {
   return {
     state,
     meta,
+    diagnosticInfo,
     lastRunReward,
     runSaveSummary,
     runSaveIssue,

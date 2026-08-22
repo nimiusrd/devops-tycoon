@@ -12,11 +12,27 @@ test('タイトルからデイリーランを開始できる', async ({ page }) 
   const info = await page.evaluate(() => {
     const g = window.game!;
     const s = g.getState();
-    return { runKind: s.runKind, dailyDate: s.dailyDate, seed: s.seed, phase: s.phase };
+    return {
+      runKind: s.runKind,
+      dailyDate: s.dailyDate,
+      seed: s.seed,
+      phase: s.phase,
+      diagnostic: g.getDiagnosticInfo(),
+    };
   });
 
   expect(info.phase).toBe('setup');
   expect(info.runKind).toBe('daily');
   expect(info.dailyDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   expect(info.seed).toBe(dailySeed(info.dailyDate!));
+  expect(info.diagnostic).toMatchObject({
+    schemaVersion: 1,
+    seed: info.seed,
+    runKind: 'daily',
+    dailyDate: info.dailyDate,
+    ruleset: {
+      version: expect.any(Number),
+      fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+    },
+  });
 });

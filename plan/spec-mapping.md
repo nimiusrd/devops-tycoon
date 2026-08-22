@@ -35,7 +35,7 @@
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-8の回復余地ギャップは既定コホートで PASS（RI-132）。F-9の有効手集合は完全評価不足で未計測（ゲート実装済み）。F-1・F-7はRI-73、F-2はRI-77／78／83、F-3はRI-102、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-10はRI-76、F-11はRI-86、F-12はRI-81で充足または実装済み |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
-| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), [balance-ssot-plan.md](./balance-ssot-plan.md), `src/game.ts`, `src/state/`, `src/data/balance/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。型付きバランスレジストリ、生成パラメータ表、工程モデル、メンバー・採用、介入・差配、ラン進行・経済、KPI・勝敗・診断、粗粒度チーム、カード実行ルール、タスク分布・スプリント評価、ペーシング、メタ進行・デイリー条件、ルールセット版と指紋、セーブ互換判定、リプレイのルールセット記録・表示、代表確率曲線は移行済み（RI-106〜118、RI-120、RI-122〜124）。残るデイリーへのルールセット伝播は RI-104／RI-121 |
+| [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](./architecture.md), [probability-model.md](./probability-model.md), [balance-ssot-plan.md](./balance-ssot-plan.md), `src/game.ts`, `src/state/`, `src/data/balance/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。型付きバランスレジストリ、生成パラメータ表、工程モデル、メンバー・採用、介入・差配、ラン進行・経済、KPI・勝敗・診断、粗粒度チーム、カード実行ルール、タスク分布・スプリント評価、ペーシング、メタ進行・デイリー条件、ルールセット版と指紋、セーブ互換判定、リプレイのルールセット記録・表示、デイリー複合キー・診断JSON、代表確率曲線は移行済み（RI-106〜118、RI-120〜124）。 |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ、ツール別シナリオ、部門比較、レビュー履歴、開始レシピ、診断・KPI時系列、OKRテンプレート、ステークホルダー別交渉、複数四半期ロードマップ（表示専用）等は実装済み | 🟡 切り出し候補のうち開始レシピまでの共有は充足。途中セーブ・リプレイのファイル共有は [RI-133](./remaining-issues.md#ri-133-途中セーブリプレイのファイル共有)、組織診断ダッシュボードの深掘りは [RI-135](./remaining-issues.md#ri-135-組織診断ダッシュボードの深掘り)。外部API・共有バックエンド、社内LT／経営プレゼンモードは対象外 |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
 
@@ -43,7 +43,6 @@
 
 | 課題 | 影響 | 追跡先 |
 | --- | --- | --- |
-| バランスパラメータSSoTのデイリーへのルールセット伝播 | 第21／第22.3／第22.5 | [RI-104](./remaining-issues.md#ri-104-バランスパラメータssotの導入)／[RI-121](./remaining-issues.md#ri-121-デイリー診断情報へのルールセット伝播) |
 | 途中セーブ・リプレイのファイル共有 | 第17／第23 | [RI-133](./remaining-issues.md#ri-133-途中セーブリプレイのファイル共有) |
 | AI依存モデルの再設計（`manualCapability`） | 第2／第22.3 | [RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計) |
 | 組織診断ダッシュボードの深掘り | 第4.7〜4.11／第23 | [RI-135](./remaining-issues.md#ri-135-組織診断ダッシュボードの深掘り) |

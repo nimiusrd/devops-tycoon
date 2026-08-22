@@ -18,6 +18,7 @@ import {
 import { isFailureDiagnosis } from '../sim/diagnosis';
 import { winView } from '../sim/outcome';
 import type { DiagnosisType, DifficultyId, QuarterOutcome, WinType } from '../sim/run/types';
+import { CURRENT_RUN_RULESET, type RunRulesetIdentity } from './runPersistence';
 
 /**
  * 現行チュートリアル内容の版（RI-67）。
@@ -54,7 +55,7 @@ export interface MetaState {
    * ドラフト／ショップの出やすさだけを偏らせ、初期所持にはしない（RI-34⁗）。
    */
   preferredCardIds: string[];
-  /** UTC 日付（YYYY-MM-DD）→ デイリーラン記録。 */
+  /** 複合キー（daily:UTC日付:v版:指紋）→ デイリーラン記録。旧日付キーも保持する。 */
   dailyRuns: Record<string, DailyRunRecord>;
   /** サウンドミュート（RI-59）。UI 層のみ。 */
   soundMuted: boolean;
@@ -78,9 +79,19 @@ export interface DailyRunRecord {
   rewardClaimed: boolean;
 }
 
+/** `dailyRuns` の複合キーを解析した結果。旧日付キーは ruleset=null になる。 */
+export interface DailyRunKeyParts {
+  dateStr: string;
+  ruleset: RunRulesetIdentity | null;
+}
+
 /** 業界画面に表示する、順位付きデイリー記録。 */
 export interface DailyLeaderboardEntry extends DailyRunRecord {
+  /** `MetaState.dailyRuns` 内の一意なキー。 */
+  entryKey: string;
   dateStr: string;
+  /** 旧日付キーでは null（ルールセット不明）。 */
+  ruleset: RunRulesetIdentity | null;
   rank: number;
 }
 
@@ -157,10 +168,32 @@ export function normalizeMeta(value: unknown): MetaState {
   return {
     ...base,
     preferredCardIds: sanitizePreferredCardIds(rest.preferredCardIds, unlocked.cards),
+    dailyRuns: normalizeDailyRuns(rest.dailyRuns),
     soundMuted: typeof rest.soundMuted === 'boolean' ? rest.soundMuted : true,
     seenTutorialVersion,
     seenTutorial: seenTutorialVersion >= TUTORIAL_CONTENT_VERSION || rest.seenTutorial === true,
   };
+}
+
+function normalizeDailyRuns(value: unknown): Record<string, DailyRunRecord> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const normalized: Record<string, DailyRunRecord> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    const record = raw as Record<string, unknown>;
+    if (
+      typeof record.bestScore !== 'number' ||
+      !Number.isFinite(record.bestScore) ||
+      typeof record.rewardClaimed !== 'boolean'
+    ) {
+      continue;
+    }
+    normalized[key] = {
+      bestScore: record.bestScore,
+      rewardClaimed: record.rewardClaimed,
+    };
+  }
+  return normalized;
 }
 
 /** ミュート設定を更新した新しい MetaState を返す（RI-59）。 */
@@ -211,9 +244,36 @@ export function dailySeed(dateStr: string): string {
   return `daily-${dateStr}`;
 }
 
-/** 指定日のデイリー記録を返す（未プレイは undefined）。 */
-export function getDailyRecord(meta: MetaState, dateStr: string): DailyRunRecord | undefined {
-  return meta.dailyRuns[dateStr];
+/** デイリー記録を保存する複合キーを組み立てる。 */
+export function dailyRunKey(
+  dateStr: string,
+  ruleset: RunRulesetIdentity = CURRENT_RUN_RULESET,
+): string {
+  return `daily:${dateStr}:v${ruleset.version}:${ruleset.fingerprint}`;
+}
+
+/** デイリー記録キーを解析する。旧日付キーはルールセット不明として扱う。 */
+export function parseDailyRunKey(key: string): DailyRunKeyParts | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+    return { dateStr: key, ruleset: null };
+  }
+  const match = /^daily:(\d{4}-\d{2}-\d{2}):v([1-9]\d*):([^:]+)$/.exec(key);
+  if (!match) return null;
+  const version = Number(match[2]);
+  if (!Number.isSafeInteger(version)) return null;
+  return {
+    dateStr: match[1],
+    ruleset: { version, fingerprint: match[3] },
+  };
+}
+
+/** 指定日の現行（または指定）ルールセットのデイリー記録を返す。 */
+export function getDailyRecord(
+  meta: MetaState,
+  dateStr: string,
+  ruleset: RunRulesetIdentity = CURRENT_RUN_RULESET,
+): DailyRunRecord | undefined {
+  return meta.dailyRuns[dailyRunKey(dateStr, ruleset)];
 }
 
 /**
@@ -222,8 +282,17 @@ export function getDailyRecord(meta: MetaState, dateStr: string): DailyRunRecord
  */
 export function dailyLeaderboardEntries(meta: MetaState): DailyLeaderboardEntry[] {
   return Object.entries(meta.dailyRuns)
-    .map(([dateStr, record]) => ({ dateStr, ...record }))
-    .sort((a, b) => b.bestScore - a.bestScore || b.dateStr.localeCompare(a.dateStr))
+    .flatMap(([entryKey, record]) => {
+      const parts = parseDailyRunKey(entryKey);
+      if (!parts) return [];
+      return [{ entryKey, dateStr: parts.dateStr, ruleset: parts.ruleset, ...record }];
+    })
+    .sort(
+      (a, b) =>
+        b.bestScore - a.bestScore ||
+        b.dateStr.localeCompare(a.dateStr) ||
+        b.entryKey.localeCompare(a.entryKey),
+    )
     .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
@@ -409,7 +478,7 @@ export interface DailyRunRewardResult {
   meta: MetaState;
   /** 今回付与されたメタ進行 points（再走時は 0）。 */
   pointsGained: number;
-  /** その日初回の報酬付与が行われたか。 */
+  /** 同日・同一ルールセットで初回の報酬付与が行われたか。 */
   rewardGranted: boolean;
   /** その日のベストスコアが更新されたか。 */
   dailyBestUpdated: boolean;
@@ -419,13 +488,16 @@ export interface DailyRunRewardResult {
 
 /**
  * デイリーラン結果をメタ進行へ反映する（不変）。
- * 同一 UTC 日付では points 付与は 1 回のみ。再走はベスト更新と勝利称号収集のみ。
+ * 同一 UTC 日付・同一ルールセットでは points 付与は 1 回のみ。
+ * 再走はベスト更新と勝利称号収集のみ。
  */
 export function applyDailyRunReward(
   meta: MetaState,
-  input: RunRewardInput & { dateStr: string },
+  input: RunRewardInput & { dateStr: string; ruleset?: RunRulesetIdentity },
 ): DailyRunRewardResult {
-  const existing = meta.dailyRuns[input.dateStr] ?? { bestScore: 0, rewardClaimed: false };
+  const ruleset = input.ruleset ?? CURRENT_RUN_RULESET;
+  const entryKey = dailyRunKey(input.dateStr, ruleset);
+  const existing = meta.dailyRuns[entryKey] ?? { bestScore: 0, rewardClaimed: false };
 
   if (!existing.rewardClaimed) {
     const rewarded = applyRunReward(meta, input);
@@ -435,7 +507,7 @@ export function applyDailyRunReward(
       ...rewarded,
       dailyRuns: {
         ...meta.dailyRuns,
-        [input.dateStr]: { bestScore: dailyBest, rewardClaimed: true },
+        [entryKey]: { bestScore: dailyBest, rewardClaimed: true },
       },
     };
     return {
@@ -460,7 +532,7 @@ export function applyDailyRunReward(
     collectedDiagnoses: mergeCollectedDiagnoses(meta.collectedDiagnoses, input.diagnosis),
     dailyRuns: {
       ...meta.dailyRuns,
-      [input.dateStr]: { bestScore: dailyBest, rewardClaimed: true },
+      [entryKey]: { bestScore: dailyBest, rewardClaimed: true },
     },
   };
   return {

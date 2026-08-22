@@ -6552,6 +6552,18 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-radius: 9px;
   background: #10142c99;
 }
+.daily-date {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.daily-record-ruleset {
+  overflow: hidden;
+  color: var(--text-dim);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .daily-rank,
 .daily-leaderboard-list strong {
   color: var(--sun);
@@ -6565,6 +6577,49 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
     grid-column: 2 / -1;
     justify-self: start;
   }
+}
+
+.result-diagnostic {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #10142c88;
+}
+.result-diagnostic .result-rows {
+  margin: 8px 0 12px;
+}
+.result-diagnostic .result-row dd {
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.result-diagnostic-status {
+  min-height: 1.4em;
+  margin: 8px 0 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.result-diagnostic-json {
+  margin-top: 8px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.result-diagnostic-json textarea {
+  display: block;
+  width: 100%;
+  min-height: 150px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #080b1bcc;
+  color: var(--text);
+  font:
+    11px/1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  resize: vertical;
 }
 
 /* 集約HUD のモバイル段組（基底の 8/6 列より後に置いて確実に上書きする）。 */

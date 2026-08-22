@@ -2,6 +2,7 @@ import { expect, test } from './fixtures';
 import { EVENT_DEFS, effectiveKind, getEvent } from '../../src/data/events';
 import { diagnosisTheme } from '../../src/render/diagnosisTheme';
 import { quarterFailureTheme } from '../../src/render/quarterFailureTheme';
+import type { RunDiagnosticInfo } from '../../src/state/diagnosticInfo';
 import type { MetaState } from '../../src/state/meta';
 import type { InterventionOutcome } from '../../src/sim/types';
 import type { RunEngine } from '../../src/sim/run/engine';
@@ -30,6 +31,7 @@ type GameWindow = Window & {
   game?: {
     pause(): void;
     getState(): RunState;
+    getDiagnosticInfo(): RunDiagnosticInfo;
     getMeta(): MetaState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
     beginSetupSprint(): RunState;
@@ -151,10 +153,21 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
       points: meta.points,
       achievements: meta.achievements,
       defeatedBosses: meta.defeatedBosses,
+      diagnostic: g.getDiagnosticInfo(),
     };
   });
 
   expect(['won', 'lost']).toContain(status.status);
+  expect(status.diagnostic).toMatchObject({
+    schemaVersion: 1,
+    seed: 'full-run',
+    ruleset: {
+      version: expect.any(Number),
+      fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+    },
+    runKind: 'normal',
+    dailyDate: null,
+  });
   // ラン完走 → applyRunReward 経由でメタ進行へ反映される（勝敗どちらでも points が増える）
   expect(status.points).toBeGreaterThan(status.beforePoints);
   if (status.status === 'won') {
@@ -166,9 +179,19 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
   await expect(page.getByTestId('run-result')).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId('run-end-status')).toBeVisible();
   await expect(page.getByTestId('diagnosis')).toBeVisible();
+  await expect(page.getByTestId('run-diagnostic-info')).toBeVisible();
+  await expect(page.getByTestId('diagnostic-seed')).toHaveText('full-run');
+  await expect(page.getByTestId('diagnostic-ruleset')).toContainText('v');
   await expect(page.getByTestId('run-result')).toHaveAttribute('data-diagnosis', status.diagnosis);
   await expect(page.getByTestId('run-result')).toHaveClass(
     new RegExp(diagnosisTheme(status.diagnosis).toneClass),
+  );
+
+  const diagnosticJson = await page.getByTestId('diagnostic-json').inputValue();
+  expect(JSON.parse(diagnosticJson)).toEqual(status.diagnostic);
+  await page.getByTestId('copy-diagnostic-info').click();
+  await expect(page.getByTestId('diagnostic-copy-status')).toContainText(
+    /再現情報をコピーしました。|自動コピーできませんでした。/,
   );
 });
 

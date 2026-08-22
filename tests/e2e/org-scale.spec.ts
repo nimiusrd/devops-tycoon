@@ -1,6 +1,8 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
 import { DESIGN_SPACES } from '../../src/render/visualTokens';
+import { dailyRunKey } from '../../src/state/meta';
+import { CURRENT_RUN_RULESET } from '../../src/state/runPersistence';
 import type { RunState } from '../../src/sim/run/types';
 import { seedMeta } from './seedMeta';
 
@@ -203,6 +205,10 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
 });
 
 test('業界画面で保存済みデイリー記録を順位付きで表示する（RI-23）', async ({ page }) => {
+  const alternateRuleset = {
+    version: CURRENT_RUN_RULESET.version + 1,
+    fingerprint: 'a'.repeat(64),
+  };
   await seedMeta(page, {
     points: 0,
     unlockedDifficulties: ['easy', 'normal'],
@@ -212,19 +218,32 @@ test('業界画面で保存済みデイリー記録を順位付きで表示す�
     unlockedCards: [],
     unlockedRelics: [],
     dailyRuns: {
-      '2026-07-09': { bestScore: 800, rewardClaimed: true },
-      '2026-07-10': { bestScore: 1200, rewardClaimed: true },
-      '2026-07-11': { bestScore: 1200, rewardClaimed: false },
+      [dailyRunKey('2026-07-09')]: { bestScore: 800, rewardClaimed: true },
+      [dailyRunKey('2026-07-10')]: { bestScore: 1200, rewardClaimed: true },
+      [dailyRunKey('2026-07-11')]: { bestScore: 1200, rewardClaimed: false },
+      [dailyRunKey('2026-07-11', alternateRuleset)]: { bestScore: 1100, rewardClaimed: true },
+      '2026-07-08': { bestScore: 700, rewardClaimed: true },
     },
   });
   await startRun(page, 'daily-ranking-e2e');
   await page.evaluate(() => (window as GameWindow).game!.zoomTo('industry'));
 
   await expect(page.getByTestId('daily-leaderboard')).toBeVisible();
-  await expect(page.getByTestId('daily-record-2026-07-11')).toContainText('#1');
-  await expect(page.getByTestId('daily-record-2026-07-11')).toContainText('1,200 pt');
-  await expect(page.getByTestId('daily-record-2026-07-10')).toContainText('#2');
-  await expect(page.getByTestId('daily-record-2026-07-09')).toContainText('#3');
+  await expect(page.getByTestId('daily-leaderboard').locator('li')).toHaveCount(5);
+  const currentLatest = page.getByTestId(`daily-record-${dailyRunKey('2026-07-11')}`);
+  const alternateLatest = page.getByTestId(
+    `daily-record-${dailyRunKey('2026-07-11', alternateRuleset)}`,
+  );
+  const legacy = page.getByTestId('daily-record-2026-07-08');
+  await expect(currentLatest).toContainText('#1');
+  await expect(currentLatest).toContainText('1,200 pt');
+  await expect(currentLatest.getByTestId('daily-record-ruleset')).toContainText('v');
+  await expect(page.getByTestId(`daily-record-${dailyRunKey('2026-07-10')}`)).toContainText('#2');
+  await expect(alternateLatest).toContainText('#3');
+  await expect(alternateLatest.getByTestId('daily-record-ruleset')).toContainText('v');
+  await expect(page.getByTestId(`daily-record-${dailyRunKey('2026-07-09')}`)).toContainText('#4');
+  await expect(legacy).toContainText('#5');
+  await expect(legacy.getByTestId('daily-record-ruleset')).toHaveText('ルールセット不明');
 });
 
 test('全社マップに診断・KPIトレンド領域を出し開始直後は記録なしとする（RI-128）', async ({

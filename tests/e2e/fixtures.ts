@@ -17,6 +17,7 @@ export type PublicGameHandle = Pick<
   GameHandle,
   | 'pause'
   | 'getState'
+  | 'getDiagnosticInfo'
   | 'startRun'
   | 'beginSetupSprint'
   | 'resolveBeat'

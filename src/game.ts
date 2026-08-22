@@ -64,8 +64,10 @@ import {
   type RunSave,
   type RunSaveCompatibilityIssue,
   type RunSaveSummary,
+  type RunRulesetIdentity,
   type RunStorage,
 } from './state/runPersistence';
+import { createRunDiagnosticInfo, type RunDiagnosticInfo } from './state/diagnosticInfo';
 
 export interface ActiveReplayInfo {
   ruleset: ReplayRulesetIdentity | null;
@@ -86,6 +88,8 @@ export interface GameHandle {
   getPauseEpoch(): number;
   /** 現在のラン状態のスナップショット。 */
   getState(): RunState;
+  /** 不具合再現用のseed・ルールセット・開始条件を返す（RI-121）。 */
+  getDiagnosticInfo(): RunDiagnosticInfo;
   /** タイトルで選んだ難易度・試練でランを開始する。 */
   startRun(
     difficulty?: DifficultyId,
@@ -270,6 +274,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   /** startRun / startDailyRun のたびに増やす（UI ガイドのセッション区切り）。 */
   let runEpoch = 0;
   let activeDailyDate: string | null = null;
+  /** 実行中デイリーに適用されたルールセット。通常ランでは null。 */
+  let activeDailyRuleset: RunRulesetIdentity | null = null;
   /** UI 向け what-if キャッシュ（Worker 完了後も同一キーなら即返却）。 */
   let whatIfCache: { key: string; value: WhatIfState | null } | null = null;
   /** 進行中の Worker リクエストのキャッシュキー。 */
@@ -459,7 +465,11 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       diagnosis: s.diagnosis,
     };
     if (s.runKind === 'daily' && activeDailyDate) {
-      const daily = applyDailyRunReward(meta, { ...input, dateStr: activeDailyDate });
+      const daily = applyDailyRunReward(meta, {
+        ...input,
+        dateStr: activeDailyDate,
+        ruleset: activeDailyRuleset ?? CURRENT_RUN_RULESET,
+      });
       meta = daily.meta;
       lastRunReward = daily.breakdown;
     } else {
@@ -513,6 +523,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
+      activeDailyRuleset = null;
       activeReplayInfo = null;
       keyframes = [];
       paused = false;
@@ -530,6 +541,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       activeReplayInfo = null;
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
+      activeDailyRuleset = { ...CURRENT_RUN_RULESET };
       keyframes = [];
       paused = false;
       clearWhatIfCache();
@@ -727,6 +739,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
+      activeDailyRuleset = null;
       keyframes = [];
       paused = false;
       clearWhatIfCache();
@@ -798,6 +811,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearWhatIfCache();
       const save = resumableSave;
       activeDailyDate = save.summary.dailyDate ?? null;
+      activeDailyRuleset =
+        save.summary.runKind === 'daily' && save.ruleset ? { ...save.ruleset } : null;
       // リロード前に集めたキーフレームを引き継ぎ、完走リプレイが前半を欠かないようにする。
       keyframes = structuredClone(save.replayKeyframes ?? []);
       // ラン中の解放プール／研修方針はセーブ時点のものを優先（メタ変更で変えない）。
@@ -854,6 +869,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
         contentSnapshot: replay.contentSnapshot ? structuredClone(replay.contentSnapshot) : null,
       };
       activeDailyDate = frame.frame.dailyDate ?? null;
+      activeDailyRuleset = null;
       recorded = true;
       lastRunReward = null;
       clearWhatIfCache();
@@ -868,6 +884,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
+      activeDailyRuleset = null;
       keyframes = [];
       // openReplay で止めた自動進行を解除しないと、通常ラン再開後もスプリントが進まない。
       paused = false;
@@ -881,6 +898,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     getActiveReplayDiagnosis() {
       return activeReplayDiagnosis;
+    },
+    getDiagnosticInfo() {
+      const state = engine.snapshot();
+      const ruleset = replayMode
+        ? (activeReplayInfo?.ruleset ?? null)
+        : (activeDailyRuleset ?? CURRENT_RUN_RULESET);
+      return createRunDiagnosticInfo(state, ruleset, activeReplayDiagnosis ?? state.diagnosis);
     },
     getActiveReplayInfo() {
       return activeReplayInfo ? structuredClone(activeReplayInfo) : null;

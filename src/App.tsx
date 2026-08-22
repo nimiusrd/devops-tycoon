@@ -149,7 +149,7 @@ function AppContent({ game }: AppProps) {
 }
 
 function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
-  const { state, meta, lastRunReward, runSaveSummary, runSaveIssue } = run;
+  const { state, meta, diagnosticInfo, lastRunReward, runSaveSummary, runSaveIssue } = run;
   const phase = state.phase;
   const responsiveMode = useResponsiveMode();
   const audio = useAudio();
@@ -373,6 +373,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           <RunResultScreen
             state={state}
             meta={meta}
+            diagnosticInfo={diagnosticInfo}
             lastRunReward={lastRunReward}
             onNewRun={run.isReplayMode ? exitReplay : newRun}
           />

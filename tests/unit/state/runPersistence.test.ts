@@ -21,6 +21,7 @@ import {
   RUN_SAVE_SCHEMA_VERSION,
   type RunSave,
 } from '../../../src/state/runPersistence';
+import { MemoryReplayStorage } from '../../../src/state/replayPersistence';
 
 import 'fake-indexeddb/auto';
 
@@ -39,6 +40,53 @@ function makeRunSave(seed = 'ri72-run-save'): RunSave {
   const frame = engine.exportReplayFrame();
   if (!state || !frame) throw new Error('failed to export run save fixture');
   return toRunSave(state, 1234, [{ phase: 'setup', label: '編成', frame }]);
+}
+
+function makeBlockingRunStorage(initial: RunSave) {
+  let saveState: RunSave | null = structuredClone(initial);
+  let blockNextSave = false;
+  let saveStarted = Promise.resolve();
+  let resolveSaveStarted: (() => void) | null = null;
+  let releasePendingSave: (() => void) | null = null;
+
+  const storage = {
+    async load(): Promise<RunSave | null> {
+      return saveState ? structuredClone(saveState) : null;
+    },
+    save(save: RunSave): Promise<void> {
+      const snapshot = structuredClone(save);
+      if (!blockNextSave) {
+        saveState = snapshot;
+        return Promise.resolve();
+      }
+      blockNextSave = false;
+      resolveSaveStarted?.();
+      return new Promise<void>((resolve) => {
+        releasePendingSave = () => {
+          saveState = snapshot;
+          releasePendingSave = null;
+          resolve();
+        };
+      });
+    },
+    async clear(): Promise<void> {
+      saveState = null;
+    },
+  };
+
+  return {
+    storage,
+    blockNextSave() {
+      blockNextSave = true;
+      saveStarted = new Promise<void>((resolve) => {
+        resolveSaveStarted = resolve;
+      });
+    },
+    saveStarted: () => saveStarted,
+    releaseSave() {
+      releasePendingSave?.();
+    },
+  };
 }
 
 /** fire-and-forget の IndexedDB 書き込みが完了するまで待つ。 */
@@ -916,6 +964,14 @@ describe('RI-133 セーブファイル共有', () => {
       parseRunSaveFile(
         JSON.stringify({
           ...save,
+          state: { ...save.state, diagnosis: 'unknown-diagnosis' },
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        JSON.stringify({
+          ...save,
           summary: { ...save.summary, runKind: 'normal', dailyDate: undefined },
         }),
       ),
@@ -981,5 +1037,40 @@ describe('RI-133 セーブファイル共有', () => {
     expect(result).toMatchObject({ ok: false, reason: 'stale' });
     expect(await storage.load()).toEqual(currentSave);
     expect(game.getRunSave()?.state.seed).toBe('ri133-current-run');
+  });
+
+  it('リプレイ閲覧への遷移と競合したセーブ取込は既存セーブを復元する', async () => {
+    const existingSave = makeRunSaveWith('ri133-existing-save');
+    const controlled = makeBlockingRunStorage(existingSave);
+    const replayStorage = new MemoryReplayStorage();
+    const replay = makeRunSave('ri133-replay-stale-import').replayKeyframes[0];
+    if (!replay) throw new Error('replay fixture missing');
+    await replayStorage.save({
+      schemaVersion: 2,
+      id: 'ri133-replay-stale',
+      seed: replay.frame.seed,
+      difficulty: replay.frame.difficulty,
+      trials: replay.frame.trials,
+      finishedAt: 1234,
+      outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 1 },
+      keyframes: [replay],
+      ruleset: CURRENT_RUN_RULESET,
+      contentSnapshot: { cards: [], relics: [] },
+    });
+    const game = createGame({ runStorage: controlled.storage });
+    game.attachRunPersistence(controlled.storage, existingSave);
+    await game.attachReplay(replayStorage);
+
+    controlled.blockNextSave();
+    const importPromise = game.importRunSave(
+      serializeRunSave(makeRunSaveWith('ri133-replay-stale-import')),
+    );
+    await controlled.saveStarted();
+    expect(game.openReplay('ri133-replay-stale', 0)).not.toBeNull();
+    controlled.releaseSave();
+
+    expect(await importPromise).toMatchObject({ ok: false, reason: 'stale' });
+    expect(await controlled.storage.load()).toEqual(existingSave);
+    expect(game.getRunSave()).toEqual(existingSave);
   });
 });

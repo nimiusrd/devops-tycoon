@@ -51,6 +51,7 @@ import {
   normalizeReplay,
   parseReplayFile,
   REPLAY_SCHEMA_VERSION,
+  serializeReplay,
   snapshotReplayContent,
   type ReplayBlob,
   type ReplayContentSnapshot,
@@ -285,7 +286,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let recorded = false;
   let lastRunReward: RunRewardBreakdown | null = null;
   let revision = 0;
-  /** startRun / startDailyRun のたびに増やす（UI ガイドのセッション区切り）。 */
+  /** 新しいラン／タイトルセッションのたびに増やす（UI ガイドの区切り）。 */
   let runEpoch = 0;
   let activeDailyDate: string | null = null;
   /** 実行中デイリーに適用されたルールセット。通常ランでは null。 */
@@ -309,9 +310,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const hadRunSave = resumableSave !== null || runSaveIssue !== null;
     resumableSave = null;
     runSaveIssue = null;
-    if (hadRunSave) runSaveRevision += 1;
-    if (!runStorage) return;
-    void runStorage.clear().catch(() => undefined);
+    if (hadRunSave || runStorage) runSaveRevision += 1;
+    if (runStorage) void runStorage.clear().catch(() => undefined);
   };
 
   const appendKeyframeIfNeeded = (): void => {
@@ -761,6 +761,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       paused = false;
       clearWhatIfCache();
       applyUnlockedToEngine();
+      runEpoch += 1;
       engine.toTitle(runSeed);
       bump();
       return after();
@@ -867,6 +868,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     async importRunSave(raw) {
       const importEpoch = runEpoch;
+      const importSaveRevision = runSaveRevision;
       const staleImport = (): RunSaveFileImportFailure => ({
         ok: false,
         reason: 'stale',
@@ -883,6 +885,23 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           message: '途中セーブの保存先を利用できないため、読み込みを完了できません。',
         };
       }
+      let previousSave: RunSave | null;
+      try {
+        previousSave = await runStorage.load();
+      } catch {
+        return {
+          ok: false,
+          reason: 'storage',
+          message: '既存のセーブを確認できないため、読み込みを完了できません。',
+        };
+      }
+      if (
+        runEpoch !== importEpoch ||
+        runSaveRevision !== importSaveRevision ||
+        engine.currentPhase() !== 'title'
+      ) {
+        return staleImport();
+      }
       try {
         await runStorage.save(parsed.save);
       } catch {
@@ -892,7 +911,25 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           message: '途中セーブを保存できませんでした。既存のセーブは変更していません。',
         };
       }
-      if (runEpoch !== importEpoch || engine.currentPhase() !== 'title') return staleImport();
+      if (
+        runEpoch !== importEpoch ||
+        runSaveRevision !== importSaveRevision ||
+        engine.currentPhase() !== 'title'
+      ) {
+        if (runEpoch === importEpoch && runSaveRevision === importSaveRevision) {
+          try {
+            if (previousSave) await runStorage.save(previousSave);
+            else await runStorage.clear();
+          } catch {
+            return {
+              ok: false,
+              reason: 'storage',
+              message: '読み込みが競合し、既存のセーブを復元できませんでした。',
+            };
+          }
+        }
+        return staleImport();
+      }
       resumableSave = structuredClone(parsed.save);
       runSaveIssue = null;
       runSaveRevision += 1;
@@ -988,6 +1025,25 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           ok: false,
           reason: 'storage',
           message: 'リプレイの保存先を利用できないため、読み込みを完了できません。',
+        };
+      }
+      let existing: ReplayBlob | null;
+      try {
+        existing = await replayStorage.get(parsed.replay.id);
+      } catch {
+        return {
+          ok: false,
+          reason: 'storage',
+          message: '既存のリプレイを確認できないため、読み込みを完了できません。',
+        };
+      }
+      if (existing) {
+        if (serializeReplay(existing) === serializeReplay(parsed.replay)) return parsed;
+        return {
+          ok: false,
+          reason: 'duplicate',
+          message:
+            '同じIDの別内容リプレイが既に保存されているため、読み込めません。既存のリプレイは変更していません。',
         };
       }
       try {

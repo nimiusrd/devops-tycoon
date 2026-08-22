@@ -876,6 +876,24 @@ describe('RI-133 リプレイファイル共有', () => {
       parseReplayFile(
         serializeReplay({
           ...blob,
+          keyframes: [
+            {
+              ...blob.keyframes[0],
+              frame: { ...blob.keyframes[0].frame, diagnosis: 'unknown-diagnosis' },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({ ...blob, outcome: { ...blob.outcome, diagnosis: 'unknown-diagnosis' } }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseReplayFile(
+        serializeReplay({
+          ...blob,
           contentSnapshot: {
             cards: [
               {
@@ -1013,6 +1031,29 @@ describe('RI-133 リプレイファイル共有', () => {
     );
     expect(rejected).toMatchObject({ ok: false, reason: 'ruleset-mismatch' });
     expect(game.listReplays().map((replay) => replay.id)).toEqual(['ri133-existing']);
+  });
+
+  it('同じIDの別内容リプレイは既存記録を変更せず拒否する', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ initialMeta: defaultMeta() });
+    const existing = makeBlob({
+      id: 'ri133-duplicate',
+      seed: 'ri133-existing',
+      ruleset: CURRENT_RUN_RULESET,
+    });
+    await replayStorage.save(existing);
+    await game.attachReplay(replayStorage);
+
+    const rejected = await game.importReplayFile(
+      serializeReplay({
+        ...existing,
+        seed: 'ri133-replacement',
+        outcome: { ...existing.outcome, score: 999 },
+      }),
+    );
+
+    expect(rejected).toMatchObject({ ok: false, reason: 'duplicate' });
+    expect(await replayStorage.get(existing.id)).toEqual(existing);
   });
 
   it('上限適用で取込対象自身が削除された場合は成功にしない', async () => {

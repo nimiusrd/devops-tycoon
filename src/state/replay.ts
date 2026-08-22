@@ -9,6 +9,7 @@ import { canHydrateReplayFrame } from '../sim/run/persistValidation';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
 import { getCard } from '../data/cards';
 import { getRelic, type RelicDef } from '../data/relics';
+import { isDiagnosisType } from '../sim/diagnosis';
 import type { CardDef } from '../sim/types';
 import type {
   DiagnosisType,
@@ -73,6 +74,7 @@ export type ReplayFileImportReason =
   | 'unsupported-schema'
   | 'invalid-data'
   | 'ruleset-mismatch'
+  | 'duplicate'
   | 'evicted'
   | 'storage';
 
@@ -212,6 +214,7 @@ function isReplayFrame(value: unknown): value is RunReplayFrame {
     return false;
   }
   if (typeof value.seed !== 'string' || !isObject(value.extras)) return false;
+  if (!isDiagnosisType(value.diagnosis)) return false;
   if (!Array.isArray(value.extras.allowedCards) || !Array.isArray(value.extras.allowedRelics)) {
     return false;
   }
@@ -312,7 +315,7 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
   if (typeof value.finishedAt !== 'number' || !Number.isFinite(value.finishedAt)) return null;
   if (!isObject(value.outcome)) return null;
   if (value.outcome.status !== 'won' && value.outcome.status !== 'lost') return null;
-  if (typeof value.outcome.diagnosis !== 'string') return null;
+  if (!isDiagnosisType(value.outcome.diagnosis)) return null;
   if (typeof value.outcome.score !== 'number' || !Number.isFinite(value.outcome.score)) {
     return null;
   }

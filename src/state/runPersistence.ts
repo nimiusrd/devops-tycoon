@@ -8,6 +8,7 @@
 import { isRunSavePhase, type RunPersistState, type RunSavePhase } from '../sim/run/persist';
 import { canHydratePersistState, canHydrateReplayFrame } from '../sim/run/persistValidation';
 import type { DifficultyId, GoalKpiProgress, RunKind, RunPhase, RunStatus } from '../sim/run/types';
+import { isDiagnosisType } from '../sim/diagnosis';
 import { companyOrgFromTeams } from '../sim/orgscale';
 import { BALANCE_RULESET_FINGERPRINT, BALANCE_RULESET_VERSION } from '../data/balance';
 import {
@@ -382,6 +383,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRunKind(state.runKind) || state.runKind !== summary.runKind) return null;
   if (state.dailyDate !== undefined && typeof state.dailyDate !== 'string') return null;
   if (state.dailyDate !== summary.dailyDate) return null;
+  if (!isDiagnosisType(state.diagnosis)) return null;
   if (!isRecord(state.extras)) return null;
   if (!Array.isArray(state.extras.allowedCards)) return null;
   if (!Array.isArray(state.extras.allowedRelics)) return null;

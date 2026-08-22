@@ -27,6 +27,9 @@ const LEGACY_REPLAY_SCHEMA_VERSION = 1;
 /** 保持するリプレイ件数の上限（古いものから削除）。 */
 export const REPLAY_MAX_COUNT = 10;
 
+/** ファイル取込時に許容する時計のずれ。通常生成値は Date.now() のため、1日を上限にする。 */
+const REPLAY_MAX_FUTURE_MS = 24 * 60 * 60 * 1000;
+
 export interface ReplayOutcome {
   status: Extract<RunStatus, 'won' | 'lost'>;
   winType?: WinType;
@@ -104,6 +107,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isCardRarity(value: unknown): value is CardDef['rarity'] {
   return value === 'common' || value === 'rare' || value === 'legendary';
+}
+
+function isDifficulty(value: unknown): value is DifficultyId {
+  return value === 'easy' || value === 'normal' || value === 'hard' || value === 'nightmare';
 }
 
 const CARD_EFFECT_KEYS = [
@@ -308,7 +315,7 @@ export function normalizeReplay(value: unknown): ReplayBlob | null {
     return null;
   }
   if (typeof value.id !== 'string' || typeof value.seed !== 'string') return null;
-  if (typeof value.difficulty !== 'string') return null;
+  if (!isDifficulty(value.difficulty)) return null;
   const replayTrials = value.trials;
   if (
     !Array.isArray(replayTrials) ||
@@ -434,6 +441,17 @@ export function parseReplayFile(
       ok: false,
       reason: 'invalid-data',
       message: 'リプレイの必須データが欠落しているか、壊れています。',
+    };
+  }
+  if (
+    !Number.isSafeInteger(replay.finishedAt) ||
+    replay.finishedAt < 0 ||
+    replay.finishedAt > Date.now() + REPLAY_MAX_FUTURE_MS
+  ) {
+    return {
+      ok: false,
+      reason: 'invalid-data',
+      message: 'リプレイの完了日時が不正または未来すぎるため、読み込めません。',
     };
   }
   if (!replay.keyframes.every(({ frame }) => canHydrateReplayFrame(frame))) {

@@ -272,6 +272,10 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         },
       },
       summary: { ...valid.summary, difficulty: 'normal' },
+      replayKeyframes: valid.replayKeyframes.map((keyframe) => ({
+        ...keyframe,
+        frame: { ...keyframe.frame, difficulty: 'normal' },
+      })),
     });
 
     expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
@@ -296,6 +300,10 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
         },
       },
       summary: { ...valid.summary, difficulty: 'normal' },
+      replayKeyframes: valid.replayKeyframes.map((keyframe) => ({
+        ...keyframe,
+        frame: { ...keyframe.frame, difficulty: 'normal' },
+      })),
     });
 
     expect(parsed?.schemaVersion).toBe(RUN_SAVE_SCHEMA_VERSION);
@@ -408,6 +416,10 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
           bossCleared: true,
         },
       },
+      replayKeyframes: valid.replayKeyframes.map((keyframe) => ({
+        ...keyframe,
+        frame: { ...keyframe.frame, difficulty: 'normal' },
+      })),
     });
 
     const review = parsed?.state.quarterReview;
@@ -512,6 +524,8 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(parseRunSave(withState({ phase: 'result' }))).toBeNull();
     expect(parseRunSave(withState({ status: 'lost' }))).toBeNull();
     expect(parseRunSave(withState({ seed: 'other-seed' }))).toBeNull();
+    expect(parseRunSave(withState({ trials: ['half-budget'] }))).toBeNull();
+    expect(parseRunSave(withState({ budget: 'bad' }))).toBeNull();
     expect(parseRunSave(withState({ extras: null }))).toBeNull();
     expect(parseRunSave(withState({ extras: [] }))).toBeNull();
     expect(parseRunSave(withExtras({ allowedCards: 'copilot' }))).toBeNull();
@@ -1063,6 +1077,19 @@ describe('RI-133 セーブファイル共有', () => {
             {
               ...save.replayKeyframes[0],
               frame: { ...save.replayKeyframes[0].frame, deck: null },
+            },
+          ],
+        }),
+      ),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
+    expect(
+      parseRunSaveFile(
+        serializeRunSave({
+          ...save,
+          replayKeyframes: [
+            {
+              ...save.replayKeyframes[0],
+              frame: { ...save.replayKeyframes[0].frame, trials: ['half-budget'] },
             },
           ],
         }),

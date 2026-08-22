@@ -712,6 +712,7 @@ describe('リプレイ正規化（RI-72-B3）', () => {
     expect(normalizeReplay({ ...valid, id: 123 })).toBeNull();
     expect(normalizeReplay({ ...valid, seed: null })).toBeNull();
     expect(normalizeReplay({ ...valid, difficulty: 7 })).toBeNull();
+    expect(normalizeReplay({ ...valid, difficulty: 'custom' })).toBeNull();
     expect(normalizeReplay({ ...valid, trials: 'trial-a' })).toBeNull();
     expect(normalizeReplay({ ...valid, trials: ['trial-a', 2] })).toBeNull();
 
@@ -857,6 +858,9 @@ describe('RI-133 リプレイファイル共有', () => {
       ok: false,
       reason: 'unsupported-schema',
     });
+    expect(
+      parseReplayFile(serializeReplay({ ...blob, finishedAt: Number.MAX_SAFE_INTEGER })),
+    ).toMatchObject({ ok: false, reason: 'invalid-data' });
     expect(parseReplayFile(JSON.stringify({ ...blob, keyframes: [] }))).toMatchObject({
       ok: false,
       reason: 'invalid-data',

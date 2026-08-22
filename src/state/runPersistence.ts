@@ -191,6 +191,10 @@ function sameStringArray(left: readonly string[], right: readonly string[]): boo
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 /** 旧スキーマの途中セーブを現行の難易度別 Delivery 倍率へ移行する。 */
 function migrateDeliveryGoal(
   state: Record<string, unknown>,
@@ -404,9 +408,22 @@ export function parseRunSave(raw: unknown): RunSave | null {
   if (!isRunStatus(state.status) || state.status !== 'playing') return null;
   if (typeof state.seed !== 'string' || state.seed !== summary.seed) return null;
   if (!isDifficulty(state.difficulty) || state.difficulty !== summary.difficulty) return null;
+  const stateTrials = state.trials;
+  if (!Array.isArray(stateTrials)) return null;
+  if (!stateTrials.every((trial): trial is string => typeof trial === 'string')) return null;
+  if (!sameStringArray(stateTrials, summary.trials)) return null;
   if (!isRunKind(state.runKind) || state.runKind !== summary.runKind) return null;
   if (state.dailyDate !== undefined && typeof state.dailyDate !== 'string') return null;
   if (state.dailyDate !== summary.dailyDate) return null;
+  if (
+    !isFiniteNumber(state.sprintsPerQuarter) ||
+    !isFiniteNumber(state.sprintIndexInQuarter) ||
+    !isFiniteNumber(state.sprintsPlayed) ||
+    !isFiniteNumber(state.quarterNumber) ||
+    !isFiniteNumber(state.budget)
+  ) {
+    return null;
+  }
   if (!isDiagnosisType(state.diagnosis)) return null;
   if (!isRecord(state.extras)) return null;
   if (!Array.isArray(state.extras.allowedCards)) return null;
@@ -429,6 +446,18 @@ export function parseRunSave(raw: unknown): RunSave | null {
       : migratedState;
   if (!stateWithCurrentReview) return null;
 
+  const replayKeyframes = normalizeReplayKeyframes(raw.replayKeyframes);
+  if (
+    !replayKeyframes.every(
+      ({ frame }) =>
+        frame.seed === state.seed &&
+        frame.difficulty === state.difficulty &&
+        sameStringArray(frame.trials, stateTrials),
+    )
+  ) {
+    return null;
+  }
+
   // セーブ時は sprint を落とす契約。残っていても復元側で無視する。
   return {
     schemaVersion: RUN_SAVE_SCHEMA_VERSION,
@@ -450,7 +479,7 @@ export function parseRunSave(raw: unknown): RunSave | null {
       ...stateWithCurrentReview,
       trendHistory: cloneTrendHistory(stateWithCurrentReview.trendHistory),
     },
-    replayKeyframes: normalizeReplayKeyframes(raw.replayKeyframes),
+    replayKeyframes,
   };
 }
 

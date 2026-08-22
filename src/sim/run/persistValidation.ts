@@ -12,6 +12,112 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function hasFiniteNumberFields(
+  value: unknown,
+  required: readonly string[],
+  optional: readonly string[] = [],
+): boolean {
+  if (!isObject(value)) return false;
+  if (
+    !required.every(
+      (key) => typeof value[key] === 'number' && Number.isFinite(value[key] as number),
+    )
+  ) {
+    return false;
+  }
+  return optional.every(
+    (key) =>
+      value[key] === undefined ||
+      (typeof value[key] === 'number' && Number.isFinite(value[key] as number)),
+  );
+}
+
+/** エンジンが計算に使う永続数値を、hydrate 前に文字列や非有限値から守る。 */
+function hasValidPersistNumbers(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (
+    !hasFiniteNumberFields(value, [
+      'sprintsPerQuarter',
+      'sprintIndexInQuarter',
+      'sprintsPlayed',
+      'quarterNumber',
+      'budget',
+    ])
+  ) {
+    return false;
+  }
+  if (
+    !hasFiniteNumberFields(
+      value.org,
+      [
+        'aiDependency',
+        'aiLiteracy',
+        'testCoverage',
+        'documentation',
+        'quality',
+        'morale',
+        'seniorHp',
+        'techDebt',
+        'deliveryScore',
+      ],
+      ['securityLevel'],
+    )
+  ) {
+    return false;
+  }
+  if (!hasFiniteNumberFields(value.evolution, ['points'])) return false;
+  if (
+    !hasFiniteNumberFields(
+      value.totals,
+      [
+        'delivered',
+        'done',
+        'rework',
+        'incidents',
+        'contained',
+        'spread',
+        'aiAssisted',
+        'completed',
+        'reviewQueuePeak',
+        'maxCombo',
+      ],
+      ['consecutiveIncidentSprints'],
+    )
+  ) {
+    return false;
+  }
+  if (
+    !hasFiniteNumberFields(
+      value.quarterTotals,
+      [
+        'delivered',
+        'done',
+        'rework',
+        'incidents',
+        'contained',
+        'spread',
+        'aiAssisted',
+        'completed',
+        'reviewQueuePeak',
+        'maxCombo',
+      ],
+      ['consecutiveIncidentSprints'],
+    )
+  ) {
+    return false;
+  }
+  if (
+    !hasFiniteNumberFields(
+      value.quarterGoal,
+      ['deliveryTarget', 'qualityTarget', 'techDebtLimit', 'moraleTarget', 'incidentLimit'],
+      ['aiAdoptionTarget'],
+    )
+  ) {
+    return false;
+  }
+  return hasFiniteNumberFields(value.stakeholderTrust, ['management', 'customers', 'team']);
+}
+
 /** フェーズ画面が要求する保存済みデータの存在を検証する。 */
 export function hasRequiredPersistPhaseState(
   state: Pick<
@@ -38,6 +144,7 @@ export function hasRequiredPersistPhaseState(
 export function canHydratePersistState(state: RunPersistState): boolean {
   try {
     if (!hasRequiredPersistPhaseState(state)) return false;
+    if (!hasValidPersistNumbers(state)) return false;
     const engine = createRunEngine({
       seed: state.seed,
       difficulty: state.difficulty,
@@ -54,6 +161,7 @@ export function canHydratePersistState(state: RunPersistState): boolean {
 export function canHydrateReplayFrame(frame: RunReplayFrame): boolean {
   try {
     if (!hasRequiredPersistPhaseState(frame)) return false;
+    if (!hasValidPersistNumbers(frame)) return false;
     const engine = createRunEngine({
       seed: frame.seed,
       difficulty: frame.difficulty,

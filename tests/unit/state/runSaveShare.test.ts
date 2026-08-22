@@ -174,6 +174,74 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-daily');
   });
 
+  it('roster.members の要素が null なら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-member');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-member-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-null-member');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { roster: { members: unknown[] } };
+    };
+    raw.state.roster.members[0] = null;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-member');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-member');
+  });
+
+  it('同梱キーフレームが欠けた途中セーブは拒否する', async () => {
+    const save = makeRunSave('ri133-kf-drop');
+    const raw = JSON.parse(serializeRunSave(save)) as {
+      replayKeyframes: Array<{ frame: Record<string, unknown> }>;
+    };
+    delete raw.replayKeyframes[0]!.frame.trials;
+    expect(parseRunSaveShare(JSON.stringify(raw))).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+    });
+  });
+
+  it('ラン開始後は保留中の途中セーブ取り込みを反映しない', async () => {
+    let current: RunSave | null = null;
+    const runStorage = {
+      async load() {
+        return current;
+      },
+      async save(save: RunSave) {
+        if (save.summary.seed === 'ri133-late-import') {
+          await new Promise((resolve) => {
+            setTimeout(resolve, 40);
+          });
+        }
+        current = save;
+      },
+      async clear() {
+        current = null;
+      },
+    };
+    const game = createGame({
+      seed: 'ri133-cancel-import',
+      initialMeta: defaultMeta(),
+      runStorage,
+    });
+    const importing = game.importRunSaveText(serializeRunSave(makeRunSave('ri133-late-import')));
+    game.startRun('easy', [], 'started-after-import');
+    await importing;
+    expect(game.getRunSaveSummary()?.seed).toBe('started-after-import');
+    expect((await runStorage.load())?.summary.seed).toBe('started-after-import');
+  });
+
   it('state.roster が null なら拒否し、既存セーブは残す', async () => {
     const existing = makeRunSave('ri133-keep-roster');
     const runStorage = new MemoryRunStorage();

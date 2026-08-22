@@ -552,6 +552,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     startRun(difficulty, trials, runSeed, scenario) {
       if (replayMode) return engine.snapshot();
+      latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
@@ -568,6 +569,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     startDailyRun(dateStr) {
       if (replayMode) return engine.snapshot();
+      latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
       activeReplayInfo = null;
@@ -838,6 +840,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     resumeRun() {
       if (replayMode || runSaveIssue || !resumableSave) return null;
+      latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
       clearWhatIfCache();
@@ -884,7 +887,12 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const write = runSaveImportWrites.then(async () => {
         if (latestImportedSave !== intended) return;
         if (runStorage) await runStorage.save(intended);
-        if (latestImportedSave !== intended) return;
+        if (latestImportedSave !== intended) {
+          if (runStorage && resumableSave && resumableSave !== intended) {
+            await runStorage.save(resumableSave);
+          }
+          return;
+        }
         resumableSave = structuredClone(intended);
         runSaveIssue = null;
         bump();

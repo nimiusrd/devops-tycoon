@@ -195,16 +195,28 @@ export function TitleScreen({
     if (!file || !onImportRunSave) return;
     const requestId = ++runSaveImportGen.current;
     setRunSaveImporting(true);
-    void file.text().then(async (raw) => {
-      if (requestId !== runSaveImportGen.current) return;
-      const result = await onImportRunSave(raw);
-      if (requestId !== runSaveImportGen.current) return;
-      setRunSaveShareStatus({
-        kind: result.ok ? 'ok' : 'error',
-        message: result.ok ? '途中セーブを読み込みました。再開できます。' : result.message,
+    void file
+      .text()
+      .then(async (raw) => {
+        if (requestId !== runSaveImportGen.current) return;
+        const result = await onImportRunSave(raw);
+        if (requestId !== runSaveImportGen.current) return;
+        setRunSaveShareStatus({
+          kind: result.ok ? 'ok' : 'error',
+          message: result.ok ? '途中セーブを読み込みました。再開できます。' : result.message,
+        });
+      })
+      .catch(() => {
+        if (requestId !== runSaveImportGen.current) return;
+        setRunSaveShareStatus({
+          kind: 'error',
+          message: '途中セーブが壊れているか、読み取れません。',
+        });
+      })
+      .finally(() => {
+        if (requestId !== runSaveImportGen.current) return;
+        setRunSaveImporting(false);
       });
-      setRunSaveImporting(false);
-    });
   };
 
   const dailyStatus = dailyRecord
@@ -594,7 +606,12 @@ export function TitleScreen({
                 <small>
                   UTC {today}・{dailyStatus}
                 </small>
-                <button type="button" data-testid="start-daily-run" onClick={onStartDaily}>
+                <button
+                  type="button"
+                  data-testid="start-daily-run"
+                  disabled={runSaveImporting}
+                  onClick={onStartDaily}
+                >
                   本日のデイリーを始める →
                 </button>
               </div>
@@ -612,6 +629,7 @@ export function TitleScreen({
                 type="button"
                 className="title-launch"
                 data-testid="start-run"
+                disabled={runSaveImporting}
                 onClick={() => onStart(difficulty, trials, scenario, seed)}
               >
                 <span>
@@ -627,6 +645,7 @@ export function TitleScreen({
                 type="button"
                 className="btn btn-primary btn-lg"
                 data-testid="start-run"
+                disabled={runSaveImporting}
                 onClick={() => onStart(difficulty, trials, scenario, seed)}
               >
                 四半期を始める →

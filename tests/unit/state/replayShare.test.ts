@@ -247,6 +247,27 @@ describe('リプレイのファイル共有（RI-133）', () => {
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-diagnosis']);
   });
 
+  it('キーフレームの member が null なら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-null-member-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-member', seed: 'keep-member' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'null-member', seed: 'null-member' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: { roster: { members: unknown[] } } }>;
+    };
+    raw.keyframes[0]!.frame.roster.members[0] = null;
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-member']);
+  });
+
   it('キーフレームの roster が null なら拒否し、既存リプレイは残す', async () => {
     const replayStorage = new MemoryReplayStorage();
     const game = createGame({ seed: 'ri133-null-roster-replay', initialMeta: defaultMeta() });

@@ -83,12 +83,24 @@ export function parseRunSaveShare(raw: string): RunSaveShareResult {
   if (
     !summaryMatchesPersistState(save) ||
     !isPersistFrameShape(save.state) ||
+    !bundledReplayKeyframesIntact(parsed, save) ||
     !canHydrateRunSave(save)
   ) {
     return fail('corrupt');
   }
 
   return { ok: true, save };
+}
+
+/** 同梱キーフレームが正規化で欠けたり、入れ子が壊れていたりしないか。 */
+export function bundledReplayKeyframesIntact(
+  parsed: Record<string, unknown>,
+  save: RunSave,
+): boolean {
+  if (parsed.replayKeyframes === undefined) return true;
+  if (!Array.isArray(parsed.replayKeyframes)) return false;
+  if (parsed.replayKeyframes.length !== save.replayKeyframes.length) return false;
+  return save.replayKeyframes.every((keyframe) => isPersistFrameShape(keyframe.frame));
 }
 
 /** 再開時に使う要約派生値が state と食い違っていないか。 */

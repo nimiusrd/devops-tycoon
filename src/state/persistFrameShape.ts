@@ -24,8 +24,7 @@ export function isPersistFrameShape(value: unknown): boolean {
   if (!isObject(value.org)) return false;
   if (!isObject(value.evolution) || typeof value.evolution.points !== 'number') return false;
   if (!isObject(value.evolution.unlocked)) return false;
-  if (!isObject(value.roster) || !Array.isArray(value.roster.members)) return false;
-  if (typeof value.roster.nextId !== 'number') return false;
+  if (!isRosterShape(value.roster)) return false;
   if (!isObject(value.pendingSprintModifiers)) return false;
   if (!isObject(value.totals)) return false;
   if (!isObject(value.quarterTotals)) return false;
@@ -49,4 +48,20 @@ export function isPersistFrameShape(value: unknown): boolean {
   if (value.beat !== undefined && !isNullableObject(value.beat)) return false;
   if (value.quarterReview !== undefined && !isNullableObject(value.quarterReview)) return false;
   return true;
+}
+
+function isRosterShape(value: unknown): boolean {
+  if (!isObject(value) || !Array.isArray(value.members) || typeof value.nextId !== 'number') {
+    return false;
+  }
+  return value.members.every(isMemberShape);
+}
+
+function isMemberShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  if (typeof value.id !== 'string' || typeof value.name !== 'string') return false;
+  if (typeof value.onLeave !== 'boolean' || typeof value.aiAssigned !== 'boolean') return false;
+  return (
+    value.assignment === 'coding' || value.assignment === 'review' || value.assignment === 'bench'
+  );
 }

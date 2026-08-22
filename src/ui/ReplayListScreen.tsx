@@ -8,6 +8,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { diagnosisView } from '../sim/diagnosis';
 import { planReviewHellReplay } from '../render/reviewHellReplayView';
 import { formatReplayRuleset } from './replayRuleset';
+import { resolveSelectedReplayId } from './replayListSelection';
 import type { ReplayBlob } from '../state/replay';
 
 export interface ReplayListScreenProps {
@@ -43,7 +44,8 @@ export function ReplayListScreen({
   onImportReplay,
 }: ReplayListScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
-  const selected = replays.find((r) => r.id === selectedId) ?? replays[0] ?? null;
+  const resolvedSelectedId = resolveSelectedReplayId(replays, selectedId);
+  const selected = replays.find((r) => r.id === resolvedSelectedId) ?? null;
   const hellView = selected ? planReviewHellReplay(selected) : null;
   const replayFileRef = useRef<HTMLInputElement>(null);
   const replayImportGen = useRef(0);
@@ -79,16 +81,28 @@ export function ReplayListScreen({
     if (!file || !onImportReplay) return;
     const requestId = ++replayImportGen.current;
     setReplayImporting(true);
-    void file.text().then(async (raw) => {
-      if (requestId !== replayImportGen.current) return;
-      const result = await onImportReplay(raw);
-      if (requestId !== replayImportGen.current) return;
-      setShareStatus({
-        kind: result.ok ? 'ok' : 'error',
-        message: result.ok ? 'リプレイを読み込みました。' : result.message,
+    void file
+      .text()
+      .then(async (raw) => {
+        if (requestId !== replayImportGen.current) return;
+        const result = await onImportReplay(raw);
+        if (requestId !== replayImportGen.current) return;
+        setShareStatus({
+          kind: result.ok ? 'ok' : 'error',
+          message: result.ok ? 'リプレイを読み込みました。' : result.message,
+        });
+      })
+      .catch(() => {
+        if (requestId !== replayImportGen.current) return;
+        setShareStatus({
+          kind: 'error',
+          message: 'リプレイが壊れているか、読み取れません。',
+        });
+      })
+      .finally(() => {
+        if (requestId !== replayImportGen.current) return;
+        setReplayImporting(false);
       });
-      setReplayImporting(false);
-    });
   };
 
   return (
@@ -113,7 +127,7 @@ export function ReplayListScreen({
                   <li key={replay.id}>
                     <button
                       type="button"
-                      className={`${replay.id === selectedId ? 'selected' : ''}${isHell ? ' replay-item-review-hell' : ''}`}
+                      className={`${replay.id === resolvedSelectedId ? 'selected' : ''}${isHell ? ' replay-item-review-hell' : ''}`}
                       data-testid={`replay-item-${replay.id}`}
                       data-diagnosis={replay.outcome.diagnosis}
                       onClick={() => setSelectedId(replay.id)}

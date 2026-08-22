@@ -116,7 +116,7 @@ export function replayTerminalsConsistent(replay: ReplayBlob): boolean {
       return false;
     }
   }
-  const last = replay.keyframes.at(-1);
+  const last = replay.keyframes[replay.keyframes.length - 1];
   if (!last || (last.phase !== 'won' && last.phase !== 'lost')) return true;
   return replay.outcome.status === last.phase;
 }

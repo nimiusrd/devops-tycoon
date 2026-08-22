@@ -408,6 +408,69 @@ describe('リプレイのファイル共有（RI-133）', () => {
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-member']);
   });
 
+  it('キーフレームの lastGrowth が空オブジェクトなら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-empty-growth-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-growth', seed: 'keep-growth' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'empty-growth', seed: 'empty-growth' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: { lastGrowth?: unknown } }>;
+    };
+    raw.keyframes[0]!.frame.lastGrowth = {};
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-growth']);
+  });
+
+  it('キーフレームの trendHistory 要素が null なら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-null-trend-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-trend', seed: 'keep-trend' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'null-trend', seed: 'null-trend' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: { trendHistory?: unknown } }>;
+    };
+    raw.keyframes[0]!.frame.trendHistory = [null];
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-trend']);
+  });
+
+  it('キーフレームの extras.teamRosters が null なら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-null-rosters-replay', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-rosters', seed: 'keep-rosters' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeReplay({ id: 'null-rosters', seed: 'null-rosters' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: { extras: { teamRosters?: Record<string, unknown> } } }>;
+    };
+    raw.keyframes[0]!.frame.extras.teamRosters = { 'other-team': null };
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-rosters']);
+  });
+
   it('キーフレームの roster が null なら拒否し、既存リプレイは残す', async () => {
     const replayStorage = new MemoryReplayStorage();
     const game = createGame({ seed: 'ri133-null-roster-replay', initialMeta: defaultMeta() });

@@ -82,6 +82,22 @@ function makeShopRunSave(seed: string): RunSave {
   return save;
 }
 
+function makeDraftRunSave(seed: string): RunSave {
+  const save = makeRunSave(seed);
+  save.state.phase = 'draft';
+  save.summary.phase = 'draft';
+  save.state.draft = ['docs', 'focus'];
+  return save;
+}
+
+function makeBeatRunSave(seed: string): RunSave {
+  const save = makeRunSave(seed);
+  save.state.phase = 'beat';
+  save.summary.phase = 'beat';
+  save.state.beat = { eventId: 'urgent-demo', kind: 'decision' };
+  return save;
+}
+
 describe('途中セーブのファイル共有（RI-133）', () => {
   it('JSON を往復しても同じセーブを再開できる', () => {
     const save = makeRunSave();
@@ -428,6 +444,185 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     });
     expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-shop');
     expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-shop');
+  });
+
+  it('draft フェーズで候補配列が null なら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-draft');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-draft-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeDraftRunSave('ri133-null-draft');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: { draft?: unknown } };
+    raw.state.draft = null;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-draft');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-draft');
+  });
+
+  it('draft フェーズの正常な途中セーブは取り込める', async () => {
+    const runStorage = new MemoryRunStorage();
+    const game = createGame({
+      seed: 'ri133-draft-ok-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+    });
+    const incoming = makeDraftRunSave('ri133-draft-ok');
+    const accepted = await game.importRunSaveText(serializeRunSave(incoming));
+    expect(accepted.ok).toBe(true);
+    expect(game.getRunSaveSummary()?.phase).toBe('draft');
+    expect((await runStorage.load())?.state.draft).toEqual(['docs', 'focus']);
+  });
+
+  it('beat フェーズで本体が空オブジェクトなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-beat');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-beat-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeBeatRunSave('ri133-empty-beat');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: { beat?: unknown } };
+    raw.state.beat = {};
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-beat');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-beat');
+  });
+
+  it('beat フェーズの未知 eventId は拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-beat-id');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-beat-id-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeBeatRunSave('ri133-unknown-beat');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { beat?: { eventId?: string; kind?: string } };
+    };
+    raw.state.beat = { eventId: 'not-a-real-event', kind: 'decision' };
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-beat-id');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-beat-id');
+  });
+
+  it('beat フェーズの正常な途中セーブは取り込める', async () => {
+    const runStorage = new MemoryRunStorage();
+    const game = createGame({
+      seed: 'ri133-beat-ok-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+    });
+    const incoming = makeBeatRunSave('ri133-beat-ok');
+    const accepted = await game.importRunSaveText(serializeRunSave(incoming));
+    expect(accepted.ok).toBe(true);
+    expect(game.getRunSaveSummary()?.phase).toBe('beat');
+    expect((await runStorage.load())?.state.beat).toEqual({
+      eventId: 'urgent-demo',
+      kind: 'decision',
+    });
+  });
+
+  it('lastGrowth が空オブジェクトなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-growth');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-growth-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-empty-growth');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: { lastGrowth?: unknown } };
+    raw.state.lastGrowth = {};
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-growth');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-growth');
+  });
+
+  it('trendHistory の要素が null なら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-trend');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-trend-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-null-trend');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: { trendHistory?: unknown } };
+    raw.state.trendHistory = [null];
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-trend');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-trend');
+  });
+
+  it('extras.teamRosters の値が null なら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-rosters');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-rosters-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeRunSave('ri133-null-team-roster');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { extras: { teamRosters?: Record<string, unknown> } };
+    };
+    raw.state.extras.teamRosters = { 'other-team': null };
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-rosters');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-rosters');
   });
 
   it('ショップフェーズの正常な途中セーブは取り込める', async () => {

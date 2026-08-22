@@ -69,6 +69,7 @@ export function parseReplayShare(raw: string): ReplayShareResult {
   if (
     !replay ||
     !hasValidReplayDomainEnums(replay) ||
+    !replayTerminalsConsistent(replay) ||
     !replay.keyframes.every((keyframe) => isPersistFrameShape(keyframe.frame)) ||
     !canHydrateReplay(replay)
   ) {
@@ -103,6 +104,22 @@ const LOSE_REASONS = new Set<LoseReason>([
 ]);
 const RUN_KINDS = new Set<RunKind>(['normal', 'daily']);
 const DIFFICULTIES = new Set<DifficultyId>(['easy', 'normal', 'hard', 'nightmare']);
+
+/** キーフレームの phase / frame.status / 終端 outcome が食い違っていないか。 */
+export function replayTerminalsConsistent(replay: ReplayBlob): boolean {
+  for (const keyframe of replay.keyframes) {
+    if (keyframe.frame.phase !== keyframe.phase) return false;
+    if (
+      (keyframe.phase === 'won' || keyframe.phase === 'lost') &&
+      keyframe.frame.status !== keyframe.phase
+    ) {
+      return false;
+    }
+  }
+  const last = replay.keyframes.at(-1);
+  if (!last || (last.phase !== 'won' && last.phase !== 'lost')) return true;
+  return replay.outcome.status === last.phase;
+}
 
 /** hydrate では落ちない未知の列挙値を、画面参照前に拒否する。 */
 export function hasValidReplayDomainEnums(replay: ReplayBlob): boolean {

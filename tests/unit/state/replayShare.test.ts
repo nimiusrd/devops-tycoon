@@ -19,6 +19,21 @@ import {
   serializeReplay,
 } from '../../../src/state/replayShare';
 
+function makeWonReplay(partial: Partial<ReplayBlob> & Pick<ReplayBlob, 'id' | 'seed'>): ReplayBlob {
+  const engine = new RunEngine({ seed: partial.seed, difficulty: 'easy' });
+  engine.startRun('easy', [], partial.seed);
+  const internals = engine as unknown as { phase: string; status: string };
+  internals.phase = 'won';
+  internals.status = 'won';
+  const frame = engine.exportReplayFrame();
+  if (!frame) throw new Error('won frame export failed');
+  return makeReplay({
+    ...partial,
+    outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 10, ...partial.outcome },
+    keyframes: partial.keyframes ?? [{ phase: 'won', frame }],
+  });
+}
+
 function makeReplay(partial: Partial<ReplayBlob> & Pick<ReplayBlob, 'id' | 'seed'>): ReplayBlob {
   const engine = new RunEngine({ seed: partial.seed, difficulty: 'easy' });
   engine.startRun('easy', [], partial.seed);
@@ -245,6 +260,39 @@ describe('リプレイのファイル共有（RI-133）', () => {
       message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
     });
     expect(game.listReplays().map((item) => item.id)).toEqual(['keep-diagnosis']);
+  });
+
+  it('終端キーフレームの status が outcome と食い違うなら拒否し、既存リプレイは残す', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-status-mismatch', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const existing = makeReplay({ id: 'keep-status', seed: 'keep-status' });
+    expect(await game.importReplay(existing)).toBe(true);
+
+    const replay = makeWonReplay({ id: 'won-as-lost', seed: 'won-as-lost' });
+    const raw = JSON.parse(serializeReplay(replay)) as {
+      keyframes: Array<{ frame: { status?: string } }>;
+    };
+    raw.keyframes[0]!.frame.status = 'lost';
+    const rejected = await game.importReplayText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.listReplays().map((item) => item.id)).toEqual(['keep-status']);
+  });
+
+  it('勝利キーフレームと outcome が一致するリプレイは取り込める', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'ri133-won-ok', initialMeta: defaultMeta() });
+    await game.attachReplay(replayStorage);
+    const replay = makeWonReplay({ id: 'won-ok', seed: 'won-ok' });
+    const accepted = await game.importReplayText(serializeReplay(replay));
+    expect(accepted.ok).toBe(true);
+    const opened = game.openReplay('won-ok');
+    expect(opened?.phase).toBe('won');
+    expect(opened?.status).toBe('won');
   });
 
   it('キーフレームの member.stats が null なら拒否し、既存リプレイは残す', async () => {

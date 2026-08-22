@@ -44,10 +44,44 @@ export function isPersistFrameShape(value: unknown): boolean {
   }
   if (value.lastGrowth !== undefined && !isNullableObject(value.lastGrowth)) return false;
   if (value.lastResult !== undefined && !isNullableObject(value.lastResult)) return false;
-  if (value.shop !== undefined && !isNullableObject(value.shop)) return false;
+  if (value.shop !== undefined && value.shop !== null && !isShopShape(value.shop)) return false;
+  if (value.phase === 'shop' && !isShopShape(value.shop)) return false;
   if (value.beat !== undefined && !isNullableObject(value.beat)) return false;
   if (value.quarterReview !== undefined && !isNullableObject(value.quarterReview)) return false;
   return true;
+}
+
+function isShopCardOfferShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.defId === 'string' &&
+    typeof value.cost === 'number' &&
+    typeof value.bought === 'boolean'
+  );
+}
+
+function isShopRelicShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.id === 'string' &&
+    typeof value.cost === 'number' &&
+    typeof value.bought === 'boolean'
+  );
+}
+
+function isShopRecruitShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return typeof value.cost === 'number' && typeof value.bought === 'boolean';
+}
+
+/** ShopScreen が cards.map する前に、陳列の形を拒否する。 */
+function isShopShape(value: unknown): boolean {
+  if (!isObject(value) || !Array.isArray(value.cards) || !value.cards.every(isShopCardOfferShape)) {
+    return false;
+  }
+  if (value.relic !== undefined && !isShopRelicShape(value.relic)) return false;
+  if (value.recruit !== undefined && !isShopRecruitShape(value.recruit)) return false;
+  return value.introSupportGranted === undefined || typeof value.introSupportGranted === 'boolean';
 }
 
 function isRosterShape(value: unknown): boolean {

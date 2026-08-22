@@ -25,6 +25,18 @@ function makeRunSave(seed = 'ri133-run-save'): RunSave {
   return toRunSave(state, 1234, [{ phase: 'setup', label: '編成', frame }]);
 }
 
+function makeShopRunSave(seed: string): RunSave {
+  const save = makeRunSave(seed);
+  save.state.phase = 'shop';
+  save.summary.phase = 'shop';
+  save.state.shop = {
+    cards: [{ defId: 'docs', cost: 4, bought: false }],
+    relic: { id: 'postmortem', cost: 12, bought: false },
+    recruit: { cost: 8, bought: false },
+  };
+  return save;
+}
+
 describe('途中セーブのファイル共有（RI-133）', () => {
   it('JSON を往復しても同じセーブを再開できる', () => {
     const save = makeRunSave();
@@ -271,6 +283,46 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect(game.getRunSaveSummary()).toBeNull();
     expect(game.getRunSaveIssue()).toBeNull();
     expect(await runStorage.load()).toBeNull();
+  });
+
+  it('ショップフェーズで shop が空オブジェクトなら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-shop');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-shop-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeShopRunSave('ri133-empty-shop');
+    const raw = JSON.parse(serializeRunSave(incoming)) as { state: { shop?: unknown } };
+    raw.state.shop = {};
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-shop');
+    expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-shop');
+  });
+
+  it('ショップフェーズの正常な途中セーブは取り込める', async () => {
+    const runStorage = new MemoryRunStorage();
+    const game = createGame({
+      seed: 'ri133-shop-ok-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+    });
+    const incoming = makeShopRunSave('ri133-shop-ok');
+    const accepted = await game.importRunSaveText(serializeRunSave(incoming));
+    expect(accepted.ok).toBe(true);
+    expect(game.getRunSaveSummary()?.phase).toBe('shop');
+    expect((await runStorage.load())?.state.shop?.cards).toEqual([
+      { defId: 'docs', cost: 4, bought: false },
+    ]);
   });
 
   it('roster.members の要素が null なら拒否し、既存セーブは残す', async () => {

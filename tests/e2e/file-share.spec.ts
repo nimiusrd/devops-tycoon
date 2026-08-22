@@ -22,6 +22,29 @@ type ShareGameWindow = Window & {
   };
 };
 
+async function storedRunSeed(page: import('@playwright/test').Page): Promise<string | null> {
+  return page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('devops-tycoon');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    if (![...db.objectStoreNames].includes('runSave')) {
+      db.close();
+      return null;
+    }
+    const value = await new Promise<unknown>((resolve, reject) => {
+      const request = db.transaction('runSave', 'readonly').objectStore('runSave').get('current');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    if (!value || typeof value !== 'object') return null;
+    const summary = (value as { summary?: { seed?: string } }).summary;
+    return summary?.seed ?? null;
+  });
+}
+
 async function persistSetupSave(
   page: import('@playwright/test').Page,
   seed: string,
@@ -34,6 +57,7 @@ async function persistSetupSave(
   await expect
     .poll(async () => page.evaluate(() => (window as ShareGameWindow).game?.phase()))
     .toBe('setup');
+  await expect.poll(() => storedRunSeed(page)).toBe(seed);
 }
 
 test.describe('run / replay file share (RI-133)', () => {

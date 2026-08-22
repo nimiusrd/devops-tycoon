@@ -81,6 +81,11 @@ const FAILURE_LESSONS: Record<FailureDiagnosisType, { lesson: string; hint: stri
   },
 };
 
+/** 既知の診断種別かどうか。外部JSONの取り込み検証用。 */
+export function isDiagnosisType(value: unknown): value is DiagnosisType {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(META, value);
+}
+
 /** 失敗診断かどうかを判定する。 */
 export function isFailureDiagnosis(type: DiagnosisType): type is FailureDiagnosisType {
   return (FAILURE_DIAGNOSIS_TYPES as readonly DiagnosisType[]).includes(type);

@@ -16,7 +16,9 @@ import {
 import type { RunDiagnosticInfo } from '../state/diagnosticInfo';
 import type { MetaState, RunRewardBreakdown } from '../state/meta';
 import type { ReplayBlob } from '../state/replay';
+import type { ReplayShareResult } from '../state/replayShare';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
+import type { RunSaveShareResult } from '../state/runSaveShare';
 import type {
   ActionId,
   ActionTarget,
@@ -100,6 +102,10 @@ export interface UseRun {
   chooseGoalAdjustment: (id: GoalAdjustmentId) => void;
   newRun: () => void;
   clearRunSave: () => void;
+  exportRunSaveText: () => string | null;
+  importRunSaveText: (raw: string) => Promise<RunSaveShareResult>;
+  exportReplayText: (id: string) => string | null;
+  importReplayText: (raw: string) => Promise<ReplayShareResult>;
   replays: ReplayBlob[];
   isReplayMode: boolean;
   /** 閲覧中リプレイの終端診断（RI-34‴）。非リプレイ時は null。 */
@@ -274,6 +280,10 @@ export function useRun(game: GameHandle): UseRun {
   );
   const newRun = useCallback(() => void game.newRun(), [game]);
   const clearRunSave = useCallback(() => void game.clearRunSave(), [game]);
+  const exportRunSaveText = useCallback(() => game.exportRunSaveText(), [game]);
+  const importRunSaveText = useCallback((raw: string) => game.importRunSaveText(raw), [game]);
+  const exportReplayText = useCallback((id: string) => game.exportReplayText(id), [game]);
+  const importReplayText = useCallback((raw: string) => game.importReplayText(raw), [game]);
   const openReplay = useCallback(
     (id: string, keyframeIndex?: number) => void game.openReplay(id, keyframeIndex),
     [game],
@@ -339,6 +349,10 @@ export function useRun(game: GameHandle): UseRun {
     chooseGoalAdjustment,
     newRun,
     clearRunSave,
+    exportRunSaveText,
+    importRunSaveText,
+    exportReplayText,
+    importReplayText,
     purchaseMetaUnlock,
     setSoundMuted,
     setPreferredCardIds,

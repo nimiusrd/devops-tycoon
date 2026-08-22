@@ -3037,6 +3037,10 @@ button.card:active {
   border-color: #7edfff;
   background: #142944;
 }
+.title-recipe-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 .title-recipe-status {
   margin: 0;
   color: #9fb0ca;
@@ -4026,6 +4030,25 @@ button.card:active {
 .replay-list-keyframes button i {
   font-style: normal;
   opacity: 0.75;
+}
+.replay-share {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.replay-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.replay-share-status {
+  margin: 0;
+  color: #9fb0ca;
+  font-size: 12px;
+}
+.replay-share-status.error {
+  color: #f3b27a;
 }
 .replay-mode-banner {
   display: flex;

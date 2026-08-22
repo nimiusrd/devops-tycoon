@@ -929,6 +929,9 @@ describe('RI-133 セーブファイル共有', () => {
     expect(await storage.load()).toEqual(save);
     expect(game.getRunSave()).toEqual(save);
     expect(game.getMeta()).toEqual(meta);
+    const importedRevision = game.getRunSaveRevision();
+    expect(importedRevision).toBeGreaterThan(0);
+    expect(game.getRunSaveRevision()).toBe(importedRevision);
 
     const beforeRejectedImport = await storage.load();
     const rejected = await game.importRunSave(JSON.stringify({ ...save, schemaVersion: 999 }));

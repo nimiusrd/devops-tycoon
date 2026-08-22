@@ -930,4 +930,35 @@ describe('RI-133 リプレイファイル共有', () => {
     expect(rejected).toMatchObject({ ok: false, reason: 'ruleset-mismatch' });
     expect(game.listReplays().map((replay) => replay.id)).toEqual(['ri133-existing']);
   });
+
+  it('上限適用で取込対象自身が削除された場合は成功にしない', async () => {
+    const replayStorage = new MemoryReplayStorage();
+    const game = createGame({ initialMeta: defaultMeta() });
+    for (let index = 0; index < REPLAY_MAX_COUNT; index += 1) {
+      await replayStorage.save(
+        makeBlob({
+          id: `ri133-newer-${index}`,
+          seed: `ri133-newer-${index}`,
+          finishedAt: 2_000 + index,
+          ruleset: CURRENT_RUN_RULESET,
+        }),
+      );
+    }
+    await game.attachReplay(replayStorage);
+
+    const result = await game.importReplayFile(
+      serializeReplay(
+        makeBlob({
+          id: 'ri133-too-old',
+          seed: 'ri133-too-old',
+          finishedAt: 1_000,
+          ruleset: CURRENT_RUN_RULESET,
+        }),
+      ),
+    );
+
+    expect(result).toMatchObject({ ok: false, reason: 'evicted' });
+    expect(game.listReplays()).toHaveLength(REPLAY_MAX_COUNT);
+    expect(game.listReplays().some((replay) => replay.id === 'ri133-too-old')).toBe(false);
+  });
 });

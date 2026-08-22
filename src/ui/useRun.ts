@@ -172,6 +172,7 @@ export function useRun(game: GameHandle): UseRun {
   useEffect(() => {
     // 初回も必ず同期する。React の描画〜effect開始の間に window.game が操作されても取りこぼさない。
     let lastRev = -1;
+    let lastRunSaveRevision = -1;
     let accumulatedMs = 0;
     let lastWallMs = performance.now();
     const id = window.setInterval(() => {
@@ -208,9 +209,13 @@ export function useRun(game: GameHandle): UseRun {
       setMeta(game.getMeta());
       setDiagnosticInfo(game.getDiagnosticInfo());
       setLastRunReward(game.getLastRunReward());
-      setRunSaveSummary(game.getRunSaveSummary());
-      setRunSave(game.getRunSave());
-      setRunSaveIssue(game.getRunSaveIssue());
+      const nextRunSaveRevision = game.getRunSaveRevision();
+      if (nextRunSaveRevision !== lastRunSaveRevision) {
+        lastRunSaveRevision = nextRunSaveRevision;
+        setRunSaveSummary(game.getRunSaveSummary());
+        setRunSave(game.getRunSave());
+        setRunSaveIssue(game.getRunSaveIssue());
+      }
       setRunEpoch(game.getRunEpoch());
       setReplays(game.listReplays());
       setIsReplayMode(game.isReplayMode());

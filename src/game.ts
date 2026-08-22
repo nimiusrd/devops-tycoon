@@ -195,6 +195,8 @@ export interface GameHandle {
   getRunSaveSummary(): RunSaveSummary | null;
   /** ファイル共有へ書き出す現行の再開可能セーブ（無い場合は null）。 */
   getRunSave(): RunSave | null;
+  /** ランセーブが更新された回数。UI の大きなスナップショット同期に使う。 */
+  getRunSaveRevision(): number;
   /** ルールセット不一致・情報欠落で再開できないセーブの理由。 */
   getRunSaveIssue(): RunSaveCompatibilityIssue | null;
   /** ランセーブを破棄する。 */
@@ -270,6 +272,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     : null;
   let resumableSave: RunSave | null = initialRunSaveIssue ? null : (options.initialRunSave ?? null);
   let runSaveIssue: RunSaveCompatibilityIssue | null = initialRunSaveIssue;
+  let runSaveRevision = 0;
   let replayStorage: ReplayStorage | null = null;
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
@@ -302,8 +305,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   const clearRunSaveInternal = (): void => {
+    const hadRunSave = resumableSave !== null || runSaveIssue !== null;
     resumableSave = null;
     runSaveIssue = null;
+    if (hadRunSave) runSaveRevision += 1;
     if (!runStorage) return;
     void runStorage.clear().catch(() => undefined);
   };
@@ -379,6 +384,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     const save = toRunSave(exported, Date.now(), keyframes);
     resumableSave = save;
     runSaveIssue = null;
+    runSaveRevision += 1;
     void runStorage.save(save).catch(() => undefined);
   };
 
@@ -812,6 +818,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       const nextIssue = save ? derivedIssue : issue;
       runSaveIssue = nextIssue ? structuredClone(nextIssue) : null;
       resumableSave = runSaveIssue ? null : save;
+      runSaveRevision += 1;
       bump();
     },
     resumeRun() {
@@ -847,6 +854,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     getRunSave() {
       return resumableSave ? structuredClone(resumableSave) : null;
     },
+    getRunSaveRevision() {
+      return runSaveRevision;
+    },
     getRunSaveIssue() {
       return runSaveIssue ? structuredClone(runSaveIssue) : null;
     },
@@ -875,6 +885,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
       resumableSave = structuredClone(parsed.save);
       runSaveIssue = null;
+      runSaveRevision += 1;
       bump();
       return parsed;
     },
@@ -977,6 +988,13 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
           ok: false,
           reason: 'storage',
           message: 'リプレイを保存できませんでした。既存のリプレイは変更していません。',
+        };
+      }
+      if (!cachedReplays.some((replay) => replay.id === parsed.replay.id)) {
+        return {
+          ok: false,
+          reason: 'evicted',
+          message: 'リプレイは保存件数上限により保存されませんでした。',
         };
       }
       bump();

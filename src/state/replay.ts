@@ -73,6 +73,7 @@ export type ReplayFileImportReason =
   | 'unsupported-schema'
   | 'invalid-data'
   | 'ruleset-mismatch'
+  | 'evicted'
   | 'storage';
 
 export interface ReplayFileCompatibilityIssue {

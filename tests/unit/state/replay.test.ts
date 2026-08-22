@@ -9,6 +9,7 @@ import {
   normalizeReplay,
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
+  selectReplaysWithinMax,
   snapshotReplayContent,
   type ReplayBlob,
   normalizeReplayKeyframes,
@@ -143,6 +144,21 @@ describe('リプレイ正規化（RI-61）', () => {
 
   it('buildReplayId は seed と時刻を含む', () => {
     expect(buildReplayId('seed-x', 42)).toBe('seed-x:42');
+  });
+
+  it('上限超過時は pinnedId を残し他の古いものから外す', () => {
+    const items = Array.from({ length: REPLAY_MAX_COUNT + 1 }, (_, i) =>
+      makeBlob({
+        id: `id-${i}`,
+        seed: `seed-${i}`,
+        finishedAt: 1000 + i,
+      }),
+    );
+    const selected = selectReplaysWithinMax(items, 'id-0');
+    expect(selected).toHaveLength(REPLAY_MAX_COUNT);
+    expect(selected.some((item) => item.id === 'id-0')).toBe(true);
+    expect(selected.some((item) => item.id === 'id-1')).toBe(false);
+    expect(selected[0]?.id).toBe(`id-${REPLAY_MAX_COUNT}`);
   });
 });
 
@@ -283,6 +299,55 @@ describe('ReplayPersistence 直接テスト（RI-72-B1）', () => {
 
     await storage.clear();
     expect(await storage.list()).toEqual([]);
+  });
+
+  it('通常保存では古い finishedAt の新規完走を上限で落とす', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `keep-${i}`,
+          seed: `keep-${i}`,
+          finishedAt: 2000 + i,
+        }),
+      );
+    }
+    await storage.save(
+      makeBlob({
+        id: 'clock-skew',
+        seed: 'clock-skew',
+        finishedAt: 1,
+      }),
+    );
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.some((item) => item.id === 'clock-skew')).toBe(false);
+    expect(listed.some((item) => item.id === 'keep-0')).toBe(true);
+  });
+
+  it('pin 指定の保存では古い finishedAt でもその件を残す', async () => {
+    const storage = new MemoryReplayStorage();
+    for (let i = 0; i < REPLAY_MAX_COUNT; i += 1) {
+      await storage.save(
+        makeBlob({
+          id: `filled-${i}`,
+          seed: `filled-${i}`,
+          finishedAt: 2000 + i,
+        }),
+      );
+    }
+    await storage.save(
+      makeBlob({
+        id: 'pinned-old',
+        seed: 'pinned-old',
+        finishedAt: 1,
+      }),
+      { pin: true },
+    );
+    const listed = await storage.list();
+    expect(listed).toHaveLength(REPLAY_MAX_COUNT);
+    expect(listed.some((item) => item.id === 'pinned-old')).toBe(true);
+    expect(listed.some((item) => item.id === 'filled-0')).toBe(false);
   });
 
   it('initializeReplayPersistence は一覧取得成功時に渡した storage を使う', async () => {

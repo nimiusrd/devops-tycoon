@@ -24,6 +24,23 @@ const LEGACY_REPLAY_SCHEMA_VERSION = 1;
 /** 保持するリプレイ件数の上限（古いものから削除）。 */
 export const REPLAY_MAX_COUNT = 10;
 
+/**
+ * 上限内に収める。`pinnedId` があるときはその件を残し、他の古いものから外す。
+ * 明示取り込みで finishedAt が古いリプレイが即削除されないようにする（RI-133）。
+ */
+export function selectReplaysWithinMax(
+  items: readonly ReplayBlob[],
+  pinnedId?: string,
+  max: number = REPLAY_MAX_COUNT,
+): ReplayBlob[] {
+  const ordered = [...items].sort((a, b) => b.finishedAt - a.finishedAt);
+  if (ordered.length <= max) return ordered;
+  const pinned = pinnedId ? ordered.find((item) => item.id === pinnedId) : undefined;
+  if (!pinned) return ordered.slice(0, max);
+  const others = ordered.filter((item) => item.id !== pinnedId).slice(0, max - 1);
+  return [pinned, ...others].sort((a, b) => b.finishedAt - a.finishedAt);
+}
+
 export interface ReplayOutcome {
   status: Extract<RunStatus, 'won' | 'lost'>;
   winType?: WinType;
@@ -167,7 +184,11 @@ function addRelicId(ids: Set<string>, value: unknown): void {
  * allowedCards / allowedRelics はラン開始時のプールであり、表示参照では
  * ないためスナップショットへは含めない。
  */
-export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): ReplayContentSnapshot {
+/** キーフレーム表示が参照するカード／レリック ID。 */
+export function collectReplayReferencedIds(keyframes: readonly ReplayKeyframe[]): {
+  cardIds: Set<string>;
+  relicIds: Set<string>;
+} {
   const cardIds = new Set<string>();
   const relicIds = new Set<string>();
 
@@ -196,6 +217,11 @@ export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): Rep
     addRelicId(relicIds, frame.bossRelicReward);
   }
 
+  return { cardIds, relicIds };
+}
+
+export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): ReplayContentSnapshot {
+  const { cardIds, relicIds } = collectReplayReferencedIds(keyframes);
   return {
     cards: [...cardIds]
       .map((id) => getCard(id))
@@ -206,6 +232,24 @@ export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): Rep
       .filter((relic): relic is RelicDef => relic !== undefined)
       .map((relic) => structuredClone(relic)),
   };
+}
+
+/** v2 スナップショットが全参照 ID を持っているか。旧 v1 の null は通す。 */
+export function replayContentSnapshotCovers(
+  snapshot: ReplayContentSnapshot | null,
+  keyframes: readonly ReplayKeyframe[],
+): boolean {
+  if (!snapshot) return true;
+  const { cardIds, relicIds } = collectReplayReferencedIds(keyframes);
+  const cards = new Set(snapshot.cards.map((card) => card.id));
+  const relics = new Set(snapshot.relics.map((relic) => relic.id));
+  for (const id of cardIds) {
+    if (!cards.has(id)) return false;
+  }
+  for (const id of relicIds) {
+    if (!relics.has(id)) return false;
+  }
+  return true;
 }
 
 /**

@@ -51,6 +51,7 @@ import {
   normalizeReplay,
   REPLAY_SCHEMA_VERSION,
   snapshotReplayContent,
+  selectReplaysWithinMax,
   type ReplayBlob,
   type ReplayContentSnapshot,
   type ReplayKeyframe,
@@ -67,6 +68,18 @@ import {
   type RunRulesetIdentity,
   type RunStorage,
 } from './state/runPersistence';
+import {
+  parseReplayShare,
+  REPLAY_SHARE_REASON_MESSAGE,
+  serializeReplay,
+  type ReplayShareResult,
+} from './state/replayShare';
+import {
+  parseRunSaveShare,
+  RUN_SAVE_SHARE_REASON_MESSAGE,
+  serializeRunSave,
+  type RunSaveShareResult,
+} from './state/runSaveShare';
 import { createRunDiagnosticInfo, type RunDiagnosticInfo } from './state/diagnosticInfo';
 
 export interface ActiveReplayInfo {
@@ -193,10 +206,24 @@ export interface GameHandle {
   getRunSaveIssue(): RunSaveCompatibilityIssue | null;
   /** ランセーブを破棄する。 */
   clearRunSave(): void;
+  /** 現行の途中セーブを JSON 文字列にする（無い場合は null。RI-133）。 */
+  exportRunSaveText(): string | null;
+  /**
+   * JSON から途中セーブを読み込む。成功時だけラン保存を置き換える。
+   * 失敗時は既存セーブ・メタ進行・リプレイを触らない。
+   */
+  importRunSaveText(raw: string): Promise<RunSaveShareResult>;
   /** リプレイ永続化を接続し、一覧をキャッシュする（RI-61）。 */
   attachReplay(storage: ReplayStorage): Promise<void>;
   /** 保存済みリプレイ一覧（新しい順）。 */
   listReplays(): ReplayBlob[];
+  /** 指定リプレイを JSON 文字列にする（無い場合は null。RI-133）。 */
+  exportReplayText(id: string): string | null;
+  /**
+   * JSON からリプレイを読み込む。成功時だけ既存上限に従って保持する。
+   * 失敗時は既存リプレイ・メタ進行・途中セーブを触らない。
+   */
+  importReplayText(raw: string): Promise<ReplayShareResult>;
   /** リプレイのキーフレームを read-only で開く（失敗時 null）。 */
   openReplay(id: string, keyframeIndex?: number): RunState | null;
   /** リプレイ閲覧を終了してタイトルへ戻る。 */
@@ -260,6 +287,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     : null;
   let resumableSave: RunSave | null = initialRunSaveIssue ? null : (options.initialRunSave ?? null);
   let runSaveIssue: RunSaveCompatibilityIssue | null = initialRunSaveIssue;
+  let latestImportedSave: RunSave | null = null;
+  let runSaveImportWrites: Promise<void> = Promise.resolve();
   let replayStorage: ReplayStorage | null = null;
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
@@ -292,6 +321,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   };
 
   const clearRunSaveInternal = (): void => {
+    latestImportedSave = null;
     resumableSave = null;
     runSaveIssue = null;
     if (!runStorage) return;
@@ -317,17 +347,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     keyframes.push(entry);
   };
 
-  const refreshReplayCache = async (): Promise<void> => {
+  const refreshReplayCache = async (): Promise<boolean> => {
     if (!replayStorage) {
       cachedReplays = [];
-      return;
+      bump();
+      return true;
     }
     try {
       cachedReplays = await replayStorage.list();
+      bump();
+      return true;
     } catch {
-      cachedReplays = [];
+      bump();
+      return false;
     }
-    bump();
   };
 
   const commitReplayIfFinished = (): void => {
@@ -520,6 +553,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     startRun(difficulty, trials, runSeed, scenario) {
       if (replayMode) return engine.snapshot();
+      latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
@@ -536,6 +570,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     startDailyRun(dateStr) {
       if (replayMode) return engine.snapshot();
+      latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
       activeReplayInfo = null;
@@ -806,6 +841,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     resumeRun() {
       if (replayMode || runSaveIssue || !resumableSave) return null;
+      latestImportedSave = null;
       recorded = false;
       lastRunReward = null;
       clearWhatIfCache();
@@ -841,12 +877,91 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearRunSaveInternal();
       bump();
     },
+    exportRunSaveText() {
+      return resumableSave ? serializeRunSave(resumableSave) : null;
+    },
+    async importRunSaveText(raw) {
+      const loaded = parseRunSaveShare(raw);
+      if (!loaded.ok) return loaded;
+      const intended = loaded.save;
+      latestImportedSave = intended;
+      const write = runSaveImportWrites.then(async () => {
+        if (latestImportedSave !== intended) return;
+        if (runStorage) await runStorage.save(intended);
+        if (latestImportedSave !== intended) {
+          if (runStorage && resumableSave && resumableSave !== intended) {
+            await runStorage.save(resumableSave);
+          } else if (runStorage && !resumableSave) {
+            await runStorage.clear();
+          }
+          return;
+        }
+        resumableSave = structuredClone(intended);
+        runSaveIssue = null;
+        bump();
+      });
+      runSaveImportWrites = write.catch(() => undefined);
+      try {
+        await write;
+      } catch {
+        return {
+          ok: false,
+          reason: 'corrupt',
+          message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+        };
+      }
+      return loaded;
+    },
     async attachReplay(storage) {
       replayStorage = storage;
       await refreshReplayCache();
     },
     listReplays() {
       return cachedReplays.map((r) => structuredClone(r));
+    },
+    exportReplayText(id) {
+      const replay = cachedReplays.find((item) => item.id === id);
+      return replay ? serializeReplay(replay) : null;
+    },
+    async importReplayText(raw) {
+      const loaded = parseReplayShare(raw);
+      if (!loaded.ok) return loaded;
+      if (!replayStorage) {
+        return {
+          ok: false,
+          reason: 'corrupt',
+          message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+        };
+      }
+      try {
+        await replayStorage.save(loaded.replay, { pin: true });
+        const listed = await refreshReplayCache();
+        if (!listed) {
+          cachedReplays = selectReplaysWithinMax(
+            [
+              ...cachedReplays.filter((item) => item.id !== loaded.replay.id),
+              structuredClone(loaded.replay),
+            ],
+            loaded.replay.id,
+          );
+          bump();
+          return loaded;
+        }
+        if (!cachedReplays.some((item) => item.id === loaded.replay.id)) {
+          return {
+            ok: false,
+            reason: 'corrupt',
+            message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+          };
+        }
+        return loaded;
+      } catch {
+        return {
+          ok: false,
+          reason: 'corrupt',
+          message: REPLAY_SHARE_REASON_MESSAGE.corrupt,
+        };
+      }
     },
     openReplay(id, keyframeIndex = -1) {
       const replay = cachedReplays.find((r) => r.id === id);

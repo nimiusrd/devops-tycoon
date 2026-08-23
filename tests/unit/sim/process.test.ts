@@ -47,6 +47,7 @@ describe('reworkProbability（RI-134 のワークフロー分離）', () => {
     expect(coarseAiPremisePressure(0, 1, 0, 90)).toBeGreaterThan(
       coarseAiPremisePressure(0, 1, 0, 0),
     );
+    expect(coarseAiPremisePressure(0, 0, 0, 90)).toBeCloseTo((0.08 / 0.28) * 100);
   });
 
   it('ワークフロー成熟度の重みは合計 1 になる', () => {
@@ -182,7 +183,9 @@ describe('RI-134 のワークフロー成熟度 Monte Carlo', () => {
           quality: 60,
           techDebt: 0,
         }),
-        cardEffects: { ...IDENTITY_CARD_EFFECTS },
+        // 成熟度に含まれる Literacy が Incident 率も変えるため、Incident 経路を無効化し、
+        // Rework 判定へ到達する機会を全条件で揃える。
+        cardEffects: { ...IDENTITY_CARD_EFFECTS, incidentRateMul: 0 },
         aiAdoptionShare: input.aiAdoptionShare,
         aiMasteryNorm: input.maturity,
       });

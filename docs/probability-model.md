@@ -470,7 +470,7 @@ coarseAiPremisePressure =
       + (1 - U) × 0.08 × D
       + 0.08 × T
     )
-    / 0.36
+    / 0.28
   ) × 100
 
 queuePressure =
@@ -485,6 +485,9 @@ queuePressure =
     )
   )
 ```
+
+粗粒度圧力の除数`0.28`は、v3で使っていた依存度ポイント換算の固定基準である。
+AIワークフロー係数の増減で共有負債項の尺度まで動かないよう、係数合計から独立させている。
 
 `adoptionShare` と `A_member` は訪問済みなら保存済み編成、未訪問なら依存度とリテラシーからの推定を使う。行列には乱数差分と`queuePressure`を加え、Review能力に応じた件数を消化する。チーム施策、レリック、試練などは`queueRelief`、`reworkRelief`、`reviewMul`、`reviewCapacityMul`へ合流する。
 

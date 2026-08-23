@@ -550,7 +550,7 @@ export const PROCESS_BALANCE = {
   }),
   stabilityReworkMultiplier: defineBalanceEntry({
     id: 'process.stability.reworkMultiplier',
-    value: 0.4,
+    value: 0.35,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
     label: '運用安定中の Rework 倍率',

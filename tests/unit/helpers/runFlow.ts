@@ -118,6 +118,9 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
           const sp = e.snapshot().sprint;
           let gained = 0;
           if (sp && !sp.complete) {
+            // RI-134: 熟練オートプレイは火消し・渋滞解消だけでなく、ペアレビューで
+            // AI前提ワークフローを成熟させる。係数変更後も「熟練」の前提を満たすため常に試行する。
+            if (e.dispatch('pairReview').ok) gained += 1;
             if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
               if (e.dispatch('interruptReview').ok) gained += 1;
             }

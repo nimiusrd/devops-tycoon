@@ -25,6 +25,7 @@ import {
   TASK_BASE_VALUE,
   securityCustomerTrustSpreadRaw,
   securityFragility,
+  coarseAiPremisePressure,
   workflowMaturity,
 } from '../model/process';
 import { AI_LITERACY_UNSAFE_CAP } from '../outcome';
@@ -745,11 +746,14 @@ export function advanceCoarseTeams(
     completed += completedGain;
     aiAssisted += Math.round(completedGain * aiShare);
     const workflowGap = 1 - workflowMaturity(team, team.aiLiteracy / 100);
+    const premisePressure = coarseAiPremisePressure(workflowGap, aiShare);
     const queuePressure = Math.max(
       0,
       Math.round(
         team.engineers * COARSE_TEAM_BALANCE.queuePressurePerEngineer.value +
-          team.aiDependency * COARSE_TEAM_BALANCE.queuePressurePerAiDependency.value * workflowGap -
+          team.aiDependency *
+            COARSE_TEAM_BALANCE.queuePressurePerAiDependency.value *
+            premisePressure -
           reviewCap * COARSE_TEAM_BALANCE.queuePressurePerReviewCapacity.value -
           queueRelief -
           reworkRelief,
@@ -771,7 +775,7 @@ export function advanceCoarseTeams(
     const fireRoll = rng();
     const fireChance = clamp(
       (team.incidentBias +
-        team.aiDependency * COARSE_TEAM_BALANCE.fireChancePerAiDependency.value * workflowGap) *
+        team.aiDependency * COARSE_TEAM_BALANCE.fireChancePerAiDependency.value * premisePressure) *
         fireMul *
         incidentRateMul,
       COARSE_TEAM_BALANCE.fireChanceMinimum.value,

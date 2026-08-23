@@ -202,16 +202,30 @@ export type WorkflowMaturityInput = Pick<OrgState, 'aiLiteracy' | 'documentation
  * リテラシー・平均 AI 習熟・ドキュメントから都度導出し、新ゲージは持たない。
  */
 export function workflowMaturity(org: WorkflowMaturityInput, aiMasteryNorm = 0): number {
-  const literacy = clamp(org.aiLiteracy / 100, 0, 1);
-  const documentation = clamp(org.documentation / 100, 0, 1);
-  const mastery = clamp(aiMasteryNorm, 0, 1);
+  const literacy = org.aiLiteracy / 100;
+  const documentation = org.documentation / 100;
   return clamp(
     PROCESS_BALANCE.reworkWorkflowLiteracyWeight.value * literacy +
-      PROCESS_BALANCE.reworkWorkflowMasteryWeight.value * mastery +
+      PROCESS_BALANCE.reworkWorkflowMasteryWeight.value * aiMasteryNorm +
       PROCESS_BALANCE.reworkWorkflowDocumentationWeight.value * documentation,
     0,
     1,
   );
+}
+
+/**
+ * 粗粒度向けの AI 前提圧力係数。
+ * 採用率で AI ありのワークフロー不足と AI なしの工程ずれを混ぜる。
+ */
+export function coarseAiPremisePressure(workflowGap: number, aiShare: number): number {
+  const share = clamp(aiShare, 0, 1);
+  const gap = clamp(workflowGap, 0, 1);
+  const workflowMax =
+    PROCESS_BALANCE.reworkWorkflowSkillGapWeight.value +
+    PROCESS_BALANCE.reworkWorkflowDependencyInteraction.value;
+  const mismatchRel =
+    workflowMax <= 0 ? 0 : PROCESS_BALANCE.reworkMismatchDependencyWeight.value / workflowMax;
+  return share * gap + (1 - share) * mismatchRel;
 }
 
 /**

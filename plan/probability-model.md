@@ -252,7 +252,7 @@ pRework =
 | `U` | 対象タスクがAI支援ありなら`1`、なしなら`0` |
 | `D` | チームのAI前提度（`org.aiDependency / 100`） |
 | `L` | 組織のAIリテラシー |
-| `A_member` | AIを配った稼働コーダーの平均AI習熟（正規化） |
+| `A_member` | AIを配った稼働コーダーの平均AI習熟（正規化。シニア倍率で1を超えうる。最終的な`W`だけを0..1へclampする） |
 | `G` | ドキュメント充実度 |
 | `Q` | 品質 |
 | `T` | `clamp(techDebt / TECH_DEBT_CAP, 0, 1)` |
@@ -284,7 +284,7 @@ SVGは `npm run balance:docs` が現行のレジストリ値と `reworkProbabili
 <!-- balance-curve-endpoints:begin -->
 | 入力 | 対象タスク: AI支援あり | 対象タスク: AI支援なし |
 | --- | ---: | ---: |
-| AI依存度 0 → 100でのRework確率 | 14.0% → 26.96% | 6.8% → 12.8% |
+| AI依存度 0 → 100でのRework確率 | 12.0% → 21.36% | 6.8% → 12.8% |
 | Test Coverage 0 → 100でのIncident確率 | 14.75% → 4.75% | 12.0% → 2.0% |
 <!-- balance-curve-endpoints:end -->
 

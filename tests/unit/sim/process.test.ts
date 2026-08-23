@@ -7,6 +7,7 @@ import {
   reviewPerTick,
   reworkProbability,
   taskValue,
+  coarseAiPremisePressure,
   workflowMaturity,
 } from '../../../src/sim/model';
 import { PROCESS_BALANCE } from '../../../src/data/balance';
@@ -34,6 +35,12 @@ function org(overrides: Partial<OrgState> = {}): OrgState {
 }
 
 describe('reworkProbability（RI-134 のワークフロー分離）', () => {
+  it('粗粒度の AI 前提圧力は採用率で workflow 不足と mismatch を混ぜる', () => {
+    expect(coarseAiPremisePressure(0, 1)).toBe(0);
+    expect(coarseAiPremisePressure(0, 0.85)).toBeGreaterThan(0);
+    expect(coarseAiPremisePressure(1, 0.85)).toBeGreaterThan(coarseAiPremisePressure(0, 0.85));
+  });
+
   it('ワークフロー成熟度の重みは合計 1 になる', () => {
     expect(
       PROCESS_BALANCE.reworkWorkflowLiteracyWeight.value +
@@ -58,6 +65,15 @@ describe('reworkProbability（RI-134 のワークフロー分離）', () => {
     expect(reworkProbability(high, task({ aiAssisted: true }))).toBeLessThan(
       reworkProbability(low, task({ aiAssisted: true })),
     );
+  });
+
+  it('正規化習熟が1を超えても重み付き合計だけを clamp する', () => {
+    const mid = org({ aiLiteracy: 45, documentation: 50 });
+    expect(workflowMaturity(mid, 1.2)).toBeGreaterThan(workflowMaturity(mid, 1));
+    expect(workflowMaturity(mid, 1.2)).toBeLessThanOrEqual(1);
+    expect(
+      reworkProbability(mid, task({ aiAssisted: true }), IDENTITY_CARD_EFFECTS, 1.2),
+    ).toBeLessThan(reworkProbability(mid, task({ aiAssisted: true }), IDENTITY_CARD_EFFECTS, 1));
   });
 
   it('ワークフロー成熟度は AI ありの Rework だけを下げる', () => {

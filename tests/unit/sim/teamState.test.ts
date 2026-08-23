@@ -423,6 +423,42 @@ describe('RI-91-B1 teamState survived mutants', () => {
       expect(high.teams[0]!.reviewQueue).toBeLessThan(low.teams[0]!.reviewQueue);
     });
 
+    it('RI-134: 高成熟でも AI なし工程ずれの行列は残る', () => {
+      const highW = {
+        engineers: 8,
+        headcount: 8,
+        reviewQueue: 10,
+        reviewCapacity: 10,
+        aiLiteracy: 100,
+        documentation: 100,
+      };
+      const withDep = [
+        makeTeam({
+          id: 'pressured',
+          ...highW,
+          aiDependency: 80,
+        }),
+      ];
+      const noDep = [
+        makeTeam({
+          id: 'pressured',
+          ...highW,
+          aiDependency: 0,
+        }),
+      ];
+      const pressured = advanceCoarseTeams(withDep, {
+        seed: 'ri134-coarse-mismatch',
+        stepKey: 'm1',
+        excludeId: 'none',
+      });
+      const idle = advanceCoarseTeams(noDep, {
+        seed: 'ri134-coarse-mismatch',
+        stepKey: 'm1',
+        excludeId: 'none',
+      });
+      expect(pressured.teams[0]!.reviewQueue).toBeGreaterThan(idle.teams[0]!.reviewQueue);
+    });
+
     it('RI-73: seniorHpCostMul が粗粒度のシニア消耗に掛かる', () => {
       const teams = [
         makeTeam({ id: 'home' }),

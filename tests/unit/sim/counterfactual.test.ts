@@ -1268,7 +1268,16 @@ describe('RI-101 プレイテストオプトイン', () => {
     const prev = process.env.PT_COUNTERFACTUAL;
     process.env.PT_COUNTERFACTUAL = '1';
     try {
-      const log = runOnce('pt-1', 'nightmare', 'idle');
+      // プレイテスト本番の 96/32/192 分岐は 1 フレーム評価だけで 10 秒超になり、
+      // CI 並列の 15s timeout を超える。このテストはオプトイン時のフィールド付与だけを見る。
+      const log = runOnce('pt-1', 'nightmare', 'idle', 'fresh', {
+        counterfactual: {
+          maxActionBranches: 4,
+          maxComboBranches: 2,
+          maxStrategicBranches: 4,
+          maxSprints: 1,
+        },
+      });
       expect(log.status).toBe('lost');
       expect(log.loseReason).toBeTruthy();
       if (log.availableActionsInDangerLastNonEmpty) {

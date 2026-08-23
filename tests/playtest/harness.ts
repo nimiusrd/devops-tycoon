@@ -28,6 +28,7 @@ import {
 import { foldPassives } from '../../src/sim/run/effects';
 import {
   evaluateLatestEffectiveFrame,
+  type CounterfactualEvaluateOptions,
   type CounterfactualFrameSample,
 } from '../../src/sim/run/counterfactual';
 import { eventMinSignalFactors, eventSignals } from '../../src/sim/run/events';
@@ -2019,12 +2020,19 @@ function shutdownTriggers(
   return hit;
 }
 
+/** `runOnce` の任意オプション。ユニットテストでは反実仮想の分岐を絞るために使う。 */
+export interface RunOnceOptions {
+  /** 省略時はプレイテスト本番と同じ分岐上限（96 / 32 / 192）。 */
+  counterfactual?: CounterfactualEvaluateOptions;
+}
+
 /** 1ランを最後まで自動プレイし、計測ログを返す。 */
 export function runOnce(
   seed: string,
   difficulty: string,
   policy: string,
   meta: MetaProfile = 'fresh',
+  options: RunOnceOptions = {},
 ): RunLog {
   const spec = POLICY_DEFS[policy];
   if (!spec) throw new Error(`unknown policy: ${policy}`);
@@ -2461,6 +2469,7 @@ export function runOnce(
               maxActionBranches: 96,
               maxComboBranches: 32,
               maxStrategicBranches: 192,
+              ...options.counterfactual,
             },
           );
           if (!selected) return {};

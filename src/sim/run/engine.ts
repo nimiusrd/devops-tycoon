@@ -39,6 +39,7 @@ import {
   activeReviewerCount,
   activeEngineerCount,
   aiAssignedCount,
+  foldFormationEffects,
   applySprintGrowth,
   assignMember,
   canRecruit,
@@ -1835,14 +1836,21 @@ export class RunEngine {
   private coarseRosterShareMaps(): {
     assignedByTeamId: Record<string, number>;
     reviewersByTeamId: Record<string, number>;
+    aiMasteryByTeamId: Record<string, number>;
+    aiAdoptionShareByTeamId: Record<string, number>;
   } {
     const assignedByTeamId: Record<string, number> = {};
     const reviewersByTeamId: Record<string, number> = {};
+    const aiMasteryByTeamId: Record<string, number> = {};
+    const aiAdoptionShareByTeamId: Record<string, number> = {};
     for (const [id, roster] of Object.entries(this.teamRosters)) {
       assignedByTeamId[id] = activeAssignedCount(roster);
       reviewersByTeamId[id] = activeReviewerCount(roster);
+      const formation = foldFormationEffects(roster);
+      aiMasteryByTeamId[id] = formation.aiMasteryNorm;
+      aiAdoptionShareByTeamId[id] = formation.aiAdoptionShare;
     }
-    return { assignedByTeamId, reviewersByTeamId };
+    return { assignedByTeamId, reviewersByTeamId, aiMasteryByTeamId, aiAdoptionShareByTeamId };
   }
 
   private advanceOtherTeams(stepKey: string): void {
@@ -1855,7 +1863,8 @@ export class RunEngine {
       trials: this.trials,
       scenario: this.scenario,
     });
-    const { assignedByTeamId, reviewersByTeamId } = this.coarseRosterShareMaps();
+    const { assignedByTeamId, reviewersByTeamId, aiMasteryByTeamId, aiAdoptionShareByTeamId } =
+      this.coarseRosterShareMaps();
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey,
@@ -1864,6 +1873,8 @@ export class RunEngine {
       modifiers: this.coarseModifiersFromFold(fold),
       assignedByTeamId,
       reviewersByTeamId,
+      aiMasteryByTeamId,
+      aiAdoptionShareByTeamId,
     });
     this.teams = stepped.teams;
     // 粗粒度チームの出荷・炎上・完了・AI 支援をラン／四半期集計へ反映する。
@@ -2643,7 +2654,8 @@ export class RunEngine {
       trials: this.trials,
       scenario: this.scenario,
     });
-    const { assignedByTeamId, reviewersByTeamId } = this.coarseRosterShareMaps();
+    const { assignedByTeamId, reviewersByTeamId, aiMasteryByTeamId, aiAdoptionShareByTeamId } =
+      this.coarseRosterShareMaps();
     const stepped = advanceCoarseTeams(this.teams, {
       seed: this.seed,
       stepKey: `sprint:${this.currentSprintId}`,
@@ -2652,6 +2664,8 @@ export class RunEngine {
       modifiers: this.coarseModifiersFromFold(fold),
       assignedByTeamId,
       reviewersByTeamId,
+      aiMasteryByTeamId,
+      aiAdoptionShareByTeamId,
     });
     const delta = normalizeCoarseTotalsDelta(
       before,

@@ -35,10 +35,12 @@ function org(overrides: Partial<OrgState> = {}): OrgState {
 }
 
 describe('reworkProbability（RI-134 のワークフロー分離）', () => {
-  it('粗粒度の AI 前提圧力は採用率で workflow 不足と mismatch を混ぜる', () => {
-    expect(coarseAiPremisePressure(0, 1)).toBe(0);
-    expect(coarseAiPremisePressure(0, 0.85)).toBeGreaterThan(0);
-    expect(coarseAiPremisePressure(1, 0.85)).toBeGreaterThan(coarseAiPremisePressure(0, 0.85));
+  it('粗粒度の AI 前提圧力は skill-gap と依存度項を分ける', () => {
+    expect(coarseAiPremisePressure(0, 1, 0)).toBe(0);
+    expect(coarseAiPremisePressure(1, 1, 0)).toBeGreaterThan(0);
+    expect(coarseAiPremisePressure(1, 1, 100)).toBeGreaterThan(coarseAiPremisePressure(1, 1, 0));
+    expect(coarseAiPremisePressure(0, 0, 100)).toBeGreaterThan(0);
+    expect(coarseAiPremisePressure(0, 1, 100)).toBe(0);
   });
 
   it('ワークフロー成熟度の重みは合計 1 になる', () => {

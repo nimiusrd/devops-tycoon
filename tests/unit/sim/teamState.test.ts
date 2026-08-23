@@ -459,6 +459,61 @@ describe('RI-91-B1 teamState survived mutants', () => {
       expect(pressured.teams[0]!.reviewQueue).toBeGreaterThan(idle.teams[0]!.reviewQueue);
     });
 
+    it('RI-134: 前提度ゼロでも採用率が高く未熟なら行列が増える', () => {
+      const base = {
+        id: 'pressured',
+        engineers: 8,
+        headcount: 8,
+        reviewQueue: 10,
+        reviewCapacity: 10,
+        aiDependency: 0,
+        aiLiteracy: 10,
+        documentation: 10,
+      };
+      const immature = [makeTeam(base)];
+      const mature = [makeTeam({ ...base, aiLiteracy: 100, documentation: 100 })];
+      const low = advanceCoarseTeams(immature, {
+        seed: 'ri134-coarse-skill-gap',
+        stepKey: 's0',
+        excludeId: 'none',
+        aiAdoptionShareByTeamId: { pressured: 1 },
+      });
+      const high = advanceCoarseTeams(mature, {
+        seed: 'ri134-coarse-skill-gap',
+        stepKey: 's0',
+        excludeId: 'none',
+        aiAdoptionShareByTeamId: { pressured: 1 },
+      });
+      expect(low.teams[0]!.reviewQueue).toBeGreaterThan(high.teams[0]!.reviewQueue);
+    });
+
+    it('RI-134: 保存済み編成の習熟が粗粒度の行列を緩める', () => {
+      const teams = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 80,
+          aiLiteracy: 20,
+          documentation: 20,
+        }),
+      ];
+      const proxy = advanceCoarseTeams(teams, {
+        seed: 'ri134-coarse-mastery',
+        stepKey: 'm0',
+        excludeId: 'none',
+      });
+      const trained = advanceCoarseTeams(teams, {
+        seed: 'ri134-coarse-mastery',
+        stepKey: 'm0',
+        excludeId: 'none',
+        aiMasteryByTeamId: { pressured: 1.2 },
+      });
+      expect(trained.teams[0]!.reviewQueue).toBeLessThan(proxy.teams[0]!.reviewQueue);
+    });
+
     it('RI-73: seniorHpCostMul が粗粒度のシニア消耗に掛かる', () => {
       const teams = [
         makeTeam({ id: 'home' }),

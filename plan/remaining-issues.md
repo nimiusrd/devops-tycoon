@@ -9,6 +9,8 @@
 | RI-134 | AI依存モデルの再設計 | 確率モデル | 高 | 進行中（係数は仮） | 第2 / 第22.3 |
 | RI-135 | 組織診断ダッシュボードの深掘り | 第23章 | 中 | 保留（要判断） | 第4.7〜4.11 / 第23 |
 | RI-136 | F-9 有効手集合の完全計測 | 第19.1 | 中 | 未着手 | 第19.1 |
+| RI-137 | Fast Refresh警告の解消 | 開発基盤 | 低 | 未着手 | 第22 |
+| RI-138 | balance:checkの手書き差分誤検知 | 開発基盤 | 低 | 未着手 | 第22 |
 
 ### RI-134 AI依存モデルの再設計
 
@@ -41,6 +43,26 @@ F-9 有効手集合の多様性は、[spec-mapping.md](./spec-mapping.md) 第19.
 
 - 層別で敗因 `n≥10` が2種以上、かつ `distinctEffectiveSetCount ≥ 2` を、分岐上限で打ち切らない完全評価で確認する。または、現行ゲートのまま対象外とする判断と根拠を文書化する。
 - 対象外にしない場合は、計測手順と必要な探索予算を [playtest-findings.md](./playtest-findings.md) に残す。
+
+### RI-137 Fast Refresh警告の解消
+
+`npm run lint`は成功するが、`src/ui/replayContent.tsx`と`src/ui/responsiveMode.tsx`がコンポーネント以外の値・関数・Hookもexportしているため、`react-refresh/only-export-components`警告が5件出る。実行時の不具合ではないため、完了済み計画書の整理とは分けて扱う。
+
+受入条件:
+
+- Providerコンポーネントと、定数・resolver・Hook・contextの所有ファイルを分離し、公開importと挙動を維持する。
+- `npm run lint`が警告なしで成功する。
+- リプレイのコンテンツスナップショット解決とレスポンシブ境界の既存unit／E2Eテストが成功する。
+
+### RI-138 balance:checkの手書き差分誤検知
+
+`scripts/check-balance.mjs`は`plan/probability-model.md`全体を生成物として`git diff`へ渡すため、生成対象外の手書き説明だけを正しく変更した場合も`npm run balance:check`が失敗する。CIではコミット済み差分が基準になるため表面化しないが、コミット前検査としては偽陽性になる。
+
+受入条件:
+
+- コマンド実行前後の内容、または生成管理範囲だけを比較し、手書き領域の意図的な作業ツリー差分を許容する。
+- 代表曲線の端点や生成Markdown／SVGが古い場合は引き続き失敗する。
+- cleanな作業ツリー、手書き領域だけの変更、生成領域が古い変更をテストで区別する。
 
 ### 第23章の残拡張（旧RI-34）
 

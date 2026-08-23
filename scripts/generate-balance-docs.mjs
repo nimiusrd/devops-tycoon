@@ -3,9 +3,9 @@ import { dirname, relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 
 const OUTPUT_PATHS = [
-  resolve('plan/generated/balance-parameters.md'),
-  resolve('plan/generated/content-catalog.md'),
-  resolve('plan/generated/balance-curves.svg'),
+  resolve('docs/generated/balance-parameters.md'),
+  resolve('docs/generated/content-catalog.md'),
+  resolve('docs/generated/balance-curves.svg'),
 ];
 
 async function main() {
@@ -45,7 +45,7 @@ async function main() {
     );
     const curves = await server.ssrLoadModule('/src/data/balance/curves.ts');
     const curveSvg = curves.renderBalanceCurvesSvg();
-    const modelPath = resolve('plan/probability-model.md');
+    const modelPath = resolve('docs/probability-model.md');
     const modelMarkdown = curves.applyBalanceCurveEndpointsToMarkdown(
       readFileSync(modelPath, 'utf8'),
     );

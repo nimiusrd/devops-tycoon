@@ -2,7 +2,7 @@
 
 DevOps Tycoonの確率モデルについて、現行実装の構造、数式、seed設計、検証方法をまとめる。
 体験要件は[`SPEC.md`](../SPEC.md)、個々の係数とデータは`src/sim/`と`src/data/`の実装を正とする。
-係数のSSoTは型付きレジストリ、生成パラメータ表、代表確率曲線まで導入済みで、工程モデルは同じ定義と計算関数を参照する。SSoT移行（RI-104）は完了済みである。AI依存モデルの意味変更は[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)で追跡する。
+係数のSSoTは型付きレジストリ、生成パラメータ表、代表確率曲線まで導入済みで、工程モデルは同じ定義と計算関数を参照する。SSoT移行（RI-104）は完了済みである。AI依存モデルの意味変更は[RI-134](../plan/remaining-issues.md#ri-134-ai依存モデルの再設計)で追跡する。
 
 ## 1. モデルの位置づけ
 
@@ -309,7 +309,7 @@ SVGは `npm run balance:docs` が現行のレジストリ値と `reworkProbabili
 
 低`W`では AI ありが危険、高`W`では高前提度でも AI ありが安全になりうる。交差点は固定目標にしない。
 
-旧`manualCapability`案の形状確認用曲線は[`proposed-ai-dependency-curves.svg`](./assets/proposed-ai-dependency-curves.svg)に残すが、現行ゲームの挙動ではない。SSoTが照合するのは[`balance-curves.svg`](./generated/balance-curves.svg)だけである。
+旧`manualCapability`案の形状確認用曲線は[`proposed-ai-dependency-curves.svg`](../plan/assets/proposed-ai-dependency-curves.svg)に残すが、現行ゲームの挙動ではない。SSoTが照合するのは[`balance-curves.svg`](./generated/balance-curves.svg)だけである。
 
 `A_member`は`W`へ入れ、編成集約の`reworkRateAdd`には載せない。トレイト由来の手戻りだけを編成補正へ残す。
 
@@ -327,7 +327,7 @@ AI前提度は AI 支援タスクの取り込みで増え、ガイドライン�
 - `reworkAttempts`による減衰、下限、上限は現行どおり機能する。
 - Incident率は別式で検証し、`testCoverage`をReworkとIncidentへ無意識に二重計上しない。
 
-追跡先は[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)である。係数の本番確定は Monte Carlo 後続とする。
+追跡先は[RI-134](../plan/remaining-issues.md#ri-134-ai依存モデルの再設計)である。係数の本番確定は Monte Carlo 後続とする。
 
 ### 4.6 編成と施策の合成
 
@@ -601,7 +601,7 @@ SetupとDraftでは、同じ開始条件を24個の派生seedで無介入実行�
 - イベントやカードの選択後結果は原則固定で、成功・失敗の二次抽選はない。
 - what-ifは24試行の平均と観測範囲に限られ、分位点や分散、信頼区間は表示しない。
 - 粗粒度チームは指標直接更新の近似で、詳細スプリントと同一のタスク分布を再現しない。
-- Rework の係数は調整開始点の仮値であり、Monte Carlo での確定は[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)に残る。
+- Rework の係数は調整開始点の仮値であり、Monte Carlo での確定は[RI-134](../plan/remaining-issues.md#ri-134-ai依存モデルの再設計)に残る。
 - 固定seedの互換性とモデル改善が衝突する場合がある。係数変更時は、再現性の対象を「同じバージョン内」とするか、既存seed結果まで維持するかを変更ごとに判断する。
 
 ## 11. 変更時の規律

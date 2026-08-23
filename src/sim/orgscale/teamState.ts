@@ -25,6 +25,8 @@ import {
   TASK_BASE_VALUE,
   securityCustomerTrustSpreadRaw,
   securityFragility,
+  coarseAiPremisePressure,
+  workflowMaturity,
 } from '../model/process';
 import { AI_LITERACY_UNSAFE_CAP } from '../outcome';
 import { createRng } from '../rng';
@@ -644,6 +646,16 @@ export function advanceCoarseTeams(
      * 未指定時は `estimateRosterReviewerCount(team.engineers)`。
      */
     reviewersByTeamId?: Readonly<Record<string, number>>;
+    /**
+     * チーム ID → 保存済み編成の平均 AI 習熟（正規化）。
+     * 未指定時は `team.aiLiteracy / 100` を代理にする。
+     */
+    aiMasteryByTeamId?: Readonly<Record<string, number>>;
+    /**
+     * チーム ID → 保存済み編成の AI 配布率（コーダー比）。
+     * 未指定時は依存度から推定する。
+     */
+    aiAdoptionShareByTeamId?: Readonly<Record<string, number>>;
   },
 ): CoarseStepResult {
   const adjust = args.adjust ?? { company: emptyAdjust(), byDept: {} };
@@ -712,7 +724,8 @@ export function advanceCoarseTeams(
 
     const coders = estimateRosterCoderCount(team.engineers);
     const adoptionShare =
-      coders > 0 ? estimateRivalAiAssigned(coders, team.aiDependency) / coders : 0;
+      args.aiAdoptionShareByTeamId?.[team.id] ??
+      (coders > 0 ? estimateRivalAiAssigned(coders, team.aiDependency) / coders : 0);
     // 詳細 sim の aiDeliveryValueMul に対応: AI 採用分だけリテラシー連動の出荷倍率を掛ける。
     const aiShare = AI_ADOPTION * clamp(adoptionShare, 0, 1);
     const aiDeliveryMul = 1 + aiShare * AI_DELIVERY_VALUE_LITERACY_WEIGHT * (team.aiLiteracy / 100);
@@ -743,11 +756,19 @@ export function advanceCoarseTeams(
     const completedGain = coarseShipToCompleted(baseShipGain);
     completed += completedGain;
     aiAssisted += Math.round(completedGain * aiShare);
+    const mastery = args.aiMasteryByTeamId?.[team.id] ?? team.aiLiteracy / 100;
+    const workflowGap = 1 - workflowMaturity(team, mastery);
+    const premisePressure = coarseAiPremisePressure(
+      workflowGap,
+      aiShare,
+      team.aiDependency,
+      team.techDebt,
+    );
     const queuePressure = Math.max(
       0,
       Math.round(
         team.engineers * COARSE_TEAM_BALANCE.queuePressurePerEngineer.value +
-          team.aiDependency * COARSE_TEAM_BALANCE.queuePressurePerAiDependency.value -
+          COARSE_TEAM_BALANCE.queuePressurePerAiDependency.value * premisePressure -
           reviewCap * COARSE_TEAM_BALANCE.queuePressurePerReviewCapacity.value -
           queueRelief -
           reworkRelief,

@@ -96,6 +96,11 @@ export interface CounterfactualEvaluateOptions {
   includeStrategic?: boolean;
   /** 危険域離脱の判定対象。省略時は起源の危険理由のいずれかが消えたら離脱。 */
   focusReason?: DangerLoseReason;
+  /**
+   * 新しいフレームから遡る評価数の上限。省略時は制限なし。
+   * 打ち切った場合は `skippedActions` に `frameScan` を残す。
+   */
+  maxFrames?: number;
 }
 
 export interface CounterfactualFrameSample {
@@ -1628,9 +1633,15 @@ export function evaluateLatestEffectiveFrame(
   let newest: LatestEffectiveFrame | null = null;
   const skippedActions = new Set<string>();
   const skippedStrategic = new Set<string>();
+  let remaining = options.maxFrames;
   for (let i = samples.length - 1; i >= 0; i -= 1) {
     const seq = framesOf(samples[i]!);
     for (let j = seq.length - 1; j >= 0; j -= 1) {
+      if (remaining !== undefined && remaining <= 0) {
+        skippedActions.add('frameScan');
+        return newest ? withScanSkipped(newest, skippedActions, skippedStrategic) : null;
+      }
+      if (remaining !== undefined) remaining -= 1;
       const evaluation = evaluateCounterfactual(seq[j]!, options);
       for (const id of evaluation.skippedActions) skippedActions.add(id);
       for (const id of evaluation.skippedStrategic) skippedStrategic.add(id);

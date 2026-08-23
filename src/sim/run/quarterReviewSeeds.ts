@@ -17,10 +17,11 @@
  * RI-78（休息投資・カード発動費分離）後に missed_adjustable seed を再探索して更新。
  * RI-88（インフラコスト軸・ボス課金）後に missed_crisis の到達四半期を再確認して更新。
  * RI-77（AI 部分配布・出荷価値・beat→setup・インフラ単価）後に再探索して更新。
+ * RI-134（AI前提ワークフロー Rework 式）後に missed_adjustable seed を再探索して更新。
  */
 import type { DifficultyId, QuarterOutcome } from './types';
 
-export const E2E_MISSED_ADJUSTABLE_SEED = 'ri77-ma-5';
+export const E2E_MISSED_ADJUSTABLE_SEED = 'ri134-ma-21';
 
 /**
  * hard で四半期レビューに到達すると継続不能のいずれかになる互換 seed。

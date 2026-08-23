@@ -23,6 +23,7 @@ describe('チュートリアルクエリ（RI-60）', () => {
   it('表示済み版とモードからガイド表示を判定する', () => {
     expect(shouldShowTutorialGuide(0, null)).toBe(true);
     expect(shouldShowTutorialGuide(TUTORIAL_CONTENT_VERSION, null)).toBe(false);
+    expect(shouldShowTutorialGuide(TUTORIAL_CONTENT_VERSION - 1, null)).toBe(true);
     expect(shouldShowTutorialGuide(LEGACY_TUTORIAL_VERSION, null)).toBe(true);
     expect(shouldShowTutorialGuide(TUTORIAL_CONTENT_VERSION, '1')).toBe(true);
     expect(shouldShowTutorialGuide(TUTORIAL_CONTENT_VERSION, 'force')).toBe(true);
@@ -49,7 +50,9 @@ describe('チュートリアルクエリ（RI-60）', () => {
     expect(seniorHp?.body).toContain('緊急対応');
     expect(seniorHp?.body).toContain('自動鎮火');
     expect(seniorHp?.body).toContain('アンドンは流入を止めて');
-    expect(seniorHp?.body).toContain('AIスロットルはAI由来');
+    expect(seniorHp?.body).toContain('AIスロットルは');
+    expect(seniorHp?.body).toContain('リテラシーが低いとき');
+    expect(seniorHp?.body).toContain('工程ずれ');
     expect(seniorHp?.body).not.toContain('アンドンやAIスロットルで流入');
   });
 

@@ -371,9 +371,9 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
     const afterMax = Math.max(
       ...i.teams.filter((t) => t.id !== i.activeTeamId).map((t) => t.reviewQueue),
     );
-    expect(afterMax).toBe(11);
-    expect(i.totals.reviewQueuePeak).toBe(11);
-    expect(i.quarterTotals.reviewQueuePeak).toBe(11);
+    expect(afterMax).toBe(10);
+    expect(i.totals.reviewQueuePeak).toBe(10);
+    expect(i.quarterTotals.reviewQueuePeak).toBe(10);
   });
 });
 

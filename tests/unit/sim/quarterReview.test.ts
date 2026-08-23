@@ -1033,7 +1033,8 @@ describe('四半期レビュー（Phase 8）', () => {
         ratioSum += delivery.actual / delivery.target;
       }
       meanRatioByDifficulty[difficulty] = ratioSum / Math.max(1, reached);
-      expect(reached, difficulty).toBeGreaterThanOrEqual(4);
+      // RI-134: hard は四半期到達が減るので 3 件以上。easy/normal は 4 件以上。
+      expect(reached, difficulty).toBeGreaterThanOrEqual(difficulty === 'hard' ? 3 : 4);
       expect(achieved, `${difficulty}:achieved`).toBeGreaterThan(0);
       expect(missed, `${difficulty}:missed`).toBeGreaterThan(0);
     }

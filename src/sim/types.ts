@@ -313,7 +313,7 @@ export interface Task {
 export interface OrgState {
   /** AI 導入フラグ（本作のコア因果のスイッチ。第2章）。 */
   aiEnabled: boolean;
-  /** AI依存度 0..100（雑な AI 利用ほど Rework/Incident を増やす）。 */
+  /** AI前提度 0..100（工程がどれだけ AI 利用を前提にしているか）。 */
   aiDependency: number;
   /** AI を適切に使う能力 0..100。 */
   aiLiteracy: number;
@@ -455,6 +455,11 @@ export interface SprintState {
    * 使う確率。編成（AIを配ったコーダーの割合）で決まり、誰も配らなければ 0 になる。
    */
   aiAdoption: number;
+  /**
+   * AI を配った稼働コーダーの平均 AI 習熟（正規化）。
+   * Rework のワークフロー成熟度へ渡し、編成の reworkRateAdd には載せない。
+   */
+  aiMasteryNorm: number;
   /**
    * スプリント内イベントログ（RI-52）。上限付き ring buffer（ティッカー表示用）。
    * 点火・鎮火・延焼・コンボ途切れなど直近 N 件を保持する。

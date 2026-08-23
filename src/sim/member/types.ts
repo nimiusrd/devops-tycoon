@@ -75,6 +75,11 @@ export interface FormationEffects {
    * 誰にも配らなければ 0 になり、スプリント中に AI タスクが発生しない。
    */
   aiAdoptionShare: number;
+  /**
+   * AI を配った稼働コーダーの平均 AI 習熟（正規化 0..上限）。
+   * Rework のワークフロー成熟度 W へ渡し、編成の reworkRateAdd には載せない。
+   */
+  aiMasteryNorm: number;
 }
 
 /** スプリント後の成長結果（UI 表示・組織への波及に使う）。 */

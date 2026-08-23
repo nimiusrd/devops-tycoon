@@ -1,4 +1,4 @@
-import { incidentProbability, reworkProbability } from '../../sim/model';
+import { IDENTITY_CARD_EFFECTS, incidentProbability, reworkProbability } from '../../sim/model';
 import type { OrgState, Task } from '../../sim/types';
 
 /** 代表曲線の入力範囲とサンプル間隔。生成は決定論的で、0 から 100 まで 1 刻み。 */
@@ -13,6 +13,8 @@ export const BALANCE_CURVE_MARKER_INPUTS = [0, 25, 50, 75, 100] as const;
  */
 export const BALANCE_CURVE_REPRESENTATIVE = {
   aiLiteracy: 45,
+  documentation: 50,
+  aiMasteryNorm: 0.5,
   quality: 60,
   securityLevel: 60,
   reworkAttempts: 0,
@@ -32,7 +34,7 @@ function representativeOrg(overrides: Partial<OrgState> = {}): OrgState {
     aiDependency: 0,
     aiLiteracy: BALANCE_CURVE_REPRESENTATIVE.aiLiteracy,
     testCoverage: 0,
-    documentation: 0,
+    documentation: BALANCE_CURVE_REPRESENTATIVE.documentation,
     quality: BALANCE_CURVE_REPRESENTATIVE.quality,
     securityLevel: BALANCE_CURVE_REPRESENTATIVE.securityLevel,
     morale: 0,
@@ -61,7 +63,12 @@ function representativeTask(overrides: Partial<Task> = {}): Task {
 
 /** 代表条件での Rework 確率。ゲーム式 `reworkProbability` をそのまま使う。 */
 export function representativeReworkProbability(aiAssisted: boolean, aiDependency: number): number {
-  return reworkProbability(representativeOrg({ aiDependency }), representativeTask({ aiAssisted }));
+  return reworkProbability(
+    representativeOrg({ aiDependency }),
+    representativeTask({ aiAssisted }),
+    IDENTITY_CARD_EFFECTS,
+    BALANCE_CURVE_REPRESENTATIVE.aiMasteryNorm,
+  );
 }
 
 /** 代表条件での Incident 確率。ゲーム式 `incidentProbability` をそのまま使う。 */
@@ -284,7 +291,7 @@ function xLabels(plot: PlotBox, ticks: readonly number[]): string {
  */
 export function renderBalanceCurvesSvg(): string {
   const points = sampleRepresentativeCurves();
-  const { aiLiteracy, quality } = BALANCE_CURVE_REPRESENTATIVE;
+  const { aiLiteracy, documentation, quality, aiMasteryNorm } = BALANCE_CURVE_REPRESENTATIVE;
   const reworkAi = (point: RepresentativeCurvePoint) => point.reworkAi;
   const reworkNoAi = (point: RepresentativeCurvePoint) => point.reworkNoAi;
   const incidentAi = (point: RepresentativeCurvePoint) => point.incidentAi;
@@ -355,7 +362,7 @@ export function renderBalanceCurvesSvg(): string {
     '  <g aria-label="AI依存度とRework確率">',
     '    <rect class="panel" x="30" y="60" width="455" height="405" rx="12" />',
     '    <text class="text" x="257.5" y="91" font-size="20" font-weight="600" text-anchor="middle">AI依存度とRework確率</text>',
-    `    <text class="muted" x="257.5" y="116" font-size="13" text-anchor="middle">AI Literacy ${aiLiteracy} / Quality ${quality} / 初回Review / 補正なし</text>`,
+    `    <text class="muted" x="257.5" y="116" font-size="13" text-anchor="middle">AI Literacy ${aiLiteracy} / Mastery ${aiMasteryNorm} / Docs ${documentation} / Quality ${quality} / 初回Review / 補正なし</text>`,
     '',
     yGrid(reworkPlot, [...reworkAxis.ticks].reverse()),
     `    <line class="axis" x1="${formatCurveCoord(reworkPlot.left)}" y1="${formatCurveCoord(reworkPlot.top)}" x2="${formatCurveCoord(reworkPlot.left)}" y2="${formatCurveCoord(reworkPlot.bottom)}" />`,

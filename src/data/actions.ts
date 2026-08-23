@@ -59,8 +59,9 @@ export const ACTION_CONTENT_DEFS = [
     label: 'AIスロットル',
     icon: '🎚️',
     stabilizesFlow: true,
-    description: 'AI出力レートを絞り、Review渋滞を抑える',
-    sideEffect: '出荷速度が一時的に低下',
+    description:
+      '新規タスクをAIなしにする。点火抑制は低リテラシー時、手戻り抑制は未熟なワークフロー時だけ',
+    sideEffect: '出荷が落ち、成熟したAI前提工程では手戻りが増えることがある',
   },
   {
     id: 'pairReview',

@@ -22,6 +22,8 @@ export interface SprintBaselineInput {
   org: OrgState;
   cardEffects: CardEffects;
   aiAdoptionShare: number;
+  /** AI 配布コーダーの平均習熟。未指定なら 0。 */
+  aiMasteryNorm?: number;
   reviewLoadAdd?: number;
   /** チーム正本から引き継ぐ炎上件数（スプリント metrics には加算しない）。 */
   incidentLoadAdd?: number;
@@ -64,7 +66,14 @@ export function createSprintFromBaselineInput(
   org: OrgState,
 ): { sprint: SprintState; rng: ReturnType<typeof createRng> } {
   const rng = createRng(input.seed);
-  const sprint = createSprint(input.config, org, rng, input.cardEffects, input.aiAdoptionShare);
+  const sprint = createSprint(
+    input.config,
+    org,
+    rng,
+    input.cardEffects,
+    input.aiAdoptionShare,
+    input.aiMasteryNorm ?? 0,
+  );
 
   // 炎上を先に確保し、行列で backlog を食い尽くして炎上が消えないようにする。
   // 引き継ぎ炎上は継続中の事象なので incidentCount（新規発生）には載せない。

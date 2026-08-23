@@ -170,9 +170,10 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(restedBoss.config.taskCount).toBeGreaterThan(unchanged.config.taskCount);
     expect(unchanged.config.focusMax).toBe(4);
     expect(modified.config.focusMax).toBe(1);
-    // RI-77: 習熟50のコーダー1人配布で編成手戻りはわずかに負。
-    expect(unchanged.cardEffects.reworkRateAdd).toBeCloseTo(-0.02);
-    expect(modified.cardEffects.reworkRateAdd).toBeCloseTo(0.05);
+    // RI-134: 習熟は W へ渡し、編成の reworkRateAdd には載せない。
+    expect(unchanged.cardEffects.reworkRateAdd).toBeCloseTo(0);
+    expect(unchanged.aiMasteryNorm).toBeGreaterThan(0);
+    expect(modified.cardEffects.reworkRateAdd).toBeCloseTo(0.07);
     expect(unchanged.reviewLoadAdd).toBeUndefined();
     expect(modified.reviewLoadAdd).toBe(3);
   });
@@ -239,7 +240,7 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(withContext.config.focusMax).toBe(5);
     expect(base.config.codingSlots).toBe(2);
     expect(withContext.config.codingSlots).toBe(3);
-    expect(withContext.cardEffects.reworkRateAdd).toBeCloseTo(0.03);
+    expect(withContext.cardEffects.reworkRateAdd).toBeCloseTo(0.05);
     expect(withContext.cardEffects.reviewEfficiencyMul).toBeCloseTo(1.058);
     expect(withContext.cardEffects.incidentRateMul).toBeCloseTo(1.3);
   });
@@ -253,8 +254,8 @@ describe('buildSprintBaselineInput（RI-72-E3）', () => {
     expect(active.cardEffects.codingSpeedMul).toBe(0.85);
     // routine には pause 倍率を載せない（定型で coding×routine の二重減算を避ける）。
     expect(active.cardEffects.routineSpeedMul).toBe(1);
-    // RI-83: pause_ai は安定化サイドも乗る。RI-77 の編成手戻り分を含む。
-    expect(active.cardEffects.reworkRateAdd).toBeCloseTo(-0.12);
+    // RI-83: pause_ai は安定化サイドも乗る。習熟は編成の reworkRateAdd に含めない。
+    expect(active.cardEffects.reworkRateAdd).toBeCloseTo(-0.1);
     expect(active.cardEffects.incidentRateMul).toBeCloseTo(0.7);
   });
 

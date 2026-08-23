@@ -148,8 +148,6 @@ const REVIEW_CAPACITY_MIN = MEMBER_BALANCE.reviewCapacityMinimum.value;
 const REVIEW_CAPACITY_MAX = MEMBER_BALANCE.reviewCapacityMaximum.value;
 const AI_MASTERY_NORMALIZATION = MEMBER_BALANCE.aiMasteryNormalization.value;
 const AI_MASTERY_MAX = MEMBER_BALANCE.aiMasteryMaximum.value;
-const AI_REWORK_BASE = MEMBER_BALANCE.aiReworkBase.value;
-const AI_REWORK_MASTERY_WEIGHT = MEMBER_BALANCE.aiReworkMasteryWeight.value;
 const AI_INCIDENT_BASE = MEMBER_BALANCE.aiIncidentBase.value;
 const AI_INCIDENT_MASTERY_WEIGHT = MEMBER_BALANCE.aiIncidentMasteryWeight.value;
 const REWORK_RATE_MIN = MEMBER_BALANCE.reworkRateMinimum.value;
@@ -356,7 +354,8 @@ function isActive(m: Member): boolean {
 /**
  * 編成を 1 つの `FormationEffects` へ畳み込む（純関数）。
  * コーダーの実装力は Coding 速度・並列枠へ、レビュアーのレビュー力は Review 効率/容量へ、
- * AI 配布は配った相手の AI習熟で手戻り・障害を増減させ、さらに「AIを配ったコーダーの割合」が
+ * AI 配布は配った相手の平均 AI 習熟をワークフロー成熟度へ渡し、障害率と
+ * トレイト由来の手戻りだけを編成効果へ残す。さらに「AIを配ったコーダーの割合」が
  * 実 AI 採用率（aiAdoptionShare）になる。誰をどこに置き、誰に AI を配るかが戦術になる。
  * コーダーを誰も置かなければ実装はほぼ止まる（幽霊実装者を残さない）。
  */
@@ -393,19 +392,22 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
   const activeAssigned = coders.length + reviewers.length;
   const seniorHpCostMul = seniorHpShareMul(activeAssigned);
 
-  // AI 配布の効果（配った相手の AI習熟・トレイトで決まる）。AI を実際に使うのは
-  // コーディング担当のタスクなので、効果対象もコーダーに揃える（採用率と一致させる）。
+  // AI 配布の効果。習熟は Rework 式の W へ渡し、編成の reworkRateAdd には載せない（RI-134）。
+  // 障害率とトレイト由来の手戻りだけをここへ残す。対象はコーダーに揃える。
   let reworkRateAdd = 0;
   let incidentRateMul = 1;
+  let masterySum = 0;
+  let masteryCount = 0;
   for (const m of coders) {
     if (!m.aiAssigned) continue;
     const masteryNorm = clamp(effectiveAiMastery(m) / AI_MASTERY_NORMALIZATION, 0, AI_MASTERY_MAX);
+    masterySum += masteryNorm;
+    masteryCount += 1;
     const traitMods = foldTraitModifiers(m.traits);
-    // RI-77: 配布時の手戻り上乗せを弱め、習熟が高い相手への配布が報われやすくする。
-    reworkRateAdd +=
-      AI_REWORK_BASE - AI_REWORK_MASTERY_WEIGHT * masteryNorm + traitMods.aiReworkAdd;
+    reworkRateAdd += traitMods.aiReworkAdd;
     incidentRateMul *= 1 + (AI_INCIDENT_BASE - AI_INCIDENT_MASTERY_WEIGHT * masteryNorm);
   }
+  const aiMasteryNorm = masteryCount === 0 ? 0 : masterySum / masteryCount;
 
   // 実 AI 採用率の倍率: AIを配った稼働コーダーの割合（コーダー不在なら 0）。
   const aiCoders = coders.filter((m) => m.aiAssigned).length;
@@ -430,6 +432,7 @@ export function foldFormationEffects(roster: RosterState): FormationEffects {
       : clamp(coders.length - 1, CODING_SLOT_BONUS_MIN, CODING_SLOT_BONUS_MAX),
     focusBonus: Math.min(FOCUS_BONUS_MAX, seniors),
     aiAdoptionShare,
+    aiMasteryNorm,
   };
 }
 

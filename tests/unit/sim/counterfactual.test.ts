@@ -1213,6 +1213,28 @@ describe('RI-101 集計規則', () => {
     }
   });
 
+  it('maxFrames は新しいフレームから数えて評価を打ち切る', () => {
+    const engine = startedSprint('ri-101-max-frames');
+    engine.step(200);
+    const older = engine.exportCounterfactualFrame()!;
+    engine.step(400);
+    const newer = engine.exportCounterfactualFrame()!;
+    const selected = evaluateLatestEffectiveFrame(
+      [
+        { sprintsPlayed: 0, quarter: 1, index: 1, frame: older },
+        { sprintsPlayed: 0, quarter: 1, index: 1, frame: newer },
+      ],
+      { actions: [], maxSprints: 1, maxFrames: 1 },
+    );
+    expect(selected).not.toBeNull();
+    expect(selected!.evaluation.origin).toEqual(
+      evaluateCounterfactual(newer, { actions: [], maxSprints: 1 }).origin,
+    );
+    if (selected!.effective.length === 0 && !selected!.baselineRecovered) {
+      expect(selected!.evaluation.skippedActions).toContain('frameScan');
+    }
+  });
+
   it('F-9 は敗因別の有効手集合を機械的集合と別に数える', () => {
     const judgment = judgeF9EffectiveSets([
       { loseReason: 'seniorBurnout', effectiveActions: ['overtime'] },
@@ -1268,7 +1290,18 @@ describe('RI-101 プレイテストオプトイン', () => {
     const prev = process.env.PT_COUNTERFACTUAL;
     process.env.PT_COUNTERFACTUAL = '1';
     try {
-      const log = runOnce('pt-1', 'nightmare', 'idle');
+      // プレイテスト本番の 96/32/192 分岐は 1 フレーム評価だけで 10 秒超になり、
+      // CI 並列の 15s timeout を超える。このテストはオプトイン時のフィールド付与だけを見る。
+      const log = runOnce('pt-1', 'nightmare', 'idle', 'fresh', {
+        counterfactual: {
+          maxActionBranches: 4,
+          maxComboBranches: 2,
+          maxStrategicBranches: 4,
+          maxSprints: 1,
+          // 狭い分岐では最新フレームで有効手を逃し、641 フレームを全部遡って 100 秒超になる。
+          maxFrames: 1,
+        },
+      });
       expect(log.status).toBe('lost');
       expect(log.loseReason).toBeTruthy();
       if (log.availableActionsInDangerLastNonEmpty) {

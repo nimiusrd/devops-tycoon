@@ -385,6 +385,173 @@ describe('RI-91-B1 teamState survived mutants', () => {
       expect(improvedQ).toBeLessThan(plainQ);
     });
 
+    it('RI-134: 高リテラシーとドキュメントは粗粒度の行列圧力を緩める', () => {
+      const lowW = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 80,
+          aiLiteracy: 10,
+          documentation: 10,
+        }),
+      ];
+      const highW = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 80,
+          aiLiteracy: 90,
+          documentation: 90,
+        }),
+      ];
+      const low = advanceCoarseTeams(lowW, {
+        seed: 'ri134-coarse-workflow',
+        stepKey: 'w1',
+        excludeId: 'none',
+      });
+      const high = advanceCoarseTeams(highW, {
+        seed: 'ri134-coarse-workflow',
+        stepKey: 'w1',
+        excludeId: 'none',
+      });
+      expect(high.teams[0]!.reviewQueue).toBeLessThan(low.teams[0]!.reviewQueue);
+    });
+
+    it('RI-134: 高成熟でも AI なし工程ずれの行列は残る', () => {
+      const highW = {
+        engineers: 8,
+        headcount: 8,
+        reviewQueue: 10,
+        reviewCapacity: 10,
+        aiLiteracy: 100,
+        documentation: 100,
+        techDebt: 0,
+      };
+      const withDep = [
+        makeTeam({
+          id: 'pressured',
+          ...highW,
+          aiDependency: 80,
+        }),
+      ];
+      const noDep = [
+        makeTeam({
+          id: 'pressured',
+          ...highW,
+          aiDependency: 0,
+        }),
+      ];
+      const pressured = advanceCoarseTeams(withDep, {
+        seed: 'ri134-coarse-mismatch',
+        stepKey: 'm1',
+        excludeId: 'none',
+      });
+      const idle = advanceCoarseTeams(noDep, {
+        seed: 'ri134-coarse-mismatch',
+        stepKey: 'm1',
+        excludeId: 'none',
+      });
+      expect(pressured.teams[0]!.reviewQueue).toBeGreaterThan(idle.teams[0]!.reviewQueue);
+    });
+
+    it('RI-134: 前提度ゼロでも採用率が高く未熟なら行列が増える', () => {
+      const base = {
+        id: 'pressured',
+        engineers: 8,
+        headcount: 8,
+        reviewQueue: 10,
+        reviewCapacity: 10,
+        aiDependency: 0,
+        aiLiteracy: 10,
+        documentation: 10,
+      };
+      const immature = [makeTeam(base)];
+      const mature = [makeTeam({ ...base, aiLiteracy: 100, documentation: 100 })];
+      const low = advanceCoarseTeams(immature, {
+        seed: 'ri134-coarse-skill-gap',
+        stepKey: 's0',
+        excludeId: 'none',
+        aiAdoptionShareByTeamId: { pressured: 1 },
+      });
+      const high = advanceCoarseTeams(mature, {
+        seed: 'ri134-coarse-skill-gap',
+        stepKey: 's0',
+        excludeId: 'none',
+        aiAdoptionShareByTeamId: { pressured: 1 },
+      });
+      expect(low.teams[0]!.reviewQueue).toBeGreaterThan(high.teams[0]!.reviewQueue);
+    });
+
+    it('RI-134: 保存済み編成の習熟が粗粒度の行列を緩める', () => {
+      const teams = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 80,
+          aiLiteracy: 20,
+          documentation: 20,
+          techDebt: 0,
+        }),
+      ];
+      const proxy = advanceCoarseTeams(teams, {
+        seed: 'ri134-coarse-mastery',
+        stepKey: 'm0',
+        excludeId: 'none',
+      });
+      const trained = advanceCoarseTeams(teams, {
+        seed: 'ri134-coarse-mastery',
+        stepKey: 'm0',
+        excludeId: 'none',
+        aiMasteryByTeamId: { pressured: 1.2 },
+      });
+      expect(trained.teams[0]!.reviewQueue).toBeLessThan(proxy.teams[0]!.reviewQueue);
+    });
+
+    it('RI-134: 技術的負債が高いほど粗粒度の行列圧力が増える', () => {
+      const lowDebt = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 0,
+          techDebt: 0,
+        }),
+      ];
+      const highDebt = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 0,
+          techDebt: 80,
+        }),
+      ];
+      const low = advanceCoarseTeams(lowDebt, {
+        seed: 'ri134-coarse-debt',
+        stepKey: 'd0',
+        excludeId: 'none',
+      });
+      const high = advanceCoarseTeams(highDebt, {
+        seed: 'ri134-coarse-debt',
+        stepKey: 'd0',
+        excludeId: 'none',
+      });
+      expect(high.teams[0]!.reviewQueue).toBeGreaterThan(low.teams[0]!.reviewQueue);
+    });
+
     it('RI-73: seniorHpCostMul が粗粒度のシニア消耗に掛かる', () => {
       const teams = [
         makeTeam({ id: 'home' }),
@@ -568,7 +735,7 @@ describe('RI-91-B1 teamState survived mutants', () => {
       const plainT = plain.teams.find((t) => t.id === 'pressured')!;
       const relievedT = relieved.teams.find((t) => t.id === 'pressured')!;
       // byTeam を無視すると同値になるため、厳密減少と exact 値で刺す。
-      expect(plainT.reviewQueue).toBe(14);
+      expect(plainT.reviewQueue).toBe(13);
       expect(relievedT.reviewQueue).toBe(10);
       expect(relievedT.reviewQueue).toBeLessThan(plainT.reviewQueue);
       expect(plain.ignited).toBe(1);

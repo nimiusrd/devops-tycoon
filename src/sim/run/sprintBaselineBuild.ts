@@ -273,6 +273,7 @@ export function buildSprintBaselineInput(
     org: structuredClone(org),
     cardEffects: { ...effects },
     aiAdoptionShare: formation.aiAdoptionShare,
+    aiMasteryNorm: formation.aiMasteryNorm,
     reviewLoadAdd: modifiers.reviewLoadAdd,
   };
 }

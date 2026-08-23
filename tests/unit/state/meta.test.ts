@@ -23,6 +23,7 @@ import {
   type MetaState,
   getDailyRecord,
   parseLegacyMeta,
+  TUTORIAL_CONTENT_VERSION,
   type RunRewardInput,
 } from '../../../src/state/meta';
 import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../../src/data/unlocks';
@@ -432,10 +433,10 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(game.getMeta().seenTutorialVersion).toBe(0);
     game.markTutorialSeen();
     expect(game.getMeta().seenTutorial).toBe(true);
-    expect(game.getMeta().seenTutorialVersion).toBe(5);
+    expect(game.getMeta().seenTutorialVersion).toBe(TUTORIAL_CONTENT_VERSION);
     await Promise.resolve();
     expect(persisted?.seenTutorial).toBe(true);
-    expect(persisted?.seenTutorialVersion).toBe(5);
+    expect(persisted?.seenTutorialVersion).toBe(TUTORIAL_CONTENT_VERSION);
   });
 
   it('旧 seenTutorial:true セーブは版1へ移行し、現行版未満として扱う（RI-67）', () => {

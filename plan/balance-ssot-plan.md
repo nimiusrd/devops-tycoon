@@ -44,7 +44,7 @@ SSoTは値の置き場所を統一する仕組みであり、モデルの意味�
 - 人間がAIなしで実装する能力
 - AI出力を評価・修正する能力
 
-値の移動だけを行うPRでは現行式を変えない。`manualCapability`を含む状態分離はSSoT移行エピックの対象外とし、移行完了後に[probability-model.md §4.5.1](./probability-model.md#451-ai依存度の意味と再設計課題)を入力とする[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)で扱う。
+値の移動だけを行うPRでは現行式を変えない。AI依存モデルの意味変更は[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)で扱い、`manualCapability`は採用しない。
 
 ## 3. 対象棚卸し
 
@@ -153,40 +153,34 @@ plan/generated/balance-curves.svg
 
 生成ファイルには直接編集しない旨を記載し、MarkdownとSVGをGit管理する。生成時刻、絶対パス、実行環境依存の順序など非決定的な情報は含めない。生成コマンドと差分チェックを`package.json`へ追加し、`balance:check`が生成後のGit差分を検出した場合はCIを失敗させる。
 
-### 4.4 将来課題: AI依存モデルの再設計
+### 4.4 AI依存モデルの再設計（RI-134）
 
-この節はSSoT移行エピックの実装対象ではない。移行完了後に別課題としてAI依存モデルを変更する場合は、次の状態を独立して調整・検証できる形を候補とする。
+`manualCapability`は採用しない。`W`は既存のリテラシー・習熟・ドキュメントから導出し、新ゲージは持たない。プレイヤー判断は AI 前提ワークフローの組み込みである。SSoT移行時は対象外とし、式変更は別PRで入れた。
 
 | 状態 | 粒度 | 役割 |
 | --- | --- | --- |
-| `aiDependency` | 組織またはチーム | AIがないと通常の仕事を維持できない度合い |
-| `manualCapability` | 初期はチーム、必要なら将来は個人 | AIなしで品質を保って実装する能力 |
+| `aiDependency` | 組織またはチーム | 工程がどれだけ AI 利用を前提にしているか |
+| `W` | 導出値 | `aiLiteracy`、平均`aiMastery`、`documentation`から都度計算する成熟度 |
 | `aiLiteracy` / `aiMastery` | 組織 / 個人 | AIを安全に利用し、出力を検証する能力 |
 | `quality` / `techDebt` | 組織またはチーム | AI支援の有無にかかわらず影響する共有リスク |
 
-`manualCapability`を個人値にするには、タスクが担当者を保持するか、編成から代表値をどう選ぶかを決める必要がある。担当者を持たないまま個人値だけを追加すると、誰の能力をRework判定へ使ったか説明できないため、初期案はチーム集約値とする。
+個人単位の新状態やタスク担当者は対象外である。具体式と仮係数は[probability-model.md §4.5](./probability-model.md#45-rework)を参照する。Monte Carlo での係数確定は後続である。
 
-この変更では、低依存時はAI支援なしが安全でも、高依存・低手作業能力ではAI支援なしが危険になる交差を許容する。単調性テストを「AI依存度が上がると常に全タスクのRework率が上がる」という現在の条件から、状態別の条件へ更新する必要がある。
-
-候補式の係数は、次の安定IDで独立して調整できるようにする。具体式と仮係数は[probability-model.md §4.5.2](./probability-model.md#452-rework候補式)を参照する。
+調整用の安定IDは次のとおりである。
 
 | パラメータID | 役割 |
 | --- | --- |
 | `rework.shared.base` | Reworkの基礎率 |
 | `rework.shared.qualityGapWeight` | 品質不足による共通リスク |
 | `rework.shared.techDebtWeight` | 技術的負債による共通リスク |
-| `rework.manual.skillGapWeight` | AI支援なしでの手作業能力不足 |
-| `rework.manual.dependencyInteraction` | AI依存度と手作業能力不足の相互作用 |
-| `rework.ai.skillGapWeight` | AI支援ありでのAI習熟不足 |
-| `rework.ai.dependencyInteraction` | AI依存度とAI習熟不足の相互作用 |
+| `rework.workflow.skillGapWeight` | AI支援ありでのワークフロー不足 |
+| `rework.workflow.dependencyInteraction` | AI前提度とワークフロー不足の相互作用 |
+| `rework.mismatch.dependencyWeight` | AIなし工程ずれ |
+| `rework.workflow.literacyWeight` / `masteryWeight` / `documentationWeight` | `W`の合成重み（合計1） |
 | `rework.attemptDecay` | IncidentまたはRework経験後の減衰倍率 |
 | `rework.minimum` / `rework.maximum` | 確率の下限と上限 |
-| `state.aiDependency.gain` | AI支援タスクによる依存度増加 |
-| `state.aiDependency.recovery` | AIなし実装や施策による依存度回復 |
-| `state.manualCapability.decay` | AI支援中の手作業能力低下 |
-| `state.manualCapability.practiceRecovery` | AIなし実装による手作業能力回復 |
 
-能力合成の比率も調整対象にするが、個々の重みは合計1になる不変条件を持たせる。AI習熟を`aiRisk`と編成の`reworkRateAdd`へ重複反映しないことも検証する。
+`W`の重みは合計1に固定する。AI習熟を`W`と編成の`reworkRateAdd`へ重複反映しない。
 
 ## 5. バージョンと再現性
 
@@ -305,15 +299,12 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 
 ### 将来の別課題: AI依存モデルを再設計（RI-134）
 
-- 共有リスク、AI依存、手作業能力、AI習熟の意味を分離する。
-- `manualCapability`をチーム状態として持つか、既存値から導出するかを決める。
-- 候補式の仮係数で、AI支援あり・なしの交差点と能力別の感度を可視化する。
-- 共有、手作業、AI利用の各リスク項を個別にオン・オフして寄与を検証する。
-- AI支援あり・なしの確率曲線と、プレイヤーへ提示する判断を合意する。
-- 値移動とは別PRで式を変更し、ルールセットを更新する。
-- 詳細モデル、粗粒度モデル、セーブ、リプレイ、診断表示を同時に確認する。
+- 共有リスク、AI前提度、ワークフロー成熟度の意味を分離する（式は仮係数で実装済み）。
+- `manualCapability`は採用しない。`W`は既存値から導出する。
+- 仮係数を Monte Carlo と代表曲線で確定し、ルールセットを更新する。
+- 詳細モデルと粗粒度モデルで因果方向が一致することを維持する。
 
-完了条件: AIを使う場合と使わない場合のリスクを、それぞれ独立した能力と組織状態から説明できる。
+完了条件: AIを使う場合と使わない場合のリスクを、共有状態とワークフロー成熟度から説明でき、係数が Monte Carlo で確定している。
 
 ### Phase 5: 調整支援を拡張
 
@@ -333,7 +324,7 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 | 領域別PR | member、actions、run、coarse-teamなど | 変更なし |
 | 調整PR | 値変更、生成文書、統計結果 | 意図した変更あり |
 | 永続化PR | ルールセットとスキーマ | 互換性方針に従う |
-| AI依存モデルPR | 手作業能力、AI習熟、共有リスクを分離 | 意図した変更あり |
+| AI依存モデルPR | 共有リスク、ワークフロー成熟度、工程ずれを分離 | 意図した変更あり |
 
 値の「移動」と「調整」を同じPRに含めない。固定seedの差分が、構造変更によるものか調整によるものかを判別しやすくする。
 
@@ -346,7 +337,7 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 | 値の移動で固定seed結果が変わる | 乱数呼び出しと評価順を維持し、移行前後を同一seedで比較する |
 | 文書と実装が再びずれる | 生成物の差分をCIで検査する |
 | 一つの値が多数のKPIを同時に変える | タグ、感度グラフ、同一seedペア、多数seedレポートを併用する |
-| AI依存度が複数の意味を持ち、曲線を説明できない | 共有リスク、手作業能力、AI習熟を別状態・別項として扱う |
+| AI依存度が複数の意味を持ち、曲線を説明できない | 共有リスク、ワークフロー成熟度、工程ずれを別項として扱う |
 | 単位を取り違える | unitを必須にし、確率、百分率、倍率、tick、msを区別する |
 | 保存中のランだけ挙動が変わる | ルールセットを保存し、不一致時の扱いを明示する |
 | メタデータが本番バンドルを増やす | 初期は許容し、問題が確認された場合だけ実行値の生成物を分離する |
@@ -361,4 +352,4 @@ npm run balance:check  # 生成差分と定義の不変条件を検査
 | 生成Markdown・SVG | 決定論的に生成してGit管理し、通常CIで差分検査する |
 | 多数seedレポート | 手動＋週次main。通常PR CI外、artifact 30日保持 |
 | 旧リプレイ・デイリー | リプレイはルール不明表示で保持。デイリー記録・報酬は日付＋ルールセット単位で保持する |
-| `manualCapability` | SSoT移行外の[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)へ延期する |
+| `manualCapability` | 採用しない。`W`は既存値から導出する（[RI-134](./remaining-issues.md#ri-134-ai依存モデルの再設計)） |

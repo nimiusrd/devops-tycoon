@@ -111,6 +111,7 @@ export function resolveSprintConfig(
  * `cardEffects` はデッキを畳み込んだ係数で、未指定（＝デッキ無し）なら
  * 無効果になる。集中力は満タンで開始する（第6.2）。
  * `aiAdoptionShare` は編成由来の実AI採用率の倍率（0..1）。未指定なら1。
+ * `aiMasteryNorm` は AI 配布コーダーの平均習熟。Rework の W に使う。
  */
 export function createSprint(
   config: SprintConfig,
@@ -118,6 +119,7 @@ export function createSprint(
   rng: Rng,
   cardEffects: CardEffects = IDENTITY_CARD_EFFECTS,
   aiAdoptionShare = 1,
+  aiMasteryNorm = 0,
 ): SprintState {
   const tasks: Task[] = [];
   for (let i = 0; i < config.taskCount; i += 1) {
@@ -160,6 +162,7 @@ export function createSprint(
     cardEffects,
     cardPiles: { drawOrder: [], hand: [], discard: [], played: [] },
     aiAdoption: clamp(AI_ADOPTION * aiAdoptionShare, 0, 1),
+    aiMasteryNorm,
     events: [],
     interventionEvents: [],
     fireEvents: [],
@@ -289,10 +292,10 @@ export function reviewOne(
     return;
   }
 
-  // 2) 手戻り判定（AI依存度が高いほど増える。第22.5 の不変条件）
+  // 2) 手戻り判定（共有リスク + ワークフロー不足 / 工程ずれ。RI-134）
   if (
     task.reworkAttempts < MAX_REWORK &&
-    rng() < reworkProbability(org, task, sprint.cardEffects) * reworkMul
+    rng() < reworkProbability(org, task, sprint.cardEffects, sprint.aiMasteryNorm) * reworkMul
   ) {
     m.reworkCount += 1;
     m.combo = 0;

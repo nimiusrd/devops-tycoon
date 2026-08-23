@@ -550,11 +550,11 @@ describe('RI-72-A2 whatIfState の cache key と state 構築', () => {
 
     expect(pressured.current.trials).toBe(24);
     // RI-77: 手戻り緩和後の golden（決定論）。securityLevel 60 で RI-87 は無効果帯。
-    expect(pressured.current.delivered).toEqual({ mean: 797.25, min: 672, max: 948 });
+    expect(pressured.current.delivered).toEqual({ mean: 784, min: 668, max: 911 });
     expect(pressured.current.spread).toEqual({
-      mean: 26.083333333333332,
+      mean: 31.291666666666668,
       min: 0,
-      max: 74,
+      max: 84,
     });
     expect(pressured.current.delivered).not.toEqual(plain.current.delivered);
   });

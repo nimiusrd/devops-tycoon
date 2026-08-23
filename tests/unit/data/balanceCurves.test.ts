@@ -98,8 +98,8 @@ describe('代表確率曲線の生成', () => {
     expect(table).toContain(
       `| Test Coverage 0 → 100でのIncident確率 | ${incidentAi} | ${incidentNoAi} |`,
     );
-    expect(table).toContain('12.0% → 21.36%');
-    expect(table).toContain('6.8% → 12.8%');
+    expect(table).toContain('13.04% → 25.52%');
+    expect(table).toContain('6.8% → 14.8%');
     expect(table).toContain('14.75% → 4.75%');
     expect(table).toContain('12.0% → 2.0%');
 

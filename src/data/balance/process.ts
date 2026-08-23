@@ -234,7 +234,7 @@ export const PROCESS_BALANCE = {
   }),
   reworkWorkflowSkillGapWeight: defineBalanceEntry({
     id: 'process.rework.workflow.skillGapWeight',
-    value: 0.1,
+    value: 0.12,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
     label: 'AI 支援時のワークフロー不足係数',
@@ -244,7 +244,7 @@ export const PROCESS_BALANCE = {
   }),
   reworkWorkflowDependencyInteraction: defineBalanceEntry({
     id: 'process.rework.workflow.dependencyInteraction',
-    value: 0.18,
+    value: 0.24,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
     label: 'AI 支援時の依存度とワークフロー不足の相互作用',
@@ -254,7 +254,7 @@ export const PROCESS_BALANCE = {
   }),
   reworkMismatchDependencyWeight: defineBalanceEntry({
     id: 'process.rework.mismatch.dependencyWeight',
-    value: 0.06,
+    value: 0.08,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
     label: 'AI なし工程ずれの依存度係数',

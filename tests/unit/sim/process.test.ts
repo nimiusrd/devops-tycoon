@@ -12,7 +12,10 @@ import {
 } from '../../../src/sim/model';
 import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { createOrgState } from '../../../src/sim/org';
+import { runSprintSimulationFull } from '../../../src/sim/run/sprintBaseline';
+import { resolveSprintConfig } from '../../../src/sim/sprint';
 import type { OrgState, Task } from '../../../src/sim/types';
+import { summarizeNumeric } from '../helpers/monteCarlo';
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -116,6 +119,26 @@ describe('reworkProbability（RI-134 のワークフロー分離）', () => {
     ).toBeGreaterThan(reworkProbability(immature, task(), IDENTITY_CARD_EFFECTS, 0));
   });
 
+  it('確定係数は高成熟の優位8ポイントと低成熟の不利28ポイントを作る', () => {
+    const base = org({ aiDependency: 100, quality: 60, techDebt: 0 });
+    const high = { ...base, aiLiteracy: 100, documentation: 100 };
+    const low = { ...base, aiLiteracy: 0, documentation: 0 };
+    const aiTask = task({ aiAssisted: true });
+    const noAiTask = task({ aiAssisted: false });
+
+    const highAi = reworkProbability(high, aiTask, IDENTITY_CARD_EFFECTS, 1);
+    const highNoAi = reworkProbability(high, noAiTask, IDENTITY_CARD_EFFECTS, 1);
+    const lowAi = reworkProbability(low, aiTask, IDENTITY_CARD_EFFECTS, 0);
+    const lowNoAi = reworkProbability(low, noAiTask, IDENTITY_CARD_EFFECTS, 0);
+
+    expect(highAi).toBeCloseTo(0.068);
+    expect(highNoAi).toBeCloseTo(0.148);
+    expect(highNoAi - highAi).toBeCloseTo(0.08);
+    expect(lowAi).toBeCloseTo(0.428);
+    expect(lowNoAi).toBeCloseTo(0.148);
+    expect(lowAi - lowNoAi).toBeCloseTo(0.28);
+  });
+
   it('手戻りを重ねたタスクは通りやすくなる（収束保証）', () => {
     const hot = org({ aiDependency: 90, quality: 20, aiLiteracy: 10, documentation: 10 });
     const fresh = reworkProbability(hot, task({ reworkAttempts: 0 }));
@@ -136,6 +159,59 @@ describe('reworkProbability（RI-134 のワークフロー分離）', () => {
     );
     expect(min).toBeGreaterThanOrEqual(0.02);
     expect(max).toBeLessThanOrEqual(0.75);
+  });
+});
+
+describe('RI-134 のワークフロー成熟度 Monte Carlo', () => {
+  const seeds = Array.from({ length: 64 }, (_, index) => `ri134-workflow-${index}`);
+
+  function reworkValues(input: {
+    aiAdoptionShare: number;
+    aiDependency: number;
+    maturity: 0 | 1;
+  }): number[] {
+    return seeds.map((seed) => {
+      const maturityValue = input.maturity * 100;
+      const result = runSprintSimulationFull({
+        seed,
+        config: resolveSprintConfig('default'),
+        org: org({
+          aiDependency: input.aiDependency,
+          aiLiteracy: maturityValue,
+          documentation: maturityValue,
+          quality: 60,
+          techDebt: 0,
+        }),
+        cardEffects: { ...IDENTITY_CARD_EFFECTS },
+        aiAdoptionShare: input.aiAdoptionShare,
+        aiMasteryNorm: input.maturity,
+      });
+      return result.rework;
+    });
+  }
+
+  it('64 seedで成熟度・AI前提度・AI利用の効果量を固定する', () => {
+    const lowMaturityAi = summarizeNumeric(
+      reworkValues({ aiAdoptionShare: 1, aiDependency: 100, maturity: 0 }),
+    );
+    const lowMaturityNoAi = summarizeNumeric(
+      reworkValues({ aiAdoptionShare: 0, aiDependency: 100, maturity: 0 }),
+    );
+    const highMaturityAi = summarizeNumeric(
+      reworkValues({ aiAdoptionShare: 1, aiDependency: 100, maturity: 1 }),
+    );
+    const highMaturityNoAi = summarizeNumeric(
+      reworkValues({ aiAdoptionShare: 0, aiDependency: 100, maturity: 1 }),
+    );
+    const lowDependencyNoAi = summarizeNumeric(
+      reworkValues({ aiAdoptionShare: 0, aiDependency: 0, maturity: 1 }),
+    );
+
+    expect(lowMaturityAi.mean - lowMaturityNoAi.mean).toBeGreaterThanOrEqual(6);
+    expect(highMaturityNoAi.mean - highMaturityAi.mean).toBeGreaterThanOrEqual(1.5);
+    expect(lowMaturityAi.mean - highMaturityAi.mean).toBeGreaterThanOrEqual(8);
+    expect(highMaturityNoAi.mean - lowDependencyNoAi.mean).toBeGreaterThanOrEqual(1.5);
+    expect(lowMaturityNoAi.values).toEqual(highMaturityNoAi.values);
   });
 });
 

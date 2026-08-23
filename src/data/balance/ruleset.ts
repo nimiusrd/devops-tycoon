@@ -8,7 +8,7 @@ import { canonicalizeJson, compareCanonicalStrings, sha256Hex } from './canonica
 import type { BalanceDefinition, BalanceEntry, ProbabilityDistribution } from './types';
 
 /** ルールセット版。結果へ影響する変更で直前の値から 1 増やす。 */
-export const BALANCE_RULESET_VERSION = 3;
+export const BALANCE_RULESET_VERSION = 4;
 
 /** 指紋の射影・算出方式の版。方式を変えるときは指紋が変わり、手動版も 1 増やす。 */
 export const BALANCE_RULESET_FINGERPRINT_SCHEME = 1;

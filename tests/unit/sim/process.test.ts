@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  IDENTITY_CARD_EFFECTS,
   aiDeliveryValueMul,
   codingTicks,
   incidentProbability,
   reviewPerTick,
   reworkProbability,
   taskValue,
+  workflowMaturity,
 } from '../../../src/sim/model';
 import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { createOrgState } from '../../../src/sim/org';
@@ -31,35 +33,84 @@ function org(overrides: Partial<OrgState> = {}): OrgState {
   return { ...createOrgState('default', true), ...overrides };
 }
 
-describe('reworkProbability（第22.5 の代表的不変条件）', () => {
-  it('AI依存度が上がると Rework 傾向も上がる（他条件固定で単調増加）', () => {
-    const t = task();
-    const low = reworkProbability(org({ aiDependency: 10 }), t);
-    const mid = reworkProbability(org({ aiDependency: 50 }), t);
-    const high = reworkProbability(org({ aiDependency: 90 }), t);
-    expect(mid).toBeGreaterThan(low);
-    expect(high).toBeGreaterThan(mid);
+describe('reworkProbability（RI-134 のワークフロー分離）', () => {
+  it('ワークフロー成熟度の重みは合計 1 になる', () => {
+    expect(
+      PROCESS_BALANCE.reworkWorkflowLiteracyWeight.value +
+        PROCESS_BALANCE.reworkWorkflowMasteryWeight.value +
+        PROCESS_BALANCE.reworkWorkflowDocumentationWeight.value,
+    ).toBeCloseTo(1);
   });
 
-  it('品質が高いほど Rework は下がる', () => {
-    const t = task();
-    const lowQuality = reworkProbability(org({ quality: 20 }), t);
-    const highQuality = reworkProbability(org({ quality: 90 }), t);
-    expect(highQuality).toBeLessThan(lowQuality);
+  it('AI前提度が上がると AI なしの工程ずれと未熟な AI ありのリスクが上がる', () => {
+    const off = task();
+    const on = task({ aiAssisted: true });
+    const immature = org({ aiDependency: 10, aiLiteracy: 10, documentation: 10 });
+    const immatureHigh = org({ aiDependency: 90, aiLiteracy: 10, documentation: 10 });
+    expect(reworkProbability(immatureHigh, off)).toBeGreaterThan(reworkProbability(immature, off));
+    expect(reworkProbability(immatureHigh, on)).toBeGreaterThan(reworkProbability(immature, on));
+  });
+
+  it('品質が高いほど AI の有無によらず Rework は下がる', () => {
+    const low = org({ quality: 20 });
+    const high = org({ quality: 90 });
+    expect(reworkProbability(high, task())).toBeLessThan(reworkProbability(low, task()));
+    expect(reworkProbability(high, task({ aiAssisted: true }))).toBeLessThan(
+      reworkProbability(low, task({ aiAssisted: true })),
+    );
+  });
+
+  it('ワークフロー成熟度は AI ありの Rework だけを下げる', () => {
+    const poor = org({ aiLiteracy: 10, documentation: 10 });
+    const rich = org({ aiLiteracy: 90, documentation: 90 });
+    expect(workflowMaturity(rich, 0.9)).toBeGreaterThan(workflowMaturity(poor, 0.1));
+    expect(
+      reworkProbability(rich, task({ aiAssisted: true }), IDENTITY_CARD_EFFECTS, 0.9),
+    ).toBeLessThan(reworkProbability(poor, task({ aiAssisted: true }), IDENTITY_CARD_EFFECTS, 0.1));
+    expect(reworkProbability(rich, task(), IDENTITY_CARD_EFFECTS, 0.9)).toBe(
+      reworkProbability(poor, task(), IDENTITY_CARD_EFFECTS, 0.1),
+    );
+  });
+
+  it('高成熟では高前提度で AI ありが安全になり、低成熟では AI ありが危険になる', () => {
+    const mature = org({
+      aiDependency: 100,
+      aiLiteracy: 100,
+      documentation: 100,
+      quality: 60,
+      techDebt: 0,
+    });
+    const immature = org({
+      aiDependency: 100,
+      aiLiteracy: 0,
+      documentation: 0,
+      quality: 60,
+      techDebt: 0,
+    });
+    expect(
+      reworkProbability(mature, task({ aiAssisted: true }), IDENTITY_CARD_EFFECTS, 1),
+    ).toBeLessThan(reworkProbability(mature, task(), IDENTITY_CARD_EFFECTS, 1));
+    expect(
+      reworkProbability(immature, task({ aiAssisted: true }), IDENTITY_CARD_EFFECTS, 0),
+    ).toBeGreaterThan(reworkProbability(immature, task(), IDENTITY_CARD_EFFECTS, 0));
   });
 
   it('手戻りを重ねたタスクは通りやすくなる（収束保証）', () => {
-    // 下限クランプに当たらない領域（高依存・低品質）で減衰を確認する。
-    const hot = org({ aiDependency: 90, quality: 20, aiLiteracy: 10 });
+    const hot = org({ aiDependency: 90, quality: 20, aiLiteracy: 10, documentation: 10 });
     const fresh = reworkProbability(hot, task({ reworkAttempts: 0 }));
     const retried = reworkProbability(hot, task({ reworkAttempts: 2 }));
     expect(retried).toBeLessThan(fresh);
   });
 
   it('確率は [0.02, 0.75] に収まる', () => {
-    const min = reworkProbability(org({ aiDependency: 0, quality: 100, aiLiteracy: 100 }), task());
+    const min = reworkProbability(
+      org({ aiDependency: 0, quality: 100, aiLiteracy: 100, documentation: 100, techDebt: 0 }),
+      task(),
+      IDENTITY_CARD_EFFECTS,
+      1,
+    );
     const max = reworkProbability(
-      org({ aiDependency: 100, quality: 0, aiLiteracy: 0 }),
+      org({ aiDependency: 100, quality: 0, aiLiteracy: 0, documentation: 0, techDebt: 200 }),
       task({ aiAssisted: true }),
     );
     expect(min).toBeGreaterThanOrEqual(0.02);

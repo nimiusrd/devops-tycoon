@@ -145,7 +145,7 @@ describe('編成効果の集約（個体値→CardEffects）', () => {
     expect(f1.effects.reviewCapacityMul!).toBeGreaterThan(f0.effects.reviewCapacityMul!);
   });
 
-  it('AIを習熟者へ配ると手戻りが減り、未熟者へ配ると増える（編成が戦術になる）', () => {
+  it('AIを習熟者へ配ると平均習熟が上がり、編成の reworkRateAdd には載せない', () => {
     const skilled = roster([
       member({
         id: 'a',
@@ -164,8 +164,9 @@ describe('編成効果の集約（個体値→CardEffects）', () => {
     ]);
     const fs = foldFormationEffects(skilled);
     const fn = foldFormationEffects(novice);
-    expect(fs.effects.reworkRateAdd!).toBeLessThan(0);
-    expect(fn.effects.reworkRateAdd!).toBeGreaterThan(0);
+    expect(fs.aiMasteryNorm).toBeGreaterThan(fn.aiMasteryNorm);
+    expect(fs.effects.reworkRateAdd).toBe(0);
+    expect(fn.effects.reworkRateAdd).toBe(0);
   });
 
   it('AI職人トレイトはAI配布時の手戻り低減をさらに強める', () => {
@@ -311,7 +312,8 @@ describe('AI配布が実採用率に反映される（第12.2 / レビュー#C�
         member({ id: 'a', assignment: 'coding', aiAssigned: true, stats: { aiMastery: 0 } }),
       ]),
     );
-    expect(riskyAi.effects.reworkRateAdd).toBe(0.05);
+    expect(riskyAi.effects.reworkRateAdd).toBe(0);
+    expect(riskyAi.aiMasteryNorm).toBeGreaterThanOrEqual(0);
     expect(riskyAi.effects.incidentRateMul).toBe(1.05);
   });
 

@@ -3,12 +3,13 @@
  *
  * すべて `OrgState` と `Task` から値を返す純関数で、乱数は呼び出し側から
  * 引数で受け取る（seed付き決定論を壊さない）。本作のコア因果——
- * 「AI を入れると Coding は速くなるが Review が詰まり、雑な AI 利用は Rework を増やす」——
- * をここで一元的に表現する。
+ * 「AI を入れると Coding は速くなるが Review が詰まり、ワークフローが未熟な
+ * AI 前提化は Rework を増やす」——をここで一元的に表現する。
  */
 import type { CardEffects, OrgState, Task, TaskKind } from '../types';
 import type { Rng } from '../rng';
 import { clamp } from '../clamp';
+import { OUTCOME_BALANCE } from '../../data/balance/outcome';
 import { PROCESS_BALANCE } from '../../data/balance/process';
 
 /**
@@ -193,28 +194,60 @@ export function reviewPerTick(org: OrgState, effects: CardEffects = IDENTITY_CAR
   );
 }
 
+/** ワークフロー成熟度の入力。組織のリテラシーとドキュメントだけを読む。 */
+export type WorkflowMaturityInput = Pick<OrgState, 'aiLiteracy' | 'documentation'>;
+
 /**
- * Review 済みタスクが手戻りになる確率。
- * **AI依存度が上がるほど増える**（第22.5 の代表的不変条件）。
- * 品質・AIリテラシーが高いほど下がる。手戻り回数が増えると収束させる。
+ * AI 前提ワークフローの成熟度 `W`（0..1）。
+ * リテラシー・平均 AI 習熟・ドキュメントから都度導出し、新ゲージは持たない。
+ */
+export function workflowMaturity(org: WorkflowMaturityInput, aiMasteryNorm = 0): number {
+  const literacy = clamp(org.aiLiteracy / 100, 0, 1);
+  const documentation = clamp(org.documentation / 100, 0, 1);
+  const mastery = clamp(aiMasteryNorm, 0, 1);
+  return clamp(
+    PROCESS_BALANCE.reworkWorkflowLiteracyWeight.value * literacy +
+      PROCESS_BALANCE.reworkWorkflowMasteryWeight.value * mastery +
+      PROCESS_BALANCE.reworkWorkflowDocumentationWeight.value * documentation,
+    0,
+    1,
+  );
+}
+
+/**
+ * Review 済みタスクが手戻りになる確率（RI-134）。
+ * 共有リスクは品質と負債、AI ありはワークフロー不足、AI なしは工程ずれ。
+ * 手戻り回数が増えると収束させる。
  */
 export function reworkProbability(
   org: OrgState,
   task: Task,
   effects: CardEffects = IDENTITY_CARD_EFFECTS,
+  aiMasteryNorm = 0,
 ): number {
-  // RI-77: AI タスク固有の手戻り上乗せは小さく保ち、依存度・編成側の代償を主因にする。
-  // Review 渋滞・Rework 増のコア因果（RI-41）は維持する。
-  const p =
-    PROCESS_BALANCE.reworkBaseProbability.value +
-    PROCESS_BALANCE.reworkAiDependencyWeight.value * (org.aiDependency / 100) +
-    (task.aiAssisted ? PROCESS_BALANCE.reworkAiAssistedAdd.value : 0) -
-    PROCESS_BALANCE.reworkAiLiteracyWeight.value * (org.aiLiteracy / 100) -
-    PROCESS_BALANCE.reworkQualityWeight.value * (org.quality / 100) +
+  const quality = clamp(org.quality / 100, 0, 1);
+  const dependency = clamp(org.aiDependency / 100, 0, 1);
+  const techDebt = clamp(org.techDebt / OUTCOME_BALANCE.loseTechDebtCap.value, 0, 1);
+  const maturity = workflowMaturity(org, aiMasteryNorm);
+  const workflowGap = 1 - maturity;
+  const sharedRisk =
+    PROCESS_BALANCE.reworkSharedBase.value +
+    PROCESS_BALANCE.reworkSharedQualityGapWeight.value * (1 - quality) +
+    PROCESS_BALANCE.reworkSharedTechDebtWeight.value * techDebt;
+  const workflowRisk = task.aiAssisted
+    ? PROCESS_BALANCE.reworkWorkflowSkillGapWeight.value * workflowGap +
+      PROCESS_BALANCE.reworkWorkflowDependencyInteraction.value * dependency * workflowGap
+    : 0;
+  const mismatchRisk = task.aiAssisted
+    ? 0
+    : PROCESS_BALANCE.reworkMismatchDependencyWeight.value * dependency;
+  const pRaw =
+    sharedRisk +
+    workflowRisk +
+    mismatchRisk +
     effects.reworkRateAdd -
     (task.split ? SPLIT_REWORK_REDUCTION : 0);
-  // 再修正済みのタスクは通りやすくする（収束保証）。
-  const damped = p * Math.pow(PROCESS_BALANCE.reworkAttemptDecay.value, task.reworkAttempts);
+  const damped = pRaw * Math.pow(PROCESS_BALANCE.reworkAttemptDecay.value, task.reworkAttempts);
   return clamp(damped, PROCESS_BALANCE.reworkMinimum.value, PROCESS_BALANCE.reworkMaximum.value);
 }
 

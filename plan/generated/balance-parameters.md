@@ -5,8 +5,8 @@
 
 ## ルールセット
 
-- 版: `2`
-- 指紋: `ab8a7e891276e81033d941472a3cf6d5533506087808e940288ff97009c3e96b`
+- 版: `3`
+- 指紋: `8f344d1930a8b536fb68ee6e8eead06c05edcd2dd4300f6cd9429d6371d156dc`
 - 指紋方式: `1`
 
 版は手動更新する単調増加整数である。結果へ影響する変更では直前の版から 1 増やす。
@@ -268,8 +268,6 @@
 | `member.formation.ai.incidentMasteryWeight` | AI習熟のIncident低減係数 | `0.1` | `multiplier` | `0〜1` | — | AI習熟がAI配布時のIncident倍率を低減する係数。 | member, formation, ai, incident | いいえ |
 | `member.formation.ai.masteryMaximum` | AI習熟正規化倍率の上限 | `1.2` | `multiplier` | `0〜3` | — | AI習熟を正規化した値の上限。 | member, formation, ai, boundary | いいえ |
 | `member.formation.ai.masteryNormalization` | AI習熟正規化基準 | `100` | `points` | `1〜200（整数）` | — | 有効AI習熟をAI配布効果へ換算する基準値。 | member, formation, ai | いいえ |
-| `member.formation.ai.reworkBase` | AI配布時Rework基礎加算 | `0.05` | `multiplier` | `0〜1` | — | AIを配布したコーダーへ加えるRework率の基礎加算。 | member, formation, ai, rework | いいえ |
-| `member.formation.ai.reworkMasteryWeight` | AI習熟のRework低減係数 | `0.14` | `multiplier` | `0〜1` | — | AI習熟がAI配布時のRework率を低減する係数。 | member, formation, ai, rework | いいえ |
 | `member.formation.coding.powerDivisor` | Coding実装力換算除数 | `230` | `count` | `1〜1000（整数）` | — | 実装力をCoding速度倍率へ換算する除数。 | member, formation, coding | いいえ |
 | `member.formation.coding.speedBase` | Coding速度基礎倍率 | `0.7` | `multiplier` | `0〜3` | — | コーダーの実装力を加算する前のCoding速度倍率。 | member, formation, coding | いいえ |
 | `member.formation.coding.speedMaximum` | Coding速度倍率の上限 | `1.8` | `multiplier` | `0〜3` | `member.formation.coding.speedMinimum` ≤ `member.formation.coding.speedMaximum` | Coding速度倍率の上限。 | member, formation, coding, boundary | いいえ |
@@ -493,17 +491,21 @@
 | `process.review.hpEfficiency.floor` | Review HP 効率の下限 | `0.3` | `multiplier` | `0.01〜1` | `process.review.hpEfficiency.floor` + `process.review.hpEfficiency.range` = 1 | シニア HP が 0 のときも残る Review 処理量の倍率。 | process, review, senior-hp | いいえ |
 | `process.review.hpEfficiency.range` | Review HP 効率の変動幅 | `0.7` | `multiplier` | `0〜1` | `process.review.hpEfficiency.floor` + `process.review.hpEfficiency.range` = 1 | シニア HP に応じて Review 処理量へ加わる倍率の幅。 | process, review, senior-hp | いいえ |
 | `process.review.hpRegen` | シニア HP 自然回復量 | `0.7` | `points` | `0〜20` | — | 炎上していない tick ごとに回復するシニア HP。 | process, review, senior-hp | いいえ |
-| `process.rework.aiAssistedAdd` | AI 支援タスクの Rework 加算 | `0.05` | `probability` | `0〜1` | — | AI 支援タスクだけに加える Rework 確率。 | process, rework, ai | いいえ |
-| `process.rework.aiDependencyWeight` | Rework の AI 依存度係数 | `0.32` | `multiplier` | `0〜1` | — | AI 依存度が Rework 確率へ加える係数。 | process, rework, ai, dependency | いいえ |
-| `process.rework.aiLiteracyWeight` | Rework の AI リテラシー低減係数 | `0.18` | `multiplier` | `0〜1` | — | AI リテラシーが Rework 確率を低減する係数。 | process, rework, ai | いいえ |
 | `process.rework.attemptDecay` | Rework 試行ごとの減衰倍率 | `0.5` | `multiplier` | `0〜1` | — | 再修正回数ごとに Rework 確率へ掛ける減衰倍率。 | process, rework | いいえ |
-| `process.rework.baseProbability` | Rework 基礎確率 | `0.05` | `probability` | `0〜1` | — | 組織状態やタスク補正を加える前の Rework 確率。 | process, rework | いいえ |
 | `process.rework.maxAttempts` | Rework 最大回数 | `3` | `count` | `0〜20（整数）` | — | 通常の Rework 判定を行うタスクごとの最大回数。 | process, rework | いいえ |
 | `process.rework.maximum` | Rework 確率の上限 | `0.75` | `probability` | `0〜1` | `process.rework.minimum` ≤ `process.rework.maximum` | Rework 確率を clamp する上限。 | process, rework, boundary | いいえ |
 | `process.rework.minimum` | Rework 確率の下限 | `0.02` | `probability` | `0〜1` | `process.rework.minimum` ≤ `process.rework.maximum` | Rework 確率を clamp する下限。 | process, rework, boundary | いいえ |
-| `process.rework.qualityWeight` | Rework の品質低減係数 | `0.14` | `multiplier` | `0〜1` | — | 品質が Rework 確率を低減する係数。 | process, rework, quality | いいえ |
+| `process.rework.mismatch.dependencyWeight` | AI なし工程ずれの依存度係数 | `0.06` | `multiplier` | `0〜1` | — | 工程が AI 前提になったあと、AI なしタスクへ加える Rework 係数。 | process, rework, ai, dependency | いいえ |
+| `process.rework.shared.base` | Rework 共有基礎率 | `0.02` | `probability` | `0〜1` | — | 品質と技術的負債を加える前の、AI 支援の有無によらない Rework 基礎率。 | process, rework | いいえ |
+| `process.rework.shared.qualityGapWeight` | Rework 共有の品質不足係数 | `0.12` | `multiplier` | `0〜1` | — | 品質不足が AI 支援の有無によらず Rework へ加える係数。 | process, rework, quality | いいえ |
+| `process.rework.shared.techDebtWeight` | Rework 共有の技術的負債係数 | `0.08` | `multiplier` | `0〜1` | — | 正規化した技術的負債が AI 支援の有無によらず Rework へ加える係数。 | process, rework, debt | いいえ |
 | `process.rework.splitReduction` | PR 分割時の Rework 低下量 | `0.16` | `probability` | `0〜1` | — | 分割したタスクの Rework 確率から引く量。 | process, rework, assignment | いいえ |
 | `process.rework.ticks` | Rework 所要 tick | `4` | `ticks` | `1〜30（整数）` | — | 手戻りタスクを修正して Review へ戻すまでに要する tick。 | process, rework | いいえ |
+| `process.rework.workflow.dependencyInteraction` | AI 支援時の依存度とワークフロー不足の相互作用 | `0.18` | `multiplier` | `0〜1` | — | AI 前提度とワークフロー不足が AI 支援タスクの Rework へ加える相互作用係数。 | process, rework, ai, workflow, dependency | いいえ |
+| `process.rework.workflow.documentationWeight` | ワークフロー成熟度のドキュメント重み | `0.2` | `multiplier` | `0〜1` | — | ワークフロー成熟度 W へ足すドキュメントの重み。リテラシー・習熟と合計 1。 | process, rework, ai, workflow | いいえ |
+| `process.rework.workflow.literacyWeight` | ワークフロー成熟度のリテラシー重み | `0.4` | `multiplier` | `0〜1` | — | ワークフロー成熟度 W へ足す AI リテラシーの重み。習熟・ドキュメントと合計 1。 | process, rework, ai, workflow | いいえ |
+| `process.rework.workflow.masteryWeight` | ワークフロー成熟度の習熟重み | `0.4` | `multiplier` | `0〜1` | — | ワークフロー成熟度 W へ足す平均 AI 習熟の重み。リテラシー・ドキュメントと合計 1。 | process, rework, ai, workflow | いいえ |
+| `process.rework.workflow.skillGapWeight` | AI 支援時のワークフロー不足係数 | `0.1` | `multiplier` | `0〜1` | — | ワークフロー成熟度の不足が AI 支援タスクの Rework へ加える係数。 | process, rework, ai, workflow | いいえ |
 | `process.security.fragility.maximum` | Security 脆弱度の上限 | `1` | `multiplier` | `0〜1` | `process.security.fragility.minimum` ≤ `process.security.fragility.maximum` | Security 脆弱度を clamp する上限。 | process, security, boundary | いいえ |
 | `process.security.fragility.minimum` | Security 脆弱度の下限 | `0` | `multiplier` | `0〜0` | `process.security.fragility.minimum` ≤ `process.security.fragility.maximum` | Security 脆弱度を clamp する下限。 | process, security, boundary | いいえ |
 | `process.security.fragility.threshold` | Security 脆弱度の無効化水準 | `50` | `percent` | `1〜100` | — | この Security 水準以上では脆弱度を 0 とする境界。 | process, security, boundary | いいえ |

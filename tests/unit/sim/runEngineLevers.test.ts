@@ -339,7 +339,7 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
 
     i.advanceOtherTeams('carry1');
     // incidents + incidentCarry（減算変異だと負寄りになり flush が潰れる）
-    expect(i.coarseIncidentCarry).toBeCloseTo(1.1222222222222222, 10);
+    expect(i.coarseIncidentCarry).toBeCloseTo(1.011111111111111, 10);
     expect(i.totals.incidents).toBe(0);
 
     i.flushCoarseIncidentCarry();
@@ -371,9 +371,9 @@ describe('RI-91-A5 advanceOtherTeams headcount/engineers sync', () => {
     const afterMax = Math.max(
       ...i.teams.filter((t) => t.id !== i.activeTeamId).map((t) => t.reviewQueue),
     );
-    expect(afterMax).toBe(11);
-    expect(i.totals.reviewQueuePeak).toBe(11);
-    expect(i.quarterTotals.reviewQueuePeak).toBe(11);
+    expect(afterMax).toBe(10);
+    expect(i.totals.reviewQueuePeak).toBe(10);
+    expect(i.quarterTotals.reviewQueuePeak).toBe(10);
   });
 });
 

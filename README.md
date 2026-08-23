@@ -197,7 +197,7 @@ tests/
 
 コアループは通しプレイ可能です。現在の未充足・保留は次のとおりです。
 
-- AI依存モデルの再設計（[RI-134](plan/remaining-issues.md#ri-134-ai依存モデルの再設計)、設計判断待ち）
+- AI依存モデルの再設計（[RI-134](plan/remaining-issues.md#ri-134-ai依存モデルの再設計)、式は仮係数。Monte Carlo での係数確定が残る）
 - 組織診断ダッシュボードの深掘り（[RI-135](plan/remaining-issues.md#ri-135-組織診断ダッシュボードの深掘り)、範囲未確定）
 - F-9 有効手集合の完全計測（[RI-136](plan/remaining-issues.md#ri-136-f-9-有効手集合の完全計測)）
 

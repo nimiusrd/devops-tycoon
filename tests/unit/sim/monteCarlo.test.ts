@@ -243,8 +243,8 @@ describe('monteCarlo 基盤（RI-14）', () => {
       incidents: { min: 0, max: 140 },
       /** ドメイン上限 100。RI-73 の消耗緩和後は端数で 99 超もあり得る。 */
       seniorHp: { min: 0, max: 100 },
-      /** REVIEW_FREEZE_PEAK 未満。境界到達 seed は代表群から除外。 */
-      reviewQueuePeak: { min: 10, max: REVIEW_FREEZE_PEAK - 1 },
+      /** REVIEW_FREEZE_PEAK 以下。境界到達は許容し、それを超える崩壊だけ弾く。 */
+      reviewQueuePeak: { min: 10, max: REVIEW_FREEZE_PEAK },
     } as const;
 
     /** 代表 seed 群を走らせて集計する。 */

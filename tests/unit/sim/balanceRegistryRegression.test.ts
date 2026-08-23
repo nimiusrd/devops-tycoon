@@ -51,18 +51,18 @@ describe('RI-106: バランスレジストリ移行の固定 seed 回帰', () =>
       elapsedMs: 5_000,
       org: {
         aiDependency: 87.80000000000007,
-        deliveryScore: 254,
-        morale: 83.5,
+        deliveryScore: 246,
+        morale: 83,
         seniorHp: 72.4000000000001,
       },
       sprint: {
         aiAdoption: 0.85,
         metrics: {
-          aiAssistedCompleted: 23,
-          completedCount: 27,
-          delivered: 254,
+          aiAssistedCompleted: 22,
+          completedCount: 26,
+          delivered: 246,
           incidentCount: 1,
-          reworkCount: 5,
+          reworkCount: 6,
         },
         reviewAccumulator: 0.5831557500000281,
         activeTasks: [
@@ -75,6 +75,15 @@ describe('RI-106: バランスレジストリ移行の固定 seed 回帰', () =>
             lane: 'rework',
             reworkAttempts: 1,
           },
+          {
+            aiAssisted: true,
+            burnTicksLeft: undefined,
+            id: 26,
+            incident: false,
+            kind: 'normal',
+            lane: 'rework',
+            reworkAttempts: 2,
+          },
         ],
       },
     });
@@ -86,18 +95,18 @@ describe('RI-106: バランスレジストリ移行の固定 seed 回帰', () =>
       elapsedMs: 5_000,
       org: {
         aiDependency: 3,
-        deliveryScore: 268,
-        morale: 83,
+        deliveryScore: 209,
+        morale: 82.5,
         seniorHp: 75.50000000000001,
       },
       sprint: {
         aiAdoption: 0.85,
         metrics: {
           aiAssistedCompleted: 0,
-          completedCount: 26,
-          delivered: 268,
+          completedCount: 25,
+          delivered: 209,
           incidentCount: 1,
-          reworkCount: 1,
+          reworkCount: 2,
         },
         reviewAccumulator: 0.07127150000001148,
         activeTasks: [
@@ -109,6 +118,15 @@ describe('RI-106: バランスレジストリ移行の固定 seed 回帰', () =>
             kind: 'routine',
             lane: 'rework',
             reworkAttempts: 1,
+          },
+          {
+            aiAssisted: false,
+            burnTicksLeft: undefined,
+            id: 26,
+            incident: false,
+            kind: 'normal',
+            lane: 'review',
+            reworkAttempts: 0,
           },
           {
             aiAssisted: false,

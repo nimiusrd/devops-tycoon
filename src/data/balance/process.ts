@@ -4,7 +4,8 @@ import { defineBalanceEntry } from './define';
  * 詳細工程モデルの調整値。
  *
  * 式そのものは `src/sim/model/process.ts` に残し、ここでは係数・閾値・
- * clamp 境界だけを型付きで管理する。値を移すだけで、工程モデルの意味は変えない。
+ * clamp 境界だけを型付きで管理する。RI-134 で Rework は共有リスク・
+ * ワークフロー成熟度・AI なしの工程ずれへ分離した。
  */
 export const PROCESS_BALANCE = {
   codingBaseTicks: defineBalanceEntry({
@@ -170,54 +171,95 @@ export const PROCESS_BALANCE = {
     derived: false,
     integer: true,
   }),
-  reworkBaseProbability: defineBalanceEntry({
-    id: 'process.rework.baseProbability',
-    value: 0.05,
+  reworkSharedBase: defineBalanceEntry({
+    id: 'process.rework.shared.base',
+    value: 0.02,
     unit: 'probability',
     allowedRange: { min: 0, max: 1 },
-    label: 'Rework 基礎確率',
-    description: '組織状態やタスク補正を加える前の Rework 確率。',
+    label: 'Rework 共有基礎率',
+    description: '品質と技術的負債を加える前の、AI 支援の有無によらない Rework 基礎率。',
     tags: ['process', 'rework'],
     derived: false,
   }),
-  reworkAiDependencyWeight: defineBalanceEntry({
-    id: 'process.rework.aiDependencyWeight',
-    value: 0.32,
+  reworkSharedQualityGapWeight: defineBalanceEntry({
+    id: 'process.rework.shared.qualityGapWeight',
+    value: 0.12,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
-    label: 'Rework の AI 依存度係数',
-    description: 'AI 依存度が Rework 確率へ加える係数。',
-    tags: ['process', 'rework', 'ai', 'dependency'],
+    label: 'Rework 共有の品質不足係数',
+    description: '品質不足が AI 支援の有無によらず Rework へ加える係数。',
+    tags: ['process', 'rework', 'quality'],
     derived: false,
   }),
-  reworkAiAssistedAdd: defineBalanceEntry({
-    id: 'process.rework.aiAssistedAdd',
-    value: 0.05,
-    unit: 'probability',
+  reworkSharedTechDebtWeight: defineBalanceEntry({
+    id: 'process.rework.shared.techDebtWeight',
+    value: 0.08,
+    unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
-    label: 'AI 支援タスクの Rework 加算',
-    description: 'AI 支援タスクだけに加える Rework 確率。',
-    tags: ['process', 'rework', 'ai'],
+    label: 'Rework 共有の技術的負債係数',
+    description: '正規化した技術的負債が AI 支援の有無によらず Rework へ加える係数。',
+    tags: ['process', 'rework', 'debt'],
     derived: false,
   }),
-  reworkAiLiteracyWeight: defineBalanceEntry({
-    id: 'process.rework.aiLiteracyWeight',
+  reworkWorkflowLiteracyWeight: defineBalanceEntry({
+    id: 'process.rework.workflow.literacyWeight',
+    value: 0.4,
+    unit: 'multiplier',
+    allowedRange: { min: 0, max: 1 },
+    label: 'ワークフロー成熟度のリテラシー重み',
+    description: 'ワークフロー成熟度 W へ足す AI リテラシーの重み。習熟・ドキュメントと合計 1。',
+    tags: ['process', 'rework', 'ai', 'workflow'],
+    derived: false,
+  }),
+  reworkWorkflowMasteryWeight: defineBalanceEntry({
+    id: 'process.rework.workflow.masteryWeight',
+    value: 0.4,
+    unit: 'multiplier',
+    allowedRange: { min: 0, max: 1 },
+    label: 'ワークフロー成熟度の習熟重み',
+    description:
+      'ワークフロー成熟度 W へ足す平均 AI 習熟の重み。リテラシー・ドキュメントと合計 1。',
+    tags: ['process', 'rework', 'ai', 'workflow'],
+    derived: false,
+  }),
+  reworkWorkflowDocumentationWeight: defineBalanceEntry({
+    id: 'process.rework.workflow.documentationWeight',
+    value: 0.2,
+    unit: 'multiplier',
+    allowedRange: { min: 0, max: 1 },
+    label: 'ワークフロー成熟度のドキュメント重み',
+    description: 'ワークフロー成熟度 W へ足すドキュメントの重み。リテラシー・習熟と合計 1。',
+    tags: ['process', 'rework', 'ai', 'workflow'],
+    derived: false,
+  }),
+  reworkWorkflowSkillGapWeight: defineBalanceEntry({
+    id: 'process.rework.workflow.skillGapWeight',
+    value: 0.1,
+    unit: 'multiplier',
+    allowedRange: { min: 0, max: 1 },
+    label: 'AI 支援時のワークフロー不足係数',
+    description: 'ワークフロー成熟度の不足が AI 支援タスクの Rework へ加える係数。',
+    tags: ['process', 'rework', 'ai', 'workflow'],
+    derived: false,
+  }),
+  reworkWorkflowDependencyInteraction: defineBalanceEntry({
+    id: 'process.rework.workflow.dependencyInteraction',
     value: 0.18,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
-    label: 'Rework の AI リテラシー低減係数',
-    description: 'AI リテラシーが Rework 確率を低減する係数。',
-    tags: ['process', 'rework', 'ai'],
+    label: 'AI 支援時の依存度とワークフロー不足の相互作用',
+    description: 'AI 前提度とワークフロー不足が AI 支援タスクの Rework へ加える相互作用係数。',
+    tags: ['process', 'rework', 'ai', 'workflow', 'dependency'],
     derived: false,
   }),
-  reworkQualityWeight: defineBalanceEntry({
-    id: 'process.rework.qualityWeight',
-    value: 0.14,
+  reworkMismatchDependencyWeight: defineBalanceEntry({
+    id: 'process.rework.mismatch.dependencyWeight',
+    value: 0.06,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
-    label: 'Rework の品質低減係数',
-    description: '品質が Rework 確率を低減する係数。',
-    tags: ['process', 'rework', 'quality'],
+    label: 'AI なし工程ずれの依存度係数',
+    description: '工程が AI 前提になったあと、AI なしタスクへ加える Rework 係数。',
+    tags: ['process', 'rework', 'ai', 'dependency'],
     derived: false,
   }),
   reworkSplitReduction: defineBalanceEntry({

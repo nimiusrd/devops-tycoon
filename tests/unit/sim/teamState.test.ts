@@ -385,6 +385,44 @@ describe('RI-91-B1 teamState survived mutants', () => {
       expect(improvedQ).toBeLessThan(plainQ);
     });
 
+    it('RI-134: 高リテラシーとドキュメントは粗粒度の行列圧力を緩める', () => {
+      const lowW = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 80,
+          aiLiteracy: 10,
+          documentation: 10,
+        }),
+      ];
+      const highW = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 80,
+          aiLiteracy: 90,
+          documentation: 90,
+        }),
+      ];
+      const low = advanceCoarseTeams(lowW, {
+        seed: 'ri134-coarse-workflow',
+        stepKey: 'w1',
+        excludeId: 'none',
+      });
+      const high = advanceCoarseTeams(highW, {
+        seed: 'ri134-coarse-workflow',
+        stepKey: 'w1',
+        excludeId: 'none',
+      });
+      expect(high.teams[0]!.reviewQueue).toBeLessThan(low.teams[0]!.reviewQueue);
+    });
+
     it('RI-73: seniorHpCostMul が粗粒度のシニア消耗に掛かる', () => {
       const teams = [
         makeTeam({ id: 'home' }),
@@ -568,7 +606,7 @@ describe('RI-91-B1 teamState survived mutants', () => {
       const plainT = plain.teams.find((t) => t.id === 'pressured')!;
       const relievedT = relieved.teams.find((t) => t.id === 'pressured')!;
       // byTeam を無視すると同値になるため、厳密減少と exact 値で刺す。
-      expect(plainT.reviewQueue).toBe(14);
+      expect(plainT.reviewQueue).toBe(13);
       expect(relievedT.reviewQueue).toBe(10);
       expect(relievedT.reviewQueue).toBeLessThan(plainT.reviewQueue);
       expect(plain.ignited).toBe(1);

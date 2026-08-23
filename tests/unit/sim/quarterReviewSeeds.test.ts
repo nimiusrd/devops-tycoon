@@ -40,7 +40,7 @@ describe('四半期レビュー E2E seed', () => {
     const s = playToReview(E2E_MISSED_ADJUSTABLE_SEED);
     expect(s.phase).toBe('quarterReview');
     expect(s.quarterReview?.outcome).toBe('missed_adjustable');
-    expect(s.quarterReview?.bossCleared).toBe(false);
+    expect(s.quarterReview?.bossCleared).toBe(true);
   });
 
   it('shutdown 用互換 seed が継続不能のいずれかになる', () => {

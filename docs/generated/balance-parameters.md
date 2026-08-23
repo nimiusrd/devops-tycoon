@@ -6,7 +6,7 @@
 ## ルールセット
 
 - 版: `4`
-- 指紋: `f2a00ef16c4b3edee51cbfde2e45337867b9a54f09ef63c71372e5846b365868`
+- 指紋: `b0817149bae4435247302afa21dcc514c83b48a26cec78f936af4ded54033a01`
 - 指紋方式: `1`
 
 版は手動更新する単調増加整数である。結果へ影響する変更では直前の版から 1 増やす。
@@ -457,6 +457,7 @@
 | `process.ai.deliveryValue.literacyWeight` | AI 出荷価値のリテラシー係数 | `0.85` | `multiplier` | `0〜2` | — | AI 支援タスクの出荷価値へ AI リテラシーに応じて加える係数。 | process, ai, delivery | いいえ |
 | `process.ai.dependency.perTask` | AI 支援タスクごとの依存度増分 | `2.2` | `percent` | `0〜20` | — | AI 支援を割り当てたタスク 1 件ごとに増える AI 依存度。 | process, ai, dependency | いいえ |
 | `process.ai.dependency.whenDisabled` | AI 無効時の初期依存度 | `3` | `percent` | `0〜100` | — | AI を導入しない組織に残る初期 AI 依存度。 | process, ai, dependency, organization | いいえ |
+| `process.coarse.aiPremisePressureReference` | 粗粒度AI前提圧力の換算基準 | `0.28` | `multiplier` | `0.01〜1` | — | 粗粒度チームのAI前提圧力を依存度ポイントへ換算するv3基準。AIワークフロー係数の増減から共有負債圧力を分離する。 | process, coarse, rework, ai, dependency | いいえ |
 | `process.coding.aiSpeedup` | AI Coding 高速化倍率 | `2.6` | `multiplier` | `1〜5` | — | AI 支援タスクの Coding 所要 tick を短縮する倍率。 | process, coding, ai | いいえ |
 | `process.coding.baseTicks` | Coding 基礎所要 tick | `7` | `ticks` | `1〜30（整数）` | — | 標準規模かつ AI 支援なしのタスクを実装する基礎所要 tick。 | process, coding | いいえ |
 | `process.coding.sizeFactor.complex` | 複雑タスクの Coding 所要倍率 | `1.7` | `multiplier` | `0.1〜3` | — | 複雑タスクへ掛ける Coding 基礎所要 tick の倍率。 | process, coding, task | いいえ |

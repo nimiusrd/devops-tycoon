@@ -19,6 +19,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { generationMismatch } from './playtest-generation.mjs';
 import { evaluateF8F9, findingsF8F9Problems } from './playtest-f8f9.mjs';
+import { evaluateF1, evaluateF7 } from './playtest-f1f7.mjs';
 
 /**
  * 検査対象。`PT_OUT` と第1引数で差し替えられる。
@@ -103,6 +104,24 @@ for (const r of runs) {
 const isWinTable = (header) => /勝利|40ラン/.test(header);
 
 const problems = [];
+
+// --- F-1 固定強手 / F-7 初勝利カーブ --------------------------------------
+const f1 = evaluateF1(runs);
+if (!f1.sampleOk) {
+  problems.push('F-1: 熟練複合と全8単一介入の4難易度×10 seed標本が揃っていない');
+}
+for (const violation of f1.violations) {
+  problems.push(
+    `F-1: ${violation.difficulty}/${violation.policy} ${violation.singleWins}/10 が ` +
+      `熟練複合 ${violation.compositeWins}/10 を上回る`,
+  );
+}
+const f7 = evaluateF7(runs);
+if (!f7.sampleOk) {
+  problems.push(`F-7: easy/naive の10 seed標本が揃っていない（実測 ${f7.total}）`);
+} else if (!f7.accepted) {
+  problems.push(`F-7: easy/naive は2〜3/10が受入帯だが実測 ${f7.wins}/10`);
+}
 
 for (const file of DOCS) {
   const raw = readFileSync(file, 'utf8');

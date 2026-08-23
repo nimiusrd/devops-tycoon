@@ -262,6 +262,17 @@ export const PROCESS_BALANCE = {
     tags: ['process', 'rework', 'ai', 'dependency'],
     derived: false,
   }),
+  coarseAiPremisePressureReference: defineBalanceEntry({
+    id: 'process.coarse.aiPremisePressureReference',
+    value: 0.28,
+    unit: 'multiplier',
+    allowedRange: { min: 0.01, max: 1 },
+    label: '粗粒度AI前提圧力の換算基準',
+    description:
+      '粗粒度チームのAI前提圧力を依存度ポイントへ換算するv3基準。AIワークフロー係数の増減から共有負債圧力を分離する。',
+    tags: ['process', 'coarse', 'rework', 'ai', 'dependency'],
+    derived: false,
+  }),
   reworkSplitReduction: defineBalanceEntry({
     id: 'process.rework.splitReduction',
     value: 0.16,

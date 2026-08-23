@@ -233,6 +233,17 @@ const SKILLED_ACTIONS: PolicySpec['actions'] = [
   { id: 'assignTask' },
 ];
 
+// RI-134: 正式な熟練方針と、その1要素だけを外す統制群は AI 前提ワークフローも成熟させる。
+// F-10 のビルド比較方針は介入構成まで変えないため、上の従来契約を明示的に使う。
+const WORKFLOW_SKILLED_ACTIONS: PolicySpec['actions'] = [
+  { id: 'pairReview' },
+  { id: 'aiThrottle', when: (c) => c.reviewLen >= 10 },
+  { id: 'firefight', when: (c) => c.burning >= 2 || (c.burning >= 1 && c.minBurnTicksLeft <= 15) },
+  { id: 'interruptReview', when: (c) => c.reviewLen >= 6 },
+  { id: 'andon', when: (c) => c.reviewLen >= 10 },
+  { id: 'assignTask', when: (c) => c.reviewLen === 0 && c.reworkLen === 0 },
+];
+
 /**
  * 攻略を知っている前提の解放順（レビュー容量 → 品質 → AI → 文化 → 開発速度）。
  * 前提ノードのある上位も含め、解放できるものを順に取る。
@@ -517,7 +528,7 @@ function pickDraft(offer: readonly string[], mode: PolicySpec['draft']): string 
 
 function skilledBase(): PolicySpec {
   return {
-    actions: SKILLED_ACTIONS,
+    actions: WORKFLOW_SKILLED_ACTIONS,
     stepMs: 300,
     cards: 'always',
     evolve: 'reviewFirst',
@@ -567,7 +578,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   },
   /** 上級者想定。閾値低め＋andon＋差配、採用あり。 */
   skilled: {
-    actions: SKILLED_ACTIONS,
+    actions: WORKFLOW_SKILLED_ACTIONS,
     stepMs: 300,
     cards: 'always',
     evolve: 'reviewFirst',
@@ -598,7 +609,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    */
   aiFullBet: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
-    stepMs: 300,
+    stepMs: 400,
     cards: 'always',
     evolve: 'aiFirst',
     draft: 'ai',

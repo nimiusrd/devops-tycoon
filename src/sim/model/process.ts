@@ -9,9 +9,6 @@
 import type { CardEffects, OrgState, Task, TaskKind } from '../types';
 import type { Rng } from '../rng';
 import { clamp } from '../clamp';
-
-/** v3 の粗粒度モデルが使っていた依存度ポイント換算。AI係数の変更から共有負債圧力を分離する。 */
-const COARSE_AI_PREMISE_PRESSURE_REFERENCE = 0.28;
 import { OUTCOME_BALANCE } from '../../data/balance/outcome';
 import { PROCESS_BALANCE } from '../../data/balance/process';
 
@@ -235,12 +232,13 @@ export function coarseAiPremisePressure(
   const interaction = PROCESS_BALANCE.reworkWorkflowDependencyInteraction.value;
   const mismatch = PROCESS_BALANCE.reworkMismatchDependencyWeight.value;
   const sharedDebt = PROCESS_BALANCE.reworkSharedTechDebtWeight.value;
+  const reference = PROCESS_BALANCE.coarseAiPremisePressureReference.value;
   const raw =
     share * skillGap * gap +
     share * interaction * dependency * gap +
     (1 - share) * mismatch * dependency +
     sharedDebt * debt;
-  return (raw / COARSE_AI_PREMISE_PRESSURE_REFERENCE) * 100;
+  return (raw / reference) * 100;
 }
 
 /**

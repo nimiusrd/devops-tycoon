@@ -47,7 +47,11 @@ describe('reworkProbability（RI-134 のワークフロー分離）', () => {
     expect(coarseAiPremisePressure(0, 1, 0, 90)).toBeGreaterThan(
       coarseAiPremisePressure(0, 1, 0, 0),
     );
-    expect(coarseAiPremisePressure(0, 0, 0, 90)).toBeCloseTo((0.08 / 0.28) * 100);
+    expect(coarseAiPremisePressure(0, 0, 0, 90)).toBeCloseTo(
+      (PROCESS_BALANCE.reworkSharedTechDebtWeight.value /
+        PROCESS_BALANCE.coarseAiPremisePressureReference.value) *
+        100,
+    );
   });
 
   it('ワークフロー成熟度の重みは合計 1 になる', () => {

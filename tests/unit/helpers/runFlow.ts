@@ -120,8 +120,9 @@ export function advance(e: RunEngine, opts: PlayOptions = {}): boolean {
           if (sp && !sp.complete) {
             // RI-134: 熟練オートプレイは火消し・渋滞解消だけでなく、ペアレビューで
             // AI前提ワークフローを成熟させる。係数変更後も「熟練」の前提を満たすため常に試行する。
+            const reviewLen = sp.tasks.filter((t) => t.lane === 'review').length;
             if (e.dispatch('pairReview').ok) gained += 1;
-            if (sp.tasks.filter((t) => t.lane === 'review').length >= 6) {
+            if (reviewLen >= 6) {
               if (e.dispatch('interruptReview').ok) gained += 1;
             }
             // RI-73 / F-1: 高コストな余裕先消しを避け、複数炎上または延焼寸前だけ消す。

@@ -85,6 +85,7 @@ const PROCESS_BALANCE_IDS = [
   'process.coding.sizeFactor.complex',
   'process.coding.sizeFactor.normal',
   'process.coding.sizeFactor.routine',
+  'process.coarse.aiPremisePressureReference',
   'process.combo.bonusCap',
   'process.combo.bonusPer',
   'process.combo.minimumCount',

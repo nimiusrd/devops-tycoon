@@ -215,25 +215,30 @@ export function workflowMaturity(org: WorkflowMaturityInput, aiMasteryNorm = 0):
 
 /**
  * 粗粒度の Rework 由来圧力（依存度ポイント換算）。
- * AI ありの skill-gap は依存度と独立し、interaction / mismatch だけ依存度に比例する。
+ * AI ありの skill-gap は依存度と独立し、interaction / mismatch は依存度、
+ * 共有リスクは正規化した技術的負債に比例する。
  */
 export function coarseAiPremisePressure(
   workflowGap: number,
   aiShare: number,
   aiDependency = 0,
+  techDebt = 0,
 ): number {
   const share = clamp(aiShare, 0, 1);
   const gap = clamp(workflowGap, 0, 1);
   const dependency = clamp(aiDependency / 100, 0, 1);
+  const debt = clamp(techDebt / OUTCOME_BALANCE.loseTechDebtCap.value, 0, 1);
   const skillGap = PROCESS_BALANCE.reworkWorkflowSkillGapWeight.value;
   const interaction = PROCESS_BALANCE.reworkWorkflowDependencyInteraction.value;
   const mismatch = PROCESS_BALANCE.reworkMismatchDependencyWeight.value;
+  const sharedDebt = PROCESS_BALANCE.reworkSharedTechDebtWeight.value;
   const workflowMax = skillGap + interaction;
   if (workflowMax <= 0) return 0;
   const raw =
     share * skillGap * gap +
     share * interaction * dependency * gap +
-    (1 - share) * mismatch * dependency;
+    (1 - share) * mismatch * dependency +
+    sharedDebt * debt;
   return (raw / workflowMax) * 100;
 }
 

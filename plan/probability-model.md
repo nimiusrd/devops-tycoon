@@ -258,7 +258,7 @@ pRework =
 | `T` | `clamp(techDebt / TECH_DEBT_CAP, 0, 1)` |
 | `W` | ワークフロー成熟度。既存値から都度導出し、新ゲージは持たない |
 
-AI支援タスクをCodingへ取り込んだときだけ、組織のAI前提度が`2.2`増える。対象タスクがAI支援なしの場合、そのタスクによって前提度が増えることはない。AIなし実装による自動回復は入れない。低下はガイドラインやスロットルなどの既存レバーに任せる。
+AI支援タスクをCodingへ取り込んだときだけ、組織のAI前提度が`2.2`増える。対象タスクがAI支援なしの場合、そのタスクによって前提度が増えることはない。AIなし実装による自動回復は入れない。低下はガイドラインや部門／チームの AI レバーに任せる。AI スロットルは新規の AI 支援タスクによる上昇を止めるだけで、既に上がった前提度は下げない。
 
 したがって後述の赤線は「AI未導入組織でAI依存度が増えていく経時変化」ではない。過去のAI利用によって依存度が蓄積した組織で、対象タスクだけがAIを使わなかった場合の感度分析である。AIスロットル中や、AIが確率的に割り当てられなかったタスクが該当する。
 
@@ -315,7 +315,7 @@ SVGは `npm run balance:docs` が現行のレジストリ値と `reworkProbabili
 
 #### 4.5.3 状態の更新
 
-AI前提度は AI 支援タスクの取り込みで増え、ガイドラインやスロットルなどの既存レバーで下がる。AI なし実装による自動回復や、手作業能力の減衰・回復は入れない。
+AI前提度は AI 支援タスクの取り込みで増え、ガイドラインや部門／チームの AI レバーで下がる。AI スロットルは新規の AI 支援タスクによる上昇を止めるだけで、既に上がった前提度は下げない。AI なし実装による自動回復や、手作業能力の減衰・回復は入れない。
 
 #### 4.5.4 検証する不変条件
 
@@ -457,19 +457,36 @@ shipGain = max(4, round(baseShipGain × aiDeliveryMul))
 reviewCapacity =
   clamp(55 + engineers × 4 - reviewQueue × 2, 10, 100)
 
+U = 0.85 × adoptionShare
+W = workflowMaturity(aiLiteracy, A_member, documentation)
+T = clamp(techDebt / TECH_DEBT_CAP, 0, 1)
+D = aiDependency / 100
+
+coarseAiPremisePressure =
+  (
+    (
+      U × 0.10 × (1 - W)
+      + U × 0.18 × D × (1 - W)
+      + (1 - U) × 0.06 × D
+      + 0.08 × T
+    )
+    / 0.28
+  ) × 100
+
 queuePressure =
   max(
     0,
     round(
       engineers × 0.35
-      + aiDependency × 0.04
+      + 0.04 × coarseAiPremisePressure
       - adjustedReviewCapacity × 0.05
       - queueRelief
+      - reworkRelief
     )
   )
 ```
 
-行列には乱数差分と`queuePressure`を加え、Review能力に応じた件数を消化する。チーム施策、レリック、試練などは`queueRelief`、`reviewMul`、`reviewCapacityMul`へ合流する。
+`adoptionShare` と `A_member` は訪問済みなら保存済み編成、未訪問なら依存度とリテラシーからの推定を使う。行列には乱数差分と`queuePressure`を加え、Review能力に応じた件数を消化する。チーム施策、レリック、試練などは`queueRelief`、`reworkRelief`、`reviewMul`、`reviewCapacityMul`へ合流する。
 
 ### 6.3 Incident
 

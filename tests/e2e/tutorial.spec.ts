@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures';
-import type { MetaState } from '../../src/state/meta';
+import { TUTORIAL_CONTENT_VERSION, type MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
 import { seedMeta } from './seedMeta';
 
@@ -29,7 +29,7 @@ const SEEN_META: MetaState = {
   dailyRuns: {},
   soundMuted: false,
   seenTutorial: true,
-  seenTutorialVersion: 5,
+  seenTutorialVersion: TUTORIAL_CONTENT_VERSION,
 };
 
 test('タイトルから遊び方ヘルプを開ける', async ({ page }) => {

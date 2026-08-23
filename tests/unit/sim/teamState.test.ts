@@ -431,6 +431,7 @@ describe('RI-91-B1 teamState survived mutants', () => {
         reviewCapacity: 10,
         aiLiteracy: 100,
         documentation: 100,
+        techDebt: 0,
       };
       const withDep = [
         makeTeam({
@@ -498,6 +499,7 @@ describe('RI-91-B1 teamState survived mutants', () => {
           aiDependency: 80,
           aiLiteracy: 20,
           documentation: 20,
+          techDebt: 0,
         }),
       ];
       const proxy = advanceCoarseTeams(teams, {
@@ -512,6 +514,42 @@ describe('RI-91-B1 teamState survived mutants', () => {
         aiMasteryByTeamId: { pressured: 1.2 },
       });
       expect(trained.teams[0]!.reviewQueue).toBeLessThan(proxy.teams[0]!.reviewQueue);
+    });
+
+    it('RI-134: 技術的負債が高いほど粗粒度の行列圧力が増える', () => {
+      const lowDebt = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 0,
+          techDebt: 0,
+        }),
+      ];
+      const highDebt = [
+        makeTeam({
+          id: 'pressured',
+          engineers: 8,
+          headcount: 8,
+          reviewQueue: 10,
+          reviewCapacity: 10,
+          aiDependency: 0,
+          techDebt: 80,
+        }),
+      ];
+      const low = advanceCoarseTeams(lowDebt, {
+        seed: 'ri134-coarse-debt',
+        stepKey: 'd0',
+        excludeId: 'none',
+      });
+      const high = advanceCoarseTeams(highDebt, {
+        seed: 'ri134-coarse-debt',
+        stepKey: 'd0',
+        excludeId: 'none',
+      });
+      expect(high.teams[0]!.reviewQueue).toBeGreaterThan(low.teams[0]!.reviewQueue);
     });
 
     it('RI-73: seniorHpCostMul が粗粒度のシニア消耗に掛かる', () => {

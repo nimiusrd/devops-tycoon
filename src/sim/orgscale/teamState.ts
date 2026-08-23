@@ -758,7 +758,12 @@ export function advanceCoarseTeams(
     aiAssisted += Math.round(completedGain * aiShare);
     const mastery = args.aiMasteryByTeamId?.[team.id] ?? team.aiLiteracy / 100;
     const workflowGap = 1 - workflowMaturity(team, mastery);
-    const premisePressure = coarseAiPremisePressure(workflowGap, aiShare, team.aiDependency);
+    const premisePressure = coarseAiPremisePressure(
+      workflowGap,
+      aiShare,
+      team.aiDependency,
+      team.techDebt,
+    );
     const queuePressure = Math.max(
       0,
       Math.round(

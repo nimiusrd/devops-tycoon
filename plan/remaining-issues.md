@@ -56,7 +56,7 @@ F-9 有効手集合の多様性は、[spec-mapping.md](./spec-mapping.md) 第19.
 
 ### RI-138 balance:checkの手書き差分誤検知
 
-`scripts/check-balance.mjs`は`plan/probability-model.md`全体を生成物として`git diff`へ渡すため、生成対象外の手書き説明だけを正しく変更した場合も`npm run balance:check`が失敗する。CIではコミット済み差分が基準になるため表面化しないが、コミット前検査としては偽陽性になる。
+`scripts/check-balance.mjs`は`docs/probability-model.md`全体を生成物として`git diff`へ渡すため、生成対象外の手書き説明だけを正しく変更した場合も`npm run balance:check`が失敗する。CIではコミット済み差分が基準になるため表面化しないが、コミット前検査としては偽陽性になる。
 
 受入条件:
 

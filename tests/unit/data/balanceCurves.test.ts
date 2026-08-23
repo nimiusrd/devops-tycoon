@@ -103,7 +103,7 @@ describe('代表確率曲線の生成', () => {
     expect(table).toContain('14.75% → 4.75%');
     expect(table).toContain('12.0% → 2.0%');
 
-    const markdown = readFileSync(resolve('plan/probability-model.md'), 'utf8');
+    const markdown = readFileSync(resolve('docs/probability-model.md'), 'utf8');
     expect(markdown).toContain(renderBalanceCurveEndpointTable());
     expect(
       applyBalanceCurveEndpointsToMarkdown(

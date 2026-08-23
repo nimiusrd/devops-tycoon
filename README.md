@@ -190,7 +190,8 @@ tests/
 - [plan/spec-mapping.md](plan/spec-mapping.md) — SPECと実装の対応
 - [plan/remaining-issues.md](plan/remaining-issues.md) — 現在の未充足・保留課題
 - [plan/mutation-remediation.md](plan/mutation-remediation.md) — ミューテーション結果に基づくテスト強化指示（現行ベースラインの RI。再計測時は新 ID）
-- [plan/architecture.md](plan/architecture.md) — 技術構成と横断規律
+- [docs/architecture.md](docs/architecture.md) — 技術構成と横断規律
+- [docs/probability-model.md](docs/probability-model.md) — 確率モデル、seed設計、数式、検証方法
 - [plan/README.md](plan/README.md) — 計画文書の索引
 
 ## 現在の開発状況

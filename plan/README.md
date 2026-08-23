@@ -8,19 +8,19 @@ DevOps Tycoonの現行仕様、設計判断、SPECとの対応、残課題を管
 | ファイル | 用途 |
 | --- | --- |
 | [`SPEC.md`](../SPEC.md) | 体験要件と受入条件の正本 |
-| [probability-model.md](./probability-model.md) | 確率モデル、seed設計、数式、粗粒度進行、検証方法 |
+| [probability-model.md](../docs/probability-model.md) | 確率モデル、seed設計、数式、粗粒度進行、検証方法 |
 | [spec-mapping.md](./spec-mapping.md) | SPECと実装の対応、未充足箇所 |
 | [remaining-issues.md](./remaining-issues.md) | 未着手・保留課題と完了項目の要約 |
 | [playtest-findings.md](./playtest-findings.md) | 実機プレイで洗い出した改善課題（バランス・UI・ポリッシュ） |
 | [mutation-remediation.md](./mutation-remediation.md) | ミューテーション改善の方針（実装単位は GitHub Issue） |
-| [architecture.md](./architecture.md) | 現在の技術構成と横断規律 |
+| [architecture.md](../docs/architecture.md) | 現在の技術構成と横断規律 |
 
 ## 現状
 
 - Vite + React 19 + TypeScript + PixiJSのフロントエンド単体ゲーム。
 - `RunEngine`をラン状態の正本とし、seed付き決定論でシミュレーションする。
-- 確率モデルの構造と変更規律は[probability-model.md](./probability-model.md)を正とする。
-- バランスパラメータSSoTは型付きレジストリ、生成パラメータ表、工程モデルから代表確率曲線、デイリー・診断情報へのルールセット伝播、調整支援まで移行済み（RI-104〜124）。収録境界、ルールセット、保存互換性の設計正本は[architecture.md §5](./architecture.md#5-データと永続化)。
+- 確率モデルの構造と変更規律は[probability-model.md](../docs/probability-model.md)を正とする。
+- バランスパラメータSSoTは型付きレジストリ、生成パラメータ表、工程モデルから代表確率曲線、デイリー・診断情報へのルールセット伝播、調整支援まで移行済み（RI-104〜124）。収録境界、ルールセット、保存互換性の設計正本は[architecture.md §5](../docs/architecture.md#5-データと永続化)。
 - 既定描画はPixiJS。`?renderer=dom`とWebGL不可時はDOM/SVGへフォールバックする。
 - IndexedDBにメタ進行、ラン途中セーブ、リプレイを保存する。
 - Vitestでロジック、Playwrightで操作・視覚回帰を検証する。

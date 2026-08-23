@@ -6,19 +6,19 @@ on:
     paths:
       - '**'
       - '!**/*.md'
-      - 'plan/generated/balance-parameters.md'
-      - 'plan/generated/content-catalog.md'
-      - 'plan/generated/balance-curves.svg'
-      - 'plan/probability-model.md'
+      - 'docs/generated/balance-parameters.md'
+      - 'docs/generated/content-catalog.md'
+      - 'docs/generated/balance-curves.svg'
+      - 'docs/probability-model.md'
       - '!mockups/**'
   pull_request:
     paths:
       - '**'
       - '!**/*.md'
-      - 'plan/generated/balance-parameters.md'
-      - 'plan/generated/content-catalog.md'
-      - 'plan/generated/balance-curves.svg'
-      - 'plan/probability-model.md'
+      - 'docs/generated/balance-parameters.md'
+      - 'docs/generated/content-catalog.md'
+      - 'docs/generated/balance-curves.svg'
+      - 'docs/probability-model.md'
       - '!mockups/**'
 
 jobs:

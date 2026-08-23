@@ -1,6 +1,6 @@
 # アーキテクチャと横断規律
 
-現行実装の技術構成と、機能追加時に維持する境界をまとめる。体験要件は[`SPEC.md`](../SPEC.md)、確率モデルは[probability-model.md](./probability-model.md)、実装対応は[spec-mapping.md](./spec-mapping.md)を正とする。
+現行実装の技術構成と、機能追加時に維持する境界をまとめる。体験要件は[`SPEC.md`](../SPEC.md)、確率モデルは[probability-model.md](./probability-model.md)、実装対応は[spec-mapping.md](../plan/spec-mapping.md)を正とする。
 
 ## 1. 技術スタック
 

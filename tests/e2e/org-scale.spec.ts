@@ -305,6 +305,98 @@ test('全社マップで部門のAI依存・負債・士気・健全度を横並
   await expect(page.getByTestId('dept-board')).toBeVisible();
 });
 
+test('部門・チームと比較指標を切り替えてチーム状態へドリルダウンできる（RI-135）', async ({
+  page,
+}) => {
+  await startRun(page, 'ri135-team-comparison');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+
+  await expect(page.getByTestId('org-compare-unit-department')).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.getByTestId('org-compare-metric-all')).toHaveAttribute('aria-selected', 'true');
+
+  const target = await page.evaluate(() => {
+    const state = (window as GameWindow).game!.getState();
+    const teams = state.orgScale?.departments.flatMap((dept) => dept.teams) ?? [];
+    const team = teams.find((candidate) => candidate.id !== state.activeTeamId) ?? teams[0];
+    if (!team) throw new Error('比較対象チームが無い');
+    return {
+      id: team.id,
+      name: team.name,
+      shipping: team.shipping,
+      reviewQueue: team.reviewQueue,
+      incidents: team.incidents,
+      aiDependency: team.aiDependency,
+      techDebt: team.techDebt,
+      morale: team.morale,
+      health: team.health,
+    };
+  });
+
+  await page.getByTestId('org-compare-unit-team').click();
+  await expect(page.getByTestId('org-compare-unit-team')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId(`org-team-row-${target.id}`)).toContainText(target.name);
+  await expect(page.getByTestId(`org-team-${target.id}-shipping`)).toHaveText(
+    String(target.shipping),
+  );
+  await expect(page.getByTestId(`org-team-${target.id}-reviewQueue`)).toHaveText(
+    String(target.reviewQueue),
+  );
+  await expect(page.getByTestId(`org-team-${target.id}-incidents`)).toHaveText(
+    String(target.incidents),
+  );
+  await expect(page.getByTestId(`org-team-${target.id}-aiDependency`)).toHaveText(
+    String(target.aiDependency),
+  );
+  await expect(page.getByTestId(`org-team-${target.id}-techDebt`)).toHaveText(
+    String(target.techDebt),
+  );
+  await expect(page.getByTestId(`org-team-${target.id}-morale`)).toHaveText(String(target.morale));
+  await expect(page.getByTestId(`org-team-${target.id}-health`)).toHaveText(
+    HEALTH_LABEL[target.health],
+  );
+
+  await page.getByTestId('org-compare-metric-reviewQueue').click();
+  await expect(page.getByTestId('org-compare-metric-reviewQueue')).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.getByTestId(`org-team-${target.id}-reviewQueue`)).toBeVisible();
+  await expect(page.getByTestId(`org-team-${target.id}-shipping`)).toHaveCount(0);
+
+  await page.getByTestId('org-compare-metric-shipping').click();
+  await page.getByTestId('org-compare-unit-department').click();
+  await expect(page.getByTestId('org-compare-metric-all')).toHaveAttribute('aria-selected', 'true');
+
+  await page.getByTestId('org-compare-unit-team').click();
+  await page.getByTestId(`org-team-focus-${target.id}`).click();
+  await expect(page.getByTestId('dept-screen')).toBeVisible();
+  await expect(page.getByTestId('dept-team-panel')).toContainText(target.name);
+});
+
+test('比較操作後も主要viewportで全社画面の横はみ出しを発生させない（RI-135）', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await startRun(page, `ri135-layout-${viewport.width}`);
+    await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+    await page.getByTestId('org-compare-unit-team').click();
+
+    await expect(page.getByTestId('org-compare-unit-tabs')).toBeVisible();
+    await expect(page.getByTestId('org-compare-metric-tabs')).toBeVisible();
+    await expect(page.getByTestId('org-dept-compare')).toBeVisible();
+    const viewportWidth = await page.evaluate(() => ({
+      client: document.documentElement.clientWidth,
+      scroll: document.documentElement.scrollWidth,
+    }));
+    expect(viewportWidth.scroll).toBeLessThanOrEqual(viewportWidth.client);
+  }
+});
+
 test('ホームチーム島をタップすると現場へドリルダウンしてオーバーレイが閉じる（第4.11）', async ({
   page,
 }) => {

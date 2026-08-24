@@ -179,4 +179,55 @@ describe('planTrendHistory (RI-128)', () => {
     const ys = [...series.d.matchAll(/,([\d.]+)/g)].map((match) => match[1]);
     expect(new Set(ys).size).toBe(1);
   });
+
+  it('RI-135: 部門健全度を四半期バッジ用に写し、欠落四半期は補完しない', () => {
+    const view = planTrendHistory([
+      snap(1),
+      snap(2, {
+        departments: [
+          {
+            deptId: 'platform',
+            aiDependency: 55,
+            techDebt: 12,
+            morale: 60,
+            health: 'congested',
+          },
+        ],
+      }),
+      snap(3, {
+        departments: [
+          {
+            deptId: 'product',
+            aiDependency: 80,
+            techDebt: 44,
+            morale: 30,
+            health: 'reviewHell',
+          },
+        ],
+      }),
+    ]);
+
+    const product = view.departments.find((dept) => dept.deptId === 'product')!;
+    expect(product.healthHistory).toEqual([
+      { quarterNumber: 1, health: 'healthy', label: '健全' },
+      { quarterNumber: 3, health: 'reviewHell', label: 'Review Hell' },
+    ]);
+    expect(product.healthHistory.map((cell) => cell.quarterNumber)).not.toContain(2);
+    expect(view.departments.find((dept) => dept.deptId === 'platform')?.healthHistory).toEqual([
+      { quarterNumber: 2, health: 'congested', label: '渋滞' },
+    ]);
+  });
+
+  it('RI-135: 部門指標を個別に絞っても全社KPI系列は維持する', () => {
+    const health = planTrendHistory([snap(1), snap(2)], { departmentMetric: 'health' });
+    expect(health.departmentMetric).toBe('health');
+    expect(health.series.map((series) => series.key)).toContain('delivery');
+    expect(health.departments[0].series).toEqual([]);
+    expect(health.departments[0].healthHistory).toHaveLength(2);
+
+    const morale = planTrendHistory([snap(1), snap(2)], { departmentMetric: 'morale' });
+    expect(morale.series.map((series) => series.key)).toContain('delivery');
+    expect(morale.departments[0].series.map((series) => series.key)).toEqual(['morale']);
+    expect(morale.departments[0].healthHistory).toEqual([]);
+  });
 });

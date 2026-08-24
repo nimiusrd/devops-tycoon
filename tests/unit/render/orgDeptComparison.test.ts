@@ -5,7 +5,11 @@
  */
 import { describe, expect, it } from 'vitest';
 import { DEPARTMENT_DEFS } from '../../../src/data/departments';
-import { planOrgDeptComparison } from '../../../src/render/orgDeptComparison';
+import {
+  normalizeOrgCompareMetric,
+  ORG_DEPT_COMPARE_COLUMNS,
+  planOrgDeptComparison,
+} from '../../../src/render/orgDeptComparison';
 import { HEALTH_LABEL } from '../../../src/render/orgView';
 import { aggregateDepartment } from '../../../src/sim/orgscale/aggregate';
 import type { DepartmentState, Team, TeamHealth } from '../../../src/sim/orgscale/types';
@@ -170,5 +174,77 @@ describe('planOrgDeptComparison (RI-125)', () => {
       value: HEALTH_LABEL[hell.health],
       health: hell.health,
     });
+  });
+
+  it('RI-135: チーム比較は部門順と部門内順を保ち、診断用7指標を出す', () => {
+    const view = planOrgDeptComparison(
+      [
+        dept({
+          def: DEPARTMENT_DEFS[1],
+          teams: [
+            team({
+              id: 'platform-b',
+              deptId: 'platform',
+              name: '基盤B',
+              shipping: 12,
+              reviewQueue: 7,
+              incidents: 1,
+              aiDependency: 72,
+              techDebt: 30,
+              morale: 45,
+              health: 'congested',
+            }),
+            team({ id: 'platform-a', deptId: 'platform', name: '基盤A' }),
+          ],
+        }),
+        dept({
+          def: DEPARTMENT_DEFS[0],
+          teams: [team({ id: 'product-a', name: '製品A' })],
+        }),
+      ],
+      { unit: 'team' },
+    );
+
+    expect(view.unit).toBe('team');
+    expect(view.metric).toBe('all');
+    expect(view.columns.map((column) => column.key)).toEqual([
+      'shipping',
+      'reviewQueue',
+      'incidents',
+      'aiDependency',
+      'techDebt',
+      'morale',
+      'health',
+    ]);
+    expect(view.rows.map((row) => row.teamId)).toEqual(['platform-b', 'platform-a', 'product-a']);
+    expect(view.rows[0]).toMatchObject({
+      deptId: 'platform',
+      teamId: 'platform-b',
+      name: '基盤B',
+      groupLabel: DEPARTMENT_DEFS[1].name,
+    });
+    expect(cell(view.rows[0], 'shipping')?.value).toBe('12');
+    expect(cell(view.rows[0], 'reviewQueue')?.value).toBe('7');
+    expect(cell(view.rows[0], 'incidents')).toMatchObject({ value: '1', tone: 'bad' });
+    expect(cell(view.rows[0], 'aiDependency')).toMatchObject({ value: '72', tone: 'warn' });
+  });
+
+  it('RI-135: 個別指標だけに絞り、単位に無い指標はすべてへ戻す', () => {
+    const departments = [dept({ teams: [team({ id: 'product-a', reviewQueue: 8 })] })];
+    const filtered = planOrgDeptComparison(departments, {
+      unit: 'team',
+      metric: 'reviewQueue',
+    });
+    expect(filtered.metric).toBe('reviewQueue');
+    expect(filtered.columns.map((column) => column.key)).toEqual(['reviewQueue']);
+    expect(filtered.rows[0].cells).toEqual([{ key: 'reviewQueue', value: '8' }]);
+
+    const fallback = planOrgDeptComparison(departments, {
+      unit: 'department',
+      metric: 'shipping',
+    });
+    expect(normalizeOrgCompareMetric('department', 'shipping')).toBe('all');
+    expect(fallback.metric).toBe('all');
+    expect(fallback.columns).toEqual([...ORG_DEPT_COMPARE_COLUMNS]);
   });
 });

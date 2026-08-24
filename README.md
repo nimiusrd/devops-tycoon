@@ -198,7 +198,6 @@ tests/
 
 コアループは通しプレイ可能です。現在の未充足・保留は次のとおりです。
 
-- Fast Refresh警告の解消（[RI-137](plan/remaining-issues.md#ri-137-fast-refresh警告の解消)）
 - `balance:check`の手書き差分誤検知（[RI-138](plan/remaining-issues.md#ri-138-balancecheckの手書き差分誤検知)）
 - F-9 敗因別手触りの定性検証（[RI-139](plan/remaining-issues.md#ri-139-f-9-敗因別手触りの定性検証)）
 

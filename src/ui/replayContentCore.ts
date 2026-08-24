@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext } from 'react';
 import { getCard } from '../data/cards';
 import { getRelic, type RelicDef } from '../data/relics';
 import type { CardDef } from '../sim/types';
@@ -39,7 +39,7 @@ const currentContent: ReplayContentContextValue = {
   isReplaySnapshot: false,
 };
 
-const ReplayContentContext = createContext<ReplayContentContextValue>(currentContent);
+export const ReplayContentContext = createContext<ReplayContentContextValue>(currentContent);
 
 export function createReplayContentResolver(
   contentSnapshot: ReplayContentSnapshot | null,
@@ -52,18 +52,6 @@ export function createReplayContentResolver(
     resolveRelic: (id) => relics.get(id) ?? unknownRelic(id),
     isReplaySnapshot: true,
   };
-}
-
-export function ReplayContentProvider({
-  contentSnapshot,
-  children,
-}: {
-  contentSnapshot: ReplayContentSnapshot | null;
-  children: ReactNode;
-}) {
-  const value = useMemo(() => createReplayContentResolver(contentSnapshot), [contentSnapshot]);
-
-  return <ReplayContentContext.Provider value={value}>{children}</ReplayContentContext.Provider>;
 }
 
 export function useReplayContent(): ReplayContentContextValue {

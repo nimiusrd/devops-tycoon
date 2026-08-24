@@ -7,10 +7,12 @@ import {
   OPEN_RANGE_END,
   REPO_ROOT,
   SHARD_MUTANT_BUDGET,
+  SPRINT_SHARD_MUTANT_BUDGET,
   coverageIncludesLine,
   listConfiguredMutateFiles,
   resolveShardMutate,
   shardIds,
+  shardMutantBudget,
   toMatrixInclude,
 } from '../../../scripts/mutation-shards.mjs';
 
@@ -155,11 +157,36 @@ describe('mutation shards', () => {
     expect(unassigned.slice(0, 10), `未割当 ${unassigned.length} 件`).toEqual([]);
     expect(overlapped.slice(0, 10), `重複 ${overlapped.length} 件`).toEqual([]);
 
-    const overBudget = [...perShard.entries()].filter(([, count]) => count > SHARD_MUTANT_BUDGET);
+    const overBudget = [...perShard.entries()].filter(
+      ([id, count]) => count > shardMutantBudget(id),
+    );
     expect(overBudget, `予算超過: ${JSON.stringify(overBudget)}`).toEqual([]);
 
     const assigned = [...perShard.values()].reduce((sum, n) => sum + n, 0);
     expect(assigned).toBe(mutants.length);
+  });
+
+  it('sprint 経路の mutant 予算は通常シャードより厳しい', () => {
+    expect(SPRINT_SHARD_MUTANT_BUDGET).toBeLessThan(SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-sprint-e')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-sprint-baseline-b')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-engine-a')).toBe(SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-support')).toBe(SHARD_MUTANT_BUDGET);
+  });
+
+  it('sprint.ts と sprintBaseline.ts は行レンジで細かく割る', () => {
+    const sprintShards = MUTATION_SHARDS.filter((shard) =>
+      shard.mutate.startsWith('src/sim/sprint.ts'),
+    );
+    expect(sprintShards.length).toBeGreaterThanOrEqual(6);
+    expect(sprintShards.every((shard) => shard.mutate.includes(':'))).toBe(true);
+
+    const baselineShards = MUTATION_SHARDS.filter((shard) =>
+      shard.mutate.startsWith('src/sim/run/sprintBaseline.ts'),
+    );
+    expect(baselineShards.length).toBeGreaterThanOrEqual(2);
+    expect(baselineShards.every((shard) => shard.mutate.includes(':'))).toBe(true);
+    expect(MUTATION_SHARDS.some((shard) => shard.id === 'sim-sprint-e')).toBe(true);
   });
 
   it('workflow はシャード定義スクリプトを matrix に使う', () => {

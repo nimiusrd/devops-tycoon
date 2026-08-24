@@ -17,11 +17,34 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = join(SCRIPT_DIR, '..');
 
 /**
- * 1 ジョブあたりの instrumented mutant 上限。
+ * 1 ジョブあたりの instrumented mutant 上限（通常シャード）。
  * engine.ts 約 2,000 mutant が 180 分で打ち切られた実測から、
  * 余裕を見て 700 以下に収める（同じ速度なら 1 時間前後）。
  */
 export const SHARD_MUTANT_BUDGET = 700;
+
+/**
+ * sprint シミュレーション経路向けのより厳しい上限。
+ *
+ * Mutation #10（203251e）では sim-sprint-a（286 mutant）/ sim-sprint-b（328）が
+ * いずれも 180 分タイムアウト。残り見積は a が約 40 分・b が約 21 分で、
+ * mutant 数 700 の予算では壁時計を説明できない。
+ * `src/sim/sprint.ts` の mutant はテストがスプリント完走まで回るため
+ * 1 体あたり約 35–45 秒（engine シャードの約 2.5 倍）。160 以下なら
+ * 同じ速度でも 2 時間前後に収まる。
+ */
+export const SPRINT_SHARD_MUTANT_BUDGET = 160;
+
+/**
+ * @param {string} id
+ * @returns {number}
+ */
+export function shardMutantBudget(id) {
+  if (id.startsWith('sim-sprint-') || id.startsWith('sim-run-sprint-baseline-')) {
+    return SPRINT_SHARD_MUTANT_BUDGET;
+  }
+  return SHARD_MUTANT_BUDGET;
+}
 
 /**
  * 最終行レンジの終端。ファイルが伸びても最後のシャードが拾う。
@@ -98,11 +121,23 @@ export const MUTATION_SHARDS = Object.freeze([
     mutate: 'src/sim/run/dangerZone.ts',
     note: 'dangerZone（約 320 mutant）',
   },
+  // src/sim/run/sprintBaseline.ts — mutant 数は少ないが while 完走経路。
+  // Mutation #10 の sim-run-support（what-if + baseline まとめて 366）は 56 分で完走。
+  // ループ本体を切り離し、sprint.ts 側の遅延と混ざらないようにする。
+  {
+    id: 'sim-run-sprint-baseline-a',
+    mutate: 'src/sim/run/sprintBaseline.ts:1-117',
+    note: 'sprintBaseline 初期化（withTeamBoardPressure / createSprintFromBaselineInput）',
+  },
+  {
+    id: 'sim-run-sprint-baseline-b',
+    mutate: `src/sim/run/sprintBaseline.ts:118-${OPEN_RANGE_END}`,
+    note: 'sprintBaseline 完走ループ（runSprintSimulationFull 以降）',
+  },
   {
     id: 'sim-run-support',
-    mutate:
-      'src/sim/run/whatIf*.ts,src/sim/run/sprintBaseline.ts,src/sim/run/sprintBaselineBuild.ts',
-    note: 'what-if とスプリント baseline',
+    mutate: 'src/sim/run/whatIf*.ts,src/sim/run/sprintBaselineBuild.ts',
+    note: 'what-if とスプリント baseline 組み立て',
   },
   {
     id: 'sim-run-rest',
@@ -121,16 +156,42 @@ export const MUTATION_SHARDS = Object.freeze([
     note: 'run 配下の残り（新規ファイルの受け皿）',
   },
 
-  // src/sim/sprint.ts — 約 630 mutant。
+  // src/sim/sprint.ts — 約 630 mutant。Mutation #10 で 2 分割でも 180 分超過。
+  // 完走ループ（stepSprint / drain）とレビュー炎上経路を関数境界で分ける。
   {
     id: 'sim-sprint-a',
-    mutate: 'src/sim/sprint.ts:1-450',
-    note: 'sprint 前半',
+    mutate: 'src/sim/sprint.ts:1-211',
+    note: 'sprint 初期化（createSprint・ヘルパー。intake 手前）',
   },
   {
     id: 'sim-sprint-b',
-    mutate: `src/sim/sprint.ts:451-${OPEN_RANGE_END}`,
-    note: 'sprint 後半',
+    mutate: 'src/sim/sprint.ts:212-345',
+    note: 'sprint 流入・実装・レビュー 1 件（intake / ignite / reviewOne）',
+  },
+  {
+    id: 'sim-sprint-c',
+    mutate: 'src/sim/sprint.ts:346-454',
+    note: 'sprint Review 消化と炎上（forceShip / advanceReview / advanceBurning）',
+  },
+  {
+    id: 'sim-sprint-d',
+    mutate: 'src/sim/sprint.ts:455-526',
+    note: 'sprint 完了判定（rework / drain / stall / abandon）',
+  },
+  {
+    id: 'sim-sprint-e',
+    mutate: 'src/sim/sprint.ts:527-584',
+    note: 'sprint 1 tick 本体（stepSprint。無限ループ mutant の主因）',
+  },
+  {
+    id: 'sim-sprint-f',
+    mutate: 'src/sim/sprint.ts:585-680',
+    note: 'sprint 評価前半（grade と称号の重い分岐）',
+  },
+  {
+    id: 'sim-sprint-g',
+    mutate: `src/sim/sprint.ts:681-${OPEN_RANGE_END}`,
+    note: 'sprint 評価後半（残りの称号と summarizeSprint。以降の追記もここ）',
   },
   {
     id: 'sim-assign-cards',

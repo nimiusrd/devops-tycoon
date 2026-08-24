@@ -232,14 +232,13 @@ export function coarseAiPremisePressure(
   const interaction = PROCESS_BALANCE.reworkWorkflowDependencyInteraction.value;
   const mismatch = PROCESS_BALANCE.reworkMismatchDependencyWeight.value;
   const sharedDebt = PROCESS_BALANCE.reworkSharedTechDebtWeight.value;
-  const workflowMax = skillGap + interaction;
-  if (workflowMax <= 0) return 0;
+  const reference = PROCESS_BALANCE.coarseAiPremisePressureReference.value;
   const raw =
     share * skillGap * gap +
     share * interaction * dependency * gap +
     (1 - share) * mismatch * dependency +
     sharedDebt * debt;
-  return (raw / workflowMax) * 100;
+  return (raw / reference) * 100;
 }
 
 /**

@@ -22,6 +22,7 @@ import {
   formatF9AcceptanceLine,
   stableEffectiveActionId,
 } from './playtest-f8f9.mjs';
+import { evaluateF1, evaluateF7 } from './playtest-f1f7.mjs';
 import { mean, quantile } from './playtest-statistics.mjs';
 
 /**
@@ -238,6 +239,25 @@ const sampleGuard = (label, required) => {
   );
   return false;
 };
+
+// --- F-1 固定強手 / F-7 勝率 -----------------------------------------------
+const f1 = evaluateF1(runs);
+console.log(`\n## F-1 単一介入と熟練複合の勝利数\n`);
+for (const cell of f1.cells) {
+  const singles = Object.entries(cell.wins)
+    .filter(([policy]) => policy !== 'skilledNoHire')
+    .map(([policy, wins]) => `${policy}=${wins}`)
+    .join(' / ');
+  console.log(`  ${cell.difficulty}: skilledNoHire=${cell.compositeWins} / ${singles}`);
+}
+console.log(
+  `  F-1 受入: ${f1.sampleOk ? (f1.accepted ? 'PASS' : 'FAIL') : '未計測'}（全8単一介入が難易度別に熟練複合以下）`,
+);
+
+const f7 = evaluateF7(runs);
+console.log(
+  `  F-7 受入: ${f7.sampleOk ? (f7.accepted ? 'PASS' : 'FAIL') : '未計測'}（easy/naive 2〜3/10、実測 ${f7.wins}/${f7.total}）`,
+);
 
 // --- F-7 勝率 ---------------------------------------------------------------
 console.log(`\n## F-7 難易度 × 方針の勝率\n`);

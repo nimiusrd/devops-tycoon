@@ -38,11 +38,11 @@ describe('harness RI-88 方針', () => {
     expect(s.shop?.relic?.bought).toBe(false);
   });
 
-  it('両ハーネスは frontier-dependency で継続課金し、最適化は手札でコスト最適化を優先する', () => {
+  it('両ハーネスは frontier-dependency で継続課金し、肥大化はデリバリー、最適化はコスト最適化を優先する', () => {
     expect(POLICY_DEFS.harnessBloated.trials).toEqual(['frontier-dependency']);
     expect(POLICY_DEFS.harnessOptimized.trials).toEqual(['frontier-dependency']);
     expect(POLICY_DEFS.harnessOptimized.cards).toBe('preferCostOpt');
-    expect(POLICY_DEFS.harnessBloated.cards).toBe('always');
+    expect(POLICY_DEFS.harnessBloated.cards).toBe('preferDelivery');
   });
 
   it('preferCostOpt は高コストカードより ai-guideline を先に発動する', () => {

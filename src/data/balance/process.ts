@@ -234,7 +234,7 @@ export const PROCESS_BALANCE = {
   }),
   reworkWorkflowSkillGapWeight: defineBalanceEntry({
     id: 'process.rework.workflow.skillGapWeight',
-    value: 0.1,
+    value: 0.12,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
     label: 'AI 支援時のワークフロー不足係数',
@@ -244,7 +244,7 @@ export const PROCESS_BALANCE = {
   }),
   reworkWorkflowDependencyInteraction: defineBalanceEntry({
     id: 'process.rework.workflow.dependencyInteraction',
-    value: 0.18,
+    value: 0.24,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
     label: 'AI 支援時の依存度とワークフロー不足の相互作用',
@@ -254,12 +254,23 @@ export const PROCESS_BALANCE = {
   }),
   reworkMismatchDependencyWeight: defineBalanceEntry({
     id: 'process.rework.mismatch.dependencyWeight',
-    value: 0.06,
+    value: 0.08,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
     label: 'AI なし工程ずれの依存度係数',
     description: '工程が AI 前提になったあと、AI なしタスクへ加える Rework 係数。',
     tags: ['process', 'rework', 'ai', 'dependency'],
+    derived: false,
+  }),
+  coarseAiPremisePressureReference: defineBalanceEntry({
+    id: 'process.coarse.aiPremisePressureReference',
+    value: 0.28,
+    unit: 'multiplier',
+    allowedRange: { min: 0.01, max: 1 },
+    label: '粗粒度AI前提圧力の換算基準',
+    description:
+      '粗粒度チームのAI前提圧力を依存度ポイントへ換算するv3基準。AIワークフロー係数の増減から共有負債圧力を分離する。',
+    tags: ['process', 'coarse', 'rework', 'ai', 'dependency'],
     derived: false,
   }),
   reworkSplitReduction: defineBalanceEntry({
@@ -550,7 +561,7 @@ export const PROCESS_BALANCE = {
   }),
   stabilityReworkMultiplier: defineBalanceEntry({
     id: 'process.stability.reworkMultiplier',
-    value: 0.4,
+    value: 0.35,
     unit: 'multiplier',
     allowedRange: { min: 0, max: 1 },
     label: '運用安定中の Rework 倍率',

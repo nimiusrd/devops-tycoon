@@ -27,7 +27,7 @@ import {
   wallSecondsAt1x,
   type PlaybackSpeed,
 } from '../../../src/ui/sprintTempo';
-import { runMatrix, type RunLog } from '../../playtest/harness';
+import { POLICY_DEFS, runMatrix, type RunLog } from '../../playtest/harness';
 import { modelQuarterWallMinutes, modelRunWallMinutes } from '../helpers/pacingStats';
 import { p50, p90 } from '../helpers/percentile';
 import { advance, playUntil, type SprintEndMetrics } from '../helpers/runFlow';
@@ -41,6 +41,18 @@ const F5_POLICIES = [
   'naiveNoInterventionCtl',
   'skilledNoHire',
   'noInterventionCtl',
+] as const;
+
+/** RI-76 / F-10 のビルド比較対象。判断間隔をビルド差へ混ぜない。 */
+const F10_POLICIES = [
+  'aiFullBet',
+  'harnessBloated',
+  'harnessOptimized',
+  'noAi',
+  'reviewHeavy',
+  'skilledNoHire',
+  'securityNeglect',
+  'securityFocus',
 ] as const;
 
 /** RI-62 / RI-66 / RI-75 共通の代表 seed（結果を見て選ばない）。 */
@@ -589,6 +601,14 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
       }
     }
     expect(improvedComparisons).toBeGreaterThanOrEqual(18);
+  });
+});
+
+describe('F-10 ビルド比較の統制', () => {
+  it('全対象方針の判断間隔を300msに揃える', () => {
+    expect(F10_POLICIES.map((policy) => POLICY_DEFS[policy]?.stepMs)).toEqual(
+      F10_POLICIES.map(() => 300),
+    );
   });
 });
 

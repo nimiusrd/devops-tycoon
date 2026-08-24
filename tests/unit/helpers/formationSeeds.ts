@@ -36,17 +36,17 @@ export interface FormationComparisonSummary {
 }
 
 /**
- * RI-75 再計測ベースの許容レンジ（極端崩壊検知用。細かな調整の縛りではない）。
+ * RI-134 再計測ベースの許容レンジ（極端崩壊検知用。細かな調整の縛りではない）。
  *
  * 代表 12 seed（index 6 除外）計測:
- * - deliveredΔ mean≈+23（min -51 / max +87）
- * - reviewQueueΔ mean≈+7.25（min +3 / max +14）
- * - reworkΔ mean≈-3.1（min -7 / max +1）
+ * - deliveredΔ mean=-53.25（min -214 / max +56）
+ * - reviewQueueΔ mean≈+14.67（min +10 / max +20）
+ * - reworkΔ mean=+1.5（min -3 / max +7）
  */
 export const RI19_RANGES = {
-  /** 出荷差は seed 依存で符号が変わるため、極端な優位・劣位だけを弾く（RI-77 再計測）。 */
-  // RI-77: 出荷価値倍率で編成差の下振れがわずかに広がる。
-  deliveredDelta: { meanMin: -45, meanMax: 100, minFloor: -220, maxCeil: 200 },
+  /** 出荷差は seed 依存で符号が変わるため、極端な優位・劣位だけを弾く（RI-134 再計測）。 */
+  // RI-134: AI依存モデル係数の確定で平均差が -53.25 へ移動したため下限を更新する。
+  deliveredDelta: { meanMin: -60, meanMax: 100, minFloor: -220, maxCeil: 200 },
   /** レビュアー不在による滞留増加を検知しつつ、支配的な悪化を許さない。 */
   reviewQueueDelta: { meanMin: 2, meanMax: 16, minFloor: 0, maxCeil: 22 },
   /** レビュー到達量の減少に伴う手戻り差は、方向を強制せず極端値だけを弾く。 */

@@ -5,8 +5,8 @@
 
 ## ルールセット
 
-- 版: `3`
-- 指紋: `8f344d1930a8b536fb68ee6e8eead06c05edcd2dd4300f6cd9429d6371d156dc`
+- 版: `4`
+- 指紋: `b0817149bae4435247302afa21dcc514c83b48a26cec78f936af4ded54033a01`
 - 指紋方式: `1`
 
 版は手動更新する単調増加整数である。結果へ影響する変更では直前の版から 1 増やす。
@@ -457,6 +457,7 @@
 | `process.ai.deliveryValue.literacyWeight` | AI 出荷価値のリテラシー係数 | `0.85` | `multiplier` | `0〜2` | — | AI 支援タスクの出荷価値へ AI リテラシーに応じて加える係数。 | process, ai, delivery | いいえ |
 | `process.ai.dependency.perTask` | AI 支援タスクごとの依存度増分 | `2.2` | `percent` | `0〜20` | — | AI 支援を割り当てたタスク 1 件ごとに増える AI 依存度。 | process, ai, dependency | いいえ |
 | `process.ai.dependency.whenDisabled` | AI 無効時の初期依存度 | `3` | `percent` | `0〜100` | — | AI を導入しない組織に残る初期 AI 依存度。 | process, ai, dependency, organization | いいえ |
+| `process.coarse.aiPremisePressureReference` | 粗粒度AI前提圧力の換算基準 | `0.28` | `multiplier` | `0.01〜1` | — | 粗粒度チームのAI前提圧力を依存度ポイントへ換算するv3基準。AIワークフロー係数の増減から共有負債圧力を分離する。 | process, coarse, rework, ai, dependency | いいえ |
 | `process.coding.aiSpeedup` | AI Coding 高速化倍率 | `2.6` | `multiplier` | `1〜5` | — | AI 支援タスクの Coding 所要 tick を短縮する倍率。 | process, coding, ai | いいえ |
 | `process.coding.baseTicks` | Coding 基礎所要 tick | `7` | `ticks` | `1〜30（整数）` | — | 標準規模かつ AI 支援なしのタスクを実装する基礎所要 tick。 | process, coding | いいえ |
 | `process.coding.sizeFactor.complex` | 複雑タスクの Coding 所要倍率 | `1.7` | `multiplier` | `0.1〜3` | — | 複雑タスクへ掛ける Coding 基礎所要 tick の倍率。 | process, coding, task | いいえ |
@@ -495,17 +496,17 @@
 | `process.rework.maxAttempts` | Rework 最大回数 | `3` | `count` | `0〜20（整数）` | — | 通常の Rework 判定を行うタスクごとの最大回数。 | process, rework | いいえ |
 | `process.rework.maximum` | Rework 確率の上限 | `0.75` | `probability` | `0〜1` | `process.rework.minimum` ≤ `process.rework.maximum` | Rework 確率を clamp する上限。 | process, rework, boundary | いいえ |
 | `process.rework.minimum` | Rework 確率の下限 | `0.02` | `probability` | `0〜1` | `process.rework.minimum` ≤ `process.rework.maximum` | Rework 確率を clamp する下限。 | process, rework, boundary | いいえ |
-| `process.rework.mismatch.dependencyWeight` | AI なし工程ずれの依存度係数 | `0.06` | `multiplier` | `0〜1` | — | 工程が AI 前提になったあと、AI なしタスクへ加える Rework 係数。 | process, rework, ai, dependency | いいえ |
+| `process.rework.mismatch.dependencyWeight` | AI なし工程ずれの依存度係数 | `0.08` | `multiplier` | `0〜1` | — | 工程が AI 前提になったあと、AI なしタスクへ加える Rework 係数。 | process, rework, ai, dependency | いいえ |
 | `process.rework.shared.base` | Rework 共有基礎率 | `0.02` | `probability` | `0〜1` | — | 品質と技術的負債を加える前の、AI 支援の有無によらない Rework 基礎率。 | process, rework | いいえ |
 | `process.rework.shared.qualityGapWeight` | Rework 共有の品質不足係数 | `0.12` | `multiplier` | `0〜1` | — | 品質不足が AI 支援の有無によらず Rework へ加える係数。 | process, rework, quality | いいえ |
 | `process.rework.shared.techDebtWeight` | Rework 共有の技術的負債係数 | `0.08` | `multiplier` | `0〜1` | — | 正規化した技術的負債が AI 支援の有無によらず Rework へ加える係数。 | process, rework, debt | いいえ |
 | `process.rework.splitReduction` | PR 分割時の Rework 低下量 | `0.16` | `probability` | `0〜1` | — | 分割したタスクの Rework 確率から引く量。 | process, rework, assignment | いいえ |
 | `process.rework.ticks` | Rework 所要 tick | `4` | `ticks` | `1〜30（整数）` | — | 手戻りタスクを修正して Review へ戻すまでに要する tick。 | process, rework | いいえ |
-| `process.rework.workflow.dependencyInteraction` | AI 支援時の依存度とワークフロー不足の相互作用 | `0.18` | `multiplier` | `0〜1` | — | AI 前提度とワークフロー不足が AI 支援タスクの Rework へ加える相互作用係数。 | process, rework, ai, workflow, dependency | いいえ |
+| `process.rework.workflow.dependencyInteraction` | AI 支援時の依存度とワークフロー不足の相互作用 | `0.24` | `multiplier` | `0〜1` | — | AI 前提度とワークフロー不足が AI 支援タスクの Rework へ加える相互作用係数。 | process, rework, ai, workflow, dependency | いいえ |
 | `process.rework.workflow.documentationWeight` | ワークフロー成熟度のドキュメント重み | `0.2` | `multiplier` | `0〜1` | — | ワークフロー成熟度 W へ足すドキュメントの重み。リテラシー・習熟と合計 1。 | process, rework, ai, workflow | いいえ |
 | `process.rework.workflow.literacyWeight` | ワークフロー成熟度のリテラシー重み | `0.4` | `multiplier` | `0〜1` | — | ワークフロー成熟度 W へ足す AI リテラシーの重み。習熟・ドキュメントと合計 1。 | process, rework, ai, workflow | いいえ |
 | `process.rework.workflow.masteryWeight` | ワークフロー成熟度の習熟重み | `0.4` | `multiplier` | `0〜1` | — | ワークフロー成熟度 W へ足す平均 AI 習熟の重み。リテラシー・ドキュメントと合計 1。 | process, rework, ai, workflow | いいえ |
-| `process.rework.workflow.skillGapWeight` | AI 支援時のワークフロー不足係数 | `0.1` | `multiplier` | `0〜1` | — | ワークフロー成熟度の不足が AI 支援タスクの Rework へ加える係数。 | process, rework, ai, workflow | いいえ |
+| `process.rework.workflow.skillGapWeight` | AI 支援時のワークフロー不足係数 | `0.12` | `multiplier` | `0〜1` | — | ワークフロー成熟度の不足が AI 支援タスクの Rework へ加える係数。 | process, rework, ai, workflow | いいえ |
 | `process.security.fragility.maximum` | Security 脆弱度の上限 | `1` | `multiplier` | `0〜1` | `process.security.fragility.minimum` ≤ `process.security.fragility.maximum` | Security 脆弱度を clamp する上限。 | process, security, boundary | いいえ |
 | `process.security.fragility.minimum` | Security 脆弱度の下限 | `0` | `multiplier` | `0〜0` | `process.security.fragility.minimum` ≤ `process.security.fragility.maximum` | Security 脆弱度を clamp する下限。 | process, security, boundary | いいえ |
 | `process.security.fragility.threshold` | Security 脆弱度の無効化水準 | `50` | `percent` | `1〜100` | — | この Security 水準以上では脆弱度を 0 とする境界。 | process, security, boundary | いいえ |
@@ -518,7 +519,7 @@
 | `process.stability.comboTailMultiplier` | 運用安定中のコンボ超過倍率 | `0.5` | `multiplier` | `0〜1` | — | 運用安定中に基準を超えたコンボ上振れへ掛ける倍率。 | process, stability, combo | いいえ |
 | `process.stability.highValueComboThreshold` | 運用安定中の高価値抑制コンボ閾値 | `8` | `count` | `0〜100（整数）` | — | 運用安定中に高価値タスクの出荷を抑え始めるコンボ段数。 | process, stability, combo, delivery | いいえ |
 | `process.stability.highValueMultiplier` | 運用安定中の高価値出荷倍率 | `0.7` | `multiplier` | `0〜1` | — | 高価値抑制コンボ閾値を超えたときの出荷価値倍率。 | process, stability, combo, delivery | いいえ |
-| `process.stability.reworkMultiplier` | 運用安定中の Rework 倍率 | `0.4` | `multiplier` | `0〜1` | — | 運用安定中に Rework 確率へ掛ける倍率。 | process, stability, rework | いいえ |
+| `process.stability.reworkMultiplier` | 運用安定中の Rework 倍率 | `0.35` | `multiplier` | `0〜1` | — | 運用安定中に Rework 確率へ掛ける倍率。 | process, stability, rework | いいえ |
 | `process.stability.ticks` | 運用安定の持続 tick | `180` | `ticks` | `0〜1000（整数）` | — | 安全側の介入後に工程が安定する期間。 | process, stability, intervention | いいえ |
 | `run.draft.mulliganCost` | ドラフト引き直し費用 | `8` | `currency` | `0〜1000（整数）` | — | ドラフト候補を一度だけ引き直すために消費する予算。 | run, draft, shop, currency | いいえ |
 | `run.event.decisionBeatChance` | decision ビート率 | `0.55` | `probability` | `0〜1` | — | 各ビートで decision イベントを先に抽選する確率。 | run, event, probability | いいえ |

@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 /** レスポンシブ表示モードの境界値。CSS/各UIが直接数値を持たないための正本。 */
 export const RESPONSIVE_BREAKPOINTS = {
@@ -39,7 +32,7 @@ function sameResponsiveMode(left: ResponsiveMode, right: ResponsiveMode): boolea
   return left.width === right.width && left.height === right.height;
 }
 
-function useViewportResponsiveMode(): ResponsiveMode {
+export function useViewportResponsiveMode(): ResponsiveMode {
   const [mode, setMode] = useState<ResponsiveMode>(readViewportMode);
 
   useEffect(() => {
@@ -56,25 +49,7 @@ function useViewportResponsiveMode(): ResponsiveMode {
   return mode;
 }
 
-const ResponsiveModeContext = createContext<ResponsiveMode | null>(null);
-
-export function ResponsiveModeProvider({ children }: { children: ReactNode }) {
-  const mode = useViewportResponsiveMode();
-
-  useLayoutEffect(() => {
-    if (typeof document === 'undefined') return;
-    const root = document.documentElement;
-    root.dataset.responsiveWidth = mode.width;
-    root.dataset.responsiveHeight = mode.height;
-
-    return () => {
-      if (root.dataset.responsiveWidth === mode.width) delete root.dataset.responsiveWidth;
-      if (root.dataset.responsiveHeight === mode.height) delete root.dataset.responsiveHeight;
-    };
-  }, [mode]);
-
-  return <ResponsiveModeContext.Provider value={mode}>{children}</ResponsiveModeContext.Provider>;
-}
+export const ResponsiveModeContext = createContext<ResponsiveMode | null>(null);
 
 export function useResponsiveMode(): ResponsiveMode {
   const mode = useContext(ResponsiveModeContext);

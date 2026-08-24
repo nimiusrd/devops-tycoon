@@ -223,8 +223,8 @@ F-5 が想定する**不確実性を抑える手段**にはなっていない。
   前回の成功結果を最新値として集計してしまうのを防ぐ
 - **メタ進行は初見相当**（`PT_META=fresh`）。`game.startRun` と同じく既定解放分のみをドラフト候補にする
 - 壁時計換算は `PACING_BALANCE`（`src/data/balance/pacing.ts`）から読む。UIの秒形式は派生値。
-- 現行スナップショット（2026-08-24、generation `d9d285d83fd056d7`）は
-  **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。94勝 / 1,466敗。以下の「現行」値はこの出力へ同期する。
+- 現行スナップショット（2026-08-24、generation `2b614704af1761d1`）は
+  **4難易度 × 39方針 × seed `pt-1`〜`pt-10` = 1,560ラン**。96勝 / 1,464敗。以下の「現行」値はこの出力へ同期する。
   F-8 / F-9 は `PT_COUNTERFACTUAL=1` かつ `PT_CF_POLICIES=naive,skilledNoHire,onlyFirefight,noInterventionCtl`
   で対象方針だけ反実仮想した同一コホートから判定する
 
@@ -252,20 +252,20 @@ AIなし−ありは `+2.046875`、AIありの低成熟−高成熟は `+10.5156
 
 既定コホートは v3（fingerprint `8f344d1930a8…`）と v4（`b0817149bae4…`）の双方で
 1,560 / 1,560ランが終端へ到達し、同一seedの完全比較になった。全方針集計の勝率は
-`4.8077% → 6.0256%`（`+1.2179`ポイント）、平均Reworkは `7.3865 → 8.0378`
-（`+0.6513`件）。難易度別の全方針集計は次の通りで、いずれも変化は±10ポイント以内だった。
+`4.8077% → 6.1538%`（`+1.3462`ポイント）、平均Reworkは `7.3865 → 8.0429`
+（`+0.6564`件）。難易度別の全方針集計は次の通りで、いずれも変化は±10ポイント以内だった。
 
 | 難易度 | v3勝率 | v4勝率 | 差（ポイント） |
 | --- | ---: | ---: | ---: |
-| easy | 9.7436% | 9.7436% | 0 |
-| normal | 9.4872% | 13.8462% | +4.3590 |
+| easy | 9.7436% | 10.7692% | +1.0256 |
+| normal | 9.4872% | 13.3333% | +3.8462 |
 | hard | 0% | 0.5128% | +0.5128 |
 | nightmare | 0% | 0% | 0 |
 
 全方針集計には難易度判定用ではない実験統制も含むため、F-7の順序判定には既定どおり
 正式標本 `naive` を使う。easy / normal / hard / nightmare は
 `20% / 0% / 0% / 0%` で難易度順を維持し、AI重点方針の難易度別平均Rework増加は
-最大 `+0.5667`件だった。過去の測定節は当時のルールセットの記録として書き換えない。
+最大 `+1.1333`件だった。過去の測定節は当時のルールセットの記録として書き換えない。
 
 ### 統制の考え方
 
@@ -446,8 +446,8 @@ SPEC 第19章の「AI は強い。しかし雑に使うと壊れる」に最も�
 
 ### RI-76 勝利種別が実質2種で、「重アクションを使ったか」でしか分岐しない（優先度: 高 / F-10）— 完了
 
-現行コホートは **1,560ラン中94勝（敗北1,466）**で、勝利種別の内訳は
-`happiness` 20 / `chaos` 30 / `healthy` 5 / `management` 8 / `normal` 31。`aiSuccess` /
+現行コホートは **1,560ラン中96勝（敗北1,464）**で、勝利種別の内訳は
+`happiness` 20 / `chaos` 31 / `healthy` 6 / `management` 8 / `normal` 31。`aiSuccess` /
 `noDamage` は 0件だった。
 F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimized` / `noAi` /
 `reviewHeavy` / `skilledNoHire` / `securityNeglect` / `securityFocus`）だけで判定し、一致≥2 / 混在首位≥3・share≥2/3・同率除外・
@@ -456,6 +456,8 @@ F-10 受入はビルド方針（`aiFullBet` / `harnessBloated` / `harnessOptimiz
 F-10 modal は `chaos` / `healthy` / `normal` の3種で PASS（採用方針
 `aiFullBet=normal` / `securityNeglect=chaos` / `securityFocus=healthy`、
 異 modal TVD≥0.5、セキュリティ対 TVD=1.00、共通 seed 裏付けあり）。
+対象8方針の判断間隔はすべて `stepMs=300` に統一し、AI系ビルド方針は共通の
+pair review と Review 19件以上での AI throttle を使う。
 `harness*` は標本不足のまま frontier 試練を通常条件と混ぜない。`noDamage` の量産もない。
 
 勝利があった方針だけを列挙する。
@@ -473,12 +475,11 @@ F-10 modal は `chaos` / `healthy` / `normal` の3種で PASS（採用方針
 | `onlySplit` | `management` 1 |
 | `onlyPair` | `management` 1 / `chaos` 1 / `happiness` 1 |
 | `onlyThrottle` | `chaos` 2 / `management` 1 |
-| `aiFullBet` | `normal` 2 / `healthy` 1 |
-| `harnessBloated` | `happiness` 1 |
+| `aiFullBet` | `normal` 2 / `happiness` 1 |
 | `harnessOptimized` | `normal` 1 / `happiness` 1 |
 | `securityNeglect` | `chaos` 2 |
-| `securityFocus` | `healthy` 3 |
-| `noAi` | `happiness` 1 |
+| `securityFocus` | `healthy` 5 |
+| `noAi` | `happiness` 1 / `chaos` 1 |
 | `reviewHeavy` | `happiness` 1 / `healthy` 1 |
 | `noInterventionCtl` | `chaos` 3 |
 | `noAiCtl` | `chaos` 1 / `management` 1 |
@@ -520,8 +521,8 @@ F-10 modal は `chaos` / `healthy` / `normal` の3種で PASS（採用方針
 
 | 方針 | 組織診断 |
 | --- | --- |
-| `aiFullBet` | `reviewHell` 6 / `seniorSacrifice` 34 |
-| `noAi` | `reviewHell` 4 / `seniorSacrifice` 34 / `healthyAcceleration` 2 |
+| `aiFullBet` | `reviewHell` 7 / `seniorSacrifice` 33 |
+| `noAi` | `reviewHell` 5 / `seniorSacrifice` 33 / `healthyAcceleration` 2 |
 
 ### RI-77 AI 導入が既定 ON で、既定のまま進むのが有利（優先度: 高 / F-1・F-2・F-10）— 完了
 
@@ -722,17 +723,17 @@ RI-73（F-1 受入）後の既定フルコホートで行った。
 `reviewLoadAdd` は付けない）へ変更し、スプリント中の HUD に凍結予兆チップ（`reviewFreezeHudCopy`）を
 追加した。予兆のピーク入力は通算ではなく進行中スプリントのピーク／現在キューを使う。
 
-再計測（1,560ラン、敗北 1,466）では `reviewFreeze`（61件）はすべて `sprint` で決着し、
+再計測（1,560ラン、敗北 1,464）では `reviewFreeze`（52件）はすべて `sprint` で決着し、
 即死イベント経路は消えた。ピーク経路（`REVIEW_FREEZE_PEAK`）とスプリント中の対処へ委ねる。
 
 | 敗因 | 決着フェーズ |
 | --- | --- |
-| **`reviewFreeze`**（61件） | `sprint` **100%** |
-| `seniorBurnout`（1212件） | beat / sprint / quarterReview が混在 |
-| `kpiMissed`（51件） | `quarterReview` 100% |
-| `budgetExhausted`（36件） | setup 36件 |
+| **`reviewFreeze`**（52件） | `sprint` **100%** |
+| `seniorBurnout`（1227件） | beat / sprint / quarterReview が混在 |
+| `kpiMissed`（54件） | `quarterReview` 100% |
+| `budgetExhausted`（42件） | setup 42件 |
 | `techDebt`（61件） / `moraleCollapse`（23件） | `sprint` が大半 |
-| `aiDependency`（20件） | sprint 17件 / setup 3件 |
+| `aiDependency`（3件） | `sprint` 3件 |
 | `reorgRequired`（2件） | `quarterReview` 100% |
 
 回帰は `tests/unit/scenarios/reviewFreeze.test.ts` と E2E（凍結チップ + decision UI）で固定。

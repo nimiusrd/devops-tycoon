@@ -227,6 +227,8 @@ function unlockedFor(profile: MetaProfile): { cards: Set<string>; relics: Set<st
 
 // RI-73 / F-1: 緊急対応は複数炎上、または延焼寸前だけ（高コストな単発先消しを避ける）。
 const SKILLED_ACTIONS: PolicySpec['actions'] = [
+  { id: 'pairReview' },
+  { id: 'aiThrottle', when: (c) => c.reviewLen >= 19 },
   { id: 'firefight', when: (c) => c.burning >= 2 || (c.burning >= 1 && c.minBurnTicksLeft <= 15) },
   { id: 'interruptReview', when: (c) => c.reviewLen >= 6 },
   { id: 'andon', when: (c) => c.reviewLen >= 10 },
@@ -609,7 +611,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
    */
   aiFullBet: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
-    stepMs: 400,
+    stepMs: 300,
     cards: 'always',
     evolve: 'aiFirst',
     draft: 'ai',
@@ -624,7 +626,7 @@ export const POLICY_DEFS: Record<string, PolicySpec> = {
   harnessBloated: {
     actions: SKILLED_ACTIONS.filter((a) => a.id !== 'andon'),
     stepMs: 300,
-    cards: 'always',
+    cards: 'preferDelivery',
     evolve: 'aiBloated',
     draft: 'aiBloated',
     ai: 'all',

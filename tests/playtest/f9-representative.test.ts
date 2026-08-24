@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CONSECUTIVE_INCIDENT_SPRINT_CAP, evaluateLose } from '../../src/sim/outcome';
 import { activeIncidents } from '../../src/sim/actions';
 import { effectiveActionsOf, evaluateCounterfactual } from '../../src/sim/run/counterfactual';
-import { activeDangerReasons, listApplicableActions } from '../../src/sim/run/dangerZone';
+import { listApplicableActions, observeDangerZone } from '../../src/sim/run/dangerZone';
 import { RunEngine } from '../../src/sim/run/engine';
 import type { CounterfactualFrame } from '../../src/sim/run/persist';
 import {
@@ -14,6 +14,19 @@ import {
   representativeFingerprint,
   type F9RepresentativeObservation,
 } from './f9Representative';
+import type { DangerSample } from './harness';
+
+function displayDangerSample(sample: DangerSample): DangerSample {
+  return {
+    ...sample,
+    signals: Object.fromEntries(
+      Object.entries(sample.signals).map(([key, value]) => [
+        key,
+        typeof value === 'number' ? Math.round(value * 10) / 10 : value,
+      ]),
+    ) as DangerSample['signals'],
+  };
+}
 
 function normalizeIncidentFrame(frame: CounterfactualFrame): CounterfactualFrame {
   const next = structuredClone(frame);
@@ -72,7 +85,8 @@ function incidentCascadeObservation(): F9RepresentativeObservation {
   const engine = new RunEngine({ seed: 'ri139-incident-restore', difficulty: 'easy' });
   engine.hydrateCounterfactualFrame(normalized);
   const state = engine.snapshot();
-  expect(activeDangerReasons(engine)).toEqual(['incidentCascade']);
+  const danger = observeDangerZone(engine);
+  expect(danger.reasons).toEqual(['incidentCascade']);
   expect(
     evaluateLose(
       state.org,
@@ -116,6 +130,8 @@ function incidentCascadeObservation(): F9RepresentativeObservation {
         aiDependency: state.org.aiDependency,
         aiLiteracy: state.org.aiLiteracy,
         budget: state.budget,
+        budgetAfterNextInfraCharge: danger.budgetAfterNextInfraCharge,
+        strategicSpendExhaustsBudget: danger.strategicSpendExhaustsBudget,
         reviewQueue,
         reviewQueuePeak: state.totals.reviewQueuePeak,
         consecutiveIncidentSprints: state.totals.consecutiveIncidentSprints ?? 0,
@@ -185,6 +201,7 @@ describe('RI-139 F-9 敗因別の代表シナリオ', () => {
     expect(
       observations.map((observation) => ({
         ...observation,
+        firstDanger: displayDangerSample(observation.firstDanger),
         observedWarnings: observedWarningIndicators(observation),
         fingerprint: representativeFingerprint(observation),
       })),
@@ -204,6 +221,8 @@ describe('RI-139 F-9 敗因別の代表シナリオ', () => {
           aiDependency: 20,
           aiLiteracy: 100,
           budget: 3,
+          budgetAfterNextInfraCharge: 3,
+          strategicSpendExhaustsBudget: false,
           reviewQueue: 0,
           reviewQueuePeak: 0,
           consecutiveIncidentSprints: 0,
@@ -230,6 +249,42 @@ describe('RI-139 F-9 敗因別の代表シナリオ', () => {
     ]);
     expect(
       fingerprintCollisions([{ ...observations[0], lostPhase: 'sprint' }, observations[1]]),
+    ).toEqual([]);
+  });
+
+  it('実判定と同じ未丸め値・次回課金後予算から警告を復元する', () => {
+    const base = {
+      firstDanger: {
+        signals: {
+          seniorHp: 49.96,
+          morale: 100,
+          techDebt: 0,
+          activeTeamTechDebt: 0,
+          aiDependency: 20,
+          aiLiteracy: 100,
+          budget: 20,
+          budgetAfterNextInfraCharge: 15,
+          strategicSpendExhaustsBudget: false,
+          reviewQueue: 0,
+          reviewQueuePeak: 0,
+          consecutiveIncidentSprints: 0,
+        },
+      },
+    } as unknown as F9RepresentativeObservation;
+
+    expect(observedWarningIndicators(base)).toEqual(['budget', 'seniorHp']);
+    expect(
+      observedWarningIndicators({
+        ...base,
+        firstDanger: {
+          ...base.firstDanger,
+          signals: {
+            ...base.firstDanger.signals,
+            seniorHp: 50.04,
+            budgetAfterNextInfraCharge: 16,
+          },
+        },
+      }),
     ).toEqual([]);
   });
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { OUTCOME_BALANCE, PROCESS_BALANCE } from '../../../src/data/balance';
 import { REVIEW_FREEZE_PEAK } from '../../../src/sim/outcome';
 import { securityCustomerTrustFromRaw, securityFragility } from '../../../src/sim/model';
-import { activeDangerReasons } from '../../../src/sim/run/dangerZone';
+import { activeDangerReasons, observeDangerZone } from '../../../src/sim/run/dangerZone';
 import { RunEngine } from '../../../src/sim/run/engine';
 import type { Task } from '../../../src/sim/types';
 
@@ -278,7 +278,9 @@ describe('危険域判定（RI-101）', () => {
     internals.sprintIndexInQuarter = internals.sprintsPerQuarter - 1;
     internals.org.aiDependency = 100;
     for (const team of internals.teams) team.aiDependency = 100;
-    expect(activeDangerReasons(engine)).toContain('budgetExhausted');
+    const danger = observeDangerZone(engine);
+    expect(danger.reasons).toContain('budgetExhausted');
+    expect(danger.budgetAfterNextInfraCharge).toBeLessThanOrEqual(15);
   });
 
   it('次回インフラ課金は選択中チームのライブ依存度を使う', () => {

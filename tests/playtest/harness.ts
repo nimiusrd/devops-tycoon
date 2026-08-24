@@ -1036,6 +1036,8 @@ export interface DangerSample {
     aiDependency: number;
     aiLiteracy: number;
     budget: number;
+    budgetAfterNextInfraCharge: number;
+    strategicSpendExhaustsBudget: boolean;
     reviewQueue: number;
     reviewQueuePeak: number;
     consecutiveIncidentSprints: number;
@@ -1590,13 +1592,15 @@ function sampleAvailableInDanger(
     index: s.sprintIndexInQuarter,
     actions: [...available].sort(),
     signals: {
-      seniorHp: round1(danger.org.seniorHp),
-      morale: round1(danger.org.morale),
-      techDebt: round1(danger.org.techDebt),
-      activeTeamTechDebt: round1(s.org.techDebt),
-      aiDependency: round1(s.org.aiDependency),
-      aiLiteracy: round1(s.org.aiLiteracy),
-      budget: round1(s.budget),
+      seniorHp: danger.org.seniorHp,
+      morale: danger.org.morale,
+      techDebt: danger.org.techDebt,
+      activeTeamTechDebt: s.org.techDebt,
+      aiDependency: s.org.aiDependency,
+      aiLiteracy: s.org.aiLiteracy,
+      budget: s.budget,
+      budgetAfterNextInfraCharge: danger.budgetAfterNextInfraCharge,
+      strategicSpendExhaustsBudget: danger.strategicSpendExhaustsBudget,
       reviewQueue: s.sprint.tasks.filter((task) => task.lane === 'review').length,
       reviewQueuePeak: danger.reviewQueuePeak,
       consecutiveIncidentSprints: s.totals.consecutiveIncidentSprints ?? 0,

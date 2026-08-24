@@ -42,6 +42,8 @@ export type DangerLoseReason = Extract<
 export interface DangerZoneObservation {
   reasons: DangerLoseReason[];
   org: RunState['org'];
+  budgetAfterNextInfraCharge: number;
+  strategicSpendExhaustsBudget: boolean;
   reviewQueuePeak: number;
 }
 
@@ -103,7 +105,8 @@ export function observeDangerZone(engine: RunEngine): DangerZoneObservation {
     out.push('aiDependency');
   }
   const nextBudget = budgetAfterNextInfraCharge(s);
-  if (s.budget <= 15 || nextBudget <= 15 || strategicSpendExhaustsBudget(s)) {
+  const spendExhaustsBudget = strategicSpendExhaustsBudget(s);
+  if (s.budget <= 15 || nextBudget <= 15 || spendExhaustsBudget) {
     out.push('budgetExhausted');
   }
   const kpiTotals = liveKpi?.totals ?? s.quarterTotals;
@@ -151,6 +154,8 @@ export function observeDangerZone(engine: RunEngine): DangerZoneObservation {
   return {
     reasons: out,
     org: kpiOrg,
+    budgetAfterNextInfraCharge: nextBudget,
+    strategicSpendExhaustsBudget: spendExhaustsBudget,
     reviewQueuePeak: Math.max(
       reviewQueueLive,
       sprintReviewPeak,

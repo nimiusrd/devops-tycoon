@@ -146,7 +146,13 @@ export function observedWarningIndicators(
   ) {
     indicators.push('aiDependencyUnsafe');
   }
-  if (signals.budget <= 15) indicators.push('budget');
+  if (
+    signals.budget <= 15 ||
+    signals.budgetAfterNextInfraCharge <= 15 ||
+    signals.strategicSpendExhaustsBudget
+  ) {
+    indicators.push('budget');
+  }
   const reviewWatch = Math.round(REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value);
   if (signals.reviewQueue >= reviewWatch || signals.reviewQueuePeak >= reviewWatch) {
     indicators.push('reviewQueuePeak');

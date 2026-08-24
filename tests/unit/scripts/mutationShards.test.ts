@@ -3,14 +3,19 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Instrumenter } from '@stryker-mutator/instrumenter';
 import {
+  INCREMENTAL_CACHE_HASH_LENGTH,
   MUTATION_SHARDS,
   OPEN_RANGE_END,
   REPO_ROOT,
   SHARD_MUTANT_BUDGET,
+  SPRINT_SHARD_MUTANT_BUDGET,
   coverageIncludesLine,
+  coverageIncludesLocation,
+  incrementalCacheKey,
   listConfiguredMutateFiles,
   resolveShardMutate,
   shardIds,
+  shardMutantBudget,
   toMatrixInclude,
 } from '../../../scripts/mutation-shards.mjs';
 
@@ -68,12 +73,12 @@ function shardCoverageMaps() {
 function coveringShards(
   maps: ReturnType<typeof shardCoverageMaps>,
   file: string,
-  line: number,
+  location: { start: { line: number; column: number }; end: { line: number; column: number } },
 ): string[] {
   const ids: string[] = [];
   for (const shard of maps) {
     const coverage = shard.files.get(file) as ShardCoverage | undefined;
-    if (coverage && coverageIncludesLine(coverage, line)) {
+    if (coverage && coverageIncludesLocation(coverage, location)) {
       ids.push(shard.id);
     }
   }
@@ -141,12 +146,15 @@ describe('mutation shards', () => {
 
     for (const mutant of mutants) {
       const file = mutant.fileName.replaceAll('\\', '/');
-      const line = mutant.location.start.line;
-      const ids = coveringShards(maps, file, line);
+      const ids = coveringShards(maps, file, mutant.location);
       if (ids.length === 0) {
-        unassigned.push(`${file}:${line}:${mutant.mutatorName}`);
+        unassigned.push(
+          `${file}:${mutant.location.start.line}-${mutant.location.end.line}:${mutant.mutatorName}`,
+        );
       } else if (ids.length > 1) {
-        overlapped.push(`${file}:${line} → ${ids.join(',')}`);
+        overlapped.push(
+          `${file}:${mutant.location.start.line}-${mutant.location.end.line} → ${ids.join(',')}`,
+        );
       } else {
         perShard.set(ids[0], (perShard.get(ids[0]) ?? 0) + 1);
       }
@@ -155,27 +163,98 @@ describe('mutation shards', () => {
     expect(unassigned.slice(0, 10), `未割当 ${unassigned.length} 件`).toEqual([]);
     expect(overlapped.slice(0, 10), `重複 ${overlapped.length} 件`).toEqual([]);
 
-    const overBudget = [...perShard.entries()].filter(([, count]) => count > SHARD_MUTANT_BUDGET);
+    const overBudget = [...perShard.entries()].filter(
+      ([id, count]) => count > shardMutantBudget(id),
+    );
     expect(overBudget, `予算超過: ${JSON.stringify(overBudget)}`).toEqual([]);
 
     const assigned = [...perShard.values()].reduce((sum, n) => sum + n, 0);
     expect(assigned).toBe(mutants.length);
   });
 
-  it('workflow はシャード定義スクリプトを matrix に使う', () => {
+  it('Stryker と同様、mutant の開始と終了が両方レンジ内のときだけ覆う', () => {
+    const titleBody = {
+      start: { line: 644, column: 0 },
+      end: { line: 735, column: 1 },
+    };
+    expect(coverageIncludesLocation([{ start: 585, end: 680 }], titleBody)).toBe(false);
+    expect(coverageIncludesLocation([{ start: 681, end: OPEN_RANGE_END }], titleBody)).toBe(false);
+    expect(coverageIncludesLocation([{ start: 642, end: OPEN_RANGE_END }], titleBody)).toBe(true);
+    expect(coverageIncludesLine([{ start: 585, end: 680 }], 645)).toBe(true);
+  });
+
+  it('computeTitleAndDiagnosis を関数の途中で割らない', () => {
+    const titleStart = 642;
+    const titleEnd = 736;
+    const sprintRanges = MUTATION_SHARDS.flatMap((shard) => {
+      const resolved = resolveShardMutate(shard.mutate);
+      const coverage = resolved.get('src/sim/sprint.ts');
+      return coverage === true || coverage === undefined ? [] : coverage;
+    });
+    const cutInside = sprintRanges.filter(
+      (range) => range.start > titleStart && range.start <= titleEnd,
+    );
+    expect(cutInside).toEqual([]);
+  });
+
+  it('sprint 経路の mutant 予算は通常シャードより厳しい', () => {
+    expect(SPRINT_SHARD_MUTANT_BUDGET).toBeLessThan(SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-sprint-e')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-sprint-baseline-b')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-engine-a')).toBe(SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-support')).toBe(SHARD_MUTANT_BUDGET);
+  });
+
+  it('sprint.ts と sprintBaseline.ts は行レンジで細かく割る', () => {
+    const sprintShards = MUTATION_SHARDS.filter((shard) =>
+      shard.mutate.startsWith('src/sim/sprint.ts'),
+    );
+    expect(sprintShards.length).toBeGreaterThanOrEqual(6);
+    expect(sprintShards.every((shard) => shard.mutate.includes(':'))).toBe(true);
+
+    const baselineShards = MUTATION_SHARDS.filter((shard) =>
+      shard.mutate.startsWith('src/sim/run/sprintBaseline.ts'),
+    );
+    expect(baselineShards.length).toBeGreaterThanOrEqual(2);
+    expect(baselineShards.every((shard) => shard.mutate.includes(':'))).toBe(true);
+    expect(MUTATION_SHARDS.some((shard) => shard.id === 'sim-sprint-e')).toBe(true);
+  });
+
+  it('workflow はシャード定義スクリプトを matrix に使い、incremental cache は mutate ハッシュを見る', () => {
     const yaml = readWorkflow();
     expect(yaml).toContain('scripts/mutation-shards.mjs --matrix');
     expect(yaml).toContain('fromJson(needs.mutation-shard-matrix.outputs.include)');
     expect(yaml).not.toContain('id: sim-run-engine\n');
+    expect(yaml).toContain('stryker-incremental-${{ matrix.cache }}');
+    expect(yaml).not.toContain('stryker-incremental-${{ matrix.id }}-${{ runner.os }}');
   });
 
-  it('matrix JSON は id と mutate だけを出す', () => {
+  it('matrix JSON は id / mutate / cache を出し、mutate が変わると cache も変わる', () => {
     const include = toMatrixInclude();
     expect(include).toHaveLength(MUTATION_SHARDS.length);
     expect(include[0]).toEqual({
       id: MUTATION_SHARDS[0].id,
       mutate: MUTATION_SHARDS[0].mutate,
+      cache: incrementalCacheKey(MUTATION_SHARDS[0].id, MUTATION_SHARDS[0].mutate),
     });
+    expect(include[0].cache).toMatch(
+      new RegExp(`^${MUTATION_SHARDS[0].id}-[0-9a-f]{${INCREMENTAL_CACHE_HASH_LENGTH}}$`),
+    );
+
+    const support = include.find((shard) => shard.id === 'sim-run-support');
+    expect(support).toBeDefined();
+    expect(support?.cache).not.toBe('sim-run-support');
+    expect(incrementalCacheKey('sim-run-support', support?.mutate ?? '')).toBe(support?.cache);
+    expect(
+      incrementalCacheKey(
+        'sim-run-support',
+        'src/sim/run/whatIf*.ts,src/sim/run/sprintBaseline.ts,src/sim/run/sprintBaselineBuild.ts',
+      ),
+    ).not.toBe(support?.cache);
+
+    const sprintA = include.find((shard) => shard.id === 'sim-sprint-a');
+    expect(sprintA).toBeDefined();
+    expect(incrementalCacheKey('sim-sprint-a', 'src/sim/sprint.ts:1-450')).not.toBe(sprintA?.cache);
   });
 
   it('初期 dry-run が 5 分で死なないよう timeout を上げている', () => {

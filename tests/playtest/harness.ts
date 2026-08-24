@@ -27,6 +27,8 @@ import {
 } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
 import {
+  effectiveActionsOf,
+  evaluateCounterfactual,
   evaluateLatestEffectiveFrame,
   type CounterfactualEvaluateOptions,
   type CounterfactualFrameSample,
@@ -967,26 +969,11 @@ export interface RunLog {
    * 最終敗因の危険域で、非空の機械的発動可能手が最後に見えた時点。
    * 危険域は観測したが一度も非空が無ければ省略（その場合は firstSample を参照）。
    */
-  availableActionsInDangerLastNonEmpty?: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
+  availableActionsInDangerLastNonEmpty?: DangerSample;
   /** 最終敗因の危険域で最初に取ったサンプル（常時空集合ランの打ち切り起点）。 */
-  availableActionsInDangerFirstSample?: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
+  availableActionsInDangerFirstSample?: DangerSample;
   /** 最終敗因の危険域で最後に取ったサンプル（空集合もありうる）。 */
-  availableActionsInDangerLastSample?: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
+  availableActionsInDangerLastSample?: DangerSample;
   /**
    * 最終敗因の last-non-empty フレームを反実仮想評価した有効手（RI-101）。
    * `PT_COUNTERFACTUAL=1` のときだけ付く。空配列は「評価したが有効手なし」。
@@ -1007,11 +994,48 @@ export interface RunLog {
     status: string;
     truncated: boolean;
   };
+  /** 限定介入を分岐した危険域フレームの位置。 */
+  counterfactualOrigin?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+  };
+  /**
+   * RI-139 の代表シナリオで明示指定した限定介入の結果。
+   * 既定コホートでは記録せず、全合法手列の評価や RI-132 の合否には使わない。
+   */
+  counterfactualBranches?: Array<{
+    actionId: string;
+    sprintsToLose: number | null;
+    leftDanger: boolean;
+    loseReason: string | null;
+    status: string;
+    truncated: boolean;
+  }>;
   /** 分岐上限で未評価の候補が残った（RI-101。不完全な「有効手なし」と F-9 集合から除外する）。 */
   counterfactualIncomplete?: boolean;
   counterfactualSkipped?: string[];
   /** 無介入ベースラインが評価期間を生存または危険域離脱した（RI-101。有効手なしとは区別する）。 */
   counterfactualBaselineRecovered?: boolean;
+}
+
+/** 危険域の位置、機械的に打てる手、敗因固有の予兆を読める状態指標。 */
+export interface DangerSample {
+  sprintsPlayed: number;
+  quarter: number;
+  index: number;
+  actions: string[];
+  signals: {
+    seniorHp: number;
+    morale: number;
+    techDebt: number;
+    aiDependency: number;
+    aiLiteracy: number;
+    budget: number;
+    reviewQueue: number;
+    reviewQueuePeak: number;
+    consecutiveIncidentSprints: number;
+  };
 }
 
 /**
@@ -1410,25 +1434,28 @@ function boardCtx(s: RunState): BoardCtx | null {
   };
 }
 
+function round1(v: number): number {
+  return Math.round(v * 10) / 10;
+}
+
 /** 敗北直前の参照に使う組織状態の控え（`RunLog.lostPrevState`）。 */
 function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
-  const r1 = (v: number): number => Math.round(v * 10) / 10;
   return {
-    seniorHp: r1(s.org.seniorHp),
-    morale: r1(s.org.morale),
-    techDebt: r1(s.org.techDebt),
-    aiDependency: r1(s.org.aiDependency),
-    budget: r1(s.budget),
-    minTrust: r1(
+    seniorHp: round1(s.org.seniorHp),
+    morale: round1(s.org.morale),
+    techDebt: round1(s.org.techDebt),
+    aiDependency: round1(s.org.aiDependency),
+    budget: round1(s.budget),
+    minTrust: round1(
       Math.min(
         s.stakeholderTrust.management,
         s.stakeholderTrust.customers,
         s.stakeholderTrust.team,
       ),
     ),
-    trustManagement: r1(s.stakeholderTrust.management),
-    trustCustomers: r1(s.stakeholderTrust.customers),
-    trustTeam: r1(s.stakeholderTrust.team),
+    trustManagement: round1(s.stakeholderTrust.management),
+    trustCustomers: round1(s.stakeholderTrust.customers),
+    trustTeam: round1(s.stakeholderTrust.team),
     phase: s.phase,
   };
 }
@@ -1436,24 +1463,9 @@ function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
 /** 敗因ごとの危険域観測トラック（和集合＋時系列）。 */
 type DangerTrack = {
   actions: Set<string>;
-  firstSample: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
-  lastSample: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
-  lastNonEmpty: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  } | null;
+  firstSample: DangerSample;
+  lastSample: DangerSample;
+  lastNonEmpty: DangerSample | null;
 };
 
 /** 集中力・クールダウンを満たす前提で、対象が存在するかを観測する。 */
@@ -1558,27 +1570,39 @@ function sampleAvailableInDanger(
   byReason: Map<DangerLoseReason, DangerTrack>,
   framesByReason?: Map<DangerLoseReason, CounterfactualFrameSample[]>,
   policy?: string,
+  forceCounterfactual = false,
 ): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
   const dangers = activeDangerReasons(e);
   if (dangers.length === 0) return;
   const available = listApplicableActions(e);
-  const sample = {
+  const sample: DangerSample = {
     sprintsPlayed: s.sprintsPlayed,
     quarter: s.quarterNumber,
     index: s.sprintIndexInQuarter,
     actions: [...available].sort(),
-    sig: [
-      s.sprintTick,
-      s.sprint.focus,
-      s.org.seniorHp,
-      s.org.morale,
-      s.budget,
-      s.sprint.tasks.filter((task) => task.lane === 'review').length,
-      available.join(','),
-    ].join('|'),
+    signals: {
+      seniorHp: round1(s.org.seniorHp),
+      morale: round1(s.org.morale),
+      techDebt: round1(s.org.techDebt),
+      aiDependency: round1(s.org.aiDependency),
+      aiLiteracy: round1(s.org.aiLiteracy),
+      budget: round1(s.budget),
+      reviewQueue: s.sprint.tasks.filter((task) => task.lane === 'review').length,
+      reviewQueuePeak: Math.max(s.sprint.metrics.reviewQueueMax, s.totals.reviewQueuePeak ?? 0),
+      consecutiveIncidentSprints: s.totals.consecutiveIncidentSprints ?? 0,
+    },
   };
+  const sig = [
+    s.sprintTick,
+    s.sprint.focus,
+    s.org.seniorHp,
+    s.org.morale,
+    s.budget,
+    s.sprint.tasks.filter((task) => task.lane === 'review').length,
+    available.join(','),
+  ].join('|');
   for (const reason of dangers) {
     let track = byReason.get(reason);
     if (!track) {
@@ -1595,11 +1619,15 @@ function sampleAvailableInDanger(
     track.lastSample = sample;
     if (available.length > 0) track.lastNonEmpty = sample;
   }
-  if (framesByReason && counterfactualEnabled(policy) && dangers.length > 0) {
+  if (
+    framesByReason &&
+    (forceCounterfactual || counterfactualEnabled(policy)) &&
+    dangers.length > 0
+  ) {
     const frame = e.exportCounterfactualFrame();
     if (frame) {
       for (const reason of dangers) {
-        rememberCounterfactualFrame(framesByReason, reason, sample, frame);
+        rememberCounterfactualFrame(framesByReason, reason, { ...sample, sig }, frame);
       }
     }
   }
@@ -2037,6 +2065,12 @@ function shutdownTriggers(
 export interface RunOnceOptions {
   /** 省略時はプレイテスト本番と同じ分岐上限（96 / 32 / 192）。 */
   counterfactual?: CounterfactualEvaluateOptions;
+  /** 環境変数に依存せず、代表シナリオの限定反実仮想を有効にする。 */
+  forceCounterfactual?: boolean;
+  /** 明示した限定介入の分岐結果を RunLog へ残す。既定コホートでは false。 */
+  recordCounterfactualBranches?: boolean;
+  /** RI-139 では危険域へ入った最初の1フレームだけを、探索ではなく固定観測点として評価する。 */
+  counterfactualFrame?: 'first-danger';
 }
 
 /** 1ランを最後まで自動プレイし、計測ログを返す。 */
@@ -2139,6 +2173,7 @@ export function runOnce(
             availableInDangerByReason,
             counterfactualFramesByReason,
             policy,
+            options.forceCounterfactual,
           );
         };
         const onCardPlayed = (focusSpent: number): void => {
@@ -2472,19 +2507,29 @@ export function runOnce(
       : {}),
     ...(f.status === 'lost' &&
     f.loseReason &&
-    counterfactualEnabled(policy) &&
+    (options.forceCounterfactual || counterfactualEnabled(policy)) &&
     counterfactualFramesByReason.has(f.loseReason as DangerLoseReason)
       ? (() => {
-          const selected = evaluateLatestEffectiveFrame(
-            counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!,
-            {
-              focusReason: f.loseReason as DangerLoseReason,
-              maxActionBranches: 96,
-              maxComboBranches: 32,
-              maxStrategicBranches: 192,
-              ...options.counterfactual,
-            },
-          );
+          const frames = counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!;
+          const evaluateOptions = {
+            focusReason: f.loseReason as DangerLoseReason,
+            maxActionBranches: 96,
+            maxComboBranches: 32,
+            maxStrategicBranches: 192,
+            ...options.counterfactual,
+          } satisfies CounterfactualEvaluateOptions;
+          const selected =
+            options.counterfactualFrame === 'first-danger'
+              ? (() => {
+                  const evaluation = evaluateCounterfactual(frames[0]!.frame, evaluateOptions);
+                  return {
+                    evaluation,
+                    effective: effectiveActionsOf(evaluation),
+                    baselineRecovered:
+                      evaluation.baseline.leftDanger || evaluation.baseline.status === 'won',
+                  };
+                })()
+              : evaluateLatestEffectiveFrame(frames, evaluateOptions);
           if (!selected) return {};
           const { evaluation, effective, baselineRecovered } = selected;
           const skipped = [...evaluation.skippedActions, ...evaluation.skippedStrategic];
@@ -2516,6 +2561,23 @@ export function runOnce(
               status: evaluation.baseline.status,
               truncated: evaluation.baseline.truncated,
             },
+            ...(options.recordCounterfactualBranches
+              ? { counterfactualOrigin: evaluation.origin }
+              : {}),
+            ...(options.recordCounterfactualBranches
+              ? {
+                  counterfactualBranches: evaluation.branches
+                    .filter((branch) => branch.actionId !== null)
+                    .map((branch) => ({
+                      actionId: branch.actionId!,
+                      sprintsToLose: branch.sprintsToLose,
+                      leftDanger: branch.leftDanger,
+                      loseReason: branch.loseReason,
+                      status: branch.status,
+                      truncated: branch.truncated,
+                    })),
+                }
+              : {}),
           };
         })()
       : {}),

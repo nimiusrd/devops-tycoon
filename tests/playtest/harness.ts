@@ -16,7 +16,6 @@ import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/
 import { MEMBER_BALANCE, OUTCOME_BALANCE } from '../../src/data/balance';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
-import { companyOrgFromTeams } from '../../src/sim/orgscale';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import {
   RunEngine,
@@ -36,9 +35,9 @@ import {
 } from '../../src/sim/run/counterfactual';
 import { eventMinSignalFactors, eventSignals } from '../../src/sim/run/events';
 import {
-  activeDangerReasons,
   canApplyAssignTaskWithExplicitTarget,
   listApplicableActions,
+  observeDangerZone,
   type DangerLoseReason,
 } from '../../src/sim/run/dangerZone';
 import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
@@ -1581,30 +1580,25 @@ function sampleAvailableInDanger(
 ): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
-  const dangers = activeDangerReasons(e);
+  const danger = observeDangerZone(e);
+  const dangers = danger.reasons;
   if (dangers.length === 0) return;
   const available = listApplicableActions(e);
-  const liveKpi = e.previewLiveQuarterKpi();
-  const warningOrg = liveKpi?.org ?? companyOrgFromTeams(s.teams, s.org);
   const sample: DangerSample = {
     sprintsPlayed: s.sprintsPlayed,
     quarter: s.quarterNumber,
     index: s.sprintIndexInQuarter,
     actions: [...available].sort(),
     signals: {
-      seniorHp: round1(warningOrg.seniorHp),
-      morale: round1(warningOrg.morale),
-      techDebt: round1(warningOrg.techDebt),
+      seniorHp: round1(danger.org.seniorHp),
+      morale: round1(danger.org.morale),
+      techDebt: round1(danger.org.techDebt),
       activeTeamTechDebt: round1(s.org.techDebt),
       aiDependency: round1(s.org.aiDependency),
       aiLiteracy: round1(s.org.aiLiteracy),
       budget: round1(s.budget),
       reviewQueue: s.sprint.tasks.filter((task) => task.lane === 'review').length,
-      reviewQueuePeak: Math.max(
-        liveKpi?.totals.reviewQueuePeak ?? 0,
-        s.sprint.metrics.reviewQueueMax,
-        s.totals.reviewQueuePeak ?? 0,
-      ),
+      reviewQueuePeak: danger.reviewQueuePeak,
       consecutiveIncidentSprints: s.totals.consecutiveIncidentSprints ?? 0,
     },
   };

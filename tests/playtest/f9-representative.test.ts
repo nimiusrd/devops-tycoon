@@ -112,6 +112,7 @@ function incidentCascadeObservation(): F9RepresentativeObservation {
         seniorHp: state.org.seniorHp,
         morale: state.org.morale,
         techDebt: state.org.techDebt,
+        activeTeamTechDebt: state.org.techDebt,
         aiDependency: state.org.aiDependency,
         aiLiteracy: state.org.aiLiteracy,
         budget: state.budget,
@@ -199,6 +200,7 @@ describe('RI-139 F-9 敗因別の代表シナリオ', () => {
           seniorHp: 100,
           morale: 100,
           techDebt: 0,
+          activeTeamTechDebt: 0,
           aiDependency: 20,
           aiLiteracy: 100,
           budget: 3,
@@ -222,7 +224,7 @@ describe('RI-139 F-9 敗因別の代表シナリオ', () => {
 
     expect(fingerprintCollisions(observations)).toEqual([
       {
-        fingerprint: 'budget|1:setup|',
+        fingerprint: 'budget|0:1:setup|',
         reasons: ['budgetExhausted', 'incidentCascade'],
       },
     ]);

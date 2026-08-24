@@ -120,11 +120,11 @@ export function dangerToLossGap(observation: F9RepresentativeObservation): numbe
   return Math.max(0, observation.sprintsPlayed - observation.firstDanger.sprintsPlayed);
 }
 
-/** 警告・速度／決着位置・限定介入の組を安定キー化する。 */
+/** 実測警告・危険到達／敗北速度・決着位置・限定介入の組を安定キー化する。 */
 export function representativeFingerprint(observation: F9RepresentativeObservation): string {
   return [
     observedWarningIndicators(observation).join(','),
-    `${dangerToLossGap(observation)}:${observation.lostPhase}`,
+    `${observation.firstDanger.sprintsPlayed}:${dangerToLossGap(observation)}:${observation.lostPhase}`,
     [...observation.effectiveProbes].sort().join(','),
   ].join('|');
 }
@@ -137,7 +137,9 @@ export function observedWarningIndicators(
   const indicators: F9WarningKey[] = [];
   if (signals.seniorHp < 50) indicators.push('seniorHp');
   if (signals.morale < 40) indicators.push('morale');
-  if (signals.techDebt >= 60) indicators.push('techDebt');
+  if (Math.max(signals.techDebt, signals.activeTeamTechDebt) >= 60) {
+    indicators.push('techDebt');
+  }
   if (
     signals.aiDependency >= 50 &&
     signals.aiLiteracy <= OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value

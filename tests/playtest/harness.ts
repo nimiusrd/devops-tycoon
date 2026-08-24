@@ -16,6 +16,7 @@ import { defaultUnlockedCardIds, defaultUnlockedRelicIds } from '../../src/data/
 import { MEMBER_BALANCE, OUTCOME_BALANCE } from '../../src/data/balance';
 import { ALL_ACTION_IDS, canApplyAction } from '../../src/sim/actions';
 import { FIXED_STEP_MS } from '../../src/sim/engine';
+import { companyOrgFromTeams } from '../../src/sim/orgscale';
 import { RECRUIT_COST, REST_STAMINA_RECOVER, ROSTER_CAP } from '../../src/sim/member/roster';
 import {
   RunEngine,
@@ -1031,6 +1032,8 @@ export interface DangerSample {
     seniorHp: number;
     morale: number;
     techDebt: number;
+    /** 危険判定が集約値と併用する、アクティブチーム単体の負債。 */
+    activeTeamTechDebt: number;
     aiDependency: number;
     aiLiteracy: number;
     budget: number;
@@ -1581,20 +1584,27 @@ function sampleAvailableInDanger(
   const dangers = activeDangerReasons(e);
   if (dangers.length === 0) return;
   const available = listApplicableActions(e);
+  const liveKpi = e.previewLiveQuarterKpi();
+  const warningOrg = liveKpi?.org ?? companyOrgFromTeams(s.teams, s.org);
   const sample: DangerSample = {
     sprintsPlayed: s.sprintsPlayed,
     quarter: s.quarterNumber,
     index: s.sprintIndexInQuarter,
     actions: [...available].sort(),
     signals: {
-      seniorHp: round1(s.org.seniorHp),
-      morale: round1(s.org.morale),
-      techDebt: round1(s.org.techDebt),
+      seniorHp: round1(warningOrg.seniorHp),
+      morale: round1(warningOrg.morale),
+      techDebt: round1(warningOrg.techDebt),
+      activeTeamTechDebt: round1(s.org.techDebt),
       aiDependency: round1(s.org.aiDependency),
       aiLiteracy: round1(s.org.aiLiteracy),
       budget: round1(s.budget),
       reviewQueue: s.sprint.tasks.filter((task) => task.lane === 'review').length,
-      reviewQueuePeak: Math.max(s.sprint.metrics.reviewQueueMax, s.totals.reviewQueuePeak ?? 0),
+      reviewQueuePeak: Math.max(
+        liveKpi?.totals.reviewQueuePeak ?? 0,
+        s.sprint.metrics.reviewQueueMax,
+        s.totals.reviewQueuePeak ?? 0,
+      ),
       consecutiveIncidentSprints: s.totals.consecutiveIncidentSprints ?? 0,
     },
   };

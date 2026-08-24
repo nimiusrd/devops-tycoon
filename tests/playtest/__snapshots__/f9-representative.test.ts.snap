@@ -51,7 +51,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "sprintsPlayed": 0,
     },
     "effectiveProbes": [],
-    "fingerprint": "seniorHp|1:beat|",
+    "fingerprint": "seniorHp|0:1:beat|",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -65,6 +65,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "index": 1,
       "quarter": 1,
       "signals": {
+        "activeTeamTechDebt": 0,
         "aiDependency": 84.4,
         "aiLiteracy": 60,
         "budget": 60,
@@ -73,7 +74,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
         "reviewQueue": 6,
         "reviewQueuePeak": 28,
         "seniorHp": 49.1,
-        "techDebt": 0,
+        "techDebt": 20,
       },
       "sprintsPlayed": 0,
     },
@@ -158,7 +159,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "andon",
       "pairReview",
     ],
-    "fingerprint": "aiDependencyUnsafe,morale,seniorHp|1:sprint|andon,firefight,pairReview",
+    "fingerprint": "aiDependencyUnsafe,morale,seniorHp|1:1:sprint|andon,firefight,pairReview",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -170,6 +171,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "index": 2,
       "quarter": 1,
       "signals": {
+        "activeTeamTechDebt": 48,
         "aiDependency": 65.4,
         "aiLiteracy": 25,
         "budget": 25,
@@ -178,7 +180,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
         "reviewQueue": 0,
         "reviewQueuePeak": 23,
         "seniorHp": 2.6,
-        "techDebt": 48,
+        "techDebt": 25,
       },
       "sprintsPlayed": 1,
     },
@@ -266,7 +268,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "firefight",
       "pairReview",
     ],
-    "fingerprint": "seniorHp,techDebt|1:sprint|firefight,pairReview",
+    "fingerprint": "seniorHp,techDebt|3:1:sprint|firefight,pairReview",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -280,6 +282,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "index": 4,
       "quarter": 1,
       "signals": {
+        "activeTeamTechDebt": 60,
         "aiDependency": 47.8,
         "aiLiteracy": 71,
         "budget": 25,
@@ -288,7 +291,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
         "reviewQueue": 3,
         "reviewQueuePeak": 25,
         "seniorHp": 7.5,
-        "techDebt": 60,
+        "techDebt": 26,
       },
       "sprintsPlayed": 3,
     },
@@ -360,7 +363,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "sprintsPlayed": 2,
     },
     "effectiveProbes": [],
-    "fingerprint": "reviewQueuePeak,seniorHp|1:sprint|",
+    "fingerprint": "reviewQueuePeak,seniorHp|2:1:sprint|",
     "firstDanger": {
       "actions": [
         "splitPr",
@@ -368,6 +371,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "index": 3,
       "quarter": 1,
       "signals": {
+        "activeTeamTechDebt": 0,
         "aiDependency": 100,
         "aiLiteracy": 100,
         "budget": 60,
@@ -376,7 +380,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
         "reviewQueue": 36,
         "reviewQueuePeak": 36,
         "seniorHp": 35.6,
-        "techDebt": 0,
+        "techDebt": 19,
       },
       "sprintsPlayed": 2,
     },
@@ -450,7 +454,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
     "effectiveProbes": [
       "pairReview",
     ],
-    "fingerprint": "aiDependencyUnsafe|5:sprint|pairReview",
+    "fingerprint": "aiDependencyUnsafe|0:5:sprint|pairReview",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -464,6 +468,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "index": 1,
       "quarter": 1,
       "signals": {
+        "activeTeamTechDebt": 0,
         "aiDependency": 51.6,
         "aiLiteracy": 25,
         "budget": 25,
@@ -472,7 +477,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
         "reviewQueue": 11,
         "reviewQueuePeak": 12,
         "seniorHp": 82.2,
-        "techDebt": 0,
+        "techDebt": 22,
       },
       "sprintsPlayed": 0,
     },
@@ -554,7 +559,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "sprintsPlayed": 2,
     },
     "effectiveProbes": [],
-    "fingerprint": "budget|1:setup|",
+    "fingerprint": "budget|2:1:setup|",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -566,6 +571,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "index": 3,
       "quarter": 1,
       "signals": {
+        "activeTeamTechDebt": 0,
         "aiDependency": 100,
         "aiLiteracy": 84,
         "budget": 3,
@@ -574,7 +580,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
         "reviewQueue": 0,
         "reviewQueuePeak": 28,
         "seniorHp": 63.5,
-        "techDebt": 0,
+        "techDebt": 25,
       },
       "sprintsPlayed": 2,
     },
@@ -653,7 +659,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "sprintsPlayed": 0,
     },
     "effectiveProbes": [],
-    "fingerprint": "consecutiveIncidentSprints|1:sprint|",
+    "fingerprint": "consecutiveIncidentSprints|0:1:sprint|",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -668,6 +674,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "index": 1,
       "quarter": 1,
       "signals": {
+        "activeTeamTechDebt": 0,
         "aiDependency": 20,
         "aiLiteracy": 100,
         "budget": 100,

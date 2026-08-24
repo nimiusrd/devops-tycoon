@@ -822,19 +822,21 @@ SPEC F-9 が列挙する7敗因に、決定論的な代表シナリオを1件ず
 炎上フレームを使い、他の敗北条件を安全値、連続障害数を上限直前の5へ正規化した境界fixtureとした。
 本体API、保存形式、ルールセット、バランス係数は変更していない。
 
-表中の「直前」は `HP / 士気 / 負債 / AI依存 / 予算 / 最低信頼`、`危険→敗北` は危険域で最初に
-観測した完了スプリント数から敗北時までの差である。発動可能集合は、その敗因の危険域で
+表中の「直前」は `HP / 士気 / 負債 / AI依存 / 予算 / 最低信頼`。「危険到達」はラン開始から
+最初に危険域へ入るまでの完了スプリント数、「→敗北」はそこから敗北までの差である。警告サンプルの
+HP・士気・負債・Review peak は `activeDangerReasons` と同じ live 全社KPI投影を使い、負債は判定と
+同じくアクティブチーム値も併記・照合する。発動可能集合は、その敗因の危険域で
 `listApplicableActions` が返した和集合を示す。
 
-| 敗因 | 代表シナリオ | 最初の警告（Q/S） | 危険→敗北・決着 | 敗北直前 | 機械的発動可能集合 | 限定介入（無介入との比較） | fingerprint |
+| 敗因 | 代表シナリオ | 最初の警告（Q/S） | 危険到達 / →敗北・決着 | 敗北直前 | 機械的発動可能集合 | 限定介入（無介入との比較） | fingerprint |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `seniorBurnout` | easy / `naiveNoInterventionCtl` / `pt-5` | HP 49.1（Q1/S1） | 1S・Q1 `beat` | 24.9 / 100 / 0 / 84.4 / 60 / 70 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`interruptReview`・`andon`・`pairReview`はいずれも1Sで同敗因 | `seniorHp\|1:beat\|` |
-| `moraleCollapse` | nightmare / `naiveNoInterventionCtl` / `pt-2` | 士気36（Q1/S2） | 1S・Q1 `sprint` | 3.3 / 0.5 / 114 / 65.4 / 25 / 45 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | `firefight`・`pairReview`は危険離脱、`andon`は同じ1Sで`seniorBurnout`へ変化 | `aiDependencyUnsafe,morale,seniorHp\|1:sprint\|andon,firefight,pairReview` |
-| `techDebt` | nightmare / `naiveNoInterventionCtl` / `pt-4` | 負債60（Q1/S4） | 1S・Q1 `sprint` | 6.4 / 46 / 90 / 47.8 / 25 / 45 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`andon`は1S、`firefight`・`pairReview`は同敗因を2Sへ遅延 | `seniorHp,techDebt\|1:sprint\|firefight,pairReview` |
-| `reviewFreeze` | easy / `securityNeglect` / `pt-5` | Review peak 36（Q1/S3） | 1S・Q1 `sprint` | 3.5 / 100 / 0 / 100 / 60 / 70 | `firefight, pairReview, splitPr` | 全指定手を打てる危険域フレームで、無介入・`splitPr`・`pairReview`はいずれも1Sで同敗因 | `reviewQueuePeak,seniorHp\|1:sprint\|` |
-| `aiDependency` | nightmare / `naiveNoInterventionCtl` / `pt-7` | AI依存51.6 / リテラシー25（Q1/S1） | 5S・Q1 `sprint` | 10.1 / 85.5 / 66 / 100 / 25 / 45 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 2Sの範囲で無介入・`aiThrottle`は危険継続、`pairReview`は危険離脱 | `aiDependencyUnsafe\|5:sprint\|pairReview` |
-| `budgetExhausted` | easy / `harnessBloated` / `pt-9` | 予算3（Q1/S3） | 1S・Q1 `setup` | 36 / 100 / 4 / 100 / 3 / 70 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`aiThrottle`・`andon`・`pairReview`はいずれも1Sで同敗因 | `budget\|1:setup\|` |
-| `incidentCascade` | nightmare / `flammable` / `ri139-incident-cascade` 境界frame | 連続障害5（Q1/S1） | 1S・Q1 `sprint` | 100 / 100 / 0 / 20 / 100 / 100 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`firefight`・`andon`はいずれも1Sで同敗因 | `consecutiveIncidentSprints\|1:sprint\|` |
+| `seniorBurnout` | easy / `naiveNoInterventionCtl` / `pt-5` | HP 49.1（Q1/S1） | 0S / +1S・Q1 `beat` | 24.9 / 100 / 0 / 84.4 / 60 / 70 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`interruptReview`・`andon`・`pairReview`はいずれも1Sで同敗因 | `seniorHp\|0:1:beat\|` |
+| `moraleCollapse` | nightmare / `naiveNoInterventionCtl` / `pt-2` | 士気36（Q1/S2） | 1S / +1S・Q1 `sprint` | 3.3 / 0.5 / 114 / 65.4 / 25 / 45 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | `firefight`・`pairReview`は危険離脱、`andon`は同じ1Sで`seniorBurnout`へ変化 | `aiDependencyUnsafe,morale,seniorHp\|1:1:sprint\|andon,firefight,pairReview` |
+| `techDebt` | nightmare / `naiveNoInterventionCtl` / `pt-4` | アクティブチーム負債60（Q1/S4） | 3S / +1S・Q1 `sprint` | 6.4 / 46 / 90 / 47.8 / 25 / 45 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`andon`は1S、`firefight`・`pairReview`は同敗因を2Sへ遅延 | `seniorHp,techDebt\|3:1:sprint\|firefight,pairReview` |
+| `reviewFreeze` | easy / `securityNeglect` / `pt-5` | Review peak 36（Q1/S3） | 2S / +1S・Q1 `sprint` | 3.5 / 100 / 0 / 100 / 60 / 70 | `firefight, pairReview, splitPr` | 全指定手を打てる危険域フレームで、無介入・`splitPr`・`pairReview`はいずれも1Sで同敗因 | `reviewQueuePeak,seniorHp\|2:1:sprint\|` |
+| `aiDependency` | nightmare / `naiveNoInterventionCtl` / `pt-7` | AI依存51.6 / リテラシー25（Q1/S1） | 0S / +5S・Q1 `sprint` | 10.1 / 85.5 / 66 / 100 / 25 / 45 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 2Sの範囲で無介入・`aiThrottle`は危険継続、`pairReview`は危険離脱 | `aiDependencyUnsafe\|0:5:sprint\|pairReview` |
+| `budgetExhausted` | easy / `harnessBloated` / `pt-9` | 予算3（Q1/S3） | 2S / +1S・Q1 `setup` | 36 / 100 / 4 / 100 / 3 / 70 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`aiThrottle`・`andon`・`pairReview`はいずれも1Sで同敗因 | `budget\|2:1:setup\|` |
+| `incidentCascade` | nightmare / `flammable` / `ri139-incident-cascade` 境界frame | 連続障害5（Q1/S1） | 0S / +1S・Q1 `sprint` | 100 / 100 / 0 / 20 / 100 / 100 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`firefight`・`andon`はいずれも1Sで同敗因 | `consecutiveIncidentSprints\|0:1:sprint\|` |
 
 限定反実仮想は、自然発生fixtureでは危険域内で列挙した全指定手が機械的に発動可能になる最初の
 フレームに `maxSprints: 2`、境界fixtureでは `maxSprints: 1`を指定した。いずれも `actions` に表の
@@ -843,9 +845,10 @@ SPEC F-9 が列挙する7敗因に、決定論的な代表シナリオを1件ず
 `skippedActions` と `skippedStrategic` は空で、`counterfactualIncomplete` は成立根拠に使っていない。
 `truncated: true` は短い観測期間を生存した結果であり、指定手の未評価ではない。
 
-fingerprint は「最初の危険域の実測値から危険域閾値を再計算した全警告指標・危険から敗北までの
-速度／決着フェーズ・有効だった限定介入」を連結した。fixtureへ手動設定した敗因別ラベルは衝突判定に
-使わない。実fixtureは7種すべて異なり、衝突は0件だったため F-9 の定性基準を **PASS** とする。
+fingerprint は「最初の危険域の実測値から危険域閾値を再計算した全警告指標・危険域へ入るまでの
+スプリント数・そこから敗北までの差／決着フェーズ・有効だった限定介入」を連結した。fixtureへ
+手動設定した敗因別ラベルは衝突判定に使わない。実fixtureは7種すべて異なり、衝突は0件だったため
+F-9 の定性基準を **PASS** とする。
 係数調整や追加のバランス課題は発生しなかった。この評価は指定した2〜3手と短い期間だけに有効で、
 最適手の証明や全合法手集合の完全評価ではない。RI-132 の `counterfactualIncomplete` 除外、方針層別、
 合否定数は変更せず、既存コホートの診断ゲートへも混入させない。

@@ -118,7 +118,7 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 
 `test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
 
-GitHub Actions では [Mutation](.github/workflows/mutation.yml) ワークフローを **手動（workflow_dispatch）または週次スケジュール** で実行できます。PR / push の必須 CI には含めていません。
+GitHub Actions では [Mutation](.github/workflows/mutation.yml) ワークフローを **手動（workflow_dispatch）または週次スケジュール** で実行できます。PR / push の必須 CI には含めていません。既定は [`scripts/mutation-shards.mjs`](scripts/mutation-shards.mjs) のシャード並列です。
 
 多数seedのバランス比較は [Balance report](.github/workflows/balance-report.yml) を手動または毎週月曜00:00 UTCに実行できます。既定では`main`の親commitと現在のcommitを同一コホートで測定し、ルールセット・設定値・勝率・Delivery／Incident／Reworkの分布差分を30日保持のartifactへ保存します。ローカルで保存済み出力を比較する場合は次の形式です。
 

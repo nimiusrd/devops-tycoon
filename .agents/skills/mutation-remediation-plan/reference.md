@@ -4,16 +4,16 @@
 
 ```text
 /tmp/mutation-results-<RUN_ID>/
-├── mutation-report-sim-root/
-│   ├── stryker-incremental-sim-root.json
+├── mutation-report-sim-run-engine-a/
+│   ├── stryker-incremental-sim-run-engine-a.json
 │   └── mutation/index.html
-├── mutation-report-sim-run-engine/
+├── mutation-report-sim-run-counterfactual-a/
 │   └── ...
 └── ...
 ```
 
-シャード名は workflow の `matrix.id` と一致する（例: `sim-root`, `sim-run-engine`, `state`）。  
-フルシャード baseline では上記6シャード分が揃っていること。`mutation-report-custom` のみの run は部分分析。
+シャード名は [`scripts/mutation-shards.mjs`](../../../scripts/mutation-shards.mjs) の `id`（workflow の `matrix.id`）と一致する。  
+フルシャード baseline では `node scripts/mutation-shards.mjs --ids` の全シャード分が揃っていること。`mutation-report-custom` のみの run は部分分析。
 
 ## status の意味
 

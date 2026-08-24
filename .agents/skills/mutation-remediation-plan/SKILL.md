@@ -108,7 +108,7 @@ gh run list --workflow=mutation.yml --limit 5 --json databaseId,conclusion,statu
 
 成功（`conclusion=success`）で artifact がある run を選ぶ。失敗のみの場合はログ原因を報告して終了する。
 
-**ベースライン用**はフルシャード実行のみを使う。artifact 名が `mutation-report-<shard>` で、想定シャード（`sim-root`, `sim-run-engine`, `sim-run-rest`, `sim-orgscale`, `sim-member-model`, `state`）が揃っていることを確認する。`mutation-report-custom` のみ、または `mutate` 入力付きの部分実行は **対象範囲限定の分析** とし、全体ベースラインや新 RI 採番には使わない。
+**ベースライン用**はフルシャード実行のみを使う。artifact 名が `mutation-report-<shard>` で、[`scripts/mutation-shards.mjs`](../../../scripts/mutation-shards.mjs) の全 id（`node scripts/mutation-shards.mjs --ids`）が揃っていることを確認する。`mutation-report-custom` のみ、または `mutate` 入力付きの部分実行は **対象範囲限定の分析** とし、全体ベースラインや新 RI 採番には使わない。
 
 現行ベースラインより古いフルシャード run を指定された場合も、明示の巻き戻し指示が無い限り **参照分析**に留める（新 RI 採番・旧エピック close・方針切替はしない）。比較は run の `createdAt` / run ID と、方針文書または open エピック Issue が記録する現行 run で行う。
 

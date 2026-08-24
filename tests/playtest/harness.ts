@@ -902,8 +902,8 @@ export interface RunLog {
    * スプリント終了とその敗北の間にはビート・ショップ・休息・setup が挟まる。
    * 例えば `giant-pr` の士気 -6 で負けたランでは、レポートには**その手前の休息で
    * 回復した後の値**ではなく前スプリント末尾の値が出ており、「敗北直前の士気」が
-   * 実際より高くも低くも出ていた。ループの各反復で処理前の状態を控え、
-   * 敗北を検知した反復の控えをそのまま残す。
+   * 実際より高くも低くも出ていた。戦略フェーズは外側ループの各反復、スプリントは
+   * カード・介入・tickごとに処理前の状態を控え、敗北を検知した処理の控えを残す。
    */
   lostPrevState?: {
     seniorHp: number;
@@ -1000,6 +1000,8 @@ export interface RunLog {
     quarter: number;
     index: number;
   };
+  /** 限定介入の起点で実際に機械的発動可能だった手。 */
+  counterfactualApplicableActions?: string[];
   /**
    * RI-139 の代表シナリオで明示指定した限定介入の結果。
    * 既定コホートでは記録せず、全合法手列の評価や RI-132 の合否には使わない。
@@ -1363,6 +1365,7 @@ export function playHand(
   e: RunEngine,
   mode: PolicySpec['cards'],
   onPlayed?: (focusSpent: number) => void,
+  onBeforePlay?: () => void,
 ): void {
   if (mode === 'none') return;
   let guard = 0;
@@ -1403,6 +1406,7 @@ export function playHand(
     let played = false;
     for (const deckIndex of order) {
       const focusSpentBefore = e.snapshot().sprint?.metrics.focusSpent ?? 0;
+      onBeforePlay?.();
       if (e.playCard(deckIndex).ok) {
         played = true;
         // カード間でも介入可能な局面を危険域サンプルへ残す（一括発動の欠測防止）。
@@ -1647,6 +1651,7 @@ function intervene(
   spec: PolicySpec,
   attempts: Record<string, Partial<Record<DispatchReason, number>>>,
   onSuccess?: () => void,
+  onBeforeDispatch?: () => void,
 ): number {
   const first = boardCtx(e.snapshot());
   if (!first) return 0;
@@ -1663,6 +1668,7 @@ function intervene(
     const ctx = boardCtx(e.snapshot());
     if (!ctx) break;
     if (a.when && !a.when(ctx)) continue;
+    onBeforeDispatch?.();
     const outcome = e.dispatch(a.id);
     if (outcome.ok) {
       bump(attempts, a.id, 'ok');
@@ -2069,8 +2075,8 @@ export interface RunOnceOptions {
   forceCounterfactual?: boolean;
   /** 明示した限定介入の分岐結果を RunLog へ残す。既定コホートでは false。 */
   recordCounterfactualBranches?: boolean;
-  /** RI-139 では危険域へ入った最初の1フレームだけを、探索ではなく固定観測点として評価する。 */
-  counterfactualFrame?: 'first-danger';
+  /** RI-139 では探索せず、最初の危険域または全指定手を打てる最初のフレームを固定観測点にする。 */
+  counterfactualFrame?: 'first-danger' | 'first-all-actions';
 }
 
 /** 1ランを最後まで自動プレイし、計測ログを返す。 */
@@ -2116,11 +2122,9 @@ export function runOnce(
   /** 直近に解決したビート（敗北がビートで確定したときに残す）。 */
   let lastBeat: { eventId: string; kind: string; choiceIndex?: number } | undefined;
   let lostBeat: typeof lastBeat;
-  /**
-   * 敗北を確定させた処理の直前状態。ループの各反復の冒頭で控え、
-   * その反復で敗北を検知したらその控えを採用する。
-   */
+  /** 敗北を確定させた処理の直前状態。スプリント内はカード・介入・tick単位で控える。 */
   let lostPrevState: RunLog['lostPrevState'];
+  let sprintLostPrevState: RunLog['lostPrevState'];
   let guard = 0;
   let s = e.snapshot();
   while (s.status === 'playing' && guard < 60_000) {
@@ -2138,6 +2142,10 @@ export function runOnce(
         e.beginSetupSprint();
         break;
       case 'sprint': {
+        let beforeSprintMutation = beforeAction;
+        const markBeforeSprintMutation = (): void => {
+          beforeSprintMutation = orgSnapshot(e.snapshot());
+        };
         const kind = s.currentSprintKind ?? 'normal';
         const quarter = s.quarterNumber;
         const index = s.sprintIndexInQuarter;
@@ -2182,26 +2190,30 @@ export function runOnce(
           sampleDanger();
         };
         sampleDanger();
-        playHand(e, spec.cards, onCardPlayed);
+        playHand(e, spec.cards, onCardPlayed, markBeforeSprintMutation);
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
           sampleDanger();
-          const n = intervene(e, spec, attempts, sampleDanger);
+          const n = intervene(e, spec, attempts, sampleDanger, markBeforeSprintMutation);
           interventions += n;
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
-          if (spec.cards === 'selective') playHand(e, 'selective', onCardPlayed);
+          if (spec.cards === 'selective') {
+            playHand(e, 'selective', onCardPlayed, markBeforeSprintMutation);
+          }
           if (e.snapshot().phase !== 'sprint') break;
           // stepMs を固定 tick に分割し、各 tick 後に危険域を観測（tick 間の一時的な手を拾う）。
           const ticks = Math.max(1, Math.floor(spec.stepMs / MS_PER_TICK));
           for (let t = 0; t < ticks; t += 1) {
+            markBeforeSprintMutation();
             e.step(MS_PER_TICK);
             if (e.snapshot().phase !== 'sprint') break;
             sampleDanger();
           }
         }
         const after = e.snapshot();
+        if (after.status !== 'playing') sprintLostPrevState = beforeSprintMutation;
         const completed = after.sprintsPlayed > before;
         // `playCard` やスプリント開始時の予算枯渇は、結果を確定せず phase=lost へ遷移する。
         // その場合でも盤面に積み上がったカード発動・試行・対象あり区間と途中 KPI を保存し、
@@ -2461,7 +2473,7 @@ export function runOnce(
     const next = e.snapshot();
     if (next.status !== 'playing' && lostPhase === undefined) {
       lostPhase = s.phase;
-      lostPrevState = beforeAction;
+      lostPrevState = s.phase === 'sprint' ? (sprintLostPrevState ?? beforeAction) : beforeAction;
       if (s.phase === 'beat') lostBeat = lastBeat;
       // 終端計測を残すためにログが増えていても、`completed` が false なら
       // スプリント完走とは数えない（カード発動などで途中敗北した行が該当する）。
@@ -2518,18 +2530,41 @@ export function runOnce(
             maxStrategicBranches: 192,
             ...options.counterfactual,
           } satisfies CounterfactualEvaluateOptions;
-          const selected =
-            options.counterfactualFrame === 'first-danger'
-              ? (() => {
-                  const evaluation = evaluateCounterfactual(frames[0]!.frame, evaluateOptions);
-                  return {
-                    evaluation,
-                    effective: effectiveActionsOf(evaluation),
-                    baselineRecovered:
-                      evaluation.baseline.leftDanger || evaluation.baseline.status === 'won',
-                  };
-                })()
-              : evaluateLatestEffectiveFrame(frames, evaluateOptions);
+          const fixedSelection = (() => {
+            if (!options.counterfactualFrame) return null;
+            if (options.counterfactualFrame === 'first-danger') {
+              const frame = frames[0]!.frame;
+              const probe = new RunEngine({ seed: 'playtest-frame-probe', difficulty: 'easy' });
+              probe.hydrateCounterfactualFrame(frame);
+              return { frame, applicableActions: listApplicableActions(probe) };
+            }
+            const requested = options.counterfactual?.actions ?? [];
+            for (const sample of frames) {
+              for (const frame of sample.frames ?? [sample.frame]) {
+                const probe = new RunEngine({ seed: 'playtest-frame-probe', difficulty: 'easy' });
+                probe.hydrateCounterfactualFrame(frame);
+                const applicableActions = listApplicableActions(probe);
+                const applicable = new Set(applicableActions);
+                if (requested.every((action) => applicable.has(action))) {
+                  return { frame, applicableActions };
+                }
+              }
+            }
+            throw new Error(
+              `${f.loseReason}: 指定した限定介入をすべて発動できる危険域フレームがない`,
+            );
+          })();
+          const selected = fixedSelection
+            ? (() => {
+                const evaluation = evaluateCounterfactual(fixedSelection.frame, evaluateOptions);
+                return {
+                  evaluation,
+                  effective: effectiveActionsOf(evaluation),
+                  baselineRecovered:
+                    evaluation.baseline.leftDanger || evaluation.baseline.status === 'won',
+                };
+              })()
+            : evaluateLatestEffectiveFrame(frames, evaluateOptions);
           if (!selected) return {};
           const { evaluation, effective, baselineRecovered } = selected;
           const skipped = [...evaluation.skippedActions, ...evaluation.skippedStrategic];
@@ -2563,6 +2598,12 @@ export function runOnce(
             },
             ...(options.recordCounterfactualBranches
               ? { counterfactualOrigin: evaluation.origin }
+              : {}),
+            ...(options.recordCounterfactualBranches
+              ? {
+                  counterfactualApplicableActions:
+                    fixedSelection?.applicableActions ?? evaluation.applicableActions,
+                }
               : {}),
             ...(options.recordCounterfactualBranches
               ? {

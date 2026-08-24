@@ -6,6 +6,8 @@
  */
 import type { ActionId } from '../../src/sim/types';
 import type { LoseReason } from '../../src/sim/run/types';
+import { OUTCOME_BALANCE } from '../../src/data/balance';
+import { CONSECUTIVE_INCIDENT_SPRINT_CAP, REVIEW_FREEZE_PEAK } from '../../src/sim/outcome';
 import { runOnce, type DangerSample, type RunLog } from './harness';
 
 export const F9_SPEC_REASONS = [
@@ -107,6 +109,7 @@ export interface F9RepresentativeObservation {
   lostPrevState: NonNullable<RunLog['lostPrevState']>;
   mechanicallyAvailable: string[];
   counterfactualOrigin: NonNullable<RunLog['counterfactualOrigin']>;
+  counterfactualApplicableActions: NonNullable<RunLog['counterfactualApplicableActions']>;
   baseline: NonNullable<RunLog['counterfactualBaseline']>;
   branches: F9LimitedBranch[];
   effectiveProbes: string[];
@@ -120,10 +123,36 @@ export function dangerToLossGap(observation: F9RepresentativeObservation): numbe
 /** 警告・速度／決着位置・限定介入の組を安定キー化する。 */
 export function representativeFingerprint(observation: F9RepresentativeObservation): string {
   return [
-    observation.warningKey,
+    observedWarningIndicators(observation).join(','),
     `${dangerToLossGap(observation)}:${observation.lostPhase}`,
     [...observation.effectiveProbes].sort().join(','),
   ].join('|');
+}
+
+/** 手動ラベルではなく、最初の危険域で実測した値から警告指標を再構成する。 */
+export function observedWarningIndicators(
+  observation: F9RepresentativeObservation,
+): F9WarningKey[] {
+  const signals = observation.firstDanger.signals;
+  const indicators: F9WarningKey[] = [];
+  if (signals.seniorHp < 50) indicators.push('seniorHp');
+  if (signals.morale < 40) indicators.push('morale');
+  if (signals.techDebt >= 60) indicators.push('techDebt');
+  if (
+    signals.aiDependency >= 50 &&
+    signals.aiLiteracy <= OUTCOME_BALANCE.loseAiLiteracyUnsafeMax.value
+  ) {
+    indicators.push('aiDependencyUnsafe');
+  }
+  if (signals.budget <= 15) indicators.push('budget');
+  const reviewWatch = Math.round(REVIEW_FREEZE_PEAK * OUTCOME_BALANCE.reviewFreezeWatchRatio.value);
+  if (signals.reviewQueue >= reviewWatch || signals.reviewQueuePeak >= reviewWatch) {
+    indicators.push('reviewQueuePeak');
+  }
+  if (signals.consecutiveIncidentSprints >= CONSECUTIVE_INCIDENT_SPRINT_CAP - 2) {
+    indicators.push('consecutiveIncidentSprints');
+  }
+  return indicators.sort();
 }
 
 export function fingerprintCollisions(
@@ -149,7 +178,7 @@ export function observeNaturalF9Scenario(scenario: F9NaturalScenario): F9Represe
   const log = runOnce(scenario.seed, scenario.difficulty, scenario.policy, 'fresh', {
     forceCounterfactual: true,
     recordCounterfactualBranches: true,
-    counterfactualFrame: 'first-danger',
+    counterfactualFrame: 'first-all-actions',
     counterfactual: {
       actions: scenario.probes,
       includeStrategic: false,
@@ -167,13 +196,27 @@ export function observeNaturalF9Scenario(scenario: F9NaturalScenario): F9Represe
   const firstDanger = log.availableActionsInDangerFirstSample;
   const lostPrevState = log.lostPrevState;
   const counterfactualOrigin = log.counterfactualOrigin;
+  const counterfactualApplicableActions = log.counterfactualApplicableActions;
   const baseline = log.counterfactualBaseline;
   const branches = log.counterfactualBranches;
-  if (!firstDanger || !lostPrevState || !counterfactualOrigin || !baseline || !branches) {
+  if (
+    !firstDanger ||
+    !lostPrevState ||
+    !counterfactualOrigin ||
+    !counterfactualApplicableActions ||
+    !baseline ||
+    !branches
+  ) {
     throw new Error(`${scenario.reason}: 代表観測が欠落`);
   }
   if (log.counterfactualIncomplete) {
     throw new Error(`${scenario.reason}: 限定介入を完全に評価できていない`);
+  }
+  const unavailable = scenario.probes.filter(
+    (probe) => !counterfactualApplicableActions.includes(probe),
+  );
+  if (unavailable.length > 0) {
+    throw new Error(`${scenario.reason}: 発動不能な限定介入: ${unavailable.join(', ')}`);
   }
   return {
     reason: scenario.reason,
@@ -185,6 +228,7 @@ export function observeNaturalF9Scenario(scenario: F9NaturalScenario): F9Represe
     lostPrevState,
     mechanicallyAvailable: log.availableActionsInDanger ?? [],
     counterfactualOrigin,
+    counterfactualApplicableActions,
     baseline,
     branches,
     effectiveProbes: log.effectiveActionsInDanger ?? [],

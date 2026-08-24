@@ -9,6 +9,7 @@ import {
   F9_NATURAL_SCENARIOS,
   F9_SPEC_REASONS,
   fingerprintCollisions,
+  observedWarningIndicators,
   observeNaturalF9Scenario,
   representativeFingerprint,
   type F9RepresentativeObservation,
@@ -97,6 +98,7 @@ function incidentCascadeObservation(): F9RepresentativeObservation {
   expect(evaluation.skippedStrategic).toEqual([]);
   const reviewQueue = state.sprint?.tasks.filter((task) => task.lane === 'review').length ?? 0;
   const available = listApplicableActions(engine).sort();
+  expect(probes.every((probe) => available.includes(probe))).toBe(true);
   return {
     reason: 'incidentCascade',
     source: 'nightmare/flammable/ri139-incident-cascade（境界frame）',
@@ -134,6 +136,7 @@ function incidentCascadeObservation(): F9RepresentativeObservation {
     },
     mechanicallyAvailable: available,
     counterfactualOrigin: evaluation.origin,
+    counterfactualApplicableActions: available,
     baseline: evaluation.baseline,
     branches: evaluation.branches
       .filter((branch) => branch.actionId !== null)
@@ -165,6 +168,12 @@ describe('RI-139 F-9 敗因別の代表シナリオ', () => {
       expect(observation.counterfactualOrigin.sprintsPlayed).toBeGreaterThanOrEqual(
         observation.firstDanger.sprintsPlayed,
       );
+      expect(observedWarningIndicators(observation)).toContain(observation.warningKey);
+      expect(
+        observation.branches.every((branch) =>
+          observation.counterfactualApplicableActions.includes(branch.actionId),
+        ),
+      ).toBe(true);
     }
     expect(fingerprintCollisions(observations)).toEqual([]);
     expect(new Set(observations.map(representativeFingerprint)).size).toBe(F9_SPEC_REASONS.length);
@@ -172,20 +181,43 @@ describe('RI-139 F-9 敗因別の代表シナリオ', () => {
       ...F9_NATURAL_SCENARIOS.map(observeNaturalF9Scenario),
       incidentCascadeObservation(),
     ]).toEqual(observations);
-    expect(observations).toMatchSnapshot();
+    expect(
+      observations.map((observation) => ({
+        ...observation,
+        observedWarnings: observedWarningIndicators(observation),
+        fingerprint: representativeFingerprint(observation),
+      })),
+    ).toMatchSnapshot();
   });
 
   it('fingerprint衝突時は同じ根拠と敗因を診断する', () => {
     const base = {
       warningKey: 'budget',
-      firstDanger: { sprintsPlayed: 0 },
+      firstDanger: {
+        sprintsPlayed: 0,
+        signals: {
+          seniorHp: 100,
+          morale: 100,
+          techDebt: 0,
+          aiDependency: 20,
+          aiLiteracy: 100,
+          budget: 3,
+          reviewQueue: 0,
+          reviewQueuePeak: 0,
+          consecutiveIncidentSprints: 0,
+        },
+      },
       sprintsPlayed: 1,
       lostPhase: 'setup',
       effectiveProbes: [],
     } as unknown as F9RepresentativeObservation;
     const observations = [
       { ...base, reason: 'budgetExhausted' },
-      { ...base, reason: 'incidentCascade' },
+      {
+        ...base,
+        reason: 'incidentCascade',
+        warningKey: 'consecutiveIncidentSprints',
+      },
     ] as F9RepresentativeObservation[];
 
     expect(fingerprintCollisions(observations)).toEqual([

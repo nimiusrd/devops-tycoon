@@ -144,7 +144,11 @@ export function OrgScreen({
         ))}
       </div>
 
-      <OrgDeptComparison departments={org.departments} onFocusDept={handleFocusDept} />
+      <OrgDeptComparison
+        departments={org.departments}
+        onFocusDept={handleFocusDept}
+        onFocusTeam={onFocusTeam}
+      />
 
       <AspectStage ratio={ORG_VIEW.w / ORG_VIEW.h} className="org-field" data-testid="org-field">
         {usePixi ? (

@@ -5487,7 +5487,47 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   color: var(--text-dim);
   font-weight: 600;
 }
+.org-dashboard-heading,
+.org-trend-dept-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.org-dashboard-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.org-dashboard-tabs button {
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #1f1942;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.org-dashboard-tabs button:hover,
+.org-dashboard-tabs button.active {
+  border-color: var(--sky);
+  color: var(--sky);
+  background: #29234f;
+}
+.org-dashboard-tabs button:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+.org-dashboard-metric-tabs {
+  justify-content: flex-start;
+}
 .org-dept-compare-scroll {
+  max-width: 100%;
   overflow-x: auto;
 }
 .org-dept-compare {
@@ -5517,6 +5557,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 .org-dept-compare-name {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   padding: 4px 10px;
   border-radius: 8px;
@@ -5527,6 +5568,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   cursor: pointer;
   font: inherit;
   font-weight: 700;
+}
+.org-dept-compare-name small {
+  color: var(--text-dim);
+  font-size: 9px;
+  font-weight: 600;
 }
 .org-dept-compare-name:hover {
   background: #2a2350;
@@ -5609,6 +5655,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-trend-depts > li {
   grid-template-columns: 8rem minmax(80px, 1fr);
 }
+.org-trend-dept-head {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+}
 .org-trend-label,
 .org-trend-dept-name {
   color: var(--text-dim);
@@ -5620,6 +5671,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-trend-dept-series {
   display: flex;
   gap: 8px;
+  min-width: 0;
+}
+.org-trend-dept-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
 }
 .org-trend-dept-metric {
@@ -5643,6 +5700,35 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-trend-svg-mini {
   flex: 1 1 0;
   min-width: 40px;
+}
+.org-trend-dept-health {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.org-trend-health-badge {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #1f1942;
+  color: var(--text-dim);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.org-trend-health-badge[data-health='healthy'] {
+  border-color: color-mix(in srgb, var(--mint) 60%, var(--line));
+  color: var(--mint);
+}
+.org-trend-health-badge[data-health='congested'] {
+  border-color: color-mix(in srgb, var(--sun) 60%, var(--line));
+  color: var(--sun);
+}
+.org-trend-health-badge[data-health='reviewHell'] {
+  border-color: color-mix(in srgb, var(--coral) 60%, var(--line));
+  color: var(--coral);
 }
 .trend-series {
   stroke-width: 1.6;
@@ -5686,6 +5772,13 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   align-items: center;
   justify-content: center;
   padding: 8px;
+}
+/* 診断ダッシュボードを展開してもデスクトップの既存盤面寸法を維持する。
+ * 短い高さでは zoom-overlay 全体を縦スクロールさせ、盤面自体は縮めない。 */
+@media (min-width: 901px) {
+  .org-field {
+    min-height: 364.5px;
+  }
 }
 /* RI-01: 等角全社盤面（旧モック org-screen 由来） */
 .org-board.iso-org {
@@ -6649,4 +6742,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 :root[data-responsive-width='narrow'] .org-hud,
 :root[data-responsive-width='narrow'] .dept-hud {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+:root[data-responsive-width='narrow'] .org-dashboard-heading,
+:root[data-responsive-width='narrow'] .org-trend-dept-head {
+  align-items: flex-start;
+  flex-direction: column;
+}
+:root[data-responsive-width='narrow'] .org-trend-depts > li {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+:root[data-responsive-width='narrow'] .org-trend-dept-series {
+  flex-direction: column;
 }

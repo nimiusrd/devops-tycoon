@@ -9,6 +9,7 @@ import { DEPARTMENT_DEFS } from '../data/departments';
 import { KPI_STATUS_LABELS } from './reviewHistoryView';
 import { diagnosisView } from '../sim/diagnosis';
 import type { DiagnosisType, GoalKpiProgress, QuarterTrendSnapshot } from '../sim/run/types';
+import type { TeamHealth } from '../sim/orgscale/types';
 
 export type CompanyTrendSeriesKey =
   | 'delivery'
@@ -18,6 +19,8 @@ export type CompanyTrendSeriesKey =
   | 'incident'
   | 'aiAdoption';
 export type DeptTrendSeriesKey = 'aiDependency' | 'techDebt' | 'morale';
+export type DeptTrendMetric = DeptTrendSeriesKey | 'health';
+export type DeptTrendMetricSelection = 'all' | DeptTrendMetric;
 export type TrendSeriesKey = CompanyTrendSeriesKey | DeptTrendSeriesKey;
 
 export interface TrendSeriesPath {
@@ -36,10 +39,17 @@ export interface TrendDiagnosisCell {
   label: string;
 }
 
+export interface TrendDeptHealthCell {
+  quarterNumber: number;
+  health: TeamHealth;
+  label: string;
+}
+
 export interface TrendDeptSeries {
   deptId: string;
   name: string;
   series: TrendSeriesPath[];
+  healthHistory: TrendDeptHealthCell[];
 }
 
 export interface TrendHistoryView {
@@ -49,6 +59,7 @@ export interface TrendHistoryView {
   quarters: TrendDiagnosisCell[];
   series: TrendSeriesPath[];
   departments: TrendDeptSeries[];
+  departmentMetric: DeptTrendMetricSelection;
 }
 
 const COMPANY_KPI_SERIES: readonly {
@@ -73,6 +84,17 @@ const DEPT_SERIES: readonly {
   { key: 'techDebt', label: '負債', tone: 'debt' },
   { key: 'morale', label: '士気', tone: 'morale' },
 ];
+
+export const DEPT_TREND_METRICS: readonly { key: DeptTrendMetric; label: string }[] = [
+  ...DEPT_SERIES.map(({ key, label }) => ({ key, label })),
+  { key: 'health', label: '健全度' },
+];
+
+const TREND_HEALTH_LABEL: Readonly<Record<TeamHealth, string>> = {
+  healthy: '健全',
+  congested: '渋滞',
+  reviewHell: 'Review Hell',
+};
 
 const DEFAULT_WIDTH = 220;
 const DEFAULT_HEIGHT = 36;
@@ -135,6 +157,7 @@ export interface PlanTrendHistoryOptions {
   width?: number;
   height?: number;
   departmentNames?: Readonly<Record<string, string>>;
+  departmentMetric?: DeptTrendMetricSelection;
 }
 
 /** 完了四半期の履歴からスパークライン計画を導出する。 */
@@ -144,8 +167,17 @@ export function planTrendHistory(
 ): TrendHistoryView {
   const width = options.width ?? DEFAULT_WIDTH;
   const height = options.height ?? DEFAULT_HEIGHT;
+  const departmentMetric = options.departmentMetric ?? 'all';
   if (history.length === 0) {
-    return { empty: true, width, height, quarters: [], series: [], departments: [] };
+    return {
+      empty: true,
+      width,
+      height,
+      quarters: [],
+      series: [],
+      departments: [],
+      departmentMetric,
+    };
   }
 
   const quarters = history.map((entry) => ({
@@ -180,20 +212,48 @@ export function planTrendHistory(
     }
   }
 
-  const departments = deptIds.map((deptId) => ({
-    deptId,
-    name: deptName(deptId, options.departmentNames),
-    series: DEPT_SERIES.map((def) =>
-      seriesFrom(
-        history.map(
-          (entry) => entry.departments.find((dept) => dept.deptId === deptId)?.[def.key] ?? 0,
+  const departments = deptIds.map((deptId) => {
+    const seriesDefs = DEPT_SERIES.filter(
+      (def) => departmentMetric === 'all' || departmentMetric === def.key,
+    );
+    return {
+      deptId,
+      name: deptName(deptId, options.departmentNames),
+      series: seriesDefs.map((def) =>
+        seriesFrom(
+          history.map(
+            (entry) => entry.departments.find((dept) => dept.deptId === deptId)?.[def.key] ?? 0,
+          ),
+          def,
+          width,
+          height,
         ),
-        def,
-        width,
-        height,
       ),
-    ),
-  }));
+      healthHistory:
+        departmentMetric === 'all' || departmentMetric === 'health'
+          ? history.flatMap((entry) => {
+              const dept = entry.departments.find((candidate) => candidate.deptId === deptId);
+              return dept
+                ? [
+                    {
+                      quarterNumber: entry.quarterNumber,
+                      health: dept.health,
+                      label: TREND_HEALTH_LABEL[dept.health],
+                    },
+                  ]
+                : [];
+            })
+          : [],
+    };
+  });
 
-  return { empty: false, width, height, quarters, series, departments };
+  return {
+    empty: false,
+    width,
+    height,
+    quarters,
+    series,
+    departments,
+    departmentMetric,
+  };
 }

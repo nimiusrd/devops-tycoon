@@ -1,7 +1,8 @@
 # コアロジック（src/sim / src/state）のミューテーションテスト。
 # PR / push の必須ゲートにはしない。手動または週次スケジュールでのみ実行する。
 #
-# 全体は約 6,700 mutant・数時間規模のため、既定はディレクトリ単位で並列シャードする。
+# 対象は約 13,000 mutant。単一ジョブや旧 6 シャードでは 180 分上限に当たるため、
+# `scripts/mutation-shards.mjs` のディレクトリ／巨大ファイル行レンジ単位で並列する。
 # カスタム mutate を指定した場合のみ単一ジョブで実行する。
 name: Mutation
 
@@ -72,30 +73,38 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  mutation-shard-matrix:
+    name: Resolve mutation shards
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mutate == '') }}
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.matrix.outputs.include }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - id: matrix
+        name: Read shard matrix
+        run: |
+          set -euo pipefail
+          {
+            echo 'include<<EOF'
+            node scripts/mutation-shards.mjs --matrix
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
   # スケジュール / 手動（mutate 未指定）はシャード並列
   mutation-sharded:
     name: Stryker (${{ matrix.id }})
-    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mutate == '') }}
+    needs: mutation-shard-matrix
+    if: ${{ needs.mutation-shard-matrix.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # 変異数の目安（計測時点）: root ~1.6k / engine ~1.5k / run-rest ~1.2k /
-          # orgscale ~1.0k / member+model ~0.4k / state ~0.9k
-          - id: sim-root
-            mutate: src/sim/*.ts,!src/sim/types.ts,!src/sim/index.ts
-          - id: sim-run-engine
-            mutate: src/sim/run/engine.ts
-          - id: sim-run-rest
-            mutate: src/sim/run/**/*.ts,!src/sim/run/engine.ts,!src/sim/run/**/index.ts,!src/sim/run/**/types.ts
-          - id: sim-orgscale
-            mutate: src/sim/orgscale/**/*.ts,!src/sim/orgscale/**/index.ts,!src/sim/orgscale/**/types.ts
-          - id: sim-member-model
-            mutate: src/sim/member/**/*.ts,src/sim/model/**/*.ts,!src/sim/**/index.ts,!src/sim/**/types.ts
-          - id: state
-            mutate: src/state/**/*.ts,!src/state/**/index.ts,!src/state/**/types.ts
+        include: ${{ fromJson(needs.mutation-shard-matrix.outputs.include) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0

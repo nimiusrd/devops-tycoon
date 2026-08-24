@@ -39,5 +39,6 @@
     "break": null
   },
   "timeoutMS": 10000,
+  "dryRunTimeoutMinutes": 20,
   "disableBail": false
 }

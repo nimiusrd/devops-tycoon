@@ -53,7 +53,7 @@
 
 - Mutation を PR 必須 CI ゲートにしない（`thresholds.break: null` を維持）。
 - スコアのためだけの本番ロジック変更（挙動を変えるリファクタは別課題）。
-- 6シャードの HTML レポートを1本に統合すること（必須ではない）。
+- 全シャードの HTML レポートを1本に統合すること（必須ではない）。
 - 単位ごとの達成率を計画や Issue に永久保存すること。
 
 ## 3. 作業ルール（実装役共通）
@@ -79,9 +79,9 @@
 
 ## 5. 運用メモ（インフラ）
 
-- 週次 / 手動 Mutation はシャード並列のまま。初回は重いが、incremental cache が載れば差分だけになる。
-- 単一ジョブでコア全体を回すと数時間・180分タイムアウトのリスクあり。**通常はシャードまたは `--mutate`。**
-- `ignoreStatic: true` 済み。`vitest.mutation.config.ts` で testTimeout 60s。
+- 週次 / 手動 Mutation は [`scripts/mutation-shards.mjs`](../scripts/mutation-shards.mjs) のシャード並列。初回は重いが、incremental cache が載れば差分だけになる。
+- 単一ジョブや旧 6 シャード（巨大ファイルを丸ごと）は 180 分タイムアウトのリスクあり。**通常は現行シャードまたは `--mutate`。**
+- `ignoreStatic: true` 済み。`vitest.mutation.config.ts` で testTimeout 60s。`dryRunTimeoutMinutes` は 20（instrument 後の初期テストが既定 5 分を超えやすい）。
 
 ## 6. 履歴: RI-91（完了）
 

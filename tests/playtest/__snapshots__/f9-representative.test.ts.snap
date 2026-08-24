@@ -51,7 +51,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "sprintsPlayed": 0,
     },
     "effectiveProbes": [],
-    "fingerprint": "seniorHp|0:1:beat|",
+    "fingerprint": "seniorHp|0:1:beat|24.9,100,0,84.4,60,70,70,75|aiThrottle,andon,firefight,interruptReview,overtime,pairReview,splitPr>aiThrottle,andon,firefight,interruptReview,overtime,pairReview,splitPr|",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -161,7 +161,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "andon",
       "pairReview",
     ],
-    "fingerprint": "aiDependencyUnsafe,morale,seniorHp|1:1:sprint|andon,firefight,pairReview",
+    "fingerprint": "aiDependencyUnsafe,morale,seniorHp|1:1:sprint|3.3,0.5,114,65.4,25,45,45,50|aiThrottle,andon,firefight,overtime,pairReview>aiThrottle,andon,firefight,interruptReview,overtime,pairReview,splitPr|andon,firefight,pairReview",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -272,7 +272,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "firefight",
       "pairReview",
     ],
-    "fingerprint": "seniorHp,techDebt|3:1:sprint|firefight,pairReview",
+    "fingerprint": "seniorHp,techDebt|3:1:sprint|6.4,46,90,47.8,25,45,45,50|aiThrottle,andon,firefight,interruptReview,overtime,pairReview,splitPr>aiThrottle,andon,firefight,interruptReview,overtime,pairReview,splitPr|firefight,pairReview",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -369,7 +369,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "sprintsPlayed": 2,
     },
     "effectiveProbes": [],
-    "fingerprint": "reviewQueuePeak,seniorHp|2:1:sprint|",
+    "fingerprint": "reviewQueuePeak,seniorHp|2:1:sprint|3.5,100,0,100,60,70,70,75|splitPr>firefight,pairReview,splitPr|",
     "firstDanger": {
       "actions": [
         "splitPr",
@@ -462,7 +462,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
     "effectiveProbes": [
       "pairReview",
     ],
-    "fingerprint": "aiDependencyUnsafe|0:5:sprint|pairReview",
+    "fingerprint": "aiDependencyUnsafe|0:5:sprint|10.1,85.5,66,100,25,45,45,50|aiThrottle,andon,assignTask,interruptReview,overtime,pairReview,splitPr>aiThrottle,andon,assignTask,firefight,interruptReview,overtime,pairReview,splitPr|pairReview",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -569,7 +569,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "sprintsPlayed": 2,
     },
     "effectiveProbes": [],
-    "fingerprint": "budget|2:1:setup|",
+    "fingerprint": "budget|2:1:setup|36,100,4,100,3,70,70,75|aiThrottle,andon,assignTask,overtime,pairReview>aiThrottle,andon,assignTask,firefight,interruptReview,overtime,pairReview,splitPr|",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -671,7 +671,7 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
       "sprintsPlayed": 0,
     },
     "effectiveProbes": [],
-    "fingerprint": "consecutiveIncidentSprints|0:1:sprint|",
+    "fingerprint": "consecutiveIncidentSprints|0:1:sprint|7.7,90.5,12,30.4,100,100,100,100|aiThrottle,andon,assignTask,firefight,interruptReview,overtime,pairReview,splitPr>aiThrottle,andon,assignTask,firefight,interruptReview,overtime,pairReview,splitPr|",
     "firstDanger": {
       "actions": [
         "aiThrottle",
@@ -703,13 +703,13 @@ exports[`RI-139 F-9 敗因別の代表シナリオ > 7敗因の予兆・速度�
     },
     "lostPhase": "sprint",
     "lostPrevState": {
-      "aiDependency": 20,
+      "aiDependency": 30.4,
       "budget": 100,
       "minTrust": 100,
-      "morale": 100,
+      "morale": 90.5,
       "phase": "sprint",
-      "seniorHp": 100,
-      "techDebt": 0,
+      "seniorHp": 7.7,
+      "techDebt": 12,
       "trustCustomers": 100,
       "trustManagement": 100,
       "trustTeam": 100,

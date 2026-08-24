@@ -120,11 +120,27 @@ export function dangerToLossGap(observation: F9RepresentativeObservation): numbe
   return Math.max(0, observation.sprintsPlayed - observation.firstDanger.sprintsPlayed);
 }
 
-/** 実測警告・危険到達／敗北速度・決着位置・限定介入の組を安定キー化する。 */
+/** 実測警告・速度／決着・直前状態・発動可能手・限定介入の組を安定キー化する。 */
 export function representativeFingerprint(observation: F9RepresentativeObservation): string {
+  const previous = observation.lostPrevState;
   return [
     observedWarningIndicators(observation).join(','),
     `${observation.firstDanger.sprintsPlayed}:${dangerToLossGap(observation)}:${observation.lostPhase}`,
+    [
+      previous.seniorHp,
+      previous.morale,
+      previous.techDebt,
+      previous.aiDependency,
+      previous.budget,
+      previous.trustManagement,
+      previous.trustCustomers,
+      previous.trustTeam,
+    ].join(','),
+    `${[...observation.firstDanger.actions].sort().join(',')}>${[
+      ...observation.mechanicallyAvailable,
+    ]
+      .sort()
+      .join(',')}`,
     [...observation.effectiveProbes].sort().join(','),
   ].join('|');
 }

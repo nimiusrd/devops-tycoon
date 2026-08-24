@@ -114,32 +114,36 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # シャード単位で incremental を分離（並列ジョブの競合を避ける）
+      # シャード単位で incremental を分離（並列ジョブの競合を避ける）。
+      # キーは id ではなく mutate ハッシュ付き cache。同じ id のまま範囲を変えても
+      # 旧レポート（範囲外 sticky mutant）を restore しない。
       - name: Restore Stryker incremental cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: reports/stryker-incremental-${{ matrix.id }}.json
-          key: stryker-incremental-${{ matrix.id }}-${{ runner.os }}-${{ github.run_id }}
+          path: reports/stryker-incremental-${{ matrix.cache }}.json
+          key: stryker-incremental-${{ matrix.cache }}-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
-            stryker-incremental-${{ matrix.id }}-${{ runner.os }}-
+            stryker-incremental-${{ matrix.cache }}-${{ runner.os }}-
 
       - name: Run mutation tests
         run: |
           set -euo pipefail
           args=(
-            --incrementalFile "reports/stryker-incremental-${SHARD_ID}.json"
+            --incrementalFile "reports/stryker-incremental-${CACHE_KEY}.json"
             --mutate "${MUTATE}"
           )
           if [ "${FORCE}" = "true" ]; then
             args+=(--force)
           fi
           echo "Shard=${SHARD_ID}"
+          echo "Cache=${CACHE_KEY}"
           echo "Mutate=${MUTATE}"
           npx stryker run "${args[@]}"
         env:
           FORCE: ${{ inputs.force }}
           MUTATE: ${{ matrix.mutate }}
           SHARD_ID: ${{ matrix.id }}
+          CACHE_KEY: ${{ matrix.cache }}
 
       - name: Upload mutation reports
         if: ${{ !cancelled() }}
@@ -148,6 +152,6 @@ jobs:
           name: mutation-report-${{ matrix.id }}
           path: |
             reports/mutation/
-            reports/stryker-incremental-${{ matrix.id }}.json
+            reports/stryker-incremental-${{ matrix.cache }}.json
           if-no-files-found: warn
           retention-days: 30

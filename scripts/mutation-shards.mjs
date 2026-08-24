@@ -9,6 +9,7 @@
  *   node scripts/mutation-shards.mjs --ids      # シャード id の JSON 配列
  *   node scripts/mutation-shards.mjs --list     # 人間向け一覧
  */
+import { createHash } from 'node:crypto';
 import { globSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,6 +48,27 @@ export function shardMutantBudget(id) {
 }
 
 /**
+ * incremental cache キーに載せる mutate ハッシュ長。
+ * 同じ id のまま行レンジや glob を変えても、旧レポートを restore しないために使う。
+ */
+export const INCREMENTAL_CACHE_HASH_LENGTH = 12;
+
+/**
+ * GHA cache / Stryker incrementalFile 用の名前空間。
+ * `id` だけだと範囲変更後も旧キャッシュが復元され、mutate 範囲外の sticky mutant が残る。
+ *
+ * @param {string} id
+ * @param {string} mutate
+ */
+export function incrementalCacheKey(id, mutate) {
+  const digest = createHash('sha256')
+    .update(mutate)
+    .digest('hex')
+    .slice(0, INCREMENTAL_CACHE_HASH_LENGTH);
+  return `${id}-${digest}`;
+}
+
+/**
  * 最終行レンジの終端。ファイルが伸びても最後のシャードが拾う。
  * 実ファイル行数より十分大きく、Stryker の `file:start-end` 構文で使う。
  */
@@ -63,39 +85,39 @@ export const MUTATION_SHARDS = Object.freeze([
   // src/sim/run/engine.ts — 約 1,960 mutant。旧 1 ジョブが 180 分タイムアウト。
   {
     id: 'sim-run-engine-a',
-    mutate: 'src/sim/run/engine.ts:1-1050',
-    note: 'engine 前半（初期化・スプリント開始）',
+    mutate: 'src/sim/run/engine.ts:1-1057',
+    note: 'engine 前半（初期化〜 chooseGoalAdjustment）',
   },
   {
     id: 'sim-run-engine-b',
-    mutate: 'src/sim/run/engine.ts:1051-1500',
-    note: 'engine 中盤（解決・四半期レビュー・ショップ手前）',
+    mutate: 'src/sim/run/engine.ts:1058-1509',
+    note: 'engine 中盤（再編〜 recruitChoose）',
   },
   {
     id: 'sim-run-engine-c',
-    mutate: 'src/sim/run/engine.ts:1501-2050',
-    note: 'engine 後半（ズーム・組織レバー・what-if）',
+    mutate: 'src/sim/run/engine.ts:1510-2048',
+    note: 'engine 後半（採用ペナルティ〜ズーム手前）',
   },
   {
     id: 'sim-run-engine-d',
-    mutate: `src/sim/run/engine.ts:2051-${OPEN_RANGE_END}`,
-    note: 'engine 末尾（永続化・hydrate・snapshot。以降の追記もここ）',
+    mutate: `src/sim/run/engine.ts:2049-${OPEN_RANGE_END}`,
+    note: 'engine 末尾（buildOrgScale・永続化。以降の追記もここ）',
   },
 
   // src/sim/run/counterfactual.ts — 約 2,170 mutant。旧 sim-run-rest 肥大の主因。
   {
     id: 'sim-run-counterfactual-a',
-    mutate: 'src/sim/run/counterfactual.ts:1-500',
-    note: 'counterfactual 前半',
+    mutate: 'src/sim/run/counterfactual.ts:1-505',
+    note: 'counterfactual 前半（recordAcquiredCards まで）',
   },
   {
     id: 'sim-run-counterfactual-b',
-    mutate: 'src/sim/run/counterfactual.ts:501-900',
-    note: 'counterfactual 中盤前',
+    mutate: 'src/sim/run/counterfactual.ts:506-1020',
+    note: 'counterfactual 中盤前（collectStrategicAtCore まで）',
   },
   {
     id: 'sim-run-counterfactual-c',
-    mutate: 'src/sim/run/counterfactual.ts:901-1400',
+    mutate: 'src/sim/run/counterfactual.ts:1021-1400',
     note: 'counterfactual 中盤後',
   },
   {
@@ -107,12 +129,12 @@ export const MUTATION_SHARDS = Object.freeze([
   // src/sim/run/quarterReview.ts — 約 830 mutant。
   {
     id: 'sim-run-quarter-review-a',
-    mutate: 'src/sim/run/quarterReview.ts:1-450',
-    note: 'quarterReview 前半',
+    mutate: 'src/sim/run/quarterReview.ts:1-451',
+    note: 'quarterReview 前半（orgAfterAdjustment まで）',
   },
   {
     id: 'sim-run-quarter-review-b',
-    mutate: `src/sim/run/quarterReview.ts:451-${OPEN_RANGE_END}`,
+    mutate: `src/sim/run/quarterReview.ts:452-${OPEN_RANGE_END}`,
     note: 'quarterReview 後半',
   },
 
@@ -185,13 +207,13 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'sim-sprint-f',
-    mutate: 'src/sim/sprint.ts:585-680',
-    note: 'sprint 評価前半（grade と称号の重い分岐）',
+    mutate: 'src/sim/sprint.ts:585-641',
+    note: 'sprint 評価（tickCooldowns / computeGrade）',
   },
   {
     id: 'sim-sprint-g',
-    mutate: `src/sim/sprint.ts:681-${OPEN_RANGE_END}`,
-    note: 'sprint 評価後半（残りの称号と summarizeSprint。以降の追記もここ）',
+    mutate: `src/sim/sprint.ts:642-${OPEN_RANGE_END}`,
+    note: 'sprint 称号と summarizeSprint（computeTitleAndDiagnosis 全体。以降の追記もここ）',
   },
   {
     id: 'sim-assign-cards',
@@ -254,17 +276,17 @@ export const MUTATION_SHARDS = Object.freeze([
   // src/state/persistFrameShape.ts — 約 1,400 mutant / 479 行。
   {
     id: 'state-persist-shape-a',
-    mutate: 'src/state/persistFrameShape.ts:1-160',
-    note: 'persistFrameShape 前半',
+    mutate: 'src/state/persistFrameShape.ts:1-164',
+    note: 'persistFrameShape 前半（isShopCardOfferShape まで）',
   },
   {
     id: 'state-persist-shape-b',
-    mutate: 'src/state/persistFrameShape.ts:161-320',
-    note: 'persistFrameShape 中盤',
+    mutate: 'src/state/persistFrameShape.ts:165-327',
+    note: 'persistFrameShape 中盤（isMemberShape まで）',
   },
   {
     id: 'state-persist-shape-c',
-    mutate: `src/state/persistFrameShape.ts:321-${OPEN_RANGE_END}`,
+    mutate: `src/state/persistFrameShape.ts:328-${OPEN_RANGE_END}`,
     note: 'persistFrameShape 後半',
   },
   {
@@ -397,10 +419,56 @@ export function coverageIncludesLine(coverage, line) {
 }
 
 /**
- * @returns {{ id: string, mutate: string }[]}
+ * `file:start-end` を Stryker 内部の Location に変換する（行は 0-origin、終端列は inclusive）。
+ *
+ * @param {{ start: number, end: number }} range 1-origin inclusive
+ * @returns {{ start: { line: number, column: number }, end: { line: number, column: number } }}
+ */
+export function shardRangeToLocation(range) {
+  return {
+    start: { line: range.start - 1, column: 0 },
+    end: { line: range.end - 1, column: Number.MAX_SAFE_INTEGER },
+  };
+}
+
+/**
+ * Stryker の `locationIncluded` と同じ（haystack が needle の開始・終了を両方含む）。
+ *
+ * @param {{ start: { line: number, column: number }, end: { line: number, column: number } }} haystack
+ * @param {{ start: { line: number, column: number }, end: { line: number, column: number } }} needle
+ */
+export function locationIncluded(haystack, needle) {
+  const startIncluded =
+    haystack.start.line < needle.start.line ||
+    (haystack.start.line === needle.start.line && haystack.start.column <= needle.start.column);
+  const endIncluded =
+    haystack.end.line > needle.end.line ||
+    (haystack.end.line === needle.end.line && haystack.end.column >= needle.end.column);
+  return startIncluded && endIncluded;
+}
+
+/**
+ * Stryker が実際に mutant を採る条件。開始行だけだと関数全体の BlockStatement などが欠ける。
+ *
+ * @param {true | Array<{ start: number, end: number }>} coverage
+ * @param {{ start: { line: number, column: number }, end: { line: number, column: number } }} location
+ */
+export function coverageIncludesLocation(coverage, location) {
+  if (coverage === true) {
+    return true;
+  }
+  return coverage.some((range) => locationIncluded(shardRangeToLocation(range), location));
+}
+
+/**
+ * @returns {{ id: string, mutate: string, cache: string }[]}
  */
 export function toMatrixInclude() {
-  return MUTATION_SHARDS.map(({ id, mutate }) => ({ id, mutate }));
+  return MUTATION_SHARDS.map(({ id, mutate }) => ({
+    id,
+    mutate,
+    cache: incrementalCacheKey(id, mutate),
+  }));
 }
 
 /**

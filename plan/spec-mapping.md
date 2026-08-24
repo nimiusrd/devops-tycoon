@@ -33,14 +33,8 @@
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `src/data/balance/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ 優先カード上限・ラン報酬係数・デイリー条件は `META_BALANCE` へ移行済み（RI-124） |
 | [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
-| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-8の回復余地ギャップは既定コホートで PASS（RI-132）。F-9の有効手集合は完全評価不足で未計測（ゲート実装済み、追跡は [RI-136](./remaining-issues.md#ri-136-f-9-有効手集合の完全計測)）。F-1・F-7はRI-73、F-2はRI-77／78／83、F-3はRI-102、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-10はRI-76、F-11はRI-86、F-12はRI-81で充足または実装済み |
+| [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | 🟡 F-8の回復余地ギャップは既定コホートで PASS（RI-132）。F-9は進行速度と決着位置だけ成立を確認済みで、定性的な判定基準全体は未充足（[RI-139](./remaining-issues.md#ri-139-f-9-敗因別手触りの定性検証)）。有効手集合の既存診断ゲートは維持し、全合法手列の完全計測だけを RI-136 で対象外とした。F-1・F-7はRI-73、F-2はRI-77／78／83、F-3はRI-102、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-10はRI-76、F-11はRI-86、F-12はRI-81で充足または実装済み |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |
 | [22](../SPEC.md#22-技術構成) | レイヤ分離、決定論、保存、テスト | [architecture.md](../docs/architecture.md), [probability-model.md](../docs/probability-model.md), `src/game.ts`, `src/state/`, `src/data/balance/`, `src/data/assets.ts`, `src/render/gameAssetView.ts`, `src/ui/SprintLayout.tsx`, `src/ui/AspectStage.tsx`, `src/ui/responsiveMode.tsx`, `tests/e2e/fixtures.ts`, `tests/` | 🟡 中核のレイヤ分離・決定論・保存、公開 `GameHandle` による5 viewport回帰、名前付きスロット、全盤面のAspectStage、RI-97のCSS境界、RI-98のレスポンシブ正本、RI-99の共有ビジュアルトークンを実装済み。SSoT親エピック（RI-104）と型付きバランスレジストリ、生成パラメータ表、工程モデル、メンバー・採用、介入・差配、ラン進行・経済、KPI・勝敗・診断、粗粒度チーム、カード実行ルール、タスク分布・スプリント評価、ペーシング、メタ進行・デイリー条件のレジストリ移行、ルールセット互換、代表曲線、AI前提ワークフローの係数確定（RI-134）は完了済み。Fast Refresh警告5件の解消は[RI-137](./remaining-issues.md#ri-137-fast-refresh警告の解消)、`balance:check`の手書き差分誤検知は[RI-138](./remaining-issues.md#ri-138-balancecheckの手書き差分誤検知)で追跡する。 |
 | [23](../SPEC.md#23-拡張案) | ローカル完結の将来拡張 | デイリー、研修方針、図鑑、リプレイ、ツール別シナリオ、部門／チーム比較、指標切替、診断・KPI・部門健全度時系列、レビュー履歴、開始レシピ、OKRテンプレート、ステークホルダー別交渉、複数四半期ロードマップ（表示専用）、途中セーブ・リプレイのファイル共有等は実装済み | ✅ ローカル完結の実装対象は充足。外部API・共有バックエンド、社内LT／経営プレゼンモードは対象外 |
 | [24〜25](../SPEC.md#24-企画の価値) | 企画価値と結論 | — | — |
-
-## 2. 未充足一覧
-
-| 課題 | 影響 | 追跡先 |
-| --- | --- | --- |
-| F-9 有効手集合の完全計測 | 第19.1 | [RI-136](./remaining-issues.md#ri-136-f-9-有効手集合の完全計測) |

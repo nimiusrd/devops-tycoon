@@ -198,7 +198,9 @@ tests/
 
 コアループは通しプレイ可能です。現在の未充足・保留は次のとおりです。
 
-- F-9 有効手集合の完全計測（[RI-136](plan/remaining-issues.md#ri-136-f-9-有効手集合の完全計測)）
+- Fast Refresh警告の解消（[RI-137](plan/remaining-issues.md#ri-137-fast-refresh警告の解消)）
+- `balance:check`の手書き差分誤検知（[RI-138](plan/remaining-issues.md#ri-138-balancecheckの手書き差分誤検知)）
+- F-9 敗因別手触りの定性検証（[RI-139](plan/remaining-issues.md#ri-139-f-9-敗因別手触りの定性検証)）
 
 詳細と受入条件は[残課題バックログ](plan/remaining-issues.md)を参照してください。
 

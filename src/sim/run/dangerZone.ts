@@ -38,6 +38,15 @@ export type DangerLoseReason = Extract<
   | 'reorgRequired'
 >;
 
+/** 危険判定と同じ計算で得た、警告サンプル用の全社投影。 */
+export interface DangerZoneObservation {
+  reasons: DangerLoseReason[];
+  org: RunState['org'];
+  budgetAfterNextInfraCharge: number;
+  strategicSpendExhaustsBudget: boolean;
+  reviewQueuePeak: number;
+}
+
 /** 対象省略で不可でも、明示 target（Backlog→Coding ドラッグ）なら差配できるか。 */
 export function canApplyAssignTaskWithExplicitTarget(
   sprint: NonNullable<RunState['sprint']>,
@@ -75,7 +84,7 @@ export function listApplicableActions(engine: RunEngine): ActionId[] {
  * F-9 / RI-89: 敗因予兆の危険域（HUD・四半期閾値の手前）。
  * 指標ごとに対応する敗因へ紐づけ、最終敗因の窓だけを報告できるようにする。
  */
-export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
+export function observeDangerZone(engine: RunEngine): DangerZoneObservation {
   const s = engine.snapshot();
   const minTrust = Math.min(
     s.stakeholderTrust.management,
@@ -96,7 +105,8 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
     out.push('aiDependency');
   }
   const nextBudget = budgetAfterNextInfraCharge(s);
-  if (s.budget <= 15 || nextBudget <= 15 || strategicSpendExhaustsBudget(s)) {
+  const spendExhaustsBudget = strategicSpendExhaustsBudget(s);
+  if (s.budget <= 15 || nextBudget <= 15 || spendExhaustsBudget) {
     out.push('budgetExhausted');
   }
   const kpiTotals = liveKpi?.totals ?? s.quarterTotals;
@@ -141,7 +151,22 @@ export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
       kpiMissCount >= OUTCOME_BALANCE.quarterReorgMissedKpiMin.value)
   )
     out.push('reorgRequired');
-  return out;
+  return {
+    reasons: out,
+    org: kpiOrg,
+    budgetAfterNextInfraCharge: nextBudget,
+    strategicSpendExhaustsBudget: spendExhaustsBudget,
+    reviewQueuePeak: Math.max(
+      reviewQueueLive,
+      sprintReviewPeak,
+      projectedReviewPeak,
+      runReviewPeak,
+    ),
+  };
+}
+
+export function activeDangerReasons(engine: RunEngine): DangerLoseReason[] {
+  return observeDangerZone(engine).reasons;
 }
 
 /** 今選択でき、支払い後残高が 0 になる戦略支出があるか。 */

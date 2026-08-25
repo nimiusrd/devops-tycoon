@@ -340,7 +340,7 @@ AIなし−ありは `+2.046875`、AIありの低成熟−高成熟は `+10.5156
 
 **成立している基準と検証上の限界**:
 
-- **F-9 のうち進行速度と決着位置は成立している**（**F-9 全体の成立ではない**）。
+- **F-9 は RI-139 の7代表シナリオで定性的に成立している**。
   現行1,560ランの全体参考値では、敗北までのスプリント数 p50 は `aiDependency` 3 /
   `moraleCollapse` 3 / `seniorBurnout` 4 / `reviewFreeze` 6 / `techDebt` 5 /
   `kpiMissed` 12 / `reorgRequired` 24。決着フェーズも、`reviewFreeze` は全61件が `sprint`、
@@ -349,10 +349,10 @@ AIなし−ありは `+2.046875`、AIありの低成熟−高成熟は `+10.5156
   `hasActionTarget`（盤面非破壊）とハーネスの `availableActionsInDanger` で記録できる。
   有効手は同一乱数状態からの反実仮想（無介入 vs 適用可能介入）で、敗北遅延・回避・危険域離脱・
   敗因変化だけを数える。`PT_COUNTERFACTUAL=1` で last-non-empty フレームを評価する。
-  F-8 の回復余地ギャップ p50 は対象方針 152 敗北で 0（PASS）。F-9 の有効手集合は
-  完全評価が 0 件のため未計測（RI-132）。
+  F-8 の回復余地ギャップ p50 は対象方針 152 敗北で 0（PASS）。F-9 の全合法手集合は
+  完全評価が 0 件のため未計測（RI-132）だが、RI-139 では各敗因2〜3手に限定して全分岐を評価した。
 
-**未充足・未検証の基準**:
+**基準の現況**:
 
 | 基準 | 現況 | 対応 |
 | --- | --- | --- |
@@ -360,7 +360,7 @@ AIなし−ありは `+2.046875`、AIありの低成熟−高成熟は `+10.5156
 | F-3 | 9戦略フェーズで `step` してもフェーズ・選択・資源が変わらず、judgment も明示操作まで解決しない | RI-102（完了） |
 | F-7 | `idle` は全難易度 0/10。`naive` easy 2/10（20%）で受入帯と難易度順を維持 | RI-73（完了） |
 | F-8 | 対象方針の回復余地ギャップ p50=0（n=152）で PASS。合否定数は p50≤1 | RI-132（完了） |
-| F-9 | 進行速度と決着位置は敗因ごとに違う。有効手集合は完全評価 n≥10 の資格敗因が 0 のため未計測 | RI-89／RI-101／RI-132（ゲート実装済み）。完全計測は RI-136 で対象外、定性的な成立確認は RI-139 |
+| F-9 | SPEC対象7敗因の代表シナリオで、警告指標・速度／決着フェーズ・有効だった限定介入の fingerprint が7種に分離 | RI-139（完了）。RI-132 の既存診断ゲートは維持し、全合法手列の完全計測は RI-136 で対象外 |
 | F-10 | ビルド方針の modal は `chaos` / `healthy` / `normal` の3種で PASS（TVD・セキュリティ対・共通 seed 裏付けを含む） | RI-76（完了） |
 
 充足済みの F-2 / F-3 / F-4 / F-5 / F-6 / F-11 / F-12 は、実装・受入の詳細を各課題節とGit履歴に残す。
@@ -811,8 +811,52 @@ F-9 の「敗因ごとに予兆・進行速度・打てる手が異なる」と�
 `scripts/playtest-f8f9.mjs` の閾値・方針層別・`distinctEffectiveSetCount` 判定、および
 `counterfactualIncomplete` を完全評価へ混ぜない契約は変更しない。不完全評価から得られる集合は
 参考診断、危険域までの速度・状態推移・機械的に打てた手は継続観測に使う。F-9 全体の定性的な
-成立確認は RI-139 で追跡する。完全探索を再検討する場合は RI-136 を再開せず、探索範囲と計算予算を
-定義した新しい RI を起票する。
+成立確認は下記 RI-139 で完了した。完全探索を再検討する場合は RI-136 を再開せず、探索範囲と
+計算予算を定義した新しい RI を起票する。
+
+### RI-139 F-9 敗因別手触りの定性検証 — 完了
+
+SPEC F-9 が列挙する7敗因に、決定論的な代表シナリオを1件ずつ固定した。自然発生する6件は
+`tests/playtest/f9Representative.ts` の difficulty / policy / seed を再走する。240ランの絞り込みで
+自然発生しなかった `incidentCascade` は、`ri139-incident-cascade` の実スプリントで最初に発生した
+炎上フレームを使い、他の敗北条件を安全値、連続障害数を上限直前の5へ正規化した境界fixtureとした。
+本体API、保存形式、ルールセット、バランス係数は変更していない。
+
+表中の「直前」は `HP / 士気 / 負債 / AI依存 / 予算 / 最低信頼`。「危険到達」はラン開始から
+最初に危険域へ入るまでの完了スプリント数、「→敗北」はそこから敗北までの差である。警告サンプルの
+HP・士気・負債・Review peak は `activeDangerReasons` と同じ live 全社KPI投影を使い、負債は判定と
+同じくアクティブチーム値も併記・照合する。閾値照合には丸め前の値を使い、予算は現在残高に加えて
+次スプリントのインフラ課金後残高と、選択可能な戦略支出による枯渇も同じ条件で照合する。表では
+読みやすさのため小数第1位へ丸める。発動可能集合は、その敗因の危険域で
+`listApplicableActions` が返した和集合を示す。
+
+| 敗因 | 代表シナリオ | 最初の警告（Q/S） | 危険到達 / →敗北・決着 | 敗北直前 | 機械的発動可能集合 | 限定介入（無介入との比較） | fingerprint（警告・速度・介入の抜粋） |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `seniorBurnout` | easy / `naiveNoInterventionCtl` / `pt-5` | HP 49.1（Q1/S1） | 0S / +1S・Q1 `beat` | 24.9 / 100 / 0 / 84.4 / 60 / 70 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`interruptReview`・`andon`・`pairReview`はいずれも1Sで同敗因 | `seniorHp\|0:1:beat\|` |
+| `moraleCollapse` | nightmare / `naiveNoInterventionCtl` / `pt-2` | 士気36（Q1/S2） | 1S / +1S・Q1 `sprint` | 3.3 / 0.5 / 114 / 65.4 / 25 / 45 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | `firefight`・`pairReview`は危険離脱、`andon`は同じ1Sで`seniorBurnout`へ変化 | `aiDependencyUnsafe,morale,seniorHp\|1:1:sprint\|andon,firefight,pairReview` |
+| `techDebt` | nightmare / `naiveNoInterventionCtl` / `pt-4` | アクティブチーム負債60（Q1/S4） | 3S / +1S・Q1 `sprint` | 6.4 / 46 / 90 / 47.8 / 25 / 45 | `aiThrottle, andon, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`andon`は1S、`firefight`・`pairReview`は同敗因を2Sへ遅延 | `seniorHp,techDebt\|3:1:sprint\|firefight,pairReview` |
+| `reviewFreeze` | easy / `securityNeglect` / `pt-5` | Review peak 36（Q1/S3） | 2S / +1S・Q1 `sprint` | 3.5 / 100 / 0 / 100 / 60 / 70 | `firefight, pairReview, splitPr` | 全指定手を打てる危険域フレームで、無介入・`splitPr`・`pairReview`はいずれも1Sで同敗因 | `reviewQueuePeak,seniorHp\|2:1:sprint\|` |
+| `aiDependency` | nightmare / `naiveNoInterventionCtl` / `pt-7` | AI依存51.6 / リテラシー25（Q1/S1） | 0S / +5S・Q1 `sprint` | 10.1 / 85.5 / 66 / 100 / 25 / 45 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 2Sの範囲で無介入・`aiThrottle`は危険継続、`pairReview`は危険離脱 | `aiDependencyUnsafe\|0:5:sprint\|pairReview` |
+| `budgetExhausted` | easy / `harnessBloated` / `pt-9` | 予算3（Q1/S3） | 2S / +1S・Q1 `setup` | 36 / 100 / 4 / 100 / 3 / 70 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`aiThrottle`・`andon`・`pairReview`はいずれも1Sで同敗因 | `budget\|2:1:setup\|` |
+| `incidentCascade` | nightmare / `flammable` / `ri139-incident-cascade` 境界frame | 連続障害5（Q1/S1） | 0S / +1S・Q1 `sprint` | 7.7 / 90.5 / 12 / 30.4 / 100 / 100 | `aiThrottle, andon, assignTask, firefight, interruptReview, overtime, pairReview, splitPr` | 無介入・`firefight`・`andon`はいずれも1Sで同敗因 | `consecutiveIncidentSprints\|0:1:sprint\|` |
+
+限定反実仮想は、自然発生fixtureでは危険域内で列挙した全指定手が機械的に発動可能になる最初の
+フレームに `maxSprints: 2`、境界fixtureでは `maxSprints: 1`を指定した。いずれも `actions` に表の
+2〜3手だけを列挙し、`includeStrategic: false`、combo / strategic の分岐上限を0とした。起点の
+`listApplicableActions` に全指定手が含まれること、全列挙手に分岐結果があることを固定している。
+`skippedActions` と `skippedStrategic` は空で、`counterfactualIncomplete` は成立根拠に使っていない。
+`truncated: true` は短い観測期間を生存した結果であり、指定手の未評価ではない。
+
+fingerprint は「最初の危険域の実測値から危険域閾値を再計算した全警告指標・危険域へ入るまでの
+スプリント数・そこから敗北までの差／決着フェーズ・敗北直前状態・最初の危険域と危険域全体の
+機械的発動可能集合・有効だった限定介入」を連結した。fixtureへ手動設定した敗因別ラベルは衝突判定に
+使わない。実fixtureは7種すべて異なり、衝突は0件だったため
+F-9 の定性基準を **PASS** とする。
+表の最終列は可読性のため警告・速度／決着・有効介入だけを抜粋し、敗北直前状態と発動可能集合を
+含む完全なキーは代表snapshotへ固定した。
+係数調整や追加のバランス課題は発生しなかった。この評価は指定した2〜3手と短い期間だけに有効で、
+最適手の証明や全合法手集合の完全評価ではない。RI-132 の `counterfactualIncomplete` 除外、方針層別、
+合否定数は変更せず、既存コホートの診断ゲートへも混入させない。
 
 ## 良かった点（回帰させないため記録）
 
@@ -821,7 +865,8 @@ F-9 の「敗因ごとに予兆・進行速度・打てる手が異なる」と�
   `reviewFreeze` 6 / `techDebt` 5 / `kpiMissed` 12 / `reorgRequired` 24。`reviewFreeze` は全件 sprint、
   `kpiMissed` と `reorgRequired` は全件 quarterReview、`seniorBurnout` は複数フェーズに分かれる。
   機械的な「打てた手」は RI-89 で観測でき、有効な手は RI-101 の反実仮想で判定できる。
-  F-8 の回復余地ギャップは既定コホートで p50=0（PASS）。F-9 の有効手集合差は完全評価不足で未計測（RI-132）。
+  F-8 の回復余地ギャップは既定コホートで p50=0（PASS）。F-9 の全合法手集合差は完全評価不足で
+  未計測（RI-132）だが、7代表シナリオの限定 fingerprint は分離している（RI-139、PASS）。
 - **ビルドの違いは組織診断と勝利種別の両方に出ている**。`noAi` は
   `healthyAcceleration` 2 と、`aiFullBet`（`reviewHell` 6 / `seniorSacrifice` 34）から
   明確に分かれる。F-10 ビルド modal は `chaos` / `healthy` / `normal` の3種で PASS（RI-76 完了）。

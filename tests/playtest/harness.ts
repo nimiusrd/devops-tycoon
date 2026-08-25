@@ -27,15 +27,17 @@ import {
 } from '../../src/sim/run/engine';
 import { foldPassives } from '../../src/sim/run/effects';
 import {
+  effectiveActionsOf,
+  evaluateCounterfactual,
   evaluateLatestEffectiveFrame,
   type CounterfactualEvaluateOptions,
   type CounterfactualFrameSample,
 } from '../../src/sim/run/counterfactual';
 import { eventMinSignalFactors, eventSignals } from '../../src/sim/run/events';
 import {
-  activeDangerReasons,
   canApplyAssignTaskWithExplicitTarget,
   listApplicableActions,
+  observeDangerZone,
   type DangerLoseReason,
 } from '../../src/sim/run/dangerZone';
 import { eliteTaskMul } from '../../src/sim/run/sprintBaselineBuild';
@@ -900,8 +902,8 @@ export interface RunLog {
    * スプリント終了とその敗北の間にはビート・ショップ・休息・setup が挟まる。
    * 例えば `giant-pr` の士気 -6 で負けたランでは、レポートには**その手前の休息で
    * 回復した後の値**ではなく前スプリント末尾の値が出ており、「敗北直前の士気」が
-   * 実際より高くも低くも出ていた。ループの各反復で処理前の状態を控え、
-   * 敗北を検知した反復の控えをそのまま残す。
+   * 実際より高くも低くも出ていた。戦略フェーズは外側ループの各反復、スプリントは
+   * カード・介入・tickごとに処理前の状態を控え、敗北を検知した処理の控えを残す。
    */
   lostPrevState?: {
     seniorHp: number;
@@ -967,26 +969,11 @@ export interface RunLog {
    * 最終敗因の危険域で、非空の機械的発動可能手が最後に見えた時点。
    * 危険域は観測したが一度も非空が無ければ省略（その場合は firstSample を参照）。
    */
-  availableActionsInDangerLastNonEmpty?: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
+  availableActionsInDangerLastNonEmpty?: DangerSample;
   /** 最終敗因の危険域で最初に取ったサンプル（常時空集合ランの打ち切り起点）。 */
-  availableActionsInDangerFirstSample?: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
+  availableActionsInDangerFirstSample?: DangerSample;
   /** 最終敗因の危険域で最後に取ったサンプル（空集合もありうる）。 */
-  availableActionsInDangerLastSample?: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
+  availableActionsInDangerLastSample?: DangerSample;
   /**
    * 最終敗因の last-non-empty フレームを反実仮想評価した有効手（RI-101）。
    * `PT_COUNTERFACTUAL=1` のときだけ付く。空配列は「評価したが有効手なし」。
@@ -1007,11 +994,54 @@ export interface RunLog {
     status: string;
     truncated: boolean;
   };
+  /** 限定介入を分岐した危険域フレームの位置。 */
+  counterfactualOrigin?: {
+    sprintsPlayed: number;
+    quarter: number;
+    index: number;
+  };
+  /** 限定介入の起点で実際に機械的発動可能だった手。 */
+  counterfactualApplicableActions?: string[];
+  /**
+   * RI-139 の代表シナリオで明示指定した限定介入の結果。
+   * 既定コホートでは記録せず、全合法手列の評価や RI-132 の合否には使わない。
+   */
+  counterfactualBranches?: Array<{
+    actionId: string;
+    sprintsToLose: number | null;
+    leftDanger: boolean;
+    loseReason: string | null;
+    status: string;
+    truncated: boolean;
+  }>;
   /** 分岐上限で未評価の候補が残った（RI-101。不完全な「有効手なし」と F-9 集合から除外する）。 */
   counterfactualIncomplete?: boolean;
   counterfactualSkipped?: string[];
   /** 無介入ベースラインが評価期間を生存または危険域離脱した（RI-101。有効手なしとは区別する）。 */
   counterfactualBaselineRecovered?: boolean;
+}
+
+/** 危険域の位置、機械的に打てる手、敗因固有の予兆を読める状態指標。 */
+export interface DangerSample {
+  sprintsPlayed: number;
+  quarter: number;
+  index: number;
+  actions: string[];
+  signals: {
+    seniorHp: number;
+    morale: number;
+    techDebt: number;
+    /** 危険判定が集約値と併用する、アクティブチーム単体の負債。 */
+    activeTeamTechDebt: number;
+    aiDependency: number;
+    aiLiteracy: number;
+    budget: number;
+    budgetAfterNextInfraCharge: number;
+    strategicSpendExhaustsBudget: boolean;
+    reviewQueue: number;
+    reviewQueuePeak: number;
+    consecutiveIncidentSprints: number;
+  };
 }
 
 /**
@@ -1339,6 +1369,7 @@ export function playHand(
   e: RunEngine,
   mode: PolicySpec['cards'],
   onPlayed?: (focusSpent: number) => void,
+  onBeforePlay?: () => void,
 ): void {
   if (mode === 'none') return;
   let guard = 0;
@@ -1379,6 +1410,7 @@ export function playHand(
     let played = false;
     for (const deckIndex of order) {
       const focusSpentBefore = e.snapshot().sprint?.metrics.focusSpent ?? 0;
+      onBeforePlay?.();
       if (e.playCard(deckIndex).ok) {
         played = true;
         // カード間でも介入可能な局面を危険域サンプルへ残す（一括発動の欠測防止）。
@@ -1410,25 +1442,28 @@ function boardCtx(s: RunState): BoardCtx | null {
   };
 }
 
+function round1(v: number): number {
+  return Math.round(v * 10) / 10;
+}
+
 /** 敗北直前の参照に使う組織状態の控え（`RunLog.lostPrevState`）。 */
 function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
-  const r1 = (v: number): number => Math.round(v * 10) / 10;
   return {
-    seniorHp: r1(s.org.seniorHp),
-    morale: r1(s.org.morale),
-    techDebt: r1(s.org.techDebt),
-    aiDependency: r1(s.org.aiDependency),
-    budget: r1(s.budget),
-    minTrust: r1(
+    seniorHp: round1(s.org.seniorHp),
+    morale: round1(s.org.morale),
+    techDebt: round1(s.org.techDebt),
+    aiDependency: round1(s.org.aiDependency),
+    budget: round1(s.budget),
+    minTrust: round1(
       Math.min(
         s.stakeholderTrust.management,
         s.stakeholderTrust.customers,
         s.stakeholderTrust.team,
       ),
     ),
-    trustManagement: r1(s.stakeholderTrust.management),
-    trustCustomers: r1(s.stakeholderTrust.customers),
-    trustTeam: r1(s.stakeholderTrust.team),
+    trustManagement: round1(s.stakeholderTrust.management),
+    trustCustomers: round1(s.stakeholderTrust.customers),
+    trustTeam: round1(s.stakeholderTrust.team),
     phase: s.phase,
   };
 }
@@ -1436,24 +1471,9 @@ function orgSnapshot(s: RunState): NonNullable<RunLog['lostPrevState']> {
 /** 敗因ごとの危険域観測トラック（和集合＋時系列）。 */
 type DangerTrack = {
   actions: Set<string>;
-  firstSample: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
-  lastSample: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  };
-  lastNonEmpty: {
-    sprintsPlayed: number;
-    quarter: number;
-    index: number;
-    actions: string[];
-  } | null;
+  firstSample: DangerSample;
+  lastSample: DangerSample;
+  lastNonEmpty: DangerSample | null;
 };
 
 /** 集中力・クールダウンを満たす前提で、対象が存在するかを観測する。 */
@@ -1558,27 +1578,43 @@ function sampleAvailableInDanger(
   byReason: Map<DangerLoseReason, DangerTrack>,
   framesByReason?: Map<DangerLoseReason, CounterfactualFrameSample[]>,
   policy?: string,
+  forceCounterfactual = false,
 ): void {
   const s = e.snapshot();
   if (s.phase !== 'sprint' || !s.sprint || s.sprint.complete) return;
-  const dangers = activeDangerReasons(e);
+  const danger = observeDangerZone(e);
+  const dangers = danger.reasons;
   if (dangers.length === 0) return;
   const available = listApplicableActions(e);
-  const sample = {
+  const sample: DangerSample = {
     sprintsPlayed: s.sprintsPlayed,
     quarter: s.quarterNumber,
     index: s.sprintIndexInQuarter,
     actions: [...available].sort(),
-    sig: [
-      s.sprintTick,
-      s.sprint.focus,
-      s.org.seniorHp,
-      s.org.morale,
-      s.budget,
-      s.sprint.tasks.filter((task) => task.lane === 'review').length,
-      available.join(','),
-    ].join('|'),
+    signals: {
+      seniorHp: danger.org.seniorHp,
+      morale: danger.org.morale,
+      techDebt: danger.org.techDebt,
+      activeTeamTechDebt: s.org.techDebt,
+      aiDependency: s.org.aiDependency,
+      aiLiteracy: s.org.aiLiteracy,
+      budget: s.budget,
+      budgetAfterNextInfraCharge: danger.budgetAfterNextInfraCharge,
+      strategicSpendExhaustsBudget: danger.strategicSpendExhaustsBudget,
+      reviewQueue: s.sprint.tasks.filter((task) => task.lane === 'review').length,
+      reviewQueuePeak: danger.reviewQueuePeak,
+      consecutiveIncidentSprints: s.totals.consecutiveIncidentSprints ?? 0,
+    },
   };
+  const sig = [
+    s.sprintTick,
+    s.sprint.focus,
+    s.org.seniorHp,
+    s.org.morale,
+    s.budget,
+    s.sprint.tasks.filter((task) => task.lane === 'review').length,
+    available.join(','),
+  ].join('|');
   for (const reason of dangers) {
     let track = byReason.get(reason);
     if (!track) {
@@ -1595,11 +1631,15 @@ function sampleAvailableInDanger(
     track.lastSample = sample;
     if (available.length > 0) track.lastNonEmpty = sample;
   }
-  if (framesByReason && counterfactualEnabled(policy) && dangers.length > 0) {
+  if (
+    framesByReason &&
+    (forceCounterfactual || counterfactualEnabled(policy)) &&
+    dangers.length > 0
+  ) {
     const frame = e.exportCounterfactualFrame();
     if (frame) {
       for (const reason of dangers) {
-        rememberCounterfactualFrame(framesByReason, reason, sample, frame);
+        rememberCounterfactualFrame(framesByReason, reason, { ...sample, sig }, frame);
       }
     }
   }
@@ -1619,6 +1659,7 @@ function intervene(
   spec: PolicySpec,
   attempts: Record<string, Partial<Record<DispatchReason, number>>>,
   onSuccess?: () => void,
+  onBeforeDispatch?: () => void,
 ): number {
   const first = boardCtx(e.snapshot());
   if (!first) return 0;
@@ -1635,6 +1676,7 @@ function intervene(
     const ctx = boardCtx(e.snapshot());
     if (!ctx) break;
     if (a.when && !a.when(ctx)) continue;
+    onBeforeDispatch?.();
     const outcome = e.dispatch(a.id);
     if (outcome.ok) {
       bump(attempts, a.id, 'ok');
@@ -2037,6 +2079,12 @@ function shutdownTriggers(
 export interface RunOnceOptions {
   /** 省略時はプレイテスト本番と同じ分岐上限（96 / 32 / 192）。 */
   counterfactual?: CounterfactualEvaluateOptions;
+  /** 環境変数に依存せず、代表シナリオの限定反実仮想を有効にする。 */
+  forceCounterfactual?: boolean;
+  /** 明示した限定介入の分岐結果を RunLog へ残す。既定コホートでは false。 */
+  recordCounterfactualBranches?: boolean;
+  /** RI-139 では探索せず、最初の危険域または全指定手を打てる最初のフレームを固定観測点にする。 */
+  counterfactualFrame?: 'first-danger' | 'first-all-actions';
 }
 
 /** 1ランを最後まで自動プレイし、計測ログを返す。 */
@@ -2082,11 +2130,9 @@ export function runOnce(
   /** 直近に解決したビート（敗北がビートで確定したときに残す）。 */
   let lastBeat: { eventId: string; kind: string; choiceIndex?: number } | undefined;
   let lostBeat: typeof lastBeat;
-  /**
-   * 敗北を確定させた処理の直前状態。ループの各反復の冒頭で控え、
-   * その反復で敗北を検知したらその控えを採用する。
-   */
+  /** 敗北を確定させた処理の直前状態。スプリント内はカード・介入・tick単位で控える。 */
   let lostPrevState: RunLog['lostPrevState'];
+  let sprintLostPrevState: RunLog['lostPrevState'];
   let guard = 0;
   let s = e.snapshot();
   while (s.status === 'playing' && guard < 60_000) {
@@ -2104,6 +2150,10 @@ export function runOnce(
         e.beginSetupSprint();
         break;
       case 'sprint': {
+        let beforeSprintMutation = beforeAction;
+        const markBeforeSprintMutation = (): void => {
+          beforeSprintMutation = orgSnapshot(e.snapshot());
+        };
         const kind = s.currentSprintKind ?? 'normal';
         const quarter = s.quarterNumber;
         const index = s.sprintIndexInQuarter;
@@ -2139,6 +2189,7 @@ export function runOnce(
             availableInDangerByReason,
             counterfactualFramesByReason,
             policy,
+            options.forceCounterfactual,
           );
         };
         const onCardPlayed = (focusSpent: number): void => {
@@ -2147,26 +2198,30 @@ export function runOnce(
           sampleDanger();
         };
         sampleDanger();
-        playHand(e, spec.cards, onCardPlayed);
+        playHand(e, spec.cards, onCardPlayed, markBeforeSprintMutation);
         let inner = 0;
         while (e.snapshot().phase === 'sprint' && inner < 20_000) {
           inner += 1;
           sampleDanger();
-          const n = intervene(e, spec, attempts, sampleDanger);
+          const n = intervene(e, spec, attempts, sampleDanger, markBeforeSprintMutation);
           interventions += n;
           if (e.snapshot().phase !== 'sprint') break;
           // selective は盤面が落ち着いた瞬間にだけ切るので、スプリント中も判断する。
-          if (spec.cards === 'selective') playHand(e, 'selective', onCardPlayed);
+          if (spec.cards === 'selective') {
+            playHand(e, 'selective', onCardPlayed, markBeforeSprintMutation);
+          }
           if (e.snapshot().phase !== 'sprint') break;
           // stepMs を固定 tick に分割し、各 tick 後に危険域を観測（tick 間の一時的な手を拾う）。
           const ticks = Math.max(1, Math.floor(spec.stepMs / MS_PER_TICK));
           for (let t = 0; t < ticks; t += 1) {
+            markBeforeSprintMutation();
             e.step(MS_PER_TICK);
             if (e.snapshot().phase !== 'sprint') break;
             sampleDanger();
           }
         }
         const after = e.snapshot();
+        if (after.status !== 'playing') sprintLostPrevState = beforeSprintMutation;
         const completed = after.sprintsPlayed > before;
         // `playCard` やスプリント開始時の予算枯渇は、結果を確定せず phase=lost へ遷移する。
         // その場合でも盤面に積み上がったカード発動・試行・対象あり区間と途中 KPI を保存し、
@@ -2426,7 +2481,7 @@ export function runOnce(
     const next = e.snapshot();
     if (next.status !== 'playing' && lostPhase === undefined) {
       lostPhase = s.phase;
-      lostPrevState = beforeAction;
+      lostPrevState = s.phase === 'sprint' ? (sprintLostPrevState ?? beforeAction) : beforeAction;
       if (s.phase === 'beat') lostBeat = lastBeat;
       // 終端計測を残すためにログが増えていても、`completed` が false なら
       // スプリント完走とは数えない（カード発動などで途中敗北した行が該当する）。
@@ -2472,19 +2527,52 @@ export function runOnce(
       : {}),
     ...(f.status === 'lost' &&
     f.loseReason &&
-    counterfactualEnabled(policy) &&
+    (options.forceCounterfactual || counterfactualEnabled(policy)) &&
     counterfactualFramesByReason.has(f.loseReason as DangerLoseReason)
       ? (() => {
-          const selected = evaluateLatestEffectiveFrame(
-            counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!,
-            {
-              focusReason: f.loseReason as DangerLoseReason,
-              maxActionBranches: 96,
-              maxComboBranches: 32,
-              maxStrategicBranches: 192,
-              ...options.counterfactual,
-            },
-          );
+          const frames = counterfactualFramesByReason.get(f.loseReason as DangerLoseReason)!;
+          const evaluateOptions = {
+            focusReason: f.loseReason as DangerLoseReason,
+            maxActionBranches: 96,
+            maxComboBranches: 32,
+            maxStrategicBranches: 192,
+            ...options.counterfactual,
+          } satisfies CounterfactualEvaluateOptions;
+          const fixedSelection = (() => {
+            if (!options.counterfactualFrame) return null;
+            if (options.counterfactualFrame === 'first-danger') {
+              const frame = frames[0]!.frame;
+              const probe = new RunEngine({ seed: 'playtest-frame-probe', difficulty: 'easy' });
+              probe.hydrateCounterfactualFrame(frame);
+              return { frame, applicableActions: listApplicableActions(probe) };
+            }
+            const requested = options.counterfactual?.actions ?? [];
+            for (const sample of frames) {
+              for (const frame of sample.frames ?? [sample.frame]) {
+                const probe = new RunEngine({ seed: 'playtest-frame-probe', difficulty: 'easy' });
+                probe.hydrateCounterfactualFrame(frame);
+                const applicableActions = listApplicableActions(probe);
+                const applicable = new Set(applicableActions);
+                if (requested.every((action) => applicable.has(action))) {
+                  return { frame, applicableActions };
+                }
+              }
+            }
+            throw new Error(
+              `${f.loseReason}: 指定した限定介入をすべて発動できる危険域フレームがない`,
+            );
+          })();
+          const selected = fixedSelection
+            ? (() => {
+                const evaluation = evaluateCounterfactual(fixedSelection.frame, evaluateOptions);
+                return {
+                  evaluation,
+                  effective: effectiveActionsOf(evaluation),
+                  baselineRecovered:
+                    evaluation.baseline.leftDanger || evaluation.baseline.status === 'won',
+                };
+              })()
+            : evaluateLatestEffectiveFrame(frames, evaluateOptions);
           if (!selected) return {};
           const { evaluation, effective, baselineRecovered } = selected;
           const skipped = [...evaluation.skippedActions, ...evaluation.skippedStrategic];
@@ -2516,6 +2604,29 @@ export function runOnce(
               status: evaluation.baseline.status,
               truncated: evaluation.baseline.truncated,
             },
+            ...(options.recordCounterfactualBranches
+              ? { counterfactualOrigin: evaluation.origin }
+              : {}),
+            ...(options.recordCounterfactualBranches
+              ? {
+                  counterfactualApplicableActions:
+                    fixedSelection?.applicableActions ?? evaluation.applicableActions,
+                }
+              : {}),
+            ...(options.recordCounterfactualBranches
+              ? {
+                  counterfactualBranches: evaluation.branches
+                    .filter((branch) => branch.actionId !== null)
+                    .map((branch) => ({
+                      actionId: branch.actionId!,
+                      sprintsToLose: branch.sprintsToLose,
+                      leftDanger: branch.leftDanger,
+                      loseReason: branch.loseReason,
+                      status: branch.status,
+                      truncated: branch.truncated,
+                    })),
+                }
+              : {}),
           };
         })()
       : {}),

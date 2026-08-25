@@ -481,6 +481,7 @@ body {
 .runbar-details {
   display: flex;
   flex: 1 1 100%;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;

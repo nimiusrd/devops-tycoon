@@ -296,6 +296,9 @@ async function assertLayoutContract(
     await expect(summaries.first()).toBeVisible();
     await expect(summaries).toHaveCount(8);
     await expect(tradeoffs).toHaveCount(8);
+    await expect(page.getByTestId('action-tradeoff-andon')).toHaveText(
+      '士気消費・薄いキューはHP消費',
+    );
     if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
       const glanceCopyFits = await summaries
         .or(tradeoffs)
@@ -318,6 +321,23 @@ async function assertLayoutContract(
   ) {
     await runbarDetailsToggle.click();
     await expect(runbarDetailsToggle).toHaveAttribute('aria-expanded', 'true');
+    const runbarDetails = page.getByTestId('runbar-details');
+    await expect(runbarDetails).toBeVisible();
+    if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
+      const flexWrap = await runbarDetails.evaluate(
+        (element) => getComputedStyle(element).flexWrap,
+      );
+      expect(flexWrap, `ラン詳細が折り返されない（${viewport.width}x${viewport.height}）`).toBe(
+        'wrap',
+      );
+    }
+    const detailsOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(
+      detailsOverflow,
+      `ラン詳細の展開で横スクロールが発生している（${viewport.width}x${viewport.height}）`,
+    ).toBe(false);
   }
   if (options.diagnosis) {
     const diagnosis = page.getByTestId('runbar-diagnosis');

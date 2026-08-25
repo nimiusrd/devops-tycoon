@@ -39,7 +39,7 @@ const ACTION_GLANCE_COPY: Record<ActionId, { effect: string; tradeoff?: string }
   aiThrottle: { effect: 'AI流入停止', tradeoff: '出荷速度低下' },
   pairReview: { effect: 'Review＋AI習熟', tradeoff: '2人を拘束' },
   overtime: { effect: '開発速度UP', tradeoff: '士気・HP低下' },
-  andon: { effect: '流入停止・渋滞解消', tradeoff: '出荷機会減' },
+  andon: { effect: '流入停止・渋滞解消', tradeoff: '士気消費・薄いキューはHP消費' },
 };
 
 interface FocusPop {

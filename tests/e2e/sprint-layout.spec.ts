@@ -303,6 +303,9 @@ async function assertLayoutContract(
     await expect(page.getByTestId('action-tradeoff-pairReview')).toHaveText(
       '集中力消費・再使用待ち',
     );
+    for (const id of ['interruptReview', 'assignTask', 'aiThrottle', 'pairReview']) {
+      await expect(page.getByTestId(`action-summary-${id}`)).toContainText('運用安定');
+    }
     if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
       const glanceCopyFits = await summaries
         .or(tradeoffs)

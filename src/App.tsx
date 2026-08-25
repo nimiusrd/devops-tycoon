@@ -439,6 +439,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         onSnapshotCaptured={rememberHudSnapshot}
         expanded={hudExpanded}
         onExpandedChange={setHudExpanded}
+        preferCompact={sprintLayout}
       />
       <RunBar
         state={state}
@@ -447,6 +448,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         readOnly={run.isReplayMode}
         getInitialPreviousSnapshot={getLastRunMetricSnapshot}
         onSnapshotCaptured={rememberRunMetricSnapshot}
+        compact={sprintLayout}
       />
     </>
   );

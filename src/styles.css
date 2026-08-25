@@ -81,7 +81,14 @@ body {
   outline: none;
 }
 .hud.hud-compact {
+  position: relative;
   gap: 4px;
+}
+.hud.hud-compact .hud-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
 }
 .hud-compact-row {
   display: flex;
@@ -89,6 +96,7 @@ body {
   gap: 6px;
   align-items: center;
   min-width: 0;
+  padding-right: 78px;
 }
 .hud-compact-chip {
   display: inline-flex;
@@ -457,6 +465,27 @@ body {
 .pill b {
   color: var(--cream);
   font-weight: 900;
+}
+.runbar-compact {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.runbar-details-toggle {
+  appearance: none;
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--sky);
+  font-weight: 800;
+  cursor: pointer;
+}
+.runbar-details {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 5px;
+  border-top: 1px solid var(--line);
 }
 .pill.run-feedback {
   position: relative;
@@ -2066,6 +2095,23 @@ body {
   font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
+}
+.action-summary,
+.action-tradeoff {
+  width: 100%;
+  overflow: hidden;
+  font-size: 8.5px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.action-summary {
+  color: #d7ffef;
+}
+.action-tradeoff {
+  color: #ffb8b0;
 }
 .action .effect-tags {
   justify-content: center;

@@ -28,7 +28,11 @@ import { useResponsiveMode } from './responsiveMode';
 
 const FEEDBACK_TTL_MS = 1000;
 /** 要約チップの上限。危険トーンを優先し、残りは主要指標で埋める。 */
-const COMPACT_CHIP_LIMIT = 5;
+/**
+ * 平常時に人が一度に追う KPI の上限。
+ * 出荷を1枠固定し、残り3枠を危険度順に入れ替える。
+ */
+const COMPACT_CHIP_LIMIT = 4;
 const COMPACT_PRIORITY_IDS: StatusMetricId[] = [
   'delivery',
   'seniorHp',
@@ -210,6 +214,8 @@ export interface HudProps {
   expanded?: boolean;
   /** 狭幅時のKPI展開状態が変わったときの通知。 */
   onExpandedChange?: (expanded: boolean) => void;
+  /** 盤面を主役にしたい画面では、広幅でも要約表示を既定にする。 */
+  preferCompact?: boolean;
 }
 
 function CompactChip({ metric }: { metric: StatusMetricView }) {
@@ -245,6 +251,7 @@ export function Hud({
   onSnapshotCaptured,
   expanded: expandedProp,
   onExpandedChange,
+  preferCompact = false,
 }: HudProps) {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const snapshot = useMemo(() => hudMetricSnapshot(s), [s]);
@@ -258,8 +265,9 @@ export function Hud({
   const narrow = responsiveMode.width === 'narrow';
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
   const expanded = expandedProp ?? uncontrolledExpanded;
-  // 広幅では常にフル表示。expanded は狭幅のときだけ効く（リサイズ時にリセットしない）。
-  const compact = narrow && !expanded;
+  // スプリント中は広幅でも要約を既定にし、盤面へ高さを返す。
+  const canCompact = narrow || preferCompact;
+  const compact = canCompact && !expanded;
   const compactMetrics = useMemo(() => pickCompactMetrics(metrics), [metrics]);
 
   useEffect(() => {
@@ -329,7 +337,7 @@ export function Hud({
       data-responsive-width={responsiveMode.width}
       data-responsive-height={responsiveMode.height}
     >
-      {narrow && (
+      {canCompact && (
         <button
           type="button"
           className="hud-toggle"
@@ -338,7 +346,7 @@ export function Hud({
           aria-controls="hud-metrics"
           onClick={toggleExpanded}
         >
-          {expanded ? 'KPIを畳む' : 'KPIを展開'}
+          {expanded ? 'KPIを畳む' : 'KPI詳細'}
         </button>
       )}
       {compact ? (

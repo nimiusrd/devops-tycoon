@@ -174,12 +174,16 @@
 }
 
 .root :global(.action) {
-  padding: 6px 4px;
+  padding: 5px 4px;
   gap: 2px;
 }
 
 .root :global(.action .ico) {
   font-size: 18px;
+}
+
+.root :global(.actionbar) {
+  min-height: 0;
 }
 
 /*

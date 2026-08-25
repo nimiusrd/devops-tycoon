@@ -16,13 +16,27 @@ import {
   type ActionBlockReason,
 } from '../render/actionBarView';
 import { isDraggableAction, planBoardDrag, type DraggableActionId } from '../render/boardDragPlan';
-import { formatActionDefTags, formatActionTooltip } from '../render/eventOutcomeView';
+import { formatActionTooltip } from '../render/eventOutcomeView';
 import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
-import { EffectTagList } from './EffectTagList';
 import { ManagerPortrait } from './ManagerPortrait';
 import { useResponsiveMode } from './responsiveMode';
 
 const FEEDBACK_TTL_MS = 1000;
+
+/**
+ * プレイ中に読む文言は、主効果1行・代償1行までに制限する。
+ * 詳細な数値と条件は title / aria-label に残す。
+ */
+const ACTION_GLANCE_COPY: Record<ActionId, { effect: string; tradeoff?: string }> = {
+  interruptReview: { effect: 'レビュー詰まり解消', tradeoff: 'シニアHP消費' },
+  splitPr: { effect: '巨大PRを分割', tradeoff: '進捗・士気・HP消費' },
+  firefight: { effect: '炎上1件鎮火', tradeoff: '平常時は高コスト' },
+  assignTask: { effect: 'タスクを前進', tradeoff: '士気消費' },
+  aiThrottle: { effect: 'AI流入停止', tradeoff: '出荷速度低下' },
+  pairReview: { effect: 'Review＋AI習熟', tradeoff: '2人を拘束' },
+  overtime: { effect: '開発速度UP', tradeoff: '士気・HP低下' },
+  andon: { effect: '流入停止・渋滞解消', tradeoff: '出荷機会減' },
+};
 
 interface FocusPop {
   id: number;
@@ -260,6 +274,7 @@ export function ActionBar({
       )}
       <div className="actions">
         {ACTION_DEFS.map((a) => {
+          const glanceCopy = ACTION_GLANCE_COPY[a.id];
           const availability = availabilityById.get(a.id)!;
           const remaining = cooldowns[a.id] ?? 0;
           const onCooldown = remaining > 0;
@@ -323,7 +338,14 @@ export function ActionBar({
                   武装中
                 </span>
               )}
-              <EffectTagList tags={formatActionDefTags(a)} testId={`action-tags-${a.id}`} />
+              <span className="action-summary" data-testid={`action-summary-${a.id}`}>
+                {glanceCopy.effect}
+              </span>
+              {glanceCopy.tradeoff && (
+                <span className="action-tradeoff" data-testid={`action-tradeoff-${a.id}`}>
+                  {glanceCopy.tradeoff}
+                </span>
+              )}
               <span className="cost">⚡{a.cost}</span>
               <span className={`cd${onCooldown ? '' : ' full'}`}>
                 <i style={{ width: `${cdPct}%` }} />

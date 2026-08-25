@@ -482,12 +482,16 @@ function difference(before, after) {
 
 function distributionDifference(before, after) {
   return {
-    n: after.n - before.n,
+    n: { before: before.n, after: after.n, delta: after.n - before.n },
     mean: difference(before.mean, after.mean),
     p10: difference(before.p10, after.p10),
     p50: difference(before.p50, after.p50),
     p90: difference(before.p90, after.p90),
   };
+}
+
+function metricCountDelta(value) {
+  return isObject(value) && Number.isFinite(value.delta) ? value.delta : value;
 }
 
 function compareSummary(beforeRuns, afterRuns) {
@@ -638,7 +642,7 @@ function renderSummaryTable(result) {
   for (const metric of METRICS) {
     const summary = result.metrics[metric.id];
     lines.push(
-      `| ${metric.label} n | ${display(summary.before.n)} | ${display(summary.after.n)} | ${display(summary.delta.n)} |`,
+      `| ${metric.label} n | ${display(summary.before.n)} | ${display(summary.after.n)} | ${display(metricCountDelta(summary.delta.n))} |`,
       `| ${metric.label} 平均 | ${display(summary.before.mean)} | ${display(summary.after.mean)} | ${display(summary.delta.mean)} |`,
       `| ${metric.label} p10 | ${display(summary.before.p10)} | ${display(summary.after.p10)} | ${display(summary.delta.p10)} |`,
       `| ${metric.label} p50 | ${display(summary.before.p50)} | ${display(summary.after.p50)} | ${display(summary.delta.p50)} |`,

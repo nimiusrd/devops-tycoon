@@ -210,6 +210,15 @@
   white-space: nowrap;
 }
 
+/* タッチ端末では title に頼れないため、主効果と代償を省略せず折り返す。 */
+.root[data-responsive-width='narrow'] :global(.action-summary),
+.root[data-responsive-width='narrow'] :global(.action-tradeoff) {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
 /* KPI 展開時は内容高を確保し、既存のページ内スクロール範囲を維持する。 */
 :global(.app).appShell[data-responsive-height='short']:not(:has(:global(.hud.hud-compact))),
 :global(.app).appShell[data-responsive-width='narrow']:not(:has(:global(.hud.hud-compact))) {

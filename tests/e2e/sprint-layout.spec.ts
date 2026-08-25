@@ -299,10 +299,16 @@ async function assertLayoutContract(
     if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
       const glanceCopyFits = await summaries
         .or(tradeoffs)
-        .evaluateAll((lines) => lines.every((line) => line.scrollHeight <= line.clientHeight + 1));
+        .evaluateAll((lines) =>
+          lines.every(
+            (line) =>
+              line.scrollWidth <= line.clientWidth + 1 &&
+              line.scrollHeight <= line.clientHeight + 1,
+          ),
+        );
       expect(
         glanceCopyFits,
-        `一目読み文言が複数行へあふれている（${viewport.width}x${viewport.height}）`,
+        `一目読み文言が表示領域から切り詰められている（${viewport.width}x${viewport.height}）`,
       ).toBe(true);
     }
   }

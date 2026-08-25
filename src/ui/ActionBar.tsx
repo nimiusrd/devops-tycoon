@@ -17,6 +17,7 @@ import {
 } from '../render/actionBarView';
 import { isDraggableAction, planBoardDrag, type DraggableActionId } from '../render/boardDragPlan';
 import { formatActionTooltip } from '../render/eventOutcomeView';
+import { INTERRUPT_REVIEW_COUNT } from '../sim/actions';
 import type { ActionId, ActionTarget, InterventionOutcome, SprintState } from '../sim/types';
 import { ManagerPortrait } from './ManagerPortrait';
 import { useResponsiveMode } from './responsiveMode';
@@ -28,7 +29,10 @@ const FEEDBACK_TTL_MS = 1000;
  * 詳細な数値と条件は title / aria-label に残す。
  */
 const ACTION_GLANCE_COPY: Record<ActionId, { effect: string; tradeoff?: string }> = {
-  interruptReview: { effect: 'レビュー詰まり解消', tradeoff: 'シニアHP消費' },
+  interruptReview: {
+    effect: `Review 最大${INTERRUPT_REVIEW_COUNT}件処理`,
+    tradeoff: 'シニアHP消費',
+  },
   splitPr: { effect: '巨大PRを分割', tradeoff: '進捗・士気・HP消費' },
   firefight: { effect: '炎上1件鎮火', tradeoff: '平常時は高コスト' },
   assignTask: { effect: 'タスクを前進', tradeoff: '士気消費' },

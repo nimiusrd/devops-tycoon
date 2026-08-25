@@ -65,6 +65,9 @@ function pickCompactMetrics(metrics: StatusMetricView[]): StatusMetricView[] {
   const ranked = metrics
     .filter((metric) => !seen.has(metric.id))
     .sort((a, b) => {
+      // 凍結・燃え尽きなど、プレイヤーが今すぐ判断すべき警告を通常の危険度より優先する。
+      const warningDiff = Number(Boolean(b.warningChip)) - Number(Boolean(a.warningChip));
+      if (warningDiff !== 0) return warningDiff;
       const toneDiff = TONE_RANK[a.tone] - TONE_RANK[b.tone];
       if (toneDiff !== 0) return toneDiff;
       return COMPACT_PRIORITY_IDS.indexOf(a.id) - COMPACT_PRIORITY_IDS.indexOf(b.id);
@@ -235,7 +238,20 @@ function CompactChip({ metric }: { metric: StatusMetricView }) {
       </span>
       <span className="hud-compact-chip-label">{metric.label}</span>
       <span className="hud-compact-chip-value">{valueText}</span>
-      {metric.warningChip && <span className="hud-compact-chip-warn">{metric.warningChip}</span>}
+      {metric.warningChip && (
+        <span
+          className="hud-compact-chip-warn"
+          data-testid={
+            metric.id === 'seniorHp'
+              ? 'senior-burnout-warning'
+              : metric.id === 'reviewCapacity'
+                ? 'review-freeze-warning'
+                : `${metric.id}-warning`
+          }
+        >
+          {metric.warningChip}
+        </span>
+      )}
       {riskText && <span className={`hud-compact-chip-risk risk-${metric.risk}`}>{riskText}</span>}
     </span>
   );

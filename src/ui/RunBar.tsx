@@ -44,6 +44,8 @@ export interface RunBarProps {
   getInitialPreviousSnapshot?: () => RunMetricSnapshot | null;
   /** 親がRunBar非表示期間をまたいで最後の表示値を保持するための通知。 */
   onSnapshotCaptured?: (snapshot: RunMetricSnapshot) => void;
+  /** 進行判断に直結しない文脈情報を詳細へ退避する。 */
+  compact?: boolean;
 }
 
 /** 表情演出の絵文字（第12.2）。 */
@@ -86,6 +88,7 @@ export function RunBar({
   readOnly = false,
   getInitialPreviousSnapshot,
   onSnapshotCaptured,
+  compact = false,
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
   const { resolveRelic } = useReplayContent();
@@ -97,6 +100,7 @@ export function RunBar({
   const nextFeedbackId = useRef(0);
   const feedbackTimers = useRef(new Set<ReturnType<typeof window.setTimeout>>());
   const [feedbacks, setFeedbacks] = useState<ActiveRunFeedback[]>([]);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
 
   useEffect(() => {
     const previous = previousSnapshot.current ?? getInitialPreviousSnapshot?.() ?? null;
@@ -153,8 +157,8 @@ export function RunBar({
     quarterNumber: state.quarterNumber,
   });
 
-  return (
-    <div className="subbar runbar" data-testid="runbar">
+  const secondaryDetails = (
+    <>
       <span className="pill" data-testid="seed">
         seed <b>{state.seed}</b>
       </span>
@@ -166,6 +170,43 @@ export function RunBar({
           {getScenario(state.scenario).label}
         </span>
       )}
+      <span className="pill" data-testid="evo-points-bar">
+        ⭐<b>{state.evolution.points}</b>
+      </span>
+      <div className="relic-bar" data-testid="relics">
+        {state.relics.length === 0 ? (
+          <span className="relic-empty">レリックなし</span>
+        ) : (
+          state.relics.map((id) => {
+            const relic = resolveRelic(id);
+            return (
+              <span key={id} className="relic-chip" title={formatRelicTooltip(relic)}>
+                🏛 {relic.name}
+              </span>
+            );
+          })
+        )}
+      </div>
+      <div
+        className={`diagnosis-status diag-${state.diagnosis}`}
+        data-testid="runbar-diagnosis"
+        data-diagnosis={state.diagnosis}
+        aria-live="polite"
+      >
+        <span className="pill diagnosis" title={diag.description}>
+          <span aria-hidden="true">{theme.icon}</span> {diag.label}
+        </span>
+        <span className="diagnosis-warning">{theme.warning}</span>
+      </div>
+    </>
+  );
+
+  return (
+    <div
+      className={`subbar runbar${compact ? ' runbar-compact' : ''}`}
+      data-testid="runbar"
+      data-compact={compact ? 'true' : 'false'}
+    >
       <span className="pill" data-testid="sprint-no" title="当四半期のトラック進行（最終がボス）">
         スプリント{' '}
         <b>
@@ -223,23 +264,6 @@ export function RunBar({
           </span>
         </span>
       )}
-      <span className="pill" data-testid="evo-points-bar">
-        ⭐<b>{state.evolution.points}</b>
-      </span>
-      <div className="relic-bar" data-testid="relics">
-        {state.relics.length === 0 ? (
-          <span className="relic-empty">レリックなし</span>
-        ) : (
-          state.relics.map((id) => {
-            const relic = resolveRelic(id);
-            return (
-              <span key={id} className="relic-chip" title={formatRelicTooltip(relic)}>
-                🏛 {relic.name}
-              </span>
-            );
-          })
-        )}
-      </div>
       {onOpenFormation ? (
         <button
           type="button"
@@ -266,17 +290,6 @@ export function RunBar({
           {roster.onLeave > 0 && <span className="roster-leave"> 😴{roster.onLeave}</span>}
         </span>
       )}
-      <div
-        className={`diagnosis-status diag-${state.diagnosis}`}
-        data-testid="runbar-diagnosis"
-        data-diagnosis={state.diagnosis}
-        aria-live="polite"
-      >
-        <span className="pill diagnosis" title={diag.description}>
-          <span aria-hidden="true">{theme.icon}</span> {diag.label}
-        </span>
-        <span className="diagnosis-warning">{theme.warning}</span>
-      </div>
       {onOpenOrg && (
         <button
           type="button"
@@ -292,6 +305,27 @@ export function RunBar({
         >
           🗺 全社
         </button>
+      )}
+      {compact ? (
+        <>
+          <button
+            type="button"
+            className="pill runbar-details-toggle"
+            data-testid="runbar-details-toggle"
+            aria-expanded={detailsExpanded}
+            aria-controls="runbar-details"
+            onClick={() => setDetailsExpanded((expanded) => !expanded)}
+          >
+            {detailsExpanded ? '詳細を閉じる' : 'ラン詳細'}
+          </button>
+          {detailsExpanded && (
+            <div className="runbar-details" id="runbar-details" data-testid="runbar-details">
+              {secondaryDetails}
+            </div>
+          )}
+        </>
+      ) : (
+        secondaryDetails
       )}
     </div>
   );

@@ -17,72 +17,15 @@ import {
   type Grade,
   type HudMetricDelta,
   type HudMetricSnapshot,
-  type StatusMetricId,
-  type StatusMetricTone,
   type StatusMetricView,
 } from '../render/status';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import type { OrgState, Task } from '../sim/types';
 import { formatSigned } from './formatSigned';
+import { pickCompactMetrics } from './hudCompact';
 import { useResponsiveMode } from './responsiveMode';
 
 const FEEDBACK_TTL_MS = 1000;
-/** 要約チップの上限。危険トーンを優先し、残りは主要指標で埋める。 */
-const COMPACT_CHIP_LIMIT = 5;
-const COMPACT_PRIORITY_IDS: StatusMetricId[] = [
-  'delivery',
-  'seniorHp',
-  'morale',
-  'aiDependency',
-  'techDebt',
-  'quality',
-  'security',
-  'devSpeed',
-  'reviewCapacity',
-];
-const TONE_RANK: Record<StatusMetricTone, number> = {
-  danger: 0,
-  watch: 1,
-  good: 2,
-};
-
-function pickCompactMetrics(metrics: StatusMetricView[]): StatusMetricView[] {
-  const byId = new Map(metrics.map((metric) => [metric.id, metric]));
-  const picked: StatusMetricView[] = [];
-  const seen = new Set<StatusMetricId>();
-
-  // 出荷は tone が常に good なので、危険トーン優先だけで埋めると落ちる。先に確保する。
-  const delivery = byId.get('delivery');
-  if (delivery) {
-    picked.push(delivery);
-    seen.add('delivery');
-  }
-
-  const ranked = metrics
-    .filter((metric) => !seen.has(metric.id))
-    .sort((a, b) => {
-      const toneDiff = TONE_RANK[a.tone] - TONE_RANK[b.tone];
-      if (toneDiff !== 0) return toneDiff;
-      return COMPACT_PRIORITY_IDS.indexOf(a.id) - COMPACT_PRIORITY_IDS.indexOf(b.id);
-    });
-  for (const metric of ranked) {
-    if (picked.length >= COMPACT_CHIP_LIMIT) break;
-    picked.push(metric);
-    seen.add(metric.id);
-  }
-  // 危険が少ないときは主要指標で埋める。
-  for (const id of COMPACT_PRIORITY_IDS) {
-    if (picked.length >= COMPACT_CHIP_LIMIT) break;
-    if (seen.has(id)) continue;
-    const metric = byId.get(id);
-    if (!metric) continue;
-    picked.push(metric);
-    seen.add(id);
-  }
-  return picked.sort(
-    (a, b) => COMPACT_PRIORITY_IDS.indexOf(a.id) - COMPACT_PRIORITY_IDS.indexOf(b.id),
-  );
-}
 
 interface ActiveHudFeedback extends HudMetricDelta {
   id: number;
@@ -210,16 +153,25 @@ export interface HudProps {
   expanded?: boolean;
   /** 狭幅時のKPI展開状態が変わったときの通知。 */
   onExpandedChange?: (expanded: boolean) => void;
+  /** 盤面を主役にしたい画面では、広幅でも要約表示を既定にする。 */
+  preferCompact?: boolean;
 }
 
-function CompactChip({ metric }: { metric: StatusMetricView }) {
+function CompactChip({
+  metric,
+  feedback,
+}: {
+  metric: StatusMetricView;
+  feedback?: ActiveHudFeedback;
+}) {
   const valueText = `${metric.value}${metric.unit ?? ''}`;
   const riskText = metric.risk && metric.risk !== 'LOW' ? `炎上 ${metric.risk}` : undefined;
+  const feedbackClass = feedback ? ` hud-feedback flash-${feedback.tone}` : '';
   // ガイド/CSS/E2E はフル表示と同じ `hud-seniorHp` を対象にする。
   const testId = metric.id === 'seniorHp' ? 'hud-seniorHp' : `hud-compact-${metric.id}`;
   return (
     <span
-      className={`hud-compact-chip tone-${metric.tone}`}
+      className={`hud-compact-chip tone-${metric.tone}${feedbackClass}`}
       data-testid={testId}
       data-tone={metric.tone}
       title={`${metric.label}: ${valueText}${riskText ? `。${riskText}` : ''}`}
@@ -229,7 +181,21 @@ function CompactChip({ metric }: { metric: StatusMetricView }) {
       </span>
       <span className="hud-compact-chip-label">{metric.label}</span>
       <span className="hud-compact-chip-value">{valueText}</span>
-      {metric.warningChip && <span className="hud-compact-chip-warn">{metric.warningChip}</span>}
+      <FeedbackPop feedback={feedback} />
+      {metric.warningChip && (
+        <span
+          className="hud-compact-chip-warn"
+          data-testid={
+            metric.id === 'seniorHp'
+              ? 'senior-burnout-warning'
+              : metric.id === 'reviewCapacity'
+                ? 'review-freeze-warning'
+                : `${metric.id}-warning`
+          }
+        >
+          {metric.warningChip}
+        </span>
+      )}
       {riskText && <span className={`hud-compact-chip-risk risk-${metric.risk}`}>{riskText}</span>}
     </span>
   );
@@ -245,6 +211,7 @@ export function Hud({
   onSnapshotCaptured,
   expanded: expandedProp,
   onExpandedChange,
+  preferCompact = false,
 }: HudProps) {
   const s = deriveHudStatusParts(org, tasks, orgScale);
   const snapshot = useMemo(() => hudMetricSnapshot(s), [s]);
@@ -258,8 +225,9 @@ export function Hud({
   const narrow = responsiveMode.width === 'narrow';
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false);
   const expanded = expandedProp ?? uncontrolledExpanded;
-  // 広幅では常にフル表示。expanded は狭幅のときだけ効く（リサイズ時にリセットしない）。
-  const compact = narrow && !expanded;
+  // スプリント中は広幅でも要約を既定にし、盤面へ高さを返す。
+  const canCompact = narrow || preferCompact;
+  const compact = canCompact && !expanded;
   const compactMetrics = useMemo(() => pickCompactMetrics(metrics), [metrics]);
 
   useEffect(() => {
@@ -329,7 +297,7 @@ export function Hud({
       data-responsive-width={responsiveMode.width}
       data-responsive-height={responsiveMode.height}
     >
-      {narrow && (
+      {canCompact && (
         <button
           type="button"
           className="hud-toggle"
@@ -338,13 +306,17 @@ export function Hud({
           aria-controls="hud-metrics"
           onClick={toggleExpanded}
         >
-          {expanded ? 'KPIを畳む' : 'KPIを展開'}
+          {expanded ? 'KPIを畳む' : 'KPI詳細'}
         </button>
       )}
       {compact ? (
         <div className="hud-compact-row" id="hud-metrics" data-testid="hud-compact">
           {compactMetrics.map((metric) => (
-            <CompactChip key={metric.id} metric={metric} />
+            <CompactChip
+              key={metric.id}
+              metric={metric}
+              feedback={metric.feedbackKey ? feedbackByKey.get(metric.feedbackKey) : undefined}
+            />
           ))}
         </div>
       ) : (

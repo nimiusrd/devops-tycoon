@@ -13,6 +13,7 @@ import {
   beginPublicSprint,
 } from './fixtures';
 import type { Locator, Page } from '@playwright/test';
+import { ACTION_DEFS } from '../../src/data/actions';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { RESPONSIVE_BREAKPOINTS } from '../../src/ui/responsiveMode';
 import { seedMeta } from './seedMeta';
@@ -30,7 +31,7 @@ const VIEWPORTS = [
 type Box = { x: number; y: number; width: number; height: number };
 
 interface LayoutContractOptions {
-  effectTags?: boolean;
+  glanceCopy?: boolean;
   diagnosis?: string;
   relicCount?: number;
   armed?: boolean;
@@ -142,6 +143,14 @@ async function assertLayoutContract(
   const board = page.getByTestId('board');
   const deck = page.getByTestId('deck');
   const actionBar = page.getByTestId('action-bar');
+  const runbarDetailsToggle = page.getByTestId('runbar-details-toggle');
+
+  if (
+    (await runbarDetailsToggle.count()) > 0 &&
+    (await runbarDetailsToggle.getAttribute('aria-expanded')) === 'true'
+  ) {
+    await runbarDetailsToggle.click();
+  }
 
   await expect(subbar).toBeVisible();
   await expect(board).toBeVisible();
@@ -161,6 +170,13 @@ async function assertLayoutContract(
       );
     }
   }
+
+  const hud = page.getByTestId('hud');
+  if ((await hud.getAttribute('data-compact')) === 'true') {
+    await expect(hud.locator('.hud-compact-chip')).toHaveCount(4);
+  }
+  await expect(page.getByTestId('runbar')).toHaveAttribute('data-compact', 'true');
+  await expect(page.getByTestId('runbar-details')).toHaveCount(0);
 
   // 直前の viewport での到達性検証によるスクロール位置を契約計測から切り離す。
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -275,26 +291,67 @@ async function assertLayoutContract(
     await assertReachableInViewport(page, senior, 'senior担当ボタン');
   }
 
-  if (options.effectTags) {
-    const effectTags = page.locator('[data-testid^="action-tags-"]').first();
-    await expect(effectTags).toBeVisible();
-    const firstEffectTag = effectTags.locator('.effect-tag').first();
-    await expect(firstEffectTag).toBeVisible();
-    await expect(firstEffectTag).not.toBeEmpty();
+  if (options.glanceCopy) {
+    const summaries = page.locator('[data-testid^="action-summary-"]');
+    const tradeoffs = page.locator('[data-testid^="action-tradeoff-"]');
+    await expect(summaries.first()).toBeVisible();
+    await expect(summaries).toHaveCount(8);
+    await expect(tradeoffs).toHaveCount(8);
+    await expect(page.getByTestId('action-tradeoff-andon')).toHaveText(
+      '士気消費・薄いキューはHP消費',
+    );
+    await expect(page.getByTestId('action-summary-andon')).toHaveText('流入停止・処理猶予');
+    await expect(page.getByTestId('action-tradeoff-pairReview')).toHaveText(
+      '集中力消費・再使用待ち',
+    );
+    for (const id of ['interruptReview', 'assignTask', 'aiThrottle', 'pairReview']) {
+      await expect(page.getByTestId(`action-summary-${id}`)).toContainText('運用安定');
+    }
+    await expect(page.getByTestId('action-summary-firefight')).toContainText('緊急時のみ運用安定');
+    for (const action of ACTION_DEFS) {
+      await expect(page.getByTestId(`action-gauge-${action.id}`)).toHaveText(
+        `連携+${Math.round(action.gauge * 100)}%`,
+      );
+    }
     if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
-      const effectTagsFit = await effectTags
-        .locator('.effect-tag')
-        .evaluateAll((tags) =>
-          tags.every(
-            (tag) =>
-              tag.scrollWidth <= tag.clientWidth + 1 && tag.scrollHeight <= tag.clientHeight + 1,
+      const glanceCopyFits = await summaries
+        .or(tradeoffs)
+        .evaluateAll((lines) =>
+          lines.every(
+            (line) =>
+              line.scrollWidth <= line.clientWidth + 1 &&
+              line.scrollHeight <= line.clientHeight + 1,
           ),
         );
       expect(
-        effectTagsFit,
-        `効果タグが表示領域から切り詰められている（${viewport.width}x${viewport.height}）`,
+        glanceCopyFits,
+        `一目読み文言が表示領域から切り詰められている（${viewport.width}x${viewport.height}）`,
       ).toBe(true);
     }
+  }
+  if (
+    (options.diagnosis || options.relicCount !== undefined) &&
+    (await runbarDetailsToggle.count())
+  ) {
+    await runbarDetailsToggle.click();
+    await expect(runbarDetailsToggle).toHaveAttribute('aria-expanded', 'true');
+    const runbarDetails = page.getByTestId('runbar-details');
+    await expect(runbarDetails).toBeVisible();
+    if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
+      const flexWrap = await runbarDetails.evaluate(
+        (element) => getComputedStyle(element).flexWrap,
+      );
+      expect(flexWrap, `ラン詳細が折り返されない（${viewport.width}x${viewport.height}）`).toBe(
+        'wrap',
+      );
+    }
+    const detailsOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(
+      detailsOverflow,
+      `ラン詳細の展開で横スクロールが発生している（${viewport.width}x${viewport.height}）`,
+    ).toBe(false);
   }
   if (options.diagnosis) {
     const diagnosis = page.getByTestId('runbar-diagnosis');
@@ -326,6 +383,12 @@ async function assertLayoutContract(
       relicsFit,
       `レリックチップが表示領域からはみ出している（${viewport.width}x${viewport.height}）`,
     ).toBe(true);
+  }
+  if (
+    (options.diagnosis || options.relicCount !== undefined) &&
+    (await runbarDetailsToggle.count())
+  ) {
+    await runbarDetailsToggle.click();
   }
   if (options.armed) {
     await expect(board).toHaveAttribute('data-armed', 'assignTask');
@@ -551,6 +614,19 @@ test('狭幅390pxでKPI折り畳み後に介入バーへ到達できる', async 
   await expect(actionBar).toBeInViewport();
 });
 
+test('要約HUDでも介入によるKPI差分をフィードバックする', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await beginPublicSprint(page, { seed: 'compact-hud-feedback-0' });
+
+  const hud = page.getByTestId('hud');
+  const seniorHp = page.getByTestId('hud-seniorHp');
+  await expect(hud).toHaveAttribute('data-compact', 'true');
+  await page.getByTestId('action-overtime').click();
+
+  await expect(seniorHp).toHaveClass(/flash-negative/);
+  await expect(seniorHp.locator('.hud-feedback-pop')).toContainText('-');
+});
+
 test('レスポンシブ表示モードを859/860/861px境界で共有する', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 844 });
   await beginPublicSprint(page, { seed: 'ri98-responsive-width-0' });
@@ -580,10 +656,7 @@ test('レスポンシブ表示モードを859/860/861px境界で共有する', a
       await expect(locator).toHaveAttribute('data-responsive-height', 'normal');
     }
 
-    await expect(page.getByTestId('hud')).toHaveAttribute(
-      'data-compact',
-      expected === 'narrow' ? 'true' : 'false',
-    );
+    await expect(page.getByTestId('hud')).toHaveAttribute('data-compact', 'true');
     const layoutStyle = await page.evaluate(() => {
       const root = document.querySelector<HTMLElement>('[data-testid="sprint-layout"]');
       const controls = document.querySelector<HTMLElement>('[data-sprint-slot="controls"]');
@@ -615,7 +688,7 @@ test('短いviewportの高さモードを自動切替する', async ({ page }) =
   await beginPublicSprint(page, { seed: 'ri98-responsive-height-0' });
 
   for (const [height, expected, expectedOverflow] of [
-    [720, 'short', 'visible'],
+    [720, 'short', 'auto'],
     [721, 'normal', 'auto'],
   ] as const) {
     await page.setViewportSize({ width: 1024, height });
@@ -642,9 +715,9 @@ test('短いviewportの高さモードを自動切替する', async ({ page }) =
 });
 
 test.describe('RI-94 レイアウト契約', () => {
-  test('通常スプリントの5 viewport契約と長い効果タグを満たす', async ({ page }) => {
+  test('通常スプリントの5 viewport契約と一目読み文言を満たす', async ({ page }) => {
     await beginPublicSprint(page, { seed: 'ri94-normal-0' });
-    await assertAcrossViewports(page, { effectTags: true });
+    await assertAcrossViewports(page, { glanceCopy: true });
   });
 
   test('HUD展開・シニア担当の武装状態を5 viewportで維持する', async ({ page }) => {
@@ -662,7 +735,7 @@ test.describe('RI-94 レイアウト契約', () => {
     await assertAcrossViewports(page, {
       armed: true,
       assignee: true,
-      effectTags: true,
+      glanceCopy: true,
       hudExpanded: true,
     });
   });
@@ -673,14 +746,14 @@ test.describe('RI-94 レイアウト契約', () => {
       target: { phase: 'setup', diagnosis: 'seniorSacrifice' },
     });
     await beginCurrentSetupSprint(page);
-    await assertAcrossViewports(page, { diagnosis: 'seniorSacrifice', effectTags: true });
+    await assertAcrossViewports(page, { diagnosis: 'seniorSacrifice', glanceCopy: true });
   });
 
   test('全レリック解放メタから6個取得した状態を5 viewportで表示する', async ({ page }) => {
     await openSixRelicSprint(page);
     await assertAcrossViewports(page, {
       relicCount: 6,
-      effectTags: true,
+      glanceCopy: true,
     });
   });
 

@@ -174,12 +174,16 @@
 }
 
 .root :global(.action) {
-  padding: 6px 4px;
+  padding: 5px 4px;
   gap: 2px;
 }
 
 .root :global(.action .ico) {
   font-size: 18px;
+}
+
+.root :global(.actionbar) {
+  min-height: 0;
 }
 
 /*
@@ -204,6 +208,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* タッチ端末では title に頼れないため、主効果と代償を省略せず折り返す。 */
+.root[data-responsive-width='narrow'] :global(.action-summary),
+.root[data-responsive-width='narrow'] :global(.action-tradeoff) {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 /* KPI 展開時は内容高を確保し、既存のページ内スクロール範囲を維持する。 */

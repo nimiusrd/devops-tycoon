@@ -13,6 +13,7 @@ import {
   beginPublicSprint,
 } from './fixtures';
 import type { Locator, Page } from '@playwright/test';
+import { ACTION_DEFS } from '../../src/data/actions';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { RESPONSIVE_BREAKPOINTS } from '../../src/ui/responsiveMode';
 import { seedMeta } from './seedMeta';
@@ -305,6 +306,12 @@ async function assertLayoutContract(
     );
     for (const id of ['interruptReview', 'assignTask', 'aiThrottle', 'pairReview']) {
       await expect(page.getByTestId(`action-summary-${id}`)).toContainText('運用安定');
+    }
+    await expect(page.getByTestId('action-summary-firefight')).toContainText('緊急時のみ運用安定');
+    for (const action of ACTION_DEFS) {
+      await expect(page.getByTestId(`action-gauge-${action.id}`)).toHaveText(
+        `連携+${Math.round(action.gauge * 100)}%`,
+      );
     }
     if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
       const glanceCopyFits = await summaries

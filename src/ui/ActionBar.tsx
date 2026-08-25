@@ -26,7 +26,7 @@ const FEEDBACK_TTL_MS = 1000;
 
 /**
  * プレイ中に読む文言は、主効果1行・代償1行までに制限する。
- * 詳細な数値と条件は title / aria-label に残す。
+ * その他の詳細な数値と条件は title / aria-label に残す。
  */
 const ACTION_GLANCE_COPY: Record<ActionId, { effect: string; tradeoff?: string }> = {
   interruptReview: {
@@ -34,7 +34,7 @@ const ACTION_GLANCE_COPY: Record<ActionId, { effect: string; tradeoff?: string }
     tradeoff: 'シニアHP消費',
   },
   splitPr: { effect: '巨大PRを分割', tradeoff: '進捗・士気・HP消費' },
-  firefight: { effect: '炎上1件鎮火', tradeoff: '平常時は高コスト' },
+  firefight: { effect: '炎上1件鎮火＋緊急時のみ運用安定', tradeoff: '平常時は高コスト' },
   assignTask: { effect: 'タスク前進＋運用安定', tradeoff: '士気消費' },
   aiThrottle: { effect: 'AI流入停止＋運用安定', tradeoff: '出荷速度低下' },
   pairReview: {
@@ -353,7 +353,16 @@ export function ActionBar({
                   {glanceCopy.tradeoff}
                 </span>
               )}
-              <span className="cost">⚡{a.cost}</span>
+              <span className="action-resources">
+                <span className="cost">⚡{a.cost}</span>
+                <span
+                  className="action-gauge-gain"
+                  data-testid={`action-gauge-${a.id}`}
+                  title={`連携ゲージ +${Math.round(a.gauge * 100)}%`}
+                >
+                  連携+{Math.round(a.gauge * 100)}%
+                </span>
+              </span>
               <span className={`cd${onCooldown ? '' : ' full'}`}>
                 <i style={{ width: `${cdPct}%` }} />
               </span>

@@ -604,6 +604,19 @@ test('狭幅390pxでKPI折り畳み後に介入バーへ到達できる', async 
   await expect(actionBar).toBeInViewport();
 });
 
+test('要約HUDでも介入によるKPI差分をフィードバックする', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await beginPublicSprint(page, { seed: 'compact-hud-feedback-0' });
+
+  const hud = page.getByTestId('hud');
+  const seniorHp = page.getByTestId('hud-seniorHp');
+  await expect(hud).toHaveAttribute('data-compact', 'true');
+  await page.getByTestId('action-overtime').click();
+
+  await expect(seniorHp).toHaveClass(/flash-negative/);
+  await expect(seniorHp.locator('.hud-feedback-pop')).toContainText('-');
+});
+
 test('レスポンシブ表示モードを859/860/861px境界で共有する', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 844 });
   await beginPublicSprint(page, { seed: 'ri98-responsive-width-0' });

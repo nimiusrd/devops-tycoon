@@ -157,14 +157,21 @@ export interface HudProps {
   preferCompact?: boolean;
 }
 
-function CompactChip({ metric }: { metric: StatusMetricView }) {
+function CompactChip({
+  metric,
+  feedback,
+}: {
+  metric: StatusMetricView;
+  feedback?: ActiveHudFeedback;
+}) {
   const valueText = `${metric.value}${metric.unit ?? ''}`;
   const riskText = metric.risk && metric.risk !== 'LOW' ? `炎上 ${metric.risk}` : undefined;
+  const feedbackClass = feedback ? ` hud-feedback flash-${feedback.tone}` : '';
   // ガイド/CSS/E2E はフル表示と同じ `hud-seniorHp` を対象にする。
   const testId = metric.id === 'seniorHp' ? 'hud-seniorHp' : `hud-compact-${metric.id}`;
   return (
     <span
-      className={`hud-compact-chip tone-${metric.tone}`}
+      className={`hud-compact-chip tone-${metric.tone}${feedbackClass}`}
       data-testid={testId}
       data-tone={metric.tone}
       title={`${metric.label}: ${valueText}${riskText ? `。${riskText}` : ''}`}
@@ -174,6 +181,7 @@ function CompactChip({ metric }: { metric: StatusMetricView }) {
       </span>
       <span className="hud-compact-chip-label">{metric.label}</span>
       <span className="hud-compact-chip-value">{valueText}</span>
+      <FeedbackPop feedback={feedback} />
       {metric.warningChip && (
         <span
           className="hud-compact-chip-warn"
@@ -304,7 +312,11 @@ export function Hud({
       {compact ? (
         <div className="hud-compact-row" id="hud-metrics" data-testid="hud-compact">
           {compactMetrics.map((metric) => (
-            <CompactChip key={metric.id} metric={metric} />
+            <CompactChip
+              key={metric.id}
+              metric={metric}
+              feedback={metric.feedbackKey ? feedbackByKey.get(metric.feedbackKey) : undefined}
+            />
           ))}
         </div>
       ) : (

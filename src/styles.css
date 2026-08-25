@@ -99,6 +99,7 @@ body {
   padding-right: 78px;
 }
 .hud-compact-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -111,6 +112,17 @@ body {
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
+}
+.hud-compact-chip.flash-positive {
+  animation: hudFlashPositive 0.8s ease-out;
+}
+.hud-compact-chip.flash-negative {
+  animation: hudFlashNegative 0.8s ease-out;
+}
+.hud-compact-chip .hud-feedback-pop {
+  top: -8px;
+  right: 2px;
+  font-size: 13px;
 }
 .hud-compact-chip.tone-danger {
   border-color: #ff6b8a88;

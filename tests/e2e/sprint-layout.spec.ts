@@ -299,6 +299,10 @@ async function assertLayoutContract(
     await expect(page.getByTestId('action-tradeoff-andon')).toHaveText(
       '士気消費・薄いキューはHP消費',
     );
+    await expect(page.getByTestId('action-summary-andon')).toHaveText('流入停止・処理猶予');
+    await expect(page.getByTestId('action-tradeoff-pairReview')).toHaveText(
+      '集中力消費・再使用待ち',
+    );
     if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
       const glanceCopyFits = await summaries
         .or(tradeoffs)

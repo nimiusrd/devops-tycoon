@@ -37,9 +37,9 @@ const ACTION_GLANCE_COPY: Record<ActionId, { effect: string; tradeoff?: string }
   firefight: { effect: '炎上1件鎮火', tradeoff: '平常時は高コスト' },
   assignTask: { effect: 'タスクを前進', tradeoff: '士気消費' },
   aiThrottle: { effect: 'AI流入停止', tradeoff: '出荷速度低下' },
-  pairReview: { effect: 'Review＋AI習熟', tradeoff: '2人を拘束' },
+  pairReview: { effect: 'Review＋AI習熟', tradeoff: '集中力消費・再使用待ち' },
   overtime: { effect: '開発速度UP', tradeoff: '士気・HP低下' },
-  andon: { effect: '流入停止・渋滞解消', tradeoff: '士気消費・薄いキューはHP消費' },
+  andon: { effect: '流入停止・処理猶予', tradeoff: '士気消費・薄いキューはHP消費' },
 };
 
 interface FocusPop {

@@ -69,7 +69,7 @@ export const ACTION_CONTENT_DEFS = [
     icon: '👥',
     stabilizesFlow: true,
     description: '詰まったPRをペアで処理。AI Literacy が上がる',
-    sideEffect: '一時的に2人を拘束',
+    sideEffect: '集中力を消費し、再使用まで待ち時間がある',
   },
   {
     id: 'overtime',
@@ -87,7 +87,7 @@ export const ACTION_CONTENT_DEFS = [
     // 渋滞時は士気のみ。毎スプリント先止めは薄キュー罰で高くつく。
     stabilizesFlow: true,
     tone: 'heavy',
-    description: 'タスク流入を止め、溜まったキューを捌き切る',
+    description: 'タスク流入を止め、溜まったキューを処理する猶予を作る',
     sideEffect: '出荷機会を失う。士気を消費。薄いキューではシニアHPも消費。運用安定なし',
   },
 ] as const satisfies readonly ActionContentDef[];

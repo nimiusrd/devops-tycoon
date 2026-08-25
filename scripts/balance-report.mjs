@@ -482,7 +482,7 @@ function difference(before, after) {
 
 function distributionDifference(before, after) {
   return {
-    n: { before: before.n, after: after.n, delta: after.n - before.n },
+    n: after.n - before.n,
     mean: difference(before.mean, after.mean),
     p10: difference(before.p10, after.p10),
     p50: difference(before.p50, after.p50),
@@ -602,6 +602,10 @@ export function compareMeasurements(before, after) {
 function display(value) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   if (typeof value === 'number') return String(Math.round(value * 10_000) / 10_000);
+  if (Array.isArray(value)) return displayList(value);
+  if (typeof value === 'object') {
+    throw new BalanceReportError('Markdownにオブジェクトを埋め込めない');
+  }
   return String(value);
 }
 

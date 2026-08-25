@@ -140,6 +140,7 @@ describe('balance-report', () => {
       complete: true,
     });
     expect(report.results.overall.winRate).toEqual({ before: 1 / 3, after: 1 / 3, delta: 0 });
+    expect(report.results.overall.metrics.delivery.delta.n).toBe(0);
     expect(report.results.overall.metrics.delivery.before.p50).toBe(20);
     expect(report.results.overall.metrics.delivery.after.p50).toBe(22);
     expect(report.results.overall.metrics.delivery.delta.p50).toBe(2);
@@ -293,6 +294,16 @@ describe('balance-report', () => {
     expect(markdown).toContain('## 結果分布の差分');
     expect(markdown).toContain('## 感度（観測値）');
     expect(markdown).toContain('fresh|easy|naive|s-3');
+    expect(markdown).not.toContain('[object Object]');
+    expect(markdown).toContain('| Delivery n | 2 | 2 | 0 |');
+  });
+
+  it('指標差分のnがオブジェクトならMarkdown生成を失敗させる', async () => {
+    const before = await measurement(payload({ runs: beforeRuns }), 'before');
+    const after = await measurement(payload({ runs: afterRuns }), 'after');
+    const report = compareMeasurements(before, after);
+    report.results.overall.metrics.delivery.delta.n = { before: 3, after: 3, delta: 0 };
+    expect(() => renderMarkdown(report)).toThrow(/オブジェクト/);
   });
 
   it('totalsが無い古いランでもDeliveryの旧フィールドを読む', () => {

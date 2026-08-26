@@ -490,6 +490,10 @@ function distributionDifference(before, after) {
   };
 }
 
+function metricCountDelta(value) {
+  return isObject(value) && Number.isFinite(value.delta) ? value.delta : value;
+}
+
 function compareSummary(beforeRuns, afterRuns) {
   const before = summarizeRuns(beforeRuns);
   const after = summarizeRuns(afterRuns);
@@ -602,6 +606,10 @@ export function compareMeasurements(before, after) {
 function display(value) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   if (typeof value === 'number') return String(Math.round(value * 10_000) / 10_000);
+  if (Array.isArray(value)) return displayList(value);
+  if (typeof value === 'object') {
+    throw new BalanceReportError('Markdownにオブジェクトを埋め込めない');
+  }
   return String(value);
 }
 
@@ -634,7 +642,7 @@ function renderSummaryTable(result) {
   for (const metric of METRICS) {
     const summary = result.metrics[metric.id];
     lines.push(
-      `| ${metric.label} n | ${display(summary.before.n)} | ${display(summary.after.n)} | ${display(summary.delta.n)} |`,
+      `| ${metric.label} n | ${display(summary.before.n)} | ${display(summary.after.n)} | ${display(metricCountDelta(summary.delta.n))} |`,
       `| ${metric.label} 平均 | ${display(summary.before.mean)} | ${display(summary.after.mean)} | ${display(summary.delta.mean)} |`,
       `| ${metric.label} p10 | ${display(summary.before.p10)} | ${display(summary.after.p10)} | ${display(summary.delta.p10)} |`,
       `| ${metric.label} p50 | ${display(summary.before.p50)} | ${display(summary.after.p50)} | ${display(summary.delta.p50)} |`,

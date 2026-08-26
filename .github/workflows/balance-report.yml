@@ -187,6 +187,10 @@ jobs:
             --after-root "${GITHUB_WORKSPACE}" \
             --out-dir "${RUNNER_TEMP}/balance-artifact/report"
           status=$?
+          report_md="${RUNNER_TEMP}/balance-artifact/report/balance-report.md"
+          if [[ -f "${report_md}" ]]; then
+            cat "${report_md}" >> "${GITHUB_STEP_SUMMARY}"
+          fi
           exit "${status}"
 
       - name: Remove before worktree

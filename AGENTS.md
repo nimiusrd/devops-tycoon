@@ -2,6 +2,12 @@
 
 変更をコミットまたはPR化する前に、CIで失敗しやすい `npm run lint` と `npm run format:check` を事前に実行して確認してください。フォーマット差分がある場合は `npm run format` または対象ファイルへの Prettier 実行で修正してから進めてください。
 
+## UI・デザインシステム
+
+- React UI、CSS、Pixi/DOM描画、レイアウト、アニメーション、画像、ユーザー向け文言を変更する前に、[`docs/design-system.md`](docs/design-system.md)と[`.agents/skills/devops-tycoon-design-system/SKILL.md`](.agents/skills/devops-tycoon-design-system/SKILL.md)を読み、同文書の制約と検証マトリクスに従う。
+- 新しい意味を持つ色やDOM/Pixi間で共有する寸法は`src/render/visualTokens.ts`を正本にする。既存の直接指定を、新しい色・寸法リテラルを増やす根拠にしない。
+- 視覚変更では、影響する状態とviewportを特定し、DOMの対象E2Eを実行する。Pixiに触れた場合は該当する視覚回帰、複数画面に及ぶ場合は`npm run gallery`も確認する。
+
 ## 共通の開発環境
 
 - 本プロジェクトは Vite + React 19 + TypeScript + PixiJS のブラウザゲーム（DevOps Tycoon）。バックエンドやDB等の外部サービスは無く、フロントエンド単体で完結する。

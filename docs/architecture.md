@@ -52,6 +52,8 @@ IndexedDB ◀──── Meta / RunSave / Replayの直列化境界
 
 ## 4. 描画規律
 
+UIのデザイン判断、トークン利用、レスポンシブ、アクセシビリティ、視覚検証は[デザインシステム制約](./design-system.md)を正とする。
+
 - 既定はPixiJS。`?renderer=dom`またはWebGL不可時のみDOM/SVGを使う。
 - 座標、深度、カリング、LOD、ヒット判定は可能な限り純関数化し、GPU不要のVitestで検証する。
 - 実ピクセルはPlaywrightの`@pixi`テスト、主要画面の目視は`npm run gallery`で確認する。

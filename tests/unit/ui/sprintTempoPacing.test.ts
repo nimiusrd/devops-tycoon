@@ -70,8 +70,10 @@ describe('sprintTempo 全難易度ペーシング（RI-75 / F-4、RI-84 / F-5）
 
   beforeAll(() => {
     // F-4の3方針に、F-5用の初見統制を加えた総当たりを1回だけ実行する。
+    // ローカルは約 200s。GitHub Actions の Vitest 並列負荷では 300s を超えて
+    // 同 SHA でも Lint & Unit が割れ落ちする。skip せずフック上限だけ 10 分にする。
     runs = runMatrix([...RI75_DIFFICULTIES], [...F5_POLICIES], [...RI75_SEEDS], 'fresh');
-  }, 300_000);
+  }, 600_000);
 
   it('F-4 代表3方針×pt seed で通常・elite・ボスの壁時計帯を満たす', () => {
     const pacingRuns = runs.filter((run) =>

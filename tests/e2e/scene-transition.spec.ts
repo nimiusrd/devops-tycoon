@@ -52,7 +52,8 @@ test.describe('シーン遷移のスクロールと下地', () => {
 
     expect(await windowScrollY(page)).toBeLessThanOrEqual(1);
     await expect(page.getByTestId('setup')).toBeInViewport();
-    await expect(page.getByTestId('begin-sprint')).toBeInViewport();
+    // 390×667 では編成の「スプリント開始」は折りたたみ下（#358）。着地は上端と setup の可視で見る。
+    await expect(page.getByTestId('begin-sprint')).toBeVisible();
     expect(await htmlBackgroundColor(page)).toBe('rgb(28, 20, 56)');
   });
 

@@ -33,6 +33,10 @@ export const SHARD_MUTANT_BUDGET = 700;
  * `src/sim/sprint.ts` の mutant はテストがスプリント完走まで回るため
  * 1 体あたり約 35–45 秒（engine シャードの約 2.5 倍）。160 以下なら
  * 同じ速度でも 2 時間前後に収まる。
+ *
+ * Mutation #11 の sim-run-engine-a（466 mutant / engine.ts:1-1057）も 180 分で打ち切られた。
+ * 件数は 700 以内だが、`step` の while と `resolveSprint` の baseline 完走が
+ * sprint.ts 並みに遅い。該当ホットパスも同じ 160 上限で切り離す。
  */
 export const SPRINT_SHARD_MUTANT_BUDGET = 160;
 
@@ -41,7 +45,12 @@ export const SPRINT_SHARD_MUTANT_BUDGET = 160;
  * @returns {number}
  */
 export function shardMutantBudget(id) {
-  if (id.startsWith('sim-sprint-') || id.startsWith('sim-run-sprint-baseline-')) {
+  if (
+    id.startsWith('sim-sprint-') ||
+    id.startsWith('sim-run-sprint-baseline-') ||
+    id === 'sim-run-engine-e' ||
+    id === 'sim-run-engine-g'
+  ) {
     return SPRINT_SHARD_MUTANT_BUDGET;
   }
   return SHARD_MUTANT_BUDGET;
@@ -83,10 +92,27 @@ const MUTATION_RANGE_RE = /^(.*?):(\d+)(?::\d+)?-(\d+)(?::\d+)?$/;
 /** @type {readonly MutationShard[]} */
 export const MUTATION_SHARDS = Object.freeze([
   // src/sim/run/engine.ts — 約 1,960 mutant。旧 1 ジョブが 180 分タイムアウト。
+  // Mutation #11 の sim-run-engine-a（1-1057 / 466 mutant）も 180 分超過。
+  // 件数ではなく step / resolveSprint の完走コストが原因なので、ホットパスを切り離す。
   {
     id: 'sim-run-engine-a',
-    mutate: 'src/sim/run/engine.ts:1-1057',
-    note: 'engine 前半（初期化〜 chooseGoalAdjustment）',
+    mutate: 'src/sim/run/engine.ts:1-765',
+    note: 'engine 初期化（beginSprint / buildSprintBaselineInput まで）',
+  },
+  {
+    id: 'sim-run-engine-e',
+    mutate: 'src/sim/run/engine.ts:766-816',
+    note: 'engine ホットパス（step / dispatch / playCard）',
+  },
+  {
+    id: 'sim-run-engine-g',
+    mutate: 'src/sim/run/engine.ts:817-901',
+    note: 'engine resolveSprint（baseline 完走を含む）',
+  },
+  {
+    id: 'sim-run-engine-f',
+    mutate: 'src/sim/run/engine.ts:902-1057',
+    note: 'engine 四半期接続（accumulateTotals 〜 chooseGoalAdjustment）',
   },
   {
     id: 'sim-run-engine-b',

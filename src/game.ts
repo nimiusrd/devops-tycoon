@@ -309,6 +309,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let whatIfCache: { key: string; value: WhatIfState | null } | null = null;
   /** 進行中の Worker リクエストのキャッシュキー。 */
   let whatIfPendingKey: string | null = null;
+  /** 進行中リクエストの世代。引き直し後の古い完了を捨てる。 */
+  let whatIfRequestGen = 0;
 
   /** 状態を変えた可能性のある操作の後に版番号を進める。 */
   const bump = (): void => {
@@ -318,6 +320,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const clearWhatIfCache = (): void => {
     whatIfCache = null;
     whatIfPendingKey = null;
+    whatIfRequestGen += 1;
+  };
+
+  const applyWhatIfResult = (gen: number, key: string, value: WhatIfState | null): void => {
+    if (gen !== whatIfRequestGen) return;
+    if (whatIfPendingKey !== key) return;
+    whatIfCache = { key, value };
+    whatIfPendingKey = null;
+    bump();
   };
 
   const clearRunSaveInternal = (): void => {
@@ -452,12 +463,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (whatIfPendingKey !== key) {
       whatIfPendingKey = key;
       const requestInput: WhatIfComputeInput = input;
-      void requestWhatIfState(requestInput).then((value) => {
-        if (whatIfPendingKey !== key) return;
-        whatIfCache = { key, value };
-        whatIfPendingKey = null;
-        bump();
-      });
+      const gen = ++whatIfRequestGen;
+      void requestWhatIfState(requestInput)
+        .then((value) => {
+          applyWhatIfResult(gen, key, value);
+        })
+        .catch(() => {
+          applyWhatIfResult(gen, key, computeWhatIfState(requestInput));
+        });
     }
 
     return { whatIf: null, whatIfStatus: 'computing' };
@@ -653,8 +666,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     mulliganDraft() {
       if (replayMode) return engine.snapshot();
       engine.mulliganDraft();
+      clearWhatIfCache();
       bump();
-      return after();
+      const persisted = after();
+      return { ...persisted, ...resolveWhatIf() };
     },
     unlockEvolution(id) {
       if (replayMode) return engine.snapshot();

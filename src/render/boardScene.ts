@@ -60,6 +60,18 @@ interface StationLayout {
 }
 
 /**
+ * 工程の人物中心。盤面描画とドラッグ判定が同じ位置を参照する。
+ * Backlog / Coding / Review は滞留の山を読み分けられる間隔を確保する。
+ */
+export const BOARD_STATION_CENTERS = {
+  backlog: { x: 380, y: 220 },
+  coding: { x: 620, y: 260 },
+  review: { x: 840, y: 300 },
+  rework: { x: 1006, y: 229 },
+  done: { x: 1075, y: 370 },
+} as const satisfies Record<Lane, Point>;
+
+/**
  * 5 工程のステーション配置（旧モック main-screen の station 座標由来）。
  * Backlog → Coding → Review（中央・手前）→ Rework（右奥）→ Done（右手前）。
  */
@@ -68,10 +80,10 @@ const STATIONS: readonly StationLayout[] = [
     lane: 'backlog',
     label: 'Backlog',
     icon: '📥',
-    anchor: { x: 526, y: 203 },
-    label_at: { x: 526, y: 178 },
-    bubble_at: { x: 556, y: 150 },
-    pile: { x: 526, y: 168 },
+    anchor: BOARD_STATION_CENTERS.backlog,
+    label_at: { x: 380, y: 190 },
+    bubble_at: { x: 410, y: 150 },
+    pile: { x: 380, y: 185 },
     perRow: 3,
     cap: 12,
   },
@@ -79,10 +91,10 @@ const STATIONS: readonly StationLayout[] = [
     lane: 'coding',
     label: 'Coding',
     icon: '💻',
-    anchor: { x: 622, y: 251 },
-    label_at: { x: 622, y: 226 },
-    bubble_at: { x: 652, y: 200 },
-    pile: { x: 622, y: 214 },
+    anchor: BOARD_STATION_CENTERS.coding,
+    label_at: { x: 620, y: 230 },
+    bubble_at: { x: 650, y: 205 },
+    pile: { x: 620, y: 225 },
     perRow: 3,
     cap: 12,
   },
@@ -90,10 +102,10 @@ const STATIONS: readonly StationLayout[] = [
     lane: 'review',
     label: 'Review',
     icon: '🔍',
-    anchor: { x: 742, y: 285 },
-    label_at: { x: 742, y: 238 },
-    bubble_at: { x: 772, y: 212 },
-    pile: { x: 744, y: 300 },
+    anchor: BOARD_STATION_CENTERS.review,
+    label_at: { x: 840, y: 260 },
+    bubble_at: { x: 840, y: 190 },
+    pile: { x: 840, y: 315 },
     perRow: 5,
     cap: 20,
   },
@@ -101,7 +113,7 @@ const STATIONS: readonly StationLayout[] = [
     lane: 'rework',
     label: 'Rework',
     icon: '↩️',
-    anchor: { x: 1006, y: 229 },
+    anchor: BOARD_STATION_CENTERS.rework,
     label_at: { x: 1006, y: 200 },
     bubble_at: { x: 1036, y: 174 },
     pile: { x: 1006, y: 190 },
@@ -112,7 +124,7 @@ const STATIONS: readonly StationLayout[] = [
     lane: 'done',
     label: 'Done',
     icon: '📦',
-    anchor: { x: 1075, y: 370 },
+    anchor: BOARD_STATION_CENTERS.done,
     label_at: { x: 1030, y: 312 },
     bubble_at: { x: 1060, y: 286 },
     pile: { x: 1006, y: 330 },
@@ -134,11 +146,11 @@ export interface BoardFlow {
 }
 
 const FLOWS: readonly BoardFlow[] = [
-  { from: 'backlog', to: 'coding', x1: 552, y1: 232, x2: 600, y2: 252, rework: false },
-  { from: 'coding', to: 'review', x1: 656, y1: 280, x2: 710, y2: 300, rework: false },
-  { from: 'review', to: 'rework', x1: 812, y1: 280, x2: 958, y2: 250, rework: true },
-  { from: 'review', to: 'done', x1: 822, y1: 320, x2: 970, y2: 350, rework: false },
-  { from: 'rework', to: 'review', x1: 970, y1: 240, x2: 800, y2: 268, rework: true },
+  { from: 'backlog', to: 'coding', x1: 470, y1: 250, x2: 545, y2: 280, rework: false },
+  { from: 'coding', to: 'review', x1: 700, y1: 290, x2: 765, y2: 325, rework: false },
+  { from: 'review', to: 'rework', x1: 915, y1: 300, x2: 955, y2: 260, rework: true },
+  { from: 'review', to: 'done', x1: 925, y1: 350, x2: 985, y2: 370, rework: false },
+  { from: 'rework', to: 'review', x1: 950, y1: 245, x2: 905, y2: 290, rework: true },
 ];
 
 /** 進捗中タスクをフロー上へ載せる対象レーン（RI-05）。 */

@@ -91,7 +91,7 @@ describe('planBoardDrag', () => {
 
 describe('hitTestDropLane', () => {
   it('coding ステーション近傍をヒットする', () => {
-    expect(hitTestDropLane(622, 251, ['backlog', 'coding'])).toBe('coding');
+    expect(hitTestDropLane(620, 260, ['backlog', 'coding'])).toBe('coding');
     expect(hitTestDropLane(0, 0, ['backlog', 'coding'])).toBeNull();
   });
 });

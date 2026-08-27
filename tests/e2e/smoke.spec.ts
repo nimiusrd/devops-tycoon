@@ -50,10 +50,23 @@ test('スプリントを開始すると盤面（HUD と5レーン）が表示さ
   await page.getByTestId('begin-sprint').click();
 
   await expect(page.getByTestId('hud')).toBeVisible();
-  await expect(page.getByTestId('board')).toBeVisible();
+  const board = page.getByTestId('board');
+  await expect(board).toBeVisible();
+  await expect(board.getByTestId('board-flow-summary')).toBeVisible();
   for (const lane of ['backlog', 'coding', 'review', 'rework', 'done']) {
     await expect(page.getByTestId(`lane-${lane}`)).toBeVisible();
+    await expect(board.getByTestId(`count-${lane}`)).toBeVisible();
   }
+  const legend = board.locator('.board-legend');
+  const legendToggle = legend.locator('summary');
+  await expect(legend).not.toHaveAttribute('open', '');
+  await expect(legendToggle).toHaveText('粒の見方');
+  await legendToggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(legend).toHaveAttribute('open', '');
+  await expect(legend.locator('.li')).toHaveCount(5);
+  await page.keyboard.press('Enter');
+  await expect(legend).not.toHaveAttribute('open', '');
 });
 
 test('window.game.step でスプリントが決定論的に進む（同一 seed で再現）', async ({ page }) => {

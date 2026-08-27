@@ -162,7 +162,7 @@ export const VISUAL_TOKENS = {
   },
   dimensions: {
     sprint: {
-      stationWidthPercent: 15,
+      stationWidthPercent: 13,
       actor: {
         local: { w: 220, h: 200 },
         dom: { w: 210, h: 190 },

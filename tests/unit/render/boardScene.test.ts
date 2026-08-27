@@ -10,6 +10,7 @@ import {
 } from '../../../src/render/boardScene';
 import { BURN_TICKS } from '../../../src/sim/model';
 import type { Lane, Task } from '../../../src/sim/types';
+import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 
 function task(overrides: Partial<Task> = {}): Task {
   return {
@@ -51,6 +52,15 @@ describe('planBoardScene（盤面シーン計画）', () => {
   it('設計座標空間を 1404×573 の固定値で返す', () => {
     const scene = planBoardScene([]);
     expect(scene.view).toEqual({ w: BOARD_VIEW.w, h: BOARD_VIEW.h });
+  });
+
+  it('Backlog・Coding・Review は人物幅以上の水平間隔を保つ', () => {
+    const stations = planBoardScene([]).stations;
+    const station = (lane: Lane) => stations.find((candidate) => candidate.lane === lane)!;
+    const actorWidth = (BOARD_VIEW.w * VISUAL_TOKENS.dimensions.sprint.stationWidthPercent) / 100;
+
+    expect(station('coding').x - station('backlog').x).toBeGreaterThan(actorWidth);
+    expect(station('review').x - station('coding').x).toBeGreaterThan(actorWidth);
   });
 
   it('レーンごとに件数を集計する', () => {

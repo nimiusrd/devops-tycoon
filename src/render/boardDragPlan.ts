@@ -6,7 +6,7 @@
  */
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { ActionId, Lane, SprintState } from '../sim/types';
-import { BOARD_VIEW, planBoardScene } from './boardScene';
+import { BOARD_STATION_CENTERS, BOARD_VIEW, planBoardScene } from './boardScene';
 
 /** ドラッグ武装可能なアクション。 */
 export type DraggableActionId = 'assignTask' | 'splitPr';
@@ -17,9 +17,9 @@ export function isDraggableAction(id: ActionId): id is DraggableActionId {
 
 /** ステーションのドロップゾーン（設計座標の中心＋半径）。 */
 const DROP_ZONES: Record<'backlog' | 'coding' | 'review', { x: number; y: number; r: number }> = {
-  backlog: { x: 526, y: 203, r: 70 },
-  coding: { x: 622, y: 251, r: 70 },
-  review: { x: 742, y: 285, r: 80 },
+  backlog: { ...BOARD_STATION_CENTERS.backlog, r: 70 },
+  coding: { ...BOARD_STATION_CENTERS.coding, r: 70 },
+  review: { ...BOARD_STATION_CENTERS.review, r: 80 },
 };
 
 export interface BoardDragPlan {

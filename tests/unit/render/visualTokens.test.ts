@@ -56,7 +56,7 @@ describe('visual tokens', () => {
     expect(values['--visual-space-organization-h']).toBe('573');
     expect(values['--visual-space-department-w']).toBe('1404');
     expect(values['--visual-space-industry-h']).toBe('360');
-    expect(values['--visual-sprint-station-width']).toBe('15%');
+    expect(values['--visual-sprint-station-width']).toBe('13%');
     expect(values['--visual-sprint-flow-dash']).toBe('6');
     expect(values['--visual-sprint-flow-gap']).toBe('9');
     expect(values['--visual-sprint-flow-period']).toBe('15px');

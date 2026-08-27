@@ -150,29 +150,45 @@ function Station({
   );
 }
 
-function StationLabel({ s }: { s: BoardStationPlan }) {
+/**
+ * 工程名と件数を盤面上部へ集約する。人物・粒の上へ個別ラベルを重ねず、
+ * 「どこに何件あるか」を視線移動の少ない一列で読めるようにする。
+ */
+function BoardFlowSummary({ stations }: { stations: readonly BoardStationPlan[] }) {
   return (
-    <div
-      className={`st-label${s.hot ? ' hot' : ''}`}
-      style={{ left: pct(s.labelX, VIEW_W), top: pct(s.labelY, VIEW_H) }}
+    <section
+      className="board-flow-summary"
+      data-testid="board-flow-summary"
+      aria-label="開発フローの工程別件数"
     >
-      {s.icon} {s.label}{' '}
-      <small data-testid={`count-${s.lane}`}>
-        {s.count}
-        {s.hot ? ' ⚠' : ''}
-      </small>
-    </div>
+      <span className="board-flow-heading">開発フロー</span>
+      <ol className="board-flow-list">
+        {stations.map((station) => {
+          const needsAttention = station.hot || station.mood === 'panic';
+          return (
+            <li
+              key={station.lane}
+              className={needsAttention ? 'needs-attention' : undefined}
+              data-lane={station.lane}
+            >
+              <span className="board-flow-icon" aria-hidden="true">
+                {station.icon}
+              </span>
+              <span className="board-flow-name">{station.label}</span>
+              <strong data-testid={`count-${station.lane}`}>{station.count}</strong>
+              {needsAttention && <span className="board-flow-alert">要対応</span>}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 
 function Bubble({ s }: { s: BoardStationPlan }) {
-  if (!s.bubble) return null;
-  const tone =
-    s.mood === 'panic' || s.mood === 'sad'
-      ? 'hot'
-      : s.mood === 'happy' || s.mood === 'cheer'
-        ? 'warm'
-        : '';
+  // 好調・完了の肯定的な演出は人物の表情へ任せ、判断が必要な状態だけ言語化する。
+  if (!s.bubble || s.mood === 'happy' || s.mood === 'cheer') return null;
+  const tone = s.mood === 'panic' || s.mood === 'sad' ? 'hot' : '';
   return (
     <div
       className={`bubble ${tone}`}
@@ -410,9 +426,7 @@ export function Board({
           hover={hoverLane === s.lane}
         />
       ))}
-      {scene.stations.map((s) => (
-        <StationLabel key={`l-${s.lane}`} s={s} />
-      ))}
+      <BoardFlowSummary stations={scene.stations} />
       {scene.stations.map((s) => (
         <Bubble key={`b-${s.lane}`} s={s} />
       ))}
@@ -430,17 +444,20 @@ export function Board({
           </div>
         ))}
 
-      <div className="board-legend">
-        {LEGEND.map((l) => (
-          <span key={l.variant} className="li">
-            <span
-              className={`legend-dot variant-${l.variant}`}
-              style={{ background: TASK_COLORS[l.variant] }}
-            />
-            {l.label}
-          </span>
-        ))}
-      </div>
+      <details className="board-legend">
+        <summary>粒の見方</summary>
+        <div className="board-legend-items">
+          {LEGEND.map((l) => (
+            <span key={l.variant} className="li">
+              <span
+                className={`legend-dot variant-${l.variant}`}
+                style={{ background: TASK_COLORS[l.variant] }}
+              />
+              {l.label}
+            </span>
+          ))}
+        </div>
+      </details>
 
       {metrics && (
         <FireEffects

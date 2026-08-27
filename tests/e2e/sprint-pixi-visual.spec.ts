@@ -270,7 +270,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       }
     }
     if (!from) throw new Error('all draggable dots are covered by overlays');
-    const to = toPage(622, 251); // Coding ステーションのドロップゾーン中心。
+    const to = toPage(620, 260); // Coding ステーションのドロップゾーン中心。
     const before = await page.evaluate(
       () =>
         (window as PixiTestWindow).game!.getState().sprint?.metrics.actionCounts.assignTask ?? 0,

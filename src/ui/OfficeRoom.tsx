@@ -93,13 +93,13 @@ export function OfficeRoom() {
       />
 
       {/* レビュー島のスポットライト */}
-      <ellipse cx="742" cy="434" rx="300" ry="150" fill="url(#ot-lamp)" />
+      <ellipse cx="840" cy="434" rx="300" ry="150" fill="url(#ot-lamp)" />
 
       {/* 島スラブ（各ステーションが乗る台座）。Review は赤系。 */}
       <g stroke="#564897" strokeWidth="1.5">
-        <polygon points="526,212 662,280 526,348 390,280" fill="#3f3470" />
-        <polygon points="622,244 782,324 622,404 462,324" fill="#3f3470" />
-        <polygon points="742,264 942,364 742,464 542,364" fill="#4a2b45" stroke="#73436b" />
+        <polygon points="380,221 516,289 380,357 244,289" fill="#3f3470" />
+        <polygon points="620,253 780,333 620,413 460,333" fill="#3f3470" />
+        <polygon points="840,279 1040,379 840,479 640,379" fill="#4a2b45" stroke="#73436b" />
         <polygon points="1006,236 1134,300 1006,364 878,300" fill="#3f3470" />
         <polygon points="1038,332 1190,408 1038,484 886,408" fill="#32414c" stroke="#4a656f" />
       </g>

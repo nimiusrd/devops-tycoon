@@ -52,8 +52,8 @@ const FONT_FAMILY = 'system-ui, sans-serif';
 
 /**
  * キャラ SVG（OfficeActors）のローカル座標系と実表示サイズ。
- * DOM は `.station { width: 15% }` の中に width=210 height=190 viewBox=220×200 の
- * SVG を置くため、設計空間では幅 1404×0.15=210.6px・ローカル倍率 min(W/220,H/200)。
+ * DOM は `.station` の共有トークン幅の中に width=210 height=190 viewBox=220×200 の
+ * SVG を置くため、設計空間では盤面幅×stationWidthPercent・ローカル倍率 min(W/220,H/200)。
  */
 const ACTOR_LOCAL = VISUAL_TOKENS.dimensions.sprint.actor.local;
 const ACTOR_DOM = VISUAL_TOKENS.dimensions.sprint.actor.dom;

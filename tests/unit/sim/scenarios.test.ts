@@ -3,6 +3,7 @@ import { getDifficulty } from '../../../src/data/difficulties';
 import {
   applyScenarioOrg,
   getScenario,
+  resolveAiDependencyPerTask,
   resolveScenarioId,
   SCENARIO_ORDER,
   type ScenarioOrg,
@@ -74,6 +75,14 @@ describe('tool scenarios (RI-103)', () => {
   it('default org matches difficulty.org bit-for-bit', () => {
     const normal = getDifficulty('normal');
     expect(applyScenarioOrg(normal.org, getScenario('default'))).toEqual(normal.org);
+  });
+
+  it('Copilot は初期依存に加え、タスク単価を 1.4 に抑える（#387）', () => {
+    expect(getScenario('copilot').aiDependencyPerTask).toBe(1.4);
+    expect(getScenario('default').aiDependencyPerTask).toBeUndefined();
+    expect(getScenario('devin').aiDependencyPerTask).toBeUndefined();
+    expect(resolveAiDependencyPerTask(undefined, 1.4)).toBe(1.4);
+    expect(resolveAiDependencyPerTask(0.8, 1.4)).toBe(0.8);
   });
 
   it('foldRunEffects includes scenario globalEffects after difficulty', () => {

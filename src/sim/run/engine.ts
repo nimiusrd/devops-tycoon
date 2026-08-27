@@ -57,7 +57,13 @@ import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng, createRngFromState, getRngState } from '../rng';
 import { DEFAULT_SEED } from '../seed';
-import { applyScenarioOrg, DEFAULT_SCENARIO, getScenario, resolveScenarioId } from '../scenarios';
+import {
+  applyScenarioOrg,
+  DEFAULT_SCENARIO,
+  getScenario,
+  resolveAiDependencyPerTask,
+  resolveScenarioId,
+} from '../scenarios';
 import {
   forceShipReviewTask,
   isAwaitingMinCompleteTick,
@@ -505,10 +511,8 @@ export class RunEngine {
     this.baseConfig = {
       ...base,
       taskCount: Math.max(6, Math.round(base.taskCount * diff.taskCountMul)),
-      ...(diff.aiDependencyPerTask !== undefined
-        ? { aiDependencyPerTask: diff.aiDependencyPerTask }
-        : {}),
     };
+    this.applyAiDependencyPerTask();
     this.org = buildRunOrg(this.difficulty, this.scenario);
     this.deck = [];
     this.relics = [];
@@ -2444,7 +2448,7 @@ export class RunEngine {
     const hadAiDependencyPerTask = legacyBaseConfig.aiDependencyPerTask !== undefined;
     this.baseConfig = { ...legacyBaseConfig };
     // RI-74: 旧セーブ（係数未保存）も現行難易度定義の上昇量へ補完する。
-    this.applyDifficultyAiDependencyPerTask();
+    this.applyAiDependencyPerTask();
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
     // RI-83: 本体 → extras → legacy pauseAiDebuffQuarter の順で復元する。
     const topCarryoverQuarter = cloned.goalCarryoverQuarter ?? null;
@@ -2599,9 +2603,15 @@ export class RunEngine {
     this.whatIfCache = null;
   }
 
-  /** 難易度定義の `aiDependencyPerTask` を baseConfig へ同期する（RI-74）。 */
-  private applyDifficultyAiDependencyPerTask(): void {
-    const perTask = getDifficulty(this.difficulty).aiDependencyPerTask;
+  /**
+   * 難易度とシナリオの `aiDependencyPerTask` を baseConfig へ同期する（RI-74 / #387）。
+   * シナリオは上書きだが、難易度がより低い値なら難易度を優先する。
+   */
+  private applyAiDependencyPerTask(): void {
+    const perTask = resolveAiDependencyPerTask(
+      getDifficulty(this.difficulty).aiDependencyPerTask,
+      getScenario(this.scenario).aiDependencyPerTask,
+    );
     if (perTask !== undefined) {
       this.baseConfig.aiDependencyPerTask = perTask;
       return;

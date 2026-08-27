@@ -358,7 +358,7 @@ export interface SprintConfig {
   focusMax: number;
   /**
    * AI 割当タスク 1 件あたりの依存度上昇（未指定時は `AI_DEP_PER_TASK`）。
-   * 難易度プリセットから RunEngine が注入する（RI-74）。
+   * 難易度プリセットと開始シナリオから RunEngine が注入する（RI-74 / #387）。
    */
   aiDependencyPerTask?: number;
 }

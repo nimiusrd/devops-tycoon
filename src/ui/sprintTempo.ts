@@ -29,8 +29,8 @@ export type PlaybackSpeed = 0 | 1 | 2;
 export type PlayingSpeed = Exclude<PlaybackSpeed, 0>;
 
 /** プレイヤー Pause 中か（sim・カード解決を止める）。 */
-export function isPlaybackPaused(speed: PlaybackSpeed): boolean {
-  return speed <= 0;
+export function isPlaybackPaused(speed: PlaybackSpeed): speed is 0 {
+  return speed === 0;
 }
 
 /**

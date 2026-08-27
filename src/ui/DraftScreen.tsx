@@ -29,6 +29,8 @@ export interface DraftScreenProps {
   onPick: (defId: string) => void;
   onSkip: () => void;
   onMulligan: () => void;
+  /** リプレイ閲覧など、操作を受け付けないとき。 */
+  readOnly?: boolean;
 }
 
 export function DraftScreen({
@@ -42,12 +44,20 @@ export function DraftScreen({
   onPick,
   onSkip,
   onMulligan,
+  readOnly = false,
 }: DraftScreenProps) {
   const canMulligan = !mulliganUsed && budget > DRAFT_MULLIGAN_COST;
   const { resolveCard } = useReplayContent();
+  const readOnlyTitle = 'リプレイ閲覧中は操作できません';
 
   return (
-    <div className="result-overlay" data-testid="draft" role="dialog" aria-label="Card Draft">
+    <div
+      className="result-overlay"
+      data-testid="draft"
+      data-readonly={readOnly ? 'true' : undefined}
+      role="dialog"
+      aria-label="Card Draft"
+    >
       <div className="draft-card-panel">
         <p className="result-eyebrow">CARD DRAFT</p>
         <h2 className="draft-title">スプリント{sprintNumber} に向けて、施策を1枚選ぶ</h2>
@@ -59,7 +69,7 @@ export function DraftScreen({
                 key={id}
                 def={def}
                 playCost={playCost(def.focusCost, 1)}
-                onPick={() => onPick(id)}
+                onPick={readOnly ? undefined : () => onPick(id)}
                 whatIfPreview={previews[id]}
                 whatIfComputing={whatIfComputing}
               />
@@ -79,19 +89,28 @@ export function DraftScreen({
             type="button"
             className="btn"
             onClick={onMulligan}
-            disabled={!canMulligan}
+            disabled={readOnly || !canMulligan}
             data-testid="draft-mulligan"
             title={
-              mulliganUsed
-                ? 'このドラフトではすでに引き直しています'
-                : budget <= DRAFT_MULLIGAN_COST
-                  ? `予算が足りません（必要 ${DRAFT_MULLIGAN_COST}）`
-                  : `予算 ${DRAFT_MULLIGAN_COST} で候補を引き直す`
+              readOnly
+                ? readOnlyTitle
+                : mulliganUsed
+                  ? 'このドラフトではすでに引き直しています'
+                  : budget <= DRAFT_MULLIGAN_COST
+                    ? `予算が足りません（必要 ${DRAFT_MULLIGAN_COST}）`
+                    : `予算 ${DRAFT_MULLIGAN_COST} で候補を引き直す`
             }
           >
             引き直し（💰{DRAFT_MULLIGAN_COST}）
           </button>
-          <button type="button" className="btn" onClick={onSkip} data-testid="draft-skip">
+          <button
+            type="button"
+            className="btn"
+            onClick={onSkip}
+            disabled={readOnly}
+            title={readOnly ? readOnlyTitle : undefined}
+            data-testid="draft-skip"
+          >
             スキップして進む
           </button>
         </div>

@@ -319,3 +319,164 @@ test('旧v1リプレイはルールセット不明と未知コンテンツのま
   ).toBeNull();
   await expect(page.getByTestId('relics')).toContainText('不明なレリック（removed-relic）');
 });
+
+test('リプレイの「カードドラフトへ」で次のドラフトキーフレームへ移動する', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=replay-draft-jump-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const imported = await page.evaluate(async (schemaVersion) => {
+    const game = (window as ReplayGameWindow).game;
+    if (!game) return false;
+    game.startRun('easy', [], 'replay-draft-jump-e2e');
+    const setupFrame = game.engine.exportReplayFrame();
+    if (!setupFrame) return false;
+
+    const resultFrame = structuredClone(setupFrame);
+    resultFrame.phase = 'result';
+    resultFrame.lastResult = {
+      done: 6,
+      delivered: 18,
+      maxCombo: 2,
+      aiAssistedPct: 55,
+      reviewQueueMax: 4,
+      rework: 1,
+      incidents: 0,
+      contained: 0,
+      spread: 0,
+      seniorHpDelta: -4,
+      actionCounts: {},
+      grade: 'C',
+      title: 'PRを増やす者',
+      diagnosis: 'レビュー渋滞',
+      timeline: [],
+      events: [],
+      fireEvents: [],
+      focusRemaining: 2,
+      focusMax: 8,
+      autoContainCount: 0,
+    };
+
+    const draftFrame = structuredClone(setupFrame);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = ['copilot', 'docs', 'auto-test'];
+
+    const blob: ReplayBlob = {
+      schemaVersion: schemaVersion as typeof REPLAY_SCHEMA_VERSION,
+      id: 'replay-draft-jump-e2e:1',
+      seed: 'replay-draft-jump-e2e',
+      difficulty: 'easy',
+      trials: [],
+      finishedAt: Date.now(),
+      outcome: {
+        status: 'won',
+        diagnosis: 'healthyAcceleration',
+        score: 18,
+      },
+      keyframes: [
+        { phase: 'setup', frame: setupFrame, label: '編成' },
+        { phase: 'result', frame: resultFrame, label: 'Sprint result' },
+        { phase: 'draft', frame: draftFrame, label: 'カードドラフト' },
+      ],
+      ruleset: { version: 1, fingerprint: 'replay-draft-jump-e2e' },
+      contentSnapshot: { cards: [], relics: [] },
+    };
+    return game.importReplay(blob);
+  }, REPLAY_SCHEMA_VERSION);
+
+  expect(imported).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBeGreaterThan(0);
+
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await page.getByTestId('replay-keyframe-1').click();
+
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-continue')).toBeEnabled();
+  await expect(page.getByTestId('result-continue-hint')).toHaveCount(0);
+  await page.getByTestId('result-continue').click();
+
+  await expect(page.getByTestId('draft')).toBeVisible();
+  await expect(page.getByTestId('draft')).toHaveAttribute('data-readonly', 'true');
+  await expect(page.getByTestId('draft-skip')).toBeDisabled();
+  await expect(page.getByTestId('draft-mulligan')).toBeDisabled();
+});
+
+test('ドラフトキーフレームが無いリプレイでは「カードドラフトへ」が disabled', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=replay-draft-missing-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const imported = await page.evaluate(async (schemaVersion) => {
+    const game = (window as ReplayGameWindow).game;
+    if (!game) return false;
+    game.startRun('easy', [], 'replay-draft-missing-e2e');
+    const setupFrame = game.engine.exportReplayFrame();
+    if (!setupFrame) return false;
+
+    const resultFrame = structuredClone(setupFrame);
+    resultFrame.phase = 'result';
+    resultFrame.lastResult = {
+      done: 6,
+      delivered: 18,
+      maxCombo: 2,
+      aiAssistedPct: 55,
+      reviewQueueMax: 4,
+      rework: 1,
+      incidents: 0,
+      contained: 0,
+      spread: 0,
+      seniorHpDelta: -4,
+      actionCounts: {},
+      grade: 'C',
+      title: 'PRを増やす者',
+      diagnosis: 'レビュー渋滞',
+      timeline: [],
+      events: [],
+      fireEvents: [],
+      focusRemaining: 2,
+      focusMax: 8,
+      autoContainCount: 0,
+    };
+
+    const blob: ReplayBlob = {
+      schemaVersion: schemaVersion as typeof REPLAY_SCHEMA_VERSION,
+      id: 'replay-draft-missing-e2e:1',
+      seed: 'replay-draft-missing-e2e',
+      difficulty: 'easy',
+      trials: [],
+      finishedAt: Date.now(),
+      outcome: {
+        status: 'won',
+        diagnosis: 'healthyAcceleration',
+        score: 18,
+      },
+      keyframes: [
+        { phase: 'setup', frame: setupFrame, label: '編成' },
+        { phase: 'result', frame: resultFrame, label: 'Sprint result' },
+      ],
+      ruleset: { version: 1, fingerprint: 'replay-draft-missing-e2e' },
+      contentSnapshot: { cards: [], relics: [] },
+    };
+    return game.importReplay(blob);
+  }, REPLAY_SCHEMA_VERSION);
+
+  expect(imported).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBeGreaterThan(0);
+
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await page.getByTestId('replay-keyframe-1').click();
+
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-continue')).toBeDisabled();
+  await expect(page.getByTestId('result-continue-hint')).toContainText(
+    'このリプレイにはカードドラフトの記録がありません。',
+  );
+});

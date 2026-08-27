@@ -1904,6 +1904,25 @@ body {
   flex: 1;
   padding: 0.7rem 1rem;
 }
+.result-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+.result-actions .btn:disabled:hover {
+  filter: none;
+}
+.result-actions .btn:disabled:active {
+  transform: none;
+  box-shadow: none;
+}
+.result-continue-hint {
+  margin: 0.6rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
 
 /* コンボ表示（第6.2 / 第18.2） */
 .combo-badge {

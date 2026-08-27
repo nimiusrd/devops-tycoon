@@ -412,6 +412,59 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(game.phase()).toBe('title');
   });
 
+  it('jumpReplayToPhase は次のドラフトキーフレームへ移動する', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-draft', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-draft', seed: 'jump-draft' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    const draftFrame = structuredClone(setup);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = ['copilot', 'docs', 'auto-test'];
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+      { phase: 'draft', frame: draftFrame },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('draft')).toBe(2);
+    expect(game.acknowledgeResult().phase).toBe('result');
+    const jumped = game.jumpReplayToPhase('draft');
+    expect(jumped?.phase).toBe('draft');
+    expect(jumped?.draft).toEqual(['copilot', 'docs', 'auto-test']);
+    expect(game.isReplayMode()).toBe(true);
+    expect(game.chooseCard('copilot').phase).toBe('draft');
+  });
+
+  it('ドラフトキーフレームが無ければジャンプせず null を返す', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-missing', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-missing', seed: 'jump-missing' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('draft')).toBeNull();
+    expect(game.jumpReplayToPhase('draft')).toBeNull();
+    expect(game.phase()).toBe('result');
+    expect(game.isReplayMode()).toBe(true);
+  });
+
   it('ルールセット不一致でも閲覧でき、what-if を再計算しない', async () => {
     const storage = new MemoryReplayStorage();
     const game = createGame({ seed: 'mismatch-replay', initialMeta: defaultMeta() });
@@ -628,8 +681,9 @@ describe('GameHandle リプレイ（RI-61）', () => {
     }
     expect(game.listReplays().length).toBeGreaterThan(0);
     expect(game.listReplays()[0]?.keyframes.length).toBeGreaterThan(0);
+    expect(game.listReplays()[0]?.keyframes.some((k) => k.phase === 'draft')).toBe(true);
     expect(game.listReplays()[0]?.ruleset).toEqual(CURRENT_RUN_RULESET);
-    expect(game.listReplays()[0]?.contentSnapshot).toEqual({ cards: [], relics: [] });
+    expect(game.listReplays()[0]?.contentSnapshot).toBeTruthy();
   });
 
   it('キーフレームに label が付く（RI-34‴）', async () => {

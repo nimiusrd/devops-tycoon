@@ -627,6 +627,26 @@ test('要約HUDでも介入によるKPI差分をフィードバックする', as
   await expect(seniorHp.locator('.hud-feedback-pop')).toContainText('-');
 });
 
+test('士気チップに炎上リスクを載せない（#356）', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await beginPublicSprint(page, { seed: 'devops-tycoon' });
+
+  const hud = page.getByTestId('hud');
+  await expect(hud).toHaveAttribute('data-compact', 'true');
+  const compactMorale = page.getByTestId('hud-compact-morale');
+  if ((await compactMorale.count()) > 0) {
+    await expect(compactMorale).not.toContainText('炎上');
+  }
+
+  await page.getByTestId('hud-toggle').click();
+  const morale = page.getByTestId('hud-morale');
+  await expect(morale).toBeVisible();
+  await expect(morale).not.toContainText('炎上');
+  const fireRisk = page.getByTestId('hud-fireRisk');
+  await expect(fireRisk).toBeVisible();
+  await expect(fireRisk).toContainText('炎上リスク');
+});
+
 test('レスポンシブ表示モードを859/860/861px境界で共有する', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 844 });
   await beginPublicSprint(page, { seed: 'ri98-responsive-width-0' });

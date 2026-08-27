@@ -50,7 +50,8 @@ export type StatusMetricId =
   | 'seniorHp'
   | 'aiDependency'
   | 'techDebt'
-  | 'morale';
+  | 'morale'
+  | 'fireRisk';
 export type StatusMetricDirection = 'higher-better' | 'lower-better';
 export type StatusMetricTone = 'good' | 'watch' | 'danger';
 
@@ -82,7 +83,7 @@ export interface StatusMetricView {
   feedbackKey?: HudMetricKey;
   label: string;
   icon: string;
-  value: number | Grade;
+  value: number | Grade | RiskLevel;
   unit?: string;
   direction: StatusMetricDirection;
   directionLabel: string;
@@ -91,14 +92,21 @@ export interface StatusMetricView {
   help: string;
   barPct?: number;
   fillClass?: string;
-  risk?: RiskLevel;
-  /** 炎上リスクと混同しない燃え尽き向けの短い警告（RI-67）。 */
+  /** 炎上リスクと混同しない燃え尽き／士気向けの短い警告（RI-67）。 */
   warningChip?: string;
 }
 
 /** シニア体力 HUD の help（RI-67）。 */
 export const SENIOR_HP_HELP =
   'メンバー個別のスタミナとは別の抽象値です。炎上は複数炎上やタイマーが短いときだけ緊急対応で消し、余裕のある先消しは避けます。アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルは新規タスクをAIなしにします。点火の抑制はリテラシーが低いときだけ、手戻りの抑制はワークフローが未熟なときだけで効きます。前提度が高く成熟していると工程ずれで手戻りが増えることがあります。休息で戻します。';
+
+/** 士気 HUD の help。炎上リスク（工程状態）とは別指標。 */
+export const MORALE_HELP =
+  'チームの粘り強さです。残業・延焼・偏った差配で下がります。休息で戻します。炎上リスクはレビュー渋滞とシニア体力から出る工程指標で、この数値とは別です。';
+
+/** 炎上リスク HUD の help。士気 KPI と結び付けない。 */
+export const FIRE_RISK_HELP =
+  'レビュー渋滞とシニア体力から見る工程リスクです。士気の数値とは別です。複数炎上やタイマーが短いときは緊急対応で鎮火します。';
 
 /** AI依存度 HUD の help（RI-74）。 */
 export const AI_DEPENDENCY_HELP = `工程のAI前提度です。リテラシーとドキュメントが追いついていないと、AI支援タスクの手戻りが増えます。前提度だけ高くリテラシーが${AI_LITERACY_UNSAFE_CAP}以下のまま${AI_DEPENDENCY_CAP}に達すると敗北します。ペアレビューやドキュメント、AI利用ガイドライン（カード）でワークフローを整え、全社／部門／チームのAIレバーで前提度を下げてください。介入バーのAIスロットルは新規タスクをAIなしにするだけで、既に上がった前提度は下げません。ワークフローが成熟していると工程ずれで手戻りが増えることがあります。`;
@@ -280,10 +288,32 @@ function lowerBetterTone(value: number, watchAt: number, dangerAt: number): Stat
   return 'good';
 }
 
-function toneFromRisk(risk: RiskLevel): StatusMetricTone {
-  if (risk === 'HIGH') return 'danger';
-  if (risk === 'MED') return 'watch';
-  return 'good';
+/** 士気の詳細・警告チップ。炎上リスクは別指標へ出す。 */
+export function moraleHudCopy(morale: number): {
+  detail: string;
+  warningChip?: string;
+} {
+  if (morale < 35) {
+    return { detail: '崩壊寸前・休息で戻す', warningChip: '士気危険' };
+  }
+  if (morale < 60) {
+    return { detail: '低下中・残業や延焼を避ける', warningChip: '士気注意' };
+  }
+  return { detail: '35未満は危険' };
+}
+
+/** 炎上リスクの詳細。Review渋滞とシニア体力から判定し、士気数値とは混ぜない。 */
+export function fireRiskHudCopy(risk: RiskLevel): {
+  tone: StatusMetricTone;
+  detail: string;
+} {
+  if (risk === 'HIGH') {
+    return { tone: 'danger', detail: 'Review渋滞かシニア体力低下' };
+  }
+  if (risk === 'MED') {
+    return { tone: 'watch', detail: 'Review渋滞か体力注意' };
+  }
+  return { tone: 'good', detail: '渋滞と体力が安定' };
 }
 
 const HIGHER_BETTER = '高いほど良い';
@@ -493,17 +523,25 @@ export function deriveHudMetrics(
       id: 'morale',
       feedbackKey: 'morale',
       label: '士気',
-      icon: '🔥',
+      icon: '✨',
       value: s.morale,
       direction: 'higher-better',
       directionLabel: HIGHER_BETTER,
-      tone:
-        toneFromRisk(s.risk) === 'good' ? higherBetterTone(s.morale, 60, 35) : toneFromRisk(s.risk),
-      detail: '炎上リスク連動',
-      help: 'チームの粘り強さです。低下やレビュー渋滞は炎上リスクを上げます。',
+      tone: higherBetterTone(s.morale, 60, 35),
+      ...moraleHudCopy(s.morale),
+      help: MORALE_HELP,
       barPct: s.morale,
       fillClass: 'fill-mor',
-      risk: s.risk,
+    },
+    {
+      id: 'fireRisk',
+      label: '炎上リスク',
+      icon: '🔥',
+      value: s.risk,
+      direction: 'lower-better',
+      directionLabel: LOWER_BETTER,
+      ...fireRiskHudCopy(s.risk),
+      help: FIRE_RISK_HELP,
     },
   ];
 }

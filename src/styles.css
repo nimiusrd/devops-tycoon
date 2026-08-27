@@ -324,6 +324,15 @@ body {
 .grade-E {
   color: var(--coral);
 }
+.fire-risk-value.risk-LOW {
+  color: var(--mint);
+}
+.fire-risk-value.risk-MED {
+  color: var(--sun);
+}
+.fire-risk-value.risk-HIGH {
+  color: var(--coral);
+}
 .bar {
   margin-top: 6px;
   height: 7px;

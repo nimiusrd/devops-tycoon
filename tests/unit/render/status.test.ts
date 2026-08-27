@@ -5,6 +5,7 @@ import {
   REVIEW_FREEZE_WATCH_PEAK,
   aiDependencyHudCopy,
   budgetHudCopy,
+  fireRiskHudCopy,
   deriveHudMetrics,
   deriveStatus,
   deriveHudStatusParts,
@@ -12,6 +13,7 @@ import {
   diffHudMetricSnapshots,
   goalCarryoverHudCopy,
   hudMetricSnapshot,
+  moraleHudCopy,
   reviewFreezeHudCopy,
   riskLevel,
   runMetricSnapshot,
@@ -103,7 +105,7 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     const state = withOrg({ aiDependency: 20, techDebt: 10, morale: 80 });
     const metrics = deriveHudMetrics(state.org, state.sprint.tasks);
 
-    expect(metrics).toHaveLength(9);
+    expect(metrics).toHaveLength(10);
     expect(metrics.map((m) => m.id)).toEqual([
       'delivery',
       'devSpeed',
@@ -114,6 +116,7 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
       'aiDependency',
       'techDebt',
       'morale',
+      'fireRisk',
     ]);
     for (const metric of metrics) {
       expect(metric.icon.length).toBeGreaterThan(0);
@@ -204,8 +207,38 @@ describe('deriveHudMetrics（HUD情報設計）', () => {
     expect(metrics.find((m) => m.id === 'morale')).toMatchObject({
       direction: 'higher-better',
       tone: 'danger',
-      risk: 'HIGH',
+      warningChip: '士気危険',
     });
+    expect(metrics.find((m) => m.id === 'fireRisk')).toMatchObject({
+      value: 'HIGH',
+      tone: 'danger',
+    });
+  });
+
+  it('士気が上限でも炎上リスクは別指標として出し、士気トーンは数値だけを見る', () => {
+    expect(moraleHudCopy(100).warningChip).toBeUndefined();
+    expect(moraleHudCopy(50).warningChip).toBe('士気注意');
+    expect(fireRiskHudCopy('MED')).toMatchObject({
+      tone: 'watch',
+      detail: 'Review渋滞か体力注意',
+    });
+
+    const metrics = deriveHudMetrics(withOrg({ morale: 100, seniorHp: 27, techDebt: 0 }).org, []);
+    const morale = metrics.find((m) => m.id === 'morale');
+    const fireRisk = metrics.find((m) => m.id === 'fireRisk');
+    expect(morale).toMatchObject({
+      value: 100,
+      tone: 'good',
+      detail: '35未満は危険',
+    });
+    expect(morale?.warningChip).toBeUndefined();
+    expect(morale?.help).toMatch(/炎上リスクは.+別/);
+    expect(fireRisk).toMatchObject({
+      label: '炎上リスク',
+      value: 'MED',
+      tone: 'watch',
+    });
+    expect(fireRisk?.help).toMatch(/士気の数値とは別/);
   });
 
   it('RI-67: シニア体力の注意域では燃え尽き向け警告を出す', () => {

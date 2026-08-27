@@ -29,6 +29,7 @@ test.describe('start recipe share (RI-127)', () => {
     await page.getByTestId('start-run').click();
     await expect(page.getByTestId('setup')).toBeVisible();
     await expect(page.getByTestId('scenario')).toHaveText('Copilot');
+    await expect(page.getByTestId('run-trial-low-focus')).toHaveText('集中力 -1');
   });
 
   test('locked difficulty stays on title and shows a reason', async ({ page }) => {

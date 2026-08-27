@@ -1,7 +1,7 @@
 /**
  * ラン情報バー（パンくず的ヘッダ）。
  *
- * seed・難易度・スプリント数・予算・進化ポイント・所持レリック・組織タイプ診断を
+ * seed・難易度・試練・スプリント数・予算・進化ポイント・所持レリック・組織タイプ診断を
  * 常時表示し、ラン全体の文脈を示す（第4.7 のパンくずの簡易版）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -19,6 +19,7 @@ import {
   type RunMetricDelta,
   type RunMetricSnapshot,
 } from '../render/status';
+import { budgetHudTitle, trialHudViews } from '../render/trialView';
 import { diagnosisView } from '../sim/diagnosis';
 import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
@@ -150,6 +151,7 @@ export function RunBar({
     ? 'negative'
     : 'positive';
   const budgetCopy = budgetHudCopy(state.budget);
+  const trialViews = trialHudViews(state.trials);
   const trustCopy = trustHudCopy(state.stakeholderTrust);
   const carryoverCopy = goalCarryoverHudCopy({
     goalCarryoverId: state.goalCarryoverId,
@@ -219,7 +221,7 @@ export function RunBar({
       <span
         className={`pill run-metric-pill tone-${budgetCopy.tone}${budgetFeedback ? ` run-feedback flash-${budgetFeedback.tone}` : ''}`}
         data-testid="budget"
-        title={budgetCopy.detail}
+        title={budgetHudTitle(budgetCopy.detail, state.trials)}
         data-tone={budgetCopy.tone}
       >
         💰<b>{state.budget}</b>
@@ -230,6 +232,17 @@ export function RunBar({
         )}
         {budgetFeedback && <RunFeedbackPop feedbacks={[budgetFeedback]} />}
       </span>
+      {trialViews.map((trial) => (
+        <span
+          key={trial.id}
+          className="pill"
+          data-testid={`run-trial-${trial.id}`}
+          title={trial.description}
+          aria-label={`試練 ${trial.label}`}
+        >
+          {trial.label}
+        </span>
+      ))}
       <span
         className={`pill run-metric-pill trust-pill tone-${trustCopy.tone}${trustFeedbacks.length > 0 ? ` run-feedback flash-${trustFeedbackTone}` : ''}`}
         data-testid="stakeholder-trust"

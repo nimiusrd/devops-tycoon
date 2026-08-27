@@ -11,6 +11,7 @@ type GameWindow = Window & {
     beginSetupSprint(): RunState;
     step(ms: number): RunState;
     dispatch(id: string): InterventionOutcome;
+    acknowledgeResult(): RunState;
   };
 };
 
@@ -169,6 +170,98 @@ test('運用安定中のコンボ表示は実際の出荷倍率を示す（RI-84
   await expect(comboElement).toContainText(
     `出荷倍率 ${deliveryComboMultiplier(stableCombo, true).toFixed(1)}x`,
   );
+});
+
+test('コンボ途切れ直後の HUD は現在値 0 で、履歴ログだけが途切れを残す（#357）', async ({
+  page,
+}) => {
+  await page.goto('/?renderer=dom&seed=ri357-combo-break');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('easy', [], 'ri357-combo-break');
+    g.beginSetupSprint();
+    const engine = (g as unknown as { engine: { sprint: NonNullable<RunState['sprint']> } }).engine;
+    const sprint = engine.sprint;
+    sprint.metrics.combo = 0;
+    sprint.events.push({
+      tick: 10,
+      kind: 'combo-break',
+      reason: 'auto-contain',
+      taskId: 1,
+    });
+    g.step(0);
+  });
+
+  const combo = page.getByTestId('combo');
+  await expect(combo).toHaveAttribute('data-combo', '0');
+  await expect(combo).not.toContainText('COMBO');
+  await expect(page.getByTestId('event-ticker')).toContainText('コンボ途切れ: 自動鎮火');
+  await expect(page.getByTestId('event-ticker-now')).toHaveCount(0);
+});
+
+test('途切れ履歴のあとコンボが伸び直したら現在値を履歴と併記する（#357）', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri357-combo-rebuild');
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('easy', [], 'ri357-combo-rebuild');
+    g.beginSetupSprint();
+    const engine = (g as unknown as { engine: { sprint: NonNullable<RunState['sprint']> } }).engine;
+    const sprint = engine.sprint;
+    sprint.metrics.combo = 12;
+    sprint.events.push({
+      tick: 10,
+      kind: 'combo-break',
+      reason: 'auto-contain',
+      taskId: 1,
+    });
+    g.step(0);
+  });
+
+  const combo = page.getByTestId('combo');
+  await expect(combo).toHaveAttribute('data-combo', '12');
+  await expect(combo).toContainText('COMBO ×12');
+  await expect(page.getByTestId('event-ticker')).toContainText('コンボ途切れ: 自動鎮火');
+  await expect(page.getByTestId('event-ticker-now')).toHaveText('現在 COMBO ×12');
+});
+
+test('スプリント終了後のドラフトでは前スプリントの COMBO を出さない（#357）', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=devops-tycoon');
+
+  const reached = await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('easy', [], 'devops-tycoon');
+    g.beginSetupSprint();
+    let state = g.getState();
+    let guard = 0;
+    while (state.phase === 'sprint' && guard < 60_000) {
+      state = g.step(1_000);
+      guard += 1;
+    }
+    if (state.phase === 'result') state = g.acknowledgeResult();
+    const engine = (g as unknown as { engine: { sprint: NonNullable<RunState['sprint']> } }).engine;
+    engine.sprint.metrics.combo = 12;
+    g.step(0);
+    return {
+      phase: g.getState().phase,
+      complete: engine.sprint.complete,
+      storedCombo: engine.sprint.metrics.combo,
+    };
+  });
+
+  expect(reached.phase).toBe('draft');
+  expect(reached.complete).toBe(true);
+  expect(reached.storedCombo).toBe(12);
+
+  await expect(page.getByTestId('draft')).toBeVisible();
+  const combo = page.getByTestId('combo');
+  await expect(combo).toHaveAttribute('data-combo', '0');
+  await expect(combo).not.toContainText('COMBO');
+  await expect(page.getByTestId('event-ticker-now')).toHaveCount(0);
 });
 
 test('Review が空のとき割り込みレビューは無効＋理由表示（RI-51）', async ({ page }) => {

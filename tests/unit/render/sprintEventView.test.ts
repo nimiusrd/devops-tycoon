@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { liveComboCount } from '../../../src/render/sprintComboView';
 import { formatRecentSprintEvents, formatSprintEvent } from '../../../src/render/sprintEventView';
 import { applyAction } from '../../../src/sim/actions';
 import { INCIDENT_CONTAIN_HP } from '../../../src/sim/model';
@@ -182,6 +183,8 @@ describe('SprintState.events 記録（RI-52）', () => {
     expect(sprint.events.some((e) => e.kind === 'combo-break' && e.reason === 'auto-contain')).toBe(
       true,
     );
+    expect(sprint.metrics.combo).toBe(0);
+    expect(liveComboCount(sprint)).toBe(0);
     expect(sprint.metrics.contained).toBe(1);
     expect(sprint.metrics.autoContainCount).toBe(1);
   });

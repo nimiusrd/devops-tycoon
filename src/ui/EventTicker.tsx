@@ -2,25 +2,34 @@
  * スプリント内イベントティッカー（RI-52）。
  *
  * sim の `SprintState.events` を読み、直近の介入・出来事を言語化して盤面脇に出す。
- * 演出は読むだけ（第22.2）。
+ * 演出は読むだけ（第22.2）。履歴と現在値が食い違うときは「今」の段数を併記する（#357）。
  */
 import { AnimatePresence, motion } from 'framer-motion';
+import { COMBO_HUD_EVENT_WINDOW, shouldShowLiveComboHint } from '../render/sprintComboView';
 import { formatRecentSprintEvents } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 
 /** 同時表示する最大件数。 */
-const TICKER_LIMIT = 5;
+const TICKER_LIMIT = COMBO_HUD_EVENT_WINDOW;
 
 export interface EventTickerProps {
   events: readonly SprintEvent[];
+  /** コンボ HUD と同じ「今」の段数。省略時は履歴のみ。 */
+  liveCombo?: number;
 }
 
-export function EventTicker({ events }: EventTickerProps) {
+export function EventTicker({ events, liveCombo = 0 }: EventTickerProps) {
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
+  const showLiveCombo = shouldShowLiveComboHint(liveCombo, events, TICKER_LIMIT);
 
   return (
     <aside className="event-ticker" data-testid="event-ticker" aria-label="スプリント出来事">
       <p className="event-ticker-label">出来事</p>
+      {showLiveCombo && (
+        <p className="event-ticker-now" data-testid="event-ticker-now">
+          現在 COMBO ×{liveCombo}
+        </p>
+      )}
       <ul className="event-ticker-list">
         <AnimatePresence initial={false}>
           {rows.map((row) => (

@@ -6002,6 +6002,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-radius: 16px;
   overflow: hidden;
   border: 2px solid var(--line);
+  container-type: inline-size;
+  container-name: org-board;
   box-shadow:
     0 6px 0 #1a1338,
     inset 0 2px 0 #ffffff10;
@@ -6034,9 +6036,14 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 140;
-  font-size: 12px;
+  font-size: calc(
+    var(--visual-org-zone-label-font-size) * 100cqw / var(--visual-space-organization-w)
+  );
   font-weight: 900;
-  padding: 6px 12px;
+  padding: calc(
+      var(--visual-org-zone-label-padding-y) * 100cqw / var(--visual-space-organization-w)
+    )
+    calc(var(--visual-org-zone-label-padding-x) * 100cqw / var(--visual-space-organization-w));
   border-radius: 999px;
   background: #1f1942e6;
   border: 2px solid var(--line);
@@ -6049,7 +6056,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   display: block;
   font-weight: 700;
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: calc(
+    var(--visual-org-zone-label-subtitle-size) * 100cqw / var(--visual-space-organization-w)
+  );
   margin-top: 2px;
 }
 .org-zone-label.tone-ok {
@@ -6084,11 +6093,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 14px;
+  padding: calc(
+      var(--visual-org-hub-overlay-padding-y) * 100cqw / var(--visual-space-organization-w)
+    )
+    calc(var(--visual-org-hub-overlay-padding-x) * 100cqw / var(--visual-space-organization-w));
   border-radius: 14px;
   background: #11183ae6;
   border: 2px solid var(--sky);
-  font-size: 12px;
+  font-size: calc(
+    var(--visual-org-hub-overlay-font-size) * 100cqw / var(--visual-space-organization-w)
+  );
   font-weight: 800;
   color: var(--cream);
   white-space: nowrap;
@@ -6099,7 +6113,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-color: #ffd45c;
 }
 .org-hub-meta {
-  font-size: 10px;
+  font-size: calc(
+    var(--visual-org-hub-overlay-meta-size) * 100cqw / var(--visual-space-organization-w)
+  );
   font-weight: 700;
   color: var(--sky);
 }
@@ -6118,11 +6134,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 5px 10px;
+  padding: calc(
+      var(--visual-org-island-badge-padding-y) * 100cqw / var(--visual-space-organization-w)
+    )
+    calc(var(--visual-org-island-badge-padding-x) * 100cqw / var(--visual-space-organization-w));
   border-radius: 12px;
   background: #1f1942e6;
   border: 2px solid var(--line);
-  font-size: 11px;
+  font-size: calc(
+    var(--visual-org-island-badge-font-size) * 100cqw / var(--visual-space-organization-w)
+  );
   color: var(--cream);
   white-space: nowrap;
   box-shadow: 0 3px 0 #00000044;
@@ -6138,12 +6159,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #3a1414e6;
 }
 .org-island-meta {
-  font-size: 10px;
+  font-size: calc(
+    var(--visual-org-island-badge-meta-size) * 100cqw / var(--visual-space-organization-w)
+  );
   color: var(--text-dim);
 }
 .org-island-tag {
   display: inline-block;
-  font-size: 9px;
+  font-size: calc(
+    var(--visual-org-island-badge-tag-size) * 100cqw / var(--visual-space-organization-w)
+  );
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 999px;
@@ -6219,6 +6244,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-pixi-mount {
   position: absolute;
   inset: 0;
+  top: var(--visual-org-hub-overlay-height);
   z-index: 1;
 }
 .org-pixi-mount canvas {
@@ -6228,7 +6254,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-infra-hub {
   position: absolute;
   left: 50%;
-  top: 10px;
+  top: var(--visual-org-hub-overlay-top);
   transform: translateX(-50%);
   z-index: 5;
   display: flex;
@@ -6239,7 +6265,6 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #11183a;
   border: 1px solid var(--sky);
   font-size: 13px;
-  z-index: 5;
 }
 .org-infra-meta {
   color: var(--sky);

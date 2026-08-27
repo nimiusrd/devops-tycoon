@@ -38,6 +38,7 @@ function OrgIsland({ island, onClick }: { island: OrgIslandPlan; onClick: () => 
     <div className="org-island-group" style={{ zIndex: 20 + island.depth }}>
       <div
         className={`org-island-badge-wrap tone-${island.badge.tone}`}
+        data-testid={`island-badge-${island.teamId}`}
         style={{ left: pct(island.badge.x, VIEW_W), top: pct(island.badge.y, VIEW_H) }}
       >
         <OrgIslandBadge island={island} />

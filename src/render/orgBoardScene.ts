@@ -21,8 +21,12 @@ export const MIN_ISLAND_SPACING_Y = 90;
 
 /** 島アクター＋バッジが盤面内に収まるよう中心座標に取る余白（設計px）。 */
 export const ISLAND_BADGE_ABOVE = VISUAL_TOKENS.dimensions.organization.island.badgeAbove;
+export const ISLAND_BADGE_HEIGHT = VISUAL_TOKENS.dimensions.organization.island.badgeHeight;
 export const ISLAND_ACTOR_HALF_H = VISUAL_TOKENS.dimensions.organization.island.actorHalfHeight;
 export const ISLAND_MARGIN = VISUAL_TOKENS.dimensions.organization.island.margin;
+export const ZONE_LABEL_Y = VISUAL_TOKENS.dimensions.organization.zoneLabel.y;
+export const ZONE_LABEL_HEIGHT = VISUAL_TOKENS.dimensions.organization.zoneLabel.height;
+export const ZONE_LABEL_GAP = VISUAL_TOKENS.dimensions.organization.zoneLabel.gap;
 
 /** 部門ゾーンの静的レイアウト（縦ストライプ領域。旧モック由来）。 */
 interface ZoneLayout {
@@ -51,7 +55,7 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
     teamYMin: 260,
     teamYMax: 480,
     labelX: 312,
-    labelY: 202,
+    labelY: ZONE_LABEL_Y,
     glowCenter: { x: 430, y: 360, rx: 300, ry: 180, kind: 'ok' },
   },
   {
@@ -62,7 +66,7 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
     teamYMin: 400,
     teamYMax: 480,
     labelX: 700,
-    labelY: 182,
+    labelY: ZONE_LABEL_Y - 8,
     glowCenter: null,
   },
   {
@@ -73,7 +77,7 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
     teamYMin: 250,
     teamYMax: 520,
     labelX: 1028,
-    labelY: 202,
+    labelY: ZONE_LABEL_Y,
     glowCenter: { x: 1000, y: 360, rx: 320, ry: 190, kind: 'hell' },
   },
 ] as const;
@@ -231,12 +235,66 @@ function zoneGlow(dept: DepartmentState, layout: ZoneLayout): ZoneLayout['glowCe
   return { ...layout.glowCenter, kind };
 }
 
-/** 島の中心座標を盤面＋アクター余白内に収める。 */
+/** 設計空間の軸平行矩形（ラベル／バッジの重なり判定用）。 */
+export interface OrgBoardRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** 部門ラベル帯の下端（最も低い labelY のラベル底）。島バッジはこの下に置く。 */
+export function zoneLabelBandBottom(): number {
+  const lowestCenter = Math.max(...ZONE_LAYOUTS.map((z) => z.labelY));
+  return lowestCenter + ZONE_LABEL_HEIGHT / 2;
+}
+
+/** 島中心の許容範囲。部門ラベル＋チームカード（バッジ）が重ならない余白を含む。 */
+export function islandCenterBounds(): {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+} {
+  const minY =
+    zoneLabelBandBottom() + ZONE_LABEL_GAP + ISLAND_BADGE_HEIGHT / 2 + ISLAND_BADGE_ABOVE;
+  return {
+    minX: 70,
+    maxX: ORG_VIEW.w - 70,
+    minY,
+    maxY: ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_MARGIN,
+  };
+}
+
+export function orgBoardRectsOverlap(a: OrgBoardRect, b: OrgBoardRect): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+/** 部門ラベルの外接矩形（幅は日本語2行ラベルを覆う保守的な見積り）。 */
+export function zoneLabelRect(label: Pick<OrgZoneLabelPlan, 'x' | 'y'>): OrgBoardRect {
+  const width = 240;
+  return {
+    x: label.x - width / 2,
+    y: label.y - ZONE_LABEL_HEIGHT / 2,
+    width,
+    height: ZONE_LABEL_HEIGHT,
+  };
+}
+
+/** 島のチームカード（バッジ）外接矩形。 */
+export function islandBadgeRect(island: Pick<OrgIslandPlan, 'badge'>): OrgBoardRect {
+  const width = VISUAL_TOKENS.dimensions.organization.card.width;
+  return {
+    x: island.badge.x - width / 2,
+    y: island.badge.y - ISLAND_BADGE_HEIGHT / 2,
+    width,
+    height: ISLAND_BADGE_HEIGHT,
+  };
+}
+
+/** 島の中心座標を盤面＋ラベル帯＋アクター余白内に収める。 */
 export function clampIslandCenter(x: number, y: number): { x: number; y: number } {
-  const minY = ISLAND_BADGE_ABOVE + ISLAND_MARGIN;
-  const maxY = ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_MARGIN;
-  const minX = 70;
-  const maxX = ORG_VIEW.w - 70;
+  const { minX, maxX, minY, maxY } = islandCenterBounds();
   return {
     x: Math.min(maxX, Math.max(minX, x)),
     y: Math.min(maxY, Math.max(minY, y)),
@@ -261,7 +319,8 @@ export function teamDesignPosition(
 
   const neededWidth = cols * MIN_ISLAND_SPACING_X;
   const neededHeight = rows * MIN_ISLAND_SPACING_Y;
-  const maxSpanY = ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_BADGE_ABOVE - ISLAND_MARGIN * 2;
+  const { minY, maxY } = islandCenterBounds();
+  const maxSpanY = Math.max(0, maxY - minY);
   const spanX = Math.max(baseWidth, neededWidth);
   const spanY = Math.min(Math.max(baseHeight, neededHeight), maxSpanY);
   const centerX = (zone.teamXMin + zone.teamXMax) / 2;
@@ -355,7 +414,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
         mood: islandMood(team),
         badge: {
           x: pos.x,
-          y: pos.y - 46,
+          y: pos.y - ISLAND_BADGE_ABOVE,
           title: team.name,
           shipping: `出荷 ${team.shipping}`,
           ai: islandAiBadgeLabel(team.aiDependency, team.aiAssignedCount),

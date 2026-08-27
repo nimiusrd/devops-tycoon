@@ -451,3 +451,55 @@ test('全社レバーで四半期予算が減り、全社AI依存度が下がる
   );
   expect(aiDepAfter).toBeLessThanOrEqual(before.aiDep);
 });
+
+function boxesOverlap(a: Box, b: Box): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+test('全社マップの部門ラベルがチームカードと重ならない（#380）', async ({ page }) => {
+  const viewports = [
+    { name: 'phone', width: 390, height: 844 },
+    { name: 'desktop-short', width: 1024, height: 768 },
+    { name: 'desktop', width: 1440, height: 900 },
+  ] as const;
+
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await startRun(page, `org-label-clear-${viewport.name}`);
+    await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+    const board = page.getByTestId('org-board');
+    await expect(board, `${viewport.name} の全社盤面が表示されない`).toBeVisible();
+    await board.scrollIntoViewIfNeeded();
+
+    const labelLocators = page.locator('.org-zone-label');
+    const badgeLocators = page.locator('.org-island-badge');
+    await expect(labelLocators).toHaveCount(3);
+    await expect.poll(async () => badgeLocators.count()).toBeGreaterThan(0);
+
+    const labels = await labelLocators.all();
+    const badges = await badgeLocators.all();
+    for (const label of labels) {
+      const labelBox = await readBox(label, `${viewport.name} 部門ラベル`);
+      expect(labelBox.width, `${viewport.name} の部門ラベル幅が 0`).toBeGreaterThan(0);
+      expect(labelBox.height, `${viewport.name} の部門ラベル高が 0`).toBeGreaterThan(0);
+      for (const badge of badges) {
+        const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
+        expect(
+          boxesOverlap(labelBox, badgeBox),
+          `${viewport.name} で部門ラベルとチームカードが重なっている`,
+        ).toBe(false);
+      }
+    }
+
+    const hub = page.getByTestId('org-infra-hub');
+    await expect(hub).toBeVisible();
+    const hubBox = await readBox(hub, `${viewport.name} ハブラベル`);
+    for (const badge of badges) {
+      const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
+      expect(
+        boxesOverlap(hubBox, badgeBox),
+        `${viewport.name} でハブラベルとチームカードが重なっている`,
+      ).toBe(false);
+    }
+  }
+});

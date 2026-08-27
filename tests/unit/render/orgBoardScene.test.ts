@@ -13,11 +13,16 @@ import {
   MIN_ISLAND_SPACING_X,
   MIN_ISLAND_SPACING_Y,
   ORG_VIEW,
+  ZONE_LABEL_GAP,
+  islandBadgeRect,
+  islandCenterBounds,
   isInOrgView,
   islandDepth,
   islandMood,
+  orgBoardRectsOverlap,
   planOrgBoardScene,
   teamDesignPosition,
+  zoneLabelRect,
 } from '../../../src/render/orgBoardScene';
 
 function orgScaleInput(seed: string, overrides: Partial<OrgScaleInput> = {}): OrgScaleInput {
@@ -264,5 +269,51 @@ describe('planOrgBoardScene (RI-01)', () => {
         }
       }
     }
+  });
+
+  it('部門ラベルはチームカード（島バッジ）と重ならない', () => {
+    const org = generateOrgScale(orgScaleInput('label-clear-default'));
+    const scene = planOrgBoardScene(org);
+    for (const label of scene.zoneLabels) {
+      const labelBox = zoneLabelRect(label);
+      for (const island of scene.islands) {
+        expect(
+          orgBoardRectsOverlap(labelBox, islandBadgeRect(island)),
+          `${label.deptId} ラベルと ${island.teamId} カードが重なる`,
+        ).toBe(false);
+        expect(islandBadgeRect(island).y).toBeGreaterThanOrEqual(
+          labelBox.y + labelBox.height + ZONE_LABEL_GAP - 0.5,
+        );
+      }
+    }
+  });
+
+  it('extraTeams で島が増えても部門ラベルとチームカードは重ならない', () => {
+    const org = generateOrgScale(
+      orgScaleInput('label-clear-extra', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 8 }, byDept: {} },
+      }),
+    );
+    const scene = planOrgBoardScene(org);
+    expect(org.departments.find((d) => d.def.id === 'product')!.teams.length).toBeGreaterThan(8);
+    for (const label of scene.zoneLabels) {
+      const labelBox = zoneLabelRect(label);
+      for (const island of scene.islands) {
+        expect(
+          orgBoardRectsOverlap(labelBox, islandBadgeRect(island)),
+          `${label.deptId} ラベルと ${island.teamId} カードが重なる`,
+        ).toBe(false);
+      }
+    }
+    const { minY } = islandCenterBounds();
+    for (const island of scene.islands) {
+      expect(island.y).toBeGreaterThanOrEqual(minY);
+    }
+  });
+
+  it('島中心の下限は部門ラベル帯の下に取る', () => {
+    const bounds = islandCenterBounds();
+    expect(bounds.minY).toBeGreaterThan(ZONE_LABEL_GAP);
+    expect(bounds.minY).toBeLessThan(bounds.maxY);
   });
 });

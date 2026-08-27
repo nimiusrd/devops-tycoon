@@ -2,28 +2,44 @@
  * プレイヤー Pause（#370）。❚❚ トグル・1x/2x 再開・停止中の手札ロック。
  * `game.pause()`（E2E 固定）とは独立した UI 速度コントロールを検証する。
  */
-import { beginPublicSprint, expect, test } from './fixtures';
+import { expect, test } from './fixtures';
+import type { CardPlayOutcome } from '../../src/sim/types';
 import type { RunState } from '../../src/sim/run/types';
 
 type GameWindow = Window & {
   game?: {
+    pause(): void;
     getState(): RunState;
+    startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
+    beginSetupSprint(): RunState;
+    playCard(deckIndex: number): CardPlayOutcome;
+    engine: {
+      deck: Array<{ defId: string; level: number }>;
+    };
   };
 };
 
 test('❚❚ はトグルでき、1x / 2x でも再開でき、停止中は手札を発動できない', async ({ page }) => {
-  await beginPublicSprint(page, { seed: 'issue-370-pause', renderer: 'dom' });
+  await page.goto('/?renderer=dom&seed=issue-370-pause');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'issue-370-pause');
+    g.engine.deck.push({ defId: 'copilot', level: 1 });
+    g.beginSetupSprint();
+    g.pause();
+  });
 
   const pauseBtn = page.getByTestId('speed-pause');
   const speed1x = page.getByTestId('speed-1x');
   const speed2x = page.getByTestId('speed-2x');
   const controls = page.getByTestId('speed-controls');
-  const enabledHand = page.locator('[data-testid^="hand-card-"]:not([disabled])');
-  await expect(enabledHand.first()).toBeVisible();
-  const cardTestId = await enabledHand.first().getAttribute('data-testid');
-  if (!cardTestId) throw new Error('発動可能な手札の testid が取れない');
-  const playableCard = page.getByTestId(cardTestId);
+  const playableCard = page.getByTestId('hand-card-copilot');
 
+  await expect(playableCard).toBeVisible();
+  await expect(playableCard).toBeEnabled();
   await expect(speed1x).toHaveAttribute('aria-pressed', 'true');
   await expect(pauseBtn).toHaveAttribute('aria-pressed', 'false');
 

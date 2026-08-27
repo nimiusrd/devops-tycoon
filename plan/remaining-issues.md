@@ -30,12 +30,18 @@ Framer Motion で重ねている。本エピックでは中央のスプリント
 
 分割して、各項目を原則 1 PR で完了させる。
 
-1. **RI-141: Review の流れ・滞留・熱を WebGL で可視化 — 未着手（難易度: 中）**
-   - タスクの移動軌跡、Review の滞留密度、盤面のヒートを、既存の状態と共有トークンから
-     描く。DOM fallback は同じ渋滞状態・数値を維持する。
+1. **RI-141: Review の流れ・滞留・熱を WebGL で可視化 — 未着手（難易度: 高）**
+   - 既存のタスク粒移動・DOMヒートオーバーレイに重ね、Pixi に二つの専用レイヤを追加する。
+     `scene.stations.review.heat` が 0 より大きい間だけReviewゾーン内にGPUヒートフィールドを
+     描き、8〜11件では強度を連続的に変化させ、12件以上では Review Hell の警告状態を維持する。
+     `dot.motion.kind === 'flow'` の Coding／Rework→Review タスクには、向き・進捗・AI補助速度を
+     読み取れる上限付きの軌跡を描く。既存の座標、件数、DOM fallback の渋滞表示は変えない。
    - 純粋な演出計画のユニットテスト、Pixi 視覚回帰、`tests/e2e/sprint-layout.spec.ts`
      （`renderer=dom`）での渋滞／Review Hell状態と主要 viewport の確認を追加する。通常時と
      `prefers-reduced-motion: reduce` の双方で、動きを抑制しても渋滞情報を失わないことを検証する。
+   - **高難易度の理由:** `boardScene`、`Board`、Pixi描画・スプライトプール、共有トークン、
+     DOM/Pixiのmotion抑制、5 viewportのE2E、実WebGL視覚回帰にまたがり、レンダラの設計境界を
+     変更するため。
 
 2. **RI-142: 炎上・鎮火・介入リアクションの GPU エフェクト化 — 未着手（難易度: 高）**
    - `FireEffects` / `InterventionEffects` が担う点火、延焼、鎮火、レビュー掃引、PR 分割、
@@ -46,6 +52,9 @@ Framer Motion で重ねている。本エピックでは中央のスプリント
      `tests/e2e/sprint-pixi-visual.spec.ts` の対象回帰を同じ PR で実行する。
      効果音の発火はレンダラから分離し、DOM／Pixi のどちらでも一度だけ再生されることを検証する。
      共有トークンの追加・CSS変数マッピングは `tests/unit/render/visualTokens.test.ts` で検証する。
+     状態→演出の発火順・位置・終了時刻・上限は `fireEffects.test.ts` /
+     `interventionEffects.test.ts` または新しい演出計画テストで契約し、通常時と
+     `prefers-reduced-motion: reduce` の双方で情報と効果音を一度だけ維持することを検証する。
    - **高難易度の理由:** 一時演出のライフサイクルと入力・描画フレームの同期、既存 DOM 演出との
      二重再生防止、reduced motion、実 WebGL のスクリーンショット安定化をまとめて保証する必要がある。
 

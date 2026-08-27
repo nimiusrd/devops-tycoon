@@ -13,7 +13,7 @@ export function useDialogOverlayLock(dialogRef: RefObject<HTMLElement | null>): 
     if (!dialog) return;
 
     if (!dialog.contains(document.activeElement)) {
-      dialog.focus();
+      dialog.focus({ preventScroll: true });
     }
     const unlock = lockBackgroundSiblings(dialog);
 
@@ -23,14 +23,15 @@ export function useDialogOverlayLock(dialogRef: RefObject<HTMLElement | null>): 
       const target = wrapTabIfNeeded(listFocusable(dialog), active, event.shiftKey, dialog);
       if (!target) return;
       event.preventDefault();
-      target.focus();
+      target.focus({ preventScroll: target === dialog });
     };
 
     const onFocusIn = (event: FocusEvent) => {
       const target = event.target;
       if (!(target instanceof Node) || dialog.contains(target)) return;
       const focusables = listFocusable(dialog);
-      (focusables[0] ?? dialog).focus();
+      const next = focusables[0] ?? dialog;
+      next.focus({ preventScroll: next === dialog });
     };
 
     document.addEventListener('keydown', onKeyDown, true);

@@ -288,9 +288,10 @@ describe('mutation shards', () => {
     expect(config.dryRunTimeoutMinutes).toBeGreaterThanOrEqual(20);
   });
 
-  it('mutation vitest は sprintTempo の重い行列を dry-run から外す', () => {
+  it('mutation vitest は F-4/F-5 行列だけ dry-run から外し、sprintTempo の軽量テストは残す', () => {
     const mutationVitest = readFileSync(join(REPO_ROOT, 'vitest.mutation.config.ts'), 'utf8');
-    expect(mutationVitest).toContain('tests/unit/ui/sprintTempo.test.ts');
+    expect(mutationVitest).toContain('tests/unit/ui/sprintTempoPacing.test.ts');
     expect(mutationVitest).toContain('exclude');
+    expect(mutationVitest).not.toContain("exclude: ['tests/unit/ui/sprintTempo.test.ts']");
   });
 });

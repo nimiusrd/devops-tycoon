@@ -20,6 +20,7 @@ import { Breadcrumb } from './ui/Breadcrumb';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
 import { RunBar } from './ui/RunBar';
 import { ResponsiveModeProvider, useResponsiveMode } from './ui/responsiveMode';
+import { ResultOverlay } from './ui/ResultOverlay';
 import { TitleScreen } from './ui/TitleScreen';
 import {
   resolveTutorialFromLocation,
@@ -117,8 +118,7 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
 /** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
 function TitleModalLoadingFallback() {
   return (
-    <div
-      className="result-overlay"
+    <ResultOverlay
       data-testid="title-modal-loading"
       role="status"
       aria-busy="true"

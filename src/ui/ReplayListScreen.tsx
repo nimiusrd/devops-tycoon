@@ -9,6 +9,7 @@ import { diagnosisView } from '../sim/diagnosis';
 import { planReviewHellReplay } from '../render/reviewHellReplayView';
 import { formatReplayRuleset } from './replayRuleset';
 import { resolveSelectedReplayId } from './replayListSelection';
+import { ResultOverlay } from './ResultOverlay';
 import type { ReplayBlob } from '../state/replay';
 
 export interface ReplayListScreenProps {
@@ -106,168 +107,178 @@ export function ReplayListScreen({
   };
 
   return (
-    <div className="result-overlay" data-testid="replay-list" role="dialog" aria-label="Replays">
+    <ResultOverlay data-testid="replay-list" role="dialog" aria-label="Replays">
       <div className="meta-shop-panel replay-list-panel">
-        <p className="result-eyebrow">REPLAY</p>
-        <h2 className="draft-title">保存済みランの閲覧</h2>
-        <p className="meta-shop-lead">
-          キーフレームを選んで、当時の盤面を読み取り専用で確認します。
-        </p>
-
-        {replays.length === 0 ? (
-          <p className="replay-list-empty" data-testid="replay-list-empty">
-            まだリプレイがありません。ランを完了するとここに保存されます。
+        <div className="result-overlay-body">
+          <p className="result-eyebrow">REPLAY</p>
+          <h2 className="draft-title">保存済みランの閲覧</h2>
+          <p className="meta-shop-lead">
+            キーフレームを選んで、当時の盤面を読み取り専用で確認します。
           </p>
-        ) : (
-          <div className="replay-list-body">
-            <ul className="replay-list-items">
-              {replays.map((replay) => {
-                const isHell = replay.outcome.diagnosis === 'reviewHell';
-                return (
-                  <li key={replay.id}>
-                    <button
-                      type="button"
-                      className={`${replay.id === resolvedSelectedId ? 'selected' : ''}${isHell ? ' replay-item-review-hell' : ''}`}
-                      data-testid={`replay-item-${replay.id}`}
-                      data-diagnosis={replay.outcome.diagnosis}
-                      onClick={() => setSelectedId(replay.id)}
-                    >
-                      <b>{replay.seed}</b>
-                      <span>
-                        {replay.difficulty} · {outcomeLabel(replay)} · {replay.outcome.score} pt
-                      </span>
-                      <span className="replay-item-diagnosis">
-                        {diagnosisView(replay.outcome.diagnosis).label}
-                        {isHell ? (
-                          <em
-                            className="replay-review-hell-badge"
-                            data-testid="replay-review-hell-badge"
-                          >
-                            レビュー地獄
-                          </em>
-                        ) : null}
-                      </span>
-                      <span
-                        className="replay-item-ruleset"
-                        data-testid="replay-ruleset"
-                        data-ruleset-known={replay.ruleset ? 'true' : 'false'}
-                      >
-                        記録時ルールセット: {formatReplayRuleset(replay.ruleset)}
-                      </span>
-                      <small>{formatFinishedAt(replay.finishedAt)}</small>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="replay-list-keyframes">
-              <h3>キーフレーム</h3>
-              {selected ? (
-                <>
-                  {hellView?.show ? (
-                    <div
-                      className="replay-review-hell-panel tone-review-hell"
-                      data-testid="replay-review-hell-panel"
-                    >
-                      <p className="result-section-label">{hellView.title}</p>
-                      <p className="replay-review-hell-lead">{hellView.lead}</p>
-                      <p className="replay-review-hell-peak" data-testid="replay-review-hell-peak">
-                        Review peak {hellView.reviewQueuePeak}
-                      </p>
-                      {hellView.burnHeadline ? (
-                        <p className="replay-review-hell-burn">{hellView.burnHeadline}</p>
-                      ) : null}
-                      <p
-                        className="replay-review-hell-lesson"
-                        data-testid="replay-review-hell-lesson"
-                      >
-                        {hellView.lesson}
-                      </p>
+
+          {replays.length === 0 ? (
+            <p className="replay-list-empty" data-testid="replay-list-empty">
+              まだリプレイがありません。ランを完了するとここに保存されます。
+            </p>
+          ) : (
+            <div className="replay-list-body">
+              <ul className="replay-list-items">
+                {replays.map((replay) => {
+                  const isHell = replay.outcome.diagnosis === 'reviewHell';
+                  return (
+                    <li key={replay.id}>
                       <button
                         type="button"
-                        className="btn"
-                        data-testid="replay-review-hell-open"
-                        onClick={() => onOpen(selected.id, hellView.preferredKeyframeIndex)}
+                        className={`${replay.id === resolvedSelectedId ? 'selected' : ''}${isHell ? ' replay-item-review-hell' : ''}`}
+                        data-testid={`replay-item-${replay.id}`}
+                        data-diagnosis={replay.outcome.diagnosis}
+                        onClick={() => setSelectedId(replay.id)}
                       >
-                        レビュー地獄を開く →
+                        <b>{replay.seed}</b>
+                        <span>
+                          {replay.difficulty} · {outcomeLabel(replay)} · {replay.outcome.score} pt
+                        </span>
+                        <span className="replay-item-diagnosis">
+                          {diagnosisView(replay.outcome.diagnosis).label}
+                          {isHell ? (
+                            <em
+                              className="replay-review-hell-badge"
+                              data-testid="replay-review-hell-badge"
+                            >
+                              レビュー地獄
+                            </em>
+                          ) : null}
+                        </span>
+                        <span
+                          className="replay-item-ruleset"
+                          data-testid="replay-ruleset"
+                          data-ruleset-known={replay.ruleset ? 'true' : 'false'}
+                        >
+                          記録時ルールセット: {formatReplayRuleset(replay.ruleset)}
+                        </span>
+                        <small>{formatFinishedAt(replay.finishedAt)}</small>
                       </button>
-                    </div>
-                  ) : null}
-                  <ul>
-                    {selected.keyframes.map((frame, index) => (
-                      <li key={`${selected.id}-${index}`}>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="replay-list-keyframes">
+                <h3>キーフレーム</h3>
+                {selected ? (
+                  <>
+                    {hellView?.show ? (
+                      <div
+                        className="replay-review-hell-panel tone-review-hell"
+                        data-testid="replay-review-hell-panel"
+                      >
+                        <p className="result-section-label">{hellView.title}</p>
+                        <p className="replay-review-hell-lead">{hellView.lead}</p>
+                        <p
+                          className="replay-review-hell-peak"
+                          data-testid="replay-review-hell-peak"
+                        >
+                          Review peak {hellView.reviewQueuePeak}
+                        </p>
+                        {hellView.burnHeadline ? (
+                          <p className="replay-review-hell-burn">{hellView.burnHeadline}</p>
+                        ) : null}
+                        <p
+                          className="replay-review-hell-lesson"
+                          data-testid="replay-review-hell-lesson"
+                        >
+                          {hellView.lesson}
+                        </p>
                         <button
                           type="button"
-                          data-testid={`replay-keyframe-${index}`}
-                          onClick={() => onOpen(selected.id, index)}
+                          className="btn"
+                          data-testid="replay-review-hell-open"
+                          onClick={() => onOpen(selected.id, hellView.preferredKeyframeIndex)}
                         >
-                          <b>{frame.phase}</b>
-                          {frame.label ? <span>{frame.label}</span> : null}
-                          <i>開く →</i>
+                          レビュー地獄を開く →
                         </button>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <p>リプレイを選択してください。</p>
-              )}
+                      </div>
+                    ) : null}
+                    <ul>
+                      {selected.keyframes.map((frame, index) => (
+                        <li key={`${selected.id}-${index}`}>
+                          <button
+                            type="button"
+                            data-testid={`replay-keyframe-${index}`}
+                            onClick={() => onOpen(selected.id, index)}
+                          >
+                            <b>{frame.phase}</b>
+                            {frame.label ? <span>{frame.label}</span> : null}
+                            <i>開く →</i>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p>リプレイを選択してください。</p>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {onExportReplay || onImportReplay ? (
-          <div className="replay-share" data-testid="replay-share">
-            <div className="replay-share-actions">
-              {onExportReplay ? (
-                <button
-                  type="button"
-                  className="btn"
-                  data-testid="replay-download"
-                  disabled={!selected}
-                  onClick={downloadSelected}
-                >
-                  ファイルで保存
-                </button>
-              ) : null}
-              {onImportReplay ? (
-                <>
+          {onExportReplay || onImportReplay ? (
+            <div className="replay-share" data-testid="replay-share">
+              <div className="replay-share-actions">
+                {onExportReplay ? (
                   <button
                     type="button"
                     className="btn"
-                    data-testid="replay-file-button"
-                    disabled={replayImporting}
-                    onClick={() => replayFileRef.current?.click()}
+                    data-testid="replay-download"
+                    disabled={!selected}
+                    onClick={downloadSelected}
                   >
-                    ファイルを開く
+                    ファイルで保存
                   </button>
-                  <input
-                    ref={replayFileRef}
-                    type="file"
-                    accept="application/json,.json"
-                    hidden
-                    data-testid="replay-file"
-                    disabled={replayImporting}
-                    onChange={onReplayFile}
-                  />
-                </>
+                ) : null}
+                {onImportReplay ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn"
+                      data-testid="replay-file-button"
+                      disabled={replayImporting}
+                      onClick={() => replayFileRef.current?.click()}
+                    >
+                      ファイルを開く
+                    </button>
+                    <input
+                      ref={replayFileRef}
+                      type="file"
+                      accept="application/json,.json"
+                      hidden
+                      data-testid="replay-file"
+                      disabled={replayImporting}
+                      onChange={onReplayFile}
+                    />
+                  </>
+                ) : null}
+              </div>
+              {shareStatus.message ? (
+                <p
+                  className={`replay-share-status${shareStatus.kind === 'error' ? ' error' : ''}`}
+                  data-testid="replay-share-status"
+                >
+                  {shareStatus.message}
+                </p>
               ) : null}
             </div>
-            {shareStatus.message ? (
-              <p
-                className={`replay-share-status${shareStatus.kind === 'error' ? ' error' : ''}`}
-                data-testid="replay-share-status"
-              >
-                {shareStatus.message}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
-        <button type="button" className="btn" data-testid="replay-list-close" onClick={onClose}>
+        <button
+          type="button"
+          className="btn result-overlay-close"
+          data-testid="replay-list-close"
+          onClick={onClose}
+        >
           閉じる
         </button>
       </div>
-    </div>
+    </ResultOverlay>
   );
 }

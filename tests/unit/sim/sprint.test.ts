@@ -100,6 +100,24 @@ describe('リザルトの整合性', () => {
     expect(result.title.length).toBeGreaterThan(0);
     expect(result.diagnosis.length).toBeGreaterThan(0);
   });
+
+  it('内部シニアHPが負でも残量は 0 下限で集計する', () => {
+    const org = createOrgState('default', false);
+    const sprint = makeSprint(org, []);
+    sprint.metrics.seniorHpStart = 40;
+    org.seniorHp = -12;
+    sprint.timeline.push({
+      tick: 3,
+      reviewQueue: 0,
+      burningCount: 0,
+      combo: 0,
+      seniorHp: -12,
+    });
+    const result = summarizeSprint(sprint, org);
+    expect(result.seniorHpDelta).toBe(-40);
+    expect(result.timeline.at(-1)?.seniorHp).toBe(0);
+    expect(org.seniorHp).toBe(-12);
+  });
 });
 
 function patchMetrics(sprint: SprintState, overrides: Partial<SprintMetrics>): void {

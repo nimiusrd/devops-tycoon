@@ -46,6 +46,32 @@ test('タイトルから遊び方ヘルプを開ける', async ({ page }) => {
   await expect(page.getByTestId('how-to-play')).not.toBeVisible();
 });
 
+test('遊び方ヘルプは Escape で閉じる', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=howto-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-help').click();
+  await expect(page.getByTestId('how-to-play')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('how-to-play')).not.toBeVisible();
+});
+
+test('遊び方ヘルプは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=howto-backdrop');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-help').click();
+  const dialog = page.getByTestId('how-to-play');
+  await expect(dialog).toBeVisible();
+
+  await page.locator('.how-to-play-panel').click();
+  await expect(dialog).toBeVisible();
+
+  await dialog.click({ position: { x: 8, y: 8 } });
+  await expect(dialog).not.toBeVisible();
+});
+
 test('?tutorial=help でタイトル起動時に遊び方を開く', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=howto-query&tutorial=help');
   await expect(page.getByTestId('how-to-play')).toBeVisible();

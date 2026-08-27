@@ -438,12 +438,17 @@ async function waitForLayoutFrame(page: Page): Promise<void> {
 async function exposeResultCardForScreenshot(page: Page): Promise<void> {
   await page.addStyleTag({
     content: `
+      html, body, .app {
+        overflow: visible !important;
+        max-height: none !important;
+      }
       .result-overlay {
         position: absolute !important;
         inset: 0 auto auto 0 !important;
         width: 100% !important;
         height: auto !important;
-        min-height: 100vh !important;
+        min-height: 0 !important;
+        max-height: none !important;
         overflow: visible !important;
         align-items: flex-start !important;
       }
@@ -451,12 +456,14 @@ async function exposeResultCardForScreenshot(page: Page): Promise<void> {
         margin-block: 0 !important;
         max-height: none !important;
         height: auto !important;
+        min-height: 0 !important;
         overflow: visible !important;
         flex: none !important;
       }
       .overlay-scroll {
         overflow: visible !important;
         max-height: none !important;
+        min-height: 0 !important;
         flex: none !important;
       }
     `,
@@ -804,7 +811,7 @@ test.describe('RI-94 レイアウト契約', () => {
     await advanceCurrentSprintToResult(page);
     await expect(page.getByTestId('sprint-result')).toBeVisible();
     await stabilizeDomForScreenshot(page);
-    await expect(page.locator('.app')).toHaveScreenshot('sprint-layout-result-overlay.png', {
+    await expect(page).toHaveScreenshot('sprint-layout-result-overlay.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });
@@ -869,8 +876,8 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     expect(before.layoutOverflowY).toBe('hidden');
     expect(before.canScroll, '結果カードが枠内スクロールできない').toBe(true);
 
-    await expect(page.getByTestId('result-continue')).toBeInViewport();
-    await expect(page.getByTestId('result-restart')).toBeInViewport();
+    await expect(page.getByTestId('result-continue')).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId('result-restart')).toBeInViewport({ ratio: 1 });
 
     await page.getByTestId('overlay-scroll').evaluate((element) => {
       element.scrollTop = element.scrollHeight;
@@ -915,8 +922,8 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     expect(before.overlayOverflowY).toBe('hidden');
     expect(before.layoutOverflowY).toBe('hidden');
 
-    await expect(page.getByTestId('draft-mulligan')).toBeInViewport();
-    await expect(page.getByTestId('draft-skip')).toBeInViewport();
+    await expect(page.getByTestId('draft-mulligan')).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId('draft-skip')).toBeInViewport({ ratio: 1 });
 
     const cardIds = draftState.draft ?? [];
     expect(cardIds.length, 'ドラフト候補が3枚ではない').toBe(3);

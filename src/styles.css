@@ -3409,6 +3409,52 @@ button.card:active {
   font-size: 12px;
   cursor: pointer;
 }
+.start-daily-confirm-card {
+  text-align: left;
+}
+.start-daily-confirm-state {
+  margin: 0 0 0.85rem;
+}
+.start-daily-confirm-state > b {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--cream);
+}
+.start-daily-confirm-state > small {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+.start-daily-confirm-risk {
+  margin: 0 0 1.25rem;
+  color: var(--sun);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+.start-daily-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.start-daily-confirm-actions .btn {
+  margin-left: 0;
+  flex: 1 1 8rem;
+  min-height: 44px;
+}
+.start-daily-confirm-discard {
+  border-color: var(--coral);
+  color: var(--coral);
+}
+.start-daily-confirm-actions .btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .result-overlay.start-daily-confirm {
+    animation: none;
+  }
+}
 .title-mission {
   border-left: 1px solid var(--tc-line);
 }

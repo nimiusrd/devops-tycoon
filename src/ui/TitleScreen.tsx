@@ -5,7 +5,8 @@
  * 実績）も表示する。世界観の制約（第2.1）に沿った現実的なトーン。
  * レイアウトは司令室 UI の構図を使い、文言は SPEC の用語に揃える。
  */
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useRef, useState, type ChangeEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
@@ -14,25 +15,8 @@ import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
-
-const DIFFICULTY_TAG: Record<DifficultyId, string> = {
-  easy: 'Easy',
-  normal: 'Normal',
-  hard: 'Hard',
-  nightmare: 'Nightmare',
-};
-
-const PHASE_LABEL: Record<RunSaveSummary['phase'], string> = {
-  setup: '編成',
-  result: 'リザルト',
-  draft: 'ドラフト',
-  evolution: '進化',
-  beat: 'イベント',
-  shop: 'ショップ',
-  rest: '休息',
-  recruit: '採用',
-  quarterReview: '四半期レビュー',
-};
+import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
+import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
 
 function formatRuleset(ruleset: { version: number; fingerprint: string }): string {
   const fingerprint =
@@ -110,6 +94,7 @@ export function TitleScreen({
     kind: 'idle' | 'ok' | 'error';
     message: string;
   }>({ kind: 'idle', message: '' });
+  const [dailyConfirmOpen, setDailyConfirmOpen] = useState(false);
   const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
@@ -222,6 +207,24 @@ export function TitleScreen({
   const dailyStatus = dailyRecord
     ? `今日のベスト ${dailyRecord.bestScore} pt${dailyRecord.rewardClaimed ? ' / 報酬受領済み' : ' / 報酬未受領'}`
     : 'まだ今日の記録はありません';
+
+  const closeDailyConfirm = useCallback(() => setDailyConfirmOpen(false), []);
+  const confirmStartDaily = useCallback(() => {
+    setDailyConfirmOpen(false);
+    onStartDaily?.();
+  }, [onStartDaily]);
+  const confirmResumeFromDaily = useCallback(() => {
+    setDailyConfirmOpen(false);
+    onResume?.();
+  }, [onResume]);
+  const requestStartDaily = () => {
+    if (runSaveImporting) return;
+    if (resumableSummary) {
+      setDailyConfirmOpen(true);
+      return;
+    }
+    onStartDaily?.();
+  };
 
   return (
     <div className="title-screen title-command" data-testid="title">
@@ -527,16 +530,8 @@ export function TitleScreen({
             >
               <div className="title-resume-copy">
                 <span>再開できないセーブ</span>
-                <b>
-                  {DIFFICULTY_TAG[resumableSummary.difficulty]} / Q{resumableSummary.quarterNumber}{' '}
-                  {PHASE_LABEL[resumableSummary.phase]}
-                </b>
-                <small>
-                  seed: {resumableSummary.seed} · スプリント {resumableSummary.sprintsPlayed} 完了
-                  {resumableSummary.runKind === 'daily' && resumableSummary.dailyDate
-                    ? ` · デイリー ${resumableSummary.dailyDate}`
-                    : ''}
-                </small>
+                <b>{resumableRunHeadline(resumableSummary)}</b>
+                <small>{resumableRunDetail(resumableSummary, { includeSeed: true })}</small>
                 <p className="title-resume-issue" data-testid="run-save-issue">
                   {runSaveIssue.kind === 'ruleset-unknown'
                     ? 'ルールセット情報がない旧セーブのため、現在のゲームでは再開できません。'
@@ -576,16 +571,8 @@ export function TitleScreen({
             <section className="title-resume" data-testid="resume-run-section">
               <div className="title-resume-copy">
                 <span>中断中のラン</span>
-                <b>
-                  {DIFFICULTY_TAG[resumableSummary.difficulty]} / Q{resumableSummary.quarterNumber}{' '}
-                  {PHASE_LABEL[resumableSummary.phase]}
-                </b>
-                <small>
-                  スプリント {resumableSummary.sprintsPlayed} 完了
-                  {resumableSummary.runKind === 'daily' && resumableSummary.dailyDate
-                    ? ` · デイリー ${resumableSummary.dailyDate}`
-                    : ''}
-                </small>
+                <b>{resumableRunHeadline(resumableSummary)}</b>
+                <small>{resumableRunDetail(resumableSummary)}</small>
               </div>
               <button
                 type="button"
@@ -611,7 +598,9 @@ export function TitleScreen({
                   type="button"
                   data-testid="start-daily-run"
                   disabled={runSaveImporting}
-                  onClick={onStartDaily}
+                  aria-haspopup={resumableSummary ? 'dialog' : undefined}
+                  aria-expanded={resumableSummary ? dailyConfirmOpen : undefined}
+                  onClick={requestStartDaily}
                 >
                   本日のデイリーを始める →
                 </button>
@@ -715,6 +704,19 @@ export function TitleScreen({
           </nav>
         </footer>
       </div>
+      {/* overflow:hidden のタイトル面から外し、既存 overlay と同じく全面を覆う */}
+      {dailyConfirmOpen && resumableSummary && onStartDaily
+        ? createPortal(
+            <StartDailyConfirmDialog
+              summary={resumableSummary}
+              canResume={!runSaveIssue && !!onResume}
+              onCancel={closeDailyConfirm}
+              onResume={confirmResumeFromDaily}
+              onDiscardAndStart={confirmStartDaily}
+            />,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

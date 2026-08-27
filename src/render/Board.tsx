@@ -188,12 +188,7 @@ function BoardFlowSummary({ stations }: { stations: readonly BoardStationPlan[] 
 function Bubble({ s }: { s: BoardStationPlan }) {
   // 好調・完了の肯定的な演出は人物の表情へ任せ、判断が必要な状態だけ言語化する。
   if (!s.bubble || s.mood === 'happy' || s.mood === 'cheer') return null;
-  const tone =
-    s.mood === 'panic' || s.mood === 'sad'
-      ? 'hot'
-      : s.mood === 'happy' || s.mood === 'cheer'
-        ? 'warm'
-        : '';
+  const tone = s.mood === 'panic' || s.mood === 'sad' ? 'hot' : '';
   return (
     <div
       className={`bubble ${tone}`}

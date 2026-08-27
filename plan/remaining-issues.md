@@ -4,7 +4,71 @@
 
 ## 1. 現在の課題
 
-現在の未充足・保留課題はない。
+### RI-140: 中央「現場」のWebGL演出リッチ化（エピック） — 未着手
+
+**難易度: 高。** 現在の `BoardPixiLayer` / `PixiBoardRenderer` はフロー線・タスク粒・
+ステーションキャラクターを WebGL で描き、炎上・介入・オーラなどの短時間演出は DOM +
+Framer Motion で重ねている。本エピックでは中央のスプリント盤面だけを対象に、状態理解を
+強める GPU 演出へ段階的に拡張する。HUD、手札、アクションバー、チュートリアル等の離散 UI
+を canvas 化することは対象外とする。
+
+- **プレイヤー価値:** Review の渋滞、手戻り、炎上、介入の因果と緊急度が、粒の流れ・熱・
+  光・短時間の反応として即座に読み取れる。画面を派手にするだけで、操作対象や次の一手を
+  隠してはならない。
+- **受入条件:** `boardScene` 等の純粋な表示モデルを状態→演出の正本にし、WebGL と
+  `?renderer=dom` の双方で、状態名・数値・選択可否・操作結果が等価に分かるようにする。
+  新しい演出色・共有寸法は `visualTokens.ts` を正本とし、DOM と Pixi で値を複製しない。
+  `prefers-reduced-motion` では演出を即時化または抑制しても情報を失わせない。既存の
+  ドラッグ操作、WebGL 初期化失敗時の DOM フォールバック、リサイズ時のコンテキスト維持を
+  壊さない。
+- **難易度が高い理由:** 状態差分からの一回限りの演出計画、Pixi の ticker／深度順／
+  スプライトプール、DOM フォールバックとの意味的同等性、5 viewport と実 WebGL の視覚回帰を
+  同時に扱う。レンダラ、演出モデル、React 境界、アクセシビリティ、E2E にまたがり、8ファイル
+  以上の変更と実ブラウザでの検証を要する。
+- **非対象:** ゲーム全 UI の WebGL 化、sim・保存・リプレイの意味変更、WebGL を必須にする変更、
+  新しいゲームルールの追加。
+
+分割して、各項目を原則 1 PR で完了させる。
+
+1. **RI-141: Review の流れ・滞留・熱を WebGL で可視化 — 未着手（難易度: 高）**
+   - 既存のタスク粒移動・DOMヒートオーバーレイに重ね、Pixi に二つの専用レイヤを追加する。
+     `scene.stations.find((station) => station.lane === 'review')?.heat ?? 0` が 0 より大きい間だけReviewゾーン内にGPUヒートフィールドを
+     描き、8〜11件では強度を連続的に変化させ、12件以上では Review Hell の警告状態を維持する。
+     `dot.motion.kind === 'flow'` の Coding／Rework→Review タスクには、向き・進捗・AI補助速度を
+     読み取れる上限付きの軌跡を描く。既存の座標、件数、DOM fallback の渋滞表示は変えない。
+   - 純粋な演出計画のユニットテスト、Pixi 視覚回帰、`tests/e2e/sprint-layout.spec.ts`
+     （`renderer=dom`）での渋滞／Review Hell状態と主要 viewport の確認を追加する。通常時と
+     `prefers-reduced-motion: reduce` の双方で、動きを抑制しても渋滞情報を失わないことを検証する。
+   - **高難易度の理由:** `boardScene`、`Board`、Pixi描画・スプライトプール、共有トークン、
+     DOM/Pixiのmotion抑制、5 viewportのE2E、実WebGL視覚回帰にまたがり、レンダラの設計境界を
+     変更するため。
+
+2. **RI-142: 炎上・鎮火・介入リアクションの GPU エフェクト化 — 未着手（難易度: 高）**
+   - `FireEffects` / `InterventionEffects` が担う点火、延焼、鎮火、レビュー掃引、PR 分割、
+     差配、`boardAura`、`successPulse` と、`Board.tsx` の常駐 `board-modifier-aura` を、
+     上限付きプールで Pixi 側へ移す。効果の発火順・位置・終了時刻を再現可能な表示モデルとして
+     扱い、演出色・共有寸法は `visualTokens.ts` から DOM と Pixi の双方へ供給する。
+     DOM はフォールバックとして残し、`tests/e2e/sprint-layout.spec.ts`（`renderer=dom`）と
+     `tests/e2e/sprint-pixi-visual.spec.ts` の対象回帰を同じ PR で実行する。`BoardPixiLayer` の
+     初期化失敗を注入するE2Eを追加し、演出・常駐オーラの再生中でもDOMフォールバックへ切り替え、
+     表示の欠落・再発火・効果音の二重再生が起きないことを確認する。
+     効果音の発火はレンダラから分離し、DOM／Pixi のどちらでも一度だけ再生されることを検証する。
+     共有トークンの追加・CSS変数マッピングは `tests/unit/render/visualTokens.test.ts` で検証する。
+     状態→演出の発火順・位置・終了時刻・上限は `fireEffects.test.ts` /
+     `interventionEffects.test.ts` または新しい演出計画テストで契約し、通常時と
+     `prefers-reduced-motion: reduce` の双方で情報と効果音を一度だけ維持することを検証する。
+   - **高難易度の理由:** 一時演出のライフサイクルと入力・描画フレームの同期、既存 DOM 演出との
+     二重再生防止、reduced motion、実 WebGL のスクリーンショット安定化をまとめて保証する必要がある。
+
+3. **RI-143: 現場 WebGL の演出予算・同等性・回帰契約 — 未着手（難易度: 高）**
+   - エフェクト数・生成数・プール再利用・描画順を数値で制限し、通常／Review Hell／炎上／
+     介入／ドラッグの DOM・Pixi 両経路を検証する。5 viewport、WebGL 不可時、コンテキスト
+     再利用、reduced motion を受入条件に含める。
+     `tests/unit/render/iso.test.ts` を拡張するか、演出プール／予算の専用Vitestを追加し、GPUを
+     必要とせずに上限到達時の切り捨て、解放後の再利用、連続イベント時の生成数を決定論的に
+     契約する。
+   - **高難易度の理由:** GPU 性能を CI の FPS に依存せず契約化しつつ、視覚回帰・操作 E2E・
+     アクセシビリティの不整合を防ぐ横断作業になる。
 
 ### 第23章の残拡張（旧RI-34）
 

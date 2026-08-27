@@ -213,6 +213,25 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/*
+ * 展開KPIの6文字ラベル（出荷ポイント / セキュリティ / レビュー耐性）は、
+ * 方向チップと横並びだと 140px タイルで省略される。デスクトップ幅では
+ * ラベルを縮めず、収まらない方向チップを次行へ送る（DS-06: 省略より折り返し）。
+ * 狭幅の2列展開は省略を残し、既定の要約チップで正式名を読めるようにする。
+ */
+:root[data-responsive-width='wide'] .stat-head {
+  flex-wrap: wrap;
+}
+:root[data-responsive-width='wide'] .stat-label {
+  flex: 1 0 auto;
+  min-width: max-content;
+}
+:root[data-responsive-width='wide'] .stat .k {
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
+}
 .direction-chip {
   flex: 0 0 auto;
   max-width: 58px;

@@ -32,7 +32,7 @@ Framer Motion で重ねている。本エピックでは中央のスプリント
 
 1. **RI-141: Review の流れ・滞留・熱を WebGL で可視化 — 未着手（難易度: 高）**
    - 既存のタスク粒移動・DOMヒートオーバーレイに重ね、Pixi に二つの専用レイヤを追加する。
-     `scene.stations.review.heat` が 0 より大きい間だけReviewゾーン内にGPUヒートフィールドを
+     `scene.stations.find((station) => station.lane === 'review')?.heat ?? 0` が 0 より大きい間だけReviewゾーン内にGPUヒートフィールドを
      描き、8〜11件では強度を連続的に変化させ、12件以上では Review Hell の警告状態を維持する。
      `dot.motion.kind === 'flow'` の Coding／Rework→Review タスクには、向き・進捗・AI補助速度を
      読み取れる上限付きの軌跡を描く。既存の座標、件数、DOM fallback の渋滞表示は変えない。
@@ -49,7 +49,9 @@ Framer Motion で重ねている。本エピックでは中央のスプリント
      上限付きプールで Pixi 側へ移す。効果の発火順・位置・終了時刻を再現可能な表示モデルとして
      扱い、演出色・共有寸法は `visualTokens.ts` から DOM と Pixi の双方へ供給する。
      DOM はフォールバックとして残し、`tests/e2e/sprint-layout.spec.ts`（`renderer=dom`）と
-     `tests/e2e/sprint-pixi-visual.spec.ts` の対象回帰を同じ PR で実行する。
+     `tests/e2e/sprint-pixi-visual.spec.ts` の対象回帰を同じ PR で実行する。`BoardPixiLayer` の
+     初期化失敗を注入するE2Eを追加し、演出・常駐オーラの再生中でもDOMフォールバックへ切り替え、
+     表示の欠落・再発火・効果音の二重再生が起きないことを確認する。
      効果音の発火はレンダラから分離し、DOM／Pixi のどちらでも一度だけ再生されることを検証する。
      共有トークンの追加・CSS変数マッピングは `tests/unit/render/visualTokens.test.ts` で検証する。
      状態→演出の発火順・位置・終了時刻・上限は `fireEffects.test.ts` /

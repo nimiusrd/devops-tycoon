@@ -105,6 +105,20 @@ export function msPerTick(speed: PlaybackSpeed): number {
 }
 
 /**
+ * UI の自動進行を進めてよいか。
+ * 全社マップ等の俯瞰中は現場 sim を止め、閲覧だけで KPI が進まないようにする。
+ */
+export function shouldAutoAdvanceSprint(input: {
+  sprintRunning: boolean;
+  paused: boolean;
+  playbackSpeed: PlaybackSpeed;
+  /** 現場（team）を見ているときだけ true。 */
+  fieldView: boolean;
+}): boolean {
+  return input.sprintRunning && !input.paused && input.playbackSpeed > 0 && input.fieldView;
+}
+
+/**
  * 壁時計アキュムレータから進める tick 数を計算する。
  * 戻り値の `consumedMs` をアキュムレータから差し引く。
  */

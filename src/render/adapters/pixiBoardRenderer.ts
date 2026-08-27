@@ -391,6 +391,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   /** アニメ経過時間（ms）。freeze で 0 に戻し位相 0 の決定論フレームにする。 */
   private elapsedMs = 0;
   private frozen = false;
+  /** 進化オーバーレイ等で ticker だけ止める。screenshot freeze とは独立。 */
+  private loopPaused = false;
   /** dispose 済みフラグ（非同期 init の中断判定）。init/dispose は 1 インスタンス 1 回。 */
   private disposed = false;
   private readonly opts: PixiBoardRendererOptions;
@@ -435,7 +437,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     // CSS keyframes（flybob / bob / flowBobDrift / fireShake / dash）相当の
     // 常時アニメ。座標本体は render() の plan 由来で、ここはオフセットだけを足す。
     app.ticker.add(() => {
-      if (this.frozen) return;
+      if (this.frozen || this.loopPaused) return;
       this.elapsedMs += app.ticker.deltaMS;
       this.applyAnimations(this.elapsedMs);
     });
@@ -468,6 +470,18 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.applyAnimations(0);
     app.ticker.stop();
     app.render();
+  }
+
+  /**
+   * オーバーレイ中など、壁時計アニメだけを止める。
+   * freezeForScreenshot と違い位相は保持する（解除後に飛び跳ねない）。
+   */
+  setAnimationsPaused(paused: boolean): void {
+    const app = this.app;
+    this.loopPaused = paused;
+    if (!app) return;
+    if (paused || this.frozen) app.ticker.stop();
+    else app.ticker.start();
   }
 
   /** 最新のシーン計画を読んで 1 フレーム描く。init() 前は何もしない。 */

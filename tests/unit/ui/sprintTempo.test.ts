@@ -24,6 +24,7 @@ import {
   SIM_STEP_MS,
   SPRINT_WALL_SEC,
   ticksDueFromAccumulator,
+  shouldAutoAdvanceSprint,
   wallSecondsAt1x,
   type PlaybackSpeed,
 } from '../../../src/ui/sprintTempo';
@@ -234,6 +235,57 @@ describe('sprintTempo（RI-62）', () => {
   it('プレイヤー Pause は speed=0 であり game.pause を必要としない', () => {
     const speed: PlaybackSpeed = 0;
     expect(ticksDueFromAccumulator(5_000, speed).ticks).toBe(0);
+  });
+
+  it('進化オーバーレイなど非スプリントでは sprintRunning でも自動進行しない（#386）', () => {
+    expect(
+      shouldAutoAdvanceSprint({
+        phase: 'sprint',
+        sprintRunning: true,
+        paused: false,
+        playbackSpeed: 1,
+      }),
+    ).toBe(true);
+    expect(
+      shouldAutoAdvanceSprint({
+        phase: 'evolution',
+        sprintRunning: true,
+        paused: false,
+        playbackSpeed: 1,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoAdvanceSprint({
+        phase: 'result',
+        sprintRunning: true,
+        paused: false,
+        playbackSpeed: 2,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoAdvanceSprint({
+        phase: 'draft',
+        sprintRunning: false,
+        paused: false,
+        playbackSpeed: 1,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoAdvanceSprint({
+        phase: 'sprint',
+        sprintRunning: true,
+        paused: true,
+        playbackSpeed: 1,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoAdvanceSprint({
+        phase: 'sprint',
+        sprintRunning: true,
+        paused: false,
+        playbackSpeed: 0,
+      }),
+    ).toBe(false);
   });
 
   it('タブ復帰など大きな delta はアキュムレータ上限で切り捨てる', () => {

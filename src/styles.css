@@ -1489,6 +1489,17 @@ body {
   z-index: 20;
   animation: fadein 0.25s ease;
 }
+
+/* #386: 進化オーバーレイ中は背面盤面の常時アニメを止め、進行中に見せない */
+.app[data-phase='evolution'] .sprint-layout .task-dot,
+.app[data-phase='evolution'] .sprint-layout .task-dot::after,
+.app[data-phase='evolution'] .sprint-layout .flowdash,
+.app[data-phase='evolution'] .sprint-layout .flame,
+.app[data-phase='evolution'] .sprint-layout .cbob,
+.app[data-phase='evolution'] .sprint-layout .meter i {
+  animation-play-state: paused;
+}
+
 .result-overlay > * {
   margin-block: auto;
   flex-shrink: 0;

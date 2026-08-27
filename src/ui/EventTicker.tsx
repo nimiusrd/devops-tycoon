@@ -13,33 +13,50 @@ const TICKER_LIMIT = 5;
 
 export interface EventTickerProps {
   events: readonly SprintEvent[];
+  /** true なら入場アニメを止め、既存行だけを静的表示する（進化オーバーレイ中）。 */
+  frozen?: boolean;
 }
 
-export function EventTicker({ events }: EventTickerProps) {
+export function EventTicker({ events, frozen = false }: EventTickerProps) {
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
 
   return (
     <aside className="event-ticker" data-testid="event-ticker" aria-label="スプリント出来事">
       <p className="event-ticker-label">出来事</p>
       <ul className="event-ticker-list">
-        <AnimatePresence initial={false}>
-          {rows.map((row) => (
-            <motion.li
+        {frozen ? (
+          rows.map((row) => (
+            <li
               key={row.key}
               className={`event-ticker-row tone-${row.tone}`}
               data-testid={`event-ticker-row-${row.tone}`}
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
             >
               <span className="event-ticker-icon" aria-hidden="true">
                 {row.icon}
               </span>
               <span className="event-ticker-text">{row.text}</span>
-            </motion.li>
-          ))}
-        </AnimatePresence>
+            </li>
+          ))
+        ) : (
+          <AnimatePresence initial={false}>
+            {rows.map((row) => (
+              <motion.li
+                key={row.key}
+                className={`event-ticker-row tone-${row.tone}`}
+                data-testid={`event-ticker-row-${row.tone}`}
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
+                <span className="event-ticker-icon" aria-hidden="true">
+                  {row.icon}
+                </span>
+                <span className="event-ticker-text">{row.text}</span>
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        )}
       </ul>
     </aside>
   );

@@ -255,6 +255,8 @@ export interface BoardProps {
   /** タスク差配の担当指定（省略時は defaultAssignee）。 */
   assignAssignee?: 'ai' | 'senior';
   onDragComplete?: (target: ActionTarget) => void;
+  /** true なら壁時計アニメを止める（進化オーバーレイ中 / #386）。 */
+  animationsPaused?: boolean;
 }
 
 /** 凡例（dot 凡例）。 */
@@ -279,6 +281,7 @@ export function Board({
   armedAction = null,
   assignAssignee,
   onDragComplete,
+  animationsPaused = false,
 }: BoardProps) {
   // 育成メンバーの疲弊/好調を表情上書きへ（RI-08。roster 無しは従来どおり）。
   const moodOverrides = useMemo(
@@ -374,6 +377,7 @@ export function Board({
       className={`board iso-office${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
       data-testid="board"
       data-armed={armedAction ?? undefined}
+      data-animations-paused={animationsPaused ? 'true' : undefined}
       onPointerDown={usePixi ? handleBoardPointerDown : undefined}
       style={{ '--review-heat': heat } as CSSProperties}
     >
@@ -400,6 +404,7 @@ export function Board({
             draggableTaskIds={dragIds}
             dragTaskId={dragTaskId}
             onWebglError={onWebglError}
+            animationsPaused={animationsPaused}
           />
         </Suspense>
       ) : (

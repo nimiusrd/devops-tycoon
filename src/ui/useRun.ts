@@ -3,8 +3,8 @@
  *
  * `window.game`（決定論ラン エンジン）を仲介し、React に最新スナップショットを
  * 供給する。スプリント中のみ壁時計アキュムレータで自動進行し、一時停止中
- * （E2E が `pause()` した時 / プレイヤー Pause）は止まる（第22.5 / RI-62）。
- * 描画は状態を読むだけ（第22.2）。
+ * （E2E が `pause()` した時 / プレイヤー Pause / 進化オーバーレイ）は止まる
+ * （第22.5 / RI-62 / #386）。描画は状態を読むだけ（第22.2）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -33,6 +33,7 @@ import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
 import {
   accumulateWallTime,
   FRAME_MS,
+  shouldAutoAdvanceSprint,
   SIM_STEP_MS,
   ticksDueFromAccumulator,
   type PlaybackSpeed,
@@ -177,19 +178,31 @@ export function useRun(game: GameHandle): UseRun {
 
       // スプリント進行中は壁時計アキュムレータで固定ステップ前進（RI-62）。
       // game.isPaused() は E2E / pauseBriefly / lazy 読込用。プレイヤー Pause は playbackSpeed=0。
-      if (game.isSprintRunning() && !game.isPaused()) {
+      // phase!==sprint（進化オーバーレイ等）では背面盤面が残っていても進めない（#386）。
+      const autoAdvance = shouldAutoAdvanceSprint({
+        phase: game.phase(),
+        sprintRunning: game.isSprintRunning(),
+        paused: game.isPaused(),
+        playbackSpeed: playbackSpeedRef.current,
+      });
+      if (autoAdvance) {
         const speed = playbackSpeedRef.current;
-        if (speed > 0) {
-          // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
-          accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
-          const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
-          accumulatedMs -= consumedMs;
-          for (let i = 0; i < ticks; i += 1) {
-            if (!game.isSprintRunning() || game.isPaused()) break;
-            game.step(SIM_STEP_MS);
+        // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
+        accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
+        const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
+        accumulatedMs -= consumedMs;
+        for (let i = 0; i < ticks; i += 1) {
+          if (
+            !shouldAutoAdvanceSprint({
+              phase: game.phase(),
+              sprintRunning: game.isSprintRunning(),
+              paused: game.isPaused(),
+              playbackSpeed: playbackSpeedRef.current,
+            })
+          ) {
+            break;
           }
-        } else {
-          accumulatedMs = 0;
+          game.step(SIM_STEP_MS);
         }
       } else {
         accumulatedMs = 0;

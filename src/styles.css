@@ -3904,23 +3904,57 @@ button.card:active {
   white-space: nowrap;
 }
 
-/* 進化ツリー */
+/* 進化ツリー
+ * 5列×3行の購入判断（効果・説明・コスト・ペナルティ）が、オーバーレイ余白で
+ * 3行目だけ欠けるのを防ぐ。枠はビューポートに合わせ、ヘッダーと CTA を残して
+ * 枝グリッドだけを縦スクロールする。 */
+.result-overlay.evolution-overlay {
+  --evolution-overlay-inset-block: 0.5rem;
+  --evolution-overlay-inset-inline: 0.75rem;
+  padding: var(--evolution-overlay-inset-block) var(--evolution-overlay-inset-inline);
+}
+.result-overlay.evolution-overlay > .evolution-panel {
+  flex-shrink: 1;
+}
 .evolution-panel {
+  display: flex;
+  flex-direction: column;
   width: min(1000px, 94vw);
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 22px 24px;
+  max-height: calc(100dvh - 2 * var(--evolution-overlay-inset-block));
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 18px 14px;
   border-radius: 20px;
   background: var(--panel);
   border: 2px solid var(--line);
   text-align: center;
 }
+.evolution-head {
+  flex: 0 0 auto;
+}
+.evolution-panel .draft-title {
+  margin: 0.1rem 0 0;
+}
+.evolution-panel .reward-ceremony {
+  flex: 0 0 auto;
+  margin: 0.35rem auto 0.45rem;
+}
 .evolution-branches {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 12px;
-  margin: 16px 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 10px 0 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   text-align: left;
+}
+.evolution-actions {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
 }
 .branch-label {
   font-size: 13px;
@@ -3933,14 +3967,17 @@ button.card:active {
   flex-direction: column;
   gap: 2px;
   width: 100%;
-  padding: 9px 10px;
-  margin-bottom: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
   border-radius: 12px;
   background: #211a44;
   border: 2px solid var(--line);
   color: var(--text);
   cursor: default;
   opacity: 0.55;
+}
+.evo-node:last-child {
+  margin-bottom: 0;
 }
 .evo-node.can {
   opacity: 1;

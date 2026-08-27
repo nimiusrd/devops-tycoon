@@ -103,3 +103,33 @@ test('タイトルからメタショップを開いて購入できる', async ({
   await expect(page.getByTestId('meta-shop-points')).toHaveText('50');
   await expect(page.getByTestId('meta-unlock-unlock-devin')).toBeDisabled();
 });
+
+test('メタショップは Escape で閉じる', async ({ page }) => {
+  await seedMeta(page, DEFAULT_META);
+
+  await page.goto('/?renderer=dom&seed=meta-shop-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-meta-shop').click();
+  await expect(page.getByTestId('meta-shop')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('meta-shop')).toHaveCount(0);
+});
+
+test('メタショップは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
+  await seedMeta(page, DEFAULT_META);
+
+  await page.goto('/?renderer=dom&seed=meta-shop-backdrop');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-meta-shop').click();
+  const dialog = page.getByTestId('meta-shop');
+  await expect(dialog).toBeVisible();
+
+  await page.locator('.meta-shop-panel').click();
+  await expect(dialog).toBeVisible();
+
+  await dialog.click({ position: { x: 8, y: 8 } });
+  await expect(dialog).toHaveCount(0);
+});

@@ -130,3 +130,33 @@ test('カードコレクションはキーボード操作と狭い画面に対�
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('card-collection')).toHaveCount(0);
 });
+
+test('カードコレクションは Escape で閉じる', async ({ page }) => {
+  await seedMeta(page, BASE_META);
+
+  await page.goto('/?renderer=dom&seed=card-collection-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-card-collection').click();
+  await expect(page.getByTestId('card-collection')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('card-collection')).toHaveCount(0);
+});
+
+test('カードコレクションは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
+  await seedMeta(page, BASE_META);
+
+  await page.goto('/?renderer=dom&seed=card-collection-backdrop');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-card-collection').click();
+  const dialog = page.getByTestId('card-collection');
+  await expect(dialog).toBeVisible();
+
+  await page.locator('.card-collection-panel').click();
+  await expect(dialog).toBeVisible();
+
+  await dialog.click({ position: { x: 8, y: 8 } });
+  await expect(dialog).toHaveCount(0);
+});

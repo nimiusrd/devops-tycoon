@@ -15,6 +15,7 @@ import {
 } from '../state/meta';
 import type { CardDef, CardRarity } from '../sim/types';
 import { CardView } from './CardView';
+import { useOverlayDismiss } from './overlayDismiss';
 
 export interface CardCollectionScreenProps {
   meta: MetaState;
@@ -76,6 +77,8 @@ export function CardCollectionScreen({
   const selectedUnlocked = selected ? unlocked.has(selected.id) : false;
   const selectedPreferred = selected ? preferred.has(selected.id) : false;
 
+  const { onBackdropClick } = useOverlayDismiss(onClose);
+
   const togglePreferred = (id: string) => {
     if (!unlocked.has(id)) return;
     if (preferred.has(id)) {
@@ -90,11 +93,6 @@ export function CardCollectionScreen({
     const unlockedIds = unlockedContent(meta).cards;
     const preferredIds = new Set(meta.preferredCardIds);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-        return;
-      }
       if (visibleCards.length === 0) return;
       const index = Math.max(
         0,
@@ -135,7 +133,7 @@ export function CardCollectionScreen({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [visibleCards, activeSelectedId, meta, onClose, onChangePreferred]);
+  }, [visibleCards, activeSelectedId, meta, onChangePreferred]);
 
   const atCap =
     selectedUnlocked && !selectedPreferred && meta.preferredCardIds.length >= MAX_PREFERRED_CARDS;
@@ -146,6 +144,7 @@ export function CardCollectionScreen({
       data-testid="card-collection"
       role="dialog"
       aria-label="カードコレクション"
+      onClick={onBackdropClick}
     >
       <div className="card-collection-panel">
         <p className="result-eyebrow">CARD CODEX</p>

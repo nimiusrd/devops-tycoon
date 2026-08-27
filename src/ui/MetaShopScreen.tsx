@@ -8,6 +8,7 @@ import { getCard } from '../data/cards';
 import { getRelic } from '../data/relics';
 import { ACHIEVEMENT_LABEL, type MetaState } from '../state/meta';
 import { UNLOCK_DEFS, type UnlockDef } from '../data/unlocks';
+import { useOverlayDismiss } from './overlayDismiss';
 
 export interface MetaShopScreenProps {
   meta: MetaState;
@@ -26,8 +27,15 @@ function contentLabel(unlock: UnlockDef): string {
 }
 
 export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProps) {
+  const { onBackdropClick } = useOverlayDismiss(onClose);
   return (
-    <div className="result-overlay" data-testid="meta-shop" role="dialog" aria-label="Meta shop">
+    <div
+      className="result-overlay"
+      data-testid="meta-shop"
+      role="dialog"
+      aria-label="Meta shop"
+      onClick={onBackdropClick}
+    >
       <div className="meta-shop-panel">
         <p className="result-eyebrow">META SHOP</p>
         <h2 className="draft-title">

@@ -30,13 +30,7 @@ import type { DiagnosisType, DifficultyId, GoalAdjustmentId, RunState } from '..
 import type { ScenarioId } from '../sim/types';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
-import {
-  accumulateWallTime,
-  FRAME_MS,
-  SIM_STEP_MS,
-  ticksDueFromAccumulator,
-  type PlaybackSpeed,
-} from './sprintTempo';
+import { FRAME_MS, runPlaybackFrame, SIM_STEP_MS, type PlaybackSpeed } from './sprintTempo';
 
 export type { PlaybackSpeed } from './sprintTempo';
 
@@ -177,23 +171,20 @@ export function useRun(game: GameHandle): UseRun {
 
       // スプリント進行中は壁時計アキュムレータで固定ステップ前進（RI-62）。
       // game.isPaused() は E2E / pauseBriefly / lazy 読込用。プレイヤー Pause は playbackSpeed=0。
-      if (game.isSprintRunning() && !game.isPaused()) {
-        const speed = playbackSpeedRef.current;
-        if (speed > 0) {
-          // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
-          accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
-          const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
-          accumulatedMs -= consumedMs;
-          for (let i = 0; i < ticks; i += 1) {
-            if (!game.isSprintRunning() || game.isPaused()) break;
-            game.step(SIM_STEP_MS);
-          }
-        } else {
-          accumulatedMs = 0;
-        }
-      } else {
-        accumulatedMs = 0;
-      }
+      const frame = runPlaybackFrame(
+        {
+          accumulatedMs,
+          deltaMs,
+          speed: playbackSpeedRef.current,
+          sprintRunning: game.isSprintRunning(),
+          gamePaused: game.isPaused(),
+        },
+        () => game.isSprintRunning() && !game.isPaused(),
+        () => {
+          game.step(SIM_STEP_MS);
+        },
+      );
+      accumulatedMs = frame.accumulatedMs;
 
       // 内部ステップでも window.game 経由の外部操作でも、変化時のみ読み直す。
       const rev = game.revision();

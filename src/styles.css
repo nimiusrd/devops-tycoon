@@ -30,15 +30,32 @@
   box-sizing: border-box;
 }
 
+/*
+ * シーン切替で document 高さが一瞬縮むと、残った scrollY の外側は html の
+ * 既定白になる（#368）。ページ下地は盤面と同じトークンにし、アンカーによる
+ * 末尾復元も止める。
+ */
+html {
+  color-scheme: dark;
+  background-color: var(--visual-color-board-background-bottom);
+  overflow-anchor: none;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  overflow-anchor: none;
   background:
     radial-gradient(1100px 460px at 78% 6%, #6b4a9e55 0%, transparent 60%),
     radial-gradient(900px 420px at 20% 0%, #ffae6b33 0%, transparent 55%),
     radial-gradient(800px 520px at 50% 118%, #ff5a4533 0%, transparent 55%),
-    linear-gradient(180deg, #2b1f52 0%, #241a47 50%, #1c1438 100%);
+    linear-gradient(
+      180deg,
+      var(--visual-color-board-background-top) 0%,
+      var(--visual-color-board-background-middle) 50%,
+      var(--visual-color-board-background-bottom) 100%
+    );
   background-attachment: fixed;
 }
 

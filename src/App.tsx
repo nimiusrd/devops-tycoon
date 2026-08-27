@@ -7,7 +7,16 @@
  *
  * RI-12: 非タイトル画面は動的 import（React.lazy）でチャンク分割する。
  */
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
@@ -20,6 +29,7 @@ import { Breadcrumb } from './ui/Breadcrumb';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
 import { RunBar } from './ui/RunBar';
 import { ResponsiveModeProvider, useResponsiveMode } from './ui/responsiveMode';
+import { resetWindowScroll, SceneScrollReset } from './ui/resetWindowScroll';
 import { TitleScreen } from './ui/TitleScreen';
 import {
   resolveTutorialFromLocation,
@@ -189,6 +199,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     return lastRunMetricSnapshot.current;
   }, []);
 
+  // シーン切替の paint 前に window スクロールを捨てる（#368）。
+  useLayoutEffect(() => {
+    resetWindowScroll();
+  }, [phase]);
+
   // setup / shop / rest など次スプリント手前でチャンクを先読みする。
   useEffect(() => {
     if (
@@ -283,32 +298,34 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   if (phase === 'title') {
     return (
       <>
-        <TitleScreen
-          seed={state.seed}
-          meta={meta}
-          onStart={startRun}
-          onStartDaily={startDailyRun}
-          onResume={resumeRun}
-          resumableSummary={runSaveSummary}
-          runSaveIssue={runSaveIssue}
-          onDiscardRunSave={discardRunSave}
-          onOpenReplays={() => setReplayListOpen(true)}
-          onOpenMetaShop={() => setMetaShopOpen(true)}
-          onOpenDeckPolicy={() => setDeckPolicyOpen(true)}
-          onOpenCardCollection={() => setCardCollectionOpen(true)}
-          onOpenAchievements={() => setAchievementsOpen(true)}
-          onToggleSoundMuted={() => {
-            audio.unlock();
-            run.setSoundMuted(!meta.soundMuted);
-          }}
-          onOpenHelp={() => setHelpOpen(true)}
-          onApplyPreferred={run.setPreferredCardIds}
-          onExportRunSave={run.exportRunSaveText}
-          onImportRunSave={async (raw) => {
-            const result = await run.importRunSaveText(raw);
-            return { ok: result.ok, message: result.ok ? '' : result.message };
-          }}
-        />
+        <SceneScrollReset>
+          <TitleScreen
+            seed={state.seed}
+            meta={meta}
+            onStart={startRun}
+            onStartDaily={startDailyRun}
+            onResume={resumeRun}
+            resumableSummary={runSaveSummary}
+            runSaveIssue={runSaveIssue}
+            onDiscardRunSave={discardRunSave}
+            onOpenReplays={() => setReplayListOpen(true)}
+            onOpenMetaShop={() => setMetaShopOpen(true)}
+            onOpenDeckPolicy={() => setDeckPolicyOpen(true)}
+            onOpenCardCollection={() => setCardCollectionOpen(true)}
+            onOpenAchievements={() => setAchievementsOpen(true)}
+            onToggleSoundMuted={() => {
+              audio.unlock();
+              run.setSoundMuted(!meta.soundMuted);
+            }}
+            onOpenHelp={() => setHelpOpen(true)}
+            onApplyPreferred={run.setPreferredCardIds}
+            onExportRunSave={run.exportRunSaveText}
+            onImportRunSave={async (raw) => {
+              const result = await run.importRunSaveText(raw);
+              return { ok: result.ok, message: result.ok ? '' : result.message };
+            }}
+          />
+        </SceneScrollReset>
         <Suspense fallback={<TitleModalLoadingFallback />}>
           {helpOpen && <HowToPlayScreen onClose={() => setHelpOpen(false)} />}
           {metaShopOpen && (
@@ -380,13 +397,15 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       <>
         {replayBanner}
         <Suspense fallback={null}>
-          <RunResultScreen
-            state={state}
-            meta={meta}
-            diagnosticInfo={diagnosticInfo}
-            lastRunReward={lastRunReward}
-            onNewRun={run.isReplayMode ? exitReplay : newRun}
-          />
+          <SceneScrollReset>
+            <RunResultScreen
+              state={state}
+              meta={meta}
+              diagnosticInfo={diagnosticInfo}
+              lastRunReward={lastRunReward}
+              onNewRun={run.isReplayMode ? exitReplay : newRun}
+            />
+          </SceneScrollReset>
         </Suspense>
       </>
     );
@@ -396,11 +415,13 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       <>
         {replayBanner}
         <Suspense fallback={null}>
-          <QuarterReviewScreen
-            state={state}
-            onAcknowledge={run.acknowledgeQuarterReview}
-            onChooseAdjustment={run.chooseGoalAdjustment}
-          />
+          <SceneScrollReset>
+            <QuarterReviewScreen
+              state={state}
+              onAcknowledge={run.acknowledgeQuarterReview}
+              onChooseAdjustment={run.chooseGoalAdjustment}
+            />
+          </SceneScrollReset>
         </Suspense>
       </>
     );
@@ -470,89 +491,113 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       */}
       <Suspense fallback={null}>
         {phase === 'setup' && (
-          <SetupScreen
-            state={state}
-            onAssign={run.assignMember}
-            onToggleAi={run.setMemberAi}
-            onBegin={run.beginSetupSprint}
-            readOnly={run.isReplayMode}
-          />
+          <SceneScrollReset>
+            <SetupScreen
+              state={state}
+              onAssign={run.assignMember}
+              onToggleAi={run.setMemberAi}
+              onBegin={run.beginSetupSprint}
+              readOnly={run.isReplayMode}
+            />
+          </SceneScrollReset>
         )}
       </Suspense>
       <Suspense fallback={<SprintSuspendFallback game={game} header={sprintHeader} />}>
         {showSprint && (
-          <SprintScreen
-            state={state}
-            header={sprintHeader}
-            onDispatch={run.dispatch}
-            onPlayCard={run.playCard}
-            getSprintSnapshot={run.getSprintSnapshot}
-            pauseBriefly={run.pauseBriefly}
-            playbackSpeed={run.playbackSpeed}
-            setPlaybackSpeed={run.setPlaybackSpeed}
-            showTutorial={tutorialActive}
-            onTutorialDismiss={dismissTutorial}
-            game={game}
-          />
+          <SceneScrollReset>
+            <SprintScreen
+              state={state}
+              header={sprintHeader}
+              onDispatch={run.dispatch}
+              onPlayCard={run.playCard}
+              getSprintSnapshot={run.getSprintSnapshot}
+              pauseBriefly={run.pauseBriefly}
+              playbackSpeed={run.playbackSpeed}
+              setPlaybackSpeed={run.setPlaybackSpeed}
+              showTutorial={tutorialActive}
+              onTutorialDismiss={dismissTutorial}
+              game={game}
+            />
+          </SceneScrollReset>
         )}
       </Suspense>
 
       <Suspense fallback={null}>
-        {phase === 'beat' && <BeatScreen state={state} onResolve={run.resolveBeat} />}
-      </Suspense>
-      <Suspense fallback={null}>
-        {phase === 'shop' && (
-          <ShopScreen
-            state={state}
-            onBuyCard={run.buyShopCard}
-            onBuyRelic={run.buyShopRelic}
-            onBuyRecruit={run.buyShopRecruit}
-            onLeave={run.leaveShop}
-          />
+        {phase === 'beat' && (
+          <SceneScrollReset>
+            <BeatScreen state={state} onResolve={run.resolveBeat} />
+          </SceneScrollReset>
         )}
       </Suspense>
       <Suspense fallback={null}>
-        {phase === 'rest' && <RestScreen state={state} onChoose={run.restChoose} />}
+        {phase === 'shop' && (
+          <SceneScrollReset>
+            <ShopScreen
+              state={state}
+              onBuyCard={run.buyShopCard}
+              onBuyRelic={run.buyShopRelic}
+              onBuyRecruit={run.buyShopRecruit}
+              onLeave={run.leaveShop}
+            />
+          </SceneScrollReset>
+        )}
       </Suspense>
       <Suspense fallback={null}>
-        {phase === 'recruit' && <RecruitScreen state={state} onChoose={run.recruitChoose} />}
+        {phase === 'rest' && (
+          <SceneScrollReset>
+            <RestScreen state={state} onChoose={run.restChoose} />
+          </SceneScrollReset>
+        )}
+      </Suspense>
+      <Suspense fallback={null}>
+        {phase === 'recruit' && (
+          <SceneScrollReset>
+            <RecruitScreen state={state} onChoose={run.recruitChoose} />
+          </SceneScrollReset>
+        )}
       </Suspense>
 
       <Suspense fallback={null}>
         {phase === 'result' && state.lastResult && (
-          <SprintResultScreen
-            result={state.lastResult}
-            growth={state.lastGrowth}
-            onContinue={run.acknowledgeResult}
-            onAbandon={newRun}
-            replayMode={run.isReplayMode}
-            diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
-          />
+          <SceneScrollReset>
+            <SprintResultScreen
+              result={state.lastResult}
+              growth={state.lastGrowth}
+              onContinue={run.acknowledgeResult}
+              onAbandon={newRun}
+              replayMode={run.isReplayMode}
+              diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
+            />
+          </SceneScrollReset>
         )}
       </Suspense>
       <Suspense fallback={null}>
         {phase === 'draft' && state.draft && (
-          <DraftScreen
-            options={state.draft}
-            sprintNumber={state.sprintsPlayed + 1}
-            budget={state.budget}
-            mulliganUsed={state.draftMulliganUsed}
-            previews={state.whatIf?.draftCandidates ?? {}}
-            skipPreview={state.whatIf?.current}
-            whatIfComputing={state.whatIfStatus === 'computing'}
-            onPick={run.chooseCard}
-            onSkip={run.skipDraft}
-            onMulligan={run.mulliganDraft}
-          />
+          <SceneScrollReset>
+            <DraftScreen
+              options={state.draft}
+              sprintNumber={state.sprintsPlayed + 1}
+              budget={state.budget}
+              mulliganUsed={state.draftMulliganUsed}
+              previews={state.whatIf?.draftCandidates ?? {}}
+              skipPreview={state.whatIf?.current}
+              whatIfComputing={state.whatIfStatus === 'computing'}
+              onPick={run.chooseCard}
+              onSkip={run.skipDraft}
+              onMulligan={run.mulliganDraft}
+            />
+          </SceneScrollReset>
         )}
       </Suspense>
       <Suspense fallback={null}>
         {phase === 'evolution' && (
-          <EvolutionScreen
-            state={state}
-            onUnlock={run.unlockEvolution}
-            onFinish={run.finishEvolution}
-          />
+          <SceneScrollReset>
+            <EvolutionScreen
+              state={state}
+              onUnlock={run.unlockEvolution}
+              onFinish={run.finishEvolution}
+            />
+          </SceneScrollReset>
         )}
       </Suspense>
 

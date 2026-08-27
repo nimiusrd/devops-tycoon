@@ -202,6 +202,7 @@ describe('mutation shards', () => {
     expect(shardMutantBudget('sim-sprint-e')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-run-sprint-baseline-b')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-run-engine-e')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-engine-g')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-run-engine-a')).toBe(SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-run-engine-f')).toBe(SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-run-support')).toBe(SHARD_MUTANT_BUDGET);
@@ -241,7 +242,7 @@ describe('mutation shards', () => {
       expect(cutInside, method.name).toEqual([]);
     }
     expect(MUTATION_SHARDS.filter((shard) => shard.id.startsWith('sim-run-engine-')).length).toBe(
-      6,
+      7,
     );
   });
 

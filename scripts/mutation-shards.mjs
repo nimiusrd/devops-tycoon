@@ -48,7 +48,8 @@ export function shardMutantBudget(id) {
   if (
     id.startsWith('sim-sprint-') ||
     id.startsWith('sim-run-sprint-baseline-') ||
-    id === 'sim-run-engine-e'
+    id === 'sim-run-engine-e' ||
+    id === 'sim-run-engine-g'
   ) {
     return SPRINT_SHARD_MUTANT_BUDGET;
   }
@@ -100,8 +101,13 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'sim-run-engine-e',
-    mutate: 'src/sim/run/engine.ts:766-901',
-    note: 'engine ホットパス（step / dispatch / playCard / resolveSprint）',
+    mutate: 'src/sim/run/engine.ts:766-816',
+    note: 'engine ホットパス（step / dispatch / playCard）',
+  },
+  {
+    id: 'sim-run-engine-g',
+    mutate: 'src/sim/run/engine.ts:817-901',
+    note: 'engine resolveSprint（baseline 完走を含む）',
   },
   {
     id: 'sim-run-engine-f',

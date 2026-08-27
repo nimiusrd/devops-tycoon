@@ -82,7 +82,7 @@
 - 週次 / 手動 Mutation は [`scripts/mutation-shards.mjs`](../scripts/mutation-shards.mjs) のシャード並列。初回は重いが、incremental cache が載れば差分だけになる。
 - 単一ジョブや旧 6 シャード（巨大ファイルを丸ごと）は 180 分タイムアウトのリスクあり。**通常は現行シャードまたは `--mutate`。**
 - `ignoreStatic: true` 済み。`vitest.mutation.config.ts` で testTimeout 60s。`dryRunTimeoutMinutes` は 20（instrument 後の初期テストが既定 5 分を超えやすい）。
-- `engine.ts` の `step` / `resolveSprint` は sprint 並みに遅いので `sim-run-engine-e` として切り離し、mutant 予算 160。`vitest.mutation.config.ts` は `tests/unit/ui/sprintTempo.test.ts` を除外する（instrument した `cards.ts` で F-4/F-5 の beforeAll が 300s を超え dry-run が落ちるため）。
+- `engine.ts` の `step` / `playCard` は `sim-run-engine-e`、`resolveSprint`（baseline 完走）は `sim-run-engine-g` として切り離し、mutant 予算 160。`vitest.mutation.config.ts` は `tests/unit/ui/sprintTempo.test.ts` を除外する（instrument した `cards.ts` で F-4/F-5 の beforeAll が 300s を超え dry-run が落ちるため）。
 
 ## 6. 履歴: RI-91（完了）
 

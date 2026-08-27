@@ -31,7 +31,7 @@
 | [13](../SPEC.md#13-組織タイプ診断) | 診断と演出 | `src/sim/diagnosis.ts`, `src/data/balance/outcome.ts`, `src/render/diagnosisTheme.ts`, `src/render/trendHistoryView.ts` | ✅ 診断境界は `OUTCOME_BALANCE` へ移行済み。第23章の時系列トレンドは RI-128、健全度履歴の切替表示は RI-135 |
 | [14〜16](../SPEC.md#14-勝利条件) | 勝利、継続不能、難易度・試練 | `src/sim/outcome.ts`, `src/data/balance/outcome.ts`, `src/data/difficulties.ts`, `quarterReview.ts` | ✅ KPI・勝敗・継続不能・勝利種別の境界を `OUTCOME_BALANCE` へ移行済み（RI-112）。Easy 序盤の燃え尽き導線は RI-67 でチュートリアル／HUD を補強 |
 | [17](../SPEC.md#17-メタ進行とアンロック) | メタ解放、実績、永続化 | `src/state/meta.ts`, `src/data/balance/meta.ts`, `metaPersistence.ts`, `runPersistence.ts`, `replayPersistence.ts` | ✅ 優先カード上限・ラン報酬係数・デイリー条件は `META_BALANCE` へ移行済み（RI-124） |
-| [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | ✅ |
+| [18](../SPEC.md#18-視覚表現) | Pixi描画、演出、音響 | `src/render/adapters/`, `src/ui/*Effects.tsx`, `src/audio/` | 🟡 中核のPixi盤面・DOM演出・音響は実装済み。中央「現場」の渋滞・炎上・介入を GPU 演出へ段階拡張する RI-140〜143 は未着手（HUD等の離散UIをWebGL化するものではない） |
 | [19〜20](../SPEC.md#19-面白さの核) | 体験・教育的価値 | ゲーム全体の判断基準 | — |
 | [19.1](../SPEC.md#191-面白さの定義と判定基準) | 面白さの定義と判定基準（F-1〜F-12） | プレイテストの合否判断基準。[playtest-findings.md](./playtest-findings.md) | ✅ F-8の回復余地ギャップは既定コホートで PASS（RI-132）。F-9はSPEC対象7敗因の決定論的代表シナリオで、警告指標・速度／決着フェーズ・限定介入の fingerprint が7種に分離（RI-139）。有効手集合の既存診断ゲートは維持し、全合法手列の完全計測だけを RI-136 で対象外とした。F-1・F-7はRI-73、F-2はRI-77／78／83、F-3はRI-102、F-4はRI-75／85、F-5はRI-84、F-6はRI-82、F-10はRI-76、F-11はRI-86、F-12はRI-81で充足または実装済み |
 | [21](../SPEC.md#21-仕様の解釈と優先順位) | 仕様の優先順位 | `SPEC.md`, 本表, `src/data/` | — |

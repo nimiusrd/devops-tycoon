@@ -103,7 +103,7 @@ export interface GameHandle {
   getState(): RunState;
   /** 不具合再現用のseed・ルールセット・開始条件を返す（RI-121）。 */
   getDiagnosticInfo(): RunDiagnosticInfo;
-  /** タイトルで選んだ難易度・試練でランを開始する。 */
+  /** タイトルで選んだ難易度・試練でランを開始する。seed 省略時はタイトル用 pending seed。 */
   startRun(
     difficulty?: DifficultyId,
     trials?: string[],
@@ -171,7 +171,7 @@ export interface GameHandle {
   acknowledgeQuarterReview(): RunState;
   /** 目標修正を選び次四半期へ進む。 */
   chooseGoalAdjustment(id: GoalAdjustmentId): RunState;
-  /** 新しいランをタイトルから始める（seed を差し替え可能）。 */
+  /** タイトルへ戻る。seed 省略時は Daily / リプレイで汚していない pending seed に戻す。 */
   newRun(seed?: string): RunState;
   /** メタショップでコンテンツを永続解放する（points 消費）。 */
   purchaseMetaUnlock(unlockId: string): { ok: boolean; reason?: string };
@@ -275,6 +275,11 @@ export interface CreateGameOptions {
 export function createGame(options: CreateGameOptions = {}): GameHandle {
   const seed = options.seed ?? resolveSeedFromLocation();
   const engine = createRunEngine({ seed, difficulty: options.difficulty, trials: options.trials });
+  /**
+   * タイトルの次の通常ランに使う seed。
+   * Daily 開始やリプレイ閲覧で engine.seed が変わっても、ここは上書きしない。
+   */
+  let pendingSeed = seed;
   let paused = false;
   /** pause() の呼び出し回数。resume では進めない。 */
   let pauseEpoch = 0;
@@ -564,7 +569,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       clearWhatIfCache();
       applyUnlockedToEngine();
       runEpoch += 1;
-      engine.startRun(difficulty, trials, runSeed, { kind: 'normal', scenario });
+      const nextSeed = runSeed ?? pendingSeed;
+      pendingSeed = nextSeed;
+      engine.startRun(difficulty, trials, nextSeed, { kind: 'normal', scenario });
       bump();
       return after();
     },
@@ -779,7 +786,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       paused = false;
       clearWhatIfCache();
       applyUnlockedToEngine();
-      engine.toTitle(runSeed);
+      if (runSeed !== undefined) pendingSeed = runSeed;
+      engine.toTitle(pendingSeed);
       bump();
       return after();
     },
@@ -1004,7 +1012,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       // openReplay で止めた自動進行を解除しないと、通常ラン再開後もスプリントが進まない。
       paused = false;
       clearWhatIfCache();
-      engine.toTitle();
+      engine.toTitle(pendingSeed);
       bump();
       return engine.snapshot();
     },

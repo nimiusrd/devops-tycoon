@@ -47,34 +47,41 @@ export function DraftScreen({
   const { resolveCard } = useReplayContent();
 
   return (
-    <div className="result-overlay" data-testid="draft" role="dialog" aria-label="Card Draft">
+    <div
+      className="result-overlay overlay-contained"
+      data-testid="draft"
+      role="dialog"
+      aria-label="Card Draft"
+    >
       <div className="draft-card-panel">
-        <p className="result-eyebrow">CARD DRAFT</p>
-        <h2 className="draft-title">スプリント{sprintNumber} に向けて、施策を1枚選ぶ</h2>
-        <div className="draft-options">
-          {options.map((id) => {
-            const def = resolveCard(id);
-            return (
-              <CardView
-                key={id}
-                def={def}
-                playCost={playCost(def.focusCost, 1)}
-                onPick={() => onPick(id)}
-                whatIfPreview={previews[id]}
-                whatIfComputing={whatIfComputing}
-              />
-            );
-          })}
+        <div className="overlay-scroll" data-testid="overlay-scroll">
+          <p className="result-eyebrow">CARD DRAFT</p>
+          <h2 className="draft-title">スプリント{sprintNumber} に向けて、施策を1枚選ぶ</h2>
+          <div className="draft-options">
+            {options.map((id) => {
+              const def = resolveCard(id);
+              return (
+                <CardView
+                  key={id}
+                  def={def}
+                  playCost={playCost(def.focusCost, 1)}
+                  onPick={() => onPick(id)}
+                  whatIfPreview={previews[id]}
+                  whatIfComputing={whatIfComputing}
+                />
+              );
+            })}
+          </div>
+          {(skipPreview || whatIfComputing) && (
+            <WhatIfPreview
+              preview={skipPreview}
+              computing={whatIfComputing && !skipPreview}
+              label="スキップ時の予測"
+              testId="what-if-draft-skip"
+            />
+          )}
         </div>
-        {(skipPreview || whatIfComputing) && (
-          <WhatIfPreview
-            preview={skipPreview}
-            computing={whatIfComputing && !skipPreview}
-            label="スキップ時の予測"
-            testId="what-if-draft-skip"
-          />
-        )}
-        <div className="draft-actions">
+        <div className="draft-actions overlay-actions">
           <button
             type="button"
             className="btn"

@@ -100,6 +100,15 @@ async function exposeResultCardForScreenshot(page: import('@playwright/test').Pa
       }
       .result-overlay > * {
         margin-block: 0 !important;
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
+        flex: none !important;
+      }
+      .overlay-scroll {
+        overflow: visible !important;
+        max-height: none !important;
+        flex: none !important;
       }
     `,
   });
@@ -215,7 +224,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     const resultContinue = page.getByTestId('result-continue');
     await resultContinue.scrollIntoViewIfNeeded();
     await expect(resultContinue).toBeInViewport({ ratio: 1 });
-    await page.getByTestId('sprint-result').evaluate((element) => element.scrollTo(0, 0));
+    await page.getByTestId('overlay-scroll').evaluate((element) => element.scrollTo(0, 0));
     await exposeResultCardForScreenshot(page);
     await expect(resultCard).toHaveScreenshot('sprint-pixi-layout-result-overlay-card.png', {
       animations: 'disabled',

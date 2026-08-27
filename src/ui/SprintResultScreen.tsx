@@ -85,120 +85,125 @@ export function SprintResultScreen({
 
   return (
     <div
-      className="result-overlay"
+      className="result-overlay overlay-contained"
       data-testid="sprint-result"
       role="dialog"
       aria-label="Sprint Result"
     >
       <div className="result-card sprint-result-card">
-        <p className="result-eyebrow">SPRINT RESULT</p>
-        {hellSummary.show ? (
-          <div
-            className="result-review-hell-summary tone-review-hell"
-            data-testid="result-review-hell-summary"
-          >
-            <p className="result-section-label">{hellSummary.title}</p>
-            <p data-testid="result-review-hell-peak">{hellSummary.peakLabel}</p>
-            <p className="result-analysis-tip" data-testid="result-review-hell-lesson">
-              {hellSummary.lesson}
-            </p>
-          </div>
-        ) : null}
-        <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
-          {result.grade}
-        </div>
-        {isSpecialGrade(result.grade) && (
-          <RewardCeremony
-            kind="grade-s"
-            title="PERFECT DELIVERY"
-            detail="評価 S — チームの流れがきらめいた"
-          />
-        )}
-        <dl className="result-rows">
-          {buildRows(result).map((row) => (
-            <div className="result-row" key={row.label}>
-              <dt>{row.label}</dt>
-              <dd>{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-        <SprintTimelineChart timeline={result.timeline} events={result.events} />
-        {burnLog.showSection && (
-          <div className="result-burn-cause" data-testid="result-burn-cause">
-            <p className="result-section-label">なぜ燃えたか</p>
-            <p className="result-burn-cause-headline" data-testid="result-burn-cause-headline">
-              {burnLog.headline}
-            </p>
-            <ul className="result-burn-cause-list">
-              {burnLog.entries.map((entry) => (
-                <li
-                  key={entry.key}
-                  className={`result-burn-cause-entry tone-${entry.tone}`}
-                  data-testid="result-burn-cause-entry"
-                >
-                  <span className="result-burn-cause-icon" aria-hidden="true">
-                    {entry.icon}
-                  </span>
-                  <span className="result-burn-cause-text">{entry.text}</span>
-                </li>
-              ))}
-            </ul>
-            {burnLog.tip && (
-              <p className="result-analysis-tip" data-testid="result-burn-cause-tip">
-                {burnLog.tip}
+        <div className="overlay-scroll" data-testid="overlay-scroll">
+          <p className="result-eyebrow">SPRINT RESULT</p>
+          {hellSummary.show ? (
+            <div
+              className="result-review-hell-summary tone-review-hell"
+              data-testid="result-review-hell-summary"
+            >
+              <p className="result-section-label">{hellSummary.title}</p>
+              <p data-testid="result-review-hell-peak">{hellSummary.peakLabel}</p>
+              <p className="result-analysis-tip" data-testid="result-review-hell-lesson">
+                {hellSummary.lesson}
               </p>
-            )}
+            </div>
+          ) : null}
+          <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
+            {result.grade}
           </div>
-        )}
-        {analysis.showSection && (
-          <div className="result-intervention-analysis" data-testid="result-intervention-analysis">
-            <p className="result-section-label">介入分析</p>
-            <dl className="result-rows result-analysis-rows">
-              {analysis.rows.map((row) => (
-                <div className="result-row" key={row.label}>
-                  <dt>{row.label}</dt>
-                  <dd>{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="result-analysis-tip" data-testid="result-intervention-tip">
-              💡 {analysis.tip}
+          {isSpecialGrade(result.grade) && (
+            <RewardCeremony
+              kind="grade-s"
+              title="PERFECT DELIVERY"
+              detail="評価 S — チームの流れがきらめいた"
+            />
+          )}
+          <dl className="result-rows">
+            {buildRows(result).map((row) => (
+              <div className="result-row" key={row.label}>
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <SprintTimelineChart timeline={result.timeline} events={result.events} />
+          {burnLog.showSection && (
+            <div className="result-burn-cause" data-testid="result-burn-cause">
+              <p className="result-section-label">なぜ燃えたか</p>
+              <p className="result-burn-cause-headline" data-testid="result-burn-cause-headline">
+                {burnLog.headline}
+              </p>
+              <ul className="result-burn-cause-list">
+                {burnLog.entries.map((entry) => (
+                  <li
+                    key={entry.key}
+                    className={`result-burn-cause-entry tone-${entry.tone}`}
+                    data-testid="result-burn-cause-entry"
+                  >
+                    <span className="result-burn-cause-icon" aria-hidden="true">
+                      {entry.icon}
+                    </span>
+                    <span className="result-burn-cause-text">{entry.text}</span>
+                  </li>
+                ))}
+              </ul>
+              {burnLog.tip && (
+                <p className="result-analysis-tip" data-testid="result-burn-cause-tip">
+                  {burnLog.tip}
+                </p>
+              )}
+            </div>
+          )}
+          {analysis.showSection && (
+            <div
+              className="result-intervention-analysis"
+              data-testid="result-intervention-analysis"
+            >
+              <p className="result-section-label">介入分析</p>
+              <dl className="result-rows result-analysis-rows">
+                {analysis.rows.map((row) => (
+                  <div className="result-row" key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd>{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="result-analysis-tip" data-testid="result-intervention-tip">
+                💡 {analysis.tip}
+              </p>
+            </div>
+          )}
+          <BaselineComparisonChart result={result} />
+          <div className="result-diagnosis">
+            <p className="result-section-label">診断</p>
+            <p>{result.diagnosis}</p>
+          </div>
+          <div className="result-title">
+            <p className="result-section-label">称号</p>
+            <RewardCeremony kind="title" title={result.title} detail="このスプリントの称号を獲得" />
+            <p className="result-title-value" data-testid="result-title">
+              「{result.title}」
             </p>
           </div>
-        )}
-        <BaselineComparisonChart result={result} />
-        <div className="result-diagnosis">
-          <p className="result-section-label">診断</p>
-          <p>{result.diagnosis}</p>
+          {growth && hasGrowthNews(growth) && (
+            <div className="result-growth" data-testid="result-growth">
+              <p className="result-section-label">チームの動き</p>
+              <ul className="growth-list">
+                {growth.promotions.map((p) => (
+                  <li key={`p-${p.id}`} className="growth-promote">
+                    🎉 {p.name} が{rankLabel(p.to)}に昇格
+                  </li>
+                ))}
+                {growth.wentOnLeave.map((w) => (
+                  <li key={`l-${w.id}`} className="growth-leave">
+                    😴 {w.name} が休職に入った
+                  </li>
+                ))}
+                {growth.leveledUp.length > 0 && growth.promotions.length === 0 && (
+                  <li className="growth-level">💪 {growth.leveledUp.length}人がレベルアップ</li>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
-        <div className="result-title">
-          <p className="result-section-label">称号</p>
-          <RewardCeremony kind="title" title={result.title} detail="このスプリントの称号を獲得" />
-          <p className="result-title-value" data-testid="result-title">
-            「{result.title}」
-          </p>
-        </div>
-        {growth && hasGrowthNews(growth) && (
-          <div className="result-growth" data-testid="result-growth">
-            <p className="result-section-label">チームの動き</p>
-            <ul className="growth-list">
-              {growth.promotions.map((p) => (
-                <li key={`p-${p.id}`} className="growth-promote">
-                  🎉 {p.name} が{rankLabel(p.to)}に昇格
-                </li>
-              ))}
-              {growth.wentOnLeave.map((w) => (
-                <li key={`l-${w.id}`} className="growth-leave">
-                  😴 {w.name} が休職に入った
-                </li>
-              ))}
-              {growth.leveledUp.length > 0 && growth.promotions.length === 0 && (
-                <li className="growth-level">💪 {growth.leveledUp.length}人がレベルアップ</li>
-              )}
-            </ul>
-          </div>
-        )}
-        <div className="result-actions">
+        <div className="result-actions overlay-actions">
           <button
             type="button"
             className="btn btn-primary"

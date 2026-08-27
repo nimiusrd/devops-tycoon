@@ -25,6 +25,6 @@ export function resetViewportScroll(root: Document | null): void {
   resetElementScroll(root.documentElement);
   if (root.body) resetElementScroll(root.body);
   root.querySelectorAll(VIEWPORT_SCROLL_HOST_SELECTOR).forEach((node) => {
-    if (node instanceof HTMLElement) resetElementScroll(node);
+    resetElementScroll(node as HTMLElement);
   });
 }

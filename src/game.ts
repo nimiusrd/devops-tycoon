@@ -74,6 +74,7 @@ import {
   serializeReplay,
   type ReplayShareResult,
 } from './state/replayShare';
+import { assessResumeRisk, type ResumeRisk } from './state/resumeRisk';
 import {
   parseRunSaveShare,
   RUN_SAVE_SHARE_REASON_MESSAGE,
@@ -202,6 +203,8 @@ export interface GameHandle {
   hasResumableRun(): boolean;
   /** タイトル「続きから」用の要約（無い場合は null）。 */
   getRunSaveSummary(): RunSaveSummary | null;
+  /** 再開前に示す燃え尽き／継続不能リスク（無い場合は null）。 */
+  getResumeRisk(): ResumeRisk | null;
   /** ルールセット不一致・情報欠落で再開できないセーブの理由。 */
   getRunSaveIssue(): RunSaveCompatibilityIssue | null;
   /** ランセーブを破棄する。 */
@@ -869,6 +872,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     getRunSaveSummary() {
       if (resumableSave) return structuredClone(resumableSave.summary);
       return runSaveIssue ? structuredClone(runSaveIssue.summary) : null;
+    },
+    getResumeRisk() {
+      if (!resumableSave) return null;
+      return assessResumeRisk({
+        org: resumableSave.state.org,
+        totals: resumableSave.state.totals,
+        budget: resumableSave.state.budget,
+      });
     },
     getRunSaveIssue() {
       return runSaveIssue ? structuredClone(runSaveIssue) : null;

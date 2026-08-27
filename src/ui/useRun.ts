@@ -18,6 +18,7 @@ import type { MetaState, RunRewardBreakdown } from '../state/meta';
 import type { ReplayBlob } from '../state/replay';
 import type { ReplayShareResult } from '../state/replayShare';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
+import type { ResumeRisk } from '../state/resumeRisk';
 import type { RunSaveShareResult } from '../state/runSaveShare';
 import type {
   ActionId,
@@ -49,6 +50,8 @@ export interface UseRun {
   lastRunReward: RunRewardBreakdown | null;
   /** 再開可能なランセーブの要約（無い場合は null）。 */
   runSaveSummary: RunSaveSummary | null;
+  /** 再開前の燃え尽き／継続不能リスク（無い場合は null）。 */
+  resumeRisk: ResumeRisk | null;
   /** ルールセット不一致・情報欠落で再開できないランセーブの理由。 */
   runSaveIssue: RunSaveCompatibilityIssue | null;
   /** ラン開始世代（RI-60）。`window.game.startRun` でも増える。 */
@@ -135,6 +138,7 @@ export function useRun(game: GameHandle): UseRun {
   const [runSaveSummary, setRunSaveSummary] = useState<RunSaveSummary | null>(() =>
     game.getRunSaveSummary(),
   );
+  const [resumeRisk, setResumeRisk] = useState<ResumeRisk | null>(() => game.getResumeRisk());
   const [runSaveIssue, setRunSaveIssue] = useState<RunSaveCompatibilityIssue | null>(() =>
     game.getRunSaveIssue(),
   );
@@ -205,6 +209,7 @@ export function useRun(game: GameHandle): UseRun {
       setDiagnosticInfo(game.getDiagnosticInfo());
       setLastRunReward(game.getLastRunReward());
       setRunSaveSummary(game.getRunSaveSummary());
+      setResumeRisk(game.getResumeRisk());
       setRunSaveIssue(game.getRunSaveIssue());
       setRunEpoch(game.getRunEpoch());
       setReplays(game.listReplays());
@@ -306,6 +311,7 @@ export function useRun(game: GameHandle): UseRun {
     diagnosticInfo,
     lastRunReward,
     runSaveSummary,
+    resumeRisk,
     runSaveIssue,
     runEpoch,
     replays,

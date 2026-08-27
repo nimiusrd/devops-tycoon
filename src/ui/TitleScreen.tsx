@@ -5,11 +5,12 @@
  * 実績）も表示する。世界観の制約（第2.1）に沿った現実的なトーン。
  * レイアウトは司令室 UI の構図を使い、文言は SPEC の用語に揃える。
  */
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
+import type { ResumeRisk } from '../state/resumeRisk';
 import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
@@ -40,6 +41,98 @@ function formatRuleset(ruleset: { version: number; fingerprint: string }): strin
   return `v${ruleset.version} / ${fingerprint}`;
 }
 
+function ResumeRiskDialog({
+  risk,
+  onCancel,
+  onConfirm,
+}: {
+  risk: ResumeRisk;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('button')];
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  return (
+    <div
+      ref={dialogRef}
+      className="result-overlay"
+      data-testid="resume-risk-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="resume-risk-title"
+      aria-describedby="resume-risk-body"
+    >
+      <div className="result-card resume-risk-card">
+        <p className="result-eyebrow">RESUME WARNING</p>
+        <h2 id="resume-risk-title" className="draft-title">
+          {risk.headline}
+        </h2>
+        <p id="resume-risk-body" className="resume-risk-body">
+          {risk.body}
+        </p>
+        <ul className="resume-risk-flags">
+          {risk.flags.map((flag) => (
+            <li key={flag.id}>
+              <span className={`pill tone-${flag.tone}`}>{flag.chip}</span>
+              {flag.id === 'seniorHp' || flag.id === 'seniorBurnout'
+                ? ` シニア体力 ${risk.seniorHpPct}%`
+                : null}
+            </li>
+          ))}
+        </ul>
+        <div className="result-actions">
+          <button
+            ref={cancelRef}
+            type="button"
+            className="btn btn-primary"
+            data-testid="resume-risk-cancel"
+            onClick={onCancel}
+          >
+            再開しない
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            data-testid="resume-risk-confirm"
+            onClick={onConfirm}
+          >
+            それでも再開する
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export interface TitleScreenProps {
   seed: string;
   meta: MetaState;
@@ -52,6 +145,7 @@ export interface TitleScreenProps {
   onStartDaily?: () => void;
   onResume?: () => void;
   resumableSummary?: RunSaveSummary | null;
+  resumeRisk?: ResumeRisk | null;
   runSaveIssue?: RunSaveCompatibilityIssue | null;
   onDiscardRunSave?: () => void;
   onOpenReplays?: () => void;
@@ -79,6 +173,7 @@ export function TitleScreen({
   onStartDaily,
   onResume,
   resumableSummary = null,
+  resumeRisk = null,
   runSaveIssue = null,
   onDiscardRunSave,
   onOpenReplays,
@@ -110,6 +205,8 @@ export function TitleScreen({
     kind: 'idle' | 'ok' | 'error';
     message: string;
   }>({ kind: 'idle', message: '' });
+  const [resumeConfirmOpen, setResumeConfirmOpen] = useState(false);
+  const resumeBtnRef = useRef<HTMLButtonElement>(null);
   const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
@@ -573,7 +670,10 @@ export function TitleScreen({
           ) : null}
 
           {!runSaveIssue && resumableSummary && onResume ? (
-            <section className="title-resume" data-testid="resume-run-section">
+            <section
+              className={`title-resume${resumeRisk?.tone === 'danger' ? ' title-resume-risk' : ''}`}
+              data-testid="resume-run-section"
+            >
               <div className="title-resume-copy">
                 <span>中断中のラン</span>
                 <b>
@@ -586,13 +686,33 @@ export function TitleScreen({
                     ? ` · デイリー ${resumableSummary.dailyDate}`
                     : ''}
                 </small>
+                {resumeRisk ? (
+                  <p className="title-resume-warning" data-testid="resume-risk-warning">
+                    <span>{resumeRisk.headline}</span>
+                    {resumeRisk.flags.map((flag) => (
+                      <span key={flag.id} className={`pill tone-${flag.tone}`}>
+                        {flag.chip}
+                        {flag.id === 'seniorHp' || flag.id === 'seniorBurnout'
+                          ? ` ${resumeRisk.seniorHpPct}%`
+                          : ''}
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
               </div>
               <button
+                ref={resumeBtnRef}
                 type="button"
                 className="title-resume-btn"
                 data-testid="resume-run"
                 disabled={runSaveImporting}
-                onClick={onResume}
+                onClick={() => {
+                  if (resumeRisk?.requiresConfirm) {
+                    setResumeConfirmOpen(true);
+                    return;
+                  }
+                  onResume();
+                }}
               >
                 続きから再開 →
               </button>
@@ -715,6 +835,19 @@ export function TitleScreen({
           </nav>
         </footer>
       </div>
+      {resumeConfirmOpen && resumeRisk?.requiresConfirm ? (
+        <ResumeRiskDialog
+          risk={resumeRisk}
+          onCancel={() => {
+            setResumeConfirmOpen(false);
+            resumeBtnRef.current?.focus();
+          }}
+          onConfirm={() => {
+            setResumeConfirmOpen(false);
+            onResume?.();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

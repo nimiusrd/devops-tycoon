@@ -33,6 +33,7 @@ import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
 import {
   accumulateWallTime,
   FRAME_MS,
+  isPlaybackPaused,
   SIM_STEP_MS,
   ticksDueFromAccumulator,
   type PlaybackSpeed,
@@ -233,7 +234,14 @@ export function useRun(game: GameHandle): UseRun {
     (id: ActionId, target?: ActionTarget) => game.dispatch(id, target),
     [game],
   );
-  const playCard = useCallback((deckIndex: number) => game.playCard(deckIndex), [game]);
+  const playCard = useCallback(
+    (deckIndex: number): CardPlayOutcome => {
+      // プレイヤー Pause 中は手札解決を止める。E2E の game.playCard / game.pause は通す。
+      if (isPlaybackPaused(playbackSpeedRef.current)) return { ok: false, reason: 'paused' };
+      return game.playCard(deckIndex);
+    },
+    [game],
+  );
   const getSprintSnapshot = useCallback(() => game.getState().sprint, [game]);
   const pauseBriefly = useCallback((ms: number) => pauseGameBriefly(game, ms), [game]);
   const acknowledgeResult = useCallback(() => void game.acknowledgeResult(), [game]);

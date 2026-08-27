@@ -23,6 +23,8 @@ export interface CardViewProps {
   playCost?: number;
   /** 発動不可（集中力不足等）。 */
   disabled?: boolean;
+  /** disabled のときプレイヤーへ示す理由。 */
+  disabledReason?: string;
   /** コンパクト表示（デッキバー用）。 */
   compact?: boolean;
   /** このカードを採用した場合の次スプリント試算。 */
@@ -38,6 +40,7 @@ export function CardView({
   onPlay,
   playCost: playCostValue,
   disabled = false,
+  disabledReason,
   compact = false,
   whatIfPreview,
   whatIfComputing = false,
@@ -92,7 +95,11 @@ export function CardView({
         onClick={onPlay}
         disabled={disabled}
         data-testid={`hand-card-${def.id}`}
-        title={`${formatCardTooltip(def, level)} / 発動 ⚡${playCostValue ?? '?'}`}
+        title={
+          disabled && disabledReason
+            ? disabledReason
+            : `${formatCardTooltip(def, level)} / 発動 ⚡${playCostValue ?? '?'}`
+        }
       >
         {inner}
       </button>

@@ -33,12 +33,14 @@ Framer Motion で重ねている。本エピックでは中央のスプリント
 1. **RI-141: Review の流れ・滞留・熱を WebGL で可視化 — 未着手（難易度: 中）**
    - タスクの移動軌跡、Review の滞留密度、盤面のヒートを、既存の状態と共有トークンから
      描く。DOM fallback は同じ渋滞状態・数値を維持する。
-   - 純粋な演出計画のユニットテスト、Pixi 視覚回帰、主要 viewport のレイアウト確認を追加する。
+   - 純粋な演出計画のユニットテスト、Pixi 視覚回帰、`tests/e2e/sprint-layout.spec.ts`
+     （`renderer=dom`）での渋滞／Review Hell状態と主要 viewport の確認を追加する。
 
 2. **RI-142: 炎上・鎮火・介入リアクションの GPU エフェクト化 — 未着手（難易度: 高）**
    - `FireEffects` / `InterventionEffects` が担う点火、延焼、鎮火、レビュー掃引、PR 分割、
-     差配を、上限付きプールで Pixi 側へ移す。効果の発火順・位置・終了時刻を再現可能な表示
-     モデルとして扱い、演出色・共有寸法は `visualTokens.ts` から DOM と Pixi の双方へ供給する。
+     差配、`boardAura`、`successPulse` と、`Board.tsx` の常駐 `board-modifier-aura` を、
+     上限付きプールで Pixi 側へ移す。効果の発火順・位置・終了時刻を再現可能な表示モデルとして
+     扱い、演出色・共有寸法は `visualTokens.ts` から DOM と Pixi の双方へ供給する。
      DOM はフォールバックとして残し、`tests/e2e/sprint-layout.spec.ts`（`renderer=dom`）と
      `tests/e2e/sprint-pixi-visual.spec.ts` の対象回帰を同じ PR で実行する。
      効果音の発火はレンダラから分離し、DOM／Pixi のどちらでも一度だけ再生されることを検証する。

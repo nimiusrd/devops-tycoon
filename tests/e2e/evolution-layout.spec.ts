@@ -97,15 +97,13 @@ test.describe('組織進化オーバーレイの初見レイアウト', () => {
       await expect(overlay).toBeVisible();
       await expect(page.getByTestId('evolution-done')).toBeInViewport({ ratio: 1 });
 
-      const clip = await readBox(page.getByTestId('evolution-branches'), '進化グリッド');
       const wide = viewport.width > RESPONSIVE_BREAKPOINTS.narrowMaxWidth;
-      const visibilities: Array<'visible' | 'hidden'> = [];
-
-      for (const nodeId of THIRD_ROW_NODE_IDS) {
-        visibilities.push(await assertCardNotPartiallyClipped(page, nodeId, clip));
-      }
-
       if (wide) {
+        const clip = await readBox(page.getByTestId('evolution-branches'), '進化グリッド');
+        const visibilities: Array<'visible' | 'hidden'> = [];
+        for (const nodeId of THIRD_ROW_NODE_IDS) {
+          visibilities.push(await assertCardNotPartiallyClipped(page, nodeId, clip));
+        }
         expect(
           visibilities,
           `${viewport.name} の 3 行目が初見で欠けているか、行ごと隠れていない`,

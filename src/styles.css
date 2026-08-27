@@ -3923,7 +3923,7 @@ button.card:active {
   max-height: calc(100dvh - 2 * var(--evolution-overlay-inset-block));
   min-height: 0;
   overflow: hidden;
-  padding: 12px 18px 14px;
+  padding: 10px 16px 12px;
   border-radius: 20px;
   background: var(--panel);
   border: 2px solid var(--line);
@@ -3942,10 +3942,10 @@ button.card:active {
 .evolution-branches {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  gap: 10px;
   flex: 1 1 auto;
   min-height: 0;
-  margin: 10px 0 12px;
+  margin: 8px 0 10px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -3956,10 +3956,13 @@ button.card:active {
   flex: 0 0 auto;
   justify-content: center;
 }
+.evolution-actions .btn {
+  margin-left: 0;
+}
 .branch-label {
   font-size: 13px;
   text-align: center;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: var(--sun);
 }
 .evo-node {

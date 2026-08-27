@@ -201,7 +201,9 @@ describe('mutation shards', () => {
     expect(SPRINT_SHARD_MUTANT_BUDGET).toBeLessThan(SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-sprint-e')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-run-sprint-baseline-b')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-engine-e')).toBe(SPRINT_SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-run-engine-a')).toBe(SHARD_MUTANT_BUDGET);
+    expect(shardMutantBudget('sim-run-engine-f')).toBe(SHARD_MUTANT_BUDGET);
     expect(shardMutantBudget('sim-run-support')).toBe(SHARD_MUTANT_BUDGET);
   });
 
@@ -218,6 +220,29 @@ describe('mutation shards', () => {
     expect(baselineShards.length).toBeGreaterThanOrEqual(2);
     expect(baselineShards.every((shard) => shard.mutate.includes(':'))).toBe(true);
     expect(MUTATION_SHARDS.some((shard) => shard.id === 'sim-sprint-e')).toBe(true);
+  });
+
+  it('engine.ts の step / resolveSprint を関数の途中で割らない', () => {
+    const methods = [
+      { name: 'beginSprint', start: 655, end: 724 },
+      { name: 'step', start: 768, end: 777 },
+      { name: 'resolveSprint', start: 819, end: 901 },
+      { name: 'chooseGoalAdjustment', start: 995, end: 1057 },
+    ];
+    const engineRanges = MUTATION_SHARDS.flatMap((shard) => {
+      const resolved = resolveShardMutate(shard.mutate);
+      const coverage = resolved.get('src/sim/run/engine.ts');
+      return coverage === true || coverage === undefined ? [] : coverage;
+    });
+    for (const method of methods) {
+      const cutInside = engineRanges.filter(
+        (range) => range.start > method.start && range.start <= method.end,
+      );
+      expect(cutInside, method.name).toEqual([]);
+    }
+    expect(MUTATION_SHARDS.filter((shard) => shard.id.startsWith('sim-run-engine-')).length).toBe(
+      6,
+    );
   });
 
   it('workflow はシャード定義スクリプトを matrix に使い、incremental cache は mutate ハッシュを見る', () => {
@@ -260,5 +285,11 @@ describe('mutation shards', () => {
   it('初期 dry-run が 5 分で死なないよう timeout を上げている', () => {
     const config = readStrykerConfig();
     expect(config.dryRunTimeoutMinutes).toBeGreaterThanOrEqual(20);
+  });
+
+  it('mutation vitest は sprintTempo の重い行列を dry-run から外す', () => {
+    const mutationVitest = readFileSync(join(REPO_ROOT, 'vitest.mutation.config.ts'), 'utf8');
+    expect(mutationVitest).toContain('tests/unit/ui/sprintTempo.test.ts');
+    expect(mutationVitest).toContain('exclude');
   });
 });

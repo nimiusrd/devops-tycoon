@@ -101,6 +101,41 @@ describe('sprintEventView（RI-52）', () => {
         spreadToTaskId: 3,
       }).text,
     ).toBe('延焼! 隣の Review 待ち PR に連鎖');
+    expect(
+      formatSprintEvent({
+        tick: 7,
+        kind: 'spread',
+        taskId: 1,
+        spreadToTaskId: 3,
+        debtGain: 6,
+        moraleCost: 5,
+      }).text,
+    ).toBe('延焼! 隣の Review 待ち PR に連鎖（負債 +6 / 士気 -5）');
+    expect(
+      formatSprintEvent({
+        tick: 8,
+        kind: 'spread',
+        taskId: 2,
+      }).text,
+    ).toBe('延焼! 負債と士気に波及');
+    expect(
+      formatSprintEvent({
+        tick: 8,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 5,
+      }).text,
+    ).toBe('延焼! 負債 +6 / 士気 -5');
+    expect(
+      formatSprintEvent({
+        tick: 9,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 0,
+      }).text,
+    ).toBe('延焼! 負債 +6');
     expect(formatSprintEvent({ tick: 8, kind: 'ignite', taskId: 0, source: 'review' }).text).toBe(
       '点火! Review 落ち PR が炎上',
     );

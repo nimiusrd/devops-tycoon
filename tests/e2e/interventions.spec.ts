@@ -242,7 +242,7 @@ test('スプリント終了後のドラフトでは前スプリントの COMBO �
       state = g.step(1_000);
       guard += 1;
     }
-    if (state.phase === 'result') state = g.acknowledgeResult();
+    if (state.phase === 'result') g.acknowledgeResult();
     const engine = (g as unknown as { engine: { sprint: NonNullable<RunState['sprint']> } }).engine;
     engine.sprint.metrics.combo = 12;
     g.step(0);

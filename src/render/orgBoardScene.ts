@@ -82,8 +82,8 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
   },
 ] as const;
 
-/** 共通基盤ハブ（設計px）。 */
-const HUB = { x: 700, y: 288, labelY: 226 } as const;
+/** 共通基盤ハブ（設計px）。ラベルは部門ラベル帯と島カードの間へ置く。 */
+const HUB = { x: 700, y: 288, labelY: 160 } as const;
 
 /** 旧モック由来の静的フローパス。zone 0/1 は島→ハブ、zone 2 の依存はハブ→島。 */
 const STATIC_FLOWS: readonly { d: string; zoneIndex: number }[] = [

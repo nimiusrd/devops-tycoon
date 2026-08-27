@@ -4,6 +4,7 @@
  * `orgBoardScene` が組み立てたシーン計画を読み、俯瞰オフィス（アイソメ）として描く。
  * 座標は設計空間（1404×573）の % で重ねる。Board.tsx と同型（第22.2）。
  */
+import { useLayoutEffect, useRef } from 'react';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { ORG_VIEW, planOrgBoardScene, type OrgIslandPlan } from '../render/orgBoardScene';
 import { OrgFlowLanes } from './OrgFlowLanes';
@@ -14,6 +15,24 @@ import { pct } from './pct';
 
 const VIEW_W = ORG_VIEW.w;
 const VIEW_H = ORG_VIEW.h;
+
+/** 設計pxラベルを実ステージ幅へ写す単位なし倍率（`--org-board-scale`）。 */
+function useOrgBoardScale() {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const apply = (): void => {
+      const scale = el.clientWidth > 0 ? el.clientWidth / VIEW_W : 1;
+      el.style.setProperty('--org-board-scale', String(scale));
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
 
 function ZoneLabel({
   label,
@@ -70,9 +89,14 @@ export interface OrgBoardProps {
 export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
   const scene = planOrgBoardScene(org);
   const hot = org.onFire > 0 || org.departments.some((d) => d.health === 'reviewHell');
+  const boardRef = useOrgBoardScale();
 
   return (
-    <div className={`org-board iso-org${hot ? ' org-hell' : ''}`} data-testid="org-board">
+    <div
+      ref={boardRef}
+      className={`org-board iso-org${hot ? ' org-hell' : ''}`}
+      data-testid="org-board"
+    >
       <OrgPlate zones={scene.zones} />
       <OrgFlowLanes flows={scene.flows} />
 

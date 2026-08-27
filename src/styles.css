@@ -5993,6 +5993,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   }
 }
 /* RI-01: 等角全社盤面（旧モック org-screen 由来） */
+.org-field > .aspect-stage-content {
+  container-type: inline-size;
+}
 .org-board.iso-org {
   position: relative;
   width: 100%;
@@ -6002,8 +6005,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-radius: 16px;
   overflow: hidden;
   border: 2px solid var(--line);
-  container-type: inline-size;
-  container-name: org-board;
+  --org-board-scale: 1;
   box-shadow:
     0 6px 0 #1a1338,
     inset 0 2px 0 #ffffff10;
@@ -6036,14 +6038,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 140;
-  font-size: calc(
-    var(--visual-org-zone-label-font-size) * 100cqw / var(--visual-space-organization-w)
-  );
+  font-size: calc(var(--visual-org-zone-label-font-size) * var(--org-board-scale));
   font-weight: 900;
-  padding: calc(
-      var(--visual-org-zone-label-padding-y) * 100cqw / var(--visual-space-organization-w)
-    )
-    calc(var(--visual-org-zone-label-padding-x) * 100cqw / var(--visual-space-organization-w));
+  padding: calc(var(--visual-org-zone-label-padding-y) * var(--org-board-scale))
+    calc(var(--visual-org-zone-label-padding-x) * var(--org-board-scale));
   border-radius: 999px;
   background: #1f1942e6;
   border: 2px solid var(--line);
@@ -6056,9 +6054,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   display: block;
   font-weight: 700;
   color: var(--text-dim);
-  font-size: calc(
-    var(--visual-org-zone-label-subtitle-size) * 100cqw / var(--visual-space-organization-w)
-  );
+  font-size: calc(var(--visual-org-zone-label-subtitle-size) * var(--org-board-scale));
   margin-top: 2px;
 }
 .org-zone-label.tone-ok {
@@ -6093,16 +6089,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: calc(
-      var(--visual-org-hub-overlay-padding-y) * 100cqw / var(--visual-space-organization-w)
-    )
-    calc(var(--visual-org-hub-overlay-padding-x) * 100cqw / var(--visual-space-organization-w));
+  padding: calc(var(--visual-org-hub-overlay-padding-y) * var(--org-board-scale))
+    calc(var(--visual-org-hub-overlay-padding-x) * var(--org-board-scale));
   border-radius: 14px;
   background: #11183ae6;
   border: 2px solid var(--sky);
-  font-size: calc(
-    var(--visual-org-hub-overlay-font-size) * 100cqw / var(--visual-space-organization-w)
-  );
+  font-size: calc(var(--visual-org-hub-overlay-font-size) * var(--org-board-scale));
   font-weight: 800;
   color: var(--cream);
   white-space: nowrap;
@@ -6113,11 +6105,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-color: #ffd45c;
 }
 .org-hub-meta {
-  font-size: calc(
-    var(--visual-org-hub-overlay-meta-size) * 100cqw / var(--visual-space-organization-w)
-  );
+  font-size: calc(var(--visual-org-hub-overlay-meta-size) * var(--org-board-scale));
   font-weight: 700;
   color: var(--sky);
+}
+/* 狭い盤面では固定pxラベルが島カードを覆う。部門チップが名前を担う。 */
+@container (max-width: 520px) {
+  .org-zone-label,
+  .org-hub-badge {
+    display: none;
+  }
 }
 .org-island-group {
   position: absolute;
@@ -6134,16 +6131,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: calc(
-      var(--visual-org-island-badge-padding-y) * 100cqw / var(--visual-space-organization-w)
-    )
-    calc(var(--visual-org-island-badge-padding-x) * 100cqw / var(--visual-space-organization-w));
+  padding: calc(var(--visual-org-island-badge-padding-y) * var(--org-board-scale))
+    calc(var(--visual-org-island-badge-padding-x) * var(--org-board-scale));
   border-radius: 12px;
   background: #1f1942e6;
   border: 2px solid var(--line);
-  font-size: calc(
-    var(--visual-org-island-badge-font-size) * 100cqw / var(--visual-space-organization-w)
-  );
+  font-size: calc(var(--visual-org-island-badge-font-size) * var(--org-board-scale));
   color: var(--cream);
   white-space: nowrap;
   box-shadow: 0 3px 0 #00000044;
@@ -6159,16 +6152,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #3a1414e6;
 }
 .org-island-meta {
-  font-size: calc(
-    var(--visual-org-island-badge-meta-size) * 100cqw / var(--visual-space-organization-w)
-  );
+  font-size: calc(var(--visual-org-island-badge-meta-size) * var(--org-board-scale));
   color: var(--text-dim);
 }
 .org-island-tag {
   display: inline-block;
-  font-size: calc(
-    var(--visual-org-island-badge-tag-size) * 100cqw / var(--visual-space-organization-w)
-  );
+  font-size: calc(var(--visual-org-island-badge-tag-size) * var(--org-board-scale));
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 999px;

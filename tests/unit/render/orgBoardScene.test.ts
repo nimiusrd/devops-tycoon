@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptyAdjustState } from '../../../src/sim/orgscale/levers';
 import { generateOrgScale } from '../../../src/sim/orgscale';
+import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import type { OrgScaleInput } from '../../../src/sim/orgscale/generate';
 import type { OrgState } from '../../../src/sim/types';
 import type { RunTotals } from '../../../src/sim/run/types';
@@ -285,6 +286,18 @@ describe('planOrgBoardScene (RI-01)', () => {
           labelBox.y + labelBox.height + ZONE_LABEL_GAP - 0.5,
         );
       }
+    }
+    const hubBox = {
+      x: scene.hub.labelX - 120,
+      y: scene.hub.labelY - VISUAL_TOKENS.dimensions.organization.hubOverlay.height / 2,
+      width: 240,
+      height: VISUAL_TOKENS.dimensions.organization.hubOverlay.height,
+    };
+    for (const island of scene.islands) {
+      expect(
+        orgBoardRectsOverlap(hubBox, islandBadgeRect(island)),
+        `ハブラベルと ${island.teamId} カードが重なる`,
+      ).toBe(false);
     }
   });
 

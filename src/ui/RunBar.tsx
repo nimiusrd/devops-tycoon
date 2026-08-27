@@ -8,8 +8,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getDifficulty } from '../data/difficulties';
 import { diagnosisTheme } from '../render/diagnosisTheme';
-import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
+import { displayedQuarterSprintIndex } from '../render/sprintProgressView';
+import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import {
   budgetHudCopy,
   diffRunMetricSnapshots,
@@ -210,7 +211,7 @@ export function RunBar({
       <span className="pill" data-testid="sprint-no" title="当四半期のトラック進行（最終がボス）">
         スプリント{' '}
         <b>
-          {Math.min(state.sprintIndexInQuarter, state.sprintsPerQuarter)}/{state.sprintsPerQuarter}
+          {displayedQuarterSprintIndex(state)}/{state.sprintsPerQuarter}
         </b>
         {state.sprintIndexInQuarter + 1 === state.sprintsPerQuarter && (
           <span className="boss-next"> ★次が山場</span>

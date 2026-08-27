@@ -8,6 +8,7 @@
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
 import { getBoss } from '../data/bosses';
+import { nextSprintIndexInQuarter } from '../render/sprintProgressView';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { DeckBar } from './DeckBar';
@@ -32,7 +33,7 @@ export function SetupScreen({
 }: SetupScreenProps) {
   const boss = getBoss(state.bossId);
   const total = state.sprintsPerQuarter;
-  const nextIndex = state.sprintIndexInQuarter + 1;
+  const nextIndex = nextSprintIndexInQuarter(state.sprintIndexInQuarter, total);
   // launchSprint と同様、最終枠はインデックスからボスを決める（pending は normal のまま）。
   const bossPending = state.pendingSprintKind === 'boss' || nextIndex >= total;
   const elitePending = !bossPending && state.pendingSprintKind === 'elite';

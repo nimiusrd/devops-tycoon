@@ -15,7 +15,7 @@ import { WhatIfPreview } from './WhatIfPreview';
 export interface DraftScreenProps {
   /** 提示カードの定義 ID（3 枚）。 */
   options: string[];
-  /** 次スプリントが何回目か（表示用、1 起点）。 */
+  /** 当四半期の次スプリント番号（表示用、1 起点。HUD と一致させる）。 */
   sprintNumber: number;
   /** 現在の予算（マリガン可否表示用）。 */
   budget: number;
@@ -50,7 +50,9 @@ export function DraftScreen({
     <div className="result-overlay" data-testid="draft" role="dialog" aria-label="Card Draft">
       <div className="draft-card-panel">
         <p className="result-eyebrow">CARD DRAFT</p>
-        <h2 className="draft-title">スプリント{sprintNumber} に向けて、施策を1枚選ぶ</h2>
+        <h2 className="draft-title" data-testid="draft-sprint-no">
+          スプリント{sprintNumber} に向けて、施策を1枚選ぶ
+        </h2>
         <div className="draft-options">
           {options.map((id) => {
             const def = resolveCard(id);

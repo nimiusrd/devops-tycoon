@@ -2,12 +2,13 @@
  * スプリントリザルト画面（SPEC 第4.6）。
  *
  * Done / Delivered / Max Combo / AI Assisted / Review Queue Max / Rework /
- * Incidents / Senior HP / 介入 と、評価・診断・称号を表示する。
+ * Incidents / Senior HP / 介入 と、評価・診断・称号・評価内訳を表示する。
  */
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
-import { planBurnCauseLog } from '../render/sprintBurnCauseView';
 import { planReviewHellResultSummary } from '../render/reviewHellReplayView';
+import { planBurnCauseLog } from '../render/sprintBurnCauseView';
+import { planSprintGradeView } from '../render/sprintGradeView';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
 import type { DiagnosisType, GrowthOutcome } from '../sim/run/types';
@@ -81,6 +82,7 @@ export function SprintResultScreen({
 }: SprintResultScreenProps) {
   const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
+  const gradeView = planSprintGradeView(result);
   const hellSummary = planReviewHellResultSummary(result, { replayMode, diagnosis });
 
   return (
@@ -107,6 +109,9 @@ export function SprintResultScreen({
         <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
           {result.grade}
         </div>
+        <p className="result-grade-caption" data-testid="result-grade-caption">
+          {gradeView.caption}
+        </p>
         {isSpecialGrade(result.grade) && (
           <RewardCeremony
             kind="grade-s"
@@ -122,6 +127,20 @@ export function SprintResultScreen({
             </div>
           ))}
         </dl>
+        <div className="result-grade-breakdown" data-testid="result-grade-breakdown">
+          <p className="result-section-label">評価の内訳</p>
+          <dl className="result-rows result-analysis-rows">
+            {gradeView.rows.map((row) => (
+              <div className="result-row" key={row.label}>
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="result-analysis-tip" data-testid="result-grade-tip">
+            {gradeView.tip}
+          </p>
+        </div>
         <SprintTimelineChart timeline={result.timeline} events={result.events} />
         {burnLog.showSection && (
           <div className="result-burn-cause" data-testid="result-burn-cause">
@@ -169,7 +188,7 @@ export function SprintResultScreen({
         <BaselineComparisonChart result={result} />
         <div className="result-diagnosis">
           <p className="result-section-label">診断</p>
-          <p>{result.diagnosis}</p>
+          <p data-testid="result-diagnosis-text">{result.diagnosis}</p>
         </div>
         <div className="result-title">
           <p className="result-section-label">称号</p>

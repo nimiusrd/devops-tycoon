@@ -661,7 +661,8 @@ export function computeTitleAndDiagnosis(
   if (hpLoss >= SPRINT_BALANCE.titleSeniorBurnoutHpLoss.value) {
     return {
       title: 'シニア過労メーカー',
-      diagnosis: 'レビュー負荷がシニアに集中しています。体力が尽きる前に分散を。',
+      diagnosis:
+        '出荷は伸びましたが、レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。',
     };
   }
   if (

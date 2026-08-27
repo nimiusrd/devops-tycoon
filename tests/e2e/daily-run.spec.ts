@@ -36,3 +36,33 @@ test('タイトルからデイリーランを開始できる', async ({ page }) 
     },
   });
 });
+
+test('Daily無介入 Sprint 1 は評価 B でも危機の読みと内訳が見える', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=daily-2026-08-27');
+
+  await page.evaluate(() => {
+    const g = window.game!;
+    g.pause();
+    g.startDailyRun('2026-08-27');
+    g.beginSetupSprint();
+    let s = g.getState();
+    let guard = 0;
+    while (s.phase === 'sprint' && guard < 8000) {
+      guard += 1;
+      s = g.step(1_000_000);
+    }
+    if (s.phase !== 'result' || !s.lastResult) {
+      throw new Error(`スプリントリザルトへ到達できませんでした: ${s.phase}`);
+    }
+  });
+
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-grade')).toHaveText('B');
+  await expect(page.getByTestId('result-grade-caption')).toContainText(
+    '大きな危機を出しつつ出荷した',
+  );
+  await expect(page.getByTestId('result-grade-breakdown')).toBeVisible();
+  await expect(page.getByTestId('result-grade-tip')).toContainText('出荷点を母数');
+  await expect(page.getByTestId('result-diagnosis-text')).toContainText('燃え尽き寸前');
+  await expect(page.getByTestId('result-title')).toContainText('シニア過労メーカー');
+});

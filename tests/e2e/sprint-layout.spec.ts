@@ -793,6 +793,9 @@ test.describe('RI-94 レイアウト契約', () => {
     await page.getByTestId('hud-toggle').click();
     await advanceCurrentSprintToResult(page);
     await expect(page.getByTestId('sprint-result')).toBeVisible();
+    await expect(
+      page.locator('.result-row').filter({ hasText: 'Senior HP' }).locator('dd'),
+    ).toHaveText(/^\d+$/);
     await stabilizeDomForScreenshot(page);
     await expect(page.locator('.app')).toHaveScreenshot('sprint-layout-result-overlay.png', {
       animations: 'disabled',

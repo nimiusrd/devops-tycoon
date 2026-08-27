@@ -3387,7 +3387,7 @@ button.card:active {
 .title-launch-dock {
   flex: 0 0 auto;
   z-index: 8;
-  padding: 0 4vw calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 4vw calc(14px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--tc-line);
   background:
     linear-gradient(180deg, rgba(10, 14, 31, 0.98), rgba(5, 7, 19, 0.98)),

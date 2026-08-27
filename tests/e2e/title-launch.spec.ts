@@ -17,13 +17,17 @@ function overlaps(a: Box, b: Box): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
-function visibleInViewport(box: Box, viewport: { width: number; height: number }): Box | null {
-  const x = Math.max(box.x, 0);
-  const y = Math.max(box.y, 0);
-  const right = Math.min(box.x + box.width, viewport.width);
-  const bottom = Math.min(box.y + box.height, viewport.height);
+function intersect(a: Box, b: Box): Box | null {
+  const x = Math.max(a.x, b.x);
+  const y = Math.max(a.y, b.y);
+  const right = Math.min(a.x + a.width, b.x + b.width);
+  const bottom = Math.min(a.y + a.height, b.y + b.height);
   if (right <= x || bottom <= y) return null;
   return { x, y, width: right - x, height: bottom - y };
+}
+
+function visibleInViewport(box: Box, viewport: { width: number; height: number }): Box | null {
+  return intersect(box, { x: 0, y: 0, width: viewport.width, height: viewport.height });
 }
 
 async function readBox(locator: Locator, label: string): Promise<Box> {
@@ -88,17 +92,19 @@ test.describe('title launch CTA first view', () => {
         `${viewport.name} で開始文言が viewport 下端で切れている`,
       ).toBeLessThanOrEqual(viewport.height + 1);
 
-      await page.getByTestId('open-help').evaluate((el) => {
+      await page.getByTestId('title-footer').evaluate((el) => {
         el.scrollIntoView({ block: 'end', inline: 'nearest' });
       });
+      const scrollBox = await readBox(scroll, 'タイトルのスクロール領域');
       const footerBox = await readBox(page.getByTestId('title-footer'), 'フッター');
       const dockedStart = await readBox(startRun, '開始 CTA（スクロール後）');
-      const visibleFooter = visibleInViewport(footerBox, viewport);
       const visibleStart = visibleInViewport(dockedStart, viewport);
+      const paintedFooter = intersect(footerBox, scrollBox);
       expect(visibleStart, `${viewport.name} でスクロール後に開始 CTA が見えない`).not.toBeNull();
-      if (visibleFooter && visibleStart) {
+      expect(paintedFooter, `${viewport.name} でフッターがスクロール領域に現れない`).not.toBeNull();
+      if (paintedFooter && visibleStart) {
         expect(
-          overlaps(visibleFooter, visibleStart),
+          overlaps(paintedFooter, visibleStart),
           `${viewport.name} でフッターが開始 CTA と重なっている`,
         ).toBe(false);
       }

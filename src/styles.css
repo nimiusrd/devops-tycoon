@@ -5508,9 +5508,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 12px;
   padding: 16px 18px 22px;
   overflow: auto;
+  isolation: isolate;
+  animation: fadein 0.25s ease;
   background:
     radial-gradient(900px 420px at 80% 0%, #6b4a9e44 0%, transparent 60%),
     linear-gradient(180deg, #1d1640 0%, #16102e 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .zoom-overlay {
+    animation: none;
+  }
 }
 
 /* パンくず */

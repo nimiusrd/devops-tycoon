@@ -4,20 +4,27 @@
  * sim の `SprintState.events` を読み、直近の介入・出来事を言語化して盤面脇に出す。
  * 演出は読むだけ（第22.2）。
  *
- * DS-01: 既定は pointer-events を通し、武装中の盤面ドラッグを奪わない。
- * DS-06 / DS-08: ホバー・フォーカス中だけリストがスクロール操作を受ける。
+ * DS-01: リストは既定で pointer-events: none。ホバーでは盤面ドラッグを奪わない。
+ * DS-06 / DS-08: ホイール（修飾キーなし）・見出しタップでフォーカス・キーボードで全行へ到達する。
  */
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { formatRecentSprintEvents } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
+import {
+  applyTickerListScroll,
+  hitBlocksTickerTouchScroll,
+  pointInRect,
+  shouldCaptureTickerWheel,
+} from './eventTickerPointer';
 
 /** 同時表示する最大件数。 */
 const TICKER_LIMIT = 5;
-
-function pointInRect(x: number, y: number, rect: DOMRect): boolean {
-  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-}
 
 /** フォーカス中のリストを矢印 / Page / Home / End でスクロールする（DS-08）。 */
 function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
@@ -58,49 +65,76 @@ export interface EventTickerProps {
 export function EventTicker({ events }: EventTickerProps) {
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
   const listRef = useRef<HTMLUListElement>(null);
-  const [pointerHot, setPointerHot] = useState(false);
 
   useEffect(() => {
     const list = listRef.current;
-    if (!list || rows.length === 0) {
-      setPointerHot(false);
-      return;
-    }
+    if (!list || rows.length === 0) return;
 
-    const onPointerMove = (event: PointerEvent) => {
-      // 盤面ドラッグ中はホットにせず、ポインターを盤面へ通し続ける。
-      if (event.buttons !== 0) return;
-      setPointerHot(pointInRect(event.clientX, event.clientY, list.getBoundingClientRect()));
-    };
+    let touchPan: { pointerId: number; lastY: number } | null = null;
 
     const onWheel = (event: WheelEvent) => {
+      if (!shouldCaptureTickerWheel(event)) return;
       if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
-      if (list.scrollHeight <= list.clientHeight + 1) return;
-      const max = list.scrollHeight - list.clientHeight;
-      const next = Math.min(max, Math.max(0, list.scrollTop + event.deltaY));
-      if (next === list.scrollTop) return;
+      if (!applyTickerListScroll(list, event.deltaY)) return;
       event.preventDefault();
-      list.scrollTop = next;
     };
 
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+      if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
+      if (hitBlocksTickerTouchScroll(document.elementFromPoint(event.clientX, event.clientY))) {
+        return;
+      }
+      touchPan = { pointerId: event.pointerId, lastY: event.clientY };
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!touchPan || event.pointerId !== touchPan.pointerId) return;
+      const dy = touchPan.lastY - event.clientY;
+      if (!applyTickerListScroll(list, dy)) return;
+      touchPan.lastY = event.clientY;
+      if (event.cancelable) event.preventDefault();
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      if (touchPan?.pointerId === event.pointerId) touchPan = null;
+    };
+
     window.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', onPointerUp, { passive: true });
+    window.addEventListener('pointercancel', onPointerUp, { passive: true });
     return () => {
-      window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('wheel', onWheel, true);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
     };
   }, [rows.length]);
 
+  const focusList = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    listRef.current?.focus();
+  };
+
   return (
     <aside className="event-ticker" data-testid="event-ticker" aria-label="スプリント出来事">
-      <p className="event-ticker-label" id="event-ticker-heading">
+      <button
+        type="button"
+        className="event-ticker-label"
+        id="event-ticker-heading"
+        data-testid="event-ticker-heading"
+        tabIndex={-1}
+        onPointerDown={focusList}
+      >
         出来事
-      </p>
+      </button>
       <ul
         ref={listRef}
-        className={`event-ticker-list${pointerHot ? ' is-pointer-hot' : ''}`}
+        className="event-ticker-list"
         data-testid="event-ticker-list"
-        data-pointer-hot={pointerHot ? 'true' : undefined}
         tabIndex={rows.length > 0 ? 0 : undefined}
         aria-labelledby="event-ticker-heading"
         onKeyDown={handleTickerListKeyDown}

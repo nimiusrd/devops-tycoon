@@ -947,12 +947,6 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
   await expect(rows, `${label}: 延焼行が5件ない`).toHaveCount(5);
 
   await list.evaluate((element) => element.blur());
-  await page.mouse.move(8, 8);
-  await page.evaluate(() => {
-    window.dispatchEvent(
-      new PointerEvent('pointermove', { clientX: 8, clientY: 8, buttons: 0, bubbles: true }),
-    );
-  });
 
   const pointerEvents = await page.evaluate(() => {
     const ticker = document.querySelector('.event-ticker');
@@ -964,7 +958,7 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
     };
   });
   expect(pointerEvents?.ticker, `${label}: ティッカー本体が盤面クリックを奪う`).toBe('none');
-  expect(pointerEvents?.list, `${label}: 非ホバーのリストが盤面ドラッグを奪う`).toBe('none');
+  expect(pointerEvents?.list, `${label}: 未フォーカスのリストが盤面ドラッグを奪う`).toBe('none');
   await assertTickerPassesBoardPointer(page, label);
   await assertTickerKeyboardReachable(page, label);
 
@@ -1053,9 +1047,10 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
   await list.evaluate((element) => element.blur());
 }
 
-/** 非ホバー時はリスト下の盤面が elementFromPoint の対象になる。ホバー中だけリストが auto になる。 */
+/** ホバーでは盤面へ通し、見出しタップと修飾なしホイールで一覧へ到達する。 */
 async function assertTickerPassesBoardPointer(page: Page, label: string): Promise<void> {
   const list = page.getByTestId('event-ticker-list');
+  const heading = page.getByTestId('event-ticker-heading');
   await list.evaluate((element) => {
     element.scrollTop = 0;
     element.blur();
@@ -1075,44 +1070,54 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
     };
   });
   if (!idleHit) throw new Error(`${label}: 延焼行が無い`);
-  expect(idleHit.inList, `${label}: 非ホバーでもリストがヒット対象`).toBe(false);
+  expect(idleHit.inList, `${label}: 未フォーカスでもリストがヒット対象`).toBe(false);
 
   await page.mouse.move(idleHit.x, idleHit.y);
-  await page.evaluate(({ x, y }) => {
-    window.dispatchEvent(
-      new PointerEvent('pointermove', { clientX: x, clientY: y, buttons: 0, bubbles: true }),
-    );
-  }, idleHit);
-  await expect(list, `${label}: ホバーでリストがホットにならない`).toHaveAttribute(
-    'data-pointer-hot',
-    'true',
-  );
   const hovered = await list.evaluate((element) => getComputedStyle(element).pointerEvents);
-  expect(hovered, `${label}: ホバー中のリストがスクロールを受けない`).toBe('auto');
+  expect(hovered, `${label}: ホバー中のリストが盤面ドラッグを奪う`).toBe('none');
+
+  await heading.click();
+  await expect(list, `${label}: 見出しタップでリストにフォーカスできない`).toBeFocused();
+  const focused = await list.evaluate((element) => getComputedStyle(element).pointerEvents);
+  expect(focused, `${label}: フォーカス後もリストがスクロールを受けない`).toBe('auto');
+  await list.evaluate((element) => element.blur());
 
   const overflow = await list.evaluate(
     (element) => element.scrollHeight > element.clientHeight + 1,
   );
-  if (overflow) {
-    await list.evaluate((element) => {
-      element.scrollTop = 0;
-    });
-    await page.mouse.move(idleHit.x, idleHit.y);
-    const before = await list.evaluate((element) => element.scrollTop);
-    await page.mouse.wheel(0, 400);
-    const afterWheel = await list.evaluate((element) => element.scrollTop);
-    expect(afterWheel, `${label}: ホイールでリストがスクロールしない`).toBeGreaterThan(before);
-  }
+  if (!overflow) return;
 
-  await page.mouse.move(8, 8);
-  await page.evaluate(() => {
-    window.dispatchEvent(
-      new PointerEvent('pointermove', { clientX: 8, clientY: 8, buttons: 0, bubbles: true }),
+  const dispatchWheel = async (deltaY: number, ctrlKey: boolean) =>
+    page.evaluate(
+      ({ x, y, deltaY: dy, ctrlKey: ctrl }) => {
+        window.dispatchEvent(
+          new WheelEvent('wheel', {
+            clientX: x,
+            clientY: y,
+            deltaY: dy,
+            ctrlKey: ctrl,
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      },
+      { x: idleHit.x, y: idleHit.y, deltaY, ctrlKey },
     );
+
+  await list.evaluate((element) => {
+    element.scrollTop = 0;
   });
-  await expect(list, `${label}: ホバー解除後もリストがホットのまま`).not.toHaveAttribute(
-    'data-pointer-hot',
-  );
+  const before = await list.evaluate((element) => element.scrollTop);
+  await dispatchWheel(400, false);
+  const afterWheel = await list.evaluate((element) => element.scrollTop);
+  expect(afterWheel, `${label}: ホイールでリストがスクロールしない`).toBeGreaterThan(before);
+
+  await list.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await dispatchWheel(400, true);
+  const afterCtrl = await list.evaluate((element) => element.scrollTop);
+  expect(afterCtrl, `${label}: Ctrl+wheel をリストが奪う`).toBe(0);
 }
 
 async function injectSpreadResultEvents(page: Page): Promise<void> {

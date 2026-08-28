@@ -1998,9 +1998,9 @@ body {
 }
 
 /* スプリント内イベントティッカー（RI-52）
- * DS-01: 本体は pointer-events: none。リストも既定は none で盤面ドラッグを通す。
- * DS-06: 長い5件はリストだけ縦スクロールし、ホバー/フォーカス/ホイールで全行へ到達できる。
- * DS-08: リストは名前付きフォーカス領域。矢印/PageDown/End でキーボード到達できる。 */
+ * DS-01: 本体とリストは既定 none。ホバーでは盤面ドラッグを奪わない。
+ * DS-06: 修飾キーなしホイール / 見出しタップ後のフォーカス / キーボードで全行へ到達する。
+ * DS-08: 見出しは 24px の名前付き操作。リストはフォーカス領域。 */
 .event-ticker {
   position: absolute;
   top: 12px;
@@ -2017,11 +2017,24 @@ body {
 .event-ticker-label {
   margin: 0;
   flex: 0 0 auto;
+  min-height: 24px;
+  min-width: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--muted, #9aa3b5);
   text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.event-ticker-label:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
 }
 .event-ticker-list {
   list-style: none;
@@ -2038,8 +2051,7 @@ body {
   pointer-events: none;
 }
 .event-ticker-list:focus,
-.event-ticker-list:focus-visible,
-.event-ticker-list.is-pointer-hot {
+.event-ticker-list:focus-visible {
   pointer-events: auto;
 }
 .event-ticker-list:focus-visible {

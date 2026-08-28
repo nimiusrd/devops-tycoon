@@ -274,6 +274,72 @@ test('記録時のレリック定義とルールセットを優先して表示�
   ).toBeNull();
 });
 
+test('記録時の試練定義を HUD に優先して表示する', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=replay-trial-snapshot-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const imported = await page.evaluate(async (schemaVersion) => {
+    const game = (window as ReplayGameWindow).game;
+    if (!game) return false;
+    game.startRun('easy', ['half-budget'], 'replay-trial-snapshot-e2e');
+    const frame = game.engine.exportReplayFrame();
+    if (!frame) return false;
+    frame.trials = ['half-budget', 'removed-trial'];
+
+    const blob: ReplayBlob = {
+      schemaVersion: schemaVersion as typeof REPLAY_SCHEMA_VERSION,
+      id: 'replay-trial-snapshot-e2e:1',
+      seed: 'replay-trial-snapshot-e2e',
+      difficulty: 'easy',
+      trials: ['half-budget', 'removed-trial'],
+      finishedAt: 3_000_002,
+      outcome: {
+        status: 'won',
+        diagnosis: 'healthyAcceleration',
+        score: 20,
+      },
+      keyframes: [{ phase: 'setup', frame, label: '記録時試練' }],
+      ruleset: { version: 99, fingerprint: 'recorded-trial-defs' },
+      contentSnapshot: {
+        cards: [],
+        relics: [],
+        trials: [
+          {
+            id: 'half-budget',
+            label: '記録時の予算半減',
+            description: '記録時の説明',
+            budgetMul: 0.25,
+          },
+          {
+            id: 'removed-trial',
+            label: '消えた試練',
+            description: '削除済み',
+            budgetMul: 1,
+          },
+        ],
+      },
+    };
+    return game.importReplay(blob);
+  }, REPLAY_SCHEMA_VERSION);
+
+  expect(imported).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBeGreaterThan(0);
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await page.getByTestId('replay-keyframe-0').click();
+
+  await expect(page.getByTestId('run-trial-half-budget')).toHaveText('記録時の予算半減');
+  await expect(page.getByTestId('run-trial-removed-trial')).toHaveText('消えた試練');
+  await expect(page.getByTestId('budget')).toHaveAttribute(
+    'title',
+    /試練「記録時の予算半減」で開始予算×0\.25/,
+  );
+});
+
 test('旧v1リプレイはルールセット不明と未知コンテンツのまま開ける', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=legacy-replay-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();

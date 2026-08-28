@@ -2,7 +2,8 @@
  * ラン中 HUD の試練表示モデル。
  *
  * 適用中の試練 ID からラベル・説明・予算倍率を導出する純関数。
- * 未知 ID は無視する（エンジンの budgetMul 積算と同じ）。
+ * ライブは未知 ID を無視する（エンジンの budgetMul 積算と同じ）。
+ * リプレイは記録時の定義（resolver）を優先する。
  */
 import { getTrial } from '../data/difficulties';
 
@@ -13,31 +14,50 @@ export interface TrialHudView {
   budgetMul: number;
 }
 
-/** ラン中 HUD に出す試練。未知 ID はスキップする。 */
-export function trialHudViews(trialIds: readonly string[]): TrialHudView[] {
+export type TrialHudResolver = (id: string) => TrialHudView | undefined;
+
+/** 現行 `getTrial` から HUD 表示を作る。未知 ID は undefined。 */
+export function resolveLiveTrial(id: string): TrialHudView | undefined {
+  const def = getTrial(id);
+  if (!def) return undefined;
+  return {
+    id: def.id,
+    label: def.label,
+    description: def.description,
+    budgetMul: def.budgetMul ?? 1,
+  };
+}
+
+/** ラン中 HUD に出す試練。resolver が undefined を返した ID はスキップする。 */
+export function trialHudViews(
+  trialIds: readonly string[],
+  resolveTrial: TrialHudResolver = resolveLiveTrial,
+): TrialHudView[] {
   const views: TrialHudView[] = [];
   for (const id of trialIds) {
-    const def = getTrial(id);
-    if (!def) continue;
-    views.push({
-      id: def.id,
-      label: def.label,
-      description: def.description,
-      budgetMul: def.budgetMul ?? 1,
-    });
+    const view = resolveTrial(id);
+    if (!view) continue;
+    views.push(view);
   }
   return views;
 }
 
 /** 開始予算を変える試練の HUD 詳細文。該当なしは undefined。 */
-export function trialBudgetHudDetail(trialIds: readonly string[]): string | undefined {
-  const affecting = trialHudViews(trialIds).filter((trial) => trial.budgetMul !== 1);
+export function trialBudgetHudDetail(
+  trialIds: readonly string[],
+  resolveTrial: TrialHudResolver = resolveLiveTrial,
+): string | undefined {
+  const affecting = trialHudViews(trialIds, resolveTrial).filter((trial) => trial.budgetMul !== 1);
   if (affecting.length === 0) return undefined;
   return affecting.map((trial) => `試練「${trial.label}」で開始予算×${trial.budgetMul}`).join('、');
 }
 
 /** 予算 pill の title。試練で開始予算が変わるときは原因を添える。 */
-export function budgetHudTitle(budgetDetail: string, trialIds: readonly string[]): string {
-  const trialDetail = trialBudgetHudDetail(trialIds);
+export function budgetHudTitle(
+  budgetDetail: string,
+  trialIds: readonly string[],
+  resolveTrial: TrialHudResolver = resolveLiveTrial,
+): string {
+  const trialDetail = trialBudgetHudDetail(trialIds, resolveTrial);
   return trialDetail ? `${budgetDetail}。${trialDetail}` : budgetDetail;
 }

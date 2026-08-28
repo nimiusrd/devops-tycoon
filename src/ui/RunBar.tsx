@@ -92,7 +92,7 @@ export function RunBar({
   compact = false,
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
-  const { resolveRelic } = useReplayContent();
+  const { resolveRelic, resolveTrial } = useReplayContent();
   const diag = diagnosisView(state.diagnosis);
   const theme = diagnosisTheme(state.diagnosis);
   const roster = rosterSummary(state.roster);
@@ -151,7 +151,7 @@ export function RunBar({
     ? 'negative'
     : 'positive';
   const budgetCopy = budgetHudCopy(state.budget);
-  const trialViews = trialHudViews(state.trials);
+  const trialViews = trialHudViews(state.trials, resolveTrial);
   const trustCopy = trustHudCopy(state.stakeholderTrust);
   const carryoverCopy = goalCarryoverHudCopy({
     goalCarryoverId: state.goalCarryoverId,
@@ -221,7 +221,7 @@ export function RunBar({
       <span
         className={`pill run-metric-pill tone-${budgetCopy.tone}${budgetFeedback ? ` run-feedback flash-${budgetFeedback.tone}` : ''}`}
         data-testid="budget"
-        title={budgetHudTitle(budgetCopy.detail, state.trials)}
+        title={budgetHudTitle(budgetCopy.detail, state.trials, resolveTrial)}
         data-tone={budgetCopy.tone}
       >
         💰<b>{state.budget}</b>
@@ -232,17 +232,21 @@ export function RunBar({
         )}
         {budgetFeedback && <RunFeedbackPop feedbacks={[budgetFeedback]} />}
       </span>
-      {trialViews.map((trial) => (
-        <span
-          key={trial.id}
-          className="pill"
-          data-testid={`run-trial-${trial.id}`}
-          title={trial.description}
-          aria-label={`試練 ${trial.label}`}
-        >
-          {trial.label}
-        </span>
-      ))}
+      {trialViews.length > 0 && (
+        <div className="trial-bar" data-testid="run-trials">
+          {trialViews.map((trial) => (
+            <span
+              key={trial.id}
+              className="pill"
+              data-testid={`run-trial-${trial.id}`}
+              title={trial.description}
+              aria-label={`試練 ${trial.label}`}
+            >
+              {trial.label}
+            </span>
+          ))}
+        </div>
+      )}
       <span
         className={`pill run-metric-pill trust-pill tone-${trustCopy.tone}${trustFeedbacks.length > 0 ? ` run-feedback flash-${trustFeedbackTone}` : ''}`}
         data-testid="stakeholder-trust"

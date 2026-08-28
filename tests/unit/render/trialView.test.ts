@@ -31,6 +31,43 @@ describe('trialHudViews', () => {
       expect.objectContaining({ id: 'half-budget', label: '予算半減', budgetMul: 0.5 }),
     ]);
   });
+
+  it('resolver は記録時のラベルと予算倍率を優先する', () => {
+    const recorded = (id: string) =>
+      id === 'half-budget'
+        ? {
+            id: 'half-budget',
+            label: '記録時の予算半減',
+            description: '記録時の説明',
+            budgetMul: 0.25,
+          }
+        : id === 'removed-trial'
+          ? {
+              id: 'removed-trial',
+              label: '消えた試練',
+              description: '記録時のみ',
+              budgetMul: 1,
+            }
+          : undefined;
+
+    expect(trialHudViews(['removed-trial', 'half-budget'], recorded)).toEqual([
+      {
+        id: 'removed-trial',
+        label: '消えた試練',
+        description: '記録時のみ',
+        budgetMul: 1,
+      },
+      {
+        id: 'half-budget',
+        label: '記録時の予算半減',
+        description: '記録時の説明',
+        budgetMul: 0.25,
+      },
+    ]);
+    expect(budgetHudTitle('15以下で注意', ['half-budget'], recorded)).toBe(
+      '15以下で注意。試練「記録時の予算半減」で開始予算×0.25',
+    );
+  });
 });
 
 describe('trialBudgetHudDetail / budgetHudTitle', () => {

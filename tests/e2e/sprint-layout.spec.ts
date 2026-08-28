@@ -961,15 +961,52 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
   const count = await rows.count();
   for (let i = 0; i < count; i += 1) {
     const row = rows.nth(i);
-    await row.evaluate((element) => element.scrollIntoView({ block: 'nearest' }));
-    const visibleInList = await row.evaluate((element) => {
+    const metrics = await row.evaluate((element) => {
+      const scrollList = element.closest('[data-testid="event-ticker-list"]');
+      if (!scrollList) return null;
+      return {
+        rowHeight: element.getBoundingClientRect().height,
+        listHeight: scrollList.getBoundingClientRect().height,
+      };
+    });
+    if (!metrics) throw new Error(`${label}: ${i + 1}行目のリストが見つからない`);
+
+    if (metrics.rowHeight <= metrics.listHeight + 1) {
+      await row.evaluate((element) => element.scrollIntoView({ block: 'nearest' }));
+      const visibleInList = await row.evaluate((element) => {
+        const scrollList = element.closest('[data-testid="event-ticker-list"]');
+        if (!scrollList) return false;
+        const listRect = scrollList.getBoundingClientRect();
+        const rowRect = element.getBoundingClientRect();
+        return rowRect.top >= listRect.top - 1 && rowRect.bottom <= listRect.bottom + 1;
+      });
+      expect(visibleInList, `${label}: ${i + 1}行目がリスト可視領域に入らない`).toBe(true);
+      continue;
+    }
+
+    await row.evaluate((element) => element.scrollIntoView({ block: 'start', inline: 'nearest' }));
+    const topReachable = await row.evaluate((element) => {
       const scrollList = element.closest('[data-testid="event-ticker-list"]');
       if (!scrollList) return false;
       const listRect = scrollList.getBoundingClientRect();
       const rowRect = element.getBoundingClientRect();
-      return rowRect.top >= listRect.top - 1 && rowRect.bottom <= listRect.bottom + 1;
+      const overlap =
+        Math.min(rowRect.bottom, listRect.bottom) - Math.max(rowRect.top, listRect.top);
+      return overlap > 0 && rowRect.top <= listRect.top + 1;
     });
-    expect(visibleInList, `${label}: ${i + 1}行目がリスト可視領域に入らない`).toBe(true);
+    expect(topReachable, `${label}: ${i + 1}行目の上端へスクロールできない`).toBe(true);
+
+    await row.evaluate((element) => element.scrollIntoView({ block: 'end', inline: 'nearest' }));
+    const bottomReachable = await row.evaluate((element) => {
+      const scrollList = element.closest('[data-testid="event-ticker-list"]');
+      if (!scrollList) return false;
+      const listRect = scrollList.getBoundingClientRect();
+      const rowRect = element.getBoundingClientRect();
+      const overlap =
+        Math.min(rowRect.bottom, listRect.bottom) - Math.max(rowRect.top, listRect.top);
+      return overlap > 0 && rowRect.bottom >= listRect.bottom - 1;
+    });
+    expect(bottomReachable, `${label}: ${i + 1}行目の下端へスクロールできない`).toBe(true);
   }
 }
 

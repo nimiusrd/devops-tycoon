@@ -59,17 +59,27 @@ function ZoneLabel({
   );
 }
 
-function OrgIsland({ island, onClick }: { island: OrgIslandPlan; onClick: () => void }) {
+function OrgIsland({
+  island,
+  onClick,
+  showBadge,
+}: {
+  island: OrgIslandPlan;
+  onClick: () => void;
+  showBadge: boolean;
+}) {
   const { team } = island;
   return (
     <div className="org-island-group" style={{ zIndex: 20 + island.depth }}>
-      <div
-        className={`org-island-badge-wrap tone-${island.badge.tone}`}
-        data-testid={`island-badge-${island.teamId}`}
-        style={{ left: pct(island.badge.x, VIEW_W), top: pct(island.badge.y, VIEW_H) }}
-      >
-        <OrgIslandBadge island={island} />
-      </div>
+      {showBadge ? (
+        <div
+          className={`org-island-badge-wrap tone-${island.badge.tone}`}
+          data-testid={`island-badge-${island.teamId}`}
+          style={{ left: pct(island.badge.x, VIEW_W), top: pct(island.badge.y, VIEW_H) }}
+        >
+          <OrgIslandBadge island={island} />
+        </div>
+      ) : null}
       <button
         type="button"
         className={`org-island health-${team.health}${team.isPlayer ? ' is-player' : ''}`}
@@ -123,8 +133,30 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
         <OrgHubSvg />
       </div>
 
+      {compact ? (
+        <div className="org-island-badge-dock" data-testid="org-island-badge-dock">
+          {scene.islands.map((island) => (
+            <button
+              key={`dock-${island.teamId}`}
+              type="button"
+              className="org-island-badge-dock-hit"
+              data-testid={`island-badge-${island.teamId}`}
+              title={island.labels.title}
+              onClick={() => onFocusTeam(island.teamId)}
+            >
+              <OrgIslandBadge island={island} />
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {scene.islands.map((island) => (
-        <OrgIsland key={island.teamId} island={island} onClick={() => onFocusTeam(island.teamId)} />
+        <OrgIsland
+          key={island.teamId}
+          island={island}
+          showBadge={!compact}
+          onClick={() => onFocusTeam(island.teamId)}
+        />
       ))}
 
       <div className="org-board-hint">

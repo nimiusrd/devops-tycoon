@@ -346,6 +346,17 @@ export function orgIslandBadgeMinCssHeight(): number {
 }
 
 /**
+ * 可読下限のメタが約 2 行に収まる CSS px 幅（CJK 1em × 8 文字 + padding + border）。
+ * 盤面スケールしたカード幅がこれより小さいあいだ、狭幅ではこの下限を使う。
+ */
+export function orgIslandBadgeMinCssWidth(): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  const borderX = 4;
+  const metaLineChars = 8;
+  return island.badgeMinMetaSize * metaLineChars + island.badgePaddingX * 2 + borderX;
+}
+
+/**
  * 3 行カードの可読下限高が設計バッジ高に収まる最小盤面幅。
  * これ以下では部門ラベルを隠し、カードをコンパクト表示する。
  */
@@ -397,6 +408,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-org-island-badge-min-tag-size': `${dimensions.organization.island.badgeMinTagSize}px`,
     '--visual-org-island-badge-padding-x': `${dimensions.organization.island.badgePaddingX}px`,
     '--visual-org-island-badge-padding-y': `${dimensions.organization.island.badgePaddingY}px`,
+    '--visual-org-island-badge-min-width': `${orgIslandBadgeMinCssWidth()}px`,
     '--visual-org-board-compact-max-width': `${orgBoardCompactMaxWidthPx()}px`,
     '--visual-org-hub-overlay-height': `${dimensions.organization.hubOverlay.height}px`,
     '--visual-org-hub-overlay-top': `${dimensions.organization.hubOverlay.top}px`,

@@ -6155,9 +6155,39 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   height: auto;
   filter: drop-shadow(0 6px 8px #0008);
 }
-/* 可読下限の 3 行カード高が設計バッジ高に収まるまで、部門ラベルを隠しカードを横並びに畳む。 */
+/* 可読下限の 3 行カード高が設計バッジ高に収まるまで、部門ラベルを隠しカードをドックへ畳む。 */
 .org-board.iso-org.org-board-compact .org-zone-label {
   display: none;
+}
+.org-island-badge-dock {
+  display: none;
+}
+.org-board.iso-org.org-board-compact .org-island-badge-dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: calc(var(--visual-org-card-line-gap) * 2);
+  position: absolute;
+  inset: 4px;
+  z-index: 30;
+  overflow: auto;
+  pointer-events: auto;
+}
+.org-island-badge-dock-hit {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  text-align: left;
+  max-width: 100%;
+}
+.org-island-badge-dock-hit:focus-visible {
+  outline: 2px solid var(--sun);
+  outline-offset: 2px;
 }
 .org-island-group {
   position: absolute;
@@ -6235,6 +6265,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+  width: auto;
+  min-width: var(--visual-org-island-badge-min-width);
+  max-width: 100%;
 }
 .org-island {
   position: absolute;

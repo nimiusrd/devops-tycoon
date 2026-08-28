@@ -1,6 +1,11 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
-import { DESIGN_SPACES, VISUAL_TOKENS, orgBoardIsCompact } from '../../src/render/visualTokens';
+import {
+  DESIGN_SPACES,
+  VISUAL_TOKENS,
+  orgBoardIsCompact,
+  orgIslandBadgeMinCssWidth,
+} from '../../src/render/visualTokens';
 import { ORG_HUB_CI_OK_MIN } from '../../src/render/orgBoardScene';
 import { dailyRunKey } from '../../src/state/meta';
 import { CURRENT_RUN_RULESET } from '../../src/state/runPersistence';
@@ -518,24 +523,36 @@ test('全社マップの部門ラベルがチームカードと重ならない�
     const expectedBadgeWidth =
       VISUAL_TOKENS.dimensions.organization.card.width *
       (boardBox.width / DESIGN_SPACES.organization.w);
+    const minBadgeWidth = orgIslandBadgeMinCssWidth();
     const badgeBoxes: Box[] = [];
     for (const badge of badges) {
       const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
       badgeBoxes.push(badgeBox);
-      expect(
-        badgeBox.width,
-        `${viewport.name} のチームカード幅が共有幅を超える`,
-      ).toBeLessThanOrEqual(expectedBadgeWidth + 1);
+      await expect(badge).toContainText(/出荷/);
+      await expect(badge).toContainText(/AI/);
+      await expect(badge).toContainText(/人/);
+      if (compact) {
+        expect(
+          badgeBox.width,
+          `${viewport.name} のチームカード幅が可読下限未満`,
+        ).toBeGreaterThanOrEqual(Math.min(minBadgeWidth, boardBox.width) - 1);
+        expect(
+          badgeBox.width,
+          `${viewport.name} のチームカードが盤面幅を超える`,
+        ).toBeLessThanOrEqual(boardBox.width + 1);
+      } else {
+        expect(
+          badgeBox.width,
+          `${viewport.name} のチームカード幅が共有幅を超える`,
+        ).toBeLessThanOrEqual(expectedBadgeWidth + 1);
+      }
     }
     for (let i = 0; i < badgeBoxes.length; i += 1) {
       for (let j = i + 1; j < badgeBoxes.length; j += 1) {
-        const a = badgeBoxes[i];
-        const b = badgeBoxes[j];
-        const dx = Math.abs(a.x + a.width / 2 - (b.x + b.width / 2));
-        if (dx <= expectedBadgeWidth * 0.5) continue;
-        expect(boxesOverlap(a, b), `${viewport.name} で異なる列のチームカードが重なっている`).toBe(
-          false,
-        );
+        expect(
+          boxesOverlap(badgeBoxes[i], badgeBoxes[j]),
+          `${viewport.name} でチームカード同士が重なっている`,
+        ).toBe(false);
       }
     }
 

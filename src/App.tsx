@@ -129,7 +129,7 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
 /** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
 function TitleModalLoadingFallback({ onDismiss }: { onDismiss?: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: Boolean(onDismiss) });
+  useDialogOverlayLock(overlayRef, { restoreFocus: true });
 
   return (
     <div

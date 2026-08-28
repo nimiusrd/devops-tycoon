@@ -103,3 +103,42 @@ test('タイトルからメタショップを開いて購入できる', async ({
   await expect(page.getByTestId('meta-shop-points')).toHaveText('50');
   await expect(page.getByTestId('meta-unlock-unlock-devin')).toBeDisabled();
 });
+
+test('メタショップの初回 lazy 読込後も Tab はダイアログ内から始まる', async ({ page }) => {
+  await seedMeta(page, DEFAULT_META);
+  await page.route(/MetaShopScreen/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.continue();
+  });
+
+  await page.goto('/?renderer=dom&seed=meta-shop-lazy-focus');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-meta-shop').click();
+  await expect(page.getByTestId('title-modal-loading')).toBeVisible();
+  await expect(page.getByTestId('meta-shop')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId('title-modal-loading')).toHaveCount(0);
+  await expect(page.getByTestId('title')).toHaveAttribute('inert', '');
+
+  const afterLoad = await page.evaluate(() => {
+    const overlay = document.querySelector('[data-testid="meta-shop"]');
+    const active = document.activeElement;
+    const testId = active instanceof HTMLElement ? (active.dataset.testid ?? active.tagName) : '';
+    const inside =
+      overlay instanceof HTMLElement && (active === overlay || overlay.contains(active));
+    return { inside, testId };
+  });
+  expect(afterLoad.inside, `読込後のフォーカスがメタショップ外 (${afterLoad.testId})`).toBe(true);
+
+  await page.keyboard.press('Tab');
+  const afterTab = await page.evaluate(() => {
+    const overlay = document.querySelector('[data-testid="meta-shop"]');
+    const active = document.activeElement;
+    const testId = active instanceof HTMLElement ? (active.dataset.testid ?? active.tagName) : '';
+    const inside =
+      overlay instanceof HTMLElement && (active === overlay || overlay.contains(active));
+    return { inside, testId };
+  });
+  expect(afterTab.inside, `Tab でタイトル背面へ抜けた (${afterTab.testId})`).toBe(true);
+  expect(['open-help', 'open-replays', 'open-meta-shop', 'title']).not.toContain(afterTab.testId);
+});

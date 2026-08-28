@@ -4,7 +4,7 @@
  * ラン外で全カードをレアリティ別に一覧し、解放済み／未解放を区別する。
  * 解放済みはコスト・効果・タグと研修方針トグル、未解放は解放条件を表示する。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CARD_DEFS, RARITY_LABEL } from '../data/cards';
 import { getCardUnlockByContentId } from '../data/unlocks';
 import {
@@ -15,6 +15,7 @@ import {
 } from '../state/meta';
 import type { CardDef, CardRarity } from '../sim/types';
 import { CardView } from './CardView';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface CardCollectionScreenProps {
   meta: MetaState;
@@ -48,6 +49,8 @@ export function CardCollectionScreen({
   onChangePreferred,
   onClose,
 }: CardCollectionScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true });
   const unlocked = unlockedContent(meta).cards;
   const preferred = new Set(meta.preferredCardIds);
   const unlockedCount = CARD_DEFS.filter((def) => unlocked.has(def.id)).length;
@@ -142,10 +145,13 @@ export function CardCollectionScreen({
 
   return (
     <div
+      ref={overlayRef}
       className="result-overlay"
       data-testid="card-collection"
       role="dialog"
+      aria-modal="true"
       aria-label="カードコレクション"
+      tabIndex={-1}
     >
       <div className="card-collection-panel">
         <p className="result-eyebrow">CARD CODEX</p>

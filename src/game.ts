@@ -196,7 +196,7 @@ export interface GameHandle {
     save: RunSave | null,
     issue?: RunSaveCompatibilityIssue | null,
   ): void;
-  /** タイトルから途中セーブを再開する（RI-58）。 */
+  /** タイトルから途中セーブを再開する（RI-58）。通常セーブは pending seed を保存済み seed へ更新する。 */
   resumeRun(): RunState | null;
   /** 再開可能なランセーブがあるか。 */
   hasResumableRun(): boolean;
@@ -279,7 +279,7 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const engine = createRunEngine({ seed, difficulty: options.difficulty, trials: options.trials });
   /**
    * タイトルの次の通常ランに使う seed。
-   * Daily 開始やリプレイ閲覧で engine.seed が変わっても、ここは上書きしない。
+   * Daily 開始やリプレイ閲覧では上書きせず、通常セーブ再開時は保存済み seed を反映する。
    */
   let pendingSeed = seed;
   let paused = false;
@@ -856,6 +856,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       lastRunReward = null;
       clearWhatIfCache();
       const save = resumableSave;
+      if (save.summary.runKind !== 'daily') {
+        pendingSeed = save.summary.seed;
+      }
       activeDailyDate = save.summary.dailyDate ?? null;
       activeDailyRuleset =
         save.summary.runKind === 'daily' && save.ruleset ? { ...save.ruleset } : null;

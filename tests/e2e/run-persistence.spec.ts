@@ -195,3 +195,35 @@ test('新ラン開始で旧セーブが上書きされ、タイトル復帰で�
   await expect.poll(() => storedRunSummary(page)).toBeNull();
   await expect(page.getByTestId('resume-run')).toHaveCount(0);
 });
+
+test('通常セーブ再開後の新しいランは保存済み seed を維持する', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=fresh');
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(page.getByTestId('seed')).toContainText('fresh');
+
+  await page.evaluate(() => {
+    (window as RunGameWindow).game?.startRun('easy', [], 'ri58-game');
+  });
+  await expect
+    .poll(() => storedRunSummary(page))
+    .toMatchObject({ seed: 'ri58-game', phase: 'setup' });
+
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(page.getByTestId('seed')).toContainText('fresh');
+  await page.getByTestId('resume-run').click();
+  await expect
+    .poll(async () => page.evaluate(() => (window as RunGameWindow).game?.phase()))
+    .toBe('setup');
+
+  await page.evaluate(() => {
+    (window as RunGameWindow).game?.newRun();
+  });
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(page.getByTestId('seed')).toContainText('ri58-game');
+
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('setup')).toBeVisible();
+  const started = await page.evaluate(() => (window as RunGameWindow).game?.getState().seed);
+  expect(started).toBe('ri58-game');
+});

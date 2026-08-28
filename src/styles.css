@@ -6172,7 +6172,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   /* 島グループは 20+depth（最大 119）、ハブ 150、ヒント 170 より前へ。 */
   z-index: 180;
   overflow: auto;
-  pointer-events: auto;
+  pointer-events: none;
 }
 .org-island-badge-dock-hit {
   margin: 0;

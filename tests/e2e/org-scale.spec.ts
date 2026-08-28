@@ -413,7 +413,7 @@ test('ホームチーム島をタップすると現場へドリルダウンし�
 
   const player = page.getByTestId('team-product-t0');
   await expect(player).toBeVisible();
-  await player.click();
+  await clickOrgTeam(page, 'product-t0');
 
   // 選択中ホームは focusTeam で現場へ着地 → オーバーレイは消える。
   await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
@@ -425,7 +425,7 @@ test('他チームは状態確認後に入り込みで現場へ着地できる�
   await startRun(page, 'enter-team-e2e');
   await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
 
-  await page.getByTestId('team-platform-t1').click();
+  await clickOrgTeam(page, 'platform-t1');
   await expect(page.getByTestId('dept-screen')).toBeVisible();
   await expect(page.getByTestId('dept-team-panel')).toBeVisible();
   await page.getByTestId('enter-team').click();
@@ -462,6 +462,18 @@ test('全社レバーで四半期予算が減り、全社AI依存度が下がる
 
 function boxesOverlap(a: Box, b: Box): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+/** コンパクト時はドックカード、それ以外は島ボタンでチームを選ぶ。 */
+async function clickOrgTeam(page: import('@playwright/test').Page, teamId: string): Promise<void> {
+  const board = page.getByTestId('org-board');
+  await expect(board).toBeVisible();
+  const compact = (await board.getAttribute('data-compact')) === 'true';
+  if (compact) {
+    await page.getByTestId(`island-badge-${teamId}`).click();
+    return;
+  }
+  await page.getByTestId(`team-${teamId}`).click();
 }
 
 test('全社マップの部門ラベルがチームカードと重ならない（#380）', async ({ page }) => {
@@ -540,14 +552,16 @@ test('全社マップの部門ラベルがチームカードと重ならない�
           badgeBox.width,
           `${viewport.name} のチームカードが盤面幅を超える`,
         ).toBeLessThanOrEqual(boardBox.width + 1);
-        const hit = await page.evaluate(
+        const coveredByActor = await page.evaluate(
           ({ x, y }) => {
             const el = document.elementFromPoint(x, y);
-            return Boolean(el?.closest('.org-island-badge, .org-island-badge-dock-hit'));
+            return Boolean(el?.closest('.org-island, .org-hub-station'));
           },
           { x: badgeBox.x + badgeBox.width / 2, y: badgeBox.y + badgeBox.height / 2 },
         );
-        expect(hit, `${viewport.name} でドックカードが島やハブの下に隠れている`).toBe(true);
+        expect(coveredByActor, `${viewport.name} でドックカードが島やハブの下に隠れている`).toBe(
+          false,
+        );
       } else {
         expect(
           badgeBox.width,

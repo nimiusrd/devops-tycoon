@@ -2110,6 +2110,11 @@ export class RunEngine {
     return this.phase;
   }
 
+  /** 現在のズーム階層（スナップショットを作らない軽量アクセサ）。 */
+  zoomLevel(): ZoomLevel {
+    return this.zoom.level;
+  }
+
   /** スプリントが進行中（自動ステップ対象）か。 */
   sprintRunning(): boolean {
     return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;
@@ -2189,7 +2194,7 @@ export class RunEngine {
 
   /**
    * リプレイキーフレーム用スナップショット（RI-61）。
-   * setup / result / quarterReview / won / lost のみ。sprint は落とす。
+   * setup / result / draft / quarterReview / won / lost のみ。sprint は落とす。
    */
   exportReplayFrame(): RunReplayFrame | null {
     if (!isReplayFramePhase(this.phase)) return null;

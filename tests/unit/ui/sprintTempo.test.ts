@@ -21,6 +21,7 @@ import {
   QUARTER_REVIEW_WALL_SEC,
   QUARTER_WALL_MIN,
   RUN_WALL_MIN,
+  shouldAutoAdvanceSprint,
   SIM_STEP_MS,
   SPRINT_WALL_SEC,
   ticksDueFromAccumulator,
@@ -203,6 +204,20 @@ describe('sprintTempo（RI-62）', () => {
   it('プレイヤー Pause は speed=0 であり game.pause を必要としない', () => {
     const speed: PlaybackSpeed = 0;
     expect(ticksDueFromAccumulator(5_000, speed).ticks).toBe(0);
+  });
+
+  it('全社マップ等の俯瞰中は自動進行しない', () => {
+    const running = {
+      sprintRunning: true,
+      paused: false,
+      playbackSpeed: 1 as PlaybackSpeed,
+      fieldView: true,
+    };
+    expect(shouldAutoAdvanceSprint(running)).toBe(true);
+    expect(shouldAutoAdvanceSprint({ ...running, fieldView: false })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, paused: true })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, playbackSpeed: 0 })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, sprintRunning: false })).toBe(false);
   });
 
   it('タブ復帰など大きな delta はアキュムレータ上限で切り捨てる', () => {

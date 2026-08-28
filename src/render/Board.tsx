@@ -7,7 +7,16 @@
  * 座標は設計空間（1404×573）の % で重ね、PixiJSとDOMの描画を切り替える。
  * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
-import { lazy, Suspense, useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import type {
   ActionTarget,
   Lane,
@@ -23,6 +32,11 @@ import {
   planBoardDrag,
   type DraggableActionId,
 } from './boardDragPlan';
+import {
+  clientPointHitsDraggableBoardDot,
+  registerBoardDragHitTest,
+  registerPixiBoardDragHitTest,
+} from './boardDragHit';
 import { hitTestBoardDot } from './boardPixiView';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
@@ -300,6 +314,19 @@ export function Board({
     armedAction && sprint ? planBoardDrag(sprint, armedAction, assignAssignee) : null;
   const dragIds = useMemo(() => new Set(dragPlan?.draggableTaskIds ?? []), [dragPlan]);
   const dropLanes = new Set(dragPlan?.dropLanes ?? []);
+
+  useEffect(() => {
+    registerPixiBoardDragHitTest(usePixi, (clientX, clientY) =>
+      clientPointHitsDraggableBoardDot(
+        clientX,
+        clientY,
+        boardRef.current?.getBoundingClientRect() ?? null,
+        scene.dots,
+        dragIds,
+      ),
+    );
+    return () => registerBoardDragHitTest(null);
+  }, [dragIds, scene.dots, usePixi]);
 
   const [dragTaskId, setDragTaskId] = useState<number | null>(null);
   const [hoverLane, setHoverLane] = useState<Lane | null>(null);

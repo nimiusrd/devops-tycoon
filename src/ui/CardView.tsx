@@ -23,6 +23,8 @@ export interface CardViewProps {
   playCost?: number;
   /** 発動不可（集中力不足等）。 */
   disabled?: boolean;
+  /** カード全体の title（読み取り専用ドラフトの理由など）。 */
+  title?: string;
   /** コンパクト表示（デッキバー用）。 */
   compact?: boolean;
   /** このカードを採用した場合の次スプリント試算。 */
@@ -39,6 +41,7 @@ export function CardView({
   playCost: playCostValue,
   disabled = false,
   compact = false,
+  title,
   whatIfPreview,
   whatIfComputing = false,
 }: CardViewProps) {
@@ -105,6 +108,8 @@ export function CardView({
         type="button"
         className={className}
         onClick={onPick}
+        disabled={disabled}
+        title={title}
         data-testid={`draft-card-${def.id}`}
       >
         {inner}

@@ -69,7 +69,9 @@ export function DraftScreen({
                 key={id}
                 def={def}
                 playCost={playCost(def.focusCost, 1)}
-                onPick={readOnly ? undefined : () => onPick(id)}
+                onPick={() => onPick(id)}
+                disabled={readOnly}
+                title={readOnly ? readOnlyTitle : undefined}
                 whatIfPreview={previews[id]}
                 whatIfComputing={whatIfComputing}
               />

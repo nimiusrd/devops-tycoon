@@ -530,6 +530,10 @@ test('リプレイの「カードドラフトへ」で次のドラフトキー�
   await expect(page.getByTestId('draft')).toHaveAttribute('data-readonly', 'true');
   await expect(page.getByTestId('draft-skip')).toBeDisabled();
   await expect(page.getByTestId('draft-mulligan')).toBeDisabled();
+  const draftCard = page.getByTestId('draft-card-copilot');
+  await expect(draftCard).toBeVisible();
+  await expect(draftCard).toBeDisabled();
+  await expect(draftCard).toHaveCSS('width', '220px');
 });
 
 test('ドラフトキーフレームが無いリプレイでは「カードドラフトへ」が disabled', async ({ page }) => {
@@ -688,4 +692,107 @@ test('対応するドラフトが無い result から後続スプリントのド
   await expect(page.getByTestId('result-continue-hint')).toContainText(
     'このリプレイにはカードドラフトの記録がありません。',
   );
+});
+
+test('phone-se のリプレイドラフトはバナー下に収まりカード幅を維持する', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/?renderer=dom&seed=replay-draft-phone-se-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const imported = await page.evaluate(async (schemaVersion) => {
+    const game = (window as ReplayGameWindow).game;
+    if (!game) return false;
+    game.startRun('easy', [], 'replay-draft-phone-se-e2e');
+    const setupFrame = game.engine.exportReplayFrame();
+    if (!setupFrame) return false;
+
+    const resultFrame = structuredClone(setupFrame);
+    resultFrame.phase = 'result';
+    resultFrame.lastResult = {
+      done: 6,
+      delivered: 18,
+      maxCombo: 2,
+      aiAssistedPct: 55,
+      reviewQueueMax: 4,
+      rework: 1,
+      incidents: 0,
+      contained: 0,
+      spread: 0,
+      seniorHpDelta: -4,
+      actionCounts: {},
+      grade: 'C',
+      title: 'PRを増やす者',
+      diagnosis: 'レビュー渋滞',
+      timeline: [],
+      events: [],
+      fireEvents: [],
+      focusRemaining: 2,
+      focusMax: 8,
+      autoContainCount: 0,
+    };
+
+    const draftFrame = structuredClone(setupFrame);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = ['copilot', 'docs', 'auto-test'];
+
+    const blob: ReplayBlob = {
+      schemaVersion: schemaVersion as typeof REPLAY_SCHEMA_VERSION,
+      id: 'replay-draft-phone-se-e2e:1',
+      seed: 'replay-draft-phone-se-e2e',
+      difficulty: 'easy',
+      trials: [],
+      finishedAt: Date.now(),
+      outcome: {
+        status: 'won',
+        diagnosis: 'healthyAcceleration',
+        score: 18,
+      },
+      keyframes: [
+        { phase: 'setup', frame: setupFrame, label: '編成' },
+        { phase: 'result', frame: resultFrame, label: 'Sprint result' },
+        { phase: 'draft', frame: draftFrame, label: 'カードドラフト' },
+      ],
+      ruleset: { version: 1, fingerprint: 'replay-draft-phone-se-e2e' },
+      contentSnapshot: { cards: [], relics: [] },
+    };
+    return game.importReplay(blob);
+  }, REPLAY_SCHEMA_VERSION);
+
+  expect(imported).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBeGreaterThan(0);
+
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await page.getByTestId('replay-keyframe-1').click();
+
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-continue')).toBeEnabled();
+  await page.getByTestId('result-continue').click();
+  await expect(page.getByTestId('draft')).toBeVisible();
+
+  const copilot = page.getByTestId('draft-card-copilot');
+  await expect(copilot).toBeVisible();
+  await expect(copilot).toBeDisabled();
+  await expect.poll(async () => copilot.evaluate((el) => el.tagName)).toBe('BUTTON');
+  await expect(copilot).toHaveCSS('width', '220px');
+
+  const layout = await page.evaluate(() => {
+    const overlay = document.querySelector('.result-overlay');
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    const title = document.querySelector('.draft-title');
+    if (!overlay || !banner || !title) {
+      throw new Error('replay draft overlay layout missing');
+    }
+    return {
+      overlayTop: overlay.getBoundingClientRect().top,
+      bannerBottom: banner.getBoundingClientRect().bottom,
+      titleTop: title.getBoundingClientRect().top,
+    };
+  });
+  expect(layout.overlayTop).toBeGreaterThanOrEqual(layout.bannerBottom - 1);
+  expect(layout.titleTop).toBeGreaterThanOrEqual(layout.bannerBottom - 1);
 });

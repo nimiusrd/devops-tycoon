@@ -35,6 +35,7 @@ import {
   shouldShowTutorialGuide,
   type TutorialQuery,
 } from './ui/tutorial';
+import { observeReplayBannerHeight } from './ui/replayBannerOffset';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
@@ -278,6 +279,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   useLayoutEffect(() => {
     if (!run.isReplayMode) return;
     resetViewportScroll(document);
+  }, [run.isReplayMode, phase]);
+  // リプレイバナーの高さだけオーバーレイ上端を下げ、先頭の見出し／カードを覆わない（DS-06）。
+  useLayoutEffect(() => {
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    return observeReplayBannerHeight(banner instanceof Element ? banner : null);
   }, [run.isReplayMode, phase]);
   const exitReplay = () => {
     closeTitleModals();

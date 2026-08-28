@@ -113,7 +113,7 @@ export interface UseRun {
   activeReplayDiagnosis: DiagnosisType | null;
   /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
   activeReplayInfo: ActiveReplayInfo | null;
-  openReplay: (id: string, keyframeIndex?: number) => void;
+  openReplay: (id: string, keyframeIndex?: number) => boolean;
   exitReplay: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
@@ -300,7 +300,18 @@ export function useRun(game: GameHandle): UseRun {
   const exportReplayText = useCallback((id: string) => game.exportReplayText(id), [game]);
   const importReplayText = useCallback((raw: string) => game.importReplayText(raw), [game]);
   const openReplay = useCallback(
-    (id: string, keyframeIndex?: number) => void game.openReplay(id, keyframeIndex),
+    (id: string, keyframeIndex?: number) => {
+      const opened = game.openReplay(id, keyframeIndex);
+      if (!opened) return false;
+      // ポーリング待ちだとタイトルオーバーレイが先に消え、前画面のスクロールが残る。
+      setState(opened);
+      setDiagnosticInfo(game.getDiagnosticInfo());
+      setLastRunReward(game.getLastRunReward());
+      setIsReplayMode(true);
+      setActiveReplayDiagnosis(game.getActiveReplayDiagnosis());
+      setActiveReplayInfo(game.getActiveReplayInfo());
+      return true;
+    },
     [game],
   );
   const exitReplay = useCallback(() => void game.exitReplay(), [game]);

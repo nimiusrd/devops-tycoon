@@ -98,8 +98,6 @@ describe('visual tokens', () => {
     expect(applied.get('--visual-org-hub-overlay-height')).toBe('44px');
     expect(applied.get('--visual-org-island-badge-min-font-size')).toBe('10px');
     expect(applied.get('--visual-org-island-badge-min-meta-size')).toBe('9px');
-    expect(applied.get('--visual-org-hub-overlay-min-font-size')).toBe('11px');
-    expect(applied.get('--visual-org-hub-overlay-min-meta-size')).toBe('10px');
   });
 
   it('破線周期を dash と gap から導出する', () => {

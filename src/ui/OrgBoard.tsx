@@ -8,7 +8,7 @@ import { useLayoutEffect, useRef } from 'react';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { ORG_VIEW, planOrgBoardScene, type OrgIslandPlan } from '../render/orgBoardScene';
 import { OrgFlowLanes } from './OrgFlowLanes';
-import { OrgHubLabel, OrgHubSvg } from './OrgHub';
+import { OrgHubSvg } from './OrgHub';
 import { OrgPlate } from './OrgPlate';
 import { OrgIslandBadge, OrgTeamActor } from './OrgTeamActor';
 import { pct } from './pct';
@@ -113,7 +113,6 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
       >
         <OrgHubSvg />
       </div>
-      <OrgHubLabel hub={scene.hub} pctX={(v) => pct(v, VIEW_W)} pctY={(v) => pct(v, VIEW_H)} />
 
       {scene.islands.map((island) => (
         <OrgIsland key={island.teamId} island={island} onClick={() => onFocusTeam(island.teamId)} />

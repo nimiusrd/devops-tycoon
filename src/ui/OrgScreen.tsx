@@ -150,26 +150,25 @@ export function OrgScreen({
         onFocusTeam={onFocusTeam}
       />
 
+      <OrgInfraHubPill
+        ci={org.infra.ci}
+        docs={org.infra.docs}
+        aiGuideline={org.infra.aiGuideline}
+      />
+
       <AspectStage ratio={ORG_VIEW.w / ORG_VIEW.h} className="org-field" data-testid="org-field">
         {usePixi ? (
-          <>
-            <OrgInfraHubPill
-              ci={org.infra.ci}
-              docs={org.infra.docs}
-              aiGuideline={org.infra.aiGuideline}
+          <Suspense fallback={null}>
+            <OrgPixiField
+              ref={pixiFieldRef}
+              teams={teams}
+              zoom={zoom}
+              departments={org.departments}
+              onFocusTeam={onFocusTeam}
+              deptColor={deptColor}
+              onWebglError={onWebglError}
             />
-            <Suspense fallback={null}>
-              <OrgPixiField
-                ref={pixiFieldRef}
-                teams={teams}
-                zoom={zoom}
-                departments={org.departments}
-                onFocusTeam={onFocusTeam}
-                deptColor={deptColor}
-                onWebglError={onWebglError}
-              />
-            </Suspense>
-          </>
+          </Suspense>
         ) : (
           <OrgBoard org={org} onFocusTeam={onFocusTeam} />
         )}

@@ -6158,58 +6158,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   height: auto;
   filter: drop-shadow(0 6px 8px #0008);
 }
-.org-hub-badge {
-  position: absolute;
-  left: var(--org-hub-left);
-  top: var(--org-hub-top);
-  transform: translate(-50%, -50%);
-  z-index: 160;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: calc(var(--visual-org-hub-overlay-padding-y) * var(--org-board-scale))
-    calc(var(--visual-org-hub-overlay-padding-x) * var(--org-board-scale));
-  border-radius: 14px;
-  background: #11183ae6;
-  border: 2px solid var(--sky);
-  font-size: max(
-    var(--visual-org-hub-overlay-min-font-size),
-    calc(var(--visual-org-hub-overlay-font-size) * var(--org-board-scale))
-  );
-  font-weight: 800;
-  color: var(--cream);
-  white-space: nowrap;
-  box-shadow: 0 3px 0 #00000044;
-  pointer-events: none;
-}
-.org-hub-badge.tone-warn {
-  border-color: #ffd45c;
-}
-.org-hub-meta {
-  font-size: max(
-    var(--visual-org-hub-overlay-min-meta-size),
-    calc(var(--visual-org-hub-overlay-meta-size) * var(--org-board-scale))
-  );
-  font-weight: 700;
-  color: var(--sky);
-}
-/* 狭い盤面では部門ラベルが島カードを覆う。部門チップが名前を担う。
- * 共通基盤の CI / Docs / AI は状態値なので残し、上端へコンパクト配置する（DS-06）。 */
+/* 狭い盤面では部門ラベルが島カードを覆う。部門チップが名前を担う。 */
 @container (max-width: 520px) {
   .org-zone-label {
-    display: none;
-  }
-  .org-hub-badge {
-    left: 50%;
-    top: var(--visual-org-hub-overlay-top);
-    transform: translateX(-50%);
-    flex-direction: row;
-    gap: 6px;
-    z-index: 180;
-  }
-  .org-hub-icon,
-  .org-hub-title {
     display: none;
   }
 }
@@ -6354,22 +6305,30 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   /* resizeTo + autoDensity が CSS 寸法を設定する。100% で再スケールするとにじむ。 */
 }
 .org-infra-hub {
-  position: absolute;
-  left: 50%;
-  top: var(--visual-org-hub-overlay-top);
-  transform: translateX(-50%);
-  z-index: 5;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 6px 12px;
+  margin: 0 auto 8px;
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--visual-org-hub-overlay-padding-y) var(--visual-org-hub-overlay-padding-x);
   border-radius: 999px;
   background: #11183a;
   border: 1px solid var(--sky);
-  font-size: 13px;
+  font-size: var(--visual-org-hub-overlay-font-size);
 }
 .org-infra-meta {
   color: var(--sky);
+  font-size: var(--visual-org-hub-overlay-meta-size);
+  font-weight: 700;
+}
+@media (max-width: 520px) {
+  .org-infra-title {
+    display: none;
+  }
 }
 .team-island {
   position: absolute;

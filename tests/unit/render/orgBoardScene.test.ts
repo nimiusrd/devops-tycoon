@@ -13,14 +13,17 @@ import {
   ISLAND_MARGIN,
   MIN_ISLAND_SPACING_X,
   MIN_ISLAND_SPACING_Y,
+  ORG_HUB_CI_OK_MIN,
   ORG_VIEW,
   ZONE_LABEL_GAP,
   islandBadgeRect,
   islandCenterBounds,
+  islandGridForCount,
   isInOrgView,
   islandDepth,
   islandMood,
   orgBoardRectsOverlap,
+  orgHubTone,
   planOrgBoardScene,
   teamDesignPosition,
   zoneLabelRect,
@@ -270,6 +273,44 @@ describe('planOrgBoardScene (RI-01)', () => {
         }
       }
     }
+  });
+
+  it('extraTeams が 9 以上でも同じ列の縦間隔を圧縮しない', () => {
+    const org = generateOrgScale(
+      orgScaleInput('ri01-spacing-extra9', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 9 }, byDept: {} },
+      }),
+    );
+    const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
+    expect(productTeams.length).toBeGreaterThanOrEqual(13);
+
+    const { minY, maxY } = islandCenterBounds();
+    const maxSpanY = maxY - minY;
+    const grid = islandGridForCount(productTeams.length, maxSpanY);
+    expect(grid.rows * MIN_ISLAND_SPACING_Y).toBeLessThanOrEqual(maxSpanY);
+
+    const positions = productTeams.map((_, i) => teamDesignPosition(0, i, productTeams.length));
+    for (let i = 0; i < positions.length; i += 1) {
+      for (let j = i + 1; j < positions.length; j += 1) {
+        const dx = Math.abs(positions[i].x - positions[j].x);
+        const dy = Math.abs(positions[i].y - positions[j].y);
+        if (dx < MIN_ISLAND_SPACING_X * 0.5) {
+          expect(dy).toBeGreaterThanOrEqual(MIN_ISLAND_SPACING_Y * 0.85);
+        }
+      }
+    }
+  });
+
+  it('共通基盤ハブの tone は CI 閾値で切り替わる', () => {
+    const org = generateOrgScale(orgScaleInput('hub-tone'));
+    expect(
+      planOrgBoardScene({ ...org, infra: { ...org.infra, ci: ORG_HUB_CI_OK_MIN } }).hub.tone,
+    ).toBe('ok');
+    expect(
+      planOrgBoardScene({ ...org, infra: { ...org.infra, ci: ORG_HUB_CI_OK_MIN - 1 } }).hub.tone,
+    ).toBe('warn');
+    expect(orgHubTone(ORG_HUB_CI_OK_MIN - 1)).toBe('warn');
+    expect(orgHubTone(ORG_HUB_CI_OK_MIN)).toBe('ok');
   });
 
   it('部門ラベルはチームカード（島バッジ）と重ならない', () => {

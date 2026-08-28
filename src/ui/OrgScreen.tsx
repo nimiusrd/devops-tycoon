@@ -10,7 +10,7 @@ import { PROCESS_BALANCE } from '../data/balance';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
-import { ORG_VIEW } from '../render/orgBoardScene';
+import { ORG_VIEW, orgHubTone } from '../render/orgBoardScene';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
 import type { QuarterTrendSnapshot } from '../sim/run/types';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
@@ -154,6 +154,7 @@ export function OrgScreen({
         ci={org.infra.ci}
         docs={org.infra.docs}
         aiGuideline={org.infra.aiGuideline}
+        tone={orgHubTone(org.infra.ci)}
       />
 
       <AspectStage ratio={ORG_VIEW.w / ORG_VIEW.h} className="org-field" data-testid="org-field">

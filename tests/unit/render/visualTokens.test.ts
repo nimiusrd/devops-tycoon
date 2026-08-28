@@ -8,6 +8,8 @@ import {
   designToHostTransform,
   flowDashPeriod,
   hexToPixiColor,
+  orgBoardCompactMaxWidthPx,
+  orgIslandBadgeMinCssHeight,
   VISUAL_TOKENS,
   visualTokenCssVariables,
 } from '../../../src/render/visualTokens';
@@ -98,6 +100,24 @@ describe('visual tokens', () => {
     expect(applied.get('--visual-org-hub-overlay-height')).toBe('44px');
     expect(applied.get('--visual-org-island-badge-min-font-size')).toBe('10px');
     expect(applied.get('--visual-org-island-badge-min-meta-size')).toBe('9px');
+    expect(applied.get('--visual-org-board-compact-max-width')).toBe(
+      `${orgBoardCompactMaxWidthPx()}px`,
+    );
+  });
+
+  it('カード可読下限高から部門ラベル再表示幅を導出する', () => {
+    const minHeight = orgIslandBadgeMinCssHeight();
+    const width = orgBoardCompactMaxWidthPx();
+    expect(minHeight).toBeGreaterThan(
+      VISUAL_TOKENS.dimensions.organization.island.badgeHeight * 0.5,
+    );
+    expect(width).toBeGreaterThan(520);
+    expect(width).toBe(
+      Math.ceil(
+        (minHeight / VISUAL_TOKENS.dimensions.organization.island.badgeHeight) *
+          DESIGN_SPACES.organization.w,
+      ),
+    );
   });
 
   it('破線周期を dash と gap から導出する', () => {

@@ -326,6 +326,35 @@ export function hexToPixiColor(hex: string): number {
 }
 
 /**
+ * 可読下限を適用した 3 行チームカードの CSS px 高（border / gap / tag padding 込み）。
+ * 設計 `badgeHeight` を盤面スケールした値より大きいあいだ、カードは配置計算より高くなる。
+ */
+export function orgIslandBadgeMinCssHeight(): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  const lineGap = VISUAL_TOKENS.dimensions.organization.card.lineGap;
+  const borderY = 4;
+  const tagPadY = 4;
+  return (
+    island.badgeMinFontSize +
+    island.badgeMinMetaSize +
+    island.badgeMinTagSize +
+    tagPadY +
+    lineGap * 2 +
+    island.badgePaddingY * 2 +
+    borderY
+  );
+}
+
+/**
+ * 3 行カードの可読下限高が設計バッジ高に収まる最小盤面幅。
+ * これ以下では部門ラベルを隠し、カードをコンパクト表示する。
+ */
+export function orgBoardCompactMaxWidthPx(): number {
+  const { badgeHeight } = VISUAL_TOKENS.dimensions.organization.island;
+  return Math.ceil((orgIslandBadgeMinCssHeight() / badgeHeight) * DESIGN_SPACES.organization.w);
+}
+
+/**
  * CSS custom property への写像。DOM/CSS の値を別ファイルへ複製せず、
  * `applyVisualTokenCssVariables` がこの結果を `:root` へ反映する。
  */
@@ -363,6 +392,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-org-island-badge-min-tag-size': `${dimensions.organization.island.badgeMinTagSize}px`,
     '--visual-org-island-badge-padding-x': `${dimensions.organization.island.badgePaddingX}px`,
     '--visual-org-island-badge-padding-y': `${dimensions.organization.island.badgePaddingY}px`,
+    '--visual-org-board-compact-max-width': `${orgBoardCompactMaxWidthPx()}px`,
     '--visual-org-hub-overlay-height': `${dimensions.organization.hubOverlay.height}px`,
     '--visual-org-hub-overlay-top': `${dimensions.organization.hubOverlay.top}px`,
     '--visual-org-hub-overlay-font-size': `${dimensions.organization.hubOverlay.fontSize}px`,

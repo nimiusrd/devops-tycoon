@@ -19,6 +19,13 @@ export const ORG_VIEW = DESIGN_SPACES.organization;
 export const MIN_ISLAND_SPACING_X = 120;
 export const MIN_ISLAND_SPACING_Y = 90;
 
+/** 共通基盤 CI がこの値未満ならハブは warn。 */
+export const ORG_HUB_CI_OK_MIN = 50;
+
+export function orgHubTone(ci: number): 'ok' | 'warn' {
+  return ci >= ORG_HUB_CI_OK_MIN ? 'ok' : 'warn';
+}
+
 /** 島アクター＋バッジが盤面内に収まるよう中心座標に取る余白（設計px）。 */
 export const ISLAND_BADGE_ABOVE = VISUAL_TOKENS.dimensions.organization.island.badgeAbove;
 export const ISLAND_BADGE_HEIGHT = VISUAL_TOKENS.dimensions.organization.island.badgeHeight;
@@ -302,6 +309,25 @@ export function clampIslandCenter(x: number, y: number): { x: number; y: number 
 }
 
 /**
+ * ラベル予約帯の縦幅に収まるよう、足りなければ列を増やして行数を抑える。
+ * 間隔を圧縮して minY/maxY に押し込むことはしない。
+ */
+export function islandGridForCount(
+  teamCount: number,
+  maxSpanY: number,
+): { cols: number; rows: number } {
+  const count = Math.max(1, teamCount);
+  const maxRows = Math.max(1, Math.floor(maxSpanY / MIN_ISLAND_SPACING_Y));
+  let cols = Math.min(count, Math.max(1, Math.ceil(Math.sqrt(count))));
+  let rows = Math.max(1, Math.ceil(count / cols));
+  while (rows > maxRows && cols < count) {
+    cols += 1;
+    rows = Math.ceil(count / cols);
+  }
+  return { cols, rows };
+}
+
+/**
  * 部門内のチーム index から設計座標を導出する。
  * チーム数に応じてゾーン内を格子状に配置する。
  */
@@ -314,13 +340,12 @@ export function teamDesignPosition(
   const baseWidth = zone.teamXMax - zone.teamXMin;
   const baseHeight = zone.teamYMax - zone.teamYMin;
 
-  const cols = Math.min(teamCount, Math.max(1, Math.ceil(Math.sqrt(teamCount))));
-  const rows = Math.max(1, Math.ceil(teamCount / cols));
+  const { minY, maxY } = islandCenterBounds();
+  const maxSpanY = Math.max(0, maxY - minY);
+  const { cols, rows } = islandGridForCount(teamCount, maxSpanY);
 
   const neededWidth = cols * MIN_ISLAND_SPACING_X;
   const neededHeight = rows * MIN_ISLAND_SPACING_Y;
-  const { minY, maxY } = islandCenterBounds();
-  const maxSpanY = Math.max(0, maxY - minY);
   const spanX = Math.max(baseWidth, neededWidth);
   const spanY = Math.min(Math.max(baseHeight, neededHeight), maxSpanY);
   const centerX = (zone.teamXMin + zone.teamXMax) / 2;
@@ -378,7 +403,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
     ci: org.infra.ci,
     docs: org.infra.docs,
     aiGuideline: org.infra.aiGuideline,
-    tone: org.infra.ci >= 50 ? 'ok' : 'warn',
+    tone: orgHubTone(org.infra.ci),
   };
 
   const deptHot = org.departments.map(

@@ -1,6 +1,11 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
-import { DESIGN_SPACES, VISUAL_TOKENS } from '../../src/render/visualTokens';
+import {
+  DESIGN_SPACES,
+  VISUAL_TOKENS,
+  orgBoardCompactMaxWidthPx,
+} from '../../src/render/visualTokens';
+import { ORG_HUB_CI_OK_MIN } from '../../src/render/orgBoardScene';
 import { dailyRunKey } from '../../src/state/meta';
 import { CURRENT_RUN_RULESET } from '../../src/state/runPersistence';
 import type { RunState } from '../../src/sim/run/types';
@@ -500,7 +505,7 @@ test('全社マップの部門ラベルがチームカードと重ならない�
       }
     }
     const boardBox = await readBox(board, `${viewport.name} 盤面`);
-    if (boardBox.width > 520) {
+    if (boardBox.width > orgBoardCompactMaxWidthPx()) {
       expect(
         visibleLabelBoxes.length,
         `${viewport.name} で部門ラベルが見えない`,
@@ -527,6 +532,13 @@ test('全社マップの部門ラベルがチームカードと重ならない�
     await expect(hub).toContainText(/CI\s+\d+/);
     await expect(hub).toContainText(/Docs\s+\d+/);
     await expect(hub).toContainText(/AI\s+\d+/);
+    const hubCi = await page.evaluate(
+      () => (window as GameWindow).game!.getState().orgScale!.infra.ci,
+    );
+    await expect(hub).toHaveAttribute('data-tone', hubCi >= ORG_HUB_CI_OK_MIN ? 'ok' : 'warn');
+    if (hubCi < ORG_HUB_CI_OK_MIN) {
+      await expect(hub).toContainText('注意');
+    }
     const hubBox = await readBox(hub, `${viewport.name} 共通基盤`);
     for (const badge of badges) {
       const badgeBox = await readBox(badge, `${viewport.name} チームカード`);

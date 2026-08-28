@@ -82,4 +82,20 @@ test('進化オーバーレイ中は壁時計が進んでも盤面数字と出�
   expect(afterDoneLabel).toBe(beforeDoneLabel);
   await expect(page.getByTestId('evolution')).toBeVisible();
   await expect(page.locator('.app')).toHaveAttribute('data-phase', 'evolution');
+
+  const pulseStates = await page.evaluate(() => {
+    const app = document.querySelector('.app');
+    if (!app) throw new Error('.app が見つからない');
+    const risk = document.createElement('div');
+    risk.className = 'risk-HIGH';
+    const burnout = document.createElement('div');
+    burnout.className = 'burnout-chip tone-danger';
+    app.appendChild(risk);
+    app.appendChild(burnout);
+    return {
+      risk: getComputedStyle(risk).animationPlayState,
+      burnout: getComputedStyle(burnout).animationPlayState,
+    };
+  });
+  expect(pulseStates).toEqual({ risk: 'paused', burnout: 'paused' });
 });

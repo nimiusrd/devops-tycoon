@@ -455,6 +455,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const t = containFitTransform(boardWidth, boardHeight, BOARD_VIEW.w, BOARD_VIEW.h);
     this.root.scale.set(t.scale);
     this.root.position.set(t.x, t.y);
+    this.paintIfTickerStopped();
   }
 
   /**
@@ -480,8 +481,19 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const app = this.app;
     this.loopPaused = paused;
     if (!app) return;
-    if (paused || this.frozen) app.ticker.stop();
-    else app.ticker.start();
+    if (paused || this.frozen) {
+      app.ticker.stop();
+      // 進化フェーズ中に init すると、ticker 停止が最初の RAF 前に起き canvas が空のまま残る。
+      app.render();
+    } else {
+      app.ticker.start();
+    }
+  }
+
+  /** ticker 停止中は自動描画が無いので、静止フレームを明示的に canvas へ焼く。 */
+  private paintIfTickerStopped(): void {
+    if (!this.app || !(this.loopPaused || this.frozen)) return;
+    this.app.render();
   }
 
   /** 最新のシーン計画を読んで 1 フレーム描く。init() 前は何もしない。 */
@@ -498,6 +510,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.applyAnimations(this.elapsedMs);
 
     this.emitRenderMetrics();
+    this.paintIfTickerStopped();
   }
 
   /** 直近 render の入力（resize 後の再描画用）。 */

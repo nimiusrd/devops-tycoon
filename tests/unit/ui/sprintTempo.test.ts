@@ -217,9 +217,9 @@ describe('sprintTempo（RI-62）', () => {
     expect(shouldAutoAdvanceSprint(running)).toBe(true);
     expect(shouldAutoAdvanceSprint({ ...running, phase: 'evolution' })).toBe(false);
     expect(shouldAutoAdvanceSprint({ ...running, phase: 'result', playbackSpeed: 2 })).toBe(false);
-    expect(
-      shouldAutoAdvanceSprint({ ...running, phase: 'draft', sprintRunning: false }),
-    ).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'draft', sprintRunning: false })).toBe(
+      false,
+    );
     expect(shouldAutoAdvanceSprint({ ...running, paused: true })).toBe(false);
     expect(shouldAutoAdvanceSprint({ ...running, playbackSpeed: 0 })).toBe(false);
   });

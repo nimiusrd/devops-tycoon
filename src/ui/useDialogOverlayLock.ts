@@ -2,15 +2,28 @@
  * ダイアログ相当オーバーレイのフォーカスロック。
  *
  * 背面兄弟を inert にしてクリック／Tab を遮断し、Tab はダイアログ内で循環させる。
- * 次画面もオーバーレイのため、閉じた後の背面へのフォーカス復帰はしない。
+ * 既定では閉じた後の背面へのフォーカス復帰はしない（次画面もオーバーレイのため）。
+ * `restoreFocus` を渡すと、開く直前のフォーカスへ戻す。
  */
 import { useEffect, type RefObject } from 'react';
 import { listFocusable, lockBackgroundSiblings, wrapTabIfNeeded } from './dialogOverlayLock';
 
-export function useDialogOverlayLock(dialogRef: RefObject<HTMLElement | null>): void {
+export function useDialogOverlayLock(
+  dialogRef: RefObject<HTMLElement | null>,
+  options?: { restoreFocus?: boolean },
+): void {
+  const restoreFocus = options?.restoreFocus === true;
+
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
+
+    const previouslyFocused =
+      restoreFocus &&
+      document.activeElement instanceof HTMLElement &&
+      !dialog.contains(document.activeElement)
+        ? document.activeElement
+        : null;
 
     if (!dialog.contains(document.activeElement)) {
       dialog.focus({ preventScroll: true });
@@ -40,6 +53,7 @@ export function useDialogOverlayLock(dialogRef: RefObject<HTMLElement | null>): 
       document.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('focusin', onFocusIn);
       unlock();
+      previouslyFocused?.focus({ preventScroll: true });
     };
-  }, [dialogRef]);
+  }, [dialogRef, restoreFocus]);
 }

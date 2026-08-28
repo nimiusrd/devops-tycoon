@@ -4,8 +4,10 @@
  * 世界観の制約（第2.1）に沿った現実的なトーンで、初見が最初のスプリントまで
  * 到達できる最低限の操作を説明する。描画は読むだけ（第22.2）。
  * Escape は親（App）が最前面判定つきで処理する。
+ * フォーカス閉じ込めと閉じたあとの起点復帰は `useDialogOverlayLock` に任せる。
  */
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface HowToPlayScreenProps {
   onClose: () => void;
@@ -40,10 +42,7 @@ const SECTIONS: readonly { title: string; body: string }[] = [
 
 export function HowToPlayScreen({ onClose }: HowToPlayScreenProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    dialogRef.current?.focus();
-  }, []);
+  useDialogOverlayLock(dialogRef, { restoreFocus: true });
 
   return (
     <div

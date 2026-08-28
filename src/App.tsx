@@ -31,6 +31,7 @@ import { RunBar } from './ui/RunBar';
 import { ResponsiveModeProvider, useResponsiveMode } from './ui/responsiveMode';
 import { TitleScreen } from './ui/TitleScreen';
 import { frontmostTitleModal } from './ui/titleModalStack';
+import { useDialogOverlayLock } from './ui/useDialogOverlayLock';
 import {
   resolveTutorialFromLocation,
   shouldShowTutorialGuide,
@@ -127,13 +128,18 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
 
 /** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
 function TitleModalLoadingFallback({ onDismiss }: { onDismiss?: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: Boolean(onDismiss) });
+
   return (
     <div
+      ref={overlayRef}
       className="result-overlay"
       data-testid="title-modal-loading"
       role="status"
       aria-busy="true"
       aria-label="読み込み中"
+      tabIndex={-1}
     >
       {onDismiss ? (
         <button

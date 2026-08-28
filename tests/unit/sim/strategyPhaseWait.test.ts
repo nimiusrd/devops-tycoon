@@ -174,4 +174,21 @@ describe('RI-102 F-3 戦略フェーズの入力待ち', () => {
     expect(game.phase()).toBe('setup');
     expect(game.isSprintRunning()).toBe(false);
   });
+
+  it('evolution では step しても tick・出来事・出荷が動かない（#386）', () => {
+    const engine = reachStrategicPhase('evolution');
+    expect(engine.snapshot().phase).toBe('evolution');
+    expect(engine.sprintRunning()).toBe(false);
+    const before = engine.snapshot();
+    engine.step(1_000_000);
+    engine.step(16);
+    const after = engine.snapshot();
+    expect(after.sprintTick).toBe(before.sprintTick);
+    expect(after.sprint?.events).toEqual(before.sprint?.events);
+    expect(after.org.deliveryScore).toBe(before.org.deliveryScore);
+    expect(after.sprint?.metrics.delivered).toBe(before.sprint?.metrics.delivered);
+    expect(after.sprint?.tasks.map((task) => task.lane)).toEqual(
+      before.sprint?.tasks.map((task) => task.lane),
+    );
+  });
 });

@@ -21,10 +21,14 @@ export interface CardViewProps {
   onPlay?: () => void;
   /** 発動時の集中力コスト。手札では主表示、選択画面ではショップ価格と併記する。 */
   playCost?: number;
-  /** 発動不可（集中力不足等）。 */
+  /** 発動不可（集中力不足等）。閲覧用の読み取り専用とは別で、全体を減光する。 */
   disabled?: boolean;
   /** disabled のときプレイヤーへ示す理由。 */
   disabledReason?: string;
+  /** リプレイ閲覧など。操作は disabled でもカード全体は減光しない（DS-08）。 */
+  readOnly?: boolean;
+  /** カード全体の title（読み取り専用ドラフトの理由など）。 */
+  title?: string;
   /** コンパクト表示（デッキバー用）。 */
   compact?: boolean;
   /** このカードを採用した場合の次スプリント試算。 */
@@ -51,12 +55,23 @@ export function CardView({
   playCost: playCostValue,
   disabled = false,
   disabledReason,
+  readOnly = false,
   compact = false,
+  title,
   whatIfPreview,
   whatIfComputing = false,
 }: CardViewProps) {
   const stars = level > 1 ? '★'.repeat(level - 1) : '';
-  const className = `card card-${def.rarity}${compact ? ' card-compact' : ''}${disabled ? ' card-disabled' : ''}${onPlay ? ' card-playable' : ''}`;
+  const className = [
+    'card',
+    `card-${def.rarity}`,
+    compact ? 'card-compact' : '',
+    disabled && !readOnly ? 'card-disabled' : '',
+    readOnly ? 'card-readonly' : '',
+    onPlay ? 'card-playable' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const costLabel = onPlay && playCostValue !== undefined ? `⚡${playCostValue}` : String(def.cost);
   const inner = (
     <>
@@ -118,6 +133,8 @@ export function CardView({
         type="button"
         className={className}
         onClick={onPick}
+        disabled={disabled}
+        title={title}
         data-testid={`draft-card-${def.id}`}
       >
         {inner}

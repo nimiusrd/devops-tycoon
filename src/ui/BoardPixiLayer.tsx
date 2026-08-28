@@ -21,6 +21,8 @@ declare global {
 export type BoardPixiLayerProps = BoardPixiInput & {
   /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
   onWebglError?: () => void;
+  /** true なら ticker を止め、壁時計アニメで盤面が進まないようにする（#386）。 */
+  animationsPaused?: boolean;
 };
 
 export function BoardPixiLayer({
@@ -28,15 +30,22 @@ export function BoardPixiLayer({
   draggableTaskIds,
   dragTaskId,
   onWebglError,
+  animationsPaused = false,
 }: BoardPixiLayerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiBoardRenderer | null>(null);
   const inputRef = useRef<BoardPixiInput>({ scene, draggableTaskIds, dragTaskId });
   const onWebglErrorRef = useRef(onWebglError);
+  const animationsPausedRef = useRef(animationsPaused);
 
   useEffect(() => {
     onWebglErrorRef.current = onWebglError;
   }, [onWebglError]);
+
+  useEffect(() => {
+    animationsPausedRef.current = animationsPaused;
+    rendererRef.current?.setAnimationsPaused(animationsPaused);
+  }, [animationsPaused]);
 
   useEffect(() => {
     inputRef.current = { scene, draggableTaskIds, dragTaskId };
@@ -72,6 +81,7 @@ export function BoardPixiLayer({
         if (cancelled) return;
         renderer.resize(mount.clientWidth, mount.clientHeight);
         renderer.render(inputRef.current);
+        renderer.setAnimationsPaused(animationsPausedRef.current);
         if (import.meta.env.DEV) {
           window.__boardPixiTest = {
             freezeForScreenshot: () => renderer.freezeForScreenshot(),

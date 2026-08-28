@@ -323,6 +323,7 @@ export function SprintScreen({
   const isElite = kind === 'elite';
   const boss = getBoss(state.bossId);
   const paused = isPlaybackPaused(playbackSpeed);
+  const overlayFrozen = state.phase === 'evolution';
 
   const queue = reviewQueueLength(sprint.tasks);
   const jamPct = Math.min(100, (queue / 18) * 100);
@@ -417,6 +418,7 @@ export function SprintScreen({
               armedAction={armedId}
               assignAssignee={armedId === 'assignTask' ? assignAssignee : undefined}
               onDragComplete={handleDragComplete}
+              animationsPaused={overlayFrozen}
             />
             {slowMoKey > 0 && (
               <SlowMotionOverlay clearedIncidentCount={slowMoPlan.clearedIncidentCount} />
@@ -424,7 +426,7 @@ export function SprintScreen({
             {attentionKey > 0 && attentionPlan.active && (
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
-            <EventTicker events={sprint.events} />
+            <EventTicker events={sprint.events} frozen={overlayFrozen} />
           </AspectStage>
         </main>
       }

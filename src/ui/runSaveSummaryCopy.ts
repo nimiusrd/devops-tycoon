@@ -37,3 +37,14 @@ export function resumableRunDetail(
     summary.runKind === 'daily' && summary.dailyDate ? ` · デイリー ${summary.dailyDate}` : '';
   return `${seed}スプリント ${summary.sprintsPlayed} 完了${daily}`;
 }
+
+export function startDailyConfirmTitle(canResume: boolean): string {
+  return canResume ? '中断中のランがあります' : '再開できないセーブがあります';
+}
+
+export function startDailyConfirmRiskText(canResume: boolean): string {
+  if (canResume) {
+    return 'デイリーを始めると途中セーブが上書きされ、このランは続きから再開できなくなります。先に再開するか、中断ランを捨てるかを選んでください。';
+  }
+  return 'デイリーを始めると途中セーブが上書きされ、このセーブは残らなくなります。戻るか、中断ランを捨ててデイリーを始めるかを選んでください。';
+}

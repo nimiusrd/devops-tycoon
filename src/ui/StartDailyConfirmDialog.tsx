@@ -1,12 +1,19 @@
 /**
  * 中断ランがあるときのデイリー開始確認（#367）。
  *
- * プレイヤー判断: 途中セーブを守って再開するか、上書きしてデイリーを始めるか。
+ * 再開できるとき: 途中セーブを守って再開するか、上書きしてデイリーを始めるか。
+ * 再開できないとき: 戻るか、互換のないセーブを捨ててデイリーを始めるか。
  * 既存の `.result-overlay` を確認ダイアログとして使う。
  */
 import { useEffect, useId, useRef } from 'react';
 import type { RunSaveSummary } from '../state/runPersistence';
-import { resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
+import { listFocusable, wrapTabIfNeeded } from './dialogOverlayLock';
+import {
+  resumableRunDetail,
+  resumableRunHeadline,
+  startDailyConfirmRiskText,
+  startDailyConfirmTitle,
+} from './runSaveSummaryCopy';
 
 export interface StartDailyConfirmDialogProps {
   summary: RunSaveSummary;
@@ -36,10 +43,6 @@ export function StartDailyConfirmDialog({
     const initial = canResume ? resumeRef.current : cancelRef.current;
     (initial ?? root).focus();
 
-    const focusableButtons = (): HTMLButtonElement[] => [
-      ...root.querySelectorAll<HTMLButtonElement>('button:not([disabled])'),
-    ];
-
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -47,19 +50,11 @@ export function StartDailyConfirmDialog({
         return;
       }
       if (event.key !== 'Tab') return;
-      const buttons = focusableButtons();
-      if (buttons.length === 0) return;
-      const first = buttons[0];
-      const last = buttons[buttons.length - 1];
-      if (!first || !last) return;
-      const active = document.activeElement;
-      if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const target = wrapTabIfNeeded(listFocusable(root), active, event.shiftKey, root);
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
     };
 
     document.addEventListener('keydown', onKeyDown);
@@ -83,14 +78,14 @@ export function StartDailyConfirmDialog({
       <div className="result-card start-daily-confirm-card">
         <p className="result-eyebrow">確認</p>
         <h2 className="draft-title" id={titleId}>
-          中断中のランがあります
+          {startDailyConfirmTitle(canResume)}
         </h2>
         <p className="start-daily-confirm-state">
           <b>{resumableRunHeadline(summary)}</b>
           <small>{resumableRunDetail(summary)}</small>
         </p>
         <p className="start-daily-confirm-risk" id={descId}>
-          デイリーを始めると途中セーブが上書きされ、このランは続きから再開できなくなります。先に再開するか、中断ランを捨てるかを選んでください。
+          {startDailyConfirmRiskText(canResume)}
         </p>
         <div className="start-daily-confirm-actions">
           <button

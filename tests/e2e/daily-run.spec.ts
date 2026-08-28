@@ -99,7 +99,7 @@ test('中断ランがあるときデイリー開始は確認し、戻るとセ�
   const dialog = page.getByTestId('start-daily-confirm');
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText('中断中のランがあります');
-  await expect(dialog).toContainText('途中セーブが上書き');
+  await expect(dialog).toContainText('先に再開するか');
   await expect(dialog).toContainText('Easy / Q1 編成');
   await expect(page.getByTestId('start-daily-confirm-resume')).toBeVisible();
 
@@ -184,4 +184,57 @@ test('確認ダイアログは狭い画面でも操作できる', async ({ page 
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflowX).toBeLessThanOrEqual(1);
+});
+
+test('再開できないセーブでは再開を案内せず破棄と戻るだけを出す', async ({ page }) => {
+  const seed = 'ri367-incompatible';
+  await openTitleWithInterruptedRun(page, seed);
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('devops-tycoon');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const value = await new Promise<unknown>((resolve, reject) => {
+      const request = db.transaction('runSave', 'readonly').objectStore('runSave').get('current');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      db.close();
+      throw new Error('run save missing');
+    }
+    const updated = {
+      ...(value as Record<string, unknown>),
+      ruleset: { version: 999, fingerprint: 'different-ruleset' },
+    };
+    await new Promise<void>((resolve, reject) => {
+      const request = db
+        .transaction('runSave', 'readwrite')
+        .objectStore('runSave')
+        .put(updated, 'current');
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+  });
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(page.getByTestId('incompatible-run-save')).toBeVisible();
+  await expect(page.getByTestId('resume-run')).toHaveCount(0);
+
+  await page.getByTestId('start-daily-run').click();
+  const dialog = page.getByTestId('start-daily-confirm');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('再開できないセーブがあります');
+  await expect(dialog).not.toContainText('先に再開するか');
+  await expect(dialog).toContainText('戻るか、中断ランを捨ててデイリーを始めるか');
+  await expect(page.getByTestId('start-daily-confirm-resume')).toHaveCount(0);
+  await expect(page.getByTestId('start-daily-confirm-cancel')).toBeFocused();
+  await expect(page.getByTestId('start-daily-confirm-discard')).toBeVisible();
+
+  await page.getByTestId('start-daily-confirm-cancel').click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId('incompatible-run-save')).toBeVisible();
+  await expect.poll(() => storedRunSeed(page)).toBe(seed);
 });

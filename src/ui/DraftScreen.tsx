@@ -70,7 +70,11 @@ export function DraftScreen({
     >
       <div className="draft-card-panel">
         <p className="result-eyebrow">CARD DRAFT</p>
-        <h2 className="draft-title">スプリント{sprintNumber} に向けて、施策を1枚選ぶ</h2>
+        <h2 className="draft-title">
+          {readOnly
+            ? `スプリント${sprintNumber} に向けて、提示された施策を確認する`
+            : `スプリント${sprintNumber} に向けて、施策を1枚選ぶ`}
+        </h2>
         <div className="draft-options">
           {options.map((id) => {
             const def = resolveCard(id);

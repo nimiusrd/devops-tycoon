@@ -17,7 +17,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
 import {
@@ -670,60 +669,59 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         )}
       </Suspense>
 
-      <AnimatePresence>
-        {zoom.level !== 'team' && (
-          <motion.div
-            key={zoom.level}
-            className="zoom-overlay"
-            data-testid="zoom-overlay"
-            data-level={zoom.level}
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
-          >
-            <Breadcrumb
-              level={zoom.level}
-              onNavigate={run.zoomTo}
-              enterLocked={state.sprintsPlayed < state.teamLockUntilSprint}
-            />
-            <Suspense fallback={null}>
-              {zoom.level === 'industry' && state.industry && (
-                <IndustryScreen
-                  industry={state.industry}
-                  meta={meta}
-                  onSetKind={run.setRankingKind}
-                />
-              )}
-              {zoom.level === 'company' && state.orgScale && (
-                <OrgScreen
-                  org={state.orgScale}
-                  budget={state.budget}
-                  zoom={zoom}
-                  trendHistory={state.trendHistory}
-                  onFocusDept={run.focusDept}
-                  onFocusTeam={run.focusTeam}
-                  onApplyLever={run.applyOrgLever}
-                />
-              )}
-              {zoom.level === 'department' && focusedDept && (
-                <DeptScreen
-                  dept={focusedDept}
-                  budget={state.budget}
-                  selectedTeamId={zoom.teamId ?? state.activeTeamId}
-                  activeTeamId={state.activeTeamId}
-                  teamLockUntilSprint={state.teamLockUntilSprint}
-                  sprintsPlayed={state.sprintsPlayed}
-                  phase={state.phase}
-                  onFocusTeam={run.focusTeam}
-                  onEnterTeam={run.enterTeam}
-                  onApplyLever={run.applyOrgLever}
-                />
-              )}
-            </Suspense>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/*
+        現場へ戻したら overlay は即 unmount する。
+        AnimatePresence の opacity/scale exit は WebGL canvas をコンポジタ層に残し、
+        閉じた全社マップが盤面へゴースト表示される（#376）。入場のフェードは CSS。
+      */}
+      {zoom.level !== 'team' && (
+        <div
+          key={zoom.level}
+          className="zoom-overlay"
+          data-testid="zoom-overlay"
+          data-level={zoom.level}
+        >
+          <Breadcrumb
+            level={zoom.level}
+            onNavigate={run.zoomTo}
+            enterLocked={state.sprintsPlayed < state.teamLockUntilSprint}
+          />
+          <Suspense fallback={null}>
+            {zoom.level === 'industry' && state.industry && (
+              <IndustryScreen
+                industry={state.industry}
+                meta={meta}
+                onSetKind={run.setRankingKind}
+              />
+            )}
+            {zoom.level === 'company' && state.orgScale && (
+              <OrgScreen
+                org={state.orgScale}
+                budget={state.budget}
+                zoom={zoom}
+                trendHistory={state.trendHistory}
+                onFocusDept={run.focusDept}
+                onFocusTeam={run.focusTeam}
+                onApplyLever={run.applyOrgLever}
+              />
+            )}
+            {zoom.level === 'department' && focusedDept && (
+              <DeptScreen
+                dept={focusedDept}
+                budget={state.budget}
+                selectedTeamId={zoom.teamId ?? state.activeTeamId}
+                activeTeamId={state.activeTeamId}
+                teamLockUntilSprint={state.teamLockUntilSprint}
+                sprintsPlayed={state.sprintsPlayed}
+                phase={state.phase}
+                onFocusTeam={run.focusTeam}
+                onEnterTeam={run.enterTeam}
+                onApplyLever={run.applyOrgLever}
+              />
+            )}
+          </Suspense>
+        </div>
+      )}
     </div>
   );
 }

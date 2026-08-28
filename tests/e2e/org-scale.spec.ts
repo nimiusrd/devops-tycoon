@@ -40,6 +40,16 @@ async function startRun(page: import('@playwright/test').Page, seed: string) {
 
 type Box = { x: number; y: number; width: number; height: number };
 
+/** ズーム overlay と全社・部署・業界画面が DOM に残っていない。 */
+async function assertZoomOverlayGone(page: import('@playwright/test').Page): Promise<void> {
+  await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+  await expect(page.getByTestId('org-screen')).toHaveCount(0);
+  await expect(page.getByTestId('org-board')).toHaveCount(0);
+  await expect(page.getByTestId('org-pixi-mount')).toHaveCount(0);
+  await expect(page.getByTestId('dept-screen')).toHaveCount(0);
+  await expect(page.getByTestId('industry-screen')).toHaveCount(0);
+}
+
 const HEALTH_LABEL = {
   healthy: '健全',
   congested: '渋滞',
@@ -416,7 +426,7 @@ test('ホームチーム島をタップすると現場へドリルダウンし�
   await clickOrgTeam(page, 'product-t0');
 
   // 選択中ホームは focusTeam で現場へ着地 → オーバーレイは消える。
-  await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+  await assertZoomOverlayGone(page);
   const teamId = await page.evaluate(() => (window as GameWindow).game!.getState().zoom.teamId);
   expect(teamId).toBe('product-t0');
 });
@@ -430,7 +440,7 @@ test('他チームは状態確認後に入り込みで現場へ着地できる�
   await expect(page.getByTestId('dept-team-panel')).toBeVisible();
   await page.getByTestId('enter-team').click();
 
-  await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+  await assertZoomOverlayGone(page);
   const state = await page.evaluate(() => {
     const s = (window as GameWindow).game!.getState();
     return { active: s.activeTeamId, level: s.zoom.level, lock: s.teamLockUntilSprint };
@@ -458,6 +468,53 @@ test('全社レバーで四半期予算が減り、全社AI依存度が下がる
     () => (window as GameWindow).game!.getState().orgScale!.aiDependency,
   );
   expect(aiDepAfter).toBeLessThanOrEqual(before.aiDep);
+});
+
+test('編成から全社マップを開き現場へ戻すとマップが残らない（#376）', async ({ page }) => {
+  await startRun(page, 'org-ghost-setup');
+  await expect(page.getByTestId('setup')).toBeVisible();
+
+  await page.getByTestId('open-org').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+  await expect(page.getByTestId('org-screen')).toBeVisible();
+  await expect(page.getByTestId('org-board')).toBeVisible();
+
+  await page.getByTestId('crumb-team').click();
+  await assertZoomOverlayGone(page);
+  await expect(page.getByTestId('setup')).toBeVisible();
+  const zoom = await page.evaluate(() => (window as GameWindow).game!.getState().zoom.level);
+  expect(zoom).toBe('team');
+});
+
+test('部署経由で現場へ戻しても全社マップは残らない（#376）', async ({ page }) => {
+  await startRun(page, 'org-ghost-dept');
+  await page.getByTestId('open-org').click();
+  await expect(page.getByTestId('org-screen')).toBeVisible();
+
+  await page.getByTestId('crumb-department').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'department');
+  await expect(page.getByTestId('dept-screen')).toBeVisible();
+
+  await page.getByTestId('crumb-team').click();
+  await assertZoomOverlayGone(page);
+  await expect(page.getByTestId('setup')).toBeVisible();
+});
+
+test('スプリント盤面から全社マップを閉じると盤面だけが見える（#376）', async ({ page }) => {
+  await startRun(page, 'org-ghost-board');
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.beginSetupSprint();
+    g.pause();
+  });
+  await expect(page.getByTestId('board')).toBeVisible();
+
+  await page.getByTestId('open-org').click();
+  await expect(page.getByTestId('org-screen')).toBeVisible();
+
+  await page.getByTestId('crumb-team').click();
+  await assertZoomOverlayGone(page);
+  await expect(page.getByTestId('board')).toBeVisible();
 });
 
 function boxesOverlap(a: Box, b: Box): boolean {

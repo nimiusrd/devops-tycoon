@@ -6070,9 +6070,6 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   }
 }
 /* RI-01: 等角全社盤面（旧モック org-screen 由来） */
-.org-field > .aspect-stage-content {
-  container-type: inline-size;
-}
 .org-board.iso-org {
   position: relative;
   width: 100%;
@@ -6159,10 +6156,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   filter: drop-shadow(0 6px 8px #0008);
 }
 /* 可読下限の 3 行カード高が設計バッジ高に収まるまで、部門ラベルを隠しカードを横並びに畳む。 */
-@container (max-width: var(--visual-org-board-compact-max-width)) {
-  .org-zone-label {
-    display: none;
-  }
+.org-board.iso-org.org-board-compact .org-zone-label {
+  display: none;
 }
 .org-island-group {
   position: absolute;
@@ -6176,9 +6171,12 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: none;
 }
 .org-island-badge {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  width: calc(var(--visual-org-card-width) * var(--org-board-scale));
+  max-width: calc(var(--visual-org-card-width) * var(--org-board-scale));
   padding: calc(var(--visual-org-island-badge-padding-y) * var(--org-board-scale))
     calc(var(--visual-org-island-badge-padding-x) * var(--org-board-scale));
   border-radius: 12px;
@@ -6189,7 +6187,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
     calc(var(--visual-org-island-badge-font-size) * var(--org-board-scale))
   );
   color: var(--cream);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: hidden;
   box-shadow: 0 3px 0 #00000044;
 }
 .org-island-badge.tone-ok {
@@ -6230,13 +6230,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: color-mix(in srgb, var(--visual-color-health-review-hell) 20%, transparent);
   color: var(--visual-color-health-review-hell);
 }
-@container (max-width: var(--visual-org-board-compact-max-width)) {
-  .org-island-badge {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
-  }
+.org-board.iso-org.org-board-compact .org-island-badge {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
 }
 .org-island {
   position: absolute;

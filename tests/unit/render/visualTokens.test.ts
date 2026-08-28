@@ -9,6 +9,7 @@ import {
   flowDashPeriod,
   hexToPixiColor,
   orgBoardCompactMaxWidthPx,
+  orgBoardIsCompact,
   orgIslandBadgeMinCssHeight,
   VISUAL_TOKENS,
   visualTokenCssVariables,
@@ -118,6 +119,8 @@ describe('visual tokens', () => {
           DESIGN_SPACES.organization.w,
       ),
     );
+    expect(orgBoardIsCompact(width)).toBe(true);
+    expect(orgBoardIsCompact(width + 1)).toBe(false);
   });
 
   it('破線周期を dash と gap から導出する', () => {

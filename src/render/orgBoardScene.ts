@@ -289,7 +289,7 @@ export function zoneLabelRect(label: Pick<OrgZoneLabelPlan, 'x' | 'y'>): OrgBoar
   };
 }
 
-/** 島のチームカード（バッジ）外接矩形。 */
+/** 島のチームカード（バッジ）外接矩形。DOM は同じカード幅に制約する。 */
 export function islandBadgeRect(island: Pick<OrgIslandPlan, 'badge'>): OrgBoardRect {
   const width = VISUAL_TOKENS.dimensions.organization.card.width;
   return {

@@ -1,10 +1,6 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
-import {
-  DESIGN_SPACES,
-  VISUAL_TOKENS,
-  orgBoardCompactMaxWidthPx,
-} from '../../src/render/visualTokens';
+import { DESIGN_SPACES, VISUAL_TOKENS, orgBoardIsCompact } from '../../src/render/visualTokens';
 import { ORG_HUB_CI_OK_MIN } from '../../src/render/orgBoardScene';
 import { dailyRunKey } from '../../src/state/meta';
 import { CURRENT_RUN_RULESET } from '../../src/state/runPersistence';
@@ -505,11 +501,39 @@ test('全社マップの部門ラベルがチームカードと重ならない�
       }
     }
     const boardBox = await readBox(board, `${viewport.name} 盤面`);
-    if (boardBox.width > orgBoardCompactMaxWidthPx()) {
+    const compact = orgBoardIsCompact(boardBox.width);
+    await expect(board).toHaveAttribute('data-compact', compact ? 'true' : 'false');
+    if (compact) {
+      expect(
+        visibleLabelBoxes.length,
+        `${viewport.name} でコンパクト幅なのに部門ラベルが見える`,
+      ).toBe(0);
+    } else {
       expect(
         visibleLabelBoxes.length,
         `${viewport.name} で部門ラベルが見えない`,
       ).toBeGreaterThanOrEqual(3);
+    }
+
+    const expectedBadgeWidth =
+      VISUAL_TOKENS.dimensions.organization.card.width *
+      (boardBox.width / DESIGN_SPACES.organization.w);
+    const badgeBoxes: Box[] = [];
+    for (const badge of badges) {
+      const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
+      badgeBoxes.push(badgeBox);
+      expect(
+        badgeBox.width,
+        `${viewport.name} のチームカード幅が共有幅を超える`,
+      ).toBeLessThanOrEqual(expectedBadgeWidth + 1);
+    }
+    for (let i = 0; i < badgeBoxes.length; i += 1) {
+      for (let j = i + 1; j < badgeBoxes.length; j += 1) {
+        expect(
+          boxesOverlap(badgeBoxes[i], badgeBoxes[j]),
+          `${viewport.name} でチームカード同士が重なっている`,
+        ).toBe(false);
+      }
     }
 
     const nameSize = await page

@@ -354,6 +354,11 @@ export function orgBoardCompactMaxWidthPx(): number {
   return Math.ceil((orgIslandBadgeMinCssHeight() / badgeHeight) * DESIGN_SPACES.organization.w);
 }
 
+/** 盤面 CSS 幅がコンパクト閾値以下なら部門ラベルを隠しカードを畳む。 */
+export function orgBoardIsCompact(boardWidthPx: number): boolean {
+  return boardWidthPx <= orgBoardCompactMaxWidthPx();
+}
+
 /**
  * CSS custom property への写像。DOM/CSS の値を別ファイルへ複製せず、
  * `applyVisualTokenCssVariables` がこの結果を `:root` へ反映する。

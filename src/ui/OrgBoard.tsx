@@ -4,9 +4,10 @@
  * `orgBoardScene` が組み立てたシーン計画を読み、俯瞰オフィス（アイソメ）として描く。
  * 座標は設計空間（1404×573）の % で重ねる。Board.tsx と同型（第22.2）。
  */
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { OrgScaleState } from '../sim/orgscale/types';
 import { ORG_VIEW, planOrgBoardScene, type OrgIslandPlan } from '../render/orgBoardScene';
+import { orgBoardIsCompact } from '../render/visualTokens';
 import { OrgFlowLanes } from './OrgFlowLanes';
 import { OrgHubSvg } from './OrgHub';
 import { OrgPlate } from './OrgPlate';
@@ -19,19 +20,26 @@ const VIEW_H = ORG_VIEW.h;
 /** 設計pxラベルを実ステージ幅へ写す単位なし倍率（`--org-board-scale`）。 */
 function useOrgBoardScale() {
   const ref = useRef<HTMLDivElement>(null);
+  const [compact, setCompact] = useState(false);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const apply = (): void => {
-      const scale = el.clientWidth > 0 ? el.clientWidth / VIEW_W : 1;
+      const width = el.clientWidth;
+      const scale = width > 0 ? width / VIEW_W : 1;
       el.style.setProperty('--org-board-scale', String(scale));
+      // CSS カスタムプロパティは @container の max-width 条件で解決されない。
+      setCompact((prev) => {
+        const next = orgBoardIsCompact(width);
+        return prev === next ? prev : next;
+      });
     };
     apply();
     const observer = new ResizeObserver(apply);
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  return ref;
+  return { ref, compact };
 }
 
 function ZoneLabel({
@@ -89,13 +97,14 @@ export interface OrgBoardProps {
 export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
   const scene = planOrgBoardScene(org);
   const hot = org.onFire > 0 || org.departments.some((d) => d.health === 'reviewHell');
-  const boardRef = useOrgBoardScale();
+  const { ref: boardRef, compact } = useOrgBoardScale();
 
   return (
     <div
       ref={boardRef}
-      className={`org-board iso-org${hot ? ' org-hell' : ''}`}
+      className={`org-board iso-org${hot ? ' org-hell' : ''}${compact ? ' org-board-compact' : ''}`}
       data-testid="org-board"
+      data-compact={compact ? 'true' : 'false'}
     >
       <OrgPlate zones={scene.zones} />
       <OrgFlowLanes flows={scene.flows} />

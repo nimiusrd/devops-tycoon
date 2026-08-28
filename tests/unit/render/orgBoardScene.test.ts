@@ -273,9 +273,20 @@ describe('planOrgBoardScene (RI-01)', () => {
         }
       }
     }
+    const extraScene = planOrgBoardScene(org);
+    const extraProduct = extraScene.islands.filter((i) => i.team.deptId === 'product');
+    const extraOthers = extraScene.islands.filter((i) => i.team.deptId !== 'product');
+    for (const product of extraProduct) {
+      for (const other of extraOthers) {
+        expect(
+          orgBoardRectsOverlap(islandBadgeRect(product), islandBadgeRect(other)),
+          `${product.teamId} と ${other.teamId} のカードが部門をまたいで重なる`,
+        ).toBe(false);
+      }
+    }
   });
 
-  it('extraTeams が 9 以上でも同じ列の縦間隔を圧縮しない', () => {
+  it('extraTeams が 9 以上でも同じ列の縦間隔を圧縮せず、隣接部門とカードが重ならない', () => {
     const org = generateOrgScale(
       orgScaleInput('ri01-spacing-extra9', {
         adjust: { company: { ...emptyAdjustState().company, extraTeams: 9 }, byDept: {} },
@@ -284,16 +295,41 @@ describe('planOrgBoardScene (RI-01)', () => {
     const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
     expect(productTeams.length).toBeGreaterThanOrEqual(13);
 
+    const scene = planOrgBoardScene(org);
+    const productZone = scene.zones.find((z) => z.deptId === 'product')!;
     const { minY, maxY } = islandCenterBounds();
     const maxSpanY = maxY - minY;
-    const grid = islandGridForCount(productTeams.length, maxSpanY);
+    const cardW = VISUAL_TOKENS.dimensions.organization.card.width;
+    const grid = islandGridForCount(productTeams.length, productZone.width, maxSpanY);
+    expect(grid.cols * cardW).toBeLessThanOrEqual(productZone.width);
     expect(grid.rows * MIN_ISLAND_SPACING_Y).toBeLessThanOrEqual(maxSpanY);
 
-    const positions = productTeams.map((_, i) => teamDesignPosition(0, i, productTeams.length));
-    for (let i = 0; i < positions.length; i += 1) {
-      for (let j = i + 1; j < positions.length; j += 1) {
-        const dx = Math.abs(positions[i].x - positions[j].x);
-        const dy = Math.abs(positions[i].y - positions[j].y);
+    const productIslands = scene.islands.filter((i) => i.team.deptId === 'product');
+    const otherIslands = scene.islands.filter((i) => i.team.deptId !== 'product');
+    for (const island of productIslands) {
+      const badge = islandBadgeRect(island);
+      expect(badge.x).toBeGreaterThanOrEqual(productZone.x - 0.5);
+      expect(badge.x + badge.width).toBeLessThanOrEqual(productZone.x + productZone.width + 0.5);
+    }
+    for (const product of productIslands) {
+      for (const other of otherIslands) {
+        expect(
+          orgBoardRectsOverlap(islandBadgeRect(product), islandBadgeRect(other)),
+          `${product.teamId} と ${other.teamId} のカードが部門をまたいで重なる`,
+        ).toBe(false);
+      }
+    }
+    for (let i = 0; i < productIslands.length; i += 1) {
+      for (let j = i + 1; j < productIslands.length; j += 1) {
+        expect(
+          orgBoardRectsOverlap(
+            islandBadgeRect(productIslands[i]),
+            islandBadgeRect(productIslands[j]),
+          ),
+          `${productIslands[i].teamId} と ${productIslands[j].teamId} のカードが重なる`,
+        ).toBe(false);
+        const dx = Math.abs(productIslands[i].x - productIslands[j].x);
+        const dy = Math.abs(productIslands[i].y - productIslands[j].y);
         if (dx < MIN_ISLAND_SPACING_X * 0.5) {
           expect(dy).toBeGreaterThanOrEqual(MIN_ISLAND_SPACING_Y * 0.85);
         }

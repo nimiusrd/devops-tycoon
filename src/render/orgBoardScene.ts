@@ -31,6 +31,7 @@ export const ISLAND_BADGE_ABOVE = VISUAL_TOKENS.dimensions.organization.island.b
 export const ISLAND_BADGE_HEIGHT = VISUAL_TOKENS.dimensions.organization.island.badgeHeight;
 export const ISLAND_ACTOR_HALF_H = VISUAL_TOKENS.dimensions.organization.island.actorHalfHeight;
 export const ISLAND_MARGIN = VISUAL_TOKENS.dimensions.organization.island.margin;
+export const ISLAND_CARD_WIDTH = VISUAL_TOKENS.dimensions.organization.card.width;
 export const ZONE_LABEL_Y = VISUAL_TOKENS.dimensions.organization.zoneLabel.y;
 export const ZONE_LABEL_HEIGHT = VISUAL_TOKENS.dimensions.organization.zoneLabel.height;
 export const ZONE_LABEL_GAP = VISUAL_TOKENS.dimensions.organization.zoneLabel.gap;
@@ -266,8 +267,8 @@ export function islandCenterBounds(): {
   const minY =
     zoneLabelBandBottom() + ZONE_LABEL_GAP + ISLAND_BADGE_HEIGHT / 2 + ISLAND_BADGE_ABOVE;
   return {
-    minX: 70,
-    maxX: ORG_VIEW.w - 70,
+    minX: ISLAND_CARD_WIDTH / 2,
+    maxX: ORG_VIEW.w - ISLAND_CARD_WIDTH / 2,
     minY,
     maxY: ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_MARGIN,
   };
@@ -308,21 +309,51 @@ export function clampIslandCenter(x: number, y: number): { x: number; y: number 
   };
 }
 
+/** 格子のカード外接が部門ゾーンから隣部門へ食い込むか。 */
+function zoneGridOverflows(
+  zone: ZoneLayout,
+  centerX: number,
+  spanX: number,
+  cols: number,
+): boolean {
+  const columnSpan = Math.max(1, cols);
+  const halfCell = spanX / (2 * columnSpan);
+  const leftCenter = centerX - spanX / 2 + halfCell;
+  const rightCenter = centerX + spanX / 2 - halfCell;
+  const cardLeft = leftCenter - ISLAND_CARD_WIDTH / 2;
+  const cardRight = rightCenter + ISLAND_CARD_WIDTH / 2;
+  // 基盤ゾーンは設計上カード左端が境界に接する。隣部門へ食い込む増設列だけを検出する。
+  return cardRight > zone.x + zone.width + 0.5 || cardLeft < zone.x - ISLAND_MARGIN;
+}
+
 /**
- * ラベル予約帯の縦幅に収まるよう、足りなければ列を増やして行数を抑える。
- * 間隔を圧縮して minY/maxY に押し込むことはしない。
+ * 縦の最小間隔を優先して列を増やすが、部門ゾーン幅を超える列は作らない。
+ * カード幅を下限にした列数まで増設し、収まりきらないときだけ行を増やす。
  */
 export function islandGridForCount(
   teamCount: number,
+  maxSpanX: number,
   maxSpanY: number,
 ): { cols: number; rows: number } {
   const count = Math.max(1, teamCount);
-  const maxRows = Math.max(1, Math.floor(maxSpanY / MIN_ISLAND_SPACING_Y));
+  const maxColsPack = Math.max(1, Math.floor(maxSpanX / ISLAND_CARD_WIDTH));
+  const maxRowsPref = Math.max(1, Math.floor(maxSpanY / MIN_ISLAND_SPACING_Y));
+  const maxRowsPack = Math.max(1, Math.floor(maxSpanY / ISLAND_BADGE_HEIGHT));
+
   let cols = Math.min(count, Math.max(1, Math.ceil(Math.sqrt(count))));
   let rows = Math.max(1, Math.ceil(count / cols));
-  while (rows > maxRows && cols < count) {
+
+  while (rows > maxRowsPref && cols < maxColsPack && cols < count) {
     cols += 1;
     rows = Math.ceil(count / cols);
+  }
+  while (rows > maxRowsPack && cols < maxColsPack && cols < count) {
+    cols += 1;
+    rows = Math.ceil(count / cols);
+  }
+  if (cols > maxColsPack) {
+    cols = maxColsPack;
+    rows = Math.max(1, Math.ceil(count / cols));
   }
   return { cols, rows };
 }
@@ -342,14 +373,24 @@ export function teamDesignPosition(
 
   const { minY, maxY } = islandCenterBounds();
   const maxSpanY = Math.max(0, maxY - minY);
-  const { cols, rows } = islandGridForCount(teamCount, maxSpanY);
+  let { cols, rows } = islandGridForCount(teamCount, zone.width, maxSpanY);
 
   const neededWidth = cols * MIN_ISLAND_SPACING_X;
-  const neededHeight = rows * MIN_ISLAND_SPACING_Y;
-  const spanX = Math.max(baseWidth, neededWidth);
-  const spanY = Math.min(Math.max(baseHeight, neededHeight), maxSpanY);
-  const centerX = (zone.teamXMin + zone.teamXMax) / 2;
+  let spanX = Math.max(baseWidth, neededWidth);
+  let centerX = (zone.teamXMin + zone.teamXMax) / 2;
   const centerY = (zone.teamYMin + zone.teamYMax) / 2;
+
+  if (zoneGridOverflows(zone, centerX, spanX, cols)) {
+    centerX = zone.x + zone.width / 2;
+    spanX = Math.min(spanX, zone.width);
+    while (cols > 1 && spanX / cols < ISLAND_CARD_WIDTH) {
+      cols -= 1;
+    }
+    rows = Math.max(1, Math.ceil(teamCount / cols));
+  }
+
+  const neededHeight = rows * MIN_ISLAND_SPACING_Y;
+  const spanY = Math.min(Math.max(baseHeight, neededHeight), maxSpanY);
 
   const col = teamIndex % cols;
   const row = Math.floor(teamIndex / cols);

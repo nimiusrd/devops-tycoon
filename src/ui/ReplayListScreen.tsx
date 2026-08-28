@@ -10,6 +10,7 @@ import { planReviewHellReplay } from '../render/reviewHellReplayView';
 import { formatReplayRuleset } from './replayRuleset';
 import { resolveSelectedReplayId } from './replayListSelection';
 import type { ReplayBlob } from '../state/replay';
+import { downloadTextFile } from './downloadTextFile';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface ReplayListScreenProps {
@@ -68,14 +69,14 @@ export function ReplayListScreen({
       setShareStatus({ kind: 'error', message: '書き出せるリプレイがありません。' });
       return;
     }
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'devops-tycoon-replay.json';
-    link.click();
-    URL.revokeObjectURL(url);
-    setShareStatus({ kind: 'ok', message: 'リプレイをファイルに保存しました。' });
+    if (downloadTextFile('devops-tycoon-replay.json', text)) {
+      setShareStatus({ kind: 'ok', message: 'リプレイをファイルに保存しました。' });
+      return;
+    }
+    setShareStatus({
+      kind: 'error',
+      message: 'リプレイをファイルに保存できませんでした。',
+    });
   };
 
   const onReplayFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -268,6 +269,8 @@ export function ReplayListScreen({
               <p
                 className={`replay-share-status${shareStatus.kind === 'error' ? ' error' : ''}`}
                 data-testid="replay-share-status"
+                role="status"
+                aria-live="polite"
               >
                 {shareStatus.message}
               </p>

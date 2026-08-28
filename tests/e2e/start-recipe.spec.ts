@@ -67,6 +67,26 @@ test.describe('start recipe share (RI-127)', () => {
     await expect(page.getByTestId('difficulty-hard')).toBeDisabled();
   });
 
+  test('ファイルで保存すると開始レシピをダウンロードできる', async ({ page }) => {
+    await page.goto('/?renderer=dom&seed=recipe-download');
+    await expect(page.getByTestId('title')).toBeVisible();
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByTestId('start-recipe-download').click(),
+    ]);
+    expect(download.suggestedFilename()).toBe('devops-tycoon-start-recipe.json');
+    const recipePath = await download.path();
+    expect(recipePath).toBeTruthy();
+    await expect(page.getByTestId('start-recipe-status')).toHaveText(
+      '開始レシピをファイルに保存しました。',
+    );
+
+    await page.getByTestId('start-recipe-file').setInputFiles(recipePath!);
+    await expect(page.getByTestId('start-recipe-status')).toHaveText('開始条件を読み込みました。');
+    await expect(page.getByTestId('seed')).toContainText('recipe-download');
+  });
+
   test('trial chip selection updates export JSON without 書き出す', async ({ page }) => {
     await page.goto('/?renderer=dom&seed=recipe-trial-sync');
     await expect(page.getByTestId('title')).toBeVisible();

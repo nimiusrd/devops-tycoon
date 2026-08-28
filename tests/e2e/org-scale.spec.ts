@@ -654,7 +654,10 @@ test('全社マップの部門ラベルがチームカードと重ならない�
 });
 
 test('コンパクト切替でチームのキーボードフォーカスを引き継ぐ', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+  // 1440×900 では HUD が盤面高を食い、幅がコンパクト閾値（1229px）以下のままになる。
+  const wide = { width: 1920, height: 1200 };
+  const narrow = { width: 320, height: 568 };
+  await page.setViewportSize(wide);
   await startRun(page, 'org-compact-focus');
   await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
   const board = page.getByTestId('org-board');
@@ -665,11 +668,11 @@ test('コンパクト切替でチームのキーボードフォーカスを引�
   await island.focus();
   await expect(island).toBeFocused();
 
-  await page.setViewportSize({ width: 320, height: 568 });
+  await page.setViewportSize(narrow);
   await expect(board).toHaveAttribute('data-compact', 'true');
   await expect(page.getByTestId('island-badge-product-t0')).toBeFocused();
 
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize(wide);
   await expect(board).toHaveAttribute('data-compact', 'false');
   await expect(page.getByTestId('team-product-t0')).toBeFocused();
 });

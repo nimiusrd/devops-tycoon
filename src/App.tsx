@@ -192,7 +192,8 @@ function AppContent({ game }: AppProps) {
 }
 
 function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
-  const { state, meta, diagnosticInfo, lastRunReward, runSaveSummary, runSaveIssue } = run;
+  const { state, meta, diagnosticInfo, lastRunReward, runSaveSummary, resumeRisk, runSaveIssue } =
+    run;
   const phase = state.phase;
   const responsiveMode = useResponsiveMode();
   const audio = useAudio();
@@ -379,6 +380,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           onStartDaily={startDailyRun}
           onResume={resumeRun}
           resumableSummary={runSaveSummary}
+          resumeRisk={resumeRisk}
           runSaveIssue={runSaveIssue}
           onDiscardRunSave={discardRunSave}
           onOpenReplays={() => openExclusiveTitleModal(() => setReplayListOpen(true))}

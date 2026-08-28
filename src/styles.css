@@ -3452,6 +3452,8 @@ button.card.card-readonly:disabled {
 }
 .title-resume-btn {
   flex: 0 0 auto;
+  min-height: 44px;
+  min-width: 44px;
   padding: 12px 18px;
   border: 1px solid rgba(56, 189, 248, 0.45);
   background: rgba(15, 23, 42, 0.55);
@@ -3467,15 +3469,78 @@ button.card.card-readonly:disabled {
   transform: translateX(-2px);
 }
 .title-resume-incompatible {
-  border-top-color: rgba(251, 191, 36, 0.42);
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.12), transparent 68%);
+  border-top-color: color-mix(in srgb, var(--sun) 42%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--sun) 14%, transparent),
+    transparent 68%
+  );
+}
+.title-resume-risk {
+  border-top-color: color-mix(in srgb, var(--coral) 48%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--coral) 16%, transparent),
+    transparent 68%
+  );
 }
 .title-resume-issue {
   max-width: 56rem;
   margin: 8px 0 0;
-  color: #f6c77b;
+  color: var(--sun);
   font-size: 12px;
   line-height: 1.5;
+}
+.title-resume-warning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 56rem;
+  margin: 8px 0 0;
+  color: var(--cream);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.title-resume-warning > span:first-child {
+  flex: 1 1 12rem;
+}
+.title-resume-btn:focus-visible,
+.resume-risk-card .btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.btn-danger {
+  background: color-mix(in srgb, var(--coral) 32%, var(--panel));
+  border-color: color-mix(in srgb, var(--coral) 55%, var(--line));
+  color: var(--cream);
+}
+.resume-risk-card {
+  text-align: left;
+}
+.resume-risk-card .result-actions {
+  flex-wrap: wrap;
+}
+.resume-risk-card .btn {
+  min-height: 44px;
+}
+.resume-risk-body {
+  margin: 0.75rem 0 1rem;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.resume-risk-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
 }
 .title-resume-rulesets {
   display: flex;

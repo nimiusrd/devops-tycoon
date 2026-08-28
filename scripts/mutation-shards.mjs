@@ -331,6 +331,11 @@ export const MUTATION_SHARDS = Object.freeze([
     note: 'meta',
   },
   {
+    id: 'state-resume-risk',
+    mutate: 'src/state/resumeRisk.ts',
+    note: 'resumeRisk（瀕死セーブ再開警告）',
+  },
+  {
     id: 'state-rest',
     mutate: [
       'src/state/**/*.ts',
@@ -338,6 +343,7 @@ export const MUTATION_SHARDS = Object.freeze([
       '!src/state/runPersistence.ts',
       '!src/state/replay.ts',
       '!src/state/meta.ts',
+      '!src/state/resumeRisk.ts',
       '!src/state/**/index.ts',
       '!src/state/**/types.ts',
     ].join(','),

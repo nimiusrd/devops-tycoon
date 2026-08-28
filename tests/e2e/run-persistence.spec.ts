@@ -42,6 +42,45 @@ async function storedRunSummary(
   });
 }
 
+async function setStoredSeniorHp(
+  page: import('@playwright/test').Page,
+  seniorHp: number,
+): Promise<void> {
+  await page.evaluate(async (nextHp) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('devops-tycoon');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const value = await new Promise<unknown>((resolve, reject) => {
+      const request = db.transaction('runSave', 'readonly').objectStore('runSave').get('current');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      db.close();
+      throw new Error('run save missing');
+    }
+    const updated = structuredClone(value) as {
+      state?: { org?: { seniorHp?: number } };
+    };
+    if (!updated.state?.org) {
+      db.close();
+      throw new Error('run save org missing');
+    }
+    updated.state.org.seniorHp = nextHp;
+    await new Promise<void>((resolve, reject) => {
+      const request = db
+        .transaction('runSave', 'readwrite')
+        .objectStore('runSave')
+        .put(updated, 'current');
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+  }, seniorHp);
+}
+
 async function updateStoredRun(
   page: import('@playwright/test').Page,
   mode: 'missing-ruleset' | 'mismatched-ruleset',
@@ -194,4 +233,44 @@ test('新ラン開始で旧セーブが上書きされ、タイトル復帰で�
   await expect(page.getByTestId('title')).toBeVisible();
   await expect.poll(() => storedRunSummary(page)).toBeNull();
   await expect(page.getByTestId('resume-run')).toHaveCount(0);
+});
+
+test('シニア体力 2% のセーブは再開前に警告し、確認なしでは再開しない', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri374-e2e');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await advanceToResult(page);
+  await expect.poll(() => storedRunSummary(page)).toMatchObject({ seed: 'ri58-e2e' });
+  await setStoredSeniorHp(page, 2);
+
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(page.getByTestId('resume-risk-warning')).toBeVisible();
+  await expect(page.getByTestId('resume-risk-warning')).toContainText('燃え尽き寸前');
+  await expect(page.getByTestId('resume-risk-warning')).toContainText('2%');
+
+  await page.getByTestId('resume-run').click();
+  await expect(page.getByTestId('resume-risk-dialog')).toBeVisible();
+  await expect(page.getByTestId('resume-risk-dialog')).toContainText('継続不能');
+  await expect(page.locator('[data-testid="resume-risk-cancel"]')).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('resume-risk-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect
+    .poll(async () => page.evaluate(() => (window as RunGameWindow).game?.phase()))
+    .toBe('title');
+
+  await page.getByTestId('resume-run').click();
+  await page.getByTestId('resume-risk-confirm').click();
+  await expect
+    .poll(async () => page.evaluate(() => (window as RunGameWindow).game?.phase()))
+    .toBe('result');
+  await expect
+    .poll(async () => page.evaluate(() => (window as RunGameWindow).game?.getState()))
+    .toMatchObject({
+      phase: 'result',
+      status: 'playing',
+      org: { seniorHp: 2 },
+    });
 });

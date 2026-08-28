@@ -631,6 +631,35 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     });
   });
 
+  it('lastResult.gradePenalties が非数なら拒否し、省略は許可する', async () => {
+    const existing = makeRunSave('ri133-keep-penalties');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-penalties-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const omitted = makeResultRunSave('ri133-omit-penalties');
+    const omittedRaw = JSON.parse(serializeRunSave(omitted));
+    const omittedOk = await game.importRunSaveText(JSON.stringify(omittedRaw));
+    expect(omittedOk).toMatchObject({ ok: true });
+
+    const incoming = makeResultRunSave('ri133-broken-penalties');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { lastResult: Record<string, unknown> };
+    };
+    raw.state.lastResult.gradePenalties = { rework: 'broken' };
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+  });
+
   it('同梱キーフレームの seed が本体と食い違うなら拒否し、既存セーブは残す', async () => {
     const existing = makeRunSave('ri133-keep-kf-seed');
     const runStorage = new MemoryRunStorage();

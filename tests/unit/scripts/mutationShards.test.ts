@@ -185,7 +185,7 @@ describe('mutation shards', () => {
 
   it('computeTitleAndDiagnosis を関数の途中で割らない', () => {
     const titleStart = 621;
-    const titleEnd = 715;
+    const titleEnd = 719;
     const sprintRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);
       const coverage = resolved.get('src/sim/sprint.ts');
@@ -199,8 +199,8 @@ describe('mutation shards', () => {
 
   it('persistFrameShape の結果検証と isMemberShape を関数の途中で割らない', () => {
     const methods = [
-      { name: 'isSprintResultShape', start: 259, end: 310 },
-      { name: 'isMemberShape', start: 338, end: 354 },
+      { name: 'isSprintResultShape', start: 274, end: 328 },
+      { name: 'isMemberShape', start: 356, end: 372 },
     ];
     const persistRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);

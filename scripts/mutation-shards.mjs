@@ -307,12 +307,12 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'state-persist-shape-b',
-    mutate: 'src/state/persistFrameShape.ts:165-354',
+    mutate: 'src/state/persistFrameShape.ts:165-372',
     note: 'persistFrameShape 中盤（isMemberShape まで）',
   },
   {
     id: 'state-persist-shape-c',
-    mutate: `src/state/persistFrameShape.ts:355-${OPEN_RANGE_END}`,
+    mutate: `src/state/persistFrameShape.ts:373-${OPEN_RANGE_END}`,
     note: 'persistFrameShape 後半',
   },
   {

@@ -638,9 +638,13 @@ export function computeTitleAndDiagnosis(
     };
   }
   if (hpLoss >= SPRINT_BALANCE.titleSeniorBurnoutHpLoss.value) {
+    // HUD `seniorHpHudCopy` と同じく、表示上の残り体力 25 未満だけを燃え尽き寸前とする。
+    const nearBurnout = Math.round(org.seniorHp) < 25;
     return {
       title: 'シニア過労メーカー',
-      diagnosis: 'レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。',
+      diagnosis: nearBurnout
+        ? 'レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。'
+        : 'レビュー負荷がシニアに集中し大きく消耗しました。体力が尽きる前に分散を。',
     };
   }
   if (
@@ -736,6 +740,7 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     gradeRatio: score.ratio,
     stabilizingBonus: score.stabilizingBonus,
     stabilizingGrants: m.stabilizingGrants,
+    gradePenalties: { ...score.penalties },
     title,
     diagnosis,
     timeline: sprint.timeline.map((s) => ({ ...s })),

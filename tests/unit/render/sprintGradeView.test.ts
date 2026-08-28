@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { planSprintGradeView } from '../../../src/render/sprintGradeView';
+import { evaluateSprintGrade } from '../../../src/sim/sprintGrade';
 import type { SprintResult } from '../../../src/sim/types';
 
 function makeResult(overrides: Partial<SprintResult> = {}): SprintResult {
@@ -28,10 +29,29 @@ function makeResult(overrides: Partial<SprintResult> = {}): SprintResult {
   };
 }
 
+function withRecordedGrade(overrides: Partial<SprintResult> = {}): SprintResult {
+  const result = makeResult(overrides);
+  const score = evaluateSprintGrade({
+    delivered: result.delivered,
+    reworkCount: result.rework,
+    incidentCount: result.incidents,
+    spread: result.spread,
+    hpLoss: result.seniorHpLoss ?? Math.max(0, -result.seniorHpDelta),
+    stabilizingGrants: result.stabilizingGrants ?? 0,
+  });
+  return {
+    ...result,
+    gradeRatio: overrides.gradeRatio ?? score.ratio,
+    stabilizingBonus: overrides.stabilizingBonus ?? score.stabilizingBonus,
+    stabilizingGrants: overrides.stabilizingGrants ?? 0,
+    gradePenalties: overrides.gradePenalties ?? score.penalties,
+  };
+}
+
 describe('sprintGradeView', () => {
   it('出荷が多くてもシニア瀕死と Incident 多数なら危機の読みを出す', () => {
     const view = planSprintGradeView(
-      makeResult({
+      withRecordedGrade({
         delivered: 576,
         rework: 3,
         incidents: 10,
@@ -59,7 +79,7 @@ describe('sprintGradeView', () => {
 
   it('安定介入ボーナス込みの最終健全比を使い、S 境界と整合する', () => {
     const view = planSprintGradeView(
-      makeResult({
+      withRecordedGrade({
         delivered: 100,
         rework: 1,
         incidents: 0,
@@ -85,7 +105,7 @@ describe('sprintGradeView', () => {
 
   it('危機が少なく健全比が高いときは比率だけを示す', () => {
     const view = planSprintGradeView(
-      makeResult({
+      withRecordedGrade({
         delivered: 100,
         rework: 0,
         incidents: 0,
@@ -105,7 +125,7 @@ describe('sprintGradeView', () => {
 
   it('健全比が B 境界未満なら重い読みにする', () => {
     const view = planSprintGradeView(
-      makeResult({
+      withRecordedGrade({
         delivered: 100,
         rework: 4,
         incidents: 5,
@@ -119,9 +139,30 @@ describe('sprintGradeView', () => {
     expect(view.caption).toContain('出荷に対して手戻り・障害・消耗が重い');
   });
 
+  it('丸め前の健全比が B 境界未満なら整数化しても重い読みにする', () => {
+    const view = planSprintGradeView(
+      withRecordedGrade({
+        delivered: 100,
+        rework: 0,
+        incidents: 0,
+        spread: 0,
+        seniorHpDelta: 0,
+        grade: 'C',
+        gradeRatio: 0.615,
+        stabilizingBonus: 0,
+        stabilizingGrants: 0,
+        gradePenalties: { rework: 0, incident: 0, spread: 0, hp: 38.5, total: 38.5 },
+      }),
+    );
+
+    expect(view.ratioPct).toBe(62);
+    expect(view.caption).toBe('出荷に対して手戻り・障害・消耗が重い（健全比 62%）');
+    expect(view.rows.at(-1)).toEqual({ label: '健全比', value: '62% → C' });
+  });
+
   it('出荷ゼロは危機が重いではなく未出荷と説明する', () => {
     const view = planSprintGradeView(
-      makeResult({
+      withRecordedGrade({
         delivered: 0,
         rework: 0,
         incidents: 0,
@@ -141,7 +182,7 @@ describe('sprintGradeView', () => {
     const seniorHpLoss = 98.48;
     const gradeRatio = (100 - (seniorHpLoss - 20) * 0.7) / 100;
     const view = planSprintGradeView(
-      makeResult({
+      withRecordedGrade({
         delivered: 100,
         rework: 0,
         incidents: 0,
@@ -158,5 +199,52 @@ describe('sprintGradeView', () => {
       value: '−54.9pt（-98）',
     });
     expect(view.ratioPct).toBe(Math.round(gradeRatio * 100));
+  });
+
+  it('旧リザルトは推定した健全比を確定値として出さず内訳を省略する', () => {
+    const view = planSprintGradeView(
+      makeResult({
+        delivered: 100,
+        rework: 1,
+        incidents: 0,
+        spread: 0,
+        seniorHpDelta: 0,
+        grade: 'S',
+      }),
+    );
+
+    expect(view.ratioPct).toBeUndefined();
+    expect(view.caption).toBe('出荷に対する評価 S');
+    expect(view.rows).toEqual([
+      { label: '出荷', value: '100pt' },
+      { label: '評価', value: 'S' },
+    ]);
+    expect(view.rows.some((row) => row.label === 'Rework')).toBe(false);
+    expect(view.tip).toContain('評価内訳の記録がありません');
+    expect(view.tip).not.toContain('ペナルティが少なく');
+  });
+
+  it('記録済みの減点内訳を現行ルールで再計算せず使う', () => {
+    const view = planSprintGradeView(
+      makeResult({
+        delivered: 100,
+        rework: 1,
+        incidents: 0,
+        spread: 0,
+        seniorHpDelta: 0,
+        grade: 'A',
+        gradeRatio: 0.8,
+        stabilizingBonus: 0,
+        stabilizingGrants: 0,
+        gradePenalties: { rework: 20, incident: 0, spread: 0, hp: 0, total: 20 },
+      }),
+    );
+
+    expect(view.ratioPct).toBe(80);
+    expect(view.rows).toEqual([
+      { label: '出荷', value: '100pt' },
+      { label: 'Rework', value: '−20pt（1件）' },
+      { label: '健全比', value: '80% → A' },
+    ]);
   });
 });

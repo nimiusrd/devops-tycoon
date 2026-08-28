@@ -4,6 +4,9 @@
  * `computeGrade` とリザルト内訳が同じ入力・同じ式を使うための正本。
  */
 import { SPRINT_BALANCE } from '../data/balance';
+import type { SprintGradePenalties } from './types';
+
+export type { SprintGradePenalties } from './types';
 
 export interface SprintGradeInput {
   delivered: number;
@@ -12,14 +15,6 @@ export interface SprintGradeInput {
   spread: number;
   hpLoss: number;
   stabilizingGrants: number;
-}
-
-export interface SprintGradePenalties {
-  rework: number;
-  incident: number;
-  spread: number;
-  hp: number;
-  total: number;
 }
 
 export interface SprintGradeScore {

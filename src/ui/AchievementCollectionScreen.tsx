@@ -4,9 +4,11 @@
  * 取得済み／未取得の実績を一覧表示し、未取得には獲得条件のヒントを出す。
  * 描画は meta を読むだけ（第22.2）。
  */
+import { useRef } from 'react';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { FAILURE_ENCYCLOPEDIA_DEFS } from '../sim/diagnosis';
 import { ACHIEVEMENT_DEFS, WIN_TITLE_DEFS, type MetaState } from '../state/meta';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface AchievementCollectionScreenProps {
   meta: MetaState;
@@ -14,6 +16,8 @@ export interface AchievementCollectionScreenProps {
 }
 
 export function AchievementCollectionScreen({ meta, onClose }: AchievementCollectionScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true });
   const earned = new Set(meta.achievements);
   const earnedCount = ACHIEVEMENT_DEFS.filter((a) => earned.has(a.id)).length;
   const collectedTitles = new Set(meta.collectedWinTypes);
@@ -25,10 +29,13 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
 
   return (
     <div
+      ref={overlayRef}
       className="result-overlay"
       data-testid="achievement-collection"
       role="dialog"
+      aria-modal="true"
       aria-label="Achievement collection"
+      tabIndex={-1}
     >
       <div className="achievement-collection-panel">
         <p className="result-eyebrow">ACHIEVEMENTS</p>

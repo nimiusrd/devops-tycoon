@@ -7,7 +7,16 @@
  * 座標は設計空間（1404×573）の % で重ね、PixiJSとDOMの描画を切り替える。
  * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
-import { lazy, Suspense, useCallback, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import type {
   ActionTarget,
   Lane,
@@ -23,6 +32,11 @@ import {
   planBoardDrag,
   type DraggableActionId,
 } from './boardDragPlan';
+import {
+  clientPointHitsDraggableBoardDot,
+  registerBoardDragHitTest,
+  registerPixiBoardDragHitTest,
+} from './boardDragHit';
 import { hitTestBoardDot } from './boardPixiView';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
@@ -255,6 +269,8 @@ export interface BoardProps {
   /** タスク差配の担当指定（省略時は defaultAssignee）。 */
   assignAssignee?: 'ai' | 'senior';
   onDragComplete?: (target: ActionTarget) => void;
+  /** true なら壁時計アニメを止める（進化オーバーレイ中 / #386）。 */
+  animationsPaused?: boolean;
 }
 
 /** 凡例（dot 凡例）。 */
@@ -279,6 +295,7 @@ export function Board({
   armedAction = null,
   assignAssignee,
   onDragComplete,
+  animationsPaused = false,
 }: BoardProps) {
   // 育成メンバーの疲弊/好調を表情上書きへ（RI-08。roster 無しは従来どおり）。
   const moodOverrides = useMemo(
@@ -300,6 +317,19 @@ export function Board({
     armedAction && sprint ? planBoardDrag(sprint, armedAction, assignAssignee) : null;
   const dragIds = useMemo(() => new Set(dragPlan?.draggableTaskIds ?? []), [dragPlan]);
   const dropLanes = new Set(dragPlan?.dropLanes ?? []);
+
+  useEffect(() => {
+    registerPixiBoardDragHitTest(usePixi, (clientX, clientY) =>
+      clientPointHitsDraggableBoardDot(
+        clientX,
+        clientY,
+        boardRef.current?.getBoundingClientRect() ?? null,
+        scene.dots,
+        dragIds,
+      ),
+    );
+    return () => registerBoardDragHitTest(null);
+  }, [dragIds, scene.dots, usePixi]);
 
   const [dragTaskId, setDragTaskId] = useState<number | null>(null);
   const [hoverLane, setHoverLane] = useState<Lane | null>(null);
@@ -374,6 +404,7 @@ export function Board({
       className={`board iso-office${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
       data-testid="board"
       data-armed={armedAction ?? undefined}
+      data-animations-paused={animationsPaused ? 'true' : undefined}
       onPointerDown={usePixi ? handleBoardPointerDown : undefined}
       style={{ '--review-heat': heat } as CSSProperties}
     >
@@ -400,6 +431,7 @@ export function Board({
             draggableTaskIds={dragIds}
             dragTaskId={dragTaskId}
             onWebglError={onWebglError}
+            animationsPaused={animationsPaused}
           />
         </Suspense>
       ) : (

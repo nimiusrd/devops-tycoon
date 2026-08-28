@@ -6,15 +6,17 @@
  * レイアウトは司令室 UI の構図を使い、文言は SPEC の用語に揃える。
  * ラン開始 CTA は画面下のドックに常時出し、初見がスクロールなしで始められるようにする。
  */
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
+import type { ResumeRisk } from '../state/resumeRisk';
 import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
+import { downloadTextFile } from './downloadTextFile';
 
 const DIFFICULTY_TAG: Record<DifficultyId, string> = {
   easy: 'Easy',
@@ -41,6 +43,98 @@ function formatRuleset(ruleset: { version: number; fingerprint: string }): strin
   return `v${ruleset.version} / ${fingerprint}`;
 }
 
+function ResumeRiskDialog({
+  risk,
+  onCancel,
+  onConfirm,
+}: {
+  risk: ResumeRisk;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('button')];
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  return (
+    <div
+      ref={dialogRef}
+      className="result-overlay"
+      data-testid="resume-risk-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="resume-risk-title"
+      aria-describedby="resume-risk-body"
+    >
+      <div className="result-card resume-risk-card">
+        <p className="result-eyebrow">RESUME WARNING</p>
+        <h2 id="resume-risk-title" className="draft-title">
+          {risk.headline}
+        </h2>
+        <p id="resume-risk-body" className="resume-risk-body">
+          {risk.body}
+        </p>
+        <ul className="resume-risk-flags">
+          {risk.flags.map((flag) => (
+            <li key={flag.id}>
+              <span className={`pill tone-${flag.tone}`}>{flag.chip}</span>
+              {flag.id === 'seniorHp' || flag.id === 'seniorBurnout'
+                ? ` シニア体力 ${risk.seniorHpPct}%`
+                : null}
+            </li>
+          ))}
+        </ul>
+        <div className="result-actions">
+          <button
+            ref={cancelRef}
+            type="button"
+            className="btn btn-primary"
+            data-testid="resume-risk-cancel"
+            onClick={onCancel}
+          >
+            再開しない
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            data-testid="resume-risk-confirm"
+            onClick={onConfirm}
+          >
+            それでも再開する
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export interface TitleScreenProps {
   seed: string;
   meta: MetaState;
@@ -53,6 +147,7 @@ export interface TitleScreenProps {
   onStartDaily?: () => void;
   onResume?: () => void;
   resumableSummary?: RunSaveSummary | null;
+  resumeRisk?: ResumeRisk | null;
   runSaveIssue?: RunSaveCompatibilityIssue | null;
   onDiscardRunSave?: () => void;
   onOpenReplays?: () => void;
@@ -80,6 +175,7 @@ export function TitleScreen({
   onStartDaily,
   onResume,
   resumableSummary = null,
+  resumeRisk = null,
   runSaveIssue = null,
   onDiscardRunSave,
   onOpenReplays,
@@ -112,6 +208,8 @@ export function TitleScreen({
     kind: 'idle' | 'ok' | 'error';
     message: string;
   }>({ kind: 'idle', message: '' });
+  const [resumeConfirmOpen, setResumeConfirmOpen] = useState(false);
+  const resumeBtnRef = useRef<HTMLButtonElement>(null);
   const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
@@ -138,14 +236,16 @@ export function TitleScreen({
   };
 
   const downloadRecipe = () => {
-    const text = exportRecipe();
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'devops-tycoon-start-recipe.json';
-    link.click();
-    URL.revokeObjectURL(url);
+    const text = liveRecipeText;
+    setRecipeDraft(null);
+    if (downloadTextFile('devops-tycoon-start-recipe.json', text)) {
+      setRecipeStatus({ kind: 'ok', message: '開始レシピをファイルに保存しました。' });
+      return;
+    }
+    setRecipeStatus({
+      kind: 'error',
+      message: '開始レシピをファイルに保存できませんでした。',
+    });
   };
 
   const applyRecipeText = (raw: string) => {
@@ -180,14 +280,14 @@ export function TitleScreen({
       setRunSaveShareStatus({ kind: 'error', message: '書き出せる途中セーブがありません。' });
       return;
     }
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'devops-tycoon-run-save.json';
-    link.click();
-    URL.revokeObjectURL(url);
-    setRunSaveShareStatus({ kind: 'ok', message: '途中セーブをファイルに保存しました。' });
+    if (downloadTextFile('devops-tycoon-run-save.json', text)) {
+      setRunSaveShareStatus({ kind: 'ok', message: '途中セーブをファイルに保存しました。' });
+      return;
+    }
+    setRunSaveShareStatus({
+      kind: 'error',
+      message: '途中セーブをファイルに保存できませんでした。',
+    });
   };
 
   const onRunSaveFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -519,6 +619,8 @@ export function TitleScreen({
                   <p
                     className={`title-recipe-status${recipeStatus.kind === 'error' ? ' error' : ''}`}
                     data-testid="start-recipe-status"
+                    role="status"
+                    aria-live="polite"
                   >
                     {recipeStatus.message}
                   </p>
@@ -573,6 +675,8 @@ export function TitleScreen({
                     <p
                       className={`title-recipe-status${runSaveShareStatus.kind === 'error' ? ' error' : ''}`}
                       data-testid="run-save-share-status"
+                      role="status"
+                      aria-live="polite"
                     >
                       {runSaveShareStatus.message}
                     </p>
@@ -636,7 +740,10 @@ export function TitleScreen({
             ) : null}
 
             {!runSaveIssue && resumableSummary && onResume ? (
-              <section className="title-resume" data-testid="resume-run-section">
+              <section
+                className={`title-resume${resumeRisk?.tone === 'danger' ? ' title-resume-risk' : ''}`}
+                data-testid="resume-run-section"
+              >
                 <div className="title-resume-copy">
                   <span>中断中のラン</span>
                   <b>
@@ -649,13 +756,33 @@ export function TitleScreen({
                       ? ` · デイリー ${resumableSummary.dailyDate}`
                       : ''}
                   </small>
+                  {resumeRisk ? (
+                    <p className="title-resume-warning" data-testid="resume-risk-warning">
+                      <span>{resumeRisk.headline}</span>
+                      {resumeRisk.flags.map((flag) => (
+                        <span key={flag.id} className={`pill tone-${flag.tone}`}>
+                          {flag.chip}
+                          {flag.id === 'seniorHp' || flag.id === 'seniorBurnout'
+                            ? ` ${resumeRisk.seniorHpPct}%`
+                            : ''}
+                        </span>
+                      ))}
+                    </p>
+                  ) : null}
                 </div>
                 <button
+                  ref={resumeBtnRef}
                   type="button"
                   className="title-resume-btn"
                   data-testid="resume-run"
                   disabled={runSaveImporting}
-                  onClick={onResume}
+                  onClick={() => {
+                    if (resumeRisk?.requiresConfirm) {
+                      setResumeConfirmOpen(true);
+                      return;
+                    }
+                    onResume();
+                  }}
                 >
                   続きから再開 →
                 </button>
@@ -733,6 +860,19 @@ export function TitleScreen({
       >
         <div className="title-launch-dock-inner">{launchControls}</div>
       </div>
+      {resumeConfirmOpen && resumeRisk?.requiresConfirm ? (
+        <ResumeRiskDialog
+          risk={resumeRisk}
+          onCancel={() => {
+            setResumeConfirmOpen(false);
+            resumeBtnRef.current?.focus();
+          }}
+          onConfirm={() => {
+            setResumeConfirmOpen(false);
+            onResume?.();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

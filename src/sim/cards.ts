@@ -355,3 +355,35 @@ export function drawDraft(
   }
   return picked;
 }
+
+function draftSetKey(ids: readonly string[]): string {
+  return [...ids].sort().join('\0');
+}
+
+/**
+ * ドラフト引き直し用に、元候補と同じ集合を避けて抽選する（RI-81）。
+ * 通常抽選が最大試行まで同一集合なら、元候補の1枚を除外して強制的に差し替える。
+ * 除外後のプールが足りない（候補が3枚しかない等）ときは最後の通常抽選を返す。
+ */
+export function redrawDraftCandidates(
+  previous: readonly string[],
+  options: {
+    count: number;
+    maxAttempts: number;
+    draw: (attempt: number) => string[];
+    forceDraw?: (excludeId: string) => string[];
+  },
+): string[] {
+  const previousKey = draftSetKey(previous);
+  let next = [...previous];
+  for (let attempt = 0; attempt < options.maxAttempts; attempt += 1) {
+    const candidate = options.draw(attempt);
+    next = candidate;
+    if (draftSetKey(candidate) !== previousKey) return candidate;
+  }
+  const excludeId = previous[0];
+  if (!excludeId || !options.forceDraw) return next;
+  const forced = options.forceDraw(excludeId);
+  if (forced.length === options.count && draftSetKey(forced) !== previousKey) return forced;
+  return next;
+}

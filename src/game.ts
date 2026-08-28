@@ -8,6 +8,7 @@
  */
 import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
+import type { ReplayFramePhase } from './sim/run/persist';
 import { resolveSeedFromLocation } from './sim/seed';
 import type {
   ActionId,
@@ -68,12 +69,14 @@ import {
   type RunRulesetIdentity,
   type RunStorage,
 } from './state/runPersistence';
+import { findNextReplayKeyframeIndex } from './state/replayJump';
 import {
   parseReplayShare,
   REPLAY_SHARE_REASON_MESSAGE,
   serializeReplay,
   type ReplayShareResult,
 } from './state/replayShare';
+import { assessResumeRisk, type ResumeRisk } from './state/resumeRisk';
 import {
   parseRunSaveShare,
   RUN_SAVE_SHARE_REASON_MESSAGE,
@@ -202,6 +205,8 @@ export interface GameHandle {
   hasResumableRun(): boolean;
   /** タイトル「続きから」用の要約（無い場合は null）。 */
   getRunSaveSummary(): RunSaveSummary | null;
+  /** 再開前に示す燃え尽き／継続不能リスク（無い場合は null）。 */
+  getResumeRisk(): ResumeRisk | null;
   /** ルールセット不一致・情報欠落で再開できないセーブの理由。 */
   getRunSaveIssue(): RunSaveCompatibilityIssue | null;
   /** ランセーブを破棄する。 */
@@ -226,6 +231,13 @@ export interface GameHandle {
   importReplayText(raw: string): Promise<ReplayShareResult>;
   /** リプレイのキーフレームを read-only で開く（失敗時 null）。 */
   openReplay(id: string, keyframeIndex?: number): RunState | null;
+  /**
+   * 閲覧中リプレイで、現在キーフレームより後の指定フェーズへジャンプする。
+   * 該当キーフレームが無ければ null。
+   */
+  jumpReplayToPhase(phase: ReplayFramePhase): RunState | null;
+  /** ジャンプ先キーフレーム index。対象が無ければ null。 */
+  findReplayJumpIndex(phase: ReplayFramePhase): number | null;
   /** リプレイ閲覧を終了してタイトルへ戻る。 */
   exitReplay(): RunState;
   /** リプレイ閲覧中か。 */
@@ -300,6 +312,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
   let replayMode = false;
+  /** 閲覧中リプレイの id。非リプレイ時は null。 */
+  let activeReplayId: string | null = null;
+  /** 閲覧中キーフレームの index。非リプレイ時は -1。 */
+  let activeReplayKeyframeIndex = -1;
   /** 閲覧中リプレイの終端診断（キーフレーム時点の diagnosis と独立。RI-34‴）。 */
   let activeReplayDiagnosis: DiagnosisType | null = null;
   /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
@@ -316,6 +332,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let whatIfCache: { key: string; value: WhatIfState | null } | null = null;
   /** 進行中の Worker リクエストのキャッシュキー。 */
   let whatIfPendingKey: string | null = null;
+  /** 進行中リクエストの世代。引き直し後の古い完了を捨てる。 */
+  let whatIfRequestGen = 0;
 
   /** 状態を変えた可能性のある操作の後に版番号を進める。 */
   const bump = (): void => {
@@ -325,6 +343,15 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   const clearWhatIfCache = (): void => {
     whatIfCache = null;
     whatIfPendingKey = null;
+    whatIfRequestGen += 1;
+  };
+
+  const applyWhatIfResult = (gen: number, key: string, value: WhatIfState | null): void => {
+    if (gen !== whatIfRequestGen) return;
+    if (whatIfPendingKey !== key) return;
+    whatIfCache = { key, value };
+    whatIfPendingKey = null;
+    bump();
   };
 
   const clearRunSaveInternal = (): void => {
@@ -459,12 +486,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     if (whatIfPendingKey !== key) {
       whatIfPendingKey = key;
       const requestInput: WhatIfComputeInput = input;
-      void requestWhatIfState(requestInput).then((value) => {
-        if (whatIfPendingKey !== key) return;
-        whatIfCache = { key, value };
-        whatIfPendingKey = null;
-        bump();
-      });
+      const gen = ++whatIfRequestGen;
+      void requestWhatIfState(requestInput)
+        .then((value) => {
+          applyWhatIfResult(gen, key, value);
+        })
+        .catch(() => {
+          applyWhatIfResult(gen, key, computeWhatIfState(requestInput));
+        });
     }
 
     return { whatIf: null, whatIfStatus: 'computing' };
@@ -538,6 +567,45 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return engine.snapshot();
   };
 
+  const openReplayById = (id: string, keyframeIndex = -1): RunState | null => {
+    const replay = cachedReplays.find((item) => item.id === id);
+    if (!replay || replay.keyframes.length === 0) return null;
+    const index =
+      keyframeIndex < 0
+        ? replay.keyframes.length - 1
+        : Math.min(keyframeIndex, replay.keyframes.length - 1);
+    const frame = replay.keyframes[index];
+    if (!frame) return null;
+    try {
+      engine.hydrateReplayFrame(frame.frame);
+    } catch {
+      return null;
+    }
+    replayMode = true;
+    activeReplayId = id;
+    activeReplayKeyframeIndex = index;
+    activeReplayDiagnosis = replay.outcome.diagnosis;
+    activeReplayInfo = {
+      ruleset: replay.ruleset ? structuredClone(replay.ruleset) : null,
+      contentSnapshot: replay.contentSnapshot ? structuredClone(replay.contentSnapshot) : null,
+    };
+    activeDailyDate = frame.frame.dailyDate ?? null;
+    activeDailyRuleset = null;
+    recorded = true;
+    lastRunReward = null;
+    clearWhatIfCache();
+    paused = true;
+    bump();
+    return engine.snapshot();
+  };
+
+  const findReplayJumpIndex = (phase: ReplayFramePhase): number | null => {
+    if (!replayMode || !activeReplayId) return null;
+    const replay = cachedReplays.find((item) => item.id === activeReplayId);
+    if (!replay) return null;
+    return findNextReplayKeyframeIndex(replay.keyframes, activeReplayKeyframeIndex, phase);
+  };
+
   return {
     pause() {
       paused = true;
@@ -566,6 +634,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       activeDailyDate = null;
       activeDailyRuleset = null;
       activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
       keyframes = [];
       paused = false;
       clearWhatIfCache();
@@ -583,6 +653,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       recorded = false;
       lastRunReward = null;
       activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
       activeDailyRuleset = { ...CURRENT_RUN_RULESET };
@@ -662,8 +734,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     mulliganDraft() {
       if (replayMode) return engine.snapshot();
       engine.mulliganDraft();
+      clearWhatIfCache();
       bump();
-      return after();
+      const persisted = after();
+      return { ...persisted, ...resolveWhatIf() };
     },
     unlockEvolution(id) {
       if (replayMode) return engine.snapshot();
@@ -780,6 +854,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       replayMode = false;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
@@ -883,6 +959,14 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       if (resumableSave) return structuredClone(resumableSave.summary);
       return runSaveIssue ? structuredClone(runSaveIssue.summary) : null;
     },
+    getResumeRisk() {
+      if (!resumableSave) return null;
+      return assessResumeRisk({
+        org: resumableSave.state.org,
+        totals: resumableSave.state.totals,
+        budget: resumableSave.state.budget,
+      });
+    },
     getRunSaveIssue() {
       return runSaveIssue ? structuredClone(runSaveIssue) : null;
     },
@@ -977,38 +1061,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
     },
     openReplay(id, keyframeIndex = -1) {
-      const replay = cachedReplays.find((r) => r.id === id);
-      if (!replay || replay.keyframes.length === 0) return null;
-      const index =
-        keyframeIndex < 0
-          ? replay.keyframes.length - 1
-          : Math.min(keyframeIndex, replay.keyframes.length - 1);
-      const frame = replay.keyframes[index];
-      if (!frame) return null;
-      try {
-        engine.hydrateReplayFrame(frame.frame);
-      } catch {
-        return null;
-      }
-      replayMode = true;
-      activeReplayDiagnosis = replay.outcome.diagnosis;
-      activeReplayInfo = {
-        ruleset: replay.ruleset ? structuredClone(replay.ruleset) : null,
-        contentSnapshot: replay.contentSnapshot ? structuredClone(replay.contentSnapshot) : null,
-      };
-      activeDailyDate = frame.frame.dailyDate ?? null;
-      activeDailyRuleset = null;
-      recorded = true;
-      lastRunReward = null;
-      clearWhatIfCache();
-      paused = true;
-      bump();
-      return engine.snapshot();
+      return openReplayById(id, keyframeIndex);
     },
+    jumpReplayToPhase(phase) {
+      const index = findReplayJumpIndex(phase);
+      if (index === null || !activeReplayId) return null;
+      return openReplayById(activeReplayId, index);
+    },
+    findReplayJumpIndex,
     exitReplay() {
       replayMode = false;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;

@@ -375,7 +375,7 @@ export function TitleScreen({
         className="title-launch"
         data-testid="start-run"
         disabled={runSaveImporting}
-        onClick={() => onStart(difficulty, trials, scenario, seed)}
+        onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
       >
         <span>
           <small>ラン開始</small>
@@ -391,7 +391,7 @@ export function TitleScreen({
         className="btn btn-primary btn-lg"
         data-testid="start-run"
         disabled={runSaveImporting}
-        onClick={() => onStart(difficulty, trials, scenario, seed)}
+        onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
       >
         四半期を始める →
       </button>

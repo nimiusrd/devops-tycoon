@@ -26,6 +26,27 @@ export const MS_PER_TICK_1X = PACING_BALANCE.msPerTick1x.value;
 /** プレイヤー向け再生速度。0=一時停止、1=1x、2=2x。 */
 export type PlaybackSpeed = 0 | 1 | 2;
 
+/** 一時停止以外の再生速度。❚❚ 解除時の復帰先。 */
+export type PlayingSpeed = Exclude<PlaybackSpeed, 0>;
+
+/** プレイヤー Pause 中か（sim・カード解決を止める）。 */
+export function isPlaybackPaused(speed: PlaybackSpeed): speed is 0 {
+  return speed === 0;
+}
+
+/**
+ * 速度コントロールの次状態。
+ * ❚❚ はトグル（解除時は直前の再生速度）、1x / 2x は指定速度へ再開する。
+ */
+export function nextPlaybackSpeed(
+  current: PlaybackSpeed,
+  clicked: PlaybackSpeed,
+  resumeSpeed: PlayingSpeed = 1,
+): PlaybackSpeed {
+  if (clicked === 0) return current === 0 ? resumeSpeed : 0;
+  return clicked;
+}
+
 /**
  * 壁時計から sim を 1 tick 進めてよいか（RI-62 / #386）。
  *

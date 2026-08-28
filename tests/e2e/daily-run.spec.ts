@@ -257,3 +257,29 @@ test('再開できないセーブでは再開を案内せず破棄と戻るだ�
   await expect(page.getByTestId('incompatible-run-save')).toBeVisible();
   await expect.poll(() => storedRunSeed(page)).toBe(seed);
 });
+
+test('デイリー後の通常ランは起動 seed を使い daily seed を引き継がない', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=pending-seed-e2e');
+  await expect(page.getByTestId('seed')).toContainText('pending-seed-e2e');
+
+  await page.getByTestId('start-daily-run').click();
+  await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
+
+  await page.evaluate(() => {
+    window.game!.newRun();
+  });
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(page.getByTestId('seed')).toContainText('pending-seed-e2e');
+  await expect(page.getByTestId('seed')).not.toContainText(/daily-\d{4}-\d{2}-\d{2}/);
+
+  await page.getByTestId('start-run').click();
+  await expect(page.getByTestId('setup')).toBeVisible({ timeout: 5000 });
+
+  const started = await page.evaluate(() => {
+    const s = window.game!.getState();
+    return { seed: s.seed, runKind: s.runKind, dailyDate: s.dailyDate ?? null };
+  });
+  expect(started.seed).toBe('pending-seed-e2e');
+  expect(started.runKind).toBe('normal');
+  expect(started.dailyDate).toBeNull();
+});

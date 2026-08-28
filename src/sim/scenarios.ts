@@ -6,6 +6,7 @@
  * シナリオは導入済みツールの差分だけを加算する。
  */
 import { clamp } from './clamp';
+import { AI_DEP_PER_TASK } from './model/process';
 import type { CardEffects, ScenarioId, SprintConfig } from './types';
 
 /** シナリオが持つ組織の初期パラメータ（0..100）。 */
@@ -32,6 +33,11 @@ export interface Scenario {
   orgDelta?: Partial<ScenarioOrg>;
   /** 難易度の直後に畳み込む係数（RI-103）。カードより弱い。 */
   globalEffects?: Partial<CardEffects>;
+  /**
+   * AI 割当タスク 1 件あたりの依存度上昇。未指定時は難易度／グローバル既定。
+   * 難易度側がより低い値なら難易度を優先する（Nightmare RI-74）。
+   */
+  aiDependencyPerTask?: number;
 }
 
 export const DEFAULT_SCENARIO: ScenarioId = 'default';
@@ -71,6 +77,13 @@ export const SCENARIOS: Record<ScenarioId, Scenario> = {
     sprint: DEFAULT_SPRINT,
     orgDelta: { aiDependencyBase: 8, securityLevel: -5 },
     globalEffects: { codingSpeedMul: 1.06, routineSpeedMul: 1.12 },
+    /**
+     * Easy の通常床 58 タスク × 採用率およそ 43% で AI 割当が約 25 件。
+     * 既定 2.2 だと開始 33 から Sprint 1 で 33+25×2.2=88 まで跳ねて Review Hell と重なる（#387）。
+     * 初期依存は orgDelta +8 で既に織り込み済みなので、追加ランプだけ抑える。
+     * 1.4 なら同一 seed で 33+25×1.4=68。速度ボーナスは残し、レビュー圧は Copilot の代償として残す。
+     */
+    aiDependencyPerTask: 1.4,
   },
   'claude-code': {
     id: 'claude-code',
@@ -116,6 +129,21 @@ const ORG_KEYS: readonly (keyof ScenarioOrg)[] = [
   'morale',
   'seniorHp',
 ];
+
+/**
+ * 難易度とシナリオから AI 依存度のタスク単価を決める。
+ * どちらも未指定ならグローバル既定を使うため `undefined` を返す。
+ * 両方あるときは低い方を採り、Nightmare の S1 即死回避（RI-74）を崩さない。
+ * Easy の通常単価を渡すのは default シナリオのときだけ（#359 / #415）。
+ * 呼び出し側で Easy+非 default の難易度単価は `undefined` にする。
+ */
+export function resolveAiDependencyPerTask(
+  difficultyPerTask: number | undefined,
+  scenarioPerTask: number | undefined,
+): number | undefined {
+  if (difficultyPerTask === undefined && scenarioPerTask === undefined) return undefined;
+  return Math.min(difficultyPerTask ?? AI_DEP_PER_TASK, scenarioPerTask ?? AI_DEP_PER_TASK);
+}
 
 /** 難易度の組織初期値へシナリオ差分を加算し 0..100 に収める（RI-103）。 */
 export function applyScenarioOrg(base: ScenarioOrg, scenario: Scenario): ScenarioOrg {

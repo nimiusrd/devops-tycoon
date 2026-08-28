@@ -1,8 +1,8 @@
 /**
  * シーン遷移のスクロール着地と白フラッシュ防止（#368）。
  *
- * タイトル／編成は window スクロールする。遷移 CTA をビューポート末尾に置いた
- * 状態で次画面へ進み、着地が上端であることと html 下地が白でないことを見る。
+ * タイトル／編成のスクロール領域を遷移 CTA の末尾まで動かした状態で次画面へ進み、
+ * 着地が上端であることと html 下地が白でないことを見る。
  */
 import { expect, test, type Page } from './fixtures';
 
@@ -41,10 +41,13 @@ test.describe('シーン遷移のスクロールと下地', () => {
     await expect(page.getByTestId('title')).toBeVisible();
     await expect(page.getByTestId('start-daily-run')).toBeVisible();
 
-    await page.getByTestId('start-daily-run').evaluate((element) => {
-      element.scrollIntoView({ block: 'end', inline: 'nearest' });
+    await page.getByTestId('title-scroll').evaluate((element) => {
+      const scroll = element as HTMLElement;
+      scroll.scrollTop = scroll.scrollHeight - scroll.clientHeight;
     });
-    const titleScrollY = await windowScrollY(page);
+    const titleScrollY = await page.getByTestId('title-scroll').evaluate((element) => {
+      return (element as HTMLElement).scrollTop;
+    });
     expect(titleScrollY).toBeGreaterThan(40);
 
     await clickWithoutScrolling(page, 'start-daily-run');

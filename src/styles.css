@@ -2652,6 +2652,12 @@ button.card:active:not(:disabled) {
 button.card:disabled {
   cursor: not-allowed;
 }
+/* 読み取り専用は native disabled のまま、UA 減光を打ち消して本文コントラストを保つ（DS-08）。 */
+button.card.card-readonly:disabled {
+  opacity: 1;
+  color: var(--text);
+  cursor: default;
+}
 
 /* ドラフト画面（第7.1） */
 .draft-card-panel {

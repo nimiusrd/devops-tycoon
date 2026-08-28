@@ -101,6 +101,31 @@ async function assertKeyframeViewerInViewport(page: Page): Promise<void> {
   }
 }
 
+async function assertReadOnlyDraftA11y(page: Page): Promise<void> {
+  const draft = page.getByTestId('draft');
+  await expect(draft).toBeVisible();
+  await expect(draft).toHaveAttribute('role', 'dialog');
+  await expect(draft).toHaveAttribute('aria-modal', 'true');
+  await expect.poll(() => draft.evaluate((el) => el === document.activeElement)).toBe(true);
+
+  const card = page.getByTestId('draft-card-copilot');
+  await expect(card).toBeDisabled();
+  await expect(card).toHaveClass(/card-readonly/);
+  await expect(card).not.toHaveClass(/card-disabled/);
+  await expect(card).toHaveCSS('opacity', '1');
+
+  await expect(page.getByTestId('draft-exit-replay')).toBeEnabled();
+  for (let i = 0; i < 8; i += 1) {
+    await page.keyboard.press('Tab');
+    const inside = await page.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="draft"]');
+      const active = document.activeElement;
+      return overlay instanceof HTMLElement && (active === overlay || overlay.contains(active));
+    });
+    expect(inside, `Tab ${i} でフォーカスがドラフト外へ抜けた`).toBe(true);
+  }
+}
+
 test('ラン完了後にリプレイ一覧からキーフレームを read-only で開ける', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=replay-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
@@ -534,6 +559,9 @@ test('リプレイの「カードドラフトへ」で次のドラフトキー�
   await expect(draftCard).toBeVisible();
   await expect(draftCard).toBeDisabled();
   await expect(draftCard).toHaveCSS('width', '220px');
+  await assertReadOnlyDraftA11y(page);
+  await page.getByTestId('draft-exit-replay').click();
+  await expect(page.getByTestId('title')).toBeVisible();
 });
 
 test('ドラフトキーフレームが無いリプレイでは「カードドラフトへ」が disabled', async ({ page }) => {
@@ -798,4 +826,5 @@ test('phone-se のリプレイドラフトはバナー下に収まりカード�
   });
   expect(layout.overlayTop).toBeGreaterThanOrEqual(layout.bannerBottom - 1);
   expect(layout.titleTop).toBeGreaterThanOrEqual(layout.bannerBottom - 1);
+  await assertReadOnlyDraftA11y(page);
 });

@@ -5,11 +5,13 @@
  * 同じデッキでも捌き方で結果が変わり、ドラフトでデッキが育っていく（第7章）。
  * RI-81: 予算コストで引き直すマリガンを提供する（F-12）。
  */
+import { useRef } from 'react';
 import { DRAFT_MULLIGAN_COST } from '../sim/run/constants';
 import { playCost } from '../sim/cards';
 import type { WhatIfPreview as WhatIfPreviewData } from '../sim/run/types';
 import { CardView } from './CardView';
 import { useReplayContent } from './replayContent';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 import { WhatIfPreview } from './WhatIfPreview';
 
 export interface DraftScreenProps {
@@ -31,6 +33,8 @@ export interface DraftScreenProps {
   onMulligan: () => void;
   /** リプレイ閲覧など、操作を受け付けないとき。 */
   readOnly?: boolean;
+  /** 読み取り専用時にダイアログ内へ出す戻る操作。 */
+  onClose?: () => void;
 }
 
 export function DraftScreen({
@@ -45,18 +49,24 @@ export function DraftScreen({
   onSkip,
   onMulligan,
   readOnly = false,
+  onClose,
 }: DraftScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef);
   const canMulligan = !mulliganUsed && budget > DRAFT_MULLIGAN_COST;
   const { resolveCard } = useReplayContent();
   const readOnlyTitle = 'リプレイ閲覧中は操作できません';
 
   return (
     <div
+      ref={overlayRef}
       className="result-overlay"
       data-testid="draft"
       data-readonly={readOnly ? 'true' : undefined}
       role="dialog"
+      aria-modal="true"
       aria-label="Card Draft"
+      tabIndex={-1}
     >
       <div className="draft-card-panel">
         <p className="result-eyebrow">CARD DRAFT</p>
@@ -71,6 +81,7 @@ export function DraftScreen({
                 playCost={playCost(def.focusCost, 1)}
                 onPick={() => onPick(id)}
                 disabled={readOnly}
+                readOnly={readOnly}
                 title={readOnly ? readOnlyTitle : undefined}
                 whatIfPreview={previews[id]}
                 whatIfComputing={whatIfComputing}
@@ -115,6 +126,11 @@ export function DraftScreen({
           >
             スキップして進む
           </button>
+          {readOnly && onClose ? (
+            <button type="button" className="btn" onClick={onClose} data-testid="draft-exit-replay">
+              タイトルへ戻る
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

@@ -573,6 +573,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onSkip={run.skipDraft}
             onMulligan={run.mulliganDraft}
             readOnly={run.isReplayMode}
+            onClose={run.isReplayMode ? exitReplay : undefined}
           />
         )}
       </Suspense>

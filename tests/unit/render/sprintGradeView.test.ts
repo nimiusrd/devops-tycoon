@@ -57,6 +57,32 @@ describe('sprintGradeView', () => {
     expect(view.tip).toContain('小さく見えます');
   });
 
+  it('安定介入ボーナス込みの最終健全比を使い、S 境界と整合する', () => {
+    const view = planSprintGradeView(
+      makeResult({
+        delivered: 100,
+        rework: 1,
+        incidents: 0,
+        spread: 0,
+        seniorHpDelta: 0,
+        grade: 'S',
+        gradeRatio: 0.959,
+        stabilizingBonus: 0.009,
+        stabilizingGrants: 2,
+      }),
+    );
+
+    expect(view.ratioPct).toBe(96);
+    expect(view.caption).toBe('出荷に対する健全比 96%');
+    expect(view.rows).toEqual([
+      { label: '出荷', value: '100pt' },
+      { label: 'Rework', value: '−5pt（1件）' },
+      { label: '安定介入', value: '+0.9%（2回）' },
+      { label: '健全比', value: '96% → S' },
+    ]);
+    expect(view.tip).toContain('安定を付与した介入');
+  });
+
   it('危機が少なく健全比が高いときは比率だけを示す', () => {
     const view = planSprintGradeView(
       makeResult({

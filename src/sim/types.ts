@@ -520,6 +520,15 @@ export interface SprintResult {
   actionCounts: Partial<Record<ActionId, number>>;
   /** 評価（S/A/B/C/D）。 */
   grade: string;
+  /**
+   * 最終健全比（危機ペナルティ後 + 安定介入ボーナス）。
+   * 旧セーブは省略。内訳は省略時にペナルティだけから再構成する。
+   */
+  gradeRatio?: number;
+  /** 安定介入ボーナス（0..cap）。旧セーブは省略。 */
+  stabilizingBonus?: number;
+  /** 実際に運用安定を付与した介入回数。旧セーブは省略。 */
+  stabilizingGrants?: number;
   /** 称号（SPEC 第4.6 の例から導出）。 */
   title: string;
   /** 診断コメント。 */

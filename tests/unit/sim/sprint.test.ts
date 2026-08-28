@@ -501,6 +501,11 @@ describe('RI-91-B3 sprint survived mutants', () => {
 
       patchMetrics(sprint, { stabilizingGrants: 2 });
       expect(computeGrade(sprint, org)).toBe('S');
+      const scored = summarizeSprint(sprint, org);
+      expect(scored.grade).toBe('S');
+      expect(scored.gradeRatio).toBeCloseTo(0.959, 5);
+      expect(scored.stabilizingBonus).toBeCloseTo(0.009, 5);
+      expect(scored.stabilizingGrants).toBe(2);
 
       patchMetrics(sprint, { stabilizingGrants: 0, actionCounts: { overtime: 2 } });
       expect(computeGrade(sprint, org)).toBe('A');

@@ -149,6 +149,7 @@ export function labelForReplayKeyframe(
     return 'Sprint result';
   }
   if (frame.phase === 'setup') return '編成';
+  if (frame.phase === 'draft') return 'カードドラフト';
   if (frame.phase === 'quarterReview') {
     const peak = frame.totals.reviewQueuePeak;
     return Number.isFinite(peak) && peak > 0 ? `四半期 (peak ${peak})` : '四半期レビュー';

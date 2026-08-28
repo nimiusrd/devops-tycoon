@@ -72,6 +72,41 @@ function formatIntervention(
   };
 }
 
+/**
+ * 延焼の正の量。整数はそのまま、小数は最大 2 桁。丸めで HUD の実測と食い違わせない。
+ */
+export function formatSpreadMagnitude(value: number): string | null {
+  if (!(value > 0)) return null;
+  const hundredths = Math.round(value * 100) / 100;
+  return hundredths > 0 ? String(hundredths) : null;
+}
+
+/**
+ * 延焼で実際に動いた負債・士気。旧リプレイ（フィールド欠落）では null。
+ * 両方 0 のときは空文字ではなく null とし、呼び元が文言を落とせるようにする。
+ */
+export function formatSpreadImpact(event: Extract<SprintEvent, { kind: 'spread' }>): string | null {
+  if (event.debtGain == null && event.moraleCost == null) return null;
+  const parts: string[] = [];
+  const debt = formatSpreadMagnitude(event.debtGain ?? 0);
+  const morale = formatSpreadMagnitude(event.moraleCost ?? 0);
+  if (debt) parts.push(`負債 +${debt}`);
+  if (morale) parts.push(`士気 -${morale}`);
+  return parts.length > 0 ? parts.join(' / ') : null;
+}
+
+function formatSpreadText(event: Extract<SprintEvent, { kind: 'spread' }>): string {
+  const impact = formatSpreadImpact(event);
+  if (event.spreadToTaskId != null) {
+    return impact
+      ? `延焼! 隣の Review 待ち PR に連鎖（${impact}）`
+      : '延焼! 隣の Review 待ち PR に連鎖';
+  }
+  if (impact) return `延焼! ${impact}`;
+  if (event.debtGain == null && event.moraleCost == null) return '延焼! 負債と士気に波及';
+  return '延焼!';
+}
+
 /** 1 イベントをティッカー表示用にフォーマットする。 */
 export function formatSprintEvent(event: SprintEvent): SprintEventView {
   switch (event.kind) {
@@ -132,10 +167,7 @@ export function formatSprintEvent(event: SprintEvent): SprintEventView {
       return {
         key: `${event.tick}:spread:${event.taskId}:${event.spreadToTaskId ?? ''}`,
         icon: '🔥',
-        text:
-          event.spreadToTaskId != null
-            ? '延焼! 隣の Review 待ち PR に連鎖'
-            : '延焼! 負債と士気に波及',
+        text: formatSpreadText(event),
         tone: 'bad',
       };
   }

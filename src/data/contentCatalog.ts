@@ -424,6 +424,9 @@ export const CONTENT_CATALOG: ContentCatalog = {
     sprint: definedObject(definition.sprint),
     orgDelta: projectScenarioOrgDelta(definition.orgDelta),
     globalEffects: omitIdentity(definition.globalEffects, IDENTITY_CARD_EFFECTS),
+    ...(definition.aiDependencyPerTask !== undefined
+      ? { aiDependencyPerTask: definition.aiDependencyPerTask }
+      : {}),
   })),
   achievements: orderedById(ACHIEVEMENT_DEFS, (definition) => ({
     conditionKey: achievementConditionKey(definition.id),

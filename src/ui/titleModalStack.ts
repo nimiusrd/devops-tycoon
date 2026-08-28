@@ -2,7 +2,7 @@
  * タイトル上に重ねるモーダルの前後関係（DOM 順 = 前面）。
  *
  * App の title フェーズ Suspense 内のマウント順と一致させる。
- * 遊び方の Escape は、最前面が help のときだけ閉じる。
+ * Escape は最前面のオーバーレイだけが処理する。
  */
 export const TITLE_MODAL_IDS = [
   'help',

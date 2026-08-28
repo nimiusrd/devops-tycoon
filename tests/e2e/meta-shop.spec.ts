@@ -105,6 +105,44 @@ test('タイトルからメタショップを開いて購入できる', async ({
   await expect(page.getByTestId('meta-unlock-unlock-devin')).toBeDisabled();
 });
 
+test('メタショップは Escape で閉じ、起点ボタンへフォーカスが戻る', async ({ page }) => {
+  await seedMeta(page, DEFAULT_META);
+
+  await page.goto('/?renderer=dom&seed=meta-shop-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-meta-shop').click();
+  await expect(page.getByTestId('meta-shop')).toBeVisible();
+  await expect(page.getByTestId('title')).toHaveAttribute('inert', '');
+
+  await page.getByTestId('meta-shop-close').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('meta-shop')).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-meta-shop');
+});
+
+test('メタショップは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
+  await seedMeta(page, DEFAULT_META);
+
+  await page.goto('/?renderer=dom&seed=meta-shop-backdrop');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-meta-shop').click();
+  const dialog = page.getByTestId('meta-shop');
+  await expect(dialog).toBeVisible();
+
+  await page.locator('.meta-shop-panel').click();
+  await expect(dialog).toBeVisible();
+
+  await page.getByTestId('meta-shop-backdrop').click({ position: { x: 8, y: 8 } });
+  await expect(dialog).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-meta-shop');
+});
+
 test('メタショップの初回 lazy 読込後も Tab はダイアログ内から始まる', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);
   await page.route(/MetaShopScreen/, async (route) => {

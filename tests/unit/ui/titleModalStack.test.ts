@@ -23,6 +23,12 @@ describe('frontmostTitleModal', () => {
     expect(frontmostTitleModal({ ...CLOSED, help: true, replayList: true })).toBe('replayList');
   });
 
+  it('カードコレクションはメタショップより前面', () => {
+    expect(frontmostTitleModal({ ...CLOSED, metaShop: true, cardCollection: true })).toBe(
+      'cardCollection',
+    );
+  });
+
   it('カードコレクションは遊び方より前面', () => {
     expect(frontmostTitleModal({ ...CLOSED, help: true, cardCollection: true })).toBe(
       'cardCollection',

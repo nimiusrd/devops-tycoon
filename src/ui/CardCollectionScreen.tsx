@@ -93,11 +93,6 @@ export function CardCollectionScreen({
     const unlockedIds = unlockedContent(meta).cards;
     const preferredIds = new Set(meta.preferredCardIds);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-        return;
-      }
       if (visibleCards.length === 0) return;
       const index = Math.max(
         0,
@@ -138,7 +133,7 @@ export function CardCollectionScreen({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [visibleCards, activeSelectedId, meta, onClose, onChangePreferred]);
+  }, [visibleCards, activeSelectedId, meta, onChangePreferred]);
 
   const atCap =
     selectedUnlocked && !selectedPreferred && meta.preferredCardIds.length >= MAX_PREFERRED_CARDS;
@@ -153,6 +148,13 @@ export function CardCollectionScreen({
       aria-label="カードコレクション"
       tabIndex={-1}
     >
+      <button
+        type="button"
+        className="result-overlay-dismiss"
+        data-testid="card-collection-backdrop"
+        aria-label="カードコレクションを閉じる"
+        onClick={onClose}
+      />
       <div className="card-collection-panel">
         <p className="result-eyebrow">CARD CODEX</p>
         <h2 className="draft-title">

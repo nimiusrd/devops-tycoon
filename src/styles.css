@@ -1541,6 +1541,22 @@ body {
 .result-overlay:focus:not(:focus-visible) {
   outline: none;
 }
+.result-overlay > .result-overlay-dismiss {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  min-width: 24px;
+  min-height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.result-overlay-dismiss:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: -2px;
+}
 @keyframes fadein {
   from {
     opacity: 0;
@@ -4725,6 +4741,8 @@ button.card.card-readonly:disabled {
   grid-template-columns: 1fr;
 }
 .meta-shop-panel {
+  position: relative;
+  z-index: 1;
   width: min(860px, 94vw);
   max-height: 90vh;
   overflow-y: auto;
@@ -4852,6 +4870,8 @@ button.card.card-readonly:disabled {
 
 /* カードコレクション（RI-65 / SPEC 7.3） */
 .card-collection-panel {
+  position: relative;
+  z-index: 1;
   width: min(980px, 96vw);
   max-height: 92vh;
   overflow-y: auto;

@@ -42,6 +42,7 @@ import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
 import { resetViewportScroll } from './ui/viewportScroll';
+import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
@@ -337,6 +338,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     tutorialDismissedEpoch !== run.runEpoch &&
     shouldShowTutorialGuide(meta.seenTutorialVersion, tutorialMode);
 
+  const closeMetaShop = useCallback(() => setMetaShopOpen(false), []);
+  const closeCardCollection = useCallback(() => setCardCollectionOpen(false), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
   const closeNonHelpTitleModals = useCallback(() => {
     setMetaShopOpen(false);
@@ -349,6 +352,27 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     closeTitleModals();
     open();
   };
+  const titleModalOpen = {
+    help: helpOpen,
+    metaShop: metaShopOpen,
+    deckPolicy: deckPolicyOpen,
+    cardCollection: cardCollectionOpen,
+    achievements: achievementsOpen,
+    replayList: replayListOpen,
+  };
+  const frontmost = phase === 'title' ? frontmostTitleModal(titleModalOpen) : null;
+
+  useEffect(() => {
+    if (frontmost !== 'metaShop' && frontmost !== 'cardCollection') return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!isOverlayDismissKey(event.key)) return;
+      event.preventDefault();
+      if (frontmost === 'metaShop') closeMetaShop();
+      else closeCardCollection();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [frontmost, closeMetaShop, closeCardCollection]);
   const helpIsFrontmost =
     phase === 'title' &&
     frontmostTitleModal({
@@ -411,7 +435,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             <MetaShopScreen
               meta={meta}
               onPurchase={(id) => run.purchaseMetaUnlock(id)}
-              onClose={() => setMetaShopOpen(false)}
+              onClose={closeMetaShop}
             />
           )}
           {deckPolicyOpen && (
@@ -425,7 +449,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             <CardCollectionScreen
               meta={meta}
               onChangePreferred={(ids) => run.setPreferredCardIds(ids)}
-              onClose={() => setCardCollectionOpen(false)}
+              onClose={closeCardCollection}
             />
           )}
           {achievementsOpen && (

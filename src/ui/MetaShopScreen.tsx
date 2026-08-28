@@ -41,6 +41,13 @@ export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProp
       aria-label="Meta shop"
       tabIndex={-1}
     >
+      <button
+        type="button"
+        className="result-overlay-dismiss"
+        data-testid="meta-shop-backdrop"
+        aria-label="メタショップを閉じる"
+        onClick={onClose}
+      />
       <div className="meta-shop-panel">
         <p className="result-eyebrow">META SHOP</p>
         <h2 className="draft-title">

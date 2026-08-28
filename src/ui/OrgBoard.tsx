@@ -107,7 +107,8 @@ export interface OrgBoardProps {
 export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
   const scene = planOrgBoardScene(org);
   const hot = org.onFire > 0 || org.departments.some((d) => d.health === 'reviewHell');
-  const { ref: boardRef, compact } = useOrgBoardScale();
+  const { ref: boardRef, compact: widthCompact } = useOrgBoardScale();
+  const compact = widthCompact || scene.capacityCompact;
 
   return (
     <div

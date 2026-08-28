@@ -18,7 +18,9 @@ import {
   ZONE_LABEL_GAP,
   islandBadgeRect,
   islandCenterBounds,
+  islandGridFitsCardHeight,
   islandGridForCount,
+  orgBoardNeedsCapacityCompact,
   isInOrgView,
   islandDepth,
   islandMood,
@@ -274,6 +276,7 @@ describe('planOrgBoardScene (RI-01)', () => {
       }
     }
     const extraScene = planOrgBoardScene(org);
+    expect(extraScene.capacityCompact).toBe(false);
     const extraProduct = extraScene.islands.filter((i) => i.team.deptId === 'product');
     const extraOthers = extraScene.islands.filter((i) => i.team.deptId !== 'product');
     for (const product of extraProduct) {
@@ -296,6 +299,7 @@ describe('planOrgBoardScene (RI-01)', () => {
     expect(productTeams.length).toBeGreaterThanOrEqual(13);
 
     const scene = planOrgBoardScene(org);
+    expect(scene.capacityCompact).toBe(false);
     const productZone = scene.zones.find((z) => z.deptId === 'product')!;
     const { minY, maxY } = islandCenterBounds();
     const maxSpanY = maxY - minY;
@@ -335,6 +339,19 @@ describe('planOrgBoardScene (RI-01)', () => {
         }
       }
     }
+  });
+
+  it('プロダクトが26チーム以上なら等角格子を捨ててドック縮退する', () => {
+    const org = generateOrgScale(
+      orgScaleInput('ri01-spacing-extra22', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 22 }, byDept: {} },
+      }),
+    );
+    const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
+    expect(productTeams.length).toBeGreaterThanOrEqual(26);
+    expect(islandGridFitsCardHeight(0, productTeams.length)).toBe(false);
+    expect(orgBoardNeedsCapacityCompact(org)).toBe(true);
+    expect(planOrgBoardScene(org).capacityCompact).toBe(true);
   });
 
   it('共通基盤ハブの tone は CI 閾値で切り替わる', () => {

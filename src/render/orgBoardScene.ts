@@ -187,6 +187,8 @@ export interface OrgBoardScene {
   hub: OrgHubPlan;
   flows: OrgFlowPlan[];
   islands: OrgIslandPlan[];
+  /** 等角格子がカード高を保てないとき true。DOM はコンパクトドックへ縮退する。 */
+  capacityCompact: boolean;
 }
 
 /** 島に並べるアバター数（1〜4）。人数スカラーを視覚へ載せる（RI-27）。 */
@@ -358,22 +360,18 @@ export function islandGridForCount(
   return { cols, rows };
 }
 
-/**
- * 部門内のチーム index から設計座標を導出する。
- * チーム数に応じてゾーン内を格子状に配置する。
- */
-export function teamDesignPosition(
+function resolveIslandGrid(
   deptIndex: number,
-  teamIndex: number,
   teamCount: number,
-): { x: number; y: number } {
+): { cols: number; rows: number; spanX: number; spanY: number; centerX: number; centerY: number } {
   const zone = ZONE_LAYOUTS[deptIndex] ?? ZONE_LAYOUTS[0];
+  const count = Math.max(1, teamCount);
   const baseWidth = zone.teamXMax - zone.teamXMin;
   const baseHeight = zone.teamYMax - zone.teamYMin;
 
   const { minY, maxY } = islandCenterBounds();
   const maxSpanY = Math.max(0, maxY - minY);
-  let { cols, rows } = islandGridForCount(teamCount, zone.width, maxSpanY);
+  let { cols, rows } = islandGridForCount(count, zone.width, maxSpanY);
 
   const neededWidth = cols * MIN_ISLAND_SPACING_X;
   let spanX = Math.max(baseWidth, neededWidth);
@@ -386,12 +384,38 @@ export function teamDesignPosition(
     while (cols > 1 && spanX / cols < ISLAND_CARD_WIDTH) {
       cols -= 1;
     }
-    rows = Math.max(1, Math.ceil(teamCount / cols));
+    rows = Math.max(1, Math.ceil(count / cols));
   }
 
   const neededHeight = rows * MIN_ISLAND_SPACING_Y;
   const spanY = Math.min(Math.max(baseHeight, neededHeight), maxSpanY);
+  return { cols, rows, spanX, spanY, centerX, centerY };
+}
 
+/** 格子の行間隔がカード高を下回る（等角配置ではカードが重なる）。 */
+export function islandGridFitsCardHeight(deptIndex: number, teamCount: number): boolean {
+  const { rows, spanY } = resolveIslandGrid(deptIndex, teamCount);
+  if (rows <= 1) return true;
+  return spanY / rows >= ISLAND_BADGE_HEIGHT;
+}
+
+/** いずれかの部門が等角格子に収まらないとき、カードはドックへ縮退する。 */
+export function orgBoardNeedsCapacityCompact(org: OrgScaleState): boolean {
+  return org.departments.some(
+    (dept, deptIndex) => !islandGridFitsCardHeight(deptIndex, dept.teams.length),
+  );
+}
+
+/**
+ * 部門内のチーム index から設計座標を導出する。
+ * チーム数に応じてゾーン内を格子状に配置する。
+ */
+export function teamDesignPosition(
+  deptIndex: number,
+  teamIndex: number,
+  teamCount: number,
+): { x: number; y: number } {
+  const { cols, rows, spanX, spanY, centerX, centerY } = resolveIslandGrid(deptIndex, teamCount);
   const col = teamIndex % cols;
   const row = Math.floor(teamIndex / cols);
   const x = centerX - spanX / 2 + ((col + 0.5) / cols) * spanX;
@@ -499,7 +523,14 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
 
   islands.sort((a, b) => a.depth - b.depth);
 
-  return { zones, zoneLabels, hub, flows, islands };
+  return {
+    zones,
+    zoneLabels,
+    hub,
+    flows,
+    islands,
+    capacityCompact: orgBoardNeedsCapacityCompact(org),
+  };
 }
 
 /** 設計座標が ORG_VIEW 範囲内か（テスト用）。 */

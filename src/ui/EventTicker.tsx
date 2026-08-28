@@ -9,6 +9,7 @@
  */
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { clientPointHitsRegisteredBoardDrag } from '../render/boardDragHit';
 import { formatRecentSprintEvents } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 import {
@@ -110,7 +111,15 @@ export function EventTicker({ events }: EventTickerProps) {
       if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
       const hit = document.elementFromPoint(event.clientX, event.clientY);
       if (isTickerPointerSuppressed(list, hit)) return;
-      if (hitBlocksTickerTouchScroll(hit)) return;
+      if (
+        hitBlocksTickerTouchScroll(hit, {
+          clientX: event.clientX,
+          clientY: event.clientY,
+          hitsBoardDot: clientPointHitsRegisteredBoardDrag,
+        })
+      ) {
+        return;
+      }
       touchPan = { pointerId: event.pointerId, lastY: event.clientY };
     };
 

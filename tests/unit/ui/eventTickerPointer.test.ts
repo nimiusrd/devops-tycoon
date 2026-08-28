@@ -64,7 +64,24 @@ describe('eventTickerPointer', () => {
     expect(hitBlocksTickerTouchScroll(null)).toBe(false);
   });
 
-  it('inert / 結果オーバーレイ上ではティッカー入力を止める', () => {
+  it('Pixi canvas でも座標ヒットした粒はタッチスクロールしない', () => {
+    const canvas = { closest: () => null };
+    const options = {
+      clientX: 40,
+      clientY: 80,
+      hitsBoardDot: (x: number, y: number) => x === 40 && y === 80,
+    };
+    expect(hitBlocksTickerTouchScroll(canvas as unknown as EventTarget, options)).toBe(true);
+    expect(
+      hitBlocksTickerTouchScroll(canvas as unknown as EventTarget, {
+        ...options,
+        clientX: 1,
+      }),
+    ).toBe(false);
+    expect(hitBlocksTickerTouchScroll(canvas as unknown as EventTarget)).toBe(false);
+  });
+
+  it('inert / 結果・ズームオーバーレイ上ではティッカー入力を止める', () => {
     const live = { closest: () => null };
     const inert = {
       closest: (selector: string) => (selector === '[inert]' ? inert : null),
@@ -73,7 +90,12 @@ describe('eventTickerPointer', () => {
       closest: (selector: string) => (selector === '[aria-hidden="true"]' ? hiddenOnly : null),
     };
     const overlayHit = {
-      closest: (selector: string) => (selector === '.result-overlay' ? overlayHit : null),
+      closest: (selector: string) =>
+        selector === '.result-overlay' || selector.includes('.result-overlay') ? overlayHit : null,
+    };
+    const zoomHit = {
+      closest: (selector: string) =>
+        selector === '.zoom-overlay' || selector.includes('.zoom-overlay') ? zoomHit : null,
     };
     const tutorialHit = {
       closest: (selector: string) => (selector === '[role="dialog"]' ? tutorialHit : null),
@@ -82,12 +104,13 @@ describe('eventTickerPointer', () => {
     expect(isTickerPointerSuppressed(inert, null)).toBe(true);
     expect(isTickerPointerSuppressed(hiddenOnly, null)).toBe(false);
     expect(isTickerPointerSuppressed(live, overlayHit as unknown as EventTarget)).toBe(true);
+    expect(isTickerPointerSuppressed(live, zoomHit as unknown as EventTarget)).toBe(true);
     expect(isTickerPointerSuppressed(live, tutorialHit as unknown as EventTarget)).toBe(false);
 
     const nativeLike = {
       closest(this: unknown, selector: string) {
         if (this !== nativeLike) throw new TypeError('Illegal invocation');
-        return selector === '.result-overlay' ? nativeLike : null;
+        return selector.includes('.result-overlay') ? nativeLike : null;
       },
     };
     expect(isTickerPointerSuppressed(live, nativeLike as unknown as EventTarget)).toBe(true);

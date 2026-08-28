@@ -3,6 +3,7 @@
  *
  * 盤面ドラッグを奪わず、ホイール・タッチ・キーボードで一覧へ到達するための純関数。
  */
+import { FRONT_OVERLAY_SELECTOR } from './viewportScroll';
 
 export const WHEEL_DELTA_PIXEL = 0;
 export const WHEEL_DELTA_LINE = 1;
@@ -50,17 +51,33 @@ export function applyTickerListScroll(
   return list.scrollTop !== previous;
 }
 
-/** ネイティブ Element.closest はメソッドのまま呼ぶ（切り離すと Illegal invocation）。 */
-export function hitBlocksTickerTouchScroll(target: EventTarget | null): boolean {
+export interface TickerTouchHitOptions {
+  clientX: number;
+  clientY: number;
+  /** Pixi canvas 上の粒。DOM の `[data-task-id]` が無いときの Board 座標ヒット。 */
+  hitsBoardDot?: (clientX: number, clientY: number) => boolean;
+}
+
+function closestMatches(target: EventTarget | null, selector: string): boolean {
   if (!target || !('closest' in target)) return false;
   const el = target as { closest?: (selector: string) => unknown };
-  return typeof el.closest === 'function' && el.closest('[data-task-id]') != null;
+  return typeof el.closest === 'function' && el.closest(selector) != null;
+}
+
+/** ネイティブ Element.closest はメソッドのまま呼ぶ（切り離すと Illegal invocation）。 */
+export function hitBlocksTickerTouchScroll(
+  target: EventTarget | null,
+  options?: TickerTouchHitOptions,
+): boolean {
+  if (closestMatches(target, '[data-task-id]')) return true;
+  return options?.hitsBoardDot?.(options.clientX, options.clientY) === true;
 }
 
 /**
  * 背面化したティッカーは window の capture リスナーを動かさない。
- * `inert` は結果オーバーレイの兄弟ロック。最前面が `.result-overlay` なら
- * 透過ヒット（pointer-events: none のリスト越し）ではなくオーバーレイ操作。
+ * `inert` は結果オーバーレイの兄弟ロック。最前面が `.result-overlay` /
+ * `.zoom-overlay` なら透過ヒットではなくオーバーレイ操作。
+ * `.sprint-layout` はティッカー自身のホストなので見ない。
  * `[role="dialog"]` は初回ガイド等にも付くので見ない。
  */
 export function isTickerPointerSuppressed(
@@ -68,7 +85,5 @@ export function isTickerPointerSuppressed(
   hit: EventTarget | null,
 ): boolean {
   if (list.closest('[inert]') != null) return true;
-  if (!hit || !('closest' in hit)) return false;
-  const el = hit as { closest?: (selector: string) => unknown };
-  return typeof el.closest === 'function' && el.closest('.result-overlay') != null;
+  return closestMatches(hit, FRONT_OVERLAY_SELECTOR);
 }

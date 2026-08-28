@@ -914,6 +914,7 @@ type SpreadGameWindow = Window & {
   game?: {
     pause(): void;
     step(ms: number): unknown;
+    zoomTo(level: string): unknown;
     engine: SpreadEngineDebug;
   };
 };
@@ -1310,5 +1311,40 @@ test.describe('延焼文言の DOM レイアウト', () => {
         `延焼リザルト ${viewport.width}x${viewport.height}`,
       );
     }
+  });
+
+  test('スプリント中の全社画面では背面ティッカーがホイールを奪わない', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await beginPublicSprint(page, { seed: 'spread-copy-ticker-zoom-0' });
+    await injectSpreadTickerEvents(page);
+    await expect(page.getByTestId('event-ticker')).toBeVisible();
+
+    await page.evaluate(() => {
+      const game = (window as SpreadGameWindow).game;
+      if (!game) throw new Error('window.game が公開されていない');
+      game.zoomTo('company');
+    });
+    const overlay = page.getByTestId('zoom-overlay');
+    await expect(overlay).toHaveAttribute('data-level', 'company');
+    await assertTickerDoesNotStealOverlayWheel(page, '全社ズーム phone-se');
+
+    const overlayBox = await overlay.boundingBox();
+    if (!overlayBox) throw new Error('zoom-overlay の box が無い');
+    const overflow = await overlay.evaluate(
+      (element) => element.scrollHeight > element.clientHeight + 1,
+    );
+    if (!overflow) return;
+
+    const before = await overlay.evaluate((element) => element.scrollTop);
+    await page.mouse.move(
+      overlayBox.x + overlayBox.width / 2,
+      overlayBox.y + overlayBox.height / 2,
+    );
+    await page.mouse.wheel(0, 400);
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    const after = await overlay.evaluate((element) => element.scrollTop);
+    expect(after, '全社ズームの overflow が背面ティッカーに奪われる').toBeGreaterThan(before);
   });
 });

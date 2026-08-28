@@ -1025,7 +1025,8 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
   );
   if (!overflow) return;
 
-  const before = await list.evaluate((element) => element.scrollTop);
+  await list.press('Home');
+  const top = await list.evaluate((element) => element.scrollTop);
   await list.press('End');
   const after = await list.evaluate((element) => {
     const rows = element.querySelectorAll<HTMLElement>('.event-ticker-row');
@@ -1036,7 +1037,7 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
     const overlap = Math.min(rowRect.bottom, listRect.bottom) - Math.max(rowRect.top, listRect.top);
     return { scrollTop: element.scrollTop, lastVisible: overlap > 0 };
   });
-  expect(after.scrollTop, `${label}: End でリストがスクロールしない`).toBeGreaterThan(before);
+  expect(after.scrollTop, `${label}: End でリストがスクロールしない`).toBeGreaterThan(top);
   expect(after.lastVisible, `${label}: End 後も最終行が見えない`).toBe(true);
 }
 

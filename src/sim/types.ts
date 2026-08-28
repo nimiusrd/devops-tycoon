@@ -58,7 +58,7 @@ export interface SprintCardPiles {
 /** 手札からのカード発動結果（RI-30）。 */
 export interface CardPlayOutcome {
   ok: boolean;
-  reason?: 'no-focus' | 'no-card' | 'complete' | 'invalid';
+  reason?: 'no-focus' | 'no-card' | 'complete' | 'invalid' | 'paused';
   /** 成功時に消費した集中力。 */
   focusCost?: number;
   /** 発動したデッキ位置。 */

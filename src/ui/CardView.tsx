@@ -23,6 +23,8 @@ export interface CardViewProps {
   playCost?: number;
   /** 発動不可（集中力不足等）。閲覧用の読み取り専用とは別で、全体を減光する。 */
   disabled?: boolean;
+  /** disabled のときプレイヤーへ示す理由。 */
+  disabledReason?: string;
   /** リプレイ閲覧など。操作は disabled でもカード全体は減光しない（DS-08）。 */
   readOnly?: boolean;
   /** カード全体の title（読み取り専用ドラフトの理由など）。 */
@@ -35,6 +37,16 @@ export interface CardViewProps {
   whatIfComputing?: boolean;
 }
 
+function handCardTitle(
+  def: CardDef,
+  level: number,
+  playCostValue: number | undefined,
+  disabledReason?: string,
+): string {
+  const tooltip = `${formatCardTooltip(def, level)} / 発動 ⚡${playCostValue ?? '?'}`;
+  return disabledReason ? `${tooltip} / ${disabledReason}` : tooltip;
+}
+
 export function CardView({
   def,
   level = 1,
@@ -42,6 +54,7 @@ export function CardView({
   onPlay,
   playCost: playCostValue,
   disabled = false,
+  disabledReason,
   readOnly = false,
   compact = false,
   title,
@@ -107,7 +120,7 @@ export function CardView({
         onClick={onPlay}
         disabled={disabled}
         data-testid={`hand-card-${def.id}`}
-        title={`${formatCardTooltip(def, level)} / 発動 ⚡${playCostValue ?? '?'}`}
+        title={handCardTitle(def, level, playCostValue, disabledReason)}
       >
         {inner}
       </button>

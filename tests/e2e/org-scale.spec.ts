@@ -478,7 +478,8 @@ async function readFieldKpi(page: import('@playwright/test').Page): Promise<Fiel
 test('編成の全社マップ閲覧では sim が進まず、現場へ戻すと KPI が一致する', async ({ page }) => {
   await startRun(page, 'org-map-setup-kpi');
   await expect(page.getByTestId('setup')).toBeVisible();
-  await expect(page.getByTestId('sprint-no')).toContainText('0/6');
+  // 編成中の HUD は次に開始するスプリント番号（#392）。setup 開始直後は 1/6。
+  await expect(page.getByTestId('sprint-no')).toContainText('1/6');
 
   const before = await readFieldKpi(page);
   await page.getByTestId('open-org').click();

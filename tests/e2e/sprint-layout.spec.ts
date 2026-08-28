@@ -810,3 +810,170 @@ test.describe('RI-94 レイアウト契約', () => {
     });
   });
 });
+
+type SpreadEngineDebug = {
+  sprint?: { events: object[] } | null;
+  lastResult?: {
+    incidents: number;
+    spread: number;
+    fireEvents: object[];
+  } | null;
+};
+
+type SpreadGameWindow = Window & {
+  game?: {
+    pause(): void;
+    step(ms: number): unknown;
+    engine: SpreadEngineDebug;
+  };
+};
+
+const SPREAD_TICKER_CHAIN = '延焼! 隣の Review 待ち PR に連鎖（負債 +6 / 士気 -5）';
+const SPREAD_TICKER_IMPACT = '延焼! 負債 +6 / 士気 -5';
+const SPREAD_RESULT_CHAIN =
+  't12: PR#3 が Review 落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火';
+const SPREAD_RESULT_IMPACT = 't12: PR#7 が Review 落ちで点火 → t18 延焼（負債 +6 / 士気 -5）';
+
+async function injectSpreadTickerEvents(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const game = (window as SpreadGameWindow).game;
+    const sprint = game?.engine.sprint;
+    if (!game || !sprint) throw new Error('sprint が無い');
+    sprint.events.push(
+      { tick: 4, kind: 'ignite', taskId: 0, source: 'review' },
+      { tick: 7, kind: 'spread', taskId: 1, spreadToTaskId: 3, debtGain: 6, moraleCost: 5 },
+      { tick: 8, kind: 'spread', taskId: 2, debtGain: 6, moraleCost: 5 },
+      {
+        tick: 9,
+        kind: 'spread',
+        taskId: 4,
+        spreadToTaskId: 5,
+        debtGain: 6,
+        moraleCost: 5,
+      },
+      { tick: 10, kind: 'spread', taskId: 6, debtGain: 6, moraleCost: 5 },
+    );
+    game.step(0);
+  });
+}
+
+async function injectSpreadResultEvents(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const game = (window as SpreadGameWindow).game;
+    const lastResult = game?.engine.lastResult;
+    if (!game || !lastResult) throw new Error('lastResult が無い');
+    lastResult.incidents = 2;
+    lastResult.spread = 2;
+    lastResult.fireEvents = [
+      { tick: 12, kind: 'ignite', taskId: 3, source: 'review' },
+      {
+        tick: 18,
+        kind: 'spread',
+        taskId: 3,
+        spreadToTaskId: 5,
+        debtGain: 6,
+        moraleCost: 5,
+      },
+      { tick: 18, kind: 'ignite', taskId: 5, source: 'spread' },
+      { tick: 22, kind: 'contain', taskId: 5, combo: 2 },
+      { tick: 12, kind: 'ignite', taskId: 7, source: 'review' },
+      { tick: 18, kind: 'spread', taskId: 7, debtGain: 6, moraleCost: 5 },
+    ];
+    game.step(0);
+  });
+}
+
+async function assertSpreadCopyFitsViewport(page: Page, label: string): Promise<void> {
+  const noHorizontalOverflow = await page.evaluate(() => {
+    const app = document.querySelector<HTMLElement>('.app.app-sprint-layout');
+    return (
+      document.documentElement.scrollWidth <= window.innerWidth + 1 &&
+      (app === null || app.scrollWidth <= app.clientWidth + 1)
+    );
+  });
+  expect(noHorizontalOverflow, `${label} で横スクロールが発生している`).toBe(true);
+}
+
+test.describe('延焼文言の DOM レイアウト', () => {
+  test('延焼・連鎖延焼のティッカーが5 viewportで盤面契約を崩さない', async ({ page }) => {
+    await beginPublicSprint(page, { seed: 'spread-copy-ticker-0' });
+    await injectSpreadTickerEvents(page);
+
+    await expect(page.getByTestId('event-ticker')).toBeVisible();
+    await expect(page.getByText(SPREAD_TICKER_CHAIN).first()).toBeVisible();
+    await expect(page.getByText(SPREAD_TICKER_IMPACT).first()).toBeVisible();
+
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await waitForLayoutFrame(page);
+      await assertLayoutContract(page, viewport, { glanceCopy: true });
+      await expect(page.getByTestId('event-ticker')).toBeVisible();
+      await expect(page.getByText(SPREAD_TICKER_CHAIN).first()).toBeVisible();
+      await expect(page.getByText(SPREAD_TICKER_IMPACT).first()).toBeVisible();
+
+      const ticker = page.getByTestId('event-ticker');
+      const stage = page.getByTestId('board-stage');
+      const tickerBox = await ticker.boundingBox();
+      const stageBox = await stage.boundingBox();
+      if (!tickerBox || !stageBox) throw new Error('ticker / board-stage の box が無い');
+      expect(
+        tickerBox.x,
+        `ticker が stage 左へはみ出す（${viewport.name}）`,
+      ).toBeGreaterThanOrEqual(stageBox.x - 1);
+      expect(
+        tickerBox.x + tickerBox.width,
+        `ticker が stage 右へはみ出す（${viewport.name}）`,
+      ).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
+      expect(
+        tickerBox.y,
+        `ticker が stage 上へはみ出す（${viewport.name}）`,
+      ).toBeGreaterThanOrEqual(stageBox.y - 1);
+      expect(tickerBox.height, `ticker が盤面全体を覆っている（${viewport.name}）`).toBeLessThan(
+        stageBox.height,
+      );
+
+      const textFits = await page
+        .locator('.event-ticker-text')
+        .evaluateAll((lines) => lines.every((line) => line.scrollWidth <= line.clientWidth + 1));
+      expect(
+        textFits,
+        `延焼ティッカーが横に溢れている（${viewport.width}x${viewport.height}）`,
+      ).toBe(true);
+      await assertSpreadCopyFitsViewport(
+        page,
+        `延焼ティッカー ${viewport.width}x${viewport.height}`,
+      );
+    }
+  });
+
+  test('延焼リザルトの因果ログが5 viewportで配置を崩さない', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await beginPublicSprint(page, { seed: 'spread-copy-result-0' });
+    await advanceCurrentSprintToResult(page);
+    await injectSpreadResultEvents(page);
+
+    await expect(page.getByTestId('sprint-result')).toBeVisible();
+    await expect(page.getByTestId('result-burn-cause')).toBeVisible();
+    await expect(page.getByText(SPREAD_RESULT_CHAIN)).toBeVisible();
+    await expect(page.getByText(SPREAD_RESULT_IMPACT)).toBeVisible();
+
+    await assertAcrossViewports(page, { resultOverlay: true });
+
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await waitForLayoutFrame(page);
+      await expect(page.getByTestId('result-burn-cause')).toBeVisible();
+      await expect(page.getByText(SPREAD_RESULT_CHAIN)).toBeVisible();
+      await expect(page.getByText(SPREAD_RESULT_IMPACT)).toBeVisible();
+      await assertReachableInViewport(page, page.getByTestId('result-continue'), 'result-continue');
+
+      const textFits = await page
+        .locator('.result-burn-cause-text')
+        .evaluateAll((lines) => lines.every((line) => line.scrollWidth <= line.clientWidth + 1));
+      expect(textFits, `延焼因果ログが横に溢れている（${viewport.width}x${viewport.height}）`).toBe(
+        true,
+      );
+      await assertSpreadCopyFitsViewport(page, `延焼リザルト ${viewport.width}x${viewport.height}`);
+    }
+  });
+});

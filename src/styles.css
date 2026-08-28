@@ -1833,6 +1833,8 @@ body {
 }
 .result-burn-cause-text {
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .result-analysis-rows {
   margin-bottom: 0.65rem;
@@ -1968,6 +1970,9 @@ body {
   right: 12px;
   z-index: 14;
   width: min(280px, 42%);
+  max-height: 58%;
+  overflow-x: hidden;
+  overflow-y: auto;
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -2018,6 +2023,7 @@ body {
 .event-ticker-text {
   flex: 1 1 auto;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* 介入アクションバー（第4.3 / 第6.1） */

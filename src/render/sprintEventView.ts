@@ -73,14 +73,27 @@ function formatIntervention(
 }
 
 /**
+ * 延焼の正の量。整数優先。0.5 未満は小数で出し、丸めで「-0」にしない。
+ */
+export function formatSpreadMagnitude(value: number): string | null {
+  if (!(value > 0)) return null;
+  const asInt = Math.round(value);
+  if (asInt !== 0) return String(asInt);
+  const hundredths = Math.round(value * 100) / 100;
+  return hundredths > 0 ? String(hundredths) : null;
+}
+
+/**
  * 延焼で実際に動いた負債・士気。旧リプレイ（フィールド欠落）では null。
  * 両方 0 のときは空文字ではなく null とし、呼び元が文言を落とせるようにする。
  */
 export function formatSpreadImpact(event: Extract<SprintEvent, { kind: 'spread' }>): string | null {
   if (event.debtGain == null && event.moraleCost == null) return null;
   const parts: string[] = [];
-  if ((event.debtGain ?? 0) > 0) parts.push(`負債 +${Math.round(event.debtGain ?? 0)}`);
-  if ((event.moraleCost ?? 0) > 0) parts.push(`士気 -${Math.round(event.moraleCost ?? 0)}`);
+  const debt = formatSpreadMagnitude(event.debtGain ?? 0);
+  const morale = formatSpreadMagnitude(event.moraleCost ?? 0);
+  if (debt) parts.push(`負債 +${debt}`);
+  if (morale) parts.push(`士気 -${morale}`);
   return parts.length > 0 ? parts.join(' / ') : null;
 }
 

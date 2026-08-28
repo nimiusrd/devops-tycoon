@@ -28,16 +28,18 @@ export function EvolutionScreen({ state, onUnlock, onFinish }: EvolutionScreenPr
     : undefined;
   return (
     <div
-      className="result-overlay"
+      className="result-overlay evolution-overlay"
       data-testid="evolution"
       role="dialog"
       aria-label="Evolution Tree"
     >
-      <div className="evolution-panel">
-        <p className="result-eyebrow">ORGANIZATION EVOLUTION</p>
-        <h2 className="draft-title">
-          進化ポイント <b data-testid="evo-points">{evo.points}</b> を割り振る
-        </h2>
+      <div className="evolution-panel" data-testid="evolution-panel">
+        <header className="evolution-head">
+          <p className="result-eyebrow">ORGANIZATION EVOLUTION</p>
+          <h2 className="draft-title">
+            進化ポイント <b data-testid="evo-points">{evo.points}</b> を割り振る
+          </h2>
+        </header>
         {unlockedNodeName && (
           <RewardCeremony
             kind="evolution"
@@ -45,7 +47,7 @@ export function EvolutionScreen({ state, onUnlock, onFinish }: EvolutionScreenPr
             detail="組織の新しい枝が伸びた"
           />
         )}
-        <div className="evolution-branches">
+        <div className="evolution-branches" data-testid="evolution-branches">
           {BRANCH_ORDER.map((branch) => (
             <div className="evolution-branch" key={branch}>
               <h3 className="branch-label">{BRANCH_LABEL[branch]}</h3>
@@ -77,14 +79,16 @@ export function EvolutionScreen({ state, onUnlock, onFinish }: EvolutionScreenPr
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          data-testid="evolution-done"
-          onClick={onFinish}
-        >
-          マップへ戻る →
-        </button>
+        <div className="evolution-actions">
+          <button
+            type="button"
+            className="btn btn-primary"
+            data-testid="evolution-done"
+            onClick={onFinish}
+          >
+            マップへ戻る →
+          </button>
+        </div>
       </div>
     </div>
   );

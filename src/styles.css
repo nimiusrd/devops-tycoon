@@ -4093,7 +4093,8 @@ button.card.card-readonly:disabled {
   font-weight: 800;
   line-height: 1.25;
 }
-.relic-bar {
+.relic-bar,
+.trial-bar {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;

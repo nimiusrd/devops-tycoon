@@ -6,6 +6,7 @@
  */
 import { isReplayFramePhase, type RunReplayFrame, type ReplayFramePhase } from '../sim/run/persist';
 import { getCard } from '../data/cards';
+import { getTrial } from '../data/difficulties';
 import { getRelic, type RelicDef } from '../data/relics';
 import type { CardDef } from '../sim/types';
 import type {
@@ -61,10 +62,23 @@ export interface ReplayRulesetIdentity {
   readonly fingerprint: string;
 }
 
-/** リプレイ表示で参照するカード／レリック定義の最小スナップショット。 */
+/** リプレイ HUD で参照する試練の記録時表示値。 */
+export interface ReplayTrialSnapshot {
+  id: string;
+  label: string;
+  description: string;
+  budgetMul: number;
+}
+
+/** リプレイ表示で参照するカード／レリック／試練定義の最小スナップショット。 */
 export interface ReplayContentSnapshot {
   cards: CardDef[];
   relics: RelicDef[];
+  /**
+   * 記録時の試練表示。旧スナップショットでは省略し、閲覧時は現行 `getTrial` へ
+   * フォールバックする。
+   */
+  trials?: ReplayTrialSnapshot[];
 }
 
 /** IndexedDB に保存するリプレイ本体。 */
@@ -118,6 +132,30 @@ function isRelicDef(value: unknown): value is RelicDef {
   );
 }
 
+function isReplayTrialSnapshot(value: unknown): value is ReplayTrialSnapshot {
+  return (
+    isObject(value) &&
+    typeof value.id === 'string' &&
+    typeof value.label === 'string' &&
+    typeof value.description === 'string' &&
+    typeof value.budgetMul === 'number' &&
+    Number.isFinite(value.budgetMul)
+  );
+}
+
+function replayTrialSnapshot(id: string): ReplayTrialSnapshot {
+  const def = getTrial(id);
+  if (!def) {
+    return { id, label: id, description: '', budgetMul: 1 };
+  }
+  return {
+    id: def.id,
+    label: def.label,
+    description: def.description,
+    budgetMul: def.budgetMul ?? 1,
+  };
+}
+
 const INVALID_REPLAY_VALUE = Symbol('invalid-replay-value');
 
 function parseReplayRuleset(
@@ -153,9 +191,21 @@ function parseReplayContentSnapshot(
   ) {
     return INVALID_REPLAY_VALUE;
   }
+  let trials: ReplayTrialSnapshot[] | undefined;
+  if (value.trials !== undefined) {
+    if (
+      !Array.isArray(value.trials) ||
+      !value.trials.every(isReplayTrialSnapshot) ||
+      new Set(value.trials.map((trial) => trial.id)).size !== value.trials.length
+    ) {
+      return INVALID_REPLAY_VALUE;
+    }
+    trials = structuredClone(value.trials);
+  }
   return {
     cards: structuredClone(value.cards),
     relics: structuredClone(value.relics),
+    ...(trials ? { trials } : {}),
   };
 }
 
@@ -190,13 +240,15 @@ function addRelicId(ids: Set<string>, value: unknown): void {
  * allowedCards / allowedRelics はラン開始時のプールであり、表示参照では
  * ないためスナップショットへは含めない。
  */
-/** キーフレーム表示が参照するカード／レリック ID。 */
+/** キーフレーム表示が参照するカード／レリック／試練 ID。 */
 export function collectReplayReferencedIds(keyframes: readonly ReplayKeyframe[]): {
   cardIds: Set<string>;
   relicIds: Set<string>;
+  trialIds: Set<string>;
 } {
   const cardIds = new Set<string>();
   const relicIds = new Set<string>();
+  const trialIds = new Set<string>();
 
   for (const keyframe of keyframes) {
     const frame = keyframe.frame;
@@ -221,13 +273,18 @@ export function collectReplayReferencedIds(keyframes: readonly ReplayKeyframe[])
       for (const relicId of frame.relics) addRelicId(relicIds, relicId);
     }
     addRelicId(relicIds, frame.bossRelicReward);
+    if (Array.isArray(frame.trials)) {
+      for (const trialId of frame.trials) {
+        if (typeof trialId === 'string') trialIds.add(trialId);
+      }
+    }
   }
 
-  return { cardIds, relicIds };
+  return { cardIds, relicIds, trialIds };
 }
 
 export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): ReplayContentSnapshot {
-  const { cardIds, relicIds } = collectReplayReferencedIds(keyframes);
+  const { cardIds, relicIds, trialIds } = collectReplayReferencedIds(keyframes);
   return {
     cards: [...cardIds]
       .map((id) => getCard(id))
@@ -237,6 +294,7 @@ export function snapshotReplayContent(keyframes: readonly ReplayKeyframe[]): Rep
       .map((id) => getRelic(id))
       .filter((relic): relic is RelicDef => relic !== undefined)
       .map((relic) => structuredClone(relic)),
+    trials: [...trialIds].map((id) => replayTrialSnapshot(id)),
   };
 }
 
@@ -246,7 +304,7 @@ export function replayContentSnapshotCovers(
   keyframes: readonly ReplayKeyframe[],
 ): boolean {
   if (!snapshot) return true;
-  const { cardIds, relicIds } = collectReplayReferencedIds(keyframes);
+  const { cardIds, relicIds, trialIds } = collectReplayReferencedIds(keyframes);
   const cards = new Set(snapshot.cards.map((card) => card.id));
   const relics = new Set(snapshot.relics.map((relic) => relic.id));
   for (const id of cardIds) {
@@ -254,6 +312,12 @@ export function replayContentSnapshotCovers(
   }
   for (const id of relicIds) {
     if (!relics.has(id)) return false;
+  }
+  if (snapshot.trials) {
+    const trials = new Set(snapshot.trials.map((trial) => trial.id));
+    for (const id of trialIds) {
+      if (!trials.has(id)) return false;
+    }
   }
   return true;
 }

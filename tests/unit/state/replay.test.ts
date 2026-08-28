@@ -84,6 +84,12 @@ describe('リプレイ正規化（RI-61）', () => {
         contentSnapshot: { cards: [{ id: 'bad' }], relics: [] },
       }),
     ).toBeNull();
+    expect(
+      normalizeReplay({
+        ...blob,
+        contentSnapshot: { cards: [], relics: [], trials: [{ id: 'bad' }] },
+      }),
+    ).toBeNull();
   });
 
   it('v1 はキーフレームを保持したままルールセット不明へ正規化する', () => {
@@ -115,6 +121,7 @@ describe('リプレイ正規化（RI-61）', () => {
     };
     frame.extras.allowedCards = ['feature-flags'];
     frame.extras.allowedRelics = ['primary-source'];
+    frame.trials = ['half-budget', 'removed-trial'];
 
     const snapshot = snapshotReplayContent([{ phase: 'setup', frame }]);
     expect(snapshot.cards.map((card) => card.id)).toEqual(['copilot', 'auto-test', 'docs']);
@@ -122,6 +129,20 @@ describe('リプレイ正規化（RI-61）', () => {
       'flow-first',
       'psych-safety',
       'postmortem',
+    ]);
+    expect(snapshot.trials).toEqual([
+      {
+        id: 'half-budget',
+        label: '予算半減',
+        description: '採用も施策も渋い。',
+        budgetMul: 0.5,
+      },
+      {
+        id: 'removed-trial',
+        label: 'removed-trial',
+        description: '',
+        budgetMul: 1,
+      },
     ]);
 
     const blob = makeBlob({
@@ -138,8 +159,10 @@ describe('リプレイ正規化（RI-61）', () => {
 
     snapshot.cards[0]!.name = '入力変更';
     snapshot.relics[0]!.name = '入力変更';
+    snapshot.trials![0]!.label = '入力変更';
     expect(normalized?.contentSnapshot?.cards[0]?.name).toBe('Copilot全員配布');
     expect(normalized?.contentSnapshot?.relics[0]?.name).toBe('フロー重視');
+    expect(normalized?.contentSnapshot?.trials?.[0]?.label).toBe('予算半減');
   });
 
   it('buildReplayId は seed と時刻を含む', () => {
@@ -737,7 +760,9 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(game.listReplays()[0]?.keyframes.length).toBeGreaterThan(0);
     expect(game.listReplays()[0]?.keyframes.some((k) => k.phase === 'draft')).toBe(true);
     expect(game.listReplays()[0]?.ruleset).toEqual(CURRENT_RUN_RULESET);
-    expect(game.listReplays()[0]?.contentSnapshot).toBeTruthy();
+    const contentSnapshot = game.listReplays()[0]?.contentSnapshot;
+    expect(contentSnapshot).toBeTruthy();
+    expect(contentSnapshot?.trials).toEqual([]);
   });
 
   it('キーフレームに label が付く（RI-34‴）', async () => {

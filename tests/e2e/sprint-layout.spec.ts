@@ -14,6 +14,7 @@ import {
 } from './fixtures';
 import type { Locator, Page } from '@playwright/test';
 import { ACTION_DEFS } from '../../src/data/actions';
+import { TRIAL_DEFS } from '../../src/data/difficulties';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { RESPONSIVE_BREAKPOINTS } from '../../src/ui/responsiveMode';
 import { seedMeta } from './seedMeta';
@@ -41,6 +42,7 @@ interface LayoutContractOptions {
   glanceCopy?: boolean;
   diagnosis?: string;
   relicCount?: number;
+  trialCount?: number;
   armed?: boolean;
   assignee?: boolean;
   hudExpanded?: boolean;
@@ -413,6 +415,33 @@ async function assertLayoutContract(
     expect(
       relicsFit,
       `レリックチップが表示領域からはみ出している（${viewport.width}x${viewport.height}）`,
+    ).toBe(true);
+  }
+  if (options.trialCount !== undefined) {
+    const trials = page.getByTestId('run-trials');
+    await expect(trials).toBeVisible();
+    await expect(trials.locator('.pill')).toHaveCount(options.trialCount);
+    if (viewport.width <= RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
+      const flexWrap = await trials.evaluate((element) => getComputedStyle(element).flexWrap);
+      expect(flexWrap, `試練バーが折り返されない（${viewport.width}x${viewport.height}）`).toBe(
+        'wrap',
+      );
+    }
+    const trialsFit = await trials.evaluate((element) => {
+      const container = element.getBoundingClientRect();
+      return Array.from(element.querySelectorAll<HTMLElement>('.pill')).every((chip) => {
+        const rect = chip.getBoundingClientRect();
+        return (
+          rect.left >= container.left - 1 &&
+          rect.right <= container.right + 1 &&
+          rect.top >= container.top - 1 &&
+          rect.bottom <= container.bottom + 1
+        );
+      });
+    });
+    expect(
+      trialsFit,
+      `試練 pill が表示領域からはみ出している（${viewport.width}x${viewport.height}）`,
     ).toBe(true);
   }
   if (
@@ -843,6 +872,19 @@ test.describe('RI-94 レイアウト契約', () => {
     await openSixRelicSprint(page);
     await assertAcrossViewports(page, {
       relicCount: 6,
+      glanceCopy: true,
+    });
+  });
+
+  test('全試練を有効にした compact HUD を5 viewportで表示する', async ({ page }) => {
+    await beginPublicSprint(page, {
+      seed: 'ri94-all-trials-0',
+      trials: TRIAL_DEFS.map((trial) => trial.id),
+    });
+    await expect(page.getByTestId('run-trials')).toBeVisible();
+    await expect(page.getByTestId('run-trials').locator('.pill')).toHaveCount(TRIAL_DEFS.length);
+    await assertAcrossViewports(page, {
+      trialCount: TRIAL_DEFS.length,
       glanceCopy: true,
     });
   });

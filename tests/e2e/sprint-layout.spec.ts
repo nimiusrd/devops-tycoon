@@ -1048,14 +1048,17 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
 /** 非ホバー時はリスト下の盤面が elementFromPoint の対象になる。ホバー中だけリストが auto になる。 */
 async function assertTickerPassesBoardPointer(page: Page, label: string): Promise<void> {
   const list = page.getByTestId('event-ticker-list');
-  await list.evaluate((element) => element.blur());
+  await list.evaluate((element) => {
+    element.scrollTop = 0;
+    element.blur();
+  });
 
   const idleHit = await page.evaluate(() => {
-    const row = document.querySelector<HTMLElement>('.event-ticker-row');
-    if (!row) return null;
-    const box = row.getBoundingClientRect();
+    const scrollList = document.querySelector<HTMLElement>('[data-testid="event-ticker-list"]');
+    if (!scrollList) return null;
+    const box = scrollList.getBoundingClientRect();
     const x = box.left + box.width / 2;
-    const y = box.top + Math.min(8, box.height / 2);
+    const y = box.top + Math.min(12, Math.max(4, box.height / 2));
     const el = document.elementFromPoint(x, y);
     return {
       x,
@@ -1067,6 +1070,11 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   expect(idleHit.inList, `${label}: 非ホバーでもリストがヒット対象`).toBe(false);
 
   await page.mouse.move(idleHit.x, idleHit.y);
+  await page.evaluate(({ x, y }) => {
+    window.dispatchEvent(
+      new PointerEvent('pointermove', { clientX: x, clientY: y, buttons: 0, bubbles: true }),
+    );
+  }, idleHit);
   await expect(list, `${label}: ホバーでリストがホットにならない`).toHaveAttribute(
     'data-pointer-hot',
     'true',
@@ -1089,6 +1097,11 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   }
 
   await page.mouse.move(8, 8);
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new PointerEvent('pointermove', { clientX: 8, clientY: 8, buttons: 0, bubbles: true }),
+    );
+  });
   await expect(list, `${label}: ホバー解除後もリストがホットのまま`).not.toHaveAttribute(
     'data-pointer-hot',
   );

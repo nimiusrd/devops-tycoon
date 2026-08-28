@@ -255,6 +255,8 @@ export interface GameHandle {
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
   isSprintRunning(): boolean;
+  /** 現在のズーム階層（スナップショットを作らない軽量アクセサ）。 */
+  zoomLevel(): ZoomLevel;
   /**
    * 状態変更ごとに増える版番号。React は毎フレームこれを見て、変化時のみ
    * スナップショットを読み直す。これにより window.game 経由の外部操作（E2E 等）も
@@ -1082,6 +1084,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     isSprintRunning() {
       return !replayMode && engine.sprintRunning();
+    },
+    zoomLevel() {
+      return engine.zoomLevel();
     },
     revision() {
       return revision;

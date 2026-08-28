@@ -4,6 +4,7 @@
  * Done / Delivered / Max Combo / AI Assisted / Review Queue Max / Rework /
  * Incidents / Senior HP / 介入 と、評価・診断・称号を表示する。
  */
+import { useRef } from 'react';
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
 import { planBurnCauseLog } from '../render/sprintBurnCauseView';
@@ -15,6 +16,7 @@ import type { ActionId, SprintResult } from '../sim/types';
 import { BaselineComparisonChart } from './BaselineComparisonChart';
 import { SprintTimelineChart } from './SprintTimelineChart';
 import { RewardCeremony } from './JuicyEffects';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 interface Row {
   label: string;
@@ -85,16 +87,21 @@ export function SprintResultScreen({
   replayMode = false,
   diagnosis = 'healthyAcceleration',
 }: SprintResultScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef);
   const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
   const hellSummary = planReviewHellResultSummary(result, { replayMode, diagnosis });
 
   return (
     <div
+      ref={overlayRef}
       className="result-overlay"
       data-testid="sprint-result"
       role="dialog"
+      aria-modal="true"
       aria-label="Sprint Result"
+      tabIndex={-1}
     >
       <div className="result-card sprint-result-card">
         <p className="result-eyebrow">SPRINT RESULT</p>

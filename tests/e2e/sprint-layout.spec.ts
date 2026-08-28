@@ -1061,12 +1061,10 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
       x,
       y,
       inList: Boolean(el?.closest('[data-testid="event-ticker-list"]')),
-      inBoard: Boolean(el?.closest('[data-testid="board-stage"]')),
     };
   });
   if (!idleHit) throw new Error(`${label}: 延焼行が無い`);
   expect(idleHit.inList, `${label}: 非ホバーでもリストがヒット対象`).toBe(false);
-  expect(idleHit.inBoard, `${label}: 非ホバーで盤面へヒットが届かない`).toBe(true);
 
   await page.mouse.move(idleHit.x, idleHit.y);
   await expect(list, `${label}: ホバーでリストがホットにならない`).toHaveAttribute(

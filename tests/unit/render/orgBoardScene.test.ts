@@ -28,6 +28,7 @@ import {
   orgBoardRectsOverlap,
   orgHubTone,
   planOrgBoardScene,
+  groupOrgIslandsByDept,
   teamDesignPosition,
   zoneLabelRect,
 } from '../../../src/render/orgBoardScene';
@@ -75,6 +76,39 @@ describe('planOrgBoardScene (RI-01)', () => {
     const scene = planOrgBoardScene(org);
     expect(scene.islands).toHaveLength(org.teamCount);
     expect(new Set(scene.islands.map((i) => i.teamId)).size).toBe(org.teamCount);
+  });
+
+  it('島に部門 ID・部門名を載せ、ツールチップで同名チームを区別する', () => {
+    const org = generateOrgScale(orgScaleInput('ri01-island-dept'));
+    const scene = planOrgBoardScene(org);
+    for (const island of scene.islands) {
+      const dept = org.departments.find((d) => d.teams.some((t) => t.id === island.teamId));
+      expect(dept, island.teamId).toBeDefined();
+      expect(island.deptId).toBe(dept!.def.id);
+      expect(island.deptName).toBe(dept!.def.name);
+      expect(island.labels.title).toContain(dept!.def.name);
+      expect(island.labels.title).toContain(island.team.name);
+    }
+  });
+
+  it('コンパクトドックは登場順の部門見出しでグループ化する', () => {
+    const org = generateOrgScale(orgScaleInput('ri01-dock-groups'));
+    const scene = planOrgBoardScene(org);
+    const groups = groupOrgIslandsByDept(scene.islands);
+    const appearanceOrder: string[] = [];
+    for (const island of scene.islands) {
+      if (!appearanceOrder.includes(island.deptId)) {
+        appearanceOrder.push(island.deptId);
+      }
+    }
+    expect(groups.map((g) => g.deptId)).toEqual(appearanceOrder);
+    expect(new Set(groups.map((g) => g.deptName))).toEqual(
+      new Set(org.departments.map((d) => d.def.name)),
+    );
+    expect(groups.reduce((n, g) => n + g.islands.length, 0)).toBe(scene.islands.length);
+    for (const group of groups) {
+      expect(group.islands.every((island) => island.deptId === group.deptId)).toBe(true);
+    }
   });
 
   it('島バッジにエンジニア人数と AI 配布数を載せる（RI-27）', () => {

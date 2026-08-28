@@ -6,7 +6,12 @@
  */
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { OrgScaleState } from '../sim/orgscale/types';
-import { ORG_VIEW, planOrgBoardScene, type OrgIslandPlan } from '../render/orgBoardScene';
+import {
+  groupOrgIslandsByDept,
+  ORG_VIEW,
+  planOrgBoardScene,
+  type OrgIslandPlan,
+} from '../render/orgBoardScene';
 import { orgBoardIsCompact } from '../render/visualTokens';
 import { OrgFlowLanes } from './OrgFlowLanes';
 import { OrgHubSvg } from './OrgHub';
@@ -62,11 +67,13 @@ function ZoneLabel({
 function OrgIsland({
   island,
   onClick,
+  onFocus,
   showBadge,
   decorative,
 }: {
   island: OrgIslandPlan;
   onClick: () => void;
+  onFocus: () => void;
   showBadge: boolean;
   /** ドックが操作を担うとき、島は見た目と空き領域のポインターだけ残す。 */
   decorative: boolean;
@@ -91,6 +98,7 @@ function OrgIsland({
         type="button"
         className={`org-island health-${team.health}${team.isPlayer ? ' is-player' : ''}`}
         data-testid={`team-${team.id}`}
+        data-team-id={team.id}
         data-health={team.health}
         tabIndex={decorative ? -1 : undefined}
         style={{
@@ -98,6 +106,7 @@ function OrgIsland({
           top: pct(island.y, VIEW_H),
         }}
         onClick={onClick}
+        onFocus={onFocus}
         title={island.labels.title}
       >
         <OrgTeamActor island={island} />
@@ -117,6 +126,38 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
   const hot = org.onFire > 0 || org.departments.some((d) => d.health === 'reviewHell');
   const { ref: boardRef, compact: widthCompact } = useOrgBoardScale();
   const compact = widthCompact || scene.capacityCompact;
+  const compactRef = useRef(compact);
+  const focusedTeamIdRef = useRef<string | null>(null);
+  const dockGroups = groupOrgIslandsByDept(scene.islands);
+
+  const rememberFocusedTeam = (teamId: string) => {
+    focusedTeamIdRef.current = teamId;
+  };
+
+  useLayoutEffect(() => {
+    const prev = compactRef.current;
+    compactRef.current = compact;
+    if (prev === compact) return;
+    const root = boardRef.current;
+    if (!root) return;
+    const active = document.activeElement;
+    const activeTeamId =
+      active instanceof HTMLElement
+        ? active.closest('[data-team-id]')?.getAttribute('data-team-id')
+        : null;
+    const lostFocusToDocument =
+      active === document.body || active === document.documentElement || active === null;
+    const teamId = activeTeamId ?? (lostFocusToDocument ? focusedTeamIdRef.current : null);
+    if (!teamId) return;
+    const next = root.querySelector<HTMLElement>(
+      compact
+        ? `.org-island-badge-dock-hit[data-team-id="${CSS.escape(teamId)}"]`
+        : `.org-island[data-team-id="${CSS.escape(teamId)}"]`,
+    );
+    if (next && next !== active) {
+      next.focus({ preventScroll: true });
+    }
+  }, [boardRef, compact]);
 
   return (
     <div
@@ -144,17 +185,31 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
 
       {compact ? (
         <div className="org-island-badge-dock" data-testid="org-island-badge-dock">
-          {scene.islands.map((island) => (
-            <button
-              key={`dock-${island.teamId}`}
-              type="button"
-              className="org-island-badge-dock-hit"
-              data-testid={`island-badge-${island.teamId}`}
-              title={island.labels.title}
-              onClick={() => onFocusTeam(island.teamId)}
+          {dockGroups.map((group) => (
+            <section
+              key={group.deptId}
+              className="org-island-badge-dock-group"
+              aria-labelledby={`org-dock-dept-${group.deptId}`}
             >
-              <OrgIslandBadge island={island} />
-            </button>
+              <p className="org-island-badge-dock-heading" id={`org-dock-dept-${group.deptId}`}>
+                {group.deptName}
+              </p>
+              {group.islands.map((island) => (
+                <button
+                  key={`dock-${island.teamId}`}
+                  type="button"
+                  className="org-island-badge-dock-hit"
+                  data-testid={`island-badge-${island.teamId}`}
+                  data-team-id={island.teamId}
+                  title={island.labels.title}
+                  aria-label={island.labels.title}
+                  onClick={() => onFocusTeam(island.teamId)}
+                  onFocus={() => rememberFocusedTeam(island.teamId)}
+                >
+                  <OrgIslandBadge island={island} />
+                </button>
+              ))}
+            </section>
           ))}
         </div>
       ) : null}
@@ -166,6 +221,7 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
           showBadge={!compact}
           decorative={compact}
           onClick={() => onFocusTeam(island.teamId)}
+          onFocus={() => rememberFocusedTeam(island.teamId)}
         />
       ))}
 

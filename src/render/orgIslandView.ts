@@ -87,9 +87,10 @@ export function fireLabel(incidents: number): string | null {
   return incidents > 0 ? `🔥${incidents}` : null;
 }
 
-/** ドリルダウン用ツールチップ。 */
-export function islandTitle(name: string, health: TeamHealth): string {
-  return `${name}（${HEALTH_LABEL[health]}）へドリルダウン`;
+/** ドリルダウン用ツールチップ。部門名があると同名チームを区別できる。 */
+export function islandTitle(name: string, health: TeamHealth, deptName?: string): string {
+  const who = deptName ? `${deptName} ${name}` : name;
+  return `${who}（${HEALTH_LABEL[health]}）へドリルダウン`;
 }
 
 /**

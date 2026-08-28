@@ -12,6 +12,7 @@ import {
   LOD_DOT_MAX,
   teamIslandView,
   truncateName,
+  islandTitle,
 } from '../../../src/render/orgIslandView';
 import type { Team, TeamHealth } from '../../../src/sim/orgscale/types';
 
@@ -66,6 +67,18 @@ describe('truncateName', () => {
 
   it('maxChars <= 0 は空文字', () => {
     expect(truncateName('Alpha', 0)).toBe('');
+  });
+});
+
+describe('islandTitle', () => {
+  it('部門名があると同名チームを区別する', () => {
+    expect(islandTitle('チームA', 'healthy', 'プロダクト事業部')).toBe(
+      'プロダクト事業部 チームA（健全）へドリルダウン',
+    );
+  });
+
+  it('部門名がなければチーム名だけにする', () => {
+    expect(islandTitle('Platform', 'congested')).toBe('Platform（渋滞）へドリルダウン');
   });
 });
 

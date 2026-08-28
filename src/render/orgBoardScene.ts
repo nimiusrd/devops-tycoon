@@ -178,6 +178,8 @@ export interface OrgIslandPlan {
     title: string;
     fire: string | null;
   };
+  deptId: string;
+  deptName: string;
 }
 
 /** 全社マップ盤面のシーン計画。 */
@@ -536,9 +538,11 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
         },
         labels: {
           name: displayName(team),
-          title: islandTitle(team.name, team.health),
+          title: islandTitle(team.name, team.health, dept.def.name),
           fire: fireLabel(team.incidents),
         },
+        deptId: dept.def.id,
+        deptName: dept.def.name,
       });
     });
   });
@@ -553,6 +557,24 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
     islands,
     capacityCompact: orgBoardNeedsCapacityCompact(org),
   };
+}
+
+/** コンパクトドックを部門見出し付きで並べる。 */
+export function groupOrgIslandsByDept(
+  islands: readonly OrgIslandPlan[],
+): { deptId: string; deptName: string; islands: OrgIslandPlan[] }[] {
+  const groups: { deptId: string; deptName: string; islands: OrgIslandPlan[] }[] = [];
+  const indexByDept = new Map<string, number>();
+  for (const island of islands) {
+    const existing = indexByDept.get(island.deptId);
+    if (existing !== undefined) {
+      groups[existing]!.islands.push(island);
+      continue;
+    }
+    indexByDept.set(island.deptId, groups.length);
+    groups.push({ deptId: island.deptId, deptName: island.deptName, islands: [island] });
+  }
+  return groups;
 }
 
 /** 設計座標が ORG_VIEW 範囲内か（テスト用）。 */

@@ -6174,6 +6174,22 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   overflow: auto;
   pointer-events: none;
 }
+.org-island-badge-dock-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: inherit;
+  flex: 1 0 100%;
+  max-width: 100%;
+}
+.org-island-badge-dock-heading {
+  flex: 1 0 100%;
+  margin: 0;
+  font: inherit;
+  font-size: var(--visual-org-island-badge-min-font-size);
+  font-weight: 800;
+  color: var(--muted);
+}
 .org-island-badge-dock-hit {
   margin: 0;
   padding: 0;
@@ -6185,6 +6201,11 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: auto;
   text-align: left;
   max-width: 100%;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-width: 24px;
+  min-height: 44px;
 }
 .org-island-badge-dock-hit:focus-visible {
   outline: 2px solid var(--sun);

@@ -576,6 +576,29 @@ test('全社マップの部門ラベルがチームカードと重ならない�
         }
         const dockHits = page.locator('.org-island-badge-dock-hit');
         await expect(dockHits.first()).not.toHaveAttribute('tabindex', '-1');
+        const dock = page.getByTestId('org-island-badge-dock');
+        await expect(dock, `${viewport.name} で部門見出しが見えない`).toContainText(
+          'プロダクト事業部',
+        );
+        await expect(dock).toContainText('基盤・プラットフォーム部');
+        await expect(dock).toContainText('新規事業部');
+        const hitCount = await dockHits.count();
+        expect(hitCount, `${viewport.name} でドック操作対象が無い`).toBeGreaterThan(0);
+        for (let i = 0; i < hitCount; i += 1) {
+          const hitBox = await readBox(dockHits.nth(i), `${viewport.name} ドック操作対象`);
+          expect(
+            hitBox.width,
+            `${viewport.name} のドック操作対象幅が 24px 未満`,
+          ).toBeGreaterThanOrEqual(24);
+          expect(
+            hitBox.height,
+            `${viewport.name} のドック操作対象高が 24px 未満`,
+          ).toBeGreaterThanOrEqual(24);
+          expect(
+            hitBox.height,
+            `${viewport.name} のドック操作対象高がモバイル原則の 44px 未満`,
+          ).toBeGreaterThanOrEqual(44);
+        }
       } else {
         expect(
           badgeBox.width,
@@ -628,6 +651,27 @@ test('全社マップの部門ラベルがチームカードと重ならない�
       ).toBe(false);
     }
   }
+});
+
+test('コンパクト切替でチームのキーボードフォーカスを引き継ぐ', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await startRun(page, 'org-compact-focus');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+  const board = page.getByTestId('org-board');
+  await expect(board).toBeVisible();
+  await expect(board).toHaveAttribute('data-compact', 'false');
+
+  const island = page.getByTestId('team-product-t0');
+  await island.focus();
+  await expect(island).toBeFocused();
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await expect(board).toHaveAttribute('data-compact', 'true');
+  await expect(page.getByTestId('island-badge-product-t0')).toBeFocused();
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(board).toHaveAttribute('data-compact', 'false');
+  await expect(page.getByTestId('team-product-t0')).toBeFocused();
 });
 
 type FieldKpi = {

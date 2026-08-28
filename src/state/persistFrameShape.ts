@@ -238,7 +238,11 @@ function isSprintEventShape(value: unknown): boolean {
     case 'auto-contain':
       return typeof value.taskId === 'number' && typeof value.hpCost === 'number';
     case 'spread':
-      return typeof value.taskId === 'number';
+      return (
+        typeof value.taskId === 'number' &&
+        (value.debtGain === undefined || typeof value.debtGain === 'number') &&
+        (value.moraleCost === undefined || typeof value.moraleCost === 'number')
+      );
     case 'contain':
       return typeof value.taskId === 'number' && typeof value.combo === 'number';
     default:

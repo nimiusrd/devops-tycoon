@@ -432,13 +432,17 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
     }
     task.debt = true;
     const spreadMul = securitySpreadMul(org.securityLevel);
-    org.techDebt += Math.ceil(DEBT_PER_SPREAD * spreadMul);
+    const debtGain = Math.ceil(DEBT_PER_SPREAD * spreadMul);
+    const moraleBefore = org.morale;
+    org.techDebt += debtGain;
     org.morale = clamp(org.morale - Math.ceil(SPREAD_MORALE_COST * spreadMul), 0, 100);
     const next = sprint.tasks.find((t) => t.lane === 'review');
     appendSprintEvent(sprint, {
       tick,
       kind: 'spread',
       taskId: task.id,
+      debtGain,
+      moraleCost: moraleBefore - org.morale,
       ...(next ? { spreadToTaskId: next.id } : {}),
     });
     appendSprintEvent(sprint, {

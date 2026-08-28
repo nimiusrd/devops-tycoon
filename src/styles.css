@@ -1867,6 +1867,8 @@ body {
 }
 .result-burn-cause-text {
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .result-analysis-rows {
   margin-bottom: 0.65rem;
@@ -1995,13 +1997,18 @@ body {
     0 2px 0 #0006;
 }
 
-/* スプリント内イベントティッカー（RI-52） */
+/* スプリント内イベントティッカー（RI-52）
+ * DS-01: 本体とリストは常に none。フォーカス中も盤面ドラッグを通す。
+ * DS-06: 修飾キーなしホイール / 見出し click / キーボードで全行へ到達する。
+ * DS-08: 見出しは native button の click。リストはキーボード用フォーカス領域。 */
 .event-ticker {
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 14;
   width: min(280px, 42%);
+  max-height: 58%;
+  overflow: hidden;
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -2009,11 +2016,29 @@ body {
 }
 .event-ticker-label {
   margin: 0;
+  flex: 0 0 auto;
+  min-height: 24px;
+  min-width: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--muted, #9aa3b5);
   text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.event-ticker-label:disabled {
+  cursor: default;
+}
+.event-ticker-label:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  /* 親 .event-ticker の overflow: hidden が外側枠を切るので内側へ描く（DS-08）。 */
+  outline-offset: -2px;
 }
 .event-ticker-list {
   list-style: none;
@@ -2022,6 +2047,16 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+}
+.event-ticker-list:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: -2px;
 }
 .event-ticker-row {
   display: flex;
@@ -2052,6 +2087,7 @@ body {
 .event-ticker-text {
   flex: 1 1 auto;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* 介入アクションバー（第4.3 / 第6.1） */

@@ -101,6 +101,12 @@ async function exposeResultCardForScreenshot(page: import('@playwright/test').Pa
       .result-overlay > * {
         margin-block: 0 !important;
       }
+      .result-overlay::before,
+      .result-overlay::after {
+        content: none !important;
+        flex: 0 0 auto !important;
+        display: none !important;
+      }
     `,
   });
   await page.evaluate(

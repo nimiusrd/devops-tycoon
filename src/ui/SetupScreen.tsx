@@ -8,6 +8,7 @@
  * 既存の編成グリッド（FormationGrid）を流用する。
  */
 import { getBoss } from '../data/bosses';
+import { runBarSprintView } from '../render/runBarView';
 import type { LaneAssignment } from '../sim/member/types';
 import type { RunState } from '../sim/run/types';
 import { DeckBar } from './DeckBar';
@@ -31,8 +32,7 @@ export function SetupScreen({
   readOnly = false,
 }: SetupScreenProps) {
   const boss = getBoss(state.bossId);
-  const total = state.sprintsPerQuarter;
-  const nextIndex = state.sprintIndexInQuarter + 1;
+  const { current: nextIndex, total } = runBarSprintView(state);
   // launchSprint と同様、最終枠はインデックスからボスを決める（pending は normal のまま）。
   const bossPending = state.pendingSprintKind === 'boss' || nextIndex >= total;
   const elitePending = !bossPending && state.pendingSprintKind === 'elite';
@@ -40,7 +40,7 @@ export function SetupScreen({
     <div className="run-setup" data-testid="setup" data-readonly={readOnly ? 'true' : undefined}>
       <div className="map-banner">
         <span className="pill">第{state.quarterNumber}四半期</span>
-        <span className="pill">
+        <span className="pill" data-testid="setup-next-sprint">
           次: スプリント {nextIndex} / {total}
         </span>
         {elitePending ? (

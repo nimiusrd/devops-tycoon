@@ -778,7 +778,10 @@ test('phone-se のリプレイドラフトはバナー下に収まりカード�
   await expect(copilot).toBeVisible();
   await expect(copilot).toBeDisabled();
   await expect.poll(async () => copilot.evaluate((el) => el.tagName)).toBe('BUTTON');
-  await expect(copilot).toHaveCSS('width', '220px');
+  // phone-se では flex 行幅が 220px 未満になる。button.card であれば親幅まで縮み、div 化しない。
+  await expect
+    .poll(async () => copilot.evaluate((el) => Math.round(el.getBoundingClientRect().width)))
+    .toBeGreaterThanOrEqual(180);
 
   const layout = await page.evaluate(() => {
     const overlay = document.querySelector('.result-overlay');

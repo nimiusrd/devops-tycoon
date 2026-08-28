@@ -33,6 +33,7 @@ import type { RankingKind, ZoomLevel } from '../sim/orgscale/types';
 import {
   accumulateWallTime,
   FRAME_MS,
+  shouldAutoAdvanceSprint,
   SIM_STEP_MS,
   ticksDueFromAccumulator,
   type PlaybackSpeed,
@@ -177,19 +178,33 @@ export function useRun(game: GameHandle): UseRun {
 
       // スプリント進行中は壁時計アキュムレータで固定ステップ前進（RI-62）。
       // game.isPaused() は E2E / pauseBriefly / lazy 読込用。プレイヤー Pause は playbackSpeed=0。
-      if (game.isSprintRunning() && !game.isPaused()) {
-        const speed = playbackSpeedRef.current;
-        if (speed > 0) {
-          // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
-          accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
-          const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
-          accumulatedMs -= consumedMs;
-          for (let i = 0; i < ticks; i += 1) {
-            if (!game.isSprintRunning() || game.isPaused()) break;
-            game.step(SIM_STEP_MS);
+      // 全社マップ等の俯瞰中は現場 sim を進めない（閲覧だけで KPI が進まない）。
+      const speed = playbackSpeedRef.current;
+      const fieldView = game.zoomLevel() === 'team';
+      if (
+        shouldAutoAdvanceSprint({
+          sprintRunning: game.isSprintRunning(),
+          paused: game.isPaused(),
+          playbackSpeed: speed,
+          fieldView,
+        })
+      ) {
+        // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
+        accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
+        const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
+        accumulatedMs -= consumedMs;
+        for (let i = 0; i < ticks; i += 1) {
+          if (
+            !shouldAutoAdvanceSprint({
+              sprintRunning: game.isSprintRunning(),
+              paused: game.isPaused(),
+              playbackSpeed: playbackSpeedRef.current,
+              fieldView: game.zoomLevel() === 'team',
+            })
+          ) {
+            break;
           }
-        } else {
-          accumulatedMs = 0;
+          game.step(SIM_STEP_MS);
         }
       } else {
         accumulatedMs = 0;

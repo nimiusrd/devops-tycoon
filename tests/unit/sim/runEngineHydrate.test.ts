@@ -118,6 +118,13 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
     internals.phase = 'shop';
     expect(engine.exportReplayFrame()).toBeNull();
 
+    internals.phase = 'draft';
+    internals.draft = ['docs', 'auto-test'];
+    expect(engine.exportReplayFrame()).toMatchObject({
+      phase: 'draft',
+      draft: ['docs', 'auto-test'],
+    });
+
     internals.phase = 'lost';
     internals.status = 'lost';
     expect(engine.exportReplayFrame()).toMatchObject({ phase: 'lost', status: 'lost' });
@@ -305,6 +312,14 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
     expect(() => restored.hydrateReplayFrame(asReplayFrame(base, { phase: 'shop' }))).toThrow(
       'cannot hydrate replay frame in phase=shop',
     );
+
+    restored.hydrateReplayFrame(
+      asReplayFrame(base, { phase: 'draft', draft: ['copilot', 'docs', 'auto-test'] }),
+    );
+    expect(restored.snapshot()).toMatchObject({
+      phase: 'draft',
+      draft: ['copilot', 'docs', 'auto-test'],
+    });
 
     const lost = asReplayFrame(base, {
       phase: 'lost',

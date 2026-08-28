@@ -174,18 +174,18 @@ describe('mutation shards', () => {
 
   it('Stryker と同様、mutant の開始と終了が両方レンジ内のときだけ覆う', () => {
     const titleBody = {
-      start: { line: 644, column: 0 },
-      end: { line: 735, column: 1 },
+      start: { line: 648, column: 0 },
+      end: { line: 739, column: 1 },
     };
-    expect(coverageIncludesLocation([{ start: 585, end: 680 }], titleBody)).toBe(false);
-    expect(coverageIncludesLocation([{ start: 681, end: OPEN_RANGE_END }], titleBody)).toBe(false);
-    expect(coverageIncludesLocation([{ start: 642, end: OPEN_RANGE_END }], titleBody)).toBe(true);
-    expect(coverageIncludesLine([{ start: 585, end: 680 }], 645)).toBe(true);
+    expect(coverageIncludesLocation([{ start: 589, end: 684 }], titleBody)).toBe(false);
+    expect(coverageIncludesLocation([{ start: 685, end: OPEN_RANGE_END }], titleBody)).toBe(false);
+    expect(coverageIncludesLocation([{ start: 646, end: OPEN_RANGE_END }], titleBody)).toBe(true);
+    expect(coverageIncludesLine([{ start: 589, end: 684 }], 649)).toBe(true);
   });
 
   it('computeTitleAndDiagnosis を関数の途中で割らない', () => {
-    const titleStart = 642;
-    const titleEnd = 736;
+    const titleStart = 655;
+    const titleEnd = 749;
     const sprintRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);
       const coverage = resolved.get('src/sim/sprint.ts');
@@ -225,13 +225,13 @@ describe('mutation shards', () => {
 
   it('engine.ts の step / resolveSprint を関数の途中で割らない', () => {
     const methods = [
-      { name: 'beginSprint', start: 656, end: 725 },
-      { name: 'buildSprintBaselineInput', start: 731, end: 766 },
-      { name: 'step', start: 769, end: 778 },
-      { name: 'playCard', start: 793, end: 817 },
-      { name: 'resolveSprint', start: 820, end: 902 },
-      { name: 'chooseGoalAdjustment', start: 996, end: 1058 },
-      { name: 'applyOrgLever', start: 1970, end: 2060 },
+      { name: 'beginSprint', start: 660, end: 729 },
+      { name: 'buildSprintBaselineInput', start: 735, end: 770 },
+      { name: 'step', start: 773, end: 782 },
+      { name: 'playCard', start: 797, end: 821 },
+      { name: 'resolveSprint', start: 824, end: 906 },
+      { name: 'chooseGoalAdjustment', start: 1000, end: 1062 },
+      { name: 'applyOrgLever', start: 1974, end: 2064 },
     ];
     const engineRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);

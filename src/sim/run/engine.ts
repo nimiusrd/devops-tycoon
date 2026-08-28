@@ -2114,6 +2114,11 @@ export class RunEngine {
     return this.phase;
   }
 
+  /** 現在のズーム階層（スナップショットを作らない軽量アクセサ）。 */
+  zoomLevel(): ZoomLevel {
+    return this.zoom.level;
+  }
+
   /** スプリントが進行中（自動ステップ対象）か。 */
   sprintRunning(): boolean {
     return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;

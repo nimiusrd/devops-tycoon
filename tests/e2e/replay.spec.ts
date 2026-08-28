@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import type { GoalAdjustmentId, RunState } from '../../src/sim/run/types';
 import type { RunDiagnosticInfo } from '../../src/state/diagnosticInfo';
 import type { ReplayBlob } from '../../src/state/replay';
@@ -32,7 +32,7 @@ type ReplayGameWindow = Window & {
   };
 };
 
-async function playUntilFinished(page: import('@playwright/test').Page): Promise<void> {
+async function playUntilFinished(page: Page): Promise<void> {
   await page.evaluate(() => {
     const game = (window as ReplayGameWindow).game;
     if (!game) return;
@@ -62,6 +62,45 @@ async function playUntilFinished(page: import('@playwright/test').Page): Promise
   });
 }
 
+/** キーフレーム画面の主内容が、空スクロール無しでビューポート内にあること。 */
+async function assertKeyframeViewerInViewport(page: Page): Promise<void> {
+  await expect(page.getByTestId('replay-mode-banner')).toBeVisible();
+  const metrics = await page.evaluate(() => {
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    const overlay = document.querySelector('.result-overlay');
+    const content =
+      document.querySelector('[data-testid="setup"]') ??
+      document.querySelector('[data-testid="sprint-layout"]') ??
+      document.querySelector('[data-testid="sprint-result"] .result-card') ??
+      document.querySelector('[data-testid="run-result"] .result-card') ??
+      banner;
+    const contentRect = content?.getBoundingClientRect();
+    const overlayEl = overlay instanceof HTMLElement ? overlay : null;
+    const overlayChild = overlayEl?.firstElementChild;
+    return {
+      scrollY: window.scrollY,
+      innerHeight: window.innerHeight,
+      contentTop: contentRect?.top ?? null,
+      contentBottom: contentRect?.bottom ?? null,
+      overlayScrollTop: overlayEl?.scrollTop ?? null,
+      overlayChildTop: overlayChild?.getBoundingClientRect().top ?? null,
+    };
+  });
+
+  expect(metrics.scrollY).toBeLessThan(8);
+  expect(metrics.contentTop).not.toBeNull();
+  expect(metrics.contentTop ?? 0).toBeGreaterThanOrEqual(-1);
+  expect(metrics.contentTop ?? 0).toBeLessThan(metrics.innerHeight);
+  expect(metrics.contentBottom ?? 0).toBeGreaterThan(0);
+  if (metrics.overlayChildTop !== null) {
+    expect(metrics.overlayChildTop).toBeGreaterThanOrEqual(-1);
+    expect(metrics.overlayChildTop).toBeLessThan(metrics.innerHeight);
+  }
+  if (metrics.overlayScrollTop !== null) {
+    expect(metrics.overlayScrollTop).toBeLessThan(8);
+  }
+}
+
 test('ラン完了後にリプレイ一覧からキーフレームを read-only で開ける', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=replay-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
@@ -83,6 +122,7 @@ test('ラン完了後にリプレイ一覧からキーフレームを read-only 
   await page.getByTestId('replay-keyframe-0').click();
 
   await expect(page.getByTestId('replay-mode-banner')).toBeVisible();
+  await assertKeyframeViewerInViewport(page);
   await expect(page.getByTestId('replay-recorded-ruleset')).toContainText('v');
   await expect
     .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.isReplayMode()))
@@ -197,6 +237,7 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
   await expect(page.getByTestId('replay-mode-banner')).toContainText('レビュー地獄リプレイ');
   await expect(page.getByTestId('result-review-hell-summary')).toBeVisible();
   await expect(page.getByTestId('result-review-hell-peak')).toContainText('21');
+  await assertKeyframeViewerInViewport(page);
 });
 
 test('記録時のレリック定義とルールセットを優先して表示する', async ({ page }) => {
@@ -384,4 +425,90 @@ test('旧v1リプレイはルールセット不明と未知コンテンツのま
     await page.evaluate(() => (window as ReplayGameWindow).game?.getDiagnosticInfo().ruleset),
   ).toBeNull();
   await expect(page.getByTestId('relics')).toContainText('不明なレリック（removed-relic）');
+});
+
+test('タイトルを大きくスクロールしたあとキーフレームを開いてもビューポート内に内容がある', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?renderer=dom&seed=replay-scroll-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const imported = await page.evaluate(async (schemaVersion) => {
+    const game = (window as ReplayGameWindow).game;
+    if (!game) return false;
+    game.startRun('easy', [], 'replay-scroll-e2e');
+    const setupFrame = game.engine.exportReplayFrame();
+    if (!setupFrame) return false;
+    const resultFrame = structuredClone(setupFrame);
+    resultFrame.phase = 'result';
+    resultFrame.lastResult = {
+      done: 4,
+      delivered: 12,
+      maxCombo: 2,
+      aiAssistedPct: 40,
+      reviewQueueMax: 3,
+      rework: 0,
+      incidents: 0,
+      contained: 0,
+      spread: 0,
+      seniorHpDelta: 0,
+      actionCounts: {},
+      grade: 'B',
+      title: '安定出荷',
+      diagnosis: '健全な加速',
+      timeline: [],
+      events: [],
+      fireEvents: [],
+      focusRemaining: 4,
+      focusMax: 8,
+      autoContainCount: 0,
+    };
+    const blob: ReplayBlob = {
+      schemaVersion: schemaVersion as typeof REPLAY_SCHEMA_VERSION,
+      id: 'replay-scroll-e2e:1',
+      seed: 'replay-scroll-e2e',
+      difficulty: 'easy',
+      trials: [],
+      finishedAt: Date.now(),
+      outcome: { status: 'won', diagnosis: 'healthyAcceleration', score: 20 },
+      keyframes: [
+        { phase: 'setup', frame: setupFrame, label: '編成' },
+        { phase: 'result', frame: resultFrame, label: 'スプリント結果' },
+      ],
+      ruleset: { version: 1, fingerprint: 'replay-scroll-e2e' },
+      contentSnapshot: { cards: [], relics: [] },
+    };
+    return game.importReplay(blob);
+  }, REPLAY_SCHEMA_VERSION);
+  expect(imported).toBe(true);
+
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await page.addStyleTag({
+    content: '.title-screen { min-height: 3600px !important; }',
+  });
+  await page.evaluate(() => window.scrollTo(0, 3000));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(2000);
+
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await page.getByTestId('replay-keyframe-0').click();
+  await expect(page.getByTestId('setup')).toBeVisible();
+  await assertKeyframeViewerInViewport(page);
+
+  await page.getByTestId('exit-replay').click();
+  await expect(page.getByTestId('title')).toBeVisible();
+  await page.addStyleTag({
+    content: [
+      '.title-screen { min-height: 3600px !important; }',
+      '.result-card { min-height: 2800px !important; }',
+    ].join('\n'),
+  });
+  await page.evaluate(() => window.scrollTo(0, 3000));
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await page.getByTestId('replay-keyframe-1').click();
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await assertKeyframeViewerInViewport(page);
 });

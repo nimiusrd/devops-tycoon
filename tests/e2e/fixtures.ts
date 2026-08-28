@@ -56,7 +56,7 @@ export interface PublicSprintOptions {
 }
 
 export interface PublicRunTarget {
-  phase: 'setup' | 'result';
+  phase: 'setup' | 'result' | 'evolution';
   diagnosis?: DiagnosisType;
   relicCount?: number;
 }

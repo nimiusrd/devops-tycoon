@@ -60,7 +60,14 @@ function FeedbackPop({ feedback }: { feedback?: ActiveHudFeedback }) {
 function MetricValue({ metric }: { metric: StatusMetricView }) {
   if (typeof metric.value === 'string') {
     if (metric.id === 'fireRisk') {
-      return <span className={`v fire-risk-value risk-${metric.value}`}>{metric.value}</span>;
+      return (
+        <span
+          className={`v fire-risk-value fire-risk-${metric.value}`}
+          data-testid="hud-fire-risk-value"
+        >
+          {metric.value}
+        </span>
+      );
     }
     return <GradeValue grade={metric.value as Grade} />;
   }

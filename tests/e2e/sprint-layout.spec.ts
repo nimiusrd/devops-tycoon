@@ -735,6 +735,25 @@ test('士気チップに炎上リスクを載せない（#356）', async ({ page
   const fireRisk = page.getByTestId('hud-fireRisk');
   await expect(fireRisk).toBeVisible();
   await expect(fireRisk).toContainText('炎上リスク');
+  const fireRiskValue = page.getByTestId('hud-fire-risk-value');
+  await expect(fireRiskValue).toBeVisible();
+  const fireRiskClasses = await fireRiskValue.evaluate((element) => [...element.classList]);
+  expect(
+    fireRiskClasses.some((cls) => /^risk-(LOW|MED|HIGH)$/.test(cls)),
+    '炎上リスク値に旧チップ用クラス risk-LOW/MED/HIGH が付いている',
+  ).toBe(false);
+  expect(
+    fireRiskClasses.some((cls) => /^fire-risk-(LOW|MED|HIGH)$/.test(cls)),
+    '炎上リスク値に衝突しない fire-risk-* が付いていない',
+  ).toBe(true);
+  const fireRiskPaint = await fireRiskValue.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { backgroundColor: style.backgroundColor, animationName: style.animationName };
+  });
+  expect(fireRiskPaint.backgroundColor, '炎上リスク値に旧チップ背景が付いている').toBe(
+    'rgba(0, 0, 0, 0)',
+  );
+  expect(fireRiskPaint.animationName, '炎上リスク値に旧チップの点滅が付いている').toBe('none');
 });
 
 test('レスポンシブ表示モードを859/860/861px境界で共有する', async ({ page }) => {

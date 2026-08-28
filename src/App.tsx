@@ -102,6 +102,23 @@ const loadSprintScreen = () => import('./ui/SprintScreen');
 const SprintScreen = lazy(() => loadSprintScreen().then((m) => ({ default: m.SprintScreen })));
 
 /**
+ * 進化オーバーレイ表示中は自動進行を止める（#386）。
+ * TutorialGuide / SprintSuspendFallback と同じ pause epoch 所有。
+ * lazy 読込中も Suspense 外でマウントし、チャンク到着を待たずに止める。
+ */
+function EvolutionSimPause({ game }: { game: GameHandle }) {
+  useEffect(() => {
+    if (game.isPaused()) return;
+    game.pause();
+    const epoch = game.getPauseEpoch();
+    return () => {
+      if (game.getPauseEpoch() === epoch) game.resume();
+    };
+  }, [game]);
+  return null;
+}
+
+/**
  * SprintScreen チャンク読込中は自動進行を止める。
  * 既に E2E 等で pause 済みなら触らず、自分が止めた epoch のままなら resume する。
  * （読込中に外部が再 pause したら epoch が進むので誤 resume しない。）
@@ -630,6 +647,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           />
         )}
       </Suspense>
+      {phase === 'evolution' && <EvolutionSimPause game={game} />}
       <Suspense fallback={null}>
         {phase === 'evolution' && (
           <EvolutionScreen

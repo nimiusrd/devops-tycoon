@@ -1525,6 +1525,18 @@ body {
 .result-overlay > * {
   flex-shrink: 0;
 }
+
+/* #386: 進化オーバーレイ中は背面盤面の常時アニメと HUD 警告パルスを止め、進行中に見せない */
+.app[data-phase='evolution'] .sprint-layout .task-dot,
+.app[data-phase='evolution'] .sprint-layout .task-dot::after,
+.app[data-phase='evolution'] .sprint-layout .flowdash,
+.app[data-phase='evolution'] .sprint-layout .flame,
+.app[data-phase='evolution'] .sprint-layout .cbob,
+.app[data-phase='evolution'] .sprint-layout .meter i,
+.app[data-phase='evolution'] .risk-HIGH,
+.app[data-phase='evolution'] .burnout-chip.tone-danger {
+  animation-play-state: paused;
+}
 /* プログラムでダイアログへ移した初期フォーカスはリングを出さない。Tab 移動は内側の button の :focus-visible に任せる。 */
 .result-overlay:focus:not(:focus-visible) {
   outline: none;

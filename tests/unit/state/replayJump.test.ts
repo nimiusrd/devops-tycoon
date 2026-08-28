@@ -1,30 +1,38 @@
 import { describe, expect, it } from 'vitest';
+import type { ReplayFramePhase } from '../../../src/sim/run/persist';
+import type { ReplayKeyframe } from '../../../src/state/replay';
 import { findNextReplayKeyframeIndex } from '../../../src/state/replayJump';
 
-describe('findNextReplayKeyframeIndex', () => {
-  const keyframes = [
-    { phase: 'setup' as const },
-    { phase: 'result' as const },
-    { phase: 'draft' as const },
-    { phase: 'result' as const },
-    { phase: 'draft' as const },
-    { phase: 'won' as const },
-  ];
+function kf(phase: ReplayFramePhase, framePhase: ReplayFramePhase = phase) {
+  return { phase, frame: { phase: framePhase } as ReplayKeyframe['frame'] };
+}
 
-  it('現在位置より後の最初の対象 phase を返す', () => {
+describe('findNextReplayKeyframeIndex', () => {
+  const keyframes = [kf('setup'), kf('result'), kf('draft'), kf('result'), kf('draft'), kf('won')];
+
+  it('現在の result に続く対応 draft を返す', () => {
     expect(findNextReplayKeyframeIndex(keyframes, 1, 'draft')).toBe(2);
-    expect(findNextReplayKeyframeIndex(keyframes, 2, 'draft')).toBe(4);
     expect(findNextReplayKeyframeIndex(keyframes, 3, 'draft')).toBe(4);
   });
 
-  it('後ろに対象が無ければ null', () => {
+  it('次の result／終端を越えた draft は返さない', () => {
+    expect(findNextReplayKeyframeIndex(keyframes, 0, 'draft')).toBeNull();
+    expect(findNextReplayKeyframeIndex(keyframes, 2, 'draft')).toBeNull();
     expect(findNextReplayKeyframeIndex(keyframes, 4, 'draft')).toBeNull();
-    expect(findNextReplayKeyframeIndex(keyframes, 1, 'quarterReview')).toBeNull();
-    expect(findNextReplayKeyframeIndex([{ phase: 'result' }], 0, 'draft')).toBeNull();
+    expect(findNextReplayKeyframeIndex([kf('result'), kf('result'), kf('draft')], 0, 'draft')).toBe(
+      null,
+    );
   });
 
-  it('currentIndex が負なら先頭から探す', () => {
-    expect(findNextReplayKeyframeIndex(keyframes, -1, 'draft')).toBe(2);
-    expect(findNextReplayKeyframeIndex(keyframes, Number.NaN, 'setup')).toBe(0);
+  it('後ろに対象が無ければ null', () => {
+    expect(findNextReplayKeyframeIndex(keyframes, 1, 'quarterReview')).toBeNull();
+    expect(findNextReplayKeyframeIndex([kf('result')], 0, 'draft')).toBeNull();
+  });
+
+  it('hydrate される frame.phase で判定し、ラッパーとの不一致は draft とみなさない', () => {
+    const mismatched = [kf('result'), kf('draft', 'result'), kf('draft')];
+    expect(findNextReplayKeyframeIndex(mismatched, 0, 'draft')).toBeNull();
+    const hydratedDraft = [kf('result'), kf('result', 'draft')];
+    expect(findNextReplayKeyframeIndex(hydratedDraft, 0, 'draft')).toBe(1);
   });
 });

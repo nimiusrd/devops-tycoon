@@ -607,3 +607,85 @@ test('ドラフトキーフレームが無いリプレイでは「カードド�
     'このリプレイにはカードドラフトの記録がありません。',
   );
 });
+
+test('対応するドラフトが無い result から後続スプリントのドラフトへ飛ばない', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=replay-draft-later-e2e&tutorial=off');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const imported = await page.evaluate(async (schemaVersion) => {
+    const game = (window as ReplayGameWindow).game;
+    if (!game) return false;
+    game.startRun('easy', [], 'replay-draft-later-e2e');
+    const setupFrame = game.engine.exportReplayFrame();
+    if (!setupFrame) return false;
+
+    const firstResult = structuredClone(setupFrame);
+    firstResult.phase = 'result';
+    firstResult.lastResult = {
+      done: 6,
+      delivered: 18,
+      maxCombo: 2,
+      aiAssistedPct: 55,
+      reviewQueueMax: 4,
+      rework: 1,
+      incidents: 0,
+      contained: 0,
+      spread: 0,
+      seniorHpDelta: -4,
+      actionCounts: {},
+      grade: 'C',
+      title: 'PRを増やす者',
+      diagnosis: 'レビュー渋滞',
+      timeline: [],
+      events: [],
+      fireEvents: [],
+      focusRemaining: 2,
+      focusMax: 8,
+      autoContainCount: 0,
+    };
+    const laterResult = structuredClone(firstResult);
+    const draftFrame = structuredClone(setupFrame);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = ['copilot', 'docs', 'auto-test'];
+
+    const blob: ReplayBlob = {
+      schemaVersion: schemaVersion as typeof REPLAY_SCHEMA_VERSION,
+      id: 'replay-draft-later-e2e:1',
+      seed: 'replay-draft-later-e2e',
+      difficulty: 'easy',
+      trials: [],
+      finishedAt: Date.now(),
+      outcome: {
+        status: 'won',
+        diagnosis: 'healthyAcceleration',
+        score: 18,
+      },
+      keyframes: [
+        { phase: 'setup', frame: setupFrame, label: '編成' },
+        { phase: 'result', frame: firstResult, label: 'Sprint result 1' },
+        { phase: 'result', frame: laterResult, label: 'Sprint result 2' },
+        { phase: 'draft', frame: draftFrame, label: 'カードドラフト' },
+      ],
+      ruleset: { version: 1, fingerprint: 'replay-draft-later-e2e' },
+      contentSnapshot: { cards: [], relics: [] },
+    };
+    return game.importReplay(blob);
+  }, REPLAY_SCHEMA_VERSION);
+
+  expect(imported).toBe(true);
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible({ timeout: 10_000 });
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.listReplays().length ?? 0))
+    .toBeGreaterThan(0);
+
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await page.getByTestId('replay-keyframe-1').click();
+
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-continue')).toBeDisabled();
+  await expect(page.getByTestId('result-continue-hint')).toContainText(
+    'このリプレイにはカードドラフトの記録がありません。',
+  );
+});

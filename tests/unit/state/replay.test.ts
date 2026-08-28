@@ -442,6 +442,60 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(game.chooseCard('copilot').phase).toBe('draft');
   });
 
+  it('次の result を越えた別スプリントの draft へはジャンプしない', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-later-draft', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-later-draft', seed: 'jump-later-draft' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    const laterResult = structuredClone(setup);
+    laterResult.phase = 'result';
+    const draftFrame = structuredClone(setup);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = ['copilot', 'docs', 'auto-test'];
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+      { phase: 'result', frame: laterResult },
+      { phase: 'draft', frame: draftFrame },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('draft')).toBeNull();
+    expect(game.jumpReplayToPhase('draft')).toBeNull();
+    expect(game.phase()).toBe('result');
+  });
+
+  it('ラッパー phase が draft でも frame.phase が result ならジャンプしない', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-mismatch', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-mismatch', seed: 'jump-mismatch' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    const mismatched = structuredClone(setup);
+    mismatched.phase = 'result';
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+      { phase: 'draft', frame: mismatched },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('draft')).toBeNull();
+    expect(game.jumpReplayToPhase('draft')).toBeNull();
+    expect(game.phase()).toBe('result');
+  });
+
   it('ドラフトキーフレームが無ければジャンプせず null を返す', async () => {
     const storage = new MemoryReplayStorage();
     const game = createGame({ seed: 'jump-missing', initialMeta: defaultMeta() });
@@ -889,6 +943,7 @@ describe('リプレイ正規化（RI-72-B3）', () => {
       { phase: 'setup', frame: { ...frame, extras: { ...frame.extras, allowedRelics: 'bad' } } },
       { phase: 'setup', label: '編成', frame },
       { phase: 'result', label: 123, frame: resultFrame },
+      { phase: 'draft', frame: resultFrame },
     ]);
 
     expect(normalized).toHaveLength(2);
@@ -924,6 +979,12 @@ describe('リプレイ正規化（RI-72-B3）', () => {
       normalizeReplay({
         ...makeNormalizeBlob(),
         keyframes: [validKeyframe, { phase: 'setup', frame: { ...frame, seed: 1 } }],
+      }),
+    ).toBeNull();
+    expect(
+      normalizeReplay({
+        ...makeNormalizeBlob(),
+        keyframes: [{ phase: 'draft', frame }],
       }),
     ).toBeNull();
     expect(

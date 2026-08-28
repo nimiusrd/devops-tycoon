@@ -320,7 +320,16 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const jumpReplayToPhase = useCallback(
-    (phase: ReplayFramePhase) => void game.jumpReplayToPhase(phase),
+    (phase: ReplayFramePhase) => {
+      const opened = game.jumpReplayToPhase(phase);
+      if (!opened) return;
+      setState(opened);
+      setDiagnosticInfo(game.getDiagnosticInfo());
+      setLastRunReward(game.getLastRunReward());
+      setIsReplayMode(true);
+      setActiveReplayDiagnosis(game.getActiveReplayDiagnosis());
+      setActiveReplayInfo(game.getActiveReplayInfo());
+    },
     [game],
   );
   const findReplayJumpIndex = useCallback(

@@ -254,7 +254,8 @@ export function replayContentSnapshotCovers(
 
 /**
  * キーフレーム配列を正規化する。
- * 壊れた要素は捨てる（途中セーブの互換補完用。完全な ReplayBlob では別途空配列を拒否）。
+ * 壊れた要素と、ラッパー phase と frame.phase が食い違う要素は捨てる
+ * （途中セーブの互換補完用。完全な ReplayBlob では別途空配列を拒否）。
  */
 export function normalizeReplayKeyframes(value: unknown): ReplayKeyframe[] {
   if (!Array.isArray(value)) return [];
@@ -263,6 +264,7 @@ export function normalizeReplayKeyframes(value: unknown): ReplayKeyframe[] {
     if (!isObject(raw) || typeof raw.phase !== 'string') continue;
     if (!isReplayFramePhase(raw.phase as RunPhase)) continue;
     if (!isReplayFrame(raw.frame)) continue;
+    if (raw.phase !== raw.frame.phase) continue;
     keyframes.push({
       phase: raw.phase as ReplayFramePhase,
       label: typeof raw.label === 'string' ? raw.label : undefined,

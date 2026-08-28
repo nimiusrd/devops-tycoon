@@ -10,6 +10,7 @@
   --lav: var(--visual-color-lav);
   --sky: var(--visual-color-sky);
   --fire: var(--visual-color-fire);
+  --replay-banner-height: 0px;
   color: var(--text);
   font-family:
     'Hiragino Maru Gothic ProN',
@@ -1497,6 +1498,7 @@ body {
 .result-overlay {
   position: fixed;
   inset: 0;
+  top: var(--replay-banner-height, 0px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1939,6 +1941,25 @@ body {
   margin-left: 0;
   flex: 1;
   padding: 0.7rem 1rem;
+}
+.result-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+.result-actions .btn:disabled:hover {
+  filter: none;
+}
+.result-actions .btn:disabled:active {
+  transform: none;
+  box-shadow: none;
+}
+.result-continue-hint {
+  margin: 0.6rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
 
 /* コンボ表示（第6.2 / 第18.2） */
@@ -2657,12 +2678,21 @@ button.card {
     filter 0.12s ease;
   width: 220px;
 }
-button.card:hover {
+button.card:hover:not(:disabled) {
   filter: brightness(1.12);
   transform: translateY(-3px);
 }
-button.card:active {
+button.card:active:not(:disabled) {
   transform: translateY(0);
+}
+button.card:disabled {
+  cursor: not-allowed;
+}
+/* 読み取り専用は native disabled のまま、UA 減光を打ち消して本文コントラストを保つ（DS-08）。 */
+button.card.card-readonly:disabled {
+  opacity: 1;
+  color: var(--text);
+  cursor: default;
 }
 
 /* ドラフト画面（第7.1） */

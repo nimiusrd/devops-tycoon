@@ -35,12 +35,14 @@ import {
   shouldShowTutorialGuide,
   type TutorialQuery,
 } from './ui/tutorial';
+import { observeReplayBannerHeight } from './ui/replayBannerOffset';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
 import { resetViewportScroll } from './ui/viewportScroll';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
+import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
 
 const AchievementCollectionScreen = lazy(() =>
   import('./ui/AchievementCollectionScreen').then((m) => ({
@@ -278,6 +280,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     if (!run.isReplayMode) return;
     resetViewportScroll(document);
   }, [run.isReplayMode, phase]);
+  // リプレイバナーの高さだけオーバーレイ上端を下げ、先頭の見出し／カードを覆わない（DS-06）。
+  useLayoutEffect(() => {
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    return observeReplayBannerHeight(banner instanceof Element ? banner : null);
+  }, [run.isReplayMode, phase]);
   const exitReplay = () => {
     closeTitleModals();
     clearHudSnapshot();
@@ -371,6 +378,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
 
   // 終端診断（ReplayBlob.outcome）で判定する。キーフレーム時点の state.diagnosis とは別。
   const reviewHellReplay = run.isReplayMode && run.activeReplayDiagnosis === 'reviewHell';
+  const replayDraftMissing = run.isReplayMode && run.findReplayJumpIndex('draft') === null;
   const replayBanner = run.isReplayMode ? (
     <div
       className={`replay-mode-banner${reviewHellReplay ? ' replay-mode-banner-review-hell' : ''}`}
@@ -540,8 +548,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           <SprintResultScreen
             result={state.lastResult}
             growth={state.lastGrowth}
-            onContinue={run.acknowledgeResult}
+            onContinue={
+              run.isReplayMode ? () => run.jumpReplayToPhase('draft') : run.acknowledgeResult
+            }
             onAbandon={newRun}
+            continueDisabled={replayDraftMissing}
+            continueDisabledReason={replayDraftMissing ? REPLAY_DRAFT_MISSING_HINT : undefined}
             replayMode={run.isReplayMode}
             diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
           />
@@ -560,6 +572,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onPick={run.chooseCard}
             onSkip={run.skipDraft}
             onMulligan={run.mulliganDraft}
+            readOnly={run.isReplayMode}
+            onClose={run.isReplayMode ? exitReplay : undefined}
           />
         )}
       </Suspense>

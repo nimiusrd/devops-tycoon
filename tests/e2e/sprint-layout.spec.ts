@@ -957,6 +957,7 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
   });
   expect(pointerEvents?.ticker, `${label}: ティッカー本体が盤面クリックを奪う`).toBe('none');
   expect(pointerEvents?.list, `${label}: リストがスクロール操作を受けない`).toBe('auto');
+  await assertTickerKeyboardReachable(page, label);
 
   const count = await rows.count();
   for (let i = 0; i < count; i += 1) {
@@ -1008,6 +1009,35 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
     });
     expect(bottomReachable, `${label}: ${i + 1}行目の下端へスクロールできない`).toBe(true);
   }
+}
+
+/** リストは名前付きフォーカス領域で、溢れるときは End キーで最終行へ到達できる。 */
+async function assertTickerKeyboardReachable(page: Page, label: string): Promise<void> {
+  const list = page.getByTestId('event-ticker-list');
+  await expect(list, `${label}: リストに tabindex が無い`).toHaveAttribute('tabindex', '0');
+  await expect(list, `${label}: リストの名前が無い`).toHaveAccessibleName('出来事');
+
+  await list.focus();
+  await expect(list, `${label}: リストにフォーカスできない`).toBeFocused();
+
+  const overflow = await list.evaluate(
+    (element) => element.scrollHeight > element.clientHeight + 1,
+  );
+  if (!overflow) return;
+
+  const before = await list.evaluate((element) => element.scrollTop);
+  await page.keyboard.press('End');
+  const after = await list.evaluate((element) => {
+    const rows = element.querySelectorAll<HTMLElement>('.event-ticker-row');
+    const last = rows.item(rows.length - 1);
+    if (!last) return { scrollTop: element.scrollTop, lastVisible: false };
+    const listRect = element.getBoundingClientRect();
+    const rowRect = last.getBoundingClientRect();
+    const overlap = Math.min(rowRect.bottom, listRect.bottom) - Math.max(rowRect.top, listRect.top);
+    return { scrollTop: element.scrollTop, lastVisible: overlap > 0 };
+  });
+  expect(after.scrollTop, `${label}: End でリストがスクロールしない`).toBeGreaterThan(before);
+  expect(after.lastVisible, `${label}: End 後も最終行が見えない`).toBe(true);
 }
 
 async function injectSpreadResultEvents(page: Page): Promise<void> {

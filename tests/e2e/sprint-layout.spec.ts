@@ -1023,7 +1023,7 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
   await list.focus();
   await expect(list, `${label}: リストにフォーカスできない`).toBeFocused();
   const focusedPointer = await list.evaluate((element) => getComputedStyle(element).pointerEvents);
-  expect(focusedPointer, `${label}: フォーカス中のリストがスクロールを受けない`).toBe('auto');
+  expect(focusedPointer, `${label}: フォーカス中のリストが盤面ドラッグを奪う`).toBe('none');
 
   const overflow = await list.evaluate(
     (element) => element.scrollHeight > element.clientHeight + 1,
@@ -1076,11 +1076,19 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   const hovered = await list.evaluate((element) => getComputedStyle(element).pointerEvents);
   expect(hovered, `${label}: ホバー中のリストが盤面ドラッグを奪う`).toBe('none');
 
+  await expect(heading, `${label}: 見出しがキーボードから到達できない`).not.toHaveAttribute(
+    'tabindex',
+    '-1',
+  );
   await heading.click();
-  await expect(list, `${label}: 見出しタップでリストにフォーカスできない`).toBeFocused();
+  await expect(list, `${label}: 見出し click でリストにフォーカスできない`).toBeFocused();
   const focused = await list.evaluate((element) => getComputedStyle(element).pointerEvents);
-  expect(focused, `${label}: フォーカス後もリストがスクロールを受けない`).toBe('auto');
-  await list.evaluate((element) => element.blur());
+  expect(focused, `${label}: フォーカス中のリストが盤面ドラッグを奪う`).toBe('none');
+  const focusedHit = await page.evaluate(({ x, y }) => {
+    const el = document.elementFromPoint(x, y);
+    return Boolean(el?.closest('[data-testid="event-ticker-list"]'));
+  }, idleHit);
+  expect(focusedHit, `${label}: フォーカス中でもリストがヒット対象`).toBe(false);
 
   const overflow = await list.evaluate(
     (element) => element.scrollHeight > element.clientHeight + 1,
@@ -1118,6 +1126,52 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   await dispatchWheel(400, true);
   const afterCtrl = await list.evaluate((element) => element.scrollTop);
   expect(afterCtrl, `${label}: Ctrl+wheel をリストが奪う`).toBe(0);
+
+  await list.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await page.evaluate(
+    ({ x, y }) => {
+      window.dispatchEvent(
+        new WheelEvent('wheel', {
+          clientX: x,
+          clientY: y,
+          deltaY: 3,
+          deltaMode: 1,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    },
+    { x: idleHit.x, y: idleHit.y },
+  );
+  const afterLine = await list.evaluate((element) => element.scrollTop);
+  expect(afterLine, `${label}: DOM_DELTA_LINE のホイールが 3px しか動かない`).toBeGreaterThan(3);
+}
+
+/** 結果オーバーレイ表示中は背面ティッカーがホイールを奪わない。 */
+async function assertTickerDoesNotStealOverlayWheel(page: Page, label: string): Promise<void> {
+  const list = page.getByTestId('event-ticker-list');
+  if ((await list.count()) === 0) return;
+  const box = await list.boundingBox();
+  if (!box) return;
+  const before = await list.evaluate((element) => element.scrollTop);
+  await page.evaluate(
+    ({ x, y }) => {
+      window.dispatchEvent(
+        new WheelEvent('wheel', {
+          clientX: x,
+          clientY: y,
+          deltaY: 400,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    },
+    { x: box.x + box.width / 2, y: box.y + Math.min(12, Math.max(4, box.height / 2)) },
+  );
+  const after = await list.evaluate((element) => element.scrollTop);
+  expect(after, `${label}: 背面ティッカーがオーバーレイのホイールを奪う`).toBe(before);
 }
 
 async function injectSpreadResultEvents(page: Page): Promise<void> {
@@ -1241,6 +1295,10 @@ test.describe('延焼文言の DOM レイアウト', () => {
         true,
       );
       await assertSpreadCopyFitsViewport(page, `延焼リザルト ${viewport.width}x${viewport.height}`);
+      await assertTickerDoesNotStealOverlayWheel(
+        page,
+        `延焼リザルト ${viewport.width}x${viewport.height}`,
+      );
     }
   });
 });

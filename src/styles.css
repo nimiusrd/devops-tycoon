@@ -1998,9 +1998,9 @@ body {
 }
 
 /* スプリント内イベントティッカー（RI-52）
- * DS-01: 本体とリストは既定 none。ホバーでは盤面ドラッグを奪わない。
- * DS-06: 修飾キーなしホイール / 見出しタップ後のフォーカス / キーボードで全行へ到達する。
- * DS-08: 見出しは 24px の名前付き操作。リストはフォーカス領域。 */
+ * DS-01: 本体とリストは常に none。フォーカス中も盤面ドラッグを通す。
+ * DS-06: 修飾キーなしホイール / 見出し click / キーボードで全行へ到達する。
+ * DS-08: 見出しは native button の click。リストはキーボード用フォーカス領域。 */
 .event-ticker {
   position: absolute;
   top: 12px;
@@ -2049,10 +2049,6 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   pointer-events: none;
-}
-.event-ticker-list:focus,
-.event-ticker-list:focus-visible {
-  pointer-events: auto;
 }
 .event-ticker-list:focus-visible {
   outline: 2px solid var(--visual-color-interaction-drag);

@@ -4,23 +4,21 @@
  * sim の `SprintState.events` を読み、直近の介入・出来事を言語化して盤面脇に出す。
  * 演出は読むだけ（第22.2）。
  *
- * DS-01: リストは既定で pointer-events: none。ホバーでは盤面ドラッグを奪わない。
- * DS-06 / DS-08: ホイール（修飾キーなし）・見出しタップでフォーカス・キーボードで全行へ到達する。
+ * DS-01: リストは常に pointer-events: none。フォーカス中も盤面ドラッグを通す。
+ * DS-06 / DS-08: 見出しの click と修飾なしホイール、キーボードで全行へ到達する。
  */
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  useEffect,
-  useRef,
-  type KeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-} from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { formatRecentSprintEvents } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 import {
   applyTickerListScroll,
   hitBlocksTickerTouchScroll,
+  isTickerPointerSuppressed,
   pointInRect,
+  readLineHeightPx,
   shouldCaptureTickerWheel,
+  wheelDeltaYInCssPixels,
 } from './eventTickerPointer';
 
 /** 同時表示する最大件数。 */
@@ -75,16 +73,23 @@ export function EventTicker({ events }: EventTickerProps) {
     const onWheel = (event: WheelEvent) => {
       if (!shouldCaptureTickerWheel(event)) return;
       if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
-      if (!applyTickerListScroll(list, event.deltaY)) return;
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      if (isTickerPointerSuppressed(list, hit)) return;
+      const deltaY = wheelDeltaYInCssPixels(
+        event,
+        readLineHeightPx(getComputedStyle(list).lineHeight),
+        list.clientHeight,
+      );
+      if (!applyTickerListScroll(list, deltaY)) return;
       event.preventDefault();
     };
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
       if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
-      if (hitBlocksTickerTouchScroll(document.elementFromPoint(event.clientX, event.clientY))) {
-        return;
-      }
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      if (isTickerPointerSuppressed(list, hit)) return;
+      if (hitBlocksTickerTouchScroll(hit)) return;
       touchPan = { pointerId: event.pointerId, lastY: event.clientY };
     };
 
@@ -114,8 +119,7 @@ export function EventTicker({ events }: EventTickerProps) {
     };
   }, [rows.length]);
 
-  const focusList = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const focusList = () => {
     listRef.current?.focus();
   };
 
@@ -126,8 +130,7 @@ export function EventTicker({ events }: EventTickerProps) {
         className="event-ticker-label"
         id="event-ticker-heading"
         data-testid="event-ticker-heading"
-        tabIndex={-1}
-        onPointerDown={focusList}
+        onClick={focusList}
       >
         出来事
       </button>

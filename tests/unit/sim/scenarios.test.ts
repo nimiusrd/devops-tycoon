@@ -3,11 +3,13 @@ import { getDifficulty } from '../../../src/data/difficulties';
 import {
   applyScenarioOrg,
   getScenario,
+  resolveAiDependencyPerTask,
   resolveScenarioId,
   SCENARIO_ORDER,
   type ScenarioOrg,
 } from '../../../src/sim/scenarios';
 import { foldRunEffects, type RunModifierInput } from '../../../src/sim/run/effects';
+import { resolveSprintConfig } from '../../../src/sim/sprint';
 
 const SAMPLE_ORG: ScenarioOrg = {
   aiDependencyBase: 20,
@@ -74,6 +76,18 @@ describe('tool scenarios (RI-103)', () => {
   it('default org matches difficulty.org bit-for-bit', () => {
     const normal = getDifficulty('normal');
     expect(applyScenarioOrg(normal.org, getScenario('default'))).toEqual(normal.org);
+  });
+
+  it('Copilot は初期依存に加え、タスク単価を 1.4 に抑える（#387）', () => {
+    expect(getScenario('copilot').aiDependencyPerTask).toBe(1.4);
+    expect(getScenario('default').aiDependencyPerTask).toBeUndefined();
+    expect(getScenario('devin').aiDependencyPerTask).toBeUndefined();
+    expect(resolveSprintConfig('copilot').aiDependencyPerTask).toBe(1.4);
+    expect(resolveSprintConfig('default').aiDependencyPerTask).toBeUndefined();
+    expect(resolveAiDependencyPerTask(undefined, 1.4)).toBe(1.4);
+    expect(resolveAiDependencyPerTask(0.8, 1.4)).toBe(0.8);
+    // Easy 1.1 をそのまま渡すと min で Copilot が潰れる。呼び出し側は非 default で難易度側を渡さない。
+    expect(resolveAiDependencyPerTask(1.1, 1.4)).toBe(1.1);
   });
 
   it('foldRunEffects includes scenario globalEffects after difficulty', () => {

@@ -6,6 +6,11 @@ import {
   pointInRect,
   readLineHeightPx,
   shouldCaptureTickerWheel,
+  shouldClaimTickerTouchPan,
+  shouldPreventTickerListKey,
+  tickerHasOverflow,
+  tickerListKeyDelta,
+  TICKER_LIST_ARROW_DELTA_PX,
   WHEEL_DELTA_LINE,
   WHEEL_DELTA_PAGE,
   WHEEL_DELTA_PIXEL,
@@ -114,5 +119,101 @@ describe('eventTickerPointer', () => {
       },
     };
     expect(isTickerPointerSuppressed(live, nativeLike as unknown as EventTarget)).toBe(true);
+  });
+
+  it('溢れているときだけリストか親をスクロール対象にする', () => {
+    expect(
+      tickerHasOverflow({
+        scrollHeight: 200,
+        clientHeight: 50,
+        parentElement: { scrollHeight: 50, clientHeight: 50 },
+      }),
+    ).toBe(true);
+    expect(
+      tickerHasOverflow({
+        scrollHeight: 40,
+        clientHeight: 50,
+        parentElement: { scrollHeight: 80, clientHeight: 40 },
+      }),
+    ).toBe(true);
+    expect(
+      tickerHasOverflow({
+        scrollHeight: 40,
+        clientHeight: 50,
+        parentElement: { scrollHeight: 50, clientHeight: 50 },
+      }),
+    ).toBe(false);
+    expect(
+      tickerHasOverflow({
+        scrollHeight: 40,
+        clientHeight: 50,
+        parentElement: null,
+      }),
+    ).toBe(false);
+  });
+
+  it('認識したスクロールキーの delta を返し、溢れているときは境界でも抑止する', () => {
+    expect(tickerListKeyDelta('ArrowDown', 80, 0, 200)).toBe(TICKER_LIST_ARROW_DELTA_PX);
+    expect(tickerListKeyDelta('ArrowUp', 80, 40, 200)).toBe(-TICKER_LIST_ARROW_DELTA_PX);
+    expect(tickerListKeyDelta('PageDown', 80, 0, 200)).toBe(80);
+    expect(tickerListKeyDelta('PageUp', 80, 80, 200)).toBe(-80);
+    expect(tickerListKeyDelta('End', 80, 0, 200)).toBe(200);
+    expect(tickerListKeyDelta('Home', 80, 40, 200)).toBe(-40);
+    expect(tickerListKeyDelta('Tab', 80, 0, 200)).toBeNull();
+    expect(shouldPreventTickerListKey('End', true)).toBe(true);
+    expect(shouldPreventTickerListKey('ArrowDown', true)).toBe(true);
+    expect(shouldPreventTickerListKey('End', false)).toBe(false);
+    expect(shouldPreventTickerListKey('Tab', true)).toBe(false);
+  });
+
+  it('溢れたリスト上の touch/pen 開始だけパンを確保し、粒と mouse は通す', () => {
+    expect(
+      shouldClaimTickerTouchPan({
+        pointerType: 'touch',
+        defaultPrevented: false,
+        overflow: true,
+        hitsBoardDot: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldClaimTickerTouchPan({
+        pointerType: 'pen',
+        defaultPrevented: false,
+        overflow: true,
+        hitsBoardDot: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldClaimTickerTouchPan({
+        pointerType: 'mouse',
+        defaultPrevented: false,
+        overflow: true,
+        hitsBoardDot: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldClaimTickerTouchPan({
+        pointerType: 'touch',
+        defaultPrevented: false,
+        overflow: false,
+        hitsBoardDot: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldClaimTickerTouchPan({
+        pointerType: 'touch',
+        defaultPrevented: false,
+        overflow: true,
+        hitsBoardDot: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldClaimTickerTouchPan({
+        pointerType: 'touch',
+        defaultPrevented: true,
+        overflow: true,
+        hitsBoardDot: false,
+      }),
+    ).toBe(false);
   });
 });

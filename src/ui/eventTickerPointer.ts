@@ -51,6 +51,73 @@ export function applyTickerListScroll(
   return list.scrollTop !== previous;
 }
 
+/** リスト本体か親が縦に溢れているか。 */
+export function tickerHasOverflow(list: {
+  scrollHeight: number;
+  clientHeight: number;
+  parentElement: { scrollHeight: number; clientHeight: number } | null;
+}): boolean {
+  if (list.scrollHeight > list.clientHeight + 1) return true;
+  const parent = list.parentElement;
+  return parent != null && parent.scrollHeight > parent.clientHeight + 1;
+}
+
+export const TICKER_LIST_ARROW_DELTA_PX = 24;
+
+const TICKER_LIST_SCROLL_KEYS = new Set([
+  'ArrowDown',
+  'ArrowUp',
+  'PageDown',
+  'PageUp',
+  'Home',
+  'End',
+]);
+
+/** フォーカス中リストのスクロールキーに対応する delta。未知キーは null。 */
+export function tickerListKeyDelta(
+  key: string,
+  pageSize: number,
+  scrollTop: number,
+  scrollHeight: number,
+): number | null {
+  switch (key) {
+    case 'ArrowDown':
+      return TICKER_LIST_ARROW_DELTA_PX;
+    case 'ArrowUp':
+      return -TICKER_LIST_ARROW_DELTA_PX;
+    case 'PageDown':
+      return pageSize;
+    case 'PageUp':
+      return -pageSize;
+    case 'End':
+      return scrollHeight;
+    case 'Home':
+      return -scrollTop;
+    default:
+      return null;
+  }
+}
+
+/** 溢れているリストでは、境界でも認識キーの既定スクロールを抑止する。 */
+export function shouldPreventTickerListKey(key: string, overflow: boolean): boolean {
+  return overflow && TICKER_LIST_SCROLL_KEYS.has(key);
+}
+
+/**
+ * タッチ開始時点でティッカーのパンを確保する。
+ * 粒ヒット時は盤面ドラッグを優先し、mouse は従来どおり通す。
+ */
+export function shouldClaimTickerTouchPan(input: {
+  pointerType: string;
+  defaultPrevented: boolean;
+  overflow: boolean;
+  hitsBoardDot: boolean;
+}): boolean {
+  if (input.defaultPrevented) return false;
+  if (input.pointerType !== 'touch' && input.pointerType !== 'pen') return false;
+  return input.overflow && !input.hitsBoardDot;
+}
+
 export interface TickerTouchHitOptions {
   clientX: number;
   clientY: number;

@@ -962,6 +962,7 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
   expect(pointerEvents?.list, `${label}: 未フォーカスのリストが盤面ドラッグを奪う`).toBe('none');
   await assertTickerPassesBoardPointer(page, label);
   await assertTickerKeyboardReachable(page, label);
+  await assertTickerTouchPanClaimsAtStart(page, label);
 
   const count = await rows.count();
   for (let i = 0; i < count; i += 1) {
@@ -1045,6 +1046,23 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
   });
   expect(after.scrollTop, `${label}: End でリストがスクロールしない`).toBeGreaterThan(top);
   expect(after.lastVisible, `${label}: End 後も最終行が見えない`).toBe(true);
+
+  const layout = page.getByTestId('sprint-layout');
+  const layoutAtEnd = await layout.evaluate((element) => element.scrollTop);
+  await list.press('End');
+  await list.press('ArrowDown');
+  await list.press('PageDown');
+  const layoutAfterEnd = await layout.evaluate((element) => element.scrollTop);
+  expect(layoutAfterEnd, `${label}: 末尾キーで外側レイアウトがスクロールする`).toBe(layoutAtEnd);
+
+  await list.press('Home');
+  const layoutAtHome = await layout.evaluate((element) => element.scrollTop);
+  await list.press('Home');
+  await list.press('ArrowUp');
+  await list.press('PageUp');
+  const layoutAfterHome = await layout.evaluate((element) => element.scrollTop);
+  expect(layoutAfterHome, `${label}: 先頭キーで外側レイアウトがスクロールする`).toBe(layoutAtHome);
+
   await list.evaluate((element) => element.blur());
 }
 
@@ -1161,6 +1179,146 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   await dispatchWheel(3, false, 1);
   const afterLine = await readTickerScroll();
   expect(afterLine, `${label}: DOM_DELTA_LINE のホイールが 3px しか動かない`).toBeGreaterThan(3);
+}
+
+/** リスト矩形内で、盤面粒に乗っていないタッチ開始点。 */
+async function findTickerTouchPanPoint(page: Page): Promise<{ x: number; y: number } | null> {
+  return page.evaluate(() => {
+    const scrollList = document.querySelector<HTMLElement>('[data-testid="event-ticker-list"]');
+    if (!scrollList) return null;
+    const box = scrollList.getBoundingClientRect();
+    const samples: Array<[number, number]> = [
+      [box.left + box.width / 2, box.top + Math.min(10, Math.max(4, box.height / 4))],
+      [box.left + 8, box.top + 8],
+      [box.right - 8, box.top + 8],
+      [box.left + box.width * 0.75, box.top + 12],
+      [box.left + box.width / 2, box.top + box.height / 2],
+    ];
+    for (const [x, y] of samples) {
+      const hit = document.elementFromPoint(x, y);
+      if (hit?.closest('[data-task-id]')) continue;
+      return { x, y };
+    }
+    return null;
+  });
+}
+
+/**
+ * 溢れたリストは touch の pointerdown 時点でパンを確保し、mouse と粒ヒットは通す。
+ */
+async function assertTickerTouchPanClaimsAtStart(page: Page, label: string): Promise<void> {
+  const list = page.getByTestId('event-ticker-list');
+  const overflow = await list.evaluate(
+    (element) => element.scrollHeight > element.clientHeight + 1,
+  );
+  if (!overflow) return;
+
+  const point = await findTickerTouchPanPoint(page);
+  if (!point) return;
+
+  await list.evaluate((element) => {
+    element.scrollTop = 0;
+    if (element.parentElement) element.parentElement.scrollTop = 0;
+  });
+  const layout = page.getByTestId('sprint-layout');
+  const layoutBefore = await layout.evaluate((element) => element.scrollTop);
+
+  const prevented = await page.evaluate(({ x, y }) => {
+    const event = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 77,
+      pointerType: 'touch',
+      clientX: x,
+      clientY: y,
+      isPrimary: true,
+    });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  }, point);
+  expect(prevented, `${label}: タッチ開始でティッカーのパンを確保しない`).toBe(true);
+
+  await page.evaluate(({ x, y }) => {
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        pointerId: 77,
+        pointerType: 'touch',
+        clientX: x,
+        clientY: y - 80,
+        isPrimary: true,
+      }),
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        pointerId: 77,
+        pointerType: 'touch',
+        clientX: x,
+        clientY: y - 80,
+        isPrimary: true,
+      }),
+    );
+  }, point);
+
+  const after = await list.evaluate(
+    (element) => element.scrollTop + (element.parentElement?.scrollTop ?? 0),
+  );
+  expect(after, `${label}: タッチ移動でリストがスクロールしない`).toBeGreaterThan(0);
+  const layoutAfter = await layout.evaluate((element) => element.scrollTop);
+  expect(layoutAfter, `${label}: タッチパンで外側レイアウトが動く`).toBe(layoutBefore);
+
+  const mousePrevented = await page.evaluate(({ x, y }) => {
+    const event = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 78,
+      pointerType: 'mouse',
+      clientX: x,
+      clientY: y,
+      isPrimary: true,
+    });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  }, point);
+  expect(mousePrevented, `${label}: mouse の pointerdown をティッカーが奪う`).toBe(false);
+
+  const grainPoint = await page.evaluate(() => {
+    const scrollList = document.querySelector<HTMLElement>('[data-testid="event-ticker-list"]');
+    const grain = document.querySelector<HTMLElement>('[data-task-id]');
+    if (!scrollList || !grain) return null;
+    const listBox = scrollList.getBoundingClientRect();
+    const grainBox = grain.getBoundingClientRect();
+    const x = grainBox.left + grainBox.width / 2;
+    const y = grainBox.top + grainBox.height / 2;
+    if (x < listBox.left || x > listBox.right || y < listBox.top || y > listBox.bottom) {
+      return null;
+    }
+    return { x, y };
+  });
+  if (!grainPoint) return;
+
+  const grainPrevented = await page.evaluate(({ x, y }) => {
+    const event = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 79,
+      pointerType: 'touch',
+      clientX: x,
+      clientY: y,
+      isPrimary: true,
+    });
+    window.dispatchEvent(event);
+    return event.defaultPrevented;
+  }, grainPoint);
+  expect(grainPrevented, `${label}: 粒上のタッチ開始をティッカーが奪う`).toBe(false);
 }
 
 /** 結果オーバーレイ表示中は背面ティッカーがホイールを奪わない。 */
@@ -1346,5 +1504,59 @@ test.describe('延焼文言の DOM レイアウト', () => {
     );
     const after = await overlay.evaluate((element) => element.scrollTop);
     expect(after, '全社ズームの overflow が背面ティッカーに奪われる').toBeGreaterThan(before);
+  });
+});
+
+test.describe('タッチ端末のティッカーパン', () => {
+  test.use({
+    hasTouch: true,
+    viewport: { width: 390, height: 844 },
+  });
+
+  test('溢れたリストは実タッチスワイプでパンし外側を動かさない', async ({ page }) => {
+    await beginPublicSprint(page, { seed: 'spread-copy-ticker-touch-0' });
+    await injectSpreadTickerEvents(page);
+    await expect(page.getByTestId('event-ticker')).toBeVisible();
+    await waitForLayoutFrame(page);
+
+    const list = page.getByTestId('event-ticker-list');
+    await expect
+      .poll(async () => list.evaluate((element) => element.scrollHeight > element.clientHeight + 1))
+      .toBe(true);
+
+    const point = await findTickerTouchPanPoint(page);
+    if (!point) throw new Error('ティッカー上に粒以外のタッチ点が無い');
+
+    await list.evaluate((element) => {
+      element.scrollTop = 0;
+      if (element.parentElement) element.parentElement.scrollTop = 0;
+    });
+    const layout = page.getByTestId('sprint-layout');
+    const layoutBefore = await layout.evaluate((element) => element.scrollTop);
+
+    const session = await page.context().newCDPSession(page);
+    const start = { x: Math.round(point.x), y: Math.round(point.y) };
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: start.x, y: start.y, id: 1 }],
+    });
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: start.x, y: start.y - 90, id: 1 }],
+    });
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    });
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+
+    const after = await list.evaluate(
+      (element) => element.scrollTop + (element.parentElement?.scrollTop ?? 0),
+    );
+    expect(after, '実タッチスワイプでリストが動かない').toBeGreaterThan(0);
+    const layoutAfter = await layout.evaluate((element) => element.scrollTop);
+    expect(layoutAfter, '実タッチスワイプで外側レイアウトが動く').toBe(layoutBefore);
   });
 });

@@ -6,6 +6,7 @@
  *
  * DS-01: リストは常に pointer-events: none。フォーカス中も盤面ドラッグを通す。
  * DS-06 / DS-08: 見出しの click と修飾なしホイール、キーボードで全行へ到達する。
+ * 溢れたリストは touch/pen の pointerdown 時点でパンを確保し、境界キーでも外側を動かさない。
  */
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
@@ -19,6 +20,10 @@ import {
   pointInRect,
   readLineHeightPx,
   shouldCaptureTickerWheel,
+  shouldClaimTickerTouchPan,
+  shouldPreventTickerListKey,
+  tickerHasOverflow,
+  tickerListKeyDelta,
   wheelDeltaYInCssPixels,
 } from './eventTickerPointer';
 
@@ -28,39 +33,19 @@ const TICKER_LIMIT = 5;
 /** フォーカス中のリストを矢印 / Page / Home / End でスクロールする（DS-08）。 */
 function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
   const list = event.currentTarget;
+  const overflow = tickerHasOverflow(list);
+  if (!shouldPreventTickerListKey(event.key, overflow)) return;
   const parent = list.parentElement;
-  const scroller =
-    list.scrollHeight > list.clientHeight + 1
-      ? list
-      : parent != null && parent.scrollHeight > parent.clientHeight + 1
-        ? parent
-        : null;
+  const scroller = list.scrollHeight > list.clientHeight + 1 ? list : parent;
   if (!scroller) return;
-  const page = scroller.clientHeight;
-  let delta: number;
-  switch (event.key) {
-    case 'ArrowDown':
-      delta = 24;
-      break;
-    case 'ArrowUp':
-      delta = -24;
-      break;
-    case 'PageDown':
-      delta = page;
-      break;
-    case 'PageUp':
-      delta = -page;
-      break;
-    case 'End':
-      delta = scroller.scrollHeight;
-      break;
-    case 'Home':
-      delta = -scroller.scrollTop;
-      break;
-    default:
-      return;
-  }
-  if (!applyTickerListScroll(scroller, delta)) return;
+  const delta = tickerListKeyDelta(
+    event.key,
+    scroller.clientHeight,
+    scroller.scrollTop,
+    scroller.scrollHeight,
+  );
+  if (delta == null) return;
+  applyTickerListScroll(scroller, delta);
   event.preventDefault();
 }
 
@@ -107,19 +92,25 @@ export function EventTicker({ events }: EventTickerProps) {
     };
 
     const onPointerDown = (event: PointerEvent) => {
-      if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
       if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
       const hit = document.elementFromPoint(event.clientX, event.clientY);
       if (isTickerPointerSuppressed(list, hit)) return;
+      const hitsBoardDot = hitBlocksTickerTouchScroll(hit, {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        hitsBoardDot: clientPointHitsRegisteredBoardDrag,
+      });
       if (
-        hitBlocksTickerTouchScroll(hit, {
-          clientX: event.clientX,
-          clientY: event.clientY,
-          hitsBoardDot: clientPointHitsRegisteredBoardDrag,
+        !shouldClaimTickerTouchPan({
+          pointerType: event.pointerType,
+          defaultPrevented: event.defaultPrevented,
+          overflow: tickerHasOverflow(list),
+          hitsBoardDot,
         })
       ) {
         return;
       }
+      if (event.cancelable) event.preventDefault();
       touchPan = { pointerId: event.pointerId, lastY: event.clientY };
     };
 
@@ -139,13 +130,13 @@ export function EventTicker({ events }: EventTickerProps) {
     };
 
     window.addEventListener('wheel', onWheel, { capture: true, passive: false });
-    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('pointerdown', onPointerDown, { capture: true, passive: false });
     window.addEventListener('pointermove', onPointerMove, { passive: false });
     window.addEventListener('pointerup', onPointerUp, { passive: true });
     window.addEventListener('pointercancel', onPointerUp, { passive: true });
     return () => {
       window.removeEventListener('wheel', onWheel, true);
-      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointerdown', onPointerDown, true);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);

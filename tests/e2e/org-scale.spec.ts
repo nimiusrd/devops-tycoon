@@ -565,7 +565,12 @@ test('全社マップの部門ラベルがチームカードと重ならない�
         const islands = page.locator('.org-island');
         const islandCount = await islands.count();
         expect(islandCount, `${viewport.name} で背後の島が無い`).toBeGreaterThan(0);
-        await expect(page.locator('.org-island-group')).toHaveAttribute('aria-hidden', 'true');
+        const groupsHidden = await page
+          .locator('.org-island-group')
+          .evaluateAll((groups) =>
+            groups.every((group) => group.getAttribute('aria-hidden') === 'true'),
+          );
+        expect(groupsHidden, `${viewport.name} でコンパクト時の島が支援技術に残る`).toBe(true);
         for (let i = 0; i < islandCount; i += 1) {
           await expect(islands.nth(i)).toHaveAttribute('tabindex', '-1');
         }

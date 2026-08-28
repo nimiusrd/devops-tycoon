@@ -235,6 +235,16 @@ export type SprintEvent =
       taskId: number;
       /** 燃え移った先のタスク ID（無い場合あり）。 */
       spreadToTaskId?: number;
+      /**
+       * この延焼で実際に増えた技術的負債。
+       * 旧リプレイでは欠けることがある。
+       */
+      debtGain?: number;
+      /**
+       * この延焼で実際に失った士気（clamp 後の減少量）。
+       * 旧リプレイでは欠けることがある。
+       */
+      moraleCost?: number;
     }
   | {
       tick: number;

@@ -9,6 +9,7 @@ import {
   deckEffects,
   drawDraft,
   HAND_SIZE,
+  redrawDraftCandidates,
   migrateBaselineAppliedByTeam,
   playCost,
   PREFERRED_DRAFT_WEIGHT_MUL,
@@ -259,6 +260,50 @@ describe('ドラフト抽選（第7.1）', () => {
     expect(drawDraft(createRng('bias:0'), 3, allowed, preferred)).toEqual(
       drawDraft(createRng('bias:0'), 3, allowed, preferred),
     );
+  });
+
+  it('引き直しは通常抽選が同一集合でも除外抽選で入れ替える', () => {
+    const previous = ['copilot', 'auto-test', 'docs'];
+    const same = [...previous];
+    const swapped = ['copilot', 'auto-test', 'static-analysis'];
+    const draws: number[] = [];
+    const result = redrawDraftCandidates(previous, {
+      count: 3,
+      maxAttempts: 3,
+      draw: (attempt) => {
+        draws.push(attempt);
+        return same;
+      },
+      forceDraw: (excludeId) => {
+        expect(excludeId).toBe('copilot');
+        return swapped;
+      },
+    });
+    expect(draws).toEqual([0, 1, 2]);
+    expect(result).toEqual(swapped);
+  });
+
+  it('引き直しは途中で別集合が出たらその候補を使う', () => {
+    const previous = ['copilot', 'auto-test', 'docs'];
+    const result = redrawDraftCandidates(previous, {
+      count: 3,
+      maxAttempts: 4,
+      draw: (attempt) =>
+        attempt === 0 ? [...previous] : ['pr-size-limit', 'docs', 'feature-flags'],
+      forceDraw: () => ['should-not-run'],
+    });
+    expect(result).toEqual(['pr-size-limit', 'docs', 'feature-flags']);
+  });
+
+  it('除外後も枚数が足りなければ同一集合を返す', () => {
+    const previous = ['copilot', 'auto-test', 'docs'];
+    const result = redrawDraftCandidates(previous, {
+      count: 3,
+      maxAttempts: 1,
+      draw: () => [...previous],
+      forceDraw: () => ['copilot', 'auto-test'],
+    });
+    expect(result).toEqual(previous);
   });
 });
 

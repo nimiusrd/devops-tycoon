@@ -4,9 +4,11 @@
  * ラン外で優先施策を最大 2 枚選び、次ラン以降のドラフト／ショップの出やすさを偏らせる。
  * 初期所持にはしない（RI-24 / §17 と整合）。購入はせずメタへ保存するだけ。
  */
+import { useRef } from 'react';
 import { CARD_DEFS } from '../data/cards';
 import { MAX_PREFERRED_CARDS, unlockedContent, type MetaState } from '../state/meta';
 import { CardView } from './CardView';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface DeckPolicyScreenProps {
   meta: MetaState;
@@ -15,6 +17,8 @@ export interface DeckPolicyScreenProps {
 }
 
 export function DeckPolicyScreen({ meta, onChange, onClose }: DeckPolicyScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true });
   const unlocked = unlockedContent(meta).cards;
   const preferred = new Set(meta.preferredCardIds);
   const candidates = CARD_DEFS.filter((def) => unlocked.has(def.id));
@@ -29,7 +33,15 @@ export function DeckPolicyScreen({ meta, onChange, onClose }: DeckPolicyScreenPr
   };
 
   return (
-    <div className="result-overlay" data-testid="deck-policy" role="dialog" aria-label="研修方針">
+    <div
+      ref={overlayRef}
+      className="result-overlay"
+      data-testid="deck-policy"
+      role="dialog"
+      aria-modal="true"
+      aria-label="研修方針"
+      tabIndex={-1}
+    >
       <div className="deck-policy-panel">
         <p className="result-eyebrow">TRAINING POLICY</p>
         <h2 className="draft-title">

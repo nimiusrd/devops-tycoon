@@ -6,6 +6,7 @@
  * 四半期・ラン・介入回数の帯定数もここに置き、統計テストと共有する。
  */
 import { PACING_BALANCE } from '../data/balance/pacing';
+import type { RunPhase } from '../sim/run/types';
 
 const millisecondsToSeconds = (milliseconds: number): number => milliseconds / 1000;
 const millisecondsToMinutes = (milliseconds: number): number => milliseconds / 60_000;
@@ -24,6 +25,30 @@ export const MS_PER_TICK_1X = PACING_BALANCE.msPerTick1x.value;
 
 /** プレイヤー向け再生速度。0=一時停止、1=1x、2=2x。 */
 export type PlaybackSpeed = 0 | 1 | 2;
+
+/**
+ * 壁時計から sim を 1 tick 進めてよいか（RI-62 / #386）。
+ *
+ * 進化オーバーレイなどスプリント以外のフェーズでは、背面盤面が残っていても
+ * `sprintRunning` の誤判定や再生速度 1x にかかわらず進めない。
+ * 全社マップ等の俯瞰中は現場 sim を止め、閲覧だけで KPI が進まないようにする。
+ */
+export function shouldAutoAdvanceSprint(input: {
+  phase: RunPhase;
+  sprintRunning: boolean;
+  paused: boolean;
+  playbackSpeed: PlaybackSpeed;
+  /** 現場（team）を見ているときだけ true。 */
+  fieldView: boolean;
+}): boolean {
+  return (
+    input.phase === 'sprint' &&
+    input.sprintRunning &&
+    !input.paused &&
+    input.playbackSpeed > 0 &&
+    input.fieldView
+  );
+}
 
 /** 1 ポーリングで追いつく最大 tick 数（タブ復帰時の飛び過ぎ防止）。 */
 export const MAX_TICKS_PER_FRAME = 4;
@@ -102,20 +127,6 @@ export const INTERVENTION_PER_SPRINT = {
 export function msPerTick(speed: PlaybackSpeed): number {
   if (speed <= 0) return Number.POSITIVE_INFINITY;
   return MS_PER_TICK_1X / speed;
-}
-
-/**
- * UI の自動進行を進めてよいか。
- * 全社マップ等の俯瞰中は現場 sim を止め、閲覧だけで KPI が進まないようにする。
- */
-export function shouldAutoAdvanceSprint(input: {
-  sprintRunning: boolean;
-  paused: boolean;
-  playbackSpeed: PlaybackSpeed;
-  /** 現場（team）を見ているときだけ true。 */
-  fieldView: boolean;
-}): boolean {
-  return input.sprintRunning && !input.paused && input.playbackSpeed > 0 && input.fieldView;
 }
 
 /**

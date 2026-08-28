@@ -104,7 +104,7 @@ test('タイトルからメタショップを開いて購入できる', async ({
   await expect(page.getByTestId('meta-unlock-unlock-devin')).toBeDisabled();
 });
 
-test('メタショップは Escape で閉じる', async ({ page }) => {
+test('メタショップは Escape で閉じ、起点ボタンへフォーカスが戻る', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);
 
   await page.goto('/?renderer=dom&seed=meta-shop-escape');
@@ -112,9 +112,14 @@ test('メタショップは Escape で閉じる', async ({ page }) => {
 
   await page.getByTestId('open-meta-shop').click();
   await expect(page.getByTestId('meta-shop')).toBeVisible();
+  await expect(page.getByTestId('title')).toHaveAttribute('inert', '');
 
+  await page.getByTestId('meta-shop-close').focus();
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('meta-shop')).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-meta-shop');
 });
 
 test('メタショップは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
@@ -130,6 +135,29 @@ test('メタショップは背景クリックで閉じ、パネルクリック�
   await page.locator('.meta-shop-panel').click();
   await expect(dialog).toBeVisible();
 
-  await dialog.click({ position: { x: 8, y: 8 } });
+  await page.getByTestId('meta-shop-backdrop').click({ position: { x: 8, y: 8 } });
   await expect(dialog).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-meta-shop');
+});
+
+test('メタショップ読込中の Escape は開く操作を取り消す', async ({ page }) => {
+  await seedMeta(page, DEFAULT_META);
+  await page.route(/MetaShopScreen/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.continue();
+  });
+
+  await page.goto('/?renderer=dom&seed=meta-shop-lazy-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-meta-shop').click();
+  await expect(page.getByTestId('title-modal-loading')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('title-modal-loading')).toHaveCount(0);
+  await expect(page.getByTestId('meta-shop')).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-meta-shop');
 });

@@ -39,6 +39,9 @@ import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
 import { resetViewportScroll } from './ui/viewportScroll';
+import { isOverlayDismissKey } from './ui/overlayDismiss';
+import { frontmostTitleModal } from './ui/titleModalStack';
+import { useDialogOverlayLock } from './ui/useDialogOverlayLock';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 
@@ -125,15 +128,30 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
 }
 
 /** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
-function TitleModalLoadingFallback() {
+function TitleModalLoadingFallback({ onDismiss }: { onDismiss?: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true });
+
   return (
     <div
+      ref={overlayRef}
       className="result-overlay"
       data-testid="title-modal-loading"
       role="status"
       aria-busy="true"
       aria-label="読み込み中"
-    />
+      tabIndex={-1}
+    >
+      {onDismiss ? (
+        <button
+          type="button"
+          className="result-overlay-dismiss"
+          data-testid="title-modal-loading-dismiss"
+          aria-label="閉じる"
+          onClick={onDismiss}
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -297,6 +315,34 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     tutorialDismissedEpoch !== run.runEpoch &&
     shouldShowTutorialGuide(meta.seenTutorialVersion, tutorialMode);
 
+  const closeMetaShop = useCallback(() => setMetaShopOpen(false), []);
+  const closeCardCollection = useCallback(() => setCardCollectionOpen(false), []);
+  const openExclusiveTitleModal = (open: () => void) => {
+    closeTitleModals();
+    open();
+  };
+  const titleModalOpen = {
+    help: helpOpen,
+    metaShop: metaShopOpen,
+    deckPolicy: deckPolicyOpen,
+    cardCollection: cardCollectionOpen,
+    achievements: achievementsOpen,
+    replayList: replayListOpen,
+  };
+  const frontmost = phase === 'title' ? frontmostTitleModal(titleModalOpen) : null;
+
+  useEffect(() => {
+    if (frontmost !== 'metaShop' && frontmost !== 'cardCollection') return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!isOverlayDismissKey(event.key)) return;
+      event.preventDefault();
+      if (frontmost === 'metaShop') closeMetaShop();
+      else closeCardCollection();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [frontmost, closeMetaShop, closeCardCollection]);
+
   if (phase === 'title') {
     return (
       <>
@@ -310,9 +356,9 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           runSaveIssue={runSaveIssue}
           onDiscardRunSave={discardRunSave}
           onOpenReplays={() => setReplayListOpen(true)}
-          onOpenMetaShop={() => setMetaShopOpen(true)}
+          onOpenMetaShop={() => openExclusiveTitleModal(() => setMetaShopOpen(true))}
           onOpenDeckPolicy={() => setDeckPolicyOpen(true)}
-          onOpenCardCollection={() => setCardCollectionOpen(true)}
+          onOpenCardCollection={() => openExclusiveTitleModal(() => setCardCollectionOpen(true))}
           onOpenAchievements={() => setAchievementsOpen(true)}
           onToggleSoundMuted={() => {
             audio.unlock();
@@ -326,13 +372,25 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             return { ok: result.ok, message: result.ok ? '' : result.message };
           }}
         />
-        <Suspense fallback={<TitleModalLoadingFallback />}>
+        <Suspense
+          fallback={
+            <TitleModalLoadingFallback
+              onDismiss={
+                frontmost === 'metaShop'
+                  ? closeMetaShop
+                  : frontmost === 'cardCollection'
+                    ? closeCardCollection
+                    : undefined
+              }
+            />
+          }
+        >
           {helpOpen && <HowToPlayScreen onClose={() => setHelpOpen(false)} />}
           {metaShopOpen && (
             <MetaShopScreen
               meta={meta}
               onPurchase={(id) => run.purchaseMetaUnlock(id)}
-              onClose={() => setMetaShopOpen(false)}
+              onClose={closeMetaShop}
             />
           )}
           {deckPolicyOpen && (
@@ -346,7 +404,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             <CardCollectionScreen
               meta={meta}
               onChangePreferred={(ids) => run.setPreferredCardIds(ids)}
-              onClose={() => setCardCollectionOpen(false)}
+              onClose={closeCardCollection}
             />
           )}
           {achievementsOpen && (

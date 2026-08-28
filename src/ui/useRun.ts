@@ -113,7 +113,7 @@ export interface UseRun {
   activeReplayDiagnosis: DiagnosisType | null;
   /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
   activeReplayInfo: ActiveReplayInfo | null;
-  openReplay: (id: string, keyframeIndex?: number) => void;
+  openReplay: (id: string, keyframeIndex?: number) => boolean;
   exitReplay: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
@@ -179,14 +179,16 @@ export function useRun(game: GameHandle): UseRun {
       // スプリント進行中は壁時計アキュムレータで固定ステップ前進（RI-62）。
       // game.isPaused() は E2E / pauseBriefly / lazy 読込用。プレイヤー Pause は playbackSpeed=0。
       // phase!==sprint（進化オーバーレイ等）では背面盤面が残っていても進めない（#386）。
+      // 全社マップ等の俯瞰中は現場 sim を進めない（閲覧だけで KPI が進まない）。
+      const speed = playbackSpeedRef.current;
       const autoAdvance = shouldAutoAdvanceSprint({
         phase: game.phase(),
         sprintRunning: game.isSprintRunning(),
         paused: game.isPaused(),
-        playbackSpeed: playbackSpeedRef.current,
+        playbackSpeed: speed,
+        fieldView: game.zoomLevel() === 'team',
       });
       if (autoAdvance) {
-        const speed = playbackSpeedRef.current;
         // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
         accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
         const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
@@ -198,6 +200,7 @@ export function useRun(game: GameHandle): UseRun {
               sprintRunning: game.isSprintRunning(),
               paused: game.isPaused(),
               playbackSpeed: playbackSpeedRef.current,
+              fieldView: game.zoomLevel() === 'team',
             })
           ) {
             break;
@@ -298,7 +301,18 @@ export function useRun(game: GameHandle): UseRun {
   const exportReplayText = useCallback((id: string) => game.exportReplayText(id), [game]);
   const importReplayText = useCallback((raw: string) => game.importReplayText(raw), [game]);
   const openReplay = useCallback(
-    (id: string, keyframeIndex?: number) => void game.openReplay(id, keyframeIndex),
+    (id: string, keyframeIndex?: number) => {
+      const opened = game.openReplay(id, keyframeIndex);
+      if (!opened) return false;
+      // ポーリング待ちだとタイトルオーバーレイが先に消え、前画面のスクロールが残る。
+      setState(opened);
+      setDiagnosticInfo(game.getDiagnosticInfo());
+      setLastRunReward(game.getLastRunReward());
+      setIsReplayMode(true);
+      setActiveReplayDiagnosis(game.getActiveReplayDiagnosis());
+      setActiveReplayInfo(game.getActiveReplayInfo());
+      return true;
+    },
     [game],
   );
   const exitReplay = useCallback(() => void game.exitReplay(), [game]);

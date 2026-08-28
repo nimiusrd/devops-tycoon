@@ -7,7 +7,16 @@
  *
  * RI-12: 非タイトル画面は動的 import（React.lazy）でチャンク分割する。
  */
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
@@ -29,6 +38,7 @@ import {
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
+import { resetViewportScroll } from './ui/viewportScroll';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 
@@ -274,10 +284,17 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   };
   const openReplay = (id: string, keyframeIndex: number) => {
     audio.unlock();
+    if (!run.openReplay(id, keyframeIndex)) return;
     closeTitleModals();
     clearHudSnapshot();
-    run.openReplay(id, keyframeIndex);
+    resetViewportScroll(document);
   };
+
+  // キーフレーム画面のコミット後に、タイトル／一覧から引き継いだスクロールを捨てる。
+  useLayoutEffect(() => {
+    if (!run.isReplayMode) return;
+    resetViewportScroll(document);
+  }, [run.isReplayMode, phase]);
   const exitReplay = () => {
     closeTitleModals();
     clearHudSnapshot();

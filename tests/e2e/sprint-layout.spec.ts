@@ -20,6 +20,13 @@ import { seedMeta } from './seedMeta';
 
 const BOARD_RATIO = 1404 / 573;
 
+/** 展開KPIで省略されやすかった正式ラベル（#354）。 */
+const EXPANDED_HUD_FULL_LABELS = [
+  ['hud-delivery', '出荷ポイント'],
+  ['hud-security', 'セキュリティ'],
+  ['hud-reviewCapacity', 'レビュー耐性'],
+] as const;
+
 const VIEWPORTS = [
   { name: 'phone-se', width: 320, height: 568 },
   { name: 'phone', width: 390, height: 844 },
@@ -48,6 +55,28 @@ async function readBox(page: Page, testId: string): Promise<Box> {
   const box = await page.getByTestId(testId).boundingBox();
   if (!box) throw new Error(`${testId} の bounding box が取得できない`);
   return box;
+}
+
+async function assertLabelTextNotTruncated(
+  locator: Locator,
+  label: string,
+  viewportLabel: string,
+): Promise<void> {
+  await expect(locator).toHaveText(label);
+  const truncated = await locator.evaluate(
+    (element) => element.scrollWidth > element.clientWidth + 1,
+  );
+  expect(truncated, `${label} が ${viewportLabel} で省略されている`).toBe(false);
+}
+
+async function assertExpandedHudLabelsNotTruncated(
+  page: Page,
+  viewportLabel: string,
+): Promise<void> {
+  await expect(page.getByTestId('hud')).toHaveAttribute('data-compact', 'false');
+  for (const [testId, label] of EXPANDED_HUD_FULL_LABELS) {
+    await assertLabelTextNotTruncated(page.getByTestId(testId).locator('.k'), label, viewportLabel);
+  }
 }
 
 /** viewport に収まる要素は全体、viewport より背の高い要素は上下端の到達性を検証する。 */
@@ -174,6 +203,8 @@ async function assertLayoutContract(
   const hud = page.getByTestId('hud');
   if ((await hud.getAttribute('data-compact')) === 'true') {
     await expect(hud.locator('.hud-compact-chip')).toHaveCount(4);
+  } else if (viewport.width > RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
+    await assertExpandedHudLabelsNotTruncated(page, `${viewport.width}x${viewport.height}`);
   }
   await expect(page.getByTestId('runbar')).toHaveAttribute('data-compact', 'true');
   await expect(page.getByTestId('runbar-details')).toHaveCount(0);
@@ -449,6 +480,12 @@ async function exposeResultCardForScreenshot(page: Page): Promise<void> {
       .result-overlay > * {
         margin-block: 0 !important;
       }
+      .result-overlay::before,
+      .result-overlay::after {
+        content: none !important;
+        flex: 0 0 auto !important;
+        display: none !important;
+      }
     `,
   });
   await waitForLayoutFrame(page);
@@ -612,6 +649,59 @@ test('狭幅390pxでKPI折り畳み後に介入バーへ到達できる', async 
   await expect(actionBar).toBeVisible();
   await actionBar.scrollIntoViewIfNeeded();
   await expect(actionBar).toBeInViewport();
+});
+
+test('デスクトップ幅の展開KPIは出荷ポイント・セキュリティ・レビュー耐性を省略しない', async ({
+  page,
+}) => {
+  await beginPublicSprint(page, { seed: 'devops-tycoon' });
+
+  for (const viewport of [
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+  ] as const) {
+    await page.setViewportSize(viewport);
+    await waitForLayoutFrame(page);
+
+    const hud = page.getByTestId('hud');
+    await expect(hud).toHaveAttribute('data-responsive-width', 'wide');
+    if ((await hud.getAttribute('data-compact')) === 'true') {
+      await page.getByTestId('hud-toggle').click();
+    }
+    await waitForLayoutFrame(page);
+    await assertExpandedHudLabelsNotTruncated(page, `${viewport.width}x${viewport.height}`);
+
+    const noHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    );
+    expect(
+      noHorizontalOverflow,
+      `${viewport.width}x${viewport.height} で横スクロールが発生している`,
+    ).toBe(true);
+  }
+});
+
+test('狭幅の要約KPIは出荷ポイントを省略せず、展開時も正式名を保持する', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await beginPublicSprint(page, { seed: 'devops-tycoon' });
+  await waitForLayoutFrame(page);
+
+  const hud = page.getByTestId('hud');
+  await expect(hud).toHaveAttribute('data-responsive-width', 'narrow');
+  await expect(hud).toHaveAttribute('data-compact', 'true');
+  await assertLabelTextNotTruncated(
+    hud.locator('.hud-compact-chip-label').filter({ hasText: '出荷ポイント' }),
+    '出荷ポイント',
+    '390x844 compact',
+  );
+
+  await page.getByTestId('hud-toggle').click();
+  await expect(hud).toHaveAttribute('data-compact', 'false');
+  for (const [testId, label] of EXPANDED_HUD_FULL_LABELS) {
+    const metric = page.getByTestId(testId);
+    await expect(metric.locator('.k')).toHaveText(label);
+    await expect(metric).toHaveAttribute('aria-label', new RegExp(`^${label}:`));
+  }
 });
 
 test('要約HUDでも介入によるKPI差分をフィードバックする', async ({ page }) => {

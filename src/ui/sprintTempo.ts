@@ -31,15 +31,22 @@ export type PlaybackSpeed = 0 | 1 | 2;
  *
  * 進化オーバーレイなどスプリント以外のフェーズでは、背面盤面が残っていても
  * `sprintRunning` の誤判定や再生速度 1x にかかわらず進めない。
+ * 全社マップ等の俯瞰中は現場 sim を止め、閲覧だけで KPI が進まないようにする。
  */
 export function shouldAutoAdvanceSprint(input: {
   phase: RunPhase;
   sprintRunning: boolean;
   paused: boolean;
   playbackSpeed: PlaybackSpeed;
+  /** 現場（team）を見ているときだけ true。 */
+  fieldView: boolean;
 }): boolean {
   return (
-    input.phase === 'sprint' && input.sprintRunning && !input.paused && input.playbackSpeed > 0
+    input.phase === 'sprint' &&
+    input.sprintRunning &&
+    !input.paused &&
+    input.playbackSpeed > 0 &&
+    input.fieldView
   );
 }
 

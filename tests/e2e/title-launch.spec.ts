@@ -7,6 +7,8 @@ import type { Locator } from '@playwright/test';
 const VIEWPORTS = [
   { name: 'phone-se', width: 320, height: 568 },
   { name: 'phone-start', width: 390, height: 667 },
+  { name: 'phone-landscape', width: 667, height: 375 },
+  { name: 'tablet-portrait', width: 768, height: 1024 },
   { name: 'desktop-short', width: 1024, height: 768 },
   { name: 'desktop', width: 1440, height: 900 },
 ] as const;
@@ -61,6 +63,19 @@ test.describe('title launch CTA first view', () => {
         startBox.y + startBox.height,
         `${viewport.name} で開始 CTA の下端が viewport 外`,
       ).toBeLessThanOrEqual(viewport.height + 1);
+
+      const dailyBox = await readBox(page.getByTestId('start-daily-run'), 'デイリー開始');
+      if (viewport.width <= 560) {
+        expect(
+          startBox.y,
+          `${viewport.name} で開始 CTA がデイリーの下に積み上がっていない`,
+        ).toBeGreaterThan(dailyBox.y);
+      } else if (viewport.width <= 900) {
+        expect(
+          startBox.x,
+          `${viewport.name} で2カラムドックの開始 CTA が右列にない`,
+        ).toBeGreaterThan(dailyBox.x + dailyBox.width - 8);
+      }
 
       const labelBox = await startRun.evaluate((el) => {
         const label =

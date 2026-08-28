@@ -2768,7 +2768,8 @@ button.card:active {
   min-height: 100dvh;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #050713;
   color: #f5f7ff;
   display: flex;
@@ -2947,7 +2948,7 @@ button.card:active {
 .title-scroll {
   position: relative;
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: min(6rem, 18dvh);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -3390,9 +3391,17 @@ button.card:active {
   padding: 8px 4vw calc(14px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--tc-line);
   background:
-    linear-gradient(180deg, rgba(10, 14, 31, 0.98), rgba(5, 7, 19, 0.98)),
-    radial-gradient(circle at 18% 0%, rgba(120, 221, 255, 0.16), transparent 42%);
-  box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.45);
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--visual-color-board-background-bottom) 98%, transparent),
+      color-mix(in srgb, var(--visual-color-ink) 98%, transparent)
+    ),
+    radial-gradient(
+      circle at 18% 0%,
+      color-mix(in srgb, var(--visual-color-interaction-drag) 16%, transparent),
+      transparent 42%
+    );
+  box-shadow: 0 -18px 40px color-mix(in srgb, var(--visual-color-ink) 55%, transparent);
 }
 .title-launch-dock-inner {
   max-width: 1320px;
@@ -3758,6 +3767,32 @@ button.card:active {
   }
   .title-launch-dock .title-launch > i {
     font-size: 22px;
+  }
+}
+/* 高さモード short（responsiveModeCore.shortMaxHeight=720）向けの縮退。新規全体 breakpoint ではない。 */
+@media (max-height: 720px) {
+  .title-topbar {
+    height: 56px;
+  }
+  .title-command .title-head {
+    padding: 16px 0 12px;
+  }
+  .title-hero-badges {
+    display: none;
+  }
+  .title-launch-dock .title-daily > b,
+  .title-launch-dock .title-daily > small,
+  .title-launch-dock .title-mission {
+    display: none;
+  }
+  .title-launch-dock .title-daily {
+    padding: 6px 12px;
+  }
+  .title-launch-dock .title-launch-row {
+    min-height: 0;
+  }
+  .title-launch-dock .title-launch {
+    min-height: 52px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

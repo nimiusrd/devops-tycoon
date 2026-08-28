@@ -6232,6 +6232,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-radius: 16px;
   overflow: hidden;
   border: 2px solid var(--line);
+  --org-board-scale: 1;
   box-shadow:
     0 6px 0 #1a1338,
     inset 0 2px 0 #ffffff10;
@@ -6264,9 +6265,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 140;
-  font-size: 12px;
+  font-size: calc(var(--visual-org-zone-label-font-size) * var(--org-board-scale));
   font-weight: 900;
-  padding: 6px 12px;
+  padding: calc(var(--visual-org-zone-label-padding-y) * var(--org-board-scale))
+    calc(var(--visual-org-zone-label-padding-x) * var(--org-board-scale));
   border-radius: 999px;
   background: #1f1942e6;
   border: 2px solid var(--line);
@@ -6279,7 +6281,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   display: block;
   font-weight: 700;
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: calc(var(--visual-org-zone-label-subtitle-size) * var(--org-board-scale));
   margin-top: 2px;
 }
 .org-zone-label.tone-ok {
@@ -6306,32 +6308,64 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   height: auto;
   filter: drop-shadow(0 6px 8px #0008);
 }
-.org-hub-badge {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  z-index: 160;
+/* 可読下限の 3 行カード高が設計バッジ高に収まるまで、部門ラベルを隠しカードをドックへ畳む。 */
+.org-board.iso-org.org-board-compact .org-zone-label {
+  display: none;
+}
+.org-island-badge-dock {
+  display: none;
+}
+.org-board.iso-org.org-board-compact .org-island-badge-dock {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 14px;
-  border-radius: 14px;
-  background: #11183ae6;
-  border: 2px solid var(--sky);
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--cream);
-  white-space: nowrap;
-  box-shadow: 0 3px 0 #00000044;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: calc(var(--visual-org-card-line-gap) * 2);
+  position: absolute;
+  inset: 4px;
+  /* 島グループは 20+depth（最大 119）、ハブ 150、ヒント 170 より前へ。 */
+  z-index: 180;
+  overflow: auto;
   pointer-events: none;
 }
-.org-hub-badge.tone-warn {
-  border-color: #ffd45c;
+.org-island-badge-dock-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: inherit;
+  flex: 1 0 100%;
+  max-width: 100%;
 }
-.org-hub-meta {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--sky);
+.org-island-badge-dock-heading {
+  flex: 1 0 100%;
+  margin: 0;
+  font: inherit;
+  font-size: var(--visual-org-island-badge-min-font-size);
+  font-weight: 800;
+  color: var(--text-dim);
+}
+.org-island-badge-dock-hit {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  text-align: left;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-width: 24px;
+  min-height: 44px;
+}
+.org-island-badge-dock-hit:focus-visible {
+  outline: 2px solid var(--sun);
+  outline-offset: 2px;
+}
+.org-island-badge-dock-hit.is-player .org-island-badge {
+  box-shadow: 0 0 0 2px var(--sun);
 }
 .org-island-group {
   position: absolute;
@@ -6345,16 +6379,26 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: none;
 }
 .org-island-badge {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 5px 10px;
+  line-height: var(--visual-org-island-badge-line-height);
+  width: calc(var(--visual-org-card-width) * var(--org-board-scale));
+  max-width: calc(var(--visual-org-card-width) * var(--org-board-scale));
+  padding: calc(var(--visual-org-island-badge-padding-y) * var(--org-board-scale))
+    calc(var(--visual-org-island-badge-padding-x) * var(--org-board-scale));
   border-radius: 12px;
   background: #1f1942e6;
   border: 2px solid var(--line);
-  font-size: 11px;
+  font-size: max(
+    var(--visual-org-island-badge-min-font-size),
+    calc(var(--visual-org-island-badge-font-size) * var(--org-board-scale))
+  );
   color: var(--cream);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: hidden;
   box-shadow: 0 3px 0 #00000044;
 }
 .org-island-badge.tone-ok {
@@ -6368,12 +6412,18 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #3a1414e6;
 }
 .org-island-meta {
-  font-size: 10px;
+  font-size: max(
+    var(--visual-org-island-badge-min-meta-size),
+    calc(var(--visual-org-island-badge-meta-size) * var(--org-board-scale))
+  );
   color: var(--text-dim);
 }
 .org-island-tag {
   display: inline-block;
-  font-size: 9px;
+  font-size: max(
+    var(--visual-org-island-badge-min-tag-size),
+    calc(var(--visual-org-island-badge-tag-size) * var(--org-board-scale))
+  );
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 999px;
@@ -6388,6 +6438,15 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-island-badge.tone-hell .org-island-tag {
   background: color-mix(in srgb, var(--visual-color-health-review-hell) 20%, transparent);
   color: var(--visual-color-health-review-hell);
+}
+.org-board.iso-org.org-board-compact .org-island-badge {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  min-width: var(--visual-org-island-badge-min-width);
+  max-width: 100%;
 }
 .org-island {
   position: absolute;
@@ -6456,23 +6515,40 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   /* resizeTo + autoDensity が CSS 寸法を設定する。100% で再スケールするとにじむ。 */
 }
 .org-infra-hub {
-  position: absolute;
-  left: 50%;
-  top: 10px;
-  transform: translateX(-50%);
-  z-index: 5;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 6px 12px;
+  margin: 0 auto 8px;
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--visual-org-hub-overlay-padding-y) var(--visual-org-hub-overlay-padding-x);
   border-radius: 999px;
   background: #11183a;
   border: 1px solid var(--sky);
-  font-size: 13px;
-  z-index: 5;
+  font-size: var(--visual-org-hub-overlay-font-size);
+}
+.org-infra-hub.tone-warn {
+  border-color: var(--visual-color-banner-warn-border);
 }
 .org-infra-meta {
   color: var(--sky);
+  font-size: var(--visual-org-hub-overlay-meta-size);
+  font-weight: 700;
+}
+.org-infra-hub.tone-warn .org-infra-meta {
+  color: var(--visual-color-banner-warn-tag-text);
+}
+.org-infra-warn {
+  font-weight: 800;
+  color: var(--visual-color-banner-warn-tag-text);
+}
+@media (max-width: 520px) {
+  .org-infra-title {
+    display: none;
+  }
 }
 .team-island {
   position: absolute;

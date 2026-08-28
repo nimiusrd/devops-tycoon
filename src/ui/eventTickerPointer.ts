@@ -42,29 +42,33 @@ export function applyTickerListScroll(
   deltaY: number,
 ): boolean {
   if (list.scrollHeight <= list.clientHeight + 1) return false;
+  const previous = list.scrollTop;
   const max = list.scrollHeight - list.clientHeight;
-  const next = Math.min(max, Math.max(0, list.scrollTop + deltaY));
-  if (next === list.scrollTop) return false;
+  const next = Math.min(max, Math.max(0, previous + deltaY));
+  if (next === previous) return false;
   list.scrollTop = next;
-  return true;
+  return list.scrollTop !== previous;
 }
 
-/** ティッカー下のタスク粒なら盤面ドラッグを優先する。 */
+/** ネイティブ Element.closest はメソッドのまま呼ぶ（切り離すと Illegal invocation）。 */
 export function hitBlocksTickerTouchScroll(target: EventTarget | null): boolean {
   if (!target || !('closest' in target)) return false;
-  const closest = (target as { closest?: (selector: string) => unknown }).closest;
-  return typeof closest === 'function' && closest('[data-task-id]') != null;
+  const el = target as { closest?: (selector: string) => unknown };
+  return typeof el.closest === 'function' && el.closest('[data-task-id]') != null;
 }
 
-/** result オーバーレイ等で背面化したティッカーは window リスナーを動かさない。 */
+/**
+ * 背面化したティッカーは window の capture リスナーを動かさない。
+ * `inert` は結果オーバーレイの兄弟ロック。最前面が `.result-overlay` なら
+ * 透過ヒット（pointer-events: none のリスト越し）ではなくオーバーレイ操作。
+ * `[role="dialog"]` は初回ガイド等にも付くので見ない。
+ */
 export function isTickerPointerSuppressed(
   list: { closest: (selector: string) => unknown },
   hit: EventTarget | null,
 ): boolean {
   if (list.closest('[inert]') != null) return true;
-  if (list.closest('[aria-hidden="true"]') != null) return true;
   if (!hit || !('closest' in hit)) return false;
-  const closest = (hit as { closest?: (selector: string) => unknown }).closest;
-  if (typeof closest !== 'function') return false;
-  return closest('.result-overlay, [role="dialog"]') != null;
+  const el = hit as { closest?: (selector: string) => unknown };
+  return typeof el.closest === 'function' && el.closest('.result-overlay') != null;
 }

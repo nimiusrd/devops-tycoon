@@ -41,6 +41,17 @@ describe('eventTickerPointer', () => {
     expect(applyTickerListScroll(list, 0)).toBe(false);
     const short = { scrollTop: 0, scrollHeight: 40, clientHeight: 50 };
     expect(applyTickerListScroll(short, 20)).toBe(false);
+    const frozen = {
+      scrollHeight: 200,
+      clientHeight: 50,
+      get scrollTop() {
+        return 0;
+      },
+      set scrollTop(_value: number) {
+        /* スクロールポートでない要素は代入を無視する */
+      },
+    };
+    expect(applyTickerListScroll(frozen, 40)).toBe(false);
   });
 
   it('タスク粒のヒットはタッチスクロールしない', () => {
@@ -58,16 +69,27 @@ describe('eventTickerPointer', () => {
     const inert = {
       closest: (selector: string) => (selector === '[inert]' ? inert : null),
     };
-    const hidden = {
-      closest: (selector: string) => (selector === '[aria-hidden="true"]' ? hidden : null),
+    const hiddenOnly = {
+      closest: (selector: string) => (selector === '[aria-hidden="true"]' ? hiddenOnly : null),
     };
     const overlayHit = {
-      closest: (selector: string) =>
-        selector === '.result-overlay, [role="dialog"]' ? overlayHit : null,
+      closest: (selector: string) => (selector === '.result-overlay' ? overlayHit : null),
+    };
+    const tutorialHit = {
+      closest: (selector: string) => (selector === '[role="dialog"]' ? tutorialHit : null),
     };
     expect(isTickerPointerSuppressed(live, null)).toBe(false);
     expect(isTickerPointerSuppressed(inert, null)).toBe(true);
-    expect(isTickerPointerSuppressed(hidden, null)).toBe(true);
+    expect(isTickerPointerSuppressed(hiddenOnly, null)).toBe(false);
     expect(isTickerPointerSuppressed(live, overlayHit as unknown as EventTarget)).toBe(true);
+    expect(isTickerPointerSuppressed(live, tutorialHit as unknown as EventTarget)).toBe(false);
+
+    const nativeLike = {
+      closest(this: unknown, selector: string) {
+        if (this !== nativeLike) throw new TypeError('Illegal invocation');
+        return selector === '.result-overlay' ? nativeLike : null;
+      },
+    };
+    expect(isTickerPointerSuppressed(live, nativeLike as unknown as EventTarget)).toBe(true);
   });
 });

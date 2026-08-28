@@ -1095,57 +1095,70 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   );
   if (!overflow) return;
 
-  const dispatchWheel = async (deltaY: number, ctrlKey: boolean) =>
-    page.evaluate(
-      ({ x, y, deltaY: dy, ctrlKey: ctrl }) => {
-        window.dispatchEvent(
+  const wheelPoint = await page.evaluate(() => {
+    const scrollList = document.querySelector<HTMLElement>('[data-testid="event-ticker-list"]');
+    if (!scrollList) return null;
+    const box = scrollList.getBoundingClientRect();
+    return {
+      x: box.left + box.width / 2,
+      y: box.top + Math.min(12, Math.max(4, box.height / 2)),
+    };
+  });
+  if (!wheelPoint) throw new Error(`${label}: フォーカス後のリスト座標が無い`);
+
+  const dispatchWheel = async (deltaY: number, ctrlKey: boolean, deltaMode = 0) => {
+    await page.evaluate(
+      ({ x, y, deltaY: dy, ctrlKey: ctrl, deltaMode: mode }) => {
+        const target = document.elementFromPoint(x, y) ?? document;
+        target.dispatchEvent(
           new WheelEvent('wheel', {
+            view: window,
             clientX: x,
             clientY: y,
             deltaY: dy,
+            deltaMode: mode,
             ctrlKey: ctrl,
             bubbles: true,
             cancelable: true,
           }),
         );
       },
-      { x: idleHit.x, y: idleHit.y, deltaY, ctrlKey },
+      { x: wheelPoint.x, y: wheelPoint.y, deltaY, ctrlKey, deltaMode },
     );
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    );
+  };
+
+  const readTickerScroll = () =>
+    list.evaluate((element) => element.scrollTop + (element.parentElement?.scrollTop ?? 0));
 
   await list.evaluate((element) => {
     element.scrollTop = 0;
+    if (element.parentElement) element.parentElement.scrollTop = 0;
   });
-  const before = await list.evaluate((element) => element.scrollTop);
+  const before = await readTickerScroll();
   await dispatchWheel(400, false);
-  const afterWheel = await list.evaluate((element) => element.scrollTop);
+  const afterWheel = await readTickerScroll();
   expect(afterWheel, `${label}: ホイールでリストがスクロールしない`).toBeGreaterThan(before);
 
   await list.evaluate((element) => {
     element.scrollTop = 0;
+    if (element.parentElement) element.parentElement.scrollTop = 0;
   });
   await dispatchWheel(400, true);
-  const afterCtrl = await list.evaluate((element) => element.scrollTop);
+  const afterCtrl = await readTickerScroll();
   expect(afterCtrl, `${label}: Ctrl+wheel をリストが奪う`).toBe(0);
 
   await list.evaluate((element) => {
     element.scrollTop = 0;
+    if (element.parentElement) element.parentElement.scrollTop = 0;
   });
-  await page.evaluate(
-    ({ x, y }) => {
-      window.dispatchEvent(
-        new WheelEvent('wheel', {
-          clientX: x,
-          clientY: y,
-          deltaY: 3,
-          deltaMode: 1,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-    },
-    { x: idleHit.x, y: idleHit.y },
-  );
-  const afterLine = await list.evaluate((element) => element.scrollTop);
+  await dispatchWheel(3, false, 1);
+  const afterLine = await readTickerScroll();
   expect(afterLine, `${label}: DOM_DELTA_LINE のホイールが 3px しか動かない`).toBeGreaterThan(3);
 }
 
@@ -1155,22 +1168,19 @@ async function assertTickerDoesNotStealOverlayWheel(page: Page, label: string): 
   if ((await list.count()) === 0) return;
   const box = await list.boundingBox();
   if (!box) return;
-  const before = await list.evaluate((element) => element.scrollTop);
-  await page.evaluate(
-    ({ x, y }) => {
-      window.dispatchEvent(
-        new WheelEvent('wheel', {
-          clientX: x,
-          clientY: y,
-          deltaY: 400,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-    },
-    { x: box.x + box.width / 2, y: box.y + Math.min(12, Math.max(4, box.height / 2)) },
+  const point = {
+    x: box.x + box.width / 2,
+    y: box.y + Math.min(12, Math.max(4, box.height / 2)),
+  };
+  const before = await list.evaluate(
+    (element) => element.scrollTop + (element.parentElement?.scrollTop ?? 0),
   );
-  const after = await list.evaluate((element) => element.scrollTop);
+  await page.mouse.move(point.x, point.y);
+  await page.mouse.wheel(0, 400);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+  const after = await list.evaluate(
+    (element) => element.scrollTop + (element.parentElement?.scrollTop ?? 0),
+  );
   expect(after, `${label}: 背面ティッカーがオーバーレイのホイールを奪う`).toBe(before);
 }
 

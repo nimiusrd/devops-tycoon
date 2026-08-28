@@ -27,33 +27,40 @@ const TICKER_LIMIT = 5;
 /** フォーカス中のリストを矢印 / Page / Home / End でスクロールする（DS-08）。 */
 function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
   const list = event.currentTarget;
-  if (list.scrollHeight <= list.clientHeight + 1) return;
-  const page = list.clientHeight;
-  let next = list.scrollTop;
+  const parent = list.parentElement;
+  const scroller =
+    list.scrollHeight > list.clientHeight + 1
+      ? list
+      : parent != null && parent.scrollHeight > parent.clientHeight + 1
+        ? parent
+        : null;
+  if (!scroller) return;
+  const page = scroller.clientHeight;
+  let delta: number;
   switch (event.key) {
     case 'ArrowDown':
-      next += 24;
+      delta = 24;
       break;
     case 'ArrowUp':
-      next -= 24;
+      delta = -24;
       break;
     case 'PageDown':
-      next += page;
+      delta = page;
       break;
     case 'PageUp':
-      next -= page;
+      delta = -page;
       break;
     case 'End':
-      next = list.scrollHeight;
+      delta = scroller.scrollHeight;
       break;
     case 'Home':
-      next = 0;
+      delta = -scroller.scrollTop;
       break;
     default:
       return;
   }
+  if (!applyTickerListScroll(scroller, delta)) return;
   event.preventDefault();
-  list.scrollTop = next;
 }
 
 export interface EventTickerProps {
@@ -70,18 +77,32 @@ export function EventTicker({ events }: EventTickerProps) {
 
     let touchPan: { pointerId: number; lastY: number } | null = null;
 
+    const scrollBy = (deltaY: number): boolean => {
+      if (applyTickerListScroll(list, deltaY)) return true;
+      const parent = list.parentElement;
+      return parent != null && applyTickerListScroll(parent, deltaY);
+    };
+
     const onWheel = (event: WheelEvent) => {
       if (!shouldCaptureTickerWheel(event)) return;
-      if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
+      const root = list.parentElement ?? list;
+      if (!pointInRect(event.clientX, event.clientY, root.getBoundingClientRect())) return;
       const hit = document.elementFromPoint(event.clientX, event.clientY);
       if (isTickerPointerSuppressed(list, hit)) return;
       const deltaY = wheelDeltaYInCssPixels(
         event,
-        readLineHeightPx(getComputedStyle(list).lineHeight),
+        readLineHeightPx(window.getComputedStyle(list).lineHeight),
         list.clientHeight,
       );
-      if (!applyTickerListScroll(list, deltaY)) return;
-      event.preventDefault();
+      const overflowed =
+        list.scrollHeight > list.clientHeight + 1 ||
+        (root !== list && root.scrollHeight > root.clientHeight + 1);
+      if (!overflowed) return;
+      if (event.cancelable) event.preventDefault();
+      if (scrollBy(deltaY)) return;
+      window.requestAnimationFrame(() => {
+        scrollBy(deltaY);
+      });
     };
 
     const onPointerDown = (event: PointerEvent) => {
@@ -96,7 +117,10 @@ export function EventTicker({ events }: EventTickerProps) {
     const onPointerMove = (event: PointerEvent) => {
       if (!touchPan || event.pointerId !== touchPan.pointerId) return;
       const dy = touchPan.lastY - event.clientY;
-      if (!applyTickerListScroll(list, dy)) return;
+      if (!applyTickerListScroll(list, dy)) {
+        const parent = list.parentElement;
+        if (parent == null || !applyTickerListScroll(parent, dy)) return;
+      }
       touchPan.lastY = event.clientY;
       if (event.cancelable) event.preventDefault();
     };
@@ -120,7 +144,7 @@ export function EventTicker({ events }: EventTickerProps) {
   }, [rows.length]);
 
   const focusList = () => {
-    listRef.current?.focus();
+    listRef.current?.focus({ preventScroll: true });
   };
 
   return (

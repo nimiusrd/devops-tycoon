@@ -68,8 +68,21 @@ test('遊び方ヘルプは背景クリックで閉じ、パネルクリック�
   await page.locator('.how-to-play-panel').click();
   await expect(dialog).toBeVisible();
 
-  await dialog.click({ position: { x: 8, y: 8 } });
+  await page.getByTestId('how-to-play-backdrop').click({ position: { x: 8, y: 8 } });
   await expect(dialog).not.toBeVisible();
+});
+
+test('遊び方の背面から別モーダルを開くと遊び方は閉じる', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=howto-exclusive');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-help').click();
+  await expect(page.getByTestId('how-to-play')).toBeVisible();
+
+  await page.getByTestId('open-replays').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('how-to-play')).not.toBeVisible();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
 });
 
 test('?tutorial=help でタイトル起動時に遊び方を開く', async ({ page }) => {

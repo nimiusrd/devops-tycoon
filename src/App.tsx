@@ -21,6 +21,7 @@ import { Hud, type HudSnapshotScope } from './ui/Hud';
 import { RunBar } from './ui/RunBar';
 import { ResponsiveModeProvider, useResponsiveMode } from './ui/responsiveMode';
 import { TitleScreen } from './ui/TitleScreen';
+import { frontmostTitleModal } from './ui/titleModalStack';
 import {
   resolveTutorialFromLocation,
   shouldShowTutorialGuide,
@@ -115,7 +116,7 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
 }
 
 /** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
-function TitleModalLoadingFallback() {
+function TitleModalLoadingFallback({ onDismiss }: { onDismiss?: () => void }) {
   return (
     <div
       className="result-overlay"
@@ -123,7 +124,17 @@ function TitleModalLoadingFallback() {
       role="status"
       aria-busy="true"
       aria-label="読み込み中"
-    />
+    >
+      {onDismiss ? (
+        <button
+          type="button"
+          className="result-overlay-dismiss"
+          data-testid="title-modal-loading-dismiss"
+          aria-label="閉じる"
+          onClick={onDismiss}
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -280,6 +291,33 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     tutorialDismissedEpoch !== run.runEpoch &&
     shouldShowTutorialGuide(meta.seenTutorialVersion, tutorialMode);
 
+  const closeHelp = useCallback(() => setHelpOpen(false), []);
+  const openExclusiveTitleModal = (open: () => void) => {
+    closeTitleModals();
+    open();
+  };
+  const helpIsFrontmost =
+    phase === 'title' &&
+    frontmostTitleModal({
+      help: helpOpen,
+      metaShop: metaShopOpen,
+      deckPolicy: deckPolicyOpen,
+      cardCollection: cardCollectionOpen,
+      achievements: achievementsOpen,
+      replayList: replayListOpen,
+    }) === 'help';
+
+  useEffect(() => {
+    if (!helpIsFrontmost) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      closeHelp();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [helpIsFrontmost, closeHelp]);
+
   if (phase === 'title') {
     return (
       <>
@@ -292,16 +330,16 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           resumableSummary={runSaveSummary}
           runSaveIssue={runSaveIssue}
           onDiscardRunSave={discardRunSave}
-          onOpenReplays={() => setReplayListOpen(true)}
-          onOpenMetaShop={() => setMetaShopOpen(true)}
-          onOpenDeckPolicy={() => setDeckPolicyOpen(true)}
-          onOpenCardCollection={() => setCardCollectionOpen(true)}
-          onOpenAchievements={() => setAchievementsOpen(true)}
+          onOpenReplays={() => openExclusiveTitleModal(() => setReplayListOpen(true))}
+          onOpenMetaShop={() => openExclusiveTitleModal(() => setMetaShopOpen(true))}
+          onOpenDeckPolicy={() => openExclusiveTitleModal(() => setDeckPolicyOpen(true))}
+          onOpenCardCollection={() => openExclusiveTitleModal(() => setCardCollectionOpen(true))}
+          onOpenAchievements={() => openExclusiveTitleModal(() => setAchievementsOpen(true))}
           onToggleSoundMuted={() => {
             audio.unlock();
             run.setSoundMuted(!meta.soundMuted);
           }}
-          onOpenHelp={() => setHelpOpen(true)}
+          onOpenHelp={() => openExclusiveTitleModal(() => setHelpOpen(true))}
           onApplyPreferred={run.setPreferredCardIds}
           onExportRunSave={run.exportRunSaveText}
           onImportRunSave={async (raw) => {
@@ -309,8 +347,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             return { ok: result.ok, message: result.ok ? '' : result.message };
           }}
         />
+        {helpOpen && (
+          <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
+            <HowToPlayScreen onClose={closeHelp} />
+          </Suspense>
+        )}
         <Suspense fallback={<TitleModalLoadingFallback />}>
-          {helpOpen && <HowToPlayScreen onClose={() => setHelpOpen(false)} />}
           {metaShopOpen && (
             <MetaShopScreen
               meta={meta}

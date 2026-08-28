@@ -4652,7 +4652,32 @@ button.card:active {
 }
 
 /* 遊び方ヘルプ / 初見ガイド（RI-60） */
+.result-overlay > .result-overlay-dismiss {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  min-width: 24px;
+  min-height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.result-overlay-dismiss:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: -2px;
+}
+.how-to-play-overlay:focus {
+  outline: none;
+}
+.how-to-play-overlay:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: -2px;
+}
 .how-to-play-panel {
+  position: relative;
+  z-index: 1;
   width: min(640px, 94vw);
   max-height: 90vh;
   overflow-y: auto;

@@ -2198,7 +2198,7 @@ export class RunEngine {
 
   /**
    * リプレイキーフレーム用スナップショット（RI-61）。
-   * setup / result / quarterReview / won / lost のみ。sprint は落とす。
+   * setup / result / draft / quarterReview / won / lost のみ。sprint は落とす。
    */
   exportReplayFrame(): RunReplayFrame | null {
     if (!isReplayFramePhase(this.phase)) return null;

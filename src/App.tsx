@@ -30,17 +30,21 @@ import { Hud, type HudSnapshotScope } from './ui/Hud';
 import { RunBar } from './ui/RunBar';
 import { ResponsiveModeProvider, useResponsiveMode } from './ui/responsiveMode';
 import { TitleScreen } from './ui/TitleScreen';
+import { frontmostTitleModal } from './ui/titleModalStack';
+import { useDialogOverlayLock } from './ui/useDialogOverlayLock';
 import {
   resolveTutorialFromLocation,
   shouldShowTutorialGuide,
   type TutorialQuery,
 } from './ui/tutorial';
+import { observeReplayBannerHeight } from './ui/replayBannerOffset';
 import { ReplayContentProvider } from './ui/replayContent';
 import { formatReplayRuleset } from './ui/replayRuleset';
 import { useRun, type UseRun } from './ui/useRun';
 import { resetViewportScroll } from './ui/viewportScroll';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
+import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
 
 const AchievementCollectionScreen = lazy(() =>
   import('./ui/AchievementCollectionScreen').then((m) => ({
@@ -124,16 +128,29 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
   );
 }
 
-/** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
-function TitleModalLoadingFallback() {
+/** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。閉じる操作は DS-08 の名前付き button。 */
+function TitleModalLoadingFallback({ onDismiss }: { onDismiss: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss });
+
   return (
     <div
+      ref={overlayRef}
       className="result-overlay"
       data-testid="title-modal-loading"
       role="status"
       aria-busy="true"
       aria-label="読み込み中"
-    />
+      tabIndex={-1}
+    >
+      <button
+        type="button"
+        className="result-overlay-dismiss"
+        data-testid="title-modal-loading-dismiss"
+        aria-label="閉じる"
+        onClick={onDismiss}
+      />
+    </div>
   );
 }
 
@@ -278,6 +295,11 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     if (!run.isReplayMode) return;
     resetViewportScroll(document);
   }, [run.isReplayMode, phase]);
+  // リプレイバナーの高さだけオーバーレイ上端を下げ、先頭の見出し／カードを覆わない（DS-06）。
+  useLayoutEffect(() => {
+    const banner = document.querySelector('[data-testid="replay-mode-banner"]');
+    return observeReplayBannerHeight(banner instanceof Element ? banner : null);
+  }, [run.isReplayMode, phase]);
   const exitReplay = () => {
     closeTitleModals();
     clearHudSnapshot();
@@ -297,6 +319,40 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     tutorialDismissedEpoch !== run.runEpoch &&
     shouldShowTutorialGuide(meta.seenTutorialVersion, tutorialMode);
 
+  const closeHelp = useCallback(() => setHelpOpen(false), []);
+  const closeNonHelpTitleModals = useCallback(() => {
+    setMetaShopOpen(false);
+    setDeckPolicyOpen(false);
+    setCardCollectionOpen(false);
+    setAchievementsOpen(false);
+    setReplayListOpen(false);
+  }, []);
+  const openExclusiveTitleModal = (open: () => void) => {
+    closeTitleModals();
+    open();
+  };
+  const helpIsFrontmost =
+    phase === 'title' &&
+    frontmostTitleModal({
+      help: helpOpen,
+      metaShop: metaShopOpen,
+      deckPolicy: deckPolicyOpen,
+      cardCollection: cardCollectionOpen,
+      achievements: achievementsOpen,
+      replayList: replayListOpen,
+    }) === 'help';
+
+  useEffect(() => {
+    if (!helpIsFrontmost) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      closeHelp();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [helpIsFrontmost, closeHelp]);
+
   if (phase === 'title') {
     return (
       <>
@@ -309,16 +365,16 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           resumableSummary={runSaveSummary}
           runSaveIssue={runSaveIssue}
           onDiscardRunSave={discardRunSave}
-          onOpenReplays={() => setReplayListOpen(true)}
-          onOpenMetaShop={() => setMetaShopOpen(true)}
-          onOpenDeckPolicy={() => setDeckPolicyOpen(true)}
-          onOpenCardCollection={() => setCardCollectionOpen(true)}
-          onOpenAchievements={() => setAchievementsOpen(true)}
+          onOpenReplays={() => openExclusiveTitleModal(() => setReplayListOpen(true))}
+          onOpenMetaShop={() => openExclusiveTitleModal(() => setMetaShopOpen(true))}
+          onOpenDeckPolicy={() => openExclusiveTitleModal(() => setDeckPolicyOpen(true))}
+          onOpenCardCollection={() => openExclusiveTitleModal(() => setCardCollectionOpen(true))}
+          onOpenAchievements={() => openExclusiveTitleModal(() => setAchievementsOpen(true))}
           onToggleSoundMuted={() => {
             audio.unlock();
             run.setSoundMuted(!meta.soundMuted);
           }}
-          onOpenHelp={() => setHelpOpen(true)}
+          onOpenHelp={() => openExclusiveTitleModal(() => setHelpOpen(true))}
           onApplyPreferred={run.setPreferredCardIds}
           onExportRunSave={run.exportRunSaveText}
           onImportRunSave={async (raw) => {
@@ -326,8 +382,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             return { ok: result.ok, message: result.ok ? '' : result.message };
           }}
         />
-        <Suspense fallback={<TitleModalLoadingFallback />}>
-          {helpOpen && <HowToPlayScreen onClose={() => setHelpOpen(false)} />}
+        {helpOpen && (
+          <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeHelp} />}>
+            <HowToPlayScreen onClose={closeHelp} />
+          </Suspense>
+        )}
+        <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeNonHelpTitleModals} />}>
           {metaShopOpen && (
             <MetaShopScreen
               meta={meta}
@@ -371,6 +431,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
 
   // 終端診断（ReplayBlob.outcome）で判定する。キーフレーム時点の state.diagnosis とは別。
   const reviewHellReplay = run.isReplayMode && run.activeReplayDiagnosis === 'reviewHell';
+  const replayDraftMissing = run.isReplayMode && run.findReplayJumpIndex('draft') === null;
   const replayBanner = run.isReplayMode ? (
     <div
       className={`replay-mode-banner${reviewHellReplay ? ' replay-mode-banner-review-hell' : ''}`}
@@ -540,8 +601,12 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
           <SprintResultScreen
             result={state.lastResult}
             growth={state.lastGrowth}
-            onContinue={run.acknowledgeResult}
+            onContinue={
+              run.isReplayMode ? () => run.jumpReplayToPhase('draft') : run.acknowledgeResult
+            }
             onAbandon={newRun}
+            continueDisabled={replayDraftMissing}
+            continueDisabledReason={replayDraftMissing ? REPLAY_DRAFT_MISSING_HINT : undefined}
             replayMode={run.isReplayMode}
             diagnosis={run.activeReplayDiagnosis ?? state.diagnosis}
           />
@@ -560,6 +625,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             onPick={run.chooseCard}
             onSkip={run.skipDraft}
             onMulligan={run.mulliganDraft}
+            readOnly={run.isReplayMode}
+            onClose={run.isReplayMode ? exitReplay : undefined}
           />
         )}
       </Suspense>

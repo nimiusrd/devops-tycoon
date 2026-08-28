@@ -110,6 +110,40 @@ describe('sprintBurnCauseView（RI-34′）', () => {
     expect(view.tip).toContain('延焼が発生した');
   });
 
+  it('連鎖のない延焼は実測の負債・士気増減を出す', () => {
+    const fireEvents: FireSprintEvent[] = [
+      { tick: 12, kind: 'ignite', taskId: 3, source: 'review' },
+      { tick: 18, kind: 'spread', taskId: 3, debtGain: 6, moraleCost: 5 },
+    ];
+    const view = planBurnCauseLog(makeResult({ incidents: 1, spread: 1, fireEvents }));
+    expect(view.entries[0].text).toBe(
+      't12: PR#3 が Review 落ちで点火 → t18 延焼（負債 +6 / 士気 -5）',
+    );
+    expect(view.entries[0].tone).toBe('bad');
+  });
+
+  it('連鎖延焼も実測の負債・士気増減を括弧で添える', () => {
+    const fireEvents: FireSprintEvent[] = [
+      { tick: 12, kind: 'ignite', taskId: 3, source: 'review' },
+      {
+        tick: 18,
+        kind: 'spread',
+        taskId: 3,
+        spreadToTaskId: 5,
+        debtGain: 6,
+        moraleCost: 5,
+      },
+      { tick: 18, kind: 'ignite', taskId: 5, source: 'spread' },
+      { tick: 22, kind: 'contain', taskId: 5, combo: 2 },
+    ];
+    const view = planBurnCauseLog(
+      makeResult({ incidents: 2, contained: 1, spread: 1, fireEvents }),
+    );
+    expect(view.entries[0].text).toBe(
+      't12: PR#3 が Review 落ちで点火 → t18 延焼 → PR#5（負債 +6 / 士気 -5） → t22 緊急対応で鎮火',
+    );
+  });
+
   it('スプリント終了の受動鎮火（hpCost 0）を区別する', () => {
     const fireEvents: FireSprintEvent[] = [
       { tick: 40, kind: 'ignite', taskId: 2, source: 'review' },

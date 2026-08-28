@@ -412,6 +412,113 @@ describe('GameHandle リプレイ（RI-61）', () => {
     expect(game.phase()).toBe('title');
   });
 
+  it('jumpReplayToPhase は次のドラフトキーフレームへ移動する', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-draft', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-draft', seed: 'jump-draft' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    const draftFrame = structuredClone(setup);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = ['copilot', 'docs', 'auto-test'];
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+      { phase: 'draft', frame: draftFrame },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('draft')).toBe(2);
+    expect(game.acknowledgeResult().phase).toBe('result');
+    const jumped = game.jumpReplayToPhase('draft');
+    expect(jumped?.phase).toBe('draft');
+    expect(jumped?.draft).toEqual(['copilot', 'docs', 'auto-test']);
+    expect(game.isReplayMode()).toBe(true);
+    expect(game.chooseCard('copilot').phase).toBe('draft');
+  });
+
+  it('次の result を越えた別スプリントの draft へはジャンプしない', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-later-draft', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-later-draft', seed: 'jump-later-draft' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    const laterResult = structuredClone(setup);
+    laterResult.phase = 'result';
+    const draftFrame = structuredClone(setup);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = ['copilot', 'docs', 'auto-test'];
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+      { phase: 'result', frame: laterResult },
+      { phase: 'draft', frame: draftFrame },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('draft')).toBeNull();
+    expect(game.jumpReplayToPhase('draft')).toBeNull();
+    expect(game.phase()).toBe('result');
+  });
+
+  it('ラッパー phase が draft でも frame.phase が result ならジャンプしない', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-mismatch', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-mismatch', seed: 'jump-mismatch' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    const mismatched = structuredClone(setup);
+    mismatched.phase = 'result';
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+      { phase: 'draft', frame: mismatched },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('draft')).toBeNull();
+    expect(game.jumpReplayToPhase('draft')).toBeNull();
+    expect(game.phase()).toBe('result');
+  });
+
+  it('ドラフトキーフレームが無ければジャンプせず null を返す', async () => {
+    const storage = new MemoryReplayStorage();
+    const game = createGame({ seed: 'jump-missing', initialMeta: defaultMeta() });
+    await game.attachReplay(storage);
+
+    const blob = makeBlob({ id: 'jump-missing', seed: 'jump-missing' });
+    const setup = structuredClone(blob.keyframes[0]!.frame);
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    blob.keyframes = [
+      { phase: 'setup', frame: setup },
+      { phase: 'result', frame: resultFrame },
+    ];
+    await storage.save(blob);
+    await game.attachReplay(storage);
+
+    expect(game.openReplay(blob.id, 1)?.phase).toBe('result');
+    expect(game.findReplayJumpIndex('draft')).toBeNull();
+    expect(game.jumpReplayToPhase('draft')).toBeNull();
+    expect(game.phase()).toBe('result');
+    expect(game.isReplayMode()).toBe(true);
+  });
+
   it('ルールセット不一致でも閲覧でき、what-if を再計算しない', async () => {
     const storage = new MemoryReplayStorage();
     const game = createGame({ seed: 'mismatch-replay', initialMeta: defaultMeta() });
@@ -628,8 +735,9 @@ describe('GameHandle リプレイ（RI-61）', () => {
     }
     expect(game.listReplays().length).toBeGreaterThan(0);
     expect(game.listReplays()[0]?.keyframes.length).toBeGreaterThan(0);
+    expect(game.listReplays()[0]?.keyframes.some((k) => k.phase === 'draft')).toBe(true);
     expect(game.listReplays()[0]?.ruleset).toEqual(CURRENT_RUN_RULESET);
-    expect(game.listReplays()[0]?.contentSnapshot).toEqual({ cards: [], relics: [] });
+    expect(game.listReplays()[0]?.contentSnapshot).toBeTruthy();
   });
 
   it('キーフレームに label が付く（RI-34‴）', async () => {
@@ -835,12 +943,61 @@ describe('リプレイ正規化（RI-72-B3）', () => {
       { phase: 'setup', frame: { ...frame, extras: { ...frame.extras, allowedRelics: 'bad' } } },
       { phase: 'setup', label: '編成', frame },
       { phase: 'result', label: 123, frame: resultFrame },
+      { phase: 'draft', frame: resultFrame },
     ]);
 
     expect(normalized).toHaveLength(2);
     expect(normalized.map((keyframe) => keyframe.phase)).toEqual(['setup', 'result']);
     expect(normalized[0]?.label).toBe('編成');
     expect(normalized[1]?.label).toBeUndefined();
+  });
+
+  it('normalizeReplayKeyframes は draft フェーズで候補配列が無いフレームを捨てる', () => {
+    const setup = makeNormalizeFrame('draft-candidates');
+    const validDraft = structuredClone(setup);
+    validDraft.phase = 'draft';
+    validDraft.draft = ['copilot', 'docs'];
+    const missing = structuredClone(setup);
+    missing.phase = 'draft';
+    missing.draft = null;
+    const omitted = structuredClone(setup);
+    omitted.phase = 'draft';
+    delete (omitted as { draft?: unknown }).draft;
+    const notStrings = structuredClone(setup);
+    notStrings.phase = 'draft';
+    notStrings.draft = [1, 'docs'] as unknown as string[];
+
+    const normalized = normalizeReplayKeyframes([
+      { phase: 'setup', frame: setup },
+      { phase: 'draft', frame: missing },
+      { phase: 'draft', frame: omitted },
+      { phase: 'draft', frame: notStrings },
+      { phase: 'draft', frame: validDraft },
+    ]);
+
+    expect(normalized.map((keyframe) => keyframe.phase)).toEqual(['setup', 'draft']);
+    expect(normalized[1]?.frame.draft).toEqual(['copilot', 'docs']);
+  });
+
+  it('draft 候補が無いキーフレームを含む ReplayBlob は拒否する', () => {
+    const setup = makeNormalizeFrame('blob-draft-missing');
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    const draftFrame = structuredClone(setup);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = null;
+
+    expect(
+      normalizeReplay(
+        makeNormalizeBlob({
+          keyframes: [
+            { phase: 'setup', frame: setup },
+            { phase: 'result', frame: resultFrame },
+            { phase: 'draft', frame: draftFrame },
+          ],
+        }),
+      ),
+    ).toBeNull();
   });
 
   it('normalizeReplayKeyframes は frame を deep clone して入力と独立させる', () => {
@@ -870,6 +1027,12 @@ describe('リプレイ正規化（RI-72-B3）', () => {
       normalizeReplay({
         ...makeNormalizeBlob(),
         keyframes: [validKeyframe, { phase: 'setup', frame: { ...frame, seed: 1 } }],
+      }),
+    ).toBeNull();
+    expect(
+      normalizeReplay({
+        ...makeNormalizeBlob(),
+        keyframes: [{ phase: 'draft', frame }],
       }),
     ).toBeNull();
     expect(

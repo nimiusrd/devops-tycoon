@@ -7,6 +7,7 @@
 import { useRef } from 'react';
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
+import { formatSprintResultSeniorHp } from '../render/seniorHpDisplay';
 import { planBurnCauseLog } from '../render/sprintBurnCauseView';
 import { planReviewHellResultSummary } from '../render/reviewHellReplayView';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
@@ -43,7 +44,7 @@ function buildRows(result: SprintResult): Row[] {
       label: 'Incidents',
       value: `${result.incidents} (鎮火 ${result.contained} / 延焼 ${result.spread})`,
     },
-    { label: 'Senior HP', value: `${result.seniorHpDelta}` },
+    { label: 'Senior HP', value: formatSprintResultSeniorHp(result) },
     { label: '介入', value: interventionSummary(result) },
   ];
 }
@@ -58,6 +59,10 @@ export interface SprintResultScreenProps {
   onAbandon?: () => void;
   continueLabel?: string;
   abandonLabel?: string;
+  /** リプレイ閲覧中でジャンプ先が無いときなど、次へを無効化する。 */
+  continueDisabled?: boolean;
+  /** 無効化している理由（title と説明文）。 */
+  continueDisabledReason?: string;
   /** リプレイ閲覧中か（RI-34‴ 要約用）。 */
   replayMode?: boolean;
   /** ラン診断（リプレイ要約用。RI-34‴）。 */
@@ -78,6 +83,8 @@ export function SprintResultScreen({
   onAbandon,
   continueLabel = 'カードドラフトへ →',
   abandonLabel = 'タイトルへ',
+  continueDisabled = false,
+  continueDisabledReason,
   replayMode = false,
   diagnosis = 'healthyAcceleration',
 }: SprintResultScreenProps) {
@@ -210,6 +217,8 @@ export function SprintResultScreen({
             type="button"
             className="btn btn-primary"
             onClick={onContinue}
+            disabled={continueDisabled}
+            title={continueDisabledReason}
             data-testid="result-continue"
           >
             {continueLabel}
@@ -220,6 +229,11 @@ export function SprintResultScreen({
             </button>
           )}
         </div>
+        {continueDisabled && continueDisabledReason ? (
+          <p className="result-continue-hint" data-testid="result-continue-hint">
+            {continueDisabledReason}
+          </p>
+        ) : null}
       </div>
     </div>
   );

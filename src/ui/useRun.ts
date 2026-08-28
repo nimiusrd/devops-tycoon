@@ -26,6 +26,7 @@ import type {
   InterventionOutcome,
   SprintState,
 } from '../sim/types';
+import type { ReplayFramePhase } from '../sim/run/persist';
 import type { DiagnosisType, DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { ScenarioId } from '../sim/types';
 import type { LaneAssignment } from '../sim/member/types';
@@ -114,6 +115,10 @@ export interface UseRun {
   /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
   activeReplayInfo: ActiveReplayInfo | null;
   openReplay: (id: string, keyframeIndex?: number) => boolean;
+  /** 閲覧中リプレイを指定フェーズの次キーフレームへ進める。 */
+  jumpReplayToPhase: (phase: ReplayFramePhase) => void;
+  /** ジャンプ先キーフレーム index。対象が無ければ null。 */
+  findReplayJumpIndex: (phase: ReplayFramePhase) => number | null;
   exitReplay: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
@@ -315,6 +320,23 @@ export function useRun(game: GameHandle): UseRun {
     },
     [game],
   );
+  const jumpReplayToPhase = useCallback(
+    (phase: ReplayFramePhase) => {
+      const opened = game.jumpReplayToPhase(phase);
+      if (!opened) return;
+      setState(opened);
+      setDiagnosticInfo(game.getDiagnosticInfo());
+      setLastRunReward(game.getLastRunReward());
+      setIsReplayMode(true);
+      setActiveReplayDiagnosis(game.getActiveReplayDiagnosis());
+      setActiveReplayInfo(game.getActiveReplayInfo());
+    },
+    [game],
+  );
+  const findReplayJumpIndex = useCallback(
+    (phase: ReplayFramePhase) => game.findReplayJumpIndex(phase),
+    [game],
+  );
   const exitReplay = useCallback(() => void game.exitReplay(), [game]);
   const purchaseMetaUnlock = useCallback(
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
@@ -345,6 +367,8 @@ export function useRun(game: GameHandle): UseRun {
     startDailyRun,
     resumeRun,
     openReplay,
+    jumpReplayToPhase,
+    findReplayJumpIndex,
     exitReplay,
     beginSetupSprint,
     resolveBeat,

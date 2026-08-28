@@ -30,7 +30,14 @@ export function isRunSavePhase(phase: RunPhase): phase is RunSavePhase {
 /** リプレイキーフレームとして残すフェーズ（RI-61。容量抑制）。 */
 export type ReplayFramePhase = RunSavePhase | 'won' | 'lost';
 
-const REPLAY_FRAME_PHASES = new Set<RunPhase>(['setup', 'result', 'quarterReview', 'won', 'lost']);
+const REPLAY_FRAME_PHASES = new Set<RunPhase>([
+  'setup',
+  'result',
+  'draft',
+  'quarterReview',
+  'won',
+  'lost',
+]);
 
 export function isReplayFramePhase(phase: RunPhase): phase is ReplayFramePhase {
   return REPLAY_FRAME_PHASES.has(phase);

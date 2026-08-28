@@ -10,7 +10,7 @@ import type { DepartmentState, OrgScaleState, Team } from '../sim/orgscale/types
 import { HEALTH_COLOR, HEALTH_LABEL } from './orgView';
 import { displayName, fireLabel, islandTitle } from './orgIslandView';
 import { badgeTone, healthTag } from './teamHealthTheme';
-import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
+import { DESIGN_SPACES, orgIslandBadgeLayoutHeight, VISUAL_TOKENS } from './visualTokens';
 
 /** 設計座標空間（旧モック org-screen の viewBox 由来）。 */
 export const ORG_VIEW = DESIGN_SPACES.organization;
@@ -19,10 +19,22 @@ export const ORG_VIEW = DESIGN_SPACES.organization;
 export const MIN_ISLAND_SPACING_X = 120;
 export const MIN_ISLAND_SPACING_Y = 90;
 
+/** 共通基盤 CI がこの値未満ならハブは warn。 */
+export const ORG_HUB_CI_OK_MIN = 50;
+
+export function orgHubTone(ci: number): 'ok' | 'warn' {
+  return ci >= ORG_HUB_CI_OK_MIN ? 'ok' : 'warn';
+}
+
 /** 島アクター＋バッジが盤面内に収まるよう中心座標に取る余白（設計px）。 */
 export const ISLAND_BADGE_ABOVE = VISUAL_TOKENS.dimensions.organization.island.badgeAbove;
+export const ISLAND_BADGE_HEIGHT = VISUAL_TOKENS.dimensions.organization.island.badgeHeight;
 export const ISLAND_ACTOR_HALF_H = VISUAL_TOKENS.dimensions.organization.island.actorHalfHeight;
 export const ISLAND_MARGIN = VISUAL_TOKENS.dimensions.organization.island.margin;
+export const ISLAND_CARD_WIDTH = VISUAL_TOKENS.dimensions.organization.card.width;
+export const ZONE_LABEL_Y = VISUAL_TOKENS.dimensions.organization.zoneLabel.y;
+export const ZONE_LABEL_HEIGHT = VISUAL_TOKENS.dimensions.organization.zoneLabel.height;
+export const ZONE_LABEL_GAP = VISUAL_TOKENS.dimensions.organization.zoneLabel.gap;
 
 /** 部門ゾーンの静的レイアウト（縦ストライプ領域。旧モック由来）。 */
 interface ZoneLayout {
@@ -51,7 +63,7 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
     teamYMin: 260,
     teamYMax: 480,
     labelX: 312,
-    labelY: 202,
+    labelY: ZONE_LABEL_Y,
     glowCenter: { x: 430, y: 360, rx: 300, ry: 180, kind: 'ok' },
   },
   {
@@ -62,7 +74,7 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
     teamYMin: 400,
     teamYMax: 480,
     labelX: 700,
-    labelY: 182,
+    labelY: ZONE_LABEL_Y - 8,
     glowCenter: null,
   },
   {
@@ -73,13 +85,13 @@ const ZONE_LAYOUTS: readonly ZoneLayout[] = [
     teamYMin: 250,
     teamYMax: 520,
     labelX: 1028,
-    labelY: 202,
+    labelY: ZONE_LABEL_Y,
     glowCenter: { x: 1000, y: 360, rx: 320, ry: 190, kind: 'hell' },
   },
 ] as const;
 
-/** 共通基盤ハブ（設計px）。 */
-const HUB = { x: 700, y: 288, labelY: 226 } as const;
+/** 共通基盤ハブ（設計px）。ラベルは部門ラベル帯と島カードの間へ置く。 */
+const HUB = { x: 700, y: 288, labelY: 160 } as const;
 
 /** 旧モック由来の静的フローパス。zone 0/1 は島→ハブ、zone 2 の依存はハブ→島。 */
 const STATIC_FLOWS: readonly { d: string; zoneIndex: number }[] = [
@@ -166,6 +178,8 @@ export interface OrgIslandPlan {
     title: string;
     fire: string | null;
   };
+  deptId: string;
+  deptName: string;
 }
 
 /** 全社マップ盤面のシーン計画。 */
@@ -175,6 +189,8 @@ export interface OrgBoardScene {
   hub: OrgHubPlan;
   flows: OrgFlowPlan[];
   islands: OrgIslandPlan[];
+  /** 等角格子がカード高を保てないとき true。DOM はコンパクトドックへ縮退する。 */
+  capacityCompact: boolean;
 }
 
 /** 島に並べるアバター数（1〜4）。人数スカラーを視覚へ載せる（RI-27）。 */
@@ -231,16 +247,174 @@ function zoneGlow(dept: DepartmentState, layout: ZoneLayout): ZoneLayout['glowCe
   return { ...layout.glowCenter, kind };
 }
 
-/** 島の中心座標を盤面＋アクター余白内に収める。 */
+/** 設計空間の軸平行矩形（ラベル／バッジの重なり判定用）。 */
+export interface OrgBoardRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** 部門ラベル帯の下端（最も低い labelY のラベル底）。島バッジはこの下に置く。 */
+export function zoneLabelBandBottom(): number {
+  const lowestCenter = Math.max(...ZONE_LAYOUTS.map((z) => z.labelY));
+  return lowestCenter + ZONE_LABEL_HEIGHT / 2;
+}
+
+/** 島中心の許容範囲。部門ラベル＋チームカード（バッジ）が重ならない余白を含む。 */
+export function islandCenterBounds(): {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+} {
+  const minY =
+    zoneLabelBandBottom() + ZONE_LABEL_GAP + ISLAND_BADGE_HEIGHT / 2 + ISLAND_BADGE_ABOVE;
+  return {
+    minX: ISLAND_CARD_WIDTH / 2,
+    maxX: ORG_VIEW.w - ISLAND_CARD_WIDTH / 2,
+    minY,
+    maxY: ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_MARGIN,
+  };
+}
+
+export function orgBoardRectsOverlap(a: OrgBoardRect, b: OrgBoardRect): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+/** 部門ラベルの外接矩形（幅は日本語2行ラベルを覆う保守的な見積り）。 */
+export function zoneLabelRect(label: Pick<OrgZoneLabelPlan, 'x' | 'y'>): OrgBoardRect {
+  const width = 240;
+  return {
+    x: label.x - width / 2,
+    y: label.y - ZONE_LABEL_HEIGHT / 2,
+    width,
+    height: ZONE_LABEL_HEIGHT,
+  };
+}
+
+/**
+ * 折り返しと line-height を含むチームカード高（設計px）。
+ * `orgIslandBadgeLayoutHeight` と同じ式で、コンパクト閾値と配置を共有する。
+ */
+export function islandBadgeLayoutHeight(): number {
+  return orgIslandBadgeLayoutHeight();
+}
+
+/** 島のチームカード（バッジ）外接矩形。DOM は同じカード幅に制約する。 */
+export function islandBadgeRect(island: Pick<OrgIslandPlan, 'badge'>): OrgBoardRect {
+  const width = VISUAL_TOKENS.dimensions.organization.card.width;
+  const height = islandBadgeLayoutHeight();
+  return {
+    x: island.badge.x - width / 2,
+    y: island.badge.y - height / 2,
+    width,
+    height,
+  };
+}
+
+/** 島の中心座標を盤面＋ラベル帯＋アクター余白内に収める。 */
 export function clampIslandCenter(x: number, y: number): { x: number; y: number } {
-  const minY = ISLAND_BADGE_ABOVE + ISLAND_MARGIN;
-  const maxY = ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_MARGIN;
-  const minX = 70;
-  const maxX = ORG_VIEW.w - 70;
+  const { minX, maxX, minY, maxY } = islandCenterBounds();
   return {
     x: Math.min(maxX, Math.max(minX, x)),
     y: Math.min(maxY, Math.max(minY, y)),
   };
+}
+
+/** 格子のカード外接が部門ゾーンから隣部門へ食い込むか。 */
+function zoneGridOverflows(
+  zone: ZoneLayout,
+  centerX: number,
+  spanX: number,
+  cols: number,
+): boolean {
+  const columnSpan = Math.max(1, cols);
+  const halfCell = spanX / (2 * columnSpan);
+  const leftCenter = centerX - spanX / 2 + halfCell;
+  const rightCenter = centerX + spanX / 2 - halfCell;
+  const cardLeft = leftCenter - ISLAND_CARD_WIDTH / 2;
+  const cardRight = rightCenter + ISLAND_CARD_WIDTH / 2;
+  // 基盤ゾーンは設計上カード左端が境界に接する。隣部門へ食い込む増設列だけを検出する。
+  return cardRight > zone.x + zone.width + 0.5 || cardLeft < zone.x - ISLAND_MARGIN;
+}
+
+/**
+ * 縦の最小間隔を優先して列を増やすが、部門ゾーン幅を超える列は作らない。
+ * カード幅を下限にした列数まで増設し、収まりきらないときだけ行を増やす。
+ */
+export function islandGridForCount(
+  teamCount: number,
+  maxSpanX: number,
+  maxSpanY: number,
+): { cols: number; rows: number } {
+  const count = Math.max(1, teamCount);
+  const maxColsPack = Math.max(1, Math.floor(maxSpanX / ISLAND_CARD_WIDTH));
+  const maxRowsPref = Math.max(1, Math.floor(maxSpanY / MIN_ISLAND_SPACING_Y));
+  const maxRowsPack = Math.max(1, Math.floor(maxSpanY / islandBadgeLayoutHeight()));
+
+  let cols = Math.min(count, Math.max(1, Math.ceil(Math.sqrt(count))));
+  let rows = Math.max(1, Math.ceil(count / cols));
+
+  while (rows > maxRowsPref && cols < maxColsPack && cols < count) {
+    cols += 1;
+    rows = Math.ceil(count / cols);
+  }
+  while (rows > maxRowsPack && cols < maxColsPack && cols < count) {
+    cols += 1;
+    rows = Math.ceil(count / cols);
+  }
+  if (cols > maxColsPack) {
+    cols = maxColsPack;
+    rows = Math.max(1, Math.ceil(count / cols));
+  }
+  return { cols, rows };
+}
+
+function resolveIslandGrid(
+  deptIndex: number,
+  teamCount: number,
+): { cols: number; rows: number; spanX: number; spanY: number; centerX: number; centerY: number } {
+  const zone = ZONE_LAYOUTS[deptIndex] ?? ZONE_LAYOUTS[0];
+  const count = Math.max(1, teamCount);
+  const baseWidth = zone.teamXMax - zone.teamXMin;
+  const baseHeight = zone.teamYMax - zone.teamYMin;
+
+  const { minY, maxY } = islandCenterBounds();
+  const maxSpanY = Math.max(0, maxY - minY);
+  let { cols, rows } = islandGridForCount(count, zone.width, maxSpanY);
+
+  const neededWidth = cols * MIN_ISLAND_SPACING_X;
+  let spanX = Math.max(baseWidth, neededWidth);
+  let centerX = (zone.teamXMin + zone.teamXMax) / 2;
+  const centerY = (zone.teamYMin + zone.teamYMax) / 2;
+
+  if (zoneGridOverflows(zone, centerX, spanX, cols)) {
+    centerX = zone.x + zone.width / 2;
+    spanX = Math.min(spanX, zone.width);
+    while (cols > 1 && spanX / cols < ISLAND_CARD_WIDTH) {
+      cols -= 1;
+    }
+    rows = Math.max(1, Math.ceil(count / cols));
+  }
+
+  const neededHeight = rows * MIN_ISLAND_SPACING_Y;
+  const spanY = Math.min(Math.max(baseHeight, neededHeight), maxSpanY);
+  return { cols, rows, spanX, spanY, centerX, centerY };
+}
+
+/** 格子の行間隔が折り返し後のカード高を下回る（等角配置ではカードが重なる）。 */
+export function islandGridFitsCardHeight(deptIndex: number, teamCount: number): boolean {
+  const { rows, spanY } = resolveIslandGrid(deptIndex, teamCount);
+  if (rows <= 1) return true;
+  return spanY / rows >= islandBadgeLayoutHeight();
+}
+
+/** いずれかの部門が等角格子に収まらないとき、カードはドックへ縮退する。 */
+export function orgBoardNeedsCapacityCompact(org: OrgScaleState): boolean {
+  return org.departments.some(
+    (dept, deptIndex) => !islandGridFitsCardHeight(deptIndex, dept.teams.length),
+  );
 }
 
 /**
@@ -252,21 +426,7 @@ export function teamDesignPosition(
   teamIndex: number,
   teamCount: number,
 ): { x: number; y: number } {
-  const zone = ZONE_LAYOUTS[deptIndex] ?? ZONE_LAYOUTS[0];
-  const baseWidth = zone.teamXMax - zone.teamXMin;
-  const baseHeight = zone.teamYMax - zone.teamYMin;
-
-  const cols = Math.min(teamCount, Math.max(1, Math.ceil(Math.sqrt(teamCount))));
-  const rows = Math.max(1, Math.ceil(teamCount / cols));
-
-  const neededWidth = cols * MIN_ISLAND_SPACING_X;
-  const neededHeight = rows * MIN_ISLAND_SPACING_Y;
-  const maxSpanY = ORG_VIEW.h - ISLAND_ACTOR_HALF_H - ISLAND_BADGE_ABOVE - ISLAND_MARGIN * 2;
-  const spanX = Math.max(baseWidth, neededWidth);
-  const spanY = Math.min(Math.max(baseHeight, neededHeight), maxSpanY);
-  const centerX = (zone.teamXMin + zone.teamXMax) / 2;
-  const centerY = (zone.teamYMin + zone.teamYMax) / 2;
-
+  const { cols, rows, spanX, spanY, centerX, centerY } = resolveIslandGrid(deptIndex, teamCount);
   const col = teamIndex % cols;
   const row = Math.floor(teamIndex / cols);
   const x = centerX - spanX / 2 + ((col + 0.5) / cols) * spanX;
@@ -319,7 +479,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
     ci: org.infra.ci,
     docs: org.infra.docs,
     aiGuideline: org.infra.aiGuideline,
-    tone: org.infra.ci >= 50 ? 'ok' : 'warn',
+    tone: orgHubTone(org.infra.ci),
   };
 
   const deptHot = org.departments.map(
@@ -355,8 +515,8 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
         mood: islandMood(team),
         badge: {
           x: pos.x,
-          y: pos.y - 46,
-          title: team.name,
+          y: pos.y - ISLAND_BADGE_ABOVE,
+          title: displayName(team),
           shipping: `出荷 ${team.shipping}`,
           ai: islandAiBadgeLabel(team.aiDependency, team.aiAssignedCount),
           headcount: `${team.engineers}人`,
@@ -365,16 +525,43 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
         },
         labels: {
           name: displayName(team),
-          title: islandTitle(team.name, team.health),
+          title: islandTitle(team.name, team.health, dept.def.name, team.isPlayer),
           fire: fireLabel(team.incidents),
         },
+        deptId: dept.def.id,
+        deptName: dept.def.name,
       });
     });
   });
 
   islands.sort((a, b) => a.depth - b.depth);
 
-  return { zones, zoneLabels, hub, flows, islands };
+  return {
+    zones,
+    zoneLabels,
+    hub,
+    flows,
+    islands,
+    capacityCompact: orgBoardNeedsCapacityCompact(org),
+  };
+}
+
+/** コンパクトドックを部門見出し付きで並べる。 */
+export function groupOrgIslandsByDept(
+  islands: readonly OrgIslandPlan[],
+): { deptId: string; deptName: string; islands: OrgIslandPlan[] }[] {
+  const groups: { deptId: string; deptName: string; islands: OrgIslandPlan[] }[] = [];
+  const indexByDept = new Map<string, number>();
+  for (const island of islands) {
+    const existing = indexByDept.get(island.deptId);
+    if (existing !== undefined) {
+      groups[existing]!.islands.push(island);
+      continue;
+    }
+    indexByDept.set(island.deptId, groups.length);
+    groups.push({ deptId: island.deptId, deptName: island.deptName, islands: [island] });
+  }
+  return groups;
 }
 
 /** 設計座標が ORG_VIEW 範囲内か（テスト用）。 */

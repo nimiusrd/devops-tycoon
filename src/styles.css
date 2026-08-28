@@ -6169,7 +6169,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: calc(var(--visual-org-card-line-gap) * 2);
   position: absolute;
   inset: 4px;
-  z-index: 30;
+  /* 島グループは 20+depth（最大 119）、ハブ 150、ヒント 170 より前へ。 */
+  z-index: 180;
   overflow: auto;
   pointer-events: auto;
 }

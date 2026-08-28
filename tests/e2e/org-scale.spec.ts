@@ -540,6 +540,14 @@ test('全社マップの部門ラベルがチームカードと重ならない�
           badgeBox.width,
           `${viewport.name} のチームカードが盤面幅を超える`,
         ).toBeLessThanOrEqual(boardBox.width + 1);
+        const hit = await page.evaluate(
+          ({ x, y }) => {
+            const el = document.elementFromPoint(x, y);
+            return Boolean(el?.closest('.org-island-badge, .org-island-badge-dock-hit'));
+          },
+          { x: badgeBox.x + badgeBox.width / 2, y: badgeBox.y + badgeBox.height / 2 },
+        );
+        expect(hit, `${viewport.name} でドックカードが島やハブの下に隠れている`).toBe(true);
       } else {
         expect(
           badgeBox.width,

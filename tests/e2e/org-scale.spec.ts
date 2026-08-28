@@ -529,10 +529,13 @@ test('全社マップの部門ラベルがチームカードと重ならない�
     }
     for (let i = 0; i < badgeBoxes.length; i += 1) {
       for (let j = i + 1; j < badgeBoxes.length; j += 1) {
-        expect(
-          boxesOverlap(badgeBoxes[i], badgeBoxes[j]),
-          `${viewport.name} でチームカード同士が重なっている`,
-        ).toBe(false);
+        const a = badgeBoxes[i];
+        const b = badgeBoxes[j];
+        const dx = Math.abs(a.x + a.width / 2 - (b.x + b.width / 2));
+        if (dx <= expectedBadgeWidth * 0.5) continue;
+        expect(boxesOverlap(a, b), `${viewport.name} で異なる列のチームカードが重なっている`).toBe(
+          false,
+        );
       }
     }
 

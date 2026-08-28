@@ -952,6 +952,54 @@ describe('リプレイ正規化（RI-72-B3）', () => {
     expect(normalized[1]?.label).toBeUndefined();
   });
 
+  it('normalizeReplayKeyframes は draft フェーズで候補配列が無いフレームを捨てる', () => {
+    const setup = makeNormalizeFrame('draft-candidates');
+    const validDraft = structuredClone(setup);
+    validDraft.phase = 'draft';
+    validDraft.draft = ['copilot', 'docs'];
+    const missing = structuredClone(setup);
+    missing.phase = 'draft';
+    missing.draft = null;
+    const omitted = structuredClone(setup);
+    omitted.phase = 'draft';
+    delete (omitted as { draft?: unknown }).draft;
+    const notStrings = structuredClone(setup);
+    notStrings.phase = 'draft';
+    notStrings.draft = [1, 'docs'] as unknown as string[];
+
+    const normalized = normalizeReplayKeyframes([
+      { phase: 'setup', frame: setup },
+      { phase: 'draft', frame: missing },
+      { phase: 'draft', frame: omitted },
+      { phase: 'draft', frame: notStrings },
+      { phase: 'draft', frame: validDraft },
+    ]);
+
+    expect(normalized.map((keyframe) => keyframe.phase)).toEqual(['setup', 'draft']);
+    expect(normalized[1]?.frame.draft).toEqual(['copilot', 'docs']);
+  });
+
+  it('draft 候補が無いキーフレームを含む ReplayBlob は拒否する', () => {
+    const setup = makeNormalizeFrame('blob-draft-missing');
+    const resultFrame = structuredClone(setup);
+    resultFrame.phase = 'result';
+    const draftFrame = structuredClone(setup);
+    draftFrame.phase = 'draft';
+    draftFrame.draft = null;
+
+    expect(
+      normalizeReplay(
+        makeNormalizeBlob({
+          keyframes: [
+            { phase: 'setup', frame: setup },
+            { phase: 'result', frame: resultFrame },
+            { phase: 'draft', frame: draftFrame },
+          ],
+        }),
+      ),
+    ).toBeNull();
+  });
+
   it('normalizeReplayKeyframes は frame を deep clone して入力と独立させる', () => {
     const frame = makeNormalizeFrame('keyframes-clone');
     const normalized = normalizeReplayKeyframes([{ phase: 'setup', label: '編成', frame }]);

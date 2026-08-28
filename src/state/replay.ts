@@ -168,6 +168,12 @@ function isReplayFrame(value: unknown): value is RunReplayFrame {
   if (!Array.isArray(value.extras.allowedCards) || !Array.isArray(value.extras.allowedRelics)) {
     return false;
   }
+  // draft 画面は候補配列が無いと空になる。phase だけ合っていても受理しない。
+  if (value.phase === 'draft') {
+    if (!Array.isArray(value.draft) || !value.draft.every((id) => typeof id === 'string')) {
+      return false;
+    }
+  }
   return true;
 }
 

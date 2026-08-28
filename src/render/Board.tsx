@@ -32,7 +32,11 @@ import {
   planBoardDrag,
   type DraggableActionId,
 } from './boardDragPlan';
-import { clientPointHitsDraggableBoardDot, registerBoardDragHitTest } from './boardDragHit';
+import {
+  clientPointHitsDraggableBoardDot,
+  registerBoardDragHitTest,
+  registerPixiBoardDragHitTest,
+} from './boardDragHit';
 import { hitTestBoardDot } from './boardPixiView';
 import { FireEffects } from '../ui/FireEffects';
 import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
@@ -312,7 +316,7 @@ export function Board({
   const dropLanes = new Set(dragPlan?.dropLanes ?? []);
 
   useEffect(() => {
-    registerBoardDragHitTest((clientX, clientY) =>
+    registerPixiBoardDragHitTest(usePixi, (clientX, clientY) =>
       clientPointHitsDraggableBoardDot(
         clientX,
         clientY,
@@ -322,7 +326,7 @@ export function Board({
       ),
     );
     return () => registerBoardDragHitTest(null);
-  }, [dragIds, scene.dots]);
+  }, [dragIds, scene.dots, usePixi]);
 
   const [dragTaskId, setDragTaskId] = useState<number | null>(null);
   const [hoverLane, setHoverLane] = useState<Lane | null>(null);

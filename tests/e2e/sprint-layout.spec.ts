@@ -1178,24 +1178,25 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   });
   if (!wheelPoint) throw new Error(`${label}: フォーカス後のリスト座標が無い`);
 
-  const dispatchWheel = async (deltaY: number, ctrlKey: boolean, deltaMode = 0) => {
-    await page.evaluate(
-      ({ x, y, deltaY: dy, ctrlKey: ctrl, deltaMode: mode }) => {
+  const dispatchWheel = async (deltaY: number, ctrlKey: boolean, deltaMode = 0, deltaX = 0) => {
+    const prevented = await page.evaluate(
+      ({ x, y, deltaY: dy, deltaX: dx, ctrlKey: ctrl, deltaMode: mode }) => {
         const target = document.elementFromPoint(x, y) ?? document;
-        target.dispatchEvent(
-          new WheelEvent('wheel', {
-            view: window,
-            clientX: x,
-            clientY: y,
-            deltaY: dy,
-            deltaMode: mode,
-            ctrlKey: ctrl,
-            bubbles: true,
-            cancelable: true,
-          }),
-        );
+        const event = new WheelEvent('wheel', {
+          view: window,
+          clientX: x,
+          clientY: y,
+          deltaX: dx,
+          deltaY: dy,
+          deltaMode: mode,
+          ctrlKey: ctrl,
+          bubbles: true,
+          cancelable: true,
+        });
+        target.dispatchEvent(event);
+        return event.defaultPrevented;
       },
-      { x: wheelPoint.x, y: wheelPoint.y, deltaY, ctrlKey, deltaMode },
+      { x: wheelPoint.x, y: wheelPoint.y, deltaY, deltaX, ctrlKey, deltaMode },
     );
     await page.evaluate(
       () =>
@@ -1203,6 +1204,7 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
           requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
         }),
     );
+    return prevented;
   };
 
   const readTickerScroll = () =>
@@ -1232,6 +1234,15 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   await dispatchWheel(3, false, 1);
   const afterLine = await readTickerScroll();
   expect(afterLine, `${label}: DOM_DELTA_LINE のホイールが 3px しか動かない`).toBeGreaterThan(3);
+
+  await list.evaluate((element) => {
+    element.scrollTop = 0;
+    if (element.parentElement) element.parentElement.scrollTop = 0;
+  });
+  const horizontalPrevented = await dispatchWheel(0, false, 0, 80);
+  const afterHorizontal = await readTickerScroll();
+  expect(afterHorizontal, `${label}: 横ホイールでリストが動く`).toBe(0);
+  expect(horizontalPrevented, `${label}: 横ホイールをティッカーが奪う`).toBe(false);
 }
 
 /** リスト矩形内で、盤面粒に乗っていないタッチ開始点。 */

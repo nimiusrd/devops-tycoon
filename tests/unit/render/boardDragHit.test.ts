@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   clientPointHitsDraggableBoardDot,
   clientPointHitsRegisteredBoardDrag,
+  hasRegisteredBoardDragHitTest,
   registerBoardDragHitTest,
+  registerPixiBoardDragHitTest,
 } from '../../../src/render/boardDragHit';
 import { BOARD_VIEW } from '../../../src/render/boardScene';
 import type { BoardDotPlan } from '../../../src/render/boardScene';
@@ -48,5 +50,16 @@ describe('registerBoardDragHitTest', () => {
     registerBoardDragHitTest((x, y) => x === 10 && y === 20);
     expect(clientPointHitsRegisteredBoardDrag(10, 20)).toBe(true);
     expect(clientPointHitsRegisteredBoardDrag(0, 0)).toBe(false);
+  });
+
+  it('DOM レンダラでは Pixi 用の拡張ヒットを登録しない', () => {
+    registerPixiBoardDragHitTest(false, () => true);
+    expect(clientPointHitsRegisteredBoardDrag(10, 20)).toBe(false);
+    registerPixiBoardDragHitTest(true, (x, y) => x === 10 && y === 20);
+    expect(hasRegisteredBoardDragHitTest()).toBe(true);
+    expect(clientPointHitsRegisteredBoardDrag(10, 20)).toBe(true);
+    registerPixiBoardDragHitTest(true, null);
+    expect(hasRegisteredBoardDragHitTest()).toBe(false);
+    expect(clientPointHitsRegisteredBoardDrag(10, 20)).toBe(false);
   });
 });

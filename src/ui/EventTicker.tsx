@@ -10,7 +10,10 @@
  */
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
-import { clientPointHitsRegisteredBoardDrag } from '../render/boardDragHit';
+import {
+  clientPointHitsRegisteredBoardDrag,
+  hasRegisteredBoardDragHitTest,
+} from '../render/boardDragHit';
 import { formatRecentSprintEvents } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 import {
@@ -25,6 +28,7 @@ import {
   shouldClaimTickerTouchPan,
   shouldPreventTickerListKey,
   shouldPreventTickerTouchMove,
+  shouldPreventTickerWheelDefault,
   tickerHasOverflow,
   tickerListKeyDelta,
   wheelDeltaYInCssPixels,
@@ -86,7 +90,7 @@ export function EventTicker({ events }: EventTickerProps) {
       const overflowed =
         list.scrollHeight > list.clientHeight + 1 ||
         (root !== list && root.scrollHeight > root.clientHeight + 1);
-      if (!overflowed) return;
+      if (!shouldPreventTickerWheelDefault(overflowed, deltaY)) return;
       if (event.cancelable) event.preventDefault();
       if (scrollBy(deltaY)) return;
       window.requestAnimationFrame(() => {
@@ -110,7 +114,9 @@ export function EventTicker({ events }: EventTickerProps) {
         hitsBoardDot: hitBlocksTickerTouchScroll(hit, {
           clientX,
           clientY,
-          hitsBoardDot: clientPointHitsRegisteredBoardDrag,
+          hitsBoardDot: hasRegisteredBoardDragHitTest()
+            ? clientPointHitsRegisteredBoardDrag
+            : undefined,
         }),
       });
     };

@@ -22,6 +22,14 @@ export function shouldCaptureTickerWheel(event: { ctrlKey: boolean; metaKey: boo
   return !event.ctrlKey && !event.metaKey;
 }
 
+/**
+ * 縦差分を実際に処理するときだけ既定のホイールを抑止する。
+ * 横方向のみ（戻る／進むジェスチャー）はブラウザへ渡す。
+ */
+export function shouldPreventTickerWheelDefault(overflowed: boolean, deltaY: number): boolean {
+  return overflowed && deltaY !== 0;
+}
+
 /** WheelEvent.deltaY を CSS ピクセルへ換算する。 */
 export function wheelDeltaYInCssPixels(
   event: { deltaY: number; deltaMode: number },
@@ -145,7 +153,7 @@ export function shouldClaimTickerTouchPan(input: {
 export interface TickerTouchHitOptions {
   clientX: number;
   clientY: number;
-  /** Pixi canvas 上の粒。DOM の `[data-task-id]` が無いときの Board 座標ヒット。 */
+  /** Pixi canvas 上の粒。登録済みのときだけ使い、DOM 粒は span ヒットに任せる。 */
   hitsBoardDot?: (clientX: number, clientY: number) => boolean;
 }
 

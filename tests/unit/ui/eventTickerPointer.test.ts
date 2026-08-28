@@ -11,6 +11,7 @@ import {
   shouldClaimTickerTouchPan,
   shouldPreventTickerListKey,
   shouldPreventTickerTouchMove,
+  shouldPreventTickerWheelDefault,
   tickerHasOverflow,
   tickerListKeyDelta,
   TICKER_LIST_ARROW_DELTA_PX,
@@ -32,6 +33,14 @@ describe('eventTickerPointer', () => {
     expect(shouldCaptureTickerWheel({ ctrlKey: false, metaKey: false })).toBe(true);
     expect(shouldCaptureTickerWheel({ ctrlKey: true, metaKey: false })).toBe(false);
     expect(shouldCaptureTickerWheel({ ctrlKey: false, metaKey: true })).toBe(false);
+  });
+
+  it('縦差分がある溢れたリストだけホイールの既定動作を抑止する', () => {
+    expect(shouldPreventTickerWheelDefault(true, 40)).toBe(true);
+    expect(shouldPreventTickerWheelDefault(true, -12)).toBe(true);
+    expect(shouldPreventTickerWheelDefault(true, 0)).toBe(false);
+    expect(shouldPreventTickerWheelDefault(false, 40)).toBe(false);
+    expect(shouldPreventTickerWheelDefault(false, 0)).toBe(false);
   });
 
   it('deltaMode を CSS ピクセルへ換算する', () => {

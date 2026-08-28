@@ -1,9 +1,10 @@
 /**
- * 盤面ドラッグのクライアント座標ヒット（DOM 粒と Pixi canvas の共通判定）。
+ * 盤面ドラッグのクライアント座標ヒット（Pixi canvas 専用）。
  *
  * Pixi 既定レンダラでは粒が canvas 内にあり `[data-task-id]` が DOM に無い。
- * Board が同じ `hitTestBoardDot` を登録し、ティッカーのタッチスクロールが
- * 武装中の粒ドラッグと同時に始まらないようにする。
+ * Board は Pixi 盤面ルートが座標ドラッグを受けるときだけ `hitTestBoardDot`
+ * （DOT_HIT_MARGIN）を登録し、ティッカーのタッチスクロールが武装中の粒ドラッグ
+ * と同時に始まらないようにする。DOM 粒は span 上でしかドラッグが始まらない。
  */
 import { clientToBoardPoint, type BoardClientRect } from './boardDragPlan';
 import { hitTestBoardDot } from './boardPixiView';
@@ -17,8 +18,24 @@ export function registerBoardDragHitTest(next: BoardDragHitTest | null): void {
   registeredBoardDragHitTest = next;
 }
 
+/**
+ * Pixi 盤面が座標ドラッグを受けるときだけ拡張ヒットを登録する。
+ * DOM レンダラでは常に解除し、粒外側の DOT_HIT_MARGIN でパンを塞がない。
+ */
+export function registerPixiBoardDragHitTest(
+  usePixi: boolean,
+  next: BoardDragHitTest | null,
+): void {
+  registerBoardDragHitTest(usePixi ? next : null);
+}
+
 export function clientPointHitsRegisteredBoardDrag(clientX: number, clientY: number): boolean {
   return registeredBoardDragHitTest?.(clientX, clientY) === true;
+}
+
+/** Pixi 盤面が座標ヒットを登録しているときだけ true。DOM では呼ばない。 */
+export function hasRegisteredBoardDragHitTest(): boolean {
+  return registeredBoardDragHitTest != null;
 }
 
 export function clientPointHitsDraggableBoardDot(

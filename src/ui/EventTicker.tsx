@@ -91,27 +91,52 @@ export function EventTicker({ events }: EventTickerProps) {
       });
     };
 
-    const onPointerDown = (event: PointerEvent) => {
-      if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
-      const hit = document.elementFromPoint(event.clientX, event.clientY);
-      if (isTickerPointerSuppressed(list, hit)) return;
-      const hitsBoardDot = hitBlocksTickerTouchScroll(hit, {
-        clientX: event.clientX,
-        clientY: event.clientY,
-        hitsBoardDot: clientPointHitsRegisteredBoardDrag,
+    const shouldClaimAt = (
+      clientX: number,
+      clientY: number,
+      pointerType: string,
+      defaultPrevented: boolean,
+    ): boolean => {
+      if (!pointInRect(clientX, clientY, list.getBoundingClientRect())) return false;
+      const hit = document.elementFromPoint(clientX, clientY);
+      if (isTickerPointerSuppressed(list, hit)) return false;
+      return shouldClaimTickerTouchPan({
+        pointerType,
+        defaultPrevented,
+        overflow: tickerHasOverflow(list),
+        hitsBoardDot: hitBlocksTickerTouchScroll(hit, {
+          clientX,
+          clientY,
+          hitsBoardDot: clientPointHitsRegisteredBoardDrag,
+        }),
       });
-      if (
-        !shouldClaimTickerTouchPan({
-          pointerType: event.pointerType,
-          defaultPrevented: event.defaultPrevented,
-          overflow: tickerHasOverflow(list),
-          hitsBoardDot,
-        })
-      ) {
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!shouldClaimAt(event.clientX, event.clientY, event.pointerType, event.defaultPrevented)) {
         return;
       }
       if (event.cancelable) event.preventDefault();
       touchPan = { pointerId: event.pointerId, lastY: event.clientY };
+    };
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      if (!shouldClaimAt(touch.clientX, touch.clientY, 'touch', event.defaultPrevented)) return;
+      if (event.cancelable) event.preventDefault();
+    };
+
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      if (
+        !touchPan &&
+        !shouldClaimAt(touch.clientX, touch.clientY, 'touch', event.defaultPrevented)
+      ) {
+        return;
+      }
+      if (event.cancelable) event.preventDefault();
     };
 
     const onPointerMove = (event: PointerEvent) => {
@@ -134,12 +159,16 @@ export function EventTicker({ events }: EventTickerProps) {
     window.addEventListener('pointermove', onPointerMove, { passive: false });
     window.addEventListener('pointerup', onPointerUp, { passive: true });
     window.addEventListener('pointercancel', onPointerUp, { passive: true });
+    window.addEventListener('touchstart', onTouchStart, { capture: true, passive: false });
+    window.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
     return () => {
       window.removeEventListener('wheel', onWheel, true);
       window.removeEventListener('pointerdown', onPointerDown, true);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+      window.removeEventListener('touchstart', onTouchStart, true);
+      window.removeEventListener('touchmove', onTouchMove, true);
     };
   }, [rows.length]);
 

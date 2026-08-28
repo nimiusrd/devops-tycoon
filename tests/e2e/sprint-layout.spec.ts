@@ -1540,10 +1540,12 @@ test.describe('タッチ端末のティッカーパン', () => {
       type: 'touchStart',
       touchPoints: [{ x: start.x, y: start.y, id: 1 }],
     });
-    await session.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [{ x: start.x, y: start.y - 90, id: 1 }],
-    });
+    for (const step of [15, 30, 45, 60, 75, 90]) {
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: start.x, y: start.y - step, id: 1 }],
+      });
+    }
     await session.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],

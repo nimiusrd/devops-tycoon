@@ -10,6 +10,7 @@ import { getDifficulty } from '../data/difficulties';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
+import { runBarSprintView } from '../render/runBarView';
 import {
   budgetHudCopy,
   diffRunMetricSnapshots,
@@ -149,6 +150,7 @@ export function RunBar({
   const trustFeedbackTone = trustFeedbacks.some((feedback) => feedback.tone === 'negative')
     ? 'negative'
     : 'positive';
+  const sprintView = runBarSprintView(state);
   const budgetCopy = budgetHudCopy(state.budget);
   const trustCopy = trustHudCopy(state.stakeholderTrust);
   const carryoverCopy = goalCarryoverHudCopy({
@@ -210,11 +212,9 @@ export function RunBar({
       <span className="pill" data-testid="sprint-no" title="当四半期のトラック進行（最終がボス）">
         スプリント{' '}
         <b>
-          {Math.min(state.sprintIndexInQuarter, state.sprintsPerQuarter)}/{state.sprintsPerQuarter}
+          {sprintView.current}/{sprintView.total}
         </b>
-        {state.sprintIndexInQuarter + 1 === state.sprintsPerQuarter && (
-          <span className="boss-next"> ★次が山場</span>
-        )}
+        {sprintView.bossNext && <span className="boss-next"> ★次が山場</span>}
       </span>
       <span
         className={`pill run-metric-pill tone-${budgetCopy.tone}${budgetFeedback ? ` run-feedback flash-${budgetFeedback.tone}` : ''}`}

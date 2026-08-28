@@ -358,9 +358,7 @@ export function SprintScreen({
                 type="button"
                 className={`speed-btn${playbackSpeed === speed ? ' active' : ''}`}
                 aria-pressed={playbackSpeed === speed}
-                aria-label={
-                  speed === 0 ? (isPlaybackPaused(playbackSpeed) ? '再開' : '一時停止') : undefined
-                }
+                aria-label={speed === 0 ? '一時停止' : undefined}
                 data-testid={testId}
                 disabled={sprint.complete}
                 onClick={() => handleSelectPlaybackSpeed(speed)}

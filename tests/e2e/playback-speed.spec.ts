@@ -93,10 +93,11 @@ test('❚❚ はトグルでき、1x / 2x でも再開でき、停止中は手�
 
   await expect(speed1x).toHaveAttribute('aria-pressed', 'true');
   await expect(pauseBtn).toHaveAttribute('aria-pressed', 'false');
+  await expect(pauseBtn).toHaveAttribute('aria-label', '一時停止');
 
   await pauseBtn.click();
   await expect(pauseBtn).toHaveAttribute('aria-pressed', 'true');
-  await expect(pauseBtn).toHaveAttribute('aria-label', '再開');
+  await expect(pauseBtn).toHaveAttribute('aria-label', '一時停止');
   await expect(controls).toHaveAttribute('data-paused', 'true');
   await expect(page.getByTestId('deck')).toHaveAttribute('data-paused', 'true');
   await expect(playableCard).toBeDisabled();

@@ -7,8 +7,8 @@
 import type { ReplayFramePhase } from '../sim/run/persist';
 import type { ReplayKeyframe } from './replay';
 
-/** ドラフトキーフレームが無いときに結果画面へ出す説明。 */
-export const REPLAY_DRAFT_MISSING_HINT = 'このリプレイにはカードドラフトの記録がありません。';
+/** 現在の result に対応するドラフトが無いときに結果画面へ出す説明。 */
+export const REPLAY_DRAFT_MISSING_HINT = 'この結果に対応するカードドラフトは記録されていません。';
 
 /** これを越えると別スプリント／終端なので、対応する draft ではない。 */
 const JUMP_BOUNDARY_PHASES = new Set<ReplayFramePhase>([

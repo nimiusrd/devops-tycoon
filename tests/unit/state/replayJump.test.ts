@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ReplayFramePhase } from '../../../src/sim/run/persist';
 import type { ReplayKeyframe } from '../../../src/state/replay';
-import { findNextReplayKeyframeIndex } from '../../../src/state/replayJump';
+import {
+  findNextReplayKeyframeIndex,
+  REPLAY_DRAFT_MISSING_HINT,
+} from '../../../src/state/replayJump';
 
 function kf(phase: ReplayFramePhase, framePhase: ReplayFramePhase = phase) {
   return { phase, frame: { phase: framePhase } as ReplayKeyframe['frame'] };
@@ -34,5 +37,13 @@ describe('findNextReplayKeyframeIndex', () => {
     expect(findNextReplayKeyframeIndex(mismatched, 0, 'draft')).toBeNull();
     const hydratedDraft = [kf('result'), kf('result', 'draft')];
     expect(findNextReplayKeyframeIndex(hydratedDraft, 0, 'draft')).toBe(1);
+  });
+});
+
+describe('REPLAY_DRAFT_MISSING_HINT', () => {
+  it('現在の結果に対応するドラフトが無いことを説明する', () => {
+    expect(REPLAY_DRAFT_MISSING_HINT).toBe(
+      'この結果に対応するカードドラフトは記録されていません。',
+    );
   });
 });

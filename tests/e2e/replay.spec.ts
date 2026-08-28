@@ -113,6 +113,8 @@ async function assertReadOnlyDraftA11y(page: Page): Promise<void> {
   await expect(card).toHaveClass(/card-readonly/);
   await expect(card).not.toHaveClass(/card-disabled/);
   await expect(card).toHaveCSS('opacity', '1');
+  await expect(page.locator('.draft-title')).toContainText('提示された施策を確認する');
+  await expect(page.locator('.draft-title')).not.toContainText('施策を1枚選ぶ');
 
   await expect(page.getByTestId('draft-exit-replay')).toBeEnabled();
   for (let i = 0; i < 8; i += 1) {
@@ -636,7 +638,7 @@ test('ドラフトキーフレームが無いリプレイでは「カードド�
   await expect(page.getByTestId('sprint-result')).toBeVisible();
   await expect(page.getByTestId('result-continue')).toBeDisabled();
   await expect(page.getByTestId('result-continue-hint')).toContainText(
-    'このリプレイにはカードドラフトの記録がありません。',
+    'この結果に対応するカードドラフトは記録されていません。',
   );
 });
 
@@ -718,7 +720,7 @@ test('対応するドラフトが無い result から後続スプリントのド
   await expect(page.getByTestId('sprint-result')).toBeVisible();
   await expect(page.getByTestId('result-continue')).toBeDisabled();
   await expect(page.getByTestId('result-continue-hint')).toContainText(
-    'このリプレイにはカードドラフトの記録がありません。',
+    'この結果に対応するカードドラフトは記録されていません。',
   );
 });
 

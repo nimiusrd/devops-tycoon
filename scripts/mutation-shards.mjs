@@ -96,37 +96,37 @@ export const MUTATION_SHARDS = Object.freeze([
   // 件数ではなく step / resolveSprint の完走コストが原因なので、ホットパスを切り離す。
   {
     id: 'sim-run-engine-a',
-    mutate: 'src/sim/run/engine.ts:1-769',
+    mutate: 'src/sim/run/engine.ts:1-770',
     note: 'engine 初期化（beginSprint / buildSprintBaselineInput まで）',
   },
   {
     id: 'sim-run-engine-e',
-    mutate: 'src/sim/run/engine.ts:770-820',
+    mutate: 'src/sim/run/engine.ts:771-821',
     note: 'engine ホットパス（step / dispatch / playCard）',
   },
   {
     id: 'sim-run-engine-g',
-    mutate: 'src/sim/run/engine.ts:821-905',
+    mutate: 'src/sim/run/engine.ts:822-906',
     note: 'engine resolveSprint（baseline 完走を含む）',
   },
   {
     id: 'sim-run-engine-f',
-    mutate: 'src/sim/run/engine.ts:906-1061',
+    mutate: 'src/sim/run/engine.ts:907-1062',
     note: 'engine 四半期接続（accumulateTotals 〜 chooseGoalAdjustment）',
   },
   {
     id: 'sim-run-engine-b',
-    mutate: 'src/sim/run/engine.ts:1062-1513',
-    note: 'engine 中盤（再編〜 recruitChoose）',
+    mutate: 'src/sim/run/engine.ts:1063-1514',
+    note: 'engine 中盤（再編〜 restChoose）',
   },
   {
     id: 'sim-run-engine-c',
-    mutate: 'src/sim/run/engine.ts:1514-2050',
-    note: 'engine 後半（採用ペナルティ〜ズーム手前）',
+    mutate: 'src/sim/run/engine.ts:1515-2064',
+    note: 'engine 後半（recruitChoose 〜 applyOrgLever）',
   },
   {
     id: 'sim-run-engine-d',
-    mutate: `src/sim/run/engine.ts:2051-${OPEN_RANGE_END}`,
+    mutate: `src/sim/run/engine.ts:2065-${OPEN_RANGE_END}`,
     note: 'engine 末尾（buildOrgScale・永続化。以降の追記もここ）',
   },
 

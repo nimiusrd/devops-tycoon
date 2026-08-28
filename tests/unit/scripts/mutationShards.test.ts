@@ -225,10 +225,13 @@ describe('mutation shards', () => {
 
   it('engine.ts の step / resolveSprint を関数の途中で割らない', () => {
     const methods = [
-      { name: 'beginSprint', start: 659, end: 728 },
-      { name: 'step', start: 772, end: 781 },
-      { name: 'resolveSprint', start: 823, end: 905 },
-      { name: 'chooseGoalAdjustment', start: 999, end: 1061 },
+      { name: 'beginSprint', start: 660, end: 729 },
+      { name: 'buildSprintBaselineInput', start: 735, end: 770 },
+      { name: 'step', start: 773, end: 782 },
+      { name: 'playCard', start: 797, end: 821 },
+      { name: 'resolveSprint', start: 824, end: 906 },
+      { name: 'chooseGoalAdjustment', start: 1000, end: 1062 },
+      { name: 'applyOrgLever', start: 1974, end: 2064 },
     ];
     const engineRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);

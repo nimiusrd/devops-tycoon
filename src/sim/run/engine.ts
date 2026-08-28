@@ -57,7 +57,13 @@ import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng, createRngFromState, getRngState } from '../rng';
 import { DEFAULT_SEED } from '../seed';
-import { applyScenarioOrg, DEFAULT_SCENARIO, getScenario, resolveScenarioId } from '../scenarios';
+import {
+  applyScenarioOrg,
+  DEFAULT_SCENARIO,
+  getScenario,
+  resolveAiDependencyPerTask,
+  resolveScenarioId,
+} from '../scenarios';
 import {
   forceShipReviewTask,
   isAwaitingMinCompleteTick,
@@ -502,12 +508,11 @@ export class RunEngine {
     this.bossId = this.pickBoss(1);
     const diff = getDifficulty(this.difficulty);
     const base = resolveSprintConfig('default');
+    const aiDependencyPerTask = resolveAiDependencyPerTask(this.difficulty, this.scenario);
     this.baseConfig = {
       ...base,
       taskCount: Math.max(6, Math.round(base.taskCount * diff.taskCountMul)),
-      ...(diff.aiDependencyPerTask !== undefined
-        ? { aiDependencyPerTask: diff.aiDependencyPerTask }
-        : {}),
+      ...(aiDependencyPerTask !== undefined ? { aiDependencyPerTask } : {}),
     };
     this.org = buildRunOrg(this.difficulty, this.scenario);
     this.deck = [];
@@ -2599,9 +2604,9 @@ export class RunEngine {
     this.whatIfCache = null;
   }
 
-  /** 難易度定義の `aiDependencyPerTask` を baseConfig へ同期する（RI-74）。 */
+  /** 難易度とシナリオから合成した `aiDependencyPerTask` を baseConfig へ同期する（RI-74 / #359）。 */
   private applyDifficultyAiDependencyPerTask(): void {
-    const perTask = getDifficulty(this.difficulty).aiDependencyPerTask;
+    const perTask = resolveAiDependencyPerTask(this.difficulty, this.scenario);
     if (perTask !== undefined) {
       this.baseConfig.aiDependencyPerTask = perTask;
       return;

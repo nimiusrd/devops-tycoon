@@ -3,8 +3,10 @@ import { getDifficulty } from '../../../src/data/difficulties';
 import {
   applyScenarioOrg,
   getScenario,
+  resolveAiDependencyPerTask,
   resolveScenarioId,
   SCENARIO_ORDER,
+  SCENARIOS,
   type ScenarioOrg,
 } from '../../../src/sim/scenarios';
 import { foldRunEffects, type RunModifierInput } from '../../../src/sim/run/effects';
@@ -85,5 +87,31 @@ describe('tool scenarios (RI-103)', () => {
     const withClaude = foldRunEffects(foldInput({ scenario: 'claude-code' })).effects;
     expect(withClaude.reviewEfficiencyMul).toBeCloseTo(without.reviewEfficiencyMul * 0.94, 8);
     expect(withClaude.reworkRateAdd).toBeCloseTo(without.reworkRateAdd - 0.02, 8);
+  });
+});
+
+describe('resolveAiDependencyPerTask (#359)', () => {
+  it('Easy の 1.1 は default だけに載せ、Copilot は既定へ戻す', () => {
+    expect(resolveAiDependencyPerTask('easy', 'default')).toBe(1.1);
+    expect(resolveAiDependencyPerTask('easy', 'copilot')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('easy', 'claude-code')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('easy', 'devin')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('normal', 'copilot')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('nightmare', 'default')).toBe(0.8);
+    expect(resolveAiDependencyPerTask('nightmare', 'copilot')).toBe(0.8);
+  });
+
+  it('シナリオ単価があるときはそれを使い、Nightmare の 0.8 は上書きしない', () => {
+    const copilot = SCENARIOS.copilot;
+    const previous = copilot.sprint;
+    copilot.sprint = { ...previous, aiDependencyPerTask: 1.4 };
+    try {
+      expect(resolveAiDependencyPerTask('easy', 'copilot')).toBe(1.4);
+      expect(resolveAiDependencyPerTask('normal', 'copilot')).toBe(1.4);
+      expect(resolveAiDependencyPerTask('nightmare', 'copilot')).toBe(0.8);
+      expect(resolveAiDependencyPerTask('easy', 'default')).toBe(1.1);
+    } finally {
+      copilot.sprint = previous;
+    }
   });
 });

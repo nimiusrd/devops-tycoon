@@ -40,7 +40,7 @@ function startEasyDefault(seed: string): RunEngine {
 }
 
 describe('Easy Sprint 2 序盤カーブ (#359)', () => {
-  it('Copilot シナリオは単価を持たず、Easy 通常だけ 1.1 に下げる', () => {
+  it('Easy 通常だけ 1.1 に下げ、Copilot ランは既定 2.2 を維持する', () => {
     expect(DIFFICULTY_DEFS.easy.aiDependencyPerTask).toBe(1.1);
     expect(DIFFICULTY_DEFS.easy.aiDependencyPerTask).toBeLessThan(AI_DEP_PER_TASK);
     expect(DIFFICULTY_DEFS.normal.aiDependencyPerTask).toBeUndefined();
@@ -49,9 +49,34 @@ describe('Easy Sprint 2 序盤カーブ (#359)', () => {
     expect(getScenario('copilot').sprint.aiDependencyPerTask).toBeUndefined();
     expect(getScenario('default').sprint.aiDependencyPerTask).toBeUndefined();
 
-    const engine = startEasyDefault(DEFAULT_SEED);
-    engine.beginSetupSprint();
-    expect(engine.snapshot().sprint?.config.aiDependencyPerTask).toBe(1.1);
+    const easyDefault = startEasyDefault(DEFAULT_SEED);
+    easyDefault.beginSetupSprint();
+    expect(easyDefault.snapshot().sprint?.config.aiDependencyPerTask).toBe(1.1);
+
+    const easyCopilot = new RunEngine({ seed: DEFAULT_SEED, difficulty: 'easy' });
+    easyCopilot.startRun('easy', [], DEFAULT_SEED, { kind: 'normal', scenario: 'copilot' });
+    easyCopilot.beginSetupSprint();
+    expect(easyCopilot.snapshot().sprint?.config.aiDependencyPerTask).toBeUndefined();
+  });
+
+  it('Easy+Copilot の無介入 S1 は既定単価 2.2 のまま、通常 Easy より依存が上がる', () => {
+    const finishSprint1 = (scenario: 'default' | 'copilot'): number => {
+      const engine = new RunEngine({ seed: DEFAULT_SEED, difficulty: 'easy' });
+      engine.startRun('easy', [], DEFAULT_SEED, { kind: 'normal', scenario });
+      engine.beginSetupSprint();
+      let guard = 0;
+      while (engine.snapshot().phase === 'sprint' && guard < 5_000) {
+        guard += 1;
+        engine.step(1_000_000);
+      }
+      expect(guard).toBeLessThan(5_000);
+      return engine.snapshot().org.aiDependency;
+    };
+
+    const easyDefault = finishSprint1('default');
+    const easyCopilot = finishSprint1('copilot');
+    expect(easyDefault).toBeLessThan(70);
+    expect(easyCopilot).toBeGreaterThan(80);
   });
 
   it('seed devops-tycoon の無介入・熟練とも Sprint 2 終端で AI依存が cap に張り付かない', () => {

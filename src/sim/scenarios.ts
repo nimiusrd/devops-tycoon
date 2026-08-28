@@ -5,7 +5,9 @@
  * 実ランの組織成熟度の正本は難易度（`src/data/difficulties.ts`）で、
  * シナリオは導入済みツールの差分だけを加算する。
  */
+import { getDifficulty } from '../data/difficulties';
 import { clamp } from './clamp';
+import type { DifficultyId } from './run/types';
 import type { CardEffects, ScenarioId, SprintConfig } from './types';
 
 /** シナリオが持つ組織の初期パラメータ（0..100）。 */
@@ -104,6 +106,29 @@ export function getScenario(id: ScenarioId): Scenario {
 export function resolveScenarioId(id: ScenarioId | undefined | null): ScenarioId {
   if (!id) return DEFAULT_SCENARIO;
   return SCENARIOS[id] ? id : DEFAULT_SCENARIO;
+}
+
+/**
+ * AI 割当 1 件あたりの依存度上昇を難易度とシナリオから合成する。
+ *
+ * Easy の 1.1（#359）は default シナリオ限定。ツール開始（Copilot 等）は
+ * シナリオ単価があればそれを使い、未指定ならグローバル既定 2.2 に戻す。
+ * 両方あるときは低い方を採用し、Nightmare の 0.8（RI-74）を上書きしない。
+ */
+export function resolveAiDependencyPerTask(
+  difficulty: DifficultyId,
+  scenarioId?: ScenarioId | null,
+): number | undefined {
+  const scenario = resolveScenarioId(scenarioId);
+  const scenarioRate = getScenario(scenario).sprint.aiDependencyPerTask;
+  const difficultyRate =
+    difficulty === 'easy' && scenario !== DEFAULT_SCENARIO
+      ? undefined
+      : getDifficulty(difficulty).aiDependencyPerTask;
+  if (scenarioRate !== undefined && difficultyRate !== undefined) {
+    return Math.min(scenarioRate, difficultyRate);
+  }
+  return scenarioRate ?? difficultyRate;
 }
 
 const ORG_KEYS: readonly (keyof ScenarioOrg)[] = [

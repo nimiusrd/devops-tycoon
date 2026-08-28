@@ -244,6 +244,10 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await expect(page.getByTestId('board')).toHaveAttribute('data-animations-paused', 'true');
     await stabilizeForScreenshot(page);
 
+    // オーバーレイは背面 canvas を覆う。静止フレーム自体を回帰するため一時的に隠す。
+    await page.getByTestId('evolution').evaluate((element) => {
+      (element as HTMLElement).style.visibility = 'hidden';
+    });
     await expect(page.getByTestId('board-pixi-mount')).toHaveScreenshot(
       'sprint-pixi-evolution-paused-board.png',
       {

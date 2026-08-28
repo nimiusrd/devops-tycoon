@@ -291,14 +291,36 @@ export function zoneLabelRect(label: Pick<OrgZoneLabelPlan, 'x' | 'y'>): OrgBoar
   };
 }
 
+/**
+ * 折り返しを含むチームカード高（設計px）。
+ * 116px 幅では「出荷／AI／人数」メタが 2 行になる。
+ */
+export function islandBadgeLayoutHeight(): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  const lineGap = VISUAL_TOKENS.dimensions.organization.card.lineGap;
+  const borderY = 4;
+  const tagPadY = 4;
+  const metaLines = 2;
+  return (
+    island.badgeFontSize +
+    island.badgeMetaSize * metaLines +
+    island.badgeTagSize +
+    tagPadY +
+    lineGap * 2 +
+    island.badgePaddingY * 2 +
+    borderY
+  );
+}
+
 /** 島のチームカード（バッジ）外接矩形。DOM は同じカード幅に制約する。 */
 export function islandBadgeRect(island: Pick<OrgIslandPlan, 'badge'>): OrgBoardRect {
   const width = VISUAL_TOKENS.dimensions.organization.card.width;
+  const height = islandBadgeLayoutHeight();
   return {
     x: island.badge.x - width / 2,
-    y: island.badge.y - ISLAND_BADGE_HEIGHT / 2,
+    y: island.badge.y - height / 2,
     width,
-    height: ISLAND_BADGE_HEIGHT,
+    height,
   };
 }
 
@@ -340,7 +362,7 @@ export function islandGridForCount(
   const count = Math.max(1, teamCount);
   const maxColsPack = Math.max(1, Math.floor(maxSpanX / ISLAND_CARD_WIDTH));
   const maxRowsPref = Math.max(1, Math.floor(maxSpanY / MIN_ISLAND_SPACING_Y));
-  const maxRowsPack = Math.max(1, Math.floor(maxSpanY / ISLAND_BADGE_HEIGHT));
+  const maxRowsPack = Math.max(1, Math.floor(maxSpanY / islandBadgeLayoutHeight()));
 
   let cols = Math.min(count, Math.max(1, Math.ceil(Math.sqrt(count))));
   let rows = Math.max(1, Math.ceil(count / cols));
@@ -392,11 +414,11 @@ function resolveIslandGrid(
   return { cols, rows, spanX, spanY, centerX, centerY };
 }
 
-/** 格子の行間隔がカード高を下回る（等角配置ではカードが重なる）。 */
+/** 格子の行間隔が折り返し後のカード高を下回る（等角配置ではカードが重なる）。 */
 export function islandGridFitsCardHeight(deptIndex: number, teamCount: number): boolean {
   const { rows, spanY } = resolveIslandGrid(deptIndex, teamCount);
   if (rows <= 1) return true;
-  return spanY / rows >= ISLAND_BADGE_HEIGHT;
+  return spanY / rows >= islandBadgeLayoutHeight();
 }
 
 /** いずれかの部門が等角格子に収まらないとき、カードはドックへ縮退する。 */

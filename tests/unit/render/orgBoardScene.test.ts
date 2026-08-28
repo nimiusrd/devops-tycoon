@@ -16,6 +16,7 @@ import {
   ORG_HUB_CI_OK_MIN,
   ORG_VIEW,
   ZONE_LABEL_GAP,
+  islandBadgeLayoutHeight,
   islandBadgeRect,
   islandCenterBounds,
   islandGridFitsCardHeight,
@@ -349,6 +350,23 @@ describe('planOrgBoardScene (RI-01)', () => {
     );
     const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
     expect(productTeams.length).toBeGreaterThanOrEqual(26);
+    expect(islandGridFitsCardHeight(0, productTeams.length)).toBe(false);
+    expect(orgBoardNeedsCapacityCompact(org)).toBe(true);
+    expect(planOrgBoardScene(org).capacityCompact).toBe(true);
+  });
+
+  it('プロダクトが5行（21チーム以上）なら折り返し後のカード高でドック縮退する', () => {
+    const org = generateOrgScale(
+      orgScaleInput('ri01-spacing-extra17', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 17 }, byDept: {} },
+      }),
+    );
+    const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
+    expect(productTeams.length).toBeGreaterThanOrEqual(21);
+    expect(productTeams.length).toBeLessThan(26);
+    expect(islandBadgeLayoutHeight()).toBeGreaterThan(
+      VISUAL_TOKENS.dimensions.organization.island.badgeHeight,
+    );
     expect(islandGridFitsCardHeight(0, productTeams.length)).toBe(false);
     expect(orgBoardNeedsCapacityCompact(org)).toBe(true);
     expect(planOrgBoardScene(org).capacityCompact).toBe(true);

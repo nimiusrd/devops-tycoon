@@ -562,6 +562,15 @@ test('全社マップの部門ラベルがチームカードと重ならない�
         expect(coveredByActor, `${viewport.name} でドックカードが島やハブの下に隠れている`).toBe(
           false,
         );
+        const islands = page.locator('.org-island');
+        const islandCount = await islands.count();
+        expect(islandCount, `${viewport.name} で背後の島が無い`).toBeGreaterThan(0);
+        await expect(page.locator('.org-island-group')).toHaveAttribute('aria-hidden', 'true');
+        for (let i = 0; i < islandCount; i += 1) {
+          await expect(islands.nth(i)).toHaveAttribute('tabindex', '-1');
+        }
+        const dockHits = page.locator('.org-island-badge-dock-hit');
+        await expect(dockHits.first()).not.toHaveAttribute('tabindex', '-1');
       } else {
         expect(
           badgeBox.width,

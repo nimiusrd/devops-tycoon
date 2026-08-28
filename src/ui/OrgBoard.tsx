@@ -63,14 +63,21 @@ function OrgIsland({
   island,
   onClick,
   showBadge,
+  decorative,
 }: {
   island: OrgIslandPlan;
   onClick: () => void;
   showBadge: boolean;
+  /** ドックが操作を担うとき、島は見た目と空き領域のポインターだけ残す。 */
+  decorative: boolean;
 }) {
   const { team } = island;
   return (
-    <div className="org-island-group" style={{ zIndex: 20 + island.depth }}>
+    <div
+      className="org-island-group"
+      style={{ zIndex: 20 + island.depth }}
+      aria-hidden={decorative ? true : undefined}
+    >
       {showBadge ? (
         <div
           className={`org-island-badge-wrap tone-${island.badge.tone}`}
@@ -85,6 +92,7 @@ function OrgIsland({
         className={`org-island health-${team.health}${team.isPlayer ? ' is-player' : ''}`}
         data-testid={`team-${team.id}`}
         data-health={team.health}
+        tabIndex={decorative ? -1 : undefined}
         style={{
           left: pct(island.x, VIEW_W),
           top: pct(island.y, VIEW_H),
@@ -156,6 +164,7 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
           key={island.teamId}
           island={island}
           showBadge={!compact}
+          decorative={compact}
           onClick={() => onFocusTeam(island.teamId)}
         />
       ))}

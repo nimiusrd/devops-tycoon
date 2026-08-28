@@ -46,6 +46,87 @@ test('タイトルから遊び方ヘルプを開ける', async ({ page }) => {
   await expect(page.getByTestId('how-to-play')).not.toBeVisible();
 });
 
+test('遊び方ヘルプは Escape で閉じ、起点の遊び方ボタンへフォーカスが戻る', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=howto-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-help').click();
+  await expect(page.getByTestId('how-to-play')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('how-to-play')).not.toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-help');
+});
+
+test('遊び方ヘルプは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=howto-backdrop');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-help').click();
+  const dialog = page.getByTestId('how-to-play');
+  await expect(dialog).toBeVisible();
+
+  await page.locator('.how-to-play-panel').click();
+  await expect(dialog).toBeVisible();
+
+  await page.getByTestId('how-to-play-backdrop').click({ position: { x: 8, y: 8 } });
+  await expect(dialog).not.toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-help');
+});
+
+test('遊び方ヘルプは背面を inert にし、Tab をモーダル内に閉じ込める', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=howto-focus-trap');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-help').click();
+  const overlay = page.getByTestId('how-to-play');
+  await expect(overlay).toBeVisible();
+  await expect(page.getByTestId('title')).toHaveAttribute('inert', '');
+
+  const focusedIds: string[] = [];
+  for (let i = 0; i < 12; i += 1) {
+    const focused = await page.evaluate(() => {
+      const overlayEl = document.querySelector('[data-testid="how-to-play"]');
+      const active = document.activeElement;
+      const testId = active instanceof HTMLElement ? (active.dataset.testid ?? active.tagName) : '';
+      const inside =
+        overlayEl instanceof HTMLElement && (active === overlayEl || overlayEl.contains(active));
+      return { testId, inside };
+    });
+    expect(focused.inside, `Tab ${i} でフォーカスが遊び方の外へ抜けた (${focused.testId})`).toBe(
+      true,
+    );
+    expect(focused.testId).not.toBe('open-replays');
+    expect(focused.testId).not.toBe('open-help');
+    focusedIds.push(focused.testId);
+    await page.keyboard.press('Tab');
+  }
+  expect(focusedIds, '閉じるボタンへ Tab で届かない').toContain('how-to-play-close');
+
+  await page.keyboard.press('Shift+Tab');
+  const afterShiftTab = await page.evaluate(() => {
+    const overlayEl = document.querySelector('[data-testid="how-to-play"]');
+    const active = document.activeElement;
+    const testId = active instanceof HTMLElement ? (active.dataset.testid ?? active.tagName) : '';
+    const inside =
+      overlayEl instanceof HTMLElement && (active === overlayEl || overlayEl.contains(active));
+    return { testId, inside };
+  });
+  expect(afterShiftTab.inside, `Shift+Tab で遊び方の外へ抜けた (${afterShiftTab.testId})`).toBe(
+    true,
+  );
+
+  await page.getByTestId('how-to-play-close').click();
+  await expect(overlay).not.toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-help');
+});
+
 test('?tutorial=help でタイトル起動時に遊び方を開く', async ({ page }) => {
   await page.goto('/?renderer=dom&seed=howto-query&tutorial=help');
   await expect(page.getByTestId('how-to-play')).toBeVisible();

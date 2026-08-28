@@ -4,8 +4,11 @@
  * 末尾スクロールが白画面に見える問題を防ぐ。
  */
 
+/** スプリント背面に重なる全面オーバーレイ。 */
+export const FRONT_OVERLAY_SELECTOR = '.result-overlay, .zoom-overlay';
+
 /** ページ本体以外で縦スクロールしうるホスト。 */
-export const VIEWPORT_SCROLL_HOST_SELECTOR = '.result-overlay, .zoom-overlay, .sprint-layout';
+export const VIEWPORT_SCROLL_HOST_SELECTOR = `${FRONT_OVERLAY_SELECTOR}, .sprint-layout`;
 
 export function resetElementScroll(element: { scrollTop: number; scrollLeft?: number }): void {
   element.scrollTop = 0;

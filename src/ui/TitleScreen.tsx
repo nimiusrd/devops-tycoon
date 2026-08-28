@@ -15,6 +15,7 @@ import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
+import { downloadTextFile } from './downloadTextFile';
 
 const DIFFICULTY_TAG: Record<DifficultyId, string> = {
   easy: 'Easy',
@@ -138,14 +139,16 @@ export function TitleScreen({
   };
 
   const downloadRecipe = () => {
-    const text = exportRecipe();
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'devops-tycoon-start-recipe.json';
-    link.click();
-    URL.revokeObjectURL(url);
+    const text = liveRecipeText;
+    setRecipeDraft(null);
+    if (downloadTextFile('devops-tycoon-start-recipe.json', text)) {
+      setRecipeStatus({ kind: 'ok', message: '開始レシピをファイルに保存しました。' });
+      return;
+    }
+    setRecipeStatus({
+      kind: 'error',
+      message: '開始レシピをファイルに保存できませんでした。',
+    });
   };
 
   const applyRecipeText = (raw: string) => {
@@ -180,14 +183,14 @@ export function TitleScreen({
       setRunSaveShareStatus({ kind: 'error', message: '書き出せる途中セーブがありません。' });
       return;
     }
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'devops-tycoon-run-save.json';
-    link.click();
-    URL.revokeObjectURL(url);
-    setRunSaveShareStatus({ kind: 'ok', message: '途中セーブをファイルに保存しました。' });
+    if (downloadTextFile('devops-tycoon-run-save.json', text)) {
+      setRunSaveShareStatus({ kind: 'ok', message: '途中セーブをファイルに保存しました。' });
+      return;
+    }
+    setRunSaveShareStatus({
+      kind: 'error',
+      message: '途中セーブをファイルに保存できませんでした。',
+    });
   };
 
   const onRunSaveFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -519,6 +522,8 @@ export function TitleScreen({
                   <p
                     className={`title-recipe-status${recipeStatus.kind === 'error' ? ' error' : ''}`}
                     data-testid="start-recipe-status"
+                    role="status"
+                    aria-live="polite"
                   >
                     {recipeStatus.message}
                   </p>
@@ -573,6 +578,8 @@ export function TitleScreen({
                     <p
                       className={`title-recipe-status${runSaveShareStatus.kind === 'error' ? ' error' : ''}`}
                       data-testid="run-save-share-status"
+                      role="status"
+                      aria-live="polite"
                     >
                       {runSaveShareStatus.message}
                     </p>

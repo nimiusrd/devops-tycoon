@@ -103,7 +103,16 @@ export function resolveSprintConfig(
   scenario: ScenarioId,
   override?: Partial<SprintConfig>,
 ): SprintConfig {
-  return { ...getScenario(scenario).sprint, ...override };
+  const def = getScenario(scenario);
+  return {
+    ...def.sprint,
+    // トップレベルのシナリオ単価も載せる。sprint だけだと共有 DEFAULT_SPRINT を
+    // 参照する Copilot がグローバル既定 2.2 のままになる（#387 / Codex P2）。
+    ...(def.aiDependencyPerTask !== undefined
+      ? { aiDependencyPerTask: def.aiDependencyPerTask }
+      : {}),
+    ...override,
+  };
 }
 
 /**
@@ -177,7 +186,7 @@ function sampleTimeline(sprint: SprintState, org: OrgState, tick: number): Timel
     reviewQueue: countLane(sprint.tasks, 'review'),
     burningCount: sprint.tasks.filter((t) => t.lane === 'rework' && t.incident).length,
     combo: sprint.metrics.combo,
-    seniorHp: org.seniorHp,
+    seniorHp: clamp(org.seniorHp, 0, 100),
   };
 }
 
@@ -432,13 +441,17 @@ function advanceBurning(sprint: SprintState, org: OrgState, tick: number): void 
     }
     task.debt = true;
     const spreadMul = securitySpreadMul(org.securityLevel);
-    org.techDebt += Math.ceil(DEBT_PER_SPREAD * spreadMul);
+    const debtGain = Math.ceil(DEBT_PER_SPREAD * spreadMul);
+    const moraleBefore = org.morale;
+    org.techDebt += debtGain;
     org.morale = clamp(org.morale - Math.ceil(SPREAD_MORALE_COST * spreadMul), 0, 100);
     const next = sprint.tasks.find((t) => t.lane === 'review');
     appendSprintEvent(sprint, {
       tick,
       kind: 'spread',
       taskId: task.id,
+      debtGain,
+      moraleCost: moraleBefore - org.morale,
       ...(next ? { spreadToTaskId: next.id } : {}),
     });
     appendSprintEvent(sprint, {
@@ -754,7 +767,7 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     grade: computeGrade(sprint, org),
     title,
     diagnosis,
-    timeline: sprint.timeline.map((s) => ({ ...s })),
+    timeline: sprint.timeline.map((s) => ({ ...s, seniorHp: clamp(s.seniorHp, 0, 100) })),
     events: sprint.interventionEvents.map((e) => ({ ...e, effect: { ...e.effect } })),
     fireEvents: sprint.fireEvents.map((e) => ({ ...e })),
     focusRemaining: sprint.focus,

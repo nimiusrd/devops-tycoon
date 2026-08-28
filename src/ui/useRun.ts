@@ -3,8 +3,8 @@
  *
  * `window.game`（決定論ラン エンジン）を仲介し、React に最新スナップショットを
  * 供給する。スプリント中のみ壁時計アキュムレータで自動進行し、一時停止中
- * （E2E が `pause()` した時 / プレイヤー Pause）は止まる（第22.5 / RI-62）。
- * 描画は状態を読むだけ（第22.2）。
+ * （E2E が `pause()` した時 / プレイヤー Pause / 進化オーバーレイ）は止まる
+ * （第22.5 / RI-62 / #386）。描画は状態を読むだけ（第22.2）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -26,6 +26,7 @@ import type {
   InterventionOutcome,
   SprintState,
 } from '../sim/types';
+import type { ReplayFramePhase } from '../sim/run/persist';
 import type { DiagnosisType, DifficultyId, GoalAdjustmentId, RunState } from '../sim/run/types';
 import type { ScenarioId } from '../sim/types';
 import type { LaneAssignment } from '../sim/member/types';
@@ -114,6 +115,10 @@ export interface UseRun {
   /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
   activeReplayInfo: ActiveReplayInfo | null;
   openReplay: (id: string, keyframeIndex?: number) => boolean;
+  /** 閲覧中リプレイを指定フェーズの次キーフレームへ進める。 */
+  jumpReplayToPhase: (phase: ReplayFramePhase) => void;
+  /** ジャンプ先キーフレーム index。対象が無ければ null。 */
+  findReplayJumpIndex: (phase: ReplayFramePhase) => number | null;
   exitReplay: () => void;
   purchaseMetaUnlock: (unlockId: string) => { ok: boolean; reason?: string };
   /** サウンドミュートを永続化する（RI-59）。 */
@@ -178,17 +183,17 @@ export function useRun(game: GameHandle): UseRun {
 
       // スプリント進行中は壁時計アキュムレータで固定ステップ前進（RI-62）。
       // game.isPaused() は E2E / pauseBriefly / lazy 読込用。プレイヤー Pause は playbackSpeed=0。
+      // phase!==sprint（進化オーバーレイ等）では背面盤面が残っていても進めない（#386）。
       // 全社マップ等の俯瞰中は現場 sim を進めない（閲覧だけで KPI が進まない）。
       const speed = playbackSpeedRef.current;
-      const fieldView = game.zoomLevel() === 'team';
-      if (
-        shouldAutoAdvanceSprint({
-          sprintRunning: game.isSprintRunning(),
-          paused: game.isPaused(),
-          playbackSpeed: speed,
-          fieldView,
-        })
-      ) {
+      const autoAdvance = shouldAutoAdvanceSprint({
+        phase: game.phase(),
+        sprintRunning: game.isSprintRunning(),
+        paused: game.isPaused(),
+        playbackSpeed: speed,
+        fieldView: game.zoomLevel() === 'team',
+      });
+      if (autoAdvance) {
         // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
         accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
         const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);
@@ -196,6 +201,7 @@ export function useRun(game: GameHandle): UseRun {
         for (let i = 0; i < ticks; i += 1) {
           if (
             !shouldAutoAdvanceSprint({
+              phase: game.phase(),
               sprintRunning: game.isSprintRunning(),
               paused: game.isPaused(),
               playbackSpeed: playbackSpeedRef.current,
@@ -314,6 +320,23 @@ export function useRun(game: GameHandle): UseRun {
     },
     [game],
   );
+  const jumpReplayToPhase = useCallback(
+    (phase: ReplayFramePhase) => {
+      const opened = game.jumpReplayToPhase(phase);
+      if (!opened) return;
+      setState(opened);
+      setDiagnosticInfo(game.getDiagnosticInfo());
+      setLastRunReward(game.getLastRunReward());
+      setIsReplayMode(true);
+      setActiveReplayDiagnosis(game.getActiveReplayDiagnosis());
+      setActiveReplayInfo(game.getActiveReplayInfo());
+    },
+    [game],
+  );
+  const findReplayJumpIndex = useCallback(
+    (phase: ReplayFramePhase) => game.findReplayJumpIndex(phase),
+    [game],
+  );
   const exitReplay = useCallback(() => void game.exitReplay(), [game]);
   const purchaseMetaUnlock = useCallback(
     (unlockId: string) => game.purchaseMetaUnlock(unlockId),
@@ -344,6 +367,8 @@ export function useRun(game: GameHandle): UseRun {
     startDailyRun,
     resumeRun,
     openReplay,
+    jumpReplayToPhase,
+    findReplayJumpIndex,
     exitReplay,
     beginSetupSprint,
     resolveBeat,

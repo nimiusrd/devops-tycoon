@@ -174,18 +174,18 @@ describe('mutation shards', () => {
 
   it('Stryker と同様、mutant の開始と終了が両方レンジ内のときだけ覆う', () => {
     const titleBody = {
-      start: { line: 644, column: 0 },
-      end: { line: 735, column: 1 },
+      start: { line: 648, column: 0 },
+      end: { line: 739, column: 1 },
     };
-    expect(coverageIncludesLocation([{ start: 585, end: 680 }], titleBody)).toBe(false);
-    expect(coverageIncludesLocation([{ start: 681, end: OPEN_RANGE_END }], titleBody)).toBe(false);
-    expect(coverageIncludesLocation([{ start: 642, end: OPEN_RANGE_END }], titleBody)).toBe(true);
-    expect(coverageIncludesLine([{ start: 585, end: 680 }], 645)).toBe(true);
+    expect(coverageIncludesLocation([{ start: 589, end: 684 }], titleBody)).toBe(false);
+    expect(coverageIncludesLocation([{ start: 685, end: OPEN_RANGE_END }], titleBody)).toBe(false);
+    expect(coverageIncludesLocation([{ start: 646, end: OPEN_RANGE_END }], titleBody)).toBe(true);
+    expect(coverageIncludesLine([{ start: 589, end: 684 }], 649)).toBe(true);
   });
 
   it('computeTitleAndDiagnosis を関数の途中で割らない', () => {
-    const titleStart = 642;
-    const titleEnd = 736;
+    const titleStart = 655;
+    const titleEnd = 749;
     const sprintRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);
       const coverage = resolved.get('src/sim/sprint.ts');
@@ -225,10 +225,10 @@ describe('mutation shards', () => {
 
   it('engine.ts の step / resolveSprint を関数の途中で割らない', () => {
     const methods = [
-      { name: 'beginSprint', start: 655, end: 724 },
-      { name: 'step', start: 768, end: 777 },
-      { name: 'resolveSprint', start: 819, end: 901 },
-      { name: 'chooseGoalAdjustment', start: 995, end: 1057 },
+      { name: 'beginSprint', start: 659, end: 728 },
+      { name: 'step', start: 772, end: 781 },
+      { name: 'resolveSprint', start: 823, end: 905 },
+      { name: 'chooseGoalAdjustment', start: 999, end: 1061 },
     ];
     const engineRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);

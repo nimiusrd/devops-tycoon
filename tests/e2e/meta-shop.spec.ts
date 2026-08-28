@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import type { Page } from '@playwright/test';
 import { defaultUnlockedCardIds } from '../../src/data/unlocks';
 import type { MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
@@ -142,22 +143,103 @@ test('メタショップは背景クリックで閉じ、パネルクリック�
     .toBe('open-meta-shop');
 });
 
-test('メタショップ読込中の Escape は開く操作を取り消す', async ({ page }) => {
+test('メタショップの初回 lazy 読込後も Tab はダイアログ内から始まる', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);
   await page.route(/MetaShopScreen/, async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     await route.continue();
   });
 
-  await page.goto('/?renderer=dom&seed=meta-shop-lazy-escape');
+  await page.goto('/?renderer=dom&seed=meta-shop-lazy-focus');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-meta-shop').click();
   await expect(page.getByTestId('title-modal-loading')).toBeVisible();
-  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('meta-shop')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId('title-modal-loading')).toHaveCount(0);
-  await expect(page.getByTestId('meta-shop')).toHaveCount(0);
+  await expect(page.getByTestId('title')).toHaveAttribute('inert', '');
+
+  const afterLoad = await page.evaluate(() => {
+    const overlay = document.querySelector('[data-testid="meta-shop"]');
+    const active = document.activeElement;
+    const testId = active instanceof HTMLElement ? (active.dataset.testid ?? active.tagName) : '';
+    const inside =
+      overlay instanceof HTMLElement && (active === overlay || overlay.contains(active));
+    return { inside, testId };
+  });
+  expect(afterLoad.inside, `読込後のフォーカスがメタショップ外 (${afterLoad.testId})`).toBe(true);
+
+  await page.keyboard.press('Tab');
+  const afterTab = await page.evaluate(() => {
+    const overlay = document.querySelector('[data-testid="meta-shop"]');
+    const active = document.activeElement;
+    const testId = active instanceof HTMLElement ? (active.dataset.testid ?? active.tagName) : '';
+    const inside =
+      overlay instanceof HTMLElement && (active === overlay || overlay.contains(active));
+    return { inside, testId };
+  });
+  expect(afterTab.inside, `Tab でタイトル背面へ抜けた (${afterTab.testId})`).toBe(true);
+  expect(['open-help', 'open-replays', 'open-meta-shop', 'title']).not.toContain(afterTab.testId);
+});
+
+async function hangTitleModalChunk(page: Page, chunk: RegExp): Promise<void> {
+  await page.route(chunk, () => new Promise(() => {}));
+}
+
+async function expectHungTitleModalDismissesToOpener(
+  page: Page,
+  options: {
+    seed: string;
+    chunk: RegExp;
+    openTestId: string;
+    dismiss: 'escape' | 'backdrop';
+  },
+): Promise<void> {
+  await seedMeta(page, DEFAULT_META);
+  await hangTitleModalChunk(page, options.chunk);
+  await page.goto(`/?renderer=dom&seed=${options.seed}`);
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId(options.openTestId).click();
+  await expect(page.getByTestId('title-modal-loading')).toBeVisible();
+  await expect(page.getByTestId('title')).toHaveAttribute('inert', '');
+
+  if (options.dismiss === 'escape') {
+    await page.keyboard.press('Escape');
+  } else {
+    await page.getByTestId('title-modal-loading-dismiss').click({ position: { x: 8, y: 8 } });
+  }
+
+  await expect(page.getByTestId('title-modal-loading')).toHaveCount(0);
+  await expect(page.getByTestId('title')).not.toHaveAttribute('inert');
   await expect
     .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
-    .toBe('open-meta-shop');
+    .toBe(options.openTestId);
+}
+
+test('メタショップの lazy 読込が止まっても Escape で起点へ戻る', async ({ page }) => {
+  await expectHungTitleModalDismissesToOpener(page, {
+    seed: 'meta-shop-lazy-escape',
+    chunk: /MetaShopScreen/,
+    openTestId: 'open-meta-shop',
+    dismiss: 'escape',
+  });
+});
+
+test('メタショップの lazy 読込が止まっても背景クリックで起点へ戻る', async ({ page }) => {
+  await expectHungTitleModalDismissesToOpener(page, {
+    seed: 'meta-shop-lazy-backdrop',
+    chunk: /MetaShopScreen/,
+    openTestId: 'open-meta-shop',
+    dismiss: 'backdrop',
+  });
+});
+
+test('カードコレクションの lazy 読込が止まっても Escape で起点へ戻る', async ({ page }) => {
+  await expectHungTitleModalDismissesToOpener(page, {
+    seed: 'card-collection-lazy-escape',
+    chunk: /CardCollectionScreen/,
+    openTestId: 'open-card-collection',
+    dismiss: 'escape',
+  });
 });

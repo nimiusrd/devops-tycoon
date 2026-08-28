@@ -206,8 +206,27 @@ describe('sprintTempo（RI-62）', () => {
     expect(ticksDueFromAccumulator(5_000, speed).ticks).toBe(0);
   });
 
+  it('進化オーバーレイなど非スプリントでは sprintRunning でも自動進行しない（#386）', () => {
+    const running = {
+      phase: 'sprint' as const,
+      sprintRunning: true,
+      paused: false,
+      playbackSpeed: 1 as PlaybackSpeed,
+      fieldView: true,
+    };
+    expect(shouldAutoAdvanceSprint(running)).toBe(true);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'evolution' })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'result', playbackSpeed: 2 })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'draft', sprintRunning: false })).toBe(
+      false,
+    );
+    expect(shouldAutoAdvanceSprint({ ...running, paused: true })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, playbackSpeed: 0 })).toBe(false);
+  });
+
   it('全社マップ等の俯瞰中は自動進行しない', () => {
     const running = {
+      phase: 'sprint' as const,
       sprintRunning: true,
       paused: false,
       playbackSpeed: 1 as PlaybackSpeed,

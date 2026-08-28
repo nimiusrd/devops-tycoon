@@ -93,11 +93,14 @@ export function hitTestDropLane(
   return best;
 }
 
+/** 盤面要素のクライアント矩形（DOMRect 互換）。 */
+export type BoardClientRect = Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>;
+
 /** クライアント座標を盤面の設計座標へ変換する。 */
 export function clientToBoardPoint(
   clientX: number,
   clientY: number,
-  boardRect: DOMRect,
+  boardRect: BoardClientRect,
 ): { x: number; y: number } {
   if (
     !Number.isFinite(boardRect.width) ||

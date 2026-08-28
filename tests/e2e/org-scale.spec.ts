@@ -9,8 +9,10 @@ import { seedMeta } from './seedMeta';
 type GameWindow = Window & {
   game?: {
     pause(): void;
+    resume(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
+    beginSetupSprint(): RunState;
     zoomTo(level: string): RunState;
     focusDept(id: string): RunState;
     focusTeam(id: string): RunState;
@@ -450,4 +452,90 @@ test('全社レバーで四半期予算が減り、全社AI依存度が下がる
     () => (window as GameWindow).game!.getState().orgScale!.aiDependency,
   );
   expect(aiDepAfter).toBeLessThanOrEqual(before.aiDep);
+});
+
+type FieldKpi = {
+  delivery: number;
+  sprintTick: number;
+  delivered: number;
+  completed: number;
+  sprintIndex: number;
+};
+
+async function readFieldKpi(page: import('@playwright/test').Page): Promise<FieldKpi> {
+  return page.evaluate(() => {
+    const s = (window as GameWindow).game!.getState();
+    return {
+      delivery: s.org.deliveryScore,
+      sprintTick: s.sprintTick,
+      delivered: s.totals.delivered,
+      completed: s.totals.completed,
+      sprintIndex: s.sprintIndexInQuarter,
+    };
+  });
+}
+
+test('編成の全社マップ閲覧では sim が進まず、現場へ戻すと KPI が一致する', async ({ page }) => {
+  await startRun(page, 'org-map-setup-kpi');
+  await expect(page.getByTestId('setup')).toBeVisible();
+  await expect(page.getByTestId('sprint-no')).toContainText('0/6');
+
+  const before = await readFieldKpi(page);
+  await page.getByTestId('open-org').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+  await expect(page.getByTestId('org-screen')).toBeVisible();
+
+  const startedAt = Date.now();
+  await expect
+    .poll(async () => {
+      const during = await readFieldKpi(page);
+      expect(during).toEqual(before);
+      return Date.now() - startedAt;
+    })
+    .toBeGreaterThanOrEqual(1500);
+
+  await page.getByTestId('crumb-team').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+  await expect(page.getByTestId('setup')).toBeVisible();
+  const after = await readFieldKpi(page);
+  expect(after).toEqual(before);
+});
+
+test('スプリント中に全社マップを開くと tick が止まり、現場へ戻すと KPI が一致する', async ({
+  page,
+}) => {
+  await page.goto('/?renderer=dom&seed=org-map-sprint-kpi');
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.startRun('normal', [], 'org-map-sprint-kpi');
+    g.beginSetupSprint();
+  });
+  await expect(page.getByTestId('board')).toBeVisible();
+
+  await expect
+    .poll(async () => page.evaluate(() => (window as GameWindow).game!.getState().sprintTick))
+    .toBeGreaterThan(0);
+
+  const before = await readFieldKpi(page);
+  await page.getByTestId('open-org').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+  const frozen = await readFieldKpi(page);
+  const startedAt = Date.now();
+  await expect
+    .poll(async () => {
+      const during = await readFieldKpi(page);
+      expect(during.sprintTick).toBe(frozen.sprintTick);
+      expect(during.delivery).toBe(frozen.delivery);
+      expect(during.delivered).toBe(frozen.delivered);
+      return Date.now() - startedAt;
+    })
+    .toBeGreaterThanOrEqual(2000);
+
+  await page.getByTestId('crumb-team').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+  const after = await readFieldKpi(page);
+  expect(after.delivery).toBe(frozen.delivery);
+  expect(after.delivered).toBe(frozen.delivered);
+  expect(after.sprintTick).toBe(frozen.sprintTick);
+  expect(after.sprintIndex).toBe(before.sprintIndex);
 });

@@ -177,7 +177,7 @@ function sampleTimeline(sprint: SprintState, org: OrgState, tick: number): Timel
     reviewQueue: countLane(sprint.tasks, 'review'),
     burningCount: sprint.tasks.filter((t) => t.lane === 'rework' && t.incident).length,
     combo: sprint.metrics.combo,
-    seniorHp: org.seniorHp,
+    seniorHp: clamp(org.seniorHp, 0, 100),
   };
 }
 
@@ -758,7 +758,7 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     grade: computeGrade(sprint, org),
     title,
     diagnosis,
-    timeline: sprint.timeline.map((s) => ({ ...s })),
+    timeline: sprint.timeline.map((s) => ({ ...s, seniorHp: clamp(s.seniorHp, 0, 100) })),
     events: sprint.interventionEvents.map((e) => ({ ...e, effect: { ...e.effect } })),
     fireEvents: sprint.fireEvents.map((e) => ({ ...e })),
     focusRemaining: sprint.focus,

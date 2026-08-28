@@ -7,6 +7,7 @@
 import { useRef } from 'react';
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
+import { formatSprintResultSeniorHp } from '../render/seniorHpDisplay';
 import { planBurnCauseLog } from '../render/sprintBurnCauseView';
 import { planReviewHellResultSummary } from '../render/reviewHellReplayView';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
@@ -43,7 +44,7 @@ function buildRows(result: SprintResult): Row[] {
       label: 'Incidents',
       value: `${result.incidents} (鎮火 ${result.contained} / 延焼 ${result.spread})`,
     },
-    { label: 'Senior HP', value: `${result.seniorHpDelta}` },
+    { label: 'Senior HP', value: formatSprintResultSeniorHp(result) },
     { label: '介入', value: interventionSummary(result) },
   ];
 }

@@ -184,8 +184,8 @@ describe('mutation shards', () => {
   });
 
   it('computeTitleAndDiagnosis を関数の途中で割らない', () => {
-    const titleStart = 646;
-    const titleEnd = 740;
+    const titleStart = 655;
+    const titleEnd = 749;
     const sprintRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);
       const coverage = resolved.get('src/sim/sprint.ts');
@@ -225,10 +225,10 @@ describe('mutation shards', () => {
 
   it('engine.ts の step / resolveSprint を関数の途中で割らない', () => {
     const methods = [
-      { name: 'beginSprint', start: 655, end: 724 },
-      { name: 'step', start: 768, end: 777 },
-      { name: 'resolveSprint', start: 819, end: 901 },
-      { name: 'chooseGoalAdjustment', start: 995, end: 1057 },
+      { name: 'beginSprint', start: 659, end: 728 },
+      { name: 'step', start: 772, end: 781 },
+      { name: 'resolveSprint', start: 823, end: 905 },
+      { name: 'chooseGoalAdjustment', start: 999, end: 1061 },
     ];
     const engineRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);

@@ -12,11 +12,13 @@ import {
   planOrgBoardScene,
   type OrgIslandPlan,
 } from '../render/orgBoardScene';
+import { islandDockAccessibleName } from '../render/orgIslandView';
 import { orgBoardIsCompact } from '../render/visualTokens';
 import { OrgFlowLanes } from './OrgFlowLanes';
 import { OrgHubSvg } from './OrgHub';
 import { OrgPlate } from './OrgPlate';
 import { OrgIslandBadge, OrgTeamActor } from './OrgTeamActor';
+import { focusOrgDockHit } from './orgDockFocus';
 import { pct } from './pct';
 
 const VIEW_W = ORG_VIEW.w;
@@ -143,7 +145,7 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
       `.org-island-badge-dock-hit[data-team-id="${CSS.escape(teamId)}"]`,
     );
     if (dock && document.activeElement !== dock) {
-      dock.focus({ preventScroll: true });
+      focusOrgDockHit(dock);
     }
   };
 
@@ -168,7 +170,8 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
         : `.org-island[data-team-id="${CSS.escape(teamId)}"]`,
     );
     if (next && next !== active) {
-      next.focus({ preventScroll: true });
+      if (compact) focusOrgDockHit(next);
+      else next.focus({ preventScroll: true });
     }
   }, [boardRef, compact]);
 
@@ -215,7 +218,12 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
                   data-testid={`island-badge-${island.teamId}`}
                   data-team-id={island.teamId}
                   title={island.labels.title}
-                  aria-label={island.labels.title}
+                  aria-label={islandDockAccessibleName(
+                    island.labels.title,
+                    island.badge.shipping,
+                    island.badge.ai,
+                    island.badge.headcount,
+                  )}
                   aria-current={island.team.isPlayer ? true : undefined}
                   onClick={() => onFocusTeam(island.teamId)}
                   onFocus={() => rememberFocusedTeam(island.teamId)}

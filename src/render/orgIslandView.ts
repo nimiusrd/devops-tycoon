@@ -99,6 +99,16 @@ export function islandTitle(
   return `${who}（${HEALTH_LABEL[health]}）へドリルダウン`;
 }
 
+/** ドック操作の accessible name。aria-label が子の出荷／AI／人数を上書きしないようにする。 */
+export function islandDockAccessibleName(
+  title: string,
+  shipping: string,
+  ai: string,
+  headcount: string,
+): string {
+  return `${title}。${shipping}／${ai}／${headcount}`;
+}
+
 /**
  * チームと LOD から DOM `TeamIsland` 相当のラベル列を導出する。
  * 同一入力なら常に同一出力（決定論）。

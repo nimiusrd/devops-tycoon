@@ -13,6 +13,7 @@ import {
   teamIslandView,
   truncateName,
   islandTitle,
+  islandDockAccessibleName,
 } from '../../../src/render/orgIslandView';
 import type { Team, TeamHealth } from '../../../src/sim/orgscale/types';
 
@@ -85,6 +86,19 @@ describe('islandTitle', () => {
     expect(islandTitle('チームA', 'healthy', 'プロダクト事業部', true)).toBe(
       'プロダクト事業部 ★ チームA（健全）へドリルダウン',
     );
+  });
+});
+
+describe('islandDockAccessibleName', () => {
+  it('ドリルダウン名に出荷・AI・人数を添える', () => {
+    expect(
+      islandDockAccessibleName(
+        'プロダクト事業部 チームA（健全）へドリルダウン',
+        '出荷 42',
+        'AI 70%',
+        '5人',
+      ),
+    ).toBe('プロダクト事業部 チームA（健全）へドリルダウン。出荷 42／AI 70%／5人');
   });
 });
 

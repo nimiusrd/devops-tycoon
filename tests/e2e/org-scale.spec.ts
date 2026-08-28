@@ -585,7 +585,12 @@ test('全社マップの部門ラベルがチームカードと重ならない�
         const hitCount = await dockHits.count();
         expect(hitCount, `${viewport.name} でドック操作対象が無い`).toBeGreaterThan(0);
         for (let i = 0; i < hitCount; i += 1) {
-          const hitBox = await readBox(dockHits.nth(i), `${viewport.name} ドック操作対象`);
+          const hit = dockHits.nth(i);
+          const hitBox = await readBox(hit, `${viewport.name} ドック操作対象`);
+          const name = await hit.getAttribute('aria-label');
+          expect(name, `${viewport.name} のドックに出荷が無い`).toMatch(/出荷/);
+          expect(name, `${viewport.name} のドックに AI が無い`).toMatch(/AI/);
+          expect(name, `${viewport.name} のドックに人数が無い`).toMatch(/人/);
           expect(
             hitBox.width,
             `${viewport.name} のドック操作対象幅が 24px 未満`,
@@ -694,6 +699,33 @@ test('コンパクト切替でチームのキーボードフォーカスを引�
   await page.setViewportSize(wide);
   await expect(board).toHaveAttribute('data-compact', 'false');
   await expect(page.getByTestId('team-product-t0')).toBeFocused();
+});
+
+test('コンパクト切替で後方チームのドックカードまでスクロールする', async ({ page }) => {
+  const wide = { width: 1920, height: 1200 };
+  const narrow = { width: 320, height: 568 };
+  await page.setViewportSize(wide);
+  await startRun(page, 'org-compact-dock-scroll');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+  const board = page.getByTestId('org-board');
+  await expect(board).toHaveAttribute('data-compact', 'false');
+
+  await page.getByTestId('team-newbiz-t0').focus();
+  await expect(page.getByTestId('team-newbiz-t0')).toBeFocused();
+
+  await page.setViewportSize(narrow);
+  await expect(board).toHaveAttribute('data-compact', 'true');
+  const dockHit = page.getByTestId('island-badge-newbiz-t0');
+  await expect(dockHit).toBeFocused();
+  const inView = await page.evaluate(() => {
+    const hit = document.querySelector('[data-testid="island-badge-newbiz-t0"]');
+    const dock = document.querySelector('[data-testid="org-island-badge-dock"]');
+    if (!(hit instanceof HTMLElement) || !(dock instanceof HTMLElement)) return false;
+    const hitBox = hit.getBoundingClientRect();
+    const dockBox = dock.getBoundingClientRect();
+    return hitBox.top >= dockBox.top - 1 && hitBox.bottom <= dockBox.bottom + 1;
+  });
+  expect(inView, '後方チームのドックカードが可視範囲外').toBe(true);
 });
 
 type FieldKpi = {

@@ -20,8 +20,10 @@ import {
   pointInRect,
   readLineHeightPx,
   shouldCaptureTickerWheel,
+  shouldClaimTickerTouchIdentifier,
   shouldClaimTickerTouchPan,
   shouldPreventTickerListKey,
+  shouldPreventTickerTouchMove,
   tickerHasOverflow,
   tickerListKeyDelta,
   wheelDeltaYInCssPixels,
@@ -113,29 +115,42 @@ export function EventTicker({ events }: EventTickerProps) {
     };
 
     const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' && !event.isPrimary) {
+        touchPan = null;
+        return;
+      }
       if (!shouldClaimAt(event.clientX, event.clientY, event.pointerType, event.defaultPrevented)) {
         return;
       }
-      if (event.cancelable) event.preventDefault();
       touchPan = { pointerId: event.pointerId, lastY: event.clientY };
+      if (event.pointerType === 'touch') return;
+      if (event.cancelable) event.preventDefault();
     };
 
     const onTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 1) return;
+      if (!shouldClaimTickerTouchIdentifier(event.touches.length)) {
+        touchPan = null;
+        return;
+      }
       const touch = event.touches[0];
       if (!shouldClaimAt(touch.clientX, touch.clientY, 'touch', event.defaultPrevented)) return;
-      if (event.cancelable) event.preventDefault();
+      touchPan = { pointerId: -1, lastY: touch.clientY };
     };
 
     const onTouchMove = (event: TouchEvent) => {
-      if (event.touches.length !== 1) return;
-      const touch = event.touches[0];
-      if (
-        !touchPan &&
-        !shouldClaimAt(touch.clientX, touch.clientY, 'touch', event.defaultPrevented)
-      ) {
+      const pan = touchPan;
+      if (!shouldPreventTickerTouchMove(event.touches.length, pan != null)) {
+        if (event.touches.length !== 1) touchPan = null;
         return;
       }
+      if (!pan) return;
+      const touch = event.touches[0];
+      const dy = pan.lastY - touch.clientY;
+      if (!applyTickerListScroll(list, dy)) {
+        const parent = list.parentElement;
+        if (parent != null) applyTickerListScroll(parent, dy);
+      }
+      pan.lastY = touch.clientY;
       if (event.cancelable) event.preventDefault();
     };
 
@@ -154,6 +169,10 @@ export function EventTicker({ events }: EventTickerProps) {
       if (touchPan?.pointerId === event.pointerId) touchPan = null;
     };
 
+    const onTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length === 0) touchPan = null;
+    };
+
     window.addEventListener('wheel', onWheel, { capture: true, passive: false });
     window.addEventListener('pointerdown', onPointerDown, { capture: true, passive: false });
     window.addEventListener('pointermove', onPointerMove, { passive: false });
@@ -161,6 +180,8 @@ export function EventTicker({ events }: EventTickerProps) {
     window.addEventListener('pointercancel', onPointerUp, { passive: true });
     window.addEventListener('touchstart', onTouchStart, { capture: true, passive: false });
     window.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
+    window.addEventListener('touchend', onTouchEnd, { capture: true, passive: true });
+    window.addEventListener('touchcancel', onTouchEnd, { capture: true, passive: true });
     return () => {
       window.removeEventListener('wheel', onWheel, true);
       window.removeEventListener('pointerdown', onPointerDown, true);
@@ -169,6 +190,8 @@ export function EventTicker({ events }: EventTickerProps) {
       window.removeEventListener('pointercancel', onPointerUp);
       window.removeEventListener('touchstart', onTouchStart, true);
       window.removeEventListener('touchmove', onTouchMove, true);
+      window.removeEventListener('touchend', onTouchEnd, true);
+      window.removeEventListener('touchcancel', onTouchEnd, true);
     };
   }, [rows.length]);
 
@@ -183,6 +206,7 @@ export function EventTicker({ events }: EventTickerProps) {
         className="event-ticker-label"
         id="event-ticker-heading"
         data-testid="event-ticker-heading"
+        disabled={rows.length === 0}
         onClick={focusList}
       >
         出来事

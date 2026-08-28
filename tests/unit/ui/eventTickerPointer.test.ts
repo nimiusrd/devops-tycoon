@@ -6,8 +6,10 @@ import {
   pointInRect,
   readLineHeightPx,
   shouldCaptureTickerWheel,
+  shouldClaimTickerTouchIdentifier,
   shouldClaimTickerTouchPan,
   shouldPreventTickerListKey,
+  shouldPreventTickerTouchMove,
   tickerHasOverflow,
   tickerListKeyDelta,
   TICKER_LIST_ARROW_DELTA_PX,
@@ -59,12 +61,17 @@ describe('eventTickerPointer', () => {
     expect(applyTickerListScroll(frozen, 40)).toBe(false);
   });
 
-  it('タスク粒のヒットはタッチスクロールしない', () => {
+  it('タスク粒のヒットはドラッグ可能な粒だけタッチスクロールしない', () => {
     const grain = {
-      closest: (selector: string) => (selector === '[data-task-id]' ? grain : null),
+      closest: (selector: string) =>
+        selector === '[data-task-id][data-draggable="true"]' ? grain : null,
+    };
+    const idle = {
+      closest: (selector: string) => (selector === '[data-task-id]' ? idle : null),
     };
     const empty = { closest: () => null };
     expect(hitBlocksTickerTouchScroll(grain as unknown as EventTarget)).toBe(true);
+    expect(hitBlocksTickerTouchScroll(idle as unknown as EventTarget)).toBe(false);
     expect(hitBlocksTickerTouchScroll(empty as unknown as EventTarget)).toBe(false);
     expect(hitBlocksTickerTouchScroll(null)).toBe(false);
   });
@@ -215,5 +222,14 @@ describe('eventTickerPointer', () => {
         hitsBoardDot: false,
       }),
     ).toBe(false);
+  });
+
+  it('複数接触のピンチとリスト外開始の touchmove は抑止しない', () => {
+    expect(shouldClaimTickerTouchIdentifier(1)).toBe(true);
+    expect(shouldClaimTickerTouchIdentifier(2)).toBe(false);
+    expect(shouldPreventTickerTouchMove(1, true)).toBe(true);
+    expect(shouldPreventTickerTouchMove(1, false)).toBe(false);
+    expect(shouldPreventTickerTouchMove(2, true)).toBe(false);
+    expect(shouldPreventTickerTouchMove(2, false)).toBe(false);
   });
 });

@@ -1196,7 +1196,7 @@ async function findTickerTouchPanPoint(page: Page): Promise<{ x: number; y: numb
     ];
     for (const [x, y] of samples) {
       const hit = document.elementFromPoint(x, y);
-      if (hit?.closest('[data-task-id]')) continue;
+      if (hit?.closest('[data-task-id][data-draggable="true"]')) continue;
       return { x, y };
     }
     return null;
@@ -1237,7 +1237,7 @@ async function assertTickerTouchPanClaimsAtStart(page: Page, label: string): Pro
     window.dispatchEvent(event);
     return event.defaultPrevented;
   }, point);
-  expect(prevented, `${label}: タッチ開始でティッカーのパンを確保しない`).toBe(true);
+  expect(prevented, `${label}: タッチ開始の pointerdown がピンチを塞ぐ`).toBe(false);
 
   await page.evaluate(({ x, y }) => {
     window.dispatchEvent(
@@ -1300,25 +1300,48 @@ async function assertTickerTouchPanClaimsAtStart(page: Page, label: string): Pro
     if (x < listBox.left || x > listBox.right || y < listBox.top || y > listBox.bottom) {
       return null;
     }
-    return { x, y };
+    return { x, y, draggable: grain.dataset.draggable === 'true' };
   });
   if (!grainPoint) return;
 
-  const grainPrevented = await page.evaluate(({ x, y }) => {
-    const event = new PointerEvent('pointerdown', {
-      bubbles: true,
-      cancelable: true,
-      composed: true,
-      pointerId: 79,
-      pointerType: 'touch',
-      clientX: x,
-      clientY: y,
-      isPrimary: true,
-    });
-    window.dispatchEvent(event);
-    return event.defaultPrevented;
+  await list.evaluate((element) => {
+    element.scrollTop = 0;
+    if (element.parentElement) element.parentElement.scrollTop = 0;
+  });
+  await page.evaluate(({ x, y }) => {
+    window.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        pointerId: 79,
+        pointerType: 'touch',
+        clientX: x,
+        clientY: y,
+        isPrimary: true,
+      }),
+    );
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        pointerId: 79,
+        pointerType: 'touch',
+        clientX: x,
+        clientY: y - 80,
+        isPrimary: true,
+      }),
+    );
   }, grainPoint);
-  expect(grainPrevented, `${label}: 粒上のタッチ開始をティッカーが奪う`).toBe(false);
+  const afterGrain = await list.evaluate(
+    (element) => element.scrollTop + (element.parentElement?.scrollTop ?? 0),
+  );
+  if (grainPoint.draggable) {
+    expect(afterGrain, `${label}: ドラッグ可能粒の上でティッカーがパンする`).toBe(0);
+  } else {
+    expect(afterGrain, `${label}: ドラッグ不能粒の上でティッカーがパンしない`).toBeGreaterThan(0);
+  }
 }
 
 /** 結果オーバーレイ表示中は背面ティッカーがホイールを奪わない。 */
@@ -1383,7 +1406,9 @@ async function assertSpreadCopyFitsViewport(page: Page, label: string): Promise<
 test.describe('延焼文言の DOM レイアウト', () => {
   test('延焼・連鎖延焼のティッカーが5 viewportで盤面契約を崩さない', async ({ page }) => {
     await beginPublicSprint(page, { seed: 'spread-copy-ticker-0' });
+    await expect(page.getByTestId('event-ticker-heading')).toBeDisabled();
     await injectSpreadTickerEvents(page);
+    await expect(page.getByTestId('event-ticker-heading')).toBeEnabled();
 
     await expect(page.getByTestId('event-ticker')).toBeVisible();
     await expect(page.getByText(SPREAD_TICKER_CHAIN).first()).toBeVisible();
@@ -1560,5 +1585,96 @@ test.describe('タッチ端末のティッカーパン', () => {
     expect(after, '実タッチスワイプでリストが動かない').toBeGreaterThan(0);
     const layoutAfter = await layout.evaluate((element) => element.scrollTop);
     expect(layoutAfter, '実タッチスワイプで外側レイアウトが動く').toBe(layoutBefore);
+
+    const pinch = await page.evaluate(({ x, y }) => {
+      const target = document.elementFromPoint(x, y) ?? document.body;
+      const first = new Touch({
+        identifier: 1,
+        target,
+        clientX: x,
+        clientY: y,
+      });
+      const start = new TouchEvent('touchstart', {
+        bubbles: true,
+        cancelable: true,
+        touches: [first],
+        targetTouches: [first],
+        changedTouches: [first],
+      });
+      window.dispatchEvent(start);
+      const second = new Touch({
+        identifier: 2,
+        target,
+        clientX: x + 36,
+        clientY: y,
+      });
+      const pinchStart = new TouchEvent('touchstart', {
+        bubbles: true,
+        cancelable: true,
+        touches: [first, second],
+        targetTouches: [first, second],
+        changedTouches: [second],
+      });
+      window.dispatchEvent(pinchStart);
+      const pinchMove = new TouchEvent('touchmove', {
+        bubbles: true,
+        cancelable: true,
+        touches: [first, second],
+        targetTouches: [first, second],
+        changedTouches: [first, second],
+      });
+      window.dispatchEvent(pinchMove);
+      return {
+        startPrevented: start.defaultPrevented,
+        pinchStartPrevented: pinchStart.defaultPrevented,
+        pinchMovePrevented: pinchMove.defaultPrevented,
+      };
+    }, point);
+    expect(pinch.startPrevented, '1本目 touchstart がピンチを塞ぐ').toBe(false);
+    expect(pinch.pinchStartPrevented, '2本目 touchstart がピンチを塞ぐ').toBe(false);
+    expect(pinch.pinchMovePrevented, 'ピンチの touchmove をティッカーが奪う').toBe(false);
+
+    const layoutBox = await layout.boundingBox();
+    if (!layoutBox) throw new Error('sprint-layout の box が無い');
+    const outside = { x: layoutBox.x + 24, y: layoutBox.y + layoutBox.height - 12 };
+    const outsideMove = await page.evaluate(
+      ({ outside: from, inside }) => {
+        const target = document.elementFromPoint(from.x, from.y) ?? document.body;
+        const finger = new Touch({
+          identifier: 8,
+          target,
+          clientX: from.x,
+          clientY: from.y,
+        });
+        const start = new TouchEvent('touchstart', {
+          bubbles: true,
+          cancelable: true,
+          touches: [finger],
+          targetTouches: [finger],
+          changedTouches: [finger],
+        });
+        window.dispatchEvent(start);
+        const moved = new Touch({
+          identifier: 8,
+          target,
+          clientX: inside.x,
+          clientY: inside.y,
+        });
+        const move = new TouchEvent('touchmove', {
+          bubbles: true,
+          cancelable: true,
+          touches: [moved],
+          targetTouches: [moved],
+          changedTouches: [moved],
+        });
+        window.dispatchEvent(move);
+        return { startPrevented: start.defaultPrevented, movePrevented: move.defaultPrevented };
+      },
+      { outside, inside: point },
+    );
+    expect(outsideMove.startPrevented, 'リスト外開始の touchstart をティッカーが奪う').toBe(false);
+    expect(outsideMove.movePrevented, 'リスト外開始の侵入 touchmove をティッカーが奪う').toBe(
+      false,
+    );
   });
 });

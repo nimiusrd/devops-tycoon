@@ -136,8 +136,21 @@ export function hitBlocksTickerTouchScroll(
   target: EventTarget | null,
   options?: TickerTouchHitOptions,
 ): boolean {
-  if (closestMatches(target, '[data-task-id]')) return true;
+  if (closestMatches(target, '[data-task-id][data-draggable="true"]')) return true;
   return options?.hitsBoardDot?.(options.clientX, options.clientY) === true;
+}
+
+/** 1本の接触だけ識別子を確保する。2本目以降はピンチへ渡す。 */
+export function shouldClaimTickerTouchIdentifier(touchCount: number): boolean {
+  return touchCount === 1;
+}
+
+/**
+ * 開始時に確保した単接触だけ touchmove を抑止する。
+ * リスト外開始の侵入やピンチはブラウザへ渡す。
+ */
+export function shouldPreventTickerTouchMove(touchCount: number, claimed: boolean): boolean {
+  return claimed && touchCount === 1;
 }
 
 /**

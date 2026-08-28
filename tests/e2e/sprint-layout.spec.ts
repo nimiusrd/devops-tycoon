@@ -956,7 +956,8 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
     };
   });
   expect(pointerEvents?.ticker, `${label}: ティッカー本体が盤面クリックを奪う`).toBe('none');
-  expect(pointerEvents?.list, `${label}: リストがスクロール操作を受けない`).toBe('auto');
+  expect(pointerEvents?.list, `${label}: 非ホバーのリストが盤面ドラッグを奪う`).toBe('none');
+  await assertTickerPassesBoardPointer(page, label);
   await assertTickerKeyboardReachable(page, label);
 
   const count = await rows.count();
@@ -1019,6 +1020,8 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
 
   await list.focus();
   await expect(list, `${label}: リストにフォーカスできない`).toBeFocused();
+  const focusedPointer = await list.evaluate((element) => getComputedStyle(element).pointerEvents);
+  expect(focusedPointer, `${label}: フォーカス中のリストがスクロールを受けない`).toBe('auto');
 
   const overflow = await list.evaluate(
     (element) => element.scrollHeight > element.clientHeight + 1,
@@ -1039,6 +1042,58 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
   });
   expect(after.scrollTop, `${label}: End でリストがスクロールしない`).toBeGreaterThan(top);
   expect(after.lastVisible, `${label}: End 後も最終行が見えない`).toBe(true);
+  await list.evaluate((element) => element.blur());
+}
+
+/** 非ホバー時はリスト下の盤面が elementFromPoint の対象になる。ホバー中だけリストが auto になる。 */
+async function assertTickerPassesBoardPointer(page: Page, label: string): Promise<void> {
+  const list = page.getByTestId('event-ticker-list');
+  await list.evaluate((element) => element.blur());
+
+  const idleHit = await page.evaluate(() => {
+    const row = document.querySelector<HTMLElement>('.event-ticker-row');
+    if (!row) return null;
+    const box = row.getBoundingClientRect();
+    const x = box.left + box.width / 2;
+    const y = box.top + Math.min(8, box.height / 2);
+    const el = document.elementFromPoint(x, y);
+    return {
+      x,
+      y,
+      inList: Boolean(el?.closest('[data-testid="event-ticker-list"]')),
+      inBoard: Boolean(el?.closest('[data-testid="board-stage"]')),
+    };
+  });
+  if (!idleHit) throw new Error(`${label}: 延焼行が無い`);
+  expect(idleHit.inList, `${label}: 非ホバーでもリストがヒット対象`).toBe(false);
+  expect(idleHit.inBoard, `${label}: 非ホバーで盤面へヒットが届かない`).toBe(true);
+
+  await page.mouse.move(idleHit.x, idleHit.y);
+  await expect(list, `${label}: ホバーでリストがホットにならない`).toHaveAttribute(
+    'data-pointer-hot',
+    'true',
+  );
+  const hovered = await list.evaluate((element) => getComputedStyle(element).pointerEvents);
+  expect(hovered, `${label}: ホバー中のリストがスクロールを受けない`).toBe('auto');
+
+  const overflow = await list.evaluate(
+    (element) => element.scrollHeight > element.clientHeight + 1,
+  );
+  if (overflow) {
+    await list.evaluate((element) => {
+      element.scrollTop = 0;
+    });
+    await page.mouse.move(idleHit.x, idleHit.y);
+    const before = await list.evaluate((element) => element.scrollTop);
+    await page.mouse.wheel(0, 400);
+    const afterWheel = await list.evaluate((element) => element.scrollTop);
+    expect(afterWheel, `${label}: ホイールでリストがスクロールしない`).toBeGreaterThan(before);
+  }
+
+  await page.mouse.move(8, 8);
+  await expect(list, `${label}: ホバー解除後もリストがホットのまま`).not.toHaveAttribute(
+    'data-pointer-hot',
+  );
 }
 
 async function injectSpreadResultEvents(page: Page): Promise<void> {

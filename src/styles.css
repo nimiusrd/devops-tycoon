@@ -1998,8 +1998,8 @@ body {
 }
 
 /* スプリント内イベントティッカー（RI-52）
- * DS-01: 本体は pointer-events: none のまま盤面クリックを通す。
- * DS-06: 長い5件はリストだけ縦スクロールし、ホイール/タッチで全行へ到達できる。
+ * DS-01: 本体は pointer-events: none。リストも既定は none で盤面ドラッグを通す。
+ * DS-06: 長い5件はリストだけ縦スクロールし、ホバー/フォーカス/ホイールで全行へ到達できる。
  * DS-08: リストは名前付きフォーカス領域。矢印/PageDown/End でキーボード到達できる。 */
 .event-ticker {
   position: absolute;
@@ -2035,6 +2035,11 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  pointer-events: none;
+}
+.event-ticker-list:focus,
+.event-ticker-list:focus-visible,
+.event-ticker-list.is-pointer-hot {
   pointer-events: auto;
 }
 .event-ticker-list:focus-visible {

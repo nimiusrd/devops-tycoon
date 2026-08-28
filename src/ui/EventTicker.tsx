@@ -3,14 +3,21 @@
  *
  * sim の `SprintState.events` を読み、直近の介入・出来事を言語化して盤面脇に出す。
  * 演出は読むだけ（第22.2）。
+ *
+ * DS-01: 既定は pointer-events を通し、武装中の盤面ドラッグを奪わない。
+ * DS-06 / DS-08: ホバー・フォーカス中だけリストがスクロール操作を受ける。
  */
 import { AnimatePresence, motion } from 'framer-motion';
-import type { KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { formatRecentSprintEvents } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 
 /** 同時表示する最大件数。 */
 const TICKER_LIMIT = 5;
+
+function pointInRect(x: number, y: number, rect: DOMRect): boolean {
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
 
 /** フォーカス中のリストを矢印 / Page / Home / End でスクロールする（DS-08）。 */
 function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
@@ -50,6 +57,39 @@ export interface EventTickerProps {
 
 export function EventTicker({ events }: EventTickerProps) {
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [pointerHot, setPointerHot] = useState(false);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || rows.length === 0) {
+      setPointerHot(false);
+      return;
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      // 盤面ドラッグ中はホットにせず、ポインターを盤面へ通し続ける。
+      if (event.buttons !== 0) return;
+      setPointerHot(pointInRect(event.clientX, event.clientY, list.getBoundingClientRect()));
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      if (!pointInRect(event.clientX, event.clientY, list.getBoundingClientRect())) return;
+      if (list.scrollHeight <= list.clientHeight + 1) return;
+      const max = list.scrollHeight - list.clientHeight;
+      const next = Math.min(max, Math.max(0, list.scrollTop + event.deltaY));
+      if (next === list.scrollTop) return;
+      event.preventDefault();
+      list.scrollTop = next;
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('wheel', onWheel, true);
+    };
+  }, [rows.length]);
 
   return (
     <aside className="event-ticker" data-testid="event-ticker" aria-label="スプリント出来事">
@@ -57,8 +97,10 @@ export function EventTicker({ events }: EventTickerProps) {
         出来事
       </p>
       <ul
-        className="event-ticker-list"
+        ref={listRef}
+        className={`event-ticker-list${pointerHot ? ' is-pointer-hot' : ''}`}
         data-testid="event-ticker-list"
+        data-pointer-hot={pointerHot ? 'true' : undefined}
         tabIndex={rows.length > 0 ? 0 : undefined}
         aria-labelledby="event-ticker-heading"
         onKeyDown={handleTickerListKeyDown}

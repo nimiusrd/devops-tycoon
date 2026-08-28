@@ -265,6 +265,33 @@ function isSprintResultShape(value: unknown): boolean {
   }
   if (typeof value.grade !== 'string' || typeof value.title !== 'string') return false;
   if (typeof value.diagnosis !== 'string') return false;
+  if (
+    value.gradeRatio !== undefined &&
+    (typeof value.gradeRatio !== 'number' || !Number.isFinite(value.gradeRatio))
+  ) {
+    return false;
+  }
+  if (
+    value.stabilizingBonus !== undefined &&
+    (typeof value.stabilizingBonus !== 'number' || !Number.isFinite(value.stabilizingBonus))
+  ) {
+    return false;
+  }
+  if (
+    value.seniorHpLoss !== undefined &&
+    (typeof value.seniorHpLoss !== 'number' || !Number.isFinite(value.seniorHpLoss))
+  ) {
+    return false;
+  }
+  if (
+    value.stabilizingGrants !== undefined &&
+    (typeof value.stabilizingGrants !== 'number' ||
+      !Number.isFinite(value.stabilizingGrants) ||
+      !Number.isInteger(value.stabilizingGrants) ||
+      value.stabilizingGrants < 0)
+  ) {
+    return false;
+  }
   return (
     typeof value.done === 'number' &&
     typeof value.delivered === 'number' &&

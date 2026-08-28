@@ -529,6 +529,11 @@ export interface SprintResult {
   stabilizingBonus?: number;
   /** 実際に運用安定を付与した介入回数。旧セーブは省略。 */
   stabilizingGrants?: number;
+  /**
+   * 評価に使った丸め前のシニアHP損失（start − end）。
+   * `seniorHpDelta` は表示用の整数丸め。旧セーブは省略。
+   */
+  seniorHpLoss?: number;
   /** 称号（SPEC 第4.6 の例から導出）。 */
   title: string;
   /** 診断コメント。 */

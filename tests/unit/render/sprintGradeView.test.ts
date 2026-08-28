@@ -118,4 +118,45 @@ describe('sprintGradeView', () => {
     expect(view.ratioPct).toBeLessThan(62);
     expect(view.caption).toContain('出荷に対して手戻り・障害・消耗が重い');
   });
+
+  it('出荷ゼロは危機が重いではなく未出荷と説明する', () => {
+    const view = planSprintGradeView(
+      makeResult({
+        delivered: 0,
+        rework: 0,
+        incidents: 0,
+        spread: 0,
+        seniorHpDelta: 0,
+        grade: 'D',
+      }),
+    );
+
+    expect(view.ratioPct).toBe(0);
+    expect(view.caption).toBe('未出荷のスプリントです（健全比 0%）');
+    expect(view.tip).toContain('出荷点が 0');
+    expect(view.tip).not.toContain('ペナルティが少なく');
+  });
+
+  it('丸め前の HP 損失で内訳の減点を再現する', () => {
+    const seniorHpLoss = 98.48;
+    const gradeRatio = (100 - (seniorHpLoss - 20) * 0.7) / 100;
+    const view = planSprintGradeView(
+      makeResult({
+        delivered: 100,
+        rework: 0,
+        incidents: 0,
+        spread: 0,
+        seniorHpDelta: -98,
+        seniorHpLoss,
+        grade: 'C',
+        gradeRatio,
+      }),
+    );
+
+    expect(view.rows.find((row) => row.label === 'シニアHP')).toEqual({
+      label: 'シニアHP',
+      value: '−54.9pt（-98）',
+    });
+    expect(view.ratioPct).toBe(Math.round(gradeRatio * 100));
+  });
 });

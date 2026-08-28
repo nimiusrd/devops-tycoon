@@ -47,12 +47,16 @@ type GradeRatioInput = Pick<
   | 'incidents'
   | 'spread'
   | 'seniorHpDelta'
+  | 'seniorHpLoss'
   | 'gradeRatio'
   | 'stabilizingBonus'
   | 'stabilizingGrants'
 >;
 
-function hpLossOf(result: Pick<SprintResult, 'seniorHpDelta'>): number {
+function hpLossOf(result: Pick<SprintResult, 'seniorHpDelta' | 'seniorHpLoss'>): number {
+  if (typeof result.seniorHpLoss === 'number' && Number.isFinite(result.seniorHpLoss)) {
+    return Math.max(0, result.seniorHpLoss);
+  }
   return Math.max(0, -result.seniorHpDelta);
 }
 
@@ -92,6 +96,9 @@ function isHighGrade(grade: string): boolean {
 }
 
 function captionFor(result: SprintResult, ratioPct: number, majorCrisis: boolean): string {
+  if (result.delivered === 0) {
+    return `未出荷のスプリントです（健全比 ${ratioPct}%）`;
+  }
   if (majorCrisis && isHighGrade(result.grade)) {
     return `大きな危機を出しつつ出荷した（健全比 ${ratioPct}%）`;
   }
@@ -101,7 +108,15 @@ function captionFor(result: SprintResult, ratioPct: number, majorCrisis: boolean
   return `出荷に対する健全比 ${ratioPct}%`;
 }
 
-function tipFor(majorCrisis: boolean, hasPenalty: boolean, hasBonus: boolean): string {
+function tipFor(
+  result: SprintResult,
+  majorCrisis: boolean,
+  hasPenalty: boolean,
+  hasBonus: boolean,
+): string {
+  if (result.delivered === 0) {
+    return '出荷点が 0 のため健全比の母数が立っていません。未出荷は危機の重さではなく、等級の母数がない状態です。';
+  }
   if (majorCrisis) {
     return '等級は出荷点を母数にした健全比です。出荷が多いと、シニア消耗や障害のペナルティが比率としては小さく見えます。';
   }
@@ -161,6 +176,6 @@ export function planSprintGradeView(result: SprintResult): SprintGradeView {
     ratioPct,
     caption: captionFor(result, ratioPct, majorCrisis),
     rows,
-    tip: tipFor(majorCrisis, hasPenalty, hasBonus),
+    tip: tipFor(result, majorCrisis, hasPenalty, hasBonus),
   };
 }

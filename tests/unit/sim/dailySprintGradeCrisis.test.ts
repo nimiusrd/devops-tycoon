@@ -50,7 +50,7 @@ describe('Daily 無介入 Sprint 1 の評価と危機の読み（#364）', () =>
     expect(s.org.seniorHp).toBeLessThan(3);
     expect(result.title).toBe('シニア過労メーカー');
     expect(result.diagnosis).toContain('燃え尽き寸前');
-    expect(result.diagnosis).toContain('出荷は伸びました');
+    expect(result.diagnosis).not.toContain('出荷は伸びました');
 
     const view = planSprintGradeView(result);
     expect(view.caption).toContain('大きな危機を出しつつ出荷した');
@@ -82,8 +82,7 @@ describe('Daily 無介入 Sprint 1 の評価と危機の読み（#364）', () =>
     expect(computeGrade(sprint, org)).toBe('B');
     expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
       title: 'シニア過労メーカー',
-      diagnosis:
-        '出荷は伸びましたが、レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。',
+      diagnosis: 'レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。',
     });
   });
 });

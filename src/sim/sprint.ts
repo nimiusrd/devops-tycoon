@@ -640,8 +640,7 @@ export function computeTitleAndDiagnosis(
   if (hpLoss >= SPRINT_BALANCE.titleSeniorBurnoutHpLoss.value) {
     return {
       title: 'シニア過労メーカー',
-      diagnosis:
-        '出荷は伸びましたが、レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。',
+      diagnosis: 'レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。',
     };
   }
   if (
@@ -731,6 +730,7 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     contained: m.contained,
     spread: m.spread,
     seniorHpDelta: Math.round(org.seniorHp - m.seniorHpStart),
+    seniorHpLoss: m.seniorHpStart - org.seniorHp,
     actionCounts: { ...m.actionCounts },
     grade: score.grade,
     gradeRatio: score.ratio,

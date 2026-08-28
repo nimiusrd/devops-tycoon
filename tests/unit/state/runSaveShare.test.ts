@@ -570,6 +570,67 @@ describe('途中セーブのファイル共有（RI-133）', () => {
     expect((await runStorage.load())?.summary.seed).toBe('ri133-keep-result');
   });
 
+  it('lastResult.gradeRatio が非数なら拒否し、既存セーブは残す', async () => {
+    const existing = makeRunSave('ri133-keep-grade-ratio');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-grade-ratio-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const incoming = makeResultRunSave('ri133-broken-grade-ratio');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { lastResult: Record<string, unknown> };
+    };
+    raw.state.lastResult.gradeRatio = 'broken';
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    raw.state.lastResult.gradeRatio = Number.POSITIVE_INFINITY;
+    const rejectedInf = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejectedInf).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+    expect(game.getRunSaveSummary()?.seed).toBe('ri133-keep-grade-ratio');
+  });
+
+  it('lastResult.stabilizingGrants が負数なら拒否し、省略は許可する', async () => {
+    const existing = makeRunSave('ri133-keep-grants');
+    const runStorage = new MemoryRunStorage();
+    await runStorage.save(existing);
+    const game = createGame({
+      seed: 'ri133-keep-grants-game',
+      initialMeta: defaultMeta(),
+      runStorage,
+      initialRunSave: existing,
+    });
+
+    const omitted = makeResultRunSave('ri133-omit-grants');
+    const omittedRaw = JSON.parse(serializeRunSave(omitted));
+    const omittedOk = await game.importRunSaveText(JSON.stringify(omittedRaw));
+    expect(omittedOk).toMatchObject({ ok: true });
+
+    const incoming = makeResultRunSave('ri133-neg-grants');
+    const raw = JSON.parse(serializeRunSave(incoming)) as {
+      state: { lastResult: Record<string, unknown> };
+    };
+    raw.state.lastResult.stabilizingGrants = -1;
+    const rejected = await game.importRunSaveText(JSON.stringify(raw));
+    expect(rejected).toMatchObject({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+  });
+
   it('同梱キーフレームの seed が本体と食い違うなら拒否し、既存セーブは残す', async () => {
     const existing = makeRunSave('ri133-keep-kf-seed');
     const runStorage = new MemoryRunStorage();

@@ -73,12 +73,10 @@ function formatIntervention(
 }
 
 /**
- * 延焼の正の量。整数優先。0.5 未満は小数で出し、丸めで「-0」にしない。
+ * 延焼の正の量。整数はそのまま、小数は最大 2 桁。丸めで HUD の実測と食い違わせない。
  */
 export function formatSpreadMagnitude(value: number): string | null {
   if (!(value > 0)) return null;
-  const asInt = Math.round(value);
-  if (asInt !== 0) return String(asInt);
   const hundredths = Math.round(value * 100) / 100;
   return hundredths > 0 ? String(hundredths) : null;
 }

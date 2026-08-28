@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatRecentSprintEvents,
   formatSpreadImpact,
+  formatSpreadMagnitude,
   formatSprintEvent,
 } from '../../../src/render/sprintEventView';
 import { applyAction } from '../../../src/sim/actions';
@@ -158,6 +159,27 @@ describe('sprintEventView（RI-52）', () => {
         moraleCost: 0.4,
       }),
     ).toBe('負債 +0.4 / 士気 -0.4');
+    expect(formatSpreadMagnitude(0.5)).toBe('0.5');
+    expect(formatSpreadMagnitude(1.5)).toBe('1.5');
+    expect(formatSpreadMagnitude(5)).toBe('5');
+    expect(
+      formatSpreadImpact({
+        tick: 12,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 0.5,
+      }),
+    ).toBe('負債 +6 / 士気 -0.5');
+    expect(
+      formatSpreadImpact({
+        tick: 13,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 1.5,
+      }),
+    ).toBe('負債 +6 / 士気 -1.5');
     expect(formatSprintEvent({ tick: 8, kind: 'ignite', taskId: 0, source: 'review' }).text).toBe(
       '点火! Review 落ち PR が炎上',
     );

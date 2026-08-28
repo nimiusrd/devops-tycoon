@@ -134,6 +134,8 @@ const ORG_KEYS: readonly (keyof ScenarioOrg)[] = [
  * 難易度とシナリオから AI 依存度のタスク単価を決める。
  * どちらも未指定ならグローバル既定を使うため `undefined` を返す。
  * 両方あるときは低い方を採り、Nightmare の S1 即死回避（RI-74）を崩さない。
+ * Easy の通常単価を渡すのは default シナリオのときだけ（#359 / #415）。
+ * 呼び出し側で Easy+非 default の難易度単価は `undefined` にする。
  */
 export function resolveAiDependencyPerTask(
   difficultyPerTask: number | undefined,

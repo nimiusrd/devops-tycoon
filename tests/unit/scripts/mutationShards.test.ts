@@ -184,8 +184,8 @@ describe('mutation shards', () => {
   });
 
   it('computeTitleAndDiagnosis を関数の途中で割らない', () => {
-    const titleStart = 642;
-    const titleEnd = 736;
+    const titleStart = 651;
+    const titleEnd = 745;
     const sprintRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);
       const coverage = resolved.get('src/sim/sprint.ts');

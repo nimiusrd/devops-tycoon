@@ -208,37 +208,37 @@ export const MUTATION_SHARDS = Object.freeze([
   // 完走ループ（stepSprint / drain）とレビュー炎上経路を関数境界で分ける。
   {
     id: 'sim-sprint-a',
-    mutate: 'src/sim/sprint.ts:1-211',
+    mutate: 'src/sim/sprint.ts:1-220',
     note: 'sprint 初期化（createSprint・ヘルパー。intake 手前）',
   },
   {
     id: 'sim-sprint-b',
-    mutate: 'src/sim/sprint.ts:212-345',
+    mutate: 'src/sim/sprint.ts:221-354',
     note: 'sprint 流入・実装・レビュー 1 件（intake / ignite / reviewOne）',
   },
   {
     id: 'sim-sprint-c',
-    mutate: 'src/sim/sprint.ts:346-454',
+    mutate: 'src/sim/sprint.ts:355-463',
     note: 'sprint Review 消化と炎上（forceShip / advanceReview / advanceBurning）',
   },
   {
     id: 'sim-sprint-d',
-    mutate: 'src/sim/sprint.ts:455-526',
+    mutate: 'src/sim/sprint.ts:464-535',
     note: 'sprint 完了判定（rework / drain / stall / abandon）',
   },
   {
     id: 'sim-sprint-e',
-    mutate: 'src/sim/sprint.ts:527-584',
+    mutate: 'src/sim/sprint.ts:536-593',
     note: 'sprint 1 tick 本体（stepSprint。無限ループ mutant の主因）',
   },
   {
     id: 'sim-sprint-f',
-    mutate: 'src/sim/sprint.ts:585-641',
+    mutate: 'src/sim/sprint.ts:594-650',
     note: 'sprint 評価（tickCooldowns / computeGrade）',
   },
   {
     id: 'sim-sprint-g',
-    mutate: `src/sim/sprint.ts:642-${OPEN_RANGE_END}`,
+    mutate: `src/sim/sprint.ts:651-${OPEN_RANGE_END}`,
     note: 'sprint 称号と summarizeSprint（computeTitleAndDiagnosis 全体。以降の追記もここ）',
   },
   {

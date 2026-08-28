@@ -5,12 +5,14 @@
 import { describe, expect, it } from 'vitest';
 import { getDifficulty } from '../../../src/data/difficulties';
 import { AI_DEP_PER_TASK } from '../../../src/sim/model/process';
+import { createEngine } from '../../../src/sim/engine';
 import { RunEngine } from '../../../src/sim/run/engine';
 import {
   applyScenarioOrg,
   getScenario,
   resolveAiDependencyPerTask,
 } from '../../../src/sim/scenarios';
+import { resolveSprintConfig } from '../../../src/sim/sprint';
 import { playUntil, type PlayOptions } from '../helpers/runFlow';
 import type { ScenarioId } from '../../../src/sim/types';
 
@@ -62,6 +64,13 @@ describe('Easy + Copilot Sprint 1 (#387)', () => {
     const copilot = sprint1('copilot', { skilled: true });
     expect(copilot.startAi).toBe(33);
     expect(copilot.endAi).toBeLessThan(80);
+  });
+
+  it('単体 Engine の Copilot も resolveSprintConfig 経由で単価 1.4 を載せる', () => {
+    expect(resolveSprintConfig('copilot').aiDependencyPerTask).toBe(1.4);
+    expect(resolveSprintConfig('default').aiDependencyPerTask).toBeUndefined();
+    const engine = createEngine({ scenario: 'copilot', aiEnabled: true, seed: SEED });
+    expect(engine.snapshot().sprint.config.aiDependencyPerTask).toBe(1.4);
   });
 
   it('Easy+Copilot のタスク単価は 1.4、Nightmare+Copilot は 0.8 のまま', () => {

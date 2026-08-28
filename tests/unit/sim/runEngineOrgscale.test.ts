@@ -52,6 +52,25 @@ describe('RunEngine: ズーム階層', () => {
     expect(s.industry).toBeNull();
   });
 
+  it('全社マップへズームしても現場 KPI とスプリント進行は変わらない', () => {
+    const e = started('org-map-kpi');
+    const before = e.snapshot();
+    expect(e.zoomLevel()).toBe('team');
+    e.zoomTo('company');
+    expect(e.zoomLevel()).toBe('company');
+    const during = e.snapshot();
+    expect(during.org.deliveryScore).toBe(before.org.deliveryScore);
+    expect(during.sprintTick).toBe(before.sprintTick);
+    expect(during.totals).toEqual(before.totals);
+    expect(during.sprintsPlayed).toBe(before.sprintsPlayed);
+    e.zoomTo('team');
+    expect(e.zoomLevel()).toBe('team');
+    const after = e.snapshot();
+    expect(after.org.deliveryScore).toBe(before.org.deliveryScore);
+    expect(after.sprintTick).toBe(before.sprintTick);
+    expect(after.totals).toEqual(before.totals);
+  });
+
   it('部署へズームすると先頭部門がフォーカスされる', () => {
     const e = started();
     e.zoomTo('department');

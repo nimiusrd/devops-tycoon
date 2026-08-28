@@ -98,7 +98,8 @@ export function TitleScreen({
   const [trials, setTrials] = useState<string[]>([]);
   const [scenario, setScenario] = useState<ScenarioId>(DEFAULT_SCENARIO);
   const [recipeSeed, setRecipeSeed] = useState<string | null>(null);
-  const [recipeText, setRecipeText] = useState('');
+  /** 手編集中の JSON。null なら現在の開始条件を即時直列化する（#383）。 */
+  const [recipeDraft, setRecipeDraft] = useState<string | null>(null);
   const [recipeStatus, setRecipeStatus] = useState<{
     kind: 'idle' | 'ok' | 'error';
     message: string;
@@ -121,20 +122,19 @@ export function TitleScreen({
   const toggleTrial = (id: string) =>
     setTrials((cur) => (cur.includes(id) ? cur.filter((t) => t !== id) : [...cur, id]));
 
-  const currentRecipeText = () =>
-    serializeStartRecipe({
-      seed,
-      difficulty,
-      trials,
-      scenario,
-      preferredCardIds: meta.preferredCardIds,
-    });
+  const liveRecipeText = serializeStartRecipe({
+    seed,
+    difficulty,
+    trials,
+    scenario,
+    preferredCardIds: meta.preferredCardIds,
+  });
+  const recipeText = recipeDraft ?? liveRecipeText;
 
   const exportRecipe = (): string => {
-    const text = currentRecipeText();
-    setRecipeText(text);
+    setRecipeDraft(null);
     setRecipeStatus({ kind: 'ok', message: '現在の開始条件を書き出しました。' });
-    return text;
+    return liveRecipeText;
   };
 
   const downloadRecipe = () => {
@@ -158,7 +158,7 @@ export function TitleScreen({
     setTrials([...loaded.recipe.trials]);
     setScenario(loaded.recipe.scenario);
     setRecipeSeed(loaded.recipe.seed);
-    setRecipeText(raw);
+    setRecipeDraft(null);
     onApplyPreferred?.(loaded.recipe.preferredCardIds);
     setRecipeStatus({ kind: 'ok', message: '開始条件を読み込みました。' });
   };
@@ -168,7 +168,7 @@ export function TitleScreen({
     event.target.value = '';
     if (!file) return;
     void file.text().then((raw) => {
-      setRecipeText(raw);
+      setRecipeDraft(raw);
       applyRecipeText(raw);
     });
   };
@@ -472,7 +472,7 @@ export function TitleScreen({
                   className="title-recipe-text"
                   data-testid="start-recipe-text"
                   value={recipeText}
-                  onChange={(event) => setRecipeText(event.target.value)}
+                  onChange={(event) => setRecipeDraft(event.target.value)}
                   placeholder="書き出した JSON を貼り付けるか、ファイルから読み込む"
                   spellCheck={false}
                   rows={6}

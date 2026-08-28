@@ -946,6 +946,14 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
   const rows = list.locator('.event-ticker-row');
   await expect(rows, `${label}: 延焼行が5件ない`).toHaveCount(5);
 
+  await list.evaluate((element) => element.blur());
+  await page.mouse.move(8, 8);
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new PointerEvent('pointermove', { clientX: 8, clientY: 8, buttons: 0, bubbles: true }),
+    );
+  });
+
   const pointerEvents = await page.evaluate(() => {
     const ticker = document.querySelector('.event-ticker');
     const scrollList = document.querySelector('.event-ticker-list');

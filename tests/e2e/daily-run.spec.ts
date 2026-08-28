@@ -154,6 +154,15 @@ test('確認ダイアログは Escape で閉じ、Tab がダイアログ内に�
   await expect(dialog).toBeVisible();
   await expect(page.getByTestId('start-daily-confirm-resume')).toBeFocused();
 
+  const backgroundLocked = await page.evaluate(() => {
+    const dialog = document.querySelector('[data-testid="start-daily-confirm"]');
+    if (!(dialog instanceof HTMLElement)) return false;
+    return [...document.body.children]
+      .filter((node) => node !== dialog)
+      .every((node) => node instanceof HTMLElement && node.inert);
+  });
+  expect(backgroundLocked).toBe(true);
+
   await page.keyboard.press('Tab');
   await expect(page.getByTestId('start-daily-confirm-discard')).toBeFocused();
   await page.keyboard.press('Tab');
@@ -162,6 +171,16 @@ test('確認ダイアログは Escape で閉じ、Tab がダイアログ内に�
   await expect(page.getByTestId('start-daily-confirm-resume')).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(page.getByTestId('start-daily-confirm-cancel')).toBeFocused();
+
+  await page.getByTestId('start-run').evaluate((el) => (el as HTMLElement).focus());
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const dialog = document.querySelector('[data-testid="start-daily-confirm"]');
+        return dialog?.contains(document.activeElement) === true;
+      }),
+    )
+    .toBe(true);
 
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);

@@ -6,7 +6,7 @@
  * レイアウトは司令室 UI の構図を使い、文言は SPEC の用語に揃える。
  * ラン開始 CTA は画面下のドックに常時出し、初見がスクロールなしで始められるようにする。
  */
-import { useCallback, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
@@ -97,6 +97,8 @@ export function TitleScreen({
     message: string;
   }>({ kind: 'idle', message: '' });
   const [dailyConfirmOpen, setDailyConfirmOpen] = useState(false);
+  const dailyConfirmWasOpen = useRef(false);
+  const startDailyButtonRef = useRef<HTMLButtonElement>(null);
   const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
@@ -227,6 +229,17 @@ export function TitleScreen({
     onStartDaily?.();
   };
 
+  useEffect(() => {
+    if (dailyConfirmOpen) {
+      dailyConfirmWasOpen.current = true;
+      return;
+    }
+    if (!dailyConfirmWasOpen.current) return;
+    dailyConfirmWasOpen.current = false;
+    // ダイアログ側は useDialogOverlayLock が背面を inert にする。解除後に開いたボタンへ戻す。
+    startDailyButtonRef.current?.focus();
+  }, [dailyConfirmOpen]);
+
   const launchControls = onStartDaily ? (
     <section className="title-launch-row" data-testid="daily-run-section">
       <div className="title-daily">
@@ -236,6 +249,7 @@ export function TitleScreen({
           UTC {today}・{dailyStatus}
         </small>
         <button
+          ref={startDailyButtonRef}
           type="button"
           data-testid="start-daily-run"
           disabled={runSaveImporting}

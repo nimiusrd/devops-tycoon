@@ -3,17 +3,17 @@
  *
  * 再開できるとき: 途中セーブを守って再開するか、上書きしてデイリーを始めるか。
  * 再開できないとき: 戻るか、互換のないセーブを捨ててデイリーを始めるか。
- * 既存の `.result-overlay` を確認ダイアログとして使う。
+ * 既存の `.result-overlay` と `useDialogOverlayLock` でモーダル契約（DS-08）を守る。
  */
 import { useEffect, useId, useRef } from 'react';
 import type { RunSaveSummary } from '../state/runPersistence';
-import { listFocusable, wrapTabIfNeeded } from './dialogOverlayLock';
 import {
   resumableRunDetail,
   resumableRunHeadline,
   startDailyConfirmRiskText,
   startDailyConfirmTitle,
 } from './runSaveSummaryCopy';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface StartDailyConfirmDialogProps {
   summary: RunSaveSummary;
@@ -39,30 +39,21 @@ export function StartDailyConfirmDialog({
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const previouslyFocused = document.activeElement;
     const initial = canResume ? resumeRef.current : cancelRef.current;
     (initial ?? root).focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onCancel();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      const target = wrapTabIfNeeded(listFocusable(root), active, event.shiftKey, root);
-      if (!target) return;
+      if (event.key !== 'Escape') return;
       event.preventDefault();
-      target.focus();
+      onCancel();
     };
 
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
     };
   }, [canResume, onCancel]);
+  useDialogOverlayLock(rootRef);
 
   return (
     <div

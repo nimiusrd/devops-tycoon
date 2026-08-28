@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
-import { DESIGN_SPACES } from '../../src/render/visualTokens';
+import { DESIGN_SPACES, VISUAL_TOKENS } from '../../src/render/visualTokens';
 import { dailyRunKey } from '../../src/state/meta';
 import { CURRENT_RUN_RULESET } from '../../src/state/runPersistence';
 import type { RunState } from '../../src/sim/run/types';
@@ -460,10 +460,13 @@ function boxesOverlap(a: Box, b: Box): boolean {
 
 test('全社マップの部門ラベルがチームカードと重ならない（#380）', async ({ page }) => {
   const viewports = [
+    { name: 'phone-se', width: 320, height: 568 },
     { name: 'phone', width: 390, height: 844 },
+    { name: 'tablet-portrait', width: 768, height: 1024 },
     { name: 'desktop-short', width: 1024, height: 768 },
     { name: 'desktop', width: 1440, height: 900 },
   ] as const;
+  const island = VISUAL_TOKENS.dimensions.organization.island;
 
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -496,25 +499,41 @@ test('全社マップの部門ラベルがチームカードと重ならない�
         ).toBe(false);
       }
     }
-    if (viewport.name !== 'phone') {
+    const boardBox = await readBox(board, `${viewport.name} 盤面`);
+    if (boardBox.width > 520) {
       expect(
         visibleLabelBoxes.length,
         `${viewport.name} で部門ラベルが見えない`,
       ).toBeGreaterThanOrEqual(3);
     }
 
+    const nameSize = await page
+      .locator('.org-island-badge strong')
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    const metaSize = await page
+      .locator('.org-island-meta')
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(nameSize, `${viewport.name} のチーム名が可読下限未満`).toBeGreaterThanOrEqual(
+      island.badgeMinFontSize,
+    );
+    expect(metaSize, `${viewport.name} のチームメタが可読下限未満`).toBeGreaterThanOrEqual(
+      island.badgeMinMetaSize,
+    );
+
     const hub = page.getByTestId('org-infra-hub');
-    if (await hub.isVisible()) {
-      const hubBox = await hub.boundingBox();
-      if (hubBox) {
-        for (const badge of badges) {
-          const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
-          expect(
-            boxesOverlap(hubBox, badgeBox),
-            `${viewport.name} でハブラベルとチームカードが重なっている`,
-          ).toBe(false);
-        }
-      }
+    await expect(hub, `${viewport.name} の共通基盤が見えない`).toBeVisible();
+    await expect(hub).toContainText(/CI\s+\d+/);
+    await expect(hub).toContainText(/Docs\s+\d+/);
+    await expect(hub).toContainText(/AI\s+\d+/);
+    const hubBox = await readBox(hub, `${viewport.name} 共通基盤`);
+    for (const badge of badges) {
+      const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
+      expect(
+        boxesOverlap(hubBox, badgeBox),
+        `${viewport.name} でハブラベルとチームカードが重なっている`,
+      ).toBe(false);
     }
   }
 });

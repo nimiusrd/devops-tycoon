@@ -6160,6 +6160,8 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 }
 .org-hub-badge {
   position: absolute;
+  left: var(--org-hub-left);
+  top: var(--org-hub-top);
   transform: translate(-50%, -50%);
   z-index: 160;
   display: flex;
@@ -6171,7 +6173,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-radius: 14px;
   background: #11183ae6;
   border: 2px solid var(--sky);
-  font-size: calc(var(--visual-org-hub-overlay-font-size) * var(--org-board-scale));
+  font-size: max(
+    var(--visual-org-hub-overlay-min-font-size),
+    calc(var(--visual-org-hub-overlay-font-size) * var(--org-board-scale))
+  );
   font-weight: 800;
   color: var(--cream);
   white-space: nowrap;
@@ -6182,14 +6187,29 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-color: #ffd45c;
 }
 .org-hub-meta {
-  font-size: calc(var(--visual-org-hub-overlay-meta-size) * var(--org-board-scale));
+  font-size: max(
+    var(--visual-org-hub-overlay-min-meta-size),
+    calc(var(--visual-org-hub-overlay-meta-size) * var(--org-board-scale))
+  );
   font-weight: 700;
   color: var(--sky);
 }
-/* 狭い盤面では固定pxラベルが島カードを覆う。部門チップが名前を担う。 */
+/* 狭い盤面では部門ラベルが島カードを覆う。部門チップが名前を担う。
+ * 共通基盤の CI / Docs / AI は状態値なので残し、上端へコンパクト配置する（DS-06）。 */
 @container (max-width: 520px) {
-  .org-zone-label,
+  .org-zone-label {
+    display: none;
+  }
   .org-hub-badge {
+    left: 50%;
+    top: var(--visual-org-hub-overlay-top);
+    transform: translateX(-50%);
+    flex-direction: row;
+    gap: 6px;
+    z-index: 180;
+  }
+  .org-hub-icon,
+  .org-hub-title {
     display: none;
   }
 }
@@ -6213,7 +6233,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-radius: 12px;
   background: #1f1942e6;
   border: 2px solid var(--line);
-  font-size: calc(var(--visual-org-island-badge-font-size) * var(--org-board-scale));
+  font-size: max(
+    var(--visual-org-island-badge-min-font-size),
+    calc(var(--visual-org-island-badge-font-size) * var(--org-board-scale))
+  );
   color: var(--cream);
   white-space: nowrap;
   box-shadow: 0 3px 0 #00000044;
@@ -6229,12 +6252,18 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #3a1414e6;
 }
 .org-island-meta {
-  font-size: calc(var(--visual-org-island-badge-meta-size) * var(--org-board-scale));
+  font-size: max(
+    var(--visual-org-island-badge-min-meta-size),
+    calc(var(--visual-org-island-badge-meta-size) * var(--org-board-scale))
+  );
   color: var(--text-dim);
 }
 .org-island-tag {
   display: inline-block;
-  font-size: calc(var(--visual-org-island-badge-tag-size) * var(--org-board-scale));
+  font-size: max(
+    var(--visual-org-island-badge-min-tag-size),
+    calc(var(--visual-org-island-badge-tag-size) * var(--org-board-scale))
+  );
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 999px;
@@ -6249,6 +6278,14 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-island-badge.tone-hell .org-island-tag {
   background: color-mix(in srgb, var(--visual-color-health-review-hell) 20%, transparent);
   color: var(--visual-color-health-review-hell);
+}
+@container (max-width: 520px) {
+  .org-island-badge {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
 }
 .org-island {
   position: absolute;
@@ -6310,7 +6347,6 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-pixi-mount {
   position: absolute;
   inset: 0;
-  top: var(--visual-org-hub-overlay-height);
   z-index: 1;
 }
 .org-pixi-mount canvas {

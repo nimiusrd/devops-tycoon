@@ -2,6 +2,7 @@
  * 全社マップの共通基盤ハブ（サーバーラック + AI ボット）。
  * レイアウトは旧モック org-screen（git 履歴の mockups/）由来。
  */
+import type { CSSProperties } from 'react';
 import type { OrgHubPlan } from '../render/orgBoardScene';
 import { VISUAL_TOKENS } from '../render/visualTokens';
 
@@ -98,11 +99,18 @@ export function OrgHubLabel({
     <div
       className={`org-hub-badge tone-${hub.tone}`}
       data-testid="org-infra-hub"
-      style={{ left: pctX(hub.labelX), top: pctY(hub.labelY) }}
+      style={
+        {
+          '--org-hub-left': pctX(hub.labelX),
+          '--org-hub-top': pctY(hub.labelY),
+        } as CSSProperties
+      }
       title="共通基盤ハブ（全チームへ波及）"
     >
-      <span aria-hidden>🛠</span>
-      <span>Platform / 共通基盤</span>
+      <span className="org-hub-icon" aria-hidden>
+        🛠
+      </span>
+      <span className="org-hub-title">Platform / 共通基盤</span>
       <span className="org-hub-meta">
         CI {hub.ci} / Docs {hub.docs} / AI {hub.aiGuideline}
       </span>

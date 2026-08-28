@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyTickerListScroll,
+  applyTickerPointerPan,
   hitBlocksTickerTouchScroll,
   isTickerPointerSuppressed,
   pointInRect,
@@ -59,6 +60,23 @@ describe('eventTickerPointer', () => {
       },
     };
     expect(applyTickerListScroll(frozen, 40)).toBe(false);
+  });
+
+  it('境界でもパンの基準座標を進め、反転したらすぐ動く', () => {
+    const list = {
+      scrollTop: 0,
+      scrollHeight: 200,
+      clientHeight: 50,
+      parentElement: null,
+    };
+    const blocked = applyTickerPointerPan(list, 100, 180);
+    expect(blocked.moved).toBe(false);
+    expect(blocked.lastY).toBe(180);
+    expect(list.scrollTop).toBe(0);
+    const reversed = applyTickerPointerPan(list, blocked.lastY, 100);
+    expect(reversed.moved).toBe(true);
+    expect(reversed.lastY).toBe(100);
+    expect(list.scrollTop).toBe(80);
   });
 
   it('タスク粒のヒットはドラッグ可能な粒だけタッチスクロールしない', () => {

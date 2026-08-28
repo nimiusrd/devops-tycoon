@@ -51,6 +51,30 @@ export function applyTickerListScroll(
   return list.scrollTop !== previous;
 }
 
+type TickerPanScroller = {
+  scrollTop: number;
+  scrollHeight: number;
+  clientHeight: number;
+  parentElement: { scrollTop: number; scrollHeight: number; clientHeight: number } | null;
+};
+
+/**
+ * リストか親へパンし、境界でも基準座標を現在位置へ進める。
+ * 反転時に古い lastY のまま同じ方向へ動かさない（pen のデッドゾーン回避）。
+ */
+export function applyTickerPointerPan(
+  list: TickerPanScroller,
+  lastY: number,
+  clientY: number,
+): { lastY: number; moved: boolean } {
+  const dy = lastY - clientY;
+  let moved = applyTickerListScroll(list, dy);
+  if (!moved && list.parentElement) {
+    moved = applyTickerListScroll(list.parentElement, dy);
+  }
+  return { lastY: clientY, moved };
+}
+
 /** リスト本体か親が縦に溢れているか。 */
 export function tickerHasOverflow(list: {
   scrollHeight: number;

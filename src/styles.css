@@ -2037,7 +2037,8 @@ body {
 }
 .event-ticker-label:focus-visible {
   outline: 2px solid var(--visual-color-interaction-drag);
-  outline-offset: 2px;
+  /* 親 .event-ticker の overflow: hidden が外側枠を切るので内側へ描く（DS-08）。 */
+  outline-offset: -2px;
 }
 .event-ticker-list {
   list-style: none;
@@ -2055,7 +2056,7 @@ body {
 }
 .event-ticker-list:focus-visible {
   outline: 2px solid var(--visual-color-interaction-drag);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 .event-ticker-row {
   display: flex;

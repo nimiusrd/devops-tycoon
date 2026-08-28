@@ -963,6 +963,7 @@ async function assertSpreadTickerRowsReachable(page: Page, label: string): Promi
   await assertTickerPassesBoardPointer(page, label);
   await assertTickerKeyboardReachable(page, label);
   await assertTickerTouchPanClaimsAtStart(page, label);
+  await assertTickerPenReversesAtBound(page, label);
 
   const count = await rows.count();
   for (let i = 0; i < count; i += 1) {
@@ -1066,6 +1067,52 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
   await list.evaluate((element) => element.blur());
 }
 
+/** 親 overflow:hidden でも 2px 枠が内側に残り、クリップされない（DS-08）。 */
+async function assertTickerFocusRingInside(
+  page: Page,
+  target: Locator,
+  label: string,
+): Promise<void> {
+  const ring = await target.evaluate((el) => {
+    const parent = el.closest('.event-ticker');
+    const cs = getComputedStyle(el);
+    const parentOverflow = parent ? getComputedStyle(parent).overflow : '';
+    if (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) {
+      return {
+        parentOverflow,
+        outlineOffset: parseFloat(cs.outlineOffset),
+        outlineWidth: parseFloat(cs.outlineWidth),
+      };
+    }
+    const selector = el.classList.contains('event-ticker-label')
+      ? '.event-ticker-label:focus-visible'
+      : '.event-ticker-list:focus-visible';
+    for (const sheet of Array.from(document.styleSheets)) {
+      let rules: CSSRuleList;
+      try {
+        rules = sheet.cssRules;
+      } catch {
+        continue;
+      }
+      for (const rule of Array.from(rules)) {
+        if (!(rule instanceof CSSStyleRule)) continue;
+        const matches = rule.selectorText.split(',').some((part) => part.trim() === selector);
+        if (!matches) continue;
+        return {
+          parentOverflow,
+          outlineOffset: parseFloat(rule.style.outlineOffset || '0'),
+          outlineWidth: parseFloat(rule.style.outlineWidth || '0'),
+        };
+      }
+    }
+    return null;
+  });
+  expect(ring, `${label} のフォーカス枠規則が無い`).not.toBeNull();
+  expect(ring!.parentOverflow, `${label} の親が overflow hidden でない`).toBe('hidden');
+  expect(ring!.outlineWidth, `${label} のフォーカス枠が 2px 未満`).toBeGreaterThanOrEqual(2);
+  expect(ring!.outlineOffset, `${label} のフォーカス枠が親の外側へはみ出す`).toBeLessThanOrEqual(0);
+}
+
 /** ホバーでは盤面へ通し、見出しタップと修飾なしホイールで一覧へ到達する。 */
 async function assertTickerPassesBoardPointer(page: Page, label: string): Promise<void> {
   const list = page.getByTestId('event-ticker-list');
@@ -1101,6 +1148,12 @@ async function assertTickerPassesBoardPointer(page: Page, label: string): Promis
   );
   await heading.click();
   await expect(list, `${label}: 見出し click でリストにフォーカスできない`).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(heading, `${label}: Shift+Tab で見出しへ戻れない`).toBeFocused();
+  await assertTickerFocusRingInside(page, heading, `${label}: 見出し`);
+  await heading.press('Enter');
+  await expect(list, `${label}: Enter でリストにフォーカスできない`).toBeFocused();
+  await assertTickerFocusRingInside(page, list, `${label}: リスト`);
   const focused = await list.evaluate((element) => getComputedStyle(element).pointerEvents);
   expect(focused, `${label}: フォーカス中のリストが盤面ドラッグを奪う`).toBe('none');
   const focusedHit = await page.evaluate(({ x, y }) => {
@@ -1342,6 +1395,80 @@ async function assertTickerTouchPanClaimsAtStart(page: Page, label: string): Pro
   } else {
     expect(afterGrain, `${label}: ドラッグ不能粒の上でティッカーがパンしない`).toBeGreaterThan(0);
   }
+}
+
+/**
+ * ペンが先頭境界で止まったあと、方向を反転すればデッドゾーンなくパンする。
+ */
+async function assertTickerPenReversesAtBound(page: Page, label: string): Promise<void> {
+  const list = page.getByTestId('event-ticker-list');
+  const overflow = await list.evaluate(
+    (element) => element.scrollHeight > element.clientHeight + 1,
+  );
+  if (!overflow) return;
+
+  const point = await findTickerTouchPanPoint(page);
+  if (!point) return;
+
+  await list.evaluate((element) => {
+    element.scrollTop = 0;
+    if (element.parentElement) element.parentElement.scrollTop = 0;
+  });
+
+  const prevented = await page.evaluate(({ x, y }) => {
+    const down = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 91,
+      pointerType: 'pen',
+      clientX: x,
+      clientY: y,
+      isPrimary: true,
+    });
+    window.dispatchEvent(down);
+    const pastBound = new PointerEvent('pointermove', {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 91,
+      pointerType: 'pen',
+      clientX: x,
+      clientY: y + 80,
+      isPrimary: true,
+    });
+    window.dispatchEvent(pastBound);
+    const reverse = new PointerEvent('pointermove', {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      pointerId: 91,
+      pointerType: 'pen',
+      clientX: x,
+      clientY: y - 80,
+      isPrimary: true,
+    });
+    window.dispatchEvent(reverse);
+    window.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        pointerId: 91,
+        pointerType: 'pen',
+        clientX: x,
+        clientY: y - 80,
+        isPrimary: true,
+      }),
+    );
+    return reverse.defaultPrevented;
+  }, point);
+
+  expect(prevented, `${label}: 境界後のペン移動が preventDefault されない`).toBe(true);
+  const after = await list.evaluate(
+    (element) => element.scrollTop + (element.parentElement?.scrollTop ?? 0),
+  );
+  expect(after, `${label}: ペンが境界から反転してもデッドゾーンになる`).toBeGreaterThan(0);
 }
 
 /** 結果オーバーレイ表示中は背面ティッカーがホイールを奪わない。 */

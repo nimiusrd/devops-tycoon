@@ -15,6 +15,7 @@ import { formatRecentSprintEvents } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 import {
   applyTickerListScroll,
+  applyTickerPointerPan,
   hitBlocksTickerTouchScroll,
   isTickerPointerSuppressed,
   pointInRect,
@@ -145,23 +146,13 @@ export function EventTicker({ events }: EventTickerProps) {
       }
       if (!pan) return;
       const touch = event.touches[0];
-      const dy = pan.lastY - touch.clientY;
-      if (!applyTickerListScroll(list, dy)) {
-        const parent = list.parentElement;
-        if (parent != null) applyTickerListScroll(parent, dy);
-      }
-      pan.lastY = touch.clientY;
+      pan.lastY = applyTickerPointerPan(list, pan.lastY, touch.clientY).lastY;
       if (event.cancelable) event.preventDefault();
     };
 
     const onPointerMove = (event: PointerEvent) => {
       if (!touchPan || event.pointerId !== touchPan.pointerId) return;
-      const dy = touchPan.lastY - event.clientY;
-      if (!applyTickerListScroll(list, dy)) {
-        const parent = list.parentElement;
-        if (parent == null || !applyTickerListScroll(parent, dy)) return;
-      }
-      touchPan.lastY = event.clientY;
+      touchPan.lastY = applyTickerPointerPan(list, touchPan.lastY, event.clientY).lastY;
       if (event.cancelable) event.preventDefault();
     };
 

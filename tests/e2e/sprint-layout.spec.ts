@@ -840,21 +840,47 @@ async function injectSpreadTickerEvents(page: Page): Promise<void> {
     const sprint = game?.engine.sprint;
     if (!game || !sprint) throw new Error('sprint が無い');
     sprint.events.push(
-      { tick: 4, kind: 'ignite', taskId: 0, source: 'review' },
-      { tick: 7, kind: 'spread', taskId: 1, spreadToTaskId: 3, debtGain: 6, moraleCost: 5 },
-      { tick: 8, kind: 'spread', taskId: 2, debtGain: 6, moraleCost: 5 },
-      {
-        tick: 9,
-        kind: 'spread',
-        taskId: 4,
-        spreadToTaskId: 5,
-        debtGain: 6,
-        moraleCost: 5,
-      },
-      { tick: 10, kind: 'spread', taskId: 6, debtGain: 6, moraleCost: 5 },
+      { tick: 6, kind: 'spread', taskId: 1, spreadToTaskId: 3, debtGain: 6, moraleCost: 5 },
+      { tick: 7, kind: 'spread', taskId: 2, debtGain: 6, moraleCost: 5 },
+      { tick: 8, kind: 'spread', taskId: 4, spreadToTaskId: 5, debtGain: 6, moraleCost: 5 },
+      { tick: 9, kind: 'spread', taskId: 6, debtGain: 6, moraleCost: 5 },
+      { tick: 10, kind: 'spread', taskId: 8, spreadToTaskId: 9, debtGain: 6, moraleCost: 5 },
     );
     game.step(0);
   });
+}
+
+/** 狭い盤面でも5件の延焼行が、スクロール後（またはそのまま）リスト可視領域に入る。 */
+async function assertSpreadTickerRowsReachable(page: Page, label: string): Promise<void> {
+  const list = page.getByTestId('event-ticker-list');
+  const rows = list.locator('.event-ticker-row');
+  await expect(rows, `${label}: 延焼行が5件ない`).toHaveCount(5);
+
+  const pointerEvents = await page.evaluate(() => {
+    const ticker = document.querySelector('.event-ticker');
+    const scrollList = document.querySelector('.event-ticker-list');
+    if (!ticker || !scrollList) return null;
+    return {
+      ticker: getComputedStyle(ticker).pointerEvents,
+      list: getComputedStyle(scrollList).pointerEvents,
+    };
+  });
+  expect(pointerEvents?.ticker, `${label}: ティッカー本体が盤面クリックを奪う`).toBe('none');
+  expect(pointerEvents?.list, `${label}: リストがスクロール操作を受けない`).toBe('auto');
+
+  const count = await rows.count();
+  for (let i = 0; i < count; i += 1) {
+    const row = rows.nth(i);
+    await row.evaluate((element) => element.scrollIntoView({ block: 'nearest' }));
+    const visibleInList = await row.evaluate((element) => {
+      const scrollList = element.closest('[data-testid="event-ticker-list"]');
+      if (!scrollList) return false;
+      const listRect = scrollList.getBoundingClientRect();
+      const rowRect = element.getBoundingClientRect();
+      return rowRect.top >= listRect.top - 1 && rowRect.bottom <= listRect.bottom + 1;
+    });
+    expect(visibleInList, `${label}: ${i + 1}行目がリスト可視領域に入らない`).toBe(true);
+  }
 }
 
 async function injectSpreadResultEvents(page: Page): Promise<void> {
@@ -939,6 +965,10 @@ test.describe('延焼文言の DOM レイアウト', () => {
         textFits,
         `延焼ティッカーが横に溢れている（${viewport.width}x${viewport.height}）`,
       ).toBe(true);
+      await assertSpreadTickerRowsReachable(
+        page,
+        `延焼ティッカー ${viewport.width}x${viewport.height}`,
+      );
       await assertSpreadCopyFitsViewport(
         page,
         `延焼ティッカー ${viewport.width}x${viewport.height}`,

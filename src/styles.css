@@ -1963,7 +1963,9 @@ body {
     0 2px 0 #0006;
 }
 
-/* スプリント内イベントティッカー（RI-52） */
+/* スプリント内イベントティッカー（RI-52）
+ * DS-01: 本体は pointer-events: none のまま盤面クリックを通す。
+ * DS-06: 長い5件はリストだけ縦スクロールし、ホイール/タッチで全行へ到達できる。 */
 .event-ticker {
   position: absolute;
   top: 12px;
@@ -1971,8 +1973,7 @@ body {
   z-index: 14;
   width: min(280px, 42%);
   max-height: 58%;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -1980,6 +1981,7 @@ body {
 }
 .event-ticker-label {
   margin: 0;
+  flex: 0 0 auto;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1993,6 +1995,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
 }
 .event-ticker-row {
   display: flex;

@@ -21,7 +21,7 @@ export function EventTicker({ events }: EventTickerProps) {
   return (
     <aside className="event-ticker" data-testid="event-ticker" aria-label="スプリント出来事">
       <p className="event-ticker-label">出来事</p>
-      <ul className="event-ticker-list">
+      <ul className="event-ticker-list" data-testid="event-ticker-list">
         <AnimatePresence initial={false}>
           {rows.map((row) => (
             <motion.li

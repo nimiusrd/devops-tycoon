@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SENIOR_HP_DISPLAY_UNKNOWN,
   clampSeniorHpDisplay,
   formatSprintResultSeniorHp,
   sprintResultSeniorHpRemaining,
@@ -55,7 +56,12 @@ describe('seniorHpDisplay', () => {
     expect(formatSprintResultSeniorHp(remaining)).toBe('68');
   });
 
-  it('タイムラインが無いときは差分を残量として出さず 0 にする', () => {
-    expect(formatSprintResultSeniorHp(makeResult({ seniorHpDelta: -20, timeline: [] }))).toBe('0');
+  it('タイムラインが無いときは残量 0 を捏造せず不明表示にする', () => {
+    expect(sprintResultSeniorHpRemaining(makeResult({ seniorHpDelta: -20, timeline: [] }))).toBe(
+      null,
+    );
+    expect(formatSprintResultSeniorHp(makeResult({ seniorHpDelta: -20, timeline: [] }))).toBe(
+      SENIOR_HP_DISPLAY_UNKNOWN,
+    );
   });
 });

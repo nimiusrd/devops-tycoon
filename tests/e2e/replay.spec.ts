@@ -237,6 +237,9 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
   await expect(page.getByTestId('replay-mode-banner')).toContainText('レビュー地獄リプレイ');
   await expect(page.getByTestId('result-review-hell-summary')).toBeVisible();
   await expect(page.getByTestId('result-review-hell-peak')).toContainText('21');
+  await expect(
+    page.locator('.result-row').filter({ hasText: 'Senior HP' }).locator('dd'),
+  ).toHaveText('—');
   await assertKeyframeViewerInViewport(page);
 });
 

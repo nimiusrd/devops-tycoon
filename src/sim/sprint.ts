@@ -739,7 +739,6 @@ export function computeTitleAndDiagnosis(
 export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResult {
   const m = sprint.metrics;
   const { title, diagnosis } = computeTitleAndDiagnosis(sprint, org);
-  const remainingHp = clamp(org.seniorHp, 0, 100);
   return {
     done: m.doneCount,
     delivered: m.delivered,
@@ -750,7 +749,7 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     incidents: m.incidentCount,
     contained: m.contained,
     spread: m.spread,
-    seniorHpDelta: Math.round(remainingHp - m.seniorHpStart),
+    seniorHpDelta: Math.round(org.seniorHp - m.seniorHpStart),
     actionCounts: { ...m.actionCounts },
     grade: computeGrade(sprint, org),
     title,

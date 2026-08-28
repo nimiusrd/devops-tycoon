@@ -101,7 +101,7 @@ describe('リザルトの整合性', () => {
     expect(result.diagnosis.length).toBeGreaterThan(0);
   });
 
-  it('内部シニアHPが負でも残量は 0 下限で集計する', () => {
+  it('内部シニアHPが負でも差分は未クランプ終値、タイムライン残量だけ 0 下限', () => {
     const org = createOrgState('default', false);
     const sprint = makeSprint(org, []);
     sprint.metrics.seniorHpStart = 40;
@@ -114,7 +114,7 @@ describe('リザルトの整合性', () => {
       seniorHp: -12,
     });
     const result = summarizeSprint(sprint, org);
-    expect(result.seniorHpDelta).toBe(-40);
+    expect(result.seniorHpDelta).toBe(-52);
     expect(result.timeline.at(-1)?.seniorHp).toBe(0);
     expect(org.seniorHp).toBe(-12);
   });

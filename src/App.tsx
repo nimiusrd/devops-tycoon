@@ -126,10 +126,10 @@ function SprintSuspendFallback({ game, header }: { game: GameHandle; header: Rea
   );
 }
 
-/** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。 */
-function TitleModalLoadingFallback({ onDismiss }: { onDismiss?: () => void }) {
+/** タイトル上の lazy モーダル読込中に下のボタン操作を塞ぐ。閉じる操作は DS-08 の名前付き button。 */
+function TitleModalLoadingFallback({ onDismiss }: { onDismiss: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: true });
+  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss });
 
   return (
     <div
@@ -141,15 +141,13 @@ function TitleModalLoadingFallback({ onDismiss }: { onDismiss?: () => void }) {
       aria-label="読み込み中"
       tabIndex={-1}
     >
-      {onDismiss ? (
-        <button
-          type="button"
-          className="result-overlay-dismiss"
-          data-testid="title-modal-loading-dismiss"
-          aria-label="閉じる"
-          onClick={onDismiss}
-        />
-      ) : null}
+      <button
+        type="button"
+        className="result-overlay-dismiss"
+        data-testid="title-modal-loading-dismiss"
+        aria-label="閉じる"
+        onClick={onDismiss}
+      />
     </div>
   );
 }
@@ -315,6 +313,13 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     shouldShowTutorialGuide(meta.seenTutorialVersion, tutorialMode);
 
   const closeHelp = useCallback(() => setHelpOpen(false), []);
+  const closeNonHelpTitleModals = useCallback(() => {
+    setMetaShopOpen(false);
+    setDeckPolicyOpen(false);
+    setCardCollectionOpen(false);
+    setAchievementsOpen(false);
+    setReplayListOpen(false);
+  }, []);
   const openExclusiveTitleModal = (open: () => void) => {
     closeTitleModals();
     open();
@@ -375,7 +380,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
             <HowToPlayScreen onClose={closeHelp} />
           </Suspense>
         )}
-        <Suspense fallback={<TitleModalLoadingFallback />}>
+        <Suspense fallback={<TitleModalLoadingFallback onDismiss={closeNonHelpTitleModals} />}>
           {metaShopOpen && (
             <MetaShopScreen
               meta={meta}

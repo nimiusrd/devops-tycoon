@@ -673,7 +673,7 @@ test('全社マップの部門ラベルがチームカードと重ならない�
 });
 
 test('コンパクト切替でチームのキーボードフォーカスを引き継ぐ', async ({ page }) => {
-  // 1440×900 では HUD が盤面高を食い、幅がコンパクト閾値（1229px）以下のままになる。
+  // 1440×900 では HUD が盤面高を食い、幅がコンパクト閾値以下のままになる。
   const wide = { width: 1920, height: 1200 };
   const narrow = { width: 320, height: 568 };
   await page.setViewportSize(wide);

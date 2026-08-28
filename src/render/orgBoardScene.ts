@@ -10,7 +10,7 @@ import type { DepartmentState, OrgScaleState, Team } from '../sim/orgscale/types
 import { HEALTH_COLOR, HEALTH_LABEL } from './orgView';
 import { displayName, fireLabel, islandTitle } from './orgIslandView';
 import { badgeTone, healthTag } from './teamHealthTheme';
-import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
+import { DESIGN_SPACES, orgIslandBadgeLayoutHeight, VISUAL_TOKENS } from './visualTokens';
 
 /** 設計座標空間（旧モック org-screen の viewBox 由来）。 */
 export const ORG_VIEW = DESIGN_SPACES.organization;
@@ -294,24 +294,11 @@ export function zoneLabelRect(label: Pick<OrgZoneLabelPlan, 'x' | 'y'>): OrgBoar
 }
 
 /**
- * 折り返しを含むチームカード高（設計px）。
- * 116px 幅では「出荷／AI／人数」メタが 2 行になる。
+ * 折り返しと line-height を含むチームカード高（設計px）。
+ * `orgIslandBadgeLayoutHeight` と同じ式で、コンパクト閾値と配置を共有する。
  */
 export function islandBadgeLayoutHeight(): number {
-  const island = VISUAL_TOKENS.dimensions.organization.island;
-  const lineGap = VISUAL_TOKENS.dimensions.organization.card.lineGap;
-  const borderY = 4;
-  const tagPadY = 4;
-  const metaLines = 2;
-  return (
-    island.badgeFontSize +
-    island.badgeMetaSize * metaLines +
-    island.badgeTagSize +
-    tagPadY +
-    lineGap * 2 +
-    island.badgePaddingY * 2 +
-    borderY
-  );
+  return orgIslandBadgeLayoutHeight();
 }
 
 /** 島のチームカード（バッジ）外接矩形。DOM は同じカード幅に制約する。 */

@@ -193,6 +193,10 @@ export const VISUAL_TOKENS = {
         badgeMinTagSize: 8,
         badgePaddingX: 10,
         badgePaddingY: 5,
+        /** 「出荷／AI／人数」メタの折り返し行数。幅制約下の実カードと配置計算で共有する。 */
+        badgeMetaLines: 2,
+        /** カード本文の CSS line-height。配置高とコンパクト閾値に含める。 */
+        badgeLineHeight: 1.2,
       },
       /** 部門ラベル帯。島バッジ（チームカード）の上に置き、縮小盤面でも重ならない。 */
       zoneLabel: {
@@ -325,24 +329,55 @@ export function hexToPixiColor(hex: string): number {
   return Number.parseInt(expanded, 16);
 }
 
+const ORG_ISLAND_BADGE_BORDER_Y = 4;
+const ORG_ISLAND_BADGE_TAG_PAD_Y = 4;
+
 /**
- * 可読下限を適用した 3 行チームカードの CSS px 高（border / gap / tag padding 込み）。
- * 設計 `badgeHeight` を盤面スケールした値より大きいあいだ、カードは配置計算より高くなる。
+ * チームカードの縦スタック高（折り返しメタ + line-height + border / gap / tag padding）。
+ * 設計フォントと可読下限フォントで同じ式を使い、コンパクト閾値と配置計算を一致させる。
+ */
+export function islandBadgeStackHeight(input: {
+  fontSize: number;
+  metaSize: number;
+  tagSize: number;
+  paddingY: number;
+}): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  const lineGap = VISUAL_TOKENS.dimensions.organization.card.lineGap;
+  return (
+    input.fontSize * island.badgeLineHeight +
+    input.metaSize * island.badgeLineHeight * island.badgeMetaLines +
+    input.tagSize * island.badgeLineHeight +
+    ORG_ISLAND_BADGE_TAG_PAD_Y +
+    lineGap * 2 +
+    input.paddingY * 2 +
+    ORG_ISLAND_BADGE_BORDER_Y
+  );
+}
+
+/** 設計フォントでのチームカード高（配置・重なり判定の正本）。 */
+export function orgIslandBadgeLayoutHeight(): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  return islandBadgeStackHeight({
+    fontSize: island.badgeFontSize,
+    metaSize: island.badgeMetaSize,
+    tagSize: island.badgeTagSize,
+    paddingY: island.badgePaddingY,
+  });
+}
+
+/**
+ * 可読下限フォントでのチームカード CSS px 高。
+ * 盤面スケールした設計カード高より大きいあいだ、カードは配置計算より高くなる。
  */
 export function orgIslandBadgeMinCssHeight(): number {
   const island = VISUAL_TOKENS.dimensions.organization.island;
-  const lineGap = VISUAL_TOKENS.dimensions.organization.card.lineGap;
-  const borderY = 4;
-  const tagPadY = 4;
-  return (
-    island.badgeMinFontSize +
-    island.badgeMinMetaSize +
-    island.badgeMinTagSize +
-    tagPadY +
-    lineGap * 2 +
-    island.badgePaddingY * 2 +
-    borderY
-  );
+  return islandBadgeStackHeight({
+    fontSize: island.badgeMinFontSize,
+    metaSize: island.badgeMinMetaSize,
+    tagSize: island.badgeMinTagSize,
+    paddingY: island.badgePaddingY,
+  });
 }
 
 /**
@@ -357,12 +392,13 @@ export function orgIslandBadgeMinCssWidth(): number {
 }
 
 /**
- * 3 行カードの可読下限高が設計バッジ高に収まる最小盤面幅。
+ * 可読下限カード高が設計カード高に収まる最小盤面幅。
  * これ以下では部門ラベルを隠し、カードをコンパクト表示する。
  */
 export function orgBoardCompactMaxWidthPx(): number {
-  const { badgeHeight } = VISUAL_TOKENS.dimensions.organization.island;
-  return Math.ceil((orgIslandBadgeMinCssHeight() / badgeHeight) * DESIGN_SPACES.organization.w);
+  return Math.ceil(
+    (orgIslandBadgeMinCssHeight() / orgIslandBadgeLayoutHeight()) * DESIGN_SPACES.organization.w,
+  );
 }
 
 /** 盤面 CSS 幅がコンパクト閾値以下なら部門ラベルを隠しカードを畳む。 */
@@ -408,6 +444,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-org-island-badge-min-tag-size': `${dimensions.organization.island.badgeMinTagSize}px`,
     '--visual-org-island-badge-padding-x': `${dimensions.organization.island.badgePaddingX}px`,
     '--visual-org-island-badge-padding-y': `${dimensions.organization.island.badgePaddingY}px`,
+    '--visual-org-island-badge-line-height': String(dimensions.organization.island.badgeLineHeight),
     '--visual-org-island-badge-min-width': `${orgIslandBadgeMinCssWidth()}px`,
     '--visual-org-board-compact-max-width': `${orgBoardCompactMaxWidthPx()}px`,
     '--visual-org-hub-overlay-height': `${dimensions.organization.hubOverlay.height}px`,

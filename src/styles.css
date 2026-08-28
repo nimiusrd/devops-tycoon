@@ -6188,7 +6188,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   font: inherit;
   font-size: var(--visual-org-island-badge-min-font-size);
   font-weight: 800;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .org-island-badge-dock-hit {
   margin: 0;
@@ -6230,6 +6230,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  line-height: var(--visual-org-island-badge-line-height);
   width: calc(var(--visual-org-card-width) * var(--org-board-scale));
   max-width: calc(var(--visual-org-card-width) * var(--org-board-scale));
   padding: calc(var(--visual-org-island-badge-padding-y) * var(--org-board-scale))

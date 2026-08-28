@@ -10,6 +10,7 @@ import {
   hexToPixiColor,
   orgBoardCompactMaxWidthPx,
   orgBoardIsCompact,
+  orgIslandBadgeLayoutHeight,
   orgIslandBadgeMinCssHeight,
   orgIslandBadgeMinCssWidth,
   VISUAL_TOKENS,
@@ -105,6 +106,7 @@ describe('visual tokens', () => {
     expect(applied.get('--visual-org-island-badge-min-width')).toBe(
       `${orgIslandBadgeMinCssWidth()}px`,
     );
+    expect(applied.get('--visual-org-island-badge-line-height')).toBe('1.2');
     expect(applied.get('--visual-org-board-compact-max-width')).toBe(
       `${orgBoardCompactMaxWidthPx()}px`,
     );
@@ -112,17 +114,22 @@ describe('visual tokens', () => {
 
   it('カード可読下限高から部門ラベル再表示幅を導出する', () => {
     const minHeight = orgIslandBadgeMinCssHeight();
+    const layoutHeight = orgIslandBadgeLayoutHeight();
     const width = orgBoardCompactMaxWidthPx();
-    expect(minHeight).toBeGreaterThan(
-      VISUAL_TOKENS.dimensions.organization.island.badgeHeight * 0.5,
+    const island = VISUAL_TOKENS.dimensions.organization.island;
+    expect(minHeight).toBe(
+      island.badgeMinFontSize * island.badgeLineHeight +
+        island.badgeMinMetaSize * island.badgeLineHeight * island.badgeMetaLines +
+        island.badgeMinTagSize * island.badgeLineHeight +
+        4 +
+        VISUAL_TOKENS.dimensions.organization.card.lineGap * 2 +
+        island.badgePaddingY * 2 +
+        4,
     );
+    expect(layoutHeight).toBeGreaterThan(minHeight);
+    expect(minHeight).toBeGreaterThan(island.badgeHeight * 0.5);
     expect(width).toBeGreaterThan(520);
-    expect(width).toBe(
-      Math.ceil(
-        (minHeight / VISUAL_TOKENS.dimensions.organization.island.badgeHeight) *
-          DESIGN_SPACES.organization.w,
-      ),
-    );
+    expect(width).toBe(Math.ceil((minHeight / layoutHeight) * DESIGN_SPACES.organization.w));
     expect(orgBoardIsCompact(width)).toBe(true);
     expect(orgBoardIsCompact(width + 1)).toBe(false);
   });

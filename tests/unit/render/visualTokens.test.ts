@@ -8,6 +8,11 @@ import {
   designToHostTransform,
   flowDashPeriod,
   hexToPixiColor,
+  orgBoardCompactMaxWidthPx,
+  orgBoardIsCompact,
+  orgIslandBadgeLayoutHeight,
+  orgIslandBadgeMinCssHeight,
+  orgIslandBadgeMinCssWidth,
   VISUAL_TOKENS,
   visualTokenCssVariables,
 } from '../../../src/render/visualTokens';
@@ -94,6 +99,49 @@ describe('visual tokens', () => {
     applyVisualTokenCssVariables(root);
     expect(applied.get('--visual-color-panel')).toBe(VISUAL_TOKENS.colors.panel);
     expect(applied.get('--visual-org-card-width')).toBe('116px');
+    expect(applied.get('--visual-org-zone-label-font-size')).toBe('12px');
+    expect(applied.get('--visual-org-hub-overlay-height')).toBe('44px');
+    expect(applied.get('--visual-org-island-badge-min-font-size')).toBe('10px');
+    expect(applied.get('--visual-org-island-badge-min-meta-size')).toBe('9px');
+    expect(applied.get('--visual-org-island-badge-min-width')).toBe(
+      `${orgIslandBadgeMinCssWidth()}px`,
+    );
+    expect(applied.get('--visual-org-island-badge-line-height')).toBe('1.2');
+    expect(applied.get('--visual-org-board-compact-max-width')).toBe(
+      `${orgBoardCompactMaxWidthPx()}px`,
+    );
+  });
+
+  it('カード可読下限高から部門ラベル再表示幅を導出する', () => {
+    const minHeight = orgIslandBadgeMinCssHeight();
+    const layoutHeight = orgIslandBadgeLayoutHeight();
+    const width = orgBoardCompactMaxWidthPx();
+    const island = VISUAL_TOKENS.dimensions.organization.island;
+    expect(minHeight).toBe(
+      island.badgeMinFontSize * island.badgeLineHeight +
+        island.badgeMinMetaSize * island.badgeLineHeight * island.badgeMetaLines +
+        island.badgeMinTagSize * island.badgeLineHeight +
+        4 +
+        VISUAL_TOKENS.dimensions.organization.card.lineGap * 2 +
+        island.badgePaddingY * 2 +
+        4,
+    );
+    expect(layoutHeight).toBeGreaterThan(minHeight);
+    expect(minHeight).toBeGreaterThan(island.badgeHeight * 0.5);
+    expect(width).toBeGreaterThan(520);
+    expect(width).toBe(Math.ceil((minHeight / layoutHeight) * DESIGN_SPACES.organization.w));
+    expect(orgBoardIsCompact(width)).toBe(true);
+    expect(orgBoardIsCompact(width + 1)).toBe(false);
+  });
+
+  it('狭幅カードの可読下限幅をメタ文字サイズから導出する', () => {
+    const minWidth = orgIslandBadgeMinCssWidth();
+    expect(minWidth).toBeGreaterThan(VISUAL_TOKENS.dimensions.organization.card.width * 0.5);
+    expect(minWidth).toBe(
+      VISUAL_TOKENS.dimensions.organization.island.badgeMinMetaSize * 8 +
+        VISUAL_TOKENS.dimensions.organization.island.badgePaddingX * 2 +
+        4,
+    );
   });
 
   it('破線周期を dash と gap から導出する', () => {

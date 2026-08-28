@@ -8,6 +8,7 @@
  */
 import { getTrial } from './data/difficulties';
 import { createRunEngine, type RunEngine } from './sim/run/engine';
+import type { ReplayFramePhase } from './sim/run/persist';
 import { resolveSeedFromLocation } from './sim/seed';
 import type {
   ActionId,
@@ -68,6 +69,7 @@ import {
   type RunRulesetIdentity,
   type RunStorage,
 } from './state/runPersistence';
+import { findNextReplayKeyframeIndex } from './state/replayJump';
 import {
   parseReplayShare,
   REPLAY_SHARE_REASON_MESSAGE,
@@ -229,6 +231,13 @@ export interface GameHandle {
   importReplayText(raw: string): Promise<ReplayShareResult>;
   /** リプレイのキーフレームを read-only で開く（失敗時 null）。 */
   openReplay(id: string, keyframeIndex?: number): RunState | null;
+  /**
+   * 閲覧中リプレイで、現在キーフレームより後の指定フェーズへジャンプする。
+   * 該当キーフレームが無ければ null。
+   */
+  jumpReplayToPhase(phase: ReplayFramePhase): RunState | null;
+  /** ジャンプ先キーフレーム index。対象が無ければ null。 */
+  findReplayJumpIndex(phase: ReplayFramePhase): number | null;
   /** リプレイ閲覧を終了してタイトルへ戻る。 */
   exitReplay(): RunState;
   /** リプレイ閲覧中か。 */
@@ -249,6 +258,8 @@ export interface GameHandle {
   phase(): RunState['phase'];
   /** スプリントが進行中（自動ステップ対象）か。 */
   isSprintRunning(): boolean;
+  /** 現在のズーム階層（スナップショットを作らない軽量アクセサ）。 */
+  zoomLevel(): ZoomLevel;
   /**
    * 状態変更ごとに増える版番号。React は毎フレームこれを見て、変化時のみ
    * スナップショットを読み直す。これにより window.game 経由の外部操作（E2E 等）も
@@ -296,6 +307,10 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
   let cachedReplays: ReplayBlob[] = [];
   let keyframes: ReplayKeyframe[] = [];
   let replayMode = false;
+  /** 閲覧中リプレイの id。非リプレイ時は null。 */
+  let activeReplayId: string | null = null;
+  /** 閲覧中キーフレームの index。非リプレイ時は -1。 */
+  let activeReplayKeyframeIndex = -1;
   /** 閲覧中リプレイの終端診断（キーフレーム時点の diagnosis と独立。RI-34‴）。 */
   let activeReplayDiagnosis: DiagnosisType | null = null;
   /** 閲覧中リプレイの記録時ルールセットと表示コンテンツ。 */
@@ -534,6 +549,45 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     return engine.snapshot();
   };
 
+  const openReplayById = (id: string, keyframeIndex = -1): RunState | null => {
+    const replay = cachedReplays.find((item) => item.id === id);
+    if (!replay || replay.keyframes.length === 0) return null;
+    const index =
+      keyframeIndex < 0
+        ? replay.keyframes.length - 1
+        : Math.min(keyframeIndex, replay.keyframes.length - 1);
+    const frame = replay.keyframes[index];
+    if (!frame) return null;
+    try {
+      engine.hydrateReplayFrame(frame.frame);
+    } catch {
+      return null;
+    }
+    replayMode = true;
+    activeReplayId = id;
+    activeReplayKeyframeIndex = index;
+    activeReplayDiagnosis = replay.outcome.diagnosis;
+    activeReplayInfo = {
+      ruleset: replay.ruleset ? structuredClone(replay.ruleset) : null,
+      contentSnapshot: replay.contentSnapshot ? structuredClone(replay.contentSnapshot) : null,
+    };
+    activeDailyDate = frame.frame.dailyDate ?? null;
+    activeDailyRuleset = null;
+    recorded = true;
+    lastRunReward = null;
+    clearWhatIfCache();
+    paused = true;
+    bump();
+    return engine.snapshot();
+  };
+
+  const findReplayJumpIndex = (phase: ReplayFramePhase): number | null => {
+    if (!replayMode || !activeReplayId) return null;
+    const replay = cachedReplays.find((item) => item.id === activeReplayId);
+    if (!replay) return null;
+    return findNextReplayKeyframeIndex(replay.keyframes, activeReplayKeyframeIndex, phase);
+  };
+
   return {
     pause() {
       paused = true;
@@ -562,6 +616,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       activeDailyDate = null;
       activeDailyRuleset = null;
       activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
       keyframes = [];
       paused = false;
       clearWhatIfCache();
@@ -577,6 +633,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       recorded = false;
       lastRunReward = null;
       activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
       const day = dateStr ?? utcDateStr();
       activeDailyDate = day;
       activeDailyRuleset = { ...CURRENT_RUN_RULESET };
@@ -774,6 +832,8 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       replayMode = false;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
@@ -975,38 +1035,20 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
       }
     },
     openReplay(id, keyframeIndex = -1) {
-      const replay = cachedReplays.find((r) => r.id === id);
-      if (!replay || replay.keyframes.length === 0) return null;
-      const index =
-        keyframeIndex < 0
-          ? replay.keyframes.length - 1
-          : Math.min(keyframeIndex, replay.keyframes.length - 1);
-      const frame = replay.keyframes[index];
-      if (!frame) return null;
-      try {
-        engine.hydrateReplayFrame(frame.frame);
-      } catch {
-        return null;
-      }
-      replayMode = true;
-      activeReplayDiagnosis = replay.outcome.diagnosis;
-      activeReplayInfo = {
-        ruleset: replay.ruleset ? structuredClone(replay.ruleset) : null,
-        contentSnapshot: replay.contentSnapshot ? structuredClone(replay.contentSnapshot) : null,
-      };
-      activeDailyDate = frame.frame.dailyDate ?? null;
-      activeDailyRuleset = null;
-      recorded = true;
-      lastRunReward = null;
-      clearWhatIfCache();
-      paused = true;
-      bump();
-      return engine.snapshot();
+      return openReplayById(id, keyframeIndex);
     },
+    jumpReplayToPhase(phase) {
+      const index = findReplayJumpIndex(phase);
+      if (index === null || !activeReplayId) return null;
+      return openReplayById(activeReplayId, index);
+    },
+    findReplayJumpIndex,
     exitReplay() {
       replayMode = false;
       activeReplayDiagnosis = null;
       activeReplayInfo = null;
+      activeReplayId = null;
+      activeReplayKeyframeIndex = -1;
       recorded = false;
       lastRunReward = null;
       activeDailyDate = null;
@@ -1053,6 +1095,9 @@ export function createGame(options: CreateGameOptions = {}): GameHandle {
     },
     isSprintRunning() {
       return !replayMode && engine.sprintRunning();
+    },
+    zoomLevel() {
+      return engine.zoomLevel();
     },
     revision() {
       return revision;

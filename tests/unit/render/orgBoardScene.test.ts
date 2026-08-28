@@ -88,6 +88,10 @@ describe('planOrgBoardScene (RI-01)', () => {
       expect(island.deptName).toBe(dept!.def.name);
       expect(island.labels.title).toContain(dept!.def.name);
       expect(island.labels.title).toContain(island.team.name);
+      if (island.team.isPlayer) {
+        expect(island.badge.title.startsWith('★ ')).toBe(true);
+        expect(island.labels.title).toContain('★');
+      }
     }
   });
 

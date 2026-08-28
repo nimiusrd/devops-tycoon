@@ -88,8 +88,14 @@ export function fireLabel(incidents: number): string | null {
 }
 
 /** ドリルダウン用ツールチップ。部門名があると同名チームを区別できる。 */
-export function islandTitle(name: string, health: TeamHealth, deptName?: string): string {
-  const who = deptName ? `${deptName} ${name}` : name;
+export function islandTitle(
+  name: string,
+  health: TeamHealth,
+  deptName?: string,
+  isPlayer = false,
+): string {
+  const team = isPlayer ? `★ ${name}` : name;
+  const who = deptName ? `${deptName} ${team}` : team;
   return `${who}（${HEALTH_LABEL[health]}）へドリルダウン`;
 }
 
@@ -98,7 +104,7 @@ export function islandTitle(name: string, health: TeamHealth, deptName?: string)
  * 同一入力なら常に同一出力（決定論）。
  */
 export function teamIslandView(team: Team, detail: OrgIslandDetail): TeamIslandLabels {
-  const title = islandTitle(team.name, team.health);
+  const title = islandTitle(team.name, team.health, undefined, team.isPlayer);
   const fire = fireLabel(team.incidents);
 
   if (detail === 'dot') {

@@ -650,6 +650,25 @@ test('全社マップの部門ラベルがチームカードと重ならない�
         `${viewport.name} でハブラベルとチームカードが重なっている`,
       ).toBe(false);
     }
+
+    if (compact) {
+      const playerHit = page.getByTestId('island-badge-product-t0');
+      await expect(playerHit, `${viewport.name} で選択中チームがドックに無い`).toHaveClass(
+        /is-player/,
+      );
+      await expect(playerHit).toHaveAttribute('aria-current', 'true');
+      await expect(playerHit).toContainText('★');
+      const otherHit = page.getByTestId('island-badge-platform-t0');
+      await expect(otherHit).not.toHaveClass(/is-player/);
+      await expect(otherHit).not.toHaveAttribute('aria-current');
+
+      await page.getByTestId('team-platform-t1').evaluate((el) => el.focus());
+      await expect(
+        page.getByTestId('island-badge-platform-t1'),
+        `${viewport.name} で島フォーカスがドックへ移らない`,
+      ).toBeFocused();
+      await expect(page.getByTestId('team-platform-t1')).not.toBeFocused();
+    }
   }
 });
 

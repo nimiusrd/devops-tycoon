@@ -6211,6 +6211,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   outline: 2px solid var(--sun);
   outline-offset: 2px;
 }
+.org-island-badge-dock-hit.is-player .org-island-badge {
+  box-shadow: 0 0 0 2px var(--sun);
+}
 .org-island-group {
   position: absolute;
   inset: 0;

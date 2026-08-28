@@ -529,7 +529,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
         badge: {
           x: pos.x,
           y: pos.y - ISLAND_BADGE_ABOVE,
-          title: team.name,
+          title: displayName(team),
           shipping: `出荷 ${team.shipping}`,
           ai: islandAiBadgeLabel(team.aiDependency, team.aiAssignedCount),
           headcount: `${team.engineers}人`,
@@ -538,7 +538,7 @@ export function planOrgBoardScene(org: OrgScaleState): OrgBoardScene {
         },
         labels: {
           name: displayName(team),
-          title: islandTitle(team.name, team.health, dept.def.name),
+          title: islandTitle(team.name, team.health, dept.def.name, team.isPlayer),
           fire: fireLabel(team.incidents),
         },
         deptId: dept.def.id,

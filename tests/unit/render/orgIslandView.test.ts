@@ -80,6 +80,12 @@ describe('islandTitle', () => {
   it('部門名がなければチーム名だけにする', () => {
     expect(islandTitle('Platform', 'congested')).toBe('Platform（渋滞）へドリルダウン');
   });
+
+  it('プレイヤーチームは ★ を付けて選択中と分かる', () => {
+    expect(islandTitle('チームA', 'healthy', 'プロダクト事業部', true)).toBe(
+      'プロダクト事業部 ★ チームA（健全）へドリルダウン',
+    );
+  });
 });
 
 describe('teamIslandView', () => {
@@ -118,6 +124,7 @@ describe('teamIslandView', () => {
   it('プレイヤーチームは ★ 付き名前', () => {
     const labels = teamIslandView(team({ id: 'me', name: 'My Team', isPlayer: true }), 'card');
     expect(labels.name).toBe('★ My Team');
+    expect(labels.title).toBe('★ My Team（健全）へドリルダウン');
   });
 
   it('炎上 0 件では fire は null', () => {

@@ -105,6 +105,9 @@ function OrgIsland({
           left: pct(island.x, VIEW_W),
           top: pct(island.y, VIEW_H),
         }}
+        onMouseDown={(event) => {
+          if (decorative) event.preventDefault();
+        }}
         onClick={onClick}
         onFocus={onFocus}
         title={island.labels.title}
@@ -132,6 +135,16 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
 
   const rememberFocusedTeam = (teamId: string) => {
     focusedTeamIdRef.current = teamId;
+  };
+
+  const focusDockTeam = (teamId: string) => {
+    rememberFocusedTeam(teamId);
+    const dock = boardRef.current?.querySelector<HTMLElement>(
+      `.org-island-badge-dock-hit[data-team-id="${CSS.escape(teamId)}"]`,
+    );
+    if (dock && document.activeElement !== dock) {
+      dock.focus({ preventScroll: true });
+    }
   };
 
   useLayoutEffect(() => {
@@ -198,11 +211,12 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
                 <button
                   key={`dock-${island.teamId}`}
                   type="button"
-                  className="org-island-badge-dock-hit"
+                  className={`org-island-badge-dock-hit${island.team.isPlayer ? ' is-player' : ''}`}
                   data-testid={`island-badge-${island.teamId}`}
                   data-team-id={island.teamId}
                   title={island.labels.title}
                   aria-label={island.labels.title}
+                  aria-current={island.team.isPlayer ? true : undefined}
                   onClick={() => onFocusTeam(island.teamId)}
                   onFocus={() => rememberFocusedTeam(island.teamId)}
                 >
@@ -220,8 +234,14 @@ export function OrgBoard({ org, onFocusTeam }: OrgBoardProps) {
           island={island}
           showBadge={!compact}
           decorative={compact}
-          onClick={() => onFocusTeam(island.teamId)}
-          onFocus={() => rememberFocusedTeam(island.teamId)}
+          onClick={() => {
+            if (compact) focusDockTeam(island.teamId);
+            onFocusTeam(island.teamId);
+          }}
+          onFocus={() => {
+            rememberFocusedTeam(island.teamId);
+            if (compact) focusDockTeam(island.teamId);
+          }}
         />
       ))}
 

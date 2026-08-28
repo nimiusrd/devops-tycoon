@@ -1026,7 +1026,7 @@ async function assertTickerKeyboardReachable(page: Page, label: string): Promise
   if (!overflow) return;
 
   const before = await list.evaluate((element) => element.scrollTop);
-  await page.keyboard.press('End');
+  await list.press('End');
   const after = await list.evaluate((element) => {
     const rows = element.querySelectorAll<HTMLElement>('.event-ticker-row');
     const last = rows.item(rows.length - 1);

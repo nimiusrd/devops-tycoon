@@ -5,11 +5,44 @@
  * 演出は読むだけ（第22.2）。
  */
 import { AnimatePresence, motion } from 'framer-motion';
+import type { KeyboardEvent } from 'react';
 import { formatRecentSprintEvents } from '../render/sprintEventView';
 import type { SprintEvent } from '../sim/types';
 
 /** 同時表示する最大件数。 */
 const TICKER_LIMIT = 5;
+
+/** フォーカス中のリストを矢印 / Page / Home / End でスクロールする（DS-08）。 */
+function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
+  const list = event.currentTarget;
+  if (list.scrollHeight <= list.clientHeight + 1) return;
+  const page = list.clientHeight;
+  let next = list.scrollTop;
+  switch (event.key) {
+    case 'ArrowDown':
+      next += 24;
+      break;
+    case 'ArrowUp':
+      next -= 24;
+      break;
+    case 'PageDown':
+      next += page;
+      break;
+    case 'PageUp':
+      next -= page;
+      break;
+    case 'End':
+      next = list.scrollHeight;
+      break;
+    case 'Home':
+      next = 0;
+      break;
+    default:
+      return;
+  }
+  event.preventDefault();
+  list.scrollTop = next;
+}
 
 export interface EventTickerProps {
   events: readonly SprintEvent[];
@@ -28,6 +61,7 @@ export function EventTicker({ events }: EventTickerProps) {
         data-testid="event-ticker-list"
         tabIndex={rows.length > 0 ? 0 : undefined}
         aria-labelledby="event-ticker-heading"
+        onKeyDown={handleTickerListKeyDown}
       >
         <AnimatePresence initial={false}>
           {rows.map((row) => (

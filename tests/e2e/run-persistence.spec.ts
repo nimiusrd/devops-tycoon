@@ -13,6 +13,7 @@ type RunGameWindow = Window & {
     resumeRun(): RunState | null;
     hasResumableRun(): boolean;
     getRunSaveSummary(): RunSaveSummary | null;
+    acknowledgeResult(): RunState;
     newRun(seed?: string): RunState;
   };
 };
@@ -207,6 +208,41 @@ test('ルールセット不一致セーブは保存時と現在の識別子を�
 
   await page.getByTestId('discard-run-save').click();
   await expect.poll(() => storedRunSummary(page)).toBeNull();
+});
+
+test('続きから再開したドラフトのスプリント番号は HUD と一致する', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=ri372-e2e');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.evaluate(() => {
+    const game = (window as RunGameWindow).game;
+    if (!game) throw new Error('game missing');
+    game.startRun('easy', [], 'ri372-e2e');
+    game.beginSetupSprint();
+    let guard = 0;
+    while (game.isSprintRunning() && guard++ < 20_000) game.step(100);
+  });
+  await expect
+    .poll(async () => page.evaluate(() => (window as RunGameWindow).game?.phase()))
+    .toBe('result');
+  await expect
+    .poll(() => storedRunSummary(page))
+    .toMatchObject({
+      seed: 'ri372-e2e',
+      phase: 'result',
+      sprintsPlayed: 1,
+    });
+
+  await page.reload();
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect(page.getByTestId('resume-run')).toBeVisible();
+  await page.getByTestId('resume-run').click();
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await page.getByTestId('result-continue').click();
+
+  await expect(page.getByTestId('draft')).toBeVisible();
+  await expect(page.getByTestId('sprint-no')).toContainText('2/6');
+  await expect(page.getByTestId('draft-sprint-no')).toContainText('スプリント2');
 });
 
 test('新ラン開始で旧セーブが上書きされ、タイトル復帰で消える', async ({ page }) => {

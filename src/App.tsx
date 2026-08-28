@@ -19,6 +19,7 @@ import {
 } from 'react';
 import { useAudio } from './audio/useAudio';
 import { diagnosisTheme } from './render/diagnosisTheme';
+import { displayedQuarterSprintIndex } from './render/sprintProgressView';
 import {
   reviewFreezeWarningPeak,
   type HudMetricSnapshot,
@@ -634,7 +635,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
         {phase === 'draft' && state.draft && (
           <DraftScreen
             options={state.draft}
-            sprintNumber={state.sprintsPlayed + 1}
+            sprintNumber={displayedQuarterSprintIndex(state)}
             budget={state.budget}
             mulliganUsed={state.draftMulliganUsed}
             previews={state.whatIf?.draftCandidates ?? {}}

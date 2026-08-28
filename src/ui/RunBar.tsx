@@ -8,9 +8,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getDifficulty } from '../data/difficulties';
 import { diagnosisTheme } from '../render/diagnosisTheme';
-import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
 import { runBarSprintView } from '../render/runBarView';
+import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import {
   budgetHudCopy,
   diffRunMetricSnapshots,

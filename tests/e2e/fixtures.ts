@@ -51,11 +51,12 @@ export const RI94_RELIC_CHOICE_BY_EVENT: Readonly<Record<string, number>> = Obje
 export interface PublicSprintOptions {
   seed: string;
   difficulty?: DifficultyId;
+  trials?: string[];
   renderer?: 'dom' | 'pixi';
 }
 
 export interface PublicRunTarget {
-  phase: 'setup' | 'result';
+  phase: 'setup' | 'result' | 'evolution';
   diagnosis?: DiagnosisType;
   relicCount?: number;
 }
@@ -75,18 +76,18 @@ export const test = base.extend({
 
 /** タイトルの hydration 完了後に、公開 GameHandle で指定ランを開始する。 */
 async function openPublicRun(page: Page, options: PublicSprintOptions): Promise<void> {
-  const { seed, difficulty = 'easy', renderer = 'dom' } = options;
+  const { seed, difficulty = 'easy', trials = [], renderer = 'dom' } = options;
   await page.goto(`/?renderer=${renderer}&seed=${seed}`);
   await expect(page.getByTestId('title')).toBeVisible();
   await page.evaluate(
-    ({ seed: runSeed, difficulty: runDifficulty }) => {
+    ({ seed: runSeed, difficulty: runDifficulty, trials: runTrials }) => {
       const game = (window as PublicGameWindow).game;
       if (!game) throw new Error('window.game が公開されていない');
-      game.startRun(runDifficulty, [], runSeed);
+      game.startRun(runDifficulty, runTrials, runSeed);
       // startRun() は自動的に pause を解除するため、開始後に壁時計進行を止める。
       game.pause();
     },
-    { seed, difficulty },
+    { seed, difficulty, trials },
   );
 }
 

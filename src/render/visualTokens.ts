@@ -179,7 +179,44 @@ export const VISUAL_TOKENS = {
       iso: { tileW: 264, tileH: 176 },
       padding: 64,
       card: { width: 116, paddingX: 10, paddingY: 8, radius: 12, lineGap: 2 },
-      island: { badgeAbove: 46, actorHalfHeight: 65, margin: 8 },
+      island: {
+        badgeAbove: 46,
+        badgeHeight: 56,
+        actorHalfHeight: 65,
+        margin: 8,
+        badgeFontSize: 11,
+        badgeMetaSize: 10,
+        badgeTagSize: 9,
+        /** phone 盤面で `--org-board-scale` が ~0.28 になっても本文が潰されない CSS px 下限。 */
+        badgeMinFontSize: 10,
+        badgeMinMetaSize: 9,
+        badgeMinTagSize: 8,
+        badgePaddingX: 10,
+        badgePaddingY: 5,
+        /** 「出荷／AI／人数」メタの折り返し行数。幅制約下の実カードと配置計算で共有する。 */
+        badgeMetaLines: 2,
+        /** カード本文の CSS line-height。配置高とコンパクト閾値に含める。 */
+        badgeLineHeight: 1.2,
+      },
+      /** 部門ラベル帯。島バッジ（チームカード）の上に置き、縮小盤面でも重ならない。 */
+      zoneLabel: {
+        y: 88,
+        height: 48,
+        gap: 16,
+        fontSize: 12,
+        subtitleSize: 10,
+        paddingX: 12,
+        paddingY: 6,
+      },
+      /** Pixi 盤面の上端に重ねる共通基盤ピル、および DOM ハブバッジの寸法。 */
+      hubOverlay: {
+        height: 44,
+        top: 8,
+        fontSize: 12,
+        metaSize: 10,
+        paddingX: 14,
+        paddingY: 6,
+      },
     },
     department: {
       teamMini: {
@@ -292,6 +329,83 @@ export function hexToPixiColor(hex: string): number {
   return Number.parseInt(expanded, 16);
 }
 
+const ORG_ISLAND_BADGE_BORDER_Y = 4;
+const ORG_ISLAND_BADGE_TAG_PAD_Y = 4;
+
+/**
+ * チームカードの縦スタック高（折り返しメタ + line-height + border / gap / tag padding）。
+ * 設計フォントと可読下限フォントで同じ式を使い、コンパクト閾値と配置計算を一致させる。
+ */
+export function islandBadgeStackHeight(input: {
+  fontSize: number;
+  metaSize: number;
+  tagSize: number;
+  paddingY: number;
+}): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  const lineGap = VISUAL_TOKENS.dimensions.organization.card.lineGap;
+  return (
+    input.fontSize * island.badgeLineHeight +
+    input.metaSize * island.badgeLineHeight * island.badgeMetaLines +
+    input.tagSize * island.badgeLineHeight +
+    ORG_ISLAND_BADGE_TAG_PAD_Y +
+    lineGap * 2 +
+    input.paddingY * 2 +
+    ORG_ISLAND_BADGE_BORDER_Y
+  );
+}
+
+/** 設計フォントでのチームカード高（配置・重なり判定の正本）。 */
+export function orgIslandBadgeLayoutHeight(): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  return islandBadgeStackHeight({
+    fontSize: island.badgeFontSize,
+    metaSize: island.badgeMetaSize,
+    tagSize: island.badgeTagSize,
+    paddingY: island.badgePaddingY,
+  });
+}
+
+/**
+ * 可読下限フォントでのチームカード CSS px 高。
+ * 盤面スケールした設計カード高より大きいあいだ、カードは配置計算より高くなる。
+ */
+export function orgIslandBadgeMinCssHeight(): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  return islandBadgeStackHeight({
+    fontSize: island.badgeMinFontSize,
+    metaSize: island.badgeMinMetaSize,
+    tagSize: island.badgeMinTagSize,
+    paddingY: island.badgePaddingY,
+  });
+}
+
+/**
+ * 可読下限のメタが約 2 行に収まる CSS px 幅（CJK 1em × 8 文字 + padding + border）。
+ * 盤面スケールしたカード幅がこれより小さいあいだ、狭幅ではこの下限を使う。
+ */
+export function orgIslandBadgeMinCssWidth(): number {
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+  const borderX = 4;
+  const metaLineChars = 8;
+  return island.badgeMinMetaSize * metaLineChars + island.badgePaddingX * 2 + borderX;
+}
+
+/**
+ * 可読下限カード高が設計カード高に収まる最小盤面幅。
+ * これ以下では部門ラベルを隠し、カードをコンパクト表示する。
+ */
+export function orgBoardCompactMaxWidthPx(): number {
+  return Math.ceil(
+    (orgIslandBadgeMinCssHeight() / orgIslandBadgeLayoutHeight()) * DESIGN_SPACES.organization.w,
+  );
+}
+
+/** 盤面 CSS 幅がコンパクト閾値以下なら部門ラベルを隠しカードを畳む。 */
+export function orgBoardIsCompact(boardWidthPx: number): boolean {
+  return boardWidthPx <= orgBoardCompactMaxWidthPx();
+}
+
 /**
  * CSS custom property への写像。DOM/CSS の値を別ファイルへ複製せず、
  * `applyVisualTokenCssVariables` がこの結果を `:root` へ反映する。
@@ -318,6 +432,27 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-org-card-padding-y': `${dimensions.organization.card.paddingY}px`,
     '--visual-org-card-radius': `${dimensions.organization.card.radius}px`,
     '--visual-org-card-line-gap': `${dimensions.organization.card.lineGap}px`,
+    '--visual-org-zone-label-font-size': `${dimensions.organization.zoneLabel.fontSize}px`,
+    '--visual-org-zone-label-subtitle-size': `${dimensions.organization.zoneLabel.subtitleSize}px`,
+    '--visual-org-zone-label-padding-x': `${dimensions.organization.zoneLabel.paddingX}px`,
+    '--visual-org-zone-label-padding-y': `${dimensions.organization.zoneLabel.paddingY}px`,
+    '--visual-org-island-badge-font-size': `${dimensions.organization.island.badgeFontSize}px`,
+    '--visual-org-island-badge-meta-size': `${dimensions.organization.island.badgeMetaSize}px`,
+    '--visual-org-island-badge-tag-size': `${dimensions.organization.island.badgeTagSize}px`,
+    '--visual-org-island-badge-min-font-size': `${dimensions.organization.island.badgeMinFontSize}px`,
+    '--visual-org-island-badge-min-meta-size': `${dimensions.organization.island.badgeMinMetaSize}px`,
+    '--visual-org-island-badge-min-tag-size': `${dimensions.organization.island.badgeMinTagSize}px`,
+    '--visual-org-island-badge-padding-x': `${dimensions.organization.island.badgePaddingX}px`,
+    '--visual-org-island-badge-padding-y': `${dimensions.organization.island.badgePaddingY}px`,
+    '--visual-org-island-badge-line-height': String(dimensions.organization.island.badgeLineHeight),
+    '--visual-org-island-badge-min-width': `${orgIslandBadgeMinCssWidth()}px`,
+    '--visual-org-board-compact-max-width': `${orgBoardCompactMaxWidthPx()}px`,
+    '--visual-org-hub-overlay-height': `${dimensions.organization.hubOverlay.height}px`,
+    '--visual-org-hub-overlay-top': `${dimensions.organization.hubOverlay.top}px`,
+    '--visual-org-hub-overlay-font-size': `${dimensions.organization.hubOverlay.fontSize}px`,
+    '--visual-org-hub-overlay-meta-size': `${dimensions.organization.hubOverlay.metaSize}px`,
+    '--visual-org-hub-overlay-padding-x': `${dimensions.organization.hubOverlay.paddingX}px`,
+    '--visual-org-hub-overlay-padding-y': `${dimensions.organization.hubOverlay.paddingY}px`,
     '--visual-dept-mini-width': `${dimensions.department.teamMini.layoutW}px`,
     '--visual-dept-flow-dash': String(dimensions.department.flowDash.dash),
     '--visual-dept-flow-gap': String(dimensions.department.flowDash.gap),

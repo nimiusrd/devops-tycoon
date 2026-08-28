@@ -1,7 +1,7 @@
 /**
  * ラン情報バー（パンくず的ヘッダ）。
  *
- * seed・難易度・スプリント数・予算・進化ポイント・所持レリック・組織タイプ診断を
+ * seed・難易度・試練・スプリント数・予算・進化ポイント・所持レリック・組織タイプ診断を
  * 常時表示し、ラン全体の文脈を示す（第4.7 のパンくずの簡易版）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { getDifficulty } from '../data/difficulties';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { formatRelicTooltip } from '../render/eventOutcomeView';
-import { displayedQuarterSprintIndex } from '../render/sprintProgressView';
+import { runBarSprintView } from '../render/runBarView';
 import { DEFAULT_SCENARIO, getScenario } from '../sim/scenarios';
 import {
   budgetHudCopy,
@@ -20,6 +20,7 @@ import {
   type RunMetricDelta,
   type RunMetricSnapshot,
 } from '../render/status';
+import { budgetHudTitle, trialHudViews } from '../render/trialView';
 import { diagnosisView } from '../sim/diagnosis';
 import { memberExpression, rosterSummary } from '../sim/member';
 import type { MemberExpression } from '../sim/member/types';
@@ -92,7 +93,7 @@ export function RunBar({
   compact = false,
 }: RunBarProps) {
   const diff = getDifficulty(state.difficulty);
-  const { resolveRelic } = useReplayContent();
+  const { resolveRelic, resolveTrial } = useReplayContent();
   const diag = diagnosisView(state.diagnosis);
   const theme = diagnosisTheme(state.diagnosis);
   const roster = rosterSummary(state.roster);
@@ -150,7 +151,9 @@ export function RunBar({
   const trustFeedbackTone = trustFeedbacks.some((feedback) => feedback.tone === 'negative')
     ? 'negative'
     : 'positive';
+  const sprintView = runBarSprintView(state);
   const budgetCopy = budgetHudCopy(state.budget);
+  const trialViews = trialHudViews(state.trials, resolveTrial);
   const trustCopy = trustHudCopy(state.stakeholderTrust);
   const carryoverCopy = goalCarryoverHudCopy({
     goalCarryoverId: state.goalCarryoverId,
@@ -211,16 +214,14 @@ export function RunBar({
       <span className="pill" data-testid="sprint-no" title="当四半期のトラック進行（最終がボス）">
         スプリント{' '}
         <b>
-          {displayedQuarterSprintIndex(state)}/{state.sprintsPerQuarter}
+          {sprintView.current}/{sprintView.total}
         </b>
-        {state.sprintIndexInQuarter + 1 === state.sprintsPerQuarter && (
-          <span className="boss-next"> ★次が山場</span>
-        )}
+        {sprintView.bossNext && <span className="boss-next"> ★次が山場</span>}
       </span>
       <span
         className={`pill run-metric-pill tone-${budgetCopy.tone}${budgetFeedback ? ` run-feedback flash-${budgetFeedback.tone}` : ''}`}
         data-testid="budget"
-        title={budgetCopy.detail}
+        title={budgetHudTitle(budgetCopy.detail, state.trials, resolveTrial)}
         data-tone={budgetCopy.tone}
       >
         💰<b>{state.budget}</b>
@@ -231,6 +232,21 @@ export function RunBar({
         )}
         {budgetFeedback && <RunFeedbackPop feedbacks={[budgetFeedback]} />}
       </span>
+      {trialViews.length > 0 && (
+        <div className="trial-bar" data-testid="run-trials">
+          {trialViews.map((trial) => (
+            <span
+              key={trial.id}
+              className="pill"
+              data-testid={`run-trial-${trial.id}`}
+              title={trial.description}
+              aria-label={`試練 ${trial.label}`}
+            >
+              {trial.label}
+            </span>
+          ))}
+        </div>
+      )}
       <span
         className={`pill run-metric-pill trust-pill tone-${trustCopy.tone}${trustFeedbacks.length > 0 ? ` run-feedback flash-${trustFeedbackTone}` : ''}`}
         data-testid="stakeholder-trust"

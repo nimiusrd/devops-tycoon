@@ -1,6 +1,12 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
-import { DESIGN_SPACES } from '../../src/render/visualTokens';
+import {
+  DESIGN_SPACES,
+  VISUAL_TOKENS,
+  orgBoardIsCompact,
+  orgIslandBadgeMinCssWidth,
+} from '../../src/render/visualTokens';
+import { ORG_HUB_CI_OK_MIN } from '../../src/render/orgBoardScene';
 import { dailyRunKey } from '../../src/state/meta';
 import { CURRENT_RUN_RULESET } from '../../src/state/runPersistence';
 import type { RunState } from '../../src/sim/run/types';
@@ -9,8 +15,10 @@ import { seedMeta } from './seedMeta';
 type GameWindow = Window & {
   game?: {
     pause(): void;
+    resume(): void;
     getState(): RunState;
     startRun(difficulty?: string, trials?: string[], seed?: string): RunState;
+    beginSetupSprint(): RunState;
     zoomTo(level: string): RunState;
     focusDept(id: string): RunState;
     focusTeam(id: string): RunState;
@@ -405,7 +413,7 @@ test('ホームチーム島をタップすると現場へドリルダウンし�
 
   const player = page.getByTestId('team-product-t0');
   await expect(player).toBeVisible();
-  await player.click();
+  await clickOrgTeam(page, 'product-t0');
 
   // 選択中ホームは focusTeam で現場へ着地 → オーバーレイは消える。
   await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
@@ -417,7 +425,7 @@ test('他チームは状態確認後に入り込みで現場へ着地できる�
   await startRun(page, 'enter-team-e2e');
   await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
 
-  await page.getByTestId('team-platform-t1').click();
+  await clickOrgTeam(page, 'platform-t1');
   await expect(page.getByTestId('dept-screen')).toBeVisible();
   await expect(page.getByTestId('dept-team-panel')).toBeVisible();
   await page.getByTestId('enter-team').click();
@@ -450,4 +458,359 @@ test('全社レバーで四半期予算が減り、全社AI依存度が下がる
     () => (window as GameWindow).game!.getState().orgScale!.aiDependency,
   );
   expect(aiDepAfter).toBeLessThanOrEqual(before.aiDep);
+});
+
+function boxesOverlap(a: Box, b: Box): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+/** コンパクト時はドックカード、それ以外は島ボタンでチームを選ぶ。 */
+async function clickOrgTeam(page: import('@playwright/test').Page, teamId: string): Promise<void> {
+  const board = page.getByTestId('org-board');
+  await expect(board).toBeVisible();
+  const compact = (await board.getAttribute('data-compact')) === 'true';
+  if (compact) {
+    await page.getByTestId(`island-badge-${teamId}`).click();
+    return;
+  }
+  await page.getByTestId(`team-${teamId}`).click();
+}
+
+test('全社マップの部門ラベルがチームカードと重ならない（#380）', async ({ page }) => {
+  const viewports = [
+    { name: 'phone-se', width: 320, height: 568 },
+    { name: 'phone', width: 390, height: 844 },
+    { name: 'tablet-portrait', width: 768, height: 1024 },
+    { name: 'desktop-short', width: 1024, height: 768 },
+    { name: 'desktop', width: 1440, height: 900 },
+  ] as const;
+  const island = VISUAL_TOKENS.dimensions.organization.island;
+
+  for (const viewport of viewports) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await startRun(page, `org-label-clear-${viewport.name}`);
+    await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+    const board = page.getByTestId('org-board');
+    await expect(board, `${viewport.name} の全社盤面が表示されない`).toBeVisible();
+    await board.scrollIntoViewIfNeeded();
+
+    const labelLocators = page.locator('.org-zone-label');
+    const badgeLocators = page.locator('.org-island-badge');
+    await expect(labelLocators).toHaveCount(3);
+    await expect.poll(async () => badgeLocators.count()).toBeGreaterThan(0);
+
+    const labels = await labelLocators.all();
+    const badges = await badgeLocators.all();
+    const visibleLabelBoxes: Box[] = [];
+    for (const label of labels) {
+      if (!(await label.isVisible())) continue;
+      const labelBox = await label.boundingBox();
+      if (!labelBox) continue;
+      visibleLabelBoxes.push(labelBox);
+      expect(labelBox.width, `${viewport.name} の部門ラベル幅が 0`).toBeGreaterThan(0);
+      expect(labelBox.height, `${viewport.name} の部門ラベル高が 0`).toBeGreaterThan(0);
+      for (const badge of badges) {
+        const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
+        expect(
+          boxesOverlap(labelBox, badgeBox),
+          `${viewport.name} で部門ラベルとチームカードが重なっている`,
+        ).toBe(false);
+      }
+    }
+    const boardBox = await readBox(board, `${viewport.name} 盤面`);
+    const compact = orgBoardIsCompact(boardBox.width);
+    await expect(board).toHaveAttribute('data-compact', compact ? 'true' : 'false');
+    if (compact) {
+      expect(
+        visibleLabelBoxes.length,
+        `${viewport.name} でコンパクト幅なのに部門ラベルが見える`,
+      ).toBe(0);
+    } else {
+      expect(
+        visibleLabelBoxes.length,
+        `${viewport.name} で部門ラベルが見えない`,
+      ).toBeGreaterThanOrEqual(3);
+    }
+
+    const expectedBadgeWidth =
+      VISUAL_TOKENS.dimensions.organization.card.width *
+      (boardBox.width / DESIGN_SPACES.organization.w);
+    const minBadgeWidth = orgIslandBadgeMinCssWidth();
+    const badgeBoxes: Box[] = [];
+    for (const badge of badges) {
+      const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
+      badgeBoxes.push(badgeBox);
+      await expect(badge).toContainText(/出荷/);
+      await expect(badge).toContainText(/AI/);
+      await expect(badge).toContainText(/人/);
+      if (compact) {
+        expect(
+          badgeBox.width,
+          `${viewport.name} のチームカード幅が可読下限未満`,
+        ).toBeGreaterThanOrEqual(Math.min(minBadgeWidth, boardBox.width) - 1);
+        expect(
+          badgeBox.width,
+          `${viewport.name} のチームカードが盤面幅を超える`,
+        ).toBeLessThanOrEqual(boardBox.width + 1);
+        const coveredByActor = await page.evaluate(
+          ({ x, y }) => {
+            const el = document.elementFromPoint(x, y);
+            return Boolean(el?.closest('.org-island, .org-hub-station'));
+          },
+          { x: badgeBox.x + badgeBox.width / 2, y: badgeBox.y + badgeBox.height / 2 },
+        );
+        expect(coveredByActor, `${viewport.name} でドックカードが島やハブの下に隠れている`).toBe(
+          false,
+        );
+        const islands = page.locator('.org-island');
+        const islandCount = await islands.count();
+        expect(islandCount, `${viewport.name} で背後の島が無い`).toBeGreaterThan(0);
+        const groupsHidden = await page
+          .locator('.org-island-group')
+          .evaluateAll((groups) =>
+            groups.every((group) => group.getAttribute('aria-hidden') === 'true'),
+          );
+        expect(groupsHidden, `${viewport.name} でコンパクト時の島が支援技術に残る`).toBe(true);
+        for (let i = 0; i < islandCount; i += 1) {
+          await expect(islands.nth(i)).toHaveAttribute('tabindex', '-1');
+        }
+        const dockHits = page.locator('.org-island-badge-dock-hit');
+        await expect(dockHits.first()).not.toHaveAttribute('tabindex', '-1');
+        const dock = page.getByTestId('org-island-badge-dock');
+        await expect(dock, `${viewport.name} で部門見出しが見えない`).toContainText(
+          'プロダクト事業部',
+        );
+        await expect(dock).toContainText('基盤・プラットフォーム部');
+        await expect(dock).toContainText('新規事業部');
+        const hitCount = await dockHits.count();
+        expect(hitCount, `${viewport.name} でドック操作対象が無い`).toBeGreaterThan(0);
+        for (let i = 0; i < hitCount; i += 1) {
+          const hit = dockHits.nth(i);
+          const hitBox = await readBox(hit, `${viewport.name} ドック操作対象`);
+          const name = await hit.getAttribute('aria-label');
+          expect(name, `${viewport.name} のドックに出荷が無い`).toMatch(/出荷/);
+          expect(name, `${viewport.name} のドックに AI が無い`).toMatch(/AI/);
+          expect(name, `${viewport.name} のドックに人数が無い`).toMatch(/人/);
+          expect(
+            hitBox.width,
+            `${viewport.name} のドック操作対象幅が 24px 未満`,
+          ).toBeGreaterThanOrEqual(24);
+          expect(
+            hitBox.height,
+            `${viewport.name} のドック操作対象高が 24px 未満`,
+          ).toBeGreaterThanOrEqual(24);
+          expect(
+            hitBox.height,
+            `${viewport.name} のドック操作対象高がモバイル原則の 44px 未満`,
+          ).toBeGreaterThanOrEqual(44);
+        }
+      } else {
+        expect(
+          badgeBox.width,
+          `${viewport.name} のチームカード幅が共有幅を超える`,
+        ).toBeLessThanOrEqual(expectedBadgeWidth + 1);
+      }
+    }
+    for (let i = 0; i < badgeBoxes.length; i += 1) {
+      for (let j = i + 1; j < badgeBoxes.length; j += 1) {
+        expect(
+          boxesOverlap(badgeBoxes[i], badgeBoxes[j]),
+          `${viewport.name} でチームカード同士が重なっている`,
+        ).toBe(false);
+      }
+    }
+
+    const nameSize = await page
+      .locator('.org-island-badge strong')
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    const metaSize = await page
+      .locator('.org-island-meta')
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(nameSize, `${viewport.name} のチーム名が可読下限未満`).toBeGreaterThanOrEqual(
+      island.badgeMinFontSize,
+    );
+    expect(metaSize, `${viewport.name} のチームメタが可読下限未満`).toBeGreaterThanOrEqual(
+      island.badgeMinMetaSize,
+    );
+
+    const hub = page.getByTestId('org-infra-hub');
+    await expect(hub, `${viewport.name} の共通基盤が見えない`).toBeVisible();
+    await expect(hub).toContainText(/CI\s+\d+/);
+    await expect(hub).toContainText(/Docs\s+\d+/);
+    await expect(hub).toContainText(/AI\s+\d+/);
+    const hubCi = await page.evaluate(
+      () => (window as GameWindow).game!.getState().orgScale!.infra.ci,
+    );
+    await expect(hub).toHaveAttribute('data-tone', hubCi >= ORG_HUB_CI_OK_MIN ? 'ok' : 'warn');
+    if (hubCi < ORG_HUB_CI_OK_MIN) {
+      await expect(hub).toContainText('注意');
+    }
+    const hubBox = await readBox(hub, `${viewport.name} 共通基盤`);
+    for (const badge of badges) {
+      const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
+      expect(
+        boxesOverlap(hubBox, badgeBox),
+        `${viewport.name} でハブラベルとチームカードが重なっている`,
+      ).toBe(false);
+    }
+
+    if (compact) {
+      const playerHit = page.getByTestId('island-badge-product-t0');
+      await expect(playerHit, `${viewport.name} で選択中チームがドックに無い`).toHaveClass(
+        /is-player/,
+      );
+      await expect(playerHit).toHaveAttribute('aria-current', 'true');
+      await expect(playerHit).toContainText('★');
+      const otherHit = page.getByTestId('island-badge-platform-t0');
+      await expect(otherHit).not.toHaveClass(/is-player/);
+      await expect(otherHit).not.toHaveAttribute('aria-current');
+
+      await page.getByTestId('team-platform-t1').evaluate((el) => el.focus());
+      await expect(
+        page.getByTestId('island-badge-platform-t1'),
+        `${viewport.name} で島フォーカスがドックへ移らない`,
+      ).toBeFocused();
+      await expect(page.getByTestId('team-platform-t1')).not.toBeFocused();
+    }
+  }
+});
+
+test('コンパクト切替でチームのキーボードフォーカスを引き継ぐ', async ({ page }) => {
+  // 1440×900 では HUD が盤面高を食い、幅がコンパクト閾値以下のままになる。
+  const wide = { width: 1920, height: 1200 };
+  const narrow = { width: 320, height: 568 };
+  await page.setViewportSize(wide);
+  await startRun(page, 'org-compact-focus');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+  const board = page.getByTestId('org-board');
+  await expect(board).toBeVisible();
+  await expect(board).toHaveAttribute('data-compact', 'false');
+
+  const island = page.getByTestId('team-product-t0');
+  await island.focus();
+  await expect(island).toBeFocused();
+
+  await page.setViewportSize(narrow);
+  await expect(board).toHaveAttribute('data-compact', 'true');
+  await expect(page.getByTestId('island-badge-product-t0')).toBeFocused();
+
+  await page.setViewportSize(wide);
+  await expect(board).toHaveAttribute('data-compact', 'false');
+  await expect(page.getByTestId('team-product-t0')).toBeFocused();
+});
+
+test('コンパクト切替で後方チームのドックカードまでスクロールする', async ({ page }) => {
+  const wide = { width: 1920, height: 1200 };
+  const narrow = { width: 320, height: 568 };
+  await page.setViewportSize(wide);
+  await startRun(page, 'org-compact-dock-scroll');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+  const board = page.getByTestId('org-board');
+  await expect(board).toHaveAttribute('data-compact', 'false');
+
+  await page.getByTestId('team-newbiz-t0').focus();
+  await expect(page.getByTestId('team-newbiz-t0')).toBeFocused();
+
+  await page.setViewportSize(narrow);
+  await expect(board).toHaveAttribute('data-compact', 'true');
+  const dockHit = page.getByTestId('island-badge-newbiz-t0');
+  await expect(dockHit).toBeFocused();
+  const inView = await page.evaluate(() => {
+    const hit = document.querySelector('[data-testid="island-badge-newbiz-t0"]');
+    const dock = document.querySelector('[data-testid="org-island-badge-dock"]');
+    if (!(hit instanceof HTMLElement) || !(dock instanceof HTMLElement)) return false;
+    const hitBox = hit.getBoundingClientRect();
+    const dockBox = dock.getBoundingClientRect();
+    return hitBox.top >= dockBox.top - 1 && hitBox.bottom <= dockBox.bottom + 1;
+  });
+  expect(inView, '後方チームのドックカードが可視範囲外').toBe(true);
+});
+
+type FieldKpi = {
+  delivery: number;
+  sprintTick: number;
+  delivered: number;
+  completed: number;
+  sprintIndex: number;
+};
+
+async function readFieldKpi(page: import('@playwright/test').Page): Promise<FieldKpi> {
+  return page.evaluate(() => {
+    const s = (window as GameWindow).game!.getState();
+    return {
+      delivery: s.org.deliveryScore,
+      sprintTick: s.sprintTick,
+      delivered: s.totals.delivered,
+      completed: s.totals.completed,
+      sprintIndex: s.sprintIndexInQuarter,
+    };
+  });
+}
+
+test('編成の全社マップ閲覧では sim が進まず、現場へ戻すと KPI が一致する', async ({ page }) => {
+  await startRun(page, 'org-map-setup-kpi');
+  await expect(page.getByTestId('setup')).toBeVisible();
+  // 編成中の HUD は次に開始するスプリント番号（#392）。setup 開始直後は 1/6。
+  await expect(page.getByTestId('sprint-no')).toContainText('1/6');
+
+  const before = await readFieldKpi(page);
+  await page.getByTestId('open-org').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+  await expect(page.getByTestId('org-screen')).toBeVisible();
+
+  const startedAt = Date.now();
+  await expect
+    .poll(async () => {
+      const during = await readFieldKpi(page);
+      expect(during).toEqual(before);
+      return Date.now() - startedAt;
+    })
+    .toBeGreaterThanOrEqual(1500);
+
+  await page.getByTestId('crumb-team').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+  await expect(page.getByTestId('setup')).toBeVisible();
+  const after = await readFieldKpi(page);
+  expect(after).toEqual(before);
+});
+
+test('スプリント中に全社マップを開くと tick が止まり、現場へ戻すと KPI が一致する', async ({
+  page,
+}) => {
+  await page.goto('/?renderer=dom&seed=org-map-sprint-kpi');
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.startRun('normal', [], 'org-map-sprint-kpi');
+    g.beginSetupSprint();
+  });
+  await expect(page.getByTestId('board')).toBeVisible();
+
+  await expect
+    .poll(async () => page.evaluate(() => (window as GameWindow).game!.getState().sprintTick))
+    .toBeGreaterThan(0);
+
+  const before = await readFieldKpi(page);
+  await page.getByTestId('open-org').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+  const frozen = await readFieldKpi(page);
+  const startedAt = Date.now();
+  await expect
+    .poll(async () => {
+      const during = await readFieldKpi(page);
+      expect(during.sprintTick).toBe(frozen.sprintTick);
+      expect(during.delivery).toBe(frozen.delivery);
+      expect(during.delivered).toBe(frozen.delivered);
+      return Date.now() - startedAt;
+    })
+    .toBeGreaterThanOrEqual(2000);
+
+  await page.getByTestId('crumb-team').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+  const after = await readFieldKpi(page);
+  expect(after.delivery).toBe(frozen.delivery);
+  expect(after.delivered).toBe(frozen.delivered);
+  expect(after.sprintTick).toBe(frozen.sprintTick);
+  expect(after.sprintIndex).toBe(before.sprintIndex);
 });

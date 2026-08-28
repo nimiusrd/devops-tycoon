@@ -33,6 +33,16 @@ export interface CardViewProps {
   whatIfComputing?: boolean;
 }
 
+function handCardTitle(
+  def: CardDef,
+  level: number,
+  playCostValue: number | undefined,
+  disabledReason?: string,
+): string {
+  const tooltip = `${formatCardTooltip(def, level)} / 発動 ⚡${playCostValue ?? '?'}`;
+  return disabledReason ? `${tooltip} / ${disabledReason}` : tooltip;
+}
+
 export function CardView({
   def,
   level = 1,
@@ -95,11 +105,7 @@ export function CardView({
         onClick={onPlay}
         disabled={disabled}
         data-testid={`hand-card-${def.id}`}
-        title={
-          disabled && disabledReason
-            ? disabledReason
-            : `${formatCardTooltip(def, level)} / 発動 ⚡${playCostValue ?? '?'}`
-        }
+        title={handCardTitle(def, level, playCostValue, disabledReason)}
       >
         {inner}
       </button>

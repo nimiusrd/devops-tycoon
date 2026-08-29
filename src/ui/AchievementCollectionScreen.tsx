@@ -18,7 +18,7 @@ export interface AchievementCollectionScreenProps {
 
 export function AchievementCollectionScreen({ meta, onClose }: AchievementCollectionScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: true });
+  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
   const earned = new Set(meta.achievements);
   const earnedCount = ACHIEVEMENT_DEFS.filter((a) => earned.has(a.id)).length;
   const collectedTitles = new Set(meta.collectedWinTypes);

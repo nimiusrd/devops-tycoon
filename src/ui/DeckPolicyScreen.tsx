@@ -19,7 +19,7 @@ export interface DeckPolicyScreenProps {
 
 export function DeckPolicyScreen({ meta, onChange, onClose }: DeckPolicyScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: true });
+  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
   const unlocked = unlockedContent(meta).cards;
   const preferred = new Set(meta.preferredCardIds);
   const candidates = CARD_DEFS.filter((def) => unlocked.has(def.id));

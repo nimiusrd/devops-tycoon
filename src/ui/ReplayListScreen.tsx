@@ -47,7 +47,7 @@ export function ReplayListScreen({
   onImportReplay,
 }: ReplayListScreenProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(overlayRef, { restoreFocus: true });
+  useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss: onClose });
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
   const resolvedSelectedId = resolveSelectedReplayId(replays, selectedId);
   const selected = replays.find((r) => r.id === resolvedSelectedId) ?? null;

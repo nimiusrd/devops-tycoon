@@ -1,5 +1,5 @@
 /**
- * SPRINT RESULT オーバーレイが背面 HUD／RunBar を完全にブロックする契約（#384）。
+ * SPRINT RESULT オーバーレイの操作契約（#384 / #424）。
  */
 import { expect, test } from './fixtures';
 import { advanceCurrentSprintToResult, beginPublicSprint } from './fixtures';
@@ -20,6 +20,11 @@ test('SPRINT RESULT 中は KPI詳細／ラン詳細にフォーカスもクリ�
   await expect(overlay).toBeVisible();
   await expect(overlay).toHaveAttribute('role', 'dialog');
   await expect(overlay).toHaveAttribute('aria-modal', 'true');
+  await expect(page.getByTestId('result-restart')).toHaveText('リプレイに残さずタイトルへ');
+  await expect(page.getByTestId('result-restart')).toHaveAttribute(
+    'title',
+    '勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません',
+  );
 
   const layout = page.getByTestId('sprint-layout');
   await expect(layout).toHaveAttribute('inert', '');

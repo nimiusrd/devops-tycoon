@@ -233,12 +233,12 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'sim-sprint-f',
-    mutate: 'src/sim/sprint.ts:598-654',
+    mutate: 'src/sim/sprint.ts:598-633',
     note: 'sprint 評価（tickCooldowns / computeGrade）',
   },
   {
     id: 'sim-sprint-g',
-    mutate: `src/sim/sprint.ts:655-${OPEN_RANGE_END}`,
+    mutate: `src/sim/sprint.ts:634-${OPEN_RANGE_END}`,
     note: 'sprint 称号と summarizeSprint（computeTitleAndDiagnosis 全体。以降の追記もここ）',
   },
   {
@@ -307,12 +307,12 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'state-persist-shape-b',
-    mutate: 'src/state/persistFrameShape.ts:165-331',
+    mutate: 'src/state/persistFrameShape.ts:165-378',
     note: 'persistFrameShape 中盤（isMemberShape まで）',
   },
   {
     id: 'state-persist-shape-c',
-    mutate: `src/state/persistFrameShape.ts:332-${OPEN_RANGE_END}`,
+    mutate: `src/state/persistFrameShape.ts:379-${OPEN_RANGE_END}`,
     note: 'persistFrameShape 後半',
   },
   {

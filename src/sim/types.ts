@@ -512,6 +512,15 @@ export interface SprintBaselineResult {
   maxCombo: number;
 }
 
+/** 評価に使った危機ペナルティ内訳（記録時の係数）。 */
+export interface SprintGradePenalties {
+  rework: number;
+  incident: number;
+  spread: number;
+  hp: number;
+  total: number;
+}
+
 /** スプリントリザルト（SPEC 第4.6）。 */
 export interface SprintResult {
   done: number;
@@ -530,6 +539,25 @@ export interface SprintResult {
   actionCounts: Partial<Record<ActionId, number>>;
   /** 評価（S/A/B/C/D）。 */
   grade: string;
+  /**
+   * 最終健全比（危機ペナルティ後 + 安定介入ボーナス）。
+   * 旧セーブは省略。省略時は内訳を再構成せず、保存済み等級だけを出す。
+   */
+  gradeRatio?: number;
+  /** 安定介入ボーナス（0..cap）。旧セーブは省略。 */
+  stabilizingBonus?: number;
+  /** 実際に運用安定を付与した介入回数。旧セーブは省略。 */
+  stabilizingGrants?: number;
+  /**
+   * 評価に使った危機ペナルティ内訳（記録時の係数）。
+   * 旧セーブは省略。省略時は減点行を出さない。
+   */
+  gradePenalties?: SprintGradePenalties;
+  /**
+   * 評価に使った丸め前のシニアHP損失（start − end）。
+   * `seniorHpDelta` は表示用の整数丸め。旧セーブは省略。
+   */
+  seniorHpLoss?: number;
   /** 称号（SPEC 第4.6 の例から導出）。 */
   title: string;
   /** 診断コメント。 */

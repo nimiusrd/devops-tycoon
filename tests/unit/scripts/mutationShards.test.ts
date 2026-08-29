@@ -184,8 +184,8 @@ describe('mutation shards', () => {
   });
 
   it('computeTitleAndDiagnosis を関数の途中で割らない', () => {
-    const titleStart = 655;
-    const titleEnd = 749;
+    const titleStart = 634;
+    const titleEnd = 732;
     const sprintRanges = MUTATION_SHARDS.flatMap((shard) => {
       const resolved = resolveShardMutate(shard.mutate);
       const coverage = resolved.get('src/sim/sprint.ts');
@@ -195,6 +195,24 @@ describe('mutation shards', () => {
       (range) => range.start > titleStart && range.start <= titleEnd,
     );
     expect(cutInside).toEqual([]);
+  });
+
+  it('persistFrameShape の結果検証と isMemberShape を関数の途中で割らない', () => {
+    const methods = [
+      { name: 'isSprintResultShape', start: 278, end: 332 },
+      { name: 'isMemberShape', start: 360, end: 376 },
+    ];
+    const persistRanges = MUTATION_SHARDS.flatMap((shard) => {
+      const resolved = resolveShardMutate(shard.mutate);
+      const coverage = resolved.get('src/state/persistFrameShape.ts');
+      return coverage === true || coverage === undefined ? [] : coverage;
+    });
+    for (const method of methods) {
+      const cutInside = persistRanges.filter(
+        (range) => range.start > method.start && range.start <= method.end,
+      );
+      expect(cutInside, method.name).toEqual([]);
+    }
   });
 
   it('sprint 経路の mutant 予算は通常シャードより厳しい', () => {

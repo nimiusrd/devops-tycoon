@@ -260,6 +260,21 @@ function isFireSprintEventShape(value: unknown): boolean {
   );
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isGradePenaltiesShape(value: unknown): boolean {
+  if (!isObject(value)) return false;
+  return (
+    isFiniteNumber(value.rework) &&
+    isFiniteNumber(value.incident) &&
+    isFiniteNumber(value.spread) &&
+    isFiniteNumber(value.hp) &&
+    isFiniteNumber(value.total)
+  );
+}
+
 function isSprintResultShape(value: unknown): boolean {
   if (!isObject(value) || !isObject(value.actionCounts)) return false;
   if (!Array.isArray(value.timeline) || !value.timeline.every(isTimelineSampleShape)) return false;
@@ -269,6 +284,36 @@ function isSprintResultShape(value: unknown): boolean {
   }
   if (typeof value.grade !== 'string' || typeof value.title !== 'string') return false;
   if (typeof value.diagnosis !== 'string') return false;
+  if (
+    value.gradeRatio !== undefined &&
+    (typeof value.gradeRatio !== 'number' || !Number.isFinite(value.gradeRatio))
+  ) {
+    return false;
+  }
+  if (
+    value.stabilizingBonus !== undefined &&
+    (typeof value.stabilizingBonus !== 'number' || !Number.isFinite(value.stabilizingBonus))
+  ) {
+    return false;
+  }
+  if (
+    value.seniorHpLoss !== undefined &&
+    (typeof value.seniorHpLoss !== 'number' || !Number.isFinite(value.seniorHpLoss))
+  ) {
+    return false;
+  }
+  if (
+    value.stabilizingGrants !== undefined &&
+    (typeof value.stabilizingGrants !== 'number' ||
+      !Number.isFinite(value.stabilizingGrants) ||
+      !Number.isInteger(value.stabilizingGrants) ||
+      value.stabilizingGrants < 0)
+  ) {
+    return false;
+  }
+  if (value.gradePenalties !== undefined && !isGradePenaltiesShape(value.gradePenalties)) {
+    return false;
+  }
   return (
     typeof value.done === 'number' &&
     typeof value.delivered === 'number' &&

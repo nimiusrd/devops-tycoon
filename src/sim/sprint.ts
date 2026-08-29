@@ -39,6 +39,7 @@ import {
 import type { Rng } from './rng';
 import { getScenario } from './scenarios';
 import { appendSprintEvent } from './sprintEvents';
+import { evaluateSprintGrade } from './sprintGrade';
 import type {
   ActionId,
   CardEffects,
@@ -608,18 +609,17 @@ export function aiAssistedPct(metrics: SprintMetrics): number {
   return Math.round((metrics.aiAssistedCompleted / metrics.completedCount) * 100);
 }
 
-/** 健全比から評価ランクへ変換する境界（RI-80）。 */
-const GRADE_THRESHOLDS = {
-  S: SPRINT_BALANCE.gradeThresholdS.value,
-  A: SPRINT_BALANCE.gradeThresholdA.value,
-  B: SPRINT_BALANCE.gradeThresholdB.value,
-  C: SPRINT_BALANCE.gradeThresholdC.value,
-} as const;
-
-/** 実際に運用安定を付与した介入1回あたりの運用判断ボーナス（RI-80）。 */
-const STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusPerGrant.value;
-/** 介入の連打だけでSにならないための上限。 */
-const MAX_STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusCap.value;
+function gradeInputOf(sprint: SprintState, org: OrgState) {
+  const m = sprint.metrics;
+  return {
+    delivered: m.delivered,
+    reworkCount: m.reworkCount,
+    incidentCount: m.incidentCount,
+    spread: m.spread,
+    hpLoss: m.seniorHpStart - org.seniorHp,
+    stabilizingGrants: m.stabilizingGrants,
+  };
+}
 
 /**
  * 評価（S/A/B/C/D）。出荷量を母数に、手戻り・障害・延焼・シニア消耗の
@@ -627,28 +627,7 @@ const MAX_STABILIZING_ACTION_BONUS = SPRINT_BALANCE.stabilizingBonusCap.value;
  * 増えると、出荷量が同じでも評価が下がる（本作のメッセージ。第2章）。
  */
 export function computeGrade(sprint: SprintState, org: OrgState): string {
-  const m = sprint.metrics;
-  const hpLoss = m.seniorHpStart - org.seniorHp;
-  const penalties =
-    m.reworkCount * SPRINT_BALANCE.gradePenaltyRework.value +
-    m.incidentCount * SPRINT_BALANCE.gradePenaltyIncident.value +
-    m.spread * SPRINT_BALANCE.gradePenaltySpread.value +
-    Math.max(0, hpLoss - SPRINT_BALANCE.gradePenaltyHpLossFree.value) *
-      SPRINT_BALANCE.gradePenaltyHpLossMultiplier.value;
-  const base = Math.max(1, m.delivered);
-  const outcomeRatio = (m.delivered - penalties) / base;
-  // 実際に運用安定を付与した介入だけを加点する（条件未成立の firefight/andon は除外。RI-73）。
-  // 残業号令は速度優先の危険な手なので安定を付けず対象外。上限も設ける。
-  const managementBonus = Math.min(
-    MAX_STABILIZING_ACTION_BONUS,
-    m.stabilizingGrants * STABILIZING_ACTION_BONUS,
-  );
-  const ratio = outcomeRatio + managementBonus;
-  if (ratio >= GRADE_THRESHOLDS.S) return 'S';
-  if (ratio >= GRADE_THRESHOLDS.A) return 'A';
-  if (ratio >= GRADE_THRESHOLDS.B) return 'B';
-  if (ratio >= GRADE_THRESHOLDS.C) return 'C';
-  return 'D';
+  return evaluateSprintGrade(gradeInputOf(sprint, org)).grade;
 }
 
 /** 称号と診断（SPEC 第4.6 の例から、結果メトリクスで分岐）。 */
@@ -672,9 +651,13 @@ export function computeTitleAndDiagnosis(
     };
   }
   if (hpLoss >= SPRINT_BALANCE.titleSeniorBurnoutHpLoss.value) {
+    // HUD `seniorHpHudCopy` と同じく、表示上の残り体力 25 未満だけを燃え尽き寸前とする。
+    const nearBurnout = Math.round(org.seniorHp) < 25;
     return {
       title: 'シニア過労メーカー',
-      diagnosis: 'レビュー負荷がシニアに集中しています。体力が尽きる前に分散を。',
+      diagnosis: nearBurnout
+        ? 'レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。'
+        : 'レビュー負荷がシニアに集中し大きく消耗しました。体力が尽きる前に分散を。',
     };
   }
   if (
@@ -752,6 +735,7 @@ export function computeTitleAndDiagnosis(
 export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResult {
   const m = sprint.metrics;
   const { title, diagnosis } = computeTitleAndDiagnosis(sprint, org);
+  const score = evaluateSprintGrade(gradeInputOf(sprint, org));
   return {
     done: m.doneCount,
     delivered: m.delivered,
@@ -763,8 +747,13 @@ export function summarizeSprint(sprint: SprintState, org: OrgState): SprintResul
     contained: m.contained,
     spread: m.spread,
     seniorHpDelta: Math.round(org.seniorHp - m.seniorHpStart),
+    seniorHpLoss: m.seniorHpStart - org.seniorHp,
     actionCounts: { ...m.actionCounts },
-    grade: computeGrade(sprint, org),
+    grade: score.grade,
+    gradeRatio: score.ratio,
+    stabilizingBonus: score.stabilizingBonus,
+    stabilizingGrants: m.stabilizingGrants,
+    gradePenalties: { ...score.penalties },
     title,
     diagnosis,
     timeline: sprint.timeline.map((s) => ({ ...s, seniorHp: clamp(s.seniorHp, 0, 100) })),

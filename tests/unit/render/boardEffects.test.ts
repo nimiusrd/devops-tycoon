@@ -86,6 +86,25 @@ describe('boardEffects timeline (RI-142)', () => {
     expect(afterExpiry).toEqual([]);
   });
 
+  it('連続イベントでも最新20件だけを保持しsequenceを単調増加させる', () => {
+    let current = [] as ReturnType<typeof createTimedBoardEffects>['effects'];
+    let nextSequence = 0;
+    for (let batchIndex = 0; batchIndex < 5; batchIndex += 1) {
+      const batch = createTimedBoardEffects(
+        Array.from({ length: 6 }, (_, index) => sweep(batchIndex * 6 + index)),
+        nextSequence,
+        1_000,
+      );
+      nextSequence = batch.nextSequence;
+      current = mergeTimedBoardEffects(current, batch.effects, 1_000);
+    }
+    expect(nextSequence).toBe(30);
+    expect(current).toHaveLength(BOARD_EFFECT_BUDGET);
+    expect(current.map((effect) => effect.sequence)).toEqual(
+      Array.from({ length: BOARD_EFFECT_BUDGET }, (_, index) => index + 10),
+    );
+  });
+
   it('複数粒でも効果音を種類ごとに一度だけ返し、描画経路を入力にしない', () => {
     expect(boardEffectSfx([spread, spread, sweep(0), sweep(1)])).toEqual([
       'fireSpread',

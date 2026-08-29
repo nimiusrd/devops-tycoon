@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   actorTextureKey,
   boardAnimationElapsedMs,
+  boardDotLayer,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
@@ -16,6 +17,7 @@ import {
   flowDriftPeriodMs,
   hitTestBoardDot,
   lineDashSegments,
+  planBoardDotsForRender,
 } from '../../../src/render/boardPixiView';
 import type { BoardDotPlan } from '../../../src/render/boardScene';
 
@@ -35,6 +37,50 @@ describe('boardAnimationElapsedMs', () => {
   it('通常時は経過時間を保ち、reduced motion は位相0へ固定する', () => {
     expect(boardAnimationElapsedMs(840, false)).toBe(840);
     expect(boardAnimationElapsedMs(840, true)).toBe(0);
+  });
+});
+
+describe('planBoardDotsForRender', () => {
+  it('上限超過でもドラッグ中・炎上・候補・流動中を優先し、最後に描画順へ戻す', () => {
+    const dots = [
+      dot({ id: 1 }),
+      dot({ id: 2 }),
+      dot({
+        id: 3,
+        motion: {
+          kind: 'flow',
+          from: 'coding',
+          to: 'review',
+          t: 0.4,
+          angleDeg: 0,
+          speedMul: 1,
+          aiAssisted: false,
+        },
+      }),
+      dot({ id: 4 }),
+      dot({ id: 5, fire: true, variant: 'incident' }),
+      dot({ id: 6 }),
+    ];
+    const plan = planBoardDotsForRender(dots, new Set([4]), 6, 4);
+
+    expect(plan.requested).toBe(6);
+    expect(plan.dropped).toBe(2);
+    expect(plan.dots.map((entry) => entry.id)).toEqual([3, 5, 4, 6]);
+    expect(plan.dots.map((entry) => boardDotLayer(entry, entry.id === 4, entry.id === 6))).toEqual([
+      8, 8, 9, 12,
+    ]);
+  });
+
+  it('同じ入力は同じ選択順になり、0予算では全件を切り捨てる', () => {
+    const dots = Array.from({ length: 8 }, (_, index) => dot({ id: index + 1 }));
+    expect(planBoardDotsForRender(dots, new Set(), null, 3)).toEqual(
+      planBoardDotsForRender(dots, new Set(), null, 3),
+    );
+    expect(planBoardDotsForRender(dots, new Set(), null, 0)).toEqual({
+      dots: [],
+      requested: 8,
+      dropped: 8,
+    });
   });
 });
 

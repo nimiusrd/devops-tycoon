@@ -29,6 +29,30 @@ describe('visual tokens', () => {
     expect(designSpaceRatio(DESIGN_SPACES.industry)).toBeCloseTo(740 / 360);
   });
 
+  it('現場のDOM/Pixi合成順を意味別トークンで固定する', () => {
+    expect(VISUAL_TOKENS.layers.sprint).toEqual({
+      flows: 2,
+      pixiBase: 3,
+      station: 4,
+      stationReview: 5,
+      stationDone: 6,
+      task: 7,
+      foreground: 8,
+      legend: 9,
+      heatOverlay: 9,
+      dragCandidate: 9,
+      summary: 10,
+      aura: 10,
+      pulse: 11,
+      fireEffects: 12,
+      dragging: 12,
+      fireParticle: 13,
+      pixiEffects: 14,
+      interventionEffects: 14,
+      interventionParticle: 15,
+    });
+  });
+
   it('設計 px を CSS の相対座標へ変換する', () => {
     expect(designPxToPercent(702, DESIGN_SPACES.sprint.w)).toBe('50%');
     expect(designPointToCss({ x: 702, y: 286.5 }, DESIGN_SPACES.sprint)).toEqual({
@@ -83,6 +107,9 @@ describe('visual tokens', () => {
     expect(values['--visual-space-organization-h']).toBe('573');
     expect(values['--visual-space-department-w']).toBe('1404');
     expect(values['--visual-space-industry-h']).toBe('360');
+    expect(values['--visual-layer-sprint-pixi-base']).toBe('3');
+    expect(values['--visual-layer-sprint-pixi-effects']).toBe('14');
+    expect(values['--visual-layer-sprint-intervention-particle']).toBe('15');
     expect(values['--visual-sprint-station-width']).toBe('13%');
     expect(values['--visual-sprint-flow-dash']).toBe('6');
     expect(values['--visual-sprint-flow-gap']).toBe('9');

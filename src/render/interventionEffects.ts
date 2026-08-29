@@ -13,6 +13,7 @@ import type {
   SprintModifiers,
   Task,
 } from '../sim/types';
+import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
 import { findBoardFlow, flowPointAt, planBoardScene, BOARD_VIEW } from './boardScene';
 
 /** 盤面上で再生する介入リアクション。 */
@@ -249,9 +250,11 @@ export function deriveActiveBoardAuras(
     { kind: 'andon', until: modifiers.andonUntilTick, total: ANDON_TICKS },
     { kind: 'stability', until: modifiers.stabilityUntilTick, total: STABILITY_TICKS },
   ];
-  return entries.flatMap(({ kind, until, total }): BoardAuraPlan[] => {
-    const remainingTicks = Math.max(0, until - sprintTick);
-    if (remainingTicks <= 0) return [];
-    return [{ kind, remainingTicks, totalTicks: total }];
-  });
+  return entries
+    .flatMap(({ kind, until, total }): BoardAuraPlan[] => {
+      const remainingTicks = Math.max(0, until - sprintTick);
+      if (remainingTicks <= 0) return [];
+      return [{ kind, remainingTicks, totalTicks: total }];
+    })
+    .slice(0, BOARD_RENDER_BUDGETS.auras);
 }

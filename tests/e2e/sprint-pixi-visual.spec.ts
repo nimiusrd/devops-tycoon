@@ -17,17 +17,106 @@ import {
 import { planBoardScene } from '../../src/render/boardScene';
 import { assignableTasks } from '../../src/sim/assignTask';
 import type { SprintState } from '../../src/sim/types';
+import type {
+  BoardRenderMetrics,
+  BoardRenderResourceMetrics,
+} from '../../src/render/adapters/pixiBoardRenderer';
 
 const PIXI_SEED = 'sprint-pixi-e2e';
 
 type BoardPixiTestHook = {
   freezeForScreenshot(): void;
+  getMetrics(): { base: BoardRenderMetrics; effects: BoardRenderMetrics };
 };
 
 type PixiTestWindow = PublicGameWindow & {
   __boardPixiTest?: BoardPixiTestHook;
   __ri98InitialBoardPixiTest?: BoardPixiTestHook;
+  __ri143InitialBoardPixiTest?: BoardPixiTestHook;
+  __ri143InitialBaseCanvas?: HTMLCanvasElement;
+  __ri143InitialEffectsCanvas?: HTMLCanvasElement;
 };
+
+const RI143_VIEWPORTS = [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 768, height: 1024 },
+  { width: 1024, height: 768 },
+  { width: 1440, height: 900 },
+] as const;
+
+function expectResourceWithinBudget(resource: BoardRenderResourceMetrics): void {
+  expect(resource.rendered).toBeLessThanOrEqual(resource.budget);
+  expect(resource.rendered + resource.dropped + resource.suppressed).toBe(resource.requested);
+  if (resource.pool) {
+    expect(resource.pool.capacity).toBe(resource.budget);
+    expect(resource.pool.createdCount).toBeLessThanOrEqual(resource.budget);
+    expect(resource.pool.retainedCount).toBeLessThanOrEqual(resource.budget);
+  }
+}
+
+type Ri143Scenario = 'normal' | 'reviewHell' | 'fire' | 'intervention' | 'drag';
+
+async function captureRi143SemanticSnapshot(
+  page: import('@playwright/test').Page,
+  renderer: 'dom' | 'pixi',
+  scenario: Ri143Scenario,
+) {
+  const seed = `ri143-${scenario}`;
+  await beginPublicSprint(page, {
+    seed,
+    renderer,
+    ...(scenario === 'reviewHell' || scenario === 'fire' ? { difficulty: 'hard' as const } : {}),
+  });
+  const board = page.getByTestId('board');
+  if (renderer === 'pixi') {
+    await expect(board).toHaveAttribute('data-effect-renderer', 'pixi', { timeout: 15_000 });
+  }
+
+  switch (scenario) {
+    case 'reviewHell':
+      await advanceCurrentSprintToReviewQueue(page, 12);
+      await expect(board).toHaveAttribute('data-review-hell', 'true');
+      break;
+    case 'fire':
+      await advanceCurrentSprintToBurning(page);
+      await expect(board).toHaveAttribute('data-effect-kinds', /fire:(ignite|spread)/);
+      break;
+    case 'intervention':
+      await page.getByTestId('action-overtime').click();
+      await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:boardAura');
+      break;
+    case 'drag':
+      await page.getByTestId('action-assignTask').click();
+      await expect(board).toHaveAttribute('data-armed', 'assignTask');
+      break;
+    case 'normal':
+      break;
+  }
+
+  return board.evaluate((element) => {
+    const lanes = ['backlog', 'coding', 'review', 'rework', 'done'] as const;
+    const effectSequence = Number(element.getAttribute('data-effect-sequence') ?? -1);
+    return {
+      counts: Object.fromEntries(
+        lanes.map((lane) => [
+          lane,
+          element.querySelector(`[data-testid="count-${lane}"]`)?.textContent ?? '',
+        ]),
+      ),
+      reviewHeat: element.getAttribute('data-review-heat'),
+      reviewHell: element.getAttribute('data-review-hell'),
+      effectOccurred: effectSequence >= 0,
+      effectSequence,
+      effectSfxCount: element.getAttribute('data-effect-sfx-count'),
+      armed: element.getAttribute('data-armed'),
+      fireCount: document.querySelector('[data-testid="fire-count"]')?.textContent ?? '',
+      auraKinds: Array.from(element.querySelectorAll('[data-testid^="board-aura-"]')).map((aura) =>
+        aura.getAttribute('data-testid'),
+      ),
+    };
+  });
+}
 
 /** Pixi 視覚回帰は opt-in のみ（CI 既定 job では WebGL を回さない）。 */
 const pixiE2e = !!process.env.PIXI_E2E;
@@ -361,6 +450,68 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
         },
         { expectedWidth: expected },
       );
+    }
+  });
+
+  test('5 viewportで同じPixi個体と予算内のプールを再利用する @pixi（RI-143）', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await beginPublicSprint(page, { seed: 'ri143-pool-budget', renderer: 'pixi' });
+    await stabilizeForScreenshot(page);
+    await page.evaluate(() => {
+      const win = window as PixiTestWindow;
+      const baseCanvas = document.querySelector<HTMLCanvasElement>('.board-pixi-mount canvas');
+      const effectsCanvas = document.querySelector<HTMLCanvasElement>(
+        '.board-pixi-effects-mount canvas',
+      );
+      if (!win.__boardPixiTest || !baseCanvas || !effectsCanvas) {
+        throw new Error('RI-143 Pixi test hook/canvas missing');
+      }
+      win.__ri143InitialBoardPixiTest = win.__boardPixiTest;
+      win.__ri143InitialBaseCanvas = baseCanvas;
+      win.__ri143InitialEffectsCanvas = effectsCanvas;
+    });
+
+    for (const viewport of RI143_VIEWPORTS) {
+      await page.setViewportSize(viewport);
+      await expect
+        .poll(async () => page.getByTestId('board-pixi-mount').getAttribute('data-board-dots'))
+        .toMatch(/^\d+$/);
+      const metrics = await page.evaluate(() => {
+        const win = window as PixiTestWindow;
+        if (win.__ri143InitialBoardPixiTest !== win.__boardPixiTest) {
+          throw new Error('viewport変更でPixiテストフックが再生成された');
+        }
+        if (
+          win.__ri143InitialBaseCanvas !==
+            document.querySelector<HTMLCanvasElement>('.board-pixi-mount canvas') ||
+          win.__ri143InitialEffectsCanvas !==
+            document.querySelector<HTMLCanvasElement>('.board-pixi-effects-mount canvas')
+        ) {
+          throw new Error('viewport変更でPixi canvasが再生成された');
+        }
+        if (!win.__boardPixiTest) throw new Error('__boardPixiTest hook missing');
+        return win.__boardPixiTest.getMetrics();
+      });
+      expectResourceWithinBudget(metrics.base.resources.dots);
+      expectResourceWithinBudget(metrics.base.resources.reviewTrails);
+      expectResourceWithinBudget(metrics.base.resources.auras);
+      expectResourceWithinBudget(metrics.effects.resources.effects);
+    }
+
+    const finalMetrics = await page.evaluate(() =>
+      (window as PixiTestWindow).__boardPixiTest!.getMetrics(),
+    );
+    expect(finalMetrics.base.resources.dots.pool?.reuseCount).toBeGreaterThan(0);
+  });
+
+  test('通常・渋滞・炎上・介入・ドラッグの意味をDOM/Pixiで一致させる @pixi（RI-143）', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    for (const scenario of ['normal', 'reviewHell', 'fire', 'intervention', 'drag'] as const) {
+      const dom = await captureRi143SemanticSnapshot(page, 'dom', scenario);
+      const pixi = await captureRi143SemanticSnapshot(page, 'pixi', scenario);
+      expect(pixi, `${scenario} の DOM/Pixi semantic snapshot`).toEqual(dom);
     }
   });
 

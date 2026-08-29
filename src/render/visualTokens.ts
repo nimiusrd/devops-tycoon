@@ -23,6 +23,30 @@ export const DESIGN_SPACES = {
 
 export const VISUAL_TOKENS = {
   spaces: DESIGN_SPACES,
+  /** DOM と Pixi canvas の合成順。既存の盤面 z-index を意味別に固定する（RI-143）。 */
+  layers: {
+    sprint: {
+      flows: 2,
+      pixiBase: 3,
+      station: 4,
+      stationReview: 5,
+      stationDone: 6,
+      task: 7,
+      foreground: 8,
+      legend: 9,
+      heatOverlay: 9,
+      dragCandidate: 9,
+      summary: 10,
+      aura: 10,
+      pulse: 11,
+      fireEffects: 12,
+      dragging: 12,
+      fireParticle: 13,
+      pixiEffects: 14,
+      interventionEffects: 14,
+      interventionParticle: 15,
+    },
+  },
   colors: {
     text: '#fdf6ec',
     textDim: '#b9add0',
@@ -466,7 +490,7 @@ export function orgBoardIsCompact(boardWidthPx: number): boolean {
  * `applyVisualTokenCssVariables` がこの結果を `:root` へ反映する。
  */
 export function visualTokenCssVariables(): Readonly<Record<string, string>> {
-  const { colors, dimensions, spaces } = VISUAL_TOKENS;
+  const { colors, dimensions, layers, spaces } = VISUAL_TOKENS;
   return {
     '--visual-space-sprint-w': String(spaces.sprint.w),
     '--visual-space-sprint-h': String(spaces.sprint.h),
@@ -476,6 +500,25 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-space-department-h': String(spaces.department.h),
     '--visual-space-industry-w': String(spaces.industry.w),
     '--visual-space-industry-h': String(spaces.industry.h),
+    '--visual-layer-sprint-flows': String(layers.sprint.flows),
+    '--visual-layer-sprint-pixi-base': String(layers.sprint.pixiBase),
+    '--visual-layer-sprint-station': String(layers.sprint.station),
+    '--visual-layer-sprint-station-review': String(layers.sprint.stationReview),
+    '--visual-layer-sprint-station-done': String(layers.sprint.stationDone),
+    '--visual-layer-sprint-task': String(layers.sprint.task),
+    '--visual-layer-sprint-foreground': String(layers.sprint.foreground),
+    '--visual-layer-sprint-legend': String(layers.sprint.legend),
+    '--visual-layer-sprint-heat': String(layers.sprint.heatOverlay),
+    '--visual-layer-sprint-drag-candidate': String(layers.sprint.dragCandidate),
+    '--visual-layer-sprint-summary': String(layers.sprint.summary),
+    '--visual-layer-sprint-aura': String(layers.sprint.aura),
+    '--visual-layer-sprint-pulse': String(layers.sprint.pulse),
+    '--visual-layer-sprint-fire-effects': String(layers.sprint.fireEffects),
+    '--visual-layer-sprint-dragging': String(layers.sprint.dragging),
+    '--visual-layer-sprint-fire-particle': String(layers.sprint.fireParticle),
+    '--visual-layer-sprint-pixi-effects': String(layers.sprint.pixiEffects),
+    '--visual-layer-sprint-intervention-effects': String(layers.sprint.interventionEffects),
+    '--visual-layer-sprint-intervention-particle': String(layers.sprint.interventionParticle),
     '--visual-sprint-station-width': `${dimensions.sprint.stationWidthPercent}%`,
     '--visual-sprint-flow-dash': String(dimensions.sprint.flowDash.dash),
     '--visual-sprint-flow-gap': String(dimensions.sprint.flowDash.gap),

@@ -36,9 +36,11 @@ import {
   fireShakeOffset,
   flowDriftOffset,
   lineDashSegments,
+  planBoardDotsForRender,
 } from '../boardPixiView';
+import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
 import { containFitTransform } from '../deptPixiView';
-import { SpritePool } from '../iso';
+import { SpritePool, type SpritePoolSnapshot } from '../iso';
 import { TASK_COLORS, TASK_DIAMETER } from '../taskView';
 import { gameAssetMoodStyle, stationAssetForLane } from '../gameAssetView';
 import { flowDashPeriod, VISUAL_TOKENS } from '../visualTokens';
@@ -49,8 +51,8 @@ import type { RendererAdapter } from './index';
 /** 破棄オプション（Pixi v8）。`pixiOrgRenderer` と同値。 */
 const DESTROY_OPTIONS = { children: true, texture: false, context: true } as const;
 
-/** 粒 Container の同時描画上限（cap 合計 70 ＋ フロー粒の余裕）。 */
-export const BOARD_SPRITE_BUDGET = 96;
+/** 互換 export。正本は BOARD_RENDER_BUDGETS。 */
+export const BOARD_SPRITE_BUDGET = BOARD_RENDER_BUDGETS.dots;
 
 const FONT_FAMILY = 'system-ui, sans-serif';
 
@@ -102,15 +104,23 @@ const ACTOR_STYLE: Record<Lane, { body: string; hair: string; skin: string; emoj
 
 const INK = VISUAL_TOKENS.colors.ink;
 
-/** DOM の z-index（station 4 / review 5 / done 6）と同じ画家順。 */
-const STATION_Z: Record<Lane, number> = { backlog: 4, coding: 4, rework: 4, review: 5, done: 6 };
+/** DOM の station layer と同じ画家順。 */
+const STATION_Z: Record<Lane, number> = {
+  backlog: VISUAL_TOKENS.layers.sprint.station,
+  coding: VISUAL_TOKENS.layers.sprint.station,
+  rework: VISUAL_TOKENS.layers.sprint.station,
+  review: VISUAL_TOKENS.layers.sprint.stationReview,
+  done: VISUAL_TOKENS.layers.sprint.stationDone,
+};
 
-/** 粒の重なり順（DOM: 通常 7 / flowing・炎上 8 / draggable 9 / dragging 12）。 */
-function dotZ(dot: BoardDotPlan, draggable: boolean, dragging: boolean): number {
-  if (dragging) return 12;
-  if (draggable) return 9;
-  if (dot.motion || dot.fire) return 8;
-  return 7;
+export interface BoardRenderResourceMetrics {
+  budget: number;
+  requested: number;
+  rendered: number;
+  dropped: number;
+  /** reduced motion など、予算以外の理由で描かなかった数。 */
+  suppressed: number;
+  pool: Readonly<SpritePoolSnapshot> | null;
 }
 
 /** 描画メトリクス（E2E 安定化・dev 計測用）。 */
@@ -124,6 +134,48 @@ export interface BoardRenderMetrics {
   auras: number;
   /** 取得処理が完了した人物SVGの種類数（失敗時のフォールバックも完了扱い）。 */
   assets: number;
+  resources: {
+    dots: BoardRenderResourceMetrics;
+    reviewTrails: BoardRenderResourceMetrics;
+    effects: BoardRenderResourceMetrics;
+    auras: BoardRenderResourceMetrics;
+  };
+}
+
+function resourceMetrics(
+  budget: number,
+  requested: number,
+  rendered: number,
+  suppressed: number,
+  pool: { snapshot(): Readonly<SpritePoolSnapshot> } | null,
+): BoardRenderResourceMetrics {
+  return {
+    budget,
+    requested,
+    rendered,
+    dropped: Math.max(0, requested - rendered - suppressed),
+    suppressed,
+    pool: pool?.snapshot() ?? null,
+  };
+}
+
+export function emptyBoardRenderMetrics(): BoardRenderMetrics {
+  return {
+    dots: 0,
+    actors: 0,
+    flows: 0,
+    reviewTrails: 0,
+    reviewHeat: 0,
+    effects: 0,
+    auras: 0,
+    assets: 0,
+    resources: {
+      dots: resourceMetrics(BOARD_RENDER_BUDGETS.dots, 0, 0, 0, null),
+      reviewTrails: resourceMetrics(BOARD_RENDER_BUDGETS.reviewTrails, 0, 0, 0, null),
+      effects: resourceMetrics(BOARD_RENDER_BUDGETS.transientEffects, 0, 0, 0, null),
+      auras: resourceMetrics(BOARD_RENDER_BUDGETS.auras, 0, 0, 0, null),
+    },
+  };
 }
 
 /** レンダラ入力（Board.tsx が plan と drag ハイライトをまとめて渡す）。 */
@@ -502,6 +554,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private activeAuras: readonly BoardAuraPlan[] = [];
   private reviewHeat: BoardReviewHeatFieldPlan | null = null;
   private lastFlows: readonly BoardFlow[] = [];
+  private dotRequestedCount = 0;
+  private dotDroppedCount = 0;
+  private reviewTrailRequestedCount = 0;
+  private effectRequestedCount = 0;
+  private effectSuppressedCount = 0;
+  private auraRequestedCount = 0;
   /** アニメ経過時間（ms）。freeze で 0 に戻し位相 0 の決定論フレームにする。 */
   private elapsedMs = 0;
   private frozen = false;
@@ -541,6 +599,15 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     mount.appendChild(app.canvas);
     app.renderer.events.setTargetElement(app.canvas);
 
+    this.root.sortableChildren = true;
+    this.flowsGfx.zIndex = BOARD_PIXI_LAYER_ORDER.flows;
+    this.reviewHeatLayer.zIndex = BOARD_PIXI_LAYER_ORDER.reviewHeat;
+    this.stationsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.stations;
+    this.reviewTrailsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.reviewTrails;
+    this.dotsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.dots;
+    this.auraLayer.zIndex = BOARD_PIXI_LAYER_ORDER.auras;
+    this.effectsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.transientEffects;
+
     if (this.stratum !== 'effects') {
       this.reviewHeatLayer.addChild(this.reviewHeatGfx);
       this.auraLayer.addChild(this.auraGfx);
@@ -559,17 +626,17 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
     if (this.stratum !== 'effects') {
       this.pool = new SpritePool<Container>(createDotContainer, {
-        max: BOARD_SPRITE_BUDGET,
+        max: BOARD_RENDER_BUDGETS.dots,
         reset: resetDotContainer,
       });
       this.reviewTrailPool = new SpritePool<Graphics>(createReviewTrail, {
-        max: VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget,
+        max: BOARD_RENDER_BUDGETS.reviewTrails,
         reset: resetReviewTrail,
       });
     }
     if (this.stratum !== 'base') {
       this.effectPool = new SpritePool<Container>(createEffectContainer, {
-        max: VISUAL_TOKENS.dimensions.sprint.boardEffects.budget,
+        max: BOARD_RENDER_BUDGETS.transientEffects,
         reset: resetEffectContainer,
       });
     }
@@ -833,6 +900,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private syncReviewTrails(trails: readonly BoardReviewTrailPlan[]): void {
     const pool = this.reviewTrailPool;
     if (!pool) return;
+    this.reviewTrailRequestedCount = trails.length;
     this.reviewTrailsLayer.removeChildren();
     pool.releaseAll();
     this.reviewTrailEntries = [];
@@ -877,10 +945,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private syncAuras(auras: readonly BoardAuraPlan[]): void {
     const g = this.auraGfx;
     g.clear();
-    this.activeAuras = auras;
-    this.auraLayer.visible = auras.length > 0;
+    this.auraRequestedCount = auras.length;
+    this.activeAuras = auras.slice(0, BOARD_RENDER_BUDGETS.auras);
+    this.auraLayer.visible = this.activeAuras.length > 0;
     const tokens = VISUAL_TOKENS.dimensions.sprint.boardEffects.aura;
-    for (const aura of auras) {
+    for (const aura of this.activeAuras) {
       const elapsedRatio =
         aura.totalTicks > 0 ? 1 - Math.min(1, aura.remainingTicks / aura.totalTicks) : 1;
       const alpha = tokens.minAlpha + elapsedRatio * tokens.elapsedAlpha;
@@ -905,12 +974,15 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.effectsLayer.removeChildren();
     pool.releaseAll();
     this.effectEntries = [];
+    const nowMs = this.effectNowOverride ?? performance.now();
+    const active = effects.filter(
+      (plan) => plan.startedAtMs + plan.delayMs + plan.durationMs > nowMs,
+    );
+    this.effectRequestedCount = active.length;
+    this.effectSuppressedCount = this.reducedMotion ? active.length : 0;
     if (this.reducedMotion) return;
 
-    const nowMs = this.effectNowOverride ?? performance.now();
-    for (const plan of effects) {
-      const animationEnd = plan.startedAtMs + plan.delayMs + plan.durationMs;
-      if (animationEnd <= nowMs) continue;
+    for (const plan of active) {
       const group = pool.acquire();
       if (!group) break;
       this.prepareEffect(group, plan);
@@ -1094,6 +1166,9 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   }
 
   private emitRenderMetrics(): void {
+    const dotPool = this.pool;
+    const reviewTrailPool = this.reviewTrailPool;
+    const effectPool = this.effectPool;
     this.opts.onRenderMetrics?.({
       dots: this.dotEntries.length,
       actors: this.actors.length,
@@ -1103,6 +1178,39 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       reviewHeat: this.reviewHeat?.intensity ?? 0,
       effects: this.effectEntries.length,
       auras: this.activeAuras.length,
+      resources: {
+        dots: {
+          ...resourceMetrics(
+            BOARD_RENDER_BUDGETS.dots,
+            this.dotRequestedCount,
+            this.dotEntries.length,
+            0,
+            dotPool,
+          ),
+          dropped: this.dotDroppedCount,
+        },
+        reviewTrails: resourceMetrics(
+          BOARD_RENDER_BUDGETS.reviewTrails,
+          this.reviewTrailRequestedCount,
+          this.reviewTrailEntries.length,
+          0,
+          reviewTrailPool,
+        ),
+        effects: resourceMetrics(
+          BOARD_RENDER_BUDGETS.transientEffects,
+          this.effectRequestedCount,
+          this.effectEntries.length,
+          this.effectSuppressedCount,
+          effectPool,
+        ),
+        auras: resourceMetrics(
+          BOARD_RENDER_BUDGETS.auras,
+          this.auraRequestedCount,
+          this.activeAuras.length,
+          0,
+          null,
+        ),
+      },
     });
   }
 
@@ -1135,17 +1243,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.dotsLayer.removeChildren();
     pool.releaseAll();
     this.dotEntries = [];
+    const renderPlan = planBoardDotsForRender(dots, draggableIds, dragTaskId);
+    this.dotRequestedCount = renderPlan.requested;
+    this.dotDroppedCount = renderPlan.dropped;
 
-    // DOM の z-index 相当の重なり順（安定ソート）。
-    const ordered = dots
-      .map((dot, i) => ({ dot, i }))
-      .sort(
-        (a, b) =>
-          dotZ(a.dot, draggableIds.has(a.dot.id), a.dot.id === dragTaskId) -
-            dotZ(b.dot, draggableIds.has(b.dot.id), b.dot.id === dragTaskId) || a.i - b.i,
-      );
-
-    for (const { dot } of ordered) {
+    for (const dot of renderPlan.dots) {
       const group = pool.acquire();
       if (!group) break;
       const parts = getDotParts(group);
@@ -1377,6 +1479,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.effectEntries = [];
     this.activeAuras = [];
     this.reviewHeat = null;
+    this.dotRequestedCount = 0;
+    this.dotDroppedCount = 0;
+    this.reviewTrailRequestedCount = 0;
+    this.effectRequestedCount = 0;
+    this.effectSuppressedCount = 0;
+    this.auraRequestedCount = 0;
     this.effectNowOverride = null;
     this.lastInput = null;
   }

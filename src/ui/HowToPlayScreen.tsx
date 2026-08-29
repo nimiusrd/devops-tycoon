@@ -37,7 +37,7 @@ export function HowToPlayScreen({ onClose }: HowToPlayScreenProps) {
         onClick={onClose}
       />
       <div className="how-to-play-panel">
-        <div className="result-overlay-body">
+        <div className="result-overlay-body" tabIndex={0}>
           <p className="result-eyebrow">HOW TO PLAY</p>
           <h2 className="draft-title">遊び方</h2>
           <p className="how-to-play-lead">

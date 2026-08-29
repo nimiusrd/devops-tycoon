@@ -25,6 +25,13 @@
   padding: 10px 14px 12px;
 }
 
+/* 結果・ドラフトの枠内スクロール中は背面盤面を動かさない（#366）。
+ * 後段の narrow/short 上書きより優先するため overflow のみ !important にする。 */
+:global(.app):has(:global(.overlay-contained)) .root {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
 .slot {
   min-width: 0;
 }

@@ -9,6 +9,7 @@ import { expect, test } from './fixtures';
 import {
   advancePublicRun,
   advanceCurrentSprintToResult,
+  advanceCurrentResultToDraft,
   beginCurrentSetupSprint,
   beginPublicSprint,
 } from './fixtures';
@@ -497,17 +498,33 @@ async function waitForLayoutFrame(page: Page): Promise<void> {
 async function exposeResultCardForScreenshot(page: Page): Promise<void> {
   await page.addStyleTag({
     content: `
+      html, body, .app {
+        overflow: visible !important;
+        max-height: none !important;
+      }
       .result-overlay {
         position: absolute !important;
         inset: 0 auto auto 0 !important;
         width: 100% !important;
         height: auto !important;
-        min-height: 100vh !important;
+        min-height: 0 !important;
+        max-height: none !important;
         overflow: visible !important;
         align-items: flex-start !important;
       }
       .result-overlay > * {
         margin-block: 0 !important;
+        max-height: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        flex: none !important;
+      }
+      .overlay-scroll {
+        overflow: visible !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        flex: none !important;
       }
       .result-overlay::before,
       .result-overlay::after {
@@ -929,20 +946,155 @@ test.describe('RI-94 レイアウト契約', () => {
       page.locator('.result-row').filter({ hasText: 'Senior HP' }).locator('dd'),
     ).toHaveText(/^\d+$/);
     await stabilizeDomForScreenshot(page);
-    await expect(page.locator('.app')).toHaveScreenshot('sprint-layout-result-overlay.png', {
+    await expect(page).toHaveScreenshot('sprint-layout-result-overlay.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });
 
     const resultCard = page.getByTestId('sprint-result').locator('.sprint-result-card');
-    const resultOverlay = page.getByTestId('sprint-result');
     await assertReachableInViewport(page, page.getByTestId('result-continue'), 'result-continue');
-    await resultOverlay.evaluate((element) => element.scrollTo(0, 0));
+    await page.getByTestId('overlay-scroll').evaluate((element) => element.scrollTo(0, 0));
     await exposeResultCardForScreenshot(page);
     await expect(resultCard).toHaveScreenshot('sprint-layout-result-overlay-card.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });
+  });
+});
+
+const SHORT_DESKTOP = { width: 1024, height: 621 } as const;
+
+async function readOverlayScrollMetrics(page: Page, overlayTestId: string) {
+  return page.evaluate((testId) => {
+    const overlay = document.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+    const scroll = overlay?.querySelector<HTMLElement>('[data-testid="overlay-scroll"]');
+    const layout = document.querySelector<HTMLElement>('[data-testid="sprint-layout"]');
+    const board = document.querySelector<HTMLElement>('[data-testid="board"]');
+    if (!overlay || !scroll || !layout || !board) {
+      throw new Error('オーバーレイまたは盤面の計測対象が見つからない');
+    }
+    const overlayRect = overlay.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
+    return {
+      overlayHeight: overlayRect.height,
+      overlayTop: overlayRect.top,
+      overlayOverflowY: getComputedStyle(overlay).overflowY,
+      scrollTop: scroll.scrollTop,
+      scrollHeight: scroll.scrollHeight,
+      clientHeight: scroll.clientHeight,
+      canScroll: scroll.scrollHeight > scroll.clientHeight + 1,
+      layoutScrollTop: layout.scrollTop,
+      layoutOverflowY: getComputedStyle(layout).overflowY,
+      boardY: boardRect.y,
+    };
+  }, overlayTestId);
+}
+
+test.describe('短いviewportの結果・ドラフトオーバーレイ #366', () => {
+  test('結果オーバーレイは枠内スクロールし、主要CTAは初見で届き背面盤面は動かない', async ({
+    page,
+  }) => {
+    await page.setViewportSize(SHORT_DESKTOP);
+    await beginPublicSprint(page, { seed: 'ri366-overlay-result-0' });
+    await advanceCurrentSprintToResult(page);
+
+    const overlay = page.getByTestId('sprint-result');
+    await expect(overlay).toBeVisible();
+    await expect(overlay).toHaveClass(/overlay-contained/);
+    await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
+
+    const before = await readOverlayScrollMetrics(page, 'sprint-result');
+    expect(before.overlayTop, 'オーバーレイ上端が viewport 外').toBeLessThanOrEqual(1);
+    expect(before.overlayHeight, 'オーバーレイが viewport より高い').toBeLessThanOrEqual(
+      SHORT_DESKTOP.height + 1,
+    );
+    expect(before.overlayOverflowY).toBe('hidden');
+    expect(before.layoutOverflowY).toBe('hidden');
+    expect(before.canScroll, '結果カードが枠内スクロールできない').toBe(true);
+
+    await expect(page.getByTestId('result-continue')).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId('result-restart')).toBeInViewport({ ratio: 1 });
+
+    await page.getByTestId('overlay-scroll').evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await waitForLayoutFrame(page);
+
+    const after = await readOverlayScrollMetrics(page, 'sprint-result');
+    expect(after.scrollTop, 'オーバーレイ内がスクロールしていない').toBeGreaterThan(0);
+    expect(after.layoutScrollTop, '背面のスプリントレイアウトがスクロールした').toBe(
+      before.layoutScrollTop,
+    );
+    expect(Math.abs(after.boardY - before.boardY), '背面盤面の位置が動いた').toBeLessThan(1);
+
+    await page.getByTestId('sprint-timeline').evaluate((element) => {
+      element.scrollIntoView({ block: 'nearest' });
+    });
+    await expect(page.getByTestId('sprint-timeline')).toBeInViewport();
+    const afterTimeline = await readOverlayScrollMetrics(page, 'sprint-result');
+    expect(
+      Math.abs(afterTimeline.boardY - before.boardY),
+      'タイムライン到達時に背面盤面が動いた',
+    ).toBeLessThan(1);
+  });
+
+  test('ドラフトオーバーレイは3枚と引き直し・スキップが枠内で届き背面盤面は動かない', async ({
+    page,
+  }) => {
+    await page.setViewportSize(SHORT_DESKTOP);
+    await beginPublicSprint(page, { seed: 'ri366-overlay-draft-0' });
+    await advanceCurrentSprintToResult(page);
+    const draftState = await advanceCurrentResultToDraft(page);
+
+    const overlay = page.getByTestId('draft');
+    await expect(overlay).toBeVisible();
+    await expect(overlay).toHaveClass(/overlay-contained/);
+    await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
+    await expect(page.locator('.draft-card-panel > .draft-actions')).toBeVisible();
+    await expect(page.locator('.result-overlay > .draft-actions')).toHaveCount(0);
+
+    const before = await readOverlayScrollMetrics(page, 'draft');
+    expect(before.overlayTop, 'オーバーレイ上端が viewport 外').toBeLessThanOrEqual(1);
+    expect(before.overlayHeight, 'オーバーレイが viewport より高い').toBeLessThanOrEqual(
+      SHORT_DESKTOP.height + 1,
+    );
+    expect(before.overlayOverflowY).toBe('hidden');
+    expect(before.layoutOverflowY).toBe('hidden');
+
+    await expect(page.getByTestId('draft-mulligan')).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId('draft-skip')).toBeInViewport({ ratio: 1 });
+
+    const cardIds = draftState.draft ?? [];
+    expect(cardIds.length, 'ドラフト候補が3枚ではない').toBe(3);
+    for (const id of cardIds) {
+      const card = page.getByTestId(`draft-card-${id}`);
+      await card.scrollIntoViewIfNeeded();
+      await expect(card).toBeInViewport();
+    }
+
+    const afterCards = await readOverlayScrollMetrics(page, 'draft');
+    expect(
+      Math.abs(afterCards.boardY - before.boardY),
+      'カード到達時に背面盤面が動いた',
+    ).toBeLessThan(1);
+    expect(afterCards.layoutScrollTop, '背面のスプリントレイアウトがスクロールした').toBe(
+      before.layoutScrollTop,
+    );
+
+    if (before.canScroll) {
+      await page.getByTestId('overlay-scroll').evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+      });
+      await waitForLayoutFrame(page);
+      const after = await readOverlayScrollMetrics(page, 'draft');
+      expect(after.layoutScrollTop, '枠内スクロールで背面レイアウトが動いた').toBe(
+        before.layoutScrollTop,
+      );
+      expect(
+        Math.abs(after.boardY - before.boardY),
+        '枠内スクロールで背面盤面が動いた',
+      ).toBeLessThan(1);
+    }
   });
 });
 

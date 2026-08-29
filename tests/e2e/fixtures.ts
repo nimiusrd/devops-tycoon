@@ -139,6 +139,24 @@ export async function advanceCurrentSprintToResult(page: Page): Promise<RunState
   return state;
 }
 
+/** スプリント結果からカードドラフトへ進む。 */
+export async function advanceCurrentResultToDraft(page: Page): Promise<RunState> {
+  const state = await page.evaluate(() => {
+    const game = (window as PublicGameWindow).game;
+    if (!game) throw new Error('window.game が公開されていない');
+    let current = game.getState();
+    if (current.phase !== 'result')
+      throw new Error(`ランが result フェーズではない: ${current.phase}`);
+    current = game.acknowledgeResult();
+    if (current.phase !== 'draft') {
+      throw new Error(`カードドラフトへ到達しない: phase=${current.phase}`);
+    }
+    return current;
+  });
+  await expect(page.getByTestId('draft')).toBeVisible();
+  return state;
+}
+
 /**
  * 実時間待機を使わず、公開 GameHandle.step() だけで決定論的にランを進める。
  * イベントの選択肢は本番の宣言データから生成した表だけを渡し、engine は参照しない。

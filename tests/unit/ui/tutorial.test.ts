@@ -47,12 +47,14 @@ describe('チュートリアルクエリ（RI-60）', () => {
     expect(actionBar?.body).toContain('AIスロットル');
     const seniorHp = TUTORIAL_STEPS.find((step) => step.id === 'senior-hp');
     expect(seniorHp?.body).toContain('抽象値');
-    expect(seniorHp?.body).toContain('緊急対応');
     expect(seniorHp?.body).toContain('自動鎮火');
-    expect(seniorHp?.body).toContain('アンドンは流入を止めて');
-    expect(seniorHp?.body).toContain('AIスロットルは');
-    expect(seniorHp?.body).toContain('リテラシーが低いとき');
-    expect(seniorHp?.body).toContain('工程ずれ');
+    expect(seniorHp?.body).toContain('燃え尽き');
+    expect(seniorHp?.body).toContain('休息');
+    expect(seniorHp?.body).not.toContain('緊急対応');
+    expect(seniorHp?.body).not.toContain('アンドン');
+    expect(seniorHp?.body).not.toContain('AIスロットル');
+    expect(seniorHp?.body).not.toContain('リテラシーが低いとき');
+    expect(seniorHp?.body).not.toContain('工程ずれ');
     expect(seniorHp?.body).not.toContain('アンドンやAIスロットルで流入');
   });
 

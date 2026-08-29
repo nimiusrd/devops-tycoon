@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptyAdjustState } from '../../../src/sim/orgscale/levers';
 import { generateOrgScale } from '../../../src/sim/orgscale';
+import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import type { OrgScaleInput } from '../../../src/sim/orgscale/generate';
 import type { OrgState } from '../../../src/sim/types';
 import type { RunTotals } from '../../../src/sim/run/types';
@@ -12,12 +13,24 @@ import {
   ISLAND_MARGIN,
   MIN_ISLAND_SPACING_X,
   MIN_ISLAND_SPACING_Y,
+  ORG_HUB_CI_OK_MIN,
   ORG_VIEW,
+  ZONE_LABEL_GAP,
+  islandBadgeLayoutHeight,
+  islandBadgeRect,
+  islandCenterBounds,
+  islandGridFitsCardHeight,
+  islandGridForCount,
+  orgBoardNeedsCapacityCompact,
   isInOrgView,
   islandDepth,
   islandMood,
+  orgBoardRectsOverlap,
+  orgHubTone,
   planOrgBoardScene,
+  groupOrgIslandsByDept,
   teamDesignPosition,
+  zoneLabelRect,
 } from '../../../src/render/orgBoardScene';
 
 function orgScaleInput(seed: string, overrides: Partial<OrgScaleInput> = {}): OrgScaleInput {
@@ -63,6 +76,43 @@ describe('planOrgBoardScene (RI-01)', () => {
     const scene = planOrgBoardScene(org);
     expect(scene.islands).toHaveLength(org.teamCount);
     expect(new Set(scene.islands.map((i) => i.teamId)).size).toBe(org.teamCount);
+  });
+
+  it('島に部門 ID・部門名を載せ、ツールチップで同名チームを区別する', () => {
+    const org = generateOrgScale(orgScaleInput('ri01-island-dept'));
+    const scene = planOrgBoardScene(org);
+    for (const island of scene.islands) {
+      const dept = org.departments.find((d) => d.teams.some((t) => t.id === island.teamId));
+      expect(dept, island.teamId).toBeDefined();
+      expect(island.deptId).toBe(dept!.def.id);
+      expect(island.deptName).toBe(dept!.def.name);
+      expect(island.labels.title).toContain(dept!.def.name);
+      expect(island.labels.title).toContain(island.team.name);
+      if (island.team.isPlayer) {
+        expect(island.badge.title.startsWith('★ ')).toBe(true);
+        expect(island.labels.title).toContain('★');
+      }
+    }
+  });
+
+  it('コンパクトドックは登場順の部門見出しでグループ化する', () => {
+    const org = generateOrgScale(orgScaleInput('ri01-dock-groups'));
+    const scene = planOrgBoardScene(org);
+    const groups = groupOrgIslandsByDept(scene.islands);
+    const appearanceOrder: string[] = [];
+    for (const island of scene.islands) {
+      if (!appearanceOrder.includes(island.deptId)) {
+        appearanceOrder.push(island.deptId);
+      }
+    }
+    expect(groups.map((g) => g.deptId)).toEqual(appearanceOrder);
+    expect(new Set(groups.map((g) => g.deptName))).toEqual(
+      new Set(org.departments.map((d) => d.def.name)),
+    );
+    expect(groups.reduce((n, g) => n + g.islands.length, 0)).toBe(scene.islands.length);
+    for (const group of groups) {
+      expect(group.islands.every((island) => island.deptId === group.deptId)).toBe(true);
+    }
   });
 
   it('島バッジにエンジニア人数と AI 配布数を載せる（RI-27）', () => {
@@ -264,5 +314,169 @@ describe('planOrgBoardScene (RI-01)', () => {
         }
       }
     }
+    const extraScene = planOrgBoardScene(org);
+    expect(extraScene.capacityCompact).toBe(false);
+    const extraProduct = extraScene.islands.filter((i) => i.team.deptId === 'product');
+    const extraOthers = extraScene.islands.filter((i) => i.team.deptId !== 'product');
+    for (const product of extraProduct) {
+      for (const other of extraOthers) {
+        expect(
+          orgBoardRectsOverlap(islandBadgeRect(product), islandBadgeRect(other)),
+          `${product.teamId} と ${other.teamId} のカードが部門をまたいで重なる`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it('extraTeams が 9 以上でも同じ列の縦間隔を圧縮せず、隣接部門とカードが重ならない', () => {
+    const org = generateOrgScale(
+      orgScaleInput('ri01-spacing-extra9', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 9 }, byDept: {} },
+      }),
+    );
+    const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
+    expect(productTeams.length).toBeGreaterThanOrEqual(13);
+
+    const scene = planOrgBoardScene(org);
+    expect(scene.capacityCompact).toBe(false);
+    const productZone = scene.zones.find((z) => z.deptId === 'product')!;
+    const { minY, maxY } = islandCenterBounds();
+    const maxSpanY = maxY - minY;
+    const cardW = VISUAL_TOKENS.dimensions.organization.card.width;
+    const grid = islandGridForCount(productTeams.length, productZone.width, maxSpanY);
+    expect(grid.cols * cardW).toBeLessThanOrEqual(productZone.width);
+    expect(grid.rows * MIN_ISLAND_SPACING_Y).toBeLessThanOrEqual(maxSpanY);
+
+    const productIslands = scene.islands.filter((i) => i.team.deptId === 'product');
+    const otherIslands = scene.islands.filter((i) => i.team.deptId !== 'product');
+    for (const island of productIslands) {
+      const badge = islandBadgeRect(island);
+      expect(badge.x).toBeGreaterThanOrEqual(productZone.x - 0.5);
+      expect(badge.x + badge.width).toBeLessThanOrEqual(productZone.x + productZone.width + 0.5);
+    }
+    for (const product of productIslands) {
+      for (const other of otherIslands) {
+        expect(
+          orgBoardRectsOverlap(islandBadgeRect(product), islandBadgeRect(other)),
+          `${product.teamId} と ${other.teamId} のカードが部門をまたいで重なる`,
+        ).toBe(false);
+      }
+    }
+    for (let i = 0; i < productIslands.length; i += 1) {
+      for (let j = i + 1; j < productIslands.length; j += 1) {
+        expect(
+          orgBoardRectsOverlap(
+            islandBadgeRect(productIslands[i]),
+            islandBadgeRect(productIslands[j]),
+          ),
+          `${productIslands[i].teamId} と ${productIslands[j].teamId} のカードが重なる`,
+        ).toBe(false);
+        const dx = Math.abs(productIslands[i].x - productIslands[j].x);
+        const dy = Math.abs(productIslands[i].y - productIslands[j].y);
+        if (dx < MIN_ISLAND_SPACING_X * 0.5) {
+          expect(dy).toBeGreaterThanOrEqual(MIN_ISLAND_SPACING_Y * 0.85);
+        }
+      }
+    }
+  });
+
+  it('プロダクトが26チーム以上なら等角格子を捨ててドック縮退する', () => {
+    const org = generateOrgScale(
+      orgScaleInput('ri01-spacing-extra22', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 22 }, byDept: {} },
+      }),
+    );
+    const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
+    expect(productTeams.length).toBeGreaterThanOrEqual(26);
+    expect(islandGridFitsCardHeight(0, productTeams.length)).toBe(false);
+    expect(orgBoardNeedsCapacityCompact(org)).toBe(true);
+    expect(planOrgBoardScene(org).capacityCompact).toBe(true);
+  });
+
+  it('プロダクトが5行（21チーム以上）なら折り返し後のカード高でドック縮退する', () => {
+    const org = generateOrgScale(
+      orgScaleInput('ri01-spacing-extra17', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 17 }, byDept: {} },
+      }),
+    );
+    const productTeams = org.departments.find((d) => d.def.id === 'product')!.teams;
+    expect(productTeams.length).toBeGreaterThanOrEqual(21);
+    expect(productTeams.length).toBeLessThan(26);
+    expect(islandBadgeLayoutHeight()).toBeGreaterThan(
+      VISUAL_TOKENS.dimensions.organization.island.badgeHeight,
+    );
+    expect(islandGridFitsCardHeight(0, productTeams.length)).toBe(false);
+    expect(orgBoardNeedsCapacityCompact(org)).toBe(true);
+    expect(planOrgBoardScene(org).capacityCompact).toBe(true);
+  });
+
+  it('共通基盤ハブの tone は CI 閾値で切り替わる', () => {
+    const org = generateOrgScale(orgScaleInput('hub-tone'));
+    expect(
+      planOrgBoardScene({ ...org, infra: { ...org.infra, ci: ORG_HUB_CI_OK_MIN } }).hub.tone,
+    ).toBe('ok');
+    expect(
+      planOrgBoardScene({ ...org, infra: { ...org.infra, ci: ORG_HUB_CI_OK_MIN - 1 } }).hub.tone,
+    ).toBe('warn');
+    expect(orgHubTone(ORG_HUB_CI_OK_MIN - 1)).toBe('warn');
+    expect(orgHubTone(ORG_HUB_CI_OK_MIN)).toBe('ok');
+  });
+
+  it('部門ラベルはチームカード（島バッジ）と重ならない', () => {
+    const org = generateOrgScale(orgScaleInput('label-clear-default'));
+    const scene = planOrgBoardScene(org);
+    for (const label of scene.zoneLabels) {
+      const labelBox = zoneLabelRect(label);
+      for (const island of scene.islands) {
+        expect(
+          orgBoardRectsOverlap(labelBox, islandBadgeRect(island)),
+          `${label.deptId} ラベルと ${island.teamId} カードが重なる`,
+        ).toBe(false);
+        expect(islandBadgeRect(island).y).toBeGreaterThanOrEqual(
+          labelBox.y + labelBox.height + ZONE_LABEL_GAP - 0.5,
+        );
+      }
+    }
+    const hubBox = {
+      x: scene.hub.labelX - 120,
+      y: scene.hub.labelY - VISUAL_TOKENS.dimensions.organization.hubOverlay.height / 2,
+      width: 240,
+      height: VISUAL_TOKENS.dimensions.organization.hubOverlay.height,
+    };
+    for (const island of scene.islands) {
+      expect(
+        orgBoardRectsOverlap(hubBox, islandBadgeRect(island)),
+        `ハブラベルと ${island.teamId} カードが重なる`,
+      ).toBe(false);
+    }
+  });
+
+  it('extraTeams で島が増えても部門ラベルとチームカードは重ならない', () => {
+    const org = generateOrgScale(
+      orgScaleInput('label-clear-extra', {
+        adjust: { company: { ...emptyAdjustState().company, extraTeams: 8 }, byDept: {} },
+      }),
+    );
+    const scene = planOrgBoardScene(org);
+    expect(org.departments.find((d) => d.def.id === 'product')!.teams.length).toBeGreaterThan(8);
+    for (const label of scene.zoneLabels) {
+      const labelBox = zoneLabelRect(label);
+      for (const island of scene.islands) {
+        expect(
+          orgBoardRectsOverlap(labelBox, islandBadgeRect(island)),
+          `${label.deptId} ラベルと ${island.teamId} カードが重なる`,
+        ).toBe(false);
+      }
+    }
+    const { minY } = islandCenterBounds();
+    for (const island of scene.islands) {
+      expect(island.y).toBeGreaterThanOrEqual(minY);
+    }
+  });
+
+  it('島中心の下限は部門ラベル帯の下に取る', () => {
+    const bounds = islandCenterBounds();
+    expect(bounds.minY).toBeGreaterThan(ZONE_LABEL_GAP);
+    expect(bounds.minY).toBeLessThan(bounds.maxY);
   });
 });

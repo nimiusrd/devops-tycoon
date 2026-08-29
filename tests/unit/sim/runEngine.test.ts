@@ -592,6 +592,32 @@ describe('RunEngine 通しプレイ（DoD: 固定トラック→ボス→決着�
     expect([...after.draft!].sort().join('\0')).toBe(previousKey);
   });
 
+  it('優先施策で同一集合が連続してもプールに余りがあれば引き直しで入れ替える', () => {
+    const allowed = new Set(['copilot', 'auto-test', 'docs', 'static-analysis']);
+    const preferred = new Set(['copilot', 'auto-test', 'docs']);
+    const e = new RunEngine({
+      seed: 'ri81-mulligan-bias',
+      difficulty: 'easy',
+      allowedCards: allowed,
+    });
+    e.setPreferredCards(preferred);
+    e.startRun();
+    e.beginSetupSprint();
+    e.step(1_000_000);
+    e.acknowledgeResult();
+    const before = e.snapshot();
+    expect(before.phase).toBe('draft');
+    const previous = [...(before.draft ?? [])];
+    expect(previous).toHaveLength(CARD_BALANCE.draftCandidateCount.value);
+
+    e.mulliganDraft();
+    const after = e.snapshot();
+    expect(after.draftMulliganUsed).toBe(true);
+    expect(after.draft).toHaveLength(CARD_BALANCE.draftCandidateCount.value);
+    expect(after.draft!.every((id) => allowed.has(id))).toBe(true);
+    expect([...after.draft!].sort()).not.toEqual([...previous].sort());
+  });
+
   it('RI-55: 無介入スプリントの実績は同条件ベースラインと一致する', () => {
     const e = new RunEngine({ seed: 'ri55-no-intervention', difficulty: 'normal' });
     e.startRun();

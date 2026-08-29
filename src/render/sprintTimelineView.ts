@@ -71,7 +71,8 @@ function buildPolyline(
   const points: string[] = [];
   for (const s of samples) {
     const x = pad.left + ((s.tick - tick0) / tickSpan) * innerW;
-    const y = pad.top + innerH - s[key] * scaleY;
+    const raw = key === 'seniorHp' ? Math.max(0, s[key]) : s[key];
+    const y = pad.top + innerH - raw * scaleY;
     points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
   }
   return `M ${points.join(' L ')}`;

@@ -58,7 +58,7 @@ export interface SprintCardPiles {
 /** 手札からのカード発動結果（RI-30）。 */
 export interface CardPlayOutcome {
   ok: boolean;
-  reason?: 'no-focus' | 'no-card' | 'complete' | 'invalid';
+  reason?: 'no-focus' | 'no-card' | 'complete' | 'invalid' | 'paused';
   /** 成功時に消費した集中力。 */
   focusCost?: number;
   /** 発動したデッキ位置。 */
@@ -235,6 +235,16 @@ export type SprintEvent =
       taskId: number;
       /** 燃え移った先のタスク ID（無い場合あり）。 */
       spreadToTaskId?: number;
+      /**
+       * この延焼で実際に増えた技術的負債。
+       * 旧リプレイでは欠けることがある。
+       */
+      debtGain?: number;
+      /**
+       * この延焼で実際に失った士気（clamp 後の減少量）。
+       * 旧リプレイでは欠けることがある。
+       */
+      moraleCost?: number;
     }
   | {
       tick: number;
@@ -358,7 +368,7 @@ export interface SprintConfig {
   focusMax: number;
   /**
    * AI 割当タスク 1 件あたりの依存度上昇（未指定時は `AI_DEP_PER_TASK`）。
-   * 難易度プリセットから RunEngine が注入する（RI-74）。
+   * 難易度プリセットと開始シナリオから RunEngine が注入する（RI-74 / #387）。
    */
   aiDependencyPerTask?: number;
 }
@@ -502,6 +512,15 @@ export interface SprintBaselineResult {
   maxCombo: number;
 }
 
+/** 評価に使った危機ペナルティ内訳（記録時の係数）。 */
+export interface SprintGradePenalties {
+  rework: number;
+  incident: number;
+  spread: number;
+  hp: number;
+  total: number;
+}
+
 /** スプリントリザルト（SPEC 第4.6）。 */
 export interface SprintResult {
   done: number;
@@ -520,6 +539,25 @@ export interface SprintResult {
   actionCounts: Partial<Record<ActionId, number>>;
   /** 評価（S/A/B/C/D）。 */
   grade: string;
+  /**
+   * 最終健全比（危機ペナルティ後 + 安定介入ボーナス）。
+   * 旧セーブは省略。省略時は内訳を再構成せず、保存済み等級だけを出す。
+   */
+  gradeRatio?: number;
+  /** 安定介入ボーナス（0..cap）。旧セーブは省略。 */
+  stabilizingBonus?: number;
+  /** 実際に運用安定を付与した介入回数。旧セーブは省略。 */
+  stabilizingGrants?: number;
+  /**
+   * 評価に使った危機ペナルティ内訳（記録時の係数）。
+   * 旧セーブは省略。省略時は減点行を出さない。
+   */
+  gradePenalties?: SprintGradePenalties;
+  /**
+   * 評価に使った丸め前のシニアHP損失（start − end）。
+   * `seniorHpDelta` は表示用の整数丸め。旧セーブは省略。
+   */
+  seniorHpLoss?: number;
   /** 称号（SPEC 第4.6 の例から導出）。 */
   title: string;
   /** 診断コメント。 */

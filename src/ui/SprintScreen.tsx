@@ -40,7 +40,12 @@ import { PointPops } from './PointPops';
 import { AspectStage } from './AspectStage';
 import { SprintLayout } from './SprintLayout';
 import { AttentionOverlay, SlowMotionOverlay } from './JuicyEffects';
-import type { PlaybackSpeed } from './sprintTempo';
+import {
+  isPlaybackPaused,
+  nextPlaybackSpeed,
+  type PlaybackSpeed,
+  type PlayingSpeed,
+} from './sprintTempo';
 import { TutorialGuide } from './TutorialGuide';
 
 /** ボススローモオーバーレイと自動進行停止の共通尺（ms）。 */
@@ -117,6 +122,7 @@ export function SprintScreen({
   const attentionPrevIgniteCount = useRef<number | null>(null);
   const attentionSprintId = useRef<string | null>(null);
   const lastAttentionAt = useRef(0);
+  const lastPlayingSpeedRef = useRef<PlayingSpeed>(1);
   const [slowMoKey, setSlowMoKey] = useState(0);
   const [slowMoPlan, setSlowMoPlan] = useState({ clearedIncidentCount: 0 });
   const [attentionKey, setAttentionKey] = useState(0);
@@ -185,7 +191,7 @@ export function SprintScreen({
     attentionPrevIgniteCount.current = nextIgniteEventCount;
 
     // プレイヤー Pause 中は既に止まっているので自動ポーズ不要。
-    if (playbackSpeed === 0) return;
+    if (isPlaybackPaused(playbackSpeed)) return;
 
     const now = performance.now();
     if (now - lastAttentionAt.current < ATTENTION_COOLDOWN_MS) return;
@@ -290,12 +296,35 @@ export function SprintScreen({
     [armedId, handleDispatch],
   );
 
+  useEffect(() => {
+    if (!isPlaybackPaused(playbackSpeed)) lastPlayingSpeedRef.current = playbackSpeed;
+  }, [playbackSpeed]);
+
+  const handleSelectPlaybackSpeed = useCallback(
+    (clicked: PlaybackSpeed) => {
+      const next = nextPlaybackSpeed(playbackSpeed, clicked, lastPlayingSpeedRef.current);
+      if (!isPlaybackPaused(next)) lastPlayingSpeedRef.current = next;
+      setPlaybackSpeed(next);
+    },
+    [playbackSpeed, setPlaybackSpeed],
+  );
+
+  const handlePlayCard = useCallback(
+    (deckIndex: number): CardPlayOutcome => {
+      if (isPlaybackPaused(playbackSpeed)) return { ok: false, reason: 'paused' };
+      return onPlayCard(deckIndex);
+    },
+    [onPlayCard, playbackSpeed],
+  );
+
   if (!sprint) return null;
 
   const kind = state.currentSprintKind;
   const isBoss = kind === 'boss';
   const isElite = kind === 'elite';
   const boss = getBoss(state.bossId);
+  const paused = isPlaybackPaused(playbackSpeed);
+  const overlayFrozen = state.phase === 'evolution';
 
   const liveCombo = liveComboCount(sprint);
   const queue = reviewQueueLength(sprint.tasks);
@@ -324,6 +353,7 @@ export function SprintScreen({
             role="group"
             aria-label="再生速度"
             data-testid="speed-controls"
+            data-paused={paused ? 'true' : 'false'}
           >
             {SPEED_OPTIONS.map(({ speed, label, testId }) => (
               <button
@@ -331,9 +361,10 @@ export function SprintScreen({
                 type="button"
                 className={`speed-btn${playbackSpeed === speed ? ' active' : ''}`}
                 aria-pressed={playbackSpeed === speed}
+                aria-label={speed === 0 ? '一時停止' : undefined}
                 data-testid={testId}
                 disabled={sprint.complete}
-                onClick={() => setPlaybackSpeed(speed)}
+                onClick={() => handleSelectPlaybackSpeed(speed)}
               >
                 {label}
               </button>
@@ -389,6 +420,7 @@ export function SprintScreen({
               armedAction={armedId}
               assignAssignee={armedId === 'assignTask' ? assignAssignee : undefined}
               onDragComplete={handleDragComplete}
+              animationsPaused={overlayFrozen}
             />
             {slowMoKey > 0 && (
               <SlowMotionOverlay clearedIncidentCount={slowMoPlan.clearedIncidentCount} />
@@ -396,7 +428,7 @@ export function SprintScreen({
             {attentionKey > 0 && attentionPlan.active && (
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
-            <EventTicker events={sprint.events} liveCombo={liveCombo} />
+            <EventTicker events={sprint.events} liveCombo={liveCombo} frozen={overlayFrozen} />
           </AspectStage>
         </main>
       }
@@ -406,7 +438,8 @@ export function SprintScreen({
           hand={sprint.cardPiles.hand}
           focus={sprint.focus}
           playable={!sprint.complete}
-          onPlay={onPlayCard}
+          paused={paused}
+          onPlay={handlePlayCard}
         />
       }
       controls={

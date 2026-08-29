@@ -107,7 +107,7 @@ export function SprintResultScreen({
       tabIndex={-1}
     >
       <div className="result-card sprint-result-card">
-        <div className="overlay-scroll" data-testid="overlay-scroll">
+        <div className="overlay-scroll" data-testid="overlay-scroll" tabIndex={0}>
           <p className="result-eyebrow">SPRINT RESULT</p>
           {hellSummary.show ? (
             <div

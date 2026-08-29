@@ -1001,6 +1001,7 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     const overlay = page.getByTestId('sprint-result');
     await expect(overlay).toBeVisible();
     await expect(overlay).toHaveClass(/overlay-contained/);
+    await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
 
     const before = await readOverlayScrollMetrics(page, 'sprint-result');
     expect(before.overlayTop, 'オーバーレイ上端が viewport 外').toBeLessThanOrEqual(1);
@@ -1048,6 +1049,9 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
     const overlay = page.getByTestId('draft');
     await expect(overlay).toBeVisible();
     await expect(overlay).toHaveClass(/overlay-contained/);
+    await expect(page.getByTestId('overlay-scroll')).toHaveAttribute('tabindex', '0');
+    await expect(page.locator('.draft-card-panel > .draft-actions')).toBeVisible();
+    await expect(page.locator('.result-overlay > .draft-actions')).toHaveCount(0);
 
     const before = await readOverlayScrollMetrics(page, 'draft');
     expect(before.overlayTop, 'オーバーレイ上端が viewport 外').toBeLessThanOrEqual(1);

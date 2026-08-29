@@ -7353,10 +7353,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   stroke: #1b1438cc;
   stroke-width: 2px;
 }
-/* RI-11: スプリント盤面の Pixi 描画領域（?renderer=pixi 時のみマウント）。
- * フロー(z2)より上・ステーション枠(z4)/ラベル(z7)/吹き出し(z8)/演出より下に置き、
- * DOM 版と同じ重なり順を保つ。ドラッグは board div の DOM pointer で受けるため
- * canvas 自体はイベントを取らない。 */
+/* RI-11: スプリント盤面の Pixi 基盤描画領域（?renderer=pixi 時のみマウント）。
+ * フロー(z2)より上・ステーション枠(z4)/ラベル(z7)/吹き出し(z8)より下に置く。
+ * ドラッグは board div の DOM pointer で受けるため canvas 自体はイベントを取らない。 */
 .board-pixi-mount {
   position: absolute;
   inset: 0;
@@ -7364,6 +7363,17 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: none;
 }
 .board-pixi-mount canvas {
+  display: block;
+}
+/* RI-142: 一時演出だけを吹き出し(z8)・工程サマリー(z10)より上へ合成する。 */
+.board-pixi-effects-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  overflow: hidden;
+  pointer-events: none;
+}
+.board-pixi-effects-mount canvas {
   display: block;
 }
 

@@ -218,6 +218,10 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     const mount = page.getByTestId('board-pixi-mount');
     await expect(board).toHaveAttribute('data-effect-renderer', 'pixi');
     await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:boardAura');
+    await expect(page.getByTestId('board-pixi-effects-mount')).toHaveAttribute(
+      'data-board-effects',
+      '1',
+    );
     await expect(mount).toHaveAttribute('data-board-effects', '1');
     await expect(mount).toHaveAttribute('data-board-auras', '1');
     await expect(page.getByTestId('intervention-effect-aura-overtime')).not.toBeVisible();
@@ -243,6 +247,17 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     const mount = page.getByTestId('board-pixi-mount');
     await expect(board).toHaveAttribute('data-effect-kinds', /fire:(ignite|spread)/);
     await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
+    const layerOrder = await page.evaluate(() => ({
+      base: Number(getComputedStyle(document.querySelector('.board-pixi-mount')!).zIndex),
+      bubble: Number(getComputedStyle(document.querySelector('.bubble')!).zIndex),
+      summary: Number(getComputedStyle(document.querySelector('.board-flow-summary')!).zIndex),
+      effects: Number(
+        getComputedStyle(document.querySelector('.board-pixi-effects-mount')!).zIndex,
+      ),
+    }));
+    expect(layerOrder.base).toBeLessThan(layerOrder.bubble);
+    expect(layerOrder.effects).toBeGreaterThan(layerOrder.bubble);
+    expect(layerOrder.effects).toBeGreaterThan(layerOrder.summary);
     await freezePixiForScreenshot(page);
 
     await expect(board).toHaveScreenshot('sprint-pixi-fire-effect.png', {

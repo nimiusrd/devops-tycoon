@@ -144,6 +144,8 @@ export interface BoardPixiInput {
 export interface PixiBoardRendererOptions {
   /** dev-only: 直近 render のメトリクス（ブラウザ計測 / E2E 安定化用）。 */
   onRenderMetrics?: (metrics: BoardRenderMetrics) => void;
+  /** DOM オーバーレイを挟むため、基盤と一時演出を別 canvas に描く。 */
+  stratum?: 'all' | 'base' | 'effects';
 }
 
 /** 1 粒ぶんの子パーツ（プール再利用用）。 */
@@ -511,10 +513,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   /** dispose 済みフラグ（非同期 init の中断判定）。init/dispose は 1 インスタンス 1 回。 */
   private disposed = false;
   private readonly opts: PixiBoardRendererOptions;
+  private readonly stratum: NonNullable<PixiBoardRendererOptions['stratum']>;
   private lastInput: BoardPixiInput | null = null;
 
   constructor(opts: PixiBoardRendererOptions = {}) {
     this.opts = opts;
+    this.stratum = opts.stratum ?? 'all';
   }
 
   /** ブラウザでのみ呼ぶ。WebGL コンテキストと描画レイヤを初期化する。 */
@@ -537,32 +541,38 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     mount.appendChild(app.canvas);
     app.renderer.events.setTargetElement(app.canvas);
 
-    this.reviewHeatLayer.addChild(this.reviewHeatGfx);
-    this.auraLayer.addChild(this.auraGfx);
-    this.root.addChild(
-      this.flowsGfx,
-      this.reviewHeatLayer,
-      this.stationsLayer,
-      this.reviewTrailsLayer,
-      this.dotsLayer,
-      this.auraLayer,
-      this.effectsLayer,
-    );
+    if (this.stratum !== 'effects') {
+      this.reviewHeatLayer.addChild(this.reviewHeatGfx);
+      this.auraLayer.addChild(this.auraGfx);
+      this.root.addChild(
+        this.flowsGfx,
+        this.reviewHeatLayer,
+        this.stationsLayer,
+        this.reviewTrailsLayer,
+        this.dotsLayer,
+        this.auraLayer,
+      );
+    }
+    if (this.stratum !== 'base') this.root.addChild(this.effectsLayer);
     app.stage.addChild(this.root);
     app.stage.eventMode = 'none';
 
-    this.pool = new SpritePool<Container>(createDotContainer, {
-      max: BOARD_SPRITE_BUDGET,
-      reset: resetDotContainer,
-    });
-    this.reviewTrailPool = new SpritePool<Graphics>(createReviewTrail, {
-      max: VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget,
-      reset: resetReviewTrail,
-    });
-    this.effectPool = new SpritePool<Container>(createEffectContainer, {
-      max: VISUAL_TOKENS.dimensions.sprint.boardEffects.budget,
-      reset: resetEffectContainer,
-    });
+    if (this.stratum !== 'effects') {
+      this.pool = new SpritePool<Container>(createDotContainer, {
+        max: BOARD_SPRITE_BUDGET,
+        reset: resetDotContainer,
+      });
+      this.reviewTrailPool = new SpritePool<Graphics>(createReviewTrail, {
+        max: VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget,
+        reset: resetReviewTrail,
+      });
+    }
+    if (this.stratum !== 'base') {
+      this.effectPool = new SpritePool<Container>(createEffectContainer, {
+        max: VISUAL_TOKENS.dimensions.sprint.boardEffects.budget,
+        reset: resetEffectContainer,
+      });
+    }
 
     this.app = app;
     retainPixiApp();
@@ -641,20 +651,21 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
   /** 最新のシーン計画を読んで 1 フレーム描く。init() 前は何もしない。 */
   render(input: BoardPixiInput): void {
-    const pool = this.pool;
-    if (!pool || !this.app) return;
+    if (!this.app) return;
     this.lastInput = input;
     const { scene } = input;
     this.reducedMotion = input.reducedMotion;
 
-    this.lastFlows = scene.flows;
-    this.drawFlows(this.elapsedMs);
-    this.syncReviewHeat(scene.reviewEffects.heatField);
-    this.syncActors(scene.stations);
-    this.syncReviewTrails(scene.reviewEffects.trails);
-    this.syncDots(scene.dots, input.draggableTaskIds ?? new Set(), input.dragTaskId ?? null);
-    this.syncAuras(input.auras);
-    this.syncEffects(input.effects);
+    if (this.stratum !== 'effects') {
+      this.lastFlows = scene.flows;
+      this.drawFlows(this.elapsedMs);
+      this.syncReviewHeat(scene.reviewEffects.heatField);
+      this.syncActors(scene.stations);
+      this.syncReviewTrails(scene.reviewEffects.trails);
+      this.syncDots(scene.dots, input.draggableTaskIds ?? new Set(), input.dragTaskId ?? null);
+      this.syncAuras(input.auras);
+    }
+    if (this.stratum !== 'base') this.syncEffects(input.effects);
     this.applyAnimations(
       boardAnimationElapsedMs(this.elapsedMs, this.reducedMotion),
       this.effectNowOverride ?? performance.now(),

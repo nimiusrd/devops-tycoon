@@ -156,7 +156,7 @@ export function CardCollectionScreen({
         onClick={onClose}
       />
       <div className="card-collection-panel">
-        <div className="result-overlay-body">
+        <div className="result-overlay-body" tabIndex={0}>
           <p className="result-eyebrow">CARD CODEX</p>
           <h2 className="draft-title">
             カードコレクション{' '}

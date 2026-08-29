@@ -43,7 +43,7 @@ export function DeckPolicyScreen({ meta, onChange, onClose }: DeckPolicyScreenPr
       tabIndex={-1}
     >
       <div className="deck-policy-panel">
-        <div className="result-overlay-body">
+        <div className="result-overlay-body" tabIndex={0}>
           <p className="result-eyebrow">TRAINING POLICY</p>
           <h2 className="draft-title">
             研修方針 <b data-testid="deck-policy-count">{meta.preferredCardIds.length}</b> /{' '}

@@ -120,7 +120,7 @@ export function ReplayListScreen({
       tabIndex={-1}
     >
       <div className="meta-shop-panel replay-list-panel">
-        <div className="result-overlay-body">
+        <div className="result-overlay-body" tabIndex={0}>
           <p className="result-eyebrow">REPLAY</p>
           <h2 className="draft-title">保存済みランの閲覧</h2>
           <p className="meta-shop-lead">

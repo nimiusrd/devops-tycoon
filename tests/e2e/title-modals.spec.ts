@@ -39,6 +39,7 @@ async function openFooterDialogFromScrolledTitle(
   expect(Math.abs(metrics.height - viewport.height)).toBeLessThanOrEqual(2);
 
   const close = page.getByTestId(options.closeTestId);
+  await expect(dialog.locator('.result-overlay-body')).toHaveAttribute('tabindex', '0');
   const closeBox = await close.boundingBox();
   expect(closeBox).not.toBeNull();
   expect(closeBox!.y).toBeGreaterThanOrEqual(0);

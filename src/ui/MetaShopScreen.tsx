@@ -49,7 +49,7 @@ export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProp
         onClick={onClose}
       />
       <div className="meta-shop-panel">
-        <div className="result-overlay-body">
+        <div className="result-overlay-body" tabIndex={0}>
           <p className="result-eyebrow">META SHOP</p>
           <h2 className="draft-title">
             研修費でツール解禁 <b data-testid="meta-shop-points">{meta.points}</b> pt

@@ -15,7 +15,7 @@ import {
   PROCESS_BALANCE,
   SPRINT_TASK_KIND_WEIGHTS,
 } from '../../data/balance';
-import { getCard } from '../../data/cards';
+import { CARD_DEFS, getCard } from '../../data/cards';
 import { getGoalAdjustment } from '../../data/goalAdjustments';
 import { getLever } from '../../data/levers';
 import { DEPARTMENT_DEFS } from '../../data/departments';
@@ -29,6 +29,7 @@ import {
   dealHand,
   drawDraft,
   inheritBaselineAppliedForTeams,
+  redrawDraftCandidates,
   migrateBaselineAppliedByTeam,
   playCardFromHand,
   upgradeCardAt,
@@ -57,7 +58,13 @@ import { FIXED_STEP_MS } from '../engine';
 import { evaluateBoss, evaluateLose, evaluateWinType } from '../outcome';
 import { createRng, createRngFromState, getRngState } from '../rng';
 import { DEFAULT_SEED } from '../seed';
-import { applyScenarioOrg, DEFAULT_SCENARIO, getScenario, resolveScenarioId } from '../scenarios';
+import {
+  applyScenarioOrg,
+  DEFAULT_SCENARIO,
+  getScenario,
+  resolveAiDependencyPerTask,
+  resolveScenarioId,
+} from '../scenarios';
 import {
   forceShipReviewTask,
   isAwaitingMinCompleteTick,
@@ -505,10 +512,8 @@ export class RunEngine {
     this.baseConfig = {
       ...base,
       taskCount: Math.max(6, Math.round(base.taskCount * diff.taskCountMul)),
-      ...(diff.aiDependencyPerTask !== undefined
-        ? { aiDependencyPerTask: diff.aiDependencyPerTask }
-        : {}),
     };
+    this.applyAiDependencyPerTask();
     this.org = buildRunOrg(this.difficulty, this.scenario);
     this.deck = [];
     this.relics = [];
@@ -1151,24 +1156,37 @@ export class RunEngine {
   /**
    * ドラフトを予算コストで引き直す（RI-81 / F-12）。
    * 1ドラフトあたり1回。phase は draft のまま候補だけ差し替える。
-   * 元候補と同じ集合になる抽選は最大数回まで再試行する。
+   * 元候補と同じ集合になる抽選は最大数回まで再試行し、プールに余りがあれば
+   * 元候補の1枚を除外して必ず入れ替える。
    */
   mulliganDraft(): void {
     if (this.phase !== 'draft' || !this.draft) return;
     if (this.draftMulliganUsed) return;
     if (this.budget <= DRAFT_MULLIGAN_COST) return;
-    const previousKey = [...this.draft].sort().join('\0');
-    let next = this.draft;
-    for (let attempt = 0; attempt < CARD_BALANCE.draftMulliganMaxAttempts.value; attempt += 1) {
-      const candidate = drawDraft(
-        createRng(`${this.seed}:draft:${this.sprintsPlayed}:m1:${attempt}`),
-        CARD_BALANCE.draftCandidateCount.value,
-        this.allowedCards ?? undefined,
-        this.preferredCards,
-      );
-      next = candidate;
-      if ([...candidate].sort().join('\0') !== previousKey) break;
-    }
+    const count = CARD_BALANCE.draftCandidateCount.value;
+    const pool = this.allowedCards ?? new Set(CARD_DEFS.map((c) => c.id));
+    const next = redrawDraftCandidates(this.draft, {
+      count,
+      maxAttempts: CARD_BALANCE.draftMulliganMaxAttempts.value,
+      draw: (attempt) =>
+        drawDraft(
+          createRng(`${this.seed}:draft:${this.sprintsPlayed}:m1:${attempt}`),
+          count,
+          this.allowedCards ?? undefined,
+          this.preferredCards,
+        ),
+      forceDraw: (excludeId) => {
+        const reduced = new Set(pool);
+        reduced.delete(excludeId);
+        if (reduced.size < count) return [...this.draft!];
+        return drawDraft(
+          createRng(`${this.seed}:draft:${this.sprintsPlayed}:m1:force:${excludeId}`),
+          count,
+          reduced,
+          this.preferredCards,
+        );
+      },
+    });
     this.budget -= DRAFT_MULLIGAN_COST;
     this.draftMulliganUsed = true;
     this.draft = next;
@@ -2110,6 +2128,11 @@ export class RunEngine {
     return this.phase;
   }
 
+  /** 現在のズーム階層（スナップショットを作らない軽量アクセサ）。 */
+  zoomLevel(): ZoomLevel {
+    return this.zoom.level;
+  }
+
   /** スプリントが進行中（自動ステップ対象）か。 */
   sprintRunning(): boolean {
     return this.phase === 'sprint' && this.sprint !== null && !this.sprint.complete;
@@ -2189,7 +2212,7 @@ export class RunEngine {
 
   /**
    * リプレイキーフレーム用スナップショット（RI-61）。
-   * setup / result / quarterReview / won / lost のみ。sprint は落とす。
+   * setup / result / draft / quarterReview / won / lost のみ。sprint は落とす。
    */
   exportReplayFrame(): RunReplayFrame | null {
     if (!isReplayFramePhase(this.phase)) return null;
@@ -2444,7 +2467,7 @@ export class RunEngine {
     const hadAiDependencyPerTask = legacyBaseConfig.aiDependencyPerTask !== undefined;
     this.baseConfig = { ...legacyBaseConfig };
     // RI-74: 旧セーブ（係数未保存）も現行難易度定義の上昇量へ補完する。
-    this.applyDifficultyAiDependencyPerTask();
+    this.applyAiDependencyPerTask();
     this.nextBudgetCap = cloned.extras.nextBudgetCap;
     // RI-83: 本体 → extras → legacy pauseAiDebuffQuarter の順で復元する。
     const topCarryoverQuarter = cloned.goalCarryoverQuarter ?? null;
@@ -2599,9 +2622,22 @@ export class RunEngine {
     this.whatIfCache = null;
   }
 
-  /** 難易度定義の `aiDependencyPerTask` を baseConfig へ同期する（RI-74）。 */
-  private applyDifficultyAiDependencyPerTask(): void {
-    const perTask = getDifficulty(this.difficulty).aiDependencyPerTask;
+  /**
+   * 難易度とシナリオの `aiDependencyPerTask` を baseConfig へ同期する（RI-74 / #387）。
+   * シナリオは上書きだが、難易度がより低い値なら難易度を優先する。
+   * Easy の通常単価は default シナリオ限定（#359 / #415）。ツール開始はシナリオ単価を残す。
+   */
+  private applyAiDependencyPerTask(): void {
+    const scenarioId = resolveScenarioId(this.scenario);
+    const scenario = getScenario(scenarioId);
+    const difficultyRate =
+      this.difficulty === 'easy' && scenarioId !== DEFAULT_SCENARIO
+        ? undefined
+        : getDifficulty(this.difficulty).aiDependencyPerTask;
+    const perTask = resolveAiDependencyPerTask(
+      difficultyRate,
+      scenario.aiDependencyPerTask ?? scenario.sprint.aiDependencyPerTask,
+    );
     if (perTask !== undefined) {
       this.baseConfig.aiDependencyPerTask = perTask;
       return;

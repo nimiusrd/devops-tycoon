@@ -151,4 +151,19 @@ test.describe('Pixi 全社マップ視覚回帰 @pixi', () => {
       })
       .toBe('team');
   });
+
+  test('現場へ戻すと Pixi 全社マップ canvas が残らない @pixi', async ({ page }) => {
+    await openPixiOrgMap(page, PIXI_SEED);
+    await expect(page.getByTestId('org-screen')).toBeVisible();
+    await expect(page.getByTestId('org-pixi-mount')).toBeVisible();
+    await expect(page.getByTestId('org-pixi-mount').locator('canvas')).toHaveCount(1);
+
+    await page.getByTestId('crumb-team').click();
+    await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
+    await expect(page.getByTestId('org-screen')).toHaveCount(0);
+    await expect(page.getByTestId('org-pixi-mount')).toHaveCount(0);
+    await expect(page.locator('canvas')).toHaveCount(0);
+    const zoom = await page.evaluate(() => (window as GameWindow).game!.getState().zoom.level);
+    expect(zoom).toBe('team');
+  });
 });

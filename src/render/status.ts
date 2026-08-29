@@ -18,6 +18,7 @@ import { resolveNextQuarterEffects } from '../sim/run/quarterReview';
 import { eventMinSignalThreshold } from '../sim/run/events';
 import type { GoalAdjustmentId, StakeholderTrust } from '../sim/run/types';
 import type { OrgState, SimState, Task } from '../sim/types';
+import { clampSeniorHpDisplay } from './seniorHpDisplay';
 
 /** `review-freeze` イベント抽選の資格帯を定義から導出する。 */
 const REVIEW_FREEZE_EVENT = getEvent('review-freeze');
@@ -250,7 +251,7 @@ export function deriveStatusParts(org: OrgState, tasks: Task[]): StatusView {
     reviewCapacity: gradeOf(org.seniorHp),
     quality: gradeOf(org.quality),
     securityLevel: Math.round(org.securityLevel),
-    seniorHpPct: Math.round(org.seniorHp),
+    seniorHpPct: clampSeniorHpDisplay(org.seniorHp),
     aiDependencyPct: Math.round(org.aiDependency),
     techDebt: org.techDebt,
     morale: Math.round(org.morale),

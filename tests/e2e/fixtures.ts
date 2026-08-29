@@ -104,6 +104,40 @@ export async function beginPublicSprint(page: Page, options: PublicSprintOptions
   await expect(page.getByTestId('board')).toBeVisible();
 }
 
+/**
+ * 公開 step() だけで Review 待ち行列を指定帯まで進め、到達フレームで停止する。
+ * RI-141 の渋滞／Review Hell 表示を実時間や内部 engine 書き換えに依存せず固定する。
+ */
+export async function advanceCurrentSprintToReviewQueue(
+  page: Page,
+  minimum: number,
+  maximum = Number.POSITIVE_INFINITY,
+): Promise<number> {
+  const count = await page.evaluate(
+    ({ min, max }) => {
+      const game = (window as PublicGameWindow).game;
+      if (!game) throw new Error('window.game が公開されていない');
+      let state = game.getState();
+      let guard = 0;
+      let peak = 0;
+      while (state.phase === 'sprint' && guard < 2_000) {
+        const queue = state.sprint?.tasks.filter((task) => task.lane === 'review').length ?? 0;
+        peak = Math.max(peak, queue);
+        if (queue >= min && queue <= max) return queue;
+        guard += 1;
+        game.step(100);
+        state = game.getState();
+      }
+      throw new Error(
+        `Review待ち行列が指定帯へ到達しない: min=${min} max=${max} peak=${peak} phase=${state.phase}`,
+      );
+    },
+    { min: minimum, max: maximum },
+  );
+  await expect(page.getByTestId('count-review')).toHaveText(String(count));
+  return count;
+}
+
 /** setup で停止しているランを次のスプリントへ進める。 */
 export async function beginCurrentSetupSprint(page: Page): Promise<void> {
   await page.evaluate(() => {

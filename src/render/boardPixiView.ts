@@ -19,6 +19,11 @@ export interface BoardPoint {
   y: number;
 }
 
+/** reduced motion では全ての盤面アニメを決定論的な位相 0 に固定する。 */
+export function boardAnimationElapsedMs(elapsedMs: number, reducedMotion: boolean): number {
+  return reducedMotion ? 0 : elapsedMs;
+}
+
 /** ヒット判定の許容マージン（設計px。指先で小粒も掴めるように少し広げる）。 */
 export const DOT_HIT_MARGIN = VISUAL_TOKENS.dimensions.sprint.dotHitMargin;
 

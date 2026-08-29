@@ -7,6 +7,7 @@
  */
 import { expect, test } from './fixtures';
 import {
+  advanceCurrentSprintToReviewQueue,
   advancePublicRun,
   advanceCurrentSprintToResult,
   advanceCurrentResultToDraft,
@@ -1134,6 +1135,50 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
         '枠内スクロールで背面盤面が動いた',
       ).toBeLessThan(1);
     }
+  });
+});
+
+test.describe('RI-141 Review渋滞のDOM同等性', () => {
+  test('8〜11件の連続ヒートを5 viewportで維持する', async ({ page }) => {
+    await beginPublicSprint(page, {
+      seed: 'ri141-review-pressure-0',
+      difficulty: 'hard',
+      renderer: 'dom',
+    });
+    const queue = await advanceCurrentSprintToReviewQueue(page, 8, 11);
+    const board = page.getByTestId('board');
+    const heat = Number(await board.getAttribute('data-review-heat'));
+    expect(queue).toBeGreaterThanOrEqual(8);
+    expect(queue).toBeLessThanOrEqual(11);
+    expect(heat).toBeGreaterThan(0);
+    expect(heat).toBeLessThan(1);
+    await expect(board).toHaveAttribute('data-review-hell', 'false');
+    await assertAcrossViewports(page);
+  });
+
+  test('12件以上のReview Hellを5 viewportとreduced motionで維持する', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await beginPublicSprint(page, {
+      seed: 'ri141-review-pressure-0',
+      difficulty: 'hard',
+      renderer: 'dom',
+    });
+    await advanceCurrentSprintToReviewQueue(page, 12);
+    const board = page.getByTestId('board');
+    await expect(board).toHaveAttribute('data-review-heat', '1');
+    await expect(board).toHaveAttribute('data-review-hell', 'true');
+    await expect(board.locator('[data-lane="review"] .board-flow-alert')).toHaveText('要対応');
+    const animationNames = await board.evaluate((element) => {
+      const flow = element.querySelector('.flowdash');
+      const dot = element.querySelector('.task-dot');
+      return {
+        flow: flow ? getComputedStyle(flow).animationName : null,
+        dot: dot ? getComputedStyle(dot).animationName : null,
+        trail: dot ? getComputedStyle(dot, '::after').animationName : null,
+      };
+    });
+    expect(animationNames).toEqual({ flow: 'none', dot: 'none', trail: 'none' });
+    await assertAcrossViewports(page);
   });
 });
 

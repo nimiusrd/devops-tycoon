@@ -3,6 +3,7 @@ import {
   BOARD_VIEW,
   findBoardFlow,
   flowPointAt,
+  REVIEW_TRAIL_BUDGET,
   REVIEW_HEAT_START,
   REVIEW_HOT_QUEUE,
   planBoardScene,
@@ -268,6 +269,55 @@ describe('reviewHeat（渋滞の段階強度・hot 手前の早期警告）', ()
   it('hot 到達時は heat が 1（最大）', () => {
     const scene = planBoardScene(tasksIn('review', REVIEW_HOT_QUEUE));
     expect(scene.stations.find((s) => s.lane === 'review')!.heat).toBe(1);
+  });
+
+  it('heat が正の間だけReview局所ヒートを計画し、Hell状態を引き継ぐ', () => {
+    expect(planBoardScene(tasksIn('review', REVIEW_HEAT_START)).reviewEffects.heatField).toBeNull();
+
+    const congested = planBoardScene(tasksIn('review', 8)).reviewEffects.heatField;
+    expect(congested).toMatchObject({ intensity: reviewHeat(8), hell: false });
+    expect(congested?.x).toBeGreaterThan(0);
+    expect(congested?.radiusX).toBeGreaterThan(congested?.radiusY ?? 0);
+
+    expect(
+      planBoardScene(tasksIn('review', REVIEW_HOT_QUEUE)).reviewEffects.heatField,
+    ).toMatchObject({ intensity: 1, hell: true });
+  });
+});
+
+describe('Review流入軌跡（RI-141）', () => {
+  it('Coding/Rework→Reviewだけを方向・進捗・AI速度つきで計画する', () => {
+    const scene = planBoardScene([
+      task({ id: 1, lane: 'coding', progress: 0.4 }),
+      task({ id: 2, lane: 'coding', progress: 0.7, aiAssisted: true }),
+      task({ id: 3, lane: 'rework', progress: 0.5 }),
+      task({ id: 4, lane: 'review', progress: 0 }),
+    ]);
+
+    expect(scene.reviewEffects.trails.map((trail) => trail.taskId)).toEqual([2, 3, 1]);
+    expect(scene.reviewEffects.trails[0]).toMatchObject({
+      progress: 0.7,
+      speedMul: 1.35,
+      tone: 'ai',
+    });
+    expect(scene.reviewEffects.trails[1]).toMatchObject({ tone: 'rework' });
+    expect(scene.reviewEffects.trails[2]).toMatchObject({ tone: 'normal' });
+    expect(scene.reviewEffects.trails.every((trail) => Number.isFinite(trail.angleDeg))).toBe(true);
+  });
+
+  it('上限到達時はReview到着に近い粒を決定論的に残す', () => {
+    const tasks = Array.from({ length: REVIEW_TRAIL_BUDGET + 6 }, (_, index) =>
+      task({
+        id: index + 1,
+        lane: index % 2 === 0 ? 'coding' : 'rework',
+        progress: (index + 1) / (REVIEW_TRAIL_BUDGET + 7),
+      }),
+    );
+    const trails = planBoardScene(tasks).reviewEffects.trails;
+    expect(trails).toHaveLength(REVIEW_TRAIL_BUDGET);
+    expect(trails[0].taskId).toBe(REVIEW_TRAIL_BUDGET + 6);
+    expect(trails.at(-1)?.taskId).toBe(7);
+    expect(planBoardScene(tasks).reviewEffects.trails).toEqual(trails);
   });
 });
 

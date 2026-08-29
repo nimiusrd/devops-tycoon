@@ -4167,6 +4167,18 @@ button.card.card-readonly:disabled {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .board.iso-office,
+  .board.iso-office::after,
+  .board.iso-office .station-game-asset {
+    transition: none !important;
+  }
+  .board.iso-office .flowdash,
+  .board.iso-office .task-dot,
+  .board.iso-office .task-dot::after,
+  .board.iso-office .task-dot .flame,
+  .board.iso-office .cbob {
+    animation: none !important;
+  }
   .title-world,
   .title-orbit,
   .title-world-platform,

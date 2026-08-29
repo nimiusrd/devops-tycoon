@@ -15,6 +15,7 @@ import {
 } from '../state/meta';
 import type { CardDef, CardRarity } from '../sim/types';
 import { CardView } from './CardView';
+import { ResultOverlay } from './ResultOverlay';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface CardCollectionScreenProps {
@@ -139,9 +140,8 @@ export function CardCollectionScreen({
     selectedUnlocked && !selectedPreferred && meta.preferredCardIds.length >= MAX_PREFERRED_CARDS;
 
   return (
-    <div
+    <ResultOverlay
       ref={overlayRef}
-      className="result-overlay"
       data-testid="card-collection"
       role="dialog"
       aria-modal="true"
@@ -156,156 +156,158 @@ export function CardCollectionScreen({
         onClick={onClose}
       />
       <div className="card-collection-panel">
-        <p className="result-eyebrow">CARD CODEX</p>
-        <h2 className="draft-title">
-          カードコレクション{' '}
-          <b data-testid="card-collection-count">
-            {unlockedCount}/{CARD_DEFS.length}
-          </b>
-        </h2>
-        <p className="card-collection-lead">
-          全施策カードの解放状況を確認できます。解放済みカードは研修方針（最大 {MAX_PREFERRED_CARDS}{' '}
-          枚）にも反映できます。
-        </p>
+        <div className="result-overlay-body" tabIndex={0}>
+          <p className="result-eyebrow">CARD CODEX</p>
+          <h2 className="draft-title">
+            カードコレクション{' '}
+            <b data-testid="card-collection-count">
+              {unlockedCount}/{CARD_DEFS.length}
+            </b>
+          </h2>
+          <p className="card-collection-lead">
+            全施策カードの解放状況を確認できます。解放済みカードは研修方針（最大{' '}
+            {MAX_PREFERRED_CARDS} 枚）にも反映できます。
+          </p>
 
-        <div
-          className="card-collection-filters"
-          role="toolbar"
-          aria-label="レアリティフィルター"
-          data-testid="card-collection-filters"
-        >
-          {FILTER_OPTIONS.map((option) => (
-            <button
-              type="button"
-              key={option.id}
-              className={`card-collection-filter${filter === option.id ? ' active' : ''}`}
-              data-testid={`card-collection-filter-${option.id}`}
-              aria-pressed={filter === option.id}
-              onClick={() => setFilter(option.id)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="card-collection-layout">
-          <div className="card-collection-list" data-testid="card-collection-list">
-            {sections.map((section) => (
-              <section
-                key={section.rarity}
-                className="card-collection-section"
-                aria-labelledby={`card-collection-rarity-${section.rarity}`}
+          <div
+            className="card-collection-filters"
+            role="toolbar"
+            aria-label="レアリティフィルター"
+            data-testid="card-collection-filters"
+          >
+            {FILTER_OPTIONS.map((option) => (
+              <button
+                type="button"
+                key={option.id}
+                className={`card-collection-filter${filter === option.id ? ' active' : ''}`}
+                data-testid={`card-collection-filter-${option.id}`}
+                aria-pressed={filter === option.id}
+                onClick={() => setFilter(option.id)}
               >
-                <h3
-                  id={`card-collection-rarity-${section.rarity}`}
-                  className="card-collection-section-title"
-                >
-                  {RARITY_LABEL[section.rarity]}
-                </h3>
-                <div className="card-collection-grid">
-                  {section.cards.map((def) => {
-                    const isUnlocked = unlocked.has(def.id);
-                    const isSelected = def.id === selected?.id;
-                    const isPreferred = preferred.has(def.id);
-                    return (
-                      <button
-                        type="button"
-                        key={def.id}
-                        className={`card-collection-item${isUnlocked ? ' unlocked' : ' locked'}${
-                          isSelected ? ' selected' : ''
-                        }${isPreferred ? ' preferred' : ''}`}
-                        data-testid={`card-collection-item-${def.id}`}
-                        data-unlocked={isUnlocked ? 'true' : 'false'}
-                        data-rarity={def.rarity}
-                        aria-pressed={isSelected}
-                        onClick={() => setSelectedId(def.id)}
-                      >
-                        {isUnlocked ? (
-                          <CardView def={def} compact />
-                        ) : (
-                          <div className="card-collection-locked-card">
-                            <span className="card-collection-lock-icon" aria-hidden="true">
-                              🔒
-                            </span>
-                            <span className="card-collection-locked-name">{def.name}</span>
-                            <span className={`card-rarity rarity-${def.rarity}`}>
-                              {RARITY_LABEL[def.rarity]}
-                            </span>
-                          </div>
-                        )}
-                        {isPreferred && (
-                          <span className="card-collection-preferred-badge">優先中</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
+                {option.label}
+              </button>
             ))}
           </div>
 
-          <aside className="card-collection-detail" data-testid="card-collection-detail">
-            {selected ? (
-              selectedUnlocked ? (
-                <>
-                  <CardView def={selected} />
-                  <button
-                    type="button"
-                    className={`card-collection-prefer-btn${selectedPreferred ? ' selected' : ''}${
-                      atCap ? ' capped' : ''
-                    }`}
-                    data-testid="card-collection-prefer"
-                    aria-pressed={selectedPreferred}
-                    disabled={atCap}
-                    onClick={() => togglePreferred(selected.id)}
+          <div className="card-collection-layout">
+            <div className="card-collection-list" data-testid="card-collection-list">
+              {sections.map((section) => (
+                <section
+                  key={section.rarity}
+                  className="card-collection-section"
+                  aria-labelledby={`card-collection-rarity-${section.rarity}`}
+                >
+                  <h3
+                    id={`card-collection-rarity-${section.rarity}`}
+                    className="card-collection-section-title"
                   >
-                    {selectedPreferred
-                      ? '✓ 研修方針の優先中'
-                      : atCap
-                        ? '優先は上限に達しています'
-                        : '研修方針に加える'}
-                  </button>
-                  <p
-                    className="card-collection-prefer-count"
-                    data-testid="card-collection-prefer-count"
-                  >
-                    優先 {meta.preferredCardIds.length} / {MAX_PREFERRED_CARDS}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="card-collection-locked-detail">
-                    <span className="card-collection-lock-icon" aria-hidden="true">
-                      🔒
-                    </span>
-                    <h3 className="card-collection-detail-name">{selected.name}</h3>
-                    <span className={`card-rarity rarity-${selected.rarity}`}>
-                      {RARITY_LABEL[selected.rarity]}
-                    </span>
+                    {RARITY_LABEL[section.rarity]}
+                  </h3>
+                  <div className="card-collection-grid">
+                    {section.cards.map((def) => {
+                      const isUnlocked = unlocked.has(def.id);
+                      const isSelected = def.id === selected?.id;
+                      const isPreferred = preferred.has(def.id);
+                      return (
+                        <button
+                          type="button"
+                          key={def.id}
+                          className={`card-collection-item${isUnlocked ? ' unlocked' : ' locked'}${
+                            isSelected ? ' selected' : ''
+                          }${isPreferred ? ' preferred' : ''}`}
+                          data-testid={`card-collection-item-${def.id}`}
+                          data-unlocked={isUnlocked ? 'true' : 'false'}
+                          data-rarity={def.rarity}
+                          aria-pressed={isSelected}
+                          onClick={() => setSelectedId(def.id)}
+                        >
+                          {isUnlocked ? (
+                            <CardView def={def} compact />
+                          ) : (
+                            <div className="card-collection-locked-card">
+                              <span className="card-collection-lock-icon" aria-hidden="true">
+                                🔒
+                              </span>
+                              <span className="card-collection-locked-name">{def.name}</span>
+                              <span className={`card-rarity rarity-${def.rarity}`}>
+                                {RARITY_LABEL[def.rarity]}
+                              </span>
+                            </div>
+                          )}
+                          {isPreferred && (
+                            <span className="card-collection-preferred-badge">優先中</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <p
-                    className="card-collection-unlock-condition"
-                    data-testid="card-collection-unlock-condition"
-                  >
-                    解放条件: {unlockConditionText(selected)}
-                  </p>
-                </>
-              )
-            ) : (
-              <p className="card-collection-empty">表示するカードがありません。</p>
-            )}
-          </aside>
+                </section>
+              ))}
+            </div>
+
+            <aside className="card-collection-detail" data-testid="card-collection-detail">
+              {selected ? (
+                selectedUnlocked ? (
+                  <>
+                    <CardView def={selected} />
+                    <button
+                      type="button"
+                      className={`card-collection-prefer-btn${selectedPreferred ? ' selected' : ''}${
+                        atCap ? ' capped' : ''
+                      }`}
+                      data-testid="card-collection-prefer"
+                      aria-pressed={selectedPreferred}
+                      disabled={atCap}
+                      onClick={() => togglePreferred(selected.id)}
+                    >
+                      {selectedPreferred
+                        ? '✓ 研修方針の優先中'
+                        : atCap
+                          ? '優先は上限に達しています'
+                          : '研修方針に加える'}
+                    </button>
+                    <p
+                      className="card-collection-prefer-count"
+                      data-testid="card-collection-prefer-count"
+                    >
+                      優先 {meta.preferredCardIds.length} / {MAX_PREFERRED_CARDS}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="card-collection-locked-detail">
+                      <span className="card-collection-lock-icon" aria-hidden="true">
+                        🔒
+                      </span>
+                      <h3 className="card-collection-detail-name">{selected.name}</h3>
+                      <span className={`card-rarity rarity-${selected.rarity}`}>
+                        {RARITY_LABEL[selected.rarity]}
+                      </span>
+                    </div>
+                    <p
+                      className="card-collection-unlock-condition"
+                      data-testid="card-collection-unlock-condition"
+                    >
+                      解放条件: {unlockConditionText(selected)}
+                    </p>
+                  </>
+                )
+              ) : (
+                <p className="card-collection-empty">表示するカードがありません。</p>
+              )}
+            </aside>
+          </div>
         </div>
 
         <button
           type="button"
-          className="btn btn-secondary"
+          className="btn btn-secondary result-overlay-close"
           data-testid="card-collection-close"
           onClick={onClose}
         >
           閉じる
         </button>
       </div>
-    </div>
+    </ResultOverlay>
   );
 }

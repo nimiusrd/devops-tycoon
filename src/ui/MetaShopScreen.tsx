@@ -9,6 +9,7 @@ import { getCard } from '../data/cards';
 import { getRelic } from '../data/relics';
 import { ACHIEVEMENT_LABEL, type MetaState } from '../state/meta';
 import { UNLOCK_DEFS, type UnlockDef } from '../data/unlocks';
+import { ResultOverlay } from './ResultOverlay';
 import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface MetaShopScreenProps {
@@ -32,9 +33,8 @@ export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProp
   useDialogOverlayLock(overlayRef, { restoreFocus: true });
 
   return (
-    <div
+    <ResultOverlay
       ref={overlayRef}
-      className="result-overlay"
       data-testid="meta-shop"
       role="dialog"
       aria-modal="true"
@@ -49,56 +49,58 @@ export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProp
         onClick={onClose}
       />
       <div className="meta-shop-panel">
-        <p className="result-eyebrow">META SHOP</p>
-        <h2 className="draft-title">
-          研修費でツール解禁 <b data-testid="meta-shop-points">{meta.points}</b> pt
-        </h2>
-        <p className="meta-shop-lead">
-          永続解放した施策は、次ラン以降のドラフト／ショップに登場します。
-        </p>
-        <div className="meta-shop-grid">
-          {UNLOCK_DEFS.map((unlock) => {
-            const owned = isOwned(meta, unlock);
-            const needsAchievement =
-              unlock.requires && !meta.achievements.includes(unlock.requires);
-            const affordable = !owned && !needsAchievement && meta.points >= unlock.cost;
-            let status = '購入可能';
-            if (owned) status = '購入済み';
-            else if (needsAchievement) {
-              status = `🔒 実績「${ACHIEVEMENT_LABEL[unlock.requires!] ?? unlock.requires}」が必要`;
-            } else if (meta.points < unlock.cost) status = 'ポイント不足';
+        <div className="result-overlay-body" tabIndex={0}>
+          <p className="result-eyebrow">META SHOP</p>
+          <h2 className="draft-title">
+            研修費でツール解禁 <b data-testid="meta-shop-points">{meta.points}</b> pt
+          </h2>
+          <p className="meta-shop-lead">
+            永続解放した施策は、次ラン以降のドラフト／ショップに登場します。
+          </p>
+          <div className="meta-shop-grid">
+            {UNLOCK_DEFS.map((unlock) => {
+              const owned = isOwned(meta, unlock);
+              const needsAchievement =
+                unlock.requires && !meta.achievements.includes(unlock.requires);
+              const affordable = !owned && !needsAchievement && meta.points >= unlock.cost;
+              let status = '購入可能';
+              if (owned) status = '購入済み';
+              else if (needsAchievement) {
+                status = `🔒 実績「${ACHIEVEMENT_LABEL[unlock.requires!] ?? unlock.requires}」が必要`;
+              } else if (meta.points < unlock.cost) status = 'ポイント不足';
 
-            return (
-              <button
-                type="button"
-                key={unlock.id}
-                className={`meta-shop-item${owned ? ' owned' : ''}${affordable ? ' affordable' : ''}`}
-                data-testid={`meta-unlock-${unlock.id}`}
-                disabled={!affordable}
-                onClick={() => onPurchase(unlock.id)}
-              >
-                <span className="meta-shop-kind">
-                  {unlock.kind === 'card' ? 'カード' : 'レリック'}
-                </span>
-                <span className="meta-shop-name">{unlock.label}</span>
-                <span className="meta-shop-target">{contentLabel(unlock)}</span>
-                <p className="meta-shop-desc">{unlock.description}</p>
-                <span className="meta-shop-status">
-                  {owned ? '✓ 購入済み' : `${unlock.cost} pt — ${status}`}
-                </span>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  type="button"
+                  key={unlock.id}
+                  className={`meta-shop-item${owned ? ' owned' : ''}${affordable ? ' affordable' : ''}`}
+                  data-testid={`meta-unlock-${unlock.id}`}
+                  disabled={!affordable}
+                  onClick={() => onPurchase(unlock.id)}
+                >
+                  <span className="meta-shop-kind">
+                    {unlock.kind === 'card' ? 'カード' : 'レリック'}
+                  </span>
+                  <span className="meta-shop-name">{unlock.label}</span>
+                  <span className="meta-shop-target">{contentLabel(unlock)}</span>
+                  <p className="meta-shop-desc">{unlock.description}</p>
+                  <span className="meta-shop-status">
+                    {owned ? '✓ 購入済み' : `${unlock.cost} pt — ${status}`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <button
           type="button"
-          className="btn btn-secondary"
+          className="btn btn-secondary result-overlay-close"
           data-testid="meta-shop-close"
           onClick={onClose}
         >
           閉じる
         </button>
       </div>
-    </div>
+    </ResultOverlay>
   );
 }

@@ -29,6 +29,7 @@ import { Breadcrumb } from './ui/Breadcrumb';
 import { Hud, type HudSnapshotScope } from './ui/Hud';
 import { RunBar } from './ui/RunBar';
 import { ResponsiveModeProvider, useResponsiveMode } from './ui/responsiveMode';
+import { ResultOverlay } from './ui/ResultOverlay';
 import { resetWindowScroll, SceneScrollReset } from './ui/resetWindowScroll';
 import { TitleScreen } from './ui/TitleScreen';
 import { frontmostTitleModal } from './ui/titleModalStack';
@@ -153,9 +154,8 @@ function TitleModalLoadingFallback({ onDismiss }: { onDismiss: () => void }) {
   useDialogOverlayLock(overlayRef, { restoreFocus: true, onDismiss });
 
   return (
-    <div
+    <ResultOverlay
       ref={overlayRef}
-      className="result-overlay"
       data-testid="title-modal-loading"
       role="status"
       aria-busy="true"
@@ -169,7 +169,7 @@ function TitleModalLoadingFallback({ onDismiss }: { onDismiss: () => void }) {
         aria-label="閉じる"
         onClick={onDismiss}
       />
-    </div>
+    </ResultOverlay>
   );
 }
 

@@ -55,15 +55,23 @@ export function lockBackgroundSiblings(dialog: HTMLElement): () => void {
   const restores: Array<() => void> = [];
   for (const sibling of Array.from(parent.children)) {
     if (sibling === dialog || !(sibling instanceof HTMLElement)) continue;
-    const previousInert = sibling.inert;
-    const previousAriaHidden = sibling.getAttribute('aria-hidden');
-    sibling.inert = true;
-    sibling.setAttribute('aria-hidden', 'true');
-    restores.push(() => {
-      sibling.inert = previousInert;
-      if (previousAriaHidden === null) sibling.removeAttribute('aria-hidden');
-      else sibling.setAttribute('aria-hidden', previousAriaHidden);
-    });
+    const targets = [sibling];
+    // ResultOverlay は body へ portal されるため、React root の直下にある
+    // 実画面にも inert を付けて、従来の同階層 overlay と同じ契約を保つ。
+    if (parent === document.body && sibling.id === 'root') {
+      targets.push(...Array.from(sibling.children).filter((child) => child instanceof HTMLElement));
+    }
+    for (const target of targets) {
+      const previousInert = target.inert;
+      const previousAriaHidden = target.getAttribute('aria-hidden');
+      target.inert = true;
+      target.setAttribute('aria-hidden', 'true');
+      restores.push(() => {
+        target.inert = previousInert;
+        if (previousAriaHidden === null) target.removeAttribute('aria-hidden');
+        else target.setAttribute('aria-hidden', previousAriaHidden);
+      });
+    }
   }
 
   return () => {

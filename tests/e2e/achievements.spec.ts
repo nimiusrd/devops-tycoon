@@ -25,6 +25,9 @@ test('タイトルから実績コレクションを開き取得済み／未取�
 
   await page.getByTestId('open-achievements').click();
   await expect(page.getByTestId('achievement-collection')).toBeVisible();
+  await expect(
+    page.getByTestId('achievement-collection').locator('.result-overlay-body'),
+  ).toHaveAttribute('tabindex', '0');
   await expect(page.getByTestId('achievement-count')).toHaveText('1/7');
 
   const firstClear = page.getByTestId('achievement-first-clear');

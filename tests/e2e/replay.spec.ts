@@ -618,6 +618,18 @@ test('リプレイの「カードドラフトへ」で次のドラフトキー�
   await page.getByTestId('replay-keyframe-1').click();
 
   await expect(page.getByTestId('sprint-result')).toBeVisible();
+  await expect(page.getByTestId('result-restart')).toHaveText('タイトルへ戻る');
+  await expect(page.getByTestId('result-restart')).not.toHaveAttribute('title');
+  await page.getByTestId('result-restart').click();
+  await expect(page.getByTestId('title')).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => (window as ReplayGameWindow).game?.isReplayMode()))
+    .toBe(false);
+
+  await page.getByTestId('open-replays').click();
+  await expect(page.getByTestId('replay-list')).toBeVisible();
+  await page.getByTestId('replay-keyframe-1').click();
+  await expect(page.getByTestId('sprint-result')).toBeVisible();
   await expect(page.getByTestId('result-continue')).toBeEnabled();
   await expect(page.getByTestId('result-continue-hint')).toHaveCount(0);
   await page.getByTestId('result-continue').click();

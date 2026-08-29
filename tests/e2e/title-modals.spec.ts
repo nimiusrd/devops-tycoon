@@ -94,3 +94,26 @@ test.describe('タイトルフッターのモーダルはビューポートに�
     });
   });
 });
+
+test('研修方針・実績・リプレイは Escape で閉じ、起点へフォーカスを戻す', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=title-modal-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  const dialogs = [
+    { open: 'open-deck-policy', dialog: 'deck-policy' },
+    { open: 'open-achievements', dialog: 'achievement-collection' },
+    { open: 'open-replays', dialog: 'replay-list' },
+  ] as const;
+
+  for (const target of dialogs) {
+    const openButton = page.getByTestId(target.open);
+    await openButton.scrollIntoViewIfNeeded();
+    await openButton.click();
+    await expect(page.getByTestId(target.dialog)).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    await expect(page.getByTestId(target.dialog)).toHaveCount(0);
+    await expect(openButton).toBeFocused();
+  }
+});

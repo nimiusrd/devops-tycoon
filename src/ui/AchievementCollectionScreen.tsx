@@ -38,7 +38,7 @@ export function AchievementCollectionScreen({ meta, onClose }: AchievementCollec
       tabIndex={-1}
     >
       <div className="achievement-collection-panel">
-        <div className="result-overlay-body">
+        <div className="result-overlay-body" tabIndex={0}>
           <p className="result-eyebrow">ACHIEVEMENTS</p>
           <h2 className="draft-title">
             実績コレクション{' '}

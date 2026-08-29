@@ -12,6 +12,8 @@ import {
   LOD_DOT_MAX,
   teamIslandView,
   truncateName,
+  islandTitle,
+  islandDockAccessibleName,
 } from '../../../src/render/orgIslandView';
 import type { Team, TeamHealth } from '../../../src/sim/orgscale/types';
 
@@ -69,6 +71,37 @@ describe('truncateName', () => {
   });
 });
 
+describe('islandTitle', () => {
+  it('部門名があると同名チームを区別する', () => {
+    expect(islandTitle('チームA', 'healthy', 'プロダクト事業部')).toBe(
+      'プロダクト事業部 チームA（健全）へドリルダウン',
+    );
+  });
+
+  it('部門名がなければチーム名だけにする', () => {
+    expect(islandTitle('Platform', 'congested')).toBe('Platform（渋滞）へドリルダウン');
+  });
+
+  it('プレイヤーチームは ★ を付けて選択中と分かる', () => {
+    expect(islandTitle('チームA', 'healthy', 'プロダクト事業部', true)).toBe(
+      'プロダクト事業部 ★ チームA（健全）へドリルダウン',
+    );
+  });
+});
+
+describe('islandDockAccessibleName', () => {
+  it('ドリルダウン名に出荷・AI・人数を添える', () => {
+    expect(
+      islandDockAccessibleName(
+        'プロダクト事業部 チームA（健全）へドリルダウン',
+        '出荷 42',
+        'AI 70%',
+        '5人',
+      ),
+    ).toBe('プロダクト事業部 チームA（健全）へドリルダウン。出荷 42／AI 70%／5人');
+  });
+});
+
 describe('teamIslandView', () => {
   it('card では DOM TeamIsland 相当のラベルを返す', () => {
     const labels = teamIslandView(
@@ -105,6 +138,7 @@ describe('teamIslandView', () => {
   it('プレイヤーチームは ★ 付き名前', () => {
     const labels = teamIslandView(team({ id: 'me', name: 'My Team', isPlayer: true }), 'card');
     expect(labels.name).toBe('★ My Team');
+    expect(labels.title).toBe('★ My Team（健全）へドリルダウン');
   });
 
   it('炎上 0 件では fire は null', () => {

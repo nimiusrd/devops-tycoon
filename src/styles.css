@@ -10,6 +10,7 @@
   --lav: var(--visual-color-lav);
   --sky: var(--visual-color-sky);
   --fire: var(--visual-color-fire);
+  --replay-banner-height: 0px;
   color: var(--text);
   font-family:
     'Hiragino Maru Gothic ProN',
@@ -30,15 +31,32 @@
   box-sizing: border-box;
 }
 
+/*
+ * シーン切替で document 高さが一瞬縮むと、残った scrollY の外側は html の
+ * 既定白になる（#368）。ページ下地は盤面と同じトークンにし、アンカーによる
+ * 末尾復元も止める。
+ */
+html {
+  color-scheme: dark;
+  background-color: var(--visual-color-board-background-bottom);
+  overflow-anchor: none;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  overflow-anchor: none;
   background:
     radial-gradient(1100px 460px at 78% 6%, #6b4a9e55 0%, transparent 60%),
     radial-gradient(900px 420px at 20% 0%, #ffae6b33 0%, transparent 55%),
     radial-gradient(800px 520px at 50% 118%, #ff5a4533 0%, transparent 55%),
-    linear-gradient(180deg, #2b1f52 0%, #241a47 50%, #1c1438 100%);
+    linear-gradient(
+      180deg,
+      var(--visual-color-board-background-top) 0%,
+      var(--visual-color-board-background-middle) 50%,
+      var(--visual-color-board-background-bottom) 100%
+    );
   background-attachment: fixed;
 }
 
@@ -211,6 +229,25 @@ body {
   font-size: 10.5px;
   color: var(--text-dim);
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/*
+ * 展開KPIの6文字ラベル（出荷ポイント / セキュリティ / レビュー耐性）は、
+ * 方向チップと横並びだと 140px タイルで省略される。デスクトップ幅では
+ * ラベルを縮めず、収まらない方向チップを次行へ送る（DS-06: 省略より折り返し）。
+ * 狭幅の2列展開は省略を残し、既定の要約チップで正式名を読めるようにする。
+ */
+:root[data-responsive-width='wide'] .stat-head {
+  flex-wrap: wrap;
+}
+:root[data-responsive-width='wide'] .stat-label {
+  flex: 1 0 auto;
+  min-width: max-content;
+}
+:root[data-responsive-width='wide'] .stat .k {
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: unset;
   white-space: nowrap;
 }
 .direction-chip {
@@ -1478,9 +1515,10 @@ body {
 .result-overlay {
   position: fixed;
   inset: 0;
+  top: var(--replay-banner-height, 0px);
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 2rem;
@@ -1489,8 +1527,19 @@ body {
   z-index: 20;
   animation: fadein 0.25s ease;
 }
+/*
+ * 短いパネルは上下スペーサで中央寄せし、長いパネルはスペーサが 0 まで縮む。
+ * margin-block: auto だと overflow コンテナで数千 px の空スクロールが残る。
+ */
+.result-overlay::before,
+.result-overlay::after {
+  content: '';
+  flex: 1 0 0%;
+  width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
 .result-overlay > * {
-  margin-block: auto;
   flex-shrink: 0;
 }
 
@@ -1500,8 +1549,8 @@ body {
  * 主要 CTA はパネル下部に残し、背面の盤面スクロールへ連鎖させない。
  */
 .result-overlay.overlay-contained {
-  align-items: flex-start;
-  justify-content: center;
+  align-items: center;
+  justify-content: flex-start;
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
@@ -1571,6 +1620,37 @@ body:has(.overlay-contained) {
   font-size: 3rem;
   margin: 0.15rem 0 0.6rem;
 }
+/* #386: 進化オーバーレイ中は背面盤面の常時アニメと HUD 警告パルスを止め、進行中に見せない */
+.app[data-phase='evolution'] .sprint-layout .task-dot,
+.app[data-phase='evolution'] .sprint-layout .task-dot::after,
+.app[data-phase='evolution'] .sprint-layout .flowdash,
+.app[data-phase='evolution'] .sprint-layout .flame,
+.app[data-phase='evolution'] .sprint-layout .cbob,
+.app[data-phase='evolution'] .sprint-layout .meter i,
+.app[data-phase='evolution'] .risk-HIGH,
+.app[data-phase='evolution'] .burnout-chip.tone-danger {
+  animation-play-state: paused;
+}
+/* プログラムでダイアログへ移した初期フォーカスはリングを出さない。Tab 移動は内側の button の :focus-visible に任せる。 */
+.result-overlay:focus:not(:focus-visible) {
+  outline: none;
+}
+.result-overlay > .result-overlay-dismiss {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  min-width: 24px;
+  min-height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.result-overlay-dismiss:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: -2px;
+}
 @keyframes fadein {
   from {
     opacity: 0;
@@ -1596,11 +1676,18 @@ body:has(.overlay-contained) {
   color: var(--lav);
 }
 .result-grade {
-  margin: 0.25rem 0 1rem;
+  margin: 0.25rem 0 0.35rem;
   font-size: 4.5rem;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 0 24px currentColor;
+}
+.result-grade-caption {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  font-weight: 700;
+  color: var(--text-dim);
 }
 .reward-ceremony {
   position: relative;
@@ -1859,6 +1946,7 @@ body:has(.overlay-contained) {
 .result-title,
 .result-burn-cause,
 .result-intervention-analysis,
+.result-grade-breakdown,
 .result-baseline-comparison,
 .result-lose-next-action {
   margin-bottom: 1rem;
@@ -1869,6 +1957,7 @@ body:has(.overlay-contained) {
 }
 .result-burn-cause,
 .result-intervention-analysis,
+.result-grade-breakdown,
 .result-baseline-comparison {
   padding: 0.75rem 0.85rem;
   border-radius: 0.65rem;
@@ -1911,6 +2000,8 @@ body:has(.overlay-contained) {
 }
 .result-burn-cause-text {
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .result-analysis-rows {
   margin-bottom: 0.65rem;
@@ -1982,6 +2073,25 @@ body:has(.overlay-contained) {
   flex: 1;
   padding: 0.7rem 1rem;
 }
+.result-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+.result-actions .btn:disabled:hover {
+  filter: none;
+}
+.result-actions .btn:disabled:active {
+  transform: none;
+  box-shadow: none;
+}
+.result-continue-hint {
+  margin: 0.6rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
 
 /* コンボ表示（第6.2 / 第18.2） */
 .combo-badge {
@@ -2039,13 +2149,18 @@ body:has(.overlay-contained) {
     0 2px 0 #0006;
 }
 
-/* スプリント内イベントティッカー（RI-52） */
+/* スプリント内イベントティッカー（RI-52）
+ * DS-01: 本体とリストは常に none。フォーカス中も盤面ドラッグを通す。
+ * DS-06: 修飾キーなしホイール / 見出し click / キーボードで全行へ到達する。
+ * DS-08: 見出しは native button の click。リストはキーボード用フォーカス領域。 */
 .event-ticker {
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 14;
   width: min(280px, 42%);
+  max-height: 58%;
+  overflow: hidden;
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -2053,11 +2168,29 @@ body:has(.overlay-contained) {
 }
 .event-ticker-label {
   margin: 0;
+  flex: 0 0 auto;
+  min-height: 24px;
+  min-width: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--muted, #9aa3b5);
   text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.event-ticker-label:disabled {
+  cursor: default;
+}
+.event-ticker-label:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  /* 親 .event-ticker の overflow: hidden が外側枠を切るので内側へ描く（DS-08）。 */
+  outline-offset: -2px;
 }
 .event-ticker-list {
   list-style: none;
@@ -2066,6 +2199,16 @@ body:has(.overlay-contained) {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+}
+.event-ticker-list:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: -2px;
 }
 .event-ticker-row {
   display: flex;
@@ -2096,6 +2239,7 @@ body:has(.overlay-contained) {
 .event-ticker-text {
   flex: 1 1 auto;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* 介入アクションバー（第4.3 / 第6.1） */
@@ -2665,12 +2809,21 @@ button.card {
     filter 0.12s ease;
   width: 220px;
 }
-button.card:hover {
+button.card:hover:not(:disabled) {
   filter: brightness(1.12);
   transform: translateY(-3px);
 }
-button.card:active {
+button.card:active:not(:disabled) {
   transform: translateY(0);
+}
+button.card:disabled {
+  cursor: not-allowed;
+}
+/* 読み取り専用は native disabled のまま、UA 減光を打ち消して本文コントラストを保つ（DS-08）。 */
+button.card.card-readonly:disabled {
+  opacity: 1;
+  color: var(--text);
+  cursor: default;
 }
 
 /* ドラフト画面（第7.1） */
@@ -2841,13 +2994,17 @@ button.card:active {
   --tc-pink: #ff7edb;
   position: relative;
   isolation: isolate;
+  height: 100dvh;
+  max-height: 100dvh;
   min-height: 100dvh;
   margin: 0;
-  padding: 0 4vw 22px;
-  overflow: hidden;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #050713;
   color: #f5f7ff;
-  display: block;
+  display: flex;
+  flex-direction: column;
   max-width: none;
 }
 .title-world {
@@ -2939,10 +3096,12 @@ button.card:active {
   animation-delay: -4s;
 }
 .title-topbar {
+  flex: 0 0 auto;
   height: 82px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
+  padding: 0 4vw;
   border-bottom: 1px solid var(--tc-line);
 }
 .title-brand {
@@ -3017,12 +3176,22 @@ button.card:active {
   margin-top: 3px;
   font-size: 14px;
 }
+.title-scroll {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: min(6rem, 18dvh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 4vw;
+}
 .title-content {
   position: relative;
   max-width: 1320px;
-  margin: auto;
+  margin: 0 auto;
   width: 100%;
   display: block;
+  padding-bottom: 20px;
 }
 .title-command .title-head {
   max-width: 760px;
@@ -3402,6 +3571,8 @@ button.card:active {
 }
 .title-resume-btn {
   flex: 0 0 auto;
+  min-height: 44px;
+  min-width: 44px;
   padding: 12px 18px;
   border: 1px solid rgba(56, 189, 248, 0.45);
   background: rgba(15, 23, 42, 0.55);
@@ -3417,15 +3588,78 @@ button.card:active {
   transform: translateX(-2px);
 }
 .title-resume-incompatible {
-  border-top-color: rgba(251, 191, 36, 0.42);
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.12), transparent 68%);
+  border-top-color: color-mix(in srgb, var(--sun) 42%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--sun) 14%, transparent),
+    transparent 68%
+  );
+}
+.title-resume-risk {
+  border-top-color: color-mix(in srgb, var(--coral) 48%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--coral) 16%, transparent),
+    transparent 68%
+  );
 }
 .title-resume-issue {
   max-width: 56rem;
   margin: 8px 0 0;
-  color: #f6c77b;
+  color: var(--sun);
   font-size: 12px;
   line-height: 1.5;
+}
+.title-resume-warning {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 56rem;
+  margin: 8px 0 0;
+  color: var(--cream);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.title-resume-warning > span:first-child {
+  flex: 1 1 12rem;
+}
+.title-resume-btn:focus-visible,
+.resume-risk-card .btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+.btn-danger {
+  background: color-mix(in srgb, var(--coral) 32%, var(--panel));
+  border-color: color-mix(in srgb, var(--coral) 55%, var(--line));
+  color: var(--cream);
+}
+.resume-risk-card {
+  text-align: left;
+}
+.resume-risk-card .result-actions {
+  flex-wrap: wrap;
+}
+.resume-risk-card .btn {
+  min-height: 44px;
+}
+.resume-risk-body {
+  margin: 0.75rem 0 1rem;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.resume-risk-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
 }
 .title-resume-rulesets {
   display: flex;
@@ -3446,6 +3680,33 @@ button.card:active {
 .title-resume-discard:hover {
   border-color: #f87171;
   color: #fff;
+}
+.title-launch-dock {
+  flex: 0 0 auto;
+  z-index: 8;
+  padding: 8px 4vw calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--tc-line);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--visual-color-board-background-bottom) 98%, transparent),
+      color-mix(in srgb, var(--visual-color-ink) 98%, transparent)
+    ),
+    radial-gradient(
+      circle at 18% 0%,
+      color-mix(in srgb, var(--visual-color-interaction-drag) 16%, transparent),
+      transparent 42%
+    );
+  box-shadow: 0 -18px 40px color-mix(in srgb, var(--visual-color-ink) 55%, transparent);
+}
+.title-launch-dock-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  width: 100%;
+}
+.title-launch-dock .title-launch-row,
+.title-launch-dock .title-actions {
+  border-top: 0;
 }
 .title-launch-row {
   display: grid;
@@ -3487,6 +3748,52 @@ button.card:active {
   font-size: 12px;
   cursor: pointer;
 }
+.start-daily-confirm-card {
+  text-align: left;
+}
+.start-daily-confirm-state {
+  margin: 0 0 0.85rem;
+}
+.start-daily-confirm-state > b {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--cream);
+}
+.start-daily-confirm-state > small {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+.start-daily-confirm-risk {
+  margin: 0 0 1.25rem;
+  color: var(--sun);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+.start-daily-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.start-daily-confirm-actions .btn {
+  margin-left: 0;
+  flex: 1 1 8rem;
+  min-height: 44px;
+}
+.start-daily-confirm-discard {
+  border-color: var(--coral);
+  color: var(--coral);
+}
+.start-daily-confirm-actions .btn:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .result-overlay.start-daily-confirm {
+    animation: none;
+  }
+}
 .title-mission {
   border-left: 1px solid var(--tc-line);
 }
@@ -3511,7 +3818,9 @@ button.card:active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 23px;
+  overflow: visible;
+  min-height: 72px;
+  padding: 12px 23px;
   border: 0;
   background:
     linear-gradient(135deg, #fff0a6 0%, #f8c66d 38%, #ff7a6a 100%),
@@ -3524,13 +3833,25 @@ button.card:active {
   cursor: pointer;
   transition: 0.25s;
 }
-.title-launch:hover {
+.title-launch:hover:not(:disabled) {
   filter: brightness(1.1);
   transform: translateX(-3px);
 }
+.title-launch:focus-visible {
+  outline: 2px solid var(--tc-cyan);
+  outline-offset: 2px;
+}
+.title-launch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
 .title-launch span {
+  overflow: visible;
   font-size: 16px;
   font-weight: 900;
+  line-height: 1.2;
 }
 .title-launch small {
   display: block;
@@ -3540,6 +3861,7 @@ button.card:active {
   letter-spacing: 0.06em;
 }
 .title-launch > i {
+  flex: 0 0 auto;
   font-size: 28px;
   font-style: normal;
 }
@@ -3584,6 +3906,12 @@ button.card:active {
   color: #9fb0ca;
   font-size: 12px;
   cursor: pointer;
+}
+.title-daily button:focus-visible,
+.title-footer button:focus-visible,
+.title-resume-btn:focus-visible {
+  outline: 2px solid var(--tc-cyan);
+  outline-offset: 2px;
 }
 .title-command .title-actions {
   display: flex;
@@ -3631,8 +3959,11 @@ button.card:active {
   }
 }
 @media (max-width: 900px) {
-  .title-screen.title-command {
-    padding: 0 18px 20px;
+  .title-topbar,
+  .title-scroll,
+  .title-launch-dock {
+    padding-left: 18px;
+    padding-right: 18px;
   }
   .title-topbar {
     height: 70px;
@@ -3642,7 +3973,7 @@ button.card:active {
     display: none;
   }
   .title-command .title-head {
-    padding: 34px 0 26px;
+    padding: 28px 0 20px;
   }
   .title-command .title-logo {
     font-size: 46px;
@@ -3661,15 +3992,29 @@ button.card:active {
     align-items: stretch;
     padding: 16px 19px;
   }
-  .title-launch-row {
-    grid-template-columns: 1fr;
+  .title-launch-dock .title-launch-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(168px, 42%);
+    grid-template-rows: auto auto;
+    min-height: 0;
   }
-  .title-mission {
-    border-top: 1px solid var(--tc-line);
+  .title-launch-dock .title-daily {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 10px 12px 4px;
+  }
+  .title-launch-dock .title-mission {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 0 12px 10px;
+    border-top: 0;
     border-left: 0;
   }
-  .title-launch {
-    min-height: 84px;
+  .title-launch-dock .title-launch {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    min-height: 72px;
+    min-width: 0;
   }
   .title-world {
     background-position: 68% center;
@@ -3718,6 +4063,78 @@ button.card:active {
   }
   .title-footer nav {
     flex-direction: column;
+  }
+  .title-launch-dock .title-launch-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .title-launch-dock .title-daily,
+  .title-launch-dock .title-mission {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+  }
+  .title-launch-dock .title-daily {
+    padding: 8px 2px 0;
+  }
+  .title-launch-dock .title-daily > span,
+  .title-launch-dock .title-daily > b,
+  .title-launch-dock .title-daily > small,
+  .title-launch-dock .title-mission > small,
+  .title-launch-dock .title-mission > b,
+  .title-launch-dock .title-mission > span {
+    display: inline;
+    margin: 0;
+  }
+  .title-launch-dock .title-daily > b {
+    font-size: 12px;
+  }
+  .title-launch-dock .title-daily button {
+    margin: 0;
+    min-height: 44px;
+    padding: 8px 0;
+  }
+  .title-launch-dock .title-mission {
+    padding: 2px 2px 8px;
+  }
+  .title-launch-dock .title-launch {
+    width: 100%;
+    min-height: 56px;
+    padding: 10px 16px;
+  }
+  .title-launch-dock .title-launch span {
+    font-size: 15px;
+  }
+  .title-launch-dock .title-launch > i {
+    font-size: 22px;
+  }
+}
+/* 高さモード short（responsiveModeCore.shortMaxHeight=720）向けの縮退。新規全体 breakpoint ではない。 */
+@media (max-height: 720px) {
+  .title-topbar {
+    height: 56px;
+  }
+  .title-command .title-head {
+    padding: 16px 0 12px;
+  }
+  .title-hero-badges {
+    display: none;
+  }
+  .title-launch-dock .title-daily > b,
+  .title-launch-dock .title-daily > small,
+  .title-launch-dock .title-mission {
+    display: none;
+  }
+  .title-launch-dock .title-daily {
+    padding: 6px 12px;
+  }
+  .title-launch-dock .title-launch-row {
+    min-height: 0;
+  }
+  .title-launch-dock .title-launch {
+    min-height: 52px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3906,7 +4323,8 @@ button.card:active {
   font-weight: 800;
   line-height: 1.25;
 }
-.relic-bar {
+.relic-bar,
+.trial-bar {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -3982,28 +4400,65 @@ button.card:active {
   white-space: nowrap;
 }
 
-/* 進化ツリー */
+/* 進化ツリー
+ * 5列×3行の購入判断（効果・説明・コスト・ペナルティ）が、オーバーレイ余白で
+ * 3行目だけ欠けるのを防ぐ。枠はビューポートに合わせ、ヘッダーと CTA を残して
+ * 枝グリッドだけを縦スクロールする。 */
+.result-overlay.evolution-overlay {
+  --evolution-overlay-inset-block: 0.5rem;
+  --evolution-overlay-inset-inline: 0.75rem;
+  padding: var(--evolution-overlay-inset-block) var(--evolution-overlay-inset-inline);
+}
+.result-overlay.evolution-overlay > .evolution-panel {
+  flex-shrink: 1;
+}
 .evolution-panel {
+  display: flex;
+  flex-direction: column;
   width: min(1000px, 94vw);
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 22px 24px;
+  max-height: calc(100dvh - 2 * var(--evolution-overlay-inset-block));
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 16px 12px;
   border-radius: 20px;
   background: var(--panel);
   border: 2px solid var(--line);
   text-align: center;
 }
+.evolution-head {
+  flex: 0 0 auto;
+}
+.evolution-panel .draft-title {
+  margin: 0.1rem 0 0;
+}
+.evolution-panel .reward-ceremony {
+  flex: 0 0 auto;
+  margin: 0.35rem auto 0.45rem;
+}
 .evolution-branches {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  margin: 16px 0;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 8px 0 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   text-align: left;
+}
+.evolution-actions {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+.evolution-actions .btn {
+  margin-left: 0;
 }
 .branch-label {
   font-size: 13px;
   text-align: center;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: var(--sun);
 }
 .evo-node {
@@ -4011,14 +4466,17 @@ button.card:active {
   flex-direction: column;
   gap: 2px;
   width: 100%;
-  padding: 9px 10px;
-  margin-bottom: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
   border-radius: 12px;
   background: #211a44;
   border: 2px solid var(--line);
   color: var(--text);
   cursor: default;
   opacity: 0.55;
+}
+.evo-node:last-child {
+  margin-bottom: 0;
 }
 .evo-node.can {
   opacity: 1;
@@ -4345,12 +4803,15 @@ button.card:active {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  flex-shrink: 0;
   gap: 12px;
   padding: 8px 14px;
   background: color-mix(in srgb, #c9a227 28%, #111);
   border-bottom: 1px solid color-mix(in srgb, #c9a227 50%, transparent);
   font-size: 13px;
   font-weight: 700;
+  position: sticky;
+  top: 0;
   z-index: 40;
 }
 .replay-mode-banner-review-hell {
@@ -4429,6 +4890,8 @@ button.card:active {
   grid-template-columns: 1fr;
 }
 .meta-shop-panel {
+  position: relative;
+  z-index: 1;
   width: min(860px, 94vw);
   max-height: 90vh;
   overflow-y: auto;
@@ -4556,6 +5019,8 @@ button.card:active {
 
 /* カードコレクション（RI-65 / SPEC 7.3） */
 .card-collection-panel {
+  position: relative;
+  z-index: 1;
   width: min(980px, 96vw);
   max-height: 92vh;
   overflow-y: auto;
@@ -4730,7 +5195,32 @@ button.card:active {
 }
 
 /* 遊び方ヘルプ / 初見ガイド（RI-60） */
+.result-overlay > .result-overlay-dismiss {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  min-width: 24px;
+  min-height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.result-overlay-dismiss:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: -2px;
+}
+.how-to-play-overlay:focus {
+  outline: none;
+}
+.how-to-play-overlay:focus-visible {
+  outline: 2px solid var(--visual-color-interaction-drag);
+  outline-offset: -2px;
+}
 .how-to-play-panel {
+  position: relative;
+  z-index: 1;
   width: min(640px, 94vw);
   max-height: 90vh;
   overflow-y: auto;
@@ -5586,9 +6076,16 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   gap: 12px;
   padding: 16px 18px 22px;
   overflow: auto;
+  isolation: isolate;
+  animation: fadein 0.25s ease;
   background:
     radial-gradient(900px 420px at 80% 0%, #6b4a9e44 0%, transparent 60%),
     linear-gradient(180deg, #1d1640 0%, #16102e 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .zoom-overlay {
+    animation: none;
+  }
 }
 
 /* パンくず */
@@ -6080,6 +6577,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   border-radius: 16px;
   overflow: hidden;
   border: 2px solid var(--line);
+  --org-board-scale: 1;
   box-shadow:
     0 6px 0 #1a1338,
     inset 0 2px 0 #ffffff10;
@@ -6112,9 +6610,10 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 140;
-  font-size: 12px;
+  font-size: calc(var(--visual-org-zone-label-font-size) * var(--org-board-scale));
   font-weight: 900;
-  padding: 6px 12px;
+  padding: calc(var(--visual-org-zone-label-padding-y) * var(--org-board-scale))
+    calc(var(--visual-org-zone-label-padding-x) * var(--org-board-scale));
   border-radius: 999px;
   background: #1f1942e6;
   border: 2px solid var(--line);
@@ -6127,7 +6626,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   display: block;
   font-weight: 700;
   color: var(--text-dim);
-  font-size: 10px;
+  font-size: calc(var(--visual-org-zone-label-subtitle-size) * var(--org-board-scale));
   margin-top: 2px;
 }
 .org-zone-label.tone-ok {
@@ -6154,32 +6653,64 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   height: auto;
   filter: drop-shadow(0 6px 8px #0008);
 }
-.org-hub-badge {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  z-index: 160;
+/* 可読下限の 3 行カード高が設計バッジ高に収まるまで、部門ラベルを隠しカードをドックへ畳む。 */
+.org-board.iso-org.org-board-compact .org-zone-label {
+  display: none;
+}
+.org-island-badge-dock {
+  display: none;
+}
+.org-board.iso-org.org-board-compact .org-island-badge-dock {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 14px;
-  border-radius: 14px;
-  background: #11183ae6;
-  border: 2px solid var(--sky);
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--cream);
-  white-space: nowrap;
-  box-shadow: 0 3px 0 #00000044;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: calc(var(--visual-org-card-line-gap) * 2);
+  position: absolute;
+  inset: 4px;
+  /* 島グループは 20+depth（最大 119）、ハブ 150、ヒント 170 より前へ。 */
+  z-index: 180;
+  overflow: auto;
   pointer-events: none;
 }
-.org-hub-badge.tone-warn {
-  border-color: #ffd45c;
+.org-island-badge-dock-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: inherit;
+  flex: 1 0 100%;
+  max-width: 100%;
 }
-.org-hub-meta {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--sky);
+.org-island-badge-dock-heading {
+  flex: 1 0 100%;
+  margin: 0;
+  font: inherit;
+  font-size: var(--visual-org-island-badge-min-font-size);
+  font-weight: 800;
+  color: var(--text-dim);
+}
+.org-island-badge-dock-hit {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  text-align: left;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  min-width: 24px;
+  min-height: 44px;
+}
+.org-island-badge-dock-hit:focus-visible {
+  outline: 2px solid var(--sun);
+  outline-offset: 2px;
+}
+.org-island-badge-dock-hit.is-player .org-island-badge {
+  box-shadow: 0 0 0 2px var(--sun);
 }
 .org-island-group {
   position: absolute;
@@ -6193,16 +6724,26 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: none;
 }
 .org-island-badge {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 5px 10px;
+  line-height: var(--visual-org-island-badge-line-height);
+  width: calc(var(--visual-org-card-width) * var(--org-board-scale));
+  max-width: calc(var(--visual-org-card-width) * var(--org-board-scale));
+  padding: calc(var(--visual-org-island-badge-padding-y) * var(--org-board-scale))
+    calc(var(--visual-org-island-badge-padding-x) * var(--org-board-scale));
   border-radius: 12px;
   background: #1f1942e6;
   border: 2px solid var(--line);
-  font-size: 11px;
+  font-size: max(
+    var(--visual-org-island-badge-min-font-size),
+    calc(var(--visual-org-island-badge-font-size) * var(--org-board-scale))
+  );
   color: var(--cream);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: hidden;
   box-shadow: 0 3px 0 #00000044;
 }
 .org-island-badge.tone-ok {
@@ -6216,12 +6757,18 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   background: #3a1414e6;
 }
 .org-island-meta {
-  font-size: 10px;
+  font-size: max(
+    var(--visual-org-island-badge-min-meta-size),
+    calc(var(--visual-org-island-badge-meta-size) * var(--org-board-scale))
+  );
   color: var(--text-dim);
 }
 .org-island-tag {
   display: inline-block;
-  font-size: 9px;
+  font-size: max(
+    var(--visual-org-island-badge-min-tag-size),
+    calc(var(--visual-org-island-badge-tag-size) * var(--org-board-scale))
+  );
   font-weight: 800;
   padding: 2px 6px;
   border-radius: 999px;
@@ -6236,6 +6783,15 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .org-island-badge.tone-hell .org-island-tag {
   background: color-mix(in srgb, var(--visual-color-health-review-hell) 20%, transparent);
   color: var(--visual-color-health-review-hell);
+}
+.org-board.iso-org.org-board-compact .org-island-badge {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  min-width: var(--visual-org-island-badge-min-width);
+  max-width: 100%;
 }
 .org-island {
   position: absolute;
@@ -6304,23 +6860,40 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   /* resizeTo + autoDensity が CSS 寸法を設定する。100% で再スケールするとにじむ。 */
 }
 .org-infra-hub {
-  position: absolute;
-  left: 50%;
-  top: 10px;
-  transform: translateX(-50%);
-  z-index: 5;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 6px 12px;
+  margin: 0 auto 8px;
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--visual-org-hub-overlay-padding-y) var(--visual-org-hub-overlay-padding-x);
   border-radius: 999px;
   background: #11183a;
   border: 1px solid var(--sky);
-  font-size: 13px;
-  z-index: 5;
+  font-size: var(--visual-org-hub-overlay-font-size);
+}
+.org-infra-hub.tone-warn {
+  border-color: var(--visual-color-banner-warn-border);
 }
 .org-infra-meta {
   color: var(--sky);
+  font-size: var(--visual-org-hub-overlay-meta-size);
+  font-weight: 700;
+}
+.org-infra-hub.tone-warn .org-infra-meta {
+  color: var(--visual-color-banner-warn-tag-text);
+}
+.org-infra-warn {
+  font-weight: 800;
+  color: var(--visual-color-banner-warn-tag-text);
+}
+@media (max-width: 520px) {
+  .org-infra-title {
+    display: none;
+  }
 }
 .team-island {
   position: absolute;

@@ -247,7 +247,7 @@
 | Order | ID | Execution |
 | ---: | --- | --- |
 | 0 | claude-code | {"globalEffects":{"codingSpeedMul":1.08,"reviewEfficiencyMul":0.94,"reworkRateAdd":-0.02},"orgDelta":{"aiLiteracy":8,"quality":5,"securityLevel":-3},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 1 | copilot | {"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 1 | copilot | {"aiDependencyPerTask":1.4,"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 | 2 | default | {"globalEffects":{},"orgDelta":{},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 | 3 | devin | {"globalEffects":{"codingSpeedMul":1.1,"reworkRateAdd":0.03},"orgDelta":{"aiDependencyBase":10,"documentation":-8,"securityLevel":-6},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 

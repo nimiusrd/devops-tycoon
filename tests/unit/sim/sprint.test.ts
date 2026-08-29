@@ -100,6 +100,24 @@ describe('リザルトの整合性', () => {
     expect(result.title.length).toBeGreaterThan(0);
     expect(result.diagnosis.length).toBeGreaterThan(0);
   });
+
+  it('内部シニアHPが負でも差分は未クランプ終値、タイムライン残量だけ 0 下限', () => {
+    const org = createOrgState('default', false);
+    const sprint = makeSprint(org, []);
+    sprint.metrics.seniorHpStart = 40;
+    org.seniorHp = -12;
+    sprint.timeline.push({
+      tick: 3,
+      reviewQueue: 0,
+      burningCount: 0,
+      combo: 0,
+      seniorHp: -12,
+    });
+    const result = summarizeSprint(sprint, org);
+    expect(result.seniorHpDelta).toBe(-52);
+    expect(result.timeline.at(-1)?.seniorHp).toBe(0);
+    expect(org.seniorHp).toBe(-12);
+  });
 });
 
 function patchMetrics(sprint: SprintState, overrides: Partial<SprintMetrics>): void {
@@ -294,6 +312,48 @@ describe('RI-91-B3 sprint survived mutants', () => {
   });
 
   describe('computeTitleAndDiagnosis 境界', () => {
+    it('HP損失が大きくても出荷ゼロ・タイムアウトでは伸びたと診断しない', () => {
+      const org = createOrgState('default', false);
+      org.seniorHp = 2;
+      const sprint = makeSprint(org, []);
+      patchMetrics(sprint, {
+        seniorHpStart: 100,
+        delivered: 0,
+        completedCount: 0,
+        reworkCount: 0,
+        incidentCount: 0,
+        spread: 0,
+        reviewQueueMax: 0,
+        aiAssistedCompleted: 0,
+        actionCounts: {},
+        timedOut: true,
+      });
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: 'シニア過労メーカー',
+        diagnosis: 'レビュー負荷がシニアに集中し燃え尽き寸前です。体力が尽きる前に分散を。',
+      });
+    });
+
+    it('HP損失が大きくても残り体力が十分なら燃え尽き寸前と診断しない', () => {
+      const org = createOrgState('default', false);
+      org.seniorHp = 45;
+      const sprint = makeSprint(org, []);
+      patchMetrics(sprint, {
+        seniorHpStart: 100,
+        delivered: 80,
+        completedCount: 10,
+        reworkCount: 0,
+        incidentCount: 0,
+        spread: 0,
+        reviewQueueMax: 0,
+        aiAssistedCompleted: 0,
+        actionCounts: {},
+      });
+      expect(computeTitleAndDiagnosis(sprint, org)).toEqual({
+        title: 'シニア過労メーカー',
+        diagnosis: 'レビュー負荷がシニアに集中し大きく消耗しました。体力が尽きる前に分散を。',
+      });
+    });
     it('reworkRatio 0.35 ちょうどで Rework職人、未満では別称号', () => {
       const org = createOrgState('default', false);
       org.seniorHp = 80;
@@ -501,9 +561,33 @@ describe('RI-91-B3 sprint survived mutants', () => {
 
       patchMetrics(sprint, { stabilizingGrants: 2 });
       expect(computeGrade(sprint, org)).toBe('S');
+      const scored = summarizeSprint(sprint, org);
+      expect(scored.grade).toBe('S');
+      expect(scored.gradeRatio).toBeCloseTo(0.959, 5);
+      expect(scored.stabilizingBonus).toBeCloseTo(0.009, 5);
+      expect(scored.stabilizingGrants).toBe(2);
 
       patchMetrics(sprint, { stabilizingGrants: 0, actionCounts: { overtime: 2 } });
       expect(computeGrade(sprint, org)).toBe('A');
+    });
+
+    it('summarizeSprint は丸め前の HP 損失を seniorHpLoss に残す', () => {
+      const org = createOrgState('default', false);
+      org.seniorHp = 1.52;
+      const sprint = makeSprint(org, []);
+      patchMetrics(sprint, {
+        seniorHpStart: 100,
+        delivered: 100,
+        reworkCount: 0,
+        incidentCount: 0,
+        spread: 0,
+        stabilizingGrants: 0,
+      });
+      const scored = summarizeSprint(sprint, org);
+      expect(scored.seniorHpDelta).toBe(-98);
+      expect(scored.seniorHpLoss).toBeCloseTo(98.48, 5);
+      expect(scored.gradeRatio).toBeCloseTo((100 - (98.48 - 20) * 0.7) / 100, 5);
+      expect(scored.gradePenalties?.hp).toBeCloseTo((98.48 - 20) * 0.7, 5);
     });
   });
 

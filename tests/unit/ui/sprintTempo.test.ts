@@ -13,14 +13,17 @@ import {
   BOSS_WALL_SEC,
   INTERVENTION_PER_SPRINT,
   isBossTickCountInSpecBand,
+  isPlaybackPaused,
   isSprintTickCountInSpecBand,
   maxAccumulatorMs,
   meetsSprintAbsoluteMin,
   MS_PER_TICK_1X,
   msPerTick,
+  nextPlaybackSpeed,
   QUARTER_REVIEW_WALL_SEC,
   QUARTER_WALL_MIN,
   RUN_WALL_MIN,
+  shouldAutoAdvanceSprint,
   SIM_STEP_MS,
   SPRINT_WALL_SEC,
   ticksDueFromAccumulator,
@@ -203,6 +206,53 @@ describe('sprintTempo（RI-62）', () => {
   it('プレイヤー Pause は speed=0 であり game.pause を必要としない', () => {
     const speed: PlaybackSpeed = 0;
     expect(ticksDueFromAccumulator(5_000, speed).ticks).toBe(0);
+  });
+
+  it('❚❚ はトグルし、1x / 2x は指定速度へ再開する', () => {
+    expect(isPlaybackPaused(0)).toBe(true);
+    expect(isPlaybackPaused(1)).toBe(false);
+    expect(isPlaybackPaused(2)).toBe(false);
+    expect(nextPlaybackSpeed(1, 0)).toBe(0);
+    expect(nextPlaybackSpeed(2, 0)).toBe(0);
+    expect(nextPlaybackSpeed(0, 0)).toBe(1);
+    expect(nextPlaybackSpeed(0, 0, 2)).toBe(2);
+    expect(nextPlaybackSpeed(0, 1)).toBe(1);
+    expect(nextPlaybackSpeed(0, 2)).toBe(2);
+    expect(nextPlaybackSpeed(1, 2)).toBe(2);
+    expect(nextPlaybackSpeed(2, 1)).toBe(1);
+  });
+
+  it('進化オーバーレイなど非スプリントでは sprintRunning でも自動進行しない（#386）', () => {
+    const running = {
+      phase: 'sprint' as const,
+      sprintRunning: true,
+      paused: false,
+      playbackSpeed: 1 as PlaybackSpeed,
+      fieldView: true,
+    };
+    expect(shouldAutoAdvanceSprint(running)).toBe(true);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'evolution' })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'result', playbackSpeed: 2 })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'draft', sprintRunning: false })).toBe(
+      false,
+    );
+    expect(shouldAutoAdvanceSprint({ ...running, paused: true })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, playbackSpeed: 0 })).toBe(false);
+  });
+
+  it('全社マップ等の俯瞰中は自動進行しない', () => {
+    const running = {
+      phase: 'sprint' as const,
+      sprintRunning: true,
+      paused: false,
+      playbackSpeed: 1 as PlaybackSpeed,
+      fieldView: true,
+    };
+    expect(shouldAutoAdvanceSprint(running)).toBe(true);
+    expect(shouldAutoAdvanceSprint({ ...running, fieldView: false })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, paused: true })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, playbackSpeed: 0 })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, sprintRunning: false })).toBe(false);
   });
 
   it('タブ復帰など大きな delta はアキュムレータ上限で切り捨てる', () => {

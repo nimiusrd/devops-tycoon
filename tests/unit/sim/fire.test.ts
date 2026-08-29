@@ -6,6 +6,7 @@ import {
   IDENTITY_CARD_EFFECTS,
   INCIDENT_CONTAIN_HP,
   INCIDENT_HP_COST,
+  SPREAD_MORALE_COST,
 } from '../../../src/sim/model';
 import { createOrgState } from '../../../src/sim/org';
 import { reviewOne, stepSprint } from '../../../src/sim/sprint';
@@ -113,11 +114,38 @@ describe('炎上タイマー: 時間切れの解決（第6.3）', () => {
     expect(sprint.tasks[0].debt).toBe(true);
     expect(org.techDebt).toBe(debt0 + DEBT_PER_SPREAD);
     expect(org.morale).toBeLessThan(morale0);
+    expect(org.morale).toBe(morale0 - SPREAD_MORALE_COST);
+    const spreadEvent = sprint.events.find((e) => e.kind === 'spread');
+    expect(spreadEvent).toMatchObject({
+      kind: 'spread',
+      taskId: 0,
+      spreadToTaskId: neighbor.id,
+      debtGain: DEBT_PER_SPREAD,
+      moraleCost: SPREAD_MORALE_COST,
+    });
     // 連鎖着火: 隣の PR が新たな障害として燃え始める。
     expect(neighbor.incident).toBe(true);
     expect(neighbor.lane).toBe('rework');
     expect(neighbor.burnTicksLeft).toBe(BURN_TICKS);
     expect(sprint.metrics.incidentCount).toBe(1);
+  });
+
+  it('士気が尽きている延焼は士気コスト 0 を記録する', () => {
+    const org = createOrgState('default', true);
+    org.seniorHp = INCIDENT_CONTAIN_HP - 2;
+    org.securityLevel = 100;
+    org.morale = 0;
+    const sprint = makeSprint(org, [burningTask(0, 1)]);
+    stepSprint(sprint, org, () => 0.99, 0);
+    expect(sprint.metrics.spread).toBe(1);
+    expect(org.morale).toBe(0);
+    const spreadEvent = sprint.events.find((e) => e.kind === 'spread');
+    expect(spreadEvent).toMatchObject({
+      kind: 'spread',
+      taskId: 0,
+      debtGain: DEBT_PER_SPREAD,
+      moraleCost: 0,
+    });
   });
 
   it('RI-73: seniorHpCostMul 時は割引後コスト以上なら自動鎮火できる', () => {

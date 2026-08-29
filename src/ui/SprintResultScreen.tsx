@@ -2,12 +2,15 @@
  * スプリントリザルト画面（SPEC 第4.6）。
  *
  * Done / Delivered / Max Combo / AI Assisted / Review Queue Max / Rework /
- * Incidents / Senior HP / 介入 と、評価・診断・称号を表示する。
+ * Incidents / Senior HP / 介入 と、評価・診断・称号・評価内訳を表示する。
  */
+import { useRef } from 'react';
 import { getAction } from '../data/actions';
 import { isSpecialGrade } from '../render/juicyEffects';
-import { planBurnCauseLog } from '../render/sprintBurnCauseView';
+import { formatSprintResultSeniorHp } from '../render/seniorHpDisplay';
 import { planReviewHellResultSummary } from '../render/reviewHellReplayView';
+import { planBurnCauseLog } from '../render/sprintBurnCauseView';
+import { planSprintGradeView } from '../render/sprintGradeView';
 import { planInterventionAnalysis } from '../render/sprintInterventionAnalysis';
 import { rankLabel } from '../sim/member';
 import type { DiagnosisType, GrowthOutcome } from '../sim/run/types';
@@ -15,6 +18,7 @@ import type { ActionId, SprintResult } from '../sim/types';
 import { BaselineComparisonChart } from './BaselineComparisonChart';
 import { SprintTimelineChart } from './SprintTimelineChart';
 import { RewardCeremony } from './JuicyEffects';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 interface Row {
   label: string;
@@ -41,7 +45,7 @@ function buildRows(result: SprintResult): Row[] {
       label: 'Incidents',
       value: `${result.incidents} (鎮火 ${result.contained} / 延焼 ${result.spread})`,
     },
-    { label: 'Senior HP', value: `${result.seniorHpDelta}` },
+    { label: 'Senior HP', value: formatSprintResultSeniorHp(result) },
     { label: '介入', value: interventionSummary(result) },
   ];
 }
@@ -56,6 +60,10 @@ export interface SprintResultScreenProps {
   onAbandon?: () => void;
   continueLabel?: string;
   abandonLabel?: string;
+  /** リプレイ閲覧中でジャンプ先が無いときなど、次へを無効化する。 */
+  continueDisabled?: boolean;
+  /** 無効化している理由（title と説明文）。 */
+  continueDisabledReason?: string;
   /** リプレイ閲覧中か（RI-34‴ 要約用）。 */
   replayMode?: boolean;
   /** ラン診断（リプレイ要約用。RI-34‴）。 */
@@ -76,19 +84,27 @@ export function SprintResultScreen({
   onAbandon,
   continueLabel = 'カードドラフトへ →',
   abandonLabel = 'タイトルへ',
+  continueDisabled = false,
+  continueDisabledReason,
   replayMode = false,
   diagnosis = 'healthyAcceleration',
 }: SprintResultScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef);
   const burnLog = planBurnCauseLog(result);
   const analysis = planInterventionAnalysis(result);
+  const gradeView = planSprintGradeView(result);
   const hellSummary = planReviewHellResultSummary(result, { replayMode, diagnosis });
 
   return (
     <div
+      ref={overlayRef}
       className="result-overlay overlay-contained"
       data-testid="sprint-result"
       role="dialog"
+      aria-modal="true"
       aria-label="Sprint Result"
+      tabIndex={-1}
     >
       <div className="result-card sprint-result-card">
         <div className="overlay-scroll" data-testid="overlay-scroll">
@@ -108,6 +124,9 @@ export function SprintResultScreen({
           <div className={`result-grade grade-${result.grade}`} data-testid="result-grade">
             {result.grade}
           </div>
+          <p className="result-grade-caption" data-testid="result-grade-caption">
+            {gradeView.caption}
+          </p>
           {isSpecialGrade(result.grade) && (
             <RewardCeremony
               kind="grade-s"
@@ -123,6 +142,20 @@ export function SprintResultScreen({
               </div>
             ))}
           </dl>
+          <div className="result-grade-breakdown" data-testid="result-grade-breakdown">
+            <p className="result-section-label">評価の内訳</p>
+            <dl className="result-rows result-analysis-rows">
+              {gradeView.rows.map((row) => (
+                <div className="result-row" key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="result-analysis-tip" data-testid="result-grade-tip">
+              {gradeView.tip}
+            </p>
+          </div>
           <SprintTimelineChart timeline={result.timeline} events={result.events} />
           {burnLog.showSection && (
             <div className="result-burn-cause" data-testid="result-burn-cause">
@@ -173,7 +206,7 @@ export function SprintResultScreen({
           <BaselineComparisonChart result={result} />
           <div className="result-diagnosis">
             <p className="result-section-label">診断</p>
-            <p>{result.diagnosis}</p>
+            <p data-testid="result-diagnosis-text">{result.diagnosis}</p>
           </div>
           <div className="result-title">
             <p className="result-section-label">称号</p>
@@ -208,6 +241,8 @@ export function SprintResultScreen({
             type="button"
             className="btn btn-primary"
             onClick={onContinue}
+            disabled={continueDisabled}
+            title={continueDisabledReason}
             data-testid="result-continue"
           >
             {continueLabel}
@@ -218,6 +253,11 @@ export function SprintResultScreen({
             </button>
           )}
         </div>
+        {continueDisabled && continueDisabledReason ? (
+          <p className="result-continue-hint" data-testid="result-continue-hint">
+            {continueDisabledReason}
+          </p>
+        ) : null}
       </div>
     </div>
   );

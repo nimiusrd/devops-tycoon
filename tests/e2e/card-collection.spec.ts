@@ -130,3 +130,61 @@ test('カードコレクションはキーボード操作と狭い画面に対�
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('card-collection')).toHaveCount(0);
 });
+
+test('カードコレクションは Escape で閉じ、起点ボタンへフォーカスが戻る', async ({ page }) => {
+  await seedMeta(page, BASE_META);
+
+  await page.goto('/?renderer=dom&seed=card-collection-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-card-collection').click();
+  await expect(page.getByTestId('card-collection')).toBeVisible();
+  await expect(page.getByTestId('title')).toHaveAttribute('inert', '');
+
+  await page.getByTestId('card-collection-close').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('card-collection')).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-card-collection');
+});
+
+test('カードコレクションは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
+  await seedMeta(page, BASE_META);
+
+  await page.goto('/?renderer=dom&seed=card-collection-backdrop');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-card-collection').click();
+  const dialog = page.getByTestId('card-collection');
+  await expect(dialog).toBeVisible();
+
+  await page.locator('.card-collection-panel').click();
+  await expect(dialog).toBeVisible();
+
+  await page.getByTestId('card-collection-backdrop').click({ position: { x: 8, y: 8 } });
+  await expect(dialog).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-card-collection');
+});
+
+test('カードコレクション読込中の Escape は開く操作を取り消す', async ({ page }) => {
+  await seedMeta(page, BASE_META);
+  await page.route(/CardCollectionScreen/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await route.continue();
+  });
+
+  await page.goto('/?renderer=dom&seed=card-collection-lazy-escape');
+  await expect(page.getByTestId('title')).toBeVisible();
+
+  await page.getByTestId('open-card-collection').click();
+  await expect(page.getByTestId('title-modal-loading')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('title-modal-loading')).toHaveCount(0);
+  await expect(page.getByTestId('card-collection')).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.getAttribute('data-testid')))
+    .toBe('open-card-collection');
+});

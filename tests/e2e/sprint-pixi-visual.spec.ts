@@ -6,6 +6,7 @@
  */
 import {
   advanceCurrentSprintToResult,
+  advancePublicRun,
   beginPublicSprint,
   expect,
   type PublicGameWindow,
@@ -100,6 +101,12 @@ async function exposeResultCardForScreenshot(page: import('@playwright/test').Pa
       }
       .result-overlay > * {
         margin-block: 0 !important;
+      }
+      .result-overlay::before,
+      .result-overlay::after {
+        content: none !important;
+        flex: 0 0 auto !important;
+        display: none !important;
       }
     `,
   });
@@ -221,6 +228,33 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });
+  });
+
+  test('進化オーバーレイ中もPixi盤面の静止フレームが残る @pixi', async ({ page }) => {
+    // freezeForScreenshot は使わない。進化中の setAnimationsPaused → app.render() 経路を固定する。
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await advancePublicRun(page, {
+      seed: 'evo-overlay-pause',
+      difficulty: 'easy',
+      renderer: 'pixi',
+      target: { phase: 'evolution' },
+    });
+    await expect(page.getByTestId('evolution')).toBeVisible();
+    await expect(page.locator('.app')).toHaveAttribute('data-phase', 'evolution');
+    await expect(page.getByTestId('board')).toHaveAttribute('data-animations-paused', 'true');
+    await stabilizeForScreenshot(page);
+
+    // オーバーレイは背面 canvas を覆う。静止フレーム自体を回帰するため一時的に隠す。
+    await page.getByTestId('evolution').evaluate((element) => {
+      (element as HTMLElement).style.visibility = 'hidden';
+    });
+    await expect(page.getByTestId('board-pixi-mount')).toHaveScreenshot(
+      'sprint-pixi-evolution-paused-board.png',
+      {
+        animations: 'disabled',
+        maxDiffPixelRatio: 0.02,
+      },
+    );
   });
 
   test('武装→canvas 上の粒ドラッグでタスク差配が確定する @pixi（RI-30）', async ({ page }) => {

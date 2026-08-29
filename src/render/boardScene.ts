@@ -233,6 +233,7 @@ function planFlowingDot(task: Task, lane: Lane, spread: Point): BoardDotPlan | n
       to,
       t: task.progress,
       angleDeg,
+      aiAssisted: task.aiAssisted,
       speedMul: task.aiAssisted ? 1.35 : 1,
     },
   };
@@ -280,6 +281,8 @@ export interface BoardDotMotion {
   t: number;
   /** フロー方向（度）。CSS の微小ドリフト用。 */
   angleDeg: number;
+  /** 表示variantと独立したAI補助状態。gold優先時もAI軌跡を維持する。 */
+  aiAssisted: boolean;
   /** 視覚速度係数（AI 粒は少し速く見せる）。 */
   speedMul: number;
 }
@@ -397,7 +400,7 @@ export function planBoardReviewEffects(
     .slice(0, REVIEW_TRAIL_BUDGET)
     .map((dot): BoardReviewTrailPlan => {
       const tone: BoardReviewTrailTone =
-        dot.motion.from === 'rework' ? 'rework' : dot.variant === 'ai' ? 'ai' : 'normal';
+        dot.motion.from === 'rework' ? 'rework' : dot.motion.aiAssisted ? 'ai' : 'normal';
       const lengthMul = tone === 'ai' ? effectTokens.trail.aiLengthMul : 1;
       return {
         taskId: dot.id,

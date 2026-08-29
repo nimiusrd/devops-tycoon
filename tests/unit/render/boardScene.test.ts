@@ -286,14 +286,18 @@ describe('reviewHeat（渋滞の段階強度・hot 手前の早期警告）', ()
 });
 
 describe('Review流入軌跡（RI-141）', () => {
-  it('Coding/Rework→Reviewだけを方向・進捗・AI速度つきで計画する', () => {
+  it('Coding/Rework→Reviewだけを方向・進捗・表示variantと独立したAI状態つきで計画する', () => {
     const scene = planBoardScene([
       task({ id: 1, lane: 'coding', progress: 0.4 }),
-      task({ id: 2, lane: 'coding', progress: 0.7, aiAssisted: true }),
+      task({ id: 2, lane: 'coding', progress: 0.7, aiAssisted: true, highValue: true }),
       task({ id: 3, lane: 'rework', progress: 0.5 }),
       task({ id: 4, lane: 'review', progress: 0 }),
     ]);
 
+    expect(scene.dots.find((dot) => dot.id === 2)).toMatchObject({
+      variant: 'gold',
+      motion: { aiAssisted: true },
+    });
     expect(scene.reviewEffects.trails.map((trail) => trail.taskId)).toEqual([2, 3, 1]);
     expect(scene.reviewEffects.trails[0]).toMatchObject({
       progress: 0.7,

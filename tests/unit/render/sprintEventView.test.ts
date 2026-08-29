@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatRecentSprintEvents, formatSprintEvent } from '../../../src/render/sprintEventView';
+import {
+  formatRecentSprintEvents,
+  formatSpreadImpact,
+  formatSpreadMagnitude,
+  formatSprintEvent,
+} from '../../../src/render/sprintEventView';
 import { applyAction } from '../../../src/sim/actions';
 import { INCIDENT_CONTAIN_HP } from '../../../src/sim/model';
 import { createOrgState } from '../../../src/sim/org';
@@ -101,6 +106,80 @@ describe('sprintEventView（RI-52）', () => {
         spreadToTaskId: 3,
       }).text,
     ).toBe('延焼! 隣の Review 待ち PR に連鎖');
+    expect(
+      formatSprintEvent({
+        tick: 7,
+        kind: 'spread',
+        taskId: 1,
+        spreadToTaskId: 3,
+        debtGain: 6,
+        moraleCost: 5,
+      }).text,
+    ).toBe('延焼! 隣の Review 待ち PR に連鎖（負債 +6 / 士気 -5）');
+    expect(
+      formatSprintEvent({
+        tick: 8,
+        kind: 'spread',
+        taskId: 2,
+      }).text,
+    ).toBe('延焼! 負債と士気に波及');
+    expect(
+      formatSprintEvent({
+        tick: 8,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 5,
+      }).text,
+    ).toBe('延焼! 負債 +6 / 士気 -5');
+    expect(
+      formatSprintEvent({
+        tick: 9,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 0,
+      }).text,
+    ).toBe('延焼! 負債 +6');
+    expect(
+      formatSpreadImpact({
+        tick: 10,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 0.25,
+      }),
+    ).toBe('負債 +6 / 士気 -0.25');
+    expect(
+      formatSpreadImpact({
+        tick: 11,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 0.4,
+        moraleCost: 0.4,
+      }),
+    ).toBe('負債 +0.4 / 士気 -0.4');
+    expect(formatSpreadMagnitude(0.5)).toBe('0.5');
+    expect(formatSpreadMagnitude(1.5)).toBe('1.5');
+    expect(formatSpreadMagnitude(5)).toBe('5');
+    expect(
+      formatSpreadImpact({
+        tick: 12,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 0.5,
+      }),
+    ).toBe('負債 +6 / 士気 -0.5');
+    expect(
+      formatSpreadImpact({
+        tick: 13,
+        kind: 'spread',
+        taskId: 2,
+        debtGain: 6,
+        moraleCost: 1.5,
+      }),
+    ).toBe('負債 +6 / 士気 -1.5');
     expect(formatSprintEvent({ tick: 8, kind: 'ignite', taskId: 0, source: 'review' }).text).toBe(
       '点火! Review 落ち PR が炎上',
     );

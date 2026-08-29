@@ -6,21 +6,28 @@ import {
 } from '../../../src/sim/run/sprintBaselineBuild';
 import { RunEngine } from '../../../src/sim/run/engine';
 import { FIXED_STEP_MS } from '../../../src/sim/engine';
-import type { DifficultyId } from '../../../src/sim/run/types';
+import { createGame } from '../../../src/game';
+import type { DifficultyId, RunState } from '../../../src/sim/run/types';
+import type { SprintState } from '../../../src/sim/types';
 import {
   accumulateWallTime,
   BETWEEN_SPRINT_WALL_SEC,
   BOSS_WALL_SEC,
   INTERVENTION_PER_SPRINT,
   isBossTickCountInSpecBand,
+  isPlaybackPaused,
   isSprintTickCountInSpecBand,
   maxAccumulatorMs,
   meetsSprintAbsoluteMin,
   MS_PER_TICK_1X,
   msPerTick,
+  nextPlaybackSpeed,
+  planPlaybackFrame,
   QUARTER_REVIEW_WALL_SEC,
   QUARTER_WALL_MIN,
+  runPlaybackFrame,
   RUN_WALL_MIN,
+  shouldAutoAdvanceSprint,
   SIM_STEP_MS,
   SPRINT_WALL_SEC,
   ticksDueFromAccumulator,
@@ -46,6 +53,86 @@ const F10_POLICIES = [
 
 /** RI-62 / RI-66 共通の代表 seed（結果を見て選ばない）。 */
 const RI62_SEEDS = ['a', 'b', 'c', 'd', 'e', 'f'] as const;
+
+type FreezeTask = {
+  id: number;
+  lane: string;
+  progress: number;
+  incident: boolean;
+  burnTicksLeft?: number;
+};
+
+type FreezeSnapshot = {
+  deliveryScore: number;
+  sprintTick: number;
+  lanes: FreezeTask[];
+  burn: Array<{ id: number; burnTicksLeft?: number }>;
+};
+
+function freezeSnapshot(state: RunState): FreezeSnapshot {
+  const tasks = state.sprint?.tasks ?? [];
+  return {
+    deliveryScore: state.org.deliveryScore,
+    sprintTick: state.sprintTick,
+    lanes: tasks.map((task) => ({
+      id: task.id,
+      lane: task.lane,
+      progress: task.progress,
+      incident: task.incident,
+      burnTicksLeft: task.burnTicksLeft,
+    })),
+    burn: tasks
+      .filter((task) => task.incident)
+      .map((task) => ({ id: task.id, burnTicksLeft: task.burnTicksLeft })),
+  };
+}
+
+function drainPlayback(
+  game: ReturnType<typeof createGame>,
+  speed: PlaybackSpeed,
+  frames: number,
+  deltaMs: number,
+): void {
+  let accumulatedMs = 0;
+  for (let i = 0; i < frames; i += 1) {
+    const frame = runPlaybackFrame(
+      {
+        accumulatedMs,
+        deltaMs,
+        speed,
+        sprintRunning: game.isSprintRunning(),
+        gamePaused: game.isPaused(),
+      },
+      () => game.isSprintRunning() && !game.isPaused(),
+      () => {
+        game.step(SIM_STEP_MS);
+      },
+    );
+    accumulatedMs = frame.accumulatedMs;
+  }
+}
+
+function liveSprint(game: ReturnType<typeof createGame>): SprintState | null {
+  return (game as typeof game & { engine: { sprint: SprintState | null } }).engine.sprint;
+}
+
+/**
+ * 自然点火を待たず、進行中タスクへ炎上タイマーを載せる。
+ * pause 中に `step` が走れば `burnTicksLeft` が減る契約を固定するため。
+ */
+function armIncidentTimer(game: ReturnType<typeof createGame>): boolean {
+  const sprint = liveSprint(game);
+  const target =
+    sprint?.tasks.find((task) => task.lane === 'rework') ??
+    sprint?.tasks.find((task) => task.lane !== 'done') ??
+    sprint?.tasks[0];
+  if (!target) return false;
+  target.lane = 'rework';
+  target.incident = true;
+  target.progress = 0;
+  target.burnTicksLeft = 24;
+  return true;
+}
 
 /**
  * RI-66: skilled で四半期・ボス・介入余地を集める代表 seed（RI-75 再選定）。
@@ -203,6 +290,121 @@ describe('sprintTempo（RI-62）', () => {
   it('プレイヤー Pause は speed=0 であり game.pause を必要としない', () => {
     const speed: PlaybackSpeed = 0;
     expect(ticksDueFromAccumulator(5_000, speed).ticks).toBe(0);
+    expect(
+      planPlaybackFrame({
+        accumulatedMs: 5_000,
+        deltaMs: 5_000,
+        speed,
+        sprintRunning: true,
+        gamePaused: false,
+      }).ticks,
+    ).toBe(0);
+  });
+
+  it('E2E の game.pause 中は 1x でも tick を計画しない', () => {
+    expect(
+      planPlaybackFrame({
+        accumulatedMs: 5_000,
+        deltaMs: 5_000,
+        speed: 1,
+        sprintRunning: true,
+        gamePaused: true,
+      }),
+    ).toEqual({ accumulatedMs: 0, ticks: 0 });
+  });
+
+  it('❚❚ 中は出荷ポイント・レーン・炎上タイマーが進まない（#363）', () => {
+    const game = createGame({ seed: 'daily-2026-08-27' });
+    game.startRun('normal', [], 'daily-2026-08-27');
+    game.beginSetupSprint();
+    expect(game.isPaused()).toBe(false);
+
+    const playDelta = maxAccumulatorMs(1);
+    drainPlayback(game, 1, 40, playDelta);
+    expect(armIncidentTimer(game)).toBe(true);
+
+    const paused = freezeSnapshot(game.getState());
+    expect(paused.sprintTick).toBeGreaterThan(0);
+    expect(paused.burn.length).toBeGreaterThan(0);
+    drainPlayback(game, 0, 80, playDelta);
+    expect(freezeSnapshot(game.getState())).toEqual(paused);
+    expect(game.isPaused()).toBe(false);
+
+    drainPlayback(game, 1, 4, playDelta);
+    const resumed = freezeSnapshot(game.getState());
+    expect(resumed.sprintTick).toBeGreaterThan(paused.sprintTick);
+    const pausedBurn = paused.burn[0]?.burnTicksLeft ?? 0;
+    expect(resumed.burn.some((task) => (task.burnTicksLeft ?? 0) < pausedBurn)).toBe(true);
+  });
+
+  it('プレイヤー Pause と game.pause は独立して tick を止める', () => {
+    const game = createGame({ seed: 'pause-independence-363' });
+    game.startRun('normal', [], 'pause-independence-363');
+    game.beginSetupSprint();
+    const playDelta = maxAccumulatorMs(1);
+
+    drainPlayback(game, 1, 8, playDelta);
+    const afterPlay = game.getState().sprintTick;
+    expect(afterPlay).toBeGreaterThan(0);
+
+    game.pause();
+    drainPlayback(game, 1, 20, playDelta);
+    expect(game.getState().sprintTick).toBe(afterPlay);
+
+    game.resume();
+    drainPlayback(game, 0, 20, playDelta);
+    expect(game.getState().sprintTick).toBe(afterPlay);
+    expect(game.isPaused()).toBe(false);
+
+    drainPlayback(game, 1, 4, playDelta);
+    expect(game.getState().sprintTick).toBeGreaterThan(afterPlay);
+  });
+
+  it('❚❚ はトグルし、1x / 2x は指定速度へ再開する', () => {
+    expect(isPlaybackPaused(0)).toBe(true);
+    expect(isPlaybackPaused(1)).toBe(false);
+    expect(isPlaybackPaused(2)).toBe(false);
+    expect(nextPlaybackSpeed(1, 0)).toBe(0);
+    expect(nextPlaybackSpeed(2, 0)).toBe(0);
+    expect(nextPlaybackSpeed(0, 0)).toBe(1);
+    expect(nextPlaybackSpeed(0, 0, 2)).toBe(2);
+    expect(nextPlaybackSpeed(0, 1)).toBe(1);
+    expect(nextPlaybackSpeed(0, 2)).toBe(2);
+    expect(nextPlaybackSpeed(1, 2)).toBe(2);
+    expect(nextPlaybackSpeed(2, 1)).toBe(1);
+  });
+
+  it('進化オーバーレイなど非スプリントでは sprintRunning でも自動進行しない（#386）', () => {
+    const running = {
+      phase: 'sprint' as const,
+      sprintRunning: true,
+      paused: false,
+      playbackSpeed: 1 as PlaybackSpeed,
+      fieldView: true,
+    };
+    expect(shouldAutoAdvanceSprint(running)).toBe(true);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'evolution' })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'result', playbackSpeed: 2 })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, phase: 'draft', sprintRunning: false })).toBe(
+      false,
+    );
+    expect(shouldAutoAdvanceSprint({ ...running, paused: true })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, playbackSpeed: 0 })).toBe(false);
+  });
+
+  it('全社マップ等の俯瞰中は自動進行しない', () => {
+    const running = {
+      phase: 'sprint' as const,
+      sprintRunning: true,
+      paused: false,
+      playbackSpeed: 1 as PlaybackSpeed,
+      fieldView: true,
+    };
+    expect(shouldAutoAdvanceSprint(running)).toBe(true);
+    expect(shouldAutoAdvanceSprint({ ...running, fieldView: false })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, paused: true })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, playbackSpeed: 0 })).toBe(false);
+    expect(shouldAutoAdvanceSprint({ ...running, sprintRunning: false })).toBe(false);
   });
 
   it('タブ復帰など大きな delta はアキュムレータ上限で切り捨てる', () => {

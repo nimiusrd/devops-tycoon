@@ -4,11 +4,13 @@
  * ランをまたいで蓄積した points を消費し、カード／レリックを永続解放する。
  * 購入は `GameHandle.purchaseMetaUnlock` 経由（描画は読むだけ。第22.2）。
  */
+import { useRef } from 'react';
 import { getCard } from '../data/cards';
 import { getRelic } from '../data/relics';
 import { ACHIEVEMENT_LABEL, type MetaState } from '../state/meta';
 import { UNLOCK_DEFS, type UnlockDef } from '../data/unlocks';
 import { ResultOverlay } from './ResultOverlay';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface MetaShopScreenProps {
   meta: MetaState;
@@ -27,8 +29,25 @@ function contentLabel(unlock: UnlockDef): string {
 }
 
 export function MetaShopScreen({ meta, onPurchase, onClose }: MetaShopScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true });
+
   return (
-    <ResultOverlay data-testid="meta-shop" role="dialog" aria-label="Meta shop">
+    <ResultOverlay
+      ref={overlayRef}
+      data-testid="meta-shop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Meta shop"
+      tabIndex={-1}
+    >
+      <button
+        type="button"
+        className="result-overlay-dismiss"
+        data-testid="meta-shop-backdrop"
+        aria-label="メタショップを閉じる"
+        onClick={onClose}
+      />
       <div className="meta-shop-panel">
         <div className="result-overlay-body">
           <p className="result-eyebrow">META SHOP</p>

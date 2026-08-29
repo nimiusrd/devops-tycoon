@@ -5,7 +5,7 @@
  * ページ先頭へ開いて見えないことがある。`document.body` へ portal し、背面スクロールを止める。
  * Escape で閉じる契約はここでは扱わない（#361 / #371）。
  */
-import { useLayoutEffect, type HTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useLayoutEffect, type HTMLAttributes, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 let lockCount = 0;
@@ -36,7 +36,10 @@ export interface ResultOverlayProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
 }
 
-export function ResultOverlay({ children, className, ...rest }: ResultOverlayProps) {
+export const ResultOverlay = forwardRef<HTMLDivElement, ResultOverlayProps>(function ResultOverlay(
+  { children, className, ...rest },
+  ref,
+) {
   useLayoutEffect(() => {
     lockDocumentScroll();
     return () => {
@@ -48,9 +51,9 @@ export function ResultOverlay({ children, className, ...rest }: ResultOverlayPro
 
   const overlayClass = className ? `result-overlay ${className}` : 'result-overlay';
   return createPortal(
-    <div className={overlayClass} {...rest}>
+    <div ref={ref} className={overlayClass} {...rest}>
       {children}
     </div>,
     document.body,
   );
-}
+});

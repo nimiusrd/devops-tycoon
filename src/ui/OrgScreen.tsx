@@ -10,7 +10,7 @@ import { PROCESS_BALANCE } from '../data/balance';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
-import { ORG_VIEW } from '../render/orgBoardScene';
+import { ORG_VIEW, orgBoardNeedsCapacityCompact, orgHubTone } from '../render/orgBoardScene';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
 import type { QuarterTrendSnapshot } from '../sim/run/types';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
@@ -50,6 +50,8 @@ export function OrgScreen({
 }: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
   const { usePixi, onWebglError } = usePixiRenderer();
+  const capacityCompact = orgBoardNeedsCapacityCompact(org);
+  const usePixiBoard = usePixi && !capacityCompact;
   const pixiFieldRef = useRef<OrgPixiFieldHandle>(null);
   const deptColorMap = useMemo(
     () => Object.fromEntries(org.departments.map((d) => [d.def.id, d.def.color])),
@@ -67,7 +69,7 @@ export function OrgScreen({
     (deptId: string) => {
       // Pixi チャンク未ロード時は ref が null。カメラ演出を待たず遷移する。
       const field = pixiFieldRef.current;
-      if (usePixi && field) {
+      if (usePixiBoard && field) {
         void field.focusDepartment(deptId).then(() => {
           onFocusDept(deptId);
         });
@@ -75,7 +77,7 @@ export function OrgScreen({
       }
       onFocusDept(deptId);
     },
-    [onFocusDept, usePixi],
+    [onFocusDept, usePixiBoard],
   );
 
   return (
@@ -150,26 +152,26 @@ export function OrgScreen({
         onFocusTeam={onFocusTeam}
       />
 
+      <OrgInfraHubPill
+        ci={org.infra.ci}
+        docs={org.infra.docs}
+        aiGuideline={org.infra.aiGuideline}
+        tone={orgHubTone(org.infra.ci)}
+      />
+
       <AspectStage ratio={ORG_VIEW.w / ORG_VIEW.h} className="org-field" data-testid="org-field">
-        {usePixi ? (
-          <>
-            <OrgInfraHubPill
-              ci={org.infra.ci}
-              docs={org.infra.docs}
-              aiGuideline={org.infra.aiGuideline}
+        {usePixiBoard ? (
+          <Suspense fallback={null}>
+            <OrgPixiField
+              ref={pixiFieldRef}
+              teams={teams}
+              zoom={zoom}
+              departments={org.departments}
+              onFocusTeam={onFocusTeam}
+              deptColor={deptColor}
+              onWebglError={onWebglError}
             />
-            <Suspense fallback={null}>
-              <OrgPixiField
-                ref={pixiFieldRef}
-                teams={teams}
-                zoom={zoom}
-                departments={org.departments}
-                onFocusTeam={onFocusTeam}
-                deptColor={deptColor}
-                onWebglError={onWebglError}
-              />
-            </Suspense>
-          </>
+          </Suspense>
         ) : (
           <OrgBoard org={org} onFocusTeam={onFocusTeam} />
         )}

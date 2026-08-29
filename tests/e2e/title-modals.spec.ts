@@ -13,8 +13,10 @@ async function openFooterDialogFromScrolledTitle(
   await expect(page.getByTestId('title')).toBeVisible();
   const openButton = page.getByTestId(options.openTestId);
   await openButton.scrollIntoViewIfNeeded();
-  const scrollY = await page.evaluate(() => window.scrollY);
-  expect(scrollY).toBeGreaterThan(50);
+  const titleScrollTop = await page.getByTestId('title-scroll').evaluate((element) => {
+    return (element as HTMLElement).scrollTop;
+  });
+  expect(titleScrollTop).toBeGreaterThan(50);
 
   await openButton.click();
   const dialog = page.getByTestId(options.dialogTestId);

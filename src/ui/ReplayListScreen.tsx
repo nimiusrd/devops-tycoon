@@ -11,6 +11,8 @@ import { formatReplayRuleset } from './replayRuleset';
 import { resolveSelectedReplayId } from './replayListSelection';
 import { ResultOverlay } from './ResultOverlay';
 import type { ReplayBlob } from '../state/replay';
+import { downloadTextFile } from './downloadTextFile';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface ReplayListScreenProps {
   replays: ReplayBlob[];
@@ -44,6 +46,8 @@ export function ReplayListScreen({
   onExportReplay,
   onImportReplay,
 }: ReplayListScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true });
   const [selectedId, setSelectedId] = useState<string | null>(replays[0]?.id ?? null);
   const resolvedSelectedId = resolveSelectedReplayId(replays, selectedId);
   const selected = replays.find((r) => r.id === resolvedSelectedId) ?? null;
@@ -66,14 +70,14 @@ export function ReplayListScreen({
       setShareStatus({ kind: 'error', message: '書き出せるリプレイがありません。' });
       return;
     }
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'devops-tycoon-replay.json';
-    link.click();
-    URL.revokeObjectURL(url);
-    setShareStatus({ kind: 'ok', message: 'リプレイをファイルに保存しました。' });
+    if (downloadTextFile('devops-tycoon-replay.json', text)) {
+      setShareStatus({ kind: 'ok', message: 'リプレイをファイルに保存しました。' });
+      return;
+    }
+    setShareStatus({
+      kind: 'error',
+      message: 'リプレイをファイルに保存できませんでした。',
+    });
   };
 
   const onReplayFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -107,7 +111,14 @@ export function ReplayListScreen({
   };
 
   return (
-    <ResultOverlay data-testid="replay-list" role="dialog" aria-label="Replays">
+    <ResultOverlay
+      ref={overlayRef}
+      data-testid="replay-list"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Replays"
+      tabIndex={-1}
+    >
       <div className="meta-shop-panel replay-list-panel">
         <div className="result-overlay-body">
           <p className="result-eyebrow">REPLAY</p>
@@ -262,6 +273,8 @@ export function ReplayListScreen({
                 <p
                   className={`replay-share-status${shareStatus.kind === 'error' ? ' error' : ''}`}
                   data-testid="replay-share-status"
+                  role="status"
+                  aria-live="polite"
                 >
                   {shareStatus.message}
                 </p>

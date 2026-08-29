@@ -4,7 +4,7 @@
  * ラン外で全カードをレアリティ別に一覧し、解放済み／未解放を区別する。
  * 解放済みはコスト・効果・タグと研修方針トグル、未解放は解放条件を表示する。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CARD_DEFS, RARITY_LABEL } from '../data/cards';
 import { getCardUnlockByContentId } from '../data/unlocks';
 import {
@@ -16,6 +16,7 @@ import {
 import type { CardDef, CardRarity } from '../sim/types';
 import { CardView } from './CardView';
 import { ResultOverlay } from './ResultOverlay';
+import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 export interface CardCollectionScreenProps {
   meta: MetaState;
@@ -49,6 +50,8 @@ export function CardCollectionScreen({
   onChangePreferred,
   onClose,
 }: CardCollectionScreenProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useDialogOverlayLock(overlayRef, { restoreFocus: true });
   const unlocked = unlockedContent(meta).cards;
   const preferred = new Set(meta.preferredCardIds);
   const unlockedCount = CARD_DEFS.filter((def) => unlocked.has(def.id)).length;
@@ -91,11 +94,6 @@ export function CardCollectionScreen({
     const unlockedIds = unlockedContent(meta).cards;
     const preferredIds = new Set(meta.preferredCardIds);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-        return;
-      }
       if (visibleCards.length === 0) return;
       const index = Math.max(
         0,
@@ -136,13 +134,27 @@ export function CardCollectionScreen({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [visibleCards, activeSelectedId, meta, onClose, onChangePreferred]);
+  }, [visibleCards, activeSelectedId, meta, onChangePreferred]);
 
   const atCap =
     selectedUnlocked && !selectedPreferred && meta.preferredCardIds.length >= MAX_PREFERRED_CARDS;
 
   return (
-    <ResultOverlay data-testid="card-collection" role="dialog" aria-label="カードコレクション">
+    <ResultOverlay
+      ref={overlayRef}
+      data-testid="card-collection"
+      role="dialog"
+      aria-modal="true"
+      aria-label="カードコレクション"
+      tabIndex={-1}
+    >
+      <button
+        type="button"
+        className="result-overlay-dismiss"
+        data-testid="card-collection-backdrop"
+        aria-label="カードコレクションを閉じる"
+        onClick={onClose}
+      />
       <div className="card-collection-panel">
         <div className="result-overlay-body">
           <p className="result-eyebrow">CARD CODEX</p>

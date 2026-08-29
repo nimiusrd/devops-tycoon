@@ -6,6 +6,7 @@
  * 四半期・ラン・介入回数の帯定数もここに置き、統計テストと共有する。
  */
 import { PACING_BALANCE } from '../data/balance/pacing';
+import type { RunPhase } from '../sim/run/types';
 
 const millisecondsToSeconds = (milliseconds: number): number => milliseconds / 1000;
 const millisecondsToMinutes = (milliseconds: number): number => milliseconds / 60_000;
@@ -24,6 +25,51 @@ export const MS_PER_TICK_1X = PACING_BALANCE.msPerTick1x.value;
 
 /** プレイヤー向け再生速度。0=一時停止、1=1x、2=2x。 */
 export type PlaybackSpeed = 0 | 1 | 2;
+
+/** 一時停止以外の再生速度。❚❚ 解除時の復帰先。 */
+export type PlayingSpeed = Exclude<PlaybackSpeed, 0>;
+
+/** プレイヤー Pause 中か（sim・カード解決を止める）。 */
+export function isPlaybackPaused(speed: PlaybackSpeed): speed is 0 {
+  return speed === 0;
+}
+
+/**
+ * 速度コントロールの次状態。
+ * ❚❚ はトグル（解除時は直前の再生速度）、1x / 2x は指定速度へ再開する。
+ */
+export function nextPlaybackSpeed(
+  current: PlaybackSpeed,
+  clicked: PlaybackSpeed,
+  resumeSpeed: PlayingSpeed = 1,
+): PlaybackSpeed {
+  if (clicked === 0) return current === 0 ? resumeSpeed : 0;
+  return clicked;
+}
+
+/**
+ * 壁時計から sim を 1 tick 進めてよいか（RI-62 / #386）。
+ *
+ * 進化オーバーレイなどスプリント以外のフェーズでは、背面盤面が残っていても
+ * `sprintRunning` の誤判定や再生速度 1x にかかわらず進めない。
+ * 全社マップ等の俯瞰中は現場 sim を止め、閲覧だけで KPI が進まないようにする。
+ */
+export function shouldAutoAdvanceSprint(input: {
+  phase: RunPhase;
+  sprintRunning: boolean;
+  paused: boolean;
+  playbackSpeed: PlaybackSpeed;
+  /** 現場（team）を見ているときだけ true。 */
+  fieldView: boolean;
+}): boolean {
+  return (
+    input.phase === 'sprint' &&
+    input.sprintRunning &&
+    !input.paused &&
+    input.playbackSpeed > 0 &&
+    input.fieldView
+  );
+}
 
 /** 1 ポーリングで追いつく最大 tick 数（タブ復帰時の飛び過ぎ防止）。 */
 export const MAX_TICKS_PER_FRAME = 4;
@@ -118,6 +164,58 @@ export function ticksDueFromAccumulator(
   const raw = Math.floor(accumulatedMs / perTick);
   const ticks = Math.min(maxTicks, Math.max(0, raw));
   return { ticks, consumedMs: ticks * perTick };
+}
+
+/**
+ * 1 ポーリング分の壁時計進行（`useRun` の自動 tick）。
+ *
+ * プレイヤー Pause は `speed=0`。`gamePaused` は E2E / pauseBriefly 用で、
+ * 両者は独立（#370 の `game.pause()` 契約を壊さない）。
+ */
+export interface PlaybackFrameInput {
+  accumulatedMs: number;
+  deltaMs: number;
+  speed: PlaybackSpeed;
+  sprintRunning: boolean;
+  /** E2E / ボススローモ。プレイヤー Pause は `speed` 側。 */
+  gamePaused: boolean;
+}
+
+export interface PlaybackFrameResult {
+  accumulatedMs: number;
+  ticks: number;
+}
+
+/**
+ * 壁時計 1 フレームで進める tick 数を決める。実際の `step` は呼び出し側。
+ * pause 中（speed=0 または game.pause）はアキュムレータを捨てて 0 tick。
+ */
+export function planPlaybackFrame(input: PlaybackFrameInput): PlaybackFrameResult {
+  if (!input.sprintRunning || input.gamePaused || input.speed <= 0) {
+    return { accumulatedMs: 0, ticks: 0 };
+  }
+  const accumulatedMs = accumulateWallTime(input.accumulatedMs, input.deltaMs, input.speed);
+  const due = ticksDueFromAccumulator(accumulatedMs, input.speed);
+  return { accumulatedMs: accumulatedMs - due.consumedMs, ticks: due.ticks };
+}
+
+/**
+ * `planPlaybackFrame` の tick を `stepOnce` で消化する。
+ * `shouldContinue` が false なら残り tick は捨てる（スプリント終了 / E2E pause）。
+ */
+export function runPlaybackFrame(
+  input: PlaybackFrameInput,
+  shouldContinue: () => boolean,
+  stepOnce: () => void,
+): PlaybackFrameResult {
+  const planned = planPlaybackFrame(input);
+  let ticks = 0;
+  for (let i = 0; i < planned.ticks; i += 1) {
+    if (!shouldContinue()) break;
+    stepOnce();
+    ticks += 1;
+  }
+  return { accumulatedMs: planned.accumulatedMs, ticks };
 }
 
 /** tick 数 × 1x テンポから壁時計秒を求める（DoD 検証用）。 */

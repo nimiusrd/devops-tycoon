@@ -166,6 +166,8 @@ describe('reviewHellReplayView（RI-34‴）', () => {
     expect(labelForReplayKeyframe(withResult(setup, makeResult({ reviewQueueMax: 16 })))).toBe(
       'Review peak 16',
     );
+    const draft: RunReplayFrame = { ...structuredClone(setup), phase: 'draft', draft: ['docs'] };
+    expect(labelForReplayKeyframe(draft)).toBe('カードドラフト');
     const lost: RunReplayFrame = { ...structuredClone(setup), phase: 'lost' };
     expect(labelForReplayKeyframe(lost, 'reviewHell')).toBe('Review Hell 型');
   });

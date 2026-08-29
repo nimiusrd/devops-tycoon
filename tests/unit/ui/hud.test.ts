@@ -42,4 +42,32 @@ describe('pickCompactMetrics', () => {
     );
     expect(picked.filter(({ tone }) => tone === 'watch')).toHaveLength(1);
   });
+
+  it('炎上リスクは士気と別チップとして選び、士気goodでもMEDを落とさない', () => {
+    const picked = pickCompactMetrics([
+      metric('delivery', 'good'),
+      metric('seniorHp', 'watch', '体力注意'),
+      metric('morale', 'good'),
+      metric('fireRisk', 'watch'),
+      metric('techDebt', 'good'),
+      metric('aiDependency', 'good'),
+    ]);
+
+    expect(picked.map(({ id }) => id)).toEqual(['delivery', 'seniorHp', 'morale', 'fireRisk']);
+    expect(picked.find((m) => m.id === 'morale')?.tone).toBe('good');
+    expect(picked.find((m) => m.id === 'fireRisk')?.tone).toBe('watch');
+  });
+
+  it('炎上リスクLOWは要約4枠から外し主要KPIを残す', () => {
+    const picked = pickCompactMetrics([
+      metric('delivery', 'good'),
+      metric('seniorHp', 'good'),
+      metric('morale', 'good'),
+      metric('fireRisk', 'good'),
+      metric('aiDependency', 'good'),
+      metric('techDebt', 'good'),
+    ]);
+
+    expect(picked.map(({ id }) => id)).toEqual(['delivery', 'seniorHp', 'morale', 'aiDependency']);
+  });
 });

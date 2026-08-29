@@ -2,7 +2,7 @@
  * ステータス HUD（SPEC 第4.2 準拠）。
  *
  * 出荷ポイント・開発速度・レビュー耐性・品質・セキュリティ・シニア体力・AI依存度・
- * 技術的負債・士気を表示し、炎上リスクをチップで示す。
+ * 技術的負債・士気・炎上リスクを表示する。炎上リスクは工程状態であり、士気チップには載せない。
  * ラン中は組織状態（持続）と進行中スプリントのタスクから導出する（第22.2）。
  *
  * RI-70: 狭幅では KPI を折り畳み要約し、盤面と介入バーを1画面に収める。
@@ -58,7 +58,19 @@ function FeedbackPop({ feedback }: { feedback?: ActiveHudFeedback }) {
 }
 
 function MetricValue({ metric }: { metric: StatusMetricView }) {
-  if (typeof metric.value === 'string') return <GradeValue grade={metric.value} />;
+  if (typeof metric.value === 'string') {
+    if (metric.id === 'fireRisk') {
+      return (
+        <span
+          className={`v fire-risk-value fire-risk-${metric.value}`}
+          data-testid="hud-fire-risk-value"
+        >
+          {metric.value}
+        </span>
+      );
+    }
+    return <GradeValue grade={metric.value as Grade} />;
+  }
 
   return (
     <div
@@ -122,11 +134,6 @@ function HudStat({ metric, feedback }: { metric: StatusMetricView; feedback?: Ac
           {metric.warningChip}
         </div>
       )}
-      {metric.risk && (
-        <div className={`risk-chip risk-${metric.risk}`} data-testid="risk">
-          炎上 {metric.risk}
-        </div>
-      )}
     </section>
   );
 }
@@ -165,7 +172,6 @@ function CompactChip({
   feedback?: ActiveHudFeedback;
 }) {
   const valueText = `${metric.value}${metric.unit ?? ''}`;
-  const riskText = metric.risk && metric.risk !== 'LOW' ? `炎上 ${metric.risk}` : undefined;
   const feedbackClass = feedback ? ` hud-feedback flash-${feedback.tone}` : '';
   // ガイド/CSS/E2E はフル表示と同じ `hud-seniorHp` を対象にする。
   const testId = metric.id === 'seniorHp' ? 'hud-seniorHp' : `hud-compact-${metric.id}`;
@@ -174,7 +180,7 @@ function CompactChip({
       className={`hud-compact-chip tone-${metric.tone}${feedbackClass}`}
       data-testid={testId}
       data-tone={metric.tone}
-      title={`${metric.label}: ${valueText}${riskText ? `。${riskText}` : ''}`}
+      title={`${metric.label}: ${valueText}`}
     >
       <span className="hud-compact-chip-icon" aria-hidden="true">
         {metric.icon}
@@ -196,7 +202,6 @@ function CompactChip({
           {metric.warningChip}
         </span>
       )}
-      {riskText && <span className={`hud-compact-chip-risk risk-${metric.risk}`}>{riskText}</span>}
     </span>
   );
 }

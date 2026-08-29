@@ -15,6 +15,8 @@ const COMPACT_PRIORITY_IDS: StatusMetricId[] = [
   'security',
   'devSpeed',
   'reviewCapacity',
+  // LOW のときは主要KPIを押し出さない。MED/HIGH は tone 優先で入る。
+  'fireRisk',
 ];
 const TONE_RANK: Record<StatusMetricTone, number> = {
   danger: 0,

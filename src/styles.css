@@ -361,6 +361,15 @@ body {
 .grade-E {
   color: var(--coral);
 }
+.fire-risk-value.fire-risk-LOW {
+  color: var(--mint);
+}
+.fire-risk-value.fire-risk-MED {
+  color: var(--sun);
+}
+.fire-risk-value.fire-risk-HIGH {
+  color: var(--coral);
+}
 .bar {
   margin-top: 6px;
   height: 7px;
@@ -395,15 +404,15 @@ body {
   color: #fff;
   border: 2px solid #ffffff44;
 }
-.risk-LOW {
+.risk-chip.risk-LOW {
   background: #2f9e69;
   border-color: #7be0b0;
 }
-.risk-MED {
+.risk-chip.risk-MED {
   background: #d99a2b;
   border-color: #ffd98a;
 }
-.risk-HIGH {
+.risk-chip.risk-HIGH {
   background: #ff5f57;
   border-color: #ffb0ac;
   animation: riskpulse 1.1s ease-in-out infinite;

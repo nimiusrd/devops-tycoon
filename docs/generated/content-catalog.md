@@ -73,7 +73,7 @@
 
 | Order | ID | Execution |
 | ---: | --- | --- |
-| 0 | easy | {"aiDependencyPerTask":2.2,"bossTargetMul":0.85,"globalEffects":{"reviewEfficiencyMul":1.05,"reworkRateAdd":-0.04,"seniorHpCostMul":0.74},"org":{"aiDependencyBase":25,"aiLiteracy":60,"documentation":65,"morale":75,"quality":70,"securityLevel":70,"seniorHp":100,"testCoverage":70},"startBudget":60,"taskCountMul":1.85} |
+| 0 | easy | {"aiDependencyPerTask":1.1,"bossTargetMul":0.85,"globalEffects":{"reviewEfficiencyMul":1.05,"reworkRateAdd":-0.04,"seniorHpCostMul":0.74},"org":{"aiDependencyBase":25,"aiLiteracy":60,"documentation":65,"morale":75,"quality":70,"securityLevel":70,"seniorHp":100,"testCoverage":70},"startBudget":60,"taskCountMul":1.85} |
 | 1 | hard | {"aiDependencyPerTask":2.2,"bossTargetMul":1.15,"globalEffects":{"reviewEfficiencyMul":0.92,"reworkRateAdd":0.05},"org":{"aiDependencyBase":45,"aiLiteracy":35,"documentation":30,"morale":60,"quality":45,"securityLevel":60,"seniorHp":90,"testCoverage":35},"startBudget":35,"taskCountMul":1.4} |
 | 2 | nightmare | {"aiDependencyPerTask":0.8,"bossTargetMul":1.3,"globalEffects":{"incidentRateMul":1.25,"reviewEfficiencyMul":0.85,"reworkRateAdd":0.1},"org":{"aiDependencyBase":42,"aiLiteracy":25,"documentation":15,"morale":55,"quality":35,"securityLevel":55,"seniorHp":80,"testCoverage":20},"startBudget":25,"taskCountMul":1} |
 | 3 | normal | {"aiDependencyPerTask":2.2,"bossTargetMul":1,"globalEffects":{"seniorHpCostMul":0.8},"org":{"aiDependencyBase":35,"aiLiteracy":45,"documentation":52,"morale":70,"quality":62,"securityLevel":60,"seniorHp":100,"testCoverage":58},"startBudget":45,"taskCountMul":1.65} |
@@ -247,7 +247,7 @@
 | Order | ID | Execution |
 | ---: | --- | --- |
 | 0 | claude-code | {"globalEffects":{"codingSpeedMul":1.08,"reviewEfficiencyMul":0.94,"reworkRateAdd":-0.02},"orgDelta":{"aiLiteracy":8,"quality":5,"securityLevel":-3},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
-| 1 | copilot | {"aiDependencyPerTask":1.4,"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
+| 1 | copilot | {"globalEffects":{"codingSpeedMul":1.06,"routineSpeedMul":1.12},"orgDelta":{"aiDependencyBase":8,"securityLevel":-5},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 | 2 | default | {"globalEffects":{},"orgDelta":{},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 | 3 | devin | {"globalEffects":{"codingSpeedMul":1.1,"reworkRateAdd":0.03},"orgDelta":{"aiDependencyBase":10,"documentation":-8,"securityLevel":-6},"sprint":{"codingSlots":6,"focusMax":12,"maxTicks":1500,"taskCount":28}} |
 

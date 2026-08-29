@@ -1,7 +1,4 @@
-/**
- * Issue #387: Easy + Copilot + seed devops-tycoon の Sprint 1 で
- * AI依存が 88% まで跳ねて Review Hell と重ならないこと。
- */
+/** Issue #359: Easy の単価調整は default シナリオに限定し、Copilot は既定値へ戻す。 */
 import { describe, expect, it } from 'vitest';
 import { getDifficulty } from '../../../src/data/difficulties';
 import { AI_DEP_PER_TASK } from '../../../src/sim/model/process';
@@ -36,47 +33,43 @@ describe('Easy + Copilot Sprint 1 (#387)', () => {
   it('開始時 AI依存は Easy 25 + Copilot +8 = 33', () => {
     const org = applyScenarioOrg(getDifficulty('easy').org, getScenario('copilot'));
     expect(org.aiDependencyBase).toBe(33);
-    expect(getScenario('copilot').aiDependencyPerTask).toBe(1.4);
+    expect(getScenario('copilot').sprint.aiDependencyPerTask).toBeUndefined();
     expect(AI_DEP_PER_TASK).toBe(2.2);
   });
 
-  it('resolveAiDependencyPerTask は低い方を採り Nightmare を崩さない', () => {
-    expect(resolveAiDependencyPerTask(undefined, undefined)).toBeUndefined();
-    expect(resolveAiDependencyPerTask(undefined, 1.4)).toBe(1.4);
-    expect(resolveAiDependencyPerTask(0.8, undefined)).toBe(0.8);
-    expect(resolveAiDependencyPerTask(0.8, 1.4)).toBe(0.8);
-    expect(resolveAiDependencyPerTask(2.2, 1.4)).toBe(1.4);
+  it('resolveAiDependencyPerTask は Easy の 1.1 を default にだけ載せる', () => {
+    expect(resolveAiDependencyPerTask('easy', 'default')).toBe(1.1);
+    expect(resolveAiDependencyPerTask('easy', 'copilot')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('normal', 'copilot')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('nightmare', 'copilot')).toBe(0.8);
   });
 
-  it('seed devops-tycoon の無介入 S1 は 88% まで跳ねない', () => {
+  it('seed devops-tycoon の無介入 S1 は Copilot の既定単価で依存が上がる', () => {
     const copilot = sprint1('copilot');
     const plain = sprint1('default');
     expect(copilot.startAi).toBe(33);
-    expect(copilot.endAi).toBeCloseTo(68, 5);
-    expect(copilot.endAi).toBeLessThan(75);
-    // 速度ボーナスは残すので、同一 seed の標準よりレビューピークは高い（Copilot の代償）。
-    expect(copilot.qMax).toBeGreaterThan(plain.qMax);
+    expect(copilot.endAi).toBeGreaterThan(80);
     expect(plain.startAi).toBe(25);
-    expect(plain.endAi).toBeGreaterThan(copilot.endAi);
+    expect(plain.endAi).toBeLessThan(70);
   });
 
-  it('熟練介入でも S1 の AI依存は崩壊域まで跳ねない', () => {
+  it('熟練介入でも Copilot は既定単価を使う', () => {
     const copilot = sprint1('copilot', { skilled: true });
     expect(copilot.startAi).toBe(33);
-    expect(copilot.endAi).toBeLessThan(80);
+    expect(copilot.endAi).toBeGreaterThan(80);
   });
 
-  it('単体 Engine の Copilot も resolveSprintConfig 経由で単価 1.4 を載せる', () => {
-    expect(resolveSprintConfig('copilot').aiDependencyPerTask).toBe(1.4);
+  it('単体 Engine の Copilot はグローバル既定へフォールバックする', () => {
+    expect(resolveSprintConfig('copilot').aiDependencyPerTask).toBeUndefined();
     expect(resolveSprintConfig('default').aiDependencyPerTask).toBeUndefined();
     const engine = createEngine({ scenario: 'copilot', aiEnabled: true, seed: SEED });
-    expect(engine.snapshot().sprint.config.aiDependencyPerTask).toBe(1.4);
+    expect(engine.snapshot().sprint.config.aiDependencyPerTask).toBeUndefined();
   });
 
-  it('Easy+Copilot のタスク単価は 1.4、Nightmare+Copilot は 0.8 のまま', () => {
+  it('Easy+Copilot は既定単価、Nightmare+Copilot は 0.8 のまま', () => {
     const easy = new RunEngine({ seed: SEED, difficulty: 'easy' });
     easy.startRun('easy', [], SEED, { kind: 'normal', scenario: 'copilot' });
-    expect((easy as unknown as EngineConfig).baseConfig.aiDependencyPerTask).toBe(1.4);
+    expect((easy as unknown as EngineConfig).baseConfig.aiDependencyPerTask).toBeUndefined();
 
     const nightmare = new RunEngine({ seed: SEED, difficulty: 'nightmare' });
     nightmare.startRun('nightmare', [], SEED, { kind: 'normal', scenario: 'copilot' });
@@ -84,18 +77,18 @@ describe('Easy + Copilot Sprint 1 (#387)', () => {
 
     const plain = new RunEngine({ seed: SEED, difficulty: 'easy' });
     plain.startRun('easy', [], SEED, { kind: 'normal', scenario: 'default' });
-    expect((plain as unknown as EngineConfig).baseConfig.aiDependencyPerTask).toBeUndefined();
+    expect((plain as unknown as EngineConfig).baseConfig.aiDependencyPerTask).toBe(1.1);
   });
 
-  it('Copilot のタスク単価は persist / hydrate で残る', () => {
+  it('Copilot の既定単価フォールバックは persist / hydrate 後も維持する', () => {
     const source = new RunEngine({ seed: SEED, difficulty: 'easy' });
     source.startRun('easy', [], SEED, { kind: 'normal', scenario: 'copilot' });
     const persist = source.exportPersistState();
-    expect(persist?.extras.baseConfig.aiDependencyPerTask).toBe(1.4);
+    expect(persist?.extras.baseConfig.aiDependencyPerTask).toBeUndefined();
 
     const restored = new RunEngine({ seed: 'other', difficulty: 'normal' });
     restored.hydratePersistState(persist!);
     expect(restored.snapshot().scenario).toBe('copilot');
-    expect((restored as unknown as EngineConfig).baseConfig.aiDependencyPerTask).toBe(1.4);
+    expect((restored as unknown as EngineConfig).baseConfig.aiDependencyPerTask).toBeUndefined();
   });
 });

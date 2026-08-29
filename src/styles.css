@@ -708,44 +708,66 @@ body {
   overflow: hidden;
   z-index: 12;
 }
+.dom-fallback-hidden {
+  visibility: hidden;
+}
 .fire-spread-particle {
   position: absolute;
-  width: 14px;
-  height: 14px;
-  margin: -7px 0 0 -7px;
+  width: var(--visual-board-effect-spread-size);
+  aspect-ratio: 1;
+  margin: calc(0px - var(--visual-board-effect-spread-size) / 2) 0 0
+    calc(0px - var(--visual-board-effect-spread-size) / 2);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #fff8c0, #ff7a2f 45%, #c02000 85%);
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--visual-color-effect-fire-core),
+    var(--visual-color-effect-fire-mid) 45%,
+    var(--visual-color-effect-fire-edge) 85%
+  );
   box-shadow:
-    0 0 16px #ff7a2fdd,
-    0 0 28px #ff450088;
+    0 0 16px color-mix(in srgb, var(--visual-color-effect-fire-mid) 87%, transparent),
+    0 0 28px color-mix(in srgb, var(--visual-color-effect-fire-edge) 53%, transparent);
   z-index: 13;
 }
 .fire-extinguish-burst {
   position: absolute;
-  width: 36px;
-  height: 36px;
-  margin: -18px 0 0 -18px;
+  width: var(--visual-board-effect-extinguish-size);
+  aspect-ratio: 1;
+  margin: calc(0px - var(--visual-board-effect-extinguish-size) / 2) 0 0
+    calc(0px - var(--visual-board-effect-extinguish-size) / 2);
   border-radius: 50%;
-  background: radial-gradient(circle, #ffffffcc 0%, #b8e8ff88 35%, transparent 70%);
-  box-shadow: 0 0 20px #ffffffaa;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--visual-color-effect-extinguish-core) 80%, transparent) 0%,
+    color-mix(in srgb, var(--visual-color-effect-extinguish-wash) 53%, transparent) 35%,
+    transparent 70%
+  );
+  box-shadow: 0 0 20px
+    color-mix(in srgb, var(--visual-color-effect-extinguish-core) 67%, transparent);
   z-index: 13;
 }
 .fire-extinguish-burst.firefight {
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
+  width: var(--visual-board-effect-extinguish-firefight-size);
+  margin: calc(0px - var(--visual-board-effect-extinguish-firefight-size) / 2) 0 0
+    calc(0px - var(--visual-board-effect-extinguish-firefight-size) / 2);
   box-shadow:
-    0 0 28px #ffffffcc,
-    0 0 40px #57e08f66;
+    0 0 28px color-mix(in srgb, var(--visual-color-effect-extinguish-core) 80%, transparent),
+    0 0 40px color-mix(in srgb, var(--visual-color-effect-firefight) 40%, transparent);
 }
 .fire-ignite-flash {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  margin: -20px 0 0 -20px;
+  width: var(--visual-board-effect-ignite-size);
+  aspect-ratio: 1;
+  margin: calc(0px - var(--visual-board-effect-ignite-size) / 2) 0 0
+    calc(0px - var(--visual-board-effect-ignite-size) / 2);
   border-radius: 50%;
-  background: radial-gradient(circle, #ffcc8088 0%, #ff5f1f55 40%, transparent 72%);
-  box-shadow: 0 0 24px #ff7a2faa;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--visual-color-effect-fire-core) 53%, transparent) 0%,
+    color-mix(in srgb, var(--visual-color-effect-fire-mid) 33%, transparent) 40%,
+    transparent 72%
+  );
+  box-shadow: 0 0 24px color-mix(in srgb, var(--visual-color-effect-fire-mid) 67%, transparent);
   z-index: 13;
 }
 
@@ -759,14 +781,20 @@ body {
 }
 .intervention-sweep-particle {
   position: absolute;
-  width: 16px;
-  height: 16px;
-  margin: -8px 0 0 -8px;
+  width: var(--visual-board-effect-sweep-size);
+  aspect-ratio: 1;
+  margin: calc(0px - var(--visual-board-effect-sweep-size) / 2) 0 0
+    calc(0px - var(--visual-board-effect-sweep-size) / 2);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffffff, #7bdcff 45%, #3fb6ff 85%);
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--visual-color-effect-sweep-core),
+    var(--visual-color-effect-sweep-mid) 45%,
+    var(--visual-color-effect-sweep-edge) 85%
+  );
   box-shadow:
-    0 0 14px #7bdcffcc,
-    0 0 24px #3fb6ff88;
+    0 0 14px color-mix(in srgb, var(--visual-color-effect-sweep-mid) 80%, transparent),
+    0 0 24px color-mix(in srgb, var(--visual-color-effect-sweep-edge) 53%, transparent);
   z-index: 15;
 }
 .intervention-sweep-particle::after {
@@ -778,35 +806,59 @@ body {
   height: 5px;
   border-radius: 999px;
   transform: translateY(-50%);
-  background: linear-gradient(90deg, transparent, #b8ebffcc);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--visual-color-effect-extinguish-wash) 80%, transparent)
+  );
   filter: blur(1px);
   opacity: 0.8;
 }
 .intervention-sweep-burst {
   position: absolute;
   inset: 16% 18%;
-  border: 2px solid #7bdcff99;
+  border: 2px solid color-mix(in srgb, var(--visual-color-effect-sweep-mid) 60%, transparent);
   border-radius: 50%;
   background:
-    linear-gradient(90deg, transparent 49.5%, #b8ebff66 50%, transparent 50.5%),
-    linear-gradient(0deg, transparent 49.5%, #b8ebff55 50%, transparent 50.5%);
+    linear-gradient(
+      90deg,
+      transparent 49.5%,
+      color-mix(in srgb, var(--visual-color-effect-extinguish-wash) 40%, transparent) 50%,
+      transparent 50.5%
+    ),
+    linear-gradient(
+      0deg,
+      transparent 49.5%,
+      color-mix(in srgb, var(--visual-color-effect-extinguish-wash) 33%, transparent) 50%,
+      transparent 50.5%
+    );
   box-shadow:
-    0 0 24px #7bdcff88,
-    inset 0 0 24px #3fb6ff44;
+    0 0 24px color-mix(in srgb, var(--visual-color-effect-sweep-mid) 53%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--visual-color-effect-sweep-edge) 27%, transparent);
   pointer-events: none;
   z-index: 13;
 }
 .intervention-sweep-particle.sweep-rework {
-  background: radial-gradient(circle at 35% 35%, #fff8e0, #ffb347 45%, #ff9f43 85%);
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--visual-color-effect-rework-core),
+    var(--visual-color-effect-rework-mid) 45%,
+    var(--visual-color-effect-rework-edge) 85%
+  );
   box-shadow:
-    0 0 14px #ffb347cc,
-    0 0 24px #ff9f4388;
+    0 0 14px color-mix(in srgb, var(--visual-color-effect-rework-mid) 80%, transparent),
+    0 0 24px color-mix(in srgb, var(--visual-color-effect-rework-edge) 53%, transparent);
 }
 .intervention-sweep-particle.sweep-incident {
-  background: radial-gradient(circle at 35% 35%, #fff8c0, #ff7a2f 45%, #c02000 85%);
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--visual-color-effect-fire-core),
+    var(--visual-color-effect-fire-mid) 45%,
+    var(--visual-color-effect-fire-edge) 85%
+  );
   box-shadow:
-    0 0 14px #ff7a2fdd,
-    0 0 24px #ff450088;
+    0 0 14px color-mix(in srgb, var(--visual-color-effect-fire-mid) 87%, transparent),
+    0 0 24px color-mix(in srgb, var(--visual-color-effect-fire-edge) 53%, transparent);
 }
 .intervention-split-badge {
   position: absolute;
@@ -817,53 +869,66 @@ body {
   text-transform: uppercase;
   padding: 2px 6px;
   border-radius: 6px;
-  background: #1b1438dd;
-  color: #ffe08a;
-  border: 1px solid #ffe08a88;
+  background: color-mix(in srgb, var(--visual-color-effect-split-panel) 87%, transparent);
+  color: var(--visual-color-effect-split-text);
+  border: 1px solid color-mix(in srgb, var(--visual-color-effect-split-text) 53%, transparent);
   z-index: 15;
 }
 .intervention-split-shard {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  margin: -5px 0 0 -5px;
+  width: var(--visual-board-effect-split-shard-size);
+  aspect-ratio: 1;
+  margin: calc(0px - var(--visual-board-effect-split-shard-size) / 2) 0 0
+    calc(0px - var(--visual-board-effect-split-shard-size) / 2);
   border-radius: 50%;
-  background: #cdbff0;
-  box-shadow: 0 0 8px #cdbff088;
+  background: var(--visual-color-effect-split-shard);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--visual-color-effect-split-shard) 53%, transparent);
   z-index: 14;
 }
 .intervention-firefight-ring {
   position: absolute;
-  width: 48px;
-  height: 48px;
-  margin: -24px 0 0 -24px;
+  width: var(--visual-board-effect-firefight-size);
+  aspect-ratio: 1;
+  margin: calc(0px - var(--visual-board-effect-firefight-size) / 2) 0 0
+    calc(0px - var(--visual-board-effect-firefight-size) / 2);
   border-radius: 50%;
-  border: 3px solid #57e08fdd;
+  border: 3px solid color-mix(in srgb, var(--visual-color-effect-firefight) 87%, transparent);
   box-shadow:
-    0 0 16px #57e08faa,
-    inset 0 0 12px #ffffff44;
+    0 0 16px color-mix(in srgb, var(--visual-color-effect-firefight) 67%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--visual-color-effect-extinguish-core) 27%, transparent);
   z-index: 15;
 }
 .intervention-firefight-burst {
   position: absolute;
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
+  width: var(--visual-board-effect-firefight-burst-size);
+  aspect-ratio: 1;
+  margin: calc(0px - var(--visual-board-effect-firefight-burst-size) / 2) 0 0
+    calc(0px - var(--visual-board-effect-firefight-burst-size) / 2);
   border-radius: 50%;
-  background: radial-gradient(circle, #ffffffcc 0%, #b8e8ff88 35%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--visual-color-effect-extinguish-core) 80%, transparent) 0%,
+    color-mix(in srgb, var(--visual-color-effect-extinguish-wash) 53%, transparent) 35%,
+    transparent 70%
+  );
   box-shadow:
-    0 0 28px #ffffffcc,
-    0 0 40px #57e08f66;
+    0 0 28px color-mix(in srgb, var(--visual-color-effect-extinguish-core) 80%, transparent),
+    0 0 40px color-mix(in srgb, var(--visual-color-effect-firefight) 40%, transparent);
   z-index: 15;
 }
 .intervention-assign-dash {
   position: absolute;
-  width: 36px;
-  height: 4px;
-  margin: -2px 0 0 -4px;
+  width: var(--visual-board-effect-assign-length);
+  aspect-ratio: var(--visual-board-effect-assign-aspect-ratio);
+  margin: calc(0px - var(--visual-board-effect-assign-width) / 2) 0 0
+    calc(0px - var(--visual-board-effect-assign-width));
   border-radius: 4px;
-  background: linear-gradient(90deg, #ffe08a, #ff9f43);
-  box-shadow: 0 0 12px #ff9f4388;
+  background: linear-gradient(
+    90deg,
+    var(--visual-color-effect-split-text),
+    var(--visual-color-effect-rework-edge)
+  );
+  box-shadow: 0 0 12px color-mix(in srgb, var(--visual-color-effect-rework-edge) 53%, transparent);
   z-index: 15;
 }
 .intervention-aura-pulse {
@@ -873,20 +938,36 @@ body {
   z-index: 11;
 }
 .intervention-aura-pulse.aura-throttle {
-  background: radial-gradient(circle at 50% 40%, #3fb6ff33 0%, transparent 70%);
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--visual-color-effect-sweep-edge) 20%, transparent) 0%,
+    transparent 70%
+  );
 }
 .intervention-aura-pulse.aura-overtime {
-  background: radial-gradient(circle at 50% 40%, #ff9f4333 0%, transparent 70%);
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--visual-color-effect-rework-edge) 20%, transparent) 0%,
+    transparent 70%
+  );
 }
 .intervention-aura-pulse.aura-andon {
-  background: radial-gradient(circle at 50% 40%, #57e08f33 0%, transparent 70%);
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--visual-color-effect-firefight) 20%, transparent) 0%,
+    transparent 70%
+  );
 }
 .intervention-success-pulse {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 11;
-  background: radial-gradient(circle at 50% 40%, #7bdcff44 0%, transparent 72%);
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--visual-color-effect-sweep-mid) 27%, transparent) 0%,
+    transparent 72%
+  );
 }
 .board-modifier-aura {
   position: absolute;
@@ -894,23 +975,47 @@ body {
   pointer-events: none;
   z-index: 10;
   opacity: calc(0.12 + (1 - var(--aura-remaining, 1)) * 0.18);
-  animation: board-aura-pulse 2.4s ease-in-out infinite;
+  animation: board-aura-pulse var(--visual-board-aura-period) ease-in-out infinite;
 }
 .board-modifier-aura.aura-throttle {
-  background: linear-gradient(180deg, #3fb6ff22 0%, transparent 55%, #3fb6ff11 100%);
-  box-shadow: inset 0 0 40px #3fb6ff33;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--visual-color-effect-sweep-edge) 13%, transparent) 0%,
+    transparent 55%,
+    color-mix(in srgb, var(--visual-color-effect-sweep-edge) 7%, transparent) 100%
+  );
+  box-shadow: inset 0 0 40px
+    color-mix(in srgb, var(--visual-color-effect-sweep-edge) 20%, transparent);
 }
 .board-modifier-aura.aura-overtime {
-  background: linear-gradient(180deg, #ff9f4322 0%, transparent 55%, #ff7a2f11 100%);
-  box-shadow: inset 0 0 40px #ff9f4333;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--visual-color-effect-rework-edge) 13%, transparent) 0%,
+    transparent 55%,
+    color-mix(in srgb, var(--visual-color-effect-fire-mid) 7%, transparent) 100%
+  );
+  box-shadow: inset 0 0 40px
+    color-mix(in srgb, var(--visual-color-effect-rework-edge) 20%, transparent);
 }
 .board-modifier-aura.aura-andon {
-  background: linear-gradient(180deg, #57e08f22 0%, transparent 55%, #57e08f11 100%);
-  box-shadow: inset 0 0 40px #57e08f33;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--visual-color-effect-firefight) 13%, transparent) 0%,
+    transparent 55%,
+    color-mix(in srgb, var(--visual-color-effect-firefight) 7%, transparent) 100%
+  );
+  box-shadow: inset 0 0 40px
+    color-mix(in srgb, var(--visual-color-effect-firefight) 20%, transparent);
 }
 .board-modifier-aura.aura-stability {
-  background: linear-gradient(180deg, #7bdcff22 0%, transparent 55%, #57e08f11 100%);
-  box-shadow: inset 0 0 40px #7bdcff33;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--visual-color-effect-sweep-mid) 13%, transparent) 0%,
+    transparent 55%,
+    color-mix(in srgb, var(--visual-color-effect-firefight) 7%, transparent) 100%
+  );
+  box-shadow: inset 0 0 40px
+    color-mix(in srgb, var(--visual-color-effect-sweep-mid) 20%, transparent);
 }
 @keyframes board-aura-pulse {
   0%,
@@ -4179,6 +4284,13 @@ button.card.card-readonly:disabled {
   .board.iso-office .cbob {
     animation: none !important;
   }
+  .board.iso-office .fire-effects,
+  .board.iso-office .intervention-effects {
+    display: none;
+  }
+  .board.iso-office .board-modifier-aura {
+    animation: none !important;
+  }
   .title-world,
   .title-orbit,
   .title-world-platform,
@@ -7241,10 +7353,9 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   stroke: #1b1438cc;
   stroke-width: 2px;
 }
-/* RI-11: スプリント盤面の Pixi 描画領域（?renderer=pixi 時のみマウント）。
- * フロー(z2)より上・ステーション枠(z4)/ラベル(z7)/吹き出し(z8)/演出より下に置き、
- * DOM 版と同じ重なり順を保つ。ドラッグは board div の DOM pointer で受けるため
- * canvas 自体はイベントを取らない。 */
+/* RI-11: スプリント盤面の Pixi 基盤描画領域（?renderer=pixi 時のみマウント）。
+ * フロー(z2)より上・ステーション枠(z4)/ラベル(z7)/吹き出し(z8)より下に置く。
+ * ドラッグは board div の DOM pointer で受けるため canvas 自体はイベントを取らない。 */
 .board-pixi-mount {
   position: absolute;
   inset: 0;
@@ -7252,6 +7363,17 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
   pointer-events: none;
 }
 .board-pixi-mount canvas {
+  display: block;
+}
+/* RI-142: 一時演出だけを吹き出し(z8)・工程サマリー(z10)より上へ合成する。 */
+.board-pixi-effects-mount {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  overflow: hidden;
+  pointer-events: none;
+}
+.board-pixi-effects-mount canvas {
   display: block;
 }
 

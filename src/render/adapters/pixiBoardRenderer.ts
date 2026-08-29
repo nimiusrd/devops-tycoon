@@ -2,10 +2,10 @@
  * スプリント盤面（現場）の PixiJS レンダラ（RI-11 残務 / RI-07。SPEC 第22.4）。
  *
  * 状態を読んで描くだけ（第22.2）。描く内容は純TSの `planBoardScene` が決め、ここは
- * WebGL への反映だけを受け持つ。Pixi 化するのは常駐物＝工程間フロー線・タスク粒・
- * ステーションキャラのみで、イベント駆動の演出（FireEffects / InterventionEffects /
- * 数字ポップ / オーラ）・ラベル・吹き出し・凡例は DOM オーバーレイのまま重ねる
- * （DOM 版と演出コンポーネントを共有し、レンダラ間の見た目乖離を避ける）。
+ * WebGL への反映だけを受け持つ。工程間フロー線・タスク粒・ステーションキャラに加え、
+ * RI-142 の時刻付き plan から炎上・介入・常駐オーラを上限付きプールで描く。ラベル・
+ * 吹き出し・凡例は DOM オーバーレイのまま重ね、WebGL不可時は同じ plan の DOM fallback
+ * へ切り替える。
  *
  * RI-07: 粒とキャラは Graphics 直描きではなく、variant×size / lane×mood ごとに
  * RenderTexture へ焼き込んで Sprite で使い回す（粒数×表情の組合せに強く、
@@ -17,6 +17,7 @@
 import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import type { GameAssetId } from '../../data/assets';
 import type { Lane } from '../../sim/types';
+import { boardEffectProgress, type BoardAuraPlan, type TimedBoardEffect } from '../boardEffects';
 import {
   BOARD_VIEW,
   type BoardDotPlan,
@@ -119,6 +120,8 @@ export interface BoardRenderMetrics {
   flows: number;
   reviewTrails: number;
   reviewHeat: number;
+  effects: number;
+  auras: number;
   /** 取得処理が完了した人物SVGの種類数（失敗時のフォールバックも完了扱い）。 */
   assets: number;
 }
@@ -130,6 +133,10 @@ export interface BoardPixiInput {
   draggableTaskIds?: ReadonlySet<number>;
   /** ドラッグ中の粒（金色輪郭・最前面）。 */
   dragTaskId?: number | null;
+  /** DOM fallback と共有する一時演出タイムライン。 */
+  effects: readonly TimedBoardEffect[];
+  /** 進行中モディファイアの常駐オーラ。 */
+  auras: readonly BoardAuraPlan[];
   /** prefers-reduced-motion 時はアニメ位相を固定する。 */
   reducedMotion: boolean;
 }
@@ -137,6 +144,8 @@ export interface BoardPixiInput {
 export interface PixiBoardRendererOptions {
   /** dev-only: 直近 render のメトリクス（ブラウザ計測 / E2E 安定化用）。 */
   onRenderMetrics?: (metrics: BoardRenderMetrics) => void;
+  /** DOM オーバーレイを挟むため、基盤と一時演出を別 canvas に描く。 */
+  stratum?: 'all' | 'base' | 'effects';
 }
 
 /** 1 粒ぶんの子パーツ（プール再利用用）。 */
@@ -203,6 +212,50 @@ interface ReviewTrailEntry {
   baseAlpha: number;
   speedMul: number;
   phaseOffsetMs: number;
+}
+
+interface EffectParts {
+  graphics: Graphics;
+  label: Text;
+}
+
+interface EffectEntry {
+  group: Container;
+  plan: TimedBoardEffect;
+}
+
+function createEffectContainer(): Container {
+  const group = new Container();
+  const graphics = new Graphics();
+  const label = new Text({
+    text: '',
+    style: { fontFamily: FONT_FAMILY, fontSize: 9, fontWeight: '900' },
+  });
+  label.anchor.set(0.5);
+  label.visible = false;
+  group.addChild(graphics, label);
+  group.eventMode = 'none';
+  graphics.eventMode = 'none';
+  label.eventMode = 'none';
+  (group as Container & { effectParts: EffectParts }).effectParts = { graphics, label };
+  return group;
+}
+
+function getEffectParts(group: Container): EffectParts {
+  return (group as Container & { effectParts: EffectParts }).effectParts;
+}
+
+function resetEffectContainer(group: Container): void {
+  const parts = getEffectParts(group);
+  parts.graphics.clear();
+  parts.label.text = '';
+  parts.label.visible = false;
+  parts.label.tint = 0xffffff;
+  group.visible = false;
+  group.alpha = 1;
+  group.rotation = 0;
+  group.scale.set(1);
+  group.position.set(0, 0);
 }
 
 /** アニメ適用用のキャラメタデータ。 */
@@ -402,6 +455,28 @@ const DOT_GLOW: Partial<Record<BoardDotPlan['variant'], { color: string; alpha: 
   incident: { color: VISUAL_TOKENS.colors.taskGlow.incident, alpha: 0.38 },
 };
 
+function boardAuraColor(kind: BoardAuraPlan['kind']): string {
+  const colors = VISUAL_TOKENS.colors.boardEffects;
+  switch (kind) {
+    case 'throttle':
+      return colors.sweepEdge;
+    case 'overtime':
+      return colors.reworkEdge;
+    case 'andon':
+      return colors.firefight;
+    case 'stability':
+      return colors.sweepMid;
+  }
+}
+
+function lerp(from: number, to: number, t: number): number {
+  return from + (to - from) * t;
+}
+
+function effectPulse(progress: number): number {
+  return Math.max(0, Math.sin(Math.PI * progress));
+}
+
 export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private app: Application | null = null;
   /** contain-fit スケールを受ける設計空間ルート。 */
@@ -412,28 +487,38 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private readonly stationsLayer = new Container();
   private readonly reviewTrailsLayer = new Container();
   private readonly dotsLayer = new Container();
+  private readonly auraLayer = new Container();
+  private readonly auraGfx = new Graphics();
+  private readonly effectsLayer = new Container();
   private pool: SpritePool<Container> | null = null;
   private reviewTrailPool: SpritePool<Graphics> | null = null;
+  private effectPool: SpritePool<Container> | null = null;
   /** 焼き込みテクスチャ（自前管理。dispose で明示破棄する）。 */
   private readonly textures = new Map<string, Texture>();
   private actors: ActorEntry[] = [];
   private dotEntries: DotEntry[] = [];
   private reviewTrailEntries: ReviewTrailEntry[] = [];
+  private effectEntries: EffectEntry[] = [];
+  private activeAuras: readonly BoardAuraPlan[] = [];
   private reviewHeat: BoardReviewHeatFieldPlan | null = null;
   private lastFlows: readonly BoardFlow[] = [];
   /** アニメ経過時間（ms）。freeze で 0 に戻し位相 0 の決定論フレームにする。 */
   private elapsedMs = 0;
   private frozen = false;
   private reducedMotion = false;
+  /** 視覚回帰では最新演出の中央位相へ固定する。通常時は performance.now()。 */
+  private effectNowOverride: number | null = null;
   /** 進化オーバーレイ等で ticker だけ止める。screenshot freeze とは独立。 */
   private loopPaused = false;
   /** dispose 済みフラグ（非同期 init の中断判定）。init/dispose は 1 インスタンス 1 回。 */
   private disposed = false;
   private readonly opts: PixiBoardRendererOptions;
+  private readonly stratum: NonNullable<PixiBoardRendererOptions['stratum']>;
   private lastInput: BoardPixiInput | null = null;
 
   constructor(opts: PixiBoardRendererOptions = {}) {
     this.opts = opts;
+    this.stratum = opts.stratum ?? 'all';
   }
 
   /** ブラウザでのみ呼ぶ。WebGL コンテキストと描画レイヤを初期化する。 */
@@ -456,25 +541,38 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     mount.appendChild(app.canvas);
     app.renderer.events.setTargetElement(app.canvas);
 
-    this.reviewHeatLayer.addChild(this.reviewHeatGfx);
-    this.root.addChild(
-      this.flowsGfx,
-      this.reviewHeatLayer,
-      this.stationsLayer,
-      this.reviewTrailsLayer,
-      this.dotsLayer,
-    );
+    if (this.stratum !== 'effects') {
+      this.reviewHeatLayer.addChild(this.reviewHeatGfx);
+      this.auraLayer.addChild(this.auraGfx);
+      this.root.addChild(
+        this.flowsGfx,
+        this.reviewHeatLayer,
+        this.stationsLayer,
+        this.reviewTrailsLayer,
+        this.dotsLayer,
+        this.auraLayer,
+      );
+    }
+    if (this.stratum !== 'base') this.root.addChild(this.effectsLayer);
     app.stage.addChild(this.root);
     app.stage.eventMode = 'none';
 
-    this.pool = new SpritePool<Container>(createDotContainer, {
-      max: BOARD_SPRITE_BUDGET,
-      reset: resetDotContainer,
-    });
-    this.reviewTrailPool = new SpritePool<Graphics>(createReviewTrail, {
-      max: VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget,
-      reset: resetReviewTrail,
-    });
+    if (this.stratum !== 'effects') {
+      this.pool = new SpritePool<Container>(createDotContainer, {
+        max: BOARD_SPRITE_BUDGET,
+        reset: resetDotContainer,
+      });
+      this.reviewTrailPool = new SpritePool<Graphics>(createReviewTrail, {
+        max: VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget,
+        reset: resetReviewTrail,
+      });
+    }
+    if (this.stratum !== 'base') {
+      this.effectPool = new SpritePool<Container>(createEffectContainer, {
+        max: VISUAL_TOKENS.dimensions.sprint.boardEffects.budget,
+        reset: resetEffectContainer,
+      });
+    }
 
     this.app = app;
     retainPixiApp();
@@ -484,7 +582,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     app.ticker.add(() => {
       if (this.frozen || this.loopPaused || this.reducedMotion) return;
       this.elapsedMs += app.ticker.deltaMS;
-      this.applyAnimations(this.elapsedMs);
+      this.applyAnimations(this.elapsedMs, performance.now());
     });
   }
 
@@ -513,7 +611,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     if (!app) return;
     this.frozen = true;
     this.elapsedMs = 0;
-    this.applyAnimations(0);
+    const latest = this.effectEntries[this.effectEntries.length - 1]?.plan;
+    const effectNowMs = latest
+      ? latest.startedAtMs + latest.delayMs + latest.durationMs * 0.55
+      : performance.now();
+    this.effectNowOverride = effectNowMs;
+    this.applyAnimations(0, effectNowMs);
     app.ticker.stop();
     app.render();
   }
@@ -548,19 +651,25 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
   /** 最新のシーン計画を読んで 1 フレーム描く。init() 前は何もしない。 */
   render(input: BoardPixiInput): void {
-    const pool = this.pool;
-    if (!pool || !this.app) return;
+    if (!this.app) return;
     this.lastInput = input;
     const { scene } = input;
     this.reducedMotion = input.reducedMotion;
 
-    this.lastFlows = scene.flows;
-    this.drawFlows(this.elapsedMs);
-    this.syncReviewHeat(scene.reviewEffects.heatField);
-    this.syncActors(scene.stations);
-    this.syncReviewTrails(scene.reviewEffects.trails);
-    this.syncDots(scene.dots, input.draggableTaskIds ?? new Set(), input.dragTaskId ?? null);
-    this.applyAnimations(boardAnimationElapsedMs(this.elapsedMs, this.reducedMotion));
+    if (this.stratum !== 'effects') {
+      this.lastFlows = scene.flows;
+      this.drawFlows(this.elapsedMs);
+      this.syncReviewHeat(scene.reviewEffects.heatField);
+      this.syncActors(scene.stations);
+      this.syncReviewTrails(scene.reviewEffects.trails);
+      this.syncDots(scene.dots, input.draggableTaskIds ?? new Set(), input.dragTaskId ?? null);
+      this.syncAuras(input.auras);
+    }
+    if (this.stratum !== 'base') this.syncEffects(input.effects);
+    this.applyAnimations(
+      boardAnimationElapsedMs(this.elapsedMs, this.reducedMotion),
+      this.effectNowOverride ?? performance.now(),
+    );
 
     this.emitRenderMetrics();
     this.syncTickerState(false);
@@ -764,6 +873,156 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     }
   }
 
+  /** 時限モディファイアの常駐オーラを共有 plan から描く。 */
+  private syncAuras(auras: readonly BoardAuraPlan[]): void {
+    const g = this.auraGfx;
+    g.clear();
+    this.activeAuras = auras;
+    this.auraLayer.visible = auras.length > 0;
+    const tokens = VISUAL_TOKENS.dimensions.sprint.boardEffects.aura;
+    for (const aura of auras) {
+      const elapsedRatio =
+        aura.totalTicks > 0 ? 1 - Math.min(1, aura.remainingTicks / aura.totalTicks) : 1;
+      const alpha = tokens.minAlpha + elapsedRatio * tokens.elapsedAlpha;
+      const color = boardAuraColor(aura.kind);
+      g.rect(0, 0, BOARD_VIEW.w, BOARD_VIEW.h).fill({ color, alpha: alpha * 0.2 });
+      g.ellipse(
+        BOARD_VIEW.w / 2,
+        BOARD_VIEW.h * 0.42,
+        BOARD_VIEW.w * 0.42,
+        BOARD_VIEW.h * 0.48,
+      ).fill({
+        color,
+        alpha: alpha * 0.34,
+      });
+    }
+  }
+
+  /** 一時演出を上限付きプールへ同期する。reduced motion では装飾だけを抑制する。 */
+  private syncEffects(effects: readonly TimedBoardEffect[]): void {
+    const pool = this.effectPool;
+    if (!pool) return;
+    this.effectsLayer.removeChildren();
+    pool.releaseAll();
+    this.effectEntries = [];
+    if (this.reducedMotion) return;
+
+    const nowMs = this.effectNowOverride ?? performance.now();
+    for (const plan of effects) {
+      const animationEnd = plan.startedAtMs + plan.delayMs + plan.durationMs;
+      if (animationEnd <= nowMs) continue;
+      const group = pool.acquire();
+      if (!group) break;
+      this.prepareEffect(group, plan);
+      this.effectsLayer.addChild(group);
+      this.effectEntries.push({ group, plan });
+    }
+  }
+
+  /** effect kind ごとの局所図形を構築し、時間変化は applyEffectAnimations に任せる。 */
+  private prepareEffect(group: Container, plan: TimedBoardEffect): void {
+    const { graphics: g, label } = getEffectParts(group);
+    const colors = VISUAL_TOKENS.colors.boardEffects;
+    const sizes = VISUAL_TOKENS.dimensions.sprint.boardEffects;
+    group.visible = true;
+
+    if (plan.source === 'fire') {
+      const effect = plan.effect;
+      switch (effect.kind) {
+        case 'spread': {
+          const r = sizes.spread.size / 2;
+          g.circle(0, 0, r * 1.7).fill({ color: colors.fireMid, alpha: 0.22 });
+          g.circle(0, 0, r).fill(colors.fireEdge);
+          g.circle(-r * 0.18, -r * 0.18, r * 0.62).fill(colors.fireMid);
+          g.circle(-r * 0.32, -r * 0.32, r * 0.25).fill(colors.fireCore);
+          break;
+        }
+        case 'extinguish': {
+          const size =
+            effect.source === 'firefight' ? sizes.extinguish.firefightSize : sizes.extinguish.size;
+          const r = size / 2;
+          g.circle(0, 0, r).fill({ color: colors.extinguishWash, alpha: 0.24 });
+          g.circle(0, 0, r * 0.72).stroke({ color: colors.extinguishCore, alpha: 0.8, width: 3 });
+          g.circle(0, 0, r * 0.3).fill({ color: colors.extinguishCore, alpha: 0.7 });
+          break;
+        }
+        case 'ignite': {
+          const r = sizes.ignite.size / 2;
+          g.circle(0, 0, r).fill({ color: colors.fireMid, alpha: 0.22 });
+          g.circle(0, 0, r * 0.62).stroke({ color: colors.fireCore, alpha: 0.7, width: 3 });
+          g.circle(0, 0, r * 0.26).fill(colors.fireMid);
+          break;
+        }
+      }
+      return;
+    }
+
+    const effect = plan.effect;
+    switch (effect.kind) {
+      case 'reviewSweep': {
+        const tone =
+          effect.outcome === 'incident'
+            ? { core: colors.fireCore, mid: colors.fireMid, edge: colors.fireEdge }
+            : effect.outcome === 'rework'
+              ? { core: colors.reworkCore, mid: colors.reworkMid, edge: colors.reworkEdge }
+              : { core: colors.sweepCore, mid: colors.sweepMid, edge: colors.sweepEdge };
+        const r = sizes.sweep.size / 2;
+        g.moveTo(-sizes.sweep.trailLength, 0)
+          .lineTo(-r * 0.4, 0)
+          .stroke({ color: tone.mid, alpha: 0.65, width: 5, cap: 'round' });
+        g.circle(0, 0, r * 1.45).fill({ color: tone.mid, alpha: 0.2 });
+        g.circle(0, 0, r).fill(tone.edge);
+        g.circle(-r * 0.2, -r * 0.2, r * 0.58).fill(tone.mid);
+        g.circle(-r * 0.32, -r * 0.32, r * 0.25).fill(tone.core);
+        break;
+      }
+      case 'split': {
+        const { badgeWidth, badgeHeight, shardSize } = sizes.split;
+        g.roundRect(-badgeWidth / 2, -badgeHeight / 2, badgeWidth, badgeHeight, 6)
+          .fill({ color: colors.splitPanel, alpha: 0.9 })
+          .stroke({ color: colors.splitText, alpha: 0.65, width: 1 });
+        for (const x of [-badgeWidth * 0.72, badgeWidth * 0.72]) {
+          g.circle(x, -badgeHeight * 0.6, shardSize / 2).fill(colors.splitShard);
+        }
+        label.text = 'split';
+        label.tint = Number.parseInt(colors.splitText.slice(1), 16);
+        label.visible = true;
+        break;
+      }
+      case 'firefight': {
+        const r = sizes.firefight.size / 2;
+        g.circle(0, 0, r).stroke({ color: colors.firefight, alpha: 0.9, width: 3 });
+        g.circle(0, 0, sizes.firefight.burstSize / 2).fill({
+          color: colors.extinguishWash,
+          alpha: 0.18,
+        });
+        g.circle(0, 0, r * 0.34).fill({ color: colors.extinguishCore, alpha: 0.78 });
+        break;
+      }
+      case 'assignDash':
+        g.roundRect(
+          0,
+          -sizes.assignDash.width / 2,
+          sizes.assignDash.length,
+          sizes.assignDash.width,
+          2,
+        ).fill(colors.reworkEdge);
+        g.circle(sizes.assignDash.length, 0, sizes.assignDash.width).fill(colors.splitText);
+        break;
+      case 'boardAura': {
+        const color = boardAuraColor(effect.modifierKind);
+        g.ellipse(0, 0, BOARD_VIEW.w * 0.42, BOARD_VIEW.h * 0.45).fill({ color, alpha: 0.2 });
+        break;
+      }
+      case 'successPulse':
+        g.ellipse(0, 0, BOARD_VIEW.w * 0.42, BOARD_VIEW.h * 0.45).fill({
+          color: colors.sweepMid,
+          alpha: 0.24,
+        });
+        break;
+    }
+  }
+
   /** ステーションキャラ（机＋キャラ Sprite）を plan と同期する。 */
   private syncActors(stations: readonly BoardStationPlan[]): void {
     // 5 体固定なので初回だけ生成し、以後はテクスチャ差し替えのみ。
@@ -842,6 +1101,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       assets: this.actors.filter((actor) => actor.assetLoaded).length,
       reviewTrails: this.reviewTrailEntries.length,
       reviewHeat: this.reviewHeat?.intensity ?? 0,
+      effects: this.effectEntries.length,
+      auras: this.activeAuras.length,
     });
   }
 
@@ -928,7 +1189,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   }
 
   /** CSS keyframes 相当の時間オフセットを全対象へ適用する（位相 0 で全て 0）。 */
-  private applyAnimations(elapsedMs: number): void {
+  private applyAnimations(elapsedMs: number, effectNowMs: number): void {
     this.drawFlows(elapsedMs);
 
     if (this.reviewHeat) {
@@ -947,6 +1208,17 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       entry.trail.alpha =
         entry.baseAlpha * (1 - trailPulse / 2 + (Math.sin(phase) + 1) * (trailPulse / 2));
     }
+
+    if (this.activeAuras.length > 0) {
+      const aura = VISUAL_TOKENS.dimensions.sprint.boardEffects.aura;
+      const phase = (2 * Math.PI * elapsedMs) / aura.pulsePeriodMs;
+      this.auraLayer.alpha =
+        1 - aura.pulseAmplitude / 2 + (Math.sin(phase) + 1) * (aura.pulseAmplitude / 2);
+    } else {
+      this.auraLayer.alpha = 1;
+    }
+
+    this.applyEffectAnimations(effectNowMs);
 
     for (const actor of this.actors) {
       if (actor.mood === 'panic') {
@@ -991,6 +1263,90 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     }
   }
 
+  /** 時刻付き plan を現在フレームの座標・透明度・拡大率へ写す。 */
+  private applyEffectAnimations(nowMs: number): void {
+    for (const entry of this.effectEntries) {
+      const { group, plan } = entry;
+      const startsAt = plan.startedAtMs + plan.delayMs;
+      if (nowMs < startsAt) {
+        group.visible = false;
+        continue;
+      }
+      const progress = boardEffectProgress(plan, nowMs);
+      if (progress >= 1) {
+        group.visible = false;
+        continue;
+      }
+      group.visible = true;
+      const pulse = effectPulse(progress);
+
+      if (plan.source === 'fire') {
+        const effect = plan.effect;
+        switch (effect.kind) {
+          case 'spread':
+            group.position.set(
+              lerp(effect.fromX, effect.toX, progress),
+              lerp(effect.fromY, effect.toY, progress),
+            );
+            group.alpha = Math.min(1, progress * 7) * (0.75 + pulse * 0.25);
+            group.scale.set(0.5 + pulse * 0.7);
+            break;
+          case 'extinguish':
+            group.position.set(effect.x, effect.y);
+            group.alpha = pulse;
+            group.scale.set(0.3 + progress * 1.9);
+            break;
+          case 'ignite':
+            group.position.set(effect.x, effect.y);
+            group.alpha = pulse;
+            group.scale.set(0.4 + pulse * 1.4);
+            break;
+        }
+        continue;
+      }
+
+      const effect = plan.effect;
+      switch (effect.kind) {
+        case 'reviewSweep': {
+          const angle = Math.atan2(effect.toY - effect.fromY, effect.toX - effect.fromX);
+          group.position.set(
+            lerp(effect.fromX, effect.toX, progress),
+            lerp(effect.fromY, effect.toY, progress),
+          );
+          group.rotation = angle;
+          group.alpha = Math.min(1, progress * 8) * (0.72 + pulse * 0.28);
+          group.scale.set(0.6 + pulse * 0.5);
+          break;
+        }
+        case 'split':
+          group.position.set(effect.x, effect.y);
+          group.alpha = pulse;
+          group.scale.set(0.55 + pulse * 0.75);
+          break;
+        case 'firefight':
+          group.position.set(effect.x, effect.y);
+          group.alpha = pulse;
+          group.scale.set(0.4 + progress * 1.8);
+          break;
+        case 'assignDash':
+          group.position.set(
+            lerp(effect.fromX, effect.toX, progress),
+            lerp(effect.fromY, effect.toY, progress),
+          );
+          group.rotation = (effect.angleDeg * Math.PI) / 180;
+          group.alpha = pulse;
+          group.scale.set(0.3 + pulse, 0.75 + pulse * 0.25);
+          break;
+        case 'boardAura':
+        case 'successPulse':
+          group.position.set(BOARD_VIEW.w / 2, BOARD_VIEW.h * 0.42);
+          group.alpha = pulse * 0.85;
+          group.scale.set(0.72 + progress * 0.38);
+          break;
+      }
+    }
+  }
+
   /** WebGL リソースを破棄する。init の解決前でも呼べる（disposed で中断させる）。 */
   dispose(): void {
     this.disposed = true;
@@ -1002,6 +1358,9 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     for (const trail of this.reviewTrailPool?.drain() ?? []) {
       trail.destroy();
     }
+    for (const effect of this.effectPool?.drain() ?? []) {
+      effect.destroy({ children: true });
+    }
     // 焼き込みテクスチャは自前管理なので明示破棄する。
     for (const texture of this.textures.values()) texture.destroy(true);
     this.textures.clear();
@@ -1011,10 +1370,14 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.app = null;
     this.pool = null;
     this.reviewTrailPool = null;
+    this.effectPool = null;
     this.actors = [];
     this.dotEntries = [];
     this.reviewTrailEntries = [];
+    this.effectEntries = [];
+    this.activeAuras = [];
     this.reviewHeat = null;
+    this.effectNowOverride = null;
     this.lastInput = null;
   }
 }

@@ -44,6 +44,21 @@ describe('visual tokens', () => {
     });
   });
 
+  it('炎上・介入演出の共有色・寿命・上限を一元管理する', () => {
+    expect(VISUAL_TOKENS.colors.boardEffects).toMatchObject({
+      fireCore: '#fff8c0',
+      extinguishWash: '#b8e8ff',
+      sweepMid: '#7bdcff',
+      firefight: '#57e08f',
+    });
+    expect(VISUAL_TOKENS.dimensions.sprint.boardEffects).toMatchObject({
+      budget: 20,
+      spread: { size: 14, durationMs: 550 },
+      sweep: { size: 16, durationMs: 480, staggerMs: 90 },
+      aura: { pulsePeriodMs: 2400 },
+    });
+  });
+
   it('設計空間を Pixi host へ contain 配置する', () => {
     expect(designToHostTransform(2808, 573, DESIGN_SPACES.sprint)).toEqual({
       scale: 1,
@@ -94,6 +109,17 @@ describe('visual tokens', () => {
     expect(values['--visual-color-banner-warn-bg-alpha']).toBe('93%');
     expect(values['--visual-color-banner-hell-bg-alpha']).toBe('93%');
     expect(values['--visual-color-interaction-drag']).toBe(VISUAL_TOKENS.colors.interaction.drag);
+    expect(values['--visual-color-effect-fire-mid']).toBe(
+      VISUAL_TOKENS.colors.boardEffects.fireMid,
+    );
+    expect(values['--visual-color-effect-sweep-mid']).toBe(
+      VISUAL_TOKENS.colors.boardEffects.sweepMid,
+    );
+    expect(values['--visual-board-aura-period']).toBe('2400ms');
+    expect(values['--visual-board-effect-spread-size']).toBe(
+      `${(VISUAL_TOKENS.dimensions.sprint.boardEffects.spread.size / DESIGN_SPACES.sprint.w) * 100}%`,
+    );
+    expect(values['--visual-board-effect-assign-aspect-ratio']).toBe('9');
 
     const applied = new Map<string, string>();
     const root = {

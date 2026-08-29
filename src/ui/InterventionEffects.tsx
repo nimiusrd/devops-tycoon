@@ -1,29 +1,17 @@
 /**
  * 介入アクション成功時の盤面リアクション演出（SPEC 第6 / 第18.2 / RI-50）。
  *
- * RI-49 の `InterventionEffect` ペイロードから plan を導出し、Framer Motion で再生する。
- * シミュレーションには影響しない描画専用レイヤ（第22.2）。
+ * `useBoardEffects` が一度だけ作った時刻付き plan を DOM fallback として描く。
+ * Pixi 使用中も不可視のまま同じ animation を進め、初期化失敗時に再発火させない。
  */
-import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useAudio } from '../audio/useAudio';
+import type { TimedBoardEffect } from '../render/boardEffects';
 import {
   interventionPct,
-  planPositionedInterventionReactions,
   type PositionedInterventionReaction,
 } from '../render/interventionEffects';
 import { BOARD_VIEW } from '../render/boardScene';
 import type { InterventionEffect, Task } from '../sim/types';
-
-type ActiveEffect = PositionedInterventionReaction & { key: number };
-
-const MAX_EFFECTS = 12;
-const SWEEP_MS = 480;
-const SWEEP_STAGGER_MS = 90;
-const SPLIT_MS = 520;
-const FIREFIGHT_MS = 550;
-const DASH_MS = 420;
-const AURA_PULSE_MS = 600;
 
 export interface InterventionTrigger {
   effect: InterventionEffect;
@@ -35,78 +23,24 @@ export interface InterventionTrigger {
 }
 
 export interface InterventionEffectsProps {
-  trigger: InterventionTrigger | null;
-  onFirefightTaskId?: (taskId: number) => void;
+  effects: readonly TimedBoardEffect[];
+  /** Pixi 描画中は DOM fallback を不可視にする（アンマウントはしない）。 */
+  gpuActive: boolean;
 }
 
-export function InterventionEffects({ trigger, onFirefightTaskId }: InterventionEffectsProps) {
-  const nextKey = useRef(0);
-  const removalTimers = useRef<Map<number, number>>(new Map());
-  const seenTriggerKeys = useRef(new Set<number>());
-  const [active, setActive] = useState<ActiveEffect[]>([]);
-  const { playSfx } = useAudio();
-
-  useEffect(() => {
-    const timers = removalTimers.current;
-    return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
-      timers.clear();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!trigger) return;
-    if (seenTriggerKeys.current.has(trigger.key)) return;
-    seenTriggerKeys.current.add(trigger.key);
-
-    const timers = removalTimers.current;
-
-    const positioned = planPositionedInterventionReactions(
-      trigger.effect,
-      trigger.nextTasks,
-      trigger.prevTasks,
-      trigger.currentTick,
-    );
-    if (positioned.length === 0) return;
-    playSfx('interventionHit');
-
-    const firefight = positioned.find((p) => p.kind === 'firefight');
-    if (firefight?.kind === 'firefight') {
-      onFirefightTaskId?.(firefight.taskId);
-    }
-
-    const batch = positioned.map((effect) => ({
-      ...effect,
-      key: nextKey.current++,
-    }));
-
-    setActive((cur) => [...cur, ...batch].slice(-MAX_EFFECTS));
-
-    for (const effect of batch) {
-      const duration =
-        effect.kind === 'reviewSweep'
-          ? SWEEP_MS + effect.staggerIndex * SWEEP_STAGGER_MS
-          : effect.kind === 'split'
-            ? SPLIT_MS
-            : effect.kind === 'firefight'
-              ? FIREFIGHT_MS
-              : effect.kind === 'assignDash'
-                ? DASH_MS
-                : effect.kind === 'boardAura' || effect.kind === 'successPulse'
-                  ? AURA_PULSE_MS
-                  : 400;
-      const timer = window.setTimeout(() => {
-        setActive((cur) => cur.filter((e) => e.key !== effect.key));
-        timers.delete(effect.key);
-      }, duration + 80);
-      timers.set(effect.key, timer);
-    }
-  }, [trigger, onFirefightTaskId, playSfx]);
-
+export function InterventionEffects({ effects, gpuActive }: InterventionEffectsProps) {
+  const active = effects.filter(
+    (effect): effect is TimedBoardEffect & { source: 'intervention' } =>
+      effect.source === 'intervention',
+  );
   return (
-    <div className="intervention-effects" aria-hidden="true">
+    <div
+      className={`intervention-effects${gpuActive ? ' dom-fallback-hidden' : ''}`}
+      data-effect-count={active.length}
+      aria-hidden="true"
+    >
       <AnimatePresence>
-        {active.filter((effect) => effect.kind === 'reviewSweep').length >= 2 && (
+        {active.filter((effect) => effect.effect.kind === 'reviewSweep').length >= 2 && (
           <motion.div
             key="sweep-burst"
             className="intervention-sweep-burst"
@@ -119,31 +53,52 @@ export function InterventionEffects({ trigger, onFirefightTaskId }: Intervention
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {active.map((effect) => {
+        {active.map((timed) => {
+          const effect = timed.effect;
           switch (effect.kind) {
             case 'reviewSweep':
               return (
                 <ReviewSweepParticle
-                  key={effect.key}
+                  key={timed.sequence}
                   effect={effect}
-                  duration={SWEEP_MS / 1000}
-                  delay={(effect.staggerIndex * SWEEP_STAGGER_MS) / 1000}
+                  duration={timed.durationMs / 1000}
+                  delay={timed.delayMs / 1000}
                 />
               );
             case 'split':
-              return <SplitBurst key={effect.key} effect={effect} duration={SPLIT_MS / 1000} />;
+              return (
+                <SplitBurst
+                  key={timed.sequence}
+                  effect={effect}
+                  duration={timed.durationMs / 1000}
+                />
+              );
             case 'firefight':
               return (
-                <FirefightBurst key={effect.key} effect={effect} duration={FIREFIGHT_MS / 1000} />
+                <FirefightBurst
+                  key={timed.sequence}
+                  effect={effect}
+                  duration={timed.durationMs / 1000}
+                />
               );
             case 'assignDash':
-              return <AssignDash key={effect.key} effect={effect} duration={DASH_MS / 1000} />;
+              return (
+                <AssignDash
+                  key={timed.sequence}
+                  effect={effect}
+                  duration={timed.durationMs / 1000}
+                />
+              );
             case 'boardAura':
               return (
-                <BoardAuraPulse key={effect.key} effect={effect} duration={AURA_PULSE_MS / 1000} />
+                <BoardAuraPulse
+                  key={timed.sequence}
+                  effect={effect}
+                  duration={timed.durationMs / 1000}
+                />
               );
             case 'successPulse':
-              return <SuccessPulse key={effect.key} duration={AURA_PULSE_MS / 1000} />;
+              return <SuccessPulse key={timed.sequence} duration={timed.durationMs / 1000} />;
             default:
               return null;
           }

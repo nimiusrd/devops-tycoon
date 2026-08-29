@@ -1,122 +1,58 @@
 /**
  * 延焼・鎮火・点火の盤面演出（SPEC 第18.2 / RI-06）。
  *
- * スプリント状態の差分から演出 plan を導出し、Framer Motion で再生する。
- * シミュレーションには影響しない描画専用レイヤ（第22.2）。
+ * `useBoardEffects` が一度だけ作った時刻付き plan を DOM fallback として描く。
+ * Pixi 使用中も不可視のまま同じ animation を進め、初期化失敗時に再発火させない。
  */
-import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useAudio } from '../audio/useAudio';
-import {
-  createFireSnapshot,
-  detectFireEvents,
-  firePct,
-  fireSnapshotsEqual,
-  positionFireEffects,
-  type FireSnapshot,
-  type PositionedFireEffect,
-} from '../render/fireEffects';
-import type { SprintMetrics, Task } from '../sim/types';
+import type { TimedBoardEffect } from '../render/boardEffects';
+import { firePct, type PositionedFireEffect } from '../render/fireEffects';
 import { BOARD_VIEW } from '../render/boardScene';
 
-type ActiveEffect = PositionedFireEffect & { key: number };
-
-const MAX_EFFECTS = 8;
-const SPREAD_MS = 550;
-const EXTINGUISH_MS = 500;
-const IGNITE_MS = 450;
-
 export interface FireEffectsProps {
-  tasks: readonly Task[];
-  metrics: SprintMetrics;
-  reviewAccumulator: number;
-  /** firefight 介入演出と二重再生しない task ID（RI-50）。 */
-  suppressExtinguishTaskIds?: ReadonlySet<number>;
+  effects: readonly TimedBoardEffect[];
+  /** Pixi 描画中は DOM fallback を不可視にする（アンマウントはしない）。 */
+  gpuActive: boolean;
 }
 
-export function FireEffects({
-  tasks,
-  metrics,
-  reviewAccumulator,
-  suppressExtinguishTaskIds,
-}: FireEffectsProps) {
-  const prevSnap = useRef<FireSnapshot>(createFireSnapshot(tasks, metrics, reviewAccumulator));
-  const prevTasks = useRef<readonly Task[]>(tasks);
-  const nextKey = useRef(0);
-  const removalTimers = useRef<Map<number, number>>(new Map());
-  const [active, setActive] = useState<ActiveEffect[]>([]);
-  const { playSfx } = useAudio();
-
-  useEffect(() => {
-    const timers = removalTimers.current;
-    return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
-      timers.clear();
-    };
-  }, []);
-
-  useEffect(() => {
-    const nextSnap = createFireSnapshot(tasks, metrics, reviewAccumulator);
-    if (fireSnapshotsEqual(prevSnap.current, nextSnap)) return;
-
-    const raw = detectFireEvents(prevSnap.current, nextSnap);
-    const priorTasks = prevTasks.current;
-    prevSnap.current = nextSnap;
-    prevTasks.current = tasks;
-    if (raw.length === 0) return;
-
-    const filtered = suppressExtinguishTaskIds?.size
-      ? raw.filter(
-          (e) =>
-            e.kind !== 'extinguish' ||
-            e.source !== 'firefight' ||
-            !suppressExtinguishTaskIds.has(e.taskId),
-        )
-      : raw;
-    if (filtered.length === 0) return;
-
-    const positioned = positionFireEffects(filtered, tasks, priorTasks);
-    if (positioned.length === 0) return;
-    if (positioned.some((e) => e.kind === 'spread')) {
-      playSfx('fireSpread');
-    }
-
-    const batch = positioned.map((effect) => ({
-      ...effect,
-      key: nextKey.current++,
-    }));
-    setActive((cur) => [...cur, ...batch].slice(-MAX_EFFECTS));
-
-    for (const effect of batch) {
-      const duration =
-        effect.kind === 'spread'
-          ? SPREAD_MS
-          : effect.kind === 'extinguish'
-            ? EXTINGUISH_MS
-            : IGNITE_MS;
-      const timer = window.setTimeout(() => {
-        setActive((cur) => cur.filter((e) => e.key !== effect.key));
-        removalTimers.current.delete(effect.key);
-      }, duration + 80);
-      removalTimers.current.set(effect.key, timer);
-    }
-  }, [tasks, metrics, reviewAccumulator, suppressExtinguishTaskIds, playSfx]);
-
+export function FireEffects({ effects, gpuActive }: FireEffectsProps) {
+  const active = effects.filter(
+    (effect): effect is TimedBoardEffect & { source: 'fire' } => effect.source === 'fire',
+  );
   return (
-    <div className="fire-effects" aria-hidden="true">
+    <div
+      className={`fire-effects${gpuActive ? ' dom-fallback-hidden' : ''}`}
+      data-effect-count={active.length}
+      aria-hidden="true"
+    >
       <AnimatePresence>
-        {active.map((effect) => {
+        {active.map((timed) => {
+          const effect = timed.effect;
           switch (effect.kind) {
             case 'spread':
               return (
-                <SpreadParticle key={effect.key} effect={effect} duration={SPREAD_MS / 1000} />
+                <SpreadParticle
+                  key={timed.sequence}
+                  effect={effect}
+                  duration={timed.durationMs / 1000}
+                />
               );
             case 'extinguish':
               return (
-                <ExtinguishBurst key={effect.key} effect={effect} duration={EXTINGUISH_MS / 1000} />
+                <ExtinguishBurst
+                  key={timed.sequence}
+                  effect={effect}
+                  duration={timed.durationMs / 1000}
+                />
               );
             case 'ignite':
-              return <IgniteFlash key={effect.key} effect={effect} duration={IGNITE_MS / 1000} />;
+              return (
+                <IgniteFlash
+                  key={timed.sequence}
+                  effect={effect}
+                  duration={timed.durationMs / 1000}
+                />
+              );
             default:
               return null;
           }

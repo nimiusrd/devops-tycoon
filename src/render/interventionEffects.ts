@@ -51,6 +51,13 @@ export type PositionedInterventionReaction =
   | { kind: 'boardAura'; modifierKind: InterventionModifierKind; durationTicks: number }
   | { kind: 'successPulse' };
 
+/** 進行中モディファイアの常駐オーラ plan（DOM/Pixi 共通）。 */
+export interface BoardAuraPlan {
+  kind: InterventionModifierKind;
+  remainingTicks: number;
+  totalTicks: number;
+}
+
 const MODIFIER_TOTALS: Record<InterventionModifierKind, number> = {
   throttle: THROTTLE_TICKS,
   overtime: OVERTIME_TICKS,
@@ -235,14 +242,14 @@ export function planPositionedInterventionReactions(
 export function deriveActiveBoardAuras(
   modifiers: SprintModifiers,
   sprintTick: number,
-): { kind: InterventionModifierKind; remainingTicks: number; totalTicks: number }[] {
+): BoardAuraPlan[] {
   const entries: { kind: InterventionModifierKind; until: number; total: number }[] = [
     { kind: 'throttle', until: modifiers.throttleUntilTick, total: THROTTLE_TICKS },
     { kind: 'overtime', until: modifiers.overtimeUntilTick, total: OVERTIME_TICKS },
     { kind: 'andon', until: modifiers.andonUntilTick, total: ANDON_TICKS },
     { kind: 'stability', until: modifiers.stabilityUntilTick, total: STABILITY_TICKS },
   ];
-  return entries.flatMap(({ kind, until, total }) => {
+  return entries.flatMap(({ kind, until, total }): BoardAuraPlan[] => {
     const remainingTicks = Math.max(0, until - sprintTick);
     if (remainingTicks <= 0) return [];
     return [{ kind, remainingTicks, totalTicks: total }];

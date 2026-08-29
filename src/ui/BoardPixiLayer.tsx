@@ -2,8 +2,9 @@
  * スプリント盤面の PixiJS 描画レイヤ（`?renderer=pixi` 時のみ Board からマウント）。
  *
  * 盤面 div（contain-fit 済み・1404:573）いっぱいに透明 canvas を重ね、常駐物
- * （フロー線・タスク粒・ステーションキャラ）だけを WebGL で描く。ラベル・吹き出し・
- * 凡例・イベント演出（FireEffects / InterventionEffects 等）は DOM のまま親が重ねる。
+ * （フロー線・タスク粒・ステーションキャラ）と、炎上・介入・常駐オーラを WebGL で描く。
+ * ラベル・吹き出し・凡例は DOM のまま親が重ね、イベント演出の DOM 版は不可視 fallback
+ * として同じ時刻付き plan を進める。
  * 実 WebGL は init() 以降ブラウザ上でのみ動く（CI/Node ではマウントされない）。
  */
 import { useReducedMotion } from 'framer-motion';
@@ -16,6 +17,8 @@ declare global {
     __boardPixiTest?: {
       freezeForScreenshot(): void;
     };
+    /** Playwright が WebGL 初期化失敗を決定論的に注入するためのフック。 */
+    __forceBoardPixiInitFailure?: { delayMs?: number; waitForEffects?: boolean };
   }
 }
 
@@ -30,6 +33,8 @@ export function BoardPixiLayer({
   scene,
   draggableTaskIds,
   dragTaskId,
+  effects,
+  auras,
   onWebglError,
   animationsPaused = false,
 }: BoardPixiLayerProps) {
@@ -40,6 +45,8 @@ export function BoardPixiLayer({
     scene,
     draggableTaskIds,
     dragTaskId,
+    effects,
+    auras,
     reducedMotion,
   });
   const onWebglErrorRef = useRef(onWebglError);
@@ -55,8 +62,8 @@ export function BoardPixiLayer({
   }, [animationsPaused]);
 
   useEffect(() => {
-    inputRef.current = { scene, draggableTaskIds, dragTaskId, reducedMotion };
-  }, [scene, draggableTaskIds, dragTaskId, reducedMotion]);
+    inputRef.current = { scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion };
+  }, [scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -71,6 +78,8 @@ export function BoardPixiLayer({
         el.dataset.boardAssets = String(m.assets);
         el.dataset.boardReviewTrails = String(m.reviewTrails);
         el.dataset.boardReviewHeat = String(m.reviewHeat);
+        el.dataset.boardEffects = String(m.effects);
+        el.dataset.boardAuras = String(m.auras);
       },
     });
     rendererRef.current = renderer;
@@ -84,8 +93,30 @@ export function BoardPixiLayer({
     };
 
     let cancelled = false;
-    void renderer
-      .init(mount)
+    const initRenderer = async (): Promise<void> => {
+      const forcedFailure = window.__forceBoardPixiInitFailure;
+      if (forcedFailure) {
+        if (forcedFailure.waitForEffects) {
+          await new Promise<void>((resolve) => {
+            const poll = () => {
+              if (cancelled || inputRef.current.effects.length > 0) {
+                resolve();
+                return;
+              }
+              window.setTimeout(poll, 16);
+            };
+            poll();
+          });
+        }
+        await new Promise<void>((resolve) =>
+          window.setTimeout(resolve, Math.max(0, forcedFailure.delayMs ?? 0)),
+        );
+        throw new Error('Forced BoardPixiLayer initialization failure');
+      }
+      await renderer.init(mount);
+    };
+
+    void initRenderer()
       .then(() => {
         if (cancelled) return;
         renderer.resize(mount.clientWidth, mount.clientHeight);
@@ -121,8 +152,8 @@ export function BoardPixiLayer({
     if (!renderer?.isReady) return;
     const mount = mountRef.current;
     if (mount) renderer.resize(mount.clientWidth, mount.clientHeight);
-    renderer.render({ scene, draggableTaskIds, dragTaskId, reducedMotion });
-  }, [scene, draggableTaskIds, dragTaskId, reducedMotion]);
+    renderer.render({ scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion });
+  }, [scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion]);
 
   return (
     <div

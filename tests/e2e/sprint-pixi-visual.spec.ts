@@ -5,6 +5,7 @@
  * 実行: `npm run test:e2e:pixi`
  */
 import {
+  advanceCurrentSprintToBurning,
   advanceCurrentSprintToReviewQueue,
   advanceCurrentSprintToResult,
   advancePublicRun,
@@ -207,6 +208,92 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await freezePixiForScreenshot(page);
   });
 
+  test('介入リアクションと常駐オーラをPixi合成で固定する @pixi（RI-142）', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await beginPublicSprint(page, { seed: 'ri142-pixi-aura', renderer: 'pixi' });
+    await stabilizeForScreenshot(page);
+
+    await page.getByTestId('action-overtime').click();
+    const board = page.getByTestId('board');
+    const mount = page.getByTestId('board-pixi-mount');
+    await expect(board).toHaveAttribute('data-effect-renderer', 'pixi');
+    await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:boardAura');
+    await expect(mount).toHaveAttribute('data-board-effects', '1');
+    await expect(mount).toHaveAttribute('data-board-auras', '1');
+    await expect(page.getByTestId('intervention-effect-aura-overtime')).not.toBeVisible();
+    await freezePixiForScreenshot(page);
+
+    await expect(board).toHaveScreenshot('sprint-pixi-intervention-aura.png', {
+      animations: 'disabled',
+      maxDiffPixelRatio: 0.02,
+    });
+  });
+
+  test('点火リアクションをPixi合成で固定する @pixi（RI-142）', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await beginPublicSprint(page, {
+      seed: 'ri142-fire-effects',
+      difficulty: 'hard',
+      renderer: 'pixi',
+    });
+    await stabilizeForScreenshot(page);
+    await advanceCurrentSprintToBurning(page);
+
+    const board = page.getByTestId('board');
+    const mount = page.getByTestId('board-pixi-mount');
+    await expect(board).toHaveAttribute('data-effect-kinds', /fire:(ignite|spread)/);
+    await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
+    await freezePixiForScreenshot(page);
+
+    await expect(board).toHaveScreenshot('sprint-pixi-fire-effect.png', {
+      animations: 'disabled',
+      maxDiffPixelRatio: 0.02,
+    });
+  });
+
+  test('レビュー掃引と緊急鎮火を上限付きPixi演出へ渡す @pixi（RI-142）', async ({ page }) => {
+    await beginPublicSprint(page, { seed: 'ops', renderer: 'pixi' });
+    await stabilizeForScreenshot(page);
+    await advanceCurrentSprintToReviewQueue(page, 4);
+    await page.getByTestId('action-interruptReview').click();
+    const board = page.getByTestId('board');
+    const mount = page.getByTestId('board-pixi-mount');
+    await expect(board).toHaveAttribute('data-effect-kinds', /intervention:reviewSweep/);
+    await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
+    await expect(page.locator('.intervention-effects')).toHaveClass(/dom-fallback-hidden/);
+
+    await beginPublicSprint(page, {
+      seed: 'ri142-fire-effects',
+      difficulty: 'hard',
+      renderer: 'pixi',
+    });
+    await stabilizeForScreenshot(page);
+    await advanceCurrentSprintToBurning(page);
+    await page.getByTestId('action-firefight').click();
+    await expect(page.getByTestId('board')).toHaveAttribute(
+      'data-effect-kinds',
+      'intervention:firefight',
+    );
+    await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-effects', '1');
+  });
+
+  test('reduced motionではPixi一時装飾を抑制して介入情報と常駐オーラを残す @pixi（RI-142）', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await beginPublicSprint(page, { seed: 'ri142-pixi-reduced', renderer: 'pixi' });
+    await stabilizeForScreenshot(page);
+
+    await page.getByTestId('action-overtime').click();
+    const board = page.getByTestId('board');
+    const mount = page.getByTestId('board-pixi-mount');
+    await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
+    await expect(mount).toHaveAttribute('data-board-effects', '0');
+    await expect(mount).toHaveAttribute('data-board-auras', '1');
+    await expect(page.locator('[data-testid^="event-ticker-row-"]').first()).toBeVisible();
+    await freezePixiForScreenshot(page);
+  });
+
   test('1440x900通常スプリントのPixi合成を固定する @pixi', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await beginPublicSprint(page, { seed: 'ri94-normal-0', renderer: 'pixi' });
@@ -314,7 +401,9 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     );
   });
 
-  test('武装→canvas 上の粒ドラッグでタスク差配が確定する @pixi（RI-30）', async ({ page }) => {
+  test('武装→canvas 上の粒ドラッグでタスク差配とGPUリアクションが確定する @pixi（RI-30 / RI-142）', async ({
+    page,
+  }) => {
     // 序盤（coding/backlog に差配候補が残っている状態）で武装する。
     await page.setViewportSize({ width: 1440, height: 900 });
     await openPixiSprintBoard(page, PIXI_SEED, 0);
@@ -380,6 +469,8 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
         ),
       )
       .toBe(before + 1);
+    await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:assignDash');
+    await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-effects', '1');
   });
 
   test('現場⇄全社⇄部署の行き来で WebGL 破棄エラーが出ない @pixi', async ({ page }) => {

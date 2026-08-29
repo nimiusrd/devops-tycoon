@@ -138,6 +138,26 @@ export async function advanceCurrentSprintToReviewQueue(
   return count;
 }
 
+/** 公開 step() だけで最初の未鎮火 Incident まで進め、React が演出差分を読める所で止める。 */
+export async function advanceCurrentSprintToBurning(page: Page): Promise<number[]> {
+  const taskIds = await page.evaluate(() => {
+    const game = (window as PublicGameWindow).game;
+    if (!game) throw new Error('window.game が公開されていない');
+    let state = game.getState();
+    let guard = 0;
+    while (state.phase === 'sprint' && guard < 4_000) {
+      const burning = state.sprint?.tasks.filter((task) => task.incident) ?? [];
+      if (burning.length > 0) return burning.map((task) => task.id);
+      guard += 1;
+      game.step(100);
+      state = game.getState();
+    }
+    throw new Error(`未鎮火 Incident へ到達しない: phase=${state.phase} guard=${guard}`);
+  });
+  await expect(page.getByTestId('fire-count')).not.toHaveText('🔥0');
+  return taskIds;
+}
+
 /** setup で停止しているランを次のスプリントへ進める。 */
 export async function beginCurrentSetupSprint(page: Page): Promise<void> {
   await page.evaluate(() => {

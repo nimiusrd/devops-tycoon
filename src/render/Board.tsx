@@ -43,6 +43,7 @@ import { InterventionEffects, type InterventionTrigger } from '../ui/Interventio
 import { OfficeRoom } from '../ui/OfficeRoom';
 import { StationActor } from '../ui/OfficeActors';
 import { usePixiRenderer } from '../ui/usePixiRenderer';
+import { useBoardEffects } from '../ui/useBoardEffects';
 import { deriveMemberMoodOverrides } from './memberMood';
 import {
   BOARD_VIEW,
@@ -303,7 +304,7 @@ export function Board({
     [roster],
   );
   const scene = planBoardScene(tasks, moodOverrides);
-  // 常駐物（フロー線・粒・キャラ）を WebGL で描くか（RI-11。演出・ラベルは DOM 共通）。
+  // 盤面の常駐物と連続演出を WebGL で描くか（RI-11 / RI-142。ラベルは DOM 共通）。
   const { usePixi, onWebglError } = usePixiRenderer();
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
@@ -312,6 +313,13 @@ export function Board({
 
   const boardRef = useRef<HTMLDivElement>(null);
   const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
+  const boardEffects = useBoardEffects({
+    tasks,
+    metrics,
+    reviewAccumulator,
+    interventionTrigger,
+    suppressExtinguishTaskIds,
+  });
 
   const dragPlan =
     armedAction && sprint ? planBoardDrag(sprint, armedAction, assignAssignee) : null;
@@ -406,6 +414,14 @@ export function Board({
       data-armed={armedAction ?? undefined}
       data-review-heat={heat}
       data-review-hell={hot ? 'true' : 'false'}
+      data-effect-renderer={usePixi ? 'pixi' : 'dom'}
+      data-effect-count={boardEffects.effects.length}
+      data-effect-kinds={boardEffects.effects
+        .map((effect) => `${effect.source}:${effect.effect.kind}`)
+        .join(',')}
+      data-effect-sequence={boardEffects.lastSequence}
+      data-effect-sfx-count={boardEffects.audio.count}
+      data-effect-last-sfx={boardEffects.audio.last ?? undefined}
       data-animations-paused={animationsPaused ? 'true' : undefined}
       onPointerDown={usePixi ? handleBoardPointerDown : undefined}
       style={{ '--review-heat': heat } as CSSProperties}
@@ -432,6 +448,8 @@ export function Board({
             scene={scene}
             draggableTaskIds={dragIds}
             dragTaskId={dragTaskId}
+            effects={boardEffects.effects}
+            auras={activeAuras}
             onWebglError={onWebglError}
             animationsPaused={animationsPaused}
           />
@@ -493,19 +511,12 @@ export function Board({
         </div>
       </details>
 
-      {metrics && (
-        <FireEffects
-          tasks={tasks}
-          metrics={metrics}
-          reviewAccumulator={reviewAccumulator}
-          suppressExtinguishTaskIds={suppressExtinguishTaskIds}
-        />
-      )}
+      <FireEffects effects={boardEffects.effects} gpuActive={usePixi} />
 
       {activeAuras.map((aura) => (
         <div
           key={aura.kind}
-          className={`board-modifier-aura aura-${aura.kind}`}
+          className={`board-modifier-aura aura-${aura.kind}${usePixi ? ' dom-fallback-hidden' : ''}`}
           data-testid={`board-aura-${aura.kind}`}
           style={
             {
@@ -515,7 +526,7 @@ export function Board({
         />
       ))}
 
-      {interventionTrigger && <InterventionEffects trigger={interventionTrigger} />}
+      <InterventionEffects effects={boardEffects.effects} gpuActive={usePixi} />
     </div>
   );
 }

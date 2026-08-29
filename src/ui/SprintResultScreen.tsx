@@ -83,7 +83,7 @@ export function SprintResultScreen({
   onContinue,
   onAbandon,
   continueLabel = 'カードドラフトへ →',
-  abandonLabel = 'リプレイに残さずタイトルへ',
+  abandonLabel,
   continueDisabled = false,
   continueDisabledReason,
   replayMode = false,
@@ -95,6 +95,8 @@ export function SprintResultScreen({
   const analysis = planInterventionAnalysis(result);
   const gradeView = planSprintGradeView(result);
   const hellSummary = planReviewHellResultSummary(result, { replayMode, diagnosis });
+  const resolvedAbandonLabel =
+    abandonLabel ?? (replayMode ? 'タイトルへ戻る' : 'リプレイに残さずタイトルへ');
 
   return (
     <div
@@ -253,9 +255,13 @@ export function SprintResultScreen({
               className="btn"
               onClick={onAbandon}
               data-testid="result-restart"
-              title="勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません"
+              title={
+                replayMode
+                  ? undefined
+                  : '勝利または敗北の前にタイトルへ戻ると、このランはリプレイに保存されません'
+              }
             >
-              {abandonLabel}
+              {resolvedAbandonLabel}
             </button>
           )}
         </div>

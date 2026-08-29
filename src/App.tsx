@@ -678,7 +678,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
               onContinue={
                 run.isReplayMode ? () => run.jumpReplayToPhase('draft') : run.acknowledgeResult
               }
-              onAbandon={newRun}
+              onAbandon={run.isReplayMode ? exitReplay : newRun}
               continueDisabled={replayDraftMissing}
               continueDisabledReason={replayDraftMissing ? REPLAY_DRAFT_MISSING_HINT : undefined}
               replayMode={run.isReplayMode}

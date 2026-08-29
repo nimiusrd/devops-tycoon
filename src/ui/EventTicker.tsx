@@ -2,7 +2,7 @@
  * スプリント内イベントティッカー（RI-52）。
  *
  * sim の `SprintState.events` を読み、直近の介入・出来事を言語化して盤面脇に出す。
- * 演出は読むだけ（第22.2）。
+ * 演出は読むだけ（第22.2）。履歴と現在値が食い違うときは「今」の段数を併記する（#357）。
  *
  * DS-01: リストは常に pointer-events: none。フォーカス中も盤面ドラッグを通す。
  * DS-06 / DS-08: 見出しの click と修飾なしホイール、キーボードで全行へ到達する。
@@ -10,6 +10,7 @@
  */
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { COMBO_HUD_EVENT_WINDOW, shouldShowLiveComboHint } from '../render/sprintComboView';
 import {
   clientPointHitsRegisteredBoardDrag,
   hasRegisteredBoardDragHitTest,
@@ -34,8 +35,8 @@ import {
   wheelDeltaYInCssPixels,
 } from './eventTickerPointer';
 
-/** 同時表示する最大件数。 */
-const TICKER_LIMIT = 5;
+/** 同時表示する最大件数。コンボ HUD の履歴判定と同じ窓を使う。 */
+const TICKER_LIMIT = COMBO_HUD_EVENT_WINDOW;
 
 /** フォーカス中のリストを矢印 / Page / Home / End でスクロールする（DS-08）。 */
 function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
@@ -58,12 +59,15 @@ function handleTickerListKeyDown(event: KeyboardEvent<HTMLUListElement>): void {
 
 export interface EventTickerProps {
   events: readonly SprintEvent[];
+  /** コンボ HUD と同じ「今」の段数。省略時は履歴のみ。 */
+  liveCombo?: number;
   /** true なら入場アニメを止め、既存行だけを静的表示する（進化オーバーレイ中）。 */
   frozen?: boolean;
 }
 
-export function EventTicker({ events, frozen = false }: EventTickerProps) {
+export function EventTicker({ events, liveCombo = 0, frozen = false }: EventTickerProps) {
   const rows = formatRecentSprintEvents(events, TICKER_LIMIT);
+  const showLiveCombo = shouldShowLiveComboHint(liveCombo, events, TICKER_LIMIT);
   const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -210,6 +214,11 @@ export function EventTicker({ events, frozen = false }: EventTickerProps) {
       >
         出来事
       </button>
+      {showLiveCombo && (
+        <p className="event-ticker-now" data-testid="event-ticker-now">
+          現在 COMBO ×{liveCombo}
+        </p>
+      )}
       <ul
         ref={listRef}
         className="event-ticker-list"

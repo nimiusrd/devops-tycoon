@@ -18,6 +18,7 @@ import {
 import { Board } from '../render/Board';
 import type { DraggableActionId } from '../render/boardDragPlan';
 import { planBossSlowMotion } from '../render/juicyEffects';
+import { liveComboCount } from '../render/sprintComboView';
 import { reviewQueueLength } from '../render/status';
 import { BURN_TICKS } from '../sim/model';
 import type {
@@ -325,6 +326,7 @@ export function SprintScreen({
   const paused = isPlaybackPaused(playbackSpeed);
   const overlayFrozen = state.phase === 'evolution';
 
+  const liveCombo = liveComboCount(sprint);
   const queue = reviewQueueLength(sprint.tasks);
   const jamPct = Math.min(100, (queue / 18) * 100);
   const burning = sprint.tasks.filter((t) => t.lane === 'rework' && t.incident);
@@ -392,7 +394,7 @@ export function SprintScreen({
             </span>
           </div>
           <ComboBadge
-            combo={sprint.metrics.combo}
+            combo={liveCombo}
             stabilized={state.sprintTick < sprint.modifiers.stabilityUntilTick}
           />
         </div>
@@ -426,7 +428,7 @@ export function SprintScreen({
             {attentionKey > 0 && attentionPlan.active && (
               <AttentionOverlay label={attentionPlan.label} title={attentionPlan.title} />
             )}
-            <EventTicker events={sprint.events} frozen={overlayFrozen} />
+            <EventTicker events={sprint.events} liveCombo={liveCombo} frozen={overlayFrozen} />
           </AspectStage>
         </main>
       }

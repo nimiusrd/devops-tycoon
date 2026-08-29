@@ -9,6 +9,7 @@
  */
 import { BURN_TICKS } from '../sim/model';
 import type { Lane, Task } from '../sim/types';
+import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
 import { DESIGN_SPACES, VISUAL_TOKENS } from './visualTokens';
 import type { TaskSize, TaskVariant } from './taskView';
 import { taskSize, taskVariant } from './taskView';
@@ -365,7 +366,7 @@ export function reviewHeat(count: number): number {
 }
 
 /** Review 軌跡の同時描画上限。高負荷状態でも無制限に GPU 要素を増やさない。 */
-export const REVIEW_TRAIL_BUDGET = VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget;
+export const REVIEW_TRAIL_BUDGET = BOARD_RENDER_BUDGETS.reviewTrails;
 
 /**
  * 盤面シーンから Review のヒートと流入軌跡を導く純粋な演出計画。

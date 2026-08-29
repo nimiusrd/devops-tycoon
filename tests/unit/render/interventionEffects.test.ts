@@ -12,6 +12,7 @@ import {
   positionInterventionReactions,
 } from '../../../src/render/interventionEffects';
 import { findBoardFlow } from '../../../src/render/boardScene';
+import { BOARD_RENDER_BUDGETS } from '../../../src/render/boardRenderBudget';
 import { makeSprint as makeSprintWith, makeTask } from '../helpers/sprintFixtures';
 
 const TICK = 42;
@@ -173,5 +174,19 @@ describe('interventionEffects (RI-50)', () => {
       { kind: 'andon', remainingTicks: 10, totalTicks: ANDON_TICKS },
       { kind: 'stability', remainingTicks: 90, totalTicks: STABILITY_TICKS },
     ]);
+  });
+
+  it('同時オーラは定義順を維持して共有予算内に収める', () => {
+    const auras = deriveActiveBoardAuras(
+      {
+        throttleUntilTick: 70,
+        overtimeUntilTick: 70,
+        andonUntilTick: 70,
+        stabilityUntilTick: 70,
+      },
+      42,
+    );
+    expect(auras).toHaveLength(BOARD_RENDER_BUDGETS.auras);
+    expect(auras.map((aura) => aura.kind)).toEqual(['throttle', 'overtime', 'andon', 'stability']);
   });
 });

@@ -10,6 +10,7 @@
 import { useReducedMotion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import {
+  emptyBoardRenderMetrics,
   PixiBoardRenderer,
   type BoardPixiInput,
   type BoardRenderMetrics,
@@ -20,6 +21,7 @@ declare global {
   interface Window {
     __boardPixiTest?: {
       freezeForScreenshot(): void;
+      getMetrics(): { base: BoardRenderMetrics; effects: BoardRenderMetrics };
     };
     /** Playwright が WebGL 初期化失敗を決定論的に注入するためのフック。 */
     __forceBoardPixiInitFailure?: { delayMs?: number; waitForEffects?: boolean };
@@ -87,18 +89,8 @@ export function BoardPixiLayer({
     const effectsMount = effectsMountRef.current;
     if (!mount || !effectsMount) return;
 
-    const emptyMetrics: BoardRenderMetrics = {
-      dots: 0,
-      actors: 0,
-      flows: 0,
-      reviewTrails: 0,
-      reviewHeat: 0,
-      effects: 0,
-      auras: 0,
-      assets: 0,
-    };
-    let baseMetrics = emptyMetrics;
-    let effectMetrics = emptyMetrics;
+    let baseMetrics = emptyBoardRenderMetrics();
+    let effectMetrics = emptyBoardRenderMetrics();
     const writeMetrics = (): void => {
       const el = mountRef.current;
       const effectEl = effectsMountRef.current;
@@ -110,7 +102,19 @@ export function BoardPixiLayer({
       el.dataset.boardReviewHeat = String(baseMetrics.reviewHeat);
       el.dataset.boardEffects = String(effectMetrics.effects);
       el.dataset.boardAuras = String(baseMetrics.auras);
+      el.dataset.boardDotDropped = String(baseMetrics.resources.dots.dropped);
+      el.dataset.boardDotCreated = String(baseMetrics.resources.dots.pool?.createdCount ?? 0);
+      el.dataset.boardDotReused = String(baseMetrics.resources.dots.pool?.reuseCount ?? 0);
+      el.dataset.boardTrailDropped = String(baseMetrics.resources.reviewTrails.dropped);
       effectEl.dataset.boardEffects = String(effectMetrics.effects);
+      effectEl.dataset.boardEffectDropped = String(effectMetrics.resources.effects.dropped);
+      effectEl.dataset.boardEffectSuppressed = String(effectMetrics.resources.effects.suppressed);
+      effectEl.dataset.boardEffectCreated = String(
+        effectMetrics.resources.effects.pool?.createdCount ?? 0,
+      );
+      effectEl.dataset.boardEffectReused = String(
+        effectMetrics.resources.effects.pool?.reuseCount ?? 0,
+      );
     };
     const baseRenderer = new PixiBoardRenderer({
       stratum: 'base',
@@ -188,6 +192,7 @@ export function BoardPixiLayer({
               baseRenderer.freezeForScreenshot();
               effectsRenderer.freezeForScreenshot();
             },
+            getMetrics: () => ({ base: baseMetrics, effects: effectMetrics }),
           };
         }
       })

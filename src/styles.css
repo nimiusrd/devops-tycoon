@@ -706,7 +706,7 @@ body {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 12;
+  z-index: var(--visual-layer-sprint-fire-effects);
 }
 .dom-fallback-hidden {
   visibility: hidden;
@@ -727,7 +727,7 @@ body {
   box-shadow:
     0 0 16px color-mix(in srgb, var(--visual-color-effect-fire-mid) 87%, transparent),
     0 0 28px color-mix(in srgb, var(--visual-color-effect-fire-edge) 53%, transparent);
-  z-index: 13;
+  z-index: var(--visual-layer-sprint-fire-particle);
 }
 .fire-extinguish-burst {
   position: absolute;
@@ -744,7 +744,7 @@ body {
   );
   box-shadow: 0 0 20px
     color-mix(in srgb, var(--visual-color-effect-extinguish-core) 67%, transparent);
-  z-index: 13;
+  z-index: var(--visual-layer-sprint-fire-particle);
 }
 .fire-extinguish-burst.firefight {
   width: var(--visual-board-effect-extinguish-firefight-size);
@@ -768,7 +768,7 @@ body {
     transparent 72%
   );
   box-shadow: 0 0 24px color-mix(in srgb, var(--visual-color-effect-fire-mid) 67%, transparent);
-  z-index: 13;
+  z-index: var(--visual-layer-sprint-fire-particle);
 }
 
 /* 介入アクション盤面リアクション（RI-50 / SPEC 第18.2） */
@@ -777,7 +777,7 @@ body {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 14;
+  z-index: var(--visual-layer-sprint-intervention-effects);
 }
 .intervention-sweep-particle {
   position: absolute;
@@ -795,7 +795,7 @@ body {
   box-shadow:
     0 0 14px color-mix(in srgb, var(--visual-color-effect-sweep-mid) 80%, transparent),
     0 0 24px color-mix(in srgb, var(--visual-color-effect-sweep-edge) 53%, transparent);
-  z-index: 15;
+  z-index: var(--visual-layer-sprint-intervention-particle);
 }
 .intervention-sweep-particle::after {
   content: '';
@@ -836,7 +836,7 @@ body {
     0 0 24px color-mix(in srgb, var(--visual-color-effect-sweep-mid) 53%, transparent),
     inset 0 0 24px color-mix(in srgb, var(--visual-color-effect-sweep-edge) 27%, transparent);
   pointer-events: none;
-  z-index: 13;
+  z-index: var(--visual-layer-sprint-fire-particle);
 }
 .intervention-sweep-particle.sweep-rework {
   background: radial-gradient(
@@ -872,7 +872,7 @@ body {
   background: color-mix(in srgb, var(--visual-color-effect-split-panel) 87%, transparent);
   color: var(--visual-color-effect-split-text);
   border: 1px solid color-mix(in srgb, var(--visual-color-effect-split-text) 53%, transparent);
-  z-index: 15;
+  z-index: var(--visual-layer-sprint-intervention-particle);
 }
 .intervention-split-shard {
   position: absolute;
@@ -883,7 +883,7 @@ body {
   border-radius: 50%;
   background: var(--visual-color-effect-split-shard);
   box-shadow: 0 0 8px color-mix(in srgb, var(--visual-color-effect-split-shard) 53%, transparent);
-  z-index: 14;
+  z-index: var(--visual-layer-sprint-intervention-effects);
 }
 .intervention-firefight-ring {
   position: absolute;
@@ -896,7 +896,7 @@ body {
   box-shadow:
     0 0 16px color-mix(in srgb, var(--visual-color-effect-firefight) 67%, transparent),
     inset 0 0 12px color-mix(in srgb, var(--visual-color-effect-extinguish-core) 27%, transparent);
-  z-index: 15;
+  z-index: var(--visual-layer-sprint-intervention-particle);
 }
 .intervention-firefight-burst {
   position: absolute;
@@ -914,7 +914,7 @@ body {
   box-shadow:
     0 0 28px color-mix(in srgb, var(--visual-color-effect-extinguish-core) 80%, transparent),
     0 0 40px color-mix(in srgb, var(--visual-color-effect-firefight) 40%, transparent);
-  z-index: 15;
+  z-index: var(--visual-layer-sprint-intervention-particle);
 }
 .intervention-assign-dash {
   position: absolute;
@@ -929,13 +929,13 @@ body {
     var(--visual-color-effect-rework-edge)
   );
   box-shadow: 0 0 12px color-mix(in srgb, var(--visual-color-effect-rework-edge) 53%, transparent);
-  z-index: 15;
+  z-index: var(--visual-layer-sprint-intervention-particle);
 }
 .intervention-aura-pulse {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 11;
+  z-index: var(--visual-layer-sprint-pulse);
 }
 .intervention-aura-pulse.aura-throttle {
   background: radial-gradient(
@@ -962,7 +962,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 11;
+  z-index: var(--visual-layer-sprint-pulse);
   background: radial-gradient(
     circle at 50% 40%,
     color-mix(in srgb, var(--visual-color-effect-sweep-mid) 27%, transparent) 0%,
@@ -973,7 +973,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 10;
+  z-index: var(--visual-layer-sprint-aura);
   opacity: calc(0.12 + (1 - var(--aura-remaining, 1)) * 0.18);
   animation: board-aura-pulse var(--visual-board-aura-period) ease-in-out infinite;
 }
@@ -1083,7 +1083,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 9;
+  z-index: var(--visual-layer-sprint-heat);
   background: radial-gradient(
     120% 90% at 53% 60%,
     transparent 40%,
@@ -1105,7 +1105,7 @@ body {
   height: 100%;
 }
 .office-flows {
-  z-index: 2;
+  z-index: var(--visual-layer-sprint-flows);
   pointer-events: none;
 }
 .flowdash {
@@ -1123,16 +1123,16 @@ body {
 .station {
   position: absolute;
   transform: translate(-50%, -50%);
-  z-index: 4;
+  z-index: var(--visual-layer-sprint-station);
   pointer-events: none;
   /* 盤面幅に対する相対サイズ（旧モックの見た目由来）。 */
   width: var(--visual-sprint-station-width);
 }
 .station-review {
-  z-index: 5;
+  z-index: var(--visual-layer-sprint-station-review);
 }
 .station-done {
-  z-index: 6;
+  z-index: var(--visual-layer-sprint-station-done);
 }
 .station-actor {
   width: 100%;
@@ -1215,7 +1215,7 @@ body {
   position: absolute;
   top: 12px;
   left: 14px;
-  z-index: 10;
+  z-index: var(--visual-layer-sprint-summary);
   width: min(700px, 52%);
   color: var(--cream);
   pointer-events: none;
@@ -1293,7 +1293,7 @@ body {
 .bubble {
   position: absolute;
   transform: translate(-50%, -50%);
-  z-index: 8;
+  z-index: var(--visual-layer-sprint-foreground);
   background: #fff;
   color: #33285c;
   font-size: 11px;
@@ -1333,7 +1333,7 @@ body {
 .task-dot {
   position: absolute;
   transform: translate(-50%, -50%);
-  z-index: 7;
+  z-index: var(--visual-layer-sprint-task);
   border-radius: 50%;
   box-shadow:
     inset 0 -3px 5px #00000033,
@@ -1342,7 +1342,7 @@ body {
 }
 /* 工程間フロー上を流れる粒（RI-05）。方向ドリフトと bob を 1 つの transform に統合。 */
 .task-dot.flowing {
-  z-index: 8;
+  z-index: var(--visual-layer-sprint-foreground);
   animation: flowBobDrift var(--flow-duration, 1.15s) ease-in-out infinite;
 }
 .task-dot.flowing::after {
@@ -1396,7 +1396,7 @@ body {
     inset 0 -3px 5px #8a6400;
 }
 .task-dot.variant-incident {
-  z-index: 8;
+  z-index: var(--visual-layer-sprint-foreground);
   box-shadow:
     0 0 18px color-mix(in srgb, var(--visual-color-task-glow-incident) 87%, transparent),
     inset 0 -3px 5px #a02a00;
@@ -1494,7 +1494,7 @@ body {
 .pile-overflow {
   position: absolute;
   transform: translate(-50%, -50%);
-  z-index: 8;
+  z-index: var(--visual-layer-sprint-foreground);
   font-size: 11px;
   font-weight: 900;
   color: var(--cream);
@@ -1512,7 +1512,7 @@ body {
   position: absolute;
   right: 14px;
   bottom: 12px;
-  z-index: 9;
+  z-index: var(--visual-layer-sprint-legend);
   font-size: 11px;
   color: var(--cream);
 }
@@ -2538,12 +2538,12 @@ body:has(.overlay-contained) {
 .task-dot.draggable {
   cursor: grab;
   outline: 2px solid color-mix(in srgb, var(--visual-color-interaction-drag) 67%, transparent);
-  z-index: 9;
+  z-index: var(--visual-layer-sprint-drag-candidate);
 }
 .task-dot.dragging {
   cursor: grabbing;
   outline-color: #ffd45c;
-  z-index: 12;
+  z-index: var(--visual-layer-sprint-dragging);
 }
 .station.drop-target {
   outline: 2px dashed color-mix(in srgb, var(--visual-color-interaction-drag) 53%, transparent);
@@ -7359,7 +7359,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .board-pixi-mount {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: var(--visual-layer-sprint-pixi-base);
   pointer-events: none;
 }
 .board-pixi-mount canvas {
@@ -7369,7 +7369,7 @@ body[data-tutorial-step='combo-gauge'] [data-testid='combo-gauge'] {
 .board-pixi-effects-mount {
   position: absolute;
   inset: 0;
-  z-index: 14;
+  z-index: var(--visual-layer-sprint-pixi-effects);
   overflow: hidden;
   pointer-events: none;
 }

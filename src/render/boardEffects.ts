@@ -6,6 +6,7 @@
  * 終了時刻を読み、途中で DOM フォールバックしても再発火しない。
  */
 import type { SfxId } from '../audio/sounds';
+import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
 import type { PositionedFireEffect } from './fireEffects';
 import type { BoardAuraPlan, PositionedInterventionReaction } from './interventionEffects';
 import { VISUAL_TOKENS } from './visualTokens';
@@ -32,7 +33,7 @@ export interface BoardEffectTimeline {
   nextSequence: number;
 }
 
-export const BOARD_EFFECT_BUDGET = VISUAL_TOKENS.dimensions.sprint.boardEffects.budget;
+export const BOARD_EFFECT_BUDGET = BOARD_RENDER_BUDGETS.transientEffects;
 
 function timingFor(payload: BoardEffectPayload): { delayMs: number; durationMs: number } {
   const tokens = VISUAL_TOKENS.dimensions.sprint.boardEffects;

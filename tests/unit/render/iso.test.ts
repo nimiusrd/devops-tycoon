@@ -96,6 +96,15 @@ describe('SpritePool', () => {
     expect(pool.acquire()).not.toBeNull();
     expect(pool.acquire()).toBeNull();
     expect(pool.activeCount).toBe(3);
+    expect(pool.snapshot()).toEqual({
+      capacity: 3,
+      retainedCount: 3,
+      activeCount: 3,
+      freeCount: 0,
+      createdCount: 3,
+      reuseCount: 0,
+      rejectedCount: 1,
+    });
   });
 
   it('releaseAll で全アクティブを再利用待ちへ戻し reset を呼ぶ', () => {
@@ -115,6 +124,24 @@ describe('SpritePool', () => {
     pool.acquire();
     expect(pool.createdCount).toBe(2);
     expect(pool.reuseCount).toBe(2);
+    expect(pool.snapshot().createdCount).toBe(2);
+    expect(pool.snapshot().retainedCount).toBe(2);
+  });
+
+  it('連続フレームでも生成数は capacity で止まり、解放済みを再利用する', () => {
+    const pool = new SpritePool(() => ({}), { max: 4 });
+    for (let frame = 0; frame < 6; frame += 1) {
+      pool.releaseAll();
+      for (let i = 0; i < 5; i += 1) pool.acquire();
+    }
+    expect(pool.snapshot()).toMatchObject({
+      capacity: 4,
+      retainedCount: 4,
+      activeCount: 4,
+      createdCount: 4,
+      reuseCount: 20,
+      rejectedCount: 6,
+    });
   });
 
   it('drain で active/free の全インスタンスを取り出して空にする（reset は呼ばない）', () => {

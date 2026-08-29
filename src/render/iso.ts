@@ -96,6 +96,17 @@ export interface PoolOptions<T> {
   reset?: (obj: T) => void;
 }
 
+/** GPU に依存せず検証できるプールの累積・現在値。 */
+export interface SpritePoolSnapshot {
+  capacity: number;
+  retainedCount: number;
+  activeCount: number;
+  freeCount: number;
+  createdCount: number;
+  reuseCount: number;
+  rejectedCount: number;
+}
+
 /**
  * スプライトの生成プール。再利用で生成数を抑える（第22.2）。
  * `acquire` は上限に達すると null を返し、無制限な生成を防ぐ。
@@ -108,6 +119,8 @@ export class SpritePool<T> {
   createdCount = 0;
   /** これまでに再利用した総数。 */
   reuseCount = 0;
+  /** 上限到達により取得を拒否した総数。 */
+  rejectedCount = 0;
 
   constructor(
     private readonly factory: () => T,
@@ -116,7 +129,10 @@ export class SpritePool<T> {
 
   /** 1 つ取得する（空きがなく上限なら null）。 */
   acquire(): T | null {
-    if (this.active.size >= this.opts.max) return null;
+    if (this.active.size >= this.opts.max) {
+      this.rejectedCount += 1;
+      return null;
+    }
     let obj = this.free.pop();
     if (obj !== undefined) {
       this.reuseCount += 1;
@@ -170,5 +186,18 @@ export class SpritePool<T> {
   /** プールが保持するインスタンス総数（active + free）。 */
   get size(): number {
     return this.active.size + this.free.length;
+  }
+
+  /** テスト・開発計測向けの読み取り専用スナップショット。 */
+  snapshot(): Readonly<SpritePoolSnapshot> {
+    return {
+      capacity: this.opts.max,
+      retainedCount: this.size,
+      activeCount: this.activeCount,
+      freeCount: this.freeCount,
+      createdCount: this.createdCount,
+      reuseCount: this.reuseCount,
+      rejectedCount: this.rejectedCount,
+    };
   }
 }

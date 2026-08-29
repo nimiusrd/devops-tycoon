@@ -9,6 +9,7 @@
  */
 import type { Lane } from '../sim/types';
 import type { BoardDotPlan, StationMood } from './boardScene';
+import { BOARD_RENDER_BUDGETS } from './boardRenderBudget';
 import type { TaskSize, TaskVariant } from './taskView';
 import { TASK_DIAMETER } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
@@ -22,6 +23,61 @@ export interface BoardPoint {
 /** reduced motion では全ての盤面アニメを決定論的な位相 0 に固定する。 */
 export function boardAnimationElapsedMs(elapsedMs: number, reducedMotion: boolean): number {
   return reducedMotion ? 0 : elapsedMs;
+}
+
+/** DOM と同じ粒の重なり順。 */
+export function boardDotLayer(dot: BoardDotPlan, draggable: boolean, dragging: boolean): number {
+  const layers = VISUAL_TOKENS.layers.sprint;
+  if (dragging) return layers.dragging;
+  if (draggable) return layers.dragCandidate;
+  if (dot.motion || dot.fire) return layers.foreground;
+  return layers.task;
+}
+
+export interface BoardDotRenderPlan {
+  dots: BoardDotPlan[];
+  requested: number;
+  dropped: number;
+}
+
+function dotRetentionPriority(dot: BoardDotPlan, draggable: boolean, dragging: boolean): number {
+  if (dragging) return 5;
+  if (dot.fire) return 4;
+  if (draggable) return 3;
+  if (dot.motion) return 2;
+  return 1;
+}
+
+/**
+ * 上限超過時も操作中の粒・炎上・操作候補を優先し、最後に画家順へ戻す。
+ * 同順位は scene 順で安定化するため、同一状態から同じ描画結果になる。
+ */
+export function planBoardDotsForRender(
+  dots: readonly BoardDotPlan[],
+  draggableIds: ReadonlySet<number> = new Set<number>(),
+  dragTaskId: number | null = null,
+  budget = BOARD_RENDER_BUDGETS.dots,
+): BoardDotRenderPlan {
+  const capacity = Math.max(0, Math.floor(budget));
+  const annotated = dots.map((dot, index) => {
+    const draggable = draggableIds.has(dot.id);
+    const dragging = dot.id === dragTaskId;
+    return {
+      dot,
+      index,
+      layer: boardDotLayer(dot, draggable, dragging),
+      priority: dotRetentionPriority(dot, draggable, dragging),
+    };
+  });
+  const selected = annotated
+    .sort((a, b) => b.priority - a.priority || a.index - b.index)
+    .slice(0, capacity)
+    .sort((a, b) => a.layer - b.layer || a.index - b.index);
+  return {
+    dots: selected.map(({ dot }) => dot),
+    requested: dots.length,
+    dropped: Math.max(0, dots.length - selected.length),
+  };
 }
 
 /** ヒット判定の許容マージン（設計px。指先で小粒も掴めるように少し広げる）。 */

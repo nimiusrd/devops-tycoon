@@ -119,6 +119,7 @@ describe('visual tokens', () => {
     expect(values['--visual-board-effect-spread-size']).toBe(
       `${(VISUAL_TOKENS.dimensions.sprint.boardEffects.spread.size / DESIGN_SPACES.sprint.w) * 100}%`,
     );
+    expect(values['--visual-board-effect-assign-aspect-ratio']).toBe('9');
 
     const applied = new Map<string, string>();
     const root = {

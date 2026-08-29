@@ -919,7 +919,7 @@ body {
 .intervention-assign-dash {
   position: absolute;
   width: var(--visual-board-effect-assign-length);
-  height: var(--visual-board-effect-assign-width);
+  aspect-ratio: var(--visual-board-effect-assign-aspect-ratio);
   margin: calc(0px - var(--visual-board-effect-assign-width) / 2) 0 0
     calc(0px - var(--visual-board-effect-assign-width));
   border-radius: 4px;

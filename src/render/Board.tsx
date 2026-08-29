@@ -306,6 +306,9 @@ export function Board({
   const scene = planBoardScene(tasks, moodOverrides);
   // 盤面の常駐物と連続演出を WebGL で描くか（RI-11 / RI-142。ラベルは DOM 共通）。
   const { usePixi, onWebglError } = usePixiRenderer();
+  const [pixiReady, setPixiReady] = useState(false);
+  // 初回描画前は DOM 演出を残し、短命なリアクションが初期化待ちで消えるのを防ぐ。
+  const gpuEffectsActive = usePixi && pixiReady;
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
   const hot = scene.reviewEffects.heatField?.hell ?? false;
@@ -414,7 +417,7 @@ export function Board({
       data-armed={armedAction ?? undefined}
       data-review-heat={heat}
       data-review-hell={hot ? 'true' : 'false'}
-      data-effect-renderer={usePixi ? 'pixi' : 'dom'}
+      data-effect-renderer={gpuEffectsActive ? 'pixi' : 'dom'}
       data-effect-count={boardEffects.effects.length}
       data-effect-kinds={boardEffects.effects
         .map((effect) => `${effect.source}:${effect.effect.kind}`)
@@ -451,6 +454,7 @@ export function Board({
             effects={boardEffects.effects}
             auras={activeAuras}
             onWebglError={onWebglError}
+            onReady={() => setPixiReady(true)}
             animationsPaused={animationsPaused}
           />
         </Suspense>
@@ -511,12 +515,12 @@ export function Board({
         </div>
       </details>
 
-      <FireEffects effects={boardEffects.effects} gpuActive={usePixi} />
+      <FireEffects effects={boardEffects.effects} gpuActive={gpuEffectsActive} />
 
       {activeAuras.map((aura) => (
         <div
           key={aura.kind}
-          className={`board-modifier-aura aura-${aura.kind}${usePixi ? ' dom-fallback-hidden' : ''}`}
+          className={`board-modifier-aura aura-${aura.kind}${gpuEffectsActive ? ' dom-fallback-hidden' : ''}`}
           data-testid={`board-aura-${aura.kind}`}
           style={
             {
@@ -526,7 +530,7 @@ export function Board({
         />
       ))}
 
-      <InterventionEffects effects={boardEffects.effects} gpuActive={usePixi} />
+      <InterventionEffects effects={boardEffects.effects} gpuActive={gpuEffectsActive} />
     </div>
   );
 }

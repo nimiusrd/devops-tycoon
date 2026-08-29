@@ -19,12 +19,16 @@ declare global {
     };
     /** Playwright が WebGL 初期化失敗を決定論的に注入するためのフック。 */
     __forceBoardPixiInitFailure?: { delayMs?: number; waitForEffects?: boolean };
+    /** Playwright が初回描画前の遅延を決定論的に注入するためのフック。 */
+    __delayBoardPixiInit?: { delayMs: number; waitForEffects?: boolean };
   }
 }
 
 export type BoardPixiLayerProps = Omit<BoardPixiInput, 'reducedMotion'> & {
   /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
   onWebglError?: () => void;
+  /** WebGL 初期化と初回描画が完了したあとに呼ぶ。 */
+  onReady?: () => void;
   /** true なら ticker を止め、壁時計アニメで盤面が進まないようにする（#386）。 */
   animationsPaused?: boolean;
 };
@@ -36,6 +40,7 @@ export function BoardPixiLayer({
   effects,
   auras,
   onWebglError,
+  onReady,
   animationsPaused = false,
 }: BoardPixiLayerProps) {
   const reducedMotion = useReducedMotion() ?? false;
@@ -50,11 +55,16 @@ export function BoardPixiLayer({
     reducedMotion,
   });
   const onWebglErrorRef = useRef(onWebglError);
+  const onReadyRef = useRef(onReady);
   const animationsPausedRef = useRef(animationsPaused);
 
   useEffect(() => {
     onWebglErrorRef.current = onWebglError;
   }, [onWebglError]);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
     animationsPausedRef.current = animationsPaused;
@@ -93,21 +103,29 @@ export function BoardPixiLayer({
     };
 
     let cancelled = false;
+    const waitForEffects = (): Promise<void> =>
+      new Promise<void>((resolve) => {
+        const poll = () => {
+          if (cancelled || inputRef.current.effects.length > 0) {
+            resolve();
+            return;
+          }
+          window.setTimeout(poll, 16);
+        };
+        poll();
+      });
     const initRenderer = async (): Promise<void> => {
+      const delayedInit = window.__delayBoardPixiInit;
+      if (delayedInit) {
+        if (delayedInit.waitForEffects) await waitForEffects();
+        await new Promise<void>((resolve) =>
+          window.setTimeout(resolve, Math.max(0, delayedInit.delayMs)),
+        );
+        if (cancelled) return;
+      }
       const forcedFailure = window.__forceBoardPixiInitFailure;
       if (forcedFailure) {
-        if (forcedFailure.waitForEffects) {
-          await new Promise<void>((resolve) => {
-            const poll = () => {
-              if (cancelled || inputRef.current.effects.length > 0) {
-                resolve();
-                return;
-              }
-              window.setTimeout(poll, 16);
-            };
-            poll();
-          });
-        }
+        if (forcedFailure.waitForEffects) await waitForEffects();
         await new Promise<void>((resolve) =>
           window.setTimeout(resolve, Math.max(0, forcedFailure.delayMs ?? 0)),
         );
@@ -122,6 +140,7 @@ export function BoardPixiLayer({
         renderer.resize(mount.clientWidth, mount.clientHeight);
         renderer.render(inputRef.current);
         renderer.setAnimationsPaused(animationsPausedRef.current);
+        onReadyRef.current?.();
         if (import.meta.env.DEV) {
           window.__boardPixiTest = {
             freezeForScreenshot: () => renderer.freezeForScreenshot(),

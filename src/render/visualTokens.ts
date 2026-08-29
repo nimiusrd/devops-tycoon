@@ -492,6 +492,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-board-effect-firefight-burst-size': `${(dimensions.sprint.boardEffects.firefight.burstSize / spaces.sprint.w) * 100}%`,
     '--visual-board-effect-assign-length': `${(dimensions.sprint.boardEffects.assignDash.length / spaces.sprint.w) * 100}%`,
     '--visual-board-effect-assign-width': `${(dimensions.sprint.boardEffects.assignDash.width / spaces.sprint.w) * 100}%`,
+    '--visual-board-effect-assign-aspect-ratio': `${dimensions.sprint.boardEffects.assignDash.length / dimensions.sprint.boardEffects.assignDash.width}`,
     '--visual-board-aura-period': `${dimensions.sprint.boardEffects.aura.pulsePeriodMs}ms`,
     '--visual-org-card-width': `${dimensions.organization.card.width}px`,
     '--visual-org-card-padding-x': `${dimensions.organization.card.paddingX}px`,

@@ -20,6 +20,7 @@ import { ACTION_DEFS } from '../../src/data/actions';
 import { TRIAL_DEFS } from '../../src/data/difficulties';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { RESPONSIVE_BREAKPOINTS } from '../../src/ui/responsiveMode';
+import { DESIGN_SPACES, VISUAL_TOKENS } from '../../src/render/visualTokens';
 import { seedMeta } from './seedMeta';
 
 const BOARD_RATIO = 1404 / 573;
@@ -1256,13 +1257,60 @@ test.describe('RI-142 炎上・介入演出のDOM同等性とフォールバッ�
     await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
     const sequence = await board.getAttribute('data-effect-sequence');
     expect(sequence).not.toBeNull();
-    await expect(page.locator('.intervention-effects')).toHaveClass(/dom-fallback-hidden/);
+    await expect(board).toHaveAttribute('data-effect-renderer', 'dom');
+    await expect(page.locator('.intervention-effects')).not.toHaveClass(/dom-fallback-hidden/);
+    await expect(page.getByTestId('intervention-effect-aura-overtime')).toBeVisible();
 
-    await expect(board).toHaveAttribute('data-effect-renderer', 'dom', { timeout: 3_000 });
+    await expect(page.getByTestId('board-pixi-mount')).toHaveCount(0, { timeout: 3_000 });
     await expect(board).toHaveAttribute('data-effect-sequence', sequence!);
     await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
     await expect(page.getByTestId('board-aura-overtime')).toBeVisible();
-    await expect(page.getByTestId('board-pixi-mount')).toHaveCount(0);
+  });
+
+  test('短命な介入演出が終了するまでPixi初回描画前のDOM表示を維持する', async ({ page }) => {
+    await page.addInitScript(() => {
+      (
+        window as Window & {
+          __delayBoardPixiInit?: { delayMs: number; waitForEffects?: boolean };
+        }
+      ).__delayBoardPixiInit = { delayMs: 700, waitForEffects: true };
+    });
+    await beginPublicSprint(page, { seed: 'ri142-pixi-delayed-ready', renderer: 'pixi' });
+    const board = page.getByTestId('board');
+    await expect(page.getByTestId('board-pixi-mount')).toBeVisible();
+
+    await page.getByTestId('action-overtime').click();
+    await expect(board).toHaveAttribute('data-effect-renderer', 'dom');
+    await expect(page.getByTestId('intervention-effect-aura-overtime')).toBeVisible();
+    await page.waitForTimeout(620);
+    await expect(board).toHaveAttribute('data-effect-renderer', 'dom');
+    await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
+    await expect(board).toHaveAttribute('data-effect-renderer', 'pixi', { timeout: 3_000 });
+  });
+
+  test('差配ダッシュのDOM寸法を5 viewportで盤面幅基準に保つ', async ({ page }) => {
+    await beginPublicSprint(page, { seed: 'ri142-assign-dash-size', renderer: 'dom' });
+    const board = page.getByTestId('board');
+    const expected = VISUAL_TOKENS.dimensions.sprint.boardEffects.assignDash;
+
+    for (const viewport of VIEWPORTS) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      const size = await board.evaluate((element) => {
+        const dash = document.createElement('span');
+        dash.className = 'intervention-assign-dash';
+        element.append(dash);
+        const style = getComputedStyle(dash);
+        const result = {
+          boardWidth: element.clientWidth,
+          width: Number.parseFloat(style.width),
+          height: Number.parseFloat(style.height),
+        };
+        dash.remove();
+        return result;
+      });
+      expect(size.width / size.boardWidth).toBeCloseTo(expected.length / DESIGN_SPACES.sprint.w, 4);
+      expect(size.height / size.boardWidth).toBeCloseTo(expected.width / DESIGN_SPACES.sprint.w, 4);
+    }
   });
 });
 

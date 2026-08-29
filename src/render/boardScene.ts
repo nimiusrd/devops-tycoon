@@ -233,6 +233,7 @@ function planFlowingDot(task: Task, lane: Lane, spread: Point): BoardDotPlan | n
       to,
       t: task.progress,
       angleDeg,
+      aiAssisted: task.aiAssisted,
       speedMul: task.aiAssisted ? 1.35 : 1,
     },
   };
@@ -280,6 +281,8 @@ export interface BoardDotMotion {
   t: number;
   /** フロー方向（度）。CSS の微小ドリフト用。 */
   angleDeg: number;
+  /** 表示variantと独立したAI補助状態。gold優先時もAI軌跡を維持する。 */
+  aiAssisted: boolean;
   /** 視覚速度係数（AI 粒は少し速く見せる）。 */
   speedMul: number;
 }
@@ -310,6 +313,39 @@ export interface BoardScenePlan {
   stations: BoardStationPlan[];
   dots: BoardDotPlan[];
   flows: readonly BoardFlow[];
+  reviewEffects: BoardReviewEffectsPlan;
+}
+
+export type BoardReviewTrailTone = 'normal' | 'ai' | 'rework';
+
+/** Review ゾーンへ重ねる局所ヒートフィールド（設計px）。 */
+export interface BoardReviewHeatFieldPlan {
+  x: number;
+  y: number;
+  radiusX: number;
+  radiusY: number;
+  /** Review の連続的な渋滞強度 0..1。 */
+  intensity: number;
+  /** 12件以上の Review Hell 警告状態。 */
+  hell: boolean;
+}
+
+/** Coding / Rework から Review へ流入する粒の軌跡。 */
+export interface BoardReviewTrailPlan {
+  taskId: number;
+  x: number;
+  y: number;
+  angleDeg: number;
+  progress: number;
+  speedMul: number;
+  length: number;
+  width: number;
+  tone: BoardReviewTrailTone;
+}
+
+export interface BoardReviewEffectsPlan {
+  heatField: BoardReviewHeatFieldPlan | null;
+  trails: BoardReviewTrailPlan[];
 }
 
 /** Review がこの件数以上で「渋滞（hot）」とみなす（第18.2）。 */
@@ -326,6 +362,60 @@ export function reviewHeat(count: number): number {
   if (count <= REVIEW_HEAT_START) return 0;
   if (count >= REVIEW_HOT_QUEUE) return 1;
   return (count - REVIEW_HEAT_START) / (REVIEW_HOT_QUEUE - REVIEW_HEAT_START);
+}
+
+/** Review 軌跡の同時描画上限。高負荷状態でも無制限に GPU 要素を増やさない。 */
+export const REVIEW_TRAIL_BUDGET = VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget;
+
+/**
+ * 盤面シーンから Review のヒートと流入軌跡を導く純粋な演出計画。
+ * 到着が近い粒を優先し、同率は task id で安定化する。
+ */
+export function planBoardReviewEffects(
+  stations: readonly BoardStationPlan[],
+  dots: readonly BoardDotPlan[],
+): BoardReviewEffectsPlan {
+  const review = stations.find((station) => station.lane === 'review');
+  const effectTokens = VISUAL_TOKENS.dimensions.sprint.reviewEffects;
+  const heatField =
+    review && review.heat > 0
+      ? {
+          x: review.x + effectTokens.heatField.offsetX,
+          y: review.y + effectTokens.heatField.offsetY,
+          radiusX: effectTokens.heatField.radiusX,
+          radiusY: effectTokens.heatField.radiusY,
+          intensity: review.heat,
+          hell: review.hot,
+        }
+      : null;
+
+  const trails = dots
+    .filter(
+      (dot): dot is BoardDotPlan & { motion: BoardDotMotion } =>
+        dot.motion?.kind === 'flow' &&
+        dot.motion.to === 'review' &&
+        (dot.motion.from === 'coding' || dot.motion.from === 'rework'),
+    )
+    .sort((a, b) => b.motion.t - a.motion.t || a.id - b.id)
+    .slice(0, REVIEW_TRAIL_BUDGET)
+    .map((dot): BoardReviewTrailPlan => {
+      const tone: BoardReviewTrailTone =
+        dot.motion.from === 'rework' ? 'rework' : dot.motion.aiAssisted ? 'ai' : 'normal';
+      const lengthMul = tone === 'ai' ? effectTokens.trail.aiLengthMul : 1;
+      return {
+        taskId: dot.id,
+        x: dot.x,
+        y: dot.y,
+        angleDeg: dot.motion.angleDeg,
+        progress: dot.motion.t,
+        speedMul: dot.motion.speedMul,
+        length: effectTokens.trail.length * lengthMul,
+        width: effectTokens.trail.width,
+        tone,
+      };
+    });
+
+  return { heatField, trails };
 }
 
 /** 粒クラスタの横間隔と段差（設計px）。 */
@@ -502,5 +592,11 @@ export function planBoardScene(
     });
   }
 
-  return { view: { w: BOARD_VIEW.w, h: BOARD_VIEW.h }, stations, dots, flows: FLOWS };
+  return {
+    view: { w: BOARD_VIEW.w, h: BOARD_VIEW.h },
+    stations,
+    dots,
+    flows: FLOWS,
+    reviewEffects: planBoardReviewEffects(stations, dots),
+  };
 }

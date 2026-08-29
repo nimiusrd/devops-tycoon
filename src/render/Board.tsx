@@ -307,8 +307,8 @@ export function Board({
   const { usePixi, onWebglError } = usePixiRenderer();
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
-  const hot = scene.stations.some((s) => s.hot);
-  const heat = scene.stations.reduce((m, s) => Math.max(m, s.heat), 0);
+  const hot = scene.reviewEffects.heatField?.hell ?? false;
+  const heat = scene.reviewEffects.heatField?.intensity ?? 0;
 
   const boardRef = useRef<HTMLDivElement>(null);
   const activeAuras = modifiers != null ? deriveActiveBoardAuras(modifiers, sprintTick) : [];
@@ -404,6 +404,8 @@ export function Board({
       className={`board iso-office${hot ? ' review-hell' : ''}${armedAction ? ' board-armed' : ''}`}
       data-testid="board"
       data-armed={armedAction ?? undefined}
+      data-review-heat={heat}
+      data-review-hell={hot ? 'true' : 'false'}
       data-animations-paused={animationsPaused ? 'true' : undefined}
       onPointerDown={usePixi ? handleBoardPointerDown : undefined}
       style={{ '--review-heat': heat } as CSSProperties}

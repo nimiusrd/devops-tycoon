@@ -174,6 +174,24 @@ export const VISUAL_TOKENS = {
       dotTexturePadding: 20,
       dotHitMargin: 6,
       taskDiameter: { small: 16, medium: 26, large: 34 },
+      reviewEffects: {
+        heatField: {
+          offsetX: 0,
+          offsetY: 15,
+          radiusX: 130,
+          radiusY: 85,
+          maxAlpha: 0.3,
+          pulseAmplitude: 0.08,
+          pulsePeriodMs: 1800,
+        },
+        trail: {
+          budget: 24,
+          length: 22,
+          width: 4,
+          aiLengthMul: 1.35,
+          pulseAmplitude: 0.25,
+        },
+      },
     },
     organization: {
       iso: { tileW: 264, tileH: 176 },

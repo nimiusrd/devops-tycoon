@@ -37,6 +37,13 @@ describe('visual tokens', () => {
     });
   });
 
+  it('Review演出の共有寸法と上限を一元管理する', () => {
+    expect(VISUAL_TOKENS.dimensions.sprint.reviewEffects).toMatchObject({
+      heatField: { radiusX: 130, radiusY: 85, maxAlpha: 0.3 },
+      trail: { budget: 24, length: 22, width: 4, aiLengthMul: 1.35 },
+    });
+  });
+
   it('設計空間を Pixi host へ contain 配置する', () => {
     expect(designToHostTransform(2808, 573, DESIGN_SPACES.sprint)).toEqual({
       scale: 1,

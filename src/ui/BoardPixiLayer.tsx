@@ -6,6 +6,7 @@
  * 凡例・イベント演出（FireEffects / InterventionEffects 等）は DOM のまま親が重ねる。
  * 実 WebGL は init() 以降ブラウザ上でのみ動く（CI/Node ではマウントされない）。
  */
+import { useReducedMotion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { PixiBoardRenderer, type BoardPixiInput } from '../render/adapters/pixiBoardRenderer';
 
@@ -18,7 +19,7 @@ declare global {
   }
 }
 
-export type BoardPixiLayerProps = BoardPixiInput & {
+export type BoardPixiLayerProps = Omit<BoardPixiInput, 'reducedMotion'> & {
   /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
   onWebglError?: () => void;
   /** true なら ticker を止め、壁時計アニメで盤面が進まないようにする（#386）。 */
@@ -32,9 +33,15 @@ export function BoardPixiLayer({
   onWebglError,
   animationsPaused = false,
 }: BoardPixiLayerProps) {
+  const reducedMotion = useReducedMotion() ?? false;
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<PixiBoardRenderer | null>(null);
-  const inputRef = useRef<BoardPixiInput>({ scene, draggableTaskIds, dragTaskId });
+  const inputRef = useRef<BoardPixiInput>({
+    scene,
+    draggableTaskIds,
+    dragTaskId,
+    reducedMotion,
+  });
   const onWebglErrorRef = useRef(onWebglError);
   const animationsPausedRef = useRef(animationsPaused);
 
@@ -48,8 +55,8 @@ export function BoardPixiLayer({
   }, [animationsPaused]);
 
   useEffect(() => {
-    inputRef.current = { scene, draggableTaskIds, dragTaskId };
-  }, [scene, draggableTaskIds, dragTaskId]);
+    inputRef.current = { scene, draggableTaskIds, dragTaskId, reducedMotion };
+  }, [scene, draggableTaskIds, dragTaskId, reducedMotion]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -62,6 +69,8 @@ export function BoardPixiLayer({
         el.dataset.boardDots = String(m.dots);
         el.dataset.boardActors = String(m.actors);
         el.dataset.boardAssets = String(m.assets);
+        el.dataset.boardReviewTrails = String(m.reviewTrails);
+        el.dataset.boardReviewHeat = String(m.reviewHeat);
       },
     });
     rendererRef.current = renderer;
@@ -112,15 +121,15 @@ export function BoardPixiLayer({
     if (!renderer?.isReady) return;
     const mount = mountRef.current;
     if (mount) renderer.resize(mount.clientWidth, mount.clientHeight);
-    renderer.render({ scene, draggableTaskIds, dragTaskId });
-  }, [scene, draggableTaskIds, dragTaskId]);
+    renderer.render({ scene, draggableTaskIds, dragTaskId, reducedMotion });
+  }, [scene, draggableTaskIds, dragTaskId, reducedMotion]);
 
   return (
     <div
       ref={mountRef}
       className="board-pixi-mount"
       data-testid="board-pixi-mount"
-      aria-label="スプリント盤面（WebGL）"
+      aria-hidden="true"
     />
   );
 }

@@ -21,12 +21,15 @@ import {
   BOARD_VIEW,
   type BoardDotPlan,
   type BoardFlow,
+  type BoardReviewHeatFieldPlan,
+  type BoardReviewTrailPlan,
   type BoardScenePlan,
   type BoardStationPlan,
   type StationMood,
 } from '../boardScene';
 import {
   actorTextureKey,
+  boardAnimationElapsedMs,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
@@ -114,6 +117,8 @@ export interface BoardRenderMetrics {
   dots: number;
   actors: number;
   flows: number;
+  reviewTrails: number;
+  reviewHeat: number;
   /** 取得処理が完了した人物SVGの種類数（失敗時のフォールバックも完了扱い）。 */
   assets: number;
 }
@@ -125,6 +130,8 @@ export interface BoardPixiInput {
   draggableTaskIds?: ReadonlySet<number>;
   /** ドラッグ中の粒（金色輪郭・最前面）。 */
   dragTaskId?: number | null;
+  /** prefers-reduced-motion 時はアニメ位相を固定する。 */
+  reducedMotion: boolean;
 }
 
 export interface PixiBoardRendererOptions {
@@ -137,6 +144,19 @@ interface DotParts {
   sprite: Sprite;
   ring: Graphics;
   flame: Text;
+}
+
+function createReviewTrail(): Graphics {
+  const trail = new Graphics();
+  trail.eventMode = 'none';
+  return trail;
+}
+
+function resetReviewTrail(trail: Graphics): void {
+  trail.clear();
+  trail.alpha = 1;
+  trail.rotation = 0;
+  trail.position.set(0, 0);
 }
 
 function createDotContainer(): Container {
@@ -176,6 +196,13 @@ interface DotEntry {
   fire: boolean;
   burnUrgency?: number;
   motion?: { angleDeg: number; speedMul: number };
+}
+
+interface ReviewTrailEntry {
+  trail: Graphics;
+  baseAlpha: number;
+  speedMul: number;
+  phaseOffsetMs: number;
 }
 
 /** アニメ適用用のキャラメタデータ。 */
@@ -380,17 +407,24 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   /** contain-fit スケールを受ける設計空間ルート。 */
   private readonly root = new Container();
   private readonly flowsGfx = new Graphics();
+  private readonly reviewHeatLayer = new Container();
+  private readonly reviewHeatGfx = new Graphics();
   private readonly stationsLayer = new Container();
+  private readonly reviewTrailsLayer = new Container();
   private readonly dotsLayer = new Container();
   private pool: SpritePool<Container> | null = null;
+  private reviewTrailPool: SpritePool<Graphics> | null = null;
   /** 焼き込みテクスチャ（自前管理。dispose で明示破棄する）。 */
   private readonly textures = new Map<string, Texture>();
   private actors: ActorEntry[] = [];
   private dotEntries: DotEntry[] = [];
+  private reviewTrailEntries: ReviewTrailEntry[] = [];
+  private reviewHeat: BoardReviewHeatFieldPlan | null = null;
   private lastFlows: readonly BoardFlow[] = [];
   /** アニメ経過時間（ms）。freeze で 0 に戻し位相 0 の決定論フレームにする。 */
   private elapsedMs = 0;
   private frozen = false;
+  private reducedMotion = false;
   /** 進化オーバーレイ等で ticker だけ止める。screenshot freeze とは独立。 */
   private loopPaused = false;
   /** dispose 済みフラグ（非同期 init の中断判定）。init/dispose は 1 インスタンス 1 回。 */
@@ -422,13 +456,24 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     mount.appendChild(app.canvas);
     app.renderer.events.setTargetElement(app.canvas);
 
-    this.root.addChild(this.flowsGfx, this.stationsLayer, this.dotsLayer);
+    this.reviewHeatLayer.addChild(this.reviewHeatGfx);
+    this.root.addChild(
+      this.flowsGfx,
+      this.reviewHeatLayer,
+      this.stationsLayer,
+      this.reviewTrailsLayer,
+      this.dotsLayer,
+    );
     app.stage.addChild(this.root);
     app.stage.eventMode = 'none';
 
     this.pool = new SpritePool<Container>(createDotContainer, {
       max: BOARD_SPRITE_BUDGET,
       reset: resetDotContainer,
+    });
+    this.reviewTrailPool = new SpritePool<Graphics>(createReviewTrail, {
+      max: VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget,
+      reset: resetReviewTrail,
     });
 
     this.app = app;
@@ -437,7 +482,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     // CSS keyframes（flybob / bob / flowBobDrift / fireShake / dash）相当の
     // 常時アニメ。座標本体は render() の plan 由来で、ここはオフセットだけを足す。
     app.ticker.add(() => {
-      if (this.frozen || this.loopPaused) return;
+      if (this.frozen || this.loopPaused || this.reducedMotion) return;
       this.elapsedMs += app.ticker.deltaMS;
       this.applyAnimations(this.elapsedMs);
     });
@@ -478,13 +523,18 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
    * freezeForScreenshot と違い位相は保持する（解除後に飛び跳ねない）。
    */
   setAnimationsPaused(paused: boolean): void {
-    const app = this.app;
     this.loopPaused = paused;
+    this.syncTickerState();
+  }
+
+  /** オーバーレイ・reduced motion・視覚回帰の各停止理由を一か所で合成する。 */
+  private syncTickerState(paintWhenStopped = true): void {
+    const app = this.app;
     if (!app) return;
-    if (paused || this.frozen) {
+    if (this.loopPaused || this.reducedMotion || this.frozen) {
       app.ticker.stop();
-      // 進化フェーズ中に init すると、ticker 停止が最初の RAF 前に起き canvas が空のまま残る。
-      app.render();
+      // ticker 停止が最初の RAF 前でも、静止フレームを空にしない。
+      if (paintWhenStopped) app.render();
     } else {
       app.ticker.start();
     }
@@ -492,7 +542,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
   /** ticker 停止中は自動描画が無いので、静止フレームを明示的に canvas へ焼く。 */
   private paintIfTickerStopped(): void {
-    if (!this.app || !(this.loopPaused || this.frozen)) return;
+    if (!this.app || !(this.loopPaused || this.reducedMotion || this.frozen)) return;
     this.app.render();
   }
 
@@ -502,14 +552,18 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     if (!pool || !this.app) return;
     this.lastInput = input;
     const { scene } = input;
+    this.reducedMotion = input.reducedMotion;
 
     this.lastFlows = scene.flows;
     this.drawFlows(this.elapsedMs);
+    this.syncReviewHeat(scene.reviewEffects.heatField);
     this.syncActors(scene.stations);
+    this.syncReviewTrails(scene.reviewEffects.trails);
     this.syncDots(scene.dots, input.draggableTaskIds ?? new Set(), input.dragTaskId ?? null);
-    this.applyAnimations(this.elapsedMs);
+    this.applyAnimations(boardAnimationElapsedMs(this.elapsedMs, this.reducedMotion));
 
     this.emitRenderMetrics();
+    this.syncTickerState(false);
     this.paintIfTickerStopped();
   }
 
@@ -635,6 +689,81 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     }
   }
 
+  /** Review ゾーン内の局所ヒートフィールドを plan と同期する。 */
+  private syncReviewHeat(heat: BoardReviewHeatFieldPlan | null): void {
+    const g = this.reviewHeatGfx;
+    g.clear();
+    this.reviewHeat = heat;
+    if (!heat) {
+      this.reviewHeatLayer.visible = false;
+      return;
+    }
+
+    this.reviewHeatLayer.visible = true;
+    const maxAlpha = VISUAL_TOKENS.dimensions.sprint.reviewEffects.heatField.maxAlpha;
+    const alpha = maxAlpha * heat.intensity;
+    const outerColor = VISUAL_TOKENS.colors.board.heatOverlay;
+    const innerColor = heat.hell
+      ? VISUAL_TOKENS.colors.health.reviewHell
+      : VISUAL_TOKENS.colors.flow.hot;
+    g.ellipse(heat.x, heat.y, heat.radiusX, heat.radiusY).fill({
+      color: outerColor,
+      alpha: alpha * 0.45,
+    });
+    g.ellipse(heat.x, heat.y, heat.radiusX * 0.7, heat.radiusY * 0.7).fill({
+      color: innerColor,
+      alpha: alpha * 0.65,
+    });
+    g.ellipse(heat.x, heat.y, heat.radiusX * 0.38, heat.radiusY * 0.38).fill({
+      color: innerColor,
+      alpha,
+    });
+  }
+
+  /** Coding / Rework から Review へ向かう上限付きの光跡を plan と同期する。 */
+  private syncReviewTrails(trails: readonly BoardReviewTrailPlan[]): void {
+    const pool = this.reviewTrailPool;
+    if (!pool) return;
+    this.reviewTrailsLayer.removeChildren();
+    pool.releaseAll();
+    this.reviewTrailEntries = [];
+
+    for (const plan of trails) {
+      const trail = pool.acquire();
+      if (!trail) break;
+      const color =
+        plan.tone === 'ai'
+          ? VISUAL_TOKENS.colors.taskGlow.ai
+          : plan.tone === 'rework'
+            ? VISUAL_TOKENS.colors.flow.hot
+            : VISUAL_TOKENS.colors.flow.normal;
+      const parts = 3;
+      for (let i = 0; i < parts; i += 1) {
+        const from = -plan.length * ((i + 1) / parts);
+        const to = -plan.length * (i / parts);
+        const nearDot = (i + 1) / parts;
+        trail
+          .moveTo(from, 0)
+          .lineTo(to, 0)
+          .stroke({
+            color,
+            width: plan.width * (0.35 + nearDot * 0.65),
+            alpha: 0.2 + nearDot * 0.5,
+            cap: 'round',
+          });
+      }
+      trail.position.set(plan.x, plan.y);
+      trail.rotation = (plan.angleDeg * Math.PI) / 180;
+      this.reviewTrailsLayer.addChild(trail);
+      this.reviewTrailEntries.push({
+        trail,
+        baseAlpha: 0.6 + plan.progress * 0.25,
+        speedMul: plan.speedMul,
+        phaseOffsetMs: plan.taskId * 37,
+      });
+    }
+  }
+
   /** ステーションキャラ（机＋キャラ Sprite）を plan と同期する。 */
   private syncActors(stations: readonly BoardStationPlan[]): void {
     // 5 体固定なので初回だけ生成し、以後はテクスチャ差し替えのみ。
@@ -711,6 +840,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       actors: this.actors.length,
       flows: this.lastFlows.length,
       assets: this.actors.filter((actor) => actor.assetLoaded).length,
+      reviewTrails: this.reviewTrailEntries.length,
+      reviewHeat: this.reviewHeat?.intensity ?? 0,
     });
   }
 
@@ -800,6 +931,23 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private applyAnimations(elapsedMs: number): void {
     this.drawFlows(elapsedMs);
 
+    if (this.reviewHeat) {
+      const heatTokens = VISUAL_TOKENS.dimensions.sprint.reviewEffects.heatField;
+      const phase = (2 * Math.PI * elapsedMs) / heatTokens.pulsePeriodMs;
+      this.reviewHeatLayer.alpha =
+        1 - heatTokens.pulseAmplitude / 2 + (Math.sin(phase) + 1) * (heatTokens.pulseAmplitude / 2);
+    } else {
+      this.reviewHeatLayer.alpha = 1;
+    }
+
+    const trailPulse = VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.pulseAmplitude;
+    for (const entry of this.reviewTrailEntries) {
+      const period = 1150 / Math.max(entry.speedMul, 0.01);
+      const phase = (2 * Math.PI * (elapsedMs + entry.phaseOffsetMs)) / period;
+      entry.trail.alpha =
+        entry.baseAlpha * (1 - trailPulse / 2 + (Math.sin(phase) + 1) * (trailPulse / 2));
+    }
+
     for (const actor of this.actors) {
       if (actor.mood === 'panic') {
         // CSS `.cbob.shake`（cshake 0.3s: translate(0,-2px) rotate(-1.4deg)）。
@@ -851,6 +999,9 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     for (const group of this.pool?.drain() ?? []) {
       group.destroy({ children: true });
     }
+    for (const trail of this.reviewTrailPool?.drain() ?? []) {
+      trail.destroy();
+    }
     // 焼き込みテクスチャは自前管理なので明示破棄する。
     for (const texture of this.textures.values()) texture.destroy(true);
     this.textures.clear();
@@ -859,8 +1010,11 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.app?.destroy(true, DESTROY_OPTIONS);
     this.app = null;
     this.pool = null;
+    this.reviewTrailPool = null;
     this.actors = [];
     this.dotEntries = [];
+    this.reviewTrailEntries = [];
+    this.reviewHeat = null;
     this.lastInput = null;
   }
 }

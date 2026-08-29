@@ -4,7 +4,7 @@
 
 ## 1. 現在の課題
 
-### RI-140: 中央「現場」のWebGL演出リッチ化（エピック） — 未着手
+### RI-140: 中央「現場」のWebGL演出リッチ化（エピック） — 進行中（RI-141完了）
 
 **難易度: 高。** 現在の `BoardPixiLayer` / `PixiBoardRenderer` はフロー線・タスク粒・
 ステーションキャラクターを WebGL で描き、炎上・介入・オーラなどの短時間演出は DOM +
@@ -30,7 +30,7 @@ Framer Motion で重ねている。本エピックでは中央のスプリント
 
 分割して、各項目を原則 1 PR で完了させる。
 
-1. **RI-141: Review の流れ・滞留・熱を WebGL で可視化 — 未着手（難易度: 高）**
+1. **RI-141: Review の流れ・滞留・熱を WebGL で可視化 — 完了（難易度: 高）**
    - 既存のタスク粒移動・DOMヒートオーバーレイに重ね、Pixi に二つの専用レイヤを追加する。
      `scene.stations.find((station) => station.lane === 'review')?.heat ?? 0` が 0 より大きい間だけReviewゾーン内にGPUヒートフィールドを
      描き、8〜11件では強度を連続的に変化させ、12件以上では Review Hell の警告状態を維持する。
@@ -42,6 +42,9 @@ Framer Motion で重ねている。本エピックでは中央のスプリント
    - **高難易度の理由:** `boardScene`、`Board`、Pixi描画・スプライトプール、共有トークン、
      DOM/Pixiのmotion抑制、5 viewportのE2E、実WebGL視覚回帰にまたがり、レンダラの設計境界を
      変更するため。
+   - `reviewEffects` を純粋な表示計画として追加し、Review 局所ヒートと上限付き流入軌跡を
+     Pixi の専用レイヤで描画する。DOM の件数・警告・全体ヒートを維持し、通常／reduced motion、
+     5 viewport、実WebGLの決定論的回帰で同等性を固定した。
 
 2. **RI-142: 炎上・鎮火・介入リアクションの GPU エフェクト化 — 未着手（難易度: 高）**
    - `FireEffects` / `InterventionEffects` が担う点火、延焼、鎮火、レビュー掃引、PR 分割、

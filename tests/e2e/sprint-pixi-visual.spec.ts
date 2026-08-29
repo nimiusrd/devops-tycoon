@@ -5,6 +5,7 @@
  * 実行: `npm run test:e2e:pixi`
  */
 import {
+  advanceCurrentSprintToReviewQueue,
   advanceCurrentSprintToResult,
   advancePublicRun,
   beginPublicSprint,
@@ -157,6 +158,11 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
   test('固定 seed でスプリント盤面 canvas が安定する @pixi', async ({ page }) => {
     await openPixiSprintBoard(page, PIXI_SEED);
     await stabilizeForScreenshot(page);
+    await expect
+      .poll(async () =>
+        page.getByTestId('board-pixi-mount').getAttribute('data-board-review-trails'),
+      )
+      .toMatch(/^[1-9]\d*$/);
     await freezePixiForScreenshot(page);
 
     // 盤面全体（DOM ラベル・凡例＋Pixi canvas の合成）で回帰を見る。
@@ -164,6 +170,41 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });
+  });
+
+  test('Review Hellの局所ヒートをPixi合成で固定する @pixi（RI-141）', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await beginPublicSprint(page, {
+      seed: 'ri141-review-pressure-0',
+      difficulty: 'hard',
+      renderer: 'pixi',
+    });
+    await advanceCurrentSprintToReviewQueue(page, 12);
+    await stabilizeForScreenshot(page);
+    const mount = page.getByTestId('board-pixi-mount');
+    await expect(mount).toHaveAttribute('data-board-review-heat', '1');
+    await expect(page.getByTestId('board')).toHaveAttribute('data-review-hell', 'true');
+    await freezePixiForScreenshot(page);
+
+    await expect(page.getByTestId('board')).toHaveScreenshot('sprint-pixi-review-hell.png', {
+      animations: 'disabled',
+      maxDiffPixelRatio: 0.02,
+    });
+  });
+
+  test('reduced motionでもPixiの渋滞情報を静止表示する @pixi（RI-141）', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await beginPublicSprint(page, {
+      seed: 'ri141-review-pressure-0',
+      difficulty: 'hard',
+      renderer: 'pixi',
+    });
+    await advanceCurrentSprintToReviewQueue(page, 12);
+    await stabilizeForScreenshot(page);
+    const mount = page.getByTestId('board-pixi-mount');
+    await expect(mount).toHaveAttribute('data-board-review-heat', '1');
+    await expect(page.getByTestId('count-review')).not.toHaveText('0');
+    await freezePixiForScreenshot(page);
   });
 
   test('1440x900通常スプリントのPixi合成を固定する @pixi', async ({ page }) => {

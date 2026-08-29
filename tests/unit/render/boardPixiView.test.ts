@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   actorTextureKey,
+  boardAnimationElapsedMs,
   bobOffsetY,
   dotTextureKey,
   fireShakeOffset,
@@ -29,6 +30,13 @@ function dot(overrides: Partial<BoardDotPlan> & { id: number }): BoardDotPlan {
     ...overrides,
   };
 }
+
+describe('boardAnimationElapsedMs', () => {
+  it('通常時は経過時間を保ち、reduced motion は位相0へ固定する', () => {
+    expect(boardAnimationElapsedMs(840, false)).toBe(840);
+    expect(boardAnimationElapsedMs(840, true)).toBe(0);
+  });
+});
 
 describe('hitTestBoardDot', () => {
   const draggable = new Set([1, 2]);

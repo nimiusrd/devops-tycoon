@@ -25,6 +25,7 @@ export interface DifficultyDef {
   /**
    * AI 割当タスク 1 件あたりの依存度上昇（未指定時は `AI_DEP_PER_TASK`）。
    * Nightmare は S1 即死を避けるためグローバル既定より低くする（RI-74）。
+   * Easy は default シナリオの通常床 58 の序盤で cap に張り付かないよう既定より低くする（#359）。
    */
   aiDependencyPerTask?: number;
 }
@@ -52,6 +53,13 @@ export const DIFFICULTY_DEFS: Record<DifficultyId, DifficultyDef> = {
     },
     // RI-75: F-4 代表方針でも通常 p50 が60秒帯に入るよう底上げ。
     taskCountMul: 1.85,
+    /**
+     * Issue #359: 通常床 58 × 採用率およそ 43% で約 25 件/スプリント。
+     * 既定 2.2 だと 2 本目で cap に張り付く。単価 1.1 なら熟練でも S2 終端は cap 未満。
+     * default シナリオ限定（`resolveAiDependencyPerTask`）。Copilot 等のツール開始は
+     * 既定 2.2 のまま（#387）。F-7 の勝率つまみ seniorHpCostMul も据え置き。
+     */
+    aiDependencyPerTask: 1.1,
     // RI-73/F-7: 手戻り抑制は RI-75 値を維持。seniorHpCostMul で消耗だけ下げて勝率帯を作る。
     // 平均HP上昇によるレビュー加速は eliteTaskMul（sprintBaselineBuild）側で相殺する。
     // RI-134 後も naive easy の初見10 seedが 2〜3勝となる ≈20% 帯を維持する。

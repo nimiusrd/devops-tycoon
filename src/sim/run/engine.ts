@@ -2622,22 +2622,9 @@ export class RunEngine {
     this.whatIfCache = null;
   }
 
-  /**
-   * 難易度とシナリオの `aiDependencyPerTask` を baseConfig へ同期する（RI-74 / #387）。
-   * シナリオは上書きだが、難易度がより低い値なら難易度を優先する。
-   * Easy の通常単価は default シナリオ限定（#359 / #415）。ツール開始はシナリオ単価を残す。
-   */
+  /** 難易度とシナリオから合成した `aiDependencyPerTask` を baseConfig へ同期する（RI-74 / #359）。 */
   private applyAiDependencyPerTask(): void {
-    const scenarioId = resolveScenarioId(this.scenario);
-    const scenario = getScenario(scenarioId);
-    const difficultyRate =
-      this.difficulty === 'easy' && scenarioId !== DEFAULT_SCENARIO
-        ? undefined
-        : getDifficulty(this.difficulty).aiDependencyPerTask;
-    const perTask = resolveAiDependencyPerTask(
-      difficultyRate,
-      scenario.aiDependencyPerTask ?? scenario.sprint.aiDependencyPerTask,
-    );
+    const perTask = resolveAiDependencyPerTask(this.difficulty, this.scenario);
     if (perTask !== undefined) {
       this.baseConfig.aiDependencyPerTask = perTask;
       return;

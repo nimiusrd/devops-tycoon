@@ -104,16 +104,7 @@ export function resolveSprintConfig(
   scenario: ScenarioId,
   override?: Partial<SprintConfig>,
 ): SprintConfig {
-  const def = getScenario(scenario);
-  return {
-    ...def.sprint,
-    // トップレベルのシナリオ単価も載せる。sprint だけだと共有 DEFAULT_SPRINT を
-    // 参照する Copilot がグローバル既定 2.2 のままになる（#387 / Codex P2）。
-    ...(def.aiDependencyPerTask !== undefined
-      ? { aiDependencyPerTask: def.aiDependencyPerTask }
-      : {}),
-    ...override,
-  };
+  return { ...getScenario(scenario).sprint, ...override };
 }
 
 /**

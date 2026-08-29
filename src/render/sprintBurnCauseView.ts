@@ -3,6 +3,7 @@
  *
  * `SprintResult.fireEvents` を読むだけの純関数。描画・状態は知らない（第22.2）。
  */
+import { formatSpreadImpact } from './sprintEventView';
 import type { FireSprintEvent, SprintResult } from '../sim/types';
 
 export interface BurnCauseEntry {
@@ -203,14 +204,25 @@ export function planBurnCauseLog(result: SprintResult): BurnCauseLogView {
         if (!chain) break;
         openByTask.delete(event.taskId);
         if (event.spreadToTaskId != null) {
-          chain.parts.push(`t${event.tick} 延焼 → PR#${event.spreadToTaskId}`);
+          const impact = formatSpreadImpact(event);
+          chain.parts.push(
+            impact
+              ? `t${event.tick} 延焼 → PR#${event.spreadToTaskId}（${impact}）`
+              : `t${event.tick} 延焼 → PR#${event.spreadToTaskId}`,
+          );
           pendingHandoff = {
             fromTaskId: event.taskId,
             toTaskId: event.spreadToTaskId,
             chain,
           };
         } else {
-          pushEntry(chain, 'spread', `t${event.tick} 延焼（負債・士気に波及）`);
+          const impact = formatSpreadImpact(event);
+          const suffix = impact
+            ? `（${impact}）`
+            : event.debtGain == null && event.moraleCost == null
+              ? '（負債・士気に波及）'
+              : '';
+          pushEntry(chain, 'spread', `t${event.tick} 延焼${suffix}`);
         }
         break;
       }

@@ -1,6 +1,7 @@
 import { deleteDB } from 'idb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGame } from '../../../src/game';
+import { displayedQuarterSprintIndex } from '../../../src/render/sprintProgressView';
 import { createRunEngine } from '../../../src/sim/run/engine';
 import {
   goalProgressStatus,
@@ -607,6 +608,33 @@ describe('ラン途中セーブ永続化（RI-58）', () => {
     expect(state?.phase).toBe('result');
     expect(state?.seed).toBe('ri58-game');
     expect(state?.sprintsPlayed).toBe(1);
+  });
+
+  it('続きから再開したドラフトの表示スプリント番号は HUD と同じ四半期内の次番号になる', async () => {
+    const storage = new MemoryRunStorage();
+    const game = createGame({
+      seed: 'ri372-resume-draft',
+      runStorage: storage,
+      metaReady: true,
+    });
+    game.attachRunPersistence(storage, null);
+    game.startRun('easy', [], 'ri372-resume-draft');
+    game.beginSetupSprint();
+    let guard = 0;
+    while (game.isSprintRunning() && guard++ < 20_000) game.step(100);
+    expect(game.phase()).toBe('result');
+    game.acknowledgeResult();
+    expect(game.phase()).toBe('draft');
+    await flushSave(storage);
+
+    const save = await storage.load();
+    const resumed = createGame({ seed: 'fresh', runStorage: storage, metaReady: true });
+    resumed.attachRunPersistence(storage, save);
+    const state = resumed.resumeRun();
+    expect(state?.phase).toBe('draft');
+    expect(displayedQuarterSprintIndex(state!)).toBe(2);
+    expect(displayedQuarterSprintIndex(state!)).not.toBe(state!.sprintIndexInQuarter);
+    expect(state!.sprintIndexInQuarter).toBe(1);
   });
 
   it('RI-117: 互換不可セーブは GameHandle から再開できず、clear はラン保存だけを消す', async () => {

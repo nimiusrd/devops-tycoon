@@ -42,6 +42,11 @@ describe('deriveStatus（状態→ステータス表示）', () => {
     expect(low).toBe('E');
   });
 
+  it('シニア体力%は 0 未満を表示しない', () => {
+    expect(deriveStatus(withOrg({ seniorHp: -12 })).seniorHpPct).toBe(0);
+    expect(deriveStatus(withOrg({ seniorHp: -0.6 })).seniorHpPct).toBe(0);
+  });
+
   it('AI依存度・技術的負債・士気をそのまま数値で出す', () => {
     const s = deriveStatus(withOrg({ aiDependency: 72, techDebt: 41, morale: 66 }));
     expect(s.aiDependencyPct).toBe(72);

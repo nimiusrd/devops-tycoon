@@ -15,17 +15,31 @@ export interface DeckBarProps {
   hand?: number[];
   focus?: number;
   playable?: boolean;
+  /** プレイヤー Pause 中。手札は見せたまま発動だけ止める。 */
+  paused?: boolean;
   /** 安定な deckIndex で発動する（連打で手札がずれない）。 */
   onPlay?: (deckIndex: number) => CardPlayOutcome;
 }
 
-export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: DeckBarProps) {
+export function DeckBar({
+  deck,
+  hand,
+  focus = 0,
+  playable = false,
+  paused = false,
+  onPlay,
+}: DeckBarProps) {
   const { resolveCard } = useReplayContent();
   const isHandMode = hand !== undefined && playable && onPlay;
 
   if (isHandMode) {
     return (
-      <div className="deckbar" data-testid="deck" data-mode="hand">
+      <div
+        className="deckbar"
+        data-testid="deck"
+        data-mode="hand"
+        data-paused={paused ? 'true' : 'false'}
+      >
         <span className="deckbar-label">手札</span>
         {hand.length === 0 ? (
           <span className="deckbar-empty">手札がありません</span>
@@ -36,7 +50,7 @@ export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: Dec
               if (!inst) return null;
               const def = resolveCard(inst.defId);
               const cost = playCost(def.focusCost, inst.level);
-              const canPlay = focus >= cost;
+              const canPlay = !paused && focus >= cost;
               return (
                 <CardView
                   key={`hand-${deckIndex}`}
@@ -45,6 +59,7 @@ export function DeckBar({ deck, hand, focus = 0, playable = false, onPlay }: Dec
                   compact
                   playCost={cost}
                   disabled={!canPlay}
+                  disabledReason={paused ? '一時停止中はカードを発動できない' : undefined}
                   onPlay={() => onPlay(deckIndex)}
                 />
               );

@@ -4,6 +4,7 @@
  * sim 決定論の外側（UI 層のみ）。`?tutorial=` は E2E / 強制再表示用のフック。
  */
 import { TUTORIAL_CONTENT_VERSION } from '../state/meta';
+import { SENIOR_HP_HOWTO_BODY } from './howToPlayContent';
 
 export { LEGACY_TUTORIAL_VERSION, TUTORIAL_CONTENT_VERSION } from '../state/meta';
 
@@ -33,7 +34,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: 'senior-hp',
     targetTestId: 'hud-seniorHp',
     title: 'シニア体力',
-    body: 'シニア体力はメンバー個別のスタミナとは別の抽象値です。尽きるとシニア燃え尽きで敗北します。炎上の自動鎮火は大きく削りますが、緊急対応も余裕のある先消しでは高コストでコンボが切れます。複数炎上やタイマーが短いときだけ打ち、アンドンは流入を止めてキューを捌く猶予を作り、AIスロットルは新規タスクをAIなしにします。点火の抑制はリテラシーが低いときだけ、手戻りの抑制はワークフローが未熟なときだけで効きます。前提度が高く成熟していると工程ずれで手戻りが増えることがあります。休息で体力を戻します。',
+    body: SENIOR_HP_HOWTO_BODY,
   },
   {
     id: 'jam-meter',

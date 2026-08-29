@@ -101,12 +101,12 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'sim-run-engine-e',
-    mutate: 'src/sim/run/engine.ts:771-822',
+    mutate: 'src/sim/run/engine.ts:771-821',
     note: 'engine ホットパス（step / dispatch / playCard）',
   },
   {
     id: 'sim-run-engine-g',
-    mutate: 'src/sim/run/engine.ts:823-906',
+    mutate: 'src/sim/run/engine.ts:822-906',
     note: 'engine resolveSprint（baseline 完走を含む）',
   },
   {
@@ -117,16 +117,16 @@ export const MUTATION_SHARDS = Object.freeze([
   {
     id: 'sim-run-engine-b',
     mutate: 'src/sim/run/engine.ts:1063-1514',
-    note: 'engine 中盤（再編〜 recruitChoose）',
+    note: 'engine 中盤（再編〜 restChoose）',
   },
   {
     id: 'sim-run-engine-c',
-    mutate: 'src/sim/run/engine.ts:1515-2051',
-    note: 'engine 後半（採用ペナルティ〜 applyOrgLever）',
+    mutate: 'src/sim/run/engine.ts:1515-2064',
+    note: 'engine 後半（recruitChoose 〜 applyOrgLever）',
   },
   {
     id: 'sim-run-engine-d',
-    mutate: `src/sim/run/engine.ts:2052-${OPEN_RANGE_END}`,
+    mutate: `src/sim/run/engine.ts:2065-${OPEN_RANGE_END}`,
     note: 'engine 末尾（buildOrgScale・永続化。以降の追記もここ）',
   },
 
@@ -218,27 +218,27 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'sim-sprint-c',
-    mutate: 'src/sim/sprint.ts:346-454',
+    mutate: 'src/sim/sprint.ts:346-457',
     note: 'sprint Review 消化と炎上（forceShip / advanceReview / advanceBurning）',
   },
   {
     id: 'sim-sprint-d',
-    mutate: 'src/sim/sprint.ts:455-526',
+    mutate: 'src/sim/sprint.ts:458-526',
     note: 'sprint 完了判定（rework / drain / stall / abandon）',
   },
   {
     id: 'sim-sprint-e',
-    mutate: 'src/sim/sprint.ts:527-584',
+    mutate: 'src/sim/sprint.ts:527-587',
     note: 'sprint 1 tick 本体（stepSprint。無限ループ mutant の主因）',
   },
   {
     id: 'sim-sprint-f',
-    mutate: 'src/sim/sprint.ts:585-641',
+    mutate: 'src/sim/sprint.ts:588-626',
     note: 'sprint 評価（tickCooldowns / computeGrade）',
   },
   {
     id: 'sim-sprint-g',
-    mutate: `src/sim/sprint.ts:642-${OPEN_RANGE_END}`,
+    mutate: `src/sim/sprint.ts:627-${OPEN_RANGE_END}`,
     note: 'sprint 称号と summarizeSprint（computeTitleAndDiagnosis 全体。以降の追記もここ）',
   },
   {
@@ -307,12 +307,12 @@ export const MUTATION_SHARDS = Object.freeze([
   },
   {
     id: 'state-persist-shape-b',
-    mutate: 'src/state/persistFrameShape.ts:165-327',
+    mutate: 'src/state/persistFrameShape.ts:165-378',
     note: 'persistFrameShape 中盤（isMemberShape まで）',
   },
   {
     id: 'state-persist-shape-c',
-    mutate: `src/state/persistFrameShape.ts:328-${OPEN_RANGE_END}`,
+    mutate: `src/state/persistFrameShape.ts:379-${OPEN_RANGE_END}`,
     note: 'persistFrameShape 後半',
   },
   {
@@ -331,6 +331,11 @@ export const MUTATION_SHARDS = Object.freeze([
     note: 'meta',
   },
   {
+    id: 'state-resume-risk',
+    mutate: 'src/state/resumeRisk.ts',
+    note: 'resumeRisk（瀕死セーブ再開警告）',
+  },
+  {
     id: 'state-rest',
     mutate: [
       'src/state/**/*.ts',
@@ -338,6 +343,7 @@ export const MUTATION_SHARDS = Object.freeze([
       '!src/state/runPersistence.ts',
       '!src/state/replay.ts',
       '!src/state/meta.ts',
+      '!src/state/resumeRisk.ts',
       '!src/state/**/index.ts',
       '!src/state/**/types.ts',
     ].join(','),

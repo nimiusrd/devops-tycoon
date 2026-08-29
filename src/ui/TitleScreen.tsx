@@ -6,39 +6,117 @@
  * レイアウトは司令室 UI の構図を使い、文言は SPEC の用語に揃える。
  * ラン開始 CTA は画面下のドックに常時出し、初見がスクロールなしで始められるようにする。
  */
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { DIFFICULTY_DEFS, DIFFICULTY_ORDER, TRIAL_DEFS, getTrial } from '../data/difficulties';
 import { ACHIEVEMENT_LABEL, getDailyRecord, utcDateStr, type MetaState } from '../state/meta';
 import { loadStartRecipe, serializeStartRecipe } from '../state/startRecipe';
 import type { RunSaveCompatibilityIssue, RunSaveSummary } from '../state/runPersistence';
+import type { ResumeRisk } from '../state/resumeRisk';
 import type { DifficultyId } from '../sim/run/types';
 import { DEFAULT_SCENARIO, SCENARIO_ORDER, getScenario } from '../sim/scenarios';
 import type { ScenarioId } from '../sim/types';
 import { publicUrl } from '../utils/publicUrl';
-
-const DIFFICULTY_TAG: Record<DifficultyId, string> = {
-  easy: 'Easy',
-  normal: 'Normal',
-  hard: 'Hard',
-  nightmare: 'Nightmare',
-};
-
-const PHASE_LABEL: Record<RunSaveSummary['phase'], string> = {
-  setup: '編成',
-  result: 'リザルト',
-  draft: 'ドラフト',
-  evolution: '進化',
-  beat: 'イベント',
-  shop: 'ショップ',
-  rest: '休息',
-  recruit: '採用',
-  quarterReview: '四半期レビュー',
-};
+import { StartDailyConfirmDialog } from './StartDailyConfirmDialog';
+import { DIFFICULTY_TAG, resumableRunDetail, resumableRunHeadline } from './runSaveSummaryCopy';
+import { downloadTextFile } from './downloadTextFile';
 
 function formatRuleset(ruleset: { version: number; fingerprint: string }): string {
   const fingerprint =
     ruleset.fingerprint.length > 12 ? `${ruleset.fingerprint.slice(0, 12)}…` : ruleset.fingerprint;
   return `v${ruleset.version} / ${fingerprint}`;
+}
+
+function ResumeRiskDialog({
+  risk,
+  onCancel,
+  onConfirm,
+}: {
+  risk: ResumeRisk;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('button')];
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  return (
+    <div
+      ref={dialogRef}
+      className="result-overlay"
+      data-testid="resume-risk-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="resume-risk-title"
+      aria-describedby="resume-risk-body"
+    >
+      <div className="result-card resume-risk-card">
+        <p className="result-eyebrow">RESUME WARNING</p>
+        <h2 id="resume-risk-title" className="draft-title">
+          {risk.headline}
+        </h2>
+        <p id="resume-risk-body" className="resume-risk-body">
+          {risk.body}
+        </p>
+        <ul className="resume-risk-flags">
+          {risk.flags.map((flag) => (
+            <li key={flag.id}>
+              <span className={`pill tone-${flag.tone}`}>{flag.chip}</span>
+              {flag.id === 'seniorHp' || flag.id === 'seniorBurnout'
+                ? ` シニア体力 ${risk.seniorHpPct}%`
+                : null}
+            </li>
+          ))}
+        </ul>
+        <div className="result-actions">
+          <button
+            ref={cancelRef}
+            type="button"
+            className="btn btn-primary"
+            data-testid="resume-risk-cancel"
+            onClick={onCancel}
+          >
+            再開しない
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            data-testid="resume-risk-confirm"
+            onClick={onConfirm}
+          >
+            それでも再開する
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export interface TitleScreenProps {
@@ -53,6 +131,7 @@ export interface TitleScreenProps {
   onStartDaily?: () => void;
   onResume?: () => void;
   resumableSummary?: RunSaveSummary | null;
+  resumeRisk?: ResumeRisk | null;
   runSaveIssue?: RunSaveCompatibilityIssue | null;
   onDiscardRunSave?: () => void;
   onOpenReplays?: () => void;
@@ -80,6 +159,7 @@ export function TitleScreen({
   onStartDaily,
   onResume,
   resumableSummary = null,
+  resumeRisk = null,
   runSaveIssue = null,
   onDiscardRunSave,
   onOpenReplays,
@@ -112,6 +192,11 @@ export function TitleScreen({
     kind: 'idle' | 'ok' | 'error';
     message: string;
   }>({ kind: 'idle', message: '' });
+  const [dailyConfirmOpen, setDailyConfirmOpen] = useState(false);
+  const dailyConfirmWasOpen = useRef(false);
+  const startDailyButtonRef = useRef<HTMLButtonElement>(null);
+  const [resumeConfirmOpen, setResumeConfirmOpen] = useState(false);
+  const resumeBtnRef = useRef<HTMLButtonElement>(null);
   const seed = recipeSeed ?? propsSeed;
   const selectedScenario = getScenario(scenario);
   const today = utcDateStr();
@@ -138,14 +223,16 @@ export function TitleScreen({
   };
 
   const downloadRecipe = () => {
-    const text = exportRecipe();
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'devops-tycoon-start-recipe.json';
-    link.click();
-    URL.revokeObjectURL(url);
+    const text = liveRecipeText;
+    setRecipeDraft(null);
+    if (downloadTextFile('devops-tycoon-start-recipe.json', text)) {
+      setRecipeStatus({ kind: 'ok', message: '開始レシピをファイルに保存しました。' });
+      return;
+    }
+    setRecipeStatus({
+      kind: 'error',
+      message: '開始レシピをファイルに保存できませんでした。',
+    });
   };
 
   const applyRecipeText = (raw: string) => {
@@ -180,14 +267,14 @@ export function TitleScreen({
       setRunSaveShareStatus({ kind: 'error', message: '書き出せる途中セーブがありません。' });
       return;
     }
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'devops-tycoon-run-save.json';
-    link.click();
-    URL.revokeObjectURL(url);
-    setRunSaveShareStatus({ kind: 'ok', message: '途中セーブをファイルに保存しました。' });
+    if (downloadTextFile('devops-tycoon-run-save.json', text)) {
+      setRunSaveShareStatus({ kind: 'ok', message: '途中セーブをファイルに保存しました。' });
+      return;
+    }
+    setRunSaveShareStatus({
+      kind: 'error',
+      message: '途中セーブをファイルに保存できませんでした。',
+    });
   };
 
   const onRunSaveFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -224,6 +311,35 @@ export function TitleScreen({
     ? `今日のベスト ${dailyRecord.bestScore} pt${dailyRecord.rewardClaimed ? ' / 報酬受領済み' : ' / 報酬未受領'}`
     : 'まだ今日の記録はありません';
 
+  const closeDailyConfirm = useCallback(() => setDailyConfirmOpen(false), []);
+  const confirmStartDaily = useCallback(() => {
+    setDailyConfirmOpen(false);
+    onStartDaily?.();
+  }, [onStartDaily]);
+  const confirmResumeFromDaily = useCallback(() => {
+    setDailyConfirmOpen(false);
+    onResume?.();
+  }, [onResume]);
+  const requestStartDaily = () => {
+    if (runSaveImporting) return;
+    if (resumableSummary) {
+      setDailyConfirmOpen(true);
+      return;
+    }
+    onStartDaily?.();
+  };
+
+  useEffect(() => {
+    if (dailyConfirmOpen) {
+      dailyConfirmWasOpen.current = true;
+      return;
+    }
+    if (!dailyConfirmWasOpen.current) return;
+    dailyConfirmWasOpen.current = false;
+    // ダイアログ側は useDialogOverlayLock が背面を inert にする。解除後に開いたボタンへ戻す。
+    startDailyButtonRef.current?.focus();
+  }, [dailyConfirmOpen]);
+
   const launchControls = onStartDaily ? (
     <section className="title-launch-row" data-testid="daily-run-section">
       <div className="title-daily">
@@ -233,10 +349,13 @@ export function TitleScreen({
           UTC {today}・{dailyStatus}
         </small>
         <button
+          ref={startDailyButtonRef}
           type="button"
           data-testid="start-daily-run"
           disabled={runSaveImporting}
-          onClick={onStartDaily}
+          aria-haspopup={resumableSummary ? 'dialog' : undefined}
+          aria-expanded={resumableSummary ? dailyConfirmOpen : undefined}
+          onClick={requestStartDaily}
         >
           本日のデイリーを始める →
         </button>
@@ -256,7 +375,7 @@ export function TitleScreen({
         className="title-launch"
         data-testid="start-run"
         disabled={runSaveImporting}
-        onClick={() => onStart(difficulty, trials, scenario, seed)}
+        onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
       >
         <span>
           <small>ラン開始</small>
@@ -272,7 +391,7 @@ export function TitleScreen({
         className="btn btn-primary btn-lg"
         data-testid="start-run"
         disabled={runSaveImporting}
-        onClick={() => onStart(difficulty, trials, scenario, seed)}
+        onClick={() => onStart(difficulty, trials, scenario, recipeSeed ?? undefined)}
       >
         四半期を始める →
       </button>
@@ -519,6 +638,8 @@ export function TitleScreen({
                   <p
                     className={`title-recipe-status${recipeStatus.kind === 'error' ? ' error' : ''}`}
                     data-testid="start-recipe-status"
+                    role="status"
+                    aria-live="polite"
                   >
                     {recipeStatus.message}
                   </p>
@@ -573,6 +694,8 @@ export function TitleScreen({
                     <p
                       className={`title-recipe-status${runSaveShareStatus.kind === 'error' ? ' error' : ''}`}
                       data-testid="run-save-share-status"
+                      role="status"
+                      aria-live="polite"
                     >
                       {runSaveShareStatus.message}
                     </p>
@@ -588,16 +711,8 @@ export function TitleScreen({
               >
                 <div className="title-resume-copy">
                   <span>再開できないセーブ</span>
-                  <b>
-                    {DIFFICULTY_TAG[resumableSummary.difficulty]} / Q
-                    {resumableSummary.quarterNumber} {PHASE_LABEL[resumableSummary.phase]}
-                  </b>
-                  <small>
-                    seed: {resumableSummary.seed} · スプリント {resumableSummary.sprintsPlayed} 完了
-                    {resumableSummary.runKind === 'daily' && resumableSummary.dailyDate
-                      ? ` · デイリー ${resumableSummary.dailyDate}`
-                      : ''}
-                  </small>
+                  <b>{resumableRunHeadline(resumableSummary)}</b>
+                  <small>{resumableRunDetail(resumableSummary, { includeSeed: true })}</small>
                   <p className="title-resume-issue" data-testid="run-save-issue">
                     {runSaveIssue.kind === 'ruleset-unknown'
                       ? 'ルールセット情報がない旧セーブのため、現在のゲームでは再開できません。'
@@ -636,26 +751,41 @@ export function TitleScreen({
             ) : null}
 
             {!runSaveIssue && resumableSummary && onResume ? (
-              <section className="title-resume" data-testid="resume-run-section">
+              <section
+                className={`title-resume${resumeRisk?.tone === 'danger' ? ' title-resume-risk' : ''}`}
+                data-testid="resume-run-section"
+              >
                 <div className="title-resume-copy">
                   <span>中断中のラン</span>
-                  <b>
-                    {DIFFICULTY_TAG[resumableSummary.difficulty]} / Q
-                    {resumableSummary.quarterNumber} {PHASE_LABEL[resumableSummary.phase]}
-                  </b>
-                  <small>
-                    スプリント {resumableSummary.sprintsPlayed} 完了
-                    {resumableSummary.runKind === 'daily' && resumableSummary.dailyDate
-                      ? ` · デイリー ${resumableSummary.dailyDate}`
-                      : ''}
-                  </small>
+                  <b>{resumableRunHeadline(resumableSummary)}</b>
+                  <small>{resumableRunDetail(resumableSummary)}</small>
+                  {resumeRisk ? (
+                    <p className="title-resume-warning" data-testid="resume-risk-warning">
+                      <span>{resumeRisk.headline}</span>
+                      {resumeRisk.flags.map((flag) => (
+                        <span key={flag.id} className={`pill tone-${flag.tone}`}>
+                          {flag.chip}
+                          {flag.id === 'seniorHp' || flag.id === 'seniorBurnout'
+                            ? ` ${resumeRisk.seniorHpPct}%`
+                            : ''}
+                        </span>
+                      ))}
+                    </p>
+                  ) : null}
                 </div>
                 <button
+                  ref={resumeBtnRef}
                   type="button"
                   className="title-resume-btn"
                   data-testid="resume-run"
                   disabled={runSaveImporting}
-                  onClick={onResume}
+                  onClick={() => {
+                    if (resumeRisk?.requiresConfirm) {
+                      setResumeConfirmOpen(true);
+                      return;
+                    }
+                    onResume();
+                  }}
                 >
                   続きから再開 →
                 </button>
@@ -733,6 +863,32 @@ export function TitleScreen({
       >
         <div className="title-launch-dock-inner">{launchControls}</div>
       </div>
+      {/* overflow:hidden のタイトル面から外し、既存 overlay と同じく全面を覆う */}
+      {dailyConfirmOpen && resumableSummary && onStartDaily
+        ? createPortal(
+            <StartDailyConfirmDialog
+              summary={resumableSummary}
+              canResume={!runSaveIssue && !!onResume}
+              onCancel={closeDailyConfirm}
+              onResume={confirmResumeFromDaily}
+              onDiscardAndStart={confirmStartDaily}
+            />,
+            document.body,
+          )
+        : null}
+      {resumeConfirmOpen && resumeRisk?.requiresConfirm ? (
+        <ResumeRiskDialog
+          risk={resumeRisk}
+          onCancel={() => {
+            setResumeConfirmOpen(false);
+            resumeBtnRef.current?.focus();
+          }}
+          onConfirm={() => {
+            setResumeConfirmOpen(false);
+            onResume?.();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

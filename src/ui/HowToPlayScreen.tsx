@@ -35,7 +35,7 @@ export function HowToPlayScreen({ onClose }: HowToPlayScreenProps) {
         aria-label="遊び方を閉じる"
         onClick={onClose}
       />
-      <div className="how-to-play-panel">
+      <div className="how-to-play-panel" tabIndex={0}>
         <p className="result-eyebrow">HOW TO PLAY</p>
         <h2 className="draft-title">遊び方</h2>
         <p className="how-to-play-lead">

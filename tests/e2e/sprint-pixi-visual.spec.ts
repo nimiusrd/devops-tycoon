@@ -90,17 +90,33 @@ async function freezePixiForScreenshot(page: import('@playwright/test').Page) {
 async function exposeResultCardForScreenshot(page: import('@playwright/test').Page) {
   await page.addStyleTag({
     content: `
+      html, body, .app {
+        overflow: visible !important;
+        max-height: none !important;
+      }
       .result-overlay {
         position: absolute !important;
         inset: 0 auto auto 0 !important;
         width: 100% !important;
         height: auto !important;
-        min-height: 100vh !important;
+        min-height: 0 !important;
+        max-height: none !important;
         overflow: visible !important;
         align-items: flex-start !important;
       }
       .result-overlay > * {
         margin-block: 0 !important;
+        max-height: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        flex: none !important;
+      }
+      .overlay-scroll {
+        overflow: visible !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        flex: none !important;
       }
       .result-overlay::before,
       .result-overlay::after {
@@ -213,7 +229,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     await stabilizeForScreenshot(page);
     await freezePixiForScreenshot(page);
 
-    await expect(page.locator('.app')).toHaveScreenshot('sprint-pixi-layout-result-overlay.png', {
+    await expect(page).toHaveScreenshot('sprint-pixi-layout-result-overlay.png', {
       animations: 'disabled',
       maxDiffPixelRatio: 0.02,
     });
@@ -222,7 +238,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     const resultContinue = page.getByTestId('result-continue');
     await resultContinue.scrollIntoViewIfNeeded();
     await expect(resultContinue).toBeInViewport({ ratio: 1 });
-    await page.getByTestId('sprint-result').evaluate((element) => element.scrollTo(0, 0));
+    await page.getByTestId('overlay-scroll').evaluate((element) => element.scrollTo(0, 0));
     await exposeResultCardForScreenshot(page);
     await expect(resultCard).toHaveScreenshot('sprint-pixi-layout-result-overlay-card.png', {
       animations: 'disabled',

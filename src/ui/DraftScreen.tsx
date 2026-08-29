@@ -60,7 +60,7 @@ export function DraftScreen({
   return (
     <div
       ref={overlayRef}
-      className="result-overlay"
+      className="result-overlay overlay-contained"
       data-testid="draft"
       data-readonly={readOnly ? 'true' : undefined}
       role="dialog"
@@ -69,39 +69,41 @@ export function DraftScreen({
       tabIndex={-1}
     >
       <div className="draft-card-panel">
-        <p className="result-eyebrow">CARD DRAFT</p>
-        <h2 className="draft-title" data-testid="draft-sprint-no">
-          {readOnly
-            ? `スプリント${sprintNumber} に向けて、提示された施策を確認する`
-            : `スプリント${sprintNumber} に向けて、施策を1枚選ぶ`}
-        </h2>
-        <div className="draft-options">
-          {options.map((id) => {
-            const def = resolveCard(id);
-            return (
-              <CardView
-                key={id}
-                def={def}
-                playCost={playCost(def.focusCost, 1)}
-                onPick={() => onPick(id)}
-                disabled={readOnly}
-                readOnly={readOnly}
-                title={readOnly ? readOnlyTitle : undefined}
-                whatIfPreview={previews[id]}
-                whatIfComputing={whatIfComputing}
-              />
-            );
-          })}
+        <div className="overlay-scroll" data-testid="overlay-scroll" tabIndex={0}>
+          <p className="result-eyebrow">CARD DRAFT</p>
+          <h2 className="draft-title" data-testid="draft-sprint-no">
+            {readOnly
+              ? `スプリント${sprintNumber} に向けて、提示された施策を確認する`
+              : `スプリント${sprintNumber} に向けて、施策を1枚選ぶ`}
+          </h2>
+          <div className="draft-options">
+            {options.map((id) => {
+              const def = resolveCard(id);
+              return (
+                <CardView
+                  key={id}
+                  def={def}
+                  playCost={playCost(def.focusCost, 1)}
+                  onPick={() => onPick(id)}
+                  disabled={readOnly}
+                  readOnly={readOnly}
+                  title={readOnly ? readOnlyTitle : undefined}
+                  whatIfPreview={previews[id]}
+                  whatIfComputing={whatIfComputing}
+                />
+              );
+            })}
+          </div>
+          {(skipPreview || whatIfComputing) && (
+            <WhatIfPreview
+              preview={skipPreview}
+              computing={whatIfComputing && !skipPreview}
+              label="スキップ時の予測"
+              testId="what-if-draft-skip"
+            />
+          )}
         </div>
-        {(skipPreview || whatIfComputing) && (
-          <WhatIfPreview
-            preview={skipPreview}
-            computing={whatIfComputing && !skipPreview}
-            label="スキップ時の予測"
-            testId="what-if-draft-skip"
-          />
-        )}
-        <div className="draft-actions">
+        <div className="draft-actions overlay-actions">
           <button
             type="button"
             className="btn"

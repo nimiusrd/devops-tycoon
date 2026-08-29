@@ -6,10 +6,10 @@ import {
   resolveAiDependencyPerTask,
   resolveScenarioId,
   SCENARIO_ORDER,
+  SCENARIOS,
   type ScenarioOrg,
 } from '../../../src/sim/scenarios';
 import { foldRunEffects, type RunModifierInput } from '../../../src/sim/run/effects';
-import { resolveSprintConfig } from '../../../src/sim/sprint';
 
 const SAMPLE_ORG: ScenarioOrg = {
   aiDependencyBase: 20,
@@ -78,18 +78,6 @@ describe('tool scenarios (RI-103)', () => {
     expect(applyScenarioOrg(normal.org, getScenario('default'))).toEqual(normal.org);
   });
 
-  it('Copilot は初期依存に加え、タスク単価を 1.4 に抑える（#387）', () => {
-    expect(getScenario('copilot').aiDependencyPerTask).toBe(1.4);
-    expect(getScenario('default').aiDependencyPerTask).toBeUndefined();
-    expect(getScenario('devin').aiDependencyPerTask).toBeUndefined();
-    expect(resolveSprintConfig('copilot').aiDependencyPerTask).toBe(1.4);
-    expect(resolveSprintConfig('default').aiDependencyPerTask).toBeUndefined();
-    expect(resolveAiDependencyPerTask(undefined, 1.4)).toBe(1.4);
-    expect(resolveAiDependencyPerTask(0.8, 1.4)).toBe(0.8);
-    // Easy 1.1 をそのまま渡すと min で Copilot が潰れる。呼び出し側は非 default で難易度側を渡さない。
-    expect(resolveAiDependencyPerTask(1.1, 1.4)).toBe(1.1);
-  });
-
   it('foldRunEffects includes scenario globalEffects after difficulty', () => {
     const without = foldRunEffects(foldInput()).effects;
     const withCopilot = foldRunEffects(foldInput({ scenario: 'copilot' })).effects;
@@ -99,5 +87,31 @@ describe('tool scenarios (RI-103)', () => {
     const withClaude = foldRunEffects(foldInput({ scenario: 'claude-code' })).effects;
     expect(withClaude.reviewEfficiencyMul).toBeCloseTo(without.reviewEfficiencyMul * 0.94, 8);
     expect(withClaude.reworkRateAdd).toBeCloseTo(without.reworkRateAdd - 0.02, 8);
+  });
+});
+
+describe('resolveAiDependencyPerTask (#359)', () => {
+  it('Easy の 1.1 は default だけに載せ、Copilot は既定へ戻す', () => {
+    expect(resolveAiDependencyPerTask('easy', 'default')).toBe(1.1);
+    expect(resolveAiDependencyPerTask('easy', 'copilot')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('easy', 'claude-code')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('easy', 'devin')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('normal', 'copilot')).toBeUndefined();
+    expect(resolveAiDependencyPerTask('nightmare', 'default')).toBe(0.8);
+    expect(resolveAiDependencyPerTask('nightmare', 'copilot')).toBe(0.8);
+  });
+
+  it('シナリオ単価があるときはそれを使い、Nightmare の 0.8 は上書きしない', () => {
+    const copilot = SCENARIOS.copilot;
+    const previous = copilot.sprint;
+    copilot.sprint = { ...previous, aiDependencyPerTask: 1.4 };
+    try {
+      expect(resolveAiDependencyPerTask('easy', 'copilot')).toBe(1.4);
+      expect(resolveAiDependencyPerTask('normal', 'copilot')).toBe(1.4);
+      expect(resolveAiDependencyPerTask('nightmare', 'copilot')).toBe(0.8);
+      expect(resolveAiDependencyPerTask('easy', 'default')).toBe(1.1);
+    } finally {
+      copilot.sprint = previous;
+    }
   });
 });

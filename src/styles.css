@@ -2127,6 +2127,13 @@ body {
   /* 親 .event-ticker の overflow: hidden が外側枠を切るので内側へ描く（DS-08）。 */
   outline-offset: -2px;
 }
+.event-ticker-now {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--sun);
+}
 .event-ticker-list {
   list-style: none;
   margin: 0;

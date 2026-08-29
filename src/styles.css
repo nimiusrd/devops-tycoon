@@ -1551,8 +1551,8 @@ body {
 .result-overlay.overlay-contained {
   align-items: center;
   justify-content: flex-start;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: calc(100dvh - var(--replay-banner-height, 0px));
+  max-height: calc(100dvh - var(--replay-banner-height, 0px));
   overflow: hidden;
   overscroll-behavior: none;
 }

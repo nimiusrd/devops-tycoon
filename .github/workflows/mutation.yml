@@ -1,21 +1,27 @@
 # コアロジック（src/sim / src/state）のミューテーションテスト。
-# PR / push の必須ゲートにはしない。手動または週次スケジュールでのみ実行する。
+# PR / push の必須ゲートにはせず、必要なときだけ手動実行する。
 #
 # 対象は約 13,000 mutant。単一ジョブや旧 6 シャードでは 180 分上限に当たるため、
 # `scripts/mutation-shards.mjs` のディレクトリ／巨大ファイル行レンジ単位で並列する。
 # sprint.ts と engine.ts の step/resolveSprint は mutant あたりの壁時計が長く、
 # 700 体予算では足りないので関数境界で更に細かく割る。
-# カスタム mutate を指定した場合のみ単一ジョブで実行する。
+# 通常は targeted で変更した高リスク領域だけを調べ、全体ベースラインが必要な場合だけ
+# full を明示してシャード並列を実行する。
 name: Mutation
 
 on:
-  schedule:
-    # 毎週月曜 03:00 UTC
-    - cron: '0 3 * * 1'
   workflow_dispatch:
     inputs:
+      mode:
+        description: '実行範囲（通常は targeted。全体ベースラインが必要な場合だけ full）'
+        required: true
+        type: choice
+        options:
+          - targeted
+          - full
+        default: targeted
       mutate:
-        description: 'mutate パターン（空ならシャード分割でコア全体を実行）'
+        description: 'targeted の mutate パターン（例: src/sim/rng.ts。full では無視）'
         required: false
         type: string
         default: ''
@@ -33,13 +39,22 @@ permissions:
   contents: read
 
 jobs:
-  # 手動で mutate を指定したときだけ単一ジョブ
+  # 通常の調査は対象を明示して単一ジョブで実行する。
   mutation-custom:
     name: Stryker (custom)
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mutate != '' }}
+    if: ${{ inputs.mode == 'targeted' }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
+      - name: Validate targeted input
+        run: |
+          set -euo pipefail
+          if [ -z "${MUTATE}" ]; then
+            echo '::error::targeted では mutate パターンを指定してください。'
+            exit 1
+          fi
+        env:
+          MUTATE: ${{ inputs.mutate }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -77,7 +92,7 @@ jobs:
 
   mutation-shard-matrix:
     name: Resolve mutation shards
-    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mutate == '') }}
+    if: ${{ inputs.mode == 'full' }}
     runs-on: ubuntu-latest
     outputs:
       include: ${{ steps.matrix.outputs.include }}
@@ -96,7 +111,7 @@ jobs:
             echo EOF
           } >> "$GITHUB_OUTPUT"
 
-  # スケジュール / 手動（mutate 未指定）はシャード並列
+  # 全体ベースラインを明示した場合だけシャード並列する。
   mutation-sharded:
     name: Stryker (${{ matrix.id }})
     needs: mutation-shard-matrix

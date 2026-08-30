@@ -46,12 +46,13 @@
 
 **目的**
 
-- Survived / NoCoverage が多いコアロジックのユニットテストを強化し、mutation score を上げる。
+- 高リスクなコアロジックの変更時に Survived / NoCoverage を調べ、意味のある断言不足を見つける。
 - 決定論的な `src/sim` / `src/state` の回帰耐性を高める。
 
 **非目的**
 
 - Mutation を PR 必須 CI ゲートにしない（`thresholds.break: null` を維持）。
+- 全体 mutation score の数値目標を置き、スコアだけを継続的に追うこと。
 - スコアのためだけの本番ロジック変更（挙動を変えるリファクタは別課題）。
 - 全シャードの HTML レポートを1本に統合すること（必須ではない）。
 - 単位ごとの達成率を計画や Issue に永久保存すること。
@@ -79,8 +80,10 @@
 
 ## 5. 運用メモ（インフラ）
 
-- 週次 / 手動 Mutation は [`scripts/mutation-shards.mjs`](../scripts/mutation-shards.mjs) のシャード並列。初回は重いが、incremental cache が載れば差分だけになる。
-- 単一ジョブや旧 6 シャード（巨大ファイルを丸ごと）は 180 分タイムアウトのリスクあり。**通常は現行シャードまたは `--mutate`。**
+- Mutation は手動実行専用。通常は `mode: targeted` と `mutate` を指定し、変更した高リスク領域だけを単一ジョブで調べる。対象未指定の targeted run は実行しない。
+- `mode: full` は全体ベースラインが必要な場合だけ使う。四半期を目安に必要性を判断するか、コアロジックの大規模変更後に手動実行し、定常スケジュールには戻さない。
+- full run は [`scripts/mutation-shards.mjs`](../scripts/mutation-shards.mjs) のシャード並列。単一ジョブや旧 6 シャード（巨大ファイルを丸ごと）は 180 分タイムアウトのリスクがある。
+- 長時間ループの弱点確認では全量スコアを追うより、境界値・不変条件・プロパティを直接断言する軽量テストを優先する。
 - `ignoreStatic: true` 済み。`vitest.mutation.config.ts` で testTimeout 60s。`dryRunTimeoutMinutes` は 20（instrument 後の初期テストが既定 5 分を超えやすい）。
 - `engine.ts` の `step` / `playCard` は `sim-run-engine-e`、`resolveSprint`（baseline 完走）は `sim-run-engine-g` として切り離し、mutant 予算 160。`vitest.mutation.config.ts` は F-4/F-5 行列の `tests/unit/ui/sprintTempoPacing.test.ts` だけ除外する（instrument した `cards.ts` で beforeAll が 300s を超え dry-run が落ちるため）。`sprintTempo.test.ts` の軽量テストは mutation に残す。
 

@@ -1,15 +1,18 @@
 # コアロジック（src/sim / src/state）のミューテーションテスト。
-# PR / push の必須ゲートにはせず、必要なときだけ手動実行する。
+# PR / push の必須ゲートにはせず、週末早朝の差分と必要時の手動実行に限定する。
 #
 # 対象は約 13,000 mutant。単一ジョブや旧 6 シャードでは 180 分上限に当たるため、
 # `scripts/mutation-shards.mjs` のディレクトリ／巨大ファイル行レンジ単位で並列する。
 # sprint.ts と engine.ts の step/resolveSprint は mutant あたりの壁時計が長く、
 # 700 体予算では足りないので関数境界で更に細かく割る。
-# 通常は targeted で変更した高リスク領域だけを調べ、全体ベースラインが必要な場合だけ
-# full を明示してシャード並列を実行する。
+# 土・日・月の早朝は前回成功以降の軽量な差分だけを targeted 実行する。
+# 手動では targeted で高リスク領域を調べ、全体ベースラインが必要な場合だけ full を明示する。
 name: Mutation
 
 on:
+  schedule:
+    # 土・日・月 03:00 JST（前日の 18:00 UTC）
+    - cron: '0 18 * * 5,6,0'
   workflow_dispatch:
     inputs:
       mode:
@@ -36,9 +39,87 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
+  # 週末開発のmain反映後、前回の成功以降に変わった軽量ファイルだけをまとめて調べる。
+  mutation-scheduled:
+    name: Stryker (scheduled targeted)
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - id: base
+        name: Resolve previous successful schedule
+        run: |
+          set -euo pipefail
+          base_sha="$(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/mutation.yml/runs" \
+              --method GET \
+              -f event=schedule \
+              -f status=success \
+              -f per_page=1 \
+              --jq '.workflow_runs[0].head_sha // empty' 2>/dev/null || true
+          )"
+          if [ -z "${base_sha}" ] || ! git merge-base --is-ancestor "${base_sha}" "${GITHUB_SHA}"; then
+            base_sha="$(git rev-parse "${GITHUB_SHA}^")"
+          fi
+          echo "base_sha=${base_sha}" >> "${GITHUB_OUTPUT}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - id: targets
+        name: Resolve scheduled mutation targets
+        run: |
+          set -euo pipefail
+          git diff --name-only --diff-filter=ACMR "${BASE_SHA}" "${GITHUB_SHA}" -- src/sim src/state \
+            | node scripts/scheduled-mutation-targets.mjs \
+                --base "${BASE_SHA}" \
+                --head "${GITHUB_SHA}" \
+                --github-output "${GITHUB_OUTPUT}" \
+                --summary "${GITHUB_STEP_SUMMARY}"
+        env:
+          BASE_SHA: ${{ steps.base.outputs.base_sha }}
+      - name: Report targets requiring manual attention
+        if: ${{ steps.targets.outputs.needs_attention == 'true' }}
+        run: echo '::warning::自動実行から除外したMutation対象があります。Actions Summaryを確認してください。'
+      - if: ${{ steps.targets.outputs.mutate != '' }}
+        run: npm ci
+      - name: Restore Stryker incremental cache
+        if: ${{ steps.targets.outputs.mutate != '' }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reports/stryker-incremental-scheduled-${{ steps.targets.outputs.cache }}.json
+          key: stryker-incremental-scheduled-${{ steps.targets.outputs.cache }}-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            stryker-incremental-scheduled-${{ steps.targets.outputs.cache }}-${{ runner.os }}-
+      - name: Run scheduled mutation tests
+        if: ${{ steps.targets.outputs.mutate != '' }}
+        run: >-
+          npx stryker run
+          --incrementalFile "reports/stryker-incremental-scheduled-${CACHE_KEY}.json"
+          --mutate "${MUTATE}"
+        env:
+          CACHE_KEY: ${{ steps.targets.outputs.cache }}
+          MUTATE: ${{ steps.targets.outputs.mutate }}
+      - name: Upload scheduled mutation report
+        if: ${{ steps.targets.outputs.mutate != '' && !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-report-scheduled
+          path: |
+            reports/mutation/
+            reports/stryker-incremental-scheduled-${{ steps.targets.outputs.cache }}.json
+          if-no-files-found: warn
+          retention-days: 30
+
   # 通常の調査は対象を明示して単一ジョブで実行する。
   mutation-custom:
     name: Stryker (custom)

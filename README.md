@@ -118,7 +118,7 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 
 `test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
 
-GitHub Actions の [Mutation](.github/workflows/mutation.yml) ワークフローは **手動実行専用**で、PR / push の必須 CI には含めていません。通常は `mode: targeted`（既定）と `mutate` パターンを指定し、変更した高リスク領域だけを計測します。全体ベースラインが必要な場合だけ `mode: full` を明示します。
+GitHub Actions の [Mutation](.github/workflows/mutation.yml) ワークフローはPR / push の必須 CI には含めていません。土・日・月の03:00 JSTに、前回成功以降に変更された軽量な`src/sim` / `src/state`だけを最大5ファイル・60分でtargeted実行します。変更がない場合は即終了し、既知の重い対象や上限超過は実行せずActions Summaryへ記録します。手動実行では通常 `mode: targeted`（既定）と `mutate` パターンを指定し、全体ベースラインが必要な場合だけ `mode: full` を明示します。
 
 多数seedのバランス比較は [Balance report](.github/workflows/balance-report.yml) を手動または毎週月曜00:00 UTCに実行できます。既定では`main`の親commitと現在のcommitを同一コホートで測定し、ルールセット・設定値・勝率・Delivery／Incident／Reworkの分布差分を30日保持のartifactへ保存します。ローカルで保存済み出力を比較する場合は次の形式です。
 
@@ -133,7 +133,7 @@ npm run balance:report -- \
   --out-dir /tmp/balance-report
 ```
 
-コア全体は約 6,700 mutant・単一ジョブだと数時間かかるため、`mode: full` は [`scripts/mutation-shards.mjs`](scripts/mutation-shards.mjs) の **並列シャード** で実行します。全量計測は定常実行せず、四半期を目安に必要性を判断するか、コアロジックの大規模変更後に手動で実行します。`force` で incremental キャッシュを無視できます。レポートはシャードごとの artifact、incremental JSON はシャード単位の Actions cache に残ります。
+コア全体は約 6,700 mutant・単一ジョブだと数時間かかるため、`mode: full` は [`scripts/mutation-shards.mjs`](scripts/mutation-shards.mjs) の **並列シャード** で実行します。全量計測は定常実行せず、コアロジックの大規模変更後など全体ベースラインが必要な場合に限って手動実行します。`force` で incremental キャッシュを無視できます。レポートはシャードごとの artifact、incremental JSON はシャード単位の Actions cache に残ります。
 
 壁時計の目安（初回・incremental なし）: シャードあたりおおむね数十分〜2時間。単一ジョブでコア全体を回すと推定 3〜6 時間で、180 分タイムアウトに達し得ます。
 

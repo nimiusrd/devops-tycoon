@@ -80,8 +80,10 @@
 
 ## 5. 運用メモ（インフラ）
 
-- Mutation は手動実行専用。通常は `mode: targeted` と `mutate` を指定し、変更した高リスク領域だけを単一ジョブで調べる。対象未指定の targeted run は実行しない。
-- `mode: full` は全体ベースラインが必要な場合だけ使う。四半期を目安に必要性を判断するか、コアロジックの大規模変更後に手動実行し、定常スケジュールには戻さない。
+- 土・日・月の03:00 JSTに、前回成功以降に変更された軽量なコア実装だけをscheduled targetedで調べる。対象がなければ即終了し、同じ成功済み範囲を再計測しない。
+- scheduled targetedは最大5ファイル・ジョブ全体60分。既知の重い対象や上限超過は自動実行せずActions Summaryへ記録する。PR / pushの必須チェックにはしない。
+- 手動では通常 `mode: targeted` と `mutate` を指定する。対象未指定のtargeted runは実行しない。
+- `mode: full` はコアロジックの大規模変更後など、全体ベースラインが必要な場合だけ手動実行し、定常スケジュールには戻さない。
 - full run は [`scripts/mutation-shards.mjs`](../scripts/mutation-shards.mjs) のシャード並列。単一ジョブや旧 6 シャード（巨大ファイルを丸ごと）は 180 分タイムアウトのリスクがある。
 - 長時間ループの弱点確認では全量スコアを追うより、境界値・不変条件・プロパティを直接断言する軽量テストを優先する。
 - `ignoreStatic: true` 済み。`vitest.mutation.config.ts` で testTimeout 60s。`dryRunTimeoutMinutes` は 20（instrument 後の初期テストが既定 5 分を超えやすい）。

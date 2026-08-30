@@ -10,7 +10,7 @@ Mutation ワークフローの成果物を取得・集計し、実装役が Issu
 ## 前提
 
 - 設定: [`stryker.config.json`](../../../stryker.config.json)
-- GHA: [`.github/workflows/mutation.yml`](../../../.github/workflows/mutation.yml)（手動専用。targeted が既定、full は必要時のみ）
+- GHA: [`.github/workflows/mutation.yml`](../../../.github/workflows/mutation.yml)（土日月早朝は差分targeted、手動はtargetedが既定、fullは必要時のみ）
 - 方針: [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md)
 - 方針・run 記録: [`plan/mutation-remediation.md`](../../../plan/mutation-remediation.md)（**フルシャードの run ID が変わったときだけ新しいエピックを採番**）
 - 採番・進捗の正本: **GitHub Issue**（1 Issue = 1PR。完了したら close。単位 MD やリポジトリ側の番号予約はしない）

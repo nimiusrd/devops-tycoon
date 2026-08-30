@@ -276,6 +276,19 @@ describe('mutation shards', () => {
     expect(yaml).not.toContain('stryker-incremental-${{ matrix.id }}-${{ runner.os }}');
   });
 
+  it('workflow は土日月早朝の差分targetedと手動のtargeted/fullを分ける', () => {
+    const yaml = readWorkflow();
+    expect(yaml).toContain("cron: '0 18 * * 5,6,0'");
+    expect(yaml).toContain("if: ${{ github.event_name == 'schedule' }}");
+    expect(yaml).toContain('scripts/scheduled-mutation-targets.mjs');
+    expect(yaml).toContain('timeout-minutes: 60');
+    expect(yaml).toContain('stryker-incremental-scheduled-${{ steps.targets.outputs.cache }}');
+    expect(yaml).toContain("if: ${{ inputs.mode == 'targeted' }}");
+    expect(yaml).toContain("if: ${{ inputs.mode == 'full' }}");
+    expect(yaml).toContain('Validate targeted input');
+    expect(yaml).toContain('if [ -z "${MUTATE}" ]');
+  });
+
   it('matrix JSON は id / mutate / cache を出し、mutate が変わると cache も変わる', () => {
     const include = toMatrixInclude();
     expect(include).toHaveLength(MUTATION_SHARDS.length);

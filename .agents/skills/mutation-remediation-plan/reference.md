@@ -71,7 +71,7 @@ gh run view <RUN_ID> --json jobs \
 
 - 1PR で触る本番／テストは、関連する数ファイルまでに抑える
 - `engine.ts` のように Survived が数百のファイルは、phase / shop・rest / hydrate / 敗北などで PR を分割する
-- 各 PR の検証は該当 `--mutate` のみ（フルシャードは記録用・週次用）
+- 各 PR の検証は該当 `--mutate` のみ（フルシャードは必要時の記録用）
 
 ## 出力テンプレ（ユーザー向け要約）
 

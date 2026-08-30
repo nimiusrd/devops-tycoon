@@ -18,7 +18,8 @@ import {
 import { assignableTasks, splitPrCandidates } from '../sim/assignTask';
 import type { ActionId, OrgState, SprintState } from '../sim/types';
 
-export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete';
+export type ActionBlockReason = 'cooldown' | 'no-focus' | 'no-target' | 'complete' | 'paused';
+export type ActionBarDisabledReason = Extract<ActionBlockReason, 'complete' | 'paused'>;
 
 /** 1 アクションの利用可否と表示メタデータ。 */
 export interface ActionAvailability {
@@ -86,25 +87,26 @@ const BLOCK_MESSAGES: Record<ActionBlockReason, string> = {
   'no-focus': '集中力不足',
   'no-target': '対象なし',
   complete: 'スプリント終了',
+  paused: '一時停止中',
 };
 
 /** 1 アクションの利用可否を導出する。 */
 export function deriveActionAvailability(
   sprint: SprintState,
   id: ActionId,
-  disabled = false,
+  disabledReason?: ActionBarDisabledReason,
   org?: OrgState,
   tick = 0,
 ): ActionAvailability {
   const targetCount = countActionTargets(sprint, id);
   const badge = formatTargetBadge(id, targetCount);
 
-  if (disabled) {
+  if (disabledReason) {
     return {
       actionId: id,
       canActivate: false,
-      blockReason: 'complete',
-      blockMessage: BLOCK_MESSAGES.complete,
+      blockReason: disabledReason,
+      blockMessage: BLOCK_MESSAGES[disabledReason],
       targetCount,
       targetBadge: badge,
     };
@@ -148,11 +150,13 @@ export function deriveActionAvailability(
 /** 全アクションの利用可否一覧。 */
 export function planActionBarView(
   sprint: SprintState,
-  disabled = false,
+  disabledReason?: ActionBarDisabledReason,
   org?: OrgState,
   tick = 0,
 ): ActionAvailability[] {
-  return ALL_ACTION_IDS.map((id) => deriveActionAvailability(sprint, id, disabled, org, tick));
+  return ALL_ACTION_IDS.map((id) =>
+    deriveActionAvailability(sprint, id, disabledReason, org, tick),
+  );
 }
 
 /** 失敗理由の表示用短文（トースト等）。 */

@@ -186,8 +186,8 @@ export interface InterventionEffect {
 /** 介入アクション発動の結果（SPEC 第6.1）。 */
 export interface InterventionOutcome {
   ok: boolean;
-  /** 失敗理由（集中力不足 / クールダウン中 / 対象なし / 完了済み）。 */
-  reason?: 'no-focus' | 'cooldown' | 'no-target' | 'complete';
+  /** 失敗理由（集中力不足 / クールダウン中 / 対象なし / 完了済み / 一時停止中）。 */
+  reason?: 'no-focus' | 'cooldown' | 'no-target' | 'complete' | 'paused';
   /** 成功時のみ。各アクションの適用内容。 */
   effect?: InterventionEffect;
 }

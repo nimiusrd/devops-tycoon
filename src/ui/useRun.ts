@@ -257,7 +257,10 @@ export function useRun(game: GameHandle): UseRun {
     [game],
   );
   const dispatch = useCallback(
-    (id: ActionId, target?: ActionTarget) => game.dispatch(id, target),
+    (id: ActionId, target?: ActionTarget): InterventionOutcome => {
+      if (isPlaybackPaused(playbackSpeedRef.current)) return { ok: false, reason: 'paused' };
+      return game.dispatch(id, target);
+    },
     [game],
   );
   const playCard = useCallback(

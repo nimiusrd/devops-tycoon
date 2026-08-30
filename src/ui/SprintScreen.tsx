@@ -231,6 +231,7 @@ export function SprintScreen({
   const handleDispatch = useCallback(
     (id: ActionId, target?: ActionTarget): InterventionOutcome => {
       if (!sprint) return { ok: false, reason: 'complete' };
+      if (isPlaybackPaused(playbackSpeed)) return { ok: false, reason: 'paused' };
       const prevTasks = sprint.tasks;
       const outcome = onDispatch(id, target);
       if (outcome.ok && outcome.effect) {
@@ -279,6 +280,7 @@ export function SprintScreen({
       onDispatch,
       getSprintSnapshot,
       pauseBriefly,
+      playbackSpeed,
       setArmedId,
       sprint,
       state.currentSprintKind,
@@ -300,13 +302,16 @@ export function SprintScreen({
     if (!isPlaybackPaused(playbackSpeed)) lastPlayingSpeedRef.current = playbackSpeed;
   }, [playbackSpeed]);
 
+  const paused = isPlaybackPaused(playbackSpeed);
+
   const handleSelectPlaybackSpeed = useCallback(
     (clicked: PlaybackSpeed) => {
       const next = nextPlaybackSpeed(playbackSpeed, clicked, lastPlayingSpeedRef.current);
       if (!isPlaybackPaused(next)) lastPlayingSpeedRef.current = next;
+      if (isPlaybackPaused(next)) setArmedId(null);
       setPlaybackSpeed(next);
     },
-    [playbackSpeed, setPlaybackSpeed],
+    [playbackSpeed, setArmedId, setPlaybackSpeed],
   );
 
   const handlePlayCard = useCallback(
@@ -323,7 +328,6 @@ export function SprintScreen({
   const isBoss = kind === 'boss';
   const isElite = kind === 'elite';
   const boss = getBoss(state.bossId);
-  const paused = isPlaybackPaused(playbackSpeed);
   const overlayFrozen = state.phase === 'evolution';
 
   const liveCombo = liveComboCount(sprint);
@@ -447,6 +451,7 @@ export function SprintScreen({
           sprint={sprint}
           sprintTick={state.sprintTick}
           disabled={sprint.complete}
+          paused={paused}
           armedId={armedId}
           onArm={setArmedId}
           onAction={handleDispatch}

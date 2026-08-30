@@ -88,6 +88,8 @@ export interface ActionBarProps {
   sprint: SprintState;
   sprintTick: number;
   disabled: boolean;
+  /** プレイヤー Pause 中。介入の状態は見せたまま発動だけ止める。 */
+  paused: boolean;
   armedId: DraggableActionId | null;
   onArm: (id: DraggableActionId | null) => void;
   onAction: (id: ActionId, target?: ActionTarget) => InterventionOutcome;
@@ -102,6 +104,7 @@ export function ActionBar({
   sprint,
   sprintTick,
   disabled,
+  paused,
   armedId,
   onArm,
   onAction,
@@ -119,11 +122,12 @@ export function ActionBar({
     : 0;
   const availabilityById = useMemo(() => {
     const map = new Map<ActionId, ReturnType<typeof deriveActionAvailability>>();
-    for (const item of planActionBarView(sprint, disabled)) {
+    const disabledReason = disabled ? 'complete' : paused ? 'paused' : undefined;
+    for (const item of planActionBarView(sprint, disabledReason)) {
       map.set(item.actionId, item);
     }
     return map;
-  }, [sprint, disabled]);
+  }, [sprint, disabled, paused]);
 
   const [shakingId, setShakingId] = useState<ActionId | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -210,6 +214,7 @@ export function ActionBar({
     <footer
       className="actionbar"
       data-testid="action-bar"
+      data-paused={paused ? 'true' : 'false'}
       data-responsive-width={responsiveMode.width}
       data-responsive-height={responsiveMode.height}
     >
@@ -257,6 +262,7 @@ export function ActionBar({
             type="button"
             className={`assign-assignee-btn${!assignAssignee ? ' on' : ''}`}
             data-testid="assign-assignee-ideal"
+            disabled={paused}
             onClick={() => onAssignAssigneeChange(undefined)}
           >
             理想
@@ -265,6 +271,7 @@ export function ActionBar({
             type="button"
             className={`assign-assignee-btn${assignAssignee === 'ai' ? ' on' : ''}`}
             data-testid="assign-assignee-ai"
+            disabled={paused}
             onClick={() => onAssignAssigneeChange('ai')}
           >
             AI
@@ -273,6 +280,7 @@ export function ActionBar({
             type="button"
             className={`assign-assignee-btn${assignAssignee === 'senior' ? ' on' : ''}`}
             data-testid="assign-assignee-senior"
+            disabled={paused}
             onClick={() => onAssignAssigneeChange('senior')}
           >
             シニア
@@ -285,7 +293,7 @@ export function ActionBar({
           const availability = availabilityById.get(a.id)!;
           const remaining = cooldowns[a.id] ?? 0;
           const onCooldown = remaining > 0;
-          const armed = armedId === a.id;
+          const armed = !paused && armedId === a.id;
           const ready = availability.canActivate || armed;
           const cdPct = onCooldown ? Math.round((1 - remaining / a.cooldownTicks) * 100) : 100;
           const modRing = sprint.complete

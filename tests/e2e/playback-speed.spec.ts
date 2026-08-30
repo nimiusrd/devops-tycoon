@@ -5,6 +5,7 @@
  */
 import {
   advanceCurrentSprintToResult,
+  advanceCurrentSprintToReviewQueue,
   beginCurrentSetupSprint,
   beginPublicSprint,
   expect,
@@ -145,4 +146,49 @@ test('❚❚ はトグルでき、1x / 2x でも再開でき、停止中は手�
   await expect(speed2x).toHaveAttribute('aria-pressed', 'true');
   await expect(controls).toHaveAttribute('data-paused', 'false');
   await expect(playableCard).toBeEnabled();
+});
+
+test('❚❚ 中は READY のペアレビューを発動できず、再開後は発動できる', async ({ page }) => {
+  await beginPublicSprint(page, { seed: 'issue-370-pair-review', renderer: 'dom' });
+  await advanceCurrentSprintToReviewQueue(page, 2);
+
+  const pauseBtn = page.getByTestId('speed-pause');
+  const actionBar = page.getByTestId('action-bar');
+  const pairReview = page.getByTestId('action-pairReview');
+  await expect(pairReview).toBeEnabled();
+
+  const snapshot = () =>
+    page.evaluate(() => {
+      const game = (window as PublicGameWindow).game;
+      if (!game) throw new Error('window.game が公開されていない');
+      const sprint = game.getState().sprint;
+      return {
+        focus: sprint?.focus ?? -1,
+        reviewCount: sprint?.tasks.filter((task) => task.lane === 'review').length ?? -1,
+        pairReviewCooldown: sprint?.cooldowns.pairReview ?? -1,
+      };
+    });
+
+  const beforePause = await snapshot();
+  await pauseBtn.click();
+  await expect(actionBar).toHaveAttribute('data-paused', 'true');
+  await expect(pairReview).toBeDisabled();
+  await expect(pairReview).toHaveAttribute('data-block-reason', 'paused');
+  await expect(page.getByTestId('action-reason-pairReview')).toHaveText('一時停止中');
+
+  // disabled 属性だけに依存せず、DOM を改変されても実行経路の pause ガードで止まる。
+  await pairReview.evaluate((button) => {
+    (button as HTMLButtonElement).disabled = false;
+    (button as HTMLButtonElement).click();
+  });
+  expect(await snapshot()).toEqual(beforePause);
+
+  await pauseBtn.click();
+  await expect(actionBar).toHaveAttribute('data-paused', 'false');
+  await expect(pairReview).toBeEnabled();
+  await pairReview.click();
+  const afterResume = await snapshot();
+  expect(afterResume.focus).toBeLessThan(beforePause.focus);
+  expect(afterResume.reviewCount).toBeLessThan(beforePause.reviewCount);
+  expect(afterResume.pairReviewCooldown).toBeGreaterThan(0);
 });

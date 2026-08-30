@@ -150,12 +150,23 @@ describe('deriveActionAvailability（RI-51）', () => {
     expect(availability.targetBadge).toBe('🔥2');
   });
 
-  it('disabled 時は complete で無効', () => {
+  it('complete 指定時は完了理由で無効', () => {
     const org = createOrgState('default', true);
     const sprint = makeSprint(org, [makeTask(0)]);
-    const availability = deriveActionAvailability(sprint, 'interruptReview', true);
+    const availability = deriveActionAvailability(sprint, 'interruptReview', 'complete');
     expect(availability.canActivate).toBe(false);
     expect(availability.blockReason).toBe('complete');
+  });
+
+  it('paused 指定時は一時停止理由で無効', () => {
+    const org = createOrgState('default', true);
+    const sprint = makeSprint(org, [makeTask(0)]);
+    const availability = deriveActionAvailability(sprint, 'pairReview', 'paused');
+    expect(availability).toMatchObject({
+      canActivate: false,
+      blockReason: 'paused',
+      blockMessage: '一時停止中',
+    });
   });
 });
 
@@ -211,5 +222,6 @@ describe('formatInterventionFailure（RI-51）', () => {
 
   it('その他の理由は汎用文言を返す', () => {
     expect(formatInterventionFailure('cooldown')).toBe('クールダウン中');
+    expect(formatInterventionFailure('paused')).toBe('一時停止中');
   });
 });

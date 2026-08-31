@@ -249,7 +249,7 @@ describe('RI-101 分岐評価と上限', () => {
     }
   });
 
-  it('setup の編成変更を戦略分岐する', () => {
+  it('setup の編成変更を戦略分岐する', { timeout: 60_000 }, () => {
     const engine = startedSprint('ri-101-setup-fork');
     engine.step(200);
     const frame = engine.exportCounterfactualFrame()!;

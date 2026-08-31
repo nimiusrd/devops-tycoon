@@ -103,6 +103,7 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 | `npm run build` | TypeScript検査と本番ビルド |
 | `npm test` | Vitestのユニットテストを実行 |
 | `npm run test:coverage` | Vitestのユニットテストと全`src` TS/TSXのカバレッジ計測を実行 |
+| `npm run test:property` | fast-checkによるproperty testのみを100ケースずつ実行 |
 | `npm run test:watch` | Vitestをwatchモードで実行 |
 | `npm run test:mutation` | Strykerで`src/sim` / `src/state`のミューテーションテストを実行（incremental・ローカル用・CI非必須） |
 | `npm run test:mutation:force` | incrementalキャッシュを無視して対象変異を再実行する |
@@ -118,6 +119,14 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 | `npm run audio:generate` | BGM・効果音アセットを再生成 |
 
 `npm run test:coverage`は`src`配下の全production TypeScript / TSXを対象にし、未テストのファイルも0%として集計します。ローカルのHTMLレポートは`coverage/index.html`で確認できます。CIでは総合値とPRで変更したファイルの値を固定PRコメントとActions Summaryに表示し、HTMLレポートを14日間artifactとして保持します。現時点ではカバレッジ閾値によるCIゲートは設けていません。
+
+property testは`*.property.test.ts`として通常のVitestスイートにも含まれるため、`npm test`とCIの`test:coverage`でも実行されます。ローカルで探索回数を増やす場合は`PBT_NUM_RUNS=1000 npm run test:property`のように指定します。失敗時にfast-checkが表示する`seed`と`path`は、次の形式で最小反例を再現できます。
+
+```bash
+PBT_SEED=<seed> PBT_PATH=<path> npm run test:property
+```
+
+特定ファイルだけ再現する場合は、末尾へ`-- rng.property`などのファイル名フィルタを追加します。反例を恒久的な回帰テストへ移すときは、失敗ログの最小入力を通常の`it`ケースとして対象のユニットテストへ追加してください。`PBT_NUM_RUNS`は正の整数、`PBT_SEED`は整数で指定します。
 
 `test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
 

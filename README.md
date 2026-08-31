@@ -102,6 +102,7 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 | `npm run dev` | 開発サーバをポート5174で起動 |
 | `npm run build` | TypeScript検査と本番ビルド |
 | `npm test` | Vitestのユニットテストを実行 |
+| `npm run test:coverage` | Vitestのユニットテストと全`src` TS/TSXのカバレッジ計測を実行 |
 | `npm run test:watch` | Vitestをwatchモードで実行 |
 | `npm run test:mutation` | Strykerで`src/sim` / `src/state`のミューテーションテストを実行（incremental・ローカル用・CI非必須） |
 | `npm run test:mutation:force` | incrementalキャッシュを無視して対象変異を再実行する |
@@ -115,6 +116,8 @@ Dockerプロファイルを統合し、プロジェクトを信頼してからCo
 | `npm run format:check` | Prettier差分を確認 |
 | `npm run format` | Prettierで整形 |
 | `npm run audio:generate` | BGM・効果音アセットを再生成 |
+
+`npm run test:coverage`は`src`配下の全production TypeScript / TSXを対象にし、未テストのファイルも0%として集計します。ローカルのHTMLレポートは`coverage/index.html`で確認できます。CIでは総合値とPRで変更したファイルの値を固定PRコメントとActions Summaryに表示し、HTMLレポートを14日間artifactとして保持します。現時点ではカバレッジ閾値によるCIゲートは設けていません。
 
 `test:mutation` は incremental モードです。結果は `reports/stryker-incremental.json` に保存され、次回は変更分だけ再実行します。ファイル単位で強制再計測する例: `npm run test:mutation:force -- --mutate src/sim/rng.ts`。HTML レポートは `reports/mutation/index.html` です。
 

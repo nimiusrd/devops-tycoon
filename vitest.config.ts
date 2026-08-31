@@ -10,5 +10,13 @@ export default defineConfig({
     hookTimeout: 15_000,
     include: ['tests/unit/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.ts'],
     exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.d.ts', 'src/**/*.{test,spec}.{ts,tsx}'],
+      reporter: ['text-summary', 'json-summary', 'json', 'html'],
+      reportsDirectory: 'coverage',
+      reportOnFailure: true,
+    },
   },
 });

@@ -10,6 +10,7 @@ describe('sprintProgressView', () => {
     expect(nextSprintIndexInQuarter(1, 6)).toBe(2);
     expect(nextSprintIndexInQuarter(5, 6)).toBe(6);
     expect(nextSprintIndexInQuarter(6, 6)).toBe(6);
+    expect(nextSprintIndexInQuarter(3, 0)).toBe(1);
   });
 
   it('ドラフトでは次スプリント、スプリント中は進行中の番号を出す', () => {
@@ -47,6 +48,16 @@ describe('sprintProgressView', () => {
         phase: 'setup',
         sprintIndexInQuarter: 1,
         sprintsPerQuarter: 6,
+      }),
+    ).toBe(1);
+  });
+
+  it('四半期のスプリント数が不正なら安全な 1 を表示する', () => {
+    expect(
+      displayedQuarterSprintIndex({
+        phase: 'draft',
+        sprintIndexInQuarter: 3,
+        sprintsPerQuarter: 0,
       }),
     ).toBe(1);
   });

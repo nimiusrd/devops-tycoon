@@ -7,6 +7,7 @@ import type { InterventionEffect, OrgState, SprintState, Task } from '../../../s
 import {
   deriveActiveBoardAuras,
   INTERVENTION_VIEW,
+  interventionPct,
   planInterventionReactions,
   planPositionedInterventionReactions,
   positionInterventionReactions,
@@ -47,6 +48,10 @@ function applyAndGetEffect(id: InterventionEffect['actionId']): {
 }
 
 describe('interventionEffects (RI-50)', () => {
+  it('設計座標を盤面内の割合へ変換する', () => {
+    expect(interventionPct(702, INTERVENTION_VIEW.w)).toBe('50%');
+  });
+
   describe.each(ACTION_DEFS.map((def) => [def.id, def] as const))('%s', (id) => {
     it('planInterventionReactions が非空の plan を返す', () => {
       const { effect } = applyAndGetEffect(id);
@@ -141,6 +146,37 @@ describe('interventionEffects (RI-50)', () => {
       gaugeGain: 0.15,
     };
     expect(planInterventionReactions(effect, 42)).toEqual([{ kind: 'successPulse' }]);
+    expect(positionInterventionReactions([{ kind: 'successPulse' }], [])).toEqual([
+      { kind: 'successPulse' },
+    ]);
+  });
+
+  it.each([
+    ['interruptReview', {}],
+    ['pairReview', { affectedTaskIds: [], literacyGain: 0 }],
+    ['splitPr', {}],
+    ['firefight', {}],
+    ['assignTask', {}],
+    ['aiThrottle', {}],
+  ] as const)('%s は対象となる効果が無ければ演出を返さない', (actionId, extra) => {
+    const effect = { actionId, focusCost: 0, gaugeGain: 0, ...extra } as InterventionEffect;
+    expect(planInterventionReactions(effect, TICK)).toEqual([]);
+  });
+
+  it('期限差が 0 の modifier は種別の標準期間を使い、期限切れでも最低 1 tick 描画する', () => {
+    const base = { actionId: 'aiThrottle', focusCost: 0, gaugeGain: 0 } as const;
+    expect(
+      planInterventionReactions(
+        { ...base, modifier: { kind: 'stability', untilTick: TICK } },
+        TICK,
+      ),
+    ).toEqual([{ kind: 'boardAura', modifierKind: 'stability', durationTicks: STABILITY_TICKS }]);
+    expect(
+      planInterventionReactions(
+        { ...base, modifier: { kind: 'throttle', untilTick: TICK - 10 } },
+        TICK,
+      ),
+    ).toEqual([{ kind: 'boardAura', modifierKind: 'throttle', durationTicks: 1 }]);
   });
 
   it('assignDash は高進捗タスクでも到達点が開始点より先になる', () => {
@@ -156,6 +192,45 @@ describe('interventionEffects (RI-50)', () => {
       const flowDx = flow.x2 - flow.x1;
       const flowDy = flow.y2 - flow.y1;
       expect(dx * flowDx + dy * flowDy).toBeGreaterThan(0);
+    }
+  });
+
+  it('元タスクが無い assignDash は Coding フロー始点から描画する', () => {
+    const [pos] = positionInterventionReactions([{ kind: 'assignDash', taskId: 999 }], []);
+    const flow = findBoardFlow('coding', 'review')!;
+
+    expect(pos).toMatchObject({
+      kind: 'assignDash',
+      taskId: 999,
+      fromX: flow.x1,
+      fromY: flow.y1,
+    });
+  });
+
+  it('存在しないタスクの単体演出は描画せず、レビュー残留・対象外レーンも除外する', () => {
+    expect(positionInterventionReactions([{ kind: 'split', taskId: 999 }], [])).toEqual([]);
+    expect(positionInterventionReactions([{ kind: 'firefight', taskId: 999 }], [])).toEqual([]);
+
+    const reviewTask = makeTask(1, { lane: 'review' });
+    const codingTask = makeTask(2, { lane: 'coding' });
+    expect(
+      positionInterventionReactions(
+        [{ kind: 'reviewSweep', taskIds: [1, 2, 999] }],
+        [reviewTask, codingTask],
+      ),
+    ).toEqual([]);
+  });
+
+  it('表示上限を超えたタスクはレーンの overflow 位置で単体演出する', () => {
+    const tasks = Array.from({ length: 13 }, (_, id) =>
+      makeTask(id, { lane: 'coding', progress: 0 }),
+    );
+    const [pos] = positionInterventionReactions([{ kind: 'split', taskId: 12 }], tasks);
+
+    expect(pos).toMatchObject({ kind: 'split', taskId: 12 });
+    if (pos?.kind === 'split') {
+      expect(pos.x).toBeGreaterThanOrEqual(0);
+      expect(pos.y).toBeGreaterThanOrEqual(0);
     }
   });
 

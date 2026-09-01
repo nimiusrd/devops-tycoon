@@ -12,7 +12,7 @@ import {
   planPositionedInterventionReactions,
   positionInterventionReactions,
 } from '../../../src/render/interventionEffects';
-import { findBoardFlow } from '../../../src/render/boardScene';
+import { findBoardFlow, planBoardScene } from '../../../src/render/boardScene';
 import { BOARD_RENDER_BUDGETS } from '../../../src/render/boardRenderBudget';
 import { makeSprint as makeSprintWith, makeTask } from '../helpers/sprintFixtures';
 
@@ -163,14 +163,14 @@ describe('interventionEffects (RI-50)', () => {
     expect(planInterventionReactions(effect, TICK)).toEqual([]);
   });
 
-  it('期限差が 0 の modifier は種別の標準期間を使い、期限切れでも最低 1 tick 描画する', () => {
+  it('期限切れの modifier は全期間へ戻さず最低 1 tick だけ描画する', () => {
     const base = { actionId: 'aiThrottle', focusCost: 0, gaugeGain: 0 } as const;
     expect(
       planInterventionReactions(
         { ...base, modifier: { kind: 'stability', untilTick: TICK } },
         TICK,
       ),
-    ).toEqual([{ kind: 'boardAura', modifierKind: 'stability', durationTicks: STABILITY_TICKS }]);
+    ).toEqual([{ kind: 'boardAura', modifierKind: 'stability', durationTicks: 1 }]);
     expect(
       planInterventionReactions(
         { ...base, modifier: { kind: 'throttle', untilTick: TICK - 10 } },
@@ -226,12 +226,14 @@ describe('interventionEffects (RI-50)', () => {
       makeTask(id, { lane: 'coding', progress: 0 }),
     );
     const [pos] = positionInterventionReactions([{ kind: 'split', taskId: 12 }], tasks);
+    const station = planBoardScene(tasks).stations.find(({ lane }) => lane === 'coding')!;
 
-    expect(pos).toMatchObject({ kind: 'split', taskId: 12 });
-    if (pos?.kind === 'split') {
-      expect(pos.x).toBeGreaterThanOrEqual(0);
-      expect(pos.y).toBeGreaterThanOrEqual(0);
-    }
+    expect(pos).toEqual({
+      kind: 'split',
+      taskId: 12,
+      x: station.overflowX,
+      y: station.overflowY,
+    });
   });
 
   it('deriveActiveBoardAuras は sprintTick から残り tick を導出する', () => {

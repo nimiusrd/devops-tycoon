@@ -59,13 +59,6 @@ export interface BoardAuraPlan {
   totalTicks: number;
 }
 
-const MODIFIER_TOTALS: Record<InterventionModifierKind, number> = {
-  throttle: THROTTLE_TICKS,
-  overtime: OVERTIME_TICKS,
-  andon: ANDON_TICKS,
-  stability: STABILITY_TICKS,
-};
-
 /** 設計 px → 盤面内の % 文字列。Board / FireEffects と同式。 */
 export function interventionPct(value: number, total: number): string {
   return `${(value / total) * 100}%`;
@@ -117,7 +110,7 @@ function reviewOutcomeSweep(
 
 /**
  * 介入ペイロードから演出 plan を導出する。
- * `currentTick` はモディファイア持続 tick の算出に使う（省略時は定数 total を使う）。
+ * `currentTick` はモディファイアの残り持続 tick の算出に使う。
  */
 export function planInterventionReactions(
   effect: InterventionEffect,
@@ -156,8 +149,7 @@ export function planInterventionReactions(
     case 'overtime':
     case 'andon':
       if (effect.modifier) {
-        const total = MODIFIER_TOTALS[effect.modifier.kind];
-        const durationTicks = Math.max(1, effect.modifier.untilTick - currentTick || total);
+        const durationTicks = Math.max(1, effect.modifier.untilTick - currentTick);
         return [{ kind: 'boardAura', modifierKind: effect.modifier.kind, durationTicks }];
       }
       return [];

@@ -85,6 +85,36 @@ async function assertExpandedHudLabelsNotTruncated(
   }
 }
 
+async function assertExpandedHudDetailsReadable(page: Page, viewportLabel: string): Promise<void> {
+  const details = page.getByTestId('hud').locator('.stat-detail');
+  await expect(details).toHaveCount(10);
+
+  for (let index = 0; index < (await details.count()); index += 1) {
+    const detail = details.nth(index);
+    await expect(detail).toBeVisible();
+    await expect(detail).not.toBeEmpty();
+    const layout = await detail.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        clientHeight: element.clientHeight,
+        clientWidth: element.clientWidth,
+        scrollHeight: element.scrollHeight,
+        scrollWidth: element.scrollWidth,
+        whiteSpace: style.whiteSpace,
+      };
+    });
+    expect(layout.whiteSpace, `${viewportLabel} のKPI説明が折り返し可能でない`).toBe('normal');
+    expect(
+      layout.scrollWidth,
+      `${viewportLabel} のKPI説明が横方向に切れている`,
+    ).toBeLessThanOrEqual(layout.clientWidth + 1);
+    expect(
+      layout.scrollHeight,
+      `${viewportLabel} のKPI説明が縦方向に切れている`,
+    ).toBeLessThanOrEqual(layout.clientHeight + 1);
+  }
+}
+
 /** viewport に収まる要素は全体、viewport より背の高い要素は上下端の到達性を検証する。 */
 async function assertReachableInViewport(
   page: Page,
@@ -209,8 +239,12 @@ async function assertLayoutContract(
   const hud = page.getByTestId('hud');
   if ((await hud.getAttribute('data-compact')) === 'true') {
     await expect(hud.locator('.hud-compact-chip')).toHaveCount(4);
-  } else if (viewport.width > RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
-    await assertExpandedHudLabelsNotTruncated(page, `${viewport.width}x${viewport.height}`);
+  } else {
+    const viewportLabel = `${viewport.width}x${viewport.height}`;
+    await assertExpandedHudDetailsReadable(page, viewportLabel);
+    if (viewport.width > RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
+      await assertExpandedHudLabelsNotTruncated(page, viewportLabel);
+    }
   }
   await expect(page.getByTestId('runbar')).toHaveAttribute('data-compact', 'true');
   await expect(page.getByTestId('runbar-details')).toHaveCount(0);

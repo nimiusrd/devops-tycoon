@@ -101,17 +101,13 @@
 
 /*
  * 警告/リスクチップ（absolute bottom）分の下余白。22px まで削るとバーと重なる。
- * 詳細文の圧縮はデスクトップ幅のみ（狭幅の KPI 展開では detail を残す）。
+ * KPI 詳細は展開操作の情報本体なので、viewport にかかわらず全文を残す。
  */
 .root :global(.stat-morale),
 .root :global(.stat-seniorHp),
 .root :global(.stat-aiDependency),
 .root :global(.stat-reviewCapacity) {
   padding-bottom: 30px;
-}
-
-.root[data-responsive-width='wide'] :global(.stat-detail) {
-  display: none;
 }
 
 .root :global(.runbar),

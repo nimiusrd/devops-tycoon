@@ -284,13 +284,13 @@ body {
 .stat-detail {
   min-height: 13px;
   margin-top: 4px;
-  overflow: hidden;
+  overflow: visible;
+  overflow-wrap: anywhere;
   color: var(--text-dim);
   font-size: 10px;
   font-weight: 700;
   line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 .stat.hud-feedback {
   overflow: hidden;

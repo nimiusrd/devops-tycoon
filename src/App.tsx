@@ -195,8 +195,16 @@ function AppContent({ game }: AppProps) {
 }
 
 function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
-  const { state, meta, diagnosticInfo, lastRunReward, runSaveSummary, resumeRisk, runSaveIssue } =
-    run;
+  const {
+    state,
+    meta,
+    diagnosticInfo,
+    lastRunReward,
+    runSaveSummary,
+    resumeRisk,
+    runSaveIssue,
+    zoomTo,
+  } = run;
   const phase = state.phase;
   const responsiveMode = useResponsiveMode();
   const audio = useAudio();
@@ -216,6 +224,8 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     orgScale: null,
   });
   const lastRunMetricSnapshot = useRef<RunMetricSnapshot | null>(null);
+  const zoomOpenerRef = useRef<HTMLButtonElement | null>(null);
+  const previousZoomLevelRef = useRef(state.zoom.level);
   const clearHudSnapshot = useCallback(() => {
     lastHudSnapshot.current = { team: null, orgScale: null };
     lastRunMetricSnapshot.current = null;
@@ -347,6 +357,13 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
   const closeMetaShop = useCallback(() => setMetaShopOpen(false), []);
   const closeCardCollection = useCallback(() => setCardCollectionOpen(false), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
+  const openOrg = useCallback(
+    (trigger: HTMLButtonElement) => {
+      zoomOpenerRef.current = trigger;
+      zoomTo('company');
+    },
+    [zoomTo],
+  );
   const closeNonHelpTitleModals = useCallback(() => {
     setMetaShopOpen(false);
     setDeckPolicyOpen(false);
@@ -400,6 +417,29 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [helpIsFrontmost, closeHelp]);
+
+  useLayoutEffect(() => {
+    if (state.zoom.level === 'team') return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!isOverlayDismissKey(event.key)) return;
+      event.preventDefault();
+      zoomTo('team');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [zoomTo, state.zoom.level]);
+
+  useLayoutEffect(() => {
+    const previousLevel = previousZoomLevelRef.current;
+    previousZoomLevelRef.current = state.zoom.level;
+    if (previousLevel === 'team' || state.zoom.level !== 'team') return;
+
+    const opener = zoomOpenerRef.current;
+    zoomOpenerRef.current = null;
+    if (opener?.isConnected && !opener.disabled) {
+      opener.focus({ preventScroll: true });
+    }
+  }, [state.zoom.level]);
 
   if (phase === 'title') {
     return (
@@ -577,7 +617,7 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
       <RunBar
         state={state}
         onOpenFormation={() => setFormationOpen(true)}
-        onOpenOrg={() => run.zoomTo('company')}
+        onOpenOrg={openOrg}
         readOnly={run.isReplayMode}
         getInitialPreviousSnapshot={getLastRunMetricSnapshot}
         onSnapshotCaptured={rememberRunMetricSnapshot}

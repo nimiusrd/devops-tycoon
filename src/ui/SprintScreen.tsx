@@ -140,11 +140,11 @@ export function SprintScreen({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setArmedId(null);
+      if (e.key === 'Escape' && state.zoom.level === 'team') setArmedId(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [setArmedId]);
+  }, [setArmedId, state.zoom.level]);
 
   useEffect(
     () => () => {

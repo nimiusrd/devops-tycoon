@@ -39,7 +39,7 @@ export interface RunBarProps {
   /** 編成画面を開く（指定時のみ編成ボタンを表示）。 */
   onOpenFormation?: () => void;
   /** 全社マップへズームアウトする（指定時のみ全社ボタンを表示。第4.7）。 */
-  onOpenOrg?: () => void;
+  onOpenOrg?: (trigger: HTMLButtonElement) => void;
   /** リプレイ閲覧など、操作ボタンを無効化するとき。 */
   readOnly?: boolean;
   /** RunBar再マウント時にも直前の表示値との差分を出すための初期比較対象。 */
@@ -313,7 +313,7 @@ export function RunBar({
           className="pill org-pill"
           data-testid="open-org"
           disabled={readOnly}
-          onClick={onOpenOrg}
+          onClick={(event) => onOpenOrg(event.currentTarget)}
           title={
             readOnly
               ? 'リプレイ閲覧中は全社マップを開けません'

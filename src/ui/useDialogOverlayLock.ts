@@ -7,7 +7,7 @@
  * `onDismiss` を渡すと Escape でそれを呼び、呼び出し側が open 状態を取り消す。
  * 新しいフォーカストラップは増やさず、このフックに閉じる経路を載せる。
  */
-import { useEffect, useRef, type RefObject } from 'react';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { listFocusable, lockBackgroundSiblings, wrapTabIfNeeded } from './dialogOverlayLock';
 
 export function useDialogOverlayLock(
@@ -18,7 +18,7 @@ export function useDialogOverlayLock(
   const onDismissRef = useRef(options?.onDismiss);
   onDismissRef.current = options?.onDismiss;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 

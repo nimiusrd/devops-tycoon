@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures';
 import type { Page } from '@playwright/test';
-import { defaultUnlockedCardIds } from '../../src/data/unlocks';
+import { defaultUnlockedCardIds, UNLOCK_DEFS } from '../../src/data/unlocks';
 import type { MetaState } from '../../src/state/meta';
 import type { RunState } from '../../src/sim/run/types';
 import { seedMeta } from './seedMeta';
@@ -37,6 +37,97 @@ const DEFAULT_META: MetaState = {
   soundMuted: false,
   seenTutorial: true,
 };
+
+const META_SHOP_VIEWPORTS = [
+  { name: 'phone-se', width: 320, height: 568, columns: 1 },
+  { name: 'issue-438', width: 375, height: 812, columns: 1 },
+  { name: 'phone', width: 390, height: 844, columns: 1 },
+  { name: 'desktop', width: 1440, height: 900, columns: 2 },
+] as const;
+
+async function expectMetaShopLayout(
+  page: Page,
+  viewport: (typeof META_SHOP_VIEWPORTS)[number],
+): Promise<void> {
+  const dialog = page.getByTestId('meta-shop');
+  const grid = dialog.locator('.meta-shop-grid');
+  const items = grid.locator('.meta-shop-item');
+  await expect(items).toHaveCount(UNLOCK_DEFS.length);
+
+  const boxes = await items.evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }),
+  );
+  const first = boxes[0];
+  const second = boxes[1];
+  expect(first).toBeDefined();
+  expect(second).toBeDefined();
+
+  if (viewport.columns === 1) {
+    expect(
+      Math.abs(second!.x - first!.x),
+      `${viewport.name} で商品が1列になっていない`,
+    ).toBeLessThanOrEqual(1);
+    expect(second!.y, `${viewport.name} で商品が縦に並んでいない`).toBeGreaterThanOrEqual(
+      first!.y + first!.height - 1,
+    );
+  } else {
+    expect(
+      Math.abs(second!.y - first!.y),
+      `${viewport.name} で商品が2列になっていない`,
+    ).toBeLessThanOrEqual(1);
+    expect(second!.x, `${viewport.name} で2列目が横に並んでいない`).toBeGreaterThanOrEqual(
+      first!.x + first!.width - 1,
+    );
+  }
+
+  const overflowed = await items.evaluateAll((elements) =>
+    elements.flatMap((item, itemIndex) =>
+      Array.from(
+        item.querySelectorAll<HTMLElement>(
+          '.meta-shop-name, .meta-shop-target, .meta-shop-desc, .meta-shop-status',
+        ),
+      )
+        .filter(
+          (element) =>
+            element.scrollWidth > element.clientWidth + 1 ||
+            element.scrollHeight > element.clientHeight + 1,
+        )
+        .map((element) => `${itemIndex}:${element.className}`),
+    ),
+  );
+  expect(overflowed, `${viewport.name} で商品情報が切れている`).toEqual([]);
+
+  const pageWidth = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(
+    pageWidth.content,
+    `${viewport.name} でページに横スクロールが発生している`,
+  ).toBeLessThanOrEqual(pageWidth.viewport);
+
+  const lastItem = items.last();
+  await lastItem.scrollIntoViewIfNeeded();
+  const lastItemReachable = await lastItem.evaluate((element) => {
+    const body = element.closest('.result-overlay-body');
+    if (!(body instanceof HTMLElement)) return false;
+    const itemRect = element.getBoundingClientRect();
+    const bodyRect = body.getBoundingClientRect();
+    return itemRect.top >= bodyRect.top - 1 && itemRect.bottom <= bodyRect.bottom + 1;
+  });
+  expect(lastItemReachable, `${viewport.name} で最後の商品へ到達できない`).toBe(true);
+
+  const closeBox = await page.getByTestId('meta-shop-close').boundingBox();
+  expect(closeBox).not.toBeNull();
+  expect(closeBox!.y, `${viewport.name} で閉じるボタンの上端が画面外`).toBeGreaterThanOrEqual(0);
+  expect(
+    closeBox!.y + closeBox!.height,
+    `${viewport.name} で閉じるボタンの下端が画面外`,
+  ).toBeLessThanOrEqual(viewport.height + 1);
+}
 
 test('メタショップ購入が次ランのドラフトプールへ反映される', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);
@@ -104,6 +195,18 @@ test('タイトルからメタショップを開いて購入できる', async ({
   await expect(page.getByTestId('meta-shop-points')).toHaveText('50');
   await expect(page.getByTestId('meta-unlock-unlock-devin')).toBeDisabled();
 });
+
+for (const viewport of META_SHOP_VIEWPORTS) {
+  test(`メタショップは ${viewport.name} で商品情報を読める列数にする`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await seedMeta(page, { ...DEFAULT_META, points: 0, achievements: [] });
+    await page.goto(`/?renderer=dom&seed=meta-shop-${viewport.name}`);
+
+    await page.getByTestId('open-meta-shop').click();
+    await expect(page.getByTestId('meta-shop')).toBeVisible();
+    await expectMetaShopLayout(page, viewport);
+  });
+}
 
 test('メタショップは Escape で閉じ、起点ボタンへフォーカスが戻る', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);

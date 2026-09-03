@@ -5065,10 +5065,13 @@ button.card.card-readonly:disabled {
 }
 .meta-shop-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 14px 0 18px;
   text-align: left;
+}
+:root[data-responsive-width='narrow'] .meta-shop-grid {
+  grid-template-columns: minmax(0, 1fr);
 }
 .meta-shop-item {
   display: flex;

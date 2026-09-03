@@ -744,6 +744,44 @@ test('ビートの選択イベントを解決すると次スプリントへ進�
   await expect(page.getByTestId('run-result')).toHaveCount(0);
 });
 
+test('DECISION は Escape で選択を保留し、同じ判断へ戻れる（#437）', async ({ page }) => {
+  await page.goto('/?renderer=dom&seed=decision-escape-dismiss');
+  await page.evaluate(() => {
+    const g = (window as GameWindow).game!;
+    g.pause();
+    g.startRun('normal', [], 'decision-escape-dismiss');
+    const engine = (g as unknown as { engine: RunEngine }).engine as unknown as {
+      phase: string;
+      beat: { eventId: string; kind: 'judgment' | 'decision' } | null;
+    };
+    engine.phase = 'beat';
+    engine.beat = { eventId: 'postmortem-culture', kind: 'decision' };
+    g.playCard(-1);
+  });
+
+  await expect(page.getByTestId('beat')).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await expect(page.getByTestId('beat')).toHaveCount(0);
+  const reopen = page.getByTestId('beat-reopen');
+  await expect(reopen).toBeVisible();
+  await expect(reopen).toBeFocused();
+  const pending = await page.evaluate(() => {
+    const state = (window as GameWindow).game!.getState();
+    return { phase: state.phase, beat: state.beat };
+  });
+  expect(pending).toEqual({
+    phase: 'beat',
+    beat: { eventId: 'postmortem-culture', kind: 'decision' },
+  });
+
+  await reopen.click();
+  await expect(page.getByTestId('beat')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ポストモーテムを始めるか' })).toBeVisible();
+  await expect(page.getByTestId('beat-choice-0')).toBeVisible();
+  await expect(page.getByTestId('beat-choice-1')).toBeVisible();
+});
+
 test('tone: joke のビートはネタ分類の見た目で表示される（RI-38）', async ({ page }) => {
   const jokeBeats = EVENT_DEFS.filter((def) => def.tone === 'joke').map((def) => ({
     eventId: def.id,

@@ -195,8 +195,16 @@ function AppContent({ game }: AppProps) {
 }
 
 function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
-  const { state, meta, diagnosticInfo, lastRunReward, runSaveSummary, resumeRisk, runSaveIssue } =
-    run;
+  const {
+    state,
+    meta,
+    diagnosticInfo,
+    lastRunReward,
+    runSaveSummary,
+    resumeRisk,
+    runSaveIssue,
+    zoomTo,
+  } = run;
   const phase = state.phase;
   const responsiveMode = useResponsiveMode();
   const audio = useAudio();
@@ -400,6 +408,17 @@ function AppContentView({ game, run }: { game: GameHandle; run: UseRun }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [helpIsFrontmost, closeHelp]);
+
+  useLayoutEffect(() => {
+    if (state.zoom.level === 'team') return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!isOverlayDismissKey(event.key)) return;
+      event.preventDefault();
+      zoomTo('team');
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [zoomTo, state.zoom.level]);
 
   if (phase === 'title') {
     return (

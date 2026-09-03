@@ -4725,6 +4725,31 @@ button.card.card-readonly:disabled {
   font-size: 12.5px;
   color: var(--text-dim);
 }
+.beat-dismiss {
+  min-height: 44px;
+  margin: 16px auto 0;
+}
+.beat-pending {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 32px auto;
+  text-align: left;
+}
+.beat-pending .event-prompt {
+  margin-bottom: 0;
+}
+.beat-pending .btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  margin-left: 0;
+}
+:root[data-responsive-width='narrow'] .beat-pending {
+  align-items: stretch;
+  flex-direction: column;
+  margin-block: 16px;
+}
 .effect-tags {
   display: flex;
   flex-wrap: wrap;

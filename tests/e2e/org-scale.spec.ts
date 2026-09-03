@@ -486,6 +486,19 @@ test('編成から全社マップを開き現場へ戻すとマップが残ら�
   expect(zoom).toBe('team');
 });
 
+test('全社マップは Escape で閉じて現場へ戻る（#437）', async ({ page }) => {
+  await startRun(page, 'org-escape-dismiss');
+  await page.getByTestId('open-org').click();
+  await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
+
+  await page.keyboard.press('Escape');
+
+  await assertZoomOverlayGone(page);
+  await expect(page.getByTestId('setup')).toBeVisible();
+  const zoom = await page.evaluate(() => (window as GameWindow).game!.getState().zoom.level);
+  expect(zoom).toBe('team');
+});
+
 test('部署経由で現場へ戻しても全社マップは残らない（#376）', async ({ page }) => {
   await startRun(page, 'org-ghost-dept');
   await page.getByTestId('open-org').click();

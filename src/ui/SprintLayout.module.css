@@ -255,13 +255,12 @@
   overflow: hidden;
 }
 
+/*
+ * 狭幅では介入バーが複数段になり、viewport の半分近い高さになる。
+ * bottom sticky にすると初期位置から盤面・手札へせり上がるため、通常フローの
+ * 末尾に置き、root の縦スクロールで到達させる（#439 / DS-06）。
+ */
 .root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) .controlsSlot {
-  position: sticky;
-  bottom: 0;
-  z-index: 6;
-}
-
-.root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) :global(.actionbar) {
   position: static;
 }
 

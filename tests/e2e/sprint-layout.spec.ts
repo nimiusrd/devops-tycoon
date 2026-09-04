@@ -718,13 +718,15 @@ test('狭幅390pxでKPI折り畳み後に介入バーへ到達できる', async 
   const viewportHeight = 844;
   expect(boardBox.y).toBeGreaterThanOrEqual(0);
   expect(boardBox.y + boardBox.height).toBeLessThanOrEqual(viewportHeight);
-  expect(actionBox.y).toBeGreaterThanOrEqual(0);
-  expect(actionBox.y + actionBox.height).toBeLessThanOrEqual(viewportHeight);
+  expect(actionBox.y).toBeGreaterThanOrEqual(boardBox.y + boardBox.height);
 
   const noHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth <= window.innerWidth + 1,
   );
   expect(noHorizontalOverflow, '横スクロールが発生している').toBe(true);
+
+  await actionBar.scrollIntoViewIfNeeded();
+  await expect(actionBar).toBeInViewport();
 
   await toggle.click();
   await expect(hud).toHaveAttribute('data-compact', 'false');
@@ -732,6 +734,77 @@ test('狭幅390pxでKPI折り畳み後に介入バーへ到達できる', async 
   await expect(actionBar).toBeVisible();
   await actionBar.scrollIntoViewIfNeeded();
   await expect(actionBar).toBeInViewport();
+});
+
+test('375pxでHUD・盤面・手札・介入バーが重ならず到達できる（#439）', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await beginPublicSprint(page, { seed: 'issue-439-narrow-overlap-0' });
+  await waitForLayoutFrame(page);
+
+  const hud = page.getByTestId('hud');
+  const runbar = page.getByTestId('runbar');
+  const subbar = page.getByTestId('sprint-subbar');
+  const board = page.getByTestId('board');
+  const ticker = page.getByTestId('event-ticker');
+  const deck = page.getByTestId('deck');
+  const actionBar = page.getByTestId('action-bar');
+
+  await expect(hud).toHaveAttribute('data-compact', 'true');
+  for (const locator of [hud, runbar, subbar, board, ticker, deck, actionBar]) {
+    await expect(locator).toBeVisible();
+  }
+
+  const orderedRegions = [
+    ['HUD', await hud.boundingBox()],
+    ['ラン詳細', await runbar.boundingBox()],
+    ['スプリント状態', await subbar.boundingBox()],
+    ['盤面', await board.boundingBox()],
+    ['手札', await deck.boundingBox()],
+    ['介入バー', await actionBar.boundingBox()],
+  ] as const;
+  for (let index = 0; index < orderedRegions.length - 1; index += 1) {
+    const [currentName, current] = orderedRegions[index];
+    const [nextName, next] = orderedRegions[index + 1];
+    if (!current || !next) throw new Error(`${currentName} / ${nextName} の box が無い`);
+    expect(
+      current.y + current.height,
+      `${currentName} が ${nextName} に重なっている`,
+    ).toBeLessThanOrEqual(next.y + 1);
+  }
+
+  const boardBox = await board.boundingBox();
+  const tickerBox = await ticker.boundingBox();
+  if (!boardBox || !tickerBox) throw new Error('盤面 / 出来事の box が無い');
+  expect(tickerBox.x).toBeGreaterThanOrEqual(boardBox.x - 1);
+  expect(tickerBox.y).toBeGreaterThanOrEqual(boardBox.y - 1);
+  expect(tickerBox.x + tickerBox.width).toBeLessThanOrEqual(boardBox.x + boardBox.width + 1);
+  expect(tickerBox.y + tickerBox.height).toBeLessThanOrEqual(boardBox.y + boardBox.height + 1);
+
+  await expect(actionBar).toHaveCSS('position', 'relative');
+  await deck.scrollIntoViewIfNeeded();
+  await expect(deck).toBeInViewport();
+  await actionBar.scrollIntoViewIfNeeded();
+  await expect(actionBar).toBeInViewport();
+
+  await page.evaluate(() => {
+    const game = (window as Window & { game?: { dispatch(id: string): unknown } }).game;
+    const overtime = document.querySelector<HTMLButtonElement>('[data-testid="action-overtime"]');
+    if (!game || !overtime) throw new Error('game / 残業号令が見つからない');
+    game.dispatch('overtime');
+    overtime.click();
+  });
+  const toast = page.getByTestId('action-toast');
+  await expect(toast).toBeVisible();
+  await expect(toast).toHaveText('クールダウン中');
+  await expect(toast).toBeInViewport();
+  await expect
+    .poll(async () => {
+      const toastBox = await toast.boundingBox();
+      const actionBarAfterScrollBox = await actionBar.boundingBox();
+      if (!toastBox || !actionBarAfterScrollBox) return Number.NEGATIVE_INFINITY;
+      return actionBarAfterScrollBox.y - (toastBox.y + toastBox.height);
+    })
+    .toBeGreaterThanOrEqual(5);
 });
 
 test('デスクトップ幅の展開KPIは出荷ポイント・セキュリティ・レビュー耐性を省略しない', async ({
@@ -880,7 +953,7 @@ test('レスポンシブ表示モードを859/860/861px境界で共有する', a
       };
     });
     if (expected === 'narrow') {
-      expect(layoutStyle.controlsPosition).toBe('sticky');
+      expect(layoutStyle.controlsPosition).toBe('static');
       expect(layoutStyle.actionBarFlexWrap).toBe('wrap');
     } else {
       expect(layoutStyle.controlsPosition).toBe('static');

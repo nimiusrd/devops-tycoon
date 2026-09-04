@@ -508,10 +508,18 @@ beforeEach(() => {
   vi.stubGlobal('Element', class Element {});
   vi.stubGlobal('document', { querySelector: vi.fn(() => null) });
 });
-afterEach(() => {
-  for (const frame of harness.frames) cleanup(frame);
-  harness.frames = [];
-  vi.unstubAllGlobals();
+afterEach(async () => {
+  try {
+    for (const frame of harness.frames) cleanup(frame);
+  } finally {
+    try {
+      // phase effect の先読みと依存 import を、globals とテスト環境の破棄前に完了させる。
+      await vi.dynamicImportSettled();
+    } finally {
+      harness.frames = [];
+      vi.unstubAllGlobals();
+    }
+  }
 });
 
 describe('App のタイトル操作', () => {

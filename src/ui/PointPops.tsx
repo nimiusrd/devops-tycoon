@@ -29,8 +29,18 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
   const prev = useRef(deliveryScore);
   const prevTeamId = useRef(teamId);
   const nextId = useRef(0);
+  const timers = useRef(new Set<number>());
   const [pops, setPops] = useState<Pop[]>([]);
   const { playSfx } = useAudio();
+
+  // 得点・チームの更新では消去予約を取り消さず、各ポップ自身の寿命を守る。
+  useEffect(() => {
+    const pendingTimers = timers.current;
+    return () => {
+      for (const timer of pendingTimers) window.clearTimeout(timer);
+      pendingTimers.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (prevTeamId.current !== teamId) {
@@ -45,9 +55,10 @@ export function PointPops({ deliveryScore, teamId }: PointPopsProps) {
     const pop: Pop = { id: nextId.current++, amount: delta, x: 20 + Math.random() * 60 };
     setPops((cur) => [...cur, pop].slice(-MAX_POPS));
     const timer = window.setTimeout(() => {
+      timers.current.delete(timer);
       setPops((cur) => cur.filter((p) => p.id !== pop.id));
     }, 1100);
-    return () => window.clearTimeout(timer);
+    timers.current.add(timer);
   }, [deliveryScore, teamId, playSfx]);
 
   return (

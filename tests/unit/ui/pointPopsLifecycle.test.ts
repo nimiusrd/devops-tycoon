@@ -104,6 +104,7 @@ function mountPops(initial: PointPopsProps) {
 }
 
 beforeEach(() => {
+  hooks.playSfx = vi.fn();
   vi.useFakeTimers();
   vi.stubGlobal('window', { setTimeout, clearTimeout });
   vi.spyOn(Math, 'random').mockReturnValue(0.5);
@@ -185,5 +186,82 @@ describe('PointPops の増分とライフサイクル', () => {
     vi.advanceTimersByTime(1100);
     expect(hooks.dirty).toBe(false);
     expect(hooks.playSfx).toHaveBeenCalledTimes(1);
+  });
+
+  it('連続出荷でも各ポップは自身の発生から 1100 ms で消え、最後に何も残らない', () => {
+    const screen = mountPops({ deliveryScore: 0, teamId: 'team-a' });
+    screen.update({ deliveryScore: 5 });
+    screen.advance(400);
+    screen.update({ deliveryScore: 12 });
+    screen.advance(300);
+    screen.update({ deliveryScore: 21 });
+    screen.advance(399);
+    expect(screen.all().map(content)).toEqual(['+5', '+7', '+9']);
+    screen.advance(1);
+    expect(screen.all().map(content)).toEqual(['+7', '+9']);
+    screen.advance(399);
+    expect(screen.all().map(content)).toEqual(['+7', '+9']);
+    screen.advance(1);
+    expect(screen.all().map(content)).toEqual(['+9']);
+    screen.advance(299);
+    expect(screen.all().map(content)).toEqual(['+9']);
+    screen.advance(1);
+    expect(screen.all()).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(hooks.playSfx).toHaveBeenCalledTimes(3);
+  });
+
+  it.each([
+    ['同じ得点への更新', { deliveryScore: 5 }],
+    ['得点の減少', { deliveryScore: 0 }],
+    ['チームの切替', { teamId: 'team-b', deliveryScore: 100 }],
+    ['音声コールバックの更新', {}],
+  ] satisfies [string, Partial<PointPopsProps>][])(
+    '%s でも表示中ポップの期限は変わらず、余計な出荷音を鳴らさない',
+    (change, next) => {
+      const screen = mountPops({ deliveryScore: 0, teamId: 'team-a' });
+      const originalSound = hooks.playSfx;
+      screen.update({ deliveryScore: 5 });
+      screen.advance(500);
+      if (change === '音声コールバックの更新') hooks.playSfx = vi.fn();
+      screen.update(next);
+      expect(screen.all().map(content)).toEqual(['+5']);
+      screen.advance(599);
+      expect(screen.all().map(content)).toEqual(['+5']);
+      screen.advance(1);
+      expect(screen.all()).toHaveLength(0);
+      expect(vi.getTimerCount()).toBe(0);
+      expect(originalSound).toHaveBeenCalledExactlyOnceWith('ship');
+      if (hooks.playSfx !== originalSound) expect(hooks.playSfx).not.toHaveBeenCalled();
+    },
+  );
+
+  it('上限を超える連続出荷後も、表示される最新 6 件はすべて期限で消える', () => {
+    const screen = mountPops({ deliveryScore: 0 });
+    let score = 0;
+    for (let amount = 1; amount <= 8; amount++) {
+      score += amount;
+      screen.update({ deliveryScore: score });
+      screen.advance(10);
+    }
+    expect(screen.all().map(content)).toEqual(['+3', '+4', '+5', '+6', '+7', '+8']);
+    screen.advance(1100);
+    expect(screen.all()).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('複数ポップの削除予約をアンマウント時にすべて解除する', () => {
+    const screen = mountPops({ deliveryScore: 0 });
+    screen.update({ deliveryScore: 5 });
+    screen.advance(400);
+    screen.update({ deliveryScore: 12 });
+    screen.advance(300);
+    screen.update({ deliveryScore: 21 });
+    expect(vi.getTimerCount()).toBe(3);
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(1100);
+    expect(hooks.dirty).toBe(false);
+    expect(hooks.playSfx).toHaveBeenCalledTimes(3);
   });
 });

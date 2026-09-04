@@ -115,6 +115,32 @@ async function assertExpandedHudDetailsReadable(page: Page, viewportLabel: strin
   }
 }
 
+async function assertExpandedHudDirectionChipsReadable(
+  page: Page,
+  viewportLabel: string,
+): Promise<void> {
+  const chips = page.getByTestId('hud').locator('.direction-chip');
+  await expect(chips).toHaveCount(10);
+
+  for (let index = 0; index < (await chips.count()); index += 1) {
+    const chip = chips.nth(index);
+    await expect(chip).toHaveText(/^(高いほど良い|低いほど安全)$/);
+    const layout = await chip.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        whiteSpace: style.whiteSpace,
+      };
+    });
+    expect(layout.whiteSpace, `${viewportLabel} のKPI方向チップが折り返し可能`).toBe('nowrap');
+    expect(
+      layout.scrollWidth,
+      `${viewportLabel} のKPI方向チップが横方向に切れている`,
+    ).toBeLessThanOrEqual(layout.clientWidth + 1);
+  }
+}
+
 /** viewport に収まる要素は全体、viewport より背の高い要素は上下端の到達性を検証する。 */
 async function assertReachableInViewport(
   page: Page,
@@ -242,6 +268,7 @@ async function assertLayoutContract(
   } else {
     const viewportLabel = `${viewport.width}x${viewport.height}`;
     await assertExpandedHudDetailsReadable(page, viewportLabel);
+    await assertExpandedHudDirectionChipsReadable(page, viewportLabel);
     if (viewport.width > RESPONSIVE_BREAKPOINTS.narrowMaxWidth) {
       await assertExpandedHudLabelsNotTruncated(page, viewportLabel);
     }

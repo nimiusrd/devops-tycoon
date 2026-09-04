@@ -780,11 +780,31 @@ test('375pxでHUD・盤面・手札・介入バーが重ならず到達できる
   expect(tickerBox.x + tickerBox.width).toBeLessThanOrEqual(boardBox.x + boardBox.width + 1);
   expect(tickerBox.y + tickerBox.height).toBeLessThanOrEqual(boardBox.y + boardBox.height + 1);
 
-  await expect(actionBar).toHaveCSS('position', 'static');
+  await expect(actionBar).toHaveCSS('position', 'relative');
   await deck.scrollIntoViewIfNeeded();
   await expect(deck).toBeInViewport();
   await actionBar.scrollIntoViewIfNeeded();
   await expect(actionBar).toBeInViewport();
+
+  await page.evaluate(() => {
+    const game = (window as Window & { game?: { dispatch(id: string): unknown } }).game;
+    const overtime = document.querySelector<HTMLButtonElement>('[data-testid="action-overtime"]');
+    if (!game || !overtime) throw new Error('game / 残業号令が見つからない');
+    game.dispatch('overtime');
+    overtime.click();
+  });
+  const toast = page.getByTestId('action-toast');
+  await expect(toast).toBeVisible();
+  await expect(toast).toHaveText('クールダウン中');
+  await expect(toast).toBeInViewport();
+  await expect
+    .poll(async () => {
+      const toastBox = await toast.boundingBox();
+      const actionBarAfterScrollBox = await actionBar.boundingBox();
+      if (!toastBox || !actionBarAfterScrollBox) return Number.NEGATIVE_INFINITY;
+      return actionBarAfterScrollBox.y - (toastBox.y + toastBox.height);
+    })
+    .toBeGreaterThanOrEqual(5);
 });
 
 test('デスクトップ幅の展開KPIは出荷ポイント・セキュリティ・レビュー耐性を省略しない', async ({

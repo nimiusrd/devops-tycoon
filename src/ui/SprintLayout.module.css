@@ -260,8 +260,7 @@
  * bottom sticky にすると初期位置から盤面・手札へせり上がるため、通常フローの
  * 末尾に置き、root の縦スクロールで到達させる（#439 / DS-06）。
  */
-.root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) .controlsSlot,
-.root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) :global(.actionbar) {
+.root[data-responsive-width='narrow']:has(:global(.hud.hud-compact)) .controlsSlot {
   position: static;
 }
 

@@ -75,3 +75,45 @@ test('GPU準備中は進行と操作を停止し、準備後に自動進行す�
   await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
   await expect.poll(() => tick(page)).toBeGreaterThan(before ?? 0);
 });
+
+for (const level of ['company', 'department'] as const) {
+  test(`${level}でGPU準備中・失敗中のEscapeが背面へ伝わらず、同じビューで再試行できる`, async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      (window as GameWindow).__forceBoardPixiInitFailure = { delayMs: 2000 };
+    });
+    await start(page);
+    await page.evaluate((target) => {
+      const game = (window as GameWindow).game;
+      if (target === 'department') game.focusDept('product');
+      else game.zoomTo('company');
+    }, level);
+    const zoomLevel = () => page.evaluate(() => (window as GameWindow).game.getState().zoom.level);
+    const loading = page.getByRole('dialog', { name: 'オフィスを準備しています' });
+    await expect(loading).toBeVisible();
+    await page.keyboard.press('Escape');
+    expect(await zoomLevel()).toBe(level);
+    await expect(loading).toBeVisible();
+
+    const failed = page.getByRole('dialog', { name: '盤面を表示できませんでした' });
+    await expect(failed).toBeVisible();
+    await page.keyboard.press('Escape');
+    expect(await zoomLevel()).toBe(level);
+    await expect(failed).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('webgl-retry')).toBeFocused();
+    await page.evaluate(() => {
+      delete (window as GameWindow).__forceBoardPixiInitFailure;
+    });
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('webgl-status')).toHaveCount(0);
+    expect(await zoomLevel()).toBe(level);
+    await expect(
+      page.getByTestId(level === 'company' ? 'org-pixi-mount' : 'dept-pixi-mount'),
+    ).toBeVisible();
+    // ダイアログ終了後は通常のEscapeによる現場への移動が再び有効になる。
+    await page.keyboard.press('Escape');
+    await expect.poll(zoomLevel).toBe('team');
+  });
+}

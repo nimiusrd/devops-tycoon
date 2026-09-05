@@ -5,7 +5,11 @@ import { useDialogOverlayLock } from './useDialogOverlayLock';
 
 function StatusDialog({ failed }: { failed: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  useDialogOverlayLock(ref, { restoreFocus: true });
+  useDialogOverlayLock(ref, {
+    restoreFocus: true,
+    // 再試行が必要なため閉じず、Escape が背面のズーム操作へ伝わることだけを防ぐ。
+    onDismiss: () => {},
+  });
   return (
     <ResultOverlay
       ref={ref}

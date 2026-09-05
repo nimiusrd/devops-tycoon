@@ -26,23 +26,38 @@ function StatusDialog({ failed }: { failed: boolean }) {
         </h2>
         <p role="status">
           {failed
-            ? '盤面の読み込み、またはWebGLの初期化に失敗しました。通信状態やブラウザのハードウェアアクセラレーション設定を確認して、もう一度お試しください。'
+            ? '通信状態やブラウザのWebGL設定を確認して、再試行してください。'
             : '描画の準備ができるまでお待ちください。'}
         </p>
         <p>ゲームの自動進行は停止しています。</p>
         {failed && (
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              // 再試行ボタンが消えても、準備中ダイアログ内にフォーカスを保つ。
-              ref.current?.focus({ preventScroll: true });
-              retryWebgl();
-            }}
-            data-testid="webgl-retry"
-          >
-            再試行
-          </button>
+          <p>
+            再読み込み後は「続きから」で保存済みのランを再開できます。保存後の進行は失われます。
+          </p>
+        )}
+        {failed && (
+          <div className="result-actions">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                // 再試行ボタンが消えても、準備中ダイアログ内にフォーカスを保つ。
+                ref.current?.focus({ preventScroll: true });
+                retryWebgl();
+              }}
+              data-testid="webgl-retry"
+            >
+              再試行
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => window.location.reload()}
+              data-testid="webgl-reload"
+            >
+              ページを再読み込み
+            </button>
+          </div>
         )}
       </div>
     </ResultOverlay>

@@ -43,7 +43,8 @@ test('GPU初期化に失敗すると進行を止め、キーボードで再試�
   ]) {
     await page.setViewportSize(viewport);
     await expect(dialog).toBeInViewport();
-    await expect(page.getByTestId('webgl-retry')).toBeInViewport();
+    await expect(page.getByTestId('webgl-retry')).toBeInViewport({ ratio: 1 });
+    await expect(page.getByTestId('webgl-reload')).toBeInViewport({ ratio: 1 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
@@ -51,6 +52,8 @@ test('GPU初期化に失敗すると進行を止め、キーボードで再試�
   await page.keyboard.press('Tab');
   await expect(page.getByTestId('webgl-retry')).toBeFocused();
   await page.keyboard.press('Shift+Tab');
+  await expect(page.getByTestId('webgl-reload')).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByTestId('webgl-retry')).toBeFocused();
   await page.evaluate(() => {
     delete (window as GameWindow).__forceBoardPixiInitFailure;
@@ -125,6 +128,72 @@ for (const level of ['company', 'department'] as const) {
     await expect.poll(zoomLevel).toBe('team');
   });
 }
+
+test('旧チャンク取得が404のままでもページを再読み込みして保存済みランを再開できる', async ({
+  page,
+}) => {
+  let documents = 0;
+  let obsoleteRequests = 0;
+  await page.route('**/*', async (route) => {
+    const request = route.request();
+    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documents += 1;
+    const isBoard =
+      /\/(?:src\/ui\/BoardPixiLayer\.tsx|assets\/BoardPixiLayer-[^/]+\.js)(?:\?.*)?$/.test(
+        request.url(),
+      );
+    // 旧ページのURLは再試行のクエリにかかわらず404。新ページを取得したときだけ配信を切り替える。
+    if (documents === 1 && isBoard) {
+      obsoleteRequests += 1;
+      await route.fulfill({ status: 404, body: 'old deployment removed' });
+    } else await route.continue();
+  });
+  await start(page);
+  const failed = page.getByRole('dialog', { name: '盤面を表示できませんでした' });
+  await expect(failed).toBeVisible();
+  // 実際のIndexedDBへの保存完了を確認し、再読み込み後も同一レコードが残ることを検証する。
+  const storedSave = () =>
+    page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('devops-tycoon');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      try {
+        return await new Promise<unknown>((resolve, reject) => {
+          const request = db
+            .transaction('runSave', 'readonly')
+            .objectStore('runSave')
+            .get('current');
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      } finally {
+        db.close();
+      }
+    });
+  await expect
+    .poll(storedSave)
+    .toMatchObject({ summary: { seed: 'webgl-required', phase: 'setup' } });
+  const before = await storedSave();
+  await page.getByTestId('webgl-retry').click();
+  await expect(failed).toBeVisible();
+  expect(obsoleteRequests).toBeGreaterThanOrEqual(2);
+  expect(documents).toBe(1);
+  await expect(failed).toContainText('保存後の進行は失われます');
+  await page.getByTestId('webgl-reload').click();
+  await expect(page.getByTestId('title')).toBeVisible();
+  expect(documents).toBe(2);
+  expect(await storedSave()).toEqual(before);
+  await page.getByTestId('resume-run').click();
+  await expect(page.getByTestId('begin-sprint')).toBeVisible();
+  expect(await page.evaluate(() => (window as GameWindow).game.getState().seed)).toBe(
+    'webgl-required',
+  );
+  await page.getByTestId('begin-sprint').click();
+  await expect(page.getByTestId('board-pixi-mount').locator('canvas')).not.toHaveCount(0);
+  await expect(page.getByTestId('webgl-status')).toHaveCount(0);
+  await expect.poll(() => tick(page)).toBeGreaterThan(0);
+});
 
 for (const scene of [
   { level: 'team', module: 'BoardPixiLayer', mount: 'board-pixi-mount' },

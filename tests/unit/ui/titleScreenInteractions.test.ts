@@ -89,6 +89,15 @@ function content(node: ReactNode): string {
   return Children.toArray(node.props.children).map(content).join('');
 }
 
+let documentStub: EventTarget & { body: object; activeElement: unknown };
+
+function keyDown(key: string, shiftKey = false) {
+  const event = new Event('keydown', { cancelable: true });
+  Object.assign(event, { key, shiftKey });
+  documentStub.dispatchEvent(event);
+  return event;
+}
+
 function mountTitle(overrides: Partial<TitleScreenProps> = {}) {
   let props: TitleScreenProps = {
     seed: 'title-seed',
@@ -159,6 +168,13 @@ function mountTitle(overrides: Partial<TitleScreenProps> = {}) {
       expect(target.value).toBe('');
       flush();
     },
+    dispatchFileChange(id: string, file: { text: () => Promise<string> }) {
+      const input = find(id);
+      const target = { value: 'selected.json', files: [file] };
+      (input.props.onChange as (event: unknown) => void)({ target });
+      expect(target.value).toBe('');
+      flush();
+    },
     async settle() {
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       flush();
@@ -172,6 +188,62 @@ function mountTitle(overrides: Partial<TitleScreenProps> = {}) {
       const node = elements(tree).find((item) => item.props.risk === props.resumeRisk);
       if (!node) throw new Error('危険再開の確認がありません');
       return node;
+    },
+  };
+}
+
+function mountResumeRiskDialog(dialog: ReactElement<ElementProps>) {
+  const parentHooks = {
+    slots: hooks.slots,
+    effects: hooks.effects,
+    cursor: hooks.cursor,
+    dirty: hooks.dirty,
+  };
+  hooks.slots = [];
+  hooks.effects = [];
+  hooks.cursor = 0;
+  hooks.dirty = false;
+
+  const targets = new Map<string, { focus: ReturnType<typeof vi.fn> }>();
+  for (const id of ['resume-risk-cancel', 'resume-risk-confirm']) {
+    const target = { focus: vi.fn() };
+    target.focus.mockImplementation(() => {
+      documentStub.activeElement = target;
+    });
+    targets.set(id, target);
+  }
+  const dialogTarget = {
+    querySelectorAll: vi.fn(() => [
+      targets.get('resume-risk-cancel'),
+      targets.get('resume-risk-confirm'),
+    ]),
+  };
+  if (typeof dialog.type !== 'function') throw new Error('危険再開の確認を描画できません');
+  const tree = (dialog.type as (props: ElementProps) => ReactNode)(dialog.props);
+  for (const node of elements(tree)) {
+    const ref = node.props.ref as { current: unknown } | undefined;
+    const id = node.props['data-testid'];
+    if (!ref || typeof id !== 'string') continue;
+    ref.current = id === 'resume-risk-dialog' ? dialogTarget : targets.get(id);
+  }
+  for (const effect of hooks.effects.splice(0)) effect();
+  const dialogSlots = hooks.slots;
+
+  hooks.slots = parentHooks.slots;
+  hooks.effects = parentHooks.effects;
+  hooks.cursor = parentHooks.cursor;
+  hooks.dirty = parentHooks.dirty;
+
+  return {
+    tree,
+    targets,
+    click(id: string) {
+      const button = elements(tree).find((node) => node.props['data-testid'] === id);
+      expect(button, `${id} が選択できること`).toBeDefined();
+      (button?.props.onClick as () => void)();
+    },
+    dispose() {
+      for (const slot of dialogSlots) slot.cleanup?.();
     },
   };
 }
@@ -203,9 +275,19 @@ const dangerousRisk: ResumeRisk = {
   flags: [{ id: 'seniorHp', tone: 'danger', chip: '燃え尽き寸前', detail: '体力低下' }],
 };
 
+const detailedDangerousRisk: ResumeRisk = {
+  ...dangerousRisk,
+  flags: [
+    ...dangerousRisk.flags,
+    { id: 'seniorBurnout', tone: 'danger', chip: '継続不能', detail: '体力枯渇' },
+    { id: 'moraleCollapse', tone: 'danger', chip: '士気崩壊', detail: '士気枯渇' },
+  ],
+};
+
 beforeEach(() => {
   vi.mocked(downloadTextFile).mockReset().mockReturnValue(true);
-  vi.stubGlobal('document', { body: {} });
+  documentStub = Object.assign(new EventTarget(), { body: {}, activeElement: null as unknown });
+  vi.stubGlobal('document', documentStub);
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-09-04T12:00:00Z'));
 });
@@ -453,6 +535,62 @@ describe('TitleScreen の途中セーブ共有', () => {
       expect(screen.find('run-save-share-status').props.className).not.toContain(' error');
     },
   );
+
+  it('連続したファイル選択では後発を優先し、先発ファイルの遅い読込を無視する', async () => {
+    let finishOldRead!: (raw: string) => void;
+    const onImportRunSave = vi.fn(async () => ({ ok: true, message: '' }));
+    const screen = mountTitle({ onImportRunSave });
+    screen.chooseFile('run-save-file', {
+      text: () =>
+        new Promise<string>((resolve) => {
+          finishOldRead = resolve;
+        }),
+    });
+    screen.dispatchFileChange('run-save-file', { text: async () => 'new-save' });
+    await screen.settle();
+    expect(onImportRunSave).toHaveBeenCalledExactlyOnceWith('new-save');
+    expect(content(screen.find('run-save-share-status'))).toBe(
+      '途中セーブを読み込みました。再開できます。',
+    );
+
+    finishOldRead('old-save');
+    await screen.settle();
+    expect(onImportRunSave).toHaveBeenCalledExactlyOnceWith('new-save');
+    expect(content(screen.find('run-save-share-status'))).toBe(
+      '途中セーブを読み込みました。再開できます。',
+    );
+    expect(screen.find('run-save-file-button').props.disabled).toBe(false);
+  });
+
+  it.each(['成功', '失敗'] as const)(
+    '連続したファイル選択では後発を優先し、先発ファイルの遅い読込%s結果を無視する',
+    async (oldResult) => {
+      let finishOldImport!: (result: { ok: boolean; message: string }) => void;
+      let failOldImport!: (reason: Error) => void;
+      const onImportRunSave = vi.fn((raw: string) => {
+        if (raw === 'old-save') {
+          return new Promise<{ ok: boolean; message: string }>((resolve, reject) => {
+            finishOldImport = resolve;
+            failOldImport = reject;
+          });
+        }
+        return Promise.resolve({ ok: false, message: '新しいセーブを読み込めません。' });
+      });
+      const screen = mountTitle({ onImportRunSave });
+      screen.chooseFile('run-save-file', { text: async () => 'old-save' });
+      await screen.settle();
+      screen.dispatchFileChange('run-save-file', { text: async () => 'new-save' });
+      await screen.settle();
+      expect(content(screen.find('run-save-share-status'))).toBe('新しいセーブを読み込めません。');
+
+      if (oldResult === '成功') finishOldImport({ ok: true, message: '' });
+      else failOldImport(new Error('old import failed'));
+      await screen.settle();
+      expect(content(screen.find('run-save-share-status'))).toBe('新しいセーブを読み込めません。');
+      expect(screen.find('run-save-share-status').props.className).toContain(' error');
+      expect(screen.find('run-save-file-button').props.disabled).toBe(false);
+    },
+  );
 });
 
 describe('TitleScreen の再開・デイリー確認', () => {
@@ -541,6 +679,109 @@ describe('TitleScreen の再開・デイリー確認', () => {
     const screen = mountTitle({ resumableSummary: savedRun, onResume: vi.fn() });
     screen.click('resume-run');
     expect(screen.props.onResume).toHaveBeenCalledOnce();
+  });
+
+  it('途中セーブ読込中はデイリー開始要求を無視し、完了後に開始できる', async () => {
+    let finishImport!: (result: { ok: boolean; message: string }) => void;
+    const onStartDaily = vi.fn();
+    const screen = mountTitle({
+      onStartDaily,
+      onImportRunSave: vi.fn(
+        () =>
+          new Promise<{ ok: boolean; message: string }>((resolve) => {
+            finishImport = resolve;
+          }),
+      ),
+    });
+    screen.chooseFile('run-save-file', { text: async () => 'run-save' });
+    await screen.settle();
+    expect(screen.find('start-daily-run').props.disabled).toBe(true);
+    (screen.find('start-daily-run').props.onClick as () => void)();
+    screen.flush();
+    expect(onStartDaily).not.toHaveBeenCalled();
+
+    finishImport({ ok: true, message: '' });
+    await screen.settle();
+    screen.click('start-daily-run');
+    expect(onStartDaily).toHaveBeenCalledOnce();
+  });
+
+  it('危険再開の確認は警告内容を示してキャンセルへフォーカスし、再開しない操作を戻す', () => {
+    const screen = mountTitle({
+      resumableSummary: savedRun,
+      resumeRisk: detailedDangerousRisk,
+      onResume: vi.fn(),
+    });
+    screen.click('resume-run');
+    const dialog = mountResumeRiskDialog(screen.riskDialog());
+    const root = elements(dialog.tree)[0];
+    expect(root.props).toMatchObject({
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-labelledby': 'resume-risk-title',
+      'aria-describedby': 'resume-risk-body',
+    });
+    expect(content(dialog.tree)).toContain(detailedDangerousRisk.headline);
+    expect(content(dialog.tree)).toContain(detailedDangerousRisk.body);
+    expect(
+      elements(dialog.tree)
+        .filter((node) => node.type === 'li')
+        .map(content),
+    ).toEqual(['燃え尽き寸前 シニア体力 12%', '継続不能 シニア体力 12%', '士気崩壊']);
+    expect(documentStub.activeElement).toBe(dialog.targets.get('resume-risk-cancel'));
+
+    dialog.click('resume-risk-cancel');
+    screen.flush();
+    expect(screen.nodes.some((node) => node.props.risk === detailedDangerousRisk)).toBe(false);
+    expect(screen.props.onResume).not.toHaveBeenCalled();
+    expect(screen.targets.get('resume-run')?.focus).toHaveBeenCalledOnce();
+    dialog.dispose();
+  });
+
+  it('危険再開の確認はフォーカスを循環し、Escape で閉じた後はキー操作を残さない', () => {
+    const screen = mountTitle({
+      resumableSummary: savedRun,
+      resumeRisk: dangerousRisk,
+      onResume: vi.fn(),
+    });
+    screen.click('resume-run');
+    const dialog = mountResumeRiskDialog(screen.riskDialog());
+    const cancel = dialog.targets.get('resume-risk-cancel');
+    const confirm = dialog.targets.get('resume-risk-confirm');
+
+    expect(keyDown('Enter').defaultPrevented).toBe(false);
+    expect(keyDown('Tab', true).defaultPrevented).toBe(true);
+    expect(documentStub.activeElement).toBe(confirm);
+    expect(keyDown('Tab').defaultPrevented).toBe(true);
+    expect(documentStub.activeElement).toBe(cancel);
+    expect(keyDown('Tab').defaultPrevented).toBe(false);
+    documentStub.activeElement = confirm;
+    expect(keyDown('Tab', true).defaultPrevented).toBe(false);
+
+    expect(keyDown('Escape').defaultPrevented).toBe(true);
+    screen.flush();
+    expect(screen.nodes.some((node) => node.props.risk === dangerousRisk)).toBe(false);
+    expect(screen.props.onResume).not.toHaveBeenCalled();
+    expect(screen.targets.get('resume-run')?.focus).toHaveBeenCalledOnce();
+    dialog.dispose();
+    expect(keyDown('Escape').defaultPrevented).toBe(false);
+    expect(screen.targets.get('resume-run')?.focus).toHaveBeenCalledOnce();
+  });
+
+  it('危険再開の確認で続行を選ぶと、確認を閉じて再開する', () => {
+    const screen = mountTitle({
+      resumableSummary: savedRun,
+      resumeRisk: dangerousRisk,
+      onResume: vi.fn(),
+    });
+    screen.click('resume-run');
+    const dialog = mountResumeRiskDialog(screen.riskDialog());
+    dialog.click('resume-risk-confirm');
+    screen.flush();
+    expect(screen.nodes.some((node) => node.props.risk === dangerousRisk)).toBe(false);
+    expect(screen.props.onResume).toHaveBeenCalledOnce();
+    expect(screen.targets.get('resume-run')?.focus).not.toHaveBeenCalled();
+    dialog.dispose();
   });
 
   it.each(['onCancel', 'onConfirm'] as const)(

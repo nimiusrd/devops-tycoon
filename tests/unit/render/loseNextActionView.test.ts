@@ -123,6 +123,55 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     expect(hpMissed.nextAction).toMatch(/シニアHP|未達/);
   });
 
+  it('信頼先の分類は省略・閾値外・複数該当を区別する', () => {
+    expect(classifyExhaustedStakeholder(undefined, 10)).toBe('unknown');
+    expect(classifyExhaustedStakeholder({ management: 11, customers: 12, team: 13 }, 10)).toBe(
+      'unknown',
+    );
+    expect(classifyExhaustedStakeholder({ management: 10, customers: 10, team: 30 }, 10)).toBe(
+      'multiple',
+    );
+    expect(classifyExhaustedStakeholder({ management: 30, customers: 10, team: 30 }, 10)).toBe(
+      'customers',
+    );
+  });
+
+  it('shutdown の信頼助言は顧客・複数・不明の対象別に変わる', () => {
+    const customers = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'shutdown',
+      snapshot: { trust: { management: 40, customers: 10, team: 40 } },
+    });
+    expect(customers.nextAction).toMatch(/顧客|スコープ削減/);
+
+    const multiple = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'shutdown',
+      snapshot: { trust: { management: 10, customers: 10, team: 40 } },
+    });
+    expect(multiple.nextAction).toContain('経営・顧客・チーム');
+
+    const unknown = loseNextActionView('trustExhausted', {
+      quarterOutcome: 'shutdown',
+      snapshot: { trust: { management: Number.NaN, customers: 40, team: 40 } },
+    });
+    expect(unknown.nextAction).toMatch(/どの下限|足りない資源/);
+  });
+
+  it('shutdown 分類は閾値ちょうどを含み、省略時は unknown にする', () => {
+    expect(classifyShutdownCause()).toBe('unknown');
+    expect(
+      classifyShutdownCause({
+        budget: OUTCOME_BALANCE.quarterShutdownBudgetMax.value,
+        morale: OUTCOME_BALANCE.quarterShutdownBudgetMoraleMax.value,
+      }),
+    ).toBe('budgetMorale');
+    expect(
+      classifyShutdownCause({
+        seniorHp: OUTCOME_BALANCE.quarterShutdownSeniorHpMax.value,
+        missedKpiCount: OUTCOME_BALANCE.quarterShutdownMissedKpiMin.value,
+      }),
+    ).toBe('seniorHpMissed');
+  });
+
   it('missed_crisis でもハード敗北原因は cause-specific 助言を使う（RI-79）', () => {
     // seniorBurnout が missed_crisis 経由で降格しても seniorBurnout 固有の一手を返す。
     const seniorBurnout = loseNextActionView('seniorBurnout', {
@@ -188,6 +237,19 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
     expect(kpi.nextAction).toMatch(/Delivery|Quality|Tech Debt|Morale/);
   });
 
+  it('missed_crisis は未知の KPI ID だけなら件数ベースの助言へ戻す', () => {
+    const fallback = loseNextActionView('kpiMissed', {
+      quarterOutcome: 'missed_crisis',
+      snapshot: {
+        missedKpiCount: OUTCOME_BALANCE.quarterCrisisMissedKpiMin.value,
+        missedKpiIds: ['legacy-kpi'],
+      },
+    });
+    expect(fallback.nextAction).toMatch(/複数KPIの同時未達/);
+    expect(fallback.nextAction).not.toContain('legacy-kpi');
+    expect(classifyMissedCrisisCause()).toBe('unknown');
+  });
+
   it('reorg_required はトリガー別に助言を分ける', () => {
     const kpi = loseNextActionView('reorgRequired', {
       quarterOutcome: 'reorg_required',
@@ -227,5 +289,27 @@ describe('loseNextActionView（RI-82 / F-6）', () => {
       }),
     ).toBe('trust');
     expect(trust.nextAction).toMatch(/経営|目標修正/);
+  });
+
+  it('reorg_required は原因を特定できないとき汎用助言へ戻す', () => {
+    expect(classifyReorgCause()).toBe('unknown');
+    const fallback = loseNextActionView('reorgRequired', {
+      quarterOutcome: 'reorg_required',
+      snapshot: {
+        quarterNumber: OUTCOME_BALANCE.quarterReorgMinQuarter.value - 1,
+        missedKpiCount: 0,
+        trust: { management: 50, customers: 50, team: 50 },
+      },
+    });
+    expect(fallback.nextAction).toContain('連続未達');
+    expect(fallback.insight).toContain('組織再編');
+  });
+
+  it('継続可能な quarterOutcome は敗因固有の助言を置き換えない', () => {
+    const view = loseNextActionView('budgetExhausted', {
+      quarterOutcome: 'met',
+    });
+    expect(view.nextAction).toContain('追加予算申請');
+    expect(view.insight).toContain('ツール費用');
   });
 });

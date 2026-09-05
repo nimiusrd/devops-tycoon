@@ -160,6 +160,97 @@ describe('reviewHellReplayView（RI-34‴）', () => {
     expect(findPeakResultKeyframeIndex(keyframes)).toBe(1);
   });
 
+  it('findPeakResultKeyframeIndex は欠損フレームと非有限 peak を無視し、同率なら先頭を保つ', () => {
+    const setup = baseFrame('idx-edge');
+    const invalid = withResult(setup, makeResult({ reviewQueueMax: Number.NaN }));
+    const keyframes = new Array<ReplayKeyframe>(5);
+    keyframes[1] = { phase: 'setup', frame: setup };
+    keyframes[2] = { phase: 'result', frame: invalid };
+    keyframes[3] = {
+      phase: 'result',
+      frame: withResult(setup, makeResult({ reviewQueueMax: 7 })),
+    };
+    keyframes[4] = {
+      phase: 'result',
+      frame: withResult(setup, makeResult({ reviewQueueMax: 7 })),
+    };
+
+    expect(findPeakResultKeyframeIndex(keyframes)).toBe(3);
+    expect(findPeakResultKeyframeIndex([{ phase: 'result', frame: invalid }])).toBeNull();
+  });
+
+  it('result も終端も無いときは末尾を選び、空なら既定ラベルと peak 0 を返す', () => {
+    const setup = baseFrame('fallback-last');
+    const draft: RunReplayFrame = {
+      ...structuredClone(setup),
+      phase: 'draft',
+      draft: ['docs'],
+    };
+
+    const lastFrame = planReviewHellReplay(
+      makeHellBlob([
+        { phase: 'setup', frame: setup },
+        { phase: 'draft', frame: draft },
+      ]),
+    );
+    expect(lastFrame.preferredKeyframeIndex).toBe(1);
+    expect(lastFrame.preferredLabel).toBe('カードドラフト');
+
+    const empty = planReviewHellReplay(makeHellBlob([]));
+    expect(empty.preferredKeyframeIndex).toBe(0);
+    expect(empty.preferredLabel).toBe('キーフレーム');
+    expect(empty.reviewQueuePeak).toBe(0);
+    expect(empty.burnHeadline).toBeUndefined();
+  });
+
+  it('preferred に peak が無ければ過去フレームの result 値、次に totals を使う', () => {
+    const setup = baseFrame('peak-fallback');
+    const previousResult: RunReplayFrame = {
+      ...structuredClone(setup),
+      lastResult: makeResult({ incidents: 0, reviewQueueMax: 14, fireEvents: [] }),
+      totals: { ...setup.totals, reviewQueuePeak: 3 },
+    };
+    const lostWithoutResult: RunReplayFrame = {
+      ...structuredClone(setup),
+      phase: 'lost',
+      lastResult: null,
+      totals: { ...setup.totals, reviewQueuePeak: Number.NaN },
+    };
+    const fromResult = planReviewHellReplay(
+      makeHellBlob([
+        { phase: 'setup', frame: previousResult },
+        { phase: 'lost', frame: lostWithoutResult },
+      ]),
+    );
+    expect(fromResult.reviewQueuePeak).toBe(14);
+
+    const previousTotals: RunReplayFrame = {
+      ...structuredClone(setup),
+      lastResult: null,
+      totals: { ...setup.totals, reviewQueuePeak: 9 },
+    };
+    const fromTotals = planReviewHellReplay(
+      makeHellBlob([
+        { phase: 'setup', frame: previousTotals },
+        { phase: 'lost', frame: lostWithoutResult },
+      ]),
+    );
+    expect(fromTotals.reviewQueuePeak).toBe(9);
+  });
+
+  it('炎上ログの無いピーク result では burn headline を省略する', () => {
+    const setup = baseFrame('no-burn');
+    const result = withResult(
+      setup,
+      makeResult({ incidents: 0, reviewQueueMax: 11, fireEvents: [] }),
+    );
+    const view = planReviewHellReplay(makeHellBlob([{ phase: 'result', frame: result }]));
+
+    expect(view.reviewQueuePeak).toBe(11);
+    expect(view.preferredLabel).toBe('Review peak 11');
+    expect(view.burnHeadline).toBeUndefined();
+  });
+
   it('labelForReplayKeyframe は phase ごとにラベルを付ける', () => {
     const setup = baseFrame('lbl');
     expect(labelForReplayKeyframe(setup)).toBe('編成');
@@ -170,6 +261,35 @@ describe('reviewHellReplayView（RI-34‴）', () => {
     expect(labelForReplayKeyframe(draft)).toBe('カードドラフト');
     const lost: RunReplayFrame = { ...structuredClone(setup), phase: 'lost' };
     expect(labelForReplayKeyframe(lost, 'reviewHell')).toBe('Review Hell 型');
+  });
+
+  it('labelForReplayKeyframe は result・四半期・終端の省略入力へフォールバックする', () => {
+    const setup = baseFrame('lbl-edge');
+    const invalidResult = withResult(
+      setup,
+      makeResult({ reviewQueueMax: Number.POSITIVE_INFINITY }),
+    );
+    expect(labelForReplayKeyframe(invalidResult)).toBe('Sprint result');
+
+    const quarter: RunReplayFrame = {
+      ...structuredClone(setup),
+      phase: 'quarterReview',
+      totals: { ...setup.totals, reviewQueuePeak: 6 },
+    };
+    expect(labelForReplayKeyframe(quarter)).toBe('四半期 (peak 6)');
+    expect(
+      labelForReplayKeyframe({
+        ...quarter,
+        totals: { ...quarter.totals, reviewQueuePeak: 0 },
+      }),
+    ).toBe('四半期レビュー');
+
+    const won: RunReplayFrame = { ...structuredClone(setup), phase: 'won' };
+    const lost: RunReplayFrame = { ...structuredClone(setup), phase: 'lost' };
+    expect(labelForReplayKeyframe(won, 'aiOverproduction')).toBe('AI Overproduction 型');
+    expect(labelForReplayKeyframe(won)).toBe('勝利');
+    expect(labelForReplayKeyframe(lost)).toBe('敗北');
+    expect(labelForReplayKeyframe({ ...structuredClone(setup), phase: 'shop' })).toBeUndefined();
   });
 
   it('planReviewHellResultSummary はリプレイかつ reviewHell のときだけ表示', () => {
@@ -192,5 +312,15 @@ describe('reviewHellReplayView（RI-34‴）', () => {
         diagnosis: 'aiOverproduction',
       }).show,
     ).toBe(false);
+
+    expect(
+      planReviewHellResultSummary(result, {
+        replayMode: true,
+        diagnosis: 'reviewHell',
+      }),
+    ).toMatchObject({
+      title: 'レビュー地獄リプレイ',
+      peakLabel: 'Review Queue Max 20 PR',
+    });
   });
 });

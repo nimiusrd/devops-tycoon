@@ -514,6 +514,172 @@ describe('useRun', () => {
     expect(run.current.state.phase).toBe('title');
   });
 
+  it('ラン進行の公開アクションは選択を受け渡し、画面の同期をポーリングに委ねる', () => {
+    const { game, view } = controlledGame();
+    const startDailyRun = vi.spyOn(game, 'startDailyRun').mockReturnValue(view.state);
+    const resumeRun = vi.spyOn(game, 'resumeRun').mockReturnValue(view.state);
+    const beginSetupSprint = vi.spyOn(game, 'beginSetupSprint').mockReturnValue(view.state);
+    const resolveBeat = vi.spyOn(game, 'resolveBeat').mockReturnValue(view.state);
+    const acknowledgeResult = vi.spyOn(game, 'acknowledgeResult').mockReturnValue(view.state);
+    const chooseCard = vi.spyOn(game, 'chooseCard').mockReturnValue(view.state);
+    const skipDraft = vi.spyOn(game, 'skipDraft').mockReturnValue(view.state);
+    const mulliganDraft = vi.spyOn(game, 'mulliganDraft').mockReturnValue(view.state);
+    const unlockEvolution = vi.spyOn(game, 'unlockEvolution').mockReturnValue(view.state);
+    const finishEvolution = vi.spyOn(game, 'finishEvolution').mockReturnValue(view.state);
+    const buyShopCard = vi.spyOn(game, 'buyShopCard').mockReturnValue(view.state);
+    const buyShopRelic = vi.spyOn(game, 'buyShopRelic').mockReturnValue(view.state);
+    const buyShopRecruit = vi.spyOn(game, 'buyShopRecruit').mockReturnValue(view.state);
+    const leaveShop = vi.spyOn(game, 'leaveShop').mockReturnValue(view.state);
+    const restChoose = vi.spyOn(game, 'restChoose').mockReturnValue(view.state);
+    const recruitChoose = vi.spyOn(game, 'recruitChoose').mockReturnValue(view.state);
+    const newRun = vi.spyOn(game, 'newRun').mockReturnValue(view.state);
+    const run = mountRun(game);
+    const stateBeforeActions = run.current.state;
+
+    expect(run.current.startDailyRun('2026-09-05')).toBeUndefined();
+    expect(run.current.resumeRun()).toBeUndefined();
+    expect(run.current.beginSetupSprint()).toBeUndefined();
+    expect(run.current.resolveBeat(2)).toBeUndefined();
+    expect(run.current.acknowledgeResult()).toBeUndefined();
+    expect(run.current.chooseCard('docs')).toBeUndefined();
+    expect(run.current.skipDraft()).toBeUndefined();
+    expect(run.current.mulliganDraft()).toBeUndefined();
+    expect(run.current.unlockEvolution('review-1')).toBeUndefined();
+    expect(run.current.finishEvolution()).toBeUndefined();
+    expect(run.current.buyShopCard('pair-review')).toBeUndefined();
+    expect(run.current.buyShopRelic()).toBeUndefined();
+    expect(run.current.buyShopRecruit()).toBeUndefined();
+    expect(run.current.leaveShop()).toBeUndefined();
+    expect(run.current.restChoose('upgrade', 3)).toBeUndefined();
+    expect(run.current.recruitChoose('hire')).toBeUndefined();
+    expect(run.current.newRun()).toBeUndefined();
+    expect(run.current.state).toBe(stateBeforeActions);
+
+    expect(startDailyRun).toHaveBeenCalledExactlyOnceWith('2026-09-05');
+    expect(resumeRun).toHaveBeenCalledOnce();
+    expect(beginSetupSprint).toHaveBeenCalledOnce();
+    expect(resolveBeat).toHaveBeenCalledExactlyOnceWith(2);
+    expect(acknowledgeResult).toHaveBeenCalledOnce();
+    expect(chooseCard).toHaveBeenCalledExactlyOnceWith('docs');
+    expect(skipDraft).toHaveBeenCalledOnce();
+    expect(mulliganDraft).toHaveBeenCalledOnce();
+    expect(unlockEvolution).toHaveBeenCalledExactlyOnceWith('review-1');
+    expect(finishEvolution).toHaveBeenCalledOnce();
+    expect(buyShopCard).toHaveBeenCalledExactlyOnceWith('pair-review');
+    expect(buyShopRelic).toHaveBeenCalledOnce();
+    expect(buyShopRecruit).toHaveBeenCalledOnce();
+    expect(leaveShop).toHaveBeenCalledOnce();
+    expect(restChoose).toHaveBeenCalledExactlyOnceWith('upgrade', 3);
+    expect(recruitChoose).toHaveBeenCalledExactlyOnceWith('hire');
+    expect(newRun).toHaveBeenCalledOnce();
+  });
+
+  it('編成・ズーム・組織の公開アクションは対象と選択をそのまま適用する', () => {
+    const { game, view } = controlledGame();
+    const assignMember = vi.spyOn(game, 'assignMember').mockReturnValue(view.state);
+    const setMemberAi = vi.spyOn(game, 'setMemberAi').mockReturnValue(view.state);
+    const zoomTo = vi.spyOn(game, 'zoomTo').mockReturnValue(view.state);
+    const focusDept = vi.spyOn(game, 'focusDept').mockReturnValue(view.state);
+    const focusTeam = vi.spyOn(game, 'focusTeam').mockReturnValue(view.state);
+    const enterTeam = vi.spyOn(game, 'enterTeam').mockReturnValue(view.state);
+    const setRankingKind = vi.spyOn(game, 'setRankingKind').mockReturnValue(view.state);
+    const applyOrgLever = vi.spyOn(game, 'applyOrgLever').mockReturnValue(view.state);
+    const acknowledgeQuarterReview = vi
+      .spyOn(game, 'acknowledgeQuarterReview')
+      .mockReturnValue(view.state);
+    const chooseGoalAdjustment = vi.spyOn(game, 'chooseGoalAdjustment').mockReturnValue(view.state);
+    const run = mountRun(game);
+    const stateBeforeActions = run.current.state;
+
+    expect(run.current.assignMember('member-1', 'review')).toBeUndefined();
+    expect(run.current.setMemberAi('member-1', true)).toBeUndefined();
+    expect(run.current.zoomTo('department')).toBeUndefined();
+    expect(run.current.focusDept('dept-platform')).toBeUndefined();
+    expect(run.current.focusTeam('team-api')).toBeUndefined();
+    expect(run.current.enterTeam('team-api')).toBeUndefined();
+    expect(run.current.setRankingKind('healthy')).toBeUndefined();
+    expect(
+      run.current.applyOrgLever('teamReviewHelp', 'dept-platform', 'team-api'),
+    ).toBeUndefined();
+    expect(run.current.acknowledgeQuarterReview()).toBeUndefined();
+    expect(run.current.chooseGoalAdjustment('cut_scope')).toBeUndefined();
+    expect(run.current.state).toBe(stateBeforeActions);
+
+    expect(assignMember).toHaveBeenCalledExactlyOnceWith('member-1', 'review');
+    expect(setMemberAi).toHaveBeenCalledExactlyOnceWith('member-1', true);
+    expect(zoomTo).toHaveBeenCalledExactlyOnceWith('department');
+    expect(focusDept).toHaveBeenCalledExactlyOnceWith('dept-platform');
+    expect(focusTeam).toHaveBeenCalledExactlyOnceWith('team-api');
+    expect(enterTeam).toHaveBeenCalledExactlyOnceWith('team-api');
+    expect(setRankingKind).toHaveBeenCalledExactlyOnceWith('healthy');
+    expect(applyOrgLever).toHaveBeenCalledExactlyOnceWith(
+      'teamReviewHelp',
+      'dept-platform',
+      'team-api',
+    );
+    expect(acknowledgeQuarterReview).toHaveBeenCalledOnce();
+    expect(chooseGoalAdjustment).toHaveBeenCalledExactlyOnceWith('cut_scope');
+  });
+
+  it('保存・リプレイ・メタの公開アクションは、ゲームが返す結果を呼び出し元へ返す', async () => {
+    const { game, view } = controlledGame();
+    const runSaveImportResult = {
+      ok: false as const,
+      reason: 'corrupt' as const,
+      message: '途中セーブを読み込めません。',
+    };
+    const replayImportResult = {
+      ok: false as const,
+      reason: 'unsupported_version' as const,
+      message: 'リプレイの版に対応していません。',
+    };
+    const unlockResult = { ok: false, reason: 'not_ready' };
+    const clearRunSave = vi.spyOn(game, 'clearRunSave').mockImplementation(() => undefined);
+    const exportRunSaveText = vi.spyOn(game, 'exportRunSaveText').mockReturnValue('run-save-json');
+    const importRunSaveText = vi
+      .spyOn(game, 'importRunSaveText')
+      .mockResolvedValue(runSaveImportResult);
+    const exportReplayText = vi.spyOn(game, 'exportReplayText').mockReturnValue('replay-json');
+    const importReplayText = vi
+      .spyOn(game, 'importReplayText')
+      .mockResolvedValue(replayImportResult);
+    const findReplayJumpIndex = vi.spyOn(game, 'findReplayJumpIndex').mockReturnValue(4);
+    const exitReplay = vi.spyOn(game, 'exitReplay').mockReturnValue(view.state);
+    const purchaseMetaUnlock = vi.spyOn(game, 'purchaseMetaUnlock').mockReturnValue(unlockResult);
+    const setSoundMuted = vi.spyOn(game, 'setSoundMuted').mockImplementation(() => undefined);
+    const setPreferredCardIds = vi
+      .spyOn(game, 'setPreferredCardIds')
+      .mockImplementation(() => undefined);
+    const markTutorialSeen = vi.spyOn(game, 'markTutorialSeen').mockImplementation(() => undefined);
+    const run = mountRun(game);
+
+    expect(run.current.clearRunSave()).toBeUndefined();
+    expect(run.current.exportRunSaveText()).toBe('run-save-json');
+    await expect(run.current.importRunSaveText('incoming-run-save')).resolves.toBe(
+      runSaveImportResult,
+    );
+    expect(run.current.exportReplayText('replay-1')).toBe('replay-json');
+    await expect(run.current.importReplayText('incoming-replay')).resolves.toBe(replayImportResult);
+    expect(run.current.findReplayJumpIndex('result')).toBe(4);
+    expect(run.current.exitReplay()).toBeUndefined();
+    expect(run.current.purchaseMetaUnlock('unlock-devin')).toBe(unlockResult);
+    expect(run.current.setSoundMuted(true)).toBeUndefined();
+    expect(run.current.setPreferredCardIds(['docs', 'pair-review'])).toBeUndefined();
+    expect(run.current.markTutorialSeen()).toBeUndefined();
+
+    expect(clearRunSave).toHaveBeenCalledOnce();
+    expect(exportRunSaveText).toHaveBeenCalledOnce();
+    expect(importRunSaveText).toHaveBeenCalledExactlyOnceWith('incoming-run-save');
+    expect(exportReplayText).toHaveBeenCalledExactlyOnceWith('replay-1');
+    expect(importReplayText).toHaveBeenCalledExactlyOnceWith('incoming-replay');
+    expect(findReplayJumpIndex).toHaveBeenCalledExactlyOnceWith('result');
+    expect(exitReplay).toHaveBeenCalledOnce();
+    expect(purchaseMetaUnlock).toHaveBeenCalledExactlyOnceWith('unlock-devin');
+    expect(setSoundMuted).toHaveBeenCalledExactlyOnceWith(true);
+    expect(setPreferredCardIds).toHaveBeenCalledExactlyOnceWith(['docs', 'pair-review']);
+    expect(markTutorialSeen).toHaveBeenCalledOnce();
+  });
+
   it('game 交換で古いポーリングを解除し、同じ revision の新しい game を同期する', () => {
     const first = controlledGame();
     const second = controlledGame();

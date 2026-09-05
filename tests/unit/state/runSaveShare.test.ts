@@ -11,9 +11,12 @@ import {
   type RunSave,
 } from '../../../src/state/runPersistence';
 import {
+  bundledReplayKeyframesIntact,
+  canHydrateRunSave,
   parseRunSaveShare,
   RUN_SAVE_SHARE_REASON_MESSAGE,
   serializeRunSave,
+  summaryMatchesPersistState,
 } from '../../../src/state/runSaveShare';
 
 function makeRunSave(seed = 'ri133-run-save'): RunSave {
@@ -128,6 +131,101 @@ describe('途中セーブのファイル共有（RI-133）', () => {
       reason,
       message: RUN_SAVE_SHARE_REASON_MESSAGE[reason],
     });
+  });
+
+  it('対応版でもセーブ本体が欠けていれば破損として拒否する', () => {
+    expect(parseRunSaveShare(JSON.stringify({ schemaVersion: RUN_SAVE_SCHEMA_VERSION }))).toEqual({
+      ok: false,
+      reason: 'corrupt',
+      message: RUN_SAVE_SHARE_REASON_MESSAGE.corrupt,
+    });
+  });
+
+  it('同梱キーフレームが省略されていれば空配列への正規化を許可する', () => {
+    const save = makeRunSave('ri133-keyframes-omitted');
+
+    expect(bundledReplayKeyframesIntact({}, save)).toBe(true);
+  });
+
+  it.each([
+    [
+      '配列でない',
+      (parsed: Record<string, unknown>, _save: RunSave) => {
+        parsed.replayKeyframes = {};
+      },
+    ],
+    [
+      '正規化後に個数が減る',
+      (parsed: Record<string, unknown>, _save: RunSave) => {
+        parsed.replayKeyframes = [];
+      },
+    ],
+    [
+      'ラッパーと frame の phase が異なる',
+      (_parsed: Record<string, unknown>, save: RunSave) => {
+        save.replayKeyframes[0]!.phase = 'draft';
+      },
+    ],
+    [
+      'trials の内容が本体と異なる',
+      (_parsed: Record<string, unknown>, save: RunSave) => {
+        save.state.trials = ['limited-budget'];
+        save.replayKeyframes[0]!.frame.trials = ['rapid-growth'];
+      },
+    ],
+  ] as const)('同梱キーフレームが%sなら破損と判定する', (_case, mutate) => {
+    const save = makeRunSave('ri133-broken-keyframes');
+    const parsed: Record<string, unknown> = { replayKeyframes: [{}] };
+    mutate(parsed, save);
+
+    expect(bundledReplayKeyframesIntact(parsed, save)).toBe(false);
+  });
+
+  it.each([
+    [
+      'runKind',
+      (save: RunSave) => {
+        save.summary.runKind = 'daily';
+      },
+    ],
+    [
+      'quarterNumber',
+      (save: RunSave) => {
+        save.summary.quarterNumber += 1;
+      },
+    ],
+    [
+      'sprintIndexInQuarter',
+      (save: RunSave) => {
+        save.summary.sprintIndexInQuarter += 1;
+      },
+    ],
+    [
+      'sprintsPlayed',
+      (save: RunSave) => {
+        save.summary.sprintsPlayed += 1;
+      },
+    ],
+    [
+      'trials の内容',
+      (save: RunSave) => {
+        save.summary.trials = ['limited-budget'];
+        save.state.trials = ['rapid-growth'];
+      },
+    ],
+  ] as const)('要約の %s が state と食い違うと拒否する', (_field, mutate) => {
+    const save = makeRunSave('ri133-summary-mismatch');
+    mutate(save);
+
+    expect(summaryMatchesPersistState(save)).toBe(false);
+  });
+
+  it('hydrate が受け付けない状態を拒否する', () => {
+    const save = makeRunSave('ri133-hydrate-failure');
+    (save.state as unknown as { status: string; trials: unknown }).status = 'won';
+    (save.state as unknown as { status: string; trials: unknown }).trials = null;
+
+    expect(canHydrateRunSave(save)).toBe(false);
   });
 
   it('ルールセット不明と不一致は拒否し、開始レシピと混ぜない', () => {

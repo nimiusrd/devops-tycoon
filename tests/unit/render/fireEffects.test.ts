@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { BURN_TICKS } from '../../../src/sim/model';
+import { planBoardScene } from '../../../src/render/boardScene';
 import {
   createFireSnapshot,
   detectFireEvents,
+  firePct,
   fireSnapshotsEqual,
   positionFireEffects,
   type FireSnapshot,
@@ -540,6 +542,140 @@ describe('detectFireEvents（RI-06）', () => {
     ]);
   });
 
+  it('Review に留まったまま点火した場合も ignite を検出する', () => {
+    const prev = snap([snapTask(0, 'review')], { incidentCount: 0 }, 0.8);
+    const next = snap(
+      [snapTask(0, 'review', { incident: true, burnTicksLeft: BURN_TICKS })],
+      { incidentCount: 1 },
+      0.2,
+    );
+
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'ignite', taskId: 0 }]);
+  });
+
+  it('Backlog 完了直後の Review への延焼は spread として検出する', () => {
+    const prev = snap(
+      [snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }), snapTask(1, 'backlog')],
+      { spread: 0, incidentCount: 1 },
+      0.2,
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, incidentCount: 2 },
+      0.35,
+    );
+
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }]);
+  });
+
+  it('延焼数だけ増えて Review キューが空ならイベントを生成しない', () => {
+    const prev = snap([snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 })], {
+      spread: 0,
+      incidentCount: 1,
+    });
+    const next = snap([snapTask(0, 'rework', { debt: true })], {
+      spread: 1,
+      incidentCount: 1,
+    });
+
+    expect(detectFireEvents(prev, next)).toEqual([]);
+  });
+
+  it('遷移結果が Review キューの順序と矛盾する場合は spread を生成しない', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'review'),
+        snapTask(2, 'review'),
+      ],
+      { spread: 0, incidentCount: 1 },
+    );
+    const next = snap(
+      [snapTask(0, 'rework', { debt: true }), snapTask(1, 'review'), snapTask(2, 'rework')],
+      { spread: 1, incidentCount: 1 },
+    );
+
+    expect(detectFireEvents(prev, next)).toEqual([]);
+  });
+
+  it('Review 後方の非炎上 Rework は延焼先として扱わない', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'review'),
+        snapTask(2, 'review'),
+      ],
+      { spread: 0, incidentCount: 1 },
+    );
+    const next = snap(
+      [snapTask(0, 'rework', { debt: true }), snapTask(1, 'rework'), snapTask(2, 'review')],
+      { spread: 1, incidentCount: 1 },
+    );
+
+    expect(detectFireEvents(prev, next)).toEqual([]);
+  });
+
+  it('延焼数が残存 Review 数を超えても存在しない延焼先を生成しない', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(2, 'review'),
+      ],
+      { spread: 0, incidentCount: 2 },
+    );
+    const next = snap(
+      [
+        snapTask(0, 'rework', { debt: true }),
+        snapTask(1, 'rework', { debt: true }),
+        snapTask(2, 'review'),
+      ],
+      { spread: 2, incidentCount: 2 },
+    );
+
+    expect(detectFireEvents(prev, next)).toEqual([]);
+  });
+
+  it('同 tick に消えた firefight 対象を Review キューへ混入させない', () => {
+    const prev = snap(
+      [
+        snapTask(0, 'rework', { incident: true, burnTicksLeft: 1 }),
+        snapTask(1, 'rework', { incident: true, burnTicksLeft: 2 }),
+        snapTask(2, 'review'),
+      ],
+      { spread: 0, contained: 0, incidentCount: 2, actionCounts: { firefight: 0 } },
+    );
+    const next = snap(
+      [
+        snapTask(1, 'rework', { debt: true }),
+        snapTask(2, 'rework', { incident: true, burnTicksLeft: BURN_TICKS }),
+      ],
+      { spread: 1, contained: 1, incidentCount: 2, actionCounts: { firefight: 1 } },
+    );
+
+    expect(detectFireEvents(prev, next)).toEqual([{ kind: 'spread', fromTaskId: 1, toTaskId: 2 }]);
+  });
+
+  it('残り燃焼 tick が無い火は task 順で firefight 対象を決める', () => {
+    const prev = snap(
+      [snapTask(5, 'rework', { incident: true }), snapTask(3, 'rework', { incident: true })],
+      { contained: 0, incidentCount: 2, actionCounts: { firefight: 0 } },
+    );
+    const next = snap([snapTask(5, 'review'), snapTask(3, 'rework')], {
+      contained: 2,
+      incidentCount: 0,
+      actionCounts: { firefight: 1 },
+    });
+
+    expect(detectFireEvents(prev, next)).toEqual([
+      { kind: 'extinguish', taskId: 5, source: 'firefight' },
+      { kind: 'extinguish', taskId: 3, source: 'auto' },
+    ]);
+  });
+
   it('変化がなければ空配列', () => {
     const s = snap([snapTask(0, 'coding')]);
     expect(detectFireEvents(s, s)).toEqual([]);
@@ -568,6 +704,37 @@ describe('fireSnapshotsEqual', () => {
       fireSnapshotsEqual(base, snap([snapTask(0, 'review')], { actionCounts: { firefight: 1 } })),
     ).toBe(false);
   });
+
+  it('メトリクスまたはタスク数が違えば false', () => {
+    const base = snap([snapTask(0, 'review')]);
+
+    expect(fireSnapshotsEqual(base, snap([snapTask(0, 'review')], { spread: 1 }))).toBe(false);
+    expect(fireSnapshotsEqual(base, snap([snapTask(0, 'review')], { contained: 1 }))).toBe(false);
+    expect(fireSnapshotsEqual(base, snap([snapTask(0, 'review')], { incidentCount: 1 }))).toBe(
+      false,
+    );
+    expect(fireSnapshotsEqual(base, snap([]))).toBe(false);
+  });
+
+  it('タスクの識別子・レーン・炎上状態・負債・残り tick が違えば false', () => {
+    const base = snap([snapTask(0, 'review', { burnTicksLeft: 3 })]);
+
+    expect(fireSnapshotsEqual(base, snap([snapTask(1, 'review', { burnTicksLeft: 3 })]))).toBe(
+      false,
+    );
+    expect(fireSnapshotsEqual(base, snap([snapTask(0, 'coding', { burnTicksLeft: 3 })]))).toBe(
+      false,
+    );
+    expect(
+      fireSnapshotsEqual(base, snap([snapTask(0, 'review', { incident: true, burnTicksLeft: 3 })])),
+    ).toBe(false);
+    expect(
+      fireSnapshotsEqual(base, snap([snapTask(0, 'review', { debt: true, burnTicksLeft: 3 })])),
+    ).toBe(false);
+    expect(fireSnapshotsEqual(base, snap([snapTask(0, 'review', { burnTicksLeft: 2 })]))).toBe(
+      false,
+    );
+  });
 });
 
 describe('createFireSnapshot / positionFireEffects', () => {
@@ -585,6 +752,14 @@ describe('createFireSnapshot / positionFireEffects', () => {
     expect(snapshot.reviewAccumulator).toBe(0.75);
     expect(snapshot.firefightCount).toBe(4);
     expect(snapshot.tasks[0].incident).toBe(true);
+  });
+
+  it('firefight 実績が無いスナップショットでは回数を 0 にする', () => {
+    expect(createFireSnapshot([], baseMetrics()).firefightCount).toBe(0);
+  });
+
+  it('設計座標を盤面内の割合へ変換する', () => {
+    expect(firePct(351, 1404)).toBe('25%');
   });
 
   it('spread イベントに座標を付与できる', () => {
@@ -636,6 +811,62 @@ describe('createFireSnapshot / positionFireEffects', () => {
       expect(positioned[0].toY).toBe(reviewPos.y);
       expect(positioned[0].toX).not.toBe(reworkPos.x);
     }
+  });
+
+  it('Coding 完了直後の spread は Review の overflow 座標を終点にする', () => {
+    const prevTasks = [makeTask(0, 'rework'), makeTask(1, 'coding')];
+    const nextTasks = [makeTask(0, 'rework'), makeTask(1, 'rework', { incident: true })];
+    const reviewStation = planBoardScene(prevTasks).stations.find(
+      (station) => station.lane === 'review',
+    );
+    const positioned = positionFireEffects(
+      [{ kind: 'spread', fromTaskId: 0, toTaskId: 1 }],
+      nextTasks,
+      prevTasks,
+    )[0];
+
+    expect(positioned.kind).toBe('spread');
+    if (positioned.kind === 'spread') {
+      expect(positioned.toX).toBe(reviewStation?.overflowX);
+      expect(positioned.toY).toBe(reviewStation?.overflowY);
+    }
+  });
+
+  it('prevTasks に無い spread と extinguish のタスクは nextTasks の座標を使う', () => {
+    const nextTasks = [makeTask(0, 'rework'), makeTask(1, 'review')];
+    const positioned = positionFireEffects(
+      [
+        { kind: 'spread', fromTaskId: 0, toTaskId: 1 },
+        { kind: 'extinguish', taskId: 0, source: 'auto' },
+      ],
+      nextTasks,
+      [],
+    );
+
+    expect(positioned).toHaveLength(2);
+    expect(positioned.every((effect) => ('x' in effect ? effect.x > 0 : effect.fromX > 0))).toBe(
+      true,
+    );
+  });
+
+  it('盤面に存在しないタスクの演出は座標付きイベントから除外する', () => {
+    const positioned = positionFireEffects(
+      [
+        { kind: 'spread', fromTaskId: 90, toTaskId: 91 },
+        { kind: 'extinguish', taskId: 92, source: 'auto' },
+        { kind: 'ignite', taskId: 93 },
+      ],
+      [],
+    );
+
+    expect(positioned).toEqual([]);
+  });
+
+  it('未知の lane や演出種別を安全に無視する', () => {
+    const invalidLaneTask = makeTask(0, 'review', { lane: 'invalid' as Lane });
+
+    expect(positionFireEffects([{ kind: 'ignite', taskId: 0 }], [invalidLaneTask])).toEqual([]);
+    expect(positionFireEffects([{ kind: 'unsupported' } as never], [])).toEqual([]);
   });
 
   it('cap 超過の Rework 火でも overflow 位置に座標を付与できる', () => {

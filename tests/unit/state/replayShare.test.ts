@@ -15,8 +15,12 @@ import {
   toRunSave,
 } from '../../../src/state/runPersistence';
 import {
+  canHydrateReplay,
+  hasValidReplayDomainEnums,
   parseReplayShare,
   REPLAY_SHARE_REASON_MESSAGE,
+  replayIdentityConsistent,
+  replayTerminalsConsistent,
   serializeReplay,
 } from '../../../src/state/replayShare';
 
@@ -80,6 +84,103 @@ describe('リプレイのファイル共有（RI-133）', () => {
       reason,
       message: REPLAY_SHARE_REASON_MESSAGE[reason],
     });
+  });
+
+  it('キーフレームの phase がラッパーと食い違うと終端整合性エラーになる', () => {
+    const replay = makeReplay({ id: 'phase-mismatch', seed: 'phase-mismatch' });
+    replay.keyframes[0]!.phase = 'draft';
+
+    expect(replayTerminalsConsistent(replay)).toBe(false);
+  });
+
+  it.each([
+    [
+      'difficulty',
+      (replay: ReplayBlob) => {
+        replay.keyframes[0]!.frame.difficulty = 'normal';
+      },
+    ],
+    [
+      'trials の個数',
+      (replay: ReplayBlob) => {
+        replay.trials = ['limited-budget'];
+      },
+    ],
+    [
+      'trials の内容',
+      (replay: ReplayBlob) => {
+        replay.trials = ['limited-budget'];
+        replay.keyframes[0]!.frame.trials = ['rapid-growth'];
+      },
+    ],
+    [
+      'trials の型',
+      (replay: ReplayBlob) => {
+        (replay.keyframes[0]!.frame as unknown as { trials: unknown }).trials = null;
+      },
+    ],
+  ] as const)('キーフレームの %s がトップレベルと食い違うと拒否する', (_field, mutate) => {
+    const replay = makeReplay({ id: 'identity-mismatch', seed: 'identity-mismatch' });
+    mutate(replay);
+
+    expect(replayIdentityConsistent(replay)).toBe(false);
+  });
+
+  it.each([
+    [
+      'outcome.diagnosis',
+      (replay: ReplayBlob) => {
+        replay.outcome.diagnosis = 'unknownDiagnosis';
+      },
+    ],
+    [
+      'トップレベル difficulty',
+      (replay: ReplayBlob) => {
+        (replay as unknown as { difficulty: string }).difficulty = 'impossible';
+      },
+    ],
+    [
+      'frame.status',
+      (replay: ReplayBlob) => {
+        (replay.keyframes[0]!.frame as unknown as { status: string }).status = 'paused';
+      },
+    ],
+    [
+      'frame.winType',
+      (replay: ReplayBlob) => {
+        (replay.keyframes[0]!.frame as unknown as { winType: string }).winType = 'lucky';
+      },
+    ],
+    [
+      'frame.loseReason',
+      (replay: ReplayBlob) => {
+        (replay.keyframes[0]!.frame as unknown as { loseReason: string }).loseReason = 'timeout';
+      },
+    ],
+    [
+      'frame.runKind',
+      (replay: ReplayBlob) => {
+        (replay.keyframes[0]!.frame as unknown as { runKind: string }).runKind = 'weekly';
+      },
+    ],
+    [
+      'frame.difficulty',
+      (replay: ReplayBlob) => {
+        (replay.keyframes[0]!.frame as unknown as { difficulty: string }).difficulty = 'extreme';
+      },
+    ],
+  ] as const)('未知の %s はドメイン列挙値として拒否する', (_field, mutate) => {
+    const replay = makeReplay({ id: 'invalid-enum', seed: 'invalid-enum' });
+    mutate(replay);
+
+    expect(hasValidReplayDomainEnums(replay)).toBe(false);
+  });
+
+  it('hydrate が受け付けないキーフレームを拒否する', () => {
+    const replay = makeReplay({ id: 'hydrate-failure', seed: 'hydrate-failure' });
+    (replay.keyframes[0]!.frame as unknown as { phase: string }).phase = 'invalid';
+
+    expect(canHydrateReplay(replay)).toBe(false);
   });
 
   it('不一致ルールセットのリプレイを読み取り専用で取り込める', async () => {

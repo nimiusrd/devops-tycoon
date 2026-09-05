@@ -25,11 +25,13 @@ describe('WebGL準備と再試行', () => {
     vi.resetModules();
     const state = await import('../../../src/render/webglStatus');
     const finish = state.beginWebglLoading();
+    expect(state.getWebglAttempt()).toBe(0);
     state.markWebglFailed();
     finish();
     await Promise.resolve();
     expect(state.getWebglStatus()).toBe('failed');
     state.retryWebgl();
+    expect(state.getWebglAttempt()).toBe(1);
     expect(state.getWebglStatus()).toBe('loading');
     await Promise.resolve();
     expect(state.getWebglStatus()).toBe('loading');
@@ -81,7 +83,9 @@ describe('WebGL準備と再試行', () => {
     next();
     await Promise.resolve();
     expect(state.getWebglStatus()).toBe('ready');
+    const attempt = state.getWebglAttempt();
     state.retryWebgl();
+    expect(state.getWebglAttempt()).toBe(attempt);
     expect(state.getWebglStatus()).toBe('ready');
   });
 });

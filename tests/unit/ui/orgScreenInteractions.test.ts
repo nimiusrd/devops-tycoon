@@ -8,6 +8,9 @@ const hooks = vi.hoisted(() => ({
   field: null as { focusDepartment: (id: string) => Promise<void> } | null,
 }));
 
+// チャンクの失敗・再試行は実ブラウザで検証し、ここでは盤面を未展開のlazy境界とする。
+vi.mock('../../../src/ui/lazyWebgl', async () => ({ lazyWebgl: (await import('react')).lazy }));
+
 // Node で表示ローカル state を保持し、WebGL の選択とカメラ完了だけを制御する。
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),

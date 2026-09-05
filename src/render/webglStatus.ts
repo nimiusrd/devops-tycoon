@@ -3,10 +3,15 @@ const pending = new Set<symbol>();
 const listeners = new Set<() => void>();
 let failed = false;
 let retryRequested = false;
+let attempt = 0;
 export type WebglStatus = 'ready' | 'loading' | 'failed';
 
 export function getWebglStatus(): WebglStatus {
   return failed ? 'failed' : retryRequested || pending.size > 0 ? 'loading' : 'ready';
+}
+
+export function getWebglAttempt(): number {
+  return attempt;
 }
 
 export function subscribeWebglStatus(listener: () => void): () => void {
@@ -47,5 +52,6 @@ export function retryWebgl(): void {
   failed = false;
   // 再マウントが始まる前から待機し、最初の描画側の待機トークンへ引き継ぐ。
   retryRequested = true;
+  attempt += 1;
   publish();
 }

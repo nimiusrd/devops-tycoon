@@ -54,6 +54,7 @@ IndexedDB ◀──── Meta / RunSave / Replayの直列化境界
 UIのデザイン判断、トークン利用、レスポンシブ、アクセシビリティ、視覚検証は[デザインシステム制約](./design-system.md)を正とする。
 
 - 動的盤面はPixiJSに統一する。WebGL準備中・初期化失敗時は自動進行を停止し、失敗時は再試行を案内する。
+- 描画チャンクは`lazyWebgl`のエラー境界で読み込む。再試行ではReact.lazyの失敗状態を破棄し、`vite.webglModules.ts`が公開するJSチャンクURLに試行番号を付けて再取得する。
 - 座標、深度、カリング、LOD、ヒット判定は可能な限り純関数化し、GPU不要のVitestで検証する。
 - 実ピクセルはPlaywrightの`@pixi`テスト、主要画面の目視は`npm run gallery`で確認する。
 - FPSをCIで直接assertせず、表示数、カリング数、スプライト再利用数など決定論的な予算を検証する。
@@ -104,6 +105,7 @@ UIのデザイン判断、トークン利用、レスポンシブ、アクセシ
 - シミュレーション、不変条件、統計レンジ、状態→表示変換はVitest。
 - フェーズ横断操作、IndexedDB連携、HTML UIと実WebGLは標準Playwright。
 - 視覚回帰も標準E2Eで実行する。描画だけの検証には`npm run test:e2e:pixi`を使う。
+- 配布用チャンクの再試行は、ビルド後に`PLAYWRIGHT_PREVIEW=1 PLAYWRIGHT_PORT=5175 npm run test:e2e -- tests/e2e/webgl-availability.spec.ts --grep 'チャンク取得' --workers=1`で検証する。
 - `?seed=`、`pause()`、`step(ms)`、各フェーズ操作で失敗を再現できる状態を維持する。
 - Node上で実WebGLを動かさず、実GPUが必要な検証はPlaywrightへ集約する。
 

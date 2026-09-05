@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({ cursor: 0, values: [] as unknown[], usePixi: true }));
 
+// チャンクの失敗・再試行は実ブラウザで検証し、ここでは盤面を未展開のlazy境界とする。
+vi.mock('../../../src/ui/lazyWebgl', async () => ({ lazyWebgl: (await import('react')).lazy }));
+
 // Node 上で JSX と画像ロード後の再描画を検証する。選択・入り込み・描画計画は実装を使う。
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),

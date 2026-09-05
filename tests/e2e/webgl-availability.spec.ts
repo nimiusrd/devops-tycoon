@@ -125,3 +125,63 @@ for (const level of ['company', 'department'] as const) {
     await expect.poll(zoomLevel).toBe('team');
   });
 }
+
+for (const scene of [
+  { level: 'team', module: 'BoardPixiLayer', mount: 'board-pixi-mount' },
+  { level: 'company', module: 'OrgPixiField', mount: 'org-pixi-mount' },
+  { level: 'department', module: 'DeptPixiBoard', mount: 'dept-pixi-mount' },
+] as const) {
+  test(`${scene.level}の描画チャンク取得失敗からランと階層を保持して再試行できる`, async ({
+    page,
+  }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    let available = false;
+    let requests = 0;
+    await page.route(
+      new RegExp(`/(?:src/ui/${scene.module}\\.tsx|assets/${scene.module}-[^/]+\\.js)(?:\\?.*)?$`),
+      async (route) => {
+        requests += 1;
+        if (available) await route.continue();
+        else await route.abort('failed');
+      },
+    );
+    await start(page);
+    if (scene.level !== 'team') {
+      await expect(page.getByTestId('webgl-status')).toHaveCount(0);
+      await page.evaluate((level) => {
+        const game = (window as GameWindow).game;
+        if (level === 'department') game.focusDept('product');
+        else game.zoomTo('company');
+      }, scene.level);
+    }
+    const failed = page.getByRole('dialog', { name: '盤面を表示できませんでした' });
+    await expect(failed).toBeVisible();
+    const before = await page.evaluate(() => {
+      const state = (window as GameWindow).game.getState();
+      return { seed: state.seed, zoom: state.zoom, tick: state.sprintTick };
+    });
+    await page.waitForTimeout(300);
+    expect(await tick(page)).toBe(before.tick);
+    // まだ通信が回復していない再試行でも、Reactツリーと復旧操作を失わない。
+    await page.getByTestId('webgl-retry').click();
+    await expect(failed).toBeVisible();
+    expect(await tick(page)).toBe(before.tick);
+
+    available = true;
+    await page.getByTestId('webgl-retry').click();
+    await expect(page.getByTestId('webgl-status')).toHaveCount(0);
+    await expect(page.getByTestId(scene.mount).locator('canvas')).not.toHaveCount(0);
+    expect(requests).toBeGreaterThanOrEqual(2);
+    expect(
+      await page.evaluate(() => {
+        const state = (window as GameWindow).game.getState();
+        return { seed: state.seed, zoom: state.zoom };
+      }),
+    ).toEqual({ seed: before.seed, zoom: before.zoom });
+    // 全社・部署の閲覧中は仕様として停止するため、現場へ戻って再開を確認する。
+    if (scene.level !== 'team') await page.keyboard.press('Escape');
+    await expect.poll(() => tick(page)).toBeGreaterThan(before.tick);
+    expect(pageErrors).toEqual([]);
+  });
+}

@@ -5,8 +5,9 @@
  * チーム島をタップすると現場へドリルダウンし、部門チップと比較表の部門名から部署ビューへ寄る。
  * 状態は読むだけ（第22.2）。盤面は `OrgPixiField` で等角描画する。
  */
-import { WebglLoading } from './WebglLoading';
-import { lazy, Suspense, useCallback, useMemo, useRef } from 'react';
+import { lazyWebgl } from './lazyWebgl';
+import { loadWebglModule } from '../render/loadWebglModule';
+import { useCallback, useMemo, useRef, type ComponentProps } from 'react';
 import { PROCESS_BALANCE } from '../data/balance';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
@@ -26,8 +27,8 @@ import { usePixiRenderer } from './usePixiRenderer';
 import { Stat } from './Stat';
 
 /** Pixi 全社マップは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
-const OrgPixiField = lazy(() =>
-  import('./OrgPixiField').then((m) => ({ default: m.OrgPixiField })),
+const OrgPixiField = lazyWebgl<ComponentProps<(typeof import('./OrgPixiField'))['OrgPixiField']>>(
+  () => loadWebglModule('company').then((m) => ({ default: m.OrgPixiField })),
 );
 
 export interface OrgScreenProps {
@@ -161,17 +162,15 @@ export function OrgScreen({
 
       <AspectStage ratio={ORG_VIEW.w / ORG_VIEW.h} className="org-field" data-testid="org-field">
         {usePixiBoard && (
-          <Suspense fallback={<WebglLoading />}>
-            <OrgPixiField
-              ref={pixiFieldRef}
-              teams={teams}
-              zoom={zoom}
-              departments={org.departments}
-              onFocusTeam={onFocusTeam}
-              deptColor={deptColor}
-              onWebglError={onWebglError}
-            />
-          </Suspense>
+          <OrgPixiField
+            ref={pixiFieldRef}
+            teams={teams}
+            zoom={zoom}
+            departments={org.departments}
+            onFocusTeam={onFocusTeam}
+            deptColor={deptColor}
+            onWebglError={onWebglError}
+          />
         )}
       </AspectStage>
       <TeamNavigator teams={teams} onFocusTeam={onFocusTeam} />

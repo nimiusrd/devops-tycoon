@@ -7,17 +7,10 @@
  * 座標は設計空間（1404×573）の % で重ね、WebGL盤面にHTMLの操作・要約を重ねる。
  * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
-import { WebglLoading } from '../ui/WebglLoading';
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react';
+import { lazyWebgl } from '../ui/lazyWebgl';
+import type { BoardPixiLayerProps } from '../ui/BoardPixiLayer';
+import { loadWebglModule } from './loadWebglModule';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type {
   ActionTarget,
   Lane,
@@ -51,8 +44,8 @@ import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 
 /** Pixi 盤面レイヤは動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
-const BoardPixiLayer = lazy(() =>
-  import('../ui/BoardPixiLayer').then((m) => ({ default: m.BoardPixiLayer })),
+const BoardPixiLayer = lazyWebgl<BoardPixiLayerProps>(() =>
+  loadWebglModule('board').then((m) => ({ default: m.BoardPixiLayer })),
 );
 
 const VIEW_W = BOARD_VIEW.w;
@@ -312,18 +305,16 @@ export function Board({
     >
       <OfficeRoom />
       {usePixi && (
-        <Suspense fallback={<WebglLoading />}>
-          <BoardPixiLayer
-            scene={scene}
-            draggableTaskIds={dragIds}
-            dragTaskId={dragTaskId}
-            effects={boardEffects.effects}
-            auras={activeAuras}
-            onWebglError={onWebglError}
-            onReady={() => setPixiReady(true)}
-            animationsPaused={animationsPaused}
-          />
-        </Suspense>
+        <BoardPixiLayer
+          scene={scene}
+          draggableTaskIds={dragIds}
+          dragTaskId={dragTaskId}
+          effects={boardEffects.effects}
+          auras={activeAuras}
+          onWebglError={onWebglError}
+          onReady={() => setPixiReady(true)}
+          animationsPaused={animationsPaused}
+        />
       )}
 
       {scene.stations.map((s) => (

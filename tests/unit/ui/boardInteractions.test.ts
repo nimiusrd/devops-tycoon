@@ -17,6 +17,7 @@ const hooks = vi.hoisted(() => ({
   },
 }));
 const boundary = vi.hoisted(() => ({ usePixi: false, loaded: false, playSfx: vi.fn() }));
+vi.mock('../../../src/ui/lazyWebgl', async () => ({ lazyWebgl: (await import('react')).lazy }));
 vi.mock('../../../src/ui/WebglLoading', () => ({ WebglLoading: () => null }));
 
 // Node 上では React の再描画・ブラウザ・GPU の境界だけを代行する。

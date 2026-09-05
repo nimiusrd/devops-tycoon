@@ -5,8 +5,9 @@
  * チーム間依存（連鎖炎上）と部門HUD・部門／チームレバーを見せる。
  * 状態確認（島クリック）と入り込みを分離する。
  */
-import { WebglLoading } from './WebglLoading';
-import { lazy, Suspense } from 'react';
+import { lazyWebgl } from './lazyWebgl';
+import type { DeptPixiBoardProps } from './DeptPixiBoard';
+import { loadWebglModule } from '../render/loadWebglModule';
 import { DEPARTMENT_LEVERS, TEAM_LEVERS } from '../data/levers';
 import { ENTER_TEAM_FOCUS_PENALTY, ENTER_TEAM_LOCK_SPRINTS } from '../sim/orgscale';
 import { DEPT_VIEW } from '../render/deptBoardScene';
@@ -21,8 +22,8 @@ import { usePixiRenderer } from './usePixiRenderer';
 import { Stat } from './Stat';
 
 /** Pixi 部署盤面は動的 import（RI-12）。usePixi 時のみチャンクを取得する。 */
-const DeptPixiBoard = lazy(() =>
-  import('./DeptPixiBoard').then((m) => ({ default: m.DeptPixiBoard })),
+const DeptPixiBoard = lazyWebgl<DeptPixiBoardProps>(() =>
+  loadWebglModule('department').then((m) => ({ default: m.DeptPixiBoard })),
 );
 
 export interface DeptScreenProps {
@@ -98,9 +99,7 @@ export function DeptScreen({
         data-testid="dept-field"
       >
         {usePixi && (
-          <Suspense fallback={<WebglLoading />}>
-            <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} onWebglError={onWebglError} />
-          </Suspense>
+          <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} onWebglError={onWebglError} />
         )}
       </AspectStage>
       <TeamNavigator teams={dept.teams} onFocusTeam={onFocusTeam} />

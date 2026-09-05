@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { webglModulesPlugin } from './vite.webglModules';
 
 /** Node の `process.env` だけ参照する（`@types/node` は DOM の Timer 型と衝突するため入れない）。 */
 declare const process: { env: Record<string, string | undefined> };
@@ -7,7 +8,7 @@ declare const process: { env: Record<string, string | undefined> };
 export default defineConfig({
   // GitHub Pages（プロジェクトサイト）用。未設定時はローカル/CI 既定の `/`。
   base: process.env.PAGES_BASE ?? '/',
-  plugins: [react()],
+  plugins: [react(), webglModulesPlugin()],
   server: {
     port: 5174,
   },

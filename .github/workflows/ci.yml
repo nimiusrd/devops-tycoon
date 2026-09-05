@@ -57,6 +57,14 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e -- --workers=1
+      - name: Verify production chunk recovery
+        run: |
+          npm run build
+          npm run test:e2e -- tests/e2e/webgl-availability.spec.ts --grep 'チャンク取得' --workers=1
+        env:
+          PLAYWRIGHT_PREVIEW: '1'
+          PLAYWRIGHT_PORT: '5175'
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/production
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:

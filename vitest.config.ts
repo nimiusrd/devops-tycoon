@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitest/config';
+import { webglModulesPlugin } from './vite.webglModules';
 
 // シミュレーション層（純TS）を最優先でテストする。
 // 実ピクセル/操作の検証は Playwright（tests/e2e）に分離する（SPEC 第22.5）。
 export default defineConfig({
+  plugins: [webglModulesPlugin()],
   test: {
     environment: 'node',
     // 並列実行時の負荷で長めのシミュレーションが既定の5秒を超えないようにする。

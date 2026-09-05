@@ -6,7 +6,7 @@
 
 - React UI、CSS、Pixi/DOM描画、レイアウト、アニメーション、画像、ユーザー向け文言を変更する前に、[`docs/design-system.md`](docs/design-system.md)と[`.agents/skills/devops-tycoon-design-system/SKILL.md`](.agents/skills/devops-tycoon-design-system/SKILL.md)を読み、同文書の制約と検証マトリクスに従う。
 - 新しい意味を持つ色やDOM/Pixi間で共有する寸法は`src/render/visualTokens.ts`を正本にする。既存の直接指定を、新しい色・寸法リテラルを増やす根拠にしない。
-- 視覚変更では、影響する状態とviewportを特定し、DOMの対象E2Eを実行する。Pixiに触れた場合は該当する視覚回帰、複数画面に及ぶ場合は`npm run gallery`も確認する。
+- 視覚変更では、影響する状態とviewportを特定し、HTML UIとWebGLの対象E2Eを実行する。Pixiに触れた場合は該当する視覚回帰、複数画面に及ぶ場合は`npm run gallery`も確認する。
 
 ## 共通の開発環境
 
@@ -15,8 +15,8 @@
 - 標準コマンドは `package.json` の scripts 参照: 開発サーバ `npm run dev`（ポート5174）、ユニット `npm test`（vitest）、E2E `npm run test:e2e`、ビルド `npm run build`。
 - 画面の見た目を一括確認するには `npm run gallery`（seed 固定で主要画面を撮影し `gallery/index.html` に一覧を生成。デザイン確認用でコミット対象外）。
 - Playwright 管理外の Chromium を使う場合は、`PLAYWRIGHT_CHROMIUM=<実行ファイル>` または `GALLERY_CHROMIUM=<実行ファイル>` を指定する。
-- E2E の `@pixi` 視覚回帰テストは通常スキップされる。実行は `npm run test:e2e:pixi`（`PIXI_E2E=1`）が必要で、ベースラインスナップショットに依存する。
-- 既定レンダラは PixiJS（WebGL）。`?renderer=dom` で DOM/SVG レンダラへ切り替えられる（WebGL 不可環境は自動フォールバック）。CI 既定の E2E は `renderer=dom` を明示して実 WebGL を回さない。
+- E2E は通常実行から実WebGLと `@pixi` 視覚回帰を検証する。`npm run test:e2e:pixi` で描画テストだけを実行できる。ベースラインスナップショットに依存する。
+- スプリント・部署・全社の動的盤面は PixiJS（WebGL）に統一する。DOM版への切替は廃止。WebGLの準備中・初期化失敗時は自動進行を止め、失敗時は再試行を案内する。HUD・操作・状態の要約はHTMLを使う。
 
 ## Codex / Dev Container 実行環境
 

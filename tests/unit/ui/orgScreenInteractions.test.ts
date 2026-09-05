@@ -8,6 +8,9 @@ const hooks = vi.hoisted(() => ({
   field: null as { focusDepartment: (id: string) => Promise<void> } | null,
 }));
 
+// チャンクの失敗・再試行は実ブラウザで検証し、ここでは盤面を未展開のlazy境界とする。
+vi.mock('../../../src/ui/lazyWebgl', async () => ({ lazyWebgl: (await import('react')).lazy }));
+
 // Node で表示ローカル state を保持し、WebGL の選択とカメラ完了だけを制御する。
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
@@ -37,7 +40,6 @@ import { PROCESS_BALANCE } from '../../../src/data/balance';
 import { createOrgState } from '../../../src/sim/org';
 import { generateOrgScale } from '../../../src/sim/orgscale';
 import { AspectStage } from '../../../src/ui/AspectStage';
-import { OrgBoard } from '../../../src/ui/OrgBoard';
 import { OrgScreen, type OrgScreenProps } from '../../../src/ui/OrgScreen';
 import { emptyRunTotals } from '../helpers/whatIfFixtures';
 
@@ -47,7 +49,7 @@ type Props = Record<string, unknown> & { children?: ReactNode };
 // 比較表・HUD・タグは実コンポーネントを一度展開し、走査時は再実行しない。
 function expand(node: ReactNode): ReactNode {
   if (!isValidElement<Props>(node)) return node;
-  if (typeof node.type === 'function' && node.type !== AspectStage && node.type !== OrgBoard) {
+  if (typeof node.type === 'function' && node.type !== AspectStage) {
     return expand((node.type as (props: Props) => ReactNode)(node.props));
   }
   return cloneElement(node, {}, ...Children.toArray(node.props.children).map(expand));
@@ -132,9 +134,7 @@ describe('OrgScreen の移動と全社レバー', () => {
     expect(screen.find('org-compare-unit-team').props['aria-selected']).toBe(true);
     screen.click(`org-team-focus-${team.id}`);
     expect(screen.props.onFocusTeam).toHaveBeenCalledExactlyOnceWith(team.id);
-    const board = screen.all().find((node) => node.type === OrgBoard)!;
-    expect(board.props.org).toBe(screen.props.org);
-    (board.props.onFocusTeam as (id: string) => void)(dept.teams[1].id);
+    screen.click(`team-${dept.teams[1].id}`);
     expect(screen.props.onFocusTeam).toHaveBeenLastCalledWith(dept.teams[1].id);
   });
 
@@ -223,7 +223,7 @@ describe('OrgScreen の Pixi 移動', () => {
     expect(screen.props.onFocusDept).toHaveBeenCalledExactlyOnceWith(dept.def.id);
   });
 
-  it('Pixi 未ロード時は直ちに移動し、島が容量を超えた場合は DOM 盤面で選択できる', () => {
+  it('Pixi 未ロード時は直ちに移動し、島が容量を超えてもPixi盤面とHTMLのチーム選択を維持する', () => {
     hooks.usePixi = true;
     const screen = mountOrg();
     const dept = screen.props.org.departments[0];
@@ -247,10 +247,8 @@ describe('OrgScreen の Pixi 移動', () => {
         ),
       },
     });
-    expect(screen.all().some((node) => node.type === OrgBoard)).toBe(true);
-    expect(screen.all().some((node) => 'teams' in node.props)).toBe(false);
-    screen.click(`dept-chip-${dept.def.id}`);
-    expect(hooks.field.focusDepartment).not.toHaveBeenCalled();
-    expect(screen.props.onFocusDept).toHaveBeenCalledTimes(2);
+    expect(screen.all().some((node) => 'teams' in node.props)).toBe(true);
+    screen.click('team-capacity-29');
+    expect(screen.props.onFocusTeam).toHaveBeenCalledWith('capacity-29');
   });
 });

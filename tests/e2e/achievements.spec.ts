@@ -21,7 +21,7 @@ const META_WITH_ACHIEVEMENT: MetaState = {
 test('タイトルから実績コレクションを開き取得済み／未取得を区別表示できる', async ({ page }) => {
   await seedMeta(page, META_WITH_ACHIEVEMENT);
 
-  await page.goto('/?renderer=dom&seed=achievement-collection-e2e');
+  await page.goto('/?seed=achievement-collection-e2e');
 
   await page.getByTestId('open-achievements').click();
   await expect(page.getByTestId('achievement-collection')).toBeVisible();

@@ -1,12 +1,6 @@
 import { expect, test } from './fixtures';
 import type { Locator } from '@playwright/test';
-import {
-  DESIGN_SPACES,
-  VISUAL_TOKENS,
-  orgBoardIsCompact,
-  orgIslandBadgeMinCssWidth,
-} from '../../src/render/visualTokens';
-import { ORG_HUB_CI_OK_MIN } from '../../src/render/orgBoardScene';
+import { DESIGN_SPACES } from '../../src/render/visualTokens';
 import { dailyRunKey } from '../../src/state/meta';
 import { CURRENT_RUN_RULESET } from '../../src/state/runPersistence';
 import type { RunState } from '../../src/sim/run/types';
@@ -30,7 +24,7 @@ type GameWindow = Window & {
 
 /** タイトルからランを開始し、現場（team）まで進める。 */
 async function startRun(page: import('@playwright/test').Page, seed: string) {
-  await page.goto(`/?renderer=dom&seed=${seed}`);
+  await page.goto(`/?seed=${seed}`);
   await page.evaluate((s) => {
     const g = (window as GameWindow).game!;
     g.pause();
@@ -44,7 +38,7 @@ type Box = { x: number; y: number; width: number; height: number };
 async function assertZoomOverlayGone(page: import('@playwright/test').Page): Promise<void> {
   await expect(page.getByTestId('zoom-overlay')).toHaveCount(0);
   await expect(page.getByTestId('org-screen')).toHaveCount(0);
-  await expect(page.getByTestId('org-board')).toHaveCount(0);
+  await expect(page.getByTestId('org-pixi-mount')).toHaveCount(0);
   await expect(page.getByTestId('org-pixi-mount')).toHaveCount(0);
   await expect(page.getByTestId('dept-screen')).toHaveCount(0);
   await expect(page.getByTestId('industry-screen')).toHaveCount(0);
@@ -139,7 +133,7 @@ test('全社・部署・業界の盤面がAspectStageで設計比率とcontain�
     await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
     await assertAspectStage(
       page.getByTestId('org-field'),
-      page.getByTestId('org-board'),
+      page.getByTestId('org-pixi-mount'),
       DESIGN_SPACES.organization.w / DESIGN_SPACES.organization.h,
       `${viewport.name} 全社`,
     );
@@ -199,7 +193,7 @@ test('現場→全社→部署→業界をパンくずで地続きにズーム�
   await expect(page.getByTestId('org-dept-compare')).toBeVisible();
   await expect(page.getByTestId('org-trend-history')).toBeVisible();
   await expect(page.getByTestId('org-trend-history')).toContainText('記録なし');
-  await expect(page.getByTestId('org-board')).toBeVisible();
+  await expect(page.getByTestId('org-pixi-mount')).toBeVisible();
   await expect(page.getByTestId('org-infra-hub')).toBeVisible();
 
   // パンくずで業界ランキングへ。
@@ -421,8 +415,6 @@ test('ホームチーム島をタップすると現場へドリルダウンし�
   await startRun(page, 'drill-e2e');
   await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
 
-  const player = page.getByTestId('team-product-t0');
-  await expect(player).toBeVisible();
   await clickOrgTeam(page, 'product-t0');
 
   // 選択中ホームは focusTeam で現場へ着地 → オーバーレイは消える。
@@ -477,7 +469,7 @@ test('編成から全社マップを開き現場へ戻すとマップが残ら�
   await page.getByTestId('open-org').click();
   await expect(page.getByTestId('zoom-overlay')).toHaveAttribute('data-level', 'company');
   await expect(page.getByTestId('org-screen')).toBeVisible();
-  await expect(page.getByTestId('org-board')).toBeVisible();
+  await expect(page.getByTestId('org-pixi-mount')).toBeVisible();
 
   await page.getByTestId('crumb-team').click();
   await assertZoomOverlayGone(page);
@@ -535,272 +527,38 @@ test('スプリント盤面から全社マップを閉じると盤面だけが�
   await expect(page.getByTestId('board')).toBeVisible();
 });
 
-function boxesOverlap(a: Box, b: Box): boolean {
-  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-}
-
-/** コンパクト時はドックカード、それ以外は島ボタンでチームを選ぶ。 */
+/** キーボードからも選べるHTML一覧で同じチームへ移動する。 */
 async function clickOrgTeam(page: import('@playwright/test').Page, teamId: string): Promise<void> {
-  const board = page.getByTestId('org-board');
-  await expect(board).toBeVisible();
-  const compact = (await board.getAttribute('data-compact')) === 'true';
-  if (compact) {
-    await page.getByTestId(`island-badge-${teamId}`).click();
-    return;
-  }
+  await page.getByTestId('team-navigator').locator('summary').click();
   await page.getByTestId(`team-${teamId}`).click();
 }
 
-test('全社マップの部門ラベルがチームカードと重ならない（#380）', async ({ page }) => {
-  const viewports = [
-    { name: 'phone-se', width: 320, height: 568 },
-    { name: 'phone', width: 390, height: 844 },
-    { name: 'tablet-portrait', width: 768, height: 1024 },
-    { name: 'desktop-short', width: 1024, height: 768 },
-    { name: 'desktop', width: 1440, height: 900 },
-  ] as const;
-  const island = VISUAL_TOKENS.dimensions.organization.island;
-
-  for (const viewport of viewports) {
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await startRun(page, `org-label-clear-${viewport.name}`);
-    await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
-    const board = page.getByTestId('org-board');
-    await expect(board, `${viewport.name} の全社盤面が表示されない`).toBeVisible();
-    await board.scrollIntoViewIfNeeded();
-
-    const labelLocators = page.locator('.org-zone-label');
-    const badgeLocators = page.locator('.org-island-badge');
-    await expect(labelLocators).toHaveCount(3);
-    await expect.poll(async () => badgeLocators.count()).toBeGreaterThan(0);
-
-    const labels = await labelLocators.all();
-    const badges = await badgeLocators.all();
-    const visibleLabelBoxes: Box[] = [];
-    for (const label of labels) {
-      if (!(await label.isVisible())) continue;
-      const labelBox = await label.boundingBox();
-      if (!labelBox) continue;
-      visibleLabelBoxes.push(labelBox);
-      expect(labelBox.width, `${viewport.name} の部門ラベル幅が 0`).toBeGreaterThan(0);
-      expect(labelBox.height, `${viewport.name} の部門ラベル高が 0`).toBeGreaterThan(0);
-      for (const badge of badges) {
-        const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
-        expect(
-          boxesOverlap(labelBox, badgeBox),
-          `${viewport.name} で部門ラベルとチームカードが重なっている`,
-        ).toBe(false);
-      }
-    }
-    const boardBox = await readBox(board, `${viewport.name} 盤面`);
-    const compact = orgBoardIsCompact(boardBox.width);
-    await expect(board).toHaveAttribute('data-compact', compact ? 'true' : 'false');
-    if (compact) {
-      expect(
-        visibleLabelBoxes.length,
-        `${viewport.name} でコンパクト幅なのに部門ラベルが見える`,
-      ).toBe(0);
-    } else {
-      expect(
-        visibleLabelBoxes.length,
-        `${viewport.name} で部門ラベルが見えない`,
-      ).toBeGreaterThanOrEqual(3);
-    }
-
-    const expectedBadgeWidth =
-      VISUAL_TOKENS.dimensions.organization.card.width *
-      (boardBox.width / DESIGN_SPACES.organization.w);
-    const minBadgeWidth = orgIslandBadgeMinCssWidth();
-    const badgeBoxes: Box[] = [];
-    for (const badge of badges) {
-      const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
-      badgeBoxes.push(badgeBox);
-      await expect(badge).toContainText(/出荷/);
-      await expect(badge).toContainText(/AI/);
-      await expect(badge).toContainText(/人/);
-      if (compact) {
-        expect(
-          badgeBox.width,
-          `${viewport.name} のチームカード幅が可読下限未満`,
-        ).toBeGreaterThanOrEqual(Math.min(minBadgeWidth, boardBox.width) - 1);
-        expect(
-          badgeBox.width,
-          `${viewport.name} のチームカードが盤面幅を超える`,
-        ).toBeLessThanOrEqual(boardBox.width + 1);
-        const coveredByActor = await page.evaluate(
-          ({ x, y }) => {
-            const el = document.elementFromPoint(x, y);
-            return Boolean(el?.closest('.org-island, .org-hub-station'));
-          },
-          { x: badgeBox.x + badgeBox.width / 2, y: badgeBox.y + badgeBox.height / 2 },
-        );
-        expect(coveredByActor, `${viewport.name} でドックカードが島やハブの下に隠れている`).toBe(
-          false,
-        );
-        const islands = page.locator('.org-island');
-        const islandCount = await islands.count();
-        expect(islandCount, `${viewport.name} で背後の島が無い`).toBeGreaterThan(0);
-        const groupsHidden = await page
-          .locator('.org-island-group')
-          .evaluateAll((groups) =>
-            groups.every((group) => group.getAttribute('aria-hidden') === 'true'),
-          );
-        expect(groupsHidden, `${viewport.name} でコンパクト時の島が支援技術に残る`).toBe(true);
-        for (let i = 0; i < islandCount; i += 1) {
-          await expect(islands.nth(i)).toHaveAttribute('tabindex', '-1');
-        }
-        const dockHits = page.locator('.org-island-badge-dock-hit');
-        await expect(dockHits.first()).not.toHaveAttribute('tabindex', '-1');
-        const dock = page.getByTestId('org-island-badge-dock');
-        await expect(dock, `${viewport.name} で部門見出しが見えない`).toContainText(
-          'プロダクト事業部',
-        );
-        await expect(dock).toContainText('基盤・プラットフォーム部');
-        await expect(dock).toContainText('新規事業部');
-        const hitCount = await dockHits.count();
-        expect(hitCount, `${viewport.name} でドック操作対象が無い`).toBeGreaterThan(0);
-        for (let i = 0; i < hitCount; i += 1) {
-          const hit = dockHits.nth(i);
-          const hitBox = await readBox(hit, `${viewport.name} ドック操作対象`);
-          const name = await hit.getAttribute('aria-label');
-          expect(name, `${viewport.name} のドックに出荷が無い`).toMatch(/出荷/);
-          expect(name, `${viewport.name} のドックに AI が無い`).toMatch(/AI/);
-          expect(name, `${viewport.name} のドックに人数が無い`).toMatch(/人/);
-          expect(
-            hitBox.width,
-            `${viewport.name} のドック操作対象幅が 24px 未満`,
-          ).toBeGreaterThanOrEqual(24);
-          expect(
-            hitBox.height,
-            `${viewport.name} のドック操作対象高が 24px 未満`,
-          ).toBeGreaterThanOrEqual(24);
-          expect(
-            hitBox.height,
-            `${viewport.name} のドック操作対象高がモバイル原則の 44px 未満`,
-          ).toBeGreaterThanOrEqual(44);
-        }
-      } else {
-        expect(
-          badgeBox.width,
-          `${viewport.name} のチームカード幅が共有幅を超える`,
-        ).toBeLessThanOrEqual(expectedBadgeWidth + 1);
-      }
-    }
-    for (let i = 0; i < badgeBoxes.length; i += 1) {
-      for (let j = i + 1; j < badgeBoxes.length; j += 1) {
-        expect(
-          boxesOverlap(badgeBoxes[i], badgeBoxes[j]),
-          `${viewport.name} でチームカード同士が重なっている`,
-        ).toBe(false);
-      }
-    }
-
-    const nameSize = await page
-      .locator('.org-island-badge strong')
-      .first()
-      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-    const metaSize = await page
-      .locator('.org-island-meta')
-      .first()
-      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-    expect(nameSize, `${viewport.name} のチーム名が可読下限未満`).toBeGreaterThanOrEqual(
-      island.badgeMinFontSize,
-    );
-    expect(metaSize, `${viewport.name} のチームメタが可読下限未満`).toBeGreaterThanOrEqual(
-      island.badgeMinMetaSize,
-    );
-
-    const hub = page.getByTestId('org-infra-hub');
-    await expect(hub, `${viewport.name} の共通基盤が見えない`).toBeVisible();
-    await expect(hub).toContainText(/CI\s+\d+/);
-    await expect(hub).toContainText(/Docs\s+\d+/);
-    await expect(hub).toContainText(/AI\s+\d+/);
-    const hubCi = await page.evaluate(
-      () => (window as GameWindow).game!.getState().orgScale!.infra.ci,
-    );
-    await expect(hub).toHaveAttribute('data-tone', hubCi >= ORG_HUB_CI_OK_MIN ? 'ok' : 'warn');
-    if (hubCi < ORG_HUB_CI_OK_MIN) {
-      await expect(hub).toContainText('注意');
-    }
-    const hubBox = await readBox(hub, `${viewport.name} 共通基盤`);
-    for (const badge of badges) {
-      const badgeBox = await readBox(badge, `${viewport.name} チームカード`);
-      expect(
-        boxesOverlap(hubBox, badgeBox),
-        `${viewport.name} でハブラベルとチームカードが重なっている`,
-      ).toBe(false);
-    }
-
-    if (compact) {
-      const playerHit = page.getByTestId('island-badge-product-t0');
-      await expect(playerHit, `${viewport.name} で選択中チームがドックに無い`).toHaveClass(
-        /is-player/,
-      );
-      await expect(playerHit).toHaveAttribute('aria-current', 'true');
-      await expect(playerHit).toContainText('★');
-      const otherHit = page.getByTestId('island-badge-platform-t0');
-      await expect(otherHit).not.toHaveClass(/is-player/);
-      await expect(otherHit).not.toHaveAttribute('aria-current');
-
-      await page.getByTestId('team-platform-t1').evaluate((el) => el.focus());
-      await expect(
-        page.getByTestId('island-badge-platform-t1'),
-        `${viewport.name} で島フォーカスがドックへ移らない`,
-      ).toBeFocused();
-      await expect(page.getByTestId('team-platform-t1')).not.toBeFocused();
-    }
+test('全社のチーム選択は5 viewportで読め、リサイズ後もキーボードフォーカスを保持する', async ({
+  page,
+}) => {
+  await startRun(page, 'webgl-team-navigator');
+  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
+  await expect(page.getByTestId('org-pixi-mount')).toBeVisible();
+  await page.getByTestId('team-navigator').locator('summary').click();
+  const target = page.getByTestId('team-platform-t1');
+  await target.focus();
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(target).toBeFocused();
+    await expect(target).toContainText('出荷');
+    const box = await target.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+    expect(overflow).toBe(false);
   }
-});
-
-test('コンパクト切替でチームのキーボードフォーカスを引き継ぐ', async ({ page }) => {
-  // 1440×900 では HUD が盤面高を食い、幅がコンパクト閾値以下のままになる。
-  const wide = { width: 1920, height: 1200 };
-  const narrow = { width: 320, height: 568 };
-  await page.setViewportSize(wide);
-  await startRun(page, 'org-compact-focus');
-  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
-  const board = page.getByTestId('org-board');
-  await expect(board).toBeVisible();
-  await expect(board).toHaveAttribute('data-compact', 'false');
-
-  const island = page.getByTestId('team-product-t0');
-  await island.focus();
-  await expect(island).toBeFocused();
-
-  await page.setViewportSize(narrow);
-  await expect(board).toHaveAttribute('data-compact', 'true');
-  await expect(page.getByTestId('island-badge-product-t0')).toBeFocused();
-
-  await page.setViewportSize(wide);
-  await expect(board).toHaveAttribute('data-compact', 'false');
-  await expect(page.getByTestId('team-product-t0')).toBeFocused();
-});
-
-test('コンパクト切替で後方チームのドックカードまでスクロールする', async ({ page }) => {
-  const wide = { width: 1920, height: 1200 };
-  const narrow = { width: 320, height: 568 };
-  await page.setViewportSize(wide);
-  await startRun(page, 'org-compact-dock-scroll');
-  await page.evaluate(() => (window as GameWindow).game!.zoomTo('company'));
-  const board = page.getByTestId('org-board');
-  await expect(board).toHaveAttribute('data-compact', 'false');
-
-  await page.getByTestId('team-newbiz-t0').focus();
-  await expect(page.getByTestId('team-newbiz-t0')).toBeFocused();
-
-  await page.setViewportSize(narrow);
-  await expect(board).toHaveAttribute('data-compact', 'true');
-  const dockHit = page.getByTestId('island-badge-newbiz-t0');
-  await expect(dockHit).toBeFocused();
-  const inView = await page.evaluate(() => {
-    const hit = document.querySelector('[data-testid="island-badge-newbiz-t0"]');
-    const dock = document.querySelector('[data-testid="org-island-badge-dock"]');
-    if (!(hit instanceof HTMLElement) || !(dock instanceof HTMLElement)) return false;
-    const hitBox = hit.getBoundingClientRect();
-    const dockBox = dock.getBoundingClientRect();
-    return hitBox.top >= dockBox.top - 1 && hitBox.bottom <= dockBox.bottom + 1;
-  });
-  expect(inView, '後方チームのドックカードが可視範囲外').toBe(true);
+  await target.press('Enter');
+  await expect(page.getByTestId('dept-screen')).toBeVisible();
 });
 
 type FieldKpi = {
@@ -854,7 +612,7 @@ test('編成の全社マップ閲覧では sim が進まず、現場へ戻すと
 test('スプリント中に全社マップを開くと tick が止まり、現場へ戻すと KPI が一致する', async ({
   page,
 }) => {
-  await page.goto('/?renderer=dom&seed=org-map-sprint-kpi');
+  await page.goto('/?seed=org-map-sprint-kpi');
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     g.startRun('normal', [], 'org-map-sprint-kpi');

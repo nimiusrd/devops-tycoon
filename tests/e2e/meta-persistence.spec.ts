@@ -37,7 +37,7 @@ test('IndexedDB の保存済みメタを読み、購入後も再読み込みで�
     unlockedRelics: [],
   });
 
-  await page.goto('/?renderer=dom&seed=meta-persistence-e2e');
+  await page.goto('/?seed=meta-persistence-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await expect

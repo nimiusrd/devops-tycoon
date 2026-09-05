@@ -33,7 +33,7 @@ const SEEN_META: MetaState = {
 };
 
 test('タイトルから遊び方ヘルプを開ける', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=howto-e2e');
+  await page.goto('/?seed=howto-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-help').click();
@@ -52,7 +52,7 @@ test('タイトルから遊び方ヘルプを開ける', async ({ page }) => {
 });
 
 test('遊び方ヘルプは Escape で閉じ、起点の遊び方ボタンへフォーカスが戻る', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=howto-escape');
+  await page.goto('/?seed=howto-escape');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-help').click();
@@ -66,7 +66,7 @@ test('遊び方ヘルプは Escape で閉じ、起点の遊び方ボタンへフ
 });
 
 test('遊び方ヘルプは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=howto-backdrop');
+  await page.goto('/?seed=howto-backdrop');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-help').click();
@@ -84,7 +84,7 @@ test('遊び方ヘルプは背景クリックで閉じ、パネルクリック�
 });
 
 test('遊び方ヘルプは背面を inert にし、Tab をモーダル内に閉じ込める', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=howto-focus-trap');
+  await page.goto('/?seed=howto-focus-trap');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-help').click();
@@ -133,12 +133,12 @@ test('遊び方ヘルプは背面を inert にし、Tab をモーダル内に閉
 });
 
 test('?tutorial=help でタイトル起動時に遊び方を開く', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=howto-query&tutorial=help');
+  await page.goto('/?seed=howto-query&tutorial=help');
   await expect(page.getByTestId('how-to-play')).toBeVisible();
 });
 
 test('?tutorial=1 で初回ガイドを進め、表示済みフラグが永続化する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=tutorial-e2e&tutorial=1');
+  await page.goto('/?seed=tutorial-e2e&tutorial=1');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.evaluate(() => {
@@ -172,7 +172,7 @@ test('?tutorial=1 で初回ガイドを進め、表示済みフラグが永続�
     .toBe(true);
 
   // クエリ無しの再読込ではガイドを出さない
-  await page.goto('/?renderer=dom&seed=tutorial-e2e-reload');
+  await page.goto('/?seed=tutorial-e2e-reload');
   await expect(page.getByTestId('title')).toBeVisible();
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -187,7 +187,7 @@ test('?tutorial=1 で初回ガイドを進め、表示済みフラグが永続�
 test('表示済みでも ?tutorial=force ならガイドを再表示できる', async ({ page }) => {
   await seedMeta(page, SEEN_META);
 
-  await page.goto('/?renderer=dom&seed=tutorial-force&tutorial=force');
+  await page.goto('/?seed=tutorial-force&tutorial=force');
   await expect(page.getByTestId('title')).toBeVisible();
   await expect
     .poll(async () => page.evaluate(() => (window as GameWindow).game!.getMeta().seenTutorial))

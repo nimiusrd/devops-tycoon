@@ -24,7 +24,7 @@ test.describe('start recipe share (RI-127)', () => {
       preferredCardIds: ['docs'],
     });
 
-    await page.goto('/?renderer=dom&seed=title-default');
+    await page.goto('/?seed=title-default');
     await expect(page.getByTestId('title')).toBeVisible();
     await expect(page.getByTestId('seed')).toContainText('title-default');
 
@@ -54,7 +54,7 @@ test.describe('start recipe share (RI-127)', () => {
       preferredCardIds: [],
     });
 
-    await page.goto('/?renderer=dom');
+    await page.goto('/?renderer=pixi');
     await expect(page.getByTestId('title')).toBeVisible();
 
     await page.getByTestId('start-recipe-text').fill(recipe);
@@ -69,7 +69,7 @@ test.describe('start recipe share (RI-127)', () => {
   });
 
   test('ファイルで保存すると開始レシピをダウンロードできる', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=recipe-download');
+    await page.goto('/?seed=recipe-download');
     await expect(page.getByTestId('title')).toBeVisible();
 
     const [download] = await Promise.all([
@@ -89,7 +89,7 @@ test.describe('start recipe share (RI-127)', () => {
   });
 
   test('trial chip selection updates export JSON without 書き出す', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=recipe-trial-sync');
+    await page.goto('/?seed=recipe-trial-sync');
     await expect(page.getByTestId('title')).toBeVisible();
 
     await expect.poll(async () => (await readRecipeJson(page)).trials).toEqual([]);

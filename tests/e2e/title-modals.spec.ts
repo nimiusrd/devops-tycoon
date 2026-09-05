@@ -50,7 +50,7 @@ test.describe('タイトルフッターのモーダルはビューポートに�
   test.use({ viewport: PHONE_VIEWPORT });
 
   test('末尾スクロールから遊び方が画面内に開く', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=howto-viewport');
+    await page.goto('/?seed=howto-viewport');
     await openFooterDialogFromScrolledTitle(page, {
       openTestId: 'open-help',
       dialogTestId: 'how-to-play',
@@ -68,7 +68,7 @@ test.describe('タイトルフッターのモーダルはビューポートに�
   });
 
   test('末尾スクロールからメタショップが画面内に開く', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=meta-shop-viewport');
+    await page.goto('/?seed=meta-shop-viewport');
     await openFooterDialogFromScrolledTitle(page, {
       openTestId: 'open-meta-shop',
       dialogTestId: 'meta-shop',
@@ -77,7 +77,7 @@ test.describe('タイトルフッターのモーダルはビューポートに�
   });
 
   test('末尾スクロールからカードコレクションが画面内に開く', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=card-collection-viewport');
+    await page.goto('/?seed=card-collection-viewport');
     await openFooterDialogFromScrolledTitle(page, {
       openTestId: 'open-card-collection',
       dialogTestId: 'card-collection',
@@ -86,7 +86,7 @@ test.describe('タイトルフッターのモーダルはビューポートに�
   });
 
   test('末尾スクロールから実績コレクションが画面内に開く', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=achievement-viewport');
+    await page.goto('/?seed=achievement-viewport');
     await openFooterDialogFromScrolledTitle(page, {
       openTestId: 'open-achievements',
       dialogTestId: 'achievement-collection',
@@ -96,7 +96,7 @@ test.describe('タイトルフッターのモーダルはビューポートに�
 });
 
 test('研修方針・実績・リプレイは Escape で閉じ、起点へフォーカスを戻す', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=title-modal-escape');
+  await page.goto('/?seed=title-modal-escape');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const dialogs = [

@@ -19,7 +19,7 @@ import {
 } from '../render/fireEffects';
 import { planPositionedInterventionReactions } from '../render/interventionEffects';
 import type { SprintMetrics, Task } from '../sim/types';
-import type { InterventionTrigger } from './InterventionEffects';
+import type { InterventionTrigger } from '../render/interventionEffects';
 
 export interface UseBoardEffectsInput {
   tasks: readonly Task[];

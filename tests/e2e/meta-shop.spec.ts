@@ -132,7 +132,7 @@ async function expectMetaShopLayout(
 test('メタショップ購入が次ランのドラフトプールへ反映される', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);
 
-  await page.goto('/?renderer=dom&seed=meta-shop-e2e');
+  await page.goto('/?seed=meta-shop-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const allowedDraft = [...defaultUnlockedCardIds(), 'devin'];
@@ -185,7 +185,7 @@ test('メタショップ購入が次ランのドラフトプールへ反映さ�
 test('タイトルからメタショップを開いて購入できる', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);
 
-  await page.goto('/?renderer=dom&seed=meta-shop-ui');
+  await page.goto('/?seed=meta-shop-ui');
 
   await page.getByTestId('open-meta-shop').click();
   await expect(page.getByTestId('meta-shop')).toBeVisible();
@@ -200,7 +200,7 @@ for (const viewport of META_SHOP_VIEWPORTS) {
   test(`メタショップは ${viewport.name} で商品情報を読める列数にする`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await seedMeta(page, { ...DEFAULT_META, points: 0, achievements: [] });
-    await page.goto(`/?renderer=dom&seed=meta-shop-${viewport.name}`);
+    await page.goto(`/?seed=meta-shop-${viewport.name}`);
 
     await page.getByTestId('open-meta-shop').click();
     await expect(page.getByTestId('meta-shop')).toBeVisible();
@@ -211,7 +211,7 @@ for (const viewport of META_SHOP_VIEWPORTS) {
 test('メタショップは Escape で閉じ、起点ボタンへフォーカスが戻る', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);
 
-  await page.goto('/?renderer=dom&seed=meta-shop-escape');
+  await page.goto('/?seed=meta-shop-escape');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-meta-shop').click();
@@ -229,7 +229,7 @@ test('メタショップは Escape で閉じ、起点ボタンへフォーカス
 test('メタショップは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
   await seedMeta(page, DEFAULT_META);
 
-  await page.goto('/?renderer=dom&seed=meta-shop-backdrop');
+  await page.goto('/?seed=meta-shop-backdrop');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-meta-shop').click();
@@ -253,7 +253,7 @@ test('メタショップの初回 lazy 読込後も Tab はダイアログ内か
     await route.continue();
   });
 
-  await page.goto('/?renderer=dom&seed=meta-shop-lazy-focus');
+  await page.goto('/?seed=meta-shop-lazy-focus');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-meta-shop').click();
@@ -300,7 +300,7 @@ async function expectHungTitleModalDismissesToOpener(
 ): Promise<void> {
   await seedMeta(page, DEFAULT_META);
   await hangTitleModalChunk(page, options.chunk);
-  await page.goto(`/?renderer=dom&seed=${options.seed}`);
+  await page.goto(`/?seed=${options.seed}`);
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId(options.openTestId).click();

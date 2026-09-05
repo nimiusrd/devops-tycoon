@@ -4,14 +4,13 @@
  * 状態を読んで描くだけ（第22.2）。描く内容は純TSの `planBoardScene` が決め、ここは
  * WebGL への反映だけを受け持つ。工程間フロー線・タスク粒・ステーションキャラに加え、
  * RI-142 の時刻付き plan から炎上・介入・常駐オーラを上限付きプールで描く。ラベル・
- * 吹き出し・凡例は DOM オーバーレイのまま重ね、WebGL不可時は同じ plan の DOM fallback
- * へ切り替える。
+ * 吹き出し・凡例は HTML オーバーレイとして重ねる。初期化失敗時は進行を止める。
  *
  * RI-07: 粒とキャラは Graphics 直描きではなく、variant×size / lane×mood ごとに
  * RenderTexture へ焼き込んで Sprite で使い回す（粒数×表情の組合せに強く、
  * RI-05/06/08 の土台になる）。粒 Container は `iso.ts` の `SpritePool` で再利用する。
  *
- * ⚠ 実 WebGL は CI/Node で回さない方針（architecture §4.2）。本ファイルは Node
+ * 実 WebGL はブラウザの E2E で検証する。本ファイルは Node
  *    から import できる（型検証のため）が、`init()` / `render()` はブラウザでのみ呼ぶこと。
  */
 import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
@@ -39,6 +38,8 @@ import {
   planBoardDotsForRender,
 } from '../boardPixiView';
 import { BOARD_PIXI_LAYER_ORDER, BOARD_RENDER_BUDGETS } from '../boardRenderBudget';
+import { BoardTaskMotion, shipmentParticle, TASK_MOTION } from '../boardTaskMotion';
+import { officeActorMotion, officeLight } from '../officeAtmosphere';
 import { containFitTransform } from '../deptPixiView';
 import { SpritePool, type SpritePoolSnapshot } from '../iso';
 import { TASK_COLORS, TASK_DIAMETER } from '../taskView';
@@ -57,7 +58,7 @@ export const BOARD_SPRITE_BUDGET = BOARD_RENDER_BUDGETS.dots;
 const FONT_FAMILY = 'system-ui, sans-serif';
 
 /**
- * キャラ SVG（OfficeActors）のローカル座標系と実表示サイズ。
+ * キャラクターのローカル座標系と実表示サイズ。
  * DOM は `.station` の共有トークン幅の中に width=210 height=190 viewBox=220×200 の
  * SVG を置くため、設計空間では盤面幅×stationWidthPercent・ローカル倍率 min(W/220,H/200)。
  */
@@ -69,7 +70,7 @@ const ACTOR_W = BOARD_VIEW.w * ACTOR_WIDTH_RATIO;
 const ACTOR_H = (ACTOR_W * ACTOR_DOM.h) / ACTOR_DOM.w;
 const ACTOR_SCALE = Math.min(ACTOR_W / ACTOR_LOCAL.w, ACTOR_H / ACTOR_LOCAL.h);
 
-/** レーンごとのキャラ見た目（OfficeActors の STYLE と同値）。 */
+/** レーンごとのキャラ見た目。 */
 const ACTOR_STYLE: Record<Lane, { body: string; hair: string; skin: string; emoji?: string }> = {
   backlog: {
     body: VISUAL_TOKENS.colors.actor.body.backlog,
@@ -185,7 +186,7 @@ export interface BoardPixiInput {
   draggableTaskIds?: ReadonlySet<number>;
   /** ドラッグ中の粒（金色輪郭・最前面）。 */
   dragTaskId?: number | null;
-  /** DOM fallback と共有する一時演出タイムライン。 */
+  /** 一時演出の時刻付きタイムライン。 */
   effects: readonly TimedBoardEffect[];
   /** 進行中モディファイアの常駐オーラ。 */
   auras: readonly BoardAuraPlan[];
@@ -198,6 +199,12 @@ export interface PixiBoardRendererOptions {
   onRenderMetrics?: (metrics: BoardRenderMetrics) => void;
   /** DOM オーバーレイを挟むため、基盤と一時演出を別 canvas に描く。 */
   stratum?: 'all' | 'base' | 'effects';
+}
+
+export interface BoardAtmosphereMetrics {
+  officeSprites: number;
+  shipmentSprites: number;
+  visibleShipmentSprites: number;
 }
 
 /** 1 粒ぶんの子パーツ（プール再利用用）。 */
@@ -251,6 +258,7 @@ function resetDotContainer(group: Container): void {
 
 /** アニメ適用用の粒メタデータ（render で組み直す）。 */
 interface DotEntry {
+  id: number;
   group: Container;
   baseX: number;
   baseY: number;
@@ -313,6 +321,7 @@ function resetEffectContainer(group: Container): void {
 /** アニメ適用用のキャラメタデータ。 */
 interface ActorEntry {
   lane: Lane;
+  count: number;
   mood: StationMood;
   assetId: GameAssetId;
   assetTexture: Texture | null;
@@ -321,11 +330,13 @@ interface ActorEntry {
   desk: Sprite;
   char: Sprite;
   status: Text;
+  light: Sprite;
+  shadow: Sprite;
   baseX: number;
   baseY: number;
 }
 
-/** 机（OfficeActors の Desk と同値。ローカル 220×200 座標）。 */
+/** 机（ローカル 220×200 座標）。 */
 function drawDesk(g: Graphics, lane: Lane): void {
   const dark = lane === 'coding';
   const desk = VISUAL_TOKENS.colors.actor.desk;
@@ -349,7 +360,7 @@ function drawDesk(g: Graphics, lane: Lane): void {
   }
 }
 
-/** 目（OfficeActors の Eyes と同値。胴体グループ原点 (60,4) 込みの絶対座標）。 */
+/** 目（胴体グループ原点 (60,4) 込みの絶対座標）。 */
 function drawEyes(g: Graphics, mood: StationMood): void {
   const ox = 60;
   const oy = 4;
@@ -374,7 +385,7 @@ function drawEyes(g: Graphics, mood: StationMood): void {
     return;
   }
   if (mood === 'exhausted') {
-    // 疲れ果て: 閉じ目（下がり弧）＋濃いクマ＋汗（OfficeActors と同値）。
+    // 疲れ果て: 閉じ目（下がり弧）＋濃いクマ＋汗。
     g.ellipse(ox + 42, oy + 53, 6.5, 3).fill({ color: '#b98a92', alpha: 0.6 });
     g.ellipse(ox + 58, oy + 53, 6.5, 3).fill({ color: '#b98a92', alpha: 0.6 });
     g.moveTo(ox + 37, oy + 48)
@@ -413,7 +424,7 @@ function drawEyes(g: Graphics, mood: StationMood): void {
   g.circle(ox + 58, oy + 48, 3).fill(INK);
 }
 
-/** 口（OfficeActors の Mouth と同値）。 */
+/** 口。 */
 function drawMouth(g: Graphics, mood: StationMood): void {
   const ox = 60;
   const oy = 4;
@@ -440,7 +451,7 @@ function drawMouth(g: Graphics, mood: StationMood): void {
     return;
   }
   if (mood === 'exhausted') {
-    // へろへろの波線口（OfficeActors と同値）。
+    // へろへろの波線口。
     g.moveTo(ox + 44, oy + 61)
       .quadraticCurveTo(ox + 47, oy + 58, ox + 50, oy + 61)
       .quadraticCurveTo(ox + 53, oy + 64, ox + 56, oy + 61)
@@ -452,7 +463,7 @@ function drawMouth(g: Graphics, mood: StationMood): void {
     .stroke({ color: '#9a5a4a', width: 2, cap: 'round' });
 }
 
-/** キャラ（胴体・頭・髪・表情。OfficeActors の bob 対象グループと同値）。 */
+/** キャラ（胴体・頭・髪・表情）。 */
 function drawCharacter(g: Graphics, lane: Lane, mood: StationMood): void {
   const s = ACTOR_STYLE[lane];
   const ox = 60;
@@ -533,12 +544,16 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   private app: Application | null = null;
   /** contain-fit スケールを受ける設計空間ルート。 */
   private readonly root = new Container();
+  private readonly officeLayer = new Container();
   private readonly flowsGfx = new Graphics();
   private readonly reviewHeatLayer = new Container();
   private readonly reviewHeatGfx = new Graphics();
   private readonly stationsLayer = new Container();
   private readonly reviewTrailsLayer = new Container();
   private readonly dotsLayer = new Container();
+  private readonly shipmentsLayer = new Container();
+  private readonly shipmentSprites: Sprite[] = [];
+  private readonly taskMotion = new BoardTaskMotion();
   private readonly auraLayer = new Container();
   private readonly auraGfx = new Graphics();
   private readonly effectsLayer = new Container();
@@ -600,11 +615,13 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     app.renderer.events.setTargetElement(app.canvas);
 
     this.root.sortableChildren = true;
+    this.officeLayer.zIndex = BOARD_PIXI_LAYER_ORDER.office;
     this.flowsGfx.zIndex = BOARD_PIXI_LAYER_ORDER.flows;
     this.reviewHeatLayer.zIndex = BOARD_PIXI_LAYER_ORDER.reviewHeat;
     this.stationsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.stations;
     this.reviewTrailsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.reviewTrails;
     this.dotsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.dots;
+    this.shipmentsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.shipments;
     this.auraLayer.zIndex = BOARD_PIXI_LAYER_ORDER.auras;
     this.effectsLayer.zIndex = BOARD_PIXI_LAYER_ORDER.transientEffects;
 
@@ -612,11 +629,13 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       this.reviewHeatLayer.addChild(this.reviewHeatGfx);
       this.auraLayer.addChild(this.auraGfx);
       this.root.addChild(
+        this.officeLayer,
         this.flowsGfx,
         this.reviewHeatLayer,
         this.stationsLayer,
         this.reviewTrailsLayer,
         this.dotsLayer,
+        this.shipmentsLayer,
         this.auraLayer,
       );
     }
@@ -677,6 +696,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const app = this.app;
     if (!app) return;
     this.frozen = true;
+    this.taskMotion.settle();
     this.elapsedMs = 0;
     const latest = this.effectEntries[this.effectEntries.length - 1]?.plan;
     const effectNowMs = latest
@@ -746,6 +766,17 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   /** 直近 render の入力（resize 後の再描画用）。 */
   getLastInput(): BoardPixiInput | null {
     return this.lastInput;
+  }
+
+  /** dev/E2E が必要な時だけ読み、毎フレーム DOM を更新しない。 */
+  getAtmosphereMetrics(): BoardAtmosphereMetrics {
+    return {
+      officeSprites: this.officeLayer.children.length,
+      shipmentSprites: this.shipmentSprites.length,
+      visibleShipmentSprites: this.shipmentSprites.filter(
+        (sprite) => sprite.visible && sprite.alpha > 0,
+      ).length,
+    };
   }
 
   /** 焼き込みテクスチャを取得（無ければ生成してキャッシュ）。 */
@@ -1103,6 +1134,28 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         (a, b) => STATION_Z[a.lane] - STATION_Z[b.lane] || a.x - b.x,
       );
       for (const s of ordered) {
+        // 同じ柔らかな照明テクスチャを陰と稼働灯に共用。足元のローカル装飾寸法。
+        const glow = this.bakeTexture('office-soft-light', () => {
+          const g = new Graphics();
+          for (let radius = 32; radius >= 2; radius -= 2) {
+            g.circle(0, 0, radius).fill({ color: VISUAL_TOKENS.colors.text, alpha: 0.065 });
+          }
+          return g;
+        });
+        const shadow = new Sprite();
+        shadow.texture = glow;
+        shadow.anchor.set(0.5);
+        shadow.scale.set(2.1, 0.65);
+        shadow.tint = VISUAL_TOKENS.colors.board.contactShadow;
+        shadow.alpha = 0.7;
+        shadow.eventMode = 'none';
+        const light = new Sprite();
+        light.texture = glow;
+        light.anchor.set(0.5);
+        light.scale.set(3.4, 1.45);
+        light.blendMode = 'add';
+        light.eventMode = 'none';
+        this.officeLayer.addChild(light, shadow);
         const desk = new Sprite();
         desk.anchor.set(0.5);
         const char = new Sprite();
@@ -1121,6 +1174,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         this.stationsLayer.addChild(char, desk, status);
         this.actors.push({
           lane: s.lane,
+          count: s.count,
           mood: s.mood,
           assetId: stationAssetForLane(s.lane),
           assetTexture: null,
@@ -1129,6 +1183,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
           desk,
           char,
           status,
+          light,
+          shadow,
           baseX: s.x,
           baseY: s.y,
         });
@@ -1138,6 +1194,12 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
       const s = stations.find((st) => st.lane === actor.lane);
       if (!s) continue;
       actor.mood = s.mood;
+      actor.count = s.count;
+      const lighting = officeLight(s);
+      actor.light.tint = lighting.color;
+      actor.light.alpha = lighting.alpha;
+      actor.light.position.set(s.x, s.y + ACTOR_H * 0.42);
+      actor.shadow.position.set(s.x, s.y + ACTOR_H * 0.49);
       actor.baseX = s.x;
       actor.baseY = s.y;
       actor.desk.texture = this.deskTexture(actor.lane);
@@ -1246,6 +1308,14 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     const renderPlan = planBoardDotsForRender(dots, draggableIds, dragTaskId);
     this.dotRequestedCount = renderPlan.requested;
     this.dotDroppedCount = renderPlan.dropped;
+    const pinned = new Set(draggableIds);
+    if (dragTaskId !== null) pinned.add(dragTaskId);
+    this.taskMotion.sync(
+      renderPlan.dots,
+      this.elapsedMs,
+      this.reducedMotion || this.frozen || this.loopPaused,
+      pinned,
+    );
 
     for (const dot of renderPlan.dots) {
       const group = pool.acquire();
@@ -1278,6 +1348,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
 
       this.dotsLayer.addChild(group);
       this.dotEntries.push({
+        id: dot.id,
         group,
         baseX: dot.x,
         baseY: dot.y,
@@ -1293,6 +1364,7 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
   /** CSS keyframes 相当の時間オフセットを全対象へ適用する（位相 0 で全て 0）。 */
   private applyAnimations(elapsedMs: number, effectNowMs: number): void {
     this.drawFlows(elapsedMs);
+    this.drawShipments();
 
     if (this.reviewHeat) {
       const heatTokens = VISUAL_TOKENS.dimensions.sprint.reviewEffects.heatField;
@@ -1332,10 +1404,9 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         actor.char.rotation =
           gameAssetMoodStyle(actor.mood).rotation + (-1.4 * wave * Math.PI) / 180;
       } else {
-        // CSS `.cbob`（bob 2.8s / coding は 1.2s）。
-        const period = actor.lane === 'coding' ? 1200 : 2800;
-        actor.char.position.set(actor.baseX, actor.baseY + bobOffsetY(elapsedMs, period, 3));
-        actor.char.rotation = gameAssetMoodStyle(actor.mood).rotation;
+        const gesture = officeActorMotion(actor, elapsedMs);
+        actor.char.position.set(actor.baseX + gesture.x, actor.baseY + gesture.y);
+        actor.char.rotation = gameAssetMoodStyle(actor.mood).rotation + gesture.rotation;
       }
       actor.status.position.set(
         actor.baseX + ACTOR_W * ACTOR_STATUS_OFFSET.xRatio,
@@ -1361,7 +1432,46 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
         dx += shake.x;
         dy += shake.y;
       }
-      entry.group.position.set(entry.baseX + dx, entry.baseY + dy);
+      const position = this.taskMotion.position(entry.id, this.elapsedMs);
+      entry.group.position.set(
+        (position?.x ?? entry.baseX) + dx,
+        (position?.y ?? entry.baseY) + dy,
+      );
+    }
+  }
+
+  /** 小さな光を一度だけ焼き、最大64枚の加算合成Spriteを使い回す。毎フレーム図形を再生成しない。 */
+  private drawShipments(): void {
+    this.taskMotion.prune(this.elapsedMs);
+    const bursts = this.taskMotion.bursts;
+    const count = bursts.length * TASK_MOTION.particlesPerBurst;
+    for (let i = 0; i < count; i += 1) {
+      let sprite = this.shipmentSprites[i];
+      if (!sprite) {
+        sprite = new Sprite();
+        sprite.texture = this.bakeTexture('shipment-light', () => {
+          const g = new Graphics();
+          g.circle(0, 0, 7).fill({ color: VISUAL_TOKENS.colors.text, alpha: 0.08 });
+          g.circle(0, 0, 4).fill({ color: VISUAL_TOKENS.colors.text, alpha: 0.25 });
+          g.circle(0, 0, 1.8).fill(VISUAL_TOKENS.colors.text);
+          return g;
+        });
+        sprite.anchor.set(0.5);
+        sprite.blendMode = 'add';
+        sprite.eventMode = 'none';
+        this.shipmentsLayer.addChild(sprite);
+        this.shipmentSprites.push(sprite);
+      }
+      const burst = bursts[Math.floor(i / TASK_MOTION.particlesPerBurst)];
+      const particle = shipmentParticle(burst, i % TASK_MOTION.particlesPerBurst, this.elapsedMs);
+      sprite.visible = true;
+      sprite.position.set(particle.x, particle.y);
+      sprite.alpha = particle.alpha;
+      sprite.scale.set(particle.scale);
+      sprite.tint = burst.gold ? VISUAL_TOKENS.colors.sun : VISUAL_TOKENS.colors.mint;
+    }
+    for (let i = count; i < this.shipmentSprites.length; i += 1) {
+      this.shipmentSprites[i].visible = false;
     }
   }
 
@@ -1475,6 +1585,8 @@ export class PixiBoardRenderer implements RendererAdapter<BoardPixiInput> {
     this.effectPool = null;
     this.actors = [];
     this.dotEntries = [];
+    this.taskMotion.clear();
+    this.shipmentSprites.length = 0;
     this.reviewTrailEntries = [];
     this.effectEntries = [];
     this.activeAuras = [];

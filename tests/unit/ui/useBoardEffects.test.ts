@@ -67,7 +67,7 @@ vi.mock('../../../src/audio/useAudio', () => ({
 
 import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import type { Lane, SprintMetrics, Task } from '../../../src/sim/types';
-import type { InterventionTrigger } from '../../../src/ui/InterventionEffects';
+import type { InterventionTrigger } from '../../../src/render/interventionEffects';
 import {
   useBoardEffects,
   type BoardEffectsState,

@@ -1,19 +1,17 @@
 /**
- * スプリント盤面の PixiJS 描画レイヤ（`?renderer=pixi` 時のみ Board からマウント）。
- *
- * 盤面 div（contain-fit 済み・1404:573）いっぱいに透明 canvas を重ねる。常駐物
- * （フロー線・タスク粒・ステーションキャラ・オーラ）は基盤 canvas、炎上・介入は
- * DOM のラベル・吹き出しより上の演出 canvas に分離する。DOM 版は不可視 fallback
- * として同じ時刻付き plan を進める。
- * 実 WebGL は init() 以降ブラウザ上でのみ動く（CI/Node ではマウントされない）。
+ * スプリント盤面のPixiJS描画レイヤ。
+ * フロー・人物・タスク・オーラのcanvasと、HTMLラベルより上の演出canvasを分離する。
+ * 初期化失敗は再試行の案内へ渡す。実WebGLはブラウザのE2Eで検証する。
  */
+import { beginWebglLoading } from '../render/webglStatus';
 import { useReducedMotion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import {
   emptyBoardRenderMetrics,
   PixiBoardRenderer,
   type BoardPixiInput,
   type BoardRenderMetrics,
+  type BoardAtmosphereMetrics,
 } from '../render/adapters/pixiBoardRenderer';
 
 /** Playwright Pixi 視覚回帰向け（dev のみ）。 */
@@ -22,6 +20,7 @@ declare global {
     __boardPixiTest?: {
       freezeForScreenshot(): void;
       getMetrics(): { base: BoardRenderMetrics; effects: BoardRenderMetrics };
+      getAtmosphereMetrics(): BoardAtmosphereMetrics;
     };
     /** Playwright が WebGL 初期化失敗を決定論的に注入するためのフック。 */
     __forceBoardPixiInitFailure?: { delayMs?: number; waitForEffects?: boolean };
@@ -31,7 +30,7 @@ declare global {
 }
 
 export type BoardPixiLayerProps = Omit<BoardPixiInput, 'reducedMotion'> & {
-  /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
+  /** WebGL 初期化失敗時に呼ぶ（再試行の案内を表示する）。 */
   onWebglError?: () => void;
   /** WebGL 初期化と初回描画が完了したあとに呼ぶ。 */
   onReady?: () => void;
@@ -84,7 +83,7 @@ export function BoardPixiLayer({
     inputRef.current = { scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion };
   }, [scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const mount = mountRef.current;
     const effectsMount = effectsMountRef.current;
     if (!mount || !effectsMount) return;
@@ -145,6 +144,7 @@ export function BoardPixiLayer({
     };
 
     let cancelled = false;
+    const finishLoading = beginWebglLoading();
     const waitForEffects = (): Promise<void> =>
       new Promise<void>((resolve) => {
         const poll = () => {
@@ -186,6 +186,7 @@ export function BoardPixiLayer({
         baseRenderer.setAnimationsPaused(animationsPausedRef.current);
         effectsRenderer.setAnimationsPaused(animationsPausedRef.current);
         onReadyRef.current?.();
+        finishLoading();
         if (import.meta.env.DEV) {
           window.__boardPixiTest = {
             freezeForScreenshot: () => {
@@ -193,13 +194,15 @@ export function BoardPixiLayer({
               effectsRenderer.freezeForScreenshot();
             },
             getMetrics: () => ({ base: baseMetrics, effects: effectMetrics }),
+            getAtmosphereMetrics: () => baseRenderer.getAtmosphereMetrics(),
           };
         }
       })
       .catch((err: unknown) => {
-        // WebGL 不可の環境では DOM/SVG レンダラへフォールバックする。
-        console.warn('PixiBoardRenderer init failed; falling back to DOM renderer', err);
+        // WebGL失敗は共有の案内へ通知し、自動進行を止める。
+        console.warn('PixiBoardRenderer init failed; WebGL is unavailable', err);
         if (!cancelled) onWebglErrorRef.current?.();
+        finishLoading();
       });
 
     const ro = new ResizeObserver(() => syncLayout());
@@ -207,6 +210,7 @@ export function BoardPixiLayer({
 
     return () => {
       cancelled = true;
+      finishLoading();
       delete window.__boardPixiTest;
       ro.disconnect();
       baseRenderer.dispose();

@@ -52,7 +52,7 @@ export interface PublicSprintOptions {
   seed: string;
   difficulty?: DifficultyId;
   trials?: string[];
-  renderer?: 'dom' | 'pixi';
+  renderer?: 'pixi';
 }
 
 export interface PublicRunTarget {
@@ -76,7 +76,7 @@ export const test = base.extend({
 
 /** タイトルの hydration 完了後に、公開 GameHandle で指定ランを開始する。 */
 async function openPublicRun(page: Page, options: PublicSprintOptions): Promise<void> {
-  const { seed, difficulty = 'easy', trials = [], renderer = 'dom' } = options;
+  const { seed, difficulty = 'easy', trials = [], renderer = 'pixi' } = options;
   await page.goto(`/?renderer=${renderer}&seed=${seed}`);
   await expect(page.getByTestId('title')).toBeVisible();
   await page.evaluate(
@@ -101,7 +101,8 @@ export async function beginPublicSprint(page: Page, options: PublicSprintOptions
     // 画面の lazy 読込や fallback の所有権に左右されず、開始フレームを固定する。
     game.pause();
   });
-  await expect(page.getByTestId('board')).toBeVisible();
+  await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
+  await expect(page.getByTestId('webgl-status')).toHaveCount(0);
 }
 
 /**

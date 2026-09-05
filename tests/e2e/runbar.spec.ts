@@ -10,7 +10,7 @@ import {
 } from './fixtures';
 
 async function openSetupRun(page: Page): Promise<void> {
-  await page.goto('/?renderer=dom&seed=devops-tycoon');
+  await page.goto('/?seed=devops-tycoon');
   await expect(page.getByTestId('title')).toBeVisible();
   await page.evaluate(() => {
     const game = (window as PublicGameWindow).game;

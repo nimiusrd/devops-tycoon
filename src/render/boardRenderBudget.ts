@@ -13,15 +13,18 @@ export const BOARD_RENDER_BUDGETS = {
   reviewTrails: VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget,
   transientEffects: VISUAL_TOKENS.dimensions.sprint.boardEffects.budget,
   auras: 4,
+  shipmentBursts: 8,
 } as const;
 
 /** Pixi の単一 canvas 内での奥→手前の描画順。 */
 export const BOARD_PIXI_LAYER_ORDER = {
+  office: 5,
   flows: 10,
   reviewHeat: 20,
   stations: 30,
   reviewTrails: 40,
   dots: 50,
+  shipments: 55,
   auras: 60,
   transientEffects: 70,
 } as const;

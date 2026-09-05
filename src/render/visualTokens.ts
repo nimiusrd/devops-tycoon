@@ -150,6 +150,7 @@ export const VISUAL_TOKENS = {
       },
     },
     board: {
+      contactShadow: '#100d20',
       backgroundTop: '#2b1f52',
       backgroundMiddle: '#241a47',
       backgroundBottom: '#1c1438',
@@ -629,6 +630,7 @@ export function visualTokenCssVariables(): Readonly<Record<string, string>> {
     '--visual-color-board-background-top': colors.board.backgroundTop,
     '--visual-color-board-background-middle': colors.board.backgroundMiddle,
     '--visual-color-board-background-bottom': colors.board.backgroundBottom,
+    '--visual-color-board-contact-shadow': colors.board.contactShadow,
     '--visual-color-board-heat-overlay': colors.board.heatOverlay,
     '--visual-color-effect-fire-core': colors.boardEffects.fireCore,
     '--visual-color-effect-fire-mid': colors.boardEffects.fireMid,

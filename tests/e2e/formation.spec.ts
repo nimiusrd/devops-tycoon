@@ -12,7 +12,7 @@ type GameWindow = Window & {
 test('編成（Setup）画面でメンバーの配置と AI 配布を切り替えてスプリントを開始できる（第12章）', async ({
   page,
 }) => {
-  await page.goto('/?renderer=dom&seed=formation-smoke');
+  await page.goto('/?seed=formation-smoke');
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-run').click();
   // ラン開始直後は編成（Setup）。
@@ -51,7 +51,7 @@ test('編成（Setup）画面でメンバーの配置と AI 配布を切り替�
 });
 
 test('ランバーにメンバーの表情が表示される（表情演出 / 第12.2）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=faces-smoke');
+  await page.goto('/?seed=faces-smoke');
   await page.getByTestId('difficulty-easy').click();
   await page.getByTestId('start-run').click();
   await expect(page.getByTestId('roster-faces')).toBeVisible();

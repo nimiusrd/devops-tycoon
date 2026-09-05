@@ -35,7 +35,7 @@ test('タイトルからカードコレクションを開き、一覧・詳細�
 }) => {
   await seedMeta(page, BASE_META);
 
-  await page.goto('/?renderer=dom&seed=card-collection-e2e');
+  await page.goto('/?seed=card-collection-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-card-collection').click();
@@ -93,7 +93,7 @@ test('カードコレクションはキーボード操作と狭い画面に対�
   await seedMeta(page, BASE_META);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?renderer=dom&seed=card-collection-keyboard');
+  await page.goto('/?seed=card-collection-keyboard');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-card-collection').click();
@@ -134,7 +134,7 @@ test('カードコレクションはキーボード操作と狭い画面に対�
 test('カードコレクションは Escape で閉じ、起点ボタンへフォーカスが戻る', async ({ page }) => {
   await seedMeta(page, BASE_META);
 
-  await page.goto('/?renderer=dom&seed=card-collection-escape');
+  await page.goto('/?seed=card-collection-escape');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-card-collection').click();
@@ -152,7 +152,7 @@ test('カードコレクションは Escape で閉じ、起点ボタンへフォ
 test('カードコレクションは背景クリックで閉じ、パネルクリックでは閉じない', async ({ page }) => {
   await seedMeta(page, BASE_META);
 
-  await page.goto('/?renderer=dom&seed=card-collection-backdrop');
+  await page.goto('/?seed=card-collection-backdrop');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-card-collection').click();
@@ -176,7 +176,7 @@ test('カードコレクション読込中の Escape は開く操作を取り消
     await route.continue();
   });
 
-  await page.goto('/?renderer=dom&seed=card-collection-lazy-escape');
+  await page.goto('/?seed=card-collection-lazy-escape');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.getByTestId('open-card-collection').click();

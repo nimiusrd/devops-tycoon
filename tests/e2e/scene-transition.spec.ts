@@ -27,7 +27,7 @@ test.describe('シーン遷移のスクロールと下地', () => {
   test.use({ viewport: PHONE });
 
   test('html のページ下地は盤面トークンの暗い色であり白ではない', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=scene-scroll');
+    await page.goto('/?seed=scene-scroll');
     await expect(page.getByTestId('title')).toBeVisible();
 
     // #1c1438 = board.backgroundBottom
@@ -37,7 +37,7 @@ test.describe('シーン遷移のスクロールと下地', () => {
   test('デイリー開始後の編成はビューポート上端から開き、スクロールを引き継がない', async ({
     page,
   }) => {
-    await page.goto('/?renderer=dom&seed=scene-scroll-daily');
+    await page.goto('/?seed=scene-scroll-daily');
     await expect(page.getByTestId('title')).toBeVisible();
     await expect(page.getByTestId('start-daily-run')).toBeVisible();
 
@@ -63,7 +63,7 @@ test.describe('シーン遷移のスクロールと下地', () => {
   test('スプリント開始後の盤面はビューポート上端から開き、スクロールを引き継がない', async ({
     page,
   }) => {
-    await page.goto('/?renderer=dom&seed=scene-scroll-sprint');
+    await page.goto('/?seed=scene-scroll-sprint');
     await expect(page.getByTestId('title')).toBeVisible();
     await page.getByTestId('difficulty-easy').click();
     await page.getByTestId('start-run').evaluate((element) => {

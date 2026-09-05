@@ -35,7 +35,7 @@ for (const viewport of VIEWPORTS) {
     }, testInfo) => {
       await page.setViewportSize(viewport);
       await page.emulateMedia({ reducedMotion });
-      await beginPublicSprint(page, { seed: 'point-pops-lifetime', renderer: 'dom' });
+      await beginPublicSprint(page, { seed: 'point-pops-lifetime', renderer: 'pixi' });
 
       const pops = page.locator('.point-pop');
       await expect(pops).toHaveCount(0);

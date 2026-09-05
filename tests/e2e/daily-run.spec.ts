@@ -42,7 +42,7 @@ async function storedRunSeed(page: Page): Promise<string | null> {
 }
 
 async function openTitleWithInterruptedRun(page: Page, seed: string): Promise<void> {
-  await page.goto(`/?renderer=dom&seed=${seed}`);
+  await page.goto(`/?seed=${seed}`);
   await expect(page.getByTestId('title')).toBeVisible();
   await page.evaluate((runSeed) => {
     const game = (window as DailyGameWindow).game;
@@ -56,7 +56,7 @@ async function openTitleWithInterruptedRun(page: Page, seed: string): Promise<vo
 }
 
 test('タイトルからデイリーランを開始できる', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=daily-e2e');
+  await page.goto('/?seed=daily-e2e');
 
   await expect(page.getByTestId('daily-run-section')).toBeVisible();
   await page.getByTestId('start-daily-run').click();
@@ -93,7 +93,7 @@ test('タイトルからデイリーランを開始できる', async ({ page }) 
 });
 
 test('Daily無介入 Sprint 1 は評価 B でも危機の読みと内訳が見える', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=daily-2026-08-27');
+  await page.goto('/?seed=daily-2026-08-27');
 
   await page.evaluate(() => {
     const g = window.game!;
@@ -289,7 +289,7 @@ test('再開できないセーブでは再開を案内せず破棄と戻るだ�
 });
 
 test('デイリー後の通常ランは起動 seed を使い daily seed を引き継がない', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=pending-seed-e2e');
+  await page.goto('/?seed=pending-seed-e2e');
   await expect(page.getByTestId('seed')).toContainText('pending-seed-e2e');
 
   await page.getByTestId('start-daily-run').click();

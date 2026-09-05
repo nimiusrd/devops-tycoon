@@ -250,3 +250,11 @@ export function deriveActiveBoardAuras(
     })
     .slice(0, BOARD_RENDER_BUDGETS.auras);
 }
+
+export interface InterventionTrigger {
+  effect: import('../sim/types').InterventionEffect;
+  prevTasks: readonly import('../sim/types').Task[];
+  nextTasks: readonly import('../sim/types').Task[];
+  currentTick: number;
+  key: number;
+}

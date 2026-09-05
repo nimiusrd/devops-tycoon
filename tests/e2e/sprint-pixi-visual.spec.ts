@@ -19,6 +19,7 @@ import { assignableTasks } from '../../src/sim/assignTask';
 import type { SprintState } from '../../src/sim/types';
 import type {
   BoardRenderMetrics,
+  BoardAtmosphereMetrics,
   BoardRenderResourceMetrics,
 } from '../../src/render/adapters/pixiBoardRenderer';
 
@@ -27,6 +28,7 @@ const PIXI_SEED = 'sprint-pixi-e2e';
 type BoardPixiTestHook = {
   freezeForScreenshot(): void;
   getMetrics(): { base: BoardRenderMetrics; effects: BoardRenderMetrics };
+  getAtmosphereMetrics(): BoardAtmosphereMetrics;
 };
 
 type PixiTestWindow = PublicGameWindow & {
@@ -55,71 +57,8 @@ function expectResourceWithinBudget(resource: BoardRenderResourceMetrics): void 
   }
 }
 
-type Ri143Scenario = 'normal' | 'reviewHell' | 'fire' | 'intervention' | 'drag';
-
-async function captureRi143SemanticSnapshot(
-  page: import('@playwright/test').Page,
-  renderer: 'dom' | 'pixi',
-  scenario: Ri143Scenario,
-) {
-  const seed = `ri143-${scenario}`;
-  await beginPublicSprint(page, {
-    seed,
-    renderer,
-    ...(scenario === 'reviewHell' || scenario === 'fire' ? { difficulty: 'hard' as const } : {}),
-  });
-  const board = page.getByTestId('board');
-  if (renderer === 'pixi') {
-    await expect(board).toHaveAttribute('data-effect-renderer', 'pixi', { timeout: 15_000 });
-  }
-
-  switch (scenario) {
-    case 'reviewHell':
-      await advanceCurrentSprintToReviewQueue(page, 12);
-      await expect(board).toHaveAttribute('data-review-hell', 'true');
-      break;
-    case 'fire':
-      await advanceCurrentSprintToBurning(page);
-      await expect(board).toHaveAttribute('data-effect-kinds', /fire:(ignite|spread)/);
-      break;
-    case 'intervention':
-      await page.getByTestId('action-overtime').click();
-      await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:boardAura');
-      break;
-    case 'drag':
-      await page.getByTestId('action-assignTask').click();
-      await expect(board).toHaveAttribute('data-armed', 'assignTask');
-      break;
-    case 'normal':
-      break;
-  }
-
-  return board.evaluate((element) => {
-    const lanes = ['backlog', 'coding', 'review', 'rework', 'done'] as const;
-    const effectSequence = Number(element.getAttribute('data-effect-sequence') ?? -1);
-    return {
-      counts: Object.fromEntries(
-        lanes.map((lane) => [
-          lane,
-          element.querySelector(`[data-testid="count-${lane}"]`)?.textContent ?? '',
-        ]),
-      ),
-      reviewHeat: element.getAttribute('data-review-heat'),
-      reviewHell: element.getAttribute('data-review-hell'),
-      effectOccurred: effectSequence >= 0,
-      effectSequence,
-      effectSfxCount: element.getAttribute('data-effect-sfx-count'),
-      armed: element.getAttribute('data-armed'),
-      fireCount: document.querySelector('[data-testid="fire-count"]')?.textContent ?? '',
-      auraKinds: Array.from(element.querySelectorAll('[data-testid^="board-aura-"]')).map((aura) =>
-        aura.getAttribute('data-testid'),
-      ),
-    };
-  });
-}
-
-/** Pixi 視覚回帰は opt-in のみ（CI 既定 job では WebGL を回さない）。 */
-const pixiE2e = !!process.env.PIXI_E2E;
+/** 通常E2Eでも実行。GPUのない診断環境では明示的に除外できる。 */
+const pixiE2e = process.env.PIXI_E2E !== '0';
 
 /**
  * 固定 seed でスプリント盤面（Pixi）を開き、決定論の固定ステップで進める。
@@ -226,10 +165,42 @@ async function exposeResultCardForScreenshot(page: import('@playwright/test').Pa
 }
 
 test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
-  test.skip(!pixiE2e, 'PIXI_E2E=1 のときだけ実行（既定 CI では WebGL を回さない）');
+  test.skip(!pixiE2e, 'PIXI_E2E=0 による明示的な描画テスト除外');
+
+  test('稼働灯と出荷光粒をWebGLで描き、reduced motionへの切替で光粒を止める @pixi', async ({
+    page,
+  }, testInfo) => {
+    await openPixiSprintBoard(page, 'office-shipment', 0);
+    await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
+    const metrics = () =>
+      page.evaluate(() => (window as PixiTestWindow).__boardPixiTest!.getAtmosphereMetrics());
+    await expect.poll(async () => (await metrics()).officeSprites).toBe(10);
+    // 公開シミュレーションを1刻みずつ進め、描画側に前後の工程を受け取らせる。
+    for (let i = 0; i < 100 && (await metrics()).shipmentSprites === 0; i += 1) {
+      await page.evaluate(() => (window as PixiTestWindow).game!.step(100));
+      await page.waitForTimeout(25);
+    }
+    await expect
+      .poll(async () => (await metrics()).visibleShipmentSprites, {
+        intervals: [20],
+        timeout: 3000,
+      })
+      .toBeGreaterThan(0);
+    expect((await metrics()).shipmentSprites).toBeLessThanOrEqual(64);
+    await testInfo.attach('出荷時のオフィス', {
+      body: await page
+        .getByTestId('board')
+        .screenshot({ path: testInfo.outputPath('office-shipment.png') }),
+      contentType: 'image/png',
+    });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(async () => (await metrics()).visibleShipmentSprites).toBe(0);
+    expect((await metrics()).officeSprites).toBe(10);
+    await expect(page.getByTestId('count-done')).not.toHaveText('0');
+  });
 
   test('renderer 未指定の既定 URL で Pixi 盤面が起動する @pixi', async ({ page }) => {
-    // 既定レンダラは Pixi（`?renderer=dom` が opt-out。selectRenderer）。
+    // 動的盤面はURLの指定なしでもPixiで起動する。
     await page.goto(`/?seed=${PIXI_SEED}`);
     await page.evaluate((s) => {
       const g = (window as PixiTestWindow).game!;
@@ -298,11 +269,16 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
   });
 
   test('介入リアクションと常駐オーラをPixi合成で固定する @pixi（RI-142）', async ({ page }) => {
+    await page.clock.install();
     await page.setViewportSize({ width: 1440, height: 900 });
     await beginPublicSprint(page, { seed: 'ri142-pixi-aura', renderer: 'pixi' });
     await stabilizeForScreenshot(page);
 
+    // GPU待ちの実時間で短命な演出が失効しないよう、発火前から時計を固定する。
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
+
     await page.getByTestId('action-overtime').click();
+    await page.clock.runFor(120);
     const board = page.getByTestId('board');
     const mount = page.getByTestId('board-pixi-mount');
     await expect(board).toHaveAttribute('data-effect-renderer', 'pixi');
@@ -313,7 +289,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     );
     await expect(mount).toHaveAttribute('data-board-effects', '1');
     await expect(mount).toHaveAttribute('data-board-auras', '1');
-    await expect(page.getByTestId('intervention-effect-aura-overtime')).not.toBeVisible();
+    await expect(page.locator('.intervention-effects')).toHaveCount(0);
     await freezePixiForScreenshot(page);
 
     await expect(board).toHaveScreenshot('sprint-pixi-intervention-aura.png', {
@@ -364,7 +340,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     const mount = page.getByTestId('board-pixi-mount');
     await expect(board).toHaveAttribute('data-effect-kinds', /intervention:reviewSweep/);
     await expect(mount).toHaveAttribute('data-board-effects', /^[1-9]\d*$/);
-    await expect(page.locator('.intervention-effects')).toHaveClass(/dom-fallback-hidden/);
+    await expect(page.locator('.intervention-effects')).toHaveCount(0);
 
     await beginPublicSprint(page, {
       seed: 'ri142-fire-effects',
@@ -504,17 +480,6 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     expect(finalMetrics.base.resources.dots.pool?.reuseCount).toBeGreaterThan(0);
   });
 
-  test('通常・渋滞・炎上・介入・ドラッグの意味をDOM/Pixiで一致させる @pixi（RI-143）', async ({
-    page,
-  }) => {
-    test.setTimeout(120_000);
-    for (const scenario of ['normal', 'reviewHell', 'fire', 'intervention', 'drag'] as const) {
-      const dom = await captureRi143SemanticSnapshot(page, 'dom', scenario);
-      const pixi = await captureRi143SemanticSnapshot(page, 'pixi', scenario);
-      expect(pixi, `${scenario} の DOM/Pixi semantic snapshot`).toEqual(dom);
-    }
-  });
-
   test('390x844 HUD展開後の結果オーバーレイPixi合成を固定する @pixi', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await beginPublicSprint(page, { seed: 'ri94-result-0', renderer: 'pixi' });
@@ -599,7 +564,7 @@ test.describe('Pixi スプリント盤面視覚回帰 @pixi', () => {
     });
 
     // ラベル・吹き出し等の DOM オーバーレイに覆われた粒は掴めない仕様
-    // （DOM モードと同じ）なので、覆われていない粒を選ぶ。
+    // ため、覆われていない粒を選ぶ。
     let from: { x: number; y: number } | null = null;
     for (const dot of candidates) {
       const pt = toPage(dot.x, dot.y);

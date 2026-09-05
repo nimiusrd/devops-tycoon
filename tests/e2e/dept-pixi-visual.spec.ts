@@ -20,8 +20,8 @@ type GameWindow = Window & {
   };
 };
 
-/** Pixi 視覚回帰は opt-in のみ（CI 既定 job では WebGL を回さない）。 */
-const pixiE2e = !!process.env.PIXI_E2E;
+/** 通常E2Eでも実行。GPUのない診断環境では明示的に除外できる。 */
+const pixiE2e = process.env.PIXI_E2E !== '0';
 
 /** 固定 seed で部署ビュー（Pixi）へ遷移する。 */
 async function openPixiDeptView(
@@ -75,7 +75,7 @@ async function freezePixiForScreenshot(page: import('@playwright/test').Page) {
 }
 
 test.describe('Pixi 部署ビュー視覚回帰 @pixi', () => {
-  test.skip(!pixiE2e, 'PIXI_E2E=1 のときだけ実行（既定 CI では WebGL を回さない）');
+  test.skip(!pixiE2e, 'PIXI_E2E=0 による明示的な描画テスト除外');
 
   test('固定 seed で部署ビュー canvas が安定する @pixi', async ({ page }) => {
     await openPixiDeptView(page, PIXI_SEED, DEPT_ID);

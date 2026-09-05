@@ -285,6 +285,54 @@ afterEach(() => {
 });
 
 describe('Pixi スプリント盤面レンダラー', () => {
+  it('出荷光粒は到着後に描き、停止中は位置を保持し、再利用後も上限とreduced motionを守る', async () => {
+    const { renderer, app } = await mounted({ stratum: 'base' });
+    const review = planBoardScene([task({ lane: 'review' })]);
+    const done = planBoardScene([task({ lane: 'done' })]);
+    renderer.render(input({ scene: review }));
+    renderer.render(input({ scene: done }));
+    const shipments = layer(app, 'shipments');
+    expect(shipments.children).toHaveLength(8);
+    expect(shipments.children.every((s) => s.alpha === 0)).toBe(true);
+    app.advance(260);
+    const positions = shipments.children.map((s) => ({ ...s.position }));
+    expect(shipments.children.every((s) => s.alpha > 0)).toBe(true);
+    renderer.setAnimationsPaused(true);
+    app.advance(1000);
+    expect(shipments.children.map((s) => ({ ...s.position }))).toEqual(positions);
+    renderer.setAnimationsPaused(false);
+    app.advance(600);
+    expect(shipments.children.every((s) => !s.visible)).toBe(true);
+    const sprites = [...shipments.children];
+    renderer.render(input({ scene: review }));
+    renderer.render(input({ scene: done }));
+    expect(shipments.children).toEqual(sprites);
+    renderer.render(input({ scene: done, reducedMotion: true }));
+    expect(shipments.children.every((s) => !s.visible)).toBe(true);
+    expect(layer(app, 'dots').children[0].position).toMatchObject({
+      x: done.dots[0].x,
+      y: done.dots[0].y,
+    });
+  });
+
+  it('足元照明は同じテクスチャ10枚を保持し、疲弊と混乱が静止状態でも見える', async () => {
+    const { renderer, app } = await mounted({ stratum: 'base' });
+    const scene = planBoardScene([]);
+    renderer.render(input({ scene }));
+    const office = layer(app, 'office');
+    const sprites = [...office.children];
+    expect(sprites).toHaveLength(10);
+    renderer.render(
+      input({
+        scene: { ...scene, stations: scene.stations.map((s) => ({ ...s, mood: 'panic' })) },
+        reducedMotion: true,
+      }),
+    );
+    expect(office.children).toEqual(sprites);
+    expect(sprite(office).tint).toBe(VISUAL_TOKENS.colors.health.reviewHell);
+    expect(sprite(office, 1).texture).toBe(sprite(office).texture);
+  });
+
   it('初期メトリクスは全資源が未使用で、呼び出しごとに独立している', () => {
     const first = emptyBoardRenderMetrics();
     expect(first).toMatchObject({
@@ -329,9 +377,22 @@ describe('Pixi スプリント盤面レンダラー', () => {
   it.each([
     [
       'all',
-      ['flows', 'reviewHeat', 'stations', 'reviewTrails', 'dots', 'auras', 'transientEffects'],
+      [
+        'office',
+        'flows',
+        'reviewHeat',
+        'stations',
+        'reviewTrails',
+        'dots',
+        'shipments',
+        'auras',
+        'transientEffects',
+      ],
     ],
-    ['base', ['flows', 'reviewHeat', 'stations', 'reviewTrails', 'dots', 'auras']],
+    [
+      'base',
+      ['office', 'flows', 'reviewHeat', 'stations', 'reviewTrails', 'dots', 'shipments', 'auras'],
+    ],
     ['effects', ['transientEffects']],
   ] as const)(
     '%s canvas の担当レイヤーだけを正しい重なり順で初期化する',
@@ -557,8 +618,9 @@ describe('Pixi スプリント盤面レンダラー', () => {
         expect(status.text).toBe(markers[mood]);
         expect(status.visible).toBe(mood !== 'neutral');
       }
-      expect(app.renderer.generateTexture).toHaveBeenCalledTimes(10);
-      for (const [options] of app.renderer.generateTexture.mock.calls) {
+      expect(app.renderer.generateTexture).toHaveBeenCalledTimes(11);
+      // 先頭の足元照明を除き、人物・机は同じフレームを共有する。
+      for (const [options] of app.renderer.generateTexture.mock.calls.slice(1)) {
         expect(options.resolution).toBe(2);
         expect(options.frame).toMatchObject({
           width: VISUAL_TOKENS.dimensions.sprint.actor.local.w,
@@ -568,7 +630,7 @@ describe('Pixi スプリント盤面レンダラー', () => {
         expect(options.target.destroy).toHaveBeenCalledExactlyOnceWith({ children: true });
       }
       renderer.render(input({ scene }));
-      expect(app.renderer.generateTexture).toHaveBeenCalledTimes(10);
+      expect(app.renderer.generateTexture).toHaveBeenCalledTimes(11);
       expect(pixi.load).toHaveBeenCalledTimes(5);
       expect(stations.children).toHaveLength(15);
     },

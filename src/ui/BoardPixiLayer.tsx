@@ -5,7 +5,7 @@
  */
 import { beginWebglLoading } from '../render/webglStatus';
 import { useReducedMotion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import {
   emptyBoardRenderMetrics,
   PixiBoardRenderer,
@@ -83,7 +83,7 @@ export function BoardPixiLayer({
     inputRef.current = { scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion };
   }, [scene, draggableTaskIds, dragTaskId, effects, auras, reducedMotion]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const mount = mountRef.current;
     const effectsMount = effectsMountRef.current;
     if (!mount || !effectsMount) return;

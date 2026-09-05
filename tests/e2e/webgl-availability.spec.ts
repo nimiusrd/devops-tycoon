@@ -54,8 +54,16 @@ test('GPU初期化に失敗すると進行を止め、キーボードで再試�
   await expect(page.getByTestId('webgl-retry')).toBeFocused();
   await page.evaluate(() => {
     delete (window as GameWindow).__forceBoardPixiInitFailure;
+    (window as GameWindow).__delayBoardPixiInit = { delayMs: 1500 };
   });
+  await dialog.evaluate((element) => element.setAttribute('data-retry-continuity', 'true'));
   await page.keyboard.press('Enter');
+  const retrying = page.getByRole('dialog', { name: 'オフィスを準備しています' });
+  await expect(retrying).toBeVisible();
+  await expect(retrying).toHaveAttribute('data-retry-continuity', 'true');
+  await expect(retrying).toBeFocused();
+  await page.waitForTimeout(400);
+  expect(await tick(page)).toBe(before);
   await expect(page.getByTestId('webgl-status')).toHaveCount(0);
   await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
   await expect.poll(() => tick(page)).toBeGreaterThan(before ?? 0);

@@ -128,6 +128,10 @@ async function advanceToResult(page: import('@playwright/test').Page): Promise<v
     let guard = 0;
     while (game.isSprintRunning() && guard++ < 20_000) game.step(100);
   });
+  // 開始時の保存に一致しただけで加工すると、遅れて届く結果保存に上書きされる。
+  await expect
+    .poll(() => storedRunSummary(page))
+    .toMatchObject({ seed: 'ri58-e2e', phase: 'result', sprintsPlayed: 1 });
 }
 
 test('ラン途中セーブをリロード後に続きから復元できる', async ({ page }) => {

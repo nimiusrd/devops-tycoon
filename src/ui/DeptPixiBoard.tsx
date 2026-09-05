@@ -42,7 +42,7 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
     deptRef.current = dept;
   }, [dept]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
 

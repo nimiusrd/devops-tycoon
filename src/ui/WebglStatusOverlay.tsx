@@ -34,7 +34,11 @@ function StatusDialog({ failed }: { failed: boolean }) {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={retryWebgl}
+            onClick={() => {
+              // 再試行ボタンが消えても、準備中ダイアログ内にフォーカスを保つ。
+              ref.current?.focus({ preventScroll: true });
+              retryWebgl();
+            }}
             data-testid="webgl-retry"
           >
             再試行

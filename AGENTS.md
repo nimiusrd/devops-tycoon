@@ -27,6 +27,14 @@
 - E2E のホスト bind やポートが競合する場合は、`devcontainer exec --workspace-folder . --remote-env PLAYWRIGHT_HOST=127.0.0.1 --remote-env PLAYWRIGHT_PORT=<空きポート> npm run test:e2e -- --workers=1` で上書きする。
 - 画面の見た目を一括確認するには `devcontainer exec --workspace-folder . npm run gallery`（seed 固定で主要画面を撮影し `gallery/index.html` に一覧を生成。デザイン確認用でコミット対象外）。
 
+## ユニットテスト・カバレッジの再実行手順
+
+- リポジトリルートで実行する。対象テストは `devcontainer exec --workspace-folder . npm test -- <テストファイルのパス> --maxWorkers=1`、全体テストは `devcontainer exec --workspace-folder . npm test -- --maxWorkers=2`、全体テストとカバレッジの前後測定は `devcontainer exec --workspace-folder . npm run test:coverage -- --maxWorkers=2` を使う。
+- 測定対象・除外設定は `vitest.config.ts` を正本にする。V8 で `src/**/*.{ts,tsx}` を測定し、型定義とテストを除外する。変更前後は同じ設定・コマンドで測定し、実行コマンド・終了コード・レポートをそれぞれ保存する。全体測定は担当を一人に固定し、個別テストとの同時実行も調整する。
+- レポートは `coverage/coverage-summary.json`（全体・ファイル別の集計）、`coverage/coverage-final.json`（未カバー箇所の詳細）、`coverage/index.html`（閲覧用）に生成される。Vitest の既定の clean により出力先は測定時に清掃されるため、前回結果は次の測定前に別の場所へ退避する。今回の実行で生成されたことを確認し、未生成時に古いレポートを代用しない。
+- `reportOnFailure: true` のため、レポートが生成されてもテスト成功とは限らない。終了コードとテスト結果を先に確認し、カバレッジは別に判定する。集計 JSON の `total` と対象ファイルについて、statements・branches・functions・lines の covered / total と率を前後比較する。閾値を判定する場合は表示用の丸め値ではなく covered / total を使う。
+- ファイルはレポート内の絶対パスからプロジェクトルートを取り除いた `src/...` の相対パスで照合する。対象キーの欠落や JSON の読取失敗を 0% と扱わない。対象が存在して total > 0・covered = 0 なら計測済みの 0%、total = 0 ならその指標は該当なしとし、カバレッジ達成とは扱わない。
+
 ## Cursor Cloud specific instructions
 
 - `.nvmrc` により Node 24 を選択する。実行前に `node --version` が v24 以上であることを確認し、異なる場合は `nvm use 24` または `bash -l` 経由で実行する。

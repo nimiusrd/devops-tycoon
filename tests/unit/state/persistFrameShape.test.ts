@@ -232,6 +232,88 @@ describe('isPersistFrameShape', () => {
     ]);
   });
 
+  it('旧形式の省略可能なチーム情報とトレンド履歴がなくても受理する', () => {
+    const frame = makeFrame();
+    const extras = frame.extras;
+    if (!isRecord(extras)) throw new Error('extras fixture missing');
+    expect(isPersistFrameShape(frame)).toBe(true);
+
+    delete extras.teams;
+    delete extras.teamRosters;
+    delete frame.trendHistory;
+    expect(isPersistFrameShape(frame)).toBe(true);
+  });
+
+  it.each([
+    ['id', null],
+    ['name', null],
+    ['rank', 'lead'],
+    ['level', 'one'],
+    ['xp', 'zero'],
+    ['stamina', 'full'],
+    ['staminaMax', null],
+    ['onLeave', 'false'],
+    ['aiAssigned', 0],
+    ['assignment', 'management'],
+  ] as const)('メンバーの %s が破損したフレームを拒否する', (field, value) => {
+    const frame = makeFrame();
+    const roster = frame.roster;
+    if (!isRecord(roster) || !Array.isArray(roster.members) || !isRecord(roster.members[0])) {
+      throw new Error('member fixture missing');
+    }
+    expect(isPersistFrameShape(frame)).toBe(true);
+
+    roster.members[0][field] = value;
+    expect(isPersistFrameShape(frame)).toBe(false);
+  });
+
+  it('ベンチに配置されたメンバーを受理する', () => {
+    const frame = makeFrame();
+    const roster = frame.roster;
+    if (!isRecord(roster) || !Array.isArray(roster.members) || !isRecord(roster.members[0])) {
+      throw new Error('member fixture missing');
+    }
+    roster.members[0].assignment = 'bench';
+    expect(isPersistFrameShape(frame)).toBe(true);
+  });
+
+  it.each([
+    ['result', 'lastResult', makeResult],
+    ['shop', 'shop', () => ({ cards: [] })],
+    ['beat', 'beat', () => ({ kind: 'judgment', eventId: 'debt-incident' })],
+  ] as const)('%s フェーズでは対応するデータの欠落を拒否する', (phase, field, makeData) => {
+    const frame = makeFrame();
+    frame.phase = phase;
+    frame[field] = makeData();
+    expect(isPersistFrameShape(frame)).toBe(true);
+
+    delete frame[field];
+    expect(isPersistFrameShape(frame), 'フィールド省略').toBe(false);
+    frame[field] = null;
+    expect(isPersistFrameShape(frame), 'null').toBe(false);
+  });
+
+  it.each([
+    { label: '配列', beat: [] },
+    { label: '数値 ID', beat: { kind: 'judgment', eventId: 1 } },
+  ])('イベントのオブジェクト構造や ID の型が壊れていると拒否する: $label', ({ beat }) => {
+    const frame = makeFrame();
+    frame.beat = { kind: 'judgment', eventId: 'debt-incident' };
+    expect(isPersistFrameShape(frame)).toBe(true);
+    frame.beat = beat;
+    expect(isPersistFrameShape(frame)).toBe(false);
+  });
+
+  it('最短完了 tick は省略と数値を受理し、文字列を拒否する', () => {
+    const frame = makeFrame();
+    setAtPath(frame, 'extras.baseConfig.minCompleteTick', undefined);
+    expect(isPersistFrameShape(frame)).toBe(true);
+    setAtPath(frame, 'extras.baseConfig.minCompleteTick', 3);
+    expect(isPersistFrameShape(frame)).toBe(true);
+    setAtPath(frame, 'extras.baseConfig.minCompleteTick', '3');
+    expect(isPersistFrameShape(frame)).toBe(false);
+  });
+
   it('成長結果とショップの各入れ子構造を検査する', () => {
     for (const growth of [
       [],
@@ -260,6 +342,39 @@ describe('isPersistFrameShape', () => {
       frame.shop = shop;
       expect(isPersistFrameShape(frame)).toBe(false);
     }
+  });
+
+  it('シニアへの昇格を受理し、未知の昇格先を拒否する', () => {
+    const frame = makeFrame();
+    const promotion = { id: 'm1', name: 'Alice', to: 'senior' };
+    frame.lastGrowth = { promotions: [promotion], leveledUp: [], wentOnLeave: [], docGain: 0 };
+    expect(isPersistFrameShape(frame)).toBe(true);
+
+    promotion.to = 'lead';
+    expect(isPersistFrameShape(frame)).toBe(false);
+  });
+
+  it.each(['auto-contain', 'spread', 'light-firefight'])(
+    'コンボ切断理由 %s を受理し、未知の理由を拒否する',
+    (reason) => {
+      const frame = makeFrame();
+      const event = { tick: 2, kind: 'combo-break', reason };
+      frame.lastResult = { ...makeResult(), events: [event] };
+      expect(isPersistFrameShape(frame)).toBe(true);
+
+      event.reason = 'unknown';
+      expect(isPersistFrameShape(frame)).toBe(false);
+    },
+  );
+
+  it('延焼からの発火を受理し、未知の発火元を拒否する', () => {
+    const frame = makeFrame();
+    const event = { tick: 3, kind: 'ignite', taskId: 1, source: 'spread' };
+    frame.lastResult = { ...makeResult(), events: [event], fireEvents: [event] };
+    expect(isPersistFrameShape(frame)).toBe(true);
+
+    event.source = 'unknown';
+    expect(isPersistFrameShape(frame)).toBe(false);
   });
 
   it('スプリント結果のイベント、有限値、ペナルティを検査する', () => {
@@ -350,5 +465,31 @@ describe('isPersistFrameShape', () => {
       frame.trendHistory = trendHistory;
       expect(isPersistFrameShape(frame)).toBe(false);
     }
+  });
+
+  it('未達 KPI を受理し、未知の達成状態を拒否する', () => {
+    const frame = makeFrame();
+    const kpi = { id: 'delivery', label: 'Delivery', target: 10, actual: 8, status: 'missed' };
+    frame.quarterReview = { ...makeQuarterReview(), progress: [kpi] };
+    expect(isPersistFrameShape(frame)).toBe(true);
+
+    kpi.status = 'unknown';
+    expect(isPersistFrameShape(frame)).toBe(false);
+  });
+
+  it('会社順位の内訳は省略可能だが、指定時はオブジェクトを要求する', () => {
+    const frame = makeFrame();
+    const trend = makeTrendSnapshot();
+    frame.trendHistory = [trend];
+    expect(isPersistFrameShape(frame)).toBe(true);
+
+    const company = trend.company;
+    if (!isRecord(company)) throw new Error('company fixture missing');
+    delete company.selfRanks;
+    expect(isPersistFrameShape(frame)).toBe(true);
+    company.selfRanks = null;
+    expect(isPersistFrameShape(frame)).toBe(false);
+    company.selfRanks = [];
+    expect(isPersistFrameShape(frame)).toBe(false);
   });
 });

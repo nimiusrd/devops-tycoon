@@ -666,6 +666,88 @@ describe('メタ進行とアンロック（第17章）', () => {
     expect(parseDailyRunKey('daily:not-a-date:v1:fingerprint')).toBeNull();
   });
 
+  it('デイリーキーの版は安全整数の上限まで保持し、上限超過を拒否する', () => {
+    expect(parseDailyRunKey('daily:2026-09-05:v9007199254740991:saved-ruleset')).toEqual({
+      dateStr: '2026-09-05',
+      ruleset: { version: 9007199254740991, fingerprint: 'saved-ruleset' },
+    });
+    expect(parseDailyRunKey('daily:2026-09-05:v9007199254740992:saved-ruleset')).toBeNull();
+  });
+
+  it('デイリー記録の正規化は旧日付とルールセット別の記録を保持し、入力と独立させる', () => {
+    const dailyRuns = {
+      '2026-09-04': { bestScore: 125, rewardClaimed: true },
+      'daily:2026-09-05:v1:saved-ruleset': { bestScore: 0, rewardClaimed: false },
+    };
+    const normalized = normalizeMeta({ dailyRuns });
+
+    expect(normalized.dailyRuns).toEqual({
+      '2026-09-04': { bestScore: 125, rewardClaimed: true },
+      'daily:2026-09-05:v1:saved-ruleset': { bestScore: 0, rewardClaimed: false },
+    });
+    expect(normalized.dailyRuns).not.toBe(dailyRuns);
+    expect(normalized.dailyRuns['2026-09-04']).not.toBe(dailyRuns['2026-09-04']);
+
+    dailyRuns['2026-09-04'].bestScore = 999;
+    normalized.dailyRuns['daily:2026-09-05:v1:saved-ruleset'].rewardClaimed = true;
+
+    expect(normalized.dailyRuns['2026-09-04'].bestScore).toBe(125);
+    expect(dailyRuns['daily:2026-09-05:v1:saved-ruleset'].rewardClaimed).toBe(false);
+  });
+
+  it.each([
+    ['null', null],
+    ['配列', []],
+    ['数値', 42],
+    ['スコア欠落', { rewardClaimed: true }],
+    ['スコアが文字列', { bestScore: '100', rewardClaimed: true }],
+    ['スコアが NaN', { bestScore: Number.NaN, rewardClaimed: true }],
+    ['スコアが正の無限大', { bestScore: Infinity, rewardClaimed: true }],
+    ['スコアが負の無限大', { bestScore: -Infinity, rewardClaimed: true }],
+    ['報酬状態欠落', { bestScore: 100 }],
+    ['報酬状態が文字列', { bestScore: 100, rewardClaimed: 'false' }],
+    ['報酬状態が数値', { bestScore: 100, rewardClaimed: 0 }],
+  ])('デイリー記録の %s だけを除去し、隣接する正常記録を保持する', (_label, broken) => {
+    const normalized = normalizeMeta({
+      dailyRuns: {
+        '2026-09-03': { bestScore: 200, rewardClaimed: true },
+        '2026-09-04': broken,
+        '2026-09-05': { bestScore: 0, rewardClaimed: false },
+      },
+    });
+
+    expect(normalized.dailyRuns).toEqual({
+      '2026-09-03': { bestScore: 200, rewardClaimed: true },
+      '2026-09-05': { bestScore: 0, rewardClaimed: false },
+    });
+  });
+
+  it.each([null, [], 'broken'])('dailyRuns 全体が %j なら空の記録へ復元する', (dailyRuns) => {
+    expect(normalizeMeta({ dailyRuns }).dailyRuns).toEqual({});
+  });
+
+  it('同日同点のデイリー順位は保存順によらず複合キーで決まる', () => {
+    const firstKey = 'daily:2026-09-05:v1:ruleset-a';
+    const secondKey = 'daily:2026-09-05:v1:ruleset-b';
+    const record = { bestScore: 200, rewardClaimed: true };
+    const forward = {
+      ...defaultMeta(),
+      dailyRuns: { [firstKey]: record, [secondKey]: record },
+    };
+    const reverse = {
+      ...defaultMeta(),
+      dailyRuns: { [secondKey]: record, [firstKey]: record },
+    };
+
+    expect(
+      dailyLeaderboardEntries(forward).map(({ entryKey, rank }) => ({ entryKey, rank })),
+    ).toEqual([
+      { entryKey: secondKey, rank: 1 },
+      { entryKey: firstKey, rank: 2 },
+    ]);
+    expect(dailyLeaderboardEntries(reverse)).toEqual(dailyLeaderboardEntries(forward));
+  });
+
   it('applyDailyRunReward は初回のみ points を付与する', () => {
     const dateStr = '2026-06-20';
     const entryKey = dailyRunKey(dateStr);

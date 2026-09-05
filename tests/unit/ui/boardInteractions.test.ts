@@ -17,6 +17,7 @@ const hooks = vi.hoisted(() => ({
   },
 }));
 const boundary = vi.hoisted(() => ({ usePixi: false, loaded: false, playSfx: vi.fn() }));
+vi.mock('../../../src/ui/WebglLoading', () => ({ WebglLoading: () => null }));
 
 // Node 上では React の再描画・ブラウザ・GPU の境界だけを代行する。
 // 盤面コンポーネント、候補選定、座標判定、シーン計画、演出タイムラインは実装を使う。
@@ -91,7 +92,6 @@ vi.mock('../../../src/ui/usePixiRenderer', () => ({
   }),
 }));
 // 画像ロードによるアクター自身の state は officeActors.test.ts で別途検証する。
-vi.mock('../../../src/ui/OfficeActors', () => ({ StationActor: 'station-actor' }));
 
 import { Board, type BoardProps } from '../../../src/render/Board';
 import {
@@ -190,9 +190,10 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
     return node;
   };
   const dot = (id: number) => {
-    const node = elements(tree).find((node) => node.props['data-task-id'] === id);
-    if (!node) throw new Error(`タスク粒がありません: ${id}`);
-    return node;
+    const scene = layer().props.scene as import('../../../src/render/boardScene').BoardScenePlan;
+    const found = scene.dots.find((dot) => dot.id === id);
+    if (!found) throw new Error(`タスク粒がありません: ${id}`);
+    return found;
   };
   const layer = () => {
     const node = elements(tree, true).find((node) => node.type === 'board-pixi-layer');
@@ -225,8 +226,8 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
       flush();
     },
     downTask(id: number) {
-      const event = pointerDown();
-      (dot(id).props.onPointerDown as (event: unknown) => void | undefined)?.(event);
+      const event = pointerDown(dot(id));
+      (find('board').props.onPointerDown as (event: unknown) => void)(event);
       flush();
       return event;
     },
@@ -259,7 +260,7 @@ function mountBoard(overrides: Partial<BoardProps> = {}) {
 beforeEach(() => {
   vi.useFakeTimers();
   vi.spyOn(performance, 'now').mockImplementation(() => Date.now());
-  boundary.usePixi = false;
+  boundary.usePixi = true;
   boundary.loaded = false;
   boundary.playSfx.mockClear();
   pointerWindow = new EventTarget();
@@ -290,7 +291,7 @@ describe('Board の状態表示', () => {
     expect(board.find('board').props).toMatchObject({
       'data-review-hell': 'true',
       'data-review-heat': 1,
-      'data-effect-renderer': 'dom',
+      'data-effect-renderer': 'loading',
     });
     expect(board.find('board').props.className).toContain('review-hell');
     expect(board.find('board-flow-summary').props['aria-label']).toBe('開発フローの工程別件数');
@@ -314,19 +315,11 @@ describe('Board の状態表示', () => {
       'レビュー終わらん…',
       '燃えてる！',
     ]);
-    expect(board.dot(40).props.className).toContain('burn-critical');
-    expect(board.dot(41).props.className).toContain('burn-warn');
-    expect(board.byClass('flame').map(content)).toEqual(['🔥', '🔥']);
-    expect(board.dot(30).props).toMatchObject({ 'data-flowing': 'true', 'data-variant': 'ai' });
-    expect(board.dot(30).props.style).toMatchObject({ '--flow-duration': `${1.15 / 1.35}s` });
-    expect(board.dot(31).props['data-variant']).toBe('gold');
-    expect(board.byClass('flowdash').map((node) => node.props.markerEnd)).toEqual([
-      'url(#bd-ah)',
-      'url(#bd-ah)',
-      'url(#bd-ahr)',
-      'url(#bd-ah)',
-      'url(#bd-ahr)',
-    ]);
+    expect(board.dot(40).burnUrgency).toBeLessThan(0.35);
+    expect(board.dot(41).fire).toBe(true);
+    expect(board.dot(30)).toMatchObject({ variant: 'ai', motion: { kind: 'flow' } });
+    expect(board.dot(31).variant).toBe('gold');
+    expect(board.byClass('task-dot')).toHaveLength(0);
     expect(board.byClass('li').map(content)).toEqual([
       'AI利用',
       '手戻り',
@@ -334,7 +327,7 @@ describe('Board の状態表示', () => {
       '技術的負債',
       '炎上',
     ]);
-    expect(hasRegisteredBoardDragHitTest()).toBe(false);
+    expect(hasRegisteredBoardDragHitTest()).toBe(true);
   });
 
   it('メンバー疲弊を人物へ反映し、空になった工程の警告と吹き出しを消す', () => {
@@ -358,19 +351,21 @@ describe('Board の状態表示', () => {
   });
 });
 
-describe('Board の DOM ドラッグ', () => {
+describe('Board の座標ドラッグ', () => {
   it.each([undefined, 'ai', 'senior'] as const)(
     '差配の担当 %s と対象 ID を Coding へのドロップで一度だけ通知する',
     (assignee) => {
       const board = mountBoard({ armedAction: 'assignTask', assignAssignee: assignee });
-      expect(board.byClass('draggable').map((node) => node.props['data-task-id'])).toEqual([1, 2]);
+      expect(Array.from(board.layer().props.draggableTaskIds as Set<number>).sort()).toEqual([
+        1, 2,
+      ]);
       expect(board.byClass('drop-target').map((node) => node.props['data-testid'])).toEqual([
         'lane-coding',
       ]);
       const down = board.downTask(1);
       expect(down.preventDefault).toHaveBeenCalledOnce();
       expect(down.stopPropagation).toHaveBeenCalledOnce();
-      expect(board.dot(1).props.className).toContain('dragging');
+      expect(board.layer().props.dragTaskId).toBe(1);
       board.dispatch('pointermove', BOARD_STATION_CENTERS.coding);
       expect(board.find('lane-coding').props.className).toContain('drop-hover');
       board.dispatch('pointerup', BOARD_STATION_CENTERS.coding);
@@ -405,8 +400,8 @@ describe('Board の DOM ドラッグ', () => {
 
   it('PR 分割は未分割の Coding/Review のみを掴み、レーン外で離しても対象 ID を通知する', () => {
     const board = mountBoard({ armedAction: 'splitPr' });
-    expect(board.byClass('draggable').map((node) => node.props['data-task-id'])).toEqual([2, 3]);
-    expect(board.dot(4).props.onPointerDown).toBeUndefined();
+    expect(Array.from(board.layer().props.draggableTaskIds as Set<number>).sort()).toEqual([2, 3]);
+    expect((board.layer().props.draggableTaskIds as Set<number>).has(4)).toBe(false);
     board.downTask(3);
     board.dispatch('pointerup', { x: 0, y: 0 });
     expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({ taskId: 3 });
@@ -426,46 +421,32 @@ describe('Board の DOM ドラッグ', () => {
 
   it('武装・スプリント・callback が揃うまで操作を開始せず、満員時は Backlog を掴ませない', () => {
     const board = mountBoard();
-    expect(board.byClass('draggable')).toHaveLength(0);
-    expect(board.find('board').props.onPointerDown).toBeUndefined();
+    expect((board.layer().props.draggableTaskIds as Set<number>).size).toBe(0);
+    expect(board.downBoard({ x: 0, y: 0 }).preventDefault).not.toHaveBeenCalled();
     board.update({ armedAction: 'assignTask', sprint: null });
-    expect(board.byClass('draggable')).toHaveLength(0);
+    expect((board.layer().props.draggableTaskIds as Set<number>).size).toBe(0);
     const sprint = dragSprint();
     sprint.config.codingSlots = 1;
     board.update({ sprint, onDragComplete: undefined });
-    expect(board.byClass('draggable').map((node) => node.props['data-task-id'])).toEqual([2]);
+    expect(Array.from(board.layer().props.draggableTaskIds as Set<number>).sort()).toEqual([2]);
     expect(board.downTask(2).preventDefault).not.toHaveBeenCalled();
     expect(board.byClass('dragging')).toHaveLength(0);
   });
 });
 
 describe('Board の Pixi 境界', () => {
-  it('ロード待ちの粒は DOM から操作でき、準備完了後は canvas 座標から同じ対象を操作する', () => {
-    boundary.usePixi = true;
+  it('準備完了後にcanvas座標から操作し、DOMの粒を作らない', () => {
     const board = mountBoard({ armedAction: 'assignTask' });
-    expect(board.find('board').props['data-effect-renderer']).toBe('dom');
-    const dot = board.dot(1);
-    const style = dot.props.style as { left: string; top: string };
-    const point = {
-      x: (parseFloat(style.left) / 100) * BOARD_VIEW.w,
-      y: (parseFloat(style.top) / 100) * BOARD_VIEW.h,
-    };
-    expect(
-      clientPointHitsRegisteredBoardDrag(clientPoint(point).clientX, clientPoint(point).clientY),
-    ).toBe(true);
-    expect(board.downTask(1).stopPropagation).toHaveBeenCalledOnce();
-    board.dispatch('pointerup', BOARD_STATION_CENTERS.coding);
-    expect(board.props.onDragComplete).toHaveBeenCalledOnce();
-    board.ready();
+    expect(board.find('board').props['data-effect-renderer']).toBe('loading');
     expect(board.byClass('task-dot')).toHaveLength(0);
+    board.ready();
     expect(board.find('board').props['data-effect-renderer']).toBe('pixi');
-    expect(board.all().some((node) => node.type === 'station-actor')).toBe(false);
-    board.downBoard(point);
-    board.dispatch('pointermove', BOARD_STATION_CENTERS.coding);
-    expect(board.find('lane-coding').props.className).toContain('drop-hover');
-    expect(board.layer().props.dragTaskId).toBe(1);
+    board.downBoard(board.dot(1));
     board.dispatch('pointerup', BOARD_STATION_CENTERS.coding);
-    expect(board.props.onDragComplete).toHaveBeenNthCalledWith(2, { taskId: 1, lane: 'coding' });
+    expect(board.props.onDragComplete).toHaveBeenCalledExactlyOnceWith({
+      taskId: 1,
+      lane: 'coding',
+    });
     unmount();
     expect(hasRegisteredBoardDragHitTest()).toBe(false);
   });
@@ -473,11 +454,7 @@ describe('Board の Pixi 境界', () => {
   it('ラベル・凡例・吹き出し・省略数のクリックでは分割せず、装飾上の粒は掴める', () => {
     boundary.usePixi = true;
     const board = mountBoard({ armedAction: 'splitPr' });
-    const style = board.dot(3).props.style as { left: string; top: string };
-    const point = {
-      x: (parseFloat(style.left) / 100) * BOARD_VIEW.w,
-      y: (parseFloat(style.top) / 100) * BOARD_VIEW.h,
-    };
+    const point = board.dot(3);
     board.ready();
     for (const selector of ['.st-label', '.bubble', '.board-legend', '.pile-overflow']) {
       expect(
@@ -500,7 +477,7 @@ describe('Board の Pixi 境界', () => {
     expect(board.downBoard(point).preventDefault).not.toHaveBeenCalled();
   });
 
-  it('GPU 準備前は演出を見せ、準備後と故障時も寿命・発火回数を維持する', () => {
+  it('GPU専用の演出planを渡し、故障時もDOM演出を作らず発火回数を維持する', () => {
     boundary.usePixi = true;
     const sprint = dragSprint();
     const board = mountBoard({
@@ -516,7 +493,7 @@ describe('Board の Pixi 境界', () => {
       },
     });
     expect(board.find('board').props).toMatchObject({
-      'data-effect-renderer': 'dom',
+      'data-effect-renderer': 'loading',
       'data-effect-count': 1,
       'data-effect-kinds': 'intervention:split',
       'data-effect-sequence': 0,
@@ -524,19 +501,21 @@ describe('Board の Pixi 境界', () => {
       'data-effect-last-sfx': 'interventionHit',
       'data-animations-paused': 'true',
     });
-    expect(board.find('board-aura-overtime').props.style).toEqual({ '--aura-remaining': 0.5 });
+    expect(board.layer().props.auras).toEqual([
+      { kind: 'overtime', remainingTicks: OVERTIME_TICKS / 2, totalTicks: OVERTIME_TICKS },
+    ]);
     expect(board.byClass('dom-fallback-hidden')).toHaveLength(0);
-    expect(content(board.find('intervention-effect-split'))).toBe('split');
+    expect(board.query('intervention-effect-split')).toBeUndefined();
     expect(board.layer().props.animationsPaused).toBe(true);
     const effects = board.layer().props.effects;
     board.ready();
     expect(board.find('board').props['data-effect-renderer']).toBe('pixi');
-    expect(board.byClass('dom-fallback-hidden')).toHaveLength(3);
+    expect(board.byClass('dom-fallback-hidden')).toHaveLength(0);
     expect(board.layer().props.effects).toBe(effects);
     board.failGpu();
-    expect(board.find('board').props['data-effect-renderer']).toBe('dom');
+    expect(board.find('board').props['data-effect-renderer']).toBe('loading');
     expect(board.byClass('dom-fallback-hidden')).toHaveLength(0);
-    expect(content(board.find('intervention-effect-split'))).toBe('split');
+    expect(board.query('intervention-effect-split')).toBeUndefined();
     expect(board.find('board').props['data-effect-sequence']).toBe(0);
     expect(boundary.playSfx).toHaveBeenCalledExactlyOnceWith('interventionHit');
     expect(hasRegisteredBoardDragHitTest()).toBe(false);

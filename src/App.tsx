@@ -48,6 +48,7 @@ import { isOverlayDismissKey } from './ui/overlayDismiss';
 import sprintLayoutStyles from './ui/SprintLayout.module.css';
 import type { GameHandle } from './game';
 import { REPLAY_DRAFT_MISSING_HINT } from './state/replayJump';
+import { WebglStatusOverlay } from './ui/WebglStatusOverlay';
 
 const AchievementCollectionScreen = lazy(() =>
   import('./ui/AchievementCollectionScreen').then((m) => ({
@@ -181,6 +182,7 @@ export default function App(props: AppProps) {
   return (
     <ResponsiveModeProvider>
       <AppContent {...props} />
+      <WebglStatusOverlay />
     </ResponsiveModeProvider>
   );
 }

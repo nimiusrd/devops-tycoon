@@ -3,20 +3,21 @@
  *
  * 部門ゾーン・チーム島（健全度で色分け）・共通基盤ハブ・全社HUD・部門チップ／比較表・全社レバーを表示する。
  * チーム島をタップすると現場へドリルダウンし、部門チップと比較表の部門名から部署ビューへ寄る。
- * 状態は読むだけ（第22.2）。盤面は `orgBoardScene` + `OrgBoard` で等角描画する。
+ * 状態は読むだけ（第22.2）。盤面は `OrgPixiField` で等角描画する。
  */
+import { WebglLoading } from './WebglLoading';
 import { lazy, Suspense, useCallback, useMemo, useRef } from 'react';
 import { PROCESS_BALANCE } from '../data/balance';
 import { COMPANY_LEVERS } from '../data/levers';
 import { diagnosisTheme } from '../render/diagnosisTheme';
 import { diagnosisView } from '../sim/diagnosis';
-import { ORG_VIEW, orgBoardNeedsCapacityCompact, orgHubTone } from '../render/orgBoardScene';
+import { ORG_VIEW, orgHubTone } from '../render/orgBoardScene';
 import type { OrgScaleState, ZoomState } from '../sim/orgscale/types';
 import type { QuarterTrendSnapshot } from '../sim/run/types';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { AspectStage } from './AspectStage';
 import { EffectTagList } from './EffectTagList';
-import { OrgBoard } from './OrgBoard';
+import { TeamNavigator } from './TeamNavigator';
 import { OrgDeptComparison } from './OrgDeptComparison';
 import { OrgTrendHistory } from './OrgTrendHistory';
 import { OrgInfraHubPill } from './OrgHub';
@@ -50,8 +51,7 @@ export function OrgScreen({
 }: OrgScreenProps) {
   const teams = org.departments.flatMap((d) => d.teams);
   const { usePixi, onWebglError } = usePixiRenderer();
-  const capacityCompact = orgBoardNeedsCapacityCompact(org);
-  const usePixiBoard = usePixi && !capacityCompact;
+  const usePixiBoard = usePixi;
   const pixiFieldRef = useRef<OrgPixiFieldHandle>(null);
   const deptColorMap = useMemo(
     () => Object.fromEntries(org.departments.map((d) => [d.def.id, d.def.color])),
@@ -160,8 +160,8 @@ export function OrgScreen({
       />
 
       <AspectStage ratio={ORG_VIEW.w / ORG_VIEW.h} className="org-field" data-testid="org-field">
-        {usePixiBoard ? (
-          <Suspense fallback={null}>
+        {usePixiBoard && (
+          <Suspense fallback={<WebglLoading />}>
             <OrgPixiField
               ref={pixiFieldRef}
               teams={teams}
@@ -172,10 +172,9 @@ export function OrgScreen({
               onWebglError={onWebglError}
             />
           </Suspense>
-        ) : (
-          <OrgBoard org={org} onFocusTeam={onFocusTeam} />
         )}
       </AspectStage>
+      <TeamNavigator teams={teams} onFocusTeam={onFocusTeam} />
 
       <div className="org-levers" data-testid="org-levers">
         <span className="org-levers-title">全社レバー</span>

@@ -4,9 +4,10 @@
  * 「状態を読んで描くだけ」の一方向に徹する（第22.2）。`boardScene` が組み立てた
  * シーン計画を読み、俯瞰オフィス（アイソメ）として描く: 部屋（背景）＋工程ごとの
  * ステーション（机＋キャラ＋ラベル＋吹き出し）＋タスク粒の山＋工程間フロー。
- * 座標は設計空間（1404×573）の % で重ね、PixiJSとDOMの描画を切り替える。
+ * 座標は設計空間（1404×573）の % で重ね、WebGL盤面にHTMLの操作・要約を重ねる。
  * RI-30: 武装中はタスク粒のドラッグで介入ターゲットを指定できる。
  */
+import { WebglLoading } from '../ui/WebglLoading';
 import {
   lazy,
   Suspense,
@@ -38,22 +39,14 @@ import {
   registerPixiBoardDragHitTest,
 } from './boardDragHit';
 import { hitTestBoardDot } from './boardPixiView';
-import { FireEffects } from '../ui/FireEffects';
-import { InterventionEffects, type InterventionTrigger } from '../ui/InterventionEffects';
+import type { InterventionTrigger } from './interventionEffects';
 import { OfficeRoom } from '../ui/OfficeRoom';
-import { StationActor } from '../ui/OfficeActors';
 import { usePixiRenderer } from '../ui/usePixiRenderer';
 import { useBoardEffects } from '../ui/useBoardEffects';
 import { deriveMemberMoodOverrides } from './memberMood';
-import {
-  BOARD_VIEW,
-  planBoardScene,
-  type BoardDotPlan,
-  type BoardFlow,
-  type BoardStationPlan,
-} from './boardScene';
+import { BOARD_VIEW, planBoardScene, type BoardStationPlan, type BoardDotPlan } from './boardScene';
 import type { RosterState } from '../sim/member/types';
-import { TASK_COLORS, TASK_DIAMETER } from './taskView';
+import { TASK_COLORS } from './taskView';
 import { VISUAL_TOKENS } from './visualTokens';
 import { pct } from '../ui/pct';
 
@@ -65,84 +58,14 @@ const BoardPixiLayer = lazy(() =>
 const VIEW_W = BOARD_VIEW.w;
 const VIEW_H = BOARD_VIEW.h;
 
-function TaskDot({
-  dot,
-  draggable,
-  dragging,
-  onPointerDown,
-}: {
-  dot: BoardDotPlan;
-  draggable?: boolean;
-  dragging?: boolean;
-  onPointerDown?: (e: React.PointerEvent, taskId: number) => void;
-}) {
-  const d = TASK_DIAMETER[dot.size];
-  // 粒径は設計幅 1404 に対する % で持たせ、盤面サイズに追従させる。
-  const sizePct = (d / VIEW_W) * 100;
-  const urgency = dot.burnUrgency;
-  const urgentClass =
-    urgency !== undefined && urgency < 0.35
-      ? ' burn-critical'
-      : urgency !== undefined
-        ? ' burn-warn'
-        : '';
-  const flowing = dot.motion?.kind === 'flow';
-  const motionStyle: CSSProperties = flowing
-    ? (() => {
-        const rad = ((dot.motion?.angleDeg ?? 0) * Math.PI) / 180;
-        const speedMul = dot.motion?.speedMul ?? 1;
-        return {
-          '--flow-dx': `${Math.cos(rad) * 5}px`,
-          '--flow-dy': `${Math.sin(rad) * 5}px`,
-          '--flow-duration': `${1.15 / speedMul}s`,
-        } as CSSProperties;
-      })()
-    : {};
-  return (
-    <span
-      className={`task-dot variant-${dot.variant}${urgentClass}${flowing ? ' flowing' : ''}${draggable ? ' draggable' : ''}${dragging ? ' dragging' : ''}`}
-      data-variant={dot.variant}
-      data-task-id={dot.id}
-      data-flowing={flowing ? 'true' : undefined}
-      data-draggable={draggable ? 'true' : undefined}
-      onPointerDown={draggable && onPointerDown ? (e) => onPointerDown(e, dot.id) : undefined}
-      style={{
-        left: pct(dot.x, VIEW_W),
-        top: pct(dot.y, VIEW_H),
-        width: `${sizePct}%`,
-        aspectRatio: '1 / 1',
-        background: TASK_COLORS[dot.variant],
-        ...motionStyle,
-        ...(urgency !== undefined ? ({ '--burn-urgency': urgency } as CSSProperties) : undefined),
-      }}
-    >
-      {dot.fire && (
-        <span
-          className="flame"
-          style={
-            urgency !== undefined
-              ? ({ fontSize: `${0.75 + (1 - urgency) * 0.35}em` } as CSSProperties)
-              : undefined
-          }
-        >
-          🔥
-        </span>
-      )}
-    </span>
-  );
-}
-
 function Station({
   s,
   dropTarget,
   hover,
-  pixi,
 }: {
   s: BoardStationPlan;
   dropTarget?: boolean;
   hover?: boolean;
-  /** Pixi 時はキャラを canvas 側が描くため、ドロップ枠のプレースホルダだけ残す。 */
-  pixi?: boolean;
 }) {
   return (
     <div
@@ -153,15 +76,9 @@ function Station({
       style={{
         left: pct(s.x, VIEW_W),
         top: pct(s.y, VIEW_H),
-        ...(pixi
-          ? {
-              aspectRatio: `${VISUAL_TOKENS.dimensions.sprint.actor.dom.w} / ${VISUAL_TOKENS.dimensions.sprint.actor.dom.h}`,
-            }
-          : undefined),
+        aspectRatio: `${VISUAL_TOKENS.dimensions.sprint.actor.dom.w} / ${VISUAL_TOKENS.dimensions.sprint.actor.dom.h}`,
       }}
-    >
-      {!pixi && <StationActor lane={s.lane} mood={s.mood} />}
-    </div>
+    ></div>
   );
 }
 
@@ -211,40 +128,6 @@ function Bubble({ s }: { s: BoardStationPlan }) {
     >
       {s.bubble}
     </div>
-  );
-}
-
-function FlowArrows({ flows }: { flows: readonly BoardFlow[] }) {
-  return (
-    <svg
-      className="office-flows"
-      viewBox={`0 0 ${BOARD_VIEW.w} ${BOARD_VIEW.h}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      <defs>
-        <marker id="bd-ah" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill={VISUAL_TOKENS.colors.flow.normal} />
-        </marker>
-        <marker id="bd-ahr" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill={VISUAL_TOKENS.colors.flow.hot} />
-        </marker>
-      </defs>
-      {flows.map((f) => (
-        <line
-          key={`${f.from}-${f.to}`}
-          className="flowdash"
-          x1={f.x1}
-          y1={f.y1}
-          x2={f.x2}
-          y2={f.y2}
-          stroke={f.rework ? VISUAL_TOKENS.colors.flow.hot : VISUAL_TOKENS.colors.flow.normal}
-          strokeWidth={f.rework ? 2.5 : 3.5}
-          opacity={f.rework ? 0.6 : 0.85}
-          markerEnd={`url(#${f.rework ? 'bd-ahr' : 'bd-ah'})`}
-        />
-      ))}
-    </svg>
   );
 }
 
@@ -307,7 +190,7 @@ export function Board({
   // 盤面の常駐物と連続演出を WebGL で描くか（RI-11 / RI-142。ラベルは DOM 共通）。
   const { usePixi, onWebglError } = usePixiRenderer();
   const [pixiReady, setPixiReady] = useState(false);
-  // 初回描画前は DOM 演出を残し、短命なリアクションが初期化待ちで消えるのを防ぐ。
+  // 初回描画の完了を診断・操作E2Eに公開する。
   const gpuEffectsActive = usePixi && pixiReady;
   // hot なら Review Hell トーン（強）。heat は hot 手前から徐々に盤面を赤くする
   // 早期警告で、--review-heat（0..1）で赤みオーバーレイの濃さをスケールする（第18.2/18.3）。
@@ -349,8 +232,7 @@ export function Board({
     (e: React.PointerEvent, taskId: number) => {
       if (!armedAction || !onDragComplete || !dragPlan) return;
       e.preventDefault();
-      // Pixi 未ロード時の DOM fallback 粒から盤面 root の hit-test へバブルしない
-      // （二重に pointerup を登録して onDragComplete が二度走るのを防ぐ）。
+      // 同じpointerイベントから二重にドラッグを開始しない。
       e.stopPropagation();
       setDragTaskId(taskId);
 
@@ -390,8 +272,7 @@ export function Board({
   // 盤面 div で受けて設計座標から掴む粒を逆引きする（RI-30 の Pixi 対応）。
   const handleBoardPointerDown = useCallback(
     (e: React.PointerEvent) => {
-      // ラベル・吹き出し等の小型 DOM オーバーレイの上では掴まない（DOM モードで
-      // 「ラベルが上に乗った粒は掴めない」のと同じ挙動。splitPr は down+up だけで
+      // ラベル・吹き出し等のHTML UIの上では粒を掴まない。splitPr は down+up だけで
       // 確定するため、粒と重なるラベルクリックの誤発動を防ぐ）。全面を覆う装飾
       // レイヤ（オーラ・演出）は素通しにする（弾くとドラッグ全体が効かなくなる）。
       if (
@@ -417,7 +298,7 @@ export function Board({
       data-armed={armedAction ?? undefined}
       data-review-heat={heat}
       data-review-hell={hot ? 'true' : 'false'}
-      data-effect-renderer={gpuEffectsActive ? 'pixi' : 'dom'}
+      data-effect-renderer={gpuEffectsActive ? 'pixi' : 'loading'}
       data-effect-count={boardEffects.effects.length}
       data-effect-kinds={boardEffects.effects
         .map((effect) => `${effect.source}:${effect.effect.kind}`)
@@ -430,23 +311,8 @@ export function Board({
       style={{ '--review-heat': heat } as CSSProperties}
     >
       <OfficeRoom />
-      {usePixi ? (
-        <Suspense
-          fallback={
-            <>
-              <FlowArrows flows={scene.flows} />
-              {scene.dots.map((d) => (
-                <TaskDot
-                  key={`${d.lane}-${d.id}`}
-                  dot={d}
-                  draggable={dragIds.has(d.id)}
-                  dragging={dragTaskId === d.id}
-                  onPointerDown={handlePointerDown}
-                />
-              ))}
-            </>
-          }
-        >
+      {usePixi && (
+        <Suspense fallback={<WebglLoading />}>
           <BoardPixiLayer
             scene={scene}
             draggableTaskIds={dragIds}
@@ -458,26 +324,12 @@ export function Board({
             animationsPaused={animationsPaused}
           />
         </Suspense>
-      ) : (
-        <>
-          <FlowArrows flows={scene.flows} />
-          {scene.dots.map((d) => (
-            <TaskDot
-              key={`${d.lane}-${d.id}`}
-              dot={d}
-              draggable={dragIds.has(d.id)}
-              dragging={dragTaskId === d.id}
-              onPointerDown={handlePointerDown}
-            />
-          ))}
-        </>
       )}
 
       {scene.stations.map((s) => (
         <Station
           key={s.lane}
           s={s}
-          pixi={usePixi}
           dropTarget={dropLanes.has(s.lane as 'backlog' | 'coding' | 'review')}
           hover={hoverLane === s.lane}
         />
@@ -514,23 +366,6 @@ export function Board({
           ))}
         </div>
       </details>
-
-      <FireEffects effects={boardEffects.effects} gpuActive={gpuEffectsActive} />
-
-      {activeAuras.map((aura) => (
-        <div
-          key={aura.kind}
-          className={`board-modifier-aura aura-${aura.kind}${gpuEffectsActive ? ' dom-fallback-hidden' : ''}`}
-          data-testid={`board-aura-${aura.kind}`}
-          style={
-            {
-              '--aura-remaining': aura.remainingTicks / aura.totalTicks,
-            } as CSSProperties
-          }
-        />
-      ))}
-
-      <InterventionEffects effects={boardEffects.effects} gpuActive={gpuEffectsActive} />
     </div>
   );
 }

@@ -16,7 +16,7 @@ type GameWindow = Window & {
 };
 
 test('割り込みレビューを発動すると Review 渋滞が捌ける（第6.1 / DoD）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ops');
+  await page.goto('/?seed=ops');
 
   const before = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -54,7 +54,7 @@ test('割り込みレビューを発動すると Review 渋滞が捌ける（第
 });
 
 test('割り込みレビュー成功時に盤面スイープ演出が出る（RI-50）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ops');
+  await page.goto('/?seed=ops');
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -72,12 +72,11 @@ test('割り込みレビュー成功時に盤面スイープ演出が出る（RI
   });
 
   await page.getByTestId('action-interruptReview').click();
-  await expect(page.locator('[data-testid^="intervention-effect-sweep-"]').first()).toBeVisible({
-    timeout: 3000,
-  });
-  await expect(page.getByTestId('intervention-effect-sweep-burst')).toBeVisible({
-    timeout: 3000,
-  });
+  await expect(page.getByTestId('board')).toHaveAttribute(
+    'data-effect-kinds',
+    /intervention:reviewSweep/,
+  );
+  await expect(page.getByTestId('board')).toHaveAttribute('data-effect-renderer', 'pixi');
   await expect(page.getByTestId('event-ticker')).toBeVisible();
   await expect(page.locator('[data-testid^="event-ticker-row-"]').first()).toBeVisible({
     timeout: 3000,
@@ -85,7 +84,7 @@ test('割り込みレビュー成功時に盤面スイープ演出が出る（RI
 });
 
 test('スプリント盤面に集中力と介入アクションバーが並ぶ', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=bar');
+  await page.goto('/?seed=bar');
   await page.getByTestId('difficulty-easy').click();
   await page.getByTestId('start-run').click();
   await page.getByTestId('begin-sprint').click();
@@ -99,7 +98,7 @@ test('スプリント盤面に集中力と介入アクションバーが並ぶ',
 });
 
 test('コンボと連携ゲージの UI 表示が sim 状態と一致する（RI-36）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri36-combo-gauge');
+  await page.goto('/?seed=ri36-combo-gauge');
 
   const gauge = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -126,6 +125,7 @@ test('コンボと連携ゲージの UI 表示が sim 状態と一致する（RI
 
   const combo = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
+    g.pause();
     let state = g.getState();
     let guard = 0;
     while (guard < 4000 && state.sprint && !state.sprint.complete) {
@@ -145,7 +145,7 @@ test('コンボと連携ゲージの UI 表示が sim 状態と一致する（RI
 
 test('運用安定中のコンボ表示は実際の出荷倍率を示す（RI-84）', async ({ page }) => {
   const stableCombo = STABILITY_COMBO_CAP + 1;
-  await page.goto('/?renderer=dom&seed=ri84-stable-combo');
+  await page.goto('/?seed=ri84-stable-combo');
 
   await page.evaluate((combo) => {
     const g = (window as GameWindow).game!;
@@ -175,7 +175,7 @@ test('運用安定中のコンボ表示は実際の出荷倍率を示す（RI-84
 test('コンボ途切れ直後の HUD は現在値 0 で、履歴ログだけが途切れを残す（#357）', async ({
   page,
 }) => {
-  await page.goto('/?renderer=dom&seed=ri357-combo-break');
+  await page.goto('/?seed=ri357-combo-break');
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -202,7 +202,7 @@ test('コンボ途切れ直後の HUD は現在値 0 で、履歴ログだけが
 });
 
 test('途切れ履歴のあとコンボが伸び直したら現在値を履歴と併記する（#357）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri357-combo-rebuild');
+  await page.goto('/?seed=ri357-combo-rebuild');
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -229,7 +229,7 @@ test('途切れ履歴のあとコンボが伸び直したら現在値を履歴�
 });
 
 test('スプリント終了後のドラフトでは前スプリントの COMBO を出さない（#357）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=devops-tycoon');
+  await page.goto('/?seed=devops-tycoon');
 
   const reached = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -265,7 +265,7 @@ test('スプリント終了後のドラフトでは前スプリントの COMBO �
 });
 
 test('Review が空のとき割り込みレビューは無効＋理由表示（RI-51）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri51-empty');
+  await page.goto('/?seed=ri51-empty');
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -281,7 +281,7 @@ test('Review が空のとき割り込みレビューは無効＋理由表示（R
 });
 
 test('Review に対象があるとき対象数バッジを表示する（RI-51）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ops');
+  await page.goto('/?seed=ops');
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -303,7 +303,7 @@ test('Review に対象があるとき対象数バッジを表示する（RI-51�
 });
 
 test('炎上があったリザルトに「なぜ燃えたか」解説を表示する（RI-34′）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri34-burn');
+  await page.goto('/?seed=ri34-burn');
 
   const summary = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -336,7 +336,7 @@ test('炎上があったリザルトに「なぜ燃えたか」解説を表示�
 });
 
 test('介入ありのリザルトに無介入ベースライン比較を表示する（RI-55）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri55-e2e');
+  await page.goto('/?seed=ri55-e2e');
 
   const result = await page.evaluate(() => {
     const g = (window as GameWindow).game!;

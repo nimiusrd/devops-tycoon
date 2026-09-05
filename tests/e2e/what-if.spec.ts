@@ -29,7 +29,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('RI-46: 編成とドラフトで次スプリントのリスク幅を表示する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=what-if-e2e');
+  await page.goto('/?seed=what-if-e2e');
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-run').click();
 
@@ -87,7 +87,7 @@ test('RI-46: 編成とドラフトで次スプリントのリスク幅を表示�
 });
 
 test('引き直し後は候補が入れ替わり介入予測が試算中から抜ける', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=mulligan-whatif-e2e');
+  await page.goto('/?seed=mulligan-whatif-e2e');
   await page.getByTestId('difficulty-easy').click();
   await page.getByTestId('start-run').click();
 

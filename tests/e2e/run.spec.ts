@@ -82,7 +82,7 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
     dailyRuns: {},
   });
 
-  await page.goto('/?renderer=dom&seed=full-run');
+  await page.goto('/?seed=full-run');
   // metaReady=false のまま完走すると報酬が落ちるため、hydration 完了（タイトル表示）を待つ
   await expect(page.getByTestId('title')).toBeVisible();
 
@@ -196,7 +196,7 @@ test('トラック→ボスまで通しプレイすると勝敗が決まり、�
 });
 
 test('RI-32: ボス突破報酬レリックを四半期レビューに表示する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri32-boss-reward');
+  await page.goto('/?seed=ri32-boss-reward');
 
   const reached = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -286,7 +286,7 @@ for (const [reason, label] of [
   ['budgetExhausted', '予算枯渇'],
 ] as const) {
   test(`RI-32: ${reason} の敗北理由をラン決着画面に表示する`, async ({ page }) => {
-    await page.goto(`/?renderer=dom&seed=ri32-${reason}`);
+    await page.goto(`/?seed=ri32-${reason}`);
 
     const state = await page.evaluate((loseReason) => {
       const g = (window as GameWindow).game!;
@@ -340,7 +340,7 @@ for (const [reason, label] of [
 }
 
 test('RI-21: 組織タイプに対応する画面トーンと状態文を表示する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri21-theme');
+  await page.goto('/?seed=ri21-theme');
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     g.pause();
@@ -358,7 +358,7 @@ test('RI-21: 組織タイプに対応する画面トーンと状態文を表示�
 });
 
 test('RI-37: 休息で強化対象カードを選んでレベルを上げられる', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri37-rest-ui');
+  await page.goto('/?seed=ri37-rest-ui');
 
   const target = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -407,7 +407,7 @@ test('RI-37: 休息で強化対象カードを選んでレベルを上げられ�
 });
 
 test('RI-78: ドラフトとショップのカード選択前に発動コストを表示する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri78-card-selection-cost');
+  await page.goto('/?seed=ri78-card-selection-cost');
 
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -441,7 +441,7 @@ test('RI-78: ドラフトとショップのカード選択前に発動コスト�
 });
 
 test('ボス未達→四半期レビュー→スコープ削減→次四半期へ継続', async ({ page }) => {
-  await page.goto(`/?renderer=dom&seed=${E2E_MISSED_ADJUSTABLE_SEED}`);
+  await page.goto(`/?seed=${E2E_MISSED_ADJUSTABLE_SEED}`);
 
   const atReview = await page.evaluate(
     ({ seed }) => {
@@ -533,7 +533,7 @@ test('ボス未達→四半期レビュー→スコープ削減→次四半期�
 
 test('継続リソース枯渇→四半期レビュー→ラン終了', async ({ page }) => {
   const { seed, difficulty, outcome: expectedOutcome } = E2E_TERMINAL_SHUTDOWN;
-  await page.goto(`/?renderer=dom&seed=${seed}`);
+  await page.goto(`/?seed=${seed}`);
 
   const atReview = await page.evaluate(
     ({ seed: runSeed, difficulty: runDifficulty, expectedOutcome: expected }) => {
@@ -610,7 +610,7 @@ const TERMINAL_FAILURE_OUTCOMES: readonly QuarterOutcome[] = [
 for (const entry of RI22_TERMINAL_SEEDS) {
   test(`RI-22: ${entry.outcome} で固有の終了演出を表示する`, async ({ page }) => {
     const { seed, difficulty, outcome: expectedOutcome } = entry;
-    await page.goto(`/?renderer=dom&seed=${seed}`);
+    await page.goto(`/?seed=${seed}`);
 
     const atReview = await page.evaluate(
       ({ seed: runSeed, difficulty: runDifficulty, expectedOutcome: expected, terminals }) => {
@@ -710,7 +710,7 @@ for (const entry of RI22_TERMINAL_SEEDS) {
 }
 
 test('ビートの選択イベントを解決すると次スプリントへ進む（第9.4）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=event-run');
+  await page.goto('/?seed=event-run');
 
   const found = await page.evaluate(() => {
     const g = (window as GameWindow).game!;
@@ -745,7 +745,7 @@ test('ビートの選択イベントを解決すると次スプリントへ進�
 });
 
 test('DECISION は Escape で選択を保留し、同じ判断へ戻れる（#437）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=decision-escape-dismiss');
+  await page.goto('/?seed=decision-escape-dismiss');
   await page.evaluate(() => {
     const g = (window as GameWindow).game!;
     g.pause();
@@ -787,7 +787,7 @@ test('tone: joke のビートはネタ分類の見た目で表示される（RI-
     eventId: def.id,
     kind: effectiveKind(def),
   }));
-  await page.goto('/?renderer=dom&seed=ri38-joke-ui');
+  await page.goto('/?seed=ri38-joke-ui');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const found = await page.evaluate((beats) => {
@@ -816,7 +816,7 @@ test('tone: joke のビートはネタ分類の見た目で表示される（RI-
 });
 
 test('RI-85: キューピークで凍結予兆が出て review-freeze は即敗北しない', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri85-freeze-ui');
+  await page.goto('/?seed=ri85-freeze-ui');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.evaluate(() => {

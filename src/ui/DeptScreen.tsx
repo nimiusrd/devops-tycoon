@@ -5,6 +5,7 @@
  * チーム間依存（連鎖炎上）と部門HUD・部門／チームレバーを見せる。
  * 状態確認（島クリック）と入り込みを分離する。
  */
+import { WebglLoading } from './WebglLoading';
 import { lazy, Suspense } from 'react';
 import { DEPARTMENT_LEVERS, TEAM_LEVERS } from '../data/levers';
 import { ENTER_TEAM_FOCUS_PENALTY, ENTER_TEAM_LOCK_SPRINTS } from '../sim/orgscale';
@@ -14,7 +15,7 @@ import type { RunPhase } from '../sim/run/types';
 import { HEALTH_LABEL } from '../render/orgView';
 import { formatLeverDefTags, formatLeverTooltip } from '../render/eventOutcomeView';
 import { AspectStage } from './AspectStage';
-import { DeptBoard } from './DeptBoard';
+import { TeamNavigator } from './TeamNavigator';
 import { EffectTagList } from './EffectTagList';
 import { usePixiRenderer } from './usePixiRenderer';
 import { Stat } from './Stat';
@@ -96,14 +97,13 @@ export function DeptScreen({
         className="dept-field"
         data-testid="dept-field"
       >
-        {usePixi ? (
-          <Suspense fallback={null}>
+        {usePixi && (
+          <Suspense fallback={<WebglLoading />}>
             <DeptPixiBoard dept={dept} onFocusTeam={onFocusTeam} onWebglError={onWebglError} />
           </Suspense>
-        ) : (
-          <DeptBoard dept={dept} onFocusTeam={onFocusTeam} selectedTeamId={panelTeamId} />
         )}
       </AspectStage>
+      <TeamNavigator teams={dept.teams} onFocusTeam={onFocusTeam} />
 
       {selected && (
         <div className="dept-team-panel" data-testid="dept-team-panel">

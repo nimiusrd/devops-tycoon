@@ -103,6 +103,9 @@ describe('visual tokens', () => {
 
   it('CSS custom property をトークンから生成して DOM へ反映する', () => {
     const values = visualTokenCssVariables();
+    expect(values['--visual-color-board-contact-shadow']).toBe(
+      VISUAL_TOKENS.colors.board.contactShadow,
+    );
     expect(values['--visual-space-sprint-w']).toBe('1404');
     expect(values['--visual-space-organization-h']).toBe('573');
     expect(values['--visual-space-department-w']).toBe('1404');

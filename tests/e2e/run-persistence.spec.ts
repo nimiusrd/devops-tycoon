@@ -131,7 +131,7 @@ async function advanceToResult(page: import('@playwright/test').Page): Promise<v
 }
 
 test('ラン途中セーブをリロード後に続きから復元できる', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri58-e2e');
+  await page.goto('/?seed=ri58-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await advanceToResult(page);
@@ -170,7 +170,7 @@ test('ラン途中セーブをリロード後に続きから復元できる', as
 });
 
 test('ルールセット情報のない旧セーブは理由を表示し、明示破棄まで保持する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri117-unknown-e2e');
+  await page.goto('/?seed=ri117-unknown-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await advanceToResult(page);
@@ -190,7 +190,7 @@ test('ルールセット情報のない旧セーブは理由を表示し、明�
 });
 
 test('ルールセット不一致セーブは保存時と現在の識別子を表示する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri117-mismatch-e2e');
+  await page.goto('/?seed=ri117-mismatch-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await advanceToResult(page);
@@ -211,7 +211,7 @@ test('ルールセット不一致セーブは保存時と現在の識別子を�
 });
 
 test('続きから再開したドラフトのスプリント番号は HUD と一致する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri372-e2e');
+  await page.goto('/?seed=ri372-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.evaluate(() => {
@@ -246,7 +246,7 @@ test('続きから再開したドラフトのスプリント番号は HUD と一
 });
 
 test('新ラン開始で旧セーブが上書きされ、タイトル復帰で消える', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri58-e2e-clear');
+  await page.goto('/?seed=ri58-e2e-clear');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await page.evaluate(() => {
@@ -272,7 +272,7 @@ test('新ラン開始で旧セーブが上書きされ、タイトル復帰で�
 });
 
 test('通常セーブ再開後の新しいランは保存済み seed を維持する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=fresh');
+  await page.goto('/?seed=fresh');
   await expect(page.getByTestId('title')).toBeVisible();
   await expect(page.getByTestId('seed')).toContainText('fresh');
 
@@ -304,11 +304,18 @@ test('通常セーブ再開後の新しいランは保存済み seed を維持�
 });
 
 test('シニア体力 2% のセーブは再開前に警告し、確認なしでは再開しない', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=ri374-e2e');
+  await page.goto('/?seed=ri374-e2e');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await advanceToResult(page);
-  await expect.poll(() => storedRunSummary(page)).toMatchObject({ seed: 'ri58-e2e' });
+  // seedだけでは開始直後のsetupセーブも一致する。結果の永続化を待ってから加工する。
+  await expect
+    .poll(() => storedRunSummary(page))
+    .toMatchObject({
+      seed: 'ri58-e2e',
+      phase: 'result',
+      sprintsPlayed: 1,
+    });
   await setStoredSeniorHp(page, 2);
 
   await page.reload();

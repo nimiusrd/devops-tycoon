@@ -6,7 +6,7 @@
  * だけを受け持つ。スプライトは `iso.ts` の `SpritePool` で再利用し、生成数を
  * 予算内に抑える（第22.5）。
  *
- * ⚠ 実 WebGL は CI/Node で回さない方針（architecture §4.2）。本ファイルは Node
+ * 実 WebGL はブラウザの E2E で検証する。本ファイルは Node
  *    から import できる（型検証のため）が、`init()` / `render()` はブラウザ
  *    （DevContainer の dev サーバをホストブラウザで開く）でのみ呼ぶこと。
  */
@@ -40,7 +40,7 @@ import type { RendererAdapter } from './index';
  */
 const DESTROY_OPTIONS = { children: true, texture: false, context: true } as const;
 
-/** DOM `.team-island` と同寸（styles.css）。 */
+/** 全社カードの共有寸法。 */
 const CARD = VISUAL_TOKENS.dimensions.organization.card;
 const CARD_W = CARD.width;
 const CARD_PAD_X = CARD.paddingX;

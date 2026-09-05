@@ -2,8 +2,9 @@
  * 全社マップの PixiJS 描画領域（`?renderer=pixi` 時のみ OrgScreen からマウント）。
  *
  * DOM の HUD / 部門チップ / レバー / 共通基盤ハブは親が描き、ここはチーム島だけ。
- * 実 WebGL は init() 以降ブラウザ上でのみ動く（CI/Node ではマウントされない）。
+ * 実 WebGL は init() 以降ブラウザ上でのみ動く（CIではPlaywrightで検証する）。
  */
+import { beginWebglLoading } from '../render/webglStatus';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react';
 import type { DepartmentState, Team, ZoomState } from '../sim/orgscale/types';
 import { PixiOrgRenderer } from '../render/adapters/pixiOrgRenderer';
@@ -34,7 +35,7 @@ export interface OrgPixiFieldProps {
   departments: readonly DepartmentState[];
   onFocusTeam: (id: string) => void;
   deptColor: (deptId: string) => string;
-  /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
+  /** WebGL 初期化失敗時に呼ぶ（再試行の案内を表示する）。 */
   onWebglError?: () => void;
 }
 
@@ -156,6 +157,7 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
     };
 
     let cancelled = false;
+    const finishLoading = beginWebglLoading();
     void renderer
       .init(mount)
       .then(() => {
@@ -165,6 +167,7 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
         layoutFingerprintRef.current = fp;
         renderer.fitToContent(teamsRef.current);
         syncLayout();
+        finishLoading();
         if (import.meta.env.DEV) {
           window.__orgPixiTest = {
             focusTeamCamera: (teamId) => renderer.focusTeamCamera(teamsRef.current, teamId, false),
@@ -175,9 +178,10 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
         }
       })
       .catch((err: unknown) => {
-        // WebGL 不可の環境では DOM/SVG レンダラへフォールバックする。
-        console.warn('PixiOrgRenderer init failed; falling back to DOM renderer', err);
+        // WebGL失敗は共有の案内へ通知し、自動進行を止める。
+        console.warn('PixiOrgRenderer init failed; WebGL is unavailable', err);
         if (!cancelled) onWebglErrorRef.current?.();
+        finishLoading();
       });
 
     const ro = new ResizeObserver(() => syncLayout());
@@ -188,6 +192,7 @@ export const OrgPixiField = forwardRef<OrgPixiFieldHandle, OrgPixiFieldProps>(fu
 
     return () => {
       cancelled = true;
+      finishLoading();
       initDoneRef.current = false;
       layoutFingerprintRef.current = null;
       delete window.__orgPixiTest;

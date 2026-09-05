@@ -129,7 +129,7 @@ async function assertReadOnlyDraftA11y(page: Page): Promise<void> {
 }
 
 test('ラン完了後にリプレイ一覧からキーフレームを read-only で開ける', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=replay-e2e&tutorial=off');
+  await page.goto('/?seed=replay-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   await playUntilFinished(page);
@@ -173,7 +173,7 @@ test('ラン完了後にリプレイ一覧からキーフレームを read-only 
 });
 
 test('レビュー地獄リプレイは専用パネルとバナーで開ける（RI-34‴）', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=review-hell-e2e&tutorial=off');
+  await page.goto('/?seed=review-hell-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async (schemaVersion) => {
@@ -271,7 +271,7 @@ test('レビュー地獄リプレイは専用パネルとバナーで開ける�
 });
 
 test('記録時のレリック定義とルールセットを優先して表示する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=replay-snapshot-e2e&tutorial=off');
+  await page.goto('/?seed=replay-snapshot-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async (schemaVersion) => {
@@ -346,7 +346,7 @@ test('記録時のレリック定義とルールセットを優先して表示�
 });
 
 test('記録時の試練定義を HUD に優先して表示する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=replay-trial-snapshot-e2e&tutorial=off');
+  await page.goto('/?seed=replay-trial-snapshot-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async (schemaVersion) => {
@@ -412,7 +412,7 @@ test('記録時の試練定義を HUD に優先して表示する', async ({ pag
 });
 
 test('旧v1リプレイはルールセット不明と未知コンテンツのまま開ける', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=legacy-replay-e2e&tutorial=off');
+  await page.goto('/?seed=legacy-replay-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async () => {
@@ -461,7 +461,7 @@ test('タイトルを大きくスクロールしたあとキーフレームを�
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?renderer=dom&seed=replay-scroll-e2e&tutorial=off');
+  await page.goto('/?seed=replay-scroll-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async (schemaVersion) => {
@@ -544,7 +544,7 @@ test('タイトルを大きくスクロールしたあとキーフレームを�
 });
 
 test('リプレイの「カードドラフトへ」で次のドラフトキーフレームへ移動する', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=replay-draft-jump-e2e&tutorial=off');
+  await page.goto('/?seed=replay-draft-jump-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async (schemaVersion) => {
@@ -648,7 +648,7 @@ test('リプレイの「カードドラフトへ」で次のドラフトキー�
 });
 
 test('ドラフトキーフレームが無いリプレイでは「カードドラフトへ」が disabled', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=replay-draft-missing-e2e&tutorial=off');
+  await page.goto('/?seed=replay-draft-missing-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async (schemaVersion) => {
@@ -724,7 +724,7 @@ test('ドラフトキーフレームが無いリプレイでは「カードド�
 });
 
 test('対応するドラフトが無い result から後続スプリントのドラフトへ飛ばない', async ({ page }) => {
-  await page.goto('/?renderer=dom&seed=replay-draft-later-e2e&tutorial=off');
+  await page.goto('/?seed=replay-draft-later-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async (schemaVersion) => {
@@ -807,7 +807,7 @@ test('対応するドラフトが無い result から後続スプリントのド
 
 test('phone-se のリプレイドラフトはバナー下に収まりカード幅を維持する', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
-  await page.goto('/?renderer=dom&seed=replay-draft-phone-se-e2e&tutorial=off');
+  await page.goto('/?seed=replay-draft-phone-se-e2e&tutorial=off');
   await expect(page.getByTestId('title')).toBeVisible();
 
   const imported = await page.evaluate(async (schemaVersion) => {

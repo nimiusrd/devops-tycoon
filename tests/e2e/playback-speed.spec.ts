@@ -17,7 +17,7 @@ import type { Page } from '@playwright/test';
 
 /** 1 本目を公開 API で完走し、ドラフト採用後の次スプリントへ入る。 */
 async function beginNextSprintWithDraftedHand(page: Page): Promise<void> {
-  await beginPublicSprint(page, { seed: 'issue-370-pause', renderer: 'dom' });
+  await beginPublicSprint(page, { seed: 'issue-370-pause', renderer: 'pixi' });
   await advanceCurrentSprintToResult(page);
   await page.evaluate((relicChoiceByEvent) => {
     const game = (window as PublicGameWindow).game;
@@ -149,7 +149,7 @@ test('❚❚ はトグルでき、1x / 2x でも再開でき、停止中は手�
 });
 
 test('❚❚ 中は READY のペアレビューを発動できず、再開後は発動できる', async ({ page }) => {
-  await beginPublicSprint(page, { seed: 'issue-370-pair-review', renderer: 'dom' });
+  await beginPublicSprint(page, { seed: 'issue-370-pair-review', renderer: 'pixi' });
   await advanceCurrentSprintToReviewQueue(page, 2);
 
   const pauseBtn = page.getByTestId('speed-pause');

@@ -8,7 +8,6 @@
 import { expect, test } from './fixtures';
 import {
   advanceCurrentSprintToReviewQueue,
-  advanceCurrentSprintToBurning,
   advancePublicRun,
   advanceCurrentSprintToResult,
   advanceCurrentResultToDraft,
@@ -20,7 +19,6 @@ import { ACTION_DEFS } from '../../src/data/actions';
 import { TRIAL_DEFS } from '../../src/data/difficulties';
 import { RELIC_DEFS } from '../../src/data/relics';
 import { RESPONSIVE_BREAKPOINTS } from '../../src/ui/responsiveMode';
-import { DESIGN_SPACES, VISUAL_TOKENS } from '../../src/render/visualTokens';
 import { seedMeta } from './seedMeta';
 
 const BOARD_RATIO = 1404 / 573;
@@ -1102,17 +1100,7 @@ test.describe('RI-94 レイアウト契約', () => {
     await assertAcrossViewports(page, { resultOverlay: true, hudExpanded: true });
   });
 
-  test('1440x900通常スプリントのDOM合成を固定する', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await beginPublicSprint(page, { seed: 'ri94-normal-0' });
-    await stabilizeDomForScreenshot(page);
-    await expect(page.locator('.app')).toHaveScreenshot('sprint-layout-normal.png', {
-      animations: 'disabled',
-      maxDiffPixelRatio: 0.02,
-    });
-  });
-
-  test('390x844 HUD展開後の結果オーバーレイDOM合成を固定する', async ({ page }) => {
+  test('390x844 HUD展開後の結果カードと操作を固定する', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await beginPublicSprint(page, { seed: 'ri94-result-0' });
     await page.getByTestId('hud-toggle').click();
@@ -1122,10 +1110,6 @@ test.describe('RI-94 レイアウト契約', () => {
       page.locator('.result-row').filter({ hasText: 'Senior HP' }).locator('dd'),
     ).toHaveText(/^\d+$/);
     await stabilizeDomForScreenshot(page);
-    await expect(page).toHaveScreenshot('sprint-layout-result-overlay.png', {
-      animations: 'disabled',
-      maxDiffPixelRatio: 0.02,
-    });
 
     const resultCard = page.getByTestId('sprint-result').locator('.sprint-result-card');
     await assertReachableInViewport(page, page.getByTestId('result-continue'), 'result-continue');
@@ -1274,12 +1258,12 @@ test.describe('短いviewportの結果・ドラフトオーバーレイ #366', (
   });
 });
 
-test.describe('RI-141 Review渋滞のDOM同等性', () => {
+test.describe('RI-141 Review渋滞とHTML状態表示', () => {
   test('8〜11件の連続ヒートを5 viewportで維持する', async ({ page }) => {
     await beginPublicSprint(page, {
       seed: 'ri141-review-pressure-0',
       difficulty: 'hard',
-      renderer: 'dom',
+      renderer: 'pixi',
     });
     const queue = await advanceCurrentSprintToReviewQueue(page, 8, 11);
     const board = page.getByTestId('board');
@@ -1297,154 +1281,28 @@ test.describe('RI-141 Review渋滞のDOM同等性', () => {
     await beginPublicSprint(page, {
       seed: 'ri141-review-pressure-0',
       difficulty: 'hard',
-      renderer: 'dom',
+      renderer: 'pixi',
     });
     await advanceCurrentSprintToReviewQueue(page, 12);
     const board = page.getByTestId('board');
     await expect(board).toHaveAttribute('data-review-heat', '1');
     await expect(board).toHaveAttribute('data-review-hell', 'true');
     await expect(board.locator('[data-lane="review"] .board-flow-alert')).toHaveText('要対応');
-    const animationNames = await board.evaluate((element) => {
-      const flow = element.querySelector('.flowdash');
-      const dot = element.querySelector('.task-dot');
-      return {
-        flow: flow ? getComputedStyle(flow).animationName : null,
-        dot: dot ? getComputedStyle(dot).animationName : null,
-        trail: dot ? getComputedStyle(dot, '::after').animationName : null,
-      };
-    });
-    expect(animationNames).toEqual({ flow: 'none', dot: 'none', trail: 'none' });
+    await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute(
+      'data-board-review-heat',
+      '1',
+    );
     await assertAcrossViewports(page);
   });
 });
 
-test.describe('RI-142 炎上・介入演出のDOM同等性とフォールバック', () => {
-  test('点火リアクションと炎上情報をDOMの5 viewportで維持する', async ({ page }) => {
-    await beginPublicSprint(page, {
-      seed: 'ri142-fire-effects',
-      difficulty: 'hard',
-      renderer: 'dom',
-    });
-    const burningTaskIds = await advanceCurrentSprintToBurning(page);
-    const board = page.getByTestId('board');
-
-    expect(burningTaskIds.length).toBeGreaterThan(0);
-    await expect(board).toHaveAttribute('data-effect-kinds', /fire:(ignite|spread)/);
-    await expect(page.locator('[data-testid^="fire-effect-"]').first()).toBeVisible();
-    await expect(page.getByTestId('fire-count')).not.toHaveText('🔥0');
-
-    await assertAcrossViewports(page);
-  });
-
-  test('介入結果と常駐オーラをDOMの5 viewportで維持する', async ({ page }) => {
-    await beginPublicSprint(page, { seed: 'ri142-dom-aura', renderer: 'dom' });
-    const board = page.getByTestId('board');
-
+test.describe('WebGLの状態表示', () => {
+  test('介入オーラとHTMLの結果を5 viewportで維持する', async ({ page }) => {
+    await beginPublicSprint(page, { seed: 'webgl-aura' });
     await page.getByTestId('action-overtime').click();
-    await expect(board).toHaveAttribute('data-effect-renderer', 'dom');
-    await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:boardAura');
-    await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
-    await expect(page.getByTestId('intervention-effect-aura-overtime')).toBeVisible();
-    await expect(page.getByTestId('board-aura-overtime')).toBeVisible();
+    await expect(page.getByTestId('board-pixi-mount')).toHaveAttribute('data-board-auras', '1');
     await expect(page.getByTestId('event-ticker')).toBeVisible();
-
     await assertAcrossViewports(page);
-  });
-
-  test('reduced motionでは一時装飾を抑制しても介入結果・オーラ・SFX契約を残す', async ({
-    page,
-  }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await beginPublicSprint(page, { seed: 'ri142-reduced-aura', renderer: 'dom' });
-    const board = page.getByTestId('board');
-
-    await page.getByTestId('action-overtime').click();
-    await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:boardAura');
-    await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
-    await expect(page.getByTestId('board-aura-overtime')).toBeVisible();
-    const motion = await board.evaluate((element) => ({
-      transientDisplay: getComputedStyle(element.querySelector('.intervention-effects')!).display,
-      auraAnimation: getComputedStyle(element.querySelector('.board-modifier-aura')!).animationName,
-    }));
-    expect(motion).toEqual({ transientDisplay: 'none', auraAnimation: 'none' });
-    await expect(page.locator('[data-testid^="event-ticker-row-"]').first()).toBeVisible();
-
-    await assertAcrossViewports(page);
-  });
-
-  test('演出・オーラ再生中のPixi初期化失敗でも同じDOM planへ一度だけ切り替える', async ({
-    page,
-  }) => {
-    await page.addInitScript(() => {
-      (
-        window as Window & {
-          __forceBoardPixiInitFailure?: { delayMs?: number; waitForEffects?: boolean };
-        }
-      ).__forceBoardPixiInitFailure = { delayMs: 350, waitForEffects: true };
-    });
-    await beginPublicSprint(page, { seed: 'ri142-pixi-fallback', renderer: 'pixi' });
-    const board = page.getByTestId('board');
-    await expect(page.getByTestId('board-pixi-mount')).toBeVisible();
-
-    await page.getByTestId('action-overtime').click();
-    await expect(board).toHaveAttribute('data-effect-kinds', 'intervention:boardAura');
-    await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
-    const sequence = await board.getAttribute('data-effect-sequence');
-    expect(sequence).not.toBeNull();
-    await expect(board).toHaveAttribute('data-effect-renderer', 'dom');
-    await expect(page.locator('.intervention-effects')).not.toHaveClass(/dom-fallback-hidden/);
-    await expect(page.getByTestId('intervention-effect-aura-overtime')).toBeVisible();
-
-    await expect(page.getByTestId('board-pixi-mount')).toHaveCount(0, { timeout: 3_000 });
-    await expect(board).toHaveAttribute('data-effect-sequence', sequence!);
-    await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
-    await expect(page.getByTestId('board-aura-overtime')).toBeVisible();
-  });
-
-  test('短命な介入演出が終了するまでPixi初回描画前のDOM表示を維持する', async ({ page }) => {
-    await page.addInitScript(() => {
-      (
-        window as Window & {
-          __delayBoardPixiInit?: { delayMs: number; waitForEffects?: boolean };
-        }
-      ).__delayBoardPixiInit = { delayMs: 700, waitForEffects: true };
-    });
-    await beginPublicSprint(page, { seed: 'ri142-pixi-delayed-ready', renderer: 'pixi' });
-    const board = page.getByTestId('board');
-    await expect(page.getByTestId('board-pixi-mount')).toBeVisible();
-
-    await page.getByTestId('action-overtime').click();
-    await expect(board).toHaveAttribute('data-effect-renderer', 'dom');
-    await expect(page.getByTestId('intervention-effect-aura-overtime')).toBeVisible();
-    await page.waitForTimeout(620);
-    await expect(board).toHaveAttribute('data-effect-renderer', 'dom');
-    await expect(board).toHaveAttribute('data-effect-sfx-count', '1');
-    await expect(board).toHaveAttribute('data-effect-renderer', 'pixi', { timeout: 3_000 });
-  });
-
-  test('差配ダッシュのDOM寸法を5 viewportで盤面幅基準に保つ', async ({ page }) => {
-    await beginPublicSprint(page, { seed: 'ri142-assign-dash-size', renderer: 'dom' });
-    const board = page.getByTestId('board');
-    const expected = VISUAL_TOKENS.dimensions.sprint.boardEffects.assignDash;
-
-    for (const viewport of VIEWPORTS) {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      const size = await board.evaluate((element) => {
-        const dash = document.createElement('span');
-        dash.className = 'intervention-assign-dash';
-        element.append(dash);
-        const style = getComputedStyle(dash);
-        const result = {
-          boardWidth: element.clientWidth,
-          width: Number.parseFloat(style.width),
-          height: Number.parseFloat(style.height),
-        };
-        dash.remove();
-        return result;
-      });
-      expect(size.width / size.boardWidth).toBeCloseTo(expected.length / DESIGN_SPACES.sprint.w, 4);
-      expect(size.height / size.boardWidth).toBeCloseTo(expected.width / DESIGN_SPACES.sprint.w, 4);
-    }
   });
 });
 
@@ -1806,8 +1664,6 @@ async function findTickerTouchPanPoint(page: Page): Promise<{ x: number; y: numb
       [box.left + box.width / 2, box.top + box.height / 2],
     ];
     for (const [x, y] of samples) {
-      const hit = document.elementFromPoint(x, y);
-      if (hit?.closest('[data-task-id][data-draggable="true"]')) continue;
       return { x, y };
     }
     return null;
@@ -1899,60 +1755,6 @@ async function assertTickerTouchPanClaimsAtStart(page: Page, label: string): Pro
     return event.defaultPrevented;
   }, point);
   expect(mousePrevented, `${label}: mouse の pointerdown をティッカーが奪う`).toBe(false);
-
-  const grainPoint = await page.evaluate(() => {
-    const scrollList = document.querySelector<HTMLElement>('[data-testid="event-ticker-list"]');
-    const grain = document.querySelector<HTMLElement>('[data-task-id]');
-    if (!scrollList || !grain) return null;
-    const listBox = scrollList.getBoundingClientRect();
-    const grainBox = grain.getBoundingClientRect();
-    const x = grainBox.left + grainBox.width / 2;
-    const y = grainBox.top + grainBox.height / 2;
-    if (x < listBox.left || x > listBox.right || y < listBox.top || y > listBox.bottom) {
-      return null;
-    }
-    return { x, y, draggable: grain.dataset.draggable === 'true' };
-  });
-  if (!grainPoint) return;
-
-  await list.evaluate((element) => {
-    element.scrollTop = 0;
-    if (element.parentElement) element.parentElement.scrollTop = 0;
-  });
-  await page.evaluate(({ x, y }) => {
-    window.dispatchEvent(
-      new PointerEvent('pointerdown', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        pointerId: 79,
-        pointerType: 'touch',
-        clientX: x,
-        clientY: y,
-        isPrimary: true,
-      }),
-    );
-    window.dispatchEvent(
-      new PointerEvent('pointermove', {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        pointerId: 79,
-        pointerType: 'touch',
-        clientX: x,
-        clientY: y - 80,
-        isPrimary: true,
-      }),
-    );
-  }, grainPoint);
-  const afterGrain = await list.evaluate(
-    (element) => element.scrollTop + (element.parentElement?.scrollTop ?? 0),
-  );
-  if (grainPoint.draggable) {
-    expect(afterGrain, `${label}: ドラッグ可能粒の上でティッカーがパンする`).toBe(0);
-  } else {
-    expect(afterGrain, `${label}: ドラッグ不能粒の上でティッカーがパンしない`).toBeGreaterThan(0);
-  }
 }
 
 /**

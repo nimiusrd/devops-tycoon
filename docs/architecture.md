@@ -9,7 +9,6 @@
 | 言語・ビルド | TypeScript / Vite / Node 24 | 全レイヤとビルド |
 | UI | React 19 / Framer Motion | HUD、カード、画面遷移、離散UI |
 | 盤面 | PixiJS / pixi-viewport | 現場、部署、全社の動的描画とカメラ |
-| フォールバック | DOM / SVG | WebGL不可環境と標準E2E |
 | シミュレーション | 純TypeScript / seed付きPRNG | 固定タイムステップ、決定論 |
 | 状態と遷移 | `RunEngine` / 純TS遷移表 / XState | ラン状態の正本、遷移検証、契約可視化 |
 | 重い試算 | Web Worker / Comlink | what-if計算 |
@@ -44,7 +43,7 @@ IndexedDB ◀──── Meta / RunSave / Replayの直列化境界
 | `src/sim/` | ドメイン型、確率モデル、ラン進行、組織集約 |
 | `src/state/` | メタ進行、IndexedDB、セーブ、リプレイ、XState契約 |
 | `src/data/` | カード、レリック、イベント、難易度などの宣言的定義 |
-| `src/render/` | 状態から描画計画への純変換、Pixi/DOMアダプタ |
+| `src/render/` | 状態から描画計画への純変換、Pixiアダプタ |
 | `src/ui/` | React画面、HUD、入力UI |
 | `src/game.ts` | UI・E2E・デバッグ向けの操作ファサード |
 | `tests/unit/` | 純ロジック、不変条件、統計レンジ |
@@ -54,7 +53,7 @@ IndexedDB ◀──── Meta / RunSave / Replayの直列化境界
 
 UIのデザイン判断、トークン利用、レスポンシブ、アクセシビリティ、視覚検証は[デザインシステム制約](./design-system.md)を正とする。
 
-- 既定はPixiJS。`?renderer=dom`またはWebGL不可時のみDOM/SVGを使う。
+- 動的盤面はPixiJSに統一する。WebGL準備中・初期化失敗時は自動進行を停止し、失敗時は再試行を案内する。
 - 座標、深度、カリング、LOD、ヒット判定は可能な限り純関数化し、GPU不要のVitestで検証する。
 - 実ピクセルはPlaywrightの`@pixi`テスト、主要画面の目視は`npm run gallery`で確認する。
 - FPSをCIで直接assertせず、表示数、カリング数、スプライト再利用数など決定論的な予算を検証する。
@@ -103,8 +102,8 @@ UIのデザイン判断、トークン利用、レスポンシブ、アクセシ
 ## 6. テスト規律
 
 - シミュレーション、不変条件、統計レンジ、状態→表示変換はVitest。
-- フェーズ横断操作、IndexedDB連携、DOMフォールバックは標準Playwright。
-- 実WebGLと視覚回帰は`npm run test:e2e:pixi`。
+- フェーズ横断操作、IndexedDB連携、HTML UIと実WebGLは標準Playwright。
+- 視覚回帰も標準E2Eで実行する。描画だけの検証には`npm run test:e2e:pixi`を使う。
 - `?seed=`、`pause()`、`step(ms)`、各フェーズ操作で失敗を再現できる状態を維持する。
 - Node上で実WebGLを動かさず、実GPUが必要な検証はPlaywrightへ集約する。
 

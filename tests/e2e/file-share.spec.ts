@@ -62,7 +62,7 @@ async function persistSetupSave(
 
 test.describe('run / replay file share (RI-133)', () => {
   test('途中セーブをファイルで往復し、拒否時は既存セーブを残す', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=ri133-save');
+    await page.goto('/?seed=ri133-save');
     await expect(page.getByTestId('title')).toBeVisible();
     const pointsBefore = await page.evaluate(
       () => (window as ShareGameWindow).game?.getMeta().points ?? -1,
@@ -107,7 +107,7 @@ test.describe('run / replay file share (RI-133)', () => {
   });
 
   test('未対応スキーマの途中セーブは理由付きで拒否する', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=ri133-unsupported');
+    await page.goto('/?seed=ri133-unsupported');
     await expect(page.getByTestId('title')).toBeVisible();
     await persistSetupSave(page, 'ri133-unsupported');
     await page.reload();
@@ -125,7 +125,7 @@ test.describe('run / replay file share (RI-133)', () => {
   });
 
   test('リプレイをファイルで往復し、拒否時は既存リプレイを残す', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=ri133-replay');
+    await page.goto('/?seed=ri133-replay');
     await expect(page.getByTestId('title')).toBeVisible();
 
     const imported = await page.evaluate(async () => {
@@ -150,7 +150,7 @@ test.describe('run / replay file share (RI-133)', () => {
     });
     expect(imported).toBe(true);
 
-    await page.goto('/?renderer=dom&seed=ri133-replay');
+    await page.goto('/?seed=ri133-replay');
     await expect(page.getByTestId('title')).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => (window as ShareGameWindow).game?.listReplays().length ?? 0))

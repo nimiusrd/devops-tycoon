@@ -3,8 +3,9 @@
  *
  * DOM の部門 HUD / レバー / ヒントは親側が描き、ここは等角盤面（プレート・依存
  * フロー・チームミニ盤面・バナー・工程ラベル）だけを canvas に描く。
- * 実 WebGL は init() 以降ブラウザ上でのみ動く（CI/Node ではマウントされない）。
+ * 実 WebGL は init() 以降ブラウザ上でのみ動く（CIではPlaywrightで検証する）。
  */
+import { beginWebglLoading } from '../render/webglStatus';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { DepartmentState } from '../sim/orgscale/types';
 import { PixiDeptRenderer } from '../render/adapters/pixiDeptRenderer';
@@ -21,7 +22,7 @@ declare global {
 export interface DeptPixiBoardProps {
   dept: DepartmentState;
   onFocusTeam: (id: string) => void;
-  /** WebGL 初期化失敗時に呼ぶ（親が DOM 版へフォールバックする）。 */
+  /** WebGL 初期化失敗時に呼ぶ（再試行の案内を表示する）。 */
   onWebglError?: () => void;
 }
 
@@ -41,7 +42,7 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
     deptRef.current = dept;
   }, [dept]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
 
@@ -79,12 +80,14 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
     };
 
     let cancelled = false;
+    const finishLoading = beginWebglLoading();
     void renderer
       .init(mount)
       .then(() => {
         if (cancelled) return;
         renderer.resize(mount.clientWidth, mount.clientHeight);
         renderer.render(deptRef.current);
+        finishLoading();
         if (import.meta.env.DEV) {
           window.__deptPixiTest = {
             freezeForScreenshot: () => renderer.freezeForScreenshot(),
@@ -92,9 +95,10 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
         }
       })
       .catch((err: unknown) => {
-        // WebGL 不可の環境では DOM/SVG レンダラへフォールバックする。
-        console.warn('PixiDeptRenderer init failed; falling back to DOM renderer', err);
+        // WebGL失敗は共有の案内へ通知し、自動進行を止める。
+        console.warn('PixiDeptRenderer init failed; WebGL is unavailable', err);
         if (!cancelled) onWebglErrorRef.current?.();
+        finishLoading();
       });
 
     const ro = new ResizeObserver(() => syncLayout());
@@ -102,6 +106,7 @@ export function DeptPixiBoard({ dept, onFocusTeam, onWebglError }: DeptPixiBoard
 
     return () => {
       cancelled = true;
+      finishLoading();
       delete window.__deptPixiTest;
       ro.disconnect();
       renderer.dispose();

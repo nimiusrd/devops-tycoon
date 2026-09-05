@@ -13,7 +13,7 @@ test.describe('trial HUD (issue #382)', () => {
     const easyBudget = getDifficulty('easy').startBudget;
     const halved = Math.round(easyBudget * 0.5);
 
-    await page.goto('/?renderer=dom');
+    await page.goto('/?renderer=pixi');
     await expect(page.getByTestId('title')).toBeVisible();
     await page.getByTestId('difficulty-easy').click();
     const trial = page.getByTestId('trial-half-budget');
@@ -40,7 +40,7 @@ test.describe('trial HUD (issue #382)', () => {
   test('試練なしの開始では HUD に試練 pill が出ず、Easy 開始予算のまま', async ({ page }) => {
     const easyBudget = getDifficulty('easy').startBudget;
 
-    await page.goto('/?renderer=dom');
+    await page.goto('/?renderer=pixi');
     await expect(page.getByTestId('title')).toBeVisible();
     await page.getByTestId('difficulty-easy').click();
     await page.getByTestId('start-run').click();
@@ -56,7 +56,7 @@ test.describe('trial HUD (issue #382)', () => {
   });
 
   test('スプリント中の compact HUD でも予算半減の試練が見える', async ({ page }) => {
-    await page.goto('/?renderer=dom&seed=trial-hud-sprint');
+    await page.goto('/?seed=trial-hud-sprint');
     await expect(page.getByTestId('title')).toBeVisible();
     await page.getByTestId('difficulty-easy').click();
     await page.getByTestId('trial-half-budget').click();

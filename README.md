@@ -61,7 +61,7 @@ PAGES_BASE=/devops-tycoon/ npm run preview
 
 - Node.js 24以上
 - npm
-- WebGL対応ブラウザ（利用できない場合はDOM/SVGへ自動フォールバック）
+- WebGL対応ブラウザ（初期化できない場合はゲームの自動進行を止め、再試行を案内）
 
 `.nvmrc`を利用する場合:
 
@@ -78,14 +78,13 @@ npm run dev
 | パラメータ | 例 | 用途 |
 | --- | --- | --- |
 | `seed` | `?seed=my-run` | 同じランを再現する |
-| `renderer` | `?renderer=dom` | PixiJSではなくDOM/SVGレンダラを使う |
 | `tutorial` | `?tutorial=force` | 初回ガイドを再表示する |
 | `tutorial` | `?tutorial=off` | 初回ガイドを表示しない |
 
 例:
 
 ```text
-http://localhost:5174/?seed=review-hell&renderer=dom&tutorial=force
+http://localhost:5174/?seed=review-hell&tutorial=force
 ```
 
 ## Codexで開発する
@@ -210,7 +209,7 @@ tests/
 ## 現在の開発状況
 
 コアループは通しプレイ可能です。F-9 敗因別手触りの定性検証（RI-139）まで完了しています。
-視覚表現拡張 RI-140〜143 は完了し、Review の流れ・滞留・熱、炎上・鎮火・介入リアクションの WebGL 可視化に加え、描画予算・DOM/Pixi 同等性・5 viewport 回帰を固定しています。検証結果は[プレイテスト所見](plan/playtest-findings.md)、
+視覚表現拡張 RI-140〜143 は完了し、Review の流れ・滞留・熱、炎上・鎮火・介入リアクションの WebGL 可視化に加え、描画予算・HTML UIとWebGLの操作契約・5 viewport 回帰を固定しています。検証結果は[プレイテスト所見](plan/playtest-findings.md)、
 未着手・完了項目は[残課題バックログ](plan/remaining-issues.md)を参照してください。
 
 ## ライセンス

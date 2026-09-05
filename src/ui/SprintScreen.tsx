@@ -31,7 +31,7 @@ import type {
 } from '../sim/types';
 import type { GameHandle, PauseBrieflyClear } from '../game';
 import type { RunState } from '../sim/run/types';
-import type { InterventionTrigger } from './InterventionEffects';
+import type { InterventionTrigger } from '../render/interventionEffects';
 import { ActionBar } from './ActionBar';
 import { ComboBadge } from './ComboBadge';
 import { DeckBar } from './DeckBar';

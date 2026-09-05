@@ -44,7 +44,7 @@ test.describe('title launch CTA first view', () => {
       page,
     }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto('/?renderer=dom&seed=title-launch-cta');
+      await page.goto('/?seed=title-launch-cta');
       await expect(page.getByTestId('title')).toBeVisible();
 
       const scroll = page.getByTestId('title-scroll');

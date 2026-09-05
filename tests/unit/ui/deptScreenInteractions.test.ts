@@ -1,7 +1,7 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const state = vi.hoisted(() => ({ cursor: 0, values: [] as unknown[], usePixi: false }));
+const state = vi.hoisted(() => ({ cursor: 0, values: [] as unknown[], usePixi: true }));
 
 // Node 上で JSX と画像ロード後の再描画を検証する。選択・入り込み・描画計画は実装を使う。
 vi.mock('react', async (importOriginal) => ({
@@ -17,7 +17,6 @@ vi.mock('../../../src/ui/usePixiRenderer', () => ({
 }));
 
 import { DEPARTMENT_LEVERS, TEAM_LEVERS } from '../../../src/data/levers';
-import { VISUAL_TOKENS } from '../../../src/render/visualTokens';
 import { createOrgState } from '../../../src/sim/org';
 import { generateOrgScale } from '../../../src/sim/orgscale';
 import type { RunPhase } from '../../../src/sim/run/types';
@@ -107,7 +106,7 @@ function mountDept(overrides: Partial<DeptScreenProps> = {}) {
 afterEach(() => {
   state.values = [];
   state.cursor = 0;
-  state.usePixi = false;
+  state.usePixi = true;
   vi.restoreAllMocks();
 });
 
@@ -124,7 +123,7 @@ describe('DeptScreen のチーム選択と入り込み', () => {
     screen.update({ selectedTeamId: other.id });
     expect(content(screen.find('dept-team-panel'))).toContain(other.name);
     expect(screen.query('team-active-badge')).toBeUndefined();
-    expect(content(screen.find('dept-board'))).toContain(`（選択: ${other.id}）`);
+    expect(content(screen.find('dept-team-panel'))).toContain(other.name);
     screen.click('enter-team');
     expect(screen.props.onEnterTeam).toHaveBeenCalledExactlyOnceWith(other.id);
 
@@ -210,7 +209,7 @@ describe('DeptScreen のレバーとチーム描画', () => {
     },
   );
 
-  it('炎上・レビュー渋滞・選択チームの情報を描き、画像の読込失敗時も人物を残す', () => {
+  it('炎上・レビュー渋滞・選択チームの情報をHTMLから確認できる', () => {
     const screen = mountDept();
     const dept = {
       ...screen.props.dept,
@@ -225,28 +224,10 @@ describe('DeptScreen のレバーとチーム描画', () => {
       })),
     };
     screen.update({ dept });
-    expect(screen.find('dept-board').props.className).toContain('dept-hell');
+    expect(screen.find(`team-${dept.teams[0].id}`).props['data-health']).toBe('reviewHell');
     expect(content(screen.find('dept-onfire'))).toBe('1');
-    expect(content(screen.find(`team-${dept.teams[0].id}`))).toContain('🔥');
+    expect(content(screen.find(`team-${dept.teams[0].id}`))).toContain('炎上');
     expect(content(screen.find('dept-team-panel'))).toContain('炎上');
-    const images = () =>
-      elements(screen.find(`team-${dept.teams[0].id}`)).filter((n) => n.type === 'image');
-    expect(images().map((n) => n.props['data-asset-id'])).toEqual([
-      'platform-architect',
-      'qa-alchemist',
-    ]);
-    expect(images().every((n) => n.props.opacity === 0)).toBe(true);
-    const skinCount = () =>
-      elements(screen.find(`team-${dept.teams[0].id}`)).filter(
-        (n) => n.type === 'circle' && n.props.fill === VISUAL_TOKENS.colors.actor.skin,
-      ).length;
-    expect(skinCount()).toBe(2);
-    screen.imageEvent(images()[0], 'onLoad');
-    expect(images()[0].props.opacity).toBeGreaterThan(0);
-    expect(skinCount()).toBe(1);
-    screen.imageEvent(images()[1], 'onError');
-    expect(images()[1].props.opacity).toBe(0);
-    expect(skinCount()).toBe(1);
   });
 
   it('Pixi 選択時も状態パネルを保ち、盤面へチーム選択 callback を渡す', () => {

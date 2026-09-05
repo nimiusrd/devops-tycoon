@@ -46,7 +46,7 @@ async function progressSnapshot(page: Page): Promise<ProgressSnapshot> {
 
 test('❚❚ 中は出荷ポイント・レーン・炎上タイマーが進まない（#363）', async ({ page }) => {
   test.setTimeout(45_000);
-  await page.goto('/?renderer=dom&seed=daily-2026-08-27');
+  await page.goto('/?seed=daily-2026-08-27');
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-run').click();
   await page.getByTestId('begin-sprint').click();

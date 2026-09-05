@@ -5,9 +5,9 @@
  * `planDeptBoardScene` が決め、ここは WebGL への反映だけを受け持つ。チームミニ盤面の
  * Container は `iso.ts` の `SpritePool` で再利用し、生成数を予算内に抑える（第22.5）。
  * 全社マップと違い盤面は固定の設計空間（1404×573）なので、viewport（pan/zoom）は
- * 使わず contain-fit の root スケールだけで DOM 版と同じ見え方にする。
+ * 使わず contain-fit の root スケールだけで 設計空間を可視範囲へ収める。
  *
- * ⚠ 実 WebGL は CI/Node で回さない方針（architecture §4.2）。本ファイルは Node
+ * 実 WebGL はブラウザの E2E で検証する。本ファイルは Node
  *    から import できる（型検証のため）が、`init()` / `render()` はブラウザでのみ呼ぶこと。
  */
 import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';

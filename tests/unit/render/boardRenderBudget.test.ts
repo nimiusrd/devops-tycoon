@@ -12,6 +12,7 @@ describe('board render budget (RI-143)', () => {
       reviewTrails: 24,
       transientEffects: 20,
       auras: 4,
+      shipmentBursts: 8,
     });
     expect(BOARD_RENDER_BUDGETS.reviewTrails).toBe(
       VISUAL_TOKENS.dimensions.sprint.reviewEffects.trail.budget,
@@ -22,6 +23,6 @@ describe('board render budget (RI-143)', () => {
   });
 
   it('Pixi内部レイヤを奥から手前へ単調増加させる', () => {
-    expect(Object.values(BOARD_PIXI_LAYER_ORDER)).toEqual([10, 20, 30, 40, 50, 60, 70]);
+    expect(Object.values(BOARD_PIXI_LAYER_ORDER)).toEqual([5, 10, 20, 30, 40, 50, 55, 60, 70]);
   });
 });

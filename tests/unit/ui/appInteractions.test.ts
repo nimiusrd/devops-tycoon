@@ -1,6 +1,8 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('../../../src/ui/WebglStatusOverlay', () => ({ WebglStatusOverlay: () => null }));
+
 const harness = vi.hoisted(() => {
   type Slot = { value?: unknown; dependencies?: readonly unknown[]; cleanup?: () => void };
   const frame = () => ({
@@ -422,7 +424,9 @@ function mountApp(overrides: Partial<UseRun> = {}) {
       frame.dirty = false;
       vi.mocked(useRun).mockReturnValue(run);
       const root = App({ game: game as unknown as GameHandle });
-      const appContent = root.props.children as ReactElement<Props>;
+      const appContent = Children.toArray(root.props.children).find(
+        (node) => isValidElement<Props>(node) && node.props.game === game,
+      ) as ReactElement<Props>;
       provider = (appContent.type as Component)(appContent.props) as ReactElement<Props>;
       const view = provider.props.children as ReactElement<Props>;
       tree = (view.type as Component)(view.props);

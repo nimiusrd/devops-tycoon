@@ -7,6 +7,7 @@
  * （第22.5 / RI-62 / #386）。描画は状態を読むだけ（第22.2）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getWebglStatus } from '../render/webglStatus';
 import {
   pauseBriefly as pauseGameBriefly,
   type ActiveReplayInfo,
@@ -198,7 +199,7 @@ export function useRun(game: GameHandle): UseRun {
         playbackSpeed: speed,
         fieldView: game.zoomLevel() === 'team',
       });
-      if (autoAdvance) {
+      if (autoAdvance && getWebglStatus() === 'ready') {
         // タブ復帰などで delta が膨らんでも、1 フレーム分超の未消化時間は破棄する。
         accumulatedMs = accumulateWallTime(accumulatedMs, deltaMs, speed);
         const { ticks, consumedMs } = ticksDueFromAccumulator(accumulatedMs, speed);

@@ -7,6 +7,7 @@ import { defaultMeta } from '../../../src/state/meta';
 import {
   buildReplayId,
   normalizeReplay,
+  replayContentSnapshotCovers,
   REPLAY_MAX_COUNT,
   REPLAY_SCHEMA_VERSION,
   selectReplaysWithinMax,
@@ -163,6 +164,103 @@ describe('リプレイ正規化（RI-61）', () => {
     expect(normalized?.contentSnapshot?.cards[0]?.name).toBe('Copilot全員配布');
     expect(normalized?.contentSnapshot?.relics[0]?.name).toBe('フロー重視');
     expect(normalized?.contentSnapshot?.trials?.[0]?.label).toBe('予算半減');
+  });
+
+  it.each([
+    ['null', null],
+    ['配列', []],
+    ['cards 欠落', { relics: [] }],
+    ['relics 欠落', { cards: [] }],
+    ['cards が配列以外', { cards: {}, relics: [] }],
+    ['relics が配列以外', { cards: [], relics: {} }],
+  ])('v2 は %s の contentSnapshot を拒否する', (_label, contentSnapshot) => {
+    const blob = makeBlob({ id: 'broken-snapshot', seed: 'broken-snapshot' });
+    expect(normalizeReplay(blob)).not.toBeNull();
+    expect(normalizeReplay({ ...blob, contentSnapshot })).toBeNull();
+    expect(blob.contentSnapshot).toEqual({ cards: [], relics: [] });
+  });
+
+  it('同じ参照が複数フレームに登場しても定義を一度だけ記録する', () => {
+    const frame = makeNormalizeFrame('repeated-content');
+    frame.deck = [{ defId: 'copilot', level: 1 }];
+    frame.draft = ['copilot'];
+    frame.shop = {
+      cards: [{ defId: 'copilot', cost: 1, bought: true }],
+      relic: { id: 'psych-safety', cost: 1, bought: true },
+    };
+    frame.relics = ['psych-safety'];
+    frame.bossRelicReward = 'psych-safety';
+    frame.trials = ['low-focus'];
+    const keyframes: ReplayKeyframe[] = [
+      { phase: 'setup', frame },
+      { phase: 'setup', frame: structuredClone(frame) },
+    ];
+
+    const snapshot = snapshotReplayContent(keyframes);
+
+    expect(snapshot.cards.map((card) => card.id)).toEqual(['copilot']);
+    expect(snapshot.relics.map((relic) => relic.id)).toEqual(['psych-safety']);
+    expect(snapshot.trials).toEqual([
+      {
+        id: 'low-focus',
+        label: '集中力 -1',
+        description: '介入の余裕が減る。',
+        budgetMul: 1,
+      },
+    ]);
+    expect(replayContentSnapshotCovers(snapshot, keyframes)).toBe(true);
+  });
+
+  it.each([
+    ['cards', 'copilot'],
+    ['cards', 'auto-test'],
+    ['cards', 'docs'],
+    ['relics', 'psych-safety'],
+    ['relics', 'flow-first'],
+    ['relics', 'postmortem'],
+    ['trials', 'half-budget'],
+  ] as const)('参照中の %s / %s が欠けたスナップショットは不完全と判定する', (kind, id) => {
+    const frame = makeNormalizeFrame('missing-content');
+    frame.deck = [{ defId: 'copilot', level: 1 }];
+    frame.draft = ['auto-test'];
+    frame.shop = {
+      cards: [{ defId: 'docs', cost: 1, bought: false }],
+      relic: { id: 'flow-first', cost: 1, bought: false },
+    };
+    frame.relics = ['psych-safety'];
+    frame.bossRelicReward = 'postmortem';
+    frame.trials = ['half-budget'];
+    const keyframes: ReplayKeyframe[] = [{ phase: 'setup', frame }];
+    const complete = snapshotReplayContent(keyframes);
+    const incomplete = {
+      ...complete,
+      [kind]: complete[kind]!.filter((definition) => definition.id !== id),
+    };
+
+    expect(replayContentSnapshotCovers(complete, keyframes)).toBe(true);
+    expect(replayContentSnapshotCovers(incomplete, keyframes)).toBe(false);
+    expect(complete[kind]!.some((definition) => definition.id === id)).toBe(true);
+  });
+
+  it('試練定義の省略された旧スナップショットは互換扱いだが、明示した空配列は不足になる', () => {
+    const frame = makeNormalizeFrame('legacy-trial-content');
+    frame.trials = ['half-budget'];
+    const keyframes: ReplayKeyframe[] = [{ phase: 'setup', frame }];
+    const { trials: _trials, ...legacySnapshot } = snapshotReplayContent(keyframes);
+    const normalized = normalizeReplay(
+      makeBlob({
+        id: 'legacy-trial-content',
+        seed: frame.seed,
+        keyframes,
+        contentSnapshot: legacySnapshot,
+      }),
+    );
+
+    expect(normalized).not.toBeNull();
+    expect(normalized?.contentSnapshot).not.toHaveProperty('trials');
+    expect(replayContentSnapshotCovers(legacySnapshot, keyframes)).toBe(true);
+    expect(replayContentSnapshotCovers({ ...legacySnapshot, trials: [] }, keyframes)).toBe(false);
+    expect(replayContentSnapshotCovers(null, keyframes)).toBe(true);
   });
 
   it('buildReplayId は seed と時刻を含む', () => {

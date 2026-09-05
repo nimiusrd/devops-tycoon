@@ -251,6 +251,97 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
     });
   });
 
+  it.each([
+    { carryoverQuarter: 2, quality: 54, techDebt: 16 },
+    { carryoverQuarter: 3, quality: 50, techDebt: 20 },
+  ])(
+    'hydratePersistState は本体の持越しを優先し、対象四半期 $carryoverQuarter にだけ効果を適用する',
+    ({ carryoverQuarter, quality, techDebt }) => {
+      const state = setupSave('carryover-top-priority');
+      state.quarterNumber = 2;
+      state.org.quality = 50;
+      state.org.techDebt = 20;
+      state.goalCarryoverQuarter = carryoverQuarter;
+      state.goalCarryoverId = 'quality_pivot';
+      state.extras.goalCarryoverQuarter = 2;
+      state.extras.goalCarryoverId = 'reorg_teams';
+      state.extras.pauseAiDebuffQuarter = 2;
+
+      const restored = started('carryover-top-priority-target');
+      restored.hydratePersistState(state);
+
+      const expectedCarryover = {
+        goalCarryoverQuarter: carryoverQuarter,
+        goalCarryoverId: 'quality_pivot',
+      };
+      expect(restored.snapshot()).toMatchObject(expectedCarryover);
+      expect(restored.exportPersistState()).toMatchObject({
+        ...expectedCarryover,
+        extras: { ...expectedCarryover, pauseAiDebuffQuarter: null },
+      });
+      expect(restored.whatIfComputeInput()).toMatchObject({
+        ...expectedCarryover,
+        pauseAiDebuffQuarter: null,
+      });
+
+      restored.beginSetupSprint();
+      expect(restored.snapshot()).toMatchObject({
+        phase: 'sprint',
+        org: { quality, techDebt },
+      });
+    },
+  );
+
+  it.each(['goalCarryoverQuarter', 'goalCarryoverId'] as const)(
+    'hydratePersistState は本体の %s が欠けると extras の持越しを組で復元する',
+    (missingField) => {
+      const state = setupSave('carryover-extras-fallback');
+      state.goalCarryoverQuarter = 3;
+      state.goalCarryoverId = 'quality_pivot';
+      state[missingField] = null;
+      state.extras.goalCarryoverQuarter = 2;
+      state.extras.goalCarryoverId = 'reorg_teams';
+      state.extras.pauseAiDebuffQuarter = 4;
+
+      const restored = started('carryover-extras-fallback-target');
+      restored.hydratePersistState(state);
+
+      const expectedCarryover = {
+        goalCarryoverQuarter: 2,
+        goalCarryoverId: 'reorg_teams',
+      };
+      expect(restored.snapshot()).toMatchObject(expectedCarryover);
+      expect(restored.exportPersistState()).toMatchObject({
+        ...expectedCarryover,
+        extras: { ...expectedCarryover, pauseAiDebuffQuarter: null },
+      });
+    },
+  );
+
+  it.each(['goalCarryoverQuarter', 'goalCarryoverId'] as const)(
+    'hydratePersistState は extras の %s が欠けると legacy 持越しを組で復元する',
+    (missingField) => {
+      const state = setupSave('carryover-partial-extras');
+      state.extras.goalCarryoverQuarter = 3;
+      state.extras.goalCarryoverId = 'quality_pivot';
+      delete state.extras[missingField];
+      state.extras.pauseAiDebuffQuarter = 2;
+
+      const restored = started('carryover-partial-extras-target');
+      restored.hydratePersistState(state);
+
+      const expectedCarryover = {
+        goalCarryoverQuarter: 2,
+        goalCarryoverId: 'pause_ai_rollout',
+      };
+      expect(restored.snapshot()).toMatchObject(expectedCarryover);
+      expect(restored.exportPersistState()).toMatchObject({
+        ...expectedCarryover,
+        extras: { ...expectedCarryover, pauseAiDebuffQuarter: 2 },
+      });
+    },
+  );
+
   it('hydratePersistState は旧 save extras の欠落値を既定値へ補完する', () => {
     const legacy = setupSave('ri72-d3-legacy-save');
     legacy.org.deliveryScore = 12.4;
@@ -283,6 +374,43 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
     expect(persistedAgain?.extras.preferredCardIds).toEqual([]);
     expect(persistedAgain?.extras.orgAdjust.byTeam).toEqual({});
     expect(persistedAgain?.extras.teamRosters?.['product-t0']).toEqual(snap.roster);
+  });
+
+  it('チーム配列のある旧 save はチームの滞留を保持し、追加された制御値だけ補完する', () => {
+    const legacy = setupSave('legacy-existing-teams');
+    const home = legacy.extras.teams?.find((team) => team.id === 'product-t0');
+    if (!home) throw new Error('save must contain home team');
+    home.reviewQueue = 17;
+    home.incidents = 3;
+    delete legacy.extras.activeTeamId;
+    delete legacy.extras.homeTeamId;
+    delete legacy.extras.teamLockUntilSprint;
+    delete legacy.extras.teamRosters;
+    delete legacy.extras.coarseIncidentCarry;
+    delete legacy.extras.coarseSecurityTrustRaw;
+    delete legacy.extras.coarseSecurityTrustCount;
+    delete legacy.extras.coarseSecurityTrustAppliedDelta;
+
+    const restored = started('legacy-existing-teams-target');
+    restored.hydratePersistState(legacy);
+
+    expect(restored.snapshot()).toMatchObject({
+      activeTeamId: 'product-t0',
+      homeTeamId: 'product-t0',
+      teamLockUntilSprint: 0,
+      stakeholderTrust: legacy.stakeholderTrust,
+    });
+    expect(restored.snapshot().teams.find((team) => team.id === 'product-t0')).toMatchObject({
+      reviewQueue: 17,
+      incidents: 3,
+    });
+    expect(restored.exportPersistState()?.extras).toMatchObject({
+      teamRosters: { 'product-t0': legacy.roster },
+      coarseIncidentCarry: 0,
+      coarseSecurityTrustRaw: 0,
+      coarseSecurityTrustCount: 0,
+      coarseSecurityTrustAppliedDelta: 0,
+    });
   });
 
   it('hydratePersistState は旧 save の extraTeams を product 部門へ追加し baseline を継承する', () => {
@@ -360,6 +488,40 @@ describe('RI-72-D3 RunEngine hydrate / save-restore', () => {
       incidentBias: 0.73,
     });
   });
+
+  it.each(['save', 'replay'] as const)(
+    '旧 %s の Security 水準は org・チーム・勝利判定用 org それぞれの品質で補完する',
+    (mode) => {
+      const state = setupSave('legacy-security-quality');
+      if (!state.extras.teams) throw new Error('save must contain teams');
+      state.org.quality = 67;
+      delete (state.org as Partial<OrgState>).securityLevel;
+      state.extras.winEvalOrg = { ...state.org, quality: 59 };
+      for (const team of state.extras.teams) {
+        team.quality = 63;
+        delete (team as Partial<TeamRunState>).securityLevel;
+      }
+
+      const restored = started('legacy-security-quality-target');
+      if (mode === 'save') restored.hydratePersistState(state);
+      else restored.hydrateReplayFrame(state);
+
+      expect(restored.snapshot().org.securityLevel).toBe(67);
+      for (const team of restored.snapshot().teams) {
+        expect(team.securityLevel).toBe(63);
+      }
+      expect(restored.exportReplayFrame()?.extras.winEvalOrg).toMatchObject({
+        quality: 59,
+        securityLevel: 59,
+      });
+      // 復元の補完は入力の旧記録を書き換えない。
+      expect(state.org).not.toHaveProperty('securityLevel');
+      expect(state.extras.winEvalOrg).not.toHaveProperty('securityLevel');
+      for (const team of state.extras.teams) {
+        expect(team).not.toHaveProperty('securityLevel');
+      }
+    },
+  );
 
   it('hydrateReplayFrame は記録済み winEvalOrg の Security 水準を正規化しない', () => {
     const source = started('ri108-replay-win-eval-security');

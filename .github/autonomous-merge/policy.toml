@@ -503,6 +503,12 @@ hard_gate = true
 reason = "リポジトリ作業指示の変更"
 
 [[path_rules]]
+pattern = "**/CODEOWNERS"
+risk = 100
+hard_gate = true
+reason = "レビュー所有者設定の変更"
+
+[[path_rules]]
 pattern = "*.md"
 risk = 0
 hard_gate = false

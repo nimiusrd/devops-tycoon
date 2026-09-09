@@ -693,8 +693,8 @@ def _scope_has_code_changes(
 
 _DISABLED_TEST_CALL = re.compile(
     r"\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
-    r"(?:\s*(?:\.\s*[A-Za-z_$][A-Za-z0-9_$]*|\[\s*['\"][A-Za-z_$][A-Za-z0-9_$]*['\"]\s*\]))*"
-    r"\s*(?:\.\s*(?:skip|fixme|todo|skipIf|runIf)\b|\[\s*['\"](?:skip|fixme|todo|skipIf|runIf)['\"]\s*\])"
+    r"(?:\s*(?:\.\s*[A-Za-z_$][A-Za-z0-9_$]*|\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+    r"\s*(?:\.\s*(?:skip|fixme|todo|skipIf|runIf)\b|\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf)['\"`]\s*\])"
 )
 
 
@@ -722,49 +722,93 @@ def _contains_disabled_test_call(base_data: bytes | None, head_data: bytes | Non
 
 
 def _strip_javascript_comments(data: bytes) -> str:
-    """文字列リテラルを保ちながらJavaScript/TypeScriptコメントを除去する。"""
+    """文字列リテラルを保ちながらJavaScript/TypeScriptコメントを除去する。
+
+    template literalのraw textは文字列として保持しつつ、`${...}`の中へ
+    戻ったときは通常のJavaScript字句規則でコメントを除去する。
+    """
 
     text = data.decode("utf-8", errors="replace")
-    characters: list[str] = []
-    quote: str | None = None
-    escaped = False
-    block_comment = False
-    index = 0
-    while index < len(text):
-        character = text[index]
-        next_character = text[index + 1] if index + 1 < len(text) else ""
-        if block_comment:
-            if character == "*" and next_character == "/":
-                block_comment = False
-                index += 2
-            else:
-                index += 1
-            continue
-        if quote is not None:
+
+    def copy_quoted(index: int, quote: str) -> tuple[str, int]:
+        characters = [quote]
+        index += 1
+        while index < len(text):
+            character = text[index]
             characters.append(character)
-            if escaped:
-                escaped = False
-            elif character == "\\":
-                escaped = True
+            index += 1
+            if character == "\\" and index < len(text):
+                characters.append(text[index])
+                index += 1
             elif character == quote:
-                quote = None
-            index += 1
-            continue
-        if character in {"'", '"', "`"}:
-            quote = character
-            characters.append(character)
-            index += 1
-        elif character == "/" and next_character == "/":
-            index += 2
-            while index < len(text) and text[index] not in "\r\n":
+                break
+        return "".join(characters), index
+
+    def scan_template(index: int) -> tuple[str, int]:
+        characters: list[str] = []
+        while index < len(text):
+            character = text[index]
+            next_character = text[index + 1] if index + 1 < len(text) else ""
+            if character == "\\":
+                characters.append(character)
                 index += 1
-        elif character == "/" and next_character == "*":
-            block_comment = True
-            index += 2
-        else:
-            characters.append(character)
-            index += 1
-    return "".join(characters)
+                if index < len(text):
+                    characters.append(text[index])
+                    index += 1
+            elif character == "`":
+                characters.append(character)
+                return "".join(characters), index + 1
+            elif character == "$" and next_character == "{":
+                characters.append("${")
+                interpolation, index = scan_code(index + 2, stop_at_brace=True)
+                characters.append(interpolation)
+            else:
+                characters.append(character)
+                index += 1
+        return "".join(characters), index
+
+    def scan_code(index: int, *, stop_at_brace: bool) -> tuple[str, int]:
+        characters: list[str] = []
+        brace_depth = 0
+        while index < len(text):
+            character = text[index]
+            next_character = text[index + 1] if index + 1 < len(text) else ""
+            if stop_at_brace and character == "}" and brace_depth == 0:
+                characters.append(character)
+                return "".join(characters), index + 1
+            if stop_at_brace and character == "{":
+                brace_depth += 1
+                characters.append(character)
+                index += 1
+            elif stop_at_brace and character == "}":
+                brace_depth -= 1
+                characters.append(character)
+                index += 1
+            elif character in {"'", '"'}:
+                quoted, index = copy_quoted(index, character)
+                characters.append(quoted)
+            elif character == "`":
+                characters.append(character)
+                template, index = scan_template(index + 1)
+                characters.append(template)
+            elif character == "/" and next_character == "/":
+                index += 2
+                while index < len(text) and text[index] not in "\r\n":
+                    index += 1
+            elif character == "/" and next_character == "*":
+                index += 2
+                while index < len(text):
+                    if text[index] == "*" and index + 1 < len(text) and text[index + 1] == "/":
+                        index += 2
+                        break
+                    index += 1
+            else:
+                characters.append(character)
+                index += 1
+        return "".join(characters), index
+
+    stripped, _ = scan_code(0, stop_at_brace=False)
+    return stripped
 
 
 def _test_code_fingerprint(data: bytes | None) -> str:

@@ -188,6 +188,7 @@ class EvaluateTests(unittest.TestCase):
             "test['skip']",
             'it["todo"]',
             "test['concurrent']['skip']",
+            "test[`skip`]",
         ):
             with self.subTest(disabled_call=disabled_call):
                 with tempfile.TemporaryDirectory() as directory:
@@ -213,6 +214,31 @@ class EvaluateTests(unittest.TestCase):
                     self.assertIn("src-fallback", result.missing_test_scopes)
                     self.assertFalse(result.test_changes)
                     self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_comment_inside_template_interpolation_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/publicUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": "test(`widget ${value}`, () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": "test(`widget ${/* only a comment */ value}`, () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, 0)
 
     def test_unrelated_unit_test_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -967,6 +993,20 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("リポジトリ作業指示", " ".join(result.hard_gate_reasons))
+
+    def test_codeowners_are_a_hard_gate(self) -> None:
+        for relative_path in ("CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS"):
+            with self.subTest(relative_path=relative_path):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(base, {relative_path: "* @old-owner\n"})
+                    write_snapshot(head, {relative_path: "* @new-owner\n"})
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+                    self.assertIn("レビュー所有者設定", " ".join(result.hard_gate_reasons))
 
     def test_gitlink_manifest_changes_are_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

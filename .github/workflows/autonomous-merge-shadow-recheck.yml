@@ -17,6 +17,9 @@ jobs:
   recheck:
     strategy:
       fail-fast: false
+      # The caller serializes batches; cap PR-level jobs here so the bound
+      # applies to the matrix that actually performs fetches and API calls.
+      max-parallel: 8
       matrix:
         pr: ${{ fromJSON(inputs.prs) }}
     name: 'Recheck PR #${{ matrix.pr.number }} after base push'
@@ -70,16 +73,18 @@ jobs:
 
           publish_report() {
             local pr_number="$1"
-            local base_sha="$2"
-            local head_sha="$3"
-            local report_file="$4"
+            local base_ref_name="$2"
+            local base_sha="$3"
+            local head_sha="$4"
+            local report_file="$5"
             local current_pr
             current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" \
-              --jq '[.state, .base.sha, .head.sha] | @tsv')"
-            local current_state current_base_sha current_head_sha
-            IFS=$'\t' read -r current_state current_base_sha current_head_sha <<< "${current_pr}"
-            if [[ "${current_state}" != "open" || "${current_base_sha}" != "${base_sha}" || \
-              "${current_head_sha}" != "${head_sha}" ]]; then
+              --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
+            local current_state current_base_ref current_base_sha current_head_sha
+            IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+            if [[ "${current_state}" != "open" || "${base_ref_name}" != "main" || \
+              "${current_base_ref}" != "main" || "${current_base_ref}" != "${base_ref_name}" || \
+              "${current_base_sha}" != "${base_sha}" || "${current_head_sha}" != "${head_sha}" ]]; then
               echo "Skipping stale failure result for PR #${pr_number}"
               return 0
             fi
@@ -127,8 +132,13 @@ jobs:
             mkdir -p "${report_dir}"
             git init -q "${git_dir}"
             git -C "${git_dir}" remote add origin "${git_url}"
+            # The base is trusted and is fetched with blobs so its local
+            # object metadata can be read without lazy-fetching. The PR head
+            # remains blobless until its size metadata has passed validation.
             git -C "${git_dir}" -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" \
-              fetch --no-tags --filter=blob:none origin "refs/heads/${base_ref_name}" "refs/pull/${pr_number}/head"
+              fetch --no-tags origin "refs/heads/${base_ref_name}"
+            git -C "${git_dir}" -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" \
+              fetch --no-tags --filter=blob:none origin "refs/pull/${pr_number}/head"
             git -C "${git_dir}" cat-file -e "${base_sha}^{commit}"
             git -C "${git_dir}" cat-file -e "${head_sha}^{commit}"
             local merge_base_sha
@@ -138,9 +148,14 @@ jobs:
             extract_raw_tree() {
               local tree_sha="$1"
               local output_dir="$2"
+              local metadata_source="$3"
               local symlink_manifest="${output_dir}.symlinks"
               local allowed_blob_ids="${output_dir}.allowed-blobs"
               local tree_entries="${output_dir}.tree"
+              local raw_blob_ids="${output_dir}.blob-ids"
+              local sorted_blob_ids="${output_dir}.sorted-blob-ids"
+              local size_map="${output_dir}.sizes"
+              local tree_metadata="${output_dir}.metadata.json"
               local snapshot_file_count=0
               local snapshot_total_bytes=0
               local max_snapshot_file_bytes=8000000
@@ -150,49 +165,122 @@ jobs:
               mkdir -p "${output_dir}"
               : > "${symlink_manifest}"
               : > "${allowed_blob_ids}"
-              stream_tree_entries() {
-                git -C "${git_dir}" ls-tree -r -l -z --full-tree "${tree_sha}"
-              }
-              stream_tree_entries > "${tree_entries}"
+              : > "${raw_blob_ids}"
+
+              # ls-tree without -l reads only tree metadata. Keep the producer
+              # connected to the bounded loop so an oversized tree is stopped
+              # before the full untrusted listing is written.
+              if ! git -C "${git_dir}" ls-tree -r -z --full-tree "${tree_sha}" |
+                {
+                  while IFS= read -r -d '' entry; do
+                    snapshot_file_count=$((snapshot_file_count + 1))
+                    if (( snapshot_file_count > max_snapshot_files )); then
+                      echo "::error::Snapshot file count exceeds ${max_snapshot_files}" >&2
+                      exit 1
+                    fi
+                    printf '%s\0' "${entry}"
+                  done
+                } > "${tree_entries}"; then
+                return 1
+              fi
+
               while IFS= read -r -d '' entry; do
                 local metadata="${entry%%$'\t'*}"
                 local relative_path="${entry#*$'\t'}"
-                local mode object_type object_id object_size
-                read -r mode object_type object_id object_size <<< "${metadata}"
-                case "${mode}" in
-                  040000)
-                    continue
-                    ;;
-                  TRUNCATED)
-                    echo "::error::Git tree response was truncated" >&2
-                    return 1
-                    ;;
-                esac
+                local mode object_type object_id
+                read -r mode object_type object_id <<< "${metadata}"
                 if [[ "${relative_path}" == /* || "${relative_path}" == .. || \
                   "${relative_path}" == ../* || "${relative_path}" == */../* || \
                   "${relative_path}" == */.. ]]; then
                   echo "::error::Invalid tree path: ${relative_path}" >&2
                   return 1
                 fi
-                snapshot_file_count=$((snapshot_file_count + 1))
-                if (( snapshot_file_count > max_snapshot_files )); then
-                  echo "::error::Snapshot file count exceeds ${max_snapshot_files}" >&2
-                  return 1
-                fi
                 case "${mode}" in
                   160000)
-                    [[ "${object_type}" == "commit" ]] || return 1
-                    continue
+                    [[ "${object_type}" == "commit" && "${object_id}" =~ ^[0-9a-f]{40,64}$ ]] || return 1
                     ;;
                   120000|100644|100755)
-                    [[ "${object_type}" == "blob" && "${object_id}" =~ ^[0-9a-f]{40,64}$ && \
-                      "${object_size}" =~ ^[0-9]+$ ]] || return 1
+                    [[ "${object_type}" == "blob" && "${object_id}" =~ ^[0-9a-f]{40,64}$ ]] || return 1
+                    printf '%s\n' "${object_id}" >> "${raw_blob_ids}"
+                    ;;
+                  *)
+                    echo "::error::Unsupported tree mode ${mode}: ${relative_path}" >&2
+                    return 1
+                    ;;
+                esac
+              done < "${tree_entries}"
+
+              if [[ "${metadata_source}" == "trusted" ]]; then
+                LC_ALL=C sort -u "${raw_blob_ids}" > "${sorted_blob_ids}"
+                : > "${size_map}"
+                if [[ -s "${sorted_blob_ids}" ]]; then
+                  # Do not allow a missing trusted object to trigger a lazy
+                  # fetch while reading sizes.
+                  GIT_NO_LAZY_FETCH=1 git -C "${git_dir}" \
+                    cat-file --batch-check='%(objectname) %(objecttype) %(objectsize)' \
+                    < "${sorted_blob_ids}" > "${size_map}"
+                fi
+              elif [[ "${metadata_source}" == "untrusted" ]]; then
+                local tree_id
+                tree_id="$(git -C "${git_dir}" rev-parse "${tree_sha}^{tree}")"
+                gh api "repos/${GITHUB_REPOSITORY}/git/trees/${tree_id}?recursive=1" > "${tree_metadata}"
+                jq -e '
+                  .truncated == false and
+                  all(.tree[]; .type != "blob" or ((.sha | type) == "string" and
+                    (.size | type) == "number" and (.size >= 0) and (.size == floor)))
+                ' "${tree_metadata}" > /dev/null
+                jq -r '.tree[] | select(.type == "blob") | [.sha, (.size | tostring)] | @tsv' \
+                  "${tree_metadata}" > "${size_map}"
+              else
+                echo "::error::Unknown tree metadata source: ${metadata_source}" >&2
+                return 1
+              fi
+
+              declare -A blob_sizes=()
+              if [[ "${metadata_source}" == "trusted" ]]; then
+                while read -r object_id object_type object_size; do
+                  [[ "${object_id}" =~ ^[0-9a-f]{40,64}$ && "${object_type}" == "blob" && \
+                    "${object_size}" =~ ^[0-9]+$ ]] || {
+                    echo "::error::Invalid blob size metadata" >&2
+                    return 1
+                  }
+                  blob_sizes["${object_id}"]="${object_size}"
+                done < "${size_map}"
+              else
+                while IFS=$'\t' read -r object_id object_size; do
+                  [[ "${object_id}" =~ ^[0-9a-f]{40,64}$ && "${object_size}" =~ ^[0-9]+$ ]] || {
+                    echo "::error::Invalid blob size metadata" >&2
+                    return 1
+                  }
+                  blob_sizes["${object_id}"]="${object_size}"
+                done < "${size_map}"
+              fi
+
+              : > "${tree_entries}.validated"
+              while IFS= read -r -d '' entry; do
+                local metadata="${entry%%$'\t'*}"
+                local relative_path="${entry#*$'\t'}"
+                local mode object_type object_id object_size
+                read -r mode object_type object_id <<< "${metadata}"
+                case "${mode}" in
+                  160000)
+                    printf '%s %s %s 0\t%s\0' "${mode}" "${object_type}" "${object_id}" \
+                      "${relative_path}" >> "${tree_entries}.validated"
+                    ;;
+                  120000|100644|100755)
+                    if [[ -z "${blob_sizes[${object_id}]+present}" ]]; then
+                      echo "::error::Blob size metadata is missing: ${relative_path}" >&2
+                      return 1
+                    fi
+                    object_size="${blob_sizes[${object_id}]}"
                     if (( object_size > max_snapshot_file_bytes || \
                       snapshot_total_bytes > max_snapshot_total_bytes - object_size )); then
                       echo "::error::Snapshot blob size exceeds the configured limit: ${relative_path}" >&2
                       return 1
                     fi
                     snapshot_total_bytes=$((snapshot_total_bytes + object_size))
+                    printf '%s %s %s %s\t%s\0' "${mode}" "${object_type}" "${object_id}" \
+                      "${object_size}" "${relative_path}" >> "${tree_entries}.validated"
                     if [[ "${mode}" != "120000" ]]; then
                       printf '%s\n' "${object_id}" >> "${allowed_blob_ids}"
                     fi
@@ -203,6 +291,8 @@ jobs:
                     ;;
                 esac
               done < "${tree_entries}"
+              mv "${tree_entries}.validated" "${tree_entries}"
+
               if [[ -s "${allowed_blob_ids}" ]]; then
                 LC_ALL=C sort -u "${allowed_blob_ids}" |
                   git -C "${git_dir}" -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" \
@@ -213,21 +303,6 @@ jobs:
                 local relative_path="${entry#*$'\t'}"
                 local mode object_type object_id object_size
                 read -r mode object_type object_id object_size <<< "${metadata}"
-                case "${mode}" in
-                  040000)
-                    continue
-                    ;;
-                  TRUNCATED)
-                    echo "::error::Git tree response was truncated" >&2
-                    return 1
-                    ;;
-                esac
-                if [[ "${relative_path}" == /* || "${relative_path}" == .. || \
-                  "${relative_path}" == ../* || "${relative_path}" == */../* || \
-                  "${relative_path}" == */.. ]]; then
-                  echo "::error::Invalid tree path: ${relative_path}" >&2
-                  return 1
-                fi
                 case "${mode}" in
                   160000)
                     continue
@@ -248,9 +323,9 @@ jobs:
                 esac
               done < "${tree_entries}"
             }
-            extract_raw_tree "${base_sha}" "${trusted_base_dir}"
-            extract_raw_tree "${merge_base_sha}" "${comparison_base_dir}"
-            extract_raw_tree "${head_sha}" "${head_dir}"
+            extract_raw_tree "${base_sha}" "${trusted_base_dir}" trusted
+            extract_raw_tree "${merge_base_sha}" "${comparison_base_dir}" trusted
+            extract_raw_tree "${head_sha}" "${head_dir}" untrusted
             write_gitlinks "${git_dir}" "${merge_base_sha}" "${base_gitlinks}"
             write_gitlinks "${git_dir}" "${head_sha}" "${head_gitlinks}"
 
@@ -311,4 +386,4 @@ jobs:
             echo "::warning::Shadow recheck failed for PR #${PR_NUMBER}"
             write_evaluation_failure_report "${report_file}" "${BASE_SHA}" "${HEAD_SHA}"
           fi
-          publish_report "${PR_NUMBER}" "${BASE_SHA}" "${HEAD_SHA}" "${report_file}"
+          publish_report "${PR_NUMBER}" "${BASE_REF_NAME}" "${BASE_SHA}" "${HEAD_SHA}" "${report_file}"

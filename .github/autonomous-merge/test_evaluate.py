@@ -125,6 +125,33 @@ class EvaluateTests(unittest.TestCase):
             self.assertFalse(result.test_changes)
             self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
+    def test_conditional_test_disabling_does_not_satisfy_verification(self) -> None:
+        for disabled_call in ("test.skipIf(true)", "test.runIf(false)"):
+            with self.subTest(disabled_call=disabled_call):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(
+                        base,
+                        {
+                            "src/utils/publicUrl.ts": "export const url = '/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": "test('builds the URL', () => {});\n",
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": f"{disabled_call}('builds the URL', () => {{}});\n",
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("src-fallback", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+                    self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_unrelated_unit_test_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -293,6 +320,54 @@ class EvaluateTests(unittest.TestCase):
                     self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
                     self.assertTrue(result.code_changes)
                     self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_audio_asset_uses_audio_verification_not_visual(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "public/assets/audio/sfx-ship.wav": b"RIFFold",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "public/assets/audio/sfx-ship.wav": b"RIFFnew",
+                    "tests/e2e/widget.spec.ts": "test('renders new', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("visual", result.missing_test_scopes)
+            self.assertIn("audio", result.missing_test_scopes)
+
+    def test_audio_asset_with_audio_test_satisfies_audio_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "public/assets/audio/sfx-ship.wav": b"RIFFold",
+                    "tests/unit/audio/audio.test.ts": "it('plays', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "public/assets/audio/sfx-ship.wav": b"RIFFnew",
+                    "tests/unit/audio/audio.test.ts": "it('plays the new sound', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("visual", result.missing_test_scopes)
+            self.assertNotIn("audio", result.missing_test_scopes)
 
     def test_deleted_test_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -675,6 +750,18 @@ class EvaluateTests(unittest.TestCase):
                     self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
                     self.assertEqual(result.path_assessments[0].risk, 25)
                     self.assertFalse(result.hard_gate_reasons)
+
+    def test_regular_helper_test_is_not_a_shared_unit_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"tests/unit/helpers/runFlow.test.ts": "it('runs', () => {});\n"})
+            write_snapshot(head, {"tests/unit/helpers/runFlow.test.ts": "it('runs a flow', () => {});\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
+            self.assertFalse(result.hard_gate_reasons)
 
     def test_gitlink_manifest_changes_are_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

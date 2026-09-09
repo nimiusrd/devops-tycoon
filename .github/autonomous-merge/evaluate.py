@@ -54,6 +54,7 @@ class VerificationScope:
     code_globs: tuple[str, ...]
     test_globs: tuple[str, ...]
     fallback: bool
+    excluded_code_globs: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -222,6 +223,10 @@ def _load_verification_scopes(value: Any) -> tuple[VerificationScope, ...]:
                     f"verification.scopes[{index}].test_globs",
                 ),
                 fallback=fallback,
+                excluded_code_globs=_require_string_list(
+                    scope.get("excluded_code_globs", []),
+                    f"verification.scopes[{index}].excluded_code_globs",
+                ),
             )
         )
     return tuple(scopes)
@@ -654,6 +659,8 @@ def _scope_has_code_changes(
     for changed_file in files:
         if not matches_any(changed_file.path, scope.code_globs):
             continue
+        if matches_any(changed_file.path, scope.excluded_code_globs):
+            continue
         if scope.fallback and any(
             other.name != scope.name
             and not other.fallback
@@ -667,7 +674,7 @@ def _scope_has_code_changes(
 
 _DISABLED_TEST_CALL = re.compile(
     r"\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
-    r"\s*\.\s*(?:skip|fixme|todo)\b"
+    r"\s*\.\s*(?:skip|fixme|todo|skipIf|runIf)\b"
 )
 
 

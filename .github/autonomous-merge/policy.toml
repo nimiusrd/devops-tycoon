@@ -69,6 +69,7 @@ test_removal_risk = 20
 [[verification.scopes]]
 name = "visual"
 fallback = false
+excluded_code_globs = ["public/assets/audio/**"]
 code_globs = [
   "index.html",
   "src/**/*.css",
@@ -121,7 +122,7 @@ test_globs = [
 [[verification.scopes]]
 name = "audio"
 fallback = false
-code_globs = ["src/audio/**"]
+code_globs = ["src/audio/**", "public/assets/audio/**"]
 test_globs = [
   "tests/unit/audio/**/*.test.ts",
   "tests/unit/audio/**/*.spec.ts",
@@ -395,7 +396,79 @@ hard_gate = false
 reason = "テストの変更"
 
 [[path_rules]]
-pattern = "tests/unit/helpers/**"
+pattern = "tests/unit/helpers/aiAdoptionSeeds.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/formationSeeds.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/leverRanges.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/metaRewardRanges.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/monteCarlo.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/orgFixtures.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/pacingStats.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/percentile.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/property.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/runEngineFixtures.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/runFlow.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/sprintFixtures.ts"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
+pattern = "tests/unit/helpers/whatIfFixtures.ts"
 risk = 100
 hard_gate = true
 reason = "共有unit test基盤の変更"

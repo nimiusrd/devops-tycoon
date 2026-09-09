@@ -197,6 +197,30 @@ hard_gate = true
 reason = "Codex権限設定の変更"
 
 [[path_rules]]
+pattern = ".codex/config.toml.example"
+risk = 100
+hard_gate = true
+reason = "Codex権限設定templateの変更"
+
+[[path_rules]]
+pattern = "ASSETS.md"
+risk = 100
+hard_gate = true
+reason = "アセットのライセンス条件の変更"
+
+[[path_rules]]
+pattern = "LICENSE*"
+risk = 100
+hard_gate = true
+reason = "ライセンス文書の変更"
+
+[[path_rules]]
+pattern = "LICENSES/**"
+risk = 100
+hard_gate = true
+reason = "第三者ライセンス文書の変更"
+
+[[path_rules]]
 pattern = ".nvmrc"
 risk = 100
 hard_gate = true

@@ -23,11 +23,14 @@ ROOT = Path(__file__).resolve().parents[2]
 POLICY = load_policy(ROOT / ".github" / "autonomous-merge" / "policy.toml")
 
 
-def write_snapshot(root: Path, files: dict[str, str]) -> None:
+def write_snapshot(root: Path, files: dict[str, str | bytes]) -> None:
     for relative_path, contents in files.items():
         path = root / relative_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(contents, encoding="utf-8")
+        if isinstance(contents, bytes):
+            path.write_bytes(contents)
+        else:
+            path.write_text(contents, encoding="utf-8")
 
 
 class EvaluateTests(unittest.TestCase):
@@ -147,6 +150,31 @@ class EvaluateTests(unittest.TestCase):
             self.assertFalse(result.test_changes)
             self.assertEqual(result.missing_test_scopes, ("visual",))
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_binary_visual_snapshot_satisfies_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("visual", result.missing_test_scopes)
+            self.assertEqual(result.verification_risk, 0)
+            self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
 
     def test_test_only_deletion_adds_removal_risk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -394,6 +422,33 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("Codex権限設定", " ".join(result.hard_gate_reasons))
+
+    def test_codex_config_template_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {".codex/config.toml.example": "default_permissions = ':workspace'\n"})
+            write_snapshot(head, {".codex/config.toml.example": "default_permissions = ':full'\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("Codex権限設定", " ".join(result.hard_gate_reasons))
+
+    def test_asset_and_license_terms_are_hard_gates(self) -> None:
+        protected_paths = ("ASSETS.md", "LICENSE", "LICENSES/CC-BY-4.0.txt")
+        with tempfile.TemporaryDirectory() as directory:
+            for relative_path in protected_paths:
+                with self.subTest(relative_path=relative_path):
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(base, {relative_path: "original terms\n"})
+                    write_snapshot(head, {relative_path: "changed terms\n"})
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+                    self.assertTrue(result.hard_gate_reasons)
 
     def test_nested_agents_instructions_are_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

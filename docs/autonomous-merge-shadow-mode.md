@@ -13,7 +13,7 @@ PR base SHA ──→ trusted evaluator.py + policy.toml
                                PR Risk / Decision
 ```
 
-workflowは`pull_request_target`でbaseブランチ側の定義を実行し、trusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。Git treeのmetadataはGitHub Git Trees APIから取得し、blob sizeを含むentryをNUL区切りで直接loopへstreamします。サイズ検査後だけ`cat-file blob`でraw blobを展開するため、`.gitattributes`の`export-ignore`や`export-subst`などの属性変換は比較へ影響しません。tree mode `120000`のsymlinkはOS上へ作らず、object IDとpathをNUL区切りで保持するmanifestとして、`160000`のgitlinkも同じ形式のmanifestとして扱います。raw blobは展開前に1件8MB・tree合計64MB・tree entry 50,000件の上限を検査し、PR headのblobを無制限に先取得しないようblobless fetchを使います。head側のコード、script、依存関係は実行しません。PRのbase変更を含む`edited`でも再評価します。コード取得には`contents: read`だけを使い、結果コメントの更新権限は評価jobと再評価jobに限定します。
+workflowは`pull_request_target`でbaseブランチ側の定義を実行し、trusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。Git treeのmetadataはGitHub Git Trees APIから取得し、blob sizeを含むentryをNUL区切りで直接loopへstreamします。1件8MB・tree合計64MB・tree entry 50,000件の上限を検査した後、許可された通常blobのobject IDだけを`git fetch --stdin`で一括取得し、その後に`cat-file blob`でraw blobを展開します。そのためサイズ検査前の欠落blob取得やblobごとの個別promisor fetchを避けられ、`.gitattributes`の`export-ignore`や`export-subst`などの属性変換は比較へ影響しません。tree mode `120000`のsymlinkはOS上へ作らず、object IDとpathをNUL区切りで保持するmanifestとして、`160000`のgitlinkも同じ形式のmanifestとして扱います。PR headのblobを無制限に先取得しないようblobless fetchを使います。head側のコード、script、依存関係は実行しません。PRのbase変更を含む`edited`でも再評価します。コード取得には`contents: read`だけを使い、結果コメントの更新権限は評価jobと再評価jobに限定します。
 
 baseブランチへのpush時は、別jobがopenなPR一覧を取得し、128件以下のbatchへ分割してreusable workflowを呼び出します。各batch内はPRごとのmatrix jobで各PRの現在のbase SHA・merge base・head SHAを独立して再評価するため、GitHub Actionsのmatrix上限を超えません。結果はPRごとの専用コメント（`autonomous-merge-shadow-result` marker）を更新するため、base側のpolicyやProject Healthが変わったときも古い判定を残しません。通常のPR評価でも同じコメントを更新するため、head更新後に古い結果を残しません。評価器または評価前のfetch・tree展開・manifest生成・base側自己テストが完了できない場合も、既存の結果を残さず`HUMAN_REVIEW_REQUIRED` / `EVALUATION_FAILED`へ更新します。base push再評価でもtrusted base側の評価器テストを先に実行します。両経路ともコメント投稿直前にPRの現在のbase/head SHAを再確認し、古いrunは結果を書き込みません。通常評価とbase push再評価はPR番号単位のconcurrencyでコメントupsertを直列化します。この再評価jobと通常評価jobだけがissueコメント更新権限を持ち、コード実行やmerge操作は行いません。PRで評価器・policy・workflowを変更しても、そのPRの評価ルールや実行定義には反映されず、変更されたこと自体がHard Gateになります。
 
@@ -25,7 +25,7 @@ baseブランチへのpush時は、別jobがopenなPR一覧を取得し、128件
 
 | 対象 | 初期扱い | 理由 |
 | --- | --- | --- |
-| `.github/workflows/**`、`.devcontainer/**`、`.codex/environments/**`、`.codex/config.toml`、`.nvmrc` | Hard Gate | CI・実行環境・Codex権限を変更するため |
+| `.github/workflows/**`、`.devcontainer/**`、`.codex/environments/**`、`.codex/config.toml`、`.codex/config.toml.example`、`.nvmrc` | Hard Gate | CI・実行環境・Codex権限を変更するため |
 | `package.json`、`package-lock.json`、`*.config.*`、`tsconfig*.json` | Hard Gate | 依存関係・ビルド・テスト契約を変更するため |
 | `.prettierrc.json`、`.prettierignore` | Hard Gate | フォーマット設定や対象範囲を変更するため |
 | `.gitmodules`、Git treeのgitlink（mode `160000`） | Hard Gate | submodule構成または参照SHAを変更するため |
@@ -39,10 +39,11 @@ baseブランチへのpush時は、別jobがopenなPR一覧を取得し、128件
 | `tests/playtest/**`、`tests/fixtures/**` | リスク加点 | suffixを持たないtest支援モジュールも含む共有fixture・シナリオ基盤を変更するため |
 | `tests/unit/helpers/**`、`tests/e2e/fixtures.ts`、`tests/e2e/seedMeta.ts`、`tests/playtest/harness.ts`、`tests/playtest/globalSetup.ts` | Hard Gate | 多数のテストから共有されるfixture・測定・初期化基盤を変更するため |
 | `.agents/skills/**`、`**/AGENTS.md`、`docs/design-system.md`、`vite.webglModules.ts` | Hard Gate | エージェント手順、階層別の作業指示、UI規約、またはWebGLビルド契約を変更するため |
+| `ASSETS.md`、`LICENSE*`、`LICENSES/**` | Hard Gate | アセット・コード・第三者ライセンスの条件を変更するため |
 
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。
 
-検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに実際のrunnerが探索するsuffix（Vitest unit/srcは`.test.ts`/`.spec.ts`、playtestは`.test.ts`のみ、Playwright e2eは`.test.ts`/`.spec.ts`）の追加行がある通常blobのテストを要求します。削除・純減・symlink化のテスト変更、または追加行が`.skip`・`.fixme`・`.todo`で無効化する変更には検証充足を与えず、削除リスクを加算します。同内容の純粋renameは削除リスクだけでなく検証充足からも除外します。Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。snapshot entryにはGitの実行権限（`100644` / `100755`）も保持し、内容が同じmode-only変更も差分として扱います。不正UTF-8を含むblobはbinaryとして保守的に扱い、実際のbyte列が同じ行へ置換されないようにします。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにし、snapshot読込みも1ファイル8MB・1評価64MB・各snapshot 50,000ファイルまでに制限します。
+検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに実際のrunnerが探索するsuffix（Vitest unit/srcは`.test.ts`/`.spec.ts`、playtestは`.test.ts`のみ、Playwright e2eは`.test.ts`/`.spec.ts`）の追加行がある通常blobのテストを要求します。visual scopeのPlaywright PNGなどbinary snapshotは検証として受け入れますが、通常のbinary testは除外します。削除・純減・symlink化のテスト変更、または追加行が`.skip`・`.fixme`・`.todo`で無効化する変更には検証充足を与えず、削除リスクを加算します。同内容の純粋renameは削除リスクだけでなく検証充足からも除外します。Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。snapshot entryにはGitの実行権限（`100644` / `100755`）も保持し、内容が同じmode-only変更も差分として扱います。不正UTF-8を含むblobはbinaryとして保守的に扱い、実際のbyte列が同じ行へ置換されないようにします。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにし、snapshot読込みも1ファイル8MB・1評価64MB・各snapshot 50,000ファイルまでに制限します。
 
 ## ローカル実行
 

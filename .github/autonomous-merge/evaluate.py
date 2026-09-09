@@ -698,8 +698,10 @@ def _is_usable_test_change(
     item: ChangedFile,
     base_snapshot: Mapping[str, SnapshotEntry],
     head_snapshot: Mapping[str, SnapshotEntry],
+    *,
+    allow_binary: bool = False,
 ) -> bool:
-    if item.status == "D" or item.additions <= 0 or item.binary:
+    if item.status == "D" or item.additions <= 0 or (item.binary and not allow_binary):
         return False
     head_entry = head_snapshot.get(item.path)
     if head_entry is None or head_entry.kind != "blob":
@@ -840,7 +842,12 @@ def assess(
         for scope in policy.verification_scopes
         if _scope_has_code_changes(scope, files, policy.verification_scopes)
         and not any(
-            _is_usable_test_change(item, base_snapshot, head_snapshot)
+            _is_usable_test_change(
+                item,
+                base_snapshot,
+                head_snapshot,
+                allow_binary=scope.name == "visual",
+            )
             and matches_any(item.path, scope.test_globs)
             and item.path not in pure_rename_additions
             for item in files

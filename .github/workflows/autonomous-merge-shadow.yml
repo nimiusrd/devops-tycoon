@@ -1,0 +1,77 @@
+name: Autonomous Merge Shadow
+
+# PRの内容を採点するだけの観測workflow。
+# required checkにはせず、merge APIも呼ばないため、Shadow Mode中はPRを止めない。
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: autonomous-merge-shadow-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    name: PR risk (shadow only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # policy/evaluatorはPR headではなく、必ずPR base SHAから取得する。
+      - name: Checkout PR base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          fetch-depth: 1
+          persist-credentials: false
+
+      # PR headはファイル比較の対象としてだけ取得し、コードは実行しない。
+      - name: Checkout PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Check base evaluator and policy
+        id: base_assets
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! -f base/.github/autonomous-merge/evaluate.py || ! -f base/.github/autonomous-merge/policy.toml ]]; then
+            echo 'available=false' >> "${GITHUB_OUTPUT}"
+            {
+              echo '## Autonomous Merge Shadow Mode'
+              echo
+              echo "> base SHA ${BASE_SHA} does not contain the evaluator/policy yet."
+              echo '> This bootstrap PR installs the Shadow Mode assets; evaluation starts on the next PR after merge.'
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          echo 'available=true' >> "${GITHUB_OUTPUT}"
+          echo "Using evaluator and policy from base SHA ${BASE_SHA}"
+
+      - name: Test base evaluator
+        if: steps.base_assets.outputs.available == 'true'
+        run: python3 -m unittest discover -v -s base/.github/autonomous-merge -p 'test_*.py'
+
+      - name: Evaluate PR risk (non-blocking shadow mode)
+        if: steps.base_assets.outputs.available == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 base/.github/autonomous-merge/evaluate.py \
+            --base-dir base \
+            --head-dir head \
+            --policy base/.github/autonomous-merge/policy.toml \
+            --base-sha "${BASE_SHA}" \
+            --head-sha "${HEAD_SHA}" \
+            --format markdown | tee -a "${GITHUB_STEP_SUMMARY}"

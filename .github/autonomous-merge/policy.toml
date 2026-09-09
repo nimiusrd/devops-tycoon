@@ -1,0 +1,204 @@
+# Autonomous Merge Shadow Modeの初期policy。
+#
+# healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から観測値へ
+# 置き換えるためのcontrol maturity index。Shadow Modeではまず90を仮置きし、
+# 30〜90日分の実績を見て更新する。
+version = 1
+mode = "shadow"
+
+[project]
+health = 90
+minimum_health = 80
+
+[scoring]
+# 25以下かつHard GateなしのPRだけを「自動merge候補」として記録する。
+# 現在はShadow Modeのため、下記の判定がマージ可否へ接続されることはない。
+maximum_pr_risk = 25
+maximum_path_risk = 35
+
+# 変更行数が大きいほど、レビュー・テストの組み合わせが増えることを表す。
+line_bands = [
+  { maximum = 0, risk = 0 },
+  { maximum = 20, risk = 5 },
+  { maximum = 80, risk = 10 },
+  { maximum = 200, risk = 20 },
+  { maximum = 400, risk = 30 },
+  { maximum = 1000000, risk = 40 },
+]
+
+# 変更ファイル数は依存関係の広がりの粗い代理指標として使う。
+file_bands = [
+  { maximum = 0, risk = 0 },
+  { maximum = 2, risk = 5 },
+  { maximum = 5, risk = 10 },
+  { maximum = 10, risk = 20 },
+  { maximum = 1000000, risk = 30 },
+]
+
+[verification]
+# このリポジトリの実コードとテストの配置に合わせたglob。
+code_globs = [
+  "src/**/*.ts",
+  "src/**/*.tsx",
+  "scripts/**/*.mjs",
+  "*.config.*",
+  "*.json",
+  ".github/**/*.py",
+  ".github/**/*.yml",
+  ".github/**/*.yaml",
+]
+test_globs = [
+  "tests/**/*.ts",
+  "src/**/*.test.ts",
+  "src/**/*.spec.ts",
+  ".github/**/test_*.py",
+]
+ignored_globs = []
+missing_test_risk = 15
+
+# ルールはファイルごとの最大値を採用し、全ファイルの合計を
+# scoring.maximum_path_riskでcapする。hard_gate=trueはリスク値に関係なく
+# HUMAN_REVIEW_REQUIREDとする。
+[[path_rules]]
+pattern = ".github/autonomous-merge/**"
+risk = 100
+hard_gate = true
+reason = "評価器・policyの変更"
+
+[[path_rules]]
+pattern = ".github/workflows/**"
+risk = 100
+hard_gate = true
+reason = "GitHub Actions workflowの変更"
+
+[[path_rules]]
+pattern = ".devcontainer/**"
+risk = 100
+hard_gate = true
+reason = "開発・CI実行環境の変更"
+
+[[path_rules]]
+pattern = "package.json"
+risk = 100
+hard_gate = true
+reason = "依存関係または実行scriptの変更"
+
+[[path_rules]]
+pattern = "package-lock.json"
+risk = 100
+hard_gate = true
+reason = "依存関係lockfileの変更"
+
+[[path_rules]]
+pattern = "*.config.*"
+risk = 100
+hard_gate = true
+reason = "ビルド・テスト設定の変更"
+
+[[path_rules]]
+pattern = "tsconfig*.json"
+risk = 100
+hard_gate = true
+reason = "TypeScript設定の変更"
+
+[[path_rules]]
+pattern = "src/state/**"
+risk = 100
+hard_gate = true
+reason = "セーブ・永続化・状態遷移の変更"
+
+[[path_rules]]
+pattern = "src/sim/run/**"
+risk = 100
+hard_gate = true
+reason = "ラン進行・シミュレーション中核の変更"
+
+[[path_rules]]
+pattern = "src/sim/engine.ts"
+risk = 100
+hard_gate = true
+reason = "シミュレーションエンジンの変更"
+
+[[path_rules]]
+pattern = "src/sim/rng.ts"
+risk = 100
+hard_gate = true
+reason = "決定論的乱数の変更"
+
+[[path_rules]]
+pattern = "src/sim/seed.ts"
+risk = 100
+hard_gate = true
+reason = "seed再現性の変更"
+
+[[path_rules]]
+pattern = "src/data/balance/**"
+risk = 100
+hard_gate = true
+reason = "バランス・確率モデルの変更"
+
+[[path_rules]]
+pattern = "src/data/contentCatalog.ts"
+risk = 100
+hard_gate = true
+reason = "ゲームコンテンツcatalogの変更"
+
+[[path_rules]]
+pattern = "src/render/adapters/**"
+risk = 30
+hard_gate = false
+reason = "WebGL描画アダプタの変更"
+
+[[path_rules]]
+pattern = "src/sim/**"
+risk = 25
+hard_gate = false
+reason = "シミュレーションロジックの変更"
+
+[[path_rules]]
+pattern = "src/data/**"
+risk = 20
+hard_gate = false
+reason = "ゲームデータ定義の変更"
+
+[[path_rules]]
+pattern = "src/ui/**"
+risk = 15
+hard_gate = false
+reason = "React UIの変更"
+
+[[path_rules]]
+pattern = "src/render/**"
+risk = 15
+hard_gate = false
+reason = "描画計画の変更"
+
+[[path_rules]]
+pattern = "scripts/**"
+risk = 15
+hard_gate = false
+reason = "補助スクリプトの変更"
+
+[[path_rules]]
+pattern = "tests/**"
+risk = 0
+hard_gate = false
+reason = "テストの変更"
+
+[[path_rules]]
+pattern = "public/assets/**"
+risk = 5
+hard_gate = false
+reason = "静的アセットの変更"
+
+[[path_rules]]
+pattern = "docs/**"
+risk = 0
+hard_gate = false
+reason = "ドキュメントの変更"
+
+[[path_rules]]
+pattern = "*.md"
+risk = 0
+hard_gate = false
+reason = "ドキュメントの変更"

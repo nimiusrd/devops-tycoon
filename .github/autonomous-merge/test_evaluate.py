@@ -1,0 +1,109 @@
+import tempfile
+import unittest
+from pathlib import Path
+
+from evaluate import EvaluationError, _ensure_within_base, assess, load_policy
+
+
+ROOT = Path(__file__).resolve().parents[2]
+POLICY = load_policy(ROOT / ".github" / "autonomous-merge" / "policy.toml")
+
+
+def write_snapshot(root: Path, files: dict[str, str]) -> None:
+    for relative_path, contents in files.items():
+        path = root / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(contents, encoding="utf-8")
+
+
+class EvaluateTests(unittest.TestCase):
+    def test_small_ui_change_with_test_is_eligible(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = () => <div>old</div>;\n",
+                    "tests/unit/ui/widget.test.ts": "it('renders', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = () => <div>new</div>;\n",
+                    "tests/unit/ui/widget.test.ts": "it('renders new', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY, base_sha="base", head_sha="head")
+
+            self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
+            self.assertEqual(result.risk, 25)
+            self.assertEqual(result.verification_risk, 0)
+
+    def test_missing_test_adds_verification_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n"})
+            write_snapshot(head, {"src/ui/Widget.tsx": "export const Widget = 2;\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+            self.assertIn("テスト変更がなく", " ".join(result.reasons))
+
+    def test_state_change_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/state/runPersistence.ts": "export const version = 1;\n"})
+            write_snapshot(head, {"src/state/runPersistence.ts": "export const version = 2;\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertTrue(result.hard_gate_reasons)
+            self.assertIn("セーブ・永続化・状態遷移", result.hard_gate_reasons[0])
+
+    def test_policy_change_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {".github/autonomous-merge/policy.toml": "version = 1\n"})
+            write_snapshot(head, {".github/autonomous-merge/policy.toml": "version = 2\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("評価器・policyの変更", result.hard_gate_reasons[0])
+
+    def test_assessment_is_deterministic(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n"})
+            write_snapshot(head, {"src/ui/Widget.tsx": "export const Widget = 2;\n"})
+
+            first = assess(base, head, POLICY)
+            second = assess(base, head, POLICY)
+
+            self.assertEqual(first, second)
+
+    def test_cli_sources_must_be_inside_base_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            base.mkdir()
+
+            with self.assertRaises(EvaluationError):
+                _ensure_within_base(
+                    base,
+                    ROOT / ".github" / "autonomous-merge" / "policy.toml",
+                    "policy",
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -5,6 +5,8 @@ name: Autonomous Merge Shadow
 on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review, edited]
+  push:
+    branches: [main]
 
 concurrency:
   group: autonomous-merge-shadow-${{ github.event.pull_request.number }}
@@ -15,6 +17,7 @@ permissions:
 
 jobs:
   evaluate:
+    if: github.event_name == 'pull_request_target'
     name: PR risk (shadow only)
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -85,6 +88,26 @@ jobs:
           echo "sha=${MERGE_BASE_SHA}" >> "${GITHUB_OUTPUT}"
           echo "Using merge base SHA ${MERGE_BASE_SHA} for the comparison"
 
+      - name: Prepare gitlink manifests
+        if: steps.base_assets.outputs.available == 'true'
+        env:
+          MERGE_BASE_SHA: ${{ steps.merge_base.outputs.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          write_gitlinks() {
+            local tree_sha="$1"
+            local output="$2"
+            git -C base ls-tree -r --full-tree "${tree_sha}" |
+              while IFS=$'\t' read -r metadata relative_path; do
+                if [[ "${metadata}" == 160000\ commit\ * ]]; then
+                  printf '%s\t%s\n' "${metadata##* }" "${relative_path}"
+                fi
+              done > "${output}"
+          }
+          write_gitlinks "${MERGE_BASE_SHA}" merge-base.gitlinks
+          write_gitlinks "${HEAD_SHA}" head.gitlinks
+
       - name: Test base evaluator
         if: steps.base_assets.outputs.available == 'true'
         env:
@@ -103,6 +126,130 @@ jobs:
             --head-dir head \
             --policy base/.github/autonomous-merge/policy.toml \
             --trusted-base-dir base \
+            --base-gitlinks merge-base.gitlinks \
+            --head-gitlinks head.gitlinks \
             --base-sha "${MERGE_BASE_SHA}" \
             --head-sha "${HEAD_SHA}" \
             --format markdown | tee -a "${GITHUB_STEP_SUMMARY}"
+
+  recheck-open-prs:
+    if: github.event_name == 'push'
+    name: Recheck open PRs after base push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Re-evaluate open PRs against current base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          git_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+
+          write_gitlinks() {
+            local git_dir="$1"
+            local tree_sha="$2"
+            local output="$3"
+            git -C "${git_dir}" ls-tree -r --full-tree "${tree_sha}" |
+              while IFS=$'\t' read -r metadata relative_path; do
+                if [[ "${metadata}" == 160000\ commit\ * ]]; then
+                  printf '%s\t%s\n' "${metadata##* }" "${relative_path}"
+                fi
+              done > "${output}"
+          }
+
+          recheck_pr() {
+            local pr_number="$1"
+            local base_ref_name="$2"
+            local base_sha="$3"
+            local head_sha="$4"
+            local report_dir="reports/pr-${pr_number}"
+            local git_dir="${report_dir}/git"
+            local trusted_base_dir="${report_dir}/base"
+            local comparison_base_dir="${report_dir}/merge-base"
+            local head_dir="${report_dir}/head"
+            local base_gitlinks="${report_dir}/merge-base.gitlinks"
+            local head_gitlinks="${report_dir}/head.gitlinks"
+            local report_file="${report_dir}/report.md"
+
+            mkdir -p "${report_dir}"
+            git init -q "${git_dir}"
+            git -C "${git_dir}" remote add origin "${git_url}"
+            git -C "${git_dir}" -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" \
+              fetch --no-tags origin "refs/heads/${base_ref_name}" "refs/pull/${pr_number}/head"
+            git -C "${git_dir}" cat-file -e "${base_sha}^{commit}"
+            git -C "${git_dir}" cat-file -e "${head_sha}^{commit}"
+            local merge_base_sha
+            merge_base_sha="$(git -C "${git_dir}" merge-base "${base_sha}" "${head_sha}")"
+
+            mkdir -p "${trusted_base_dir}" "${comparison_base_dir}" "${head_dir}"
+            git -C "${git_dir}" archive "${base_sha}" | tar -x -C "${trusted_base_dir}"
+            git -C "${git_dir}" archive "${merge_base_sha}" | tar -x -C "${comparison_base_dir}"
+            git -C "${git_dir}" archive "${head_sha}" | tar -x -C "${head_dir}"
+            write_gitlinks "${git_dir}" "${merge_base_sha}" "${base_gitlinks}"
+            write_gitlinks "${git_dir}" "${head_sha}" "${head_gitlinks}"
+
+            if [[ ! -f "${trusted_base_dir}/.github/autonomous-merge/evaluate.py" || \
+              ! -f "${trusted_base_dir}/.github/autonomous-merge/policy.toml" ]]; then
+              {
+                printf '%s\n' '## Autonomous Merge Shadow Mode'
+                printf '%s\n' ''
+                printf '%s\n' '> Base push recheck: this PR is awaiting the Shadow Mode evaluator/policy on its base branch.'
+                printf '%s\n' ''
+                printf '%s\n' '| 指標 | 値 |' '| --- | --- |' '| Decision | `HUMAN_REVIEW_REQUIRED` |' '| Reason | `BOOTSTRAP_BASELINE_MISSING` |' '| PR Risk | `N/A` |'
+                printf '| Comparison base SHA | `%s` |\n' "${base_sha}"
+              } > "${report_file}"
+            else
+              python3 -B "${trusted_base_dir}/.github/autonomous-merge/evaluate.py" \
+                --base-dir "${comparison_base_dir}" \
+                --head-dir "${head_dir}" \
+                --policy "${trusted_base_dir}/.github/autonomous-merge/policy.toml" \
+                --trusted-base-dir "${trusted_base_dir}" \
+                --base-gitlinks "${base_gitlinks}" \
+                --head-gitlinks "${head_gitlinks}" \
+                --base-sha "${merge_base_sha}" \
+                --head-sha "${head_sha}" \
+                --format markdown > "${report_file}"
+            fi
+
+            local report_body
+            report_body="$(cat "${report_file}")"
+            if (( ${#report_body} > 60000 )); then
+              report_body="${report_body:0:59000}"
+              report_body+=$'\n\n_Report truncated to fit the recheck comment limit._'
+            fi
+            local full_body
+            full_body=$'<!-- autonomous-merge-shadow-recheck -->\n\n'"${report_body}"
+            local payload
+            payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
+            local existing_comment_id
+            existing_comment_id="$(gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments?per_page=100" \
+              --jq '.[] | select(.body | contains("<!-- autonomous-merge-shadow-recheck -->")) | .id' | tail -n 1)"
+            if [[ -n "${existing_comment_id}" ]]; then
+              gh api --method PATCH \
+                "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
+                --input - <<<"${payload}" >/dev/null
+            else
+              gh api --method POST \
+                "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" \
+                --input - <<<"${payload}" >/dev/null
+            fi
+            echo "Rechecked PR #${pr_number} against base ${base_sha}"
+          }
+
+          gh pr list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 \
+            --json number,baseRefName,baseRefOid,headRefOid \
+            --jq '.[] | [.number, .baseRefName, .baseRefOid, .headRefOid] | @tsv' |
+            while IFS=$'\t' read -r pr_number base_ref_name base_sha head_sha; do
+              [[ -n "${pr_number}" ]] || continue
+              if ! recheck_pr "${pr_number}" "${base_ref_name}" "${base_sha}" "${head_sha}"; then
+                echo "::warning::Shadow recheck failed for PR #${pr_number}"
+              fi
+            done

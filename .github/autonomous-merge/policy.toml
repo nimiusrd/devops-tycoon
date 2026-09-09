@@ -60,6 +60,73 @@ test_globs = [
 ]
 ignored_globs = []
 missing_test_risk = 15
+test_removal_risk = 20
+
+[[verification.scopes]]
+name = "visual"
+fallback = false
+code_globs = [
+  "index.html",
+  "src/**/*.css",
+  "src/ui/**",
+  "src/render/**",
+  "src/App.tsx",
+  "src/main.tsx",
+  "public/assets/**",
+]
+test_globs = [
+  "tests/e2e/**",
+  "tests/**/*-snapshots/**",
+  "tests/**/__snapshots__/**",
+]
+
+[[verification.scopes]]
+name = "simulation"
+fallback = false
+code_globs = ["src/sim/**"]
+test_globs = ["tests/unit/sim/**", "tests/playtest/**"]
+
+[[verification.scopes]]
+name = "data"
+fallback = false
+code_globs = ["src/data/**"]
+test_globs = ["tests/unit/data/**", "tests/unit/sim/**", "tests/playtest/**"]
+
+[[verification.scopes]]
+name = "state"
+fallback = false
+code_globs = ["src/state/**"]
+test_globs = ["tests/unit/state/**", "tests/e2e/**persistence**"]
+
+[[verification.scopes]]
+name = "audio"
+fallback = false
+code_globs = ["src/audio/**"]
+test_globs = ["tests/unit/audio/**", "tests/e2e/game-assets.spec.ts"]
+
+[[verification.scopes]]
+name = "scripts"
+fallback = false
+code_globs = ["scripts/**"]
+test_globs = ["tests/unit/scripts/**"]
+
+[[verification.scopes]]
+name = "automation"
+fallback = false
+code_globs = [".github/**/*.py", ".github/**/*.yml", ".github/**/*.yaml"]
+test_globs = [".github/**/test_*.py"]
+
+[[verification.scopes]]
+name = "configuration"
+fallback = false
+code_globs = ["*.config.*", "*.json"]
+test_globs = ["tests/**"]
+
+[[verification.scopes]]
+name = "src-fallback"
+fallback = true
+code_globs = ["src/**"]
+test_globs = ["tests/unit/**", "tests/playtest/**"]
 
 # ルールはファイルごとの最大値を採用し、全ファイルの合計を
 # scoring.maximum_path_riskでcapする。hard_gate=trueはリスク値に関係なく
@@ -111,6 +178,12 @@ pattern = "package-lock.json"
 risk = 100
 hard_gate = true
 reason = "依存関係lockfileの変更"
+
+[[path_rules]]
+pattern = ".gitmodules"
+risk = 100
+hard_gate = true
+reason = "Git submodule構成の変更"
 
 [[path_rules]]
 pattern = "*.config.*"

@@ -8,6 +8,7 @@ from evaluate import (
     EvaluationError,
     _ensure_within_base,
     _escape_markdown,
+    _line_changes,
     _markdown,
     assess,
     load_policy,
@@ -35,14 +36,14 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/ui/Widget.tsx": "export const Widget = () => <div>old</div>;\n",
-                    "tests/unit/ui/widget.test.ts": "it('renders', () => {});\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => {});\n",
                 },
             )
             write_snapshot(
                 head,
                 {
                     "src/ui/Widget.tsx": "export const Widget = () => <div>new</div>;\n",
-                    "tests/unit/ui/widget.test.ts": "it('renders new', () => {});\n",
+                    "tests/e2e/widget.spec.ts": "test('renders new', () => {});\n",
                 },
             )
 
@@ -88,7 +89,52 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertFalse(result.test_changes)
+            self.assertEqual(
+                result.verification_risk,
+                POLICY.missing_test_risk + POLICY.test_removal_risk,
+            )
+
+    def test_unrelated_unit_test_does_not_satisfy_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/styles.css": ".office { color: blue; }\n",
+                    "tests/unit/sim/engine.test.ts": "it('runs', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/styles.css": ".office { color: red; }\n",
+                    "tests/unit/sim/engine.test.ts": "it('runs with a new case', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.missing_test_scopes, ("visual",))
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_test_only_deletion_adds_removal_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"tests/unit/sim/engine.test.ts": "it('runs', () => {});\n"})
+            head.mkdir()
+            write_snapshot(head, {})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertFalse(result.code_changes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+            self.assertIn("テストの削除・純減", " ".join(result.reasons))
 
     def test_unclassified_src_code_has_fallback_path_risk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -133,7 +179,10 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertFalse(result.test_changes)
-            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+            self.assertEqual(
+                result.verification_risk,
+                POLICY.missing_test_risk + POLICY.test_removal_risk,
+            )
 
     def test_css_change_is_subject_to_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -351,6 +400,52 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("評価器・policyの変更", result.hard_gate_reasons[0])
+
+    def test_gitmodules_change_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {".gitmodules": '[submodule "vendor/dep"]\n'})
+            write_snapshot(head, {".gitmodules": '[submodule "vendor/new-dep"]\n'})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("Git submodule構成", " ".join(result.hard_gate_reasons))
+
+    def test_gitlink_manifest_changes_are_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            base.mkdir()
+            head.mkdir()
+            base_gitlinks = Path(directory) / "base.gitlinks"
+            head_gitlinks = Path(directory) / "head.gitlinks"
+            base_gitlinks.write_text("a" * 40 + "\tvendor/dep\n", encoding="utf-8")
+            head_gitlinks.write_text("b" * 40 + "\tvendor/dep\n", encoding="utf-8")
+
+            result = assess(
+                base,
+                head,
+                POLICY,
+                base_gitlinks=base_gitlinks,
+                head_gitlinks=head_gitlinks,
+            )
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertEqual(result.files[0].path, "vendor/dep")
+            self.assertTrue(result.files[0].gitlink)
+            self.assertIn("Git submodule参照", result.hard_gate_reasons[0])
+
+    def test_large_text_diff_uses_bounded_conservative_counts(self) -> None:
+        base_data = ("repeat\n" * 2500).encode("utf-8")
+        head_data = ("repeat\n" * 2501).encode("utf-8")
+
+        additions, deletions, binary = _line_changes(base_data, head_data)
+
+        self.assertEqual(additions, 2501)
+        self.assertEqual(deletions, 2500)
+        self.assertFalse(binary)
 
     def test_path_rule_hard_gate_requires_a_boolean(self) -> None:
         policy_path = ROOT / ".github" / "autonomous-merge" / "policy.toml"

@@ -13,7 +13,9 @@ PR base SHA ──→ trusted evaluator.py + policy.toml
                                PR Risk / Decision
 ```
 
-workflowは`pull_request_target`でbaseブランチ側の定義を実行し、trusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。head側のコード、script、依存関係は実行しません。権限も`contents: read`だけです。PRで評価器・policy・workflowを変更しても、そのPRの評価ルールや実行定義には反映されず、変更されたこと自体がHard Gateになります。
+workflowは`pull_request_target`でbaseブランチ側の定義を実行し、trusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。head側のコード、script、依存関係は実行しません。PRのbase変更を含む`edited`でも再評価します。通常のPR評価は`contents: read`だけで実行します。
+
+baseブランチへのpush時は、別jobがopenなPR一覧を取得し、各PRの現在のbase SHA・merge base・head SHAで再評価します。結果はPRごとの専用コメント（`autonomous-merge-shadow-recheck` marker）を更新するため、base側のpolicyやProject Healthが変わったときも古い判定を残しません。この再評価jobだけがissueコメント更新権限を持ち、コード実行やmerge操作は行いません。PRで評価器・policy・workflowを変更しても、そのPRの評価ルールや実行定義には反映されず、変更されたこと自体がHard Gateになります。
 
 このPRが最初の導入PRの場合、baseブランチにはまだ`pull_request_target`のworkflow定義がないためworkflow自体が実行されません。そのため初回導入PRは人手レビュー必須として扱い、merge後の次のPRから通常の数値評価が始まります。baseにworkflowは存在するが評価器・policyがない場合は、`HUMAN_REVIEW_REQUIRED (bootstrap)`とRisk `N/A`をSummaryへ出して終了します。
 
@@ -26,16 +28,19 @@ workflowは`pull_request_target`でbaseブランチ側の定義を実行し、tr
 | `.github/workflows/**`、`.devcontainer/**`、`.codex/environments/**`、`.nvmrc` | Hard Gate | CI・実行環境を変更するため |
 | `package.json`、`package-lock.json`、`*.config.*`、`tsconfig*.json` | Hard Gate | 依存関係・ビルド・テスト契約を変更するため |
 | `.prettierrc.json`、`.prettierignore` | Hard Gate | フォーマット設定や対象範囲を変更するため |
+| `.gitmodules`、Git treeのgitlink（mode `160000`） | Hard Gate | submodule構成または参照SHAを変更するため |
 | `src/state/**`、`src/game.ts` | Hard Gate | セーブ、永続化、状態遷移を束ねる中核のため |
 | `src/sim/run/**`、`src/sim/engine.ts`、`src/sim/rng.ts`、`src/sim/seed.ts` | Hard Gate | ラン進行とseed再現性の中核であるため |
 | `src/data/balance/**`、`src/data/contentCatalog.ts` | Hard Gate | バランス、確率、コンテンツ契約を変更するため |
-| `index.html`、`src/**`、`public/assets/**` | リスク加点 | 起動・実装・視覚変更を含め、変更量とテスト有無を組み合わせて判定するため |
+| `index.html`、`src/**`、`public/assets/**` | リスク加点 | 起動・実装・視覚変更を含め、変更量と対応するテスト種別を組み合わせて判定するため |
 | `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 領域ごとの変更影響を細分化して判定するため |
 | `src/App.tsx`、`src/main.tsx` | リスク加点 | ルート画面と起動処理を変更するため |
 | `tests/**`、`tests/**/*-snapshots/**`、`tests/**/__snapshots__/**`、`docs/**`、`*.md` | 低加点 | 変更量は計測するが、単独ではHard Gateにしないため |
 | `AGENTS.md`、`docs/design-system.md`、`.agents/skills/devops-tycoon-design-system/SKILL.md`、`vite.webglModules.ts` | Hard Gate | リポジトリ作業手順、UI規約、またはWebGLビルド契約を変更するため |
 
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。
+
+検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに追加行のあるテストを要求します。削除または純減のテスト変更には別のリスクを加算し、Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにします。
 
 ## ローカル実行
 

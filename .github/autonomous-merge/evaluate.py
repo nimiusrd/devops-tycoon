@@ -41,6 +41,14 @@ class PathRule:
 
 
 @dataclass(frozen=True)
+class VerificationScope:
+    name: str
+    code_globs: tuple[str, ...]
+    test_globs: tuple[str, ...]
+    fallback: bool
+
+
+@dataclass(frozen=True)
 class Policy:
     version: int
     mode: str
@@ -49,10 +57,12 @@ class Policy:
     maximum_pr_risk: int
     maximum_path_risk: int
     missing_test_risk: int
+    test_removal_risk: int
     line_bands: tuple[ScoreBand, ...]
     file_bands: tuple[ScoreBand, ...]
     code_globs: tuple[str, ...]
     test_globs: tuple[str, ...]
+    verification_scopes: tuple[VerificationScope, ...]
     ignored_globs: tuple[str, ...]
     path_rules: tuple[PathRule, ...]
 
@@ -64,6 +74,7 @@ class ChangedFile:
     additions: int
     deletions: int
     binary: bool
+    gitlink: bool
 
     @property
     def changed_lines(self) -> int:
@@ -93,6 +104,8 @@ class RiskAssessment:
     verification_risk: int
     code_changes: bool
     test_changes: bool
+    missing_test_scopes: tuple[str, ...]
+    test_removal_risk: int
     hard_gate_reasons: tuple[str, ...]
     reasons: tuple[str, ...]
     files: tuple[ChangedFile, ...]
@@ -172,6 +185,40 @@ def _load_path_rules(value: Any) -> tuple[PathRule, ...]:
     return tuple(rules)
 
 
+def _load_verification_scopes(value: Any) -> tuple[VerificationScope, ...]:
+    if not isinstance(value, list) or not value:
+        raise EvaluationError("policyのverification.scopesは1件以上指定してください")
+
+    scopes: list[VerificationScope] = []
+    names: set[str] = set()
+    for index, raw_scope in enumerate(value):
+        scope = _require_mapping(raw_scope, f"verification.scopes[{index}]")
+        name = _require_string(scope.get("name"), f"verification.scopes[{index}].name")
+        if name in names:
+            raise EvaluationError(f"policyのverification.scopesに重複したnameがあります: {name}")
+        names.add(name)
+        fallback = scope.get("fallback", False)
+        if not isinstance(fallback, bool):
+            raise EvaluationError(
+                f"verification.scopes[{index}].fallbackは真偽値で指定してください"
+            )
+        scopes.append(
+            VerificationScope(
+                name=name,
+                code_globs=_require_string_list(
+                    scope.get("code_globs"),
+                    f"verification.scopes[{index}].code_globs",
+                ),
+                test_globs=_require_string_list(
+                    scope.get("test_globs"),
+                    f"verification.scopes[{index}].test_globs",
+                ),
+                fallback=fallback,
+            )
+        )
+    return tuple(scopes)
+
+
 def load_policy(policy_path: Path) -> Policy:
     """TOML policyを読み込み、評価器が扱える型へ正規化する。"""
 
@@ -210,6 +257,11 @@ def load_policy(policy_path: Path) -> Policy:
         "verification.missing_test_risk",
         maximum=100,
     )
+    test_removal_risk = _require_int(
+        verification.get("test_removal_risk"),
+        "verification.test_removal_risk",
+        maximum=100,
+    )
 
     return Policy(
         version=version,
@@ -219,10 +271,12 @@ def load_policy(policy_path: Path) -> Policy:
         maximum_pr_risk=maximum_pr_risk,
         maximum_path_risk=maximum_path_risk,
         missing_test_risk=missing_test_risk,
+        test_removal_risk=test_removal_risk,
         line_bands=_load_bands(scoring.get("line_bands"), "scoring.line_bands"),
         file_bands=_load_bands(scoring.get("file_bands"), "scoring.file_bands"),
         code_globs=_require_string_list(verification.get("code_globs"), "verification.code_globs"),
         test_globs=_require_string_list(verification.get("test_globs"), "verification.test_globs"),
+        verification_scopes=_load_verification_scopes(verification.get("scopes")),
         ignored_globs=_require_string_list(
             verification.get("ignored_globs", []),
             "verification.ignored_globs",
@@ -271,7 +325,37 @@ def matches_any(path: str, patterns: Iterable[str]) -> bool:
     return any(_matches(path, pattern) for pattern in patterns)
 
 
-def _read_snapshot(root: Path) -> dict[str, bytes]:
+GITLINK_PREFIX = b"\x00GITLINK:"
+MAX_DIFF_BYTES = 1_000_000
+MAX_DIFF_LINES = 4_000
+CONSERVATIVE_LINE_RISK_LINES = 401
+
+
+def _read_gitlinks(manifest_path: Path | None) -> dict[str, bytes]:
+    if manifest_path is None:
+        return {}
+    try:
+        contents = manifest_path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise EvaluationError(f"gitlink manifestを読み込めません: {manifest_path}: {error}") from error
+
+    gitlinks: dict[str, bytes] = {}
+    for line_number, line in enumerate(contents.splitlines(), start=1):
+        try:
+            object_id, relative_path = line.split("\t", 1)
+        except ValueError as error:
+            raise EvaluationError(
+                f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
+            ) from error
+        if not re.fullmatch(r"[0-9a-f]{40,64}", object_id) or not relative_path:
+            raise EvaluationError(
+                f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
+            )
+        gitlinks[relative_path] = GITLINK_PREFIX + object_id.encode("ascii")
+    return gitlinks
+
+
+def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, bytes]:
     if not root.is_dir():
         raise EvaluationError(f"チェックアウトディレクトリがありません: {root}")
 
@@ -309,11 +393,24 @@ def _read_snapshot(root: Path) -> dict[str, bytes]:
                 snapshot[relative_path] = path.read_bytes()
             except OSError as error:
                 raise EvaluationError(f"ファイルを読み込めません: {path}: {error}") from error
+    for relative_path, gitlink_data in _read_gitlinks(gitlinks_path).items():
+        existing_data = snapshot.get(relative_path)
+        if existing_data is not None and existing_data != gitlink_data:
+            raise EvaluationError(
+                f"gitlink manifestが通常ファイルと衝突しています: {relative_path}"
+            )
+        snapshot[relative_path] = gitlink_data
     return snapshot
 
 
 def _is_binary(data: bytes) -> bool:
     return b"\x00" in data[:8192]
+
+
+def _conservative_line_count(data: bytes, lines: Sequence[str]) -> int:
+    if len(data) > MAX_DIFF_BYTES:
+        return max(len(lines), CONSERVATIVE_LINE_RISK_LINES)
+    return len(lines)
 
 
 def _line_changes(base_data: bytes | None, head_data: bytes | None) -> tuple[int, int, bool]:
@@ -331,7 +428,19 @@ def _line_changes(base_data: bytes | None, head_data: bytes | None) -> tuple[int
 
     base_lines = (base_data or b"").decode("utf-8", errors="replace").splitlines()
     head_lines = (head_data or b"").decode("utf-8", errors="replace").splitlines()
-    matcher = difflib.SequenceMatcher(a=base_lines, b=head_lines, autojunk=False)
+    if (
+        len(base_data or b"") > MAX_DIFF_BYTES
+        or len(head_data or b"") > MAX_DIFF_BYTES
+        or len(base_lines) + len(head_lines) > MAX_DIFF_LINES
+    ):
+        return (
+            _conservative_line_count(head_data or b"", head_lines),
+            _conservative_line_count(base_data or b"", base_lines),
+            False,
+        )
+
+    # autojunk=True avoids quadratic behavior for repeated untrusted lines.
+    matcher = difflib.SequenceMatcher(a=base_lines, b=head_lines, autojunk=True)
     additions = 0
     deletions = 0
     for tag, base_start, base_end, head_start, head_end in matcher.get_opcodes():
@@ -342,9 +451,16 @@ def _line_changes(base_data: bytes | None, head_data: bytes | None) -> tuple[int
     return additions, deletions, False
 
 
-def collect_changed_files(base_dir: Path, head_dir: Path, policy: Policy) -> tuple[ChangedFile, ...]:
-    base_snapshot = _read_snapshot(base_dir)
-    head_snapshot = _read_snapshot(head_dir)
+def collect_changed_files(
+    base_dir: Path,
+    head_dir: Path,
+    policy: Policy,
+    *,
+    base_gitlinks: Path | None = None,
+    head_gitlinks: Path | None = None,
+) -> tuple[ChangedFile, ...]:
+    base_snapshot = _read_snapshot(base_dir, base_gitlinks)
+    head_snapshot = _read_snapshot(head_dir, head_gitlinks)
     changed: list[ChangedFile] = []
 
     for path in sorted(set(base_snapshot) | set(head_snapshot)):
@@ -368,6 +484,8 @@ def collect_changed_files(base_dir: Path, head_dir: Path, policy: Policy) -> tup
                 additions=additions,
                 deletions=deletions,
                 binary=binary,
+                gitlink=(base_data or b"").startswith(GITLINK_PREFIX)
+                or (head_data or b"").startswith(GITLINK_PREFIX),
             )
         )
     return tuple(changed)
@@ -384,6 +502,25 @@ def _matching_rules(path: str, policy: Policy) -> tuple[PathRule, ...]:
     return tuple(rule for rule in policy.path_rules if _matches(path, rule.pattern))
 
 
+def _scope_has_code_changes(
+    scope: VerificationScope,
+    files: Sequence[ChangedFile],
+    scopes: Sequence[VerificationScope],
+) -> bool:
+    for changed_file in files:
+        if not matches_any(changed_file.path, scope.code_globs):
+            continue
+        if scope.fallback and any(
+            other.name != scope.name
+            and not other.fallback
+            and matches_any(changed_file.path, other.code_globs)
+            for other in scopes
+        ):
+            continue
+        return True
+    return False
+
+
 def assess(
     base_dir: Path,
     head_dir: Path,
@@ -391,8 +528,16 @@ def assess(
     *,
     base_sha: str | None = None,
     head_sha: str | None = None,
+    base_gitlinks: Path | None = None,
+    head_gitlinks: Path | None = None,
 ) -> RiskAssessment:
-    files = collect_changed_files(base_dir, head_dir, policy)
+    files = collect_changed_files(
+        base_dir,
+        head_dir,
+        policy,
+        base_gitlinks=base_gitlinks,
+        head_gitlinks=head_gitlinks,
+    )
     additions = sum(item.additions for item in files)
     deletions = sum(item.deletions for item in files)
     changed_lines = additions + deletions
@@ -405,18 +550,21 @@ def assess(
     for changed_file in files:
         matching_rules = _matching_rules(changed_file.path, policy)
         path_risk = max((rule.risk for rule in matching_rules), default=0)
-        reasons = tuple(
+        reasons = [
             f"{reason}（{changed_file.path} matches `{pattern}`）"
             for pattern, reason in sorted(
                 ((rule.pattern, rule.reason) for rule in matching_rules if rule.hard_gate),
                 key=lambda item: item[0],
             )
-        )
+        ]
+        if changed_file.gitlink:
+            path_risk = max(path_risk, 100)
+            reasons.insert(0, f"Git submodule参照の変更（{changed_file.path}）")
         path_assessments.append(
             PathAssessment(
                 path=changed_file.path,
                 risk=path_risk,
-                hard_gate_reasons=reasons,
+                hard_gate_reasons=tuple(reasons),
             )
         )
         path_risk_total += path_risk
@@ -426,13 +574,30 @@ def assess(
     path_risk = min(path_risk_total, policy.maximum_path_risk)
 
     code_changes = any(matches_any(item.path, policy.code_globs) for item in files)
-    test_changes = any(
-        item.status != "D"
-        and item.additions > 0
-        and matches_any(item.path, policy.test_globs)
-        for item in files
+    missing_test_scopes = tuple(
+        scope.name
+        for scope in policy.verification_scopes
+        if _scope_has_code_changes(scope, files, policy.verification_scopes)
+        and not any(
+            item.status != "D"
+            and item.additions > 0
+            and matches_any(item.path, scope.test_globs)
+            for item in files
+        )
     )
-    verification_risk = policy.missing_test_risk if code_changes and not test_changes else 0
+    test_changes = code_changes and not missing_test_scopes
+    test_removal_risk = (
+        policy.test_removal_risk
+        if any(
+            matches_any(item.path, policy.test_globs)
+            and (item.status == "D" or item.additions < item.deletions)
+            for item in files
+        )
+        else 0
+    )
+    verification_risk = (
+        (policy.missing_test_risk if missing_test_scopes else 0) + test_removal_risk
+    )
     risk = min(100, line_risk + file_risk + path_risk + verification_risk)
 
     reasons: list[str] = []
@@ -445,10 +610,13 @@ def assess(
         )
     if risk > policy.maximum_pr_risk:
         reasons.append(f"PR Risk {risk}が閾値 {policy.maximum_pr_risk}を超える")
-    if code_changes and not test_changes:
+    if missing_test_scopes:
         reasons.append(
-            f"コード変更に対応するテスト変更がなく、検証リスク +{policy.missing_test_risk}"
+            f"コード変更に対応するテスト変更がなく（不足: {', '.join(missing_test_scopes)}）、"
+            f"検証リスク +{policy.missing_test_risk}"
         )
+    if test_removal_risk:
+        reasons.append(f"テストの削除・純減リスク +{test_removal_risk}")
     if not reasons:
         reasons.append("Hard Gateなし、PR RiskとProject Healthが閾値内")
 
@@ -475,6 +643,8 @@ def assess(
         verification_risk=verification_risk,
         code_changes=code_changes,
         test_changes=test_changes,
+        missing_test_scopes=missing_test_scopes,
+        test_removal_risk=test_removal_risk,
         hard_gate_reasons=tuple(hard_gate_reasons),
         reasons=tuple(reasons),
         files=files,
@@ -538,6 +708,7 @@ def _markdown(assessment: RiskAssessment, policy: Policy, policy_path: Path) -> 
             f"| Changed files | {assessment.file_risk} |",
             f"| Changed paths | {assessment.path_risk} |",
             f"| Verification | {assessment.verification_risk} |",
+            f"| Test removal | {assessment.test_removal_risk} |",
             "",
             "### Reasons",
             "",
@@ -591,6 +762,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="evaluatorとpolicyの信頼元チェックアウト（省略時は--base-dir）",
     )
+    parser.add_argument(
+        "--base-gitlinks",
+        type=Path,
+        help="比較baseのGit treeから抽出したgitlink manifest",
+    )
+    parser.add_argument(
+        "--head-gitlinks",
+        type=Path,
+        help="PR headのGit treeから抽出したgitlink manifest",
+    )
     parser.add_argument("--base-sha", help="出力へ記録する差分比較元のmerge base SHA")
     parser.add_argument("--head-sha", help="出力へ記録するPR head SHA")
     parser.add_argument(
@@ -623,6 +804,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             policy,
             base_sha=args.base_sha,
             head_sha=args.head_sha,
+            base_gitlinks=args.base_gitlinks,
+            head_gitlinks=args.head_gitlinks,
         )
     except EvaluationError as error:
         print(f"Autonomous Merge Shadow Modeの評価に失敗しました: {error}", file=sys.stderr)

@@ -21,6 +21,10 @@ jobs:
     name: PR risk (shadow only)
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
     steps:
       # policy/evaluatorはPR headではなく、必ずPR base SHAから取得する。
       - name: Checkout PR base
@@ -84,7 +88,11 @@ jobs:
           git -C base cat-file -e "${HEAD_SHA}^{commit}"
           MERGE_BASE_SHA="$(git -C base merge-base "${BASE_SHA}" "${HEAD_SHA}")"
           mkdir -p merge-base
-          git -C base archive "${MERGE_BASE_SHA}" | tar -x -C merge-base
+          empty_attributes_worktree="${RUNNER_TEMP}/autonomous-merge-shadow-empty-attributes"
+          mkdir -p "${empty_attributes_worktree}"
+          GIT_ATTR_NOSYSTEM=1 GIT_WORK_TREE="${empty_attributes_worktree}" \
+            git -C base -c core.attributesfile=/dev/null archive \
+            --worktree-attributes "${MERGE_BASE_SHA}" | tar -x -C merge-base
           echo "sha=${MERGE_BASE_SHA}" >> "${GITHUB_OUTPUT}"
           echo "Using merge base SHA ${MERGE_BASE_SHA} for the comparison"
 
@@ -130,7 +138,35 @@ jobs:
             --head-gitlinks head.gitlinks \
             --base-sha "${MERGE_BASE_SHA}" \
             --head-sha "${HEAD_SHA}" \
-            --format markdown | tee -a "${GITHUB_STEP_SUMMARY}"
+            --format markdown | tee shadow-report.md | tee -a "${GITHUB_STEP_SUMMARY}"
+
+      - name: Update PR shadow result comment
+        if: steps.base_assets.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          report_body="$(cat shadow-report.md)"
+          if (( ${#report_body} > 60000 )); then
+            report_body="${report_body:0:59000}"
+            report_body+=$'\n\n_Report truncated to fit the shadow result comment limit._'
+          fi
+          full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
+          payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
+          existing_comment_id="$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+          if [[ -n "${existing_comment_id}" ]]; then
+            gh api --method PATCH \
+              "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
+              --input - <<<"${payload}" >/dev/null
+          else
+            gh api --method POST \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --input - <<<"${payload}" >/dev/null
+          fi
 
   recheck-open-prs:
     if: github.event_name == 'push'
@@ -189,9 +225,18 @@ jobs:
             merge_base_sha="$(git -C "${git_dir}" merge-base "${base_sha}" "${head_sha}")"
 
             mkdir -p "${trusted_base_dir}" "${comparison_base_dir}" "${head_dir}"
-            git -C "${git_dir}" archive "${base_sha}" | tar -x -C "${trusted_base_dir}"
-            git -C "${git_dir}" archive "${merge_base_sha}" | tar -x -C "${comparison_base_dir}"
-            git -C "${git_dir}" archive "${head_sha}" | tar -x -C "${head_dir}"
+            local empty_attributes_worktree="${RUNNER_TEMP}/autonomous-merge-shadow-empty-attributes-pr-${pr_number}"
+            mkdir -p "${empty_attributes_worktree}"
+            archive_raw_tree() {
+              local tree_sha="$1"
+              local output_dir="$2"
+              GIT_ATTR_NOSYSTEM=1 GIT_WORK_TREE="${empty_attributes_worktree}" \
+                git -C "${git_dir}" -c core.attributesfile=/dev/null archive \
+                --worktree-attributes "${tree_sha}" | tar -x -C "${output_dir}"
+            }
+            archive_raw_tree "${base_sha}" "${trusted_base_dir}"
+            archive_raw_tree "${merge_base_sha}" "${comparison_base_dir}"
+            archive_raw_tree "${head_sha}" "${head_dir}"
             write_gitlinks "${git_dir}" "${merge_base_sha}" "${base_gitlinks}"
             write_gitlinks "${git_dir}" "${head_sha}" "${head_gitlinks}"
 
@@ -225,13 +270,13 @@ jobs:
               report_body+=$'\n\n_Report truncated to fit the recheck comment limit._'
             fi
             local full_body
-            full_body=$'<!-- autonomous-merge-shadow-recheck -->\n\n'"${report_body}"
+            full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
             local payload
             payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
             local existing_comment_id
             existing_comment_id="$(gh api --paginate \
               "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments?per_page=100" \
-              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-recheck -->"))) | .id' | tail -n 1)"
+              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
             if [[ -n "${existing_comment_id}" ]]; then
               gh api --method PATCH \
                 "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \

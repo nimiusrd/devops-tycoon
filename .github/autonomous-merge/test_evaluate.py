@@ -3,13 +3,16 @@ import io
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from evaluate import (
     EvaluationError,
+    MAX_SNAPSHOT_FILE_BYTES,
     _ensure_within_base,
     _escape_markdown,
     _line_changes,
     _markdown,
+    _read_snapshot,
     assess,
     load_policy,
     main,
@@ -135,6 +138,9 @@ class EvaluateTests(unittest.TestCase):
             self.assertFalse(result.test_changes)
             self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
             self.assertIn("テストの削除・純減", " ".join(result.reasons))
+            markdown = _markdown(result, POLICY, Path("base/policy.toml"))
+            self.assertIn("| Verification | 0 |", markdown)
+            self.assertIn(f"| Test removal | {POLICY.test_removal_risk} |", markdown)
 
     def test_pure_test_rename_does_not_add_removal_risk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -148,6 +154,19 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.test_removal_risk, 0)
             self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
+
+    def test_rename_to_non_test_path_keeps_removal_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            test_contents = "it('runs', () => {});\n"
+            write_snapshot(base, {"tests/unit/sim/guard.test.ts": test_contents})
+            write_snapshot(head, {"tests/unit/sim/guard.ts": test_contents})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
 
     def test_unclassified_src_code_has_fallback_path_risk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -473,6 +492,43 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.files[0].path, "vendor/dep")
             self.assertTrue(result.files[0].gitlink)
             self.assertIn("Git submodule参照", result.hard_gate_reasons[0])
+
+    def test_gitlink_is_not_equal_to_matching_blob(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            base.mkdir()
+            head.mkdir()
+            base_gitlinks = Path(directory) / "base.gitlinks"
+            base_gitlinks.write_text("a" * 40 + "\tvendor/dep\n", encoding="utf-8")
+            write_snapshot(head, {"vendor/dep": "a" * 40})
+
+            result = assess(base, head, POLICY, base_gitlinks=base_gitlinks)
+
+            self.assertEqual(result.changed_files, 1)
+            self.assertTrue(result.files[0].gitlink)
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+
+    def test_snapshot_file_size_is_bounded_before_reading(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "snapshot"
+            root.mkdir()
+            oversized = root / "oversized.bin"
+            with oversized.open("wb") as file:
+                file.truncate(MAX_SNAPSHOT_FILE_BYTES + 1)
+
+            with self.assertRaises(EvaluationError):
+                _read_snapshot(root)
+
+    def test_snapshot_total_read_size_is_bounded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "snapshot"
+            write_snapshot(root, {"first.txt": "123456", "second.txt": "123456"})
+
+            with patch("evaluate.MAX_SNAPSHOT_FILE_BYTES", 8), patch(
+                "evaluate.MAX_SNAPSHOT_TOTAL_BYTES", 10
+            ), self.assertRaises(EvaluationError):
+                _read_snapshot(root)
 
     def test_large_text_diff_uses_bounded_conservative_counts(self) -> None:
         base_data = ("repeat\n" * 2500).encode("utf-8")

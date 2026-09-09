@@ -13,9 +13,9 @@ PR base SHA ──→ trusted evaluator.py + policy.toml
                                PR Risk / Decision
 ```
 
-workflowは`pull_request_target`でbaseブランチ側の定義を実行し、trusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。head側のコード、script、依存関係は実行しません。PRのbase変更を含む`edited`でも再評価します。通常のPR評価は`contents: read`だけで実行します。
+workflowは`pull_request_target`でbaseブランチ側の定義を実行し、trusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。Git treeの展開は空のattribute worktreeを使ったraw archiveとし、`.gitattributes`の`export-ignore`や`export-subst`で比較内容が変わらないようにします。head側のコード、script、依存関係は実行しません。PRのbase変更を含む`edited`でも再評価します。コード取得には`contents: read`だけを使い、結果コメントの更新権限は評価jobと再評価jobに限定します。
 
-baseブランチへのpush時は、別jobがopenなPR一覧を取得し、各PRの現在のbase SHA・merge base・head SHAで再評価します。結果はPRごとの専用コメント（`autonomous-merge-shadow-recheck` marker）を更新するため、base側のpolicyやProject Healthが変わったときも古い判定を残しません。この再評価jobだけがissueコメント更新権限を持ち、コード実行やmerge操作は行いません。PRで評価器・policy・workflowを変更しても、そのPRの評価ルールや実行定義には反映されず、変更されたこと自体がHard Gateになります。
+baseブランチへのpush時は、別jobがopenなPR一覧を取得し、各PRの現在のbase SHA・merge base・head SHAで再評価します。結果はPRごとの専用コメント（`autonomous-merge-shadow-result` marker）を更新するため、base側のpolicyやProject Healthが変わったときも古い判定を残しません。通常のPR評価でも同じコメントを更新するため、head更新後に古い結果を残しません。この再評価jobと通常評価jobだけがissueコメント更新権限を持ち、コード実行やmerge操作は行いません。PRで評価器・policy・workflowを変更しても、そのPRの評価ルールや実行定義には反映されず、変更されたこと自体がHard Gateになります。
 
 このPRが最初の導入PRの場合、baseブランチにはまだ`pull_request_target`のworkflow定義がないためworkflow自体が実行されません。そのため初回導入PRは人手レビュー必須として扱い、merge後の次のPRから通常の数値評価が始まります。baseにworkflowは存在するが評価器・policyがない場合は、`HUMAN_REVIEW_REQUIRED (bootstrap)`とRisk `N/A`をSummaryへ出して終了します。
 

@@ -42,6 +42,12 @@ class PathRule:
 
 
 @dataclass(frozen=True)
+class SnapshotEntry:
+    kind: str
+    data: bytes
+
+
+@dataclass(frozen=True)
 class VerificationScope:
     name: str
     code_globs: tuple[str, ...]
@@ -326,13 +332,14 @@ def matches_any(path: str, patterns: Iterable[str]) -> bool:
     return any(_matches(path, pattern) for pattern in patterns)
 
 
-GITLINK_PREFIX = b"\x00GITLINK:"
 MAX_DIFF_BYTES = 1_000_000
 MAX_DIFF_LINES = 4_000
 CONSERVATIVE_LINE_RISK_LINES = 401
+MAX_SNAPSHOT_FILE_BYTES = 8_000_000
+MAX_SNAPSHOT_TOTAL_BYTES = 64_000_000
 
 
-def _read_gitlinks(manifest_path: Path | None) -> dict[str, bytes]:
+def _read_gitlinks(manifest_path: Path | None) -> dict[str, SnapshotEntry]:
     if manifest_path is None:
         return {}
     try:
@@ -340,7 +347,7 @@ def _read_gitlinks(manifest_path: Path | None) -> dict[str, bytes]:
     except OSError as error:
         raise EvaluationError(f"gitlink manifestを読み込めません: {manifest_path}: {error}") from error
 
-    gitlinks: dict[str, bytes] = {}
+    gitlinks: dict[str, SnapshotEntry] = {}
     for line_number, line in enumerate(contents.splitlines(), start=1):
         try:
             object_id, relative_path = line.split("\t", 1)
@@ -352,23 +359,25 @@ def _read_gitlinks(manifest_path: Path | None) -> dict[str, bytes]:
             raise EvaluationError(
                 f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
             )
-        gitlinks[relative_path] = GITLINK_PREFIX + object_id.encode("ascii")
+        gitlinks[relative_path] = SnapshotEntry("gitlink", object_id.encode("ascii"))
     return gitlinks
 
 
-def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, bytes]:
+def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, SnapshotEntry]:
     if not root.is_dir():
         raise EvaluationError(f"チェックアウトディレクトリがありません: {root}")
 
-    snapshot: dict[str, bytes] = {}
+    snapshot: dict[str, SnapshotEntry] = {}
+    snapshot_total_bytes = 0
     for directory, directories, filenames in os.walk(root, topdown=True, followlinks=False):
         directory_path = Path(directory)
         for name in directories:
             path = directory_path / name
             if path.is_symlink():
                 try:
-                    snapshot[path.relative_to(root).as_posix()] = b"\x00SYMLINK:" + os.fsencode(
-                        path.readlink()
+                    snapshot[path.relative_to(root).as_posix()] = SnapshotEntry(
+                        "symlink",
+                        b"\x00SYMLINK:" + os.fsencode(path.readlink()),
                     )
                 except OSError as error:
                     raise EvaluationError(f"symlinkを読み込めません: {path}: {error}") from error
@@ -384,16 +393,45 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, b
             relative_path = path.relative_to(root).as_posix()
             if path.is_symlink():
                 try:
-                    snapshot[relative_path] = b"\x00SYMLINK:" + os.fsencode(path.readlink())
+                    snapshot[relative_path] = SnapshotEntry(
+                        "symlink",
+                        b"\x00SYMLINK:" + os.fsencode(path.readlink()),
+                    )
                 except OSError as error:
                     raise EvaluationError(f"symlinkを読み込めません: {path}: {error}") from error
                 continue
             if not path.is_file():
                 continue
             try:
-                snapshot[relative_path] = path.read_bytes()
+                file_size = path.stat().st_size
+            except OSError as error:
+                raise EvaluationError(f"ファイルサイズを読み込めません: {path}: {error}") from error
+            if file_size > MAX_SNAPSHOT_FILE_BYTES:
+                raise EvaluationError(
+                    f"snapshotのファイルサイズが上限を超えています: {path} "
+                    f"({file_size} bytes > {MAX_SNAPSHOT_FILE_BYTES} bytes)"
+                )
+            if snapshot_total_bytes + file_size > MAX_SNAPSHOT_TOTAL_BYTES:
+                raise EvaluationError(
+                    "snapshotの総読込み量が上限を超えています: "
+                    f"{snapshot_total_bytes + file_size} bytes > {MAX_SNAPSHOT_TOTAL_BYTES} bytes"
+                )
+            try:
+                with path.open("rb") as file:
+                    data = file.read(MAX_SNAPSHOT_FILE_BYTES + 1)
             except OSError as error:
                 raise EvaluationError(f"ファイルを読み込めません: {path}: {error}") from error
+            if len(data) > MAX_SNAPSHOT_FILE_BYTES:
+                raise EvaluationError(
+                    f"snapshotのファイルサイズが上限を超えています: {path}"
+                )
+            if snapshot_total_bytes + len(data) > MAX_SNAPSHOT_TOTAL_BYTES:
+                raise EvaluationError(
+                    "snapshotの総読込み量が上限を超えています: "
+                    f"{snapshot_total_bytes + len(data)} bytes > {MAX_SNAPSHOT_TOTAL_BYTES} bytes"
+                )
+            snapshot[relative_path] = SnapshotEntry("blob", data)
+            snapshot_total_bytes += len(data)
     for relative_path, gitlink_data in _read_gitlinks(gitlinks_path).items():
         existing_data = snapshot.get(relative_path)
         if existing_data is not None and existing_data != gitlink_data:
@@ -466,8 +504,8 @@ def collect_changed_files(
 
 
 def _collect_changed_files_from_snapshots(
-    base_snapshot: Mapping[str, bytes],
-    head_snapshot: Mapping[str, bytes],
+    base_snapshot: Mapping[str, SnapshotEntry],
+    head_snapshot: Mapping[str, SnapshotEntry],
     policy: Policy,
 ) -> tuple[ChangedFile, ...]:
     changed: list[ChangedFile] = []
@@ -475,10 +513,12 @@ def _collect_changed_files_from_snapshots(
     for path in sorted(set(base_snapshot) | set(head_snapshot)):
         if matches_any(path, policy.ignored_globs):
             continue
-        base_data = base_snapshot.get(path)
-        head_data = head_snapshot.get(path)
-        if base_data == head_data:
+        base_entry = base_snapshot.get(path)
+        head_entry = head_snapshot.get(path)
+        if base_entry == head_entry:
             continue
+        base_data = base_entry.data if base_entry is not None else None
+        head_data = head_entry.data if head_entry is not None else None
         additions, deletions, binary = _line_changes(base_data, head_data)
         if base_data is None:
             status = "A"
@@ -493,8 +533,8 @@ def _collect_changed_files_from_snapshots(
                 additions=additions,
                 deletions=deletions,
                 binary=binary,
-                gitlink=(base_data or b"").startswith(GITLINK_PREFIX)
-                or (head_data or b"").startswith(GITLINK_PREFIX),
+                gitlink=(base_entry is not None and base_entry.kind == "gitlink")
+                or (head_entry is not None and head_entry.kind == "gitlink"),
             )
         )
     return tuple(changed)
@@ -532,13 +572,13 @@ def _scope_has_code_changes(
 
 def _has_test_removal(
     files: Sequence[ChangedFile],
-    base_snapshot: Mapping[str, bytes],
-    head_snapshot: Mapping[str, bytes],
+    base_snapshot: Mapping[str, SnapshotEntry],
+    head_snapshot: Mapping[str, SnapshotEntry],
     policy: Policy,
 ) -> bool:
     """テストの削除・純減を検出し、同内容の純粋なrenameは除外する。"""
 
-    added_test_contents: Counter[bytes] = Counter(
+    added_test_contents: Counter[SnapshotEntry] = Counter(
         head_snapshot[item.path]
         for item in files
         if item.status == "A"
@@ -620,12 +660,11 @@ def assess(
         )
     )
     test_changes = code_changes and not missing_test_scopes
-    test_removal_risk = policy.test_removal_risk if _has_test_removal(
-        files,
-        base_snapshot,
-        head_snapshot,
-        policy,
-    ) else 0
+    test_removal_risk = (
+        policy.test_removal_risk
+        if _has_test_removal(files, base_snapshot, head_snapshot, policy)
+        else 0
+    )
     verification_risk = (
         (policy.missing_test_risk if missing_test_scopes else 0) + test_removal_risk
     )
@@ -707,6 +746,7 @@ def _safe_code(value: str) -> str:
 
 
 def _markdown(assessment: RiskAssessment, policy: Policy, policy_path: Path) -> str:
+    verification_base_risk = assessment.verification_risk - assessment.test_removal_risk
     lines = [
         "## Autonomous Merge Shadow Mode",
         "",
@@ -738,7 +778,7 @@ def _markdown(assessment: RiskAssessment, policy: Policy, policy_path: Path) -> 
             f"| Changed lines | {assessment.line_risk} |",
             f"| Changed files | {assessment.file_risk} |",
             f"| Changed paths | {assessment.path_risk} |",
-            f"| Verification | {assessment.verification_risk} |",
+            f"| Verification | {verification_base_risk} |",
             f"| Test removal | {assessment.test_removal_risk} |",
             "",
             "### Reasons",

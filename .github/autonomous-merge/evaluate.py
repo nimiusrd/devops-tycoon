@@ -336,29 +336,35 @@ MAX_DIFF_LINES = 4_000
 CONSERVATIVE_LINE_RISK_LINES = 401
 MAX_SNAPSHOT_FILE_BYTES = 8_000_000
 MAX_SNAPSHOT_TOTAL_BYTES = 64_000_000
+MAX_SNAPSHOT_FILES = 50_000
 
 
 def _read_gitlinks(manifest_path: Path | None) -> dict[str, SnapshotEntry]:
     if manifest_path is None:
         return {}
+    gitlinks: dict[str, SnapshotEntry] = {}
     try:
-        contents = manifest_path.read_text(encoding="utf-8")
+        manifest_file = manifest_path.open("r", encoding="utf-8")
     except OSError as error:
         raise EvaluationError(f"gitlink manifestを読み込めません: {manifest_path}: {error}") from error
 
-    gitlinks: dict[str, SnapshotEntry] = {}
-    for line_number, line in enumerate(contents.splitlines(), start=1):
-        try:
-            object_id, relative_path = line.split("\t", 1)
-        except ValueError as error:
-            raise EvaluationError(
-                f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
-            ) from error
-        if not re.fullmatch(r"[0-9a-f]{40,64}", object_id) or not relative_path:
-            raise EvaluationError(
-                f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
-            )
-        gitlinks[relative_path] = SnapshotEntry("gitlink", object_id.encode("ascii"))
+    with manifest_file:
+        for line_number, line in enumerate(manifest_file, start=1):
+            try:
+                object_id, relative_path = line.rstrip("\r\n").split("\t", 1)
+            except ValueError as error:
+                raise EvaluationError(
+                    f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
+                ) from error
+            if not re.fullmatch(r"[0-9a-f]{40,64}", object_id) or not relative_path:
+                raise EvaluationError(
+                    f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
+                )
+            if len(gitlinks) >= MAX_SNAPSHOT_FILES and relative_path not in gitlinks:
+                raise EvaluationError(
+                    f"snapshotのファイル数が上限を超えています: {manifest_path}"
+                )
+            gitlinks[relative_path] = SnapshotEntry("gitlink", object_id.encode("ascii"))
     return gitlinks
 
 
@@ -374,7 +380,12 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
             path = directory_path / name
             if path.is_symlink():
                 try:
-                    snapshot[path.relative_to(root).as_posix()] = SnapshotEntry(
+                    relative_path = path.relative_to(root).as_posix()
+                    if relative_path not in snapshot and len(snapshot) >= MAX_SNAPSHOT_FILES:
+                        raise EvaluationError(
+                            f"snapshotのファイル数が上限を超えています: {root}"
+                        )
+                    snapshot[relative_path] = SnapshotEntry(
                         "symlink",
                         b"\x00SYMLINK:" + os.fsencode(path.readlink()),
                     )
@@ -392,6 +403,10 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
             relative_path = path.relative_to(root).as_posix()
             if path.is_symlink():
                 try:
+                    if relative_path not in snapshot and len(snapshot) >= MAX_SNAPSHOT_FILES:
+                        raise EvaluationError(
+                            f"snapshotのファイル数が上限を超えています: {root}"
+                        )
                     snapshot[relative_path] = SnapshotEntry(
                         "symlink",
                         b"\x00SYMLINK:" + os.fsencode(path.readlink()),
@@ -401,6 +416,8 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
                 continue
             if not path.is_file():
                 continue
+            if relative_path not in snapshot and len(snapshot) >= MAX_SNAPSHOT_FILES:
+                raise EvaluationError(f"snapshotのファイル数が上限を超えています: {root}")
             try:
                 file_size = path.stat().st_size
             except OSError as error:
@@ -437,6 +454,8 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
             raise EvaluationError(
                 f"gitlink manifestが通常ファイルと衝突しています: {relative_path}"
             )
+        if existing_data is None and len(snapshot) >= MAX_SNAPSHOT_FILES:
+            raise EvaluationError(f"snapshotのファイル数が上限を超えています: {root}")
         snapshot[relative_path] = gitlink_data
     return snapshot
 

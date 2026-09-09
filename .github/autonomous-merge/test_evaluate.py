@@ -209,16 +209,18 @@ class EvaluateTests(unittest.TestCase):
 
     def test_static_asset_change_requires_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            base = Path(directory) / "base"
-            head = Path(directory) / "head"
-            write_snapshot(base, {"public/assets/devops-command-center.jpg": "old asset\n"})
-            write_snapshot(head, {"public/assets/devops-command-center.jpg": "new asset\n"})
+            for relative_path in ("public/assets/devops-command-center.jpg", "public/favicon.svg"):
+                with self.subTest(relative_path=relative_path):
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(base, {relative_path: "old asset\n"})
+                    write_snapshot(head, {relative_path: "new asset\n"})
 
-            result = assess(base, head, POLICY)
+                    result = assess(base, head, POLICY)
 
-            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
-            self.assertTrue(result.code_changes)
-            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+                    self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+                    self.assertTrue(result.code_changes)
+                    self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
 
     def test_deleted_test_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -513,11 +515,13 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("Git submodule構成", " ".join(result.hard_gate_reasons))
 
-    def test_shared_e2e_support_is_a_hard_gate(self) -> None:
+    def test_shared_test_support_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             for relative_path, reason in (
                 ("tests/e2e/fixtures.ts", "共有E2E fixture"),
                 ("tests/e2e/seedMeta.ts", "共有E2Eメタ状態fixture"),
+                ("tests/playtest/harness.ts", "共有playtest測定基盤"),
+                ("tests/playtest/globalSetup.ts", "playtest共通setup"),
             ):
                 with self.subTest(relative_path=relative_path):
                     base = Path(directory) / "base"
@@ -589,6 +593,14 @@ class EvaluateTests(unittest.TestCase):
             with patch("evaluate.MAX_SNAPSHOT_FILE_BYTES", 8), patch(
                 "evaluate.MAX_SNAPSHOT_TOTAL_BYTES", 10
             ), self.assertRaises(EvaluationError):
+                _read_snapshot(root)
+
+    def test_snapshot_file_count_is_bounded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "snapshot"
+            write_snapshot(root, {"first.txt": "", "second.txt": "", "third.txt": ""})
+
+            with patch("evaluate.MAX_SNAPSHOT_FILES", 2), self.assertRaises(EvaluationError):
                 _read_snapshot(root)
 
     def test_large_text_diff_uses_bounded_conservative_counts(self) -> None:

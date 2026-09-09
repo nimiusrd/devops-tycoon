@@ -45,7 +45,7 @@ code_globs = [
   "scripts/**/*.mjs",
   "*.config.*",
   "*.json",
-  "public/assets/**",
+  "public/**",
   ".github/**/*.py",
   ".github/**/*.yml",
   ".github/**/*.yaml",
@@ -76,7 +76,7 @@ code_globs = [
   "src/render/**",
   "src/App.tsx",
   "src/main.tsx",
-  "public/assets/**",
+  "public/**",
 ]
 test_globs = [
   "tests/e2e/**/*.test.ts",
@@ -381,7 +381,19 @@ hard_gate = true
 reason = "共有E2Eメタ状態fixtureの変更"
 
 [[path_rules]]
-pattern = "public/assets/**"
+pattern = "tests/playtest/harness.ts"
+risk = 100
+hard_gate = true
+reason = "共有playtest測定基盤の変更"
+
+[[path_rules]]
+pattern = "tests/playtest/globalSetup.ts"
+risk = 100
+hard_gate = true
+reason = "playtest共通setupの変更"
+
+[[path_rules]]
+pattern = "public/**"
 risk = 5
 hard_gate = false
 reason = "静的アセットの変更"

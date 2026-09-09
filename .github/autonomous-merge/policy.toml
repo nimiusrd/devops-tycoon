@@ -369,6 +369,12 @@ hard_gate = false
 reason = "テストの変更"
 
 [[path_rules]]
+pattern = "tests/unit/helpers/**"
+risk = 100
+hard_gate = true
+reason = "共有unit test基盤の変更"
+
+[[path_rules]]
 pattern = "tests/e2e/fixtures.ts"
 risk = 100
 hard_gate = true

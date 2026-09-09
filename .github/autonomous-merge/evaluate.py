@@ -14,6 +14,7 @@ import html
 import json
 import os
 import re
+import stat
 import sys
 import tomllib
 from dataclasses import asdict, dataclass
@@ -43,6 +44,7 @@ class PathRule:
 @dataclass(frozen=True)
 class SnapshotEntry:
     kind: str
+    mode: str
     data: bytes
 
 
@@ -364,7 +366,11 @@ def _read_gitlinks(manifest_path: Path | None) -> dict[str, SnapshotEntry]:
                 raise EvaluationError(
                     f"snapshotのファイル数が上限を超えています: {manifest_path}"
                 )
-            gitlinks[relative_path] = SnapshotEntry("gitlink", object_id.encode("ascii"))
+            gitlinks[relative_path] = SnapshotEntry(
+                "gitlink",
+                "160000",
+                object_id.encode("ascii"),
+            )
     return gitlinks
 
 
@@ -387,6 +393,7 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
                         )
                     snapshot[relative_path] = SnapshotEntry(
                         "symlink",
+                        "120000",
                         b"\x00SYMLINK:" + os.fsencode(path.readlink()),
                     )
                 except OSError as error:
@@ -409,6 +416,7 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
                         )
                     snapshot[relative_path] = SnapshotEntry(
                         "symlink",
+                        "120000",
                         b"\x00SYMLINK:" + os.fsencode(path.readlink()),
                     )
                 except OSError as error:
@@ -419,7 +427,9 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
             if relative_path not in snapshot and len(snapshot) >= MAX_SNAPSHOT_FILES:
                 raise EvaluationError(f"snapshotのファイル数が上限を超えています: {root}")
             try:
-                file_size = path.stat().st_size
+                file_stat = path.stat()
+                file_size = file_stat.st_size
+                file_mode = "100755" if file_stat.st_mode & stat.S_IXUSR else "100644"
             except OSError as error:
                 raise EvaluationError(f"ファイルサイズを読み込めません: {path}: {error}") from error
             if file_size > MAX_SNAPSHOT_FILE_BYTES:
@@ -446,7 +456,7 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
                     "snapshotの総読込み量が上限を超えています: "
                     f"{snapshot_total_bytes + len(data)} bytes > {MAX_SNAPSHOT_TOTAL_BYTES} bytes"
                 )
-            snapshot[relative_path] = SnapshotEntry("blob", data)
+            snapshot[relative_path] = SnapshotEntry("blob", file_mode, data)
             snapshot_total_bytes += len(data)
     for relative_path, gitlink_data in _read_gitlinks(gitlinks_path).items():
         existing_data = snapshot.get(relative_path)

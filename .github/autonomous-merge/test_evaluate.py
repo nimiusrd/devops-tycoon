@@ -522,6 +522,7 @@ class EvaluateTests(unittest.TestCase):
                 ("tests/e2e/seedMeta.ts", "共有E2Eメタ状態fixture"),
                 ("tests/playtest/harness.ts", "共有playtest測定基盤"),
                 ("tests/playtest/globalSetup.ts", "playtest共通setup"),
+                ("tests/unit/helpers/property.ts", "共有unit test基盤"),
             ):
                 with self.subTest(relative_path=relative_path):
                     base = Path(directory) / "base"
@@ -602,6 +603,21 @@ class EvaluateTests(unittest.TestCase):
 
             with patch("evaluate.MAX_SNAPSHOT_FILES", 2), self.assertRaises(EvaluationError):
                 _read_snapshot(root)
+
+    def test_executable_mode_change_is_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"docs/mode-sensitive.txt": "same content\n"})
+            write_snapshot(head, {"docs/mode-sensitive.txt": "same content\n"})
+            (head / "docs/mode-sensitive.txt").chmod(0o755)
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.changed_files, 1)
+            self.assertEqual(result.files[0].path, "docs/mode-sensitive.txt")
+            self.assertEqual(result.files[0].status, "M")
+            self.assertEqual(result.files[0].changed_lines, 0)
 
     def test_large_text_diff_uses_bounded_conservative_counts(self) -> None:
         base_data = ("repeat\n" * 2500).encode("utf-8")

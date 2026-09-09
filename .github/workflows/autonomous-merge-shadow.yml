@@ -161,6 +161,8 @@ jobs:
 
       - name: Evaluate PR risk (non-blocking shadow mode)
         if: steps.base_assets.outputs.available == 'true'
+        id: evaluate_risk
+        continue-on-error: true
         env:
           MERGE_BASE_SHA: ${{ steps.merge_base.outputs.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -178,16 +180,38 @@ jobs:
             --format markdown | tee shadow-report.md | tee -a "${GITHUB_STEP_SUMMARY}"
 
       - name: Update PR shadow result comment
-        if: steps.base_assets.outputs.available == 'true'
+        if: >-
+          always() && steps.base_assets.outputs.available == 'true' &&
+          (steps.evaluate_risk.outcome == 'success' || steps.evaluate_risk.outcome == 'failure')
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_BASE_SHA: ${{ steps.merge_base.outputs.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVALUATION_OUTCOME: ${{ steps.evaluate_risk.outcome }}
         run: |
           set -euo pipefail
-          report_body="$(cat shadow-report.md)"
+          if [[ "${EVALUATION_OUTCOME}" == "failure" ]]; then
+            report_body="$(cat <<EOF
+          ## Autonomous Merge Shadow Mode
+
+          > 評価器が入力上限または評価エラーで完了できませんでした。人手レビューが必要です。
+
+          | 指標 | 値 |
+          | --- | --- |
+          | Decision | \`HUMAN_REVIEW_REQUIRED\` |
+          | Reason | \`EVALUATION_FAILED\` |
+          | PR Risk | \`N/A\` |
+          | Comparison base SHA | \`${MERGE_BASE_SHA}\` |
+          | Head SHA | \`${HEAD_SHA}\` |
+          EOF
+            )"
+            printf '%s\n' "${report_body}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            report_body="$(cat shadow-report.md)"
+          fi
           if (( ${#report_body} > 60000 )); then
             report_body="${report_body:0:59000}"
             report_body+=$'\n\n_Report truncated to fit the shadow result comment limit._'
@@ -338,16 +362,30 @@ jobs:
                 printf '| Comparison base SHA | `%s` |\n' "${base_sha}"
               } > "${report_file}"
             else
+              set +e
               python3 -B "${trusted_base_dir}/.github/autonomous-merge/evaluate.py" \
-                --base-dir "${comparison_base_dir}" \
-                --head-dir "${head_dir}" \
-                --policy "${trusted_base_dir}/.github/autonomous-merge/policy.toml" \
-                --trusted-base-dir "${trusted_base_dir}" \
-                --base-gitlinks "${base_gitlinks}" \
-                --head-gitlinks "${head_gitlinks}" \
-                --base-sha "${merge_base_sha}" \
-                --head-sha "${head_sha}" \
-                --format markdown > "${report_file}"
+                  --base-dir "${comparison_base_dir}" \
+                  --head-dir "${head_dir}" \
+                  --policy "${trusted_base_dir}/.github/autonomous-merge/policy.toml" \
+                  --trusted-base-dir "${trusted_base_dir}" \
+                  --base-gitlinks "${base_gitlinks}" \
+                  --head-gitlinks "${head_gitlinks}" \
+                  --base-sha "${merge_base_sha}" \
+                  --head-sha "${head_sha}" \
+                  --format markdown > "${report_file}"
+              local evaluation_status=$?
+              set -e
+              if (( evaluation_status != 0 )); then
+                {
+                  printf '%s\n' '## Autonomous Merge Shadow Mode'
+                  printf '%s\n' ''
+                  printf '%s\n' '> Base push recheck: the Shadow Mode evaluator could not complete. Human review is required.'
+                  printf '%s\n' ''
+                  printf '%s\n' '| 指標 | 値 |' '| --- | --- |' '| Decision | `HUMAN_REVIEW_REQUIRED` |' '| Reason | `EVALUATION_FAILED` |' '| PR Risk | `N/A` |'
+                  printf '| Comparison base SHA | `%s` |\n' "${merge_base_sha}"
+                  printf '| Head SHA | `%s` |\n' "${head_sha}"
+                } > "${report_file}"
+              fi
             fi
 
             local report_body

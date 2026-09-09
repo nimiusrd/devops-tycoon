@@ -15,7 +15,7 @@ PR base SHA ──→ trusted evaluator.py + policy.toml
 
 workflowは`pull_request_target`でbaseブランチ側の定義を実行し、trusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。Git treeは`ls-tree -z`で列挙し、`cat-file blob`でraw blobを直接展開するため、`.gitattributes`の`export-ignore`や`export-subst`などの属性変換は比較へ影響しません。mode `120000`のsymlinkはリンクとして、`160000`のgitlinkはmanifestとして扱います。head側のコード、script、依存関係は実行しません。PRのbase変更を含む`edited`でも再評価します。コード取得には`contents: read`だけを使い、結果コメントの更新権限は評価jobと再評価jobに限定します。
 
-baseブランチへのpush時は、別jobがopenなPR一覧を取得し、各PRの現在のbase SHA・merge base・head SHAで再評価します。結果はPRごとの専用コメント（`autonomous-merge-shadow-result` marker）を更新するため、base側のpolicyやProject Healthが変わったときも古い判定を残しません。通常のPR評価でも同じコメントを更新するため、head更新後に古い結果を残しません。両経路ともコメント投稿直前にPRの現在のbase/head SHAを再確認し、古いrunは結果を書き込みません。workflowのconcurrencyもPR番号またはpush refごとに分離します。この再評価jobと通常評価jobだけがissueコメント更新権限を持ち、コード実行やmerge操作は行いません。PRで評価器・policy・workflowを変更しても、そのPRの評価ルールや実行定義には反映されず、変更されたこと自体がHard Gateになります。
+baseブランチへのpush時は、別jobがopenなPR一覧を取得し、各PRの現在のbase SHA・merge base・head SHAで再評価します。結果はPRごとの専用コメント（`autonomous-merge-shadow-result` marker）を更新するため、base側のpolicyやProject Healthが変わったときも古い判定を残しません。通常のPR評価でも同じコメントを更新するため、head更新後に古い結果を残しません。評価器が入力上限やその他の評価エラーで完了できない場合は、既存の結果を残さず`HUMAN_REVIEW_REQUIRED` / `EVALUATION_FAILED`へ更新します。両経路ともコメント投稿直前にPRの現在のbase/head SHAを再確認し、古いrunは結果を書き込みません。workflowのconcurrencyもPR番号またはpush refごとに分離します。この再評価jobと通常評価jobだけがissueコメント更新権限を持ち、コード実行やmerge操作は行いません。PRで評価器・policy・workflowを変更しても、そのPRの評価ルールや実行定義には反映されず、変更されたこと自体がHard Gateになります。
 
 このPRが最初の導入PRの場合、baseブランチにはまだ`pull_request_target`のworkflow定義がないためworkflow自体が実行されません。そのため初回導入PRは人手レビュー必須として扱い、merge後の次のPRから通常の数値評価が始まります。baseにworkflowは存在するが評価器・policyがない場合は、`HUMAN_REVIEW_REQUIRED (bootstrap)`とRisk `N/A`をSummaryへ出して終了します。
 
@@ -36,12 +36,12 @@ baseブランチへのpush時は、別jobがopenなPR一覧を取得し、各PR�
 | `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 領域ごとの変更影響を細分化して判定するため |
 | `src/App.tsx`、`src/main.tsx` | リスク加点 | ルート画面と起動処理を変更するため |
 | `tests/**`、`tests/**/*-snapshots/**`、`tests/**/__snapshots__/**`、`docs/**`、`*.md` | 低加点 | 変更量は計測するが、単独ではHard Gateにしないため |
-| `tests/e2e/fixtures.ts`、`tests/e2e/seedMeta.ts`、`tests/playtest/harness.ts`、`tests/playtest/globalSetup.ts` | Hard Gate | 多数のテストから共有されるfixture・測定・初期化基盤を変更するため |
+| `tests/unit/helpers/**`、`tests/e2e/fixtures.ts`、`tests/e2e/seedMeta.ts`、`tests/playtest/harness.ts`、`tests/playtest/globalSetup.ts` | Hard Gate | 多数のテストから共有されるfixture・測定・初期化基盤を変更するため |
 | `**/AGENTS.md`、`docs/design-system.md`、`.agents/skills/devops-tycoon-design-system/SKILL.md`、`vite.webglModules.ts` | Hard Gate | 階層別の作業手順、UI規約、またはWebGLビルド契約を変更するため |
 
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。
 
-検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに実際のrunnerが探索するsuffix（Vitest unit/srcは`.test.ts`/`.spec.ts`、playtestは`.test.ts`のみ、Playwright e2eは`.test.ts`/`.spec.ts`）の追加行があるテストを要求します。削除または純減のテスト変更には別のリスクを加算し、同内容の純粋renameは削除リスクだけでなく検証充足からも除外します。Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにし、snapshot読込みも1ファイル8MB・1評価64MB・各snapshot 50,000ファイルまでに制限します。
+検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに実際のrunnerが探索するsuffix（Vitest unit/srcは`.test.ts`/`.spec.ts`、playtestは`.test.ts`のみ、Playwright e2eは`.test.ts`/`.spec.ts`）の追加行があるテストを要求します。削除または純減のテスト変更には別のリスクを加算し、同内容の純粋renameは削除リスクだけでなく検証充足からも除外します。Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。snapshot entryにはGitの実行権限（`100644` / `100755`）も保持し、内容が同じmode-only変更も差分として扱います。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにし、snapshot読込みも1ファイル8MB・1評価64MB・各snapshot 50,000ファイルまでに制限します。
 
 ## ローカル実行
 

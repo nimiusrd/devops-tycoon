@@ -56,8 +56,8 @@ test_globs = [
   "tests/playtest/**/*.test.ts",
   "tests/e2e/**/*.test.ts",
   "tests/e2e/**/*.spec.ts",
-  "tests/**/*-snapshots/**",
-  "tests/**/__snapshots__/**",
+  "tests/**/*-snapshots/**/*.png",
+  "tests/**/__snapshots__/**/*.snap",
   "src/**/*.test.ts",
   "src/**/*.spec.ts",
   ".github/**/test_*.py",
@@ -82,12 +82,12 @@ code_globs = [
 test_globs = [
   "tests/e2e/**/*.test.ts",
   "tests/e2e/**/*.spec.ts",
-  "tests/**/*-snapshots/**",
-  "tests/**/__snapshots__/**",
+  "tests/**/*-snapshots/**/*.png",
+  "tests/**/__snapshots__/**/*.snap",
 ]
 binary_test_globs = [
-  "tests/**/*-snapshots/**",
-  "tests/**/__snapshots__/**",
+  "tests/**/*-snapshots/**/*.png",
+  "tests/**/__snapshots__/**/*.snap",
 ]
 
 [[verification.scopes]]
@@ -152,8 +152,8 @@ code_globs = ["*.config.*", "*.json"]
 test_globs = [
   "tests/**/*.test.ts",
   "tests/**/*.spec.ts",
-  "tests/**/*-snapshots/**",
-  "tests/**/__snapshots__/**",
+  "tests/**/*-snapshots/**/*.png",
+  "tests/**/__snapshots__/**/*.snap",
 ]
 
 [[verification.scopes]]

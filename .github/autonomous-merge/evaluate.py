@@ -693,8 +693,8 @@ def _scope_has_code_changes(
 
 _DISABLED_TEST_CALL = re.compile(
     r"\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
-    r"(?:\s*(?:\.\s*[A-Za-z_$][A-Za-z0-9_$]*|\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
-    r"\s*(?:\.\s*(?:skip|fixme|todo|skipIf|runIf)\b|\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf)['\"`]\s*\])"
+    r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+    r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf)\b|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf)['\"`]\s*\])"
 )
 
 
@@ -811,10 +811,117 @@ def _strip_javascript_comments(data: bytes) -> str:
     return stripped
 
 
+def _normalize_javascript_whitespace(
+    text: str,
+    *,
+    preserve_literal_content: bool = True,
+) -> str:
+    """コード上の空白を除去し、必要に応じて文字列内容を保持する。"""
+
+    def copy_quoted(index: int, quote: str) -> tuple[str, int]:
+        if not preserve_literal_content:
+            end = index + 1
+            while end < len(text):
+                character = text[end]
+                end += 1
+                if character == "\\" and end < len(text):
+                    end += 1
+                elif character == quote:
+                    break
+            return f"{quote}S{quote}", end
+
+        characters = [quote]
+        index += 1
+        while index < len(text):
+            character = text[index]
+            characters.append(character)
+            index += 1
+            if character == "\\" and index < len(text):
+                characters.append(text[index])
+                index += 1
+            elif character == quote:
+                break
+        return "".join(characters), index
+
+    def scan_template(index: int) -> tuple[str, int]:
+        characters: list[str] = []
+        raw_content_added = False
+        while index < len(text):
+            character = text[index]
+            if character == "\\":
+                if preserve_literal_content:
+                    characters.append(character)
+                elif not raw_content_added:
+                    characters.append("T")
+                    raw_content_added = True
+                index += 1
+                if index < len(text):
+                    if preserve_literal_content:
+                        characters.append(text[index])
+                    index += 1
+            elif character == "`":
+                characters.append(character)
+                return "".join(characters), index + 1
+            elif character == "$" and index + 1 < len(text) and text[index + 1] == "{":
+                characters.append("${")
+                interpolation, index = scan_code(index + 2, stop_at_brace=True)
+                characters.append(interpolation)
+            else:
+                if preserve_literal_content:
+                    characters.append(character)
+                elif not raw_content_added:
+                    characters.append("T")
+                    raw_content_added = True
+                index += 1
+        return "".join(characters), index
+
+    def scan_code(index: int, *, stop_at_brace: bool) -> tuple[str, int]:
+        characters: list[str] = []
+        brace_depth = 0
+        while index < len(text):
+            character = text[index]
+            if stop_at_brace and character == "}" and brace_depth == 0:
+                characters.append(character)
+                return "".join(characters), index + 1
+            if stop_at_brace and character == "{":
+                brace_depth += 1
+                characters.append(character)
+                index += 1
+            elif stop_at_brace and character == "}":
+                brace_depth -= 1
+                characters.append(character)
+                index += 1
+            elif character in {"'", '"'}:
+                quoted, index = copy_quoted(index, character)
+                characters.append(quoted)
+            elif character == "`":
+                characters.append(character)
+                template, index = scan_template(index + 1)
+                characters.append(template)
+            elif character.isspace():
+                index += 1
+            else:
+                characters.append(character)
+                index += 1
+        return "".join(characters), index
+
+    normalized, _ = scan_code(0, stop_at_brace=False)
+    return normalized
+
+
 def _test_code_fingerprint(data: bytes | None) -> str:
     if data is None:
         return ""
-    return "".join(_strip_javascript_comments(data).split())
+    return _normalize_javascript_whitespace(_strip_javascript_comments(data))
+
+
+def _test_code_structure_fingerprint(data: bytes | None) -> str:
+    if data is None:
+        return ""
+    return _normalize_javascript_whitespace(
+        _strip_javascript_comments(data),
+        preserve_literal_content=False,
+    )
 
 
 def _has_executable_test_change(base_data: bytes | None, head_data: bytes) -> bool:
@@ -913,8 +1020,8 @@ def _has_test_removal(
                 and base_entry.kind == "blob"
                 and head_entry is not None
                 and head_entry.kind == "blob"
-                and len(_test_code_fingerprint(head_entry.data))
-                < len(_test_code_fingerprint(base_entry.data))
+                and len(_test_code_structure_fingerprint(head_entry.data))
+                < len(_test_code_structure_fingerprint(base_entry.data))
             ):
                 return True
         if item.status != "D" and item.additions >= item.deletions:

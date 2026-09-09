@@ -189,6 +189,7 @@ class EvaluateTests(unittest.TestCase):
             'it["todo"]',
             "test['concurrent']['skip']",
             "test[`skip`]",
+            "test?.skip",
         ):
             with self.subTest(disabled_call=disabled_call):
                 with tempfile.TemporaryDirectory() as directory:
@@ -239,6 +240,31 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("src-fallback", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
             self.assertEqual(result.test_removal_risk, 0)
+
+    def test_string_literal_whitespace_is_part_of_test_change(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => expect(page).toHaveText('hello world'));\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => expect(page).toHaveText('helloworld'));\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertTrue(result.test_changes)
+            self.assertNotIn("visual", result.missing_test_scopes)
+            self.assertEqual(result.verification_risk, 0)
 
     def test_unrelated_unit_test_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -814,6 +840,31 @@ class EvaluateTests(unittest.TestCase):
             self.assertTrue(result.code_changes)
             self.assertTrue(result.test_changes)
             self.assertEqual(result.verification_risk, 0)
+
+    def test_arbitrary_snapshot_text_does_not_satisfy_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts-snapshots/README.md": "old notes\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts-snapshots/README.md": "new notes\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
 
     def test_nvmrc_change_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

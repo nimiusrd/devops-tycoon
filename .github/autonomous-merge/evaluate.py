@@ -36,6 +36,7 @@ class ScoreBand:
 @dataclass(frozen=True)
 class PathRule:
     pattern: str
+    exclude_globs: tuple[str, ...]
     risk: int
     hard_gate: bool
     reason: str
@@ -182,6 +183,10 @@ def _load_path_rules(value: Any) -> tuple[PathRule, ...]:
         rules.append(
             PathRule(
                 pattern=_require_string(rule.get("pattern"), f"path_rules[{index}].pattern"),
+                exclude_globs=_require_string_list(
+                    rule.get("exclude_globs", []),
+                    f"path_rules[{index}].exclude_globs",
+                ),
                 risk=_require_int(
                     rule.get("risk"),
                     f"path_rules[{index}].risk",
@@ -648,7 +653,12 @@ def _band_risk(value: int, bands: Sequence[ScoreBand]) -> int:
 
 
 def _matching_rules(path: str, policy: Policy) -> tuple[PathRule, ...]:
-    return tuple(rule for rule in policy.path_rules if _matches(path, rule.pattern))
+    return tuple(
+        rule
+        for rule in policy.path_rules
+        if _matches(path, rule.pattern)
+        and not matches_any(path, rule.exclude_globs)
+    )
 
 
 def _scope_has_code_changes(
@@ -674,6 +684,7 @@ def _scope_has_code_changes(
 
 _DISABLED_TEST_CALL = re.compile(
     r"\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
+    r"(?:\s*\.\s*[A-Za-z_$][A-Za-z0-9_$]*)*"
     r"\s*\.\s*(?:skip|fixme|todo|skipIf|runIf)\b"
 )
 

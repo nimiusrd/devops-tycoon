@@ -152,6 +152,37 @@ class EvaluateTests(unittest.TestCase):
                     self.assertFalse(result.test_changes)
                     self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
+    def test_chained_test_disabling_does_not_satisfy_verification(self) -> None:
+        for disabled_call in (
+            "test.concurrent.skip",
+            "test.skip.concurrent",
+            "test.describe.concurrent.skip",
+        ):
+            with self.subTest(disabled_call=disabled_call):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(
+                        base,
+                        {
+                            "src/utils/publicUrl.ts": "export const url = '/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": "test('builds the URL', () => {});\n",
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": f"{disabled_call}('builds the URL', () => {{}});\n",
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("src-fallback", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+                    self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_unrelated_unit_test_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -721,6 +752,7 @@ class EvaluateTests(unittest.TestCase):
                 ("tests/playtest/harness.ts", "共有playtest測定基盤"),
                 ("tests/playtest/globalSetup.ts", "playtest共通setup"),
                 ("tests/unit/helpers/property.ts", "共有unit test基盤"),
+                ("tests/unit/helpers/fastProperty.ts", "共有unit test基盤"),
             ):
                 with self.subTest(relative_path=relative_path):
                     base = Path(directory) / "base"
@@ -762,6 +794,18 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
             self.assertFalse(result.hard_gate_reasons)
+
+    def test_ci_decision_script_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"scripts/check-balance.mjs": "export const limit = 1;\n"})
+            write_snapshot(head, {"scripts/check-balance.mjs": "export const limit = 2;\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("CI判定を担うscript", " ".join(result.hard_gate_reasons))
 
     def test_gitlink_manifest_changes_are_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

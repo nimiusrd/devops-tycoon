@@ -390,85 +390,20 @@ hard_gate = false
 reason = "補助スクリプトの変更"
 
 [[path_rules]]
+pattern = "scripts/check-balance.mjs"
+risk = 100
+hard_gate = true
+reason = "CI判定を担うscriptの変更"
+
+[[path_rules]]
 pattern = "tests/**"
 risk = 0
 hard_gate = false
 reason = "テストの変更"
 
 [[path_rules]]
-pattern = "tests/unit/helpers/aiAdoptionSeeds.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/formationSeeds.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/leverRanges.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/metaRewardRanges.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/monteCarlo.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/orgFixtures.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/pacingStats.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/percentile.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/property.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/runEngineFixtures.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/runFlow.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/sprintFixtures.ts"
-risk = 100
-hard_gate = true
-reason = "共有unit test基盤の変更"
-
-[[path_rules]]
-pattern = "tests/unit/helpers/whatIfFixtures.ts"
+pattern = "tests/unit/helpers/*.ts"
+exclude_globs = ["tests/unit/helpers/*.test.ts", "tests/unit/helpers/*.spec.ts"]
 risk = 100
 hard_gate = true
 reason = "共有unit test基盤の変更"

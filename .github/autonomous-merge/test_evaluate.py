@@ -157,6 +157,7 @@ class EvaluateTests(unittest.TestCase):
             "test.concurrent.skip",
             "test.skip.concurrent",
             "test.describe.concurrent.skip",
+            "test\n  .skip",
         ):
             with self.subTest(disabled_call=disabled_call):
                 with tempfile.TemporaryDirectory() as directory:
@@ -298,15 +299,15 @@ class EvaluateTests(unittest.TestCase):
             write_snapshot(
                 base,
                 {
-                    ".github/tools/check.py": "def check():\n    return True\n",
-                    ".github/tools/test_check.py": "def test_check():\n    assert check()\n# old explanation\n",
+                    ".github/autonomous-merge/check.py": "def check():\n    return True\n",
+                    ".github/autonomous-merge/test_check.py": "def test_check():\n    assert check()\n# old explanation\n",
                 },
             )
             write_snapshot(
                 head,
                 {
-                    ".github/tools/check.py": "def check():\n    return False\n",
-                    ".github/tools/test_check.py": "def test_check():\n    assert check()\n# new explanation\n",
+                    ".github/autonomous-merge/check.py": "def check():\n    return False\n",
+                    ".github/autonomous-merge/test_check.py": "def test_check():\n    assert check()\n# new explanation\n",
                 },
             )
 
@@ -315,6 +316,57 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("automation", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_unexecuted_python_test_path_does_not_satisfy_automation_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {".github/tools/check.py": "def check():\n    return True\n"})
+            write_snapshot(
+                head,
+                {
+                    ".github/tools/check.py": "def check():\n    return False\n",
+                    ".github/tools/test_check.py": "def test_check():\n    assert check()\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("automation", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_python_skip_decorator_does_not_satisfy_verification(self) -> None:
+        for decorator in (
+            "@unittest.skip('not ready')",
+            "@unittest.skipIf(True, 'not ready')",
+            "@unittest.skipUnless(False, 'not ready')",
+            "@pytest.mark.skip",
+            "@pytest.mark.skipif(True)",
+        ):
+            with self.subTest(decorator=decorator):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(
+                        base,
+                        {
+                            ".github/autonomous-merge/check.py": "def check():\n    return True\n",
+                            ".github/autonomous-merge/test_check.py": "def test_check():\n    assert check()\n",
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            ".github/autonomous-merge/check.py": "def check():\n    return False\n",
+                            ".github/autonomous-merge/test_check.py": f"{decorator}\ndef test_check():\n    assert check()\n",
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("automation", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+                    self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
     def test_unrelated_unit_test_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -987,6 +1039,33 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertNotIn("simulation", result.missing_test_scopes)
             self.assertEqual(result.verification_risk, 0)
+
+    def test_skipped_playwright_snapshot_does_not_satisfy_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = "test.skip('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
 
     def test_nvmrc_change_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

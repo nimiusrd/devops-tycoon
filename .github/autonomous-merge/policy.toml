@@ -60,7 +60,7 @@ test_globs = [
   "tests/**/__snapshots__/**/*.snap",
   "src/**/*.test.ts",
   "src/**/*.spec.ts",
-  ".github/**/test_*.py",
+  ".github/autonomous-merge/test_*.py",
 ]
 ignored_globs = []
 missing_test_risk = 15
@@ -143,7 +143,7 @@ test_globs = ["tests/unit/scripts/**/*.test.ts", "tests/unit/scripts/**/*.spec.t
 name = "automation"
 fallback = false
 code_globs = [".github/**/*.py", ".github/**/*.yml", ".github/**/*.yaml"]
-test_globs = [".github/**/test_*.py"]
+test_globs = [".github/autonomous-merge/test_*.py"]
 
 [[verification.scopes]]
 name = "configuration"

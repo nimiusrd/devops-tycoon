@@ -700,13 +700,76 @@ _DISABLED_TEST_CALL = re.compile(
 )
 
 
-def _contains_disabled_test_call(base_data: bytes | None, head_data: bytes | None) -> bool:
+_PYTHON_DISABLED_DECORATORS = frozenset(
+    {
+        "skip",
+        "skipIf",
+        "skipUnless",
+        "unittest.skip",
+        "unittest.skipIf",
+        "unittest.skipUnless",
+        "pytest.mark.skip",
+        "pytest.mark.skipif",
+    }
+)
+
+
+def _python_disabled_decorators(data: bytes | None) -> tuple[str, ...]:
+    if data is None or _is_binary(data):
+        return ()
+    text = data.decode("utf-8", errors="replace")
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (IndentationError, SyntaxError, tokenize.TokenError, ValueError):
+        return ()
+
+    decorators: list[str] = []
+    for index, token in enumerate(tokens):
+        if token.type != tokenize.OP or token.string != "@":
+            continue
+        parts: list[str] = []
+        cursor = index + 1
+        while cursor < len(tokens) and tokens[cursor].start[0] == token.start[0]:
+            current = tokens[cursor]
+            if current.type == tokenize.NAME:
+                parts.append(current.string)
+            elif current.type == tokenize.OP and current.string == ".":
+                pass
+            else:
+                break
+            cursor += 1
+        decorator = ".".join(parts)
+        if decorator in _PYTHON_DISABLED_DECORATORS:
+            decorators.append(decorator)
+    return tuple(decorators)
+
+
+def _contains_disabled_test_call(
+    base_data: bytes | None,
+    head_data: bytes | None,
+    *,
+    language: str = "javascript",
+) -> bool:
     """追加されたテスト行がskip/fixme/todoだけになる変更を検出する。"""
 
     if head_data is None or _is_binary(head_data):
         return False
+    if language == "python":
+        base_decorators = _python_disabled_decorators(base_data)
+        head_decorators = _python_disabled_decorators(head_data)
+        base_counts = {name: base_decorators.count(name) for name in set(base_decorators)}
+        return any(
+            head_decorators.count(name) > base_counts.get(name, 0)
+            for name in set(head_decorators)
+        )
     base_lines = (base_data or b"").decode("utf-8", errors="replace").splitlines()
     head_lines = head_data.decode("utf-8", errors="replace").splitlines()
+    base_text = "\n".join(base_lines)
+    head_text = "\n".join(head_lines)
+    if len(list(_DISABLED_TEST_CALL.finditer(head_text))) > len(
+        list(_DISABLED_TEST_CALL.finditer(base_text))
+    ):
+        return True
     if (
         len(base_data or b"") > MAX_DIFF_BYTES
         or len(head_data) > MAX_DIFF_BYTES
@@ -716,9 +779,8 @@ def _contains_disabled_test_call(base_data: bytes | None, head_data: bytes | Non
 
     matcher = difflib.SequenceMatcher(a=base_lines, b=head_lines, autojunk=True)
     for tag, _, _, head_start, head_end in matcher.get_opcodes():
-        if tag in {"replace", "insert"} and any(
-            _DISABLED_TEST_CALL.search(line) for line in head_lines[head_start:head_end]
-        ):
+        changed_text = "\n".join(head_lines[head_start:head_end])
+        if tag in {"replace", "insert"} and _DISABLED_TEST_CALL.search(changed_text):
             return True
     return False
 
@@ -856,6 +918,8 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
         if owner_runner not in {"vitest", "vitest-playtest"}:
             return False
     elif owner_runner != runner:
+        return False
+    if _contains_disabled_test_call(None, owner.data, language="javascript"):
         return False
     source = _strip_javascript_comments(owner.data)
 
@@ -1200,7 +1264,11 @@ def _is_usable_test_change(
         base_data,
         head_entry.data,
         language=language,
-    ) and not _contains_disabled_test_call(base_data, head_entry.data)
+    ) and not _contains_disabled_test_call(
+        base_data,
+        head_entry.data,
+        language=language,
+    )
 
 
 def _pure_test_rename_paths(
@@ -1263,6 +1331,7 @@ def _has_test_removal(
             if _contains_disabled_test_call(
                 base_entry.data if base_entry is not None else None,
                 head_entry.data if head_entry is not None else None,
+                language=_test_language(item.path),
             ):
                 return True
             if (

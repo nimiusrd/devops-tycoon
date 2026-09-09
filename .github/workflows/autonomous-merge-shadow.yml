@@ -1,9 +1,9 @@
 name: Autonomous Merge Shadow
 
-# PRの内容を採点するだけの観測workflow。
+# PRの内容を採点するだけの観測workflow。baseブランチ側の定義で実行する。
 # required checkにはせず、merge APIも呼ばないため、Shadow Mode中はPRを止めない。
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:

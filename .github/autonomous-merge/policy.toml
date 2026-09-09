@@ -38,6 +38,7 @@ file_bands = [
 [verification]
 # このリポジトリの実コードとテストの配置に合わせたglob。
 code_globs = [
+  "index.html",
   "src/**/*.ts",
   "src/**/*.tsx",
   "src/**/*.css",
@@ -87,6 +88,12 @@ hard_gate = true
 reason = "Node.js実行バージョンの変更"
 
 [[path_rules]]
+pattern = "index.html"
+risk = 15
+hard_gate = false
+reason = "HTMLエントリの変更"
+
+[[path_rules]]
 pattern = "package.json"
 risk = 100
 hard_gate = true
@@ -105,6 +112,12 @@ hard_gate = true
 reason = "ビルド・テスト設定の変更"
 
 [[path_rules]]
+pattern = "vite.webglModules.ts"
+risk = 100
+hard_gate = true
+reason = "WebGLビルド設定の変更"
+
+[[path_rules]]
 pattern = "tsconfig*.json"
 risk = 100
 hard_gate = true
@@ -121,6 +134,18 @@ pattern = "src/game.ts"
 risk = 100
 hard_gate = true
 reason = "ゲーム中核ファサードの変更"
+
+[[path_rules]]
+pattern = "src/App.tsx"
+risk = 15
+hard_gate = false
+reason = "ルートReact画面の変更"
+
+[[path_rules]]
+pattern = "src/main.tsx"
+risk = 15
+hard_gate = false
+reason = "React起動処理の変更"
 
 [[path_rules]]
 pattern = "src/sim/run/**"
@@ -217,6 +242,12 @@ pattern = "docs/**"
 risk = 0
 hard_gate = false
 reason = "ドキュメントの変更"
+
+[[path_rules]]
+pattern = "AGENTS.md"
+risk = 100
+hard_gate = true
+reason = "リポジトリ作業指示の変更"
 
 [[path_rules]]
 pattern = "*.md"

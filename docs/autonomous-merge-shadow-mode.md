@@ -13,9 +13,9 @@ PR base SHA ──→ trusted evaluator.py + policy.toml
                                PR Risk / Decision
 ```
 
-workflowはtrusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。head側のコード、script、依存関係は実行しません。権限も`contents: read`だけです。PRで評価器・policyを変更しても、そのPRの評価ルールには反映されず、変更されたこと自体がHard Gateになります。
+workflowは`pull_request_target`でbaseブランチ側の定義を実行し、trusted base、merge base、headを分けて扱います。評価器とpolicyは常にPR base SHA側のファイルを明示して実行し、差分比較だけをPRのmerge baseからheadまでに限定します。head側のコード、script、依存関係は実行しません。権限も`contents: read`だけです。PRで評価器・policy・workflowを変更しても、そのPRの評価ルールや実行定義には反映されず、変更されたこと自体がHard Gateになります。
 
-このPRが最初の導入PRでbase SHAに評価器・policyがまだ存在しない場合は、workflowは`HUMAN_REVIEW_REQUIRED (bootstrap)`とRisk `N/A`をSummaryへ出して終了します。これはtrustedな評価基準がまだbaseにないための保守的な初回判定で、PRをblockするものではありません。merge後、次のPRから通常の数値評価が始まります。
+このPRが最初の導入PRの場合、baseブランチにはまだ`pull_request_target`のworkflow定義がないためworkflow自体が実行されません。そのため初回導入PRは人手レビュー必須として扱い、merge後の次のPRから通常の数値評価が始まります。baseにworkflowは存在するが評価器・policyがない場合は、`HUMAN_REVIEW_REQUIRED (bootstrap)`とRisk `N/A`をSummaryへ出して終了します。
 
 ## devops-tycoon向けの初期policy
 
@@ -28,8 +28,10 @@ workflowはtrusted base、merge base、headを分けて扱います。評価器�
 | `src/state/**`、`src/game.ts` | Hard Gate | セーブ、永続化、状態遷移を束ねる中核のため |
 | `src/sim/run/**`、`src/sim/engine.ts`、`src/sim/rng.ts`、`src/sim/seed.ts` | Hard Gate | ラン進行とseed再現性の中核であるため |
 | `src/data/balance/**`、`src/data/contentCatalog.ts` | Hard Gate | バランス、確率、コンテンツ契約を変更するため |
-| `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 変更量とテスト有無を組み合わせて判定するため |
+| `index.html`、`src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 起動・視覚変更を含め、変更量とテスト有無を組み合わせて判定するため |
+| `src/App.tsx`、`src/main.tsx` | リスク加点 | ルート画面と起動処理を変更するため |
 | `tests/**`、`tests/**/*-snapshots/**`、`tests/**/__snapshots__/**`、`docs/**`、`*.md` | 低加点 | 変更量は計測するが、単独ではHard Gateにしないため |
+| `AGENTS.md`、`vite.webglModules.ts` | Hard Gate | リポジトリ作業手順またはWebGLビルド契約を変更するため |
 
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。
 

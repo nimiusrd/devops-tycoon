@@ -283,6 +283,32 @@ class EvaluateTests(unittest.TestCase):
             self.assertFalse(result.test_changes)
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
 
+    def test_commenting_out_a_test_adds_removal_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "// test('renders', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_test_only_deletion_adds_removal_risk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -855,6 +881,18 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("CI判定を担うscript", " ".join(result.hard_gate_reasons))
+
+    def test_npmrc_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {".npmrc": "ignore-scripts=false\n"})
+            write_snapshot(head, {".npmrc": "ignore-scripts=true\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("npm実行環境設定", " ".join(result.hard_gate_reasons))
 
     def test_gitlink_manifest_changes_are_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

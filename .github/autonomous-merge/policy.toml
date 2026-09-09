@@ -250,6 +250,12 @@ hard_gate = true
 reason = "依存関係lockfileの変更"
 
 [[path_rules]]
+pattern = ".npmrc"
+risk = 100
+hard_gate = true
+reason = "npm実行環境設定の変更"
+
+[[path_rules]]
 pattern = ".gitmodules"
 risk = 100
 hard_gate = true

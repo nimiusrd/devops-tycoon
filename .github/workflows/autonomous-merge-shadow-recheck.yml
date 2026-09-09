@@ -148,6 +148,7 @@ jobs:
               local output_dir="$2"
               local symlink_manifest="${output_dir}.symlinks"
               local allowed_blob_ids="${output_dir}.allowed-blobs"
+              local tree_entries="${output_dir}.tree"
               local snapshot_file_count=0
               local snapshot_total_bytes=0
               local max_snapshot_file_bytes=8000000
@@ -166,7 +167,8 @@ jobs:
                     (if .truncated then "TRUNCATED\t\u0000" else empty end)
                   '
               }
-              stream_tree_entries | while IFS= read -r -d '' entry; do
+              stream_tree_entries > "${tree_entries}"
+              while IFS= read -r -d '' entry; do
                 local metadata="${entry%%$'\t'*}"
                 local relative_path="${entry#*$'\t'}"
                 local mode object_type object_id object_size
@@ -214,13 +216,13 @@ jobs:
                     return 1
                     ;;
                 esac
-              done
+              done < "${tree_entries}"
               if [[ -s "${allowed_blob_ids}" ]]; then
                 LC_ALL=C sort -u "${allowed_blob_ids}" |
                   git -C "${git_dir}" -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" \
                     fetch --no-tags --filter=blob:none --stdin origin
               fi
-              stream_tree_entries | while IFS= read -r -d '' entry; do
+              while IFS= read -r -d '' entry; do
                 local metadata="${entry%%$'\t'*}"
                 local relative_path="${entry#*$'\t'}"
                 local mode object_type object_id object_size
@@ -258,7 +260,7 @@ jobs:
                     return 1
                     ;;
                 esac
-              done
+              done < "${tree_entries}"
             }
             extract_raw_tree "${base_sha}" "${trusted_base_dir}"
             extract_raw_tree "${merge_base_sha}" "${comparison_base_dir}"

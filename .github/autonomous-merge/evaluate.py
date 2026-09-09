@@ -772,7 +772,8 @@ def _test_code_fingerprint(data: bytes | None) -> str:
 def _has_executable_test_change(base_data: bytes | None, head_data: bytes) -> bool:
     """コメント・空白だけのテスト変更を検証追加として扱わない。"""
 
-    return _test_code_fingerprint(base_data) != _test_code_fingerprint(head_data)
+    head_fingerprint = _test_code_fingerprint(head_data)
+    return bool(head_fingerprint) and _test_code_fingerprint(base_data) != head_fingerprint
 
 
 def _is_usable_test_change(
@@ -856,6 +857,16 @@ def _has_test_removal(
             if _contains_disabled_test_call(
                 base_entry.data if base_entry is not None else None,
                 head_entry.data if head_entry is not None else None,
+            ):
+                return True
+            if (
+                not item.binary
+                and base_entry is not None
+                and base_entry.kind == "blob"
+                and head_entry is not None
+                and head_entry.kind == "blob"
+                and len(_test_code_fingerprint(head_entry.data))
+                < len(_test_code_fingerprint(base_entry.data))
             ):
                 return True
         if item.status != "D" and item.additions >= item.deletions:

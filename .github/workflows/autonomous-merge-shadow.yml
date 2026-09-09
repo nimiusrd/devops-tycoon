@@ -1,6 +1,6 @@
 name: Autonomous Merge Shadow
 
-# PRの内容を採点するだけの観測workflow。baseブランチ側の定義で実行する。
+# PRの内容を採点するだけの観測workflow。mainをbaseとするPRをbase側の定義で実行する。
 # required checkにはせず、merge APIも呼ばないため、Shadow Mode中はPRを止めない。
 on:
   pull_request_target:
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   evaluate:
-    if: github.event_name == 'pull_request_target'
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.base.ref == 'main'
     name: PR risk (shadow only)
     concurrency:
       group: autonomous-merge-shadow-pr-${{ github.event.pull_request.number }}
@@ -89,6 +89,7 @@ jobs:
             local output_dir="$3"
             local symlink_manifest="${output_dir}.symlinks"
             local allowed_blob_ids="${output_dir}.allowed-blobs"
+            local tree_entries="${output_dir}.tree"
             local snapshot_file_count=0
             local snapshot_total_bytes=0
             local max_snapshot_file_bytes=8000000
@@ -107,7 +108,8 @@ jobs:
                   (if .truncated then "TRUNCATED\t\u0000" else empty end)
                 '
             }
-            stream_tree_entries | while IFS= read -r -d '' entry; do
+            stream_tree_entries > "${tree_entries}"
+            while IFS= read -r -d '' entry; do
               local metadata="${entry%%$'\t'*}"
               local relative_path="${entry#*$'\t'}"
               local mode object_type object_id object_size
@@ -155,13 +157,13 @@ jobs:
                   return 1
                   ;;
               esac
-            done
+            done < "${tree_entries}"
             if [[ -s "${allowed_blob_ids}" ]]; then
               LC_ALL=C sort -u "${allowed_blob_ids}" |
                 git -C "${git_dir}" -c http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
                   fetch --no-tags --filter=blob:none --stdin origin
             fi
-            stream_tree_entries | while IFS= read -r -d '' entry; do
+            while IFS= read -r -d '' entry; do
               local metadata="${entry%%$'\t'*}"
               local relative_path="${entry#*$'\t'}"
               local mode object_type object_id object_size
@@ -199,7 +201,7 @@ jobs:
                   return 1
                   ;;
               esac
-            done
+            done < "${tree_entries}"
           }
           mkdir -p merge-base head
           extract_raw_tree base "${MERGE_BASE_SHA}" merge-base
@@ -346,9 +348,9 @@ jobs:
         run: |
           set -euo pipefail
           pr_list="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
-            --jq '.[] | {number: .number, base_ref_name: .base.ref, base_sha: .base.sha, head_sha: .head.sha}' |
+            --jq '.[] | select(.base.ref == "main") | {number: .number, base_ref_name: .base.ref, base_sha: .base.sha, head_sha: .head.sha}' |
             jq -sc '.')"
-          pr_batches="$(jq -c '[range(0; length; 128) as $start | {index: (($start / 128) | floor), prs: .[$start:($start + 128)]}]' <<< "${pr_list}")"
+          pr_batches="$(jq -c '[range(0; length; 100) as $start | {index: (($start / 100) | floor), prs: .[$start:($start + 100)]}]' <<< "${pr_list}")"
           printf 'batches=%s\n' "${pr_batches}" >> "${GITHUB_OUTPUT}"
 
   recheck-open-prs:

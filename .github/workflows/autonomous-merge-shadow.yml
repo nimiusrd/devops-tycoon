@@ -25,7 +25,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
 
       # PR headはファイル比較の対象としてだけ取得し、コードは実行しない。
@@ -49,29 +49,60 @@ jobs:
             {
               echo '## Autonomous Merge Shadow Mode'
               echo
+              echo '| 指標 | 値 |'
+              echo '| --- | --- |'
+              echo '| Decision | `HUMAN_REVIEW_REQUIRED` |'
+              echo '| Reason | `BOOTSTRAP_BASELINE_MISSING` |'
+              echo '| PR Risk | `N/A` |'
+              echo '| Project Health | `N/A` |'
+              echo
               echo "> base SHA ${BASE_SHA} does not contain the evaluator/policy yet."
-              echo '> This bootstrap PR installs the Shadow Mode assets; evaluation starts on the next PR after merge.'
+              echo '> This bootstrap PR installs the Shadow Mode assets. Human review is required before merge; numeric evaluation starts on the next PR after merge.'
             } >> "${GITHUB_STEP_SUMMARY}"
             exit 0
           fi
           echo 'available=true' >> "${GITHUB_OUTPUT}"
           echo "Using evaluator and policy from base SHA ${BASE_SHA}"
 
+      - name: Prepare merge-base snapshot
+        if: steps.base_assets.outputs.available == 'true'
+        id: merge_base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git -C base -c http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
+          if ! git -C base cat-file -e "${HEAD_SHA}^{commit}"; then
+            git -C base -c http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" fetch --no-tags origin "${HEAD_SHA}"
+          fi
+          git -C base cat-file -e "${HEAD_SHA}^{commit}"
+          MERGE_BASE_SHA="$(git -C base merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+          mkdir -p merge-base
+          git -C base archive "${MERGE_BASE_SHA}" | tar -x -C merge-base
+          echo "sha=${MERGE_BASE_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "Using merge base SHA ${MERGE_BASE_SHA} for the comparison"
+
       - name: Test base evaluator
         if: steps.base_assets.outputs.available == 'true'
-        run: python3 -m unittest discover -v -s base/.github/autonomous-merge -p 'test_*.py'
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 -B -m unittest discover -v -s base/.github/autonomous-merge -p 'test_*.py'
 
       - name: Evaluate PR risk (non-blocking shadow mode)
         if: steps.base_assets.outputs.available == 'true'
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_BASE_SHA: ${{ steps.merge_base.outputs.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          python3 base/.github/autonomous-merge/evaluate.py \
-            --base-dir base \
+          python3 -B base/.github/autonomous-merge/evaluate.py \
+            --base-dir merge-base \
             --head-dir head \
             --policy base/.github/autonomous-merge/policy.toml \
-            --base-sha "${BASE_SHA}" \
+            --trusted-base-dir base \
+            --base-sha "${MERGE_BASE_SHA}" \
             --head-sha "${HEAD_SHA}" \
             --format markdown | tee -a "${GITHUB_STEP_SUMMARY}"

@@ -420,7 +420,9 @@ def assess(
     path_risk = min(path_risk_total, policy.maximum_path_risk)
 
     code_changes = any(matches_any(item.path, policy.code_globs) for item in files)
-    test_changes = any(matches_any(item.path, policy.test_globs) for item in files)
+    test_changes = any(
+        item.status != "D" and matches_any(item.path, policy.test_globs) for item in files
+    )
     verification_risk = policy.missing_test_risk if code_changes and not test_changes else 0
     risk = min(100, line_risk + file_risk + path_risk + verification_risk)
 
@@ -495,10 +497,12 @@ def _markdown(assessment: RiskAssessment, policy: Policy, policy_path: Path) -> 
         f"| PR Risk | `{assessment.risk}` / `{assessment.maximum_pr_risk}` |",
         f"| Changed files | `{assessment.changed_files}` |",
         f"| Changed lines | `+{assessment.additions} / -{assessment.deletions}` |",
-        f"| Evaluator policy | `{_escape_markdown(str(policy_path))}` (base checkout) |",
+        f"| Evaluator policy | `{_escape_markdown(str(policy_path))}` (trusted base checkout) |",
     ]
     if assessment.base_sha:
-        lines.append(f"| Base SHA | `{_escape_markdown(assessment.base_sha)}` |")
+        lines.append(
+            f"| Comparison base SHA | `{_escape_markdown(assessment.base_sha)}` |"
+        )
     if assessment.head_sha:
         lines.append(f"| Head SHA | `{_escape_markdown(assessment.head_sha)}` |")
 
@@ -553,10 +557,20 @@ def _json(assessment: RiskAssessment, policy: Policy, policy_path: Path) -> str:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-dir", type=Path, required=True, help="PR base SHAのチェックアウト")
+    parser.add_argument(
+        "--base-dir",
+        type=Path,
+        required=True,
+        help="PRの差分比較元（通常はmerge base）のチェックアウト",
+    )
     parser.add_argument("--head-dir", type=Path, required=True, help="PR head SHAのチェックアウト")
-    parser.add_argument("--policy", type=Path, help="評価に使うpolicy.toml（base側を指定する）")
-    parser.add_argument("--base-sha", help="出力へ記録するPR base SHA")
+    parser.add_argument("--policy", type=Path, help="評価に使うpolicy.toml（trusted base側を指定する）")
+    parser.add_argument(
+        "--trusted-base-dir",
+        type=Path,
+        help="evaluatorとpolicyの信頼元チェックアウト（省略時は--base-dir）",
+    )
+    parser.add_argument("--base-sha", help="出力へ記録する差分比較元のmerge base SHA")
     parser.add_argument("--head-sha", help="出力へ記録するPR head SHA")
     parser.add_argument(
         "--format",
@@ -576,10 +590,11 @@ def _ensure_within_base(base_dir: Path, candidate: Path, label: str) -> None:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    policy_path = args.policy or args.base_dir / ".github" / "autonomous-merge" / "policy.toml"
+    trusted_base_dir = args.trusted_base_dir or args.base_dir
+    policy_path = args.policy or trusted_base_dir / ".github" / "autonomous-merge" / "policy.toml"
     try:
-        _ensure_within_base(args.base_dir, Path(__file__), "evaluator")
-        _ensure_within_base(args.base_dir, policy_path, "policy")
+        _ensure_within_base(trusted_base_dir, Path(__file__), "evaluator")
+        _ensure_within_base(trusted_base_dir, policy_path, "policy")
         policy = load_policy(policy_path)
         assessment = assess(
             args.base_dir,

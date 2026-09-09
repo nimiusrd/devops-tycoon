@@ -40,6 +40,7 @@ file_bands = [
 code_globs = [
   "src/**/*.ts",
   "src/**/*.tsx",
+  "src/**/*.css",
   "scripts/**/*.mjs",
   "*.config.*",
   "*.json",
@@ -49,6 +50,8 @@ code_globs = [
 ]
 test_globs = [
   "tests/**/*.ts",
+  "tests/**/*-snapshots/**",
+  "tests/**/__snapshots__/**",
   "src/**/*.test.ts",
   "src/**/*.spec.ts",
   ".github/**/test_*.py",
@@ -76,6 +79,12 @@ pattern = ".devcontainer/**"
 risk = 100
 hard_gate = true
 reason = "開発・CI実行環境の変更"
+
+[[path_rules]]
+pattern = ".nvmrc"
+risk = 100
+hard_gate = true
+reason = "Node.js実行バージョンの変更"
 
 [[path_rules]]
 pattern = "package.json"
@@ -106,6 +115,12 @@ pattern = "src/state/**"
 risk = 100
 hard_gate = true
 reason = "セーブ・永続化・状態遷移の変更"
+
+[[path_rules]]
+pattern = "src/game.ts"
+risk = 100
+hard_gate = true
+reason = "ゲーム中核ファサードの変更"
 
 [[path_rules]]
 pattern = "src/sim/run/**"
@@ -166,6 +181,12 @@ pattern = "src/ui/**"
 risk = 15
 hard_gate = false
 reason = "React UIの変更"
+
+[[path_rules]]
+pattern = "src/**/*.css"
+risk = 15
+hard_gate = false
+reason = "CSS・視覚スタイルの変更"
 
 [[path_rules]]
 pattern = "src/render/**"

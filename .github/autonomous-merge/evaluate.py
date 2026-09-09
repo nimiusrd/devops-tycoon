@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import html
 import json
 import os
 import re
@@ -476,12 +477,24 @@ def assess(
 
 
 def _escape_markdown(value: str) -> str:
+    normalized = value.replace("\n", " ").replace("\r", " ")
+    escaped = html.escape(normalized, quote=False)
     return (
-        value.replace("|", "\\|")
-        .replace("`", "\\`")
-        .replace("\n", " ")
-        .replace("\r", " ")
+        escaped.replace("\\", "&#92;")
+        .replace("`", "&#96;")
+        .replace("*", "&#42;")
+        .replace("_", "&#95;")
+        .replace("[", "&#91;")
+        .replace("]", "&#93;")
+        .replace("|", "&#124;")
+        .replace("~", "&#126;")
     )
+
+
+def _safe_code(value: str) -> str:
+    """動的な値をMarkdownのcode span外で安全に表示する。"""
+
+    return f"<code>{_escape_markdown(value)}</code>"
 
 
 def _markdown(assessment: RiskAssessment, policy: Policy, policy_path: Path) -> str:
@@ -492,19 +505,19 @@ def _markdown(assessment: RiskAssessment, policy: Policy, policy_path: Path) -> 
         "",
         "| 指標 | 値 |",
         "| --- | ---: |",
-        f"| Decision | `{assessment.decision}` |",
-        f"| Project Health | `{assessment.project_health}` / `{assessment.minimum_project_health}` |",
-        f"| PR Risk | `{assessment.risk}` / `{assessment.maximum_pr_risk}` |",
-        f"| Changed files | `{assessment.changed_files}` |",
-        f"| Changed lines | `+{assessment.additions} / -{assessment.deletions}` |",
-        f"| Evaluator policy | `{_escape_markdown(str(policy_path))}` (trusted base checkout) |",
+        f"| Decision | {_safe_code(assessment.decision)} |",
+        f"| Project Health | {_safe_code(str(assessment.project_health))} / "
+        f"{_safe_code(str(assessment.minimum_project_health))} |",
+        f"| PR Risk | {_safe_code(str(assessment.risk))} / "
+        f"{_safe_code(str(assessment.maximum_pr_risk))} |",
+        f"| Changed files | {_safe_code(str(assessment.changed_files))} |",
+        f"| Changed lines | {_safe_code(f'+{assessment.additions} / -{assessment.deletions}')} |",
+        f"| Evaluator policy | {_safe_code(str(policy_path))} (trusted base checkout) |",
     ]
     if assessment.base_sha:
-        lines.append(
-            f"| Comparison base SHA | `{_escape_markdown(assessment.base_sha)}` |"
-        )
+        lines.append(f"| Comparison base SHA | {_safe_code(assessment.base_sha)} |")
     if assessment.head_sha:
-        lines.append(f"| Head SHA | `{_escape_markdown(assessment.head_sha)}` |")
+        lines.append(f"| Head SHA | {_safe_code(assessment.head_sha)} |")
 
     lines.extend(
         [
@@ -535,7 +548,7 @@ def _markdown(assessment: RiskAssessment, policy: Policy, policy_path: Path) -> 
     if assessment.files:
         path_risks = {item.path: item.risk for item in assessment.path_assessments}
         lines.extend(
-            f"| {item.status} | `{_escape_markdown(item.path)}` | {item.additions} | "
+            f"| {_escape_markdown(item.status)} | {_safe_code(item.path)} | {item.additions} | "
             f"{item.deletions} | {path_risks[item.path]} |"
             for item in assessment.files
         )

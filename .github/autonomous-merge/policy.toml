@@ -82,6 +82,12 @@ hard_gate = true
 reason = "開発・CI実行環境の変更"
 
 [[path_rules]]
+pattern = ".codex/environments/**"
+risk = 100
+hard_gate = true
+reason = "Codex実行環境の変更"
+
+[[path_rules]]
 pattern = ".nvmrc"
 risk = 100
 hard_gate = true
@@ -110,6 +116,18 @@ pattern = "*.config.*"
 risk = 100
 hard_gate = true
 reason = "ビルド・テスト設定の変更"
+
+[[path_rules]]
+pattern = ".prettierrc.json"
+risk = 100
+hard_gate = true
+reason = "Prettier設定の変更"
+
+[[path_rules]]
+pattern = ".prettierignore"
+risk = 100
+hard_gate = true
+reason = "Prettier対象除外設定の変更"
 
 [[path_rules]]
 pattern = "vite.webglModules.ts"
@@ -242,6 +260,18 @@ pattern = "docs/**"
 risk = 0
 hard_gate = false
 reason = "ドキュメントの変更"
+
+[[path_rules]]
+pattern = "docs/design-system.md"
+risk = 100
+hard_gate = true
+reason = "UIデザインシステム制約の変更"
+
+[[path_rules]]
+pattern = ".agents/skills/devops-tycoon-design-system/SKILL.md"
+risk = 100
+hard_gate = true
+reason = "UIデザインシステム入口の変更"
 
 [[path_rules]]
 pattern = "AGENTS.md"

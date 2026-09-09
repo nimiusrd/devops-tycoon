@@ -23,15 +23,16 @@ workflowは`pull_request_target`でbaseブランチ側の定義を実行し、tr
 
 | 対象 | 初期扱い | 理由 |
 | --- | --- | --- |
-| `.github/workflows/**`、`.devcontainer/**`、`.nvmrc` | Hard Gate | CI・実行環境を変更するため |
+| `.github/workflows/**`、`.devcontainer/**`、`.codex/environments/**`、`.nvmrc` | Hard Gate | CI・実行環境を変更するため |
 | `package.json`、`package-lock.json`、`*.config.*`、`tsconfig*.json` | Hard Gate | 依存関係・ビルド・テスト契約を変更するため |
+| `.prettierrc.json`、`.prettierignore` | Hard Gate | フォーマット設定や対象範囲を変更するため |
 | `src/state/**`、`src/game.ts` | Hard Gate | セーブ、永続化、状態遷移を束ねる中核のため |
 | `src/sim/run/**`、`src/sim/engine.ts`、`src/sim/rng.ts`、`src/sim/seed.ts` | Hard Gate | ラン進行とseed再現性の中核であるため |
 | `src/data/balance/**`、`src/data/contentCatalog.ts` | Hard Gate | バランス、確率、コンテンツ契約を変更するため |
 | `index.html`、`src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 起動・視覚変更を含め、変更量とテスト有無を組み合わせて判定するため |
 | `src/App.tsx`、`src/main.tsx` | リスク加点 | ルート画面と起動処理を変更するため |
 | `tests/**`、`tests/**/*-snapshots/**`、`tests/**/__snapshots__/**`、`docs/**`、`*.md` | 低加点 | 変更量は計測するが、単独ではHard Gateにしないため |
-| `AGENTS.md`、`vite.webglModules.ts` | Hard Gate | リポジトリ作業手順またはWebGLビルド契約を変更するため |
+| `AGENTS.md`、`docs/design-system.md`、`.agents/skills/devops-tycoon-design-system/SKILL.md`、`vite.webglModules.ts` | Hard Gate | リポジトリ作業手順、UI規約、またはWebGLビルド契約を変更するため |
 
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。
 

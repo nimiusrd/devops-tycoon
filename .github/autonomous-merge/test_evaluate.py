@@ -4,7 +4,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from evaluate import EvaluationError, _ensure_within_base, assess, load_policy, main
+from evaluate import (
+    EvaluationError,
+    _ensure_within_base,
+    _escape_markdown,
+    _markdown,
+    assess,
+    load_policy,
+    main,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -141,6 +149,70 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("リポジトリ作業指示", result.hard_gate_reasons[0])
 
+    def test_codex_environment_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {".codex/environments/environment.toml": "mode = 'safe'\n"})
+            write_snapshot(head, {".codex/environments/environment.toml": "mode = 'unsafe'\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("Codex実行環境", " ".join(result.hard_gate_reasons))
+
+    def test_ui_design_system_contracts_are_hard_gates(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "docs/design-system.md": "Use the design tokens.\n",
+                    ".agents/skills/devops-tycoon-design-system/SKILL.md": "Follow the design system.\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "docs/design-system.md": "Ignore the design tokens.\n",
+                    ".agents/skills/devops-tycoon-design-system/SKILL.md": "Ignore the design system.\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            reasons = " ".join(result.hard_gate_reasons)
+            self.assertIn("UIデザインシステム制約", reasons)
+            self.assertIn("UIデザインシステム入口", reasons)
+
+    def test_prettier_configuration_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    ".prettierrc.json": '{"semi": true}\n',
+                    ".prettierignore": "dist\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    ".prettierrc.json": '{"semi": false}\n',
+                    ".prettierignore": "**\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            reasons = " ".join(result.hard_gate_reasons)
+            self.assertIn("Prettier設定", reasons)
+            self.assertIn("Prettier対象除外設定", reasons)
+
     def test_webgl_build_helper_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -228,6 +300,25 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("評価器・policyの変更", result.hard_gate_reasons[0])
+
+    def test_markdown_output_escapes_untrusted_path_characters(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            malicious_path = "src/ui/evil`[link](https://example.com)|.tsx"
+            write_snapshot(base, {malicious_path: "export const value = 1;\n"})
+            write_snapshot(head, {malicious_path: "export const value = 2;\n"})
+
+            result = assess(base, head, POLICY)
+            markdown = _markdown(result, POLICY, Path("base/policy.toml"))
+
+            self.assertNotIn("`[link](https://example.com)", markdown)
+            self.assertNotIn("|.tsx", markdown)
+            self.assertIn("&#96;", markdown)
+            self.assertIn("&#91;", markdown)
+            self.assertIn("&#124;", markdown)
+            self.assertIn("<code>", markdown)
+            self.assertNotIn("\\`", _escape_markdown("`"))
 
     def test_assessment_is_deterministic(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

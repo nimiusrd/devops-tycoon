@@ -97,6 +97,31 @@ class EvaluateTests(unittest.TestCase):
                 POLICY.missing_test_risk + POLICY.test_removal_risk,
             )
 
+    def test_disabling_a_test_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/publicUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": "it('builds the URL', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": "it.skip('builds the URL', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_unrelated_unit_test_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -683,6 +708,29 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.changed_files, 2)
             self.assertIn("src/module.ts\r", {item.path for item in result.files})
             self.assertIn("src/module.ts", {item.path for item in result.files})
+
+    def test_symlink_test_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/publicUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": "it('builds the URL', () => {});\n",
+                },
+            )
+            write_snapshot(head, {"src/utils/publicUrl.ts": "export const url = '/app/';\n"})
+            head_symlinks = Path(directory) / "head.symlinks"
+            head_symlinks.write_bytes(
+                ("a" * 40 + "\ttests/unit/utils/publicUrl.test.ts\0").encode("ascii")
+            )
+
+            result = assess(base, head, POLICY, head_symlinks=head_symlinks)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
     def test_snapshot_file_size_is_bounded_before_reading(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

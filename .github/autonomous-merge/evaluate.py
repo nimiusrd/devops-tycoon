@@ -665,6 +665,52 @@ def _scope_has_code_changes(
     return False
 
 
+_DISABLED_TEST_CALL = re.compile(
+    r"\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
+    r"\s*\.\s*(?:skip|fixme|todo)\b"
+)
+
+
+def _contains_disabled_test_call(base_data: bytes | None, head_data: bytes | None) -> bool:
+    """追加されたテスト行がskip/fixme/todoだけになる変更を検出する。"""
+
+    if head_data is None or _is_binary(head_data):
+        return False
+    base_lines = (base_data or b"").decode("utf-8", errors="replace").splitlines()
+    head_lines = head_data.decode("utf-8", errors="replace").splitlines()
+    if (
+        len(base_data or b"") > MAX_DIFF_BYTES
+        or len(head_data) > MAX_DIFF_BYTES
+        or len(base_lines) + len(head_lines) > MAX_DIFF_LINES
+    ):
+        return _DISABLED_TEST_CALL.search(head_data.decode("utf-8", errors="replace")) is not None
+
+    matcher = difflib.SequenceMatcher(a=base_lines, b=head_lines, autojunk=True)
+    for tag, _, _, head_start, head_end in matcher.get_opcodes():
+        if tag in {"replace", "insert"} and any(
+            _DISABLED_TEST_CALL.search(line) for line in head_lines[head_start:head_end]
+        ):
+            return True
+    return False
+
+
+def _is_usable_test_change(
+    item: ChangedFile,
+    base_snapshot: Mapping[str, SnapshotEntry],
+    head_snapshot: Mapping[str, SnapshotEntry],
+) -> bool:
+    if item.status == "D" or item.additions <= 0 or item.binary:
+        return False
+    head_entry = head_snapshot.get(item.path)
+    if head_entry is None or head_entry.kind != "blob":
+        return False
+    base_entry = base_snapshot.get(item.path)
+    return not _contains_disabled_test_call(
+        base_entry.data if base_entry is not None else None,
+        head_entry.data,
+    )
+
+
 def _pure_test_rename_paths(
     files: Sequence[ChangedFile],
     base_snapshot: Mapping[str, SnapshotEntry],
@@ -714,6 +760,16 @@ def _has_test_removal(
     for item in files:
         if not matches_any(item.path, policy.test_globs):
             continue
+        if item.status == "M":
+            head_entry = head_snapshot.get(item.path)
+            if head_entry is not None and head_entry.kind != "blob":
+                return True
+            base_entry = base_snapshot.get(item.path)
+            if _contains_disabled_test_call(
+                base_entry.data if base_entry is not None else None,
+                head_entry.data if head_entry is not None else None,
+            ):
+                return True
         if item.status != "D" and item.additions >= item.deletions:
             continue
         if item.status == "D" and item.path in pure_rename_deletions:
@@ -784,8 +840,7 @@ def assess(
         for scope in policy.verification_scopes
         if _scope_has_code_changes(scope, files, policy.verification_scopes)
         and not any(
-            item.status != "D"
-            and item.additions > 0
+            _is_usable_test_change(item, base_snapshot, head_snapshot)
             and matches_any(item.path, scope.test_globs)
             and item.path not in pure_rename_additions
             for item in files

@@ -341,14 +341,20 @@ MAX_SNAPSHOT_TOTAL_BYTES = 64_000_000
 MAX_SNAPSHOT_FILES = 50_000
 
 
-def _read_gitlinks(manifest_path: Path | None) -> dict[str, SnapshotEntry]:
+def _read_object_manifest(
+    manifest_path: Path | None,
+    *,
+    kind: str,
+    mode: str,
+    label: str,
+) -> dict[str, SnapshotEntry]:
     if manifest_path is None:
         return {}
-    gitlinks: dict[str, SnapshotEntry] = {}
+    entries: dict[str, SnapshotEntry] = {}
     try:
         manifest_file = manifest_path.open("r", encoding="utf-8")
     except OSError as error:
-        raise EvaluationError(f"gitlink manifestを読み込めません: {manifest_path}: {error}") from error
+        raise EvaluationError(f"{label} manifestを読み込めません: {manifest_path}: {error}") from error
 
     with manifest_file:
         for line_number, line in enumerate(manifest_file, start=1):
@@ -356,25 +362,47 @@ def _read_gitlinks(manifest_path: Path | None) -> dict[str, SnapshotEntry]:
                 object_id, relative_path = line.rstrip("\r\n").split("\t", 1)
             except ValueError as error:
                 raise EvaluationError(
-                    f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
+                    f"{label} manifestの{line_number}行目が不正です: {manifest_path}"
                 ) from error
             if not re.fullmatch(r"[0-9a-f]{40,64}", object_id) or not relative_path:
                 raise EvaluationError(
-                    f"gitlink manifestの{line_number}行目が不正です: {manifest_path}"
+                    f"{label} manifestの{line_number}行目が不正です: {manifest_path}"
                 )
-            if len(gitlinks) >= MAX_SNAPSHOT_FILES and relative_path not in gitlinks:
+            if len(entries) >= MAX_SNAPSHOT_FILES and relative_path not in entries:
                 raise EvaluationError(
                     f"snapshotのファイル数が上限を超えています: {manifest_path}"
                 )
-            gitlinks[relative_path] = SnapshotEntry(
-                "gitlink",
-                "160000",
+            entries[relative_path] = SnapshotEntry(
+                kind,
+                mode,
                 object_id.encode("ascii"),
             )
-    return gitlinks
+    return entries
 
 
-def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, SnapshotEntry]:
+def _read_gitlinks(manifest_path: Path | None) -> dict[str, SnapshotEntry]:
+    return _read_object_manifest(
+        manifest_path,
+        kind="gitlink",
+        mode="160000",
+        label="gitlink",
+    )
+
+
+def _read_symlinks(manifest_path: Path | None) -> dict[str, SnapshotEntry]:
+    return _read_object_manifest(
+        manifest_path,
+        kind="symlink",
+        mode="120000",
+        label="symlink",
+    )
+
+
+def _read_snapshot(
+    root: Path,
+    gitlinks_path: Path | None = None,
+    symlinks_path: Path | None = None,
+) -> dict[str, SnapshotEntry]:
     if not root.is_dir():
         raise EvaluationError(f"チェックアウトディレクトリがありません: {root}")
 
@@ -467,11 +495,26 @@ def _read_snapshot(root: Path, gitlinks_path: Path | None = None) -> dict[str, S
         if existing_data is None and len(snapshot) >= MAX_SNAPSHOT_FILES:
             raise EvaluationError(f"snapshotのファイル数が上限を超えています: {root}")
         snapshot[relative_path] = gitlink_data
+    for relative_path, symlink_data in _read_symlinks(symlinks_path).items():
+        existing_data = snapshot.get(relative_path)
+        if existing_data is not None and existing_data != symlink_data:
+            raise EvaluationError(
+                f"symlink manifestが通常ファイルまたはgitlinkと衝突しています: {relative_path}"
+            )
+        if existing_data is None and len(snapshot) >= MAX_SNAPSHOT_FILES:
+            raise EvaluationError(f"snapshotのファイル数が上限を超えています: {root}")
+        snapshot[relative_path] = symlink_data
     return snapshot
 
 
 def _is_binary(data: bytes) -> bool:
-    return b"\x00" in data[:8192]
+    if b"\x00" in data[:8192]:
+        return True
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        return True
+    return False
 
 
 def _conservative_line_count(data: bytes, lines: Sequence[str]) -> int:
@@ -525,9 +568,11 @@ def collect_changed_files(
     *,
     base_gitlinks: Path | None = None,
     head_gitlinks: Path | None = None,
+    base_symlinks: Path | None = None,
+    head_symlinks: Path | None = None,
 ) -> tuple[ChangedFile, ...]:
-    base_snapshot = _read_snapshot(base_dir, base_gitlinks)
-    head_snapshot = _read_snapshot(head_dir, head_gitlinks)
+    base_snapshot = _read_snapshot(base_dir, base_gitlinks, base_symlinks)
+    head_snapshot = _read_snapshot(head_dir, head_gitlinks, head_symlinks)
     return _collect_changed_files_from_snapshots(base_snapshot, head_snapshot, policy)
 
 
@@ -664,9 +709,11 @@ def assess(
     head_sha: str | None = None,
     base_gitlinks: Path | None = None,
     head_gitlinks: Path | None = None,
+    base_symlinks: Path | None = None,
+    head_symlinks: Path | None = None,
 ) -> RiskAssessment:
-    base_snapshot = _read_snapshot(base_dir, base_gitlinks)
-    head_snapshot = _read_snapshot(head_dir, head_gitlinks)
+    base_snapshot = _read_snapshot(base_dir, base_gitlinks, base_symlinks)
+    head_snapshot = _read_snapshot(head_dir, head_gitlinks, head_symlinks)
     files = _collect_changed_files_from_snapshots(base_snapshot, head_snapshot, policy)
     additions = sum(item.additions for item in files)
     deletions = sum(item.deletions for item in files)
@@ -906,6 +953,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="PR headのGit treeから抽出したgitlink manifest",
     )
+    parser.add_argument(
+        "--base-symlinks",
+        type=Path,
+        help="比較baseのGit treeから抽出したsymlink manifest",
+    )
+    parser.add_argument(
+        "--head-symlinks",
+        type=Path,
+        help="PR headのGit treeから抽出したsymlink manifest",
+    )
     parser.add_argument("--base-sha", help="出力へ記録する差分比較元のmerge base SHA")
     parser.add_argument("--head-sha", help="出力へ記録するPR head SHA")
     parser.add_argument(
@@ -940,6 +997,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             head_sha=args.head_sha,
             base_gitlinks=args.base_gitlinks,
             head_gitlinks=args.head_gitlinks,
+            base_symlinks=args.base_symlinks,
+            head_symlinks=args.head_symlinks,
         )
     except EvaluationError as error:
         print(f"Autonomous Merge Shadow Modeの評価に失敗しました: {error}", file=sys.stderr)

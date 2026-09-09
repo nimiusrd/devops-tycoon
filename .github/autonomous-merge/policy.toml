@@ -375,6 +375,18 @@ hard_gate = true
 reason = "共有unit test基盤の変更"
 
 [[path_rules]]
+pattern = "tests/playtest/**"
+risk = 25
+hard_gate = false
+reason = "playtestテスト・支援モジュールの変更"
+
+[[path_rules]]
+pattern = "tests/fixtures/**"
+risk = 25
+hard_gate = false
+reason = "共有test fixture支援モジュールの変更"
+
+[[path_rules]]
 pattern = "tests/e2e/fixtures.ts"
 risk = 100
 hard_gate = true
@@ -421,6 +433,12 @@ pattern = ".agents/skills/devops-tycoon-design-system/SKILL.md"
 risk = 100
 hard_gate = true
 reason = "UIデザインシステム入口の変更"
+
+[[path_rules]]
+pattern = ".agents/skills/**"
+risk = 100
+hard_gate = true
+reason = "エージェントskillの変更"
 
 [[path_rules]]
 pattern = "**/AGENTS.md"

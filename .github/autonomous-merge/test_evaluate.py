@@ -389,6 +389,30 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("UIデザインシステム制約", reasons)
             self.assertIn("UIデザインシステム入口", reasons)
 
+    def test_all_agent_skills_are_hard_gates(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    ".agents/skills/commit-and-pr/SKILL.md": "Use the required flow.\n",
+                    ".agents/skills/codex-review-loop/SKILL.md": "Reply to findings.\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    ".agents/skills/commit-and-pr/SKILL.md": "Skip the required flow.\n",
+                    ".agents/skills/codex-review-loop/SKILL.md": "Ignore findings.\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("エージェントskill", " ".join(result.hard_gate_reasons))
+
     def test_prettier_configuration_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -535,6 +559,24 @@ class EvaluateTests(unittest.TestCase):
                     self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
                     self.assertIn(reason, " ".join(result.hard_gate_reasons))
 
+    def test_shared_test_helpers_have_dedicated_path_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            for relative_path in (
+                "tests/playtest/f9Representative.ts",
+                "tests/fixtures/orgSceneTeams.ts",
+            ):
+                with self.subTest(relative_path=relative_path):
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(base, {relative_path: "export const value = 1;\n"})
+                    write_snapshot(head, {relative_path: "export const value = 2;\n"})
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+                    self.assertEqual(result.path_assessments[0].risk, 25)
+                    self.assertFalse(result.hard_gate_reasons)
+
     def test_gitlink_manifest_changes_are_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -574,6 +616,31 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.changed_files, 1)
             self.assertTrue(result.files[0].gitlink)
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+
+    def test_symlink_manifest_changes_are_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            base.mkdir()
+            head.mkdir()
+            base_symlinks = Path(directory) / "base.symlinks"
+            head_symlinks = Path(directory) / "head.symlinks"
+            # Different object IDs also distinguish a raw symlink blob such as same\0changed.
+            base_symlinks.write_text("a" * 40 + "\tlink\n", encoding="utf-8")
+            head_symlinks.write_text("b" * 40 + "\tlink\n", encoding="utf-8")
+
+            result = assess(
+                base,
+                head,
+                POLICY,
+                base_symlinks=base_symlinks,
+                head_symlinks=head_symlinks,
+            )
+
+            self.assertEqual(result.changed_files, 1)
+            self.assertEqual(result.files[0].path, "link")
+            self.assertEqual(result.files[0].status, "M")
+            self.assertFalse(result.files[0].gitlink)
 
     def test_snapshot_file_size_is_bounded_before_reading(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -618,6 +685,13 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.files[0].path, "docs/mode-sensitive.txt")
             self.assertEqual(result.files[0].status, "M")
             self.assertEqual(result.files[0].changed_lines, 0)
+
+    def test_invalid_utf8_diff_is_treated_as_binary(self) -> None:
+        additions, deletions, binary = _line_changes(b"\xff\n", b"\xfe\n")
+
+        self.assertEqual(additions, 1)
+        self.assertEqual(deletions, 1)
+        self.assertTrue(binary)
 
     def test_large_text_diff_uses_bounded_conservative_counts(self) -> None:
         base_data = ("repeat\n" * 2500).encode("utf-8")

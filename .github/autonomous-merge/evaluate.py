@@ -670,9 +670,13 @@ def _scope_has_code_changes(
     scope: VerificationScope,
     files: Sequence[ChangedFile],
     scopes: Sequence[VerificationScope],
+    *,
+    test_globs: Sequence[str] = (),
 ) -> bool:
     for changed_file in files:
         if not matches_any(changed_file.path, scope.code_globs):
+            continue
+        if matches_any(changed_file.path, test_globs):
             continue
         if matches_any(changed_file.path, scope.excluded_code_globs):
             continue
@@ -689,8 +693,8 @@ def _scope_has_code_changes(
 
 _DISABLED_TEST_CALL = re.compile(
     r"\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
-    r"(?:\s*\.\s*[A-Za-z_$][A-Za-z0-9_$]*)*"
-    r"\s*\.\s*(?:skip|fixme|todo|skipIf|runIf)\b"
+    r"(?:\s*(?:\.\s*[A-Za-z_$][A-Za-z0-9_$]*|\[\s*['\"][A-Za-z_$][A-Za-z0-9_$]*['\"]\s*\]))*"
+    r"\s*(?:\.\s*(?:skip|fixme|todo|skipIf|runIf)\b|\[\s*['\"](?:skip|fixme|todo|skipIf|runIf)['\"]\s*\])"
 )
 
 
@@ -927,7 +931,11 @@ def assess(
                 hard_gate_reasons.append(reason)
     path_risk = min(path_risk_total, policy.maximum_path_risk)
 
-    code_changes = any(matches_any(item.path, policy.code_globs) for item in files)
+    code_changes = any(
+        matches_any(item.path, policy.code_globs)
+        and not matches_any(item.path, policy.test_globs)
+        for item in files
+    )
     pure_rename_additions, _ = _pure_test_rename_paths(
         files,
         base_snapshot,
@@ -937,7 +945,12 @@ def assess(
     missing_test_scopes = tuple(
         scope.name
         for scope in policy.verification_scopes
-        if _scope_has_code_changes(scope, files, policy.verification_scopes)
+        if _scope_has_code_changes(
+            scope,
+            files,
+            policy.verification_scopes,
+            test_globs=policy.test_globs,
+        )
         and not any(
             _is_usable_test_change(
                 item,

@@ -100,13 +100,7 @@ jobs:
             : > "${symlink_manifest}"
             : > "${allowed_blob_ids}"
             stream_tree_entries() {
-              local root_tree_sha
-              root_tree_sha="$(git -C "${git_dir}" rev-parse "${tree_sha}^{tree}")"
-              gh api "repos/${GITHUB_REPOSITORY}/git/trees/${root_tree_sha}?recursive=1" |
-                jq -j '
-                  (.tree[] | "\(.mode) \(.type) \(.sha) \(.size // "-")\t\(.path)\u0000"),
-                  (if .truncated then "TRUNCATED\t\u0000" else empty end)
-                '
+              git -C "${git_dir}" ls-tree -r -l -z --full-tree "${tree_sha}"
             }
             stream_tree_entries > "${tree_entries}"
             while IFS= read -r -d '' entry; do
@@ -329,6 +323,60 @@ jobs:
               --input - <<<"${payload}" >/dev/null
           fi
 
+  invalidate-out-of-scope:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.base.ref != 'main'
+    name: Invalidate out-of-scope shadow result
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Invalidate stale result for non-main base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+          if [[ "${current_state}" != "open" || "${current_base_ref}" == "main" || \
+            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" ]]; then
+            echo "Skipping stale out-of-scope invalidation for PR #${PR_NUMBER}"
+            exit 0
+          fi
+          existing_comment_id="$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+          if [[ -z "${existing_comment_id}" ]]; then
+            echo "No shadow result exists for PR #${PR_NUMBER}"
+            exit 0
+          fi
+          report_body="$(cat <<EOF
+          ## Autonomous Merge Shadow Mode
+
+          > This PR no longer targets \`main\`; the previous shadow result is invalidated.
+
+          | 指標 | 値 |
+          | --- | --- |
+          | Decision | \`HUMAN_REVIEW_REQUIRED\` |
+          | Reason | \`BASE_BRANCH_OUT_OF_SCOPE\` |
+          | PR Risk | \`N/A\` |
+          | Base branch | \`not main\` |
+          | Base SHA | \`${BASE_SHA}\` |
+          | Head SHA | \`${HEAD_SHA}\` |
+          EOF
+          )"
+          full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
+          payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
+          gh api --method PATCH \
+            "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
+            --input - <<<"${payload}" >/dev/null
+
   list-open-prs:
     if: github.event_name == 'push'
     name: List open PRs for base recheck
@@ -358,6 +406,9 @@ jobs:
     if: github.event_name == 'push' && needs.list-open-prs.outputs.batches != '[]'
     strategy:
       fail-fast: false
+      # tree metadata is read from the fetched git object database; only the bounded
+      # current-PR/comment upsert calls use the GitHub REST API.
+      max-parallel: 8
       matrix:
         batch: ${{ fromJSON(needs.list-open-prs.outputs.batches) }}
     name: 'Recheck PR batch ${{ matrix.batch.index }} after base push'

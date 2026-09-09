@@ -250,6 +250,12 @@ hard_gate = true
 reason = "依存関係lockfileの変更"
 
 [[path_rules]]
+pattern = "npm-shrinkwrap.json"
+risk = 100
+hard_gate = true
+reason = "依存関係lockfileの変更"
+
+[[path_rules]]
 pattern = ".npmrc"
 risk = 100
 hard_gate = true
@@ -486,6 +492,12 @@ reason = "エージェントskillの変更"
 
 [[path_rules]]
 pattern = "**/AGENTS.md"
+risk = 100
+hard_gate = true
+reason = "リポジトリ作業指示の変更"
+
+[[path_rules]]
+pattern = "**/CLAUDE.md"
 risk = 100
 hard_gate = true
 reason = "リポジトリ作業指示の変更"

@@ -68,10 +68,11 @@ jobs:
             } > "${report_file}"
           }
 
-          upsert_failure_comment() {
+          publish_report() {
             local pr_number="$1"
             local base_sha="$2"
             local head_sha="$3"
+            local report_file="$4"
             local current_pr
             current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" \
               --jq '[.state, .base.sha, .head.sha] | @tsv')"
@@ -83,20 +84,11 @@ jobs:
               return 0
             fi
             local report_body
-            report_body="$(cat <<EOF
-          ## Autonomous Merge Shadow Mode
-
-          > Base push recheck could not complete. Human review is required.
-
-          | 指標 | 値 |
-          | --- | --- |
-          | Decision | \`HUMAN_REVIEW_REQUIRED\` |
-          | Reason | \`EVALUATION_FAILED\` |
-          | PR Risk | \`N/A\` |
-          | Base branch SHA | \`${base_sha}\` |
-          | Head SHA | \`${head_sha}\` |
-          EOF
-            )"
+            report_body="$(cat "${report_file}")"
+            if (( ${#report_body} > 60000 )); then
+              report_body="${report_body:0:59000}"
+              report_body+=$'\n\n_Report truncated to fit the recheck comment limit._'
+            fi
             local full_body
             full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
             local payload
@@ -159,13 +151,7 @@ jobs:
               : > "${symlink_manifest}"
               : > "${allowed_blob_ids}"
               stream_tree_entries() {
-                local root_tree_sha
-                root_tree_sha="$(git -C "${git_dir}" rev-parse "${tree_sha}^{tree}")"
-                gh api "repos/${GITHUB_REPOSITORY}/git/trees/${root_tree_sha}?recursive=1" |
-                  jq -j '
-                    (.tree[] | "\(.mode) \(.type) \(.sha) \(.size // "-")\t\(.path)\u0000"),
-                    (if .truncated then "TRUNCATED\t\u0000" else empty end)
-                  '
+                git -C "${git_dir}" ls-tree -r -l -z --full-tree "${tree_sha}"
               }
               stream_tree_entries > "${tree_entries}"
               while IFS= read -r -d '' entry; do
@@ -309,42 +295,11 @@ jobs:
               fi
             fi
 
-            local report_body
-            report_body="$(cat "${report_file}")"
-            if (( ${#report_body} > 60000 )); then
-              report_body="${report_body:0:59000}"
-              report_body+=$'\n\n_Report truncated to fit the recheck comment limit._'
-            fi
-            local current_pr
-            current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" \
-              --jq '[.state, .base.sha, .head.sha] | @tsv')"
-            local current_state current_base_sha current_head_sha
-            IFS=$'\t' read -r current_state current_base_sha current_head_sha <<< "${current_pr}"
-            if [[ "${current_state}" != "open" || "${current_base_sha}" != "${base_sha}" || \
-              "${current_head_sha}" != "${head_sha}" ]]; then
-              echo "Skipping stale shadow result for PR #${pr_number}"
-              return 0
-            fi
-            local full_body
-            full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
-            local payload
-            payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
-            local existing_comment_id
-            existing_comment_id="$(gh api --paginate \
-              "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments?per_page=100" \
-              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
-            if [[ -n "${existing_comment_id}" ]]; then
-              gh api --method PATCH \
-                "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
-                --input - <<<"${payload}" >/dev/null
-            else
-              gh api --method POST \
-                "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments" \
-                --input - <<<"${payload}" >/dev/null
-            fi
-            echo "Rechecked PR #${pr_number} against base ${base_sha}"
+            return 0
           }
 
+          report_file="reports/pr-${PR_NUMBER}/report.md"
+          mkdir -p "$(dirname "${report_file}")"
           set +e
           (
             set -e
@@ -354,5 +309,6 @@ jobs:
           set -e
           if (( recheck_status != 0 )); then
             echo "::warning::Shadow recheck failed for PR #${PR_NUMBER}"
-            upsert_failure_comment "${PR_NUMBER}" "${BASE_SHA}" "${HEAD_SHA}"
+            write_evaluation_failure_report "${report_file}" "${BASE_SHA}" "${HEAD_SHA}"
           fi
+          publish_report "${PR_NUMBER}" "${BASE_SHA}" "${HEAD_SHA}" "${report_file}"

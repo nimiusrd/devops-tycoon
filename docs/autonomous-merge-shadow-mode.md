@@ -28,7 +28,7 @@ workflowはtrusted base、merge base、headを分けて扱います。評価器�
 | `src/state/**`、`src/game.ts` | Hard Gate | セーブ、永続化、状態遷移を束ねる中核のため |
 | `src/sim/run/**`、`src/sim/engine.ts`、`src/sim/rng.ts`、`src/sim/seed.ts` | Hard Gate | ラン進行とseed再現性の中核であるため |
 | `src/data/balance/**`、`src/data/contentCatalog.ts` | Hard Gate | バランス、確率、コンテンツ契約を変更するため |
-| `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**` | リスク加点 | 変更量とテスト有無を組み合わせて判定するため |
+| `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 変更量とテスト有無を組み合わせて判定するため |
 | `tests/**`、`tests/**/*-snapshots/**`、`tests/**/__snapshots__/**`、`docs/**`、`*.md` | 低加点 | 変更量は計測するが、単独ではHard Gateにしないため |
 
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。

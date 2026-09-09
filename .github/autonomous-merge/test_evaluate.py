@@ -1,8 +1,10 @@
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
 
-from evaluate import EvaluationError, _ensure_within_base, assess, load_policy
+from evaluate import EvaluationError, _ensure_within_base, assess, load_policy, main
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -186,6 +188,33 @@ class EvaluateTests(unittest.TestCase):
                     ROOT / ".github" / "autonomous-merge" / "policy.toml",
                     "policy",
                 )
+
+    def test_cli_can_use_trusted_base_separately_from_comparison_base(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            comparison_base = Path(directory) / "comparison-base"
+            head = Path(directory) / "head"
+            comparison_base.mkdir()
+            head.mkdir()
+            output = io.StringIO()
+
+            with contextlib.redirect_stdout(output):
+                result = main(
+                    [
+                        "--base-dir",
+                        str(comparison_base),
+                        "--head-dir",
+                        str(head),
+                        "--policy",
+                        str(ROOT / ".github" / "autonomous-merge" / "policy.toml"),
+                        "--trusted-base-dir",
+                        str(ROOT),
+                        "--format",
+                        "json",
+                    ]
+                )
+
+            self.assertEqual(result, 0)
+            self.assertIn('"risk": 0', output.getvalue())
 
 
 if __name__ == "__main__":

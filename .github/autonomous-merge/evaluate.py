@@ -339,6 +339,24 @@ CONSERVATIVE_LINE_RISK_LINES = 401
 MAX_SNAPSHOT_FILE_BYTES = 8_000_000
 MAX_SNAPSHOT_TOTAL_BYTES = 64_000_000
 MAX_SNAPSHOT_FILES = 50_000
+MAX_MANIFEST_RECORD_BYTES = 1_000_000
+
+
+def _iter_nul_records(manifest_file: Any) -> Iterable[bytes]:
+    buffer = bytearray()
+    while chunk := manifest_file.read(65_536):
+        buffer.extend(chunk)
+        while True:
+            try:
+                delimiter_index = buffer.index(0)
+            except ValueError:
+                break
+            yield bytes(buffer[:delimiter_index])
+            del buffer[: delimiter_index + 1]
+        if len(buffer) > MAX_MANIFEST_RECORD_BYTES:
+            raise EvaluationError("manifestの1レコードが上限を超えています")
+    if buffer:
+        raise EvaluationError("manifestのレコードがNULで終端されていません")
 
 
 def _read_object_manifest(
@@ -352,15 +370,19 @@ def _read_object_manifest(
         return {}
     entries: dict[str, SnapshotEntry] = {}
     try:
-        manifest_file = manifest_path.open("r", encoding="utf-8")
+        manifest_file = manifest_path.open("rb")
     except OSError as error:
         raise EvaluationError(f"{label} manifestを読み込めません: {manifest_path}: {error}") from error
 
     with manifest_file:
-        for line_number, line in enumerate(manifest_file, start=1):
+        for line_number, record in enumerate(_iter_nul_records(manifest_file), start=1):
+            if not record:
+                continue
             try:
-                object_id, relative_path = line.rstrip("\r\n").split("\t", 1)
-            except ValueError as error:
+                object_id_bytes, path_bytes = record.split(b"\t", 1)
+                object_id = object_id_bytes.decode("ascii")
+                relative_path = os.fsdecode(path_bytes)
+            except (UnicodeDecodeError, ValueError) as error:
                 raise EvaluationError(
                     f"{label} manifestの{line_number}行目が不正です: {manifest_path}"
                 ) from error

@@ -207,6 +207,25 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.path_assessments[0].risk, 10)
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
 
+    def test_src_fallback_accepts_src_test_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/utils/publicUrl.ts": "export const url = '/';\n"})
+            write_snapshot(
+                head,
+                {
+                    "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                    "src/utils/publicUrl.test.ts": "it('builds the public URL', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("src-fallback", result.missing_test_scopes)
+            self.assertEqual(result.verification_risk, 0)
+            self.assertEqual(result.test_changes, True)
+
     def test_static_asset_change_requires_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             for relative_path in ("public/assets/devops-command-center.jpg", "public/favicon.svg"):
@@ -585,8 +604,8 @@ class EvaluateTests(unittest.TestCase):
             head.mkdir()
             base_gitlinks = Path(directory) / "base.gitlinks"
             head_gitlinks = Path(directory) / "head.gitlinks"
-            base_gitlinks.write_text("a" * 40 + "\tvendor/dep\n", encoding="utf-8")
-            head_gitlinks.write_text("b" * 40 + "\tvendor/dep\n", encoding="utf-8")
+            base_gitlinks.write_bytes(("a" * 40 + "\tvendor/dep\0").encode("ascii"))
+            head_gitlinks.write_bytes(("b" * 40 + "\tvendor/dep\0").encode("ascii"))
 
             result = assess(
                 base,
@@ -608,7 +627,7 @@ class EvaluateTests(unittest.TestCase):
             base.mkdir()
             head.mkdir()
             base_gitlinks = Path(directory) / "base.gitlinks"
-            base_gitlinks.write_text("a" * 40 + "\tvendor/dep\n", encoding="utf-8")
+            base_gitlinks.write_bytes(("a" * 40 + "\tvendor/dep\0").encode("ascii"))
             write_snapshot(head, {"vendor/dep": "a" * 40})
 
             result = assess(base, head, POLICY, base_gitlinks=base_gitlinks)
@@ -626,8 +645,8 @@ class EvaluateTests(unittest.TestCase):
             base_symlinks = Path(directory) / "base.symlinks"
             head_symlinks = Path(directory) / "head.symlinks"
             # Different object IDs also distinguish a raw symlink blob such as same\0changed.
-            base_symlinks.write_text("a" * 40 + "\tlink\n", encoding="utf-8")
-            head_symlinks.write_text("b" * 40 + "\tlink\n", encoding="utf-8")
+            base_symlinks.write_bytes(("a" * 40 + "\tlink\0").encode("ascii"))
+            head_symlinks.write_bytes(("b" * 40 + "\tlink\0").encode("ascii"))
 
             result = assess(
                 base,
@@ -641,6 +660,29 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.files[0].path, "link")
             self.assertEqual(result.files[0].status, "M")
             self.assertFalse(result.files[0].gitlink)
+
+    def test_symlink_manifest_preserves_carriage_return_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            base.mkdir()
+            head.mkdir()
+            base_symlinks = Path(directory) / "base.symlinks"
+            head_symlinks = Path(directory) / "head.symlinks"
+            base_symlinks.write_bytes(("a" * 40 + "\tsrc/module.ts\r\0").encode("ascii"))
+            head_symlinks.write_bytes(("a" * 40 + "\tsrc/module.ts\0").encode("ascii"))
+
+            result = assess(
+                base,
+                head,
+                POLICY,
+                base_symlinks=base_symlinks,
+                head_symlinks=head_symlinks,
+            )
+
+            self.assertEqual(result.changed_files, 2)
+            self.assertIn("src/module.ts\r", {item.path for item in result.files})
+            self.assertIn("src/module.ts", {item.path for item in result.files})
 
     def test_snapshot_file_size_is_bounded_before_reading(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

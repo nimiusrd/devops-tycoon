@@ -159,6 +159,8 @@ test_globs = [
   "tests/unit/**/*.test.ts",
   "tests/unit/**/*.spec.ts",
   "tests/playtest/**/*.test.ts",
+  "src/**/*.test.ts",
+  "src/**/*.spec.ts",
 ]
 
 # ルールはファイルごとの最大値を採用し、全ファイルの合計を

@@ -85,6 +85,10 @@ test_globs = [
   "tests/**/*-snapshots/**",
   "tests/**/__snapshots__/**",
 ]
+binary_test_globs = [
+  "tests/**/*-snapshots/**",
+  "tests/**/__snapshots__/**",
+]
 
 [[verification.scopes]]
 name = "simulation"

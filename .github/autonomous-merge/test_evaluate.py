@@ -234,6 +234,55 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.verification_risk, 0)
             self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
 
+    def test_binary_visual_test_file_does_not_satisfy_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": b"test('renders', () => {});\xff",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": b"test('renders new', () => {});\xfe",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_comment_only_test_change_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => {});\n// explain the fixture\n\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
     def test_test_only_deletion_adds_removal_risk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"

@@ -54,6 +54,7 @@ class VerificationScope:
     name: str
     code_globs: tuple[str, ...]
     test_globs: tuple[str, ...]
+    binary_test_globs: tuple[str, ...]
     fallback: bool
     excluded_code_globs: tuple[str, ...] = ()
 
@@ -226,6 +227,10 @@ def _load_verification_scopes(value: Any) -> tuple[VerificationScope, ...]:
                 test_globs=_require_string_list(
                     scope.get("test_globs"),
                     f"verification.scopes[{index}].test_globs",
+                ),
+                binary_test_globs=_require_string_list(
+                    scope.get("binary_test_globs", []),
+                    f"verification.scopes[{index}].binary_test_globs",
                 ),
                 fallback=fallback,
                 excluded_code_globs=_require_string_list(
@@ -712,21 +717,84 @@ def _contains_disabled_test_call(base_data: bytes | None, head_data: bytes | Non
     return False
 
 
+def _strip_javascript_comments(data: bytes) -> str:
+    """文字列リテラルを保ちながらJavaScript/TypeScriptコメントを除去する。"""
+
+    text = data.decode("utf-8", errors="replace")
+    characters: list[str] = []
+    quote: str | None = None
+    escaped = False
+    block_comment = False
+    index = 0
+    while index < len(text):
+        character = text[index]
+        next_character = text[index + 1] if index + 1 < len(text) else ""
+        if block_comment:
+            if character == "*" and next_character == "/":
+                block_comment = False
+                index += 2
+            else:
+                index += 1
+            continue
+        if quote is not None:
+            characters.append(character)
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == quote:
+                quote = None
+            index += 1
+            continue
+        if character in {"'", '"', "`"}:
+            quote = character
+            characters.append(character)
+            index += 1
+        elif character == "/" and next_character == "/":
+            index += 2
+            while index < len(text) and text[index] not in "\r\n":
+                index += 1
+        elif character == "/" and next_character == "*":
+            block_comment = True
+            index += 2
+        else:
+            characters.append(character)
+            index += 1
+    return "".join(characters)
+
+
+def _test_code_fingerprint(data: bytes | None) -> str:
+    if data is None:
+        return ""
+    return "".join(_strip_javascript_comments(data).split())
+
+
+def _has_executable_test_change(base_data: bytes | None, head_data: bytes) -> bool:
+    """コメント・空白だけのテスト変更を検証追加として扱わない。"""
+
+    return _test_code_fingerprint(base_data) != _test_code_fingerprint(head_data)
+
+
 def _is_usable_test_change(
     item: ChangedFile,
     base_snapshot: Mapping[str, SnapshotEntry],
     head_snapshot: Mapping[str, SnapshotEntry],
     *,
-    allow_binary: bool = False,
+    binary_test_globs: Sequence[str] = (),
 ) -> bool:
-    if item.status == "D" or item.additions <= 0 or (item.binary and not allow_binary):
+    if item.status == "D" or item.additions <= 0:
+        return False
+    if item.binary and not matches_any(item.path, binary_test_globs):
         return False
     head_entry = head_snapshot.get(item.path)
     if head_entry is None or head_entry.kind != "blob":
         return False
     base_entry = base_snapshot.get(item.path)
-    return not _contains_disabled_test_call(
-        base_entry.data if base_entry is not None else None,
+    base_data = base_entry.data if base_entry is not None else None
+    if item.binary:
+        return True
+    return _has_executable_test_change(base_data, head_entry.data) and not _contains_disabled_test_call(
+        base_data,
         head_entry.data,
     )
 
@@ -864,7 +932,7 @@ def assess(
                 item,
                 base_snapshot,
                 head_snapshot,
-                allow_binary=scope.name == "visual",
+                binary_test_globs=scope.binary_test_globs,
             )
             and matches_any(item.path, scope.test_globs)
             and item.path not in pure_rename_additions

@@ -11,11 +11,13 @@ from __future__ import annotations
 import argparse
 import difflib
 import html
+import io
 import json
 import os
 import re
 import stat
 import sys
+import tokenize
 import tomllib
 from dataclasses import asdict, dataclass
 from functools import lru_cache
@@ -721,6 +723,204 @@ def _contains_disabled_test_call(base_data: bytes | None, head_data: bytes | Non
     return False
 
 
+_REGEX_LITERAL_PRECEDING_WORDS = frozenset(
+    {"await", "case", "delete", "in", "instanceof", "of", "return", "throw", "typeof", "void", "yield"}
+)
+
+
+def _can_start_regex_literal(text: str, index: int) -> bool:
+    """現在位置の`/`が正規表現リテラルの開始らしいかを判定する。"""
+
+    previous = index - 1
+    while previous >= 0 and text[previous].isspace():
+        previous -= 1
+    if previous < 0 or text[previous] in "([{=,:;!&|?+-*%^~<>":
+        return True
+    if text[previous].isalnum() or text[previous] in "_$":
+        end = previous + 1
+        start = previous
+        while start >= 0 and (text[start].isalnum() or text[start] in "_$"):
+            start -= 1
+        return text[start + 1 : end] in _REGEX_LITERAL_PRECEDING_WORDS
+    return False
+
+
+def _read_regex_literal(text: str, index: int) -> tuple[str, int, int] | None:
+    """正規表現リテラル全体、終端slash、次の位置を返す。"""
+
+    if index >= len(text) or text[index] != "/" or not _can_start_regex_literal(text, index):
+        return None
+    cursor = index + 1
+    in_character_class = False
+    while cursor < len(text):
+        character = text[cursor]
+        if character == "\\":
+            cursor += 2
+            continue
+        if character == "[":
+            in_character_class = True
+        elif character == "]":
+            in_character_class = False
+        elif character == "/" and not in_character_class:
+            close = cursor
+            cursor += 1
+            while cursor < len(text) and (text[cursor].isalpha() or text[cursor].isdigit()):
+                cursor += 1
+            return text[index:cursor], close, cursor
+        elif character in "\r\n":
+            return None
+        cursor += 1
+    return None
+
+
+def _regex_for_fingerprint(
+    text: str,
+    index: int,
+    *,
+    preserve_literal_content: bool,
+) -> tuple[str, int] | None:
+    literal = _read_regex_literal(text, index)
+    if literal is None:
+        return None
+    value, close, end = literal
+    if preserve_literal_content:
+        return value, end
+    return f"/R/{value[close + 1 :]}", end
+
+
+def _test_runner(path: str) -> str | None:
+    """リポジトリ内でテストを実行するrunnerを、pathの規約から分類する。"""
+
+    if path.endswith(".png") and "-snapshots/" in path:
+        return "playwright"
+    if path.endswith(".snap") and "/__snapshots__/" in path:
+        owner_directory, snapshot_name = path.split("/__snapshots__/", 1)
+        if snapshot_name.endswith(".snap"):
+            return _test_runner(f"{owner_directory}/{snapshot_name[:-len('.snap')]}")
+        return None
+    if matches_any(path, ("tests/e2e/**/*.test.ts", "tests/e2e/**/*.spec.ts")):
+        return "playwright"
+    if matches_any(path, ("tests/playtest/**/*.test.ts",)):
+        return "vitest-playtest"
+    if matches_any(
+        path,
+        (
+            "tests/unit/**/*.test.ts",
+            "tests/unit/**/*.spec.ts",
+            "src/**/*.test.ts",
+            "src/**/*.spec.ts",
+        ),
+    ):
+        return "vitest"
+    if matches_any(path, (".github/**/test_*.py",)):
+        return "python"
+    return None
+
+
+def _snapshot_owner(path: str) -> tuple[str, str, str] | None:
+    """snapshot pathからrunner・所有テスト・snapshot名を取り出す。"""
+
+    if path.endswith(".png") and "-snapshots/" in path:
+        owner, snapshot_name = path.split("-snapshots/", 1)
+        return "playwright", owner, snapshot_name
+    if path.endswith(".snap") and "/__snapshots__/" in path:
+        owner_directory, snapshot_name = path.split("/__snapshots__/", 1)
+        if snapshot_name.endswith(".snap"):
+            owner = f"{owner_directory}/{snapshot_name[:-len('.snap')]}"
+            return "vitest", owner, snapshot_name
+    return None
+
+
+_PLAYWRIGHT_SCREENSHOT_CALL = re.compile(
+    r"\.\s*toHaveScreenshot\s*\(\s*(['\"])(?P<name>[^'\"\r\n]+)\1"
+)
+_VITEST_SNAPSHOT_CALL = re.compile(r"\.\s*toMatchSnapshot\s*\(")
+_VITEST_SNAPSHOT_KEY = re.compile(r"exports\[\s*(['\"`])([^'\"`\r\n]+)\1\s*\]\s*=")
+_TEST_TITLE = re.compile(
+    r"\b(?:test|it|describe|suite|context)\s*\(\s*(['\"])(?P<title>[^'\"\r\n]+)\1"
+)
+
+
+def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry]) -> bool:
+    """snapshotが実在するtest runnerのbaselineとして参照されているか確認する。"""
+
+    owner_info = _snapshot_owner(path)
+    if owner_info is None:
+        return False
+    runner, owner_path, snapshot_name = owner_info
+    owner = head_snapshot.get(owner_path)
+    if owner is None or owner.kind != "blob":
+        return False
+    owner_runner = _test_runner(owner_path)
+    if runner == "vitest":
+        if owner_runner not in {"vitest", "vitest-playtest"}:
+            return False
+    elif owner_runner != runner:
+        return False
+    source = _strip_javascript_comments(owner.data)
+
+    if runner == "playwright":
+        if not snapshot_name.endswith(".png"):
+            return False
+        snapshot_stem = snapshot_name[: -len(".png")]
+        for match in _PLAYWRIGHT_SCREENSHOT_CALL.finditer(source):
+            expected_name = match.group("name")
+            if not expected_name.endswith(".png"):
+                expected_name += ".png"
+            expected_stem = expected_name[: -len(".png")]
+            if snapshot_stem == f"{expected_stem}-chromium-linux":
+                return True
+        return False
+
+    if runner == "vitest":
+        # Vitestのsnapshot fileは、所有testがあり、標準形式のexport keyが
+        # そのtestの静的なタイトルを含む場合だけbaselineとして受け入れる。
+        snapshot_entry = head_snapshot.get(path)
+        if snapshot_entry is None or snapshot_entry.kind != "blob":
+            return False
+        snapshot_text = snapshot_entry.data.decode("utf-8", errors="replace")
+        if not snapshot_text.startswith("// Vitest Snapshot v1"):
+            return False
+        keys = [match.group(2) for match in _VITEST_SNAPSHOT_KEY.finditer(snapshot_text)]
+        titles = [match.group("title") for match in _TEST_TITLE.finditer(source)]
+        return bool(
+            _VITEST_SNAPSHOT_CALL.search(source)
+            and keys
+            and titles
+            and all(any(title and title in key for title in titles) for key in keys)
+        )
+
+    return False
+
+
+def _python_code_fingerprint(data: bytes | None, *, preserve_literal_content: bool) -> str:
+    if data is None:
+        return ""
+    text = data.decode("utf-8", errors="replace")
+    try:
+        tokens = tokenize.generate_tokens(io.StringIO(text).readline)
+        parts: list[str] = []
+        ignored = {
+            tokenize.COMMENT,
+            tokenize.ENCODING,
+            tokenize.ENDMARKER,
+            tokenize.INDENT,
+            tokenize.DEDENT,
+            tokenize.NEWLINE,
+            tokenize.NL,
+        }
+        for token in tokens:
+            if token.type in ignored:
+                continue
+            if token.type == tokenize.STRING and not preserve_literal_content:
+                parts.append("S")
+            else:
+                parts.append(token.string)
+        return "\x1f".join(parts)
+    except (IndentationError, SyntaxError, tokenize.TokenError, ValueError):
+        return text
+
+
 def _strip_javascript_comments(data: bytes) -> str:
     """文字列リテラルを保ちながらJavaScript/TypeScriptコメントを除去する。
 
@@ -801,6 +1001,18 @@ def _strip_javascript_comments(data: bytes) -> str:
                     if text[index] == "*" and index + 1 < len(text) and text[index + 1] == "/":
                         index += 2
                         break
+                    index += 1
+            elif character == "/":
+                regex = _regex_for_fingerprint(
+                    text,
+                    index,
+                    preserve_literal_content=True,
+                )
+                if regex is not None:
+                    literal, index = regex
+                    characters.append(literal)
+                else:
+                    characters.append(character)
                     index += 1
             else:
                 characters.append(character)
@@ -898,6 +1110,18 @@ def _normalize_javascript_whitespace(
                 characters.append(character)
                 template, index = scan_template(index + 1)
                 characters.append(template)
+            elif character == "/":
+                regex = _regex_for_fingerprint(
+                    text,
+                    index,
+                    preserve_literal_content=preserve_literal_content,
+                )
+                if regex is not None:
+                    literal, index = regex
+                    characters.append(literal)
+                else:
+                    characters.append(character)
+                    index += 1
             elif character.isspace():
                 index += 1
             else:
@@ -909,26 +1133,46 @@ def _normalize_javascript_whitespace(
     return normalized
 
 
-def _test_code_fingerprint(data: bytes | None) -> str:
+def _test_language(path: str) -> str:
+    return "python" if path.endswith(".py") else "javascript"
+
+
+def _test_code_fingerprint(data: bytes | None, *, language: str = "javascript") -> str:
     if data is None:
         return ""
+    if language == "python":
+        return _python_code_fingerprint(data, preserve_literal_content=True)
     return _normalize_javascript_whitespace(_strip_javascript_comments(data))
 
 
-def _test_code_structure_fingerprint(data: bytes | None) -> str:
+def _test_code_structure_fingerprint(
+    data: bytes | None,
+    *,
+    language: str = "javascript",
+) -> str:
     if data is None:
         return ""
+    if language == "python":
+        return _python_code_fingerprint(data, preserve_literal_content=False)
     return _normalize_javascript_whitespace(
         _strip_javascript_comments(data),
         preserve_literal_content=False,
     )
 
 
-def _has_executable_test_change(base_data: bytes | None, head_data: bytes) -> bool:
+def _has_executable_test_change(
+    base_data: bytes | None,
+    head_data: bytes,
+    *,
+    language: str = "javascript",
+) -> bool:
     """コメント・空白だけのテスト変更を検証追加として扱わない。"""
 
-    head_fingerprint = _test_code_fingerprint(head_data)
-    return bool(head_fingerprint) and _test_code_fingerprint(base_data) != head_fingerprint
+    head_fingerprint = _test_code_fingerprint(head_data, language=language)
+    return bool(head_fingerprint) and _test_code_fingerprint(
+        base_data,
+        language=language,
+    ) != head_fingerprint
 
 
 def _is_usable_test_change(
@@ -947,12 +1191,16 @@ def _is_usable_test_change(
         return False
     base_entry = base_snapshot.get(item.path)
     base_data = base_entry.data if base_entry is not None else None
+    if _snapshot_owner(item.path) is not None:
+        return _is_referenced_snapshot(item.path, head_snapshot)
     if item.binary:
         return True
-    return _has_executable_test_change(base_data, head_entry.data) and not _contains_disabled_test_call(
+    language = _test_language(item.path)
+    return _has_executable_test_change(
         base_data,
         head_entry.data,
-    )
+        language=language,
+    ) and not _contains_disabled_test_call(base_data, head_entry.data)
 
 
 def _pure_test_rename_paths(
@@ -963,24 +1211,27 @@ def _pure_test_rename_paths(
 ) -> tuple[frozenset[str], frozenset[str]]:
     """同内容のテスト追加・削除ペアを純粋なrenameとして対応付ける。"""
 
-    added_by_content: dict[SnapshotEntry, list[str]] = {}
-    deleted_by_content: dict[SnapshotEntry, list[str]] = {}
+    added_by_content: dict[tuple[str, SnapshotEntry], list[str]] = {}
+    deleted_by_content: dict[tuple[str, SnapshotEntry], list[str]] = {}
     for item in files:
         if not matches_any(item.path, policy.test_globs):
+            continue
+        runner = _test_runner(item.path)
+        if runner is None:
             continue
         if item.status == "A":
             content = head_snapshot.get(item.path)
             if content is not None:
-                added_by_content.setdefault(content, []).append(item.path)
+                added_by_content.setdefault((runner, content), []).append(item.path)
         elif item.status == "D":
             content = base_snapshot.get(item.path)
             if content is not None:
-                deleted_by_content.setdefault(content, []).append(item.path)
+                deleted_by_content.setdefault((runner, content), []).append(item.path)
 
     paired_added: set[str] = set()
     paired_deleted: set[str] = set()
-    for content, added_paths in added_by_content.items():
-        deleted_paths = deleted_by_content.get(content, [])
+    for key, added_paths in added_by_content.items():
+        deleted_paths = deleted_by_content.get(key, [])
         pair_count = min(len(added_paths), len(deleted_paths))
         paired_added.update(sorted(added_paths)[:pair_count])
         paired_deleted.update(sorted(deleted_paths)[:pair_count])
@@ -1020,8 +1271,18 @@ def _has_test_removal(
                 and base_entry.kind == "blob"
                 and head_entry is not None
                 and head_entry.kind == "blob"
-                and len(_test_code_structure_fingerprint(head_entry.data))
-                < len(_test_code_structure_fingerprint(base_entry.data))
+                and len(
+                    _test_code_structure_fingerprint(
+                        head_entry.data,
+                        language=_test_language(item.path),
+                    )
+                )
+                < len(
+                    _test_code_structure_fingerprint(
+                        base_entry.data,
+                        language=_test_language(item.path),
+                    )
+                )
             ):
                 return True
         if item.status != "D" and item.additions >= item.deletions:

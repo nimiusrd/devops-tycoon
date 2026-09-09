@@ -266,6 +266,56 @@ class EvaluateTests(unittest.TestCase):
             self.assertNotIn("visual", result.missing_test_scopes)
             self.assertEqual(result.verification_risk, 0)
 
+    def test_regex_literal_whitespace_is_part_of_test_change(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => expect(page).toHaveText(/hello world/));\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => expect(page).toHaveText(/helloworld/));\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertTrue(result.test_changes)
+            self.assertNotIn("visual", result.missing_test_scopes)
+            self.assertEqual(result.verification_risk, 0)
+
+    def test_python_comment_only_test_change_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    ".github/tools/check.py": "def check():\n    return True\n",
+                    ".github/tools/test_check.py": "def test_check():\n    assert check()\n# old explanation\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    ".github/tools/check.py": "def check():\n    return False\n",
+                    ".github/tools/test_check.py": "def test_check():\n    assert check()\n# new explanation\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("automation", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
     def test_unrelated_unit_test_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -300,6 +350,7 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n",
                     "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
                 },
             )
@@ -307,6 +358,7 @@ class EvaluateTests(unittest.TestCase):
                 head,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n",
                     "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
                 },
             )
@@ -423,6 +475,19 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.test_removal_risk, 0)
             self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
+
+    def test_pure_test_rename_across_runners_keeps_removal_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            test_contents = "it('runs', () => {});\n"
+            write_snapshot(base, {"tests/e2e/old.spec.ts": test_contents})
+            write_snapshot(head, {"tests/unit/old.test.ts": test_contents})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
 
     def test_pure_test_rename_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -822,16 +887,16 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 1;\n",
-                    "tests/e2e/office.spec.ts-snapshots/office.png": "old image\n",
-                    "tests/playtest/__snapshots__/result.snap": "old snapshot\n",
+                    "tests/e2e/office.spec.ts": "test('office', async () => expect(page).toHaveScreenshot('office.png'));\n",
+                    "tests/e2e/office.spec.ts-snapshots/office-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
                 },
             )
             write_snapshot(
                 head,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 2;\n",
-                    "tests/e2e/office.spec.ts-snapshots/office.png": "new image\n",
-                    "tests/playtest/__snapshots__/result.snap": "new snapshot\n",
+                    "tests/e2e/office.spec.ts": "test('office', async () => expect(page).toHaveScreenshot('office.png'));\n",
+                    "tests/e2e/office.spec.ts-snapshots/office-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
                 },
             )
 
@@ -865,6 +930,63 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_unreferenced_playwright_snapshot_does_not_satisfy_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n",
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n",
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
+                    "tests/e2e/widget.spec.ts-snapshots/not-used-by-any-test-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_referenced_vitest_snapshot_satisfies_simulation_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = "it('captures', () => expect({ value: 1 }).toMatchSnapshot());\n"
+            base_snapshot = "// Vitest Snapshot v1\n\nexports[`captures 1`] = `value: 1`;\n"
+            head_snapshot = "// Vitest Snapshot v1\n\nexports[`captures 1`] = `value: 2`;\n"
+            write_snapshot(
+                base,
+                {
+                    "src/sim/engine.ts": "export const value = 1;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": base_snapshot,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": head_snapshot,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("simulation", result.missing_test_scopes)
+            self.assertEqual(result.verification_risk, 0)
 
     def test_nvmrc_change_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -914,6 +1036,18 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("評価器・policyの変更", result.hard_gate_reasons[0])
+
+    def test_local_github_action_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {".github/actions/check/action.yml": "runs: {}\n"})
+            write_snapshot(head, {".github/actions/check/action.yml": "runs: changed\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("local action", " ".join(result.hard_gate_reasons))
 
     def test_gitmodules_change_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

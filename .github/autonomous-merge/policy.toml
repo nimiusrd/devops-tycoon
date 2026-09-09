@@ -83,11 +83,9 @@ test_globs = [
   "tests/e2e/**/*.test.ts",
   "tests/e2e/**/*.spec.ts",
   "tests/**/*-snapshots/**/*.png",
-  "tests/**/__snapshots__/**/*.snap",
 ]
 binary_test_globs = [
   "tests/**/*-snapshots/**/*.png",
-  "tests/**/__snapshots__/**/*.snap",
 ]
 
 [[verification.scopes]]
@@ -98,6 +96,7 @@ test_globs = [
   "tests/unit/sim/**/*.test.ts",
   "tests/unit/sim/**/*.spec.ts",
   "tests/playtest/**/*.test.ts",
+  "tests/**/__snapshots__/**/*.snap",
 ]
 
 [[verification.scopes]]
@@ -110,6 +109,7 @@ test_globs = [
   "tests/unit/sim/**/*.test.ts",
   "tests/unit/sim/**/*.spec.ts",
   "tests/playtest/**/*.test.ts",
+  "tests/**/__snapshots__/**/*.snap",
 ]
 
 [[verification.scopes]]
@@ -152,8 +152,6 @@ code_globs = ["*.config.*", "*.json"]
 test_globs = [
   "tests/**/*.test.ts",
   "tests/**/*.spec.ts",
-  "tests/**/*-snapshots/**/*.png",
-  "tests/**/__snapshots__/**/*.snap",
 ]
 
 [[verification.scopes]]
@@ -164,6 +162,7 @@ test_globs = [
   "tests/unit/**/*.test.ts",
   "tests/unit/**/*.spec.ts",
   "tests/playtest/**/*.test.ts",
+  "tests/**/__snapshots__/**/*.snap",
   "src/**/*.test.ts",
   "src/**/*.spec.ts",
 ]
@@ -182,6 +181,12 @@ pattern = ".github/workflows/**"
 risk = 100
 hard_gate = true
 reason = "GitHub Actions workflowの変更"
+
+[[path_rules]]
+pattern = ".github/actions/**"
+risk = 100
+hard_gate = true
+reason = "GitHub Actions local actionの変更"
 
 [[path_rules]]
 pattern = ".devcontainer/**"

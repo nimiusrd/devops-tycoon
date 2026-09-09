@@ -25,7 +25,7 @@ baseブランチへのpush時は、別jobがopenなPR一覧を取得し、各PR�
 
 | 対象 | 初期扱い | 理由 |
 | --- | --- | --- |
-| `.github/workflows/**`、`.devcontainer/**`、`.codex/environments/**`、`.nvmrc` | Hard Gate | CI・実行環境を変更するため |
+| `.github/workflows/**`、`.devcontainer/**`、`.codex/environments/**`、`.codex/config.toml`、`.nvmrc` | Hard Gate | CI・実行環境・Codex権限を変更するため |
 | `package.json`、`package-lock.json`、`*.config.*`、`tsconfig*.json` | Hard Gate | 依存関係・ビルド・テスト契約を変更するため |
 | `.prettierrc.json`、`.prettierignore` | Hard Gate | フォーマット設定や対象範囲を変更するため |
 | `.gitmodules`、Git treeのgitlink（mode `160000`） | Hard Gate | submodule構成または参照SHAを変更するため |
@@ -36,11 +36,11 @@ baseブランチへのpush時は、別jobがopenなPR一覧を取得し、各PR�
 | `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 領域ごとの変更影響を細分化して判定するため |
 | `src/App.tsx`、`src/main.tsx` | リスク加点 | ルート画面と起動処理を変更するため |
 | `tests/**`、`tests/**/*-snapshots/**`、`tests/**/__snapshots__/**`、`docs/**`、`*.md` | 低加点 | 変更量は計測するが、単独ではHard Gateにしないため |
-| `AGENTS.md`、`docs/design-system.md`、`.agents/skills/devops-tycoon-design-system/SKILL.md`、`vite.webglModules.ts` | Hard Gate | リポジトリ作業手順、UI規約、またはWebGLビルド契約を変更するため |
+| `**/AGENTS.md`、`docs/design-system.md`、`.agents/skills/devops-tycoon-design-system/SKILL.md`、`vite.webglModules.ts` | Hard Gate | 階層別の作業手順、UI規約、またはWebGLビルド契約を変更するため |
 
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。
 
-検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに追加行のあるテストを要求します。削除または純減のテスト変更には別のリスクを加算し、Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにします。
+検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに追加行のあるテストを要求します。削除または純減のテスト変更には別のリスクを加算しますが、同内容のテストファイルを別pathへ移す純粋なrenameは純減として扱いません。Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにします。
 
 ## ローカル実行
 

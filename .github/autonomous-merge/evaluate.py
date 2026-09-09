@@ -16,6 +16,7 @@ import os
 import re
 import sys
 import tomllib
+from collections import Counter
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -461,6 +462,14 @@ def collect_changed_files(
 ) -> tuple[ChangedFile, ...]:
     base_snapshot = _read_snapshot(base_dir, base_gitlinks)
     head_snapshot = _read_snapshot(head_dir, head_gitlinks)
+    return _collect_changed_files_from_snapshots(base_snapshot, head_snapshot, policy)
+
+
+def _collect_changed_files_from_snapshots(
+    base_snapshot: Mapping[str, bytes],
+    head_snapshot: Mapping[str, bytes],
+    policy: Policy,
+) -> tuple[ChangedFile, ...]:
     changed: list[ChangedFile] = []
 
     for path in sorted(set(base_snapshot) | set(head_snapshot)):
@@ -521,6 +530,35 @@ def _scope_has_code_changes(
     return False
 
 
+def _has_test_removal(
+    files: Sequence[ChangedFile],
+    base_snapshot: Mapping[str, bytes],
+    head_snapshot: Mapping[str, bytes],
+    policy: Policy,
+) -> bool:
+    """テストの削除・純減を検出し、同内容の純粋なrenameは除外する。"""
+
+    added_test_contents: Counter[bytes] = Counter(
+        head_snapshot[item.path]
+        for item in files
+        if item.status == "A"
+        and matches_any(item.path, policy.test_globs)
+        and item.path in head_snapshot
+    )
+    for item in files:
+        if not matches_any(item.path, policy.test_globs):
+            continue
+        if item.status != "D" and item.additions >= item.deletions:
+            continue
+        if item.status == "D":
+            content = base_snapshot.get(item.path)
+            if content is not None and added_test_contents[content] > 0:
+                added_test_contents[content] -= 1
+                continue
+        return True
+    return False
+
+
 def assess(
     base_dir: Path,
     head_dir: Path,
@@ -531,13 +569,9 @@ def assess(
     base_gitlinks: Path | None = None,
     head_gitlinks: Path | None = None,
 ) -> RiskAssessment:
-    files = collect_changed_files(
-        base_dir,
-        head_dir,
-        policy,
-        base_gitlinks=base_gitlinks,
-        head_gitlinks=head_gitlinks,
-    )
+    base_snapshot = _read_snapshot(base_dir, base_gitlinks)
+    head_snapshot = _read_snapshot(head_dir, head_gitlinks)
+    files = _collect_changed_files_from_snapshots(base_snapshot, head_snapshot, policy)
     additions = sum(item.additions for item in files)
     deletions = sum(item.deletions for item in files)
     changed_lines = additions + deletions
@@ -586,15 +620,12 @@ def assess(
         )
     )
     test_changes = code_changes and not missing_test_scopes
-    test_removal_risk = (
-        policy.test_removal_risk
-        if any(
-            matches_any(item.path, policy.test_globs)
-            and (item.status == "D" or item.additions < item.deletions)
-            for item in files
-        )
-        else 0
-    )
+    test_removal_risk = policy.test_removal_risk if _has_test_removal(
+        files,
+        base_snapshot,
+        head_snapshot,
+        policy,
+    ) else 0
     verification_risk = (
         (policy.missing_test_risk if missing_test_scopes else 0) + test_removal_risk
     )

@@ -231,7 +231,7 @@ jobs:
             local existing_comment_id
             existing_comment_id="$(gh api --paginate \
               "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments?per_page=100" \
-              --jq '.[] | select(.body | contains("<!-- autonomous-merge-shadow-recheck -->")) | .id' | tail -n 1)"
+              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-recheck -->"))) | .id' | tail -n 1)"
             if [[ -n "${existing_comment_id}" ]]; then
               gh api --method PATCH \
                 "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
@@ -244,12 +244,18 @@ jobs:
             echo "Rechecked PR #${pr_number} against base ${base_sha}"
           }
 
-          gh pr list --repo "${GITHUB_REPOSITORY}" --state open --limit 100 \
-            --json number,baseRefName,baseRefOid,headRefOid \
-            --jq '.[] | [.number, .baseRefName, .baseRefOid, .headRefOid] | @tsv' |
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+            --jq '.[] | [.number, .base.ref, .base.sha, .head.sha] | @tsv' |
             while IFS=$'\t' read -r pr_number base_ref_name base_sha head_sha; do
               [[ -n "${pr_number}" ]] || continue
-              if ! recheck_pr "${pr_number}" "${base_ref_name}" "${base_sha}" "${head_sha}"; then
+              set +e
+              (
+                set -e
+                recheck_pr "${pr_number}" "${base_ref_name}" "${base_sha}" "${head_sha}"
+              )
+              recheck_status=$?
+              set -e
+              if (( recheck_status != 0 )); then
                 echo "::warning::Shadow recheck failed for PR #${pr_number}"
               fi
             done

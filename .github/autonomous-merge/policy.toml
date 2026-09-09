@@ -156,6 +156,12 @@ hard_gate = true
 reason = "Codex実行環境の変更"
 
 [[path_rules]]
+pattern = ".codex/config.toml"
+risk = 100
+hard_gate = true
+reason = "Codex権限設定の変更"
+
+[[path_rules]]
 pattern = ".nvmrc"
 risk = 100
 hard_gate = true
@@ -354,7 +360,7 @@ hard_gate = true
 reason = "UIデザインシステム入口の変更"
 
 [[path_rules]]
-pattern = "AGENTS.md"
+pattern = "**/AGENTS.md"
 risk = 100
 hard_gate = true
 reason = "リポジトリ作業指示の変更"

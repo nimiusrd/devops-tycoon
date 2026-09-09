@@ -136,6 +136,19 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
             self.assertIn("テストの削除・純減", " ".join(result.reasons))
 
+    def test_pure_test_rename_does_not_add_removal_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            test_contents = "it('runs', () => {});\n"
+            write_snapshot(base, {"tests/unit/sim/old.test.ts": test_contents})
+            write_snapshot(head, {"tests/unit/sim/new.test.ts": test_contents})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.test_removal_risk, 0)
+            self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
+
     def test_unclassified_src_code_has_fallback_path_risk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -260,6 +273,30 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("Codex実行環境", " ".join(result.hard_gate_reasons))
+
+    def test_codex_config_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {".codex/config.toml": "default_permissions = 'safe'\n"})
+            write_snapshot(head, {".codex/config.toml": "default_permissions = 'full'\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("Codex権限設定", " ".join(result.hard_gate_reasons))
+
+    def test_nested_agents_instructions_are_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/AGENTS.md": "Run the required checks.\n"})
+            write_snapshot(head, {"src/AGENTS.md": "Skip the required checks.\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertIn("リポジトリ作業指示", " ".join(result.hard_gate_reasons))
 
     def test_ui_design_system_contracts_are_hard_gates(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

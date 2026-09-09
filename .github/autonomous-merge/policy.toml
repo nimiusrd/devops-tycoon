@@ -45,6 +45,7 @@ code_globs = [
   "scripts/**/*.mjs",
   "*.config.*",
   "*.json",
+  "public/assets/**",
   ".github/**/*.py",
   ".github/**/*.yml",
   ".github/**/*.yaml",
@@ -152,6 +153,12 @@ pattern = "src/game.ts"
 risk = 100
 hard_gate = true
 reason = "ゲーム中核ファサードの変更"
+
+[[path_rules]]
+pattern = "src/**"
+risk = 10
+hard_gate = false
+reason = "未分類のsrc実装の変更"
 
 [[path_rules]]
 pattern = "src/App.tsx"

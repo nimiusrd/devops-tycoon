@@ -29,7 +29,8 @@ workflowは`pull_request_target`でbaseブランチ側の定義を実行し、tr
 | `src/state/**`、`src/game.ts` | Hard Gate | セーブ、永続化、状態遷移を束ねる中核のため |
 | `src/sim/run/**`、`src/sim/engine.ts`、`src/sim/rng.ts`、`src/sim/seed.ts` | Hard Gate | ラン進行とseed再現性の中核であるため |
 | `src/data/balance/**`、`src/data/contentCatalog.ts` | Hard Gate | バランス、確率、コンテンツ契約を変更するため |
-| `index.html`、`src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 起動・視覚変更を含め、変更量とテスト有無を組み合わせて判定するため |
+| `index.html`、`src/**`、`public/assets/**` | リスク加点 | 起動・実装・視覚変更を含め、変更量とテスト有無を組み合わせて判定するため |
+| `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 領域ごとの変更影響を細分化して判定するため |
 | `src/App.tsx`、`src/main.tsx` | リスク加点 | ルート画面と起動処理を変更するため |
 | `tests/**`、`tests/**/*-snapshots/**`、`tests/**/__snapshots__/**`、`docs/**`、`*.md` | 低加点 | 変更量は計測するが、単独ではHard Gateにしないため |
 | `AGENTS.md`、`docs/design-system.md`、`.agents/skills/devops-tycoon-design-system/SKILL.md`、`vite.webglModules.ts` | Hard Gate | リポジトリ作業手順、UI規約、またはWebGLビルド契約を変更するため |

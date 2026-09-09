@@ -152,6 +152,11 @@ def _load_path_rules(value: Any) -> tuple[PathRule, ...]:
     rules: list[PathRule] = []
     for index, raw_rule in enumerate(value):
         rule = _require_mapping(raw_rule, f"path_rules[{index}]")
+        hard_gate = rule.get("hard_gate")
+        if not isinstance(hard_gate, bool):
+            raise EvaluationError(
+                f"path_rules[{index}].hard_gateは真偽値で指定してください"
+            )
         rules.append(
             PathRule(
                 pattern=_require_string(rule.get("pattern"), f"path_rules[{index}].pattern"),
@@ -160,7 +165,7 @@ def _load_path_rules(value: Any) -> tuple[PathRule, ...]:
                     f"path_rules[{index}].risk",
                     maximum=100,
                 ),
-                hard_gate=rule.get("hard_gate") is True,
+                hard_gate=hard_gate,
                 reason=_require_string(rule.get("reason"), f"path_rules[{index}].reason"),
             )
         )
@@ -422,7 +427,10 @@ def assess(
 
     code_changes = any(matches_any(item.path, policy.code_globs) for item in files)
     test_changes = any(
-        item.status != "D" and matches_any(item.path, policy.test_globs) for item in files
+        item.status != "D"
+        and item.additions > 0
+        and matches_any(item.path, policy.test_globs)
+        for item in files
     )
     verification_risk = policy.missing_test_risk if code_changes and not test_changes else 0
     risk = min(100, line_risk + file_risk + path_risk + verification_risk)

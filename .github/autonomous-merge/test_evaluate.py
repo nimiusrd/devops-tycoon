@@ -65,6 +65,57 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
             self.assertIn("テスト変更がなく", " ".join(result.reasons))
 
+    def test_emptying_a_test_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/unit/ui/widget.test.ts": "it('renders', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/unit/ui/widget.test.ts": "",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_unclassified_src_code_has_fallback_path_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/utils/publicUrl.ts": "export const url = '/';\n"})
+            write_snapshot(head, {"src/utils/publicUrl.ts": "export const url = '/app/';\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertEqual(result.path_assessments[0].risk, 10)
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_static_asset_change_requires_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"public/assets/devops-command-center.jpg": "old asset\n"})
+            write_snapshot(head, {"public/assets/devops-command-center.jpg": "new asset\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertTrue(result.code_changes)
+            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
     def test_deleted_test_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -300,6 +351,22 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("評価器・policyの変更", result.hard_gate_reasons[0])
+
+    def test_path_rule_hard_gate_requires_a_boolean(self) -> None:
+        policy_path = ROOT / ".github" / "autonomous-merge" / "policy.toml"
+        policy_text = policy_path.read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as directory:
+            invalid_policies = (
+                policy_text.replace("hard_gate = true", 'hard_gate = "true"', 1),
+                policy_text.replace("hard_gate = true", "hard_gate = 1", 1),
+                policy_text.replace("hard_gate = true\n", "", 1),
+            )
+            for index, invalid_policy in enumerate(invalid_policies):
+                invalid_path = Path(directory) / f"invalid-{index}.toml"
+                invalid_path.write_text(invalid_policy, encoding="utf-8")
+
+                with self.subTest(index=index), self.assertRaises(EvaluationError):
+                    load_policy(invalid_path)
 
     def test_markdown_output_escapes_untrusted_path_characters(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

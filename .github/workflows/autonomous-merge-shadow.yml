@@ -4,7 +4,7 @@ name: Autonomous Merge Shadow
 # required checkにはせず、merge APIも呼ばないため、Shadow Mode中はPRを止めない。
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
 
 concurrency:
   group: autonomous-merge-shadow-${{ github.event.pull_request.number }}

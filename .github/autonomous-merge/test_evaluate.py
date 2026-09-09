@@ -155,6 +155,32 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.test_removal_risk, 0)
             self.assertEqual(result.decision, "ELIGIBLE_FOR_AUTONOMOUS_MERGE")
 
+    def test_pure_test_rename_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            test_contents = "it('runs', () => {});\n"
+            write_snapshot(
+                base,
+                {
+                    "src/sim/engine.ts": "export const value = 1;\n",
+                    "tests/unit/sim/old.test.ts": test_contents,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/unit/sim/new.test.ts": test_contents,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.test_removal_risk, 0)
+            self.assertIn("simulation", result.missing_test_scopes)
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+
     def test_rename_to_non_test_path_keeps_removal_risk(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -215,6 +241,24 @@ class EvaluateTests(unittest.TestCase):
                 result.verification_risk,
                 POLICY.missing_test_risk + POLICY.test_removal_risk,
             )
+
+    def test_playtest_spec_does_not_satisfy_simulation_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/sim/engine.ts": "export const value = 1;\n"})
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/playtest/not-run.spec.ts": "it('is not discovered', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("simulation", result.missing_test_scopes)
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
 
     def test_css_change_is_subject_to_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -468,6 +512,23 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("Git submodule構成", " ".join(result.hard_gate_reasons))
+
+    def test_shared_e2e_support_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            for relative_path, reason in (
+                ("tests/e2e/fixtures.ts", "共有E2E fixture"),
+                ("tests/e2e/seedMeta.ts", "共有E2Eメタ状態fixture"),
+            ):
+                with self.subTest(relative_path=relative_path):
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(base, {relative_path: "export const value = 1;\n"})
+                    write_snapshot(head, {relative_path: "export const value = 2;\n"})
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+                    self.assertIn(reason, " ".join(result.hard_gate_reasons))
 
     def test_gitlink_manifest_changes_are_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

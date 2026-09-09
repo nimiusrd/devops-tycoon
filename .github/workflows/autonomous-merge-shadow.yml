@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: autonomous-merge-shadow-${{ github.event.pull_request.number }}
+  group: autonomous-merge-shadow-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -33,16 +33,6 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
           fetch-depth: 0
-          persist-credentials: false
-
-      # PR headはファイル比較の対象としてだけ取得し、コードは実行しない。
-      - name: Checkout PR head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.sha }}
-          path: head
-          fetch-depth: 1
           persist-credentials: false
 
       - name: Check base evaluator and policy
@@ -87,12 +77,59 @@ jobs:
           fi
           git -C base cat-file -e "${HEAD_SHA}^{commit}"
           MERGE_BASE_SHA="$(git -C base merge-base "${BASE_SHA}" "${HEAD_SHA}")"
-          mkdir -p merge-base
-          empty_attributes_worktree="${RUNNER_TEMP}/autonomous-merge-shadow-empty-attributes"
-          mkdir -p "${empty_attributes_worktree}"
-          GIT_ATTR_NOSYSTEM=1 GIT_WORK_TREE="${empty_attributes_worktree}" \
-            git -C base -c core.attributesfile=/dev/null archive \
-            --worktree-attributes "${MERGE_BASE_SHA}" | tar -x -C merge-base
+          extract_raw_tree() {
+            local git_dir="$1"
+            local tree_sha="$2"
+            local output_dir="$3"
+            local tree_entries="${RUNNER_TEMP}/autonomous-merge-shadow-tree-${tree_sha}.ls-tree"
+
+            mkdir -p "${output_dir}"
+            git -C "${git_dir}" ls-tree -r -z --full-tree "${tree_sha}" > "${tree_entries}"
+            while IFS= read -r -d '' entry; do
+              local metadata="${entry%%$'\t'*}"
+              local relative_path="${entry#*$'\t'}"
+              local mode object_type object_id
+              read -r mode object_type object_id <<< "${metadata}"
+              if [[ "${relative_path}" == /* || "${relative_path}" == .. || \
+                "${relative_path}" == ../* || "${relative_path}" == */../* || \
+                "${relative_path}" == */.. ]]; then
+                echo "::error::Invalid tree path: ${relative_path}" >&2
+                return 1
+              fi
+              local output_path="${output_dir}/${relative_path}"
+              case "${mode}" in
+                160000)
+                  continue
+                  ;;
+                120000)
+                  [[ "${object_type}" == "blob" ]] || return 1
+                  local link_target
+                  if ! IFS= read -r -d '' link_target < <(
+                    git -C "${git_dir}" cat-file blob "${object_id}" && printf '\0'
+                  ); then
+                    echo "::error::Unable to read symlink tree entry: ${relative_path}" >&2
+                    return 1
+                  fi
+                  mkdir -p "$(dirname "${output_path}")"
+                  ln -s -- "${link_target}" "${output_path}"
+                  ;;
+                100644|100755)
+                  [[ "${object_type}" == "blob" ]] || return 1
+                  mkdir -p "$(dirname "${output_path}")"
+                  git -C "${git_dir}" cat-file blob "${object_id}" > "${output_path}"
+                  chmod "${mode#100}" "${output_path}"
+                  ;;
+                *)
+                  echo "::error::Unsupported tree mode ${mode}: ${relative_path}" >&2
+                  return 1
+                  ;;
+              esac
+            done < "${tree_entries}"
+            rm -f "${tree_entries}"
+          }
+          mkdir -p merge-base head
+          extract_raw_tree base "${MERGE_BASE_SHA}" merge-base
+          extract_raw_tree base "${HEAD_SHA}" head
           echo "sha=${MERGE_BASE_SHA}" >> "${GITHUB_OUTPUT}"
           echo "Using merge base SHA ${MERGE_BASE_SHA} for the comparison"
 
@@ -146,12 +183,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           report_body="$(cat shadow-report.md)"
           if (( ${#report_body} > 60000 )); then
             report_body="${report_body:0:59000}"
             report_body+=$'\n\n_Report truncated to fit the shadow result comment limit._'
+          fi
+          current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            --jq '[.state, .base.sha, .head.sha] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_sha current_head_sha <<< "${current_pr}"
+          if [[ "${current_state}" != "open" || "${current_base_sha}" != "${BASE_SHA}" || \
+            "${current_head_sha}" != "${HEAD_SHA}" ]]; then
+            echo "Skipping stale shadow result for PR #${PR_NUMBER}"
+            exit 0
           fi
           full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
           payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
@@ -225,18 +272,58 @@ jobs:
             merge_base_sha="$(git -C "${git_dir}" merge-base "${base_sha}" "${head_sha}")"
 
             mkdir -p "${trusted_base_dir}" "${comparison_base_dir}" "${head_dir}"
-            local empty_attributes_worktree="${RUNNER_TEMP}/autonomous-merge-shadow-empty-attributes-pr-${pr_number}"
-            mkdir -p "${empty_attributes_worktree}"
-            archive_raw_tree() {
+            extract_raw_tree() {
               local tree_sha="$1"
               local output_dir="$2"
-              GIT_ATTR_NOSYSTEM=1 GIT_WORK_TREE="${empty_attributes_worktree}" \
-                git -C "${git_dir}" -c core.attributesfile=/dev/null archive \
-                --worktree-attributes "${tree_sha}" | tar -x -C "${output_dir}"
+              local tree_entries="${RUNNER_TEMP}/autonomous-merge-shadow-tree-pr-${pr_number}-${tree_sha}.ls-tree"
+
+              mkdir -p "${output_dir}"
+              git -C "${git_dir}" ls-tree -r -z --full-tree "${tree_sha}" > "${tree_entries}"
+              while IFS= read -r -d '' entry; do
+                local metadata="${entry%%$'\t'*}"
+                local relative_path="${entry#*$'\t'}"
+                local mode object_type object_id
+                read -r mode object_type object_id <<< "${metadata}"
+                if [[ "${relative_path}" == /* || "${relative_path}" == .. || \
+                  "${relative_path}" == ../* || "${relative_path}" == */../* || \
+                  "${relative_path}" == */.. ]]; then
+                  echo "::error::Invalid tree path: ${relative_path}" >&2
+                  return 1
+                fi
+                local output_path="${output_dir}/${relative_path}"
+                case "${mode}" in
+                  160000)
+                    continue
+                    ;;
+                  120000)
+                    [[ "${object_type}" == "blob" ]] || return 1
+                    local link_target
+                    if ! IFS= read -r -d '' link_target < <(
+                      git -C "${git_dir}" cat-file blob "${object_id}" && printf '\0'
+                    ); then
+                      echo "::error::Unable to read symlink tree entry: ${relative_path}" >&2
+                      return 1
+                    fi
+                    mkdir -p "$(dirname "${output_path}")"
+                    ln -s -- "${link_target}" "${output_path}"
+                    ;;
+                  100644|100755)
+                    [[ "${object_type}" == "blob" ]] || return 1
+                    mkdir -p "$(dirname "${output_path}")"
+                    git -C "${git_dir}" cat-file blob "${object_id}" > "${output_path}"
+                    chmod "${mode#100}" "${output_path}"
+                    ;;
+                  *)
+                    echo "::error::Unsupported tree mode ${mode}: ${relative_path}" >&2
+                    return 1
+                    ;;
+                esac
+              done < "${tree_entries}"
+              rm -f "${tree_entries}"
             }
-            archive_raw_tree "${base_sha}" "${trusted_base_dir}"
-            archive_raw_tree "${merge_base_sha}" "${comparison_base_dir}"
-            archive_raw_tree "${head_sha}" "${head_dir}"
+            extract_raw_tree "${base_sha}" "${trusted_base_dir}"
+            extract_raw_tree "${merge_base_sha}" "${comparison_base_dir}"
+            extract_raw_tree "${head_sha}" "${head_dir}"
             write_gitlinks "${git_dir}" "${merge_base_sha}" "${base_gitlinks}"
             write_gitlinks "${git_dir}" "${head_sha}" "${head_gitlinks}"
 
@@ -268,6 +355,16 @@ jobs:
             if (( ${#report_body} > 60000 )); then
               report_body="${report_body:0:59000}"
               report_body+=$'\n\n_Report truncated to fit the recheck comment limit._'
+            fi
+            local current_pr
+            current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" \
+              --jq '[.state, .base.sha, .head.sha] | @tsv')"
+            local current_state current_base_sha current_head_sha
+            IFS=$'\t' read -r current_state current_base_sha current_head_sha <<< "${current_pr}"
+            if [[ "${current_state}" != "open" || "${current_base_sha}" != "${base_sha}" || \
+              "${current_head_sha}" != "${head_sha}" ]]; then
+              echo "Skipping stale shadow result for PR #${pr_number}"
+              return 0
             fi
             local full_body
             full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"

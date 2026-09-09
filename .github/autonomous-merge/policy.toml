@@ -93,7 +93,6 @@ test_globs = [
   "tests/unit/sim/**/*.test.ts",
   "tests/unit/sim/**/*.spec.ts",
   "tests/playtest/**/*.test.ts",
-  "tests/playtest/**/*.spec.ts",
 ]
 
 [[verification.scopes]]
@@ -106,7 +105,6 @@ test_globs = [
   "tests/unit/sim/**/*.test.ts",
   "tests/unit/sim/**/*.spec.ts",
   "tests/playtest/**/*.test.ts",
-  "tests/playtest/**/*.spec.ts",
 ]
 
 [[verification.scopes]]
@@ -161,7 +159,6 @@ test_globs = [
   "tests/unit/**/*.test.ts",
   "tests/unit/**/*.spec.ts",
   "tests/playtest/**/*.test.ts",
-  "tests/playtest/**/*.spec.ts",
 ]
 
 # ルールはファイルごとの最大値を採用し、全ファイルの合計を
@@ -370,6 +367,18 @@ pattern = "tests/**"
 risk = 0
 hard_gate = false
 reason = "テストの変更"
+
+[[path_rules]]
+pattern = "tests/e2e/fixtures.ts"
+risk = 100
+hard_gate = true
+reason = "共有E2E fixtureの変更"
+
+[[path_rules]]
+pattern = "tests/e2e/seedMeta.ts"
+risk = 100
+hard_gate = true
+reason = "共有E2Eメタ状態fixtureの変更"
 
 [[path_rules]]
 pattern = "public/assets/**"

@@ -16,7 +16,6 @@ import os
 import re
 import sys
 import tomllib
-from collections import Counter
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -570,6 +569,38 @@ def _scope_has_code_changes(
     return False
 
 
+def _pure_test_rename_paths(
+    files: Sequence[ChangedFile],
+    base_snapshot: Mapping[str, SnapshotEntry],
+    head_snapshot: Mapping[str, SnapshotEntry],
+    policy: Policy,
+) -> tuple[frozenset[str], frozenset[str]]:
+    """同内容のテスト追加・削除ペアを純粋なrenameとして対応付ける。"""
+
+    added_by_content: dict[SnapshotEntry, list[str]] = {}
+    deleted_by_content: dict[SnapshotEntry, list[str]] = {}
+    for item in files:
+        if not matches_any(item.path, policy.test_globs):
+            continue
+        if item.status == "A":
+            content = head_snapshot.get(item.path)
+            if content is not None:
+                added_by_content.setdefault(content, []).append(item.path)
+        elif item.status == "D":
+            content = base_snapshot.get(item.path)
+            if content is not None:
+                deleted_by_content.setdefault(content, []).append(item.path)
+
+    paired_added: set[str] = set()
+    paired_deleted: set[str] = set()
+    for content, added_paths in added_by_content.items():
+        deleted_paths = deleted_by_content.get(content, [])
+        pair_count = min(len(added_paths), len(deleted_paths))
+        paired_added.update(sorted(added_paths)[:pair_count])
+        paired_deleted.update(sorted(deleted_paths)[:pair_count])
+    return frozenset(paired_added), frozenset(paired_deleted)
+
+
 def _has_test_removal(
     files: Sequence[ChangedFile],
     base_snapshot: Mapping[str, SnapshotEntry],
@@ -578,23 +609,19 @@ def _has_test_removal(
 ) -> bool:
     """テストの削除・純減を検出し、同内容の純粋なrenameは除外する。"""
 
-    added_test_contents: Counter[SnapshotEntry] = Counter(
-        head_snapshot[item.path]
-        for item in files
-        if item.status == "A"
-        and matches_any(item.path, policy.test_globs)
-        and item.path in head_snapshot
+    _, pure_rename_deletions = _pure_test_rename_paths(
+        files,
+        base_snapshot,
+        head_snapshot,
+        policy,
     )
     for item in files:
         if not matches_any(item.path, policy.test_globs):
             continue
         if item.status != "D" and item.additions >= item.deletions:
             continue
-        if item.status == "D":
-            content = base_snapshot.get(item.path)
-            if content is not None and added_test_contents[content] > 0:
-                added_test_contents[content] -= 1
-                continue
+        if item.status == "D" and item.path in pure_rename_deletions:
+            continue
         return True
     return False
 
@@ -648,6 +675,12 @@ def assess(
     path_risk = min(path_risk_total, policy.maximum_path_risk)
 
     code_changes = any(matches_any(item.path, policy.code_globs) for item in files)
+    pure_rename_additions, _ = _pure_test_rename_paths(
+        files,
+        base_snapshot,
+        head_snapshot,
+        policy,
+    )
     missing_test_scopes = tuple(
         scope.name
         for scope in policy.verification_scopes
@@ -656,6 +689,7 @@ def assess(
             item.status != "D"
             and item.additions > 0
             and matches_any(item.path, scope.test_globs)
+            and item.path not in pure_rename_additions
             for item in files
         )
     )

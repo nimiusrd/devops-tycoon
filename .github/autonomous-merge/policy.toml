@@ -131,7 +131,6 @@ code_globs = ["src/audio/**", "src/utils/publicUrl.ts", "public/assets/audio/**"
 test_globs = [
   "tests/unit/audio/**/*.test.ts",
   "tests/unit/audio/**/*.spec.ts",
-  "tests/e2e/game-assets.spec.ts",
 ]
 
 [[verification.scopes]]

@@ -12,6 +12,7 @@ from evaluate import (
     _ensure_within_base,
     _escape_markdown,
     _has_test_behavior_change,
+    _javascript_disabled_test_option_variables,
     _line_changes,
     _markdown,
     _read_snapshot,
@@ -311,6 +312,8 @@ class EvaluateTests(unittest.TestCase):
             ("const options = { skip: true };\n", "options"),
             ("const options = { todo: true };\n", "options"),
             ("const skip = true;\nconst options = { skip };\n", "options"),
+            ("", "{ ['skip']: true }"),
+            ("", '{ ["todo"]: true }'),
             ("const disabled = { skip: true };\n", "{ ...disabled }"),
             ("const disabled = { todo: true };\n", "{ ...disabled }"),
             (
@@ -600,6 +603,113 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
+
+    def test_template_interpolation_runtime_skip_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders', () => {\n"
+                        "  expect(page).toBeVisible();\n"
+                        "});\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders', () => {\n"
+                        "  `${test.skip(true, 'temporarily disabled')}`;\n"
+                        "  expect(page).toHaveText('updated');\n"
+                        "});\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_expected_failure_test_does_not_satisfy_verification(self) -> None:
+        for test_call in ("test.fail", "it.fails"):
+            with self.subTest(test_call=test_call):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    owner_base = (
+                        f"{test_call}('renders', () => expect(page).toBeVisible());\n"
+                    )
+                    owner_head = owner_base.replace(
+                        "toBeVisible()",
+                        "toHaveText('updated')",
+                    )
+                    write_snapshot(
+                        base,
+                        {
+                            "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                            "tests/e2e/widget.spec.ts": owner_base,
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                            "tests/e2e/widget.spec.ts": owner_head,
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("visual", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+
+    def test_parameterized_test_callback_satisfies_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "it.each([['old']])('builds', (value) => expect(value).toBe('old'));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "it.each([['new']])('builds', (value) => expect(value).toBe('new'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("src-fallback", result.missing_test_scopes)
+            self.assertTrue(result.test_changes)
+            self.assertEqual(result.verification_risk, 0)
+
+    def test_disabled_option_spread_resolution_is_linear_for_reverse_chain(self) -> None:
+        source = "\n".join(
+            f"const options_{index} = {{ ...options_{index + 1} }};"
+            for index in range(999, -1, -1)
+        )
+        source += "\nconst options_1000 = { skip: true };\n"
+
+        disabled_variables = _javascript_disabled_test_option_variables(source)
+
+        self.assertIn("options_0", disabled_variables)
+        self.assertIn("options_999", disabled_variables)
 
     def test_callback_alias_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1106,6 +1216,33 @@ class EvaluateTests(unittest.TestCase):
             self.assertNotIn("visual", result.missing_test_scopes)
             self.assertNotIn("audio", result.missing_test_scopes)
 
+    def test_image_only_e2e_does_not_satisfy_audio_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/audio/audioEngine.ts": "export const enabled = false;\n",
+                    "tests/e2e/game-assets.spec.ts": (
+                        "test('renders assets', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/audio/audioEngine.ts": "export const enabled = true;\n",
+                    "tests/e2e/game-assets.spec.ts": (
+                        "test('renders assets', () => expect(page).toHaveText('ready'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("audio", result.missing_test_scopes)
+
     def test_deleted_test_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -1516,6 +1653,40 @@ class EvaluateTests(unittest.TestCase):
             base = Path(directory) / "base"
             head = Path(directory) / "head"
             owner = "test.skip('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_runtime_skipped_playwright_snapshot_does_not_satisfy_visual_verification(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "test('renders', () => {\n"
+                "  test.skip(true, 'temporarily disabled');\n"
+                "  expect(page).toHaveScreenshot('widget.png');\n"
+                "});\n"
+            )
             write_snapshot(
                 base,
                 {

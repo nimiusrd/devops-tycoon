@@ -85,7 +85,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
-          fetch-depth: 0
+          # Fetch only the trusted base commit. PR refs are fetched separately
+          # below with blob filtering, so checkout cannot hydrate untrusted blobs.
+          fetch-depth: 1
           persist-credentials: false
 
       - name: Check base evaluator and policy
@@ -126,6 +128,10 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+          # Merge-base calculation needs trusted main history. Keep this fetch
+          # explicitly scoped to main; the PR ref below remains blobless.
+          git -C base -c http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" \
+            fetch --no-tags --unshallow origin "refs/heads/main"
           git -C base -c http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" fetch --no-tags --filter=blob:none origin "refs/pull/${PR_NUMBER}/head"
           if ! git -C base cat-file -e "${HEAD_SHA}^{commit}"; then
             git -C base -c http.extraheader="AUTHORIZATION: bearer ${GITHUB_TOKEN}" fetch --no-tags --filter=blob:none origin "${HEAD_SHA}"
@@ -461,6 +467,9 @@ jobs:
   invalidate-out-of-scope:
     if: github.event_name == 'pull_request_target' && github.event.pull_request.base.ref != 'main'
     name: Invalidate out-of-scope shadow result
+    concurrency:
+      group: autonomous-merge-shadow-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

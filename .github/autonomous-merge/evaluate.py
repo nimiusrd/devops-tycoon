@@ -698,7 +698,7 @@ def _scope_has_code_changes(
 _DISABLED_TEST_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
     r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
-    r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf)\b|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf)['\"`]\s*\])"
+    r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf|fail|fails)\b|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf|fail|fails)['\"`]\s*\])"
 )
 _JAVASCRIPT_TEST_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)"
@@ -706,8 +706,12 @@ _JAVASCRIPT_TEST_CALL = re.compile(
     r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`](?!(?:describe|suite)['\"`])[A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*\("
 )
+_JAVASCRIPT_PARAMETERIZED_TEST_CALL = re.compile(
+    r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)\s*(?:\.\s*|\?\.\s*)each\s*\("
+)
 _JAVASCRIPT_DISABLED_TEST_OPTION = re.compile(
-    r"(?:^|[{,])\s*(?:skip|todo)\s*:(?!\s*(?:false|0|null|undefined)\b)\s*"
+    r"(?:^|[{,])\s*(?:(?:skip|todo)|\[\s*['\"`](?:skip|todo)['\"`]\s*\])"
+    r"\s*:(?!\s*(?:false|0|null|undefined)\b)\s*"
 )
 _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND = re.compile(
     r"(?:^|[{,])\s*(?:skip|todo)\s*(?=[,}])"
@@ -879,59 +883,113 @@ def _regex_for_fingerprint(
 def _mask_javascript_literals(text: str) -> str:
     """文字列・template・正規表現の内容を隠し、コード構文だけを残す。"""
 
-    characters: list[str] = []
-    index = 0
-    while index < len(text):
-        character = text[index]
-        if character in {"'", '"', "`"}:
-            quote = character
-            previous = index - 1
-            while previous >= 0 and text[previous].isspace():
-                previous -= 1
-            computed_property = previous >= 0 and text[previous] == "["
-            cursor = index + 1
-            while cursor < len(text):
-                if text[cursor] == "\\":
-                    cursor += 2
-                    continue
-                if text[cursor] == quote:
-                    cursor += 1
-                    break
-                cursor += 1
-            literal = text[index:cursor]
-            value = literal[1:-1] if literal.endswith(quote) else literal[1:]
-            preserve = computed_property and re.fullmatch(
-                r"[A-Za-z_$][A-Za-z0-9_$]*",
-                value,
-            )
-            if preserve:
-                characters.append(literal)
-            else:
-                characters.append(
-                    "".join(
-                        item if item in "\r\n" or item == quote else " "
-                        for item in literal
-                    )
-                )
-            index = cursor
-            continue
-        if character == "/":
-            regex = _read_regex_literal(text, index)
-            if regex is not None:
-                literal, close, end = regex
-                characters.append(
-                    "/"
-                    + "".join(
-                        item if item in "\r\n" else " "
-                        for item in literal[1 : close - index]
-                    )
-                    + literal[close - index :]
-                )
-                index = end
-                continue
-        characters.append(character)
+    def is_computed_property(index: int) -> bool:
+        previous = index - 1
+        while previous >= 0 and text[previous].isspace():
+            previous -= 1
+        return previous >= 0 and text[previous] == "["
+
+    def mask_quoted(index: int, quote: str) -> tuple[str, int]:
+        start = index
         index += 1
-    return "".join(characters)
+        while index < len(text):
+            if text[index] == "\\":
+                index += 2
+                continue
+            if text[index] == quote:
+                index += 1
+                break
+            index += 1
+        literal = text[start:index]
+        value = literal[1:-1] if literal.endswith(quote) else literal[1:]
+        if is_computed_property(start) and re.fullmatch(
+            r"[A-Za-z_$][A-Za-z0-9_$]*",
+            value,
+        ):
+            return literal, index
+        return (
+            "".join(item if item in "\r\n" or item == quote else " " for item in literal),
+            index,
+        )
+
+    def mask_template(index: int) -> tuple[str, int]:
+        start = index
+        characters = ["`"]
+        index += 1
+        has_interpolation = False
+        while index < len(text):
+            character = text[index]
+            next_character = text[index + 1] if index + 1 < len(text) else ""
+            if character == "\\":
+                escaped = text[index : min(index + 2, len(text))]
+                characters.append("".join(item if item in "\r\n" else " " for item in escaped))
+                index += len(escaped)
+            elif character == "`":
+                index += 1
+                literal = text[start:index]
+                value = literal[1:-1]
+                if is_computed_property(start) and not has_interpolation and re.fullmatch(
+                    r"[A-Za-z_$][A-Za-z0-9_$]*",
+                    value,
+                ):
+                    return literal, index
+                characters.append("`")
+                return "".join(characters), index
+            elif character == "$" and next_character == "{":
+                has_interpolation = True
+                characters.append("${")
+                interpolation, index = mask_code(index + 2, stop_at_brace=True)
+                characters.append(interpolation)
+            else:
+                characters.append(character if character in "\r\n" else " ")
+                index += 1
+        return "".join(characters), index
+
+    def mask_code(index: int, *, stop_at_brace: bool) -> tuple[str, int]:
+        characters: list[str] = []
+        brace_depth = 0
+        while index < len(text):
+            character = text[index]
+            if stop_at_brace and character == "}" and brace_depth == 0:
+                characters.append(character)
+                return "".join(characters), index + 1
+            if stop_at_brace and character == "{":
+                brace_depth += 1
+                characters.append(character)
+                index += 1
+            elif stop_at_brace and character == "}":
+                brace_depth -= 1
+                characters.append(character)
+                index += 1
+            elif character in {"'", '"'}:
+                quoted, index = mask_quoted(index, character)
+                characters.append(quoted)
+            elif character == "`":
+                template, index = mask_template(index)
+                characters.append(template)
+            elif character == "/":
+                regex = _read_regex_literal(text, index)
+                if regex is not None:
+                    literal, close, end = regex
+                    characters.append(
+                        "/"
+                        + "".join(
+                            item if item in "\r\n" else " "
+                            for item in literal[1 : close - index]
+                        )
+                        + literal[close - index :]
+                    )
+                    index = end
+                else:
+                    characters.append(character)
+                    index += 1
+            else:
+                characters.append(character)
+                index += 1
+        return "".join(characters), index
+
+    masked, _ = mask_code(0, stop_at_brace=False)
+    return masked
 
 
 def _javascript_disabled_call_source(data: bytes | None) -> str:
@@ -1066,17 +1124,26 @@ def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
         if object_end is not None:
             object_sources[match.group("name")] = source[match.end() - 1 : object_end]
 
-    variables: set[str] = set()
-    changed = True
-    while changed:
-        changed = False
-        for name, object_source in object_sources.items():
-            if name in variables:
-                continue
-            if _javascript_object_has_disabled_test_option(object_source, variables):
-                variables.add(name)
-                changed = True
-    return frozenset(variables)
+    disabled_variables = {
+        name
+        for name, object_source in object_sources.items()
+        if _javascript_object_has_disabled_test_option(object_source)
+    }
+    dependents: dict[str, set[str]] = {}
+    for name, object_source in object_sources.items():
+        for match in _JAVASCRIPT_OBJECT_SPREAD.finditer(object_source):
+            dependents.setdefault(match.group("name"), set()).add(name)
+
+    queue = list(disabled_variables)
+    cursor = 0
+    while cursor < len(queue):
+        dependency = queue[cursor]
+        cursor += 1
+        for dependent in dependents.get(dependency, ()):
+            if dependent not in disabled_variables:
+                disabled_variables.add(dependent)
+                queue.append(dependent)
+    return frozenset(disabled_variables)
 
 
 def _javascript_disabled_test_option_count(source: str) -> int:
@@ -1162,6 +1229,16 @@ def _is_inside_disabled_javascript_call(source: str, position: int) -> bool:
     return any(start <= position < end for start, end in _disabled_javascript_call_ranges(source))
 
 
+def _is_inside_disabled_javascript_test_callback(
+    callback_spans: Sequence[tuple[int, int, bool]],
+    position: int,
+) -> bool:
+    return any(
+        disabled and body_start <= position < body_end
+        for body_start, body_end, disabled in callback_spans
+    )
+
+
 def _test_runner(path: str) -> str | None:
     """リポジトリ内でテストを実行するrunnerを、pathの規約から分類する。"""
 
@@ -1232,6 +1309,7 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
     elif owner_runner != runner:
         return False
     source = _strip_javascript_comments(owner.data)
+    disabled_test_callbacks = _javascript_test_callback_spans(source)
 
     if runner == "playwright":
         if not snapshot_name.endswith(".png"):
@@ -1243,7 +1321,12 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
                 expected_name += ".png"
             expected_stem = expected_name[: -len(".png")]
             if snapshot_stem == f"{expected_stem}-chromium-linux":
-                if not _is_inside_disabled_javascript_call(source, match.start()):
+                if not _is_inside_disabled_javascript_call(source, match.start()) and not (
+                    _is_inside_disabled_javascript_test_callback(
+                        disabled_test_callbacks,
+                        match.start(),
+                    )
+                ):
                     return True
         return False
 
@@ -1265,6 +1348,14 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
             )
             and keys
             and titles
+            and any(
+                not _is_inside_disabled_javascript_call(source, match.start())
+                and not _is_inside_disabled_javascript_test_callback(
+                    disabled_test_callbacks,
+                    match.start(),
+                )
+                for match in _VITEST_SNAPSHOT_CALL.finditer(source)
+            )
             and all(any(title and title in key for title in titles) for key in keys)
         )
 
@@ -1644,14 +1735,67 @@ def _javascript_test_body_argument(arguments: Sequence[str]) -> str | None:
     return arguments[index].strip() if index is not None else None
 
 
+def _javascript_test_call_spans(source: str) -> tuple[tuple[int, int], ...]:
+    """通常・parameterized test呼び出しの開始位置と引数括弧位置を返す。"""
+
+    parameterized_open_indexes = {
+        match.end() - 1 for match in _JAVASCRIPT_PARAMETERIZED_TEST_CALL.finditer(source)
+    }
+    calls: list[tuple[int, int]] = []
+    for match in _JAVASCRIPT_TEST_CALL.finditer(source):
+        if match.end() - 1 in parameterized_open_indexes:
+            continue
+        calls.append((match.start(), match.end() - 1))
+
+    for match in _JAVASCRIPT_PARAMETERIZED_TEST_CALL.finditer(source):
+        each_end = _javascript_call_end(source, match.end() - 1)
+        if each_end is None:
+            continue
+        open_index = each_end
+        while open_index < len(source) and source[open_index].isspace():
+            open_index += 1
+        if open_index < len(source) and source[open_index] == "(":
+            calls.append((match.start(), open_index))
+    return tuple(sorted(set(calls)))
+
+
 def _javascript_callback_contains_disabled_call(
     disabled_ranges: Sequence[tuple[int, int]],
     body_start: int,
     body_end: int,
 ) -> bool:
-    """callback内のruntime skip/fixme/todoを、そのtest全体の無効化として扱う。"""
+    """callback内のruntime modifierを、そのtest全体の無効化として扱う。"""
 
     return any(body_start <= start < body_end for start, _ in disabled_ranges)
+
+
+def _javascript_test_callback_spans(
+    source: str,
+) -> tuple[tuple[int, int, bool], ...]:
+    disabled_ranges = _disabled_javascript_call_ranges(source)
+    callbacks: list[tuple[int, int, bool]] = []
+    for call_start, open_index in _javascript_test_call_spans(source):
+        argument_spans = _javascript_call_argument_spans(source, open_index)
+        if argument_spans is None:
+            continue
+        arguments = tuple(source[start:end] for start, end in argument_spans)
+        body_index = _javascript_test_body_argument_index(arguments)
+        if body_index is None:
+            continue
+        body_start, body_end = argument_spans[body_index]
+        callbacks.append(
+            (
+                body_start,
+                body_end,
+                any(start <= call_start < end for start, end in disabled_ranges)
+                or _javascript_callback_contains_disabled_call(
+                    disabled_ranges,
+                    body_start,
+                    body_end,
+                ),
+            )
+        )
+    return tuple(callbacks)
 
 
 def _javascript_test_behavior_records(
@@ -1660,28 +1804,10 @@ def _javascript_test_behavior_records(
     if data is None or _is_binary(data):
         return ()
     source = _strip_javascript_comments(data)
-    disabled_ranges = _disabled_javascript_call_ranges(source)
-    behaviors: list[tuple[str, bool]] = []
-    for match in _JAVASCRIPT_TEST_CALL.finditer(source):
-        argument_spans = _javascript_call_argument_spans(source, match.end() - 1)
-        if argument_spans is None:
-            continue
-        arguments = tuple(source[start:end] for start, end in argument_spans)
-        body_index = _javascript_test_body_argument_index(arguments)
-        if body_index is None:
-            continue
-        body_start, body_end = argument_spans[body_index]
-        body = source[body_start:body_end].strip()
+    behaviors = []
+    for body_start, body_end, disabled in _javascript_test_callback_spans(source):
         behaviors.append(
-            (
-                _normalize_javascript_whitespace(body),
-                any(start <= match.start() < end for start, end in disabled_ranges)
-                or _javascript_callback_contains_disabled_call(
-                    disabled_ranges,
-                    body_start,
-                    body_end,
-                ),
-            )
+            (_normalize_javascript_whitespace(source[body_start:body_end].strip()), disabled)
         )
     return tuple(behaviors)
 

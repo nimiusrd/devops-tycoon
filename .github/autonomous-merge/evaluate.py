@@ -1178,8 +1178,12 @@ def _javascript_options_argument_is_disabled(
         disabled_option_variables,
     ):
         return True
-    option_name = re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", options)
-    return option_name is not None and option_name.group(0) in frozenset(
+    option_name = re.fullmatch(
+        r"(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)"
+        r"(?:\s*!+|\s+(?:as|satisfies)\b[\s\S]*)?",
+        options,
+    )
+    return option_name is not None and option_name.group("name") in frozenset(
         disabled_option_variables
     )
 
@@ -1217,18 +1221,28 @@ def _javascript_disabled_test_option_count(source: str) -> int:
     count = 0
     disabled_option_variables = _javascript_disabled_test_option_variables(source)
     argument_span_index = _javascript_call_argument_span_index(source)
-    for pattern in (_JAVASCRIPT_TEST_CALL, _JAVASCRIPT_SUITE_CALL):
-        for match in pattern.finditer(source):
-            arguments = _javascript_call_arguments(
-                source,
-                match.end() - 1,
-                argument_span_index=argument_span_index,
-            )
-            if arguments is not None and len(arguments) >= 2 and _javascript_options_argument_is_disabled(
-                arguments[1],
-                disabled_option_variables,
-            ):
-                count += 1
+    for _, open_index in _javascript_test_call_spans(source):
+        arguments = _javascript_call_arguments(
+            source,
+            open_index,
+            argument_span_index=argument_span_index,
+        )
+        if arguments is not None and len(arguments) >= 2 and _javascript_options_argument_is_disabled(
+            arguments[1],
+            disabled_option_variables,
+        ):
+            count += 1
+    for match in _JAVASCRIPT_SUITE_CALL.finditer(source):
+        arguments = _javascript_call_arguments(
+            source,
+            match.end() - 1,
+            argument_span_index=argument_span_index,
+        )
+        if arguments is not None and len(arguments) >= 2 and _javascript_options_argument_is_disabled(
+            arguments[1],
+            disabled_option_variables,
+        ):
+            count += 1
     return count
 
 
@@ -1878,6 +1892,7 @@ def _javascript_test_callback_spans(
 ) -> tuple[tuple[int, int, bool], ...]:
     disabled_ranges = _disabled_javascript_call_ranges(source)
     argument_span_index = _javascript_call_argument_span_index(source)
+    disabled_option_variables = _javascript_disabled_test_option_variables(source)
     callbacks: list[tuple[int, int, bool]] = []
     for call_start, open_index in _javascript_test_call_spans(source):
         argument_spans = _javascript_call_argument_spans(
@@ -1897,6 +1912,13 @@ def _javascript_test_callback_spans(
                 body_start,
                 body_end,
                 any(start <= call_start < end for start, end in disabled_ranges)
+                or (
+                    len(arguments) >= 2
+                    and _javascript_options_argument_is_disabled(
+                        arguments[1],
+                        disabled_option_variables,
+                    )
+                )
                 or _javascript_callback_contains_disabled_call(
                     disabled_ranges,
                     body_start,
@@ -1907,6 +1929,22 @@ def _javascript_test_callback_spans(
     return tuple(callbacks)
 
 
+def _javascript_callback_has_executable_content(callback: str) -> bool:
+    """空またはコメントだけのinline callbackをbehavior recordから除外する。"""
+
+    normalized = _normalize_javascript_whitespace(
+        callback.strip(),
+        preserve_literal_content=False,
+    )
+    if not normalized or normalized.endswith("=>"):
+        return False
+    if re.search(r"=>\{\}$", normalized):
+        return False
+    if re.match(r"^(?:async)?function\b", normalized) and normalized.endswith("{}"):
+        return False
+    return True
+
+
 def _javascript_test_behavior_records(
     data: bytes | None,
 ) -> tuple[tuple[str, bool], ...]:
@@ -1915,8 +1953,11 @@ def _javascript_test_behavior_records(
     source = _strip_javascript_comments(data)
     behaviors = []
     for body_start, body_end, disabled in _javascript_test_callback_spans(source):
+        callback = source[body_start:body_end].strip()
+        if not _javascript_callback_has_executable_content(callback):
+            continue
         behaviors.append(
-            (_normalize_javascript_whitespace(source[body_start:body_end].strip()), disabled)
+            (_normalize_javascript_whitespace(callback), disabled)
         )
     return tuple(behaviors)
 

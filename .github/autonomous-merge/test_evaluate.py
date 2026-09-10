@@ -349,6 +349,9 @@ class EvaluateTests(unittest.TestCase):
             ("const todo = true;\n", "{ todo }"),
             ("const options = { skip: true };\n", "options"),
             ("const options = { todo: true };\n", "options"),
+            ("const options = { skip: true };\n", "options satisfies { skip: boolean }"),
+            ("const options = { skip: true };\n", "options as TestOptions"),
+            ("const options = { skip: true };\n", "options!"),
             ("const skip = true;\nconst options = { skip };\n", "options"),
             ("", "{ ['skip']: true }"),
             ("", '{ ["todo"]: true }'),
@@ -392,6 +395,39 @@ class EvaluateTests(unittest.TestCase):
                     self.assertIn("src-fallback", result.missing_test_scopes)
                     self.assertFalse(result.test_changes)
                     self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_disabled_test_option_is_tracked_per_callback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "const disabled = { skip: true };\n"
+                        "test('first', disabled, () => expect(url).toBe('/first'));\n"
+                        "test('second', () => expect(url).toBe('/second'));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "const disabled = { skip: true };\n"
+                        "test('first', () => expect(url).toBe('/first'));\n"
+                        "test('second', disabled, () => expect(url).toBe('/app/second'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
 
     def test_computed_property_test_disabling_does_not_satisfy_verification(self) -> None:
         for disabled_call in (
@@ -736,6 +772,56 @@ class EvaluateTests(unittest.TestCase):
             self.assertNotIn("src-fallback", result.missing_test_scopes)
             self.assertTrue(result.test_changes)
             self.assertEqual(result.verification_risk, 0)
+
+    def test_parameterized_test_disabled_option_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "it.each([['old']])('builds', (value) => expect(value).toBe('old'));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "it.each([['new']])('builds', { skip: true }, "
+                        "(value) => expect(value).toBe('new'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_empty_javascript_callback_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n"})
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "import { test } from '@playwright/test';\n"
+                        "test('renders', () => {});\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
 
     def test_disabled_option_spread_resolution_is_linear_for_reverse_chain(self) -> None:
         source = "\n".join(
@@ -1163,7 +1249,9 @@ class EvaluateTests(unittest.TestCase):
                 head,
                 {
                     "src/utils/assetUrl.ts": "export const url = '/app/';\n",
-                    "src/utils/publicUrl.test.ts": "it('builds the public URL', () => {});\n",
+                    "src/utils/publicUrl.test.ts": (
+                        "it('builds the public URL', () => expect(url).toBe('/app/'));\n"
+                    ),
                 },
             )
 

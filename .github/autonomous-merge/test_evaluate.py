@@ -352,6 +352,8 @@ class EvaluateTests(unittest.TestCase):
             ("const options = { skip: true };\n", "options satisfies { skip: boolean }"),
             ("const options = { skip: true };\n", "options as TestOptions"),
             ("const options = { skip: true };\n", "options!"),
+            ("const options = { skip: true };\n", "(options)"),
+            ("const options = { skip: true };\n", "((options))"),
             ("const options = { skip: false };\noptions.skip = true;\n", "options"),
             ("const options = { skip: false };\noptions['skip'] = true;\n", "options"),
             ("const skip = true;\nconst options = { skip };\n", "options"),
@@ -923,6 +925,24 @@ class EvaluateTests(unittest.TestCase):
             _has_test_behavior_change(
                 base_text.encode("utf-8"),
                 head_text.encode("utf-8"),
+                language="javascript",
+            )
+        )
+
+    def test_reordering_unchanged_test_callbacks_does_not_satisfy_verification(self) -> None:
+        base = (
+            "test('first', () => expect(page).toBeVisible());\n"
+            "test('second', () => expect(page).toBeHidden());\n"
+        )
+        head = (
+            "test('second', () => expect(page).toBeHidden());\n"
+            "test('first', () => expect(page).toBeVisible());\n"
+        )
+
+        self.assertFalse(
+            _has_test_behavior_change(
+                base.encode("utf-8"),
+                head.encode("utf-8"),
                 language="javascript",
             )
         )
@@ -1707,6 +1727,66 @@ class EvaluateTests(unittest.TestCase):
             self.assertTrue(result.test_changes)
             self.assertEqual(result.verification_risk, 0)
 
+    def test_unrelated_e2e_test_does_not_satisfy_pixi_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/render/boardScene.ts": "export const boardScene = 1;\n",
+                    "tests/e2e/smoke.spec.ts": (
+                        "test('smoke', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/render/boardScene.ts": "export const boardScene = 2;\n",
+                    "tests/e2e/smoke.spec.ts": (
+                        "test('smoke', () => expect(page).toHaveText('updated'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.missing_test_scopes, ("pixi-visual",))
+            self.assertFalse(result.test_changes)
+
+    def test_pixi_visual_snapshot_satisfies_pixi_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = "test('board', async () => expect(page).toHaveScreenshot('board.png'));\n"
+            write_snapshot(
+                base,
+                {
+                    "src/render/boardScene.ts": "export const boardScene = 1;\n",
+                    "tests/e2e/sprint-pixi-visual.spec.ts": owner,
+                    "tests/e2e/sprint-pixi-visual.spec.ts-snapshots/board-chromium-linux.png": (
+                        b"\x89PNG\r\n\x1a\nold"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/render/boardScene.ts": "export const boardScene = 2;\n",
+                    "tests/e2e/sprint-pixi-visual.spec.ts": owner,
+                    "tests/e2e/sprint-pixi-visual.spec.ts-snapshots/board-chromium-linux.png": (
+                        b"\x89PNG\r\n\x1a\nnew"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("pixi-visual", result.missing_test_scopes)
+            self.assertTrue(result.test_changes)
+            self.assertEqual(result.verification_risk, 0)
+
     def test_arbitrary_snapshot_text_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -1788,6 +1868,43 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertNotIn("simulation", result.missing_test_scopes)
             self.assertEqual(result.verification_risk, 0)
+
+    def test_vitest_snapshot_key_owned_by_skipped_test_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "const disabled = { skip: true };\n"
+                "it('skipped', disabled, () => expect({ value: 1 }).toMatchSnapshot());\n"
+                "it('active', () => expect({ value: 1 }).toMatchSnapshot());\n"
+            )
+            base_snapshot = (
+                "// Vitest Snapshot v1\n\n"
+                "exports[`skipped 1`] = `value: 1`;\n"
+                "\nexports[`active 1`] = `value: 1`;\n"
+            )
+            head_snapshot = base_snapshot.replace("value: 1", "value: 2")
+            write_snapshot(
+                base,
+                {
+                    "src/sim/engine.ts": "export const value = 1;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": base_snapshot,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": head_snapshot,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("simulation", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
 
     def test_conditional_suite_skip_does_not_invalidate_active_visual_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

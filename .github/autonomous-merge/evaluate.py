@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from collections import Counter
 import difflib
 import html
 import io
@@ -1171,13 +1172,26 @@ def _javascript_object_has_disabled_test_option(
     )
 
 
+def _javascript_unwrap_parenthesized_expression(expression: str) -> str:
+    """外側だけの括弧を対で剥がし、option変数の参照を解決できる形にする。"""
+
+    expression = expression.strip()
+    while expression.startswith("("):
+        argument_spans = _javascript_call_argument_span_index(expression).get(0)
+        if argument_spans is None or len(argument_spans) != 1:
+            break
+        inner_start, inner_end = argument_spans[0]
+        if inner_start != 1 or expression[inner_end:].strip() != ")":
+            break
+        expression = expression[inner_start:inner_end].strip()
+    return expression
+
+
 def _javascript_options_argument_is_disabled(
     options: str,
     disabled_option_variables: Iterable[str],
 ) -> bool:
-    options = options.lstrip()
-    if options.startswith("("):
-        options = options[1:].lstrip()
+    options = _javascript_unwrap_parenthesized_expression(options)
     if options.startswith("{") and _javascript_object_has_disabled_test_option(
         options,
         disabled_option_variables,
@@ -1415,9 +1429,41 @@ _PLAYWRIGHT_SCREENSHOT_CALL = re.compile(
 )
 _VITEST_SNAPSHOT_CALL = re.compile(r"\.\s*toMatchSnapshot\s*\(")
 _VITEST_SNAPSHOT_KEY = re.compile(r"exports\[\s*(['\"`])([^'\"`\r\n]+)\1\s*\]\s*=")
-_TEST_TITLE = re.compile(
-    r"\b(?:test|it|describe|suite|context)\s*\(\s*(['\"])(?P<title>[^'\"\r\n]+)\1"
-)
+
+
+def _javascript_static_test_title(arguments: Sequence[str]) -> str | None:
+    """test callbackに対応付けられる静的なtitleだけを返す。"""
+
+    if not arguments:
+        return None
+    match = re.fullmatch(
+        r"(['\"`])(?P<title>[^'\"`\r\n]*)\1",
+        arguments[0].strip(),
+    )
+    if match is None or "${" in match.group("title"):
+        return None
+    return match.group("title")
+
+
+def _vitest_snapshot_key_matches_title(snapshot_key: str, title: str) -> bool:
+    """Vitest標準keyが単独またはsuite配下のtest titleで始まるか確認する。"""
+
+    return snapshot_key == title or snapshot_key.startswith(f"{title} ") or (
+        f" > {title} " in f" {snapshot_key} "
+    )
+
+
+def _vitest_snapshot_callback_records(source: str) -> tuple[tuple[str, bool], ...]:
+    """snapshot呼び出しごとに、所有testのtitleと無効化状態を返す。"""
+
+    masked_source = _mask_javascript_literals(source)
+    records: list[tuple[str, bool]] = []
+    for _, body_start, body_end, disabled, title in _javascript_test_callback_records(source):
+        if title is None:
+            continue
+        if _VITEST_SNAPSHOT_CALL.search(masked_source, body_start, body_end):
+            records.append((title, disabled))
+    return tuple(records)
 
 
 def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry]) -> bool:
@@ -1459,8 +1505,8 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
         return False
 
     if runner == "vitest":
-        # Vitestのsnapshot fileは、所有testがあり、標準形式のexport keyが
-        # そのtestの静的なタイトルを含む場合だけbaselineとして受け入れる。
+        # Vitestのsnapshot fileは、各export keyが、そのkeyを生成した有効な
+        # test callbackへ対応付けられる場合だけbaselineとして受け入れる。
         snapshot_entry = head_snapshot.get(path)
         if snapshot_entry is None or snapshot_entry.kind != "blob":
             return False
@@ -1468,23 +1514,18 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
         if not snapshot_text.startswith("// Vitest Snapshot v1"):
             return False
         keys = [match.group(2) for match in _VITEST_SNAPSHOT_KEY.finditer(snapshot_text)]
-        titles = [match.group("title") for match in _TEST_TITLE.finditer(source)]
+        snapshot_callbacks = _vitest_snapshot_callback_records(source)
         return bool(
-            any(
-                not _is_inside_disabled_javascript_call(source, match.start())
-                for match in _VITEST_SNAPSHOT_CALL.finditer(source)
-            )
-            and keys
-            and titles
-            and any(
-                not _is_inside_disabled_javascript_call(source, match.start())
-                and not _is_inside_disabled_javascript_test_callback(
-                    disabled_test_callbacks,
-                    match.start(),
+            keys
+            and snapshot_callbacks
+            and all(
+                any(
+                    not disabled
+                    and _vitest_snapshot_key_matches_title(key, title)
+                    for title, disabled in snapshot_callbacks
                 )
-                for match in _VITEST_SNAPSHOT_CALL.finditer(source)
+                for key in keys
             )
-            and all(any(title and title in key for title in titles) for key in keys)
         )
 
     return False
@@ -1994,14 +2035,16 @@ def _javascript_callback_contains_disabled_call(
     return any(body_start <= start < body_end for start, _ in disabled_ranges)
 
 
-def _javascript_test_callback_spans(
+def _javascript_test_callback_records(
     source: str,
-) -> tuple[tuple[int, int, bool], ...]:
+) -> tuple[tuple[int, int, int, bool, str | None], ...]:
+    """test callbackの位置、無効化状態、静的titleを返す。"""
+
     masked_source = _mask_javascript_literals(source)
     disabled_ranges = _disabled_javascript_call_ranges(source)
     argument_span_index = _javascript_call_argument_span_index(source)
     disabled_option_variables = _javascript_disabled_test_option_variables(source)
-    callbacks: list[tuple[int, int, int, bool]] = []
+    callbacks: list[tuple[int, int, int, bool, str | None]] = []
     for call_start, open_index in _javascript_test_call_spans(source):
         argument_spans = _javascript_call_argument_spans(
             source,
@@ -2033,6 +2076,7 @@ def _javascript_test_callback_spans(
                     body_start,
                     body_end,
                 ),
+                _javascript_static_test_title(arguments),
             )
         )
     suite_argument_span_index = _javascript_call_argument_span_index(masked_source)
@@ -2042,12 +2086,16 @@ def _javascript_test_callback_spans(
     )
     scope_disabled_calls = _javascript_unconditional_scope_disabled_calls(
         masked_source,
-        tuple((call_start, body_start, body_end) for call_start, body_start, body_end, _ in callbacks),
+        tuple(
+            (call_start, body_start, body_end)
+            for call_start, body_start, body_end, _, _ in callbacks
+        ),
         suite_callbacks,
         argument_span_index=suite_argument_span_index,
     )
     return tuple(
         (
+            call_start,
             body_start,
             body_end,
             disabled
@@ -2055,8 +2103,18 @@ def _javascript_test_callback_spans(
                 call_start,
                 scope_disabled_calls,
             ),
+            title,
         )
-        for call_start, body_start, body_end, disabled in callbacks
+        for call_start, body_start, body_end, disabled, title in callbacks
+    )
+
+
+def _javascript_test_callback_spans(
+    source: str,
+) -> tuple[tuple[int, int, bool], ...]:
+    return tuple(
+        (body_start, body_end, disabled)
+        for _, body_start, body_end, disabled, _ in _javascript_test_callback_records(source)
     )
 
 
@@ -2134,6 +2192,8 @@ def _has_test_behavior_change(
     head_records = _javascript_test_behavior_records(head_data)
     base_behaviors = tuple(behavior for behavior, _ in base_records)
     head_behaviors = tuple(behavior for behavior, _ in head_records)
+    if Counter(base_records) == Counter(head_records):
+        return False
     if base_behaviors == head_behaviors:
         return False
     if (

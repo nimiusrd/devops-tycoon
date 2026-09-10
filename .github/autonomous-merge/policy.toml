@@ -69,7 +69,18 @@ test_removal_risk = 20
 [[verification.scopes]]
 name = "visual"
 fallback = false
-excluded_code_globs = ["public/assets/audio/**"]
+excluded_code_globs = [
+  "public/assets/audio/**",
+  "src/render/**",
+  "src/ui/BoardPixiLayer.tsx",
+  "src/ui/DeptPixiBoard.tsx",
+  "src/ui/OrgPixiField.tsx",
+  "src/ui/WebglLoading.tsx",
+  "src/ui/WebglScene.tsx",
+  "src/ui/WebglStatusOverlay.tsx",
+  "src/ui/lazyWebgl.ts",
+  "src/ui/usePixiRenderer.ts",
+]
 code_globs = [
   "index.html",
   "src/**/*.css",
@@ -87,6 +98,28 @@ test_globs = [
 ]
 binary_test_globs = [
   "tests/**/*-snapshots/**/*.png",
+]
+
+[[verification.scopes]]
+name = "pixi-visual"
+fallback = false
+code_globs = [
+  "src/render/**",
+  "src/ui/BoardPixiLayer.tsx",
+  "src/ui/DeptPixiBoard.tsx",
+  "src/ui/OrgPixiField.tsx",
+  "src/ui/WebglLoading.tsx",
+  "src/ui/WebglScene.tsx",
+  "src/ui/WebglStatusOverlay.tsx",
+  "src/ui/lazyWebgl.ts",
+  "src/ui/usePixiRenderer.ts",
+]
+test_globs = [
+  "tests/e2e/**/*-pixi-visual.spec.ts",
+  "tests/e2e/**/*-pixi-visual.spec.ts-snapshots/**/*.png",
+]
+binary_test_globs = [
+  "tests/e2e/**/*-pixi-visual.spec.ts-snapshots/**/*.png",
 ]
 
 [[verification.scopes]]

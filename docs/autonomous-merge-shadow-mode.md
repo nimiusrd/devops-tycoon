@@ -27,7 +27,7 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 | --- | --- | --- |
 | `.github/workflows/**`、`.github/actions/**`、`scripts/check-balance.mjs`、`.devcontainer/**`、`.codex/environments/**`、`.codex/config.toml`、`.codex/config.toml.example`、`.nvmrc` | Hard Gate | CI判定・実行環境・Codex権限を変更するため |
 | `package.json`、`package-lock.json`、`npm-shrinkwrap.json`、`.npmrc`、`*.config.*`、`tsconfig*.json` | Hard Gate | 依存関係・npm実行環境・ビルド・テスト契約を変更するため |
-| `.prettierrc.json`、`.prettierignore` | Hard Gate | フォーマット設定や対象範囲を変更するため |
+| `.prettierrc*`、`.prettierignore` | Hard Gate | Prettierが探索する設定形式、または対象範囲を変更するため |
 | `.gitmodules`、Git treeのgitlink（mode `160000`） | Hard Gate | submodule構成または参照SHAを変更するため |
 | `src/state/**`、`src/game.ts` | Hard Gate | セーブ、永続化、状態遷移を束ねる中核のため |
 | `src/sim/run/**`、`src/sim/engine.ts`、`src/sim/rng.ts`、`src/sim/seed.ts` | Hard Gate | ラン進行とseed再現性の中核であるため |
@@ -45,6 +45,8 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。
 
 検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに実際のrunnerが探索するsuffix（Vitest unit/srcは`.test.ts`/`.spec.ts`、playtestは`.test.ts`のみ、Playwright e2eは`.test.ts`/`.spec.ts`）の追加行がある通常blobのテストを要求します。`src/**/*.test.ts` / `src/**/*.spec.ts`などglobal test globに一致するファイルはscopeのコード変更から除外します。コメント・空白だけの追加や、コメント化によって実行可能コードが減るテスト変更は検証変更として扱わず、削除リスクを加算します。Pythonのverificationは、Shadow workflowが実際にdiscoverする`.github/autonomous-merge/test_*.py`だけを対象にし、Python tokenizerで`#`コメントを除去して比較します。`public/assets/audio/**`はvisual scopeから除外してaudio scopeで扱います。visual scopeのbinary検証は、実際にこのリポジトリで生成されるPNG（`tests/**/*-snapshots/**/*.png`）に一致し、かつ所有specの`toHaveScreenshot()`が生成名を参照する場合だけ受け入れます。Vitest snapshot（`tests/**/__snapshots__/**/*.snap`）は所有testの`toMatchSnapshot()`と標準snapshot keyが対応する場合だけ、simulation/data scopeの検証として受け入れます。snapshotディレクトリ内の未参照PNG、READMEなど任意テキスト、通常のbinary testは除外します。削除・純減・symlink化のテスト変更、または追加行が`.skip`・`.fixme`・`.todo`・`.skipIf`・`.runIf`で無効化する変更には検証充足を与えず、削除リスクを加算します。`test.concurrent.skip`や`test.skip.concurrent`、`test['skip']`、`test[\`skip\`]`、`test?.skip`、`it["todo"]`のようなcomputed propertyやoptional chainingを含む連結modifierは改行を挟んでも無効化として扱います。Pythonでは`unittest.skip`・`unittest.skipIf`・`unittest.skipUnless`・`pytest.mark.skip`・`pytest.mark.skipif`も同様に扱います。template literalの`${...}`内のコメントも実行内容を変えない変更として除外し、コード部分の空白だけを正規化して文字列・template・正規表現リテラル内の意味のある空白は保持します。同内容の純粋renameは削除リスクだけでなく検証充足からも除外し、Playwright、通常Vitest、playtest、Pythonのrunnerを跨ぐrenameは除外しません。Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。snapshot entryにはGitの実行権限（`100644` / `100755`）も保持し、内容が同じmode-only変更も差分として扱います。不正UTF-8を含むblobはbinaryとして保守的に扱い、実際のbyte列が同じ行へ置換されないようにします。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにし、snapshot読込みも1ファイル8MB・1評価64MB・各snapshot 50,000ファイルまでに制限します。
+
+条件付きのfile-level skip（例: `test.skip(!pixiE2e, ...)`）は、そのskip呼び出しの引数内にない有効なsnapshot参照を無効化しません。一方、skipされたtestまたはsuiteの中にある参照は検証として受け入れません。さらに、テストファイルの行数が増えていても、実行可能なtest宣言またはassertionの純減を検出した場合はテスト削除リスクを加算します。`src/utils/publicUrl.ts`は画像・WebGLテクスチャ・音源で共有されるため、visualとaudioの両scopeで対応する検証を要求します。
 
 ## ローカル実行
 

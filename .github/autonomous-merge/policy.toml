@@ -73,6 +73,7 @@ excluded_code_globs = ["public/assets/audio/**"]
 code_globs = [
   "index.html",
   "src/**/*.css",
+  "src/utils/publicUrl.ts",
   "src/ui/**",
   "src/render/**",
   "src/App.tsx",
@@ -126,7 +127,7 @@ test_globs = [
 [[verification.scopes]]
 name = "audio"
 fallback = false
-code_globs = ["src/audio/**", "public/assets/audio/**"]
+code_globs = ["src/audio/**", "src/utils/publicUrl.ts", "public/assets/audio/**"]
 test_globs = [
   "tests/unit/audio/**/*.test.ts",
   "tests/unit/audio/**/*.spec.ts",
@@ -279,7 +280,7 @@ hard_gate = true
 reason = "ビルド・テスト設定の変更"
 
 [[path_rules]]
-pattern = ".prettierrc.json"
+pattern = ".prettierrc*"
 risk = 100
 hard_gate = true
 reason = "Prettier設定の変更"

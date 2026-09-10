@@ -850,6 +850,60 @@ def _regex_for_fingerprint(
     return f"/R/{value[close + 1 :]}", end
 
 
+def _javascript_call_end(text: str, open_index: int) -> int | None:
+    """開き括弧に対応するJavaScript呼び出しの終端を返す。"""
+
+    depth = 0
+    index = open_index
+    while index < len(text):
+        character = text[index]
+        if character in {"'", '"', "`"}:
+            quote = character
+            index += 1
+            while index < len(text):
+                if text[index] == "\\":
+                    index += 2
+                    continue
+                if text[index] == quote:
+                    index += 1
+                    break
+                index += 1
+            continue
+        if character == "/":
+            regex = _read_regex_literal(text, index)
+            if regex is not None:
+                index = regex[2]
+                continue
+        if character == "(":
+            depth += 1
+        elif character == ")":
+            depth -= 1
+            if depth == 0:
+                return index + 1
+        index += 1
+    return None
+
+
+def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]:
+    """無効化modifierを持つ呼び出しの引数範囲を返す。"""
+
+    ranges: list[tuple[int, int]] = []
+    for match in _DISABLED_TEST_CALL.finditer(source):
+        open_index = match.end()
+        while open_index < len(source) and source[open_index].isspace():
+            open_index += 1
+        if open_index >= len(source) or source[open_index] != "(":
+            continue
+        end = _javascript_call_end(source, open_index)
+        if end is not None:
+            ranges.append((match.start(), end))
+    return tuple(ranges)
+
+
+def _is_inside_disabled_javascript_call(source: str, position: int) -> bool:
+    return any(start <= position < end for start, end in _disabled_javascript_call_ranges(source))
+
+
 def _test_runner(path: str) -> str | None:
     """リポジトリ内でテストを実行するrunnerを、pathの規約から分類する。"""
 
@@ -919,8 +973,6 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
             return False
     elif owner_runner != runner:
         return False
-    if _contains_disabled_test_call(None, owner.data, language="javascript"):
-        return False
     source = _strip_javascript_comments(owner.data)
 
     if runner == "playwright":
@@ -933,7 +985,8 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
                 expected_name += ".png"
             expected_stem = expected_name[: -len(".png")]
             if snapshot_stem == f"{expected_stem}-chromium-linux":
-                return True
+                if not _is_inside_disabled_javascript_call(source, match.start()):
+                    return True
         return False
 
     if runner == "vitest":
@@ -948,7 +1001,10 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
         keys = [match.group(2) for match in _VITEST_SNAPSHOT_KEY.finditer(snapshot_text)]
         titles = [match.group("title") for match in _TEST_TITLE.finditer(source)]
         return bool(
-            _VITEST_SNAPSHOT_CALL.search(source)
+            any(
+                not _is_inside_disabled_javascript_call(source, match.start())
+                for match in _VITEST_SNAPSHOT_CALL.finditer(source)
+            )
             and keys
             and titles
             and all(any(title and title in key for title in titles) for key in keys)
@@ -1224,6 +1280,90 @@ def _test_code_structure_fingerprint(
     )
 
 
+_JAVASCRIPT_TEST_DECLARATION = re.compile(
+    r"\b(?:test|it|describe|suite|specify|context)"
+    r"(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
+)
+_JAVASCRIPT_ASSERTION = re.compile(
+    r"\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
+)
+
+
+def _python_test_shape(data: bytes | None) -> tuple[int, int]:
+    if data is None or _is_binary(data):
+        return (0, 0)
+    text = data.decode("utf-8", errors="replace")
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (IndentationError, SyntaxError, tokenize.TokenError, ValueError):
+        return (
+            len(re.findall(r"(?m)^\s*(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\(", text)),
+            len(re.findall(r"(?m)^\s*assert\b", text))
+            + len(re.findall(r"\bself\s*\.\s*assert[A-Za-z0-9_]*\s*\(", text)),
+        )
+
+    meaningful = [
+        token
+        for token in tokens
+        if token.type
+        not in {
+            tokenize.COMMENT,
+            tokenize.ENCODING,
+            tokenize.ENDMARKER,
+            tokenize.INDENT,
+            tokenize.DEDENT,
+            tokenize.NEWLINE,
+            tokenize.NL,
+            tokenize.STRING,
+        }
+    ]
+    declarations = 0
+    assertions = 0
+    for index, token in enumerate(meaningful):
+        if token.type == tokenize.NAME and token.string == "def":
+            if index + 1 < len(meaningful):
+                name = meaningful[index + 1]
+                if name.type == tokenize.NAME and name.string.startswith("test_"):
+                    declarations += 1
+        if token.type == tokenize.NAME and token.string == "assert":
+            assertions += 1
+        if (
+            token.type == tokenize.NAME
+            and token.string.startswith("assert")
+            and index > 0
+            and meaningful[index - 1].type == tokenize.OP
+            and meaningful[index - 1].string == "."
+        ):
+            assertions += 1
+    return declarations, assertions
+
+
+def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
+    if data is None:
+        return (0, 0)
+    if language == "python":
+        return _python_test_shape(data)
+    normalized = _normalize_javascript_whitespace(
+        _strip_javascript_comments(data),
+        preserve_literal_content=False,
+    )
+    return (
+        len(_JAVASCRIPT_TEST_DECLARATION.findall(normalized)),
+        len(_JAVASCRIPT_ASSERTION.findall(normalized)),
+    )
+
+
+def _has_executable_test_reduction(
+    base_data: bytes | None,
+    head_data: bytes | None,
+    *,
+    language: str,
+) -> bool:
+    base_shape = _test_shape(base_data, language=language)
+    head_shape = _test_shape(head_data, language=language)
+    return any(head < base for base, head in zip(base_shape, head_shape))
+
+
 def _has_executable_test_change(
     base_data: bytes | None,
     head_data: bytes,
@@ -1265,6 +1405,10 @@ def _is_usable_test_change(
         head_entry.data,
         language=language,
     ) and not _contains_disabled_test_call(
+        base_data,
+        head_entry.data,
+        language=language,
+    ) and not _has_executable_test_reduction(
         base_data,
         head_entry.data,
         language=language,
@@ -1332,6 +1476,19 @@ def _has_test_removal(
                 base_entry.data if base_entry is not None else None,
                 head_entry.data if head_entry is not None else None,
                 language=_test_language(item.path),
+            ):
+                return True
+            if (
+                not item.binary
+                and base_entry is not None
+                and base_entry.kind == "blob"
+                and head_entry is not None
+                and head_entry.kind == "blob"
+                and _has_executable_test_reduction(
+                    base_entry.data,
+                    head_entry.data,
+                    language=_test_language(item.path),
+                )
             ):
                 return True
             if (

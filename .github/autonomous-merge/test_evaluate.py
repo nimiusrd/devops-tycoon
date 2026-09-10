@@ -100,6 +100,38 @@ class EvaluateTests(unittest.TestCase):
                 POLICY.missing_test_risk + POLICY.test_removal_risk,
             )
 
+    def test_replacing_a_test_with_a_longer_helper_adds_removal_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/assetUrl.test.ts": (
+                        "it('builds the URL', () => expect(buildUrl('/')).toBe('/'));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/assetUrl.test.ts": (
+                        "const renderFixture = {\n"
+                        "  component: 'asset-url',\n"
+                        "  label: 'builds the URL',\n"
+                        "};\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+            self.assertFalse(result.test_changes)
+            self.assertIn("src-fallback", result.missing_test_scopes)
+
     def test_disabling_a_test_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -107,14 +139,14 @@ class EvaluateTests(unittest.TestCase):
             write_snapshot(
                 base,
                 {
-                    "src/utils/publicUrl.ts": "export const url = '/';\n",
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
                     "tests/unit/utils/publicUrl.test.ts": "it('builds the URL', () => {});\n",
                 },
             )
             write_snapshot(
                 head,
                 {
-                    "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                     "tests/unit/utils/publicUrl.test.ts": "it.skip('builds the URL', () => {});\n",
                 },
             )
@@ -134,14 +166,14 @@ class EvaluateTests(unittest.TestCase):
                     write_snapshot(
                         base,
                         {
-                            "src/utils/publicUrl.ts": "export const url = '/';\n",
+                            "src/utils/assetUrl.ts": "export const url = '/';\n",
                             "tests/unit/utils/publicUrl.test.ts": "test('builds the URL', () => {});\n",
                         },
                     )
                     write_snapshot(
                         head,
                         {
-                            "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                            "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                             "tests/unit/utils/publicUrl.test.ts": f"{disabled_call}('builds the URL', () => {{}});\n",
                         },
                     )
@@ -166,14 +198,14 @@ class EvaluateTests(unittest.TestCase):
                     write_snapshot(
                         base,
                         {
-                            "src/utils/publicUrl.ts": "export const url = '/';\n",
+                            "src/utils/assetUrl.ts": "export const url = '/';\n",
                             "tests/unit/utils/publicUrl.test.ts": "test('builds the URL', () => {});\n",
                         },
                     )
                     write_snapshot(
                         head,
                         {
-                            "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                            "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                             "tests/unit/utils/publicUrl.test.ts": f"{disabled_call}('builds the URL', () => {{}});\n",
                         },
                     )
@@ -199,14 +231,14 @@ class EvaluateTests(unittest.TestCase):
                     write_snapshot(
                         base,
                         {
-                            "src/utils/publicUrl.ts": "export const url = '/';\n",
+                            "src/utils/assetUrl.ts": "export const url = '/';\n",
                             "tests/unit/utils/publicUrl.test.ts": "test('builds the URL', () => {});\n",
                         },
                     )
                     write_snapshot(
                         head,
                         {
-                            "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                            "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                             "tests/unit/utils/publicUrl.test.ts": f"{disabled_call}('builds the URL', () => {{}});\n",
                         },
                     )
@@ -224,14 +256,14 @@ class EvaluateTests(unittest.TestCase):
             write_snapshot(
                 base,
                 {
-                    "src/utils/publicUrl.ts": "export const url = '/';\n",
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
                     "tests/unit/utils/publicUrl.test.ts": "test(`widget ${value}`, () => {});\n",
                 },
             )
             write_snapshot(
                 head,
                 {
-                    "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                     "tests/unit/utils/publicUrl.test.ts": "test(`widget ${/* only a comment */ value}`, () => {});\n",
                 },
             )
@@ -584,8 +616,8 @@ class EvaluateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
             head = Path(directory) / "head"
-            write_snapshot(base, {"src/utils/publicUrl.ts": "export const url = '/';\n"})
-            write_snapshot(head, {"src/utils/publicUrl.ts": "export const url = '/app/';\n"})
+            write_snapshot(base, {"src/utils/assetUrl.ts": "export const url = '/';\n"})
+            write_snapshot(head, {"src/utils/assetUrl.ts": "export const url = '/app/';\n"})
 
             result = assess(base, head, POLICY)
 
@@ -597,11 +629,11 @@ class EvaluateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
             head = Path(directory) / "head"
-            write_snapshot(base, {"src/utils/publicUrl.ts": "export const url = '/';\n"})
+            write_snapshot(base, {"src/utils/assetUrl.ts": "export const url = '/';\n"})
             write_snapshot(
                 head,
                 {
-                    "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                     "src/utils/publicUrl.test.ts": "it('builds the public URL', () => {});\n",
                 },
             )
@@ -611,6 +643,31 @@ class EvaluateTests(unittest.TestCase):
             self.assertNotIn("src-fallback", result.missing_test_scopes)
             self.assertEqual(result.verification_risk, 0)
             self.assertEqual(result.test_changes, True)
+
+    def test_shared_public_url_helper_requires_visual_and_audio_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/publicUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": "it('builds the URL', () => {});\n",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/publicUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": "it('builds the app URL', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertIn("audio", result.missing_test_scopes)
+            self.assertNotIn("src-fallback", result.missing_test_scopes)
 
     def test_static_asset_change_requires_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -894,30 +951,38 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("エージェントskill", " ".join(result.hard_gate_reasons))
 
     def test_prettier_configuration_is_a_hard_gate(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            base = Path(directory) / "base"
-            head = Path(directory) / "head"
-            write_snapshot(
-                base,
-                {
-                    ".prettierrc.json": '{"semi": true}\n',
-                    ".prettierignore": "dist\n",
-                },
-            )
-            write_snapshot(
-                head,
-                {
-                    ".prettierrc.json": '{"semi": false}\n',
-                    ".prettierignore": "**\n",
-                },
-            )
+        prettier_config_paths = (
+            ".prettierrc",
+            ".prettierrc.json",
+            ".prettierrc.json5",
+            ".prettierrc.yml",
+            ".prettierrc.yaml",
+            ".prettierrc.toml",
+            ".prettierrc.js",
+            ".prettierrc.cjs",
+            ".prettierrc.mjs",
+            ".prettierrc.ts",
+            ".prettierrc.cts",
+            ".prettierrc.mts",
+        )
+        for relative_path in (*prettier_config_paths, ".prettierignore"):
+            with self.subTest(relative_path=relative_path):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(base, {relative_path: "semi = true\n"})
+                    write_snapshot(head, {relative_path: "semi = false\n"})
 
-            result = assess(base, head, POLICY)
+                    result = assess(base, head, POLICY)
 
-            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
-            reasons = " ".join(result.hard_gate_reasons)
-            self.assertIn("Prettier設定", reasons)
-            self.assertIn("Prettier対象除外設定", reasons)
+                    self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+                    reasons = " ".join(result.hard_gate_reasons)
+                    expected_reason = (
+                        "Prettier対象除外設定"
+                        if relative_path == ".prettierignore"
+                        else "Prettier設定"
+                    )
+                    self.assertIn(expected_reason, reasons)
 
     def test_webgl_build_helper_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1038,6 +1103,38 @@ class EvaluateTests(unittest.TestCase):
             result = assess(base, head, POLICY)
 
             self.assertNotIn("simulation", result.missing_test_scopes)
+            self.assertEqual(result.verification_risk, 0)
+
+    def test_conditional_suite_skip_does_not_invalidate_active_visual_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "const pixiE2e = process.env.PIXI_E2E !== '0';\n"
+                "test.skip(!pixiE2e, 'Pixi is disabled');\n"
+                "test('renders', async () => "
+                "expect(page).toHaveScreenshot('widget.png'));\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("visual", result.missing_test_scopes)
             self.assertEqual(result.verification_risk, 0)
 
     def test_skipped_playwright_snapshot_does_not_satisfy_visual_verification(self) -> None:
@@ -1367,11 +1464,11 @@ class EvaluateTests(unittest.TestCase):
             write_snapshot(
                 base,
                 {
-                    "src/utils/publicUrl.ts": "export const url = '/';\n",
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
                     "tests/unit/utils/publicUrl.test.ts": "it('builds the URL', () => {});\n",
                 },
             )
-            write_snapshot(head, {"src/utils/publicUrl.ts": "export const url = '/app/';\n"})
+            write_snapshot(head, {"src/utils/assetUrl.ts": "export const url = '/app/';\n"})
             head_symlinks = Path(directory) / "head.symlinks"
             head_symlinks.write_bytes(
                 ("a" * 40 + "\ttests/unit/utils/publicUrl.test.ts\0").encode("ascii")

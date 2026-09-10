@@ -358,6 +358,7 @@ MAX_SNAPSHOT_FILE_BYTES = 8_000_000
 MAX_SNAPSHOT_TOTAL_BYTES = 64_000_000
 MAX_SNAPSHOT_FILES = 50_000
 MAX_MANIFEST_RECORD_BYTES = 1_000_000
+MAX_TEST_BEHAVIOR_RECORDS = 512
 
 
 def _iter_nul_records(manifest_file: Any) -> Iterable[bytes]:
@@ -714,6 +715,9 @@ _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND = re.compile(
 _JAVASCRIPT_OBJECT_VARIABLE = re.compile(
     r"\b(?:const|let|var)\s+(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*\{"
 )
+_JAVASCRIPT_OBJECT_SPREAD = re.compile(
+    r"(?:^|[{,])\s*\.\.\.\s*(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\b"
+)
 
 
 _PYTHON_DISABLED_DECORATORS = frozenset(
@@ -936,12 +940,15 @@ def _javascript_disabled_call_source(data: bytes | None) -> str:
     return _mask_javascript_literals(_strip_javascript_comments(data))
 
 
-def _javascript_call_arguments(source: str, open_index: int) -> tuple[str, ...] | None:
-    """JavaScript呼び出しのトップレベル引数を、文字列を跨がずに分割する。"""
+def _javascript_call_argument_spans(
+    source: str,
+    open_index: int,
+) -> tuple[tuple[int, int], ...] | None:
+    """JavaScript呼び出しのトップレベル引数のsource上の範囲を返す。"""
 
     if open_index >= len(source) or source[open_index] != "(":
         return None
-    arguments: list[str] = []
+    spans: list[tuple[int, int]] = []
     argument_start = open_index + 1
     parentheses = 0
     brackets = 0
@@ -970,8 +977,8 @@ def _javascript_call_arguments(source: str, open_index: int) -> tuple[str, ...] 
             parentheses += 1
         elif character == ")":
             if parentheses == brackets == braces == 0:
-                arguments.append(source[argument_start:index])
-                return tuple(arguments)
+                spans.append((argument_start, index))
+                return tuple(spans)
             if parentheses > 0:
                 parentheses -= 1
         elif character == "[":
@@ -985,10 +992,19 @@ def _javascript_call_arguments(source: str, open_index: int) -> tuple[str, ...] 
             if braces > 0:
                 braces -= 1
         elif character == "," and parentheses == brackets == braces == 0:
-            arguments.append(source[argument_start:index])
+            spans.append((argument_start, index))
             argument_start = index + 1
         index += 1
     return None
+
+
+def _javascript_call_arguments(source: str, open_index: int) -> tuple[str, ...] | None:
+    """JavaScript呼び出しのトップレベル引数を、文字列を跨がずに分割する。"""
+
+    spans = _javascript_call_argument_spans(source, open_index)
+    if spans is None:
+        return None
+    return tuple(source[start:end] for start, end in spans)
 
 
 def _javascript_braced_end(source: str, open_index: int) -> int | None:
@@ -1027,21 +1043,39 @@ def _javascript_braced_end(source: str, open_index: int) -> int | None:
     return None
 
 
-def _javascript_object_has_disabled_test_option(source: str) -> bool:
-    return bool(
+def _javascript_object_has_disabled_test_option(
+    source: str,
+    disabled_option_variables: Iterable[str] = (),
+) -> bool:
+    if (
         _JAVASCRIPT_DISABLED_TEST_OPTION.search(source)
         or _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND.search(source)
+    ):
+        return True
+    disabled_options = frozenset(disabled_option_variables)
+    return any(
+        match.group("name") in disabled_options
+        for match in _JAVASCRIPT_OBJECT_SPREAD.finditer(source)
     )
 
 
 def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
-    variables: set[str] = set()
+    object_sources: dict[str, str] = {}
     for match in _JAVASCRIPT_OBJECT_VARIABLE.finditer(source):
         object_end = _javascript_braced_end(source, match.end() - 1)
-        if object_end is not None and _javascript_object_has_disabled_test_option(
-            source[match.end() - 1 : object_end]
-        ):
-            variables.add(match.group("name"))
+        if object_end is not None:
+            object_sources[match.group("name")] = source[match.end() - 1 : object_end]
+
+    variables: set[str] = set()
+    changed = True
+    while changed:
+        changed = False
+        for name, object_source in object_sources.items():
+            if name in variables:
+                continue
+            if _javascript_object_has_disabled_test_option(object_source, variables):
+                variables.add(name)
+                changed = True
     return frozenset(variables)
 
 
@@ -1055,7 +1089,10 @@ def _javascript_disabled_test_option_count(source: str) -> int:
         options = arguments[1].lstrip()
         if options.startswith("("):
             options = options[1:].lstrip()
-        if options.startswith("{") and _javascript_object_has_disabled_test_option(options):
+        if options.startswith("{") and _javascript_object_has_disabled_test_option(
+            options,
+            disabled_option_variables,
+        ):
             count += 1
             continue
         option_name = re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", options)
@@ -1583,24 +1620,38 @@ def _has_executable_test_reduction(
 
 
 def _javascript_test_behavior_fingerprint(data: bytes | None) -> tuple[str, ...]:
-    return tuple(
-        behavior
-        for behavior, _ in _javascript_test_behavior_records(data)
-    )
+    return tuple(behavior for behavior, _ in _javascript_test_behavior_records(data))
 
 
-def _javascript_test_body_argument(arguments: Sequence[str]) -> str | None:
-    """test呼び出しからtitle/optionsを除いたcallback引数を取り出す。"""
+def _javascript_test_body_argument_index(arguments: Sequence[str]) -> int | None:
+    """test呼び出しのinline callback引数の位置を返す。"""
 
-    for argument in reversed(arguments[1:]):
+    for index in range(len(arguments) - 1, 0, -1):
+        argument = arguments[index]
         candidate = argument.strip()
         if (
             "=>" in candidate
             or re.search(r"\bfunction\b", candidate)
-            or re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", candidate)
         ):
-            return candidate
+            return index
     return None
+
+
+def _javascript_test_body_argument(arguments: Sequence[str]) -> str | None:
+    """test呼び出しからtitle/optionsを除いたinline callbackを取り出す。"""
+
+    index = _javascript_test_body_argument_index(arguments)
+    return arguments[index].strip() if index is not None else None
+
+
+def _javascript_callback_contains_disabled_call(
+    disabled_ranges: Sequence[tuple[int, int]],
+    body_start: int,
+    body_end: int,
+) -> bool:
+    """callback内のruntime skip/fixme/todoを、そのtest全体の無効化として扱う。"""
+
+    return any(body_start <= start < body_end for start, _ in disabled_ranges)
 
 
 def _javascript_test_behavior_records(
@@ -1612,16 +1663,24 @@ def _javascript_test_behavior_records(
     disabled_ranges = _disabled_javascript_call_ranges(source)
     behaviors: list[tuple[str, bool]] = []
     for match in _JAVASCRIPT_TEST_CALL.finditer(source):
-        arguments = _javascript_call_arguments(source, match.end() - 1)
-        if arguments is None:
+        argument_spans = _javascript_call_argument_spans(source, match.end() - 1)
+        if argument_spans is None:
             continue
-        body = _javascript_test_body_argument(arguments)
-        if body is None:
+        arguments = tuple(source[start:end] for start, end in argument_spans)
+        body_index = _javascript_test_body_argument_index(arguments)
+        if body_index is None:
             continue
+        body_start, body_end = argument_spans[body_index]
+        body = source[body_start:body_end].strip()
         behaviors.append(
             (
                 _normalize_javascript_whitespace(body),
-                any(start <= match.start() < end for start, end in disabled_ranges),
+                any(start <= match.start() < end for start, end in disabled_ranges)
+                or _javascript_callback_contains_disabled_call(
+                    disabled_ranges,
+                    body_start,
+                    body_end,
+                ),
             )
         )
     return tuple(behaviors)
@@ -1669,6 +1728,13 @@ def _has_test_behavior_change(
     base_behaviors = tuple(behavior for behavior, _ in base_records)
     head_behaviors = tuple(behavior for behavior, _ in head_records)
     if base_behaviors == head_behaviors:
+        return False
+    if (
+        len(base_records) > MAX_TEST_BEHAVIOR_RECORDS
+        or len(head_records) > MAX_TEST_BEHAVIOR_RECORDS
+    ):
+        # 大きな入力ではSequenceMatcherの二次時間を避け、対応関係を証明できない
+        # 変更を検証済みとは扱わない。Shadow Modeでは人手レビュー側へ倒す。
         return False
     matcher = difflib.SequenceMatcher(
         a=base_behaviors,

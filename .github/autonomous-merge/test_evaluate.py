@@ -7,9 +7,11 @@ from unittest.mock import patch
 
 from evaluate import (
     EvaluationError,
+    MAX_TEST_BEHAVIOR_RECORDS,
     MAX_SNAPSHOT_FILE_BYTES,
     _ensure_within_base,
     _escape_markdown,
+    _has_test_behavior_change,
     _line_changes,
     _markdown,
     _read_snapshot,
@@ -309,6 +311,12 @@ class EvaluateTests(unittest.TestCase):
             ("const options = { skip: true };\n", "options"),
             ("const options = { todo: true };\n", "options"),
             ("const skip = true;\nconst options = { skip };\n", "options"),
+            ("const disabled = { skip: true };\n", "{ ...disabled }"),
+            ("const disabled = { todo: true };\n", "{ ...disabled }"),
+            (
+                "const disabled = { skip: true };\nconst options = { ...disabled };\n",
+                "options",
+            ),
         ):
             with self.subTest(declaration=declaration, options=options):
                 with tempfile.TemporaryDirectory() as directory:
@@ -561,6 +569,82 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
+
+    def test_runtime_skip_inside_test_body_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner_base = (
+                "test('renders', () => {\n"
+                "  test.skip(true, 'temporarily disabled');\n"
+                "  expect(page).toBeVisible();\n"
+                "});\n"
+            )
+            owner_head = owner_base.replace("toBeVisible()", "toHaveText('updated')")
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner_base,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner_head,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_callback_alias_change_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "const oldCallback = () => expect(page).toBeVisible();\n"
+                        "test('renders', oldCallback);\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "const newCallback = () => expect(page).toBeVisible();\n"
+                        "test('renders', newCallback);\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_large_test_behavior_change_fails_closed_before_sequence_matching(self) -> None:
+        base_text = "\n".join(
+            "test('generated', () => expect(page).toBeVisible());"
+            for _ in range(MAX_TEST_BEHAVIOR_RECORDS + 1)
+        )
+        head_text = base_text.replace("toBeVisible()", "toHaveText('updated')", 1)
+
+        self.assertFalse(
+            _has_test_behavior_change(
+                base_text.encode("utf-8"),
+                head_text.encode("utf-8"),
+                language="javascript",
+            )
+        )
 
     def test_string_literal_whitespace_is_part_of_test_change(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

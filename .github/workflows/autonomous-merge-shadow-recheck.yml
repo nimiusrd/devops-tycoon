@@ -29,6 +29,51 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Invalidate previous shadow result before recheck
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ matrix.pr.number }}
+          BASE_REF_NAME: ${{ matrix.pr.base_ref_name }}
+          BASE_SHA: ${{ matrix.pr.base_sha }}
+          HEAD_SHA: ${{ matrix.pr.head_sha }}
+        run: |
+          set -euo pipefail
+          current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+          if [[ "${current_state}" != "open" || "${BASE_REF_NAME}" != "main" || \
+            "${current_base_ref}" != "main" || "${current_base_ref}" != "${BASE_REF_NAME}" || \
+            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" ]]; then
+            echo "Skipping stale shadow recheck invalidation for PR #${PR_NUMBER}"
+            exit 0
+          fi
+          existing_comment_id="$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+          if [[ -z "${existing_comment_id}" ]]; then
+            echo "No previous shadow result exists for PR #${PR_NUMBER}"
+            exit 0
+          fi
+          report_body="$(cat <<EOF
+          ## Autonomous Merge Shadow Mode
+
+          > 最新のbase push後状態を再評価中です。前回のShadow Mode判定は無効化されました。
+
+          | 指標 | 値 |
+          | --- | --- |
+          | Decision | \`HUMAN_REVIEW_REQUIRED\` |
+          | Reason | \`EVALUATION_IN_PROGRESS\` |
+          | Comparison base SHA | \`${BASE_SHA}\` |
+          | Head SHA | \`${HEAD_SHA}\` |
+          EOF
+          )"
+          full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
+          payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
+          gh api --method PATCH \
+            "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
+            --input - <<<"${payload}" >/dev/null
+
       - name: Re-evaluate open PR against current base
         env:
           GH_TOKEN: ${{ github.token }}

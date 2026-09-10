@@ -783,7 +783,7 @@ def _scope_has_usable_test_change(
 
 
 _DISABLED_TEST_CALL = re.compile(
-    r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
+    r"(?<![A-Za-z0-9_$?.'\"`])\b(?P<binding>test|it|describe|suite|specify|context)"
     r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf|fail|fails)\b|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf|fail|fails)['\"`]\s*\])"
 )
@@ -794,12 +794,6 @@ _JAVASCRIPT_TEST_INFO_MODIFIER_CALL = re.compile(
 )
 _JAVASCRIPT_DESTRUCTURED_TEST_CONTEXT_MODIFIER_CALL = re.compile(
     r"\b(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*\("
-)
-_JAVASCRIPT_TEST_CALL = re.compile(
-    r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)"
-    r"(?:(?:\s*(?:\.\s*|\?\.\s*)(?!(?:describe|suite)\b)[A-Za-z_$][A-Za-z0-9_$]*)"
-    r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`](?!(?:describe|suite)['\"`])[A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
-    r"\s*\("
 )
 _JAVASCRIPT_SUITE_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])(?:\b(?:describe|suite|context)|"
@@ -814,9 +808,6 @@ _JAVASCRIPT_PARAMETERIZED_SUITE_CALL = re.compile(
     r"(?:(?:\s*(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)"
     r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*(?:\.\s*|\?\.\s*)(?:each|for)\s*\("
-)
-_JAVASCRIPT_PARAMETERIZED_TEST_CALL = re.compile(
-    r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)\s*(?:\.\s*|\?\.\s*)each\s*\("
 )
 _JAVASCRIPT_DISABLED_TEST_OPTION = re.compile(
     r"(?:^|[{,])\s*(?:(?:skip|todo|fails)|\[\s*['\"`](?:skip|todo|fails)['\"`]\s*\])"
@@ -1565,9 +1556,15 @@ def _javascript_disabled_call_spans(source: str) -> tuple[tuple[int, int], ...]:
     """組み込み名とsuite aliasのdisabled modifier呼び出し範囲を返す。"""
 
     masked_source = _mask_javascript_literals(source)
+    test_bindings = _javascript_test_runner_bindings(
+        source,
+        masked_source=masked_source,
+    )
     spans = {
         (match.start(), match.end())
         for match in _DISABLED_TEST_CALL.finditer(masked_source)
+        if match.group("binding") not in _JAVASCRIPT_TEST_RUNNER_BINDING
+        or match.group("binding") in test_bindings
     }
     alias_pattern = _javascript_suite_alias_call_pattern(
         _javascript_suite_aliases(source),
@@ -2098,7 +2095,11 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
         return False
     source = _strip_javascript_comments(owner.data)
     disabled_call_ranges = _disabled_javascript_call_ranges(source)
-    disabled_test_callbacks = _javascript_test_callback_spans(source)
+    test_callback_records = _javascript_test_callback_records(source)
+    disabled_test_callbacks = tuple(
+        (body_start, body_end, disabled)
+        for _, body_start, body_end, disabled, _ in test_callback_records
+    )
 
     if runner == "playwright":
         if not snapshot_name.endswith(".png"):
@@ -2110,7 +2111,11 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
                 expected_name += ".png"
             expected_stem = expected_name[: -len(".png")]
             if snapshot_stem == f"{expected_stem}-chromium-linux":
-                if not _is_inside_disabled_javascript_call(
+                active_test_callback = any(
+                    body_start <= match.start() < body_end and not disabled
+                    for _, body_start, body_end, disabled, _ in test_callback_records
+                )
+                if active_test_callback and not _is_inside_disabled_javascript_call(
                     source,
                     match.start(),
                     disabled_ranges=disabled_call_ranges,
@@ -2510,6 +2515,7 @@ _JAVASCRIPT_EXPECT_REQUIRE = re.compile(
     r"\b(?:const|let|var)\s*\{(?P<specifiers>[^{}]*)\}\s*=\s*require\s*\(\s*"
     r"(?P<quote>['\"])(?P<module>[^'\"]+)(?P=quote)\s*\)"
 )
+_JAVASCRIPT_TEST_RUNNER_BINDING = frozenset({"test", "it", "specify"})
 _JAVASCRIPT_EXPECT_SHADOW_DECLARATION = re.compile(
     r"\b(?:const|let|var|class|function)\s+(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\b"
 )
@@ -2539,6 +2545,53 @@ def _javascript_expect_module_is_known(module: str) -> bool:
         r"(?:\.\.?/)+fixtures",
         module,
     ) is not None
+
+
+def _javascript_test_runner_bindings(
+    source: str,
+    *,
+    masked_source: str | None = None,
+) -> frozenset[str]:
+    """既知のtest runnerからimportされた未shadowのtest bindingを返す。"""
+
+    if masked_source is None:
+        masked_source = _mask_javascript_literals(source)
+
+    def is_code_match(match: re.Match[str]) -> bool:
+        return (
+            match.start() < len(masked_source)
+            and not masked_source[match.start()].isspace()
+        )
+
+    bindings: set[str] = set()
+    for pattern in (_JAVASCRIPT_EXPECT_NAMED_IMPORT, _JAVASCRIPT_EXPECT_REQUIRE):
+        for match in pattern.finditer(source):
+            if not is_code_match(match) or not _javascript_expect_module_is_known(
+                match.group("module")
+            ):
+                continue
+            for specifier in match.group("specifiers").split(","):
+                specifier = specifier.strip()
+                if specifier.startswith("type "):
+                    continue
+                parts = re.split(r"\s+as\s+", specifier, maxsplit=1)
+                imported = parts[0].strip()
+                local = parts[-1].strip()
+                if imported in _JAVASCRIPT_TEST_RUNNER_BINDING and re.fullmatch(
+                    r"[A-Za-z_$][A-Za-z0-9_$]*",
+                    local,
+                ):
+                    bindings.add(local)
+
+    # A local declaration with the same name invalidates the imported runner
+    # binding for this conservative static analysis. This also handles the
+    # common failure mode where a no-op `test` replaces the real runner.
+    declared_bindings = {
+        match.group("binding")
+        for match in _JAVASCRIPT_EXPECT_SHADOW_DECLARATION.finditer(masked_source)
+        if match.group("binding") in bindings
+    }
+    return frozenset(bindings - declared_bindings)
 
 
 def _javascript_expect_bindings(
@@ -2585,15 +2638,49 @@ def _javascript_shadowed_expect_bindings(
     end: int,
     expect_bindings: Iterable[str],
 ) -> frozenset[str]:
-    expected = frozenset(expect_bindings)
+    return _javascript_shadowed_bindings_in_ranges(
+        masked_source,
+        ((start, end),),
+        expect_bindings,
+    )
+
+
+def _javascript_shadowed_bindings_in_ranges(
+    masked_source: str,
+    ranges: Iterable[tuple[int, int]],
+    bindings: Iterable[str],
+) -> frozenset[str]:
+    """複数のlexical scope内で宣言されたbindingをまとめて返す。"""
+
+    expected = frozenset(bindings)
     return frozenset(
         match.group("binding")
-        for match in _JAVASCRIPT_EXPECT_SHADOW_DECLARATION.finditer(
-            masked_source,
-            start,
-            end,
-        )
+        for start, end in ranges
+        for match in _JAVASCRIPT_EXPECT_SHADOW_DECLARATION.finditer(masked_source, start, end)
         if match.group("binding") in expected
+    )
+
+
+def _javascript_shadowed_expect_bindings_for_test(
+    masked_source: str,
+    call_start: int,
+    body_start: int,
+    body_end: int,
+    suite_records: Sequence[tuple[int, int, int, str | None]],
+    expect_bindings: Iterable[str],
+) -> frozenset[str]:
+    """test本体と、それを含むsuite callbackのexpect shadowを返す。"""
+
+    ranges = [(body_start, body_end)]
+    ranges.extend(
+        (suite_body_start, suite_body_end)
+        for _, suite_body_start, suite_body_end, _ in suite_records
+        if suite_body_start <= call_start < suite_body_end
+    )
+    return _javascript_shadowed_bindings_in_ranges(
+        masked_source,
+        ranges,
+        expect_bindings,
     )
 
 
@@ -2656,6 +2743,7 @@ def _javascript_assertion_count(
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
     node_assert_bindings: frozenset[str] | None = None,
     expect_bindings: frozenset[str] | None = None,
+    shadowed_expect_bindings: frozenset[str] | None = None,
 ) -> int:
     """検証runnerまたはNode assertion APIのassertion数を数える。"""
 
@@ -2675,12 +2763,13 @@ def _javascript_assertion_count(
             source,
             masked_source=masked_source,
         )
-    shadowed_expect_bindings = _javascript_shadowed_expect_bindings(
-        masked_source,
-        start,
-        end,
-        expect_bindings,
-    )
+    if shadowed_expect_bindings is None:
+        shadowed_expect_bindings = _javascript_shadowed_expect_bindings(
+            masked_source,
+            start,
+            end,
+            expect_bindings,
+        )
     count = 0
     for match in _JAVASCRIPT_NODE_ASSERTION_CALL.finditer(masked_source, start, end):
         method = match.group("dot") or match.group("bracket")
@@ -2782,22 +2871,33 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
         masked_source=masked_source,
     )
     callbacks = _javascript_test_callback_records(source)
-    return (
-        len(callbacks),
-        sum(
-            _javascript_assertion_count(
-                source,
-                body_start,
-                body_end,
-                masked_source=masked_source,
-                argument_span_index=argument_span_index,
-                node_assert_bindings=node_assert_bindings,
-                expect_bindings=expect_bindings,
-            )
-            for _, body_start, body_end, disabled, _ in callbacks
-            if not disabled
-        ),
+    suite_records = _javascript_suite_callback_records(
+        source,
+        argument_span_index=argument_span_index,
     )
+    assertion_count = 0
+    for call_start, body_start, body_end, disabled, _ in callbacks:
+        if disabled:
+            continue
+        shadowed_expect_bindings = _javascript_shadowed_expect_bindings_for_test(
+            masked_source,
+            call_start,
+            body_start,
+            body_end,
+            suite_records,
+            expect_bindings,
+        )
+        assertion_count += _javascript_assertion_count(
+            source,
+            body_start,
+            body_end,
+            masked_source=masked_source,
+            argument_span_index=argument_span_index,
+            node_assert_bindings=node_assert_bindings,
+            expect_bindings=expect_bindings,
+            shadowed_expect_bindings=shadowed_expect_bindings,
+        )
+    return len(callbacks), assertion_count
 
 
 def _has_executable_test_reduction(
@@ -2836,20 +2936,69 @@ def _javascript_test_body_argument(arguments: Sequence[str]) -> str | None:
     return arguments[index].strip() if index is not None else None
 
 
-def _javascript_test_call_spans(source: str) -> tuple[tuple[int, int], ...]:
+def _javascript_test_call_pattern(
+    bindings: Iterable[str],
+    *,
+    parameterized: bool = False,
+) -> re.Pattern[str] | None:
+    """runner binding名に対応するtest call patternを生成する。"""
+
+    names = sorted(
+        {
+            binding
+            for binding in bindings
+            if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", binding)
+        }
+    )
+    if not names:
+        return None
+    prefix = (
+        r"(?<![A-Za-z0-9_$?.'\"`])\b(?P<binding>(?:"
+        + "|".join(re.escape(name) for name in names)
+        + r"))"
+    )
+    if parameterized:
+        return re.compile(
+            prefix + r"\s*(?:\.\s*|\?\.\s*)each\s*\("
+        )
+    chain = (
+        r"(?:(?:\s*(?:\.\s*|\?\.\s*)(?!(?:describe|suite)\b)"
+        r"[A-Za-z_$][A-Za-z0-9_$]*)"
+        r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`](?!(?:describe|suite)['\"`])"
+        r"[A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+    )
+    return re.compile(prefix + chain + r"\s*\(")
+
+
+def _javascript_test_call_spans(
+    source: str,
+    *,
+    test_bindings: frozenset[str] | None = None,
+) -> tuple[tuple[int, int], ...]:
     """通常・parameterized test呼び出しの開始位置と引数括弧位置を返す。"""
 
+    if test_bindings is None:
+        test_bindings = _javascript_test_runner_bindings(source)
+    masked_source = _mask_javascript_literals(source)
     argument_span_index = _javascript_call_argument_span_index(source)
+    test_call_pattern = _javascript_test_call_pattern(test_bindings)
+    parameterized_test_pattern = _javascript_test_call_pattern(
+        test_bindings,
+        parameterized=True,
+    )
+    if test_call_pattern is None or parameterized_test_pattern is None:
+        return ()
     parameterized_open_indexes = {
-        match.end() - 1 for match in _JAVASCRIPT_PARAMETERIZED_TEST_CALL.finditer(source)
+        match.end() - 1
+        for match in parameterized_test_pattern.finditer(masked_source)
     }
     calls: list[tuple[int, int]] = []
-    for match in _JAVASCRIPT_TEST_CALL.finditer(source):
+    for match in test_call_pattern.finditer(masked_source):
         if match.end() - 1 in parameterized_open_indexes:
             continue
         calls.append((match.start(), match.end() - 1))
 
-    for match in _JAVASCRIPT_PARAMETERIZED_TEST_CALL.finditer(source):
+    for match in parameterized_test_pattern.finditer(masked_source):
         each_open_index = match.end() - 1
         each_argument_spans = argument_span_index.get(each_open_index)
         if each_argument_spans is None:
@@ -3201,6 +3350,7 @@ def _javascript_callback_has_executable_content(
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
     node_assert_bindings: frozenset[str] | None = None,
     expect_bindings: frozenset[str] | None = None,
+    shadowed_expect_bindings: frozenset[str] | None = None,
 ) -> bool:
     """検証操作を含まないinline callbackをbehavior recordから除外する。"""
 
@@ -3225,6 +3375,7 @@ def _javascript_callback_has_executable_content(
             argument_span_index=argument_span_index,
             node_assert_bindings=node_assert_bindings,
             expect_bindings=expect_bindings,
+            shadowed_expect_bindings=shadowed_expect_bindings,
         )
         > 0
     )
@@ -3236,7 +3387,11 @@ def _javascript_test_behavior_records(
     if data is None or _is_binary(data):
         return ()
     source = _strip_javascript_comments(data)
-    callback_spans = _javascript_test_callback_spans(source)
+    callback_records = _javascript_test_callback_records(source)
+    callback_spans = tuple(
+        (body_start, body_end, disabled)
+        for _, body_start, body_end, disabled, _ in callback_records
+    )
     if _javascript_test_callbacks_overlap(callback_spans):
         # 入れ子testは通常のrunner構文ではなく、外側callbackと内側callbackの
         # 全文を重複して正規化すると入力サイズに対して二次時間になる。
@@ -3252,9 +3407,21 @@ def _javascript_test_behavior_records(
         source,
         masked_source=masked_source,
     )
+    suite_records = _javascript_suite_callback_records(
+        source,
+        argument_span_index=argument_span_index,
+    )
     behaviors = []
-    for body_start, body_end, disabled in callback_spans:
+    for call_start, body_start, body_end, disabled, _ in callback_records:
         callback = source[body_start:body_end].strip()
+        shadowed_expect_bindings = _javascript_shadowed_expect_bindings_for_test(
+            masked_source,
+            call_start,
+            body_start,
+            body_end,
+            suite_records,
+            expect_bindings,
+        )
         if not _javascript_callback_has_executable_content(
             callback,
             source=source,
@@ -3264,6 +3431,7 @@ def _javascript_test_behavior_records(
             argument_span_index=argument_span_index,
             node_assert_bindings=node_assert_bindings,
             expect_bindings=expect_bindings,
+            shadowed_expect_bindings=shadowed_expect_bindings,
         ):
             continue
         behaviors.append(

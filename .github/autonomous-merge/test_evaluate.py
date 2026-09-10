@@ -223,6 +223,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/utils/assetUrl.ts": "export const url = '/';\n",
                     "tests/unit/utils/assetUrl.test.ts": (
+                        "import { expect, it } from 'vitest';\n"
                         "it('builds the URL', () => expect(buildUrl('/')).toBe('/'));\n"
                     ),
                 },
@@ -254,14 +255,20 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/utils/assetUrl.ts": "export const url = '/';\n",
-                    "tests/unit/utils/publicUrl.test.ts": "it('builds the URL', () => {});\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { it } from 'vitest';\n"
+                        "it('builds the URL', () => {});\n"
+                    ),
                 },
             )
             write_snapshot(
                 head,
                 {
                     "src/utils/assetUrl.ts": "export const url = '/app/';\n",
-                    "tests/unit/utils/publicUrl.test.ts": "it.skip('builds the URL', () => {});\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { it } from 'vitest';\n"
+                        "it.skip('builds the URL', () => {});\n"
+                    ),
                 },
             )
 
@@ -281,14 +288,20 @@ class EvaluateTests(unittest.TestCase):
                         base,
                         {
                             "src/utils/assetUrl.ts": "export const url = '/';\n",
-                            "tests/unit/utils/publicUrl.test.ts": "test('builds the URL', () => {});\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { test } from 'vitest';\n"
+                                "test('builds the URL', () => {});\n"
+                            ),
                         },
                     )
                     write_snapshot(
                         head,
                         {
                             "src/utils/assetUrl.ts": "export const url = '/app/';\n",
-                            "tests/unit/utils/publicUrl.test.ts": f"{disabled_call}('builds the URL', () => {{}});\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { test } from 'vitest';\n"
+                                f"{disabled_call}('builds the URL', () => {{}});\n"
+                            ),
                         },
                     )
 
@@ -308,6 +321,7 @@ class EvaluateTests(unittest.TestCase):
                     {
                         "src/ui/Widget.tsx": "export const Widget = 1;\n",
                         "tests/e2e/widget.spec.ts": (
+                            "import { expect, test } from '@playwright/test';\n"
                             "test('renders', async ({ page }, info) => "
                             "expect(page).toBeVisible());\n"
                         ),
@@ -318,6 +332,7 @@ class EvaluateTests(unittest.TestCase):
                     {
                         "src/ui/Widget.tsx": "export const Widget = 2;\n",
                         "tests/e2e/widget.spec.ts": (
+                            "import { expect, test } from '@playwright/test';\n"
                             "test('renders', async ({ page }, info) => {\n"
                             f"  info.{modifier}('temporarily disabled');\n"
                             "  expect(page).toBeVisible();\n"
@@ -347,14 +362,20 @@ class EvaluateTests(unittest.TestCase):
                         base,
                         {
                             "src/utils/assetUrl.ts": "export const url = '/';\n",
-                            "tests/unit/utils/publicUrl.test.ts": "test('builds the URL', () => {});\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { test } from 'vitest';\n"
+                                "test('builds the URL', () => {});\n"
+                            ),
                         },
                     )
                     write_snapshot(
                         head,
                         {
                             "src/utils/assetUrl.ts": "export const url = '/app/';\n",
-                            "tests/unit/utils/publicUrl.test.ts": f"{disabled_call}('builds the URL', () => {{}});\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { test } from 'vitest';\n"
+                                f"{disabled_call}('builds the URL', () => {{}});\n"
+                            ),
                         },
                     )
 
@@ -375,6 +396,7 @@ class EvaluateTests(unittest.TestCase):
                         {
                             "src/utils/assetUrl.ts": "export const url = '/';\n",
                             "tests/unit/utils/publicUrl.test.ts": (
+                                "import { expect, test } from 'vitest';\n"
                                 "test('builds the URL', () => expect(url).toBe('/'));\n"
                             ),
                         },
@@ -384,6 +406,7 @@ class EvaluateTests(unittest.TestCase):
                         {
                             "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                             "tests/unit/utils/publicUrl.test.ts": (
+                                "import { expect, test } from 'vitest';\n"
                                 "test(\n"
                                 "  'builds the URL',\n"
                                 f"  {{ {option}: true }},\n"
@@ -597,16 +620,53 @@ class EvaluateTests(unittest.TestCase):
 
     def test_assertion_reduction_is_scoped_to_executable_test_callbacks(self) -> None:
         base = (
-            "import { expect } from 'vitest';\n"
+            "import { expect, test } from 'vitest';\n"
             "test('runs', () => expect(run()).toBe(1));\n"
         ).encode("utf-8")
         head = (
-            "import { expect } from 'vitest';\n"
+            "import { expect, test } from 'vitest';\n"
             "const unused = () => expect(run()).toBe(2);\n"
             "test('runs', () => run());\n"
         ).encode("utf-8")
 
         self.assertTrue(_has_executable_test_reduction(base, head, language="javascript"))
+
+    def test_expect_shadowing_in_enclosing_suite_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner_base = (
+                "import { expect, test } from '@playwright/test';\n"
+                "test.describe('group', () => {\n"
+                "  test('renders', () => expect(page).toBeVisible());\n"
+                "});\n"
+            )
+            owner_head = (
+                "import { expect, test } from '@playwright/test';\n"
+                "test.describe('group', () => {\n"
+                "  const expect = () => ({ toBeVisible() {} });\n"
+                "  test('renders', () => expect(page).toBeVisible());\n"
+                "});\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner_base,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner_head,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
 
     def test_vitest_shorthand_and_variable_options_do_not_satisfy_verification(self) -> None:
         for declaration, options in (
@@ -640,6 +700,7 @@ class EvaluateTests(unittest.TestCase):
                         {
                             "src/utils/assetUrl.ts": "export const url = '/';\n",
                             "tests/unit/utils/publicUrl.test.ts": (
+                                "import { expect, test } from 'vitest';\n"
                                 "test('builds the URL', () => expect(url).toBe('/'));\n"
                             ),
                         },
@@ -649,6 +710,7 @@ class EvaluateTests(unittest.TestCase):
                         {
                             "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                             "tests/unit/utils/publicUrl.test.ts": (
+                                "import { expect, test } from 'vitest';\n"
                                 f"{declaration}"
                                 "test(\n"
                                 "  'builds the URL',\n"
@@ -714,14 +776,20 @@ class EvaluateTests(unittest.TestCase):
                         base,
                         {
                             "src/utils/assetUrl.ts": "export const url = '/';\n",
-                            "tests/unit/utils/publicUrl.test.ts": "test('builds the URL', () => {});\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { test } from 'vitest';\n"
+                                "test('builds the URL', () => {});\n"
+                            ),
                         },
                     )
                     write_snapshot(
                         head,
                         {
                             "src/utils/assetUrl.ts": "export const url = '/app/';\n",
-                            "tests/unit/utils/publicUrl.test.ts": f"{disabled_call}('builds the URL', () => {{}});\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { test } from 'vitest';\n"
+                                f"{disabled_call}('builds the URL', () => {{}});\n"
+                            ),
                         },
                     )
 
@@ -996,6 +1064,7 @@ class EvaluateTests(unittest.TestCase):
                     {
                         "src/utils/assetUrl.ts": "export const url = '/';\n",
                         "tests/unit/utils/publicUrl.test.ts": (
+                            "import { expect, test } from 'vitest';\n"
                             "test('renders', () => expect(page).toHaveText('old'));\n"
                         ),
                     },
@@ -1005,6 +1074,7 @@ class EvaluateTests(unittest.TestCase):
                     {
                         "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                         "tests/unit/utils/publicUrl.test.ts": (
+                            "import { expect, test } from 'vitest';\n"
                             "test('renders', " + callback + ");\n"
                         ),
                     },
@@ -1126,11 +1196,13 @@ class EvaluateTests(unittest.TestCase):
             base = Path(directory) / "base"
             head = Path(directory) / "head"
             owner_base = (
+                "import { expect, test } from '@playwright/test';\n"
                 "test.describe('group', () => {\n"
                 "  test('renders', () => expect(page).toBeVisible());\n"
                 "});\n"
             )
             owner_head = (
+                "import { expect, test } from '@playwright/test';\n"
                 "test.describe('group', () => {\n"
                 "  test('renders', () => expect(page).toHaveText('updated'));\n"
                 "  test.beforeEach(() => test.skip(true, 'temporarily disabled'));\n"
@@ -1319,6 +1391,7 @@ class EvaluateTests(unittest.TestCase):
                     "src/utils/assetUrl.ts": "export const url = '/';\n",
                     "tests/unit/utils/publicUrl.test.ts": (
                         "import { strict as assert } from 'node:assert/strict';\n"
+                        "import { test } from 'vitest';\n"
                         "test('builds', () => { assert.equal('/old', '/old'); });\n"
                     ),
                 },
@@ -1329,6 +1402,7 @@ class EvaluateTests(unittest.TestCase):
                     "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                     "tests/unit/utils/publicUrl.test.ts": (
                         "import { strict as assert } from 'node:assert/strict';\n"
+                        "import { test } from 'vitest';\n"
                         "test('builds', () => { assert.equal('/new', '/new'); });\n"
                     ),
                 },
@@ -1482,7 +1556,7 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(disabled_variables, {f"options_{nesting}"})
 
     def test_many_parameterized_calls_are_indexed_without_suffix_rescans(self) -> None:
-        source = "\n".join(
+        source = "import { expect, test } from 'vitest';\n" + "\n".join(
             "test.each([1])('case', () => expect(value).toBe(1));" for _ in range(4000)
         )
 
@@ -1520,6 +1594,24 @@ class EvaluateTests(unittest.TestCase):
                 "expect(value).toBe(1);"
             ),
             0,
+        )
+
+    def test_test_callbacks_require_imported_unshadowed_runner_bindings(self) -> None:
+        source = (
+            "import { expect, it as caseTest } from 'vitest';\n"
+            "const test = () => {};\n"
+            "test('fake', () => expect(value).toBe(1));\n"
+            "caseTest('real', () => expect(value).toBe(1));\n"
+        )
+
+        calls = _javascript_test_call_spans(source)
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(
+            _javascript_test_call_spans(
+                "test('unbound', () => expect(value).toBe(1));"
+            ),
+            (),
         )
 
     def test_nested_test_callbacks_fail_closed_before_behavior_scan(self) -> None:
@@ -1769,7 +1861,10 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 1;\n",
-                    "tests/e2e/widget.spec.ts": "test('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
+                        "test('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n"
+                    ),
                     "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
                 },
             )
@@ -1777,7 +1872,10 @@ class EvaluateTests(unittest.TestCase):
                 head,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 2;\n",
-                    "tests/e2e/widget.spec.ts": "test('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
+                        "test('renders', async () => expect(page).toHaveScreenshot('widget.png'));\n"
+                    ),
                     "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
                 },
             )
@@ -2376,7 +2474,10 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 1;\n",
-                    "tests/e2e/office.spec.ts": "test('office', async () => expect(page).toHaveScreenshot('office.png'));\n",
+                    "tests/e2e/office.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
+                        "test('office', async () => expect(page).toHaveScreenshot('office.png'));\n"
+                    ),
                     "tests/e2e/office.spec.ts-snapshots/office-chromium-linux.png": b"\x89PNG\r\n\x1a\nold",
                 },
             )
@@ -2384,7 +2485,10 @@ class EvaluateTests(unittest.TestCase):
                 head,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 2;\n",
-                    "tests/e2e/office.spec.ts": "test('office', async () => expect(page).toHaveScreenshot('office.png'));\n",
+                    "tests/e2e/office.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
+                        "test('office', async () => expect(page).toHaveScreenshot('office.png'));\n"
+                    ),
                     "tests/e2e/office.spec.ts-snapshots/office-chromium-linux.png": b"\x89PNG\r\n\x1a\nnew",
                 },
             )
@@ -2459,7 +2563,10 @@ class EvaluateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
             head = Path(directory) / "head"
-            owner = "test('board', async () => expect(page).toHaveScreenshot('board.png'));\n"
+            owner = (
+                "import { expect, test } from '@playwright/test';\n"
+                "test('board', async () => expect(page).toHaveScreenshot('board.png'));\n"
+            )
             write_snapshot(
                 base,
                 {
@@ -2661,11 +2768,51 @@ class EvaluateTests(unittest.TestCase):
             self.assertFalse(result.test_changes)
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
 
+    def test_unused_playwright_screenshot_helper_does_not_satisfy_visual_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "import { expect, test } from '@playwright/test';\n"
+                "function unusedCapture(page) {\n"
+                "  return expect(page).toHaveScreenshot('widget.png');\n"
+                "}\n"
+                "test('smoke', () => expect(page).toBeVisible());\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": (
+                        b"\x89PNG\r\n\x1a\nold"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": (
+                        b"\x89PNG\r\n\x1a\nnew"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
     def test_referenced_vitest_snapshot_satisfies_simulation_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
             head = Path(directory) / "head"
-            owner = "it('captures', () => expect({ value: 1 }).toMatchSnapshot());\n"
+            owner = (
+                "import { expect, it } from 'vitest';\n"
+                "it('captures', () => expect({ value: 1 }).toMatchSnapshot());\n"
+            )
             base_snapshot = "// Vitest Snapshot v1\n\nexports[`captures 1`] = `value: 1`;\n"
             head_snapshot = "// Vitest Snapshot v1\n\nexports[`captures 1`] = `value: 2`;\n"
             write_snapshot(
@@ -2838,6 +2985,7 @@ class EvaluateTests(unittest.TestCase):
             base = Path(directory) / "base"
             head = Path(directory) / "head"
             owner = (
+                "import { expect, test } from '@playwright/test';\n"
                 "const pixiE2e = process.env.PIXI_E2E !== '0';\n"
                 "test.skip(!pixiE2e, 'Pixi is disabled');\n"
                 "test('renders', async () => "

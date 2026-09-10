@@ -113,3 +113,5 @@ Vitest snapshotは末尾の連番を除いたsuite込みの完全なtest title�
 Playwrightのcallback第2引数の任意aliasに対する`skip()`・`fixme()`・`fail()`（`testInfo`を含む）も無効化として扱います。Pixi scopeは変更pathごとにsprint・department・organizationの対応spec／snapshotを明示的に紐付け、共有Pixi pathは3画面すべての検証を要求します。業界DOM描画は`tests/e2e/org-scale.spec.ts`へ対応付けます。`tests/e2e/**/*.ts`のうちrunnerのtest suffixを持たない共有helper・fixtureはHard Gateです。
 
 結果marker commentの探索は、更新日時の新しいページから最大3ページに制限します。初回に見つけたcomment IDはPRへ`autonomous-merge-shadow-result-id-<comment-id>` labelとして永続化し、以後はその既知IDを先に参照するため、コメント量が増えても古い判定を失効できます。pointerが不正・複数の場合は別markerを作らず保守的に失敗し、pointer先commentの`issue_url`は対象repositoryとPR番号のパス末尾まで完全一致で検証します。同一run内で取得したcomment IDを失敗判定・再評価・通常判定の更新に再利用します。
+
+Nodeのassertionは、`node:assert`／`node:assert/strict`（または`assert`）から静的にimport・requireされたbindingと、既知のassertion methodの組み合わせだけを検証操作として数えます。任意の`assert`変数や`assert.log()`などの非assertion methodは検証充足になりません。file／suite scopeの`skip`・`fail`はhookの宣言位置にかかわらず同じscopeのtestへ伝播します。option objectの無効化判定は直下メンバーだけを解析し、ネストしたobject範囲を含むsource sliceの再走査を避けます。

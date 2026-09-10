@@ -1311,11 +1311,11 @@ def _javascript_callback_modifier_parameter_names(
 
 def _javascript_braced_end_index(
     source: str,
-    target_open_indexes: Iterable[int],
+    target_open_indexes: Iterable[int] | None,
 ) -> dict[int, int | None]:
-    """指定されたobject literalの閉じ括弧を一度の走査で索引化する。"""
+    """object literalの閉じ括弧を一度の走査で索引化する。"""
 
-    target_indexes = frozenset(target_open_indexes)
+    target_indexes = None if target_open_indexes is None else frozenset(target_open_indexes)
     openings: list[int] = []
     results: dict[int, int | None] = {}
     index = 0
@@ -1356,11 +1356,11 @@ def _javascript_braced_end_index(
             openings.append(index)
         elif character == "}" and openings:
             open_index = openings.pop()
-            if open_index in target_indexes:
+            if target_indexes is None or open_index in target_indexes:
                 results[open_index] = index + 1
         index += 1
     for open_index in openings:
-        if open_index in target_indexes:
+        if target_indexes is None or open_index in target_indexes:
             results[open_index] = None
     return results
 
@@ -1741,6 +1741,62 @@ def _javascript_object_has_disabled_test_option(
     )
 
 
+def _javascript_object_direct_option_info(
+    source: str,
+    object_open_index: int,
+    object_end_index: int,
+    braced_end_index: Mapping[int, int | None],
+) -> tuple[bool, tuple[str, ...]]:
+    """objectの直下optionとspreadだけを、ネストを再走査せずに抽出する。"""
+
+    close_index = object_end_index - 1
+    member_start = object_open_index + 1
+    index = member_start
+    parenthesis_depth = 0
+    bracket_depth = 0
+    has_disabled_option = False
+    spread_names: list[str] = []
+
+    def inspect_member(start: int, end: int) -> None:
+        nonlocal has_disabled_option
+        member = "{" + source[start:end] + "}"
+        if (
+            _JAVASCRIPT_DISABLED_TEST_OPTION.search(member)
+            or _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND.search(member)
+        ):
+            has_disabled_option = True
+        spread_names.extend(
+            match.group("name")
+            for match in _JAVASCRIPT_OBJECT_SPREAD.finditer(member)
+        )
+
+    while index < close_index:
+        character = source[index]
+        if character == "{":
+            nested_end_index = braced_end_index.get(index)
+            if nested_end_index is None or nested_end_index > close_index:
+                inspect_member(member_start, index)
+                return has_disabled_option, tuple(spread_names)
+            inspect_member(member_start, index)
+            member_start = nested_end_index
+            index = nested_end_index
+            continue
+        if character == "(":
+            parenthesis_depth += 1
+        elif character == ")" and parenthesis_depth:
+            parenthesis_depth -= 1
+        elif character == "[":
+            bracket_depth += 1
+        elif character == "]" and bracket_depth:
+            bracket_depth -= 1
+        elif character == "," and parenthesis_depth == bracket_depth == 0:
+            inspect_member(member_start, index)
+            member_start = index + 1
+        index += 1
+    inspect_member(member_start, close_index)
+    return has_disabled_option, tuple(spread_names)
+
+
 def _javascript_unwrap_parenthesized_expression(expression: str) -> str:
     """外側だけの括弧を対で剥がし、option変数の参照を解決できる形にする。"""
 
@@ -1778,31 +1834,34 @@ def _javascript_options_argument_is_disabled(
 
 def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
     source = _mask_javascript_literals(source)
-    object_sources: dict[str, str] = {}
+    object_info: dict[str, tuple[bool, tuple[str, ...]]] = {}
     object_matches = tuple(_JAVASCRIPT_OBJECT_VARIABLE.finditer(source))
-    braced_end_index = _javascript_braced_end_index(
-        source,
-        (match.end() - 1 for match in object_matches),
-    )
+    braced_end_index = _javascript_braced_end_index(source, None)
     for match in object_matches:
-        object_end = braced_end_index.get(match.end() - 1)
+        object_open_index = match.end() - 1
+        object_end = braced_end_index.get(object_open_index)
         if object_end is not None:
-            object_sources[match.group("name")] = source[match.end() - 1 : object_end]
+            object_info[match.group("name")] = _javascript_object_direct_option_info(
+                source,
+                object_open_index,
+                object_end,
+                braced_end_index,
+            )
 
     disabled_variables = {
         name
-        for name, object_source in object_sources.items()
-        if _javascript_object_has_disabled_test_option(object_source)
+        for name, (has_disabled_option, _) in object_info.items()
+        if has_disabled_option
     }
     disabled_variables.update(
         match.group("name")
         for match in _JAVASCRIPT_DISABLED_TEST_OPTION_ASSIGNMENT.finditer(source)
-        if match.group("name") in object_sources
+        if match.group("name") in object_info
     )
     dependents: dict[str, set[str]] = {}
-    for name, object_source in object_sources.items():
-        for match in _JAVASCRIPT_OBJECT_SPREAD.finditer(object_source):
-            dependents.setdefault(match.group("name"), set()).add(name)
+    for name, (_, spread_names) in object_info.items():
+        for dependency in spread_names:
+            dependents.setdefault(dependency, set()).add(name)
 
     queue = list(disabled_variables)
     cursor = 0
@@ -2386,9 +2445,59 @@ def _vitest_snapshot_value_fingerprint(data: bytes | None) -> str:
 
 
 _JAVASCRIPT_ASSERTION = re.compile(
-    r"(?P<expect>\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\()"
-    r"|(?P<node_assert>\bassert(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|"
-    r"(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\])+\s*\()"
+    r"\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
+)
+_JAVASCRIPT_NODE_ASSERTION_CALL = re.compile(
+    r"\b(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
+    r"(?:(?:\.\s*|\?\.\s*)(?P<dot>[A-Za-z_$][A-Za-z0-9_$]*)|"
+    r"(?:\?\.)?\s*\[\s*['\"`](?P<bracket>[A-Za-z_$][A-Za-z0-9_$]*)['\"`]\s*\])\s*\("
+)
+_JAVASCRIPT_NODE_ASSERTION_METHODS = frozenset(
+    {
+        "deepEqual",
+        "deepStrictEqual",
+        "doesNotMatch",
+        "doesNotReject",
+        "doesNotThrow",
+        "equal",
+        "fail",
+        "ifError",
+        "match",
+        "notDeepEqual",
+        "notDeepStrictEqual",
+        "notEqual",
+        "notStrictEqual",
+        "ok",
+        "partialDeepStrictEqual",
+        "rejects",
+        "strictEqual",
+        "throws",
+    }
+)
+_JAVASCRIPT_NODE_ASSERT_NAMESPACE_IMPORT = re.compile(
+    r"\bimport\s*\*\s*as\s+(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\s+from\s*"
+    r"(['\"])(?:assert|node:assert(?:/strict)?)\2"
+)
+_JAVASCRIPT_NODE_ASSERT_DEFAULT_IMPORT = re.compile(
+    r"\bimport\s+(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
+    r"(?:,\s*(?:\{[^{}]*\}|\*\s*as\s+[A-Za-z_$][A-Za-z0-9_$]*))?\s+from\s*"
+    r"(['\"])(?:assert|node:assert(?:/strict)?)\2"
+)
+_JAVASCRIPT_NODE_ASSERT_NAMED_IMPORT = re.compile(
+    r"\bimport\s*\{(?P<specifiers>[^{}]*)\}\s*from\s*"
+    r"(['\"])(?:assert|node:assert(?:/strict)?)\2"
+)
+_JAVASCRIPT_NODE_ASSERT_REQUIRE = re.compile(
+    r"\b(?:const|let|var)\s+(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*"
+    r"require\s*\(\s*(['\"])(?:assert|node:assert(?:/strict)?)\2\s*\)"
+)
+_JAVASCRIPT_NODE_ASSERT_DESTRUCTURED_REQUIRE = re.compile(
+    r"\b(?:const|let|var)\s*\{(?P<specifiers>[^{}]*)\}\s*=\s*require\s*\(\s*"
+    r"(['\"])(?:assert|node:assert(?:/strict)?)\2\s*\)"
+)
+_JAVASCRIPT_NODE_ASSERT_TS_IMPORT = re.compile(
+    r"\bimport\s+(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*require\s*\(\s*"
+    r"(['\"])(?:assert|node:assert(?:/strict)?)\2\s*\)"
 )
 _JAVASCRIPT_OBJECT_METHODS = frozenset(
     {
@@ -2411,6 +2520,53 @@ _JAVASCRIPT_MATCHER_CALL = re.compile(
 _JAVASCRIPT_IDENTIFIER_AT_END = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*\s*$")
 
 
+def _javascript_node_assert_bindings(
+    source: str,
+    *,
+    masked_source: str | None = None,
+) -> frozenset[str]:
+    """Node assertion APIからimport/requireされたbinding名を返す。"""
+
+    if masked_source is None:
+        masked_source = _mask_javascript_literals(source)
+
+    def is_code_match(match: re.Match[str]) -> bool:
+        return (
+            match.start() < len(masked_source)
+            and not masked_source[match.start()].isspace()
+        )
+
+    bindings: set[str] = set()
+    bindings.update(
+        match.group("binding")
+        for pattern in (
+            _JAVASCRIPT_NODE_ASSERT_NAMESPACE_IMPORT,
+            _JAVASCRIPT_NODE_ASSERT_DEFAULT_IMPORT,
+            _JAVASCRIPT_NODE_ASSERT_REQUIRE,
+            _JAVASCRIPT_NODE_ASSERT_TS_IMPORT,
+        )
+        for match in pattern.finditer(source)
+        if is_code_match(match)
+    )
+    for pattern in (
+        _JAVASCRIPT_NODE_ASSERT_NAMED_IMPORT,
+        _JAVASCRIPT_NODE_ASSERT_DESTRUCTURED_REQUIRE,
+    ):
+        for match in pattern.finditer(source):
+            if not is_code_match(match):
+                continue
+            for specifier in match.group("specifiers").split(","):
+                parts = re.split(r"\s+as\s+", specifier.strip(), maxsplit=1)
+                imported = parts[0].removeprefix("type ").strip()
+                local = parts[-1].strip()
+                if imported in {"default", "strict"} and re.fullmatch(
+                    r"[A-Za-z_$][A-Za-z0-9_$]*",
+                    local,
+                ):
+                    bindings.add(local)
+    return frozenset(bindings)
+
+
 def _javascript_assertion_count(
     source: str,
     start: int = 0,
@@ -2418,8 +2574,9 @@ def _javascript_assertion_count(
     *,
     masked_source: str | None = None,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+    node_assert_bindings: frozenset[str] | None = None,
 ) -> int:
-    """expect呼び出しの後にmatcher呼び出しがあるassertion数を数える。"""
+    """検証runnerまたはNode assertion APIのassertion数を数える。"""
 
     if end is None:
         end = len(source)
@@ -2427,11 +2584,20 @@ def _javascript_assertion_count(
         masked_source = _mask_javascript_literals(source)
     if argument_span_index is None:
         argument_span_index = _javascript_call_argument_span_index(source)
+    if node_assert_bindings is None:
+        node_assert_bindings = _javascript_node_assert_bindings(
+            source,
+            masked_source=masked_source,
+        )
     count = 0
-    for match in _JAVASCRIPT_ASSERTION.finditer(masked_source, start, end):
-        if match.group("node_assert") is not None:
+    for match in _JAVASCRIPT_NODE_ASSERTION_CALL.finditer(masked_source, start, end):
+        method = match.group("dot") or match.group("bracket")
+        if (
+            match.group("binding") in node_assert_bindings
+            and method in _JAVASCRIPT_NODE_ASSERTION_METHODS
+        ):
             count += 1
-            continue
+    for match in _JAVASCRIPT_ASSERTION.finditer(masked_source, start, end):
         open_index = match.end() - 1
         argument_spans = argument_span_index.get(open_index)
         if argument_spans is None:
@@ -2510,6 +2676,10 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
     source = _strip_javascript_comments(data)
     masked_source = _mask_javascript_literals(source)
     argument_span_index = _javascript_call_argument_span_index(source)
+    node_assert_bindings = _javascript_node_assert_bindings(
+        source,
+        masked_source=masked_source,
+    )
     callbacks = _javascript_test_callback_records(source)
     return (
         len(callbacks),
@@ -2520,6 +2690,7 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
                 body_end,
                 masked_source=masked_source,
                 argument_span_index=argument_span_index,
+                node_assert_bindings=node_assert_bindings,
             )
             for _, body_start, body_end, disabled, _ in callbacks
             if not disabled
@@ -2685,7 +2856,7 @@ def _javascript_unconditional_scope_disabled_calls(
     *,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
 ) -> tuple[tuple[int, int | None, int | None], ...]:
-    """file/suite scopeの無条件modifierを後続testへ適用する。"""
+    """file/suite scopeの無条件modifierを同じscopeのtestへ適用する。"""
 
     if argument_span_index is None:
         argument_span_index = _javascript_call_argument_span_index(source)
@@ -2739,12 +2910,12 @@ def _javascript_callback_has_scope_disabled_call(
     scope_disabled_calls: Sequence[tuple[int, int | None, int | None]],
 ) -> bool:
     return any(
-        disabled_start < call_start
-        and (
-            scope_start is None
-            or (scope_start <= call_start < (scope_end if scope_end is not None else call_start))
+        scope_start is None
+        or (
+            scope_end is not None
+            and scope_start <= call_start < scope_end
         )
-        for disabled_start, scope_start, scope_end in scope_disabled_calls
+        for _, scope_start, scope_end in scope_disabled_calls
     )
 
 
@@ -2926,6 +3097,7 @@ def _javascript_callback_has_executable_content(
     end: int | None = None,
     masked_source: str | None = None,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+    node_assert_bindings: frozenset[str] | None = None,
 ) -> bool:
     """検証操作を含まないinline callbackをbehavior recordから除外する。"""
 
@@ -2948,6 +3120,7 @@ def _javascript_callback_has_executable_content(
             assertion_end,
             masked_source=masked_source,
             argument_span_index=argument_span_index,
+            node_assert_bindings=node_assert_bindings,
         )
         > 0
     )
@@ -2967,6 +3140,10 @@ def _javascript_test_behavior_records(
         return ()
     masked_source = _mask_javascript_literals(source)
     argument_span_index = _javascript_call_argument_span_index(source)
+    node_assert_bindings = _javascript_node_assert_bindings(
+        source,
+        masked_source=masked_source,
+    )
     behaviors = []
     for body_start, body_end, disabled in callback_spans:
         callback = source[body_start:body_end].strip()
@@ -2977,6 +3154,7 @@ def _javascript_test_behavior_records(
             end=body_end,
             masked_source=masked_source,
             argument_span_index=argument_span_index,
+            node_assert_bindings=node_assert_bindings,
         ):
             continue
         behaviors.append(

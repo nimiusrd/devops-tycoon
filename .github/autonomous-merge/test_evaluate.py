@@ -1104,6 +1104,44 @@ class EvaluateTests(unittest.TestCase):
                     self.assertIn("visual", result.missing_test_scopes)
                     self.assertFalse(result.test_changes)
 
+    def test_suite_hook_modifier_after_test_declaration_does_not_satisfy_verification(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner_base = (
+                "test.describe('group', () => {\n"
+                "  test('renders', () => expect(page).toBeVisible());\n"
+                "});\n"
+            )
+            owner_head = (
+                "test.describe('group', () => {\n"
+                "  test('renders', () => expect(page).toHaveText('updated'));\n"
+                "  test.beforeEach(() => test.skip(true, 'temporarily disabled'));\n"
+                "});\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner_base,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner_head,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_expected_failure_test_does_not_satisfy_verification(self) -> None:
         for test_call in ("test.fail", "it.fails"):
             with self.subTest(test_call=test_call):
@@ -1285,6 +1323,28 @@ class EvaluateTests(unittest.TestCase):
             self.assertTrue(result.test_changes)
             self.assertEqual(result.verification_risk, 0)
 
+    def test_unbound_or_non_assertion_node_calls_do_not_satisfy_verification(self) -> None:
+        self.assertEqual(
+            _javascript_assertion_count(
+                "const assert = console; assert.equal(1, 1);"
+            ),
+            0,
+        )
+        self.assertEqual(
+            _javascript_assertion_count(
+                "import { strict as assert } from 'node:assert/strict'; "
+                "assert.log(1);"
+            ),
+            0,
+        )
+        self.assertEqual(
+            _javascript_assertion_count(
+                "import { strict as assert } from 'node:assert/strict'; "
+                "assert.equal(1, 1);"
+            ),
+            1,
+        )
+
     def test_unclosed_disabled_calls_are_indexed_without_suffix_rescans(self) -> None:
         source = "test.skip(\n" * 2000
 
@@ -1379,6 +1439,30 @@ class EvaluateTests(unittest.TestCase):
         source = "\n".join(f"const options_{index} = {{" for index in range(2000))
 
         self.assertEqual(_javascript_disabled_test_option_variables(source), frozenset())
+
+    def test_nested_option_objects_do_not_rescan_containing_sources(self) -> None:
+        nesting = 400
+        lines = ["const options_0 = {"]
+        for index in range(nesting):
+            lines.extend(
+                (
+                    f"  get nested_{index}() {{",
+                    f"    const options_{index + 1} = {{",
+                )
+            )
+        lines.extend(("      skip: true,", "};"))
+        for index in reversed(range(nesting)):
+            lines.extend(
+                (
+                    f"    return options_{index + 1};",
+                    "  },",
+                    "};",
+                )
+            )
+
+        disabled_variables = _javascript_disabled_test_option_variables("\n".join(lines))
+
+        self.assertEqual(disabled_variables, {f"options_{nesting}"})
 
     def test_many_parameterized_calls_are_indexed_without_suffix_rescans(self) -> None:
         source = "\n".join(

@@ -2794,7 +2794,7 @@ def _javascript_test_callback_records(
     argument_span_index = _javascript_call_argument_span_index(source)
     disabled_option_variables = _javascript_disabled_test_option_variables(source)
     suite_records = _javascript_suite_callback_records(source)
-    callbacks: list[tuple[int, int, int, bool, str | None]] = []
+    raw_callbacks: list[tuple[int, int, int, str, bool, str | None]] = []
     for call_start, open_index in _javascript_test_call_spans(source):
         argument_spans = _javascript_call_argument_spans(
             source,
@@ -2808,12 +2808,12 @@ def _javascript_test_callback_records(
         if body_index is None:
             continue
         body_start, body_end = argument_spans[body_index]
-        callback = arguments[body_index]
-        callbacks.append(
+        raw_callbacks.append(
             (
                 call_start,
                 body_start,
                 body_end,
+                arguments[body_index],
                 any(start <= call_start < end for start, end in disabled_ranges)
                 or (
                     len(arguments) >= 2
@@ -2826,7 +2826,28 @@ def _javascript_test_callback_records(
                     disabled_ranges,
                     body_start,
                     body_end,
-                )
+                ),
+                _javascript_static_test_title(arguments),
+            )
+        )
+    callback_spans = tuple(
+        (body_start, body_end, disabled)
+        for call_start, body_start, body_end, _, disabled, _ in raw_callbacks
+    )
+    if _javascript_test_callbacks_overlap(callback_spans):
+        # 入れ子testは通常のrunner構文ではなく、callback引数の全文解析を
+        # 続けると入力サイズに対して二次時間になるため、すべて無効化扱いにする。
+        callbacks = [
+            (call_start, body_start, body_end, True, title)
+            for call_start, body_start, body_end, _, _, title in raw_callbacks
+        ]
+    else:
+        callbacks = [
+            (
+                call_start,
+                body_start,
+                body_end,
+                disabled
                 or _javascript_callback_test_info_modifier_count(
                     masked_source,
                     callback,
@@ -2834,9 +2855,10 @@ def _javascript_test_callback_records(
                     body_end,
                 )
                 > 0,
-                _javascript_static_test_title(arguments),
+                title,
             )
-        )
+            for call_start, body_start, body_end, callback, disabled, title in raw_callbacks
+        ]
     suite_callbacks = tuple(
         (call_start, body_start, body_end)
         for call_start, body_start, body_end, _ in suite_records

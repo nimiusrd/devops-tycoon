@@ -764,8 +764,8 @@ def _contains_disabled_test_call(
         )
     base_lines = (base_data or b"").decode("utf-8", errors="replace").splitlines()
     head_lines = head_data.decode("utf-8", errors="replace").splitlines()
-    base_text = "\n".join(base_lines)
-    head_text = "\n".join(head_lines)
+    base_text = _javascript_disabled_call_source(base_data)
+    head_text = _javascript_disabled_call_source(head_data)
     if len(list(_DISABLED_TEST_CALL.finditer(head_text))) > len(
         list(_DISABLED_TEST_CALL.finditer(base_text))
     ):
@@ -775,12 +775,15 @@ def _contains_disabled_test_call(
         or len(head_data) > MAX_DIFF_BYTES
         or len(base_lines) + len(head_lines) > MAX_DIFF_LINES
     ):
-        return _DISABLED_TEST_CALL.search(head_data.decode("utf-8", errors="replace")) is not None
+        return _DISABLED_TEST_CALL.search(head_text) is not None
 
     matcher = difflib.SequenceMatcher(a=base_lines, b=head_lines, autojunk=True)
     for tag, _, _, head_start, head_end in matcher.get_opcodes():
         changed_text = "\n".join(head_lines[head_start:head_end])
-        if tag in {"replace", "insert"} and _DISABLED_TEST_CALL.search(changed_text):
+        changed_source = _mask_javascript_literals(
+            _strip_javascript_comments(changed_text.encode("utf-8"))
+        )
+        if tag in {"replace", "insert"} and _DISABLED_TEST_CALL.search(changed_source):
             return True
     return False
 
@@ -850,6 +853,70 @@ def _regex_for_fingerprint(
     return f"/R/{value[close + 1 :]}", end
 
 
+def _mask_javascript_literals(text: str) -> str:
+    """文字列・template・正規表現の内容を隠し、コード構文だけを残す。"""
+
+    characters: list[str] = []
+    index = 0
+    while index < len(text):
+        character = text[index]
+        if character in {"'", '"', "`"}:
+            quote = character
+            previous = index - 1
+            while previous >= 0 and text[previous].isspace():
+                previous -= 1
+            computed_property = previous >= 0 and text[previous] == "["
+            cursor = index + 1
+            while cursor < len(text):
+                if text[cursor] == "\\":
+                    cursor += 2
+                    continue
+                if text[cursor] == quote:
+                    cursor += 1
+                    break
+                cursor += 1
+            literal = text[index:cursor]
+            value = literal[1:-1] if literal.endswith(quote) else literal[1:]
+            preserve = computed_property and re.fullmatch(
+                r"[A-Za-z_$][A-Za-z0-9_$]*",
+                value,
+            )
+            if preserve:
+                characters.append(literal)
+            else:
+                characters.append(
+                    "".join(
+                        item if item in "\r\n" or item == quote else " "
+                        for item in literal
+                    )
+                )
+            index = cursor
+            continue
+        if character == "/":
+            regex = _read_regex_literal(text, index)
+            if regex is not None:
+                literal, close, end = regex
+                characters.append(
+                    "/"
+                    + "".join(
+                        item if item in "\r\n" else " "
+                        for item in literal[1 : close - index]
+                    )
+                    + literal[close - index :]
+                )
+                index = end
+                continue
+        characters.append(character)
+        index += 1
+    return "".join(characters)
+
+
+def _javascript_disabled_call_source(data: bytes | None) -> str:
+    if data is None or _is_binary(data):
+        return ""
+    return _mask_javascript_literals(_strip_javascript_comments(data))
+
+
 def _javascript_call_end(text: str, open_index: int) -> int | None:
     """開き括弧に対応するJavaScript呼び出しの終端を返す。"""
 
@@ -887,6 +954,7 @@ def _javascript_call_end(text: str, open_index: int) -> int | None:
 def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]:
     """無効化modifierを持つ呼び出しの引数範囲を返す。"""
 
+    source = _mask_javascript_literals(source)
     ranges: list[tuple[int, int]] = []
     for match in _DISABLED_TEST_CALL.finditer(source):
         open_index = match.end()
@@ -1400,18 +1468,23 @@ def _is_usable_test_change(
     if item.binary:
         return True
     language = _test_language(item.path)
-    return _has_executable_test_change(
-        base_data,
-        head_entry.data,
-        language=language,
-    ) and not _contains_disabled_test_call(
-        base_data,
-        head_entry.data,
-        language=language,
-    ) and not _has_executable_test_reduction(
-        base_data,
-        head_entry.data,
-        language=language,
+    return (
+        _test_shape(head_entry.data, language=language)[0] > 0
+        and _has_executable_test_change(
+            base_data,
+            head_entry.data,
+            language=language,
+        )
+        and not _contains_disabled_test_call(
+            base_data,
+            head_entry.data,
+            language=language,
+        )
+        and not _has_executable_test_reduction(
+            base_data,
+            head_entry.data,
+            language=language,
+        )
     )
 
 

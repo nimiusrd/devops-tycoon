@@ -72,6 +72,24 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
             self.assertIn("テスト変更がなく", " ".join(result.reasons))
 
+    def test_new_spec_without_test_declaration_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n"})
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "export const helper = 1;\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
     def test_emptying_a_test_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -272,6 +290,37 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertIn("src-fallback", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, 0)
+
+    def test_skip_text_in_comments_and_strings_is_not_a_disabled_test_call(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "// test.skip is rejected elsewhere\n"
+                        "const note = 'documents test.skip behavior';\n"
+                        "test('documents test.skip behavior', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertTrue(result.test_changes)
+            self.assertNotIn("visual", result.missing_test_scopes)
             self.assertEqual(result.test_removal_risk, 0)
 
     def test_string_literal_whitespace_is_part_of_test_change(self) -> None:

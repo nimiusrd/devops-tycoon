@@ -2441,14 +2441,17 @@ def _vitest_snapshot_value_fingerprint(data: bytes | None) -> str:
                 preserve_literal_content=True,
             )
         )
-    return "\x1e".join(values)
+    # export keyを除いて比較する場合でも、単なるexport順変更は値のmultisetが
+    # 変わらないため、検証変更として扱わない。
+    return "\x1e".join(sorted(values))
 
 
 _JAVASCRIPT_ASSERTION = re.compile(
-    r"\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
+    r"(?<![A-Za-z0-9_$?.])\b(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)"
+    r"(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
 )
 _JAVASCRIPT_NODE_ASSERTION_CALL = re.compile(
-    r"\b(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
+    r"(?<![A-Za-z0-9_$?.])\b(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
     r"(?:(?:\.\s*|\?\.\s*)(?P<dot>[A-Za-z_$][A-Za-z0-9_$]*)|"
     r"(?:\?\.)?\s*\[\s*['\"`](?P<bracket>[A-Za-z_$][A-Za-z0-9_$]*)['\"`]\s*\])\s*\("
 )
@@ -2499,6 +2502,17 @@ _JAVASCRIPT_NODE_ASSERT_TS_IMPORT = re.compile(
     r"\bimport\s+(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*require\s*\(\s*"
     r"(['\"])(?:assert|node:assert(?:/strict)?)\2\s*\)"
 )
+_JAVASCRIPT_EXPECT_NAMED_IMPORT = re.compile(
+    r"\bimport\s*\{(?P<specifiers>[^{}]*)\}\s*from\s*"
+    r"(?P<quote>['\"])(?P<module>[^'\"]+)(?P=quote)"
+)
+_JAVASCRIPT_EXPECT_REQUIRE = re.compile(
+    r"\b(?:const|let|var)\s*\{(?P<specifiers>[^{}]*)\}\s*=\s*require\s*\(\s*"
+    r"(?P<quote>['\"])(?P<module>[^'\"]+)(?P=quote)\s*\)"
+)
+_JAVASCRIPT_EXPECT_SHADOW_DECLARATION = re.compile(
+    r"\b(?:const|let|var|class|function)\s+(?P<binding>[A-Za-z_$][A-Za-z0-9_$]*)\b"
+)
 _JAVASCRIPT_OBJECT_METHODS = frozenset(
     {
         "__defineGetter__",
@@ -2518,6 +2532,69 @@ _JAVASCRIPT_MATCHER_CALL = re.compile(
     r"(?P<chain>(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)+)\s*\("
 )
 _JAVASCRIPT_IDENTIFIER_AT_END = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*\s*$")
+
+
+def _javascript_expect_module_is_known(module: str) -> bool:
+    return module in {"vitest", "@playwright/test"} or re.fullmatch(
+        r"(?:\.\.?/)+fixtures",
+        module,
+    ) is not None
+
+
+def _javascript_expect_bindings(
+    source: str,
+    *,
+    masked_source: str | None = None,
+) -> frozenset[str]:
+    """Vitest/Playwrightまたは既知のfixtureからimportされたexpect名を返す。"""
+
+    if masked_source is None:
+        masked_source = _mask_javascript_literals(source)
+
+    def is_code_match(match: re.Match[str]) -> bool:
+        return (
+            match.start() < len(masked_source)
+            and not masked_source[match.start()].isspace()
+        )
+
+    bindings: set[str] = set()
+    for pattern in (_JAVASCRIPT_EXPECT_NAMED_IMPORT, _JAVASCRIPT_EXPECT_REQUIRE):
+        for match in pattern.finditer(source):
+            if not is_code_match(match) or not _javascript_expect_module_is_known(
+                match.group("module")
+            ):
+                continue
+            for specifier in match.group("specifiers").split(","):
+                specifier = specifier.strip()
+                if specifier.startswith("type "):
+                    continue
+                parts = re.split(r"\s+as\s+", specifier, maxsplit=1)
+                imported = parts[0].strip()
+                local = parts[-1].strip()
+                if imported == "expect" and re.fullmatch(
+                    r"[A-Za-z_$][A-Za-z0-9_$]*",
+                    local,
+                ):
+                    bindings.add(local)
+    return frozenset(bindings)
+
+
+def _javascript_shadowed_expect_bindings(
+    masked_source: str,
+    start: int,
+    end: int,
+    expect_bindings: Iterable[str],
+) -> frozenset[str]:
+    expected = frozenset(expect_bindings)
+    return frozenset(
+        match.group("binding")
+        for match in _JAVASCRIPT_EXPECT_SHADOW_DECLARATION.finditer(
+            masked_source,
+            start,
+            end,
+        )
+        if match.group("binding") in expected
+    )
 
 
 def _javascript_node_assert_bindings(
@@ -2556,8 +2633,11 @@ def _javascript_node_assert_bindings(
             if not is_code_match(match):
                 continue
             for specifier in match.group("specifiers").split(","):
-                parts = re.split(r"\s+as\s+", specifier.strip(), maxsplit=1)
-                imported = parts[0].removeprefix("type ").strip()
+                specifier = specifier.strip()
+                if specifier.startswith("type "):
+                    continue
+                parts = re.split(r"\s+as\s+", specifier, maxsplit=1)
+                imported = parts[0].strip()
                 local = parts[-1].strip()
                 if imported in {"default", "strict"} and re.fullmatch(
                     r"[A-Za-z_$][A-Za-z0-9_$]*",
@@ -2575,6 +2655,7 @@ def _javascript_assertion_count(
     masked_source: str | None = None,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
     node_assert_bindings: frozenset[str] | None = None,
+    expect_bindings: frozenset[str] | None = None,
 ) -> int:
     """検証runnerまたはNode assertion APIのassertion数を数える。"""
 
@@ -2589,6 +2670,17 @@ def _javascript_assertion_count(
             source,
             masked_source=masked_source,
         )
+    if expect_bindings is None:
+        expect_bindings = _javascript_expect_bindings(
+            source,
+            masked_source=masked_source,
+        )
+    shadowed_expect_bindings = _javascript_shadowed_expect_bindings(
+        masked_source,
+        start,
+        end,
+        expect_bindings,
+    )
     count = 0
     for match in _JAVASCRIPT_NODE_ASSERTION_CALL.finditer(masked_source, start, end):
         method = match.group("dot") or match.group("bracket")
@@ -2598,6 +2690,11 @@ def _javascript_assertion_count(
         ):
             count += 1
     for match in _JAVASCRIPT_ASSERTION.finditer(masked_source, start, end):
+        if (
+            match.group("binding") not in expect_bindings
+            or match.group("binding") in shadowed_expect_bindings
+        ):
+            continue
         open_index = match.end() - 1
         argument_spans = argument_span_index.get(open_index)
         if argument_spans is None:
@@ -2680,6 +2777,10 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
         source,
         masked_source=masked_source,
     )
+    expect_bindings = _javascript_expect_bindings(
+        source,
+        masked_source=masked_source,
+    )
     callbacks = _javascript_test_callback_records(source)
     return (
         len(callbacks),
@@ -2691,6 +2792,7 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
                 masked_source=masked_source,
                 argument_span_index=argument_span_index,
                 node_assert_bindings=node_assert_bindings,
+                expect_bindings=expect_bindings,
             )
             for _, body_start, body_end, disabled, _ in callbacks
             if not disabled
@@ -3098,6 +3200,7 @@ def _javascript_callback_has_executable_content(
     masked_source: str | None = None,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
     node_assert_bindings: frozenset[str] | None = None,
+    expect_bindings: frozenset[str] | None = None,
 ) -> bool:
     """検証操作を含まないinline callbackをbehavior recordから除外する。"""
 
@@ -3121,6 +3224,7 @@ def _javascript_callback_has_executable_content(
             masked_source=masked_source,
             argument_span_index=argument_span_index,
             node_assert_bindings=node_assert_bindings,
+            expect_bindings=expect_bindings,
         )
         > 0
     )
@@ -3144,6 +3248,10 @@ def _javascript_test_behavior_records(
         source,
         masked_source=masked_source,
     )
+    expect_bindings = _javascript_expect_bindings(
+        source,
+        masked_source=masked_source,
+    )
     behaviors = []
     for body_start, body_end, disabled in callback_spans:
         callback = source[body_start:body_end].strip()
@@ -3155,6 +3263,7 @@ def _javascript_test_behavior_records(
             masked_source=masked_source,
             argument_span_index=argument_span_index,
             node_assert_bindings=node_assert_bindings,
+            expect_bindings=expect_bindings,
         ):
             continue
         behaviors.append(

@@ -52,6 +52,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/Widget.tsx": "export const Widget = () => <div>old</div>;\n",
                     "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('renders', () => expect(page).toBeHidden());\n"
                     ),
                 },
@@ -61,6 +62,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/Widget.tsx": "export const Widget = () => <div>new</div>;\n",
                     "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('renders new', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -94,6 +96,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/MetaShopScreen.tsx": "export const MetaShopScreen = 1;\n",
                     "tests/e2e/smoke.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('smoke', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -103,6 +106,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/MetaShopScreen.tsx": "export const MetaShopScreen = 2;\n",
                     "tests/e2e/smoke.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('smoke updated', () => expect(page).toHaveTitle('Tycoon'));\n"
                     ),
                 },
@@ -122,6 +126,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/AchievementCollectionScreen.tsx": "export const AchievementCollectionScreen = 1;\n",
                     "tests/e2e/smoke.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('smoke', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -131,6 +136,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/AchievementCollectionScreen.tsx": "export const AchievementCollectionScreen = 2;\n",
                     "tests/e2e/smoke.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('smoke updated', () => expect(page).toHaveTitle('Tycoon'));\n"
                     ),
                 },
@@ -150,6 +156,7 @@ class EvaluateTests(unittest.TestCase):
                 head,
                 {
                     "tests/unit/utils/new-behavior.test.ts": (
+                        "import { expect, it } from 'vitest';\n"
                         "it('covers the new behavior', () => expect(value).toBe(1));\n"
                     ),
                 },
@@ -501,6 +508,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/utils/assetUrl.ts": "export const url = '/';\n",
                     "tests/unit/utils/publicUrl.test.ts": (
+                        "import { expect, test } from 'vitest';\n"
                         "test('builds the URL', () => expect(url).toBe('/'));\n"
                     ),
                 },
@@ -510,6 +518,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                     "tests/unit/utils/publicUrl.test.ts": (
+                        "import { expect, test } from 'vitest';\n"
                         "test('builds the URL', { skip: false }, () => expect(url).toBe('/app/'));\n"
                     ),
                 },
@@ -531,6 +540,7 @@ class EvaluateTests(unittest.TestCase):
                     {
                         "src/utils/assetUrl.ts": "export const url = '/';\n",
                         "tests/unit/utils/publicUrl.test.ts": (
+                            "import { expect, test } from 'vitest';\n"
                             "test('builds the URL', () => expect(url).toBe('/'));\n"
                         ),
                     },
@@ -571,6 +581,7 @@ class EvaluateTests(unittest.TestCase):
                     {
                         "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                         "tests/unit/utils/publicUrl.test.ts": (
+                            "import { expect, test } from 'vitest';\n"
                             "const options = {};\n"
                             f"options.skip = {expression};\n"
                             "test('builds the URL', options, () => expect(url).toBe('/app/'));\n"
@@ -586,9 +597,11 @@ class EvaluateTests(unittest.TestCase):
 
     def test_assertion_reduction_is_scoped_to_executable_test_callbacks(self) -> None:
         base = (
+            "import { expect } from 'vitest';\n"
             "test('runs', () => expect(run()).toBe(1));\n"
         ).encode("utf-8")
         head = (
+            "import { expect } from 'vitest';\n"
             "const unused = () => expect(run()).toBe(2);\n"
             "test('runs', () => run());\n"
         ).encode("utf-8")
@@ -752,6 +765,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/Widget.tsx": "export const Widget = 1;\n",
                     "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('renders', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -763,6 +777,7 @@ class EvaluateTests(unittest.TestCase):
                     "tests/e2e/widget.spec.ts": (
                         "// test.skip is rejected elsewhere\n"
                         "const note = 'documents test.skip behavior';\n"
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('documents test.skip behavior', () => expect(page).toHaveText('updated'));\n"
                     ),
                 },
@@ -1184,6 +1199,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/utils/assetUrl.ts": "export const url = '/';\n",
                     "tests/unit/utils/publicUrl.test.ts": (
+                        "import { expect, it } from 'vitest';\n"
                         "it.each([['old']])('builds', (value) => expect(value).toBe('old'));\n"
                     ),
                 },
@@ -1193,6 +1209,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                     "tests/unit/utils/publicUrl.test.ts": (
+                        "import { expect, it } from 'vitest';\n"
                         "it.each([['new']])('builds', (value) => expect(value).toBe('new'));\n"
                     ),
                 },
@@ -1474,8 +1491,36 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(len(calls), 4000)
 
     def test_object_methods_are_not_counted_as_expect_matchers(self) -> None:
-        self.assertEqual(_javascript_assertion_count("expect(value).toString();"), 0)
-        self.assertEqual(_javascript_assertion_count("expect(value).toBe(1);"), 1)
+        import_source = "import { expect } from 'vitest'; "
+        self.assertEqual(
+            _javascript_assertion_count(import_source + "expect(value).toString();"),
+            0,
+        )
+        self.assertEqual(
+            _javascript_assertion_count(import_source + "expect(value).toBe(1);"),
+            1,
+        )
+        self.assertEqual(
+            _javascript_assertion_count(
+                "const expect = () => ({ toBe() {} }); "
+                "test('fake', () => expect(value).toBe(1));"
+            ),
+            0,
+        )
+        self.assertEqual(
+            _javascript_assertion_count(
+                "import { expect as check } from './fixtures'; "
+                "check(value).toBe(1);"
+            ),
+            1,
+        )
+        self.assertEqual(
+            _javascript_assertion_count(
+                "const note = \"import { expect } from 'vitest'\"; "
+                "expect(value).toBe(1);"
+            ),
+            0,
+        )
 
     def test_nested_test_callbacks_fail_closed_before_behavior_scan(self) -> None:
         source = (
@@ -1560,14 +1605,20 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 1;\n",
-                    "tests/e2e/widget.spec.ts": "test('renders', () => expect(page).toHaveText('hello world'));\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
+                        "test('renders', () => expect(page).toHaveText('hello world'));\n"
+                    ),
                 },
             )
             write_snapshot(
                 head,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 2;\n",
-                    "tests/e2e/widget.spec.ts": "test('renders', () => expect(page).toHaveText('helloworld'));\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
+                        "test('renders', () => expect(page).toHaveText('helloworld'));\n"
+                    ),
                 },
             )
 
@@ -1585,14 +1636,20 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 1;\n",
-                    "tests/e2e/widget.spec.ts": "test('renders', () => expect(page).toHaveText(/hello world/));\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
+                        "test('renders', () => expect(page).toHaveText(/hello world/));\n"
+                    ),
                 },
             )
             write_snapshot(
                 head,
                 {
                     "src/ui/Widget.tsx": "export const Widget = 2;\n",
-                    "tests/e2e/widget.spec.ts": "test('renders', () => expect(page).toHaveText(/helloworld/));\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
+                        "test('renders', () => expect(page).toHaveText(/helloworld/));\n"
+                    ),
                 },
             )
 
@@ -1917,6 +1974,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                     "src/utils/publicUrl.test.ts": (
+                        "import { expect, it } from 'vitest';\n"
                         "it('builds the public URL', () => expect(url).toBe('/app/'));\n"
                     ),
                 },
@@ -2008,6 +2066,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "public/assets/audio/sfx-ship.wav": b"RIFFnew",
                     "tests/unit/audio/audio.test.ts": (
+                        "import { expect, it } from 'vitest';\n"
                         "it('plays the new sound', () => expect(audio).toBeDefined());\n"
                     ),
                 },
@@ -2345,6 +2404,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/render/boardScene.ts": "export const boardScene = 1;\n",
                     "tests/e2e/org-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('org', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -2354,6 +2414,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/render/boardScene.ts": "export const boardScene = 2;\n",
                     "tests/e2e/org-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('org', () => expect(page).toHaveText('updated'));\n"
                     ),
                 },
@@ -2373,6 +2434,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/render/industryBoardScene.ts": "export const scene = 1;\n",
                     "tests/e2e/org-scale.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('industry', () => expect(page.getByTestId('industry-screen')).toBeVisible());\n"
                     ),
                 },
@@ -2382,6 +2444,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/render/industryBoardScene.ts": "export const scene = 2;\n",
                     "tests/e2e/org-scale.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('industry', () => expect(page.getByTestId('industry-skyline')).toBeVisible());\n"
                     ),
                 },
@@ -2433,12 +2496,15 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/render/gameAssetView.ts": "export const asset = 1;\n",
                     "tests/e2e/sprint-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('sprint', () => expect(page).toBeVisible());\n"
                     ),
                     "tests/e2e/dept-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('dept', () => expect(page).toBeVisible());\n"
                     ),
                     "tests/e2e/org-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('org', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -2448,12 +2514,15 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/render/gameAssetView.ts": "export const asset = 2;\n",
                     "tests/e2e/sprint-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('sprint', () => expect(page).toHaveText('updated'));\n"
                     ),
                     "tests/e2e/dept-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('dept', () => expect(page).toBeVisible());\n"
                     ),
                     "tests/e2e/org-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('org', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -2473,6 +2542,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/WebglStatusOverlay.tsx": "export const label = 'old';\n",
                     "tests/e2e/sprint-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('pixi', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -2482,6 +2552,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/WebglStatusOverlay.tsx": "export const label = 'new';\n",
                     "tests/e2e/sprint-pixi-visual.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('pixi', () => expect(page).toHaveText('updated'));\n"
                     ),
                 },
@@ -2515,6 +2586,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/WebglStatusOverlay.tsx": "export const label = 'old';\n",
                     "tests/e2e/webgl-availability.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('shows WebGL status', () => expect(page).toBeVisible());\n"
                     ),
                 },
@@ -2524,6 +2596,7 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/WebglStatusOverlay.tsx": "export const label = 'new';\n",
                     "tests/e2e/webgl-availability.spec.ts": (
+                        "import { expect, test } from '@playwright/test';\n"
                         "test('shows WebGL status', () => expect(page).toHaveText('available'));\n"
                     ),
                 },
@@ -2627,6 +2700,47 @@ class EvaluateTests(unittest.TestCase):
                 "// Vitest Snapshot v1\n"
                 "// regenerated without changing the captured value\n\n"
                 "exports[`captures 1`] = `value: 1`;\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/sim/engine.ts": "export const value = 1;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": base_snapshot,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": head_snapshot,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("simulation", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_vitest_snapshot_export_reorder_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "import { expect, it } from 'vitest';\n"
+                "it('first', () => expect({ value: 1 }).toMatchSnapshot());\n"
+                "it('second', () => expect({ value: 2 }).toMatchSnapshot());\n"
+            )
+            base_snapshot = (
+                "// Vitest Snapshot v1\n\n"
+                "exports[`first 1`] = `value: 1`;\n\n"
+                "exports[`second 1`] = `value: 2`;\n"
+            )
+            head_snapshot = (
+                "// Vitest Snapshot v1\n\n"
+                "exports[`second 1`] = `value: 2`;\n\n"
+                "exports[`first 1`] = `value: 1`;\n"
             )
             write_snapshot(
                 base,

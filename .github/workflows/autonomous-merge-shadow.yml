@@ -29,6 +29,55 @@ jobs:
       issues: write
       pull-requests: read
     steps:
+      - name: Invalidate previous shadow result before evaluation
+        id: invalidate_previous_result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+          if [[ "${current_state}" != "open" || "${BASE_REF}" != "main" || \
+            "${current_base_ref}" != "main" || "${current_base_ref}" != "${BASE_REF}" || \
+            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" ]]; then
+            echo "Skipping stale shadow invalidation for PR #${PR_NUMBER}"
+            echo 'invalidated=false' >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          existing_comment_id="$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+          if [[ -z "${existing_comment_id}" ]]; then
+            echo "No previous shadow result exists for PR #${PR_NUMBER}"
+            echo 'invalidated=false' >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          report_body="$(cat <<EOF
+          ## Autonomous Merge Shadow Mode
+
+          > 最新のPR状態を評価中です。前回のShadow Mode判定は無効化されました。
+
+          | 指標 | 値 |
+          | --- | --- |
+          | Decision | \`HUMAN_REVIEW_REQUIRED\` |
+          | Reason | \`EVALUATION_IN_PROGRESS\` |
+          | Comparison base SHA | \`${BASE_SHA}\` |
+          | Head SHA | \`${HEAD_SHA}\` |
+          EOF
+          )"
+          full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
+          payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
+          gh api --method PATCH \
+            "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
+            --input - <<<"${payload}" >/dev/null
+          echo 'invalidated=true' >> "${GITHUB_OUTPUT}"
+
       # policy/evaluatorはPR headではなく、必ずPR base SHAから取得する。
       - name: Checkout PR base
         id: checkout_base
@@ -340,7 +389,9 @@ jobs:
 
       - name: Update PR shadow result comment
         if: >-
-          always() && (steps.checkout_base.outcome != 'success' || steps.base_assets.outputs.available == 'true')
+          always() && (steps.checkout_base.outcome != 'success' ||
+          steps.base_assets.outputs.available == 'true' ||
+          steps.invalidate_previous_result.outputs.invalidated == 'true')
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}

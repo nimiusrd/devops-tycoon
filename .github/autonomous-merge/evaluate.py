@@ -1583,16 +1583,47 @@ def _has_executable_test_reduction(
 
 
 def _javascript_test_behavior_fingerprint(data: bytes | None) -> tuple[str, ...]:
+    return tuple(
+        behavior
+        for behavior, _ in _javascript_test_behavior_records(data)
+    )
+
+
+def _javascript_test_body_argument(arguments: Sequence[str]) -> str | None:
+    """test呼び出しからtitle/optionsを除いたcallback引数を取り出す。"""
+
+    for argument in reversed(arguments[1:]):
+        candidate = argument.strip()
+        if (
+            "=>" in candidate
+            or re.search(r"\bfunction\b", candidate)
+            or re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", candidate)
+        ):
+            return candidate
+    return None
+
+
+def _javascript_test_behavior_records(
+    data: bytes | None,
+) -> tuple[tuple[str, bool], ...]:
     if data is None or _is_binary(data):
         return ()
     source = _strip_javascript_comments(data)
-    behaviors: list[str] = []
+    disabled_ranges = _disabled_javascript_call_ranges(source)
+    behaviors: list[tuple[str, bool]] = []
     for match in _JAVASCRIPT_TEST_CALL.finditer(source):
-        end = _javascript_call_end(source, match.end() - 1)
-        if end is not None:
-            behaviors.append(
-                _normalize_javascript_whitespace(source[match.start() : end])
+        arguments = _javascript_call_arguments(source, match.end() - 1)
+        if arguments is None:
+            continue
+        body = _javascript_test_body_argument(arguments)
+        if body is None:
+            continue
+        behaviors.append(
+            (
+                _normalize_javascript_whitespace(body),
+                any(start <= match.start() < end for start, end in disabled_ranges),
             )
+        )
     return tuple(behaviors)
 
 
@@ -1605,7 +1636,7 @@ def _python_test_behavior_fingerprint(data: bytes | None) -> tuple[str, ...]:
     except SyntaxError:
         return (_python_code_fingerprint(data, preserve_literal_content=True),)
     return tuple(
-        ast.dump(node, include_attributes=False)
+        ast.dump(ast.Module(body=node.body, type_ignores=[]), include_attributes=False)
         for node in ast.walk(tree)
         if isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef))
         and node.name.startswith("test_")
@@ -1622,6 +1653,35 @@ def _test_behavior_fingerprint(
     return _javascript_test_behavior_fingerprint(data)
 
 
+def _has_test_behavior_change(
+    base_data: bytes | None,
+    head_data: bytes,
+    *,
+    language: str,
+) -> bool:
+    if language != "javascript":
+        return _test_behavior_fingerprint(base_data, language=language) != _test_behavior_fingerprint(
+            head_data,
+            language=language,
+        )
+    base_records = _javascript_test_behavior_records(base_data)
+    head_records = _javascript_test_behavior_records(head_data)
+    base_behaviors = tuple(behavior for behavior, _ in base_records)
+    head_behaviors = tuple(behavior for behavior, _ in head_records)
+    if base_behaviors == head_behaviors:
+        return False
+    matcher = difflib.SequenceMatcher(
+        a=base_behaviors,
+        b=head_behaviors,
+        autojunk=False,
+    )
+    return any(
+        tag in {"replace", "insert"}
+        and any(not disabled for _, disabled in head_records[head_start:head_end])
+        for tag, _, _, head_start, head_end in matcher.get_opcodes()
+    )
+
+
 def _has_executable_test_change(
     base_data: bytes | None,
     head_data: bytes,
@@ -1634,8 +1694,7 @@ def _has_executable_test_change(
     return (
         bool(head_fingerprint)
         and _test_code_fingerprint(base_data, language=language) != head_fingerprint
-        and _test_behavior_fingerprint(base_data, language=language)
-        != _test_behavior_fingerprint(head_data, language=language)
+        and _has_test_behavior_change(base_data, head_data, language=language)
     )
 
 

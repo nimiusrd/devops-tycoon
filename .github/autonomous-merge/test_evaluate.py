@@ -42,14 +42,18 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/ui/Widget.tsx": "export const Widget = () => <div>old</div>;\n",
-                    "tests/e2e/widget.spec.ts": "test('renders', () => {});\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders', () => expect(page).toBeHidden());\n"
+                    ),
                 },
             )
             write_snapshot(
                 head,
                 {
                     "src/ui/Widget.tsx": "export const Widget = () => <div>new</div>;\n",
-                    "tests/e2e/widget.spec.ts": "test('renders new', () => {});\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders new', () => expect(page).toBeVisible());\n"
+                    ),
                 },
             )
 
@@ -418,7 +422,7 @@ class EvaluateTests(unittest.TestCase):
                     "tests/e2e/widget.spec.ts": (
                         "// test.skip is rejected elsewhere\n"
                         "const note = 'documents test.skip behavior';\n"
-                        "test('documents test.skip behavior', () => expect(page).toBeVisible());\n"
+                        "test('documents test.skip behavior', () => expect(page).toHaveText('updated'));\n"
                     ),
                 },
             )
@@ -487,6 +491,68 @@ class EvaluateTests(unittest.TestCase):
                     "tests/e2e/widget.spec.ts": (
                         "const unrelatedHelper = 1;\n"
                         "test('renders', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_test_title_only_change_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders the widget', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders the updated widget', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_existing_skipped_test_body_change_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test.skip(\n"
+                        "  'renders the widget',\n"
+                        "  () => expect(page).toBeVisible(),\n"
+                        ");\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test.skip(\n"
+                        "  'renders the widget',\n"
+                        "  () => expect(page).toHaveText('updated'),\n"
+                        ");\n"
                     ),
                 },
             )
@@ -945,7 +1011,9 @@ class EvaluateTests(unittest.TestCase):
                 head,
                 {
                     "public/assets/audio/sfx-ship.wav": b"RIFFnew",
-                    "tests/unit/audio/audio.test.ts": "it('plays the new sound', () => {});\n",
+                    "tests/unit/audio/audio.test.ts": (
+                        "it('plays the new sound', () => expect(audio).toBeDefined());\n"
+                    ),
                 },
             )
 

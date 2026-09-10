@@ -40,11 +40,12 @@ jobs:
         run: |
           set -euo pipefail
           current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
-            --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
-          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+            --jq '[.state, .base.ref, .base.sha, .head.sha, .draft] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha current_draft <<< "${current_pr}"
           if [[ "${current_state}" != "open" || "${BASE_REF_NAME}" != "main" || \
             "${current_base_ref}" != "main" || "${current_base_ref}" != "${BASE_REF_NAME}" || \
-            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" ]]; then
+            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" || \
+            "${current_draft}" != "false" ]]; then
             echo "Skipping stale shadow recheck invalidation for PR #${PR_NUMBER}"
             exit 0
           fi
@@ -124,12 +125,13 @@ jobs:
             local report_file="$5"
             local current_pr
             current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" \
-              --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
-            local current_state current_base_ref current_base_sha current_head_sha
-            IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+              --jq '[.state, .base.ref, .base.sha, .head.sha, .draft] | @tsv')"
+            local current_state current_base_ref current_base_sha current_head_sha current_draft
+            IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha current_draft <<< "${current_pr}"
             if [[ "${current_state}" != "open" || "${base_ref_name}" != "main" || \
               "${current_base_ref}" != "main" || "${current_base_ref}" != "${base_ref_name}" || \
-              "${current_base_sha}" != "${base_sha}" || "${current_head_sha}" != "${head_sha}" ]]; then
+              "${current_base_sha}" != "${base_sha}" || "${current_head_sha}" != "${head_sha}" || \
+              "${current_draft}" != "false" ]]; then
               echo "Skipping stale failure result for PR #${pr_number}"
               return 0
             fi

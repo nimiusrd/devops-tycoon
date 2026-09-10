@@ -1787,6 +1787,63 @@ class EvaluateTests(unittest.TestCase):
             self.assertTrue(result.test_changes)
             self.assertEqual(result.verification_risk, 0)
 
+    def test_webgl_overlay_requires_webgl_availability_e2e(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/WebglStatusOverlay.tsx": "export const label = 'old';\n",
+                    "tests/e2e/sprint-pixi-visual.spec.ts": (
+                        "test('pixi', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/WebglStatusOverlay.tsx": "export const label = 'new';\n",
+                    "tests/e2e/sprint-pixi-visual.spec.ts": (
+                        "test('pixi', () => expect(page).toHaveText('updated'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("webgl-availability", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_webgl_availability_e2e_satisfies_webgl_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/WebglStatusOverlay.tsx": "export const label = 'old';\n",
+                    "tests/e2e/webgl-availability.spec.ts": (
+                        "test('shows WebGL status', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/WebglStatusOverlay.tsx": "export const label = 'new';\n",
+                    "tests/e2e/webgl-availability.spec.ts": (
+                        "test('shows WebGL status', () => expect(page).toHaveText('available'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("webgl-availability", result.missing_test_scopes)
+            self.assertTrue(result.test_changes)
+            self.assertEqual(result.verification_risk, 0)
+
     def test_arbitrary_snapshot_text_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -1875,13 +1932,15 @@ class EvaluateTests(unittest.TestCase):
             head = Path(directory) / "head"
             owner = (
                 "const disabled = { skip: true };\n"
-                "it('skipped', disabled, () => expect({ value: 1 }).toMatchSnapshot());\n"
-                "it('active', () => expect({ value: 1 }).toMatchSnapshot());\n"
+                "describe('suite', () => {\n"
+                "  it('foo bar', disabled, () => expect({ value: 1 }).toMatchSnapshot());\n"
+                "  it('foo', () => expect({ value: 1 }).toMatchSnapshot());\n"
+                "});\n"
             )
             base_snapshot = (
                 "// Vitest Snapshot v1\n\n"
-                "exports[`skipped 1`] = `value: 1`;\n"
-                "\nexports[`active 1`] = `value: 1`;\n"
+                "exports[`suite > foo bar 1`] = `value: 1`;\n"
+                "\nexports[`suite > foo 1`] = `value: 1`;\n"
             )
             head_snapshot = base_snapshot.replace("value: 1", "value: 2")
             write_snapshot(

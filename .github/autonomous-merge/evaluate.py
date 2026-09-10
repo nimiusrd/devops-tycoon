@@ -1446,11 +1446,10 @@ def _javascript_static_test_title(arguments: Sequence[str]) -> str | None:
 
 
 def _vitest_snapshot_key_matches_title(snapshot_key: str, title: str) -> bool:
-    """Vitest標準keyが単独またはsuite配下のtest titleで始まるか確認する。"""
+    """Vitest標準keyの番号を除いた完全なtest titleと一致するか確認する。"""
 
-    return snapshot_key == title or snapshot_key.startswith(f"{title} ") or (
-        f" > {title} " in f" {snapshot_key} "
-    )
+    key_match = re.fullmatch(r"(?P<title>.+) (?P<index>[1-9][0-9]*)", snapshot_key)
+    return key_match is not None and key_match.group("title") == title
 
 
 def _vitest_snapshot_callback_records(source: str) -> tuple[tuple[str, bool], ...]:
@@ -1520,8 +1519,13 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
             and snapshot_callbacks
             and all(
                 any(
-                    not disabled
-                    and _vitest_snapshot_key_matches_title(key, title)
+                    _vitest_snapshot_key_matches_title(key, title)
+                    and not disabled
+                    for title, disabled in snapshot_callbacks
+                )
+                and not any(
+                    _vitest_snapshot_key_matches_title(key, title)
+                    and disabled
                     for title, disabled in snapshot_callbacks
                 )
                 for key in keys
@@ -1928,17 +1932,18 @@ def _javascript_test_call_spans(source: str) -> tuple[tuple[int, int], ...]:
     return tuple(sorted(set(calls)))
 
 
-def _javascript_suite_callback_spans(
+def _javascript_suite_callback_records(
     source: str,
     *,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
-) -> tuple[tuple[int, int, int], ...]:
-    """suite呼び出しとinline callbackの範囲を返す。"""
+) -> tuple[tuple[int, int, int, str | None], ...]:
+    """suite呼び出しとinline callback、静的titleの範囲を返す。"""
 
     if argument_span_index is None:
         argument_span_index = _javascript_call_argument_span_index(source)
-    callbacks: list[tuple[int, int, int]] = []
-    for match in _JAVASCRIPT_SUITE_CALL.finditer(source):
+    masked_source = _mask_javascript_literals(source)
+    callbacks: list[tuple[int, int, int, str | None]] = []
+    for match in _JAVASCRIPT_SUITE_CALL.finditer(masked_source):
         argument_spans = _javascript_call_argument_spans(
             source,
             match.end() - 1,
@@ -1951,8 +1956,29 @@ def _javascript_suite_callback_spans(
         if body_index is None:
             continue
         body_start, body_end = argument_spans[body_index]
-        callbacks.append((match.start(), body_start, body_end))
+        callbacks.append(
+            (
+                match.start(),
+                body_start,
+                body_end,
+                _javascript_static_test_title(arguments),
+            )
+        )
     return tuple(callbacks)
+
+
+def _javascript_suite_callback_spans(
+    source: str,
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> tuple[tuple[int, int, int], ...]:
+    return tuple(
+        (call_start, body_start, body_end)
+        for call_start, body_start, body_end, _ in _javascript_suite_callback_records(
+            source,
+            argument_span_index=argument_span_index,
+        )
+    )
 
 
 def _javascript_unconditional_scope_disabled_calls(
@@ -2035,6 +2061,32 @@ def _javascript_callback_contains_disabled_call(
     return any(body_start <= start < body_end for start, _ in disabled_ranges)
 
 
+def _javascript_qualified_test_title(
+    call_start: int,
+    title: str | None,
+    suite_callbacks: Sequence[tuple[int, int, int, str | None]],
+) -> str | None:
+    """test titleへ静的な親suite titleを付け、snapshot keyと同じ完全名にする。"""
+
+    if title is None:
+        return None
+    containing_suites = [
+        suite
+        for suite in suite_callbacks
+        if suite[1] <= call_start < suite[2]
+    ]
+    if any(suite[3] is None for suite in containing_suites):
+        return None
+    suite_titles = [
+        suite[3]
+        for suite in sorted(
+            containing_suites,
+            key=lambda suite: (-(suite[2] - suite[1]), suite[0]),
+        )
+    ]
+    return " > ".join((*suite_titles, title))
+
+
 def _javascript_test_callback_records(
     source: str,
 ) -> tuple[tuple[int, int, int, bool, str | None], ...]:
@@ -2044,6 +2096,7 @@ def _javascript_test_callback_records(
     disabled_ranges = _disabled_javascript_call_ranges(source)
     argument_span_index = _javascript_call_argument_span_index(source)
     disabled_option_variables = _javascript_disabled_test_option_variables(source)
+    suite_records = _javascript_suite_callback_records(source)
     callbacks: list[tuple[int, int, int, bool, str | None]] = []
     for call_start, open_index in _javascript_test_call_spans(source):
         argument_spans = _javascript_call_argument_spans(
@@ -2079,19 +2132,18 @@ def _javascript_test_callback_records(
                 _javascript_static_test_title(arguments),
             )
         )
-    suite_argument_span_index = _javascript_call_argument_span_index(masked_source)
-    suite_callbacks = _javascript_suite_callback_spans(
-        masked_source,
-        argument_span_index=suite_argument_span_index,
+    suite_callbacks = tuple(
+        (call_start, body_start, body_end)
+        for call_start, body_start, body_end, _ in suite_records
     )
     scope_disabled_calls = _javascript_unconditional_scope_disabled_calls(
         masked_source,
         tuple(
             (call_start, body_start, body_end)
-            for call_start, body_start, body_end, _, _ in callbacks
+        for call_start, body_start, body_end, _, _ in callbacks
         ),
         suite_callbacks,
-        argument_span_index=suite_argument_span_index,
+        argument_span_index=_javascript_call_argument_span_index(masked_source),
     )
     return tuple(
         (
@@ -2103,7 +2155,7 @@ def _javascript_test_callback_records(
                 call_start,
                 scope_disabled_calls,
             ),
-            title,
+            _javascript_qualified_test_title(call_start, title, suite_records),
         )
         for call_start, body_start, body_end, disabled, title in callbacks
     )

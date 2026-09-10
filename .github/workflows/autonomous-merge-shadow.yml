@@ -4,7 +4,7 @@ name: Autonomous Merge Shadow
 # required checkにはせず、merge APIも呼ばないため、Shadow Mode中はPRを止めない。
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
   push:
     branches: [main]
 
@@ -17,7 +17,10 @@ permissions:
 
 jobs:
   evaluate:
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.base.ref == 'main'
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.draft == false
     name: PR risk (shadow only)
     concurrency:
       group: autonomous-merge-shadow-pr-${{ github.event.pull_request.number }}
@@ -38,14 +41,16 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           set -euo pipefail
           current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
-            --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
-          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+            --jq '[.state, .base.ref, .base.sha, .head.sha, .draft] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha current_draft <<< "${current_pr}"
           if [[ "${current_state}" != "open" || "${BASE_REF}" != "main" || \
             "${current_base_ref}" != "main" || "${current_base_ref}" != "${BASE_REF}" || \
-            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" ]]; then
+            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" || \
+            "${current_draft}" != "${DRAFT}" ]]; then
             echo "Skipping stale shadow invalidation for PR #${PR_NUMBER}"
             echo 'invalidated=false' >> "${GITHUB_OUTPUT}"
             exit 0
@@ -405,6 +410,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           MERGE_BASE_SHA: ${{ steps.merge_base.outputs.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DRAFT: ${{ github.event.pull_request.draft }}
           CHECKOUT_OUTCOME: ${{ steps.checkout_base.outcome }}
           EVALUATION_OUTCOME: ${{ steps.evaluate_risk.outcome }}
           MERGE_BASE_OUTCOME: ${{ steps.merge_base.outcome }}
@@ -441,11 +447,11 @@ jobs:
             report_body+=$'\n\n_Report truncated to fit the shadow result comment limit._'
           fi
           current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
-            --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
-          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+            --jq '[.state, .base.ref, .base.sha, .head.sha, .draft] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha current_draft <<< "${current_pr}"
           if [[ "${current_state}" != "open" || "${current_base_ref}" != "main" || \
             "${current_base_sha}" != "${BASE_SHA}" || \
-            "${current_head_sha}" != "${HEAD_SHA}" ]]; then
+            "${current_head_sha}" != "${HEAD_SHA}" || "${current_draft}" != "${DRAFT}" ]]; then
             echo "Skipping stale shadow result for PR #${PR_NUMBER}"
             exit 0
           fi
@@ -464,9 +470,12 @@ jobs:
               --input - <<<"${payload}" >/dev/null
           fi
 
-  invalidate-out-of-scope:
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.base.ref != 'main'
-    name: Invalidate out-of-scope shadow result
+  invalidate-non-evaluable:
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      (github.event.pull_request.base.ref != 'main' ||
+      github.event.pull_request.draft == true)
+    name: Invalidate non-evaluable shadow result
     concurrency:
       group: autonomous-merge-shadow-pr-${{ github.event.pull_request.number }}
       cancel-in-progress: false
@@ -481,16 +490,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           set -euo pipefail
           current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
-            --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
-          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
-          if [[ "${current_state}" != "open" || "${current_base_ref}" == "main" || \
-            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" ]]; then
-            echo "Skipping stale out-of-scope invalidation for PR #${PR_NUMBER}"
+            --jq '[.state, .base.ref, .base.sha, .head.sha, .draft] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha current_draft <<< "${current_pr}"
+          if [[ "${current_state}" != "open" || "${current_base_ref}" != "${BASE_REF}" || \
+            "${current_base_sha}" != "${BASE_SHA}" || "${current_head_sha}" != "${HEAD_SHA}" || \
+            "${current_draft}" != "${DRAFT}" ]]; then
+            echo "Skipping stale non-evaluable invalidation for PR #${PR_NUMBER}"
             exit 0
           fi
           existing_comment_id="$(gh api --paginate \
@@ -500,17 +512,26 @@ jobs:
             echo "No shadow result exists for PR #${PR_NUMBER}"
             exit 0
           fi
+          if [[ "${BASE_REF}" != "main" ]]; then
+            reason="BASE_BRANCH_OUT_OF_SCOPE"
+            detail='This PR no longer targets `main`; the previous shadow result is invalidated.'
+            base_row='| Base branch | `not main` |'
+          else
+            reason="DRAFT_PR"
+            detail='Draft PRはmerge候補として評価しません。ready_for_review後に再評価します。'
+            base_row='| Draft | `true` |'
+          fi
           report_body="$(cat <<EOF
           ## Autonomous Merge Shadow Mode
 
-          > This PR no longer targets \`main\`; the previous shadow result is invalidated.
+          > ${detail}
 
           | 指標 | 値 |
           | --- | --- |
           | Decision | \`HUMAN_REVIEW_REQUIRED\` |
-          | Reason | \`BASE_BRANCH_OUT_OF_SCOPE\` |
+          | Reason | \`${reason}\` |
           | PR Risk | \`N/A\` |
-          | Base branch | \`not main\` |
+          ${base_row}
           | Base SHA | \`${BASE_SHA}\` |
           | Head SHA | \`${HEAD_SHA}\` |
           EOF
@@ -540,7 +561,7 @@ jobs:
         run: |
           set -euo pipefail
           pr_list="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
-            --jq '.[] | select(.base.ref == "main") | {number: .number, base_ref_name: .base.ref, base_sha: .base.sha, head_sha: .head.sha}' |
+            --jq '.[] | select(.base.ref == "main" and .draft == false) | {number: .number, base_ref_name: .base.ref, base_sha: .base.sha, head_sha: .head.sha}' |
             jq -sc '.')"
           pr_batches="$(jq -c '[range(0; length; 100) as $start | {index: (($start / 100) | floor), prs: .[$start:($start + 100)]}]' <<< "${pr_list}")"
           printf 'batches=%s\n' "${pr_batches}" >> "${GITHUB_OUTPUT}"

@@ -93,3 +93,11 @@ python3 -m unittest discover \
 - deploy後のrevert・hotfix率と復旧時間
 
 特にFalse Negativeをゼロに近づけることを優先し、Risk `25`を事故確率として解釈しないでください。最初の目的は、既存のレビュー判断と安全に比較できる基準線を作ることです。
+
+## 最新の安全側ルール
+
+Draft PRは評価せず、既存の結果を`DRAFT_PR`として失効させます。`converted_to_draft`を含む状態変更を監視し、ready for review後に再評価します。main push時の再評価一覧からもdraft PRを除外し、結果を書き込む直前にもdraft状態を確認します。
+
+`src/ui/WebglLoading.tsx`、`src/ui/WebglScene.tsx`、`src/ui/WebglStatusOverlay.tsx`はPixi scopeではなく、HTML上の状態を確認する`tests/e2e/webgl-availability.spec.ts`専用scopeで検証します。通常のvisual scopeは引き続き適用されます。
+
+Vitest snapshotは末尾の連番を除いたsuite込みの完全なtest titleで所有callbackを照合します。タイトルの前方一致や、skipされた別testのsnapshotによる検証充足は認めません。

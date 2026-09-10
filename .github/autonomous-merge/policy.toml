@@ -75,9 +75,6 @@ excluded_code_globs = [
   "src/ui/BoardPixiLayer.tsx",
   "src/ui/DeptPixiBoard.tsx",
   "src/ui/OrgPixiField.tsx",
-  "src/ui/WebglLoading.tsx",
-  "src/ui/WebglScene.tsx",
-  "src/ui/WebglStatusOverlay.tsx",
   "src/ui/lazyWebgl.ts",
   "src/ui/usePixiRenderer.ts",
 ]
@@ -108,9 +105,6 @@ code_globs = [
   "src/ui/BoardPixiLayer.tsx",
   "src/ui/DeptPixiBoard.tsx",
   "src/ui/OrgPixiField.tsx",
-  "src/ui/WebglLoading.tsx",
-  "src/ui/WebglScene.tsx",
-  "src/ui/WebglStatusOverlay.tsx",
   "src/ui/lazyWebgl.ts",
   "src/ui/usePixiRenderer.ts",
 ]
@@ -121,6 +115,16 @@ test_globs = [
 binary_test_globs = [
   "tests/e2e/**/*-pixi-visual.spec.ts-snapshots/**/*.png",
 ]
+
+[[verification.scopes]]
+name = "webgl-availability"
+fallback = false
+code_globs = [
+  "src/ui/WebglLoading.tsx",
+  "src/ui/WebglScene.tsx",
+  "src/ui/WebglStatusOverlay.tsx",
+]
+test_globs = ["tests/e2e/webgl-availability.spec.ts"]
 
 [[verification.scopes]]
 name = "simulation"

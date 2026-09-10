@@ -48,7 +48,7 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 
 条件付きのfile-level skip（例: `test.skip(!pixiE2e, ...)`）は、そのskip呼び出しの引数内にない有効なsnapshot参照を無効化しません。一方、skipされたtestまたはsuiteの中にある参照は検証として受け入れません。さらに、テストファイルの行数が増えていても、実行可能なtest宣言またはassertionの純減を検出した場合はテスト削除リスクを加算します。`src/utils/publicUrl.ts`は画像・WebGLテクスチャ・音源で共有されるため、visualとaudioの両scopeで対応する検証を要求します。
 
-通常のテスト変更は、実行可能なtest/suite宣言を少なくとも1つ含むことを必須とします。これにより、新規specへhelperや定数だけを追加した変更を検証充足と誤認しません。無効化modifierの検査はJavaScript/TypeScriptのコメント・文字列・正規表現リテラルをマスクしたコード部分だけを対象にするため、説明文やテストタイトルに含まれる`test.skip`などは誤って無効化扱いになりません。
+通常のテスト変更は、実行可能なtest case宣言（`test`・`it`・`specify`）を少なくとも1つ含むことを必須とします。`describe`・`suite`・`context`・`test.describe`だけの空suiteは実行テストとして数えないため、新規specへhelperやsuiteだけを追加した変更を検証充足と誤認しません。Vitestの`test('name', { skip: true }, fn)`／`{ todo: true }`形式も無効化として検出します。無効化modifierの検査はJavaScript/TypeScriptのコメント・文字列・正規表現リテラルをマスクしたコード部分だけを対象にするため、説明文やテストタイトルに含まれる`test.skip`などは誤って無効化扱いになりません。
 
 ## ローカル実行
 

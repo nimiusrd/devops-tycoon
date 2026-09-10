@@ -234,6 +234,70 @@ class EvaluateTests(unittest.TestCase):
                     self.assertFalse(result.test_changes)
                     self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
+    def test_vitest_test_options_disabling_does_not_satisfy_verification(self) -> None:
+        for option in ("skip", "todo"):
+            with self.subTest(option=option):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(
+                        base,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "test('builds the URL', () => expect(url).toBe('/'));\n"
+                            ),
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "test(\n"
+                                "  'builds the URL',\n"
+                                f"  {{ {option}: true }},\n"
+                                "  () => expect(url).toBe('/app/'),\n"
+                                ");\n"
+                            ),
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("src-fallback", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+                    self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_vitest_false_skip_option_keeps_test_usable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "test('builds the URL', () => expect(url).toBe('/'));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "test('builds the URL', { skip: false }, () => expect(url).toBe('/app/'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("src-fallback", result.missing_test_scopes)
+            self.assertTrue(result.test_changes)
+            self.assertEqual(result.test_removal_risk, 0)
+
     def test_computed_property_test_disabling_does_not_satisfy_verification(self) -> None:
         for disabled_call in (
             "test['skip']",
@@ -322,6 +386,24 @@ class EvaluateTests(unittest.TestCase):
             self.assertTrue(result.test_changes)
             self.assertNotIn("visual", result.missing_test_scopes)
             self.assertEqual(result.test_removal_risk, 0)
+
+    def test_empty_test_suite_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n"})
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "test.describe('group', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
 
     def test_string_literal_whitespace_is_part_of_test_change(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -698,6 +698,15 @@ _DISABLED_TEST_CALL = re.compile(
     r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf)\b|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf)['\"`]\s*\])"
 )
+_JAVASCRIPT_TEST_CALL = re.compile(
+    r"\b(?:test|it|specify)"
+    r"(?:(?:\s*(?:\.\s*|\?\.\s*)(?!(?:describe|suite)\b)[A-Za-z_$][A-Za-z0-9_$]*)"
+    r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`](?!(?:describe|suite)['\"`])[A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+    r"\s*\("
+)
+_JAVASCRIPT_DISABLED_TEST_OPTION = re.compile(
+    r"(?:^|[{,])\s*(?:skip|todo)\s*:(?!\s*(?:false|0|null|undefined)\b)\s*"
+)
 
 
 _PYTHON_DISABLED_DECORATORS = frozenset(
@@ -766,8 +775,8 @@ def _contains_disabled_test_call(
     head_lines = head_data.decode("utf-8", errors="replace").splitlines()
     base_text = _javascript_disabled_call_source(base_data)
     head_text = _javascript_disabled_call_source(head_data)
-    if len(list(_DISABLED_TEST_CALL.finditer(head_text))) > len(
-        list(_DISABLED_TEST_CALL.finditer(base_text))
+    if _javascript_disabled_test_feature_count(head_text) > _javascript_disabled_test_feature_count(
+        base_text
     ):
         return True
     if (
@@ -783,7 +792,10 @@ def _contains_disabled_test_call(
         changed_source = _mask_javascript_literals(
             _strip_javascript_comments(changed_text.encode("utf-8"))
         )
-        if tag in {"replace", "insert"} and _DISABLED_TEST_CALL.search(changed_source):
+        if tag in {"replace", "insert"} and (
+            _DISABLED_TEST_CALL.search(changed_source)
+            or _javascript_disabled_test_option_count(changed_source) > 0
+        ):
             return True
     return False
 
@@ -915,6 +927,81 @@ def _javascript_disabled_call_source(data: bytes | None) -> str:
     if data is None or _is_binary(data):
         return ""
     return _mask_javascript_literals(_strip_javascript_comments(data))
+
+
+def _javascript_call_arguments(source: str, open_index: int) -> tuple[str, ...] | None:
+    """JavaScript呼び出しのトップレベル引数を、文字列を跨がずに分割する。"""
+
+    if open_index >= len(source) or source[open_index] != "(":
+        return None
+    arguments: list[str] = []
+    argument_start = open_index + 1
+    parentheses = 0
+    brackets = 0
+    braces = 0
+    index = argument_start
+    while index < len(source):
+        character = source[index]
+        if character in {"'", '"', "`"}:
+            quote = character
+            index += 1
+            while index < len(source):
+                if source[index] == "\\":
+                    index += 2
+                    continue
+                if source[index] == quote:
+                    index += 1
+                    break
+                index += 1
+            continue
+        if character == "/":
+            regex = _read_regex_literal(source, index)
+            if regex is not None:
+                index = regex[2]
+                continue
+        if character == "(":
+            parentheses += 1
+        elif character == ")":
+            if parentheses == brackets == braces == 0:
+                arguments.append(source[argument_start:index])
+                return tuple(arguments)
+            if parentheses > 0:
+                parentheses -= 1
+        elif character == "[":
+            brackets += 1
+        elif character == "]":
+            if brackets > 0:
+                brackets -= 1
+        elif character == "{":
+            braces += 1
+        elif character == "}":
+            if braces > 0:
+                braces -= 1
+        elif character == "," and parentheses == brackets == braces == 0:
+            arguments.append(source[argument_start:index])
+            argument_start = index + 1
+        index += 1
+    return None
+
+
+def _javascript_disabled_test_option_count(source: str) -> int:
+    count = 0
+    for match in _JAVASCRIPT_TEST_CALL.finditer(source):
+        arguments = _javascript_call_arguments(source, match.end() - 1)
+        if arguments is None or len(arguments) < 2:
+            continue
+        options = arguments[1].lstrip()
+        if options.startswith("("):
+            options = options[1:].lstrip()
+        if options.startswith("{") and _JAVASCRIPT_DISABLED_TEST_OPTION.search(options):
+            count += 1
+    return count
+
+
+def _javascript_disabled_test_feature_count(source: str) -> int:
+    return len(list(_DISABLED_TEST_CALL.finditer(source))) + _javascript_disabled_test_option_count(
+        source
+    )
 
 
 def _javascript_call_end(text: str, open_index: int) -> int | None:
@@ -1348,10 +1435,7 @@ def _test_code_structure_fingerprint(
     )
 
 
-_JAVASCRIPT_TEST_DECLARATION = re.compile(
-    r"\b(?:test|it|describe|suite|specify|context)"
-    r"(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
-)
+_JAVASCRIPT_TEST_DECLARATION = _JAVASCRIPT_TEST_CALL
 _JAVASCRIPT_ASSERTION = re.compile(
     r"\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
 )

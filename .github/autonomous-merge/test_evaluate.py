@@ -11,6 +11,7 @@ from evaluate import (
     MAX_SNAPSHOT_FILE_BYTES,
     _ensure_within_base,
     _escape_markdown,
+    _disabled_javascript_call_ranges,
     _has_executable_test_reduction,
     _has_test_behavior_change,
     _javascript_call_argument_span_index,
@@ -82,6 +83,34 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
             self.assertIn("テスト変更がなく", " ".join(result.reasons))
+
+    def test_meta_shop_ui_requires_its_corresponding_e2e_spec(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/MetaShopScreen.tsx": "export const MetaShopScreen = 1;\n",
+                    "tests/e2e/smoke.spec.ts": (
+                        "test('smoke', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/MetaShopScreen.tsx": "export const MetaShopScreen = 2;\n",
+                    "tests/e2e/smoke.spec.ts": (
+                        "test('smoke updated', () => expect(page).toHaveTitle('Tycoon'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("meta-shop-visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
 
     def test_new_spec_without_test_declaration_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1027,6 +1056,63 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
 
+    def test_callback_without_assertion_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n"})
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders', async () => { await Promise.resolve(); });\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_unclosed_disabled_calls_are_indexed_without_suffix_rescans(self) -> None:
+        source = "test.skip(\n" * 2000
+
+        self.assertEqual(_disabled_javascript_call_ranges(source), ())
+
+    def test_parameterized_suite_disabled_option_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "describe.each([['old']])('group', { skip: false }, () => {\n"
+                        "  test('builds', () => expect(url).toBe('old'));\n"
+                        "});\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "describe.each([['new']])('group', { skip: true }, () => {\n"
+                        "  test('builds', () => expect(url).toBe('new'));\n"
+                        "});\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
     def test_disabled_option_spread_resolution_is_linear_for_reverse_chain(self) -> None:
         source = "\n".join(
             f"const options_{index} = {{ ...options_{index + 1} }};"
@@ -1326,7 +1412,11 @@ class EvaluateTests(unittest.TestCase):
             result = assess(base, head, POLICY)
 
             self.assertIn("visual", result.missing_test_scopes)
-            self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+            self.assertEqual(
+                result.verification_risk,
+                POLICY.missing_test_risk + POLICY.test_removal_risk,
+            )
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
     def test_comment_only_test_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -2186,6 +2276,39 @@ class EvaluateTests(unittest.TestCase):
             self.assertNotIn("simulation", result.missing_test_scopes)
             self.assertEqual(result.verification_risk, 0)
 
+    def test_vitest_snapshot_comment_only_change_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = "it('captures', () => expect({ value: 1 }).toMatchSnapshot());\n"
+            base_snapshot = "// Vitest Snapshot v1\n\nexports[`captures 1`] = `value: 1`;\n"
+            head_snapshot = (
+                "// Vitest Snapshot v1\n"
+                "// regenerated without changing the captured value\n\n"
+                "exports[`captures 1`] = `value: 1`;\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/sim/engine.ts": "export const value = 1;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": base_snapshot,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": head_snapshot,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("simulation", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
     def test_vitest_snapshot_key_owned_by_skipped_test_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -2719,6 +2842,28 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(additions, 1)
         self.assertEqual(deletions, 1)
         self.assertTrue(binary)
+
+    def test_binary_conversion_of_a_test_adds_removal_risk(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "tests/unit/sim/engine.test.ts": (
+                        "it('runs', () => expect(run()).toBe(true));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {"tests/unit/sim/engine.test.ts": b"\x00binary test\n"},
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertTrue(result.files[0].binary)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
     def test_large_text_diff_uses_bounded_conservative_counts(self) -> None:
         base_data = ("repeat\n" * 2500).encode("utf-8")

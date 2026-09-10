@@ -72,6 +72,7 @@ fallback = false
 excluded_code_globs = [
   "public/assets/audio/**",
   "src/render/**",
+  "src/ui/MetaShopScreen.tsx",
   "src/ui/BoardPixiLayer.tsx",
   "src/ui/DeptPixiBoard.tsx",
   "src/ui/OrgPixiField.tsx",
@@ -96,6 +97,12 @@ test_globs = [
 binary_test_globs = [
   "tests/**/*-snapshots/**/*.png",
 ]
+
+[[verification.scopes]]
+name = "meta-shop-visual"
+fallback = false
+code_globs = ["src/ui/MetaShopScreen.tsx"]
+test_globs = ["tests/e2e/meta-shop.spec.ts"]
 
 [[verification.scopes]]
 name = "industry-visual"

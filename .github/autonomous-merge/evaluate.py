@@ -805,6 +805,13 @@ _JAVASCRIPT_SUITE_CALL = re.compile(
     r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*\("
 )
+_JAVASCRIPT_PARAMETERIZED_SUITE_CALL = re.compile(
+    r"(?<![A-Za-z0-9_$?.'\"`])(?:\b(?:describe|suite|context)|"
+    r"\btest\s*(?:\.\s*|\?\.\s*)describe)"
+    r"(?:(?:\s*(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)"
+    r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+    r"\s*(?:\.\s*|\?\.\s*)each\s*\("
+)
 _JAVASCRIPT_PARAMETERIZED_TEST_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)\s*(?:\.\s*|\?\.\s*)each\s*\("
 )
@@ -1343,6 +1350,7 @@ def _javascript_suite_alias_call_pattern(
     aliases: Iterable[str],
     *,
     disabled: bool = False,
+    parameterized: bool = False,
 ) -> re.Pattern[str] | None:
     names = sorted(
         {
@@ -1362,6 +1370,8 @@ def _javascript_suite_alias_call_pattern(
         r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|"
         r"(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     )
+    if parameterized:
+        return re.compile(prefix + chain + r"\s*(?:\.\s*|\?\.\s*)each\s*\(")
     if disabled:
         return re.compile(
             prefix
@@ -1370,6 +1380,54 @@ def _javascript_suite_alias_call_pattern(
             r"(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|fail|fails)['\"`]\s*\])"
         )
     return re.compile(prefix + chain + r"\s*\(")
+
+
+def _javascript_parameterized_suite_call_spans(source: str) -> tuple[tuple[int, int], ...]:
+    """parameterized suiteが返す実際のsuite callback呼び出し範囲を返す。"""
+
+    masked_source = _mask_javascript_literals(source)
+    matches = list(_JAVASCRIPT_PARAMETERIZED_SUITE_CALL.finditer(masked_source))
+    alias_pattern = _javascript_suite_alias_call_pattern(
+        _javascript_suite_aliases(source),
+        parameterized=True,
+    )
+    if alias_pattern is not None:
+        matches.extend(alias_pattern.finditer(masked_source))
+
+    argument_span_index = _javascript_call_argument_span_index(source)
+    spans: set[tuple[int, int]] = set()
+    for match in matches:
+        each_open_index = match.end() - 1
+        each_argument_spans = argument_span_index.get(each_open_index)
+        if each_argument_spans is None:
+            continue
+        each_close_index = (
+            each_argument_spans[-1][1]
+            if each_argument_spans
+            else each_open_index + 1
+        )
+        while (
+            each_close_index < len(masked_source)
+            and masked_source[each_close_index].isspace()
+        ):
+            each_close_index += 1
+        if (
+            each_close_index >= len(masked_source)
+            or masked_source[each_close_index] != ")"
+        ):
+            continue
+        returned_open_index = each_close_index + 1
+        while (
+            returned_open_index < len(masked_source)
+            and masked_source[returned_open_index].isspace()
+        ):
+            returned_open_index += 1
+        if (
+            returned_open_index < len(masked_source)
+            and masked_source[returned_open_index] == "("
+        ):
+            spans.add((match.start(), returned_open_index))
+    return tuple(sorted(spans))
 
 
 def _javascript_suite_call_spans(source: str) -> tuple[tuple[int, int], ...]:
@@ -1386,6 +1444,7 @@ def _javascript_suite_call_spans(source: str) -> tuple[tuple[int, int], ...]:
             (match.start(), match.end() - 1)
             for match in alias_pattern.finditer(masked_source)
         )
+    spans.update(_javascript_parameterized_suite_call_spans(source))
     return tuple(sorted(spans))
 
 
@@ -1618,40 +1677,6 @@ def _javascript_disabled_test_feature_count(source: str) -> int:
     )
 
 
-def _javascript_call_end(text: str, open_index: int) -> int | None:
-    """開き括弧に対応するJavaScript呼び出しの終端を返す。"""
-
-    depth = 0
-    index = open_index
-    while index < len(text):
-        character = text[index]
-        if character in {"'", '"', "`"}:
-            quote = character
-            index += 1
-            while index < len(text):
-                if text[index] == "\\":
-                    index += 2
-                    continue
-                if text[index] == quote:
-                    index += 1
-                    break
-                index += 1
-            continue
-        if character == "/":
-            regex = _read_regex_literal(text, index)
-            if regex is not None:
-                index = regex[2]
-                continue
-        if character == "(":
-            depth += 1
-        elif character == ")":
-            depth -= 1
-            if depth == 0:
-                return index + 1
-        index += 1
-    return None
-
-
 def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]:
     """無効化modifierを持つ呼び出しの引数範囲を返す。"""
 
@@ -1663,9 +1688,14 @@ def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]
             open_index += 1
         if open_index >= len(source) or source[open_index] != "(":
             continue
-        end = _javascript_call_end(source, open_index)
-        if end is not None:
-            ranges.append((start, end))
+        argument_spans = argument_span_index.get(open_index)
+        if argument_spans is None:
+            continue
+        close_index = argument_spans[-1][1] if argument_spans else open_index + 1
+        while close_index < len(source) and source[close_index].isspace():
+            close_index += 1
+        if close_index < len(source) and source[close_index] == ")":
+            ranges.append((start, close_index + 1))
     ranges.extend(
         _javascript_disabled_suite_option_ranges(
             source,
@@ -2110,8 +2140,22 @@ def _test_code_structure_fingerprint(
     )
 
 
+def _vitest_snapshot_value_fingerprint(data: bytes | None) -> str:
+    """Vitest snapshotの値だけを比較し、コメントとコード空白を無視する。"""
+
+    if data is None:
+        return ""
+    return _normalize_javascript_whitespace(
+        _strip_javascript_comments(data),
+        preserve_literal_content=True,
+    )
+
+
 _JAVASCRIPT_ASSERTION = re.compile(
     r"\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
+)
+_JAVASCRIPT_CALLBACK_VERIFICATION = re.compile(
+    r"\b(?:expect|assert)(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
 )
 
 
@@ -2496,7 +2540,7 @@ def _javascript_test_callback_spans(
 
 
 def _javascript_callback_has_executable_content(callback: str) -> bool:
-    """空またはコメントだけのinline callbackをbehavior recordから除外する。"""
+    """検証操作を含まないinline callbackをbehavior recordから除外する。"""
 
     normalized = _normalize_javascript_whitespace(
         callback.strip(),
@@ -2508,7 +2552,7 @@ def _javascript_callback_has_executable_content(callback: str) -> bool:
         return False
     if re.match(r"^(?:async)?function\b", normalized) and normalized.endswith("{}"):
         return False
-    return True
+    return _JAVASCRIPT_CALLBACK_VERIFICATION.search(_mask_javascript_literals(callback)) is not None
 
 
 def _javascript_test_behavior_records(
@@ -2624,7 +2668,15 @@ def _is_usable_test_change(
         return False
     base_entry = base_snapshot.get(item.path)
     base_data = base_entry.data if base_entry is not None else None
-    if _snapshot_owner(item.path) is not None:
+    snapshot_owner = _snapshot_owner(item.path)
+    if snapshot_owner is not None:
+        runner, _, _ = snapshot_owner
+        if (
+            runner == "vitest"
+            and _vitest_snapshot_value_fingerprint(base_data)
+            == _vitest_snapshot_value_fingerprint(head_entry.data)
+        ):
+            return False
         return _is_referenced_snapshot(item.path, head_snapshot)
     if item.binary:
         return True
@@ -2706,6 +2758,13 @@ def _has_test_removal(
             if head_entry is not None and head_entry.kind != "blob":
                 return True
             base_entry = base_snapshot.get(item.path)
+            if (
+                item.binary
+                and _snapshot_owner(item.path) is None
+                and base_entry is not None
+                and base_entry.kind == "blob"
+            ):
+                return True
             if _contains_disabled_test_call(
                 base_entry.data if base_entry is not None else None,
                 head_entry.data if head_entry is not None else None,

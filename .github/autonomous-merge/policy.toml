@@ -115,6 +115,12 @@ test_globs = [
 binary_test_globs = [
   "tests/e2e/**/*-pixi-visual.spec.ts-snapshots/**/*.png",
 ]
+test_mappings = [
+  { code_globs = ["src/render/Board.tsx", "src/render/board*.ts", "src/render/industryBoardScene.ts", "src/render/sprint*.ts", "src/render/adapters/pixiBoardRenderer.ts", "src/ui/BoardPixiLayer.tsx"], test_globs = ["tests/e2e/sprint-pixi-visual.spec.ts", "tests/e2e/sprint-pixi-visual.spec.ts-snapshots/**/*.png"] },
+  { code_globs = ["src/render/dept*.ts", "src/render/adapters/pixiDeptRenderer.ts", "src/ui/DeptPixiBoard.tsx"], test_globs = ["tests/e2e/dept-pixi-visual.spec.ts", "tests/e2e/dept-pixi-visual.spec.ts-snapshots/**/*.png"] },
+  { code_globs = ["src/render/org*.ts", "src/render/adapters/pixiOrgRenderer.ts", "src/ui/OrgPixiField.tsx"], test_globs = ["tests/e2e/org-pixi-visual.spec.ts", "tests/e2e/org-pixi-visual.spec.ts-snapshots/**/*.png"] },
+  { code_globs = ["src/render/adapters/pixiTexturePoolGuard.ts", "src/render/gameAssetView.ts", "src/render/loadWebglModule.ts", "src/render/webglStatus.ts", "src/ui/lazyWebgl.ts", "src/ui/usePixiRenderer.ts"], test_globs = ["tests/e2e/sprint-pixi-visual.spec.ts", "tests/e2e/sprint-pixi-visual.spec.ts-snapshots/**/*.png", "tests/e2e/dept-pixi-visual.spec.ts", "tests/e2e/dept-pixi-visual.spec.ts-snapshots/**/*.png", "tests/e2e/org-pixi-visual.spec.ts", "tests/e2e/org-pixi-visual.spec.ts-snapshots/**/*.png"] },
+]
 
 [[verification.scopes]]
 name = "webgl-availability"
@@ -476,6 +482,13 @@ pattern = "tests/**"
 risk = 0
 hard_gate = false
 reason = "テストの変更"
+
+[[path_rules]]
+pattern = "tests/e2e/**/*.ts"
+exclude_globs = ["tests/e2e/**/*.test.ts", "tests/e2e/**/*.spec.ts"]
+risk = 100
+hard_gate = true
+reason = "共有E2E helper・fixtureの変更"
 
 [[path_rules]]
 pattern = "tests/unit/helpers/*.ts"

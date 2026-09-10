@@ -682,6 +682,29 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
 
+    def test_test_info_skip_inside_test_body_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner_base = (
+                "test('renders', async ({ page }, testInfo) => {\n"
+                "  await expect(page).toBeVisible();\n"
+                "});\n"
+            )
+            owner_head = (
+                "test('renders', async ({ page }, testInfo) => {\n"
+                "  testInfo.skip();\n"
+                "  await expect(page).toHaveText('updated');\n"
+                "});\n"
+            )
+            write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n", "tests/e2e/widget.spec.ts": owner_base})
+            write_snapshot(head, {"src/ui/Widget.tsx": "export const Widget = 2;\n", "tests/e2e/widget.spec.ts": owner_head})
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
     def test_template_interpolation_runtime_skip_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -883,6 +906,11 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(len(argument_span_index), 2000)
         self.assertTrue(all(spans is None for spans in argument_span_index.values()))
         self.assertEqual(_javascript_test_behavior_records(source.encode("utf-8")), ())
+
+    def test_many_unclosed_option_objects_are_indexed_in_one_scan(self) -> None:
+        source = "\n".join(f"const options_{index} = {{" for index in range(2000))
+
+        self.assertEqual(_javascript_disabled_test_option_variables(source), frozenset())
 
     def test_callback_alias_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1735,8 +1763,8 @@ class EvaluateTests(unittest.TestCase):
                 base,
                 {
                     "src/render/boardScene.ts": "export const boardScene = 1;\n",
-                    "tests/e2e/smoke.spec.ts": (
-                        "test('smoke', () => expect(page).toBeVisible());\n"
+                    "tests/e2e/org-pixi-visual.spec.ts": (
+                        "test('org', () => expect(page).toBeVisible());\n"
                     ),
                 },
             )
@@ -1744,8 +1772,8 @@ class EvaluateTests(unittest.TestCase):
                 head,
                 {
                     "src/render/boardScene.ts": "export const boardScene = 2;\n",
-                    "tests/e2e/smoke.spec.ts": (
-                        "test('smoke', () => expect(page).toHaveText('updated'));\n"
+                    "tests/e2e/org-pixi-visual.spec.ts": (
+                        "test('org', () => expect(page).toHaveText('updated'));\n"
                     ),
                 },
             )
@@ -1814,6 +1842,20 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertIn("webgl-availability", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
+
+    def test_suffixless_e2e_helper_is_a_hard_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"tests/e2e/sessionFixture.ts": "export const seed = 1;\n"})
+            write_snapshot(head, {"tests/e2e/sessionFixture.ts": "export const seed = 2;\n"})
+
+            result = assess(base, head, POLICY)
+
+            self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+            self.assertTrue(
+                any("共有E2E helper・fixture" in reason for reason in result.hard_gate_reasons)
+            )
 
     def test_webgl_availability_e2e_satisfies_webgl_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

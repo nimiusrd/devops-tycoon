@@ -30,6 +30,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Invalidate previous shadow result before recheck
+        id: invalidate_previous_result
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -39,6 +40,32 @@ jobs:
           HEAD_SHA: ${{ matrix.pr.head_sha }}
         run: |
           set -euo pipefail
+
+          find_shadow_result_comment_id() {
+            # The result comment is updated on every evaluation, so search a
+            # bounded number of recently updated pages and fail closed if the
+            # marker is older than that bound.
+            local page
+            for page in 1 2 3; do
+              local page_json
+              page_json="$(gh api \
+                "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100&sort=updated&direction=desc&page=${page}")"
+              local comment_id
+              comment_id="$(jq -r '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id] | last // empty' <<<"${page_json}")"
+              if [[ -n "${comment_id}" ]]; then
+                printf '%s\n' "${comment_id}"
+                return 0
+              fi
+              local page_size
+              page_size="$(jq 'length' <<<"${page_json}")"
+              if (( page_size < 100 )); then
+                return 0
+              fi
+            done
+            echo "Could not locate the shadow result comment within the three-page lookup limit" >&2
+            return 1
+          }
+
           current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
             --jq '[.state, .base.ref, .base.sha, .head.sha, .draft] | @tsv')"
           IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha current_draft <<< "${current_pr}"
@@ -49,13 +76,13 @@ jobs:
             echo "Skipping stale shadow recheck invalidation for PR #${PR_NUMBER}"
             exit 0
           fi
-          existing_comment_id="$(gh api --paginate \
-            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+          existing_comment_id="$(find_shadow_result_comment_id)"
           if [[ -z "${existing_comment_id}" ]]; then
             echo "No previous shadow result exists for PR #${PR_NUMBER}"
+            echo 'existing_comment_id=' >> "${GITHUB_OUTPUT}"
             exit 0
           fi
+          printf 'existing_comment_id=%s\n' "${existing_comment_id}" >> "${GITHUB_OUTPUT}"
           report_body="$(cat <<EOF
           ## Autonomous Merge Shadow Mode
 
@@ -84,6 +111,7 @@ jobs:
           BASE_REF_NAME: ${{ matrix.pr.base_ref_name }}
           BASE_SHA: ${{ matrix.pr.base_sha }}
           HEAD_SHA: ${{ matrix.pr.head_sha }}
+          EXISTING_COMMENT_ID: ${{ steps.invalidate_previous_result.outputs.existing_comment_id }}
         run: |
           set -euo pipefail
           git_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
@@ -145,10 +173,7 @@ jobs:
             full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
             local payload
             payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
-            local existing_comment_id
-            existing_comment_id="$(gh api --paginate \
-              "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/comments?per_page=100" \
-              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+            local existing_comment_id="${EXISTING_COMMENT_ID}"
             if [[ -n "${existing_comment_id}" ]]; then
               gh api --method PATCH \
                 "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \

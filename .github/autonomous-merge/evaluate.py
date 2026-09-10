@@ -54,6 +54,12 @@ class SnapshotEntry:
 
 
 @dataclass(frozen=True)
+class VerificationMapping:
+    code_globs: tuple[str, ...]
+    test_globs: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class VerificationScope:
     name: str
     code_globs: tuple[str, ...]
@@ -61,6 +67,7 @@ class VerificationScope:
     binary_test_globs: tuple[str, ...]
     fallback: bool
     excluded_code_globs: tuple[str, ...] = ()
+    test_mappings: tuple[VerificationMapping, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -204,6 +211,29 @@ def _load_path_rules(value: Any) -> tuple[PathRule, ...]:
     return tuple(rules)
 
 
+def _load_verification_mappings(value: Any, name: str) -> tuple[VerificationMapping, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise EvaluationError(f"policyの{name}はテーブル配列で指定してください")
+    mappings: list[VerificationMapping] = []
+    for index, raw_mapping in enumerate(value):
+        mapping = _require_mapping(raw_mapping, f"{name}[{index}]")
+        mappings.append(
+            VerificationMapping(
+                code_globs=_require_string_list(
+                    mapping.get("code_globs"),
+                    f"{name}[{index}].code_globs",
+                ),
+                test_globs=_require_string_list(
+                    mapping.get("test_globs"),
+                    f"{name}[{index}].test_globs",
+                ),
+            )
+        )
+    return tuple(mappings)
+
+
 def _load_verification_scopes(value: Any) -> tuple[VerificationScope, ...]:
     if not isinstance(value, list) or not value:
         raise EvaluationError("policyのverification.scopesは1件以上指定してください")
@@ -240,6 +270,10 @@ def _load_verification_scopes(value: Any) -> tuple[VerificationScope, ...]:
                 excluded_code_globs=_require_string_list(
                     scope.get("excluded_code_globs", []),
                     f"verification.scopes[{index}].excluded_code_globs",
+                ),
+                test_mappings=_load_verification_mappings(
+                    scope.get("test_mappings"),
+                    f"verification.scopes[{index}].test_mappings",
                 ),
             )
         )
@@ -678,6 +712,17 @@ def _scope_has_code_changes(
     *,
     test_globs: Sequence[str] = (),
 ) -> bool:
+    return bool(_scope_code_change_paths(scope, files, scopes, test_globs=test_globs))
+
+
+def _scope_code_change_paths(
+    scope: VerificationScope,
+    files: Sequence[ChangedFile],
+    scopes: Sequence[VerificationScope],
+    *,
+    test_globs: Sequence[str] = (),
+) -> tuple[str, ...]:
+    paths: list[str] = []
     for changed_file in files:
         if not matches_any(changed_file.path, scope.code_globs):
             continue
@@ -692,14 +737,59 @@ def _scope_has_code_changes(
             for other in scopes
         ):
             continue
-        return True
-    return False
+        paths.append(changed_file.path)
+    return tuple(paths)
+
+
+def _scope_has_usable_test_change(
+    scope: VerificationScope,
+    files: Sequence[ChangedFile],
+    base_snapshot: Mapping[str, SnapshotEntry],
+    head_snapshot: Mapping[str, SnapshotEntry],
+    pure_rename_additions: frozenset[str],
+    *,
+    code_change_paths: Sequence[str],
+) -> bool:
+    def usable_test_matches(patterns: Sequence[str]) -> bool:
+        return any(
+            _is_usable_test_change(
+                item,
+                base_snapshot,
+                head_snapshot,
+                binary_test_globs=scope.binary_test_globs,
+            )
+            and matches_any(item.path, scope.test_globs)
+            and matches_any(item.path, patterns)
+            and item.path not in pure_rename_additions
+            for item in files
+        )
+
+    if not scope.test_mappings:
+        return usable_test_matches(scope.test_globs)
+
+    required_mappings: set[VerificationMapping] = set()
+    for code_path in code_change_paths:
+        matching_mappings = tuple(
+            mapping
+            for mapping in scope.test_mappings
+            if matches_any(code_path, mapping.code_globs)
+        )
+        if not matching_mappings:
+            # A scoped code path without an explicit ownership mapping is
+            # deliberately conservative: no unrelated test can satisfy it.
+            return False
+        required_mappings.update(matching_mappings)
+    return all(usable_test_matches(mapping.test_globs) for mapping in required_mappings)
 
 
 _DISABLED_TEST_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
     r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf|fail|fails)\b|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf|fail|fails)['\"`]\s*\])"
+)
+_JAVASCRIPT_TEST_INFO_SKIP_CALL = re.compile(
+    r"\btestInfo\s*(?:(?:\.\s*|\?\.\s*)skip\b|"
+    r"(?:\?\.)?\s*\[\s*['\"`]skip['\"`]\s*\])\s*\("
 )
 _JAVASCRIPT_TEST_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)"
@@ -822,6 +912,7 @@ def _contains_disabled_test_call(
         )
         if tag in {"replace", "insert"} and (
             _DISABLED_TEST_CALL.search(changed_source)
+            or _JAVASCRIPT_TEST_INFO_SKIP_CALL.search(changed_source)
             or _javascript_disabled_test_option_count(changed_source) > 0
         ):
             return True
@@ -1120,15 +1211,19 @@ def _javascript_call_arguments(
     return tuple(source[start:end] for start, end in spans)
 
 
-def _javascript_braced_end(source: str, open_index: int) -> int | None:
-    """JavaScriptオブジェクトリテラルの閉じ括弧位置を返す。"""
+def _javascript_braced_end_index(
+    source: str,
+    target_open_indexes: Iterable[int],
+) -> dict[int, int | None]:
+    """指定されたobject literalの閉じ括弧を一度の走査で索引化する。"""
 
-    if open_index >= len(source) or source[open_index] != "{":
-        return None
-    depth = 0
-    index = open_index
+    target_indexes = frozenset(target_open_indexes)
+    openings: list[int] = []
+    results: dict[int, int | None] = {}
+    index = 0
     while index < len(source):
         character = source[index]
+        next_character = source[index + 1] if index + 1 < len(source) else ""
         if character in {"'", '"', "`"}:
             quote = character
             index += 1
@@ -1141,19 +1236,35 @@ def _javascript_braced_end(source: str, open_index: int) -> int | None:
                     break
                 index += 1
             continue
+        if character == "/" and next_character == "/":
+            index += 2
+            while index < len(source) and source[index] not in "\r\n":
+                index += 1
+            continue
+        if character == "/" and next_character == "*":
+            index += 2
+            while index < len(source):
+                if source[index] == "*" and index + 1 < len(source) and source[index + 1] == "/":
+                    index += 2
+                    break
+                index += 1
+            continue
         if character == "/":
             regex = _read_regex_literal(source, index)
             if regex is not None:
                 index = regex[2]
                 continue
         if character == "{":
-            depth += 1
-        elif character == "}":
-            depth -= 1
-            if depth == 0:
-                return index + 1
+            openings.append(index)
+        elif character == "}" and openings:
+            open_index = openings.pop()
+            if open_index in target_indexes:
+                results[open_index] = index + 1
         index += 1
-    return None
+    for open_index in openings:
+        if open_index in target_indexes:
+            results[open_index] = None
+    return results
 
 
 def _javascript_object_has_disabled_test_option(
@@ -1209,8 +1320,13 @@ def _javascript_options_argument_is_disabled(
 
 def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
     object_sources: dict[str, str] = {}
-    for match in _JAVASCRIPT_OBJECT_VARIABLE.finditer(source):
-        object_end = _javascript_braced_end(source, match.end() - 1)
+    object_matches = tuple(_JAVASCRIPT_OBJECT_VARIABLE.finditer(source))
+    braced_end_index = _javascript_braced_end_index(
+        source,
+        (match.end() - 1 for match in object_matches),
+    )
+    for match in object_matches:
+        object_end = braced_end_index.get(match.end() - 1)
         if object_end is not None:
             object_sources[match.group("name")] = source[match.end() - 1 : object_end]
 
@@ -1304,8 +1420,10 @@ def _javascript_disabled_suite_option_ranges(
 
 
 def _javascript_disabled_test_feature_count(source: str) -> int:
-    return len(list(_DISABLED_TEST_CALL.finditer(source))) + _javascript_disabled_test_option_count(
-        source
+    return (
+        len(list(_DISABLED_TEST_CALL.finditer(source)))
+        + len(list(_JAVASCRIPT_TEST_INFO_SKIP_CALL.finditer(source)))
+        + _javascript_disabled_test_option_count(source)
     )
 
 
@@ -2128,7 +2246,13 @@ def _javascript_test_callback_records(
                     disabled_ranges,
                     body_start,
                     body_end,
-                ),
+                )
+                or _JAVASCRIPT_TEST_INFO_SKIP_CALL.search(
+                    masked_source,
+                    body_start,
+                    body_end,
+                )
+                is not None,
                 _javascript_static_test_title(arguments),
             )
         )
@@ -2492,22 +2616,21 @@ def assess(
     missing_test_scopes = tuple(
         scope.name
         for scope in policy.verification_scopes
-        if _scope_has_code_changes(
+        if (
+            code_change_paths := _scope_code_change_paths(
+                scope,
+                files,
+                policy.verification_scopes,
+                test_globs=policy.test_globs,
+            )
+        )
+        and not _scope_has_usable_test_change(
             scope,
             files,
-            policy.verification_scopes,
-            test_globs=policy.test_globs,
-        )
-        and not any(
-            _is_usable_test_change(
-                item,
-                base_snapshot,
-                head_snapshot,
-                binary_test_globs=scope.binary_test_globs,
-            )
-            and matches_any(item.path, scope.test_globs)
-            and item.path not in pure_rename_additions
-            for item in files
+            base_snapshot,
+            head_snapshot,
+            pure_rename_additions,
+            code_change_paths=code_change_paths,
         )
     )
     test_changes = code_changes and not missing_test_scopes

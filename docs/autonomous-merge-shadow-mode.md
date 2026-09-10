@@ -101,3 +101,7 @@ Draft PRは評価せず、既存の結果を`DRAFT_PR`として失効させま�
 `src/ui/WebglLoading.tsx`、`src/ui/WebglScene.tsx`、`src/ui/WebglStatusOverlay.tsx`はPixi scopeではなく、HTML上の状態を確認する`tests/e2e/webgl-availability.spec.ts`専用scopeで検証します。通常のvisual scopeは引き続き適用されます。
 
 Vitest snapshotは末尾の連番を除いたsuite込みの完全なtest titleで所有callbackを照合します。タイトルの前方一致や、skipされた別testのsnapshotによる検証充足は認めません。
+
+Playwrightのcallback内にある`testInfo.skip()`も無効化として扱います。Pixi scopeは変更pathごとにsprint・department・organizationの対応spec／snapshotを明示的に紐付け、別画面の`*-pixi-visual.spec.ts`だけでは検証を満たしません。`tests/e2e/**/*.ts`のうちrunnerのtest suffixを持たない共有helper・fixtureはHard Gateです。
+
+結果marker commentの探索は、更新日時の新しいページから最大3ページに制限します。見つけられない場合は別markerを作らず保守的に失敗し、同一run内で取得したcomment IDを失敗判定・再評価・通常判定の更新に再利用します。

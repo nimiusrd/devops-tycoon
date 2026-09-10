@@ -44,6 +44,32 @@ jobs:
           DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           set -euo pipefail
+
+          find_shadow_result_comment_id() {
+            # The result comment is updated on every evaluation, so search the
+            # most recently updated pages only. A full unbounded pagination
+            # would let issue-comment volume consume the job's API budget.
+            local page
+            for page in 1 2 3; do
+              local page_json
+              page_json="$(gh api \
+                "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100&sort=updated&direction=desc&page=${page}")"
+              local comment_id
+              comment_id="$(jq -r '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id] | last // empty' <<<"${page_json}")"
+              if [[ -n "${comment_id}" ]]; then
+                printf '%s\n' "${comment_id}"
+                return 0
+              fi
+              local page_size
+              page_size="$(jq 'length' <<<"${page_json}")"
+              if (( page_size < 100 )); then
+                return 0
+              fi
+            done
+            echo "Could not locate the shadow result comment within the three-page lookup limit" >&2
+            return 1
+          }
+
           current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
             --jq '[.state, .base.ref, .base.sha, .head.sha, .draft] | @tsv')"
           IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha current_draft <<< "${current_pr}"
@@ -55,9 +81,12 @@ jobs:
             echo 'invalidated=false' >> "${GITHUB_OUTPUT}"
             exit 0
           fi
-          existing_comment_id="$(gh api --paginate \
-            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+          if ! existing_comment_id="$(find_shadow_result_comment_id)"; then
+            echo 'lookup_failed=true' >> "${GITHUB_OUTPUT}"
+            exit 1
+          fi
+          printf 'existing_comment_id=%s\n' "${existing_comment_id}" >> "${GITHUB_OUTPUT}"
+          echo 'lookup_failed=false' >> "${GITHUB_OUTPUT}"
           if [[ -z "${existing_comment_id}" ]]; then
             echo "No previous shadow result exists for PR #${PR_NUMBER}"
             echo 'invalidated=false' >> "${GITHUB_OUTPUT}"
@@ -416,8 +445,24 @@ jobs:
           MERGE_BASE_OUTCOME: ${{ steps.merge_base.outcome }}
           GITLINKS_OUTCOME: ${{ steps.gitlinks.outcome }}
           BASE_TESTS_OUTCOME: ${{ steps.base_tests.outcome }}
+          INVALIDATION_OUTCOME: ${{ steps.invalidate_previous_result.outcome }}
+          EXISTING_COMMENT_ID: ${{ steps.invalidate_previous_result.outputs.existing_comment_id }}
         run: |
           set -euo pipefail
+          if [[ "${INVALIDATION_OUTCOME}" != "success" ]]; then
+            {
+              echo '## Autonomous Merge Shadow Mode'
+              echo
+              echo '> 結果コメントの探索を安全な上限内で完了できなかったため、判定を公開しません。人手レビューが必要です。'
+              echo
+              echo '| 指標 | 値 |'
+              echo '| --- | --- |'
+              echo '| Decision | `HUMAN_REVIEW_REQUIRED` |'
+              echo '| Reason | `RESULT_COMMENT_LOOKUP_FAILED` |'
+              echo '| PR Risk | `N/A` |'
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
           if [[ "${CHECKOUT_OUTCOME}" != "success" || \
             "${EVALUATION_OUTCOME}" != "success" || \
             "${MERGE_BASE_OUTCOME}" == "failure" || \
@@ -457,9 +502,7 @@ jobs:
           fi
           full_body=$'<!-- autonomous-merge-shadow-result -->\n\n'"${report_body}"
           payload="$(jq -n --arg body "${full_body}" '{body: $body}')"
-          existing_comment_id="$(gh api --paginate \
-            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+          existing_comment_id="${EXISTING_COMMENT_ID}"
           if [[ -n "${existing_comment_id}" ]]; then
             gh api --method PATCH \
               "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
@@ -496,6 +539,32 @@ jobs:
           DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           set -euo pipefail
+
+          find_shadow_result_comment_id() {
+            # Search a bounded number of recently updated pages. If the marker
+            # is older than the bound, fail closed instead of creating a second
+            # result comment beside an unknown stale result.
+            local page
+            for page in 1 2 3; do
+              local page_json
+              page_json="$(gh api \
+                "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100&sort=updated&direction=desc&page=${page}")"
+              local comment_id
+              comment_id="$(jq -r '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id] | last // empty' <<<"${page_json}")"
+              if [[ -n "${comment_id}" ]]; then
+                printf '%s\n' "${comment_id}"
+                return 0
+              fi
+              local page_size
+              page_size="$(jq 'length' <<<"${page_json}")"
+              if (( page_size < 100 )); then
+                return 0
+              fi
+            done
+            echo "Could not locate the shadow result comment within the three-page lookup limit" >&2
+            return 1
+          }
+
           current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
             --jq '[.state, .base.ref, .base.sha, .head.sha, .draft] | @tsv')"
           IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha current_draft <<< "${current_pr}"
@@ -505,9 +574,7 @@ jobs:
             echo "Skipping stale non-evaluable invalidation for PR #${PR_NUMBER}"
             exit 0
           fi
-          existing_comment_id="$(gh api --paginate \
-            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id' | tail -n 1)"
+          existing_comment_id="$(find_shadow_result_comment_id)"
           if [[ -z "${existing_comment_id}" ]]; then
             echo "No shadow result exists for PR #${PR_NUMBER}"
             exit 0

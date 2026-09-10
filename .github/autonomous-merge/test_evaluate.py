@@ -875,6 +875,84 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
 
+    def test_vitest_test_context_modifiers_do_not_satisfy_verification(self) -> None:
+        callbacks = (
+            "(ctx) => {\n"
+            "  ctx.skip();\n"
+            "  expect(page).toHaveText('updated');\n"
+            "}",
+            "({ skip }) => {\n"
+            "  skip();\n"
+            "  expect(page).toHaveText('updated');\n"
+            "}",
+            "({ skip: skipTest }) => {\n"
+            "  skipTest();\n"
+            "  expect(page).toHaveText('updated');\n"
+            "}",
+        )
+        for callback in callbacks:
+            with self.subTest(callback=callback), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory) / "base"
+                head = Path(directory) / "head"
+                write_snapshot(
+                    base,
+                    {
+                        "src/utils/assetUrl.ts": "export const url = '/';\n",
+                        "tests/unit/utils/publicUrl.test.ts": (
+                            "test('renders', () => expect(page).toHaveText('old'));\n"
+                        ),
+                    },
+                )
+                write_snapshot(
+                    head,
+                    {
+                        "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                        "tests/unit/utils/publicUrl.test.ts": (
+                            "test('renders', " + callback + ");\n"
+                        ),
+                    },
+                )
+
+                result = assess(base, head, POLICY)
+
+                self.assertIn("src-fallback", result.missing_test_scopes)
+                self.assertFalse(result.test_changes)
+                self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_conditional_suite_modifiers_do_not_satisfy_verification(self) -> None:
+        for modifier in ("describe.skipIf(true)", "describe.runIf(false)"):
+            with self.subTest(modifier=modifier), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory) / "base"
+                head = Path(directory) / "head"
+                write_snapshot(
+                    base,
+                    {
+                        "src/utils/assetUrl.ts": "export const url = '/';\n",
+                        "tests/unit/utils/publicUrl.test.ts": (
+                            "describe('group', () => {\n"
+                            "  test('renders', () => expect(url).toBe('/'));\n"
+                            "});\n"
+                        ),
+                    },
+                )
+                write_snapshot(
+                    head,
+                    {
+                        "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                        "tests/unit/utils/publicUrl.test.ts": (
+                            f"{modifier}('group', () => {{\n"
+                            "  test('renders', () => expect(url).toBe('/app/'));\n"
+                            "});\n"
+                        ),
+                    },
+                )
+
+                result = assess(base, head, POLICY)
+
+                self.assertIn("src-fallback", result.missing_test_scopes)
+                self.assertFalse(result.test_changes)
+                self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_template_interpolation_runtime_skip_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -2350,6 +2428,36 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/sim/engine.ts": "export const value = 2;\n",
                     "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": head_snapshot,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("simulation", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_vitest_snapshot_key_only_change_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            base_owner = "it('captures old', () => expect({ value: 1 }).toMatchSnapshot());\n"
+            head_owner = "it('captures new', () => expect({ value: 1 }).toMatchSnapshot());\n"
+            base_snapshot = "// Vitest Snapshot v1\n\nexports[`captures old 1`] = `value: 1`;\n"
+            head_snapshot = "// Vitest Snapshot v1\n\nexports[`captures new 1`] = `value: 1`;\n"
+            write_snapshot(
+                base,
+                {
+                    "src/sim/engine.ts": "export const value = 1;\n",
+                    "tests/playtest/engine.test.ts": base_owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": base_snapshot,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/playtest/engine.test.ts": head_owner,
                     "tests/playtest/__snapshots__/engine.test.ts.snap": head_snapshot,
                 },
             )

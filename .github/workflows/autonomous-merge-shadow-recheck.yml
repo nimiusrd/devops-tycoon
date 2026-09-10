@@ -111,7 +111,7 @@ jobs:
               return 1
             fi
             if [[ -n "${persisted_comment_id}" ]]; then
-              printf '%s\n' "${persisted_comment_id}"
+              printf '%s\tpersisted\n' "${persisted_comment_id}"
               return 0
             fi
             local page
@@ -122,7 +122,7 @@ jobs:
               local comment_id
               comment_id="$(jq -r '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id] | first // empty' <<<"${page_json}")"
               if [[ -n "${comment_id}" ]]; then
-                printf '%s\n' "${comment_id}"
+                printf '%s\tdiscovered\n' "${comment_id}"
                 return 0
               fi
               local page_size
@@ -145,13 +145,17 @@ jobs:
             echo "Skipping stale shadow recheck invalidation for PR #${PR_NUMBER}"
             exit 0
           fi
-          existing_comment_id="$(find_shadow_result_comment_id)"
+          shadow_result_lookup="$(find_shadow_result_comment_id)"
+          existing_comment_id="${shadow_result_lookup%%$'\t'*}"
+          lookup_source="${shadow_result_lookup#*$'\t'}"
           if [[ -z "${existing_comment_id}" ]]; then
             echo "No previous shadow result exists for PR #${PR_NUMBER}"
             echo 'existing_comment_id=' >> "${GITHUB_OUTPUT}"
             exit 0
           fi
-          persist_shadow_result_comment_id "${existing_comment_id}"
+          if [[ "${lookup_source}" != "persisted" ]]; then
+            persist_shadow_result_comment_id "${existing_comment_id}"
+          fi
           printf 'existing_comment_id=%s\n' "${existing_comment_id}" >> "${GITHUB_OUTPUT}"
           report_body="$(cat <<EOF
           ## Autonomous Merge Shadow Mode

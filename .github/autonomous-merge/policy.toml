@@ -73,6 +73,7 @@ excluded_code_globs = [
   "public/assets/audio/**",
   "src/render/**",
   "src/ui/MetaShopScreen.tsx",
+  "src/ui/AchievementCollectionScreen.tsx",
   "src/ui/BoardPixiLayer.tsx",
   "src/ui/DeptPixiBoard.tsx",
   "src/ui/OrgPixiField.tsx",
@@ -103,6 +104,12 @@ name = "meta-shop-visual"
 fallback = false
 code_globs = ["src/ui/MetaShopScreen.tsx"]
 test_globs = ["tests/e2e/meta-shop.spec.ts"]
+
+[[verification.scopes]]
+name = "achievement-visual"
+fallback = false
+code_globs = ["src/ui/AchievementCollectionScreen.tsx"]
+test_globs = ["tests/e2e/achievements.spec.ts"]
 
 [[verification.scopes]]
 name = "industry-visual"

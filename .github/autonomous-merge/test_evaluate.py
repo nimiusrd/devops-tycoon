@@ -112,6 +112,34 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("meta-shop-visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
 
+    def test_achievement_collection_ui_requires_its_corresponding_e2e_spec(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/AchievementCollectionScreen.tsx": "export const AchievementCollectionScreen = 1;\n",
+                    "tests/e2e/smoke.spec.ts": (
+                        "test('smoke', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/AchievementCollectionScreen.tsx": "export const AchievementCollectionScreen = 2;\n",
+                    "tests/e2e/smoke.spec.ts": (
+                        "test('smoke updated', () => expect(page).toHaveTitle('Tycoon'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("achievement-visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
     def test_new_spec_without_test_declaration_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -400,6 +428,39 @@ class EvaluateTests(unittest.TestCase):
                     "tests/unit/utils/publicUrl.test.ts": (
                         "import { describe as group } from 'vitest';\n"
                         "group.skip('URL', () => test('builds the URL', () => expect(url).toBe('/app/')));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_vitest_namespace_suite_skip_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { test } from 'vitest';\n"
+                        "import * as v from 'vitest';\n"
+                        "v.describe('URL', () => test('builds', () => expect(url).toBe('/')));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { test } from 'vitest';\n"
+                        "import * as v from 'vitest';\n"
+                        "v.describe.skip('URL', () => test('builds', () => expect(url).toBe('/app/')));\n"
                     ),
                 },
             )
@@ -1171,6 +1232,37 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
+
+    def test_node_assertion_satisfies_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { strict as assert } from 'node:assert/strict';\n"
+                        "test('builds', () => { assert.equal('/old', '/old'); });\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { strict as assert } from 'node:assert/strict';\n"
+                        "test('builds', () => { assert.equal('/new', '/new'); });\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("src-fallback", result.missing_test_scopes)
+            self.assertTrue(result.test_changes)
+            self.assertEqual(result.verification_risk, 0)
 
     def test_unclosed_disabled_calls_are_indexed_without_suffix_rescans(self) -> None:
         source = "test.skip(\n" * 2000

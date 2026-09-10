@@ -839,6 +839,10 @@ _JAVASCRIPT_DISABLED_TEST_OPTION_ASSIGNMENT = re.compile(
 _JAVASCRIPT_SUITE_IMPORT = re.compile(
     r"\bimport\s*\{(?P<specifiers>[^{}]*)\}\s*from\s*['\"`](?:vitest|@playwright/test)['\"`]"
 )
+_JAVASCRIPT_SUITE_NAMESPACE_IMPORT = re.compile(
+    r"\bimport\s*\*\s*as\s+(?P<alias>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
+    r"from\s*['\"`](?:vitest|@playwright/test)['\"`]"
+)
 
 
 _PYTHON_DISABLED_DECORATORS = frozenset(
@@ -1376,6 +1380,15 @@ def _javascript_suite_aliases(source: str) -> frozenset[str]:
     return frozenset(aliases)
 
 
+def _javascript_suite_namespace_aliases(source: str) -> frozenset[str]:
+    """Vitest/Playwright namespace importのlocal bindingを取り出す。"""
+
+    return frozenset(
+        match.group("alias")
+        for match in _JAVASCRIPT_SUITE_NAMESPACE_IMPORT.finditer(source)
+    )
+
+
 def _javascript_suite_alias_call_pattern(
     aliases: Iterable[str],
     *,
@@ -1414,6 +1427,55 @@ def _javascript_suite_alias_call_pattern(
     return re.compile(prefix + chain + r"\s*\(")
 
 
+def _javascript_suite_namespace_call_pattern(
+    aliases: Iterable[str],
+    *,
+    disabled: bool = False,
+    parameterized: bool = False,
+) -> re.Pattern[str] | None:
+    names = sorted(
+        {
+            alias
+            for alias in aliases
+            if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", alias)
+        }
+    )
+    if not names:
+        return None
+    prefix = (
+        r"(?<![A-Za-z0-9_$?.'\"`])\b(?:"
+        + "|".join(re.escape(name) for name in names)
+        + r")"
+    )
+    suite_root = (
+        r"\s*(?:(?:\.\s*|\?\.\s*)(?:describe|suite|context)"
+        r"|(?:\.\s*|\?\.\s*)test\s*(?:\.\s*|\?\.\s*)describe"
+        r"|(?:\?\.)?\s*\[\s*['\"`](?:describe|suite|context)['\"`]\s*\]"
+        r"|(?:\?\.)?\s*\[\s*['\"`]test['\"`]\s*\]"
+        r"\s*(?:\.\s*|\?\.\s*)describe)"
+    )
+    chain = (
+        r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|"
+        r"(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+    )
+    if parameterized:
+        return re.compile(
+            prefix
+            + suite_root
+            + chain
+            + r"\s*(?:\.\s*|\?\.\s*)(?:each|for)\s*\("
+        )
+    if disabled:
+        return re.compile(
+            prefix
+            + suite_root
+            + chain
+            + r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf|fail|fails)\b|"
+            r"(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf|fail|fails)['\"`]\s*\])"
+        )
+    return re.compile(prefix + suite_root + chain + r"\s*\(")
+
+
 def _javascript_parameterized_suite_call_spans(source: str) -> tuple[tuple[int, int], ...]:
     """parameterized suiteが返す実際のsuite callback呼び出し範囲を返す。"""
 
@@ -1425,6 +1487,12 @@ def _javascript_parameterized_suite_call_spans(source: str) -> tuple[tuple[int, 
     )
     if alias_pattern is not None:
         matches.extend(alias_pattern.finditer(masked_source))
+    namespace_pattern = _javascript_suite_namespace_call_pattern(
+        _javascript_suite_namespace_aliases(source),
+        parameterized=True,
+    )
+    if namespace_pattern is not None:
+        matches.extend(namespace_pattern.finditer(masked_source))
 
     argument_span_index = _javascript_call_argument_span_index(source)
     spans: set[tuple[int, int]] = set()
@@ -1476,6 +1544,13 @@ def _javascript_suite_call_spans(source: str) -> tuple[tuple[int, int], ...]:
         alias_matches = tuple(alias_pattern.finditer(masked_source))
         spans.update((match.start(), match.end() - 1) for match in alias_matches)
         suite_call_starts.update(match.start() for match in alias_matches)
+    namespace_pattern = _javascript_suite_namespace_call_pattern(
+        _javascript_suite_namespace_aliases(source)
+    )
+    if namespace_pattern is not None:
+        namespace_matches = tuple(namespace_pattern.finditer(masked_source))
+        spans.update((match.start(), match.end() - 1) for match in namespace_matches)
+        suite_call_starts.update(match.start() for match in namespace_matches)
     spans.update(_javascript_parameterized_suite_call_spans(source))
     spans.update(
         _javascript_conditional_suite_return_spans(
@@ -1502,6 +1577,15 @@ def _javascript_disabled_call_spans(source: str) -> tuple[tuple[int, int], ...]:
         spans.update(
             (match.start(), match.end())
             for match in alias_pattern.finditer(masked_source)
+        )
+    namespace_pattern = _javascript_suite_namespace_call_pattern(
+        _javascript_suite_namespace_aliases(source),
+        disabled=True,
+    )
+    if namespace_pattern is not None:
+        spans.update(
+            (match.start(), match.end())
+            for match in namespace_pattern.finditer(masked_source)
         )
     return tuple(sorted(spans))
 
@@ -2302,7 +2386,9 @@ def _vitest_snapshot_value_fingerprint(data: bytes | None) -> str:
 
 
 _JAVASCRIPT_ASSERTION = re.compile(
-    r"\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
+    r"(?P<expect>\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\()"
+    r"|(?P<node_assert>\bassert(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|"
+    r"(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\])+\s*\()"
 )
 _JAVASCRIPT_MATCHER_CALL = re.compile(
     r"(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)+\s*\("
@@ -2327,6 +2413,9 @@ def _javascript_assertion_count(
         argument_span_index = _javascript_call_argument_span_index(source)
     count = 0
     for match in _JAVASCRIPT_ASSERTION.finditer(masked_source, start, end):
+        if match.group("node_assert") is not None:
+            count += 1
+            continue
         open_index = match.end() - 1
         argument_spans = argument_span_index.get(open_index)
         if argument_spans is None:

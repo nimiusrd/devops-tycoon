@@ -810,7 +810,7 @@ _JAVASCRIPT_PARAMETERIZED_SUITE_CALL = re.compile(
     r"\btest\s*(?:\.\s*|\?\.\s*)describe)"
     r"(?:(?:\s*(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)"
     r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
-    r"\s*(?:\.\s*|\?\.\s*)each\s*\("
+    r"\s*(?:\.\s*|\?\.\s*)(?:each|for)\s*\("
 )
 _JAVASCRIPT_PARAMETERIZED_TEST_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)\s*(?:\.\s*|\?\.\s*)each\s*\("
@@ -1371,7 +1371,9 @@ def _javascript_suite_alias_call_pattern(
         r"(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     )
     if parameterized:
-        return re.compile(prefix + chain + r"\s*(?:\.\s*|\?\.\s*)each\s*\(")
+        return re.compile(
+            prefix + chain + r"\s*(?:\.\s*|\?\.\s*)(?:each|for)\s*\("
+        )
     if disabled:
         return re.compile(
             prefix
@@ -2154,9 +2156,40 @@ def _vitest_snapshot_value_fingerprint(data: bytes | None) -> str:
 _JAVASCRIPT_ASSERTION = re.compile(
     r"\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
 )
-_JAVASCRIPT_CALLBACK_VERIFICATION = re.compile(
-    r"\b(?:expect|assert)(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
+_JAVASCRIPT_MATCHER_CALL = re.compile(
+    r"(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)+\s*\("
 )
+
+
+def _javascript_assertion_count(
+    source: str,
+    start: int = 0,
+    end: int | None = None,
+    *,
+    masked_source: str | None = None,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> int:
+    """expect呼び出しの後にmatcher呼び出しがあるassertion数を数える。"""
+
+    if end is None:
+        end = len(source)
+    if masked_source is None:
+        masked_source = _mask_javascript_literals(source)
+    if argument_span_index is None:
+        argument_span_index = _javascript_call_argument_span_index(source)
+    count = 0
+    for match in _JAVASCRIPT_ASSERTION.finditer(masked_source, start, end):
+        open_index = match.end() - 1
+        argument_spans = argument_span_index.get(open_index)
+        if argument_spans is None:
+            continue
+        close_index = argument_spans[-1][1] if argument_spans else open_index + 1
+        matcher_start = close_index + 1
+        while matcher_start < end and masked_source[matcher_start].isspace():
+            matcher_start += 1
+        if _JAVASCRIPT_MATCHER_CALL.match(masked_source, matcher_start, end) is not None:
+            count += 1
+    return count
 
 
 def _python_test_shape(data: bytes | None) -> tuple[int, int]:
@@ -2215,11 +2248,18 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
         return _python_test_shape(data)
     source = _strip_javascript_comments(data)
     masked_source = _mask_javascript_literals(source)
+    argument_span_index = _javascript_call_argument_span_index(source)
     callbacks = _javascript_test_callback_records(source)
     return (
         len(callbacks),
         sum(
-            len(_JAVASCRIPT_ASSERTION.findall(masked_source, body_start, body_end))
+            _javascript_assertion_count(
+                source,
+                body_start,
+                body_end,
+                masked_source=masked_source,
+                argument_span_index=argument_span_index,
+            )
             for _, body_start, body_end, disabled, _ in callbacks
             if not disabled
         ),
@@ -2552,7 +2592,7 @@ def _javascript_callback_has_executable_content(callback: str) -> bool:
         return False
     if re.match(r"^(?:async)?function\b", normalized) and normalized.endswith("{}"):
         return False
-    return _JAVASCRIPT_CALLBACK_VERIFICATION.search(_mask_javascript_literals(callback)) is not None
+    return _javascript_assertion_count(callback) > 0
 
 
 def _javascript_test_behavior_records(

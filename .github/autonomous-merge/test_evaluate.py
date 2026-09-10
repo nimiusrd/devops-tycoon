@@ -1076,6 +1076,24 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
 
+    def test_expect_without_matcher_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n"})
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": "test('renders', () => { expect(1); });\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
     def test_unclosed_disabled_calls_are_indexed_without_suffix_rescans(self) -> None:
         source = "test.skip(\n" * 2000
 
@@ -1102,6 +1120,38 @@ class EvaluateTests(unittest.TestCase):
                     "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                     "tests/unit/utils/publicUrl.test.ts": (
                         "describe.each([['new']])('group', { skip: true }, () => {\n"
+                        "  test('builds', () => expect(url).toBe('new'));\n"
+                        "});\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_parameterized_suite_for_disabled_option_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "describe.for([['old']])('group', { skip: false }, () => {\n"
+                        "  test('builds', () => expect(url).toBe('old'));\n"
+                        "});\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "describe.for([['new']])('group', { skip: true }, () => {\n"
                         "  test('builds', () => expect(url).toBe('new'));\n"
                         "});\n"
                     ),

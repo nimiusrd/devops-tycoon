@@ -81,7 +81,7 @@ jobs:
               '((.id | tostring) == $comment_id) and
                (.user.login == "github-actions[bot]") and
                (.body | contains("<!-- autonomous-merge-shadow-result -->")) and
-               (.issue_url | contains("/repos/" + $repository + "/issues/" + $pr_number))' \
+               (.issue_url | endswith("/repos/" + $repository + "/issues/" + $pr_number))' \
               <<<"${comment_json}" >/dev/null; then
               echo "Shadow result pointer comment ${label_name} is not a valid result for PR #${PR_NUMBER}" >&2
               return 1
@@ -687,7 +687,7 @@ jobs:
               '((.id | tostring) == $comment_id) and
                (.user.login == "github-actions[bot]") and
                (.body | contains("<!-- autonomous-merge-shadow-result -->")) and
-               (.issue_url | contains("/repos/" + $repository + "/issues/" + $pr_number))' \
+               (.issue_url | endswith("/repos/" + $repository + "/issues/" + $pr_number))' \
               <<<"${comment_json}" >/dev/null; then
               echo "Shadow result pointer comment ${label_name} is not a valid result for PR #${PR_NUMBER}" >&2
               return 1

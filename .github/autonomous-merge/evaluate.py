@@ -787,9 +787,10 @@ _DISABLED_TEST_CALL = re.compile(
     r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf|fail|fails)\b|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf|fail|fails)['\"`]\s*\])"
 )
-_JAVASCRIPT_TEST_INFO_SKIP_CALL = re.compile(
-    r"\btestInfo\s*(?:(?:\.\s*|\?\.\s*)skip\b|"
-    r"(?:\?\.)?\s*\[\s*['\"`]skip['\"`]\s*\])\s*\("
+_JAVASCRIPT_TEST_INFO_MODIFIER_CALL = re.compile(
+    r"\b(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
+    r"(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|fail)\b|"
+    r"(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|fail)['\"`]\s*\])\s*\("
 )
 _JAVASCRIPT_TEST_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)"
@@ -809,7 +810,7 @@ _JAVASCRIPT_PARAMETERIZED_TEST_CALL = re.compile(
 )
 _JAVASCRIPT_DISABLED_TEST_OPTION = re.compile(
     r"(?:^|[{,])\s*(?:(?:skip|todo|fails)|\[\s*['\"`](?:skip|todo|fails)['\"`]\s*\])"
-    r"\s*:(?!\s*(?:false|0|null|undefined)\b)\s*"
+    r"\s*:(?!\s*(?:false|0|null|undefined)\s*(?=[,}]))\s*"
 )
 _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND = re.compile(
     r"(?:^|[{,])\s*(?:skip|todo|fails)\s*(?=[,}])"
@@ -823,7 +824,10 @@ _JAVASCRIPT_OBJECT_SPREAD = re.compile(
 _JAVASCRIPT_DISABLED_TEST_OPTION_ASSIGNMENT = re.compile(
     r"\b(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
     r"(?:\.\s*(?:skip|todo|fails)\b|\[\s*['\"`](?:skip|todo|fails)['\"`]\s*\])"
-    r"\s*=\s*(?!\s*(?:false|0|null|undefined)\b)"
+    r"\s*=\s*(?!\s*(?:false|0|null|undefined)\s*(?=[;,\r\n}]|$))"
+)
+_JAVASCRIPT_SUITE_IMPORT = re.compile(
+    r"\bimport\s*\{(?P<specifiers>[^{}]*)\}\s*from\s*['\"`](?:vitest|@playwright/test)['\"`]"
 )
 
 
@@ -891,10 +895,10 @@ def _contains_disabled_test_call(
         )
     base_lines = (base_data or b"").decode("utf-8", errors="replace").splitlines()
     head_lines = head_data.decode("utf-8", errors="replace").splitlines()
-    base_text = _javascript_disabled_call_source(base_data)
-    head_text = _javascript_disabled_call_source(head_data)
-    if _javascript_disabled_test_feature_count(head_text) > _javascript_disabled_test_feature_count(
-        base_text
+    base_source = _strip_javascript_comments(base_data or b"")
+    head_source = _strip_javascript_comments(head_data)
+    if _javascript_disabled_test_feature_count(head_source) > _javascript_disabled_test_feature_count(
+        base_source
     ):
         return True
     if (
@@ -902,17 +906,19 @@ def _contains_disabled_test_call(
         or len(head_data) > MAX_DIFF_BYTES
         or len(base_lines) + len(head_lines) > MAX_DIFF_LINES
     ):
-        return _DISABLED_TEST_CALL.search(head_text) is not None
+        return bool(
+            _javascript_disabled_call_spans(head_source)
+            or _javascript_test_info_modifier_count(head_source)
+            or _javascript_disabled_test_option_count(head_source)
+        )
 
     matcher = difflib.SequenceMatcher(a=base_lines, b=head_lines, autojunk=True)
     for tag, _, _, head_start, head_end in matcher.get_opcodes():
         changed_text = "\n".join(head_lines[head_start:head_end])
-        changed_source = _mask_javascript_literals(
-            _strip_javascript_comments(changed_text.encode("utf-8"))
-        )
+        changed_source = _strip_javascript_comments(changed_text.encode("utf-8"))
         if tag in {"replace", "insert"} and (
-            _DISABLED_TEST_CALL.search(changed_source)
-            or _JAVASCRIPT_TEST_INFO_SKIP_CALL.search(changed_source)
+            _javascript_disabled_call_spans(changed_source)
+            or _javascript_test_info_modifier_count(changed_source)
             or _javascript_disabled_test_option_count(changed_source) > 0
         ):
             return True
@@ -1211,6 +1217,57 @@ def _javascript_call_arguments(
     return tuple(source[start:end] for start, end in spans)
 
 
+def _javascript_parameter_name(parameter: str) -> str | None:
+    """callback引数から単純な識別子だけを取り出す。"""
+
+    candidate = parameter.strip()
+    if "=" in candidate:
+        candidate = candidate.split("=", 1)[0].strip()
+    if ":" in candidate:
+        candidate = candidate.split(":", 1)[0].strip()
+    candidate = candidate.removesuffix("?").strip()
+    if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", candidate):
+        return candidate
+    return None
+
+
+def _javascript_callback_test_info_parameter(callback: str) -> str | None:
+    """test callbackの第2引数（Playwright TestInfo）の名前を返す。"""
+
+    masked_callback = _mask_javascript_literals(callback)
+    arrow_index = masked_callback.find("=>")
+    if arrow_index >= 0:
+        parameter_source = masked_callback[:arrow_index].strip()
+        parameters = parameter_source
+        parameters = re.sub(r"^async\s+", "", parameters)
+        if not parameters.startswith("("):
+            return None
+        parameter_source = parameters
+        spans = _javascript_call_argument_spans(
+            parameters,
+            0,
+            argument_span_index=_javascript_call_argument_span_index(parameters),
+        )
+    else:
+        function_match = re.search(
+            r"\bfunction(?:\s+[A-Za-z_$][A-Za-z0-9_$]*)?\s*\(",
+            masked_callback,
+        )
+        if function_match is None:
+            return None
+        open_index = function_match.end() - 1
+        parameter_source = masked_callback
+        spans = _javascript_call_argument_spans(
+            masked_callback,
+            open_index,
+            argument_span_index=_javascript_call_argument_span_index(masked_callback),
+        )
+    if spans is None or len(spans) < 2:
+        return None
+    start, end = spans[1]
+    return _javascript_parameter_name(parameter_source[start:end])
+
+
 def _javascript_braced_end_index(
     source: str,
     target_open_indexes: Iterable[int],
@@ -1267,10 +1324,143 @@ def _javascript_braced_end_index(
     return results
 
 
+def _javascript_suite_aliases(source: str) -> frozenset[str]:
+    """Vitest/Playwright suite runnerのimport aliasを取り出す。"""
+
+    aliases: set[str] = set()
+    for match in _JAVASCRIPT_SUITE_IMPORT.finditer(source):
+        for specifier in match.group("specifiers").split(","):
+            parts = re.split(r"\s+as\s+", specifier.strip(), maxsplit=1)
+            imported = parts[0].strip()
+            local = parts[1].strip() if len(parts) == 2 else imported
+            if imported in {"describe", "suite", "context"}:
+                if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", local):
+                    aliases.add(local)
+    return frozenset(aliases)
+
+
+def _javascript_suite_alias_call_pattern(
+    aliases: Iterable[str],
+    *,
+    disabled: bool = False,
+) -> re.Pattern[str] | None:
+    names = sorted(
+        {
+            alias
+            for alias in aliases
+            if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", alias)
+        }
+    )
+    if not names:
+        return None
+    prefix = (
+        r"(?<![A-Za-z0-9_$?.'\"`])\b(?:"
+        + "|".join(re.escape(name) for name in names)
+        + r")"
+    )
+    chain = (
+        r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|"
+        r"(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+    )
+    if disabled:
+        return re.compile(
+            prefix
+            + chain
+            + r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|fail|fails)\b|"
+            r"(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|fail|fails)['\"`]\s*\])"
+        )
+    return re.compile(prefix + chain + r"\s*\(")
+
+
+def _javascript_suite_call_spans(source: str) -> tuple[tuple[int, int], ...]:
+    """組み込み名とrunner import aliasのsuite呼び出し範囲を返す。"""
+
+    masked_source = _mask_javascript_literals(source)
+    spans = {
+        (match.start(), match.end() - 1)
+        for match in _JAVASCRIPT_SUITE_CALL.finditer(masked_source)
+    }
+    alias_pattern = _javascript_suite_alias_call_pattern(_javascript_suite_aliases(source))
+    if alias_pattern is not None:
+        spans.update(
+            (match.start(), match.end() - 1)
+            for match in alias_pattern.finditer(masked_source)
+        )
+    return tuple(sorted(spans))
+
+
+def _javascript_disabled_call_spans(source: str) -> tuple[tuple[int, int], ...]:
+    """組み込み名とsuite aliasのdisabled modifier呼び出し範囲を返す。"""
+
+    masked_source = _mask_javascript_literals(source)
+    spans = {
+        (match.start(), match.end())
+        for match in _DISABLED_TEST_CALL.finditer(masked_source)
+    }
+    alias_pattern = _javascript_suite_alias_call_pattern(
+        _javascript_suite_aliases(source),
+        disabled=True,
+    )
+    if alias_pattern is not None:
+        spans.update(
+            (match.start(), match.end())
+            for match in alias_pattern.finditer(masked_source)
+        )
+    return tuple(sorted(spans))
+
+
+def _javascript_test_info_modifier_count(source: str) -> int:
+    """各test callbackの第2引数に対するskip/fixme/fail呼び出し数を数える。"""
+
+    masked_source = _mask_javascript_literals(source)
+    argument_span_index = _javascript_call_argument_span_index(source)
+    count = 0
+    for _, open_index in _javascript_test_call_spans(source):
+        argument_spans = _javascript_call_argument_spans(
+            source,
+            open_index,
+            argument_span_index=argument_span_index,
+        )
+        if argument_spans is None:
+            continue
+        arguments = tuple(source[start:end] for start, end in argument_spans)
+        body_index = _javascript_test_body_argument_index(arguments)
+        if body_index is None:
+            continue
+        body_start, body_end = argument_spans[body_index]
+        count += _javascript_callback_test_info_modifier_count(
+            masked_source,
+            arguments[body_index],
+            body_start,
+            body_end,
+        )
+    return count
+
+
+def _javascript_callback_test_info_modifier_count(
+    masked_source: str,
+    callback: str,
+    body_start: int,
+    body_end: int,
+) -> int:
+    parameter = _javascript_callback_test_info_parameter(callback)
+    if parameter is None:
+        return 0
+    return sum(
+        match.group("name") == parameter
+        for match in _JAVASCRIPT_TEST_INFO_MODIFIER_CALL.finditer(
+            masked_source,
+            body_start,
+            body_end,
+        )
+    )
+
+
 def _javascript_object_has_disabled_test_option(
     source: str,
     disabled_option_variables: Iterable[str] = (),
 ) -> bool:
+    source = _mask_javascript_literals(source)
     if (
         _JAVASCRIPT_DISABLED_TEST_OPTION.search(source)
         or _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND.search(source)
@@ -1319,6 +1509,7 @@ def _javascript_options_argument_is_disabled(
 
 
 def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
+    source = _mask_javascript_literals(source)
     object_sources: dict[str, str] = {}
     object_matches = tuple(_JAVASCRIPT_OBJECT_VARIABLE.finditer(source))
     braced_end_index = _javascript_braced_end_index(
@@ -1372,10 +1563,10 @@ def _javascript_disabled_test_option_count(source: str) -> int:
             disabled_option_variables,
         ):
             count += 1
-    for match in _JAVASCRIPT_SUITE_CALL.finditer(source):
+    for _, open_index in _javascript_suite_call_spans(source):
         arguments = _javascript_call_arguments(
             source,
-            match.end() - 1,
+            open_index,
             argument_span_index=argument_span_index,
         )
         if arguments is not None and len(arguments) >= 2 and _javascript_options_argument_is_disabled(
@@ -1397,10 +1588,10 @@ def _javascript_disabled_suite_option_ranges(
     if argument_span_index is None:
         argument_span_index = _javascript_call_argument_span_index(source)
     ranges: list[tuple[int, int]] = []
-    for match in _JAVASCRIPT_SUITE_CALL.finditer(source):
+    for call_start, open_index in _javascript_suite_call_spans(source):
         argument_spans = _javascript_call_argument_spans(
             source,
-            match.end() - 1,
+            open_index,
             argument_span_index=argument_span_index,
         )
         if argument_spans is None or len(argument_spans) < 3:
@@ -1415,14 +1606,14 @@ def _javascript_disabled_suite_option_ranges(
         if body_index is None:
             continue
         _, body_end = argument_spans[body_index]
-        ranges.append((match.start(), body_end))
+        ranges.append((call_start, body_end))
     return tuple(ranges)
 
 
 def _javascript_disabled_test_feature_count(source: str) -> int:
     return (
-        len(list(_DISABLED_TEST_CALL.finditer(source)))
-        + len(list(_JAVASCRIPT_TEST_INFO_SKIP_CALL.finditer(source)))
+        len(_javascript_disabled_call_spans(source))
+        + _javascript_test_info_modifier_count(source)
         + _javascript_disabled_test_option_count(source)
     )
 
@@ -1464,18 +1655,17 @@ def _javascript_call_end(text: str, open_index: int) -> int | None:
 def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]:
     """無効化modifierを持つ呼び出しの引数範囲を返す。"""
 
-    source = _mask_javascript_literals(source)
     argument_span_index = _javascript_call_argument_span_index(source)
     ranges: list[tuple[int, int]] = []
-    for match in _DISABLED_TEST_CALL.finditer(source):
-        open_index = match.end()
+    for start, end in _javascript_disabled_call_spans(source):
+        open_index = end
         while open_index < len(source) and source[open_index].isspace():
             open_index += 1
         if open_index >= len(source) or source[open_index] != "(":
             continue
         end = _javascript_call_end(source, open_index)
         if end is not None:
-            ranges.append((match.start(), end))
+            ranges.append((start, end))
     ranges.extend(
         _javascript_disabled_suite_option_ranges(
             source,
@@ -1920,7 +2110,6 @@ def _test_code_structure_fingerprint(
     )
 
 
-_JAVASCRIPT_TEST_DECLARATION = _JAVASCRIPT_TEST_CALL
 _JAVASCRIPT_ASSERTION = re.compile(
     r"\bexpect(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)*\s*\("
 )
@@ -1980,13 +2169,16 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
         return (0, 0)
     if language == "python":
         return _python_test_shape(data)
-    normalized = _normalize_javascript_whitespace(
-        _strip_javascript_comments(data),
-        preserve_literal_content=False,
-    )
+    source = _strip_javascript_comments(data)
+    masked_source = _mask_javascript_literals(source)
+    callbacks = _javascript_test_callback_records(source)
     return (
-        len(_JAVASCRIPT_TEST_DECLARATION.findall(normalized)),
-        len(_JAVASCRIPT_ASSERTION.findall(normalized)),
+        len(callbacks),
+        sum(
+            len(_JAVASCRIPT_ASSERTION.findall(masked_source, body_start, body_end))
+            for _, body_start, body_end, disabled, _ in callbacks
+            if not disabled
+        ),
     )
 
 
@@ -2029,6 +2221,7 @@ def _javascript_test_body_argument(arguments: Sequence[str]) -> str | None:
 def _javascript_test_call_spans(source: str) -> tuple[tuple[int, int], ...]:
     """通常・parameterized test呼び出しの開始位置と引数括弧位置を返す。"""
 
+    argument_span_index = _javascript_call_argument_span_index(source)
     parameterized_open_indexes = {
         match.end() - 1 for match in _JAVASCRIPT_PARAMETERIZED_TEST_CALL.finditer(source)
     }
@@ -2039,10 +2232,16 @@ def _javascript_test_call_spans(source: str) -> tuple[tuple[int, int], ...]:
         calls.append((match.start(), match.end() - 1))
 
     for match in _JAVASCRIPT_PARAMETERIZED_TEST_CALL.finditer(source):
-        each_end = _javascript_call_end(source, match.end() - 1)
-        if each_end is None:
+        each_open_index = match.end() - 1
+        each_argument_spans = argument_span_index.get(each_open_index)
+        if each_argument_spans is None:
             continue
-        open_index = each_end
+        each_close_index = each_argument_spans[-1][1] if each_argument_spans else each_open_index + 1
+        while each_close_index < len(source) and source[each_close_index].isspace():
+            each_close_index += 1
+        if each_close_index >= len(source) or source[each_close_index] != ")":
+            continue
+        open_index = each_close_index + 1
         while open_index < len(source) and source[open_index].isspace():
             open_index += 1
         if open_index < len(source) and source[open_index] == "(":
@@ -2061,10 +2260,10 @@ def _javascript_suite_callback_records(
         argument_span_index = _javascript_call_argument_span_index(source)
     masked_source = _mask_javascript_literals(source)
     callbacks: list[tuple[int, int, int, str | None]] = []
-    for match in _JAVASCRIPT_SUITE_CALL.finditer(masked_source):
+    for call_start, open_index in _javascript_suite_call_spans(source):
         argument_spans = _javascript_call_argument_spans(
             source,
-            match.end() - 1,
+            open_index,
             argument_span_index=argument_span_index,
         )
         if argument_spans is None:
@@ -2076,7 +2275,7 @@ def _javascript_suite_callback_records(
         body_start, body_end = argument_spans[body_index]
         callbacks.append(
             (
-                match.start(),
+                call_start,
                 body_start,
                 body_end,
                 _javascript_static_test_title(arguments),
@@ -2111,18 +2310,18 @@ def _javascript_unconditional_scope_disabled_calls(
     if argument_span_index is None:
         argument_span_index = _javascript_call_argument_span_index(source)
     disabled_calls: list[tuple[int, int | None, int | None]] = []
-    for match in _DISABLED_TEST_CALL.finditer(source):
+    for call_start, call_end in _javascript_disabled_call_spans(source):
         modifier_match = re.search(
             r"(?:\.\s*|\?\.\s*)(?P<dot>skip|fixme|todo|fail|fails)\b"
             r"|(?:\?\.)?\s*\[\s*['\"`](?P<bracket>skip|fixme|todo|fail|fails)['\"`]\s*\]",
-            source[match.start() : match.end()],
+            source[call_start:call_end],
         )
         if modifier_match is None:
             continue
         modifier = modifier_match.group("dot") or modifier_match.group("bracket")
         if modifier is None:
             continue
-        open_index = match.end()
+        open_index = call_end
         while open_index < len(source) and source[open_index].isspace():
             open_index += 1
         if open_index >= len(source) or source[open_index] != "(":
@@ -2137,21 +2336,21 @@ def _javascript_unconditional_scope_disabled_calls(
         first_argument = arguments[0].strip() if arguments else ""
         if first_argument and first_argument not in {"true", "1"}:
             continue
-        if any(body_start <= match.start() < body_end for _, body_start, body_end in test_callbacks):
+        if any(body_start <= call_start < body_end for _, body_start, body_end in test_callbacks):
             continue
         containing_suites = [
             suite
             for suite in suite_callbacks
-            if suite[1] <= match.start() < suite[2]
+            if suite[1] <= call_start < suite[2]
         ]
         if containing_suites:
             _, body_start, body_end = min(
                 containing_suites,
                 key=lambda suite: suite[2] - suite[1],
             )
-            disabled_calls.append((match.start(), body_start, body_end))
+            disabled_calls.append((call_start, body_start, body_end))
         else:
-            disabled_calls.append((match.start(), None, None))
+            disabled_calls.append((call_start, None, None))
     return tuple(disabled_calls)
 
 
@@ -2229,6 +2428,7 @@ def _javascript_test_callback_records(
         if body_index is None:
             continue
         body_start, body_end = argument_spans[body_index]
+        callback = arguments[body_index]
         callbacks.append(
             (
                 call_start,
@@ -2247,12 +2447,13 @@ def _javascript_test_callback_records(
                     body_start,
                     body_end,
                 )
-                or _JAVASCRIPT_TEST_INFO_SKIP_CALL.search(
+                or _javascript_callback_test_info_modifier_count(
                     masked_source,
+                    callback,
                     body_start,
                     body_end,
                 )
-                is not None,
+                > 0,
                 _javascript_static_test_title(arguments),
             )
         )
@@ -2261,13 +2462,13 @@ def _javascript_test_callback_records(
         for call_start, body_start, body_end, _ in suite_records
     )
     scope_disabled_calls = _javascript_unconditional_scope_disabled_calls(
-        masked_source,
+        source,
         tuple(
             (call_start, body_start, body_end)
         for call_start, body_start, body_end, _, _ in callbacks
         ),
         suite_callbacks,
-        argument_span_index=_javascript_call_argument_span_index(masked_source),
+        argument_span_index=argument_span_index,
     )
     return tuple(
         (

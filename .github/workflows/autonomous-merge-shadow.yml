@@ -45,17 +45,96 @@ jobs:
         run: |
           set -euo pipefail
 
+          result_pointer_label_prefix='autonomous-merge-shadow-result-id-'
+
+          find_persisted_shadow_result_comment_id() {
+            local labels_json
+            labels_json="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels?per_page=100")"
+            local pointer_count
+            pointer_count="$(jq --arg prefix "${result_pointer_label_prefix}" \
+              '[.[] | select(.name | startswith($prefix))] | length' <<<"${labels_json}")"
+            if (( pointer_count > 1 )); then
+              echo "Multiple shadow result pointer labels found for PR #${PR_NUMBER}" >&2
+              return 1
+            fi
+            if (( pointer_count == 0 )); then
+              return 0
+            fi
+            local label_name
+            label_name="$(jq -r --arg prefix "${result_pointer_label_prefix}" \
+              '[.[] | select(.name | startswith($prefix))][0].name | ltrimstr($prefix)' <<<"${labels_json}")"
+            if [[ ! "${label_name}" =~ ^[0-9]+$ ]]; then
+              echo "Invalid shadow result pointer label for PR #${PR_NUMBER}" >&2
+              return 1
+            fi
+            local comment_json
+            if ! comment_json="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/issues/comments/${label_name}")"; then
+              echo "Shadow result pointer comment ${label_name} could not be read" >&2
+              return 1
+            fi
+            if ! jq -e \
+              --arg comment_id "${label_name}" \
+              --arg repository "${GITHUB_REPOSITORY}" \
+              --arg pr_number "${PR_NUMBER}" \
+              '((.id | tostring) == $comment_id) and
+               (.user.login == "github-actions[bot]") and
+               (.body | contains("<!-- autonomous-merge-shadow-result -->")) and
+               (.issue_url | contains("/repos/" + $repository + "/issues/" + $pr_number))' \
+              <<<"${comment_json}" >/dev/null; then
+              echo "Shadow result pointer comment ${label_name} is not a valid result for PR #${PR_NUMBER}" >&2
+              return 1
+            fi
+            printf '%s\n' "${label_name}"
+          }
+
+          persist_shadow_result_comment_id() {
+            local comment_id="$1"
+            if [[ ! "${comment_id}" =~ ^[0-9]+$ ]]; then
+              echo "Invalid shadow result comment id: ${comment_id}" >&2
+              return 1
+            fi
+            local label_name="${result_pointer_label_prefix}${comment_id}"
+            if ! gh api "repos/${GITHUB_REPOSITORY}/labels/${label_name}" >/dev/null 2>&1; then
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/labels" \
+                -f "name=${label_name}" \
+                -f 'color=5319e7' \
+                -f 'description=Internal pointer for the shadow result comment' >/dev/null
+            fi
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
+              -f "labels[]=${label_name}" >/dev/null
+            local labels_json
+            labels_json="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels?per_page=100")"
+            while IFS= read -r old_label; do
+              [[ -z "${old_label}" || "${old_label}" == "${label_name}" ]] && continue
+              gh api --method DELETE \
+                "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels/${old_label}" >/dev/null
+            done < <(jq -r --arg prefix "${result_pointer_label_prefix}" \
+              --arg current "${label_name}" \
+              '.[] | .name | select(startswith($prefix) and . != $current)' <<<"${labels_json}")
+          }
+
           find_shadow_result_comment_id() {
             # The result comment is updated on every evaluation, so search the
-            # most recently updated pages only. A full unbounded pagination
-            # would let issue-comment volume consume the job's API budget.
+            # most recently updated pages only. The pointer label is checked
+            # first so an old result remains addressable outside that window.
+            local persisted_comment_id
+            if ! persisted_comment_id="$(find_persisted_shadow_result_comment_id)"; then
+              return 1
+            fi
+            if [[ -n "${persisted_comment_id}" ]]; then
+              printf '%s\n' "${persisted_comment_id}"
+              return 0
+            fi
             local page
             for page in 1 2 3; do
               local page_json
               page_json="$(gh api \
                 "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100&sort=updated&direction=desc&page=${page}")"
               local comment_id
-              comment_id="$(jq -r '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id] | last // empty' <<<"${page_json}")"
+              comment_id="$(jq -r '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id] | first // empty' <<<"${page_json}")"
               if [[ -n "${comment_id}" ]]; then
                 printf '%s\n' "${comment_id}"
                 return 0
@@ -92,6 +171,7 @@ jobs:
             echo 'invalidated=false' >> "${GITHUB_OUTPUT}"
             exit 0
           fi
+          persist_shadow_result_comment_id "${existing_comment_id}"
           report_body="$(cat <<EOF
           ## Autonomous Merge Shadow Mode
 
@@ -449,6 +529,35 @@ jobs:
           EXISTING_COMMENT_ID: ${{ steps.invalidate_previous_result.outputs.existing_comment_id }}
         run: |
           set -euo pipefail
+          result_pointer_label_prefix='autonomous-merge-shadow-result-id-'
+
+          persist_shadow_result_comment_id() {
+            local comment_id="$1"
+            if [[ ! "${comment_id}" =~ ^[0-9]+$ ]]; then
+              echo "Invalid shadow result comment id: ${comment_id}" >&2
+              return 1
+            fi
+            local label_name="${result_pointer_label_prefix}${comment_id}"
+            if ! gh api "repos/${GITHUB_REPOSITORY}/labels/${label_name}" >/dev/null 2>&1; then
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/labels" \
+                -f "name=${label_name}" \
+                -f 'color=5319e7' \
+                -f 'description=Internal pointer for the shadow result comment' >/dev/null
+            fi
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
+              -f "labels[]=${label_name}" >/dev/null
+            local labels_json
+            labels_json="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels?per_page=100")"
+            while IFS= read -r old_label; do
+              [[ -z "${old_label}" || "${old_label}" == "${label_name}" ]] && continue
+              gh api --method DELETE \
+                "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels/${old_label}" >/dev/null
+            done < <(jq -r --arg prefix "${result_pointer_label_prefix}" \
+              --arg current "${label_name}" \
+              '.[] | .name | select(startswith($prefix) and . != $current)' <<<"${labels_json}")
+          }
+
           if [[ "${INVALIDATION_OUTCOME}" != "success" ]]; then
             {
               echo '## Autonomous Merge Shadow Mode'
@@ -508,9 +617,11 @@ jobs:
               "repos/${GITHUB_REPOSITORY}/issues/comments/${existing_comment_id}" \
               --input - <<<"${payload}" >/dev/null
           else
-            gh api --method POST \
+            created_comment="$(gh api --method POST \
               "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-              --input - <<<"${payload}" >/dev/null
+              --input - <<<"${payload}")"
+            created_comment_id="$(jq -r '.id // empty' <<<"${created_comment}")"
+            persist_shadow_result_comment_id "${created_comment_id}"
           fi
 
   invalidate-non-evaluable:
@@ -540,17 +651,85 @@ jobs:
         run: |
           set -euo pipefail
 
+          result_pointer_label_prefix='autonomous-merge-shadow-result-id-'
+
+          find_persisted_shadow_result_comment_id() {
+            local labels_json
+            labels_json="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels?per_page=100")"
+            local pointer_count
+            pointer_count="$(jq --arg prefix "${result_pointer_label_prefix}" \
+              '[.[] | select(.name | startswith($prefix))] | length' <<<"${labels_json}")"
+            if (( pointer_count > 1 )); then
+              echo "Multiple shadow result pointer labels found for PR #${PR_NUMBER}" >&2
+              return 1
+            fi
+            if (( pointer_count == 0 )); then
+              return 0
+            fi
+            local label_name
+            label_name="$(jq -r --arg prefix "${result_pointer_label_prefix}" \
+              '[.[] | select(.name | startswith($prefix))][0].name | ltrimstr($prefix)' <<<"${labels_json}")"
+            if [[ ! "${label_name}" =~ ^[0-9]+$ ]]; then
+              echo "Invalid shadow result pointer label for PR #${PR_NUMBER}" >&2
+              return 1
+            fi
+            local comment_json
+            if ! comment_json="$(gh api \
+              "repos/${GITHUB_REPOSITORY}/issues/comments/${label_name}")"; then
+              echo "Shadow result pointer comment ${label_name} could not be read" >&2
+              return 1
+            fi
+            if ! jq -e \
+              --arg comment_id "${label_name}" \
+              --arg repository "${GITHUB_REPOSITORY}" \
+              --arg pr_number "${PR_NUMBER}" \
+              '((.id | tostring) == $comment_id) and
+               (.user.login == "github-actions[bot]") and
+               (.body | contains("<!-- autonomous-merge-shadow-result -->")) and
+               (.issue_url | contains("/repos/" + $repository + "/issues/" + $pr_number))' \
+              <<<"${comment_json}" >/dev/null; then
+              echo "Shadow result pointer comment ${label_name} is not a valid result for PR #${PR_NUMBER}" >&2
+              return 1
+            fi
+            printf '%s\n' "${label_name}"
+          }
+
+          persist_shadow_result_comment_id() {
+            local comment_id="$1"
+            if [[ ! "${comment_id}" =~ ^[0-9]+$ ]]; then
+              echo "Invalid shadow result comment id: ${comment_id}" >&2
+              return 1
+            fi
+            local label_name="${result_pointer_label_prefix}${comment_id}"
+            if ! gh api "repos/${GITHUB_REPOSITORY}/labels/${label_name}" >/dev/null 2>&1; then
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/labels" \
+                -f "name=${label_name}" \
+                -f 'color=5319e7' \
+                -f 'description=Internal pointer for the shadow result comment' >/dev/null
+            fi
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
+              -f "labels[]=${label_name}" >/dev/null
+          }
+
           find_shadow_result_comment_id() {
-            # Search a bounded number of recently updated pages. If the marker
-            # is older than the bound, fail closed instead of creating a second
-            # result comment beside an unknown stale result.
+            # Search a bounded number of recently updated pages after checking
+            # the persistent pointer label.
+            local persisted_comment_id
+            if ! persisted_comment_id="$(find_persisted_shadow_result_comment_id)"; then
+              return 1
+            fi
+            if [[ -n "${persisted_comment_id}" ]]; then
+              printf '%s\n' "${persisted_comment_id}"
+              return 0
+            fi
             local page
             for page in 1 2 3; do
               local page_json
               page_json="$(gh api \
                 "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100&sort=updated&direction=desc&page=${page}")"
               local comment_id
-              comment_id="$(jq -r '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id] | last // empty' <<<"${page_json}")"
+              comment_id="$(jq -r '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- autonomous-merge-shadow-result -->"))) | .id] | first // empty' <<<"${page_json}")"
               if [[ -n "${comment_id}" ]]; then
                 printf '%s\n' "${comment_id}"
                 return 0
@@ -579,6 +758,7 @@ jobs:
             echo "No shadow result exists for PR #${PR_NUMBER}"
             exit 0
           fi
+          persist_shadow_result_comment_id "${existing_comment_id}"
           if [[ "${BASE_REF}" != "main" ]]; then
             reason="BASE_BRANCH_OUT_OF_SCOPE"
             detail='This PR no longer targets `main`; the previous shadow result is invalidated.'

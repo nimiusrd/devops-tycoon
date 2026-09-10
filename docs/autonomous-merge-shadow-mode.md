@@ -35,6 +35,7 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 | `.github/dependabot.yml`、`.github/dependabot.yaml` | Hard Gate | 依存関係更新の自動化設定を変更するため |
 | `index.html`、`src/**`、`public/**` | リスク加点 | 起動・実装・視覚変更を含め、変更量と対応するテスト種別を組み合わせて判定するため（audio資産はaudio scope） |
 | `src/render/**`、Pixi/WebGL adapter (`src/ui/*Pixi*.tsx` など) | 専用visual scope | `*-pixi-visual.spec.ts`または対応PNG snapshotによるPixi視覚回帰を要求するため |
+| `src/render/industryBoardScene.ts`、`src/ui/IndustryScreen.tsx`、`src/ui/IndustrySkyline.tsx` | industry-visual scope | DOM業界画面を実際に行使する`tests/e2e/org-scale.spec.ts`を要求するため |
 | `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 領域ごとの変更影響を細分化して判定するため |
 | `src/App.tsx`、`src/main.tsx` | リスク加点 | ルート画面と起動処理を変更するため |
 | `public/assets/audio/**` | リスク加点 | 音源変更としてaudioテストとの対応を確認するため |
@@ -46,6 +47,8 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 
 初期閾値は、Project Health `90`、最低Project Health `80`、PR Risk `25`です。Project Healthは事故確率ではなく、CI・テスト・セキュリティ・復旧能力を後から実測値へ置き換えるためのcontrol maturity indexです。変更行数、変更ファイル数、変更path、コード変更に対するテスト変更の有無を固定ルールで採点します。
 
+業界画面のDOM描画は`industry-visual` scopeで`tests/e2e/org-scale.spec.ts`へ明示的に対応付けます。共有Pixi描画pathはsprint・department・organizationの各視覚回帰をすべて要求します。
+
 検証判定はPR全体でテストファイルが1件あるかだけでは決めません。UI・CSS・静的アセットはE2Eまたは視覚スナップショット、simulation・data・state・audio・scriptsは対応するunit/playtest領域など、変更pathに対応するverification scopeごとに実際のrunnerが探索するsuffix（Vitest unit/srcは`.test.ts`/`.spec.ts`、playtestは`.test.ts`のみ、Playwright e2eは`.test.ts`/`.spec.ts`）の追加行がある通常blobのテストを要求します。`src/**/*.test.ts` / `src/**/*.spec.ts`などglobal test globに一致するファイルはscopeのコード変更から除外します。コメント・空白だけの追加や、コメント化によって実行可能コードが減るテスト変更は検証変更として扱わず、削除リスクを加算します。Pythonのverificationは、Shadow workflowが実際にdiscoverする`.github/autonomous-merge/test_*.py`だけを対象にし、Python tokenizerで`#`コメントを除去して比較します。`public/assets/audio/**`はvisual scopeから除外してaudio scopeで扱います。audio scopeは音源を実際に行使するunit/audio testだけを受け入れ、画像アセット専用の`tests/e2e/game-assets.spec.ts`はaudio検証に使いません。通常のvisual scopeのbinary検証は、実際にこのリポジトリで生成されるPNG（`tests/**/*-snapshots/**/*.png`）に一致し、かつ所有specの`toHaveScreenshot()`が生成名を参照する場合だけ受け入れます。Pixi対象path（`src/render/**`およびPixi/WebGL adapter）は通常visual scopeから分離し、`*-pixi-visual.spec.ts`またはそのspecに対応するPNG snapshotだけを受け入れます。所有testのcallbackにruntimeの`skip`・`fixme`・`todo`・`fail`などのmodifierがある場合も、snapshotは検証として受け入れません。Vitest snapshot（`tests/**/__snapshots__/**/*.snap`）は、snapshot内の各標準keyを、そのkeyを生成した有効なtest callbackの`toMatchSnapshot()`へ対応付けられる場合だけ、simulation/data scopeの検証として受け入れます。snapshotディレクトリ内の未参照PNG、READMEなど任意テキスト、通常のbinary testは除外します。削除・純減・symlink化のテスト変更、または追加行が`.skip`・`.fixme`・`.todo`・`.skipIf`・`.runIf`・`.fail`・`.fails`で無効化または期待失敗化する変更には検証充足を与えず、削除リスクを加算します。`test.concurrent.skip`や`test.skip.concurrent`、`test['skip']`、`test[\`skip\`]`、`test?.skip`、`it["todo"]`のようなcomputed propertyやoptional chainingを含む連結modifierは改行を挟んでも無効化として扱います。Pythonでは`unittest.skip`・`unittest.skipIf`・`unittest.skipUnless`・`pytest.mark.skip`・`pytest.mark.skipif`も同様に扱います。template literalの`${...}`内のコメントも実行内容を変えない変更として除外し、コード部分の空白だけを正規化して文字列・template・正規表現リテラル内の意味のある空白は保持します。同内容の純粋renameは削除リスクだけでなく検証充足からも除外し、Playwright、通常Vitest、playtest、Pythonのrunnerを跨ぐrenameは除外しません。Git treeのsubmodule gitlink変更はファイルシステム走査に依存せずHard Gateにします。snapshot entryにはGitの実行権限（`100644` / `100755`）も保持し、内容が同じmode-only変更も差分として扱います。不正UTF-8を含むblobはbinaryとして保守的に扱い、実際のbyte列が同じ行へ置換されないようにします。大きなテキストは決定論的な保守的カウントへ切り替え、反復行を含む差分で比較時間が無制限に増えないようにし、test behavior recordが512件を超える場合は対応関係を証明できないため検証不成立へ倒します。snapshot読込みも1ファイル8MB・1評価64MB・各snapshot 50,000ファイルまでに制限します。
 
 条件付きのfile-level skip（例: `test.skip(!pixiE2e, ...)`）は、そのskip呼び出しの引数内にない有効なsnapshot参照を無効化しません。一方、skipされたtestまたはsuiteの中にある参照は検証として受け入れません。さらに、テストファイルの行数が増えていても、実行可能なtest宣言またはassertionの純減を検出した場合はテスト削除リスクを加算します。`src/utils/publicUrl.ts`は画像・WebGLテクスチャ・音源で共有されるため、visualとaudioの両scopeで対応する検証を要求します。
@@ -53,6 +56,8 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 通常のテスト変更は、実行可能なtest case宣言（`test`・`it`・`specify`、または`it.each(...)('title', callback)`のようなparameterized test）を少なくとも1つ含むことを必須とします。`describe`・`suite`・`context`・`test.describe`だけの空suiteは実行テストとして数えないため、新規specへhelperやsuiteだけを追加した変更を検証充足と誤認しません。空またはコメントだけのinline callbackも実行可能な検証変更として数えません。Vitestの`test('name', { skip: true }, fn)`／`{ todo: true }`／`{ fails: true }`形式に加え、`{ skip }`・`{ todo }`の省略記法、`{ ['skip']: true }`のcomputed key、無効化optionを代入した変数やobject spreadを渡す形式も無効化として検出します。変数optionへ`as`・`satisfies`・非null assertionを付けた型注釈付きの参照、括弧で囲んだ参照、および`it.each(...)('title', { skip: true }, callback)`のparameterized optionも同様に解決します。`describe`／`suite`のoptionsにある`skip`・`todo`・`fails`も配下のtest callback全体を無効化済みとして扱います。テストファイルの変更は宣言の存在だけでなく、titleやtimeoutなどのメタデータを除いたinline test caseのcallback本体（Pythonは`test_`関数本体）が実質的に変わった場合だけ検証変更として扱います。callback識別子の付け替えだけは参照先を解析せず検証変更とみなしません。callback本体の並べ替えだけでbase/headのtest callback multisetが同じ場合も検証変更として扱いません。既存のskip・fixme・todoされたtest caseや、callback内でruntimeに`test.skip(true, ...)`・`test.fail()`などを呼ぶtest caseの変更も検証として受け入れません。Playwrightの`test.fail()`とVitestの`.fails`によるexpected-failure testも同様です。無効化modifierの検査はJavaScript/TypeScriptのコメント・文字列・正規表現リテラルをマスクしたコード部分だけを対象にし、template interpolation内は実行可能なJavaScriptとして検査するため、説明文やテストタイトルに含まれる`test.skip`などは誤って無効化扱いになりません。spreadされたoptionの依存解決はworklistで行い、宣言順に依存せず線形に処理します。呼び出し引数の括弧対応はソース全体を一度だけ走査して索引化し、未閉鎖呼び出しが大量にある入力でも再走査による二次時間を避けます。
 
 option objectの`skip`・`todo`・`fails`プロパティへの後続代入も無効化状態として追跡し、file／suite scopeの無条件`test.skip()`・`test.fail()`は後続または配下のtest callbackへ伝播させます。DOMとPixiの共有正本である`src/render/visualTokens.ts`の変更は、影響画面を個別に確認するためHard Gateとします。
+
+JavaScript/TypeScriptのテスト削除・純減は、ファイル全体のassertion数ではなく有効なtest callback内のassertion数で判定します。`false`・`0`・`null`・`undefined`はoption値全体がそのprimitive literalの場合だけ安全扱いし、`false || true`などの複合式は無効化扱いにします。Playwrightのcallback第2引数の任意aliasに対する`skip()`・`fixme()`・`fail()`、およびVitestのimportされたsuite aliasのmodifierも無効化として検出します。
 
 ## ローカル実行
 
@@ -102,6 +107,6 @@ Draft PRは評価せず、既存の結果を`DRAFT_PR`として失効させま�
 
 Vitest snapshotは末尾の連番を除いたsuite込みの完全なtest titleで所有callbackを照合します。タイトルの前方一致や、skipされた別testのsnapshotによる検証充足は認めません。
 
-Playwrightのcallback内にある`testInfo.skip()`も無効化として扱います。Pixi scopeは変更pathごとにsprint・department・organizationの対応spec／snapshotを明示的に紐付け、別画面の`*-pixi-visual.spec.ts`だけでは検証を満たしません。`tests/e2e/**/*.ts`のうちrunnerのtest suffixを持たない共有helper・fixtureはHard Gateです。
+Playwrightのcallback第2引数の任意aliasに対する`skip()`・`fixme()`・`fail()`（`testInfo`を含む）も無効化として扱います。Pixi scopeは変更pathごとにsprint・department・organizationの対応spec／snapshotを明示的に紐付け、共有Pixi pathは3画面すべての検証を要求します。業界DOM描画は`tests/e2e/org-scale.spec.ts`へ対応付けます。`tests/e2e/**/*.ts`のうちrunnerのtest suffixを持たない共有helper・fixtureはHard Gateです。
 
-結果marker commentの探索は、更新日時の新しいページから最大3ページに制限します。見つけられない場合は別markerを作らず保守的に失敗し、同一run内で取得したcomment IDを失敗判定・再評価・通常判定の更新に再利用します。
+結果marker commentの探索は、更新日時の新しいページから最大3ページに制限します。初回に見つけたcomment IDはPRへ`autonomous-merge-shadow-result-id-<comment-id>` labelとして永続化し、以後はその既知IDを先に参照するため、コメント量が増えても古い判定を失効できます。pointerが不正・複数の場合は別markerを作らず保守的に失敗し、同一run内で取得したcomment IDを失敗判定・再評価・通常判定の更新に再利用します。

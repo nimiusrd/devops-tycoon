@@ -11,9 +11,11 @@ from evaluate import (
     MAX_SNAPSHOT_FILE_BYTES,
     _ensure_within_base,
     _escape_markdown,
+    _has_executable_test_reduction,
     _has_test_behavior_change,
     _javascript_call_argument_span_index,
     _javascript_disabled_test_option_variables,
+    _javascript_test_call_spans,
     _javascript_test_behavior_records,
     _line_changes,
     _markdown,
@@ -211,6 +213,40 @@ class EvaluateTests(unittest.TestCase):
                     self.assertFalse(result.test_changes)
                     self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
+    def test_playwright_test_info_alias_modifiers_do_not_satisfy_verification(self) -> None:
+        for modifier in ("skip", "fixme", "fail"):
+            with self.subTest(modifier=modifier), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory) / "base"
+                head = Path(directory) / "head"
+                write_snapshot(
+                    base,
+                    {
+                        "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                        "tests/e2e/widget.spec.ts": (
+                            "test('renders', async ({ page }, info) => "
+                            "expect(page).toBeVisible());\n"
+                        ),
+                    },
+                )
+                write_snapshot(
+                    head,
+                    {
+                        "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                        "tests/e2e/widget.spec.ts": (
+                            "test('renders', async ({ page }, info) => {\n"
+                            f"  info.{modifier}('temporarily disabled');\n"
+                            "  expect(page).toBeVisible();\n"
+                            "});\n"
+                        ),
+                    },
+                )
+
+                result = assess(base, head, POLICY)
+
+                self.assertIn("visual", result.missing_test_scopes)
+                self.assertFalse(result.test_changes)
+                self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_chained_test_disabling_does_not_satisfy_verification(self) -> None:
         for disabled_call in (
             "test.concurrent.skip",
@@ -314,6 +350,37 @@ class EvaluateTests(unittest.TestCase):
                     self.assertFalse(result.test_changes)
                     self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
+    def test_vitest_suite_alias_skip_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { describe as group } from 'vitest';\n"
+                        "group('URL', () => test('builds the URL', () => expect(url).toBe('/')));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { describe as group } from 'vitest';\n"
+                        "group.skip('URL', () => test('builds the URL', () => expect(url).toBe('/app/')));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_vitest_false_skip_option_keeps_test_usable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -342,6 +409,80 @@ class EvaluateTests(unittest.TestCase):
             self.assertNotIn("src-fallback", result.missing_test_scopes)
             self.assertTrue(result.test_changes)
             self.assertEqual(result.test_removal_risk, 0)
+
+    def test_vitest_complex_falsey_options_do_not_satisfy_verification(self) -> None:
+        for expression in ("false || true", "0 || 1", "undefined ?? true"):
+            with self.subTest(expression=expression), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory) / "base"
+                head = Path(directory) / "head"
+                write_snapshot(
+                    base,
+                    {
+                        "src/utils/assetUrl.ts": "export const url = '/';\n",
+                        "tests/unit/utils/publicUrl.test.ts": (
+                            "test('builds the URL', () => expect(url).toBe('/'));\n"
+                        ),
+                    },
+                )
+                write_snapshot(
+                    head,
+                    {
+                        "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                        "tests/unit/utils/publicUrl.test.ts": (
+                            "test('builds the URL', { skip: "
+                            f"{expression} }}, () => expect(url).toBe('/app/'));\n"
+                        ),
+                    },
+                )
+
+                result = assess(base, head, POLICY)
+
+                self.assertIn("src-fallback", result.missing_test_scopes)
+                self.assertFalse(result.test_changes)
+                self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_vitest_complex_falsey_option_assignments_do_not_satisfy_verification(self) -> None:
+        for expression in ("false || true", "0 || 1", "undefined ?? true"):
+            with self.subTest(expression=expression), tempfile.TemporaryDirectory() as directory:
+                base = Path(directory) / "base"
+                head = Path(directory) / "head"
+                write_snapshot(
+                    base,
+                    {
+                        "src/utils/assetUrl.ts": "export const url = '/';\n",
+                        "tests/unit/utils/publicUrl.test.ts": (
+                            "test('builds the URL', () => expect(url).toBe('/'));\n"
+                        ),
+                    },
+                )
+                write_snapshot(
+                    head,
+                    {
+                        "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                        "tests/unit/utils/publicUrl.test.ts": (
+                            "const options = {};\n"
+                            f"options.skip = {expression};\n"
+                            "test('builds the URL', options, () => expect(url).toBe('/app/'));\n"
+                        ),
+                    },
+                )
+
+                result = assess(base, head, POLICY)
+
+                self.assertIn("src-fallback", result.missing_test_scopes)
+                self.assertFalse(result.test_changes)
+                self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_assertion_reduction_is_scoped_to_executable_test_callbacks(self) -> None:
+        base = (
+            "test('runs', () => expect(run()).toBe(1));\n"
+        ).encode("utf-8")
+        head = (
+            "const unused = () => expect(run()).toBe(2);\n"
+            "test('runs', () => run());\n"
+        ).encode("utf-8")
+
+        self.assertTrue(_has_executable_test_reduction(base, head, language="javascript"))
 
     def test_vitest_shorthand_and_variable_options_do_not_satisfy_verification(self) -> None:
         for declaration, options in (
@@ -911,6 +1052,15 @@ class EvaluateTests(unittest.TestCase):
         source = "\n".join(f"const options_{index} = {{" for index in range(2000))
 
         self.assertEqual(_javascript_disabled_test_option_variables(source), frozenset())
+
+    def test_many_parameterized_calls_are_indexed_without_suffix_rescans(self) -> None:
+        source = "\n".join(
+            "test.each([1])('case', () => expect(value).toBe(1));" for _ in range(4000)
+        )
+
+        calls = _javascript_test_call_spans(source)
+
+        self.assertEqual(len(calls), 4000)
 
     def test_callback_alias_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1783,6 +1933,34 @@ class EvaluateTests(unittest.TestCase):
             self.assertEqual(result.missing_test_scopes, ("pixi-visual",))
             self.assertFalse(result.test_changes)
 
+    def test_industry_dom_scene_requires_org_scale_e2e(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/render/industryBoardScene.ts": "export const scene = 1;\n",
+                    "tests/e2e/org-scale.spec.ts": (
+                        "test('industry', () => expect(page.getByTestId('industry-screen')).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/render/industryBoardScene.ts": "export const scene = 2;\n",
+                    "tests/e2e/org-scale.spec.ts": (
+                        "test('industry', () => expect(page.getByTestId('industry-skyline')).toBeVisible());\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("industry-visual", result.missing_test_scopes)
+            self.assertEqual(result.verification_risk, 0)
+
     def test_pixi_visual_snapshot_satisfies_pixi_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -1814,6 +1992,46 @@ class EvaluateTests(unittest.TestCase):
             self.assertNotIn("pixi-visual", result.missing_test_scopes)
             self.assertTrue(result.test_changes)
             self.assertEqual(result.verification_risk, 0)
+
+    def test_shared_pixi_path_requires_all_screen_visual_regressions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/render/gameAssetView.ts": "export const asset = 1;\n",
+                    "tests/e2e/sprint-pixi-visual.spec.ts": (
+                        "test('sprint', () => expect(page).toBeVisible());\n"
+                    ),
+                    "tests/e2e/dept-pixi-visual.spec.ts": (
+                        "test('dept', () => expect(page).toBeVisible());\n"
+                    ),
+                    "tests/e2e/org-pixi-visual.spec.ts": (
+                        "test('org', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/render/gameAssetView.ts": "export const asset = 2;\n",
+                    "tests/e2e/sprint-pixi-visual.spec.ts": (
+                        "test('sprint', () => expect(page).toHaveText('updated'));\n"
+                    ),
+                    "tests/e2e/dept-pixi-visual.spec.ts": (
+                        "test('dept', () => expect(page).toBeVisible());\n"
+                    ),
+                    "tests/e2e/org-pixi-visual.spec.ts": (
+                        "test('org', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("pixi-visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
 
     def test_webgl_overlay_requires_webgl_availability_e2e(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

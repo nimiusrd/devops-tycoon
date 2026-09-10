@@ -729,6 +729,11 @@ _JAVASCRIPT_OBJECT_VARIABLE = re.compile(
 _JAVASCRIPT_OBJECT_SPREAD = re.compile(
     r"(?:^|[{,])\s*\.\.\.\s*(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\b"
 )
+_JAVASCRIPT_DISABLED_TEST_OPTION_ASSIGNMENT = re.compile(
+    r"\b(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*"
+    r"(?:\.\s*(?:skip|todo|fails)\b|\[\s*['\"`](?:skip|todo|fails)['\"`]\s*\])"
+    r"\s*=\s*(?!\s*(?:false|0|null|undefined)\b)"
+)
 
 
 _PYTHON_DISABLED_DECORATORS = frozenset(
@@ -1200,6 +1205,11 @@ def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
         for name, object_source in object_sources.items()
         if _javascript_object_has_disabled_test_option(object_source)
     }
+    disabled_variables.update(
+        match.group("name")
+        for match in _JAVASCRIPT_DISABLED_TEST_OPTION_ASSIGNMENT.finditer(source)
+        if match.group("name") in object_sources
+    )
     dependents: dict[str, set[str]] = {}
     for name, object_source in object_sources.items():
         for match in _JAVASCRIPT_OBJECT_SPREAD.finditer(object_source):
@@ -1877,6 +1887,103 @@ def _javascript_test_call_spans(source: str) -> tuple[tuple[int, int], ...]:
     return tuple(sorted(set(calls)))
 
 
+def _javascript_suite_callback_spans(
+    source: str,
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> tuple[tuple[int, int, int], ...]:
+    """suite呼び出しとinline callbackの範囲を返す。"""
+
+    if argument_span_index is None:
+        argument_span_index = _javascript_call_argument_span_index(source)
+    callbacks: list[tuple[int, int, int]] = []
+    for match in _JAVASCRIPT_SUITE_CALL.finditer(source):
+        argument_spans = _javascript_call_argument_spans(
+            source,
+            match.end() - 1,
+            argument_span_index=argument_span_index,
+        )
+        if argument_spans is None:
+            continue
+        arguments = tuple(source[start:end] for start, end in argument_spans)
+        body_index = _javascript_test_body_argument_index(arguments)
+        if body_index is None:
+            continue
+        body_start, body_end = argument_spans[body_index]
+        callbacks.append((match.start(), body_start, body_end))
+    return tuple(callbacks)
+
+
+def _javascript_unconditional_scope_disabled_calls(
+    source: str,
+    test_callbacks: Sequence[tuple[int, int, int]],
+    suite_callbacks: Sequence[tuple[int, int, int]],
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> tuple[tuple[int, int | None, int | None], ...]:
+    """file/suite scopeの無条件modifierを後続testへ適用する。"""
+
+    if argument_span_index is None:
+        argument_span_index = _javascript_call_argument_span_index(source)
+    disabled_calls: list[tuple[int, int | None, int | None]] = []
+    for match in _DISABLED_TEST_CALL.finditer(source):
+        modifier_match = re.search(
+            r"(?:\.\s*|\?\.\s*)(?P<dot>skip|fixme|todo|fail|fails)\b"
+            r"|(?:\?\.)?\s*\[\s*['\"`](?P<bracket>skip|fixme|todo|fail|fails)['\"`]\s*\]",
+            source[match.start() : match.end()],
+        )
+        if modifier_match is None:
+            continue
+        modifier = modifier_match.group("dot") or modifier_match.group("bracket")
+        if modifier is None:
+            continue
+        open_index = match.end()
+        while open_index < len(source) and source[open_index].isspace():
+            open_index += 1
+        if open_index >= len(source) or source[open_index] != "(":
+            continue
+        arguments = _javascript_call_arguments(
+            source,
+            open_index,
+            argument_span_index=argument_span_index,
+        )
+        if arguments is None:
+            continue
+        first_argument = arguments[0].strip() if arguments else ""
+        if first_argument and first_argument not in {"true", "1"}:
+            continue
+        if any(body_start <= match.start() < body_end for _, body_start, body_end in test_callbacks):
+            continue
+        containing_suites = [
+            suite
+            for suite in suite_callbacks
+            if suite[1] <= match.start() < suite[2]
+        ]
+        if containing_suites:
+            _, body_start, body_end = min(
+                containing_suites,
+                key=lambda suite: suite[2] - suite[1],
+            )
+            disabled_calls.append((match.start(), body_start, body_end))
+        else:
+            disabled_calls.append((match.start(), None, None))
+    return tuple(disabled_calls)
+
+
+def _javascript_callback_has_scope_disabled_call(
+    call_start: int,
+    scope_disabled_calls: Sequence[tuple[int, int | None, int | None]],
+) -> bool:
+    return any(
+        disabled_start < call_start
+        and (
+            scope_start is None
+            or (scope_start <= call_start < (scope_end if scope_end is not None else call_start))
+        )
+        for disabled_start, scope_start, scope_end in scope_disabled_calls
+    )
+
+
 def _javascript_callback_contains_disabled_call(
     disabled_ranges: Sequence[tuple[int, int]],
     body_start: int,
@@ -1890,10 +1997,11 @@ def _javascript_callback_contains_disabled_call(
 def _javascript_test_callback_spans(
     source: str,
 ) -> tuple[tuple[int, int, bool], ...]:
+    masked_source = _mask_javascript_literals(source)
     disabled_ranges = _disabled_javascript_call_ranges(source)
     argument_span_index = _javascript_call_argument_span_index(source)
     disabled_option_variables = _javascript_disabled_test_option_variables(source)
-    callbacks: list[tuple[int, int, bool]] = []
+    callbacks: list[tuple[int, int, int, bool]] = []
     for call_start, open_index in _javascript_test_call_spans(source):
         argument_spans = _javascript_call_argument_spans(
             source,
@@ -1909,6 +2017,7 @@ def _javascript_test_callback_spans(
         body_start, body_end = argument_spans[body_index]
         callbacks.append(
             (
+                call_start,
                 body_start,
                 body_end,
                 any(start <= call_start < end for start, end in disabled_ranges)
@@ -1926,7 +2035,29 @@ def _javascript_test_callback_spans(
                 ),
             )
         )
-    return tuple(callbacks)
+    suite_argument_span_index = _javascript_call_argument_span_index(masked_source)
+    suite_callbacks = _javascript_suite_callback_spans(
+        masked_source,
+        argument_span_index=suite_argument_span_index,
+    )
+    scope_disabled_calls = _javascript_unconditional_scope_disabled_calls(
+        masked_source,
+        tuple((call_start, body_start, body_end) for call_start, body_start, body_end, _ in callbacks),
+        suite_callbacks,
+        argument_span_index=suite_argument_span_index,
+    )
+    return tuple(
+        (
+            body_start,
+            body_end,
+            disabled
+            or _javascript_callback_has_scope_disabled_call(
+                call_start,
+                scope_disabled_calls,
+            ),
+        )
+        for call_start, body_start, body_end, disabled in callbacks
+    )
 
 
 def _javascript_callback_has_executable_content(callback: str) -> bool:

@@ -51,6 +51,8 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 
 通常のテスト変更は、実行可能なtest case宣言（`test`・`it`・`specify`、または`it.each(...)('title', callback)`のようなparameterized test）を少なくとも1つ含むことを必須とします。`describe`・`suite`・`context`・`test.describe`だけの空suiteは実行テストとして数えないため、新規specへhelperやsuiteだけを追加した変更を検証充足と誤認しません。空またはコメントだけのinline callbackも実行可能な検証変更として数えません。Vitestの`test('name', { skip: true }, fn)`／`{ todo: true }`／`{ fails: true }`形式に加え、`{ skip }`・`{ todo }`の省略記法、`{ ['skip']: true }`のcomputed key、無効化optionを代入した変数やobject spreadを渡す形式も無効化として検出します。変数optionへ`as`・`satisfies`・非null assertionを付けた型注釈付きの参照と、`it.each(...)('title', { skip: true }, callback)`のparameterized optionも同様に解決します。`describe`／`suite`のoptionsにある`skip`・`todo`・`fails`も配下のtest callback全体を無効化済みとして扱います。テストファイルの変更は宣言の存在だけでなく、titleやtimeoutなどのメタデータを除いたinline test caseのcallback本体（Pythonは`test_`関数本体）が実質的に変わった場合だけ検証変更として扱います。callback識別子の付け替えだけは参照先を解析せず検証変更とみなしません。既存のskip・fixme・todoされたtest caseや、callback内でruntimeに`test.skip(true, ...)`・`test.fail()`などを呼ぶtest caseの変更も検証として受け入れません。Playwrightの`test.fail()`とVitestの`.fails`によるexpected-failure testも同様です。無効化modifierの検査はJavaScript/TypeScriptのコメント・文字列・正規表現リテラルをマスクしたコード部分だけを対象にし、template interpolation内は実行可能なJavaScriptとして検査するため、説明文やテストタイトルに含まれる`test.skip`などは誤って無効化扱いになりません。spreadされたoptionの依存解決はworklistで行い、宣言順に依存せず線形に処理します。呼び出し引数の括弧対応はソース全体を一度だけ走査して索引化し、未閉鎖呼び出しが大量にある入力でも再走査による二次時間を避けます。
 
+option objectの`skip`・`todo`・`fails`プロパティへの後続代入も無効化状態として追跡し、file／suite scopeの無条件`test.skip()`・`test.fail()`は後続または配下のtest callbackへ伝播させます。DOMとPixiの共有正本である`src/render/visualTokens.ts`の変更は、影響画面を個別に確認するためHard Gateとします。
+
 ## ローカル実行
 
 baseとheadのディレクトリを用意したうえで、base側の評価器とpolicyを指定します。

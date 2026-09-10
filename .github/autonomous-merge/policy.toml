@@ -183,6 +183,12 @@ hard_gate = true
 reason = "GitHub Actions workflowの変更"
 
 [[path_rules]]
+pattern = "src/render/visualTokens.ts"
+risk = 100
+hard_gate = true
+reason = "DOM・Pixi共有visual tokenの変更"
+
+[[path_rules]]
 pattern = ".github/actions/**"
 risk = 100
 hard_gate = true

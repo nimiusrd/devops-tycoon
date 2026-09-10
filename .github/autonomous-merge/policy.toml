@@ -190,6 +190,18 @@ hard_gate = true
 reason = "GitHub Actions local actionの変更"
 
 [[path_rules]]
+pattern = ".github/dependabot.yml"
+risk = 100
+hard_gate = true
+reason = "Dependabot設定の変更"
+
+[[path_rules]]
+pattern = ".github/dependabot.yaml"
+risk = 100
+hard_gate = true
+reason = "Dependabot設定の変更"
+
+[[path_rules]]
 pattern = ".devcontainer/**"
 risk = 100
 hard_gate = true

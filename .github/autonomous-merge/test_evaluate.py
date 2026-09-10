@@ -298,6 +298,48 @@ class EvaluateTests(unittest.TestCase):
             self.assertTrue(result.test_changes)
             self.assertEqual(result.test_removal_risk, 0)
 
+    def test_vitest_shorthand_and_variable_options_do_not_satisfy_verification(self) -> None:
+        for declaration, options in (
+            ("const skip = true;\n", "{ skip }"),
+            ("const todo = true;\n", "{ todo }"),
+            ("const options = { skip: true };\n", "options"),
+            ("const options = { todo: true };\n", "options"),
+            ("const skip = true;\nconst options = { skip };\n", "options"),
+        ):
+            with self.subTest(declaration=declaration, options=options):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(
+                        base,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "test('builds the URL', () => expect(url).toBe('/'));\n"
+                            ),
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                f"{declaration}"
+                                "test(\n"
+                                "  'builds the URL',\n"
+                                f"  {options},\n"
+                                "  () => expect(url).toBe('/app/'),\n"
+                                ");\n"
+                            ),
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("src-fallback", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+                    self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
     def test_computed_property_test_disabling_does_not_satisfy_verification(self) -> None:
         for disabled_call in (
             "test['skip']",
@@ -397,6 +439,55 @@ class EvaluateTests(unittest.TestCase):
                 {
                     "src/ui/Widget.tsx": "export const Widget = 2;\n",
                     "tests/e2e/widget.spec.ts": "test.describe('group', () => {});\n",
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+
+    def test_javascript_method_call_does_not_satisfy_verification(self) -> None:
+        for expression in ("/widget/.test('widget');", "widget.test('widget');"):
+            with self.subTest(expression=expression):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(base, {"src/ui/Widget.tsx": "export const Widget = 1;\n"})
+                    write_snapshot(
+                        head,
+                        {
+                            "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                            "tests/e2e/widget.spec.ts": f"const matches = {expression}\n",
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("visual", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+
+    def test_helper_only_test_file_change_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "test('renders', () => expect(page).toBeVisible());\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": (
+                        "const unrelatedHelper = 1;\n"
+                        "test('renders', () => expect(page).toBeVisible());\n"
+                    ),
                 },
             )
 
@@ -1306,6 +1397,29 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
             self.assertIn("Node.js実行バージョン", result.hard_gate_reasons[0])
+
+    def test_dependabot_configuration_is_a_hard_gate(self) -> None:
+        for relative_path in (".github/dependabot.yml", ".github/dependabot.yaml"):
+            with self.subTest(relative_path=relative_path):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(base, {relative_path: "version: 2\n"})
+                    write_snapshot(
+                        head,
+                        {
+                            relative_path: (
+                                "version: 2\n"
+                                "updates:\n"
+                                "  - package-ecosystem: npm\n"
+                            )
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertEqual(result.decision, "HUMAN_REVIEW_REQUIRED")
+                    self.assertIn("Dependabot設定", " ".join(result.hard_gate_reasons))
 
     def test_game_facade_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

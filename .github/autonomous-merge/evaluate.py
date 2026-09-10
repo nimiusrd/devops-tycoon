@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import difflib
 import html
 import io
@@ -694,18 +695,24 @@ def _scope_has_code_changes(
 
 
 _DISABLED_TEST_CALL = re.compile(
-    r"\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
+    r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test(?:\s*\.\s*describe)?|it|describe|suite|specify|context)"
     r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf)\b|(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf)['\"`]\s*\])"
 )
 _JAVASCRIPT_TEST_CALL = re.compile(
-    r"\b(?:test|it|specify)"
+    r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)"
     r"(?:(?:\s*(?:\.\s*|\?\.\s*)(?!(?:describe|suite)\b)[A-Za-z_$][A-Za-z0-9_$]*)"
     r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`](?!(?:describe|suite)['\"`])[A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*\("
 )
 _JAVASCRIPT_DISABLED_TEST_OPTION = re.compile(
     r"(?:^|[{,])\s*(?:skip|todo)\s*:(?!\s*(?:false|0|null|undefined)\b)\s*"
+)
+_JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND = re.compile(
+    r"(?:^|[{,])\s*(?:skip|todo)\s*(?=[,}])"
+)
+_JAVASCRIPT_OBJECT_VARIABLE = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*\{"
 )
 
 
@@ -984,8 +991,63 @@ def _javascript_call_arguments(source: str, open_index: int) -> tuple[str, ...] 
     return None
 
 
+def _javascript_braced_end(source: str, open_index: int) -> int | None:
+    """JavaScriptオブジェクトリテラルの閉じ括弧位置を返す。"""
+
+    if open_index >= len(source) or source[open_index] != "{":
+        return None
+    depth = 0
+    index = open_index
+    while index < len(source):
+        character = source[index]
+        if character in {"'", '"', "`"}:
+            quote = character
+            index += 1
+            while index < len(source):
+                if source[index] == "\\":
+                    index += 2
+                    continue
+                if source[index] == quote:
+                    index += 1
+                    break
+                index += 1
+            continue
+        if character == "/":
+            regex = _read_regex_literal(source, index)
+            if regex is not None:
+                index = regex[2]
+                continue
+        if character == "{":
+            depth += 1
+        elif character == "}":
+            depth -= 1
+            if depth == 0:
+                return index + 1
+        index += 1
+    return None
+
+
+def _javascript_object_has_disabled_test_option(source: str) -> bool:
+    return bool(
+        _JAVASCRIPT_DISABLED_TEST_OPTION.search(source)
+        or _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND.search(source)
+    )
+
+
+def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
+    variables: set[str] = set()
+    for match in _JAVASCRIPT_OBJECT_VARIABLE.finditer(source):
+        object_end = _javascript_braced_end(source, match.end() - 1)
+        if object_end is not None and _javascript_object_has_disabled_test_option(
+            source[match.end() - 1 : object_end]
+        ):
+            variables.add(match.group("name"))
+    return frozenset(variables)
+
+
 def _javascript_disabled_test_option_count(source: str) -> int:
     count = 0
+    disabled_option_variables = _javascript_disabled_test_option_variables(source)
     for match in _JAVASCRIPT_TEST_CALL.finditer(source):
         arguments = _javascript_call_arguments(source, match.end() - 1)
         if arguments is None or len(arguments) < 2:
@@ -993,7 +1055,11 @@ def _javascript_disabled_test_option_count(source: str) -> int:
         options = arguments[1].lstrip()
         if options.startswith("("):
             options = options[1:].lstrip()
-        if options.startswith("{") and _JAVASCRIPT_DISABLED_TEST_OPTION.search(options):
+        if options.startswith("{") and _javascript_object_has_disabled_test_option(options):
+            count += 1
+            continue
+        option_name = re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", options)
+        if option_name is not None and option_name.group(0) in disabled_option_variables:
             count += 1
     return count
 
@@ -1516,19 +1582,61 @@ def _has_executable_test_reduction(
     return any(head < base for base, head in zip(base_shape, head_shape))
 
 
+def _javascript_test_behavior_fingerprint(data: bytes | None) -> tuple[str, ...]:
+    if data is None or _is_binary(data):
+        return ()
+    source = _strip_javascript_comments(data)
+    behaviors: list[str] = []
+    for match in _JAVASCRIPT_TEST_CALL.finditer(source):
+        end = _javascript_call_end(source, match.end() - 1)
+        if end is not None:
+            behaviors.append(
+                _normalize_javascript_whitespace(source[match.start() : end])
+            )
+    return tuple(behaviors)
+
+
+def _python_test_behavior_fingerprint(data: bytes | None) -> tuple[str, ...]:
+    if data is None or _is_binary(data):
+        return ()
+    text = data.decode("utf-8", errors="replace")
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return (_python_code_fingerprint(data, preserve_literal_content=True),)
+    return tuple(
+        ast.dump(node, include_attributes=False)
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef))
+        and node.name.startswith("test_")
+    )
+
+
+def _test_behavior_fingerprint(
+    data: bytes | None,
+    *,
+    language: str,
+) -> tuple[str, ...]:
+    if language == "python":
+        return _python_test_behavior_fingerprint(data)
+    return _javascript_test_behavior_fingerprint(data)
+
+
 def _has_executable_test_change(
     base_data: bytes | None,
     head_data: bytes,
     *,
     language: str = "javascript",
 ) -> bool:
-    """コメント・空白だけのテスト変更を検証追加として扱わない。"""
+    """テストcase本体が実質変更された場合だけ検証追加として扱う。"""
 
     head_fingerprint = _test_code_fingerprint(head_data, language=language)
-    return bool(head_fingerprint) and _test_code_fingerprint(
-        base_data,
-        language=language,
-    ) != head_fingerprint
+    return (
+        bool(head_fingerprint)
+        and _test_code_fingerprint(base_data, language=language) != head_fingerprint
+        and _test_behavior_fingerprint(base_data, language=language)
+        != _test_behavior_fingerprint(head_data, language=language)
+    )
 
 
 def _is_usable_test_change(

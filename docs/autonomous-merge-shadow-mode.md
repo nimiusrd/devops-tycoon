@@ -32,6 +32,7 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 | `src/state/**`、`src/game.ts` | Hard Gate | セーブ、永続化、状態遷移を束ねる中核のため |
 | `src/sim/run/**`、`src/sim/engine.ts`、`src/sim/rng.ts`、`src/sim/seed.ts` | Hard Gate | ラン進行とseed再現性の中核であるため |
 | `src/data/balance/**`、`src/data/contentCatalog.ts` | Hard Gate | バランス、確率、コンテンツ契約を変更するため |
+| `.github/dependabot.yml`、`.github/dependabot.yaml` | Hard Gate | 依存関係更新の自動化設定を変更するため |
 | `index.html`、`src/**`、`public/**` | リスク加点 | 起動・実装・視覚変更を含め、変更量と対応するテスト種別を組み合わせて判定するため（audio資産はaudio scope） |
 | `src/sim/**`、`src/data/**`、`src/ui/**`、`src/render/**`、`src/**/*.css` | リスク加点 | 領域ごとの変更影響を細分化して判定するため |
 | `src/App.tsx`、`src/main.tsx` | リスク加点 | ルート画面と起動処理を変更するため |
@@ -48,7 +49,7 @@ mainへのpush時は、別jobがmainをbaseとするopenなPR一覧を取得し�
 
 条件付きのfile-level skip（例: `test.skip(!pixiE2e, ...)`）は、そのskip呼び出しの引数内にない有効なsnapshot参照を無効化しません。一方、skipされたtestまたはsuiteの中にある参照は検証として受け入れません。さらに、テストファイルの行数が増えていても、実行可能なtest宣言またはassertionの純減を検出した場合はテスト削除リスクを加算します。`src/utils/publicUrl.ts`は画像・WebGLテクスチャ・音源で共有されるため、visualとaudioの両scopeで対応する検証を要求します。
 
-通常のテスト変更は、実行可能なtest case宣言（`test`・`it`・`specify`）を少なくとも1つ含むことを必須とします。`describe`・`suite`・`context`・`test.describe`だけの空suiteは実行テストとして数えないため、新規specへhelperやsuiteだけを追加した変更を検証充足と誤認しません。Vitestの`test('name', { skip: true }, fn)`／`{ todo: true }`形式も無効化として検出します。無効化modifierの検査はJavaScript/TypeScriptのコメント・文字列・正規表現リテラルをマスクしたコード部分だけを対象にするため、説明文やテストタイトルに含まれる`test.skip`などは誤って無効化扱いになりません。
+通常のテスト変更は、実行可能なtest case宣言（`test`・`it`・`specify`）を少なくとも1つ含むことを必須とします。`describe`・`suite`・`context`・`test.describe`だけの空suiteは実行テストとして数えないため、新規specへhelperやsuiteだけを追加した変更を検証充足と誤認しません。Vitestの`test('name', { skip: true }, fn)`／`{ todo: true }`形式に加え、`{ skip }`・`{ todo }`の省略記法と、無効化optionを代入した変数を渡す形式も無効化として検出します。テストファイルの変更は宣言の存在だけでなく、test caseの呼び出し本体（Pythonは`test_`関数本体）が実質的に変わった場合だけ検証変更として扱います。無効化modifierの検査はJavaScript/TypeScriptのコメント・文字列・正規表現リテラルをマスクしたコード部分だけを対象にするため、説明文やテストタイトルに含まれる`test.skip`などは誤って無効化扱いになりません。
 
 ## ローカル実行
 

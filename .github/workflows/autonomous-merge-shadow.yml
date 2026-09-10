@@ -384,9 +384,10 @@ jobs:
             report_body+=$'\n\n_Report truncated to fit the shadow result comment limit._'
           fi
           current_pr="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
-            --jq '[.state, .base.sha, .head.sha] | @tsv')"
-          IFS=$'\t' read -r current_state current_base_sha current_head_sha <<< "${current_pr}"
-          if [[ "${current_state}" != "open" || "${current_base_sha}" != "${BASE_SHA}" || \
+            --jq '[.state, .base.ref, .base.sha, .head.sha] | @tsv')"
+          IFS=$'\t' read -r current_state current_base_ref current_base_sha current_head_sha <<< "${current_pr}"
+          if [[ "${current_state}" != "open" || "${current_base_ref}" != "main" || \
+            "${current_base_sha}" != "${BASE_SHA}" || \
             "${current_head_sha}" != "${HEAD_SHA}" ]]; then
             echo "Skipping stale shadow result for PR #${PR_NUMBER}"
             exit 0

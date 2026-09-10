@@ -706,15 +706,22 @@ _JAVASCRIPT_TEST_CALL = re.compile(
     r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`](?!(?:describe|suite)['\"`])[A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     r"\s*\("
 )
+_JAVASCRIPT_SUITE_CALL = re.compile(
+    r"(?<![A-Za-z0-9_$?.'\"`])(?:\b(?:describe|suite|context)|"
+    r"\btest\s*(?:\.\s*|\?\.\s*)describe)"
+    r"(?:(?:\s*(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)"
+    r"|(?:\s*(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+    r"\s*\("
+)
 _JAVASCRIPT_PARAMETERIZED_TEST_CALL = re.compile(
     r"(?<![A-Za-z0-9_$?.'\"`])\b(?:test|it|specify)\s*(?:\.\s*|\?\.\s*)each\s*\("
 )
 _JAVASCRIPT_DISABLED_TEST_OPTION = re.compile(
-    r"(?:^|[{,])\s*(?:(?:skip|todo)|\[\s*['\"`](?:skip|todo)['\"`]\s*\])"
+    r"(?:^|[{,])\s*(?:(?:skip|todo|fails)|\[\s*['\"`](?:skip|todo|fails)['\"`]\s*\])"
     r"\s*:(?!\s*(?:false|0|null|undefined)\b)\s*"
 )
 _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND = re.compile(
-    r"(?:^|[{,])\s*(?:skip|todo)\s*(?=[,}])"
+    r"(?:^|[{,])\s*(?:skip|todo|fails)\s*(?=[,}])"
 )
 _JAVASCRIPT_OBJECT_VARIABLE = re.compile(
     r"\b(?:const|let|var)\s+(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*\{"
@@ -998,20 +1005,17 @@ def _javascript_disabled_call_source(data: bytes | None) -> str:
     return _mask_javascript_literals(_strip_javascript_comments(data))
 
 
-def _javascript_call_argument_spans(
+def _javascript_call_argument_span_index(
     source: str,
-    open_index: int,
-) -> tuple[tuple[int, int], ...] | None:
-    """JavaScript呼び出しのトップレベル引数のsource上の範囲を返す。"""
+) -> dict[int, tuple[tuple[int, int], ...] | None]:
+    """全呼び出しのトップレベル引数範囲を一度の走査で索引化する。"""
 
-    if open_index >= len(source) or source[open_index] != "(":
-        return None
-    spans: list[tuple[int, int]] = []
-    argument_start = open_index + 1
-    parentheses = 0
-    brackets = 0
-    braces = 0
-    index = argument_start
+    # Each frame owns the bracket/brace depth inside its current call. Nested
+    # calls are separate frames, so every source character is processed once
+    # instead of rescanning the suffix for every opening parenthesis.
+    frames: list[list[Any]] = []
+    results: dict[int, tuple[tuple[int, int], ...] | None] = {}
+    index = 0
     while index < len(source):
         character = source[index]
         if character in {"'", '"', "`"}:
@@ -1032,34 +1036,79 @@ def _javascript_call_argument_spans(
                 index = regex[2]
                 continue
         if character == "(":
-            parentheses += 1
-        elif character == ")":
-            if parentheses == brackets == braces == 0:
-                spans.append((argument_start, index))
-                return tuple(spans)
-            if parentheses > 0:
-                parentheses -= 1
+            # [open index, next argument start, spans, bracket depth,
+            # brace depth, structurally valid]
+            frames.append([index, index + 1, [], 0, 0, True])
         elif character == "[":
-            brackets += 1
+            if frames:
+                frames[-1][3] += 1
         elif character == "]":
-            if brackets > 0:
-                brackets -= 1
+            if frames:
+                if frames[-1][3] > 0:
+                    frames[-1][3] -= 1
+                else:
+                    frames[-1][5] = False
         elif character == "{":
-            braces += 1
+            if frames:
+                frames[-1][4] += 1
         elif character == "}":
-            if braces > 0:
-                braces -= 1
-        elif character == "," and parentheses == brackets == braces == 0:
-            spans.append((argument_start, index))
-            argument_start = index + 1
+            if frames:
+                if frames[-1][4] > 0:
+                    frames[-1][4] -= 1
+                else:
+                    frames[-1][5] = False
+        elif character == "," and frames:
+            frame = frames[-1]
+            if frame[3] == frame[4] == 0:
+                frame[2].append((frame[1], index))
+                frame[1] = index + 1
+        elif character == ")" and frames:
+            frame = frames[-1]
+            if frame[3] == frame[4] == 0:
+                frames.pop()
+                if frame[5]:
+                    frame[2].append((frame[1], index))
+                    results[frame[0]] = tuple(frame[2])
+                else:
+                    results[frame[0]] = None
         index += 1
-    return None
+
+    for frame in frames:
+        results[frame[0]] = None
+    return results
 
 
-def _javascript_call_arguments(source: str, open_index: int) -> tuple[str, ...] | None:
+def _javascript_call_argument_spans(
+    source: str,
+    open_index: int,
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> tuple[tuple[int, int], ...] | None:
+    """JavaScript呼び出しのトップレベル引数のsource上の範囲を返す。"""
+
+    if open_index >= len(source) or source[open_index] != "(":
+        return None
+    index = (
+        _javascript_call_argument_span_index(source)
+        if argument_span_index is None
+        else argument_span_index
+    )
+    return index.get(open_index)
+
+
+def _javascript_call_arguments(
+    source: str,
+    open_index: int,
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> tuple[str, ...] | None:
     """JavaScript呼び出しのトップレベル引数を、文字列を跨がずに分割する。"""
 
-    spans = _javascript_call_argument_spans(source, open_index)
+    spans = _javascript_call_argument_spans(
+        source,
+        open_index,
+        argument_span_index=argument_span_index,
+    )
     if spans is None:
         return None
     return tuple(source[start:end] for start, end in spans)
@@ -1117,6 +1166,24 @@ def _javascript_object_has_disabled_test_option(
     )
 
 
+def _javascript_options_argument_is_disabled(
+    options: str,
+    disabled_option_variables: Iterable[str],
+) -> bool:
+    options = options.lstrip()
+    if options.startswith("("):
+        options = options[1:].lstrip()
+    if options.startswith("{") and _javascript_object_has_disabled_test_option(
+        options,
+        disabled_option_variables,
+    ):
+        return True
+    option_name = re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", options)
+    return option_name is not None and option_name.group(0) in frozenset(
+        disabled_option_variables
+    )
+
+
 def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
     object_sources: dict[str, str] = {}
     for match in _JAVASCRIPT_OBJECT_VARIABLE.finditer(source):
@@ -1149,23 +1216,53 @@ def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
 def _javascript_disabled_test_option_count(source: str) -> int:
     count = 0
     disabled_option_variables = _javascript_disabled_test_option_variables(source)
-    for match in _JAVASCRIPT_TEST_CALL.finditer(source):
-        arguments = _javascript_call_arguments(source, match.end() - 1)
-        if arguments is None or len(arguments) < 2:
+    argument_span_index = _javascript_call_argument_span_index(source)
+    for pattern in (_JAVASCRIPT_TEST_CALL, _JAVASCRIPT_SUITE_CALL):
+        for match in pattern.finditer(source):
+            arguments = _javascript_call_arguments(
+                source,
+                match.end() - 1,
+                argument_span_index=argument_span_index,
+            )
+            if arguments is not None and len(arguments) >= 2 and _javascript_options_argument_is_disabled(
+                arguments[1],
+                disabled_option_variables,
+            ):
+                count += 1
+    return count
+
+
+def _javascript_disabled_suite_option_ranges(
+    source: str,
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> tuple[tuple[int, int], ...]:
+    """skip/todo/fails optionを持つsuiteと、そのinline callbackの範囲を返す。"""
+
+    disabled_option_variables = _javascript_disabled_test_option_variables(source)
+    if argument_span_index is None:
+        argument_span_index = _javascript_call_argument_span_index(source)
+    ranges: list[tuple[int, int]] = []
+    for match in _JAVASCRIPT_SUITE_CALL.finditer(source):
+        argument_spans = _javascript_call_argument_spans(
+            source,
+            match.end() - 1,
+            argument_span_index=argument_span_index,
+        )
+        if argument_spans is None or len(argument_spans) < 3:
             continue
-        options = arguments[1].lstrip()
-        if options.startswith("("):
-            options = options[1:].lstrip()
-        if options.startswith("{") and _javascript_object_has_disabled_test_option(
-            options,
+        arguments = tuple(source[start:end] for start, end in argument_spans)
+        if not _javascript_options_argument_is_disabled(
+            arguments[1],
             disabled_option_variables,
         ):
-            count += 1
             continue
-        option_name = re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", options)
-        if option_name is not None and option_name.group(0) in disabled_option_variables:
-            count += 1
-    return count
+        body_index = _javascript_test_body_argument_index(arguments)
+        if body_index is None:
+            continue
+        _, body_end = argument_spans[body_index]
+        ranges.append((match.start(), body_end))
+    return tuple(ranges)
 
 
 def _javascript_disabled_test_feature_count(source: str) -> int:
@@ -1212,6 +1309,7 @@ def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]
     """無効化modifierを持つ呼び出しの引数範囲を返す。"""
 
     source = _mask_javascript_literals(source)
+    argument_span_index = _javascript_call_argument_span_index(source)
     ranges: list[tuple[int, int]] = []
     for match in _DISABLED_TEST_CALL.finditer(source):
         open_index = match.end()
@@ -1222,6 +1320,12 @@ def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]
         end = _javascript_call_end(source, open_index)
         if end is not None:
             ranges.append((match.start(), end))
+    ranges.extend(
+        _javascript_disabled_suite_option_ranges(
+            source,
+            argument_span_index=argument_span_index,
+        )
+    )
     return tuple(ranges)
 
 
@@ -1773,9 +1877,14 @@ def _javascript_test_callback_spans(
     source: str,
 ) -> tuple[tuple[int, int, bool], ...]:
     disabled_ranges = _disabled_javascript_call_ranges(source)
+    argument_span_index = _javascript_call_argument_span_index(source)
     callbacks: list[tuple[int, int, bool]] = []
     for call_start, open_index in _javascript_test_call_spans(source):
-        argument_spans = _javascript_call_argument_spans(source, open_index)
+        argument_spans = _javascript_call_argument_spans(
+            source,
+            open_index,
+            argument_span_index=argument_span_index,
+        )
         if argument_spans is None:
             continue
         arguments = tuple(source[start:end] for start, end in argument_spans)

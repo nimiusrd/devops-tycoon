@@ -12,7 +12,9 @@ from evaluate import (
     _ensure_within_base,
     _escape_markdown,
     _has_test_behavior_change,
+    _javascript_call_argument_span_index,
     _javascript_disabled_test_option_variables,
+    _javascript_test_behavior_records,
     _line_changes,
     _markdown,
     _read_snapshot,
@@ -242,7 +244,7 @@ class EvaluateTests(unittest.TestCase):
                     self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
     def test_vitest_test_options_disabling_does_not_satisfy_verification(self) -> None:
-        for option in ("skip", "todo"):
+        for option in ("skip", "todo", "fails"):
             with self.subTest(option=option):
                 with tempfile.TemporaryDirectory() as directory:
                     base = Path(directory) / "base"
@@ -265,6 +267,42 @@ class EvaluateTests(unittest.TestCase):
                                 "  'builds the URL',\n"
                                 f"  {{ {option}: true }},\n"
                                 "  () => expect(url).toBe('/app/'),\n"
+                                ");\n"
+                            ),
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertIn("src-fallback", result.missing_test_scopes)
+                    self.assertFalse(result.test_changes)
+                    self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_vitest_disabled_suite_options_do_not_satisfy_verification(self) -> None:
+        for suite_name in ("describe", "suite"):
+            with self.subTest(suite_name=suite_name):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(
+                        base,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                f"{suite_name}('URL', () => "
+                                "test('builds the URL', () => expect(url).toBe('/')));\n"
+                            ),
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                f"{suite_name}(\n"
+                                "  'URL',\n"
+                                "  { skip: true },\n"
+                                "  () => test('builds the URL', () => expect(url).toBe('/app/')),\n"
                                 ");\n"
                             ),
                         },
@@ -710,6 +748,15 @@ class EvaluateTests(unittest.TestCase):
 
         self.assertIn("options_0", disabled_variables)
         self.assertIn("options_999", disabled_variables)
+
+    def test_unclosed_test_calls_are_indexed_without_repeated_scans(self) -> None:
+        source = "test(\n" * 2000
+
+        argument_span_index = _javascript_call_argument_span_index(source)
+
+        self.assertEqual(len(argument_span_index), 2000)
+        self.assertTrue(all(spans is None for spans in argument_span_index.values()))
+        self.assertEqual(_javascript_test_behavior_records(source.encode("utf-8")), ())
 
     def test_callback_alias_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -2390,9 +2390,25 @@ _JAVASCRIPT_ASSERTION = re.compile(
     r"|(?P<node_assert>\bassert(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|"
     r"(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\])+\s*\()"
 )
-_JAVASCRIPT_MATCHER_CALL = re.compile(
-    r"(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)+\s*\("
+_JAVASCRIPT_OBJECT_METHODS = frozenset(
+    {
+        "__defineGetter__",
+        "__defineSetter__",
+        "__lookupGetter__",
+        "__lookupSetter__",
+        "hasOwnProperty",
+        "isPrototypeOf",
+        "propertyIsEnumerable",
+        "toJSON",
+        "toLocaleString",
+        "toString",
+        "valueOf",
+    }
 )
+_JAVASCRIPT_MATCHER_CALL = re.compile(
+    r"(?P<chain>(?:(?:\s*\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*)+)\s*\("
+)
+_JAVASCRIPT_IDENTIFIER_AT_END = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*\s*$")
 
 
 def _javascript_assertion_count(
@@ -2424,7 +2440,15 @@ def _javascript_assertion_count(
         matcher_start = close_index + 1
         while matcher_start < end and masked_source[matcher_start].isspace():
             matcher_start += 1
-        if _JAVASCRIPT_MATCHER_CALL.match(masked_source, matcher_start, end) is not None:
+        matcher_match = _JAVASCRIPT_MATCHER_CALL.match(masked_source, matcher_start, end)
+        if matcher_match is None:
+            continue
+        method_match = _JAVASCRIPT_IDENTIFIER_AT_END.search(matcher_match.group("chain"))
+        if (
+            method_match is not None
+            and method_match.group(0).strip().startswith("to")
+            and method_match.group(0).strip() not in _JAVASCRIPT_OBJECT_METHODS
+        ):
             count += 1
     return count
 
@@ -2856,7 +2880,31 @@ def _javascript_test_callback_spans(
     )
 
 
-def _javascript_callback_has_executable_content(callback: str) -> bool:
+def _javascript_test_callbacks_overlap(
+    callback_spans: Sequence[tuple[int, int, bool]],
+) -> bool:
+    """入れ子test callbackを検出し、重複した全文走査を避ける。"""
+
+    furthest_end = -1
+    for body_start, body_end, _ in sorted(
+        callback_spans,
+        key=lambda span: (span[0], -span[1]),
+    ):
+        if body_start < furthest_end:
+            return True
+        furthest_end = max(furthest_end, body_end)
+    return False
+
+
+def _javascript_callback_has_executable_content(
+    callback: str,
+    *,
+    source: str | None = None,
+    start: int = 0,
+    end: int | None = None,
+    masked_source: str | None = None,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> bool:
     """検証操作を含まないinline callbackをbehavior recordから除外する。"""
 
     normalized = _normalize_javascript_whitespace(
@@ -2869,7 +2917,18 @@ def _javascript_callback_has_executable_content(callback: str) -> bool:
         return False
     if re.match(r"^(?:async)?function\b", normalized) and normalized.endswith("{}"):
         return False
-    return _javascript_assertion_count(callback) > 0
+    assertion_source = callback if source is None else source
+    assertion_end = len(assertion_source) if end is None else end
+    return (
+        _javascript_assertion_count(
+            assertion_source,
+            start,
+            assertion_end,
+            masked_source=masked_source,
+            argument_span_index=argument_span_index,
+        )
+        > 0
+    )
 
 
 def _javascript_test_behavior_records(
@@ -2878,10 +2937,25 @@ def _javascript_test_behavior_records(
     if data is None or _is_binary(data):
         return ()
     source = _strip_javascript_comments(data)
+    callback_spans = _javascript_test_callback_spans(source)
+    if _javascript_test_callbacks_overlap(callback_spans):
+        # 入れ子testは通常のrunner構文ではなく、外側callbackと内側callbackの
+        # 全文を重複して正規化すると入力サイズに対して二次時間になる。
+        # Shadow Modeではbehavior changeを証明できない入力として扱う。
+        return ()
+    masked_source = _mask_javascript_literals(source)
+    argument_span_index = _javascript_call_argument_span_index(source)
     behaviors = []
-    for body_start, body_end, disabled in _javascript_test_callback_spans(source):
+    for body_start, body_end, disabled in callback_spans:
         callback = source[body_start:body_end].strip()
-        if not _javascript_callback_has_executable_content(callback):
+        if not _javascript_callback_has_executable_content(
+            callback,
+            source=source,
+            start=body_start,
+            end=body_end,
+            masked_source=masked_source,
+            argument_span_index=argument_span_index,
+        ):
             continue
         behaviors.append(
             (_normalize_javascript_whitespace(callback), disabled)
@@ -3015,6 +3089,33 @@ def _is_usable_test_change(
             head_entry.data,
             language=language,
         )
+    )
+
+
+def _has_usable_test_change(
+    files: Sequence[ChangedFile],
+    base_snapshot: Mapping[str, SnapshotEntry],
+    head_snapshot: Mapping[str, SnapshotEntry],
+    pure_rename_additions: frozenset[str],
+    policy: Policy,
+) -> bool:
+    """コード変更の有無とは独立して、実質的なテスト変更を観測する。"""
+
+    binary_test_globs = tuple(
+        pattern
+        for scope in policy.verification_scopes
+        for pattern in scope.binary_test_globs
+    )
+    return any(
+        matches_any(item.path, policy.test_globs)
+        and item.path not in pure_rename_additions
+        and _is_usable_test_change(
+            item,
+            base_snapshot,
+            head_snapshot,
+            binary_test_globs=binary_test_globs,
+        )
+        for item in files
     )
 
 
@@ -3210,7 +3311,13 @@ def assess(
             code_change_paths=code_change_paths,
         )
     )
-    test_changes = code_changes and not missing_test_scopes
+    test_changes = _has_usable_test_change(
+        files,
+        base_snapshot,
+        head_snapshot,
+        pure_rename_additions,
+        policy,
+    )
     test_removal_risk = (
         policy.test_removal_risk
         if _has_test_removal(files, base_snapshot, head_snapshot, policy)

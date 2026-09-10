@@ -16,6 +16,7 @@ from evaluate import (
     _has_test_behavior_change,
     _javascript_call_argument_span_index,
     _javascript_disabled_test_option_variables,
+    _javascript_assertion_count,
     _javascript_test_call_spans,
     _javascript_test_behavior_records,
     _line_changes,
@@ -110,7 +111,7 @@ class EvaluateTests(unittest.TestCase):
             result = assess(base, head, POLICY)
 
             self.assertIn("meta-shop-visual", result.missing_test_scopes)
-            self.assertFalse(result.test_changes)
+            self.assertTrue(result.test_changes)
 
     def test_achievement_collection_ui_requires_its_corresponding_e2e_spec(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -138,7 +139,27 @@ class EvaluateTests(unittest.TestCase):
             result = assess(base, head, POLICY)
 
             self.assertIn("achievement-visual", result.missing_test_scopes)
-            self.assertFalse(result.test_changes)
+            self.assertTrue(result.test_changes)
+
+    def test_test_only_pr_records_usable_test_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            base.mkdir()
+            write_snapshot(
+                head,
+                {
+                    "tests/unit/utils/new-behavior.test.ts": (
+                        "it('covers the new behavior', () => expect(value).toBe(1));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertFalse(result.code_changes)
+            self.assertTrue(result.test_changes)
+            self.assertEqual(result.missing_test_scopes, ())
 
     def test_new_spec_without_test_declaration_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1368,6 +1389,22 @@ class EvaluateTests(unittest.TestCase):
 
         self.assertEqual(len(calls), 4000)
 
+    def test_object_methods_are_not_counted_as_expect_matchers(self) -> None:
+        self.assertEqual(_javascript_assertion_count("expect(value).toString();"), 0)
+        self.assertEqual(_javascript_assertion_count("expect(value).toBe(1);"), 1)
+
+    def test_nested_test_callbacks_fail_closed_before_behavior_scan(self) -> None:
+        source = (
+            "test('outer', () => {\n"
+            + "".join(
+                "  test('inner', () => expect(value).toBe(1));\n"
+                for _ in range(400)
+            )
+            + "});\n"
+        )
+
+        self.assertEqual(_javascript_test_behavior_records(source.encode("utf-8")), ())
+
     def test_callback_alias_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -2241,7 +2278,7 @@ class EvaluateTests(unittest.TestCase):
             result = assess(base, head, POLICY)
 
             self.assertEqual(result.missing_test_scopes, ("pixi-visual",))
-            self.assertFalse(result.test_changes)
+            self.assertTrue(result.test_changes)
 
     def test_industry_dom_scene_requires_org_scale_e2e(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -2341,7 +2378,7 @@ class EvaluateTests(unittest.TestCase):
             result = assess(base, head, POLICY)
 
             self.assertIn("pixi-visual", result.missing_test_scopes)
-            self.assertFalse(result.test_changes)
+            self.assertTrue(result.test_changes)
 
     def test_webgl_overlay_requires_webgl_availability_e2e(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -2369,7 +2406,7 @@ class EvaluateTests(unittest.TestCase):
             result = assess(base, head, POLICY)
 
             self.assertIn("webgl-availability", result.missing_test_scopes)
-            self.assertFalse(result.test_changes)
+            self.assertTrue(result.test_changes)
 
     def test_suffixless_e2e_helper_is_a_hard_gate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -516,6 +516,22 @@ class EvaluateTests(unittest.TestCase):
 
         self.assertEqual(len(_javascript_test_behavior_records(source.encode())), 1)
 
+    def test_nested_callbacks_require_a_provably_executed_receiver(self) -> None:
+        unknown_receiver = (
+            "import { expect, test } from 'vitest';\n"
+            "test('empty', () => [].map(() => expect(value).toBe(1)));\n"
+            "const collection = { map() {} };\n"
+            "test('custom', () => collection.map(() => expect(value).toBe(1)));\n"
+            "test('reduce', () => [value].reduce(() => expect(value).toBe(1)));\n"
+        )
+        known_receiver = (
+            "import { expect, test } from 'vitest';\n"
+            "test('known', () => [value].forEach(() => expect(value).toBe(1)));\n"
+        )
+
+        self.assertEqual(_javascript_test_behavior_records(unknown_receiver.encode()), ())
+        self.assertEqual(len(_javascript_test_behavior_records(known_receiver.encode())), 1)
+
     def test_typed_arrow_parameter_shadowing_does_not_register_fake_tests(self) -> None:
         source = (
             "import { expect, test as runner } from 'vitest';\n"
@@ -530,11 +546,40 @@ class EvaluateTests(unittest.TestCase):
 
         self.assertEqual(len(calls), 1)
 
+    def test_local_runner_declaration_only_shadows_calls_in_its_function(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "function register() {\n"
+            "  const test = () => {};\n"
+            "  test('fake', () => expect(value).toBe(1));\n"
+            "}\n"
+            "test('real', () => expect(value).toBe(1));\n"
+        )
+
+        self.assertEqual(len(_javascript_test_call_spans(source)), 1)
+
     def test_unknown_nested_callbacks_do_not_satisfy_verification(self) -> None:
         source = (
             "import { expect, test } from 'vitest';\n"
             "function ignore(cb: () => void) { void cb; }\n"
             "test('runs', () => ignore(() => expect(value).toBe(1)));\n"
+        )
+
+        self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+
+    def test_uncalled_nested_helpers_do_not_make_transitive_assertions_executable(
+        self,
+    ) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test('runs', () => {\n"
+            "  function verify() {\n"
+            "    expect(value).toBe(1);\n"
+            "  }\n"
+            "  function unused() {\n"
+            "    verify();\n"
+            "  }\n"
+            "});\n"
         )
 
         self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
@@ -549,6 +594,58 @@ class EvaluateTests(unittest.TestCase):
 
         self.assertEqual(_javascript_test_call_spans(source), ())
         self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+
+    def test_tests_in_braceless_static_false_branches_do_not_satisfy_verification(
+        self,
+    ) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "if (false) test('dead', () => expect(value).toBe(1));\n"
+            "test('live', () => expect(value).toBe(1));\n"
+        )
+
+        self.assertEqual(len(_javascript_test_call_spans(source)), 1)
+        self.assertEqual(len(_javascript_test_behavior_records(source.encode())), 1)
+
+    def test_disabled_options_are_resolved_per_lexical_binding(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "const opts = { skip: true };\n"
+            "test('skipped', opts, () => expect(value).toBe(1));\n"
+            "function register() {\n"
+            "  const opts = {};\n"
+            "  test('active', opts, () => expect(value).toBe(1));\n"
+            "}\n"
+        )
+
+        records = _javascript_test_behavior_records(source.encode())
+
+        self.assertEqual(len(records), 2)
+        self.assertTrue(records[0][1])
+        self.assertFalse(records[1][1])
+
+    def test_runner_hook_assertions_contribute_to_test_behavior(self) -> None:
+        base = (
+            "import { beforeEach as setup, expect, test } from 'vitest';\n"
+            "setup(() => expect(value).toBe(1));\n"
+            "test('runs', () => expect(value).toBe(1));\n"
+        )
+        head = base.replace(
+            "setup(() => expect(value).toBe(1))",
+            "setup(() => expect(value).toBe(2))",
+        )
+
+        records = _javascript_test_behavior_records(head.encode())
+
+        self.assertEqual(len(records), 1)
+        self.assertIn("hook:()=>expect(value).toBe(2)", records[0][0])
+        self.assertTrue(
+            _has_test_behavior_change(
+                base.encode(),
+                head.encode(),
+                language="javascript",
+            )
+        )
 
     def test_many_single_parameter_arrows_are_indexed_without_prefix_rescans(self) -> None:
         source = "import { expect, test } from 'vitest';\n" + "\n".join(

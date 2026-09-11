@@ -831,6 +831,39 @@ class PublishTests(unittest.TestCase):
             ["shadow/CI・レビュー待ち"],
         )
 
+    def test_final_pass_removes_peer_label_after_readd(self):
+        api = FixtureAPI([])
+        original = api.request
+        deletes = {"n": 0}
+
+        def competing_publisher(path, body=None, method=None):
+            result = original(path, body, method)
+            verb = method or ("POST" if body is not None else "GET")
+            desired = "shadow/CI・レビュー待ち"
+            peer = "shadow/要対応"
+            names = [item["name"] for item in api.pull["labels"]]
+            if verb == "POST" and body and "labels" in body and peer not in names:
+                api.pull["labels"].append({"name": peer})
+            if verb == "DELETE":
+                deletes["n"] += 1
+                if deletes["n"] == 1:
+                    api.pull["labels"] = [
+                        item
+                        for item in api.pull["labels"]
+                        if item["name"] != desired
+                    ]
+                    if not any(item["name"] == peer for item in api.pull["labels"]):
+                        api.pull["labels"].append({"name": peer})
+            return result
+
+        api.request = competing_publisher
+        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
+        self.assertEqual(status, "updated")
+        self.assertEqual(
+            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
+            ["shadow/CI・レビュー待ち"],
+        )
+
     def test_sync_readds_desired_after_peer_removes_it(self):
         api = FixtureAPI(["shadow/要マージ判断"])
         original = api.request
@@ -857,16 +890,14 @@ class PublishTests(unittest.TestCase):
     def test_empty_remote_labels_are_not_replaced_by_cache(self):
         api = FixtureAPI(["shadow/CI・レビュー待ち"])
         original = api.request
+        seen = {"n": 0}
 
         def emptied(path, body=None, method=None):
             result = original(path, body, method)
             if path.endswith("/pulls/1"):
-                api.pull["labels"] = [
-                    item
-                    for item in api.pull["labels"]
-                    if item["name"] not in MANAGED_LABELS
-                ]
-                return {**api.pull, "labels": []}
+                seen["n"] += 1
+                if seen["n"] == 3:
+                    return {**api.pull, "labels": []}
             return result
 
         api.request = emptied

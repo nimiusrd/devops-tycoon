@@ -485,6 +485,24 @@ def sync_labels(
                     raise
             writes.append(f"remove:{name}")
             names[:] = [item for item in names if item != name]
+    latest = refresh()
+    if desired not in latest:
+        reason = guard()
+        if reason:
+            return writes, reason
+        api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
+        writes.append(f"add:{desired}")
+        latest = refresh()
+    for name in [item for item in latest if item in MANAGED_LABELS and item != desired]:
+        try:
+            api.request(
+                f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
+                method="DELETE",
+            )
+        except PublishError as error:
+            if "HTTP 404" not in str(error):
+                raise
+        writes.append(f"remove:{name}")
     return writes, None
 
 

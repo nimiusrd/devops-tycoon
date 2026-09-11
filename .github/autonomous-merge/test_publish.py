@@ -590,6 +590,28 @@ class PublishTests(unittest.TestCase):
         runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 200)
         self.assertIn(5, {int(item["id"]) for item in runs})
 
+    def test_shared_history_is_refreshed_before_first_write(self):
+        api = FixtureAPI(["enhancement"])
+        api.workflow_pages = [
+            {
+                "workflow_runs": [
+                    {
+                        "id": 20,
+                        "run_attempt": 1,
+                        "status": "in_progress",
+                        "event": "schedule",
+                        "run_started_at": "2026-09-11T14:00:00Z",
+                        "pull_requests": [],
+                    }
+                ]
+            }
+        ]
+        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
+        self.assertEqual(status, "skipped:newer_run")
+        self.assertEqual(
+            [item["name"] for item in api.pull["labels"]], ["enhancement"]
+        )
+
     def test_write_is_skipped_when_newer_run_appears_before_labels(self):
         api = FixtureAPI(["enhancement"])
         api.workflow_pages = [

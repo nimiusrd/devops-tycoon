@@ -239,6 +239,27 @@ def list_relevant_runs(api: GitHub, workflow: str, run_id: int) -> list:
     return records
 
 
+def list_recent_runs(api: GitHub, workflow: str, known: list | None = None) -> list:
+    records = []
+    seen = set()
+    path = f"{api.prefix}/actions/workflows/{workflow}/runs"
+
+    def add(batch: list) -> None:
+        for item in batch:
+            run = int(item["id"])
+            if run in seen:
+                continue
+            seen.add(run)
+            records.append(item)
+
+    if known:
+        add(known)
+    for status in LIVE_STATUSES:
+        add(_workflow_run_page(api, f"{path}?status={status}&per_page=100&page=1"))
+    add(_workflow_run_page(api, f"{path}?per_page=100&page=1"))
+    return records
+
+
 def run_observed(run: dict, default_branch: str | None) -> bool:
     if run.get("conclusion") in IGNORED_CONCLUSIONS:
         return False
@@ -505,7 +526,7 @@ def publish_pr(
         return skip_reason(
             report,
             latest,
-            current_runs(),
+            list_recent_runs(api, workflow, current_runs()),
             run_id,
             run_attempt,
             incumbent,

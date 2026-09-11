@@ -62,6 +62,19 @@ export function resolveIssue476VariantFromLocation(): Issue476Variant {
   return resolveIssue476Variant(window.location.search);
 }
 
+const issue476Listeners = new Set<() => void>();
+
+export function subscribeIssue476Variant(onStoreChange: () => void): () => void {
+  issue476Listeners.add(onStoreChange);
+  return () => {
+    issue476Listeners.delete(onStoreChange);
+  };
+}
+
+function notifyIssue476Listeners(): void {
+  for (const listener of issue476Listeners) listener();
+}
+
 export function issue476Knobs(
   variant: Issue476Variant = resolveIssue476VariantFromLocation(),
 ): Issue476Knobs {
@@ -106,6 +119,7 @@ export function writeIssue476VariantToLocation(variant: Issue476Variant): void {
   }
   const next = `${url.pathname}${url.search}${url.hash}`;
   window.history.replaceState(window.history.state, '', next);
+  notifyIssue476Listeners();
 }
 
 export function issue476VariantLabel(variant: Issue476Variant): string {

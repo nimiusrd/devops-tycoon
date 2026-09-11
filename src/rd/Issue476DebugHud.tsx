@@ -1,10 +1,16 @@
 /**
  * Issue #476 研究用の安価なメトリクス表示。本番 UI ではない。
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { formatSprintResultSeniorHp } from '../render/seniorHpDisplay';
 import type { SprintResult } from '../sim/types';
-import { issue476Knobs, issue476VariantLabel, type Issue476Variant } from './issue476Experiment';
+import {
+  issue476Knobs,
+  issue476VariantLabel,
+  resolveIssue476VariantFromLocation,
+  subscribeIssue476Variant,
+  type Issue476Variant,
+} from './issue476Experiment';
 
 export interface Issue476DebugHudProps {
   variant?: Issue476Variant;
@@ -51,15 +57,26 @@ export function Issue476DebugHud({
   taskCount,
   seniorHp,
 }: Issue476DebugHudProps) {
-  const knobs = issue476Knobs(variant);
+  const liveVariant = useSyncExternalStore(
+    subscribeIssue476Variant,
+    resolveIssue476VariantFromLocation,
+    () => 'baseline' as const,
+  );
+  const knobs = issue476Knobs(variant ?? liveVariant);
   const lastDump = useRef<string>('');
 
   useEffect(() => {
-    const line = dumpLine({ variant, sprintNumber, result, taskCount, seniorHp });
+    const line = dumpLine({
+      variant: variant ?? liveVariant,
+      sprintNumber,
+      result,
+      taskCount,
+      seniorHp,
+    });
     if (line === lastDump.current) return;
     lastDump.current = line;
     console.info(line);
-  }, [variant, sprintNumber, result, taskCount, seniorHp]);
+  }, [variant, liveVariant, sprintNumber, result, taskCount, seniorHp]);
 
   return (
     <aside className="rd476-hud" data-testid="rd476-hud" aria-label="Issue 476 R&D metrics">

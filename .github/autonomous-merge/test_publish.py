@@ -18,6 +18,7 @@ from publish import (
     is_fresher,
     list_recent_runs,
     list_relevant_runs,
+    run_published_labels,
     load_reports,
     main,
     publish_pr,
@@ -387,6 +388,7 @@ class PublishTests(unittest.TestCase):
             "event": "workflow_run",
             "run_started_at": "2026-09-11T12:05:00Z",
             "pull_requests": [{"number": 1}],
+            "jobs": [{"name": "publish (1)", "conclusion": "success"}],
         }
         self.assertTrue(
             has_newer_run(
@@ -425,6 +427,33 @@ class PublishTests(unittest.TestCase):
             "pull_requests": [{"number": 1}],
         }
         self.assertTrue(has_newer_run([failed_targeted], 1, 10, 1))
+        success_without_publish = {
+            "id": 62,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "success",
+            "event": "pull_request_review",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [{"number": 1}],
+            "jobs": [{"name": "observe", "conclusion": "success"}],
+        }
+        self.assertFalse(has_newer_run([success_without_publish], 1, 10, 1))
+        self.assertTrue(
+            run_published_labels(
+                {**failed_collection, "jobs": None},
+                type(
+                    "Boom",
+                    (),
+                    {
+                        "pages": staticmethod(
+                            lambda path, key=None: (_ for _ in ()).throw(
+                                PublishError("API GET jobs: HTTP 502")
+                            )
+                        )
+                    },
+                )(),
+            )
+        )
         self.assertEqual(
             skip_reason(report("WAITING"), current, [failed_published], 10, 1),
             "newer_run",
@@ -671,6 +700,90 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(match["run_started_at"], "2026-09-11T14:00:00Z")
         self.assertTrue(has_newer_run(runs, 1, 12, 1))
         self.assertFalse(has_newer_run(known, 1, 12, 1))
+
+    def test_recorded_attempt_start_keeps_retry_from_looking_newer(self):
+        data = report("WAITING", observed="2026-09-11T12:10:00+00:00")
+        data["observations"]["run_started_at"] = "2026-09-11T12:00:00Z"
+        current = {
+            "number": 1,
+            "head_sha": HEAD,
+            "base_sha": BASE,
+            "base_ref": "trunk",
+            "state": "open",
+            "merged": False,
+            "draft": False,
+            "labels": ["shadow/CI・レビュー待ち"],
+        }
+        runs = [
+            {
+                "id": 10,
+                "run_attempt": 2,
+                "status": "in_progress",
+                "event": "pull_request",
+                "run_started_at": "2026-09-11T14:00:00Z",
+                "pull_requests": [{"number": 1}],
+            },
+            {
+                "id": 11,
+                "run_attempt": 1,
+                "status": "completed",
+                "event": "schedule",
+                "run_started_at": "2026-09-11T12:05:00Z",
+                "pull_requests": [],
+                "jobs": [{"name": "publish (1)", "conclusion": "success"}],
+            },
+        ]
+        self.assertTrue(
+            has_newer_run(
+                runs,
+                1,
+                10,
+                1,
+                observed_at="2026-09-11T12:10:00+00:00",
+                recorded_started_at="2026-09-11T12:00:00Z",
+            )
+        )
+        self.assertEqual(skip_reason(data, current, runs, 10, 1), "newer_run")
+
+    def test_recent_runs_refresh_completed_low_id_rerun(self):
+        known = [
+            {
+                "id": 5,
+                "run_attempt": 1,
+                "status": "completed",
+                "event": "schedule",
+                "run_started_at": "2026-09-11T10:00:00Z",
+                "pull_requests": [],
+            }
+        ]
+        updated = {
+            "id": 5,
+            "run_attempt": 2,
+            "status": "completed",
+            "event": "schedule",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [],
+            "jobs": [{"name": "publish (1)", "conclusion": "success"}],
+        }
+
+        class Paging:
+            prefix = "/repos/example/project"
+
+            def request(self, path, body=None, method=None):
+                if path.endswith("/actions/runs/5"):
+                    return updated
+                return {"workflow_runs": []}
+
+        runs = list_recent_runs(
+            Paging(),
+            "autonomous-merge-shadow.yml",
+            known,
+            number=1,
+            run_id=200,
+        )
+        match = next(item for item in runs if int(item["id"]) == 5)
+        self.assertEqual(match["run_attempt"], 2)
+        self.assertEqual(match["run_started_at"], "2026-09-11T14:00:00Z")
 
     def test_shared_history_is_refreshed_before_first_write(self):
         api = FixtureAPI(["enhancement"])

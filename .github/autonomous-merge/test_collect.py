@@ -453,6 +453,21 @@ class CollectTests(unittest.TestCase):
             )
             self.assertIn("$cursor: String", request.call_args.args[1]["query"])
 
+    def test_collect_records_current_run_start_time(self):
+        api = FixtureAPI()
+        api.prefix = "/repos/example/project"
+        api.request = lambda path: {
+            "id": 9,
+            "run_started_at": "2026-09-11T12:00:00Z",
+        }
+        with patch.dict(
+            "os.environ", {"GITHUB_RUN_ID": "9", "GITHUB_RUN_ATTEMPT": "1"}
+        ):
+            facts = collect(api, 1, BASE)
+        self.assertEqual(facts["run_id"], 9)
+        self.assertEqual(facts["run_attempt"], 1)
+        self.assertEqual(facts["run_started_at"], "2026-09-11T12:00:00Z")
+
 
 if __name__ == "__main__":
     unittest.main()

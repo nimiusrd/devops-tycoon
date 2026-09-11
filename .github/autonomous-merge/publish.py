@@ -177,6 +177,10 @@ def observed_at(report: dict) -> str | None:
     return (report.get("observations") or {}).get("observed_at")
 
 
+def observed_run_started_at(report: dict) -> str | None:
+    return (report.get("observations") or {}).get("run_started_at")
+
+
 def snapshot(api: GitHub, number: int) -> dict:
     pull = api.request(f"{api.prefix}/pulls/{number}")
     if not isinstance(pull, dict):
@@ -241,25 +245,47 @@ def list_relevant_runs(api: GitHub, workflow: str, run_id: int) -> list:
     raise PublishError("REST pagination limit exceeded")
 
 
-def list_recent_runs(api: GitHub, workflow: str, known: list | None = None) -> list:
-    records = []
-    seen = set()
+def list_recent_runs(
+    api: GitHub,
+    workflow: str,
+    known: list | None = None,
+    number: int | None = None,
+    run_id: int | None = None,
+    default_branch: str | None = None,
+    pr_open: bool = True,
+) -> list:
+    records = {}
     path = f"{api.prefix}/actions/workflows/{workflow}/runs"
 
-    def add(batch: list) -> None:
+    def add(batch: list, replace: bool = False) -> None:
         for item in batch:
-            run = int(item["id"])
-            if run in seen:
+            if not isinstance(item, dict) or item.get("id") is None:
                 continue
-            seen.add(run)
-            records.append(item)
+            run = int(item["id"])
+            if run in records and not replace:
+                continue
+            records[run] = item
 
     for status in LIVE_STATUSES:
         add(_workflow_run_page(api, f"{path}?status={status}&per_page=100&page=1"))
     add(_workflow_run_page(api, f"{path}?per_page=100&page=1"))
     if known:
         add(known)
-    return records
+        for item in known:
+            if number is None or run_id is None:
+                continue
+            other = int(item["id"])
+            if other == int(run_id) or item.get("status") != "completed":
+                continue
+            if not run_targets_pr(item, number, default_branch, pr_open):
+                continue
+            try:
+                latest = api.request(f"{api.prefix}/actions/runs/{other}")
+            except PublishError:
+                raise
+            if isinstance(latest, dict):
+                add([latest], replace=True)
+    return list(records.values())
 
 
 def run_observed(run: dict, default_branch: str | None) -> bool:
@@ -313,18 +339,16 @@ def run_published_labels(run: dict, api: GitHub | None = None) -> bool:
         return True
     if run.get("conclusion") in IGNORED_CONCLUSIONS:
         return False
-    if run.get("conclusion") != "failure":
-        return True
-    if run_declared_targets(run) is not None:
-        return True
     jobs = run.get("jobs")
     if jobs is None and api is not None:
         try:
             jobs = api.pages(f"/actions/runs/{int(run['id'])}/jobs", "jobs")
         except (PublishError, KeyError, TypeError, ValueError):
-            return False
+            return True
+    if jobs is None:
+        return run_declared_targets(run) is not None
     if not isinstance(jobs, list):
-        return False
+        return True
     return any(
         _is_publish_job(str(job.get("name") or ""))
         and job.get("conclusion") not in {None, "cancelled", "skipped"}
@@ -344,12 +368,14 @@ def current_started_at(
     runs: list,
     run_id: int,
     observed_at: str | None = None,
+    recorded_started_at: str | None = None,
 ) -> datetime | None:
-    started = None
-    for run in runs:
-        if int(run["id"]) == int(run_id):
-            started = run_started_at(run)
-            break
+    started = parse_time(recorded_started_at) if recorded_started_at else None
+    if started is None:
+        for run in runs:
+            if int(run["id"]) == int(run_id):
+                started = run_started_at(run)
+                break
     observed = parse_time(observed_at) if observed_at else None
     if started and observed:
         return min(started, observed)
@@ -365,8 +391,11 @@ def has_newer_run(
     pr_open: bool = True,
     observed_at: str | None = None,
     api: GitHub | None = None,
+    recorded_started_at: str | None = None,
 ) -> bool:
-    current_started = current_started_at(runs, run_id, observed_at)
+    current_started = current_started_at(
+        runs, run_id, observed_at, recorded_started_at
+    )
     current_key = (int(run_id), int(run_attempt))
     for run in runs:
         if int(run["id"]) == int(run_id):
@@ -418,6 +447,7 @@ def skip_reason(
         current_pr_state(current) == "OPEN",
         observed_at(report),
         api,
+        observed_run_started_at(report),
     ):
         return "newer_run"
     stamp = observed_at(report)
@@ -606,7 +636,15 @@ def publish_pr(
         return skip_reason(
             report,
             latest,
-            list_recent_runs(api, workflow, current_runs()),
+            list_recent_runs(
+                api,
+                workflow,
+                current_runs(),
+                number,
+                run_id,
+                default_branch,
+                current_pr_state(latest) == "OPEN",
+            ),
             run_id,
             run_attempt,
             incumbent,

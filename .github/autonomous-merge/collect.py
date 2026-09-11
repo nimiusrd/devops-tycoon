@@ -210,6 +210,29 @@ def decision_metadata(api: GitHub, number: int, pr: dict) -> dict:
     return metadata
 
 
+def stamp_current_run(facts: dict, api: GitHub) -> None:
+    raw_id = os.environ.get("GITHUB_RUN_ID")
+    raw_attempt = os.environ.get("GITHUB_RUN_ATTEMPT")
+    if raw_id:
+        facts["run_id"] = int(raw_id)
+    if raw_attempt:
+        facts["run_attempt"] = int(raw_attempt)
+    if not raw_id:
+        return
+    request = getattr(api, "request", None)
+    prefix = getattr(api, "prefix", f"/repos/{api.repository}")
+    if not callable(request):
+        return
+    try:
+        run = request(f"{prefix}/actions/runs/{int(raw_id)}")
+    except CollectionError:
+        return
+    if isinstance(run, dict):
+        started = run.get("run_started_at") or run.get("created_at")
+        if started:
+            facts["run_started_at"] = started
+
+
 def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
     facts = {
         "schema_version": 2,
@@ -219,6 +242,7 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
         "collection_errors": [],
         "stable": False,
     }
+    stamp_current_run(facts, api)
     try:
         before = normalized_pr(api.graphql(number, PR_FIELDS))
         facts["pr"] = before

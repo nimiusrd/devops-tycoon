@@ -14,6 +14,7 @@ from collect import (
     CollectionError,
     GitHub,
     collect,
+    load_current_run,
     main,
     stamp_current_run,
     targets,
@@ -517,6 +518,29 @@ class CollectTests(unittest.TestCase):
             stamp_current_run(facts, Empty())
         self.assertEqual(facts["collection_errors"], ["missing run_started_at"])
         self.assertNotIn("run_started_at", facts)
+
+    def test_stamp_current_run_reuses_prefetched_run(self):
+        class Counting:
+            repository = "example/project"
+            prefix = "/repos/example/project"
+            calls = 0
+
+            def request(self, path):
+                self.calls += 1
+                return {"id": 9, "run_started_at": "2026-09-11T12:00:00Z"}
+
+        api = Counting()
+        with patch.dict(
+            "os.environ", {"GITHUB_RUN_ID": "9", "GITHUB_RUN_ATTEMPT": "1"}
+        ):
+            cached = load_current_run(api)
+            first = {"collection_errors": []}
+            second = {"collection_errors": []}
+            stamp_current_run(first, api, cached)
+            stamp_current_run(second, api, cached)
+        self.assertEqual(api.calls, 1)
+        self.assertEqual(first["run_started_at"], "2026-09-11T12:00:00Z")
+        self.assertEqual(second["run_started_at"], "2026-09-11T12:00:00Z")
 
 
 if __name__ == "__main__":

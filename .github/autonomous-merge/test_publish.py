@@ -353,6 +353,30 @@ class PublishTests(unittest.TestCase):
                 "jobs": [{"name": "publish (1)", "conclusion": "success"}],
             }
         ]
+        live_published = {
+            "id": 32,
+            "run_attempt": 1,
+            "status": "in_progress",
+            "event": "schedule",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [],
+            "jobs": [{"name": "publish (1)", "conclusion": "success"}],
+        }
+        self.assertTrue(has_newer_run([live_published], 1, 10, 1, pr_open=False))
+        self.assertFalse(
+            has_newer_run(
+                [
+                    {
+                        **live_published,
+                        "jobs": [{"name": "observe", "conclusion": None}],
+                    }
+                ],
+                1,
+                10,
+                1,
+                pr_open=False,
+            )
+        )
         self.assertTrue(has_newer_run(recovered, 1, 10, 1, pr_open=False))
         self.assertFalse(
             has_newer_run(
@@ -1046,7 +1070,7 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(match["run_attempt"], 2)
         self.assertEqual(match["run_started_at"], "2026-09-11T14:00:00Z")
 
-    def test_recent_runs_refresh_completed_known_run_before_write(self):
+    def test_recent_runs_skip_id_refresh_for_completed_known_run(self):
         known = [
             {
                 "id": 5,
@@ -1087,8 +1111,8 @@ class PublishTests(unittest.TestCase):
             run_id=200,
         )
         match = next(item for item in runs if int(item["id"]) == 5)
-        self.assertEqual(match["run_attempt"], 2)
-        self.assertTrue(any(path.endswith("/actions/runs/5") for path in api.fetched))
+        self.assertEqual(match["run_attempt"], 1)
+        self.assertFalse(any(path.endswith("/actions/runs/5") for path in api.fetched))
 
     def test_shared_history_is_refreshed_before_first_write(self):
         api = FixtureAPI(["enhancement"])

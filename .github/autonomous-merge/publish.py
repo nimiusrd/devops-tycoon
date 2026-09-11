@@ -293,9 +293,12 @@ def list_recent_runs(
             if number is None or run_id is None:
                 continue
             other = int(item["id"])
-            if other == int(run_id):
+            if other == int(run_id) or item.get("status") == "completed":
                 continue
-            if not run_targets_pr(item, number, default_branch, pr_open):
+            if not run_observed(item, default_branch):
+                continue
+            targets = run_declared_targets(item)
+            if targets is not None and number not in targets:
                 continue
             try:
                 latest = api.request(f"{api.prefix}/actions/runs/{other}")
@@ -339,13 +342,37 @@ def run_targets_pr(
     number: int,
     default_branch: str | None = None,
     pr_open: bool = True,
+    api: GitHub | None = None,
 ) -> bool:
     if not run_observed(run, default_branch):
         return False
     targets = run_declared_targets(run)
     if targets is None:
-        return pr_open or run.get("status") == "completed"
+        if pr_open or run.get("status") == "completed":
+            return True
+        return _broadcast_published_pr(run, api, number)
     return number in targets
+
+
+def _broadcast_published_pr(
+    run: dict, api: GitHub | None, number: int
+) -> bool:
+    jobs = run.get("jobs")
+    if jobs is None and api is not None:
+        try:
+            jobs = api.pages(
+                f"/actions/runs/{int(run['id'])}/jobs?filter=all", "jobs"
+            )
+        except (PublishError, KeyError, TypeError, ValueError):
+            return True
+    if not isinstance(jobs, list):
+        return False
+    return any(
+        _is_publish_job(str(job.get("name") or ""), number)
+        and job.get("conclusion") not in {None, "cancelled", "skipped"}
+        for job in jobs
+        if isinstance(job, dict)
+    )
 
 
 def _is_publish_job(name: str, number: int | None = None) -> bool:
@@ -432,7 +459,7 @@ def has_newer_run(
             continue
         if run.get("status") not in ACTIVE_RUNS:
             continue
-        if not run_targets_pr(run, number, default_branch, pr_open):
+        if not run_targets_pr(run, number, default_branch, pr_open, api):
             continue
         other_key = (int(run["id"]), int(run.get("run_attempt") or 1))
         other_started = run_started_at(run)

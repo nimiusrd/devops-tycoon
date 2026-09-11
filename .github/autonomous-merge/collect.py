@@ -216,33 +216,53 @@ def decision_metadata(api: GitHub, number: int, pr: dict) -> dict:
     return metadata
 
 
-def stamp_current_run(facts: dict, api: GitHub) -> None:
+def load_current_run(api: GitHub) -> tuple[dict | None, list[str]]:
+    raw_id = os.environ.get("GITHUB_RUN_ID")
+    if not raw_id:
+        return None, []
+    request = getattr(api, "request", None)
+    prefix = getattr(api, "prefix", f"/repos/{api.repository}")
+    if not callable(request):
+        return None, []
+    try:
+        run = request(f"{prefix}/actions/runs/{int(raw_id)}")
+    except CollectionError as error:
+        return None, [str(error)]
+    if isinstance(run, dict):
+        if run.get("run_started_at") or run.get("created_at"):
+            return run, []
+        return run, ["missing run_started_at"]
+    return None, []
+
+
+def stamp_current_run(
+    facts: dict,
+    api: GitHub,
+    current_run: tuple[dict | None, list[str]] | None = None,
+) -> None:
     raw_id = os.environ.get("GITHUB_RUN_ID")
     raw_attempt = os.environ.get("GITHUB_RUN_ATTEMPT")
     if raw_id:
         facts["run_id"] = int(raw_id)
     if raw_attempt:
         facts["run_attempt"] = int(raw_attempt)
-    if not raw_id:
-        return
-    request = getattr(api, "request", None)
-    prefix = getattr(api, "prefix", f"/repos/{api.repository}")
-    if not callable(request):
-        return
-    try:
-        run = request(f"{prefix}/actions/runs/{int(raw_id)}")
-    except CollectionError as error:
-        facts.setdefault("collection_errors", []).append(str(error))
-        return
+    if current_run is None:
+        current_run = load_current_run(api)
+    run, errors = current_run
+    if errors:
+        facts.setdefault("collection_errors", []).extend(errors)
     if isinstance(run, dict):
         started = run.get("run_started_at") or run.get("created_at")
         if started:
             facts["run_started_at"] = started
-            return
-        facts.setdefault("collection_errors", []).append("missing run_started_at")
 
 
-def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
+def collect(
+    api: GitHub,
+    number: int,
+    evaluator_sha: str,
+    current_run: tuple[dict | None, list[str]] | None = None,
+) -> dict:
     facts = {
         "schema_version": 2,
         "observed_at": datetime.now(timezone.utc).isoformat(),
@@ -251,7 +271,7 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
         "collection_errors": [],
         "stable": False,
     }
-    stamp_current_run(facts, api)
+    stamp_current_run(facts, api, current_run)
     try:
         before = normalized_pr(api.graphql(number, PR_FIELDS))
         facts["pr"] = before
@@ -401,8 +421,9 @@ def main() -> int:
         api = GitHub(args.repository)
         event = json.loads(args.event.read_text()) if args.event else {}
         numbers = targets(api, event, args.pr)
+        current_run = load_current_run(api)
         for number in numbers:
-            facts = collect(api, number, sha(args.evaluator_sha))
+            facts = collect(api, number, sha(args.evaluator_sha), current_run)
             result = assess(facts, policy)
             (args.output / f"pr-{number}.json").write_text(
                 json.dumps(result, ensure_ascii=False, indent=2) + "\n"

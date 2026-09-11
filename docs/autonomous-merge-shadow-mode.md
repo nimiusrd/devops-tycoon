@@ -98,7 +98,7 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 | より新しい開始時刻（`run_started_at`）または`observed_at`の観測がある | 未着手なら変更しない。一度書き始めたら`desired`まで完了する。再実行はrun IDより開始時刻を優先する |
 | 観測していない通常ブランチの`push` run | 後着とは扱わない |
 | PR指定の`workflow_dispatch` | 指定したPRだけを後着とみなす |
-| 全体観測（schedule / `workflow_run` / default branch push / `shadow-all`） | open PRに後着として効く。完了してそのPRのpublish jobが動いた全体runは、回収対象のclosed PRにも後着として効く |
+| 全体観測（schedule / `workflow_run` / default branch push / `shadow-all`） | open PRに後着として効く。完了した全体run、および進行中でも対象PRのpublish jobが完了した全体runは、回収対象のclosed PRにも後着として効く |
 | 対象PRが分かる収集失敗 | `shadow/再観測が必要`を付け、`shadow/要マージ判断`を残さない |
 | 収集失敗だけでPR番号が分からない | どのPRも変更しない |
 | close / merge | evaluatorの`HUMAN_REVIEW_REQUIRED`を`shadow/要対応`として反映する |
@@ -108,9 +108,9 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 同じPRを対象にする新しいShadow runがある場合も、未着手なら上書きしません。
 後着判定は`run_started_at`（なければ`created_at` / 観測時刻）を優先し、古いrunの再実行が新しいIDの失敗runより後なら破棄しません。
 `observe` の並行グループだけ `cancel-in-progress: true` です。workflow全体はキャンセルせず、実行中の`publish`を保護します。
-`publish` jobは先頭256件をPR番号ごとのmatrixにします。257–512件目もPR番号ごとのoverflow matrixです。同じPRは同じconcurrency groupで直列化し、無関係なPRはpending枠を共有しません。`cancel-in-progress: false` です。対象が512件を超える場合は`GITHUB_RUN_ID`で一覧を回転してから切り出すので、513件目以降も後続の定期観測で先頭側に入ります。
+`publish` jobは先頭256件をPR番号ごとのmatrixにします。257–512件目もPR番号ごとのoverflow matrixです。同じPRは同じconcurrency groupで直列化し、無関係なPRはpending枠を共有しません。`cancel-in-progress: false` です。対象が512件を超える場合は`GITHUB_RUN_NUMBER`で一覧を回転してから切り出すので、513件目以降も後続の定期観測で先頭側に入ります。
 一度ラベル変更を始めた後は、後着判定で途中終了せず管理ラベルが1つになるまで収束します。
-後着判定のrun履歴は`prepare-publish`が1回取得して各PRのpublish jobへ渡します。各PRの最初の書き込み直前に進行中runと直近1ページだけ再確認します。再取得した同じrun IDは共有履歴より優先し、履歴がページ上限まで埋まっている場合は部分履歴で続行せず失敗します。鮮度は同じ開始時刻同士で比較し、publisher単独再実行ではより古い`observed_at`を使います。観測artifactに`run_started_at`が無い場合は公開しません。ラベル更新は追加先行で、再追加後も競合ラベルを除去して一意な状態を確認します。公開先のない失敗broadcastと、publish jobが動かなかった成功runは後着にしません。後着になり得るrunだけjobsを`filter=all`で確認し、過去attemptの成功済みpublishも後着とします。結果はrun ID・attempt・status・conclusion単位で再利用します。jobs APIを確認できない場合は未公開と断定せず書き込みません。publisher単独再実行は観測artifactに残した元attemptの開始時刻を使います。書き込み直前は対象PRに効く既知runを completed でもID指定で再取得し、共有snapshot後に完了した再実行を拾います。1 jobが複数PRを処理する場合、ラベル定義の確認はループ外で一度だけ行います。
+後着判定のrun履歴は`prepare-publish`が1回取得して各PRのpublish jobへ渡します。各PRの最初の書き込み直前に進行中runと直近1ページだけ再確認します。再取得した同じrun IDは共有履歴より優先し、履歴がページ上限まで埋まっている場合は部分履歴で続行せず失敗します。鮮度は同じ開始時刻同士で比較し、publisher単独再実行ではより古い`observed_at`を使います。観測artifactに`run_started_at`が無い場合は公開しません。ラベル更新は追加先行で、再追加後も競合ラベルを除去して一意な状態を確認します。公開先のない失敗broadcastと、publish jobが動かなかった成功runは後着にしません。後着になり得るrunだけjobsを`filter=all`で確認し、過去attemptの成功済みpublishも後着とします。結果はrun ID・attempt・status・conclusion単位で再利用します。jobs APIを確認できない場合は未公開と断定せず書き込みません。publisher単独再実行は観測artifactに残した元attemptの開始時刻を使います。書き込み直前のID再取得は、共有snapshot時点で未完了だった既知runだけに限定します。完了済みrunの更新は進行中statusと直近1ページで拾います。1 jobが複数PRを処理する場合、ラベル定義の確認はループ外で一度だけ行います。
 `skipped`のrunは後着にしません。`cancelled`でも対象PRのpublish jobが完了していれば後着です。jobsを確認できない`cancelled`は未公開と断定せず書き込みません。`failure`でも観測レポートを出している場合は後着として扱います。publisher単独再実行は選択した観測artifactのattemptと`observed_at`で鮮度を判定します。
 `workflow_dispatch` の対象はrun名が`shadow-pr-N`または`shadow-all`に完全一致する場合だけ宣言として扱います。
 `workflow_run`とdefault branchの`push`は、RESTの`pull_requests`関連付けより先に全体観測として扱います。
@@ -119,7 +119,7 @@ fork由来PRの`pull_request_review`ではwrite tokenが降格されるため`pu
 
 PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
 スレッド解決や外部CIの状態変更など、直接購読しないイベントは毎時の再観測、または手動実行で反映します。
-CI完了時はイベントに含まれる古いSHAを使わず、現在openのPRと、close処理が未完了のclosed PR（`shadow/要マージ判断`・`shadow/CI・レビュー待ち`・`shadow/再観測が必要`）を改めて取得します。正常に`shadow/要対応`へ更新済みのclosed PRは再収集しません。`observe`はActions read権限で現在runの開始時刻をartifactへ残します。開始時刻の取得に失敗した観測は`collection_errors`に記録し、publisherは公開しません。
+CI完了時はイベントに含まれる古いSHAを使わず、現在openのPRと、close処理が未完了のclosed PR（`shadow/要マージ判断`・`shadow/CI・レビュー待ち`・`shadow/再観測が必要`）を改めて取得します。正常に`shadow/要対応`へ更新済みのclosed PRは再収集しません。`observe`はActions read権限で現在runの開始時刻をartifactへ残します。開始時刻はPRループの前に一度だけ取得します。取得失敗は`collection_errors`に記録し、publisherは公開しません。
 通常ブランチのpushはジョブを実行せず、CI完了トリガーは自身を含めません。
 
 APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は部分的な成功として扱いません。

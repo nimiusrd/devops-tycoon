@@ -124,7 +124,7 @@ jobs:
           if Path("shadow-report/collection-error.json").exists() and raw.isdigit():
               prs.add(int(raw))
           values = sorted(prs)
-          offset = int(os.environ.get("GITHUB_RUN_ID") or "0")
+          offset = int(os.environ.get("GITHUB_RUN_NUMBER") or "0")
           publisher = Path(".github/autonomous-merge/publish.py")
           if publisher.exists():
               sys.path.insert(0, str(publisher.parent.resolve()))

@@ -406,9 +406,27 @@ class PublishTests(unittest.TestCase):
             "run_started_at": "2026-09-11T14:00:00Z",
             "pull_requests": [],
         }
-        self.assertTrue(has_newer_run([failed_collection], 1, 10, 1))
+        self.assertFalse(has_newer_run([failed_collection], 1, 10, 1))
+        self.assertIsNone(
+            skip_reason(report("WAITING"), current, [failed_collection], 10, 1)
+        )
+        failed_published = {
+            **failed_collection,
+            "jobs": [{"name": "publish (1)", "conclusion": "failure"}],
+        }
+        self.assertTrue(has_newer_run([failed_published], 1, 10, 1))
+        failed_targeted = {
+            "id": 61,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure",
+            "event": "pull_request",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [{"number": 1}],
+        }
+        self.assertTrue(has_newer_run([failed_targeted], 1, 10, 1))
         self.assertEqual(
-            skip_reason(report("WAITING"), current, [failed_collection], 10, 1),
+            skip_reason(report("WAITING"), current, [failed_published], 10, 1),
             "newer_run",
         )
         completed_old_id = {
@@ -1136,6 +1154,64 @@ class PublishTests(unittest.TestCase):
             names = [item["name"] for item in api.pull["labels"]]
             self.assertIn("shadow/CI・レビュー待ち", names)
             self.assertNotIn("shadow/要対応", names)
+
+    def test_cli_uses_shared_runs_file_instead_of_listing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_dir = Path(directory)
+            (report_dir / "pr-1.json").write_text(
+                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
+            )
+            runs_file = Path(directory) / "runs.json"
+            runs_file.write_text("[]\n")
+            args = [
+                "publish.py",
+                "--repository",
+                "example/project",
+                "--report-dir",
+                str(report_dir),
+                "--run-id",
+                "10",
+                "--run-attempt",
+                "1",
+                "--run-url",
+                RUN_URL,
+                "--runs-file",
+                str(runs_file),
+            ]
+            api = FixtureAPI(["enhancement"])
+            with (
+                patch("sys.argv", args),
+                patch("publish.GitHub", return_value=api),
+                patch("publish.list_relevant_runs") as listed,
+            ):
+                self.assertEqual(main(), 0)
+            listed.assert_not_called()
+            names = [item["name"] for item in api.pull["labels"]]
+            self.assertIn("shadow/CI・レビュー待ち", names)
+
+    def test_cli_export_runs_writes_shared_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            dest = Path(directory) / "runs.json"
+            args = [
+                "publish.py",
+                "--repository",
+                "example/project",
+                "--run-id",
+                "10",
+                "--export-runs",
+                str(dest),
+            ]
+            api = FixtureAPI()
+            api.workflow_pages = [
+                {
+                    "workflow_runs": [
+                        {"id": 20, "run_attempt": 1, "status": "completed"}
+                    ]
+                }
+            ]
+            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
+                self.assertEqual(main(), 0)
+            self.assertEqual(json.loads(dest.read_text())[0]["id"], 20)
 
     def test_cli_noops_without_reports(self):
         with tempfile.TemporaryDirectory() as directory:

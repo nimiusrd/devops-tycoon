@@ -110,7 +110,7 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 `observe` の並行グループだけ `cancel-in-progress: true` です。workflow全体はキャンセルせず、実行中の`publish`を保護します。
 `publish` jobは観測したPRごとに分かれ、並行グループはPR番号だけです。`cancel-in-progress: false` です。scheduleとPRイベントも同じPRなら直列になり、他PRのpendingは別groupなので落ちません。
 一度ラベル変更を始めた後は、後着判定で途中終了せず管理ラベルが1つになるまで収束します。
-後着判定のrun履歴はpublish実行あたり1回取得し、各PRの最初の書き込み直前に進行中runと直近1ページだけ再確認します。再取得した同じrun IDは共有履歴より優先し、履歴がページ上限まで埋まっている場合は部分履歴で続行せず失敗します。鮮度は同じ開始時刻同士で比較し、publisher単独再実行ではより古い`observed_at`を使います。ラベル更新は追加先行で、再追加後も競合ラベルを除去して一意な状態を確認します。
+後着判定のrun履歴は`prepare-publish`が1回取得して各PRのpublish jobへ渡します。各PRの最初の書き込み直前に進行中runと直近1ページだけ再確認します。再取得した同じrun IDは共有履歴より優先し、履歴がページ上限まで埋まっている場合は部分履歴で続行せず失敗します。鮮度は同じ開始時刻同士で比較し、publisher単独再実行ではより古い`observed_at`を使います。ラベル更新は追加先行で、再追加後も競合ラベルを除去して一意な状態を確認します。公開先のない失敗broadcastは後着にしません。
 キャンセル・skippedのrunは後着にしません。`failure`でも観測レポートを出している場合は後着として扱います。publisher単独再実行は選択した観測artifactのattemptと`observed_at`で鮮度を判定します。
 `workflow_dispatch` の対象はrun名が`shadow-pr-N`または`shadow-all`に完全一致する場合だけ宣言として扱います。
 `workflow_run`とdefault branchの`push`は、RESTの`pull_requests`関連付けより先に全体観測として扱います。

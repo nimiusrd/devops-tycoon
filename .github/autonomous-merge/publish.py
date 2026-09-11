@@ -304,6 +304,35 @@ def run_targets_pr(
     return number in targets
 
 
+def _is_publish_job(name: str) -> bool:
+    return name == "publish" or name.startswith("publish (")
+
+
+def run_published_labels(run: dict, api: GitHub | None = None) -> bool:
+    if run.get("status") != "completed":
+        return True
+    if run.get("conclusion") in IGNORED_CONCLUSIONS:
+        return False
+    if run.get("conclusion") != "failure":
+        return True
+    if run_declared_targets(run) is not None:
+        return True
+    jobs = run.get("jobs")
+    if jobs is None and api is not None:
+        try:
+            jobs = api.pages(f"/actions/runs/{int(run['id'])}/jobs", "jobs")
+        except (PublishError, KeyError, TypeError, ValueError):
+            return False
+    if not isinstance(jobs, list):
+        return False
+    return any(
+        _is_publish_job(str(job.get("name") or ""))
+        and job.get("conclusion") not in {None, "cancelled", "skipped"}
+        for job in jobs
+        if isinstance(job, dict)
+    )
+
+
 def run_started_at(run: dict) -> datetime | None:
     raw = run.get("run_started_at") or run.get("created_at")
     if not raw:
@@ -335,6 +364,7 @@ def has_newer_run(
     default_branch: str | None = None,
     pr_open: bool = True,
     observed_at: str | None = None,
+    api: GitHub | None = None,
 ) -> bool:
     current_started = current_started_at(runs, run_id, observed_at)
     current_key = (int(run_id), int(run_attempt))
@@ -344,6 +374,8 @@ def has_newer_run(
         if run.get("status") not in ACTIVE_RUNS:
             continue
         if not run_targets_pr(run, number, default_branch, pr_open):
+            continue
+        if not run_published_labels(run, api):
             continue
         other_key = (int(run["id"]), int(run.get("run_attempt") or 1))
         other_started = run_started_at(run)
@@ -364,6 +396,7 @@ def skip_reason(
     run_attempt: int,
     incumbent: dict | None = None,
     default_branch: str | None = None,
+    api: GitHub | None = None,
 ) -> str | None:
     facts = observed_pr(report)
     if facts.get("head_sha") and facts["head_sha"] != current["head_sha"]:
@@ -384,6 +417,7 @@ def skip_reason(
         default_branch,
         current_pr_state(current) == "OPEN",
         observed_at(report),
+        api,
     ):
         return "newer_run"
     stamp = observed_at(report)
@@ -540,7 +574,14 @@ def publish_pr(
 
     current = snapshot(api, number)
     reason = skip_reason(
-        report, current, current_runs(), run_id, run_attempt, incumbent, default_branch
+        report,
+        current,
+        current_runs(),
+        run_id,
+        run_attempt,
+        incumbent,
+        default_branch,
+        api,
     )
     if reason:
         return f"skipped:{reason}"
@@ -548,7 +589,14 @@ def publish_pr(
     ensure_labels(api)
     current = snapshot(api, number)
     reason = skip_reason(
-        report, current, current_runs(), run_id, run_attempt, incumbent, default_branch
+        report,
+        current,
+        current_runs(),
+        run_id,
+        run_attempt,
+        incumbent,
+        default_branch,
+        api,
     )
     if reason:
         return f"skipped:{reason}"
@@ -563,6 +611,7 @@ def publish_pr(
             run_attempt,
             incumbent,
             default_branch,
+            api,
         )
 
     writes, reason = sync_labels(
@@ -578,10 +627,12 @@ def main() -> int:
     parser.add_argument(
         "--repository", default=os.environ.get("GITHUB_REPOSITORY"), required=False
     )
-    parser.add_argument("--report-dir", type=Path, required=True)
+    parser.add_argument("--report-dir", type=Path)
     parser.add_argument("--run-id", type=int, required=True)
-    parser.add_argument("--run-attempt", type=int, required=True)
-    parser.add_argument("--run-url", required=True)
+    parser.add_argument("--run-attempt", type=int)
+    parser.add_argument("--run-url")
+    parser.add_argument("--export-runs", type=Path)
+    parser.add_argument("--runs-file", type=Path)
     parser.add_argument(
         "--event", type=Path, default=os.environ.get("GITHUB_EVENT_PATH")
     )
@@ -595,8 +646,20 @@ def main() -> int:
     )
     parser.add_argument("--pr", type=int)
     args = parser.parse_args()
-    if not args.report_dir.is_dir():
+    if args.export_runs:
+        try:
+            api = GitHub(args.repository)
+            runs = list_relevant_runs(api, args.workflow, args.run_id)
+            args.export_runs.parent.mkdir(parents=True, exist_ok=True)
+            args.export_runs.write_text(json.dumps(runs) + "\n")
+        except (PublishError, OSError, KeyError, TypeError, ValueError) as error:
+            print(str(error), flush=True)
+            return 1
         return 0
+    if args.report_dir is None or not args.report_dir.is_dir():
+        return 0
+    if args.run_attempt is None or not args.run_url:
+        return 1
     event = json.loads(args.event.read_text()) if args.event else {}
     reports = load_reports(args.report_dir, event)
     if args.pr is not None:
@@ -606,7 +669,13 @@ def main() -> int:
     failed = False
     try:
         api = GitHub(args.repository)
-        runs = list_relevant_runs(api, args.workflow, args.run_id)
+        if args.runs_file:
+            loaded = json.loads(args.runs_file.read_text())
+            if not isinstance(loaded, list):
+                raise PublishError("invalid runs file")
+            runs = loaded
+        else:
+            runs = list_relevant_runs(api, args.workflow, args.run_id)
         for number, report in reports:
             try:
                 publish_pr(

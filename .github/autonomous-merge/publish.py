@@ -353,12 +353,25 @@ def sync_labels(
     before_write=None,
 ) -> tuple[list[str], str | None]:
     writes = []
-    for name in current_names:
+    names = list(current_names)
+
+    def guard() -> str | None:
+        if before_write is None or writes:
+            return None
+        return before_write()
+
+    if desired not in names:
+        reason = guard()
+        if reason:
+            return writes, reason
+        api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
+        writes.append(f"add:{desired}")
+        names.append(desired)
+    for name in names:
         if name in MANAGED_LABELS and name != desired:
-            if before_write is not None:
-                reason = before_write()
-                if reason:
-                    return writes, reason
+            reason = guard()
+            if reason:
+                return writes, reason
             try:
                 api.request(
                     f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
@@ -368,13 +381,6 @@ def sync_labels(
                 if "HTTP 404" not in str(error):
                     raise
             writes.append(f"remove:{name}")
-    if desired not in current_names:
-        if before_write is not None:
-            reason = before_write()
-            if reason:
-                return writes, reason
-        api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
-        writes.append(f"add:{desired}")
     return writes, None
 
 

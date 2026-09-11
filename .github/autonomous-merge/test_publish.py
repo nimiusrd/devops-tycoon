@@ -496,7 +496,9 @@ class PublishTests(unittest.TestCase):
             prefix = "/repos/example/project"
 
             def request(self, path, body=None, method=None):
-                writes.append((method or "GET", path, body))
+                writes.append(
+                    (method or ("POST" if body is not None else "GET"), path, body)
+                )
                 return None
 
         sync_labels(
@@ -506,7 +508,15 @@ class PublishTests(unittest.TestCase):
             "shadow/再観測が必要",
         )
         self.assertEqual(
-            writes[0][1],
+            writes[0],
+            (
+                "POST",
+                "/repos/example/project/issues/3/labels",
+                {"labels": ["shadow/再観測が必要"]},
+            ),
+        )
+        self.assertEqual(
+            writes[1][1],
             "/repos/example/project/issues/3/labels/"
             + encoded_label("shadow/要マージ判断"),
         )
@@ -518,7 +528,9 @@ class PublishTests(unittest.TestCase):
             prefix = "/repos/example/project"
 
             def request(self, path, body=None, method=None):
-                writes.append((method or "GET", path, body))
+                writes.append(
+                    (method or ("POST" if body is not None else "GET"), path, body)
+                )
                 return None
 
         checks = iter(["newer_run"])
@@ -532,6 +544,36 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(reason, "newer_run")
         self.assertEqual(result, [])
         self.assertEqual(writes, [])
+
+    def test_started_sync_finishes_desired_label_despite_newer_run(self):
+        writes = []
+
+        class Recording:
+            prefix = "/repos/example/project"
+
+            def request(self, path, body=None, method=None):
+                writes.append(
+                    (method or ("POST" if body is not None else "GET"), path, body)
+                )
+                return None
+
+        checks = iter([None, "newer_run"])
+        result, reason = sync_labels(
+            Recording(),
+            3,
+            ["shadow/要マージ判断"],
+            "shadow/再観測が必要",
+            lambda: next(checks),
+        )
+        self.assertIsNone(reason)
+        self.assertEqual(
+            result,
+            ["add:shadow/再観測が必要", "remove:shadow/要マージ判断"],
+        )
+        self.assertEqual(
+            [item[0] for item in writes],
+            ["POST", "DELETE"],
+        )
 
     def test_missing_repo_labels_are_created_once(self):
         api = FixtureAPI([])

@@ -95,7 +95,7 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 | 状況 | ラベルの扱い |
 | --- | --- |
 | 観測のhead/base SHA、base ref、open/closed/merged、Draftが現在のPRと不一致 | 変更しない。新しい観測の表示を残す |
-| より新しい`(run_id, run_attempt)`または`observed_at`の観測がある | 変更しない。各ラベル書き込みの直前にも再確認する |
+| より新しい`(run_id, run_attempt)`または`observed_at`の観測がある | 未着手なら変更しない。一度書き始めたら`desired`まで完了する |
 | 観測していない通常ブランチの`push` run | 後着とは扱わない |
 | PR指定の`workflow_dispatch` | 指定したPRだけを後着とみなす |
 | 全体観測（schedule / `workflow_run` / default branch push / `shadow-all`） | open PRにだけ後着として効く。closed/merged PRは対象にしない |
@@ -105,11 +105,11 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 | 再評価待ち | 既存トリガー（PR更新、レビュー、CI完了、毎時cron、手動）で再観測する |
 | ラベル書き込み失敗 | `publish` jobを失敗させる。SummaryとJSONはobserve側に残し、判定成功とは扱わない |
 
-同じPRを対象にする新しいShadow runがある場合も上書きしません。
-`publish` jobは全イベントで直列実行し、検査とラベルDELETE/POSTが他のpublisherと交差しないようにします。
+同じPRを対象にする新しいShadow runがある場合も、未着手なら上書きしません。
+`publish` jobの並行グループはPR番号またはイベント名です。全イベントを1 groupにすると待機1件しか残らず、他PRのpendingが落ちます。
+グループをまたぐ競合はpublisherの後着判定で吸収します。一度ラベル変更を始めた後は、後着判定で途中終了せず整合した1ラベルまで完了します。
 後着判定は現在のrunより新しいIDまでしか走査せず、履歴全体の取得失敗でpublishを止めません。
 `workflow_dispatch` の対象はrun名（`shadow-pr-N` / `shadow-all`）で区別します。
-並行グループはPR番号またはイベント名です。グループをまたぐ競合はpublisherの後着判定で吸収します。
 
 PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
 スレッド解決や外部CIの状態変更など、直接購読しないイベントは毎時の再観測、または手動実行で反映します。

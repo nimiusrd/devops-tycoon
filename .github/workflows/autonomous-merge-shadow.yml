@@ -95,9 +95,10 @@ jobs:
   publish:
     needs: observe
     if: ${{ !cancelled() && (needs.observe.result == 'success' || needs.observe.result == 'failure') }}
-    # 全イベントのラベル更新を直列化し、検査とDELETE/POSTの交差を防ぐ。
+    # 同一PR（または同一イベント名）だけ直列化する。
+    # 全イベントを1 groupにすると、待機は1件しか残らず他PRのpendingが落ちる。
     concurrency:
-      group: autonomous-merge-shadow-publish
+      group: autonomous-merge-shadow-publish-${{ github.event.pull_request.number || inputs.pr_number || github.event_name }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10

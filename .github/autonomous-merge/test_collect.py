@@ -9,7 +9,14 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 
-from collect import CollectionError, GitHub, collect, main, targets
+from collect import (
+    RECOVERY_LABELS,
+    CollectionError,
+    GitHub,
+    collect,
+    main,
+    targets,
+)
 from evaluate import assess
 from test_evaluate import BASE, HEAD, MERGE, policy
 
@@ -454,6 +461,7 @@ class CollectTests(unittest.TestCase):
             )
         with self.assertRaises(CollectionError):
             targets(api, {}, -1)
+        self.assertNotIn("shadow/要対応", RECOVERY_LABELS)
 
     def test_graphql_state_query_omits_unused_cursor_variable(self):
         api = GitHub("example/project")

@@ -22,7 +22,6 @@ MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 RECOVERY_LABELS = (
     "shadow/要マージ判断",
     "shadow/CI・レビュー待ち",
-    "shadow/要対応",
     "shadow/再観測が必要",
 )
 PR_FIELDS = """

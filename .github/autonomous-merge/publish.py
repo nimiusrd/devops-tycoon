@@ -162,7 +162,7 @@ def publish_matrix(prs: list[int]) -> tuple[str, list[int]]:
 
 def overflow_prs(prs: list[int]) -> list[int]:
     values = sorted({int(number) for number in prs})
-    return values[MAX_PUBLISH_MATRIX:]
+    return values[MAX_PUBLISH_MATRIX : MAX_PUBLISH_MATRIX * 2]
 
 
 def load_reports(directory: Path, event: dict) -> list[tuple[int, dict]]:
@@ -337,15 +337,21 @@ def run_targets_pr(
         return False
     targets = run_declared_targets(run)
     if targets is None:
-        return pr_open
+        return pr_open or run.get("status") == "completed"
     return number in targets
 
 
-def _is_publish_job(name: str) -> bool:
-    return name == "publish" or name.startswith("publish (")
+def _is_publish_job(name: str, number: int | None = None) -> bool:
+    if name == "publish":
+        return True
+    if number is None:
+        return name.startswith("publish (") or name.startswith("publish-overflow (")
+    return name in {f"publish ({number})", f"publish-overflow ({number})"}
 
 
-def run_published_labels(run: dict, api: GitHub | None = None) -> bool:
+def run_published_labels(
+    run: dict, api: GitHub | None = None, number: int | None = None
+) -> bool:
     if run.get("status") != "completed":
         return True
     if run.get("conclusion") in IGNORED_CONCLUSIONS:
@@ -361,7 +367,7 @@ def run_published_labels(run: dict, api: GitHub | None = None) -> bool:
     if not isinstance(jobs, list):
         return True
     return any(
-        _is_publish_job(str(job.get("name") or ""))
+        _is_publish_job(str(job.get("name") or ""), number)
         and job.get("conclusion") not in {None, "cancelled", "skipped"}
         for job in jobs
         if isinstance(job, dict)
@@ -429,9 +435,10 @@ def has_newer_run(
             int(run.get("run_attempt") or 1),
             str(run.get("status") or ""),
             str(run.get("conclusion") or ""),
+            int(number),
         )
         if cache_key not in cache:
-            cache[cache_key] = run_published_labels(run, api)
+            cache[cache_key] = run_published_labels(run, api, number)
         if cache[cache_key]:
             return True
     return False

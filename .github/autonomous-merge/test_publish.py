@@ -340,6 +340,34 @@ class PublishTests(unittest.TestCase):
         closed_report["observations"]["pr"]["state"] = "CLOSED"
         self.assertFalse(has_newer_run(broadcast, 1, 10, 1, pr_open=False))
         self.assertIsNone(skip_reason(closed_report, closed, broadcast, 10, 1))
+        recovered = [
+            {
+                "id": 31,
+                "run_attempt": 1,
+                "status": "completed",
+                "conclusion": "success",
+                "event": "schedule",
+                "run_started_at": "2026-09-11T14:00:00Z",
+                "pull_requests": [],
+                "jobs": [{"name": "publish (1)", "conclusion": "success"}],
+            }
+        ]
+        self.assertTrue(has_newer_run(recovered, 1, 10, 1, pr_open=False))
+        self.assertFalse(
+            has_newer_run(
+                [
+                    {
+                        **recovered[0],
+                        "jobs": [{"name": "publish (2)", "conclusion": "success"}],
+                    }
+                ],
+                1,
+                10,
+                1,
+                pr_open=False,
+            )
+        )
+        self.assertEqual(skip_reason(closed_report, closed, recovered, 10, 1), "newer_run")
         self.assertEqual(skip_reason(closed_report, closed, newer, 10, 1), "newer_run")
         rerun = {
             "id": 10,

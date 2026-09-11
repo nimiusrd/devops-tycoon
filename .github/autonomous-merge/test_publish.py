@@ -1,0 +1,427 @@
+"""ラベル付け替え・後着防止・書き込み失敗を、外部へ書き込まず検証する。"""
+
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+from urllib.error import HTTPError
+
+from publish import (
+    DECISION_LABELS,
+    LABEL_DESCRIPTIONS,
+    MANAGED_LABELS,
+    PublishError,
+    encoded_label,
+    event_pr,
+    has_newer_run,
+    is_fresher,
+    load_reports,
+    main,
+    publish_pr,
+    skip_reason,
+    sync_labels,
+)
+from test_evaluate import BASE, HEAD
+
+OTHER = "d" * 40
+RUN_URL = "https://github.com/example/project/actions/runs/9"
+
+
+def report(decision, head=HEAD, base=BASE, observed="2026-09-11T12:00:00+00:00"):
+    return {
+        "decision": decision,
+        "observations": {
+            "observed_at": observed,
+            "pr": {"number": 1, "head_sha": head, "base_sha": base, "state": "OPEN"},
+        },
+    }
+
+
+def pull(labels=None, head=HEAD, base=BASE, state="open", merged=False):
+    return {
+        "head": {"sha": head},
+        "base": {"sha": base},
+        "state": state,
+        "merged": merged,
+        "labels": [{"name": name} for name in (labels or [])],
+    }
+
+
+class FixtureAPI:
+    repository = "example/project"
+    prefix = "/repos/example/project"
+
+    def __init__(self, labels=None, head=HEAD, base=BASE, state="open", merged=False):
+        self.pull = pull(labels, head, base, state, merged)
+        self.calls = []
+        self.labels = {name: True for name in DECISION_LABELS.values()}
+
+    def pages(self, path, key=None):
+        self.calls.append(("GET", path, None))
+        return []
+
+    def request(self, path, body=None, method=None):
+        verb = method or ("POST" if body is not None else "GET")
+        self.calls.append((verb, path, body))
+        if path.endswith("/pulls/1"):
+            return self.pull
+        if "/labels/" in path and verb == "GET":
+            name = path.rsplit("/", 1)[-1]
+            if name in {encoded_label(item) for item in self.labels}:
+                return {"name": name}
+            raise PublishError(f"API GET {path}: HTTP 404")
+        if path.endswith("/labels") and verb == "POST":
+            if body and "name" in body:
+                self.labels[body["name"]] = True
+                return body
+            if body and "labels" in body:
+                names = [item["name"] for item in self.pull["labels"]]
+                for label in body["labels"]:
+                    if label not in names:
+                        self.pull["labels"].append({"name": label})
+                return body
+        if verb == "DELETE" and "/labels/" in path:
+            encoded = path.rsplit("/", 1)[-1]
+            self.pull["labels"] = [
+                item
+                for item in self.pull["labels"]
+                if encoded_label(item["name"]) != encoded
+            ]
+            return None
+        return {}
+
+
+class PublishTests(unittest.TestCase):
+    def test_decision_labels_are_actionable_japanese_names(self):
+        self.assertEqual(
+            DECISION_LABELS,
+            {
+                "SHADOW_CONDITIONS_MET": "shadow/要マージ判断",
+                "WAITING": "shadow/CI・レビュー待ち",
+                "HUMAN_REVIEW_REQUIRED": "shadow/要対応",
+                "INSUFFICIENT_DATA": "shadow/再観測が必要",
+            },
+        )
+        for name, description in LABEL_DESCRIPTIONS.items():
+            self.assertLessEqual(len(description), 100, name)
+            self.assertTrue(name.startswith("shadow/"))
+
+    def test_replaces_managed_label_and_keeps_unrelated_ones(self):
+        api = FixtureAPI(["enhancement", "shadow/要マージ判断"])
+        status = publish_pr(
+            api, 1, report("WAITING"), 10, 1, [], None
+        )
+        self.assertEqual(status, "updated")
+        names = [item["name"] for item in api.pull["labels"]]
+        self.assertEqual(names.count("shadow/CI・レビュー待ち"), 1)
+        self.assertIn("enhancement", names)
+        self.assertNotIn("shadow/要マージ判断", names)
+        self.assertTrue(
+            any(
+                call[0] == "DELETE" and encoded_label("shadow/要マージ判断") in call[1]
+                for call in api.calls
+            )
+        )
+        self.assertFalse(any(call[0] == "PUT" for call in api.calls))
+
+    def test_all_decisions_are_published_idempotently(self):
+        for decision, label in DECISION_LABELS.items():
+            with self.subTest(decision=decision):
+                api = FixtureAPI([label])
+                status = publish_pr(api, 1, report(decision), 10, 1, [], None)
+                self.assertEqual(status, "unchanged")
+                names = [item["name"] for item in api.pull["labels"]]
+                self.assertEqual([name for name in names if name in MANAGED_LABELS], [label])
+
+    def test_stale_sha_does_not_overwrite_current_labels(self):
+        api = FixtureAPI(["shadow/要対応"])
+        status = publish_pr(
+            api, 1, report("SHADOW_CONDITIONS_MET", head=OTHER), 10, 1, [], None
+        )
+        self.assertEqual(status, "skipped:stale_sha")
+        self.assertEqual(
+            [item["name"] for item in api.pull["labels"]], ["shadow/要対応"]
+        )
+        self.assertFalse(
+            any(call[0] in {"POST", "DELETE"} and "/issues/" in call[1] for call in api.calls)
+        )
+
+    def test_newer_run_id_or_observed_at_is_skipped(self):
+        current = {
+            "number": 1,
+            "head_sha": HEAD,
+            "base_sha": BASE,
+            "labels": ["shadow/CI・レビュー待ち"],
+        }
+        newer = [
+            {
+                "id": 20,
+                "run_attempt": 1,
+                "status": "completed",
+                "event": "pull_request_target",
+                "pull_requests": [{"number": 1}],
+            }
+        ]
+        self.assertTrue(has_newer_run(newer, 1, 10, 1))
+        self.assertEqual(
+            skip_reason(report("SHADOW_CONDITIONS_MET"), current, newer, 10, 1),
+            "newer_run",
+        )
+        older = [
+            {
+                "id": 8,
+                "run_attempt": 1,
+                "status": "completed",
+                "event": "pull_request_target",
+                "pull_requests": [{"number": 1}],
+            }
+        ]
+        self.assertIsNone(
+            skip_reason(report("SHADOW_CONDITIONS_MET"), current, older, 10, 1)
+        )
+        self.assertFalse(
+            is_fresher(
+                {
+                    "observed_at": "2026-09-11T12:00:00+00:00",
+                    "run_id": 10,
+                    "run_attempt": 1,
+                },
+                {
+                    "observed_at": "2026-09-11T13:00:00+00:00",
+                    "run_id": 9,
+                    "run_attempt": 1,
+                },
+            )
+        )
+        self.assertEqual(
+            skip_reason(
+                report("SHADOW_CONDITIONS_MET"),
+                current,
+                [],
+                10,
+                1,
+                {
+                    "observed_at": "2026-09-11T13:00:00+00:00",
+                    "run_id": 11,
+                    "run_attempt": 1,
+                },
+            ),
+            "stale_receipt",
+        )
+        broadcast = [
+            {
+                "id": 30,
+                "run_attempt": 1,
+                "status": "in_progress",
+                "event": "schedule",
+                "pull_requests": [],
+            }
+        ]
+        self.assertEqual(
+            skip_reason(report("WAITING"), current, broadcast, 10, 1),
+            "newer_run",
+        )
+
+    def test_collection_error_expires_merge_judgment_label(self):
+        api = FixtureAPI(["enhancement", "shadow/要マージ判断"])
+        status = publish_pr(
+            api,
+            1,
+            {"decision": "INSUFFICIENT_DATA", "error": "API 403"},
+            10,
+            1,
+            [],
+            None,
+        )
+        self.assertEqual(status, "updated")
+        names = [item["name"] for item in api.pull["labels"]]
+        self.assertIn("shadow/再観測が必要", names)
+        self.assertIn("enhancement", names)
+        self.assertNotIn("shadow/要マージ判断", names)
+
+    def test_closed_or_merged_pr_uses_human_review_label(self):
+        api = FixtureAPI(["shadow/要マージ判断"], state="closed", merged=True)
+        closed = report("HUMAN_REVIEW_REQUIRED")
+        closed["observations"]["pr"]["state"] = "MERGED"
+        status = publish_pr(api, 1, closed, 10, 1, [], None)
+        self.assertEqual(status, "updated")
+        names = [item["name"] for item in api.pull["labels"]]
+        self.assertEqual(
+            [name for name in names if name in MANAGED_LABELS], ["shadow/要対応"]
+        )
+
+    def test_write_failure_does_not_change_report_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_dir = Path(directory)
+            payload = report("WAITING")
+            (report_dir / "pr-1.json").write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+            )
+            before = (report_dir / "pr-1.json").read_text()
+            event = report_dir / "event.json"
+            event.write_text(json.dumps({"pull_request": {"number": 1}}))
+            args = [
+                "publish.py",
+                "--repository",
+                "example/project",
+                "--report-dir",
+                str(report_dir),
+                "--run-id",
+                "10",
+                "--run-attempt",
+                "1",
+                "--run-url",
+                RUN_URL,
+                "--event",
+                str(event),
+            ]
+            api = FixtureAPI(["enhancement"])
+            original = api.request
+
+            def failing(path, body=None, method=None):
+                verb = method or ("POST" if body is not None else "GET")
+                if verb == "POST" and path.endswith("/labels") and body and "labels" in body:
+                    raise PublishError("API POST /labels: HTTP 403")
+                return original(path, body, method)
+
+            api.request = failing
+            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
+                self.assertEqual(main(), 1)
+            self.assertEqual((report_dir / "pr-1.json").read_text(), before)
+            self.assertEqual(
+                [item["name"] for item in api.pull["labels"]], ["enhancement"]
+            )
+
+    def test_collection_error_without_pr_number_is_ignored(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_dir = Path(directory)
+            (report_dir / "collection-error.json").write_text(
+                json.dumps({"decision": "INSUFFICIENT_DATA", "error": "boom"})
+            )
+            self.assertEqual(load_reports(report_dir, {}), [])
+            self.assertEqual(
+                load_reports(report_dir, {"pull_request": {"number": 7}}),
+                [(7, {"decision": "INSUFFICIENT_DATA", "error": "boom"})],
+            )
+
+    def test_event_pr_reads_dispatch_input(self):
+        self.assertEqual(event_pr({"inputs": {"pr_number": "12"}}), 12)
+        self.assertIsNone(event_pr({"inputs": {"pr_number": ""}}))
+
+    def test_japanese_label_names_are_percent_encoded(self):
+        self.assertEqual(
+            encoded_label("shadow/要マージ判断"),
+            "shadow%2F%E8%A6%81%E3%83%9E%E3%83%BC%E3%82%B8%E5%88%A4%E6%96%AD",
+        )
+        writes = []
+
+        class Recording:
+            prefix = "/repos/example/project"
+
+            def request(self, path, body=None, method=None):
+                writes.append((method or "GET", path, body))
+                return None
+
+        sync_labels(
+            Recording(),
+            3,
+            ["shadow/要マージ判断"],
+            "shadow/再観測が必要",
+        )
+        self.assertEqual(
+            writes[0][1],
+            "/repos/example/project/issues/3/labels/"
+            + encoded_label("shadow/要マージ判断"),
+        )
+
+    def test_missing_repo_labels_are_created_once(self):
+        api = FixtureAPI([])
+        api.labels = {}
+        publish_pr(api, 1, report("WAITING"), 10, 1, [], None)
+        created = [
+            call[2]["name"]
+            for call in api.calls
+            if call[0] == "POST" and call[1].endswith("/labels") and call[2] and "name" in call[2]
+        ]
+        self.assertEqual(sorted(created), sorted(DECISION_LABELS.values()))
+
+    def test_http_delete_uses_method_and_empty_body(self):
+        from publish import GitHub
+
+        api = GitHub("example/project")
+        with patch("publish.urlopen", return_value=__import__("io").BytesIO(b"")) as request:
+            self.assertIsNone(
+                api.request(
+                    "/repos/example/project/issues/1/labels/shadow%2Fwaiting",
+                    method="DELETE",
+                )
+            )
+            sent = request.call_args.args[0]
+            self.assertEqual(sent.get_method(), "DELETE")
+            self.assertIsNone(sent.data)
+
+    def test_http_failure_is_not_treated_as_published(self):
+        from publish import GitHub
+
+        api = GitHub("example/project")
+        with patch(
+            "publish.urlopen",
+            side_effect=HTTPError(
+                "https://api.github.com/repos/example/project/labels",
+                403,
+                "forbidden",
+                {},
+                None,
+            ),
+        ):
+            with self.assertRaisesRegex(PublishError, "HTTP 403"):
+                api.request("/repos/example/project/labels", {"name": "shadow/要対応"})
+
+    def test_cli_publishes_report_and_keeps_unrelated_labels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_dir = Path(directory)
+            (report_dir / "pr-1.json").write_text(
+                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
+            )
+            args = [
+                "publish.py",
+                "--repository",
+                "example/project",
+                "--report-dir",
+                str(report_dir),
+                "--run-id",
+                "10",
+                "--run-attempt",
+                "1",
+                "--run-url",
+                RUN_URL,
+            ]
+            api = FixtureAPI(["enhancement"])
+            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
+                self.assertEqual(main(), 0)
+            names = [item["name"] for item in api.pull["labels"]]
+            self.assertIn("shadow/CI・レビュー待ち", names)
+            self.assertIn("enhancement", names)
+
+    def test_cli_noops_without_reports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = [
+                "publish.py",
+                "--repository",
+                "example/project",
+                "--report-dir",
+                directory,
+                "--run-id",
+                "10",
+                "--run-attempt",
+                "1",
+                "--run-url",
+                RUN_URL,
+            ]
+            with patch("sys.argv", args):
+                self.assertEqual(main(), 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

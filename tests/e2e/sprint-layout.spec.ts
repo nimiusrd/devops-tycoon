@@ -1996,6 +1996,8 @@ test.describe('延焼文言の DOM レイアウト', () => {
     });
     const overlay = page.getByTestId('zoom-overlay');
     await expect(overlay).toHaveAttribute('data-level', 'company');
+    await expect(page.getByTestId('org-pixi-mount')).toBeVisible();
+    await expect(page.getByTestId('webgl-status')).toHaveCount(0);
     await assertTickerDoesNotStealOverlayWheel(page, '全社ズーム phone-se');
 
     const overlayBox = await overlay.boundingBox();
@@ -2011,11 +2013,12 @@ test.describe('延焼文言の DOM レイアウト', () => {
       overlayBox.y + overlayBox.height / 2,
     );
     await page.mouse.wheel(0, 400);
-    await page.evaluate(
-      () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
-    );
-    const after = await overlay.evaluate((element) => element.scrollTop);
-    expect(after, '全社ズームの overflow が背面ティッカーに奪われる').toBeGreaterThan(before);
+    // mouse.wheelはスクロール完了を待たないため、1フレーム後の値で断定しない。
+    await expect
+      .poll(() => overlay.evaluate((element) => element.scrollTop), {
+        message: '全社ズームの overflow が背面ティッカーに奪われる',
+      })
+      .toBeGreaterThan(before);
   });
 });
 

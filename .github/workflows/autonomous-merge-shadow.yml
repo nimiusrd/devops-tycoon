@@ -124,6 +124,7 @@ jobs:
           pattern: shadow-observations-${{ github.run_id }}-*
           path: shadow-artifacts
       - name: Select latest observation artifact
+        id: select
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -148,6 +149,7 @@ jobs:
           mkdir -p shadow-report
           cp -a "${latest_dir}/." shadow-report/
           echo "using ${latest_dir}"
+          echo "attempt=${latest_attempt}" >> "$GITHUB_OUTPUT"
       - name: Publish observation labels
         env:
           GH_TOKEN: ${{ github.token }}
@@ -161,6 +163,6 @@ jobs:
           python3 -B .github/autonomous-merge/publish.py \
             --report-dir shadow-report \
             --run-id "${GITHUB_RUN_ID}" \
-            --run-attempt "${GITHUB_RUN_ATTEMPT}" \
+            --run-attempt "${{ steps.select.outputs.attempt }}" \
             --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
             --default-branch "${DEFAULT_BRANCH}"

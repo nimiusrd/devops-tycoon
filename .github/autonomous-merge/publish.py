@@ -17,7 +17,7 @@ MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 BROADCAST_EVENTS = {"schedule", "workflow_run"}
 TARGETED_PR = re.compile(r"^shadow-pr-([1-9][0-9]*)$")
-IGNORED_CONCLUSIONS = {"cancelled", "skipped"}
+IGNORED_CONCLUSIONS = {"cancelled", "skipped", "failure"}
 ACTIVE_RUNS = {
     "completed",
     "in_progress",
@@ -212,7 +212,6 @@ def _workflow_run_page(api: GitHub, path: str) -> list:
 def list_relevant_runs(api: GitHub, workflow: str, run_id: int) -> list:
     records = []
     seen = set()
-    current = int(run_id)
     path = f"{api.prefix}/actions/workflows/{workflow}/runs"
 
     def add(batch: list) -> None:
@@ -236,8 +235,6 @@ def list_relevant_runs(api: GitHub, workflow: str, run_id: int) -> list:
         batch = _workflow_run_page(api, f"{path}?per_page=100&page={page}")
         add(batch)
         if not batch or len(batch) < 100:
-            return records
-        if min(int(item["id"]) for item in batch) <= current:
             return records
     return records
 
@@ -296,13 +293,12 @@ def current_started_at(
     run_id: int,
     observed_at: str | None = None,
 ) -> datetime | None:
+    if observed_at:
+        return parse_time(observed_at)
     for run in runs:
         if int(run["id"]) == int(run_id):
-            started = run_started_at(run)
-            if started is not None:
-                return started
-            break
-    return parse_time(observed_at) if observed_at else None
+            return run_started_at(run)
+    return None
 
 
 def has_newer_run(
@@ -317,6 +313,8 @@ def has_newer_run(
     current_started = current_started_at(runs, run_id, observed_at)
     current_key = (int(run_id), int(run_attempt))
     for run in runs:
+        if int(run["id"]) == int(run_id):
+            continue
         if run.get("status") not in ACTIVE_RUNS:
             continue
         if not run_targets_pr(run, number, default_branch, pr_open):
@@ -425,30 +423,40 @@ def sync_labels(
         for item in labels:
             if isinstance(item, dict) and item.get("name"):
                 found.append(item["name"])
-        return found or names
+        if found:
+            names[:] = found
+            return found
+        return names
 
-    if desired not in names:
+    for _ in range(3):
+        names = refresh()
+        extras = [
+            name for name in names if name in MANAGED_LABELS and name != desired
+        ]
+        if extras:
+            for name in extras:
+                reason = guard()
+                if reason:
+                    return writes, reason
+                try:
+                    api.request(
+                        f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
+                        method="DELETE",
+                    )
+                except PublishError as error:
+                    if "HTTP 404" not in str(error):
+                        raise
+                writes.append(f"remove:{name}")
+                names[:] = [item for item in names if item != name]
+            continue
+        if desired in names:
+            return writes, None
         reason = guard()
         if reason:
             return writes, reason
         api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
         writes.append(f"add:{desired}")
         names.append(desired)
-    names = refresh()
-    for name in names:
-        if name in MANAGED_LABELS and name != desired:
-            reason = guard()
-            if reason:
-                return writes, reason
-            try:
-                api.request(
-                    f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
-                    method="DELETE",
-                )
-            except PublishError as error:
-                if "HTTP 404" not in str(error):
-                    raise
-            writes.append(f"remove:{name}")
     return writes, None
 
 

@@ -358,13 +358,69 @@ class PublishTests(unittest.TestCase):
         }
         self.assertFalse(has_newer_run([failed_newer_id, rerun], 1, 10, 2))
         self.assertIsNone(
-            skip_reason(report("WAITING"), current, [failed_newer_id, rerun], 10, 2)
+            skip_reason(
+                report("WAITING", observed="2026-09-11T13:00:00+00:00"),
+                current,
+                [failed_newer_id, rerun],
+                10,
+                2,
+            )
         )
         later_start = {
             **failed_newer_id,
             "run_started_at": "2026-09-11T14:00:00Z",
         }
         self.assertTrue(has_newer_run([later_start, rerun], 1, 10, 2))
+        failed_collection = {
+            "id": 60,
+            "run_attempt": 1,
+            "status": "completed",
+            "conclusion": "failure",
+            "event": "schedule",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [],
+        }
+        self.assertFalse(has_newer_run([failed_collection], 1, 10, 1))
+        self.assertIsNone(
+            skip_reason(report("WAITING"), current, [failed_collection], 10, 1)
+        )
+        completed_old_id = {
+            "id": 5,
+            "run_attempt": 2,
+            "status": "completed",
+            "conclusion": "success",
+            "event": "workflow_dispatch",
+            "display_title": "shadow-pr-1",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [],
+        }
+        self.assertTrue(
+            has_newer_run(
+                [completed_old_id],
+                1,
+                200,
+                1,
+                observed_at="2026-09-11T12:00:00+00:00",
+            )
+        )
+        self.assertIsNone(
+            skip_reason(
+                report("WAITING", observed="2026-09-11T12:00:00+00:00"),
+                current,
+                [
+                    {
+                        "id": 10,
+                        "run_attempt": 2,
+                        "status": "in_progress",
+                        "event": "workflow_dispatch",
+                        "display_title": "shadow-pr-1",
+                        "run_started_at": "2026-09-11T14:00:00Z",
+                    }
+                ],
+                10,
+                1,
+            )
+        )
 
     def test_base_ref_mismatch_skips_without_sha_change(self):
         current = {
@@ -433,6 +489,8 @@ class PublishTests(unittest.TestCase):
                 self.calls.append(path)
                 if "status=" in path:
                     return {"workflow_runs": []}
+                if not pages:
+                    return {"workflow_runs": []}
                 return pages.pop(0)
 
         runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 10)
@@ -459,16 +517,52 @@ class PublishTests(unittest.TestCase):
 
         class Paging:
             prefix = "/repos/example/project"
+            listed = False
 
             def request(self, path, body=None, method=None):
                 if "status=in_progress" in path:
                     return pages[0]
                 if "status=" in path:
                     return {"workflow_runs": []}
+                if self.listed:
+                    return {"workflow_runs": []}
+                self.listed = True
                 return pages[1]
 
         runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 200)
         self.assertEqual({int(item["id"]) for item in runs}, {5, *range(20, 120)})
+
+    def test_completed_older_rerun_is_listed_after_current_id(self):
+        pages = [
+            {
+                "workflow_runs": [
+                    {"id": 200 + n, "run_attempt": 1} for n in range(100)
+                ]
+            },
+            {
+                "workflow_runs": [
+                    {
+                        "id": 5,
+                        "run_attempt": 2,
+                        "status": "completed",
+                        "run_started_at": "2026-09-11T14:00:00Z",
+                    }
+                ]
+            },
+        ]
+
+        class Paging:
+            prefix = "/repos/example/project"
+
+            def request(self, path, body=None, method=None):
+                if "status=" in path:
+                    return {"workflow_runs": []}
+                if not pages:
+                    return {"workflow_runs": []}
+                return pages.pop(0)
+
+        runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 200)
+        self.assertIn(5, {int(item["id"]) for item in runs})
 
     def test_write_is_skipped_when_newer_run_appears_before_labels(self):
         api = FixtureAPI(["enhancement"])
@@ -600,13 +694,12 @@ class PublishTests(unittest.TestCase):
             ["shadow/要マージ判断"],
             "shadow/再観測が必要",
         )
-        self.assertEqual(
-            writes[0],
-            (
-                "POST",
-                "/repos/example/project/issues/3/labels",
-                {"labels": ["shadow/再観測が必要"]},
-            ),
+        self.assertTrue(
+            any(
+                item[0] == "POST"
+                and item[2] == {"labels": ["shadow/再観測が必要"]}
+                for item in writes
+            )
         )
         delete = next(item for item in writes if item[0] == "DELETE")
         self.assertEqual(
@@ -637,7 +730,7 @@ class PublishTests(unittest.TestCase):
         )
         self.assertEqual(reason, "newer_run")
         self.assertEqual(result, [])
-        self.assertEqual(writes, [])
+        self.assertFalse(any(item[0] in {"POST", "DELETE"} for item in writes))
 
     def test_started_sync_finishes_desired_label_despite_newer_run(self):
         writes = []
@@ -662,11 +755,11 @@ class PublishTests(unittest.TestCase):
         self.assertIsNone(reason)
         self.assertEqual(
             result,
-            ["add:shadow/再観測が必要", "remove:shadow/要マージ判断"],
+            ["remove:shadow/要マージ判断", "add:shadow/再観測が必要"],
         )
         self.assertEqual(
             [item[0] for item in writes if item[0] in {"POST", "DELETE"}],
-            ["POST", "DELETE"],
+            ["DELETE", "POST"],
         )
 
     def test_refresh_removes_managed_labels_added_by_a_peer(self):
@@ -683,6 +776,29 @@ class PublishTests(unittest.TestCase):
             return result
 
         api.request = peer
+        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
+        self.assertEqual(status, "updated")
+        self.assertEqual(
+            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
+            ["shadow/CI・レビュー待ち"],
+        )
+
+    def test_sync_readds_desired_after_peer_removes_it(self):
+        api = FixtureAPI(["shadow/要マージ判断"])
+        original = api.request
+
+        def wipe(path, body=None, method=None):
+            result = original(path, body, method)
+            verb = method or ("POST" if body is not None else "GET")
+            if verb == "DELETE":
+                api.pull["labels"] = [
+                    item
+                    for item in api.pull["labels"]
+                    if item["name"] not in MANAGED_LABELS
+                ]
+            return result
+
+        api.request = wipe
         status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
         self.assertEqual(status, "updated")
         self.assertEqual(

@@ -16,6 +16,7 @@ from publish import (
     event_pr,
     has_newer_run,
     is_fresher,
+    list_recent_runs,
     list_relevant_runs,
     load_reports,
     main,
@@ -590,6 +591,69 @@ class PublishTests(unittest.TestCase):
         runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 200)
         self.assertIn(5, {int(item["id"]) for item in runs})
 
+    def test_relevant_runs_fail_when_history_fills_page_limit(self):
+        class Paging:
+            prefix = "/repos/example/project"
+
+            def request(self, path, body=None, method=None):
+                if "status=" in path:
+                    return {"workflow_runs": []}
+                return {
+                    "workflow_runs": [
+                        {"id": 1000 + n, "run_attempt": 1} for n in range(100)
+                    ]
+                }
+
+        with (
+            patch("publish.MAX_PAGES", 1),
+            self.assertRaises(PublishError) as error,
+        ):
+            list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 10)
+        self.assertIn("pagination limit", str(error.exception))
+
+    def test_recent_runs_prefer_refreshed_record_for_same_id(self):
+        known = [
+            {
+                "id": 5,
+                "run_attempt": 1,
+                "status": "completed",
+                "event": "schedule",
+                "run_started_at": "2026-09-11T10:00:00Z",
+                "pull_requests": [],
+            },
+            {
+                "id": 12,
+                "run_attempt": 1,
+                "status": "in_progress",
+                "event": "pull_request",
+                "run_started_at": "2026-09-11T12:00:00Z",
+                "pull_requests": [{"number": 1}],
+            },
+        ]
+        refreshed = {
+            "id": 5,
+            "run_attempt": 2,
+            "status": "in_progress",
+            "event": "schedule",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [],
+        }
+
+        class Paging:
+            prefix = "/repos/example/project"
+
+            def request(self, path, body=None, method=None):
+                if "status=in_progress" in path or "status=" not in path:
+                    return {"workflow_runs": [refreshed]}
+                return {"workflow_runs": []}
+
+        runs = list_recent_runs(Paging(), "autonomous-merge-shadow.yml", known)
+        match = next(item for item in runs if int(item["id"]) == 5)
+        self.assertEqual(match["run_attempt"], 2)
+        self.assertEqual(match["run_started_at"], "2026-09-11T14:00:00Z")
+        self.assertTrue(has_newer_run(runs, 1, 12, 1))
+        self.assertFalse(has_newer_run(known, 1, 12, 1))
+
     def test_shared_history_is_refreshed_before_first_write(self):
         api = FixtureAPI(["enhancement"])
         api.workflow_pages = [
@@ -862,6 +926,36 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(
             [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
             ["shadow/CI・レビュー待ち"],
+        )
+
+    def test_final_pass_readds_desired_after_peer_deletes_it(self):
+        api = FixtureAPI([])
+        original = api.request
+        deletes = {"n": 0}
+
+        def competing_publisher(path, body=None, method=None):
+            result = original(path, body, method)
+            verb = method or ("POST" if body is not None else "GET")
+            desired = "shadow/CI・レビュー待ち"
+            peer = "shadow/要対応"
+            names = [item["name"] for item in api.pull["labels"]]
+            if verb == "POST" and body and "labels" in body and peer not in names:
+                api.pull["labels"].append({"name": peer})
+            if verb == "DELETE":
+                deletes["n"] += 1
+                api.pull["labels"] = [
+                    item for item in api.pull["labels"] if item["name"] != desired
+                ]
+                if not any(item["name"] == peer for item in api.pull["labels"]):
+                    api.pull["labels"].append({"name": peer})
+            return result
+
+        api.request = competing_publisher
+        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
+        self.assertEqual(status, "updated")
+        self.assertIn(
+            "shadow/CI・レビュー待ち",
+            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
         )
 
     def test_sync_readds_desired_after_peer_removes_it(self):

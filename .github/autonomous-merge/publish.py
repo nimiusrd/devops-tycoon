@@ -230,13 +230,15 @@ def list_relevant_runs(api: GitHub, workflow: str, run_id: int) -> list:
             add(batch)
             if not batch or len(batch) < 100:
                 break
+        else:
+            raise PublishError("REST pagination limit exceeded")
 
     for page in range(1, MAX_PAGES + 1):
         batch = _workflow_run_page(api, f"{path}?per_page=100&page={page}")
         add(batch)
         if not batch or len(batch) < 100:
             return records
-    return records
+    raise PublishError("REST pagination limit exceeded")
 
 
 def list_recent_runs(api: GitHub, workflow: str, known: list | None = None) -> list:
@@ -252,11 +254,11 @@ def list_recent_runs(api: GitHub, workflow: str, known: list | None = None) -> l
             seen.add(run)
             records.append(item)
 
-    if known:
-        add(known)
     for status in LIVE_STATUSES:
         add(_workflow_run_page(api, f"{path}?status={status}&per_page=100&page=1"))
     add(_workflow_run_page(api, f"{path}?per_page=100&page=1"))
+    if known:
+        add(known)
     return records
 
 
@@ -503,6 +505,13 @@ def sync_labels(
             if "HTTP 404" not in str(error):
                 raise
         writes.append(f"remove:{name}")
+    latest = refresh()
+    if desired not in latest:
+        reason = guard()
+        if reason:
+            return writes, reason
+        api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
+        writes.append(f"add:{desired}")
     return writes, None
 
 

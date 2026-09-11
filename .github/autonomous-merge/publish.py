@@ -14,6 +14,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 MAX_PAGES = 30
+MAX_PUBLISH_MATRIX = 256
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 BROADCAST_EVENTS = {"schedule", "workflow_run"}
 TARGETED_PR = re.compile(r"^shadow-pr-([1-9][0-9]*)$")
@@ -154,6 +155,13 @@ def event_pr(event: dict) -> int | None:
     return int(raw)
 
 
+def publish_matrix(prs: list[int]) -> tuple[str, list[int]]:
+    values = sorted({int(number) for number in prs})
+    if len(values) > MAX_PUBLISH_MATRIX:
+        return "all", [0]
+    return "per-pr", values
+
+
 def load_reports(directory: Path, event: dict) -> list[tuple[int, dict]]:
     reports = []
     seen = set()
@@ -275,7 +283,7 @@ def list_recent_runs(
             if number is None or run_id is None:
                 continue
             other = int(item["id"])
-            if other == int(run_id) or item.get("status") != "completed":
+            if other == int(run_id) or item.get("status") == "completed":
                 continue
             if not run_targets_pr(item, number, default_branch, pr_open):
                 continue

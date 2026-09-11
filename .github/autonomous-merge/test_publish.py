@@ -745,12 +745,21 @@ class PublishTests(unittest.TestCase):
         )
         self.assertEqual(skip_reason(data, current, runs, 10, 1), "newer_run")
 
-    def test_recent_runs_refresh_completed_low_id_rerun(self):
+    def test_publish_matrix_batches_when_over_limit(self):
+        from publish import MAX_PUBLISH_MATRIX, publish_matrix
+
+        self.assertEqual(publish_matrix([3, 1, 2]), ("per-pr", [1, 2, 3]))
+        at_limit = list(range(1, MAX_PUBLISH_MATRIX + 1))
+        self.assertEqual(publish_matrix(at_limit), ("per-pr", at_limit))
+        overflow = list(range(1, MAX_PUBLISH_MATRIX + 2))
+        self.assertEqual(publish_matrix(overflow), ("all", [0]))
+
+    def test_recent_runs_refresh_live_snapshot_run(self):
         known = [
             {
                 "id": 5,
                 "run_attempt": 1,
-                "status": "completed",
+                "status": "in_progress",
                 "event": "schedule",
                 "run_started_at": "2026-09-11T10:00:00Z",
                 "pull_requests": [],
@@ -784,6 +793,50 @@ class PublishTests(unittest.TestCase):
         match = next(item for item in runs if int(item["id"]) == 5)
         self.assertEqual(match["run_attempt"], 2)
         self.assertEqual(match["run_started_at"], "2026-09-11T14:00:00Z")
+
+    def test_recent_runs_skip_id_refresh_for_completed_known_run(self):
+        known = [
+            {
+                "id": 5,
+                "run_attempt": 1,
+                "status": "completed",
+                "event": "schedule",
+                "run_started_at": "2026-09-11T10:00:00Z",
+                "pull_requests": [],
+            }
+        ]
+        updated = {
+            "id": 5,
+            "run_attempt": 2,
+            "status": "completed",
+            "event": "schedule",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [],
+        }
+
+        class Paging:
+            prefix = "/repos/example/project"
+
+            def __init__(self):
+                self.fetched = []
+
+            def request(self, path, body=None, method=None):
+                self.fetched.append(path)
+                if path.endswith("/actions/runs/5"):
+                    return updated
+                return {"workflow_runs": []}
+
+        api = Paging()
+        runs = list_recent_runs(
+            api,
+            "autonomous-merge-shadow.yml",
+            known,
+            number=1,
+            run_id=200,
+        )
+        match = next(item for item in runs if int(item["id"]) == 5)
+        self.assertEqual(match["run_attempt"], 1)
+        self.assertFalse(any(path.endswith("/actions/runs/5") for path in api.fetched))
 
     def test_shared_history_is_refreshed_before_first_write(self):
         api = FixtureAPI(["enhancement"])

@@ -43,6 +43,8 @@ jobs:
     timeout-minutes: 15
     outputs:
       prs: ${{ steps.targets.outputs.prs }}
+      mode: ${{ steps.targets.outputs.mode }}
+      matrix: ${{ steps.targets.outputs.matrix }}
     steps:
       - name: Checkout trusted default branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -103,6 +105,7 @@ jobs:
           python3 - <<'PY'
           import json
           import os
+          import sys
           from pathlib import Path
 
           prs = {
@@ -112,8 +115,19 @@ jobs:
           raw = os.environ.get("EVENT_PR", "")
           if Path("shadow-report/collection-error.json").exists() and raw.isdigit():
               prs.add(int(raw))
+          values = sorted(prs)
+          publisher = Path(".github/autonomous-merge/publish.py")
+          if publisher.exists():
+              sys.path.insert(0, str(publisher.parent.resolve()))
+              from publish import publish_matrix
+
+              mode, matrix = publish_matrix(values)
+          else:
+              mode, matrix = ("per-pr", values) if len(values) <= 256 else ("all", [0])
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-              fh.write(f"prs={json.dumps(sorted(prs))}\n")
+              fh.write(f"prs={json.dumps(values)}\n")
+              fh.write(f"mode={mode}\n")
+              fh.write(f"matrix={json.dumps(matrix)}\n")
           PY
 
   prepare-publish:
@@ -171,11 +185,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pr: ${{ fromJSON(needs.observe.outputs.prs || '[]') }}
-    # 同一PR番号なら schedule と PR イベントも同じ group で直列化する。
-    # PRごとに job を分けるので、他PRの pending は落とさない。
+        pr: ${{ fromJSON(needs.observe.outputs.matrix || '[]') }}
+    # 256件以下はPR番号で直列化する。超過時は1 jobで全PRを処理する。
     concurrency:
-      group: autonomous-merge-shadow-publish-${{ matrix.pr }}
+      group: autonomous-merge-shadow-publish-${{ needs.observe.outputs.mode == 'all' && 'all' || matrix.pr }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -264,11 +277,15 @@ jobs:
             echo 'publisher is not on the default branch yet.'
             exit 0
           fi
-          python3 -B .github/autonomous-merge/publish.py \
-            --report-dir shadow-report \
-            --run-id "${GITHUB_RUN_ID}" \
-            --run-attempt "${{ steps.select.outputs.attempt }}" \
-            --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
-            --default-branch "${DEFAULT_BRANCH}" \
-            --pr "${{ matrix.pr }}" \
+          args=(
+            --report-dir shadow-report
+            --run-id "${GITHUB_RUN_ID}"
+            --run-attempt "${{ steps.select.outputs.attempt }}"
+            --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            --default-branch "${DEFAULT_BRANCH}"
             --runs-file shadow-publish/runs.json
+          )
+          if [[ "${{ needs.observe.outputs.mode }}" != "all" ]]; then
+            args+=(--pr "${{ matrix.pr }}")
+          fi
+          python3 -B .github/autonomous-merge/publish.py "${args[@]}"

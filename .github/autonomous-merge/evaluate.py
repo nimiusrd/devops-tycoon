@@ -819,6 +819,10 @@ _JAVASCRIPT_DISABLED_TEST_OPTION_SHORTHAND = re.compile(
 _JAVASCRIPT_OBJECT_VARIABLE = re.compile(
     r"\b(?:const|let|var)\s+(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*\{"
 )
+_JAVASCRIPT_OBJECT_ALIAS = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*"
+    r"(?P<source>[A-Za-z_$][A-Za-z0-9_$]*)\b"
+)
 _JAVASCRIPT_OBJECT_SPREAD = re.compile(
     r"(?:^|[{,])\s*\.\.\.\s*(?P<name>[A-Za-z_$][A-Za-z0-9_$]*)\b"
 )
@@ -1356,6 +1360,263 @@ def _javascript_braced_end_index(
     return results
 
 
+def _javascript_call_close_index(
+    source: str,
+    open_index: int,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None],
+) -> int | None:
+    spans = argument_span_index.get(open_index)
+    if spans is None:
+        return None
+    close_index = spans[-1][1] if spans else open_index + 1
+    while close_index < len(source) and source[close_index].isspace():
+        close_index += 1
+    if close_index >= len(source) or source[close_index] != ")":
+        return None
+    return close_index
+
+
+def _javascript_parameter_binding_names(parameter: str) -> frozenset[str]:
+    """function/arrow parameterから宣言されたbinding名を取り出す。"""
+
+    candidate = re.sub(r"^\s*async\s+", "", parameter.strip())
+    candidate = candidate.removeprefix("...").strip()
+    simple_name = _javascript_parameter_name(candidate)
+    if simple_name is not None:
+        return frozenset({simple_name})
+
+    names: set[str] = set()
+    if candidate.startswith("{") and candidate.endswith("}"):
+        for member in candidate[1:-1].split(","):
+            member = member.strip().removeprefix("...").strip()
+            if not member:
+                continue
+            parts = re.split(r"\s*:\s*", member, maxsplit=1)
+            name = parts[-1].split("=", 1)[0].strip().removesuffix("?").strip()
+            if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name):
+                names.add(name)
+    elif candidate.startswith("[") and candidate.endswith("]"):
+        for member in candidate[1:-1].split(","):
+            name = member.strip().removeprefix("...").split("=", 1)[0].strip()
+            if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name):
+                names.add(name)
+    return frozenset(names)
+
+
+def _javascript_arrow_expression_end(
+    masked_source: str,
+    start: int,
+    end: int,
+) -> int:
+    """concise arrow bodyの終端を、外側のdelimiterまで走査する。"""
+
+    parentheses = 0
+    brackets = 0
+    braces = 0
+    index = start
+    while index < end:
+        character = masked_source[index]
+        if character == "(":
+            parentheses += 1
+        elif character == ")":
+            if parentheses == 0:
+                return index
+            parentheses -= 1
+        elif character == "[":
+            brackets += 1
+        elif character == "]":
+            if brackets == 0:
+                return index
+            brackets -= 1
+        elif character == "{":
+            braces += 1
+        elif character == "}":
+            if braces == 0:
+                return index
+            braces -= 1
+        elif character in {",", ";"} and parentheses == brackets == braces == 0:
+            return index
+        index += 1
+    return end
+
+
+def _javascript_function_scopes(
+    source: str,
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+) -> tuple[tuple[int, int, int, frozenset[str]], ...]:
+    """function/arrowのbody範囲とparameter bindingを一度の走査で返す。"""
+
+    masked_source = _mask_javascript_literals(source)
+    if argument_span_index is None:
+        argument_span_index = _javascript_call_argument_span_index(source)
+    braced_end_index = _javascript_braced_end_index(masked_source, None)
+    close_to_open: dict[int, int] = {}
+    for open_index in argument_span_index:
+        close_index = _javascript_call_close_index(
+            source,
+            open_index,
+            argument_span_index,
+        )
+        if close_index is not None:
+            close_to_open[close_index] = open_index
+
+    scopes: list[tuple[int, int, int, frozenset[str]]] = []
+    function_pattern = re.compile(
+        r"\b(?:async\s+)?function(?:\s*\*)?"
+        r"(?:\s+[A-Za-z_$][A-Za-z0-9_$]*)?\s*\("
+    )
+    for match in function_pattern.finditer(masked_source):
+        open_index = match.end() - 1
+        close_index = _javascript_call_close_index(
+            source,
+            open_index,
+            argument_span_index,
+        )
+        if close_index is None:
+            continue
+        body_start = close_index + 1
+        while body_start < len(source) and source[body_start].isspace():
+            body_start += 1
+        if body_start >= len(source) or source[body_start] != "{":
+            continue
+        body_end = braced_end_index.get(body_start)
+        if body_end is None:
+            continue
+        parameter_spans = argument_span_index.get(open_index) or ()
+        parameter_names = frozenset(
+            name
+            for parameter_start, parameter_end in parameter_spans
+            for name in _javascript_parameter_binding_names(
+                source[parameter_start:parameter_end]
+            )
+        )
+        scopes.append((match.start(), body_start, body_end, parameter_names))
+
+    for arrow in re.finditer(r"=>", masked_source):
+        arrow_start = arrow.start()
+        previous = arrow_start - 1
+        while previous >= 0 and masked_source[previous].isspace():
+            previous -= 1
+        if previous < 0:
+            continue
+        if masked_source[previous] == ")":
+            open_index = close_to_open.get(previous)
+            if open_index is None:
+                continue
+            parameter_start = open_index + 1
+            marker_start = open_index
+            parameter_spans = argument_span_index.get(open_index) or ()
+        else:
+            parameter_match = re.search(
+                r"[A-Za-z_$][A-Za-z0-9_$]*\s*$",
+                masked_source[: arrow_start + 1],
+            )
+            if parameter_match is None:
+                continue
+            parameter_start = parameter_match.start()
+            marker_start = parameter_start
+            parameter_spans = ((parameter_start, arrow_start),)
+        body_start = arrow.end()
+        while body_start < len(source) and source[body_start].isspace():
+            body_start += 1
+        if body_start >= len(source):
+            continue
+        if source[body_start] == "{":
+            body_end = braced_end_index.get(body_start)
+            if body_end is None:
+                continue
+        else:
+            body_end = _javascript_arrow_expression_end(
+                masked_source,
+                body_start,
+                len(source),
+            )
+            if body_end <= body_start:
+                continue
+        scopes.append(
+            (
+                marker_start,
+                body_start,
+                body_end,
+                frozenset(
+                    name
+                    for parameter_start, parameter_end in parameter_spans
+                    for name in _javascript_parameter_binding_names(
+                        source[parameter_start:parameter_end]
+                    )
+                ),
+            )
+        )
+    return tuple(sorted(scopes, key=lambda scope: (scope[0], scope[2])))
+
+
+@lru_cache(maxsize=32)
+def _javascript_function_scopes_cached(
+    source: str,
+) -> tuple[tuple[int, int, int, frozenset[str]], ...]:
+    return _javascript_function_scopes(source)
+
+
+def _javascript_binding_shadowed_at(
+    source: str,
+    position: int,
+    binding: str,
+    *,
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
+) -> bool:
+    if function_scopes is None:
+        function_scopes = _javascript_function_scopes_cached(source)
+    return any(
+        binding in parameter_names and body_start <= position < body_end
+        for _, body_start, body_end, parameter_names in function_scopes
+    )
+
+
+def _javascript_nested_function_ranges(
+    source: str,
+    start: int,
+    end: int,
+    *,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
+) -> tuple[tuple[int, int], ...]:
+    """outer callback以外のnested function bodyをassertion走査から除外する。"""
+
+    if function_scopes is None:
+        scopes = (
+            _javascript_function_scopes_cached(source)
+            if argument_span_index is None
+            else _javascript_function_scopes(
+                source,
+                argument_span_index=argument_span_index,
+            )
+        )
+    else:
+        scopes = function_scopes
+    candidates = [
+        scope
+        for scope in scopes
+        if start <= scope[0] < end
+    ]
+    if not candidates:
+        candidates = [
+            scope
+            for scope in scopes
+            if scope[1] <= start and end <= scope[2]
+        ]
+    if not candidates:
+        return ()
+    outer = min(candidates, key=lambda scope: (scope[0], -scope[2]))
+    return tuple(
+        (body_start, body_end)
+        for scope_start, body_start, body_end, _ in scopes
+        if scope_start != outer[0]
+        and body_start < end
+        and start < body_end
+    )
+
+
 def _javascript_suite_aliases(source: str) -> frozenset[str]:
     """Vitest/Playwright suite runnerのimport aliasを取り出す。"""
 
@@ -1492,6 +1753,11 @@ def _javascript_parameterized_suite_call_spans(source: str) -> tuple[tuple[int, 
         each_argument_spans = argument_span_index.get(each_open_index)
         if each_argument_spans is None:
             continue
+        if _javascript_parameterized_dataset_is_empty(
+            source,
+            each_argument_spans,
+        ):
+            continue
         each_close_index = (
             each_argument_spans[-1][1]
             if each_argument_spans
@@ -1560,12 +1826,7 @@ def _javascript_disabled_call_spans(source: str) -> tuple[tuple[int, int], ...]:
         source,
         masked_source=masked_source,
     )
-    spans = {
-        (match.start(), match.end())
-        for match in _DISABLED_TEST_CALL.finditer(masked_source)
-        if match.group("binding") not in _JAVASCRIPT_TEST_RUNNER_BINDING
-        or match.group("binding") in test_bindings
-    }
+    spans = set(_javascript_test_modifier_call_spans(source, test_bindings=test_bindings))
     alias_pattern = _javascript_suite_alias_call_pattern(
         _javascript_suite_aliases(source),
         disabled=True,
@@ -1633,6 +1894,41 @@ def _javascript_conditional_suite_is_disabled(
     return (modifier == "skipIf" and condition in {"true", "1"}) or (
         modifier == "runIf" and condition in {"false", "0"}
     )
+
+
+def _javascript_conditional_test_call_spans(
+    source: str,
+) -> tuple[tuple[int, int, bool, str], ...]:
+    """conditional test modifierが返すtest callback呼び出し範囲を返す。"""
+
+    argument_span_index = _javascript_call_argument_span_index(source)
+    spans: set[tuple[int, int, bool, str]] = set()
+    for match in _javascript_test_modifier_call_matches(source):
+        call_start, call_end = match.start(), match.end()
+        modifier_call = _javascript_conditional_suite_modifier_call(
+            source,
+            call_start,
+            call_end,
+            argument_span_index=argument_span_index,
+        )
+        if modifier_call is None:
+            continue
+        returned_open_index = modifier_call[3] + 1
+        while returned_open_index < len(source) and source[returned_open_index].isspace():
+            returned_open_index += 1
+        if returned_open_index < len(source) and source[returned_open_index] == "(":
+            spans.add(
+                (
+                    call_start,
+                    returned_open_index,
+                    _javascript_conditional_suite_is_disabled(
+                        modifier_call[0],
+                        modifier_call[1],
+                    ),
+                    match.group("binding"),
+                )
+            )
+    return tuple(sorted(spans))
 
 
 def _javascript_conditional_suite_return_spans(
@@ -1845,6 +2141,10 @@ def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
                 braced_end_index,
             )
 
+    object_aliases = tuple(_JAVASCRIPT_OBJECT_ALIAS.finditer(source))
+    for match in object_aliases:
+        object_info.setdefault(match.group("name"), (False, ()))
+
     disabled_variables = {
         name
         for name, (has_disabled_option, _) in object_info.items()
@@ -1859,6 +2159,8 @@ def _javascript_disabled_test_option_variables(source: str) -> frozenset[str]:
     for name, (_, spread_names) in object_info.items():
         for dependency in spread_names:
             dependents.setdefault(dependency, set()).add(name)
+    for match in object_aliases:
+        dependents.setdefault(match.group("source"), set()).add(match.group("name"))
 
     queue = list(disabled_variables)
     cursor = 0
@@ -1935,8 +2237,26 @@ def _javascript_disabled_suite_option_ranges(
 
 
 def _javascript_disabled_test_feature_count(source: str) -> int:
+    argument_span_index = _javascript_call_argument_span_index(source)
+    disabled_call_count = 0
+    for call_start, call_end in _javascript_disabled_call_spans(source):
+        conditional_modifier = _javascript_conditional_suite_modifier_call(
+            source,
+            call_start,
+            call_end,
+            argument_span_index=argument_span_index,
+        )
+        if (
+            conditional_modifier is not None
+            and not _javascript_conditional_suite_is_disabled(
+                conditional_modifier[0],
+                conditional_modifier[1],
+            )
+        ):
+            continue
+        disabled_call_count += 1
     return (
-        len(_javascript_disabled_call_spans(source))
+        disabled_call_count
         + _javascript_test_info_modifier_count(source)
         + _javascript_disabled_test_option_count(source)
     )
@@ -1948,6 +2268,20 @@ def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]
     argument_span_index = _javascript_call_argument_span_index(source)
     ranges: list[tuple[int, int]] = []
     for start, end in _javascript_disabled_call_spans(source):
+        conditional_modifier = _javascript_conditional_suite_modifier_call(
+            source,
+            start,
+            end,
+            argument_span_index=argument_span_index,
+        )
+        if (
+            conditional_modifier is not None
+            and not _javascript_conditional_suite_is_disabled(
+                conditional_modifier[0],
+                conditional_modifier[1],
+            )
+        ):
+            continue
         open_index = end
         while open_index < len(source) and source[open_index].isspace():
             open_index += 1
@@ -1961,6 +2295,18 @@ def _disabled_javascript_call_ranges(source: str) -> tuple[tuple[int, int], ...]
             close_index += 1
         if close_index < len(source) and source[close_index] == ")":
             ranges.append((start, close_index + 1))
+    for call_start, open_index, disabled, _ in _javascript_conditional_test_call_spans(
+        source
+    ):
+        if not disabled:
+            continue
+        close_index = _javascript_call_close_index(
+            source,
+            open_index,
+            argument_span_index,
+        )
+        if close_index is not None:
+            ranges.append((call_start, close_index + 1))
     ranges.extend(
         _javascript_disabled_suite_option_ranges(
             source,
@@ -2684,6 +3030,29 @@ def _javascript_shadowed_expect_bindings_for_test(
     )
 
 
+def _javascript_shadowed_node_assert_bindings_for_test(
+    masked_source: str,
+    call_start: int,
+    body_start: int,
+    body_end: int,
+    suite_records: Sequence[tuple[int, int, int, str | None]],
+    node_assert_bindings: Iterable[str],
+) -> frozenset[str]:
+    """test本体と包含suiteでshadowされたNode assert bindingを返す。"""
+
+    ranges = [(body_start, body_end)]
+    ranges.extend(
+        (suite_body_start, suite_body_end)
+        for _, suite_body_start, suite_body_end, _ in suite_records
+        if suite_body_start <= call_start < suite_body_end
+    )
+    return _javascript_shadowed_bindings_in_ranges(
+        masked_source,
+        ranges,
+        node_assert_bindings,
+    )
+
+
 def _javascript_node_assert_bindings(
     source: str,
     *,
@@ -2742,8 +3111,10 @@ def _javascript_assertion_count(
     masked_source: str | None = None,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
     node_assert_bindings: frozenset[str] | None = None,
+    shadowed_node_assert_bindings: frozenset[str] | None = None,
     expect_bindings: frozenset[str] | None = None,
     shadowed_expect_bindings: frozenset[str] | None = None,
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
 ) -> int:
     """検証runnerまたはNode assertion APIのassertion数を数える。"""
 
@@ -2753,10 +3124,18 @@ def _javascript_assertion_count(
         masked_source = _mask_javascript_literals(source)
     if argument_span_index is None:
         argument_span_index = _javascript_call_argument_span_index(source)
+    if function_scopes is None:
+        function_scopes = _javascript_function_scopes_cached(source)
     if node_assert_bindings is None:
         node_assert_bindings = _javascript_node_assert_bindings(
             source,
             masked_source=masked_source,
+        )
+    if shadowed_node_assert_bindings is None:
+        shadowed_node_assert_bindings = _javascript_shadowed_bindings_in_ranges(
+            masked_source,
+            ((start, end),),
+            node_assert_bindings,
         )
     if expect_bindings is None:
         expect_bindings = _javascript_expect_bindings(
@@ -2770,18 +3149,47 @@ def _javascript_assertion_count(
             end,
             expect_bindings,
         )
+    nested_function_ranges = _javascript_nested_function_ranges(
+        source,
+        start,
+        end,
+        argument_span_index=argument_span_index,
+        function_scopes=function_scopes,
+    )
+
+    def is_nested_function_position(position: int) -> bool:
+        return any(
+            range_start <= position < range_end
+            for range_start, range_end in nested_function_ranges
+        )
+
     count = 0
     for match in _JAVASCRIPT_NODE_ASSERTION_CALL.finditer(masked_source, start, end):
         method = match.group("dot") or match.group("bracket")
         if (
             match.group("binding") in node_assert_bindings
+            and match.group("binding") not in shadowed_node_assert_bindings
+            and not _javascript_binding_shadowed_at(
+                source,
+                match.start(),
+                match.group("binding"),
+                function_scopes=function_scopes,
+            )
             and method in _JAVASCRIPT_NODE_ASSERTION_METHODS
+            and not is_nested_function_position(match.start())
         ):
             count += 1
     for match in _JAVASCRIPT_ASSERTION.finditer(masked_source, start, end):
         if (
             match.group("binding") not in expect_bindings
             or match.group("binding") in shadowed_expect_bindings
+            or _javascript_binding_shadowed_at(
+                source,
+                match.start(),
+                match.group("binding"),
+                function_scopes=function_scopes,
+            )
+            or is_nested_function_position(match.start())
         ):
             continue
         open_index = match.end() - 1
@@ -2862,6 +3270,10 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
     source = _strip_javascript_comments(data)
     masked_source = _mask_javascript_literals(source)
     argument_span_index = _javascript_call_argument_span_index(source)
+    function_scopes = _javascript_function_scopes(
+        source,
+        argument_span_index=argument_span_index,
+    )
     node_assert_bindings = _javascript_node_assert_bindings(
         source,
         masked_source=masked_source,
@@ -2887,6 +3299,14 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
             suite_records,
             expect_bindings,
         )
+        shadowed_node_assert_bindings = _javascript_shadowed_node_assert_bindings_for_test(
+            masked_source,
+            call_start,
+            body_start,
+            body_end,
+            suite_records,
+            node_assert_bindings,
+        )
         assertion_count += _javascript_assertion_count(
             source,
             body_start,
@@ -2894,8 +3314,10 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
             masked_source=masked_source,
             argument_span_index=argument_span_index,
             node_assert_bindings=node_assert_bindings,
+            shadowed_node_assert_bindings=shadowed_node_assert_bindings,
             expect_bindings=expect_bindings,
             shadowed_expect_bindings=shadowed_expect_bindings,
+            function_scopes=function_scopes,
         )
     return len(callbacks), assertion_count
 
@@ -2939,6 +3361,7 @@ def _javascript_test_body_argument(arguments: Sequence[str]) -> str | None:
 def _javascript_test_call_pattern(
     bindings: Iterable[str],
     *,
+    disabled: bool = False,
     parameterized: bool = False,
 ) -> re.Pattern[str] | None:
     """runner binding名に対応するtest call patternを生成する。"""
@@ -2957,6 +3380,17 @@ def _javascript_test_call_pattern(
         + "|".join(re.escape(name) for name in names)
         + r"))"
     )
+    if disabled:
+        disabled_chain = (
+            r"(?:\s*(?:(?:\.\s*|\?\.\s*)[A-Za-z_$][A-Za-z0-9_$]*|"
+            r"(?:\?\.)?\s*\[\s*['\"`][A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
+        )
+        return re.compile(
+            prefix
+            + disabled_chain
+            + r"\s*(?:(?:\.\s*|\?\.\s*)(?:skip|fixme|todo|skipIf|runIf|fail|fails)\b|"
+            r"(?:\?\.)?\s*\[\s*['\"`](?:skip|fixme|todo|skipIf|runIf|fail|fails)['\"`]\s*\])"
+        )
     if parameterized:
         return re.compile(
             prefix + r"\s*(?:\.\s*|\?\.\s*)each\s*\("
@@ -2968,6 +3402,112 @@ def _javascript_test_call_pattern(
         r"[A-Za-z_$][A-Za-z0-9_$]*['\"`]\s*\]))*"
     )
     return re.compile(prefix + chain + r"\s*\(")
+
+
+def _javascript_test_modifier_call_matches(
+    source: str,
+    *,
+    test_bindings: frozenset[str] | None = None,
+) -> tuple[re.Match[str], ...]:
+    """import済みtest runnerのmodifier呼び出し範囲を返す。"""
+
+    masked_source = _mask_javascript_literals(source)
+    if test_bindings is None:
+        test_bindings = _javascript_test_runner_bindings(
+            source,
+            masked_source=masked_source,
+        )
+    matches = [
+        match
+        for match in _DISABLED_TEST_CALL.finditer(masked_source)
+        if match.group("binding") in test_bindings
+    ]
+    alias_pattern = _javascript_test_call_pattern(test_bindings, disabled=True)
+    if alias_pattern is not None:
+        matches.extend(alias_pattern.finditer(masked_source))
+    unique_matches: dict[tuple[int, int], re.Match[str]] = {
+        (match.start(), match.end()): match
+        for match in matches
+    }
+    return tuple(unique_matches[key] for key in sorted(unique_matches))
+
+
+def _javascript_test_modifier_call_spans(
+    source: str,
+    *,
+    test_bindings: frozenset[str] | None = None,
+) -> tuple[tuple[int, int], ...]:
+    return tuple(
+        (match.start(), match.end())
+        for match in _javascript_test_modifier_call_matches(
+            source,
+            test_bindings=test_bindings,
+        )
+    )
+
+
+def _javascript_parameterized_dataset_is_empty(
+    source: str,
+    argument_spans: Sequence[tuple[int, int]],
+) -> bool:
+    """静的に空と判定できるparameterized datasetを検出する。"""
+
+    if not argument_spans:
+        return False
+    dataset = _mask_javascript_literals(
+        source[argument_spans[0][0] : argument_spans[0][1]]
+    ).strip()
+    return re.fullmatch(r"\[\s*\](?:\s+as\s+const)?", dataset) is not None
+
+
+def _javascript_empty_parameterized_suite_ranges(
+    source: str,
+) -> tuple[tuple[int, int], ...]:
+    """空のparameterized suite callback内を検証対象から除外する。"""
+
+    masked_source = _mask_javascript_literals(source)
+    matches = list(_JAVASCRIPT_PARAMETERIZED_SUITE_CALL.finditer(masked_source))
+    alias_pattern = _javascript_suite_alias_call_pattern(
+        _javascript_suite_aliases(source),
+        parameterized=True,
+    )
+    if alias_pattern is not None:
+        matches.extend(alias_pattern.finditer(masked_source))
+    namespace_pattern = _javascript_suite_namespace_call_pattern(
+        _javascript_suite_namespace_aliases(source),
+        parameterized=True,
+    )
+    if namespace_pattern is not None:
+        matches.extend(namespace_pattern.finditer(masked_source))
+
+    argument_span_index = _javascript_call_argument_span_index(source)
+    ranges: set[tuple[int, int]] = set()
+    for match in matches:
+        each_open_index = match.end() - 1
+        each_argument_spans = argument_span_index.get(each_open_index)
+        if not each_argument_spans or not _javascript_parameterized_dataset_is_empty(
+            source,
+            each_argument_spans,
+        ):
+            continue
+        each_close_index = each_argument_spans[-1][1]
+        while each_close_index < len(source) and source[each_close_index].isspace():
+            each_close_index += 1
+        if each_close_index >= len(source) or source[each_close_index] != ")":
+            continue
+        returned_open_index = each_close_index + 1
+        while returned_open_index < len(source) and source[returned_open_index].isspace():
+            returned_open_index += 1
+        if returned_open_index >= len(source) or source[returned_open_index] != "(":
+            continue
+        close_index = _javascript_call_close_index(
+            source,
+            returned_open_index,
+            argument_span_index,
+        )
+        if close_index is not None:
+            ranges.add((returned_open_index, close_index + 1))
+    return tuple(sorted(ranges))
 
 
 def _javascript_test_call_spans(
@@ -2988,20 +3528,53 @@ def _javascript_test_call_spans(
     )
     if test_call_pattern is None or parameterized_test_pattern is None:
         return ()
+    function_scopes = _javascript_function_scopes(
+        source,
+        argument_span_index=argument_span_index,
+    )
+    empty_parameterized_suite_ranges = _javascript_empty_parameterized_suite_ranges(source)
+
+    def is_shadowed(match: re.Match[str]) -> bool:
+        return _javascript_binding_shadowed_at(
+            source,
+            match.start(),
+            match.group("binding"),
+            function_scopes=function_scopes,
+        )
+
+    def is_inside_empty_parameterized_suite(position: int) -> bool:
+        return any(
+            range_start <= position < range_end
+            for range_start, range_end in empty_parameterized_suite_ranges
+        )
+
     parameterized_open_indexes = {
         match.end() - 1
         for match in parameterized_test_pattern.finditer(masked_source)
+        if not is_shadowed(match)
+        and not is_inside_empty_parameterized_suite(match.start())
     }
     calls: list[tuple[int, int]] = []
     for match in test_call_pattern.finditer(masked_source):
-        if match.end() - 1 in parameterized_open_indexes:
+        if (
+            match.end() - 1 in parameterized_open_indexes
+            or is_shadowed(match)
+            or is_inside_empty_parameterized_suite(match.start())
+        ):
             continue
         calls.append((match.start(), match.end() - 1))
 
     for match in parameterized_test_pattern.finditer(masked_source):
+        if is_shadowed(match) or is_inside_empty_parameterized_suite(match.start()):
+            continue
         each_open_index = match.end() - 1
         each_argument_spans = argument_span_index.get(each_open_index)
         if each_argument_spans is None:
+            continue
+        if _javascript_parameterized_dataset_is_empty(
+            source,
+            each_argument_spans,
+        ):
             continue
         each_close_index = each_argument_spans[-1][1] if each_argument_spans else each_open_index + 1
         while each_close_index < len(source) and source[each_close_index].isspace():
@@ -3013,6 +3586,17 @@ def _javascript_test_call_spans(
             open_index += 1
         if open_index < len(source) and source[open_index] == "(":
             calls.append((match.start(), open_index))
+    calls.extend(
+        (call_start, open_index)
+        for call_start, open_index, _, binding in _javascript_conditional_test_call_spans(source)
+        if not _javascript_binding_shadowed_at(
+            source,
+            call_start,
+            binding,
+            function_scopes=function_scopes,
+        )
+        and not is_inside_empty_parameterized_suite(call_start)
+    )
     return tuple(sorted(set(calls)))
 
 
@@ -3349,8 +3933,10 @@ def _javascript_callback_has_executable_content(
     masked_source: str | None = None,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
     node_assert_bindings: frozenset[str] | None = None,
+    shadowed_node_assert_bindings: frozenset[str] | None = None,
     expect_bindings: frozenset[str] | None = None,
     shadowed_expect_bindings: frozenset[str] | None = None,
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
 ) -> bool:
     """検証操作を含まないinline callbackをbehavior recordから除外する。"""
 
@@ -3374,8 +3960,10 @@ def _javascript_callback_has_executable_content(
             masked_source=masked_source,
             argument_span_index=argument_span_index,
             node_assert_bindings=node_assert_bindings,
+            shadowed_node_assert_bindings=shadowed_node_assert_bindings,
             expect_bindings=expect_bindings,
             shadowed_expect_bindings=shadowed_expect_bindings,
+            function_scopes=function_scopes,
         )
         > 0
     )
@@ -3399,6 +3987,10 @@ def _javascript_test_behavior_records(
         return ()
     masked_source = _mask_javascript_literals(source)
     argument_span_index = _javascript_call_argument_span_index(source)
+    function_scopes = _javascript_function_scopes(
+        source,
+        argument_span_index=argument_span_index,
+    )
     node_assert_bindings = _javascript_node_assert_bindings(
         source,
         masked_source=masked_source,
@@ -3422,6 +4014,14 @@ def _javascript_test_behavior_records(
             suite_records,
             expect_bindings,
         )
+        shadowed_node_assert_bindings = _javascript_shadowed_node_assert_bindings_for_test(
+            masked_source,
+            call_start,
+            body_start,
+            body_end,
+            suite_records,
+            node_assert_bindings,
+        )
         if not _javascript_callback_has_executable_content(
             callback,
             source=source,
@@ -3430,8 +4030,10 @@ def _javascript_test_behavior_records(
             masked_source=masked_source,
             argument_span_index=argument_span_index,
             node_assert_bindings=node_assert_bindings,
+            shadowed_node_assert_bindings=shadowed_node_assert_bindings,
             expect_bindings=expect_bindings,
             shadowed_expect_bindings=shadowed_expect_bindings,
+            function_scopes=function_scopes,
         ):
             continue
         behaviors.append(

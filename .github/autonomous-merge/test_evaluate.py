@@ -311,6 +311,161 @@ class EvaluateTests(unittest.TestCase):
                     self.assertFalse(result.test_changes)
                     self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
 
+    def test_imported_test_alias_modifier_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { expect, test as check } from 'vitest';\n"
+                        "check('builds', () => expect(url).toBe('/'));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { expect, test as check } from 'vitest';\n"
+                        "check.skip('builds', () => expect(url).toBe('/app/'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_disabled_test_option_alias_does_not_satisfy_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            write_snapshot(
+                base,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { expect, test } from 'vitest';\n"
+                        "test('builds', () => expect(url).toBe('/'));\n"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                    "tests/unit/utils/publicUrl.test.ts": (
+                        "import { expect, test } from 'vitest';\n"
+                        "const skipped = { skip: true };\n"
+                        "const opts = skipped;\n"
+                        "test('builds', opts, () => expect(url).toBe('/app/'));\n"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("src-fallback", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
+            self.assertEqual(result.test_removal_risk, POLICY.test_removal_risk)
+
+    def test_runner_parameter_shadowing_does_not_register_fake_tests(self) -> None:
+        source = (
+            "import { expect, test as runner } from 'vitest';\n"
+            "function register(runner) {\n"
+            "  runner('fake', () => expect(value).toBe(1));\n"
+            "}\n"
+        )
+
+        self.assertEqual(_javascript_test_call_spans(source), ())
+        self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+
+    def test_node_assert_shadowing_does_not_satisfy_verification(self) -> None:
+        source = (
+            "import { strict as assert } from 'node:assert/strict';\n"
+            "import { test } from 'vitest';\n"
+            "test('fake', () => {\n"
+            "  const assert = { equal() {} };\n"
+            "  assert.equal(value, value);\n"
+            "});\n"
+        )
+
+        self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+
+    def test_assertions_in_uncalled_nested_functions_do_not_satisfy_verification(
+        self,
+    ) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test('unused', () => {\n"
+            "  function unused() {\n"
+            "    expect(value).toBe(1);\n"
+            "  }\n"
+            "});\n"
+        )
+        active_source = source.replace(
+            "  }\n});\n",
+            "  }\n  expect(value).toBe(1);\n});\n",
+        )
+
+        self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+        self.assertEqual(len(_javascript_test_behavior_records(active_source.encode())), 1)
+
+    def test_empty_parameterized_tests_and_suites_do_not_satisfy_verification(self) -> None:
+        empty_test = (
+            "import { expect, test } from 'vitest';\n"
+            "test.each([])('empty', () => expect(value).toBe(1));\n"
+        )
+        empty_suite = (
+            "import { expect, test, describe } from 'vitest';\n"
+            "describe.each([])('empty', () => {\n"
+            "  test('never runs', () => expect(value).toBe(1));\n"
+            "});\n"
+        )
+
+        self.assertEqual(_javascript_test_call_spans(empty_test), ())
+        self.assertEqual(_javascript_test_behavior_records(empty_test.encode()), ())
+        self.assertEqual(_javascript_test_behavior_records(empty_suite.encode()), ())
+
+    def test_active_conditional_tests_satisfy_verification(self) -> None:
+        for conditional_call in ("test.skipIf(false)", "test.runIf(true)"):
+            with self.subTest(conditional_call=conditional_call):
+                with tempfile.TemporaryDirectory() as directory:
+                    base = Path(directory) / "base"
+                    head = Path(directory) / "head"
+                    write_snapshot(
+                        base,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { expect, test } from 'vitest';\n"
+                                "test('builds', () => expect(url).toBe('/'));\n"
+                            ),
+                        },
+                    )
+                    write_snapshot(
+                        head,
+                        {
+                            "src/utils/assetUrl.ts": "export const url = '/app/';\n",
+                            "tests/unit/utils/publicUrl.test.ts": (
+                                "import { expect, test } from 'vitest';\n"
+                                f"{conditional_call}('builds', () => expect(url).toBe('/app/'));\n"
+                            ),
+                        },
+                    )
+
+                    result = assess(base, head, POLICY)
+
+                    self.assertNotIn("src-fallback", result.missing_test_scopes)
+                    self.assertTrue(result.test_changes)
+                    self.assertEqual(result.verification_risk, 0)
+
     def test_playwright_test_info_alias_modifiers_do_not_satisfy_verification(self) -> None:
         for modifier in ("skip", "fixme", "fail"):
             with self.subTest(modifier=modifier), tempfile.TemporaryDirectory() as directory:
@@ -1096,6 +1251,7 @@ class EvaluateTests(unittest.TestCase):
                     {
                         "src/utils/assetUrl.ts": "export const url = '/';\n",
                         "tests/unit/utils/publicUrl.test.ts": (
+                            "import { expect, test, describe } from 'vitest';\n"
                             "describe('group', () => {\n"
                             "  test('renders', () => expect(url).toBe('/'));\n"
                             "});\n"
@@ -1107,6 +1263,7 @@ class EvaluateTests(unittest.TestCase):
                     {
                         "src/utils/assetUrl.ts": "export const url = '/app/';\n",
                         "tests/unit/utils/publicUrl.test.ts": (
+                            "import { expect, test, describe } from 'vitest';\n"
                             f"{modifier}('group', () => {{\n"
                             "  test('renders', () => expect(url).toBe('/app/'));\n"
                             "});\n"

@@ -563,6 +563,42 @@ class PublishTests(unittest.TestCase):
         )
         self.assertEqual(len(api.paths), 1)
 
+    def test_published_cache_invalidates_when_attempt_or_status_changes(self):
+        live = {
+            "id": 60,
+            "run_attempt": 1,
+            "status": "in_progress",
+            "event": "schedule",
+            "run_started_at": "2026-09-11T14:00:00Z",
+            "pull_requests": [],
+        }
+        cancelled = {
+            **live,
+            "status": "completed",
+            "conclusion": "cancelled",
+        }
+        cache = {}
+        self.assertTrue(
+            has_newer_run(
+                [live],
+                1,
+                10,
+                1,
+                observed_at="2026-09-11T12:00:00+00:00",
+                published_cache=cache,
+            )
+        )
+        self.assertFalse(
+            has_newer_run(
+                [cancelled],
+                1,
+                10,
+                1,
+                observed_at="2026-09-11T12:00:00+00:00",
+                published_cache=cache,
+            )
+        )
+
     def test_base_ref_mismatch_skips_without_sha_change(self):
         current = {
             "number": 1,
@@ -812,20 +848,20 @@ class PublishTests(unittest.TestCase):
         )
         self.assertEqual(skip_reason(data, current, runs, 10, 1), "newer_run")
 
-    def test_publish_matrix_uses_shards_within_job_limit(self):
-        from publish import MAX_PUBLISH_MATRIX, publish_matrix
+    def test_publish_matrix_keeps_per_pr_jobs_within_limit(self):
+        from publish import MAX_PUBLISH_MATRIX, overflow_prs, publish_matrix
 
-        self.assertEqual(publish_matrix([3, 1, 2]), ("shard", [1, 2, 3]))
+        self.assertEqual(publish_matrix([3, 1, 2]), ("per-pr", [1, 2, 3]))
+        self.assertEqual(overflow_prs([3, 1, 2]), [])
         at_limit = list(range(1, MAX_PUBLISH_MATRIX + 1))
-        self.assertEqual(
-            publish_matrix(at_limit),
-            ("shard", list(range(MAX_PUBLISH_MATRIX))),
-        )
+        self.assertEqual(publish_matrix(at_limit), ("per-pr", at_limit))
+        self.assertEqual(overflow_prs(at_limit), [])
         overflow = list(range(1, MAX_PUBLISH_MATRIX + 2))
         self.assertEqual(
             publish_matrix(overflow),
-            ("shard", list(range(MAX_PUBLISH_MATRIX))),
+            ("per-pr", list(range(1, MAX_PUBLISH_MATRIX + 1))),
         )
+        self.assertEqual(overflow_prs(overflow), [MAX_PUBLISH_MATRIX + 1])
 
     def test_recent_runs_refresh_live_snapshot_run(self):
         known = [
@@ -1431,6 +1467,44 @@ class PublishTests(unittest.TestCase):
                 self.assertEqual(main(), 0)
             self.assertTrue(any("/pulls/1" in path for path in seen))
             self.assertFalse(any("/pulls/2" in path for path in seen))
+
+    def test_cli_only_prs_flag_skips_other_reports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_dir = Path(directory)
+            (report_dir / "pr-1.json").write_text(
+                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
+            )
+            (report_dir / "pr-2.json").write_text(
+                json.dumps(report("HUMAN_REVIEW_REQUIRED"), ensure_ascii=False) + "\n"
+            )
+            args = [
+                "publish.py",
+                "--repository",
+                "example/project",
+                "--report-dir",
+                str(report_dir),
+                "--run-id",
+                "10",
+                "--run-attempt",
+                "1",
+                "--run-url",
+                RUN_URL,
+                "--only-prs",
+                "[2]",
+            ]
+            api = FixtureAPI(["enhancement"])
+            seen = []
+            original = api.request
+
+            def track(path, body=None, method=None):
+                seen.append(path)
+                return original(path, body, method)
+
+            api.request = track
+            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
+                self.assertEqual(main(), 0)
+            self.assertFalse(any("/pulls/1" in path for path in seen))
+            self.assertTrue(any("/pulls/2" in path for path in seen))
 
     def test_cli_ensures_labels_once_for_multiple_prs(self):
         with tempfile.TemporaryDirectory() as directory:

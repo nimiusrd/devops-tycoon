@@ -156,8 +156,13 @@ def event_pr(event: dict) -> int | None:
 
 
 def publish_matrix(prs: list[int]) -> tuple[str, list[int]]:
-    values = {int(number) for number in prs}
-    return "shard", sorted({number % MAX_PUBLISH_MATRIX for number in values})
+    values = sorted({int(number) for number in prs})
+    return "per-pr", values[:MAX_PUBLISH_MATRIX]
+
+
+def overflow_prs(prs: list[int]) -> list[int]:
+    values = sorted({int(number) for number in prs})
+    return values[MAX_PUBLISH_MATRIX:]
 
 
 def load_reports(directory: Path, event: dict) -> list[tuple[int, dict]]:
@@ -419,10 +424,15 @@ def has_newer_run(
                 continue
         elif other_key <= current_key:
             continue
-        other_id = int(run["id"])
-        if other_id not in cache:
-            cache[other_id] = run_published_labels(run, api)
-        if cache[other_id]:
+        cache_key = (
+            int(run["id"]),
+            int(run.get("run_attempt") or 1),
+            str(run.get("status") or ""),
+            str(run.get("conclusion") or ""),
+        )
+        if cache_key not in cache:
+            cache[cache_key] = run_published_labels(run, api)
+        if cache[cache_key]:
             return True
     return False
 
@@ -704,6 +714,7 @@ def main() -> int:
     parser.add_argument("--pr", type=int)
     parser.add_argument("--shard", type=int)
     parser.add_argument("--shard-count", type=int, default=MAX_PUBLISH_MATRIX)
+    parser.add_argument("--only-prs")
     args = parser.parse_args()
     if args.export_runs:
         try:
@@ -726,6 +737,9 @@ def main() -> int:
     if args.shard is not None:
         count = args.shard_count or MAX_PUBLISH_MATRIX
         reports = [item for item in reports if item[0] % count == args.shard]
+    if args.only_prs:
+        allowed = {int(number) for number in json.loads(args.only_prs)}
+        reports = [item for item in reports if item[0] in allowed]
     if not reports:
         return 0
     failed = False

@@ -94,6 +94,10 @@ class FixtureAPI:
             ]
         return []
 
+    def request(self, path, body=None):
+        self.paths.append(path)
+        return []
+
 
 class CollectTests(unittest.TestCase):
     def test_workflow_changes_cannot_be_masked_by_same_name_success(self):
@@ -438,6 +442,15 @@ class CollectTests(unittest.TestCase):
         with patch.object(api, "pages", return_value=[{"number": 1}, {"number": 2}]):
             self.assertEqual(
                 targets(api, {"workflow_run": {"head_sha": BASE}}, None), [1, 2]
+            )
+        api.request = lambda path, body=None: (
+            [{"number": 9, "pull_request": {}}]
+            if "/issues?" in path
+            else []
+        )
+        with patch.object(api, "pages", return_value=[{"number": 1}, {"number": 2}]):
+            self.assertEqual(
+                targets(api, {"workflow_run": {"head_sha": BASE}}, None), [1, 2, 9]
             )
         with self.assertRaises(CollectionError):
             targets(api, {}, -1)

@@ -12,12 +12,19 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from evaluate import assess, load_policy, markdown, sha, string
 
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
+RECOVERY_LABELS = (
+    "shadow/要マージ判断",
+    "shadow/CI・レビュー待ち",
+    "shadow/要対応",
+    "shadow/再観測が必要",
+)
 PR_FIELDS = """
 number state isDraft headRefOid baseRefOid baseRefName updatedAt
 mergeable mergeStateStatus reviewDecision
@@ -342,7 +349,33 @@ def targets(api: GitHub, event: dict, requested: int | None) -> list[int]:
         return [event["pull_request"]["number"]]
     # CI完了時も全open PRを再評価する。base更新・fork・同じheadを持つ複数PRに対応。
     # 古いworkflow_run payloadのSHAを、現在のPRのSHAとして使わない。
-    return [p["number"] for p in api.pages("/pulls?state=open")]
+    # closeイベント失敗後も、管理ラベルが残る最近closedなPRを回収する。
+    open_prs = [p["number"] for p in api.pages("/pulls?state=open")]
+    recovered = labeled_closed_prs(api)
+    return sorted({*open_prs, *recovered})
+
+
+def labeled_closed_prs(api: GitHub) -> list[int]:
+    found = []
+    seen = set()
+    prefix = getattr(api, "prefix", f"/repos/{api.repository}")
+    for name in RECOVERY_LABELS:
+        path = (
+            f"{prefix}/issues?state=closed&labels={quote(name, safe='')}"
+            "&sort=updated&direction=desc&per_page=100&page=1"
+        )
+        batch = api.request(path)
+        if not isinstance(batch, list):
+            raise CollectionError("invalid REST page")
+        for item in batch:
+            if not isinstance(item, dict) or "pull_request" not in item:
+                continue
+            number = item.get("number")
+            if number in (None, "") or int(number) in seen:
+                continue
+            seen.add(int(number))
+            found.append(int(number))
+    return found
 
 
 def main() -> int:

@@ -2,7 +2,8 @@
 
 Git・PR・CIの共通メタデータから、観測時点で設定条件を満たしているかを記録するPoCです。
 ソースの意味、テストの有効性、コードベース固有の重要pathを解析しません。
-自動マージ、承認、required checkの登録、PRコメントやラベルの変更も行いません。
+自動マージ、承認、required checkの登録、PRコメントの継続更新は行いません。
+判定結果の表示だけを、専用のPRラベルで更新します。ラベルは自動マージ許可ではなく、直近の観測時点の状態です。
 
 ## 判断材料と判定
 
@@ -32,6 +33,18 @@ GitHub側の設定変更はそれらの総合状態に反映されますが、�
 | `WAITING` | CI未実行・実行中、Draft、必要承認不足、base追随待ちなど |
 | `HUMAN_REVIEW_REQUIRED` | CI定義の変更、CI失敗、競合、変更要求、未解決スレッド、GitHub側のブロックなど |
 | `INSUFFICIENT_DATA` | API失敗、権限不足、ページング上限、必須情報欠落、再取得時のPR・CI・レビューの変化など |
+
+PR一覧では次のラベルで4判定を区別します。管理対象ラベルは同時に最大1つです。無関係なラベルは変更しません。
+
+| Decision | PRラベル | 次にすること |
+| --- | --- | --- |
+| `SHADOW_CONDITIONS_MET` | `shadow/要マージ判断` | 自動マージはしない。人がマージ可否を判断する |
+| `WAITING` | `shadow/CI・レビュー待ち` | CI完了・Draft解除・承認・base追随などを待つ |
+| `HUMAN_REVIEW_REQUIRED` | `shadow/要対応` | 競合・CI失敗・変更要求・未解決スレッドなどを人が解消する |
+| `INSUFFICIENT_DATA` | `shadow/再観測が必要` | 再実行するか、次の定期観測を待つ |
+
+ラベル説明とActionsの当該run Summaryから、観測時刻・対象SHA・JSON artifactへ辿れます。
+publisherが未作成なら4ラベルを作成します。branch protectionやrulesetsの必須チェックには登録しません。
 
 複数条件に該当するときは、情報不足、人間確認、待機の順に優先し、個々の条件をすべてレポートへ記録します。
 GitHubの集約状態が`BLOCKED`でも、必要承認不足やCI実行中など明示的な待機条件がある間は、その完了後に再評価します。別にCI失敗・変更要求などがある場合は人間確認を優先します。待機条件が解消しても`BLOCKED`なら人間確認とし、条件達成には引き続き`CLEAN`を要求します。
@@ -63,22 +76,39 @@ GitHubのレビュー総合状態も併せて確認します。
 
 ## 実装の分離
 
-- `.github/autonomous-merge/collect.py`：GitHub REST / GraphQL APIから観測事実を正規化するadapter。source本文やartifactの個別取得・実行は行わず、ファイル一覧APIに同梱されるpatchも参照・保存しない。
+- `.github/autonomous-merge/collect.py`：GitHub REST / GraphQL APIから観測事実を正規化するadapter。source本文やartifactの個別取得・実行は行わず、ファイル一覧APIに同梱されるpatchも参照・保存しない。書き込みは行わない。
 - `.github/autonomous-merge/evaluate.py`：正規化済みJSONとpolicyから仮判定する純粋な処理。GitHub接続や作業ツリーを必要としない。
+- `.github/autonomous-merge/publish.py`：保存済みJSONの`decision`をPRラベルへ写す処理。判定の再計算はしない。
 - `.github/autonomous-merge/policy.toml`：リポジトリごとの必須checkとレビュー条件。
-- `.github/workflows/autonomous-merge-shadow.yml`：default branchの信頼済みcollectorを実行し、SummaryとJSON artifactを保存する。
-- `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器のテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
+- `.github/workflows/autonomous-merge-shadow.yml`：default branchの信頼済みcollectorをread-onlyで実行し、SummaryとJSON artifactを保存する。ラベル更新は独立した`publish` jobだけが行う。
+- `.github/workflows/autonomous-merge-tests.yml`：変更中のcollector・評価器・publisherのテスト。PRコードのテストは観測workflowと分離し、read-only権限で実行する。
 
 JSONには正規化した観測事実、条件ごとの結果、観測時刻、head/base/test merge SHA、実行した評価器のSHA、policyとそのSHA-256を保存します。
 履歴はActionsのrun IDとattemptで区別したartifactに30日間保持します。
-PRに「現在も有効」と見えるコメントを維持しないため、pointer label・コメント探索・古い判定の書き換えは不要です。
-このPRを初めて導入する時点では旧workflowはdefault branchにないため、旧コメントの移行処理はありません。
+Summaryには当該観測runへのURLを追記します。PRコメントは作成・更新しません。
+collectorやpublisherがdefault branchにない初回導入中はbootstrapとして情報不足をSummaryへ記録し、ラベルは更新しません。
+
+## ラベルの失効と後着
+
+ラベルは「今も有効なマージ許可」ではなく、直近に成功したラベル更新です。publisherは書き込み直前にPRを再取得します。
+
+| 状況 | ラベルの扱い |
+| --- | --- |
+| 観測のhead/base SHAが現在のPRと不一致 | 変更しない。新しい観測の表示を残す |
+| より新しい`(run_id, run_attempt)`または`observed_at`の観測がある | 変更しない |
+| 対象PRが分かる収集失敗 | `shadow/再観測が必要`を付け、`shadow/要マージ判断`を残さない |
+| 収集失敗だけでPR番号が分からない | どのPRも変更しない |
+| close / merge | evaluatorの`HUMAN_REVIEW_REQUIRED`を`shadow/要対応`として反映する |
+| 再評価待ち | 既存トリガー（PR更新、レビュー、CI完了、毎時cron、手動）で再観測する |
+| ラベル書き込み失敗 | `publish` jobを失敗させる。SummaryとJSONはobserve側に残し、判定成功とは扱わない |
+
+同じPRを対象にする新しいShadow run（PRイベント、またはschedule / `workflow_run` / push / `workflow_dispatch`）がある場合も上書きしません。
+並行グループはPR番号またはイベント名です。グループをまたぐ競合はpublisherの後着判定で吸収します。
 
 PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
 スレッド解決や外部CIの状態変更など、直接購読しないイベントは毎時の再観測、または手動実行で反映します。
 CI完了時はイベントに含まれる古いSHAを使わず、現在openのPRを改めて取得します。
 通常ブランチのpushはジョブを実行せず、CI完了トリガーは自身を含めません。
-新しいcollectorがdefault branchにない初回導入中はbootstrapとして情報不足をSummaryへ記録します。
 
 APIは各一覧を100件ずつ最大30ページ、1レスポンス8MBまで読みます。上限超過は部分的な成功として扱いません。
 workflow全体には15分の実行上限があります。多数のPRがある場合は後続で分割実行を検討します。
@@ -86,8 +116,9 @@ workflow全体には15分の実行上限があります。多数のPRがある�
 ## ローカル実行と検証
 
 必要環境はPython 3.11以上です。Pythonの外部依存はありません。
-GitHubへのread-only tokenは環境変数`GH_TOKEN`または`GITHUB_TOKEN`で渡します。
-必要権限はContents / Pull requests / Checks / Commit statusesのreadです。書き込み・管理者権限は要求しません。
+GitHub tokenは環境変数`GH_TOKEN`または`GITHUB_TOKEN`で渡します。CLI引数には含めません。
+collectorの必要権限はContents / Pull requests / Checks / Commit statusesのreadです。
+publisherの必要権限はPull requestsとIssuesのwrite、Actionsのreadです。書き込み権限は`publish` jobだけに付けます。
 
 本リポジトリではDev Container内から実行します。
 
@@ -109,15 +140,22 @@ tokenはDev Containerへ環境変数として渡してください。CLI引数�
 python3 -B .github/autonomous-merge/evaluate.py \
   --facts /tmp/observations.json \
   --policy .github/autonomous-merge/policy.toml --format markdown
+
+python3 -B .github/autonomous-merge/publish.py \
+  --repository nimiusrd/devops-tycoon \
+  --report-dir /tmp/shadow-report \
+  --run-id 1 --run-attempt 1 \
+  --run-url https://github.com/nimiusrd/devops-tycoon/actions/runs/1
 ```
 
 ## 他コードベースへの展開
 
-1. collector、評価器、テスト、workflowを配置する。
+1. collector、評価器、publisher、テスト、workflowを配置する。
 2. 信頼済みdefault branchのpolicyに、対象CIのcheck名と発行元、承認条件を設定する。
 3. Shadow workflowの`workflow_run.workflows`を対象CIのworkflow名に合わせる。テストworkflowのpush対象ブランチも合わせる。
-4. required checkや自動マージへ接続せず、観測を開始する。
-5. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
+4. `publish` jobにだけPull requests / Issuesのwriteを付け、4つの`shadow/`ラベルは初回実行で作成する。branch protectionの必須チェックや自動マージには接続しない。
+5. required checkや自動マージへ接続せず、観測とラベル表示を開始する。
+6. 同じ条件で記録した仮判定と、人間の判断や変更後の結果を比較して条件を調整する。
 
 コードベース固有のパス一覧、言語別parser、テストファイル名の規約を移植する必要はありません。
 別ホスティングサービスへ展開するときは、同じ観測JSONを出力するadapterを追加し、評価器へは正規化した状態を渡します。

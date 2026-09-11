@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from bisect import bisect_right
 from collections import Counter
 import difflib
 import html
@@ -1440,12 +1441,38 @@ def _javascript_arrow_expression_end(
     return end
 
 
+def _javascript_typed_arrow_parameter_open_index(
+    masked_source: str,
+    arrow_start: int,
+    close_to_open: Mapping[int, int],
+) -> int | None:
+    """戻り値型を跨いでarrow parameterの閉じ括弧を探す。"""
+
+    cursor = arrow_start - 1
+    while cursor >= 0:
+        if masked_source[cursor] == ")":
+            parameter_open_index = close_to_open.get(cursor)
+            annotation_start = cursor + 1
+            while (
+                annotation_start < arrow_start
+                and masked_source[annotation_start].isspace()
+            ):
+                annotation_start += 1
+            if (
+                parameter_open_index is not None
+                and annotation_start < arrow_start
+                and masked_source[annotation_start] == ":"
+            ):
+                return parameter_open_index
+        cursor -= 1
+    return None
+
+
 def _javascript_arrow_parameter_spans(
     masked_source: str,
     arrow_start: int,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None],
     close_to_open: Mapping[int, int],
-    typed_parameter_open_indexes: Mapping[int, int],
 ) -> tuple[int, tuple[tuple[int, int], ...]] | None:
     """arrow直前のparameter範囲を、型注釈を跨いで後方走査する。"""
 
@@ -1455,9 +1482,57 @@ def _javascript_arrow_parameter_spans(
 
     parameter_open_index: int | None = None
     if previous >= 0 and masked_source[previous] == ")":
-        parameter_open_index = close_to_open.get(previous)
+        candidate_open_index = close_to_open.get(previous)
+        before_parameter = candidate_open_index - 1 if candidate_open_index is not None else -1
+        while before_parameter >= 0 and masked_source[before_parameter].isspace():
+            before_parameter -= 1
+        if (
+            candidate_open_index is not None
+            and (
+                before_parameter < 0
+                or masked_source[before_parameter] != ":"
+            )
+        ):
+            parameter_open_index = candidate_open_index
+        elif candidate_open_index is not None:
+            parameter_open_index = _javascript_typed_arrow_parameter_open_index(
+                masked_source,
+                arrow_start,
+                close_to_open,
+            )
     else:
-        parameter_open_index = typed_parameter_open_indexes.get(arrow_start)
+        parameter_end = arrow_start
+        while parameter_end > 0 and masked_source[parameter_end - 1].isspace():
+            parameter_end -= 1
+        parameter_start = parameter_end
+        while parameter_start > 0 and (
+            masked_source[parameter_start - 1].isalnum()
+            or masked_source[parameter_start - 1] in "_$"
+        ):
+            parameter_start -= 1
+        type_hint_cursor = parameter_start - 1
+        while type_hint_cursor >= 0 and masked_source[type_hint_cursor].isspace():
+            type_hint_cursor -= 1
+        type_hint_before_parameter = (
+            type_hint_cursor >= 0
+            and masked_source[type_hint_cursor] in ":|&<>"
+        )
+        if parameter_start == parameter_end:
+            if previous < 0 or masked_source[previous] not in "}]>":
+                return None
+            parameter_open_index = _javascript_typed_arrow_parameter_open_index(
+                masked_source,
+                arrow_start,
+                close_to_open,
+            )
+        elif not type_hint_before_parameter:
+            return parameter_start, ((parameter_start, parameter_end),)
+        else:
+            parameter_open_index = _javascript_typed_arrow_parameter_open_index(
+                masked_source,
+                arrow_start,
+                close_to_open,
+            )
 
     if parameter_open_index is not None:
         parameter_spans = argument_span_index.get(parameter_open_index)
@@ -1498,11 +1573,6 @@ def _javascript_function_scopes(
         )
         if close_index is not None:
             close_to_open[close_index] = open_index
-    typed_parameter_open_indexes = {
-        match.end() - 2: close_to_open[match.start()]
-        for match in re.finditer(r"\)(?=\s*:)[^;{}]*?=>", masked_source)
-        if match.start() in close_to_open
-    }
 
     scopes: list[tuple[int, int, int, frozenset[str]]] = []
     function_pattern = re.compile(
@@ -1543,7 +1613,6 @@ def _javascript_function_scopes(
             arrow_start,
             argument_span_index,
             close_to_open,
-            typed_parameter_open_indexes,
         )
         if parameter_info is None:
             continue
@@ -1589,48 +1658,130 @@ def _javascript_function_scopes_cached(
     return _javascript_function_scopes(source)
 
 
+def _javascript_binding_scope_index(
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]],
+) -> dict[str, tuple[tuple[int, ...], tuple[int, ...]]]:
+    """parameter bindingごとの包含scopeを位置検索できる形へ索引化する。"""
+
+    intervals: dict[str, list[tuple[int, int]]] = {}
+    for _, body_start, body_end, parameter_names in function_scopes:
+        for binding in parameter_names:
+            intervals.setdefault(binding, []).append((body_start, body_end))
+    index: dict[str, tuple[tuple[int, ...], tuple[int, ...]]] = {}
+    for binding, binding_intervals in intervals.items():
+        starts: list[int] = []
+        prefix_max_ends: list[int] = []
+        maximum_end = -1
+        for body_start, body_end in sorted(binding_intervals):
+            starts.append(body_start)
+            maximum_end = max(maximum_end, body_end)
+            prefix_max_ends.append(maximum_end)
+        index[binding] = (tuple(starts), tuple(prefix_max_ends))
+    return index
+
+
+def _javascript_function_scope_start_index(
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]],
+) -> tuple[int, ...]:
+    return tuple(scope[0] for scope in function_scopes)
+
+
 def _javascript_binding_shadowed_at(
     source: str,
     position: int,
     binding: str,
     *,
     function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
+    binding_scope_index: Mapping[str, tuple[tuple[int, ...], tuple[int, ...]]] | None = None,
 ) -> bool:
     if function_scopes is None:
         function_scopes = _javascript_function_scopes_cached(source)
-    return any(
-        binding in parameter_names and body_start <= position < body_end
-        for _, body_start, body_end, parameter_names in function_scopes
-    )
+    if binding_scope_index is None:
+        binding_scope_index = _javascript_binding_scope_index(function_scopes)
+    interval_index = binding_scope_index.get(binding)
+    if interval_index is None:
+        return False
+    starts, prefix_max_ends = interval_index
+    previous_scope = bisect_right(starts, position) - 1
+    return previous_scope >= 0 and prefix_max_ends[previous_scope] > position
+
+
+_JAVASCRIPT_SYNCHRONOUS_CALLBACK_CALLEES = frozenset(
+    {
+        "every",
+        "filter",
+        "find",
+        "findIndex",
+        "flatMap",
+        "forEach",
+        "map",
+        "reduce",
+        "reduceRight",
+        "some",
+    }
+)
+
+
+def _javascript_call_callee_name(
+    masked_source: str,
+    open_index: int,
+) -> str | None:
+    cursor = open_index - 1
+    while cursor >= 0 and masked_source[cursor].isspace():
+        cursor -= 1
+    end = cursor + 1
+    while cursor >= 0 and (
+        masked_source[cursor].isalnum()
+        or masked_source[cursor] in "_$"
+    ):
+        cursor -= 1
+    return masked_source[cursor + 1 : end] or None
+
+
+def _javascript_direct_callback_callee_index(
+    masked_source: str,
+    argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None],
+) -> dict[int, str]:
+    """直接callback引数の先頭位置からcallee名を引ける索引を作る。"""
+
+    index: dict[int, str] = {}
+    for open_index, argument_spans in argument_span_index.items():
+        if argument_spans is None:
+            continue
+        callee = _javascript_call_callee_name(masked_source, open_index)
+        if callee is None:
+            continue
+        for argument_start, argument_end in argument_spans:
+            candidate = argument_start
+            while candidate < argument_end and masked_source[candidate].isspace():
+                candidate += 1
+            if masked_source.startswith("async", candidate):
+                async_end = candidate + len("async")
+                if async_end >= argument_end or not (
+                    masked_source[async_end].isalnum()
+                    or masked_source[async_end] in "_$"
+                ):
+                    candidate = async_end
+                    while (
+                        candidate < argument_end
+                        and masked_source[candidate].isspace()
+                    ):
+                        candidate += 1
+            if candidate < argument_end:
+                index.setdefault(candidate, callee)
+    return index
 
 
 def _javascript_function_scope_is_direct_call_argument(
-    masked_source: str,
+    direct_callback_callee_index: Mapping[int, str],
     scope_start: int,
 ) -> bool:
-    """scopeが呼び出しの直接callback引数として渡されているか判定する。"""
+    """既知の同期calleeの直接callback引数だけを実行済みと判定する。"""
 
-    previous = scope_start - 1
-    while previous >= 0 and masked_source[previous].isspace():
-        previous -= 1
-    if previous < 0:
-        return False
-    if masked_source[previous] in "(,":
-        return True
-
-    word_end = previous + 1
-    word_start = previous
-    while word_start >= 0 and (
-        masked_source[word_start].isalnum()
-        or masked_source[word_start] in "_$"
-    ):
-        word_start -= 1
-    if masked_source[word_start + 1 : word_end] != "async":
-        return False
-    previous = word_start
-    while previous >= 0 and masked_source[previous].isspace():
-        previous -= 1
-    return previous >= 0 and masked_source[previous] in "(,"
+    return (
+        direct_callback_callee_index.get(scope_start)
+        in _JAVASCRIPT_SYNCHRONOUS_CALLBACK_CALLEES
+    )
 
 
 def _javascript_named_function_scope_is_called(
@@ -1663,6 +1814,9 @@ def _javascript_nested_function_ranges(
     *,
     argument_span_index: Mapping[int, tuple[tuple[int, int], ...] | None] | None = None,
     function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
+    direct_callback_callee_index: Mapping[int, str] | None = None,
+    function_scope_start_index: tuple[int, ...] | None = None,
+    masked_source: str | None = None,
 ) -> tuple[tuple[int, int], ...]:
     """未呼出しのnested function bodyだけをassertion走査から除外する。"""
 
@@ -1677,11 +1831,13 @@ def _javascript_nested_function_ranges(
         )
     else:
         scopes = function_scopes
-    candidates = [
-        scope
-        for scope in scopes
-        if start <= scope[0] < end
-    ]
+    if argument_span_index is None:
+        argument_span_index = _javascript_call_argument_span_index(source)
+    if function_scope_start_index is None:
+        function_scope_start_index = _javascript_function_scope_start_index(scopes)
+    candidate_start = bisect_right(function_scope_start_index, start - 1)
+    candidate_end = bisect_right(function_scope_start_index, end - 1)
+    candidates = list(scopes[candidate_start:candidate_end])
     if not candidates:
         candidates = [
             scope
@@ -1691,10 +1847,17 @@ def _javascript_nested_function_ranges(
     if not candidates:
         return ()
     outer = min(candidates, key=lambda scope: (scope[0], -scope[2]))
-    masked_source = _mask_javascript_literals(source)
+    scopes_to_check = candidates
+    if masked_source is None:
+        masked_source = _mask_javascript_literals(source)
+    if direct_callback_callee_index is None:
+        direct_callback_callee_index = _javascript_direct_callback_callee_index(
+            masked_source,
+            argument_span_index,
+        )
     return tuple(
         (body_start, body_end)
-        for scope_start, body_start, body_end, _ in scopes
+        for scope_start, body_start, body_end, _ in scopes_to_check
         if scope_start != outer[0]
         and body_start < end
         and start < body_end
@@ -1706,7 +1869,7 @@ def _javascript_nested_function_ranges(
             end,
         )
         and not _javascript_function_scope_is_direct_call_argument(
-            masked_source,
+            direct_callback_callee_index,
             scope_start,
         )
     )
@@ -3211,6 +3374,12 @@ def _javascript_assertion_count(
     expect_bindings: frozenset[str] | None = None,
     shadowed_expect_bindings: frozenset[str] | None = None,
     function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
+    binding_scope_index: Mapping[
+        str,
+        tuple[tuple[int, ...], tuple[int, ...]],
+    ] | None = None,
+    direct_callback_callee_index: Mapping[int, str] | None = None,
+    function_scope_start_index: tuple[int, ...] | None = None,
 ) -> int:
     """検証runnerまたはNode assertion APIのassertion数を数える。"""
 
@@ -3222,6 +3391,15 @@ def _javascript_assertion_count(
         argument_span_index = _javascript_call_argument_span_index(source)
     if function_scopes is None:
         function_scopes = _javascript_function_scopes_cached(source)
+    if binding_scope_index is None:
+        binding_scope_index = _javascript_binding_scope_index(function_scopes)
+    if function_scope_start_index is None:
+        function_scope_start_index = _javascript_function_scope_start_index(function_scopes)
+    if direct_callback_callee_index is None:
+        direct_callback_callee_index = _javascript_direct_callback_callee_index(
+            masked_source,
+            argument_span_index,
+        )
     if node_assert_bindings is None:
         node_assert_bindings = _javascript_node_assert_bindings(
             source,
@@ -3251,6 +3429,9 @@ def _javascript_assertion_count(
         end,
         argument_span_index=argument_span_index,
         function_scopes=function_scopes,
+        direct_callback_callee_index=direct_callback_callee_index,
+        function_scope_start_index=function_scope_start_index,
+        masked_source=masked_source,
     )
 
     def is_nested_function_position(position: int) -> bool:
@@ -3270,6 +3451,7 @@ def _javascript_assertion_count(
                 match.start(),
                 match.group("binding"),
                 function_scopes=function_scopes,
+                binding_scope_index=binding_scope_index,
             )
             and method in _JAVASCRIPT_NODE_ASSERTION_METHODS
             and not is_nested_function_position(match.start())
@@ -3284,6 +3466,7 @@ def _javascript_assertion_count(
                 match.start(),
                 match.group("binding"),
                 function_scopes=function_scopes,
+                binding_scope_index=binding_scope_index,
             )
             or is_nested_function_position(match.start())
         ):
@@ -3370,6 +3553,12 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
         source,
         argument_span_index=argument_span_index,
     )
+    binding_scope_index = _javascript_binding_scope_index(function_scopes)
+    function_scope_start_index = _javascript_function_scope_start_index(function_scopes)
+    direct_callback_callee_index = _javascript_direct_callback_callee_index(
+        masked_source,
+        argument_span_index,
+    )
     node_assert_bindings = _javascript_node_assert_bindings(
         source,
         masked_source=masked_source,
@@ -3414,6 +3603,9 @@ def _test_shape(data: bytes | None, *, language: str) -> tuple[int, int]:
             expect_bindings=expect_bindings,
             shadowed_expect_bindings=shadowed_expect_bindings,
             function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
+            direct_callback_callee_index=direct_callback_callee_index,
+            function_scope_start_index=function_scope_start_index,
         )
     return len(callbacks), assertion_count
 
@@ -3606,6 +3798,26 @@ def _javascript_empty_parameterized_suite_ranges(
     return tuple(sorted(ranges))
 
 
+def _javascript_unreachable_test_ranges(
+    source: str,
+) -> tuple[tuple[int, int], ...]:
+    """静的false分岐内のtest宣言範囲を検証対象から除外する。"""
+
+    masked_source = _mask_javascript_literals(source)
+    braced_end_index = _javascript_braced_end_index(masked_source, None)
+    ranges: list[tuple[int, int]] = []
+    for match in re.finditer(r"\bif\s*\(\s*(?:false|0)\s*\)", masked_source):
+        body_start = match.end()
+        while body_start < len(source) and source[body_start].isspace():
+            body_start += 1
+        if body_start >= len(source) or source[body_start] != "{":
+            continue
+        body_end = braced_end_index.get(body_start)
+        if body_end is not None:
+            ranges.append((body_start, body_end))
+    return tuple(ranges)
+
+
 def _javascript_test_call_spans(
     source: str,
     *,
@@ -3628,7 +3840,9 @@ def _javascript_test_call_spans(
         source,
         argument_span_index=argument_span_index,
     )
+    binding_scope_index = _javascript_binding_scope_index(function_scopes)
     empty_parameterized_suite_ranges = _javascript_empty_parameterized_suite_ranges(source)
+    unreachable_test_ranges = _javascript_unreachable_test_ranges(source)
 
     def is_shadowed(match: re.Match[str]) -> bool:
         return _javascript_binding_shadowed_at(
@@ -3636,6 +3850,7 @@ def _javascript_test_call_spans(
             match.start(),
             match.group("binding"),
             function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
         )
 
     def is_inside_empty_parameterized_suite(position: int) -> bool:
@@ -3644,11 +3859,18 @@ def _javascript_test_call_spans(
             for range_start, range_end in empty_parameterized_suite_ranges
         )
 
+    def is_inside_unreachable_test_range(position: int) -> bool:
+        return any(
+            range_start <= position < range_end
+            for range_start, range_end in unreachable_test_ranges
+        )
+
     parameterized_open_indexes = {
         match.end() - 1
         for match in parameterized_test_pattern.finditer(masked_source)
         if not is_shadowed(match)
         and not is_inside_empty_parameterized_suite(match.start())
+        and not is_inside_unreachable_test_range(match.start())
     }
     calls: list[tuple[int, int]] = []
     for match in test_call_pattern.finditer(masked_source):
@@ -3656,12 +3878,17 @@ def _javascript_test_call_spans(
             match.end() - 1 in parameterized_open_indexes
             or is_shadowed(match)
             or is_inside_empty_parameterized_suite(match.start())
+            or is_inside_unreachable_test_range(match.start())
         ):
             continue
         calls.append((match.start(), match.end() - 1))
 
     for match in parameterized_test_pattern.finditer(masked_source):
-        if is_shadowed(match) or is_inside_empty_parameterized_suite(match.start()):
+        if (
+            is_shadowed(match)
+            or is_inside_empty_parameterized_suite(match.start())
+            or is_inside_unreachable_test_range(match.start())
+        ):
             continue
         each_open_index = match.end() - 1
         each_argument_spans = argument_span_index.get(each_open_index)
@@ -3690,8 +3917,10 @@ def _javascript_test_call_spans(
             call_start,
             binding,
             function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
         )
         and not is_inside_empty_parameterized_suite(call_start)
+        and not is_inside_unreachable_test_range(call_start)
     )
     return tuple(sorted(set(calls)))
 
@@ -4033,6 +4262,12 @@ def _javascript_callback_has_executable_content(
     expect_bindings: frozenset[str] | None = None,
     shadowed_expect_bindings: frozenset[str] | None = None,
     function_scopes: Sequence[tuple[int, int, int, frozenset[str]]] | None = None,
+    binding_scope_index: Mapping[
+        str,
+        tuple[tuple[int, ...], tuple[int, ...]],
+    ] | None = None,
+    direct_callback_callee_index: Mapping[int, str] | None = None,
+    function_scope_start_index: tuple[int, ...] | None = None,
 ) -> bool:
     """検証操作を含まないinline callbackをbehavior recordから除外する。"""
 
@@ -4060,6 +4295,9 @@ def _javascript_callback_has_executable_content(
             expect_bindings=expect_bindings,
             shadowed_expect_bindings=shadowed_expect_bindings,
             function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
+            direct_callback_callee_index=direct_callback_callee_index,
+            function_scope_start_index=function_scope_start_index,
         )
         > 0
     )
@@ -4086,6 +4324,12 @@ def _javascript_test_behavior_records(
     function_scopes = _javascript_function_scopes(
         source,
         argument_span_index=argument_span_index,
+    )
+    binding_scope_index = _javascript_binding_scope_index(function_scopes)
+    function_scope_start_index = _javascript_function_scope_start_index(function_scopes)
+    direct_callback_callee_index = _javascript_direct_callback_callee_index(
+        masked_source,
+        argument_span_index,
     )
     node_assert_bindings = _javascript_node_assert_bindings(
         source,
@@ -4130,6 +4374,9 @@ def _javascript_test_behavior_records(
             expect_bindings=expect_bindings,
             shadowed_expect_bindings=shadowed_expect_bindings,
             function_scopes=function_scopes,
+            binding_scope_index=binding_scope_index,
+            direct_callback_callee_index=direct_callback_callee_index,
+            function_scope_start_index=function_scope_start_index,
         ):
             continue
         behaviors.append(

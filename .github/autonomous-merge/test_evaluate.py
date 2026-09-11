@@ -519,8 +519,9 @@ class EvaluateTests(unittest.TestCase):
     def test_typed_arrow_parameter_shadowing_does_not_register_fake_tests(self) -> None:
         source = (
             "import { expect, test as runner } from 'vitest';\n"
-            "const register = (runner: typeof test): void => {\n"
+            "const register = (runner: typeof test): { registered: boolean } => {\n"
             "  runner('fake', () => expect(value).toBe(1));\n"
+            "  return { registered: false };\n"
             "};\n"
             "runner('real', () => expect(value).toBe(1));\n"
         )
@@ -528,6 +529,33 @@ class EvaluateTests(unittest.TestCase):
         calls = _javascript_test_call_spans(source)
 
         self.assertEqual(len(calls), 1)
+
+    def test_unknown_nested_callbacks_do_not_satisfy_verification(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "function ignore(cb: () => void) { void cb; }\n"
+            "test('runs', () => ignore(() => expect(value).toBe(1)));\n"
+        )
+
+        self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+
+    def test_tests_in_static_false_branches_do_not_satisfy_verification(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "if (false) {\n"
+            "  test('dead', () => expect(value).toBe(1));\n"
+            "}\n"
+        )
+
+        self.assertEqual(_javascript_test_call_spans(source), ())
+        self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
+
+    def test_many_single_parameter_arrows_are_indexed_without_prefix_rescans(self) -> None:
+        source = "import { expect, test } from 'vitest';\n" + "\n".join(
+            "test('case', value => expect(value).toBe(1));" for _ in range(1200)
+        )
+
+        self.assertEqual(len(_javascript_test_call_spans(source)), 1200)
 
     def test_playwright_test_info_alias_modifiers_do_not_satisfy_verification(self) -> None:
         for modifier in ("skip", "fixme", "fail"):

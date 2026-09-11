@@ -36,6 +36,7 @@ def report(decision, head=HEAD, base=BASE, observed="2026-09-11T12:00:00+00:00")
         "decision": decision,
         "observations": {
             "observed_at": observed,
+            "run_started_at": observed,
             "pr": {
                 "number": 1,
                 "head_sha": head,
@@ -578,6 +579,7 @@ class PublishTests(unittest.TestCase):
             )
         )
         self.assertEqual(len(api.paths), 1)
+        self.assertTrue(api.paths[0].endswith("/jobs?filter=all"))
         self.assertTrue(
             has_newer_run(
                 [newer],
@@ -606,6 +608,14 @@ class PublishTests(unittest.TestCase):
             "conclusion": "cancelled",
         }
         cache = {}
+        cancelled_unpublished = {
+            **cancelled,
+            "jobs": [{"name": "observe", "conclusion": "cancelled"}],
+        }
+        cancelled_published = {
+            **cancelled,
+            "jobs": [{"name": "publish (1)", "conclusion": "success"}],
+        }
         self.assertTrue(
             has_newer_run(
                 [live],
@@ -618,12 +628,30 @@ class PublishTests(unittest.TestCase):
         )
         self.assertFalse(
             has_newer_run(
-                [cancelled],
+                [cancelled_unpublished],
                 1,
                 10,
                 1,
                 observed_at="2026-09-11T12:00:00+00:00",
                 published_cache=cache,
+            )
+        )
+        self.assertTrue(
+            has_newer_run(
+                [cancelled_published],
+                1,
+                10,
+                1,
+                observed_at="2026-09-11T12:00:00+00:00",
+            )
+        )
+        self.assertTrue(
+            has_newer_run(
+                [cancelled],
+                1,
+                10,
+                1,
+                observed_at="2026-09-11T12:00:00+00:00",
             )
         )
 
@@ -891,6 +919,93 @@ class PublishTests(unittest.TestCase):
         )
         self.assertEqual(overflow_prs(overflow), [MAX_PUBLISH_MATRIX + 1])
 
+    def test_publish_matrix_rotates_beyond_overflow_across_runs(self):
+        from publish import MAX_PUBLISH_MATRIX, overflow_prs, publish_matrix, rotate_prs
+
+        self.assertEqual(rotate_prs([], 9), [])
+        self.assertEqual(rotate_prs([3, 1, 2], 1), [2, 3, 1])
+        values = list(range(1, MAX_PUBLISH_MATRIX * 2 + 4))
+        leftover = values[MAX_PUBLISH_MATRIX * 2 :]
+        rotated = values[2:] + values[:2]
+        self.assertEqual(
+            publish_matrix(values, 2),
+            ("per-pr", rotated[:MAX_PUBLISH_MATRIX]),
+        )
+        self.assertEqual(
+            overflow_prs(values, 2),
+            rotated[MAX_PUBLISH_MATRIX : MAX_PUBLISH_MATRIX * 2],
+        )
+        covered = set(publish_matrix(values, MAX_PUBLISH_MATRIX * 2)[1]) | set(
+            overflow_prs(values, MAX_PUBLISH_MATRIX * 2)
+        )
+        self.assertTrue(set(leftover) <= covered)
+
+    def test_skip_reason_blocks_observation_without_run_started_at(self):
+        current = {
+            "number": 1,
+            "head_sha": HEAD,
+            "base_sha": BASE,
+            "base_ref": "trunk",
+            "state": "open",
+            "merged": False,
+            "draft": False,
+            "labels": ["shadow/CI・レビュー待ち"],
+        }
+        payload = report("WAITING")
+        del payload["observations"]["run_started_at"]
+        self.assertEqual(
+            skip_reason(payload, current, [], 10, 1),
+            "missing_run_started_at",
+        )
+        self.assertIsNone(
+            skip_reason(
+                {"decision": "INSUFFICIENT_DATA", "error": "API 403"},
+                current,
+                [],
+                10,
+                1,
+            )
+        )
+
+    def test_run_published_labels_uses_prior_attempt_and_cancelled_jobs(self):
+        cancelled = {
+            "id": 9,
+            "status": "completed",
+            "conclusion": "cancelled",
+            "event": "schedule",
+        }
+        self.assertTrue(
+            run_published_labels(
+                {
+                    **cancelled,
+                    "jobs": [
+                        {"name": "publish (1)", "conclusion": "success"},
+                        {"name": "observe", "conclusion": "cancelled"},
+                    ],
+                },
+                number=1,
+            )
+        )
+        self.assertFalse(
+            run_published_labels(
+                {
+                    **cancelled,
+                    "jobs": [{"name": "observe", "conclusion": "cancelled"}],
+                },
+                number=1,
+            )
+        )
+        self.assertTrue(run_published_labels(cancelled))
+
+        class JobsAPI:
+            def pages(self, path, key=None):
+                self.path = path
+                return [{"name": "publish (1)", "conclusion": "success"}]
+
+        api = JobsAPI()
+        self.assertTrue(run_published_labels(cancelled, api, 1))
+        self.assertEqual(api.path, "/actions/runs/9/jobs?filter=all")
+
     def test_recent_runs_refresh_live_snapshot_run(self):
         known = [
             {
@@ -931,7 +1046,7 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(match["run_attempt"], 2)
         self.assertEqual(match["run_started_at"], "2026-09-11T14:00:00Z")
 
-    def test_recent_runs_skip_id_refresh_for_completed_known_run(self):
+    def test_recent_runs_refresh_completed_known_run_before_write(self):
         known = [
             {
                 "id": 5,
@@ -972,8 +1087,8 @@ class PublishTests(unittest.TestCase):
             run_id=200,
         )
         match = next(item for item in runs if int(item["id"]) == 5)
-        self.assertEqual(match["run_attempt"], 1)
-        self.assertFalse(any(path.endswith("/actions/runs/5") for path in api.fetched))
+        self.assertEqual(match["run_attempt"], 2)
+        self.assertTrue(any(path.endswith("/actions/runs/5") for path in api.fetched))
 
     def test_shared_history_is_refreshed_before_first_write(self):
         api = FixtureAPI(["enhancement"])

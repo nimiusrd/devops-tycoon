@@ -124,16 +124,19 @@ jobs:
           if Path("shadow-report/collection-error.json").exists() and raw.isdigit():
               prs.add(int(raw))
           values = sorted(prs)
+          offset = int(os.environ.get("GITHUB_RUN_ID") or "0")
           publisher = Path(".github/autonomous-merge/publish.py")
           if publisher.exists():
               sys.path.insert(0, str(publisher.parent.resolve()))
               from publish import overflow_prs, publish_matrix
 
-              mode, matrix = publish_matrix(values)
-              overflow = overflow_prs(values)
+              mode, matrix = publish_matrix(values, offset)
+              overflow = overflow_prs(values, offset)
           else:
-              mode, matrix = "per-pr", values[:256]
-              overflow = values[256:]
+              start = offset % len(values) if values else 0
+              rotated = values[start:] + values[:start]
+              mode, matrix = "per-pr", rotated[:256]
+              overflow = rotated[256:512]
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
               fh.write(f"prs={json.dumps(values)}\n")
               fh.write(f"mode={mode}\n")

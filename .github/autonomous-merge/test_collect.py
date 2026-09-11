@@ -15,6 +15,7 @@ from collect import (
     GitHub,
     collect,
     main,
+    stamp_current_run,
     targets,
 )
 from evaluate import assess
@@ -488,6 +489,34 @@ class CollectTests(unittest.TestCase):
         self.assertEqual(facts["run_id"], 9)
         self.assertEqual(facts["run_attempt"], 1)
         self.assertEqual(facts["run_started_at"], "2026-09-11T12:00:00Z")
+
+    def test_stamp_current_run_records_api_failure(self):
+        class Boom:
+            repository = "example/project"
+            prefix = "/repos/example/project"
+
+            def request(self, path):
+                raise CollectionError("API GET run: HTTP 403")
+
+        facts = {"collection_errors": []}
+        with patch.dict("os.environ", {"GITHUB_RUN_ID": "9"}):
+            stamp_current_run(facts, Boom())
+        self.assertEqual(facts["collection_errors"], ["API GET run: HTTP 403"])
+        self.assertNotIn("run_started_at", facts)
+
+    def test_stamp_current_run_records_missing_start_time(self):
+        class Empty:
+            repository = "example/project"
+            prefix = "/repos/example/project"
+
+            def request(self, path):
+                return {"id": 9}
+
+        facts = {"collection_errors": []}
+        with patch.dict("os.environ", {"GITHUB_RUN_ID": "9"}):
+            stamp_current_run(facts, Empty())
+        self.assertEqual(facts["collection_errors"], ["missing run_started_at"])
+        self.assertNotIn("run_started_at", facts)
 
 
 if __name__ == "__main__":

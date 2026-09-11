@@ -231,12 +231,15 @@ def stamp_current_run(facts: dict, api: GitHub) -> None:
         return
     try:
         run = request(f"{prefix}/actions/runs/{int(raw_id)}")
-    except CollectionError:
+    except CollectionError as error:
+        facts.setdefault("collection_errors", []).append(str(error))
         return
     if isinstance(run, dict):
         started = run.get("run_started_at") or run.get("created_at")
         if started:
             facts["run_started_at"] = started
+            return
+        facts.setdefault("collection_errors", []).append("missing run_started_at")
 
 
 def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:

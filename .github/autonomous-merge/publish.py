@@ -18,7 +18,6 @@ MAX_PUBLISH_MATRIX = 256
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 BROADCAST_EVENTS = {"schedule", "workflow_run"}
 TARGETED_PR = re.compile(r"^shadow-pr-([1-9][0-9]*)$")
-IGNORED_CONCLUSIONS = {"cancelled", "skipped"}
 ACTIVE_RUNS = {
     "completed",
     "in_progress",
@@ -155,13 +154,21 @@ def event_pr(event: dict) -> int | None:
     return int(raw)
 
 
-def publish_matrix(prs: list[int]) -> tuple[str, list[int]]:
+def rotate_prs(prs: list[int], offset: int = 0) -> list[int]:
     values = sorted({int(number) for number in prs})
+    if not values:
+        return []
+    start = int(offset) % len(values)
+    return values[start:] + values[:start]
+
+
+def publish_matrix(prs: list[int], offset: int = 0) -> tuple[str, list[int]]:
+    values = rotate_prs(prs, offset)
     return "per-pr", values[:MAX_PUBLISH_MATRIX]
 
 
-def overflow_prs(prs: list[int]) -> list[int]:
-    values = sorted({int(number) for number in prs})
+def overflow_prs(prs: list[int], offset: int = 0) -> list[int]:
+    values = rotate_prs(prs, offset)
     return values[MAX_PUBLISH_MATRIX : MAX_PUBLISH_MATRIX * 2]
 
 
@@ -286,7 +293,7 @@ def list_recent_runs(
             if number is None or run_id is None:
                 continue
             other = int(item["id"])
-            if other == int(run_id) or item.get("status") == "completed":
+            if other == int(run_id):
                 continue
             if not run_targets_pr(item, number, default_branch, pr_open):
                 continue
@@ -300,7 +307,7 @@ def list_recent_runs(
 
 
 def run_observed(run: dict, default_branch: str | None) -> bool:
-    if run.get("conclusion") in IGNORED_CONCLUSIONS:
+    if run.get("conclusion") == "skipped":
         return False
     if run.get("event") != "push":
         return True
@@ -354,15 +361,19 @@ def run_published_labels(
 ) -> bool:
     if run.get("status") != "completed":
         return True
-    if run.get("conclusion") in IGNORED_CONCLUSIONS:
+    if run.get("conclusion") == "skipped":
         return False
     jobs = run.get("jobs")
     if jobs is None and api is not None:
         try:
-            jobs = api.pages(f"/actions/runs/{int(run['id'])}/jobs", "jobs")
+            jobs = api.pages(
+                f"/actions/runs/{int(run['id'])}/jobs?filter=all", "jobs"
+            )
         except (PublishError, KeyError, TypeError, ValueError):
             return True
     if jobs is None:
+        if run.get("conclusion") == "cancelled":
+            return True
         return run_declared_targets(run) is not None
     if not isinstance(jobs, list):
         return True
@@ -456,6 +467,8 @@ def skip_reason(
     published_cache: dict | None = None,
 ) -> str | None:
     facts = observed_pr(report)
+    if (report.get("observations") or {}) and not observed_run_started_at(report):
+        return "missing_run_started_at"
     if facts.get("head_sha") and facts["head_sha"] != current["head_sha"]:
         return "stale_sha"
     if facts.get("base_sha") and facts["base_sha"] != current["base_sha"]:

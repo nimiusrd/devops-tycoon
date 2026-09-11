@@ -113,11 +113,13 @@ def assess(facts: dict, policy: dict) -> dict:
         if pr["merge_sha"] is not None:
             sha(pr["merge_sha"])
         if not boolean(facts["stable"], "stable"):
-            condition("freshness", "unknown", "PR changed during collection; recollect")
-        else:
             condition(
-                "freshness", "pass", "PR state and commit pair stable during collection"
+                "freshness",
+                "unknown",
+                "PR, CI or reviews changed between samples; recollect",
             )
+        else:
+            condition("freshness", "pass", "PR, CI and reviews agree in both samples")
         if pr["state"] not in {"OPEN", "CLOSED", "MERGED"}:
             raise EvaluationError("unknown PR state")
         condition(
@@ -144,7 +146,7 @@ def assess(facts: dict, policy: dict) -> dict:
             "pass"
             if merge_state == "CLEAN"
             else "waiting"
-            if merge_state in {"UNKNOWN", "BEHIND"}
+            if merge_state in {"UNKNOWN", "BEHIND", "DRAFT"}
             else "blocked"
         )
         condition("github_merge_state", status, merge_state)

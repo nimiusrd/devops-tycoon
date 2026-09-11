@@ -94,6 +94,109 @@ class FixtureAPI:
 
 
 class CollectTests(unittest.TestCase):
+    def test_rerun_detected_without_any_pr_state_change(self):
+        for add_run in [True, False]:
+            with self.subTest(add_run=add_run):
+                api = FixtureAPI()
+                original = api.pages
+
+                def changing(path, key=None):
+                    records = original(path, key)
+                    if (
+                        path.startswith(f"/commits/{HEAD}/check-runs")
+                        and api.paths.count(path) == 2
+                    ):
+                        if add_run:
+                            records.append(
+                                {
+                                    **records[-1],
+                                    "id": 3,
+                                    "status": "in_progress",
+                                    "conclusion": None,
+                                }
+                            )
+                        else:
+                            records[-1].update(status="in_progress", conclusion=None)
+                    return records
+
+                api.pages = changing
+                result = collect(api, 1, BASE)
+                self.assertTrue(result["rechecked"]["pr"])
+                self.assertFalse(result["rechecked"]["checks"])
+                self.assertEqual(
+                    assess(result, policy())["decision"], "INSUFFICIENT_DATA"
+                )
+
+    def test_legacy_status_change_and_recheck_error_are_not_success(self):
+        for fail in [False, True]:
+            api = FixtureAPI()
+            original = api.pages
+
+            def changing(path, key=None):
+                records = original(path, key)
+                if path == f"/commits/{HEAD}/statuses" and api.paths.count(path) == 2:
+                    if fail:
+                        raise CollectionError("API 403 during recheck")
+                    return [
+                        {
+                            "id": 4,
+                            "context": "External CI",
+                            "creator": {"login": "ci"},
+                            "state": "pending",
+                        }
+                    ]
+                return records
+
+            api.pages = changing
+            self.assertEqual(
+                assess(collect(api, 1, BASE), policy())["decision"], "INSUFFICIENT_DATA"
+            )
+
+    def test_reviews_and_thread_resolution_are_also_rechecked(self):
+        api = FixtureAPI()
+        original = api.pages
+
+        def changing_reviews(path, key=None):
+            records = original(path, key)
+            if path.endswith("/reviews") and api.paths.count(path) == 2:
+                records[0]["state"] = "CHANGES_REQUESTED"
+            return records
+
+        api.pages = changing_reviews
+        self.assertEqual(
+            assess(collect(api, 1, BASE), policy())["decision"], "INSUFFICIENT_DATA"
+        )
+        api = FixtureAPI()
+        original_connection = api.connection
+        thread_reads = 0
+
+        def changing_threads(number, name, fields):
+            nonlocal thread_reads
+            records = original_connection(number, name, fields)
+            if name == "reviewThreads":
+                thread_reads += 1
+                if thread_reads == 2:
+                    records[0]["isResolved"] = False
+            return records
+
+        api.connection = changing_threads
+        result = collect(api, 1, BASE)
+        self.assertFalse(result["rechecked"]["unresolved_threads"])
+        self.assertEqual(assess(result, policy())["decision"], "INSUFFICIENT_DATA")
+
+    def test_metadata_order_changes_do_not_invalidate_observation(self):
+        api = FixtureAPI()
+        original = api.pages
+
+        def reordered(path, key=None):
+            records = original(path, key)
+            return list(reversed(records)) if api.paths.count(path) == 2 else records
+
+        api.pages = reordered
+        self.assertEqual(
+            assess(collect(api, 1, BASE), policy())["decision"], "SHADOW_CONDITIONS_MET"
+        )
+
     def test_http_transport_sends_json_and_rejects_graphql_errors(self):
         api = GitHub("example/project")
         with patch(

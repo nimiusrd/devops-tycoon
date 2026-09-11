@@ -153,6 +153,63 @@ def normalized_pr(raw: dict) -> dict:
     }
 
 
+def decision_metadata(api: GitHub, number: int, pr: dict) -> dict:
+    """判定に使うCI・レビュー状態を同じ方法で再取得できるようにする。"""
+    metadata = {}
+    reviews = api.pages(f"/pulls/{number}/reviews")
+    metadata["reviews"] = [
+        {
+            "id": r["id"],
+            "author": (r["user"] or {}).get("login"),
+            "state": r["state"],
+            "commit_sha": r["commit_id"],
+            "submitted_at": r["submitted_at"],
+        }
+        for r in reviews
+    ]
+    threads = api.connection(number, "reviewThreads", "isResolved")
+    if any(type(t["isResolved"]) is not bool for t in threads):
+        raise CollectionError("invalid review thread state")
+    metadata["unresolved_threads"] = sum(not t["isResolved"] for t in threads)
+    metadata["checks"] = []
+    for commit in dict.fromkeys([pr["head_sha"], pr["merge_sha"]]):
+        if commit is None:
+            continue
+        runs = api.pages(f"/commits/{commit}/check-runs?filter=all", "check_runs")
+        for run in runs:
+            # APIを要求したSHAとcheck自体のSHAの双方を保存・照合する。
+            if run["head_sha"] != commit:
+                raise CollectionError("check run SHA mismatch")
+            metadata["checks"].append(
+                {
+                    "kind": "check_run",
+                    "name": run["name"],
+                    "app_id": run["app"]["id"],
+                    "id": run["id"],
+                    "sha": commit,
+                    "status": run["status"],
+                    "conclusion": run["conclusion"],
+                }
+            )
+        for status in api.pages(f"/commits/{commit}/statuses"):
+            metadata["checks"].append(
+                {
+                    "kind": "status",
+                    "name": status["context"],
+                    "creator": status["creator"]["login"],
+                    "id": status["id"],
+                    "sha": commit,
+                    "status": "pending"
+                    if status["state"] == "pending"
+                    else "completed",
+                    "conclusion": status["state"],
+                }
+            )
+    for key in ("reviews", "checks"):
+        metadata[key].sort(key=lambda item: json.dumps(item, sort_keys=True))
+    return metadata
+
+
 def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
     facts = {
         "schema_version": 2,
@@ -183,55 +240,8 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
             for key in ("changed_files", "additions", "deletions")
         ):
             raise CollectionError("PR file totals mismatch")
-        reviews = api.pages(f"/pulls/{number}/reviews")
-        facts["reviews"] = [
-            {
-                "id": r["id"],
-                "author": (r["user"] or {}).get("login"),
-                "state": r["state"],
-                "commit_sha": r["commit_id"],
-                "submitted_at": r["submitted_at"],
-            }
-            for r in reviews
-        ]
-        threads = api.connection(number, "reviewThreads", "isResolved")
-        if any(type(t["isResolved"]) is not bool for t in threads):
-            raise CollectionError("invalid review thread state")
-        facts["unresolved_threads"] = sum(not t["isResolved"] for t in threads)
-        facts["checks"] = []
-        for commit in dict.fromkeys([before["head_sha"], before["merge_sha"]]):
-            if commit is None:
-                continue
-            runs = api.pages(f"/commits/{commit}/check-runs?filter=all", "check_runs")
-            for run in runs:
-                # APIを要求したSHAとcheck自体のSHAの双方を保存・照合する。
-                if run["head_sha"] != commit:
-                    raise CollectionError("check run SHA mismatch")
-                facts["checks"].append(
-                    {
-                        "kind": "check_run",
-                        "name": run["name"],
-                        "app_id": run["app"]["id"],
-                        "id": run["id"],
-                        "sha": commit,
-                        "status": run["status"],
-                        "conclusion": run["conclusion"],
-                    }
-                )
-            for status in api.pages(f"/commits/{commit}/statuses"):
-                facts["checks"].append(
-                    {
-                        "kind": "status",
-                        "name": status["context"],
-                        "creator": status["creator"]["login"],
-                        "id": status["id"],
-                        "sha": commit,
-                        "status": "pending"
-                        if status["state"] == "pending"
-                        else "completed",
-                        "conclusion": status["state"],
-                    }
-                )
+        initial_metadata = decision_metadata(api, number, before)
+        facts.update(initial_metadata)
         histories = {}
         for check in facts["checks"]:
             key = (
@@ -255,8 +265,16 @@ def collect(api: GitHub, number: int, evaluator_sha: str) -> dict:
             }
             for key, checks in histories.items()
         ]
+        confirmed_metadata = decision_metadata(api, number, before)
         after = normalized_pr(api.graphql(number, PR_FIELDS))
-        facts["stable"] = before == after
+        facts["rechecked"] = {
+            "pr": before == after,
+            **{
+                key: initial_metadata[key] == confirmed_metadata[key]
+                for key in initial_metadata
+            },
+        }
+        facts["stable"] = all(facts["rechecked"].values())
         facts["observed_at"] = datetime.now(timezone.utc).isoformat()
     except (CollectionError, KeyError, TypeError, ValueError) as error:
         facts["collection_errors"].append(str(error))

@@ -137,6 +137,7 @@ class EvaluateTests(unittest.TestCase):
     def test_pr_conditions(self):
         cases = [
             ({"draft": True}, "WAITING"),
+            ({"draft": True, "merge_state": "DRAFT"}, "WAITING"),
             ({"state": "CLOSED"}, "HUMAN_REVIEW_REQUIRED"),
             ({"state": "MERGED"}, "HUMAN_REVIEW_REQUIRED"),
             ({"mergeable": "CONFLICTING"}, "HUMAN_REVIEW_REQUIRED"),

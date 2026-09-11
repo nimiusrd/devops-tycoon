@@ -111,7 +111,7 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 `publish` jobの並行グループはPR番号またはイベント名で、`cancel-in-progress: false` です。全イベントを1 groupにすると待機1件しか残らず、他PRのpendingが落ちます。
 グループをまたぐ競合はpublisherの後着判定で吸収します。一度ラベル変更を始めた後は、後着判定で途中終了せず整合した1ラベルまで完了します。
 後着判定は進行中のrunをstatus別に取得し、完了履歴は最大30ページまで走査して低IDの再実行も含めます。
-失敗・キャンセル・skippedのrunは後着にしません。publisher単独再実行は選択した観測artifactのattemptと`observed_at`で鮮度を判定します。
+キャンセル・skippedのrunは後着にしません。`failure`でも観測レポートを出している場合は後着として扱います。publisher単独再実行は選択した観測artifactのattemptと`observed_at`で鮮度を判定します。
 `workflow_dispatch` の対象はrun名が`shadow-pr-N`または`shadow-all`に完全一致する場合だけ宣言として扱います。
 `workflow_run`とdefault branchの`push`は、RESTの`pull_requests`関連付けより先に全体観測として扱います。
 fork由来PRの`pull_request_review`ではwrite tokenが降格されるため`publish`を起動せず、scheduleやCI完了の後続観測でラベルを更新します。

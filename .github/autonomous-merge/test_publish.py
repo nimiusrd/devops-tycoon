@@ -380,9 +380,10 @@ class PublishTests(unittest.TestCase):
             "run_started_at": "2026-09-11T14:00:00Z",
             "pull_requests": [],
         }
-        self.assertFalse(has_newer_run([failed_collection], 1, 10, 1))
-        self.assertIsNone(
-            skip_reason(report("WAITING"), current, [failed_collection], 10, 1)
+        self.assertTrue(has_newer_run([failed_collection], 1, 10, 1))
+        self.assertEqual(
+            skip_reason(report("WAITING"), current, [failed_collection], 10, 1),
+            "newer_run",
         )
         completed_old_id = {
             "id": 5,
@@ -755,11 +756,11 @@ class PublishTests(unittest.TestCase):
         self.assertIsNone(reason)
         self.assertEqual(
             result,
-            ["remove:shadow/要マージ判断", "add:shadow/再観測が必要"],
+            ["add:shadow/再観測が必要", "remove:shadow/要マージ判断"],
         )
         self.assertEqual(
             [item[0] for item in writes if item[0] in {"POST", "DELETE"}],
-            ["DELETE", "POST"],
+            ["POST", "DELETE"],
         )
 
     def test_refresh_removes_managed_labels_added_by_a_peer(self):
@@ -805,6 +806,46 @@ class PublishTests(unittest.TestCase):
             [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
             ["shadow/CI・レビュー待ち"],
         )
+
+    def test_empty_remote_labels_are_not_replaced_by_cache(self):
+        api = FixtureAPI(["shadow/CI・レビュー待ち"])
+        original = api.request
+
+        def emptied(path, body=None, method=None):
+            result = original(path, body, method)
+            if path.endswith("/pulls/1"):
+                api.pull["labels"] = [
+                    item
+                    for item in api.pull["labels"]
+                    if item["name"] not in MANAGED_LABELS
+                ]
+                return {**api.pull, "labels": []}
+            return result
+
+        api.request = emptied
+        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
+        self.assertEqual(status, "updated")
+        self.assertEqual(
+            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
+            ["shadow/CI・レビュー待ち"],
+        )
+
+    def test_concurrent_label_create_422_is_reused(self):
+        api = FixtureAPI([])
+        api.labels = {}
+        original = api.request
+
+        def conflict(path, body=None, method=None):
+            verb = method or ("POST" if body is not None else "GET")
+            if path.endswith("/labels") and verb == "POST" and body and "name" in body:
+                api.labels[body["name"]] = True
+                raise PublishError(f"API POST {path}: HTTP 422")
+            return original(path, body, method)
+
+        api.request = conflict
+        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
+        self.assertEqual(status, "updated")
+        self.assertIn("shadow/CI・レビュー待ち", [item["name"] for item in api.pull["labels"]])
 
     def test_missing_repo_labels_are_created_once(self):
         api = FixtureAPI([])

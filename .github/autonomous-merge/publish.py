@@ -17,7 +17,7 @@ MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 BROADCAST_EVENTS = {"schedule", "workflow_run"}
 TARGETED_PR = re.compile(r"^shadow-pr-([1-9][0-9]*)$")
-IGNORED_CONCLUSIONS = {"cancelled", "skipped", "failure"}
+IGNORED_CONCLUSIONS = {"cancelled", "skipped"}
 ACTIVE_RUNS = {
     "completed",
     "in_progress",
@@ -387,14 +387,19 @@ def ensure_labels(api: GitHub) -> None:
         except PublishError as error:
             if "HTTP 404" not in str(error):
                 raise
-            api.request(
-                f"{api.prefix}/labels",
-                {
-                    "name": name,
-                    "color": LABEL_COLORS[name],
-                    "description": LABEL_DESCRIPTIONS[name],
-                },
-            )
+            try:
+                api.request(
+                    f"{api.prefix}/labels",
+                    {
+                        "name": name,
+                        "color": LABEL_COLORS[name],
+                        "description": LABEL_DESCRIPTIONS[name],
+                    },
+                )
+            except PublishError as created:
+                if "HTTP 422" not in str(created):
+                    raise
+                api.request(path)
 
 
 def sync_labels(
@@ -419,44 +424,43 @@ def sync_labels(
         labels = pull.get("labels")
         if not isinstance(labels, list):
             return names
-        found = []
-        for item in labels:
-            if isinstance(item, dict) and item.get("name"):
-                found.append(item["name"])
-        if found:
-            names[:] = found
-            return found
+        names[:] = [
+            item["name"]
+            for item in labels
+            if isinstance(item, dict) and item.get("name")
+        ]
         return names
 
     for _ in range(3):
-        names = refresh()
-        extras = [
-            name for name in names if name in MANAGED_LABELS and name != desired
-        ]
-        if extras:
-            for name in extras:
-                reason = guard()
-                if reason:
-                    return writes, reason
-                try:
-                    api.request(
-                        f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
-                        method="DELETE",
-                    )
-                except PublishError as error:
-                    if "HTTP 404" not in str(error):
-                        raise
-                writes.append(f"remove:{name}")
-                names[:] = [item for item in names if item != name]
+        latest = refresh()
+        if desired not in latest:
+            reason = guard()
+            if reason:
+                return writes, reason
+            api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
+            writes.append(f"add:{desired}")
+            if desired not in names:
+                names.append(desired)
             continue
-        if desired in names:
+        extras = [
+            name for name in latest if name in MANAGED_LABELS and name != desired
+        ]
+        if not extras:
             return writes, None
-        reason = guard()
-        if reason:
-            return writes, reason
-        api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
-        writes.append(f"add:{desired}")
-        names.append(desired)
+        for name in extras:
+            reason = guard()
+            if reason:
+                return writes, reason
+            try:
+                api.request(
+                    f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
+                    method="DELETE",
+                )
+            except PublishError as error:
+                if "HTTP 404" not in str(error):
+                    raise
+            writes.append(f"remove:{name}")
+            names[:] = [item for item in names if item != name]
     return writes, None
 
 

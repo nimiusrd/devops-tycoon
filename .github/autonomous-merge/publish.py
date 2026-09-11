@@ -16,7 +16,7 @@ from urllib.request import Request, urlopen
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 BROADCAST_EVENTS = {"schedule", "workflow_run"}
-TARGETED_PR = re.compile(r"shadow-pr-(\d+)")
+TARGETED_PR = re.compile(r"^shadow-pr-([1-9][0-9]*)$")
 IGNORED_CONCLUSIONS = {"cancelled", "skipped"}
 ACTIVE_RUNS = {
     "completed",
@@ -26,6 +26,7 @@ ACTIVE_RUNS = {
     "waiting",
     "requested",
 }
+LIVE_STATUSES = tuple(sorted(ACTIVE_RUNS - {"completed"}))
 
 DECISION_LABELS = {
     "SHADOW_CONDITIONS_MET": "shadow/要マージ判断",
@@ -198,18 +199,42 @@ def current_pr_state(current: dict) -> str:
     return str(current.get("state") or "").upper()
 
 
+def _workflow_run_page(api: GitHub, path: str) -> list:
+    result = api.request(path)
+    if not isinstance(result, dict):
+        raise PublishError("invalid REST page")
+    batch = result.get("workflow_runs")
+    if not isinstance(batch, list):
+        raise PublishError("invalid REST page")
+    return batch
+
+
 def list_relevant_runs(api: GitHub, workflow: str, run_id: int) -> list:
     records = []
+    seen = set()
     current = int(run_id)
     path = f"{api.prefix}/actions/workflows/{workflow}/runs"
+
+    def add(batch: list) -> None:
+        for item in batch:
+            run = int(item["id"])
+            if run in seen:
+                continue
+            seen.add(run)
+            records.append(item)
+
+    for status in LIVE_STATUSES:
+        for page in range(1, MAX_PAGES + 1):
+            batch = _workflow_run_page(
+                api, f"{path}?status={status}&per_page=100&page={page}"
+            )
+            add(batch)
+            if not batch or len(batch) < 100:
+                break
+
     for page in range(1, MAX_PAGES + 1):
-        result = api.request(f"{path}?per_page=100&page={page}")
-        if not isinstance(result, dict):
-            raise PublishError("invalid REST page")
-        batch = result.get("workflow_runs")
-        if not isinstance(batch, list):
-            raise PublishError("invalid REST page")
-        records.extend(batch)
+        batch = _workflow_run_page(api, f"{path}?per_page=100&page={page}")
+        add(batch)
         if not batch or len(batch) < 100:
             return records
         if min(int(item["id"]) for item in batch) <= current:
@@ -226,11 +251,14 @@ def run_observed(run: dict, default_branch: str | None) -> bool:
 
 
 def run_declared_targets(run: dict) -> set[int] | None:
-    title = str(run.get("display_title") or "")
-    named = TARGETED_PR.search(title)
+    title = str(run.get("display_title") or "").strip()
+    named = TARGETED_PR.fullmatch(title)
     if named:
         return {int(named.group(1))}
-    if "shadow-all" in title:
+    if title == "shadow-all":
+        return None
+    event = run.get("event")
+    if event == "push" or event in BROADCAST_EVENTS:
         return None
     prs = {
         item.get("number")
@@ -239,9 +267,6 @@ def run_declared_targets(run: dict) -> set[int] | None:
     }
     if prs:
         return prs
-    event = run.get("event")
-    if event == "push" or event in BROADCAST_EVENTS:
-        return None
     return set()
 
 
@@ -389,6 +414,19 @@ def sync_labels(
             return None
         return before_write()
 
+    def refresh() -> list[str]:
+        pull = api.request(f"{api.prefix}/pulls/{number}")
+        if not isinstance(pull, dict):
+            return names
+        labels = pull.get("labels")
+        if not isinstance(labels, list):
+            return names
+        found = []
+        for item in labels:
+            if isinstance(item, dict) and item.get("name"):
+                found.append(item["name"])
+        return found or names
+
     if desired not in names:
         reason = guard()
         if reason:
@@ -396,6 +434,7 @@ def sync_labels(
         api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
         writes.append(f"add:{desired}")
         names.append(desired)
+    names = refresh()
     for name in names:
         if name in MANAGED_LABELS and name != desired:
             reason = guard()

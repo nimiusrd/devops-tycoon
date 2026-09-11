@@ -77,6 +77,8 @@ class FixtureAPI:
         verb = method or ("POST" if body is not None else "GET")
         self.calls.append((verb, path, body))
         if "/actions/workflows/" in path:
+            if "status=" in path:
+                return {"workflow_runs": []}
             if self.workflow_pages:
                 return self.workflow_pages.pop(0)
             return {"workflow_runs": []}
@@ -288,6 +290,38 @@ class PublishTests(unittest.TestCase):
         ]
         self.assertTrue(has_newer_run(dispatch_one, 1, 10, 1))
         self.assertFalse(has_newer_run(dispatch_one, 2, 10, 1))
+        invalid_dispatch = [
+            {
+                "id": 51,
+                "run_attempt": 1,
+                "status": "completed",
+                "event": "workflow_dispatch",
+                "display_title": "shadow-pr-123abc",
+                "pull_requests": [],
+            }
+        ]
+        self.assertFalse(has_newer_run(invalid_dispatch, 123, 10, 1))
+        substring_all = [
+            {
+                "id": 52,
+                "run_attempt": 1,
+                "status": "in_progress",
+                "event": "workflow_dispatch",
+                "display_title": "retry-shadow-all-now",
+                "pull_requests": [],
+            }
+        ]
+        self.assertFalse(has_newer_run(substring_all, 2, 10, 1))
+        associated_broadcast = [
+            {
+                "id": 53,
+                "run_attempt": 1,
+                "status": "in_progress",
+                "event": "workflow_run",
+                "pull_requests": [{"number": 1}],
+            }
+        ]
+        self.assertTrue(has_newer_run(associated_broadcast, 2, 10, 1))
         dispatch_all = [
             {
                 "id": 50,
@@ -397,11 +431,44 @@ class PublishTests(unittest.TestCase):
 
             def request(self, path, body=None, method=None):
                 self.calls.append(path)
+                if "status=" in path:
+                    return {"workflow_runs": []}
                 return pages.pop(0)
 
         runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 10)
         self.assertEqual(len(runs), 102)
-        self.assertEqual(len(Paging.calls), 2)
+        self.assertEqual(
+            [path for path in Paging.calls if "status=" not in path],
+            [
+                "/repos/example/project/actions/workflows/"
+                "autonomous-merge-shadow.yml/runs?per_page=100&page=1",
+                "/repos/example/project/actions/workflows/"
+                "autonomous-merge-shadow.yml/runs?per_page=100&page=2",
+            ],
+        )
+
+    def test_live_older_run_is_included_without_full_history(self):
+        pages = [
+            {"workflow_runs": [{"id": 5, "run_attempt": 2, "status": "in_progress"}]},
+            {
+                "workflow_runs": [
+                    {"id": 20 + n, "run_attempt": 1} for n in range(100)
+                ]
+            },
+        ]
+
+        class Paging:
+            prefix = "/repos/example/project"
+
+            def request(self, path, body=None, method=None):
+                if "status=in_progress" in path:
+                    return pages[0]
+                if "status=" in path:
+                    return {"workflow_runs": []}
+                return pages[1]
+
+        runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 200)
+        self.assertEqual({int(item["id"]) for item in runs}, {5, *range(20, 120)})
 
     def test_write_is_skipped_when_newer_run_appears_before_labels(self):
         api = FixtureAPI(["enhancement"])
@@ -541,8 +608,9 @@ class PublishTests(unittest.TestCase):
                 {"labels": ["shadow/再観測が必要"]},
             ),
         )
+        delete = next(item for item in writes if item[0] == "DELETE")
         self.assertEqual(
-            writes[1][1],
+            delete[1],
             "/repos/example/project/issues/3/labels/"
             + encoded_label("shadow/要マージ判断"),
         )
@@ -597,8 +665,29 @@ class PublishTests(unittest.TestCase):
             ["add:shadow/再観測が必要", "remove:shadow/要マージ判断"],
         )
         self.assertEqual(
-            [item[0] for item in writes],
+            [item[0] for item in writes if item[0] in {"POST", "DELETE"}],
             ["POST", "DELETE"],
+        )
+
+    def test_refresh_removes_managed_labels_added_by_a_peer(self):
+        api = FixtureAPI(["shadow/要マージ判断"])
+        original = api.request
+
+        def peer(path, body=None, method=None):
+            result = original(path, body, method)
+            verb = method or ("POST" if body is not None else "GET")
+            if verb == "POST" and body and "labels" in body:
+                names = [item["name"] for item in api.pull["labels"]]
+                if "shadow/要対応" not in names:
+                    api.pull["labels"].append({"name": "shadow/要対応"})
+            return result
+
+        api.request = peer
+        status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
+        self.assertEqual(status, "updated")
+        self.assertEqual(
+            [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
+            ["shadow/CI・レビュー待ち"],
         )
 
     def test_missing_repo_labels_are_created_once(self):

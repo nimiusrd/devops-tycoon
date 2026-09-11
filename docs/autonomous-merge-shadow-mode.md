@@ -110,8 +110,11 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 `observe` の並行グループだけ `cancel-in-progress: true` です。workflow全体はキャンセルせず、実行中の`publish`を保護します。
 `publish` jobの並行グループはPR番号またはイベント名で、`cancel-in-progress: false` です。全イベントを1 groupにすると待機1件しか残らず、他PRのpendingが落ちます。
 グループをまたぐ競合はpublisherの後着判定で吸収します。一度ラベル変更を始めた後は、後着判定で途中終了せず整合した1ラベルまで完了します。
-後着判定は現在のrunより新しいIDまでしか走査せず、履歴全体の取得失敗でpublishを止めません。
-`workflow_dispatch` の対象はrun名（`shadow-pr-N` / `shadow-all`）で区別します。
+後着判定は進行中のrunをstatus別に取得し、完了履歴は現在のrun IDまでしか走査しません。
+`workflow_dispatch` の対象はrun名が`shadow-pr-N`または`shadow-all`に完全一致する場合だけ宣言として扱います。
+`workflow_run`とdefault branchの`push`は、RESTの`pull_requests`関連付けより先に全体観測として扱います。
+fork由来PRの`pull_request_review`ではwrite tokenが降格されるため`publish`を起動せず、scheduleやCI完了の後続観測でラベルを更新します。
+`publish`が単独再実行されたときは、同じrun IDの最新観測artifactへフォールバックします。
 
 PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。
 スレッド解決や外部CIの状態変更など、直接購読しないイベントは毎時の再観測、または手動実行で反映します。

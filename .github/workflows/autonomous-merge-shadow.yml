@@ -123,7 +123,7 @@ jobs:
 
               mode, matrix = publish_matrix(values)
           else:
-              mode, matrix = ("per-pr", values) if len(values) <= 256 else ("all", [0])
+              mode, matrix = "shard", sorted({number % 256 for number in values})
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
               fh.write(f"prs={json.dumps(values)}\n")
               fh.write(f"mode={mode}\n")
@@ -186,9 +186,9 @@ jobs:
       fail-fast: false
       matrix:
         pr: ${{ fromJSON(needs.observe.outputs.matrix || '[]') }}
-    # 256件以下はPR番号で直列化する。超過時は1 jobで全PRを処理する。
+    # matrix は shard（PR番号 % 256）。同じPRは broadcast と個別イベントで同じ group になる。
     concurrency:
-      group: autonomous-merge-shadow-publish-${{ needs.observe.outputs.mode == 'all' && 'all' || matrix.pr }}
+      group: autonomous-merge-shadow-publish-${{ matrix.pr }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -285,7 +285,5 @@ jobs:
             --default-branch "${DEFAULT_BRANCH}"
             --runs-file shadow-publish/runs.json
           )
-          if [[ "${{ needs.observe.outputs.mode }}" != "all" ]]; then
-            args+=(--pr "${{ matrix.pr }}")
-          fi
+          args+=(--shard "${{ matrix.pr }}")
           python3 -B .github/autonomous-merge/publish.py "${args[@]}"

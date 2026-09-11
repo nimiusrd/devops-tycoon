@@ -156,10 +156,8 @@ def event_pr(event: dict) -> int | None:
 
 
 def publish_matrix(prs: list[int]) -> tuple[str, list[int]]:
-    values = sorted({int(number) for number in prs})
-    if len(values) > MAX_PUBLISH_MATRIX:
-        return "all", [0]
-    return "per-pr", values
+    values = {int(number) for number in prs}
+    return "shard", sorted({number % MAX_PUBLISH_MATRIX for number in values})
 
 
 def load_reports(directory: Path, event: dict) -> list[tuple[int, dict]]:
@@ -400,11 +398,13 @@ def has_newer_run(
     observed_at: str | None = None,
     api: GitHub | None = None,
     recorded_started_at: str | None = None,
+    published_cache: dict | None = None,
 ) -> bool:
     current_started = current_started_at(
         runs, run_id, observed_at, recorded_started_at
     )
     current_key = (int(run_id), int(run_attempt))
+    cache = published_cache if published_cache is not None else {}
     for run in runs:
         if int(run["id"]) == int(run_id):
             continue
@@ -412,15 +412,17 @@ def has_newer_run(
             continue
         if not run_targets_pr(run, number, default_branch, pr_open):
             continue
-        if not run_published_labels(run, api):
-            continue
         other_key = (int(run["id"]), int(run.get("run_attempt") or 1))
         other_started = run_started_at(run)
         if current_started is not None and other_started is not None:
-            if (other_started, *other_key) > (current_started, *current_key):
-                return True
+            if (other_started, *other_key) <= (current_started, *current_key):
+                continue
+        elif other_key <= current_key:
             continue
-        if other_key > current_key:
+        other_id = int(run["id"])
+        if other_id not in cache:
+            cache[other_id] = run_published_labels(run, api)
+        if cache[other_id]:
             return True
     return False
 
@@ -434,6 +436,7 @@ def skip_reason(
     incumbent: dict | None = None,
     default_branch: str | None = None,
     api: GitHub | None = None,
+    published_cache: dict | None = None,
 ) -> str | None:
     facts = observed_pr(report)
     if facts.get("head_sha") and facts["head_sha"] != current["head_sha"]:
@@ -456,6 +459,7 @@ def skip_reason(
         observed_at(report),
         api,
         observed_run_started_at(report),
+        published_cache,
     ):
         return "newer_run"
     stamp = observed_at(report)
@@ -602,6 +606,8 @@ def publish_pr(
     incumbent: dict | None = None,
     workflow: str = "autonomous-merge-shadow.yml",
     default_branch: str | None = None,
+    published_cache: dict | None = None,
+    prepare_labels: bool = True,
 ) -> str:
     def current_runs() -> list:
         return (
@@ -610,6 +616,7 @@ def publish_pr(
             else list_relevant_runs(api, workflow, run_id)
         )
 
+    cache = published_cache if published_cache is not None else {}
     current = snapshot(api, number)
     reason = skip_reason(
         report,
@@ -620,11 +627,13 @@ def publish_pr(
         incumbent,
         default_branch,
         api,
+        cache,
     )
     if reason:
         return f"skipped:{reason}"
     desired = desired_label(report)
-    ensure_labels(api)
+    if prepare_labels:
+        ensure_labels(api)
     current = snapshot(api, number)
     reason = skip_reason(
         report,
@@ -635,6 +644,7 @@ def publish_pr(
         incumbent,
         default_branch,
         api,
+        cache,
     )
     if reason:
         return f"skipped:{reason}"
@@ -658,6 +668,7 @@ def publish_pr(
             incumbent,
             default_branch,
             api,
+            cache,
         )
 
     writes, reason = sync_labels(
@@ -691,6 +702,8 @@ def main() -> int:
         default=os.environ.get("DEFAULT_BRANCH"),
     )
     parser.add_argument("--pr", type=int)
+    parser.add_argument("--shard", type=int)
+    parser.add_argument("--shard-count", type=int, default=MAX_PUBLISH_MATRIX)
     args = parser.parse_args()
     if args.export_runs:
         try:
@@ -710,6 +723,9 @@ def main() -> int:
     reports = load_reports(args.report_dir, event)
     if args.pr is not None:
         reports = [item for item in reports if item[0] == args.pr]
+    if args.shard is not None:
+        count = args.shard_count or MAX_PUBLISH_MATRIX
+        reports = [item for item in reports if item[0] % count == args.shard]
     if not reports:
         return 0
     failed = False
@@ -722,6 +738,8 @@ def main() -> int:
             runs = loaded
         else:
             runs = list_relevant_runs(api, args.workflow, args.run_id)
+        ensure_labels(api)
+        published_cache: dict = {}
         for number, report in reports:
             try:
                 publish_pr(
@@ -733,6 +751,8 @@ def main() -> int:
                     runs,
                     workflow=args.workflow,
                     default_branch=args.default_branch,
+                    published_cache=published_cache,
+                    prepare_labels=False,
                 )
             except (PublishError, KeyError, TypeError, ValueError) as error:
                 failed = True

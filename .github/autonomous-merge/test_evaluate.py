@@ -386,6 +386,18 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(_javascript_test_call_spans(source), ())
         self.assertEqual(_javascript_test_behavior_records(source.encode()), ())
 
+    def test_tests_in_uncalled_helpers_do_not_register_fake_tests(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "function register() {\n"
+            "  test('fake', () => expect(value).toBe(1));\n"
+            "}\n"
+            "test('real', () => expect(value).toBe(1));\n"
+        )
+
+        self.assertEqual(len(_javascript_test_call_spans(source)), 1)
+        self.assertEqual(len(_javascript_test_behavior_records(source.encode())), 1)
+
     def test_node_assert_shadowing_does_not_satisfy_verification(self) -> None:
         source = (
             "import { strict as assert } from 'node:assert/strict';\n"
@@ -627,6 +639,7 @@ class EvaluateTests(unittest.TestCase):
             "  const opts = {};\n"
             "  test('active', opts, () => expect(value).toBe(1));\n"
             "}\n"
+            "register();\n"
         )
 
         records = _javascript_test_behavior_records(source.encode())
@@ -656,6 +669,25 @@ class EvaluateTests(unittest.TestCase):
         source = (
             "import { expect, test } from 'vitest';\n"
             "test('runs', () => { if (false) expect(value).toBe(1); });\n"
+        )
+
+        self.assertEqual(_javascript_assertion_count(source), 0)
+
+    def test_assertions_after_unconditional_return_do_not_satisfy_verification(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test('runs', () => { return; expect(value).toBe(1); });\n"
+        )
+
+        self.assertEqual(_javascript_assertion_count(source), 0)
+
+    def test_catch_parameter_shadowing_does_not_satisfy_verification(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test('runs', () => {\n"
+            "  try { throw new Error('x'); }\n"
+            "  catch (expect) { expect(value).toBe(1); }\n"
+            "});\n"
         )
 
         self.assertEqual(_javascript_assertion_count(source), 0)
@@ -1674,6 +1706,15 @@ class EvaluateTests(unittest.TestCase):
             self.assertTrue(result.test_changes)
             self.assertEqual(result.verification_risk, 0)
 
+    def test_parameterized_for_test_callback_satisfies_verification(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test.for([[2]])('builds', ([value]) => expect(value).toBe(2));\n"
+        )
+
+        self.assertEqual(len(_javascript_test_call_spans(source)), 1)
+        self.assertEqual(len(_javascript_test_behavior_records(source.encode())), 1)
+
     def test_parameterized_test_disabled_option_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory) / "base"
@@ -2036,6 +2077,28 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
+
+    def test_callback_noop_and_unused_local_do_not_satisfy_verification(self) -> None:
+        base = (
+            "import { expect, test } from '@playwright/test';\n"
+            "test('renders', () => { expect(page).toBeVisible(); });\n"
+        )
+        head = (
+            "import { expect, test } from '@playwright/test';\n"
+            "test('renders', () => {\n"
+            "  void 0;\n"
+            "  const unused = 1;\n"
+            "  expect(page).toBeVisible();\n"
+            "});\n"
+        )
+
+        self.assertFalse(
+            _has_test_behavior_change(
+                base.encode(),
+                head.encode(),
+                language="javascript",
+            )
+        )
 
     def test_large_test_behavior_change_fails_closed_before_sequence_matching(self) -> None:
         base_text = "\n".join(
@@ -3329,6 +3392,48 @@ class EvaluateTests(unittest.TestCase):
 
             self.assertIn("simulation", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
+
+    def test_vitest_snapshot_value_swap_is_detected_per_key(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "import { expect, it } from 'vitest';\n"
+                "it('first', () => expect({ value: 1 }).toMatchSnapshot());\n"
+                "it('second', () => expect({ value: 2 }).toMatchSnapshot());\n"
+            )
+            base_snapshot = (
+                "// Vitest Snapshot v1\n\n"
+                "exports[`first 1`] = `value: 1`;\n\n"
+                "exports[`second 1`] = `value: 2`;\n"
+            )
+            head_snapshot = (
+                "// Vitest Snapshot v1\n\n"
+                "exports[`first 1`] = `value: 2`;\n\n"
+                "exports[`second 1`] = `value: 1`;\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/sim/engine.ts": "export const value = 1;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": base_snapshot,
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/sim/engine.ts": "export const value = 2;\n",
+                    "tests/playtest/engine.test.ts": owner,
+                    "tests/playtest/__snapshots__/engine.test.ts.snap": head_snapshot,
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertNotIn("simulation", result.missing_test_scopes)
+            self.assertTrue(result.test_changes)
+            self.assertEqual(result.verification_risk, 0)
 
     def test_vitest_snapshot_key_only_change_does_not_satisfy_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -558,6 +558,17 @@ class EvaluateTests(unittest.TestCase):
 
         self.assertEqual(len(_javascript_test_call_spans(source)), 1)
 
+    def test_destructured_runner_declaration_shadows_fake_tests(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "const { test: fakeTest } = fakeRunner;\n"
+            "fakeTest('fake', () => expect(value).toBe(1));\n"
+            "const { test } = fakeRunner;\n"
+            "test('also fake', () => expect(value).toBe(1));\n"
+        )
+
+        self.assertEqual(_javascript_test_call_spans(source), ())
+
     def test_unknown_nested_callbacks_do_not_satisfy_verification(self) -> None:
         source = (
             "import { expect, test } from 'vitest';\n"
@@ -623,6 +634,31 @@ class EvaluateTests(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertTrue(records[0][1])
         self.assertFalse(records[1][1])
+
+    def test_disabled_options_are_resolved_per_block_binding(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "const opts = { skip: true };\n"
+            "{\n"
+            "  const opts = {};\n"
+            "  test('active', opts, () => expect(value).toBe(1));\n"
+            "}\n"
+            "test('skipped', opts, () => expect(value).toBe(1));\n"
+        )
+
+        records = _javascript_test_behavior_records(source.encode())
+
+        self.assertEqual(len(records), 2)
+        self.assertFalse(records[0][1])
+        self.assertTrue(records[1][1])
+
+    def test_assertions_in_static_false_branches_do_not_satisfy_verification(self) -> None:
+        source = (
+            "import { expect, test } from 'vitest';\n"
+            "test('runs', () => { if (false) expect(value).toBe(1); });\n"
+        )
+
+        self.assertEqual(_javascript_assertion_count(source), 0)
 
     def test_runner_hook_assertions_contribute_to_test_behavior(self) -> None:
         base = (
@@ -3112,6 +3148,44 @@ class EvaluateTests(unittest.TestCase):
             self.assertIn("visual", result.missing_test_scopes)
             self.assertFalse(result.test_changes)
             self.assertEqual(result.verification_risk, POLICY.missing_test_risk)
+
+    def test_playwright_snapshot_in_static_false_branch_does_not_satisfy_visual_verification(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory) / "base"
+            head = Path(directory) / "head"
+            owner = (
+                "import { expect, test } from '@playwright/test';\n"
+                "test('renders', async () => {\n"
+                "  if (false) await expect(page).toHaveScreenshot('widget.png');\n"
+                "});\n"
+            )
+            write_snapshot(
+                base,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 1;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": (
+                        b"\x89PNG\r\n\x1a\nold"
+                    ),
+                },
+            )
+            write_snapshot(
+                head,
+                {
+                    "src/ui/Widget.tsx": "export const Widget = 2;\n",
+                    "tests/e2e/widget.spec.ts": owner,
+                    "tests/e2e/widget.spec.ts-snapshots/widget-chromium-linux.png": (
+                        b"\x89PNG\r\n\x1a\nnew"
+                    ),
+                },
+            )
+
+            result = assess(base, head, POLICY)
+
+            self.assertIn("visual", result.missing_test_scopes)
+            self.assertFalse(result.test_changes)
 
     def test_unused_playwright_screenshot_helper_does_not_satisfy_visual_verification(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -137,44 +137,48 @@ class RiskAssessment:
     head_sha: str | None
 
 
+_JavaScriptScopeId = int | tuple[str, int] | None
+
+
 @dataclass(frozen=True)
 class _JavaScriptDisabledOptionIndex:
     """JavaScript test optionのbinding identityとlexical scopeを保持する。"""
 
     function_scopes: tuple[tuple[int, int, int, frozenset[str]], ...]
-    parent_scopes: tuple[int | None, ...]
+    scope_ranges: tuple[tuple[_JavaScriptScopeId, int, int], ...]
+    parent_scopes: Mapping[_JavaScriptScopeId, _JavaScriptScopeId]
     bindings: Mapping[
-        tuple[int | None, str],
+        tuple[_JavaScriptScopeId, str],
         tuple[bool, tuple[str, ...]],
     ]
 
-    def _scope_at(self, position: int) -> int | None:
+    def _scope_at(self, position: int) -> _JavaScriptScopeId:
         candidates = [
-            (body_end - body_start, index)
-            for index, (_, body_start, body_end, _) in enumerate(self.function_scopes)
-            if body_start <= position < body_end
+            (scope_end - scope_start, scope_id)
+            for scope_id, scope_start, scope_end in self.scope_ranges
+            if scope_start <= position < scope_end
         ]
-        return min(candidates)[1] if candidates else None
+        return min(candidates, key=lambda item: item[0])[1] if candidates else None
 
     def _visible_binding(
         self,
         name: str,
-        scope_index: int | None,
-    ) -> tuple[int | None, tuple[bool, tuple[str, ...]]] | None:
+        scope_index: _JavaScriptScopeId,
+    ) -> tuple[_JavaScriptScopeId, tuple[bool, tuple[str, ...]]] | None:
         current = scope_index
         while current is not None:
             binding = self.bindings.get((current, name))
             if binding is not None:
                 return current, binding
-            current = self.parent_scopes[current]
+            current = self.parent_scopes.get(current)
         binding = self.bindings.get((None, name))
         return (None, binding) if binding is not None else None
 
     def _resolve(
         self,
         name: str,
-        scope_index: int | None,
-        visiting: set[tuple[int | None, str]],
+        scope_index: _JavaScriptScopeId,
+        visiting: set[tuple[_JavaScriptScopeId, str]],
     ) -> bool:
         root = self._visible_binding(name, scope_index)
         if root is None:
@@ -182,12 +186,12 @@ class _JavaScriptDisabledOptionIndex:
         root_scope, root_record = root
         stack: list[
             tuple[
-                tuple[int | None, str],
+                tuple[_JavaScriptScopeId, str],
                 tuple[bool, tuple[str, ...]],
                 bool,
             ]
         ] = [((root_scope, name), root_record, False)]
-        resolved: dict[tuple[int | None, str], bool] = {}
+        resolved: dict[tuple[_JavaScriptScopeId, str], bool] = {}
         active = set(visiting)
         while stack:
             identity, (disabled, dependencies), expanded = stack.pop()
@@ -1807,6 +1811,20 @@ def _javascript_binding_scope_index(
                 _, body_start, body_end, _ = function_scopes[scope_index]
                 interval = (body_start, body_end)
             intervals.setdefault(match.group("binding"), set()).add(interval)
+        for declaration_start, declaration_bindings in _javascript_destructured_declaration_bindings(
+            masked_source
+        ):
+            scope_index = _javascript_innermost_function_scope_index(
+                function_scopes,
+                declaration_start,
+            )
+            if scope_index is None:
+                interval = (-1, len(source))
+            else:
+                _, body_start, body_end, _ = function_scopes[scope_index]
+                interval = (body_start, body_end)
+            for binding in declaration_bindings:
+                intervals.setdefault(binding, set()).add(interval)
 
     index: dict[str, tuple[tuple[int, ...], tuple[int, ...]]] = {}
     for binding, binding_intervals in intervals.items():
@@ -2871,6 +2889,59 @@ def _javascript_options_argument_is_disabled(
     return option_name is not None and option_name.group("name") in visible_disabled_options
 
 
+def _javascript_option_lexical_scope_layout(
+    source: str,
+    masked_source: str,
+    function_scopes: Sequence[tuple[int, int, int, frozenset[str]]],
+) -> tuple[
+    tuple[tuple[_JavaScriptScopeId, int, int], ...],
+    Mapping[_JavaScriptScopeId, _JavaScriptScopeId],
+]:
+    """functionとbrace blockを結合したoption用lexical scopeを作る。"""
+
+    braced_end_index = _javascript_braced_end_index(masked_source, None)
+    function_body_starts = {body_start for _, body_start, _, _ in function_scopes}
+    scope_ranges: list[tuple[_JavaScriptScopeId, int, int]] = [
+        (index, body_start, body_end)
+        for index, (_, body_start, body_end, _) in enumerate(function_scopes)
+    ]
+    scope_ranges.extend(
+        (("block", open_index), open_index, close_index)
+        for open_index, close_index in braced_end_index.items()
+        if close_index is not None and open_index not in function_body_starts
+    )
+
+    parent_scopes: dict[_JavaScriptScopeId, _JavaScriptScopeId] = {}
+    for scope_id, scope_start, _ in scope_ranges:
+        containing = [
+            (other_end - other_start, other_id)
+            for other_id, other_start, other_end in scope_ranges
+            if other_id != scope_id
+            and other_start <= scope_start < other_end
+        ]
+        parent_scopes[scope_id] = (
+            min(containing, key=lambda item: item[0])[1]
+            if containing
+            else None
+        )
+    return tuple(scope_ranges), parent_scopes
+
+
+def _javascript_destructured_declaration_bindings(
+    masked_source: str,
+) -> tuple[tuple[int, frozenset[str]], ...]:
+    """object/array destructuring declarationのbinding名と位置を返す。"""
+
+    declaration_pattern = re.compile(
+        r"\b(?:const|let|var)\s*"
+        r"(?P<pattern>\{[^{}\r\n]*\}|\[[^\[\]\r\n]*\])\s*="
+    )
+    return tuple(
+        (match.start(), _javascript_parameter_binding_names(match.group("pattern")))
+        for match in declaration_pattern.finditer(masked_source)
+    )
+
+
 def _javascript_disabled_test_option_index(
     source: str,
     *,
@@ -2882,23 +2953,24 @@ def _javascript_disabled_test_option_index(
     if function_scopes is None:
         function_scopes = _javascript_function_scopes_cached(source)
 
-    parent_scopes: list[int | None] = []
-    for index, scope in enumerate(function_scopes):
-        containing = [
-            (function_scopes[parent][2] - function_scopes[parent][1], parent)
-            for parent in range(len(function_scopes))
-            if parent != index
-            and function_scopes[parent][1] <= scope[0] < function_scopes[parent][2]
-        ]
-        parent_scopes.append(min(containing)[1] if containing else None)
+    scope_ranges, parent_scopes = _javascript_option_lexical_scope_layout(
+        source,
+        masked_source,
+        function_scopes,
+    )
 
     bindings: dict[
-        tuple[int | None, str],
+        tuple[_JavaScriptScopeId, str],
         tuple[bool, tuple[str, ...]],
     ] = {}
 
-    def scope_at(position: int) -> int | None:
-        return _javascript_innermost_function_scope_index(function_scopes, position)
+    def scope_at(position: int) -> _JavaScriptScopeId:
+        candidates = [
+            (scope_end - scope_start, scope_id)
+            for scope_id, scope_start, scope_end in scope_ranges
+            if scope_start <= position < scope_end
+        ]
+        return min(candidates, key=lambda item: item[0])[1] if candidates else None
 
     for index, (_, _, _, parameter_names) in enumerate(function_scopes):
         for name in parameter_names:
@@ -2924,16 +2996,23 @@ def _javascript_disabled_test_option_index(
         key = (scope_at(match.start()), match.group("name"))
         bindings.setdefault(key, (False, (match.group("source"),)))
 
+    for declaration_start, declaration_bindings in _javascript_destructured_declaration_bindings(
+        masked_source
+    ):
+        scope = scope_at(declaration_start)
+        for name in declaration_bindings:
+            bindings.setdefault((scope, name), (False, ()))
+
     for match in _JAVASCRIPT_DISABLED_TEST_OPTION_ASSIGNMENT.finditer(masked_source):
         current_scope = scope_at(match.start())
         candidate_scope = current_scope
-        binding_key: tuple[int | None, str] | None = None
+        binding_key: tuple[_JavaScriptScopeId, str] | None = None
         while candidate_scope is not None:
             key = (candidate_scope, match.group("name"))
             if key in bindings:
                 binding_key = key
                 break
-            candidate_scope = parent_scopes[candidate_scope]
+            candidate_scope = parent_scopes.get(candidate_scope)
         if binding_key is None and (None, match.group("name")) in bindings:
             binding_key = (None, match.group("name"))
         if binding_key is not None:
@@ -2942,7 +3021,8 @@ def _javascript_disabled_test_option_index(
 
     return _JavaScriptDisabledOptionIndex(
         function_scopes=tuple(function_scopes),
-        parent_scopes=tuple(parent_scopes),
+        scope_ranges=scope_ranges,
+        parent_scopes=parent_scopes,
         bindings=bindings,
     )
 
@@ -3250,6 +3330,7 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
         return False
     source = _strip_javascript_comments(owner.data)
     disabled_call_ranges = _disabled_javascript_call_ranges(source)
+    unreachable_test_ranges = _javascript_unreachable_test_ranges(source)
     test_callback_records = _javascript_test_callback_records(source)
     disabled_test_callbacks = tuple(
         (body_start, body_end, disabled)
@@ -3272,14 +3353,17 @@ def _is_referenced_snapshot(path: str, head_snapshot: Mapping[str, SnapshotEntry
                 )
                 if active_test_callback and not _is_inside_disabled_javascript_call(
                     source,
-                    match.start(),
-                    disabled_ranges=disabled_call_ranges,
-                ) and not (
-                    _is_inside_disabled_javascript_test_callback(
-                        disabled_test_callbacks,
                         match.start(),
-                    )
-                ):
+                        disabled_ranges=disabled_call_ranges,
+                    ) and not (
+                        _is_inside_disabled_javascript_test_callback(
+                            disabled_test_callbacks,
+                            match.start(),
+                        )
+                    ) and not any(
+                        range_start <= match.start() < range_end
+                        for range_start, range_end in unreachable_test_ranges
+                    ):
                     return True
         return False
 
@@ -3710,7 +3794,7 @@ def _javascript_test_runner_bindings(
     """既知のtest runnerからimportされたtest bindingを返す。
 
     shadow判定はimport名の集合から一括で削ると別functionのlocal declaration
-   までファイル全体へ誤適用するため、各callの参照位置で行う。
+    までファイル全体へ誤適用するため、各callの参照位置で行う。
     """
 
     if masked_source is None:
@@ -3973,6 +4057,14 @@ def _javascript_assertion_count(
             end,
             expect_bindings,
         )
+    unreachable_test_ranges = _javascript_unreachable_test_ranges(source)
+
+    def is_unreachable_position(position: int) -> bool:
+        return any(
+            range_start <= position < range_end
+            for range_start, range_end in unreachable_test_ranges
+        )
+
     nested_function_ranges = _javascript_nested_function_ranges(
         source,
         start,
@@ -4004,6 +4096,7 @@ def _javascript_assertion_count(
                 binding_scope_index=binding_scope_index,
             )
             and method in _JAVASCRIPT_NODE_ASSERTION_METHODS
+            and not is_unreachable_position(match.start())
             and not is_nested_function_position(match.start())
         ):
             count += 1
@@ -4018,6 +4111,7 @@ def _javascript_assertion_count(
                 function_scopes=function_scopes,
                 binding_scope_index=binding_scope_index,
             )
+            or is_unreachable_position(match.start())
             or is_nested_function_position(match.start())
         ):
             continue
@@ -4405,6 +4499,8 @@ def _javascript_unreachable_test_ranges(
             elif character == "}":
                 if braces:
                     braces -= 1
+                else:
+                    return index
             elif parentheses == brackets == braces == 0:
                 if character == ";":
                     return index + 1

@@ -15,7 +15,8 @@ from urllib.request import Request, urlopen
 
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
-BROADCAST_EVENTS = {"schedule", "workflow_run", "workflow_dispatch"}
+BROADCAST_EVENTS = {"schedule", "workflow_run"}
+TARGETED_PR = re.compile(r"shadow-pr-(\d+)")
 IGNORED_CONCLUSIONS = {"cancelled", "skipped"}
 ACTIVE_RUNS = {
     "completed",
@@ -183,6 +184,7 @@ def snapshot(api: GitHub, number: int) -> dict:
         "number": number,
         "head_sha": pull["head"]["sha"],
         "base_sha": pull["base"]["sha"],
+        "base_ref": pull["base"]["ref"],
         "state": pull["state"],
         "merged": bool(pull.get("merged")),
         "draft": bool(pull.get("draft")),
@@ -223,15 +225,38 @@ def run_observed(run: dict, default_branch: str | None) -> bool:
     return bool(default_branch) and run.get("head_branch") == default_branch
 
 
-def run_targets_pr(run: dict, number: int, default_branch: str | None = None) -> bool:
+def run_declared_targets(run: dict) -> set[int] | None:
+    title = str(run.get("display_title") or "")
+    named = TARGETED_PR.search(title)
+    if named:
+        return {int(named.group(1))}
+    if "shadow-all" in title:
+        return None
+    prs = {
+        item.get("number")
+        for item in run.get("pull_requests") or []
+        if item.get("number")
+    }
+    if prs:
+        return prs
+    event = run.get("event")
+    if event == "push" or event in BROADCAST_EVENTS:
+        return None
+    return set()
+
+
+def run_targets_pr(
+    run: dict,
+    number: int,
+    default_branch: str | None = None,
+    pr_open: bool = True,
+) -> bool:
     if not run_observed(run, default_branch):
         return False
-    prs = [item.get("number") for item in run.get("pull_requests") or []]
-    if number in prs:
-        return True
-    if run.get("event") == "push":
-        return True
-    return not prs and run.get("event") in BROADCAST_EVENTS
+    targets = run_declared_targets(run)
+    if targets is None:
+        return pr_open
+    return number in targets
 
 
 def has_newer_run(
@@ -240,12 +265,13 @@ def has_newer_run(
     run_id: int,
     run_attempt: int,
     default_branch: str | None = None,
+    pr_open: bool = True,
 ) -> bool:
     current = (int(run_id), int(run_attempt))
     for run in runs:
         if run.get("status") not in ACTIVE_RUNS:
             continue
-        if not run_targets_pr(run, number, default_branch):
+        if not run_targets_pr(run, number, default_branch, pr_open):
             continue
         other = (int(run["id"]), int(run.get("run_attempt") or 1))
         if other > current:
@@ -271,7 +297,16 @@ def skip_reason(
         return "stale_pr_state"
     if "draft" in facts and bool(facts["draft"]) != bool(current.get("draft")):
         return "stale_pr_state"
-    if has_newer_run(runs, current["number"], run_id, run_attempt, default_branch):
+    if facts.get("base_ref") and facts["base_ref"] != current.get("base_ref"):
+        return "stale_pr_state"
+    if has_newer_run(
+        runs,
+        current["number"],
+        run_id,
+        run_attempt,
+        default_branch,
+        current_pr_state(current) == "OPEN",
+    ):
         return "newer_run"
     stamp = observed_at(report)
     if stamp and incumbent is not None:
@@ -310,10 +345,20 @@ def ensure_labels(api: GitHub) -> None:
             )
 
 
-def sync_labels(api: GitHub, number: int, current_names: list[str], desired: str) -> list[str]:
+def sync_labels(
+    api: GitHub,
+    number: int,
+    current_names: list[str],
+    desired: str,
+    before_write=None,
+) -> tuple[list[str], str | None]:
     writes = []
     for name in current_names:
         if name in MANAGED_LABELS and name != desired:
+            if before_write is not None:
+                reason = before_write()
+                if reason:
+                    return writes, reason
             try:
                 api.request(
                     f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
@@ -324,9 +369,13 @@ def sync_labels(api: GitHub, number: int, current_names: list[str], desired: str
                     raise
             writes.append(f"remove:{name}")
     if desired not in current_names:
+        if before_write is not None:
+            reason = before_write()
+            if reason:
+                return writes, reason
         api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
         writes.append(f"add:{desired}")
-    return writes
+    return writes, None
 
 
 def publish_pr(
@@ -361,7 +410,24 @@ def publish_pr(
     )
     if reason:
         return f"skipped:{reason}"
-    writes = sync_labels(api, number, current["labels"], desired)
+
+    def before_write() -> str | None:
+        latest = snapshot(api, number)
+        return skip_reason(
+            report,
+            latest,
+            current_runs(),
+            run_id,
+            run_attempt,
+            incumbent,
+            default_branch,
+        )
+
+    writes, reason = sync_labels(
+        api, number, current["labels"], desired, before_write
+    )
+    if reason:
+        return f"skipped:{reason}"
     return "unchanged" if not writes else "updated"
 
 

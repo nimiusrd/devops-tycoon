@@ -1,4 +1,5 @@
 name: Autonomous Merge Shadow
+run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number && format('shadow-pr-{0}', inputs.pr_number) || github.event_name == 'workflow_dispatch' && 'shadow-all' || github.event.pull_request.number && format('shadow-pr-{0}', github.event.pull_request.number) || format('shadow-{0}', github.event_name) }}
 
 # 観測はread-only。ラベル更新はpublish jobだけが行う。
 on:
@@ -94,6 +95,10 @@ jobs:
   publish:
     needs: observe
     if: ${{ !cancelled() && (needs.observe.result == 'success' || needs.observe.result == 'failure') }}
+    # 全イベントのラベル更新を直列化し、検査とDELETE/POSTの交差を防ぐ。
+    concurrency:
+      group: autonomous-merge-shadow-publish
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

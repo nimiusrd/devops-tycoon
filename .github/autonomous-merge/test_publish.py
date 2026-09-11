@@ -40,6 +40,7 @@ def report(decision, head=HEAD, base=BASE, observed="2026-09-11T12:00:00+00:00")
                 "base_sha": base,
                 "state": "OPEN",
                 "draft": False,
+                "base_ref": "trunk",
             },
         },
     }
@@ -48,7 +49,7 @@ def report(decision, head=HEAD, base=BASE, observed="2026-09-11T12:00:00+00:00")
 def pull(labels=None, head=HEAD, base=BASE, state="open", merged=False, draft=False):
     return {
         "head": {"sha": head},
-        "base": {"sha": base},
+        "base": {"sha": base, "ref": "trunk"},
         "state": state,
         "merged": merged,
         "draft": draft,
@@ -167,6 +168,7 @@ class PublishTests(unittest.TestCase):
             "number": 1,
             "head_sha": HEAD,
             "base_sha": BASE,
+            "base_ref": "trunk",
             "state": "open",
             "merged": False,
             "draft": False,
@@ -274,12 +276,58 @@ class PublishTests(unittest.TestCase):
             ),
             "newer_run",
         )
+        dispatch_one = [
+            {
+                "id": 50,
+                "run_attempt": 1,
+                "status": "completed",
+                "event": "workflow_dispatch",
+                "display_title": "shadow-pr-1",
+                "pull_requests": [],
+            }
+        ]
+        self.assertTrue(has_newer_run(dispatch_one, 1, 10, 1))
+        self.assertFalse(has_newer_run(dispatch_one, 2, 10, 1))
+        dispatch_all = [
+            {
+                "id": 50,
+                "run_attempt": 1,
+                "status": "in_progress",
+                "event": "workflow_dispatch",
+                "display_title": "shadow-all",
+                "pull_requests": [],
+            }
+        ]
+        self.assertTrue(has_newer_run(dispatch_all, 2, 10, 1))
+        closed = {**current, "state": "closed"}
+        closed_report = report("HUMAN_REVIEW_REQUIRED")
+        closed_report["observations"]["pr"]["state"] = "CLOSED"
+        self.assertFalse(has_newer_run(broadcast, 1, 10, 1, pr_open=False))
+        self.assertIsNone(skip_reason(closed_report, closed, broadcast, 10, 1))
+        self.assertEqual(skip_reason(closed_report, closed, newer, 10, 1), "newer_run")
+
+    def test_base_ref_mismatch_skips_without_sha_change(self):
+        current = {
+            "number": 1,
+            "head_sha": HEAD,
+            "base_sha": BASE,
+            "base_ref": "release",
+            "state": "open",
+            "merged": False,
+            "draft": False,
+            "labels": ["shadow/要マージ判断"],
+        }
+        self.assertEqual(
+            skip_reason(report("SHADOW_CONDITIONS_MET"), current, [], 10, 1),
+            "stale_pr_state",
+        )
 
     def test_draft_or_close_mismatch_skips_without_sha_change(self):
         current = {
             "number": 1,
             "head_sha": HEAD,
             "base_sha": BASE,
+            "base_ref": "trunk",
             "state": "open",
             "merged": False,
             "draft": True,
@@ -462,6 +510,28 @@ class PublishTests(unittest.TestCase):
             "/repos/example/project/issues/3/labels/"
             + encoded_label("shadow/要マージ判断"),
         )
+
+    def test_label_write_aborts_when_newer_run_appears_mid_sync(self):
+        writes = []
+
+        class Recording:
+            prefix = "/repos/example/project"
+
+            def request(self, path, body=None, method=None):
+                writes.append((method or "GET", path, body))
+                return None
+
+        checks = iter(["newer_run"])
+        result, reason = sync_labels(
+            Recording(),
+            3,
+            ["shadow/要マージ判断"],
+            "shadow/再観測が必要",
+            lambda: next(checks),
+        )
+        self.assertEqual(reason, "newer_run")
+        self.assertEqual(result, [])
+        self.assertEqual(writes, [])
 
     def test_missing_repo_labels_are_created_once(self):
         api = FixtureAPI([])

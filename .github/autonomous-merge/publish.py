@@ -15,7 +15,8 @@ from urllib.request import Request, urlopen
 
 MAX_PAGES = 30
 MAX_RESPONSE_BYTES = 8 * 1024 * 1024
-BROADCAST_EVENTS = {"schedule", "workflow_run", "push", "workflow_dispatch"}
+BROADCAST_EVENTS = {"schedule", "workflow_run", "workflow_dispatch"}
+IGNORED_CONCLUSIONS = {"cancelled", "skipped"}
 ACTIVE_RUNS = {
     "completed",
     "in_progress",
@@ -184,23 +185,67 @@ def snapshot(api: GitHub, number: int) -> dict:
         "base_sha": pull["base"]["sha"],
         "state": pull["state"],
         "merged": bool(pull.get("merged")),
+        "draft": bool(pull.get("draft")),
         "labels": [item["name"] for item in pull.get("labels") or []],
     }
 
 
-def run_targets_pr(run: dict, number: int) -> bool:
+def current_pr_state(current: dict) -> str:
+    if current.get("merged"):
+        return "MERGED"
+    return str(current.get("state") or "").upper()
+
+
+def list_relevant_runs(api: GitHub, workflow: str, run_id: int) -> list:
+    records = []
+    current = int(run_id)
+    path = f"{api.prefix}/actions/workflows/{workflow}/runs"
+    for page in range(1, MAX_PAGES + 1):
+        result = api.request(f"{path}?per_page=100&page={page}")
+        if not isinstance(result, dict):
+            raise PublishError("invalid REST page")
+        batch = result.get("workflow_runs")
+        if not isinstance(batch, list):
+            raise PublishError("invalid REST page")
+        records.extend(batch)
+        if not batch or len(batch) < 100:
+            return records
+        if min(int(item["id"]) for item in batch) <= current:
+            return records
+    return records
+
+
+def run_observed(run: dict, default_branch: str | None) -> bool:
+    if run.get("conclusion") in IGNORED_CONCLUSIONS:
+        return False
+    if run.get("event") != "push":
+        return True
+    return bool(default_branch) and run.get("head_branch") == default_branch
+
+
+def run_targets_pr(run: dict, number: int, default_branch: str | None = None) -> bool:
+    if not run_observed(run, default_branch):
+        return False
     prs = [item.get("number") for item in run.get("pull_requests") or []]
     if number in prs:
+        return True
+    if run.get("event") == "push":
         return True
     return not prs and run.get("event") in BROADCAST_EVENTS
 
 
-def has_newer_run(runs: list, number: int, run_id: int, run_attempt: int) -> bool:
+def has_newer_run(
+    runs: list,
+    number: int,
+    run_id: int,
+    run_attempt: int,
+    default_branch: str | None = None,
+) -> bool:
     current = (int(run_id), int(run_attempt))
     for run in runs:
         if run.get("status") not in ACTIVE_RUNS:
             continue
-        if not run_targets_pr(run, number):
+        if not run_targets_pr(run, number, default_branch):
             continue
         other = (int(run["id"]), int(run.get("run_attempt") or 1))
         if other > current:
@@ -215,13 +260,18 @@ def skip_reason(
     run_id: int,
     run_attempt: int,
     incumbent: dict | None = None,
+    default_branch: str | None = None,
 ) -> str | None:
     facts = observed_pr(report)
     if facts.get("head_sha") and facts["head_sha"] != current["head_sha"]:
         return "stale_sha"
     if facts.get("base_sha") and facts["base_sha"] != current["base_sha"]:
         return "stale_sha"
-    if has_newer_run(runs, current["number"], run_id, run_attempt):
+    if facts.get("state") and facts["state"].upper() != current_pr_state(current):
+        return "stale_pr_state"
+    if "draft" in facts and bool(facts["draft"]) != bool(current.get("draft")):
+        return "stale_pr_state"
+    if has_newer_run(runs, current["number"], run_id, run_attempt, default_branch):
         return "newer_run"
     stamp = observed_at(report)
     if stamp and incumbent is not None:
@@ -285,15 +335,32 @@ def publish_pr(
     report: dict,
     run_id: int,
     run_attempt: int,
-    runs: list,
+    runs: list | None = None,
     incumbent: dict | None = None,
+    workflow: str = "autonomous-merge-shadow.yml",
+    default_branch: str | None = None,
 ) -> str:
+    def current_runs() -> list:
+        return (
+            runs
+            if runs is not None
+            else list_relevant_runs(api, workflow, run_id)
+        )
+
     current = snapshot(api, number)
-    reason = skip_reason(report, current, runs, run_id, run_attempt, incumbent)
+    reason = skip_reason(
+        report, current, current_runs(), run_id, run_attempt, incumbent, default_branch
+    )
     if reason:
         return f"skipped:{reason}"
     desired = desired_label(report)
     ensure_labels(api)
+    current = snapshot(api, number)
+    reason = skip_reason(
+        report, current, current_runs(), run_id, run_attempt, incumbent, default_branch
+    )
+    if reason:
+        return f"skipped:{reason}"
     writes = sync_labels(api, number, current["labels"], desired)
     return "unchanged" if not writes else "updated"
 
@@ -314,6 +381,10 @@ def main() -> int:
         "--workflow",
         default="autonomous-merge-shadow.yml",
     )
+    parser.add_argument(
+        "--default-branch",
+        default=os.environ.get("DEFAULT_BRANCH"),
+    )
     args = parser.parse_args()
     if not args.report_dir.is_dir():
         return 0
@@ -324,10 +395,17 @@ def main() -> int:
     failed = False
     try:
         api = GitHub(args.repository)
-        runs = api.pages(f"/actions/workflows/{args.workflow}/runs", "workflow_runs")
         for number, report in reports:
             try:
-                publish_pr(api, number, report, args.run_id, args.run_attempt, runs)
+                publish_pr(
+                    api,
+                    number,
+                    report,
+                    args.run_id,
+                    args.run_attempt,
+                    workflow=args.workflow,
+                    default_branch=args.default_branch,
+                )
             except (PublishError, KeyError, TypeError, ValueError) as error:
                 failed = True
                 print(f"PR #{number}: {error}", flush=True)

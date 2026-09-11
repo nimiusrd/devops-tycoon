@@ -94,15 +94,17 @@ collectorやpublisherがdefault branchにない初回導入中はbootstrapとし
 
 | 状況 | ラベルの扱い |
 | --- | --- |
-| 観測のhead/base SHAが現在のPRと不一致 | 変更しない。新しい観測の表示を残す |
-| より新しい`(run_id, run_attempt)`または`observed_at`の観測がある | 変更しない |
+| 観測のhead/base SHA、open/closed/merged、Draftが現在のPRと不一致 | 変更しない。新しい観測の表示を残す |
+| より新しい`(run_id, run_attempt)`または`observed_at`の観測がある | 変更しない。書き込み直前にworkflow runを再取得して確認する |
+| 観測していない通常ブランチの`push` run | 後着とは扱わない |
 | 対象PRが分かる収集失敗 | `shadow/再観測が必要`を付け、`shadow/要マージ判断`を残さない |
 | 収集失敗だけでPR番号が分からない | どのPRも変更しない |
 | close / merge | evaluatorの`HUMAN_REVIEW_REQUIRED`を`shadow/要対応`として反映する |
 | 再評価待ち | 既存トリガー（PR更新、レビュー、CI完了、毎時cron、手動）で再観測する |
 | ラベル書き込み失敗 | `publish` jobを失敗させる。SummaryとJSONはobserve側に残し、判定成功とは扱わない |
 
-同じPRを対象にする新しいShadow run（PRイベント、またはschedule / `workflow_run` / push / `workflow_dispatch`）がある場合も上書きしません。
+同じPRを対象にする新しいShadow run（PRイベント、default branchのpush、またはschedule / `workflow_run` / `workflow_dispatch`）がある場合も上書きしません。
+後着判定は現在のrunより新しいIDまでしか走査せず、履歴全体の取得失敗でpublishを止めません。
 並行グループはPR番号またはイベント名です。グループをまたぐ競合はpublisherの後着判定で吸収します。
 
 PR更新、レビュー投稿・変更・dismiss、default branch更新、指定CIの完了で観測します。

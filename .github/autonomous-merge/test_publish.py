@@ -16,6 +16,7 @@ from publish import (
     event_pr,
     has_newer_run,
     is_fresher,
+    list_relevant_runs,
     load_reports,
     main,
     publish_pr,
@@ -33,17 +34,24 @@ def report(decision, head=HEAD, base=BASE, observed="2026-09-11T12:00:00+00:00")
         "decision": decision,
         "observations": {
             "observed_at": observed,
-            "pr": {"number": 1, "head_sha": head, "base_sha": base, "state": "OPEN"},
+            "pr": {
+                "number": 1,
+                "head_sha": head,
+                "base_sha": base,
+                "state": "OPEN",
+                "draft": False,
+            },
         },
     }
 
 
-def pull(labels=None, head=HEAD, base=BASE, state="open", merged=False):
+def pull(labels=None, head=HEAD, base=BASE, state="open", merged=False, draft=False):
     return {
         "head": {"sha": head},
         "base": {"sha": base},
         "state": state,
         "merged": merged,
+        "draft": draft,
         "labels": [{"name": name} for name in (labels or [])],
     }
 
@@ -52,10 +60,13 @@ class FixtureAPI:
     repository = "example/project"
     prefix = "/repos/example/project"
 
-    def __init__(self, labels=None, head=HEAD, base=BASE, state="open", merged=False):
-        self.pull = pull(labels, head, base, state, merged)
+    def __init__(
+        self, labels=None, head=HEAD, base=BASE, state="open", merged=False, draft=False
+    ):
+        self.pull = pull(labels, head, base, state, merged, draft)
         self.calls = []
         self.labels = {name: True for name in DECISION_LABELS.values()}
+        self.workflow_pages = [{"workflow_runs": []}]
 
     def pages(self, path, key=None):
         self.calls.append(("GET", path, None))
@@ -64,6 +75,10 @@ class FixtureAPI:
     def request(self, path, body=None, method=None):
         verb = method or ("POST" if body is not None else "GET")
         self.calls.append((verb, path, body))
+        if "/actions/workflows/" in path:
+            if self.workflow_pages:
+                return self.workflow_pages.pop(0)
+            return {"workflow_runs": []}
         if path.endswith("/pulls/1"):
             return self.pull
         if "/labels/" in path and verb == "GET":
@@ -152,6 +167,9 @@ class PublishTests(unittest.TestCase):
             "number": 1,
             "head_sha": HEAD,
             "base_sha": BASE,
+            "state": "open",
+            "merged": False,
+            "draft": False,
             "labels": ["shadow/CI・レビュー待ち"],
         }
         newer = [
@@ -221,6 +239,116 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(
             skip_reason(report("WAITING"), current, broadcast, 10, 1),
             "newer_run",
+        )
+        feature_push = [
+            {
+                "id": 40,
+                "run_attempt": 1,
+                "status": "completed",
+                "conclusion": "success",
+                "event": "push",
+                "head_branch": "feature",
+                "pull_requests": [],
+            }
+        ]
+        self.assertFalse(has_newer_run(feature_push, 1, 10, 1, "trunk"))
+        self.assertIsNone(
+            skip_reason(
+                report("WAITING"), current, feature_push, 10, 1, None, "trunk"
+            )
+        )
+        default_push = [
+            {
+                "id": 40,
+                "run_attempt": 1,
+                "status": "in_progress",
+                "conclusion": None,
+                "event": "push",
+                "head_branch": "trunk",
+                "pull_requests": [],
+            }
+        ]
+        self.assertEqual(
+            skip_reason(
+                report("WAITING"), current, default_push, 10, 1, None, "trunk"
+            ),
+            "newer_run",
+        )
+
+    def test_draft_or_close_mismatch_skips_without_sha_change(self):
+        current = {
+            "number": 1,
+            "head_sha": HEAD,
+            "base_sha": BASE,
+            "state": "open",
+            "merged": False,
+            "draft": True,
+            "labels": ["shadow/要マージ判断"],
+        }
+        self.assertEqual(
+            skip_reason(report("SHADOW_CONDITIONS_MET"), current, [], 10, 1),
+            "stale_pr_state",
+        )
+        current["draft"] = False
+        current["state"] = "closed"
+        self.assertEqual(
+            skip_reason(report("SHADOW_CONDITIONS_MET"), current, [], 10, 1),
+            "stale_pr_state",
+        )
+        api = FixtureAPI(["shadow/要マージ判断"], draft=True)
+        status = publish_pr(api, 1, report("SHADOW_CONDITIONS_MET"), 10, 1, [])
+        self.assertEqual(status, "skipped:stale_pr_state")
+        self.assertEqual(
+            [item["name"] for item in api.pull["labels"]], ["shadow/要マージ判断"]
+        )
+
+    def test_relevant_runs_stop_after_reaching_current_id(self):
+        pages = [
+            {
+                "workflow_runs": [
+                    {"id": 20 + n, "run_attempt": 1} for n in range(100)
+                ]
+            },
+            {
+                "workflow_runs": [
+                    {"id": 10, "run_attempt": 1},
+                    {"id": 5, "run_attempt": 1},
+                ]
+            },
+        ]
+
+        class Paging:
+            prefix = "/repos/example/project"
+            calls = []
+
+            def request(self, path, body=None, method=None):
+                self.calls.append(path)
+                return pages.pop(0)
+
+        runs = list_relevant_runs(Paging(), "autonomous-merge-shadow.yml", 10)
+        self.assertEqual(len(runs), 102)
+        self.assertEqual(len(Paging.calls), 2)
+
+    def test_write_is_skipped_when_newer_run_appears_before_labels(self):
+        api = FixtureAPI(["enhancement"])
+        api.workflow_pages = [
+            {"workflow_runs": []},
+            {
+                "workflow_runs": [
+                    {
+                        "id": 20,
+                        "run_attempt": 1,
+                        "status": "in_progress",
+                        "event": "schedule",
+                        "pull_requests": [],
+                    }
+                ]
+            },
+        ]
+        status = publish_pr(api, 1, report("WAITING"), 10, 1)
+        self.assertEqual(status, "skipped:newer_run")
+        self.assertEqual(
+            [item["name"] for item in api.pull["labels"]], ["enhancement"]
         )
 
     def test_collection_error_expires_merge_judgment_label(self):

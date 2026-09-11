@@ -155,6 +155,28 @@ class EvaluateTests(unittest.TestCase):
                 data["pr"].update(update)
                 self.assertEqual(self.decision(data), expected)
 
+    def test_aggregate_block_waits_for_explicit_pending_conditions(self):
+        data = facts()
+        data["pr"].update(merge_state="BLOCKED", review_decision="REVIEW_REQUIRED")
+        self.assertEqual(self.decision(data), "WAITING")
+        data["pr"]["review_decision"] = "APPROVED"
+        self.assertEqual(self.decision(data), "HUMAN_REVIEW_REQUIRED")
+        data["checks"][0].update(status="in_progress", conclusion=None)
+        self.assertEqual(self.decision(data), "WAITING")
+        data["checks"][0].update(status="completed", conclusion="success")
+        self.assertEqual(self.decision(data), "HUMAN_REVIEW_REQUIRED")
+        data["pr"]["merge_state"] = "CLEAN"
+        self.assertEqual(self.decision(data), "SHADOW_CONDITIONS_MET")
+
+    def test_explicit_failure_still_blocks_while_approval_is_pending(self):
+        data = facts()
+        data["pr"].update(merge_state="BLOCKED", review_decision="REVIEW_REQUIRED")
+        data["checks"][0]["conclusion"] = "failure"
+        self.assertEqual(self.decision(data), "HUMAN_REVIEW_REQUIRED")
+        data["checks"][0]["conclusion"] = "success"
+        data["unresolved_threads"] = 1
+        self.assertEqual(self.decision(data), "HUMAN_REVIEW_REQUIRED")
+
     def test_incomplete_pagination_overrides_other_results(self):
         data = facts()
         data["collection_errors"] = ["GraphQL pagination limit exceeded"]

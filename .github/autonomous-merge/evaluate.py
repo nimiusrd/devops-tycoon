@@ -140,16 +140,6 @@ def assess(facts: dict, policy: dict) -> dict:
             ],
             mergeable,
         )
-        # GitHubの総合状態を尊重し、保護ルール・CODEOWNERSを独自に再実装しない。
-        merge_state = pr["merge_state"]
-        status = (
-            "pass"
-            if merge_state == "CLEAN"
-            else "waiting"
-            if merge_state in {"UNKNOWN", "BEHIND", "DRAFT"}
-            else "blocked"
-        )
-        condition("github_merge_state", status, merge_state)
         review_decision = pr["review_decision"]
         if review_decision not in {
             None,
@@ -240,6 +230,22 @@ def assess(facts: dict, policy: dict) -> dict:
                 # neutral/skippedは実行成功と混同しない。
                 state = "blocked"
             condition(label, state, current)
+
+        # BLOCKEDは原因を列挙しない集約値。明示的な待機条件があれば、
+        # その完了後に再評価する。CI失敗・変更要求などのblockedは引き続き優先する。
+        merge_state = pr["merge_state"]
+        has_waiting_condition = any(
+            c["status"] == "waiting" for c in result["conditions"]
+        )
+        status = (
+            "pass"
+            if merge_state == "CLEAN"
+            else "waiting"
+            if merge_state in {"UNKNOWN", "BEHIND", "DRAFT"}
+            or (merge_state == "BLOCKED" and has_waiting_condition)
+            else "blocked"
+        )
+        condition("github_merge_state", status, merge_state)
 
         # サイズと変更形態は観測のみ。テスト差分、パス、作者から安全性を推測しない。
         for key in ("additions", "deletions", "changed_files"):

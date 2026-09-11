@@ -1,0 +1,19 @@
+# 移植時に変更するのは、観測したい必須checkの識別子と承認条件。
+# ディレクトリ、言語、テスト構文、変更量の閾値を評価器へ埋め込まない。
+version = 2
+mode = "shadow"
+minimum_approvals = 0
+require_resolved_threads = true
+
+# GitHub側のマージ条件も別途尊重する。この一覧はShadow観測用の明示的な条件であり、
+# branch protection / rulesetsの全要件を自動取得・再現したものではない。
+# Check Runは名前と発行元App IDを照合し、同名の別Appを成功として受理しない。
+[[required_checks]]
+kind = "check_run"
+name = "Lint & Unit (Vitest)"
+app_id = 15368
+
+[[required_checks]]
+kind = "check_run"
+name = "E2E (Playwright)"
+app_id = 15368

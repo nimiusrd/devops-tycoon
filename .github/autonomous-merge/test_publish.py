@@ -939,23 +939,31 @@ class PublishTests(unittest.TestCase):
             desired = "shadow/CI・レビュー待ち"
             peer = "shadow/要対応"
             names = [item["name"] for item in api.pull["labels"]]
-            if verb == "POST" and body and "labels" in body and peer not in names:
+            if (
+                verb == "POST"
+                and body
+                and "labels" in body
+                and deletes["n"] < 2
+                and peer not in names
+            ):
                 api.pull["labels"].append({"name": peer})
             if verb == "DELETE":
                 deletes["n"] += 1
                 api.pull["labels"] = [
                     item for item in api.pull["labels"] if item["name"] != desired
                 ]
-                if not any(item["name"] == peer for item in api.pull["labels"]):
+                if deletes["n"] == 1 and not any(
+                    item["name"] == peer for item in api.pull["labels"]
+                ):
                     api.pull["labels"].append({"name": peer})
             return result
 
         api.request = competing_publisher
         status = publish_pr(api, 1, report("WAITING"), 10, 1, [])
         self.assertEqual(status, "updated")
-        self.assertIn(
-            "shadow/CI・レビュー待ち",
+        self.assertEqual(
             [item["name"] for item in api.pull["labels"] if item["name"] in MANAGED_LABELS],
+            ["shadow/CI・レビュー待ち"],
         )
 
     def test_sync_readds_desired_after_peer_removes_it(self):
@@ -1087,6 +1095,47 @@ class PublishTests(unittest.TestCase):
             names = [item["name"] for item in api.pull["labels"]]
             self.assertIn("shadow/CI・レビュー待ち", names)
             self.assertIn("enhancement", names)
+
+    def test_cli_pr_flag_skips_other_reports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_dir = Path(directory)
+            (report_dir / "pr-1.json").write_text(
+                json.dumps(report("WAITING"), ensure_ascii=False) + "\n"
+            )
+            (report_dir / "pr-2.json").write_text(
+                json.dumps(report("HUMAN_REVIEW_REQUIRED"), ensure_ascii=False) + "\n"
+            )
+            args = [
+                "publish.py",
+                "--repository",
+                "example/project",
+                "--report-dir",
+                str(report_dir),
+                "--run-id",
+                "10",
+                "--run-attempt",
+                "1",
+                "--run-url",
+                RUN_URL,
+                "--pr",
+                "1",
+            ]
+            api = FixtureAPI(["enhancement"])
+            seen = []
+            original = api.request
+
+            def track(path, body=None, method=None):
+                seen.append(path)
+                return original(path, body, method)
+
+            api.request = track
+            with patch("sys.argv", args), patch("publish.GitHub", return_value=api):
+                self.assertEqual(main(), 0)
+            self.assertTrue(any("/pulls/1" in path for path in seen))
+            self.assertFalse(any("/pulls/2" in path for path in seen))
+            names = [item["name"] for item in api.pull["labels"]]
+            self.assertIn("shadow/CI・レビュー待ち", names)
+            self.assertNotIn("shadow/要対応", names)
 
     def test_cli_noops_without_reports(self):
         with tempfile.TemporaryDirectory() as directory:

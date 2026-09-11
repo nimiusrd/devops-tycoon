@@ -41,6 +41,8 @@ jobs:
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      prs: ${{ steps.targets.outputs.prs }}
     steps:
       - name: Checkout trusted default branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -91,18 +93,45 @@ jobs:
           path: shadow-report/
           if-no-files-found: warn
           retention-days: 30
+      - name: Record target PRs
+        id: targets
+        if: ${{ always() }}
+        env:
+          EVENT_PR: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          prs = {
+              int(path.stem.split("-", 1)[1])
+              for path in Path("shadow-report").glob("pr-*.json")
+          }
+          raw = os.environ.get("EVENT_PR", "")
+          if Path("shadow-report/collection-error.json").exists() and raw.isdigit():
+              prs.add(int(raw))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"prs={json.dumps(sorted(prs))}\n")
+          PY
 
   publish:
     needs: observe
     if: >-
       ${{ !cancelled() &&
           (needs.observe.result == 'success' || needs.observe.result == 'failure') &&
+          join(fromJSON(needs.observe.outputs.prs || '[]'), ',') != '' &&
           (github.event_name != 'pull_request_review' ||
            github.event.pull_request.head.repo.full_name == github.repository) }}
-    # 同一PR（または同一イベント名）だけ直列化する。
-    # 全イベントを1 groupにすると、待機は1件しか残らず他PRのpendingが落ちる。
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: ${{ fromJSON(needs.observe.outputs.prs || '[]') }}
+    # 同一PR番号なら schedule と PR イベントも同じ group で直列化する。
+    # PRごとに job を分けるので、他PRの pending は落とさない。
     concurrency:
-      group: autonomous-merge-shadow-publish-${{ github.event.pull_request.number || inputs.pr_number || github.event_name }}
+      group: autonomous-merge-shadow-publish-${{ matrix.pr }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -165,4 +194,5 @@ jobs:
             --run-id "${GITHUB_RUN_ID}" \
             --run-attempt "${{ steps.select.outputs.attempt }}" \
             --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
-            --default-branch "${DEFAULT_BRANCH}"
+            --default-branch "${DEFAULT_BRANCH}" \
+            --pr "${{ matrix.pr }}"

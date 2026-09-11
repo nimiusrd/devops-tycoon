@@ -457,26 +457,24 @@ def sync_labels(
         ]
         return names
 
-    for _ in range(3):
-        latest = refresh()
-        if desired not in latest:
+    def extras_of(latest: list[str]) -> list[str]:
+        return [name for name in latest if name in MANAGED_LABELS and name != desired]
+
+    def add_desired() -> str | None:
+        reason = guard()
+        if reason:
+            return reason
+        api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
+        writes.append(f"add:{desired}")
+        if desired not in names:
+            names.append(desired)
+        return None
+
+    def remove_extras(latest: list[str]) -> str | None:
+        for name in extras_of(latest):
             reason = guard()
             if reason:
-                return writes, reason
-            api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
-            writes.append(f"add:{desired}")
-            if desired not in names:
-                names.append(desired)
-            continue
-        extras = [
-            name for name in latest if name in MANAGED_LABELS and name != desired
-        ]
-        if not extras:
-            return writes, None
-        for name in extras:
-            reason = guard()
-            if reason:
-                return writes, reason
+                return reason
             try:
                 api.request(
                     f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
@@ -487,31 +485,38 @@ def sync_labels(
                     raise
             writes.append(f"remove:{name}")
             names[:] = [item for item in names if item != name]
-    latest = refresh()
-    if desired not in latest:
-        reason = guard()
-        if reason:
-            return writes, reason
-        api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
-        writes.append(f"add:{desired}")
+        return None
+
+    for _ in range(6):
         latest = refresh()
-    for name in [item for item in latest if item in MANAGED_LABELS and item != desired]:
-        try:
-            api.request(
-                f"{api.prefix}/issues/{number}/labels/{encoded_label(name)}",
-                method="DELETE",
-            )
-        except PublishError as error:
-            if "HTTP 404" not in str(error):
-                raise
-        writes.append(f"remove:{name}")
-    latest = refresh()
-    if desired not in latest:
-        reason = guard()
+        if desired not in latest:
+            reason = add_desired()
+            if reason:
+                return writes, reason
+            continue
+        if not extras_of(latest):
+            return writes, None
+        reason = remove_extras(latest)
         if reason:
             return writes, reason
-        api.request(f"{api.prefix}/issues/{number}/labels", {"labels": [desired]})
-        writes.append(f"add:{desired}")
+    latest = refresh()
+    if desired not in latest:
+        reason = add_desired()
+        if reason:
+            return writes, reason
+        latest = refresh()
+    reason = remove_extras(latest)
+    if reason:
+        return writes, reason
+    latest = refresh()
+    if desired not in latest:
+        reason = add_desired()
+        if reason:
+            return writes, reason
+        latest = refresh()
+        reason = remove_extras(latest)
+        if reason:
+            return writes, reason
     return writes, None
 
 
@@ -588,11 +593,14 @@ def main() -> int:
         "--default-branch",
         default=os.environ.get("DEFAULT_BRANCH"),
     )
+    parser.add_argument("--pr", type=int)
     args = parser.parse_args()
     if not args.report_dir.is_dir():
         return 0
     event = json.loads(args.event.read_text()) if args.event else {}
     reports = load_reports(args.report_dir, event)
+    if args.pr is not None:
+        reports = [item for item in reports if item[0] == args.pr]
     if not reports:
         return 0
     failed = False
